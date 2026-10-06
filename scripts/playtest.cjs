@@ -39710,18 +39710,19 @@ async function checkBandWelle6XAudit(ctx) {
         // --- C1: at_player_forward DSL-Resolver
         out.atPlayerForwardExists = !!r.dslPositions.at_player_forward;
         if (r.dslPositions.at_player_forward) {
-            // Spieler bei (10, 50, 20), yaw=0 → forward ist -Z.
-            // at_player_forward(8) sollte (10, 50, 12) liefern.
+            // Spieler bei (10, 50, 20), yaw=0 → der Blick geht nach +Z (die EINE Vorwärts-Richtung _blickVorn,
+            // dieselbe wie Kamera und Phantom — Welle L, Befund V-D4: die alte Probe schrieb „hinter dir" fest).
+            // at_player_forward(8) liefert (10, 50, 28).
             r.state.playerMesh.position.set(10, 50, 20);
             r.state.yaw = 0;
             const ctx = { state: r.state, rng: () => 0.5 };
             const pos = r.dslPositions.at_player_forward([8], ctx);
             out.atPlayerForwardOffset =
-                Math.abs(pos.x - 10) < 0.01 && Math.abs(pos.y - 50) < 0.01 && Math.abs(pos.z - 12) < 0.01;
-            // Mit yaw=π/2 → forward ist -X. at_player_forward(5) → (5, 50, 20)
+                Math.abs(pos.x - 10) < 0.01 && Math.abs(pos.y - 50) < 0.01 && Math.abs(pos.z - 28) < 0.01;
+            // Mit yaw=π/2 → der Blick geht nach +X. at_player_forward(5) → (15, 50, 20)
             r.state.yaw = Math.PI / 2;
             const pos2 = r.dslPositions.at_player_forward([5], ctx);
-            out.atPlayerForwardYawAware = Math.abs(pos2.x - 5) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
+            out.atPlayerForwardYawAware = Math.abs(pos2.x - 15) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
             // Reset
             r.state.yaw = 0;
         }
@@ -39739,9 +39740,9 @@ async function checkBandWelle6XAudit(ctx) {
                 dslOut.program[1][0] === "at" &&
                 typeof dslOut.program[2] === "number";
             // Position ist NICHT bei (0,0,0) — sondern 8m vor dem
-            // Spieler. yaw=0 → forward ist -Z, also z ≈ -8.
+            // Spieler. yaw=0 → der Blick geht nach +Z, also z ≈ +8.
             const z = dslOut.program[1][3];
-            out.chatBuildDorfForwardOffset = Math.abs(z - -8) < 0.5;
+            out.chatBuildDorfForwardOffset = Math.abs(z - 8) < 0.5;
         }
 
         // --- C3: _canSoulJumpFromSlope existiert
@@ -39826,14 +39827,14 @@ async function checkBandWelle6XAudit(ctx) {
             "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
             wave6x3Results.atPlayerForwardOffset
         );
-        check("Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → -X)", wave6x3Results.atPlayerForwardYawAware);
+        check("Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → +X, die EINE Vorwärts-Richtung)", wave6x3Results.atPlayerForwardYawAware);
         check("Welle 6.X.3 C1: Chat 'baue dorf hier' parst zu DSL", wave6x3Results.chatBuildDorfParses);
         check(
             "Welle 6.X.3 C1: Chat 'baue dorf hier' Format [spawn_village, at, seed]",
             wave6x3Results.chatBuildDorfFormat
         );
         check(
-            "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ -8)",
+            "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ +8, vor dem Blick)",
             wave6x3Results.chatBuildDorfForwardOffset
         );
         check("Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert", wave6x3Results.canJumpFromSlopeExists);

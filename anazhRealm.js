@@ -2950,15 +2950,9 @@ class AnazhRealm {
             at_player_forward: ([dist], ctx) => {
                 const d = c(dist, 1, 50) || 5;
                 const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
-                const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : 0;
-                // yaw=0 → Blick nach +X. -sin(yaw), 0, -cos(yaw) ist die
-                // Standard-„forward"-Richtung im AnazhRealm-Coord-System
-                // (gleicher Vektor wie der Phantom-Distance-Pfad).
-                return {
-                    x: p.x - Math.sin(yaw) * d,
-                    y: p.y,
-                    z: p.z - Math.cos(yaw) * d,
-                };
+                // „vor dir" liest die EINE Vorwärts-Richtung (_blickVorn, waagrecht) — dieselbe wie Kamera und Phantom.
+                const v = this._blickVorn(ctx.state.yaw, 0);
+                return { x: p.x + v.x * d, y: p.y, z: p.z + v.z * d };
             },
             near_player: ([radius], ctx) => {
                 const r = c(radius, 1, 100);
@@ -8577,10 +8571,10 @@ class AnazhRealm {
                     // Forward-Offset 8 m statt Spieler-Position: die Bauwerke sind ~6–10 m groß, sonst steht der
                     // Spieler MITTEN darin. Position + Seed zur Build-Zeit eingebettet (Multi-User-Determinismus).
                     const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
-                    const yaw = typeof this.state.yaw === "number" ? this.state.yaw : 0;
+                    const vorn = this._blickVorn(this.state.yaw, 0); // die EINE Vorwärts-Richtung
                     const dist = 8;
-                    const fx = p.x - Math.sin(yaw) * dist;
-                    const fz = p.z - Math.cos(yaw) * dist;
+                    const fx = p.x + vorn.x * dist;
+                    const fz = p.z + vorn.z * dist;
                     const seed = Math.floor(Math.random() * 0xffffffff);
                     const op = map[kind];
                     const program = op
@@ -66464,10 +66458,11 @@ class AnazhRealm {
         let d = Math.hypot(dx, dz);
         if (d >= clearance) return pos; // schon weit genug — unberührt
         if (d < 1e-3) {
-            // ~auf dem Spieler → vor ihn (Blickrichtung; yaw=0 → Blick nach −z/−x)
+            // ~auf dem Spieler → vor ihn (die EINE Vorwärts-Richtung)
             const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : ctx.rng ? ctx.rng() * Math.PI * 2 : 0;
-            dx = -Math.sin(yaw);
-            dz = -Math.cos(yaw);
+            const vorn = this._blickVorn(yaw, 0);
+            dx = vorn.x;
+            dz = vorn.z;
             d = 1;
         }
         const nx = pp.x + (dx / d) * clearance;
@@ -68570,8 +68565,8 @@ class AnazhRealm {
                 const dx = cx - pm.position.x;
                 const dz = cz - pm.position.z;
                 if (Math.hypot(dx, dz) > 0.5) {
-                    // yaw: 0 → −z; sin/cos wie Chat-Bau-Offset
-                    this.state.yaw = Math.atan2(-dx, -dz);
+                    // der Blick zu den Häusern (die Umkehrung der EINEN Vorwärts-Richtung)
+                    this.state.yaw = this._blickGierZu(dx, dz);
                 }
             }
             const nHaus = houses.length;
@@ -75340,10 +75335,11 @@ class AnazhRealm {
         const bm = this.state.buildMode;
         const p = this.state.playerMesh.position;
         const sf = this.state.scaleFactor || 1;
-        // Fallback-Position: yaw-Ring vor dem Spieler.
-        const fallbackX = p.x + Math.sin(this.state.yaw) * bm.phantomDistance;
+        // Fallback-Position: vor dem Spieler (die EINE Vorwärts-Richtung, waagrecht).
+        const vorn = this._blickVorn(this.state.yaw, 0);
+        const fallbackX = p.x + vorn.x * bm.phantomDistance;
         const fallbackY = p.y - 0.5;
-        const fallbackZ = p.z + Math.cos(this.state.yaw) * bm.phantomDistance;
+        const fallbackZ = p.z + vorn.z * bm.phantomDistance;
         const fallback = { x: fallbackX, y: fallbackY, z: fallbackZ, isStable: false, hit: false };
         // P3 — der Raycast ist feld-nativ (`_runRaycast` → `_fieldRaycast`); nur die Kamera nötig.
         if (!this.state.camera) {
@@ -89053,6 +89049,29 @@ class AnazhRealm {
         }
     }
 
+    // DIE BLICK-WAHRHEIT (Welle L 06.10., Befunde K-D14 + V-D4): EINE Vorwärts-Richtung aus Gier und Neigung,
+    // (sin yaw · cos pitch, sin pitch, cos yaw · cos pitch) — yaw 0 blickt nach +z. Sie lesen die Ego-Kamera, der
+    // Pfeil, das Bau-Phantom, jede „vor dir"-Position der DSL und das Dorf-Ausrichten (Neigung 0 = waagrecht vorn).
+    // Vorher rechnete jeder Leser seine eigene: die Kamera ohne cos(pitch) (Blick bei Pitch −90° nur −45°), „vor dir"
+    // mit −(sin, cos) (die Birken standen HINTER dir, cos −0,96…−1,00). Die Neigung bleibt eine Haaresbreite unter
+    // ±90° (lookAt braucht eine waagrechte Spur der Gier).
+    _blickVorn(yaw, pitch, out) {
+        const g = Math.PI / 2 - 1e-3;
+        const p = Math.max(-g, Math.min(g, Number.isFinite(pitch) ? pitch : 0));
+        const y = Number.isFinite(yaw) ? yaw : 0;
+        const o = out || {};
+        const cp = Math.cos(p);
+        o.x = Math.sin(y) * cp;
+        o.y = Math.sin(p);
+        o.z = Math.cos(y) * cp;
+        return o;
+    }
+
+    // Die Gier, die in die Richtung (dx, dz) blickt — die Umkehrung von _blickVorn (Dorf-Ausrichten).
+    _blickGierZu(dx, dz) {
+        return Math.atan2(dx, dz);
+    }
+
     _loopCamera(currentTime) {
         // ### Kamera ###
         // V9.44-f — player/camera kamen vorher aus der Bewegungs-Sektion
@@ -89187,11 +89206,12 @@ class AnazhRealm {
                     eyeY = Math.min(eyeY, player.position.y + 0.55 + headroomFP - 0.12);
                 }
                 camera.position.set(player.position.x, eyeY, player.position.z);
-                camera.lookAt(
-                    player.position.x + Math.sin(this.state.yaw),
-                    eyeY + Math.sin(this.state.pitch),
-                    player.position.z + Math.cos(this.state.yaw)
+                const blick = this._blickVorn(
+                    this.state.yaw,
+                    this.state.pitch,
+                    this._egoBlick || (this._egoBlick = {})
                 );
+                camera.lookAt(player.position.x + blick.x, eyeY + blick.y, player.position.z + blick.z);
             }
             if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                 this.log(
