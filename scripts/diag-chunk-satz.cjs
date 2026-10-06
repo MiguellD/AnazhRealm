@@ -9,10 +9,13 @@
 //   (a) BODEN — höchstens EIN Objekt trägt das Boden-Material (der Satz, Stitch eingeschlossen),
 //       kein `voxelChunk:`-Name lebt im Szenen-Baum;
 //   (b) WASSER — höchstens EIN Chunk-Wasser-Objekt (der Satz);
-//   (c) STREU — die Nah-Streu (Waldboden 04.10.: Studio-Arten, Kachel-Ring um die Kamera) trägt höchstens EINE
-//       InstancedMesh je Senke (Art × Gestalt × Stufe × Teil, ≤ Zahl der Senken), keine Deck-Streu und keine
-//       Fern-Deko (beide fielen); je Senke eine dichte Block-Tabelle (lückenlos, Summe = Anzahl = mesh.count, je
-//       Block die Ernte-Identitäten), jeder Block gehört einer lebenden Kachel des Rings;
+//   (c) STREU-SATZ (W7) — die Draw-Einheit der Nah-Streu (Waldboden 04.10.: Studio-Arten, Kachel-Ring um die Kamera) ist
+//       ihr STOFF: kein Nah-Streu-Objekt zeichnet selbst (keine `streuNah:`-/`streu-klein`-Mesh im Szenen-Baum), keine
+//       Deck-Streu und keine Fern-Deko (beide fielen); jede Senke (Art × Gestalt × Stufe × Teil) trägt je Kachel einen
+//       Block (Σ n = Anzahl, je Block die Ernte-Identitäten, jeder Block einer lebenden Kachel des Rings), und jeder Block
+//       mit Pflanzen lebt als Bereich im Streu-Satz seines Stoffs — n × Vertices der Gestalt, die erste Pflanze in
+//       Welt-Lage (Geometrie × Matrix), je Stoff EIN Satz. Befund (echte GPU, Mess-Wiese): je Senke eine InstancedMesh
+//       über den ganzen Ring — 15 Befehle, 46k Dreiecke, auch hinter dem Blick (Haushalt 9 / 40k);
 //   (d) BAU — keine Instanz-Gruppe mit `@p:` im Schlüssel, kein `p:`-Region-Bundle;
 //   (e) KONSUM — ein Chunk-Abbau und -Wiederaufbau ändert den Satz (Bereiche, Index-Zahl), nie die Zahl
 //       der Szenen-Kinder; der Wiederaufbau trifft dieselbe Index-Zahl (deterministisch);
@@ -37,7 +40,8 @@
 //       (`ruheTakte`), dann kehrt er am selben Mesh auf seine Start-Kapazität zurück. Befund (echte GPU, Mess-Wiese, drei
 //       Wander-Schleifen à 1,2 km): die Bau-Sätze verlassener Dörfer hielten 38,3 MB, die größten ohne einen Bereich.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Zensus mit einem `voxelChunk:0,0:lod0`
-// direkt in der Szene, einer Gruppe `x#0@p:0,0`, einem zweiten `streuNah` derselben Senke, einer Fern-Deko, einer
+// direkt in der Szene, einer Gruppe `x#0@p:0,0`, einer selbst zeichnenden Streu-Senke, einem Block ohne Bereich, einer
+// Fern-Deko, einer
 // selbst zeichnenden Satz-Gruppe (`f:zacken:L0`) und einem Haus ohne Bereich MUSS rot fallen und jeden Täter mit
 // Namen und Zahl nennen — eine Wand, die hier nicht feuert, ist selbst rot.
 //   node scripts/diag-chunk-satz.cjs [--selftest]   (npm run gate:chunk-satz)
@@ -56,12 +60,18 @@ function urteil(z) {
             `BODEN: ${z.voxelChunkNamen.length} \`voxelChunk:\`-Objekte im Szenen-Baum — ${z.voxelChunkNamen.slice(0, 4).join(", ")}`
         );
     if (z.wasser.objekte > 1) v.push(`WASSER: ${z.wasser.objekte} Chunk-Wasser-Objekte (Soll ≤ 1, der Satz)`);
-    for (const [senke, n] of Object.entries(z.streuNah))
-        if (n > 1) v.push(`STREU: ${n} Nah-Streu-InstancedMeshes der Senke ${senke} (Soll ≤ 1 je Senke)`);
-    // Eine Streu-InstancedMesh, die keiner Senke gehört (eine alte Senken-Mesh nach dem Wachsen, ein Host-Bauer), ist
-    // eine Waise — sie zeichnet ohne Block-Tabelle (Integration 05.10.: die Schranke `Summe ≤ Senken` las dieselbe
-    // Map, aus der sie zählte, und sah unsichtbare Senken als Platz).
-    if (z.waisen > 0) v.push(`STREU: ${z.waisen} Nah-Streu-InstancedMeshes ohne Senke (Waisen, Soll 0)`);
+    // Die Nah-Streu zeichnet je Stoff im Streu-Satz (W7): jedes Nah-Streu-Objekt im Szenen-Baum zeichnet selbst — eine
+    // InstancedMesh je Senke war der Befund (15 Befehle im Hauptbild, auch hinter dem Blick).
+    const selbst = Object.entries(z.streuNah);
+    if (selbst.length)
+        v.push(
+            `STREU: ${selbst.reduce((a, [, n]) => a + n, 0)} Nah-Streu-Objekte zeichnen selbst (Soll 0, der Streu-Satz ihres ` +
+                `Stoffs) — ${selbst.map(([k, n]) => k + (n > 1 ? "×" + n : "")).slice(0, 4).join(", ")}`
+        );
+    const ss = z.streuSatz || { ohneBereich: [], doppelt: [] };
+    if (ss.ohneBereich.length)
+        v.push(`STREU-SATZ: ${ss.ohneBereich.length} Blöcke ohne treuen Bereich — ${ss.ohneBereich.slice(0, 4).join(", ")}`);
+    if (ss.doppelt.length) v.push(`STREU-SATZ: ${ss.doppelt.length} Stoffe in mehr als einem Satz — ${ss.doppelt.join(", ")}`);
     if (z.deck > 0) v.push(`STREU: ${z.deck} Deck-Streu-InstancedMeshes (gefallen, Soll 0)`);
     const fernSumme = Object.values(z.fern).reduce((a, b) => a + b, 0);
     if (fernSumme > 0) v.push(`STREU: ${fernSumme} Fern-Deko-InstancedMeshes (das Kreuz-Fernfeld fiel, Soll 0)`);
@@ -108,8 +118,8 @@ function selbsttest() {
         boden: { objekte: 1, namen: ["bodenSatz"] },
         voxelChunkNamen: [],
         wasser: { objekte: 1 },
-        streuNah: { "blume:1:L2:0": 1, "farn:2:L1:0": 1 },
-        waisen: 0,
+        streuNah: {},
+        streuSatz: { bloecke: 12, imSatz: 12, ohneBereich: [], doppelt: [] },
         deck: 0,
         fern: {},
         pGruppen: [],
@@ -134,14 +144,17 @@ function selbsttest() {
             muss: [/BAU: 1 Instanz-Gruppen mit `@p:`.*x#0@p:0,0/],
         },
         {
-            name: "zweites streuNah derselben Senke",
-            z: { ...gruen, streuNah: { "blume:1:L2:0": 2, "farn:2:L1:0": 1 } },
-            muss: [/STREU: 2 Nah-Streu-InstancedMeshes der Senke blume:1:L2:0/],
+            name: "eine Streu-Senke zeichnet selbst",
+            z: { ...gruen, streuNah: { "blume:1:L2:0": 1 } },
+            muss: [/STREU: 1 Nah-Streu-Objekte zeichnen selbst .*blume:1:L2:0/],
         },
         {
-            name: "eine Waise ohne Senke",
-            z: { ...gruen, waisen: 1 },
-            muss: [/STREU: 1 Nah-Streu-InstancedMeshes ohne Senke/],
+            name: "ein Block ohne Bereich im Streu-Satz",
+            z: {
+                ...gruen,
+                streuSatz: { bloecke: 12, imSatz: 11, ohneBereich: ["farn:2:L1:0@-226,-212"], doppelt: [] },
+            },
+            muss: [/STREU-SATZ: 1 Blöcke ohne treuen Bereich — farn:2:L1:0@-226,-212/],
         },
         {
             name: "die Fern-Deko lebt",
@@ -317,15 +330,12 @@ function check(name, ok, detail) {
 
             // ── DER ZENSUS: Render-Bürger je Klasse im Szenen-Baum (Bundles eingeschlossen).
             const zensus = () => {
-                const senkenMeshes = new Set(s.nahStreu ? [...s.nahStreu.senken.values()].map((a) => a.mesh) : []);
                 const bodenMat = s.voxelChunkMaterial;
                 const z = {
                     boden: { objekte: 0, namen: [], tris: 0 },
                     voxelChunkNamen: [],
                     wasser: { objekte: 0, tris: 0 },
                     streuNah: {},
-                    streuInstanzen: 0,
-                    waisen: 0,
                     deck: 0,
                     fern: {},
                     pGruppen: [],
@@ -356,11 +366,10 @@ function check(name, ok, detail) {
                         z.wasser.objekte++;
                         z.wasser.tris += tris(o);
                     }
-                    if (u.inventar === "streu-klein") {
+                    // (c) ein Nah-Streu-Objekt, das selbst zeichnet (die Senke zeichnet nie — ihr Stoff-Satz zeichnet)
+                    if (u.inventar === "streu-klein" || (typeof o.name === "string" && o.name.startsWith("streuNah:"))) {
                         const a = artVon(o);
                         z.streuNah[a] = (z.streuNah[a] || 0) + 1;
-                        z.streuInstanzen += o.count;
-                        if (!senkenMeshes.has(o)) z.waisen++;
                     }
                     if (u.inventar === "deck-streu") z.deck++;
                     if (u.inventar === "deko-fernfeld") {
@@ -422,6 +431,41 @@ function check(name, ok, detail) {
                         if (treu) z.bauSatz.imSatz++;
                         else z.bauSatz.ohneBereich.push(name);
                     }
+                // (c) DER STREU-SATZ: jeder Block mit Pflanzen lebt als Bereich im Satz seines Stoffs — n × Vertices der
+                // Gestalt, die erste Pflanze, erster Vertex: Geometrie × Matrix, in Welt-Lage im Pool; je Stoff EIN Satz.
+                z.streuSatz = { bloecke: 0, imSatz: 0, ohneBereich: [], doppelt: [] };
+                const stoffe = new Map();
+                if (s.chunkSaetze)
+                    for (const [art, satz] of s.chunkSaetze)
+                        if (satz.spec.userData.streuSatz) {
+                            const u = satz.spec.mat.uuid;
+                            stoffe.set(u, (stoffe.get(u) || 0) + 1);
+                            if (stoffe.get(u) === 2) z.streuSatz.doppelt.push(art);
+                        }
+                if (s.nahStreu)
+                    for (const a of s.nahStreu.senken.values())
+                        for (const [kk, b] of a.bloecke) {
+                            if (!(b.n > 0)) continue;
+                            z.streuSatz.bloecke++;
+                            const satz = s.chunkSaetze ? s.chunkSaetze.get(a.satz) : null;
+                            const bb = satz ? satz.bloecke.get(a.key + "@" + kk) : null;
+                            const n = a.geo.attributes.position.count;
+                            let treu = !!bb && bb.vAnzahl === n * b.n && satz.spec.mat === a.mat;
+                            if (treu) {
+                                const e = b.matrizen;
+                                const q = a.geo.attributes.position.array;
+                                const w = satz.geom.attributes.position.array;
+                                const o = bb.vStart * 3;
+                                const soll = [
+                                    e[0] * q[0] + e[4] * q[1] + e[8] * q[2] + e[12],
+                                    e[1] * q[0] + e[5] * q[1] + e[9] * q[2] + e[13],
+                                    e[2] * q[0] + e[6] * q[1] + e[10] * q[2] + e[14],
+                                ];
+                                for (let c = 0; c < 3; c++) if (Math.abs(w[o + c] - soll[c]) > 1e-3) treu = false;
+                            }
+                            if (treu) z.streuSatz.imSatz++;
+                            else z.streuSatz.ohneBereich.push(a.key + "@" + kk);
+                        }
                 z.boden.tris = Math.round(z.boden.tris);
                 z.wasser.tris = Math.round(z.wasser.tris);
                 return z;
@@ -434,28 +478,26 @@ function check(name, ok, detail) {
             for (const e of s.voxelChunks.values()) if (e && !e.empty && e.mesh) chunks++;
             res.chunks = chunks;
 
-            // ── (c) DER STREU-SATZ: je Senke ist die Block-Tabelle dicht (lückenlos in Puffer-Ordnung, Summe = Anzahl
-            // = mesh.count, je Block die Ernte-Identitäten) und jeder Block gehört einer lebenden Kachel des Rings.
+            // ── (c) DIE SENKEN DER NAH-STREU: je Senke Σ n der Blöcke = Anzahl, je Block die Ernte-Identitäten (n) und n × 16
+            // Matrix-Werte, jeder Block gehört einer lebenden Kachel des Rings, die ihn kennt.
             res.streu = { arten: 0, bloecke: 0, dicht: true, fehler: [] };
             const ns = s.nahStreu;
             if (ns)
                 for (const [name, a] of ns.senken) {
                     res.streu.arten++;
-                    let pos = 0;
-                    for (const kk of a.ordnung) {
-                        const b = a.bloecke.get(kk);
+                    let summe = 0;
+                    for (const [kk, b] of a.bloecke) {
                         const k = ns.kacheln.get(kk);
-                        if (!b || b.start !== pos || b.ids.length !== b.n || !k || !k.senken.has(name)) {
+                        if (b.ids.length !== b.n || b.matrizen.length !== b.n * 16 || !k || !k.senken.has(name)) {
                             res.streu.dicht = false;
                             if (res.streu.fehler.length < 4) res.streu.fehler.push(name + "@" + kk);
                         }
-                        pos += b ? b.n : 0;
+                        summe += b.n;
                         res.streu.bloecke++;
                     }
-                    if (pos !== a.anzahl || a.mesh.count !== a.anzahl) {
+                    if (summe !== a.anzahl || a.mesh !== undefined) {
                         res.streu.dicht = false;
-                        if (res.streu.fehler.length < 4)
-                            res.streu.fehler.push(`${name}: ${pos}/${a.anzahl}/${a.mesh.count}`);
+                        if (res.streu.fehler.length < 4) res.streu.fehler.push(`${name}: ${summe}/${a.anzahl}`);
                     }
                 }
 
@@ -862,7 +904,8 @@ function check(name, ok, detail) {
     const z = out.zensus;
     console.log(
         `\n  Zensus: ${out.chunks} Chunks · Boden ${z.boden.objekte} Objekte (${z.boden.tris} Dreiecke) · Wasser ${z.wasser.objekte}` +
-            ` · Nah-Streu ${Object.values(z.streuNah).reduce((a, b) => a + b, 0)} Meshes (${z.streuInstanzen} Instanzen)` +
+            ` · Nah-Streu ${Object.values(z.streuNah).reduce((a, b) => a + b, 0)} selbst zeichnend, ` +
+            `${z.streuSatz.imSatz}/${z.streuSatz.bloecke} Blöcke im Streu-Satz ihres Stoffs` +
             ` · Fern ${Object.values(z.fern).reduce((a, b) => a + b, 0)} · Deck ${z.deck} · @p:-Gruppen ${z.pGruppen.length}` +
             ` · p:-Bundles ${z.pBundles.length} · Render-Bürger ${z.renderBuerger} · Szenen-Kinder ${z.szeneKinder}` +
             `\n  Bau: ${z.bau.gruppen} Gruppen (${z.bau.werfer} werfen) · Glut ${z.bau.glut} (${z.bau.glutWerfer} werfen)` +
@@ -887,7 +930,12 @@ function check(name, ok, detail) {
         `${z.bauSatz.imSatz}/${z.bauSatz.gruppen}`
     );
     check(
-        "(c) STREU-SATZ — je Senke der Nah-Streu eine dichte Block-Tabelle, jeder Block einer lebenden Kachel",
+        "(c) STREU-SATZ — die Nah-Streu lebt (Blöcke im Ring), jeder Block mit Pflanzen als Bereich im Streu-Satz seines Stoffs",
+        z.streuSatz.bloecke > 0 && z.streuSatz.imSatz === z.streuSatz.bloecke,
+        `${z.streuSatz.imSatz}/${z.streuSatz.bloecke}`
+    );
+    check(
+        "(c) … je Senke der Nah-Streu eine treue Block-Tabelle (Σ n = Anzahl, je Block Identitäten und Matrizen), jeder Block einer lebenden Kachel, keine Senke zeichnet",
         !!out.streu && out.streu.arten > 0 && out.streu.dicht === true,
         out.streu
             ? `${out.streu.arten} Senken · ${out.streu.bloecke} Blöcke${out.streu.fehler.length ? " — " + out.streu.fehler.join(", ") : ""}`

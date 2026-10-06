@@ -35,12 +35,12 @@
         },
         {
             "id": "streu",
-            "titel": "Nah-Streu (die Studio-Arten des Waldbodens je Senke, die Klein-Streu der Streu-Regionen)",
+            "titel": "Nah-Streu (die Studio-Arten des Waldbodens je Stoff im Streu-Satz, die Klein-Streu der Streu-Regionen)",
             "befehle": 9,
             "dreiecke": 40000,
             "regeln": [
                 {
-                    "muster": "^streuNah:"
+                    "muster": "^streuSatz$"
                 },
                 {
                     "familie": [

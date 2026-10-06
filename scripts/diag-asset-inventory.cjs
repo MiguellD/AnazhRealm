@@ -6,8 +6,9 @@
 // JEDEN zeichnenden Emitter GENAU EINEM Regal zu:
 //
 //   STUDIO     — aus der Studio-Pipeline (fscatter:* Scatter-Gruppen · f:/fimp:-Leaves der
-//                platzierten Architektur · das Studio-Gras-Asset [geo.userData.foundryGras] · die Senken der
-//                Nah-Streu und die Senken der Nah-Wiese über ihren Foundry-Leaf-Key). Die Senken der Nah-Wiese füllt
+//                platzierten Architektur · das Studio-Gras-Asset [geo.userData.foundryGras] · der Streu-Satz der
+//                Nah-Streu über die Leaf-Keys seiner Senken, die Senken der Nah-Wiese über ihren Foundry-Leaf-Key, die
+//                Karten-Sicht über den Schlüssel der Atlas-Gruppe). Die Senken der Nah-Wiese füllt
 //                ihr Sicht-Satz im Haupt-Pass — headless legt ihn die Linse selbst (scripts/lib/wiese-sicht.cjs) und
 //                verlangt: der Ring am Start trägt Büschel, jede Senke belegt und als Studio-Emitter gezählt (W).
 //   SUBSTANZ   — Welt-Substanz ohne Studio-Gegenstück, bewusst KEINE Silhouetten-Frage
@@ -169,11 +170,23 @@ const server = http.createServer((req, res) => {
         if (st.nahWiese)
             for (const a of st.nahWiese.senken.values())
                 if (a.mesh && a.leafKey) meshKeys.set(a.mesh, ["nahWiese#" + a.leafKey]);
-        // Waldboden 04.10. — die Nah-Streu (Kamera-Ring aus den Studio-Bodenarten): je Senke ihr Foundry-Leaf-Key;
-        // eine Senke ohne Key bleibt unbekannt → Verletzung (fail-closed).
+        // Waldboden 04.10. — die Nah-Streu (Kamera-Ring aus den Studio-Bodenarten) zeichnet je Stoff im Streu-Satz (W7): ein
+        // Streu-Satz trägt die Foundry-Leaf-Keys seiner Senken wie ein Batch (die schlechteste Klasse gewinnt); ein Satz ohne
+        // Senke, eine Senke ohne Key bleibt unbekannt → Verletzung (fail-closed).
+        const streuKeys = new Map();
         if (st.nahStreu)
-            for (const a of st.nahStreu.senken.values())
-                if (a.mesh && a.leafKey) meshKeys.set(a.mesh, ["nahStreu#" + a.leafKey]);
+            for (const a of st.nahStreu.senken.values()) {
+                if (!(a.anzahl > 0)) continue;
+                if (!streuKeys.has(a.satz)) streuKeys.set(a.satz, []);
+                streuKeys.get(a.satz).push(a.leafKey ? "nahStreu#" + a.leafKey : "nahStreu#?" + a.key);
+            }
+        if (st.chunkSaetze)
+            for (const [art, s] of st.chunkSaetze)
+                if (s.spec && s.spec.userData && s.spec.userData.streuSatz && streuKeys.has(art))
+                    meshKeys.set(s.mesh, streuKeys.get(art));
+        // W7 — die Karten zeichnen als Sicht der EINEN Atlas-Gruppe: die Sicht trägt deren Schlüssel.
+        if (st.kartenSicht && st.kartenSicht.mesh)
+            meshKeys.set(st.kartenSicht.mesh, [String(st.kartenSicht.mesh.userData.archInstanceKey)]);
         // Welle 6 — der Bau-Satz (`_bauSatzArt`): ein Satz-Mesh zeichnet die Bereiche seiner Gruppen — er trägt ihre
         // Schlüssel wie ein Batch (die schlechteste Klasse gewinnt); ein Bau-Satz ohne Bereich bleibt unbekannt.
         if (st.chunkSaetze)
