@@ -85,6 +85,11 @@ function ausgabeAufnahme(W, H, warm) {
         const BH = Math.max(1, Math.round(db.y));
         const rt = new T.RenderTarget(BW, BH, { depthBuffer: true, samples: 0 });
         const prevOut = typeof rend.getOutputRenderTarget === "function" ? rend.getOutputRenderTarget() : null;
+        // DAS ZIEL DES RENDERERS mit zurück (06.10., echte GPU, `werkbank zerlegen --bilder`): im Direktpfad (ohne Post-Kette)
+        // stellt r184 am Ende von `_renderScene` das aktuelle Ziel auf `_renderTarget || _outputRenderTarget` — nach einer
+        // Aufnahme stand das Aufnahme-Ziel als aktuelles Ziel, jeder folgende Frame schrieb in das entsorgte Ziel und jede
+        // weitere Aufnahme las ein nie beschriebenes (`copyTextureToBuffer: format of undefined`).
+        const prevZiel = rend.getRenderTarget();
         rend.setOutputRenderTarget(rt);
         try {
             // Warm-Frames: der erste Frame nach dem Kamera-Umsetzen trägt die Feld-Formen noch nicht
@@ -162,6 +167,7 @@ function ausgabeAufnahme(W, H, warm) {
             return { u8, info, ms };
         } finally {
             rend.setOutputRenderTarget(prevOut);
+            rend.setRenderTarget(prevZiel);
             if (rt.dispose) rt.dispose();
         }
     })();

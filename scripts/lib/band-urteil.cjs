@@ -62,6 +62,10 @@ function regelPasst(regel, e) {
     return true;
 }
 
+// Der Täter-Schlüssel eines Zensus-Eintrags (draw-zaehler `klassen[]`: klasse · stufe · art) — das EINE Eingangs-Format
+// von `zuordnen` (Band-Urteil und GPU-Zerlegung ordnen über dieselbe Regel).
+const einOf = (e) => ({ klasse: e.klasse, familie: familieOf(e.klasse), stufe: e.stufe, art: e.art || null });
+
 // Die Haushalt-Klasse eines Täter-Schlüssels: die erste Klasse, deren Regel passt; sonst keine (ROT `haushalt`).
 function zuordnen(haushalt, e) {
     if (istUnbenannt(e.klasse)) return null;
@@ -265,7 +269,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche }) {
     for (const k of haushalt.klassen) zeile(k.id, k.titel, { befehle: k.befehle, dreiecke: k.dreiecke });
     const ausserhalb = {};
     for (const e of zensus.klassen || []) {
-        const ein = { klasse: e.klasse, familie: familieOf(e.klasse), stufe: e.stufe, art: e.art || null };
+        const ein = einOf(e);
         let cmd = 0,
             tris = 0;
         const je = {};
@@ -610,6 +614,7 @@ module.exports = {
     ratscheNachziehen,
     vramBefunde,
     bandTabelle,
+    einOf,
     zuordnen,
     erzeugerOf,
     ueberRatsche,
