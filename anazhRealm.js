@@ -64463,9 +64463,12 @@ class AnazhRealm {
     spawnArchitecture(type, position, opts = {}) {
         // FOUNDRY-SPAWN-WAND: Studio-Blueprints (fahrzeug_/haus_/tor_/klinge_*) existieren erst nach get-book
         // → kaltes Buch = LAUTER ERROR statt unsichtbarem Tot-Spawn. Opt-out: Worldgen/silent + Restore
-        // (precise+id) — die heilen beim Ingest/Rewarm.
+        // (precise+id) — die heilen beim Ingest/Rewarm. Die Restore-id ist auch eine ZAHL (Worldgen-ids,
+        // `_loadStateRestoreArchitectures`): die Wand nahm nur Text-ids, jeder Reload mit noch kaltem Buch warf
+        // die Studio-Häuser der Welt weg, und der nächste Save schrieb den Verlust fest (gate:persistence K).
         const _fdrySpawnHeal =
-            opts.silent === true || (opts.precise === true && typeof opts.id === "string" && opts.id);
+            opts.silent === true ||
+            (opts.precise === true && ((typeof opts.id === "string" && opts.id) || Number.isFinite(opts.id)));
         if (this._foundryEnabled() && this._foundryNeedsBookForType(type) && !_fdrySpawnHeal) {
             const f = this._foundry;
             if (!f || !f.ready || !f.recipes) {

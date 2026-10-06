@@ -9,6 +9,11 @@
 // BEVOR es überschreibt) + ein KORRUPTIONS-SICHERER Load (`_loadStateLoadFromStorage`
 // fällt bei korruptem Haupt-Stand auf den .bak-Backup zurück). Diese Linse beweist
 // beide Hälften headless (GPU-frei).
+//
+// (K) DER RELOAD MIT KALTEM BUCH (06.10., V18.531): ein Studio-Haus der Welt (haus_*, Worldgen-id als ZAHL) muss
+// den Restore überstehen, auch wenn das Studio-Buch noch nicht da ist. Die FOUNDRY-SPAWN-WAND nahm nur Text-ids als
+// Restore-Heilung: echte GPU, Werkbank, zweiter Boot — 12 Häuser an der Mess-Wiese fielen, der nächste Save schrieb
+// den Verlust fest. Gegenprobe (nicht vakuös): ein FRISCHER Spawn bei kaltem Buch bleibt blockiert.
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -44,6 +49,7 @@ const server = http.createServer((req, res) => {
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
+        window.__anazhForceFoundry = true;
     });
     let out = null;
     try {
@@ -84,6 +90,43 @@ const server = http.createServer((req, res) => {
             o.honestNullWhenBothCorrupt = both === null;
             return o;
         });
+        // (K) DER RELOAD MIT KALTEM BUCH: warten, bis das Studio-Buch die Häuser registriert hat, dann ein Haus mit
+        // Zahlen-id setzen, den Snapshot bei kaltem Buch zurückspielen (der Zweit-Boot) und zählen.
+        await page.waitForFunction(
+            () => {
+                const r = window.anazhRealm;
+                return !!(r._foundry && r._foundry.ready && r.state.blueprints && r.state.blueprints.haus_griechisch);
+            },
+            { timeout: 120000 }
+        );
+        Object.assign(
+            out,
+            await page.evaluate(() => {
+                const r = window.anazhRealm;
+                const k = {};
+                const id = 990001; // eine Zahlen-id (wie Worldgen) — der Spawn vergibt sie neu, gezählt wird die Stelle
+                const istHaus = (a) => a && a.type === "haus_griechisch" && Math.abs(a.position.x - 52) < 0.01 && Math.abs(a.position.z - 52) < 0.01;
+                const pos = { x: 52, y: r._voxelSurfaceY(52, 52), z: 52 };
+                const haus = r.spawnArchitecture("haus_griechisch", pos, { seed: 9, precise: true, id });
+                k.kGesetzt = !!haus;
+                const snap = r.buildStateSnapshot();
+                k.kImSnapshot = (snap.architectures || []).some(istHaus);
+                const f = r._foundry;
+                const warm = f.ready;
+                f.ready = false; // der Zweit-Boot: der Stand lädt, bevor das Buch kommt
+                try {
+                    k.kFrischBlockiert =
+                        r.spawnArchitecture("haus_griechisch", { x: 60, y: pos.y, z: 60 }, { seed: 9 }) === null;
+                    r._loadStateRestoreArchitectures({ architectures: snap.architectures });
+                } finally {
+                    f.ready = warm;
+                }
+                k.kZurueck = (r.state.architectures || []).some(istHaus);
+                k.kVorher = (snap.architectures || []).length;
+                k.kNachher = (r.state.architectures || []).length;
+                return k;
+            })
+        );
     } catch (e) {
         out = { __err: (e && e.message) || String(e) };
     }
@@ -105,6 +148,14 @@ const server = http.createServer((req, res) => {
             pass: out.recoveredFromBackup,
         },
         { name: "Haupt + Backup korrupt → ehrliches null (kein stiller Müll)", pass: out.honestNullWhenBothCorrupt },
+        {
+            name: "(K) Gegenprobe: ein FRISCHER Studio-Spawn bei kaltem Buch bleibt blockiert (die Kalt-Probe wirkt)",
+            pass: out.kGesetzt === true && out.kFrischBlockiert === true,
+        },
+        {
+            name: `(K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück (Einträge ${out.kVorher} → ${out.kNachher})`,
+            pass: out.kImSnapshot === true && out.kZurueck === true && out.kNachher === out.kVorher,
+        },
     ];
     console.log("\n=== Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load) ===");
     let fails = 0;
