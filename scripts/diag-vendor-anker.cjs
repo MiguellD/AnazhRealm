@@ -180,6 +180,19 @@ const ANKER = [
         sub: "if(this.device.queue.submit([t.encoder.finish()]),null!==e.textures)",
         organ: "_chunkSatzUmlegen (jeder Schatten-Pass ist am Ende abgegeben — ein Umzug mitten im Frame trifft ihn nie)",
     },
+    // DIE INSTANZ-WAHL JE PASS (Welle 7): eine Pflanzen-Stufe ordnet im Szenen-Haken ihre Slots und setzt `count` — der Draw
+    // liest die Instanz-Zahl beim ZEICHNEN (nicht einmal je Objekt), und jeder Pass ist am Ende abgegeben: die Kaskade k0
+    // schreibt die Puffer eines Zwillings, gibt ab, dann schreibt k1 — der Inhalt jedes Passes erreicht die GPU vor dem nächsten.
+    {
+        file: "vendor/three.webgpu.min.js",
+        sub: "r.instanceCount:void 0!==e.count&&(u=Math.max(0,e.count)),0===u)return null",
+        organ: "_instanzWahlPass (der Draw liest count beim Zeichnen; count 0 zeichnet nicht)",
+    },
+    {
+        file: "vendor/three.webgpu.min.js",
+        sub: "if(this.device.queue.submit([t.encoder.finish()]),null!==e.textures)",
+        organ: "_instanzWahlPass (jeder Kaskaden-Pass ist abgegeben, bevor der nächste die Zwillings-Puffer schreibt)",
+    },
     // Das Wachsen des Satzes tauscht die Geometrie am selben Mesh: das Render-Objekt sieht den Tausch beim nächsten Zeichnen
     // und liest die Attribute der neuen Geometrie (der Geometrie-Hörer, der sonst die neuen Puffer zerstörte, fällt im
     // Register — `_renderObjektRegister`, Anker unten).
