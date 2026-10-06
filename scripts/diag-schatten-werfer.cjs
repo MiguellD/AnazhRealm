@@ -34,7 +34,8 @@
 //       (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe)
 //   W7  die Sätze je Pass (Befund 05.10., echte GPU, Mess-Wiese: Hauptbild, k0 und k1 zogen je den ganzen Ring,
 //       245 696 Dreiecke; der Bau-Satz zog in k1 den Lauf vom ersten bis zum letzten Bereich im Frustum): jeder Pass
-//       zeichnet in jedem Satz genau die Zellen, deren Hülle sein Frustum schneidet, byte-gleich hintereinander, nach dem
+//       zeichnet in jedem Satz genau die Zellen, deren Hülle sein Frustum schneidet (Höhlen-Zellen nur, wenn die Höhlen-
+//       Sicht des Passes sie erreicht, Welle 7), byte-gleich hintereinander, nach dem
 //       Pass wieder den Abschnitt des Hauptbilds; ein Pass lässt Ring weg, und am Abend (Sonne im Rücken) trägt die nahe
 //       Kaskade Boden hinter dem Blick (der Hang wirft)
 //   Z1  die Karten-Ziele: Farbe r8 (der Filter liest sie nur mit shadowMap.transmitted), Tiefe 16 bit, benannt —
@@ -537,11 +538,20 @@ function probe(selbsttest) {
             voll: boden.iSumme / 3,
             bauGeprueft: 0,
         };
+        // eine Höhlen-Zelle (Welle 7) zählt nur, wenn die Höhlen-Sicht DIESES Passes sie gestempelt hat — ihre Wahrheit
+        // prüft gate:hoehlen-sicht (Strahlen gegen den ganzen Boden-Satz), hier zählt die Treue des Abschnitts
         const wahl = (s, fr) => {
             const liste = [];
+            const stempel = s.hoehle ? s.hoehle.stempel : 0;
             for (const b of s.ordnung) {
                 if (!b.huelle || b.huelle.isEmpty() || !fr.intersectsBox(b.huelle)) continue;
-                for (const z of b.zellen) if (!z.huelle.isEmpty() && fr.intersectsBox(z.huelle)) liste.push(z);
+                for (const z of b.zellen)
+                    if (
+                        (z.knoten === undefined || z.knoten.sicht === stempel) &&
+                        !z.huelle.isEmpty() &&
+                        fr.intersectsBox(z.huelle)
+                    )
+                        liste.push(z);
             }
             return liste;
         };

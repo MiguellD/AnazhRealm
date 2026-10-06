@@ -21393,6 +21393,18 @@ class AnazhRealm {
                                 indices: new Uint32Array(msg.indices),
                                 colors: new Float32Array(msg.colors),
                                 waterCells: new Uint8Array(msg.waterCells),
+                                // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
+                                hoehle: msg.hTri
+                                    ? {
+                                          tri: new Int32Array(msg.hTri),
+                                          n: msg.hN | 0,
+                                          knoten: new Float32Array(msg.hKnoten),
+                                          muend: new Float32Array(msg.hMuend),
+                                          seiten: new Float32Array(msg.hSeiten),
+                                          kanten: new Float32Array(msg.hKanten),
+                                          rand: new Int32Array(msg.hRand),
+                                      }
+                                    : null,
                             });
                         }
                     }
@@ -21725,11 +21737,19 @@ class AnazhRealm {
             return c._idbReady;
         }
         // Stempel = AnazhRealm.VERSION (jeder Release bustet — bewusst statt SHA über den Stamm) + genVersion
-        // + macroAnker-Hash (ein fremder Anker darf nie alte Bytes lesen); Mismatch → clear. Der SEED lebt im
+        // + macroAnker-Hash (ein fremder Anker darf nie alte Bytes lesen) + die Form des Replys (CHUNK_IDB_FORM);
+        // Mismatch → clear. Der SEED lebt im
         // KEY (`_chunkIdbKey`); Welt-Wechsel ohne Reload behält den Boot-Stempel (Keys sind seed-scoped).
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
         const anker = typeof this._macroAnker === "function" ? this._macroAnker() : null;
-        const stamp = AnazhRealm.VERSION + "|" + genV + "|" + this._fastHash(JSON.stringify(anker || null));
+        const stamp =
+            AnazhRealm.VERSION +
+            "|" +
+            genV +
+            "|" +
+            this._fastHash(JSON.stringify(anker || null)) +
+            "|" +
+            AnazhRealm.CHUNK_IDB_FORM;
         c._stamp = stamp;
         c._idbReady = new Promise((resolve) => {
             try {
@@ -21935,6 +21955,14 @@ class AnazhRealm {
             "aMorphWeight",
             new THREE.Float32BufferAttribute(new Float32Array(meshData.positions.length / 3), 1)
         );
+        // Der Höhlen-Graph (Welle 7, `_voxelHoehlenGraph` ↔ Worker `hoehlenGraph`): fail-closed — ein Boden ohne ihn
+        // wüsste nicht, welche Fläche aus dem Himmel zu sehen ist.
+        const H = meshData.hoehle;
+        if (!H || !H.tri || H.tri.length * 3 !== meshData.indices.length)
+            throw new Error(
+                `_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keinen passenden Höhlen-Graph`
+            );
+        geom.hoehle = Object.assign({}, H, { step: this._voxelChunkConfig(lod).step });
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
@@ -25493,7 +25521,8 @@ class AnazhRealm {
         densityFn,
         cropMargin = 0,
         preDensity = null,
-        smoothIters = 1
+        smoothIters = 1,
+        hoehle = null
     ) {
         const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
         // `preDensity`: hat der Aufrufer das Grid schon (Cell-Klassifikation), läuft die teure Sample-
@@ -25510,9 +25539,19 @@ class AnazhRealm {
             step
         );
         if (positions.length === 0) return null;
-        const indices = this._voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ);
+        // `hoehle` (der Höhlen-Graph des Boden-Chunks, `_voxelHoehlenGraph`): je Dreieck die Zelle seiner Luft
+        const triZelle = hoehle ? [] : null;
+        const indices = this._voxelEmitQuadIndices(
+            density,
+            cellVert,
+            dimX,
+            dimY,
+            dimZ,
+            hoehle ? hoehle.lab : null,
+            triZelle
+        );
         this._voxelLaplacianSmoothPositions(positions, indices, smoothIters, sharp);
-        this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin);
+        this._voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin, triZelle);
         if (positions.length === 0) return null;
         // Gradient-Normals nutzen das geteilte preDensity-Grid (statt ~18k Dichte-Calls);
         // _voxelGradientNormals interpoliert trilinear, Out-of-Bounds → sample().
@@ -25531,6 +25570,17 @@ class AnazhRealm {
         // grobe Nachbar-Oberfläche zieht. Render-only (Vertex-Shader), main-only, Physik-Position unberührt.
         geom.setAttribute("aMorphTarget", new THREE.Float32BufferAttribute(new Float32Array(positions), 3));
         geom.setAttribute("aMorphWeight", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
+        if (hoehle)
+            geom.hoehle = {
+                tri: Int32Array.from(triZelle),
+                n: hoehle.n,
+                knoten: hoehle.knoten,
+                muend: hoehle.muend,
+                seiten: hoehle.seiten,
+                kanten: hoehle.kanten,
+                rand: hoehle.rand,
+                step,
+            };
         return geom;
     }
 
@@ -25855,7 +25905,9 @@ class AnazhRealm {
     // Pass 2 — je Gitter-Kante mit Vorzeichenwechsel ein Quad; die Diagonale alterniert mit der
     // Zell-Parität `(i+j+k) & 1` (sonst Streifen-Muster auf flachen Hügeln). cv() ist die Out-of-Range-
     // Wand: ohne sie aliast `ci(dim, j, k)` in einen fremden Zell-Slot → Streck-Dreieck an jeder Naht.
-    _voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ) {
+    // Mit `lab` (je Gitter-Punkt die Höhlen-Zelle, `_voxelHoehlenGraph`) trägt `triZelle` je Dreieck die Zelle des
+    // LUFT-Endes seiner Kante (−1: Himmels-Luft) — die Fläche gehört der Luft, aus der man sie sieht.
+    _voxelEmitQuadIndices(density, cellVert, dimX, dimY, dimZ, lab = null, triZelle = null) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const gi = (i, j, k) => i + j * Nx + k * Nx * Ny;
@@ -25866,35 +25918,312 @@ class AnazhRealm {
             return cellVert[ci(i, j, k)];
         };
         const indices = [];
-        const quad = (a, b, c, d, parity) => {
+        const quad = (a, b, c, d, parity, zelle) => {
             if (a < 0 || b < 0 || c < 0 || d < 0) return;
             if (parity & 1) {
                 indices.push(a, b, d, b, c, d);
             } else {
                 indices.push(a, b, c, a, c, d);
             }
+            if (triZelle) triZelle.push(zelle, zelle);
         };
+        // die Zelle des Luft-Endes der Kante p0–p1 (s0: p0 fest)
+        const luft = (p0, p1, s0) => (lab ? lab[s0 ? p1 : p0] : -1);
         for (let k = 0; k <= dimZ; k++) {
             for (let j = 0; j <= dimY; j++) {
                 for (let i = 0; i <= dimX; i++) {
-                    const s0 = solid(density[gi(i, j, k)]);
+                    const p0 = gi(i, j, k);
+                    const s0 = solid(density[p0]);
                     const parity = (i + j + k) & 1;
                     // +x-Kante → 4 Zellen bei (i, j-1..j, k-1..k)
                     if (i < dimX && j > 0 && k > 0 && s0 !== solid(density[gi(i + 1, j, k)])) {
-                        quad(cv(i, j - 1, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i, j - 1, k), parity);
+                        quad(
+                            cv(i, j - 1, k - 1),
+                            cv(i, j, k - 1),
+                            cv(i, j, k),
+                            cv(i, j - 1, k),
+                            parity,
+                            luft(p0, gi(i + 1, j, k), s0)
+                        );
                     }
                     // +y-Kante → 4 Zellen bei (i-1..i, j, k-1..k)
                     if (j < dimY && i > 0 && k > 0 && s0 !== solid(density[gi(i, j + 1, k)])) {
-                        quad(cv(i - 1, j, k - 1), cv(i, j, k - 1), cv(i, j, k), cv(i - 1, j, k), parity);
+                        quad(
+                            cv(i - 1, j, k - 1),
+                            cv(i, j, k - 1),
+                            cv(i, j, k),
+                            cv(i - 1, j, k),
+                            parity,
+                            luft(p0, gi(i, j + 1, k), s0)
+                        );
                     }
                     // +z-Kante → 4 Zellen bei (i-1..i, j-1..j, k)
                     if (k < dimZ && i > 0 && j > 0 && s0 !== solid(density[gi(i, j, k + 1)])) {
-                        quad(cv(i - 1, j - 1, k), cv(i, j - 1, k), cv(i, j, k), cv(i - 1, j, k), parity);
+                        quad(
+                            cv(i - 1, j - 1, k),
+                            cv(i, j - 1, k),
+                            cv(i, j, k),
+                            cv(i - 1, j, k),
+                            parity,
+                            luft(p0, gi(i, j, k + 1), s0)
+                        );
                     }
                 }
             }
         }
         return indices;
+    }
+
+    // DIE HÖHLEN-SCHICHT (Welle 7) — der Sicht-Graph der Höhlen-Luft aus dem Dichte-Gitter des Chunks (MUSS bit-identisch
+    // im Worker, `hoehlenGraph`). Befund (echte GPU, Mess-Wiese −900/−850, Gitter-Probe): 68 % der Boden-Kanten trennen Fels
+    // von HÖHLEN-Luft, und der Boden-Satz zeichnete sie in jedem Pass; eine Tiefen-Grenze unter der Oberfläche risse an
+    // Mündungen, Überhängen und Klippen Löcher. Die Wahrheit liegt in der Luft: HIMMELS-Luft ist ein Luft-Punkt über der
+    // obersten festen Ecke seiner Spalte, HÖHLEN-Luft einer darunter. Senkrecht unter Himmels-Luft liegt nur Himmels-Luft
+    // oder Fels — ein Strahl aus dem Himmel betritt Höhlen-Luft nur WAAGERECHT, durch eine MÜNDUNG (Höhlen-Luft neben
+    // Himmels-Luft). Eine ZELLE ist eine Höhlen-Luft-Komponente (6-Nachbarschaft, wie Surface-Nets die Luft trennt) je
+    // Chunk-Teil (Kachel × Lage); ein PORTAL sind zwei 6-benachbarte Punkte verschiedener Zellen (über eine Teil-Grenze); das RAND-BAND
+    // trägt die Punkte bis einen Schritt jenseits jeder Chunk-Kante (dort verknüpft der Haupt-Thread die Nachbar-Chunks,
+    // `_hoehlenVerknuepfe`). Zelle 0 sammelt die versiegelten Komponenten (keine Mündung, kein Portal, kein Rand-Band — von
+    // außen nie zu sehen). Rückgabe: `lab` (je Gitter-Punkt die Zelle, −1 = keine Höhlen-Luft), `n` Zellen, `knoten` (je
+    // Zelle ihre Luft-Box, min xyz · max xyz, leer = +∞/−∞), `muend` (je Zelle und Fach von 4³ Punkten eine Mündungs-Box:
+    // Zelle · Box), `seiten` (je Zelle und Seite −x · +x ·
+    // −z · +z die Box ihrer Rand-Band-Punkte), `kanten` (je Portal Zelle a · Zelle b · Box), `rand` (die Höhlen-Punkte auf
+    // den Chunk-Kanten, `_hoehlenVerknuepfe`).
+    _voxelHoehlenGraph(density, ox, oy, oz, dimX, dimY, dimZ, step) {
+        const Nx = dimX + 1;
+        const Ny = dimY + 1;
+        const Nz = dimZ + 1;
+        const NxNy = Nx * Ny;
+        const N = NxNy * Nz;
+        // die oberste feste Ecke je Spalte (−1: keine)
+        const top = new Int32Array(Nx * Nz).fill(-1);
+        for (let k = 0; k < Nz; k++)
+            for (let i = 0; i < Nx; i++)
+                for (let j = Ny - 1; j >= 0; j--)
+                    if (density[i + j * Nx + k * NxNy] > 0) {
+                        top[i + k * Nx] = j;
+                        break;
+                    }
+        const hoehle = (p, i, j, k) => density[p] <= 0 && j < top[i + k * Nx];
+        // DIE TEILUNG der Zellen (MUSS gleich in Main und Worker): je Chunk-Seite TEIL Kacheln, je SCHICHT Gitter-Ebenen eine
+        // Lage — eine kleine Zelle hält das Rechteck der Portal-Sicht eng (Werkbank 06.10., Mess-Wiese: Viertel ohne Lagen
+        // 13,8k, 4 × 4 Kacheln mit Lagen 7,5k Höhlen-Dreiecke im Hauptbild bei derselben Mündungs-Wahl).
+        const TEIL = 4,
+            SCHICHT = 8;
+        const kachel = (i, dim) => {
+            const t = Math.floor(((i - 1) * TEIL) / dim);
+            return t < 0 ? 0 : t >= TEIL ? TEIL - 1 : t;
+        };
+        const teil = (i, j, k) =>
+            kachel(i, dimX - 3) + TEIL * kachel(k, dimZ - 3) + TEIL * TEIL * Math.floor(j / SCHICHT);
+        // (1) die Komponenten je Teil (Breitensuche über einen Stapel, Punkte in Index-Folge — deterministisch)
+        const lab = new Int32Array(N).fill(-1);
+        const stapel = new Int32Array(N);
+        let nRoh = 0;
+        for (let p = 0; p < N; p++) {
+            if (lab[p] >= 0) continue;
+            const i = p % Nx;
+            const j = ((p / Nx) | 0) % Ny;
+            const k = (p / NxNy) | 0;
+            if (!hoehle(p, i, j, k)) continue;
+            const v = teil(i, j, k);
+            lab[p] = nRoh;
+            let sp = 0;
+            stapel[sp++] = p;
+            const tritt = (q, qi, qj, qk) => {
+                if (lab[q] >= 0 || !hoehle(q, qi, qj, qk) || teil(qi, qj, qk) !== v) return;
+                lab[q] = nRoh;
+                stapel[sp++] = q;
+            };
+            while (sp > 0) {
+                const q = stapel[--sp];
+                const qi = q % Nx;
+                const qj = ((q / Nx) | 0) % Ny;
+                const qk = (q / NxNy) | 0;
+                if (qi + 1 < Nx) tritt(q + 1, qi + 1, qj, qk);
+                if (qi > 0) tritt(q - 1, qi - 1, qj, qk);
+                if (qj + 1 < Ny) tritt(q + Nx, qi, qj + 1, qk);
+                if (qj > 0) tritt(q - Nx, qi, qj - 1, qk);
+                if (qk + 1 < Nz) tritt(q + NxNy, qi, qj, qk + 1);
+                if (qk > 0) tritt(q - NxNy, qi, qj, qk - 1);
+            }
+            nRoh++;
+        }
+        // (2) je Komponente: Luft-Box, Mündungs-Boxen je Fach, Rand-Bänder (Gitter-Indizes) und die Portale zu den Nachbar-Teilen
+        const LEER = [2147483647, -2147483648];
+        const luftB = new Int32Array(nRoh * 6);
+        // die Mündungen je Komponente und Fach (4 × 4 × 4 Gitter-Punkte): eine kleine Box hält die Horizont-Probe und das Licht-
+        // Rechteck eng (eine Komponente trägt oft Mündungen über die ganze Höhe einer Schlucht-Wand)
+        const mundM = new Map();
+        const mund = (c, i, j, k, i2, k2) => {
+            const key = c * 4096 + (i >> 2) + 8 * ((k >> 2) + 8 * (j >> 2));
+            let B = mundM.get(key);
+            if (!B) mundM.set(key, (B = [c, LEER[0], LEER[0], LEER[0], LEER[1], LEER[1], LEER[1]]));
+            dehne(B, 1, i, j, k);
+            dehne(B, 1, i2, j, k2);
+        };
+        const seitB = new Int32Array(nRoh * 24);
+        for (let c = 0; c < nRoh; c++) {
+            for (let a = 0; a < 3; a++) {
+                luftB[c * 6 + a] = LEER[0];
+                luftB[c * 6 + 3 + a] = LEER[1];
+            }
+            for (let sd = 0; sd < 4; sd++)
+                for (let a = 0; a < 3; a++) {
+                    seitB[c * 24 + sd * 6 + a] = LEER[0];
+                    seitB[c * 24 + sd * 6 + 3 + a] = LEER[1];
+                }
+        }
+        const dehne = (B, o, i, j, k) => {
+            if (i < B[o]) B[o] = i;
+            if (j < B[o + 1]) B[o + 1] = j;
+            if (k < B[o + 2]) B[o + 2] = k;
+            if (i > B[o + 3]) B[o + 3] = i;
+            if (j > B[o + 4]) B[o + 4] = j;
+            if (k > B[o + 5]) B[o + 5] = k;
+        };
+        const offen = new Uint8Array(nRoh); // Mündung, Portal oder Rand-Band → nicht versiegelt
+        const paare = []; // je Portal-Fund [a, b, i, j, k, i2, k2]
+        const himmel = (q, qi, qj, qk) => density[q] <= 0 && qj > top[qi + qk * Nx];
+        for (let p = 0; p < N; p++) {
+            const c = lab[p];
+            if (c < 0) continue;
+            const i = p % Nx;
+            const j = ((p / Nx) | 0) % Ny;
+            const k = (p / NxNy) | 0;
+            dehne(luftB, c * 6, i, j, k);
+            if (i <= 2) dehne(seitB, c * 24, i, j, k);
+            if (i >= dimX - 3) dehne(seitB, c * 24 + 6, i, j, k);
+            if (k <= 2) dehne(seitB, c * 24 + 12, i, j, k);
+            if (k >= dimZ - 3) dehne(seitB, c * 24 + 18, i, j, k);
+            if (i <= 2 || i >= dimX - 3 || k <= 2 || k >= dimZ - 3) offen[c] = 1;
+            // die Mündung: ein waagerechter Nachbar in Himmels-Luft
+            if (i + 1 < Nx && himmel(p + 1, i + 1, j, k)) {
+                mund(c, i, j, k, i + 1, k);
+                offen[c] = 1;
+            }
+            if (i > 0 && himmel(p - 1, i - 1, j, k)) {
+                mund(c, i, j, k, i - 1, k);
+                offen[c] = 1;
+            }
+            if (k + 1 < Nz && himmel(p + NxNy, i, j, k + 1)) {
+                mund(c, i, j, k, i, k + 1);
+                offen[c] = 1;
+            }
+            if (k > 0 && himmel(p - NxNy, i, j, k - 1)) {
+                mund(c, i, j, k, i, k - 1);
+                offen[c] = 1;
+            }
+            // das Portal: der +x-, +y- bzw. +z-Nachbar in einer anderen Zelle (nur über eine Teil-Grenze möglich)
+            if (i + 1 < Nx && lab[p + 1] >= 0 && lab[p + 1] !== c) {
+                paare.push(c, lab[p + 1], i, j, k, i + 1, j, k);
+                offen[c] = offen[lab[p + 1]] = 1;
+            }
+            if (j + 1 < Ny && lab[p + Nx] >= 0 && lab[p + Nx] !== c) {
+                paare.push(c, lab[p + Nx], i, j, k, i, j + 1, k);
+                offen[c] = offen[lab[p + Nx]] = 1;
+            }
+            if (k + 1 < Nz && lab[p + NxNy] >= 0 && lab[p + NxNy] !== c) {
+                paare.push(c, lab[p + NxNy], i, j, k, i, j, k + 1);
+                offen[c] = offen[lab[p + NxNy]] = 1;
+            }
+        }
+        // (3) Zellen: die versiegelten → 0, jede offene Komponente ihre Zelle 1…n−1 (in Fund-Folge)
+        const zelleVon = new Int32Array(nRoh);
+        let n = 1;
+        for (let c = 0; c < nRoh; c++) zelleVon[c] = offen[c] ? n++ : 0;
+        for (let p = 0; p < N; p++) if (lab[p] >= 0) lab[p] = zelleVon[lab[p]];
+        const wx = (i) => ox + i * step;
+        const wy = (j) => oy + j * step;
+        const wz = (k) => oz + k * step;
+        const knoten = new Float32Array(n * 6);
+        const seiten = new Float32Array(n * 24);
+        for (let z = 0; z < n; z++) {
+            for (let a = 0; a < 3; a++) {
+                knoten[z * 6 + a] = Infinity;
+                knoten[z * 6 + 3 + a] = -Infinity;
+            }
+            for (let sd = 0; sd < 4; sd++)
+                for (let a = 0; a < 3; a++) {
+                    seiten[z * 24 + sd * 6 + a] = Infinity;
+                    seiten[z * 24 + sd * 6 + 3 + a] = -Infinity;
+                }
+        }
+        // eine Gitter-Box (Int32, leer: min > max) in eine Welt-Box (Float32) vereinen
+        const vereine = (Z, zo, B, bo) => {
+            if (B[bo] > B[bo + 3]) return;
+            const v = [wx(B[bo]), wy(B[bo + 1]), wz(B[bo + 2]), wx(B[bo + 3]), wy(B[bo + 4]), wz(B[bo + 5])];
+            for (let a = 0; a < 3; a++) {
+                if (v[a] < Z[zo + a]) Z[zo + a] = v[a];
+                if (v[3 + a] > Z[zo + 3 + a]) Z[zo + 3 + a] = v[3 + a];
+            }
+        };
+        for (let c = 0; c < nRoh; c++) {
+            const z = zelleVon[c];
+            vereine(knoten, z * 6, luftB, c * 6);
+            for (let sd = 0; sd < 4; sd++) vereine(seiten, z * 24 + sd * 6, seitB, c * 24 + sd * 6);
+        }
+        // (4) die Portale je Zellen-Paar (a < b) als EINE Box beider Punkte, in Fund-Folge
+        const portal = new Map();
+        for (let q = 0; q < paare.length; q += 8) {
+            const a = zelleVon[paare[q]];
+            const b = zelleVon[paare[q + 1]];
+            const lo = a < b ? a : b;
+            const hi = a < b ? b : a;
+            const key = lo * n + hi;
+            let B = portal.get(key);
+            if (!B) portal.set(key, (B = [lo, hi, Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]));
+            const pts = [
+                [paare[q + 2], paare[q + 3], paare[q + 4]],
+                [paare[q + 5], paare[q + 6], paare[q + 7]],
+            ];
+            for (const [i, j, k] of pts) {
+                const x = wx(i),
+                    y = wy(j),
+                    zz = wz(k);
+                if (x < B[2]) B[2] = x;
+                if (y < B[3]) B[3] = y;
+                if (zz < B[4]) B[4] = zz;
+                if (x > B[5]) B[5] = x;
+                if (y > B[6]) B[6] = y;
+                if (zz > B[7]) B[7] = zz;
+            }
+        }
+        // die Mündungs-Boxen [Zelle, Box] in Fund-Folge (eine versiegelte Komponente trägt keine)
+        const muend = new Float32Array(mundM.size * 7);
+        let om = 0;
+        for (const B of mundM.values()) {
+            muend[om++] = zelleVon[B[0]];
+            muend[om++] = wx(B[1]);
+            muend[om++] = wy(B[2]);
+            muend[om++] = wz(B[3]);
+            muend[om++] = wx(B[4]);
+            muend[om++] = wy(B[5]);
+            muend[om++] = wz(B[6]);
+        }
+        const kanten = new Float32Array(portal.size * 8);
+        let o = 0;
+        for (const B of portal.values()) for (let a = 0; a < 8; a++) kanten[o++] = B[a];
+        // (5) die RAND-EBENEN: je Höhlen-Punkt auf einer Chunk-Kante (−x: i = 1 · +x: i = dimX − 2 · −z: k = 1 · +z: k = dimZ − 2)
+        // [Seite, j, u (k bzw. i), Zelle] — derselbe Welt-Punkt liegt im Gitter des Nachbarn auf seiner Gegen-Kante (gleiche
+        // Stufe: dieselben Indizes), dort verknüpft der Haupt-Thread die Zellen exakt (`_hoehlenVerknuepfe`).
+        const randL = [];
+        for (let k = 0; k < Nz; k++)
+            for (let j = 0; j < Ny; j++) {
+                const a = lab[1 + j * Nx + k * NxNy];
+                if (a > 0) randL.push(0, j, k, a);
+                const b = lab[dimX - 2 + j * Nx + k * NxNy];
+                if (b > 0) randL.push(1, j, k, b);
+            }
+        for (let i = 0; i < Nx; i++)
+            for (let j = 0; j < Ny; j++) {
+                const a = lab[i + j * Nx + NxNy];
+                if (a > 0) randL.push(2, j, i, a);
+                const b = lab[i + j * Nx + (dimZ - 2) * NxNy];
+                if (b > 0) randL.push(3, j, i, b);
+            }
+        const rand = Int32Array.from(randL);
+        return { lab, n, knoten, muend, seiten, kanten, rand };
     }
 
     // Laplacian-Smooth MUTIERT positions in place (Surface-Nets-Treppen → sanfte Schrägen).
@@ -25952,7 +26281,8 @@ class AnazhRealm {
 
     // Crop-Pass: die äußersten `cropMargin` Zell-Ebenen in X/Z (nur Smooth-Stützen) verwerfen. MUTIERT
     // positions + indices in place (.length=0 + push — der Aufrufer hält Referenzen).
-    _voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin) {
+    // `triZelle` (die Höhlen-Zelle je Dreieck, `_voxelEmitQuadIndices`) fällt mit seinen Dreiecken.
+    _voxelCropPad(positions, indices, vertCells, dimX, dimZ, cropMargin, triZelle = null) {
         if (cropMargin <= 0 || positions.length === 0) return;
         const vc = positions.length / 3;
         const remap = new Int32Array(vc).fill(-1);
@@ -25968,16 +26298,24 @@ class AnazhRealm {
             keptPos.push(positions[v * 3], positions[v * 3 + 1], positions[v * 3 + 2]);
         }
         const keptIdx = [];
+        const keptZelle = [];
         for (let t = 0; t + 2 < indices.length; t += 3) {
             const a = remap[indices[t]];
             const b = remap[indices[t + 1]];
             const c = remap[indices[t + 2]];
-            if (a >= 0 && b >= 0 && c >= 0) keptIdx.push(a, b, c);
+            if (a >= 0 && b >= 0 && c >= 0) {
+                keptIdx.push(a, b, c);
+                if (triZelle) keptZelle.push(triZelle[t / 3]);
+            }
         }
         positions.length = 0;
         for (let i = 0; i < keptPos.length; i++) positions.push(keptPos[i]);
         indices.length = 0;
         for (let i = 0; i < keptIdx.length; i++) indices.push(keptIdx[i]);
+        if (triZelle) {
+            triZelle.length = 0;
+            for (let i = 0; i < keptZelle.length; i++) triZelle.push(keptZelle[i]);
+        }
     }
 
     // Normalen = −∇d des Dichtefelds (die wahre Iso-Normale, facettierungs-unabhängig) statt
@@ -29372,6 +29710,8 @@ class AnazhRealm {
         // Pad-Aufruf: Origin um einen `step` versetzt, dimX/Z = `dim + 3` (dim + 1 Skirt + 2·1 Pad),
         // `cropMargin = 1`, smoothIters=1. Mehr Glätt-Iterationen bräuchten 2 Zellen Pad im GETEILTEN
         // Density-Grid (die Wasser-Cells indizieren es bei dim+4) — nie nur hier ändern, sonst Seam-Riss.
+        // Die Höhlen-Schicht (Welle 7): der Sicht-Graph der Höhlen-Luft aus demselben Gitter (der Worker baut ihn gleich).
+        const hoehle = this._voxelHoehlenGraph(terrainDensity, ox - step, oy, oz - step, dim + 3, dimY, dim + 3, step);
         const geom = this._voxelChunkGeometry(
             ox - step,
             oy,
@@ -29382,7 +29722,9 @@ class AnazhRealm {
             step,
             undefined,
             1,
-            terrainDensity
+            terrainDensity,
+            1,
+            hoehle
         );
         if (!geom) return { mesh: null, kind: "empty" };
         this._attachVoxelFieldColors(geom);
@@ -29501,6 +29843,9 @@ class AnazhRealm {
         // der Chunk-Mesh bleibt der CPU-Körper (Boden-Karte, Geomorph, Stitch-Quelle) und betritt die Szene nie.
         // Worker- und Sync-Bau speisen denselben Eintritt.
         if (fresh.mesh && !fresh.mesh.name) fresh.mesh.name = "voxelChunk:" + key + ":lod" + lod;
+        // Fail-closed: jeder Boden-Chunk trägt seinen Höhlen-Graph (Welle 7, `_voxelHoehlenGraph`) — ohne ihn wüsste der
+        // Satz nicht, welche Fläche aus dem Himmel zu sehen ist.
+        if (!fresh.mesh.geometry.hoehle) throw new Error(`_finalizeVoxelChunkBuild(${key}): Boden ohne Höhlen-Graph`);
         this._chunkSatzEin("boden", key, fresh.mesh.geometry, key);
         // V9.92 — `fresh.hasBVH` true wenn BVH gebaut (Lazy-Decision im Worker-
         // Mesh-Pfad). Sync-Build baut immer BVH → default true.
@@ -62225,8 +62570,11 @@ class AnazhRealm {
         };
         s.bloecke.set(key, b);
         this._chunkSatzViews(s, b);
-        this._chunkSatzZellen(b, li, vStart, geom.zellen || null);
+        // Ein Boden-Chunk bringt seinen Höhlen-Graph (Welle 7): seine Zellen werden Knoten, verknüpft mit den Nachbarn
+        if (geom.hoehle) this._hoehlenKnoten(s, b, geom.hoehle);
+        this._chunkSatzZellen(b, li, vStart, geom.zellen || null, geom.hoehle || null);
         this._chunkSatzHuelle(s, b);
+        if (b.hoehle) this._hoehlenVerknuepfe(s, b);
         s.iSumme += b.iAnzahl;
         s.schmutzig = true;
         return b;
@@ -62237,8 +62585,8 @@ class AnazhRealm {
     // (`grenzen`: Index-Offsets, je Instanz einer — `_bauSatzBlock`; vorher zog die Kaskade den Lauf vom ersten bis zum letzten
     // Bereich im Frustum, k1 fast den ganzen Fels-Satz); ein Boden-/Wasser-Bereich zerfällt in VIERTEL (`_chunkSatzViertel`).
     // Fail-closed: Grenzen, die den Index nicht lückenlos in ganzen Dreiecken teilen, sind ein lauter Bruch.
-    _chunkSatzZellen(b, li, vStart, grenzen) {
-        if (!grenzen) return this._chunkSatzViertel(b, li, vStart);
+    _chunkSatzZellen(b, li, vStart, grenzen, hoehle) {
+        if (!grenzen) return this._chunkSatzViertel(b, li, vStart, hoehle);
         const ende = grenzen.length - 1;
         if (ende < 1 || grenzen[0] !== 0 || grenzen[ende] !== li.length)
             throw new Error(`_chunkSatzZellen(${b.key}): die Grenzen teilen den Index nicht (${li.length} Indizes)`);
@@ -62258,8 +62606,9 @@ class AnazhRealm {
 
     // DIE VIERTEL eines Boden-/Wasser-Bereichs: jedes Dreieck nach seinem Schwerpunkt (xz) in eine von 2×2 Zellen um die
     // Mitte der Lage des Bereichs (Werkbank 05.10., Mess-Wiese, Mittag, ein Blick: ganze Chunks 337k Dreiecke über drei
-    // Pässe, Viertel 282k, Sechzehntel 263k).
-    _chunkSatzViertel(b, li, vStart) {
+    // Pässe, Viertel 282k, Sechzehntel 263k). Ein Boden-Chunk mit Höhlen-Graph (Welle 7) legt die Dreiecke der HIMMELS-Luft
+    // in die Viertel und jedes Dreieck der Höhlen-Luft in die Zelle seines Knotens (`knoten`: nur sie wählt die Höhlen-Sicht).
+    _chunkSatzViertel(b, li, vStart, hoehle) {
         const P = b.geom.attributes.position.array;
         let x0 = Infinity,
             x1 = -Infinity,
@@ -62275,18 +62624,27 @@ class AnazhRealm {
         const mx3 = 1.5 * (x0 + x1),
             mz3 = 1.5 * (z0 + z1);
         const nT = (li.length / 3) | 0;
-        const zelle = new Uint8Array(nT);
-        const zahl = [0, 0, 0, 0];
+        // Zellen 0…3 die Viertel der Himmels-Luft, 4 + k der Höhlen-Knoten k
+        const H = hoehle ? hoehle.tri : null;
+        if (H && H.length !== nT)
+            throw new Error(`_chunkSatzViertel(${b.key}): ${H.length} Höhlen-Zellen für ${nT} Dreiecke`);
+        const nZ = 4 + (hoehle ? hoehle.n : 0);
+        const zelle = new Int32Array(nT);
+        const zahl = new Int32Array(nZ);
         for (let t = 0, i = 0; t < nT; t++, i += 3) {
-            const a = li[i] * 3,
-                c = li[i + 1] * 3,
-                d = li[i + 2] * 3;
-            const z = (P[a] + P[c] + P[d] > mx3 ? 1 : 0) + (P[a + 2] + P[c + 2] + P[d + 2] > mz3 ? 2 : 0);
+            let z;
+            if (H && H[t] >= 0) z = 4 + H[t];
+            else {
+                const a = li[i] * 3,
+                    c = li[i + 1] * 3,
+                    d = li[i + 2] * 3;
+                z = (P[a] + P[c] + P[d] > mx3 ? 1 : 0) + (P[a + 2] + P[c + 2] + P[d + 2] > mz3 ? 2 : 0);
+            }
             zelle[t] = z;
             zahl[z]++;
         }
-        const start = [0, 0, 0, 0];
-        for (let z = 1; z < 4; z++) start[z] = start[z - 1] + zahl[z - 1] * 3;
+        const start = new Int32Array(nZ);
+        for (let z = 1; z < nZ; z++) start[z] = start[z - 1] + zahl[z - 1] * 3;
         const idx = new Uint32Array(nT * 3);
         const pos = start.slice();
         for (let t = 0, i = 0; t < nT; t++, i += 3) {
@@ -62299,13 +62657,19 @@ class AnazhRealm {
         b.idx = idx;
         b.iAnzahl = idx.length;
         b.zellen = [];
-        for (let z = 0; z < 4; z++)
-            if (zahl[z] > 0)
-                b.zellen.push({
+        for (let z = 0; z < nZ; z++)
+            if (zahl[z] > 0) {
+                const zl = {
                     bereich: b,
                     idx: idx.subarray(start[z], start[z] + zahl[z] * 3),
                     huelle: new THREE.Box3(),
-                });
+                };
+                if (z >= 4) {
+                    zl.knoten = b.hoehle.knoten[z - 4];
+                    zl.knoten.zelle = zl;
+                }
+                b.zellen.push(zl);
+            }
     }
 
     // DIE HÜLLE eines Bereichs und seiner Zellen (Welt-AABB + `randM`): der Satz lebt außerhalb jedes Bundles (EIN
@@ -62371,6 +62735,7 @@ class AnazhRealm {
             const a = b.geom.attributes[name];
             if (a) a.array = a.array.slice();
         }
+        if (b.hoehle) this._hoehlenLoese(s, b);
         this._chunkSatzVFrei(s, b.vStart, b.vAnzahl);
         s.bloecke.delete(key);
         s.iSumme -= b.iAnzahl;
@@ -62389,6 +62754,7 @@ class AnazhRealm {
             ga.needsUpdate = true;
         }
         this._chunkSatzHuelle(s, b); // der Geomorph legt neue Ziele — die Hülle folgt
+        if (b.hoehle) b.hoehle.horizont = null; // und der Horizont (`_hoehlenHorizont`) liest sie neu
     }
 
     // Die Grund-Sicht des Satzes (außerhalb jedes Passes): nicht verborgen und ein Bereich da.
@@ -62460,6 +62826,8 @@ class AnazhRealm {
             }
             if (k >= 0 && s.spec.schatten !== true) continue;
             this._chunkSatzBereit(s);
+            // Die Höhlen-Schicht (Welle 7): welche Höhlen-Zelle die Pass-Kamera durch Luft erreicht
+            if (s.hoehle) this._hoehlenSicht(s, kamera, S, haupt);
             // Das Hauptbild läuft vor jedem Zeichnen des Frames: hier legt der Satz seine Abschnitte dicht neu, sobald der
             // Verschnitt (die verlassenen Läufe umgezogener Abschnitte) wächst.
             if (haupt) {
@@ -62499,10 +62867,16 @@ class AnazhRealm {
     _chunkSatzAbschnitt(s, key, fr, umlegen) {
         const liste = [];
         let n = 0;
+        // eine Höhlen-Zelle (Welle 7) zeichnet nur, wenn die Höhlen-Sicht dieses Passes sie erreicht hat
+        const stempel = s.hoehle ? s.hoehle.stempel : 0;
         for (const b of s.ordnung) {
             if (!b.huelle || b.huelle.isEmpty() || !fr.intersectsBox(b.huelle)) continue;
             for (const z of b.zellen)
-                if (!z.huelle.isEmpty() && fr.intersectsBox(z.huelle)) {
+                if (
+                    (z.knoten === undefined || z.knoten.sicht === stempel) &&
+                    !z.huelle.isEmpty() &&
+                    fr.intersectsBox(z.huelle)
+                ) {
                     liste.push(z);
                     n += z.idx.length;
                 }
@@ -62681,6 +63055,644 @@ class AnazhRealm {
         index.needsUpdate = true;
         const k = wer + ">" + wen;
         s.schreiben[k] = (s.schreiben[k] || 0) + 4 * n;
+    }
+
+    // ═══ DIE HÖHLEN-SICHT (Welle 7) ═══
+    // Befund (echte GPU, Mess-Wiese −900/−850, Gitter-Probe): 68 % der Boden-Kanten trennen Fels von HÖHLEN-Luft (Luft unter
+    // der obersten festen Ecke ihrer Spalte, `_voxelHoehlenGraph`), 16–52 m tief, und der Boden-Satz zeichnete sie in JEDEM
+    // Pass mit — von der Wiese aus sieht man sie nie, eine Tiefen-Grenze risse an Mündungen, Überhängen und Klippen Löcher.
+    // Die Sicht folgt der Luft: ein Strahl aus der Himmels-Luft betritt die Höhlen-Luft nur durch eine MÜNDUNG und wandert
+    // von Zelle zu Zelle nur durch ein PORTAL (im Chunk über eine Teil-Grenze, über die Chunk-Kante durch die Rand-Bänder).
+    // Je Pass läuft das Schirm-Rechteck jeder Mündung durch die Portale (Schnitt je Portal, Vereinigung je Zelle — die
+    // klassische Portal-Sicht); eine Zelle, die ein Rechteck erreicht, zeichnet. Steht das Auge in einer Zelle (perspektivisch,
+    // in ihrer Luft-Box), läuft ihr ganzes Bild. Die Kaskade (orthogonal, das Licht) läuft dieselbe Rechnung im Licht-Raum:
+    // die Schatten-Karte trägt je Strahl die ERSTE Fläche vom Licht, und die liegt in Himmels-Luft oder hinter einer Mündung —
+    // jede andere Höhlen-Fläche ändert die Karte nie. Die Kosten folgen dem Bild: je Pass die Mündungen und die erreichten
+    // Zellen, nie die Weltgröße.
+
+    // Die Knoten eines Boden-Bereichs aus dem Höhlen-Graph seines Chunks (Boxen in Welt-Lage, um den Saum geweitet); sein
+    // Horizont entsteht beim ersten Lesen (`_hoehlenHorizont`).
+    _hoehlenKnoten(s, b, H) {
+        if (!s.hoehle)
+            s.hoehle = {
+                stempel: 0,
+                muendungen: new Set(),
+                stapel: [],
+                rect: new Float64Array(6),
+                besucht: null,
+                kacheln: null, // die Licht-Kacheln der Kaskade (`_hoehlenSichtLicht`)
+                sichtHaupt: null, // die Zellen, die das letzte Hauptbild erreichte (die Empfänger der Kaskaden)
+            };
+        const saum = AnazhRealm.HOEHLEN_SAUM.schritte * H.step + AnazhRealm.HOEHLEN_SAUM.m;
+        const box = (A, o, weit) => {
+            if (!(A[o] <= A[o + 3])) return null;
+            const bx = new THREE.Box3(
+                new THREE.Vector3(A[o], A[o + 1], A[o + 2]),
+                new THREE.Vector3(A[o + 3], A[o + 4], A[o + 5])
+            );
+            return weit ? bx.expandByScalar(saum) : bx;
+        };
+        const knoten = [];
+        for (let z = 0; z < H.n; z++)
+            knoten.push({
+                bereich: b,
+                id: z,
+                luft: box(H.knoten, z * 6, true),
+                // die Mündungen der Zelle (je Fach eine Box, um den Saum geweitet) mit ihrer Horizont-Probe je Auge
+                tore: [],
+                seiten: [0, 1, 2, 3].map((sd) => box(H.seiten, z * 24 + sd * 6, false)),
+                // je Seite die offene Rand-Box (der Nachbar-Chunk fehlt, `_hoehlenRand`), sonst null
+                raender: [null, null, null, null],
+                nb: [],
+                zelle: null,
+                sicht: 0,
+                rect: new Float64Array(4),
+                z: 0,
+            });
+        for (let o = 0; o < H.muend.length; o += 7)
+            knoten[H.muend[o]].tore.push({ box: box(H.muend, o + 1, true), verdeckt: false, auge: [NaN, NaN, NaN] });
+        for (let o = 0; o < H.kanten.length; o += 8) {
+            const a = knoten[H.kanten[o]];
+            const c = knoten[H.kanten[o + 1]];
+            const p = this._hoehlenPortal(box(H.kanten, o + 2, true));
+            a.nb.push({ zu: c, p });
+            c.nb.push({ zu: a, p });
+        }
+        b.hoehle = { knoten, step: H.step, rand: H.rand, horizont: null };
+    }
+
+    _hoehlenPortal(box) {
+        return { box, rect: new Float64Array(6), st: 0, auf: false };
+    }
+
+    // DER HORIZONT eines Boden-Bereichs (lazy, `_hoehlenHorizontProbe`): je Zelle eines Rasters von `HOEHLEN_HORIZONT_M`
+    // über seiner Fläche eine UNTERE Schranke des gezeichneten Himmels-Bodens. Die Quelle ist die Boden-Karte des Chunks
+    // (`_bodenKarteAusMesh`: die oberste nicht-steile Fläche des fertigen Meshs, Punkte im Abstand step/Teilung) — das
+    // Minimum ihrer Punkte in der Zelle und einen Punkt-Abstand darum, minus die Hang-Schranke (eine nicht-steile Fläche,
+    // |n_y| ≥ 0,3, fällt zwischen zwei Punkten um höchstens tan(acos 0,3) · Abstand · √½) und den größten Abstieg, den der
+    // Geomorph einem Vertex dieser Zelle gibt (der Vertex-Shader zeichnet zwischen Position und Morph-Ziel). Ein Punkt ohne
+    // Boden (Wand, Höhle, außerhalb) macht die Zelle offen (−∞). Ein Geomorph-Schreiber legt den Horizont neu
+    // (`_chunkSatzMarke`).
+    _hoehlenHorizont(s, b) {
+        const span = this._voxelChunkConfig(0).span;
+        const R = AnazhRealm.HOEHLEN_HORIZONT_M;
+        const n = Math.round(span / R);
+        const h = new Float32Array(n * n).fill(-Infinity);
+        const ent = this.state.voxelChunks ? this.state.voxelChunks.get(b.chunkKey) : null;
+        const map = ent && ent.surfMap;
+        if (!map) return h;
+        const cfg = this._voxelChunkConfig(ent.lod || 0);
+        const T = AnazhRealm.BODEN_KARTE_TEILUNG;
+        const a = cfg.step / T;
+        const M = T * (cfg.dim + 3) + 1;
+        const ox = b.cx * span - cfg.step,
+            oz = b.cz * span - cfg.step;
+        // der Geomorph-Abstieg je Raster-Zelle (und ihre Nachbarn)
+        const morph = new Float32Array(n * n);
+        const A = s.geom.attributes;
+        const P = A.position.array,
+            Z = A.aMorphTarget.array,
+            W = A.aMorphWeight.array;
+        for (let v = b.vStart; v < b.vStart + b.vAnzahl; v++) {
+            const w = W[v];
+            if (!(w > 0)) continue;
+            const ab = (P[v * 3 + 1] - Z[v * 3 + 1]) * w;
+            if (!(ab > 0)) continue;
+            const I = Math.floor((P[v * 3] - b.cx * span) / R),
+                K = Math.floor((P[v * 3 + 2] - b.cz * span) / R);
+            for (let k = K - 1; k <= K + 1; k++)
+                for (let i = I - 1; i <= I + 1; i++)
+                    if (i >= 0 && k >= 0 && i < n && k < n && ab > morph[i + k * n]) morph[i + k * n] = ab;
+        }
+        const hang = Math.tan(Math.acos(0.3)) * a * Math.SQRT1_2;
+        for (let K = 0; K < n; K++)
+            for (let I = 0; I < n; I++) {
+                const xa = b.cx * span + I * R,
+                    za = b.cz * span + K * R;
+                const i0 = Math.floor((xa - ox) / a) - 1,
+                    i1 = Math.ceil((xa + R - ox) / a) + 1,
+                    k0 = Math.floor((za - oz) / a) - 1,
+                    k1 = Math.ceil((za + R - oz) / a) + 1;
+                let mn = Infinity;
+                for (let k = k0; k <= k1 && mn > -Infinity; k++)
+                    for (let i = i0; i <= i1; i++) {
+                        const v = i >= 0 && k >= 0 && i < M && k < M ? map[i + k * M] : NaN;
+                        if (!(v >= -Infinity)) {
+                            mn = -Infinity;
+                            break;
+                        }
+                        if (v < mn) mn = v;
+                    }
+                h[I + K * n] = mn - hang - morph[I + K * n];
+            }
+        return h;
+    }
+
+    // Die Rand-Portale zu den Nachbar-Chunks im Satz. Gleiche Stufe: derselbe Welt-Punkt auf der gemeinsamen Kante liegt in
+    // beiden Gittern (`rand` des Graphs, gleiche Indizes) — jedes Paar Höhlen-Punkt ↔ Höhlen-Punkt verknüpft seine zwei Zellen,
+    // das Portal ist die Box dieser Punkte (um den Saum geweitet). Eine Höhlen-Komponente, die die Kante kreuzt, trägt dort
+    // einen Gitter-Punkt (ein 6-Pfad wechselt die Ebene nur über einen Punkt auf ihr). An einer LOD-Naht (verschiedene
+    // Schritte) teilen die Gitter nicht jeden Punkt: dort schneidet die Rand-Band-Box einer Zelle die der Nachbar-Zelle,
+    // beide um den gröberen Saum geweitet. Danach legen der Bereich und seine Nachbarn ihre offenen Ränder neu.
+    _hoehlenVerknuepfe(s, b) {
+        const R = AnazhRealm.HOEHLEN_SAUM;
+        const x = new THREE.Box3(),
+            y = new THREE.Box3();
+        const span = this._voxelChunkConfig(0).span;
+        const oy = (this.state.terrainBaseHeight || 0) - this._voxelChunkConfig(0).floorDrop;
+        for (let seite = 0; seite < 4; seite++) {
+            const n = this._hoehlenNachbar(s, b, seite);
+            if (!n) continue;
+            const gegen = seite ^ 1;
+            const knA = b.hoehle.knoten,
+                knB = n.hoehle.knoten;
+            const verbinde = (a, c, box) => {
+                const p = this._hoehlenPortal(box);
+                a.nb.push({ zu: c, p });
+                c.nb.push({ zu: a, p });
+            };
+            if (b.hoehle.step === n.hoehle.step) {
+                const step = b.hoehle.step;
+                const saum = R.schritte * step + R.m;
+                // die Gegen-Kante des Nachbarn: (j, u) → Zelle
+                const gegenueber = new Map();
+                const rn = n.hoehle.rand;
+                for (let o = 0; o < rn.length; o += 4)
+                    if (rn[o] === gegen) gegenueber.set(rn[o + 1] * 65536 + rn[o + 2], rn[o + 3]);
+                const paare = new Map();
+                const ra = b.hoehle.rand;
+                // die Welt-Lage der Kante und der Gitter-Ursprung (Pad: ein Schritt vor der Chunk-Kante)
+                const ox = b.cx * span - step,
+                    oz = b.cz * span - step;
+                const kante =
+                    seite === 0
+                        ? b.cx * span
+                        : seite === 1
+                          ? (b.cx + 1) * span
+                          : seite === 2
+                            ? b.cz * span
+                            : (b.cz + 1) * span;
+                for (let o = 0; o < ra.length; o += 4) {
+                    if (ra[o] !== seite) continue;
+                    const zc = gegenueber.get(ra[o + 1] * 65536 + ra[o + 2]);
+                    if (zc === undefined) continue;
+                    const za = ra[o + 3];
+                    const key = za * 65536 + zc;
+                    let bx = paare.get(key);
+                    if (!bx) paare.set(key, (bx = new THREE.Box3()));
+                    const wy = oy + ra[o + 1] * step;
+                    if (seite < 2) bx.expandByPoint(x.min.set(kante, wy, oz + ra[o + 2] * step));
+                    else bx.expandByPoint(x.min.set(ox + ra[o + 2] * step, wy, kante));
+                }
+                for (const [key, bx] of paare) {
+                    const a = knA[Math.floor(key / 65536)],
+                        c = knB[key % 65536];
+                    if (a && c) verbinde(a, c, bx.expandByScalar(saum));
+                }
+                continue;
+            }
+            const saum = R.schritte * Math.max(b.hoehle.step, n.hoehle.step) + R.m;
+            for (const a of knA) {
+                const sa = a.seiten[seite];
+                if (!sa) continue;
+                x.copy(sa).expandByScalar(saum);
+                for (const c of knB) {
+                    const sc = c.seiten[gegen];
+                    if (!sc) continue;
+                    y.copy(sc).expandByScalar(saum);
+                    if (x.intersectsBox(y)) verbinde(a, c, x.clone().intersect(y));
+                }
+            }
+        }
+        this._hoehlenRandUm(s, b);
+    }
+
+    // Der Nachbar-Bereich eines Boden-Bereichs an einer Seite (0 −x · 1 +x · 2 −z · 3 +z), sofern er einen Höhlen-Graph trägt.
+    _hoehlenNachbar(s, b, seite) {
+        const n = s.bloecke.get(
+            b.cx + (seite === 0 ? -1 : seite === 1 ? 1 : 0) + "," + (b.cz + (seite === 2 ? -1 : seite === 3 ? 1 : 0))
+        );
+        return n && n.hoehle ? n : null;
+    }
+
+    // Der Bereich und seine vier Nachbarn legen ihre offenen Ränder neu.
+    _hoehlenRandUm(s, b) {
+        this._hoehlenRand(s, b);
+        for (let seite = 0; seite < 4; seite++) {
+            const n = this._hoehlenNachbar(s, b, seite);
+            if (n) this._hoehlenRand(s, n);
+        }
+    }
+
+    // DER OFFENE RAND: fehlt der Nachbar-Chunk einer Seite (der Ring endet dort), liegt die Höhlen-Luft im Rand-Band offen —
+    // der Ring schneidet die Höhle auf, und ein Strahl von draußen (das Licht, eine Kamera jenseits des Rings) tritt dort ein.
+    // Die Rand-Box (um den Saum geweitet) wirkt wie eine Mündung; ein Knoten mit Mündung oder offenem Rand ist ein Start.
+    _hoehlenRand(s, b) {
+        if (!b || !b.hoehle) return;
+        const R = AnazhRealm.HOEHLEN_SAUM;
+        const saum = R.schritte * b.hoehle.step + R.m;
+        const fehlt = [0, 1, 2, 3].map((seite) => !this._hoehlenNachbar(s, b, seite));
+        for (const kn of b.hoehle.knoten) {
+            let offen = kn.tore.length > 0;
+            for (let seite = 0; seite < 4; seite++) {
+                const sb = fehlt[seite] ? kn.seiten[seite] : null;
+                kn.raender[seite] = sb ? sb.clone().expandByScalar(saum) : null;
+                if (sb) offen = true;
+            }
+            if (offen) s.hoehle.muendungen.add(kn);
+            else s.hoehle.muendungen.delete(kn);
+        }
+    }
+
+    // Der Austritt eines Boden-Bereichs: seine Starts fallen, die Nachbar-Zellen vergessen ihre Rand-Portale zu ihm, und seine
+    // Nachbarn liegen an dieser Seite nun offen.
+    _hoehlenLoese(s, b) {
+        for (const kn of b.hoehle.knoten) {
+            s.hoehle.muendungen.delete(kn);
+            for (const e of kn.nb) if (e.zu.bereich !== b) e.zu.nb = e.zu.nb.filter((f) => f.zu.bereich !== b);
+        }
+        b.hoehle = null;
+        for (let seite = 0; seite < 4; seite++) {
+            const n = this._hoehlenNachbar(s, b, seite);
+            if (n) this._hoehlenRand(s, n);
+        }
+    }
+
+    // DIE HORIZONT-PROBE einer Mündung (perspektivisch): ein Strahl vom Auge betritt die Höhlen-Luft durch seine ERSTE
+    // Mündung und läuft bis dorthin in Himmels-Luft, also über dem gezeichneten Boden. Verdeckt ist die Box, wenn ein Bogen
+    // um das Auge (Abstand d vor der Box, über den Winkel-Keil ihrer Grundfläche) überall Boden trägt, der höher liegt als
+    // jeder Strahl zur Box dort sein kann (die Gerade vom Auge zum höchsten Punkt der Box, über den kürzesten bzw. längsten
+    // Weg). Der Boden ist die untere Schranke `_hoehlenHorizont`; ein ungeladener Ort hat keinen Boden (−∞). Der Bogen wird
+    // je Raster-Zelle abgetastet, jeder Punkt liest das Minimum seiner 3 × 3 Zellen (ein Bogen-Stück zwischen zwei Punkten
+    // liegt in ihnen). Gemerkt je Auge — für jedes Auge im Würfel ±`HOEHLEN_AUGE_M` um das geprüfte (die Probe hebt das Auge
+    // und weitet die Box um ihn; die 3 × 3 Zellen tragen die Verschiebung): das Auge der Spiel-Kamera atmet im Stand um
+    // Millimeter, und jede Probe neu wäre Arbeit ohne Änderung.
+    _hoehlenVerdeckt(s, tor, ex, ey, ez) {
+        if (this._hoehlenAugeGleich(tor, ex, ey, ez)) return tor.verdeckt;
+        const t = AnazhRealm.HOEHLEN_AUGE_M;
+        tor.auge[0] = ex;
+        tor.auge[1] = ey;
+        tor.auge[2] = ez;
+        const box = this._hoehlenProbenBox || (this._hoehlenProbenBox = new THREE.Box3());
+        tor.verdeckt = this._hoehlenHorizontProbe(s, box.copy(tor.box).expandByScalar(t), ex, ey + t, ez);
+        return tor.verdeckt;
+    }
+
+    _hoehlenAugeGleich(tor, ex, ey, ez) {
+        const t = AnazhRealm.HOEHLEN_AUGE_M;
+        return Math.abs(tor.auge[0] - ex) <= t && Math.abs(tor.auge[1] - ey) <= t && Math.abs(tor.auge[2] - ez) <= t;
+    }
+
+    // Der Boden an der Raster-Zelle (I, K) der Welt (`HOEHLEN_HORIZONT_M`): die untere Schranke ihres Bereichs, −∞ ohne.
+    _hoehlenBodenZelle(s, I, K, c) {
+        const n = c.n;
+        const kx = Math.floor(I / n),
+            kz = Math.floor(K / n);
+        if (kx !== c.kx || kz !== c.kz) {
+            c.kx = kx;
+            c.kz = kz;
+            const b = s.bloecke.get(kx + "," + kz);
+            c.h = b && b.hoehle ? b.hoehle.horizont || (b.hoehle.horizont = this._hoehlenHorizont(s, b)) : null;
+        }
+        return c.h ? c.h[I - kx * n + (K - kz * n) * n] : -Infinity;
+    }
+
+    _hoehlenHorizontProbe(s, box, ex, ey, ez) {
+        // der nächste und der fernste Punkt der Grundfläche
+        const nx = Math.max(box.min.x - ex, 0, ex - box.max.x),
+            nz = Math.max(box.min.z - ez, 0, ez - box.max.z);
+        const dMin = Math.hypot(nx, nz);
+        if (dMin < 2) return false;
+        const fx = Math.max(Math.abs(box.min.x - ex), Math.abs(box.max.x - ex)),
+            fz = Math.max(Math.abs(box.min.z - ez), Math.abs(box.max.z - ez));
+        const dMax = Math.hypot(fx, fz);
+        // der Winkel-Keil der Grundfläche um die Richtung zu ihrer Mitte
+        const mitte = Math.atan2((box.min.z + box.max.z) / 2 - ez, (box.min.x + box.max.x) / 2 - ex);
+        let w0 = Infinity,
+            w1 = -Infinity;
+        for (let c = 0; c < 4; c++) {
+            let w = Math.atan2((c & 2 ? box.max.z : box.min.z) - ez, (c & 1 ? box.max.x : box.min.x) - ex) - mitte;
+            if (w > Math.PI) w -= 2 * Math.PI;
+            if (w < -Math.PI) w += 2 * Math.PI;
+            if (w < w0) w0 = w;
+            if (w > w1) w1 = w;
+        }
+        const hoch = box.max.y - ey;
+        const dRef = hoch >= 0 ? dMin : dMax;
+        const R = AnazhRealm.HOEHLEN_HORIZONT_M;
+        const c = this._hoehlenBodenCache || (this._hoehlenBodenCache = { n: 0, kx: NaN, kz: NaN, h: null });
+        c.n = Math.round(this._voxelChunkConfig(0).span / R);
+        c.kx = NaN;
+        for (let d = 2; d < dMin; d += Math.max(R, 0.04 * d)) {
+            const grenze = ey + (hoch * d) / dRef; // kein Strahl liegt dort höher
+            const schritte = Math.max(1, Math.ceil(((w1 - w0) * d) / R));
+            let frei = false;
+            for (let q = 0; q <= schritte && !frei; q++) {
+                const w = mitte + w0 + ((w1 - w0) * q) / schritte;
+                const I = Math.floor((ex + d * Math.cos(w)) / R),
+                    K = Math.floor((ez + d * Math.sin(w)) / R);
+                for (let k = K - 1; k <= K + 1 && !frei; k++)
+                    for (let i = I - 1; i <= I + 1; i++)
+                        if (!(this._hoehlenBodenZelle(s, i, k, c) >= grenze)) {
+                            frei = true;
+                            break;
+                        }
+            }
+            if (!frei) return true;
+        }
+        return false;
+    }
+
+    // DIE HÖHLEN-SICHT eines Passes (aus `_chunkSatzPass`, mit der Matrix der Pass-Kamera in `S.m`): jede Zelle, die zeichnen
+    // muss, trägt den Stempel dieses Passes (`_chunkSatzAbschnitt` liest ihn). Die Kaskade (orthogonal, das Licht) wählt
+    // anders (`_hoehlenSichtLicht`). PERSPEKTIVISCH läuft ein Strahl vom Auge fort: je Zelle trägt der Lauf neben dem
+    // Schirm-Rechteck die Tiefe, die der Strahl dort mindestens hat (NDC-z, monoton in der Blick-Tiefe) — ein Portal ganz davor
+    // ist zu. Starts sind (1) die Zellen um das Auge (in ihrer Luft-Box) mit dem ganzen Bild, (2) jede Mündung im Bild, die der
+    // Horizont nicht verdeckt (`_hoehlenVerdeckt`), (3) jeder offene Rand — tritt das Auge von draußen ein, läuft er durch die
+    // Portale, sonst zeichnet nur seine Zelle (der Rand-Saum des Netzes ragt über die Kante). Das Hauptbild merkt seine
+    // erreichten Zellen (`sichtHaupt`, die Empfänger der Kaskaden).
+    _hoehlenSicht(s, kamera, S, haupt) {
+        if (!kamera || kamera.isPerspectiveCamera !== true) return this._hoehlenSichtLicht(s, S, kamera);
+        const H = s.hoehle;
+        const st = ++H.stempel;
+        const m = S.m.elements;
+        H.stapel.length = 0;
+        const besucht = (H.besucht = haupt ? [] : null);
+        const rc = H.rect;
+        const span = this._voxelChunkConfig(0).span;
+        const e = kamera.matrixWorld.elements;
+        const ex = e[12],
+            ey = e[13],
+            ez = e[14];
+        // (1) das Auge in einer Zelle
+        const v = this._hoehlenAuge || (this._hoehlenAuge = new THREE.Vector3());
+        v.set(ex, ey, ez);
+        const cx = Math.floor(ex / span),
+            cz = Math.floor(ez / span);
+        for (let dx = -1; dx <= 1; dx++)
+            for (let dz = -1; dz <= 1; dz++) {
+                const b = s.bloecke.get(cx + dx + "," + (cz + dz));
+                if (!b || !b.hoehle) continue;
+                for (const kn of b.hoehle.knoten)
+                    if (kn.luft && kn.luft.containsPoint(v)) this._hoehlenBesuch(H, kn, -1, -1, 1, 1, -Infinity);
+            }
+        // (2) die Mündungen im Bild: eine frische Horizont-Probe kostet — je Pass höchstens `HOEHLEN_HORIZONT_PROBEN`, die
+        // nächsten zuerst; eine Mündung ohne frische Probe gilt als offen (mehr zeichnen, nie ein Loch)
+        const offen = H.offen || (H.offen = []);
+        offen.length = 0;
+        for (const kn of H.muendungen)
+            for (const tor of kn.tore) {
+                if (!this._hoehlenRect(tor.box, m, rc)) continue;
+                tor.r0 = rc[0];
+                tor.r1 = rc[1];
+                tor.r2 = rc[2];
+                tor.r3 = rc[3];
+                tor.r4 = rc[4];
+                tor.kn = kn;
+                if (this._hoehlenAugeGleich(tor, ex, ey, ez)) {
+                    if (!tor.verdeckt) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
+                    continue;
+                }
+                const bx = tor.box;
+                tor.d = Math.hypot((bx.min.x + bx.max.x) / 2 - ex, (bx.min.z + bx.max.z) / 2 - ez);
+                offen.push(tor);
+            }
+        offen.sort((p, q) => p.d - q.d);
+        for (let i = 0; i < offen.length; i++) {
+            const tor = offen[i];
+            if (i < AnazhRealm.HOEHLEN_HORIZONT_PROBEN && this._hoehlenVerdeckt(s, tor, ex, ey, ez)) continue;
+            this._hoehlenBesuch(H, tor.kn, tor.r0, tor.r1, tor.r2, tor.r3, tor.r4);
+        }
+        for (const kn of H.muendungen) {
+            // (3) der offene Rand: von draußen durch die Portale, von drinnen nur seine Zelle
+            const b = kn.bereich;
+            for (let seite = 0; seite < 4; seite++) {
+                const rb = kn.raender[seite];
+                if (!rb || !this._hoehlenRect(rb, m, rc)) continue;
+                const draussen =
+                    seite === 0
+                        ? ex < b.cx * span
+                        : seite === 1
+                          ? ex > (b.cx + 1) * span
+                          : seite === 2
+                            ? ez < b.cz * span
+                            : ez > (b.cz + 1) * span;
+                if (draussen) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
+                else this._hoehlenMarke(H, kn);
+            }
+        }
+        // (4) durch die Portale: das Rechteck schrumpft je Portal, die Tiefe wächst
+        while (H.stapel.length > 0) {
+            const kn = H.stapel.pop();
+            const r = kn.rect;
+            const z = kn.z;
+            for (const ed of kn.nb) {
+                const p = ed.p;
+                if (p.st !== st) {
+                    p.st = st;
+                    p.auf = this._hoehlenRect(p.box, m, p.rect);
+                }
+                if (!p.auf) continue;
+                const q = p.rect;
+                if (q[5] < z) continue;
+                const x0 = r[0] > q[0] ? r[0] : q[0],
+                    y0 = r[1] > q[1] ? r[1] : q[1],
+                    x1 = r[2] < q[2] ? r[2] : q[2],
+                    y1 = r[3] < q[3] ? r[3] : q[3];
+                if (x0 <= x1 && y0 <= y1) this._hoehlenBesuch(H, ed.zu, x0, y0, x1, y1, q[4] > z ? q[4] : z);
+            }
+        }
+        // die Empfänger der Kaskaden: die erreichten Zellen, deren Dreiecke das Hauptbild zeichnet (im Frustum)
+        if (besucht)
+            H.sichtHaupt = besucht.filter(
+                (kn) => kn.zelle && !kn.zelle.huelle.isEmpty() && S.frustum.intersectsBox(kn.zelle.huelle)
+            );
+    }
+
+    // Eine Zelle erreicht ein Rechteck mit einer Tiefe: neu (Stempel) oder mehr als bisher (größeres Rechteck oder eine
+    // kleinere Tiefe, die weiter trägt) → vereinigen und weiterlaufen.
+    _hoehlenBesuch(H, kn, x0, y0, x1, y1, z) {
+        const r = kn.rect;
+        if (kn.sicht === H.stempel) {
+            const naeher = z < kn.z;
+            if (!naeher && r[0] <= x0 && r[1] <= y0 && r[2] >= x1 && r[3] >= y1) return;
+            if (x0 < r[0]) r[0] = x0;
+            if (y0 < r[1]) r[1] = y0;
+            if (x1 > r[2]) r[2] = x1;
+            if (y1 > r[3]) r[3] = y1;
+            if (naeher) kn.z = z;
+        } else {
+            kn.sicht = H.stempel;
+            r[0] = x0;
+            r[1] = y0;
+            r[2] = x1;
+            r[3] = y1;
+            kn.z = z;
+            if (H.besucht) H.besucht.push(kn);
+        }
+        H.stapel.push(kn);
+    }
+
+    // Eine Zelle zeichnet in diesem Pass, ohne dass ein Strahl durch sie weiterläuft (ein leeres Rechteck und eine Tiefe, die
+    // nichts trägt: jeder echte Besuch danach ist mehr).
+    _hoehlenMarke(H, kn) {
+        if (kn.sicht === H.stempel) return;
+        kn.sicht = H.stempel;
+        kn.rect[0] = 1;
+        kn.rect[1] = 1;
+        kn.rect[2] = -1;
+        kn.rect[3] = -1;
+        kn.z = Infinity;
+        if (H.besucht) H.besucht.push(kn);
+    }
+
+    // DIE HÖHLEN-SICHT DER KASKADE (orthogonal, das Licht): die Karte muss nur für die EMPFÄNGER stimmen, die das Bild zeigt —
+    // für jeden muss die erste Fläche auf seinem Weg zum Licht in der Karte stehen. Dieser Weg kann durch Fels laufen, ohne
+    // eine Fläche zu kreuzen: der Ring schneidet das Gelände auf, eine LOD-Naht im Höhlen-Netz klafft, die Nah-Ebene der
+    // Kaskade kappt — dann wirft jede Höhlen-Fläche auf dem Weg (gemessen 06.10., Abend, Kamera in der Halle 38 m tief: ein
+    // versiegelter Hohlraum warf durch die Naht −23/−24 einen Schatten-Strich, den ein Lauf durch Luft-Portale verlor). Darum
+    // ohne Luft-Annahme: eine Höhlen-Zelle zeichnet, wenn ihr Licht-Rechteck das eines Empfängers schneidet und sie dem Licht
+    // so nah kommt wie dessen tiefster Punkt. Empfänger sind die Zellen des Hauptbilds (`sichtHaupt`, ihre Hülle) und — für
+    // die Empfänger in Himmels-Luft, deren Weg zum Licht Höhlen-Luft nur durch eine Mündung betritt (darüber liegt nur
+    // Himmels-Luft oder Fels unter einer Himmels-Fläche, die immer zeichnet) — jede Mündung. Ortsfeste Kacheln von
+    // `HOEHLEN_LICHT_KACHEL_M` quer zum Licht tragen je Kachel die tiefste Empfänger-Tiefe; eine Zelle liest die Kacheln
+    // unter ihrer Box.
+    _hoehlenSichtLicht(s, S, kamera) {
+        const H = s.hoehle;
+        const st = ++H.stempel;
+        H.besucht = null;
+        if (!kamera || !kamera.matrixWorldInverse)
+            throw new Error("_hoehlenSichtLicht: eine Kaskade ohne Kamera — die Licht-Kacheln brauchen ihre Drehung");
+        // die Lage einer Box im Licht-Raum: nur die DREHUNG der Licht-Kamera (u, v quer zum Licht, d entlang) — die Kacheln
+        // stehen ortsfest, während die Kaskaden-Box mit dem atmenden Auge wandert (sonst kippte die Wahl am Rand je Frame)
+        const e = kamera.matrixWorldInverse.elements;
+        const L = H.lichtBox || (H.lichtBox = new Float64Array(6));
+        const lage = (box) => {
+            L[0] = L[1] = L[2] = Infinity;
+            L[3] = L[4] = L[5] = -Infinity;
+            for (let c = 0; c < 8; c++) {
+                const x = c & 1 ? box.max.x : box.min.x,
+                    y = c & 2 ? box.max.y : box.min.y,
+                    z = c & 4 ? box.max.z : box.min.z;
+                const u = e[0] * x + e[4] * y + e[8] * z,
+                    v = e[1] * x + e[5] * y + e[9] * z,
+                    d = -(e[2] * x + e[6] * y + e[10] * z);
+                if (u < L[0]) L[0] = u;
+                if (u > L[3]) L[3] = u;
+                if (v < L[1]) L[1] = v;
+                if (v > L[4]) L[4] = v;
+                if (d < L[2]) L[2] = d;
+                if (d > L[5]) L[5] = d;
+            }
+        };
+        const T = AnazhRealm.HOEHLEN_LICHT_KACHEL_M;
+        const K = H.kacheln || (H.kacheln = new Map());
+        K.clear();
+        const empfang = (kn, box) => {
+            if (!box) return;
+            kn.sicht = st;
+            lage(box);
+            const tief = L[5];
+            for (let j = Math.floor(L[1] / T); j <= Math.floor(L[4] / T); j++)
+                for (let i = Math.floor(L[0] / T); i <= Math.floor(L[3] / T); i++) {
+                    const key = (i + 32768) * 65536 + (j + 32768);
+                    const w = K.get(key);
+                    if (w === undefined || tief > w) K.set(key, tief);
+                }
+        };
+        if (H.sichtHaupt) for (const kn of H.sichtHaupt) if (kn.bereich.hoehle) empfang(kn, kn.zelle.huelle);
+        for (const kn of H.muendungen) for (const tor of kn.tore) empfang(kn, tor.box);
+        const fr = S.frustum;
+        for (const b of s.ordnung) {
+            if (!b.hoehle || !b.huelle || b.huelle.isEmpty() || !fr.intersectsBox(b.huelle)) continue;
+            for (const kn of b.hoehle.knoten) {
+                const z = kn.zelle;
+                if (!z || kn.sicht === st || z.huelle.isEmpty() || !fr.intersectsBox(z.huelle)) continue;
+                lage(z.huelle);
+                const nah = L[2];
+                let wirft = false;
+                for (let j = Math.floor(L[1] / T); j <= Math.floor(L[4] / T) && !wirft; j++)
+                    for (let i = Math.floor(L[0] / T); i <= Math.floor(L[3] / T); i++) {
+                        const w = K.get((i + 32768) * 65536 + (j + 32768));
+                        if (w !== undefined && w >= nah) {
+                            wirft = true;
+                            break;
+                        }
+                    }
+                if (wirft) kn.sicht = st;
+            }
+        }
+    }
+
+    // Das Schirm-Rechteck einer Box unter der Pass-Matrix `m` (NDC, auf [−1, 1] geklemmt) in `out[0…3]`, ihre nahe und ferne
+    // Tiefe (NDC-z) in `out[4]`, `out[5]`; false, wenn die Box hinter dem Auge oder neben dem Bild liegt. Eine Box, die die
+    // Augen-Ebene kreuzt, zählt mit ihrem Teil VOR dem Auge (an der Ebene w = ε geschnitten — ihre Schnitt-Punkte liegen
+    // weit draußen, das Klemmen trägt sie; ihre nahe Tiefe ist −∞): der Strahl durch ein Portal trifft es vor dem Auge, sein
+    // Schirm-Punkt ist die Projektion dieses Treffers.
+    _hoehlenRect(box, m, out) {
+        const E = 1e-4;
+        const C = this._hoehlenEcken || (this._hoehlenEcken = new Float64Array(24));
+        let x0 = Infinity,
+            y0 = Infinity,
+            x1 = -Infinity,
+            y1 = -Infinity,
+            z0 = Infinity,
+            z1 = -Infinity,
+            vorn = 0;
+        const nimm = (cx, cy, w) => {
+            const px = cx / w,
+                py = cy / w;
+            if (px < x0) x0 = px;
+            if (px > x1) x1 = px;
+            if (py < y0) y0 = py;
+            if (py > y1) y1 = py;
+        };
+        for (let c = 0; c < 8; c++) {
+            const x = c & 1 ? box.max.x : box.min.x,
+                y = c & 2 ? box.max.y : box.min.y,
+                z = c & 4 ? box.max.z : box.min.z;
+            const cx = m[0] * x + m[4] * y + m[8] * z + m[12],
+                cy = m[1] * x + m[5] * y + m[9] * z + m[13],
+                cz = m[2] * x + m[6] * y + m[10] * z + m[14],
+                w = m[3] * x + m[7] * y + m[11] * z + m[15];
+            C[c * 3] = cx;
+            C[c * 3 + 1] = cy;
+            C[c * 3 + 2] = w;
+            if (w > E) {
+                vorn++;
+                nimm(cx, cy, w);
+                const pz = cz / w;
+                if (pz < z0) z0 = pz;
+                if (pz > z1) z1 = pz;
+            }
+        }
+        if (vorn === 0) return false;
+        if (vorn < 8) {
+            z0 = -Infinity;
+            // die zwölf Kanten (Ecken, die sich in einem Bit unterscheiden), die die Ebene w = ε kreuzen
+            for (let a = 0; a < 8; a++)
+                for (let bit = 1; bit < 8; bit <<= 1) {
+                    if (a & bit) continue;
+                    const b = a | bit;
+                    const wa = C[a * 3 + 2],
+                        wb = C[b * 3 + 2];
+                    if (wa > E === wb > E) continue;
+                    const t = (E - wa) / (wb - wa);
+                    nimm(C[a * 3] + t * (C[b * 3] - C[a * 3]), C[a * 3 + 1] + t * (C[b * 3 + 1] - C[a * 3 + 1]), E);
+                }
+        }
+        if (x0 < -1) x0 = -1;
+        if (y0 < -1) y0 = -1;
+        if (x1 > 1) x1 = 1;
+        if (y1 > 1) y1 = 1;
+        if (x0 > x1 || y0 > y1) return false;
+        out[0] = x0;
+        out[1] = y0;
+        out[2] = x1;
+        out[3] = y1;
+        out[4] = z0;
+        out[5] = z1;
+        return true;
     }
 
     // ═══ DER BAU-SATZ (Welle 6) ═══
@@ -88408,6 +89420,25 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 // Eintrags-Deckel des Chunk-Mesh-Stores "anazhChunkMesh" (grobes Überlauf-Ventil in `_chunkIdbPut`,
 // kein LRU): LOD-0-Chunk ≈ 0.2–0.6 MB → ~600 Einträge halten den Store unter wenigen hundert MB.
 AnazhRealm.CHUNK_IDB_MAX = 600;
+// Die FORM des rohen Worker-Replys im Store (ein Teil des Stempels, `_chunkIdbInit`): ändert sich, was der Worker liefert,
+// liest kein Boot die alte Form — seit Welle 7 trägt er den Höhlen-Graph (`hTri` · `hKnoten` · `hSeiten` · `hKanten`).
+AnazhRealm.CHUNK_IDB_FORM = "hoehle";
+// DIE HÖHLEN-SICHT (Welle 7, `_hoehlenSicht`): der Saum jeder Mündungs-, Portal-, Rand- und Luft-Box — `schritte` Gitter-
+// Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
+// Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).
+AnazhRealm.HOEHLEN_SAUM = Object.freeze({ schritte: 1.5, m: 2 });
+// DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
+// des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
+AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;
+// Frische Horizont-Proben je Hauptbild (`_hoehlenSicht`, die nächsten Mündungen zuerst): die Kosten folgen dem bewegten Auge,
+// nie der Zahl der Mündungen — eine Mündung ohne frische Probe zeichnet.
+AnazhRealm.HOEHLEN_HORIZONT_PROBEN = 8;
+// Der Würfel um das geprüfte Auge, in dem eine Horizont-Probe gilt (m, `_hoehlenVerdeckt`): weit unter der Raster-Zelle
+// (die 3 × 3 Zellen der Probe tragen die waagerechte Verschiebung), weit über dem Atmen der stehenden Kamera.
+AnazhRealm.HOEHLEN_AUGE_M = 0.25;
+// DIE KASKADE der Höhlen-Sicht (`_hoehlenSichtLicht`): die Kante einer ortsfesten Licht-Kachel quer zum Licht (m), die je
+// Kachel die tiefste Empfänger-Tiefe trägt.
+AnazhRealm.HOEHLEN_LICHT_KACHEL_M = 4;
 // DER SATZ (Welle B, `_chunkSatz`) — die Start-Kapazität je Satz-Art (Vertices · Indizes): die Vertices gemessen am
 // vollen Ring 4 am Spawn (81 Chunks + 16 Stitch-Bänder = 179 046 Vertices) plus Luft für Fragmentierung und Gebirge,
 // damit eine typische Sitzung nie wächst; die Indizes tragen die Abschnitte der Pässe (Hauptbild · k0 · k1, gemessen

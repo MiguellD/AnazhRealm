@@ -29,7 +29,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = 4364;
+const PORT = Number(process.env.CHUNK_SEAM_PORT) || 4364;
 const root = path.resolve(__dirname, "..");
 const mime = {
     ".html": "text/html",
