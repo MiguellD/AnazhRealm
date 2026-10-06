@@ -18,6 +18,9 @@
 //       Fade-Saum aus CSMShadowNode._setupFade abgeschrieben) — mittags und am Abend
 //   K2  die Box ist eng: Fläche ≤ 60 % des Addon-Quadrats (Diagonale + Fade-Saum) je Kaskade, waagrechter Blick
 //   K3  das Zentrum liegt auf dem Texel-Raster der Licht-Basis; 0,37 m Gehen hält Größe und Raster
+//   K7  der Takt hält die Box (Welle C, `_kaskadeHaelt`): rendert eine Kaskade auf ihrem Takt und nichts änderte sich,
+//       behält sie ihre Box (dieselbe Lage — die Wahl ihres Passes steht); steigt ein Werfer über ihre nahe Ebene, legt
+//       sie neu (und wirft ihn). Die Box-Messungen (K1–K6, W5, die Selbsttests) legen die Box frisch (`alleNeu`).
 //   K4  außerhalb des Takts: dieselbe Kamera → keine Kaskade rendert; 40° gedreht → beide rendern (die Scheibe lief
 //       aus der Box)
 //   K5  die Karte trägt die LÄNGSTE Kante der Referenz-Scheibe bei texelM (kleinste Zweierpotenz)
@@ -192,7 +195,11 @@ function probe(selbsttest) {
         st.directionalLight.updateMatrixWorld(true);
         st.directionalLight.target.updateMatrixWorld(true);
     };
-    const alleNeu = () => csm.lights.forEach((l) => ((l.shadow.autoUpdate = false), (l.shadow.needsUpdate = true)));
+    // jede Kaskade rendert UND legt ihre Box frisch (die Box-Messungen messen den Fit, nicht den Halt des Takts)
+    const alleNeu = () => {
+        csm._anazhFit = [];
+        csm.lights.forEach((l) => ((l.shadow.autoUpdate = false), (l.shadow.needsUpdate = true)));
+    };
     const S = r._kaskadenSchmier();
     // Kamera der Kaskade so, wie `renderShadow` sie stellt (updateMatrices), dann ihr Frustum.
     const frustumVon = (i) => {
@@ -319,6 +326,35 @@ function probe(selbsttest) {
         const q = (f.x0 + f.W / 2) / f.texel;
         return f.W === vorher[i].W && Math.abs(q - Math.round(q)) < 1e-6;
     });
+    // K7 — der Takt hält die Box: ein Takt-Render ohne Änderung behält sie, ein Werfer über der nahen Ebene legt sie neu
+    if (boden) {
+        tag(0.5);
+        blick(0);
+        alleNeu();
+        r._kaskadenPassen(csm);
+        // ein Fit zählt seine Neulegungen (`bild`; er legt dasselbe Objekt neu)
+        const vor = csm._anazhFit.map((f) => f.bild);
+        csm.lights.forEach((l) => (l.shadow.needsUpdate = true));
+        r._kaskadenPassen(csm);
+        const gehalten = csm._anazhFit.every((f, i) => f.bild === vor[i]);
+        const f0 = csm._anazhFit[0];
+        const bild0 = f0.bild;
+        const ph = new T.Vector3(f0.x0 + f0.W / 2, f0.y0 + f0.H / 2, f0.zt + 20).applyMatrix4(f0.basisInv.clone().invert());
+        const hoch = { huelle: new T.Box3().setFromCenterAndSize(ph, new T.Vector3(6, 6, 6)) };
+        boden.bloecke.set("__wc:hoch", hoch);
+        let neuGelegt = false,
+            wirft = false;
+        try {
+            csm.lights.forEach((l) => (l.shadow.needsUpdate = true));
+            r._kaskadenPassen(csm);
+            const f1 = csm._anazhFit[0];
+            neuGelegt = f1.bild !== bild0;
+            wirft = ph.clone().applyMatrix4(f1.basisInv).z <= f1.zt;
+        } finally {
+            boden.bloecke.delete("__wc:hoch");
+        }
+        aus.k7 = { gehalten, neuGelegt, wirft };
+    }
     // K4 — außerhalb des Takts
     csm.lights.forEach((l) => ((l.shadow.autoUpdate = false), (l.shadow.needsUpdate = false)));
     r._kaskadenPassen(csm);
@@ -1265,6 +1301,12 @@ function probe(selbsttest) {
             a.k4still.every((x) => !x) && a.k4dreh.every(Boolean),
             `still ${a.k4still} · gedreht ${a.k4dreh}`
         );
+        if (a.k7)
+            check(
+                "K7 der Takt hält die Box: ein Takt-Render ohne Änderung behält sie, ein Werfer über der nahen Ebene legt sie neu und wirft",
+                a.k7.gehalten && a.k7.neuGelegt && a.k7.wirft,
+                JSON.stringify(a.k7)
+            );
         check(
             "K5 die Karte trägt die längste Kante bei texelM (kleinste Zweierpotenz)",
             a.k5.every((k) => k.kleinste),
