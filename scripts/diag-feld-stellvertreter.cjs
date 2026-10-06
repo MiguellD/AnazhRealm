@@ -9,8 +9,12 @@
 //             Fragment-Tiefe; jedes Fragment marcht den EINEN Satz seines Stellvertreters.
 //   PANORAMA: Vollbild-Dreieck auf fester Tiefe OHNE Fragment-Tiefe, ohne Schleife — der frühe Tiefentest verwirft Szene und
 //             Sätze, nur Himmels-Pixel schattieren.
-// Gemessen (echte GPU, Werkbank, Mess-Wiese, Blick des Spielers): Fragmente des Marchs 2 073 600 → 505, des Panoramas
-// 16 191 (Himmel); das Bild aus dem Ausgabe-Pfad pixelgleich (24 Bildpaare, max. 5 Stufen an 2 Pixeln).
+// Gemessen (echte GPU Radeon 890M, Werkbank, Mess-Wiese, Blick des Spielers): Fragmente des Marchs 2 073 600 → 505–663,
+// des Panoramas 15 987–16 191 (Himmel). Das Bild aus dem Ausgabe-Pfad, alter gegen neuen Stand in derselben Welt
+// (Uhr, TRAA und Dither je Schuss fest), 28 Bildpaare + 6 Paare eines fernen Tiers (Glieder-Kapseln, 1 125 m vom Spieler):
+// im Fußabdruck des Feld-Passes 1 von 6 558 Pixeln mit 1 Stufe; die Kapseln aus 6,5 m und 6 m pixelgleich (4 063 und
+// 4 721 Fußabdruck-Pixel), aus 93 m (4°) 1 bzw. 4 von ~8 960 an Glied-Kanten (≤ 40 Stufen); außerhalb der Fußabdrücke
+// höchstens 279 Pixel mit ≤ 9 Stufen (Laub am Bildrand, nicht im Feld-Pass).
 //
 // Diese Linse (Null-Renderer, GPU-frei) fährt die ECHTEN Organ-Methoden:
 //   O1  die Obergrenze (Stellvertreter-Zahl / Plätze je Block) folgt dem höchsten belegten Slot — auch nach Freigaben
