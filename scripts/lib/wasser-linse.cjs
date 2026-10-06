@@ -151,9 +151,13 @@ function wasserKanalParitaet(opts) {
                 const p = rv.points[k];
                 if (!p.inLake && !rv.points[k + 1].inLake) punkte.push(p);
             }
+        // NaN ist nie ein Befund: eine NaN-Zelle (NaN !== NaN) zählte an der Basis 19074 von 19074 „abweichend" bei
+        // maxDelta null — die Probe war kaputt, nicht der Kanal; sie wird beim Namen gezählt (`nanMain`, `nanWorker`).
         let zellen = 0,
             abweichend = 0,
-            maxDelta = 0;
+            maxDelta = 0,
+            nanMain = 0,
+            nanWorker = 0;
         for (const p of punkte) {
             const ox = Math.floor(p.x / cfg.step) * cfg.step - 8 * cfg.step;
             const oz = Math.floor(p.z / cfg.step) * cfg.step - 8 * cfg.step;
@@ -168,13 +172,18 @@ function wasserKanalParitaet(opts) {
             const wrk = await r._voxelWorkerComputeDensity(ox, oy, oz, n, ny, n, cfg.step);
             for (let i = 0; i < main.length; i++) {
                 zellen++;
+                const nm = !Number.isFinite(main[i]),
+                    nw = !(wrk && Number.isFinite(wrk[i]));
+                if (nm) nanMain++;
+                if (nw) nanWorker++;
+                if (nm || nw) continue;
                 if (main[i] !== wrk[i]) {
                     abweichend++;
                     maxDelta = Math.max(maxDelta, Math.abs(main[i] - wrk[i]));
                 }
             }
         }
-        return { punkte: punkte.length, zellen, abweichend, maxDelta };
+        return { punkte: punkte.length, zellen, abweichend, maxDelta, nanMain, nanWorker };
     })();
 }
 
@@ -969,8 +978,521 @@ function wasserRegen(opts) {
     })();
 }
 
+// ── Q6: die Decke (D11, Gegenprüfung 07.10.) ──
+// Das Zell-Gesetz hält Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`): je geladener Wasser-Spalte
+// die erste LUFT-Zelle über einer FEST-Zelle, deren Mitte unter dem Spiegel des Gesetzes liegt (`_atlasWaterLevelAt` mit
+// tiefem Boden — See, Fluss, Rand-Spiegel) und über der eine FEST-Zelle steht (die Decke). Ihr Boden (`_fieldSurfaceBelow`)
+// ist der Grund eines Körpers in der Höhle: die EINE Wasser-Wahrheit am Körper darf dort kein Wasser lesen (Chokepoint), der
+// Spieler schwimmt dort nicht (`_stepFixedSim`), die Kamera taucht nicht (`_applyDayNightToScene`), das Tier schwimmt nicht
+// (`updateCreatures`, sein Grund der Höhlen-Boden — wie ihn `_kreaturBodenUnter` liefert). Bis 8f09227d las der Körper den
+// Spiegel des Gesetzes ohne Decke: im Höhlen-Boden unter dem See der Mess-Wiese 393 von 400 Proben „nass".
+function wasserHoehle(opts) {
+    return (async () => {
+        const o = opts || {};
+        const r = window.anazhRealm;
+        const st = r.state;
+        const A = r.constructor;
+        if (typeof r._koerperWasser !== "function") return { fehler: "kein _koerperWasser (Stand vor der Welle L)" };
+        const cfg = r._voxelChunkConfig(0);
+        const { dim, dimY, step, span, floorDrop } = cfg;
+        const oy = (st.terrainBaseHeight || 0) - floorDrop;
+        const S = A.CELL_STATE;
+        const dq = dim * dim;
+        const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+        const hoehlen = [];
+        for (const [key, e] of st.voxelChunks || []) {
+            if (!e || !e.waterCells) continue;
+            const c = e.waterCells;
+            const [cx, cz] = key.split(",").map(Number);
+            for (let k = 0; k < dim; k++)
+                for (let i = 0; i < dim; i++) {
+                    const b = i + k * dim;
+                    const x = cx * span + (i + 0.5) * step,
+                        z = cz * span + (k + 0.5) * step;
+                    const L = r._atlasWaterLevelAt(x, z, -1e9);
+                    if (!(L > -Infinity)) continue;
+                    for (let j = 1; j < dimY; j++) {
+                        const cy = oy + (j + 0.5) * step;
+                        if (cy > L) break;
+                        if (c[b + j * dq] !== S.AIR || c[b + (j - 1) * dq] !== S.SOLID) continue;
+                        let decke = false,
+                            wasserDrueber = false;
+                        for (let jj = j + 1; jj < dimY && oy + jj * step < L + step; jj++) {
+                            if (c[b + jj * dq] === S.SOLID) decke = true;
+                            else if (decke && c[b + jj * dq] === S.WATER) wasserDrueber = true;
+                        }
+                        if (!decke) continue;
+                        const boden = r._fieldSurfaceBelow(x, cy, z, 3);
+                        if (Number.isFinite(boden) && boden < L - 0.2)
+                            hoehlen.push({ x, z, boden, L, unter: wasserDrueber, luft: c[b + (j + 1) * dq] === S.AIR });
+                        break;
+                    }
+                }
+        }
+        let nass = 0,
+            nassUnter = 0,
+            nassNeben = 0,
+            unter = 0,
+            maxM = 0;
+        const beispiele = [];
+        for (const h of hoehlen) {
+            if (h.unter) unter++;
+            const w = r._koerperWasser(h.x, h.z, h.boden);
+            if (w > h.boden + 0.1) {
+                nass++;
+                if (h.unter) nassUnter++;
+                else nassNeben++;
+                if (w - h.boden > maxM) maxM = w - h.boden;
+                if (beispiele.length < 4) beispiele.push([R(h.x, 1), R(h.z, 1), R(h.boden), R(w)]);
+            }
+        }
+        // Die Pfade der Leser an Höhlen mit Kopf-Raum (zwei Luft-Zellen über dem Boden): Spieler, Kamera, Tier.
+        const raum = hoehlen.filter((h) => h.luft);
+        const wahl = [];
+        for (let q = 0; q < raum.length && wahl.length < (o.n || 6); q += Math.max(1, Math.floor(raum.length / 6)))
+            wahl.push(raum[q]);
+        const pm = st.playerMesh;
+        const posAlt = pm.position.clone();
+        const camAlt = st.camera ? st.camera.position.clone() : null;
+        const loopAlt = r._loopFixedStep;
+        const keysAlt = st.keys;
+        r._loopFixedStep = function () {
+            return 0;
+        };
+        const FUSS = A.PLAYER_FOOT_OFFSET;
+        let t = Number.isFinite(st._fixedSimTime) ? st._fixedSimTime : 0;
+        let schwimmFrames = 0,
+            kameraUnter = 0,
+            tierSchwimmt = 0,
+            tierProben = 0;
+        try {
+            st.keys = {};
+            for (const h of wahl) {
+                pm.position.set(h.x, h.boden + FUSS + 0.02, h.z);
+                st._fieldVy = 0;
+                st.playerVel.setValue(0, 0, 0);
+                st.isInAir = false;
+                if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
+                st._fixedPrevPos = null;
+                for (let s = 0; s < 20; s++) {
+                    r._stepFixedSim(t, A.FIXED_DT);
+                    t += A.FIXED_DT;
+                    st._fixedSimTime = t;
+                    if (st.playerUnderwater) schwimmFrames++;
+                }
+                if (st.camera) {
+                    st.camera.position.set(h.x, h.boden + 1.6, h.z);
+                    st.camera.updateMatrixWorld(true);
+                    r._applyDayNightToScene();
+                    if (st.kameraUnterWasser) kameraUnter++;
+                }
+                const c = r.spawnCreatureAt(h.x, h.boden, h.z, "happy", "wolf", { precise: true, bodySize: 1 });
+                if (c) {
+                    tierProben++;
+                    let schwimmt = false;
+                    for (let s = 0; s < 6; s++) {
+                        c.position.x = h.x;
+                        c.position.z = h.z;
+                        c.userData.cachedGroundY = h.boden;
+                        c.userData.cachedGroundX = h.x;
+                        c.userData.cachedGroundZ = h.z;
+                        r.updateCreatures(0.05);
+                        if (c.userData._motionZustand === "schwimmen") schwimmt = true;
+                    }
+                    if (schwimmt) tierSchwimmt++;
+                    r.removeCreature(c);
+                }
+            }
+        } finally {
+            r._loopFixedStep = loopAlt;
+            st.keys = keysAlt || {};
+            pm.position.copy(posAlt);
+            if (st._fixedSimPos) st._fixedSimPos.copy(posAlt);
+            st._fixedPrevPos = null;
+            if (camAlt) {
+                st.camera.position.copy(camAlt);
+                st.camera.updateMatrixWorld(true);
+                r._applyDayNightToScene();
+            }
+        }
+        return {
+            proben: hoehlen.length,
+            unter,
+            neben: hoehlen.length - unter,
+            nass,
+            nassUnter,
+            nassNeben,
+            maxM: R(maxM),
+            beispiele,
+            spieler: { proben: wahl.length, schritte: wahl.length * 20, schwimmFrames },
+            kamera: { proben: st.camera ? wahl.length : 0, unterWasser: kameraUnter },
+            tier: { proben: tierProben, schwimmt: tierSchwimmt },
+        };
+    })();
+}
+
+// ── Q6: jeder Körper liegt nach seiner Gestalt im Wasser — auch der Wagen (D10, W-W2, F-D5, W-L4) ──
+// Das Gefährt im See der Mess-Wiese, gefahren über den Ritt-Tick (`_tickMountedMovement`, der Reiter hält x/z): (a) der
+// Straßenwagen (fahrzeug_gt, die Hülle aus dem Fahrzeug-Kern) in der See-Mitte darf nicht treiben — bis 8f09227d schwamm er
+// mit der Dichte des Holzkarren-Spenders (0,5155 < 0,55); (b) das Holz-Boot (Teile-Werk) treibt dort mit dem Tiefgang
+// seiner Gestalt; (c) im Rand-Streifen des Sees (Befund W-W2: Profil x = −944, z = −690 … −726, 1–7 m Wasser über
+// Atlas-Land) treibt das Boot — bis cf9a07ba war die Lauf-Fläche dort blind (das Boot fuhr am Seegrund); (d) treibend
+// nickt das Boot nicht mit dem Seegrund (F-D5 „25° Bug-ab": das Nick-Ziel las die Ebene des Grunds).
+function wasserWagen(opts) {
+    return (async () => {
+        const o = opts || {};
+        const r = window.anazhRealm;
+        const st = r.state;
+        const h = st.hydrosphere;
+        if (!h || !h.ready) return { fehler: "keine Hydrosphäre" };
+        const ziel = o.see || [-944, -640];
+        let see = null,
+            best = Infinity;
+        for (const l of h.lakes || []) {
+            if (!(l.level > (st.waterLevel || 0) + 2) || !l.cells || l.cells.length <= 8) continue;
+            const d = Math.hypot((l.bbox.minX + l.bbox.maxX) / 2 - ziel[0], (l.bbox.minZ + l.bbox.maxZ) / 2 - ziel[1]);
+            if (d < best) {
+                best = d;
+                see = l;
+            }
+        }
+        if (!see) return { fehler: "kein See" };
+        const S = see.level;
+        const R = (x, n = 3) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+        const dl = performance.now() + (o.warteMs || 90000);
+        while (!(st.blueprints && st.blueprints.fahrzeug_gt) && performance.now() < dl)
+            await new Promise((res) => setTimeout(res, 250));
+        if (!(st.blueprints && st.blueprints.fahrzeug_gt)) return { fehler: "kein Studio-Wagen im Buch (fahrzeug_gt)" };
+        const BOOT = "__wasser_boot";
+        st.blueprints[BOOT] = {
+            name: BOOT,
+            parts: [
+                { shape: "box", material: "holz", size: { x: 3, y: 0.6, z: 1.4 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "holz", size: { x: 0.4, y: 0.4, z: 0.4 }, position: { x: 0, y: 0.5, z: 0 } },
+            ],
+            connections: [],
+        };
+        const pm = st.playerMesh.position;
+        const posAlt = pm.clone();
+        const fahre = (typ, x, z, takte) => {
+            const boden = r._voxelSurfaceY(x, z);
+            pm.set(x, Math.max(S, boden) + 1, z);
+            const e = r.spawnArchitecture(typ, { x, y: boden, z }, { silent: true, precise: true });
+            if (!e) return { fehler: "kein Eintrag " + typ };
+            // Das Probe-Boot ist ein Teile-Werk ohne Antriebs-Tag: fahrbar gesetzt (die Probe misst das Wasser, nicht die
+            // Fahrzeug-Signatur der Affordanz).
+            if (typ === BOOT) e.affordances = Object.assign({}, e.affordances, { moveable: true });
+            const m = r.mountArchitecture(e);
+            if (!(m && m.ok) || st.player.mountedArch !== e.id) {
+                r.removeArchitecture(e);
+                return { fehler: "nicht geritten " + typ };
+            }
+            if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+            for (let k = 0; k < (takte || 40); k++) {
+                pm.x = x;
+                pm.z = z;
+                r._tickMountedMovement(0.05);
+            }
+            const grund = r.getTerrainHeightAt(x, z);
+            // die Unterkante des Rumpfs: Studio-Fahrzeug die Ebene y = 0 (die Basis), Teile-Werk Basis − Boden-Klärung
+            const unten =
+                e.position.y - 0.5 - (e._fahrAchseX ? 0 : Number.isFinite(e._groundClear) ? e._groundClear : 0);
+            const aus = {
+                afloat: e._afloat === true,
+                tiefe: R(S - boden, 2),
+                unterkanteUeberGrund: R(unten - grund),
+                unterkanteUnterSpiegel: R(S - unten),
+                nickZielGrad: R(((Number.isFinite(e._terrainPitchZiel) ? e._terrainPitchZiel : 0) * 180) / Math.PI, 2),
+                wankZielGrad: R(((Number.isFinite(e._terrainRollZiel) ? e._terrainRollZiel : 0) * 180) / Math.PI, 2),
+            };
+            r.dismountArchitecture();
+            r.removeArchitecture(e);
+            return aus;
+        };
+        const aus = { see: { spiegel: R(S, 2) } };
+        try {
+            const mitte = o.mitte || [-935, -650];
+            aus.wagen = fahre("fahrzeug_gt", mitte[0], mitte[1]);
+            aus.boot = fahre(BOOT, mitte[0], mitte[1]);
+            // (c) der Rand-Streifen: Atlas-Land neben dem See, der Boden ≥ 1 m unter dem Spiegel.
+            const rand = [];
+            for (let z = -690; z >= -726; z -= 3) {
+                const x = -944;
+                const boden = r._voxelSurfaceY(x, z);
+                if (!Number.isFinite(boden) || S - boden < 1) continue;
+                const hr = r._hydroFor(x, z);
+                const ci = Math.floor((x - hr.originX) / hr.cell),
+                    cj = Math.floor((z - hr.originZ) / hr.cell);
+                if (hr.water.waterKind[ci + cj * hr.dim] !== 0) continue; // nur Atlas-Land (der Streifen)
+                rand.push([x, z, S - boden]);
+            }
+            let treibt = 0;
+            const randAus = [];
+            for (const [x, z, tiefe] of rand) {
+                const f = fahre(BOOT, x, z, 20);
+                if (f.afloat) treibt++;
+                randAus.push([x, z, R(tiefe, 2), f.afloat]);
+            }
+            aus.rand = { proben: rand.length, treibt, punkte: randAus };
+            // (d) Bug-ab: der Punkt des Wegs vom Ostufer mit dem steilsten Seegrund und ≥ 2,5 m Wasser.
+            let steil = null,
+                gMax = 0;
+            for (let x = -890; x >= -934; x -= 1) {
+                const z = -650;
+                const b0 = r._voxelSurfaceY(x, z),
+                    b1 = r._voxelSurfaceY(x - 2, z);
+                if (!Number.isFinite(b0) || !Number.isFinite(b1) || S - b0 < 2.5) continue;
+                const g = Math.abs(b1 - b0) / 2;
+                if (g > gMax) {
+                    gMax = g;
+                    steil = [x - 1, z];
+                }
+            }
+            if (steil) {
+                const f = fahre(BOOT, steil[0], steil[1]);
+                aus.bugAb = Object.assign({ ort: steil, grundGrad: R((Math.atan(gMax) * 180) / Math.PI, 1) }, f);
+            }
+        } finally {
+            delete st.blueprints[BOOT];
+            pm.copy(posAlt);
+            if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+            st._fieldVy = 0;
+        }
+        return aus;
+    })();
+}
+
+// ── Q7-Gestalt: die Quelle (W-F5, Befund 06.10.: „8,5 m nass, 2,36 m tief aus dem Nichts; alle 16 Quellen 8,2–11,9 m") ──
+// Je Fluss der Heimat-Region der erste Punkt außerhalb eines Sees (die Quelle): quer zum Lauf in 0,25-m-Schritten bis
+// ±15 m die nasse Breite (der Spiegel des Gesetzes `_atlasWaterLevelAt` über dem Boden `_voxelSurfaceY` + 5 cm, die
+// zusammenhängende Strecke um die Mitte) und die Wasser-Tiefe in der Mitte. Ein Fluss bricht nie in voller Breite aus dem
+// Boden: die Quelle ist schmaler als die Mindest-Breite eines Flusses (HYDROSPHERE.widthMin).
+function wasserQuelle(opts) {
+    const o = opts || {};
+    const r = window.anazhRealm;
+    const st = r.state;
+    const h = st.hydrosphere;
+    if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
+    const HC = r.constructor.HYDROSPHERE;
+    const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+    const breiten = [],
+        tiefen = [];
+    const beispiele = [];
+    const gesehen = new Set();
+    for (const rv of h.rivers) {
+        const P = rv.points;
+        let k = 0;
+        while (k + 1 < P.length && P[k].inLake) k++;
+        if (k > 0 || k + 1 >= P.length) continue; // ein Abfluss aus einem See ist keine Quelle
+        const a = P[0],
+            b = P[1];
+        const schl = Math.round(a.x) + "," + Math.round(a.z);
+        if (gesehen.has(schl)) continue;
+        gesehen.add(schl);
+        const fl = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+        const nx = -(b.z - a.z) / fl,
+            nz = (b.x - a.x) / fl;
+        // nass = der FLUSS trägt hier Wasser (sein Spiegel über dem Boden) — ein See daneben zählt nie zur Quelle
+        const nassAt = (d) => {
+            const x = a.x + nx * d,
+                z = a.z + nz * d;
+            const y = r._voxelSurfaceY(x, z);
+            const rv = r._hydroRiverAt(x, z);
+            return Number.isFinite(y) && !!rv && rv.surfaceY > y + 0.05;
+        };
+        let links = 0,
+            rechts = 0;
+        if (nassAt(0)) {
+            for (let d = 0.25; d <= 15 && nassAt(-d); d += 0.25) links = d;
+            for (let d = 0.25; d <= 15 && nassAt(d); d += 0.25) rechts = d;
+        }
+        const breite = nassAt(0) ? links + rechts + 0.25 : 0;
+        const y0 = r._voxelSurfaceY(a.x, a.z);
+        const rv0 = r._hydroRiverAt(a.x, a.z);
+        const tiefe = Number.isFinite(y0) && rv0 ? Math.max(0, rv0.surfaceY - y0) : 0;
+        breiten.push(breite);
+        tiefen.push(tiefe);
+        if (beispiele.length < (o.beispiele || 4)) beispiele.push([R(a.x, 0), R(a.z, 0), R(breite), R(tiefe)]);
+    }
+    const max = (A) => (A.length ? Math.max(...A) : 0);
+    const s = breiten.slice().sort((x, y) => x - y);
+    return {
+        quellen: breiten.length,
+        soll: HC.widthMin,
+        breiteP50: R(s.length ? s[s.length >> 1] : 0),
+        breiteMax: R(max(breiten)),
+        breiter: breiten.filter((x) => x > HC.widthMin).length,
+        tiefeMax: R(max(tiefen)),
+        beispiele,
+    };
+}
+
+// ── Q7-Gestalt: die Bank (Gegenprüfung 07.10.: „die neuen Kanal-Banken sind Steilwände mit Rauten-Muster") ──
+// Je Fluss-Punkt (Heimat-Region und Kacheln) in einem geladenen Nah-Chunk (LOD 0) ein Profil-Schnitt quer zum Lauf: der
+// Boden des Gesetzes (`_voxelSurfaceY`, 0,1-m-Schritte) von der Wasserlinie (der erste Boden über dem Spiegel) 6 m weit —
+// die BANK, die der Kanal schneidet — und ihre steilste Neigung über 0,5 m je Seite. Gegen das Geologie-Gesetz des Bodens
+// (`TERRAIN_GEOLOGY`, wie `_terrainGeologyAlbedo`): ab rockLo (1 − n.y = 0,42, ≈ 54,5°) trägt der Hang Fels, ab screeLo
+// (≈ 37°) Geröll. Dazu das BILD (Lehre 22: sichtbar ist das 1,8-m-Mesh): die Vertices der Chunk-Meshes über dem Spiegel
+// des nächsten Fluss-Punkts, bis 6 m darüber und bis halbe Breite + 8 m von seiner Mitte — ihr Fels- und Geröll-Gewicht aus
+// der Geometrie-Normale. Bis 8f09227d lag die Krone nach 0,6 der Bank-Rampe, und dahinter glitt eine Wand ins Gelände.
+function wasserBank(opts) {
+    const o = opts || {};
+    const r = window.anazhRealm;
+    const st = r.state;
+    const h = st.hydrosphere;
+    if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
+    const HC = r.constructor.HYDROSPHERE;
+    const G = r.constructor.TERRAIN_GEOLOGY;
+    const span = r._voxelChunkConfig(0).span;
+    const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+    const grad = (steile) => (Math.acos(1 - steile) * 180) / Math.PI;
+    const felsGrad = grad(G.rockLo),
+        geroellGrad = grad(G.screeLo);
+    const nah = (x, z) => {
+        const e = st.voxelChunks && st.voxelChunks.get(Math.floor(x / span) + "," + Math.floor(z / span));
+        return e && e.mesh && e.lod === 0 ? e : null;
+    };
+    const punkte = [];
+    // Heimat-Region und Kacheln (der Fluss der Mess-Wiese liegt jenseits ±1024 m)
+    const regionen = [h].concat(st.hydroTiles ? [...st.hydroTiles.values()].filter((t) => t && t.ready) : []);
+    for (const rv of regionen.flatMap((g) => g.rivers || [])) {
+        const P = rv.points;
+        for (let k = 0; k + 1 < P.length; k++) {
+            const a = P[k],
+                b = P[k + 1];
+            if (a.inLake || b.inLake || !nah(a.x, a.z)) continue;
+            punkte.push([a, b]);
+        }
+    }
+    const spiegelVon = (a) => (Number.isFinite(a.S) ? a.S : r._atlasWaterLevelAt(a.x, a.z, -Infinity));
+    const winkel = [];
+    let fels = 0,
+        geroell = 0;
+    const beispiele = [];
+    const jede = Math.max(1, Math.floor(punkte.length / (o.n || 80)));
+    for (let q = 0; q < punkte.length; q += jede) {
+        const [a, b] = punkte[q];
+        const fl = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+        const nx = -(b.z - a.z) / fl,
+            nz = (b.x - a.x) / fl;
+        const sp = spiegelVon(a);
+        if (!Number.isFinite(sp)) continue;
+        for (const sg of [-1, 1]) {
+            const ys = [];
+            for (let d = 0; d <= 40; d += 0.1) {
+                const y = r._voxelSurfaceY(a.x + nx * d * sg, a.z + nz * d * sg);
+                ys.push(Number.isFinite(y) ? y : NaN);
+            }
+            const i0 = ys.findIndex((y) => y > sp);
+            if (i0 < 0) continue;
+            let maxG = 0;
+            for (let i = i0; i + 5 < ys.length && i < i0 + 60; i++) {
+                const g = Math.abs(ys[i + 5] - ys[i]) / 0.5;
+                if (Number.isFinite(g) && g > maxG) maxG = g;
+            }
+            const w = (Math.atan(maxG) * 180) / Math.PI;
+            winkel.push(w);
+            if (w > felsGrad) {
+                fels++;
+                if (beispiele.length < 4) beispiele.push([R(a.x, 1), R(a.z, 1), sg, R(w, 1)]);
+            } else if (w > geroellGrad) geroell++;
+        }
+    }
+    // Das Bild: Mesh-Vertices der Nah-Chunks an der Bank.
+    let vertices = 0,
+        felsV = 0,
+        geroellV = 0,
+        gewicht = 0;
+    const ss = (e0, e1, v) => {
+        const t = Math.max(0, Math.min(1, (v - e0) / (e1 - e0)));
+        return t * t * (3 - 2 * t);
+    };
+    const ZELLE = 8;
+    const raster = new Map();
+    for (const [a, b] of punkte) {
+        const sp = spiegelVon(a);
+        const hw = Math.max(1, (a.width || HC.widthMin) * 0.5);
+        const L = Math.hypot(b.x - a.x, b.z - a.z);
+        for (let t = 0; t <= L; t += 0.5) {
+            const x = a.x + ((b.x - a.x) * t) / (L || 1),
+                z = a.z + ((b.z - a.z) * t) / (L || 1);
+            const k = Math.floor(x / ZELLE) + "," + Math.floor(z / ZELLE);
+            if (!raster.has(k)) raster.set(k, []);
+            raster.get(k).push([x, z, sp, hw]);
+        }
+    }
+    const naechster = (x, z) => {
+        const ci = Math.floor(x / ZELLE),
+            cj = Math.floor(z / ZELLE);
+        let best = null,
+            bd = Infinity;
+        for (let dj = -2; dj <= 2; dj++)
+            for (let di = -2; di <= 2; di++) {
+                const L = raster.get(ci + di + "," + (cj + dj));
+                if (!L) continue;
+                for (const p of L) {
+                    const d = Math.hypot(p[0] - x, p[1] - z);
+                    if (d < bd) {
+                        bd = d;
+                        best = p;
+                    }
+                }
+            }
+        return best ? { d: bd, sp: best[2], hw: best[3] } : null;
+    };
+    const T = window.THREE;
+    const v = new T.Vector3(),
+        n = new T.Vector3();
+    const nm = new T.Matrix3();
+    for (const [, e] of st.voxelChunks || []) {
+        if (!e || !e.mesh || e.lod !== 0 || !e.mesh.geometry) continue;
+        const g = e.mesh.geometry;
+        const pos = g.attributes.position,
+            nor = g.attributes.normal;
+        if (!pos || !nor) continue;
+        e.mesh.updateMatrixWorld(true);
+        nm.getNormalMatrix(e.mesh.matrixWorld);
+        for (let i = 0; i < pos.count; i++) {
+            v.fromBufferAttribute(pos, i).applyMatrix4(e.mesh.matrixWorld);
+            const nb = naechster(v.x, v.z);
+            if (!nb || nb.d > nb.hw + 8 || !(v.y > nb.sp) || v.y > nb.sp + 6) continue;
+            n.fromBufferAttribute(nor, i).applyMatrix3(nm).normalize();
+            const steile = Math.max(0, Math.min(1, 1 - n.y));
+            const rw = ss(G.rockLo, G.rockHi, steile);
+            const sw = ss(G.screeLo, G.screeHi, steile) * (1 - rw);
+            vertices++;
+            gewicht += rw + sw;
+            if (steile > G.rockLo) felsV++;
+            else if (steile > G.screeLo) geroellV++;
+        }
+    }
+    const s = winkel.slice().sort((x, y) => x - y);
+    const q = (p) => (s.length ? s[Math.min(s.length - 1, Math.floor(p * s.length))] : 0);
+    return {
+        profile: s.length,
+        felsGrad: R(felsGrad, 1),
+        winkelP50: R(q(0.5), 1),
+        winkelP90: R(q(0.9), 1),
+        winkelMax: R(s.length ? s[s.length - 1] : 0, 1),
+        fels,
+        geroell,
+        felsAnteil: R(s.length ? fels / s.length : 0, 3),
+        beispiele,
+        bild: {
+            vertices,
+            felsAnteil: R(vertices ? felsV / vertices : 0, 4),
+            geroellAnteil: R(vertices ? geroellV / vertices : 0, 4),
+            gewichtMittel: R(vertices ? gewicht / vertices : 0, 4),
+        },
+    };
+}
+
 module.exports = {
     WASSER_INSTALL:
+        `window.__wasserHoehle = ${wasserHoehle.toString()};` +
+        `window.__wasserWagen = ${wasserWagen.toString()};` +
+        `window.__wasserQuelle = ${wasserQuelle.toString()};` +
+        `window.__wasserBank = ${wasserBank.toString()};` +
         `window.__wasserFluss = ${wasserFluss.toString()};` +
         `window.__wasserKanalParitaet = ${wasserKanalParitaet.toString()};` +
         `window.__wasserUfer = ${wasserUfer.toString()};` +

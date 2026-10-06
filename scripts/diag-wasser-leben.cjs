@@ -16,6 +16,14 @@
 //   U (Q7-Gestalt)  die Ufer-Farbe quer zum Fluss: 34 Sprünge (Luma bis 0,223 je 2 cm) — der Bezug der Ufer-Bänder
 //                   sprang am Ende des Fluss-Spiegels auf den Meeresspiegel; der Worker färbte 2137 von 7578 Ufer-
 //                   Vertices anders als der Main (die Feuchte las eine Halbbreite, die kein Segment trägt).
+//   Gegenprüfung 07.10. (jede Zahl rot am Vorher 8f09227d bzw. cf9a07ba):
+//   K10 (D11)       die Decke: in trockenen Höhlen unter und neben dem See las der Körper Wasser (3511 von 3511 Proben),
+//                   Spieler schwamm, Kamera tauchte, Tier schwamm.
+//   K11 (D10)       der Straßenwagen trieb im See mit der Dichte des Holzkarren-Spenders; treibend nickte das Boot mit dem
+//                   Seegrund (Wank-Ziel 29,5°). W2: der Rand-Streifen des Sees war für das Gefährt blind (0 von 13).
+//   F5              die Quelle bricht breiter als ein Fluss aus dem Boden (Basis 13 von 16, nass p50 14,5 m).
+//   F7              die Bank des Kanals ist eine Steilwand (8f09227d: 18 von 42 Profilen steiler als der Fels, p90 68,9°).
+//   FP              die Kanal-Parität Main ↔ Worker (NaN = Probe kaputt, nie Befund).
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_waterRunSurfaceAt` vorher, `_atlasWaterLevelAt` nachher), den
 // Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
 //
@@ -38,6 +46,7 @@ const SCHWELLE = {
     sturm: 1.3, // Kanten-Dichte des ruhigen Flusses im Sturm gegen die bei Sonne (das Gesetz: Amplitude × (w0 + w1·Wind))
     schlieren: 50, // senkrechte Läufe ≥ 4 lit Pixel des Sturm-Regens allein auf Schwarz (640 × 360)
     neigung: 0.2, // (rechts − links) / (rechts + links) der diagonalen Lauf-Nachbarn quer zum Wind
+    bankFels: 0.1, // Anteil der Bank-Profile (6 m ab der Wasserlinie), die steiler als der Fels des Boden-Gesetzes sind
 };
 
 // Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein — im Selbsttest wie im Lauf.
@@ -64,13 +73,39 @@ function urteil(b) {
                 v.push(`F4 DOPPEL: ${f.wasserfaelle} Wasserfall-Einträge an ${f.wasserfallOrte} Orten`);
         }
     }
+    // FP = die Kanal-PARITÄT (Main ↔ Worker, Lehre 7) — nie „F5": F5 ist die Quelle (W-F5). Eine NaN-Zelle ist eine kaputte
+    // Probe, nie ein Befund (an der Basis zählte NaN !== NaN 19074 von 19074 Zellen „abweichend" bei maxDelta null).
     if (b.kanal) {
         const k = b.kanal;
-        if (k.fehler) v.push(`F5 SPIEGEL: ${k.fehler}`);
-        else if (!(k.zellen > 1000)) v.push(`F5 LEER: nur ${k.zellen} Kanal-Zellen verglichen`);
+        if (k.fehler) v.push(`FP SPIEGEL: ${k.fehler}`);
+        else if (!(k.zellen > 1000)) v.push(`FP LEER: nur ${k.zellen} Kanal-Zellen verglichen`);
+        else if (k.nanMain > 0 || k.nanWorker > 0 || !Number.isFinite(k.maxDelta))
+            v.push(
+                `FP PROBE KAPUTT: ${k.nanMain} Main- und ${k.nanWorker} Worker-Zellen nicht endlich (kein Befund über den Kanal)`
+            );
         else if (k.abweichend > 0)
             v.push(
-                `F5 ZWEI KANÄLE: ${k.abweichend} von ${k.zellen} Dichte-Zellen weichen Main ↔ Worker ab (max ${k.maxDelta})`
+                `FP ZWEI KANÄLE: ${k.abweichend} von ${k.zellen} Dichte-Zellen weichen Main ↔ Worker ab (max ${k.maxDelta})`
+            );
+    }
+    if (b.quelle) {
+        const q = b.quelle;
+        if (q.fehler) v.push(`F5: ${q.fehler}`);
+        else if (!(q.quellen >= 5)) v.push(`F5 LEER: nur ${q.quellen} Quellen gemessen`);
+        else if (q.breiter > 0)
+            v.push(
+                `F5 QUELLE: ${q.breiter} von ${q.quellen} Quellen brechen breiter als die Mindest-Breite eines Flusses ` +
+                    `(${q.soll} m) aus dem Boden (nass p50 ${q.breiteP50} m, max ${q.breiteMax} m, bis ${q.tiefeMax} m tief)`
+            );
+    }
+    if (b.bank) {
+        const k = b.bank;
+        if (k.fehler) v.push(`F7: ${k.fehler}`);
+        else if (!(k.profile >= 20)) v.push(`F7 LEER: nur ${k.profile} Bank-Profile gemessen`);
+        else if (!(k.felsAnteil <= SCHWELLE.bankFels))
+            v.push(
+                `F7 STEILWAND: ${k.fels} von ${k.profile} Bank-Profilen steiler als der Fels des Boden-Gesetzes ` +
+                    `(${k.felsGrad}°; Neigung p50 ${k.winkelP50}°, p90 ${k.winkelP90}°, max ${k.winkelMax}°)`
             );
     }
     if (b.uferFarbe) {
@@ -100,6 +135,66 @@ function urteil(b) {
                 v.push(`B4 REGEN: der Sturm zeigt ${g.schlieren} Schlieren (lit ${g.litAnteil} der Pixel)`);
             else if (!(Math.abs(g.neigung) >= S.neigung))
                 v.push(`B5 SENKRECHT: quer zum Sturm fallen die Schlieren senkrecht (Neigung ${g.neigung})`);
+        }
+    }
+    if (b.hoehle) {
+        const hh = b.hoehle;
+        if (hh.fehler) v.push(`K10: ${hh.fehler}`);
+        else {
+            if (!(hh.proben >= 20)) v.push(`K10 LEER: nur ${hh.proben} trockene Höhlen-Proben`);
+            else if (hh.nass > 0)
+                v.push(
+                    `K10 HÖHLE: ${hh.nass} von ${hh.proben} trockenen Höhlen-Proben tragen Körper-Wasser (unter dem See ` +
+                        `${hh.nassUnter} von ${hh.unter}, daneben ${hh.nassNeben} von ${hh.neben}; bis ${hh.maxM} m)`
+                );
+            const sp = hh.spieler || {},
+                ka = hh.kamera || {},
+                ti = hh.tier || {};
+            if (!(sp.proben > 0 && ka.proben > 0 && ti.proben > 0))
+                v.push("K10 LEER: Spieler, Kamera oder Tier liefen in keiner Höhle");
+            if (sp.schwimmFrames > 0)
+                v.push(
+                    `K10 SPIELER: in ${sp.proben} trockenen Höhlen schwimmt der Spieler ${sp.schwimmFrames} von ${sp.schritte} Schritten`
+                );
+            if (ka.unterWasser > 0)
+                v.push(
+                    `K10 KAMERA: in ${ka.unterWasser} von ${ka.proben} trockenen Höhlen sieht die Kamera Unterwasser`
+                );
+            if (ti.schwimmt > 0)
+                v.push(
+                    `K10 TIER: in ${ti.schwimmt} von ${ti.proben} trockenen Höhlen schwimmt das Tier auf dem Höhlen-Boden`
+                );
+        }
+    }
+    if (b.wagen) {
+        const w = b.wagen;
+        if (w.fehler) v.push(`K11: ${w.fehler}`);
+        else {
+            const g = w.wagen || {},
+                bo = w.boot || {},
+                rd = w.rand || {},
+                ba = w.bugAb;
+            if (g.fehler) v.push(`K11: ${g.fehler}`);
+            else if (g.afloat)
+                v.push(
+                    `K11 STRASSENWAGEN SCHWIMMT: der GT treibt im See (${g.tiefe} m Wasser; Unterkante ` +
+                        `${g.unterkanteUeberGrund} m über dem Grund, ${g.unterkanteUnterSpiegel} m unter dem Spiegel)`
+                );
+            if (bo.fehler) v.push(`K11: ${bo.fehler}`);
+            else if (!bo.afloat) v.push(`K11 BOOT SINKT: das Holz-Boot steht im See am Grund (${bo.tiefe} m Wasser)`);
+            if (!(rd.proben >= 5)) v.push(`W2 LEER: nur ${rd.proben || 0} Proben im Rand-Streifen des Sees`);
+            else if (rd.treibt < rd.proben)
+                v.push(
+                    `W2 RAND-STREIFEN: im Rand-Streifen des Sees (1–7 m Wasser über Atlas-Land) treibt das Boot an ` +
+                        `${rd.treibt} von ${rd.proben} Proben — sonst fährt es am Seegrund`
+                );
+            if (!ba || ba.fehler)
+                v.push(`K11 LEER: die Bug-ab-Probe lief nicht${ba && ba.fehler ? " (" + ba.fehler + ")" : ""}`);
+            else if (ba.afloat && !(Math.abs(ba.nickZielGrad) <= 1 && Math.abs(ba.wankZielGrad) <= 1))
+                v.push(
+                    `K11 BUG-AB: treibend neigt sich das Boot mit dem Seegrund (Nick-Ziel ${ba.nickZielGrad}°, Wank-Ziel ` +
+                        `${ba.wankZielGrad}°; Grund ${ba.grundGrad}°)`
+                );
         }
     }
     if (b.ufer) {
@@ -237,7 +332,27 @@ function selbsttest() {
             wasserfaelle: 9,
             wasserfallOrte: 9,
         },
-        kanal: { punkte: 6, zellen: 18000, abweichend: 0, maxDelta: 0 },
+        kanal: { punkte: 6, zellen: 18000, abweichend: 0, maxDelta: 0, nanMain: 0, nanWorker: 0 },
+        quelle: { quellen: 16, soll: 3, breiteP50: 2.2, breiteMax: 2.8, breiter: 0, tiefeMax: 0.5 },
+        bank: { profile: 60, felsGrad: 54.5, winkelP50: 30, winkelP90: 45, winkelMax: 60, fels: 2, felsAnteil: 0.033 },
+        hoehle: {
+            proben: 3500,
+            unter: 760,
+            neben: 2740,
+            nass: 0,
+            nassUnter: 0,
+            nassNeben: 0,
+            maxM: 0,
+            spieler: { proben: 6, schritte: 120, schwimmFrames: 0 },
+            kamera: { proben: 6, unterWasser: 0 },
+            tier: { proben: 6, schwimmt: 0 },
+        },
+        wagen: {
+            wagen: { afloat: false, tiefe: 8.2, unterkanteUeberGrund: 0, unterkanteUnterSpiegel: 8.2 },
+            boot: { afloat: true, tiefe: 8.2 },
+            rand: { proben: 13, treibt: 13 },
+            bugAb: { afloat: true, nickZielGrad: 0, wankZielGrad: 0, grundGrad: 29.3 },
+        },
         ufer: { trocken: 180, geflutet: 0, maxFlutM: 0 },
         uferFarbe: {
             proben: 24,
@@ -289,7 +404,28 @@ function selbsttest() {
         ["F2 BUCKEL", (b) => Object.assign(b.fluss, { buckelP90M: 1.2, querP90M: 9.65 })],
         ["F4 DOPPEL", (b) => (b.fluss.wasserfaelle = 19)],
         ["F LEER", (b) => (b.fluss.schritte = 0)],
-        ["F5 ZWEI KANÄLE", (b) => Object.assign(b.kanal, { abweichend: 412, maxDelta: 3.1 })],
+        ["FP ZWEI KANÄLE", (b) => Object.assign(b.kanal, { abweichend: 412, maxDelta: 3.1 })],
+        ["FP PROBE KAPUTT", (b) => Object.assign(b.kanal, { abweichend: 0, maxDelta: null, nanMain: 19074 })],
+        ["FP LEER", (b) => (b.kanal.zellen = 0)],
+        ["F5 QUELLE", (b) => Object.assign(b.quelle, { breiter: 13, breiteP50: 14.5, breiteMax: 16.75 })],
+        ["F5 LEER", (b) => (b.quelle.quellen = 0)],
+        ["F7 STEILWAND", (b) => Object.assign(b.bank, { fels: 18, felsAnteil: 0.429, winkelP90: 68.9 })],
+        ["F7 LEER", (b) => (b.bank.profile = 0)],
+        ["K10 HÖHLE", (b) => Object.assign(b.hoehle, { nass: 3511, nassUnter: 766, nassNeben: 2745, maxM: 54.3 })],
+        ["K10 SPIELER", (b) => (b.hoehle.spieler.schwimmFrames = 120)],
+        ["K10 KAMERA", (b) => (b.hoehle.kamera.unterWasser = 6)],
+        ["K10 TIER", (b) => (b.hoehle.tier.schwimmt = 6)],
+        ["K10 LEER", (b) => (b.hoehle.proben = 0)],
+        [
+            "K11 STRASSENWAGEN SCHWIMMT",
+            (b) =>
+                Object.assign(b.wagen.wagen, { afloat: true, unterkanteUeberGrund: 7.3, unterkanteUnterSpiegel: 0.9 }),
+        ],
+        ["K11 BOOT SINKT", (b) => (b.wagen.boot.afloat = false)],
+        ["K11 BUG-AB", (b) => Object.assign(b.wagen.bugAb, { nickZielGrad: 7.3, wankZielGrad: 29.5 })],
+        ["K11 LEER", (b) => (b.wagen.bugAb = null)],
+        ["W2 RAND-STREIFEN", (b) => (b.wagen.rand.treibt = 0)],
+        ["W2 LEER", (b) => (b.wagen.rand.proben = 0)],
         ["K1 AM GRUND", (b) => Object.assign(b.koerper.hinein, { tiefGeerdet: 966, maxTiefeGeerdetM: 4.68 })],
         ["K2 ZELL-DACH", (b) => (b.koerper.lage.fussUnterSpiegelP50 = 0.352)],
         ["K3 KRIECHEN", (b) => Object.assign(b.koerper.kraulen, { mps: 0.141, anteil: 0.144 })],
@@ -456,10 +592,16 @@ async function lauf() {
                 st.voxelWorker = worker;
             });
             befund.fluss = await page.evaluate(() => window.__wasserFluss());
+            befund.quelle = await page.evaluate(() => window.__wasserQuelle({}));
             befund.kanal = await page.evaluate(() => window.__wasserKanalParitaet({}));
             befund.koerper = await page.evaluate(() => window.__wasserKoerper({}));
+            // am See der Mess-Wiese: die Höhlen darunter und daneben (D11), das Gefährt (D10, W-W2)
+            befund.hoehle = await page.evaluate(() => window.__wasserHoehle({}));
+            befund.wagen = await page.evaluate(() => window.__wasserWagen({}));
             befund.ufer = await page.evaluate(() => window.__wasserUfer({}));
             befund.uferFarbe = await page.evaluate(() => window.__wasserUferFarbe({}));
+            // nach der Ufer-Probe steht die Welt am Fluss der Mess-Wiese: die Bank
+            befund.bank = await page.evaluate(() => window.__wasserBank({}));
         }
         const v = urteil(befund);
         console.log(JSON.stringify(Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) }), null, 1));
