@@ -1,0 +1,312 @@
+#!/usr/bin/env node
+// ─────────────────────────────────────────────────────────────────────────
+// diag-wasser-leben.cjs — DIE WASSER-WAND der Leben-Prüfung (Welle L, Klassen Q6 + Q7). Befund 06.10. (sichtbares
+// Fenster, echte Radeon, artifacts/profiband/leben/befund-wasser-fluss.md), jede Zahl hier zuerst ROT am Vorher gemessen:
+//   F (Q7-Gestalt)  der Fluss-Spiegel steigt längs der Mitte (14,2 % der 2-m-Schritte, 133 m Anstieg) und wölbt sich quer
+//                   (Spanne der Lauf-Fläche über die Kanal-Breite p90 9,7 m) — ein Fluss fließt nie bergauf, quer liegt
+//                   er waagrecht; ein Wasserfall steht EINMAL je Ort (19 Einträge, 13 Orte).
+//   K (Q6-Körper)   wer vom Ostufer in den See (Spiegel 22,93, 8 m tief) geht, geht am Grund (966 Frames Brustkorb unter
+//                   dem Spiegel UND geerdet, bis 4,68 m tief); in Ruhe treibt der Körper auf dem Zell-Dach (Füße 0,35 m
+//                   unter dem Spiegel statt der Brustkorb-Linie 1,22 m); Kraulen 0,141 m/s = 14,4 % des Gesetzes; das
+//                   Eintauchen aus 6 m ist stumm (0 Landungen).
+//   B (Q7-Bild)     das Wasser-Material auf einem Fluss-Bogen: Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s =
+//                   5,5 × der bei 60 s, der ruhige Fluss 59,9 gegen 10,5 (der Phasen-Zerfall, das weiße Zebra); 46 % des
+//                   ruhigen Flusses schaumbedeckt (Strähnen-Schaum ohne Gesetz).
+// Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): die Lauf-Fläche `_waterRunSurfaceAt`, den
+// Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
+//
+//   node scripts/diag-wasser-leben.cjs              F + K (Null-Renderer, Mess-Wiese)      npm run gate:wasser-leben
+//   node scripts/diag-wasser-leben.cjs --bild       B (WebGPU: swiftshader; --echt die Hardware-GPU)
+//   node scripts/diag-wasser-leben.cjs --selftest   das Urteil gegen jeden Täter, ohne Browser (in `npm run check`)
+// Port: WASSER_LEBEN_PORT (Standard 4623).
+// ─────────────────────────────────────────────────────────────────────────
+"use strict";
+
+const SCHWELLE = {
+    steigend: 0, // Anteil der 2-m-Schritte, deren Lauf-Fläche > 5 cm steigt
+    querP90: 0.05, // m — Spanne der Lauf-Fläche quer über die Kanal-Breite (p90 der Fluss-Punkte)
+    lageToleranz: 0.15, // m — Füße unter dem Spiegel in Ruhe gegen die Brustkorb-Linie des Gesetzes
+    kraulAnteil: 0.9, // Kraul-Tempo gegen speed × schwimmen.speedMul
+    kantenVerhaeltnis: 1.3, // Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s gegen 60 s
+    kantenRuhig: 5, // Kanten-Dichte des ruhigen Flusses bei 3600 s (mittlere Luma-Stufe je Pixel)
+    hellRuhig: 0.05, // Schaum-Deckung des ruhigen Flusses (kein Ufer, kein Steil-Lauf: das Gesetz schäumt dort nicht)
+};
+
+// Das Urteil über einen Befund: Liste der Verstöße (leer = grün). Rein — im Selbsttest wie im Lauf.
+function urteil(b) {
+    const v = [];
+    const S = SCHWELLE;
+    if (b.fluss) {
+        const f = b.fluss;
+        if (f.fehler) v.push(`F: ${f.fehler}`);
+        else {
+            if (!(f.schritte > 1000))
+                v.push(`F LEER: nur ${f.schritte} Fluss-Schritte gemessen (die Probe prüfte nichts)`);
+            if (!(f.anteilSteigend <= S.steigend))
+                v.push(
+                    `F1 BERGAUF: ${(f.anteilSteigend * 100).toFixed(1)} % der 2-m-Schritte steigen (${f.steigend} von ${f.schritte}, ` +
+                        `${f.anstiegM} m Anstieg, Spitze ${f.maxAnstiegM} m)`
+                );
+            if (!(f.querP90M <= S.querP90))
+                v.push(`F2 BUCKEL: der Querschnitt spannt p90 ${f.querP90M} m (max ${f.querMaxM} m) statt waagrecht`);
+            if (f.wasserfaelle !== f.wasserfallOrte)
+                v.push(`F4 DOPPEL: ${f.wasserfaelle} Wasserfall-Einträge an ${f.wasserfallOrte} Orten`);
+        }
+    }
+    if (b.koerper) {
+        const k = b.koerper;
+        if (k.fehler) v.push(`K: ${k.fehler}`);
+        else {
+            const h = k.hinein || {};
+            if (!(h.schwimmFrames > 0)) v.push("K LEER: der Gang erreichte kein Wasser (die Probe prüfte nichts)");
+            if (h.tiefGeerdet > 0)
+                v.push(
+                    `K1 AM GRUND: ${h.tiefGeerdet} Frames Brustkorb unter dem Spiegel UND geerdet (bis ${h.maxTiefeGeerdetM} m tief)`
+                );
+            if (h.augenUnterGeerdet > 0)
+                v.push(`K1 AM GRUND: ${h.augenUnterGeerdet} Frames Augen unter Wasser UND geerdet`);
+            const l = k.lage || {};
+            if (!(Math.abs(l.fussUnterSpiegelP50 - l.sollFussUnterSpiegel) <= S.lageToleranz))
+                v.push(
+                    `K2 ZELL-DACH: in Ruhe die Füße ${l.fussUnterSpiegelP50} m unter dem Spiegel, die Brustkorb-Linie verlangt ` +
+                        `${l.sollFussUnterSpiegel} m`
+                );
+            if (l.augenUnter > 0) v.push(`K2 UNTERGEHEN: ${l.augenUnter} Ruhe-Frames mit den Augen unter Wasser`);
+            const c = k.kraulen || {};
+            if (!(c.anteil >= S.kraulAnteil))
+                v.push(
+                    `K3 KRIECHEN: Kraulen ${c.mps} m/s = ${Math.round((c.anteil || 0) * 100)} % des Gesetzes (${c.soll} m/s)`
+                );
+            const e = k.eintauchen || {};
+            if (!e.landung) v.push(`K4 STUMM: das Eintauchen mit ${e.eintauchVy} m/s löst keine Landung aus`);
+            else if (e.landung.material !== "wasser")
+                v.push(`K4 STUMM: die Landung klingt „${e.landung.material}" statt „wasser"`);
+        }
+    }
+    if (b.bild) {
+        const g = b.bild;
+        if (g.fehler) v.push(`B: ${g.fehler}`);
+        else {
+            const a = g.uhr60 || {},
+                z = g.uhr3600 || {};
+            if (!(a.ruhig && a.ruhig.pixel > 1000 && a.schnelle && a.schnelle.pixel > 1000))
+                v.push("B LEER: der Fluss-Bogen deckt keine Pixel (die Probe prüfte nichts)");
+            else {
+                if (!(g.kantenVerhaeltnis <= S.kantenVerhaeltnis))
+                    v.push(
+                        `B2 ZEBRA: Kanten-Dichte der Stromschnelle bei Wasser-Uhr 3600 s ${z.schnelle.kantenDichte} = ` +
+                            `${g.kantenVerhaeltnis} × der bei 60 s (${a.schnelle.kantenDichte})`
+                    );
+                if (!(z.ruhig.kantenDichte <= S.kantenRuhig))
+                    v.push(
+                        `B2 ZEBRA: der ruhige Fluss trägt bei Wasser-Uhr 3600 s Kanten-Dichte ${z.ruhig.kantenDichte} ` +
+                            `(bei 60 s ${a.ruhig.kantenDichte})`
+                    );
+                if (!(a.ruhig.hellAnteil <= S.hellRuhig))
+                    v.push(
+                        `B1 SCHAUM: ${(a.ruhig.hellAnteil * 100).toFixed(1)} % des ruhigen Flusses schaumbedeckt ohne Gesetz-Grund`
+                    );
+            }
+        }
+    }
+    if (b.seitenFehler && b.seitenFehler.length) v.push(`SEITE: ${b.seitenFehler[0]}`);
+    return v;
+}
+
+// ── SELBSTTEST: ein grüner Befund bleibt grün, jeder Täter fällt beim Namen rot ──
+function selbsttest() {
+    const gut = {
+        fluss: {
+            schritte: 3800,
+            steigend: 0,
+            anteilSteigend: 0,
+            anstiegM: 0,
+            maxAnstiegM: 0,
+            querP90M: 0.01,
+            querMaxM: 0.04,
+            wasserfaelle: 9,
+            wasserfallOrte: 9,
+        },
+        koerper: {
+            hinein: { tiefGeerdet: 0, augenUnterGeerdet: 0, maxTiefeGeerdetM: 0, schwimmFrames: 400 },
+            lage: { fussUnterSpiegelP50: 1.2, sollFussUnterSpiegel: 1.224, augenUnter: 0 },
+            kraulen: { mps: 0.97, soll: 0.977, anteil: 0.99 },
+            eintauchen: { landung: { material: "wasser" }, eintauchVy: -10.6 },
+        },
+        bild: {
+            uhr60: {
+                ruhig: { kantenDichte: 1, hellAnteil: 0, pixel: 20000 },
+                schnelle: { kantenDichte: 20, pixel: 20000 },
+            },
+            uhr3600: { ruhig: { kantenDichte: 1 }, schnelle: { kantenDichte: 21 } },
+            kantenVerhaeltnis: 1.05,
+        },
+    };
+    const kopie = () => JSON.parse(JSON.stringify(gut));
+    const taeter = [
+        ["F1 BERGAUF", (b) => Object.assign(b.fluss, { steigend: 551, anteilSteigend: 0.142, anstiegM: 133.2 })],
+        ["F2 BUCKEL", (b) => (b.fluss.querP90M = 9.65)],
+        ["F4 DOPPEL", (b) => (b.fluss.wasserfaelle = 19)],
+        ["F LEER", (b) => (b.fluss.schritte = 0)],
+        ["K1 AM GRUND", (b) => Object.assign(b.koerper.hinein, { tiefGeerdet: 966, maxTiefeGeerdetM: 4.68 })],
+        ["K2 ZELL-DACH", (b) => (b.koerper.lage.fussUnterSpiegelP50 = 0.352)],
+        ["K3 KRIECHEN", (b) => Object.assign(b.koerper.kraulen, { mps: 0.141, anteil: 0.144 })],
+        ["K4 STUMM", (b) => (b.koerper.eintauchen.landung = null)],
+        ["K LEER", (b) => (b.koerper.hinein.schwimmFrames = 0)],
+        ["B2 ZEBRA", (b) => Object.assign(b.bild, { kantenVerhaeltnis: 5.8 })],
+        ["B1 SCHAUM", (b) => (b.bild.uhr60.ruhig.hellAnteil = 0.6)],
+        ["B2 ZEBRA: der ruhige", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],
+        ["B LEER", (b) => (b.bild.uhr60.schnelle.pixel = 0)],
+        ["SEITE", (b) => (b.seitenFehler = ["TypeError: x"])],
+    ];
+    let rot = 0;
+    const g = urteil(gut);
+    if (g.length) {
+        console.log("  ❌ der grüne Befund fällt rot:", g);
+        rot++;
+    } else console.log("  ✅ der grüne Befund bleibt grün");
+    for (const [name, mach] of taeter) {
+        const b = kopie();
+        mach(b);
+        const v = urteil(b);
+        const ok = v.some((x) => x.startsWith(name));
+        console.log(
+            `  ${ok ? "✅" : "❌"} Täter ${name} → ${ok ? v.find((x) => x.startsWith(name)) : "nicht erkannt: " + JSON.stringify(v)}`
+        );
+        if (!ok) rot++;
+    }
+    console.log(rot ? `SELBSTTEST ROT (${rot})` : "SELBSTTEST GRÜN");
+    process.exit(rot ? 1 : 0);
+}
+
+if (process.argv.includes("--selftest")) selbsttest();
+else lauf();
+
+async function lauf() {
+    const puppeteer = require("puppeteer");
+    const http = require("http");
+    const fs = require("fs");
+    const path = require("path");
+    const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
+    const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+    const BILD = process.argv.includes("--bild");
+    const ECHT = process.argv.includes("--echt");
+    const PORT = Number(process.env.WASSER_LEBEN_PORT || 4623);
+    const root = path.resolve(__dirname, "..");
+    const mime = {
+        ".html": "text/html",
+        ".js": "application/javascript",
+        ".wasm": "application/wasm",
+        ".json": "application/json",
+        ".css": "text/css",
+        ".png": "image/png",
+        ".woff2": "font/woff2",
+    };
+    const server = http.createServer((req, res) => {
+        let p = req.url.split("?")[0];
+        if (p === "/") p = "/index.html";
+        const fp = path.join(root, p);
+        if (!fp.startsWith(root)) return ((res.statusCode = 403), res.end());
+        fs.readFile(fp, (err, data) => {
+            if (err) return ((res.statusCode = 404), res.end());
+            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
+            res.end(data);
+        });
+    });
+    await new Promise((r) => server.listen(PORT, r));
+    const browser = await puppeteer.launch({
+        headless: ECHT ? false : "new",
+        protocolTimeout: 900000,
+        args: BILD ? (ECHT ? echteWebGpuArgs() : softwareWebGpuArgs()) : ["--no-sandbox", "--disable-gpu"],
+    });
+    const page = await browser.newPage();
+    if (BILD) await page.setViewport({ width: 640, height: 360 });
+    const seitenFehler = [];
+    page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
+    if (!BILD)
+        await page.evaluateOnNewDocument(() => {
+            window.__anazhHeadlessNullRenderer = true;
+        });
+    let befund = { seitenFehler };
+    let exit = 1;
+    try {
+        await page.goto(`http://127.0.0.1:${PORT}/index.html${BILD && !ECHT ? "?holz=kienspan" : ""}`, {
+            waitUntil: "domcontentloaded",
+            timeout: 120000,
+        });
+        await page.waitForFunction(
+            () =>
+                window.anazhRealm &&
+                typeof window.anazhRealm._gameLoopTick === "function" &&
+                window.anazhRealm.state.hydrosphere &&
+                window.anazhRealm.state.hydrosphere.ready,
+            { timeout: 600000, polling: 250 }
+        );
+        await page.evaluate(WASSER_INSTALL);
+        if (BILD) {
+            const ordner = (() => {
+                const i = process.argv.indexOf("--bilder");
+                return i >= 0 ? process.argv[i + 1] : null;
+            })();
+            befund.bild = await page.evaluate((png) => window.__wasserBild({ png }), !!ordner);
+            for (const k of ["png60", "png3600"]) {
+                if (ordner && befund.bild[k]) {
+                    fs.mkdirSync(ordner, { recursive: true });
+                    fs.writeFileSync(
+                        path.join(ordner, `wasser-bild-${k.slice(3)}.png`),
+                        Buffer.from(befund.bild[k].split(",")[1], "base64")
+                    );
+                }
+                delete befund.bild[k];
+            }
+        } else {
+            // Die Welt an das Ostufer des Sees der Mess-Wiese streamen (Sync-Bau, Worker ausgehängt — wie der Playtest):
+            // die Wasser-Zellen der Chunks sind ein Leser der Körper-Wahrheit von gestern.
+            await page.evaluate(async () => {
+                const r = window.anazhRealm;
+                const st = r.state;
+                if (st.renderer) {
+                    st.renderer.render = function () {};
+                    if (typeof st.renderer.renderAsync === "function")
+                        st.renderer.renderAsync = () => Promise.resolve();
+                }
+                st.postProcessingFailed = true;
+                st.playerMesh.position.set(-890, r._voxelSurfaceY(-890, -650) + 0.6, -650);
+                const worker = st.voxelWorker;
+                st.voxelWorker = null;
+                const start = performance.now();
+                let last = -1,
+                    still = performance.now();
+                for (;;) {
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                    const n = st.voxelChunks ? st.voxelChunks.size : 0;
+                    if (n !== last) {
+                        last = n;
+                        still = performance.now();
+                    }
+                    if ((n >= 9 && performance.now() - still > 1500) || performance.now() - start > 90000) break;
+                    await new Promise((res) => setTimeout(res, 0));
+                }
+                st.voxelWorker = worker;
+            });
+            befund.fluss = await page.evaluate(() => window.__wasserFluss());
+            befund.koerper = await page.evaluate(() => window.__wasserKoerper({}));
+        }
+        const v = urteil(befund);
+        console.log(JSON.stringify(Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) }), null, 1));
+        if (v.length) {
+            console.log(`\nWASSER-LEBEN ROT (${v.length}):`);
+            for (const x of v) console.log("  ❌ " + x);
+        } else console.log("\nWASSER-LEBEN GRÜN");
+        exit = v.length ? 1 : 0;
+    } catch (e) {
+        console.log("WASSER-LEBEN ABBRUCH:", (e && e.message) || e);
+        exit = 1;
+    } finally {
+        await browser.close().catch(() => {});
+        server.close();
+    }
+    process.exit(exit);
+}
