@@ -9769,9 +9769,10 @@ class AnazhRealm {
     }
 
     // DIE LAGE AM OHR — die Eingabe des Klang-Gesetzes (umweltMischung). Alles gelesen, nichts erfunden: das
-    // Wetter-Feld (transition-aware) × Böen-Drift, die Böe am Ort, die Kronen-Deckung aus dem Pflanz-Gesetz
-    // (`_canopyLightAt`), Sonne (Tageszeit), Jahres-Phase, Leben (auraAt), der Hör-Ring (Ufer/Fluss), der nächste
-    // Wasserfall der Region, die nächste Glut.
+    // Wetter-Feld (transition-aware) × Böen-Drift, die Böe am Ort, die Kronen-Deckung der STEHENDEN Bäume (die
+    // Kronen-Karte `_kronenStreuAt` — dieselben Bytes, aus denen Boden und Nah-Wiese den Wald lesen; das Kronenlicht-
+    // Feld der Platzierung sagt nur, wo Bäume wachsen DÜRFEN), Sonne (Tageszeit), Jahres-Phase, Leben (auraAt), der
+    // Hör-Ring (Ufer/Fluss), der nächste Wasserfall der Region, die nächste Glut (Brenn-Fläche).
     _umweltLage() {
         const um = this.state.symphony.umwelt;
         const pm = this.state.playerMesh;
@@ -9780,7 +9781,6 @@ class AnazhRealm {
         const pz = pm.position.z;
         const wf = this._weatherFieldFor(this.state.weather);
         const tod = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-        const fussY = pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET;
         const aura = this.auraAt(px, pz);
         const re = this._umweltRechts();
         const pan = (ux, uz) => Math.max(-1, Math.min(1, ux * re.x + uz * re.z));
@@ -9840,7 +9840,7 @@ class AnazhRealm {
         return {
             windFeld: wf.wind * (this._weatherWob || 1),
             boe: this._windBoeAt(px, pz, this._windZeit()),
-            deckung: 1 - this._canopyLightAt(px, pz, fussY),
+            deckung: this._kronenStreuAt(px, pz),
             regen: wf.rain,
             sonne: Math.sin(tod * Math.PI * 2 - Math.PI / 2),
             saisonPhase: typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375,

@@ -486,6 +486,8 @@ const FORBIDDEN = [
         fiel: "Integration W5-Klang — UMWELT.stimmen.glut.bettRefM (das Glutbett der Studio-Feuerstelle)",
         auch: ["klang-core.js", "worlds/klang/klang.js"],
     },
+    // Das Ohr liest die Kronen-Karte der STEHENDEN Bäume (`_kronenStreuAt`), nie das Kronenlicht-Feld der Platzierung.
+    { token: "1 - this._canopyLightAt(px, pz, fussY)", fiel: "Integration W5-Klang — die Laub-Deckung ist _kronenStreuAt" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

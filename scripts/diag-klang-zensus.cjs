@@ -7,8 +7,10 @@
 //
 //  (O) DIE ORTE aus dem Gesetz gefunden (Standard-Saat, Null-Renderer): Wiese = die
 //      Mess-Wiese (−900/−850) · Seeufer = der nächste trockene Punkt, 3–7 m vor stillem
-//      Wasser · Waldinneres = der Punkt höchster Kronen-Deckung (1 − _canopyLightAt) ·
-//      Dorf = 4 m neben dem nächsten Glut-Bau (Teile aus Material „glut").
+//      Wasser · Waldinneres = der Punkt höchster Kronen-Deckung der Kronen-Karte (`_kronenStreuAt`: die EINE
+//      Quelle, wo Wald STEHT — das Ohr liest dieselbe; geprüft wird sie am Bestand: die stehenden Bäume ≤ 15 m,
+//      Einträge + Streu-Zellen, gezählt an den Objekten, nie an der Karte) · Dorf = 4 m neben dem nächsten Glut-Bau
+//      (Teile aus Material „glut", Brenn-Fläche > 0).
 //  (Z) DER ZENSUS je Ort (Bühne Mittag · Sonne · Sommer, Tiere halten, die Musik ruht):
 //      jede gestartete Quelle (Oszillator/Puffer/Konstante) mit ihrem ERZEUGER (Datei +
 //      Funktion aus dem Stapel), die Umwelt-Stimmen des Gesetzes (Pegel, an/aus) und der
@@ -22,7 +24,7 @@
 //      einer Gesetz-Stimme über der Hörschwelle; Quellen-Zahl = Σ der hörbaren Stimmen.
 //  (S) SOLL-KLANG je Ort (Pegel am Welt-Bus, die Lage am Ohr bei mittlerer Böe):
 //      Wiese: wind ≥ −46 · vogel ≥ −52 · kein Wasser · Glut ≤ Wind · Seeufer: ufer ≥ −32
-//      und ≥ wind + 6 · Wald: laub ≥ −44 und ≥ Wiese.laub + 8 · Dorf: glut ≥ −34.
+//      und ≥ wind + 6 · Wald: laub ≥ −44 und ≥ Wiese.laub + 8, der Bestand trägt den Wald · Dorf: glut ≥ −34.
 //      Dazu der OFFLINE-RENDER des Studio-Graphen (umweltGraph auf OfflineAudioContext):
 //      je Stimme gemessener Pegel = Gesetz-Pegel (±1,5 dB) und Schwerpunkt im Band.
 //  (K) KOSTEN je Takt: die Welt-Abfragen des Klang-Takts (Boden · Wasser · Strömung ·
@@ -48,7 +50,8 @@
 //  Wasser am Seeufer weg → S · ein Glut-Umlauf über ALLE Bauten → K · eine Ereignis-Glocke
 //  aus dem Stamm am Master vorbei (zwillingGlocke) → E · ein Graph ohne Werkstatt am
 //  Seeufer → W · ein Ruf, der im Spiel-Takt rechnet (zwillingRuf) → W · die Glut auf Armlänge
-//  ohne Spitzen-Wand → P · ein Ping-Zwilling im Stamm-Text (zwillingPing) → G Stamm beim Namen. Stubs restauriert.
+//  ohne Spitzen-Wand → P · ein Ping-Zwilling im Stamm-Text (zwillingPing) → G Stamm beim Namen · ein Wald-Ort
+//  ohne stehenden Baum → S wald. Stubs restauriert.
 //
 //   node scripts/diag-klang-zensus.cjs [--selftest] [--aufnahme <ordner>] [--json <datei>]
 //   (--aufnahme: je Ort 6 s Ausgang als WAV + Spektrogramm-PNG, dazu der Lab-Ort offline;
@@ -192,6 +195,16 @@ function werkzeug() {
         for (const p of bp.parts) if (p && p.material === "glut" && p.size) a += p.size.x * p.size.z;
         return a;
     };
+    // DER BESTAND an (x, z): die stehenden Bäume im Umkreis `m` — Einträge mit Art (gesetzt, promoviert) und die Zellen
+    // der Baum-Streu (promotable), gezählt an den Objekten der Welt, nie an der Kronen-Karte.
+    W.bestand = (x, z, m) => {
+        let n = 0;
+        for (const e of st.architectures || [])
+            if (e && e._lodSpecies && e.position && Math.hypot(e.position.x - x, e.position.z - z) < m) n++;
+        for (const reg of st.scatterRegions ? st.scatterRegions.values() : [])
+            for (const c of reg.cells || []) if (c && c.promotable && Math.hypot(c.x - x, c.z - z) < m) n++;
+        return n;
+    };
     // DIE ORTE aus dem Gesetz.
     W.orte = async (wx, wz) => {
         const orte = { wiese: { x: wx, z: wz } };
@@ -221,7 +234,8 @@ function werkzeug() {
             await sleep(0);
         }
         if (best) orte.seeufer = best;
-        // Waldinneres: höchste Kronen-Deckung auf trockenem Land.
+        // Waldinneres: höchste Kronen-Deckung der Kronen-Karte auf trockenem Land (die Karte trägt die stehenden Kronen;
+        // bei Gleichstand gewinnt der dichtere Bestand).
         let wald = null;
         for (let gx = -240; gx <= 240; gx += 12) {
             for (let gz = -240; gz <= 240; gz += 12) {
@@ -229,8 +243,10 @@ function werkzeug() {
                 const z = wz + gz;
                 const y = r._voxelSurfaceY(x, z);
                 if (y === null || W.nass(x, z)) continue;
-                const deck = 1 - r._canopyLightAt(x, z, y);
-                if (!wald || deck > wald.deckung) wald = { x, z, deckung: +deck.toFixed(3) };
+                const deck = +r._kronenStreuAt(x, z).toFixed(3);
+                if (wald && deck < wald.deckung) continue;
+                const bestand = W.bestand(x, z, 15);
+                if (!wald || deck > wald.deckung || bestand > wald.bestand) wald = { x, z, deckung: deck, bestand };
             }
             await sleep(0);
         }
@@ -578,11 +594,7 @@ async function messeOrt(page, name, ort, stubs) {
                 const zensus = W.zensus();
                 const syn1 = W.synthese();
                 const bp = st.playerMesh.position;
-                let baeume = 0;
-                for (const e of st.architectures || []) {
-                    if (e && e._lodSpecies && e.position && Math.hypot(e.position.x - bp.x, e.position.z - bp.z) < 15)
-                        baeume++;
-                }
+                const baeume = W.bestand(bp.x, bp.z, 15);
                 const hauptSynthese = syn0 === null || syn1 === null ? null : syn1 - syn0;
                 return { name, ort, um, aus, laufend, zensus, baeume, hauptSynthese };
             } finally {
@@ -1138,6 +1150,12 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
         if (!SOLL[name]) continue;
         for (const [txt, ok] of SOLL[name](m, mixAlle)) if (!ok) rot.push(`S ${name}: ${txt} verfehlt`);
     }
+    // Der Wald-Ort ist aus der Kronen-Karte gewählt, die auch das Ohr liest — geprüft wird er am BESTAND, an den
+    // Objekten der Welt (stehende Bäume ≤ 15 m, Einträge + Streu-Zellen): mindestens doppelt so dicht wie die Wiese.
+    if (daten.wald && daten.wiese && !(daten.wald.baeume > 0 && daten.wald.baeume >= 2 * daten.wiese.baeume))
+        rot.push(
+            `S wald: der Bestand trägt keinen Wald (${daten.wald.baeume} Bäume ≤ 15 m, Soll ≥ 2 × Wiese ${daten.wiese.baeume})`
+        );
     for (const name of Object.keys(SOLL))
         if (!mixAlle[name])
             rot.push(
@@ -1470,10 +1488,16 @@ function drucke(zeilen, offline, kostenErg, lab) {
             );
             if (!s9.rot.some((t) => /^G Stamm: zwillingPing baut Oscillator ohne Gesetz/.test(t)))
                 fehl.push("S9: der Ping-Zwilling im Stamm bleibt unbenannt");
+            // S10: ein Wald-Ort, an dem die Karte Wald sagt, aber kein Baum steht — der Bestand nennt es.
+            if (daten.wald && daten.wiese) {
+                const d10 = { wiese: daten.wiese, wald: Object.assign({}, daten.wald, { baeume: 0 }) };
+                if (!urteile(d10, null, null).rot.some((t) => /^S wald: der Bestand trägt keinen Wald/.test(t)))
+                    fehl.push("S10: ein Wald ohne Bäume bleibt unbemerkt");
+            } else fehl.push("S10: kein Wald-/Wiesen-Ort gemessen");
             for (const t of fehl) console.log("   ❌ " + t);
             if (!fehl.length)
                 console.log(
-                    "   ✅ S1 Zwilling beim Namen · S2 stumme Schleife beim Namen · S3 Seeufer ohne Wasser rot · S4 Voll-Umlauf rot · S5 Ereignis-Zwilling + Master-Umweg beim Namen · S6 Graph ohne Werkstatt rot · S7 Ruf im Haupt-Thread rot · S8 Glut auf Armlänge ohne Spitzen-Wand rot · S9 Ping-Zwilling im Stamm beim Namen"
+                    "   ✅ S1 Zwilling beim Namen · S2 stumme Schleife beim Namen · S3 Seeufer ohne Wasser rot · S4 Voll-Umlauf rot · S5 Ereignis-Zwilling + Master-Umweg beim Namen · S6 Graph ohne Werkstatt rot · S7 Ruf im Haupt-Thread rot · S8 Glut auf Armlänge ohne Spitzen-Wand rot · S9 Ping-Zwilling im Stamm beim Namen · S10 Wald ohne Bestand rot"
                 );
             selbstOk = fehl.length === 0;
             ergebnis.selbsttest = fehl;
