@@ -5,82 +5,82 @@
     "drachentor-s7-L0": {
       "objects": 329,
       "vertices": 90720,
-      "sha256": "32a46e579c1e29f2beef2a82bd73d6b54096221b09293a1f35443dd7991c2f4b"
+      "sha256": "95ac6820cbcbff854014a2411ea142636d928c8a6f247054dbb817ce49c2c852"
     },
     "drachentor-s12345-L0": {
       "objects": 329,
       "vertices": 90720,
-      "sha256": "32a46e579c1e29f2beef2a82bd73d6b54096221b09293a1f35443dd7991c2f4b"
+      "sha256": "95ac6820cbcbff854014a2411ea142636d928c8a6f247054dbb817ce49c2c852"
     },
     "kathedrale-s7-L0": {
       "objects": 517,
       "vertices": 76908,
-      "sha256": "1b3dd2f298083f67617af76f354a833677b477c222e6dde9a34ad45d86da2a7d"
+      "sha256": "ecc7cddc61567832696aa4d44fa82b4a7397a09cab2b620d6cf368b0c0fea390"
     },
     "kathedrale-s12345-L0": {
       "objects": 517,
       "vertices": 76908,
-      "sha256": "1b3dd2f298083f67617af76f354a833677b477c222e6dde9a34ad45d86da2a7d"
+      "sha256": "ecc7cddc61567832696aa4d44fa82b4a7397a09cab2b620d6cf368b0c0fea390"
     },
     "maschine-s7-L0": {
       "objects": 326,
       "vertices": 99795,
-      "sha256": "0b3261d76819e9530c1101f4c8d99fafb5311a35ac7313eb160fcfe5c36f6676"
+      "sha256": "eb1a6036d6401473e203a89fa53325df3e8fcfd81c9c82fa87d62f4585aac05b"
     },
     "maschine-s12345-L0": {
       "objects": 326,
       "vertices": 99795,
-      "sha256": "0b3261d76819e9530c1101f4c8d99fafb5311a35ac7313eb160fcfe5c36f6676"
+      "sha256": "eb1a6036d6401473e203a89fa53325df3e8fcfd81c9c82fa87d62f4585aac05b"
     },
     "geisttor-s7-L0": {
       "objects": 170,
       "vertices": 37625,
-      "sha256": "a7163a4c1c59bb8127b12925f45063c97fdf8ea80e6e3a8302494a8bc1939806"
+      "sha256": "922477742872b054cbaa88f5f518fa91c97494f1910511d124e45ae18ed13322"
     },
     "geisttor-s12345-L0": {
       "objects": 170,
       "vertices": 37625,
-      "sha256": "a7163a4c1c59bb8127b12925f45063c97fdf8ea80e6e3a8302494a8bc1939806"
+      "sha256": "922477742872b054cbaa88f5f518fa91c97494f1910511d124e45ae18ed13322"
     },
     "verkalkt-s7-L0": {
       "objects": 434,
       "vertices": 108910,
-      "sha256": "7aa8e806bce90d6608c55272186345aab79e99ee75db3f6a042e7ca4fd1af09c"
+      "sha256": "9e8faaa2488e0292a727bedfbd224ef06be1e2be4c9d95697e82fbf92583c432"
     },
     "verkalkt-s12345-L0": {
       "objects": 434,
       "vertices": 108910,
-      "sha256": "7aa8e806bce90d6608c55272186345aab79e99ee75db3f6a042e7ca4fd1af09c"
+      "sha256": "9e8faaa2488e0292a727bedfbd224ef06be1e2be4c9d95697e82fbf92583c432"
     },
     "ruine-s7-L0": {
       "objects": 373,
       "vertices": 58002,
-      "sha256": "20689743dd3daa3033e7c6fc5a61296899c5e63c9db624c24525ccae4583f5e3"
+      "sha256": "4d2f6fff5c2cc679804b1e81495e29dc0a96db1741fb842a2ee476496c40a62c"
     },
     "ruine-s12345-L0": {
       "objects": 373,
       "vertices": 58002,
-      "sha256": "20689743dd3daa3033e7c6fc5a61296899c5e63c9db624c24525ccae4583f5e3"
+      "sha256": "4d2f6fff5c2cc679804b1e81495e29dc0a96db1741fb842a2ee476496c40a62c"
     },
     "maurentor-s7-L0": {
       "objects": 486,
       "vertices": 116074,
-      "sha256": "a95aafce124322e64680aacbc213136a4184329bb5d1fb62b85d256618619bd4"
+      "sha256": "add13f7ce54374ee102fc11f00b74a7969499d70de25b7ea192ee7f6689a58d4"
     },
     "maurentor-s12345-L0": {
       "objects": 486,
       "vertices": 116074,
-      "sha256": "a95aafce124322e64680aacbc213136a4184329bb5d1fb62b85d256618619bd4"
+      "sha256": "add13f7ce54374ee102fc11f00b74a7969499d70de25b7ea192ee7f6689a58d4"
     },
     "drachentor-s7-L0-ov_mass": {
       "objects": 337,
       "vertices": 92232,
-      "sha256": "75f640a4e85337e59137affab2d330ca381d514ee2f6ce92de3453f22ebdb804"
+      "sha256": "45129f8cad47fa1d55816abe1ec89afe4a2164c4123d173b9bd64797c65d30dc"
     },
     "kathedrale-s7-L0-ov_glow_orders": {
       "objects": 477,
       "vertices": 70103,
-      "sha256": "825aabdac15f7bb443ff186d61274ffbd7a897a01da312ee4af8ec11836083fb"
+      "sha256": "d5db8245ff00b1638ad93453e7bcd1b128913e10f6265f60d013291656b7ee4b"
     }
   }
 }

@@ -88,6 +88,9 @@ function fnBody(src, sigRe) {
 // `NAME: { name: "NAME"`-Rueckwaerts-Anker), nicht aus einer hart gepflegten Liste — ein
 // neues Gestalt-Portal (welt_schmiede) waechst von selbst in die Linse. Die ANKER unten
 // (Mindest-Zahl · terrain/schmiede-Zuordnung · Einzigartigkeit) halten die Drift laut.
+// Architektur-Welle 05.10.: dieselbe Daten-Zeile trägt auch die AUSSTATTUNG (glutbrunnen · marktstand_dorf ·
+// brunnen_dorf → das Gesetzbuch der Architektur) — sie sind keine Portale. Diese Linse zählt die PORTAL-Träger (role
+// "portal" im Block); die Ausstattung prüft gate:v1-resolve (Auflösung) und gate:fachwerk-contract (die Gestalt).
 function deriveGestalt(srcNC) {
     const map = {};
     const re = /studioGestalt:\s*"([a-z_]+)"/g;
@@ -98,7 +101,10 @@ function deriveGestalt(srcNC) {
         let last = null;
         let b;
         while ((b = bpRe.exec(before))) last = b[1];
-        if (last) map[last] = m[1];
+        if (!last) continue;
+        const idx = srcNC.indexOf(`${last}: {`);
+        const block = idx >= 0 ? srcNC.slice(idx, idx + 900) : "";
+        if (/role:\s*"portal"/.test(block)) map[last] = m[1];
     }
     return map;
 }
@@ -203,7 +209,7 @@ function deriveGestalt(srcNC) {
         res.liveSet = Object.keys(r.state.blueprints || {})
             .filter((n) => {
                 const bp = r.state.blueprints[n] || {};
-                return typeof bp.studioGestalt === "string" && !bp._foundryAutoSpecies;
+                return typeof bp.studioGestalt === "string" && !bp._foundryAutoSpecies && bp.role === "portal";
             })
             .sort();
         // (B) Resolver: Gestalt-Aufloesung + Regression-0-Proben.

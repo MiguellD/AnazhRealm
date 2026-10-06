@@ -571,7 +571,8 @@ function deckungsUrteil(paare, band, atlas) {
         const ohneFaltung = zweitArten.filter(
             (k) => !messungen.some((x) => x.kind === k && x.budget.vorher.draws > B[k][x.lod].draws)
         );
-        const s11 = zweitArten.length === 6 && ohneFaltung.length === 0;
+        // jede Art der Zweit-Kerne (aus dem Umschlag — die Ausstattung kam 05.10. als siebte dazu) ist gemessen und gefaltet
+        const s11 = zweitArten.length === Object.keys(wand.kernVonArt).length && ohneFaltung.length === 0;
         const p0 = sehProben[0];
         const entkleidet = p0
             ? [{ fall: p0.fall, teile: p0.teile.map((t, i) => (i ? t : Object.assign({}, t, { mat: Object.assign({}, t.mat, { seh: undefined }) }))) }]

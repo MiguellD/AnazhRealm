@@ -244,7 +244,11 @@
       var orders=FR.orders;
       D.orders=orders;D.depthStep=depthStep;D.zFace=FR.zFace;
       var gate=new THREE.Group();
-      var stone=new THREE.Color().setHSL(0.62-(0.62-0.07)*p.hue,0.16+0.14*p.hue,0.40);
+      // DAS FARB-GESETZ (Architektur-Welle 05.10.): der STEIN mischt LINEAR zwischen Granit (sRGB-Absicht 0x8e939a, linear
+      // Y 0,29) und Sandstein (0xb59a74, Y 0,34) — die Welt liest den linearen Wert. Bis 05.10. las sie den HSL-Ton roh
+      // (Hellwert 0,40 → Albedo 0,37–0,44, das Tor stand kalkweiß), und der Ton wanderte über Grün (hue 0,3–0,6: türkiser
+      // Stein, sobald man ihn linear liest). Ein Metall-Rahmen (metal ≥ 0,5) trägt seine Spiegelfarbe F0 wie bisher.
+      var stone=p.metal<0.5?new THREE.Color(0x8e939a).convertSRGBToLinear().lerp(new THREE.Color(0xb59a74).convertSRGBToLinear(),p.hue):new THREE.Color().setHSL(0.62-(0.62-0.07)*p.hue,0.16+0.14*p.hue,0.40);
       var fmat=new THREE.MeshStandardMaterial({color:stone,roughness:lerp(0.88,0.16,p.metal),metalness:lerp(0.05,0.97,p.metal),emissive:new THREE.Color().setHSL(0.09,0.7,0.5),emissiveIntensity:lerp(0.04,0.55,p.glow)});
       var amat=new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(0.11,0.6,0.55),roughness:0.28,metalness:1.0,emissive:0x2a1c06,emissiveIntensity:0.3+0.6*p.glow});
       var bmatG=new THREE.MeshStandardMaterial({color:new THREE.Color().setHSL(0.11,0.7,0.55),roughness:0.2,metalness:1.0,emissive:new THREE.Color().setHSL(0.09,0.8,0.4),emissiveIntensity:0.4+0.6*p.glow});

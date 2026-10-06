@@ -1,0 +1,81 @@
+{
+  "cv": 6,
+  "minted": "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall (Architektur-Welle 05.10.)",
+  "cases": {
+    "feuerstelle-s1-L0": {
+      "objects": 4,
+      "vertices": 1068,
+      "sha256": "209b36aa541b928843dcdb1848b7df60445e46298a3d525a7a0dae3e5447829b"
+    },
+    "feuerstelle-s1-L1": {
+      "objects": 4,
+      "vertices": 405,
+      "sha256": "500505ca2793e307235ff9b2f8f7e4ec6d598eeb1ce6771190b299cbb0f7d97b"
+    },
+    "feuerstelle-s2-L0": {
+      "objects": 4,
+      "vertices": 1068,
+      "sha256": "c14ee6d8a4513b4afa739f0fb6a9e0c97f68647d0b293242a157f5f18d610da0"
+    },
+    "feuerstelle-s2-L1": {
+      "objects": 4,
+      "vertices": 405,
+      "sha256": "01b2275a65fdb48759aaf7a0245cd35c679720e501acfd8855c3ce39de77e996"
+    },
+    "marktstand-s1-L0": {
+      "objects": 4,
+      "vertices": 3506,
+      "sha256": "14ac39dd22eaa31352eb62a4aa19dbfcc6404b20433a211a43b84841ee30b6e6"
+    },
+    "marktstand-s1-L1": {
+      "objects": 3,
+      "vertices": 666,
+      "sha256": "59c831794fed80a44d3f8395e0b6508a3c979a5d2e7f772afb89b4543c4b4ead"
+    },
+    "marktstand-s2-L0": {
+      "objects": 4,
+      "vertices": 3336,
+      "sha256": "46b385dd2bbe129b1c32fbc6d36bb151b302ddff22d0977ca4907671f5a70aad"
+    },
+    "marktstand-s2-L1": {
+      "objects": 3,
+      "vertices": 622,
+      "sha256": "3d4dab43a558542b87ea3c1c47a098bd41dcf6e4a284e4e06d2a3e30a182b269"
+    },
+    "marktstand-s3-L0": {
+      "objects": 4,
+      "vertices": 3348,
+      "sha256": "feba75afff9d765a7531437089f3c930a3b9833dce6f7341b1cf5b53f3e1b3d3"
+    },
+    "marktstand-s3-L1": {
+      "objects": 3,
+      "vertices": 622,
+      "sha256": "421eef4f02b1385a27dfc8a5e0979b3c8341d84e4ea8923ed7951f311662bb59"
+    },
+    "brunnen-s1-L0": {
+      "objects": 6,
+      "vertices": 6825,
+      "sha256": "b279edaf01e97fa55b8b0a5e9fe84026ae723669aa79868fa676a03f9be18e76"
+    },
+    "brunnen-s1-L1": {
+      "objects": 6,
+      "vertices": 449,
+      "sha256": "832f971a2f693a3eebd73210c929a76201a86ef321cf911de920799aa126f105"
+    },
+    "brunnen-s2-L0": {
+      "objects": 6,
+      "vertices": 6825,
+      "sha256": "30447c14f177e0b00dbe8236d6fc72f624da911c8389a23dd1255a8106a708f4"
+    },
+    "brunnen-s2-L1": {
+      "objects": 6,
+      "vertices": 449,
+      "sha256": "8dab472b2bc82a6b37c529057f70cdfba73ea71909b1e54154152ad700dca1b3"
+    },
+    "feuerstelle-s1-L0-ov_fuelle": {
+      "objects": 4,
+      "vertices": 906,
+      "sha256": "fd73c5666099f1b34e85655f037b48ba04299887048669cbf987d907387277c3"
+    }
+  }
+}

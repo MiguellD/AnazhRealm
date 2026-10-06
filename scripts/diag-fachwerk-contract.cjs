@@ -40,6 +40,8 @@ const path = require("path");
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "haeuser.json");
+// DIE AUSSTATTUNG (Architektur-Welle 05.10.): Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens.
+const goldenAusFile = path.join(goldenDir, "ausstattung.json");
 
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
 require(path.join(root, "fachwerk-core.js"));
@@ -102,7 +104,15 @@ function disposeGroup(g) {
 }
 
 // ── Die eingefrorenen Fälle: Kulturen × Seeds × die drei deklarierten Stufen ──
-const KULTUREN = Object.keys(FC.PRESETS); // alle 32 Kultur-Archetypen
+const KULTUREN = Object.keys(FC.PRESETS).filter((k) => FC.PRESETS[k].kind === "haus"); // alle 32 Kultur-Archetypen
+// Die Ausstattung: jedes Rezept × jede Gestalt der Welt (Samen 1..V) × jede Stufe, dazu ein ov-Fall.
+const AUS = Object.keys(FC.PRESETS).filter((k) => FC.PRESETS[k].kind === "ausstattung");
+const AUS_LODS = FC.PORTAL_RENDER_CONFIG.lod.kindStages.ausstattung || [];
+const AUS_CASES = [];
+for (const k of AUS)
+    for (let s = 1; s <= FC.PORTAL_RENDER_CONFIG.lod.budget.gestalten[k]; s++)
+        for (const l of AUS_LODS) AUS_CASES.push({ rezeptId: k, seed: s, lod: l });
+AUS_CASES.push({ rezeptId: "feuerstelle", seed: 1, lod: 0, ov: { fuelle: 0.2 } });
 const SEEDS = [7, 12345];
 const LODS = FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus; // [0, 1, 2] — die B2-Stufen-Wahrheit
 const CASES = [];
@@ -376,6 +386,244 @@ function compare(golden, actual) {
     check(
         "SELBST-TEST: objects-Drift wird erkannt",
         t2.some((s) => s.includes("objects"))
+    );
+
+    // 9b) DAS FARB-GESETZ DER HÄUSER (Architektur-Welle 05.10.) — die Linse der Täter-Klasse „Hex roh als linear": bis
+    //     05.10. legte der Bake (`_colFor`) das Paletten-Hex roh in den Vertex, die Welt las es linear — Putz 0,82, Holz
+    //     0,30, ganze Häuser 0,35–0,57 (das weiße Haus mit blassem Fachwerk). Gemessen wird, was die Welt liest: je Kultur
+    //     (alle 32, Stufe 1 — die Flächen-Stufe, die das Auge am längsten sieht) die flächengewichtete lineare Albedo der
+    //     Vertex-Farbe × Stoff-Farbe, je Rolle und gesamt, gegen das Band der Natur (diag-albedo-zensus): Holz-Klasse
+    //     (holz · stamm · blockholz · lattung · boden) ≤ 0,25 · Kalk und Lehm (putz · gefach · lehm) ≤ 0,85 · jeder andere
+    //     Stoff ≤ 0,45 · das ganze Haus ≤ 0,50. SELBST-TEST: dieselben Häuser mit roh gelesener Farbe (linear → sRGB
+    //     zurück) MÜSSEN rot werden.
+    {
+        console.log("\n=== DAS FARB-GESETZ DER HÄUSER — die Albedo, die die Welt liest ===");
+        const rolleVon = (m) => {
+            for (const k in FC._MM) if (FC._MM[k] === m) return k;
+            return null;
+        };
+        const HOLZ = new Set(["holz", "stamm", "blockholz", "lattung", "boden"]);
+        const KALK = new Set(["putz", "gefach", "lehm"]);
+        const decke = (r) => (HOLZ.has(r) ? 0.25 : KALK.has(r) ? 0.85 : 0.45);
+        const roh = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+        // je Haus: { gesamt, rollen: { rolle: Y } } — `farbe` liest die Vertex-Farbe (die Welt) oder ihr Roh-Zwilling (vorher)
+        const albedoHaus = (g, farbe) => {
+            const proRolle = {};
+            let A = 0,
+                Y = 0;
+            g.traverse((o) => {
+                if (!o.isMesh || !o.geometry.attributes.color) return;
+                const seh = o.material.userData && o.material.userData.__seh;
+                if (seh === "glas" || seh === "glut") return; // Glas spiegelt, Glut leuchtet — keine Albedo des Stoffs
+                const r = rolleVon(o.material) || "?";
+                const P = o.geometry.attributes.position.array,
+                    C = o.geometry.attributes.color.array,
+                    I = o.geometry.index ? o.geometry.index.array : null,
+                    mc = o.material.color;
+                const n = I ? I.length : P.length / 3;
+                let a = 0,
+                    y = 0;
+                for (let i = 0; i < n; i += 3) {
+                    const q = I ? [I[i], I[i + 1], I[i + 2]] : [i, i + 1, i + 2];
+                    const [p0, p1, p2] = q.map((v) => v * 3);
+                    const ux = P[p1] - P[p0],
+                        uy = P[p1 + 1] - P[p0 + 1],
+                        uz = P[p1 + 2] - P[p0 + 2],
+                        vx = P[p2] - P[p0],
+                        vy = P[p2 + 1] - P[p0 + 1],
+                        vz = P[p2 + 2] - P[p0 + 2];
+                    const ar = 0.5 * Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx);
+                    let l = 0;
+                    for (const v of q)
+                        l +=
+                            (0.2126 * farbe(C[v * 3]) * mc.r +
+                                0.7152 * farbe(C[v * 3 + 1]) * mc.g +
+                                0.0722 * farbe(C[v * 3 + 2]) * mc.b) /
+                            3;
+                    a += ar;
+                    y += ar * l;
+                }
+                if (!(a > 0)) return;
+                const e = proRolle[r] || (proRolle[r] = { a: 0, y: 0 });
+                e.a += a;
+                e.y += y;
+                A += a;
+                Y += y;
+            });
+            const rollen = {};
+            for (const r in proRolle) rollen[r] = proRolle[r].y / proRolle[r].a;
+            return { gesamt: A > 0 ? Y / A : 0, rollen };
+        };
+        const urteil = (mess) => {
+            const bruch = [];
+            for (const [k, m] of mess) {
+                if (m.gesamt > 0.5) bruch.push(`${k} gesamt ${m.gesamt.toFixed(3)} > 0,50`);
+                for (const r in m.rollen)
+                    if (m.rollen[r] > decke(r)) bruch.push(`${k} ${r} ${m.rollen[r].toFixed(3)} > ${decke(r)}`);
+            }
+            return bruch;
+        };
+        const welt = [],
+            vorher = [];
+        const maxRolle = {};
+        for (const k of KULTUREN) {
+            const g = FC.buildInstance(k, 7, 1);
+            const m = albedoHaus(g, (c) => c);
+            welt.push([k, m]);
+            vorher.push([k, albedoHaus(g, roh)]);
+            for (const r in m.rollen) if (!maxRolle[r] || m.rollen[r] > maxRolle[r][0]) maxRolle[r] = [m.rollen[r], k];
+            disposeGroup(g);
+        }
+        const gesamt = welt.map(([, m]) => m.gesamt);
+        const bruch = urteil(welt);
+        check(
+            `Albedo der Häuser im Band der Natur (${KULTUREN.length} Kulturen, L1): gesamt ${Math.min(...gesamt).toFixed(2)}–${Math.max(...gesamt).toFixed(2)} · ` +
+                ["holz", "putz", "ziegel", "backstein", "stein"]
+                    .filter((r) => maxRolle[r])
+                    .map((r) => `${r} ≤ ${maxRolle[r][0].toFixed(2)}`)
+                    .join(" · "),
+            bruch.length === 0,
+            bruch.slice(0, 3).join(" | ")
+        );
+        const bruchRoh = urteil(vorher);
+        check(
+            `SELBST-TEST: roh gelesene Farbe (der Bake vor dem FARB-GESETZ) wird rot (${bruchRoh.length} Brüche)`,
+            bruchRoh.length > 0,
+            bruchRoh.length > 0 ? "" : "die Linse misst nichts"
+        );
+    }
+
+    // 10) DIE AUSSTATTUNG (Architektur-Welle 05.10.) — die Linse der Täter-Klasse „Host-Part-Look": was der Wirt aus
+    //     eigenen Teilen baute (Glut-Zylinder, Brett-Tisch, Brunnen-Zylinder), baut jetzt das Gesetzbuch. Die Gestalt hält:
+    //     Stufen echt verschieden UND deckungsgleich (L1 ersetzt L0 ohne Sprung: Hülle ± 8 cm), Boden-Anschluss (jedes
+    //     Stück taucht unter y = 0), die Glut leuchtet und wirft nie, jede Zahl auf dem Raster 2^-12 (plattformgleich:
+    //     V8 rundet sin/cos auf Linux und Windows verschieden — das Raster macht die Bytes gleich), Determinismus, Goldens.
+    console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen (dasselbe Gesetzbuch) ===");
+    check(
+        `drei Ausstattungs-Rezepte (kind ausstattung) mit Stufen [0,1] und Gestalten (${AUS.join(", ")})`,
+        AUS.length === 3 && JSON.stringify(AUS_LODS) === "[0,1]" && AUS_CASES.length >= 12
+    );
+    const ausIst = {};
+    const huelle = {};
+    let glutOk = true,
+        glutDa = false,
+        bodenOk = true,
+        rasterOk = true,
+        rasterBeispiel = "",
+        albedoOk = true,
+        albedoBeispiel = "";
+    const albedo = {};
+    for (const c of AUS_CASES) {
+        const g = buildCase(c);
+        ausIst[caseKey(c)] = fingerprint(g);
+        const bb = new THREE.Box3().setFromObject(g);
+        huelle[caseKey(c)] = bb;
+        if (!(bb.min.y < -0.02)) bodenOk = false;
+        g.traverse((o) => {
+            if (!o.isMesh) return;
+            const em = o.material && o.material.emissive;
+            // DIE ALBEDO-LINSE (kartenlos trägt der Vertex): je Stoff die mittlere Luminanz der Vertex-Farbe × Stoff-Farbe —
+            // ein Stoff im Band der Natur (0,08–0,45: Holz, Stein, Tuch, Asche nach Kontakt-AO und Erdsaum — schwarz und Creme sind rot), die Glut dunkel
+            // (≤ 0,30 — sie leuchtet durch ihren Stoff, eine helle Glut bleicht in der Sonne zu Creme). Glas misst nicht.
+            const seh = o.material.userData && o.material.userData.__seh;
+            const col = o.geometry.attributes.color;
+            if (col && seh !== "glas") {
+                const mc = o.material.color;
+                let s = 0;
+                for (let i = 0; i < col.count; i++)
+                    s += 0.2126 * col.array[i * 3] * mc.r + 0.7152 * col.array[i * 3 + 1] * mc.g + 0.0722 * col.array[i * 3 + 2] * mc.b;
+                const Y = s / col.count;
+                const k = `${c.rezeptId}:${seh}`;
+                albedo[k] = Math.max(albedo[k] || 0, Y);
+                const ok = seh === "glut" ? Y <= 0.3 : Y >= 0.08 && Y <= 0.45;
+                if (!ok) {
+                    albedoOk = false;
+                    albedoBeispiel = albedoBeispiel || `${caseKey(c)} ${seh}: Y ${Y.toFixed(3)}`;
+                }
+            }
+            if (em && em.getHex() !== 0) {
+                if (c.rezeptId === "feuerstelle") glutDa = true;
+                if (o.castShadow !== false || (o.material.userData && o.material.userData.__seh) !== "glut") glutOk = false;
+            }
+            for (const name of Object.keys(o.geometry.attributes)) {
+                const q = name === "normal" ? 16384 : 4096;
+                const arr = o.geometry.attributes[name].array;
+                for (let i = 0; i < arr.length; i++)
+                    if (arr[i] * q !== Math.round(arr[i] * q) || Object.is(arr[i], -0)) {
+                        rasterOk = false;
+                        rasterBeispiel = rasterBeispiel || `${caseKey(c)} ${name}[${i}] = ${arr[i]}`;
+                        break;
+                    }
+            }
+        });
+        disposeGroup(g);
+    }
+    let stufenAus = true,
+        deckung = true,
+        deckBeispiel = "";
+    for (const k of AUS)
+        for (let s = 1; s <= FC.PORTAL_RENDER_CONFIG.lod.budget.gestalten[k]; s++) {
+            const a = `${k}-s${s}-L0`,
+                b = `${k}-s${s}-L1`;
+            if (ausIst[a].sha256 === ausIst[b].sha256) stufenAus = false;
+            const A = huelle[a],
+                B = huelle[b];
+            const d = Math.max(
+                Math.abs(A.min.x - B.min.x),
+                Math.abs(A.max.x - B.max.x),
+                Math.abs(A.max.y - B.max.y),
+                Math.abs(A.min.z - B.min.z),
+                Math.abs(A.max.z - B.max.z)
+            );
+            if (d > 0.08) {
+                deckung = false;
+                deckBeispiel = deckBeispiel || `${k} s${s}: L0↔L1 Hülle ${d.toFixed(3)} m`;
+            }
+        }
+    check("Stufen-Wahrheit: L0 != L1 je Rezept × Gestalt (nah fein · mittel grob)", stufenAus);
+    check("Deckungsgleich: die L1-Hülle liegt auf der L0-Hülle (± 8 cm — kein Sprung beim Stufen-Wechsel)", deckung, deckBeispiel);
+    check("Boden-Anschluss: jedes Stück taucht unter y = 0 (Steine, Pfosten, Kranz im Boden — kein Schweben am Hang)", bodenOk);
+    check("Die Glut leuchtet und wirft nie (emissive ⇒ Seh-Klasse glut, castShadow false; die Feuerstelle trägt sie)", glutOk && glutDa);
+    check(
+        `Albedo im Band (kartenlos, je Stoff: Stoff 0,08–0,45 · Glut ≤ 0,30) — ${Object.entries(albedo)
+            .map(([k, v]) => k + " " + v.toFixed(2))
+            .join(" · ")}`,
+        albedoOk,
+        albedoBeispiel
+    );
+    check("Plattformgleich: jede Zahl auf dem Raster 2^-12 (Normalen 2^-14), kein −0", rasterOk, rasterBeispiel);
+    {
+        const g1 = buildCase(AUS_CASES[0]),
+            g2 = buildCase(AUS_CASES[0]);
+        check("Determinismus: die Ausstattung baut doppelt byte-gleich", fingerprint(g1).sha256 === fingerprint(g2).sha256);
+        disposeGroup(g1);
+        disposeGroup(g2);
+    }
+    check(
+        "ov-Kanal der Ausstattung: fuelle 0,2 baut eine andere Feuerstelle (weniger Scheite, kleinere Flamme)",
+        ausIst["feuerstelle-s1-L0"].sha256 !== ausIst["feuerstelle-s1-L0-ov_fuelle"].sha256
+    );
+    if (!fs.existsSync(goldenAusFile) || process.env.MINT_FORCE === "1") {
+        fs.writeFileSync(
+            goldenAusFile,
+            JSON.stringify(
+                {
+                    cv: 6,
+                    minted: "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall (Architektur-Welle 05.10.)",
+                    cases: ausIst,
+                },
+                null,
+                2
+            ) + "\n"
+        );
+        console.log(`  🧊 GOLDEN GEMINTET (${Object.keys(ausIst).length} Fälle) → ${path.relative(root, goldenAusFile)}`);
+    }
+    const goldenAus = JSON.parse(fs.readFileSync(goldenAusFile, "utf8"));
+    const diffsAus = compare(goldenAus, ausIst);
+    check(
+        `Ausstattungs-Goldens byte-exakt (${Object.keys(goldenAus.cases).length} Fälle)`,
+        diffsAus.length === 0 && Object.keys(goldenAus.cases).length === AUS_CASES.length,
+        diffsAus[0] || ""
     );
 
     if (errs.length) {

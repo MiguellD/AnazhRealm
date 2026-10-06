@@ -17377,6 +17377,7 @@ class AnazhRealm {
         if (mat.userData && mat.userData.__webe) out.mat.webe = mat.userData.__webe;
         // Die Seh-Klasse des Gesetzbuchs reist mit (das Budget-Gesetz faltet nur innerhalb EINER, `_ofenBudget`).
         if (mat.userData && mat.userData.__seh) out.mat.seh = mat.userData.__seh;
+        if (mat.userData && typeof mat.userData.__leucht === "number") out.mat.leucht = mat.userData.__leucht;
         if (mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
             out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
             out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
@@ -41455,7 +41456,9 @@ class AnazhRealm {
         // `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
         for (const a of state.architectures) {
             if (!a || typeof a.type !== "string" || !a.position) continue;
-            const entry = this.spawnArchitecture(a.type, a.position, {
+            // DER BAUPLAN-UMZUG: ein gefallener Bauplan steht als sein Erbe wieder auf (glut_var* → glutbrunnen).
+            const typ = AnazhRealm.BAUPLAN_UMZUG[a.type] || a.type;
+            const entry = this.spawnArchitecture(typ, a.position, {
                 seed: a.seed,
                 scale: a.scale,
                 id: a.id,
@@ -54911,83 +54914,6 @@ class AnazhRealm {
         return parts;
     }
 
-    // ═══ DAS GLUT-GENOM ═══
-    // Becken-Größe · Flammen-Höhe · Öffnung · Intensität (emissiv aus dem glut-Tag, kein gesetzter
-    // Glow). Nur glutbrunnen-Formen → tag-frozen zu glutbrunnen; ein gedrungenes Becken steht.
-    _glutVariant(seed) {
-        const g = this._rollGenome(seed, "glut");
-        const parts = [];
-        const r = g.range("basinR", 0.7, 1.5);
-        const basinH = g.range("basinH", 0.5, 1.0);
-        this._lastLandmarkForm = basinH > 0.78 ? "tief" : "flach"; // T-FULLSTACK: tiefe Esse ↔ flacher Lava-See
-        // T3 (wahrerwuchs §4.4 S4) — zwei neue Achsen: die ÖFFNUNG (Becken-Weite: enge Esse-
-        // Glut ↔ weiter Lava-See) + die INTENSITÄT (emissiv-Boost: die Glut lodert, DIESE
-        // heißer — getragen vom glut-wärmeleitung/brennbar-Tag). Tag-NEUTRAL (Form/Glanz).
-        const opening = g.range("opening", 0.6, 1.35); // Öffnungs-Weite (Becken-Radius-Faktor)
-        const intensity = g.range("intensity", 0.8, 1.8); // Glut-Intensität (emissiv-Boost)
-        const rimR = r * (0.82 + 0.34 * opening); // die offene Schale (breit+niedrig → steht)
-        // (1) Stein-Becken (Schale) — breit + niedrig → steht immer; die ÖFFNUNG macht den Rand.
-        parts.push({
-            shape: "cylinder",
-            material: "stein",
-            color: 0x6a6258,
-            position: { x: 0, y: basinH * 0.5, z: 0 },
-            size: { x: rimR * 2, y: basinH, z: rimR * 2 },
-            segments: 12,
-        });
-        // Glühendes Kohlen-Bett + Flammen-Zungen (`latheProfile`-Tropfen) statt Kugel; latheProfile aktiviert
-        // wie sphere → tag-frozen. Bett breit+niedrig, Tropfen wurzeln darin, w ∝ h (knickt nicht).
-        const coreR = r * g.range("core", 0.6, 0.85) * (0.7 + 0.4 * opening);
-        // (2) Kohlen-Bett — eine flache glühende glut-Schale im Becken.
-        const bedProfile = [
-            [0, 0],
-            [0.85, 0.04],
-            [1.0, 0.3],
-            [0.8, 0.55],
-            [0, 0.62],
-        ];
-        parts.push({
-            shape: "latheProfile",
-            material: "glut",
-            color: 0xff7a2a,
-            opacity: 0.85,
-            emissiveBoost: intensity,
-            position: { x: 0, y: basinH + coreR * 0.18, z: 0 },
-            size: { x: coreR * 2, y: coreR * 0.9, z: coreR * 2 },
-            profile: bedProfile,
-        });
-        // (3) FLAMMEN-Zungen — Tropfen-Profile, die aus dem Bett züngeln (Höhe/Versatz/Farbe
-        // variieren → ein lebendiges Feuer; w ∝ h → keine knickenden Spitzen).
-        const flameProfile = [
-            [0, 0],
-            [0.55, 0.06],
-            [0.6, 0.2],
-            [0.45, 0.42],
-            [0.26, 0.66],
-            [0.1, 0.86],
-            [0, 1],
-        ];
-        const nTongue = g.int("tongues", 2, 4);
-        for (let i = 0; i < nTongue; i++) {
-            const a = g.axis("ta" + i) * 6.283;
-            const d = g.range("td" + i, 0, coreR * 0.55);
-            const fh = g.range("fh" + i, 0.9, 1.9) * coreR;
-            const fw = fh * g.range("fw" + i, 0.42, 0.6); // w ∝ h → knickt nicht
-            const hot = i === 0;
-            parts.push({
-                shape: "latheProfile",
-                material: "glut",
-                color: hot ? 0xffd27a : 0xffa23a,
-                opacity: 0.66,
-                emissiveBoost: intensity * (hot ? 1.25 : 1.05),
-                position: { x: Math.cos(a) * d, y: basinH + coreR * 0.3 + fh * 0.45, z: Math.sin(a) * d },
-                size: { x: fw, y: fh, z: fw },
-                profile: flameProfile,
-            });
-        }
-        return parts;
-    }
-
     // ═══ DIE ESSE ALS FORGE ═══
     // Die Funktion diktiert die Teile: Feuerbox + Kohlen-Bett (`latheProfile`, emissiv) + Haube auf zwei
     // Pfeilern + Schornstein + Amboss (eisen + Horn auf Holz-Stumpf) + Blasebalg. Die Domäne bleibt
@@ -55906,21 +55832,23 @@ class AnazhRealm {
                 opacity: 0.86,
             },
         ];
+        // DIE FEUERSTELLE (Architektur-Welle 05.10.): die Gestalt baut das Gesetzbuch (fachwerk `feuerstelle`, über die
+        // studioGestalt-Zeile unten) — diese Parts sind ihre unsichtbare SUBSTANZ: der Steinring als niedriger Blocker
+        // (30 cm, man steigt hinüber) und der Glut-Kern. Form und Stoff wie zuvor (Zylinder Stein · Kugel Glut): die
+        // Tags sind größen-unabhängig (computeCompoundTags), die Affinität und damit jeder Ort im Glut-Feld bleibt.
         const glutbrunnenParts = [
-            // Steinrand (Schale)
             {
                 shape: "cylinder",
                 material: "stein",
-                position: { x: 0, y: 0.4, z: 0 },
-                size: { x: 1.8, y: 0.8, z: 1.8 },
+                position: { x: 0, y: 0.15, z: 0 },
+                size: { x: 1.4, y: 0.3, z: 1.4 },
                 segments: 12,
             },
-            // Glut-Kern (mittig, halb-transparent für Glüh-Eindruck)
             {
                 shape: "sphere",
                 material: "glut",
-                position: { x: 0, y: 0.8, z: 0 },
-                size: { x: 1.2, y: 1.2, z: 1.2 },
+                position: { x: 0, y: 0.18, z: 0 },
+                size: { x: 0.7, y: 0.36, z: 0.7 },
                 opacity: 0.75,
             },
         ];
@@ -56599,8 +56527,8 @@ class AnazhRealm {
             };
         }
         // wahrerwuchs §4.3 S4 — DAS KRISTALL-GENOM (Habitus/Größe/Facetten, quarz, tag-frozen
-        // zu kristall_geode) + §4.4 DAS GLUT-GENOM (Becken/Flamme/Intensität, stein+glut,
-        // tag-frozen zu glutbrunnen). Dieselbe Pool-Mechanik wie der Fels.
+        // zu kristall_geode). Dieselbe Pool-Mechanik wie der Fels. (Das Glut-Genom fiel 05.10.: die Feuerstelle trägt
+        // ihre Gestalten im Gesetzbuch, `glutbrunnen` streut ohne Pool.)
         for (let i = 0; i < AnazhRealm.CRYSTAL_VARIANTS; i++) {
             const key = `kristall_var${i}`;
             const parts = this._crystalVariant(`${felsWorldSeed}-kristall-${i}`);
@@ -56612,18 +56540,6 @@ class AnazhRealm {
                 // ABSCHIED DER ALT-DOPPEL — Studio-Pendant: das EINE kristalle-Rezept.
                 donorOnly: true,
                 _altDoppel: "kristalle",
-                parts,
-                _formClass: this._lastLandmarkForm,
-            };
-        }
-        for (let i = 0; i < AnazhRealm.GLUT_VARIANTS; i++) {
-            const key = `glut_var${i}`;
-            const parts = this._glutVariant(`${felsWorldSeed}-glut-${i}`);
-            landmarkVariants[key] = {
-                name: key,
-                label: "Glut-Formation",
-                builtIn: true,
-                instanced: true,
                 parts,
                 _formClass: this._lastLandmarkForm,
             };
@@ -56723,118 +56639,123 @@ class AnazhRealm {
             },
             glutbrunnen: {
                 name: "glutbrunnen",
-                label: "Glutbrunnen",
+                label: "Feuerstelle",
                 builtIn: true,
                 instanced: true,
+                studioGestalt: "feuerstelle",
                 parts: glutbrunnenParts,
             },
             // DORF-BRUNNEN: Welt-Körper der brunnen-Schicht aus fachwerk exportSettlement, gehoben über den EINEN
-            // Chokepoint `_spawnSettlementErlebnis` → `spawnArchitecture`. Reine Daten-Parts; die Blocker-Wahrheit
-            // emergiert aus der Substanz (stein/holz dicht → solide).
+            // Chokepoint `_spawnSettlementErlebnis` → `spawnArchitecture`. Die GESTALT baut das Gesetzbuch (fachwerk
+            // `brunnen`, Architektur-Welle 05.10.); die Parts sind ihre unsichtbare Substanz in ihren Maßen (Kranz außen
+            // Ø 1,84 m × 0,73 m, Pfosten bei ±1,05 m, Haspel 1,5 m, Dach 2,4 m) — die Blocker-Wahrheit emergiert aus
+            // ihr (stein/holz dicht → solide).
             brunnen_dorf: {
                 name: "brunnen_dorf",
-                label: "Dorfbrunnen",
+                label: "Ziehbrunnen",
                 builtIn: true,
                 instanced: true,
+                studioGestalt: "brunnen",
                 parts: [
                     {
                         shape: "cylinder",
                         material: "stein",
-                        position: { x: 0, y: 0.4, z: 0 },
-                        size: { x: 1.7, y: 0.8, z: 1.7 },
+                        position: { x: 0, y: 0.33, z: 0 },
+                        size: { x: 1.84, y: 0.66, z: 1.84 },
                         segments: 10,
                     },
                     {
                         shape: "cylinder",
                         material: "stein",
-                        position: { x: 0, y: 0.84, z: 0 },
-                        size: { x: 1.85, y: 0.14, z: 1.85 },
+                        position: { x: 0, y: 0.695, z: 0 },
+                        size: { x: 1.9, y: 0.07, z: 1.9 },
                         segments: 10,
                     },
-                    // Wasser-Spiegel (quarz, leicht transparent — der Brunnen lebt)
+                    // Wasser-Spiegel (quarz — der Brunnen lebt)
                     {
                         shape: "cylinder",
                         material: "quarz",
-                        position: { x: 0, y: 0.62, z: 0 },
-                        size: { x: 1.35, y: 0.06, z: 1.35 },
+                        position: { x: 0, y: 0.5, z: 0 },
+                        size: { x: 1.24, y: 0.04, z: 1.24 },
                         segments: 10,
                         opacity: 0.8,
                     },
-                    // Zwei Pfosten + Windebalken + Satteldach-Platte
+                    // Zwei Pfosten + Haspel + Satteldach
                     {
                         shape: "box",
                         material: "holz",
-                        position: { x: -0.95, y: 1.5, z: 0 },
-                        size: { x: 0.16, y: 2.2, z: 0.16 },
+                        position: { x: -1.05, y: 1.27, z: 0 },
+                        size: { x: 0.14, y: 2.55, z: 0.14 },
                     },
                     {
                         shape: "box",
                         material: "holz",
-                        position: { x: 0.95, y: 1.5, z: 0 },
-                        size: { x: 0.16, y: 2.2, z: 0.16 },
+                        position: { x: 1.05, y: 1.27, z: 0 },
+                        size: { x: 0.14, y: 2.55, z: 0.14 },
                     },
                     {
                         shape: "cylinder",
                         material: "holz",
-                        position: { x: 0, y: 2.1, z: 0 },
+                        position: { x: 0, y: 1.5, z: 0 },
                         rotation: { x: 0, y: 0, z: 1.5708 },
-                        size: { x: 0.18, y: 2.0, z: 0.18 },
+                        size: { x: 0.12, y: 2.3, z: 0.12 },
                         segments: 8,
                     },
                     {
                         shape: "box",
                         material: "holz",
-                        position: { x: 0, y: 2.72, z: 0 },
-                        size: { x: 2.5, y: 0.08, z: 1.1 },
+                        position: { x: 0, y: 2.42, z: 0 },
+                        size: { x: 2.6, y: 0.1, z: 1.7 },
                     },
                 ],
             },
-            // SCHICHT-VOLLENDUNG (18.07.) — der Marktstand der staende-Schicht
-            // (exportSettlement; das brunnen_dorf-Muster: builtIn-Daten-Parts,
-            // der EINE spawnArchitecture-Chokepoint hebt ihn am Platz-Rand).
+            // SCHICHT-VOLLENDUNG (18.07.) — der Marktstand der staende-Schicht (exportSettlement), gehoben am Platz-Rand
+            // über den EINEN spawnArchitecture-Chokepoint, die Front zur Platz-Mitte. Die GESTALT baut das Gesetzbuch
+            // (fachwerk `marktstand`, Architektur-Welle 05.10.); die Parts sind die Substanz in ihren Maßen (Tisch 2,0 ×
+            // 0,9 m auf 0,86 m, Pfosten vorn 2,25 m · hinten 1,95 m, Plane mit Gefälle nach hinten).
             marktstand_dorf: {
                 name: "marktstand_dorf",
                 label: "Marktstand",
                 builtIn: true,
                 instanced: true,
+                studioGestalt: "marktstand",
                 parts: [
-                    // Tischplatte + vier Pfosten + Plane (schräg)
                     {
                         shape: "box",
                         material: "holz",
-                        position: { x: 0, y: 0.85, z: 0 },
-                        size: { x: 1.8, y: 0.08, z: 1.0 },
+                        position: { x: 0, y: 0.84, z: 0 },
+                        size: { x: 2.1, y: 0.04, z: 0.96 },
                     },
                     {
                         shape: "box",
                         material: "holz",
-                        position: { x: -0.8, y: 1.1, z: -0.42 },
-                        size: { x: 0.1, y: 2.2, z: 0.1 },
+                        position: { x: -0.95, y: 1.125, z: -0.42 },
+                        size: { x: 0.09, y: 2.25, z: 0.09 },
                     },
                     {
                         shape: "box",
                         material: "holz",
-                        position: { x: 0.8, y: 1.1, z: -0.42 },
-                        size: { x: 0.1, y: 2.2, z: 0.1 },
+                        position: { x: 0.95, y: 1.125, z: -0.42 },
+                        size: { x: 0.09, y: 2.25, z: 0.09 },
                     },
                     {
                         shape: "box",
                         material: "holz",
-                        position: { x: -0.8, y: 0.95, z: 0.42 },
-                        size: { x: 0.1, y: 1.9, z: 0.1 },
+                        position: { x: -0.95, y: 0.975, z: 0.42 },
+                        size: { x: 0.09, y: 1.95, z: 0.09 },
                     },
                     {
                         shape: "box",
                         material: "holz",
-                        position: { x: 0.8, y: 0.95, z: 0.42 },
-                        size: { x: 0.1, y: 1.9, z: 0.1 },
+                        position: { x: 0.95, y: 0.975, z: 0.42 },
+                        size: { x: 0.09, y: 1.95, z: 0.09 },
                     },
                     {
                         shape: "box",
                         material: "holz",
-                        position: { x: 0, y: 2.05, z: 0 },
-                        rotation: { x: -0.28, y: 0, z: 0 },
-                        size: { x: 2.0, y: 0.06, z: 1.3 },
+                        position: { x: 0, y: 2.16, z: -0.03 },
+                        rotation: { x: 0.27, y: 0, z: 0 },
+                        size: { x: 2.4, y: 0.04, z: 1.2 },
                     },
                 ],
             },
@@ -63794,19 +63715,83 @@ class AnazhRealm {
         return a > b ? a : b;
     }
 
-    // Die Nah-Wiese über einem neuen Weg neu wachsen lassen: jede Kachel im Rechteck fällt, der nächste Takt baut
-    // sie auf dem Pfad-Feld neu.
+    // DIE TRITTFLÄCHE (Architektur-Welle 05.10.): um eine Feuerstelle, einen Brunnen, einen Marktstand ist der Boden
+    // getreten. Befund (Werkbank, echte GPU, Armlänge): Halme der Nah-Wiese stachen durch Glutbett und Brunnenkranz.
+    // Das Gesetzbuch nennt die Fläche (`fx.tritt` des Rezepts: Kreis r oder Kasten ex/ez im Asset-Raum), der Wirt malt
+    // sie als Form in die EINE Wege-Karte (Kanal Erde) — der Boden-Shader zeigt getretene Erde, Wiese und Nah-Streu
+    // wachsen dort nicht (`_pfadFeldAt`). Einmal je Eintrag, beim ersten Studio-Platz (das Buch ist warm); sie bleibt,
+    // solange der Eintrag lebt — der Boden vergisst die Feuerstelle nicht, wenn ihr Mesh die Mesh-Zone verlässt.
+    _trittFlaecheSetzen(entry) {
+        if (!entry || entry._trittBox || !entry.position) return;
+        const preset = this._foundryPresetForEntry(entry);
+        const f = this._foundry;
+        const rec = preset && f && f.recipes ? f.recipes[preset] : null;
+        const t = rec && rec.fx ? rec.fx.tritt : null;
+        if (!t || typeof t !== "object") return;
+        const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        const x = entry.position.x;
+        const z = entry.position.z;
+        const form =
+            t.typ === "kasten" && Number.isFinite(t.ex) && Number.isFinite(t.ez)
+                ? {
+                      typ: "kasten",
+                      kanal: 0,
+                      ax: x,
+                      az: z,
+                      bx: x,
+                      bz: z,
+                      ex: t.ex * s,
+                      ez: t.ez * s,
+                      phi: Number.isFinite(entry.rotationY) ? entry.rotationY : 0,
+                      halb: 0,
+                  }
+                : Number.isFinite(t.r)
+                  ? { typ: "segment", kanal: 0, ax: x, az: z, bx: x, bz: z, halb: t.r * s }
+                  : null;
+        if (!form) return;
+        const wk = this._wegeKarteEnsure();
+        if (!wk) return;
+        const r = AnazhRealm._wegeFormRadius(form);
+        const box = { x0: x - r, z0: z - r, x1: x + r, z1: z + r, formen: [form] };
+        wk.siedlungen.push(box);
+        entry._trittBox = box; // transient (kein Snapshot): der Restore setzt sie beim ersten Platz neu
+        for (const stufe of wk.stufen)
+            if (stufe.zentriert) {
+                this._wegeKarteMale(stufe, form);
+                stufe.tex.needsUpdate = true;
+            }
+        const pm = this.state.playerMesh;
+        if (pm && wk.stufen.some((st) => !st.zentriert)) this._tickWegeKarte(pm.position);
+        this._nahWieseNeuIn(box.x0, box.z0, box.x1, box.z1);
+    }
+    // Der Abbau nimmt die Trittfläche mit: die Form fällt aus der Karte, der nächste Takt malt jede Stufe neu.
+    _trittFlaecheLoesen(entry) {
+        const wk = this.state.wegeKarte;
+        if (!entry || !entry._trittBox || !wk) return;
+        const i = wk.siedlungen.indexOf(entry._trittBox);
+        if (i >= 0) wk.siedlungen.splice(i, 1);
+        entry._trittBox = null;
+        for (const stufe of wk.stufen) stufe.zentriert = false;
+    }
+
+    // Die Nah-Wiese UND die Nah-Streu über einer neuen Weg-/Tritt-Fläche neu wachsen lassen: jede Kachel im Rechteck
+    // fällt, der nächste Takt baut sie auf dem Pfad-Feld neu (beide lesen `_pfadFeldAt` — bis 05.10. fiel nur die Wiese,
+    // die Blume des Waldbodens blieb auf dem neuen Weg stehen).
     _nahWieseNeuIn(x0, z0, x1, z1) {
-        const nw = this.state.nahWiese;
-        if (!nw) return 0;
-        const K = AnazhRealm.NAH_WIESE.kachel;
         let n = 0;
-        for (const [key, k] of nw.kacheln) {
-            const [tx, tz] = key.split(",").map(Number);
-            if ((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1) continue;
-            this._nahWieseKachelEntsorgen(k);
-            nw.kacheln.delete(key);
-            n++;
+        const ringe = [
+            [this.state.nahWiese, AnazhRealm.NAH_WIESE.kachel, (k) => this._nahWieseKachelEntsorgen(k)],
+            [this.state.nahStreu, AnazhRealm.NAH_STREU.kachel, (k) => this._nahStreuKachelEntsorgen(k)],
+        ];
+        for (const [ring, K, weg] of ringe) {
+            if (!ring) continue;
+            for (const [key, k] of ring.kacheln) {
+                const [tx, tz] = key.split(",").map(Number);
+                if ((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1) continue;
+                weg(k);
+                ring.kacheln.delete(key);
+                n++;
+            }
         }
         return n;
     }
@@ -63991,13 +63976,13 @@ class AnazhRealm {
         return n;
     }
     // KATALOG-SICHT: der EINE Sicht-Chokepoint aller Picker (Werkstatt-Liste · Rezeptbuch · Omnibox ·
-    // Kreatur-Auftrag): donorOnly-Spender und Render-Varianten (grown_*, fels/kristall/glut_var1+)
+    // Kreatur-Auftrag): donorOnly-Spender und Render-Varianten (grown_*, fels/kristall_var1+)
     // erscheinen nirgends — je Gattung EIN Studio-Eintrag.
     _katalogSichtbar(name, bp) {
         const b = bp || (this.state.blueprints && this.state.blueprints[name]);
         if (!b || b.donorOnly) return false;
         const n = typeof name === "string" && name ? name : b.name || "";
-        return !(/^grown_/.test(n) || /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n));
+        return !(/^grown_/.test(n) || /^(fels|kristall)_var([1-9]\d*)$/.test(n));
     }
 
     _stlWegeDispose() {
@@ -64115,6 +64100,8 @@ class AnazhRealm {
         // DORF-IN-TERRAIN — der Sockel lebt mit dem PRIMÄREN Instanz-Leben des
         // Eintrags (Band-Adds returnen oben früher); ensure ist idempotent.
         if (entry.fundament) this._archFundamentEnsure(entry);
+        // die Trittfläche der Ausstattung (einmal je Eintrag, idempotent) — der Studio-Platz hat das Buch
+        if (entry.instFoundry) this._trittFlaecheSetzen(entry);
     }
 
     // Instanz-Matrizen eines Eintrags neu schreiben — auch der Mount-Follow eines FOUNDRY-Fahrzeugs
@@ -66514,12 +66501,14 @@ class AnazhRealm {
                 if (!this._isAboveWaterAt(wx, wz, 0.2)) continue;
                 const wy = this.getTerrainHeightAt(wx, wz);
                 if (!Number.isFinite(wy)) continue;
+                // Die Front (−z des Gesetzbuch-Stands) schaut zur Platz-Mitte — dieselbe Regel wie das Labor-Dorf.
+                const pz = plan.platz;
                 const entry = this.spawnArchitecture(
                     "marktstand_dorf",
                     { x: wx, y: wy + 0.5, z: wz },
                     {
                         seed: ((plan.seed >>> 0 || 1) + 53 + m * 7919) >>> 0,
-                        rotationY: ((((plan.seed >>> 0) + m * 97) >>> 2) % 628) / 100,
+                        rotationY: pz && Number.isFinite(pz.cx) ? Math.atan2(-(pz.cx - st.x), -(pz.cz - st.z)) : 0,
                         silent: true,
                         autonomous: !!(so && so.autonomous),
                     }
@@ -67546,6 +67535,14 @@ class AnazhRealm {
             const rec = recipes && Object.prototype.hasOwnProperty.call(recipes, t) ? recipes[t] : null;
             const pol = rec && KP[rec.kind];
             if (pol && pol.prefix && bps[pol.prefix + t]) return pol.prefix + t;
+            // Ein Rezept ohne eigene Domänen-Zeile, dessen Gestalt ein Bauplan trägt (studioGestalt — die Ausstattung:
+            // feuerstelle → glutbrunnen, marktstand → marktstand_dorf, brunnen → brunnen_dorf): der Bauplan.
+            if (rec) {
+                const traeger = Object.keys(bps)
+                    .filter((n) => bps[n] && bps[n].studioGestalt === t && !bps[n]._foundryAutoSpecies)
+                    .sort();
+                if (traeger.length) return traeger[0];
+            }
         }
         const WORT = AnazhRealm.STUDIO_WORT;
         for (const t of kandidaten) {
@@ -67566,7 +67563,7 @@ class AnazhRealm {
     _studioWordsForPrompt() {
         const f = this._foundry;
         const recipes = f && f.recipes ? f.recipes : {};
-        const gruppen = { tree: [], haus: [], gate: [], vehicle: [] };
+        const gruppen = { tree: [], haus: [], gate: [], vehicle: [], ausstattung: [] };
         for (const id of Object.keys(recipes)) {
             const r = recipes[id];
             if (r && gruppen[r.kind] && this._studioBlueprintForWord(id)) gruppen[r.kind].push(id);
@@ -67581,6 +67578,7 @@ class AnazhRealm {
         if (gruppen.haus.length) teile.push("Häuser: haus, " + gruppen.haus.slice(0, 6).join(", "));
         if (gruppen.gate.length) teile.push("Tore: " + gruppen.gate.join(", "));
         if (gruppen.vehicle.length) teile.push("Fahrzeuge: " + gruppen.vehicle.join(", "));
+        if (gruppen.ausstattung.length) teile.push("Ausstattung: " + gruppen.ausstattung.join(", "));
         return teile.join(" · ");
     }
 
@@ -67588,10 +67586,12 @@ class AnazhRealm {
     // mit Luft (Kind aus dem Rezeptbuch über das Preset).
     _studioSpawnAbstand(name) {
         const f = this._foundry;
-        const preset = this._foundryPresetFor(name);
+        // der EINE Entry-Resolver (studioGestalt eingeschlossen: die Ausstattung löst über ihren Bauplan auf)
+        const preset = this._foundryPresetForEntry({ type: name });
         const rec = preset && f && f.recipes ? f.recipes[preset] : null;
         const kind = rec ? rec.kind : name.startsWith("baum_") ? "tree" : null;
         if (kind === "haus" || kind === "gate" || kind === "vehicle") return 9;
+        if (kind === "ausstattung") return 4;
         return 2.5;
     }
 
@@ -67617,7 +67617,6 @@ class AnazhRealm {
             // Formations-Varianten (`kristall_var7`/`fels_var3`) verfehlen den exakten Lookup → Suffix abstreifen:
             // Kristall → das EINE Rezept `kristalle`; Fels nach Form-Klasse (brocken→findling · geroell→geroell ·
             // nadel→zacken · stapel→sediment, sonst sediment); Instanz-Variation: `_foundryVariantFor(seed, preset)`.
-            // `glut_var` bleibt bewusst Part-Look (nicht gemappt).
             const vm = entry.type.match(/^(kristall|fels)_var\d+$/);
             if (vm) {
                 if (vm[1] === "kristall") return "kristalle";
@@ -69173,6 +69172,10 @@ class AnazhRealm {
             // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
             // `_foundryBuildGroup` garantiert das color-Attribut.
             const vcol = TSL.attribute("color", "vec3");
+            // DAS LEUCHT-GESETZ (Architektur-Welle 05.10.): ein Stoff, dessen Gesetzbuch `leucht` stempelt (fachwerk
+            // `feuer`: Glut, Flamme, Herdfeuer), leuchtet in seiner Vertex-Farbe × leucht — heiße Mitte, kühler Rand,
+            // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128).
+            if (mp && typeof mp.leucht === "number" && mp.leucht > 0) mat.emissiveNode = vcol.mul(mp.leucht);
             // DIE SAISON IST EINE FARBE (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
             // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
             // Blüte). Rinde, Fels, Kristall bleiben ungetönt.
@@ -69503,8 +69506,10 @@ class AnazhRealm {
         } else {
             mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
         }
-        // Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder).
-        mesh.castShadow = m.kind !== "fellSchale";
+        // Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder). Eine
+        // LICHTQUELLE wirft nie (Seh-Klasse glut, vom Gesetzbuch gestempelt: Glutbett und Flamme der Feuerstelle, das
+        // Herdfeuer, die Leucht-Linien der Tore) — dieselbe Regel wie `_archTeilLeuchtet` für die Wirts-Teile.
+        mesh.castShadow = m.kind !== "fellSchale" && !(m.mat && m.mat.seh === "glut");
         mesh.receiveShadow = true;
         // Die Look-Klasse steht am Mesh (das Fell-Bildschirm-Gesetz liest sie: Strähnen schweigen unter ½ px).
         if (globalThis.__phytoCore.budgetLook(m.kind)) mesh.userData.__klasse = m.kind;
@@ -70194,7 +70199,8 @@ class AnazhRealm {
                     // V4(B) — die Rück-Referenz auf die Cache-Gruppe, damit _archInstanceGroupFor
                     // beim Neubau der InstancedMesh-Gruppe den Ref-Zähler dieser Gruppe hebt.
                     _srcGroup: group,
-                    castShadow: castsShadow,
+                    // die Stufe wirft (Budget) — eine Lichtquelle nie (`_foundryBuildMesh` stempelt sie ans Mesh)
+                    castShadow: castsShadow && child.castShadow !== false,
                 });
             }
             this._foundryFlatVerschmelzen(group, leaves);
@@ -70206,7 +70212,7 @@ class AnazhRealm {
                         Object.assign({}, lf, {
                             leafKey: lf.leafKey + "#S",
                             geom: this._foundrySchattenGeom(lf),
-                            castShadow: true,
+                            castShadow: lf.castShadow !== false, // die Zwillings-Stufe wirft selbst — ihre Lichtquellen nie
                             shadowTwin: true,
                             _eigen: false, // die verschmolzene L1-Geometrie gehört der L1-Gruppe, nie diesem Flat
                         })
@@ -73305,6 +73311,7 @@ class AnazhRealm {
         // Resonierende Strukturen verstummen beim Abbau mit abklingendem Sinus; stumme bleiben still.
         this._playArchitectureFarewellPing(entry);
         this._cullArchitectureMesh(entry);
+        this._trittFlaecheLoesen(entry);
         this.state.architectures.splice(idx, 1);
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
         if (typeof this.journalAppend === "function") {
@@ -89365,26 +89372,34 @@ AnazhRealm.TOTHOLZ_RATE = 0.1;
 // Pool-Aufstellung lazy, kein Welt-Reset nötig.
 AnazhRealm.VARIANTS_PER_SPECIES = 3;
 // wahrerwuchs §4.2-4.4 S3+S4 — die Zahl der Genom-gewürfelten Landmark-Formationen
-// (Fels: Brocken/Stapel/Nadel/Geröll · Kristall: Einzel/Cluster/Geode/Druse · Glut:
-// Becken/Flamme/Intensität), die der Scatter NACH dem Affinitäts-Sieg wählt.
+// (Fels: Brocken/Stapel/Nadel/Geröll · Kristall: Einzel/Cluster/Geode/Druse), die der Scatter NACH dem
+// Affinitäts-Sieg wählt. Die Glut streut ohne Pool: ihre Gestalten trägt das Gesetzbuch (fachwerk `feuerstelle`).
 AnazhRealm.ROCK_VARIANTS = 12;
 AnazhRealm.CRYSTAL_VARIANTS = 8;
-AnazhRealm.GLUT_VARIANTS = 6;
 // Die Landmark-Pool-Karte: Sieger-Name → { Pool-Präfix, Zahl }. Der Scatter würfelt
 // REGION-deterministisch einen `<prefix>_var<idx>` aus dem passenden Pool (tag-frozen
 // zum Wahrzeichen → kein Affinitäts-Shift, V17.17).
 AnazhRealm.SCATTER_VARIANT_POOL = Object.freeze({
     stein_block: Object.freeze({ prefix: "fels", n: 12 }),
     kristall_geode: Object.freeze({ prefix: "kristall", n: 8 }),
-    glutbrunnen: Object.freeze({ prefix: "glut", n: 6 }),
+});
+// DER BAUPLAN-UMZUG — gefallene Baupläne, deren Einträge in gespeicherten Welten stehen, und ihr Erbe: der Restore
+// (`_loadStateRestoreArchitectures`) liest ihn, bevor er spawnt. Die sechs Glut-Formationen (`glut_var0..5`, das
+// Glut-Genom bis 05.10.) leben als die EINE Feuerstelle weiter (`glutbrunnen`, Gestalt aus dem Gesetzbuch).
+AnazhRealm.BAUPLAN_UMZUG = Object.freeze({
+    glut_var0: "glutbrunnen",
+    glut_var1: "glutbrunnen",
+    glut_var2: "glutbrunnen",
+    glut_var3: "glutbrunnen",
+    glut_var4: "glutbrunnen",
+    glut_var5: "glutbrunnen",
 });
 // Welche Formations-FORM ist aufragend? `_landmarkVariantIdx` wählt sie an steilem Terrain, die
 // gedrungenen am flachen Land. `_formClass` jeder Pool-Variante kommt aus ihrem Genom-Roll
-// (Fels: Brocken/Stapel/Nadel/Geröll · Kristall: Einzel/Cluster/Geode/Druse · Glut: tief/flach).
+// (Fels: Brocken/Stapel/Nadel/Geröll · Kristall: Einzel/Cluster/Geode/Druse).
 AnazhRealm.LANDMARK_TALL_FORMS = Object.freeze({
     fels: Object.freeze(["nadel", "stapel"]),
     kristall: Object.freeze(["druse", "einzel"]),
-    glut: Object.freeze(["tief"]),
 });
 AnazhRealm.LANDMARK_SLOPE_TALL = 0.32; // ab dieser Hangneigung (m/m) bevorzugt der Scatter aufragende Formen
 

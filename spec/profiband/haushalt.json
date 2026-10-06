@@ -176,7 +176,7 @@
         },
         {
             "id": "bau",
-            "titel": "Bau (Haus · Tor · Fahrzeug · Glut · Markt · Fundament · Zaun)",
+            "titel": "Bau (Haus · Tor · Fahrzeug · Ausstattung: Feuerstelle, Marktstand, Brunnen · Fundament · Zaun)",
             "befehle": 40,
             "dreiecke": 60000,
             "regeln": [
@@ -188,7 +188,8 @@
                         "haus",
                         "gate",
                         "vehicle",
-                        "weapon"
+                        "weapon",
+                        "ausstattung"
                     ],
                     "stufe": [
                         0,
@@ -196,7 +197,7 @@
                     ]
                 },
                 {
-                    "muster": "^g:(glut|glutbrunnen|markt|marktstand_dorf|brunnen_dorf|haus|tor|esse|esse_meister|brennkolben|webstuhl|drehbank|seelenstein_altar|welt_portal|welt_strom|start_plattform):L[01]$"
+                    "muster": "^g:(haus|tor|esse|esse_meister|brennkolben|webstuhl|drehbank|seelenstein_altar|welt_portal|welt_strom|start_plattform):L[01]$"
                 },
                 {
                     "muster": "^bau:"

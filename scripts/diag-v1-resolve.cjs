@@ -1,13 +1,15 @@
 // V1-GATE — DAS KRISTALL-KLEID (Null-Renderer, GPU-frei, immun gegen swiftshader-Tod): beweist, dass
 // `_foundryPresetForEntry` die Formations-VARIANTEN (kristall_var${N}/fels_var${N}) auf ein Studio-
 // Rezept auflöst (vorher NULL = Part-Pfad → die „alten Kristalle") — die Fels-Vielfalt bleibt (jede
-// Form-Klasse ihr Studio-Rezept), glutbrunnen bleibt BEWUSST Part-Look (Schöpfer-Entscheid). Reine
-// CPU-Logik, kein Rendern. Selbst-assertierend: falsche Auflösung → exit 1.
+// Form-Klasse ihr Studio-Rezept). Die AUSSTATTUNG (Architektur-Welle 05.10.): glutbrunnen · marktstand_dorf ·
+// brunnen_dorf lösen über ihre studioGestalt-Zeile auf das Gesetzbuch der Architektur auf (feuerstelle · marktstand ·
+// brunnen); die sechs Glut-Formationen sind gefallen, ihr Umzug trägt alte Welten auf glutbrunnen. Reine CPU-Logik,
+// kein Rendern. Selbst-assertierend: falsche Auflösung → exit 1.
 const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = 4509;
+const PORT = Number(process.env.V1_RESOLVE_PORT || 4509);
 const root = path.resolve(__dirname, "..");
 const mime = { ".html": "text/html", ".js": "application/javascript", ".wasm": "application/wasm", ".json": "application/json", ".css": "text/css", ".png": "image/png" };
 const server = http.createServer((req, res) => {
@@ -31,12 +33,17 @@ const server = http.createServer((req, res) => {
             await sleep(8);
         }
         const r = window.anazhRealm;
+        // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
+        const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
+        const b0 = performance.now();
+        while (performance.now() - b0 < 60000 && !(f && f.ready && f.recipes && f.recipes.feuerstelle)) await sleep(100);
         const bp = r.state.blueprints || {};
         const resolve = (t) => (r._foundryPresetForEntry ? r._foundryPresetForEntry({ type: t }) : "nomethod");
         const res = {};
-        for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glut_var3", "kristall_geode", "felsturm", "stein_block"]) {
+        for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "kristall_geode", "felsturm", "stein_block"]) {
             res[t] = { exists: !!bp[t], formClass: bp[t] && bp[t]._formClass, preset: resolve(t) };
         }
+        res._umzug = r.constructor.BAUPLAN_UMZUG ? r.constructor.BAUPLAN_UMZUG.glut_var3 : null;
         // V2 — WERKSTATT: der Rezept-Regler klassifiziert die Repräsentanten (Karte je Art) korrekt +
         // der `_var0`-Suffix löst über `_foundryPresetForEntry` auf → die Vorschau zeigt das Studio-Asset.
         res._workshop = {
@@ -62,9 +69,17 @@ const server = http.createServer((req, res) => {
     check("fels_var0", (r) => r.preset && r.preset !== "null", "erwartet nicht-null Fels-Rezept");
     check("fels_var5", (r) => r.preset && r.preset !== "null", "erwartet nicht-null Fels-Rezept");
     check("fels_var7", (r) => r.preset && r.preset !== "null", "erwartet nicht-null Fels-Rezept");
-    // Glut bleibt BEWUSST Part-Look (Schöpfer-Entscheid „glutbrunnen bleibt noch").
-    check("glut_var0", (r) => r.preset == null, "glut MUSS Part-Look bleiben (null)");
-    check("glut_var3", (r) => r.preset == null, "glut MUSS Part-Look bleiben (null)");
+    // Die Ausstattung trägt das Gesetzbuch (studioGestalt → LIVE-Buch); das Glut-Genom ist gefallen (kein glut_var-Bauplan),
+    // sein Umzug führt alte Welten auf die EINE Feuerstelle.
+    check("glutbrunnen", (r) => r.preset === "feuerstelle", "erwartet feuerstelle (Gesetzbuch)");
+    check("marktstand_dorf", (r) => r.preset === "marktstand", "erwartet marktstand (Gesetzbuch)");
+    check("brunnen_dorf", (r) => r.preset === "brunnen", "erwartet brunnen (Gesetzbuch)");
+    check("glut_var0", (r) => r.exists === false, "das Glut-Genom ist gefallen");
+    {
+        const ok = out._umzug === "glutbrunnen";
+        console.log(`  ${ok ? "✅" : "❌"} Umzug glut_var3 -> ${out._umzug}`);
+        if (!ok) fails.push("umzug");
+    }
     // Kontroll-Referenz: die benannten Arten bleiben UNVERÄNDERT.
     check("kristall_geode", (r) => r.preset === "kristalle", "Regression");
     check("felsturm", (r) => r.preset === "zacken", "Regression");
@@ -82,5 +97,5 @@ const server = http.createServer((req, res) => {
     wcheck("kristall_var0 kind", ws.kristallKind, "crystal");
 
     if (fails.length) { console.log(`\n❌ Gate ROT: ${fails.join(", ")}`); process.exit(1); }
-    console.log("\n✅ Gate GRÜN — V1: jede Fels/Kristall-Variante trägt ihr Studio-Rezept (glut Part-Look); V2: der Werkstatt-Rezept-Regler erkennt die Repräsentanten.");
+    console.log("\n✅ Gate GRÜN — V1: jede Fels/Kristall-Variante trägt ihr Studio-Rezept, die Ausstattung ihr Gesetzbuch; V2: der Werkstatt-Rezept-Regler erkennt die Repräsentanten.");
 })();

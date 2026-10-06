@@ -114,7 +114,7 @@ function staticLaws(anazhSrc, fcSrc, manifestSrc) {
     ]);
     out.push([
         "S4: fachwerk-core deklariert kindStages.haus == [0, 1, 2] (B2-Vertrags-Daten — die Mehr-Stufen-Wahrheit)",
-        /kindStages:\s*\{\s*haus:\s*\[0,\s*1,\s*2\]\s*\}/.test(fcSrc),
+        /kindStages:\s*\{\s*haus:\s*\[0,\s*1,\s*2\]\s*[,}]/.test(fcSrc),
     ]);
     out.push([
         'S5: die Haus-Rezepte tragen das Platzierungs-Gesetz als DATEN (fx.place mode "settlement" + siteTag "haus" — N5.7, W-A5b)',
@@ -181,7 +181,7 @@ function ksRow(src, name) {
         const s2 = staticLaws(brokenPolicy, fcSrc, manifestSrc).find((l) => l[0].startsWith("S2"));
         check("Selbst-Test 2: haus-Policy-Zeile verstuemmelt -> S2 feuert", s2 && s2[1] === false);
         // V3: die Stufen-Deklaration kollabiert -> S4 muss rot werden (die Mehr-Stufen-Wand).
-        const brokenStages = fcSrc.replace("kindStages: { haus: [0, 1, 2] }", "kindStages: { haus: [0] }");
+        const brokenStages = fcSrc.replace("kindStages: { haus: [0, 1, 2],", "kindStages: { haus: [0],");
         const s4 = staticLaws(anazhSrc, brokenStages, manifestSrc).find((l) => l[0].startsWith("S4"));
         check("Selbst-Test 3: kindStages.haus auf [0] kollabiert -> S4 feuert", s4 && s4[1] === false);
         if (errs.length) {

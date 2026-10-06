@@ -45,7 +45,31 @@ function cases() {
 }
 const fileFor = (c) => `${c.presetId}-s${c.seed}-L${c.lod}-${c.season}.json`;
 
+// MINT_NUR_DATEN=1 — der Vertrags-Akt am UMSCHLAG allein: die drei Daten-Kanäle (recipes · world-params ·
+// render-config) neu einfrieren, jede Geometrie-Golden bleibt unberührt (ein neues Rezept im Buch ändert den Umschlag,
+// nicht die Bytes der Bäume). Das Manifest trägt die neuen Hashes der drei.
+async function nurDaten() {
+    const manifest = JSON.parse(fs.readFileSync(path.join(DIR, "manifest.json"), "utf8"));
+    await runWithWorker(PORT, async ({ getData }) => {
+        const bookReply = await getData("get-book");
+        for (const [field, key] of [
+            ["book", "recipes"],
+            ["worldParams", "world-params"],
+            ["renderConfig", "render-config"],
+        ]) {
+            const json = JSON.stringify(bookReply[field]);
+            const alt = fs.readFileSync(path.join(DIR, key + ".json"), "utf8").trim();
+            fs.writeFileSync(path.join(DIR, key + ".json"), json + "\n");
+            manifest.files[key + ".json"] = crypto.createHash("sha256").update(json).digest("hex");
+            console.log(`  ${alt === json ? "=" : "✔ neu"} ${key}.json`);
+        }
+    });
+    fs.writeFileSync(path.join(DIR, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+    process.exit(0);
+}
+
 (async () => {
+    if (process.env.MINT_NUR_DATEN === "1") return nurDaten();
     fs.mkdirSync(DIR, { recursive: true });
     const existing = fs.readdirSync(DIR).filter((f) => f.endsWith(".json") && f !== "manifest.json");
     if (existing.length && !process.env.MINT_FORCE) {

@@ -288,7 +288,9 @@ function check(name, ok, detail) {
                         if (String(k).includes("@") && !String(k).includes("@p:")) continue; // Streu-Regionen
                         z.bau.gruppen++;
                         if (g.mesh.castShadow) z.bau.werfer++;
-                        if (/^glut_var/.test(k)) {
+                        // die Glut: Lichtquellen-Stoffe (emissiv — das Glutbett der Feuerstelle, das Herdfeuer)
+                        const em = g.mesh.material && g.mesh.material.emissive;
+                        if (em && (em.r || em.g || em.b)) {
                             z.bau.glut++;
                             if (g.mesh.castShadow) z.bau.glutWerfer++;
                         }
