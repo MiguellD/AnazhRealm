@@ -154,6 +154,11 @@ const FORBIDDEN = [
     // Das Chunk-Wasser ist EIN Satz ausserhalb jedes Bundles (der Pass-Bruch des viewportLinearDepth) — das
     // Bundle-Flag hatte keinen Leser, der es je setzte.
     { token: "wasserImBundle", fiel: "Welle B — das Wasser des Rings ist der Wasser-Satz" },
+    // Das Ufer-Band des Wasser-Shaders las ein Attribut, das jeder Schreiber mit 0 füllte (je Pixel zwei Rauschen und ein
+    // Sinus für ×0); den Ufer-Saum trägt der optische Weg (WASSER_GESETZ.schaum.ufer). Mit ihm fiel der Strähnen-Schaum
+    // ohne Gesetz-Grund (Welle L, W-B1/W-kD11).
+    { token: "aShore", fiel: "Welle L Q7 — die tote Ufer-Spalte; der Saum ist der optische Weg" },
+    { token: "riverFoam", fiel: "Welle L Q7 — der Strähnen-Schaum ohne Gesetz-Grund (W-B1)" },
     // Die Chunk-Einbürgerung in Region-Bundles hat keinen Bürger mehr (Boden · Stitch · Wasser sind Sätze, die
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.

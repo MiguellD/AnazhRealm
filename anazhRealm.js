@@ -27518,7 +27518,7 @@ class AnazhRealm {
     // Wasser ist eine FLÄCHE: die Iso-Hülle wickelt nach INNEN (Oberseiten ny<0, Unterseiten ny>0) →
     // verworfen wird NUR die Unterseite (ny>upCull). Fast-vertikale Flächen bleiben — an Fluss-Stufen
     // sind sie die natürlichen Wasserfälle (ein top-only-Cull verlöre sie). Indiziert → alle Attribute
-    // (aFlow/aShore/aWave danach) bleiben gültig.
+    // (aFlow/aWave danach) bleiben gültig.
     _cullWaterUndersides(geom, upCull = 0.2) {
         const pos = geom && geom.attributes && geom.attributes.position;
         if (!pos) return geom;
@@ -27734,15 +27734,12 @@ class AnazhRealm {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
-        // hydroSurfaceMaterial liest aFlow (vec2), aShore, aWave via TSL `attribute()` — unter NodeMaterial/
+        // hydroSurfaceMaterial liest aFlow (vec2), aWave via TSL `attribute()` — unter NodeMaterial/
         // WebGPU crasht die Pipeline bei fehlenden Attributen. Darum Null-Defaults (kein Wellen-Displacement,
-        // Flow, Ufer-Schaum — korrekt, das Chunk-Iso ist See/Pfütze).
+        // kein Flow — korrekt, das Chunk-Iso ist See/Pfütze).
         const vCount = geom.attributes.position.count;
         if (!geom.getAttribute("aFlow")) {
             geom.setAttribute("aFlow", new THREE.BufferAttribute(new Float32Array(vCount * 2), 2));
-        }
-        if (!geom.getAttribute("aShore")) {
-            geom.setAttribute("aShore", new THREE.BufferAttribute(new Float32Array(vCount), 1));
         }
         if (!geom.getAttribute("aWave")) {
             geom.setAttribute("aWave", new THREE.BufferAttribute(new Float32Array(vCount), 1));
@@ -27854,8 +27851,6 @@ class AnazhRealm {
         geom.setAttribute("aWave", new THREE.Float32BufferAttribute(data.aWave, 1));
         geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(data.aDepth, 1));
         geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(data.aSlope, 1));
-        // aShore trägt der Tiefen-Shader → 0 (wie Fläche + Iso).
-        geom.setAttribute("aShore", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
         geom.setIndex(Array.from(data.indices));
         const mat = this._ensureHydroSurfaceMaterial();
         if (!mat) {
@@ -32659,14 +32654,13 @@ class AnazhRealm {
 
     // Der EINE Wasser-Shader für alle Iso-Wasser-Meshes (Ozean + See + Fluss): `aWave` ∈ [0,1]
     // (Ozean-Anteil, skaliert die Wellen; weich 0 am Ufer → kein Küsten-Riss), `aFlow` (Gefälle-
-    // Tangente, Schaum stromab), `aShore` (Ufer-Schaum-Band). Sonne/Licht/Fog speist
-    // `_applyDayNightToScene`.
+    // Tangente, die Strömung trägt das Bild stromab). Sonne/Licht/Fog speist `_applyDayNightToScene`.
     _ensureHydroSurfaceMaterial() {
         if (this.state.hydroSurfaceMaterial) return this.state.hydroSurfaceMaterial;
         if (typeof THREE === "undefined") return null;
         // MeshBasicNodeMaterial (TSL), NUR WebGPU (kein WebGL-Fallback — ohne WebGPU zeigt sich der Banner).
-        // Wellen-Displacement, Tangenten-Kreuzprodukt-Normale, Fluss-/See-Foam, Blinn-Phong-Spec, Fresnel-
-        // Alpha (die Luft: scene.fogNode); Attribute aFlow (vec2), aShore, aWave (float). Live-Uniforms in
+        // Wellen-Displacement, Tangenten-Kreuzprodukt-Normale, Schaum aus dem Gesetz, Blinn-Phong-Spec, Fresnel-
+        // Alpha (die Luft: scene.fogNode); Attribute aFlow (vec2), aWave, aDepth, aSlope (float). Live-Uniforms in
         // state.hydroSurfaceUniforms (Schlüssel ohne u-Präfix, TSL-Konvention), mutiert von
         // _loopSkyboxZeit (time) + _dayNightApplyWaterMaterials (sunDir, light).
         const TSL = THREE.TSL;
@@ -32701,6 +32695,7 @@ class AnazhRealm {
             reflect,
             select: cond,
             Fn,
+            abs,
             // V13.5 (Schicht 3) — Tiefenpuffer-Knoten für die pro-Pixel-Uferlinie.
             linearDepth,
             depth,
@@ -32712,14 +32707,28 @@ class AnazhRealm {
         } = TSL;
         void mat3; // potenzielle Alternative zu modelNormalMatrix
 
-        // Die Live-Uniforms (uniform-Knoten mit .value-Setter)
-        const uTime = uniform(0.0);
-        const uFlowSpeed = uniform(0.5);
         // Das Studio-Gesetz WASSER_GESETZ (lebt NUR in foundry-core/__terrainCore; dieselben Zahlen injiziert das
         // Studio-GLSL): Beer-Lambert-Absorption wK (1/m) · Schlick-Fresnel · Sonnen-Glanz · Schaum. Der Leser ist
         // fail-closed, keine Kopie hier.
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+        // Die Live-Uniforms (uniform-Knoten mit .value-Setter). Die Strömung des Bilds ist die des Gesetzes
+        // (`wellen.adv`, m/s im Kern — dieselbe Zeile, die das Studio-Bach-Bild trägt): Strähnen, Kräusel und Glitzer
+        // reiten DASSELBE Wasser (bis V18.531 1,5 · 0,5 · 0,9 m/s, drei Literale).
+        const uTime = uniform(0.0);
+        const uFlowSpeed = uniform(WG.wellen.adv);
+        // DIE FLUSS-PHASE (Flowmap mit Rücksetzung, Vlachos/Portal 2): jede advektierte Lage wandert höchstens eine Phase
+        // weit (v · P Meter) und kehrt dann zurück; zwei Lagen, um eine halbe Phase versetzt, die Dreiecks-Blende
+        // versteckt die Rücksetzung. Bis V18.531 war der Versatz `uTime · v` — mit der Spielzeit unbegrenzt, und wo die
+        // Strömung quer zum Fluss ausblendet, wuchs sein Gefälle mit: frisch weich, nach Minuten Höhenlinien-Bänder, nach
+        // einer Stunde Rauschen (das weiße Zebra, gate:wasser-leben B2).
+        const uFlowPeriod = uniform(AnazhRealm.WASSER_WELLE.phase);
+        const phaseA = fract(uTime.div(uFlowPeriod));
+        const phaseB = fract(uTime.div(uFlowPeriod).add(0.5));
+        const phaseBlend = abs(phaseA.mul(2.0).sub(1.0)); // 0 → Lage A allein, 1 → Lage B allein (A kehrt zurück)
+        const flussWegA = phaseA.mul(uFlowPeriod).mul(uFlowSpeed); // Meter stromab, beschränkt
+        const flussWegB = phaseB.mul(uFlowPeriod).mul(uFlowSpeed);
+        const LAGE_B = vec2(17.3, 31.7); // die zweite Lage liest ein anderes Stück desselben Rauschens
         // DER WASSER-KÖRPER: was die optisch tiefe Wassersäule zurückstreut — R∞ = 0,33 · b_b / (a + b_b) je Kanal
         // (Gordon 1975; a = die Absorption wK des Gesetzes, b_b = seine Rückstreuung `koerperStreu`, 1/m): 0,005/0,016/
         // 0,025, ein dunkles Blaugrün, im Licht des Orts 3–4× dunkler als die Wiese. Bis 05.10. stand hier das tiefe
@@ -32785,10 +32794,9 @@ class AnazhRealm {
         });
 
         // === VERTEX-STAGE: Gerstner-Wellen-Displacement + Tangenten-Normale.
-        // Drei per-Vertex-Attribute: aFlow/aShore/aWave. aWave gated die
+        // Per-Vertex-Attribute aFlow/aWave (+ aDepth, aSlope unten). aWave gated die
         // Wellen-Amplitude (Ozean voll, See/Fluss still) → kein Riss am Ufer.
         const aFlowV = attribute("aFlow", "vec2");
-        const aShoreV = attribute("aShore", "float");
         const aWaveV = attribute("aWave", "float");
         // V18.14 — der MAKRO-Kontext: die echte Wassertiefe (L−Bett) pro Vertex.
         const aDepthV = attribute("aDepth", "float");
@@ -32815,20 +32823,20 @@ class AnazhRealm {
             // aWaveV > 0 trägt; fließende Flüsse bekommen nur die advektierte Kräuselung, die Mündung blendet
             // weich. Der Rest-Moiré im steilen Lauf-Kern kommt von der Fresnel-Lesart (s. `fres`-Block).
             const ocean = oceanSwell(xz).mul(aWaveV).mul(float(1.0).sub(flowMix));
-            // See + Fluss: organische, advektierte Kräuselung (stromab in Flüssen, still in Seen).
-            const drift = flowDir.mul(uTime.mul(float(0.5)).mul(flowMix));
+            // See + Fluss: organische, advektierte Kräuselung (stromab in Flüssen, still in Seen) — zwei Lagen der
+            // Fluss-Phase, je höchstens eine Phase weit getragen.
             // Kräusel-Oktaven klar UNTER der Mesh-Nyquist (~1,8-m-Raster → 3,6 m): 0.07 ≈ 14 m, 0.12 ≈ 8 m,
             // Hoch-Oktave leiser (0.4); die Amplitude 2.2·rippleAmt bleibt. Das Kern-Muster steiler Läufe ist
             // nicht die Amplitude, sondern die Fresnel-Lesart der Steilflächen-Normale (s. `fres`-Block).
             // Gilt für See UND Fluss; der Ozean trägt `oceanSwell`.
-            const a1 = xz
-                .sub(drift)
-                .mul(float(0.07))
-                .add(uTime.mul(float(0.02)));
-            const a2 = xz.sub(drift.mul(float(1.8))).mul(float(0.12));
             const K = AnazhRealm.WASSER_WELLE;
-            const rippleH = vnoise(a1)
-                .add(vnoise(a2).mul(float(K.oktave)))
+            const kraeuselLage = (weg, versatz) => {
+                const q = xz.sub(flowDir.mul(weg.mul(flowMix))).add(versatz);
+                return vnoise(q.mul(float(0.07)).add(uTime.mul(float(0.02)))).add(
+                    vnoise(q.mul(float(0.12))).mul(float(K.oktave))
+                );
+            };
+            const rippleH = mix(kraeuselLage(flussWegA, vec2(0.0, 0.0)), kraeuselLage(flussWegB, LAGE_B), phaseBlend)
                 .sub(float(K.mitte))
                 .mul(float(K.kraeusel));
             const ripple = vec3(float(0.0), rippleH.mul(rippleAmt), float(0.0));
@@ -32885,50 +32893,29 @@ class AnazhRealm {
         const durchlass = exp(vec3(WG.wK[0], WG.wK[1], WG.wK[2]).mul(wegM.add(aDepthV)).negate());
         const T = dot(durchlass, vec3(0.2126, 0.7152, 0.0722));
 
-        // FOAM: Fluss-vs-See-Trennung (vorher GLSL if/else, jetzt cond-Blend).
-        // fmag > 0.01 → Fluss-Strähnen scrollen stromab.
-        // sonst → See-Schimmer + Ufer-Schaum + Ozean-Schaumkämme.
+        // DER SCHAUM IST DAS GESETZ: WASSER_GESETZ.schaum kennt das Ufer und den Kamm, das Studio schäumt nur dort —
+        // hier die Ufer-Linie aus dem optischen Weg (unten), der Ozean-Kamm (aWave) und das Wildwasser am Steil-Lauf
+        // (aSlope). Bis V18.531 lag ein Strähnen-Schaum ohne Gesetz über jedem Fluss (Schwelle 0,44 unter dem Rausch-
+        // Mittel: ~60 % der Fläche bis 0,7 gedeckt, gate:wasser-leben B1) und ein Ufer-Band aus dem Attribut `aShore`,
+        // das jeder Schreiber mit 0 füllte (je Pixel zwei Rauschen und ein Sinus für ×0).
         const fmag = length(aFlowV);
-        const isRiver = fmag.greaterThan(0.01);
-
-        // RIVER-PFAD
         const fdir = aFlowV.div(max(fmag, float(0.0001)));
-        const scroll = uTime.mul(uFlowSpeed).mul(fmag);
-        // Advektierte Welt-Raum-Strähnen: das Muster lebt STABIL in Welt-XZ und wird nur um −fdir·scroll
-        // verschoben. Nie `dot(xz, fdir)`: |xz| ist ein Hebelarm, eine kleine Drehung in Kurven springt den
-        // Noise-Input → Zickzack-Moiré.
-        const adv = xz.sub(fdir.mul(scroll.mul(3.0)));
-        // Foam-Oktaven UNTER der Mesh-Nyquist (~3,6 m): 0.11 ≈ 9 m, 0.20 ≈ 5 m (Anti-Aliasing der Foam-
-        // Farbe; gilt auch fürs `whitewater`, das `riverS1` liest). Das Kern-Moiré steiler Läufe sitzt in
-        // der Mesh-Tessellation am Grazing-Blick (s. `fres`), nicht hier. Shader-only.
-        const riverS1 = vnoise(adv.mul(0.11));
-        const riverS2 = vnoise(adv.mul(0.2));
-        const riverFoam = clamp(riverS1.add(riverS2.mul(0.4)).div(1.4).sub(0.44).mul(2.0), 0.0, 1.0);
-
-        // LAKE/OCEAN-PFAD — ruhiges Wasser trägt keinen Schaum: der „See-Schimmer" (Noise-Flecken bis 0,5 Schaum)
-        // fiel mit dem Durchlass-Gesetz — im weißen Spiegel unsichtbar, auf dunklem Wasser weiße Kacheln (Linse 05.10.).
-        // V9.48 — Ufer-Schaum-Band (vShore: 1 an Wasserlinie, 0 im offenen See)
-        const band = smoothstep(0.04, 0.9, aShoreV);
-        const sn1 = vnoise(xz.mul(0.34).add(uTime.mul(0.15)));
-        const sn2 = vnoise(xz.mul(0.82).sub(uTime.mul(0.21)));
-        const sn = sn1.add(sn2.mul(0.5)).div(1.5);
-        const lap = float(0.62).add(sin(uTime.mul(0.7).add(xz.x.add(xz.y).mul(0.07))).mul(0.38));
-        const shoreFoam = clamp(band.mul(float(0.4).add(sn.mul(0.9))).mul(lap), 0.0, 1.0);
-        // V9.49-c — Ozean-Schaumkämme (Gerstner-Crests tragen Gischt, aWave-gated)
+        // Die Fluss-Phase im Bild: je Lage der Weg stromab × der örtliche Strömungs-Anteil fmag (0 im See). Das Muster
+        // lebt STABIL in Welt-XZ und wird nur verschoben — nie `dot(xz, fdir)`: |xz| ist ein Hebelarm, eine kleine
+        // Drehung in Kurven springt den Noise-Input (Zickzack-Moiré).
+        const strom = (weg, versatz) => xz.sub(fdir.mul(weg.mul(fmag))).add(versatz);
+        const advA = strom(flussWegA, vec2(0.0, 0.0));
+        const advB = strom(flussWegB, LAGE_B);
+        // Die Wildwasser-Strähnen (0.11 ≈ 9 m, unter der Mesh-Nyquist ~3,6 m), zwei Lagen der Phase.
+        const riverS1 = mix(vnoise(advA.mul(0.11)), vnoise(advB.mul(0.11)), phaseBlend);
+        // V9.49-c — Ozean-Schaumkämme (Gerstner-Crests tragen Gischt, aWave-gated); `riverness` (0 See … 1 Fluss, die
+        // taperende aFlow-Rampe 0.04→0.5) blendet sie in der Mündung aus.
         const crest = smoothstep(0.62, 1.0, waveT).mul(aWaveV);
-        const lakeFoam = max(shoreFoam, crest.mul(0.6));
-
-        // Foam-Zweige MISCHEN statt hart schalten: `riverness` (0 See … 1 Fluss) blendet die Strähnen in den
-        // Schimmer → keine Naht am Übergang. Breite fmag-Rampe 0.04→0.5, weil `aFlow` eine taperende
-        // Magnitude trägt → die Strähnen klingen über die ganze Mündung aus; der 0.04-Boden hält
-        // Rausch-Rest-Strömung im offenen See aus.
         const riverness = smoothstep(float(0.04), float(0.5), fmag);
-        const foam = mix(lakeFoam, riverFoam, riverness);
-        void isRiver;
+        const foam = crest.mul(0.6).mul(float(1.0).sub(riverness));
 
-        // Uferlinien-Schaum aus der Tiefe: ein heller Saum genau am Wasser-Rand, pro Pixel terrain-folgend
-        // (ersetzt das für Chunk-Wasser tote aShore-Band). Glitzer glatt (0.8 + 0.2·noise) — stärkere
-        // Speckel-Varianz machte das Band als distinkte Textur lesbar.
+        // Uferlinien-Schaum aus der Tiefe: ein heller Saum genau am Wasser-Rand, pro Pixel terrain-folgend.
+        // Glitzer glatt (0.8 + 0.2·noise) — stärkere Speckel-Varianz machte das Band als distinkte Textur lesbar.
         const shoreSparkle = float(0.8).add(vnoise(xz.mul(0.5).add(uTime.mul(0.2))).mul(0.2));
         // Der Schaum-Saum sitzt an der Uferlinie UND ist auf echte flache Tiefe gegated (`realShallow`:
         // aDepth < uDepthFoam m) → nur die echte Kante schäumt, nicht der ganze flache Fluss.
@@ -32955,14 +32942,13 @@ class AnazhRealm {
 
         // Flow-ausgerichtete Mikro-Kräuselung der NORMALE (Fragment-Stage): das Sonnen-Glitzern wandert
         // stromab. Bewusst KEIN Vertex-Displacement (Narben-Wand: kein Querschnitt, keine Naht).
-        // Advektiertes Mehr-Oktav-Noise statt `sin(dot(xz,fdir))` (parallele Glitzer-Linien); Amplitude
-        // ∝ `fmag` (0 im See) × `detailFade`.
-        const advN = xz.sub(fdir.mul(uTime.mul(0.9).mul(fmag)));
+        // Advektiertes Mehr-Oktav-Noise statt `sin(dot(xz,fdir))` (parallele Glitzer-Linien), dieselben zwei Lagen
+        // der Fluss-Phase; Amplitude ∝ `fmag` (0 im See) × `detailFade`.
         // Flow-Kräuselung über der Mesh-Nyquist (~2 m): 0.14 ≈ 7 m, 0.32 ≈ 3 m, Amplitude 0.2, `detailFade`
         // 45 m — glättet Fragment-Aliasing auf ruhigem/Rand-Wasser. Das Kern-Muster steiler Läufe sitzt
         // nicht hier, sondern an der Fresnel/Steilflächen-Normale (s. `fres`-Block). Shader-only.
-        const flowRipple = vnoise(advN.mul(0.14))
-            .add(vnoise(advN.mul(0.32).add(11.3)).mul(0.35))
+        const glitzerLage = (q) => vnoise(q.mul(0.14)).add(vnoise(q.mul(0.32).add(11.3)).mul(0.35));
+        const flowRipple = mix(glitzerLage(advA), glitzerLage(advB), phaseBlend)
             .sub(0.675)
             .mul(0.2)
             .mul(fmag)
@@ -33032,6 +33018,7 @@ class AnazhRealm {
         this.state.hydroSurfaceUniforms = {
             time: uTime,
             flowSpeed: uFlowSpeed,
+            flowPeriod: uFlowPeriod,
             foam: uFoam,
             sunDir: uSunDir,
             irr: uIrr,
@@ -34386,7 +34373,6 @@ class AnazhRealm {
             geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
             // der VOLLE Material-Vertrag (WebGPU strikt — jedes gelesene Attribut MUSS da sein):
             geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(new Float32Array(vCount * 2), 2));
-            geom.setAttribute("aShore", new THREE.Float32BufferAttribute(new Float32Array(vCount), 1));
             geom.setAttribute("aWave", new THREE.Float32BufferAttribute(aWave, 1));
             geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(aDepth, 1));
             geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(new Float32Array(vCount), 1));
@@ -62671,7 +62657,6 @@ class AnazhRealm {
                     ["aWave", 1],
                     ["aDepth", 1],
                     ["aSlope", 1],
-                    ["aShore", 1],
                 ],
                 mat: this._ensureHydroSurfaceMaterial(),
                 schatten: false,
@@ -94997,6 +94982,9 @@ AnazhRealm.WASSER_WELLE = Object.freeze({
     mitte: 0.7,
     kraeusel: 2.2,
     kraeuselDecke: 1,
+    // Die Fluss-Phase (s): eine advektierte Lage des Wasser-Bilds wandert höchstens phase × Strömung weit (4 s × 1,2 m/s
+    // = 4,8 m, eine halbe Kräusel-Welle), dann kehrt sie hinter der Blende der zweiten Lage zurück.
+    phase: 4,
 });
 AnazhRealm._wasserHubM = function () {
     const W = AnazhRealm.WASSER_WELLE;
