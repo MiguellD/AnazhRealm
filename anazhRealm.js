@@ -62398,6 +62398,7 @@ class AnazhRealm {
         this._chunkSatzHuelle(s, b);
         s.iSumme += b.iAnzahl;
         s.schmutzig = true;
+        s.bewegt = s.takt; // die Lage änderte sich: das Verdichten wartet die Ruhe ab (`_chunkSatzVerdichten`)
         return b;
     }
 
@@ -62544,6 +62545,7 @@ class AnazhRealm {
         s.bloecke.delete(key);
         s.iSumme -= b.iAnzahl;
         s.schmutzig = true;
+        s.bewegt = s.takt;
         return true;
     }
 
@@ -62583,7 +62585,53 @@ class AnazhRealm {
             s.takt++;
             this._chunkSatzBereit(s);
             this._chunkSatzLeert(s);
+            this._chunkSatzVerdichten(s);
         }
+    }
+
+    // DAS VERDICHTEN (W7): ein Satz MIT Bereichen hält seine Kapazität nicht über sein Hochwasser hinaus. Nach der Ruhe-Frist
+    // (`ruheTakte` Render-Takte ohne Ein- oder Austritt) rücken seine Bereiche dicht ab 0 (in Lage-Ordnung, jeder Index um
+    // seinen Umzug verschoben — die Zellen sind Sichten darauf), und die Pool-Geometrie tauscht am SELBEN Mesh auf das Soll
+    // (Vertices 1,25 × die lebenden, Indizes 1,25 × die Kapazität der Abschnitte, nie unter der Start-Kapazität); die
+    // Abschnitte legen sich im nächsten Pass dicht neu. Es verdichtet erst ab dem Doppelten des Solls (das Wachsen ×1,5 und
+    // das Verdichten pendeln nie). Befund (echte GPU, Mess-Wiese, drei Wander-Schleifen à 1,2 km, Puffer-Linse): der Streu-
+    // Satz des Laubs hielt 107 568 Vertices für 33 490 lebende (4,1 MB für 1,3 MB), seine Abschnitte 207 360 Indizes; die
+    // Bau-Sätze hielten ihr Hochwasser (bauSatz 11,5 MB) — nur der LEERE Satz kehrte zurück (`_chunkSatzLeert`).
+    _chunkSatzVerdichten(s) {
+        if (s.bloecke.size === 0 || !(s.takt - (s.bewegt || 0) > AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte)) return;
+        const C = AnazhRealm.CHUNK_SATZ[s.spec.kapazitaet || s.art];
+        let leben = 0;
+        for (const b of s.bloecke.values()) leben += b.vAnzahl;
+        let iBedarf = 0;
+        for (const a of s.abschnitte.values()) iBedarf += this._chunkSatzKap(a.n);
+        const vSoll = Math.max(C.v, Math.ceil(leben * 1.25));
+        const iSoll = Math.max(C.i, Math.ceil(iBedarf * 1.25));
+        if (s.vKap < 2 * vSoll && s.iKap < 2 * iSoll) return;
+        // die Bereiche rücken in Lage-Ordnung nach unten (ein Umzug liest nie, was ein früherer schrieb)
+        const A = s.geom.attributes;
+        let pos = 0;
+        for (const b of [...s.bloecke.values()].sort((x, y) => x.vStart - y.vStart)) {
+            if (b.vStart !== pos) {
+                for (const [name, is] of s.spec.attr)
+                    A[name].array.copyWithin(pos * is, b.vStart * is, (b.vStart + b.vAnzahl) * is);
+                const d = pos - b.vStart;
+                for (let k = 0; k < b.idx.length; k++) b.idx[k] += d;
+                b.vStart = pos;
+            }
+            pos += b.vAnzahl;
+        }
+        s.vEnde = pos;
+        s.vFrei.length = 0;
+        s.abschnitte.clear();
+        s.iEnde = 0;
+        const alt = s.geom;
+        this._chunkSatzGeometrie(s, Math.min(s.vKap, vSoll), Math.min(s.iKap, iSoll));
+        s.geom.setDrawRange(0, 0); // der nächste Pass legt seinen Abschnitt
+        // Die alten Puffer verlassen die GPU jetzt — vor dem Zeichnen des Frames (`_loopRender`), wie beim leeren Satz: ein
+        // Satz, den gerade kein Pass zeichnet, hielte sie sonst über den Kehraus fest.
+        for (const k in alt.attributes) this._gpuAbschied(alt.attributes[k]);
+        if (alt.index) this._gpuAbschied(alt.index);
+        s.verdichtet = (s.verdichtet || 0) + 1;
     }
 
     _chunkSatzBereit(s) {

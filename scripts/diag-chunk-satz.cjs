@@ -39,6 +39,11 @@
 //   (k) DER LEERE SATZ (Integration W6) — ein Satz ohne Bereich hält seine Kapazität nur bis zur Ruhe-Frist
 //       (`ruheTakte`), dann kehrt er am selben Mesh auf seine Start-Kapazität zurück. Befund (echte GPU, Mess-Wiese, drei
 //       Wander-Schleifen à 1,2 km): die Bau-Sätze verlassener Dörfer hielten 38,3 MB, die größten ohne einen Bereich.
+//   (l) DAS VERDICHTEN (W7) — ein Satz MIT Bereichen hält sein Hochwasser nur bis zur Ruhe-Frist: danach rücken seine Bereiche
+//       dicht ab 0 und die Pool-Geometrie tauscht am SELBEN Mesh auf das Soll (1,25 × die lebenden Vertices, nie unter der
+//       Start-Kapazität); jeder Bereich trägt danach byte-gleich seinen Inhalt, sein Index ist um den Umzug verschoben, ein
+//       Abschnitt legt sich treu neu. Befund (echte GPU, Mess-Wiese, drei Wander-Schleifen): der Streu-Satz des Laubs hielt
+//       107 568 Vertices für 33 490 lebende (4,1 MB für 1,3 MB), die Bau-Sätze ihr Hochwasser (bauSatz 11,5 MB).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Zensus mit einem `voxelChunk:0,0:lod0`
 // direkt in der Szene, einer Gruppe `x#0@p:0,0`, einer selbst zeichnenden Streu-Senke, einem Block ohne Bereich, einer
 // Fern-Deko, einer
@@ -889,6 +894,107 @@ function check(name, ok, detail) {
                 s.chunkSaetze.delete(art);
                 s.satzStoffe.delete(art);
             }
+            // (l) DAS VERDICHTEN (W7): ein eigener Bau-Satz des Gates mit drei Bereichen, auf das Achtfache gewachsen; der erste
+            // Bereich tritt aus (eine Lücke am Anfang) — nach der Ruhe-Frist rücken die beiden anderen nach unten.
+            res.verdichtet = null;
+            {
+                const art = "gate:dicht|probe|-";
+                s.satzStoffe.set(art, { name: "gateDichtSatz", mat: new T.MeshBasicMaterial(), wurf: false });
+                const ds = r._chunkSatz(art);
+                const C = r.constructor.CHUNK_SATZ.bau;
+                const bereich = (x0, n) => {
+                    // n Dreiecke als eigene Zellen (je Dreieck eine Instanz), Werte je Bereich eindeutig
+                    const attributes = {};
+                    for (const [name, is] of r.constructor.BAU_SATZ_ATTR) {
+                        const a = new Float32Array(n * 3 * is);
+                        for (let i = 0; i < a.length; i++) a[i] = x0 + i * 0.001 + (name === "position" ? (i % 3) * 2 : 0);
+                        attributes[name] = { array: a, itemSize: is, count: n * 3 };
+                    }
+                    const idx = new Uint32Array(n * 3);
+                    for (let i = 0; i < idx.length; i++) idx[i] = i;
+                    const zellen = new Uint32Array(n + 1);
+                    for (let i = 0; i <= n; i++) zellen[i] = i * 3;
+                    return { attributes, index: { array: idx }, zellen };
+                };
+                const quellen = { a: bereich(10, 400), b: bereich(500, 300), c: bereich(900, 200) };
+                for (const k of ["a", "b", "c"]) r._chunkSatzEin(art, "dicht:" + k, quellen[k], "0,0");
+                r._chunkSatzGeometrie(ds, C.v * 8, C.i * 8);
+                r._chunkSatzAus(art, "dicht:a");
+                const mesh0 = ds.mesh,
+                    gross = [ds.vKap, ds.iKap];
+                // genau die Ruhe-Frist (der Austritt stempelte den Takt): noch kein Verdichten
+                for (let i = 0; i < r.constructor.CHUNK_SATZ_ABSCHNITT.ruheTakte; i++) r._tickChunkSatz();
+                const vorFrist = [ds.vKap, ds.iKap];
+                r._tickChunkSatz();
+                r._tickChunkSatz();
+                // die Treue: jeder Bereich trägt seine Quelle, sein Index = Quell-Index + vStart, die Zellen sind Sichten darauf
+                let treu = ds.bloecke.size === 2;
+                const P = ds.geom.attributes.position.array;
+                for (const k of ["b", "c"]) {
+                    const b = ds.bloecke.get("dicht:" + k);
+                    const q = quellen[k];
+                    if (!b) {
+                        treu = false;
+                        continue;
+                    }
+                    for (const [name, is] of r.constructor.BAU_SATZ_ATTR) {
+                        const src = q.attributes[name].array,
+                            dst = ds.geom.attributes[name].array;
+                        for (let i = 0; i < src.length; i++)
+                            if (dst[b.vStart * is + i] !== src[i]) {
+                                treu = false;
+                                break;
+                            }
+                        if (b.geom.attributes[name].array.buffer !== dst.buffer) treu = false;
+                    }
+                    for (let i = 0; i < b.idx.length; i++) if (b.idx[i] !== q.index.array[i] + b.vStart) treu = false;
+                    if (b.zellen[0].idx.buffer !== b.idx.buffer) treu = false;
+                }
+                // ein Pass legt den Abschnitt neu: genau die Zellen beider Bereiche, aus dem neuen Index
+                const cam = new T.PerspectiveCamera(60, 1, 0.1, 5000);
+                cam.position.set(0, 3000, 0);
+                cam.lookAt(0, 0, 0.001);
+                cam.updateMatrixWorld(true);
+                const fr = new T.Frustum().setFromProjectionMatrix(
+                    new T.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse),
+                    cam.coordinateSystem
+                );
+                const ab = r._chunkSatzAbschnitt(ds, "haupt", fr, true);
+                res.verdichtet = {
+                    gross,
+                    vorFrist,
+                    nach: [ds.vKap, ds.iKap],
+                    soll: Math.max(C.v, Math.ceil(500 * 3 * 1.25)),
+                    start: [C.v, C.i],
+                    derselbe: ds.mesh === mesh0 && ds.mesh.geometry === ds.geom,
+                    vEnde: ds.vEnde,
+                    treu,
+                    abschnitt: ab ? ab.n : -1,
+                    zaehler: ds.verdichtet || 0,
+                };
+                s.scene.remove(ds.mesh);
+                s.chunkSaetze.delete(art);
+                s.satzStoffe.delete(art);
+                void P;
+                // Selbsttest der Linse: ohne den Schnitt (das Verdichten stumm) hält derselbe Satz sein Hochwasser — die Probe
+                // sähe es (nach = gross)
+                const art2 = "gate:dicht2|probe|-";
+                s.satzStoffe.set(art2, { name: "gateDichtSatz", mat: new T.MeshBasicMaterial(), wurf: false });
+                const ds2 = r._chunkSatz(art2);
+                for (const k of ["a", "b"]) r._chunkSatzEin(art2, "dicht2:" + k, quellen[k], "0,0");
+                r._chunkSatzGeometrie(ds2, C.v * 8, C.i * 8);
+                r._chunkSatzAus(art2, "dicht2:a");
+                r._chunkSatzVerdichten = () => {};
+                try {
+                    for (let i = 0; i < r.constructor.CHUNK_SATZ_ABSCHNITT.ruheTakte + 3; i++) r._tickChunkSatz();
+                } finally {
+                    delete r._chunkSatzVerdichten;
+                }
+                res.verdichtet.ohneSchnitt = [ds2.vKap, ds2.iKap];
+                s.scene.remove(ds2.mesh);
+                s.chunkSaetze.delete(art2);
+                s.satzStoffe.delete(art2);
+            }
             return res;
         });
     } catch (e) {
@@ -1029,6 +1135,25 @@ function check(name, ok, detail) {
             le.gross[0] > le.start[0] &&
             le.derselbe === true,
         JSON.stringify(le)
+    );
+    const vd = out.verdichtet;
+    check(
+        "(l) DAS VERDICHTEN — mit Bereichen hält ein Satz sein Hochwasser bis zur Ruhe-Frist, danach rücken die Bereiche dicht ab 0 (derselbe Mesh, das Soll, byte-gleich, Index verschoben, Abschnitt treu)",
+        !!vd &&
+            vd.vorFrist[0] === vd.gross[0] &&
+            vd.nach[0] === vd.soll &&
+            vd.nach[1] === vd.start[1] &&
+            vd.vEnde === 1500 &&
+            vd.derselbe === true &&
+            vd.treu === true &&
+            vd.abschnitt === 1500 &&
+            vd.zaehler === 1,
+        JSON.stringify(vd)
+    );
+    check(
+        "(l) Selbsttest — ohne den Schnitt (das Verdichten stumm) hält derselbe Satz sein Hochwasser, die Probe nennt es",
+        !!vd && Array.isArray(vd.ohneSchnitt) && vd.ohneSchnitt[0] === vd.gross[0] && vd.ohneSchnitt[0] !== vd.soll,
+        vd ? `ohne Schnitt ${JSON.stringify(vd.ohneSchnitt)} (Hochwasser ${JSON.stringify(vd.gross)}, Soll ${vd.soll})` : "—"
     );
     check("(g) kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
     if (errs.length) {
