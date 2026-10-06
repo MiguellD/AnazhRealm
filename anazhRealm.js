@@ -16631,6 +16631,9 @@ class AnazhRealm {
             kh: kh / f,
             _baum: true,
             _morphDials: dials,
+            // Die Hand-Mitte je Handgelenk (Ofen-Beipack, Hand-Raum): dort sitzt der Griff der Faust (_refreshHeldMesh).
+            // Eigenes Feld, nie in armL/armR — deren Glieder setzt die Pose je Schlüssel auf neutral.
+            handMitte: t0.handMitte || null,
             _skinMat: null, // GEFALLEN mit dem Inline-Bau — die Farb-Wahrheit ist userData.hautTon (Pipe: Vertex-Farben)
         };
         // V18.491.85 — Augen-Welle: iris/lid aus Ofen-Gelenken (fail-closed ohne Refs).
@@ -17315,6 +17318,8 @@ class AnazhRealm {
             teile,
             tailNamen: Array.isArray(skelett.tailSegs) ? skelett.tailSegs.slice() : [],
             minY: Number.isFinite(sohle.min.y) ? sohle.min.y : 0,
+            // die Hand-Mitte je Hand-Gelenk (Mensch nah, im Hand-Raum) — der Griff der Faust
+            handMitte: skelett.handMitte || null,
         };
     }
     // Das Art-Template (memo): warm aus dem Prefetch/IDB, kalt über den EINEN
@@ -43601,7 +43606,15 @@ class AnazhRealm {
                 !!rig &&
                 ((rig.armR && anchor === rig.armR.wrist) || (rig.armL && anchor === rig.armL.wrist));
             if (faust) {
-                const fo = cfg.faustOffset;
+                // DIE HAND-MITTE kommt aus der Hand selbst (Ofen-Beipack: der Schwerpunkt der Hand-Haut im Hand-Raum) —
+                // vorher eine Welt-Konstante der Hand vor Welle 5 (0,107 m fingerwärts); die neue Hand (kleiner, höher)
+                // ließ den Griff 0,072 m neben ihr (gate:nervensystem-schmiede H-F). Ohne Mitte keine Faust: LAUT.
+                const hm = rig.handMitte && rig.handMitte[anchor.name];
+                if (!hm) {
+                    this.log("FAUST: die Hand trägt keine Hand-Mitte (Ofen-Beipack handMitte) — kein Griff.", "ERROR");
+                    return null;
+                }
+                const fo = { x: hm[0], y: hm[1], z: hm[2] };
                 const art = mesh.userData && mesh.userData.heldArt;
                 // Der Bogen steht rechtwinklig zum Unterarm (gestreckter Bogen-Arm: der Bogen senkrecht zum Pfeil), eine
                 // Klinge oder ein Schaft `neigung` unter der Waagrechten des hängenden Arms.
@@ -43624,11 +43637,7 @@ class AnazhRealm {
                         ? new THREE.Vector3(0, 0, 0)
                         : new THREE.Vector3((mesh.userData && mesh.userData.heldGripX) || 0, 0, 0);
                 gpT.multiplyScalar(ms).applyQuaternion(mesh.quaternion);
-                mesh.position.set(
-                    (fo.x * sx) / ankerSkala - gpT.x,
-                    fo.y / ankerSkala - gpT.y,
-                    fo.z / ankerSkala - gpT.z
-                );
+                mesh.position.set(fo.x - gpT.x, fo.y - gpT.y, fo.z - gpT.z);
                 anchor.add(mesh);
                 return mesh;
             }
@@ -89656,11 +89665,10 @@ AnazhRealm.HELD_MESH = Object.freeze({
     handOffset: Object.freeze({ x: 0, y: -0.5, z: 0.12 }), // im Arm-Anker-Lokalraum (Handfläche/-spitze)
     rootOffset: Object.freeze({ x: 0.42, y: 0.9, z: 0.32 }), // Fallback: vorn-rechts an der Körper-Wurzel
     tilt: Object.freeze({ x: 0.5, y: 0, z: 0 }), // ein leichter Vorwärts-Neigung (ein langes Werkzeug zeigt nach vorn/unten)
-    // DIE FAUST (W5) — das Studio-Gerät im Handgelenk des Studio-Menschen, in WELT-Metern im Gelenk-Raum (−y zu den
-    // Fingern, +z Daumenseite): die Griff-Mitte sitzt in der Hand-Mitte (gemessen: der Schwerpunkt der Haut-Vertices am
-    // Handgelenk-Gelenk liegt 0,107 m fingerwärts, 0,013 m quer, 0,014 m vorn); die Griff-Achse zeigt nach vorn und
-    // `neigung` unter die Waagrechte (der entspannte Arm: das Langschwert-Ende 0,4 m über dem Boden statt im Boden).
-    faustOffset: Object.freeze({ x: 0.013, y: -0.105, z: 0.014 }),
+    // DIE FAUST (W5) — das Studio-Gerät im Handgelenk des Studio-Menschen (−y zu den Fingern, +z Daumenseite): die
+    // Griff-Mitte sitzt in der Hand-Mitte, die die Hand selbst trägt (rig.handMitte je Handgelenk, Ofen-Beipack); die
+    // Griff-Achse zeigt nach vorn und `neigung` unter die Waagrechte (der entspannte Arm: das Langschwert-Ende über dem
+    // Boden statt im Boden).
     neigung: 0.44,
 });
 // ═══ KAMPF-GEFÜHL — DIE GESETZE DES SCHWUNGS ═══

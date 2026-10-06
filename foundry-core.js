@@ -5702,8 +5702,12 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // Kinn, Wangen, Masseter, Lippen — jede mit eigener Kante, der Kartoffel-Kopf der Tour). Wie beim Tier (V18.499)
     // gießt derselbe SDF-Guss die Haut- und Lippen-Kugeln des Kopfes (ohne die Augen-Gruppen: ihre Lider blinzeln) zu
     // EINER glatten Fläche im Kopf-Raum; die Lippe ist eine Farbe der Haut (Vertex, je Punkt das nächste Primitiv),
-    // keine Wurst auf dem Gesicht. Nur nah (lod 0) — das Fern-Standbild bleibt der Primitiv-Guss.
-    if (!fein && typeof kern.surfaceNets === "function" && kern.MENSCH_GESTALT && B.parts.head) {
+    // keine Wurst auf dem Gesicht. Nur nah (lod 0) — das Fern-Standbild bleibt der Primitiv-Guss. Ohne Hüllen-Maschine
+    // oder Gestalt-Tafel kein Mensch nah: LAUT (Integration W5-Körper; vorher fiel die Haut still weg — Kugel-Gesicht).
+    const handMitte = {};
+    if (!fein) {
+        if (typeof kern.surfaceNets !== "function" || !kern.MENSCH_GESTALT || !B.parts.head)
+            throw new Error("MENSCH-HAUT: Hüllen-Maschine, MENSCH_GESTALT oder Kopf fehlt (fail-closed)");
         const kopf = B.parts.head;
         const KH = kern.MENSCH_GESTALT.kopfHaut;
         const augen = [B.augen.eyeL, B.augen.eyeR].filter(Boolean);
@@ -5770,6 +5774,18 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             const hg = __huelleAusFeld(kern, Fh.f, Fh.nx, Fh.ny, Fh.nz, Fh.lo, HH.vox, 0, 0, null, null, 0);
             if (!hg) throw new Error("MENSCH-HAUT: die Hand-Haut lieferte keine Fläche");
             hand.add(new THREE.Mesh(hg, matFuer("haut"))); // Hand-lokal gebacken (Identität)
+            // DIE HAND-MITTE (Integration W5-Körper): der Schwerpunkt der Hand-Haut im Hand-Raum reist im Beipack — die
+            // Faust des Wirts setzt den Griff dorthin (vorher eine Welt-Konstante der alten Hand: 0,07 m daneben).
+            const hp2 = hg.attributes.position;
+            let mx = 0,
+                my = 0,
+                mz = 0;
+            for (let i = 0; i < hp2.count; i++) {
+                mx += hp2.getX(i);
+                my += hp2.getY(i);
+                mz += hp2.getZ(i);
+            }
+            handMitte[hn] = [mx / hp2.count, my / hp2.count, mz / hp2.count];
         }
     }
     // DAS BAUM-HAAR (V18.461): kern.haarStreu streut die Frisur als Strähnen
@@ -5819,6 +5835,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         base: skinCol,
         // V18.463 — die Bone-Ordnung der Haut-/Kleid-Hüllen (skinIndex zeigt hierauf).
         skinJoints: skinJoints,
+        // die Hand-Mitte je Hand im Hand-Raum (nur nah gegossen) — der Griff der Faust
+        ...(fein ? {} : { handMitte }),
     });
 }
 

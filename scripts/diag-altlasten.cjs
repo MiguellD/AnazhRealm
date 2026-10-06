@@ -445,6 +445,9 @@ const FORBIDDEN = [
     { token: "__TK.tierauge.c,", fiel: "Integration W5-Körper — das Lab liest tierAuge", auch: ["worlds/tetrapoda/tetrapoda.js"] },
     { token: "__TK.tierauge.emissiv", fiel: "Integration W5-Körper — die Glut ist ein Anteil der Iris (tierAuge)", auch: ["worlds/tetrapoda/tetrapoda.js"] },
     { token: "emissiv: 0x442200", fiel: "Integration W5-Körper — tierauge trägt glut, keine eigene Farbe", auch: ["tetrapoda-core.js"] },
+    // Integration 06.10. (W5-Körper) — DIE HAND-MITTE TRÄGT DIE HAND: die Welt-Konstante der Faust (die Hand vor Welle 5)
+    // ließ den Griff 0,072 m neben der neuen Hand; der Ofen gibt den Schwerpunkt der Hand-Haut im Beipack mit.
+    { token: "faustOffset", fiel: "Integration W5-Körper — der Griff sitzt auf rig.handMitte (Ofen-Beipack)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
