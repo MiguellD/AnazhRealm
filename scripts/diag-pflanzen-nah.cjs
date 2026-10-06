@@ -13,11 +13,12 @@
 //      Periode, Mikro-Rauschen je Ring zufällig) faltet in Ringel-Bänder: vorher Fichte/Tanne 0,44/0,42, Eiche 0,32,
 //      Karst 0,37. Die lebenden Laub- und Nadel-Rinden halten ≤ RINGEL_MAX; die Birke trägt ihre Zeilen absichtlich,
 //      das Totholz seine Zerfalls-Flecken (3D-Rauschen, kein periodischer Term) — beide stehen benannt außerhalb.
-//  (S) STRAUCH (Nah-Stufe L1, Gestalt 1): die Krone sind Karten aus dem EINEN Atlas (foliageTex, keine Klinge) und das
-//      Reisig trägt ≥ REISIG_MIN der Dreiecke. Vorher: 8 820 Klingen-Dreiecke, Rinde 24 %.
+//  (S) STRAUCH (Gestalt 1, beide Gitter-Stufen — die Nah-Stufe L0 und seit Welle 6 die Mittel-Stufe L1): die Krone sind
+//      Karten aus dem EINEN Atlas (foliageTex, keine Klinge) und das Reisig trägt ≥ REISIG_MIN der Dreiecke. Vorher:
+//      8 820 Klingen-Dreiecke, Rinde 24 %.
 //  (B) BLUME (L0, Gestalten 1/2): die Blütenblätter tragen den Saftmal-Verlauf — je Blatt Luminanz Spitze : Grund im
 //      Mittel ≥ SAFTMAL_MIN. Vorher: eine Farbe je Blatt (1,0).
-//  (M) BLATT-MASS (Laub-Bäume L0 und der Strauch L1, Gestalt 1): die Länge eines Atlas-Blatts in der Welt =
+//  (M) BLATT-MASS (Laub-Bäume L0 und der Strauch L0/L1, Gestalt 1): die Länge eines Atlas-Blatts in der Welt =
 //      mittlere Karten-Kante (aus den gelieferten Quads, ÷ kern) × Blatt-Länge des Zweigs der Zelle (Baum ZWEIG_BLATT,
 //      Strauch ZWEIG_GROSS) / BLATT_ATLAS_ZELLE × Welt-Skala im Band
 //      BLATT_BAND. Vorher 1,4–1,7 m (Rosetten), dann 0,37–0,49 m (Zweig mit 27-px-Blättern).
@@ -429,7 +430,7 @@ function leserUrteil(quelle) {
         for (const p of baeume) await fall(p, 0, 1);
         for (const p of baeume) await fall(p, 1, 1);
         await fall("birke", 0, 2);
-        for (const p of Object.keys(buch).filter((x) => art(x) === "shrub")) await fall(p, 1, 1);
+        for (const p of Object.keys(buch).filter((x) => art(x) === "shrub")) for (const l of [0, 1]) await fall(p, l, 1);
         for (const p of Object.keys(buch).filter((x) => art(x) === "flower"))
             for (const s of [1, 2]) await fall(p, 0, s);
     });
@@ -502,7 +503,7 @@ function leserUrteil(quelle) {
     const kopie = (T) => T.map((t) => Object.assign({}, t, { col: t.col ? Float32Array.from(t.col) : null }));
     const birke = roh["birke-s1-L0"],
         fichte = roh["fichte-s1-L0"],
-        strauch = roh["strauch-s1-L1"],
+        strauch = roh["strauch-s1-L0"],
         blume = roh["blume-s1-L0"],
         eiche = roh["eiche-s1-L0"],
         tanne = roh["tanne-s1-L0"],

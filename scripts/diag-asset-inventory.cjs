@@ -7,7 +7,9 @@
 //
 //   STUDIO     — aus der Studio-Pipeline (fscatter:* Scatter-Gruppen · f:/fimp:-Leaves der
 //                platzierten Architektur · das Studio-Gras-Asset [geo.userData.foundryGras] · die Senken der
-//                Nah-Streu und die Kacheln der Nah-Wiese über ihren Foundry-Leaf-Key).
+//                Nah-Streu und die Senken der Nah-Wiese über ihren Foundry-Leaf-Key). Die Senken der Nah-Wiese füllt
+//                ihr Sicht-Satz im Haupt-Pass — headless legt ihn die Linse selbst (scripts/lib/wiese-sicht.cjs) und
+//                verlangt: der Ring am Start trägt Büschel, jede Senke belegt und als Studio-Emitter gezählt (W).
 //   SUBSTANZ   — Welt-Substanz ohne Studio-Gegenstück, bewusst KEINE Silhouetten-Frage
 //                (Terrain-Chunks · Wasser [isHydrosphere] · Himmel/Gestirne · Kreaturen ·
 //                Avatar · nicht-vegetative platzierte Architektur · die per userData.inventar
@@ -44,6 +46,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 const PORT = Number(process.env.DIAG_PORT || 4517);
 const root = path.resolve(__dirname, "..");
 const mime = {
@@ -83,6 +86,7 @@ const server = http.createServer((req, res) => {
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
     });
+    await page.evaluateOnNewDocument(installWieseSicht);
     page.on("pageerror", (e) => console.log("[ERR]", (e.stack || e.message).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     const out = await page.evaluate(async (doSelftest) => {
@@ -132,6 +136,10 @@ const server = http.createServer((req, res) => {
             }
         }
 
+        // ── Die Nah-Wiese zeichnet nur, was ihr Sicht-Satz legt (`_nahWieseSicht` im Haupt-Pass) — der Null-Renderer
+        // zeichnet nie, ihre Senken stünden leer und würden als „leerer Pool" übersprungen. Die Linse legt den Satz
+        // selbst (scripts/lib/wiese-sicht.cjs) — jede Senke muss danach als STUDIO-Emitter im Zensus stehen.
+        o.wiese = window.__wieseSicht(r);
         // ── Identitäts-Karten (die Teilmenge wird über IDENTITÄT klassifiziert, V18.346):
         const st = r.state;
         const grassSet = new Set();
@@ -155,12 +163,11 @@ const server = http.createServer((req, res) => {
                 if (!meshKeys.has(g.mesh)) meshKeys.set(g.mesh, []);
                 meshKeys.get(g.mesh).push(String(k));
             }
-        // V18.508 — die Nah-Wiese (Kamera-Ring aus dem Studio-Gras): je Mesh sein Foundry-Leaf-Key; ein
-        // Ring-Mesh ohne Key bleibt unbekannt → Verletzung (fail-closed).
+        // V18.508 — die Nah-Wiese (Kamera-Ring aus dem Studio-Gras): je Senke ihr Foundry-Leaf-Key; eine
+        // Senke ohne Key bleibt unbekannt → Verletzung (fail-closed).
         if (st.nahWiese)
-            for (const k of st.nahWiese.kacheln.values())
-                for (const im of k.meshes || [])
-                    if (im.userData && im.userData.leafKey) meshKeys.set(im, ["nahWiese#" + im.userData.leafKey]);
+            for (const a of st.nahWiese.senken.values())
+                if (a.mesh && a.leafKey) meshKeys.set(a.mesh, ["nahWiese#" + a.leafKey]);
         // Waldboden 04.10. — die Nah-Streu (Kamera-Ring aus den Studio-Bodenarten): je Senke ihr Foundry-Leaf-Key;
         // eine Senke ohne Key bleibt unbekannt → Verletzung (fail-closed).
         if (st.nahStreu)
@@ -317,6 +324,31 @@ const server = http.createServer((req, res) => {
 
         o.zensus = census();
 
+        // ── W — die Nah-Wiese im Zensus (Welle 6): der Ring am Start trägt Büschel, jede Senke ist nach dem Sicht-Satz
+        // belegt und steht als STUDIO-Emitter im Zensus (über ihren Foundry-Leaf-Key) — sonst ist die Wiese leer bewiesen.
+        const wieseImZensus = (z) =>
+            Object.entries(z.detail.studio)
+                .filter(([k]) => k.indexOf("[nahWiese#") >= 0)
+                .reduce((s, [, n]) => s + n, 0);
+        const wieseUrteil = (w, z) => {
+            const f = [];
+            if (!(w.senken > 0)) f.push("keine Senke der Nah-Wiese — die Studio-Gras-Vorlagen fehlen");
+            else if (!(w.bueschel > 0))
+                f.push(
+                    `der Ring am Start trägt keinen Büschel (${w.kacheln} Kacheln) — die Linse misst die Nah-Wiese nicht`
+                );
+            else {
+                const leer = Object.keys(w.je).filter((k) => !(w.je[k] > 0));
+                if (leer.length)
+                    f.push(`${leer.length} Senken leer nach dem Sicht-Satz (${leer.join(", ")}) — leer bewiesen`);
+                const n = wieseImZensus(z);
+                if (n !== w.senken) f.push(`${n} von ${w.senken} Senken der Nah-Wiese als Studio-Emitter gezählt`);
+            }
+            return f;
+        };
+        o.wieseZensus = wieseImZensus(o.zensus);
+        o.wieseFehl = wieseUrteil(o.wiese, o.zensus);
+
         // ── Positiv-Beweis: die Linse misst eine LEBENDE Studio-Streu (sonst vakuös).
         o.studioScatterGroups = 0;
         if (st.archInstanceGroups)
@@ -460,6 +492,21 @@ const server = http.createServer((req, res) => {
                 for (const m of injected) st.scene.remove(m);
                 if (st.archInstanceGroups) st.archInstanceGroups.delete("baum_eiche#0@3,3");
             }
+            // (c) W: eine belegte Senke der Nah-Wiese ohne Leaf-Key MUSS als Verletzung zählen (sie zeichnet, der Zensus
+            // sieht sie — nicht als leeren Pool), und ein Sicht-Satz in den Himmel (leere Senken) MUSS das W-Urteil röten.
+            if (st.nahWiese) {
+                const a = [...st.nahWiese.senken.values()].find((x) => x.anzahl > 0 && x.mesh);
+                o.selftestWiese = { name: a ? a.name : null, ohneKey: false, blind: [] };
+                if (a) {
+                    const keys = meshKeys.get(a.mesh);
+                    meshKeys.delete(a.mesh);
+                    const z3 = census();
+                    meshKeys.set(a.mesh, keys);
+                    o.selftestWiese.ohneKey = z3.violations.some((v) => v.name === a.name);
+                }
+                o.selftestWiese.blind = wieseUrteil(window.__wieseSicht(r, true), census());
+                window.__wieseSicht(r);
+            }
         }
         return o;
     }, selftest);
@@ -494,7 +541,14 @@ const server = http.createServer((req, res) => {
     );
     if (inv.lost.length) for (const k of inv.lost.slice(0, 20)) console.log(`     ❌ verloren: ${k}`);
 
+    const w = out.wiese || { je: {} };
+    console.log(
+        `  ── NAH-WIESE (Sicht-Satz von der Linse gelegt): ${w.senken} Senken · ${w.bueschel} Büschel im Ring · gelegt ${Object.values(w.je).join("/")} · als Studio-Emitter gezählt ${out.wieseZensus}`
+    );
+    for (const x of out.wieseFehl || []) console.log(`     ❌ ${x}`);
+
     const fails = [];
+    for (const x of out.wieseFehl || []) fails.push("Nah-Wiese: " + x);
     if (!out.foundryReady) fails.push("Foundry nicht ready (Linse misst die falsche Welt)");
     if (!(out.studioScatterGroups > 0)) fails.push("keine bestückte fscatter:-Gruppe (Linse misst nichts)");
     if (!(out.stampedClasses > 0)) fails.push("keine gestempelte inventar-Klasse in der Szene (Wörterbuch vakuös)");
@@ -524,13 +578,20 @@ const server = http.createServer((req, res) => {
             fails.push("Selbst-Test: Klassifikations-Regeln fehlerhaft");
         if (!out.selftestLost || !out.selftestLost.fired)
             fails.push("Selbst-Test: synthetisch verlorener Key nicht gefangen");
+        const sw = out.selftestWiese || { blind: [] };
+        console.log(
+            `  Selbst-Test Nah-Wiese: belegte Senke ohne Leaf-Key (${sw.name}) → ${sw.ohneKey ? "Verletzung ✅" : "NICHT gesehen ❌"} · Sicht-Satz in den Himmel → ${sw.blind.length ? "rot ✅ (" + sw.blind[0] + ")" : "NICHT rot ❌"}`
+        );
+        if (!sw.ohneKey) fails.push("Selbst-Test: eine belegte Senke der Nah-Wiese ohne Leaf-Key blieb ungesehen");
+        if (!sw.blind.length)
+            fails.push("Selbst-Test: leere Senken der Nah-Wiese (Blick in den Himmel) röten das W-Urteil nicht");
     }
     if (fails.length) {
         console.log(`\n❌ ASSET-INVENTUR ROT: ${fails.join(" · ")}`);
         process.exit(1);
     }
     console.log(
-        `\n✅ ASSET-INVENTUR GRÜN — ${z.emitters} Emitter erklärt, 0 Fremd-Silhouetten (Studio ${z.buckets.studio} · Substanz ${z.buckets.substanz} · Entscheid ${z.buckets.entscheid}); H3: ${inv.requested} angefragte Keys ⊆ visible|cached (0 verloren, 0 hängend).`
+        `\n✅ ASSET-INVENTUR GRÜN — ${z.emitters} Emitter erklärt, 0 Fremd-Silhouetten (Studio ${z.buckets.studio} · Substanz ${z.buckets.substanz} · Entscheid ${z.buckets.entscheid}); H3: ${inv.requested} angefragte Keys ⊆ visible|cached (0 verloren, 0 hängend); die Nah-Wiese zeichnet ${out.wieseZensus} belegte Studio-Senken.`
     );
     process.exit(0);
 })().catch((e) => {

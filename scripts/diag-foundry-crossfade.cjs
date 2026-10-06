@@ -350,31 +350,32 @@ async function runPartB() {
         }
         res.warm = { l0: warm[0], l1: warm[1], l2: warm[2] };
         if (!(warm[0] && warm[1] && warm[2])) return res;
-        // DER STRAUCH (Art ohne L0, kindStages [1, 2]): seine L1 ist die einzige Nah-Stufe (aLodLevel 3) — sie blendet
-        // nie ein, aber im L1/L2-Band zum Billboard aus. Eigener Ort, eigener Sweep.
+        // DER STRAUCH (Welle 6: kindStages [0, 1, 2], die Kette wie der Baum): Nah-Stufe L0 (aLodLevel 1), Mittel-Stufe L1
+        // (aLodLevel 2) und das Billboard — bis Welle 6 war seine L1 die einzige Nah-Stufe (aLodLevel 3). Eigener Ort,
+        // eigener Sweep.
         const sx = px + 400,
             sz = pz;
         const sy = r._voxelSurfaceY(sx, sz) || 1;
         const sKey = r._growTreeBlueprintForSpawn("busch_hazel", "w54-strauch-sweep");
         const sEntry = sKey ? r.spawnArchitecture(sKey, { x: sx, y: sy, z: sz }, { silent: true, seed: 3 }) : null;
         res.strauchPreset = sEntry ? r._foundryPresetForEntry(sEntry) : null;
-        const sWarm = { 1: false, 2: false };
+        const sWarm = { 0: false, 1: false, 2: false };
         const dlS = performance.now() + 120000;
-        while (sEntry && performance.now() < dlS && !(sWarm[1] && sWarm[2])) {
-            for (const lod of [1, 2]) {
+        while (sEntry && performance.now() < dlS && !(sWarm[0] && sWarm[1] && sWarm[2])) {
+            for (const lod of [0, 1, 2]) {
                 if (!sWarm[lod]) {
                     const fl = r._foundryFlattenFor(sEntry, res.strauchPreset, lod);
                     if (fl && fl.instanceable) sWarm[lod] = true;
                 }
             }
-            if (!(sWarm[1] && sWarm[2])) {
+            if (!(sWarm[0] && sWarm[1] && sWarm[2])) {
                 try {
                     r._gameLoopTick(performance.now());
                 } catch (_e) {}
                 await sleep(120);
             }
         }
-        res.strauchWarm = { l1: sWarm[1], l2: sWarm[2] };
+        res.strauchWarm = { l0: sWarm[0], l1: sWarm[1], l2: sWarm[2] };
         // Der Strauch verlässt die Welt vor der Baseline (die Slot-Bilanz zählt nur den Proben-Baum); der Sweep pflanzt
         // ihn mit warmen Stufen neu und räumt ihn wieder.
         if (sEntry) r.removeArchitecture(sEntry);
@@ -791,9 +792,9 @@ function perfWahrheit(srcNC) {
         v.push("die Karte trägt nicht die Höhe der Höhen-Stufe (das Höhen-Buch) als Sichthöhe");
     const stempel = fnBody(srcNC, /\n {4}_lodSlotStamp\(g, slot, scale, occluded, leaf\)\s*\{/) || "";
     if (!/h = leaf\.sicht \* s;/.test(stempel)) v.push("der Slot-Stempel schreibt die Karten-Sichthöhe nicht als Vorlage × Instanz-Skala");
-    // Die einzige Nah-Stufe (Strauch: keine L0) blendet zum Billboard aus (aLodLevel 3), nie ungemaskt.
+    // Die einzige Nah-Stufe einer Art ohne L0 (bis Welle 6 der Strauch) blendet zum Billboard aus (aLodLevel 3), nie ungemaskt.
     if (!/_foundryDeclaredStage\(stage\.preset, 0\) === 0\s*\?\s*2\s*:\s*3/.test(srcNC))
-        v.push("die L1 einer Art ohne L0 (Strauch) ist ungemaskt — sie blendet nicht zum Billboard aus");
+        v.push("die L1 einer Art ohne L0 ist ungemaskt — sie blendet nicht zum Billboard aus");
     if (!/_fadeIn\.max\(T\.step\(T\.float\(2\.5\), _aLod\)\)\.mul\(T\.step\(_f1o, _dh\)\)/.test(maske))
         v.push("die Maske kennt die einzige Nah-Stufe nicht (aLodLevel 3: nur die Fern-Ausblendung)");
     const hoehe = fnBody(srcNC, /\n {4}_lodTreeVisHeight\(entry\)\s*\{/) || "";
@@ -1164,14 +1165,22 @@ async function main() {
         );
         const ST = SW.strauch;
         check(
-            "STRAUCH: Preset strauch, L1 und Billboard warm",
-            out.strauchPreset === "strauch" && out.strauchWarm && out.strauchWarm.l1 && out.strauchWarm.l2,
+            "STRAUCH: Preset strauch, L0, L1 und Billboard warm",
+            out.strauchPreset === "strauch" &&
+                out.strauchWarm &&
+                out.strauchWarm.l0 &&
+                out.strauchWarm.l1 &&
+                out.strauchWarm.l2,
             JSON.stringify({ preset: out.strauchPreset, warm: out.strauchWarm })
         );
         if (ST) {
             check(
-                "STRAUCH: die L1 ist die einzige Nah-Stufe (aLodLevel 3) und trifft das Billboard im Band",
-                (ST.voll.modi.l1e || 0) > 0 && (ST.voll.modi.fin || 0) > 0 && !ST.voll.modi.frei,
+                "STRAUCH: die Kette wie der Baum — L0 (aLodLevel 1) und L1 (aLodLevel 2) im Sweep, das Billboard im Band",
+                (ST.voll.modi.l0 || 0) > 0 &&
+                    (ST.voll.modi.l1 || 0) > 0 &&
+                    (ST.voll.modi.fin || 0) > 0 &&
+                    !ST.voll.modi.l1e &&
+                    !ST.voll.modi.frei,
                 JSON.stringify(ST.voll.modi)
             );
             check("STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)", ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0, z(ST.voll));

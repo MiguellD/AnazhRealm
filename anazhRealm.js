@@ -26437,12 +26437,14 @@ class AnazhRealm {
 
     // DIE NAH-WIESE (V18.508): nah am Auge wächst die Wiese aus dem Studio-Gras (Foundry „gras", Stufen
     // aus `kindStages.grass`), jenseits trägt die Boden-Funktion. Kosten an den SCHIRM gebunden (Gebot 7):
-    // ein Kachel-Ring um die Kamera, nie je Chunk. `stufe1` = Radius der feinen Stufe (L1), `radius` =
-    // Ende der Büschel, `rand` = Ausdünnungs-Band davor (die Kachel zeigt nur einen Anteil ihrer zufällig
-    // geordneten Büschel), `kachel` = Kachel-Kante (Frustum-Cull-Einheit). Raster, Dichte-Gesetz und
-    // Skala kommen aus dem Studio (understory.grassStep · groundCover.grass · placement.scale.gras).
+    // ein Kachel-Ring um die Kamera, nie je Chunk; gezeichnet wird je Büschel, was das Auge sieht (der Sicht-Satz
+    // `_nahWieseSicht`, EINE Senke je Vorlage × Stufe × Teil). `stufe1` = Radius der feinen Stufe (L1) um das Auge, je
+    // Büschel, `stufe1Rand` = ihr Austritt dahinter (Hysterese), `radius` = Ende der Büschel, `rand` = Ausdünnungs-Band
+    // davor (ein Büschel zeigt sich, solange seine Würfel-Ordnung unter dem Anteil seiner Distanz liegt), `kachel` =
+    // Kachel-Kante (Bau- und Grob-Cull-Einheit). Raster, Dichte-Gesetz und Skala kommen aus dem Studio
+    // (understory.grassStep · groundCover.grass · placement.scale.gras).
     static get NAH_WIESE() {
-        return Object.freeze({ kachel: 6, stufe1: 5, radius: 14, rand: 4, kachelnJeTakt: 1 });
+        return Object.freeze({ kachel: 6, stufe1: 5, stufe1Rand: 0.5, radius: 14, rand: 4, kachelnJeTakt: 1 });
     }
 
     // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (`_grassInstanceMat` baseCol) UND den Meadow-
@@ -29083,7 +29085,7 @@ class AnazhRealm {
             // keep Stufe L0 (lod=0): Laub keep = clamp(2f0−1) < dh · Rinde keep = f0 < dh.
             const _keep0 = _foliage ? T.step(_f0.mul(2.0).sub(1.0).clamp(0.0, 1.0), _dh) : T.step(_f0, _dh);
             // keep Stufe L1 (lod=1): (Laub min(2f0,1) ≥ dh · Rinde f0 ≥ dh) UND f1o < dh. Die einzige Nah-Stufe einer
-            // Art ohne L0 (aLodLevel 3, der Strauch) blendet nie ein, nur zum Billboard aus: keep = f1o < dh.
+            // Art ohne L0 (aLodLevel 3) blendet nie ein, nur zum Billboard aus: keep = f1o < dh.
             const _fadeIn = _foliage ? T.step(_dh, _f0.mul(2.0).min(T.float(1.0))) : T.step(_dh, _f0);
             const _keep1 = _fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh));
             // Stufen-Wahl per aLodLevel (1 → keep0 · 2 → keep1) + das vLod>0.5-Gate (0 → ungemaskt).
@@ -32562,26 +32564,19 @@ class AnazhRealm {
         return out;
     }
 
-    // Entsorgen gibt die Foundry-Referenz zurück (V4(B)-Ref-Zähler `_liveRefs` der Cache-Gruppe): solange
-    // eine Kachel die Studio-Geometrie zeichnet, räumt der LRU sie nicht; war sie geräumt, fällt sie jetzt.
-    _nahWieseKachelEntsorgen(k) {
-        if (k.meshes)
-            for (const im of k.meshes) {
-                if (im.parent) im.parent.remove(im);
-                this._instanzAbschied(im);
-            }
-        k.meshes = null;
-        for (const src of k.quellen || []) {
-            src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
-            if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
-        }
-        k.quellen = null;
+    // Eine Kachel fällt aus dem Ring (oder baut neu): sie trägt nur Daten, der Sicht-Satz legt sich neu.
+    _nahWieseKachelFaellt(key) {
+        const nw = this.state.nahWiese;
+        if (!nw || !nw.kacheln.delete(key)) return false;
+        nw.neu = true;
+        return true;
     }
 
-    // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt
-    // Neubauten), Stufe L1/L2 nach Kachel-Distanz, das Rand-Band dünnt über `count`, ausserhalb fällt die
-    // Kachel. Ein Chunk-Neubau (Edit) oder ein neues Studio-Asset (Saison) baut die betroffenen Kacheln neu.
-    // Rückgabe: Zahl der Neubauten (0 = der Ring steht).
+    // Je Takt (scatterDeco, prio 2): Kacheln im Ring um die KAMERA anlegen (nah zuerst, ≤ kachelnJeTakt Neubauten),
+    // außerhalb fällt die Kachel; die Senken folgen den Studio-Vorlagen (`_nahWieseSenken`). Ein Chunk-Neubau (Edit)
+    // baut die betroffenen Kacheln neu. Stufe, Rand-Band und Sicht wählt der Sicht-Satz je Büschel und Frame
+    // (`_nahWieseSicht`) — eine Kachel baut nur, wenn sie den Ring betritt. Rückgabe: Zahl der Neubauten (0 = der Ring
+    // steht).
     _tickNahWiese(deadline) {
         const st = this.state;
         if (!st.scene || !st.camera || typeof THREE === "undefined") return 0;
@@ -32590,7 +32585,7 @@ class AnazhRealm {
             const gruppe = new THREE.Group();
             gruppe.name = "nahWiese";
             st.scene.add(gruppe);
-            st.nahWiese = { gruppe, kacheln: new Map(), chunkStand: new Map() };
+            st.nahWiese = { gruppe, kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
         }
         const nw = st.nahWiese;
         const cam = st.camera.position;
@@ -32599,12 +32594,10 @@ class AnazhRealm {
         const reichweite = Math.ceil(NW.radius / NW.kachel) + 1;
         // Chunk-Neubau → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden).
         for (const [key, k] of nw.kacheln) {
-            if (!k.chunks) continue;
             for (const ck of k.chunks) {
                 const e = st.voxelChunks && st.voxelChunks.get(ck);
                 if (!e || e.surfMap !== k.chunkKarten.get(ck)) {
-                    this._nahWieseKachelEntsorgen(k);
-                    nw.kacheln.delete(key);
+                    this._nahWieseKachelFaellt(key);
                     break;
                 }
             }
@@ -32620,115 +32613,257 @@ class AnazhRealm {
             }
         }
         const gewollt = new Set(wunsch.map((w) => w.key));
-        for (const [key, k] of nw.kacheln) {
-            if (gewollt.has(key)) continue;
-            this._nahWieseKachelEntsorgen(k);
-            nw.kacheln.delete(key);
-        }
+        for (const key of [...nw.kacheln.keys()]) if (!gewollt.has(key)) this._nahWieseKachelFaellt(key);
         wunsch.sort((a, b) => a.d - b.d);
+        nw.offen = 0;
+        // Die zwei Studio-Vorlagen je Stufe (Foundry-Cache; eine Anfrage, falls noch kalt) — einmal je Takt. Der Wurf
+        // ist das Studio-Budget (B2c grass[stufe].schatten): die Nah-Wiese legt ihren Satz am AUGE — ein Werfer bräuchte
+        // den Satz der Kaskade, das Budget nennt für das Gras keinen (laut, falls doch).
+        for (const stufe of [1, 2]) {
+            if (this._foundryBudgetZeile("gras", stufe).schatten !== false)
+                throw new Error(`Nah-Wiese: gras[${stufe}] wirft — der Sicht-Satz cullt am Auge, nie für die Kaskade`);
+            for (let v = 0; v < 2; v++) {
+                const fl = this._foundryFlattenFor({ seed: v + 1 }, "gras", stufe);
+                if (fl && Array.isArray(fl.leaves) && fl.leaves.length) this._nahWieseSenken(v, stufe, fl);
+                else nw.offen++; // das Studio-Asset kommt noch (die Foundry-Anfrage läuft)
+            }
+        }
         const cfg = this._voxelChunkConfig(0);
         let gebaut = 0;
-        nw.offen = 0;
-        // Die zwei Studio-Vorlagen je Stufe (Foundry-Cache; eine Anfrage, falls noch kalt) — einmal je Takt.
-        const flatsJe = {};
-        for (const stufe of [1, 2])
-            flatsJe[stufe] = [0, 1].map((v) => this._foundryFlattenFor({ seed: v + 1 }, "gras", stufe));
         for (const w of wunsch) {
-            const stufe = w.d <= NW.stufe1 ? 1 : 2;
-            const anteil = Math.max(0, Math.min(1, (NW.radius - w.d) / NW.rand + 0.5));
-            let k = nw.kacheln.get(w.key);
-            const flats = flatsJe[stufe];
-            const bereit = flats.every((f) => f && f.leaves);
-            if (k && k.stufe === stufe && k.flats && k.flats[0] === flats[0] && k.flats[1] === flats[1]) {
-                for (const im of k.meshes || []) AnazhRealm._instanzZahl(im, Math.round(im.userData.nGesamt * anteil));
+            if (nw.kacheln.has(w.key)) continue;
+            if (gebaut >= NW.kachelnJeTakt || (deadline && performance.now() > deadline)) {
+                nw.offen++; // das Takt-Budget ist leer
                 continue;
             }
-            if (!bereit || gebaut >= NW.kachelnJeTakt || (deadline && performance.now() > deadline)) {
-                nw.offen++; // Studio-Asset kommt noch (Foundry-Anfrage läuft) oder das Takt-Budget ist leer
+            const bueschel = this._nahWieseKachelBueschel(w.tx, w.tz);
+            if (!bueschel) {
+                nw.offen++;
                 continue;
             }
-            if (!k) {
-                const bueschel = this._nahWieseKachelBueschel(w.tx, w.tz);
-                if (!bueschel) {
-                    nw.offen++;
-                    continue;
-                }
-                const chunks = new Set();
-                for (const [ex, ez] of [
-                    [0, 0],
-                    [1, 0],
-                    [0, 1],
-                    [1, 1],
-                ]) {
-                    const cx = Math.floor(((w.tx + ex) * NW.kachel - (ex ? 1e-6 : 0)) / cfg.span);
-                    const cz = Math.floor(((w.tz + ez) * NW.kachel - (ez ? 1e-6 : 0)) / cfg.span);
-                    chunks.add(`${cx},${cz}`);
-                }
-                const chunkKarten = new Map();
-                for (const ck of chunks) {
-                    const e = st.voxelChunks.get(ck);
-                    chunkKarten.set(ck, e ? e.surfMap : undefined);
-                }
-                k = { bueschel, chunks, chunkKarten, stufe: 0, flats: null, meshes: null };
-                nw.kacheln.set(w.key, k);
+            const chunks = new Set();
+            for (const [ex, ez] of [
+                [0, 0],
+                [1, 0],
+                [0, 1],
+                [1, 1],
+            ]) {
+                const cx = Math.floor(((w.tx + ex) * NW.kachel - (ex ? 1e-6 : 0)) / cfg.span);
+                const cz = Math.floor(((w.tz + ez) * NW.kachel - (ez ? 1e-6 : 0)) / cfg.span);
+                chunks.add(`${cx},${cz}`);
             }
-            this._nahWieseKachelEntsorgen(k);
-            // Der Wurf der Wiese ist das Studio-Budget (B2c grass[stufe].schatten: die Stufe wirft selbst oder nicht).
-            const wirft = this._foundryBudgetZeile("gras", stufe).schatten === stufe;
-            k.meshes = this._nahWieseKachelMeshes(k.bueschel, flats, w.key, wirft);
-            k.quellen = [];
-            for (const fl of flats)
-                for (const lf of fl.leaves)
-                    if (lf._srcGroup && !k.quellen.includes(lf._srcGroup)) {
-                        lf._srcGroup._liveRefs = (lf._srcGroup._liveRefs || 0) + 1;
-                        k.quellen.push(lf._srcGroup);
-                    }
-            for (const im of k.meshes) {
-                AnazhRealm._instanzZahl(im, Math.round(im.userData.nGesamt * anteil));
-                nw.gruppe.add(im);
+            const chunkKarten = new Map();
+            for (const ck of chunks) {
+                const e = st.voxelChunks.get(ck);
+                chunkKarten.set(ck, e ? e.surfMap : undefined);
             }
-            k.stufe = stufe;
-            k.flats = flats;
+            nw.kacheln.set(
+                w.key,
+                Object.assign({ chunks, chunkKarten }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
+            );
+            nw.neu = true;
             gebaut++;
         }
         return gebaut;
     }
 
-    // Je Vorlage × Teil-Mesh EIN InstancedMesh (Matrix = Ort · Drehung · Studio-Streuung · Welt-Skala der
-    // Vorlage); Instanzen in Büschel-Ordnung, damit `count` die Ausdünnung trägt. `wirft` = der Budget-Wurf der Stufe;
-    // ein Schatten-Zwilling des Flats (Budget nennt eine andere Stufe) wirft auf der Zwillings-Ebene, unsichtbar.
-    _nahWieseKachelMeshes(bueschel, flats, key, wirft) {
-        const out = [];
-        const m4 = new THREE.Matrix4();
-        const q = new THREE.Quaternion();
-        const pv = new THREE.Vector3();
-        const sv = new THREE.Vector3();
-        const up = new THREE.Vector3(0, 1, 0);
-        for (let v = 0; v < 2; v++) {
-            const liste = bueschel.filter((b) => b.vorlage === v);
-            if (!liste.length) continue;
-            for (const lf of flats[v].leaves) {
-                const im = AnazhRealm._instanzMesh(lf.geom, lf.mat, liste.length);
-                for (let i = 0; i < liste.length; i++) {
-                    const b = liste[i];
-                    pv.set(b.x, b.y, b.z);
-                    q.setFromAxisAngle(up, b.rot);
-                    sv.set(b.s, b.s, b.s);
-                    m4.compose(pv, q, sv).multiply(lf.localMatrix);
-                    im.setMatrixAt(i, m4);
-                }
-                im.instanceMatrix.needsUpdate = true;
-                im.castShadow = lf.shadowTwin === true || wirft === true;
-                if (lf.shadowTwin) im.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
-                im.receiveShadow = true;
-                im.computeBoundingSphere();
-                im.name = "nahWiese:" + key;
-                im.userData.nGesamt = liste.length;
-                im.userData.leafKey = lf.leafKey; // die Studio-Identität (Foundry-Leaf) für Inventur und Linsen
-                out.push(im);
+    // Die Daten einer Kachel: je Büschel die Basis-Matrix (Ort · Drehung · Skala — die Welt-Skala des Studio-Teils hängt
+    // der Sicht-Satz an), die Hysterese der Stufe (`l1`) und die Kachel-Kugel ohne Büschel-Radius (grober Cull vor
+    // dem Büschel-Test).
+    _nahWieseKachelDaten(tx, tz, bueschel) {
+        const K = AnazhRealm.NAH_WIESE.kachel;
+        const n = bueschel.length;
+        const basis = new Float32Array(n * 16);
+        const m4 = this._tmpWieseM4 || (this._tmpWieseM4 = new THREE.Matrix4());
+        const q = this._tmpWieseQ || (this._tmpWieseQ = new THREE.Quaternion());
+        const pv = this._tmpWieseP || (this._tmpWieseP = new THREE.Vector3());
+        const sv = this._tmpWieseS || (this._tmpWieseS = new THREE.Vector3());
+        const up = this._tmpWieseUp || (this._tmpWieseUp = new THREE.Vector3(0, 1, 0));
+        let y0 = Infinity,
+            y1 = -Infinity,
+            sMax = 0;
+        for (let i = 0; i < n; i++) {
+            const b = bueschel[i];
+            pv.set(b.x, b.y, b.z);
+            q.setFromAxisAngle(up, b.rot);
+            sv.set(b.s, b.s, b.s);
+            m4.compose(pv, q, sv).toArray(basis, i * 16);
+            if (b.y < y0) y0 = b.y;
+            if (b.y > y1) y1 = b.y;
+            if (b.s > sMax) sMax = b.s;
+        }
+        return {
+            bueschel,
+            basis,
+            l1: new Uint8Array(n),
+            mx: (tx + 0.5) * K,
+            mz: (tz + 0.5) * K,
+            y0: n ? y0 : 0,
+            y1: n ? y1 : 0,
+            sMax,
+        };
+    }
+
+    // Die Senken einer Vorlage × Stufe: je Studio-Teil EINE InstancedMesh für den ganzen Ring (`nahWiese:<v>:L<stufe>:<p>`).
+    // Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt; ein neues Studio-Asset
+    // (Saison) ersetzt die Senken der Vorlage. Die Sicht-Kugel der Vorlage: Höhe der Mitte und Radius in Büschel-Skala 1
+    // (die waagrechte Lage der Mitte geht in den Radius — der Büschel dreht um die Hochachse).
+    _nahWieseSenken(v, stufe, fl) {
+        const nw = this.state.nahWiese;
+        const kopf = `${v}:L${stufe}`;
+        const alt = nw.vorlagen.get(kopf);
+        if (alt && alt.flat === fl) return;
+        if (alt) for (const a of alt.senken) this._nahWieseSenkeFaellt(a);
+        const kugel = this._tmpWieseKugel || (this._tmpWieseKugel = new THREE.Sphere());
+        const senken = [];
+        let cy = null,
+            r = 0;
+        for (let p = 0; p < fl.leaves.length; p++) {
+            const lf = fl.leaves[p];
+            if (!lf || !lf.geom || !lf.mat)
+                throw new Error(
+                    `Nah-Wiese: Vorlage ${kopf} Teil ${p} ohne Geometrie oder Stoff — kein stiller Ausfall`
+                );
+            const a = {
+                key: `${kopf}:${p}`,
+                name: `nahWiese:${v}:L${stufe}:${p}`,
+                geo: lf.geom,
+                mat: lf.mat,
+                lokal: lf.localMatrix,
+                leafKey: lf.leafKey,
+                quelle: lf._srcGroup || null,
+                mesh: null,
+                kap: 0,
+                anzahl: 0,
+            };
+            if (a.quelle) a.quelle._liveRefs = (a.quelle._liveRefs || 0) + 1;
+            this._nahWieseMesh(a, 256);
+            nw.senken.set(a.key, a);
+            senken.push(a);
+            if (!lf.geom.boundingSphere) lf.geom.computeBoundingSphere();
+            kugel.copy(lf.geom.boundingSphere).applyMatrix4(lf.localMatrix);
+            if (cy === null) cy = kugel.center.y;
+            r = Math.max(r, kugel.radius + Math.hypot(kugel.center.x, kugel.center.z) + Math.abs(kugel.center.y - cy));
+        }
+        nw.vorlagen.set(kopf, { flat: fl, senken, cy: cy || 0, r });
+        nw.neu = true;
+    }
+
+    // Die Senken-InstancedMesh (neu oder gewachsen): Inhalt bis zur Anzahl kopiert, die alte verlässt die Szene.
+    _nahWieseMesh(a, kap) {
+        const alt = a.mesh;
+        const m = AnazhRealm._instanzMesh(a.geo, a.mat, kap);
+        m.name = a.name;
+        m.castShadow = false; // die Wiese wirft nicht (Budget grass schatten false, `_tickNahWiese`)
+        m.receiveShadow = true;
+        m.frustumCulled = false; // der Sicht-Satz cullt je Büschel
+        m.userData.leafKey = a.leafKey; // die Studio-Identität (Foundry-Leaf) für Inventur und Linsen
+        if (alt) {
+            m.instanceMatrix.array.set(alt.instanceMatrix.array.subarray(0, a.anzahl * 16));
+            if (alt.parent) alt.parent.remove(alt);
+            this._instanzAbschied(alt);
+        }
+        AnazhRealm._instanzZahl(m, a.anzahl);
+        a.mesh = m;
+        a.kap = kap;
+        this.state.nahWiese.gruppe.add(m);
+    }
+
+    // Eine Senke fällt (ihre Vorlage wurde ersetzt): die Mesh verlässt die Szene, die Studio-Referenz geht zurück — war
+    // die Cache-Gruppe geräumt (LRU), fällt ihre Geometrie jetzt.
+    _nahWieseSenkeFaellt(a) {
+        const nw = this.state.nahWiese;
+        if (a.mesh) {
+            if (a.mesh.parent) a.mesh.parent.remove(a.mesh);
+            this._instanzAbschied(a.mesh);
+            a.mesh = null;
+        }
+        nw.senken.delete(a.key);
+        const src = a.quelle;
+        if (src) {
+            src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
+            if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
+        }
+    }
+
+    // DER SICHT-SATZ (`_passSicht`, der Haupt-Pass jedes Frames, vor der Projektion): je Büschel die Stufe (L1 im Kreis
+    // `stufe1` um das Auge, Austritt erst `stufe1Rand` dahinter), das Rand-Band (seine Würfel-Ordnung gegen den Anteil
+    // seiner EIGENEN Distanz — ein Präfix der zufälligen Ordnung ist eine gleichmäßige Ausdünnung) und die Sicht (seine
+    // Kugel gegen das Frustum der Pass-Kamera — `fr`, EINE Rechnung je Pass in `_passSicht`); jede Senke trägt dicht genau
+    // ihre sichtbaren Büschel. Die Signatur (Welt- und Projektions-Matrix) spart nur bei stehender Projektion: unter TRAA
+    // zittert die Projektion je Frame, der Satz rechnet und lädt jeden Frame (CPU-Kosten: offen, die ruhige Messung der
+    // Integration).
+    _nahWieseSicht(kamera, fr) {
+        const nw = this.state.nahWiese;
+        if (!nw || !kamera || !nw.senken.size) return;
+        if (!fr || !fr.planes) throw new Error("_nahWieseSicht: ohne das Frustum der Pass-Kamera (`_passSicht`)");
+        const sig = nw.sig || (nw.sig = new Float64Array(33));
+        const we = kamera.matrixWorld.elements;
+        const pe = kamera.projectionMatrix.elements;
+        let gleich = !nw.neu && sig[32] === kamera.id;
+        for (let i = 0; i < 16; i++) {
+            if (sig[i] !== we[i]) {
+                sig[i] = we[i];
+                gleich = false;
+            }
+            if (sig[16 + i] !== pe[i]) {
+                sig[16 + i] = pe[i];
+                gleich = false;
             }
         }
-        return out;
+        if (gleich) return;
+        sig[32] = kamera.id;
+        nw.neu = false;
+        const NW = AnazhRealm.NAH_WIESE;
+        const E = fr.planes;
+        const drin = (x, y, z, r) => {
+            for (let p = 0; p < 6; p++) {
+                const n = E[p].normal;
+                if (n.x * x + n.y * y + n.z * z + E[p].constant < -r) return false;
+            }
+            return true;
+        };
+        // Je Stufe × Vorlage die Senken samt Sicht-Kugel (fehlt eine, kommt ihr Studio-Asset noch).
+        const ziel = [null, [null, null], [null, null]];
+        let rMax = 0;
+        for (const stufe of [1, 2])
+            for (let v = 0; v < 2; v++) {
+                const vl = nw.vorlagen.get(`${v}:L${stufe}`) || null;
+                ziel[stufe][v] = vl;
+                if (vl && vl.r + Math.abs(vl.cy) > rMax) rMax = vl.r + Math.abs(vl.cy);
+            }
+        for (const a of nw.senken.values()) a.anzahl = 0;
+        const m4 = this._tmpWieseM4 || (this._tmpWieseM4 = new THREE.Matrix4());
+        const mw = this._tmpWieseM4b || (this._tmpWieseM4b = new THREE.Matrix4());
+        const ax = we[12];
+        const az = we[14];
+        const K2 = NW.kachel * 0.7072;
+        for (const k of nw.kacheln.values()) {
+            const n = k.bueschel.length;
+            if (!n || !drin(k.mx, (k.y0 + k.y1) / 2, k.mz, K2 + (k.y1 - k.y0) / 2 + k.sMax * rMax)) continue;
+            for (let i = 0; i < n; i++) {
+                const b = k.bueschel[i];
+                const d = Math.hypot(b.x - ax, b.z - az);
+                if (b.ordnung >= Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5))) continue;
+                const l1 = k.l1[i] ? d <= NW.stufe1 + NW.stufe1Rand : d <= NW.stufe1;
+                k.l1[i] = l1 ? 1 : 0;
+                const vl = ziel[l1 ? 1 : 2][b.vorlage];
+                if (!vl || !drin(b.x, b.y + vl.cy * b.s, b.z, vl.r * b.s)) continue;
+                m4.fromArray(k.basis, i * 16);
+                for (const a of vl.senken) {
+                    if (a.anzahl >= a.kap) this._nahWieseMesh(a, Math.ceil(a.kap * 1.5));
+                    mw.multiplyMatrices(m4, a.lokal).toArray(a.mesh.instanceMatrix.array, a.anzahl * 16);
+                    a.anzahl++;
+                }
+            }
+        }
+        for (const a of nw.senken.values()) {
+            const im = a.mesh.instanceMatrix;
+            im.clearUpdateRanges();
+            if (a.anzahl) im.addUpdateRange(0, a.anzahl * 16);
+            im.needsUpdate = true;
+            AnazhRealm._instanzZahl(a.mesh, a.anzahl);
+        }
     }
 
     // ═══ DIE NAH-STREU (Waldboden 04.10.) ═══
@@ -63660,12 +63795,10 @@ class AnazhRealm {
         if (!nw) return 0;
         const K = AnazhRealm.NAH_WIESE.kachel;
         let n = 0;
-        for (const [key, k] of nw.kacheln) {
+        for (const key of [...nw.kacheln.keys()]) {
             const [tx, tz] = key.split(",").map(Number);
             if ((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1) continue;
-            this._nahWieseKachelEntsorgen(k);
-            nw.kacheln.delete(key);
-            n++;
+            if (this._nahWieseKachelFaellt(key)) n++;
         }
         return n;
     }
@@ -69343,11 +69476,11 @@ class AnazhRealm {
                     typeof this._foundryPresetIsTree === "function" &&
                     this._foundryPresetIsTree(stage.preset)
                 );
-                // Die L1-Maske blendet aus der L0 EIN — nur wo die Art eine L0 deklariert (kindStages). Der Strauch
-                // ([1, 2]) hat keine: seine L1 ist nah die volle Gestalt (Studio: nah stages[0], fern stages[letzte]),
-                // sie blendet nie ein (gemessen 04.10., Werkbank, Mess-Wiese: ein Strauch auf 8,9 m zu 66 %
-                // durchsichtig, die L0-Hälfte der Blende fehlte), aber im L1/L2-Band zum Billboard AUS (Stufe 3) —
-                // ungemaskt stand sie dort doppelt mit dem Billboard und sprang am Bandende weg.
+                // Die L1-Maske blendet aus der L0 EIN — nur wo die Art eine L0 deklariert (kindStages). Eine Art ohne
+                // L0 (bis Welle 6 der Strauch, [1, 2]) trägt nah die volle Gestalt in der L1, sie blendet nie ein
+                // (gemessen 04.10., Werkbank, Mess-Wiese: ein Strauch auf 8,9 m zu 66 % durchsichtig, die L0-Hälfte der
+                // Blende fehlte), aber im L1/L2-Band zum Billboard AUS (Stufe 3) — ungemaskt stand sie dort doppelt mit
+                // dem Billboard und sprang am Bandende weg. Seit Welle 6 trägt der Strauch die Kette wie der Baum.
                 const _aLodVal =
                     _isTree && _lodS === 0
                         ? 1
@@ -87713,6 +87846,7 @@ class AnazhRealm {
         const csm = this.state.csmNode;
         if (!nach && csm && csm.camera && kamera === csm.camera) this._kaskadenPassen(csm);
         const k = nach ? -1 : this._schattenKameraIndex(kamera);
+        // Das Frustum der Pass-Kamera: EINE Rechnung je Pass, alle Satz-Verbraucher wählen mit ihm.
         if (!nach) {
             S.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse);
             S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
@@ -87720,6 +87854,8 @@ class AnazhRealm {
         // Die Sätze (Boden · Wasser · Bau) wählen ihren Abschnitt mit demselben Gesetz: was das Pass-Frustum nicht
         // schneidet, zeichnet in diesem Pass nicht.
         this._chunkSatzPass(kamera, nach, k, S);
+        // Die Nah-Wiese legt ihren Satz für das Auge dieses Passes (eine Kaskade sieht sie nie: sie wirft nicht).
+        if (!nach && k < 0) this._nahWieseSicht(kamera, S.frustum);
         const map = this.state._regionBundles;
         if (!map || map.size === 0) return;
         if (k < 0) {
