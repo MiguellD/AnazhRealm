@@ -64283,6 +64283,15 @@ class AnazhRealm {
             // lassen, NIE die Grammatik; Culling-Tick/Refill bauen ihn als Studio, sobald das Asset da ist.
             return null;
         }
+        // DIE STUDIO-GESTALT WARTET KALT (Integration 06.10.: die Glut gehört ins Studio): trägt der Bauplan eine
+        // studioGestalt-Zeile (Feuerstelle · Marktstand · Ziehbrunnen · die Tore) und ist das Buch noch kalt, zeichnet
+        // der Wirt NICHTS — seine Teile sind unsichtbare Substanz (Tags · Blocker · Trigger), nie ein Ersatz-Bild; der
+        // Rewarm (`_foundryRewarmColdTrees`) platziert das Studio, sobald das Buch antwortet. Bis 06.10. zeichneten die
+        // Wirts-Teile beim Boot (leer:g:glutbrunnen:L0 hielt danach seinen High-Water-count, 2 Befehle).
+        if (this._foundryEnabled() && !(this._foundry && this._foundry.recipes)) {
+            const gbp = this.state.blueprints && this.state.blueprints[entry.type];
+            if (gbp && typeof gbp.studioGestalt === "string") return null;
+        }
         const flat = this._archFlattenBlueprint(entry.type);
         // DETERMINISMUS-BOGEN P3 — die Architektur-Kollision ist feld-nativ
         // (`entry.blockerAABBs` aus dem Spawn + `_stepCharacterStructures`); kein
@@ -67644,7 +67653,7 @@ class AnazhRealm {
             // Gestalt-Wechsel als DATEN: trägt der Bauplan eine `studioGestalt`-Zeile (welt_portal → "geisttor")
             // und steht sie im LIVE-Buch, serviert das Studio die Render-Schicht; die Parts bleiben unsichtbare
             // Substanz (Tags · blockerAABBs · Portal-Trigger). Generisch, kein welt_-Literal. Unbekannte Gestalt/
-            // kaltes Buch/Foundry aus → null → Part-Pfad.
+            // Foundry aus → null → Part-Pfad; kaltes Buch → null, und der Eintrag wartet kalt (`_rebuildArchitectureMesh`).
             if (typeof this._foundryEnabled === "function" && this._foundryEnabled()) {
                 const gbp = this.state.blueprints && this.state.blueprints[entry.type];
                 if (gbp && typeof gbp.studioGestalt === "string") {
