@@ -38019,7 +38019,12 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
             const alt = r.parseChatToDsl("pflanze baum hier");
             out.altGesteBleibt = !!alt && alt.program[0] === "spawn_tree";
             const nw = r.dslPositions.near_water([160], { state: r.state, rng: Math.random });
-            out.nearWater = !!nw && Number.isFinite(nw.x) && Number.isFinite(nw.z);
+            // Welle L (V-k5): ohne Wasser im Umkreis KEIN Ort (null, `invalid_position`) — nie still der Spieler-Ort.
+            const pm0 = r.state.playerMesh.position;
+            out.nearWater =
+                nw === null
+                    ? r._findNearestWaterPoint(pm0.x, pm0.z, 160) === null
+                    : Number.isFinite(nw.x) && Number.isFinite(nw.z) && Math.hypot(nw.x - pm0.x, nw.z - pm0.z) > 0.5;
             out.nearWaterTrocken = !!nw && r._isAboveWaterAt(nw.x, nw.z, 0.3);
             const prompt = r.llmBuildSystemPrompt();
             out.promptOp = /spawn_studio/.test(prompt) && /near_water/.test(prompt);
@@ -38102,7 +38107,10 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
         "V18.493 Co-Schöpfer: die spezifischere alte Geste bleibt („pflanze baum hier“ → spawn_tree)",
         R.altGesteBleibt === true
     );
-    check("V18.493 Co-Schöpfer: near_water liefert einen endlichen Ort", R.nearWater === true);
+    check(
+        "V18.493 Co-Schöpfer: near_water liefert einen Ufer-Ort — oder ohne Wasser im Umkreis KEINEN (nie still den Spieler-Ort)",
+        R.nearWater === true
+    );
     check(
         "V18.493 Co-Schöpfer: das KI-Prompt lehrt spawn_studio + near_water + die lebenden Wörter; Regeln dürfen es nicht",
         R.promptOp === true && R.promptWoerter === true && R.ruleVerbot === true

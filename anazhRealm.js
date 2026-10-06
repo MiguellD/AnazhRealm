@@ -1280,6 +1280,7 @@ class AnazhRealm {
             log: opts.log || [],
             source: opts.source || "unknown",
             programId: opts.programId || `prog_${this.state.dsl.nextEntryId++}`,
+            orte: new Map(), // Positions-Knoten → aufgelöste Orte (`dslEvalPos`; der Absender schickt sie mit)
         };
     }
 
@@ -1324,7 +1325,7 @@ class AnazhRealm {
             this.state.p2p.enabled &&
             this.state.p2p.connected
         ) {
-            this.p2pBroadcastDsl(program);
+            this.p2pBroadcastDsl(this._dslMitOrten(program, ctx));
         }
         return { ok: outcome.errors === 0, log: ctx.log, outcome, programId: ctx.programId };
     }
@@ -1511,6 +1512,10 @@ class AnazhRealm {
         return { x: 0, y: 50, z: 0 };
     }
 
+    // Ein Positions-Knoten → {x, y, z}. Ein Auflöser, der keinen Ort hat (near_water ohne Wasser), liefert null: der
+    // Knoten meldet `invalid_position` und gibt null weiter — die Op pflanzt nichts, der Satz sagt es (V-k5). Jeder
+    // aufgelöste Knoten merkt sich seinen Ort im Kontext (`ctx.orte`): der Absender schickt ihn mit (V-k6,
+    // `_dslMitOrten`).
     dslEvalPos(node, ctx) {
         if (!Array.isArray(node) || node.length === 0) return this._defaultSpawnPos();
         const fn = this.dslPositions[node[0]];
@@ -1518,11 +1523,42 @@ class AnazhRealm {
             ctx.log.push({ event: "unknown_position_op", op: String(node[0]) });
             return this._defaultSpawnPos();
         }
+        let pos;
         try {
-            return fn.call(this, node.slice(1), ctx);
+            pos = fn.call(this, node.slice(1), ctx);
         } catch {
             return this._defaultSpawnPos();
         }
+        if (!pos) {
+            ctx.log.push({ event: "invalid_position", op: String(node[0]), program_id: ctx.programId });
+            return null;
+        }
+        if (ctx.orte) {
+            const liste = ctx.orte.get(node);
+            if (liste) liste.push(pos);
+            else ctx.orte.set(node, [pos]);
+        }
+        return pos;
+    }
+
+    // DER ABSENDER LÖST DIE ORTE AUF (Welle L, Befund V-k6): ein Programm mit spieler-relativen Orten
+    // (at_player_forward, near_water, near_player …) lief beim Empfänger gegen DESSEN Spieler — die Birken des Senders
+    // standen 7,3/8,9 m beim Empfänger, 203/206 m vom Sender. Jeder Knoten, den der Lauf beim Absender genau EINMAL
+    // auflöste, reist als ["at", x, y, z]; ein mehrfach aufgelöster (Schleife) reist als Knoten (benannt im Log).
+    _dslMitOrten(program, ctx) {
+        const orte = ctx && ctx.orte;
+        if (!orte || !orte.size) return program;
+        let mehrfach = 0;
+        const kopie = (n) => {
+            if (!Array.isArray(n)) return n;
+            const o = orte.get(n);
+            if (o && o.length === 1) return ["at", o[0].x, o[0].y, o[0].z];
+            if (o && o.length > 1) mehrfach++;
+            return n.map(kopie);
+        };
+        const out = kopie(program);
+        if (mehrfach) ctx.log.push({ event: "position_mehrfach_relativ", count: mehrfach, program_id: ctx.programId });
+        return out;
     }
 
     dslEvalCond(node, ctx) {
@@ -2067,6 +2103,7 @@ class AnazhRealm {
                 }
                 const n = c(count, 1, 24);
                 const pos = this.dslEvalPos(positionNode, ctx);
+                if (!pos) return; // kein Ort (near_water ohne Wasser): `invalid_position` steht im Log, nichts wächst
                 const abstand = this._studioSpawnAbstand(name);
                 const jitter = n > 1 ? abstand * Math.sqrt(n) : 0;
                 const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter);
@@ -2990,14 +3027,15 @@ class AnazhRealm {
                 return { x, y, z };
             },
             // V18.492 — „am Wasser": das nächste Wasser im Umkreis, von dort zurück zum
-            // Spieler bis zum ersten trockenen Ufer-Fleck (+2 m landeinwärts). Kein Wasser
-            // in Reichweite → der Spieler-Ort (der Aufrufer bleibt handlungsfähig).
+            // Spieler bis zum ersten trockenen Ufer-Fleck (+2 m landeinwärts). Kein Wasser in Reichweite → null:
+            // KEIN Ort (`dslEvalPos` meldet `invalid_position`, der Satz sagt es laut). Bis 06.10. fiel es still auf den
+            // Spieler-Ort — Befund V-k5: 6 Eichen 3,3–7,4 m um den Spieler, der Fluss 85 m fort, der Chat „am Wasser".
             near_water: ([radius], ctx) => {
                 const r = c(radius, 8, 200) || 60;
                 const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
                 const w =
                     typeof this._findNearestWaterPoint === "function" ? this._findNearestWaterPoint(p.x, p.z, r) : null;
-                if (!w) return { x: p.x, y: p.y, z: p.z };
+                if (!w) return null;
                 const dx = p.x - w.x,
                     dz = p.z - w.z;
                 const L = Math.hypot(dx, dz) || 1;
@@ -4459,6 +4497,10 @@ class AnazhRealm {
             return { error: `Kurze Pause — ${(llm.minGapSeconds - (nowSec - llm.lastResponseAt)).toFixed(1)} s` };
         }
         llm.inFlight = true;
+        // Wohin die Anfrage ging (der Fehler-Klassifizierer liest den Endpunkt-Host, V-D6).
+        let zielUrl = null,
+            zielLokal = false,
+            ueberProxy = false;
         try {
             // Welle 6.H Phase 2E V1 — wenn systemPromptOverride gegeben (z. B.
             // Kreatur-Persona), nutze diesen statt den Welt-Grok-Prompt. Der
@@ -4475,6 +4517,9 @@ class AnazhRealm {
             // umgangen — kein CORS-Problem, und der Proxy scheiterte am https-only-Check.
             const isLocalUrl = /^https?:\/\/(localhost|127\.0\.0\.1)([:/]|$)/i.test(url);
             const useProxy = !!(cfg && cfg.useProxy) && !isLocalUrl;
+            zielUrl = url;
+            zielLokal = isLocalUrl;
+            ueberProxy = useProxy;
             const fetchUrl = useProxy ? "http://localhost:4312/api/proxy/llm" : url;
             const fetchBody = useProxy ? JSON.stringify({ url, headers, body }) : JSON.stringify(body);
             const fetchHeaders = useProxy ? { "content-type": "application/json" } : headers;
@@ -4508,14 +4553,25 @@ class AnazhRealm {
             // Browser-Fehler bei CORS-Block + Netzwerk-Down.
             const rawMsg = err.message || String(err);
             const isCorsLikely = /Failed to fetch|NetworkError|TypeError|CORS|preflight/i.test(rawMsg);
-            if (isCorsLikely && this.state.llm.provider === "ollama") {
-                const cfg2 = this.state.llm.providerConfig.ollama;
-                const usingProxy = !!(cfg2 && cfg2.useProxy);
-                if (usingProxy) {
+            // DER KLASSIFIZIERER LIEST DEN ENDPUNKT-HOST (Welle L, Befund V-D6): ein lokaler Endpunkt kann nicht an
+            // CORS scheitern — „Failed to fetch" heißt dort, der Dienst läuft nicht (ERR_CONNECTION_REFUSED). Bis 06.10.
+            // nannte jeder Fehlschlag bei Ollama „Cloud blockt Browser-Direct-Call (CORS)" und riet zu dem lokalen
+            // Ollama, das schon eingestellt war.
+            let zielHost = "";
+            try {
+                zielHost = zielUrl ? new URL(zielUrl).host : "";
+            } catch (_eU) {}
+            if (isCorsLikely && zielLokal && !ueberProxy) {
+                const pv = this.state.llm.provider;
+                llm.lastError =
+                    `Keine Antwort von ${zielHost || "localhost"} — der lokale Dienst läuft nicht` +
+                    (pv === "ollama" ? " (starte ihn: `ollama serve`)." : ".");
+            } else if (isCorsLikely && this.state.llm.provider === "ollama") {
+                if (ueberProxy) {
                     llm.lastError = "Proxy nicht erreichbar (läuft 'npm run dev' / save-server auf Port 4312?).";
                 } else {
                     llm.lastError =
-                        "Cloud blockt Browser-Direct-Call (CORS). Optionen: " +
+                        `${zielHost || "Die Cloud"} blockt den Browser-Direct-Call (CORS). Optionen: ` +
                         "(a) lokales Ollama auf localhost:11434, " +
                         "(b) aktiviere 'Proxy über save-server' im Einstellungen-Drawer (braucht `npm run dev`), " +
                         "(c) Provider mit CORS-Header (Groq, Gemini, OpenRouter).";
@@ -8917,9 +8973,12 @@ class AnazhRealm {
                     const pos = m[4] ? ["near_water", 80] : ["at_player_forward", m[5] ? 6 : 10];
                     const seed = Math.floor(Math.random() * 0xffffffff);
                     const wo = m[4] ? "am Wasser" : "vor dir";
+                    // Der Spieler liest das Label der Art („Eiche"), nie die interne id („baum_eiche", Befund V-D8).
+                    const bp = this.state.blueprints && this.state.blueprints[name];
+                    const label = (bp && bp.label) || name;
                     return {
                         program: ["spawn_studio", wort, pos, n, seed],
-                        describe: `${n}× ${name} aus dem Studio ${wo} gewachsen`,
+                        describe: `${n}× ${label} aus dem Studio ${wo} gewachsen`,
                     };
                 },
             },
@@ -20173,12 +20232,14 @@ class AnazhRealm {
         return out.set(nx * speed, 0, nz * speed);
     }
 
-    // Ring-Scan: 8 Himmelsrichtungen × konzentrische Ringe in 4-m-Schritten bis radius; der erste
-    // Treffer (`_isAboveWaterAt` false) gewinnt — innen nach außen = kürzeste Distanz. → {x, z} | null.
+    // Ring-Scan: konzentrische Ringe in 4-m-Schritten bis radius, je Ring so viele Richtungen, dass der Bogen
+    // zwischen zwei Proben ≤ 4 m bleibt (bis 06.10. 8 Strahlen: bei 80 m lagen 63 m zwischen zwei Proben, ein Bach
+    // fiel durch); der erste Treffer (`_isAboveWaterAt` false — die Hydrosphäre: See, Fluss, Tarn, Meer) gewinnt —
+    // innen nach außen = kürzeste Distanz. → {x, z} | null.
     _findNearestWaterPoint(cx, cz, radius) {
         const STEP = 4;
-        const DIRS = 8;
         for (let r = STEP; r <= radius; r += STEP) {
+            const DIRS = Math.max(8, Math.ceil((2 * Math.PI * r) / STEP));
             for (let d = 0; d < DIRS; d++) {
                 const angle = (d / DIRS) * Math.PI * 2;
                 const x = cx + Math.cos(angle) * r;
@@ -23387,8 +23448,16 @@ class AnazhRealm {
         this.state.dsl.lastUserProgram = parsed.program;
         this.state.dsl.lastUserOutcome = result.outcome;
         this.state.dsl.lastUserAt = performance.now() / 1000;
+        // Ein Ort, den es nicht gibt, wird laut gesagt (V-k5): kein Wasser in Reichweite heißt, am Wasser wächst nichts.
+        const ohneOrt = result.log.find((e) => e.event === "invalid_position");
         if (result.ok) {
             appendChatOutput(parsed.describe);
+        } else if (ohneOrt) {
+            appendChatOutput(
+                ohneOrt.op === "near_water"
+                    ? "Kein Wasser in Reichweite — am Wasser wächst hier nichts. Geh näher an ein Ufer."
+                    : `Kein Ort für „${ohneOrt.op}" — nichts gewachsen.`
+            );
         } else {
             const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
             appendChatOutput(`Befehl lief, aber mit Auffälligkeit: ${reason ? reason.event : "siehe Log"}`);
@@ -51025,6 +51094,15 @@ class AnazhRealm {
     // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-
     // Compound in Blick-Richtung in Reichweite ist, reduziere camera.fov.
     // setZoomActive(false) stellt den Original-FOV wieder her.
+    // ALLE TASTEN LOS (die Tasten-Wand, V-k4): Fokus-Verlust, Unsichtbarkeit und Zeiger-Verlust lösen jede gehaltene
+    // Taste (state.keys), den Zoom und das Mahlen — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt.
+    _alleTastenLos() {
+        const k = this.state.keys;
+        if (k) for (const n in k) k[n] = false;
+        if (this.state._zoomActive) this.setZoomActive(false);
+        if (this.state.player) this.state.player.breakHeld = false;
+    }
+
     setZoomActive(active) {
         const cam = this.state.camera;
         if (!cam) return false;
@@ -68586,7 +68664,8 @@ class AnazhRealm {
             const zeile = nearest
                 ? `Bauten n=${list.length} haus=${nHaus} ziegel=${nZiegel} nah=${nearest.e.type} @${Math.round(nearest.e.position.x)}/${Math.round(nearest.e.position.y)}/${Math.round(nearest.e.position.z)} d=${Math.round(nearest.d)}m`
                 : `Bauten n=${list.length} haus=${nHaus} ziegel=${nZiegel} placed=${res && res.placed}`;
-            this._chatEcho?.(zeile);
+            // Die Zählung ist Entwickler-Telemetrie: sie geht ins Log, nie in den Spieler-Chat (Befund V-D8: „Bauten
+            // n=330 haus=21 ziegel=10 nah=… d=10m" nach jeder Dorf-Gründung).
             this.log(zeile, "INFO");
             // Hand-Dichte: nächstes haus_ sofort meshen (nicht auf Cull-Budget warten)
             if (nearest && nearest.e && typeof this._rebuildArchitectureMesh === "function") {
@@ -77615,8 +77694,9 @@ class AnazhRealm {
 
     // Rezeptbuch: craftbare Baupläne nach Verwendung gruppiert, je Zeile Kosten + rollen-gerechter
     // Fertigen-Knopf (disabled ohne Material). Signatur = wovon der INHALT abhängt (Bauplan-Namen +
-    // Inventar-Materialien + Part-Edit-Tick), NICHT die Slot-Auswahl (`_recipeRow` liest sie nicht) —
-    // sonst Voll-Rebuild bei jeder Slot-Wahl.
+    // Inventar-Materialien + Part-Edit-Tick + Spielmodus — `_recipeRow` gibt den Knopf in schöpfer frei; bis 06.10.
+    // fehlte der Modus, Befund V-D5: in schöpfer blieb „Es fehlt: 44× holz, 50× laub" gesperrt stehen), NICHT die
+    // Slot-Auswahl (`_recipeRow` liest sie nicht) — sonst Voll-Rebuild bei jeder Slot-Wahl.
     _recipeBookSignature() {
         const bps = this.state.blueprints || {};
         const inv = (this.state.player && this.state.player.inventory) || [];
@@ -77628,7 +77708,9 @@ class AnazhRealm {
             .sort()
             .map((m) => m + have[m])
             .join(",");
-        return Object.keys(bps).join("|") + "#" + matSig + "#" + (this.state._bpEditTick || 0);
+        return (
+            Object.keys(bps).join("|") + "#" + matSig + "#" + (this.state._bpEditTick || 0) + "#" + this.getGameMode()
+        );
     }
 
     renderRecipeBook() {
@@ -87138,6 +87220,13 @@ class AnazhRealm {
                 this.setZoomActive(false);
             }
         });
+        // DIE TASTEN-WAND (Welle L, Befund V-k4): verliert das Fenster den Fokus (Fensterwechsel), wird die Seite
+        // unsichtbar oder fällt der Zeiger-Lock, erreicht das keyup der gehaltenen Taste diese Seite nie — W blieb
+        // gedrückt, der Avatar lief 4,63 m in 278 Frames ohne Taste. Jeder dieser Wechsel löst ALLE Tasten.
+        window.addEventListener("blur", () => this._alleTastenLos());
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") this._alleTastenLos();
+        });
         this.log("Tastatureingaben initialisiert: WASD, Space, Shift", "INFO");
 
         // Maus-Listener-Bindung als Methode (initial-Canvas).
@@ -87173,8 +87262,8 @@ class AnazhRealm {
         );
         document.addEventListener("pointerlockchange", () => {
             this.state.isPointerLocked = document.pointerLockElement === canvas;
-            // V17.55 W1 — verliert der Spieler den Lock (Esc/UI), stoppt das Mahlen.
-            if (!this.state.isPointerLocked && this.state.player) this.state.player.breakHeld = false;
+            // V17.55 W1 — verliert der Spieler den Lock (Esc/UI), stoppt das Mahlen und jede gehaltene Taste (V-k4).
+            if (!this.state.isPointerLocked) this._alleTastenLos();
             this.log(`Pointer-Lock: ${this.state.isPointerLocked ? "Aktiv" : "Inaktiv"}`, "INFO");
         });
         document.addEventListener("mousemove", (event) => {

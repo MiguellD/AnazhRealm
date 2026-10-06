@@ -17,6 +17,17 @@
 //     Soll: keine Krone über der Scheibe. Dazu der Genesis-Ring (`_genesisPortalRing`): er steht um die Plattform
 //     (Schöpfer V18.486), nicht um den Ursprung 36 m daneben.                                     Soll Ring-Mitte ≤ 1 m
 //
+//   Q15-EINZELSCHNITTE, je der Chokepoint selbst gerufen:
+//     V-D5 — `renderRecipeBook` in frieden, dann in schöpfer: der Mach-Knopf der Eiche wird frei (Befund: gesperrt).
+//     V-k4 — keydown W, dann das blur-Ereignis des Fensters: W ist los (Befund: 4,63 m in 278 Frames ohne Taste).
+//     V-D6 — `llmCall` gegen einen lokalen Endpunkt ohne Dienst: der Fehler nennt den Host, nie CORS.
+//     V-k5 — „pflanz mir einen eichenhain am wasser" an einem Ort ohne Wasser im 84-m-Kreis (eigenes 4-m-Raster):
+//       0 Eichen, die Absage im Chat (Befund: 6 Eichen um den Spieler, „am Wasser gewachsen").
+//     V-k6 — „pflanz mir zwei birken" mit P2P an: das gesendete Programm trägt den Ort aufgelöst (["at", …]), der
+//       Empfänger 200 m weiter pflanzt beim Absender (Befund: 203/206 m vom Absender). Der Sende-Punkt `p2pSend` ist
+//       der Beobachtungs-Punkt (das Netz), der Chokepoint `dslRun` → `_dslMitOrten` läuft echt.
+//     V-D8 — das Label der Art im Chat („Birke", nie „baum_birke"), die Dorf-Zählung nur im Log.
+//
 //   node scripts/diag-v1-pfad.cjs [--selftest]          Port: V1_PFAD_PORT (Standard 4421)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -88,6 +99,48 @@ function ankunftVerdict(m) {
     return out;
 }
 
+function rezeptVerdict(m) {
+    if (!m || m.gestartet !== true) return ["start"];
+    const out = [];
+    if (!m.friedenGesperrt) out.push("frieden: der Knopf ist ohne Material frei (Vorbedingung)");
+    if (!m.schoepferFrei) out.push(`schöpfer: der Knopf bleibt gesperrt („${m.titel}")`);
+    return out;
+}
+function tasteVerdict(m) {
+    if (!m || m.gestartet !== true) return ["start"];
+    const out = [];
+    if (!m.gedrueckt) out.push("keydown kam nicht an (Vorbedingung)");
+    if (m.nachBlur) out.push("W bleibt nach dem Fensterwechsel gedrückt");
+    return out;
+}
+function kiVerdict(m) {
+    if (!m || m.gestartet !== true) return ["start"];
+    const out = [];
+    if (!m.fehler) out.push("kein Fehler gemeldet (Vorbedingung: der Dienst läuft nicht)");
+    else {
+        if (/CORS/i.test(m.fehler)) out.push(`lokaler Endpunkt als CORS gemeldet („${m.fehler.slice(0, 60)}…")`);
+        if (!m.fehler.includes(m.host)) out.push("der Fehler nennt den Host nicht");
+    }
+    return out;
+}
+function satzVerdict(m) {
+    if (!m || m.gestartet !== true) return ["start"];
+    const out = [];
+    if (!m.trockenOrt) out.push("kein Ort ohne Wasser gefunden (Vorbedingung)");
+    else if (m.amWasserOhneWasser > 0) out.push(`${m.amWasserOhneWasser} Eichen „am Wasser" ohne Wasser`);
+    else if (!/Kein Wasser/.test(m.amWasserZeile || "")) out.push(`die Absage fehlt („${m.amWasserZeile}")`);
+    if (!(m.birkenAbsender > 0)) out.push("der Absender pflanzte keine Birke (Vorbedingung)");
+    if (/baum_/.test(m.birkenZeile || "") || (m.birkenLabel && !(m.birkenZeile || "").includes(m.birkenLabel)))
+        out.push(`der Chat nennt die interne id („${m.birkenZeile}")`);
+    if (!m.gesendet) out.push("nichts gesendet (Vorbedingung)");
+    else if (!/^\["at",/.test(m.ortKnoten || "")) out.push(`der Ort reist spieler-relativ: ${m.ortKnoten}`);
+    if (m.gesendet && !(m.birkenEmpfaenger > 0)) out.push("der Empfänger pflanzte nichts");
+    else if (m.gesendet && !(m.empfaengerAbstandZumAbsender <= 40))
+        out.push(`der Empfänger pflanzt ${m.empfaengerAbstandZumAbsender} m vom Absender`);
+    if (m.telemetrieImChat) out.push("Dorf-Telemetrie im Spieler-Chat");
+    return out;
+}
+
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src) {
     const nc = ohneKommentare(src);
@@ -121,7 +174,8 @@ const server = http.createServer((req, res) => {
 });
 
 // ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
-async function probe() {
+async function probe(arg) {
+    const kiPort = arg && arg.kiPort;
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
     const dl0 = performance.now() + 90000;
@@ -203,6 +257,167 @@ async function probe() {
         m.gestartet = true;
     } catch (e) {
         out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
+    }
+    // ── V-D5: das Rezeptbuch urteilt nach dem Spielmodus ──
+    try {
+        const m = { gestartet: false };
+        out.rezept = m;
+        const host = document.getElementById("inventory-recipes");
+        if (!host) throw new Error("kein #inventory-recipes");
+        const lbl = (st.blueprints.baum_eiche && st.blueprints.baum_eiche.label) || "baum_eiche";
+        const knopf = () => {
+            for (const row of host.querySelectorAll(".recipe-row")) {
+                const nm = row.querySelector(".recipe-name");
+                if (nm && nm.textContent === lbl) return row.querySelector("button");
+            }
+            return null;
+        };
+        const modusAlt = r.getGameMode();
+        r.setGameMode("frieden");
+        r.renderRecipeBook();
+        const k0 = knopf();
+        m.friedenGesperrt = !!k0 && k0.disabled === true;
+        r.setGameMode("schöpfer");
+        r.renderRecipeBook();
+        const k1 = knopf();
+        m.schoepferFrei = !!k1 && k1.disabled === false;
+        m.titel = k1 ? k1.title || "" : "kein Knopf";
+        r.setGameMode(modusAlt);
+        m.gestartet = true;
+    } catch (e) {
+        out.rezept = Object.assign(out.rezept || {}, { err: (e && e.stack) || String(e) });
+    }
+    // ── V-k4: der Fensterwechsel löst die Tasten ──
+    try {
+        const m = { gestartet: false };
+        out.taste = m;
+        window.dispatchEvent(new KeyboardEvent("keydown", { key: "w", code: "KeyW", bubbles: true }));
+        m.gedrueckt = st.keys.w === true;
+        window.dispatchEvent(new Event("blur"));
+        m.nachBlur = st.keys.w === true;
+        window.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW", bubbles: true }));
+        m.gestartet = true;
+    } catch (e) {
+        out.taste = Object.assign(out.taste || {}, { err: (e && e.stack) || String(e) });
+    }
+    // ── V-D6: der KI-Fehler nennt die Ursache ──
+    try {
+        const m = { gestartet: false };
+        out.ki = m;
+        const llm = st.llm;
+        const alt = {
+            enabled: llm.enabled,
+            provider: llm.provider,
+            ep: llm.providerConfig.ollama.endpoint,
+            px: llm.providerConfig.ollama.useProxy,
+            last: llm.lastResponseAt,
+        };
+        llm.enabled = true;
+        llm.provider = "ollama";
+        llm.providerConfig.ollama.endpoint = "http://127.0.0.1:" + kiPort;
+        llm.providerConfig.ollama.useProxy = false;
+        llm.lastResponseAt = -1e9;
+        let antwort = null;
+        try {
+            antwort = await r.llmCall("hallo welt");
+        } finally {
+            llm.enabled = alt.enabled;
+            llm.provider = alt.provider;
+            llm.providerConfig.ollama.endpoint = alt.ep;
+            llm.providerConfig.ollama.useProxy = alt.px;
+            llm.lastResponseAt = alt.last;
+        }
+        m.fehler = antwort && antwort.error ? String(antwort.error) : null;
+        m.host = "127.0.0.1:" + kiPort;
+        m.gestartet = true;
+    } catch (e) {
+        out.ki = Object.assign(out.ki || {}, { err: (e && e.stack) || String(e) });
+    }
+    // ── V-k5 · V-k6 · V-D8: der Satz trifft die Welt ──
+    try {
+        const m = { gestartet: false };
+        out.satz = m;
+        const archs = st.architectures;
+        const pm = st.playerMesh.position;
+        const ausgabe = document.getElementById("chat-output");
+        const letzteZeile = () => (ausgabe && ausgabe.lastElementChild ? ausgabe.lastElementChild.textContent : "");
+        const nass = (x, z) => !r._isAboveWaterAt(x, z, 0.2);
+        // Ein Ort ohne Wasser im 84-m-Kreis (eigenes 4-m-Raster, unabhängig von der Such-Funktion des Spiels).
+        const trockenUm = (x, z) => {
+            for (let dz = -84; dz <= 84; dz += 4)
+                for (let dx = -84; dx <= 84; dx += 4) if (dx * dx + dz * dz <= 84 * 84 && nass(x + dx, z + dz)) return false;
+            return true;
+        };
+        let ort = null;
+        for (const [x, z] of [[pm.x, pm.z], [200, 200], [-200, 200], [200, -200], [-200, -200], [400, 0], [0, 400], [-400, 0]]) {
+            if (r._isAboveWaterAt(x, z, 1) && trockenUm(x, z)) {
+                ort = { x, z };
+                break;
+            }
+        }
+        m.trockenOrt = ort;
+        const setze = (x, z) => {
+            pm.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+            st.yaw = 0;
+        };
+        const neue = (vorher, typ) => archs.slice(vorher).filter((a) => a && a.type === typ);
+        if (ort) {
+            setze(ort.x, ort.z);
+            const v0 = archs.length;
+            r.processChatCommand("pflanz mir einen eichenhain am wasser");
+            const n0 = neue(v0, "baum_eiche");
+            m.amWasserOhneWasser = n0.length;
+            m.amWasserZeile = letzteZeile();
+            for (const a of n0.reverse()) r.removeArchitecture(a);
+        }
+        // V-D8 + V-k6: „pflanz mir zwei birken" beim Absender — das Label im Chat, der Ort reist aufgelöst.
+        const p2p = st.p2p;
+        const p2pAlt = { enabled: p2p.enabled, connected: p2p.connected };
+        const sendAlt = r.p2pSend;
+        const gesendet = [];
+        p2p.enabled = true;
+        p2p.connected = true;
+        r.p2pSend = (o) => gesendet.push(o);
+        const sx = ort ? ort.x : pm.x,
+            sz = ort ? ort.z : pm.z;
+        setze(sx, sz);
+        const v1 = archs.length;
+        try {
+            r.processChatCommand("pflanz mir zwei birken");
+        } finally {
+            r.p2pSend = sendAlt;
+            p2p.enabled = p2pAlt.enabled;
+            p2p.connected = p2pAlt.connected;
+        }
+        const nB = neue(v1, "baum_birke");
+        m.birkenAbsender = nB.length;
+        m.birkenZeile = letzteZeile();
+        m.birkenLabel = (st.blueprints.baum_birke && st.blueprints.baum_birke.label) || null;
+        const msg = gesendet.find((o) => o && o.type === "dsl");
+        m.gesendet = !!msg;
+        m.ortKnoten = msg && Array.isArray(msg.program) ? JSON.stringify(msg.program[2]) : null;
+        for (const a of nB.slice().reverse()) r.removeArchitecture(a);
+        // Der Empfänger steht 200 m weiter: seine Birken stehen dort, wo der Absender sie wollte.
+        if (msg) {
+            setze(sx + 200, sz);
+            const v2 = archs.length;
+            r._p2pMsgDsl({ type: "dsl", peerId: "peer-empfaenger-probe", program: msg.program }, { peerId: "self" });
+            const nE = neue(v2, "baum_birke");
+            m.birkenEmpfaenger = nE.length;
+            m.empfaengerAbstandZumAbsender = nE.length
+                ? +Math.max(...nE.map((a) => Math.hypot(a.position.x - sx, a.position.z - sz))).toFixed(1)
+                : null;
+            for (const a of nE.reverse()) r.removeArchitecture(a);
+        }
+        setze(sx, sz);
+        // V-D8: die Dorf-Zählung bleibt im Log.
+        const z0 = ausgabe ? ausgabe.childElementCount : 0;
+        r._nachDorfOrientieren({ x: sx, z: sz }, { placed: 1 });
+        const neuZeilen = ausgabe ? Array.from(ausgabe.children).slice(z0).map((c) => c.textContent) : [];
+        m.telemetrieImChat = neuZeilen.some((t) => /Bauten n=/.test(t));
+        m.gestartet = true;
+    } catch (e) {
+        out.satz = Object.assign(out.satz || {}, { err: (e && e.stack) || String(e) });
     }
     // ── V-D3: die Werkstatt-Vorschau ──
     try {
@@ -319,6 +534,49 @@ async function probe() {
             const v = ankunftVerdict(Object.assign({}, gesundA, bruch));
             check(`Selbst-Test V-D1: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
+        // Die Einzelschnitte: je ein gesunder Zustand ohne Täter, je der Befund-Zustand mit Täter beim Namen.
+        const gesundS = {
+            gestartet: true,
+            trockenOrt: { x: 0, z: 0 },
+            amWasserOhneWasser: 0,
+            amWasserZeile: "Kein Wasser in Reichweite — am Wasser wächst hier nichts.",
+            birkenAbsender: 2,
+            birkenZeile: "2× Birke aus dem Studio vor dir gewachsen",
+            birkenLabel: "Birke",
+            gesendet: true,
+            ortKnoten: '["at",1,2,3]',
+            birkenEmpfaenger: 2,
+            empfaengerAbstandZumAbsender: 12,
+            telemetrieImChat: false,
+        };
+        for (const [kurz, urteil, gesund, brueche] of [
+            ["V-D5", rezeptVerdict, { gestartet: true, friedenGesperrt: true, schoepferFrei: true }, [["schöpfer gesperrt (V-D5)", { schoepferFrei: false, titel: "Es fehlt: 44× holz" }, "schöpfer"]]],
+            ["V-k4", tasteVerdict, { gestartet: true, gedrueckt: true, nachBlur: false }, [["Klebetaste (V-k4)", { nachBlur: true }, "W bleibt"]]],
+            [
+                "V-D6",
+                kiVerdict,
+                { gestartet: true, fehler: "Keine Antwort von 127.0.0.1:9 — der lokale Dienst läuft nicht", host: "127.0.0.1:9" },
+                [["CORS-Märchen (V-D6)", { fehler: "Cloud blockt Browser-Direct-Call (CORS). Optionen: …" }, "lokaler Endpunkt"]],
+            ],
+            [
+                "V-k5 V-k6 V-D8",
+                satzVerdict,
+                gesundS,
+                [
+                    ["6 Eichen am Spieler (V-k5)", { amWasserOhneWasser: 6, amWasserZeile: "6× baum_eiche aus dem Studio am Wasser gewachsen" }, "6 Eichen"],
+                    ["interne id im Chat (V-D8)", { birkenZeile: "2× baum_birke aus dem Studio vor dir gewachsen" }, "der Chat nennt"],
+                    ["Ort reist relativ (V-k6)", { ortKnoten: '["at_player_forward",10]' }, "der Ort reist"],
+                    ["Empfänger pflanzt bei sich (V-k6)", { empfaengerAbstandZumAbsender: 203 }, "der Empfänger pflanzt"],
+                    ["Telemetrie im Chat (V-D8)", { telemetrieImChat: true }, "Dorf-Telemetrie"],
+                ],
+            ],
+        ]) {
+            check(`Selbst-Test ${kurz}: gesund == 0 Täter`, urteil(gesund).length === 0, urteil(gesund).join(" · "));
+            for (const [name, bruch, soll] of brueche) {
+                const v = urteil(Object.assign({}, gesund, bruch));
+                check(`Selbst-Test ${kurz}: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+            }
+        }
         const gruen = wand(quelle);
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
         const vorStand = quelle
@@ -352,7 +610,8 @@ async function probe() {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-    const out = await page.evaluate(probe);
+    // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
+    const out = await page.evaluate(probe, { kiPort: PORT + 3 });
     await browser.close();
     server.close();
 
@@ -365,6 +624,43 @@ async function probe() {
         vA.length === 0,
         `Plattform ${JSON.stringify(am.plattform)} · ${am.baeume} Bäume im 40-m-Kreis · nächster Stamm ${am.naechsterStamm} m (${am.naechsteArt}) · Kronen über der Scheibe ${am.kronen} · Ring ${am.ringPortale} Portale, Mitte ${am.ringMitteAbstand} m${vA.length ? " — Täter: " + vA.join(", ") : ""}`
     );
+    console.log("=== V-D5 · V-k4 · V-D6 · V-k5 · V-k6 · V-D8 (Q15) — DIE EINZELSCHNITTE DES V1-PFADS ===");
+    for (const [kurz, name, m, urteil, zeile] of [
+        [
+            "V-D5",
+            "das Rezeptbuch urteilt nach dem Spielmodus (schöpfer gibt den Knopf frei)",
+            out.rezept,
+            rezeptVerdict,
+            (m) => `frieden gesperrt ${m.friedenGesperrt} · schöpfer frei ${m.schoepferFrei}`,
+        ],
+        [
+            "V-k4",
+            "der Fensterwechsel löst die gehaltene Taste",
+            out.taste,
+            tasteVerdict,
+            (m) => `W gedrückt ${m.gedrueckt} · nach blur ${m.nachBlur}`,
+        ],
+        [
+            "V-D6",
+            "der KI-Fehler nennt die Ursache (lokaler Dienst läuft nicht, nicht CORS)",
+            out.ki,
+            kiVerdict,
+            (m) => `„${(m.fehler || "").slice(0, 90)}"`,
+        ],
+        [
+            "V-k5 V-k6 V-D8",
+            "der Satz trifft die Welt: kein Wasser → laute Absage · der Ort reist aufgelöst · das Label im Chat · keine Telemetrie",
+            out.satz,
+            satzVerdict,
+            (m) =>
+                `ohne Wasser ${m.amWasserOhneWasser} Eichen („${m.amWasserZeile}") · Absender ${m.birkenAbsender} Birken („${m.birkenZeile}") · Ort ${m.ortKnoten} · Empfänger ${m.birkenEmpfaenger} Birken ${m.empfaengerAbstandZumAbsender} m vom Absender · Telemetrie ${m.telemetrieImChat}`,
+        ],
+    ]) {
+        const mm = m || {};
+        if (mm.err) check(`${kurz} Probe ohne Ausnahme`, false, mm.err.split("\n")[0]);
+        const v = urteil(mm);
+        check(`${kurz} ${name}`, v.length === 0, `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`);
+    }
     console.log("=== V-D3 (Q14) — DIE WERKSTATT-VORSCHAU ZEIGT IHR WERK ===");
     const vm = out.vorschau || {};
     if (vm.err) check("V-D3 Probe ohne Ausnahme", false, vm.err.split("\n")[0]);
