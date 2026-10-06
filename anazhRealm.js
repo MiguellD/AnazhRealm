@@ -62019,7 +62019,8 @@ class AnazhRealm {
             takt: 0, // Render-Takt (_tickChunkSatz) — ein Abschnitt, den kein Pass mehr fragt, fällt beim Umlegen
             vInhalt: 0, // die Vertices aller Bereiche (der Inhalt, den `_chunkSatzVerdichten` misst)
             ueberSeit: -1, // der Takt, seit dem die Kapazität über `schwelle` × Ziel liegt (-1 = sie liegt darunter)
-            ueberHoch: 0, // das Hochwasser des Inhalts seit `ueberSeit` (ein Satz, der noch füllt, trägt sein Ziel mit)
+            ueberHoch: 0, // das Hochwasser des Inhalts seit `ueberSeit`
+            ueberStart: 0, // der Inhalt zu Beginn der Frist (wächst er um mehr als `stetig`, beginnt sie neu)
             schmutzig: false,
             anker: null,
             verborgen: false,
@@ -62084,16 +62085,17 @@ class AnazhRealm {
     // nie, ein leerer kehrte nur auf die Start-Kapazität zurück. Befund (echte GPU, Mess-Wiese, Puffer-Linse): in Ruhe hielt
     // der Wasser-Satz 3,25 MB für 0,33 MB Inhalt (9 745 von 65 536 Vertices), drei Bau-Sätze je 0,44 MB für 48 bis 1 464
     // Vertices; nach drei Wander-Schleifen à 1,2 km hielt der Boden-Satz 24,9 statt 16,4 MB und die Bau-Sätze 12,0 statt
-    // 1,3 MB. Je Render-Takt misst der Satz seinen Inhalt — die Vertices seiner Bereiche, das Hochwasser der Abschnitte, die
-    // ein Pass noch fragt; trägt die Kapazität `ruheTakte` Takte lang mehr als `schwelle` × Ziel (die Wasser-Bereiche treten
-    // fast je Takt neu ein, eine Ruhe des Satzes käme nie), schrumpft er auf das Ziel (das Hochwasser des Inhalts über diese
-    // Frist × `luft`, mindestens vMin/iMin — ein Satz, der noch füllt wie der Ring im Boot, hebt sein Ziel über die Schwelle
-    // und schrumpft nie; die Schwelle über dem Wachs-Schritt hält ihn ruhig): die Bereiche ziehen dicht nach vorn (jeder Index-Lauf um die Verschiebung seines
-    // Bereichs, Zellen und Hüllen bleiben), die Abschnitte fallen und jeder Pass legt seinen im nächsten Frame neu, die
-    // Geometrie tauscht am SELBEN Mesh, die Views der Chunks zeigen auf die neuen Arrays (jeder CPU-Leser bleibt
-    // byte-gleich). Ein leerer Satz ist der Fall „Inhalt 0". Die alten Puffer verlassen die GPU hier, vor dem Zeichnen des
-    // Frames (`_loopRender`): ein Render-Objekt, das die alte Geometrie las, tauscht beim nächsten Zeichnen, und der Kehraus
-    // hielte die Puffer eines unsichtbaren Satzes für gezeichnet (W6: Bau-Sätze 38,3 → 31,4 statt 45,2 MB).
+    // 1,3 MB. Je Render-Takt misst der Satz sein Ziel: das Hochwasser seines Inhalts (die Vertices seiner Bereiche) über die
+    // Frist × `luft`, die Indizes aus dem Hochwasser der Abschnitte, die ein Pass noch fragt, mindestens vMin/iMin. Liegt die
+    // Kapazität `ruheTakte` Takte lang über `schwelle` × Ziel (die Schwelle über dem Wachs-Schritt hält ihn ruhig), schrumpft
+    // er auf das Ziel — ohne auf eine Ruhe seiner Bereiche zu warten (die Wasser-Bereiche treten fast je Takt neu ein), aber
+    // nie, solange er füllt: wächst sein Inhalt um mehr als `stetig` über den Stand zu Beginn der Frist (der Ring im Boot,
+    // ein Dorf, das einströmt), beginnt die Frist neu. Dann ziehen die Bereiche dicht nach vorn (jeder Index-Lauf um die
+    // Verschiebung seines Bereichs, Zellen und Hüllen bleiben), die Abschnitte fallen und jeder Pass legt seinen im nächsten
+    // Frame neu, die Geometrie tauscht am SELBEN Mesh, die Views der Chunks zeigen auf die neuen Arrays (jeder CPU-Leser
+    // bleibt byte-gleich). Ein leerer Satz ist der Fall „Inhalt 0". Die alten Puffer verlassen die GPU hier, vor dem Zeichnen
+    // des Frames (`_loopRender`): ein Render-Objekt, das die alte Geometrie las, tauscht beim nächsten Zeichnen, und der
+    // Kehraus hielte die Puffer eines unsichtbaren Satzes für gezeichnet (W6: Bau-Sätze 38,3 → 31,4 statt 45,2 MB).
     _chunkSatzVerdichten(s) {
         const V = AnazhRealm.CHUNK_SATZ_VERDICHTEN;
         const R = AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte;
@@ -62108,7 +62110,10 @@ class AnazhRealm {
             s.ueberSeit = -1;
             return false;
         }
-        if (s.ueberSeit < 0) s.ueberSeit = s.takt;
+        if (s.ueberSeit < 0 || s.vInhalt > s.ueberStart * V.stetig) {
+            s.ueberSeit = s.takt;
+            s.ueberStart = s.vInhalt;
+        }
         s.ueberHoch = hoch;
         if (s.takt - s.ueberSeit <= R) return false;
         s.ueberSeit = -1;
@@ -88503,8 +88508,9 @@ AnazhRealm.CHUNK_SATZ_ABSCHNITT = Object.freeze({ luft: 1.2, ruheTakte: 600, ver
 // DAS VERDICHTEN des Satzes (`_chunkSatzVerdichten`): nach der Ruhe-Frist schrumpft ein Satz, dessen Kapazität mehr als
 // `schwelle` × Ziel trägt, auf das Ziel = Inhalt × `luft` (Vertices: die Bereiche; Indizes: das Hochwasser der lebenden
 // Abschnitte), mindestens vMin/iMin. Die Schwelle 1,5 liegt auf dem Wachs-Schritt der Vertices: nach einem Schrumpfen wächst
-// der Satz erst, wenn sein Inhalt um ein Viertel zunimmt, und schrumpft erst wieder, wenn er ein Drittel verliert.
-AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, vMin: 1024, iMin: 3072 });
+// der Satz erst, wenn sein Inhalt um ein Viertel zunimmt, und schrumpft erst wieder, wenn er ein Drittel verliert. Wächst der
+// Inhalt während der Frist um mehr als `stetig` (10 %), beginnt sie neu — ein Satz, der füllt, schrumpft nie.
+AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, stetig: 1.1, vMin: 1024, iMin: 3072 });
 // DER BAU-SATZ (Welle 6, `_bauSatzArt`): die Studio-Arten (Rezept-`kind`), deren gesetzte Gestalt im Satz ihres Stoffs
 // zeichnet — je Art der Name des Satzes (die Täter-Klasse der Band-Linse, spec/profiband/haushalt.json: `bauSatz` →
 // bau, `formationenSatz` → formationen). Ein gesetzter Bau wandert nie (die Tür-Flügel reisen einzeln), und seine
