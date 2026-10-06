@@ -72963,7 +72963,20 @@ class AnazhRealm {
     // Ast-Spitze der gezeichneten Instanz): die Studio-Tanne trägt bei T 3,0 m Äste bis 11,7 m, die Fichte bei T 2,6 m
     // bis 13,2 m, die Birke bei T 3,6 m bis 12,4 m.
     _forestKroneWelt(d) {
-        return d.T * (this._foundryWorldScaleMatrix(this._foundryPresetFor(d.sp)).elements[0] || 1);
+        // Die Welt-Skala je Art einmal gelesen (der Pflanz-Gang fragt je stehendem Wurf); die LIVE-Quelle der Skala
+        // (`PORTAL_RENDER_CONFIG.placement`) leert den Merker mit ihrer Identität.
+        const rc = AnazhRealm._studioRenderConfig;
+        const quelle = rc && rc.placement ? rc.placement : null;
+        if (!this._kroneWeltK || this._kroneWeltQuelle !== quelle) {
+            this._kroneWeltK = new Map();
+            this._kroneWeltQuelle = quelle;
+        }
+        let k = this._kroneWeltK.get(d.sp);
+        if (k === undefined) {
+            k = this._foundryWorldScaleMatrix(this._foundryPresetFor(d.sp)).elements[0] || 1;
+            this._kroneWeltK.set(d.sp, k);
+        }
+        return d.T * k;
     }
 
     _forestPlantChunk(cx, cz) {
