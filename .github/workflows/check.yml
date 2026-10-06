@@ -192,11 +192,11 @@ jobs:
               # Massstab (`_schirm`), kein Gesetz liest den Schirm an ihm vorbei; die Selbsttests feuern.
               run: npm run gate:schirm-monotonie
 
-            - name: Seiten-Wand (der Welt-March testet enge Seiten nah zuerst und bricht hinter dem Treffer ab)
-              # Fährt die ECHTEN Organ-Methoden (GPU-frei) auf Einträgen in Erzeugungs-Reihenfolge: jeder Eintrag
-              # reist mit seinem Handle, die Seiten werden eng (Hilbert), große Hüllen wohnen getrennt, die Folge
-              # ist aufsteigend und eine untere Schranke, Tick und Shader konsumieren sie; die Selbsttests feuern.
-              run: npm run gate:seiten-ordnung
+            - name: Stellvertreter-Wand (der Feld-Pass marcht nur in den Hüllen seiner Sätze, das Panorama nur am Himmel)
+              # Fährt die ECHTEN Organ-Methoden (GPU-frei): die Obergrenze folgt dem höchsten belegten Slot, der Takt setzt
+              # die Instanzen und zieht Raster und Strahl aus EINER Matrix, der March-Draw trägt Rückseiten-Stellvertreter mit
+              # Fragment-Tiefe, das Panorama hat weder Schleife noch Fragment-Tiefe (früher Tiefentest); die Selbsttests feuern.
+              run: npm run gate:feld-stellvertreter
 
             - name: Schatten-Wand (je CSM-Kaskade am echten Leser — nah im Regler-Takt, fern seltener)
               # Fährt den ECHTEN _loopShadowUpdate gegen Schein-Kaskaden (GPU-frei): autoUpdate aus, nah jeden Frame

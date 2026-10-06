@@ -184,7 +184,7 @@ function main() {
       console.log("  weltMarch Snapshot:");
       console.log("    belegt=" + wm.belegt + "  gesetzBloecke=" + wm.gesetzBloecke +
         (wm.gesetzPlaetze != null ? "  gesetzPlaetze=" + wm.gesetzPlaetze : "") +
-        (wm.seiten != null ? "  seiten=" + wm.seiten : ""));
+        (wm.stellvertreter != null ? "  stellvertreter=" + wm.stellvertreter : ""));
       if (wm.felderFrei != null) note("frei: felder=" + wm.felderFrei);
       if (typeof wm.kapseln === "number") {
         note("kapseln=" + wm.kapseln + " (Dedup-Sätze)");

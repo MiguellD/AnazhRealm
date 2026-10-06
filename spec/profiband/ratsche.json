@@ -246,8 +246,6 @@
         "buf:buffer_timestamp_resolve_render": 0,
         "buf:buffer_timestamp_result_render": 0,
         "buf:bindingBuffer": 0,
-        "tex:welt-march-seiten": 0,
-        "tex:welt-march-folge": 0,
         "tex:DFG_LUT": 0,
         "tex:TRAANode.vortiefe": 0,
         "buf:szene": 40.6,
