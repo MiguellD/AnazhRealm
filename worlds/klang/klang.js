@@ -4496,7 +4496,8 @@ applyHashSession();                                              // #s=…&p=…
    tierRuf. Rein additiv: die Musik-Maschine bleibt Byte für Byte, wie sie war. */
 (function () {
   const K = window.__klangCore;
-  if (!K || !K.UMWELT || !K.umweltGraph) return;
+  // Kern-Pflicht: ohne das Umwelt-Gesetz kein Welt-Modus — laut, nie ein stilles Lab ohne Welt.
+  if (!K || !K.UMWELT || !K.umweltGraph) throw new Error("klang-core ohne UMWELT/umweltGraph — der Welt-Modus hat kein Gesetz");
   const U = K.UMWELT;
   let bus = null, graph = null, timer = null, aktivOrt = null;
   let lage = JSON.parse(JSON.stringify(U.orte.wiese));

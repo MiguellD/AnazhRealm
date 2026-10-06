@@ -20446,12 +20446,13 @@ async function checkBandHydrosphere(ctx) {
             e.hasRiver === true && e.flussNah >= e.schwelle && e.flussFern < e.schwelle,
             `nah=${zahl(e.flussNah)} dB fern=${zahl(e.flussFern)} dB`
         );
-        if (e.hasWaterfall)
-            check(
-                "Welle 5 Klang: der Wasserfall donnert nah, schweigt fern",
-                e.fallNah >= e.schwelle && e.fallFern < e.schwelle,
-                `nah=${zahl(e.fallNah)} dB fern=${zahl(e.fallFern)} dB`
-            );
+        // Pflicht wie vor der Welle (V9.43-e): die Hydrosphäre der Standard-Saat trägt Wasserfälle — fehlt einer, ist
+        // das ein Befund, kein stilles Auslassen.
+        check(
+            "Welle 5 Klang: der Wasserfall donnert nah, schweigt fern",
+            e.hasWaterfall === true && e.fallNah >= e.schwelle && e.fallFern < e.schwelle,
+            e.hasWaterfall ? `nah=${zahl(e.fallNah)} dB fern=${zahl(e.fallFern)} dB` : "kein Wasserfall in der Hydrosphäre"
+        );
     }
 }
 

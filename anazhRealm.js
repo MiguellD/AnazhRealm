@@ -15848,7 +15848,8 @@ class AnazhRealm {
     // DIE KANONISCHE WIND-SWAY-GRÖSSE — jeder Wind-Leser LIEST sie;
     // Charakter als Parameter: `ampX` (Gras 1.5), `windScale` (Wipfel-Dämpfen, fehlt → 1).
     // phase = uWindTime·1.7 + dot(worldXZ, uWindDir)·0.35; hf = max(positionLocal.y, 0);
-    // gust = sin(uWindTime·0.4 − dot(worldXZ, uWindDir)·0.0384)·0.45 + 0.7 (wandernde Böe, λ~164 m).
+    // gust = sin(uWindTime·omega − dot(worldXZ, uWindDir)·k)·amp + mitte — die wandernde Böe, Zahlen aus WIND_BOE (das Ohr
+    // liest dieselben, `_windBoeAt`).
     // uBend-Sphären biegen Halme radial weg (min(hf,1)). Render-rein; gibt den vec3-Versatz zurück.
     _windSwayOffset(TSL, opts = {}) {
         const wu = this.state.windUniforms;
@@ -73652,8 +73653,8 @@ class AnazhRealm {
         return true;
     }
 
-    // Wasser strömt zurück, wenn eine solide Welt-Geste die Wasser-Cell-Klassifikation verschiebt: die Fluss-Textur des
-    // klang-Gesetzbuchs durch einen fallenden Bandpass (klang:SUBSTANZ.wasser). Stumm ohne Symphonie.
+    // Wasser strömt zurück, wenn eine solide Welt-Geste die Wasser-Cell-Klassifikation verschiebt: ein Chor aus
+    // MINNAERT-Blasen auf Oszillatoren (klang:SUBSTANZ.wasser, die Blasen wachsen über das Ereignis). Stumm ohne Symphonie.
     _playWaterReactionPing() {
         this._substanzKlang("wasser", null);
     }
