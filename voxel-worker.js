@@ -2446,7 +2446,7 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     const AIR = CELL_STATE.AIR;
     // Welle H (mirror): AQUIFER — tiefe Höhlen-Zellen über dem Wassertisch trocken.
     const aquiferY = typeof state.waterLevel === "number" ? state.waterLevel : 0;
-    const AQ_DEPTH = 18;
+    const AQ_DEPTH = 18; // Mirror AnazhRealm.AQUIFER_TIEFE_M
     const colSurf = new Float64Array(dim * dim);
     for (let k = 0; k < dim; k++) {
         const cz = oz + (k + 0.5) * step;

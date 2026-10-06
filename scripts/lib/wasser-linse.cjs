@@ -1017,7 +1017,7 @@ function wasserHoehle(opts) {
                         if (c[b + j * dq] !== S.AIR || c[b + (j - 1) * dq] !== S.SOLID) continue;
                         let decke = false,
                             wasserDrueber = false;
-                        for (let jj = j + 1; jj < dimY && oy + jj * step < L + step; jj++) {
+                        for (let jj = j + 1; jj < dimY && oy + jj * step < L; jj++) {
                             if (c[b + jj * dq] === S.SOLID) decke = true;
                             else if (decke && c[b + jj * dq] === S.WATER) wasserDrueber = true;
                         }

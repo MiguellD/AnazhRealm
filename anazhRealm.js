@@ -26918,6 +26918,13 @@ class AnazhRealm {
         return Object.freeze({ AIR: 0, WATER: 1, SOLID: 2 });
     }
 
+    // Die AQUIFER-Regel des Zell-Gesetzes: eine Zelle tiefer als so viele Meter unter der Makro-Fläche und über dem
+    // Wassertisch bleibt trocken (ein Oberflächen-See flutet die Höhlen darunter nicht). Leser: der Zell-Bau
+    // (`_buildVoxelChunkWaterCells`, Worker-Spiegel `buildWaterCells` bit-identisch) und die Decke am Körper (`_koerperWasser`).
+    static get AQUIFER_TIEFE_M() {
+        return 18;
+    }
+
     // Welle C — der Schwarz-Floor für Flach-Farb-Strukturen (Eigen-Leuchten in
     // der Materialfarbe, hebt Stein/Eisen nachts über Schwarz). Browser-justierbar.
     static get STRUCTURE_EMISSIVE() {
@@ -27258,7 +27265,7 @@ class AnazhRealm {
         // surf-18) über dem globalen Wassertisch (`waterLevel`) bleibt trocken, darunter nass.
         // MUSS bit-identisch im Worker.
         const aquiferY = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        const AQ_DEPTH = 18; // Tiefe unter surf, ab der die Aquifer-Regel greift
+        const AQ_DEPTH = AnazhRealm.AQUIFER_TIEFE_M; // Tiefe unter surf, ab der die Aquifer-Regel greift
         const colSurf = new Float64Array(dim * dim);
         for (let k = 0; k < dim; k++) {
             const cz = oz + (k + 0.5) * step;
@@ -32436,32 +32443,71 @@ class AnazhRealm {
     // und Schritt-Klang lesen nur sie. Bis V18.531 trug der Spieler das Dach der obersten Wasser-ZELLE (1,8-m-Raster: in
     // Ruhe 0,47 m über dem See, im Fluss 0,17 m über der Lauf-Fläche), das Tier den rohen Spiegel, der Mitspieler den
     // Meeresspiegel. Rückgabe: Spiegel (m) oder −Infinity (kein Wasser).
+    // DIE DECKE (D11, Gegenprüfung 07.10.): Wasser zählt für einen Körper nur, wo das Zell-Gesetz es führt. Liegt die
+    // Zelle des Körpers (die erste nicht-feste über seinem Grund) mit ihrer Mitte unter dem Spiegel und hält das Zell-
+    // Gesetz sie trocken (die Aquifer-Regel caveDry, `_skyOpenWaterFilter`, keine Verbindung zur Quelle), ist dort kein
+    // Wasser — außer der Live-Automat trägt es in genau diese Zelle (dann sein zusammenhängendes Dach darüber). Sub-zelliges
+    // Ufer-Wasser (die Zellen-Mitte über dem Spiegel) bleibt der Spiegel des Gesetzes. Bis 8f09227d las der Körper den
+    // Spiegel ohne Decke: in trockenen Höhlen unter und neben dem See der Mess-Wiese 3511 von 3511 Proben „nass" — der
+    // Spieler schwamm, die Kamera tauchte, das Tier schwamm auf dem Höhlen-Boden.
     _koerperWasser(x, z, grundY) {
-        let spiegel = this._atlasWaterLevelAt(x, z, Number.isFinite(grundY) ? grundY : -Infinity);
-        const lvlMap = this.state.waterLevelCells;
-        if (!lvlMap || lvlMap.size === 0 || !this.state.voxelChunks) return spiegel;
+        const endlich = Number.isFinite(grundY);
+        let spiegel = this._atlasWaterLevelAt(x, z, endlich ? grundY : -Infinity);
+        if (!this.state.voxelChunks) return spiegel;
         const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
         const cx = Math.floor(x / span);
         const cz = Math.floor(z / span);
         const key = `${cx},${cz}`;
-        const lvl = lvlMap.get(key);
-        const entry = lvl ? this.state.voxelChunks.get(key) : null;
-        if (!entry || !entry.waterCells) return spiegel;
+        const entry = this.state.voxelChunks.get(key);
+        const cells = entry ? entry.waterCells : null;
+        if (!cells) return spiegel;
         const i = Math.floor((x - cx * span) / step);
         const k = Math.floor((z - cz * span) / step);
         if (i < 0 || k < 0 || i >= dim || k >= dim) return spiegel;
         const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
-        const sc = this._caColumnScan(entry.waterCells, lvl, i + k * dim, dim * dim, dimY);
-        const liveRel = sc.liveTopJ >= 0 ? (sc.liveTopJ + sc.liveFrac) * step : -1;
-        if (sc.floodTopJ < 0) {
-            // Live-Wasser jenseits der Flut (ein gegrabener Kanal, ein Stau): sein Dach.
-            if (liveRel >= 0 && oy + liveRel > spiegel) spiegel = oy + liveRel;
-            return spiegel;
+        const dq = dim * dim;
+        const b = i + k * dim;
+        const lvlMap = this.state.waterLevelCells;
+        const lvl = lvlMap && lvlMap.size ? lvlMap.get(key) : null;
+        if (lvl) {
+            const sc = this._caColumnScan(cells, lvl, b, dq, dimY);
+            const liveRel = sc.liveTopJ >= 0 ? (sc.liveTopJ + sc.liveFrac) * step : -1;
+            if (sc.floodTopJ < 0) {
+                // Live-Wasser jenseits der Flut (ein gegrabener Kanal, ein Stau): sein Dach.
+                if (liveRel >= 0 && oy + liveRel > spiegel) spiegel = oy + liveRel;
+            } else if (Number.isFinite(spiegel)) {
+                let d = Math.max(0, liveRel) - (sc.floodTopJ + 1) * step;
+                if (d > -0.05 && d < 0.05) d = 0;
+                spiegel += Math.max(-14, Math.min(4, d));
+            }
         }
-        if (!Number.isFinite(spiegel)) return spiegel;
-        let d = Math.max(0, liveRel) - (sc.floodTopJ + 1) * step;
-        if (d > -0.05 && d < 0.05) d = 0;
-        return spiegel + Math.max(-14, Math.min(4, d));
+        if (!endlich || !(spiegel > grundY)) return spiegel;
+        // Die Zelle des Körpers und das Urteil des Zell-Gesetzes über sie: geflutet (WATER) trägt sie den Spiegel; sonst
+        // ist sie trocken, wenn eine FEST-Zelle zwischen ihr und dem Spiegel liegt (die Decke: das Wasser käme nur durch
+        // Fels herein — `_skyOpenWaterFilter` trocknet so jede Blase) oder die Aquifer-Regel sie hält (caveDry: tiefer als
+        // 18 m unter der Makro-Fläche und über dem Wassertisch, `_buildVoxelChunkWaterCells`). Offen nach oben bleibt sie
+        // der Spiegel des Gesetzes (das sub-zellige Ufer).
+        const ZS = AnazhRealm.CELL_STATE;
+        let jK = Math.max(0, Math.min(dimY - 1, Math.floor((grundY - oy) / step)));
+        for (let n = 0; n < 2 && jK + 1 < dimY && cells[b + jK * dq] === ZS.SOLID; n++) jK++;
+        if (cells[b + jK * dq] === ZS.WATER) return spiegel;
+        let decke = false;
+        for (let j = jK + 1; j < dimY && oy + j * step < spiegel; j++) {
+            if (cells[b + j * dq] === ZS.SOLID) {
+                decke = true;
+                break;
+            }
+        }
+        if (!decke) {
+            const cy = oy + (jK + 0.5) * step;
+            const aquiferY = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+            const colSurf = this._terrainMacroSurfaceY(cx * span + (i + 0.5) * step, cz * span + (k + 0.5) * step);
+            if (!(cy < colSurf - AnazhRealm.AQUIFER_TIEFE_M && cy > aquiferY)) return spiegel;
+        }
+        if (!lvl || !(lvl[b + jK * dq] > 0.5)) return -Infinity;
+        let jT = jK;
+        while (jT + 1 < dimY && cells[b + (jT + 1) * dq] !== ZS.SOLID && lvl[b + (jT + 1) * dq] > 0.5) jT++;
+        return oy + (jT + lvl[b + jT * dq]) * step;
     }
 
     // DIE EINE SZENEN-TIEFE: jeder r184-ViewportDepthTextureNode hält seinen EIGENEN Klon je Render-Ziel und kopiert
@@ -87694,7 +87740,9 @@ class AnazhRealm {
             mesh.position.z,
             AnazhRealm.PLAYER_STEP_UP + AnazhRealm.HYDROSPHERE.carveLakeBedDepth + brustM
         );
-        const waterY = this._koerperWasser(mesh.position.x, mesh.position.z, grund0);
+        // Ohne Grund in Reichweite (tiefes Wasser, eine hohe Höhlen-Halle) urteilt die Wahrheit an den Füßen — die Decke
+        // (D11) gilt auch dort.
+        const waterY = this._koerperWasser(mesh.position.x, mesh.position.z, grund0 !== null ? grund0 : feet0);
         const schwimmt = waterY > feet0 && (waterY - feet0 > brustM || grund0 === null || waterY - grund0 > brustM);
         s.playerUnderwater = schwimmt;
         s.playerEyesUnderwater = schwimmt && mesh.position.y + 1.6 < waterY;

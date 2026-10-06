@@ -32856,26 +32856,59 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         out.seamPadCropMechanism = /cropMargin/.test(buildSrc);
 
         // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6) — der Zell-Leser
-        // `_waterCellAt` (eine zweite Wahrheit, nur noch von dieser Probe gerufen) ist gefallen. Ein Körper hoch in der
-        // Luft (y=200) und 20 m über dem Spieler steht nie unter dem Spiegel (kein Phantom-Wasser in der Höhe).
+        // `_waterCellAt` (eine zweite Wahrheit, nur noch von dieser Probe gerufen) ist gefallen — und sie kennt die DECKE
+        // (D11): die Zellen halten Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`). Die Probe sucht
+        // in den geladenen Wasser-Chunks jede erste LUFT-Zelle über FEST, deren Mitte unter dem Spiegel des Gesetzes liegt
+        // und über der eine FEST-Zelle steht (eine trockene Höhle), und stellt einen Körper auf ihren Boden: er liest dort
+        // nie Wasser. Bis 8f09227d las er den Spiegel ohne Decke (3511 von 3511 Höhlen-Proben am See der Mess-Wiese nass).
         // Plus: Worker-Mirror baut waterCells via Flood (V13.12 Vertikal-Open).
         let waterCellAtWorks = false;
-        let highIsNotWater = false;
-        let playerPosNoPhantom = false;
+        const hoehle = { unter: 0, neben: 0, nassUnter: 0, nassNeben: 0 };
         if (typeof r._koerperWasser === "function" && typeof r._waterCellAt === "undefined") {
             waterCellAtWorks = true;
-            highIsNotWater = r._koerperWasser(0, 0, 200) < 200;
-            const pm = r.state.playerMesh;
-            if (pm) {
-                const y = pm.position.y + 20;
-                playerPosNoPhantom = r._koerperWasser(pm.position.x, pm.position.z, y) < y;
-            } else {
-                playerPosNoPhantom = true; // ohne Spieler keine Probe → skip-pass
+            const cfg = r._voxelChunkConfig(0);
+            const oy = (s.terrainBaseHeight || 0) - cfg.floorDrop;
+            const ZS = r.constructor.CELL_STATE;
+            const dq = cfg.dim * cfg.dim;
+            for (const [key, e] of s.voxelChunks || []) {
+                if (!e || !e.waterCells) continue;
+                const c = e.waterCells;
+                const [kx, kz] = key.split(",").map(Number);
+                for (let k = 0; k < cfg.dim; k++)
+                    for (let i = 0; i < cfg.dim; i++) {
+                        const b = i + k * cfg.dim;
+                        const x = kx * cfg.span + (i + 0.5) * cfg.step;
+                        const z = kz * cfg.span + (k + 0.5) * cfg.step;
+                        const L = r._atlasWaterLevelAt(x, z, -1e9);
+                        if (!(L > -Infinity)) continue;
+                        for (let j = 1; j < cfg.dimY; j++) {
+                            const cy = oy + (j + 0.5) * cfg.step;
+                            if (cy > L) break;
+                            if (c[b + j * dq] !== ZS.AIR || c[b + (j - 1) * dq] !== ZS.SOLID) continue;
+                            let decke = false,
+                                wasser = false;
+                            for (let jj = j + 1; jj < cfg.dimY && oy + jj * cfg.step < L; jj++) {
+                                if (c[b + jj * dq] === ZS.SOLID) decke = true;
+                                else if (decke && c[b + jj * dq] === ZS.WATER) wasser = true;
+                            }
+                            if (!decke) continue;
+                            const boden = r._fieldSurfaceBelow(x, cy, z, 3);
+                            if (!Number.isFinite(boden) || !(boden < L - 0.2)) break;
+                            const nass = r._koerperWasser(x, z, boden) > boden + 0.1;
+                            if (wasser) {
+                                hoehle.unter++;
+                                if (nass) hoehle.nassUnter++;
+                            } else {
+                                hoehle.neben++;
+                                if (nass) hoehle.nassNeben++;
+                            }
+                            break;
+                        }
+                    }
             }
         }
         out.waterCellAtExists = waterCellAtWorks;
-        out.waterCellHighNotWater = highIsNotWater;
-        out.waterCellAbovePlayerNotWater = playerPosNoPhantom;
+        out.hoehle = hoehle;
         // Source-Probe für die V13.12-Heilung in der Cell-Build-Funktion
         const cellsSrc = r._buildVoxelChunkWaterCells ? window.__codeOf(r._buildVoxelChunkWaterCells) : "";
         out.cellsBuildHasFlood = cellsSrc.length > 200;
@@ -32939,10 +32972,14 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         "Γ6 (G3a) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (_koerperWasser; der Zell-Leser _waterCellAt fiel)",
         res.waterCellAtExists === true
     );
-    check("Γ6 (G3b) hohe Luft-Position (y=200) liegt NIE unter dem Spiegel (kein Phantom)", res.waterCellHighNotWater === true);
+    const hh = res.hoehle || {};
     check(
-        "Γ6 (G3c) über Spielerposition (+20 m) liegt NIE unter dem Spiegel (kein Sub-Terrain-Blasen-Riss)",
-        res.waterCellAbovePlayerNotWater === true
+        `Γ6 (G3b) FALSE-SWIM: die trockene Höhle UNTER dem See bleibt für den Körper trocken (Decke, D11: ${hh.nassUnter} von ${hh.unter} nass)`,
+        hh.unter + hh.neben > 0 && hh.nassUnter === 0
+    );
+    check(
+        `Γ6 (G3c) FALSE-SWIM: die trockene Höhle NEBEN dem See bleibt für den Körper trocken (Rand-Spiegel, D11: ${hh.nassNeben} von ${hh.neben} nass)`,
+        hh.unter + hh.neben > 0 && hh.nassNeben === 0
     );
     check("Γ6 (G3d) Cell-Build-Funktion vorhanden (V13.12 Vertikal-Open-Foundation)", res.cellsBuildHasFlood === true);
     check("Γ6 (G3e) Worker-Snapshot trägt hydroBand (Cell-Klassifikations-Skip)", res.hydroBandPresent === true);
