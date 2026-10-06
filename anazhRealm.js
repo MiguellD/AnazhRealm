@@ -89252,6 +89252,33 @@ class AnazhRealm {
         return n;
     }
 
+    // DER EINE TIEFEN-WEG DER LEINWAND (06.10.): in die Leinwand zeichnet die Post-Kette nur ihr Ausgabe-Quad (die Szene
+    // lebt im Ziel des Szene-Passes, mit eigener Tiefe) — r184 legt für jeden Leinwand-Pass dennoch eine Tiefe in Leinwand-
+    // Größe an (`depthBuffer`, depth24plus, 7,9 MB bei 1080p), die dort kein Pixel liest. Der Direktpfad dagegen zeichnet
+    // die Szene in das Rahmen-Ziel des Renderers (`_getFrameBufferTarget`, das Tonemapping zur Leinwand), dessen Tiefe
+    // `renderer.depth` folgt: ohne sie zeichnete er ohne Tiefentest, und der erste Leser der Szenen-Tiefe (`_szeneTiefe`:
+    // Wasser, Feld-Pass) warf in r184 `copyFramebufferToTexture` („Invalid value used as weak map key" — das Rahmen-Ziel
+    // trägt keine Tiefen-Textur). Bis V18.532 stellten ZWEI Stellen die Tiefe (der Ketten-Bau nahm sie, nur der Fang eines
+    // Render-Fehlers gab sie zurück) — jeder andere Weg in den Direktpfad (die Weiche der Zerleg-Linse `post`/`leer`) fuhr
+    // ohne und stürzte. Jetzt stellt sie die Weiche in `_loopRender` je Frame hier: Direktpfad → mit Tiefe, Post-Kette →
+    // ohne, und die GPU-Textur der Leinwand-Tiefe fällt dabei mit (sonst hielte ein Ausflug in den Direktpfad die 7,9 MB
+    // für immer). Nur WebGPU: das WebGL2-Rückend legt die Tiefe mit dem Kontext an. Die Wand: gate:post-kette.
+    _leinwandTiefe(direkt) {
+        const rend = this.state.renderer;
+        const be = rend && rend.backend;
+        if (!be || be.isWebGPUBackend !== true) return;
+        const soll = direkt === true;
+        if (rend.depth === soll) return;
+        rend.depth = soll;
+        // r184 hält den Deskriptor des Leinwand-Passes im Backend-Datensatz der Leinwand — updateSize verwirft ihn, der
+        // nächste Leinwand-Pass baut ihn mit bzw. ohne Tiefe neu (gate:vendor-anker pinnt beides).
+        be.updateSize();
+        if (!soll) {
+            const t = rend.getCanvasTarget().depthTexture;
+            if (t && be.has(t)) be.destroyTexture(t);
+        }
+    }
+
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
     // aus TSL-Primitiven selbst gebaut (kein Vendor-Addon). Lazy nach rendererReady; bei jedem Fehler
     // postProcessingFailed=true → der Loop rendert direkt renderer.render() (nie schwarzer Schirm).
@@ -89488,12 +89515,7 @@ class AnazhRealm {
             // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
             pp.outputNode = graded;
             this.state.postProcessing = pp;
-            // DIE LEINWAND OHNE TIEFE: in die Leinwand zeichnet die Post-Kette nur ihr Ausgabe-Quad (die Szene lebt im Ziel
-            // des Szene-Passes, mit eigener Tiefe) — r184 legte für jeden Leinwand-Pass dennoch eine Tiefe in Leinwand-Größe
-            // an (`depthBuffer`, depth24plus, 7,9 MB bei 1080p), die kein Pixel las. Der direkte Pfad (die Kette scheitert
-            // im Render, _loopRender) holt sie zurück. Nur WebGPU: das WebGL2-Rückend legt die Tiefe mit dem Kontext an.
-            const rend = this.state.renderer;
-            if (rend.backend && rend.backend.isWebGPUBackend === true) rend.depth = false;
+            // Die Leinwand-Tiefe stellt die Weiche in `_loopRender` (`_leinwandTiefe`) je Pfad — nie der Bau.
             // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
             this.state.traaNode = traa;
             this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
@@ -90640,7 +90662,10 @@ class AnazhRealm {
         // submitten intern gegen den Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View (Fehler-
         // Klasse ohne fps-Gewinn). Die statische KLASSEN-PIXEL-KAPPE (Boot-Set) trägt die Auflösungs-
         // Ökonomie; eine Wahrnehmungs-Auflösung nur realloc-frei (Viewport-Scaling).
-        if (pp && !this.state.postProcessingFailed) {
+        // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr die Leinwand-Tiefe (`_leinwandTiefe`, der EINE Tiefen-Weg).
+        let direkt = !pp || this.state.postProcessingFailed === true;
+        if (!direkt) {
+            this._leinwandTiefe(false);
             try {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
@@ -90650,16 +90675,11 @@ class AnazhRealm {
             } catch (err) {
                 this.state.postProcessingFailed = true;
                 this.log(`Post-Processing-Render scheiterte (${err && err.message}) — direkter Pfad.`, "INFO");
-                // Der direkte Pfad zeichnet die Szene in die Leinwand: sie braucht ihre Tiefe wieder (die Post-Kette nahm
-                // sie, _ensurePostProcessing) — r184 baut den Leinwand-Pass neu (updateSize verwirft seinen Deskriptor).
-                const rend = this.state.renderer;
-                if (rend.depth === false) {
-                    rend.depth = true;
-                    if (rend.backend && typeof rend.backend.updateSize === "function") rend.backend.updateSize();
-                }
-                rend.render(this.state.scene, this.state.camera);
+                direkt = true;
             }
-        } else {
+        }
+        if (direkt) {
+            this._leinwandTiefe(true);
             this.state.renderer.render(this.state.scene, this.state.camera);
         }
         // GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke, alle Pässe). Im r184-WebGPU-Info ist
