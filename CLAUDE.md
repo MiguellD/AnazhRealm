@@ -211,7 +211,10 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
     Sonden zeichnen Bundles nach jedem castShadow-Wechsel neu; vor dem Push läuft JEDER CI-Schritt lokal, nie eine Auswahl;
     Echt-Renderer-Linsen auf CPU-Raster fahren das Software-Holz (`?holz=kienspan`) — auf „voll" kostet ein Compile 50–70 s;
     swiftshader kompiliert synchron (kein KHR_parallel_shader_compile, `compileAsync` blockiert), `_gameLoopTick` rendert
-    selbst: jeder Linsen-Aufruf ist benannt und trägt höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`).
+    selbst: jeder Linsen-Aufruf ist benannt und trägt höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`). Und ein
+    normalNode liest nie r184s `normalWorld` (EINE Variable je Programm: baut die NORMAL-Stufe sie zuerst, lesen Schatten-
+    Lookup, Halbkugel- und Umgebungslicht die Geometrie-Normale mit Flächen-Vorzeichen — der Boden zeigt oben die
+    Rückseite und lag im eigenen Schatten); die Geometrie-Normale heißt `normalWorldGeometry` × `faceDirection`.
 27. **Die GPU hält, was das Bild zeichnet:** r184 hält jedes hochgeladene Attribut stark (`info.memoryMap`) bis
     `_attributes.delete` — `InstancedMesh.dispose()` gibt nichts frei, `geometry.dispose()` nur die Attribute des ersten
     Render-Objekts, und r184s Geometrie-Hörer (`_geometryDisposeListeners`) hielt dieses erste Render-Objekt samt Senke und

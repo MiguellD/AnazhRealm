@@ -29097,13 +29097,23 @@ class AnazhRealm {
             try {
                 const _Tn = THREE.TSL;
                 const _aun = this.state.atmoUniforms;
-                if (_Tn && _Tn.normalWorld && _Tn.normalize && _Tn.mix && _Tn.vec3) {
+                if (_Tn && _Tn.normalWorldGeometry && _Tn.faceDirection && _Tn.normalize && _Tn.mix && _Tn.vec3) {
                     const _up = _Tn.vec3(0.0, 1.0, 0.0);
                     const _flat =
                         _aun && _aun.terrainFlatten
                             ? _aun.terrainFlatten
                             : _Tn.float(AnazhRealm.TERRAIN_NORMAL_FLATTEN);
-                    let _baseN = _Tn.mix(_Tn.normalWorld, _up, _flat);
+                    // DIE GEOMETRIE-NORMALE DIESES GRAPHEN ist `normalWorldGeometry` × Flächen-Vorzeichen, nie r184s
+                    // `normalWorld`: das ist EINE Variable je Programm, und las dieser normalNode (er baut in der
+                    // NORMAL-Stufe) sie zuerst, übernahmen der Schatten-Lookup (normalBias), das Halbkugel- und das
+                    // Umgebungslicht ihre NORMAL-Fassung — die Geometrie-Normale mit Flächen-Vorzeichen. Die Boden-
+                    // Dreiecke zeigen oben ihre Rückseite (DoubleSide), die Normale zeigte nach unten, der normalBias schob
+                    // die Probe 1 m in den Boden. Welche Fassung ein Programm bekam, hing an seiner Bau-Reihenfolge
+                    // (echte GPU, Mess-Wiese, Zweit-Boot nach kurzem Erst-Boot: 4 von 5 Läufen dunkel, Boden-Helligkeit
+                    // 68 statt 133 — gate:altlasten Normal-Wand). Derselbe Wert wie vorher, `normalWorld` baut nur die
+                    // Licht-Stufe (die End-Normale aus diesem normalNode).
+                    const _nGeo = _Tn.normalWorldGeometry.mul(_Tn.faceDirection);
+                    let _baseN = _Tn.mix(_nGeo, _up, _flat);
                     // Mikro-Relief (s. TERRAIN_BUMP): ein Noise-Höhengradient (zwei Oktaven: Klumpen + Korn) kippt die
                     // geflattete Normale entgegen dem Gradienten, LOD-gegated. Render-only, try/catch.
                     if (_Tn.mx_noise_float && _Tn.cameraPosition && _Tn.positionWorld && _Tn.smoothstep) {
@@ -29112,9 +29122,7 @@ class AnazhRealm {
                         // Bump NUR auf flachem Boden (auf steilen Wänden ist xz-Höhen-Noise sinnlos). Schwellen (0.55, 0.85)
                         // sind gemessen (`diag-bump-flatdist`, top-surface-gefiltert): flache Wiese liegt bei ny 0.90–0.98 →
                         // voller Bump > 0.85, aus unter 0.55. Tiefere Schwellen schöben den Bump auf 32–52°-Hänge zurück.
-                        const _flatGate = _Tn
-                            .smoothstep(_Tn.float(0.55), _Tn.float(0.85), _Tn.normalWorld.y)
-                            .clamp(0.0, 1.0);
+                        const _flatGate = _Tn.smoothstep(_Tn.float(0.55), _Tn.float(0.85), _nGeo.y).clamp(0.0, 1.0);
                         const _lod = _Tn
                             .float(1.0)
                             .sub(

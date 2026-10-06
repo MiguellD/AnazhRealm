@@ -947,6 +947,40 @@ function scanNormalWand(srcRoh) {
             `Normal-Wand: anazhRealm.js:${code.slice(0, m.index).split("\n").length} dreht die Normale mit der ` +
                 `transponierten Matrix (n.transformDirection(M) = Mᵀ·n) — Welt → Sicht ist M.transformDirection(n)`
         );
+    // DIE QUELLE (V18.532): ein normalNode-Graph liest nie r184s `normalWorld` — es ist EINE Variable je Programm; las der
+    // normalNode (NORMAL-Stufe) sie zuerst, lasen Schatten-Lookup (normalBias), Halbkugel- und Umgebungslicht ihre
+    // NORMAL-Fassung (die Geometrie-Normale mit Flächen-Vorzeichen: am Boden nach unten, der Boden lag im eigenen
+    // Schatten). Die Geometrie-Normale heißt im Graphen `normalWorldGeometry` (× `faceDirection`). Geprüft wird der
+    // Rechte-Hand-Ausdruck jeder normalNode-Zuweisung und transitiv jede lokale Größe (`_name`), die er in seiner Methode liest.
+    const zuweisung = /([\w$.]+)\.normalNode\s*=\s*([^;]+);/g;
+    const kopfRe = /\n {4}[_a-zA-Z$][\w$]*\([^)\n]*\)\s*\{\n/g;
+    const quelleRe = /\.normalWorld\b(?!Geometry)/;
+    while ((m = zuweisung.exec(code))) {
+        let anfang = 0,
+            k;
+        kopfRe.lastIndex = 0;
+        while ((k = kopfRe.exec(code)) && k.index < m.index) anfang = k.index;
+        const rumpf = code.slice(anfang, m.index);
+        const offen = [m[2]];
+        const gesehen = new Set();
+        let treffer = null;
+        while (offen.length && !treffer) {
+            const ausdruck = offen.pop();
+            if (quelleRe.test(ausdruck)) treffer = ausdruck.trim().slice(0, 80);
+            for (const n of ausdruck.match(/\b_[A-Za-z0-9]+\b/g) || []) {
+                if (gesehen.has(n)) continue;
+                gesehen.add(n);
+                const def = new RegExp(`(?:^|[^\\w$.])${n}\\s*=(?!=)\\s*([^;]+);`, "g");
+                let d;
+                while ((d = def.exec(rumpf))) offen.push(d[1]);
+            }
+        }
+        if (treffer)
+            errs.push(
+                `Normal-Wand: anazhRealm.js:${code.slice(0, m.index).split("\n").length} — der normalNode-Graph liest ` +
+                    `r184s \`normalWorld\` (${treffer}); die Geometrie-Normale ist \`normalWorldGeometry\` × \`faceDirection\``
+            );
+    }
     return errs;
 }
 
@@ -1037,12 +1071,19 @@ function main() {
             process.exit(1);
         }
         // Die Normal-Wand muss feuern: eine Welt-Normale, mit der transponierten Kamera-Matrix gedreht.
+        // Dazu die Quelle: der Boden-Graph liest wieder r184s `normalWorld` (der Fall vor V18.532), transitiv über `_nGeo`.
+        const quelleAlt = stamm.replace(
+            "const _nGeo = _Tn.normalWorldGeometry.mul(_Tn.faceDirection);",
+            "const _nGeo = _Tn.normalWorld;"
+        );
         const normalFeuert =
             scanNormalWand(stamm).length === 0 &&
             scanNormalWand(stamm + "\nmat.normalNode = _T.normalize(n).transformDirection(_T.cameraViewMatrix);\n")
                 .length === 1 &&
             scanNormalWand(stamm + "\nmat.normalNode = _T.cameraViewMatrix.transformDirection(_T.normalize(n));\n")
-                .length === 0;
+                .length === 0 &&
+            quelleAlt !== stamm &&
+            scanNormalWand(quelleAlt).filter((e) => /liest r184s `normalWorld`/.test(e)).length === 1;
         if (!normalFeuert) {
             console.log("❌ SELBST-TEST: die Normal-Wand feuert nicht (oder steht heute rot)");
             process.exit(1);
@@ -1121,7 +1162,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable.`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0, CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable.`
     );
 }
 
