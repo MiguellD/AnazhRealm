@@ -5,6 +5,10 @@
 // (der Boden-Punkt unter der Handwurzel in der Ruhe-Pose, im Gelenk-Raum der Pfote mitgeführt) gemessen. Im STAND
 // (der Punkt liegt in den untersten 2,5 % der Beinlänge) darf er nicht mit dem Leib wandern: der SCHLUPF = Weg des
 // Stand-Fußes / Weg des Leibs in denselben Takten. Soll ≤ 0,2 (eine Pfote, die mit dem Leib gleitet, hat 1).
+// UNTER LAST (Integration W5-Körper): das Zielgerät läuft 30 fps, das Wesen steht im 1/4-Band der Anim-Raten-Leiter
+// (_creatureAnimDiv auf 0,8 × Fern-Distanz, mit dem Takt des Gangs) — gemessen wird zwischen zwei Auswertungen (der
+// Leib zieht jeden Frame weiter). Vorher deckelte der Takt seinen Schritt auf 0,1 s (die Phase blieb 25 % hinter dem
+// Weg, Schlupf 0,27) und die Leiter tastete den schnellen Fuchs-Trab unter seinem Takt ab (Schlupf 1,33).
 //   --selftest: das Gang-Gesetz gestubbt (fester Takt, feste Auslenkung — der Vor-Welle-Gang) → der Schlupf steigt
 //   über die Schwelle, die Linse feuert.
 //   node scripts/diag-tier-gang.cjs [--selftest]
@@ -75,17 +79,27 @@ const LAUF = (k) => {
         return p.worldToLocal(w.clone());
     });
     const hueft = new T.Vector3().setFromMatrixPosition(Tt.legHL.matrixWorld).y - boden;
-    const dt = 1 / 60,
+    // Frame-Takt und Raten-Leiter: je Frame zieht der Leib weiter, ausgewertet (und gemessen) wird, wenn die ECHTE
+    // Leiter (_creatureAnimDiv mit dem Takt des Gangs) es will — im Band ihrer Stufe 1/4 (0,8 × Fern-Distanz).
+    const dt = 1 / (k.fps || 60),
         N = 360;
+    const fernDist = Math.sqrt(r.constructor.TIER_FERN_DIST_SQ) * (cr.scale.x || 1);
+    const stufe = () => (k.last ? r._creatureAnimDiv(0.8 * fernDist, fernDist, tb._gang ? tb._gang.omega : 0, dt) : 1);
+    let maxDiv = 1,
+        auswertungen = 0;
     let t = 0,
         phase = 0;
     const spur = pfoten.map(() => []);
     const leib = [];
     cr.userData._animFade = 1;
-    for (let i = 0; i < N; i++) {
+    for (let i = 0; auswertungen < N; i++) {
         cr.position.x += k.v * dt;
         t += dt;
         phase += dt * 5.0;
+        const div = stufe();
+        if (i % div !== 0) continue;
+        maxDiv = Math.max(maxDiv, auswertungen > 60 ? div : 1);
+        auswertungen++;
         r._animateCompoundMotion(cr, roles, t, phase, true, null);
         cr.updateMatrixWorld(true);
         leib.push(cr.position.x);
@@ -118,6 +132,7 @@ const LAUF = (k) => {
     return {
         seele: k.seele,
         v: k.v,
+        last: k.last ? `${k.fps} fps · Leiter 1/${maxDiv}` : "",
         hueftM: +hueft.toFixed(3),
         standAnteil: +(standTakte / (4 * (N - 61))).toFixed(2),
         schlupf: wegLeib > 0 ? +(wegFuss / wegLeib).toFixed(3) : null,
@@ -144,8 +159,11 @@ const LAUF = (k) => {
             timeout: 60000,
         });
         const zeilen = [];
-        for (const seele of ["wolf", "fuchs", "baer", "wesen"])
+        for (const seele of ["wolf", "fuchs", "baer", "wesen"]) {
             for (const v of [0.8, 1.6, 3.0]) zeilen.push(await page.evaluate(LAUF, { seele, v, stub: SELBST }));
+            // unter Last: 30 fps, die Raten-Leiter 1/4
+            for (const v of [1.6, 3.0]) zeilen.push(await page.evaluate(LAUF, { seele, v, stub: SELBST, fps: 30, last: true }));
+        }
         for (const z of zeilen) {
             if (z.fehler) {
                 console.log("  ❌", z.fehler);
@@ -154,7 +172,7 @@ const LAUF = (k) => {
             }
             const ok = z.schlupf !== null && z.schlupf <= SCHWELLE;
             console.log(
-                `  ${ok ? "✅" : "❌"} ${z.seele.padEnd(5)} ${z.v.toFixed(1)} m/s · Hüfte ${z.hueftM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf} · Drift je Pfote ${z.drift.join(" ")}`
+                `  ${ok ? "✅" : "❌"} ${z.seele.padEnd(5)} ${z.v.toFixed(1)} m/s${z.last ? " (" + z.last + ")" : ""} · Hüfte ${z.hueftM} m · Stand ${z.standAnteil} · Schlupf ${z.schlupf} · Drift je Pfote ${z.drift.join(" ")}`
             );
             if (!ok) rot++;
         }

@@ -17656,9 +17656,13 @@ class AnazhRealm {
             g.profil = name;
         }
         // dtWeg = die echte Uhr-Spanne seit der letzten Auswertung (die Raten-Leiter wertet ferne Wesen nur jeden 2./4.
-        // Takt aus) — der Weg teilt sich durch sie, nie durch den gedeckelten Animations-Schritt.
+        // Takt aus) — der Weg teilt sich durch sie, nie durch den gedeckelten Animations-Schritt. Der TAKT rückt um
+        // dieselbe Spanne vor (dtTakt, in Schritten ≤ 0,1 s — die Kopplung bleibt stabil; eine Pause über 1 s ist kein
+        // Gang): mit dem gedeckelten Schritt blieb die Phase bei 30 fps und Raten-Leiter 1/4 (0,133 s je Auswertung)
+        // 25 % hinter dem Weg, die Pfoten glitten (gate:tier-gang unter Last: Schlupf 0,27 → siehe Commit).
         const dtWeg = t - g.lastT;
         const dt = Math.max(0, Math.min(0.1, dtWeg));
+        const dtTakt = Math.max(0, Math.min(1, dtWeg));
         g.lastT = t;
         // DAS GANG-GESETZ (Welle 5, tetrapoda gangSchritt): Takt und Hüft-Auslenkung folgen dem WEG des Leibs — die
         // Geschwindigkeit misst der Chokepoint selbst (Lage-Änderung je Uhr-Schritt, geglättet; jeder Halter — Welt,
@@ -17673,11 +17677,13 @@ class AnazhRealm {
         g.lageZ = lage.z;
         const skala = group.scale.x || 1;
         const gs = core.gangSchritt(moving ? g.v || 0 : 0, tb.beinL * skala);
+        g.omega = gs.omega; // der Takt des Gangs — die Raten-Leiter tastet ihn nie gröber als ein Viertel ab
         const st = gs.S * fadeMul;
         const freq = st > 0 ? gs.omega : Number(P.freq) || 0.25;
         const phAlt = g.ph.slice();
-        if (dt > 0 && typeof core.cpgStep === "function" && core.CPG_COUPLING) {
-            core.cpgStep(g.ph, freq, core.CPG_COUPLING, dt);
+        if (dtTakt > 0 && typeof core.cpgStep === "function" && core.CPG_COUPLING) {
+            const nT = Math.ceil(dtTakt / 0.1);
+            for (let k = 0; k < nT; k++) core.cpgStep(g.ph, freq, core.CPG_COUPLING, dtTakt / nT);
         }
         const SP = (core && core.STAND_POSE) || [
             [0, 0, 0, 0],
@@ -17780,7 +17786,7 @@ class AnazhRealm {
                 const GG = core.GANG_GESETZ;
                 // der Fußweg dieses Beins folgt SEINER Phasen-Rate (die Kopplung beschleunigt/bremst einzelne Beine):
                 // im Stand wandert der Fuß mit genau der Geschwindigkeit des Leibs zurück
-                const rate = dt > 0 ? (g.ph[i] - phAlt[i]) / dt : freq;
+                const rate = dtTakt > 0 ? (g.ph[i] - phAlt[i]) / dtTakt : freq;
                 const Si = st * (freq / Math.max(0.25 * freq, rate));
                 const F = core.gangFuss(ph, Si);
                 const p0y = BM.p0[1] * skala,
@@ -20729,12 +20735,16 @@ class AnazhRealm {
     // EINE Rate je Distanz relativ zur Standbild-Schwelle (dieselbe wie der wrap↔fern-Toggle): 1 = jeden
     // Frame · 2 · 4 · 0 = hinterm Standbild (eingefroren in Stand-Pose). walkPhase + Anim-Uhr akkumulieren
     // JEDEN Frame → der Gang bleibt gleich schnell, nur seltener ausgewertet. Linse: gate:kreatur-kosten.
-    _creatureAnimDiv(dist, fernDist) {
+    _creatureAnimDiv(dist, fernDist, omega, frameDt) {
         if (!(fernDist > 0) || !(dist >= 0)) return 1;
         if (dist >= fernDist) return 0;
-        if (dist >= fernDist * 0.75) return 4;
-        if (dist >= fernDist * 0.5) return 2;
-        return 1;
+        const div = dist >= fernDist * 0.75 ? 4 : dist >= fernDist * 0.5 ? 2 : 1;
+        // Der Gang wird nie gröber als ein Viertel seines Takts abgetastet (ω des Gang-Gesetzes aus der letzten
+        // Auswertung): ein Fuchs im schnellen Trab (Takt 0,24 s) traf bei 30 fps und Stufe 1/4 (0,133 s je Auswertung)
+        // seine Stand-Phase nie zweimal — die Beine sprangen (gate:tier-gang unter Last, Schlupf 1,33).
+        if (div > 1 && omega > 0 && frameDt > 0)
+            return Math.max(1, Math.min(div, Math.floor((2 * Math.PI) / omega / (4 * frameDt))));
+        return div;
     }
     // AUSKLINGE-SAUM (letzte 15 % vor der Standbild-Schwelle): 1 → 0 linear; _animateTierBaum
     // multipliziert Schritt/Schwanz/Sway/Kopf damit → der Toggle trifft die Stand-Pose. Jenseits 0.
@@ -21270,8 +21280,9 @@ class AnazhRealm {
                     // unterste Stufe (sonst stünde die volle Gestalt sichtbar im Schritt).
                     const fLA = creature.scale.x || 1;
                     const fernDist = tierFernDist * fLA;
-                    let animDiv = this._creatureAnimDiv(distToPlayer, fernDist);
                     const tBA = creature.userData._tierBaum;
+                    const omegaGang = tBA && tBA._gang ? tBA._gang.omega : 0;
+                    let animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, delta);
                     if (animDiv === 0 && !(tBA && tBA.fern)) animDiv = 4;
                     if (animDiv === 0) {
                         if (!creature.userData._animEingefroren) {
