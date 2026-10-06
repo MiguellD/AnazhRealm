@@ -50721,7 +50721,7 @@ class AnazhRealm {
     // DER STAND eines Studio-Fahrzeugs (W5): es parkt, wie es fährt — auf der Ebene seiner vier Räder (Höhe, Nick,
     // Wank aus `_rittEbene`); ohne ihn stand der Wagen waagrecht, am Hang hob ein Rad 0,3 m ab. Der Rahmen (längs x)
     // und die Fahrt-Richtung (Template-Gier + π/2) stehen ab hier am Eintrag. Leser: der Spawn (jeder Pfad: Hotbar,
-    // DSL, Wiederherstellen) und der Abstieg trägt die letzte Ritt-Pose ohnehin.
+    // DSL, Wiederherstellen); der Abstieg trägt die letzte Ritt-Pose (im Flug: `_fahrNachlauf` bis auf den Boden).
     _fahrzeugStand(entry) {
         const fzg = this._fahrzeugGesetzFor(entry);
         if (!fzg || !fzg.drive || !fzg.drive.huelle) return;
@@ -50729,11 +50729,12 @@ class AnazhRealm {
         entry._rideYaw = (Number.isFinite(entry.rotationY) ? entry.rotationY : 0) + Math.PI / 2;
         const eb = this._rittEbene(entry, entry.position.x, entry.position.z, entry._rideYaw);
         if (!eb) return;
+        const kl = AnazhRealm._fahrSchrittGesetz().S.ebeneMax; // die Ebenen-Klammer des Kerns (NaN-/Sprung-Wand)
         entry.position.y = eb.y + 0.5;
         entry._terrainPitchZiel = eb.nick;
         entry._terrainRollZiel = eb.wank;
-        entry._rideTerrainPitch = Math.max(-0.7, Math.min(0.7, eb.nick));
-        entry._rideRoll = Math.max(-0.7, Math.min(0.7, eb.wank));
+        entry._rideTerrainPitch = Math.max(-kl, Math.min(kl, eb.nick));
+        entry._rideRoll = Math.max(-kl, Math.min(kl, eb.wank));
     }
 
     // Die Template-Gier zu einer Fahrt-Richtung (sin, cos): ein Studio-Fahrzeug liegt längs x (Bug +x) — R_y(φ)
@@ -50891,15 +50892,16 @@ class AnazhRealm {
         entry._ridePhase = (entry._ridePhase || 0) + sp * tick * 2.2;
         entry._rideSp = sp;
         // Ohne Fahr-Gesetz keine Aufbau-Feder; die Lage liegt in der Ebene der Aufstandspunkte (die Klammer ist die NaN-/
-        // Sprung-Wand, ±0.7 rad).
+        // Sprung-Wand: die Ebenen-Klammer des Kerns, FAHR.schritt.ebeneMax).
+        const kl = AnazhRealm._fahrSchrittGesetz().S.ebeneMax;
         entry._ridePitch = 0;
         entry._rideKurvenRoll = 0;
         entry._rideHeave = 0;
         entry._rideTerrainPitch = Number.isFinite(entry._terrainPitchZiel)
-            ? Math.max(-0.7, Math.min(0.7, entry._terrainPitchZiel))
+            ? Math.max(-kl, Math.min(kl, entry._terrainPitchZiel))
             : 0;
         entry._rideRoll = Number.isFinite(entry._terrainRollZiel)
-            ? Math.max(-0.7, Math.min(0.7, entry._terrainRollZiel))
+            ? Math.max(-kl, Math.min(kl, entry._terrainRollZiel))
             : 0;
     }
 

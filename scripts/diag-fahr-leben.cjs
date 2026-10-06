@@ -168,7 +168,17 @@ function fahrWand(stamm, garage, kern) {
 // einem Kern ohne fahrGesetz/fahrEbene still null (der Gesetz-Wagen ritt richtungs-folgend), Hülle, Kontakt und Rad trugen
 // Literal-Zwillinge der FAHR.schritt-Zeilen (0,34/0,5 · 0,7 · 0,34/0,6). Soll: EIN fail-closed Leser
 // (`AnazhRealm._fahrSchrittGesetz` → `_kernPflichtBruch`), jeder Fahr-Leser liest durch ihn. ──
-const FAHR_LESER = ["_fahrSatz", "_rittEbene", "_rittSchritt", "_fahrHuelle", "_fahrHuelleKontakt", "_archRadMatrix", "_loopPlayerMovement"];
+const FAHR_LESER = [
+    "_fahrSatz",
+    "_rittEbene",
+    "_rittSchritt",
+    "_fahrzeugStand",
+    "_fahrNachlauf",
+    "_fahrHuelle",
+    "_fahrHuelleKontakt",
+    "_archRadMatrix",
+    "_loopPlayerMovement",
+];
 function pflichtWand(stamm) {
     const st = ohneKommentare(stamm);
     const leser = fnBody(st, /\nAnazhRealm\._fahrSchrittGesetz = function \(\) \{/) || "";
@@ -181,7 +191,9 @@ function pflichtWand(stamm) {
     const zwillinge = [];
     for (const n of FAHR_LESER) {
         const b = koerper[n];
-        const treffer = (b.match(/__vehicleCore|FAHR\.schritt|\b0\.34\b|:\s*0\.7\)|:\s*0\.6\)|0\.5 \* radR/g) || []).length;
+        // dazu die Ebenen-Klammer als Literal (±0,7 rad = FAHR.schritt.ebeneMax) in Stand und Ritt ohne Fahr-Gesetz
+        const treffer = (b.match(/__vehicleCore|FAHR\.schritt|\b0\.34\b|:\s*0\.7\)|:\s*0\.6\)|0\.5 \* radR|Math\.min\(0\.7,/g) || [])
+            .length;
         if (treffer) zwillinge.push(`${n} ${treffer}×`);
     }
     return [
