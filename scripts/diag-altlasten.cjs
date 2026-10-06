@@ -432,6 +432,11 @@ const FORBIDDEN = [
     // auf dem kurzen Bogen nach und läuft durch den Baum-Gang.
     { token: "out.set(bestDx, 0, bestDz)", fiel: "Welle L kreatur — der Geruchs-Gradient (zentrale Differenz)" },
     { token: "m.rotation.y = rc.tyaw || 0", fiel: "Welle L kreatur — _p2pTickRemoteCreatures zieht die Gier nach" },
+    // WELLE L KREATUR (Q11 + CPU): der Hindernis-Strahl je Tier und Frame (feste Diagonale, nur im Blick, Antwort ein
+    // Math.random-Stoß; 29–37 % der CPU im OMEN-Profil) kehrt nicht zurück — jedes Tier löst seine Achse über den EINEN
+    // Kontakt-Löser gegen die Hüllen (_kreaturHuellenKontakt), die Herde ist die Form des Kerns (herdeZug).
+    { token: "OBSTACLE_RAYCAST_MAX_DIST_SQ", fiel: "Welle L kreatur — _kreaturHuellenKontakt (kein Strahl je Frame)" },
+    { token: "hasHit = this._runRaycast(", fiel: "Welle L kreatur — _kreaturHuellenKontakt" },
     // Nachbesserung 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters — auch die Eintrags-
     // Kronen (a:), die nur beim Entstehen eintragen; der Raum-Index `kronenZellen` bindet die Kosten an den Streifen.
     { token: "this._kronenStreuUmzug(stufe, war, S === fernS)", fiel: "Nachbesserung 06.10. — kein Umzug vergisst eine Krone" },

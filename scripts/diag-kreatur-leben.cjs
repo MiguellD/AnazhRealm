@@ -165,7 +165,10 @@ probe("die Stimmungs-Schwellen sind Gesetz (Tick liest stimmung.schwellen)", /_v
 probe("die Größen-Bänder sind Gesetz (_creatureBodySize liest groessen)", /_verhaltenGesetz\(\)\.groessen/);
 probe("die Separations-Kraft liest das Gesetz (VERHALTEN.separation)", /_verhaltenGesetz\(\)\.separation/);
 probe("die Aufgaben-Tempi/Halt-Distanzen lesen das Gesetz (aufgaben.*)", /aufgaben\.followTempo/);
-probe("die Schwarm-Kohäsion liest das Gesetz (herde.gewicht/maxNachbarn)", /HERDE\.maxNachbarn/);
+probe(
+    "die Schwarm-Kohäsion ist die Herden-Form des Kerns (tetrapoda herdeZug über VERHALTEN.herde, je Gattung)",
+    /\.herdeZug\([\s\S]{0,400}VG\.herde/
+);
 probe("die Ufer-Scheu liest das Gesetz (wasser.tiefenScheuM/uferBias)", /WAS\.tiefenScheuM/);
 probe("Pirsch-/Neugier-Stopp lesen das Gesetz (pirschStoppM/neugierStoppM)", /VG\.jagd\.pirschStoppM/);
 probe(

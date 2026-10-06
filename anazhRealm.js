@@ -19826,11 +19826,44 @@ class AnazhRealm {
         // SPIEGEL-ZENSUS — die Wariness-Gewichte wohnen im tetrapoda-Gesetzbuch
         // (VERHALTEN.furcht via _verhaltenGesetz, fail-soft byte-gleich).
         const NAT = AnazhRealm._verhaltenGesetz().furcht;
+        const ud = creature.userData || {};
+        // DIE BEDROHUNG (Q11): die Wariness liest JEDE Bedrohung — den Spieler (unten) und den jagenden Jäger in der
+        // Witterung — und merkt Ort und Flucht-Radius der stärksten (der Flucht-Zweig flieht von dort). Vorher las sie nur
+        // den Spieler: ein gebissener Hirsch wanderte neben dem Wolf weiter (R-D4/K-D11).
+        const von = ud._bedrohtVon || (ud._bedrohtVon = { x: 0, z: 0, r: 0 });
+        const wSpieler = this._creatureWarinessSpieler(creature, NAT, von);
+        const jaeger = this._kreaturJaeger;
+        if (!jaeger || !jaeger.length || this._creatureTemperament(creature) === "wild") return wSpieler;
+        let best = NAT.noticeRadius;
+        let J = null;
+        for (const j of jaeger) {
+            if (j === creature || !j.position) continue;
+            const d = Math.hypot(j.position.x - creature.position.x, j.position.z - creature.position.z);
+            if (d < best) {
+                best = d;
+                J = j;
+            }
+        }
+        // Ein jagender Jäger in der Witterung wiegt wie ein Treffer (combatFearWariness): die Beute flieht, solange sie
+        // ihn wittert (Flucht-Radius = noticeRadius).
+        if (!J || NAT.combatFearWariness < wSpieler) return wSpieler;
+        von.x = J.position.x;
+        von.z = J.position.z;
+        von.r = NAT.noticeRadius;
+        return NAT.combatFearWariness;
+    }
+
+    // Die Wariness vor dem SPIELER (Aura-Menace × Natur × Bindung × Modus + frische Kampf-Furcht); merkt seinen Ort und
+    // den Flucht-Radius in `von`.
+    _creatureWarinessSpieler(creature, NAT, von) {
         const now = performance.now() / 1000;
         const ud = creature.userData || {};
         const fearActive = Number.isFinite(ud.fearUntil) && now < ud.fearUntil;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return fearActive ? NAT.combatFearWariness : 0;
+        von.x = pm.x;
+        von.z = pm.z;
+        von.r = NAT.fleeRadius;
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
         if (!fearActive && dist > NAT.noticeRadius) return 0; // fern → neutral, das Wesen wandert
         const e = (this.state.player && this.state.player.emotions) || {};
@@ -20025,6 +20058,54 @@ class AnazhRealm {
         if (!(d > 1e-6) || !(rest > 0) || !(vMax > 0)) return out.set(0, 0, 0);
         const v = AnazhRealm._steuerGesetz().ankunftTempo(rest, vMax);
         return out.set((dx / d) * v, 0, (dz / d) * v);
+    }
+
+    // DER KÖRPER DES TIERS GEGEN DIE HÜLLEN (Q11 + Lehre 25): jedes Tier — im Blick oder nicht — löst seine Achse gegen die
+    // soliden Part-Boxen naher Bauwerke über den EINEN Kontakt-Löser des Spielers (_resolveCapsuleVsAABB; die Hülle selbst
+    // ist das Gesetz von _populateBlockerAABBs). Die Nähe-Liste je Tier ist gecacht — neu nach 4 m Weg oder einer Sekunde
+    // Kreatur-Uhr —, die Boxen liest der Löser live (ein fahrendes Gefährt zieht sie mit). Vorher: ein Feld-Strahl je Tier
+    // und Frame auf eine feste Diagonale (DDA durchs Dichtefeld + Segment gegen JEDES Bauwerk), nur im Blick, die Antwort
+    // ein Math.random-Stoß — 29–37 % der CPU (OMEN-Profil), und die Tiere liefen durch Häuser (R-D7: 21 % der Frames).
+    _kreaturHuellenKontakt(creature, L, px0, pz0) {
+        const arches = this.state.architectures;
+        if (!arches || !arches.length) return;
+        const ud = creature.userData;
+        const p = creature.position;
+        const t = this.state.creatureAnimationTime;
+        let nah = ud._huellenNah;
+        if (!nah || Math.abs(p.x - nah.x) > 4 || Math.abs(p.z - nah.z) > 4 || !(t - nah.t < 1)) {
+            const liste = nah ? nah.liste : [];
+            liste.length = 0;
+            for (let a = 0; a < arches.length; a++) {
+                const e = arches[a];
+                if (!e || !e.position) continue;
+                const r = 8 + (e._blockerReach || 0);
+                if (Math.abs(e.position.x - p.x) > r || Math.abs(e.position.z - p.z) > r) continue;
+                liste.push(e);
+            }
+            nah = ud._huellenNah = { x: p.x, z: p.z, t, liste };
+        }
+        if (!nah.liste.length) return;
+        // der Leib als Achse: Radius aus der Körperlänge (die Schnauze ragt nicht in die Wand), Höhe aus der Hüfte
+        const radius = 0.3 * this._creatureKoerperLaenge(creature);
+        const feetY = p.y;
+        const headY = feetY + Math.max(0.5, 1.8 * L);
+        const k = this._kreaturKontakt || (this._kreaturKontakt = { nx: 0, nz: 0 });
+        // Eine Wand hält nur, wer von AUSSEN kommt: stand die Achse schon vor dem Schritt im Kasten (geboren, gestoßen,
+        // eine Boden-Stufe machte eine flache Box zur Wand), stößt der Kasten sie nicht quer durch sich hinaus — sie
+        // geht frei heraus. Sonst sprang ein Tier je Frame um Meter (gemessen: Tempo-Sprünge bis 7000 m/s²).
+        const rInnen2 = 0.81 * radius * radius;
+        for (const e of nah.liste) {
+            const boxes = e.blockerAABBs;
+            if (!boxes) continue;
+            for (let b = 0; b < boxes.length; b++) {
+                const box = boxes[b];
+                const qx = px0 - Math.max(box.minX, Math.min(px0, box.maxX));
+                const qz = pz0 - Math.max(box.minZ, Math.min(pz0, box.maxZ));
+                if (qx * qx + qz * qz < rInnen2) continue;
+                this._resolveCapsuleVsAABB(box, p, feetY, headY, radius, -Infinity, k);
+            }
+        }
     }
 
     // CHARAKTER-WANDERN, die EINE Wander-Quelle (Flucht-Fallback + NEUTRAL): ein ZUG je Zeit-Slot
@@ -21028,8 +21109,12 @@ class AnazhRealm {
         // DER KREATUR-ZIEGEL (Analog A): Tiere sind Kapsel-Feld — das Feld
         // WANDERT mit dem Tier (lebende Knochen-Matrix, Matrix der Matrix).
         this._tickKreaturZiegel(playerPos);
-        // V8.49 — Distanz-LOD: jenseits 70 m kein Hindernis-Raycast (² gespart).
-        const OBSTACLE_RAYCAST_MAX_DIST_SQ = 70 * 70;
+        // DIE JÄGER dieses Takts (Q11): wer jagt (der Zustand des Vor-Takts), ist eine Bedrohung für jede Beute in seiner
+        // Witterung — _creatureWariness liest die Liste (die Beute floh vorher nur vor dem Spieler, R-D4/K-D11).
+        const jaeger = this._kreaturJaeger || (this._kreaturJaeger = []);
+        jaeger.length = 0;
+        for (const c of this.state.creatures)
+            if (c && c.userData && c.userData._motionZustand === "jagd" && !c.userData.dying) jaeger.push(c);
         // Spatial-Hash fürs Flocking: 5-m-Buckets (= Flocking-Range `dsq < 25`), je Kreatur nur die 3×3-
         // Nachbar-Cells statt O(N²). Map + Buckets als Pool recycelt — keine Allokation pro Frame.
         const FLOCK_CELL = 5;
@@ -21115,7 +21200,8 @@ class AnazhRealm {
             // in ihre Zelle (Leben sustainiert, wo es wohnt; rate-limitiert).
             this._tickCreatureLifeTrickle(creature, lifeTrickleNow);
 
-            // Im Sichtfeld? (nur für die Hindernis-Verfeinerung unten)
+            // Im Sichtfeld? Nur für die Sicht-Pflege unten (Aura, Fern-Guss, Fell) — nie für eine Bewegungs-Entscheidung
+            // (Q11: Herde und Hindernis hingen am Blick des Spielers, R-D5).
             const inFrustum = this.isInFrustum(creature);
 
             // EIN SICHTBARKEITS-BESITZER: trägt das Tier sein Feld, gehört `visible` dem Kreatur-Ziegel (der
@@ -21123,25 +21209,6 @@ class AnazhRealm {
             // Das Mesh-Tier ist sichtbar, gecullt wird JE PASS: jede Hülle trägt die Körper-Kugel (frustumCulled),
             // three prüft sie gegen den Blick UND gegen jede Kaskaden-Box — ein Tier hinter dem Blick wirft ins Bild.
             if (!this._kzBesitztFeld(creature)) creature.visible = this.state.creaturesHidden !== true;
-
-            // Hindernis-Raycast nur für sichtbare, nahe Kreaturen (≤70 m) — reine visuelle Verfeinerung; die
-            // Bewegung selbst läuft für ALLE Kreaturen.
-            let hasHit = false;
-            if (inFrustum && creature.position.distanceToSquared(playerPos) < OBSTACLE_RAYCAST_MAX_DIST_SQ) {
-                const rayStart = this.setVec(
-                    this.state.tmpVec1,
-                    creature.position.x / this.state.scaleFactor,
-                    (creature.position.y + 0.5) / this.state.scaleFactor,
-                    creature.position.z / this.state.scaleFactor
-                );
-                const rayEnd = this.setVec(
-                    this.state.tmpVec2,
-                    (creature.position.x + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor,
-                    (creature.position.y + 0.5) / this.state.scaleFactor,
-                    (creature.position.z + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor
-                );
-                hasHit = this._runRaycast(rayStart, rayEnd, (_cb, hit) => hit);
-            }
 
             // Das Distanz-Band bestimmt, wie oft die KI-Richtung neu rechnet. distSq (XZ) EINMAL hier (der
             // Wasser-Kontext nutzt es wieder), die Wurzel EINMAL (die Anim-Raten-Leiter liest sie).
@@ -21185,12 +21252,16 @@ class AnazhRealm {
                         );
                         this._tickCreatureHuntStrike(creature);
                     } else if (wariness >= NAT.fleeThreshold) {
-                        // SCHEU/verschreckt — fort vom Spieler (schneller als das Schlendern; sonst Zufalls-Drift).
-                        const fromPlayer = scratchA.subVectors(creature.position, playerPos);
-                        fromPlayer.y = 0;
-                        if (fromPlayer.length() < NAT.fleeRadius) {
+                        // SCHEU/verschreckt — fort von der BEDROHUNG (Spieler, jagender Jäger; _creatureWariness merkt ihren
+                        // Ort und ihren Flucht-Radius), schneller als das Schlendern; sonst Charakter-Wandern.
+                        const B = creature.userData._bedrohtVon;
+                        const fx = creature.position.x - B.x;
+                        const fz = creature.position.z - B.z;
+                        const fd = Math.hypot(fx, fz);
+                        if (fd < B.r) {
                             this._kreaturZustandStempel(creature, "flucht");
-                            direction.copy(fromPlayer.normalize().multiplyScalar(speed * NAT.fleeSpeedBoost));
+                            const fv = fd > 1e-6 ? (speed * NAT.fleeSpeedBoost) / fd : 0;
+                            direction.set(fx * fv, 0, fz * fv);
                         } else {
                             this._kreaturZustandStempel(creature, null);
                             // V18.472 (C2) — die EINE Wander-Quelle (Charakter statt Rauschen).
@@ -21203,38 +21274,41 @@ class AnazhRealm {
                         const tpx = playerPos.x - creature.position.x;
                         const tpz = playerPos.z - creature.position.z;
                         this._kreaturZiel(direction, tpx, tpz, Math.hypot(tpx, tpz) - NAT.neugierStoppM, speed);
-                        // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare Kreaturen (off-screen
-                        // ist Flocking unsichtbar), distanceToSquared (kein sqrt), nach 6 Nachbarn abbrechen,
-                        // Spatial-Hash (nur die 9 Cells um die eigene Kreatur). REUSE für die neugierige Schar.
-                        if (inFrustum) {
-                            // SCHLUSS-WELLE — die Flocking-Zahlen sind Herden-Gesetz
-                            // (tetrapoda VERHALTEN.herde, byte-gleiche Werte).
-                            const HERDE = VG.herde;
-                            let neighbors = 0;
-                            const gcx = Math.floor(creature.position.x / FLOCK_CELL);
-                            const gcz = Math.floor(creature.position.z / FLOCK_CELL);
-                            cellLoop: for (let dgx = -1; dgx <= 1; dgx++) {
-                                for (let dgz = -1; dgz <= 1; dgz++) {
-                                    const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
-                                    if (!bucket) continue;
-                                    for (let bi = 0; bi < bucket.length; bi++) {
-                                        const j = bucket[bi];
-                                        if (i === j) continue;
-                                        const otherCreature = this.state.creatures[j];
-                                        const dsq = creature.position.distanceToSquared(otherCreature.position);
-                                        if (dsq > HERDE.minAbstSq && dsq < HERDE.fensterSq) {
-                                            const toOther = scratchB.subVectors(
-                                                otherCreature.position,
-                                                creature.position
-                                            );
-                                            toOther.y = 0;
-                                            direction.add(toOther.normalize().multiplyScalar(HERDE.gewicht));
-                                            neighbors++;
-                                            if (neighbors >= HERDE.maxNachbarn) break cellLoop;
-                                        }
-                                    }
+                        // DIE HERDEN-FORM (Q11, tetrapoda herdeZug): Kohäsion nur zu Nachbarn DERSELBEN Gattung, für jedes
+                        // Tier — nie am Blick des Spielers (R-D5: nur im Frustum, artfremd). Kandidaten aus dem Gitter (die 9
+                        // Zellen um das Tier), die Zahlen VERHALTEN.herde, die Kosten trägt aiDiv.
+                        const nb = this._herdeNachbarn || (this._herdeNachbarn = []);
+                        const pool = this._herdePool || (this._herdePool = []);
+                        nb.length = 0;
+                        const gcx = Math.floor(creature.position.x / FLOCK_CELL);
+                        const gcz = Math.floor(creature.position.z / FLOCK_CELL);
+                        for (let dgx = -1; dgx <= 1; dgx++) {
+                            for (let dgz = -1; dgz <= 1; dgz++) {
+                                const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
+                                if (!bucket) continue;
+                                for (let bi = 0; bi < bucket.length; bi++) {
+                                    const j = bucket[bi];
+                                    if (i === j) continue;
+                                    const o = this.state.creatures[j];
+                                    const e = pool[nb.length] || (pool[nb.length] = { x: 0, z: 0, gattung: null });
+                                    e.x = o.position.x;
+                                    e.z = o.position.z;
+                                    e.gattung = o.userData && o.userData.gattung;
+                                    nb.push(e);
                                 }
                             }
+                        }
+                        if (nb.length) {
+                            const zug = AnazhRealm._steuerGesetz().herdeZug(
+                                creature.position.x,
+                                creature.position.z,
+                                creature.userData.gattung,
+                                nb,
+                                VG.herde,
+                                this._herdeZug || (this._herdeZug = { x: 0, z: 0, n: 0 })
+                            );
+                            direction.x += zug.x;
+                            direction.z += zug.z;
                         }
                     } else {
                         // Raubtier ("wild") wittert Beute in 50 m → folgt dem Geruch-Gradienten (`_scentAt`, Beute-Kreaturen
@@ -21307,11 +21381,6 @@ class AnazhRealm {
                 }
             }
 
-            if (hasHit) {
-                direction.x += (Math.random() - 0.5) * 2;
-                direction.z += (Math.random() - 0.5) * 2;
-            }
-
             // DER STEUER-SCHRITT (Q3, tetrapoda steuerSchritt): `direction` ist der WUNSCH (Welt-XZ, m/s) aus Auftrag,
             // Flucht, Jagd, Neugier, Wandern, Separation, Ufer-Scheu und Aktion. Er dreht die Gier mit der Wendegrenze
             // der Art auf sich zu; der Leib läuft nur VORWÄRTS längs seiner Gier, mit dem Teil des Wunschs, der vor ihm
@@ -21322,6 +21391,8 @@ class AnazhRealm {
             const steuer = udS._steuer || (udS._steuer = { gier: creature.rotation.y || 0, v: 0 });
             AnazhRealm._steuerGesetz().steuerSchritt(steuer, direction.x, direction.z, delta, hueftL);
             creature.rotation.y = steuer.gier;
+            const px0 = creature.position.x;
+            const pz0 = creature.position.z;
             creature.position.x += Math.sin(steuer.gier) * steuer.v * delta;
             creature.position.z += Math.cos(steuer.gier) * steuer.v * delta;
             // STRÖMUNG trägt SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ nasse Spalte, Tiefe > 0.5 — Land-Läufer
@@ -21333,6 +21404,7 @@ class AnazhRealm {
                     creature.position.z += _fl.z * delta;
                 }
             }
+            this._kreaturHuellenKontakt(creature, hueftL, px0, pz0);
 
             // Sanfter Decay des Innenlebens (~17 s Halbwert); ruhige Wesen werden sparse (null = kein Tick-Rest),
             // beim Ausklingen projiziert die Valenz auf "happy" zurück — getroffene Wesen erholen sich.
@@ -88373,7 +88445,7 @@ class AnazhRealm {
     // (gibt die höchste als neuen supportTop). (2) WAND — eine Box, deren Oberkante über der
     // Stufe-hoch-Linie liegt + vertikal mit dem Körper überlappt, schiebt die Achse horizontal
     // heraus (gleiten). Mutiert pos.x/z. Bauwerke + Inseln teilen diese Mathematik.
-    _resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop) {
+    _resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop, kontakt = null) {
         const STEP = AnazhRealm.PLAYER_STEP_UP;
         const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
         const bodyLo = feetY + STEP;
@@ -88404,9 +88476,16 @@ class AnazhRealm {
                     // gratis ab: der horizontale Push IST der Kontakt (Normale =
                     // Push-Richtung, von der Wand weg). Die Parkour-Leser
                     // (Wandsprung/Klettern) lesen sie mit kurzem Verfall.
-                    this.state._wandKontaktNx = dx / d;
-                    this.state._wandKontaktNz = dz / d;
-                    this.state._wandKontaktAt = performance.now() / 1000;
+                    // Ein Tier trägt seinen eigenen Kontakt-Empfänger (_kreaturHuellenKontakt) — die Wand-Wahrheit des
+                    // Spielers (Parkour) bleibt seine.
+                    if (kontakt) {
+                        kontakt.nx = dx / d;
+                        kontakt.nz = dz / d;
+                    } else {
+                        this.state._wandKontaktNx = dx / d;
+                        this.state._wandKontaktNz = dz / d;
+                        this.state._wandKontaktAt = performance.now() / 1000;
+                    }
                 } else {
                     // Achse genau in der Box → zur nächsten Seite hinausschieben
                     const toMinX = pos.x - box.minX + radius;

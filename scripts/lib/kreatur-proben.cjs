@@ -12,9 +12,11 @@
 //   huepfer   (Q1/Q2) Luft-Anteil < 3 %, jeder Sprung aus einer Aktion, Flugzeit gleich bei 30 und 144 Hz
 //   wachsen   (Q2) die Skala nach 3600 Wachstums-Takten = 1,000
 //   gier      (Q3) Lauf ↔ Blick p90 ≤ 20°, 0 Rückwärts-Frames, Stand-Schlupf quer ≤ 0,2, Beschleunigung im Gesetz
-//   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames, die Beute läuft vom Jäger fort (> 80 %)
+//   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf), die Beute läuft vom Jäger fort (> 80 %)
 //   herde     (Q11) Kohäsion je Gattung, Bewegung gleich mit und ohne Blick (Frustum + Zufall)
 //   hindernis (Q11) kein Feld-Strahl je Tier und Takt, kein Tier in der Wand
+//   nacht     (Q11) die Ruhe-Aktion hält den Leib an (Kritik §2.3: 81 % bewegt während ruhen)
+//   reload    (Q12) ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück (Kritik §2.5: hp heilte)
 //   peer      (Q3) die Sicht-Kopie beim Mitspieler dreht in die Laufrichtung und geht
 "use strict";
 
@@ -86,6 +88,34 @@ async function kreaturProben(r, T, opts) {
         }
         return { x: P0.x + dx, y: P0.y, z: P0.z + dz };
     };
+    // Ein Ort auf Land ohne Bauwerks-Hülle im Umkreis R — die Witterungs-Jagd im Freien: an einer Wand gleitet ein Leib
+    // längs der Box-Kante (achsparallel), das misst die Hindernis-Probe, nicht die Richtung der Jagd.
+    const frei = (dx, dz, R) => {
+        const arches = s.architectures || [];
+        for (let ring = 0; ring < 40; ring++) {
+            const n = Math.max(1, ring * 6);
+            for (let q = 0; q < n; q++) {
+                const a = (q / n) * Math.PI * 2;
+                const x = P0.x + dx + Math.cos(a) * ring * 8,
+                    z = P0.z + dz + Math.sin(a) * ring * 8;
+                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) continue;
+                let ok = true;
+                for (const e of arches) {
+                    if (!e || !e.blockerAABBs || !e.position) continue;
+                    const rr = R + (e._blockerReach || 0);
+                    if (Math.abs(e.position.x - x) < rr && Math.abs(e.position.z - z) < rr) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok) {
+                    const h = r.getTerrainHeightAt(x, z);
+                    return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
+                }
+            }
+        }
+        return null;
+    };
     const tier = (p, seele, bodySize) => {
         const c = r.spawnCreatureAt(p.x, p.y, p.z, "happy", seele, { precise: true, bodySize: bodySize || 1 });
         if (!c) throw new Error("Spawn " + seele);
@@ -118,6 +148,25 @@ async function kreaturProben(r, T, opts) {
         });
     };
     const takt = (dt) => r.updateCreatures(dt);
+    // Der Wand-Kontakt je Takt — instrumentiert, nicht gestubbt: der EINE Kontakt-Löser läuft unverändert, die Linse merkt
+    // nur, wessen Lage er schob. Freier Lauf und Anprall werden getrennt gezählt (an einer Box-Kante gleitet ein Leib
+    // achsparallel, der Anprall an der Wand ist kein Gas-oder-Bremse).
+    const kontaktZaehler = (restore) => {
+        const geschoben = new Set();
+        decke(
+            restore,
+            "_resolveCapsuleVsAABB",
+            (alt) =>
+                function (box, pos, ...rest) {
+                    const x = pos.x,
+                        z = pos.z;
+                    const o = alt.call(this, box, pos, ...rest);
+                    if (pos.x !== x || pos.z !== z) geschoben.add(pos);
+                    return o;
+                }
+        );
+        return geschoben;
+    };
 
     // ── geister (Q12): clearCreatures räumt jedes Tier ──
     await buehne("geister", async () => {
@@ -377,8 +426,9 @@ async function kreaturProben(r, T, opts) {
             [0, -1],
             [-1, 0],
         ];
-        const zeilen = tiere.map(() => ({ abw: [], rueck: 0, seit: 0, lauf: 0, vs: [], beschl: [] }));
-        const vorher = tiere.map((c) => ({ x: c.position.x, z: c.position.z, v: 0 }));
+        const zeilen = tiere.map(() => ({ abw: [], rueck: 0, seit: 0, lauf: 0, vs: [], beschl: [], kontakt: 0 }));
+        const vorher = tiere.map((c) => ({ x: c.position.x, z: c.position.z, v: 0, anprall: false }));
+        const geschoben = kontaktZaehler(restore);
         let k = 0;
         for (const [ex, ez] of ecken) {
             for (let j = 0; j < Math.round(30 / v / dt); j++, k++) {
@@ -390,9 +440,12 @@ async function kreaturProben(r, T, opts) {
                         dz = c.position.z - vorher[i].z;
                     const sp = Math.hypot(dx, dz) / dt;
                     const z = zeilen[i];
+                    const anprall = geschoben.has(c.position);
+                    if (anprall && k > 60) z.kontakt++;
                     if (k > 60) {
                         z.vs.push(sp);
-                        z.beschl.push(Math.abs(sp - vorher[i].v) / dt);
+                        // der Tempo-Sprung im FREIEN Lauf (der Anprall-Takt und der danach zählen nicht)
+                        if (!anprall && !vorher[i].anprall) z.beschl.push(Math.abs(sp - vorher[i].v) / dt);
                     }
                     if (sp > 0.3 && k > 60) {
                         const a = Math.abs(grad(wrap(Math.atan2(dx, dz) - c.rotation.y)));
@@ -401,7 +454,7 @@ async function kreaturProben(r, T, opts) {
                         if (a > 90) z.rueck++;
                         else if (a > 45) z.seit++;
                     }
-                    vorher[i] = { x: c.position.x, z: c.position.z, v: sp };
+                    vorher[i] = { x: c.position.x, z: c.position.z, v: sp, anprall };
                     const pf = pfoten[i];
                     if (pf) {
                         c.updateMatrixWorld(true);
@@ -411,6 +464,7 @@ async function kreaturProben(r, T, opts) {
                         pf.ps.forEach((p, j2) => pf.spur[j2].push(p.localToWorld(pf.lokal[j2].clone())));
                     }
                 });
+                geschoben.clear();
             }
         }
         // DER STAND-SCHLUPF: im STAND einer Pfote (ihre Gang-Phase in [π, 2π), gangFuss: der Fuß wandert dort am Boden)
@@ -454,6 +508,7 @@ async function kreaturProben(r, T, opts) {
             const z = zeilen[i];
             o[a] = {
                 laufFrames: z.lauf,
+                kontaktFrames: z.kontakt,
                 abwP50: z.abw.length ? +quantil(z.abw, 0.5).toFixed(1) : null,
                 abwP90: z.abw.length ? +quantil(z.abw, 0.9).toFixed(1) : null,
                 rueckwaerts: z.lauf ? +(z.rueck / z.lauf).toFixed(3) : 0,
@@ -472,7 +527,8 @@ async function kreaturProben(r, T, opts) {
     // ── jagd (Q3 + Q11): die Witterungs-Jagd folgt dem Geruch, die Beute flieht vor dem Jäger ──
     await buehne("jagd", async (restore) => {
         r.setGameMode("pfad");
-        const w0 = land(-60, 50);
+        const w0 = frei(-60, 50, 30);
+        if (!w0) return { fehler: "kein freies Feld (30 m ohne Hülle) für die Jagd" };
         pm.set(w0.x + 45, pm.y, w0.z + 20); // der Spieler fern (jenseits der Witterung des Spielers)
         const wolf = tier(w0, "wolf");
         ruhig(wolf);
@@ -502,8 +558,11 @@ async function kreaturProben(r, T, opts) {
             );
         const dt = 1 / 60;
         const NAT = A._verhaltenGesetz().furcht;
+        const geschoben = kontaktZaehler(restore);
         let jagdFrames = 0,
+            kontakt = 0,
             achs = 0,
+            achs5 = 0,
             bedroht = 0,
             fort = 0;
         let wv = { x: wolf.position.x, z: wolf.position.z };
@@ -513,12 +572,20 @@ async function kreaturProben(r, T, opts) {
             const dx = wolf.position.x - wv.x,
                 dz = wolf.position.z - wv.z;
             const jagt = wolf.userData._motionZustand === "jagd";
-            if (jagt && Math.hypot(dx, dz) / dt > 0.3) {
+            const anprall = geschoben.has(wolf.position);
+            geschoben.clear();
+            if (jagt && anprall) kontakt++;
+            if (jagt && !anprall && Math.hypot(dx, dz) / dt > 0.3) {
                 jagdFrames++;
                 const h = Math.atan2(dx, dz);
                 let m = Infinity;
                 for (let q = 0; q < 4; q++) m = Math.min(m, Math.abs(wrap(h - (q * Math.PI) / 2)));
-                if (grad(m) < 5) achs++;
+                // Die Achsen-Signatur ist die QUANTISIERUNG: das Argmax aus vier Proben setzte die Richtung exakt auf eine
+                // Himmelsachse, der Lauf lag auf ihr (Basis: 100 % auf 0,25° genau). Ein stetiger Gradient trifft das
+                // 0,5°-Fenster je Achse zufällig in ~0,6 % der Takte; nahe einer Achse liegt er nur, wenn der Wind dort
+                // weht (die Fahne des Geruchs) — darum zählt das enge Fenster, das 5°-Fenster steht als Zahl daneben.
+                if (grad(m) < 0.25) achs++;
+                if (grad(m) < 5) achs5++;
             }
             beute.forEach((c, i) => {
                 const vx = c.position.x - bv[i].x,
@@ -536,7 +603,9 @@ async function kreaturProben(r, T, opts) {
         }
         return {
             jagdFrames,
+            kontaktFrames: kontakt,
             achsAnteil: jagdFrames ? +(achs / jagdFrames).toFixed(3) : null,
+            achsAnteil5Grad: jagdFrames ? +(achs5 / jagdFrames).toFixed(3) : null,
             bedrohtFrames: bedroht,
             fortAnteil: bedroht ? +(fort / bedroht).toFixed(3) : null,
             bisse: beute.filter((c) => c.userData.hp < 9999).length,
@@ -685,6 +754,87 @@ async function kreaturProben(r, T, opts) {
         return Object.assign(kosten, { wandFrames: drin, wandAnteil: +(drin / N2).toFixed(3), angekommen: durch });
     });
 
+    // ── nacht (Q11, Kritik §2.3): die Ruhe-Aktion hält den Leib an ──
+    await buehne("nacht", async (restore) => {
+        r.setGameMode("frieden");
+        const altTod = s.timeOfDay;
+        restore.push(() => {
+            s.timeOfDay = altTod;
+        });
+        s.timeOfDay = 0; // Mitternacht: die Stimmung „nacht" wählt ruhen/yawn
+        if (taeter === "nacht")
+            decke(
+                restore,
+                "updateCreatures",
+                (alt) =>
+                    function (dt) {
+                        alt.call(this, dt);
+                        for (const c of this.state.creatures) {
+                            const VA = c.userData._verhaltenAktion;
+                            if (VA && VA.name === "ruhen") c.position.x += 0.02;
+                        }
+                    }
+            );
+        const o = land(25, 0);
+        const arten = ["wesen", "wesen", "wesen", "wesen", "wolf", "wolf", "fuchs", "fuchs"];
+        const tiere = arten.map((a, i) => {
+            const c = tier({ x: o.x + (i % 4) * 4, y: o.y, z: o.z + Math.floor(i / 4) * 5 }, a);
+            ruhig(c);
+            return c;
+        });
+        const dt = 1 / 60;
+        const vor = tiere.map((c) => ({ x: c.position.x, z: c.position.z }));
+        let ruhFrames = 0,
+            ruhBewegt = 0;
+        for (let k = 0; k < 3600; k++) {
+            takt(dt);
+            tiere.forEach((c, i) => {
+                const VA = c.userData._verhaltenAktion;
+                const sp = Math.hypot(c.position.x - vor[i].x, c.position.z - vor[i].z) / dt;
+                vor[i] = { x: c.position.x, z: c.position.z };
+                // die Ruhe ab ihrer zweiten Sekunde (der Leib bremst mit der Brems-Grenze in den Stand)
+                if (VA && VA.name === "ruhen" && s.creatureAnimationTime - VA.start > 1) {
+                    ruhFrames++;
+                    if (sp > 0.1) ruhBewegt++;
+                }
+            });
+        }
+        return { ruhFrames, ruhBewegt, bewegtAnteil: ruhFrames ? +(ruhBewegt / ruhFrames).toFixed(3) : null };
+    });
+
+    // ── reload (Q12): ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück ──
+    await buehne("reload", async (restore) => {
+        const c = tier(land(30, 12), "wesen");
+        const hpMax = c.userData.hpMax;
+        c.userData.hp = 0.55 * hpMax;
+        c.rotation.y = 1.0;
+        if (c.userData._steuer) c.userData._steuer.gier = 1.0;
+        if (taeter === "reload")
+            decke(
+                restore,
+                "_serializeCreature",
+                (alt) =>
+                    function (cr) {
+                        const o = alt.call(this, cr);
+                        if (o) {
+                            delete o.hp;
+                            delete o.gier;
+                        }
+                        return o;
+                    }
+            );
+        const snap = r._serializeCreature(c);
+        const hpVor = c.userData.hp;
+        r.removeCreature(c);
+        const c2 = r._restoreCreatureFromSnapshot(snap);
+        if (!c2) return { fehler: "Restore" };
+        return {
+            hpVor: +hpVor.toFixed(2),
+            hpNach: +c2.userData.hp.toFixed(2),
+            gierFehlerGrad: +Math.abs(grad(wrap(c2.rotation.y - 1.0))).toFixed(1),
+        };
+    });
+
     // ── peer (Q3): die Sicht-Kopie beim Mitspieler dreht und geht ──
     await buehne("peer", async (restore) => {
         const remote = s.p2p && s.p2p.remoteCreatures;
@@ -731,7 +881,20 @@ async function kreaturProben(r, T, opts) {
 }
 
 // ═══ DAS URTEIL (Node): Zahl → grün/rot mit Grund ═══
-const PROBEN = ["geister", "geburt", "sattel", "huepfer", "wachsen", "gier", "jagd", "herde", "hindernis", "peer"];
+const PROBEN = [
+    "geister",
+    "geburt",
+    "sattel",
+    "reload",
+    "huepfer",
+    "wachsen",
+    "gier",
+    "jagd",
+    "herde",
+    "hindernis",
+    "nacht",
+    "peer",
+];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
     if (z.fehler) return { ok: false, grund: z.fehler };
@@ -774,7 +937,10 @@ function urteil(name, z) {
     }
     if (name === "jagd") {
         soll(z.jagdFrames >= 60, `nur ${z.jagdFrames} Jagd-Frames (Probe vakuös)`);
-        soll(z.achsAnteil !== null && z.achsAnteil < 0.1, `Jagd auf den Achsen ${(z.achsAnteil * 100).toFixed(1)} %`);
+        soll(
+            z.achsAnteil !== null && z.achsAnteil < 0.1,
+            `Jagd auf den Achsen (0,25°) ${(z.achsAnteil * 100).toFixed(1)} % (5°: ${(z.achsAnteil5Grad * 100).toFixed(1)} %)`
+        );
         soll(z.bedrohtFrames >= 60, `nur ${z.bedrohtFrames} bedrohte Beute-Frames`);
         soll(z.fortAnteil !== null && z.fortAnteil > 0.8, `Beute fort vom Jäger ${z.fortAnteil} (Soll > 0,8)`);
     }
@@ -785,6 +951,14 @@ function urteil(name, z) {
     if (name === "hindernis") {
         soll(z.strahlenJeTakt === 0, `${z.strahlenJeTakt} Feld-Strahlen je Takt (${z.dichteJeTakt} Dichte-Proben)`);
         soll(z.wandFrames === 0, `${z.wandFrames} Frames in der Wand (der Folger läuft durch den Stein)`);
+    }
+    if (name === "nacht") {
+        soll(z.ruhFrames >= 300, `nur ${z.ruhFrames} Ruhe-Frames (Probe vakuös)`);
+        soll(z.bewegtAnteil !== null && z.bewegtAnteil < 0.03, `${(z.bewegtAnteil * 100).toFixed(1)} % bewegt während ruhen`);
+    }
+    if (name === "reload") {
+        soll(Math.abs(z.hpNach - z.hpVor) < 0.01, `hp vor dem Reload ${z.hpVor}, danach ${z.hpNach} (geheilt)`);
+        soll(z.gierFehlerGrad <= 1, `die Gier kehrt ${z.gierFehlerGrad}° daneben zurück`);
     }
     if (name === "peer") {
         soll(z.gierFehlerGrad <= 15, `Sicht-Kopie blickt ${z.gierFehlerGrad}° neben die Laufrichtung`);
