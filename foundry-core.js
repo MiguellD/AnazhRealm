@@ -4691,32 +4691,11 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
     let fell = null;
     if (!fein) {
         if (typeof kern.fellStreu !== "function") throw new Error("FELL: kern.fellStreu fehlt (fail-closed)");
-        const T = {};
-        for (const nm of [
-            "belly",
-            "lowerAbd",
-            "croup",
-            "pelvis",
-            "throat",
-            "throatLower",
-            "mane",
-            "ribcage",
-            "waist",
-            "flank",
-            "cranium",
-        ]) {
-            const nd = B.teile[nm];
-            if (nd && nd.position) T[nm] = [nd.position.x, nd.position.y, nd.position.z];
-        }
-        if (B.neckStart && B.neckDir) {
-            const nm2 = B.neckStart.clone().add(B.neckDir.clone().multiplyScalar(0.5));
-            T.neckMid = [nm2.x, nm2.y, nm2.z];
-        }
         // kl: die Haar-Länge der Art je Lab-Einheit (H/2,4 × Fell-Länge), ks: die Ruten-Haare (Fuchs buschig).
+        // Die Zeilen sitzen auf dem Fell-Ort des Baus (B.fellOrt: Rumpf-Stationen, Hals, Glied-Dicke der Art).
         const k = (B.masse.H || P.size) / 2.4;
         fell = {
-            rows: kern.fellStreu(P, B.masse, T) || [],
-            T,
+            rows: kern.fellStreu(P, B.masse, B.fellOrt),
             schweif,
             kl: k * art.fell.lang,
             ks: k * art.schwanz.fell,
@@ -4945,7 +4924,7 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     const mesh = new THREE.Mesh(geo, matFuer("fell"));
     root.add(mesh); // Root-lokal gebacken (Identität)
     if (fell) {
-        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, H);
+        const schalen = __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW * eW, kandidaten, fell, B, root, nodeName);
         root.add(new THREE.Mesh(schalen, matFuer("fellSchale")));
     }
     if (!fein) __tierKopfHaeute(hk, B, H, matFuer, kern, P);
@@ -5109,9 +5088,15 @@ function __tierKopfHaeute(hk, B, H, matFuer, kern, P) {
 
 // ── DAS SCHALEN-FELL (V18.497): N versetzte Schalen über einer gröberen Haut aus DEMSELBEN Feld (jeder
 // zweite Rasterpunkt — keine neue Füllung), gleich geskinnt: LBS biegt jede Schale samt Legerichtung mit.
-// Je Haut-Punkt mischt das Fell-Gesetz Länge, Ton und Legerichtung: jede fellStreu-Zeile (und jedes
-// Schweif-Segment) wirkt auf ihrer Streu-Schale (Ellipsoid-Abstand e ≈ 1, Abfall über `reich`), gewichtet
-// mit ihrer Strähnen-Dichte je Fläche. Die Schale s liegt bei (s+1)/N der Länge, zur Spitze hin mit der
+// DIE DECKUNG FOLGT DER HAUT (Integration W5-Körper): jedes Gelenk trägt seine Strähnen (die Zeilen seines Teils,
+// an der Wurzel dazu der Deck-Mantel, am Schweif-Segment das Schweif-Gesetz) über seine ECHTE Haut-Fläche — das
+// Lab-Gesetz des Deck-Mantels (N Strähnen über der Führungs-Fläche, placeFurOnMesh), je Haut-Punkt über seine
+// Bone-Gewichte gemischt. Vorher entschied der Ellipsoid-Abstand jeder Zeile (e ≈ 1 ± reich) über die DECKUNG,
+// und die Zeilen trugen feste Radien: nach der Anatomie-Welle (Rumpf-Profil, Glieder × Dicke der Art, Hals × 1,7)
+// lagen 28 % des Bär-Rumpfs, 87 % seiner Läufe und 34 % des Hirsch-Halses kahl (innerste Schale, Dichte unter
+// 5 % des Medians — gate:tier-anatomie, Kahl-Linse). Die Zeilen tragen nur noch den LOOK am Ort: Länge und
+// Legerichtung mischen die Zeilen des eigenen Gelenks, gewichtet mit Strähnen-Dichte × Nähe 1 / (1 + ((e − 1) /
+// reich)²) — nie null, die nächste Zeile führt. Die Schale s liegt bei (s+1)/N der Länge, zur Spitze hin mit der
 // Legerichtung gekämmt (Lean ∝ t²). Attribute: aSchale (t = 0..1 innen → außen · lokale Dichte relativ zum
 // Median · Haar-Zellen je Einheit = √Median — das Raster der Lab-Strähnen) · aWurzel (der Bind-Punkt
 // der Haar-Wurzel — die Haar-Maske liest ihn, damit jedes Haar EINE Säule über alle Schalen bleibt) ·
@@ -5123,10 +5108,10 @@ var TIER_FELL = Object.freeze({
     schalen: 6,
     basisVox: 2, // Schalen-Basis = jeder basisVox-te Rasterpunkt der Haut
     clr: 0.5, // × vox: die Basis liegt knapp über der Haut
-    reich: 0.6, // Zeilen-Abfall in Ellipsoid-Einheiten um e = 1
+    reich: 0.6, // die Nähe der Look-Mischung in Ellipsoid-Einheiten um e = 1 (1 / (1 + ((e − 1) / reich)²))
     kamm: 0.6, // Lean zur Spitze (× Länge)
 });
-function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2, kandidaten, fell, B, root, H) {
+function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2, kandidaten, fell, B, root, nodeName) {
     const s = TIER_FELL.basisVox;
     const nx2 = Math.floor((nx - 1) / s) + 1,
         ny2 = Math.floor((ny - 1) / s) + 1,
@@ -5151,18 +5136,31 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
         kandidaten
     );
     if (!basis) throw new Error("FELL: die Schalen-Basis lieferte keine Fläche");
-    // Die Zeilen in den Root-Raum (Ellipsoid-Inverse + Legerichtung).
+    // Die Zeilen in den Root-Raum (Ellipsoid-Inverse + Legerichtung), jede an IHREM Gelenk (der Knoten oder sein
+    // nächster animierter Ahn — die Wurzel trägt Rumpf und Hals).
     root.updateMatrixWorld(true);
     const invRoot = new THREE.Matrix4().copy(root.matrixWorld).invert();
-    const zeilen = [];
+    const NJ = skinJoints.length;
+    const jIdx = new Map(skinJoints.map((nm, k) => [nm, k]));
+    const gelenkIdx = (node) => {
+        for (let c = node; c; c = c.parent) if (nodeName.has(c)) return jIdx.has(nodeName.get(c)) ? jIdx.get(nodeName.get(c)) : -1;
+        return -1;
+    };
+    const jWurzel = gelenkIdx(root);
+    if (jWurzel < 0) throw new Error("FELL: die Wurzel trägt keine Leib-Haut");
+    const straehnen = new Float64Array(NJ);
+    const zeilenJe = Array.from({ length: NJ }, () => []);
     const zeile = (node, c, r, sc, d, n, l) => {
         if (!(n > 0) || !(l > 0)) return;
+        const j = gelenkIdx(node);
+        if (j < 0) return; // ein Teil ohne Leib-Haut: der Kopf trägt seine starren Häute (oben benannt)
         const M = new THREE.Matrix4().multiplyMatrices(invRoot, node.matrixWorld);
         const dw = new THREE.Vector3(d[0], d[1], d[2]).transformDirection(M);
         const rx = r * sc[0],
             ry = r * sc[1],
             rz = r * sc[2];
-        zeilen.push({
+        straehnen[j] += n;
+        zeilenJe[j].push({
             Mi: Float64Array.from(new THREE.Matrix4().copy(M).invert().elements),
             c,
             rx,
@@ -5173,18 +5171,20 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
             l,
         });
     };
-    const bX = (B.masse && B.masse.bX) || 1;
+    // Der Deck-Mantel (Unterwolle · Grannen · helle Spitzen) liegt gleichmäßig auf der Haut der Wurzel.
+    const mantel = [];
     for (const row of fell.rows) {
         if (row.art === "deck") {
-            for (const [wirt, anteil] of row.wirte || []) {
-                const t3 = fell.T[wirt];
-                if (!t3) continue;
-                const r = 0.3 * H * Math.sqrt(anteil * 3),
-                    sc = [bX, 0.95, 1.15];
-                zeile(root, t3, r, sc, row.d, row.uDens * anteil, row.underL);
-                zeile(root, t3, r, sc, row.d, row.gDens * anteil, row.guardL);
-                zeile(root, t3, r, sc, row.d, row.gDens * anteil * row.hellQuote, 0.06 * fell.kl);
-            }
+            const dw = new THREE.Vector3(row.d[0], row.d[1], row.d[2]).normalize();
+            for (const [n, l] of [
+                [row.uDens, row.underL],
+                [row.gDens, row.guardL],
+                [row.gDens * row.hellQuote, 0.06 * fell.kl],
+            ])
+                if (n > 0 && l > 0) {
+                    mantel.push({ n, l, dw });
+                    straehnen[jWurzel] += n;
+                }
             continue;
         }
         const node = B.teile[row.teil];
@@ -5201,6 +5201,31 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     const pa = basis.attributes.position,
         na = basis.attributes.normal,
         Vs = pa.count;
+    const hI = basis.attributes.skinIndex.array,
+        hW = basis.attributes.skinWeight.array,
+        hX = basis.index.array;
+    // Die Haut-Fläche je Gelenk (jedes Dreieck verteilt seine Fläche über die Bone-Gewichte seiner Ecken) und die
+    // Strähnen je Fläche des Gelenks — die Einheit des Lab-Mantels (placeFurOnMesh: N Strähnen über der Fläche); sie
+    // trägt das Haar-Raster. Die Look-Mischung wiegt Mantel und Zeilen in der Einheit der Zeilen-Dichte
+    // n / (rx·ry + ry·rz + rz·rx) = 4π/3 · n / Fläche.
+    const flaeche = new Float64Array(NJ);
+    for (let q = 0; q < hX.length; q += 3) {
+        const a = hX[q] * 3,
+            b = hX[q + 1] * 3,
+            c = hX[q + 2] * 3;
+        const P0 = pa.array;
+        const ux = P0[b] - P0[a],
+            uy = P0[b + 1] - P0[a + 1],
+            uz = P0[b + 2] - P0[a + 2];
+        const vx = P0[c] - P0[a],
+            vy = P0[c + 1] - P0[a + 1],
+            vz = P0[c + 2] - P0[a + 2];
+        const drittel = Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx) / 6;
+        for (const v of [hX[q], hX[q + 1], hX[q + 2]])
+            for (let k = 0; k < 4; k++) flaeche[hI[v * 4 + k]] += drittel * hW[v * 4 + k];
+    }
+    const dichteJe = Float64Array.from(straehnen, (n, j) => (flaeche[j] > 0 ? n / flaeche[j] : 0));
+    for (const m of mantel) m.dichte = ((4 * Math.PI) / 3) * (m.n / flaeche[jWurzel]);
     const len = new Float32Array(Vs),
         dichte = new Float32Array(Vs),
         kamm = new Float32Array(Vs * 3),
@@ -5210,27 +5235,41 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
         const x = pa.getX(i),
             y = pa.getY(i),
             z = pa.getZ(i);
-        let W = 0,
+        let D = 0,
+            W = 0,
             L = 0,
             dx = 0,
             dy = 0,
             dz = 0;
-        for (const zl of zeilen) {
-            const m = zl.Mi;
-            const qx = (m[0] * x + m[4] * y + m[8] * z + m[12] - zl.c[0]) / zl.rx,
-                qy = (m[1] * x + m[5] * y + m[9] * z + m[13] - zl.c[1]) / zl.ry,
-                qz = (m[2] * x + m[6] * y + m[10] * z + m[14] - zl.c[2]) / zl.rz;
-            const e = Math.sqrt(qx * qx + qy * qy + qz * qz);
-            const nah = 1 - Math.abs(e - 1) / reich;
-            if (nah <= 0) continue;
-            const w = nah * zl.dichte;
-            W += w;
-            L += w * zl.l;
-            dx += w * zl.dw.x;
-            dy += w * zl.dw.y;
-            dz += w * zl.dw.z;
+        for (let k = 0; k < 4; k++) {
+            const wj = hW[i * 4 + k];
+            if (!(wj > 0)) continue;
+            const j = hI[i * 4 + k];
+            D += wj * dichteJe[j];
+            if (j === jWurzel)
+                for (const m of mantel) {
+                    const w = wj * m.dichte;
+                    W += w;
+                    L += w * m.l;
+                    dx += w * m.dw.x;
+                    dy += w * m.dw.y;
+                    dz += w * m.dw.z;
+                }
+            for (const zl of zeilenJe[j]) {
+                const m = zl.Mi;
+                const qx = (m[0] * x + m[4] * y + m[8] * z + m[12] - zl.c[0]) / zl.rx,
+                    qy = (m[1] * x + m[5] * y + m[9] * z + m[13] - zl.c[1]) / zl.ry,
+                    qz = (m[2] * x + m[6] * y + m[10] * z + m[14] - zl.c[2]) / zl.rz;
+                const q = (Math.sqrt(qx * qx + qy * qy + qz * qz) - 1) / reich;
+                const w = (wj * zl.dichte) / (1 + q * q);
+                W += w;
+                L += w * zl.l;
+                dx += w * zl.dw.x;
+                dy += w * zl.dw.y;
+                dz += w * zl.dw.z;
+            }
         }
-        dichte[i] = W;
+        dichte[i] = D;
         if (W > 0) {
             len[i] = L / W;
             // Legerichtung tangential (der Anteil entlang der Normale ist die Länge selbst).
@@ -5259,9 +5298,6 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
     const zellen = Math.sqrt(median);
     // Der Schalen-Stapel: N Kopien der Basis, jede auf ihrer Höhe, gekämmt, gleich gewichtet.
     const N = TIER_FELL.schalen;
-    const si = basis.attributes.skinIndex,
-        sw = basis.attributes.skinWeight;
-    const idx0 = basis.index.array;
     const P = new Float32Array(Vs * N * 3),
         Nn = new Float32Array(Vs * N * 3),
         C = new Float32Array(Vs * N * 3),
@@ -5269,7 +5305,7 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
         T = new Float32Array(Vs * N * 3),
         SI = new Float32Array(Vs * N * 4),
         SW = new Float32Array(Vs * N * 4),
-        I = new Uint32Array(idx0.length * N);
+        I = new Uint32Array(hX.length * N);
     for (let sN = 0; sN < N; sN++) {
         const t = (sN + 1) / N;
         const o = sN * Vs;
@@ -5296,11 +5332,11 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
             T[v * 3 + 1] = Math.min(1.6, dichte[i] / median);
             T[v * 3 + 2] = zellen;
             for (let k = 0; k < 4; k++) {
-                SI[v * 4 + k] = si.array[i * 4 + k];
-                SW[v * 4 + k] = sw.array[i * 4 + k];
+                SI[v * 4 + k] = hI[i * 4 + k];
+                SW[v * 4 + k] = hW[i * 4 + k];
             }
         }
-        for (let q = 0; q < idx0.length; q++) I[sN * idx0.length + q] = idx0[q] + o;
+        for (let q = 0; q < hX.length; q++) I[sN * hX.length + q] = hX[q] + o;
     }
     basis.dispose();
     const geo = new THREE.BufferGeometry();

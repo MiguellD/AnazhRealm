@@ -861,7 +861,10 @@
     // DIE FELL-STREU (V18.460) — DAS LOOK-GESETZ ALS DATEN: die komplette
     // Körper-Streu des Labs (Bein-Lokale/Tuben · Bauch/Brust/Hüft-Fuzz ·
     // Kehle/Mähne/Nacken-Akzente · Torso-Deckhaar) als ZEILEN-Tabelle.
-    // fellStreu(P, M, T) → rows [{teil, c:[x,y,z], r, sc:[3], d:[3], n, l, t, ton}]
+    // fellStreu(P, M, O) → rows [{teil, c:[x,y,z], r, sc:[3], d:[3], n, l, t, ton}]
+    //   O = bauTier(…).fellOrt (Lage und Größe der Körper-Teile: Rumpf-Stationen, Hals, Glied-Dicke der Art,
+    //   Kehle/Mähne/Schädel) — die Zeilen sitzen auf der Anatomie der Art, nie auf festen Radien des alten
+    //   Lab-Rumpfs (Integration W5-Körper: der Bär-Rumpf und der Hirsch-Hals lagen sonst neben ihren Zeilen).
     //   teil = Gelenk-/Teil-Name (Streu-Wirt) · c = Zentrum (teil-lokal) ·
     //   r = Basis-Radius · sc = Ellipsoid-Skala · d = Legerichtung ·
     //   n = Strähnen-Zahl · l/t = Länge/Dicke · ton = "B"|"D"|"L" (cB/cD/cL).
@@ -869,14 +872,11 @@
     // UND der Pipe-Bäcker (deterministische Streu mit Wurzel→Spitze-Farbverlauf
     // als Vertex-Daten). MESHFREI §8: reine Zahlen, kein Mesh. Die Tuben des
     // Labs sind vor-entrollt (Scheiben-Zeilen — dieselbe Mathe wie addFurTube).
-    function fellStreu(P, M, T) {
+    function fellStreu(P, M, O) {
+        if (!O || !O.rumpf || !O.hals || !O.glied) throw new Error("fellStreu: der Fell-Ort des Baus fehlt (bauTier.fellOrt)");
         var H = M.H,
             lv = M.lv,
-            bt = M.bt,
-            bX = M.bX,
-            by = M.by,
-            sY = M.sY,
-            hY = M.hY;
+            bt = M.bt;
         // DIE FELL-LÄNGE DER ART (Welle 5): die Haar-Längen waren absolute Lab-Zahlen (Wolf-Maß) — der Fuchs trug
         // relativ zu lange, der Bär zu kurze Haare; jetzt × H/2,4 und × die Fell-Länge der Art (der Bär trägt
         // zottiges Fell, der Hirsch glattes Sommerhaar).
@@ -921,6 +921,10 @@
                 );
             }
         };
+        // Die Glied-Dicke der Art (bauTier: proximal × √Dicke, distal × Dicke × distal) — jede Bein-Zeile sitzt auf
+        // dem Fleisch, das sie bedeckt (vorher die Wolf-Radien: die Bär-Läufe trugen ihre Zeilen im Inneren).
+        var gp = O.glied.p,
+            gd = O.glied.d;
         // ── Vorderbein-Achsen (verbatim Lab-Formeln) ──
         var humLen = P.legLen * H,
             humAng = (25 * Math.PI) / 180;
@@ -932,8 +936,8 @@
             metaAng = (15 * Math.PI) / 180;
         var metaF = [0, -metaLen * Math.cos(metaAng), metaLen * Math.sin(metaAng)];
         ["legFL", "legFR"].forEach(function (g) {
-            R(g, 0, 0.04 * H, 0, 0.085 * H, 1.1, 1.32, 1.05 * lv, 0, 0.02, -0.8, 1000, 0.032, 0.006);
-            R(g, 0, 0.075 * H, 0, 0.035 * H, 1.05, 1.0, 1.0 * lv, 0, 0.02, -0.8, 250, 0.032, 0.006);
+            R(g, 0, 0.04 * H, 0, 0.085 * H * gp, 1.1, 1.32, 1.05 * lv, 0, 0.02, -0.8, 1000, 0.032, 0.006);
+            R(g, 0, 0.075 * H, 0, 0.035 * H * gp, 1.05, 1.0, 1.0 * lv, 0, 0.02, -0.8, 250, 0.032, 0.006);
         });
         ["flU", "frU"].forEach(function (g) {
             tube(
@@ -941,8 +945,8 @@
                 humF[0],
                 humF[1],
                 humF[2],
-                0.1 * H,
-                0.055 * H * Math.pow(bt, 0.4),
+                0.1 * H * gp,
+                0.055 * H * Math.pow(bt, 0.4) * gp,
                 0.9,
                 1.0,
                 0.65,
@@ -958,7 +962,7 @@
                 humF[0],
                 humF[1],
                 humF[2],
-                0.045 * H * Math.pow(bt, 0.4),
+                0.045 * H * Math.pow(bt, 0.4) * gd,
                 1.3,
                 0.6,
                 1.0,
@@ -976,8 +980,8 @@
                 radF[0],
                 radF[1],
                 radF[2],
-                0.055 * H * Math.pow(bt, 0.4),
-                0.035 * H * Math.pow(bt, 0.8),
+                0.055 * H * Math.pow(bt, 0.4) * gd,
+                0.035 * H * Math.pow(bt, 0.8) * gd,
                 0.9,
                 1.0,
                 0.55,
@@ -995,7 +999,7 @@
                 metaF[0] * 0.5,
                 metaF[1] * 0.5,
                 metaF[2] * 0.5,
-                0.045 * H * Math.pow(bt, 0.8),
+                0.045 * H * Math.pow(bt, 0.8) * gd,
                 1.0,
                 1.6,
                 0.8,
@@ -1018,9 +1022,9 @@
             metaTAng = (5 * Math.PI) / 180;
         var metaTF = [0, -metaTLen * Math.cos(metaTAng), metaTLen * Math.sin(metaTAng)];
         ["legHL", "legHR"].forEach(function (g) {
-            R(g, 0, 0.03 * H, -0.02 * H, 0.08 * H * 1.35, 1.1, 1.1 * lv, 1.22 * lv, 0, 0.05, -0.78, 1200, 0.032, 0.006);
-            R(g, 0, 0.06 * H, -0.02 * H, 0.05 * H * 1.35, 1.15, 1.1 * lv, 1.15 * lv, 0, 0.1, -0.75, 700, 0.03, 0.006);
-            R(g, 0, 0.06 * H, -0.02 * H, 0.03 * H * 1.35, 1.05, 1.1 * lv, 1.0 * lv, 0, 0.05, -0.78, 300, 0.032, 0.006);
+            R(g, 0, 0.03 * H, -0.02 * H, 0.08 * H * 1.35 * gp, 1.1, 1.1 * lv, 1.22 * lv, 0, 0.05, -0.78, 1200, 0.032, 0.006);
+            R(g, 0, 0.06 * H, -0.02 * H, 0.05 * H * 1.35 * gp, 1.15, 1.1 * lv, 1.15 * lv, 0, 0.1, -0.75, 700, 0.03, 0.006);
+            R(g, 0, 0.06 * H, -0.02 * H, 0.03 * H * 1.35 * gp, 1.05, 1.1 * lv, 1.0 * lv, 0, 0.05, -0.78, 300, 0.032, 0.006);
         });
         ["hlT", "hrT"].forEach(function (g) {
             tube(
@@ -1028,8 +1032,8 @@
                 femF[0],
                 femF[1],
                 femF[2],
-                0.1 * H,
-                0.055 * H * Math.pow(bt, 0.4),
+                0.1 * H * gp,
+                0.055 * H * Math.pow(bt, 0.4) * gp,
                 0.9,
                 1.0,
                 0.7,
@@ -1045,7 +1049,7 @@
                 femF[0],
                 femF[1],
                 femF[2],
-                0.045 * H * Math.pow(bt, 0.4),
+                0.045 * H * Math.pow(bt, 0.4) * gp,
                 1.3,
                 0.6,
                 1.0,
@@ -1056,14 +1060,14 @@
                 0.028,
                 0.006
             );
-            R(g, 0, 0, 0.045 * H, 0.055 * H, 0.55, 1.1, 0.45, 0, 0.05, -0.75, 500, 0.032, 0.006);
+            R(g, 0, 0, 0.045 * H, 0.055 * H * gp, 0.55, 1.1, 0.45, 0, 0.05, -0.75, 500, 0.032, 0.006);
             tube(
                 g,
                 femF[0],
                 femF[1],
                 femF[2],
-                0.08 * H,
-                0.04 * H,
+                0.08 * H * gp,
+                0.04 * H * gp,
                 0.8,
                 1.0,
                 0.8,
@@ -1084,8 +1088,8 @@
                 tibF[0],
                 tibF[1],
                 tibF[2],
-                0.055 * H * Math.pow(bt, 0.4),
-                0.035 * H * Math.pow(bt, 0.8),
+                0.055 * H * Math.pow(bt, 0.4) * gd,
+                0.035 * H * Math.pow(bt, 0.8) * gd,
                 0.9,
                 1.0,
                 0.5,
@@ -1101,7 +1105,7 @@
                 tibF[0],
                 tibF[1],
                 tibF[2],
-                0.04 * H * Math.pow(bt, 0.4),
+                0.04 * H * Math.pow(bt, 0.4) * gd,
                 1.3,
                 0.6,
                 1.0,
@@ -1119,7 +1123,7 @@
                 metaTF[0] * 0.5,
                 metaTF[1] * 0.5,
                 metaTF[2] * 0.5,
-                0.045 * H * Math.pow(bt, 0.8),
+                0.045 * H * Math.pow(bt, 0.8) * gd,
                 1.0,
                 1.6,
                 0.8,
@@ -1131,92 +1135,29 @@
                 0.005
             );
         });
-        // ── Rumpf-Fuzz (Wurzel-Koordinaten — teil "wolf"; Zentren aus T) ──
+        // ── Rumpf-Fuzz (Wurzel-Koordinaten — teil "wolf") auf den Rumpf-Stationen des Baus: jede Zeile sitzt auf der
+        //    Station, die ihren Körper-Ort trägt (Bauch · Unterbauch · Flanke · Becken · Kruppe), mit deren Ellipsoid —
+        //    vorher Radien des alten Lab-Rumpf-Sacks (0,28–0,3 H; der Wolf-Rumpf ist heute 0,11–0,15 H breit) und
+        //    Seiten-Büschel an Lab-Kugeln, die es nicht mehr gibt (Becken/Kruppe ±0,06 H: hier je ein Paar, gleiche
+        //    Strähnen-Zahl auf der Station).
         var fD = [0, -0.5, -0.2],
             fO = [0, 0.04, -0.78];
-        if (T && T.belly)
-            R(
-                "wolf",
-                T.belly[0],
-                T.belly[1],
-                T.belly[2],
-                0.3 * H,
-                bX * 0.92,
-                0.5 + by * 0.8,
-                0.96,
-                fD[0],
-                fD[1],
-                fD[2],
-                800,
-                0.024,
-                0.006
-            );
-        if (T && T.lowerAbd)
-            R(
-                "wolf",
-                T.lowerAbd[0],
-                T.lowerAbd[1],
-                T.lowerAbd[2],
-                0.28 * H,
-                bX * 0.83,
-                0.48,
-                0.9,
-                fD[0],
-                fD[1],
-                fD[2],
-                600,
-                0.022,
-                0.006
-            );
-        if (T && T.flank)
-            R("wolf", 0, T.flank[1] - 0.06 * H, T.flank[2], 0.05 * H, 1.4, 0.5, 1.6, fD[0], fD[1], fD[2], 300, 0.022, 0.005);
-        if (T && T.pelvis)
-            [-0.067, 0.067].forEach(function (x) {
-                R("wolf", x * H, T.pelvis[1] + 0.02 * H, T.pelvis[2], 0.042 * H, 1.5, 0.9, 1.3, fO[0], fO[1], fO[2], 400, 0.028, 0.006);
-            });
-        if (T && T.croup)
-            [-0.058, 0.058].forEach(function (x) {
-                R("wolf", x * H, T.croup[1], T.croup[2], 0.038 * H, 1.4, 0.9, 1.3, fO[0], fO[1], fO[2], 350, 0.028, 0.006);
-            });
-        if (T && T.croup)
-            R(
-                "wolf",
-                T.croup[0],
-                T.croup[1],
-                T.croup[2],
-                0.2 * H,
-                bX * 1.04,
-                0.44,
-                0.36,
-                fO[0],
-                fO[1],
-                fO[2],
-                500,
-                0.03,
-                0.006
-            );
-        if (T && T.pelvis)
-            R(
-                "wolf",
-                T.pelvis[0],
-                T.pelvis[1],
-                T.pelvis[2],
-                0.28 * H,
-                bX * 0.79,
-                0.66,
-                0.42,
-                fO[0],
-                fO[1],
-                fO[2],
-                500,
-                0.03,
-                0.006
-            );
+        var auf = function (ort, d, n, l, t) {
+            R("wolf", ort.c[0], ort.c[1], ort.c[2], 1, ort.r[0], ort.r[1], ort.r[2], d[0], d[1], d[2], n, l, t);
+        };
+        var Ru = O.rumpf;
+        auf(Ru.bauch, fD, 800, 0.024, 0.006);
+        auf(Ru.unterbauch, fD, 600, 0.022, 0.006);
+        auf(Ru.flanke, fD, 300, 0.022, 0.005);
+        auf(Ru.becken, fO, 800, 0.028, 0.006);
+        auf(Ru.kruppe, fO, 700, 0.028, 0.006);
+        auf(Ru.kruppe, fO, 500, 0.03, 0.006);
+        auf(Ru.becken, fO, 500, 0.03, 0.006);
         // ── Torso-DECKHAAR als DATEN-Zeile (art "deck"): das GESETZ sind die
         //    Dichten/Längen/Töne (P.uDens/underL · P.gDens/guardL + Akzent-Quoten);
         //    die COVERAGE-Technik ist Leser-Sache — das Lab deckt über seinen
-        //    Guide-Mesh-Bäcker (Benchmark unbewegt), der Pipe-Bäcker über die
-        //    Rumpf-Teil-Ellipsoide (Wirte-Liste reist mit).
+        //    Guide-Mesh-Bäcker (Benchmark unbewegt), der Ofen legt den Mantel
+        //    gleichmäßig auf die Haut der Wurzel (Strähnen je Fläche).
         rows.push({
             art: "deck",
             uDens: P.uDens || 3000,
@@ -1226,58 +1167,48 @@
             dunkelQuote: 0.2,
             hellQuote: 0.1,
             d: fO,
-            wirte: [
-                ["ribcage", 0.3],
-                ["waist", 0.18],
-                ["flank", 0.18],
-                ["belly", 0.12],
-                ["croup", 0.12],
-                ["pelvis", 0.1],
-            ],
         });
         // ── Kehle/Mähne/Nacken/Schädel-Akzente ──
-        if (T && T.throat)
+        R(
+            "wolf",
+            O.throat[0],
+            O.throat[1] - 0.02 * H,
+            O.throat[2],
+            0.05 * H,
+            1.0,
+            0.8,
+            1.2,
+            0,
+            -0.3,
+            -0.6,
+            600,
+            0.05,
+            0.007,
+            "D"
+        );
+        R(
+            "wolf",
+            O.throatLower[0],
+            O.throatLower[1] - 0.015 * H,
+            O.throatLower[2],
+            0.045 * H,
+            1.0,
+            0.8,
+            1.2,
+            0,
+            -0.3,
+            -0.6,
+            500,
+            0.045,
+            0.007,
+            "D"
+        );
+        if (P.maneCount > 0)
             R(
                 "wolf",
-                T.throat[0],
-                T.throat[1] - 0.02 * H,
-                T.throat[2],
-                0.05 * H,
-                1.0,
-                0.8,
-                1.2,
-                0,
-                -0.3,
-                -0.6,
-                600,
-                0.05,
-                0.007,
-                "D"
-            );
-        if (T && T.throatLower)
-            R(
-                "wolf",
-                T.throatLower[0],
-                T.throatLower[1] - 0.015 * H,
-                T.throatLower[2],
-                0.045 * H,
-                1.0,
-                0.8,
-                1.2,
-                0,
-                -0.3,
-                -0.6,
-                500,
-                0.045,
-                0.007,
-                "D"
-            );
-        if (P.maneCount > 0 && T && T.mane)
-            R(
-                "wolf",
-                T.mane[0],
-                T.mane[1],
-                T.mane[2],
+                O.mane[0],
+                O.mane[1],
+                O.mane[2],
                 0.062 * H,
                 0.85,
                 0.7,
@@ -1290,42 +1221,46 @@
                 0.011,
                 "D"
             );
-        if (T && T.neckMid)
-            R(
-                "wolf",
-                T.neckMid[0],
-                T.neckMid[1],
-                T.neckMid[2],
-                0.1 * H,
-                0.9,
-                0.94,
-                1.18,
-                fO[0],
-                fO[1],
-                fO[2],
-                800,
-                0.1,
-                0.009,
-                "B"
-            );
-        if (T && T.cranium)
-            R(
-                "headGroup",
-                T.cranium[0],
-                T.cranium[1],
-                T.cranium[2],
-                P.skullR * H,
-                0.95,
-                0.96,
-                1.26,
-                0,
-                0.04,
-                -0.78,
-                30,
-                0.03,
-                0.005,
-                "D"
-            );
+        // Der Hals-Mantel liegt als Röhre ENTLANG des Halses (Ansatz → Kopf, Radius des Halses an Wurzel und Spitze):
+        // vorher EINE Zeile an der Hals-Mitte mit 0,1 H — der Hirsch-Hals (1,7× lang, schmaler) trug sie nur in der Mitte.
+        var Hs = O.hals;
+        tube(
+            "wolf",
+            Hs.ende[0] - Hs.start[0],
+            Hs.ende[1] - Hs.start[1],
+            Hs.ende[2] - Hs.start[2],
+            Hs.r[0],
+            Hs.r[Hs.r.length - 1],
+            0.9,
+            0.94,
+            0.94,
+            fO[0],
+            fO[1],
+            fO[2],
+            800,
+            0.1,
+            0.009,
+            Hs.start[0],
+            Hs.start[1],
+            Hs.start[2]
+        );
+        R(
+            "headGroup",
+            O.cranium[0],
+            O.cranium[1],
+            O.cranium[2],
+            P.skullR * H,
+            0.95,
+            0.96,
+            1.26,
+            0,
+            0.04,
+            -0.78,
+            30,
+            0.03,
+            0.005,
+            "D"
+        );
         return rows;
     }
 
@@ -1829,7 +1764,8 @@
         // Zeilen und der Lab-Animation (der Brustkorb atmet mit scale.y um 0.76).
         var NS = 21,
             schritt = (zFront - zRear) / (NS - 1);
-        var stationen = [];
+        var stationen = [],
+            stationOrt = [];
         for (var si = 0; si < NS; si++) {
             var su = si / (NS - 1);
             var sz0 = zU(su),
@@ -1843,6 +1779,7 @@
             st.position.set(0, (so + sun) / 2, sz0);
             wolf.add(st);
             stationen.push(st);
+            stationOrt.push({ c: [0, (so + sun) / 2, sz0], r: [sb, shy, shz] });
         }
         ribcage = stationen[15];
         waist = stationen[9];
@@ -2608,6 +2545,23 @@
             neckStart: neckStart,
             neckDir: neckDir,
             neckEnd: neckEnd,
+            // DER FELL-ORT (Integration W5-Körper): Lage und Größe der Körper-Teile, auf denen die Fell-Zeilen sitzen —
+            // fellStreu liest NUR ihn (Lab und Ofen reichen ihn durch); die Zeilen folgen so der Anatomie der Art.
+            fellOrt: {
+                rumpf: {
+                    bauch: stationOrt[8],
+                    unterbauch: stationOrt[6],
+                    flanke: stationOrt[7],
+                    becken: stationOrt[4],
+                    kruppe: stationOrt[2],
+                },
+                hals: { start: [neckStart.x, neckStart.y, neckStart.z], ende: [neckEnd.x, neckEnd.y, neckEnd.z], r: nR.slice() },
+                glied: { p: Dp, d: Dd },
+                throat: [throat.position.x, throat.position.y, throat.position.z],
+                throatLower: [throatLower.position.x, throatLower.position.y, throatLower.position.z],
+                mane: [mane.position.x, mane.position.y, mane.position.z],
+                cranium: [cranium.position.x, cranium.position.y, cranium.position.z],
+            },
             tailSegs: tailSegs,
             spineSegs: spineSegs,
             neckSegs: neckSegs,

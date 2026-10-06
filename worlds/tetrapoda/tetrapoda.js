@@ -138,7 +138,7 @@ function buildAnimal(){
   tailSegs=__B.tailSegs;spineSegs=__B.spineSegs;neckSegs=__B.neckSegs;
   pawOffsets[0]=__B.pawOffsets[0];pawOffsets[1]=__B.pawOffsets[1];pawOffsets[2]=__B.pawOffsets[2];pawOffsets[3]=__B.pawOffsets[3];
   H=__B.masse.H;sY=__B.masse.sY;hY=__B.masse.hY;sZ=__B.masse.sZ;hZ=__B.masse.hZ;lv=__B.masse.lv;by=__B.masse.by;tv=__B.masse.tv;bt=__B.masse.bt;
-  var bX=__B.masse.bX,croup=__B.teile.croup,pelvis=__B.teile.pelvis,throatLower=__B.teile.throatLower,cranium=__B.teile.cranium,neckStart=__B.neckStart,neckDir=__B.neckDir,neckEnd=__B.neckEnd;
+  var bX=__B.masse.bX;
 
   /* V18.460 DIE FELL-STREU IST GESETZ: die komplette Koerper-Streu wohnt als
      Zeilen-Tabelle im Gesetzbuch (__tetrapodaCore.fellStreu) -- dieselben Zeilen
@@ -146,13 +146,9 @@ function buildAnimal(){
      (addFurLocal + Instancing); die Inline-Streu, der Guide-Mesh-Mantel und die
      fuzz/accent-Bloecke sind GEFALLEN (eine Quelle, zwei Leser). */
   (function(){
-    var T={};
-    var TN={belly:belly,lowerAbd:lowerAbd,croup:croup,pelvis:pelvis,throat:throat,throatLower:throatLower,mane:mane,ribcage:ribcage,waist:waist,flank:flank,cranium:cranium};
-    for(var nm in TN){if(TN[nm]&&TN[nm].position)T[nm]=[TN[nm].position.x,TN[nm].position.y,TN[nm].position.z];}
-    var nMid=neckStart.clone().add(neckDir.clone().multiplyScalar(0.5));T.neckMid=[nMid.x,nMid.y,nMid.z];
     var wirte={wolf:wolf,headGroup:headGroup,legFL:legFL,legFR:legFR,legHL:legHL,legHR:legHR,flU:flU,frU:frU,flL:flL,frL:frL,flP:flP,frP:frP,hlT:hlT,hrT:hrT,hlC:hlC,hrC:hrC,hlP:hlP,hrP:hrP};
     var toene={B:matStrand,D:matStrandDk,L:matStrandLt};
-    var rows=__tetrapodaCore.fellStreu(P,__B.masse,T)||[];
+    var rows=__tetrapodaCore.fellStreu(P,__B.masse,__B.fellOrt); /* Integration W5-Koerper: die Zeilen sitzen auf dem Fell-Ort des Baus */
     for(var i2=0;i2<rows.length;i2++){var row=rows[i2];
       if(row.art==="deck"){
         /* der Guide-Mesh-Mantel des Labs, gespeist aus der GESETZ-Zeile */

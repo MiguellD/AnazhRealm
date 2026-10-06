@@ -17285,6 +17285,14 @@ class AnazhRealm {
                 n.bind(new THREE.Skeleton(bones), n.matrixWorld.clone());
             });
         }
+        // DIE SOHLE steht auf dem Boden, nie das Fell darunter (Integration W5-Körper): die Fell-Schalen (aSchale) reichen
+        // unter der Pfote bis 3,3 cm tiefer (Bär) — sie hoben das Tier um ihre Länge über den Boden (Wolf 1,3 cm). Der
+        // Stand (minY: Boden-Versatz, Bein-IK, Bein-Länge) liest die Haut.
+        const sohle = new THREE.Box3();
+        root.traverse((n) => {
+            if (n.isMesh && !(n.geometry && n.geometry.attributes && n.geometry.attributes.aSchale))
+                sohle.expandByObject(n);
+        });
         const bb = new THREE.Box3().setFromObject(root);
         AnazhRealm._ofenStarrBinden(root);
         // DIE KÖRPER-KUGEL: jede geskinnte Hülle (Haut · Fell · Kleid · starre Teile) cullt gegen die Bind-Hülle
@@ -17306,7 +17314,7 @@ class AnazhRealm {
             root,
             teile,
             tailNamen: Array.isArray(skelett.tailSegs) ? skelett.tailSegs.slice() : [],
-            minY: Number.isFinite(bb.min.y) ? bb.min.y : 0,
+            minY: Number.isFinite(sohle.min.y) ? sohle.min.y : 0,
         };
     }
     // Das Art-Template (memo): warm aus dem Prefetch/IDB, kalt über den EINEN

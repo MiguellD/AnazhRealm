@@ -433,6 +433,12 @@ const FORBIDDEN = [
     { token: "_glutVariant(", fiel: "Welle 5 architektur — die Feuerstelle trägt ihre Gestalten im Gesetzbuch" },
     { token: "GLUT_VARIANTS", fiel: "Welle 5 architektur — glutbrunnen streut ohne Formations-Pool" },
     { token: 'prefix: "glut"', fiel: "Welle 5 architektur — kein Glut-Pool im SCATTER_VARIANT_POOL" },
+    // Integration 06.10. (W5-Körper) — DIE DECKUNG FOLGT DER HAUT: der Ofen deckte den Rumpf über Ellipsoide mit festen
+    // Radien um sechs Stationen (die Wirte-Liste des Deck-Mantels) und den Hals über EINE Zeile an der Hals-Mitte; nach
+    // der Anatomie-Welle lagen Bär-Rumpf, Läufe und Hirsch-Hals kahl. Die Zeilen sitzen auf bauTier.fellOrt.
+    { token: "row.wirte", fiel: "Integration W5-Körper — der Deck-Mantel liegt auf der Haut der Wurzel (Strähnen je Fläche)" },
+    { token: "Math.sqrt(anteil * 3)", fiel: "Integration W5-Körper — kein fester Mantel-Radius je Wirt" },
+    { token: "T.neckMid", fiel: "Integration W5-Körper — der Hals-Mantel ist eine Röhre entlang des Halses", auch: ["tetrapoda-core.js", "worlds/tetrapoda/tetrapoda.js"] },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

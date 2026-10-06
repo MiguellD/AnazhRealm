@@ -9,8 +9,13 @@
 // (PORTAL_RENDER_CONFIG.lod.budget.kreatur) — die Gestalt hält ihr Budget.
 //   --selftest: (S1) der Rumpf 1,4× gestreckt → brustTiefe rot · (S2) das Muster einfarbig → kontrast rot ·
 //   (S3) der Maßstab 1 → widerristM rot · (S4) der Hals 1,8× breit → halsBreite rot · (S5) der Kopf in den Hals
-//   geschoben → kopfFrei rot. Die Linse feuert, sonst ist sie vakuös.
+//   geschoben → kopfFrei rot · (S6) die Läufe ohne ihre Fell-Zeilen → beinUnten kahl · (S7) die Wurzel ohne
+//   Deck-Mantel und Rumpf-Zeilen → rumpf kahl. Die Linse feuert, sonst ist sie vakuös.
 // Dazu kopfFrei (Anteil der Kopf-Länge vor der Leib-Haut) und halsBreite (die Leib-Haut auf 60 % Schulter → Kopf).
+// DIE KAHL-LINSE (Integration W5-Körper: die Anatomie-Welle ließ 28 % des Bär-Rumpfs, 87 % seiner Läufe und 34 % des
+// Hirsch-Halses kahl, unbenannt): je Region (rumpf · hals · beinOben · beinUnten · rute — nach dem dominanten Bone
+// der Schale) der Anteil der innersten Fell-Schale, deren Dichte unter der Wolle-Schwelle des Welt-Materials liegt
+// (aSchale.y < 0,05: dort deckt keine Unterwolle — anazhRealm.js, Klasse fellSchale). Rot über KAHL_MAX.
 //   node scripts/diag-tier-anatomie.cjs [--selftest] [--json]
 "use strict";
 const fs = require("fs");
@@ -19,6 +24,61 @@ const path = require("path");
 
 const ROOT = path.resolve(__dirname, "..");
 const ARTEN = ["wolf", "fox", "bear", "deer"];
+const WOLLE_SCHWELLE = 0.05; // aSchale.y, ab der die inneren Schalen decken (Welt-Material fellSchale)
+const KAHL_MAX = 0.02; // höchster kahler Anteil je Region
+const BEIN_OBEN = new Set(["flU", "frU", "hlT", "hrT", "legFL", "legFR", "legHL", "legHR"]);
+const BEIN_UNTEN = new Set(["flL", "flP", "frL", "frP", "hlC", "hlP", "hrC", "hrP"]);
+
+// Der kahle Anteil der innersten Fell-Schale je Region (Bind-Raum der Wurzel: aWurzel, Bein-Gelenke aus dem Skelett).
+function kahlAnteile(g) {
+    const sk = g.userData.__skelett;
+    const pos = {};
+    for (const j of sk.joints) pos[j.name] = j.pos;
+    const zS = pos.legFL[2],
+        zH = pos.legHL[2],
+        span = zS - zH;
+    let schale = null;
+    g.traverse((o) => {
+        if (o.isMesh && o.material.userData.__klasse === "fellSchale") schale = o.geometry;
+    });
+    if (!schale) return { fehlt: 1 };
+    const S = schale.attributes.aSchale.array,
+        Wz = schale.attributes.aWurzel.array,
+        SI = schale.attributes.skinIndex.array,
+        SW = schale.attributes.skinWeight.array;
+    let tmin = Infinity;
+    for (let i = 0; i < S.length; i += 3) tmin = Math.min(tmin, S[i]);
+    const zahl = {},
+        kahl = {};
+    for (let i = 0; i < S.length / 3; i++) {
+        if (Math.abs(S[i * 3] - tmin) > 1e-6) continue;
+        let best = 0,
+            bw = -1;
+        for (let k = 0; k < 4; k++)
+            if (SW[i * 4 + k] > bw) {
+                bw = SW[i * 4 + k];
+                best = SI[i * 4 + k];
+            }
+        const j = sk.skinJoints[best];
+        const r =
+            j === sk.root
+                ? Wz[i * 3 + 2] > zS + 0.05 * span
+                    ? "hals"
+                    : "rumpf"
+                : BEIN_OBEN.has(j)
+                  ? "beinOben"
+                  : BEIN_UNTEN.has(j)
+                    ? "beinUnten"
+                    : /^tail/.test(j)
+                      ? "rute"
+                      : "sonst";
+        zahl[r] = (zahl[r] || 0) + 1;
+        if (!(S[i * 3 + 1] >= WOLLE_SCHWELLE)) kahl[r] = (kahl[r] || 0) + 1;
+    }
+    const out = {};
+    for (const r of Object.keys(zahl)) out[r] = (kahl[r] || 0) / zahl[r];
+    return out;
+}
 
 function ladeWelt() {
     const sb = { console, Math, performance: { now: () => Date.now() }, setTimeout, clearTimeout };
@@ -267,6 +327,9 @@ function lauf(sb, opts) {
         if (opts && opts.verzerre) opts.verzerre(sb, g);
         const m = messe(sb, g);
         const u = urteile(sb, art, m, M);
+        m.kahl = kahlAnteile(g);
+        for (const [r, x] of Object.entries(m.kahl)) if (!(x <= KAHL_MAX)) u.v.push(`${art} kahl ${r} ${x.toFixed(3)} > ${KAHL_MAX}`);
+        u.roh.kahl = m.kahl;
         // die zweite Stufe (das Fern-Standbild) gegen ihre Budget-Zeile
         const g1 = sb.BAKERS_BY_KIND.kreatur(TC, art, 0, 1, null);
         let t1 = 0;
@@ -284,10 +347,14 @@ function lauf(sb, opts) {
 
 function zeige(ergebnis) {
     const r3 = (x) => (Number.isFinite(x) ? x.toFixed(3) : String(x));
-    for (const [art, m] of Object.entries(ergebnis))
+    for (const [art, m] of Object.entries(ergebnis)) {
+        const kahl = Object.entries(m.kahl)
+            .map(([r, x]) => `${r} ${r3(x)}`)
+            .join(" ");
         console.log(
-            `  ${art.padEnd(5)} W ${m.widerristM.toFixed(2)} m · Brust ${r3(m.brustTiefe)} · Aufzug ${r3(m.aufzug)} · Rumpf ${r3(m.rumpf)} · Unterarm ${r3(m.unterarm)} · Kopf ${r3(m.kopfHoehe)} · Ohr ${r3(m.ohr)} · Rute ${r3(m.rute)} · Kopf frei ${r3(m.kopfFrei)} · Hals ${r3(m.halsBreite)} · Kontrast ${r3(m.kontrast)} · Lauf ${r3(m.lauf)} · Spitze ${r3(m.spitze)} · L0 ${m.tris} / L1 ${m.trisL1} Dreiecke`
+            `  ${art.padEnd(5)} W ${m.widerristM.toFixed(2)} m · Brust ${r3(m.brustTiefe)} · Aufzug ${r3(m.aufzug)} · Rumpf ${r3(m.rumpf)} · Unterarm ${r3(m.unterarm)} · Kopf ${r3(m.kopfHoehe)} · Ohr ${r3(m.ohr)} · Rute ${r3(m.rute)} · Kopf frei ${r3(m.kopfFrei)} · Hals ${r3(m.halsBreite)} · Kontrast ${r3(m.kontrast)} · Lauf ${r3(m.lauf)} · Spitze ${r3(m.spitze)} · L0 ${m.tris} / L1 ${m.trisL1} Dreiecke · kahl ${kahl}`
         );
+    }
 }
 
 if (process.argv.includes("--selftest")) {
@@ -358,6 +425,20 @@ if (process.argv.includes("--selftest")) {
         });
         pruefe("S4 der Kapuzen-Hals wird erkannt", r.fehler, /wolf halsBreite/);
         pruefe("S5 der Kopf im Hals wird erkannt", r.fehler, /wolf kopfFrei/);
+    }
+    // S6: die Läufe ohne ihre Fell-Zeilen (Unterarm, Unterschenkel, Mittelfuß) — ihre Haut trägt keine Strähne
+    // S7: die Wurzel ohne Deck-Mantel und Rumpf-Zeilen — der Rumpf trägt keine Strähne
+    for (const [name, weg, muster] of [
+        ["S6 die kahlen Läufe werden erkannt", (row) => /^(fl|fr)[LP]$|^(hl|hr)[CP]$/.test(row.teil || ""), /wolf kahl beinUnten/],
+        ["S7 der kahle Rumpf wird erkannt", (row) => row.art === "deck" || row.teil === "wolf", /wolf kahl rumpf/],
+    ]) {
+        const sb = ladeWelt();
+        const TC = sb.__tetrapodaCore;
+        const alt = TC.fellStreu;
+        TC.fellStreu = (P, M, O) => alt(P, M, O).filter((row) => !weg(row));
+        const r = lauf(sb);
+        TC.fellStreu = alt;
+        pruefe(name, r.fehler, muster);
     }
     if (rot) {
         console.error(`\n❌ SELBST-TEST ROT — ${rot} Linse(n) vakuös.`);
