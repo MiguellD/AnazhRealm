@@ -439,6 +439,12 @@ const FORBIDDEN = [
     { token: "row.wirte", fiel: "Integration W5-Körper — der Deck-Mantel liegt auf der Haut der Wurzel (Strähnen je Fläche)" },
     { token: "Math.sqrt(anteil * 3)", fiel: "Integration W5-Körper — kein fester Mantel-Radius je Wirt" },
     { token: "T.neckMid", fiel: "Integration W5-Körper — der Hals-Mantel ist eine Röhre entlang des Halses", auch: ["tetrapoda-core.js", "worlds/tetrapoda/tetrapoda.js"] },
+    // Integration 06.10. (W5-Körper) — DIE AUGEN-FARBE HAT EINE QUELLE (tetrapoda tierAuge): das Lab las das feste
+    // Bernstein der Material-Tabelle, der Ofen rechnete die Art-Farbe selbst um.
+    { token: "art.kopf.auge", fiel: "Integration W5-Körper — der Ofen liest kern.tierAuge" },
+    { token: "__TK.tierauge.c,", fiel: "Integration W5-Körper — das Lab liest tierAuge", auch: ["worlds/tetrapoda/tetrapoda.js"] },
+    { token: "__TK.tierauge.emissiv", fiel: "Integration W5-Körper — die Glut ist ein Anteil der Iris (tierAuge)", auch: ["worlds/tetrapoda/tetrapoda.js"] },
+    { token: "emissiv: 0x442200", fiel: "Integration W5-Körper — tierauge trägt glut, keine eigene Farbe", auch: ["tetrapoda-core.js"] },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

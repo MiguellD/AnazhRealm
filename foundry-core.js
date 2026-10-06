@@ -4579,7 +4579,7 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
     const dials = ov && typeof ov === "object" ? Object.assign({}, dials0, ov) : Object.assign({}, dials0);
     const P = kern.deriveTierParams(dials);
     const TK = kern.TIER_MATERIAL_KLASSEN || {};
-    // DIE ART (Welle 5): die Augen-Farbe der Art (Wolf · Fuchs Bernstein, Bär · Hirsch dunkelbraun) — sRGB-Absicht.
+    // DIE ART (Welle 5): Fell-Länge und Ruten-Fell der Art.
     const art = kern.artGestalt(P);
     const fein = (lod | 0) >= 1;
     const segW = fein ? 8 : 20,
@@ -4610,22 +4610,18 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
             // Die Schalen tragen ihren Ton als Vertex-Farbe; der Anker (mp.color) ist der Körper-Ton.
             c = P.cB != null ? P.cB : 0x6b4a2e;
             r = 0.92;
+        } else if (k === "tierauge") {
+            // DIE AUGEN-FARBE DER ART (EINE Quelle, kern.tierAuge — Lab und Ofen lesen dieselbe Iris und Glut);
+            // die Glut-Stärke heisst im Gesetzbuch `ei` (AUGEN-GLUT-SCHNITT 18.07.: der Phantom-Name gab 2.8x Glut).
+            const au = kern.tierAuge(P);
+            c = au.farbe;
+            em = au.glut;
+            emI = TK.tierauge.ei;
+            r = TK.tierauge.r;
         } else {
             const kl = TK[k] || TK.dunkel || { c: 0x111111, r: 0.5 };
             c = kl.c;
-            if (k === "tierauge") {
-                const a = art.kopf.auge;
-                c = (Math.round(a[0]) << 16) | (Math.round(a[1]) << 8) | Math.round(a[2]);
-            }
             r = kl.r != null ? kl.r : 0.5;
-            if (kl.emissiv != null) {
-                em = kl.emissiv;
-                // AUGEN-GLUT-SCHNITT (P0-Inventur 18.07.): das Gesetzbuch-Feld heisst
-                // `ei` (tetrapoda TIER_MATERIAL_KLASSEN.tierauge) — der Phantom-Name
-                // las nie einen Schreiber und der 0.85-Default gab jedem Kreatur-Auge
-                // 2.8x Glut vs Lab. Ohne ei: THREE-Default 1 (kein Ofen-eigener Wert).
-                emI = kl.ei != null ? kl.ei : 1;
-            }
         }
         // FARB-GESETZ (scheduler-neutral): r128 setHex schreibt ROH, r184 wandelt
         // sRGB→linear automatisch — derselbe Bäcker muss auf BEIDEN dieselben

@@ -1325,7 +1325,9 @@
     // faltet nur innerhalb EINER (das Auge nie in die Nase, die Nase nie ins Fell); Fell · Strähne · Schale sind haar.
     var TIER_MATERIAL_KLASSEN = Object.freeze({
         nase: Object.freeze({ c: 0x060606, r: 0.1, seh: "haut" }),
-        tierauge: Object.freeze({ c: 0xeec040, r: 0.06, emissiv: 0x442200, ei: 0.3, seh: "auge" }),
+        // Die Iris-Farbe trägt die Art (ART_GESTALT.kopf.auge, gelesen über tierAuge); glut = der Anteil dieser Farbe,
+        // der glüht (das Lab-Verhältnis 0x44 : 0xee im Rot), ei = die Glut-Stärke.
+        tierauge: Object.freeze({ r: 0.06, glut: 0.29, ei: 0.3, seh: "auge" }),
         pupille: Object.freeze({ c: 0x000000, r: 0.2, seh: "auge" }),
         hornhaut: Object.freeze({ c: 0xffffff, r: 0, seh: "auge" }),
         klaue: Object.freeze({ c: 0x181818, r: 0.2, seh: "stoff" }),
@@ -1532,6 +1534,18 @@
         for (var id4 in g.w) ref.build += g.w[id4] * GATTUNGEN[id4].build;
         out.ref = ref;
         return out;
+    }
+
+    // DIE AUGEN-FARBE DER ART (Integration W5-Körper, EINE Quelle für Lab und Ofen): die Iris aus ART_GESTALT.kopf.auge
+    // (sRGB-Absicht: Wolf · Fuchs Bernstein, Bär · Hirsch dunkelbraun), die Glut ein fester Anteil davon — vorher las das
+    // Lab das feste Bernstein der Material-Tabelle (0xeec040, Glut 0x442200) für jede Art, der Ofen die Art.
+    function tierAuge(P) {
+        var a = artGestalt(P).kopf.auge,
+            g = TIER_MATERIAL_KLASSEN.tierauge.glut;
+        var hex = function (r, gr, b) {
+            return (Math.round(r) << 16) | (Math.round(gr) << 8) | Math.round(b);
+        };
+        return { farbe: hex(a[0], a[1], a[2]), glut: hex(a[0] * g, a[1] * g, a[2] * g) };
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -2609,6 +2623,7 @@
         MASSSTAB: MASSSTAB,
         ART_GESTALT: ART_GESTALT,
         artGestalt: artGestalt,
+        tierAuge: tierAuge,
         fellFarbe: fellFarbe,
         ANATOMIE_SOLL: ANATOMIE_SOLL,
         GANG_GESETZ: GANG_GESETZ,
