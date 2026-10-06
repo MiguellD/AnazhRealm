@@ -43,7 +43,6 @@
 const ZUGRIFF =
     /\btexture(Sample(?:Level|Bias|Grad|CompareLevel|Compare|BaseClampToEdge)?|Load|Gather(?:Compare)?)\s*\(/g;
 const RAUSCH_NAME = /noise|perlin|simplex|worley|fbm/i;
-const RAUSCHEN = /\b([A-Za-z_]\w*(?:noise|Noise|perlin|Perlin|simplex|Simplex|worley|Worley|fbm|Fbm)\w*)\s*\(/g;
 const ABLEITUNG = /\b(?:dpdx|dpdy|fwidth)(?:Fine|Coarse)?\s*\(/g;
 const SCHLEIFE = /\b(?:for|loop|while)\b/g;
 const VERZWEIGUNG = /\bif\s*\(/g;
@@ -198,17 +197,19 @@ function wgslKosten(wgsl) {
         k.schleifen += zaehle(rumpf, SCHLEIFE);
         k.verzweigungen += zaehle(rumpf, VERZWEIGUNG);
         k.ops += opsSchaetzung(rumpf);
-        RAUSCHEN.lastIndex = 0;
-        while ((m = RAUSCHEN.exec(rumpf))) {
-            if (fns.has(m[1])) continue; // eine eigene Rausch-Funktion zählt am Aufruf unten
-            k.rauschen++;
-            k.rauschNamen[m[1]] = (k.rauschNamen[m[1]] || 0) + 1;
-        }
-        // Aufrufe eigener Funktionen: ihre Kosten am Aufruf-Ort
+        // Aufrufe: eine eigene Funktion trägt ihre Kosten an den Aufruf-Ort; eine fremde mit dem Rausch-Namen (die EINE Regel
+        // RAUSCH_NAME, auch `noise3(`) zählt als Rauschen
         const ruf = /\b([A-Za-z_]\w*)\s*\(/g;
         while ((m = ruf.exec(rumpf))) {
             const f = m[1];
-            if (f === name || !fns.has(f)) continue;
+            if (f === name) continue;
+            if (!fns.has(f)) {
+                if (RAUSCH_NAME.test(f)) {
+                    k.rauschen++;
+                    k.rauschNamen[f] = (k.rauschNamen[f] || 0) + 1;
+                }
+                continue;
+            }
             const o = ort(m.index);
             const u = kostenVon(f, pfad);
             k.abtastungen.gesamt += u.abtastungen.gesamt;
@@ -488,6 +489,9 @@ fn main( @location( 0 ) uv : vec2<f32> ) -> OutputStruct {
         )
     )
         fehler.push("das Boden-Budget fing das dritte Rauschen nicht beim Namen");
+    // eine fremde Rausch-Funktion, deren Name mit der Regel BEGINNT (`noise3(`), zählt wie jede andere
+    const b4 = wgslKosten(W.replace("v = ( v + dpdx( v ) );", "v = ( v + dpdx( v ) + noise3( v ) );"));
+    pruef("fremdes Rauschen", [b4.rauschen, b4.rauschNamen], [1, { noise3: 1 }]);
     if (kostenUrteil(b, STOFFE.boden.budget, "boden").length) fehler.push("das Boden-Budget fiel ohne Grund");
 
     // (3) der Stoff-Graph: ein Knoten-Graph wie r184 ihn baut — Slots, geteilte Knoten einmal, Überladung und Aufruf mit
