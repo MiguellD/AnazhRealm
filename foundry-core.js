@@ -2013,12 +2013,15 @@ function emitFlower(P) {
     return { height: H };
 }
 
+// Die Halm-Spitze: der Saison-Akzent nach dem Farb-Gesetz, linear um GRAS_SPITZE_HELL aufgehellt (emitGrass). Der
+// Stamm liest DIESELBE Zahl fuer die Halme seiner Boden-Wiese (`AnazhRealm.GRAS_SPITZE`, terrain:GRAS_SPITZE_HELL).
+const GRAS_SPITZE_HELL = 1.08;
 function emitGrass(P) {
     const geos = [];
     const lf = __lod === 0 ? 1 : __lod === 1 ? 0.55 : 0.14;
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
     const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
-        tipCol = vegFarbe(seasonAccent).multiplyScalar(1.08);
+        tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
     const seedCol = vegFarbe(P.seedTan || 0xc8b27a);
     const SH = P.seedHead || 0;
     for (let i = 0; i < N; i++) {
@@ -5595,3 +5598,5 @@ __terrainCore.PHYTO_PRESETS = PRESETS;
 // additiv): der Voxel-Worker faerbt jeden Chunk-Vertex mit ihr, darum muss sie VOR dem ersten Chunk feststehen —
 // der async Buch-Umschlag (get-book) kam zu spaet und trug nur vier ihrer Werte.
 __terrainCore.PORTAL_GROUND = PORTAL_GROUND;
+// Die Halm-Spitze des Grases (emitGrass) reist mit: der Stamm hellt den Saison-Akzent um DIESELBE Zahl auf (rein additiv).
+__terrainCore.GRAS_SPITZE_HELL = GRAS_SPITZE_HELL;

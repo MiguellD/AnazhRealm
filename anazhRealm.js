@@ -26484,17 +26484,18 @@ class AnazhRealm {
         return AnazhRealm.BODEN_FARBE.mead;
     }
 
-    // Die Gras-SPITZE: der Sommer-Grasakzent des Studios (SAISON_GESETZ, Sommer-Stütze `ac` 0x6f9a3a) nach der
-    // emitGrass-tipCol-Formel (× 1,08 in sRGB) und dem FARB-GESETZ linear (0,187/0,383/0,049). EINE Quelle für die
-    // Halm-Spitze des Nah-Grases und die Halme der Boden-Wiese (`_terrainGeologyAlbedo`) — bis 05.10. stand sie als
-    // Literal im Gras-Stoff, der Boden kannte sie nicht.
+    // Die Gras-SPITZE: der Sommer-Grasakzent des Studios (SAISON_GESETZ, Sommer-Stütze `ac` 0x6f9a3a) nach dem
+    // FARB-GESETZ linear, aufgehellt um die Zahl des Studio-Grases (terrain:GRAS_SPITZE_HELL, emitGrass: `vegFarbe(
+    // seasonAccent) × 1,08` — linear, 0,172/0,349/0,046). EINE Quelle für die Halm-Spitze des Nah-Grases und die Halme
+    // der Boden-Wiese (`_terrainGeologyAlbedo`). Bis 06.10. hellte der Stamm in sRGB auf (0,187/0,383/0,049, ein Zwilling
+    // der Studio-Formel mit eigener Rechnung).
     static get GRAS_SPITZE() {
         if (AnazhRealm._grasSpitzeMemo) return AnazhRealm._grasSpitzeMemo;
         const ac = AnazhRealm._saisonGesetz().stuetzen[1].ac;
         if (!Number.isFinite(ac)) AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ.stuetzen[1].ac");
-        const dek = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-        const kanal = (s) => dek(Math.min(1, (((ac >> s) & 255) / 255) * 1.08));
-        AnazhRealm._grasSpitzeMemo = Object.freeze([kanal(16), kanal(8), kanal(0)]);
+        const hell = AnazhRealm.Gesetz("terrain:GRAS_SPITZE_HELL", null);
+        if (!Number.isFinite(hell)) AnazhRealm._kernPflichtBruch("terrain:GRAS_SPITZE_HELL");
+        AnazhRealm._grasSpitzeMemo = Object.freeze(AnazhRealm._srgbHexLinear(ac).map((v) => v * hell));
         return AnazhRealm._grasSpitzeMemo;
     }
 
