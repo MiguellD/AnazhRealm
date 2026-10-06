@@ -175,6 +175,12 @@ const FORBIDDEN = [
     { token: "WAKE_CA_RADIUS", fiel: "Welle L Q6" },
     { token: "_voxelChunkNearPlayer", fiel: "Welle L Q6 — der Nah-Test der Weckung" },
     { token: "_caWoken", fiel: "Welle L Q6" },
+    // Der Wasser-Render hat EINEN Pfad (das Zell-Oberkanten-Sheet); der Debug-Zwilling „Zell-Iso" hinter einem
+    // Einstellungs-Schalter, im Save persistiert, ist gefallen (Welle L, W-kD7).
+    { token: "waterRenderMode", fiel: "Welle L Q7 — der Render-Schalter Zell-Sheet/Zell-Iso" },
+    { token: "_cullWaterUndersides", fiel: "Welle L Q7 — die Unterseiten-Schere der Zell-Iso" },
+    { token: '"chunk-water-iso"', fiel: "Welle L Q7 — der Kind-Stempel der Zell-Iso" },
+    { token: "select-waterrender", fiel: "Welle L Q7 — die Auswahl im Einstellungs-Band" },
     // Die Chunk-Einbürgerung in Region-Bundles hat keinen Bürger mehr (Boden · Stitch · Wasser sind Sätze, die
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.

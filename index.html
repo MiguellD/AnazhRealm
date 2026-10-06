@@ -9236,8 +9236,7 @@
                                 <span class="help-dot" tabindex="0" aria-label="Hilfe"
                                     >?<span class="help-pop"
                                         ><b>Wasser-Cull</b> blendet dünnes Ufer-/Wandwasser pro Pixel aus (tiefes
-                                        bleibt). <b>Wasser-Render</b> ist „Fläche" (die finale Form auf dem Spiegel)
-                                        oder „Zell-Iso" (alt, zum Vergleich). <b>Ufer-Schärfe</b> = wie schmal die
+                                        bleibt). <b>Ufer-Schärfe</b> = wie schmal die
                                         Uferlinie einblendet, <b>Wasser-Tiefe</b> = wie schnell es ins Dunkle kippt.
                                         See-Wellen, Fluss-Schaum, Wasserfall-Steilheit und Auslauf-Übergang feilen
                                         die Form.</span
@@ -9248,14 +9247,6 @@
                                 <label for="slider-watercull">Wasser-Cull</label>
                                 <input type="range" id="slider-watercull" min="0" max="200" value="25" />
                                 <span class="slider-value" id="slider-watercull-val">0.0025</span>
-                            </div>
-                            <div class="slider-row">
-                                <label for="select-waterrender">Wasser-Render</label>
-                                <select id="select-waterrender">
-                                    <option value="cells">Zell-Sheet (lebendig)</option>
-                                    <option value="iso">Zell-Iso (Debug)</option>
-                                </select>
-                                <span class="slider-value" id="select-waterrender-val"></span>
                             </div>
                             <!-- (Ufer-Schärfe und Wasser-Tiefe gefallen: das Wasser deckt nach dem Durchlass-Gesetz, optischer Weg in Metern) -->
                             <div class="slider-row">

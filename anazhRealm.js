@@ -137,8 +137,8 @@ class AnazhRealm {
             // DIE NAH-STREU (Waldboden 04.10.): der Kachel-Ring der Studio-Bodenarten um die Kamera —
             // { kacheln: Map<"tx,tz", {items, chunks, senken, zustand}>, senken: Map<"art:v:L:teil", {mesh, bloecke…}> }.
             nahStreu: null,
-            // Wasser-Mesh je Voxel-Chunk (Map<key, Mesh|null>) — der EINZIGE Wasser-Render-Pfad, gebaut aus
-            // entry.waterCells; die Form wählt waterRenderMode.
+            // Wasser-Mesh je Voxel-Chunk (Map<key, Mesh|null>) — der EINZIGE Wasser-Render-Pfad (das Zell-Oberkanten-
+            // Sheet), gebaut aus entry.waterCells.
             voxelChunkWaterIso: null,
             // V18.381 — das FERN-WASSER-Sheet (Atlas-Kulisse jenseits des Chunk-Rings):
             // { mesh, anchorX/Z, builtRing, builtOutR, quads, builtMs } | null.
@@ -345,9 +345,6 @@ class AnazhRealm {
                 triplanar: 2.0,
                 colorVar: 1.5,
                 waterCull: 0.0,
-                // Wasser-Form: "cells" (Default, das Zell-Oberkanten-Sheet) | "iso" (alte Zell-Iso, Debug-A/B).
-                // Persistierte "surface"-Werte (L-Film, entfernt) heilen auf "cells".
-                waterRenderMode: "cells",
                 // V18.25 — Schöpfer-getunte Wasser-Werte als Default übernommen (Browser-Sign-off 06.06.). Ufer-Saum
                 // und Tiefen-Farbe sind seit dem Durchlass-Gesetz keine Regler mehr (Beer-Lambert über den
                 // optischen Weg in Metern, `_ensureHydroSurfaceMaterial`).
@@ -27553,254 +27550,16 @@ class AnazhRealm {
         }
     }
 
-    // Wasser ist eine FLÄCHE: die Iso-Hülle wickelt nach INNEN (Oberseiten ny<0, Unterseiten ny>0) →
-    // verworfen wird NUR die Unterseite (ny>upCull). Fast-vertikale Flächen bleiben — an Fluss-Stufen
-    // sind sie die natürlichen Wasserfälle (ein top-only-Cull verlöre sie). Indiziert → alle Attribute
-    // (aFlow/aWave danach) bleiben gültig.
-    _cullWaterUndersides(geom, upCull = 0.2) {
-        const pos = geom && geom.attributes && geom.attributes.position;
-        if (!pos) return geom;
-        const idx = geom.index ? geom.index.array : null;
-        const triCount = idx ? idx.length / 3 : Math.floor(pos.count / 3);
-        const kept = [];
-        for (let t = 0; t < triCount; t++) {
-            const a = idx ? idx[t * 3] : t * 3;
-            const b = idx ? idx[t * 3 + 1] : t * 3 + 1;
-            const c = idx ? idx[t * 3 + 2] : t * 3 + 2;
-            const ax = pos.getX(a);
-            const ay = pos.getY(a);
-            const az = pos.getZ(a);
-            const ex1 = pos.getX(b) - ax;
-            const ey1 = pos.getY(b) - ay;
-            const ez1 = pos.getZ(b) - az;
-            const ex2 = pos.getX(c) - ax;
-            const ey2 = pos.getY(c) - ay;
-            const ez2 = pos.getZ(c) - az;
-            // y-Komponente + Länge von (b-a)×(c-a)
-            const nx = ey1 * ez2 - ez1 * ey2;
-            const ny = ez1 * ex2 - ex1 * ez2;
-            const nz = ex1 * ey2 - ey1 * ex2;
-            const nlen = Math.hypot(nx, ny, nz) || 1e-9;
-            // nur die UNTERSEITE (ny>upCull) verwerfen; Oberseite + Ufer/Fluss-Drops behalten.
-            if (ny / nlen <= upCull) kept.push(a, b, c);
-        }
-        if (kept.length === 0) return null;
-        geom.setIndex(kept);
-        return geom;
-    }
-
-    // Wasser-Render-Modus: "cells" (Default) = Zell-Oberkanten-Sheet (folgt dem Live-CA, Kante taucht
-    // unters Terrain); "iso" = Zell-Iso (Debug-A/B). Persistierte "surface"-Werte heilen auf "cells".
-    _waterRenderMode() {
-        const m = this.state.atmosphere && this.state.atmosphere.waterRenderMode;
-        return m === "iso" ? "iso" : "cells";
-    }
-
+    // Das Wasser eines Chunks (EIN Render-Pfad: das Zell-Oberkanten-Sheet). Idempotent: das alte Mesh fällt vor dem Bau.
+    // Bis zur Welle L lebte hinter einem Einstellungs-Schalter ein zweiter Renderer („Zell-Iso (Debug)", im Save
+    // persistiert, W-kD7) — der Zwilling ist gefallen.
     _buildVoxelChunkWaterIsoSurface(cx, cz) {
         if (!this.state.scene || typeof THREE === "undefined") return null;
         if (!this.state.voxelChunks) return null;
         if (!this.state.voxelChunkWaterIso) this.state.voxelChunkWaterIso = new Map();
         const key = `${cx},${cz}`;
-        // Idempotenz: vorhandenes Mesh disposen, bevor wir neu bauen
         this._disposeVoxelChunkWaterIso(key);
-        // U-W4/V18.92 — der Modus-Dispatch NACH dem Dispose (geteilter Map-/
-        // Material-Pfad): "cells" (DEFAULT, §0-Kanon) = das Zell-Oberkanten-Sheet;
-        // "iso" = die alte Zell-Iso (der Code darunter, Debug-A/B).
-        const wrMode = this._waterRenderMode();
-        if (wrMode !== "iso") return this._buildVoxelChunkWaterCellSheet(cx, cz, key);
-        const entry = this.state.voxelChunks.get(key);
-        if (!entry || !entry.waterCells) {
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        const cells = entry.waterCells;
-        // Wasser-Iso läuft IMMER bei LOD 0 (dim=24, step=1.8), egal welche Terrain-LOD — LOD-spezifische
-        // Cell-Grids ließen die Iso am LOD-Boundary klaffen. Der Builder erzeugt Wasser-Cells immer LOD 0
-        // (`_buildVoxelChunkData`) → naht-frei; das Terrain-Mesh bleibt LOD-aware.
-        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig(0);
-        const base = this.state.terrainBaseHeight || 0;
-        const ox = cx * span;
-        const oz = cz * span;
-        const oy = base - floorDrop;
-        const STATE = AnazhRealm.CELL_STATE;
-        // OOB-Live-Berechnung folgt EXAKT `_buildVoxelChunkWaterCells`: above-band → −1 (AIR), sonst voller
-        // Density+waterLevel-Check. Nie below-band=WATER abkürzen — in-chunk-SOLID gegen OOB-WATER erzeugte
-        // eine Floating-Plane in Berg-Säulen.
-        const band = this.state.hydroBand;
-        const bandTop = band ? band.top : Infinity;
-        // Nur die Wasser-LUFT-Iso: Cells 3-fach klassifiziert (AIR/WATER/SOLID); nur WATER+AIR-Mischungen
-        // erzeugen Iso — Bottom, Unterwasser-Seiten und Bergkuppen (Terrain-Mesh) werden unterdrückt.
-        // OOB-Klassen-Memo pro (i,k,j): der Mesher fragt dieselbe Eck-Zelle bis zu 8×.
-        const oobClassCache = new Map();
-        const cellClass = (i, k, j) => {
-            if (j < 0 || j >= dimY) return STATE.AIR;
-            if (i >= 0 && k >= 0 && i < dim && k < dim) {
-                return cells[i + k * dim + j * dim * dim];
-            }
-            const wy = oy + (j + 0.5) * step;
-            if (wy > bandTop) return STATE.AIR;
-            const cacheKey = i + "," + k + "," + j;
-            const cached = oobClassCache.get(cacheKey);
-            if (cached !== undefined) return cached;
-            // Der OOB-Ring (1 Cell, cropMargin=1) LIEST die Flood-Zellen des Nachbar-Chunks statt per-Spalte neu
-            // zu klassifizieren — die 2,5D-Logik injizierte an jeder Grenze Phantom-Wasser (Bergwände, unter
-            // Bauten, Rim-Würfel). Eine Wahrheit, gelesen statt geraten.
-            let ncx = cx;
-            let ncz = cz;
-            let li = i;
-            let lk = k;
-            if (i < 0) {
-                ncx -= 1;
-                li = i + dim;
-            } else if (i >= dim) {
-                ncx += 1;
-                li = i - dim;
-            }
-            if (k < 0) {
-                ncz -= 1;
-                lk = k + dim;
-            } else if (k >= dim) {
-                ncz += 1;
-                lk = k - dim;
-            }
-            const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
-            let cls;
-            if (nb && nb.waterCells) {
-                // Nachbar geladen + trägt Wasser → seine Flood-Zelle ist exakt.
-                cls = nb.waterCells[li + lk * dim + j * dim * dim];
-            } else if (nb) {
-                // Nachbar geladen, aber TROCKEN (Atlas-Gate: kein Wasser) →
-                // garantiert kein Wasser dort, nur Terrain. Kein Phantom.
-                cls =
-                    this._terrainDensityAt(ox + (i + 0.5) * step, wy, oz + (k + 0.5) * step) > 0
-                        ? STATE.SOLID
-                        : STATE.AIR;
-            } else {
-                // Nachbar noch nicht gestreamt → die eigene Kant-Zelle spiegeln (kein Phantom); beim Laden des
-                // Nachbarn re-enqueued der Finalize-Pfad dieses Iso und der Seam heilt exakt.
-                const ci2 = i < 0 ? 0 : i >= dim ? dim - 1 : i;
-                const ck2 = k < 0 ? 0 : k >= dim ? dim - 1 : k;
-                cls = cells[ci2 + ck2 * dim + j * dim * dim];
-            }
-            oobClassCache.set(cacheKey, cls);
-            return cls;
-        };
-        // V13.6 — Surface-Nets-Iso über die Wasser-Zellen, band-limitiert (die
-        // SYNERGIE zurück). Schöpfer-Audit V13.5: das V13.2-Grenzflächen-Meshing
-        // (flache Achsen-Quads) hatte die Synergie mit dem Terrain verloren — das
-        // Terrain ist eine glatte Surface-Nets-Iso (fließt, Gradienten-Normalen,
-        // folgt der Landschaft), das Wasser war flach + würfelig + gappy: „selbst
-        // das Terrain hat mehr Flow als das Wasser". Die Riesen-Synergie kommt daher,
-        // dass das Wasser durch DENSELBEN MESHER läuft — eine glatte Iso, deren
-        // Uferlinie als sub-zellige Kurve dem Terrain folgt. V13.6 holt das zurück:
-        // `_voxelChunkGeometry` (derselbe Surface-Nets-Pfad wie der Boden) über die
-        // Wasser-Zellen, Pad+Crop (V9.79, naht-frei). `sampleWater` gibt nur an der
-        // Wasser-LUFT-Grenze Iso (kein Air → tief drinnen +1; kein Water → außen −1;
-        // Mischung → glatte Oberfläche), so dass NUR die obere Wasserfläche entsteht
-        // (Bottom/Sides verdeckt das Terrain). Die V13.0-Perf-Wurzel (~150 ms) war die
-        // VOLLE 124-Zellen-Säule — das Wasser ist aber ein dünnes Oberflächen-Band:
-        // wir beschränken den Y-Bereich aufs GLOBALE `hydroBand` (~28 statt 124 Zellen
-        // → ~4-5×, global = seam-frei nach V9.77), der V12.0-perf.h-Defer-Queue fängt
-        // den Rest. Alle Korrektheits-Siege bleiben: V13.1-strikte Zellen (kein Hang-
-        // Schatten), V13.3-Flow, V13.5-Tiefen-Shader (Schicht 3 oben drauf). Die Zellen
-        // bleiben die reaktive Wahrheit — KEIN Sheet (das war vor V9.49 — nicht
-        // manipulierbar, zwei Skalen, zerbricht an der Naht).
-        const sampleWater = (x, y, z) => {
-            const i = Math.floor((x - ox) / step);
-            const k = Math.floor((z - oz) / step);
-            const j = Math.floor((y - oy) / step);
-            let cWater = 0;
-            let cAir = 0;
-            for (let dj = 0; dj <= 1; dj++) {
-                for (let dk = 0; dk <= 1; dk++) {
-                    for (let di = 0; di <= 1; di++) {
-                        const cls = cellClass(i - 1 + di, k - 1 + dk, j - 1 + dj);
-                        if (cls === STATE.WATER) cWater++;
-                        else if (cls === STATE.AIR) cAir++;
-                        // SOLID ist neutral (zählt weder) — das Terrain verdeckt es.
-                    }
-                }
-            }
-            // Sub-Terrain-Wasser ist in `waterCells` schon getrocknet → kein Sky-Open-Scan im Mesher nötig
-            // (der kostete ~94 ms/Chunk). Einfache Wasser-Luft-Iso:
-            if (cAir === 0) return 1; // tief drinnen → kein Iso (kein Bottom/Underwater-Side)
-            if (cWater === 0) return -1; // außen → kein Iso (Mountain-Top trägt das Terrain)
-            return (cWater - cAir) / 8; // Wasser+Luft-Mischung → glatte Iso, 8-Cell-geglättet
-        };
-        // Wasser lebt auf EINER Skala (LOD0): eine gröbere ferne Wasser-Iso verschob die Nachbar-Iso um bis
-        // ~3 m und quoll über den Footprint → Naht + Höhen-Stufe am Band-Rand.
-        // Y-Bereich aufs globale Wasser-Band beschränken (statt volle dimY).
-        const bBot = band ? band.bottom : oy;
-        const bTopY = band ? band.top : oy + dimY * step;
-        let jBot = Math.floor((bBot - oy) / step);
-        let jTop = Math.ceil((bTopY - oy) / step);
-        if (jBot < 0) jBot = 0;
-        if (jTop > dimY) jTop = dimY;
-        const bandDimY = jTop - jBot;
-        if (bandDimY <= 0) {
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        // Pad+Crop in X/Z (V9.79, naht-frei); Y band-limitiert (Crop schneidet nur X/Z).
-        const geom = this._voxelChunkGeometry(
-            ox - step,
-            oy + jBot * step,
-            oz - step,
-            dim + 3,
-            bandDimY,
-            dim + 3,
-            step,
-            sampleWater,
-            1
-        );
-        if (!geom) {
-            // Kein Wasser-Iso im Band → kein Mesh.
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        // V18.1/V18.4 W1 — die Unterseite verwerfen (s. `_cullWaterUndersides`):
-        // tötet „Wasser auf der falschen Seite des Bodens" (von unter der Karte);
-        // die Oberseite + die fast-vertikalen Fluss-Wasserfälle/Ufer bleiben.
-        if (!this._cullWaterUndersides(geom)) {
-            this._queueDispose(geom);
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        const mat = this._ensureHydroSurfaceMaterial();
-        if (!mat) {
-            this._queueDispose(geom);
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        // hydroSurfaceMaterial liest aFlow (vec2), aWave via TSL `attribute()` — unter NodeMaterial/
-        // WebGPU crasht die Pipeline bei fehlenden Attributen. Darum Null-Defaults (kein Wellen-Displacement,
-        // kein Flow — korrekt, das Chunk-Iso ist See/Pfütze).
-        const vCount = geom.attributes.position.count;
-        if (!geom.getAttribute("aFlow")) {
-            geom.setAttribute("aFlow", new THREE.BufferAttribute(new Float32Array(vCount * 2), 2));
-        }
-        if (!geom.getAttribute("aWave")) {
-            geom.setAttribute("aWave", new THREE.BufferAttribute(new Float32Array(vCount), 1));
-        }
-        // V18.14 — jeder Mesh am geteilten hydroSurfaceMaterial braucht `aDepth`
-        // (WebGPU-strikt, V10.0-g.1); 0 = flach (der Iso-A/B-Pfad ist sowieso Vergleich).
-        if (!geom.getAttribute("aDepth")) {
-            geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(vCount), 1));
-            geom.setAttribute("aSlope", new THREE.BufferAttribute(new Float32Array(vCount), 1));
-        }
-        // Der CPU-Körper des Chunk-Wassers (Map-Wahrheit, Sonden lesen seine Geometrie); gezeichnet wird er als
-        // Bereich im Wasser-Satz (Welle B: EIN Objekt für das Wasser des ganzen Rings, ausserhalb jedes Bundles —
-        // die Szenen-Tiefe `_szeneTiefe` erzwingt einen Pass-Bruch, den der Bundle-Encoder nicht kann).
-        const mesh = new THREE.Mesh(geom, mat);
-        mesh.userData = {
-            isHydrosphere: true,
-            hydroKind: "chunk-water-iso",
-            voxelChunkX: cx,
-            voxelChunkZ: cz,
-        };
-        this._chunkSatzEin("wasser", key, geom, key);
-        this.state.voxelChunkWaterIso.set(key, mesh);
-        return mesh;
+        return this._buildVoxelChunkWaterCellSheet(cx, cz, key);
     }
 
     // Zell-Oberkanten-Sheet (Default-Wasser-Render): Domäne NUR über wassertragenden Spalten + 1-Zell-
@@ -37932,8 +37691,6 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
                         ? this.state.atmosphere.waterCull
                         : 0.0025,
-                // V18.6 U-W4 — Wasser-Render-Modus persistieren.
-                waterRenderMode: this._waterRenderMode(),
                 // V18.14/.15 — Makro-Kontext-Regler persistieren.
                 waterDepthFoam:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthFoam)
@@ -41971,11 +41728,6 @@ class AnazhRealm {
             if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
             const wc = Number(state.atmosphere.waterCull);
             if (Number.isFinite(wc)) this.state.atmosphere.waterCull = Math.max(0.0, Math.min(0.05, wc));
-            // V18.92 — Wasser-Render-Modus (persistierte "surface"-Werte heilen im
-            // Setter auf "cells" — der L-Film ist entfernt).
-            if (typeof state.atmosphere.waterRenderMode === "string") {
-                this.setWaterRenderMode(state.atmosphere.waterRenderMode);
-            }
             const lr = Number(state.atmosphere.waterLakeRipple);
             if (Number.isFinite(lr)) this.setLakeRipple(Math.max(0.0, Math.min(1.0, lr)));
             // V18.14 M1/M3 — die Makro-Kontext-Regler (vor dem Hydrosphäre-Mesh-Bau setzen,
@@ -67238,26 +66990,6 @@ class AnazhRealm {
         return m;
     }
 
-    // V18.6 U-W4 — der Wasser-Render-Modus ("surface" = die finale Höhenfeld-
-    // Fläche auf `L`, Default; "iso" = die alte Zell-Iso, A/B-Schalter für den
-    // Browser-Sign-off). Setzt alle gestreamten Wasser-Meshes neu (re-enqueued).
-    setWaterRenderMode(mode) {
-        const m = mode === "iso" ? "iso" : "cells";
-        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
-        this.state.atmosphere.waterRenderMode = m;
-        // Alle Wasser-tragenden Chunks neu meshen, damit der Modus-Wechsel sofort
-        // greift (die Zellen/Physik bleiben unberührt — nur der Render-Pfad).
-        if (this.state.voxelChunks) {
-            for (const [key, e] of this.state.voxelChunks) {
-                if (!e || !e.waterCells) continue;
-                const comma = key.indexOf(",");
-                this._enqueueWaterIso(parseInt(key.slice(0, comma), 10), parseInt(key.slice(comma + 1), 10));
-            }
-        }
-        if (typeof this.saveState === "function") this.saveState();
-        return m;
-    }
-
     // V18.15 Phase 3 — der See-Wellen-Floor (uLakeRipple, 0..1): wie stark See/Fluss
     // kräuseln (0 = flach, 0.06 sanft, 1 = wie Ozean). Live an die Uniform.
     setLakeRipple(v) {
@@ -73514,13 +73246,7 @@ class AnazhRealm {
     // Bump zwischen Request und Antwort → sync neu über `_buildVoxelChunkWaterIsoSurface`). Aufrufer:
     // Finalize (vor dem CA-Wake) + Streaming-Tick; Carve/Edit/Test bleiben sync.
     _tryWorkerWaterSheet(cx, cz) {
-        if (
-            !this.state.voxelWorker ||
-            !this.state.voxelWorkerReady ||
-            this._waterRenderMode() !== "cells" ||
-            !this._waterSheetCaFree(cx, cz)
-        )
-            return false;
+        if (!this.state.voxelWorker || !this.state.voxelWorkerReady || !this._waterSheetCaFree(cx, cz)) return false;
         const key = `${cx},${cz}`;
         const entry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
         if (!entry || !entry.waterCells) return false; // kein Wasser → der Aufrufer baut sync (Map null)
@@ -85827,12 +85553,6 @@ class AnazhRealm {
                 const v = this.setWaterCull(raw);
                 if (wcVal) wcVal.textContent = v.toFixed(4);
             });
-        }
-        // V18.6 U-W4 — Wasser-Render-Modus (Fläche-auf-L | Zell-Iso).
-        const wrSel = document.getElementById("select-waterrender");
-        if (wrSel) {
-            wrSel.value = this._waterRenderMode();
-            wrSel.addEventListener("change", () => this.setWaterRenderMode(wrSel.value));
         }
         // V18.15 Phase 3 — See-Wellen (uLakeRipple 0..1, Slider ×100).
         const lrS = document.getElementById("slider-lakeripple");

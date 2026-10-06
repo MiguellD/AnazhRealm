@@ -20724,13 +20724,9 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             }
             const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
             out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
-            // V18.6 U-W4 — der Default-Render ist die Höhenfeld-FLÄCHE ("chunk-
-            // water-surface"); der A/B-Schalter "iso" baut die alte Zell-Iso
-            // ("chunk-water-iso"). Beide Kind-Stempel sind gültig.
-            out.sampleMeshUserData =
-                sampleMesh.userData &&
-                (sampleMesh.userData.hydroKind === "chunk-water-cellsheet" ||
-                    sampleMesh.userData.hydroKind === "chunk-water-iso");
+            // Der EINE Render-Pfad ist das Zell-Oberkanten-Sheet ("chunk-water-cellsheet"); der Debug-Zwilling
+            // „Zell-Iso" ist gefallen (Welle L, W-kD7).
+            out.sampleMeshUserData = !!sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-cellsheet";
             // Wasser ist eine FLÄCHE, kein Volumen: Material BackSide (von oben sichtbar, von unten
             // front-gecullt) + keine Unterseiten-Dreiecke (ny>0.2 am Build verworfen) — sonst „Wasser auf
             // der falschen Seite des Bodens“. Über ALLE Iso-Meshes gezählt.
@@ -20861,7 +20857,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         );
         check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
         check(
-            "V18.92: Wasser-Mesh trägt userData.hydroKind='chunk-water-cellsheet' (Default) ODER 'chunk-water-iso' (Debug)",
+            "V18.92 → Welle L: Wasser-Mesh trägt userData.hydroKind='chunk-water-cellsheet' (der EINE Render-Pfad)",
             res.sampleMeshUserData === true
         );
         check(
@@ -23820,8 +23816,8 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         out.lod1WithCells = lod1WithCells;
         out.allCellsAreLod0 = allCellsAreLod0;
         out.firstMismatchLen = firstMismatchLen;
-        // Source-Probe: _buildVoxelChunkWaterIsoSurface nutzt LOD 0 fest
-        const isoSrc = window.__codeOf(r._buildVoxelChunkWaterIsoSurface);
+        // Source-Probe: die Sheet-Mathe (der EINE Wasser-Render-Pfad) nutzt LOD 0 fest
+        const isoSrc = window.__codeOf(r._computeWaterSheetData);
         out.isoUsesLod0 = /_voxelChunkConfig\(0\)/.test(isoSrc);
         // Source-Probe: _buildVoxelChunkData baut waterCells mit lod=0
         const buildSrc = window.__codeOf(r._buildVoxelChunkData);
@@ -23842,7 +23838,7 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         res.totalWithCells >= 1,
         `total=${res.totalWithCells}, lod0=${res.lod0WithCells}, lod1=${res.lod1WithCells}`
     );
-    check("Welle V9.93: _buildVoxelChunkWaterIsoSurface nutzt LOD 0 fest (Source-Probe)", res.isoUsesLod0);
+    check("Welle V9.93: die Wasser-Sheet-Mathe (_computeWaterSheetData) nutzt LOD 0 fest (Source-Probe)", res.isoUsesLod0);
     check("Welle V9.93: _buildVoxelChunkData baut waterCells mit lod=0 (Source-Probe)", res.buildPassesLod0);
 }
 
@@ -41471,17 +41467,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // persistiert in state.atmosphere.waterCull.
         out.waterCullSetter = typeof r.setWaterCull === "function";
         out.waterMinDepthCull = waterMinDepthCull;
-        // V13.6: Wasser-Oberfläche ist wieder die Surface-Nets-Iso (Synergie mit dem
-        // Terrain — derselbe Mesher), band-limitiert aufs globale hydroBand. Source-
-        // Probe: der Iso-Builder nutzt sampleWater + _voxelChunkGeometry + bandDimY.
-        {
-            const isoSrc =
-                typeof r._buildVoxelChunkWaterIsoSurface === "function"
-                    ? window.__codeOf(r._buildVoxelChunkWaterIsoSurface)
-                    : "";
-            out.waterIsoSynergy =
-                /sampleWater/.test(isoSrc) && /_voxelChunkGeometry\(/.test(isoSrc) && /bandDimY/.test(isoSrc);
-        }
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
         out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
@@ -41531,10 +41516,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check(
             "V13.9: Wasser-Shader cullt dünnes Bluten (optischer Weg < uMinDepth via alphaTest)",
             v830Results.waterMinDepthCull
-        );
-        check(
-            "V13.6: Wasser-Oberfläche ist die Surface-Nets-Iso (Synergie mit Terrain, band-limitiert)",
-            v830Results.waterIsoSynergy
         );
     } else {
         check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
