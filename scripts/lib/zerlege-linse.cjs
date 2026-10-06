@@ -49,7 +49,7 @@
 // Leinwand-Größe, nach `_loopRender`) muss als eigener Posten `pass:zerlege-selbsttest` erscheinen, seine Differenz muss
 // seine Kosten allein treffen (±max(1 ms, 35 %)), und ohne ihn verschwindet der Posten.
 //
-//   Seite:     window.__passUhr() · __bankRunde(n) · __frameAnatomie(uhr, n) · __zerlegeInventur(k) · __zerlegeMessen(k)
+//   Seite:     window.__passUhr() · __bankRunde(n) · __stempelWache() · __frameAnatomie(uhr, n) · __zerlegeInventur(k) · __zerlegeMessen(k)
 //              · __zerlegeLast(k) · __zerlegeZustand() · __zerlegeVergleich(a, b) · __ketteKante(uniform)
 //   Werkbank:  node scripts/werkbank.cjs zerlegen [--runden r] [--n frames] [--nur a,b] [--json datei] [--bilder ordner]
 //                                                 [--selbsttest [--last iter]]
@@ -170,13 +170,21 @@ function passUhr() {
 // DIE EINE BANK-RUNDE (gpu-bank · zerlegen): n Frames direkt hintereinander (ohne rAF, ohne VSync) — je Frame der
 // Schatten-Takt wie im Loop und `_loopRender` —, dann auf die GPU warten. Liegt die GPU je Frame über der CPU, ist
 // Gesamtzeit / n die reine GPU-Zeit je Frame. (Alle n Frames laufen in EINER Aufgabe: die Leinwand präsentiert erst
-// danach — das Präsentieren steht nicht in der Bank.)
+// danach — das Präsentieren steht nicht in der Bank.) DIE STEMPEL DER BANK: der Spiel-Loop löst den Zeitstempel-Pool je
+// gerendertem Frame auf (`_perfGpuResolveKick`), die Bank rendert ohne ihn — sie leert den Pool vor ihren Frames und nach
+// ihnen (außerhalb der gemessenen Spanne; r184 setzt ihn nur beim Auflösen zurück, `__stempelWache`). Ein Auflösen, das
+// schon läuft, deckt die Abfragen danach nicht: höchstens drei Züge, bis der Pool leer ist.
 function bankRunde(n) {
     return (async () => {
         const r = window.anazhRealm;
         const rend = r.state.renderer;
         const q = rend.backend.device.queue;
+        const stempelAuf = async () => {
+            const pool = rend.backend.trackTimestamp === true && rend.backend.timestampQueryPool.render;
+            for (let i = 0; pool && i < 3 && pool.currentQueryIndex > 0; i++) await rend.resolveTimestampsAsync("render");
+        };
         await q.onSubmittedWorkDone();
+        await stempelAuf();
         const t0 = performance.now();
         let cpu = 0;
         for (let i = 0; i < n; i++) {
@@ -189,8 +197,52 @@ function bankRunde(n) {
         const tAb = performance.now();
         await q.onSubmittedWorkDone();
         const t1 = performance.now();
+        await stempelAuf();
         return { jeFrame: (t1 - t0) / n, cpuJeFrame: cpu / n, nachlauf: t1 - tAb };
     })();
+}
+
+// DIE STEMPEL-WACHE: r184 legt je Render-Pass zwei Abfragen in einen festen Pool (WebGPUTimestampQueryPool, 2048) und
+// setzt ihn nur beim Auflösen zurück (`resolveTimestampsAsync`); ist er voll, bekommt ein Pass keine Abfrage
+// (`allocateQueriesForContext` → null, die Warnung kommt nur EINMAL je Seite: warnOnce) und schreibt seine Stempel
+// trotzdem — `timestampWrites` mit Index null → 0 und null + 1 → 1, in die Plätze eines fremden Passes. Die Wache zählt
+// jede verweigerte Abfrage (Haken am Prototyp des Pools, einmal je Seite) und die Spitze des Pools; ohne Pool (kein
+// timestamp-query) steht `pool: null`.
+// Je verweigerter Abfrage der Täter: der Render, der sie wollte (r184 setzt Kamera und Ziel des Render-Kontexts vor
+// `beginRender`) — der Pass (`__passName`) und das Ziel beim Namen.
+function stempelWache() {
+    const rend = window.anazhRealm && window.anazhRealm.state.renderer;
+    const be = rend && rend.backend;
+    const w =
+        window.__stempelWacheStand || (window.__stempelWacheStand = { ueberlauf: 0, spitze: 0, an: false, taeter: {} });
+    const pool = be && be.timestampQueryPool ? be.timestampQueryPool.render : null;
+    const stand = () => ({
+        ueberlauf: w.ueberlauf,
+        spitze: w.spitze,
+        taeter: Object.assign({}, w.taeter),
+        pool: pool ? { stand: pool.currentQueryIndex, max: pool.maxQueries } : null,
+        an: w.an,
+    });
+    if (!pool) return stand();
+    if (!w.an) {
+        const P = Object.getPrototypeOf(pool);
+        const roh = P.allocateQueriesForContext;
+        P.allocateQueriesForContext = function (uid) {
+            const i = roh.call(this, uid);
+            if (i === null && this.trackTimestamp && !this.isDisposed) {
+                w.ueberlauf++;
+                const ctx = rend._currentRenderContext;
+                const rt = ctx && ctx.renderTarget;
+                const ziel = rt && rt.texture && rt.texture.name ? rt.texture.name : rt ? "ziel" : "leinwand";
+                const k = (ctx && ctx.camera ? window.__passName(null, ctx.camera) : "?") + " → " + ziel;
+                w.taeter[k] = (w.taeter[k] || 0) + 1;
+            }
+            if (this.currentQueryIndex > w.spitze) w.spitze = this.currentQueryIndex;
+            return i;
+        };
+        w.an = true;
+    }
+    return stand();
 }
 
 // DIE FRAME-ANATOMIE: n Bank-Frames mit Zähl-Haken an den WebGPU-Prototypen — jeder Befehl je Frame beim Namen.
@@ -1531,6 +1583,7 @@ module.exports = {
     ZERLEGE_INSTALL:
         `window.__passUhr = (function(){ const haken = ${haken.toString()}; return ${passUhr.toString()}; })();` +
         `window.__bankRunde = ${bankRunde.toString()};` +
+        `window.__stempelWache = ${stempelWache.toString()};` +
         `window.__frameAnatomie = (function(){ const haken = ${haken.toString()}; return ${frameAnatomie.toString()}; })();` +
         `window.__knotenKinder = ${knotenKinder.toString()};` +
         `window.__ketteKante = (function(){ const knotenKinder = window.__knotenKinder; return ${ketteKante.toString()}; })();` +

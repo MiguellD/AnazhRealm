@@ -446,11 +446,14 @@ function lauf(k) {
                 ruhe = Object.assign({ ruhig, sek: +((performance.now() - t0) / 1000).toFixed(1) }, vor);
             }
             const v0 = Object.assign({}, window.__vram || {});
+            const wache = () => (window.__stempelWache ? window.__stempelWache() : null);
+            const s0 = wache();
             messen = true;
             uhr.messen = true;
             await sleep(k.sek * 1000);
             messen = false;
             uhr.messen = false;
+            const s1 = wache();
             rend.setAnimationLoop(null);
             // Die GPU-Fertig-Meldungen laufen der CPU hinterher — warten, bis die Schlange leer ist.
             if (rend.backend && rend.backend.device) await rend.backend.device.queue.onSubmittedWorkDone();
@@ -525,6 +528,18 @@ function lauf(k) {
                         return [p, { p50: quant(w, 0.5), p95: quant(w, 0.95), frames: w.length }];
                     })
                 ),
+                // Die Pass-Stempel gelten nur, wenn im Fenster kein Pass ohne Abfrage blieb (ein voller Pool schreibt
+                // seine Stempel in fremde Plätze — `__stempelWache`).
+                stempel:
+                    s0 && s1
+                        ? {
+                              imLauf: s1.ueberlauf - s0.ueberlauf,
+                              seitBoot: s1.ueberlauf,
+                              spitze: s1.spitze,
+                              pool: s1.pool,
+                              gueltig: s1.ueberlauf === s0.ueberlauf,
+                          }
+                        : null,
                 befehle: passZahl("dc"),
                 dreiecke: passZahl("tri"),
                 ueber17: dt.length ? +((100 * dt.filter((x) => x > 17).length) / dt.length).toFixed(1) : null,
@@ -802,6 +817,9 @@ async function starte() {
     await page.evaluateOnNewDocument(vramAbgriff);
     const fehler = [];
     const zerstoert = { n: 0 };
+    // Der Zeuge des vollen Stempel-Pools (r184 warnt nur EINMAL je Seite — warnOnce): die Zahl zählt
+    // `__stempelWache` (scripts/lib/zerlege-linse.cjs), die Warnung belegt, dass es geschah.
+    const stempelWarnung = { n: 0 };
     page.on("pageerror", (e) => fehler.push((e.message || String(e)).split("\n")[0]));
     // Der Tod der Seite beim NAMEN (04.10.: zweimal „detached Frame" ohne Spur — Absturz, Schließen oder
     // Navigation waren nicht zu unterscheiden): jedes Ende landet mit Uhrzeit im Werkbank-Log.
@@ -815,6 +833,7 @@ async function starte() {
     // WebGPU-Validierung meldet sich nur als Konsolen-Fehler (kein pageerror) — die Wahrheit über schwarze Bilder.
     page.on("console", (m) => {
         if (/Destroyed texture|Destroyed buffer/.test(m.text())) zerstoert.n++;
+        if (/TimestampQueryPool \[render\]: Maximum number of queries exceeded/.test(m.text())) stempelWarnung.n++;
         if (m.type() === "error" || /WebGPU|GPUValidation|Invalid/.test(m.text()))
             fehler.push(("[konsole] " + m.text()).split("\n").slice(0, 3).join(" | ").slice(0, 400));
         if (fehler.length > 200) fehler.splice(0, fehler.length - 200);
@@ -953,6 +972,13 @@ async function starte() {
                 b = d ? JSON.parse(d) : {};
             } catch (_e) {}
             const t0 = Date.now();
+            // DIE STEMPEL-WACHE (scripts/lib/zerlege-linse.cjs): sobald der Pool steht, zählt sie jede verweigerte Abfrage.
+            const stempel = () =>
+                page
+                    .evaluate(() => (window.__stempelWache ? window.__stempelWache() : null))
+                    .then((w) => Object.assign({ warnung: stempelWarnung.n }, w || {}))
+                    .catch(() => null);
+            await stempel();
             try {
                 // DER SCHIRM: was der Spieler sieht — der präsentierte Canvas nach einer Sekunde echter Loop.
                 if (req.url === "/schirm") {
@@ -996,6 +1022,7 @@ async function starte() {
                         Object.assign(s, {
                             boot: Object.assign({ art: bootArt() }, boot),
                             zerstoert: zerstoert.n,
+                            stempel: await stempel(),
                             fehler: fehler.slice(-12),
                         })
                     );
@@ -1135,11 +1162,15 @@ async function starte() {
                     // DIE BAND-MESSUNG: einschwingen (bis der Bau ruht), Proben (das Maximum je Klasse × Pass), dann der
                     // VRAM je Erzeuger, die Szenen-Puffer je Klasse, der Fluss und die GPU-Bank — geurteilt gegen Haushalt
                     // und Ratsche (spec/profiband).
+                    // DIE STEMPEL-WACHE je Phase: welche Frames den Pool füllen, ohne ihn aufzulösen, steht beim Namen.
+                    const w0 = await stempel();
                     const messung = await page.evaluate(bandEinschwingen, {
                         capMs: Number(b.capMs) || 240000,
                         ruhig: Number(b.ruhig) || 30,
                     });
+                    const w1 = await stempel();
                     const proben = await page.evaluate(bandProben, { n: Number(b.proben) || 6, zwischen: 20 });
+                    const w2 = await stempel();
                     // DER SPEICHER NACH DEM COLLECTOR: was niemand zerstört, aber auch niemand mehr hält, gibt Chrome mit
                     // dem GC frei (der Abgriff bucht es dann aus) — gemessen wird das Lebende, nicht die Laune des GC.
                     const cdp = await page.target().createCDPSession();
@@ -1180,6 +1211,21 @@ async function starte() {
                         };
                     });
                     const gpu = await page.evaluate(gpuBank, { n: 12, runden: 3 });
+                    const w3 = await stempel();
+                    const ue = (a, c) => (a && c && Number.isFinite(c.ueberlauf) ? c.ueberlauf - (a.ueberlauf || 0) : null);
+                    const stempelBand = w3
+                        ? {
+                              einschwingen: ue(w0, w1),
+                              proben: ue(w1, w2),
+                              bank: ue(w2, w3),
+                              seitBoot: w3.ueberlauf,
+                              warnung: w3.warnung,
+                              spitze: w3.spitze,
+                              pool: w3.pool,
+                              taeter: w3.taeter,
+                              urteil: w3.ueberlauf === 0 && w3.warnung === 0 ? "GRUEN" : "ROT",
+                          }
+                        : null;
                     const { haushalt, ratsche } = BAND.ladeSpec();
                     const zensus = BAND.zensusMax(proben);
                     const u = BAND.bandUrteil({
@@ -1208,6 +1254,7 @@ async function starte() {
                         messung: Object.assign({ proben: proben.length }, messung),
                         fluss: fl,
                         gpu,
+                        stempel: stempelBand,
                         puffer: roh.puffer,
                         unbenannt: zensus.unbenannt,
                         frameMs: proben.map((z) => z.frameMs),
@@ -1226,10 +1273,26 @@ async function starte() {
                         roh: { zensus: zensus.klassen, vram: roh.vram, texturen: roh.texturen },
                     });
                     fs.writeFileSync(datei, JSON.stringify(u, null, 1));
+                    const sb = stempelBand;
                     return send({
                         urteil: u.urteil,
                         linse: u.linse,
-                        tabelle: BAND.bandTabelle(u),
+                        stempel: sb,
+                        tabelle:
+                            BAND.bandTabelle(u) +
+                            (sb
+                                ? `\nSTEMPEL-POOL ${sb.urteil}: ${sb.seitBoot} verweigerte Abfragen seit Boot (Einschwingen ` +
+                                  `${sb.einschwingen} · Proben ${sb.proben} · Bank ${sb.bank}), Warnung ${sb.warnung}, Spitze ` +
+                                  `${sb.spitze}${sb.pool ? "/" + sb.pool.max : ""}` +
+                                  (sb.taeter && Object.keys(sb.taeter).length
+                                      ? " — Täter: " +
+                                        Object.entries(sb.taeter)
+                                            .sort((x, y) => y[1] - x[1])
+                                            .slice(0, 4)
+                                            .map(([k, n]) => `${k} ${n}`)
+                                            .join(" · ")
+                                      : "")
+                                : "\nSTEMPEL-POOL: kein Pool (kein timestamp-query)"),
                         datei,
                         ms: Date.now() - t0,
                     });
@@ -1241,6 +1304,7 @@ async function starte() {
                     const runden = Math.max(4, Number(b.runden) || 4);
                     const kette = ZL.KETTE.map((x) => x.uniform);
                     let last = null;
+                    const zw0 = await stempel();
                     if (b.selbsttest) {
                         await page.evaluate(() => {
                             window.__zerlegeVorSelbst = window.__zerlegeZustand();
@@ -1323,6 +1387,18 @@ async function starte() {
                                     ? "GRUEN"
                                     : "ROT";
                         }
+                        // Die Stempel der Zerlegung gelten nur ohne verweigerte Abfrage in ihrer Dauer (`__stempelWache`).
+                        const zw1 = await stempel();
+                        const stempelZ =
+                            zw0 && zw1
+                                ? {
+                                      imZerlegen: zw1.ueberlauf - (zw0.ueberlauf || 0),
+                                      seitBoot: zw1.ueberlauf,
+                                      warnung: zw1.warnung,
+                                      spitze: zw1.spitze,
+                                      pool: zw1.pool,
+                                  }
+                                : null;
                         const datei = path.resolve(
                             b.json || path.join(root, "artifacts", "werkbank", `zerlegen-${Date.now()}.json`)
                         );
@@ -1338,6 +1414,7 @@ async function starte() {
                                     auswertung: a,
                                     roh,
                                     selbsttest: selbst,
+                                    stempel: stempelZ,
                                 },
                                 null,
                                 1
@@ -1355,12 +1432,26 @@ async function starte() {
                                 `\nSTEMPEL-PROBE: der r184-Pass-Stempel derselben Last zeigt ${selbst.stempelMs} ms ` +
                                 `(${selbst.stempelMs != null && selbst.alleinMs ? Math.round((100 * selbst.stempelMs) / selbst.alleinMs) : "–"} % ` +
                                 "ihrer Kosten allein) — so viel Fragment-Arbeit sehen die Stempel dieses Geräts";
+                        if (stempelZ)
+                            tabelle +=
+                                `\nSTEMPEL-POOL ${stempelZ.imZerlegen === 0 ? "GRUEN" : "ROT"}: ${stempelZ.imZerlegen} verweigerte ` +
+                                `Abfragen in der Zerlegung (seit Boot ${stempelZ.seitBoot}, Warnung ${stempelZ.warnung}), Spitze ` +
+                                `${stempelZ.spitze}${stempelZ.pool ? "/" + stempelZ.pool.max : ""}`;
                         const ok =
                             !a.zurueck.length &&
                             !a.fenster.some((e) => !e.geschluckt) &&
                             a.zeilen.every((z) => z.geschaltet !== false) &&
-                            (!selbst || selbst.urteil === "GRUEN");
-                        return send({ tabelle, ok, datei, ordner, selbsttest: selbst, ms: Date.now() - t0 });
+                            (!selbst || selbst.urteil === "GRUEN") &&
+                            (!stempelZ || stempelZ.imZerlegen === 0);
+                        return send({
+                            tabelle,
+                            ok,
+                            datei,
+                            ordner,
+                            selbsttest: selbst,
+                            stempel: stempelZ,
+                            ms: Date.now() - t0,
+                        });
                     } finally {
                         if (last && !last.weg) await page.evaluate((k) => window.__zerlegeLast(k), { an: false });
                     }
@@ -1373,6 +1464,7 @@ async function starte() {
                         regler: b.regler || "frei",
                         tiere: b.tiere || "halten",
                     });
+                    if (o.stempel) o.stempel.warnung = stempelWarnung.n;
                     return send(Object.assign(o, { fehler: fehler.slice(-5), ms: Date.now() - t0 }));
                 }
                 if (req.url === "/profil") {
@@ -1485,7 +1577,7 @@ async function starte() {
         });
         if (o && o.tabelle) {
             console.log(o.tabelle + "\n\n" + (o.datei || ""));
-            process.exit(o.urteil === "GRUEN" ? 0 : 1);
+            process.exit(o.urteil === "GRUEN" && (!o.stempel || o.stempel.urteil === "GRUEN") ? 0 : 1);
         }
     } else if (cmd === "ratsche") {
         // DIE RATSCHE AUS EINER SERIE (nur Node, keine Welt nötig): jede Datei ist eine Band-Messung der echten GPU am
