@@ -87702,7 +87702,7 @@ class AnazhRealm {
 
     // DER SCHIRM — die EINE Quelle jeder Schirm-Größe (Gebot 7: Kosten an den Schirm). Einmal je Takt (Loop-Eingang)
     // aus dem Zeichenpuffer des Renderers (Bildpunkte samt Pixel-Verhältnis) und dem Sichtfeld der Kamera: Breite ·
-    // Höhe · MPix · pxJeM (Bildpunkte, die ein Meter Objekt in einem Meter Abstand senkrecht deckt). Jedes Gesetz, das
+    // Höhe · pxJeM (Bildpunkte, die ein Meter Objekt in einem Meter Abstand senkrecht deckt). Jedes Gesetz, das
     // den Schirm liest, liest IHN, und richtig herum: ein kleinerer Schirm trägt höchstens gleich viel Detail. Bis
     // V18.531 las das Fell-Gesetz die Canvas-Höhe selbst (Rückfall 1080, Sichtfeld-Rückfall 60°), und der Geräte-Seed
     // las `innerWidth·innerHeight·dpr²` VERKEHRT herum (ab 4 MPix weniger Welt: ein größerer Schirm startete ärmer).
@@ -87713,12 +87713,11 @@ class AnazhRealm {
         const rend = st.renderer;
         const cam = st.camera;
         const v = this._schirmPuffer || (this._schirmPuffer = new THREE.Vector2());
-        const s = this._schirmWert || (this._schirmWert = { breite: 0, hoehe: 0, mpix: 0, pxJeM: null });
+        const s = this._schirmWert || (this._schirmWert = { breite: 0, hoehe: 0, pxJeM: null });
         if (rend && typeof rend.getDrawingBufferSize === "function") rend.getDrawingBufferSize(v);
         else v.set(0, 0);
         s.breite = v.x;
         s.hoehe = v.y;
-        s.mpix = Math.round((v.x * v.y) / 1e5) / 10;
         s.pxJeM = cam && cam.isPerspectiveCamera && v.y > 0 ? v.y / (2 * Math.tan((cam.fov * Math.PI) / 360)) : null;
         return s;
     }
