@@ -32198,7 +32198,8 @@ class AnazhRealm {
             const w1 = vnoise(xz.mul(0.05).add(vec2(t.mul(0.06), t.mul(0.04)))).sub(0.5);
             const w2 = vnoise(xz.mul(0.12).add(vec2(t.mul(-0.05), t.mul(0.07)))).sub(0.5);
             const w3 = vnoise(xz.mul(0.23).add(vec2(t.mul(0.08), t.mul(-0.06)))).sub(0.5);
-            const h = w1.mul(1.4).add(w2.mul(0.7)).add(w3.mul(0.34));
+            const D = AnazhRealm.WASSER_WELLE.duenung;
+            const h = w1.mul(D[0]).add(w2.mul(D[1])).add(w3.mul(D[2]));
             return vec3(float(0.0), h, float(0.0));
         });
 
@@ -32244,10 +32245,11 @@ class AnazhRealm {
                 .mul(float(0.07))
                 .add(uTime.mul(float(0.02)));
             const a2 = xz.sub(drift.mul(float(1.8))).mul(float(0.12));
+            const K = AnazhRealm.WASSER_WELLE;
             const rippleH = vnoise(a1)
-                .add(vnoise(a2).mul(float(0.4)))
-                .sub(float(0.7))
-                .mul(float(2.2));
+                .add(vnoise(a2).mul(float(K.oktave)))
+                .sub(float(K.mitte))
+                .mul(float(K.kraeusel));
             const ripple = vec3(float(0.0), rippleH.mul(rippleAmt), float(0.0));
             return ocean.add(ripple);
         });
@@ -61828,6 +61830,7 @@ class AnazhRealm {
                 empfang: false,
                 renderOrder: 1, // transparent — nach den opaken Objekten
                 richtung: -1, // fern → nah (transparent: der Maler-Algorithmus innerhalb des Satzes)
+                hub: AnazhRealm._wasserHubM(), // der Shader hebt und senkt die Fläche (die Zellen-Hülle trägt es)
                 userData: { chunkSatz: "wasser", isHydrosphere: true, hydroKind: "chunk-water-satz" },
             };
         // DER BAU-SATZ (`_bauSatzArt`): je Familie × Stoff × Wurf ein Satz — sein Stoff ist der geteilte Studio-Stoff
@@ -62142,7 +62145,8 @@ class AnazhRealm {
     // Szenen-Mesh), jeder Pass wählt seine Zellen über ihre Hülle (`_chunkSatzAbschnitt`); die Kaskaden-Box liest die
     // Bereichs-Hülle jedes werfenden Satzes als Empfänger-Band (der Boden unter der Scheibe empfängt) und als Werfer (ein
     // Hang zur Sonne hin wirft über die nahe Ebene). Der Boden-Shader zeichnet zwischen Position und Morph-Ziel; das Ziel
-    // zählt nur, wo sein Gewicht greift (ungewichtete Ziele tragen keine Lage).
+    // zählt nur, wo sein Gewicht greift (ungewichtete Ziele tragen keine Lage). Ein Satz, dessen Stoff die Fläche senkrecht
+    // hebt (das Wasser, `spec.hub` = `_wasserHubM`), trägt den Hub oben und unten.
     _chunkSatzHuelle(s, b) {
         const h = b.huelle || (b.huelle = new THREE.Box3());
         h.makeEmpty();
@@ -62152,6 +62156,7 @@ class AnazhRealm {
             W = A.aMorphWeight ? A.aMorphWeight.array : null;
         const vs = b.vStart;
         const rand = AnazhRealm.SCHATTEN_KASKADE.randM;
+        const hub = s.spec.hub || 0;
         for (const zelle of b.zellen) {
             const I = zelle.idx;
             let x0 = Infinity,
@@ -62182,6 +62187,8 @@ class AnazhRealm {
                 zh.min.set(x0, y0, z0);
                 zh.max.set(x1, y1, z1);
                 zh.expandByScalar(rand);
+                zh.min.y -= hub;
+                zh.max.y += hub;
                 h.union(zh);
             }
         }
@@ -91975,6 +91982,24 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     luftM: 4,
     biasM: Object.freeze([-0.25, -0.5]),
 });
+// DIE WASSER-WELLE (der Hub des Hydro-Stoffs, `_ensureHydroSurfaceMaterial` liest sie): die Dünung der offenen See
+// (drei Rausch-Oktaven je ±0,5, Gewichte `duenung`, × aWave ≤ 1) und das Kräuseln von See und Fluss ((Rausch + `oktave` ·
+// Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`). Der Hub
+// hebt und senkt die Fläche im Shader um höchstens `_wasserHubM()` (2,76 m) — die Zellen-Hülle des Wasser-Satzes trägt
+// ihn (vorher nur der Saum 2 m: am Bildrand fehlte ein gehobenes Viertel).
+AnazhRealm.WASSER_WELLE = Object.freeze({
+    duenung: Object.freeze([1.4, 0.7, 0.34]),
+    oktave: 0.4,
+    mitte: 0.7,
+    kraeusel: 2.2,
+    kraeuselDecke: 1,
+});
+AnazhRealm._wasserHubM = function () {
+    const W = AnazhRealm.WASSER_WELLE;
+    const duenung = 0.5 * (W.duenung[0] + W.duenung[1] + W.duenung[2]);
+    const kraeusel = W.kraeusel * Math.max(1 + W.oktave - W.mitte, W.mitte) * W.kraeuselDecke;
+    return duenung + kraeusel;
+};
 // Die zwölf Kanten einer Frustum-Scheibe (Ecken 0–3 nah, 4–7 fern, CSMFrustum-Reihenfolge) als Index-Paare.
 AnazhRealm.KASKADEN_KANTEN = Object.freeze([0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7]);
 // V18.281 — DER ATEM-KOPFRAUM: die Schönheit wächst nur, wenn die Frame-Zeit ≥ diesen
