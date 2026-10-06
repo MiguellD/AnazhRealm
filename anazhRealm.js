@@ -58341,8 +58341,16 @@ class AnazhRealm {
         return null;
     }
 
+    // DIE EINE GÜTE EINES WERKS ∈ [0, 1] (Welle L, Befund K-D7 — vorher drei Wahrheiten: der Lehren-Faktor des Kerns im
+    // Schaden, forgedPrecision in der Werkstoff-Kraft, die Teile-Präzision im Equip-Fold): ein Schmiede-Gerät trägt das
+    // Lehren-Urteil des Kerns über Gestalt und Prägung (_schmiedeGueteAnteil), ein geschmiedetes Eigenwerk den
+    // eingefrorenen Werk-Stand (forgedPrecision), ein Plan die Präzision seiner Teile. Leser: der Schadens-Faktor
+    // (_heldGueteFaktor), die Werkstoff-Kraft (_implementProfileForBlueprint), der Equip-Fold, Rüstung und Konsum.
     computeBlueprintQuality(blueprint) {
         if (!blueprint || !Array.isArray(blueprint.parts)) return 1.0;
+        const lehre = this._schmiedeGueteAnteil(blueprint);
+        if (lehre !== null) return lehre;
+        if (Number.isFinite(blueprint.forgedPrecision)) return blueprint.forgedPrecision;
         return this._compoundAvgPrecisionFromParts(blueprint.parts);
     }
 
@@ -76173,32 +76181,29 @@ class AnazhRealm {
     }
 
     // ═══ WAFFEN-GÜTE — DIE SCHMIEDE-ARBEIT ERREICHT DEN KAMPF ═══
-    // Der EINE Güte-Faktor __schmiedeCore.gueteFaktor (bestandener Lehren-Anteil → linear
-    // [ARENA.guete.faktorLeer, faktorVoll]); Klingen-Sweep UND Pfeil multiplizieren ihn auf stats.damage.
-    // Die Prägung (bp.studioOv) reist als ov in die Messung. Kern kalt / kein Rezept → 1.
-    // Memo je preset|ov-Hash (Guss-gefroren), gedeckelt.
+    // Der Schadens-Faktor des gehaltenen Geräts: die EINE Güte (computeBlueprintQuality) linear auf
+    // [ARENA.guete.faktorLeer, faktorVoll]; Klingen-Sweep UND Pfeil multiplizieren ihn auf stats.damage. Die Faust 1.
     _heldGueteFaktor() {
-        const eq = this.state.player && this.state.player.equipped;
-        const held = eq && eq.held;
-        if (!held) return 1;
+        const bp = this._heldImplementBlueprint();
+        if (!bp) return 1;
+        const G = AnazhRealm._arenaGesetz().guete;
+        return G.faktorLeer + (G.faktorVoll - G.faktorLeer) * this.computeBlueprintQuality(bp);
+    }
+
+    // Der Lehren-Anteil eines Schmiede-Geräts (schmiede gueteAnteil über Gestalt + Prägung, SYNCHRON und Lockstep-fest wie
+    // die Kampf-Maße); null = kein Schmiede-Gerät. Memo je Gestalt|ov-Hash (Guss-gefroren), gedeckelt.
+    _schmiedeGueteAnteil(bp) {
+        const gestalt = this._schmiedeGestalt(bp);
+        if (!gestalt) return null;
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-        if (!sc || typeof sc.gueteFaktor !== "function") return 1;
-        const f = this._foundry;
-        if (!f || !f.recipes) return 1;
-        const preset =
-            typeof this._foundryPresetForEntry === "function" ? this._foundryPresetForEntry({ type: held }) : null;
-        if (!preset || !f.recipes[preset]) return 1;
-        const bp = this.state.blueprints && this.state.blueprints[held];
-        const ov = bp && typeof this._artifactStudioOv === "function" ? this._artifactStudioOv(bp) : null;
-        const key = preset + (ov ? "|ov:" + this._studioOvHash(ov) : "");
-        const memo = this._gueteFaktorMemo || (this._gueteFaktorMemo = new Map());
+        if (!sc || typeof sc.gueteAnteil !== "function") AnazhRealm._kernPflichtBruch("schmiede:gueteAnteil");
+        const ov = typeof this._artifactStudioOv === "function" ? this._artifactStudioOv(bp) : null;
+        const key = gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");
+        const memo = this._gueteAnteilMemo || (this._gueteAnteilMemo = new Map());
         let v = memo.get(key);
         if (v === undefined) {
-            v = 1;
-            try {
-                const g = sc.gueteFaktor(preset, ov || undefined);
-                if (Number.isFinite(g) && g > 0) v = g;
-            } catch (_e) {}
+            const a = sc.gueteAnteil(gestalt, ov || undefined);
+            v = a === null || !Number.isFinite(a) ? null : Math.max(0, Math.min(1, a));
             if (memo.size > 64) memo.clear(); // gedeckelt (jeder Guss ein Schlüssel)
             memo.set(key, v);
         }
@@ -76591,12 +76596,9 @@ class AnazhRealm {
         const pointedFrac = this._blueprintPointedFraction(bp);
         const sharpness = pointedFrac * (t.härte || 0);
         const bluntness = 1 - pointedFrac;
-        // Die Schmiede-PRÄZISION moduliert die Welt-Kraft (besseres Gerät bricht/schneidet kräftiger).
-        // Eingefroren als forgedPrecision (Snapshot), sonst live aus den Parts; ohne opChain = 1.0 → Faktor 1.
-        const precision = Number.isFinite(bp.forgedPrecision)
-            ? bp.forgedPrecision
-            : this._compoundAvgPrecisionFromParts(bp.parts);
-        const precMul = 0.5 + 0.5 * precision;
+        // Die GÜTE des Werks moduliert die Welt-Kraft (besseres Gerät bricht/schneidet kräftiger) — die EINE Güte
+        // (computeBlueprintQuality: Lehren-Urteil, eingefrorener Werk-Stand oder die Teile; ohne opChain 1.0 → Faktor 1).
+        const precMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp);
         const minePower =
             (H.toolMineBase + bluntness * ((t.härte || 0) * H.mineFromHärte + (t.dichte || 0) * H.mineFromDichte)) *
             precMul;

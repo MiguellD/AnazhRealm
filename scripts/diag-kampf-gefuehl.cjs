@@ -47,8 +47,8 @@
 //      1,3 m/−0,6 m) und klein flach (Hirsch L 0,64) je ≥ 8/10 · Hit-Stop-Energie Keule ≠ Grossschwert (≥ 10 %) · keine Schadens-Kappe (höchstens
 //      2 von 17 Rezepten auf dem Maximal-Faktor) · Gegenwehr > 0 bei 20 Treffern in 1,6 m (pfad) · die Hand ist
 //      kein Panzer (defense/hpMax gleich) · Kampf verschleißt, ein verbrauchtes Gerät schlägt nicht · der Pfeil:
-//      Schaden ∝ Impuls (25 %-Auszug < 0,5 × voll) und eine Wand hält ihn (0 Treffer dahinter) · die fünf
-//      Phantom-Leser sind aus dem Stamm verschwunden.
+//      Schaden ∝ Energie (25 %-Auszug ≤ 0,5 × voll) und eine Wand hält ihn (0 Treffer dahinter) · die fünf
+//      Phantom-Leser sind aus dem Stamm verschwunden · EINE Güte je Gerät (Schaden, Werkstoff-Kraft, Fold).
 //  (Q9 MAUS) 3rd-Person 10 Klicks auf ein Tier in 2 m → 10 Schwünge, 0 Krater · 1st-Person Halten nach dem Stoß →
 //      0 Krater · RMB mit Schwert → 0 Aufschüttungen (Spaten und leere Hand schütten weiter) · offene Werkstatt →
 //      4 Canvas-Klicks, 0 Griffe in die Welt · FERTIGEN eines Bauwerks → Bau-Modus, die Hand bleibt leer.
@@ -442,6 +442,33 @@ async function WELLE_L() {
             const frei = schuss(1, hirsch);
             w.z.pfeilFrei = frei.treffer ? 1 : 0;
             w.c.pfeilWand = !!wand && w.z.pfeilHinterWand === 0 && w.z.pfeilFrei === 1;
+        }
+        // (T9) EINE Güte je Gerät: der Schadens-Faktor (_heldGueteFaktor) und die Güte des Werks (computeBlueprintQuality —
+        // Werkstoff-Kraft, Equip-Fold) lesen dasselbe Lehren-Urteil des Kerns (schmiede gueteFaktor → Anteil)
+        {
+            const GU = A._arenaGesetz().guete;
+            let uneins = 0,
+                n9 = 0;
+            const proben9 = [];
+            for (const id of Object.keys(sc.REZEPT_ZU_GATTUNG)) {
+                const name = "klinge_" + id;
+                if (!s.blueprints[name]) continue;
+                ausruesten(name);
+                const anteil = (sc.gueteFaktor(id) - GU.faktorLeer) / (GU.faktorVoll - GU.faktorLeer);
+                const q = r.computeBlueprintQuality(s.blueprints[name]);
+                const gF = r._heldGueteFaktor();
+                const gSoll = GU.faktorLeer + (GU.faktorVoll - GU.faktorLeer) * q;
+                n9++;
+                const eins = Math.abs(q - anteil) < 1e-9 && Math.abs(gF - gSoll) < 1e-9;
+                if (!eins) {
+                    uneins++;
+                    if (proben9.length < 4) proben9.push(`${id}: Güte ${q.toFixed(2)} · Lehre ${anteil.toFixed(2)} · Schaden ×${gF.toFixed(2)}`);
+                }
+            }
+            w.z.gueteUneins = uneins;
+            w.z.gueteGeraete = n9;
+            w.z.gueteProben = proben9.join(" | ");
+            w.c.eineGuete = n9 >= 17 && uneins === 0;
         }
         // die fünf Phantom-Leser (0 Definitionen im Kern) — kein Aufruf im Stamm
         // (Absenz über den Code ohne Kommentare — Kommentare dürfen die Gefallenen zitieren, Lehre 6)
@@ -1295,7 +1322,7 @@ async function WELLE_L() {
         );
         console.log(`       Faktoren ${z.faktoren}`);
         console.log(
-            `       ${z.panzer} · Verschleiß wear ${f1(z.wear16)} nach ${z.treffer16} Treffern, verbraucht ${z.trefferVerbraucht} Treffer · Phantome ${z.phantome}`
+            `       ${z.panzer} · Verschleiß wear ${f1(z.wear16)} nach ${z.treffer16} Treffern, verbraucht ${z.trefferVerbraucht} Treffer · Phantome ${z.phantome} · Güte uneins ${z.gueteUneins} von ${z.gueteGeraete}${z.gueteProben ? " (" + z.gueteProben + ")" : ""}`
         );
         console.log(
             `       Pfeil voll ${f1(z.pfeilVoll)} · 25 % ${f1(z.pfeilViertel)} · hinter der Wand ${z.pfeilHinterWand} · frei ${z.pfeilFrei}`
@@ -1314,7 +1341,8 @@ async function WELLE_L() {
         check(c.hitStopEnergie, "Q8 K-D4: der Hit-Stop ist energie-skaliert — Keule ≠ Grossschwert (≥ 10 %)");
         check(c.keineKappe, "Q8 K-D5: keine Schadens-Kappe — höchstens 2 Nahkampf-Rezepte auf dem Maximal-Faktor");
         check(c.verschleiss, "Q8 K-D6: Kampf verschleißt die Klinge, ein verbrauchtes Gerät schlägt nicht");
-        check(c.pfeilImpuls, "Q8 K-D8: der Pfeil trägt seinen Impuls in den Schaden (25 %-Auszug ≤ 0,5 × voll)");
+        check(c.eineGuete, "Q8 K-D7: EINE Güte je Gerät — Schaden, Werkstoff-Kraft und Equip-Fold lesen das Lehren-Urteil des Kerns");
+        check(c.pfeilImpuls, "Q8 K-D8: der Pfeil trägt seine Energie in den Schaden (25 %-Auszug ≤ 0,5 × voll)");
         check(c.pfeilWand, "Q8 K-D8: eine Wand hält den Pfeil (0 Treffer dahinter, frei 1)");
         check(c.keinPanzer, "Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt, der Angriff steigt)");
         check(c.gegenwehr, "Q8 K-D16: Gegenwehr > 0 bei 20 Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)");

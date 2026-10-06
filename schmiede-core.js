@@ -3253,10 +3253,8 @@
         };
     }
 
-    function gueteFaktor(rezeptId, ov) {
-        var tp = prepP(rezeptId, ov);
-        if (!tp) return ARENA.guete.faktorVoll;
-        if (tp.modus === "bogen") return ARENA.guete.faktorVoll;
+    // DER LEHREN-ANTEIL einer vorbereiteten Gestalt (pass 1, warn ½, na zählt nicht) ∈ [0, 1].
+    function lehrenAnteil(tp) {
         if (tp.modus === "wucht") tp.schaftR = griffD(intentControl(tp)) * 0.5;
         var res = evalLehren(tp);
         var sum = 0;
@@ -3267,7 +3265,24 @@
             if (res[i].st === "pass") sum += 1;
             else if (res[i].st === "warn") sum += 0.5;
         }
-        var score = n > 0 ? sum / n : 1;
+        return n > 0 ? sum / n : 1;
+    }
+
+    // DIE GÜTE ALS ANTEIL (Welle L 06.10., additiv): der bestandene Lehren-Anteil ∈ [0, 1] einer Gestalt samt Prägung —
+    // die EINE Güte eines Schmiede-Geräts (der Wirt liest sie für Schaden, Werkstoff-Kraft und Equip-Fold; gueteFaktor
+    // bildet sie auf [faktorLeer, faktorVoll] ab). null = kein Rezept; ein Bogen trägt 1.
+    function gueteAnteil(rezeptId, ov) {
+        var tp = prepP(rezeptId, ov);
+        if (!tp) return null;
+        if (tp.modus === "bogen") return 1;
+        return lehrenAnteil(tp);
+    }
+
+    function gueteFaktor(rezeptId, ov) {
+        var tp = prepP(rezeptId, ov);
+        if (!tp) return ARENA.guete.faktorVoll;
+        if (tp.modus === "bogen") return ARENA.guete.faktorVoll;
+        var score = lehrenAnteil(tp);
         var f = ARENA.guete.faktorLeer + (ARENA.guete.faktorVoll - ARENA.guete.faktorLeer) * score;
         return isFinite(f) && f > 0 ? f : ARENA.guete.faktorVoll;
     }
@@ -3280,6 +3295,7 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         ARENA: ARENA,
         gueteFaktor: gueteFaktor,
+        gueteAnteil: gueteAnteil,
         kampfMasze: kampfMasze,
         trefferUrteil: trefferUrteil,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
