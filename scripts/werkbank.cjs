@@ -48,15 +48,17 @@
 //                                                           DIE GPU-ZERLEGUNG (scripts/lib/zerlege-linse.cjs): schaltet
 //                                                           jeden benannten Verbraucher des echten Wegs ab (Pässe, Post-
 //                                                           Stufen, Klassen, leerer Frame) und misst je Schalter die gpu-
-//                                                           bank-Differenz ABBA (r ≥ 4 Runden à n Frames, Median ± halbe
-//                                                           Spannweite, dazu Δ CPU und Δ Pass-Stempel) → Tabelle mit Σ,
+//                                                           bank-Differenz ABBA (r ≥ 4 Runden à n Frames, Median ± σ =
+//                                                           1,4826 × MAD, dazu Δ CPU und Δ Pass-Stempel) → Tabelle mit Σ,
 //                                                           Rest, Frame-Anatomie (jeder GPU-Befehl je Frame mit Bytes) und
 //                                                           Beleg je Schalter; `--nur` nimmt Schalter-ids (Tabelle zeigt
 //                                                           sie), `--bilder` legt je Schalter das AUS-Bild aus dem Ausgabe-
 //                                                           Pfad ab, `--selbsttest` schmuggelt einen Vollbild-Pass fester
-//                                                           Last ein und prüft, dass er als Posten erscheint und wieder
-//                                                           verschwindet. Exit 1: ein Schalter schaltet nicht, der Zustand
-//                                                           ist nicht zurück, oder der Selbsttest ist ROT.
+//                                                           Last ein und prüft, dass er als Posten erscheint (Δ ≈ seine
+//                                                           Kosten allein) und wieder verschwindet; die STEMPEL-PROBE nennt,
+//                                                           wie viel derselben Last der Pass-Stempel sieht. Exit 1: ein
+//                                                           Schalter schaltet nicht, der Zustand ist nicht zurück, ein
+//                                                           Fenster änderte die Größe, oder der Selbsttest ist ROT.
 //     MESSFOLGE am ruhigen Messplatz (keine fremde Last, Port 3000 frei; Zeiten nur ruhig, ~3 min je Lauf):
 //       npm start                                           (save-server :4312, eigenes Fenster)
 //       node scripts/werkbank.cjs start --echt              (eigenes Fenster; wartet auf „WERKBANK bereit")
