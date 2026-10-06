@@ -130,7 +130,8 @@ const ANKER = [
     { file: "vendor/TRAANode.js", sub: "renderPipeline.context.onBeforeRenderPipeline = () => {", organ: "_traaReprojektion (der Versatz lebt nur im Post-Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "null!==this._context.onBeforeRenderPipeline&&this._context.onBeforeRenderPipeline()", organ: "_traaReprojektion (RenderPipeline ruft den Vorher-Haken)" },
     { file: "vendor/TRAANode.js", sub: "this._historyRenderTarget = new RenderTarget( 1, 1, { depthBuffer: false, type: HalfFloatType, depthTexture: new DepthTexture() } );", organ: "TRAA-Tiefen-Kopie (Geschichte depth24plus wie die Szenen-Tiefe)" },
-    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( currentDepth, this._historyRenderTarget.depthTexture );", organ: "TRAA-Tiefen-Kopie (Textur zu Textur, gleiches Format)" },
+    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( currentDepth, this._historyRenderTarget.depthTexture );", organ: "TRAA-Tiefen-Kopie (Textur zu Textur, gleiches Format; _ensurePostProcessing nennt das Ziel TRAANode.history:tiefe)" },
+    { file: "vendor/TRAANode.js", sub: "let depth = this._previousDepthNode.sample( uv ).r;", organ: "TRAA-Tiefen-Kopie (der Leser: die Vortiefe der Disokklusion — die Kopie bleibt)" },
     // Die Platzhalter-Tiefe (1×1, namenlos, ohne Ziel): der Stamm nennt sie über den Knoten (Band-Linse, Textur-Zensus)
     { file: "vendor/TRAANode.js", sub: "this._previousDepthNode = texture( new DepthTexture( 1, 1 ) );", organ: "_ensurePostProcessing (TRAANode.vortiefe — die Band-Linse nennt jede Textur)" },
     { file: "vendor/TRAANode.js", sub: "this._jitterIndex = this._jitterIndex % ( _haltonOffsets.length - 1 );", organ: "Ausgabe-Aufnahme (32 Frames = eine Halton-Runde)" },
@@ -233,11 +234,24 @@ const ANKER = [
     // Die Textur merkt jede Bindegruppe, die sie liest, und vergisst sie nie — _instanzAbschied nimmt die Gruppen der Senke heraus.
     { file: "vendor/three.webgpu.min.js", sub: "l=this.textures.get(u);o&&(this.textures.updateTexture(u),t.generation!==l.generation&&(t.generation=l.generation,s=!0),l.bindGroups.add(e))", organ: "_instanzAbschied (die Textur hält die Bindegruppen ihrer Leser)" },
     { file: "vendor/three.webgpu.min.js", sub: "this._textures=new tb(this,r,this.info)", organ: "_instanzAbschied (renderer._textures)" },
-    // Die Leinwand ohne Tiefe: der Leinwand-Pass trägt eine Tiefe nur bei renderer.depth/stencil; updateSize verwirft seinen
-    // Deskriptor (der direkte Pfad holt die Tiefe zurück).
-    { file: "vendor/three.webgpu.min.js", sub: "!0!==e.depth&&!0!==e.stencil||(i.depthStencilAttachment={view:this.textureUtils.getDepthBuffer(e.depth,e.stencil).createView()})", organ: "_ensurePostProcessing (die Leinwand ohne Tiefe)" },
-    { file: "vendor/three.webgpu.min.js", sub: "updateSize(){this.delete(this.renderer.getCanvasTarget())}", organ: "_loopRender (der direkte Pfad holt die Leinwand-Tiefe zurück)" },
-    { file: "vendor/three.webgpu.min.js", sub: "this.isWebGPUBackend=!0", organ: "_ensurePostProcessing (Leinwand-Tiefe nur auf WebGPU)" },
+    // DER EINE TIEFEN-WEG DER LEINWAND (`_leinwandTiefe`, gestellt von der Weiche in `_loopRender`): der Leinwand-Pass trägt
+    // eine Tiefe nur bei renderer.depth/stencil, updateSize verwirft seinen Deskriptor; das Rahmen-Ziel des Direktpfads
+    // (Tonemapping zur Leinwand) nimmt seine Tiefe aus renderer.depth — ohne sie liest copyFramebufferToTexture die Tiefen-
+    // Textur eines Ziels, das keine trägt (der Absturz des Direktpfads, gate:post-kette); die GPU-Textur der Leinwand-Tiefe
+    // hängt am Leinwand-Ziel und fällt über destroyTexture.
+    { file: "vendor/three.webgpu.min.js", sub: "!0!==e.depth&&!0!==e.stencil||(i.depthStencilAttachment={view:this.textureUtils.getDepthBuffer(e.depth,e.stencil).createView()})", organ: "_leinwandTiefe (die Post-Kette zeichnet in eine Leinwand ohne Tiefe)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateSize(){this.delete(this.renderer.getCanvasTarget())}", organ: "_leinwandTiefe (der Leinwand-Pass baut seinen Deskriptor neu)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.isWebGPUBackend=!0", organ: "_leinwandTiefe (Leinwand-Tiefe nur auf WebGPU)" },
+    { file: "vendor/three.webgpu.min.js", sub: "{depth:a,stencil:o}=this,u=this._outputRenderTarget||this._canvasTarget;", organ: "_leinwandTiefe (das Rahmen-Ziel des Direktpfads liest renderer.depth)" },
+    { file: "vendor/three.webgpu.min.js", sub: "l.depthBuffer=a,l.stencilBuffer=o,", organ: "_leinwandTiefe (das Rahmen-Ziel folgt renderer.depth je Frame)" },
+    { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture:", organ: "_leinwandTiefe (die Tiefen-Kopie liest die Tiefen-Textur des Ziels — ohne sie der WeakMap-Absturz)" },
+    { file: "vendor/three.webgpu.min.js", sub: "a=r.renderer.currentSamples,o=s.depthTexture;", organ: "_leinwandTiefe (die Leinwand-Tiefe ist die DepthTexture des Leinwand-Ziels)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getCanvasTarget(){return this._canvasTarget}", organ: "_leinwandTiefe (das Leinwand-Ziel)" },
+    { file: "vendor/three.webgpu.min.js", sub: "destroyTexture(e,t=!1){this.textureUtils.destroyTexture(e,t)}", organ: "_leinwandTiefe (die GPU-Textur der Leinwand-Tiefe fällt in der Post-Kette)" },
+    { file: "vendor/three.webgpu.min.js", sub: "destroyTexture(e,t=!1){const r=this.backend,s=r.get(e);void 0!==s.texture&&!1===t&&s.texture.destroy(),void 0!==s.msaaTexture&&s.msaaTexture.destroy(),r.delete(e)}", organ: "_leinwandTiefe (destroyTexture zerstört und vergisst — getDepthBuffer legt sie im Direktpfad neu an)" },
+    // DIE STUFE KOSTET NUR, WENN SIE ZEIGT (`nurBeiStaerke` in _ensurePostProcessing): ein Fn-Aufruf trägt seine Argumente
+    // als `rawInputs` (der Ketten-Graph der Zerleg-Linse liest sie), ein Fn ohne Layout baut seinen Rumpf inline.
+    { file: "vendor/three.webgpu.min.js", sub: "constructor(e,t){super(),this.shaderNode=e,this.rawInputs=t,this.isShaderCallNodeInternal=!0}", organ: "_ensurePostProcessing (nurBeiStaerke — die Stufe bleibt im Ketten-Graph sichtbar)" },
     // DER SCHMALE INDEX (W7): r184 weitet beim Anlegen jedes nicht-normierte 8-/16-bit-Attribut auf 32 bit — auch den Index;
     // `_index16` setzt `normalized` nur für das Anlegen eines Uint16-Index (der EINE Weg jedes Index), der Draw bindet ihn
     // nach dem Array-Typ als uint16. Das Haut-Gewicht reist als normiertes Uint16 (unorm16x4, nie geweitet).

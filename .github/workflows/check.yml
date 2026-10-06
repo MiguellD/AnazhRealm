@@ -704,6 +704,14 @@ jobs:
               # erzwungener Kapsel-Satz in 20 m wird rot und genannt.
               run: npm run gate:analog-nah
 
+            - name: Post-Kette (echter Renderer — der Direktpfad zeichnet mit Tiefe, jede Nachbild-Stufe kostet nur, wenn sie zeigt)
+              # Faehrt den ECHTEN Frame (swiftshader, kienspan) durch die Weiche: Post-Kette, Direktpfad (wie die
+              # Zerleg-Linse ihn stellt), zurueck, ein Render-Fehler der Kette — je Schritt kein Fehler, der Leser der
+              # Szenen-Tiefe kopiert, der Direktpfad zeichnet mit Tiefe (die nahe Kiste deckt die ferne), die Post-Kette
+              # ohne Leinwand-Tiefe. Dazu die Shader-Kosten-Linse am erzeugten WGSL der Ausgabe (hoechstens 9 unbedingte
+              # Abtastungen, Godrays und Kontrast im Zweig hinter ihrer Staerke) und die Godrays mit der Sonne im Bild.
+              run: npm run gate:post-kette
+
             - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
               # Die LINSE gegen den asymmetrischen-Verifikations-Riss: das Gate misst Mechanik, nicht
               # den Perzept — ABER für die Teile des Looks, die REALITÄT SIND (Albedo · Wetter-Dimmung ·
