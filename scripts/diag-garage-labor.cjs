@@ -145,7 +145,12 @@ const server = http.createServer((req, res) => {
     );
     // G3: Gas geben, dann Anzeige gegen das echte Tempo desselben Frames.
     await page.keyboard.down("KeyW");
-    await new Promise((r) => setTimeout(r, 1800));
+    // bis der Wagen fährt (> 3 m/s) — nie eine feste Uhr: auf dem CPU-Raster der CI kommen in 1,8 s nur wenige Frames
+    // (gemessen 1,1 m/s), der Tacho ist aber eine Frage der Umrechnung, nicht der Bildrate
+    await page
+        // eslint-disable-next-line no-undef
+        .waitForFunction(() => Math.abs(car.speed) > 3, { timeout: 90000, polling: 100 })
+        .catch(() => {});
     Object.assign(
         m,
         await page.evaluate(
