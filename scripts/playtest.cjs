@@ -52001,6 +52001,10 @@ async function checkBandWave10b(ctx) {
             const targetEntry = r.spawnArchitecture("baum_eiche", { x: 1, y: 0, z: 0 }, { silent: true });
             const beforeWeather = r.state.weather;
             r.state.weather = "sunny";
+            // Das Brennglas-Gesetz (Welle L Folge) bündelt die SONNE: Mittag, damit der Brennpunkt unter der Linse in der
+            // Eiche liegt (nachts brennt nichts).
+            const beforeTod = r.state.timeOfDay;
+            r.state.timeOfDay = 0.5;
             const beforeArchCount = r.state.architectures.length;
             r._tickFocusingAffordances(25);
             const afterArchCount = r.state.architectures.length;
@@ -52015,6 +52019,7 @@ async function checkBandWave10b(ctx) {
             out.rainyNoIgnite = !!r.state.architectures.find((e) => e.id === target2.id);
 
             r.state.weather = beforeWeather;
+            r.state.timeOfDay = beforeTod;
             r.state.architectures = r.state.architectures.filter(
                 (e) =>
                     e.type !== "test_10b3_car" &&

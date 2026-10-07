@@ -24,6 +24,13 @@
 //     „0 von 3 Wegen", frieden verweigert nur im Log (anazhRealm.js:76375), das Rezeptbuch legte die Eiche ins Inventar
 //     und zog das Material doppelt.
 //
+//   BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH: die Eiche 2,4 m vor der Mitte der
+//     Genesis-Plattform (ihr Quarz-Kern ist nach der Tag-Sprache ein Brennglas) übersteht einen ganzen sonnigen Tag; die
+//     gebaute Linse (Quarz-Kugel im Bronze-Ring, 1 m über dem Boden) entzündet zu Mittag die Eiche unter sich — erst glimmt
+//     sie, dann brennt sie, beides im Spieler-Kanal —, nachts nie, und was den Brennpunkt verlässt, kühlt. Dazu der
+//     Zensus der Welt: was das alte Gesetz im 4-m-Kreis jeder Linse erhitzte, was das Licht jetzt erreicht. Befund
+//     (Leben-Schau 07.10.): die Werkstatt-Eiche verbrannte nach 20 s Sonne still (Architekturen 125 → 124, nur im Log).
+//
 //   node scripts/diag-werkstatt-weg.cjs [--selftest]          Port: WERKSTATT_WEG_PORT (Standard 4623)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -171,6 +178,33 @@ function wegVerdict(m) {
     return out;
 }
 
+// Brennglas: { plattform: {steht, maxWaerme, zeilen}, linse: {glimmtBei, brenntBei, steht, zeileGlimmt, zeileBrennt},
+// nacht: {waerme, steht}, kuehlung: {nachFokus, nachKuehlen}, zensus: {linsen, altReichweite, imLicht} }.
+function brennVerdict(m) {
+    if (!m || m.gestartet !== true) return ["start"];
+    const out = [];
+    const p = m.plattform || {};
+    if (!p.gesetzt) out.push("die Eiche an der Plattform nicht gesetzt (Vorbedingung)");
+    else if (!(p.abstand <= 3)) out.push(`die Eiche steht nicht 2,4 m vor der Mitte (Vorbedingung, ${p.abstand} m)`);
+    else if (!p.steht) out.push(`die Eiche 2,4 m vor der Plattform-Mitte verbrannte (nach ${p.verbranntNach} s Sonne)`);
+    const l = m.linse || {};
+    if (!l.gesetzt) out.push("die gebaute Linse nicht gesetzt (Vorbedingung)");
+    else {
+        if (l.steht) out.push(`die gebaute Linse entzündet die Eiche unter sich nicht (Wärme ${l.waerme})`);
+        if (!/glimmt/.test(l.zeileGlimmt || "")) out.push("das Glimmen schweigt");
+        if (!/entzündete/.test(l.zeileBrennt || ""))
+            out.push(`die Zerstörung nennt sich nicht („${(l.zeileBrennt || "").slice(0, 50)}")`);
+    }
+    const n = m.nacht || {};
+    if (!(n.waerme === 0) || !n.steht)
+        out.push(`nachts erwärmt die Linse (Wärme ${n.waerme}${n.steht ? "" : ", verbrannt"})`);
+    const k = m.kuehlung || {};
+    if (!(k.nachFokus > 0)) out.push("keine Wärme im Brennpunkt (Vorbedingung)");
+    else if (!(k.nachKuehlen === 0))
+        out.push(`außerhalb des Brennpunkts kühlt nichts (${k.nachFokus} → ${k.nachKuehlen})`);
+    return out;
+}
+
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src) {
     const nc = ohneKommentare(src);
@@ -220,6 +254,20 @@ function wand(src) {
                     logs <= 1 &&
                     sagt >= 4,
                 `confirmBuild: ${sagt}× Spieler-Kanal, ${logs}× Log`,
+            ];
+        })(),
+        (() => {
+            const brenn = fnBody(nc, /\n {4}_tickFocusingAffordances\(dt\) \{/) || "";
+            const formel = (nc.match(/\* Math\.PI \* 2 - Math\.PI \/ 2/g) || []).length;
+            return [
+                "W5 das Brennglas bündelt die Sonne in den Brennpunkt (`_sonnenRichtung` · `_brennpunkte` · `_traegtPunkt`), die Zerstörung spricht der Spieler-Kanal, der Sonnen-Winkel ist EINE Formel",
+                /this\._sonnenRichtung\(\)/.test(brenn) &&
+                    /this\._brennpunkte\(/.test(brenn) &&
+                    /this\._traegtPunkt\(/.test(brenn) &&
+                    /this\._spielerSagt\(/.test(brenn) &&
+                    !/this\.log\(/.test(brenn) &&
+                    formel === 1,
+                `Sonnen-Winkel ausgeschrieben ${formel}×`,
             ];
         })(),
     ];
@@ -587,6 +635,147 @@ async function probe(argW) {
     } catch (e) {
         out.weg = Object.assign(out.weg || {}, { err: (e && e.stack) || String(e) });
     }
+
+    // ── Brennglas: das Licht brennt, wo es sich bündelt, und die Zerstörung nennt sich ──
+    try {
+        const m = { gestartet: false };
+        out.brenn = m;
+        if (!frei || !plat) throw new Error("kein freier Ort oder keine Genesis-Plattform");
+        const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
+        const wetterAlt = st.weather;
+        const zeitAlt = st.timeOfDay;
+        const takt = (s) => r._tickFocusingAffordances(s);
+        try {
+            st.weather = "sunny";
+            // Der Zensus: Linsen der Welt, was das alte Gesetz im 4-m-Kreis erreichte, was das Licht zu Mittag erreicht.
+            const R2 = r.constructor.FOCUSING_HEAT_RANGE_M ** 2;
+            const linsen = st.architectures.filter((e) => e.affordances && e.affordances.focusing);
+            const brennbar = (e) => {
+                const b = st.blueprints[e.type];
+                return b && (r.computeCompoundTags(b).brennbar || 0) >= r.constructor.BRENNBAR_TAG_MIN;
+            };
+            const nah = st.architectures.filter(
+                (e) =>
+                    !(e.affordances && e.affordances.focusing) &&
+                    linsen.some((f) => (f.position.x - e.position.x) ** 2 + (f.position.z - e.position.z) ** 2 <= R2) &&
+                    brennbar(e)
+            );
+            st.timeOfDay = 0.5;
+            const licht = typeof r._sonnenRichtung === "function" ? r._sonnenRichtung() : null;
+            const imLicht =
+                licht && typeof r._brennpunkte === "function"
+                    ? nah.filter((e) =>
+                          linsen.some((f) =>
+                              r._brennpunkte(f, licht).some((p) => r._traegtPunkt(e, st.blueprints[e.type], p))
+                          )
+                      ).length
+                    : null;
+            m.zensus = { linsen: [...new Set(linsen.map((e) => e.type))], altReichweite: nah.length, imLicht };
+            // (1) Die Eiche 2,4 m vor der Plattform-Mitte (der Ort der Leben-Schau; direkt gesetzt — der Bau-Modus hält die
+            // Lichtung seit dem Schnitt der Wege frei, hier wird das Brennglas-Gesetz allein gemessen): ein sonniger Tag.
+            const P = plat.position;
+            const vorn = r._blickVorn ? r._blickVorn(0, 0) : { x: 0, z: 1 };
+            const eiche = r.spawnArchitecture(
+                "baum_eiche",
+                { x: P.x + vorn.x * 2.4, y: P.y + 1.5, z: P.z + vorn.z * 2.4 },
+                { precise: true } // bit-treu wie das Setzen (confirmBuild: string-id) — keine Spieler-Klemme
+            );
+            m.plattform = { gesetzt: !!eiche };
+            if (eiche) m.plattform.abstand = +Math.hypot(eiche.position.x - P.x, eiche.position.z - P.z).toFixed(2);
+            if (eiche) {
+                let maxW = 0;
+                let nach = null;
+                for (let s = 0; s < 480; s++) {
+                    st.timeOfDay = s / 480;
+                    takt(1);
+                    maxW = Math.max(maxW, eiche.heatBuildup || 0);
+                    if (!st.architectures.includes(eiche)) {
+                        nach = s;
+                        break;
+                    }
+                }
+                m.plattform.steht = st.architectures.includes(eiche);
+                m.plattform.maxWaerme = +maxW.toFixed(3);
+                m.plattform.verbranntNach = nach;
+                if (m.plattform.steht) r.removeArchitecture(eiche);
+            }
+            // (2) Die gebaute Linse (das Gesetz lebt): Quarz-Kugel im Bronze-Ring, 1 m über dem Boden, die Eiche darunter.
+            const LINSE = "__werkstatt_weg_linse";
+            st.blueprints[LINSE] = {
+                name: LINSE,
+                label: "Prüf-Linse",
+                parts: [
+                    {
+                        shape: "sphere",
+                        material: "quarz",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 0.8, y: 0.8, z: 0.8 },
+                    },
+                    {
+                        shape: "torus",
+                        material: "bronze",
+                        position: { x: 0, y: 1, z: 0 },
+                        size: { x: 0.9, y: 0.15, z: 0.9 },
+                    },
+                ],
+            };
+            const L0 = { x: frei.x + 30, y: frei.y, z: frei.z };
+            const linse = r.spawnArchitecture(LINSE, L0, { silent: true });
+            m.linse = { gesetzt: !!(linse && linse.affordances && linse.affordances.focusing) };
+            const baum = () => r.spawnArchitecture("baum_eiche", { x: L0.x + 0.3, y: L0.y, z: L0.z }, { silent: true });
+            if (m.linse.gesetzt) {
+                // Nachts: 30 s Sonne-Wetter ohne Sonne.
+                const b0 = baum();
+                st.timeOfDay = 0.0;
+                for (let s = 0; s < 30; s++) takt(1);
+                m.nacht = { waerme: +(b0.heatBuildup || 0).toFixed(3), steht: st.architectures.includes(b0) };
+                // Kühlung: 10 s im Brennpunkt (Mittag), dann 30 s Nacht.
+                st.timeOfDay = 0.5;
+                for (let s = 0; s < 10; s++) takt(1);
+                const nachFokus = +(b0.heatBuildup || 0).toFixed(3);
+                st.timeOfDay = 0.0;
+                for (let s = 0; s < 30; s++) takt(1);
+                m.kuehlung = { nachFokus, nachKuehlen: +(b0.heatBuildup || 0).toFixed(3) };
+                if (st.architectures.includes(b0)) r.removeArchitecture(b0);
+                // Mittag: glimmen, dann brennen — im Spieler-Kanal.
+                r._spielerSagtLetzte = null;
+                const b1 = baum();
+                st.timeOfDay = 0.5;
+                const n0 = zeilen().length;
+                let glimmt = null;
+                let brennt = null;
+                for (let s = 1; s <= 40 && st.architectures.includes(b1); s++) {
+                    takt(1);
+                    if (
+                        glimmt == null &&
+                        zeilen()
+                            .slice(n0)
+                            .some((z) => /glimmt/.test(z))
+                    )
+                        glimmt = s;
+                    if (!st.architectures.includes(b1)) brennt = s;
+                }
+                const neu = zeilen().slice(n0);
+                Object.assign(m.linse, {
+                    steht: st.architectures.includes(b1),
+                    waerme: +(b1.heatBuildup || 0).toFixed(3),
+                    glimmtBei: glimmt,
+                    brenntBei: brennt,
+                    zeileGlimmt: neu.find((z) => /glimmt/.test(z)) || "",
+                    zeileBrennt: neu.find((z) => /entzünd/i.test(z)) || neu.join(" | "),
+                });
+                if (st.architectures.includes(b1)) r.removeArchitecture(b1);
+            }
+            if (linse) r.removeArchitecture(linse);
+            delete st.blueprints[LINSE];
+        } finally {
+            st.weather = wetterAlt;
+            st.timeOfDay = zeitAlt;
+        }
+        m.gestartet = true;
+    } catch (e) {
+        out.brenn = Object.assign(out.brenn || {}, { err: (e && e.stack) || String(e) });
+    }
     return out;
 }
 
@@ -821,6 +1010,55 @@ async function probe(argW) {
                 v.join(" · ")
             );
         }
+        // Brennglas: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
+        const gesundB = {
+            gestartet: true,
+            plattform: { gesetzt: true, abstand: 2.4, steht: true, maxWaerme: 0.2 },
+            linse: {
+                gesetzt: true,
+                steht: false,
+                waerme: 1,
+                glimmtBei: 10,
+                brenntBei: 20,
+                zeileGlimmt: "„Eiche“ glimmt im Brennpunkt",
+                zeileBrennt: "Die Sonne entzündete durch „Prüf-Linse“ „Eiche“",
+            },
+            nacht: { waerme: 0, steht: true },
+            kuehlung: { nachFokus: 0.5, nachKuehlen: 0 },
+        };
+        check(
+            "Selbst-Test Brennglas: gesund == 0 Täter",
+            brennVerdict(gesundB).length === 0,
+            brennVerdict(gesundB).join(" · ")
+        );
+        const mitB = (k, o) => Object.assign({}, gesundB, { [k]: Object.assign({}, gesundB[k], o) });
+        for (const [name, bruch, soll] of [
+            [
+                "die Plattform verbrennt die Eiche (Befund)",
+                mitB("plattform", { steht: false, verbranntNach: 20 }),
+                "die Eiche 2,4 m vor der Plattform-Mitte verbrannte",
+            ],
+            [
+                "die Zerstörung steht nur im Log (Befund)",
+                mitB("linse", { zeileBrennt: "" }),
+                "die Zerstörung nennt sich nicht",
+            ],
+            ["das Glimmen schweigt", mitB("linse", { zeileGlimmt: "" }), "das Glimmen schweigt"],
+            [
+                "das Gesetz ist tot (die Linse brennt nicht)",
+                mitB("linse", { steht: true, waerme: 0 }),
+                "die gebaute Linse entzündet",
+            ],
+            ["nachts brennt es", mitB("nacht", { waerme: 1.5, steht: false }), "nachts erwärmt die Linse"],
+            ["nichts kühlt", mitB("kuehlung", { nachKuehlen: 0.5 }), "außerhalb des Brennpunkts kühlt nichts"],
+        ]) {
+            const v = brennVerdict(bruch);
+            check(
+                `Selbst-Test Brennglas: ‚${name}' → die Linse nennt ${soll}`,
+                v.some((t) => t.startsWith(soll)),
+                v.join(" · ")
+            );
+        }
         for (const [name, bruch, soll] of [
             [
                 "das Rezeptbuch legt wieder ins Inventar",
@@ -834,6 +1072,16 @@ async function probe(argW) {
                 "das Setzen fragt die Natur-Wand nicht",
                 quelle.replace("? this._naturSetzen(name, spawnPos, {}, setzen, (wo) => (wand = wo))", "? setzen()"),
                 "W4",
+            ],
+            [
+                "das Brennglas erhitzt wieder den ganzen 4-m-Kreis",
+                quelle.replace("if (this._traegtPunkt(target, targetBp, p)) {", "if (true) {"),
+                "W5",
+            ],
+            [
+                "der Sonnen-Winkel ein zweites Mal ausgeschrieben",
+                quelle.replace("const sa = this._sonnenWinkel(t);", "const sa = t * Math.PI * 2 - Math.PI / 2;"),
+                "W5",
             ],
         ]) {
             const rot = wand(bruch)
@@ -909,6 +1157,17 @@ async function probe(argW) {
         "L-Werkstatt jeder Weg (Werkstatt · Rezeptbuch · Hotbar) führt zum stehenden Werk, frieden zahlt einmal, jede Absage spricht, die Lichtung sagt warum",
         vG.length === 0,
         `${gm.gestartet ? `${tragen}/6 Wege tragen · ${LAGEN.map((l) => `${l}: ${WEGE.map((w) => zelle(l, w)).join(", ")}`).join(" · ")} · Werkstatt ${JSON.stringify(gm.werke)} · Suche „haus" ${gm.sucheHaus} · Lichtung ${JSON.stringify({ wand: gm.lichtung && gm.lichtung.wand, steht: gm.lichtung && gm.lichtung.steht })}` : "nicht gestartet"}${vG.length ? " — Täter: " + vG.join(", ") : ""}`
+    );
+    console.log("=== BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH ===");
+    const bm = out.brenn || {};
+    if (bm.err) check("Brennglas Probe ohne Ausnahme", false, bm.err.split("\n")[0]);
+    const vB = brennVerdict(bm);
+    const bp_ = bm.plattform || {};
+    const bl = bm.linse || {};
+    check(
+        "Brennglas die Eiche an der Genesis-Plattform übersteht einen sonnigen Tag, die gebaute Linse brennt zu Mittag und sagt es, nachts nie, außerhalb kühlt es",
+        vB.length === 0,
+        `${bm.gestartet ? `Plattform: ${bp_.steht ? `steht nach 480 s (max. Wärme ${bp_.maxWaerme})` : `verbrannt nach ${bp_.verbranntNach} s`} · Linse: glimmt ${bl.glimmtBei} s, brennt ${bl.brenntBei} s („${(bl.zeileBrennt || "").slice(0, 60)}") · Nacht Wärme ${(bm.nacht || {}).waerme} · Kühlung ${(bm.kuehlung || {}).nachFokus} → ${(bm.kuehlung || {}).nachKuehlen} · Zensus ${JSON.stringify(bm.zensus)}` : "nicht gestartet"}${vB.length ? " — Täter: " + vB.join(", ") : ""}`
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {

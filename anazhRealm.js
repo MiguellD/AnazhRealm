@@ -10009,7 +10009,7 @@ class AnazhRealm {
             boe: this._windBoeAt(px, pz, this._windZeit()),
             deckung: this._kronenStreuAt(px, pz),
             regen: wf.rain,
-            sonne: Math.sin(tod * Math.PI * 2 - Math.PI / 2),
+            sonne: Math.sin(this._sonnenWinkel(tod)),
             saisonPhase: typeof this.state.seasonPhase === "number" ? this.state.seasonPhase : 0.375,
             lebendig: Math.max(0, Math.min(1, aura.lebendig)),
             ufer,
@@ -18655,7 +18655,7 @@ class AnazhRealm {
                 // Nacht = Ruhe; am Tag weiden Pflanzenfresser (diet ≤ weideDiet,
                 // tetrapoda-Dials über die Soul-Karte — einmal je Wesen gemerkt).
                 const tod = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-                const nacht = Math.sin(tod * Math.PI * 2 - Math.PI / 2) < SW.nachtSin;
+                const nacht = Math.sin(this._sonnenWinkel(tod)) < SW.nachtSin;
                 if (ud._verhaltenDiet === undefined) {
                     const recId = AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[ud.soul];
                     const dials = recId && this._tetrapodaStudioDials ? this._tetrapodaStudioDials(recId) : null;
@@ -51861,56 +51861,136 @@ class AnazhRealm {
 
     // ----- Welt-Reaktion: focusing (Brennglas im Sonnenschein) -----
 
-    // Brennglas (throttled in _tickAffordances): jede focusing-Architektur akkumuliert Wärme an
-    // brennbaren Architekturen im FOCUSING_HEAT_RANGE; an der Schwelle ignite (entfernen + Journal).
-    // Nur bei state.weather === "sunny".
+    // DAS BRENNGLAS-GESETZ (throttled in _tickAffordances; Welle L Folge): eine focusing-Architektur bündelt die SONNE durch
+    // ihre Linse (jeder Teil, der die Tag-Sprache „transparent" trägt) in EINEN Brennpunkt je Linse — die Linsen-Mitte, um
+    // 1,5 Linsen-Radien gegen das Licht versetzt (`_brennpunkte`; die Brennweite einer Glas-Kugel, n ≈ 1,5). Erwärmt wird
+    // nur, wessen Körper den Brennpunkt trägt (`_traegtPunkt`: Grundriss und Höhe seiner Teile); außerhalb kühlt es mit
+    // derselben Rate, nachts und ohne Sonne kühlt alles. Auf halbem Weg glimmt es — der Spieler hört es, ehe es brennt —,
+    // an der Schwelle entzündet es sich, und die Zerstörung nennt sich dem Spieler (`_spielerSagt` + Journal, mit den Namen
+    // von Werk und Linse). Befund (Leben-Schau 07.10.): die Genesis-Plattform (Quarz-Kern auf Stein) ist nach der Tag-Sprache
+    // ein Brennglas — sie erhitzte JEDES Brennbare im 4-m-Kreis, ohne Licht-Geometrie, ohne Abkühlung, auch nachts; die
+    // Werkstatt-Eiche 2,4 m vor dem Spieler verbrannte nach 20 s Sonne, und das stand nur im Log (Architekturen 125 → 124).
+    // Ein Brennpunkt im Leib der Linse oder darunter (der Kern der Plattform, das Wasser des Ziehbrunnens) erreicht niemanden.
     _tickFocusingAffordances(dt) {
         // Zündet erst auf stehender Bühne — sonst verbrennt Welt-Substanz im unspielbaren Boot. Headless steht
         // die Bühne sofort (direkte Tick-Aufrufe laufen unverändert).
         if (!this._buehneSteht()) return;
-        if (this.state.weather !== "sunny") return;
-        const focusing = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.focusing);
-        if (focusing.length === 0) return;
+        const archs = this.state.architectures || [];
+        const focusing = archs.filter((e) => e.affordances && e.affordances.focusing);
+        const sonne = this.state.weather === "sunny" ? this._sonnenRichtung() : null;
+        const licht = sonne && sonne.y > 0 ? sonne : null;
+        const punkte = [];
+        if (licht) for (const fa of focusing) for (const p of this._brennpunkte(fa, licht)) punkte.push({ fa, p });
         const heatRange2 = AnazhRealm.FOCUSING_HEAT_RANGE_M * AnazhRealm.FOCUSING_HEAT_RANGE_M;
         const ignite = AnazhRealm.FOCUSING_IGNITE_THRESHOLD;
         const ratePerSec = AnazhRealm.FOCUSING_HEAT_RATE_PER_SEC;
+        const name = (e) => {
+            const b = e && this.state.blueprints ? this.state.blueprints[e.type] : null;
+            return String((b && b.label) || (e && e.type) || "?").split(/\s[·—(]/)[0];
+        };
         const ignitions = [];
         // Das GERITTENE Gefährt brennt nie unter dem Reiter weg (sonst Auto-Dismount aus dem Nichts) —
         // Reiter + Gefährt sind EINS.
         const riddenId = this.state.player ? this.state.player.mountedArch : null;
-        for (const target of this.state.architectures || []) {
+        for (const target of archs) {
+            const warm = target.heatBuildup > 0;
+            if (!warm && !punkte.length) continue; // kein Licht, nichts zu kühlen: der billigste Weg (Lehre 25)
             if (target.affordances && target.affordances.focusing) continue; // selbst nicht
             if (riddenId !== null && riddenId !== undefined && target.id === riddenId) continue;
-            // Mindestens eine focusing-Architektur in Range? ZUERST (billig) — die Compound-Tags rechnet nur ein
-            // Bau in Reichweite (Befund 02.10.: die Tags aller ~120 Bauten je Takt kosteten Ø 20 ms, max 62 ms).
-            let inRange = false;
-            for (const fa of focusing) {
-                const dx = fa.position.x - target.position.x;
-                const dz = fa.position.z - target.position.z;
-                if (dx * dx + dz * dz <= heatRange2) {
-                    inRange = true;
-                    break;
+            let quelle = null;
+            if (punkte.length) {
+                // Mindestens eine focusing-Architektur in Range? ZUERST (billig) — die Compound-Tags rechnet nur ein
+                // Bau in Reichweite (Befund 02.10.: die Tags aller ~120 Bauten je Takt kosteten Ø 20 ms, max 62 ms).
+                let inRange = false;
+                for (const fa of focusing) {
+                    const dx = fa.position.x - target.position.x;
+                    const dz = fa.position.z - target.position.z;
+                    if (dx * dx + dz * dz <= heatRange2) {
+                        inRange = true;
+                        break;
+                    }
                 }
+                const targetBp = inRange && this.state.blueprints ? this.state.blueprints[target.type] : null;
+                const tags = targetBp ? this.computeCompoundTags(targetBp) || {} : {};
+                if ((tags.brennbar || 0) >= AnazhRealm.BRENNBAR_TAG_MIN)
+                    for (const { fa, p } of punkte)
+                        if (this._traegtPunkt(target, targetBp, p)) {
+                            quelle = fa;
+                            break;
+                        }
             }
-            if (!inRange) continue;
-            const targetBp = this.state.blueprints && this.state.blueprints[target.type];
-            if (!targetBp) continue;
-            const tags = this.computeCompoundTags(targetBp) || {};
-            if ((tags.brennbar || 0) < AnazhRealm.BRENNBAR_TAG_MIN) continue;
-            target.heatBuildup = (target.heatBuildup || 0) + ratePerSec * dt;
-            if (target.heatBuildup >= ignite) {
-                ignitions.push(target);
+            if (!quelle) {
+                if (warm) target.heatBuildup = Math.max(0, target.heatBuildup - ratePerSec * dt);
+                continue;
             }
+            const vorher = target.heatBuildup || 0;
+            target.heatBuildup = vorher + ratePerSec * dt;
+            if (vorher < ignite / 2 && target.heatBuildup >= ignite / 2 && target.heatBuildup < ignite)
+                this._spielerSagt(
+                    `„${name(target)}" glimmt im Brennpunkt von „${name(quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
+                );
+            if (target.heatBuildup >= ignite) ignitions.push({ t: target, quelle });
         }
-        for (const t of ignitions) {
-            this.log(`Sonnen-Brennglas entzündete „${t.type}"`, "INFO");
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        for (const { t, quelle } of ignitions) {
+            const d = pm ? Math.hypot(t.position.x - pm.x, t.position.z - pm.z) : null;
+            this._spielerSagt(
+                `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}"${d != null ? ` (${Math.round(d)} m von dir)` : ""}.`
+            );
             if (this.journalAppend) {
-                this.journalAppend("loss", `Eine Sonne-und-Brennglas-Geste verzehrte „${t.type}".`, {
+                this.journalAppend("loss", `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
                     type: t.type,
+                    linse: quelle.type,
                 });
             }
             this.removeArchitecture(t);
         }
+    }
+
+    // Die Brennpunkte einer Linse in der Welt: je Teil, der die Tag-Sprache „transparent" trägt (die Schwelle der
+    // focusing-Affordanz), seine Mitte (Eintrag + gedrehter, skalierter Teil-Ort) minus Licht × 1,5 Radien (Radius = die
+    // halbe waagrechte Ausdehnung des Teils). `licht` = Richtung ZUR Sonne.
+    _brennpunkte(fa, licht) {
+        const bp = this.state.blueprints && this.state.blueprints[fa.type];
+        if (!bp || !Array.isArray(bp.parts) || !fa.position) return [];
+        const T = AnazhRealm.AFFORDANCE_THRESHOLDS.focusing;
+        const g = Number.isFinite(fa.scale) && fa.scale > 0 ? fa.scale : 1;
+        const ry = Number.isFinite(fa.rotationY) ? fa.rotationY : 0;
+        const c = Math.cos(ry);
+        const s = Math.sin(ry);
+        const out = [];
+        for (const part of bp.parts) {
+            if (!part || (this.computePartTags(part).transparent || 0) < T.transparentMin) continue;
+            const pp = part.position || { x: 0, y: 0, z: 0 };
+            const sz = part.size || { x: 1, y: 1, z: 1 };
+            const sx = Math.abs(sz.x || 1);
+            const f = 1.5 * (Math.max(sx, Math.abs(sz.z || sx)) / 2) * g;
+            const lx = (pp.x || 0) * g;
+            const lz = (pp.z || 0) * g;
+            out.push({
+                x: fa.position.x + lx * c + lz * s - licht.x * f,
+                y: fa.position.y + (pp.y || 0) * g - licht.y * f,
+                z: fa.position.z - lx * s + lz * c - licht.z * f,
+            });
+        }
+        return out;
+    }
+
+    // Trägt der Körper eines Eintrags den Punkt p? Grundriss (der Kreis um die Mitte seiner Teile bis zur weitesten
+    // waagrechten Ausdehnung) und Höhe seiner Teile, mit dem Eintrag skaliert und gedreht.
+    _traegtPunkt(e, bp, p) {
+        const bb = bp ? this._compoundBoundingBox(bp) : null;
+        if (!bb || !e.position) return false;
+        const g = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+        const ry = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+        const mx = ((bb.min.x + bb.max.x) / 2) * g;
+        const mz = ((bb.min.z + bb.max.z) / 2) * g;
+        const cx = e.position.x + mx * Math.cos(ry) + mz * Math.sin(ry);
+        const cz = e.position.z - mx * Math.sin(ry) + mz * Math.cos(ry);
+        const r = (Math.max(bb.extent.x, bb.extent.z) / 2) * g;
+        const y0 = e.position.y + bb.min.y * g;
+        const y1 = e.position.y + bb.max.y * g;
+        return (p.x - cx) ** 2 + (p.z - cz) ** 2 <= r * r && p.y >= y0 && p.y <= y1;
     }
 
     // ----- Welt-Reaktion: radiating (Resonanz wärmt das Gemüt) -----
@@ -86050,7 +86130,7 @@ class AnazhRealm {
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         const stop = this._interpolateDayNight(t);
         const tint = this._dayNightComputeTint(stop);
-        const angle = t * Math.PI * 2 - Math.PI / 2;
+        const angle = this._sonnenWinkel(t);
         const sunDir = this._dayNightSunDirection(angle);
         // Mond-Richtung aus der EINEN Quelle: `_dayNightSunDirection(angle+π)` ist exakt die Formel des
         // sichtbaren Mond-Meshes (`_updateCelestialBodies`); −sunDir hätte eine andere z-Komponente.
@@ -86201,6 +86281,18 @@ class AnazhRealm {
         return new THREE.Vector3(sunDirX / sunLen, sunDirY / sunLen, sunDirZ / sunLen);
     }
 
+    // Der Sonnen-Winkel der Tageszeit t (0 Mitternacht · 0,5 Mittag) — die EINE Formel, die Licht, Mond, Sterne, Godrays,
+    // Tier-Nacht, Feld-Sonne und das Brennglas lesen (vorher fünfmal ausgeschrieben).
+    _sonnenWinkel(t) {
+        return t * Math.PI * 2 - Math.PI / 2;
+    }
+
+    // Die Richtung ZUR Sonne jetzt (Einheitsvektor; y ≤ 0 unter dem Horizont) — dieselbe Quelle wie Licht und Skybox.
+    _sonnenRichtung() {
+        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+        return this._dayNightSunDirection(this._sonnenWinkel(t));
+    }
+
     // Reine Godray-Stärke aus Sonnenhöhe (smoothstep knapp über 0) × Wetter-Klarheit (`weatherSun`,
     // auf [0..1] remappt); keine this-Reads → headless verifizierbar.
     // Der Screen-Sichtbarkeits-Gate (Sonne im Bild) sitzt separat in `_loopRender`.
@@ -86288,7 +86380,7 @@ class AnazhRealm {
     _dayNightApplyStarField(t, skyMul) {
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
-        const sa = t * Math.PI * 2 - Math.PI / 2;
+        const sa = this._sonnenWinkel(t);
         const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
         u.opacity.value = skyMul;
         if (u.grenze) u.grenze.value = this._himmelGrenzgroesse(sunHeight);
@@ -92821,7 +92913,7 @@ class AnazhRealm {
             const gu = this.state.godrayUniforms;
             const cam = this.state.camera;
             const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-            const angle = t * Math.PI * 2 - Math.PI / 2;
+            const angle = this._sonnenWinkel(t);
             const sunDir = this._dayNightSunDirection(angle); // dieselbe Richtungs-Quelle wie Licht/Skybox
             // NDC-Projektion des sichtbaren Sonnen-Meshes → Screen-UV (0..1).
             const proj = (this._godrayProjV || (this._godrayProjV = new THREE.Vector3()))
