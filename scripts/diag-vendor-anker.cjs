@@ -79,6 +79,22 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getLights(e,t){if(", organ: "AnazhRealm._diaetRefresh (obs.getLights)" },
     { file: "vendor/three.webgpu.min.js", sub: 'needsVelocity(e){const t=e.getMRT();return null!==t&&t.has("velocity")}', organ: "AnazhRealm._diaetRefresh (obs.needsVelocity)" },
     { file: "vendor/three.webgpu.min.js", sub: "firstInitialization(e){return!1===this.renderObjects.has(e)&&(this.getRenderObjectData(e),!0)}", organ: "AnazhRealm._diaetRefresh (obs.renderObjects = Erst-Init)" },
+    // DER EINE KNOTEN JE QUELLE (_configureRenderer, Welle K): r184 teilt eine geteilte Gruppe über Programme nur bei
+    // GLEICHEN Knoten-Ids (je Render-Kontext EIN Puffer); ReferenceNode legt seinen Uniform-Knoten in setNodeType an (der
+    // Eingriff gibt jedem Verweis auf dasselbe Objekt und dieselbe Eigenschaft einer geteilten Gruppe DENSELBEN), die CSM
+    // baut ihre Render-Knoten in setup (einmal je Instanz).
+    { file: "vendor/three.webgpu.min.js", sub: 'setNodeType(e){let t=null;t=null!==this.count?Zl(null,e,this.count):Array.isArray(this.getValueFromReference())?td(null,e):"texture"===e?Kl(null):"cubeTexture"===e?$c(null):Sa(null,e),null!==this.group&&t.setGroup(this.group),null!==this.name&&t.setName(this.name),this.node=t}', organ: "EIN KNOTEN JE QUELLE (ReferenceNode.setNodeType legt den Uniform-Knoten an)" },
+    { file: "vendor/three.webgpu.min.js", sub: "e.uniforms.sort((e,t)=>e.nodeUniform.node.id-t.nodeUniform.node.id);for(const t of e.uniforms)r+=t.nodeUniform.node.id}else r+=e.nodeUniform.id;const i=this.renderer._currentRenderContext||this.renderer;let n=qN.get(i);", organ: "EIN KNOTEN JE QUELLE (_getBindGroup teilt die Gruppe nach Knoten-Ids je Render-Kontext)" },
+    { file: "vendor/CSMShadowNode.js", sub: "setup( builder ) {\n\n\t\tif ( this.camera === null ) this._init( builder );\n\n\t\treturn this.fade === true ? this._setupFade() : this._setupStandard();", organ: "EIN KNOTEN JE QUELLE (CSMShadowNode.setup baut die Render-Knoten je Aufruf — einmal je Instanz)" },
+    { file: "vendor/CSMShadowNode.js", sub: "this.setupShadowPosition( builder );", organ: "EIN KNOTEN JE QUELLE (die Schatten-Lage baut der Fn-Rumpf je Programm, nie setup)" },
+    // EIN SCHREIBEN JE PUFFER: das Backend lädt eine Uniform-Gruppe Bereich für Bereich (je Bereich ein writeBuffer).
+    { file: "vendor/three.webgpu.min.js", sub: "updateBinding(e){const t=this.backend,r=t.device,s=e.buffer,i=t.get(e).buffer,n=e.updateRanges;if(0===n.length)r.queue.writeBuffer(i,0,s,0);else{", organ: "EIN SCHREIBEN JE PUFFER (backend.updateBinding: ein writeBuffer je Bereich)" },
+    { file: "vendor/three.webgpu.min.js", sub: "t.isBuffer&&t.updateRanges.length>0&&t.clearUpdateRanges()", organ: "EIN SCHREIBEN JE PUFFER (r184 leert die Bereiche nach dem Upload)" },
+    // EIN GANG JE GRUPPE UND RENDER (_diaetGang): Bindegruppen und Knoten tragen Ids, Vorher-Knoten ihren Takt.
+    { file: "vendor/three.webgpu.min.js", sub: 'class bN{constructor(e="",t=[]){this.name=e,this.bindings=t,this.id=yN++}}', organ: "AnazhRealm._diaetGang (die Bindegruppe trägt eine Id)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getUpdateBeforeType(){return this.updateBeforeType}", organ: "AnazhRealm._diaetGang (Vorher-Takt: object geht je Programm)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateBeforeNode(e){const t=e.getUpdateBeforeType(),r=e.updateReference(this);if(t===ri.FRAME){", organ: "AnazhRealm._diaetGeteiltSchreiben (NodeFrame.updateBeforeNode je Vorher-Knoten, wie Nodes.updateBefore)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateReference(e){return this.reference=null!==this.object?this.object:e.object,this.reference}", organ: "AnazhRealm._diaetGang (ein Verweis ohne festes Objekt liest frame.object — sein Programm geht seinen eigenen Gang)" },
     // DIE BUNDLE-WAHRHEIT (_configureRenderer, Chokepoint _renderScene): r184 hält den Aufnahme-Zeiger ohne Stapel,
     // verfolgt nur bei stehendem Zeiger, refresht im Replay ausserhalb von renderObject; der Override-Stoff wird je
     // Objekt eingerichtet und zurückgesetzt; eine BundleGroup ohne backend.beginBundle ist eine Gruppe.
@@ -267,20 +283,44 @@ const ANKER = [
 // (Kopf → renderId-Wand → equals()). Manipulationen für den Selbsttest: "abkuerzung" kürzt jedes bekannte Objekt
 // ohne Schreiben ab (die Klasse der Bundle-Abkürzung V18.518 mit Render-Stempel), "schreiben" nimmt der Diät ihr Schreiben der
 // geteilten Gruppe (falls sie eins hat).
+// Weitere Manipulationen (Welle K, EIN GANG JE KNOTEN UND GRUPPE): "gangWiederholung" nimmt den Knoten ihren Render-Stempel
+// (jedes Programm stellt sie wieder), "gruppenWiederholung" nimmt der geteilten Gruppe ihren
+// (jedes Programm lädt sie wieder), "eigen" nimmt ihm die Weiche für Knoten je Zeichen-Objekt (ein Verweis ohne festes
+// Objekt teilte dann den Gang eines Geschwisters und arbeitete nie für sein eigenes Objekt).
 function diaetLaden(manipuliert) {
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     const b = stamm.indexOf("AnazhRealm._diaetRefresh = function");
     if (b < 0) return null;
-    const s0 = stamm.indexOf("AnazhRealm._diaetGeteiltSchreiben = function");
-    const a = s0 >= 0 && s0 < b ? s0 : b;
+    let a = b;
+    for (const kopf of ["AnazhRealm._diaetGang = function", "AnazhRealm._diaetGeteiltSchreiben = function"]) {
+        const s0 = stamm.indexOf(kopf);
+        if (s0 >= 0 && s0 < a) a = s0;
+    }
     const e = stamm.indexOf("\n};\n", b);
     if (e < 0) return null;
     let src = stamm.slice(a, e + 3);
-    if (manipuliert === "schreiben") {
+    const ersetze = (alt, neu) => {
         const vor = src;
-        src = src.split("AnazhRealm._diaetGeteiltSchreiben(rend, ro);").join("");
-        if (src === vor) return null;
-    }
+        src = src.split(alt).join(neu);
+        return src !== vor;
+    };
+    if (manipuliert === "schreiben" && !ersetze("AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);", "")) return null;
+    if (
+        manipuliert === "gangWiederholung" &&
+        !(ersetze("if (n._anazhRid === rid) continue;", "") && ersetze("if (n._anazhVorRid === rid) continue;", ""))
+    )
+        return null;
+    if (manipuliert === "gruppenWiederholung" && !ersetze("if (g._anazhRid === rid) continue;", "")) return null;
+    if (
+        manipuliert === "frameAlt" &&
+        !ersetze(
+            "rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);",
+            "(nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateBeforeNode(n);"
+        )
+    )
+        return null;
+    if (manipuliert === "eigen" && !ersetze('typ === "object" || (typeof n.property === "string" && n.object === null)', "false"))
+        return null;
     const AnazhRealm = {};
     new Function("AnazhRealm", src)(AnazhRealm);
     const echt = AnazhRealm._diaetRefresh;
@@ -333,31 +373,72 @@ function diaetLauf(fn) {
         }
         return this.equals(ro, [], frame.renderId) !== true;
     };
-    // Der Schein-Renderer: was die Diät selbst schreibt (Knoten der Gruppe + Upload), zählt je Programm.
+    // Der Schein-Renderer: was die Diät selbst schreibt (Knoten der Gruppe + Upload), zählt je GRUPPE (die Diät) und die
+    // Gänge des Knotens je Zeichen-Objekt je Programm.
+    let dieDiaet = null,
+        zeichenGaenge = null,
+        knotenGaenge = null,
+        fremdeKamera = 0;
+    const frame = {
+        camera: null,
+        ro: null,
+        updateBeforeNode(n) {
+            knotenGaenge.set("v" + n.id, (knotenGaenge.get("v" + n.id) || 0) + 1);
+            if (n.verschachtelt) this.camera = "schatten";
+        },
+        updateNode(n) {
+            if (this.camera !== "haupt") fremdeKamera++;
+            if (n.object === null) zeichenGaenge.add(this.ro.progId);
+            else knotenGaenge.set(n.id, (knotenGaenge.get(n.id) || 0) + 1);
+        },
+    };
     const rend = {
         _nodes: {
             updateBefore() {},
-            getNodeFrameForRender: () => ({ updateNode() {} }),
+            // r184: EIN Node-Frame, getNodeFrameForRender stellt Kamera und Objekt des Render-Objekts. Der Vorher-Knoten
+            // des Schattens verschachtelt einen Render, der den Frame auf SEINE Kamera stellt.
+            getNodeFrameForRender: (ro) => {
+                frame.camera = "haupt";
+                frame.ro = ro;
+                return frame;
+            },
         },
         _bindings: {
             _update(g) {
-                if (g.bindings[0].groupNode.shared === true) geschrieben.set(g.prog, (geschrieben.get(g.prog) || 0) + 1);
-                else objektDurchDiaet++;
+                if (g.bindings[0].groupNode.shared === true) {
+                    geschrieben.set(g.id, (geschrieben.get(g.id) || 0) + 1);
+                    dieDiaet.set(g.id, (dieDiaet.get(g.id) || 0) + 1);
+                } else objektDurchDiaet++;
             },
         },
     };
+    // r184-Ids (Knoten · Bindegruppen): Programme 0–9 tragen je ihre EIGENE geteilte Gruppe und ihren eigenen Render-
+    // Knoten (wie vor dem EINEN Knoten je Quelle), 10–17 teilen EINE Gruppe und EINEN Knoten (dieselbe Arbeit), 18–19
+    // teilen sie auch, tragen aber denselben Verweis ohne festes Objekt (er liest frame.object — je Programm ein Gang).
+    const geteilteGruppe = { id: 500, bindings: [{ groupNode: { shared: true } }] };
+    const geteilterKnoten = { id: 600, getUpdateType: () => "render" };
+    const zeichenKnoten = { id: 700, property: "x", object: null, getUpdateType: () => "render" };
+    const objektKnoten = { id: 800, getUpdateType: () => "object" };
+    // Ein Vorher-Knoten aller Programme (wie der Schatten des Lichts): EINMAL je Render.
+    const vorKnoten = { id: 900, verschachtelt: true, getUpdateBeforeType: () => "render" };
     const programme = [];
-    for (let p = 0; p < N_PROG; p++)
+    for (let p = 0; p < N_PROG; p++) {
+        const eigen = p < 10;
         programme.push({
             id: p,
             obs: beobachter(),
-            geteilt: { prog: p, bindings: [{ groupNode: { shared: true } }] },
+            geteilt: eigen ? { id: 100 + p, bindings: [{ groupNode: { shared: true } }] } : geteilteGruppe,
             nbs: {
-                updateNodes: [{ getUpdateType: () => "render" }, { getUpdateType: () => "object" }],
-                updateBeforeNodes: [],
+                updateNodes: [
+                    eigen ? { id: 200 + p, getUpdateType: () => "render" } : geteilterKnoten,
+                    objektKnoten,
+                    ...(p >= 18 ? [zeichenKnoten] : []),
+                ],
+                updateBeforeNodes: [vorKnoten],
                 updateAfterNodes: [],
             },
         });
+    }
     const objekte = [];
     for (let i = 0; i < N_OBJ; i++) {
         const prog = programme[i % N_PROG];
@@ -372,6 +453,7 @@ function diaetLauf(fn) {
         objekte.push({
             prog,
             ro: {
+                progId: prog.id,
                 object: obj,
                 material: obj.material,
                 lightsNode: {},
@@ -386,6 +468,10 @@ function diaetLauf(fn) {
         const frame = { renderer: rend, renderId: rid };
         if (vorher) vorher();
         geschrieben = new Map();
+        dieDiaet = new Map();
+        zeichenGaenge = new Set();
+        knotenGaenge = new Map();
+        fremdeKamera = 0;
         objektDurchDiaet = 0;
         const voll = new Set();
         for (let i = 0; i < objekte.length; i++) {
@@ -393,12 +479,19 @@ function diaetLauf(fn) {
             // Ein Voll-Refresh schreibt alle Gruppen des Objekts (die Vendor-Bahn), die geteilte eingeschlossen.
             if (fn(x.prog.obs, x.ro, frame, altNR)) {
                 voll.add(i);
-                geschrieben.set(x.prog.id, (geschrieben.get(x.prog.id) || 0) + 1);
+                // Der Voll-Refresh fährt jeden Knoten für SEIN Objekt (die Vendor-Bahn).
+                zeichenGaenge.add(x.prog.id);
+                geschrieben.set(x.prog.geteilt.id, (geschrieben.get(x.prog.geteilt.id) || 0) + 1);
             }
         }
         let fehlt = 0;
-        for (const p of programme) if (!geschrieben.get(p.id)) fehlt++;
-        return { voll, fehlt, objektDurchDiaet };
+        for (const p of programme) if (!geschrieben.get(p.geteilt.id)) fehlt++;
+        // Die Wiederholung: dieselbe geteilte Gruppe oder derselbe render-Knoten mehr als EINMAL je Render durch die Diät.
+        let wiederholt = 0;
+        for (const n of dieDiaet.values()) if (n > 1) wiederholt += n - 1;
+        for (const n of knotenGaenge.values()) if (n > 1) wiederholt += n - 1;
+        const zeichenFehlt = [18, 19].filter((p) => !zeichenGaenge.has(p)).length;
+        return { voll, fehlt, objektDurchDiaet, wiederholt, zeichenFehlt, fremdeKamera };
     };
     const r1 = render();
     const r2 = render();
@@ -421,6 +514,18 @@ function diaetProbe(selftest) {
                     `Kamera-Treue ${k}: ${r.fehlt} von 20 Programmen ohne geschriebene geteilte Gruppe — sie zeigen die Kamera ihres letzten Refreshs`
                 );
             if (r.objektDurchDiaet) f.push(`${k}: die Diät schrieb ${r.objektDurchDiaet} Objekt-Gruppen (nur die geteilte ist ihre)`);
+            if (r.wiederholt)
+                f.push(
+                    `Wiederholung ${k}: ${r.wiederholt} Gänge über eine schon geschriebene geteilte Gruppe oder einen schon gestellten Knoten — gleiche Arbeit läuft EINMAL je Render`
+                );
+            if (r.fremdeKamera)
+                f.push(
+                    `Node-Frame ${k}: ${r.fremdeKamera} Knoten mit der Kamera eines verschachtelten Renders gestellt — der Frame wurde vor dem Vorher-Knoten gemerkt`
+                );
+            if (r.zeichenFehlt)
+                f.push(
+                    `Zeichen-Objekt ${k}: ${r.zeichenFehlt} von 2 Programmen mit einem Verweis ohne festes Objekt gingen keinen eigenen Gang — er arbeitete nie für ihr Objekt`
+                );
         }
         if (!z.r4.voll.has(7)) f.push("Objekt-Wahrheit: ein bewegtes Objekt refresht voll (equals)");
         if (!z.r5.voll.has(11)) f.push("Instanz-Wächter: eine Instanz-Mutation refresht voll");
@@ -438,10 +543,29 @@ function diaetProbe(selftest) {
         // Die Diät MUSS ihr Schreiben tragen: fehlt der Ruf `_diaetGeteiltSchreiben(rend, ro)`, ist die Manipulation
         // nicht anwendbar und der Selbsttest rot (nie still übersprungen).
         const schreibFn = diaetLaden("schreiben");
-        if (!schreibFn) fehler.push("Selbsttest: die Diät trägt keinen Ruf `AnazhRealm._diaetGeteiltSchreiben(rend, ro);`");
+        if (!schreibFn) fehler.push("Selbsttest: die Diät trägt keinen Ruf `AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);`");
         const ohneSchreiben = schreibFn ? pruefe(diaetLauf(schreibFn)) : [];
+        // Der Gang je Signatur MUSS seinen Render-Stempel und seine Weiche je Zeichen-Objekt tragen (sonst rot, nie still).
+        const gangFn = diaetLaden("gangWiederholung");
+        if (!gangFn) fehler.push("Selbsttest: der Knoten-Gang trägt keinen Render-Stempel je Knoten (`n._anazhRid` · `n._anazhVorRid`)");
+        const gruppeFn = diaetLaden("gruppenWiederholung");
+        if (!gruppeFn) fehler.push("Selbsttest: die geteilte Gruppe trägt keinen Render-Stempel `if (g._anazhRid === rid) continue;`");
+        const wieder = [
+            ...(gangFn ? pruefe(diaetLauf(gangFn)).filter((e) => e.startsWith("Wiederholung")).slice(0, 1) : []),
+            ...(gruppeFn ? pruefe(diaetLauf(gruppeFn)).filter((e) => e.startsWith("Wiederholung")).slice(0, 1) : []),
+        ];
+        const frameFn = diaetLaden("frameAlt");
+        if (!frameFn) fehler.push("Selbsttest: der Gang stellt den Node-Frame nicht je Vorher-Knoten neu");
+        const frameAlt = frameFn ? pruefe(diaetLauf(frameFn)) : [];
+        const eigenFn = diaetLaden("eigen");
+        if (!eigenFn) fehler.push("Selbsttest: der Gang trägt keine Weiche für Knoten je Zeichen-Objekt");
+        const ohneEigen = eigenFn ? pruefe(diaetLauf(eigenFn)) : [];
         selbstFeuert =
-            abk.some((e) => e.startsWith("Kamera-Treue")) && ohneSchreiben.some((e) => e.startsWith("Kamera-Treue"));
+            abk.some((e) => e.startsWith("Kamera-Treue")) &&
+            ohneSchreiben.some((e) => e.startsWith("Kamera-Treue")) &&
+            wieder.length === 2 &&
+            ohneEigen.some((e) => e.startsWith("Zeichen-Objekt")) &&
+            frameAlt.some((e) => e.startsWith("Node-Frame"));
     }
     return { fehler, selbstFeuert, stand };
 }
@@ -620,7 +744,7 @@ function main() {
         console.log(feuert ? "✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)" : "❌ SELBST-TEST: die Wand ist vakuös");
         console.log(
             diaetFeuert
-                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung ohne Schreiben lässt Programme an der alten Kamera kleben)"
+                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung ohne Schreiben lässt Programme an der alten Kamera kleben; ein Gang ohne Render-Stempel wiederholt Knoten und Gruppen; ein Verweis ohne festes Objekt ohne eigenen Gang; ein gemerkter Node-Frame trägt die Schatten-Kamera)"
                 : "❌ SELBST-TEST: die Diät-Probe ist vakuös"
         );
         const stoffFeuert = schattenStoffProbe(true).fehler.length > 0;
@@ -646,7 +770,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Programm und Render geschrieben; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50), der Schatten-Stoff prüft im Stand ${stoff.stand} von 40 Bürgern, ein eigener Wechsel ${stoff.eigener}; die Haupt-Aufnahme verfolgt ${wahr.z.verfolgtHaupt} von ${wahr.z.gezeichnetHaupt} Draws trotz Schatten-Render, ${wahr.z.unterOverride} Bundles unter dem Override-Stoff.`
+        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Render geschrieben, keine Gruppe und kein Knoten zweimal; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50), der Schatten-Stoff prüft im Stand ${stoff.stand} von 40 Bürgern, ein eigener Wechsel ${stoff.eigener}; die Haupt-Aufnahme verfolgt ${wahr.z.verfolgtHaupt} von ${wahr.z.gezeichnetHaupt} Draws trotz Schatten-Render, ${wahr.z.unterOverride} Bundles unter dem Override-Stoff.`
     );
 }
 main();

@@ -95975,38 +95975,82 @@ AnazhRealm._tuerOffenRad = function () {
 //      (Pflicht-Paar _uniformHeimatTeilen), ihre Objekt-Gruppe ändert sich nur mit dem Objekt. Kopf wie der Vendor:
 //      Erst-Init, Animation, Velocity und Programme mit updateAfter fahren die Vendor-Bahn. gate:vendor-anker pinnt
 //      jede benutzte r184-Stelle und fährt die Treue am Schein-Programm, gate:kamera-treue am echten Bild.
-AnazhRealm._diaetGeteiltSchreiben = function (rend, ro) {
+//  (4) EIN GANG JE KNOTEN UND GRUPPE UND RENDER (Welle K, 07.10.): seit der EINE Knoten je Quelle die Render-Gruppen
+//      über Programme teilt (_configureRenderer), tragen die Programme DIESELBEN Vorher-Knoten, render-/frame-Knoten und
+//      geteilten Gruppen. Der Gang je Programm wiederholte sie: gemessen an der Mess-Wiese (echte GPU, Stand, ein Frame)
+//      69–89 Gänge über 9–12 geteilte Gruppen, 930–1 150 Knoten-Besuche, 190–225 Vorher-Besuche — jeder Knoten im Schnitt
+//      in 60 Programmen. Jetzt stellt die Diät jeden Knoten und lädt jede geteilte Gruppe EINMAL je Render (Render-Stempel
+//      am Knoten und an der Gruppe; die Uniform-Knoten einer geteilten Gruppe sind Knoten jedes Programms, das sie trägt —
+//      der erste Gang hat sie gestellt). Nur Knoten mit eigener Arbeit je Programm bleiben je Programm: die Instanz-Knoten
+//      (je InstancedMesh, 61 von 101 Programmen) haben ohnehin ihren eigenen Stempel. Ein Knoten, der je Zeichen-Objekt
+//      arbeitet (Takt object, oder ein Verweis ohne festes Objekt — er liest frame.object), geht je Programm wie bisher.
+AnazhRealm._diaetGang = function (ro, nbs) {
+    const jeZeichen = (n, typ) => typ === "object" || (typeof n.property === "string" && n.object === null);
+    const vor = [],
+        knoten = [],
+        eigenVor = [],
+        eigenKnoten = [];
+    for (const n of nbs.updateBeforeNodes) (jeZeichen(n, n.getUpdateBeforeType()) ? eigenVor : vor).push(n);
+    for (const n of nbs.updateNodes) {
+        const typ = n.getUpdateType();
+        if (typ !== "object") (jeZeichen(n, typ) ? eigenKnoten : knoten).push(n);
+    }
+    const gruppen = [];
+    for (const g of ro.getBindings()) {
+        const b0 = g.bindings && g.bindings[0];
+        if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
+    }
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen };
+};
+AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     const nbs = ro.getNodeBuilderState();
-    let k = nbs._anazhGeteilt;
-    if (!k) {
-        const knoten = [];
-        for (const n of nbs.updateNodes) if (n.getUpdateType() !== "object") knoten.push(n);
-        const gruppen = [];
-        for (const g of ro.getBindings()) {
-            const b0 = g.bindings && g.bindings[0];
-            if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
-        }
-        k = nbs._anazhGeteilt = { knoten, gruppen };
+    const k = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
+    // Die Reihenfolge des Vendors (updateBefore → updateForRender): erst alle Vorher-Knoten, dann die Knoten. Ein
+    // Vorher-Knoten kann einen Render verschachteln (der Schatten am ersten Licht-Empfänger), und der stellt den EINEN
+    // Node-Frame auf SEINE Kamera und SEIN Objekt — der Frame wird darum wie im Vendor je Vorher-Knoten und nach allen
+    // Vorher-Knoten neu gestellt (ein vorher gemerkter Frame zeichnete das Hauptbild mit der Schatten-Kamera:
+    // gate:kamera-treue ÄNDERUNG 0,10 statt 1).
+    let nf = null;
+    for (const n of k.vor) {
+        if (n._anazhVorRid === rid) continue;
+        n._anazhVorRid = rid;
+        rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
     }
-    rend._nodes.updateBefore(ro);
-    if (k.knoten.length) {
-        const nf = rend._nodes.getNodeFrameForRender(ro);
-        for (const n of k.knoten) nf.updateNode(n);
+    for (const n of k.eigenVor) rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
+    for (const n of k.knoten) {
+        if (n._anazhRid === rid) continue;
+        n._anazhRid = rid;
+        (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
     }
-    if (k.gruppen.length) {
-        const alle = ro.getBindings();
-        for (const g of k.gruppen) rend._bindings._update(g, alle);
+    if (k.eigenKnoten.length) {
+        nf = nf || rend._nodes.getNodeFrameForRender(ro);
+        for (const n of k.eigenKnoten) nf.updateNode(n);
+    }
+    let alle = null;
+    for (const g of k.gruppen) {
+        if (g._anazhRid === rid) continue;
+        g._anazhRid = rid;
+        rend._bindings._update(g, alle || (alle = ro.getBindings()));
     }
 };
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const obj = ro && ro.object;
+    // Die Wächter vergleichen Zahlen am EINEN Daten-Satz des Render-Objekts — eine Prüfung ohne Änderung legt nichts an
+    // (vorher je Prüfung zwei Versions-Zeichenketten: Instanz und Atlas).
+    let d = null;
     if (obj && obj.isInstancedMesh === true) {
         const im = obj.instanceMatrix,
             ic = obj.instanceColor;
-        const v = (im ? im.version : -1) + "|" + (ic ? ic.version : -1);
-        const d = obs.getRenderObjectData(ro);
-        if (d._anazhInstV !== v) {
-            d._anazhInstV = v;
+        const iId = im ? im.id : -1,
+            iV = im ? im.version : -1,
+            cId = ic ? ic.id : -1,
+            cV = ic ? ic.version : -1;
+        d = obs.getRenderObjectData(ro);
+        if (d._anazhIId !== iId || d._anazhIV !== iV || d._anazhICId !== cId || d._anazhICV !== cV) {
+            d._anazhIId = iId;
+            d._anazhIV = iV;
+            d._anazhICId = cId;
+            d._anazhICV = cV;
             return true;
         }
     }
@@ -96023,7 +96067,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     // („Vertex buffer slot 5 … was not set"). Geometrie-Id, Index und jedes Attribut (Id · Version) je Render-Objekt.
     const geo = ro && ro.geometry;
     if (geo && geo.attributes) {
-        const d = obs.getRenderObjectData(ro);
+        if (d === null) d = obs.getRenderObjectData(ro);
         const g = d._anazhGeoV || (d._anazhGeoV = []);
         const ix = geo.index;
         let anders = g[0] !== geo.id || g[1] !== (ix ? ix.id : -1) || g[2] !== (ix ? ix.version : -1);
@@ -96048,13 +96092,18 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     const texe = mat ? mat._anazhAtlasTexe : null;
     if (texe) {
-        let va = "";
-        for (let i = 0; i < texe.length; i++) va += (texe[i] ? texe[i].version : -1) + "|";
-        const d = obs.getRenderObjectData(ro);
-        if (d._anazhAtlasV !== va) {
-            d._anazhAtlasV = va;
-            return true;
+        if (d === null) d = obs.getRenderObjectData(ro);
+        const va = d._anazhAtlasVs || (d._anazhAtlasVs = []);
+        let anders = va.length !== texe.length;
+        va.length = texe.length;
+        for (let i = 0; i < texe.length; i++) {
+            const v = texe[i] ? texe[i].version : -1;
+            if (va[i] !== v) {
+                va[i] = v;
+                anders = true;
+            }
         }
+        if (anders) return true;
     }
     const rend = frame && frame.renderer;
     if (
@@ -96068,7 +96117,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const rid = frame.renderId;
     if (obs.renderId !== rid) {
         obs.renderId = rid;
-        AnazhRealm._diaetGeteiltSchreiben(rend, ro);
+        AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);
     }
     return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
 };

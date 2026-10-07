@@ -21,6 +21,16 @@
 //       letzte direkte Werfer hinterlässt).
 //   LAUF-KONTROLLEN (sonst ist die Wand blind und rot): ohne den Chokepoint klebt der Replay an Blick X, und ein
 //   Schatten-Replay mit fremdem Stoff wirft anders (je < 0,98); Blick X und Y sind verschiedene Bilder (< 0,9).
+// DIE STAND-WAND (Welle K, 07.10.): was die Diät im Stand arbeitet, am selben echten Renderer.
+//   (d) TEILEN — die acht Karten-Programme (gleiche Quellen: Kamera, Licht, Schatten) tragen EINE geteilte Gruppe (der
+//       EINE Knoten je Quelle, _configureRenderer). V18.534: 8 Gruppen, jede lud Kamera und Schatten für sich.
+//   (e) STAND — je Pfad (direkt · Replay) vier Frames ohne Änderung: kein Voll-Refresh, kein Upload einer geteilten
+//       Gruppe, kein zweiter Gang über einen Knoten, Vorher-Knoten oder eine geteilte Gruppe im selben Render (ein
+//       verschachtelter Render ist nie der Gang). V18.534: 136 wiederholte Gänge je Render.
+//   (f) ÄNDERUNG — im Stand rückt eine Kiste, ein Blatt dreht: das Bild der Diät gleicht dem Bild, in dem jedes Objekt
+//       voll refresht (≥ 0,999); Lauf-Kontrolle: eine Diät, die nie refresht, weicht ab (< 0,98). So fiel der gemerkte
+//       Node-Frame (Hauptbild mit der Schatten-Kamera: 0,10) beim Bau des Gangs auf.
+//   Die Bühne nimmt keinen Spiel-Loop an (die Welt bootet weiter und renderte sonst mitten hinein).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil über einen grünen Lauf und je einen injizierten
 // Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (npm run gate:kamera-treue)
@@ -52,19 +62,53 @@ function urteil(z) {
     if (!(b.schattenBundle < BLIND_GRENZE))
         v.push(`BILD: ein Schatten-Bundle mit fremdem Stoff zeichnet Y zu ${b.schattenBundle} gleich (Soll < ${BLIND_GRENZE}) — die Override-Probe ist blind`);
     if (!(b.xGegenY < BLICK_GRENZE)) v.push(`BILD: Blick X und Blick Y sind zu ${b.xGegenY} gleich (Soll < ${BLICK_GRENZE}) — die Bühne ist blind`);
+    // DIE STAND-WAND (Welle K): im Stand kostet die Diät nur die Prüfung — kein Voll-Refresh, kein zweiter Gang über einen
+    // Knoten oder eine geteilte Gruppe im selben Render, kein Upload; Programme mit denselben Quellen teilen EINE Gruppe;
+    // eine Änderung im Stand erreicht das Bild wie ein voller Refresh.
+    const s = z.stand || {};
+    const t = s.teilen || {};
+    if (!(t.programme >= 8)) v.push(`TEILEN: ${t.programme || 0} Karten-Programme im Hauptbild gesammelt (Soll 8) — die Probe ist blind`);
+    else if (t.gruppen !== t.gruppenJeProgramm)
+        v.push(
+            `TEILEN: die ${t.programme} Karten-Programme (gleiche Quellen: Kamera, Licht, Schatten) tragen ${t.gruppen} geteilte Gruppen statt ${t.gruppenJeProgramm} — jedes Programm lädt Kamera und Schatten in seinen eigenen Puffer`
+        );
+    for (const pfad of ["direkt", "replay"]) {
+        const r = s[pfad] || {};
+        if (!(r.pruef > 0)) v.push(`STAND ${pfad}: keine Diät-Prüfung gezählt — die Probe ist blind`);
+        if (r.voll !== 0) v.push(`STAND ${pfad}: ${r.voll} Voll-Refreshs je Render ohne Änderung (Soll 0) — ein Refresh je Frame ohne Änderung`);
+        if (r.wiederholt !== 0)
+            v.push(
+                `STAND ${pfad}: ${r.wiederholt} wiederholte Gänge je Render (${JSON.stringify(r.wer || {})}: k Knoten · v Vorher · g Gruppe) — dieselbe Arbeit je Programm statt EINMAL`
+            );
+        if (r.uploads !== 0) v.push(`STAND ${pfad}: ${r.uploads} Uploads geteilter Gruppen je Render ohne Änderung (Soll 0)`);
+        const a = (s.aenderung || {})[pfad] || {};
+        if (!(a.diaet >= BILD_SOLL))
+            v.push(`ÄNDERUNG ${pfad}: nach Kiste und Blatt zeichnet die Diät ${a.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}) — ein vergessener Refresh`);
+        if (!(a.taeter < BLIND_GRENZE))
+            v.push(`ÄNDERUNG ${pfad}: eine Diät, die nie refresht, zeichnet ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
+    }
     return v;
 }
 
 function selbsttest() {
+    const ruhig = { pruef: 13, voll: 0, uploads: 0, wiederholt: 0, wer: {} };
     const gruen = {
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
+        stand: {
+            teilen: { programme: 8, gruppenJeProgramm: 1, gruppen: 1 },
+            direkt: ruhig,
+            replay: ruhig,
+            aenderung: { direkt: { diaet: 1, taeter: 0.93 }, replay: { diaet: 1, taeter: 0.93 } },
+        },
     };
     const fehler = [];
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const mit = (pfad, wert) => {
         const z = JSON.parse(JSON.stringify(gruen));
-        Object.assign(z[pfad], wert);
+        let o = z;
+        for (const k of pfad.split(".")) o = o[k];
+        Object.assign(o, wert);
         return z;
     };
     const faelle = [
@@ -76,6 +120,14 @@ function selbsttest() {
         { name: "Stapel-Probe blind", z: mit("bild", { ohneStapel: 1 }), muss: /die Stapel-Probe ist blind/ },
         { name: "Override-Probe blind", z: mit("bild", { schattenBundle: 1 }), muss: /die Override-Probe ist blind/ },
         { name: "Bühne blind", z: mit("bild", { xGegenY: 0.99 }), muss: /die Bühne ist blind/ },
+        { name: "Refresh je Frame ohne Änderung", z: mit("stand.direkt", { voll: 2 }), muss: /STAND direkt: 2 Voll-Refreshs/ },
+        { name: "Gang je Programm (Replay)", z: mit("stand.replay", { wiederholt: 31, wer: { k: 28, g: 3 } }), muss: /STAND replay: 31 wiederholte Gänge/ },
+        { name: "Upload ohne Änderung", z: mit("stand.direkt", { uploads: 1 }), muss: /1 Uploads geteilter Gruppen/ },
+        { name: "vergessener Refresh", z: mit("stand.aenderung.replay", { diaet: 0.9 }), muss: /ÄNDERUNG replay: .* ein vergessener Refresh/ },
+        { name: "Änderungs-Probe blind", z: mit("stand.aenderung.direkt", { taeter: 1 }), muss: /die Änderungs-Probe ist blind/ },
+        { name: "Gruppe je Programm", z: mit("stand.teilen", { gruppen: 8 }), muss: /tragen 8 geteilte Gruppen statt 1/ },
+        { name: "Teilen blind", z: mit("stand.teilen", { programme: 0 }), muss: /TEILEN: 0 Karten-Programme/ },
+        { name: "Stand blind", z: mit("stand.direkt", { pruef: 0 }), muss: /STAND direkt: keine Diät-Prüfung/ },
     ];
     for (const f of faelle) {
         const v = urteil(f.z);
@@ -134,6 +186,15 @@ function buehne() {
             TSL = T.TSL;
         const rend = st.renderer;
         if (typeof rend.setAnimationLoop === "function") rend.setAnimationLoop(null);
+        // DER RUHENDE SPIEL-LOOP (Lauf-Kontrolle, Welle K): die Welt bootet nach „Renderer bereit" weiter und setzt ihren
+        // Loop selbst — er renderte dann mitten in die Bühne (info sprang zurück, gemessen 2 von 4 Läufen unter Last), und
+        // unter einer Täter-Diät zeichnete die Welt ohne Upload (setIndexBuffer ohne Puffer). Für die Bühne nimmt der
+        // Renderer keinen Loop an; danach gilt der zuletzt verlangte.
+        const loopRoh = rend.setAnimationLoop;
+        let loopVerlangt = null;
+        rend.setAnimationLoop = (f) => {
+            loopVerlangt = f;
+        };
         const nf = rend._nodes.nodeFrame;
         const zeit = nf.time;
         nf.update = function () {
@@ -201,8 +262,10 @@ function buehne() {
         laub.receiveShadow = true;
         laub.frustumCulled = false;
         gruppe.add(laub);
+        const kisten = [];
         for (let i = 0; i < 3; i++) {
             const kiste = new T.Mesh(new T.BoxGeometry(1.5, 1.5 + i, 1.5), diaet(new T.MeshStandardNodeMaterial({ color: 0x8a6a4a + i * 0x101010 })));
+            kisten.push(kiste);
             kiste.position.set(4 + i * 2.5, 0.75 + i / 2, 5 - i * 3);
             kiste.castShadow = true;
             kiste.receiveShadow = true;
@@ -326,7 +389,160 @@ function buehne() {
             // Lauf-Kontrolle 2: nur der Stapel (Bundles auch im Schatten-Render) mit fremdem Schatten-Stoff.
             rend._renderScene = zaehlUm(nurStapel);
             const bSchatten = await replay(fremderStoff);
+            rend._renderScene = zaehlUm(spielSzene);
+            // (d)(e)(f) DIE STAND-WAND (Welle K): die Diät-Arbeit je Render am echten Renderer — Prüfungen, Voll-Refreshs,
+            // die Gänge der Diät über Vorher-Knoten, Knoten und geteilte Gruppen (je Render-Id), die Uploads geteilter Gruppen.
+            const A = r.constructor;
+            const diaetRoh = A._diaetRefresh,
+                schreibRoh = A._diaetGeteiltSchreiben;
+            const nfP = Object.getPrototypeOf(nf);
+            const buRoh = rend._bindings._update;
+            const be = rend.backend;
+            const ubEigen = Object.prototype.hasOwnProperty.call(be, "updateBinding");
+            const ubRoh = be.updateBinding;
+            let messen = false,
+                imSchreib = false,
+                sammle = null;
+            const zs = { pruef: 0, voll: 0, besuche: new Map(), uploads: 0 };
+            const besuch = (art, id) => {
+                const k = nf.renderId + ":" + art + id;
+                zs.besuche.set(k, (zs.besuche.get(k) || 0) + 1);
+            };
+            A._diaetRefresh = function (obs, ro, frame, altNR) {
+                const v = diaetRoh(obs, ro, frame, altNR);
+                if (messen) {
+                    zs.pruef++;
+                    if (v) zs.voll++;
+                }
+                // (d) TEILEN: die geteilten Gruppen je Karten-Programm im Hauptbild
+                if (sammle && ro.material && ro.material.isShadowPassMaterial !== true && karten.includes(ro.object)) {
+                    const ids = [];
+                    for (const g of ro.getBindings()) if (g.bindings[0] && g.bindings[0].groupNode && g.bindings[0].groupNode.shared === true) ids.push(g.id);
+                    sammle.set(ro.getNodeBuilderState(), ids);
+                }
+                return v;
+            };
+            A._diaetGeteiltSchreiben = function (rr, ro, rid) {
+                imSchreib = true;
+                try {
+                    return schreibRoh(rr, ro, rid);
+                } finally {
+                    imSchreib = false;
+                }
+            };
+            nf.updateNode = function (n) {
+                if (messen && imSchreib) besuch("k", n.id);
+                return nfP.updateNode.call(this, n);
+            };
+            nf.updateBeforeNode = function (n) {
+                if (messen && imSchreib) besuch("v", n.id);
+                return nfP.updateBeforeNode.call(this, n);
+            };
+            rend._bindings._update = function (g, alle) {
+                if (messen && imSchreib) besuch("g", g.id);
+                return buRoh.call(this, g, alle);
+            };
+            be.updateBinding = function (b) {
+                if (messen && b && b.groupNode && b.groupNode.shared === true) zs.uploads++;
+                return ubRoh.call(this, b);
+            };
+            // Ein verschachtelter Render (der Schatten, den ein Vorher-Knoten im Gang startet) ist nie der Gang.
+            const szeneMitGang = rend._renderScene;
+            rend._renderScene = function (sc, c, f) {
+                const alt = imSchreib;
+                imSchreib = false;
+                try {
+                    return szeneMitGang.call(this, sc, c, f);
+                } finally {
+                    imSchreib = alt;
+                }
+            };
+            const stand = {};
+            try {
+                // (d) TEILEN: ein Hauptbild (direkter Pfad) sammelt die geteilten Gruppen der acht Karten-Programme.
+                gruppe.isBundleGroup = false;
+                blick(1);
+                sammle = new Map();
+                await schuss();
+                const jeProgramm = [...sammle.values()];
+                sammle = null;
+                const alle = new Set();
+                for (const ids of jeProgramm) for (const id of ids) alle.add(id);
+                stand.teilen = { programme: jeProgramm.length, gruppenJeProgramm: jeProgramm.length ? jeProgramm[0].length : 0, gruppen: alle.size };
+                // (e) STAND: einschwingen, dann je Pfad (direkt · Replay) vier Frames ohne jede Änderung, gezählt.
+                const ruhe = async (bundle) => {
+                    gruppe.isBundleGroup = bundle;
+                    gruppe.needsUpdate = true;
+                    await schuss();
+                    await schuss();
+                    Object.assign(zs, { pruef: 0, voll: 0, uploads: 0 });
+                    zs.besuche.clear();
+                    messen = true;
+                    for (let i = 0; i < 4; i++) await schuss();
+                    messen = false;
+                    let wiederholt = 0;
+                    const wer = {};
+                    for (const [k, n] of zs.besuche)
+                        if (n > 1) {
+                            wiederholt += n - 1;
+                            const art = k.split(":")[1][0];
+                            wer[art] = (wer[art] || 0) + n - 1;
+                        }
+                    for (const k in wer) wer[k] /= 4;
+                    return { pruef: zs.pruef / 4, voll: zs.voll / 4, uploads: zs.uploads / 4, wiederholt: wiederholt / 4, wer };
+                };
+                stand.direkt = await ruhe(false);
+                stand.replay = await ruhe(true);
+                // (f) ÄNDERUNG IM STAND: eine Kiste rückt, ein Blatt dreht — das Bild der Diät gleicht dem Bild, in dem jedes
+                // Objekt voll refresht (die Wahrheit ohne Diät); eine Täter-Diät, die nie refresht, weicht ab (Lauf-Kontrolle).
+                const immer = () => true;
+                const nie = (obs, ro, frame, altNR) => (obs.renderObjects.has(ro) ? false : altNR.call(obs, ro, frame));
+                const m4 = new T.Matrix4();
+                let schritt = 0;
+                const aendere = () => {
+                    schritt++;
+                    kisten[0].position.x += 1.5;
+                    kisten[0].updateMatrixWorld(true);
+                    m4.makeRotationX(-Math.PI / 2 + 0.3 * schritt).setPosition(0, 3.5, -4);
+                    laub.setMatrixAt(1, m4);
+                    laub.instanceMatrix.needsUpdate = true;
+                };
+                const mitDiaet = async (fn) => {
+                    const alt = A._diaetRefresh;
+                    if (fn) A._diaetRefresh = fn;
+                    try {
+                        return await schuss();
+                    } finally {
+                        A._diaetRefresh = alt;
+                    }
+                };
+                const bild = {};
+                for (const bundle of [false, true]) {
+                    gruppe.isBundleGroup = bundle;
+                    gruppe.needsUpdate = true;
+                    await schuss();
+                    await schuss();
+                    aendere();
+                    const diaetBild = await mitDiaet(null);
+                    const wahr = await mitDiaet(immer);
+                    aendere();
+                    const taeterBild = await mitDiaet(nie);
+                    const wahr2 = await mitDiaet(immer);
+                    bild[bundle ? "replay" : "direkt"] = { diaet: gleich(diaetBild, wahr), taeter: gleich(taeterBild, wahr2) };
+                }
+                stand.aenderung = bild;
+            } finally {
+                A._diaetRefresh = diaetRoh;
+                A._diaetGeteiltSchreiben = schreibRoh;
+                delete nf.updateNode;
+                delete nf.updateBeforeNode;
+                rend._bindings._update = buRoh;
+                rend._renderScene = szeneMitGang;
+                if (ubEigen) be.updateBinding = ubRoh;
+                else delete be.updateBinding;
+            }
             return {
+                stand,
                 aufnahme,
                 stoffe: stoffe.size,
                 bild: {
@@ -342,6 +558,8 @@ function buehne() {
             rend._renderObjectDirect = odRoh;
             rend._renderScene = spielSzene;
             rend.shadowMap.enabled = schattenAlt;
+            rend.setAnimationLoop = loopRoh;
+            if (loopVerlangt) rend.setAnimationLoop(loopVerlangt);
             if (rt.dispose) rt.dispose();
         }
     })();
@@ -401,6 +619,7 @@ function buehne() {
             `Aufnahme: ${out.aufnahme.verfolgt}/${out.aufnahme.gezeichnet} verfolgt · ${out.aufnahme.schattenRenders} Schatten-Render · ` +
                 `${out.aufnahme.unterOverride} Bundles unter Override · Bild ${JSON.stringify(out.bild)}`
         );
+        log(`Stand: ${JSON.stringify(out.stand)}`);
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
     }
@@ -421,6 +640,7 @@ function buehne() {
     console.log(
         `\n✅ GRÜN — die Aufnahme verfolgt ${out.aufnahme.verfolgt} von ${out.aufnahme.gezeichnet} Draws trotz Schatten-Render, ` +
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
-            `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}.`
+            `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
+            `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs, 0 Uploads, 0 wiederholte Gänge (direkt und Replay); nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}).`
     );
 })();

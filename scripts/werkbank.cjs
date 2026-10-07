@@ -37,6 +37,13 @@
 //   node scripts/werkbank.cjs fluss                        DIE FLUSS-LINSE: was der Foundry-Kanal den Haupt-Thread
 //                                                           kostet (Bytes · Entpacken · Platte · Worker-Auslastung);
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
+//   node scripts/werkbank.cjs diaet [frames] [--modus ruhe|drehen|gehen] [--tiere halten|frei] | diaet --selbsttest
+//                                                           DIE DIÄT-LINSE: was Observer-Diät und Bundles je gerendertem
+//                                                           Frame arbeiten (Prüfungen · Voll-Refreshs · Gänge und ihre
+//                                                           Wiederholung je Render · Uploads · writeBuffer) und NETTO kosten
+//                                                           — jeder verschachtelte Render (der Schatten im ersten Licht-
+//                                                           Empfänger) ist abgezogen und beim Pfad genannt
+//                                                           (scripts/lib/diaet-linse.cjs; Exit 1: Wiederholung im Stand)
 //   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
 //                                                           ruht (scripts/lib/takt-linse.cjs)
 //   node scripts/werkbank.cjs sicht [--ruhe n] [--sonne n] [--drehen n] [--dreh-grad g] [--gehen n] [--tag laeuft|steht]
@@ -138,6 +145,7 @@ const { ZAEHLER_INSTALL, FALTE_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
+const DIAET = require("./lib/diaet-linse.cjs");
 const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
@@ -904,6 +912,7 @@ async function starte() {
         await page.evaluate(ZAEHLER_INSTALL);
         await page.evaluate(FLUSS_INSTALL);
         await page.evaluate(TAKT_INSTALL);
+        await page.evaluate(DIAET.DIAET_INSTALL);
         await page.evaluate(SICHT.SICHT_INSTALL);
         await page.evaluate(FERNWALD_INSTALL);
         await page.evaluate(ZL.ZERLEGE_INSTALL);
@@ -1316,6 +1325,15 @@ async function starte() {
                         rot.push(...SK.probeUrteil(probe));
                     }
                     return send({ programme: zeilen.length, tabelle, stoff: stoffBericht, probe, rot, ordner: b.ordner || null, ms: Date.now() - t0 });
+                }
+                if (req.url === "/diaet") {
+                    const o = await page.evaluate((k) => window.__diaetLauf(k), {
+                        frames: Number(b.frames) || 90,
+                        modus: b.modus || "ruhe",
+                        grad: Number(b.grad) || 1,
+                        tiere: b.tiere || "halten",
+                    });
+                    return send(Object.assign(o, { urteil: DIAET.diaetUrteil(o), ms: Date.now() - t0 }));
                 }
                 if (req.url === "/takt") {
                     const o = await page.evaluate((k) => window.__taktZerlegung(k), {
@@ -1821,6 +1839,22 @@ async function starte() {
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
     else if (cmd === "takt") o = await rufe("/takt", { n: a[0], extra: opt("--extra", "") });
+    else if (cmd === "diaet") {
+        if (argv.includes("--selbsttest")) {
+            const f = DIAET.selbsttest();
+            console.log(
+                f.length
+                    ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
+                    : "SELBSTTEST GRÜN: das Diät-Urteil nennt die Wiederholung im Stand und eine blinde Linse beim Namen"
+            );
+            process.exit(f.length ? 1 : 0);
+        }
+        o = await rufe("/diaet", { frames: a[0], modus: opt("--modus", "ruhe"), grad: opt("--grad"), tiere: opt("--tiere", "halten") });
+        if (o && o.urteil) {
+            console.log(JSON.stringify(o, null, 1));
+            process.exit(o.urteil.length ? 1 : 0);
+        }
+    }
     else if (cmd === "sicht")
         o = await rufe("/sicht", {
             ruhe: opt("--ruhe"),
