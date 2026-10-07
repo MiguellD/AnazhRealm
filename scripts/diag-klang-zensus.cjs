@@ -224,8 +224,11 @@ function werkzeug() {
                     const qx = x + ux * s;
                     const qz = z + uz * s;
                     if (!W.nass(qx, qz)) {
-                        const fx = qx + ux * 4;
-                        const fz = qz + uz * 4;
+                        // drei Meter hinter dem ersten trockenen Punkt (das Wasser 3–4 m entfernt): das Ohr hört das Ufer auf
+                        // seinem ersten Ring (4 m). Mit vier Metern traf der erste Ring den trockenen Saum, seit die Welt das
+                        // flache Ufer zeichnet und der Körper es liest (Gegenprüfung 07.10., Runde 3: Ufer 10 m, −31,5 dB).
+                        const fx = qx + ux * 3;
+                        const fz = qz + uz * 3;
                         if (!W.nass(fx, fz)) best = { x: fx, z: fz, wasser: { x, z } };
                         break;
                     }
