@@ -939,8 +939,9 @@ class AnazhRealm {
             blueprints: {},
             // Hotbar (9 Slots, Bauplan-Name oder null) + Bau-Modus: Tasten 1-9 wählen den Slot — leer lässt
             // den Modus aus, belegt aktiviert den Bauplan (oder toggelt zurück). F baut, ESC verlässt.
-            // Start-Gurt = die lebende Saat; Studio-Kataloge (klinge_/haus_/tor_) füllen sich über den Picker.
-            hotbar: ["stein_block", "waterfall", "damm", null, null, null, null, null, null],
+            // Der Start-Gurt liest den heutigen Katalog (`_startGurt`, gelegt nach der Buch-Ankunft): bis 07.10. stand
+            // hier Felsblock · Wasserfall · Damm (L7 — der Felsblock ist ein Alt-Doppel, im Katalog versteckt).
+            hotbar: [null, null, null, null, null, null, null, null, null],
             buildMode: {
                 active: false,
                 slotIndex: -1,
@@ -43031,9 +43032,16 @@ class AnazhRealm {
     _loadStateRestoreHotbarAndInventory(state) {
         if (Array.isArray(state.hotbar)) {
             const restored = [];
+            // Ein Studio-Werk (haus_/fahrzeug_/tor_ …) hat seinen Bauplan erst mit dem Buch: bei kaltem Buch bleibt der
+            // Name stehen, `_hotbarNachBuch` urteilt nach der Ankunft (sonst verlor jeder Reload die Werke des Gurts).
+            const buchKalt = !(this._foundry && this._foundry.recipes);
             for (let i = 0; i < 9; i++) {
                 const name = state.hotbar[i];
-                if (typeof name === "string" && this.state.blueprints[name]) {
+                if (
+                    typeof name === "string" &&
+                    (this.state.blueprints[name] ||
+                        (buchKalt && this._foundryEnabled() && this._foundryNeedsBookForType(name)))
+                ) {
                     restored.push(name);
                 } else {
                     restored.push(null);
@@ -68875,6 +68883,8 @@ class AnazhRealm {
         // `_ensureFoliageClusterAtlas` lädt sie, ohne im Haupt-Thread zu malen.
         if (m.blattAtlas && m.blattAtlas.rgba && Array.isArray(m.blattAtlas.rgba.mips) && m.blattAtlas.rgba.mips.length)
             this._blattAtlasBild = m.blattAtlas;
+        // Der Katalog steht: die Hotbar urteilt über ihre Namen und legt, wenn sie leer ist, den Start-Gurt.
+        this._hotbarNachBuch();
         // Die Welt-Skala der Bäume steht (`PORTAL_RENDER_CONFIG.placement`): Stamm- und Kronen-Hülle der Bäume, die vor
         // dem Buch entstanden (Reload mit kaltem Buch), messen jetzt im Weltmaß.
         this._baumHuellenNachBuch();
@@ -68895,6 +68905,44 @@ class AnazhRealm {
                 y1: h > 0 ? e.position.y + h : null,
             });
         }
+    }
+
+    // DER START-GURT (Leben-Schau 07.10., L7): je Studio-Art EIN platzierbares Werk, in der Reihenfolge des Katalogs
+    // (`_katalogSichtbar` — dieselbe Sicht wie Werkstatt und Rezeptbuch; die Art ist der kind des Studio-Rezepts). Heute:
+    // Eiche · GT · Drachentor · ein Fachwerkhaus. Vorher Felsblock · Wasserfall · Damm (Alt-Baupläne, der Felsblock ein
+    // Alt-Doppel, im Katalog versteckt). Null bei kaltem Buch.
+    _startGurt() {
+        const f = this._foundry;
+        if (!f || !f.recipes) return null;
+        const bps = this.state.blueprints || {};
+        const arten = new Set();
+        const gurt = [];
+        for (const name of Object.keys(bps)) {
+            if (!this._katalogSichtbar(name, bps[name]) || !this._isPlaceableBlueprint(bps[name])) continue;
+            const preset = this._foundryPresetFor(name);
+            const rec = preset ? f.recipes[preset] : null;
+            if (!rec || typeof rec.kind !== "string" || arten.has(rec.kind)) continue;
+            arten.add(rec.kind);
+            gurt.push(name);
+        }
+        return gurt;
+    }
+
+    // Nach der Buch-Ankunft: ein Name ohne Bauplan fällt aus der Hotbar (laut), und eine ganz leere Hotbar bekommt den
+    // Start-Gurt — ein neuer Spieler wie einer, dessen Gurt leer gespeichert wurde.
+    _hotbarNachBuch() {
+        const hb = this.state.hotbar;
+        if (!Array.isArray(hb)) return;
+        for (let i = 0; i < hb.length; i++) {
+            if (hb[i] && !this.state.blueprints[hb[i]]) {
+                this.log(`Hotbar-Slot ${i + 1}: „${hb[i]}" hat keinen Bauplan im Buch — der Platz wird frei.`, "WARN");
+                hb[i] = null;
+            }
+        }
+        if (hb.some(Boolean)) return this._renderHotbarDOM();
+        const gurt = this._startGurt() || [];
+        for (let i = 0; i < gurt.length && i < hb.length; i++) hb[i] = gurt[i];
+        this._renderHotbarDOM();
     }
     // Siedlungs-Gesetz aus dem Buch (fachwerk-core SIEDLUNG, Feld `siedlung`): wo und wie viele Dörfer.
     // Ganz oder gar nicht: EIN nicht-finites Feld → kein Gesetz (`_siedlungGesetz` → null, kein Dorf — nie ein Ersatz).

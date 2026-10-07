@@ -15478,7 +15478,8 @@ async function checkBandWelle6APolish(ctx) {
         // Kamera 8m über Bauwerks-Top, blickt steil nach unten auf die Mitte
         r.state.camera.position.set(_spawnArchX, _archTopY + 8, _spawnArchZ);
         r.state.camera.lookAt(_spawnArchX, _archTopY, _spawnArchZ);
-        // Build-Modus auf Slot 0 (stein_block in Default-Hotbar)
+        // Build-Modus auf Slot 0 (stein_block, gesetzt — der Start-Gurt liest den Katalog)
+        r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         out.buildModeActive = r.state.buildMode.active;
         out.phantomExists = !!r.state.buildMode.phantomMesh;
@@ -39805,9 +39806,9 @@ async function checkBandWelle6XAudit(ctx) {
             /* ignore */
         }
         if (r.state.hotbar && r.state.hotbar.length === 9) {
-            const builtIns = ["stein_block", "waterfall", "damm"];
+            const gurt = r._startGurt() || [];
             for (let i = 0; i < 9; i++) {
-                r.state.hotbar[i] = i < 3 ? builtIns[i] : null;
+                r.state.hotbar[i] = i < gurt.length ? gurt[i] : null;
             }
         }
         r._clearBuildMode && r._clearBuildMode();
@@ -54985,17 +54986,19 @@ async function checkBandRing6Workshop(ctx) {
             bar &&
             bar.querySelectorAll(".hotbar-slot").length === 10 &&
             bar.querySelectorAll('.hotbar-slot[data-slot="offhand"]').length === 1;
-        // AUSLÖSCHUNGS-WELLE — die Default-Hotbar ist [stein_block, waterfall, damm, null×6].
+        // Leben-Schau 07.10. (L7) — die Default-Hotbar ist der Start-Gurt aus dem Katalog (`_startGurt`: je Studio-Art
+        // ein Werk; bei kaltem Buch leer), nie mehr [stein_block, waterfall, damm].
+        const hb0 = r.state.hotbar;
+        const gurt = r._startGurt() || [];
         out.defaultHotbar =
-            Array.isArray(r.state.hotbar) &&
-            r.state.hotbar.length === 9 &&
-            r.state.hotbar[0] === "stein_block" &&
-            r.state.hotbar[1] === "waterfall" &&
-            r.state.hotbar[2] === "damm" &&
-            r.state.hotbar.slice(3).every((s) => s === null);
+            Array.isArray(hb0) &&
+            hb0.length === 9 &&
+            gurt.every((n, i) => hb0[i] === n) &&
+            hb0.slice(gurt.length).every((s) => s === null);
         // Slot-Label folgt aus blueprints.label
         const firstSlotLabel = bar.querySelector('.hotbar-slot[data-slot="0"] .label');
-        out.firstSlotShowsLabel = firstSlotLabel && firstSlotLabel.textContent === "Felsblock";
+        out.firstSlotShowsLabel =
+            !!firstSlotLabel && (!hb0[0] || firstSlotLabel.textContent === (r.state.blueprints[hb0[0]].label || hb0[0]));
 
         // setHotbarSlot setzt slot 5 auf eigenen Bauplan
         r.state.blueprints["test_hotbar_bp"] = {
@@ -55095,7 +55098,7 @@ async function checkBandRing6Workshop(ctx) {
     } else {
         check("Ring 6.5: #hotbar im DOM", ring65Results.hotbarInDom);
         check("Ring 6.5: Hotbar hat 9 Slots", ring65Results.hotbarHasNineSlots);
-        check("Ring 6.5: Default-Hotbar [stein_block, waterfall, damm, ..., null]", ring65Results.defaultHotbar);
+        check("Ring 6.5: Default-Hotbar = der Start-Gurt aus dem Katalog (_startGurt)", ring65Results.defaultHotbar);
         check("Ring 6.5: Slot-Label folgt Bauplan-Label", ring65Results.firstSlotShowsLabel);
         check("Ring 6.5: setHotbarSlot setzt Eintrag", ring65Results.setHotbarOk);
         check("Ring 6.5: Hotbar-DOM aktualisiert sich nach setHotbarSlot", ring65Results.hotbarDomReflectsSet);
@@ -55381,7 +55384,8 @@ async function checkBandRing6Workshop(ctx) {
         r._clearBuildMode();
         out.hudInDom = !!document.getElementById("build-mode-hud");
         out.hudInitiallyHidden = document.getElementById("build-mode-hud").hidden === true;
-        // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = stein_block.
+        // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = stein_block (gesetzt: der Start-Gurt liest den Katalog).
+        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r.selectHotbarSlot(0);
         out.modeActiveAfterSet = r.state.buildMode.active === true && r.state.buildMode.blueprintName === "stein_block";
         out.phantomInScene =
