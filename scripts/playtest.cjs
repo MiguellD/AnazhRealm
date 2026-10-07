@@ -19698,8 +19698,8 @@ async function checkBandHydrosphere(ctx) {
     // ### Wasserfälle aus dem Hydrosphären-Netz ###
     // Wasserfälle entstehen, wo ein Fluss eine echte Voxel-Klippe kreuzt (`_hydroExtractWaterfalls`);
     // der per-Chunk-Zufalls-Spawner `_buildVoxelChunkWaterfalls` + seine State-Map sind gelöscht und
-    // nicht mehr in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` gehookt. `_ensureWaterfallMaterial` +
-    // die vertikale Plane-Geometrie bleiben (`_buildHydroWaterfall` nutzt sie).
+    // nicht mehr in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` gehookt. Das Wasserfall-Material ohne Leser
+    // (`_ensureWaterfallMaterial`, nur Tests riefen es) ist mit der Welle L gefallen (W-kD11).
     const voxelV943cAblation = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -19711,7 +19711,7 @@ async function checkBandHydrosphere(ctx) {
             ensureNoHook: !/_buildVoxelChunkWaterfalls/.test(ensureSrc),
             disposeNoHook: !/_disposeVoxelChunkWaterfalls/.test(disposeSrc),
             stateMapGone: !("voxelChunkWaterfalls" in r.state),
-            materialKept: typeof r._ensureWaterfallMaterial === "function",
+            materialKept: typeof r._ensureWaterfallMaterial === "undefined" && !("waterfallUniforms" in r.state),
         };
     });
 
@@ -19731,71 +19731,8 @@ async function checkBandHydrosphere(ctx) {
         );
         check("Voxel V9.43-c: state.voxelChunkWaterfalls-Map ist entfernt", voxelV943cAblation.stateMapGone);
         check(
-            "Voxel V9.43-c: _ensureWaterfallMaterial lebt weiter (von _buildHydroWaterfall reuset)",
+            "Voxel V9.43-c → Welle L: das Wasserfall-Material ohne Leser ist gefallen (kein _ensureWaterfallMaterial, keine waterfallUniforms)",
             voxelV943cAblation.materialKept
-        );
-    }
-
-    // ### Das Wasserfall-Material ###
-    // Ein geteiltes Material mit Abwärts-Flow (`_ensureWaterfallMaterial`) teilt die Wasser-Substanz-Uniforms
-    // (Farbe/Sonne/Licht) mit dem Meer; `_buildHydroWaterfall` nutzt es für die netz-verankerten Planes. Die Luft
-    // trägt es nicht selbst: der EINE Luft-Knoten (`scene.fogNode`, V18.530) dunstet es wie jedes Mesh.
-    const voxelV943Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r) return null;
-        const out = {};
-        out.hasEnsureMat = typeof r._ensureWaterfallMaterial === "function";
-        let mat = null;
-        if (out.hasEnsureMat) mat = r._ensureWaterfallMaterial();
-        // V10.0-f-3 Doku-Sync: Wasserfall ist jetzt MeshBasicNodeMaterial
-        // (TSL). Die alte ShaderMaterial-Identitäts-Probe (mat.type ===
-        // "ShaderMaterial") wandert auf isMeshBasicNodeMaterial=true.
-        out.matIsShader = !!mat && mat.isMeshBasicNodeMaterial === true;
-        // V10.0-f-3 Doku-Sync: Uniforms leben in state.waterfallUniforms
-        // (uniform-Knoten mit .value, kein material.uniforms mehr).
-        const u = r.state.waterfallUniforms || {};
-        out.hasFlowUniforms =
-            !!u.flowDir &&
-            !!u.flowDir.value &&
-            u.flowDir.value.y < 0 &&
-            typeof (u.flowSpeed && u.flowSpeed.value) === "number" &&
-            !!u.time;
-        // Kein eigener Wasser-Nebel: fogColor/fogNear/fogFar sind fort, die Luft legt scene.fogNode auf.
-        out.sharesWaterUniforms =
-            !!u.deep && !!u.shallow && !!u.sunDir && !!u.light && !u.fogColor && !u.fogNear && !u.fogFar;
-        // Day-Night synct das Wasserfall-Material: das Licht (uLight) folgt dem Richtlicht, und die EINE Luft
-        // (state.luft = scene.fogNode) liegt auf dem Material (mat.fog an).
-        out.dayNightSyncsWaterfall = false;
-        if (mat && typeof r._applyDayNightToScene === "function") {
-            try {
-                u.light.value = -1;
-                r._applyDayNightToScene();
-                const sc = r.state.scene;
-                out.dayNightSyncsWaterfall =
-                    u.light.value > 0 && mat.fog !== false && !!r.state.luft && !!sc && sc.fogNode != null;
-            } catch {
-                out.dayNightSyncsWaterfall = false;
-            }
-        }
-        return out;
-    });
-
-    if (voxelV943Results && !voxelV943Results.error) {
-        check(
-            "Voxel V9.43-a: _ensureWaterfallMaterial liefert ein MeshBasicNodeMaterial (V10.0-f-3 TSL)",
-            voxelV943Results.hasEnsureMat && voxelV943Results.matIsShader
-        );
-        check(
-            "Voxel V9.43-a: state.waterfallUniforms trägt flowDir (abwärts) + flowSpeed + time",
-            voxelV943Results.hasFlowUniforms
-        );
-        check(
-            "Voxel V9.43-a: state.waterfallUniforms teilt die Wasser-Substanz-Uniforms mit dem Meer (kein eigener Nebel)",
-            voxelV943Results.sharesWaterUniforms
-        );
-        check(
-            "Voxel V9.43-a: _applyDayNightToScene synct das Wasserfall-Material (Licht gesetzt, die EINE Luft liegt auf)",
-            voxelV943Results.dayNightSyncsWaterfall
         );
     }
 
@@ -20249,58 +20186,45 @@ async function checkBandHydrosphere(ctx) {
             // benachbarter See-Blend die Mess-Punkte verfälscht; am Blockende wiederhergestellt.
             const savedLN = hydro.lakeNear;
             hydro.lakeNear = new Uint8Array(savedLN.length);
-            // (3) der Fluss-Mittelpunkt wird gecarvt
-            const carveCenter = r._hydrosphereCarveAt(rx, rz);
-            out.riverCenterCarved = carveCenter > 0.5;
-            // (4) das Bett liegt unter den Ufern: das Carve-Profil
-            // fällt von der Fluss-Mitte zur Bank-Rampe hin ab.
-            const D = HC.carveBedMin + HC.carveBedK * (rp.width || HC.widthMin);
-            const bankW = Math.max(2, D * HC.carveBankSlope);
-            const halfW = Math.max(1, (rp.width || HC.widthMin) * 0.5);
+            // (3) der Kanal formt den Fluss-Mittelpunkt (`_hydrosphereCarveAt` liefert { P, L, k } — P der Kanal: Flachboden
+            // unter dem Spiegel), und das Bett liegt unter der Wasser-Fläche.
+            const kanal = r._hydrosphereCarveAt(rx, rz);
+            const rvM = r._hydroRiverAt(rx, rz);
+            out.riverCenterCarved = !!(kanal && rvM && kanal.P < rvM.surfaceY - 0.5 && kanal.L >= kanal.P);
+            // (4) das Bett liegt unter den Ufern: die Bank steigt von der Fluss-Mitte mit ihrer Neigung zur Krone (halbe
+            // Breite + Tiefe / bankNeigung, die Tiefe aus `_flussTiefe`).
+            const D = r.constructor._flussTiefe(rp);
+            const halfW = (rp.width || HC.widthMin) * 0.5;
             const pX = -rp.flowZ;
             const pZ = rp.flowX;
-            const rcCenter = r._hydrosphereCarveAt(rx, rz);
-            const midOff = halfW + bankW * 0.45;
-            const rcMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
-            out.bedBelowBanks = rcCenter > rcMid && rcMid > 0;
-            // (5) Der Carve senkt die Voxel-Surface am Fluss. Flache Rinnen (<1.2 m = unter der
-            // `_voxelSurfaceY`-Scan-Granularität) sind nicht messbar → den TIEFSTEN Carve-Punkt über alle
-            // Flüsse suchen; kein tiefer Carve = unmessbar = bestanden (carveIsSubtractive beweist exakt).
-            let bestCarve = 0;
-            let bcx = rx;
-            let bcz = rz;
-            for (let ri = 0; ri < hydro.rivers.length; ri++) {
-                const pts = hydro.rivers[ri].points;
-                for (let k = 0; k < pts.length; k++) {
-                    if (pts[k].inLake) continue;
-                    const c = r._hydrosphereCarveAt(pts[k].x, pts[k].z);
-                    if (c > bestCarve) {
-                        bestCarve = c;
-                        bcx = pts[k].x;
-                        bcz = pts[k].z;
-                    }
-                }
-            }
-            const sCarve = r._voxelSurfaceY(bcx, bcz);
-            r._hydroComputing = true;
-            const sNoCarve = r._voxelSurfaceY(bcx, bcz);
-            r._hydroComputing = false;
-            out.surfaceLowered =
-                bestCarve < 1.5
-                    ? true
-                    : Number.isFinite(sCarve) && Number.isFinite(sNoCarve) && sCarve < sNoCarve - 0.3;
-            // (8) der Carve ist rein subtraktiv: die _terrainDensityAt-
-            // Differenz (Carve aktiv vs. suppressed) === der Carve-Betrag
+            const midOff = halfW + (D / HC.bankNeigung) * 0.75;
+            const kMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
+            out.bedBelowBanks = !!(kanal && kMid && kanal.P < kMid.P);
+            // (5) die Voxel-Fläche liegt AUF der Gestalt: die Fluss-Mitte trägt den Flachboden (auf die Scan-Körnung
+            // von `_voxelSurfaceY`, 1,2 m).
+            const sKanal = r._voxelSurfaceY(rx, rz);
+            out.surfaceLowered = !!kanal && Number.isFinite(sKanal) && Math.abs(sKanal - kanal.P) < 1.3;
+            // (8) der Kanal formt das Gelände: die _terrainDensityAt-Dichte mit Kanal === das weiche Minimum aus Kanal und
+            // dem weichen Maximum aus Gelände (die Dichte ohne Kanal, das Suppress-Flag) und Damm.
             const y = (r.state.terrainBaseHeight || 0) + 10;
             const dCarve = r._terrainDensityAt(rx, y, rz);
             r._hydroComputing = true;
             const dSuppressed = r._terrainDensityAt(rx, y, rz);
             r._hydroComputing = false;
-            out.carveIsSubtractive = Math.abs(dSuppressed - dCarve - carveCenter) < 0.001;
-            // (9) ohne Hydrosphäre bit-identisch — _hydrosphereCarveAt → 0
+            let carveSoll = null;
+            if (kanal) {
+                const dL = kanal.L - y;
+                let hk = Math.max(kanal.k - Math.abs(dSuppressed - dL), 0) / kanal.k;
+                const damm = Math.max(dSuppressed, dL) + hk * hk * kanal.k * 0.25;
+                const dP = kanal.P - y;
+                hk = Math.max(kanal.k - Math.abs(damm - dP), 0) / kanal.k;
+                carveSoll = Math.min(damm, dP) - hk * hk * kanal.k * 0.25;
+            }
+            out.carveIsSubtractive = carveSoll !== null && Math.abs(carveSoll - dCarve) < 0.001;
+            // (9) ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)
             const savedHydro = r.state.hydrosphere;
             r.state.hydrosphere = null;
-            out.carveZeroWithoutHydro = r._hydrosphereCarveAt(rx, rz) === 0;
+            out.carveZeroWithoutHydro = r._hydrosphereCarveAt(rx, rz) === null;
             r.state.hydrosphere = savedHydro;
             // (10) der Chunk-Boden bleibt fest auf der Fluss-Mitte
             const base = r.state.terrainBaseHeight || 0;
@@ -20365,15 +20289,15 @@ async function checkBandHydrosphere(ctx) {
             "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeBedCell/lakeW/lakeNear)",
             d.indexWired
         );
-        check("Voxel V9.43-d: der Carve senkt einen Fluss-Mittelpunkt", d.riverCenterCarved);
-        check("Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (Carve-Profil fällt zur Bank ab)", d.bedBelowBanks);
-        check("Voxel V9.43-d: der Carve senkt die Voxel-Surface am Fluss", d.surfaceLowered);
+        check("Voxel V9.43-d → Welle L: der Kanal formt einen Fluss-Mittelpunkt (Flachboden unter dem Spiegel)", d.riverCenterCarved);
+        check("Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (die Gestalt steigt zur Bank an)", d.bedBelowBanks);
+        check("Voxel V9.43-d → Welle L: die Voxel-Fläche liegt auf dem Flachboden des Kanals", d.surfaceLowered);
         check(
-            "Voxel V9.43-d: der Carve ist rein subtraktiv (_terrainDensityAt-Differenz === Carve-Betrag)",
+            "Voxel V9.43-d → Welle L: der Kanal formt das Gelände (weiches Minimum aus Kanal und dem weichen Maximum aus Gelände und Damm — die Bank läuft ins Gelände aus)",
             d.carveIsSubtractive
         );
         check(
-            "Voxel V9.43-d: ohne Hydrosphäre ist der Carve 0 (bit-identisch zu vor V9.43-d)",
+            "Voxel V9.43-d: ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)",
             d.carveZeroWithoutHydro
         );
         check("Voxel V9.43-d: der Chunk-Boden bleibt fest auf einer Fluss-Mitte (V9.12-Garantie)", d.floorSolid);
@@ -20768,30 +20692,25 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             }
             const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
             out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
-            // V18.6 U-W4 — der Default-Render ist die Höhenfeld-FLÄCHE ("chunk-
-            // water-surface"); der A/B-Schalter "iso" baut die alte Zell-Iso
-            // ("chunk-water-iso"). Beide Kind-Stempel sind gültig.
-            out.sampleMeshUserData =
-                sampleMesh.userData &&
-                (sampleMesh.userData.hydroKind === "chunk-water-cellsheet" ||
-                    sampleMesh.userData.hydroKind === "chunk-water-iso");
+            // Der EINE Render-Pfad ist das Zell-Oberkanten-Sheet ("chunk-water-cellsheet"); der Debug-Zwilling
+            // „Zell-Iso" ist gefallen (Welle L, W-kD7).
+            out.sampleMeshUserData = !!sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-cellsheet";
             // Wasser ist eine FLÄCHE, kein Volumen: Material BackSide (von oben sichtbar, von unten
             // front-gecullt) + keine Unterseiten-Dreiecke (ny>0.2 am Build verworfen) — sonst „Wasser auf
             // der falschen Seite des Bodens“. Über ALLE Iso-Meshes gezählt.
             const BACK = window.THREE && window.THREE.BackSide !== undefined ? window.THREE.BackSide : 1;
-            // Der Tauch-Pass macht das GETEILTE Material DoubleSide, solange playerEyesUnderwater — korrekt,
-            // aber nicht der Oberflächen-Vertrag. Darum deterministisch den OBERFLÄCHEN-Zustand prüfen
-            // (ruhende Fläche = BackSide), zustands-neutral mit Restore — sonst kippt es mit der
-            // Spieler-Position.
+            // Der Tauch-Pass macht das GETEILTE Material DoubleSide, solange die KAMERA unter Wasser liegt
+            // (`_applyDayNightToScene` fragt `_koerperWasser` an der Kamera) — korrekt, aber nicht der
+            // Oberflächen-Vertrag. Darum deterministisch den OBERFLÄCHEN-Zustand prüfen (überall trocken = BackSide),
+            // zustands-neutral mit Restore — sonst kippt es mit der Kamera-Position.
             out.waterMatBackSide = (() => {
                 if (!r.state.hydroSurfaceMaterial) return false;
-                const savedDive = r.state.playerEyesUnderwater;
                 try {
-                    r.state.playerEyesUnderwater = false;
+                    r._koerperWasser = () => -Infinity;
                     if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
                     return r.state.hydroSurfaceMaterial.side === BACK;
                 } finally {
-                    r.state.playerEyesUnderwater = savedDive;
+                    delete r._koerperWasser;
                     if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
                 }
             })();
@@ -20906,7 +20825,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         );
         check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
         check(
-            "V18.92: Wasser-Mesh trägt userData.hydroKind='chunk-water-cellsheet' (Default) ODER 'chunk-water-iso' (Debug)",
+            "V18.92 → Welle L: Wasser-Mesh trägt userData.hydroKind='chunk-water-cellsheet' (der EINE Render-Pfad)",
             res.sampleMeshUserData === true
         );
         check(
@@ -23164,13 +23083,13 @@ async function checkBandPhasenBF(ctx) {
             /_sitzHeight/.test(window.__codeOf(r.mountArchitecture)) &&
             /_sitzHeight/.test(window.__codeOf(r._rittSchritt));
         out.c7Grip = /_attachPointFor/.test(window.__codeOf(r._refreshHeldMesh));
-        // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg, das Abwärts-Material lebt als markierte
-        // Saat); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
+        // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg; die Abwärts-Material-Saat ohne Leser fiel mit der
+        // Welle L); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
         out.a4PlaneCut =
             typeof r._buildHydroWaterfall === "undefined" &&
             typeof r._buildHydroWaterfallPool === "undefined" &&
             typeof r._waterfallIsRealWall === "undefined" &&
-            typeof r._ensureWaterfallMaterial === "function" &&
+            typeof r._ensureWaterfallMaterial === "undefined" &&
             typeof r.setWaterfallSteep === "undefined";
         // B1 (V18.345) — die Sheet-Mathe lebt jetzt in `_computeWaterSheetData` (geteilt mit
         // dem Worker-Mirror); der `_buildVoxelChunkWaterCellSheet`-Wrapper ist nur noch Gate+ctx.
@@ -23263,24 +23182,24 @@ async function checkBandPhasenBF(ctx) {
             const src = r._specRenderBody ? window.__codeOf(r._specRenderBody) : "";
             return hasRad && /computeMotionRoles\(bp\.parts, bp\.connections\)/.test(src) && /Rad an Achse/.test(src);
         })();
-        // B5-UNTERWASSER-PASS: dritter Konsument des playerEyesUnderwater-Flags (neben Tauch-Fog + Tint) —
-        // getaucht ist das geteilte Wasser-Material DoubleSide (Decke von unten sichtbar), aufgetaucht
-        // BackSide. Behavioral mit Restore (zustands-neutral).
+        // B5-UNTERWASSER-PASS: Konsument des Kamera-Mediums (neben der Unterwasser-Luft) — liegt die KAMERA unter
+        // dem Spiegel (`_koerperWasser` an der Kamera, Welle L Q6), ist das geteilte Wasser-Material DoubleSide (Decke von
+        // unten sichtbar), darüber BackSide. Behavioral mit Restore (zustands-neutral): der Spiegel wird einmal über,
+        // einmal unter die Kamera gelegt.
         out.b5Underwater = (() => {
             if (typeof r._ensureHydroSurfaceMaterial !== "function") return false;
             const mat = r._ensureHydroSurfaceMaterial();
             if (!mat) return false;
-            const savedFlag = r.state.playerEyesUnderwater;
             try {
-                r.state.playerEyesUnderwater = true;
+                r._koerperWasser = () => Infinity;
                 r._applyDayNightToScene();
                 const diveSide = mat.side;
-                r.state.playerEyesUnderwater = false;
+                r._koerperWasser = () => -Infinity;
                 r._applyDayNightToScene();
                 const surfSide = mat.side;
                 return diveSide === THREE.DoubleSide && surfSide === THREE.BackSide;
             } finally {
-                r.state.playerEyesUnderwater = savedFlag;
+                delete r._koerperWasser;
                 r._applyDayNightToScene();
             }
         })();
@@ -23597,7 +23516,7 @@ async function checkBandPhasenBF(ctx) {
     check("C7: Built-in-Körper liegen automatisch als Blueprints (Button gefallen)", res.c7Bodies);
     check("C7: der Mount liest die Sitz-Höhe des Bauplans (Source, beide Leser)", res.c7MountSitz);
     check("C7: die Hand greift am GRIFF-Punkt (Source im Hand-Mesh-Pfad)", res.c7Grip);
-    check("A4: die Wasserfall-Plane ist geschnitten, das Abwärts-Material lebt als Saat", res.a4PlaneCut);
+    check("A4 → Welle L: die Wasserfall-Plane und die Saat ohne Leser sind gefallen", res.a4PlaneCut);
     check("A4: der Steil-Split formt vertikales Wasser (Lippe + Vorhang im Zell-Sheet)", res.a4Curtain);
     check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
     check(
@@ -23866,8 +23785,8 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         out.lod1WithCells = lod1WithCells;
         out.allCellsAreLod0 = allCellsAreLod0;
         out.firstMismatchLen = firstMismatchLen;
-        // Source-Probe: _buildVoxelChunkWaterIsoSurface nutzt LOD 0 fest
-        const isoSrc = window.__codeOf(r._buildVoxelChunkWaterIsoSurface);
+        // Source-Probe: die Sheet-Mathe (der EINE Wasser-Render-Pfad) nutzt LOD 0 fest
+        const isoSrc = window.__codeOf(r._computeWaterSheetData);
         out.isoUsesLod0 = /_voxelChunkConfig\(0\)/.test(isoSrc);
         // Source-Probe: _buildVoxelChunkData baut waterCells mit lod=0
         const buildSrc = window.__codeOf(r._buildVoxelChunkData);
@@ -23888,7 +23807,7 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         res.totalWithCells >= 1,
         `total=${res.totalWithCells}, lod0=${res.lod0WithCells}, lod1=${res.lod1WithCells}`
     );
-    check("Welle V9.93: _buildVoxelChunkWaterIsoSurface nutzt LOD 0 fest (Source-Probe)", res.isoUsesLod0);
+    check("Welle V9.93: die Wasser-Sheet-Mathe (_computeWaterSheetData) nutzt LOD 0 fest (Source-Probe)", res.isoUsesLod0);
     check("Welle V9.93: _buildVoxelChunkData baut waterCells mit lod=0 (Source-Probe)", res.buildPassesLod0);
 }
 
@@ -23964,15 +23883,16 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         out.perfMs = performance.now() - t0;
 
         // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` liest den Boden UNTER dem Körper (`_kreaturBodenUnter`:
-        // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle);
-        // der Helper selbst liest `_waterLevelAt` + `_isAboveWaterAt`.
+        // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle); der Helper liest die
+        // EINE Wasser-Wahrheit am Körper (`_koerperWasser`, Welle L wasser) — Tiefe UND Ufer-Suche —, nie mehr das 3×3-gedehnte
+        // `_waterLevelAt` / `_isAboveWaterAt` (die zweite Wahrheit der Ufer-Scheu).
         const helperSrc = window.__codeOf(r._creatureWaterContextAt);
         out.usesVoxelSurfaceY =
             /_kreaturBodenUnter\(/.test(window.__codeOf(r._creatureGroundY)) &&
             /_fieldSurfaceBelow\(/.test(window.__codeOf(r._kreaturBodenUnter)) &&
             /_voxelSurfaceY\(/.test(window.__codeOf(r._kreaturBodenUnter));
-        out.usesWaterLevelAt = /_waterLevelAt\(/.test(helperSrc);
-        out.usesIsAboveWaterAt = /_isAboveWaterAt\(/.test(helperSrc);
+        out.usesKoerperWasser = (helperSrc.match(/_koerperWasser\(/g) || []).length >= 2;
+        out.ohneZweiteWahrheit = !/_waterLevelAt\(|_isAboveWaterAt\(/.test(helperSrc);
 
         // BODEN-CACHE: die teuren `_voxelSurfaceY`-Scans sind pro Frame per Budget gedeckelt, nicht 1–2×
         // pro Kreatur. Das Budget dekrementiert je echtem Scan → hier als Scan-Zähler gelesen.
@@ -24051,8 +23971,14 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         "Welle V11.0-d.1: _creatureGroundY liest den Boden unter dem Körper (_kreaturBodenUnter → _fieldSurfaceBelow, Säule nur ohne Fels)",
         res.usesVoxelSurfaceY === true
     );
-    check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
-    check("Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)", res.usesIsAboveWaterAt === true);
+    check(
+        "Welle L: Helper liest die EINE Wasser-Wahrheit am Körper (_koerperWasser: Tiefe und Ufer-Suche)",
+        res.usesKoerperWasser === true
+    );
+    check(
+        "Welle L: Helper liest keine zweite Wahrheit (_waterLevelAt / _isAboveWaterAt)",
+        res.ohneZweiteWahrheit === true
+    );
     check("V17.113 Kreatur-FPS-Dirigent: _creatureGroundY (Boden-Cache) existiert", res.groundCacheFn === true);
     if (res.groundCacheFn) {
         check("V17.113: erster Boden-Zugriff scannt (Budget dekrementiert)", res.gFirstScan === true);
@@ -24238,9 +24164,8 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         const STEP = 6;
         for (let dx = -SCAN; dx <= SCAN && !waterSpot; dx += STEP) {
             for (let dz = -SCAN; dz <= SCAN && !waterSpot; dz += STEP) {
-                const sy = r._voxelSurfaceY(dx, dz);
-                if (sy === null || !Number.isFinite(sy)) continue;
-                if (!r._isAboveWaterAt(dx, dz, 0.1)) waterSpot = { x: dx, z: dz };
+                // das Wasser, wie der Körper es trägt (Welle L: das Trink-Ziel liest `_nassAt` über `_koerperWasser`)
+                if (r._nassAt(dx, dz, 0.1)) waterSpot = { x: dx, z: dz };
             }
         }
         out.waterFound = waterSpot !== null;
@@ -24348,8 +24273,9 @@ async function checkBandNahStreu(ctx) {
             /bodenGewicht/.test(kSrc) &&
             /_canopyLightAt/.test(kSrc) &&
             /_feuchteAt/.test(kSrc) &&
-            /_nahStreuSpiegel/.test(kSrc) &&
-            /_hydroRiverAt/.test(window.__codeOf(r._nahStreuSpiegel)) &&
+            /_nahStreuBodenGewicht\(/.test(kSrc) &&
+            /_koerperWasser\(/.test(kSrc) &&
+            /uf\.fluss/.test(window.__codeOf(r._nahStreuBodenGewicht)) &&
             /_foundryFlattenFor/.test(tSrc) &&
             /_foundryDeclaredStage/.test(tSrc) &&
             /_foundryVariantFor/.test(tSrc) &&
@@ -29224,9 +29150,9 @@ async function checkBandM3RittVollendet(ctx) {
             // Die GERENDERTE Unterkante: die Basis liegt bei position.y − 0.5 (Instanz-Matrix · Gruppen-Bau) — die alte
             // Formel ohne die −0.5 hielt den versunkenen Wagen (Reifen 0,48 m im Boden) für stehend.
             const bottom = entry.position.y - 0.5 + r._compoundBottomY(bp) * (entry.scale || 1);
-            // Der fahrzeug_wagen ist HOLZ → er SCHWIMMT: über Wasser ruht die Unterkante an der geglätteten
-            // Lauf-Fläche − 25 cm Tiefgang, trocken auf dem Terrain. Intent: „kein Versinken“.
-            const runSurf = r._waterRunSurfaceAt(entry.position.x, entry.position.z);
+            // Der fahrzeug_wagen ist HOLZ → er SCHWIMMT: über Wasser ruht die Unterkante am Spiegel (die EINE
+            // Wasser-Wahrheit am Körper über seinem Grund) − 25 cm Tiefgang, trocken auf dem Terrain. Intent: „kein Versinken“.
+            const runSurf = r._koerperWasser(entry.position.x, entry.position.z, terr);
             const expectFloat = Number.isFinite(runSurf) && runSurf > -1e8 && runSurf - 0.25 > terr;
             // An Land steht das Gefährt auf seinen Rädern und versinkt nirgends (W5 + Integration): die Probe liest das
             // Boden-Gesetz selbst an den vier Aufstandspunkten (`_rittAufstand`) und unter dem Ursprung (der Bauch), legt
@@ -30807,7 +30733,7 @@ async function checkBandGammaGenese(ctx) {
                 /bodenGewicht/.test(kSrc) &&
                 /_feuchteAt/.test(kSrc) &&
                 /_canopyLightAt/.test(kSrc) &&
-                /_nahStreuSpiegel/.test(kSrc);
+                /_nahStreuBodenGewicht\(/.test(kSrc);
             out.schilfData = !!(boden && boden.schilf && Array.isArray(boden.schilf.ufer) && boden.schilf.ring === "nah");
             out.farnDual = !!(boden && boden.farn && Array.isArray(boden.farn.licht) && boden.farn.feuchtLicht > 0);
             out.bodenLiest = /_feuchteAt/.test(window.__codeOf(r._terrainMaterialAt));
@@ -32954,7 +32880,7 @@ async function checkBandV18193MakroErbgut(ctx) {
 }
 
 // Γ6 — vier stehende Wände gegen geheilte visuelle Narben: (G1) Schneeband auf PROMINENZ ·
-// (G2) chunk-seam per Pad+Crop (Source-Wand) · (G3) false-swim via `_waterCellAt` (3D-Wahrheit) ·
+// (G2) chunk-seam per Pad+Crop (Source-Wand) · (G3) false-swim via `_koerperWasser` (die EINE Wahrheit am Körper) ·
 // (G4) arch-water-solid via blockerAABBs. KEINE mutativen Spawns — Source-Proben + Welt nach Warmup.
 async function checkBandV18194Gamma6Befoerderung(ctx) {
     const { page, check } = ctx;
@@ -33027,32 +32953,60 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         const buildSrc = r._voxelChunkGeometry ? window.__codeOf(r._voxelChunkGeometry) : "";
         out.seamPadCropMechanism = /cropMargin/.test(buildSrc);
 
-        // (G3) FALSE-SWIM: `_waterCellAt` liest die 3D-Wahrheit (V13.11/V18.0).
-        // Eine HOHE Luft-Position (y=200) ist sicher AIR-Cell (0), nie WATER.
+        // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6) — der Zell-Leser
+        // `_waterCellAt` (eine zweite Wahrheit, nur noch von dieser Probe gerufen) ist gefallen — und sie kennt die DECKE
+        // (D11): die Zellen halten Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`). Die Probe sucht
+        // in den geladenen Wasser-Chunks jede erste LUFT-Zelle über FEST, deren Mitte unter dem Spiegel des Gesetzes liegt
+        // und über der eine FEST-Zelle steht (eine trockene Höhle), und stellt einen Körper auf ihren Boden: er liest dort
+        // nie Wasser. Bis 8f09227d las er den Spiegel ohne Decke (3511 von 3511 Höhlen-Proben am See der Mess-Wiese nass).
         // Plus: Worker-Mirror baut waterCells via Flood (V13.12 Vertikal-Open).
         let waterCellAtWorks = false;
-        let highIsNotWater = false;
-        let playerPosNoPhantom = false;
-        if (typeof r._waterCellAt === "function") {
+        const hoehle = { unter: 0, neben: 0, nassUnter: 0, nassNeben: 0 };
+        if (typeof r._koerperWasser === "function" && typeof r._waterCellAt === "undefined") {
             waterCellAtWorks = true;
-            // Hohe Luft-Position (y=200) ist NIE Wasser (1) — entweder AIR (0),
-            // SOLID (2) oder null (Chunk außerhalb). V13.12-Heilung: kein
-            // Phantom-Wasser in der Höhe.
-            const highCell = r._waterCellAt(0, 200, 0);
-            highIsNotWater = highCell !== 1;
-            // Direkt über Spielerposition (≈ 20 m über Spieler) — sicher Luft,
-            // niemals Wasser.
-            const pm = r.state.playerMesh;
-            if (pm) {
-                const above = r._waterCellAt(pm.position.x, pm.position.y + 20, pm.position.z);
-                playerPosNoPhantom = above !== 1;
-            } else {
-                playerPosNoPhantom = true; // ohne Spieler keine Probe → skip-pass
+            const cfg = r._voxelChunkConfig(0);
+            const oy = (s.terrainBaseHeight || 0) - cfg.floorDrop;
+            const ZS = r.constructor.CELL_STATE;
+            const dq = cfg.dim * cfg.dim;
+            for (const [key, e] of s.voxelChunks || []) {
+                if (!e || !e.waterCells) continue;
+                const c = e.waterCells;
+                const [kx, kz] = key.split(",").map(Number);
+                for (let k = 0; k < cfg.dim; k++)
+                    for (let i = 0; i < cfg.dim; i++) {
+                        const b = i + k * cfg.dim;
+                        const x = kx * cfg.span + (i + 0.5) * cfg.step;
+                        const z = kz * cfg.span + (k + 0.5) * cfg.step;
+                        const L = r._atlasWaterLevelAt(x, z, -1e9);
+                        if (!(L > -Infinity)) continue;
+                        for (let j = 1; j < cfg.dimY; j++) {
+                            const cy = oy + (j + 0.5) * cfg.step;
+                            if (cy > L) break;
+                            if (c[b + j * dq] !== ZS.AIR || c[b + (j - 1) * dq] !== ZS.SOLID) continue;
+                            let decke = false,
+                                wasser = false;
+                            for (let jj = j + 1; jj < cfg.dimY && oy + jj * cfg.step < L; jj++) {
+                                if (c[b + jj * dq] === ZS.SOLID) decke = true;
+                                else if (decke && c[b + jj * dq] === ZS.WATER) wasser = true;
+                            }
+                            if (!decke) continue;
+                            const boden = r._fieldSurfaceBelow(x, cy, z, 3);
+                            if (!Number.isFinite(boden) || !(boden < L - 0.2)) break;
+                            const nass = r._koerperWasser(x, z, boden) > boden + 0.1;
+                            if (wasser) {
+                                hoehle.unter++;
+                                if (nass) hoehle.nassUnter++;
+                            } else {
+                                hoehle.neben++;
+                                if (nass) hoehle.nassNeben++;
+                            }
+                            break;
+                        }
+                    }
             }
         }
         out.waterCellAtExists = waterCellAtWorks;
-        out.waterCellHighNotWater = highIsNotWater;
-        out.waterCellAbovePlayerNotWater = playerPosNoPhantom;
+        out.hoehle = hoehle;
         // Source-Probe für die V13.12-Heilung in der Cell-Build-Funktion
         const cellsSrc = r._buildVoxelChunkWaterCells ? window.__codeOf(r._buildVoxelChunkWaterCells) : "";
         out.cellsBuildHasFlood = cellsSrc.length > 200;
@@ -33112,11 +33066,18 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         res.seamPadCropMechanism === true
     );
     // (G3) FALSE-SWIM
-    check("Γ6 (G3a) FALSE-SWIM: _waterCellAt liest 3D-Cell-Wahrheit (V13.11/V18.0)", res.waterCellAtExists === true);
-    check("Γ6 (G3b) hohe Luft-Position (y=200) ist NIE Wasser-Cell (kein Phantom)", res.waterCellHighNotWater === true);
     check(
-        "Γ6 (G3c) über Spielerposition (+20 m) ist NIE Wasser-Cell (kein Sub-Terrain-Blasen-Riss)",
-        res.waterCellAbovePlayerNotWater === true
+        "Γ6 (G3a) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (_koerperWasser; der Zell-Leser _waterCellAt fiel)",
+        res.waterCellAtExists === true
+    );
+    const hh = res.hoehle || {};
+    check(
+        `Γ6 (G3b) FALSE-SWIM: die trockene Höhle UNTER dem See bleibt für den Körper trocken (Decke, D11: ${hh.nassUnter} von ${hh.unter} nass)`,
+        hh.unter + hh.neben > 0 && hh.nassUnter === 0
+    );
+    check(
+        `Γ6 (G3c) FALSE-SWIM: die trockene Höhle NEBEN dem See bleibt für den Körper trocken (Rand-Spiegel, D11: ${hh.nassNeben} von ${hh.neben} nass)`,
+        hh.unter + hh.neben > 0 && hh.nassNeben === 0
     );
     check("Γ6 (G3d) Cell-Build-Funktion vorhanden (V13.12 Vertikal-Open-Foundation)", res.cellsBuildHasFlood === true);
     check("Γ6 (G3e) Worker-Snapshot trägt hydroBand (Cell-Klassifikations-Skip)", res.hydroBandPresent === true);
@@ -38798,9 +38759,10 @@ async function checkBandW3UiPuls(ctx) {
     );
 }
 
-// W-F Fluss: die EINE geglättete Lauf-Fläche (_waterRunSurfaceAt) mit drei Konsumenten (Zell-Sheet ·
-// Tauch-Trigger · Boot-Schwimmen), Narben-Wand (Zentrums-Blende lässt die Querschnitt-Kante roh),
-// Flow-Kräuselung im Shader, Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
+// W-F Fluss (Welle L, Q7-Gestalt): der EINE Spiegel des Gesetzes (_atlasWaterLevelAt — der Fluss-Spiegel stromab nie
+// steigend, quer waagrecht, `_hydroRiverSpiegel`) mit seinen Konsumenten (Zell-Sheet · Körper · Boot-Schwimmen); die
+// geglättete Lauf-Fläche (_waterRunSurfaceAt) fiel mit dem monotonen Spiegel. Flow-Kräuselung im Shader,
+// Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
 // (checkBandWEFrequenzband unten: EIN Empfänger _applySubstanceResponse, Profile aus der Substanz
 // via _substanceResponseProfile, FÜLL-LICHT statt max()-Clamp, Band-Regler, Gras angedockt.)
 async function checkBandWFFluss(ctx) {
@@ -38808,23 +38770,23 @@ async function checkBandWFFluss(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // (1) der EINE Leser existiert + Seen/Ozean kommen unverändert durch
-        // (kein Fluss → _waterRunSurfaceAt === _atlasWaterLevelAt; pure-Funktion).
-        out.runExists = typeof r._waterRunSurfaceAt === "function";
-        // ein trockener Punkt gibt -Infinity durch (kein Wasser erfunden).
+        // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
+        // (kein Wasser erfunden).
+        out.runExists = typeof r._atlasWaterLevelAt === "function" && typeof r._waterRunSurfaceAt === "undefined";
         const dryX = 99999,
             dryZ = 99999;
-        out.dryPassthrough = r._waterRunSurfaceAt(dryX, dryZ) === r._atlasWaterLevelAt(dryX, dryZ, -Infinity);
-        // (2) die DREI Konsumenten lesen die geglättete Fläche (Source-Probe): die Sheet-Mathe in
-        // `_computeWaterSheetData` (Main + Worker geteilt), der Tauch-Trigger in `_stepCharacter`.
-        out.sheetReadsRun = /_waterRunSurfaceAt/.test(window.__codeOf(r._computeWaterSheetData));
-        out.diveReadsRun = /_waterRunSurfaceAt/.test(window.__codeOf(r._stepCharacter));
-        // (3) NARBEN-WAND: die Zentrums-Blende (centerness) lebt — _hydroRiverAt
-        // gibt sie, _waterRunSurfaceAt blendet roh↔glatt damit (Kante bleibt roh).
-        out.centernessField = /centerness/.test(window.__codeOf(r._hydroRiverAt));
-        out.centernessBlend =
-            /centerness/.test(window.__codeOf(r._waterRunSurfaceAt)) &&
-            /\* center/.test(window.__codeOf(r._waterRunSurfaceAt));
+        out.dryPassthrough = r._atlasWaterLevelAt(dryX, dryZ, -Infinity) === -Infinity;
+        // (2) die Konsumenten lesen den Spiegel (Source-Probe): die Sheet-Mathe in `_computeWaterSheetData` (Main +
+        // Worker geteilt) und der Körper über die EINE Wasser-Wahrheit am Körper (`_stepCharacter` → `_koerperWasser`).
+        out.sheetReadsRun = /_atlasWaterLevelAt/.test(window.__codeOf(r._computeWaterSheetData));
+        out.diveReadsRun =
+            /_koerperWasser/.test(window.__codeOf(r._stepCharacter)) &&
+            /_atlasWaterLevelAt/.test(window.__codeOf(r._koerperWasser));
+        // (3) DER SPIEGEL IST DAS SEGMENT: `_hydroRiverAt` liest den Spiegel seiner Enden (sA/sB), nie die Makro-Höhe des
+        // Orts (bis V18.531: Makro − 0,25·D + Buckel — der Fluss stieg bergauf und wölbte sich).
+        const rvSrc = window.__codeOf(r._hydroRiverAt);
+        out.centernessField = /centerness/.test(rvSrc);
+        out.centernessBlend = /seg\.sA/.test(rvSrc) && /seg\.sB/.test(rvSrc) && !/_terrainMacroSurfaceY/.test(rvSrc);
         // (4) die Flow-Kräuselung im Shader (fragment-seitig, narben-sicher).
         out.flowRipple = /flowRipple/.test(window.__codeOf(r._ensureHydroSurfaceMaterial));
         // (5) das BOOT-SCHWIMMEN ist Substanz-emergent: holz schwimmt, stein/
@@ -38847,20 +38809,31 @@ async function checkBandWFFluss(ctx) {
         out.holzFloats = probeFloat("holz");
         out.steinFloats = probeFloat("stein");
         out.eisenFloats = probeFloat("eisen");
-        // (6) das Profil trägt das floats-Feld (der Konsument im Ritt-Tick liest es).
-        out.tickFloatConsumed = /rideProf\.floats|prof.*floats/.test(window.__codeOf(r._rittSchritt));
+        // (6) der Studio-Wagen liegt nach der Hülle des Fahrzeug-Kerns im Wasser (D10: exportDrive.huelle.dichte), nie nach
+        // dem Holzkarren-Spender, den sein Bauplan klont (bis 8f09227d schwamm der GT wie ein Holz-Boot).
+        const pGt = r._vehicleProfile({ type: "fahrzeug_gt", scale: 1, position: { x: 0, y: 0, z: 0 } });
+        out.gtFloats = pGt ? pGt.floats : null;
+        // (7) der Ritt im Sim-Schritt und der Boden des Fahr-Schritts legen das Gefährt über die EINE Wahrheit am Körper mit
+        // seiner Gestalt ins Wasser (D4/D10 — der Frame-Tick ist nur Sicht).
+        const ritt = window.__codeOf(r._rittSchritt);
+        const boden = window.__codeOf(r._fahrBoden);
+        out.tickFloatConsumed =
+            /_fahrzeugGestalt\(/.test(ritt) &&
+            /_koerperWasser\([^)]*gestalt\)/.test(ritt) &&
+            /_fahrzeugGestalt\(/.test(boden) &&
+            /_koerperWasser\([^)]*gestalt\)/.test(boden);
         return out;
     });
     check(
-        "W-F Fluss: der EINE Lauf-Leser _waterRunSurfaceAt existiert + reicht Nicht-Fluss-Wasser unverändert durch",
+        "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt (die geglättete Lauf-Fläche fiel) + erfindet kein Wasser",
         res.runExists && res.dryPassthrough
     );
     check(
-        "W-F Fluss: die DREI Konsumenten lesen die geglättete Fläche (Zell-Sheet + Tauch-Trigger; Source-Probe)",
+        "W-F Fluss: die Konsumenten lesen den Spiegel des Gesetzes (Zell-Sheet + Körper über _koerperWasser; Source-Probe)",
         res.sheetReadsRun && res.diveReadsRun
     );
     check(
-        "W-F Fluss NARBEN-WAND: die Zentrums-Blende lebt (_hydroRiverAt gibt centerness, _waterRunSurfaceAt blendet roh↔glatt — die Querschnitt-Kante bleibt roh)",
+        "W-F Fluss SPIEGEL: _hydroRiverAt liest den Segment-Spiegel (sA/sB — stromab nie steigend, quer waagrecht), nie die Makro-Höhe des Orts",
         res.centernessField && res.centernessBlend
     );
     check(
@@ -38868,8 +38841,12 @@ async function checkBandWFFluss(ctx) {
         res.flowRipple
     );
     check(
-        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken — volumen-gewichtete Mittel-Dichte) + im Ritt-Tick konsumiert",
-        res.holzFloats === true && res.steinFloats === false && res.eisenFloats === false && res.tickFloatConsumed
+        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken), der Studio-Wagen liest die Hülle des Kerns (GT sinkt) + im Ritt-Tick über _koerperWasser mit der Gestalt",
+        res.holzFloats === true &&
+            res.steinFloats === false &&
+            res.eisenFloats === false &&
+            res.gtFloats === false &&
+            res.tickFloatConsumed
     );
 }
 
@@ -41736,17 +41713,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // persistiert in state.atmosphere.waterCull.
         out.waterCullSetter = typeof r.setWaterCull === "function";
         out.waterMinDepthCull = waterMinDepthCull;
-        // V13.6: Wasser-Oberfläche ist wieder die Surface-Nets-Iso (Synergie mit dem
-        // Terrain — derselbe Mesher), band-limitiert aufs globale hydroBand. Source-
-        // Probe: der Iso-Builder nutzt sampleWater + _voxelChunkGeometry + bandDimY.
-        {
-            const isoSrc =
-                typeof r._buildVoxelChunkWaterIsoSurface === "function"
-                    ? window.__codeOf(r._buildVoxelChunkWaterIsoSurface)
-                    : "";
-            out.waterIsoSynergy =
-                /sampleWater/.test(isoSrc) && /_voxelChunkGeometry\(/.test(isoSrc) && /bandDimY/.test(isoSrc);
-        }
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
         out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
@@ -41760,10 +41726,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
                     const src = window.__codeOf(fn);
-                    if (/playerUnderwater\s*=\s*submerged/.test(src)) buoy = true;
-                    // Die Bremse liest das Schwimm-Gesetz (schwimmen.speedMul, Fallback 0.55) statt eines Literals:
-                    // if-Block `playerUnderwater) { … currentSpeed *= … speedMul … }`.
-                    if (/playerUnderwater\)\s*\{[\s\S]{0,240}?currentSpeed\s*\*=[\s\S]{0,160}?speedMul/.test(src))
+                    // Welle L Q6: der Schwimm-Zustand heißt `schwimmt` (die Säule über dem Grund übersteigt die Brustkorb-Linie).
+                    if (/playerUnderwater\s*=\s*(?:submerged|schwimmt)/.test(src)) buoy = true;
+                    // Die Bremse liest das Schwimm-Gesetz (schwimmen.speedMul, fail-closed, kein Literal-Rückfall):
+                    // `playerUnderwater) … currentSpeed *= … speedMul`.
+                    if (/playerUnderwater\)\s*\{?[\s\S]{0,240}?currentSpeed\s*\*=[\s\S]{0,160}?speedMul/.test(src))
                         speedCut = true;
                 } catch {
                     /* skip */
@@ -41795,10 +41762,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check(
             "V13.9: Wasser-Shader cullt dünnes Bluten (optischer Weg < uMinDepth via alphaTest)",
             v830Results.waterMinDepthCull
-        );
-        check(
-            "V13.6: Wasser-Oberfläche ist die Surface-Nets-Iso (Synergie mit Terrain, band-limitiert)",
-            v830Results.waterIsoSynergy
         );
     } else {
         check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
@@ -41872,7 +41835,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
                     if (
-                        /playerEyesUnderwater\s*=\s*(?:submerged\s*&&\s*)?(?:scaledY|mesh\.position\.y) \+ 1\.6/.test(
+                        /playerEyesUnderwater\s*=\s*(?:(?:submerged|schwimmt)\s*&&\s*)?(?:scaledY|mesh\.position\.y) \+ 1\.6/.test(
                             window.__codeOf(fn)
                         )
                     )
@@ -41883,12 +41846,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             }
             out.eyesFlagComputed = found;
         }
-        // Der Unterwasser-Tint nutzt playerEyesUnderwater, NICHT
-        // mehr playerUnderwater. V9.56-i: die Hemi+Luft-Phase lebt jetzt
-        // im _dayNightApplyHemiUndLuft-Helfer (Source-Pattern wandert mit).
+        // Die Unterwasser-Luft folgt dem Medium der KAMERA (Welle L Q6, W-L-d): `_koerperWasser` an der Kamera, nie
+        // die Augen des Körpers. V9.56-i: die Hemi+Luft-Phase lebt im _dayNightApplyHemiUndLuft-Helfer.
         {
             const src = window.__codeOf(r._dayNightApplyHemiUndLuft);
-            out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /unterwasserM/.test(src);
+            out.tintUsesEyesFlag =
+                /kameraUnterWasser/.test(src) &&
+                /_koerperWasser\(cam\.position\.x/.test(src) &&
+                /unterwasserM/.test(src) &&
+                !/playerEyesUnderwater/.test(src);
         }
 
         // V10.0-f-4 Doku-Sync: Fresnel-Opazität jetzt im TSL-Tree. Source-Probe.
@@ -41916,7 +41882,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     if (v832Results && !v832Results.error) {
         check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
         check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
-        check("V8.32: Unterwasser-Tint nutzt playerEyesUnderwater (nicht beim Waten)", v832Results.tintUsesEyesFlag);
+        check("V8.32 → Welle L: die Unterwasser-Luft folgt dem Kamera-Medium (nie den Augen des Körpers)", v832Results.tintUsesEyesFlag);
         check("W10: EIN Schlick-Fresnel (WASSER_GESETZ) spiegelt die Himmels-Umgebung und treibt die Deckung", v832Results.waterFresnel);
         check("V8.32 → V18.530: kein Fog-Slider mehr (die Luft ist Physik)", v832Results.fogSliderTo300);
         check("V8.32 → V18.530: kein setFogDistance mehr", v832Results.fogDistanceTo3);
@@ -42468,7 +42434,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         //    Terrain) und die KILLPLANE fängt einen echten Durchfall — beide Stücke müssen da sein.
         {
             const src = srcOf("_stepCharacter");
-            out.waterGate = /submerged/.test(src) && /killPlaneY/.test(src);
+            out.waterGate = /(?:submerged|schwimmt)/.test(src) && /killPlaneY/.test(src);
         }
 
         // 5. Logbuch — CSS-Regel teilt die Konsole 50/50.

@@ -31,7 +31,6 @@ const TAKTE = {
 const BLAETTER = [
     "_voxelChunkLodFor",
     "_pruneDistantVoxelChunks",
-    "_tickWaterCANearWake",
     "_lodTreeVisHeight",
     "_chooseLODForDistance",
     "_updateFoundryLodBand",

@@ -83,11 +83,29 @@ function probe(stoerung) {
     out.kanteM = Math.round(kante);
     out.tKante = +Math.exp((-K * kante) / out.sichtSonne).toFixed(3);
     out.tFern = +Math.exp((-K * fernKante) / out.sichtSonne).toFixed(4);
-    st.playerEyesUnderwater = true;
-    r._applyDayNightToScene();
-    out.sichtWasser = Math.round(r._luftSichtM(augeY));
-    st.playerEyesUnderwater = false;
-    r._applyDayNightToScene();
+    // Unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera (Welle L, W-L-d; bis V18.531 die Augen des
+    // Körpers, `playerEyesUnderwater`): die Kamera 3 m unter den Spiegel des größten Sees der Heimat-Region.
+    const h = st.hydrosphere;
+    const see =
+        h && h.lakes
+            ? h.lakes.filter((l) => l.cells && l.cells.length).sort((a, b) => b.cells.length - a.cells.length)[0]
+            : null;
+    const cam = st.camera;
+    if (see && cam) {
+        const c = see.cells[0];
+        const camAlt = cam.position.clone();
+        cam.position.set(
+            h.originX + ((c % h.dim) + 0.5) * h.cell,
+            see.level - 3,
+            h.originZ + (Math.floor(c / h.dim) + 0.5) * h.cell
+        );
+        cam.updateMatrixWorld(true);
+        r._applyDayNightToScene();
+        out.sichtWasser = Math.round(r._luftSichtM(augeY));
+        cam.position.copy(camAlt);
+        cam.updateMatrixWorld(true);
+        r._applyDayNightToScene();
+    } else out.sichtWasser = -1;
     const A = r.constructor;
     const luftSrc = window.__codeOf(r._dayNightApplyHemiUndLuft);
     out.absenz = {

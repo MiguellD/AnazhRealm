@@ -621,7 +621,7 @@ async function probeLeben(expected) {
     };
     const hh = (a, b) => r.getTerrainHeightAt(a, b);
     const nass = (a, b) => {
-        const ws = r._waterRunSurfaceAt(a, b);
+        const ws = r._atlasWaterLevelAt(a, b, hh(a, b)); // der Spiegel des Gesetzes (wie gate:vehicle-drive)
         return Number.isFinite(ws) && ws > hh(a, b) - 0.3;
     };
     // Die Strecke: trocken, die kleinste Stufe (dieselbe Suche wie gate:vehicle-drive B-e), Fahrt in +x.

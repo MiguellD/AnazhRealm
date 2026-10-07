@@ -137,8 +137,8 @@ class AnazhRealm {
             // DIE NAH-STREU (Waldboden 04.10.): der Kachel-Ring der Studio-Bodenarten um die Kamera —
             // { kacheln: Map<"tx,tz", {items, chunks, senken, zustand}>, senken: Map<"art:v:L:teil", {mesh, bloecke…}> }.
             nahStreu: null,
-            // Wasser-Mesh je Voxel-Chunk (Map<key, Mesh|null>) — der EINZIGE Wasser-Render-Pfad, gebaut aus
-            // entry.waterCells; die Form wählt waterRenderMode.
+            // Wasser-Mesh je Voxel-Chunk (Map<key, Mesh|null>) — der EINZIGE Wasser-Render-Pfad (das Zell-Oberkanten-
+            // Sheet), gebaut aus entry.waterCells.
             voxelChunkWaterIso: null,
             // V18.381 — das FERN-WASSER-Sheet (Atlas-Kulisse jenseits des Chunk-Rings):
             // { mesh, anchorX/Z, builtRing, builtOutR, quads, builtMs } | null.
@@ -160,10 +160,6 @@ class AnazhRealm {
             // opacity (Tag/Nacht-Fade), pixelRatio (DPR-Konstante). Init in
             // _buildStarField(); mutiert von _dayNightApplyStarField.
             starFieldUniforms: null,
-            // Live-Uniforms des TSL-Wasserfall-Materials (time, flowDir, flowSpeed, deep/shallow/foam, sunDir,
-            // light); init in _ensureWaterfallMaterial(), geschrieben von _loopSkyboxZeit (time) +
-            // _dayNightApplyWaterMaterials (sunDir, light).
-            waterfallUniforms: null,
             // Live-Uniforms des TSL-Hydrosphären-Materials (time, flowSpeed, deep/shallow/foam, sunDir, light);
             // init in _ensureHydroSurfaceMaterial(), geschrieben von _loopSkyboxZeit (time) +
             // _dayNightApplyWaterMaterials (sunDir, light).
@@ -187,9 +183,6 @@ class AnazhRealm {
             creatureEmotions: [],
             creatureAnimationTime: 0,
             ufos: [],
-            // Geteiltes Wasserfall-Material (lazy, _ensureWaterfallMaterial); Wasserfälle kommen aus dem
-            // Hydrosphären-Netz (_buildHydrosphereMeshes), Material + Plane-Geometrie werden wiederverwendet.
-            waterfallMaterial: null,
             // Geteiltes horizontales Wasser-Material für Fluss-Ribbons + See-Planes (lazy,
             // _ensureHydroSurfaceMaterial); teilt Farbe/Sonne/Fog mit Meer + Wasserfall.
             hydroSurfaceMaterial: null,
@@ -326,12 +319,14 @@ class AnazhRealm {
             // V8.28 6.G4.b — Stern-Feld (THREE.Points) + Welt-Wasser-Plane.
             // starField folgt der Kamera + dreht sidereal mit timeOfDay.
             starField: null,
-            // V8.29.1 — true wenn der Spieler unter waterLevel ist. Treibt
-            // Auftrieb (Physik-Loop), langsamere Bewegung + Unterwasser-Tint.
+            // true, solange der Spieler SCHWIMMT (die Säule über dem Grund übersteigt seine Brustkorb-Linie,
+            // `_stepCharacter`): Auftrieb, Kraul-Tempo, Schwimm-Pose; wer flacher watet, geht.
             playerUnderwater: false,
-            // true, wenn die AUGEN unter Wasser sind; treibt den Unterwasser-Tint — getrennt von
-            // playerUnderwater (Körper), damit der Tint nicht schon beim Waten/Schwimmen erscheint.
+            // true, wenn die AUGEN des Körpers unter Wasser sind (getaucht).
             playerEyesUnderwater: false,
+            // true, wenn die KAMERA unter dem Spiegel liegt — das Medium der Luft (Unterwasser-Trübung, Wasser-Decke
+            // von unten); geschrieben von `_applyDayNightToScene`.
+            kameraUnterWasser: false,
             // V8.28 6.G4.b — Atmosphäre-Slider (Spieler-Präferenz, persistiert). Der Fog-Distanz-Regler fiel mit dem
             // Nebel (V18.530 — die Luft ist Physik, `LUFT`). (Cel-Stufen sind seit V18.236 gestrichen — PBR ist die EINE Wahrheit.)
             atmosphere: {
@@ -343,9 +338,6 @@ class AnazhRealm {
                 triplanar: 2.0,
                 colorVar: 1.5,
                 waterCull: 0.0,
-                // Wasser-Form: "cells" (Default, das Zell-Oberkanten-Sheet) | "iso" (alte Zell-Iso, Debug-A/B).
-                // Persistierte "surface"-Werte (L-Film, entfernt) heilen auf "cells".
-                waterRenderMode: "cells",
                 // V18.25 — Schöpfer-getunte Wasser-Werte als Default übernommen (Browser-Sign-off 06.06.). Ufer-Saum
                 // und Tiefen-Farbe sind seit dem Durchlass-Gesetz keine Regler mehr (Beer-Lambert über den
                 // optischen Weg in Metern, `_ensureHydroSurfaceMaterial`).
@@ -7622,7 +7614,11 @@ class AnazhRealm {
         // Nicht-Lockstep-Snaps, s. _p2pSampleSnapBuf), dann zeichnen.
         this._p2pSampleSnapBuf(entry, nowSec * 1000);
         const isMoving = nowSec - (entry.lastMovedAt || 0) < 0.25;
-        const underwater = typeof this.state.waterLevel === "number" && entry.y < this.state.waterLevel;
+        // Der Mitspieler schwimmt nach derselben Wahrheit wie der eigene Körper: die Säule über seinen Füßen (die EINE
+        // Wasser-Wahrheit am Körper) trägt ihn an der Brustkorb-Linie (bis V18.531 schwamm er nur unter dem
+        // Meeresspiegel — in jedem See und Fluss ging er, W-kD3b).
+        const fussP = entry.y - AnazhRealm.PLAYER_FOOT_OFFSET;
+        const underwater = this._koerperWasser(entry.x, entry.z, fussP) - fussP > AnazhRealm._schwimmBrustM() * 0.9;
         // Der Cone+Sphere-Platzhalter sitzt mit -1-Offset; das Seelen-Mesh am
         // playerMesh-Origin (entry.y direkt — wie der lokale Soul-Group).
         const yOff = entry.meshKind === "placeholder" ? -1 : 0;
@@ -9850,11 +9846,14 @@ class AnazhRealm {
         }
     }
 
-    // Steht an (x, z) Wasser? Der Boden (Voxel-Surface) liegt mehr als 5 cm unter dem Wasser-Spiegel; eine Höhle, ein
-    // Loch (Surface null) trägt kein Wasser. Die EINE Nässe des Klangs: der Hör-Ring und der Wasser-Hauch lesen sie.
-    _nassAt(x, z) {
+    // Steht an (x, z) Wasser? Der Boden (Voxel-Surface) liegt mehr als 5 cm unter der EINEN Wasser-Wahrheit am Körper
+    // (`_koerperWasser` über diesem Boden: See, Fluss bis zur Krone, Rand, Aquifer, Decke); eine Höhle, ein Loch (Surface
+    // null) trägt kein Wasser. Die EINE Nässe des Klangs (der Hör-Ring und der Wasser-Hauch) und — mit `marge` (m über dem
+    // Spiegel, der Rand zählt mit) — des Trink-Ziels der Tiere (`_findNearestWaterPoint`). Bis zur Gegenprüfung las der
+    // Klang das 3×3-gedehnte `_waterLevelAt`, das Trink-Ziel `_isAboveWaterAt` (zwei Wahrheiten neben dem Körper).
+    _nassAt(x, z, marge = -0.05) {
         const boden = this._voxelSurfaceY(x, z);
-        return boden !== null && Number.isFinite(boden) && boden < this._waterLevelAt(x, z) - 0.05;
+        return boden !== null && Number.isFinite(boden) && boden < this._koerperWasser(x, z, boden) + marge;
     }
 
     // Glut-Bauten im Hör-Radius: je Frame `n` Einträge von state.architectures (rund um die Liste); ein voller Umlauf
@@ -10266,10 +10265,10 @@ class AnazhRealm {
     }
 
     // Material am Fuß — NASS SCHLÄGT FEST: unter dem Wasserspiegel (watender Ufer-Schritt) platscht er.
-    // `_waterLevelAt` = die EINE Wasser-Wahrheit (Ozean ∨ See ∨ Fluss), `_terrainMaterialAt` die EINE
-    // Boden-Wahrheit.
+    // `_koerperWasser` = die EINE Wasser-Wahrheit am Körper (der Fuß ist sein Grund), `_terrainMaterialAt` die
+    // EINE Boden-Wahrheit.
     _schrittMaterialAt(x, z, y) {
-        const w = this._waterLevelAt(x, z);
+        const w = this._koerperWasser(x, z, y);
         if (Number.isFinite(w) && y < w + 0.02) return "wasser";
         return this._terrainMaterialAt(x, z, y);
     }
@@ -15727,33 +15726,9 @@ class AnazhRealm {
     // Voxel-Chunk selbst (Iso-Surface aus den Wasser-Cells, s. unten).
     _buildWaterPlane() {
         if (!this.state.scene || typeof THREE === "undefined") return;
-        if (typeof this.state.waterLevel !== "number") {
-            // Die 13×13-Stichprobe (±170 m) wird nur sortiert — der Pegel hängt nicht an ihr (s. unten).
-            try {
-                // Höhenquelle ist `_voxelSurfaceY` (die wahre Voxel-Topographie); terrainSteepness/baseHeight
-                // modulieren sie in `_voxelDensityAt`.
-                const heights = [];
-                for (let i = 0; i < 13; i++) {
-                    for (let j = 0; j < 13; j++) {
-                        const sx = -170 + (340 / 12) * i;
-                        const sz = -170 + (340 / 12) * j;
-                        const h = this._voxelSurfaceY(sx, sz);
-                        if (typeof h === "number" && Number.isFinite(h)) heights.push(h);
-                    }
-                }
-                if (heights.length > 0) {
-                    // waterLevel ist ABSOLUT (`terrainBaseHeight − 3`), nie ein lokales Perzentil: die Sample-Region
-                    // (340 m) ist viel kleiner als die längste Oktave (cont0, λ~7100 m) — ein Perzentil landete am
-                    // lokalen Median, knapp unter der Oberfläche.
-                    heights.sort((a, b) => a - b); // sortiert für Diagnose-Logs
-                    this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
-                } else {
-                    this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
-                }
-            } catch {
-                this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
-            }
-        }
+        // Der Meeresspiegel ist ABSOLUT (`terrainBaseHeight − 3`): bis zur Welle L lief davor eine 13×13-Stichprobe
+        // `_voxelSurfaceY` (169 Dichte-Säulen beim Boot), die nur sortiert und dann verworfen wurde (W-kD11).
+        if (typeof this.state.waterLevel !== "number") this.state.waterLevel = (this.state.terrainBaseHeight || 0) - 3;
         // Das Wasser ist ein Cell-Zustand im Voxel-Feld; jeder Voxel-Chunk baut sein Iso-Surface-Mesh aus
         // den Cells (`_buildVoxelChunkWaterIsoSurface`) — EIN Wasser-Mesh, eine Geometrie-Quelle.
         this.log(`Welt-Wasser — Meeresspiegel y=${this.state.waterLevel.toFixed(1)} (Iso-Cells, V9.75)`);
@@ -16234,7 +16209,9 @@ class AnazhRealm {
         // in den Horizont, das IST der Himmel, den der Spieler sieht (die EINE tag/nacht/wetter-kohärente
         // Horizont-Quelle); die Skybox-Tönung (nebulaColor) vertieft nur den Zenit. Gemessen 01.10.: aus
         // nebulaColor allein lag der Schatten einer 50-%-Fläche bei sRGB 0/25/102 (Licht wie unter Blaufolie).
-        const fc = st.luft && st.luft.U.farbe.value;
+        // Die Luft ÜBER dem Wasser (`himmelFarbe`), nie das Medium der Kamera: bis V18.531 malte ein Tauchgang die
+        // Unterwasser-Farbe in die Umgebung der ganzen Welt (191/218/237 → 81/132/170, blieb nach dem Auftauchen, W-L-b).
+        const fc = st.luft && st.luft.himmelFarbe;
         const hor = fc ? { r: fc.r, g: fc.g, b: fc.b } : tief;
         const sky = { r: hor.r + tief.r, g: hor.g + tief.g, b: hor.b + tief.b }; // Drift-Schlüssel beider Quellen
         const last = st._skyEnvLastColor;
@@ -16853,8 +16830,8 @@ class AnazhRealm {
         for (const row of MAP) {
             if (!row || !Number.isFinite(row.base) || !Number.isFinite(row.mul) || row.mul === 0) continue;
             if (row.axis === "khMul") {
-                const kh = Number.isFinite(g.kh) ? g.kh : 0.2125;
-                d[row.dial] = (kh / 0.2125 - row.base) / row.mul;
+                const kh = Number.isFinite(g.kh) ? g.kh : AnazhRealm.PLAYER_KH;
+                d[row.dial] = (kh / AnazhRealm.PLAYER_KH - row.base) / row.mul;
             } else if (Number.isFinite(g[row.axis])) {
                 d[row.dial] = (g[row.axis] - row.base) / row.mul;
             }
@@ -16871,7 +16848,7 @@ class AnazhRealm {
         // Animator/Equip/Werkstatt/Peers.
         if (typeof THREE === "undefined") return null;
         g = g || {};
-        const kh = g.kh || 0.2125;
+        const kh = g.kh || AnazhRealm.PLAYER_KH;
         const oy = g.oy || 0;
         const core = typeof window !== "undefined" && window.__koerperCore;
         if (!core || typeof core.bauMensch !== "function" || typeof core.morphAuf !== "function") {
@@ -16903,7 +16880,7 @@ class AnazhRealm {
             if ((n.isGroup || n.isBone) && n.name) teile[n.name] = n;
         });
         AnazhRealm._ofenKlonRebind(klon, teile);
-        const f = (8 * 0.2125) / 6.0;
+        const f = (8 * AnazhRealm.PLAYER_KH) / 6.0;
         const wrap = new THREE.Group();
         wrap.scale.setScalar(f);
         wrap.position.y = oy;
@@ -19723,7 +19700,36 @@ class AnazhRealm {
             // Rinnen + gemuldete Becken. Bett-Tiefe ∝ Fluss-Breite.
             carveBedMin: 1.4, // m — Mindest-Tiefe eines Fluss-Betts
             carveBedK: 0.16, // m je m Fluss-Breite — breitere Flüsse schneiden tiefer
-            carveBankSlope: 1.4, // Bank-Rampe = Bett-Tiefe × dieser Faktor
+            // DER FLUSS-SPIEGEL (Welle L, Q7-Gestalt): der Spiegel liegt um diesen Anteil der Bett-Tiefe unter dem
+            // tiefsten Ufer seines Querschnitts (und so tief unter der Kanal-Krone); das Bett liegt um den Rest darunter.
+            spiegelFreibord: 0.25,
+            // DIE BANK (Gegenprüfung 07.10.): vom Flachboden steigt die Bank mit dieser Neigung (tan 35°, unter dem Geröll
+            // des Boden-Gesetzes ab ≈ 37°) bis zur KRONE auf Spiegel + Freibord · Tiefe; jenseits der Krone schneidet der
+            // Kanal höheres Gelände mit einer Böschung und hält tieferes mit einem Damm, beide mit derselben Neigung, die mit
+            // dem Abstand von der Krone um bankKruemmung je m zunimmt (ein Tal: flach am Wasser, steiler den Hang hinauf),
+            // bis bankWeite hinter der Krone; die Kanten (Fuß, Krone, Saum ins Gelände) runden über bankRundung (weiches
+            // Minimum der Dichten). Bis 8f09227d lag die Krone nach 0,6 der Bank-Rampe (≈ 61°), und dahinter glitt eine
+            // Wand ins Gelände (bis ≈ 73°: Fels-Rauten an 19 von 46 Bank-Profilen der Mess-Wiese).
+            bankNeigung: 0.7,
+            bankKruemmung: 0.04, // je m hinter der Krone
+            bankWeite: 24, // m hinter der Krone
+            bankRundung: 0.6, // m
+            // DIE DAMM-KRONE (Gegenprüfung 07.10., Runde 4): hält der Kanal tieferes Gelände mit einem Damm, trägt der Damm
+            // eine Krone, die das 1,8-m-Gitter trägt — dammBreite hinter der Krone des Kanals eben auf Spiegel + max(Freibord ·
+            // Tiefe, dammFreibord), erst dahinter fällt er mit der Neigung der Bank. Die Breite reicht, so weit das Wasser-Sheet
+            // hinter der Krone auf dem Spiegel liegt (die äußere Ecke einer Spalte, die an der Krone flutet: 1,8 m · √2), das
+            // Freibord über den Fehler der gezeichneten Fläche. Bis zur Gegenprüfung war der Damm eine Schneide (Breite 0, beim
+            // Rinnsal 7 cm über dem Spiegel): das Mesh trug ihn nicht (an der Krone des Bachs der Mess-Wiese lag der gezeichnete
+            // Boden in 68 von 152 Profilen unter dem Spiegel, p50 0,28 m), und das Wasser lief über ihn ins tiefere Gelände.
+            dammBreite: 2.6, // m hinter der Krone des Kanals
+            dammFreibord: 0.2, // m über dem Spiegel, mindestens
+            // DIE QUELLE (W-F5): jede beginnt als Rinnsal mit quellBett Meter Bett (Wasser höchstens 2,3 m breit und 0,37 m
+            // tief) und weitet sich stromab um quellWeitung je Meter Lauf (m/m), bis sie die Breite ihrer Akkumulation trägt
+            // (an der Schwelle quellBreite der vollen, ab der doppelten Schwelle die volle) — Breite und Tiefe wachsen aus dem
+            // Gesetz, nichts bricht aus dem Nichts.
+            quellBett: 1.2,
+            quellWeitung: 0.25,
+            quellBreite: 0.25,
             carveLakeBedDepth: 8, // m — der See-Boden liegt ~so weit unter dem Spiegel
             carveBucketSize: 32, // m — Kantenlänge einer Fluss-Index-Bucket-Zelle
         });
@@ -20591,8 +20597,7 @@ class AnazhRealm {
                 this.assignCreatureTask(creature, "wander", {}, { silent: true });
                 return null;
             }
-            // Pausen-Phase — stehen + leichte Bobbing-Animation läuft eh
-            // weiter via floatOffset im updateCreatures-Pfad.
+            // Pausen-Phase — stehen (der Gang trägt die Ruhe-Animation).
             return out.set(0, 0, 0);
         }
         // Phase 2: walk Richtung Ziel (das Ankunfts-Gesetz bremst vor dem Halt).
@@ -20602,9 +20607,9 @@ class AnazhRealm {
 
     // Ring-Scan: konzentrische Ringe in 4-m-Schritten bis radius, je Ring so viele Richtungen, dass der Bogen
     // zwischen zwei Proben ≤ 4 m bleibt (bis 06.10. 8 Strahlen: bei 80 m lagen 63 m zwischen zwei Proben, ein Bach
-    // fiel durch); der erste Treffer (`_isAboveWaterAt` false — die Hydrosphäre: See, Fluss, Tarn, Meer) gewinnt —
-    // innen nach außen = kürzeste Distanz. Eine trockene Probe kostet den Fels-Beweis (1–3 Dichte-Proben), den Spalten-Scan
-    // zahlt nur das Ufer (R2: ohne Wasser im 200-m-Kreis 8037 → 4 Scans). → {x, z} | null.
+    // fiel durch); der erste Treffer gewinnt — innen nach außen = kürzeste Distanz. Treffer = Wasser oder sein Rand (bis
+    // 0,2 m über dem Spiegel), wie der Körper es trägt (`_nassAt` über `_koerperWasser`); bis zur Gegenprüfung der Welle L
+    // `_isAboveWaterAt` (34 von 451 Zielen trocken). → {x, z} | null.
     _findNearestWaterPoint(cx, cz, radius) {
         const STEP = 4;
         for (let r = STEP; r <= radius; r += STEP) {
@@ -20613,7 +20618,7 @@ class AnazhRealm {
                 const angle = (d / DIRS) * Math.PI * 2;
                 const x = cx + Math.cos(angle) * r;
                 const z = cz + Math.sin(angle) * r;
-                if (!this._isAboveWaterAt(x, z, 0.2)) {
+                if (this._nassAt(x, z, 0.2)) {
                     return { x, z };
                 }
             }
@@ -21659,14 +21664,32 @@ class AnazhRealm {
             // ~2·Körperradius stoßen ab, deterministisch aus Positionen + Index.
             this._applyCreatureSeparation(creature, i, direction, speed);
 
-            // Wasser-Kontext für nahe Kreaturen (<50 m — wer's nicht sieht, braucht keinen Lookup), zwei
-            // Schichten: (a) Ufer-Bias NUR bei freiem Wandern (Aufträge sind Welt-Wille, nie überschreiben);
-            // (b) Y-Override für ALLE Tasks: nasse + tiefe Spalte → knapp unter dem Spiegel schwimmen statt
-            // am See-Boden ertrinken.
+            // DER KÖRPER IM WASSER (Welle L, Q6 — JEDE Kreatur, nie nur im 50-m-Kreis um den Spieler): die EINE
+            // Wasser-Wahrheit am Körper (`_koerperWasser` über ihrem Grund) und ihre GESTALT — die Wasserlinie liegt am
+            // Schultergelenk (die Gelenk-Höhe des Vorderlaufs × Körpergröße, `_tierBaum.bein`). Sie schwimmt, sobald die
+            // Säule über dem Grund tiefer ist als diese Linie (mindestens wasser.schwimmTiefeM); flacher watet sie.
+            // Bis V18.531: jenseits 50 m stand jedes Tier am Seegrund (8 m tief, 4,27-m-Sprung beim Näherkommen), und
+            // die Sohle lag bei jeder Größe 0,3 ± 0,2 m unter dem rohen Spiegel (der Hirsch stand AUF dem See).
             let waterSurface = null;
+            const udW = creature.userData;
+            {
+                const grundW = this._creatureGroundY(creature);
+                const tbW = udW._tierBaum;
+                // Ohne Gestalt-Baum (ein Wesen, das noch keinen trägt) liegt die Linie auf der Schwimm-Tiefe des Gesetzes —
+                // bis zur Gegenprüfung 0: das Wesen stand still AUF dem Spiegel.
+                udW._wasserlinie = tbW && tbW.bein ? tbW.bein[0].h * (creature.scale.x || 1) : VGL.wasser.schwimmTiefeM;
+                const spiegelW = Number.isFinite(grundW)
+                    ? this._koerperWasser(creature.position.x, creature.position.z, grundW)
+                    : -Infinity;
+                if (spiegelW - grundW > Math.max(VGL.wasser.schwimmTiefeM, udW._wasserlinie)) waterSurface = spiegelW;
+            }
+            // Körper-Zustand für die EINE Motion-Brücke: schwimmt die Kreatur (dieselbe Wahrheit wie ihre Lage), paddelt
+            // der Baum-Gang (MOTION.schwimmen); an Land fällt NUR der Schwimm-Stempel.
+            if (waterSurface !== null) udW._motionZustand = "schwimmen";
+            else if (udW._motionZustand === "schwimmen") udW._motionZustand = null;
             // XZ-Distanz, nicht 3D: bei großer Y-Variation (Spieler auf dem Berg, Kreatur am See-Boden) risse
             // Δy² allein die 2500-Schwelle — das Gate meint horizontale Sichtnähe. distSqToPlayer (XZ) kommt
-            // schon von oben; hier nur das <50-m-Wasser-Gate.
+            // schon von oben; hier nur das <50-m-Verhaltens-Gate.
             if (distSqToPlayer < 2500) {
                 // SCHLUSS-WELLE — die Ufer-Scheu ist Wasser-Gesetz (tetrapoda
                 // VERHALTEN.wasser: Tiefen-Schwellen + Ufer-Bias, byte-gleich).
@@ -21680,15 +21703,7 @@ class AnazhRealm {
                         direction.x += wctx.shoreDir.x * speed * WAS.uferBias;
                         direction.z += wctx.shoreDir.z * speed * WAS.uferBias;
                     }
-                    if (wctx.depthBelow > WAS.schwimmTiefeM) {
-                        waterSurface = this._waterLevelAt(creature.position.x, creature.position.z);
-                    }
                 }
-                // Körper-Zustand für die EINE Motion-Brücke: schwimmt die Kreatur (dieselbe Wahrheit wie ihr
-                // Y-Override), paddelt der Baum-Gang (MOTION.schwimmen); an Land fällt NUR der Schwimm-Stempel.
-                const udZ = creature.userData;
-                if (waterSurface !== null) udZ._motionZustand = "schwimmen";
-                else if (udZ._motionZustand === "schwimmen") udZ._motionZustand = null;
                 // Verhaltens-Tick (nahe Wesen, dieselbe 50-m-Wand): tempo bremst/stoppt die Bewegung unten, hop
                 // zündet beim Start den feld-nativen Hüpfer. Die Uhr der Aktion ist die Kreatur-Uhr (Q1: was den
                 // Körper bewegt, läuft im Takt — die Wand-Uhr ließ eine Aktion je nach Bildrate verschieden lang wirken).
@@ -21698,7 +21713,7 @@ class AnazhRealm {
             // die Aktion trägt — die 50-m-Wand endet nur das Wählen neuer Aktionen. Vorher galt er nur in ihr: ein Tier, das
             // hinaus wanderte, lag in der Ruhe-Pose und lief (95 % der Ruhe-Takte bewegt).
             {
-                const VA = creature.userData._verhaltenAktion;
+                const VA = udW._verhaltenAktion;
                 if (VA && VA.def && Number.isFinite(VA.def.tempo) && this.state.creatureAnimationTime < VA.bis) {
                     direction.multiplyScalar(Math.max(0, VA.def.tempo));
                 }
@@ -21718,8 +21733,9 @@ class AnazhRealm {
             const pz0 = creature.position.z;
             creature.position.x += Math.sin(steuer.gier) * steuer.v * delta;
             creature.position.z += Math.cos(steuer.gier) * steuer.v * delta;
-            // STRÖMUNG trägt SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ nasse Spalte, Tiefe > 0.5 — Land-Läufer
-            // nie): eine Drift des Wassers, kein Wunsch des Tiers (Quelle = DIESELBE `_waterFlowAt` wie beim Spieler).
+            // STRÖMUNG trägt SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ die Säule ist tiefer als ihre Wasserlinie —
+            // Land-Läufer nie): eine Drift des Wassers, kein Wunsch des Tiers (Quelle = DIESELBE `_waterFlowAt` wie beim
+            // Spieler).
             if (waterSurface !== null) {
                 const _fl = this._waterFlowAt(creature.position.x, creature.position.z);
                 if (_fl) {
@@ -21801,10 +21817,10 @@ class AnazhRealm {
             let baseY;
             let pitchZiel = 0;
             let rollZiel = 0;
-            let floatOffset = 0;
             if (waterSurface !== null) {
-                baseY = waterSurface - 0.3;
-                floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
+                // Die Wasserlinie am Schultergelenk: die Sohle hängt so tief unter dem Spiegel (das Paddeln trägt der
+                // Gang selbst, MOTION.schwimmen; das Literal −0,3 ± 0,2 m fiel).
+                baseY = waterSurface - udW._wasserlinie;
             } else {
                 // DIE SICHT STEHT AUF DEM MESH (Q4): jedes Tier steht auf dem Stand-Leser um sein Gesetz — nahe Wesen auf
                 // ihren vier Proben, ferne auf der Mitte (je Frame bilinear, kein Cache-Sprung).
@@ -21851,7 +21867,7 @@ class AnazhRealm {
                 } else udH._hopH = h;
                 hopOffset = udH._hopH;
             }
-            creature.position.y = baseY + floatOffset + hopOffset;
+            creature.position.y = baseY + hopOffset;
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
             // sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
             if (inFrustum) {
@@ -22060,7 +22076,14 @@ class AnazhRealm {
             terrainSteepness: typeof this.state.terrainSteepness === "number" ? this.state.terrainSteepness : 1, // V14.7: ridgeAmp-Skala (Worker-Mirror)
             voxelEdits: this._snapshotVoxelEdits(),
             hydroComputing: !!this._hydroComputing,
-            carveBankSlope: AnazhRealm.HYDROSPHERE.carveBankSlope,
+            // der Fluss-Kanal (Welle L): Freibord und das Gesetz der Bank reisen mit — der Worker baut dasselbe Bett
+            spiegelFreibord: AnazhRealm.HYDROSPHERE.spiegelFreibord,
+            bankNeigung: AnazhRealm.HYDROSPHERE.bankNeigung,
+            bankKruemmung: AnazhRealm.HYDROSPHERE.bankKruemmung,
+            bankWeite: AnazhRealm.HYDROSPHERE.bankWeite,
+            bankRundung: AnazhRealm.HYDROSPHERE.bankRundung,
+            dammBreite: AnazhRealm.HYDROSPHERE.dammBreite,
+            dammFreibord: AnazhRealm.HYDROSPHERE.dammFreibord,
             // Die genVersion-Schleuse reist mit: der Worker-Spiegel gated die Feuchte-Mix-Linie identisch
             // (Legacy-Welten gen < 2 → feuchte = 0).
             genVersion: typeof this._genVersion === "function" ? this._genVersion() : 1,
@@ -26131,7 +26154,7 @@ class AnazhRealm {
         // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
         const hydro = this.state.hydrosphere;
         const hydroActive = !!(hydro && hydro.ready && !this._hydroComputing);
-        let hydroCarve = 0;
+        let hydroCarve = null; // der Fluss-Kanal { P, L, k } (`_hydrosphereCarveAt`) oder null
         let lake = null;
         if (hydroActive) {
             hydroCarve = this._hydrosphereCarveAt(x, z);
@@ -26173,7 +26196,17 @@ class AnazhRealm {
             d -= hallCarve * caveEnv * 72;
         }
         if (ctx.hydroActive) {
-            d -= ctx.hydroCarve;
+            // Der Fluss-Kanal (`_hydrosphereCarveAt`): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit
+            // dem Kanal (polynomial, Rundung k: m ∓ h² · k / 4, h = max(k − |a − b|, 0) / k); das See-Becken danach.
+            const kn = ctx.hydroCarve;
+            if (kn) {
+                const dL = kn.L - y;
+                let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
+                const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
+                const dP = kn.P - y;
+                hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+                d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+            }
             const lk = ctx.lake;
             if (lk) {
                 const flatD = lk.bedY - y;
@@ -26290,51 +26323,66 @@ class AnazhRealm {
         return out;
     }
 
-    // Fluss-Bett-Senkung an xz (≥ 0, wird von der Dichte subtrahiert): über den Bucket-Index je Segment
-    // der nächste Punkt + Flachboden-Profil (volle Tiefe bis halbe Breite, dann smoothstep-Bank), MAX
-    // über die Segmente. Leere-Bucket-Early-Out → wasserlose Welt ~5 Ops (millionenfach beim Meshing).
-    // See-Becken leben in `_hydrosphereLakeAt`.
+    // DER FLUSS-KANAL an xz: die Gestalt, die das Gelände im Fluss-Korridor annimmt — `{ P, L, k }` oder null. P ist die
+    // Höhe des KANALS (Flachboden auf Spiegel − (1 − Freibord) · Tiefe bis zur halben Breite, die Bank steigt mit
+    // bankNeigung bis zur Krone auf Spiegel + Freibord · Tiefe, dahinter die Böschung, die mit dem Abstand steiler wird), L die
+    // Höhe des DAMMS (seine Krone auf Spiegel + max(Freibord · Tiefe, dammFreibord), eben bis dammBreite hinter der Krone des
+    // Kanals, dahinter fällt er wie die Böschung steigt — die Krone trägt das 1,8-m-Gitter), k die Rundung. Die Dichte
+    // nimmt das weiche Maximum aus Gelände und Damm (tieferes Gelände wird zur Krone gefüllt) und davon das weiche Minimum
+    // mit dem Kanal (höheres Gelände wird zur Böschung geschnitten): wo das Gelände zwischen beiden liegt, bleibt es, wie es
+    // ist — die Bank läuft mit ihrer eigenen Neigung ins Gelände aus, nie als Wand. Mehrere Segmente (Biegung, Mündung):
+    // der tiefste Kanal und der höchste Damm (die Vereinigung). So schneidet der Kanal Buckel und überbrückt Senken, und die
+    // Krone hält das Wasser. Bis 8f09227d mischte ein Gewicht das Gelände zur Gestalt: die Krone nach 0,6 der Bank-Rampe,
+    // dahinter eine Gleit-Zone von 0,4 der Rampe — eine Wand von bis zu ≈ 73° mit Fels-Rauten (Gegenprüfung 07.10.).
+    // Leere-Bucket-Early-Out → wasserlose Welt ~5 Ops (millionenfach beim Meshing). See-Becken: `_hydrosphereLakeAt`.
     _hydrosphereCarveAt(x, z) {
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-        if (!h || !h.ready) return 0;
-        let cut = 0;
-        // --- Fluss-Kanal: nächstes Segment im Bucket ---
+        if (!h || !h.ready) return null;
         const rb = h.riverBuckets;
-        if (rb) {
-            const bs = h.bucketSize;
-            const bd = h.bucketsDim;
-            const bi = Math.floor((x - h.originX) / bs);
-            const bj = Math.floor((z - h.originZ) / bs);
-            if (bi >= 0 && bj >= 0 && bi < bd && bj < bd) {
-                const list = rb[bj * bd + bi];
-                if (list) {
-                    for (let s = 0; s < list.length; s++) {
-                        const seg = list[s];
-                        const ex = seg.bx - seg.ax;
-                        const ez = seg.bz - seg.az;
-                        const len2 = ex * ex + ez * ez || 1;
-                        let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
-                        if (t < 0) t = 0;
-                        else if (t > 1) t = 1;
-                        const px = seg.ax + ex * t;
-                        const pz = seg.az + ez * t;
-                        const dist = Math.hypot(x - px, z - pz);
-                        const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
-                        const D = seg.dA + (seg.dB - seg.dA) * t;
-                        const bankW = Math.max(2, D * AnazhRealm.HYDROSPHERE.carveBankSlope);
-                        let rc = 0;
-                        if (dist <= halfW) {
-                            rc = D; // Flachboden — so breit wie das Fluss-Ribbon
-                        } else if (dist < halfW + bankW) {
-                            const u = (dist - halfW) / bankW;
-                            rc = D * (1 - u * u * (3 - 2 * u)); // smoothstep-Bank
-                        }
-                        if (rc > cut) cut = rc;
-                    }
-                }
-            }
+        if (!rb) return null;
+        const bs = h.bucketSize;
+        const bd = h.bucketsDim;
+        const bi = Math.floor((x - h.originX) / bs);
+        const bj = Math.floor((z - h.originZ) / bs);
+        if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
+        const list = rb[bj * bd + bi];
+        if (!list) return null;
+        const HC = AnazhRealm.HYDROSPHERE;
+        const sN = HC.bankNeigung;
+        const sK = HC.bankKruemmung;
+        const fuss = HC.bankRundung;
+        const kB = HC.dammBreite;
+        let P = Infinity;
+        let L = -Infinity;
+        for (let s = 0; s < list.length; s++) {
+            const seg = list[s];
+            const ex = seg.bx - seg.ax;
+            const ez = seg.bz - seg.az;
+            const len2 = ex * ex + ez * ez || 1;
+            let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+            if (t < 0) t = 0;
+            else if (t > 1) t = 1;
+            const px = seg.ax + ex * t;
+            const pz = seg.az + ez * t;
+            const dist = Math.hypot(x - px, z - pz);
+            const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
+            const D = seg.dA + (seg.dB - seg.dA) * t;
+            const dK = halfW + D / sN;
+            if (dist >= dK + kB + HC.bankWeite) continue;
+            const spiegel = seg.sA + (seg.sB - seg.sA) * t;
+            const B = spiegel - (1 - HC.spiegelFreibord) * D;
+            const u0 = dist - halfW;
+            let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
+            const u = dist - dK;
+            if (u > 0) p += sK * u * u;
+            // der Damm: seine Krone eben bis dammBreite hinter der Krone des Kanals, dahinter die Böschung
+            let l = spiegel + Math.max(HC.spiegelFreibord * D, HC.dammFreibord);
+            const uL = u - kB;
+            if (uL > 0) l -= sN * uL + sK * uL * uL;
+            if (p < P) P = p;
+            if (l > L) L = l;
         }
-        return cut;
+        return P < Infinity ? { P, L, k: fuss } : null;
     }
 
     // Fluss-Distanz an (x,z): derselbe riverBuckets-Walk wie _hydrosphereCarveAt (EINE Quelle), liefert
@@ -26401,10 +26449,15 @@ class AnazhRealm {
         let hoehe = 0;
         const sy = Number.isFinite(surfY) ? surfY : this._voxelSurfaceY ? this._voxelSurfaceY(x, z) : null;
         if (Number.isFinite(sy)) {
-            const wl = this._waterLevelAt(x, z);
-            const above = sy - wl;
-            const t = Math.max(0, Math.min(1, (F.hoeheFern - above) / (F.hoeheFern - F.hoeheNah)));
-            hoehe = t * t * (3 - 2 * t) * F.hoeheGewicht;
+            // die Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner Kronen-Blende
+            const uf = { see: 0, fluss: null, ufer: 0 };
+            this._waterLevelAt(x, z, uf);
+            const band = (above) => {
+                const t = Math.max(0, Math.min(1, (F.hoeheFern - above) / (F.hoeheFern - F.hoeheNah)));
+                return t * t * (3 - 2 * t) * F.hoeheGewicht;
+            };
+            hoehe = band(sy - uf.see);
+            if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(sy - uf.fluss));
         }
         return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
     }
@@ -26420,12 +26473,16 @@ class AnazhRealm {
         const bankW = 4.5;
         const d = r.dist - inner;
         if (d < 0 || d > bankW) return 0;
-        if (Number.isFinite(surfY)) {
-            const above = surfY - this._waterLevelAt(x, z);
-            if (above < 0 || above > 5) return 0;
-        }
         const band = 1 - d / bankW;
-        return band * band;
+        if (!Number.isFinite(surfY)) return band * band;
+        // niedrige Bank (0..5 m) über einem der beiden Bezüge (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner
+        // Kronen-Blende
+        const uf = { see: 0, fluss: null, ufer: 0 };
+        this._waterLevelAt(x, z, uf);
+        const niedrig = (above) => (above < 0 || above > 5 ? 0 : 1);
+        let w = niedrig(surfY - uf.see);
+        if (uf.fluss !== null) w = Math.max(w, uf.ufer * niedrig(surfY - uf.fluss));
+        return band * band * w;
     }
 
     // See-Becken an xz → `{bedY, w}` oder null: `bedY` = flache, wasserdichte Bett-Höhe, `w` ∈ [0,1] die
@@ -27483,19 +27540,29 @@ class AnazhRealm {
         mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
         // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
         // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).
-        const waterY = this._waterLevelAt(x, z);
-        const aboveWater = y - waterY;
-        mix(sed, ss(-0.5, -4, aboveWater));
+        // Schlick und Strand sind Ufer-Bänder über beiden Bezügen (`_waterLevelAt`): See/Meer voll, der Fluss mit seiner
+        // Kronen-Blende — stetig über die Krone, wo der Fluss-Spiegel endet.
+        const uf = { see: 0, fluss: null, ufer: 0 };
+        this._waterLevelAt(x, z, uf);
+        const aboveWater = y - uf.see;
+        const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
+        let schlick = ss(-0.5, -4, aboveWater);
+        if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+        mix(sed, schlick);
         // Strand: Glocken-Profil über dem Wasser (`_waterLevelAt` O(1) für Ozean; See-Vertices bekommen den
         // See-Spiegel). Drei Noise-Modulationen statt einer Schwelle: (a) Breite (λ~570 m), (b) Intensität
-        // (λ~290 m), (c) karge Fels-Patches ohne Sand.
-        if (aboveWater > -1.5 && aboveWater < 2.0) {
+        // (λ~290 m), (c) karge Fels-Patches ohne Sand. Die Glocke trägt bis 0,6 + 1,9 m — das Fenster schneidet sie nie
+        // (bis Welle L endete es bei 2,0 m: ein Sprung im Strand jeder breiten Glocke).
+        const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
+        if (imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss))) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5; // [0, 1]
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
             if (widthNoise > 0.18) {
                 const width = 0.5 + 1.4 * widthNoise; // [0.5, 1.9] m
                 const intensity = 0.25 + 0.55 * intenseNoise; // [0.25, 0.8]
-                const shoreBlend = Math.max(0, 1 - Math.abs(aboveWater - 0.6) / width);
+                const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
+                let shoreBlend = glocke(aboveWater);
+                if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
                 mix(sand, shoreBlend * intensity);
             }
             // widthNoise <= 0.18 → karge Stelle, Sand bleibt aus (Stone/
@@ -27706,6 +27773,22 @@ class AnazhRealm {
     // oder FEST (Land/Architektur/Voxel-Fill) — EINE Sprache mit dem Voxel-Terrain.
     static get CELL_STATE() {
         return Object.freeze({ AIR: 0, WATER: 1, SOLID: 2 });
+    }
+
+    // Die AQUIFER-Regel des Zell-Gesetzes: eine Zelle tiefer als so viele Meter unter der Makro-Fläche und über dem
+    // Wassertisch bleibt trocken (ein Oberflächen-See flutet die Höhlen darunter nicht). Leser: der Zell-Bau
+    // (`_buildVoxelChunkWaterCells`, Worker-Spiegel `buildWaterCells` bit-identisch) und die Decke am Körper (`_koerperWasser`).
+    static get AQUIFER_TIEFE_M() {
+        return 18;
+    }
+
+    // DIE AQUIFER-REGEL als EINE Rechnung (Zell-Bau, Worker-Spiegel `aquiferTrocken`, die Decke am Körper): eine Zelle ist
+    // trockene Höhle, wenn sie tiefer als AQUIFER_TIEFE_M unter der Makro-Fläche und über dem Wassertisch liegt UND Fels über
+    // ihr steht (`unterFels`). Unter offenem Himmel (eine Schlucht) ist eine Zelle nie Höhle: bis zur Gegenprüfung 07.10.
+    // (Runde 3) trocknete die Regel jeden Fluss, der sich tiefer als 18 m unter die Makro-Fläche schneidet (Quelle der Kachel
+    // −664/−2264: Spiegel 90,38 über dem Schlucht-Boden 86,32, der Körper trocken, das Sheet hing schräg über der Schlucht).
+    static _aquiferTrocken(cy, makroY, tischY, unterFels) {
+        return unterFels && cy < makroY - AnazhRealm.AQUIFER_TIEFE_M && cy > tischY;
     }
 
     // Welle C — der Schwarz-Floor für Flach-Farb-Strukturen (Eigen-Leuchten in
@@ -28108,25 +28191,71 @@ class AnazhRealm {
         // surf-18) über dem globalen Wassertisch (`waterLevel`) bleibt trocken, darunter nass.
         // MUSS bit-identisch im Worker.
         const aquiferY = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        const AQ_DEPTH = 18; // Tiefe unter surf, ab der die Aquifer-Regel greift
         const colSurf = new Float64Array(dim * dim);
         for (let k = 0; k < dim; k++) {
             const cz = oz + (k + 0.5) * step;
             for (let i = 0; i < dim; i++) colSurf[i + k * dim] = this._terrainMacroSurfaceY(ox + (i + 0.5) * step, cz);
         }
-        const caveDry = (i, k, cy) => cy < colSurf[i + k * dim] - AQ_DEPTH && cy > aquiferY;
+        // Fels über der Zelle: die Unterkante der obersten FESTEN Zelle der Spalte (Bau-Stempel eingeschlossen) — darunter
+        // ist eine Zelle bedeckt, darüber steht sie unter offenem Himmel (`AnazhRealm._aquiferTrocken`).
+        const colFels = new Float64Array(dimSq).fill(-Infinity);
+        for (let idx0 = 0; idx0 < dimSq; idx0++) {
+            for (let j = jMax; j >= 0; j--) {
+                if (cells[idx0 + j * dimSq] !== STATE.SOLID) continue;
+                colFels[idx0] = oy + j * step;
+                break;
+            }
+        }
+        const caveDry = (i, k, cy) =>
+            AnazhRealm._aquiferTrocken(cy, colSurf[i + k * dim], aquiferY, cy < colFels[i + k * dim]);
+        // DER BODEN JE SPALTE (Gegenprüfung 07.10., Runde 3): der tiefste Null-Durchgang der Dichte an den vier Ecken der Spalte
+        // (das Gitter, aus dem auch der Mesher die Fläche setzt) — das Wasser der Spalte steht, wo es über irgendeinem Teil
+        // ihres Bodens steht. Das Ufer-Urteil des Spiegels und die Deck-Zelle lesen ihn, wie der Körper seinen Boden liest
+        // (`_koerperWasser`); bis zur Gegenprüfung las das Ufer-Urteil die Makro-Fläche (an den Seen der Kacheln bis 4,6 m über
+        // dem Boden): der Körper stand im Ufer-Wasser, das die Welt nicht zeichnete. Reicht das Gelände über das Band, trägt
+        // die Ecke kein Wasser; ohne Gelände im Band die Makro-Fläche.
+        const colBoden = new Float64Array(dimSq);
+        {
+            const jTop = Math.min(dimY, jMax + 1);
+            for (let k = 0; k < dim; k++) {
+                for (let i = 0; i < dim; i++) {
+                    let b = Infinity;
+                    let gelaende = false;
+                    for (let e = 0; e < 4; e++) {
+                        const g = i + 1 + (e & 1) + (k + 1 + (e >> 1)) * NxNy;
+                        for (let j = jTop; j >= 0; j--) {
+                            const dS = density[g + j * Nx];
+                            if (!(dS > 0)) continue;
+                            gelaende = true;
+                            const dD = j + 1 <= dimY ? density[g + (j + 1) * Nx] : 1;
+                            if (dD <= 0) b = Math.min(b, oy + j * step + (step * dS) / (dS - dD));
+                            break;
+                        }
+                    }
+                    colBoden[i + k * dim] = gelaende ? b : colSurf[i + k * dim];
+                }
+            }
+        }
         // Die EINE kanonische Wasserspiegel-Höhe `colL` PRO SPALTE, terrain-gated (`_atlasWaterLevelAt` mit
-        // dem echten Spalten-Terrain-Top → Ufer füllt sub-zellig, Land bleibt trocken). `colSrc` = echte
-        // Atlas-Wasser-Quelle (Seed).
+        // dem Boden der Spalte → Ufer füllt sub-zellig, Land bleibt trocken). `colSrc` = echte
+        // Atlas-Wasser-Quelle (Seed). Gefragt wird an der Mitte UND den vier Ecken der Spalte (das Höchste): die Ränder des
+        // Gesetzes (das 16-m-Raster der Seen und ihres Ufers, die Krone des Flusses) liegen nicht auf dem 1,8-m-Gitter — an
+        // der Mitte allein zeichnete die Welt einen Ufer-Streifen nicht, in dem der Körper stand (Gegenprüfung 07.10., Runde 3).
         const colL = new Float64Array(dimSq);
         const colSrc = new Uint8Array(dimSq);
+        const spalteL = (i, k, boden) => {
+            let l = this._atlasWaterLevelAt(ox + (i + 0.5) * step, oz + (k + 0.5) * step, boden);
+            for (let e = 0; e < 4; e++) {
+                const le = this._atlasWaterLevelAt(ox + (i + (e & 1)) * step, oz + (k + (e >> 1)) * step, boden);
+                if (le > l) l = le;
+            }
+            return l;
+        };
         for (let k = 0; k < dim; k++) {
-            const cz = oz + (k + 0.5) * step;
             for (let i = 0; i < dim; i++) {
-                const cxw = ox + (i + 0.5) * step;
                 const idx0 = i + k * dim;
-                colL[idx0] = this._atlasWaterLevelAt(cxw, cz, colSurf[idx0]);
-                colSrc[idx0] = this._atlasWaterLevelAt(cxw, cz, Infinity) > -Infinity ? 1 : 0;
+                colL[idx0] = spalteL(i, k, colBoden[idx0]);
+                colSrc[idx0] = spalteL(i, k, Infinity) > -Infinity ? 1 : 0;
             }
         }
         // OOB-Ring: ein Wasser-Körper jenseits der Kante flutet herein → die
@@ -28197,15 +28326,6 @@ class AnazhRealm {
                 if (topCy < aquiferY - SHELF_MIN_DEPTH) {
                     colL[idx0] = lvl0 > -Infinity ? lvl0 : aquiferY;
                     colSrc[idx0] = 1;
-                    // Zell-Quantisierungs-Wand: eine ~2-m-Wassersäule kann durchs 1.8-m-Gitter fallen (keine AIR-Mitte
-                    // unter dem Spiegel) → dann trägt die DECK-Zelle das flache Wasser (ihr Intervall schneidet den
-                    // Spiegel per Konstruktion). Kein queue-Push nötig; _skyOpenWaterFilter behält sie (AIR drüber).
-                    const lvl = colL[idx0];
-                    const deckCy = topCy + step;
-                    if (deckCy > lvl && topJ + 1 <= jMax) {
-                        const deckIdx = idx0 + (topJ + 1) * dimSq;
-                        if (cells[deckIdx] === AIR) cells[deckIdx] = WATER;
-                    }
                 }
             }
         }
@@ -28255,6 +28375,77 @@ class AnazhRealm {
             pushN(i, k - 1, j);
             pushN(i, k, j + 1);
             pushN(i, k, j - 1);
+        }
+        // 4b) DIE DECK-ZELLE (EINE Regel für jedes flache Wasser, Gegenprüfung 07.10., Runde 3): liegt der Spiegel einer
+        //    Quell-Spalte über ihrem Boden, aber unter der Mitte ihrer ersten freien Zelle (ein Rinnsal, ein flaches Ufer, die
+        //    Küsten-Schelfe), fällt das Wasser durchs 1,8-m-Gitter — der Körper las es (`_koerperWasser`: der Spiegel des
+        //    Gesetzes über dem Boden), die Welt zeichnete es nicht (der Bach der Mess-Wiese: Körper nass in 104 von 104
+        //    Querschnitten, gezeichnet in 52). Dann trägt die DECK-Zelle das Wasser, und das Sheet zeichnet in ihr den Spiegel
+        //    des Gesetzes (`_computeWaterSheetData`). Der Boden der Spalte ist der Null-Durchgang der Dichte zwischen ihrer
+        //    obersten festen Zelle und der Deck-Zelle (dort setzt auch der Mesher die Fläche); eine gestempelte Zelle (Bau)
+        //    trägt keinen Boden. Eine Quell-Spalte trägt ihr flaches Wasser immer, eine Ufer-Spalte, wenn sie an Wasser grenzt
+        //    (an der Oberfläche einer Nachbar-Spalte im Chunk, auch einer Deck-Zelle — der flache Ufer-Streifen wächst vom
+        //    Wasser her). Kein queue-Push: die Deck-Zelle flutet nichts weiter; `_skyOpenWaterFilter` behält sie (Luft
+        //    darüber). Bis zur Gegenprüfung trug nur die Küsten-Schelfe diese Regel, ohne Boden-Urteil. Worker bit-identisch.
+        const deckZelle = (i, k) => {
+            const idx0 = i + k * dim;
+            const lvl = colL[idx0];
+            if (!(lvl > -Infinity)) return -1;
+            let topJ = -1;
+            for (let j = jMax; j >= 0; j--) {
+                const c = cells[idx0 + j * dimSq];
+                if (c === AIR) continue;
+                if (c === STATE.SOLID) topJ = j;
+                break; // eine Wasser-Zelle: die Spalte trägt ihr Wasser schon
+            }
+            if (topJ < 0 || topJ + 1 > jMax) return -1;
+            const deckIdx = idx0 + (topJ + 1) * dimSq;
+            const topCy = oy + (topJ + 0.5) * step;
+            // der Spiegel liegt in der Deck-Zelle oder in der festen Zelle darunter (bis dorthin zeichnet das Sheet ihn,
+            // `_computeWaterSheetData`), über dem Boden der Spalte; die feste Zelle ist Gelände, kein Bau-Stempel
+            if (cells[deckIdx] !== AIR || topCy + step <= lvl || !(lvl > topCy - 0.5 * step)) return -1;
+            if (!(cellD(i, topJ, k) > 0) || !(lvl > colBoden[idx0])) return -1;
+            return deckIdx;
+        };
+        const nassOben = new Uint8Array(dimSq);
+        const offen = [];
+        for (let idx0 = 0; idx0 < dimSq; idx0++) {
+            for (let j = jMax; j >= 0; j--) {
+                const c = cells[idx0 + j * dimSq];
+                if (c === AIR) continue;
+                if (c === WATER) {
+                    nassOben[idx0] = 1;
+                    offen.push(idx0);
+                }
+                break;
+            }
+        }
+        for (let idx0 = 0; idx0 < dimSq; idx0++) {
+            if (!colSrc[idx0] || nassOben[idx0]) continue;
+            const d = deckZelle(idx0 % dim, (idx0 / dim) | 0);
+            if (d < 0) continue;
+            cells[d] = WATER;
+            nassOben[idx0] = 1;
+            offen.push(idx0);
+        }
+        for (let h = 0; h < offen.length; h++) {
+            const i = offen[h] % dim;
+            const k = (offen[h] / dim) | 0;
+            for (const [ni, nk] of [
+                [i + 1, k],
+                [i - 1, k],
+                [i, k + 1],
+                [i, k - 1],
+            ]) {
+                if (ni < 0 || nk < 0 || ni >= dim || nk >= dim) continue;
+                const n0 = ni + nk * dim;
+                if (nassOben[n0]) continue;
+                const d = deckZelle(ni, nk);
+                if (d < 0) continue;
+                cells[d] = WATER;
+                nassOben[n0] = 1;
+                offen.push(n0);
+            }
         }
         // 5) 3D-Konnektivität: eine WATER-Zelle ist nur echt, wenn sie durch Wasser mit der OFFENEN
         //    ATMOSPHÄRE verbunden ist („komme ich zur Oberfläche?", nicht „Deckel über mir?") — erhält die
@@ -28388,257 +28579,16 @@ class AnazhRealm {
         }
     }
 
-    // Wasser ist eine FLÄCHE: die Iso-Hülle wickelt nach INNEN (Oberseiten ny<0, Unterseiten ny>0) →
-    // verworfen wird NUR die Unterseite (ny>upCull). Fast-vertikale Flächen bleiben — an Fluss-Stufen
-    // sind sie die natürlichen Wasserfälle (ein top-only-Cull verlöre sie). Indiziert → alle Attribute
-    // (aFlow/aShore/aWave danach) bleiben gültig.
-    _cullWaterUndersides(geom, upCull = 0.2) {
-        const pos = geom && geom.attributes && geom.attributes.position;
-        if (!pos) return geom;
-        const idx = geom.index ? geom.index.array : null;
-        const triCount = idx ? idx.length / 3 : Math.floor(pos.count / 3);
-        const kept = [];
-        for (let t = 0; t < triCount; t++) {
-            const a = idx ? idx[t * 3] : t * 3;
-            const b = idx ? idx[t * 3 + 1] : t * 3 + 1;
-            const c = idx ? idx[t * 3 + 2] : t * 3 + 2;
-            const ax = pos.getX(a);
-            const ay = pos.getY(a);
-            const az = pos.getZ(a);
-            const ex1 = pos.getX(b) - ax;
-            const ey1 = pos.getY(b) - ay;
-            const ez1 = pos.getZ(b) - az;
-            const ex2 = pos.getX(c) - ax;
-            const ey2 = pos.getY(c) - ay;
-            const ez2 = pos.getZ(c) - az;
-            // y-Komponente + Länge von (b-a)×(c-a)
-            const nx = ey1 * ez2 - ez1 * ey2;
-            const ny = ez1 * ex2 - ex1 * ez2;
-            const nz = ex1 * ey2 - ey1 * ex2;
-            const nlen = Math.hypot(nx, ny, nz) || 1e-9;
-            // nur die UNTERSEITE (ny>upCull) verwerfen; Oberseite + Ufer/Fluss-Drops behalten.
-            if (ny / nlen <= upCull) kept.push(a, b, c);
-        }
-        if (kept.length === 0) return null;
-        geom.setIndex(kept);
-        return geom;
-    }
-
-    // Wasser-Render-Modus: "cells" (Default) = Zell-Oberkanten-Sheet (folgt dem Live-CA, Kante taucht
-    // unters Terrain); "iso" = Zell-Iso (Debug-A/B). Persistierte "surface"-Werte heilen auf "cells".
-    _waterRenderMode() {
-        const m = this.state.atmosphere && this.state.atmosphere.waterRenderMode;
-        return m === "iso" ? "iso" : "cells";
-    }
-
+    // Das Wasser eines Chunks (EIN Render-Pfad: das Zell-Oberkanten-Sheet). Idempotent: das alte Mesh fällt vor dem Bau.
+    // Bis zur Welle L lebte hinter einem Einstellungs-Schalter ein zweiter Renderer („Zell-Iso (Debug)", im Save
+    // persistiert, W-kD7) — der Zwilling ist gefallen.
     _buildVoxelChunkWaterIsoSurface(cx, cz) {
         if (!this.state.scene || typeof THREE === "undefined") return null;
         if (!this.state.voxelChunks) return null;
         if (!this.state.voxelChunkWaterIso) this.state.voxelChunkWaterIso = new Map();
         const key = `${cx},${cz}`;
-        // Idempotenz: vorhandenes Mesh disposen, bevor wir neu bauen
         this._disposeVoxelChunkWaterIso(key);
-        // U-W4/V18.92 — der Modus-Dispatch NACH dem Dispose (geteilter Map-/
-        // Material-Pfad): "cells" (DEFAULT, §0-Kanon) = das Zell-Oberkanten-Sheet;
-        // "iso" = die alte Zell-Iso (der Code darunter, Debug-A/B).
-        const wrMode = this._waterRenderMode();
-        if (wrMode !== "iso") return this._buildVoxelChunkWaterCellSheet(cx, cz, key);
-        const entry = this.state.voxelChunks.get(key);
-        if (!entry || !entry.waterCells) {
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        const cells = entry.waterCells;
-        // Wasser-Iso läuft IMMER bei LOD 0 (dim=24, step=1.8), egal welche Terrain-LOD — LOD-spezifische
-        // Cell-Grids ließen die Iso am LOD-Boundary klaffen. Der Builder erzeugt Wasser-Cells immer LOD 0
-        // (`_buildVoxelChunkData`) → naht-frei; das Terrain-Mesh bleibt LOD-aware.
-        const { dim, step, span, dimY, floorDrop } = this._voxelChunkConfig(0);
-        const base = this.state.terrainBaseHeight || 0;
-        const ox = cx * span;
-        const oz = cz * span;
-        const oy = base - floorDrop;
-        const STATE = AnazhRealm.CELL_STATE;
-        // OOB-Live-Berechnung folgt EXAKT `_buildVoxelChunkWaterCells`: above-band → −1 (AIR), sonst voller
-        // Density+waterLevel-Check. Nie below-band=WATER abkürzen — in-chunk-SOLID gegen OOB-WATER erzeugte
-        // eine Floating-Plane in Berg-Säulen.
-        const band = this.state.hydroBand;
-        const bandTop = band ? band.top : Infinity;
-        // Nur die Wasser-LUFT-Iso: Cells 3-fach klassifiziert (AIR/WATER/SOLID); nur WATER+AIR-Mischungen
-        // erzeugen Iso — Bottom, Unterwasser-Seiten und Bergkuppen (Terrain-Mesh) werden unterdrückt.
-        // OOB-Klassen-Memo pro (i,k,j): der Mesher fragt dieselbe Eck-Zelle bis zu 8×.
-        const oobClassCache = new Map();
-        const cellClass = (i, k, j) => {
-            if (j < 0 || j >= dimY) return STATE.AIR;
-            if (i >= 0 && k >= 0 && i < dim && k < dim) {
-                return cells[i + k * dim + j * dim * dim];
-            }
-            const wy = oy + (j + 0.5) * step;
-            if (wy > bandTop) return STATE.AIR;
-            const cacheKey = i + "," + k + "," + j;
-            const cached = oobClassCache.get(cacheKey);
-            if (cached !== undefined) return cached;
-            // Der OOB-Ring (1 Cell, cropMargin=1) LIEST die Flood-Zellen des Nachbar-Chunks statt per-Spalte neu
-            // zu klassifizieren — die 2,5D-Logik injizierte an jeder Grenze Phantom-Wasser (Bergwände, unter
-            // Bauten, Rim-Würfel). Eine Wahrheit, gelesen statt geraten.
-            let ncx = cx;
-            let ncz = cz;
-            let li = i;
-            let lk = k;
-            if (i < 0) {
-                ncx -= 1;
-                li = i + dim;
-            } else if (i >= dim) {
-                ncx += 1;
-                li = i - dim;
-            }
-            if (k < 0) {
-                ncz -= 1;
-                lk = k + dim;
-            } else if (k >= dim) {
-                ncz += 1;
-                lk = k - dim;
-            }
-            const nb = this.state.voxelChunks.get(`${ncx},${ncz}`);
-            let cls;
-            if (nb && nb.waterCells) {
-                // Nachbar geladen + trägt Wasser → seine Flood-Zelle ist exakt.
-                cls = nb.waterCells[li + lk * dim + j * dim * dim];
-            } else if (nb) {
-                // Nachbar geladen, aber TROCKEN (Atlas-Gate: kein Wasser) →
-                // garantiert kein Wasser dort, nur Terrain. Kein Phantom.
-                cls =
-                    this._terrainDensityAt(ox + (i + 0.5) * step, wy, oz + (k + 0.5) * step) > 0
-                        ? STATE.SOLID
-                        : STATE.AIR;
-            } else {
-                // Nachbar noch nicht gestreamt → die eigene Kant-Zelle spiegeln (kein Phantom); beim Laden des
-                // Nachbarn re-enqueued der Finalize-Pfad dieses Iso und der Seam heilt exakt.
-                const ci2 = i < 0 ? 0 : i >= dim ? dim - 1 : i;
-                const ck2 = k < 0 ? 0 : k >= dim ? dim - 1 : k;
-                cls = cells[ci2 + ck2 * dim + j * dim * dim];
-            }
-            oobClassCache.set(cacheKey, cls);
-            return cls;
-        };
-        // V13.6 — Surface-Nets-Iso über die Wasser-Zellen, band-limitiert (die
-        // SYNERGIE zurück). Schöpfer-Audit V13.5: das V13.2-Grenzflächen-Meshing
-        // (flache Achsen-Quads) hatte die Synergie mit dem Terrain verloren — das
-        // Terrain ist eine glatte Surface-Nets-Iso (fließt, Gradienten-Normalen,
-        // folgt der Landschaft), das Wasser war flach + würfelig + gappy: „selbst
-        // das Terrain hat mehr Flow als das Wasser". Die Riesen-Synergie kommt daher,
-        // dass das Wasser durch DENSELBEN MESHER läuft — eine glatte Iso, deren
-        // Uferlinie als sub-zellige Kurve dem Terrain folgt. V13.6 holt das zurück:
-        // `_voxelChunkGeometry` (derselbe Surface-Nets-Pfad wie der Boden) über die
-        // Wasser-Zellen, Pad+Crop (V9.79, naht-frei). `sampleWater` gibt nur an der
-        // Wasser-LUFT-Grenze Iso (kein Air → tief drinnen +1; kein Water → außen −1;
-        // Mischung → glatte Oberfläche), so dass NUR die obere Wasserfläche entsteht
-        // (Bottom/Sides verdeckt das Terrain). Die V13.0-Perf-Wurzel (~150 ms) war die
-        // VOLLE 124-Zellen-Säule — das Wasser ist aber ein dünnes Oberflächen-Band:
-        // wir beschränken den Y-Bereich aufs GLOBALE `hydroBand` (~28 statt 124 Zellen
-        // → ~4-5×, global = seam-frei nach V9.77), der V12.0-perf.h-Defer-Queue fängt
-        // den Rest. Alle Korrektheits-Siege bleiben: V13.1-strikte Zellen (kein Hang-
-        // Schatten), V13.3-Flow, V13.5-Tiefen-Shader (Schicht 3 oben drauf). Die Zellen
-        // bleiben die reaktive Wahrheit — KEIN Sheet (das war vor V9.49 — nicht
-        // manipulierbar, zwei Skalen, zerbricht an der Naht).
-        const sampleWater = (x, y, z) => {
-            const i = Math.floor((x - ox) / step);
-            const k = Math.floor((z - oz) / step);
-            const j = Math.floor((y - oy) / step);
-            let cWater = 0;
-            let cAir = 0;
-            for (let dj = 0; dj <= 1; dj++) {
-                for (let dk = 0; dk <= 1; dk++) {
-                    for (let di = 0; di <= 1; di++) {
-                        const cls = cellClass(i - 1 + di, k - 1 + dk, j - 1 + dj);
-                        if (cls === STATE.WATER) cWater++;
-                        else if (cls === STATE.AIR) cAir++;
-                        // SOLID ist neutral (zählt weder) — das Terrain verdeckt es.
-                    }
-                }
-            }
-            // Sub-Terrain-Wasser ist in `waterCells` schon getrocknet → kein Sky-Open-Scan im Mesher nötig
-            // (der kostete ~94 ms/Chunk). Einfache Wasser-Luft-Iso:
-            if (cAir === 0) return 1; // tief drinnen → kein Iso (kein Bottom/Underwater-Side)
-            if (cWater === 0) return -1; // außen → kein Iso (Mountain-Top trägt das Terrain)
-            return (cWater - cAir) / 8; // Wasser+Luft-Mischung → glatte Iso, 8-Cell-geglättet
-        };
-        // Wasser lebt auf EINER Skala (LOD0): eine gröbere ferne Wasser-Iso verschob die Nachbar-Iso um bis
-        // ~3 m und quoll über den Footprint → Naht + Höhen-Stufe am Band-Rand.
-        // Y-Bereich aufs globale Wasser-Band beschränken (statt volle dimY).
-        const bBot = band ? band.bottom : oy;
-        const bTopY = band ? band.top : oy + dimY * step;
-        let jBot = Math.floor((bBot - oy) / step);
-        let jTop = Math.ceil((bTopY - oy) / step);
-        if (jBot < 0) jBot = 0;
-        if (jTop > dimY) jTop = dimY;
-        const bandDimY = jTop - jBot;
-        if (bandDimY <= 0) {
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        // Pad+Crop in X/Z (V9.79, naht-frei); Y band-limitiert (Crop schneidet nur X/Z).
-        const geom = this._voxelChunkGeometry(
-            ox - step,
-            oy + jBot * step,
-            oz - step,
-            dim + 3,
-            bandDimY,
-            dim + 3,
-            step,
-            sampleWater,
-            1
-        );
-        if (!geom) {
-            // Kein Wasser-Iso im Band → kein Mesh.
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        // V18.1/V18.4 W1 — die Unterseite verwerfen (s. `_cullWaterUndersides`):
-        // tötet „Wasser auf der falschen Seite des Bodens" (von unter der Karte);
-        // die Oberseite + die fast-vertikalen Fluss-Wasserfälle/Ufer bleiben.
-        if (!this._cullWaterUndersides(geom)) {
-            this._queueDispose(geom);
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        const mat = this._ensureHydroSurfaceMaterial();
-        if (!mat) {
-            this._queueDispose(geom);
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        // hydroSurfaceMaterial liest aFlow (vec2), aShore, aWave via TSL `attribute()` — unter NodeMaterial/
-        // WebGPU crasht die Pipeline bei fehlenden Attributen. Darum Null-Defaults (kein Wellen-Displacement,
-        // Flow, Ufer-Schaum — korrekt, das Chunk-Iso ist See/Pfütze).
-        const vCount = geom.attributes.position.count;
-        if (!geom.getAttribute("aFlow")) {
-            geom.setAttribute("aFlow", new THREE.BufferAttribute(new Float32Array(vCount * 2), 2));
-        }
-        if (!geom.getAttribute("aShore")) {
-            geom.setAttribute("aShore", new THREE.BufferAttribute(new Float32Array(vCount), 1));
-        }
-        if (!geom.getAttribute("aWave")) {
-            geom.setAttribute("aWave", new THREE.BufferAttribute(new Float32Array(vCount), 1));
-        }
-        // V18.14 — jeder Mesh am geteilten hydroSurfaceMaterial braucht `aDepth`
-        // (WebGPU-strikt, V10.0-g.1); 0 = flach (der Iso-A/B-Pfad ist sowieso Vergleich).
-        if (!geom.getAttribute("aDepth")) {
-            geom.setAttribute("aDepth", new THREE.BufferAttribute(new Float32Array(vCount), 1));
-            geom.setAttribute("aSlope", new THREE.BufferAttribute(new Float32Array(vCount), 1));
-        }
-        // Der CPU-Körper des Chunk-Wassers (Map-Wahrheit, Sonden lesen seine Geometrie); gezeichnet wird er als
-        // Bereich im Wasser-Satz (Welle B: EIN Objekt für das Wasser des ganzen Rings, ausserhalb jedes Bundles —
-        // die Szenen-Tiefe `_szeneTiefe` erzwingt einen Pass-Bruch, den der Bundle-Encoder nicht kann).
-        const mesh = new THREE.Mesh(geom, mat);
-        mesh.userData = {
-            isHydrosphere: true,
-            hydroKind: "chunk-water-iso",
-            voxelChunkX: cx,
-            voxelChunkZ: cz,
-        };
-        this._chunkSatzEin("wasser", key, geom, key);
-        this.state.voxelChunkWaterIso.set(key, mesh);
-        return mesh;
+        return this._buildVoxelChunkWaterCellSheet(cx, cz, key);
     }
 
     // Zell-Oberkanten-Sheet (Default-Wasser-Render): Domäne NUR über wassertragenden Spalten + 1-Zell-
@@ -28648,14 +28598,7 @@ class AnazhRealm {
     // (Zellen/Level nur via ctx) → Worker `buildWaterSheetGeometry` byte-identisch; Carve/CA-aktiv sync.
     _buildVoxelChunkWaterCellSheet(cx, cz, key) {
         const entry = this.state.voxelChunks.get(key);
-        if (!entry || !entry.waterCells) {
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        // Das Gate kennt das LIVE-Wasser: ein Chunk ohne Atlas-Wasser kann CA-Wasser tragen (Ausbreitung
-        // über die Grenze) — hat er einen Level-Eintrag, entscheidet der Spalten-Scan, nicht der Atlas.
-        const levelMap = this.state.waterLevelCells;
-        if (!this._voxelChunkHasAnyWater(cx, cz) && !(levelMap && levelMap.has(key))) {
+        if (!entry || !entry.waterCells || !this._wasserSheetTraegt(cx, cz)) {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
@@ -28681,6 +28624,160 @@ class AnazhRealm {
             return null;
         }
         return this._finalizeWaterSheetMesh(cx, cz, key, data);
+    }
+
+    // Trägt der Chunk ein Sheet? Das Gate kennt das LIVE-Wasser: ein Chunk ohne Atlas-Wasser kann CA-Wasser tragen
+    // (Ausbreitung über die Grenze) — hat er einen Level-Eintrag, entscheidet der Spalten-Scan, nicht der Atlas. EIN Gate
+    // für den Bau (`_buildVoxelChunkWaterCellSheet`) und das Gezeichnete, bevor es gezeichnet ist (`_wasserNetz`).
+    _wasserSheetTraegt(cx, cz) {
+        const levelMap = this.state.waterLevelCells;
+        return this._voxelChunkHasAnyWater(cx, cz) || !!(levelMap && levelMap.has(`${cx},${cz}`));
+    }
+
+    // ═══ DAS GEZEICHNETE WASSER ALS WAHRHEIT (Gegenprüfung 07.10., Runde 4) ═══
+    // Was die Welt als Wasser zeichnet, ist die Wasser-Wahrheit am Körper (`_koerperWasser`): die Dreiecke des Wasser-Sheets
+    // eines Chunks — dieselben Zahlen, die der Renderer bekommt (`geometry.attributes.position`, Float32) — je Zelle des
+    // 1,8-m-Gitters gefächert. Bis zur Gegenprüfung las der Körper das Gesetz an seinem Punkt, die Welt zeichnete auf dem
+    // 1,8-m-Gitter (jede Spalte flutet ganz, ihre Ecken tragen den Spiegel): am Bach der Mess-Wiese zeichnete sie auf 64 m
+    // Breite Wasser, in dem der Körper trocken stand, und die Nah-Streu setzte Farne hinein; vor Runde 3 umgekehrt (der
+    // Körper las 177 m, die die Welt nicht zeichnete). Rückgabe: das Netz, null (der Chunk zeichnet kein Wasser) oder
+    // undefined (kein Chunk geladen — die Ferne, dort liest der Körper das Gesetz). Ist ein Chunk geladen, sein Sheet aber noch
+    // nicht gebaut, rechnet DIESELBE Rechnung (`_computeWaterSheetData`, das Gate `_wasserSheetTraegt`) das Netz vorab, einmal
+    // je Zell-Stand. Gleicher Inhalt ist dasselbe Netz: seine Kennung bleibt (die Nah-Streu baut nur bei echter Änderung neu).
+    _wasserNetz(cx, cz) {
+        const st = this.state;
+        const key = `${cx},${cz}`;
+        const entry = st.voxelChunks ? st.voxelChunks.get(key) : null;
+        if (!entry) return undefined;
+        if (!entry.waterCells) return null;
+        const iso = st.voxelChunkWaterIso;
+        const gezeichnet = !!iso && iso.has(key);
+        const quelle = gezeichnet ? iso.get(key) : entry.waterCells;
+        const alt = entry._wasserNetz;
+        if (alt && alt.quelle === quelle) return alt.netz;
+        let pos = null;
+        let idx = null;
+        if (gezeichnet) {
+            if (quelle) {
+                pos = quelle.geometry.attributes.position.array;
+                idx = quelle.geometry.index.array;
+            }
+        } else if (this._wasserSheetTraegt(cx, cz)) {
+            const d = this._computeWaterSheetData(cx, cz, this._mainWaterSheetCtx(cx, cz, entry));
+            if (d) {
+                pos = Float32Array.from(d.positions);
+                idx = Uint32Array.from(d.indices);
+            }
+        }
+        let netz = pos ? this._wasserNetzBau(cx, cz, pos, idx) : null;
+        if (alt && AnazhRealm._wasserNetzGleich(alt.netz, netz)) netz = alt.netz;
+        entry._wasserNetz = { quelle, netz };
+        return netz;
+    }
+
+    // Das Netz eines Sheets: jedes Dreieck in jeder Zelle (1,8 m) des um eine Zelle erweiterten Chunks, die seine xz-Hülle
+    // berührt (die Rand-Vertices sind bis 0,54 m versetzt, `_computeWaterSheetData`) — CSR (`start` · `liste`).
+    _wasserNetzBau(cx, cz, pos, idx) {
+        const { dim, step, span } = this._voxelChunkConfig(0);
+        const nb = dim + 2;
+        const gx0 = cx * span - step;
+        const gz0 = cz * span - step;
+        const triN = (idx.length / 3) | 0;
+        const start = new Int32Array(nb * nb + 1);
+        const faecher = (t, tu) => {
+            const a = 3 * idx[3 * t];
+            const b = 3 * idx[3 * t + 1];
+            const c = 3 * idx[3 * t + 2];
+            const i0 = Math.max(0, Math.floor((Math.min(pos[a], pos[b], pos[c]) - gx0) / step));
+            const i1 = Math.min(nb - 1, Math.floor((Math.max(pos[a], pos[b], pos[c]) - gx0) / step));
+            const k0 = Math.max(0, Math.floor((Math.min(pos[a + 2], pos[b + 2], pos[c + 2]) - gz0) / step));
+            const k1 = Math.min(nb - 1, Math.floor((Math.max(pos[a + 2], pos[b + 2], pos[c + 2]) - gz0) / step));
+            for (let k = k0; k <= k1; k++) for (let i = i0; i <= i1; i++) tu(i + k * nb);
+        };
+        for (let t = 0; t < triN; t++) faecher(t, (f) => start[f + 1]++);
+        for (let f = 0; f < nb * nb; f++) start[f + 1] += start[f];
+        const liste = new Int32Array(start[nb * nb]);
+        const fuell = start.slice(0, nb * nb);
+        for (let t = 0; t < triN; t++) faecher(t, (f) => (liste[fuell[f]++] = t));
+        return { pos, idx, gx0, gz0, nb, step, start, liste };
+    }
+
+    // Das höchste Dreieck eines Netzes über (x, z) (baryzentrisch in xz; senkrechte Vorhänge tragen keine Fläche) oder null.
+    static _wasserNetzHoehe(n, x, z) {
+        const i = Math.floor((x - n.gx0) / n.step);
+        const k = Math.floor((z - n.gz0) / n.step);
+        if (i < 0 || k < 0 || i >= n.nb || k >= n.nb) return null;
+        const f = i + k * n.nb;
+        const p = n.pos;
+        const ix = n.idx;
+        let best = null;
+        for (let q = n.start[f]; q < n.start[f + 1]; q++) {
+            const t = n.liste[q];
+            const a = 3 * ix[3 * t];
+            const b = 3 * ix[3 * t + 1];
+            const c = 3 * ix[3 * t + 2];
+            const d = (p[b + 2] - p[c + 2]) * (p[a] - p[c]) + (p[c] - p[b]) * (p[a + 2] - p[c + 2]);
+            if (Math.abs(d) < 1e-12) continue;
+            const u = ((p[b + 2] - p[c + 2]) * (x - p[c]) + (p[c] - p[b]) * (z - p[c + 2])) / d;
+            const v = ((p[c + 2] - p[a + 2]) * (x - p[c]) + (p[a] - p[c]) * (z - p[c + 2])) / d;
+            const w = 1 - u - v;
+            if (u < -1e-6 || v < -1e-6 || w < -1e-6) continue;
+            const y = u * p[a + 1] + v * p[b + 1] + w * p[c + 1];
+            if (best === null || y > best) best = y;
+        }
+        return best;
+    }
+
+    static _wasserNetzGleich(a, b) {
+        if (!a || !b) return a === b;
+        if (a.pos.length !== b.pos.length || a.idx.length !== b.idx.length) return false;
+        for (let i = 0; i < a.pos.length; i++) if (a.pos[i] !== b.pos[i]) return false;
+        for (let i = 0; i < a.idx.length; i++) if (a.idx[i] !== b.idx[i]) return false;
+        return true;
+    }
+
+    // Die Höhe des gezeichneten Wassers an (x, z): das höchste Dreieck der Sheets, die den Punkt tragen — des eigenen Chunks
+    // und der Nachbarn, deren Kante näher als WASSER_BILD_RAND liegt (ihre Rand-Vertices sind versetzt). null = kein Wasser
+    // gezeichnet, undefined = kein Chunk geladen.
+    _wasserBildAt(x, z) {
+        const span = this._voxelChunkConfig(0).span;
+        const R = AnazhRealm.WASSER_BILD_RAND;
+        const cx = Math.floor(x / span);
+        const cz = Math.floor(z / span);
+        const eigen = this._wasserNetz(cx, cz);
+        if (eigen === undefined) return undefined;
+        let best = eigen ? AnazhRealm._wasserNetzHoehe(eigen, x, z) : null;
+        const fx = x - cx * span;
+        const fz = z - cz * span;
+        for (let dz = -1; dz <= 1; dz++) {
+            if (dz < 0 ? fz > R : dz > 0 ? span - fz > R : false) continue;
+            for (let dx = -1; dx <= 1; dx++) {
+                if ((!dx && !dz) || (dx < 0 ? fx > R : dx > 0 ? span - fx > R : false)) continue;
+                const n = this._wasserNetz(cx + dx, cz + dz);
+                if (!n) continue;
+                const y = AnazhRealm._wasserNetzHoehe(n, x, z);
+                if (y !== null && (best === null || y > best)) best = y;
+            }
+        }
+        return best;
+    }
+
+    // Die Kennungen des gezeichneten Wassers über einem Rechteck (eine Kachel der Nah-Streu/Nah-Wiese): je Chunk, dessen Sheet
+    // ein Punkt des Rechtecks lesen kann, sein Netz. Eine Kachel baut neu, sobald eines sich ändert (`_wasserKennungenGleich`).
+    _wasserKennungen(x0, z0, x1, z1) {
+        const span = this._voxelChunkConfig(0).span;
+        const R = AnazhRealm.WASSER_BILD_RAND;
+        const aus = [];
+        for (let cz = Math.floor((z0 - R) / span); cz <= Math.floor((z1 + R) / span); cz++)
+            for (let cx = Math.floor((x0 - R) / span); cx <= Math.floor((x1 + R) / span); cx++)
+                aus.push(cx, cz, this._wasserNetz(cx, cz));
+        return aus;
+    }
+
+    _wasserKennungenGleich(k) {
+        if (!k) return false;
+        for (let i = 0; i < k.length; i += 3) if (this._wasserNetz(k[i], k[i + 1]) !== k[i + 2]) return false;
+        return true;
     }
 
     // B1 — der Main-Zell-Kontext: liest die geladenen Chunk-Zellen + DAS GEZEICHNETE DACH jedes Chunks
@@ -28727,8 +28824,6 @@ class AnazhRealm {
         geom.setAttribute("aWave", new THREE.Float32BufferAttribute(data.aWave, 1));
         geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(data.aDepth, 1));
         geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(data.aSlope, 1));
-        // aShore trägt der Tiefen-Shader → 0 (wie Fläche + Iso).
-        geom.setAttribute("aShore", new THREE.Float32BufferAttribute(new Float32Array(positions.length / 3), 1));
         geom.setIndex(Array.from(data.indices));
         const mat = this._ensureHydroSurfaceMaterial();
         if (!mat) {
@@ -28770,6 +28865,9 @@ class AnazhRealm {
         const topG = new Float64Array(GW * GW).fill(NaN); // NaN = trocken
         const solidG = new Float64Array(GW * GW); // Boden-Anker (Unterkante der höchsten SOLID-Zelle)
         const depthG = new Float64Array(GW * GW); // Wasser-Säulen-Dicke (aDepth)
+        // RUHENDES Wasser je Spalte (1): das Dach IST der Spiegel des Gesetzes — kein Live-Delta, keine Klemme. Seine Vertices
+        // tragen den Spiegel des Gesetzes an ihrem eigenen Ort (`addVert`), nie das Mittel der Nachbar-Dächer.
+        const ruhG = new Uint8Array(GW * GW);
         for (let ck = -PAD; ck < dim + PAD; ck++) {
             for (let ci = -PAD; ci < dim + PAD; ci++) {
                 const gi = ci + PAD + (ck + PAD) * GW;
@@ -28832,24 +28930,38 @@ class AnazhRealm {
                     continue; // sonst trocken (topG bleibt NaN)
                 }
                 const faceY = oy + (sc.floodTopJ + 1) * step; // Zell-Dach (quantisiert)
-                // RUHE: sub-zellig der Body-Spiegel `L`, clamp ±1 Zelle ums Dach (gegen Atlas/Zell-Drift). Der
-                // Fluss-LAUF liest die geglättete Fläche (_waterRunSurfaceAt: Along-Flow-Tiefpass, nie der
-                // Querschnitt) statt des rohen L; Seen/Ozean unverändert.
+                // RUHE: sub-zellig der Body-Spiegel `L` (das Gesetz `_atlasWaterLevelAt`: Ozean, See, der Fluss-Spiegel
+                // — stromab nie steigend, quer waagrecht), geklemmt von der Unterkante der Zelle unter dem Dach bis eine
+                // Zelle darüber (gegen Atlas/Zell-Drift): die Deck-Zelle (`_buildVoxelChunkWaterCells` 4b) trägt einen
+                // Spiegel, der in der obersten festen Zelle liegt (ein Rinnsal über seinem Boden).
                 const wx = ox + (ci + 0.5) * step;
                 const wz = oz + (ck + 0.5) * step;
-                // Das Bett reist mit (solidG + step = Bett-OBERFLÄCHE): nasse Flood-Spalten behalten ihre
-                // Rim-Füllung (Bett < rim per Flood); nur „unbekannt" (−Inf) verliert sie.
-                const L = this._waterRunSurfaceAt(wx, wz, solidG[gi] + step);
-                let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
+                // Das Ufer-Urteil liest die Unterkante der obersten festen Zelle: die Spalte IST nass (das Zell-Gesetz flutete
+                // sie über dem tiefsten Boden ihrer Ecken), nur „unbekannt" (−Inf) verliert die Rim-Füllung; bis zur
+                // Gegenprüfung 07.10. (Runde 3) las es die Oberkante. Gefragt wird wie im Zell-Gesetz an der Mitte und den
+                // vier Ecken (das Höchste): eine Spalte, die das Wasser nur an einer Ecke trägt, zeichnete sonst ihr Zell-Dach.
+                let L = this._atlasWaterLevelAt(wx, wz, solidG[gi]);
+                for (let e = 0; e < 4; e++) {
+                    const le = this._atlasWaterLevelAt(
+                        ox + (ci + (e & 1)) * step,
+                        oz + (ck + (e >> 1)) * step,
+                        solidG[gi]
+                    );
+                    if (le > L) L = le;
+                }
+                let top = L > -Infinity ? Math.max(faceY - 2 * step, Math.min(faceY + step, L)) : faceY;
+                let ruht = L > -Infinity && top === L;
                 // LIVE: der CA-Delta obendrauf (gezeichnetes Live-Dach − Flood-Dach, geclampt).
                 if (dach) {
                     const floodRel = (sc.floodTopJ + 1) * step;
                     const liveRel = live < 0 ? 0 : live * step;
                     let d = liveRel - floodRel;
                     if (d > -0.05 && d < 0.05) d = 0;
+                    if (d !== 0) ruht = false;
                     top += Math.max(-14, Math.min(4, d));
                 }
                 topG[gi] = top;
+                ruhG[gi] = ruht ? 1 : 0;
                 // depthG (aDepth) wird GLOBAL als kontinuierliche Tiefe gesetzt (V18.377, s.u.).
             }
         }
@@ -29082,6 +29194,9 @@ class AnazhRealm {
             const wz = oz + k * step;
             let sum = 0;
             let n = 0;
+            let rohMin = Infinity;
+            let rohMax = -Infinity;
+            let ruht = true;
             let dsum = 0;
             let sfx = 0;
             let sfz = 0;
@@ -29098,6 +29213,9 @@ class AnazhRealm {
                 if (!Number.isNaN(v)) {
                     sum += v;
                     n++;
+                    if (topRawG[gi2] < rohMin) rohMin = topRawG[gi2];
+                    if (topRawG[gi2] > rohMax) rohMax = topRawG[gi2];
+                    if (!ruhG[gi2]) ruht = false;
                     dsum += depthG[gi2];
                     sfx += flowXG[gi2];
                     sfz += flowZG[gi2];
@@ -29106,19 +29224,30 @@ class AnazhRealm {
                 const sv = solidG[gi2];
                 if (sv < anchor) anchor = sv;
             }
-            // Nasser Vertex: das geglättete Wasser-Dach. Anker-Vertex (kein nasser Nachbar): UNTER das Terrain
-            // (`solidG` = Unterkante der höchsten SOLID-Zelle), MIN über die 4 Nachbar-Spalten — nie MAX (griffe
-            // an Klippen/Überhängen die Wand → schwebende Kante); die Kante taucht am Ufer-Fuß ein.
-            const surfY = n > 0 ? sum / n : anchor - 0.5;
-            const depthM = n > 0 ? dsum / n : 0;
-            const id = positions.length / 3;
-            vertIsAnchor[id] = n === 0;
             // UNIFORMER Jitter (keine Steigungs-Skala): `slopeMax` ist pro Chunk verschieden → verschiedene
             // Magnituden an Rand-Vertices = Riss. Gleiche Amplitude + globaler-Index-Hash → Rand-Vertices fallen
             // exakt zusammen; auf flachem Wasser ist horizontaler Jitter unsichtbar. `slopeMax` bleibt für
             // aSlope/Whitewater.
             const _jdir = _jhash(cx * dim + i, cz * dim + k) * _jitAmp;
             const _jdir2 = _jhash(cz * dim + k + 8191, cx * dim + i + 131071) * _jitAmp;
+            // Nasser Vertex: RUHT das Wasser aller nassen Nachbar-Spalten, trägt er den Spiegel des Gesetzes an seinem
+            // eigenen Ort (dieselbe Zahl, die der Körper dort liest, `_koerperWasser`; jenseits der Krone der Fluss-Spiegel quer,
+            // `_hydroSpiegelQuer`), gehalten zwischen die rohen Dächer der nassen Nachbar-Spalten (ein fremdes Wasser am Ort des
+            // Vertex — ein See-Feld daneben — hebt ihn nie) — das Mittel der GEGLÄTTETEN Dächer zog am Ende eines steilen Laufs
+            // das Wasser unter den Boden
+            // (Quelle der Kachel −1624/−1080: Spiegel 74,04, gezeichnet 73,00, Boden 73,62). Sonst (Live-Delta, Klemme) das
+            // geglättete Wasser-Dach. Anker-Vertex (kein nasser Nachbar): UNTER das Terrain (`solidG` = Unterkante der
+            // höchsten SOLID-Zelle), MIN über die 4 Nachbar-Spalten — nie MAX (griffe an Klippen/Überhängen die Wand →
+            // schwebende Kante); die Kante taucht am Ufer-Fuß ein.
+            let surfY = anchor - 0.5;
+            if (n > 0 && ruht) {
+                const Lv = this._atlasWaterLevelAt(wx + _jdir, wz + _jdir2, Infinity);
+                const Lq = Lv > -Infinity ? Lv : this._hydroSpiegelQuer(wx + _jdir, wz + _jdir2);
+                surfY = Lq > -Infinity ? Math.max(rohMin, Math.min(rohMax, Lq)) : rohMax;
+            } else if (n > 0) surfY = sum / n;
+            const depthM = n > 0 ? dsum / n : 0;
+            const id = positions.length / 3;
+            vertIsAnchor[id] = n === 0;
             positions.push(wx + _jdir, surfY, wz + _jdir2);
             // aFlow: der Vertex mittelt die 4 geglätteten Nachbar-Spalten von flowXG/flowZG (sfx/sfz im
             // wet-Loop) → kein Regime-Patchwork, naht-exakt; der Blur trägt das Tapern zur Mündung/Bank.
@@ -31100,23 +31229,15 @@ class AnazhRealm {
         // Wasser-Iso sonst deferred (~78 ms Surface-Nets, ≤budget/Frame → kein Streaming-Spike). Beim
         // Edit-Rebuild (`syncWater`) SYNCHRON — sonst fehlt der Iso 1–2 Frames am Edit-Punkt (Flackern).
         if (syncWater) this._buildVoxelChunkWaterIsoSurface(cx, cz);
-        // Erst-Paint off-thread: HIER (vor `_wakeWaterCAOnce`) ist der Chunk garantiert CA-frei → der
-        // Worker baut das Sheet byte-identisch. Nicht eligible (kein Worker · aktiv fließende Nachbarn ·
-        // kein Wasser) → deferred Queue (Sync-Fallback im Tick).
+        // Erst-Paint off-thread: ein einstreamender Chunk ist CA-frei → der Worker baut das Sheet byte-identisch.
+        // Nicht eligible (kein Worker · aktiv fließende Nachbarn · kein Wasser) → deferred Queue (Sync-Fallback im
+        // Tick). DER WASSER-AUTOMAT WACHT NUR, WO DIE WELT ABWEICHT (Welle L, W-W1): Graben, Füllen, ein Damm wecken
+        // ihn (`_wakeWaterCA` aus Edit/Stau); ungestörtes Wasser IST das Gesetz. Bis V18.531 weckte jeder einstreamende
+        // Wasser-Chunk im Nah-Ring den Automaten — er rechnete den ruhenden Fluss in ganzen 1,8-m-Zellen nach, der
+        // Quellen-Pin füllte sie bis 0,9 m über den Spiegel, das Wasser lief in jedes Ufer darunter: am Fluss der
+        // Mess-Wiese trugen 81 von 233 trockenen Ufer-Proben Körper-Wasser bis 4,6 m über dem Gras (Tauch-Nebel),
+        // und jeder geweckte Chunk zog seine Nachbarn aus dem Worker-Sheet in den Sync-Bau.
         else if (!this._tryWorkerWaterSheet(cx, cz)) this._enqueueWaterIso(cx, cz);
-        // Wake-on-stream: ein einstreamender Wasser-Chunk weckt den CA EINMAL, damit die Wasser-Substanz
-        // von allein lebt. Gebändigt durch Distanz-Decay (CA_FLOW_KEEP) + Spiegel-Kappe (waterCapJ: Wasser
-        // steigt nie über seinen Spiegel). Nur im Nah-Ring (`WAKE_CA_RADIUS`); die Ferne streamt CA-frei
-        // und wird bei Annäherung über `_tickWaterCANearWake` geweckt.
-        if (
-            (Number.isFinite(lod) ? lod === 0 : true) &&
-            this._voxelChunkNearPlayer(cx, cz, AnazhRealm.WAKE_CA_RADIUS) &&
-            this.state.voxelChunks.get(`${cx},${cz}`) &&
-            this.state.voxelChunks.get(`${cx},${cz}`).waterCells &&
-            this._voxelChunkHasAnyWater(cx, cz)
-        ) {
-            this._wakeWaterCAOnce(cx, cz);
-        }
         // Der neue Chunk ist Flood-Wahrheit für seine Nachbarn, deren Iso evtl. gegen ihn als ABWESEND
         // gebaut wurde. Der Iso-Mesher liest alle 8 Nachbarn (inkl. DIAGONALEN) → alle 8 re-enqueuen, nicht
         // nur die Achsen (sonst klebt Wasser an Gebäude-Ecken). Nur wassertragende; idempotent über das Set.
@@ -31983,6 +32104,8 @@ class AnazhRealm {
             // Jeder Fluss-Punkt bekommt seine ECHTE Voxel-Surface-Höhe (`voxelY`): geroutet wird auf der glatten
             // Makro-Surface, Wasserfälle leben aber an den echten Klippen — das Ribbon hängt am Voxel-Relief.
             this._hydroSampleRiverSurfaces(rivers);
+            // Der Spiegel jedes Fluss-Punkts (stromab nie steigend, quer waagrecht) — das Bett folgt ihm (Carve).
+            this._hydroRiverSpiegel(ctx, rivers);
             const waterfalls = this._hydroExtractWaterfalls(ctx, rivers);
             // Diagnostik: jede Land-Zelle (nicht Rand, nicht Meer) MUSS nach dem
             // Priority-Flood einen definierten Abfluss tragen — das ε garantiert
@@ -32106,8 +32229,12 @@ class AnazhRealm {
 
     // Wasser-Oberflächen-Höhe an (x,z) = MAX aus Ozean (`waterLevel`, Default überall), See-Becken
     // (`lake.level`) und Fluss-Bett-Profil. Nass ist, wo `_voxelSurfaceY < _waterLevelAt` — die
-    // Uferlinie ist der exakte Schnitt mit dem echten Voxel-Terrain.
-    _waterLevelAt(x, z) {
+    // Uferlinie ist der exakte Schnitt mit dem echten Voxel-Terrain. `aus` (optional) bekommt die beiden Bezüge der
+    // Ufer-Bänder getrennt: `see` (Meer/See), `fluss` (der Fluss-Spiegel oder null) und `ufer` (seine Kronen-Blende). Ein
+    // Ufer-Band (Strand, Schlick, Pfad, Höhen-Feuchte) ist das Maximum aus dem Band über `see` und dem Band über `fluss`
+    // × `ufer` — stetig über die Krone, wo der Fluss-Spiegel endet (bis Welle L lasen die Bänder das Maximum der Spiegel:
+    // an der Krone sprang der Bezug auf den Meeresspiegel, die Bank trug ein Rauten-Schachbrett).
+    _waterLevelAt(x, z, aus) {
         let level = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (h && h.ready && h.water && h.water.waterKind) {
@@ -32130,6 +32257,11 @@ class AnazhRealm {
             }
         }
         const river = this._hydroRiverAt(x, z);
+        if (aus) {
+            aus.see = level;
+            aus.fluss = river ? river.surfaceY : null;
+            aus.ufer = river ? river.ufer : 0;
+        }
         if (river && river.surfaceY > level) level = river.surfaceY;
         return level;
     }
@@ -32203,47 +32335,13 @@ class AnazhRealm {
         return level;
     }
 
-    // Geglättete Lauf-Fläche: die EINE Render-/Feel-Wahrheit der Wasser-Oberfläche (Sheet-Höhe · Tauch-
-    // Trigger · Boot); die Welt-Wahrheit (Atlas, Flood, Carve, Worker) bleibt. Along-Flow-Tiefpass
-    // gegen die geerbten Terrain-Beulen: 7 Samples ±18 m entlang der Tangente, gauss-gewichtet — NIE
-    // quer (der konvexe Breiten-Bulge bleibt). Pure Funktion der Welt-Position (seam-frei).
-    // `terrainTopY` = Bett der Zentrums-Spalte (Rim-Füllung); die Along-Samples fragen mit −Infinity.
-    _waterRunSurfaceAt(x, z, terrainTopY = -Infinity) {
-        const L = this._atlasWaterLevelAt(x, z, terrainTopY);
-        if (!(L > -Infinity)) return L;
-        const river = this._hydroRiverAt(x, z);
-        if (!river) return L;
-        // Nur der KERN wird geglättet: zur Kanal-Kante (centerness → 0) blendet es auf den ROHEN Spiegel —
-        // der konvexe Querschnitt bleibt dort exakt.
-        const center = Number.isFinite(river.centerness) ? river.centerness : 1;
-        if (center <= 0.001) return L;
-        const fx = river.flowX;
-        const fz = river.flowZ;
-        let acc = L * 4;
-        let wsum = 4;
-        for (let k = 1; k <= 3; k++) {
-            const w = 4 - k;
-            const d = 6 * k;
-            const la = this._atlasWaterLevelAt(x + fx * d, z + fz * d, -Infinity);
-            const lb = this._atlasWaterLevelAt(x - fx * d, z - fz * d, -Infinity);
-            if (la > -Infinity) {
-                acc += la * w;
-                wsum += w;
-            }
-            if (lb > -Infinity) {
-                acc += lb * w;
-                wsum += w;
-            }
-        }
-        const smoothed = acc / wsum;
-        return L + (smoothed - L) * center;
-    }
-
-    // ═══ KOPPLUNG (1) — DIE EINE STRÖMUNGS-QUELLE FÜR BEWEGUNG ═══
-    // Strömungs-Geschwindigkeit (m/s) aus dem kanonischen Fluss-Flow von `_hydroRiverAt` für alle
-    // Bewegungs-Konsumenten (`_stepCharacter` · Kreaturen in `updateCreatures` · Boot via `_afloat`).
-    // Betrag = FLOW_ADVECT_SPEED × centerness (die Bank-Rampe schiebt nie). Reine Funktion der
-    // Welt-Position (Lockstep bit-treu); degenerierte Richtung (See) → null.
+    // ═══ KOPPLUNG (1) — DIE EINE STRÖMUNGS-QUELLE ═══
+    // Strömungs-Geschwindigkeit (m/s) aus dem kanonischen Fluss-Flow von `_hydroRiverAt` für jeden Leser: Körper
+    // (`_stepCharacter` · Kreaturen in `updateCreatures` · Boot via `_afloat`) und Klang (Hör-Ring). Betrag = die
+    // Strömung des Gesetzes (WASSER_GESETZ.wellen.adv, dieselbe Zeile, die das Wasser-Bild und der Studio-Bach tragen
+    // und an der die Fluss-Stimme geeicht ist) × centerness (die Bank-Rampe schiebt nie). Bis V18.531 schob der Körper
+    // mit 3,2 m/s (Host-Literal), das Bild floss mit 1,5/0,5/0,9 m/s. Reine Funktion der Welt-Position (Lockstep
+    // bit-treu); degenerierte Richtung (See) → null.
     _waterFlowAt(x, z) {
         const rv = this._hydroRiverAt(x, z);
         if (!rv) return null;
@@ -32251,7 +32349,9 @@ class AnazhRealm {
         if (!(m > 1e-6) || !Number.isFinite(m)) return null;
         const center = Number.isFinite(rv.centerness) ? Math.max(0, Math.min(1, rv.centerness)) : 0;
         if (center <= 0) return null;
-        const speed = AnazhRealm.FLOW_ADVECT_SPEED * center;
+        const WG =
+            AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+        const speed = WG.wellen.adv * center;
         return { x: (rv.flowX / m) * speed, z: (rv.flowZ / m) * speed };
     }
 
@@ -32358,9 +32458,11 @@ class AnazhRealm {
         const z = creature.position.z;
         const cy = creature.position.y;
         // V17.113 — `surfaceY` kommt jetzt aus `_creatureGroundY` (gecacht) statt
-        // einem eigenen `_voxelSurfaceY`-Scan → kein Doppel-Scan pro Kreatur.
-        const waterY = this._waterLevelAt(x, z);
+        // einem eigenen `_voxelSurfaceY`-Scan → kein Doppel-Scan pro Kreatur. Das Wasser ist die EINE Wahrheit am Körper
+        // (`_koerperWasser` über diesem Grund — dieselbe, die Lage und Schwimmen des Tiers trägt); bis zur Gegenprüfung las
+        // die Ufer-Scheu das 3×3-gedehnte `_waterLevelAt`.
         const surfY = surfaceY === null || !Number.isFinite(surfaceY) ? cy : surfaceY;
+        const waterY = this._koerperWasser(x, z, surfY);
         const depthBelow = waterY - surfY;
         const inWater = depthBelow > 0;
         const submerged = cy < waterY - 0.1;
@@ -32379,7 +32481,10 @@ class AnazhRealm {
             const dx = d === 0 ? 1 : d === 1 ? -1 : 0;
             const dz = d === 2 ? 1 : d === 3 ? -1 : 0;
             for (let step = STEP; step <= MAX; step += STEP) {
-                if (this._isAboveWaterAt(x + dx * step, z + dz * step, 0.1)) {
+                const lx = x + dx * step;
+                const lz = z + dz * step;
+                const lb = this._voxelSurfaceY(lx, lz);
+                if (lb !== null && Number.isFinite(lb) && lb > this._koerperWasser(lx, lz, lb) + 0.1) {
                     if (step < bestDist) {
                         bestDist = step;
                         bestDx = dx;
@@ -32965,9 +33070,12 @@ class AnazhRealm {
         return boxes;
     }
 
-    // Nächstes Fluss-Segment an (x,z), wenn der Punkt im gecarvten Kanal liegt (dist ≤ halbe Breite +
-    // Bank-Rampe). Liefert Flow-Richtung (normiert), Carve-Tiefe `depth`, Wasser-Oberfläche `surfaceY`
-    // (Makro − 0.25·depth + konvexer Bulge) und centerness — oder null. O(1) über `riverBuckets`.
+    // Nächstes Fluss-Segment an (x,z), wenn der Punkt im Kanal liegt (dist ≤ halbe Breite + Tiefe / bankNeigung, die
+    // Krone der Bank — jenseits der Krone trägt der Fluss kein Wasser). Liefert Flow-Richtung (normiert), Bett-Tiefe
+    // `depth` und centerness des nächsten Segments, dazu die Wasser-Oberfläche `surfaceY`: der Spiegel der Segmente
+    // (`_hydroRiverSpiegel`, linear zwischen ihren Enden — stromab nie steigend, quer waagrecht), gemittelt mit einem
+    // Gewicht, das zur Krone stetig auf 0 fällt — ein breiter Fluss überdeckt in der Biegung mehrere Segmente, das
+    // nächste allein gäbe dort eine Stufe. O(1) über `riverBuckets`. Worker bit-identisch (speist die Zellen).
     _hydroRiverAt(x, z) {
         const h = this._hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
         if (!h || !h.ready || !h.riverBuckets) return null;
@@ -32978,12 +33086,15 @@ class AnazhRealm {
         if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
         const list = h.riverBuckets[bj * bd + bi];
         if (!list) return null;
-        const bankSlope = AnazhRealm.HYDROSPHERE.carveBankSlope;
+        const HC = AnazhRealm.HYDROSPHERE;
         let bestD = Infinity;
         let dirX = 0;
         let dirZ = 0;
         let depth = 0;
         let bestHalfW = 1;
+        let gSumme = 0;
+        let sSumme = 0;
+        let ufer = 0;
         for (let s = 0; s < list.length; s++) {
             const seg = list[s];
             const ex = seg.bx - seg.ax;
@@ -32997,8 +33108,16 @@ class AnazhRealm {
             const dist = Math.hypot(x - px, z - pz);
             const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
             const D = seg.dA + (seg.dB - seg.dA) * t;
-            const bankW = Math.max(2, D * bankSlope);
-            if (dist <= halfW + bankW && dist < bestD) {
+            const krone = halfW + D / HC.bankNeigung;
+            if (dist > krone) continue;
+            const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
+            gSumme += g;
+            sSumme += g * (seg.sA + (seg.sB - seg.sA) * t);
+            // Die Kronen-Blende: 1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone (das Maximum der Segmente).
+            const u = dist <= halfW ? 0 : (dist - halfW) / (krone - halfW);
+            const uS = 1 - u * u * (3 - 2 * u);
+            if (uS > ufer) ufer = uS;
+            if (dist < bestD) {
                 bestD = dist;
                 const len = Math.sqrt(len2);
                 dirX = ex / len;
@@ -33008,19 +33127,50 @@ class AnazhRealm {
             }
         }
         if (bestD === Infinity) return null;
-        // Konvexer Querschnitt: ein fließender Fluss wölbt sich in der Mitte. bulge = 0.45·D·(1 −
-        // (dist/halfW)²) (Parabel, 0 am Ufer) auf die laterale Makro-Höhe → terrain-folgend UND konvex,
-        // unter den Bänken (kein Überlauf). Worker bit-identisch (speist die Zellen).
-        const convexBulge = 0.45 * depth * Math.max(0, 1 - (bestD / Math.max(bestHalfW, 1)) ** 2);
         return {
             flowX: dirX,
             flowZ: dirZ,
             depth,
-            surfaceY: this._terrainMacroSurfaceY(x, z) - depth * 0.25 + convexBulge,
-            // Zentrums-Nähe [0..1] (1 Mittellinie, 0 Kanal-Kante): `_waterRunSurfaceAt` glättet damit NUR den
-            // Kern, der konvexe Querschnitt am Ufer bleibt roh.
+            surfaceY: sSumme / gSumme,
+            // Zentrums-Nähe [0..1] (1 Mittellinie, 0 Kanal-Kante): die Strömung trägt nur im Kanal.
             centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
+            // Die Kronen-Blende [0..1]: die Ufer-Bänder (Strand, Schlick, Pfad, Höhen-Feuchte) über diesem Spiegel
+            // laufen mit ihr zur Krone aus — dort endet der Spiegel, der Bezug springt auf den Meeresspiegel.
+            ufer,
         };
+    }
+
+    // DER SPIEGEL QUER (Gegenprüfung 07.10., Runde 3): der Spiegel des nächsten Fluss-Segments an (x, z), auch jenseits der
+    // Krone — der Fluss-Spiegel liegt quer waagrecht (`_hydroRiverSpiegel`). Nur das Wasser-Sheet liest ihn, für Rand-Vertices
+    // jenseits der Krone (dort taucht das Sheet unter den Boden; das Mittel oder ein Extrem der Nachbar-Dächer setzte das Ende
+    // eines steilen Laufs zu tief oder zu hoch). −Infinity ohne Segment im Bucket. Worker bit-identisch (`hydroSpiegelQuer`).
+    _hydroSpiegelQuer(x, z) {
+        const h = this._hydroFor(x, z);
+        if (!h || !h.ready || !h.riverBuckets) return -Infinity;
+        const bs = h.bucketSize;
+        const bd = h.bucketsDim;
+        const bi = Math.floor((x - h.originX) / bs);
+        const bj = Math.floor((z - h.originZ) / bs);
+        if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return -Infinity;
+        const list = h.riverBuckets[bj * bd + bi];
+        if (!list) return -Infinity;
+        let bestD = Infinity;
+        let spiegel = -Infinity;
+        for (let s = 0; s < list.length; s++) {
+            const seg = list[s];
+            const ex = seg.bx - seg.ax;
+            const ez = seg.bz - seg.az;
+            const len2 = ex * ex + ez * ez || 1;
+            let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+            if (t < 0) t = 0;
+            else if (t > 1) t = 1;
+            const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
+            if (dist < bestD) {
+                bestD = dist;
+                spiegel = seg.sA + (seg.sB - seg.sA) * t;
+            }
+        }
+        return spiegel;
     }
 
     // Phase 1 — Surface-Sampling: Region-Raster mit `_terrainMacroSurfaceY` OHNE Detail-Oktave
@@ -33429,6 +33579,46 @@ class AnazhRealm {
         }
         const wx = (idx) => originX + ((idx % dim) + 0.5) * cell;
         const wz = (idx) => originZ + (((idx / dim) | 0) + 0.5) * cell;
+        // DER LAUF (W-F5, Gegenprüfung 07.10., Runde 3): je Zelle die Länge ihres längsten Laufs stromauf bis zu einer Quelle
+        // — die Quelle wächst mit ihm. Fließt ein See in die Quelle (ein Abfluss) oder der Lauf durch einen See, trägt er das
+        // Wasser des Sees mit: dort ist der Lauf unendlich (ein Abfluss beginnt in der Breite seines Durchflusses).
+        const lauf = new Float64Array(n).fill(-1);
+        for (let src = 0; src < n; src++) {
+            if (!isLandConduit(src) || hasUpstream[src]) continue;
+            let s = 0;
+            for (const [di, dj] of [
+                [-1, -1],
+                [0, -1],
+                [1, -1],
+                [-1, 0],
+                [1, 0],
+                [-1, 1],
+                [0, 1],
+                [1, 1],
+            ]) {
+                const ni = (src % dim) + di;
+                const nj = ((src / dim) | 0) + dj;
+                if (
+                    ni >= 0 &&
+                    nj >= 0 &&
+                    ni < dim &&
+                    nj < dim &&
+                    flowTo[ni + nj * dim] === src &&
+                    lakeOf[ni + nj * dim] >= 0
+                )
+                    s = Infinity;
+            }
+            let cur = src;
+            for (let guard = 0; guard < HC.maxRiverPoints && cur >= 0; guard++) {
+                if (lakeOf[cur] >= 0) s = Infinity;
+                if (lauf[cur] >= s) break; // ein früherer Lauf trug hier (und stromab) schon mehr
+                lauf[cur] = s;
+                const t = flowTo[cur];
+                if (t < 0 || isSea(t)) break;
+                s += Math.hypot(wx(t) - wx(cur), wz(t) - wz(cur));
+                cur = t;
+            }
+        }
         const rivers = [];
         for (let src = 0; src < n; src++) {
             if (!isLandConduit(src) || hasUpstream[src]) continue;
@@ -33446,13 +33636,26 @@ class AnazhRealm {
                     fx /= L;
                     fz /= L;
                 }
+                // DIE QUELLE wächst aus dem Gesetz (W-F5): jede beginnt als das Rinnsal (quellBett) und weitet sich stromab um
+                // quellWeitung je Meter Lauf, bis sie die Breite ihrer Akkumulation trägt (an der Schwelle quellBreite, ab der
+                // doppelten Schwelle die volle); die Tiefe folgt dem Anteil (`AnazhRealm._flussTiefe`). Je Zelle aus Lauf und
+                // Akkumulation: geteilte Unterläufe sind breiten-gleich. Bis V18.531 sprang jede Quelle in voller Breite aus dem
+                // Boden (8,2–11,9 m, 2,36 m tief); bis 5040e8f7 wer an seiner ersten Zelle schon mehr als die Schwelle sammelte
+                // (die Quelle −456/872: 11,75 m breit, 1,62 m tief).
+                const voll = HC.widthMin + HC.widthK * Math.sqrt(accum[cur]);
+                const quelle = Math.min(
+                    1,
+                    Math.max(HC.quellBreite, (accum[cur] - threshold) / threshold),
+                    (HC.quellBett + HC.quellWeitung * lauf[cur]) / voll
+                );
                 points.push({
                     x: wx(cur),
                     z: wz(cur),
                     // y = hydrologische Füllhöhe: fällt entlang flowTo STRIKT monoton, auch durch einen See (ε≈0.01 →
                     // die See-Strecke ist nahezu flach).
                     y: filled[cur],
-                    width: HC.widthMin + HC.widthK * Math.sqrt(accum[cur]),
+                    width: voll * quelle,
+                    quelle,
                     flowX: fx,
                     flowZ: fz,
                     inLake: lakeOf[cur] >= 0,
@@ -33493,12 +33696,125 @@ class AnazhRealm {
         }
     }
 
-    // Phase 5c — Wasserfälle: Fluss-Läufe mit steilem Drop in der ECHTEN Voxel-Surface (`voxelY`) = ein
-    // Abschnitt über einer echten Klippe. Aufeinanderfolgende steile Segmente verschmelzen zu EINEM Sturz.
+    // DER FLUSS-SPIEGEL (Welle L, Q7-Gestalt, W-F1/F2/F3): je Fluss-Punkt der Spiegel `S` — stromab nie steigend,
+    // quer waagrecht; das Bett folgt ihm (`_hydrosphereCarveAt`). Ziel je Punkt: das tiefste Ufer seines Querschnitts
+    // (die ungecarvte Voxel-Fläche in der Mitte und an beiden Kanal-Kanten, halbe Breite + Bank-Rampe) minus dem
+    // Freibord-Anteil der Bett-Tiefe; die Folge ist die monotone Ausgleichs-Kurve (PAVA, kleinste Quadrate) je Reach
+    // zwischen zwei Seen — der Kanal schneidet Buckel und überbrückt Senken, beides so wenig wie möglich. Ein Reach endet
+    // nie unter dem See, in den er mündet (oder dem Meer), und beginnt nie über dem See, aus dem er kommt. Geteilte
+    // Unterläufe (zwei Quellen, ein Fluss) tragen EIN S: die längsten Flüsse zuerst, ein Zufluss endet am Spiegel seiner
+    // Mündung. Bis V18.531 war der Spiegel die Makro-Höhe des Orts plus ein Buckel (14,3 % der Lauf-Schritte stiegen,
+    // der Querschnitt wölbte sich 1,55 m). Läuft im Bau (`_hydroComputing`: die Ufer sind ungecarvt).
+    _hydroRiverSpiegel(ctx, rivers) {
+        const HC = AnazhRealm.HYDROSPHERE;
+        const schluessel = (p) => p.x + "," + p.z;
+        const S = new Map();
+        const ziel = (p) => {
+            const D = AnazhRealm._flussTiefe(p);
+            const rand = (p.width || HC.widthMin) * 0.5 + D / HC.bankNeigung;
+            let tief = Number.isFinite(p.voxelY) ? p.voxelY : p.y;
+            for (let sg = -1; sg <= 1; sg += 2) {
+                const v = this._voxelSurfaceY(p.x - p.flowZ * rand * sg, p.z + p.flowX * rand * sg);
+                if (Number.isFinite(v) && v < tief) tief = v;
+            }
+            return tief - HC.spiegelFreibord * D;
+        };
+        // PAVA (pool adjacent violators): benachbarte Verletzer verschmelzen zu ihrem Mittel, bis die Folge nicht steigt.
+        const pava = (t) => {
+            const summe = [];
+            const zahl = [];
+            for (let i = 0; i < t.length; i++) {
+                summe.push(t[i]);
+                zahl.push(1);
+                let n = summe.length;
+                while (n > 1 && summe[n - 2] / zahl[n - 2] < summe[n - 1] / zahl[n - 1]) {
+                    summe[n - 2] += summe[n - 1];
+                    zahl[n - 2] += zahl[n - 1];
+                    summe.pop();
+                    zahl.pop();
+                    n--;
+                }
+            }
+            const aus = [];
+            for (let b = 0; b < summe.length; b++) for (let i = 0; i < zahl[b]; i++) aus.push(summe[b] / zahl[b]);
+            return aus;
+        };
+        const reihe = rivers.slice().sort((a, b) => b.points.length - a.points.length);
+        // (1) die Ausgleichs-Kurve je Reach, mit den Schranken der Seen und der Mündung.
+        const reaches = [];
+        const deckel = new Map();
+        for (const rv of reihe) {
+            const P = rv.points;
+            let k = 0;
+            while (k < P.length) {
+                if (P[k].inLake || S.has(schluessel(P[k]))) {
+                    k++;
+                    continue;
+                }
+                let e = k;
+                while (e < P.length && !P[e].inLake && !S.has(schluessel(P[e]))) e++;
+                const t = [];
+                for (let i = k; i < e; i++) {
+                    const p = P[i];
+                    t.push(ziel(p));
+                    // Die HEBUNG ist gedeckelt: der Kanal überbrückt eine Senke höchstens um eine Bett-Tiefe über ihrem
+                    // Grund — tiefer (eine Schlucht) fällt der Fluss hinein und schneidet stromab.
+                    const D = AnazhRealm._flussTiefe(p);
+                    const mitte = Number.isFinite(p.voxelY) ? p.voxelY : p.y;
+                    deckel.set(schluessel(p), mitte + (1 - HC.spiegelFreibord) * D);
+                }
+                const f = pava(t);
+                for (let i = k; i < e; i++) S.set(schluessel(P[i]), f[i - k]);
+                reaches.push({ rv, k, e });
+                k = e;
+            }
+        }
+        // (2) der Deckel, dann stromab nie steigend: in Fluss-Reihenfolge (die Füllhöhe y fällt entlang des Flusses
+        // strikt) gibt jeder Punkt sein Minimum an den nächsten weiter — über Zusammenflüsse, nie in einen See.
+        const naechster = new Map();
+        const punkte = new Map();
+        for (const rv of rivers) {
+            const P = rv.points;
+            for (let i = 0; i < P.length; i++) {
+                if (P[i].inLake) continue;
+                punkte.set(schluessel(P[i]), P[i]);
+                if (i + 1 < P.length && !P[i + 1].inLake) naechster.set(schluessel(P[i]), schluessel(P[i + 1]));
+            }
+        }
+        for (const [key, d] of deckel) if (S.get(key) > d) S.set(key, d);
+        const nachHoehe = [...punkte.keys()].sort((a, b) => punkte.get(b).y - punkte.get(a).y);
+        for (const key of nachHoehe) {
+            const n = naechster.get(key);
+            if (n !== undefined && S.get(n) > S.get(key)) S.set(n, S.get(key));
+        }
+        // (3) die Schranken: nie unter dem See, in den der Reach mündet (oder dem Meer), nie über dem See, aus dem er
+        // kommt (eine Konstante wahrt die Monotonie).
+        for (const { rv, k, e } of reaches) {
+            const P = rv.points;
+            const oben = k > 0 && P[k - 1].inLake ? P[k - 1].y : Infinity;
+            let unten = -Infinity;
+            if (e < P.length) unten = P[e].inLake ? P[e].y : S.get(schluessel(P[e]));
+            else if (rv.mouth === "sea") unten = ctx.waterLevel;
+            for (let i = k; i < e; i++) {
+                const key = schluessel(P[i]);
+                S.set(key, Math.min(oben, Math.max(unten, S.get(key))));
+            }
+            // Der Abfluss beginnt bündig mit seinem See (sonst schnitte der Kanal den Becken-Rand auf den tieferen Lauf
+            // und das See-Wasser stünde als Wand darüber); die Stufe liegt im ersten Segment.
+            if (Number.isFinite(oben)) S.set(schluessel(P[k]), oben);
+        }
+        for (const rv of rivers) for (const p of rv.points) p.S = p.inLake ? p.y : S.get(schluessel(p));
+    }
+
+    // Phase 5c — Wasserfälle: Fluss-Läufe, deren SPIEGEL (`S`) steil fällt (Steigung > waterfallSlope, in Summe ≥
+    // waterfallMinDrop) = ein Sturz; aufeinanderfolgende steile Segmente verschmelzen zu EINEM. Jedes Segment zählt
+    // EINMAL: zwei Quellen teilen ihren Unterlauf, und der Sturz darin gehört beiden (bis V18.531 19 Einträge an 13 Orten,
+    // W-F4).
     _hydroExtractWaterfalls(ctx, rivers) {
         const HC = AnazhRealm.HYDROSPHERE;
         const waterfalls = [];
-        const yOf = (p) => (typeof p.voxelY === "number" ? p.voxelY : p.y);
+        const yOf = (p) => (Number.isFinite(p.S) ? p.S : p.y);
+        const gesehen = new Set();
         for (let ri = 0; ri < rivers.length; ri++) {
             const pts = rivers[ri].points;
             let runStart = -1; // Index des oberen Punkts des steilen Laufs
@@ -33526,11 +33842,14 @@ class AnazhRealm {
                 const a = pts[k];
                 const b = pts[k + 1];
                 // V9.46 — eine See-Durchquerung ist flach (Wasser-Oberfläche),
-                // kein Wasserfall; ein laufender steiler Lauf endet an ihr.
-                if (a.inLake || b.inLake) {
+                // kein Wasserfall; ein laufender steiler Lauf endet an ihr. Ein schon gezähltes Segment (geteilter
+                // Unterlauf) beendet den Lauf ebenso.
+                const seg = a.x + "," + a.z;
+                if (a.inLake || b.inLake || gesehen.has(seg)) {
                     flush(k);
                     continue;
                 }
+                gesehen.add(seg);
                 const drop = yOf(a) - yOf(b);
                 const horiz = Math.hypot(b.x - a.x, b.z - a.z) || ctx.cell;
                 const steep = drop > 0 && drop / horiz > HC.waterfallSlope;
@@ -33552,13 +33871,14 @@ class AnazhRealm {
     _hydroBuildCarveIndex(ctx, rivers, lakes) {
         const HC = AnazhRealm.HYDROSPHERE;
         const { dim, originX, originZ, size, waterLevel } = ctx;
-        const depthFor = (width) => HC.carveBedMin + HC.carveBedK * (width || HC.widthMin);
         // --- Fluss-Bucket-Grid ---
         const bucketSize = HC.carveBucketSize;
         const bucketsDim = Math.max(1, Math.ceil(size / bucketSize));
         const riverBuckets = new Array(bucketsDim * bucketsDim);
         const addSeg = (seg) => {
-            const reach = Math.max(seg.hwA, seg.hwB) + Math.max(2, Math.max(seg.dA, seg.dB) * HC.carveBankSlope);
+            // die Reichweite des Kanals: Krone (halbe Breite + Tiefe / Neigung) + die Krone des Damms + die Böschung dahinter
+            const reach =
+                Math.max(seg.hwA, seg.hwB) + Math.max(seg.dA, seg.dB) / HC.bankNeigung + HC.dammBreite + HC.bankWeite;
             let bi0 = Math.floor((Math.min(seg.ax, seg.bx) - reach - originX) / bucketSize);
             let bi1 = Math.floor((Math.max(seg.ax, seg.bx) + reach - originX) / bucketSize);
             let bj0 = Math.floor((Math.min(seg.az, seg.bz) - reach - originZ) / bucketSize);
@@ -33575,6 +33895,8 @@ class AnazhRealm {
                 }
             }
         };
+        // Ein geteilter Unterlauf ist EIN Segment (zwei Quellen, ein Fluss — die Buckets trugen ihn je Quelle).
+        const segGesehen = new Set();
         for (let ri = 0; ri < rivers.length; ri++) {
             const pts = rivers[ri].points;
             for (let k = 0; k + 1 < pts.length; k++) {
@@ -33584,15 +33906,21 @@ class AnazhRealm {
                 // ist schon von `_hydrosphereLakeAt` flach gesculptet; ein
                 // Fluss-Carve grübe sonst eine Rinne in den flachen See-Boden.
                 if (a.inLake || b.inLake) continue;
+                const segKey = a.x + "," + a.z;
+                if (segGesehen.has(segKey)) continue;
+                segGesehen.add(segKey);
                 addSeg({
                     ax: a.x,
                     az: a.z,
                     bx: b.x,
                     bz: b.z,
-                    hwA: Math.max(1, (a.width || HC.widthMin) * 0.5),
-                    hwB: Math.max(1, (b.width || HC.widthMin) * 0.5),
-                    dA: depthFor(a.width),
-                    dB: depthFor(b.width),
+                    hwA: (a.width || HC.widthMin) * 0.5,
+                    hwB: (b.width || HC.widthMin) * 0.5,
+                    dA: AnazhRealm._flussTiefe(a),
+                    dB: AnazhRealm._flussTiefe(b),
+                    // der Spiegel an beiden Enden (`_hydroRiverSpiegel`): Fluss-Fläche und Bett lesen ihn linear
+                    sA: a.S,
+                    sB: b.S,
                 });
             }
         }
@@ -33644,8 +33972,8 @@ class AnazhRealm {
         if (!hydro || !hydro.ready) return;
         this._disposeHydrosphereMeshes(); // idempotenter Rebuild
         const meshes = [];
-        // Keine Wasserfall-Plane: steile Läufe trägt das CA-Wildwasser (aSlope-Schaum) + die Steilkanten-
-        // Form im Zell-Sheet. Vertikales Wasser bräuchte eigene Geometrie (`_ensureWaterfallMaterial`).
+        // Keine Wasserfall-Plane: steile Läufe trägt das Wildwasser (aSlope-Schaum) + die Steilkanten-Form im
+        // Zell-Sheet (das Wasserfall-Material ohne Leser fiel mit der Welle L).
         this.state.hydrosphereMeshes = meshes;
         // V9.75 — schon gestreamte Voxel-Chunks bekommen ihr Iso-Mesh neu
         // gebaut, damit Chunks aus der Pre-Hydrosphäre-Phase (vor dem Atlas)
@@ -33682,7 +34010,8 @@ class AnazhRealm {
                 }
             }
             for (const [cx, cz] of neu) this._buildVoxelChunkWaterIsoSurface(cx, cz);
-            // die Wasser-Zellen der Chunks sind neu: der Ring weckt ihren Automaten (`_tickWaterCANearWake`), auch im Stand
+            // die Wasser-Zellen der Chunks sind neu: die Welt und ihr Boden regen sich — die Stand-Wache weckt die Fege-
+            // Takte, auch im Stand (der Wasser-Automat selbst läuft auf seiner eigenen Uhr)
             this._weltRegt(true);
         }
         this.log(
@@ -33708,68 +34037,69 @@ class AnazhRealm {
         this.state.hydrosphereMeshes = [];
     }
 
-    // 3D-Wasser-Wahrheit an einer Welt-Position: liest die geflutete Zelle (`entry.waterCells`,
-    // AIR/WATER/SOLID) am Index `i + k·dim + j·dim·dim`, immer mit LOD-0-Config (Cells leben auf LOD 0).
-    // Rückgabe 0/1/2 oder null (Chunk nicht gestreamt / außerhalb) → der Aufrufer fällt auf die 2.5D-
-    // Spalte zurück. Kein Re-Raten: die Zelle IST die Wahrheit.
-    _waterCellAt(x, y, z) {
-        if (!this.state.voxelChunks) return null;
-        const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
-        const cx = Math.floor(x / span);
-        const cz = Math.floor(z / span);
-        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
-        if (!entry || !entry.waterCells) return null;
-        const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
-        const i = Math.floor((x - cx * span) / step);
-        const k = Math.floor((z - cz * span) / step);
-        const j = Math.floor((y - oy) / step);
-        if (i < 0 || k < 0 || j < 0 || i >= dim || k >= dim || j >= dimY) return null;
-        return entry.waterCells[i + k * dim + j * dim * dim];
+    // DIE EINE WASSER-WAHRHEIT AM KÖRPER (Welle L, Q6): der Spiegel an (x, z), den das Auge sieht — das GEZEICHNETE Wasser
+    // (`_koerperWasserSpiegel` über `_wasserBildAt`: die Dreiecke des Sheets, die der Renderer bekommt, mit dem Live-Dach des
+    // Automaten und dem flachen Ufer der Deck-Zelle) über dem Grund des Körpers. Spieler, Kreatur, Mitspieler, Schritt-Klang,
+    // Klang-Nässe, Tier-Scheu, Trink-Ziel und die Pflanzen am Boden (Nah-Streu, Nah-Wiese) lesen nur sie. Bis V18.531 trug der
+    // Spieler das Dach der obersten Wasser-ZELLE (1,8-m-Raster: in Ruhe 0,47 m über dem See), das Tier den rohen Spiegel, der
+    // Mitspieler den Meeresspiegel; bis zur Gegenprüfung (Runde 4) las der Körper den Spiegel des Gesetzes an seinem Punkt,
+    // die Welt zeichnete ihn auf dem 1,8-m-Gitter — am Bach der Mess-Wiese 64 m Breite Wasser, in dem der Körper trocken stand
+    // (Runde 3 umgekehrt: 177 m, die die Welt nicht zeichnete). Rückgabe: Spiegel (m) oder −Infinity (kein Wasser).
+    // DIE DECKE (D11, Gegenprüfung 07.10.): eine geflutete Zelle des Körpers trägt das gezeichnete Wasser, solange keine
+    // FEST-Zelle dazwischen liegt; sonst trägt es ihn nur unter offenem Himmel (`_koerperWasserSpiegel`) — unter Fels steht er
+    // trocken. Bis 8f09227d las der Körper den Spiegel ohne Decke: in trockenen Höhlen unter und neben dem See der Mess-Wiese
+    // 3511 von 3511 Proben „nass".
+    // DIE GESTALT (D10): mit `gestalt` (`{ linie }` — die Wasserlinie über der Unterkante des Körpers; Infinity = sie trägt
+    // nie) schreibt die Wahrheit die LAGE hinein: `gestalt.lage = { tiefe, schwimmt, unterkante }` — der Körper schwimmt,
+    // sobald die Säule über seinem Grund die Linie übersteigt (seine Unterkante liegt dann auf Spiegel − Linie), sonst steht er
+    // auf dem Grund (er watet; dichter als Wasser sinkt er). Leser: das Gefährt (`_fahrBoden`, `_rittSchritt`).
+    _koerperWasser(x, z, grundY, gestalt) {
+        const spiegel = this._koerperWasserSpiegel(x, z, grundY);
+        if (gestalt) {
+            const tiefe = Number.isFinite(grundY) && spiegel > grundY ? spiegel - grundY : 0;
+            const schwimmt = tiefe > gestalt.linie;
+            const L = gestalt.lage || (gestalt.lage = {});
+            L.tiefe = tiefe;
+            L.schwimmt = schwimmt;
+            L.unterkante = schwimmt ? spiegel - gestalt.linie : grundY;
+        }
+        return spiegel;
     }
 
-    // Wasser-Kontext am Spieler aus den 3D-Cells (für den Auftrieb): liegt eine Wasserzelle in der
-    // Körper-Höhe (yFeet .. yFeet+1.8), scannt er aufwärts bis zur ersten Nicht-Wasser-Zelle → der ECHTE
-    // Spiegel dieses Körpers (Bergsee statt Meeresspiegel). `{ submerged, surfaceY }` oder null (kein
-    // Chunk → Fallback `_waterLevelAt`, die EINE Wahrheit).
-    _playerWaterContext(x, yFeet, z) {
-        if (!this.state.voxelChunks) return null;
+    // Der Spiegel am Körper (die Wahrheit ohne Gestalt) — nur `_koerperWasser` ruft ihn. Wo ein Chunk geladen ist, ist es das
+    // GEZEICHNETE Wasser (`_wasserBildAt`: das Sheet, auch der Küsten-Aquifer, das Live-Dach des Automaten, das flache Ufer)
+    // unter der DECKE (D11), gelesen an der Zelle des Körpers (die erste nicht-feste über seinem Grund): ist sie geflutet,
+    // trägt sie das Wasser bis zum Spiegel, solange keine FEST-Zelle dazwischen liegt; sonst trägt es den Körper nur unter
+    // offenem Himmel — liegt die oberste Fläche des Gesetzes (`_voxelSurfaceY`) mehr als eine Zelle über seinem Grund, steht
+    // er unter Fels (eine Höhle unter oder neben dem Wasser): trocken, auch wo der Rand eines Sheets unter das Gelände in die
+    // Höhle taucht (am See der Mess-Wiese lag die Anker-Kante in einer 16 m hohen Höhle 15 m über ihrem Boden). Ein Bau-Stempel
+    // (Stamm, Pfeiler) ist kein Fels: das Gesetz kennt ihn nicht, das Sheet läuft durch ihn wie das Wasser um ihn.
+    // Ohne Chunk (die Ferne, die niemand sieht) der Spiegel des Gesetzes über seinem Grund.
+    _koerperWasserSpiegel(x, z, grundY) {
+        const endlich = Number.isFinite(grundY);
+        const bild = this._wasserBildAt(x, z);
+        if (bild === undefined) return this._atlasWaterLevelAt(x, z, endlich ? grundY : -Infinity);
+        if (bild === null) return -Infinity;
+        if (!endlich || !(bild > grundY)) return bild;
         const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
         const cx = Math.floor(x / span);
         const cz = Math.floor(z / span);
         const entry = this.state.voxelChunks.get(`${cx},${cz}`);
-        if (!entry || !entry.waterCells) return null;
-        const cells = entry.waterCells;
+        const cells = entry ? entry.waterCells : null;
+        if (!cells) return bild;
         const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
-        const i = Math.floor((x - cx * span) / step);
-        const k = Math.floor((z - cz * span) / step);
-        if (i < 0 || k < 0 || i >= dim || k >= dim) return null;
-        const WATER = AnazhRealm.CELL_STATE.WATER;
-        const SOLID = AnazhRealm.CELL_STATE.SOLID;
-        const colBase = i + k * dim;
-        const dimSq = dim * dim;
-        // Existiert ein LIVE-CA-Level, führt ES (Zelle trägt ab Level > 0.5): der Auftrieb folgt dem
-        // nachfließenden Wasser, nicht der instant re-gefluteten Zelle (Render + Physik lesen dieselbe
-        // Live-Schicht). Ohne Level-Eintrag: die statische Zell-Wahrheit.
-        const lvl = this.state.waterLevelCells ? this.state.waterLevelCells.get(`${cx},${cz}`) : null;
-        const isWaterJ = lvl
-            ? (j) => cells[colBase + j * dimSq] !== SOLID && lvl[colBase + j * dimSq] > 0.5
-            : (j) => cells[colBase + j * dimSq] === WATER;
-        // Körper-Spanne Füße..Kopf: eine Wasserzelle darin → im Wasser.
-        const jFeet = Math.max(0, Math.floor((yFeet - oy) / step));
-        const jHead = Math.min(dimY - 1, Math.floor((yFeet + 1.8 - oy) / step));
-        let bodyWaterJ = -1;
-        for (let j = jFeet; j <= jHead; j++) {
-            if (isWaterJ(j)) {
-                bodyWaterJ = j;
-                break;
-            }
+        const dq = dim * dim;
+        const b = Math.floor((x - cx * span) / step) + Math.floor((z - cz * span) / step) * dim;
+        const ZS = AnazhRealm.CELL_STATE;
+        let jK = Math.max(0, Math.min(dimY - 1, Math.floor((grundY - oy) / step)));
+        for (let n = 0; n < 2 && jK + 1 < dimY && cells[b + jK * dq] === ZS.SOLID; n++) jK++;
+        if (cells[b + jK * dq] === ZS.WATER) {
+            for (let j = jK + 1; j < dimY && oy + j * step < bild; j++)
+                if (cells[b + j * dq] === ZS.SOLID) return -Infinity;
+            return bild;
         }
-        if (bodyWaterJ < 0) return { submerged: false, surfaceY: null };
-        // Aufwärts bis zum Spiegel DIESES Wasserkörpers (erste Nicht-Wasser-Zelle).
-        let topJ = bodyWaterJ;
-        while (topJ + 1 < dimY && isWaterJ(topJ + 1)) topJ++;
-        const surfaceY = oy + (topJ + 1) * step; // Oberkante der obersten Wasserzelle
-        return { submerged: true, surfaceY };
+        const oben = this._voxelSurfaceY(x, z);
+        return oben !== null && grundY < oben - step ? -Infinity : bild;
     }
 
     // DIE EINE SZENEN-TIEFE: Wasser (bis V18.529 der Modul-Knoten der linearen Tiefe) und Feld-Pass (ein zweiter
@@ -33967,14 +34297,13 @@ class AnazhRealm {
 
     // Der EINE Wasser-Shader für alle Iso-Wasser-Meshes (Ozean + See + Fluss): `aWave` ∈ [0,1]
     // (Ozean-Anteil, skaliert die Wellen; weich 0 am Ufer → kein Küsten-Riss), `aFlow` (Gefälle-
-    // Tangente, Schaum stromab), `aShore` (Ufer-Schaum-Band). Sonne/Licht/Fog speist
-    // `_applyDayNightToScene`.
+    // Tangente, die Strömung trägt das Bild stromab). Sonne/Licht/Fog speist `_applyDayNightToScene`.
     _ensureHydroSurfaceMaterial() {
         if (this.state.hydroSurfaceMaterial) return this.state.hydroSurfaceMaterial;
         if (typeof THREE === "undefined") return null;
         // MeshBasicNodeMaterial (TSL), NUR WebGPU (kein WebGL-Fallback — ohne WebGPU zeigt sich der Banner).
-        // Wellen-Displacement, Tangenten-Kreuzprodukt-Normale, Fluss-/See-Foam, Blinn-Phong-Spec, Fresnel-
-        // Alpha (die Luft: scene.fogNode); Attribute aFlow (vec2), aShore, aWave (float). Live-Uniforms in
+        // Wellen-Displacement, Tangenten-Kreuzprodukt-Normale, Schaum aus dem Gesetz, Blinn-Phong-Spec, Fresnel-
+        // Alpha (die Luft: scene.fogNode); Attribute aFlow (vec2), aWave, aDepth, aSlope (float). Live-Uniforms in
         // state.hydroSurfaceUniforms (Schlüssel ohne u-Präfix, TSL-Konvention), mutiert von
         // _loopSkyboxZeit (time) + _dayNightApplyWaterMaterials (sunDir, light).
         const TSL = THREE.TSL;
@@ -34009,6 +34338,7 @@ class AnazhRealm {
             reflect,
             select: cond,
             Fn,
+            abs,
             // V13.5 (Schicht 3) — Tiefenpuffer-Knoten für die pro-Pixel-Uferlinie.
             linearDepth,
             depth,
@@ -34020,14 +34350,28 @@ class AnazhRealm {
         } = TSL;
         void mat3; // potenzielle Alternative zu modelNormalMatrix
 
-        // Die Live-Uniforms (uniform-Knoten mit .value-Setter)
-        const uTime = uniform(0.0);
-        const uFlowSpeed = uniform(0.5);
         // Das Studio-Gesetz WASSER_GESETZ (lebt NUR in foundry-core/__terrainCore; dieselben Zahlen injiziert das
         // Studio-GLSL): Beer-Lambert-Absorption wK (1/m) · Schlick-Fresnel · Sonnen-Glanz · Schaum. Der Leser ist
         // fail-closed, keine Kopie hier.
         const WG =
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+        // Die Live-Uniforms (uniform-Knoten mit .value-Setter). Die Strömung des Bilds ist die des Gesetzes
+        // (`wellen.adv`, m/s im Kern — dieselbe Zeile, die das Studio-Bach-Bild trägt): Strähnen, Kräusel und Glitzer
+        // reiten DASSELBE Wasser (bis V18.531 1,5 · 0,5 · 0,9 m/s, drei Literale).
+        const uTime = uniform(0.0);
+        const uFlowSpeed = uniform(WG.wellen.adv);
+        // DIE FLUSS-PHASE (Flowmap mit Rücksetzung, Vlachos/Portal 2): jede advektierte Lage wandert höchstens eine Phase
+        // weit (v · P Meter) und kehrt dann zurück; zwei Lagen, um eine halbe Phase versetzt, die Dreiecks-Blende
+        // versteckt die Rücksetzung. Bis V18.531 war der Versatz `uTime · v` — mit der Spielzeit unbegrenzt, und wo die
+        // Strömung quer zum Fluss ausblendet, wuchs sein Gefälle mit: frisch weich, nach Minuten Höhenlinien-Bänder, nach
+        // einer Stunde Rauschen (das weiße Zebra, gate:wasser-leben B2).
+        const uFlowPeriod = uniform(AnazhRealm.WASSER_WELLE.phase);
+        const phaseA = fract(uTime.div(uFlowPeriod));
+        const phaseB = fract(uTime.div(uFlowPeriod).add(0.5));
+        const phaseBlend = abs(phaseA.mul(2.0).sub(1.0)); // 0 → Lage A allein, 1 → Lage B allein (A kehrt zurück)
+        const flussWegA = phaseA.mul(uFlowPeriod).mul(uFlowSpeed); // Meter stromab, beschränkt
+        const flussWegB = phaseB.mul(uFlowPeriod).mul(uFlowSpeed);
+        const LAGE_B = vec2(17.3, 31.7); // die zweite Lage liest ein anderes Stück desselben Rauschens
         // DER WASSER-KÖRPER: was die optisch tiefe Wassersäule zurückstreut — R∞ = 0,33 · b_b / (a + b_b) je Kanal
         // (Gordon 1975; a = die Absorption wK des Gesetzes, b_b = seine Rückstreuung `koerperStreu`, 1/m): 0,005/0,016/
         // 0,025, ein dunkles Blaugrün, im Licht des Orts 3–4× dunkler als die Wiese. Bis 05.10. stand hier das tiefe
@@ -34062,6 +34406,11 @@ class AnazhRealm {
         // diesen Anteil der Wellen-Amplitude → SICHTBARES sanftes Kräuseln (Default 0.2 statt der
         // zu subtilen 0.06; 0 = flach, 1 = wie Ozean). Ein persistierter Slider-Wert wird respektiert.
         const uLakeRipple = uniform(Number.isFinite(atmoW.waterLakeRipple) ? atmoW.waterLakeRipple : 0.2);
+        // DER WIND BEWEGT DAS WASSER (W-R3): die Wind-Zeile des Gesetzes (WASSER_GESETZ.wind, Amplitude × (w0 + w1·Wind))
+        // skaliert Kräuselung, Dünung und Glitzer — `uWind` ist der Wind des Wetters (0 ruhig … 1 Sturm, Schreiber
+        // `_dayNightApplyWaterMaterials`). Bis V18.531 las die Welt die Zeile nicht: Sturm und Sonne zeigten denselben See.
+        const uWind = uniform(0.06);
+        const windF = float(WG.wind[0]).add(uWind.mul(WG.wind[1]));
 
         // 2D-Hash + Value-Noise — identische Konstanten zur GLSL- + f-3-Variante.
         const hash2 = Fn(([p]) => {
@@ -34093,10 +34442,9 @@ class AnazhRealm {
         });
 
         // === VERTEX-STAGE: Gerstner-Wellen-Displacement + Tangenten-Normale.
-        // Drei per-Vertex-Attribute: aFlow/aShore/aWave. aWave gated die
+        // Per-Vertex-Attribute aFlow/aWave (+ aDepth, aSlope unten). aWave gated die
         // Wellen-Amplitude (Ozean voll, See/Fluss still) → kein Riss am Ufer.
         const aFlowV = attribute("aFlow", "vec2");
-        const aShoreV = attribute("aShore", "float");
         const aWaveV = attribute("aWave", "float");
         // V18.14 — der MAKRO-Kontext: die echte Wassertiefe (L−Bett) pro Vertex.
         const aDepthV = attribute("aDepth", "float");
@@ -34116,27 +34464,29 @@ class AnazhRealm {
         const flowDir = aFlowV.div(flowMag.max(float(0.0001)));
         // Kräusel-Amplitude = Floor 0.3 + weite aDepth-Rampe (0.4→4.0 m): aDepth springt an Bett-Nähten
         // minimal — eine harte Rampe machte daraus eine sichtbare Linie. Shader-only.
-        const rippleAmt = uLakeRipple.mul(float(0.3).add(smoothstep(float(0.4), float(4.0), aDepthV).mul(float(0.7))));
+        const rippleAmt = uLakeRipple
+            .mul(float(0.3).add(smoothstep(float(0.4), float(4.0), aDepthV).mul(float(0.7))))
+            .mul(windF);
         // EINE Displace-Quelle (Ozean-Gerstner + organische Kräuselung) für alle 3 Normal-Samples.
         const surfDisp = Fn(([xz]) => {
             // Offene See: organische Dünung, nur wo aWaveV hoch — ×(1−flowMix), weil auch Binnenwasser
             // aWaveV > 0 trägt; fließende Flüsse bekommen nur die advektierte Kräuselung, die Mündung blendet
             // weich. Der Rest-Moiré im steilen Lauf-Kern kommt von der Fresnel-Lesart (s. `fres`-Block).
-            const ocean = oceanSwell(xz).mul(aWaveV).mul(float(1.0).sub(flowMix));
-            // See + Fluss: organische, advektierte Kräuselung (stromab in Flüssen, still in Seen).
-            const drift = flowDir.mul(uTime.mul(float(0.5)).mul(flowMix));
+            const ocean = oceanSwell(xz).mul(aWaveV).mul(float(1.0).sub(flowMix)).mul(windF);
+            // See + Fluss: organische, advektierte Kräuselung (stromab in Flüssen, still in Seen) — zwei Lagen der
+            // Fluss-Phase, je höchstens eine Phase weit getragen.
             // Kräusel-Oktaven klar UNTER der Mesh-Nyquist (~1,8-m-Raster → 3,6 m): 0.07 ≈ 14 m, 0.12 ≈ 8 m,
             // Hoch-Oktave leiser (0.4); die Amplitude 2.2·rippleAmt bleibt. Das Kern-Muster steiler Läufe ist
             // nicht die Amplitude, sondern die Fresnel-Lesart der Steilflächen-Normale (s. `fres`-Block).
             // Gilt für See UND Fluss; der Ozean trägt `oceanSwell`.
-            const a1 = xz
-                .sub(drift)
-                .mul(float(0.07))
-                .add(uTime.mul(float(0.02)));
-            const a2 = xz.sub(drift.mul(float(1.8))).mul(float(0.12));
             const K = AnazhRealm.WASSER_WELLE;
-            const rippleH = vnoise(a1)
-                .add(vnoise(a2).mul(float(K.oktave)))
+            const kraeuselLage = (weg, versatz) => {
+                const q = xz.sub(flowDir.mul(weg.mul(flowMix))).add(versatz);
+                return vnoise(q.mul(float(0.07)).add(uTime.mul(float(0.02)))).add(
+                    vnoise(q.mul(float(0.12))).mul(float(K.oktave))
+                );
+            };
+            const rippleH = mix(kraeuselLage(flussWegA, vec2(0.0, 0.0)), kraeuselLage(flussWegB, LAGE_B), phaseBlend)
                 .sub(float(K.mitte))
                 .mul(float(K.kraeusel));
             const ripple = vec3(float(0.0), rippleH.mul(rippleAmt), float(0.0));
@@ -34193,50 +34543,29 @@ class AnazhRealm {
         const durchlass = exp(vec3(WG.wK[0], WG.wK[1], WG.wK[2]).mul(wegM.add(aDepthV)).negate());
         const T = dot(durchlass, vec3(0.2126, 0.7152, 0.0722));
 
-        // FOAM: Fluss-vs-See-Trennung (vorher GLSL if/else, jetzt cond-Blend).
-        // fmag > 0.01 → Fluss-Strähnen scrollen stromab.
-        // sonst → See-Schimmer + Ufer-Schaum + Ozean-Schaumkämme.
+        // DER SCHAUM IST DAS GESETZ: WASSER_GESETZ.schaum kennt das Ufer und den Kamm, das Studio schäumt nur dort —
+        // hier die Ufer-Linie aus dem optischen Weg (unten), der Ozean-Kamm (aWave) und das Wildwasser am Steil-Lauf
+        // (aSlope). Bis V18.531 lag ein Strähnen-Schaum ohne Gesetz über jedem Fluss (Schwelle 0,44 unter dem Rausch-
+        // Mittel: ~60 % der Fläche bis 0,7 gedeckt, gate:wasser-leben B1) und ein Ufer-Band aus dem Attribut `aShore`,
+        // das jeder Schreiber mit 0 füllte (je Pixel zwei Rauschen und ein Sinus für ×0).
         const fmag = length(aFlowV);
-        const isRiver = fmag.greaterThan(0.01);
-
-        // RIVER-PFAD
         const fdir = aFlowV.div(max(fmag, float(0.0001)));
-        const scroll = uTime.mul(uFlowSpeed).mul(fmag);
-        // Advektierte Welt-Raum-Strähnen: das Muster lebt STABIL in Welt-XZ und wird nur um −fdir·scroll
-        // verschoben. Nie `dot(xz, fdir)`: |xz| ist ein Hebelarm, eine kleine Drehung in Kurven springt den
-        // Noise-Input → Zickzack-Moiré.
-        const adv = xz.sub(fdir.mul(scroll.mul(3.0)));
-        // Foam-Oktaven UNTER der Mesh-Nyquist (~3,6 m): 0.11 ≈ 9 m, 0.20 ≈ 5 m (Anti-Aliasing der Foam-
-        // Farbe; gilt auch fürs `whitewater`, das `riverS1` liest). Das Kern-Moiré steiler Läufe sitzt in
-        // der Mesh-Tessellation am Grazing-Blick (s. `fres`), nicht hier. Shader-only.
-        const riverS1 = vnoise(adv.mul(0.11));
-        const riverS2 = vnoise(adv.mul(0.2));
-        const riverFoam = clamp(riverS1.add(riverS2.mul(0.4)).div(1.4).sub(0.44).mul(2.0), 0.0, 1.0);
-
-        // LAKE/OCEAN-PFAD — ruhiges Wasser trägt keinen Schaum: der „See-Schimmer" (Noise-Flecken bis 0,5 Schaum)
-        // fiel mit dem Durchlass-Gesetz — im weißen Spiegel unsichtbar, auf dunklem Wasser weiße Kacheln (Linse 05.10.).
-        // V9.48 — Ufer-Schaum-Band (vShore: 1 an Wasserlinie, 0 im offenen See)
-        const band = smoothstep(0.04, 0.9, aShoreV);
-        const sn1 = vnoise(xz.mul(0.34).add(uTime.mul(0.15)));
-        const sn2 = vnoise(xz.mul(0.82).sub(uTime.mul(0.21)));
-        const sn = sn1.add(sn2.mul(0.5)).div(1.5);
-        const lap = float(0.62).add(sin(uTime.mul(0.7).add(xz.x.add(xz.y).mul(0.07))).mul(0.38));
-        const shoreFoam = clamp(band.mul(float(0.4).add(sn.mul(0.9))).mul(lap), 0.0, 1.0);
-        // V9.49-c — Ozean-Schaumkämme (Gerstner-Crests tragen Gischt, aWave-gated)
+        // Die Fluss-Phase im Bild: je Lage der Weg stromab × der örtliche Strömungs-Anteil fmag (0 im See). Das Muster
+        // lebt STABIL in Welt-XZ und wird nur verschoben — nie `dot(xz, fdir)`: |xz| ist ein Hebelarm, eine kleine
+        // Drehung in Kurven springt den Noise-Input (Zickzack-Moiré).
+        const strom = (weg, versatz) => xz.sub(fdir.mul(weg.mul(fmag))).add(versatz);
+        const advA = strom(flussWegA, vec2(0.0, 0.0));
+        const advB = strom(flussWegB, LAGE_B);
+        // Die Wildwasser-Strähnen (0.11 ≈ 9 m, unter der Mesh-Nyquist ~3,6 m), zwei Lagen der Phase.
+        const riverS1 = mix(vnoise(advA.mul(0.11)), vnoise(advB.mul(0.11)), phaseBlend);
+        // V9.49-c — Ozean-Schaumkämme (Gerstner-Crests tragen Gischt, aWave-gated); `riverness` (0 See … 1 Fluss, die
+        // taperende aFlow-Rampe 0.04→0.5) blendet sie in der Mündung aus.
         const crest = smoothstep(0.62, 1.0, waveT).mul(aWaveV);
-        const lakeFoam = max(shoreFoam, crest.mul(0.6));
-
-        // Foam-Zweige MISCHEN statt hart schalten: `riverness` (0 See … 1 Fluss) blendet die Strähnen in den
-        // Schimmer → keine Naht am Übergang. Breite fmag-Rampe 0.04→0.5, weil `aFlow` eine taperende
-        // Magnitude trägt → die Strähnen klingen über die ganze Mündung aus; der 0.04-Boden hält
-        // Rausch-Rest-Strömung im offenen See aus.
         const riverness = smoothstep(float(0.04), float(0.5), fmag);
-        const foam = mix(lakeFoam, riverFoam, riverness);
-        void isRiver;
+        const foam = crest.mul(0.6).mul(float(1.0).sub(riverness));
 
-        // Uferlinien-Schaum aus der Tiefe: ein heller Saum genau am Wasser-Rand, pro Pixel terrain-folgend
-        // (ersetzt das für Chunk-Wasser tote aShore-Band). Glitzer glatt (0.8 + 0.2·noise) — stärkere
-        // Speckel-Varianz machte das Band als distinkte Textur lesbar.
+        // Uferlinien-Schaum aus der Tiefe: ein heller Saum genau am Wasser-Rand, pro Pixel terrain-folgend.
+        // Glitzer glatt (0.8 + 0.2·noise) — stärkere Speckel-Varianz machte das Band als distinkte Textur lesbar.
         const shoreSparkle = float(0.8).add(vnoise(xz.mul(0.5).add(uTime.mul(0.2))).mul(0.2));
         // Der Schaum-Saum sitzt an der Uferlinie UND ist auf echte flache Tiefe gegated (`realShallow`:
         // aDepth < uDepthFoam m) → nur die echte Kante schäumt, nicht der ganze flache Fluss.
@@ -34263,17 +34592,17 @@ class AnazhRealm {
 
         // Flow-ausgerichtete Mikro-Kräuselung der NORMALE (Fragment-Stage): das Sonnen-Glitzern wandert
         // stromab. Bewusst KEIN Vertex-Displacement (Narben-Wand: kein Querschnitt, keine Naht).
-        // Advektiertes Mehr-Oktav-Noise statt `sin(dot(xz,fdir))` (parallele Glitzer-Linien); Amplitude
-        // ∝ `fmag` (0 im See) × `detailFade`.
-        const advN = xz.sub(fdir.mul(uTime.mul(0.9).mul(fmag)));
+        // Advektiertes Mehr-Oktav-Noise statt `sin(dot(xz,fdir))` (parallele Glitzer-Linien), dieselben zwei Lagen
+        // der Fluss-Phase; Amplitude ∝ `fmag` (0 im See) × `detailFade`.
         // Flow-Kräuselung über der Mesh-Nyquist (~2 m): 0.14 ≈ 7 m, 0.32 ≈ 3 m, Amplitude 0.2, `detailFade`
         // 45 m — glättet Fragment-Aliasing auf ruhigem/Rand-Wasser. Das Kern-Muster steiler Läufe sitzt
         // nicht hier, sondern an der Fresnel/Steilflächen-Normale (s. `fres`-Block). Shader-only.
-        const flowRipple = vnoise(advN.mul(0.14))
-            .add(vnoise(advN.mul(0.32).add(11.3)).mul(0.35))
+        const glitzerLage = (q) => vnoise(q.mul(0.14)).add(vnoise(q.mul(0.32).add(11.3)).mul(0.35));
+        const flowRipple = mix(glitzerLage(advA), glitzerLage(advB), phaseBlend)
             .sub(0.675)
             .mul(0.2)
             .mul(fmag)
+            .mul(windF)
             .mul(detailFade);
         const nFlow = normalize(n.add(vec3(fdir.x.mul(flowRipple), float(0.0), fdir.y.mul(flowRipple))));
         const viewDir = normalize(cameraPosition.sub(vWorldPos));
@@ -34340,6 +34669,7 @@ class AnazhRealm {
         this.state.hydroSurfaceUniforms = {
             time: uTime,
             flowSpeed: uFlowSpeed,
+            flowPeriod: uFlowPeriod,
             foam: uFoam,
             sunDir: uSunDir,
             irr: uIrr,
@@ -34350,6 +34680,7 @@ class AnazhRealm {
             minDepth: uMinDepth,
             depthFoam: uDepthFoam,
             lakeRipple: uLakeRipple,
+            wind: uWind,
         };
         // UNIFORM-HEIMAT + OBSERVER-DIÄT (Pflicht-Paar): alle Takt-Uniforms des
         // Wassers sind geteilt → der Monitor darf auf die equals()-Bahn.
@@ -34427,7 +34758,7 @@ class AnazhRealm {
                 if (y === null) continue;
                 const gruen = this._chunkGruenAt(entry, cx, cz, x, z) || 0;
                 if (gruen <= 0) continue;
-                if (typeof this._isAboveWaterAt === "function" && !this._isAboveWaterAt(x, z, 0.1)) continue;
+                if (y < this._koerperWasser(x, z, y) + 0.1) continue; // nie im gezeichneten Wasser (wie die Nah-Streu)
                 const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
                 const L = this._canopyLightAt(x, z, y, m);
                 const hang = this._slopeAt(x, z, (px, pz) => {
@@ -34480,15 +34811,16 @@ class AnazhRealm {
         const tcx = Math.floor(cam.x / NW.kachel);
         const tcz = Math.floor(cam.z / NW.kachel);
         const reichweite = Math.ceil(NW.radius / NW.kachel) + 1;
-        // Chunk-Neubau → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden).
+        // Chunk-Neubau oder neues gezeichnetes Wasser → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden,
+        // am alten Ufer).
         for (const [key, k] of nw.kacheln) {
+            let neu = !this._wasserKennungenGleich(k.wasser);
             for (const ck of k.chunks) {
+                if (neu) break;
                 const e = st.voxelChunks && st.voxelChunks.get(ck);
-                if (!e || e.surfMap !== k.chunkKarten.get(ck)) {
-                    if (this._nahWieseKachelFaellt(key)) gefallen++;
-                    break;
-                }
+                if (!e || e.surfMap !== k.chunkKarten.get(ck)) neu = true;
             }
+            if (neu && this._nahWieseKachelFaellt(key)) gefallen++;
         }
         const wunsch = [];
         for (let dz = -reichweite; dz <= reichweite; dz++) {
@@ -34552,9 +34884,13 @@ class AnazhRealm {
                 const e = st.voxelChunks.get(ck);
                 chunkKarten.set(ck, e ? e.surfMap : undefined);
             }
+            // die Kennungen des gezeichneten Wassers, das die Büschel lasen (ihr Jitter reicht 0,34 m über die Kachel)
+            const x0 = w.tx * NW.kachel - 0.34;
+            const z0 = w.tz * NW.kachel - 0.34;
+            const wasser = this._wasserKennungen(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
             nw.kacheln.set(
                 w.key,
-                Object.assign({ chunks, chunkKarten }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
+                Object.assign({ chunks, chunkKarten, wasser }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
             );
             nw.neu = true;
             gebaut++;
@@ -34779,12 +35115,16 @@ class AnazhRealm {
         return arten;
     }
 
-    // Der Wasser-Spiegel, an dem das Ufer-Band des Boden-Gesetzes misst: See und Meer (`_waterLevelAt`) oder — im
-    // Fluss-Kanal samt Bank-Rampe — die Fluss-Oberfläche (`_hydroRiverAt`); der Schilfgürtel säumt beide.
-    _nahStreuSpiegel(x, z) {
-        const see = this._waterLevelAt(x, z);
-        const fluss = this._hydroRiverAt(x, z);
-        return fluss && Number.isFinite(fluss.surfaceY) ? Math.max(see, fluss.surfaceY) : see;
+    // Das Gewicht einer Nah-Streu-Art nach dem Boden-Gesetz (`core.bodenGewicht`) über der Höhe über dem Wasser: das
+    // Ufer-Band (Schilf) über beiden Bezügen — See/Meer voll, der Fluss mit seiner Kronen-Blende, das Maximum (stetig über
+    // die Krone, wie Strand und Schlick in `_bodenFarbeAt`); jede andere Art über der EINEN Wahrheit am Körper (`u.ufer` =
+    // Boden − `_koerperWasser`). `uf` = `_waterLevelAt(x, z, aus)`, `y` der Boden.
+    _nahStreuBodenGewicht(core, zeile, u, uf, y) {
+        if (!zeile.ufer) return core.bodenGewicht(zeile, u);
+        let w = core.bodenGewicht(zeile, Object.assign({}, u, { ufer: y - uf.see }));
+        if (uf.fluss !== null && uf.ufer > 0)
+            w = Math.max(w, uf.ufer * core.bodenGewicht(zeile, Object.assign({}, u, { ufer: y - uf.fluss })));
+        return w;
     }
 
     // Die Pflanzen einer Kachel nach dem Boden-Gesetz: je Zelle (NAH_STREU.zelle) EINE Umwelt-Messung (Kronen-Licht
@@ -34792,8 +35132,9 @@ class AnazhRealm {
     // Gewicht · Last-Dichte (`_effectiveFoliageDensity`), n = ⌊λ + Wurf⌋. Der Wurf-Strom je (Zelle, Art) hängt nur
     // an der Zelle (Γ5): dieselbe Streu bei jedem Besuch, und eine dünnere Last ist ein Präfix der vollen (die
     // Ernte-Identität `gi|gj|art|i` bleibt). Fuß auf dem GERENDERTEN Boden (`_chunkSurfaceAt`), Pfade bleiben frei, kein
-    // Haus trägt Streu (`_naturSetzen`), nur Arten mit Ufer-Band stehen im Wasser. Rückgabe { items, chunks } oder null, solange ein Chunk unter der
-    // Kachel noch keine Boden-Karte hat.
+    // Haus trägt Streu (`_naturSetzen`), nur Arten mit Ufer-Band stehen im Wasser — im GEZEICHNETEN (`_koerperWasser`).
+    // Rückgabe { items, chunks, wasser } (`wasser`: die Kennungen des gezeichneten Wassers, das die Kachel las,
+    // `_wasserKennungen`) oder null, solange ein Chunk unter der Kachel noch keine Boden-Karte hat.
     _nahStreuKachel(tx, tz, arten) {
         const NS = AnazhRealm.NAH_STREU;
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
@@ -34827,10 +35168,17 @@ class AnazhRealm {
                 if (this._pfadFeldAt(x, z, y) > 0.5) continue; // Ufer-Pfad und Siedlungs-Weg bleiben frei (Labor: trailAt < 3 m)
                 const feucht = this._feuchteAt(x, z, y);
                 const feld = this.worldFieldAt(x, z);
+                // Die Höhe über dem Wasser: für das Ufer-Band (Schilf) über beiden Bezügen (`_waterLevelAt` → see · fluss ·
+                // ufer, wie Strand und Schlick in `_bodenFarbeAt`: das Band über See/Meer und das über dem Fluss mit seiner
+                // Kronen-Blende, das Maximum — stetig über die Krone), für jede andere Art über der EINEN Wahrheit am Körper
+                // (`_koerperWasser`: nie im Wasser). Bis zur Gegenprüfung las die Streu das Maximum der Spiegel — an der
+                // Krone sprang der Bezug auf den Meeresspiegel (der Kronen-Sprung, den 463c4fda in der Boden-Farbe heilte).
+                const uf = { see: 0, fluss: null, ufer: 0 };
+                this._waterLevelAt(x, z, uf);
                 const u = {
                     licht: this._canopyLightAt(x, z, y, feucht),
                     feucht,
-                    ufer: y - this._nahStreuSpiegel(x, z),
+                    ufer: y - this._koerperWasser(x, z, y),
                     fels: feld ? feld.dichte : null,
                     hang: this._slopeAt(x, z, (px, pz) => {
                         const v = this._chunkSurfaceAt(o.e, o.cx, o.cz, px, pz);
@@ -34839,7 +35187,8 @@ class AnazhRealm {
                 };
                 for (let a = 0; a < arten.length; a++) {
                     const A = arten[a];
-                    const lam = A.zeile.dichte * Z * Z * 0.01 * core.bodenGewicht(A.zeile, u) * last;
+                    const gw = this._nahStreuBodenGewicht(core, A.zeile, u, uf, y);
+                    const lam = A.zeile.dichte * Z * Z * 0.01 * gw * last;
                     if (!(lam > 0)) continue;
                     let hs =
                         ((gi * 73856093) ^ (gj * 19349663) ^ ((a + 1) * 0x85ebca6b) ^ seedInt ^ 0x5eedb0de) >>> 0 || 1;
@@ -34865,7 +35214,7 @@ class AnazhRealm {
                         }
                         const py = this._chunkSurfaceAt(op.e, op.cx, op.cz, px, pz);
                         if (py === null) continue;
-                        if (!A.zeile.ufer && py < this._nahStreuSpiegel(px, pz) + 0.1) continue;
+                        if (!A.zeile.ufer && py < this._koerperWasser(px, pz, py) + 0.1) continue;
                         chunks.set(op.ck, op.e.surfMap);
                         const it = { art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung };
                         this._naturSetzen(null, it, null, () => items.push(it)); // die EINE Natur-Wand: nie im Haus
@@ -34873,7 +35222,8 @@ class AnazhRealm {
                 }
             }
         }
-        return { items, chunks };
+        const K = NS.kachel;
+        return { items, chunks, wasser: this._wasserKennungen(tx * K, tz * K, (tx + 1) * K, (tz + 1) * K) };
     }
 
     // Die Senke einer (Art, Gestalt, Stufe, Teil): die DATEN des ganzen Rings — je Kachel ein Block (Matrizen = Ort ·
@@ -35069,17 +35419,20 @@ class AnazhRealm {
         const tcx = Math.floor(cam.x / NS.kachel);
         const tcz = Math.floor(cam.z / NS.kachel);
         const reichweite = Math.ceil(NS.radius / NS.kachel) + 1;
-        // Chunk-Neubau → die betroffenen Kacheln neu (ihre Pflanzen standen auf dem alten Boden).
+        // Chunk-Neubau oder neues gezeichnetes Wasser → die betroffenen Kacheln neu (ihre Pflanzen standen auf dem alten
+        // Boden, am alten Ufer).
         for (const [key, k] of ns.kacheln) {
             if (!k.chunks) continue;
+            let neu = !this._wasserKennungenGleich(k.wasser);
             for (const [ck, karte] of k.chunks) {
+                if (neu) break;
                 const e = st.voxelChunks && st.voxelChunks.get(ck);
-                if (!e || e.surfMap !== karte) {
-                    this._nahStreuKachelEntsorgen(k);
-                    ns.kacheln.delete(key);
-                    gefallen++;
-                    break;
-                }
+                if (!e || e.surfMap !== karte) neu = true;
+            }
+            if (neu) {
+                this._nahStreuKachelEntsorgen(k);
+                ns.kacheln.delete(key);
+                gefallen++;
             }
         }
         const wunsch = [];
@@ -35128,6 +35481,7 @@ class AnazhRealm {
                     key: w.key,
                     items: satz.items,
                     chunks: satz.chunks,
+                    wasser: satz.wasser,
                     senken: new Set(),
                     zustand: null,
                     nahZahl: 0,
@@ -35412,142 +35766,6 @@ class AnazhRealm {
         }
     }
 
-    // Wasserfall-Material (ruht: die Plane ist geschnitten, es bleibt für eine eigene Vertikal-Form; der
-    // Test „materialKept" bewacht es). Abwärts-Flow `uFlowDir` (0,−1) + `uFlowSpeed` scrollen Schaum +
-    // Turbulenz; dieselben Farben/Sonne/Fog-Uniforms wie das Meer (`_buildWaterPlane`), gespeist von
-    // `_applyDayNightToScene`.
-    _ensureWaterfallMaterial() {
-        if (this.state.waterfallMaterial) return this.state.waterfallMaterial;
-        if (typeof THREE === "undefined") return null;
-        // MeshBasicNodeMaterial (TSL): vertikales Wasser-Tuch mit billow-Displacement entlang der Normale
-        // (positionNode), Schaum-Strähnen (vnoise) + Blinn-Phong-Glitzern + Fog (colorNode); transparent +
-        // depthWrite + DoubleSide. Uniforms in state.waterfallUniforms: time (_loopSkyboxZeit),
-        // flowDir/flowSpeed (statisch), deep/shallow/foam, sunDir/light/fog* (_dayNightApplyWaterMaterials).
-        const TSL = THREE.TSL;
-        if (!TSL || typeof THREE.MeshBasicNodeMaterial !== "function") {
-            this.log("Wasserfall-Material-Bau: TSL/MeshBasicNodeMaterial fehlt", "ERROR");
-            return null;
-        }
-        const {
-            uniform,
-            uv,
-            vec2,
-            vec3,
-            vec4,
-            float,
-            positionLocal,
-            normalWorld,
-            modelWorldMatrix,
-            cameraPosition,
-            sin,
-            dot,
-            mix,
-            smoothstep,
-            clamp,
-            fract,
-            floor,
-            max,
-            pow,
-            normalize,
-            Fn,
-        } = TSL;
-
-        // Elf Live-Uniforms (uniform-Knoten mit .value-Setter)
-        const uTime = uniform(0.0);
-        const uFlowDir = uniform(new THREE.Vector2(0, -1));
-        const uFlowSpeed = uniform(0.62);
-        const uDeep = uniform(new THREE.Color(0x0d2e4f)); // Vorlage: Beer-Lambert deepC (exp(-wK*0.85))
-        const uShallow = uniform(new THREE.Color(0x5aacc6)); // Vorlage: Beer-Lambert shallowC, heller/cyaner
-        const uFoam = uniform(new THREE.Color(0xdff1ff));
-        const uSunDir = uniform(new THREE.Vector3(1, 1, 1).normalize());
-        const uLight = uniform(1.0);
-
-        // 2D-Hash + Value-Noise — Vendor-Spiegel der GLSL-`hash`/`vnoise`-
-        // Closures. Identische Magic-Konstanten (41.3, 289.1, 43758.5453).
-        const hash2 = Fn(([p]) => {
-            return fract(sin(dot(p, vec2(41.3, 289.1))).mul(43758.5453));
-        });
-        const vnoise = Fn(([p]) => {
-            const i = floor(p);
-            const f = fract(p);
-            const u = f.mul(f).mul(float(3.0).sub(f.mul(2.0)));
-            return mix(
-                mix(hash2(i), hash2(i.add(vec2(1.0, 0.0))), u.x),
-                mix(hash2(i.add(vec2(0.0, 1.0))), hash2(i.add(vec2(1.0, 1.0))), u.x),
-                u.y
-            );
-        });
-
-        const vUv = uv();
-        const flowTime = uTime.mul(uFlowSpeed);
-
-        // === VERTEX-STAGE: billow-Displacement entlang lokaler Z-Normale.
-        // GLSL: p.z += billow * edgeY. Hier auf positionLocal angewandt.
-        const fp = dot(vUv, uFlowDir).mul(9.0).add(flowTime.mul(3.2));
-        const billow = sin(fp)
-            .mul(0.2)
-            .add(sin(fp.mul(2.4).add(vUv.x.mul(15.0))).mul(0.1));
-        const edgeY = smoothstep(0.0, 0.18, vUv.y).mul(smoothstep(1.0, 0.8, vUv.y));
-        const displacedLocal = positionLocal.add(vec3(0.0, 0.0, billow.mul(edgeY)));
-
-        // World-Position des displaced Vertex (für Blinn-Phong-viewDir + Fog).
-        // mat4×vec4-Multiplikation in TSL via .mul().
-        const wp = modelWorldMatrix.mul(vec4(displacedLocal, 1.0));
-        const vWorldPos = wp.xyz;
-
-        // === FRAGMENT-STAGE: Schaum + Wasserfarbe + Sonnen-Spec (die Luft: scene.fogNode).
-        const flow = uFlowDir.mul(flowTime);
-        const sc = vUv.add(flow);
-        // Vertikale Strähnen (hochfrequent quer, scrollend Flow hinab).
-        const streak1 = vnoise(vec2(vUv.x.mul(26.0), sc.y.mul(7.0)));
-        const streak2 = vnoise(vec2(vUv.x.mul(55.0), sc.y.mul(15.0).add(3.0)));
-        const streak = streak1.add(streak2.mul(0.5)).div(1.5);
-        // Turbulente Schaum-Ballen.
-        const turb = vnoise(vUv.mul(vec2(9.0, 5.0)).add(flow.mul(1.7)));
-        // Aufprall + Spritzer (uv.y-Position-Maskierung).
-        const impact = smoothstep(0.86, 1.0, vUv.y);
-        const splash = smoothstep(0.22, 0.0, vUv.y);
-        const foam = clamp(streak.mul(0.8).add(turb.mul(0.35)).add(impact.mul(0.7)).add(splash.mul(0.6)), 0.0, 1.0);
-
-        // Basis-Wasserfarbe → Foam-Mix → Light-Skalierung.
-        const baseCol = mix(uDeep, uShallow, float(0.4).add(streak.mul(0.6)));
-        const withFoam = mix(baseCol, uFoam, foam.mul(0.85));
-        const lit = withFoam.mul(uLight);
-
-        // Blinn-Phong Sonnen-Glitzern (V8.44-Welt-Raum-Normale).
-        const n = normalize(normalWorld);
-        const viewDir = normalize(cameraPosition.sub(vWorldPos));
-        const halfV = normalize(normalize(uSunDir).add(viewDir));
-        const spec = pow(max(dot(n, halfV), 0.0), 40.0);
-        const withSpec = lit.add(vec3(1.0, 0.97, 0.85).mul(spec).mul(0.5).mul(uLight));
-
-        // Die Luft legt der EINE Luft-Knoten auf (`scene.fogNode`, mat.fog) — kein eigener Wasser-Nebel.
-
-        // Alpha: dichter Körper, weiche Seiten-Ränder.
-        const edgeX = smoothstep(0.0, 0.1, vUv.x).mul(smoothstep(1.0, 0.9, vUv.x));
-        const alpha = clamp(float(0.62).add(foam.mul(0.33)).mul(edgeX), 0.0, 1.0);
-
-        const mat = new THREE.MeshBasicNodeMaterial();
-        mat.positionNode = displacedLocal;
-        mat.colorNode = vec4(withSpec, alpha);
-        mat.transparent = true;
-        mat.depthWrite = false;
-        mat.side = THREE.DoubleSide;
-
-        this.state.waterfallUniforms = {
-            time: uTime,
-            flowDir: uFlowDir,
-            flowSpeed: uFlowSpeed,
-            deep: uDeep,
-            shallow: uShallow,
-            foam: uFoam,
-            sunDir: uSunDir,
-            light: uLight,
-        };
-        this.state.waterfallMaterial = mat;
-        return mat;
-    }
-
     // Entfernt Voxel-Chunks, die zu weit vom Spieler sind (Manhattan-
     // Distanz über dem Ring-Radius + 1 — eine Pufferzone gegen Flackern).
     _pruneDistantVoxelChunks(playerPos) {
@@ -35689,7 +35907,6 @@ class AnazhRealm {
             geom.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
             // der VOLLE Material-Vertrag (WebGPU strikt — jedes gelesene Attribut MUSS da sein):
             geom.setAttribute("aFlow", new THREE.Float32BufferAttribute(new Float32Array(vCount * 2), 2));
-            geom.setAttribute("aShore", new THREE.Float32BufferAttribute(new Float32Array(vCount), 1));
             geom.setAttribute("aWave", new THREE.Float32BufferAttribute(aWave, 1));
             geom.setAttribute("aDepth", new THREE.Float32BufferAttribute(aDepth, 1));
             geom.setAttribute("aSlope", new THREE.Float32BufferAttribute(new Float32Array(vCount), 1));
@@ -38395,9 +38612,6 @@ class AnazhRealm {
             }
         }
         this._pruneDistantVoxelChunks(playerPos);
-        // B1 (V18.373) — die ferne (off-thread, CA-frei gestreamte) See zum Leben wecken, sobald
-        // der Spieler sie in den Nah-Ring zieht (einmal je Chunk, churn-frei via `entry._caWoken`).
-        this._tickWaterCANearWake(pcx, pcz);
         // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach; die Chunk-Menge regt die Welt selbst.
         this._standMeldet("strom", 1, false, built > 0);
         // DETERMINISMUS-BOGEN P3 — kein BVH-Pump/Watchdog mehr: die Spieler-Kollision
@@ -39059,8 +39273,6 @@ class AnazhRealm {
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterCull)
                         ? this.state.atmosphere.waterCull
                         : 0.0025,
-                // V18.6 U-W4 — Wasser-Render-Modus persistieren.
-                waterRenderMode: this._waterRenderMode(),
                 // V18.14/.15 — Makro-Kontext-Regler persistieren.
                 waterDepthFoam:
                     this.state.atmosphere && Number.isFinite(this.state.atmosphere.waterDepthFoam)
@@ -43103,11 +43315,6 @@ class AnazhRealm {
             if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
             const wc = Number(state.atmosphere.waterCull);
             if (Number.isFinite(wc)) this.state.atmosphere.waterCull = Math.max(0.0, Math.min(0.05, wc));
-            // V18.92 — Wasser-Render-Modus (persistierte "surface"-Werte heilen im
-            // Setter auf "cells" — der L-Film ist entfernt).
-            if (typeof state.atmosphere.waterRenderMode === "string") {
-                this.setWaterRenderMode(state.atmosphere.waterRenderMode);
-            }
             const lr = Number(state.atmosphere.waterLakeRipple);
             if (Number.isFinite(lr)) this.setLakeRipple(Math.max(0.0, Math.min(1.0, lr)));
             // V18.14 M1/M3 — die Makro-Kontext-Regler (vor dem Hydrosphäre-Mesh-Bau setzen,
@@ -50865,7 +51072,7 @@ class AnazhRealm {
         group.rotation.order = "YXZ";
         // Der getragene Avatar IST der Studio-Baum (bauMensch + Gelenk-Gruppen-Rig). parts.{leftArm,
         // rightArm,…} → WRIST-/HÜFT-Bones (equipHeld hängt das Gerät an die Hand; Kinder folgen dem Bone).
-        const PLAYER_KH = 0.2125, // 8 KH → ~1.7 Welt-Höhe (matcht den alten Avatar)
+        const PLAYER_KH = AnazhRealm.PLAYER_KH, // 8 KH → ~1.7 Welt-Höhe (matcht den alten Avatar)
             FOOT_Y = -0.5; // Sohle ~0.5 unter dem Mesh-Ursprung
         // Gestalt-Dials aus dem Da-Vinci-Studio (LIVE über _koerperStudioDials); Dial→Genom über die
         // DATEN-Tabelle KOERPER_DIAL_MAP (khMul skaliert die EINE Kopfhöhen-Einheit). Hautton aus der
@@ -51521,7 +51728,9 @@ class AnazhRealm {
         }
         const mass = bp ? Math.max(0.6, Math.min(2.5, this._compoundSizeFactor(bp))) : 1;
         // Schwimmfähigkeit aus der volumen-gewichteten MITTEL-Dichte (nie der MAX-Tag — ein Eisen-Nagel
-        // versenkte sonst das Holz-Boot): unter ~0.55 trägt es (holz 0.4 schwimmt, stein/eisen sinken).
+        // versenkte sonst das Holz-Boot): unter der Wasser-Dichte der Tag-Skala (WASSER_DICHTE_TAG) trägt es (holz 0.4
+        // schwimmt, stein/eisen sinken). Ein Studio-Fahrzeug liest seine HÜLLE (unten) — nie die Substanz des Spenders.
+        const W_TAG = AnazhRealm.WASSER_DICHTE_TAG;
         let floats = false;
         let dichteMittel = 0.45; // ZENSUS-REST V18.488 — die Wasserlinien-Quelle (s. prof.dichte)
         if (bp && Array.isArray(bp.parts)) {
@@ -51538,8 +51747,18 @@ class AnazhRealm {
                 volSum += v;
                 dSum += v * d;
             }
-            floats = volSum > 0 && dSum / volSum < 0.55;
+            floats = volSum > 0 && dSum / volSum < W_TAG;
             if (volSum > 0) dichteMittel = dSum / volSum;
+        }
+        // DIE HÜLLE DES KERNS (D10): jeder Studio-Wagen ist ein Bauplan-Klon des Holzkarren-Spenders (fahrzeug_wagen,
+        // Mittel-Dichte 0,5155 < 0,55 — der Supersportler schwamm wie ein Holz-Boot); seine Dichte im Wasser ist die der
+        // Hülle aus dem Fahrzeug-Kern (exportDrive.huelle.dichte, relativ zu Wasser), fail-closed.
+        const fzgH = this._fahrzeugGesetzFor(entry);
+        const huelleH = fzgH && fzgH.drive ? fzgH.drive.huelle : null;
+        if (huelleH) {
+            if (!Number.isFinite(huelleH.dichte)) AnazhRealm._kernPflichtBruch("vehicle:exportDrive.huelle.dichte");
+            dichteMittel = huelleH.dichte * W_TAG;
+            floats = huelleH.dichte < 1;
         }
         // Emergenz-Koeffizienten aus dem Gesetzbuch (vehicle-core FAHR.hostEmergent); der Leser
         // _fahrGesetz ist FAIL-CLOSED über alle Felder — ein alter Kern bricht laut, kein Literal-Zwilling.
@@ -51704,6 +51923,41 @@ class AnazhRealm {
         }
         entry._vehicleProfile = prof;
         return prof;
+    }
+
+    // DIE GESTALT DES GEFÄHRTS IM WASSER (D10): `{ linie }` — die Wasserlinie über der Unterkante (m), bis zu der das Wasser
+    // die Hülle trägt; Infinity = sie trägt nie (dichter als Wasser: das Gefährt watet und sinkt). Archimedes: die Hülle
+    // taucht, bis ihr verdrängtes Volumen ihre Masse trägt. Die Dichte entscheidet `_vehicleProfile` (Substanz bzw. Hülle
+    // des Kerns); die Form ein Studio-Fahrzeug aus seiner Hülle (exportDrive.huelle: Unterkörper nose..tail × ±bw ×
+    // yFloor..yBelt, Greenhouse cowl..back × ±cw × yBelt..yRoof; die Linie misst von der Rad-Ebene y = 0), ein Teile-Werk aus
+    // der Höhe seines Bauplans (die Linie misst von seiner Unterkante). Am Eintrag gemerkt (die Form ist eingefroren).
+    // Leser: der Fahr-Schritt (`_fahrBoden`) und der Ritt im Sim-Schritt (`_rittSchritt`) über `_koerperWasser(x, z, grund,
+    // gestalt)` — der Frame-Tick (`_tickMountedMovement`) ist nur Sicht.
+    _fahrzeugGestalt(entry, prof) {
+        if (entry._wasserGestalt) return entry._wasserGestalt;
+        const p = prof || this._vehicleProfile(entry);
+        const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+        const rel = p && Number.isFinite(p.dichte) ? p.dichte / AnazhRealm.WASSER_DICHTE_TAG : Infinity;
+        let linie = Infinity;
+        if (p && p.floats && rel < 1) {
+            const fzg = this._fahrzeugGesetzFor(entry);
+            const h = fzg && fzg.drive ? fzg.drive.huelle : null;
+            if (h) {
+                const a1 = (h.noseX - h.tailX) * 2 * h.bw;
+                const a2 = Math.max(0.4, h.cowlX - h.backX) * 2 * h.cw;
+                const v1 = a1 * (h.yBelt - h.yFloor);
+                const m = rel * (v1 + a2 * (h.yRoof - h.yBelt));
+                linie = (h.yFloor + (m <= v1 ? m / a1 : h.yBelt - h.yFloor + (m - v1) / a2)) * sc;
+            } else {
+                const bp = this.state.blueprints && this.state.blueprints[entry.type];
+                const bb = bp ? this._compoundBBox(bp) : null;
+                const rumpfH = bb ? Math.max(0.3, (bb.max.y - bb.min.y) * sc) : 1;
+                const anteil = Math.max(0.1, Math.min(0.95, rel));
+                linie = Math.max(0.08, Math.min(rumpfH - 0.05, anteil * rumpfH));
+            }
+        }
+        entry._wasserGestalt = { linie, lage: null };
+        return entry._wasserGestalt;
     }
 
     // V18.150 — das Profil des AKTUELL gerittenen Gefährts (der Bewegungs-
@@ -51938,41 +52192,24 @@ class AnazhRealm {
         return entry._fahrSatz;
     }
 
-    // DER BODEN unter den Rädern des Fahr-Schritts: das Boden-Gesetz; ein schwimmendes Werk (floats) reitet die Lauf-
-    // Fläche, wo sie über dem Terrain liegt (Wasserlinie = Lauf-Fläche − Tauchtiefe, `_rittTauchTiefe`). Je Werk EINE
-    // Funktion (kein Abschluss je Schritt). INTEGRATIONS-NAHT (Entscheide D4/D10 der Welle L): die Wasser-Wahrheit gehört
-    // der Familie wasser — `_waterRunSurfaceAt` fällt dort; nach dem Merge liest diese Stelle (wie die zwei in
-    // `_rittSchritt`) `_koerperWasser(x, z, grund, gestalt)`, kein zweiter Wasser-Leser.
+    // DER BODEN unter den Rädern des Fahr-Schritts: das Boden-Gesetz; ein Werk, das das Wasser trägt (seine Gestalt,
+    // `_fahrzeugGestalt`: Wasserlinie aus Hülle und Dichte des Kerns), reitet die EINE Wasser-Wahrheit am Körper
+    // (`_koerperWasser(x, z, grund, gestalt)`, D4/D10): schwimmt es an diesem Punkt, liegt seine Unterkante auf Spiegel −
+    // Linie — der Spiegel ist waagrecht, Nick und Wank folgen nie dem Seegrund; sonst steht es auf dem Grund (es watet,
+    // dichter als Wasser sinkt es). Bis zur Integration las der Fahr-Schritt die Lauf-Fläche (`_waterRunSurfaceAt`, die
+    // Familie wasser schnitt sie) mit einer eigenen Tauchtiefe — ein zweiter Wasser-Leser neben dem Körper. Je Werk EINE
+    // Funktion (kein Abschluss je Schritt); ein Werk, das das Wasser nie trägt, fragt es nicht.
     _fahrBoden(entry) {
         if (entry._fahrBodenFn) return entry._fahrBodenFn;
-        const prof = this._vehicleProfile(entry);
-        const floats = !!(prof && prof.floats);
+        const gestalt = this._fahrzeugGestalt(entry, this._vehicleProfile(entry));
+        const traegt = gestalt.linie !== Infinity;
         entry._fahrBodenFn = (x, z) => {
             const t = this.getTerrainHeightAt(x, z);
-            if (!floats || !Number.isFinite(t)) return t;
-            const w = this._waterRunSurfaceAt(x, z);
-            const tief = this._rittTauchTiefe(entry, prof);
-            return w > -Infinity && w - tief > t ? w - tief : t;
+            if (!traegt || !Number.isFinite(t)) return t;
+            this._koerperWasser(x, z, t, gestalt);
+            return gestalt.lage.schwimmt ? gestalt.lage.unterkante : t;
         };
         return entry._fahrBodenFn;
-    }
-
-    // Die Tauchtiefe eines schwimmenden Werks nach Archimedes: eingetauchter Rumpf-Anteil = prof.dichte / 0.55 (dieselbe
-    // Schwelle wie das floats-Gate) × Rumpf-Höhe aus der Bauplan-BBox (am Eintrag gecacht; Klemmen halten den Rumpf
-    // sichtbar).
-    _rittTauchTiefe(entry, prof) {
-        if (!Number.isFinite(entry._tauchTiefe)) {
-            const bpT = this.state.blueprints && this.state.blueprints[entry.type];
-            const bbT = bpT ? this._compoundBBox(bpT) : null;
-            const sclT = Number.isFinite(entry.scale) ? entry.scale : 1;
-            const rumpfH = bbT ? Math.max(0.3, (bbT.max.y - bbT.min.y) * sclT) : 1;
-            const anteil = Math.max(
-                0.1,
-                Math.min(0.95, (prof && Number.isFinite(prof.dichte) ? prof.dichte : 0.45) / 0.55)
-            );
-            entry._tauchTiefe = Math.max(0.08, Math.min(rumpfH - 0.05, anteil * rumpfH));
-        }
-        return entry._tauchTiefe;
     }
 
     // DER STAND eines Studio-Fahrzeugs (W5): es parkt, wie es fährt — auf der Ebene seiner vier Räder (Höhe, Nick,
@@ -52049,18 +52286,19 @@ class AnazhRealm {
         entry.position.z = pm.z;
         const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
         const rideProf = this._vehicleProfile(entry);
-        // `_afloat` = reitet das Gefährt in DIESEM Schritt auf der Lauf-Fläche (am Ursprung, dieselbe Wasserlinie wie der
-        // Boden des Fahr-Schritts): _stepCharacter (4b) liest es als Boots-Gate der Strömungs-Advektion. Die zwei Lauf-
-        // Flächen-Lesungen dieses Schritts sind INTEGRATIONS-NAHT (D4/D10, Familie wasser: `_koerperWasser`, s. `_fahrBoden`).
+        // `_afloat` = schwimmt das Gefährt in DIESEM Schritt (am Ursprung, dieselbe Wahrheit wie der Boden des Fahr-
+        // Schritts: `_koerperWasser` mit seiner Gestalt, D4/D10): _stepCharacter (4b) liest es als Boots-Gate der
+        // Strömungs-Advektion — der Reiter schwimmt nie selbst, das Boot folgt ihm.
         // BENANNT GEFALLEN (Welle L, Q13): die Schwimm-Feder — exportDrive.spring {k, c} federte vorher die Aufsitz-Höhe
         // eines schwimmenden Werks gegen die Wasserlinie (ein zweiter Vertikal-Integrator neben dem Kern). Jetzt reitet ein
         // Gesetz-Werk die Wasserlinie auf der ballistischen Vertikale des Fahr-Schritts (`_fahrBoden`), seine Feder federt
         // den Aufbau (Nick · Wank · Hub); ein Werk ohne Fahr-Gesetz folgt ihr mit exp-k 8.
         entry._afloat = false;
         const t0 = this.getTerrainHeightAt(pm.x, pm.z);
-        if (rideProf && rideProf.floats && Number.isFinite(t0)) {
-            const runSurf = this._waterRunSurfaceAt(pm.x, pm.z);
-            if (runSurf > -Infinity && runSurf - this._rittTauchTiefe(entry, rideProf) > t0) entry._afloat = true;
+        const gestalt = this._fahrzeugGestalt(entry, rideProf);
+        if (gestalt.linie !== Infinity && Number.isFinite(t0)) {
+            this._koerperWasser(pm.x, pm.z, t0, gestalt);
+            entry._afloat = gestalt.lage.schwimmt;
         }
         // Die Höhe des Eintrags trägt die Platzierungs-Konvention (die Basis liegt bei position.y − 0.5:
         // `_archEntryWorldMatrix`, `_rebuildArchitectureMesh`, die Blocker). Ein Studio-Fahrzeug steht mit seiner Ebene
@@ -52108,7 +52346,9 @@ class AnazhRealm {
             return;
         }
         // DER RITT OHNE FAHR-GESETZ: die Räder (Hufe) stehen auf der Ebene durch die Aufstandspunkte (`_rittEbene`, die
-        // Ebene des Kerns); ein schwimmendes Werk reitet die Wasserlinie, wo sie über dem Terrain liegt.
+        // Ebene des Kerns); schwimmt das Werk über diesem Grund (die Wahrheit am Körper mit seiner Gestalt — W-W2: ohne den
+        // Grund der Ebene war der Rand-Streifen eines Sees blind), liegt seine Unterkante auf Spiegel − Linie, und der
+        // Spiegel ist waagrecht: Nick und Wank folgen nie dem Seegrund (F-D5: 25° Bug-ab).
         let groundY = t0;
         if (Number.isFinite(groundY) && Number.isFinite(entry._rideYaw)) {
             const eb = this._rittEbene(entry, pm.x, pm.z, entry._rideYaw);
@@ -52118,7 +52358,15 @@ class AnazhRealm {
                 entry._terrainRollZiel = eb.wank;
             }
         }
-        if (entry._afloat) groundY = this._waterRunSurfaceAt(pm.x, pm.z) - this._rittTauchTiefe(entry, rideProf);
+        if (gestalt.linie !== Infinity && Number.isFinite(groundY)) {
+            this._koerperWasser(pm.x, pm.z, groundY, gestalt);
+            entry._afloat = gestalt.lage.schwimmt;
+            if (entry._afloat) {
+                groundY = gestalt.lage.unterkante;
+                entry._terrainPitchZiel = 0;
+                entry._terrainRollZiel = 0;
+            }
+        }
         if (Number.isFinite(groundY)) {
             const targetY = groundY + 0.5 + clear;
             // An Land führt der Boden die Hufe EXAKT; schwimmend folgt die Aufsitz-Höhe der Wasserlinie mit exp-k 8.
@@ -63872,7 +64120,6 @@ class AnazhRealm {
                     ["aWave", 1],
                     ["aDepth", 1],
                     ["aSlope", 1],
-                    ["aShore", 1],
                 ],
                 mat: this._ensureHydroSurfaceMaterial(),
                 schatten: false,
@@ -68600,26 +68847,6 @@ class AnazhRealm {
         // ersten Material-Bau; nur setzen, wenn schon da).
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.minDepth) {
             this.state.hydroSurfaceUniforms.minDepth.value = m;
-        }
-        if (typeof this.saveState === "function") this.saveState();
-        return m;
-    }
-
-    // V18.6 U-W4 — der Wasser-Render-Modus ("surface" = die finale Höhenfeld-
-    // Fläche auf `L`, Default; "iso" = die alte Zell-Iso, A/B-Schalter für den
-    // Browser-Sign-off). Setzt alle gestreamten Wasser-Meshes neu (re-enqueued).
-    setWaterRenderMode(mode) {
-        const m = mode === "iso" ? "iso" : "cells";
-        if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
-        this.state.atmosphere.waterRenderMode = m;
-        // Alle Wasser-tragenden Chunks neu meshen, damit der Modus-Wechsel sofort
-        // greift (die Zellen/Physik bleiben unberührt — nur der Render-Pfad).
-        if (this.state.voxelChunks) {
-            for (const [key, e] of this.state.voxelChunks) {
-                if (!e || !e.waterCells) continue;
-                const comma = key.indexOf(",");
-                this._enqueueWaterIso(parseInt(key.slice(0, comma), 10), parseInt(key.slice(comma + 1), 10));
-            }
         }
         if (typeof this.saveState === "function") this.saveState();
         return m;
@@ -74583,59 +74810,108 @@ class AnazhRealm {
     // ==================== WETTER: sichtbarer Regen ====================
     // AnazhRealm hat state.weather (sunny/rainy/stormy) schon fuer Himmel/Wind/Naesse — hier der
     // sichtbare Niederschlag: eine Punktwolke, die dem Spieler folgt + faellt, bei rainy/stormy.
+    // DER REGEN (Welle L, W-R1/W-kD5): EIN Gesetz für Labor und Welt (foundry-core REGEN_GESETZ) — fallende Schlieren in
+    // einem Kasten um das Auge, der Wind treibt und neigt sie, die Deckung folgt der Regen-Stärke des Wetters. Gezeichnet
+    // als EIN instanziertes Sprite (PointsNodeMaterial: je Schliere ein Quad Breite × Länge in Welt-Maß; die Lage rechnet
+    // der Vertex aus Saat + Zeit, kein CPU-Umlauf je Frame). Bis V18.531 eine Punktwolke — WebGPU zeichnet Punkte ein
+    // Pixel groß: im Sturm lag kein Tropfen im Bild, senkrecht bei jedem Wind, und das Labor zeichnete andere Zahlen.
     _ensureRainSystem() {
         if (this._rainSystem) return this._rainSystem;
-        if (!this.state.scene) return null;
-        try {
-            const T = THREE;
-            const N = 1800;
-            const geo = new T.BufferGeometry();
-            const pos = new Float32Array(N * 3);
-            for (let i = 0; i < N; i++) {
-                pos[i * 3] = (Math.random() - 0.5) * 70;
-                pos[i * 3 + 1] = Math.random() * 42 - 6;
-                pos[i * 3 + 2] = (Math.random() - 0.5) * 70;
-            }
-            geo.setAttribute("position", new T.BufferAttribute(pos, 3));
-            const MatCtor = T.PointsNodeMaterial || T.PointsMaterial;
-            const mat = new MatCtor({ color: 0x9fb0c8, size: 0.5, transparent: true, opacity: 0.5, depthWrite: false });
-            const mesh = new T.Points(geo, mat);
-            mesh.frustumCulled = false;
-            mesh.renderOrder = 5;
-            // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: die Regen-Punktwolke ist
-            // Wetter-Substanz (nur bei rainy/stormy sichtbar, folgt dem Spieler).
-            mesh.userData.inventar = "wetter-regen";
-            this.state.scene.add(mesh);
-            this._rainSystem = { mesh, lastT: null };
-        } catch (_e) {
-            this._rainSystem = null;
+        if (!this.state.scene || typeof THREE === "undefined" || !THREE.TSL || !THREE.PointsNodeMaterial) return null;
+        const RG =
+            AnazhRealm.Gesetz("terrain:REGEN_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:REGEN_GESETZ");
+        const T = THREE.TSL;
+        const N = RG.anzahl;
+        // Die Saat je Schliere (Lage im Kasten 0..1, Länge) aus einem festen Strom — das Bild ist reproduzierbar.
+        const saat = new Float32Array(N * 4);
+        let h = 2166136261 >>> 0;
+        const zufall = () => {
+            h ^= h << 13;
+            h >>>= 0;
+            h ^= h >>> 17;
+            h ^= h << 5;
+            h >>>= 0;
+            return h / 4294967296;
+        };
+        for (let i = 0; i < N; i++) {
+            saat[i * 4] = zufall();
+            saat[i * 4 + 1] = zufall();
+            saat[i * 4 + 2] = zufall();
+            saat[i * 4 + 3] = RG.laenge[0] + zufall() * RG.laenge[1];
         }
+        const s4 = T.instancedBufferAttribute(new THREE.InstancedBufferAttribute(saat, 4));
+        const uZeit = T.uniform(0);
+        const uDrift = T.uniform(new THREE.Vector2(0, 0));
+        const uWinkel = T.uniform(0);
+        const R = RG.raum;
+        // Fallen (y) und Treiben (xz), je Achse in den Kasten um das Auge zurückgefaltet.
+        const x = T.fract(s4.x.add(uDrift.x.mul(uZeit).div(R[0])))
+            .sub(0.5)
+            .mul(R[0]);
+        const y = T.fract(s4.y.sub(uZeit.mul(RG.fall).div(R[1])))
+            .sub(0.5)
+            .mul(R[1]);
+        const z = T.fract(s4.z.add(uDrift.y.mul(uZeit).div(R[2])))
+            .sub(0.5)
+            .mul(R[2]);
+        // Das Maß im Bild: r184 teilt die Sprite-Größe durch die Tiefe, ohne die Brennweite — `uProj` (Projektion [1][1])
+        // macht Breite und Länge zu Welt-Metern. Eine Schliere schmaler als `minPixel` zeichnet `minPixel` breit und deckt
+        // anteilig (die Pixel-Deckung): fern wird der Regen ein Schleier, nah eine Schliere; am Auge und an den Kasten-
+        // Rändern blendet er aus (kein Schnitt, wo der Kasten faltet).
+        const uProj = T.uniform(1);
+        const tiefe = T.positionView.z.negate().max(0.05);
+        const pixelM = tiefe.mul(2).div(uProj.mul(T.viewportSize.y));
+        const breiteM = pixelM.mul(RG.minPixel).max(RG.breite);
+        const rand = T.length(T.vec2(x, z)).div(R[0] * 0.5);
+        const blende = T.varying(
+            T.min(T.float(RG.breite).div(breiteM), 1)
+                .mul(T.smoothstep(0.4, 2.0, tiefe))
+                .mul(T.float(1).sub(T.smoothstep(0.7, 1.0, rand)))
+        );
+        const mat = new THREE.PointsNodeMaterial({ color: RG.farbe, transparent: true, depthWrite: false, opacity: 0 });
+        mat.positionNode = T.vec3(x, y, z);
+        mat.sizeNode = T.vec2(breiteM, s4.w).mul(uProj);
+        mat.opacityNode = T.materialOpacity.mul(blende);
+        mat.rotationNode = uWinkel;
+        mat.sizeAttenuation = true;
+        const mesh = new THREE.Sprite(mat);
+        AnazhRealm._instanzZahl(mesh, N);
+        mesh.frustumCulled = false;
+        mesh.renderOrder = 5;
+        // H3 (gate:asset-inventory) — IDENTITÄTS-STEMPEL: der Regen ist Wetter-Substanz (sichtbar, solange das Wetter
+        // regnet; folgt dem Auge).
+        mesh.userData.inventar = "wetter-regen";
+        mesh.visible = false;
+        this.state.scene.add(mesh);
+        this._rainSystem = { mesh, uZeit, uDrift, uWinkel, uProj, RG };
         return this._rainSystem;
     }
     _tickRain(currentTime) {
         const st = this.state;
-        const wet = st.weather === "rainy" || st.weather === "stormy";
-        if (!wet) {
+        const wf = this._weatherFieldFor(st.weather);
+        if (!(wf.rain > 0.01)) {
             if (this._rainSystem && this._rainSystem.mesh) this._rainSystem.mesh.visible = false;
             return;
         }
         const sys = this._ensureRainSystem();
         if (!sys || !sys.mesh) return;
+        const RG = sys.RG;
         sys.mesh.visible = true;
-        const p = st.playerMesh ? st.playerMesh.position : null;
-        if (p) sys.mesh.position.set(p.x, p.y, p.z);
-        if (sys.mesh.material) sys.mesh.material.opacity = st.weather === "stormy" ? 0.62 : 0.42;
-        const now = currentTime || 0;
-        if (sys.lastT == null) sys.lastT = now;
-        const dt = Math.min(0.1, Math.max(0, (now - sys.lastT) / 1000));
-        sys.lastT = now;
-        const speed = st.weather === "stormy" ? 36 : 24;
-        const arr = sys.mesh.geometry.attributes.position.array;
-        for (let i = 1; i < arr.length; i += 3) {
-            arr[i] -= speed * dt;
-            if (arr[i] < -6) arr[i] += 42;
+        const cam = st.camera;
+        if (cam) sys.mesh.position.copy(cam.position);
+        sys.mesh.material.opacity = Math.min(RG.deckung, wf.rain * RG.deckung);
+        // Die Uhr der Schlieren (s), auf eine Stunde gefaltet (float-Genauigkeit im Vertex).
+        const t = ((currentTime || 0) / 1000) % 3600;
+        sys.uZeit.value = t;
+        const wd = this._windDirAt(t);
+        const v = RG.drift * Math.max(wf.wind, 0.1);
+        sys.uDrift.value.set(wd.x * v, wd.z * v);
+        // Die Neigung im Bild: der Drift-Anteil quer zur Blickrichtung gegen das Fallen (Bild-Rechts = Spalte 0 der Kamera).
+        if (cam) {
+            const m = cam.matrixWorld.elements;
+            sys.uWinkel.value = Math.atan2(wd.x * v * m[0] + wd.z * v * m[2], RG.fall);
+            sys.uProj.value = cam.projectionMatrix.elements[5];
         }
-        sys.mesh.geometry.attributes.position.needsUpdate = true;
     }
 
     // Steht der geborene Dart `d` der Zelle (gx, gz)? Kronen-Schüchternheit: er steht, wenn KEIN besserer Dart (prio,
@@ -75502,13 +75778,7 @@ class AnazhRealm {
     // Bump zwischen Request und Antwort → sync neu über `_buildVoxelChunkWaterIsoSurface`). Aufrufer:
     // Finalize (vor dem CA-Wake) + Streaming-Tick; Carve/Edit/Test bleiben sync.
     _tryWorkerWaterSheet(cx, cz) {
-        if (
-            !this.state.voxelWorker ||
-            !this.state.voxelWorkerReady ||
-            this._waterRenderMode() !== "cells" ||
-            !this._waterSheetCaFree(cx, cz)
-        )
-            return false;
+        if (!this.state.voxelWorker || !this.state.voxelWorkerReady || !this._waterSheetCaFree(cx, cz)) return false;
         const key = `${cx},${cz}`;
         const entry = this.state.voxelChunks ? this.state.voxelChunks.get(key) : null;
         if (!entry || !entry.waterCells) return false; // kein Wasser → der Aufrufer baut sync (Map null)
@@ -76228,46 +76498,6 @@ class AnazhRealm {
     _wakeWaterCA(cx, cz) {
         if (!this.state.waterCAActive) this.state.waterCAActive = new Set();
         this.state.waterCAActive.add(`${cx},${cz}`);
-    }
-
-    // B1 (V18.373) — der Spieler-Chunk-Nah-Test (Chebyshev in CHUNK-Einheiten, span-frei). Ohne
-    // bekannte Spieler-Position (Boot/Test vor dem ersten Streaming-Tick) → konservativ true
-    // (das alte Verhalten: wecken), damit kein Warmup-Pfad still die CA verliert.
-    _voxelChunkNearPlayer(cx, cz, r) {
-        const p = this.state.lastPlayerVoxelChunk;
-        if (!p) return true;
-        return Math.abs(cx - p.cx) <= r && Math.abs(cz - p.cz) <= r;
-    }
-
-    // Einmal-Wake: weckt den CA eines Wasser-Chunks genau einmal je Load (`entry._caWoken` auf dem
-    // Chunk-Eintrag, lifecycle-gebunden, kein state-Feld) — sonst würde ein settled Chunk jeden Tick neu
-    // geweckt. Echte Ereignisse (Carve/Strömung) wecken direkt über `_wakeWaterCA`.
-    _wakeWaterCAOnce(cx, cz) {
-        const entry = this.state.voxelChunks && this.state.voxelChunks.get(`${cx},${cz}`);
-        if (!entry || entry._caWoken) return;
-        if (Number.isFinite(entry.lod) && entry.lod !== 0) return;
-        entry._caWoken = true;
-        this._wakeWaterCA(cx, cz);
-    }
-
-    // Annäherungs-Wake: ferne See streamt CA-frei; tritt sie in den Nah-Ring, wird sie EINMAL lebendig
-    // (füllen, strömen, settlen). (2R+1)² Map-Gets/Tick, meist `_caWoken`-Skip; nur frische Nah-Wasser-
-    // Chunks zahlen den `_voxelChunkHasAnyWater`-Scan. Aufruf aus dem Streaming-Tick.
-    _tickWaterCANearWake(pcx, pcz) {
-        const chunks = this.state.voxelChunks;
-        if (!chunks) return;
-        const R = AnazhRealm.WAKE_CA_RADIUS;
-        for (let dz = -R; dz <= R; dz++) {
-            for (let dx = -R; dx <= R; dx++) {
-                const cx = pcx + dx,
-                    cz = pcz + dz;
-                const entry = chunks.get(`${cx},${cz}`);
-                if (!entry || entry._caWoken || !entry.waterCells) continue;
-                if (Number.isFinite(entry.lod) && entry.lod !== 0) continue;
-                entry._caWoken = true; // einmal behandeln (Wasser → wecken, sonst still markiert)
-                if (this._voxelChunkHasAnyWater(cx, cz)) this._wakeWaterCA(cx, cz);
-            }
-        }
     }
 
     // T4a-2/3 — EIN Welt-Tick des Wasser-Automaten über die AKTIVEN LOD0-Chunks. Lokal-reaktiv,
@@ -87132,13 +87362,15 @@ class AnazhRealm {
             return T.mix(U.farbe, U.sonneFarbe, keule);
         });
         st.scene.fogNode = T.fog(farbe(T.cameraPosition, T.positionWorld), faktor(T.cameraPosition, T.positionWorld));
-        st.luft = { U, faktor, farbe };
+        // `himmelFarbe`: die Farbe der LUFT ÜBER DEM WASSER (die In-Streu des Himmels), auch wenn die Kamera taucht — die
+        // Himmels-Umgebung malt sich aus ihr (`_ensureSkyEnvironment`), nie aus dem Medium der Kamera.
+        st.luft = { U, faktor, farbe, himmelFarbe: new THREE.Color(0.651, 0.824, 0.925) };
         return st.luft;
     }
 
     // HemisphereLight + die Luft synchron aus Tag-Nacht-Sky-Color × Welt-Feld am Spieler × Wetter × Sonne; die
     // In-Streu-Farbe = Himmel mit kleinem Erd-Anteil (gMix, unten) — Luft ist Luft, keine Dreck-Schicht.
-    // Unterwasser trägt dieselbe Formel mit Wasser-Trübung (playerEyesUnderwater).
+    // Unterwasser (die KAMERA unter dem Spiegel) trägt dieselbe Formel mit Wasser-Trübung im Licht des Orts.
     _dayNightApplyHemiUndLuft(angle, tint, sunDir) {
         const hl = this.state.hemiLight;
         const pm = this.state.playerMesh;
@@ -87195,14 +87427,36 @@ class AnazhRealm {
         const fogR = fogRn * (1 - dayAmt) + fdR * wDim * dayAmt;
         const fogG = fogGn * (1 - dayAmt) + fdG * wDim * dayAmt;
         const fogB = fogBn * (1 - dayAmt) + fdB * wDim * dayAmt;
+        // DAS MEDIUM DER KAMERA (W-L-d): unter Wasser ist, wessen AUGE unter dem Spiegel liegt — das der Kamera, nie das
+        // des Körpers (bis V18.531: eine Kamera 20 m über dem Ufer zeigte Voll-Bild-Unterwasser, solange die Augen des
+        // Körpers in der Ufer-Flut lagen; die Verfolger-Kamera am Seegrund sah klare Luft). Die Kamera-Höhe ist ihr
+        // eigener Grund-Bezug: liegt sie unter dem Spiegel, der ihre Spalte füllt, ist sie im Wasser.
+        const cam = this.state.camera;
+        const kameraUnterWasser =
+            !!cam && cam.position.y < this._koerperWasser(cam.position.x, cam.position.z, cam.position.y);
+        this.state.kameraUnterWasser = kameraUnterWasser;
         const luft = this._luftEnsure();
         if (luft) {
             const L = AnazhRealm.LUFT;
             const U = luft.U;
             U.bezugY.value = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
-            if (this.state.playerEyesUnderwater) {
-                // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), keine Sonnen-Keule.
-                U.farbe.value.setRGB(0.06, 0.19, 0.32);
+            luft.himmelFarbe.setRGB(fogR, fogG, fogB);
+            if (kameraUnterWasser) {
+                // Unter Wasser: DIESELBE Formel, Wasser-Trübung ohne Höhen-Abnahme (H → ∞), keine Sonnen-Keule. Die
+                // Farbe ist das Unterwasser-Gesetz des Terrain-Studios: der Durchlass der ersten 0,3 m (WASSER_GESETZ.wK,
+                // Beer-Lambert) × das Tageslicht — in der Welt die Helligkeit der Luft über dem Wasser (die EINE
+                // tag-, nacht- und wetter-kohärente Himmels-Quelle): mittags türkis, halb so hell wie die Luft, nachts
+                // dunkler als die Nacht darüber, im Sturm trüb. Bis V18.531 ein Literal 0,06/0,19/0,32 zu jeder Stunde —
+                // Mitternacht unter Wasser war heller als Mittag unter Wasser und 2,5× heller als die Nacht darüber (W-L-a).
+                const WGu =
+                    AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) ||
+                    AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
+                const tagesLicht = 0.2126 * fogR + 0.7152 * fogG + 0.0722 * fogB;
+                U.farbe.value.setRGB(
+                    Math.exp(-WGu.wK[0] * 0.3) * tagesLicht,
+                    Math.exp(-WGu.wK[1] * 0.3) * tagesLicht,
+                    Math.exp(-WGu.wK[2] * 0.3) * tagesLicht
+                );
                 U.sonneFarbe.value.copy(U.farbe.value);
                 U.beta.value = -Math.log(L.kontrast) / L.unterwasserM;
                 U.hoehe.value = 1e9;
@@ -87236,16 +87490,16 @@ class AnazhRealm {
             au.terrainMoonRim.value = moonBase * Math.max(0, 1 - sunUp * 4) * (1 - Math.min(1, rainyMix) * 0.7);
         }
         // Unterwasser-Pass: das Wasser rendert als einseitige Oberseite (BackSide + Top-Cull) → von unten
-        // fehlte die Decke. Beim Tauchen (playerEyesUnderwater) wird das EINE geteilte Wasser-Material
+        // fehlte die Decke. Liegt die Kamera unter Wasser, wird das EINE geteilte Wasser-Material
         // DoubleSide, beim Auftauchen zurück BackSide (von oben unverändert).
         const hsm = this.state.hydroSurfaceMaterial;
         if (hsm) {
-            const wantSide = this.state.playerEyesUnderwater ? THREE.DoubleSide : THREE.BackSide;
+            const wantSide = kameraUnterWasser ? THREE.DoubleSide : THREE.BackSide;
             if (hsm.side !== wantSide) hsm.side = wantSide;
         }
     }
 
-    // Wasser-Materialien (hydroSurfaceMaterial für Meer/Fluss/See + waterfallMaterial) teilen DIESELBE
+    // Das Wasser-Material (hydroSurfaceMaterial für Meer/Fluss/See) folgt der
     // Tag-Nacht-Sprache: uSunDir + uLight (die Luft legt `scene.fogNode` auf). `lightDir` ist der AKTIVE
     // Himmelskörper (vom Aufrufer _applyDayNightToScene) → der Glitzer folgt tags der Sonne, nachts dem Mond.
     _dayNightApplyWaterMaterials(lightDir) {
@@ -87254,20 +87508,19 @@ class AnazhRealm {
         const lightVal = Math.max(0.22, dl.intensity);
         // Das Licht des Orts für Körper und Schaum: E/π einer waagrechten Fläche (die Bilanz der Belichtung).
         const e = this._waagrechtIrradianz(this._wasserE || (this._wasserE = [0, 0, 0]));
-        // Beide Wasser-Materialien sind TSL; Uniforms leben in state.waterfallUniforms /
-        // state.hydroSurfaceUniforms — EINE Closure für beide.
+        // Die Uniforms leben in state.hydroSurfaceUniforms.
         const applyToTSL = (uniforms) => {
             if (!uniforms) return;
             if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
             if (uniforms.light) uniforms.light.value = lightVal;
             if (uniforms.irr) uniforms.irr.value.setRGB(e[0] / Math.PI, e[1] / Math.PI, e[2] / Math.PI);
-            // Der Wasserfall spiegelt noch die Himmels-Tönung (nebulaColor); das Wasser liest die Umgebung selbst.
-            if (uniforms.skyCol && this.state.skyboxUniforms && this.state.skyboxUniforms.nebulaColor)
-                uniforms.skyCol.value.copy(this.state.skyboxUniforms.nebulaColor.value);
             if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
+            // Der Wind des Wetters (0 ruhig … 1 Sturm): die Böen-Amplitude der Welt ohne ihren Verstärker.
+            const wu = this.state.windUniforms;
+            if (uniforms.wind && wu && wu.uWindStrength)
+                uniforms.wind.value = Math.max(0, Math.min(1, wu.uWindStrength.value / AnazhRealm.WEATHER_WIND_AMP));
         };
         applyToTSL(this.state.hydroSurfaceUniforms);
-        applyToTSL(this.state.waterfallUniforms);
     }
 
     // [ATMOSPHERE] Sonne + Mond als sichtbare Meshes, gespeist aus _applyDayNightToScene (EINE Quelle).
@@ -88087,12 +88340,6 @@ class AnazhRealm {
                 const v = this.setWaterCull(raw);
                 if (wcVal) wcVal.textContent = v.toFixed(4);
             });
-        }
-        // V18.6 U-W4 — Wasser-Render-Modus (Fläche-auf-L | Zell-Iso).
-        const wrSel = document.getElementById("select-waterrender");
-        if (wrSel) {
-            wrSel.value = this._waterRenderMode();
-            wrSel.addEventListener("change", () => this.setWaterRenderMode(wrSel.value));
         }
         // V18.15 Phase 3 — See-Wellen (uLakeRipple 0..1, Slider ×100).
         const lrS = document.getElementById("slider-lakeripple");
@@ -89644,13 +89891,14 @@ class AnazhRealm {
     }
 
     // Vertikale Schwimm-Geschwindigkeit, reine Funktion (testbar): Shift taucht ab, Space hebt, ohne
-    // Eingabe treibt der Auftrieb sanft zur Oberfläche. currentVy (m/s), depth = Tiefe unter dem
-    // Wasser-Niveau (m), dive/rise = Tasten-Flags → Ziel-vy.
+    // Eingabe trägt der Auftrieb den Körper sanft an seine Wasserlinie. currentVy (m/s), depth = Tiefe unter
+    // der Wasserlinie des Körpers (m; negativ = darüber — der Körper sinkt zurück), dive/rise = Tasten-Flags
+    // → Ziel-vy.
     _swimVerticalVelocity(currentVy, depth, dive, rise) {
         // SCHWIMM-HEIMAT — die Zahlen wohnen im koerperstudio-Gesetzbuch
-        // (fx.bewegung.schwimmen, _schwimmGesetz fail-soft byte-gleich).
+        // (fx.bewegung.schwimmen, _schwimmGesetz fail-closed).
         const S = AnazhRealm._schwimmGesetz();
-        const d = Math.max(0, Math.min(S.tiefeCap, depth));
+        const d = Math.max(-S.tiefeCap, Math.min(S.tiefeCap, depth));
         if (dive) {
             // Abtauchen: Ziel-Sinkgeschwindigkeit −tauchV m/s, lerp-geglättet —
             // überwindet den Auftrieb, der Spieler sinkt kontrolliert.
@@ -90625,31 +90873,29 @@ class AnazhRealm {
         if (bvy > s._fieldVy + 0.5) s._fieldVy = bvy; // frischer Sprung-Impuls
         let vy = s._fieldVy;
 
-        // 3. Wasser-Kontext (dieselbe EINE Quelle wie der Ammo-Pfad) → Auftrieb/Schwimmen.
-        const wctx = this._playerWaterContext(mesh.position.x, mesh.position.y, mesh.position.z);
-        let submerged = false;
-        let waterY = -Infinity;
-        if (wctx !== null) {
-            submerged = wctx.submerged;
-            waterY = submerged ? wctx.surfaceY : -Infinity;
-        } else if (typeof s.waterLevel === "number") {
-            const eff = this._waterLevelAt(mesh.position.x, mesh.position.z);
-            waterY = typeof eff === "number" ? eff : s.waterLevel;
-            submerged = mesh.position.y < waterY;
-        }
-        s.playerUnderwater = submerged;
-        if (submerged) {
-            let eyeWaterY = waterY;
-            const runSurf = this._waterRunSurfaceAt(mesh.position.x, mesh.position.z);
-            if (runSurf > -Infinity && Math.abs(runSurf - waterY) <= 1.8) eyeWaterY = runSurf;
-            s.playerEyesUnderwater = mesh.position.y + 1.6 < eyeWaterY;
-        } else {
-            s.playerEyesUnderwater = false;
-        }
+        // 3. WASSER — die EINE Wasser-Wahrheit am Körper (`_koerperWasser`: der Spiegel, den das Auge sieht, über dem
+        //    Grund unter dem Körper). Der Körper liegt nach seiner GESTALT im Wasser: er SCHWIMMT, sobald die Säule über
+        //    dem Grund seine Brustkorb-Linie übersteigt (`_schwimmBrustM`, koerper-core) — der Auftrieb hält dann die
+        //    Wasserlinie am Brustkorb; flacher WATET er (geerdet, der Fuß im Wasser, der Schritt platscht). Schwimmen ist
+        //    ein eigener Zustand: nicht Luft (Beschleunigung, Landung) und nie vom Boden-Snap gegriffen.
+        const feet0 = mesh.position.y - footDrop;
+        const brustM = AnazhRealm._schwimmBrustM();
+        const grund0 = this._fieldSurfaceBelow(
+            mesh.position.x,
+            feet0 + AnazhRealm.PLAYER_STEP_UP,
+            mesh.position.z,
+            AnazhRealm.PLAYER_STEP_UP + AnazhRealm.HYDROSPHERE.carveLakeBedDepth + brustM
+        );
+        // Ohne Grund in Reichweite (tiefes Wasser, eine hohe Höhlen-Halle) urteilt die Wahrheit an den Füßen — die Decke
+        // (D11) gilt auch dort.
+        const waterY = this._koerperWasser(mesh.position.x, mesh.position.z, grund0 !== null ? grund0 : feet0);
+        const schwimmt = waterY > feet0 && (waterY - feet0 > brustM || grund0 === null || waterY - grund0 > brustM);
+        s.playerUnderwater = schwimmt;
+        s.playerEyesUnderwater = schwimmt && mesh.position.y + 1.6 < waterY;
 
-        // 4. Vertikale Integration. Im Wasser: Schwimm-Auftrieb (dieselbe reine Funktion);
+        // 4. Vertikale Integration. Im Wasser: Schwimm-Auftrieb (dieselbe reine Funktion) zur Brustkorb-Linie;
         //    an Land: Schwerkraft, gecappt (Anti-Tunneling, wie der Ammo-Fall-Cap −25).
-        if (submerged) {
+        if (schwimmt) {
             // SCHWIMM-HEIMAT — Drag + Ausdauer aus dem koerperstudio-Gesetzbuch:
             // aktive Züge (Shift-Tauchen / Space-Auftauchen) zehren ausdauerProS;
             // erschöpft (stamina 0) trägt NUR der Auftrieb den Körper zur
@@ -90665,9 +90911,10 @@ class AnazhRealm {
                     rise = false;
                 }
             }
-            vy = this._swimVerticalVelocity(vy, waterY - mesh.position.y, dive, rise);
-            vx *= SG.drag;
-            vz *= SG.drag;
+            // Die Tiefe unter der Wasserlinie des Körpers: Füße am Spiegel − Brustkorb-Linie. Das Wasser bremst die
+            // Horizontale nur ohne Zug (`_loopPlayerMovement`, schwimmen.drag) — bis V18.531 bremste es JEDEN Schritt
+            // auch den Zug (Kraulen 0,141 m/s = 14 % des Gesetzes).
+            vy = this._swimVerticalVelocity(vy, waterY - brustM - feet0, dive, rise);
         } else if (s._parkourKletter > 0) {
             // PARKOUR — der Griff hält: KLETTERN ersetzt die Schwerkraft (Input-
             // seitig gegated: W + frische Wand + Ausdauer; der Steig-Wert reist
@@ -90683,11 +90930,14 @@ class AnazhRealm {
         const geritten = !!(s.player && s.player.mountedArch !== null && s.player.mountedArch !== undefined);
         if (geritten) vy = 0;
 
-        // 4b. STRÖMUNG: der Fluss-Flow (`_waterFlowAt`, EINE Quelle) advektiert SCHWIMMENDE Körper am EINEN
-        // Bewegungs-Chokepoint — Gate `submerged` oder das gerittene schwimmende Gefährt (`_afloat`, von
-        // `_tickMountedMovement` gestempelt); Land-Läufer nie. v += (flow − v)·k wirkt auf den Slip:
-        // selbstlimitierend bis Strömungstempo, kein Overshoot. k = FLOW_ADVECT_K = 0.3 ≈ Verlustrate des
-        // Wasser-Damps (1 − 0.7) → ruhender Schwimmer ~0.56·FLOW_ADVECT_SPEED, Boot ~0.95× (gate:kopplung).
+        // 4b. STRÖMUNG — die EINE Kopplung jedes Körpers im Wasser (Spieler, Boot, Tier): er bewegt sich RELATIV zum
+        // Wasser, das Wasser trägt ihn mit (`_waterFlowAt`, EINE Quelle): v_Welt = v_eigen + Strömung. Gate: der
+        // Schwimmer oder das gerittene schwimmende Gefährt (`_afloat`, von `_tickMountedMovement` gestempelt); Land-Läufer
+        // und Watende nie. Der Körper integriert v_Welt (Wand-Klip und Kollision inbegriffen), `playerVel` behält das
+        // Eigene. Bis V18.531 zwei Gesetze: der Spieler mit Schlupf (v += (Strom − v)·0,3 je Schritt, ruhend ~0,56 ×
+        // Strömung), das Tier additiv.
+        let stromX = 0;
+        let stromZ = 0;
         {
             const rideEntry = this._mountedEntry;
             const afloat = !!(
@@ -90696,11 +90946,13 @@ class AnazhRealm {
                 rideEntry.id === s.player.mountedArch &&
                 rideEntry._afloat === true
             );
-            if (submerged || afloat) {
+            if (schwimmt || afloat) {
                 const fl = this._waterFlowAt(mesh.position.x, mesh.position.z);
                 if (fl) {
-                    vx += (fl.x - vx) * AnazhRealm.FLOW_ADVECT_K;
-                    vz += (fl.z - vz) * AnazhRealm.FLOW_ADVECT_K;
+                    stromX = fl.x;
+                    stromZ = fl.z;
+                    vx += stromX;
+                    vz += stromZ;
                 }
             }
         }
@@ -90851,8 +91103,10 @@ class AnazhRealm {
                     //  (b) knapp UNTER den Füßen (0 .. GROUND_SNAP] → Boden-Haftung bergab, NUR wenn
                     //      vorher geerdet (sanft bergab); im Fall NICHT → kein Magnet. Größerer gap
                     //      (Kamm/Klippe) → kein Snap → natürlicher Sprung-Bogen.
+                    // Der Schwimmer haftet nie bergab (das Wasser trägt ihn — bis V18.531 zog die Haftung jeden, der
+                    // vom Ufer hineinging, Schritt für Schritt am Grund entlang, bis 4,68 m unter den Spiegel).
                     const catchOrStep = gap <= 0 && gap >= -AnazhRealm.PLAYER_STEP_UP;
-                    const gentleDownhill = gap > 0 && gap <= AnazhRealm.PLAYER_GROUND_SNAP && wasGrounded;
+                    const gentleDownhill = gap > 0 && gap <= AnazhRealm.PLAYER_GROUND_SNAP && wasGrounded && !schwimmt;
                     if (catchOrStep || gentleDownhill) {
                         if (s.isInAir && vy < -AnazhRealm.LAND_DIP_MIN_SPEED) {
                             s._landImpactPending = Math.max(s._landImpactPending || 0, -vy);
@@ -90899,7 +91153,8 @@ class AnazhRealm {
         //    isPlayerGrounded-Cache, Slope-Penalty, handleJump-Coyote). Kein Ammo-Body.
         mesh.position.set(nx, ny, nz);
         s._fieldVy = vy;
-        s.playerVel.setValue(vx, vy, vz);
+        // Das Eigene bleibt (die Strömung trug den Rest, 4b).
+        s.playerVel.setValue(vx - stromX, vy, vz - stromZ);
 
         s.groundNormalY = grounded ? groundNormalY : 1.0;
         s.onSteepSlope =
@@ -90918,7 +91173,10 @@ class AnazhRealm {
             if (s._airJumps) s._airJumps = 0;
             s.isJumping = false;
         } else {
-            s.isInAir = true;
+            // Der Schwimmer ist nicht in der Luft: er beschleunigt wie zu Fuß (bis V18.531 mit dem Luft-Wert 4,5 statt
+            // 14), und der Übergang Luft → Wasser ist eine Landung (der Eintauch-Klang „wasser", der Schritt-Takt liest
+            // isInAir).
+            s.isInAir = !schwimmt;
         }
     }
 
@@ -91124,11 +91382,9 @@ class AnazhRealm {
         // `_stepCharacter` integriert. Unter Wasser ist Shift die Tauch-Geste, an Land Sprint.
         let currentSpeed =
             this.state.keys["shift"] && !this.state.playerUnderwater ? this.state.sprintSpeed : this.state.speed;
-        // Wasser bremst: das Tempo kommt aus dem Schwimm-Gesetz (speedMul, Kraul relativ zum Gehen).
-        if (this.state.playerUnderwater) {
-            const SGm = AnazhRealm._schwimmGesetz();
-            currentSpeed *= SGm && Number.isFinite(SGm.speedMul) ? SGm.speedMul : 0.55;
-        }
+        // Wasser bremst: das Tempo kommt aus dem Schwimm-Gesetz (speedMul, Kraul relativ zum Gehen; der Leser ist
+        // fail-closed — das Literal 0,55 neben dem Gesetz 0,85 fiel, W-K3).
+        if (this.state.playerUnderwater) currentSpeed *= AnazhRealm._schwimmGesetz().speedMul;
 
         this.state.forward.set(Math.sin(this.state.yaw), 0, Math.cos(this.state.yaw));
         this.state.right.set(Math.cos(this.state.yaw), 0, -Math.sin(this.state.yaw));
@@ -91278,7 +91534,15 @@ class AnazhRealm {
                 // kBrake). kBrake/kBrakeLuft wohnen im Gesetzbuch (fx.bewegung.luft).
                 const v = this.state.playerVel;
                 const LG = AnazhRealm._bewegungsBlock("luft", ["kAcc", "kAccLuft", "kBrake", "kBrakeLuft"]);
-                const kBrake = rideKBrake !== null ? rideKBrake : this.state.isInAir ? LG.kBrakeLuft : LG.kBrake;
+                // Ohne Zug bremst das WASSER (schwimmen.drag: was je Sim-Schritt bleibt) — der Zug selbst läuft frei.
+                const kBrake =
+                    rideKBrake !== null
+                        ? rideKBrake
+                        : this.state.playerUnderwater
+                          ? -Math.log(AnazhRealm._schwimmGesetz().drag) / AnazhRealm.FIXED_DT
+                          : this.state.isInAir
+                            ? LG.kBrakeLuft
+                            : LG.kBrake;
                 const fb = 1 - Math.exp(-kBrake * nowDt);
                 this.state.playerVel.setValue(v.x() * (1 - fb), v.y(), v.z() * (1 - fb));
             }
@@ -93998,11 +94262,6 @@ class AnazhRealm {
         // Stern-Feld) → sie stehen fest am Himmel statt um den Welt-Ursprung zu
         // orbiten + neben dem fernen Spieler durchs Terrain zu rasen.
         this._followCelestialBodies();
-        // Das geteilte Wasserfall-Material wird hier zentral animiert (time-Uniform in
-        // state.waterfallUniforms); der Flow-Shader trägt die Bewegung.
-        if (this.state.waterfallUniforms && this.state.waterfallUniforms.time) {
-            this.state.waterfallUniforms.time.value = currentTime;
-        }
         // Das geteilte Hydrosphären-Material (Fluss-Ribbons + See-Planes) zentral animieren; der
         // Flow-Shader scrollt den Schaum stromab nach per-Vertex-`aFlow`.
         if (this.state.hydroSurfaceUniforms && this.state.hydroSurfaceUniforms.time) {
@@ -94390,8 +94649,17 @@ AnazhRealm.FOUNDRY_CACHE_CAP = 512;
 // kein LRU): LOD-0-Chunk ≈ 0.2–0.6 MB → ~600 Einträge halten den Store unter wenigen hundert MB.
 AnazhRealm.CHUNK_IDB_MAX = 600;
 // Die FORM des rohen Worker-Replys im Store (ein Teil des Stempels, `_chunkIdbInit`): ändert sich, was der Worker liefert,
-// liest kein Boot die alte Form — seit Welle 7 trägt er den Höhlen-Graph (`hTri` · `hKnoten` · `hSeiten` · `hKanten`).
-AnazhRealm.CHUNK_IDB_FORM = "hoehle";
+// liest kein Boot die alte Form — seit Welle 7 trägt er den Höhlen-Graph (`hTri` · `hKnoten` · `hSeiten` · `hKanten`); seit
+// Welle L liegt das Fluss-Bett auf dem Spiegel (`_hydrosphereCarveAt`): ein alter Chunk trüge den alten Kanal; und die
+// Ufer-Farbe läuft mit der Kronen-Blende aus (`_waterLevelAt` → `ufer`): ein alter Chunk trüge das Rauten-Schachbrett; seit
+// der Gegenprüfung läuft die Bank mit ihrer Neigung ins Gelände (Kanal und Damm): ein alter Chunk trüge die Gleit-Wand; seit
+// Runde 3 trägt die Deck-Zelle das flache Wasser und das Ufer liest den Boden der Spalte: alte Zellen zeichneten den Bach nicht;
+// und jede Quelle beginnt als Rinnsal: ein alter Chunk trüge den Kanal, der aus dem Nichts bricht; seit Runde 4 trägt der
+// Damm eine Krone (`dammBreite`): ein alter Chunk trüge die Schneide, über die das Wasser ins tiefere Gelände lief.
+AnazhRealm.CHUNK_IDB_FORM = "damm-krone";
+// Der Saum des gezeichneten Wassers (`_wasserBildAt`): die Vertices eines Wasser-Sheets sind bis 0,3 · 1,8 m = 0,54 m versetzt
+// (der Gitter-Jitter in `_computeWaterSheetData`) — ein Punkt bis so nah an der Chunk-Kante kann im Sheet des Nachbarn liegen.
+AnazhRealm.WASSER_BILD_RAND = 0.6;
 // DIE HÖHLEN-SICHT (Welle 7, `_hoehlenSicht`): der Saum jeder Mündungs-, Portal-, Rand- und Luft-Box — `schritte` Gitter-
 // Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
 // Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).
@@ -95214,6 +95482,20 @@ AnazhRealm.Gesetz = function (pfad, fallback) {
 // Die Kerne sind PFLICHT (index.html lädt alle Gesetzbücher, _kernPflichtWand meldet den Ausfall):
 // ein unlesbares Gesetz ist ein lauter BRUCH, nie eine stille Ersatz-Welt. Keine Zahlen-Zwillinge im
 // Stamm — die Zwillings-Absenz-Wand (gate:studio-vertrag) hält sie draußen.
+// DIE BETT-TIEFE eines Fluss-Punkts (der EINE Leser): carveBedMin + carveBedK · volle Breite, an der Quelle mit ihrem
+// Anteil (W-F5: eine Quelle ist ein Rinnsal, nie ein 1,4-m-Graben aus dem Nichts). Leser: `_hydroRiverSpiegel`,
+// `_hydroBuildCarveIndex` (seg.dA/dB → der Kanal, `_hydroRiverAt`, der Worker).
+AnazhRealm._flussTiefe = function (p) {
+    const HC = AnazhRealm.HYDROSPHERE;
+    const q = p.quelle;
+    if (!(q > 0 && q <= 1)) throw new Error(`_flussTiefe: Fluss-Punkt ohne Quell-Anteil (quelle = ${q})`);
+    return (HC.carveBedMin + (HC.carveBedK * p.width) / q) * q;
+};
+
+// Die Dichte des Wassers auf der Tag-Skala der Materialien (holz 0,4 schwimmt, stein/eisen sinken): die Schwelle des
+// Schwimmens und der Bezug der Wasserlinie (`_vehicleProfile`, `_fahrzeugGestalt`).
+AnazhRealm.WASSER_DICHTE_TAG = 0.55;
+
 AnazhRealm._kernPflichtBruch = function (pfad) {
     throw new Error(
         "KERN-PFLICHT verletzt: " +
@@ -95348,6 +95630,20 @@ AnazhRealm._schwimmGesetz = function () {
         return s;
     }
     return AnazhRealm._kernPflichtBruch("koerper:bewegung.schwimmen");
+};
+// Die WASSERLINIE des Menschen-Körpers: die Brustkorb-Linie über der Sohle (Meter) aus seiner Gestalt — die
+// Brustwarzen-Höhe der Proportionen (koerper-core labProportionen, nippleY/H) × die Welt-Körperhöhe des Avatars
+// (8 Kopf-Einheiten PLAYER_KH). Der Schwimmer liegt mit dieser Linie am Spiegel; flacheres Wasser watet er.
+// Fail-closed (Kern-Pflicht); Memo nur im Erfolgs-Fall.
+AnazhRealm._schwimmBrustM = function () {
+    if (AnazhRealm._schwimmBrustMemo) return AnazhRealm._schwimmBrustMemo;
+    const lp = AnazhRealm.Gesetz("koerper:labProportionen", null);
+    const P = typeof lp === "function" ? lp() : null;
+    if (P && Number.isFinite(P.nippleY) && P.H > 0) {
+        AnazhRealm._schwimmBrustMemo = (P.nippleY / P.H) * 8 * AnazhRealm.PLAYER_KH;
+        return AnazhRealm._schwimmBrustMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("koerper:labProportionen");
 };
 // Der EINE Parkour-Leser (Doppel-/Wandsprung · Klettern · Rutsch aus fx.bewegung.parkour). Bewusst
 // ohne Zahlen-Fallback: Kern kalt → null → KEIN Parkour — die Verben existieren nur als
@@ -98202,12 +98498,6 @@ AnazhRealm.RING_EXIST_FLOOR = 2;
 // `_softFloorWhileChunkLoading` trägt den Rand, dann wächst der Ramp bei gesundem Frame Ring für
 // Ring — ein großer Start-Ring (25 Chunks) fror den Boot ein.
 AnazhRealm.RING_RAMP_SETTLE_MS = 350; // der „Atem" zwischen zwei Ring-Wachstums-Schritten
-// Wasser-CA-Wake nur im Nah-Ring (Chebyshev ≤ WAKE_CA_RADIUS um den Spieler-Chunk): sonst fiel jeder
-// einstreamende Wasser-Chunk samt Nachbarn aus `_waterSheetCaFree` und die ferne See baute SYNC auf
-// dem Main-Thread. So streamt sie CA-frei, der Worker baut ihr Sheet off-thread (byte-identisch zum
-// settled Flood-Spiegel). Annäherung weckt ferne Chunks über `_tickWaterCANearWake` (einmal je
-// Chunk, `entry._caWoken`); Strömung propagiert per `_exchangeWaterBoundary`.
-AnazhRealm.WAKE_CA_RADIUS = 3;
 // DIE LUFT (V18.530, `_luftEnsure`): Koschmieder-Extinktion mit Höhen-Abnahme. Die Anker sind BEOBACHTBARE
 // Sichtweiten (Kontrast eines Gelände-Pixels fällt unter `kontrast`): ein klarer Sommertag trägt Gelände-
 // Silhouetten 20 km weit (Mitteleuropa, Sommer-Dunst 15–30 km), Starkregen im Sturm 1,5 km. Die reine Luft ist
@@ -98585,6 +98875,9 @@ AnazhRealm.WASSER_WELLE = Object.freeze({
     mitte: 0.7,
     kraeusel: 2.2,
     kraeuselDecke: 1,
+    // Die Fluss-Phase (s): eine advektierte Lage des Wasser-Bilds wandert höchstens phase × Strömung weit (4 s × 1,2 m/s
+    // = 4,8 m, eine halbe Kräusel-Welle), dann kehrt sie hinter der Blende der zweiten Lage zurück.
+    phase: 4,
 });
 AnazhRealm._wasserHubM = function () {
     const W = AnazhRealm.WASSER_WELLE;
@@ -99396,6 +99689,8 @@ AnazhRealm.STAND_SICHT_BAND = 2.0;
 AnazhRealm.TOD_KIPP_RAD = 1.45;
 AnazhRealm.TOD_KIPP_STUETZ = 16;
 AnazhRealm.TOD_KIPP_PUNKTE = 1500;
+// Die Kopf-Einheit des Avatars (m): 8 Einheiten = die Welt-Körperhöhe ~1,7 m (bauMensch, Wasserlinie, Studio-Maßstab).
+AnazhRealm.PLAYER_KH = 0.2125;
 // Boden-Haftung: bis zu dieser Distanz UNTER den Füßen klebt der Läufer am Boden — nur wenn er
 // vorher geerdet war, NIE im Fall (sonst Magnet-Sog). Kleiner als STEP_UP: am Kamm löst die
 // Haftung → natürlicher Sprung-Bogen.
@@ -99406,13 +99701,7 @@ AnazhRealm.PLAYER_GROUND_SNAP = 0.25;
 // der gemessene Stufe-hoch-Konflikt). Nur echte Wände (höher als STEP_UP) blocken.
 AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
 // ═══ KOPPLUNG — Strömung · Gleiten · Wind · Gras (gate:kopplung) ═══
-// FLOW_ADVECT_SPEED: Strömung im Fluss-KERN (m/s, zur Kanal-Kante getapert) — trägt den ruhenden
-// Schwimmer sichtbar (~1.8 m/s effektiv), aktives Schwimmen (3.3 m/s) gewinnt stromauf.
-AnazhRealm.FLOW_ADVECT_SPEED = 3.2;
-// FLOW_ADVECT_K: die pro-Schritt-Slip-Kopplung v += (flow − v)·k am Bewegungs-
-// Chokepoint. 0.3 = die pro-Schritt-Verlustrate des Wasser-Damps (1 − 0.7) →
-// selbstlimitierend AUF Strömungstempo (Herleitung: `_stepCharacter` 4b).
-AnazhRealm.FLOW_ADVECT_K = 0.3;
+// Die Strömung ist das Gesetz (`_waterFlowAt` liest WASSER_GESETZ.wellen.adv), die Kopplung additiv (`_stepCharacter` 4b).
 // SLIDE_CLIP_PLANES: max. Kontaktebenen im PM_ClipVelocity-Wand-Klip (Quake
 // PM_SlideMove: Wand = 1, Ecke = 2, Kerbe = 3 — mehr Ebenen sind degeneriert,
 // dann greift der fail-closed Voll-Stopp).

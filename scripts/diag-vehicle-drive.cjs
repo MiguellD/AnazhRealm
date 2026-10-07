@@ -22,8 +22,9 @@
 //         die EMERGENZ (AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist
 //         gefallen) wird an einem Test-Blueprint aus KIND_SUBSTANCE.fahrzeug_wagen
 //         bewiesen (parts+connections JSON-geklont, registriert, aufgeraeumt) —
-//         byte-gleich gegen die emergente Formel nachgerechnet; floats bleibt in
-//         BEIDEN die Substanz-Entscheidung (das Lab kennt kein Wasser).
+//         byte-gleich gegen die emergente Formel nachgerechnet; floats ist beim
+//         Teile-Werk die Substanz, beim Studio-Wagen die Huelle des Kerns (D10:
+//         exportDrive.huelle.dichte — bis 8f09227d schwamm der GT mit dem Spender).
 //   B-d (B2, Schoepfer-Browser-Befund 14.07. „Fahren bewegt das Fahrzeug nicht"): DIE
 //     FAHR-PROBE — fahrzeug_gt wird gespawnt (Studio-instanziert), bestiegen, N Fahr-Ticks
 //     gefahren; danach MUSS entry.position > 1 m bewegt sein, der Spieler darauf sitzen,
@@ -624,7 +625,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
                         let vor = null;
                         for (let s = 0; s <= 36 && trocken; s++) {
                             const hx = r.getTerrainHeightAt(cx + s * 2, cz + dz);
-                            const ws = r._waterRunSurfaceAt(cx + s * 2, cz + dz);
+                            const ws = r._atlasWaterLevelAt(cx + s * 2, cz + dz, hx);
                             if (!Number.isFinite(hx) || (Number.isFinite(ws) && ws > hx - 0.3)) trocken = false;
                             if (vor !== null) stufe = Math.max(stufe, Math.abs(hx - vor));
                             vor = hx;
@@ -752,7 +753,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
                     const z = mo[1] + dz;
                     const hh = (a, b) => r.getTerrainHeightAt(a, b);
                     const g = Math.hypot((hh(x + 2, z) - hh(x - 2, z)) / 4, (hh(x, z + 2) - hh(x, z - 2)) / 4);
-                    const ws = r._waterRunSurfaceAt(x, z);
+                    const ws = r._atlasWaterLevelAt(x, z, hh(x, z));
                     if (!(g >= 0.12 && g <= 0.35) || (Number.isFinite(ws) && ws > hh(x, z) - 0.3)) continue;
                     hang.push({ x, z, g, rot: hang.length % 2 ? Math.PI / 2 : 0 });
                 }
@@ -847,8 +848,8 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             : "kein Profil"
     );
     check(
-        "B-c: floats bleibt SUBSTANZ-Entscheidung (Lab exportiert kein floats — gt == wagen, derselbe Donor)",
-        !!pg && !!pw && typeof pg.floats === "boolean" && pg.floats === pw.floats,
+        "B-c (D10): der Studio-Wagen schwimmt nach der Huelle des Kerns (exportDrive.huelle.dichte > 1: gt sinkt), das Teile-Werk nach seiner Substanz (wagen-Substanz schwimmt) — nie gt == Holzkarren-Spender",
+        !!pg && !!pw && pg.floats === false && pw.floats === true,
         pg && pw ? `gt=${pg.floats} wagen=${pw.floats}` : ""
     );
     // B-d (B2): die stehende Fahr-Probe — EIN Verdikt (dieselbe pure Funktion wie der Selbst-Test).

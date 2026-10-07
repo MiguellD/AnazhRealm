@@ -154,6 +154,56 @@ const FORBIDDEN = [
     // Das Chunk-Wasser ist EIN Satz ausserhalb jedes Bundles (der Pass-Bruch des viewportLinearDepth) — das
     // Bundle-Flag hatte keinen Leser, der es je setzte.
     { token: "wasserImBundle", fiel: "Welle B — das Wasser des Rings ist der Wasser-Satz" },
+    // Das Ufer-Band des Wasser-Shaders las ein Attribut, das jeder Schreiber mit 0 füllte (je Pixel zwei Rauschen und ein
+    // Sinus für ×0); den Ufer-Saum trägt der optische Weg (WASSER_GESETZ.schaum.ufer). Mit ihm fiel der Strähnen-Schaum
+    // ohne Gesetz-Grund (Welle L, W-B1/W-kD11).
+    { token: "aShore", fiel: "Welle L Q7 — die tote Ufer-Spalte; der Saum ist der optische Weg" },
+    { token: "riverFoam", fiel: "Welle L Q7 — der Strähnen-Schaum ohne Gesetz-Grund (W-B1)" },
+    // Der Körper im Wasser liest EINE Wahrheit (`_koerperWasser`: die Lauf-Fläche des Gesetzes über seinem Grund + die
+    // Abweichung des Live-Automaten), nie das 1,8-m-Zell-Dach; die Strömung ist das Gesetz (wellen.adv) und koppelt additiv.
+    { token: "_playerWaterContext", fiel: "Welle L Q6 — das Zell-Dach als Körper-Spiegel (W-K2)" },
+    { token: "_waterCellAt", fiel: "Welle L Q6 — der Zell-Leser als dritte Wahrheit, nur noch von einer Probe gerufen" },
+    { token: "FLOW_ADVECT_SPEED", fiel: "Welle L Q6 — die Host-Strömung 3,2 m/s neben dem Gesetz 1,2 (W-kD4)" },
+    { token: "FLOW_ADVECT_K", fiel: "Welle L Q6 — die Schlupf-Kopplung des Spielers neben der additiven des Tiers" },
+    // Der Fluss-Spiegel ist das Gesetz (`_hydroRiverSpiegel`: stromab nie steigend, quer waagrecht; das Bett folgt ihm) —
+    // die Makro-Höhe des Orts mit Buckel und die geglättete Lauf-Fläche darüber sind gefallen (Main und Worker).
+    { token: "convexBulge", fiel: "Welle L Q7 — der 1,55-m-Buckel des Querschnitts (W-F2)" },
+    { token: "waterRunSurfaceAt", fiel: "Welle L Q7 — die geglättete Lauf-Fläche; der Spiegel selbst ist monoton" },
+    // Der Wasser-Automat wacht nur, wo die Welt abweicht (Graben · Füllen · Damm) — das Wecken beim Einstreamen und bei
+    // Annäherung rechnete den ruhenden Fluss in ganzen Zellen nach und flutete die Ufer (W-W1).
+    { token: "_tickWaterCANearWake", fiel: "Welle L Q6 — die Annäherungs-Weckung (Ufer-Flut W-W1)" },
+    { token: "_wakeWaterCAOnce", fiel: "Welle L Q6 — die Einstream-Weckung" },
+    { token: "WAKE_CA_RADIUS", fiel: "Welle L Q6" },
+    { token: "_voxelChunkNearPlayer", fiel: "Welle L Q6 — der Nah-Test der Weckung" },
+    { token: "_caWoken", fiel: "Welle L Q6" },
+    // Der Wasser-Render hat EINEN Pfad (das Zell-Oberkanten-Sheet); der Debug-Zwilling „Zell-Iso" hinter einem
+    // Einstellungs-Schalter, im Save persistiert, ist gefallen (Welle L, W-kD7).
+    { token: "waterRenderMode", fiel: "Welle L Q7 — der Render-Schalter Zell-Sheet/Zell-Iso" },
+    { token: "_cullWaterUndersides", fiel: "Welle L Q7 — die Unterseiten-Schere der Zell-Iso" },
+    { token: '"chunk-water-iso"', fiel: "Welle L Q7 — der Kind-Stempel der Zell-Iso" },
+    { token: "select-waterrender", fiel: "Welle L Q7 — die Auswahl im Einstellungs-Band" },
+    // Das Wasserfall-Material ohne Leser (nur Tests riefen es) fiel ganz (W-kD11).
+    { token: "_ensureWaterfallMaterial", fiel: "Welle L Q7 — die Saat ohne Leser" },
+    { token: "waterfallUniforms", fiel: "Welle L Q7" },
+    { token: "waterfallMaterial", fiel: "Welle L Q7" },
+    // DER REGEN ist EIN Gesetz für Labor und Welt (foundry-core REGEN_GESETZ): die Welt zeichnet Schlieren, deren Lage der
+    // Vertex aus Saat und Zeit rechnet; die Punktwolke (Math.random-Saat, je Frame im Haupt-Thread gefallen, 1 Pixel groß)
+    // und die eigenen Zahlen des Labors sind gefallen (W-R1/W-kD5).
+    { token: "sys.lastT", fiel: "Welle L Q7 — der Regen fiel je Frame im Haupt-Thread; die Lage rechnet der Vertex" },
+    { token: "dt * 42", fiel: "Welle L Q7 — die Fall-Zahl des Labors wohnt im REGEN_GESETZ", auch: ["worlds/terrain/phytogenesis.js"] },
+    // DIE UFER-BÄNDER sind stetig: Strand, Schlick, Pfad und Höhen-Feuchte lesen beide Bezüge (`_waterLevelAt` → see ·
+    // fluss · ufer); das Strand-Fenster schnitt die Glocke bei 2,0 m, die Worker-Feuchte las eine Halbbreite, die kein
+    // Segment trägt (2137 von 7578 Ufer-Vertices anders gefärbt als im Main).
+    { token: "aboveWater < 2.0", fiel: "Welle L Q7 — die Strand-Glocke trägt bis 0,6 + 1,9 m (imStrand)" },
+    { token: "seg.halfW || 0", fiel: "Welle L Q7 — die Halbbreite am Fußpunkt wie im Main (hwA/hwB)" },
+    // DIE BANK läuft mit ihrer Neigung ins Gelände (Kanal und Damm, `_hydrosphereCarveAt` → { P, L, k }); die Krone nach
+    // 0,6 der Bank-Rampe und die Gleit-Zone dahinter (eine Wand bis ≈ 73° mit Fels-Rauten) sind gefallen (Main und Worker).
+    { token: "kroneAnteil", fiel: "Gegenprüfung 07.10. — die Krone nach 0,6 der Bank-Rampe (die Steilwand)" },
+    { token: "carveBankSlope", fiel: "Gegenprüfung 07.10. — die Bank-Rampe Tiefe × 1,4; die Bank ist bankNeigung" },
+    { token: "kn.T - y", fiel: "Gegenprüfung 07.10. — das Gewicht der Gleit-Zone; die Dichte nimmt Kanal und Damm" },
+    // DER SCHILF-BEZUG der Nah-Streu liest beide Bezüge (`_nahStreuBodenGewicht`: das Band über See und das über dem Fluss
+    // mit seiner Kronen-Blende), jede andere Art die EINE Wahrheit am Körper; das Maximum der Spiegel sprang an der Krone.
+    { token: "_nahStreuSpiegel", fiel: "Gegenprüfung 07.10. — der Kronen-Sprung des Schilf-Bands (13 Sprünge bis 1,0)" },
     // Die Chunk-Einbürgerung in Region-Bundles hat keinen Bürger mehr (Boden · Stitch · Wasser sind Sätze, die
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.
