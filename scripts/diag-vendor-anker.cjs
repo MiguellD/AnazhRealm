@@ -129,7 +129,16 @@ const ANKER = [
     // Der Fenster-Wechsel: die Viewport-Tiefe ist ein Klon je Render-Ziel (der EINE Leser bindet nach setSize neu)
     { file: "vendor/three.webgpu.min.js", sub: "getTextureForReference(e=null){", organ: "_tiefenLeserNeuBinden (Viewport-Tiefen-Klon je Ziel)" },
     // Der Name der Viewport-Tiefe: EIN geteiltes Original je Seite, jeder Klon je Ziel erbt seinen Namen
-    { file: "vendor/three.webgpu.min.js", sub: '"ViewportDepthTextureNode"}constructor(e=ud,t=null,r=null){null===r&&(null===Kp&&(Kp=new Z),r=Kp)', organ: "_szeneTiefe (szene:tiefenkopie am geteilten Original)" },
+    { file: "vendor/three.webgpu.min.js", sub: '"ViewportDepthTextureNode"}constructor(e=ud,t=null,r=null){null===r&&(null===Kp&&(Kp=new Z),r=Kp)', organ: "_szeneTiefe (WebGL2-Rückfall und Null-Renderer: r184s Viewport-Tiefe, szene:tiefenkopie)" },
+    // DAS TIEFEN-ABBILD (0710-1 P2, Runde 2): r184s Bruch-Weg (Pass beenden, auf demselben Encoder kopieren, mit load neu
+    // beginnen) trägt den Abbild-Pass — seine Quelle ist die Tiefe des Kontexts, seine Kopie die EINE Encoder-Stelle, die
+    // `_tiefenAbbild` für die Attrappe durch den Abbild-Pass ersetzt; der Knoten zieht je Render einmal; r32float bindet
+    // r184 als (unfilterable-)float.
+    { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture", organ: "_tiefenAbbild (Quelle des Bruchs = die Tiefe des Kontexts)" },
+    { file: "vendor/three.webgpu.min.js", sub: 's.currentPass?(s.currentPass.end(),a=s.encoder):a=this.device.createCommandEncoder({label:"copyFramebufferToTexture_"+e.id}),a.copyTextureToTexture({texture:i,origin:[r.x,r.y,0]},{texture:n},[r.z,r.w])', organ: "_tiefenAbbild (Pass-Ende und die EINE Encoder-Kopie)" },
+    { file: "vendor/three.webgpu.min.js", sub: "s.currentPass=a.beginRenderPass(e),s.currentSets={attributes:{},bindingGroups:[],pipeline:null,index:null}", organ: "_tiefenAbbild (der Neubeginn mit load)" },
+    { file: "vendor/three.webgpu.min.js", sub: "else if(t===ri.RENDER){const t=this._getMaps(this.updateBeforeMap,r);if(t.renderId!==this.renderId)", organ: "_szeneTiefe (der Abbild-Knoten zieht je Render einmal)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'e===K&&(this.backend.hasFeature("float32-filterable")?t.sampleType=Gw:t.sampleType=zw)', organ: "_szeneTiefe (das r32float-Abbild als float-Textur gebunden)" },
     { file: "vendor/three.webgpu.min.js", sub: "if(!1===r.has(e)){const s=t.clone();r.set(e,s)}return r.get(e)}", organ: "_szeneTiefe (der Klon je Ziel trägt den Namen)" },
     // Der Schatten-Takt (_loopShadowUpdate): der EINE Leser je Licht, die Matrix nur im Schatten-Render, die
     // Matrix-Uniform rechnet nur bei abgeschalteter Map selbst nach — sonst bliebe eine übersprungene Kaskade
@@ -150,8 +159,8 @@ const ANKER = [
     { file: "vendor/TRAANode.js", sub: "const offsetUV = this.velocityNode.load( closestPositionTexel ).xy.mul( vec2( 0.5, - 0.5 ) );", organ: "_traaKameraBewegung (velocityNode.load → NDC-Bewegung)" },
     { file: "vendor/TRAANode.js", sub: "renderPipeline.context.onBeforeRenderPipeline = () => {", organ: "_traaReprojektion (der Versatz lebt nur im Post-Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "null!==this._context.onBeforeRenderPipeline&&this._context.onBeforeRenderPipeline()", organ: "_traaReprojektion (RenderPipeline ruft den Vorher-Haken)" },
-    { file: "vendor/TRAANode.js", sub: "this._historyRenderTarget = new RenderTarget( 1, 1, { depthBuffer: false, type: HalfFloatType, depthTexture: new DepthTexture() } );", organ: "TRAA-Tiefen-Kopie (Geschichte depth24plus wie die Szenen-Tiefe)" },
-    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( currentDepth, this._historyRenderTarget.depthTexture );", organ: "TRAA-Tiefen-Kopie (Textur zu Textur, gleiches Format; _ensurePostProcessing nennt das Ziel TRAANode.history:tiefe)" },
+    { file: "vendor/TRAANode.js", sub: "this._historyRenderTarget = new RenderTarget( 1, 1, { depthBuffer: false, type: HalfFloatType, depthTexture: new DepthTexture() } );", organ: "_traaVortiefe (die Vortiefe der Geschichte — ihr Typ wird 16 bit, bevor die GPU sie anlegt)" },
+    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( currentDepth, this._historyRenderTarget.depthTexture );", organ: "_traaVortiefe (der EINE Kopier-Ruf des Knotens — am Renderer gehakt, gezeichnet in 16 bit; Name TRAANode.history:tiefe)" },
     { file: "vendor/TRAANode.js", sub: "let depth = this._previousDepthNode.sample( uv ).r;", organ: "TRAA-Tiefen-Kopie (der Leser: die Vortiefe der Disokklusion — die Kopie bleibt)" },
     // Die Platzhalter-Tiefe (1×1, namenlos, ohne Ziel): der Stamm nennt sie über den Knoten (Band-Linse, Textur-Zensus)
     { file: "vendor/TRAANode.js", sub: "this._previousDepthNode = texture( new DepthTexture( 1, 1 ) );", organ: "_ensurePostProcessing (TRAANode.vortiefe — die Band-Linse nennt jede Textur)" },
@@ -169,6 +178,17 @@ const ANKER = [
     { file: "vendor/CSMShadowNode.js", sub: "const cascades = reference( '_cascades', 'vec2', this )", organ: "gate:schatten-werfer K1 (die Kaskaden-Uniform, die der Shader liest)" },
     { file: "vendor/three.webgpu.min.js", sub: 'r.name="ShadowDepthTexture",r.compareFunction=', organ: "_kaskadenZiele (ShadowNode.setupRenderTarget baut Tiefe …)" },
     { file: "vendor/three.webgpu.min.js", sub: 'return s.texture.name="ShadowMap",s.texture.type=e.mapType,s.depthTexture=r,{shadowMap:s,depthTexture:r}}', organ: "_kaskadenZiele (… und Farbe, die Hülle setzt r8 + 16 bit)" },
+    // DIE KARTE OHNE FARBE (0710-1 P2, Ziel-Zensus: kaskade0/1:farbe OHNE LESER): die Ziel-Daten tragen eine leere Farb-
+    // Liste, die Farb-Textur legt die GPU nie an — der Ziel-Bau misst textures[0] und reicht die Liste an den Kontext,
+    // updateTexture ist der EINE Anlage-Weg, der Pass-Deskriptor und der Pipeline-Bau laufen über die Liste, Format und
+    // Farbraum lasen blind textures[0].
+    { file: "vendor/three.webgpu.min.js", sub: "updateRenderTarget(e,t=0){const r=this.get(e),s=0===e.samples?1:e.samples,i=r.depthTextureMips||(r.depthTextureMips={}),n=e.textures,a=this.getSize(n[0])", organ: "_kaskadenZiele (der Ziel-Bau misst textures[0] — das Textur-Objekt bleibt)" },
+    { file: "vendor/three.webgpu.min.js", sub: "r.width=a.width,r.height=a.height,r.textures=n,r.depthTexture=l||null", organ: "_kaskadenZiele (die Ziel-Daten tragen die Farb-Liste — die Hülle leert sie)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateTexture(e,t={}){const r=this.get(e);if(!0===r.initialized&&r.version===e.version)return;", organ: "_kaskadenZiele (der EINE Anlage-Weg einer Textur — die Karten-Farbe überspringt ihn)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getCurrentColorFormat(e){let t;return t=null!==e.textures?this.getTextureFormatGPU(e.textures[0]):this.getPreferredCanvasFormat(),t}", organ: "_kaskadenZiele (Format auf leerer Liste: null)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getCurrentColorSpace(e){return null!==e.textures?e.textures[0].colorSpace:this.backend.renderer.outputColorSpace}", organ: "_kaskadenZiele (Farbraum auf leerer Liste: null)" },
+    { file: "vendor/three.webgpu.min.js", sub: "if(null!==e.context.textures){const t=e.context.textures,r=e.context.mrt;for(let e=0;e<t.length;e++)", organ: "_kaskadenZiele (der Pipeline-Bau: je Farbe ein Ziel — leere Liste, reine Tiefen-Pipeline)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const t=e.textures,o=[];let u;const l=this._isRenderCameraDepthArray(e);for(let s=0;s<t.length;s++)", organ: "_kaskadenZiele (der Pass-Deskriptor: je Farbe ein Anhang — leere Liste, nur die Tiefe)" },
     { file: "vendor/three.webgpu.min.js", sub: "g.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,p);const v=t.isArrayCamera", organ: "_passSicht (der Vorher-Haken je Render, vor der Projektion — auch im Schatten-Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "l.onAfterRender(this,e,t,p),this.inspector.finishRender", organ: "_passSicht (der Nachher-Haken je Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "c.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,d);const g=this._renderLists.get(l,t)", organ: "_kompiliere (compileAsync ruft den Vorher-Haken synchron — die Wache _imKompilat)" },

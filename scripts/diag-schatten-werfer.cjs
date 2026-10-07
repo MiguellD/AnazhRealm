@@ -61,7 +61,7 @@
 //       ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre Scheibe verfehlt (aus der Welt gesucht) — dort wirft
 //       weder ein Werfer eines Bündels noch eine Instanz der Wahl in diese Kaskade, und der Boden-Satz zeichnet dort genau
 //       die Zellen des Gesetzes (es schneidet Zellen, die das Frustum allein zöge: nicht vakuös)
-//   Z1  die Karten-Ziele: Farbe r8 (der Filter liest sie nur mit shadowMap.transmitted), Tiefe 16 bit, benannt —
+//   Z1  die Karten-Ziele: Farbe r8 ohne GPU-Textur auf WebGPU (kein Pass liest sie — der Filter nur mit transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
 //   Z2  die Bildziele je Leser: EIN Weg zu compileAsync (`_kompiliere`, gegen das Ziel des Szenen-Passes), EINE
 //       Szenen-Tiefe (`_szeneTiefe`), kein Modul-Knoten der linearen Tiefe, kein namenloses Bildziel (convertToTexture)
@@ -1327,6 +1327,20 @@ function probe(selbsttest) {
             farbe: z.shadowMap.texture.format === T.RedFormat,
             tiefe: z.depthTexture.type === T.UnsignedShortType,
             namen: rt.texture.name === "kaskade0:farbe" && dt.name === "kaskade0:tiefe",
+            // die Karte ohne Farbe (0710-1, Ziel-Zensus: die Farbe hatte keinen Leser): auf WebGPU legt die GPU die Farbe nie
+            // an, der Kontext des Ziels trägt keinen Farb-Anhang; die echte Karte trägt keine GPU-Textur ihrer Farbe
+            ohneFarbe: (() => {
+                const be = st.renderer && st.renderer.backend;
+                if (!be || be.isWebGPUBackend !== true) return true;
+                return (
+                    rt.__anazhOhneFarbe === true &&
+                    rt.texture.__anazhOhneGpu === true &&
+                    csm.lights.every((l) => {
+                        const m = l.shadow && l.shadow.map;
+                        return !m || !m.texture || !be.has(m.texture) || !be.get(m.texture).texture;
+                    })
+                );
+            })(),
             // die echte CSM: jeder Kaskaden-Knoten trägt die Hülle seit der Geburt
             echt:
                 csm._shadowNodes.length > 0 &&
@@ -1646,8 +1660,8 @@ function probe(selbsttest) {
             a.w9 ? w9t(a.w9) : "keine W9-Messung"
         );
         check(
-            "Z1 Karten-Ziele: Farbe r8 · Tiefe 16 bit · benannt",
-            a.z1.farbe && a.z1.tiefe && a.z1.namen && a.z1.echt,
+            "Z1 Karten-Ziele: Farbe r8 ohne GPU-Textur (WebGPU) · Tiefe 16 bit · benannt",
+            a.z1.farbe && a.z1.tiefe && a.z1.namen && a.z1.echt && a.z1.ohneFarbe,
             JSON.stringify(a.z1)
         );
         check(

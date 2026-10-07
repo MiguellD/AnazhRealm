@@ -54,6 +54,8 @@ export default [
                 GPUBufferUsage: "readonly",
                 GPUMapMode: "readonly",
                 GPUShaderStage: "readonly",
+                // Das Tiefen-Abbild (`_tiefenAbbild`) hängt für EINEN Pass-Bruch an die Encoder-Kopie.
+                GPUCommandEncoder: "readonly",
             },
         },
         rules: {
