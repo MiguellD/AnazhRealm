@@ -27726,14 +27726,7 @@ class AnazhRealm {
     // (Zellen/Level nur via ctx) → Worker `buildWaterSheetGeometry` byte-identisch; Carve/CA-aktiv sync.
     _buildVoxelChunkWaterCellSheet(cx, cz, key) {
         const entry = this.state.voxelChunks.get(key);
-        if (!entry || !entry.waterCells) {
-            this.state.voxelChunkWaterIso.set(key, null);
-            return null;
-        }
-        // Das Gate kennt das LIVE-Wasser: ein Chunk ohne Atlas-Wasser kann CA-Wasser tragen (Ausbreitung
-        // über die Grenze) — hat er einen Level-Eintrag, entscheidet der Spalten-Scan, nicht der Atlas.
-        const levelMap = this.state.waterLevelCells;
-        if (!this._voxelChunkHasAnyWater(cx, cz) && !(levelMap && levelMap.has(key))) {
+        if (!entry || !entry.waterCells || !this._wasserSheetTraegt(cx, cz)) {
             this.state.voxelChunkWaterIso.set(key, null);
             return null;
         }
@@ -27759,6 +27752,160 @@ class AnazhRealm {
             return null;
         }
         return this._finalizeWaterSheetMesh(cx, cz, key, data);
+    }
+
+    // Trägt der Chunk ein Sheet? Das Gate kennt das LIVE-Wasser: ein Chunk ohne Atlas-Wasser kann CA-Wasser tragen
+    // (Ausbreitung über die Grenze) — hat er einen Level-Eintrag, entscheidet der Spalten-Scan, nicht der Atlas. EIN Gate
+    // für den Bau (`_buildVoxelChunkWaterCellSheet`) und das Gezeichnete, bevor es gezeichnet ist (`_wasserNetz`).
+    _wasserSheetTraegt(cx, cz) {
+        const levelMap = this.state.waterLevelCells;
+        return this._voxelChunkHasAnyWater(cx, cz) || !!(levelMap && levelMap.has(`${cx},${cz}`));
+    }
+
+    // ═══ DAS GEZEICHNETE WASSER ALS WAHRHEIT (Gegenprüfung 07.10., Runde 4) ═══
+    // Was die Welt als Wasser zeichnet, ist die Wasser-Wahrheit am Körper (`_koerperWasser`): die Dreiecke des Wasser-Sheets
+    // eines Chunks — dieselben Zahlen, die der Renderer bekommt (`geometry.attributes.position`, Float32) — je Zelle des
+    // 1,8-m-Gitters gefächert. Bis zur Gegenprüfung las der Körper das Gesetz an seinem Punkt, die Welt zeichnete auf dem
+    // 1,8-m-Gitter (jede Spalte flutet ganz, ihre Ecken tragen den Spiegel): am Bach der Mess-Wiese zeichnete sie auf 64 m
+    // Breite Wasser, in dem der Körper trocken stand, und die Nah-Streu setzte Farne hinein; vor Runde 3 umgekehrt (der
+    // Körper las 177 m, die die Welt nicht zeichnete). Rückgabe: das Netz, null (der Chunk zeichnet kein Wasser) oder
+    // undefined (kein Chunk geladen — die Ferne, dort liest der Körper das Gesetz). Ist ein Chunk geladen, sein Sheet aber noch
+    // nicht gebaut, rechnet DIESELBE Rechnung (`_computeWaterSheetData`, das Gate `_wasserSheetTraegt`) das Netz vorab, einmal
+    // je Zell-Stand. Gleicher Inhalt ist dasselbe Netz: seine Kennung bleibt (die Nah-Streu baut nur bei echter Änderung neu).
+    _wasserNetz(cx, cz) {
+        const st = this.state;
+        const key = `${cx},${cz}`;
+        const entry = st.voxelChunks ? st.voxelChunks.get(key) : null;
+        if (!entry) return undefined;
+        if (!entry.waterCells) return null;
+        const iso = st.voxelChunkWaterIso;
+        const gezeichnet = !!iso && iso.has(key);
+        const quelle = gezeichnet ? iso.get(key) : entry.waterCells;
+        const alt = entry._wasserNetz;
+        if (alt && alt.quelle === quelle) return alt.netz;
+        let pos = null;
+        let idx = null;
+        if (gezeichnet) {
+            if (quelle) {
+                pos = quelle.geometry.attributes.position.array;
+                idx = quelle.geometry.index.array;
+            }
+        } else if (this._wasserSheetTraegt(cx, cz)) {
+            const d = this._computeWaterSheetData(cx, cz, this._mainWaterSheetCtx(cx, cz, entry));
+            if (d) {
+                pos = Float32Array.from(d.positions);
+                idx = Uint32Array.from(d.indices);
+            }
+        }
+        let netz = pos ? this._wasserNetzBau(cx, cz, pos, idx) : null;
+        if (alt && AnazhRealm._wasserNetzGleich(alt.netz, netz)) netz = alt.netz;
+        entry._wasserNetz = { quelle, netz };
+        return netz;
+    }
+
+    // Das Netz eines Sheets: jedes Dreieck in jeder Zelle (1,8 m) des um eine Zelle erweiterten Chunks, die seine xz-Hülle
+    // berührt (die Rand-Vertices sind bis 0,54 m versetzt, `_computeWaterSheetData`) — CSR (`start` · `liste`).
+    _wasserNetzBau(cx, cz, pos, idx) {
+        const { dim, step, span } = this._voxelChunkConfig(0);
+        const nb = dim + 2;
+        const gx0 = cx * span - step;
+        const gz0 = cz * span - step;
+        const triN = (idx.length / 3) | 0;
+        const start = new Int32Array(nb * nb + 1);
+        const faecher = (t, tu) => {
+            const a = 3 * idx[3 * t];
+            const b = 3 * idx[3 * t + 1];
+            const c = 3 * idx[3 * t + 2];
+            const i0 = Math.max(0, Math.floor((Math.min(pos[a], pos[b], pos[c]) - gx0) / step));
+            const i1 = Math.min(nb - 1, Math.floor((Math.max(pos[a], pos[b], pos[c]) - gx0) / step));
+            const k0 = Math.max(0, Math.floor((Math.min(pos[a + 2], pos[b + 2], pos[c + 2]) - gz0) / step));
+            const k1 = Math.min(nb - 1, Math.floor((Math.max(pos[a + 2], pos[b + 2], pos[c + 2]) - gz0) / step));
+            for (let k = k0; k <= k1; k++) for (let i = i0; i <= i1; i++) tu(i + k * nb);
+        };
+        for (let t = 0; t < triN; t++) faecher(t, (f) => start[f + 1]++);
+        for (let f = 0; f < nb * nb; f++) start[f + 1] += start[f];
+        const liste = new Int32Array(start[nb * nb]);
+        const fuell = start.slice(0, nb * nb);
+        for (let t = 0; t < triN; t++) faecher(t, (f) => (liste[fuell[f]++] = t));
+        return { pos, idx, gx0, gz0, nb, step, start, liste };
+    }
+
+    // Das höchste Dreieck eines Netzes über (x, z) (baryzentrisch in xz; senkrechte Vorhänge tragen keine Fläche) oder null.
+    static _wasserNetzHoehe(n, x, z) {
+        const i = Math.floor((x - n.gx0) / n.step);
+        const k = Math.floor((z - n.gz0) / n.step);
+        if (i < 0 || k < 0 || i >= n.nb || k >= n.nb) return null;
+        const f = i + k * n.nb;
+        const p = n.pos;
+        const ix = n.idx;
+        let best = null;
+        for (let q = n.start[f]; q < n.start[f + 1]; q++) {
+            const t = n.liste[q];
+            const a = 3 * ix[3 * t];
+            const b = 3 * ix[3 * t + 1];
+            const c = 3 * ix[3 * t + 2];
+            const d = (p[b + 2] - p[c + 2]) * (p[a] - p[c]) + (p[c] - p[b]) * (p[a + 2] - p[c + 2]);
+            if (Math.abs(d) < 1e-12) continue;
+            const u = ((p[b + 2] - p[c + 2]) * (x - p[c]) + (p[c] - p[b]) * (z - p[c + 2])) / d;
+            const v = ((p[c + 2] - p[a + 2]) * (x - p[c]) + (p[a] - p[c]) * (z - p[c + 2])) / d;
+            const w = 1 - u - v;
+            if (u < -1e-6 || v < -1e-6 || w < -1e-6) continue;
+            const y = u * p[a + 1] + v * p[b + 1] + w * p[c + 1];
+            if (best === null || y > best) best = y;
+        }
+        return best;
+    }
+
+    static _wasserNetzGleich(a, b) {
+        if (!a || !b) return a === b;
+        if (a.pos.length !== b.pos.length || a.idx.length !== b.idx.length) return false;
+        for (let i = 0; i < a.pos.length; i++) if (a.pos[i] !== b.pos[i]) return false;
+        for (let i = 0; i < a.idx.length; i++) if (a.idx[i] !== b.idx[i]) return false;
+        return true;
+    }
+
+    // Die Höhe des gezeichneten Wassers an (x, z): das höchste Dreieck der Sheets, die den Punkt tragen — des eigenen Chunks
+    // und der Nachbarn, deren Kante näher als WASSER_BILD_RAND liegt (ihre Rand-Vertices sind versetzt). null = kein Wasser
+    // gezeichnet, undefined = kein Chunk geladen.
+    _wasserBildAt(x, z) {
+        const span = this._voxelChunkConfig(0).span;
+        const R = AnazhRealm.WASSER_BILD_RAND;
+        const cx = Math.floor(x / span);
+        const cz = Math.floor(z / span);
+        const eigen = this._wasserNetz(cx, cz);
+        if (eigen === undefined) return undefined;
+        let best = eigen ? AnazhRealm._wasserNetzHoehe(eigen, x, z) : null;
+        const fx = x - cx * span;
+        const fz = z - cz * span;
+        for (let dz = -1; dz <= 1; dz++) {
+            if (dz < 0 ? fz > R : dz > 0 ? span - fz > R : false) continue;
+            for (let dx = -1; dx <= 1; dx++) {
+                if ((!dx && !dz) || (dx < 0 ? fx > R : dx > 0 ? span - fx > R : false)) continue;
+                const n = this._wasserNetz(cx + dx, cz + dz);
+                if (!n) continue;
+                const y = AnazhRealm._wasserNetzHoehe(n, x, z);
+                if (y !== null && (best === null || y > best)) best = y;
+            }
+        }
+        return best;
+    }
+
+    // Die Kennungen des gezeichneten Wassers über einem Rechteck (eine Kachel der Nah-Streu/Nah-Wiese): je Chunk, dessen Sheet
+    // ein Punkt des Rechtecks lesen kann, sein Netz. Eine Kachel baut neu, sobald eines sich ändert (`_wasserKennungenGleich`).
+    _wasserKennungen(x0, z0, x1, z1) {
+        const span = this._voxelChunkConfig(0).span;
+        const R = AnazhRealm.WASSER_BILD_RAND;
+        const aus = [];
+        for (let cz = Math.floor((z0 - R) / span); cz <= Math.floor((z1 + R) / span); cz++)
+            for (let cx = Math.floor((x0 - R) / span); cx <= Math.floor((x1 + R) / span); cx++)
+                aus.push(cx, cz, this._wasserNetz(cx, cz));
+        return aus;
+    }
+
+    _wasserKennungenGleich(k) {
+        if (!k) return false;
+        for (let i = 0; i < k.length; i += 3) if (this._wasserNetz(k[i], k[i + 1]) !== k[i + 2]) return false;
+        return true;
     }
 
     // B1 — der Main-Zell-Kontext: liest die geladenen Chunk-Zellen + DAS GEZEICHNETE DACH jedes Chunks
@@ -32720,21 +32867,18 @@ class AnazhRealm {
         this.state.hydrosphereMeshes = [];
     }
 
-    // DIE EINE WASSER-WAHRHEIT AM KÖRPER (Welle L, Q6): der Spiegel an (x, z), den das Auge sieht — der Spiegel des
-    // Gesetzes (`_atlasWaterLevelAt`) über dem Grund des Körpers (`grundY`: das Bett trägt die Rand-Füllung, wie im
-    // Zell-Sheet; unbekannt → nur der Kanal-Kern), dazu die Abweichung des Live-Automaten nach derselben Regel, die das
-    // Sheet zeichnet (oberste Zeile mit Pegel > 0,5 und ihr Füllgrad gegen das Flut-Dach). Spieler, Kreatur, Mitspieler
-    // und Schritt-Klang lesen nur sie. Bis V18.531 trug der Spieler das Dach der obersten Wasser-ZELLE (1,8-m-Raster: in
-    // Ruhe 0,47 m über dem See, im Fluss 0,17 m über der Lauf-Fläche), das Tier den rohen Spiegel, der Mitspieler den
-    // Meeresspiegel. Rückgabe: Spiegel (m) oder −Infinity (kein Wasser).
-    // DIE DECKE (D11, Gegenprüfung 07.10.): Wasser zählt für einen Körper nur, wo das Zell-Gesetz es führt — und das Zell-
-    // Gesetz führt jedes Wasser, auch das flache (die Deck-Zelle, `_buildVoxelChunkWaterCells` 4b). Ist die Zelle des Körpers
-    // (die erste nicht-feste über seinem Grund) nicht geflutet, ist dort kein Wasser (Decke, Aquifer-Regel, keine Verbindung
-    // zum Wasser) — außer der Live-Automat trägt es in genau diese Zelle (dann sein zusammenhängendes Dach darüber). Bis
-    // 8f09227d las der Körper den Spiegel ohne Decke: in trockenen Höhlen unter und neben dem See der Mess-Wiese 3511 von
-    // 3511 Proben „nass"; bis zur Gegenprüfung (Runde 3) las er das flache Ufer als sub-zelliges Wasser, das die Welt nicht
-    // zeichnete (in Senken neben den Seen der Kacheln, ohne Verbindung zum See), und rechnete die Aquifer-Regel ein zweites
-    // Mal.
+    // DIE EINE WASSER-WAHRHEIT AM KÖRPER (Welle L, Q6): der Spiegel an (x, z), den das Auge sieht — das GEZEICHNETE Wasser
+    // (`_koerperWasserSpiegel` über `_wasserBildAt`: die Dreiecke des Sheets, die der Renderer bekommt, mit dem Live-Dach des
+    // Automaten und dem flachen Ufer der Deck-Zelle) über dem Grund des Körpers. Spieler, Kreatur, Mitspieler, Schritt-Klang,
+    // Klang-Nässe, Tier-Scheu, Trink-Ziel und die Pflanzen am Boden (Nah-Streu, Nah-Wiese) lesen nur sie. Bis V18.531 trug der
+    // Spieler das Dach der obersten Wasser-ZELLE (1,8-m-Raster: in Ruhe 0,47 m über dem See), das Tier den rohen Spiegel, der
+    // Mitspieler den Meeresspiegel; bis zur Gegenprüfung (Runde 4) las der Körper den Spiegel des Gesetzes an seinem Punkt,
+    // die Welt zeichnete ihn auf dem 1,8-m-Gitter — am Bach der Mess-Wiese 64 m Breite Wasser, in dem der Körper trocken stand
+    // (Runde 3 umgekehrt: 177 m, die die Welt nicht zeichnete). Rückgabe: Spiegel (m) oder −Infinity (kein Wasser).
+    // DIE DECKE (D11, Gegenprüfung 07.10.): eine geflutete Zelle des Körpers trägt das gezeichnete Wasser, solange keine
+    // FEST-Zelle dazwischen liegt; sonst trägt es ihn nur unter offenem Himmel (`_koerperWasserSpiegel`) — unter Fels steht er
+    // trocken. Bis 8f09227d las der Körper den Spiegel ohne Decke: in trockenen Höhlen unter und neben dem See der Mess-Wiese
+    // 3511 von 3511 Proben „nass".
     // DIE GESTALT (D10): mit `gestalt` (`{ linie }` — die Wasserlinie über der Unterkante des Körpers; Infinity = sie trägt
     // nie) schreibt die Wahrheit die LAGE hinein: `gestalt.lage = { tiefe, schwimmt, unterkante }` — der Körper schwimmt,
     // sobald die Säule über seinem Grund die Linie übersteigt (seine Unterkante liegt dann auf Spiegel − Linie), sonst steht er
@@ -32752,57 +32896,40 @@ class AnazhRealm {
         return spiegel;
     }
 
-    // Der Spiegel am Körper (die Wahrheit ohne Gestalt) — nur `_koerperWasser` ruft ihn.
+    // Der Spiegel am Körper (die Wahrheit ohne Gestalt) — nur `_koerperWasser` ruft ihn. Wo ein Chunk geladen ist, ist es das
+    // GEZEICHNETE Wasser (`_wasserBildAt`: das Sheet, auch der Küsten-Aquifer, das Live-Dach des Automaten, das flache Ufer)
+    // unter der DECKE (D11), gelesen an der Zelle des Körpers (die erste nicht-feste über seinem Grund): ist sie geflutet,
+    // trägt sie das Wasser bis zum Spiegel, solange keine FEST-Zelle dazwischen liegt; sonst trägt es den Körper nur unter
+    // offenem Himmel — liegt die oberste Fläche des Gesetzes (`_voxelSurfaceY`) mehr als eine Zelle über seinem Grund, steht
+    // er unter Fels (eine Höhle unter oder neben dem Wasser): trocken, auch wo der Rand eines Sheets unter das Gelände in die
+    // Höhle taucht (am See der Mess-Wiese lag die Anker-Kante in einer 16 m hohen Höhle 15 m über ihrem Boden). Ein Bau-Stempel
+    // (Stamm, Pfeiler) ist kein Fels: das Gesetz kennt ihn nicht, das Sheet läuft durch ihn wie das Wasser um ihn.
+    // Ohne Chunk (die Ferne, die niemand sieht) der Spiegel des Gesetzes über seinem Grund.
     _koerperWasserSpiegel(x, z, grundY) {
         const endlich = Number.isFinite(grundY);
-        let spiegel = this._atlasWaterLevelAt(x, z, endlich ? grundY : -Infinity);
-        if (!this.state.voxelChunks) return spiegel;
+        const bild = this._wasserBildAt(x, z);
+        if (bild === undefined) return this._atlasWaterLevelAt(x, z, endlich ? grundY : -Infinity);
+        if (bild === null) return -Infinity;
+        if (!endlich || !(bild > grundY)) return bild;
         const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
         const cx = Math.floor(x / span);
         const cz = Math.floor(z / span);
-        const key = `${cx},${cz}`;
-        const entry = this.state.voxelChunks.get(key);
+        const entry = this.state.voxelChunks.get(`${cx},${cz}`);
         const cells = entry ? entry.waterCells : null;
-        if (!cells) return spiegel;
-        const i = Math.floor((x - cx * span) / step);
-        const k = Math.floor((z - cz * span) / step);
-        if (i < 0 || k < 0 || i >= dim || k >= dim) return spiegel;
+        if (!cells) return bild;
         const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
         const dq = dim * dim;
-        const b = i + k * dim;
-        const lvlMap = this.state.waterLevelCells;
-        const lvl = lvlMap && lvlMap.size ? lvlMap.get(key) : null;
-        const atlasLand = !(spiegel > -Infinity);
-        const sc = lvl || atlasLand ? this._caColumnScan(cells, lvl, b, dq, dimY) : null;
-        // DER KÜSTEN-AQUIFER: flutet das Zell-Gesetz die Spalte unter dem Wassertisch, wo der Atlas Land sagt (die 3D-Rauheit
-        // taucht das Gelände unter den Meeresspiegel, `_buildVoxelChunkWaterCells`), steht das Wasser auf dem Wassertisch —
-        // wie das Sheet es zeichnet. Bis zur Gegenprüfung stand der Körper dort trocken (an der Küste −88/−880 110 von 110
-        // Spalten, in denen das Sheet Wasser über dem Boden zeichnet), Klang und Tier-Scheu lasen das Meer überall.
-        if (atlasLand && sc.floodTopJ >= 0) {
-            const tisch = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-            if (oy + sc.floodTopJ * step < tisch) spiegel = tisch;
-        }
-        if (lvl) {
-            const liveRel = sc.liveTopJ >= 0 ? (sc.liveTopJ + sc.liveFrac) * step : -1;
-            if (sc.floodTopJ < 0) {
-                // Live-Wasser jenseits der Flut (ein gegrabener Kanal, ein Stau): sein Dach.
-                if (liveRel >= 0 && oy + liveRel > spiegel) spiegel = oy + liveRel;
-            } else if (Number.isFinite(spiegel)) {
-                let d = Math.max(0, liveRel) - (sc.floodTopJ + 1) * step;
-                if (d > -0.05 && d < 0.05) d = 0;
-                spiegel += Math.max(-14, Math.min(4, d));
-            }
-        }
-        if (!endlich || !(spiegel > grundY)) return spiegel;
-        // Die Zelle des Körpers und das Urteil des Zell-Gesetzes über sie: geflutet (WATER) trägt sie den Spiegel.
+        const b = Math.floor((x - cx * span) / step) + Math.floor((z - cz * span) / step) * dim;
         const ZS = AnazhRealm.CELL_STATE;
         let jK = Math.max(0, Math.min(dimY - 1, Math.floor((grundY - oy) / step)));
         for (let n = 0; n < 2 && jK + 1 < dimY && cells[b + jK * dq] === ZS.SOLID; n++) jK++;
-        if (cells[b + jK * dq] === ZS.WATER) return spiegel;
-        if (!lvl || !(lvl[b + jK * dq] > 0.5)) return -Infinity;
-        let jT = jK;
-        while (jT + 1 < dimY && cells[b + (jT + 1) * dq] !== ZS.SOLID && lvl[b + (jT + 1) * dq] > 0.5) jT++;
-        return oy + (jT + lvl[b + jT * dq]) * step;
+        if (cells[b + jK * dq] === ZS.WATER) {
+            for (let j = jK + 1; j < dimY && oy + j * step < bild; j++)
+                if (cells[b + j * dq] === ZS.SOLID) return -Infinity;
+            return bild;
+        }
+        const oben = this._voxelSurfaceY(x, z);
+        return oben !== null && grundY < oben - step ? -Infinity : bild;
     }
 
     // DIE EINE SZENEN-TIEFE: jeder r184-ViewportDepthTextureNode hält seinen EIGENEN Klon je Render-Ziel und kopiert
@@ -33323,7 +33450,7 @@ class AnazhRealm {
                 if (y === null) continue;
                 const gruen = this._chunkGruenAt(entry, cx, cz, x, z) || 0;
                 if (gruen <= 0) continue;
-                if (typeof this._isAboveWaterAt === "function" && !this._isAboveWaterAt(x, z, 0.1)) continue;
+                if (y < this._koerperWasser(x, z, y) + 0.1) continue; // nie im gezeichneten Wasser (wie die Nah-Streu)
                 const m = this._feuchteAt ? this._feuchteAt(x, z, y) : 0;
                 const L = this._canopyLightAt(x, z, y, m);
                 const hang = this._slopeAt(x, z, (px, pz) => {
@@ -33373,15 +33500,16 @@ class AnazhRealm {
         const tcx = Math.floor(cam.x / NW.kachel);
         const tcz = Math.floor(cam.z / NW.kachel);
         const reichweite = Math.ceil(NW.radius / NW.kachel) + 1;
-        // Chunk-Neubau → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden).
+        // Chunk-Neubau oder neues gezeichnetes Wasser → betroffene Kacheln neu (ihre Büschel standen auf dem alten Boden,
+        // am alten Ufer).
         for (const [key, k] of nw.kacheln) {
+            let neu = !this._wasserKennungenGleich(k.wasser);
             for (const ck of k.chunks) {
+                if (neu) break;
                 const e = st.voxelChunks && st.voxelChunks.get(ck);
-                if (!e || e.surfMap !== k.chunkKarten.get(ck)) {
-                    this._nahWieseKachelFaellt(key);
-                    break;
-                }
+                if (!e || e.surfMap !== k.chunkKarten.get(ck)) neu = true;
             }
+            if (neu) this._nahWieseKachelFaellt(key);
         }
         const wunsch = [];
         for (let dz = -reichweite; dz <= reichweite; dz++) {
@@ -33438,9 +33566,13 @@ class AnazhRealm {
                 const e = st.voxelChunks.get(ck);
                 chunkKarten.set(ck, e ? e.surfMap : undefined);
             }
+            // die Kennungen des gezeichneten Wassers, das die Büschel lasen (ihr Jitter reicht 0,34 m über die Kachel)
+            const x0 = w.tx * NW.kachel - 0.34;
+            const z0 = w.tz * NW.kachel - 0.34;
+            const wasser = this._wasserKennungen(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
             nw.kacheln.set(
                 w.key,
-                Object.assign({ chunks, chunkKarten }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
+                Object.assign({ chunks, chunkKarten, wasser }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
             );
             nw.neu = true;
             gebaut++;
@@ -33703,8 +33835,9 @@ class AnazhRealm {
     // Gewicht · Last-Dichte (`_effectiveFoliageDensity`), n = ⌊λ + Wurf⌋. Der Wurf-Strom je (Zelle, Art) hängt nur
     // an der Zelle (Γ5): dieselbe Streu bei jedem Besuch, und eine dünnere Last ist ein Präfix der vollen (die
     // Ernte-Identität `gi|gj|art|i` bleibt). Fuß auf dem GERENDERTEN Boden (`_chunkSurfaceAt`), Pfade bleiben frei,
-    // nur Arten mit Ufer-Band stehen im Wasser. Rückgabe { items, chunks } oder null, solange ein Chunk unter der
-    // Kachel noch keine Boden-Karte hat.
+    // nur Arten mit Ufer-Band stehen im Wasser — im GEZEICHNETEN (`_koerperWasser`). Rückgabe { items, chunks, wasser }
+    // (`wasser`: die Kennungen des gezeichneten Wassers, das die Kachel las, `_wasserKennungen`) oder null, solange ein Chunk
+    // unter der Kachel noch keine Boden-Karte hat.
     _nahStreuKachel(tx, tz, arten) {
         const NS = AnazhRealm.NAH_STREU;
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
@@ -33791,7 +33924,8 @@ class AnazhRealm {
                 }
             }
         }
-        return { items, chunks };
+        const K = NS.kachel;
+        return { items, chunks, wasser: this._wasserKennungen(tx * K, tz * K, (tx + 1) * K, (tz + 1) * K) };
     }
 
     // Die Senke einer (Art, Gestalt, Stufe, Teil): die DATEN des ganzen Rings — je Kachel ein Block (Matrizen = Ort ·
@@ -33984,16 +34118,19 @@ class AnazhRealm {
         const tcx = Math.floor(cam.x / NS.kachel);
         const tcz = Math.floor(cam.z / NS.kachel);
         const reichweite = Math.ceil(NS.radius / NS.kachel) + 1;
-        // Chunk-Neubau → die betroffenen Kacheln neu (ihre Pflanzen standen auf dem alten Boden).
+        // Chunk-Neubau oder neues gezeichnetes Wasser → die betroffenen Kacheln neu (ihre Pflanzen standen auf dem alten
+        // Boden, am alten Ufer).
         for (const [key, k] of ns.kacheln) {
             if (!k.chunks) continue;
+            let neu = !this._wasserKennungenGleich(k.wasser);
             for (const [ck, karte] of k.chunks) {
+                if (neu) break;
                 const e = st.voxelChunks && st.voxelChunks.get(ck);
-                if (!e || e.surfMap !== karte) {
-                    this._nahStreuKachelEntsorgen(k);
-                    ns.kacheln.delete(key);
-                    break;
-                }
+                if (!e || e.surfMap !== karte) neu = true;
+            }
+            if (neu) {
+                this._nahStreuKachelEntsorgen(k);
+                ns.kacheln.delete(key);
             }
         }
         const wunsch = [];
@@ -34041,6 +34178,7 @@ class AnazhRealm {
                     key: w.key,
                     items: satz.items,
                     chunks: satz.chunks,
+                    wasser: satz.wasser,
                     senken: new Set(),
                     zustand: null,
                     nahZahl: 0,
@@ -91007,6 +91145,9 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // und jede Quelle beginnt als Rinnsal: ein alter Chunk trüge den Kanal, der aus dem Nichts bricht; seit Runde 4 trägt der
 // Damm eine Krone (`dammBreite`): ein alter Chunk trüge die Schneide, über die das Wasser ins tiefere Gelände lief.
 AnazhRealm.CHUNK_IDB_FORM = "damm-krone";
+// Der Saum des gezeichneten Wassers (`_wasserBildAt`): die Vertices eines Wasser-Sheets sind bis 0,3 · 1,8 m = 0,54 m versetzt
+// (der Gitter-Jitter in `_computeWaterSheetData`) — ein Punkt bis so nah an der Chunk-Kante kann im Sheet des Nachbarn liegen.
+AnazhRealm.WASSER_BILD_RAND = 0.6;
 // DIE HÖHLEN-SICHT (Welle 7, `_hoehlenSicht`): der Saum jeder Mündungs-, Portal-, Rand- und Luft-Box — `schritte` Gitter-
 // Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
 // Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).
