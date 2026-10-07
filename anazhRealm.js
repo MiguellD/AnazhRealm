@@ -54462,11 +54462,13 @@ class AnazhRealm {
 
     // V18.387 — die Sichthöhe eines bereits gespawnten Architektur-Eintrags
     // (Baum-HISM). Nicht-Baum-Einträge → 0 (der Chooser läuft dann roh).
-    _lodTreeVisHeight(entry) {
+    // `nurLesen`: eine unbekannte Höhe ist null, ohne die Höhen-Stufe zu bestellen (die Kronen-Hülle der Kamera fragt beim
+    // Entstehen jedes Baums — das Bestellen bleibt beim LOD-Takt, der die Höhe braucht).
+    _lodTreeVisHeight(entry, nurLesen) {
         if (!entry) return 0;
         const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
         const preset = this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
-        if (preset && this._foundryPresetIsTree(preset)) return this._foundrySichtHoehe(preset, entry, s);
+        if (preset && this._foundryPresetIsTree(preset)) return this._foundrySichtHoehe(preset, entry, s, nurLesen);
         if (!entry._lodSpecies || !Number.isFinite(entry._lodVariantIndex)) return 0;
         return this._lodTreeVisHeightFor(entry._lodSpecies, entry._lodVariantIndex, s);
     }
@@ -54478,8 +54480,8 @@ class AnazhRealm {
     // standen mit Sichthöhe 0, die Stufenwahl lief roh, die Masken mit 17–60 m Sichthöhe: zwischen ~12 und ~25 m stand
     // ein Baum als L1 ALLEIN, deren Maske ihn erst halb einblendet (Birke 15,7 m: Rinde zu 66 % gezeichnet, die L0
     // fehlte) — die gerasterten Geister. null = die Höhe ist (noch) nicht bekannt: KEIN Stufen-Urteil, nie roh.
-    _foundrySichtHoehe(preset, entry, scale) {
-        const h0 = this._foundryBaumHoehe(preset, entry);
+    _foundrySichtHoehe(preset, entry, scale, nurLesen) {
+        const h0 = this._foundryBaumHoehe(preset, entry, nurLesen);
         if (h0 == null) return null;
         return h0 * (Number.isFinite(scale) && scale > 0 ? scale : 1);
     }
@@ -54488,7 +54490,7 @@ class AnazhRealm {
     // der Höhen-Stufe → _foundryGruppenHoehe). Unbekannt: die Höhen-Stufe wird bestellt (der EINE Bestell-Weg
     // _foundryFlattenFor, nah zuerst über die Eintrags-Position) und null kommt zurück — der Aufrufer wartet wie auf
     // ein ladendes Asset. Kann das Studio die Höhen-Stufe nicht bauen, meldet sich das einmal je Körper LAUT.
-    _foundryBaumHoehe(preset, entry) {
+    _foundryBaumHoehe(preset, entry, nurLesen) {
         const f = this._foundry;
         const gestalt = f ? this._foundryVariantFor(entry.seed, preset) : null;
         if (gestalt == null) return null; // Buch kalt
@@ -54496,6 +54498,7 @@ class AnazhRealm {
         const key = this._foundryKoerperKey(preset, gestalt, stufe, this._artifactStudioOv(entry));
         const h0 = f.hoehen ? f.hoehen.get(key) : undefined;
         if (h0 > 0) return h0;
+        if (nurLesen) return null;
         if (this._foundryFlattenFor(entry, preset, stufe) === false) {
             if (!f.hoeheFehlt) f.hoeheFehlt = new Set();
             if (!f.hoeheFehlt.has(key)) {
@@ -67671,7 +67674,7 @@ class AnazhRealm {
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
         const _krone = this._kronenRadiusFuer(type, entry.scale);
         if (_krone) {
-            const _h = this._lodTreeVisHeight(entry);
+            const _h = this._lodTreeVisHeight(entry, true);
             this._kronenStreuNeu("a:" + entry.id, entry.position.x, entry.position.z, _krone, {
                 krone: this._naturKrone(type, entry),
                 y0: entry.position.y,
@@ -68898,7 +68901,7 @@ class AnazhRealm {
             this._populateBlockerAABBs(e);
             const kr = this._kronenRadiusFuer(e.type, e.scale);
             if (!kr) continue;
-            const h = this._lodTreeVisHeight(e);
+            const h = this._lodTreeVisHeight(e, true);
             this._kronenStreuNeu("a:" + e.id, e.position.x, e.position.z, kr, {
                 krone: this._naturKrone(e.type, e),
                 y0: e.position.y,
