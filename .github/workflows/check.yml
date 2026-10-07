@@ -782,7 +782,9 @@ jobs:
               # jeden Draw trotz Schatten-Render, kein Bundle unter dem Override-Stoff, der Replay zeichnet Blick Y wie der
               # direkte Pfad. Dazu die STAND-WAND (Welle K): Programme mit denselben Quellen teilen EINE geteilte Gruppe, im
               # Stand je Render kein Voll-Refresh, kein Upload, kein zweiter Gang ueber einen Knoten oder eine Gruppe; eine
-              # Aenderung im Stand zeichnet wie der volle Refresh. --selftest zuerst: injizierte Taeter fallen rot.
+              # Aenderung im Stand zeichnet wie der volle Refresh; VERSCHACHTELT: ein Schatten-Render, dessen Werfer ohne
+              # Diaet die Kamera-Knoten ueber die Vendor-Bahn stellt, laesst keinen Stempel ueberleben (181d3c9e: 0,11).
+              # --selftest zuerst: injizierte Taeter fallen rot.
               run: npm run gate:kamera-treue
 
             - name: Look-Physik-Linse (der Look gegen die gemessene Realität)

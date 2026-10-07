@@ -6,11 +6,11 @@
 // Frame, die Diät selbst netto 0,7 (Prüfung) + 1,0 (Gang) ms, der Replay 0,1 ms. Die Linse zählt und zieht jeden
 // verschachtelten Bereich vom äußeren ab:
 //   Zahl je Frame: Prüfungen · Voll-Refreshs (Grund) · Gänge der Diät über Vorher-Knoten, Knoten und geteilte Gruppen
-//                  (und wie viele davon einen Knoten oder eine Gruppe im SELBEN Render wiederholen) · Uploads geteilter
+//                  (und wie viele davon einen Knoten oder eine Gruppe im SELBEN Render-Abschnitt wiederholen) · Uploads geteilter
 //                  und eigener Gruppen · writeBuffer · Replay-Bürger · Renders
 //   Netto je Frame: Prüfung · Gang · Replay · Aufnahme · Voll-Refresh (Knoten · Bindungen · Geometrie) · Schatten-
 //                  Render · Szene — und WO der Schatten-Render startet (Pfad der umschließenden Bereiche)
-// Urteil (Gebot 7): im Stand wiederholt die Diät keinen Gang (je Knoten und geteilter Gruppe EINMAL je Render).
+// Urteil (Gebot 7): im Stand wiederholt die Diät keinen Gang (je Knoten und geteilter Gruppe EINMAL je Render-Abschnitt).
 //
 //   Seite:     window.__diaetLauf({ frames: 90, modus: "ruhe"|"drehen"|"gehen", grad: 1, tiere: "halten"|"frei" })
 //   Werkbank:  node scripts/werkbank.cjs diaet [frames] [--modus ruhe] [--tiere halten] | diaet --selbsttest
@@ -63,9 +63,11 @@ function diaetLauf(opts) {
         const zaehle = (k, n = 1) => {
             if (c) c.n[k] = (c.n[k] || 0) + n;
         };
+        // Die Wiederholung zählt je RENDER-ABSCHNITT (Render-Id und `info.calls`, wie der Stempel des Gangs): nach einem
+        // verschachtelten Render stellt der äußere seine Knoten zu Recht ein zweites Mal.
         const besuch = (art, id) => {
             if (!c) return;
-            const k = nf.renderId + ":" + art + ":" + id;
+            const k = nf.renderId + ":" + rend.info.calls + ":" + art + ":" + id;
             const v = (c.besuche.get(k) || 0) + 1;
             c.besuche.set(k, v);
             zaehle("gang" + art);

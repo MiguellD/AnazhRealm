@@ -95979,11 +95979,18 @@ AnazhRealm._tuerOffenRad = function () {
 //      über Programme teilt (_configureRenderer), tragen die Programme DIESELBEN Vorher-Knoten, render-/frame-Knoten und
 //      geteilten Gruppen. Der Gang je Programm wiederholte sie: gemessen an der Mess-Wiese (echte GPU, Stand, ein Frame)
 //      69–89 Gänge über 9–12 geteilte Gruppen, 930–1 150 Knoten-Besuche, 190–225 Vorher-Besuche — jeder Knoten im Schnitt
-//      in 60 Programmen. Jetzt stellt die Diät jeden Knoten und lädt jede geteilte Gruppe EINMAL je Render (Render-Stempel
-//      am Knoten und an der Gruppe; die Uniform-Knoten einer geteilten Gruppe sind Knoten jedes Programms, das sie trägt —
-//      der erste Gang hat sie gestellt). Nur Knoten mit eigener Arbeit je Programm bleiben je Programm: die Instanz-Knoten
-//      (je InstancedMesh, 61 von 101 Programmen) haben ohnehin ihren eigenen Stempel. Ein Knoten, der je Zeichen-Objekt
-//      arbeitet (Takt object, oder ein Verweis ohne festes Objekt — er liest frame.object), geht je Programm wie bisher.
+//      in 60 Programmen. Jetzt stellt die Diät jeden Knoten und lädt jede geteilte Gruppe EINMAL je RENDER-ABSCHNITT
+//      (Stempel am Knoten und an der Gruppe; die Uniform-Knoten einer geteilten Gruppe sind Knoten jedes Programms, das sie
+//      trägt — der erste Gang hat sie gestellt). Nur Knoten mit eigener Arbeit je Programm bleiben je Programm: die Instanz-
+//      Knoten (je InstancedMesh, 61 von 101 Programmen) haben ohnehin ihren eigenen Stempel. Ein Knoten, der je Zeichen-
+//      Objekt arbeitet (Takt object, oder ein Verweis ohne festes Objekt — er liest frame.object), geht je Programm wie bisher.
+//  (5) DER RENDER-ABSCHNITT (Gegenprüfung K, 07.10.): der Stempel ist das Paar (Render-Id, `info.calls`) und wechselt beim
+//      Betreten UND Verlassen jedes Renders. r184 stapelt die Render-Id (`_renderScene` setzt sie auf `info.calls` und gibt
+//      dem äußeren Render danach seine zurück), `info.calls` zählt jeden betretenen Render und fällt nie (`info.reset` lässt
+//      ihn stehen). Ein verschachtelter Render, der die geteilten Kamera-Knoten über die VENDOR-Bahn auf seine Kamera stellt
+//      (ein Werfer ohne Diät, oder jeder Diät-Werfer der Kaskade an einem Wächter), lässt die Render-Id unverändert zurück:
+//      ein Stempel nur aus ihr überlebte ihn, die nächste erstmals geladene Gruppe trug die Schatten-Kamera (gemessen am
+//      echten Renderer: das Bild 0,11 gleich mit dem vollen Refresh statt 1,0 — gate:kamera-treue VERSCHACHTELT).
 AnazhRealm._diaetGang = function (ro, nbs) {
     const jeZeichen = (n, typ) => typ === "object" || (typeof n.property === "string" && n.object === null);
     const vor = [],
@@ -96009,17 +96016,22 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     // Vorher-Knoten kann einen Render verschachteln (der Schatten am ersten Licht-Empfänger), und der stellt den EINEN
     // Node-Frame auf SEINE Kamera und SEIN Objekt — der Frame wird darum wie im Vendor je Vorher-Knoten und nach allen
     // Vorher-Knoten neu gestellt (ein vorher gemerkter Frame zeichnete das Hauptbild mit der Schatten-Kamera:
-    // gate:kamera-treue ÄNDERUNG 0,10 statt 1).
+    // gate:kamera-treue ÄNDERUNG 0,10 statt 1). Der Stempel ist der RENDER-ABSCHNITT (rid, `rend.info.calls`, s. (5)):
+    // ein Vorher-Knoten trägt den Abschnitt NACH seinem Ruf (der Render, den er verschachtelt, ist dann vorbei), Knoten
+    // und Gruppen den Abschnitt nach allen Vorher-Knoten.
     let nf = null;
     for (const n of k.vor) {
-        if (n._anazhVorRid === rid) continue;
-        n._anazhVorRid = rid;
+        if (n._anazhVorRid === rid && n._anazhVorRuf === rend.info.calls) continue;
         rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
+        n._anazhVorRid = rid;
+        n._anazhVorRuf = rend.info.calls;
     }
     for (const n of k.eigenVor) rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
+    const ruf = rend.info.calls;
     for (const n of k.knoten) {
-        if (n._anazhRid === rid) continue;
+        if (n._anazhRid === rid && n._anazhRuf === ruf) continue;
         n._anazhRid = rid;
+        n._anazhRuf = ruf;
         (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
     }
     if (k.eigenKnoten.length) {
@@ -96028,8 +96040,9 @@ AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     }
     let alle = null;
     for (const g of k.gruppen) {
-        if (g._anazhRid === rid) continue;
+        if (g._anazhRid === rid && g._anazhRuf === ruf) continue;
         g._anazhRid = rid;
+        g._anazhRuf = ruf;
         rend._bindings._update(g, alle || (alle = ro.getBindings()));
     }
 };

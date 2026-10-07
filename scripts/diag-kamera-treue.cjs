@@ -30,6 +30,15 @@
 //   (f) ÄNDERUNG — im Stand rückt eine Kiste, ein Blatt dreht: das Bild der Diät gleicht dem Bild, in dem jedes Objekt
 //       voll refresht (≥ 0,999); Lauf-Kontrolle: eine Diät, die nie refresht, weicht ab (< 0,98). So fiel der gemerkte
 //       Node-Frame (Hauptbild mit der Schatten-Kamera: 0,10) beim Bau des Gangs auf.
+//   (g) VERSCHACHTELT — ein verschachtelter Render, der die geteilten Kamera-Knoten über die VENDOR-Bahn auf SEINE Kamera
+//       stellt (ein Werfer ohne Diät), macht jeden Stempel des äußeren Renders alt. Eigene Bühne (in (f) wirft jeder als
+//       Diät-Stoff und stempelt neu — dort ist die Klasse unsichtbar): ein Diät-Stoff ohne Schatten zuerst (er stellt die
+//       Kamera-Knoten), der Diät-Boden (sein Schatten startet den verschachtelten Render), ein Werfer ohne Diät. Die Diät
+//       zeichnet wie der volle Refresh (≥ 0,999); Lauf-Kontrollen: ein verschachtelter Render lief, und der Gang mit
+//       einem Stempel nur aus der Render-Id (er überlebt den verschachtelten Render) weicht ab (< 0,98). Gegenprüfung
+//       07.10.: der Gang von 181d3c9e zeichnete hier 0,11.
+//   Die Wiederholung zählt je RENDER-ABSCHNITT (Render-Id und `info.calls`): nach einem verschachtelten Render stellt
+//   der äußere seine Knoten zu Recht ein zweites Mal.
 //   Die Bühne nimmt keinen Spiel-Loop an (die Welt bootet weiter und renderte sonst mitten hinein).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil über einen grünen Lauf und je einen injizierten
 // Täter — jeder fällt rot und wird genannt.
@@ -86,6 +95,16 @@ function urteil(z) {
             v.push(`ÄNDERUNG ${pfad}: nach Kiste und Blatt zeichnet die Diät ${a.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}) — ein vergessener Refresh`);
         if (!(a.taeter < BLIND_GRENZE))
             v.push(`ÄNDERUNG ${pfad}: eine Diät, die nie refresht, zeichnet ${a.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Änderungs-Probe ist blind`);
+        const n = (s.verschachtelt || {})[pfad] || {};
+        if (!(n.renders > 0)) v.push(`VERSCHACHTELT ${pfad}: kein verschachtelter Render im Bild der Diät — die Probe ist blind`);
+        if (!(n.diaet >= BILD_SOLL))
+            v.push(
+                `VERSCHACHTELT ${pfad}: nach einem verschachtelten Render über die Vendor-Bahn (Werfer ohne Diät) zeichnet die Diät ${n.diaet} gleich mit dem vollen Refresh (Soll ≥ ${BILD_SOLL}) — ein Stempel überlebte den verschachtelten Render, die nächste geteilte Gruppe trug dessen Kamera`
+            );
+        if (!(n.taeter < BLIND_GRENZE))
+            v.push(
+                `VERSCHACHTELT ${pfad}: ein Stempel nur aus der Render-Id zeichnet ${n.taeter} gleich (Soll < ${BLIND_GRENZE}) — die Probe ist blind (oder der Gang liest seinen Render-Abschnitt nicht aus \`rend.info.calls\`)`
+            );
     }
     return v;
 }
@@ -100,6 +119,7 @@ function selbsttest() {
             direkt: ruhig,
             replay: ruhig,
             aenderung: { direkt: { diaet: 1, taeter: 0.93 }, replay: { diaet: 1, taeter: 0.93 } },
+            verschachtelt: { direkt: { renders: 1, diaet: 1, taeter: 0.11 }, replay: { renders: 1, diaet: 1, taeter: 0.11 } },
         },
     };
     const fehler = [];
@@ -128,6 +148,13 @@ function selbsttest() {
         { name: "Gruppe je Programm", z: mit("stand.teilen", { gruppen: 8 }), muss: /tragen 8 geteilte Gruppen statt 1/ },
         { name: "Teilen blind", z: mit("stand.teilen", { programme: 0 }), muss: /TEILEN: 0 Karten-Programme/ },
         { name: "Stand blind", z: mit("stand.direkt", { pruef: 0 }), muss: /STAND direkt: keine Diät-Prüfung/ },
+        {
+            name: "Stempel überlebt den verschachtelten Render",
+            z: mit("stand.verschachtelt.replay", { diaet: 0.1099 }),
+            muss: /VERSCHACHTELT replay: .* 0\.1099 .* ein Stempel überlebte den verschachtelten Render/,
+        },
+        { name: "Verschachtelt blind (Täter)", z: mit("stand.verschachtelt.direkt", { taeter: 1 }), muss: /nur aus der Render-Id zeichnet 1 gleich/ },
+        { name: "kein verschachtelter Render", z: mit("stand.verschachtelt.replay", { renders: 0 }), muss: /VERSCHACHTELT replay: kein verschachtelter Render/ },
     ];
     for (const f of faelle) {
         const v = urteil(f.z);
@@ -326,10 +353,10 @@ function buehne() {
         const W = 160,
             H = 120;
         const rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
-        const schuss = async () => {
+        const schuss = async (sc = szene) => {
             nf.update();
             rend.setRenderTarget(rt);
-            rend.render(szene, kam);
+            rend.render(sc, kam);
             rend.setRenderTarget(null);
             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
             const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
@@ -390,8 +417,10 @@ function buehne() {
             rend._renderScene = zaehlUm(nurStapel);
             const bSchatten = await replay(fremderStoff);
             rend._renderScene = zaehlUm(spielSzene);
-            // (d)(e)(f) DIE STAND-WAND (Welle K): die Diät-Arbeit je Render am echten Renderer — Prüfungen, Voll-Refreshs,
-            // die Gänge der Diät über Vorher-Knoten, Knoten und geteilte Gruppen (je Render-Id), die Uploads geteilter Gruppen.
+            // (d)(e)(f)(g) DIE STAND-WAND (Welle K): die Diät-Arbeit je Render am echten Renderer — Prüfungen, Voll-Refreshs,
+            // die Gänge der Diät über Vorher-Knoten, Knoten und geteilte Gruppen (je Render-Abschnitt: Render-Id und
+            // `info.calls` — nach einem verschachtelten Render stellt der äußere seine Knoten zu Recht neu), die Uploads
+            // geteilter Gruppen.
             const A = r.constructor;
             const diaetRoh = A._diaetRefresh,
                 schreibRoh = A._diaetGeteiltSchreiben;
@@ -405,7 +434,7 @@ function buehne() {
                 sammle = null;
             const zs = { pruef: 0, voll: 0, besuche: new Map(), uploads: 0 };
             const besuch = (art, id) => {
-                const k = nf.renderId + ":" + art + id;
+                const k = nf.renderId + ":" + rend.info.calls + ":" + art + id;
                 zs.besuche.set(k, (zs.besuche.get(k) || 0) + 1);
             };
             A._diaetRefresh = function (obs, ro, frame, altNR) {
@@ -446,14 +475,19 @@ function buehne() {
                 if (messen && b && b.groupNode && b.groupNode.shared === true) zs.uploads++;
                 return ubRoh.call(this, b);
             };
-            // Ein verschachtelter Render (der Schatten, den ein Vorher-Knoten im Gang startet) ist nie der Gang.
+            // Ein verschachtelter Render (der Schatten, den ein Vorher-Knoten im Gang startet) ist nie der Gang; (g) zählt ihn.
             const szeneMitGang = rend._renderScene;
+            let tiefe = 0,
+                verschachtelteRenders = 0;
             rend._renderScene = function (sc, c, f) {
                 const alt = imSchreib;
                 imSchreib = false;
+                if (tiefe > 0) verschachtelteRenders++;
+                tiefe++;
                 try {
                     return szeneMitGang.call(this, sc, c, f);
                 } finally {
+                    tiefe--;
                     imSchreib = alt;
                 }
             };
@@ -485,7 +519,7 @@ function buehne() {
                     for (const [k, n] of zs.besuche)
                         if (n > 1) {
                             wiederholt += n - 1;
-                            const art = k.split(":")[1][0];
+                            const art = k.split(":")[2][0];
                             wer[art] = (wer[art] || 0) + n - 1;
                         }
                     for (const k in wer) wer[k] /= 4;
@@ -531,6 +565,78 @@ function buehne() {
                     bild[bundle ? "replay" : "direkt"] = { diaet: gleich(diaetBild, wahr), taeter: gleich(taeterBild, wahr2) };
                 }
                 stand.aenderung = bild;
+                // (g) VERSCHACHTELT (Gegenprüfung 07.10.): eine eigene Bühne, in deren Schatten-Render KEIN Diät-Stoff wirft —
+                // die geteilten Kamera-Knoten stellt dort nur die Vendor-Bahn des Werfers ohne Diät. Ein Diät-Stoff ohne
+                // Schatten zeichnet zuerst (renderOrder −1: er stellt und stempelt die Kamera-Knoten), dann startet der
+                // Diät-Boden den Schatten; seine erstmals geladene Gruppe trägt die Kamera, die die Knoten JETZT halten.
+                const szene2 = new T.Scene();
+                const licht2 = new T.DirectionalLight(0xffffff, 3);
+                licht2.position.set(6, 12, 4);
+                licht2.castShadow = true;
+                licht2.shadow.mapSize.set(256, 256);
+                Object.assign(licht2.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 0.5, far: 50 });
+                licht2.shadow.camera.updateProjectionMatrix();
+                szene2.add(licht2, licht2.target, new T.AmbientLight(0xffffff, 0.35));
+                const gruppe2 = new T.BundleGroup();
+                gruppe2.name = "kamera-treue:VERSCHACHTELT";
+                szene2.add(gruppe2);
+                const stein = new T.Mesh(new T.BoxGeometry(2, 2, 2), diaet(new T.MeshStandardNodeMaterial({ color: 0x8080c0 })));
+                stein.position.set(-6, 1, 3);
+                stein.renderOrder = -1;
+                stein.castShadow = false;
+                stein.receiveShadow = false;
+                stein.frustumCulled = false;
+                gruppe2.add(stein);
+                const boden2 = new T.Mesh(
+                    new T.PlaneGeometry(30, 30),
+                    diaet(
+                        new T.MeshStandardNodeMaterial({
+                            colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
+                        })
+                    )
+                );
+                boden2.rotation.x = -Math.PI / 2;
+                boden2.receiveShadow = true;
+                boden2.castShadow = false;
+                boden2.frustumCulled = false;
+                gruppe2.add(boden2);
+                const werfer = new T.Mesh(new T.BoxGeometry(2, 4, 2), new T.MeshStandardNodeMaterial({ color: 0x8a6a4a }));
+                werfer.position.set(3, 2, 0);
+                werfer.renderOrder = 1;
+                werfer.castShadow = true;
+                werfer.receiveShadow = false;
+                werfer.frustumCulled = false;
+                gruppe2.add(werfer);
+                // Der Täter (Lauf-Kontrolle): derselbe Gang, dem `info.calls` stehen bleibt (er liest die Render-Id) — sein
+                // Stempel ist nur die Render-Id und überlebt den verschachtelten Render. Liest der Gang seinen Abschnitt
+                // anderswo, gleicht der Täter dem Gang und die Kontrolle fällt rot (nie still). Ohne eval (die CSP der Seite).
+                const taeterGang = (rr, ro, rid) => schreibRoh(Object.create(rr, { info: { value: { calls: rid } } }), ro, rid);
+                const mit2 = async (refresh, gang) => {
+                    const altR = A._diaetRefresh,
+                        altG = A._diaetGeteiltSchreiben;
+                    if (refresh) A._diaetRefresh = refresh;
+                    if (gang) A._diaetGeteiltSchreiben = gang;
+                    try {
+                        return await schuss(szene2);
+                    } finally {
+                        A._diaetRefresh = altR;
+                        A._diaetGeteiltSchreiben = altG;
+                    }
+                };
+                const verschachtelt = {};
+                for (const bundle of [false, true]) {
+                    gruppe2.isBundleGroup = bundle;
+                    gruppe2.needsUpdate = true;
+                    for (let i = 0; i < 3; i++) await schuss(szene2);
+                    const r0 = verschachtelteRenders;
+                    const diaetBild = await mit2(null, null);
+                    const renders = verschachtelteRenders - r0;
+                    const wahr = await mit2(immer, null);
+                    const taeterBild = await mit2(null, taeterGang);
+                    const wahr2 = await mit2(immer, null);
+                    verschachtelt[bundle ? "replay" : "direkt"] = { renders, diaet: gleich(diaetBild, wahr), taeter: gleich(taeterBild, wahr2) };
+                }
+                stand.verschachtelt = verschachtelt;
             } finally {
                 A._diaetRefresh = diaetRoh;
                 A._diaetGeteiltSchreiben = schreibRoh;
@@ -641,6 +747,7 @@ function buehne() {
         `\n✅ GRÜN — die Aufnahme verfolgt ${out.aufnahme.verfolgt} von ${out.aufnahme.gezeichnet} Draws trotz Schatten-Render, ` +
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
-            `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs, 0 Uploads, 0 wiederholte Gänge (direkt und Replay); nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}).`
+            `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs, 0 Uploads, 0 wiederholte Gänge (direkt und Replay); nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
+            `VERSCHACHTELT (Werfer ohne Diät) ${out.stand.verschachtelt.direkt.diaet}/${out.stand.verschachtelt.replay.diaet} (Stempel nur aus der Render-Id ${out.stand.verschachtelt.direkt.taeter}/${out.stand.verschachtelt.replay.taeter}).`
     );
 })();
