@@ -6,9 +6,11 @@
 // `obtainPortalForWorld` → `_buildPortalOverlay`, die übersetzte Welt über `acceptTranslatedManifest` +
 // `buildTranslatedWorld` mit gestubbtem LLM). Gemessen wird nur, was die Heimat KONSUMIERT, und was die Welt sichtbar
 // tut (Journal der Heimat, Zustand der Welt-UI):
-//   K1 ready      die Heimat empfängt die ready-Meldung der Welt (der Handshake schließt); trägt die Welt ein
-//                 manifest.json, steht die Heimat danach auf Stufe „nativ" mit dem Label und jedem Wort des Manifests
-//                 (die Welt las ihr Manifest und meldete es im ready — Konsum statt Quelltext-Zitat)
+//   K1 ready      die Heimat empfängt die ready-Meldung der Welt (der Handshake schließt); das SOLL des Manifests
+//                 steht in WELTEN (`manifest: true`), nie in der Existenz der Datei: eine Soll-Welt liefert ihr
+//                 worlds/<id>/manifest.json (Form: schemaVersion 1.0 · id · label · dsl) und die Heimat steht danach auf
+//                 Stufe „nativ" mit dem Label und jedem Wort (die Welt las ihr Manifest und meldete es im ready — Konsum
+//                 statt Quelltext-Zitat); fehlt es ihr, ist K1 rot beim Namen, ebenso ein Manifest ohne Soll-Zeile
 //   K2 endlich    der Handshake endet: die Heimat schickt höchstens drei enter (about:blank · load · erste ready)
 //   K3 Quelle     eine FREMDE Seite (Geschwister-Frame der Heimat) schickt der Welt dieselbe Nachricht — die Welt
 //                 nimmt sie nicht an (event.source !== parent), nichts wirkt
@@ -28,7 +30,10 @@
 //
 //   node scripts/diag-portal-konformanz.cjs --selftest   die alten Defekte eingespielt (begegnung ohne Quellen-Prüfung,
 //                                                        die Heimat beantwortet JEDE ready, skeleton liest op[0] je
-//                                                        Element) → jede Wand wird rot und nennt den Täter
+//                                                        Element, skeleton und terrain ohne Manifest — der Server
+//                                                        antwortet 404 —, fluid meldet ihr Manifest ohne „flut", die
+//                                                        garage trägt eins ohne Soll-Zeile) → jede Wand wird rot und
+//                                                        nennt den Täter
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
@@ -58,11 +63,12 @@ const MIME = {
 // Je Welt: das Wort, das der Spieler in die Konsole tippt, und woran man sieht, dass es wirkt. `ui` = Zustand der
 // Welt-UI (same-origin: Selektor + Feld + Soll, der echte UI-Pfad der Studios); ohne `ui` = das Journal der Heimat
 // (die Welt antwortet mit einem Ereignis). begegnung versteht keine DSL (dsl []), ihre Wirkung ist der Ko-Präsenz-
-// Eintritt eines Gefährten (peer-join → Ereignis).
+// Eintritt eines Gefährten (peer-join → Ereignis). `manifest: true` ist das SOLL der nativen Stufe: die Welt trägt ihr
+// worlds/<id>/manifest.json, liest es selbst und meldet es im ready (K1).
 const WELTEN = [
-    { id: "skeleton", wort: "skybox_color 2a0a3a", mitgebracht: "voll" },
-    { id: "fluid", wort: "flut", zusatz: stromZeichnet, mitgebracht: "pass" },
-    { id: "terrain", wort: "fichte", mitgebracht: "pass" },
+    { id: "skeleton", manifest: true, wort: "skybox_color 2a0a3a", mitgebracht: "voll" },
+    { id: "fluid", manifest: true, wort: "flut", zusatz: stromZeichnet, mitgebracht: "pass" },
+    { id: "terrain", manifest: true, wort: "fichte", mitgebracht: "pass" },
     { id: "garage", wort: "supersport", ui: { sel: "#presets button.on", feld: "text", soll: "Supersport" }, zusatz: probefahrt },
     { id: "portale", wort: "maschine", ui: { sel: "#presets button.active", feld: "text", soll: "Maschine" } },
     { id: "schmiede", wort: "degen", ui: { sel: "#presets button.on", feld: "text", soll: "Degen" } },
@@ -183,15 +189,43 @@ const TAETER = {
     // skeleton mit dem Studio-Adapter: die Elemente des Programms je einzeln (aus ["w", arg] wird "w", arg).
     "worlds/skeleton/skeleton.js": [
         ["applyDsl(msg.program);", "msg.program.forEach(function (op) { applyDsl(op); });"],
-        // das Manifest kommt nicht an (die Welt meldet ready ohne Wörterbuch) → K1 rot
-        ['fetch("./manifest.json")', 'fetch("./manifest-fehlt.json")'],
         // das Mitgebrachte als Markup statt als Text → K7 rot
         ['chip.textContent = String((m && m.name) || "?");', 'chip.innerHTML = String((m && m.name) || "?");'],
     ],
+    // fluid meldet ihr Manifest unvollständig (das welt-eigene Wort fehlt im ready) → K1 rot, „flut" beim Namen
+    "worlds/fluid/fluid.js": [["const dsl = m && Array.isArray(m.dsl) ? m.dsl : null;", 'const dsl = m && Array.isArray(m.dsl) ? m.dsl.filter((w) => w !== "flut") : null;']],
 };
+// Die Soll-Welten verlieren ihr Manifest: der Server antwortet 404 (vorher fielen skeleton und terrain still auf die
+// Registry-Wörter zurück, und K1 blieb grün) → K1 rot, die Welt beim Namen.
+const TAETER_WEG = ["worlds/skeleton/manifest.json", "worlds/terrain/manifest.json"];
+// Ein Manifest ohne Soll-Zeile: die garage (kein `manifest` in WELTEN) liefert eins → K1 rot.
+const TAETER_UNTER = { "worlds/garage/manifest.json": { schemaVersion: "1.0", id: "garage", label: "Garage", dsl: ["supersport"] } };
+
+// Was der Server unter einem Pfad ausliefert (null = 404): die Welt im Browser und K1 lesen DIESELBEN Bytes.
+function ausliefern(rel, taeter, fehlend) {
+    if (taeter && TAETER_WEG.includes(rel)) return null;
+    if (taeter && TAETER_UNTER[rel]) return Buffer.from(JSON.stringify(TAETER_UNTER[rel]), "utf8");
+    let data;
+    try {
+        data = fs.readFileSync(path.join(ROOT, rel));
+    } catch {
+        return null;
+    }
+    if (taeter && TAETER[rel]) {
+        let t = data.toString("utf8");
+        for (const [alt, neu] of TAETER[rel]) {
+            if (!t.includes(alt)) fehlend.push(rel + ": " + alt.slice(0, 50));
+            t = t.split(alt).join(neu);
+        }
+        data = Buffer.from(t, "utf8");
+    }
+    return data;
+}
 
 function server(taeter) {
     const fehlend = [];
+    // Welche 404-Täter die Welt im Browser traf (sie fragte ihr Manifest und bekam keins).
+    const weg = new Set();
     const s = http.createServer((req, res) => {
         let p = decodeURIComponent(req.url.split("?")[0]);
         if (p === "/") p = "/index.html";
@@ -208,22 +242,23 @@ function server(taeter) {
         }
         const fp = path.join(ROOT, p);
         if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
-        fs.readFile(fp, (err, data) => {
-            if (err) return ((res.statusCode = 404), res.end());
-            const rel = path.relative(ROOT, fp).split(path.sep).join("/");
-            if (taeter && TAETER[rel]) {
-                let t = data.toString("utf8");
-                for (const [alt, neu] of TAETER[rel]) {
-                    if (!t.includes(alt)) fehlend.push(rel + ": " + alt.slice(0, 50));
-                    t = t.split(alt).join(neu);
-                }
-                data = Buffer.from(t, "utf8");
-            }
-            res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
-            res.end(data);
-        });
+        const rel = path.relative(ROOT, fp).split(path.sep).join("/");
+        if (taeter && TAETER_WEG.includes(rel)) weg.add(rel);
+        const data = ausliefern(rel, taeter, fehlend);
+        if (!data) return ((res.statusCode = 404), res.end());
+        res.setHeader("Content-Type", MIME[path.extname(fp)] || "application/octet-stream");
+        res.end(data);
     });
-    return { s, fehlend };
+    return { s, fehlend, weg };
+}
+
+// Manifeste im Baum, deren Welt keine Zeile in WELTEN hat: die Probe betritt sie nie, ihr Soll fehlt → rot.
+function manifestOhneZeile(welten) {
+    const d = path.join(ROOT, "worlds");
+    return fs
+        .readdirSync(d)
+        .filter((id) => fs.existsSync(path.join(d, id, "manifest.json")) && !welten.some((w) => w.id === id))
+        .sort();
 }
 
 const warte = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -365,7 +400,7 @@ async function fremdBereit(page, port) {
     }, "http://127.0.0.1:" + port + "/__fremd.html");
 }
 
-async function pruefeWelt(page, welt, fehlerLog) {
+async function pruefeWelt(page, welt, fehlerLog, lies) {
     const aus = { id: welt.id, k: {}, stumm: null, echo: null, notiz: [] };
     const fehlerVor = fehlerLog.length;
     const b = await betreten(page, welt);
@@ -394,11 +429,36 @@ async function pruefeWelt(page, welt, fehlerLog) {
         aus.k.K1 = false;
         aus.notiz.push(`die ready trägt ein Wörterbuch, die Heimat steht auf „${z.stufe}"`);
     }
-    // Trägt die Welt ein manifest.json, meldet sie es im ready und die Heimat übernimmt es ganz (Stufe, Label, jedes Wort).
-    const manifestPfad = path.join(ROOT, "worlds", welt.id, "manifest.json");
-    if (fs.existsSync(manifestPfad)) {
-        const m = JSON.parse(fs.readFileSync(manifestPfad, "utf8"));
-        const fehlt = (m.dsl || []).filter((w) => !(z.dsl || []).includes(w));
+    // Das Manifest gegen das SOLL in WELTEN, gelesen wie die Welt es liest (dieselben Bytes des Servers): eine Soll-Welt
+    // liefert es in Form, meldet es im ready, und die Heimat übernimmt es ganz (Stufe „nativ", Label, jedes Wort);
+    // fehlt es ihr, ist K1 rot beim Namen — ebenso ein Manifest einer Welt ohne Soll-Zeile.
+    const rel = `worlds/${welt.id}/manifest.json`;
+    const roh = lies(rel);
+    let m = null;
+    try {
+        m = roh ? JSON.parse(roh.toString("utf8")) : null;
+    } catch {
+        m = null;
+    }
+    const inForm =
+        !!m &&
+        m.schemaVersion === "1.0" &&
+        m.id === welt.id &&
+        typeof m.label === "string" &&
+        Array.isArray(m.dsl) &&
+        m.dsl.length > 0 &&
+        m.dsl.every((w) => typeof w === "string");
+    if (welt.manifest && !roh) {
+        aus.k.K1 = false;
+        aus.notiz.push(`das Soll-Manifest fehlt: ${rel} liefert 404, die Heimat steht auf „${z.stufe}"`);
+    } else if (!welt.manifest && roh) {
+        aus.k.K1 = false;
+        aus.notiz.push(`${rel} steht ohne Soll-Zeile (WELTEN trägt kein manifest für ${welt.id})`);
+    } else if (welt.manifest && !inForm) {
+        aus.k.K1 = false;
+        aus.notiz.push(`${rel} ist nicht in Form (schemaVersion 1.0 · id ${welt.id} · label · dsl mit Wörtern)`);
+    } else if (welt.manifest) {
+        const fehlt = m.dsl.filter((w) => !(z.dsl || []).includes(w));
         if (z.stufe !== "nativ" || z.label !== m.label || fehlt.length) {
             aus.k.K1 = false;
             aus.notiz.push(
@@ -482,7 +542,8 @@ async function pruefeWelt(page, welt, fehlerLog) {
 }
 
 async function lauf(welten, taeter) {
-    const { s, fehlend } = server(taeter);
+    const { s, fehlend, weg } = server(taeter);
+    const lies = (rel) => ausliefern(rel, taeter, []);
     await new Promise((r) => s.listen(PORT, "127.0.0.1", r));
     const browser = await puppeteer.launch({ headless: true, protocolTimeout: 180000, args: softwareWebGpuArgs() });
     const fehlerLog = [];
@@ -513,12 +574,12 @@ async function lauf(welten, taeter) {
         const bootFehler = fehlerLog.length;
         if (bootFehler) console.log(`  (Heimat-Boot: ${bootFehler} Seiten-Fehler — ${fehlerLog[0]})`);
         fehlerLog.length = 0;
-        for (const w of welten) ergebnisse.push(await pruefeWelt(page, w, fehlerLog));
+        for (const w of welten) ergebnisse.push(await pruefeWelt(page, w, fehlerLog, lies));
     } finally {
         await browser.close();
         s.close();
     }
-    return { ergebnisse, fehlend };
+    return { ergebnisse, fehlend, weg };
 }
 
 function ratscheLesen() {
@@ -541,8 +602,8 @@ function drucke(e) {
 }
 
 async function selbsttest() {
-    const welten = WELTEN.filter((w) => ["begegnung", "garage", "skeleton"].includes(w.id));
-    const { ergebnisse, fehlend } = await lauf(welten, true);
+    const welten = WELTEN.filter((w) => ["begegnung", "garage", "skeleton", "fluid", "terrain"].includes(w.id));
+    const { ergebnisse, fehlend, weg } = await lauf(welten, true);
     ergebnisse.forEach(drucke);
     const by = Object.fromEntries(ergebnisse.map((e) => [e.id, e]));
     const ratsche = ratscheLesen();
@@ -554,8 +615,16 @@ async function selbsttest() {
         ["K2 rot: die Heimat beantwortet jede ready, garage spielt Ping-Pong", by.garage && by.garage.k.K2 === false, by.garage && by.garage.handshake ? `${by.garage.handshake.enters} enter` : ""],
         ["Ratsche rot: skeleton mit Element-Adapter ist NEU stumm", v.neu.includes("skeleton"), "neu stumm: " + v.neu.join(",")],
         ["Kontrolle: die chain-Form wirkt trotz Element-Adapter (der Täter trifft nur das Einzelwort)", by.skeleton && by.skeleton.k.K4 === true, ""],
-        ["K1 rot: skeleton meldet ihr Manifest nicht (die Heimat bleibt „übersetzt“)", by.skeleton && by.skeleton.k.K1 === false, by.skeleton ? by.skeleton.notiz.filter((n) => /Manifest/.test(n)).join("") : ""],
         ["K7 rot: skeleton rendert den Material-Namen als Markup", by.skeleton && by.skeleton.k.K7 === false, by.skeleton ? by.skeleton.notiz.filter((n) => /Markup/.test(n)).join("") : ""],
+        ["404-Täter getroffen: die Welt fragte ihr Manifest und bekam keins", TAETER_WEG.every((r) => weg.has(r)), [...weg].join(" · ")],
+        ...["skeleton", "terrain"].map((id) => [
+            `K1 rot: ${id} verliert ihr manifest.json (404), die Soll-Welt beim Namen`,
+            by[id] && by[id].k.K1 === false && by[id].notiz.some((n) => n.includes(`Soll-Manifest fehlt: worlds/${id}/manifest.json`)),
+            by[id] ? by[id].notiz.filter((n) => /Manifest/.test(n)).join("") : "",
+        ]),
+        ["K1 rot: fluid meldet ihr Manifest ohne „flut“ (die Heimat lernt das Wort nicht)", by.fluid && by.fluid.k.K1 === false && by.fluid.notiz.some((n) => /es fehlen flut/.test(n)), by.fluid ? by.fluid.notiz.filter((n) => /Manifest/.test(n)).join("") : ""],
+        ["K1 rot: garage trägt ein manifest.json ohne Soll-Zeile", by.garage && by.garage.k.K1 === false && by.garage.notiz.some((n) => /ohne Soll-Zeile/.test(n)), by.garage ? by.garage.notiz.filter((n) => /Soll-Zeile/.test(n)).join("") : ""],
+        ["Soll-Wand rot: ein Manifest im Baum, dessen Welt WELTEN nicht kennt (fluid ohne Zeile)", manifestOhneZeile(WELTEN.filter((w) => w.id !== "fluid")).join() === "fluid", ""],
     ];
     let ok = true;
     for (const [n, gut, d] of proben) {
@@ -568,10 +637,11 @@ async function selbsttest() {
 (async () => {
     if (process.argv.includes("--selftest")) process.exit((await selbsttest()) ? 0 : 1);
     const { ergebnisse } = await lauf(WELTEN, false);
-    console.log("Portal-Konformanz: K1 ready (+ Manifest) · K2 endlich · K3 Quelle · K4 wirkt · K5 Esc · K6 fehlerfrei · K7 mitgebracht");
+    console.log("Portal-Konformanz: K1 ready (+ Manifest gegen das Soll) · K2 endlich · K3 Quelle · K4 wirkt · K5 Esc · K6 fehlerfrei · K7 mitgebracht");
     ergebnisse.forEach(drucke);
     const rot = [];
     for (const e of ergebnisse) for (const [k, v] of Object.entries(e.k)) if (v === false) rot.push(`${e.id} ${k}`);
+    for (const id of manifestOhneZeile(WELTEN)) rot.push(`${id} K1 — worlds/${id}/manifest.json ohne Soll-Zeile in WELTEN`);
     const ratsche = ratscheLesen();
     const stumm = ergebnisse.filter((e) => e.stumm).map((e) => e.id);
     const echo = ergebnisse.filter((e) => e.echo).map((e) => e.id);
