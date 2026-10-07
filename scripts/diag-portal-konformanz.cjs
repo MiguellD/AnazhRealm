@@ -36,8 +36,8 @@ const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const ROOT = path.resolve(__dirname, "..");
 const PORT = Number(process.env.PORTAL_KONFORMANZ_PORT || 4563);
 const RATSCHE_PFAD = path.join(ROOT, "spec", "vertraege", "ratsche.json");
-// Die Frist der ersten ready: das Körper-Studio baut seinen Menschen, bevor die Brücke meldet (lokal bis 19 s, auf dem
-// CPU-Raster des Linux-Runners mehr) — die Frist ist ein Deckel gegen den Hänger, keine Messung.
+// Die Frist der ersten ready: das Körper-Studio baut seinen Menschen, bevor die Brücke meldet (von allen Welten am
+// längsten; wie lange, misst der OMEN) — die Frist ist ein Deckel gegen den Hänger, keine Messung.
 const READY_FRIST_MS = 120000;
 const MIME = {
     ".html": "text/html",
