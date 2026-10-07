@@ -31,6 +31,14 @@
 //     Zensus der Welt: was das alte Gesetz im 4-m-Kreis jeder Linse erhitzte, was das Licht jetzt erreicht. Befund
 //     (Leben-Schau 07.10.): die Werkstatt-Eiche verbrannte nach 20 s Sonne still (Architekturen 125 → 124, nur im Log).
 //
+//   DER SAME DES WERKS (Gegenprüfung 08.10., ROT 1) — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER: das Setzen
+//     (`confirmBuild`) stellt die Gestalt, Drehung und Tönung, die das Phantom zeigt (EIN Same je Werk, `_werkSame` — dieselbe
+//     Gestalt wie Werkstatt-Vorschau und Hand), würfelt nichts aus Math.random, und die Nachricht an den Mitspieler trägt
+//     Same und Drehung des Werks: dort steht dasselbe Werk. Der Zähler des Welt-Stroms (`_bauSame`) reist im Welt-Gedächtnis
+//     (`worldMeta`): nach einem Reload wiederholt der Strom nie seinen ersten Samen. Befund: der Standard-Same der Wurzel
+//     `spawnArchitecture` war Math.random, der Broadcast schickte den Samen 0 (immer Gestalt 1), das Phantom zeigte die
+//     Gestalt des Bauplan-Namens und blickte zum Spieler, das Werk stand mit Drehung 0.
+//
 //   node scripts/diag-werkstatt-weg.cjs [--selftest]          Port: WERKSTATT_WEG_PORT (Standard 4623)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -215,6 +223,36 @@ function brennVerdict(m) {
     return out;
 }
 
+// Der Same des Werks: { steht, zuege, phantomKey, werkKey, phantomDreh, werkDreh, werkSame, werkTint, gesendetSame,
+// empfang: {steht, key, dreh, tint}, reload: {erst, weiter, nachReload} }.
+function werkVerdict(m) {
+    if (!m || m.gestartet !== true) return ["start"];
+    const out = [];
+    const gleich = (a, b) => Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) < 1e-6;
+    if (!(m.steht === 1)) out.push(`das Setzen stellt ${m.steht} Werk(e) (Vorbedingung)`);
+    if (m.zuege > 0) out.push(`das Setzen würfelt ${m.zuege}× aus Math.random`);
+    if (!m.phantomKey) out.push("kein Studio-Phantom (Vorbedingung)");
+    else if (m.phantomKey !== m.werkKey) out.push(`das Phantom zeigt ${m.phantomKey}, es steht ${m.werkKey}`);
+    if (!gleich(m.phantomDreh, m.werkDreh))
+        out.push(`das Phantom blickt ${m.phantomDreh} rad, das Werk ${m.werkDreh} rad`);
+    if (m.gesendetSame !== m.werkSame)
+        out.push(`der Mitspieler bekommt den Samen ${m.gesendetSame}, das Werk trägt ${m.werkSame}`);
+    const e = m.empfang || {};
+    if (!e.steht) out.push("beim Mitspieler steht kein Werk (Vorbedingung)");
+    else {
+        if (e.key !== m.werkKey) out.push(`beim Mitspieler steht ${e.key} statt ${m.werkKey}`);
+        if (!gleich(e.dreh, m.werkDreh)) out.push(`beim Mitspieler blickt das Werk ${e.dreh} rad statt ${m.werkDreh}`);
+        if (e.tint !== m.werkTint) out.push(`beim Mitspieler eine andere Tönung (${e.tint} ≠ ${m.werkTint})`);
+    }
+    const rl = m.reload || {};
+    if (rl.erst == null) out.push("der Welt-Strom zieht nicht (Vorbedingung)");
+    else if (rl.nachReload === rl.erst)
+        out.push(`nach dem Reload wiederholt der Welt-Strom seinen ersten Samen (${rl.erst})`);
+    else if (rl.nachReload !== rl.weiter)
+        out.push(`nach dem Reload ein fremder Same (${rl.nachReload}, Soll ${rl.weiter})`);
+    return out;
+}
+
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src) {
     const nc = ohneKommentare(src);
@@ -287,6 +325,57 @@ function wand(src) {
                 geist.includes("g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;"),
             ];
         })(),
+        (() => {
+            const wurzeln = {
+                spawnArchitecture: /\n {4}spawnArchitecture\(type, position, opts = \{\}\) \{/,
+                spawnIslandAt: /\n {4}spawnIslandAt\(x, y, z, height = 6, opts = \{\}\) \{/,
+                spawnUfoAt: /\n {4}spawnUfoAt\(x, y, z\) \{/,
+                _workshopRecipeSpec: /\n {4}_workshopRecipeSpec\(bp, kind\) \{/,
+                dslCompose: /\n {4}dslCompose\(opts = \{\}\) \{/,
+                generateEvolution: /\n {4}generateEvolution\(\) \{/,
+                confirmBuild: /\n {4}confirmBuild\(\) \{/,
+            };
+            const fehlt = [];
+            const zuege = [];
+            for (const [n, re] of Object.entries(wurzeln)) {
+                const b = fnBody(nc, re);
+                if (!b) fehlt.push(n);
+                else if (/Math\.random/.test(b)) zuege.push(`${n} ${b.match(/Math\.random/g).length}`);
+            }
+            const same = fnBody(nc, /\n {4}_bauSame\(art\) \{/) || "";
+            const zaehler = (nc.match(/_bauSameZaehler/g) || []).length;
+            return [
+                "W7 kein Werk würfelt aus Math.random (spawnArchitecture · spawnIslandAt · spawnUfoAt · Werkstatt-Würfel · dslCompose · generateEvolution · confirmBuild), der Zähler des Welt-Stroms reist im Welt-Gedächtnis",
+                !fehlt.length && !zuege.length && /this\.state\.worldMeta/.test(same) && zaehler === 0,
+                `${fehlt.length ? "fehlt " + fehlt.join(", ") + " · " : ""}Math.random ${zuege.join(", ") || "0"} · Sitzungs-Zähler ${zaehler}`,
+            ];
+        })(),
+        (() => {
+            const setzen = fnBody(nc, /\n {4}confirmBuild\(\) \{/) || "";
+            const hash = (nc.match(/Math\.imul\(\w+, 131\)/g) || []).length;
+            const leser = {
+                Vorschau: /\n {4}_workshopFoundryPreviewGroup\(bpName\) \{/,
+                Hand: /\n {4}_heldFoundryGroup\(bpName\) \{/,
+                Phantom: /\n {4}_buildStudioPlacementGhost\(bp\) \{/,
+                Setzen: /\n {4}confirmBuild\(\) \{/,
+            };
+            const ohne = Object.entries(leser)
+                .filter(([, re]) => !/this\._werkSame\(/.test(fnBody(nc, re) || ""))
+                .map(([n]) => n);
+            const null0 = /"spawn_blueprint", bm\.blueprintName, posNode, 0\b/.test(setzen);
+            return [
+                "W8 EIN Same je Werk (`_werkSame`: Vorschau · Hand · Phantom · Setzen), das Setzen trägt Same und Drehung des Phantoms, die Nachricht an den Mitspieler den Samen des Werks",
+                hash === 1 && !ohne.length && /rotationY: dreh/.test(setzen) && !null0,
+                `Same-Hash ${hash}× · ohne _werkSame: ${ohne.join(", ") || "keiner"} · Samen 0 im Broadcast ${null0 ? "ja" : "nein"}`,
+            ];
+        })(),
+        (() => {
+            const strom = fnBody(nc, /\n {4}_streamRng\(streamName\) \{/) || "";
+            return [
+                "W9 EIN Strom-Gesetz: `_streamRng` ist der Strom seines Samens (`_samenStrom`), kein zweites LCG",
+                /this\._samenStrom\(/.test(strom) && !/1664525/.test(strom),
+            ];
+        })(),
     ];
 }
 
@@ -357,29 +446,30 @@ async function probe(argW) {
     };
     out.frei = frei;
 
+    const orig = Math.random;
+    let n = 0;
+    // Gezählt wird ein Zug der WELT (der Aufrufer steht in anazhRealm.js); die UUID eines neuen three-Objekts
+    // (MathUtils.generateUUID beim Bau einer Geometrie) und die Identität eines Werks (`_newArchId`: ein Name, keine
+    // Substanz — er reist mit der Nachricht) sind keine Welt-Substanz.
+    const zaehle = (fn) => {
+        n = 0;
+        Math.random = function () {
+            const rufer = (new Error().stack || "").split("\n")[2] || "";
+            if (/anazhRealm\.js/.test(rufer) && !/\._newArchId \(/.test(rufer)) n++;
+            return orig();
+        };
+        try {
+            return fn();
+        } finally {
+            Math.random = orig;
+        }
+    };
     // ── D10: der Same eines Satzes ──
     try {
         const m = { gestartet: false, zuege: {} };
         out.same = m;
         if (!frei) throw new Error("kein freier Ort abseits der Lichtung");
         stelle();
-        const orig = Math.random;
-        let n = 0;
-        // Gezählt wird ein Zug der WELT (der Aufrufer steht in anazhRealm.js); die UUID eines neuen three-Objekts
-        // (MathUtils.generateUUID beim Bau einer Geometrie) ist keine Welt-Substanz.
-        const zaehle = (fn) => {
-            n = 0;
-            Math.random = function () {
-                const rufer = (new Error().stack || "").split("\n")[2] || "";
-                if (/anazhRealm\.js/.test(rufer)) n++;
-                return orig();
-            };
-            try {
-                return fn();
-            } finally {
-                Math.random = orig;
-            }
-        };
         const neue = (vorher) => st.architectures.filter((a) => a && !vorher.has(a));
         const relOrte = (liste) =>
             liste
@@ -394,7 +484,7 @@ async function probe(argW) {
         // Der Hain: Satz + Programm, zweimal an derselben Stelle der Welt-Geschichte (der Zähler des Welt-Stroms zurück).
         const hain = () => {
             const vorher = new Set(st.architectures);
-            const z0 = Object.assign({}, r._bauSameZaehler || {});
+            const z0 = JSON.parse(JSON.stringify(st.worldMeta.bauSame || {}));
             let gebaut = null;
             zaehle(() => {
                 gebaut = r.parseChatToDsl("pflanz mir einen eichenhain");
@@ -403,7 +493,7 @@ async function probe(argW) {
             const zz = n;
             const liste = neue(vorher);
             for (const a of liste) r.removeArchitecture(a);
-            r._bauSameZaehler = z0;
+            st.worldMeta.bauSame = z0;
             return { zz, same: gebaut ? gebaut.program[4] : null, orte: relOrte(liste), n: liste.length };
         };
         const h1 = hain();
@@ -421,14 +511,14 @@ async function probe(argW) {
         // Ein KI-Programm ohne Seed: der Strom des Programms ist der Welt-Strom.
         const ki = () => {
             const vorher = new Set(st.architectures);
-            const z0 = Object.assign({}, r._bauSameZaehler || {});
+            const z0 = JSON.parse(JSON.stringify(st.worldMeta.bauSame || {}));
             zaehle(() =>
                 r.dslRun(["spawn_studio", "birke", ["at", frei.x + 12, frei.y, frei.z], 3], { source: "llm:grok" })
             );
             const zz = n;
             const liste = neue(vorher);
             for (const a of liste) r.removeArchitecture(a);
-            r._bauSameZaehler = z0;
+            st.worldMeta.bauSame = z0;
             return { zz, orte: relOrte(liste) };
         };
         const k1 = ki();
@@ -669,6 +759,116 @@ async function probe(argW) {
         m.gestartet = true;
     } catch (e) {
         out.weg = Object.assign(out.weg || {}, { err: (e && e.stack) || String(e) });
+    }
+
+    // ── Der Same des Werks: das gesetzte Werk ist das Phantom, auch beim Mitspieler ──
+    try {
+        const m = { gestartet: false };
+        out.werk = m;
+        if (!frei || !plat) throw new Error("kein freier Ort oder keine Genesis-Plattform");
+        const NAME = "baum_eiche";
+        const preset = r._foundryPresetForEntry({ type: NAME });
+        // Die Gestalt eines Phantoms: der Schlüssel seiner Studio-Gruppe im Foundry-Cache; die eines Werks: ihr Schlüssel aus
+        // Same und Stempel (dieselbe Formel wie `_foundryFlattenFor`, Stufe 0 wie das Phantom).
+        const keyVon = (grp) => {
+            if (!grp || !r._foundry || !r._foundry.cache) return null;
+            for (const [k, v] of r._foundry.cache) if (v === grp) return k;
+            return null;
+        };
+        const werkKey = (e) =>
+            r._foundryKoerperKey(preset, r._foundryVariantFor(e.seed, preset), 0, r._artifactStudioOv(e));
+        const dreh = (e) => (Number.isFinite(e.rotationY) ? +e.rotationY.toFixed(6) : 0);
+        const tint = (e) => [e.tintH, e.tintS, e.tintV].map((v) => (Number.isFinite(v) ? v.toFixed(6) : "-")).join("/");
+        const finde = (p) => {
+            if (!Array.isArray(p)) return null;
+            if (p[0] === "spawn_blueprint") return p;
+            for (const k of p) {
+                const f = finde(k);
+                if (f) return f;
+            }
+            return null;
+        };
+        const modusAlt = r.getGameMode();
+        const p2pAlt = st.p2p;
+        const gesendet = [];
+        try {
+            if (st.buildMode.active) r._clearBuildMode();
+            if (st.uiActiveDrawer) r.closeAllDrawers();
+            r.setGameMode("schöpfer");
+            // ein schräger Blick weg von der Plattform: die Drehung des Phantoms ist nicht 0
+            st.playerMesh.position.set(frei.x, frei.y + 1.2, frei.z);
+            st.yaw = Math.atan2(frei.x - plat.position.x, frei.z - plat.position.z) + 0.7;
+            st.pitch = -0.45;
+            await tick(4, 30);
+            r.setHotbarSlot(4, NAME);
+            if (!(st.buildMode.active && st.buildMode.blueprintName === NAME)) r.selectHotbarSlot(4);
+            const bm = st.buildMode;
+            r.tickBuildMode();
+            for (let i = 0; i < 300 && bm.phantomMesh && !bm.phantomMesh.userData.studioGhost; i++) {
+                await tick(1, 50);
+                r.tickBuildMode();
+            }
+            m.phantomKey = bm.phantomMesh ? keyVon(bm.phantomMesh.userData.foundrySrcGroup) : null;
+            m.phantomDreh = bm.phantomMesh ? +bm.phantomMesh.rotation.y.toFixed(6) : null;
+            // Die Naht zum Mitspieler: das Programm, das der Sender schickt.
+            st.p2p = Object.assign({}, p2pAlt || {}, { enabled: true });
+            r.p2pBroadcastDsl = (prog) => gesendet.push(JSON.parse(JSON.stringify(prog)));
+            const vorher = new Set(st.architectures);
+            zaehle(() => r.tryMousePlace());
+            m.zuege = n;
+            st.p2p = p2pAlt;
+            delete r.p2pBroadcastDsl;
+            const neu = st.architectures.filter(
+                (a) => a && !vorher.has(a) && a.type === NAME && typeof a.id === "string"
+            );
+            m.steht = neu.length;
+            const e = neu[0];
+            if (e) {
+                m.werkSame = e.seed;
+                m.werkKey = werkKey(e);
+                m.werkDreh = dreh(e);
+                m.werkTint = tint(e);
+            }
+            const op = finde(gesendet[0]);
+            m.gesendetSame = op ? op[3] : null;
+            // Der Mitspieler: dasselbe Programm in seiner Welt (das lokale Werk weicht, der Empfänger baut aus der Nachricht).
+            for (const a of neu) r.removeArchitecture(a);
+            m.empfang = { steht: false };
+            if (e && gesendet[0]) {
+                r.dslRun(gesendet[0], { source: "remote:pruef" });
+                const e2 = st.architectures.find((a) => a && a.id === e.id);
+                if (e2) {
+                    m.empfang = { steht: true, same: e2.seed, key: werkKey(e2), dreh: dreh(e2), tint: tint(e2) };
+                    r.removeArchitecture(e2);
+                }
+            }
+        } finally {
+            st.p2p = p2pAlt;
+            delete r.p2pBroadcastDsl;
+            if (st.buildMode.active) r._clearBuildMode();
+            r.setGameMode(modusAlt);
+        }
+        // Der Welt-Strom über einen Reload: der Snapshot trägt das Welt-Gedächtnis (`worldMeta`), der Restore mischt es
+        // über den frischen Stand (`_loadStateRestoreWorldMeta`); die Sitzung vergisst alles, was nicht dort reist.
+        const wmAlt = st.worldMeta;
+        const zAlt = wmAlt.bauSame ? JSON.parse(JSON.stringify(wmAlt.bauSame)) : undefined;
+        const rl = {};
+        try {
+            rl.erst = r._bauSame("pruef:reload");
+            const snapMeta = JSON.parse(JSON.stringify(r.buildStateSnapshot().worldMeta));
+            rl.weiter = r._bauSame("pruef:reload");
+            st.worldMeta = Object.assign({}, wmAlt, { bauSame: undefined }, snapMeta);
+            delete st.worldMeta.scatterPromoted;
+            rl.nachReload = r._bauSame("pruef:reload");
+        } finally {
+            st.worldMeta = wmAlt;
+            if (zAlt === undefined) delete wmAlt.bauSame;
+            else wmAlt.bauSame = zAlt;
+        }
+        m.reload = rl;
+        m.gestartet = true;
+    } catch (e) {
+        out.werk = Object.assign(out.werk || {}, { err: (e && e.stack) || String(e) });
     }
 
     // ── Brennglas: das Licht brennt, wo es sich bündelt, und die Zerstörung nennt sich ──
@@ -1078,6 +1278,63 @@ async function probe(argW) {
                 v.join(" · ")
             );
         }
+        // Der Same des Werks: gesund ohne Täter, je Befund-Zustand (Gegenprüfung 08.10.) der Täter beim Namen.
+        const gesundK = {
+            gestartet: true,
+            steht: 1,
+            zuege: 0,
+            phantomKey: "eiche|2|0",
+            werkKey: "eiche|2|0",
+            phantomDreh: -0.7,
+            werkDreh: -0.7,
+            werkSame: 1785671328,
+            werkTint: "1.0/0.98/1.0",
+            gesendetSame: 1785671328,
+            empfang: { steht: true, key: "eiche|2|0", dreh: -0.7, tint: "1.0/0.98/1.0" },
+            reload: { erst: 540370045, weiter: 490037188, nachReload: 490037188 },
+        };
+        check(
+            "Selbst-Test Werk-Same: gesund == 0 Täter",
+            werkVerdict(gesundK).length === 0,
+            werkVerdict(gesundK).join(" · ")
+        );
+        const mitK = (o) => Object.assign({}, gesundK, o);
+        for (const [name, bruch, soll] of [
+            ["das Setzen würfelt (Befund: der Standard-Same)", mitK({ zuege: 1 }), "das Setzen würfelt 1×"],
+            [
+                "das Phantom zeigt eine andere Gestalt (Befund)",
+                mitK({ werkKey: "eiche|1|0" }),
+                "das Phantom zeigt eiche|2|0, es steht eiche|1|0",
+            ],
+            ["das Werk steht mit Drehung 0 (Befund)", mitK({ werkDreh: 0 }), "das Phantom blickt -0.7 rad"],
+            [
+                "der Mitspieler bekommt den Samen 0 (Befund)",
+                mitK({ gesendetSame: 0 }),
+                "der Mitspieler bekommt den Samen 0",
+            ],
+            [
+                "beim Mitspieler eine andere Gestalt",
+                mitK({ empfang: Object.assign({}, gesundK.empfang, { key: "eiche|1|0" }) }),
+                "beim Mitspieler steht eiche|1|0",
+            ],
+            [
+                "beim Mitspieler eine andere Tönung (Befund)",
+                mitK({ empfang: Object.assign({}, gesundK.empfang, { tint: "0.89/0.92/0.95" }) }),
+                "beim Mitspieler eine andere Tönung",
+            ],
+            [
+                "der Zähler vergisst den Reload (Befund)",
+                mitK({ reload: { erst: 540370045, weiter: 490037188, nachReload: 540370045 } }),
+                "nach dem Reload wiederholt der Welt-Strom",
+            ],
+        ]) {
+            const v = werkVerdict(bruch);
+            check(
+                `Selbst-Test Werk-Same: ‚${name}' → die Linse nennt ${soll}`,
+                v.some((t) => t.startsWith(soll)),
+                v.join(" · ")
+            );
+        }
         // Brennglas: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
         const gesundB = {
             gestartet: true,
@@ -1158,6 +1415,51 @@ async function probe(argW) {
                 quelle.replace("const sa = this._sonnenWinkel(t);", "const sa = t * Math.PI * 2 - Math.PI / 2;"),
                 "W5",
             ],
+            [
+                "die Wurzel würfelt wieder (Befund)",
+                quelle.replace(
+                    'const seed = Number.isFinite(opts.seed) ? opts.seed : this._bauSame("bau:" + type);',
+                    "const seed = Number.isFinite(opts.seed) ? opts.seed : Math.floor(Math.random() * 0xffffffff);"
+                ),
+                "W7",
+            ],
+            [
+                "der Zähler wird wieder Sitzungs-Feld",
+                quelle.replace(
+                    'const z = wm.bauSame && typeof wm.bauSame === "object" ? wm.bauSame : (wm.bauSame = {});',
+                    "const z = this._bauSameZaehler || (this._bauSameZaehler = {});"
+                ),
+                "W7",
+            ],
+            [
+                "der Broadcast schickt wieder den Samen 0 (Befund)",
+                quelle.replace(
+                    '["spawn_blueprint", bm.blueprintName, posNode, steht.seed, archId,',
+                    '["spawn_blueprint", bm.blueprintName, posNode, 0, archId,'
+                ),
+                "W8",
+            ],
+            [
+                "die Vorschau hasht ihren Samen selbst",
+                quelle.replace(
+                    "        const seedNum = this._werkSame(bp, bpName);",
+                    "        let seedNum = 0;\n        for (const c of String(bpName)) seedNum = (Math.imul(seedNum, 131) + c.charCodeAt(0)) >>> 0;"
+                ),
+                "W8",
+            ],
+            [
+                "das Setzen vergisst die Drehung des Phantoms (Befund)",
+                quelle.replace("                rotationY: dreh,\n", ""),
+                "W8",
+            ],
+            [
+                "ein zweites LCG im Strom-Gesetz",
+                quelle.replace(
+                    "        return this._samenStrom(h >>> 0);",
+                    "        let st = h >>> 0 || 1;\n        return () => (st = (st * 1664525 + 1013904223) >>> 0) / 4294967296;"
+                ),
+                "W9",
+            ],
         ]) {
             const rot = wand(bruch)
                 .filter(([, ok]) => !ok)
@@ -1232,6 +1534,17 @@ async function probe(argW) {
         "L-Werkstatt jeder Weg (Werkstatt · Rezeptbuch · Hotbar) führt zum stehenden Werk, frieden zahlt einmal, jede Absage spricht, die Lichtung sagt warum",
         vG.length === 0,
         `${gm.gestartet ? `${tragen}/6 Wege tragen · ${LAGEN.map((l) => `${l}: ${WEGE.map((w) => zelle(l, w)).join(", ")}`).join(" · ")} · Werkstatt ${JSON.stringify(gm.werke)} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Lichtung ${JSON.stringify({ wand: gm.lichtung && gm.lichtung.wand, steht: gm.lichtung && gm.lichtung.steht })}` : "nicht gestartet"}${vG.length ? " — Täter: " + vG.join(", ") : ""}`
+    );
+    console.log("=== DER SAME DES WERKS — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER ===");
+    const km = out.werk || {};
+    if (km.err) check("Werk-Same Probe ohne Ausnahme", false, km.err.split("\n")[0]);
+    const vK = werkVerdict(km);
+    const ke = km.empfang || {};
+    const kr = km.reload || {};
+    check(
+        "Werk-Same das Setzen stellt Gestalt und Drehung des Phantoms ohne Math.random, der Mitspieler baut dasselbe Werk, der Welt-Strom übersteht den Reload",
+        vK.length === 0,
+        `${km.gestartet ? `Math.random ${km.zuege} · Phantom ${km.phantomKey} @ ${km.phantomDreh} rad → Werk ${km.werkKey} @ ${km.werkDreh} rad (Same ${km.werkSame}) · gesendet Same ${km.gesendetSame} → Mitspieler ${ke.steht ? `${ke.key} @ ${ke.dreh} rad, Tönung ${ke.tint === km.werkTint ? "gleich" : "anders"}` : "nichts"} · Strom ${kr.erst} → ${kr.weiter}, nach Reload ${kr.nachReload}` : "nicht gestartet"}${vK.length ? " — Täter: " + vK.join(", ") : ""}`
     );
     console.log("=== BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH ===");
     const bm = out.brenn || {};

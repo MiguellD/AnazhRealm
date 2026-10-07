@@ -2253,8 +2253,9 @@ class AnazhRealm {
             // Generischer Bauplan-Spawn für jeden Namen (built-in oder eigen), z. B. ["spawn_blueprint",
             // "mein-tempelplatz", ["at_player"]] — der universelle Pfad von Hotbar + Werkstatt. Slot 6
             // (optional) trägt den Guss-Stempel (studioOv) über die P2P-Naht; die Wand (plain object +
-            // Taille-Größe) hält spawnArchitecture. Alte Sender lassen ihn weg, alte Empfänger ignorieren ihn.
-            spawn_blueprint: ([name, positionNode, seed, archId, studioOv], ctx) => {
+            // Taille-Größe) hält spawnArchitecture. Slot 7 (optional) die Drehung des Werks (das Phantom des Senders).
+            // Alte Sender lassen sie weg, alte Empfänger ignorieren sie.
+            spawn_blueprint: ([name, positionNode, seed, archId, studioOv, drehung], ctx) => {
                 if (typeof name !== "string") {
                     ctx.log.push({ event: "invalid_blueprint_name", name });
                     return;
@@ -2282,6 +2283,7 @@ class AnazhRealm {
                 // unbeschränktes Horten); Mensch-/Remote-Bauten bleiben ungedeckelt (gewollt + permanent).
                 const opts = { seed: s, autonomous: ctx.source === "nexus" };
                 if (sharedId) opts.id = sharedId;
+                if (typeof drehung === "number" && Number.isFinite(drehung)) opts.rotationY = drehung;
                 // PRÄGUNG-WELT — der gereiste Stempel geht ungestrippt an den EINEN
                 // Sanitize-Chokepoint (spawnArchitecture: plain object + Taille-Wand).
                 if (studioOv && typeof studioOv === "object" && !Array.isArray(studioOv)) opts.studioOv = studioOv;
@@ -3283,7 +3285,8 @@ class AnazhRealm {
     }
 
     dslCompose(opts = {}) {
-        const rng = opts.rng || Math.random;
+        // die Komposition würfelt aus dem Welt-Strom (Γ5), nie aus Math.random
+        const rng = opts.rng || this._samenStrom(this._bauSame("komposition"));
         const maxDepth = opts.maxDepth || 5;
         // Schicht 1 — Wenn Spieler-Keywords im Memory liegen: mit ~25 %
         // ein Pattern-Programm wählen (Themen-Antwort). Sonst weiter im
@@ -23358,15 +23361,17 @@ class AnazhRealm {
         // ### Nexus-Evolution als DSL-Programm ###
         // Komponiert ein zufälliges DSL-Programm — die DSL ist der einzige Pfad für neue Effekte (keine
         // Code-Generierung). Mit composeRuleProb wird es eine stehende Regel: der `rule`-Op registriert sie
-        // über denselben dslRun-Pfad in state.worldRules.
-        const rng = Math.random;
+        // über denselben dslRun-Pfad in state.worldRules. Der Wurf des Nexus ist ein Strom der Welt (`_bauSame`, Γ5) — die
+        // Komposition darunter zieht aus demselben Strom.
+        const rng = this._samenStrom(this._bauSame("nexus"));
         // Keine Struktur-Batch-Bomben: ≤1 schwerer Welt-Bau (spawn_village/temple/…) pro Evolution, egal wie
         // in repeat/chain verschachtelt — jeder Bau ist ein synchroner Footprint-Remesh (~140 ms), N davon =
         // Sekunden-Freeze. Sonst neu würfeln (wenige Versuche); ein einzelner Bau bleibt ein Einzel-Hitch.
         const HEAVY = /spawn_(village|temple|island|fractal|waterfall)/g;
         let program = null;
         for (let tries = 0; tries < 4; tries++) {
-            program = rng() < AnazhRealm.WORLD_RULES.composeRuleProb ? this._composeNexusRule(rng) : this.dslCompose();
+            program =
+                rng() < AnazhRealm.WORLD_RULES.composeRuleProb ? this._composeNexusRule(rng) : this.dslCompose({ rng });
             const heavyCount = (JSON.stringify(program).match(HEAVY) || []).length;
             if (heavyCount <= 1) break; // frame-sicher → nehmen
         }
@@ -39498,9 +39503,10 @@ class AnazhRealm {
         return (h >>> 0).toString(16).padStart(8, "0");
     }
 
-    // Stream-Gesetz: seed-deterministische RNG je Zweck — Stream-Name → FNV-1a (wie `_fastHash`) → LCG
-    // (Numerical Recipes). Je Zweck ein eigener Suffix (z. B. seed + "-island-2"), damit ein Draw mehr NIE
-    // einen anderen Stream re-rollt. NIE `Math.random` in Welt-Substanz (nur UI/Audio/Deko).
+    // Stream-Gesetz: seed-deterministische RNG je Zweck — Stream-Name → FNV-1a (wie `_fastHash`) → der Strom dieses
+    // Samens (`_samenStrom`, das EINE LCG der Welt, Numerical Recipes). Je Zweck ein eigener Suffix (z. B. seed +
+    // "-island-2"), damit ein Draw mehr NIE einen anderen Stream re-rollt. NIE `Math.random` in Welt-Substanz (nur
+    // UI/Audio/Deko).
     _streamRng(streamName) {
         const s = String(streamName);
         let h = 0x811c9dc5;
@@ -39508,11 +39514,7 @@ class AnazhRealm {
             h ^= s.charCodeAt(i);
             h = Math.imul(h, 0x01000193);
         }
-        let state = h >>> 0 || 1;
-        return () => {
-            state = (state * 1664525 + 1013904223) >>> 0;
-            return state / 4294967296;
-        };
+        return this._samenStrom(h >>> 0);
     }
 
     // Versiegelt einen eigenen Bauplan mit dem Vibe-Pass (setzt signature + authorPubKey + signedHash +
@@ -44998,16 +45000,9 @@ class AnazhRealm {
             return preset ? "pending" : null;
         }
         if (!preset) return null;
-        // Same → Variante EXAKT wie die Werkstatt-Vorschau (W-A1) → derselbe Cache-Schlüssel.
+        // Same → Variante EXAKT wie die Werkstatt-Vorschau (W-A1) → derselbe Cache-Schlüssel (der EINE `_werkSame`).
         const bp = this.state.blueprints ? this.state.blueprints[bpName] : null;
-        const rawSeed =
-            (bp && (bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase)) != null
-                ? bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase
-                : bpName;
-        let seedNum = 0;
-        const seedStr = String(rawSeed);
-        for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
-        const variant = this._foundryVariantFor(seedNum, preset);
+        const variant = this._foundryVariantFor(this._werkSame(bp, bpName), preset);
         if (variant == null) return "pending"; // Buch ohne Gestalten-Budget: die Hand wartet (der Part-Bau trägt)
         // Der beim Guss gestempelte Charakter (bp.studioOv) reist in den Hand-Bau: der ov-Hash trennt den
         // Cache-Schlüssel (ungeprägt bleibt byte-alt), das ov geht als 4. Arg an _foundryRequest.
@@ -61332,25 +61327,20 @@ class AnazhRealm {
         return g;
     }
 
-    // Der Ghost spiegelt EXAKT die Quell-Entscheidung des finalen Eintrags (`_rebuildArchitectureMesh`:
-    // Foundry-Preset → `_foundryFlattenFor`, Stufe 0; Variante über `_heldFoundryGroup`). Foundry aus/kalt
-    // → null: der Donor-Ghost bleibt, `tickBuildMode` swappt, sobald das Asset dockt. Geteilte Studio-
-    // Geometrie ist sharedGeom-markiert + hält `foundrySrcGroup` (`_disposeSoulGroup` lässt sie stehen);
-    // Material = der gecachte Klon (`_ghostMaterialFor`).
+    // Der Ghost IST der finale Eintrag (`_rebuildArchitectureMesh`: Foundry-Preset → `_foundryFlattenFor`, Stufe 0): derselbe
+    // Same (`_werkSame` — wie Werkstatt-Vorschau und Hand, und `confirmBuild` setzt ihn) und derselbe Stempel
+    // (`_studioStampFor` — die Prägung, die das Setzen mitgibt). Foundry aus/kalt → null: der Donor-Ghost bleibt,
+    // `tickBuildMode` swappt, sobald das Asset dockt. Geteilte Studio-Geometrie ist sharedGeom-markiert + hält
+    // `foundrySrcGroup` (`_disposeSoulGroup` lässt sie stehen); Material = der gecachte Klon (`_ghostMaterialFor`).
     _buildStudioPlacementGhost(bp) {
         if (!bp || typeof bp.name !== "string") return null;
         if (typeof this._foundryEnabled !== "function" || !this._foundryEnabled()) return null;
         const preset = this._foundryPresetForEntry({ type: bp.name });
         if (!preset) return null;
-        // Same → Variante EXAKT wie Werkstatt/Hand (dieselbe Hash-Konvention — EIN Zug, viele Leser).
-        const rawSeed =
-            (bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase) != null
-                ? bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase
-                : bp.name;
-        let seedNum = 0;
-        const seedStr = String(rawSeed);
-        for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
-        const flat = this._foundryFlattenFor({ seed: seedNum, type: bp.name }, preset, 0);
+        const werk = { seed: this._werkSame(bp, bp.name), type: bp.name };
+        const stempel = this._studioStampFor(bp.name);
+        if (stempel) werk.studioOv = stempel;
+        const flat = this._foundryFlattenFor(werk, preset, 0);
         if (!flat || !flat.instanceable || !Array.isArray(flat.leaves) || !flat.leaves.length) {
             // null = lädt noch (die Anfrage ist unterwegs) → tickBuildMode heilt den Donor-
             // Ghost zur Studio-Gestalt; false = kann nicht → Donor-Ghost bleibt (fail-soft).
@@ -67282,7 +67272,7 @@ class AnazhRealm {
         // V9.42-b — Schöpfer-Wahl: Insel-Grösse jetzt bis 48 m Durchmesser
         // (vorher 24, immer gleich gefühlt) + size-Parameter ist DSL-erreichbar.
         const size = Number.isFinite(opts.size) ? Math.max(6, Math.min(48, opts.size)) : 12;
-        const seedStr = opts.seed != null ? String(opts.seed) : `island-${Date.now()}-${Math.random()}`;
+        const seedStr = opts.seed != null ? String(opts.seed) : String(this._bauSame("insel")); // Γ5, nie Math.random
         const noise = new SimplexNoise(seedStr);
         // V9.42-a — Geometrie aus der Surface-Nets-Pipeline. Voxel-Welt-Chunks
         // + Inseln teilen sich `_voxelChunkGeometry` (eine Mesh-Sprache, zwei
@@ -67351,7 +67341,8 @@ class AnazhRealm {
         ufo.position.set(x, y, z);
         ufo.visible = true;
         ufo.name = "dsl-ufo";
-        ufo.userData = { baseY: y, speed: 0.5 + Math.random() * 0.5, sourceOp: "spawn_ufo" };
+        // der Schwebe-Takt aus dem Welt-Strom (Γ5): jeder Peer sieht das UFO im selben Takt
+        ufo.userData = { baseY: y, speed: 0.5 + this._samenStrom(this._bauSame("ufo"))() * 0.5, sourceOp: "spawn_ufo" };
         this.state.scene.add(ufo);
         if (!Array.isArray(this.state.ufos)) this.state.ufos = [];
         this.state.ufos.push(ufo);
@@ -67471,7 +67462,9 @@ class AnazhRealm {
             return null;
         }
         if (!this.state.scene) return null;
-        const seed = Number.isFinite(opts.seed) ? opts.seed : Math.floor(Math.random() * 0xffffffff);
+        // Der Same eines Werks ohne eigenen (Bau einer Kreatur, Plattform, Portal) kommt aus dem Welt-Strom seiner Art (Γ5,
+        // Lehre 7) — nie Math.random: der Mitspieler und der Reload sähen ein anderes Werk.
+        const seed = Number.isFinite(opts.seed) ? opts.seed : this._bauSame("bau:" + type);
         const scale = Number.isFinite(opts.scale) && opts.scale > 0 ? opts.scale : 1;
         // Die EINE Spieler-Klemme an der WURZEL (jeder Spawn-Pfad). Präzisions-Opt-outs: opts.silent
         // (Worldgen-Determinismus), string-id (Multi-User-Sync/confirmBuild, bit-treu), opts.precise
@@ -69758,11 +69751,14 @@ class AnazhRealm {
     // DER BAU-SAME (Γ5): zieht aus dem Welt-Seed-Stream (Suffix ":<art>", FNV-1a — das _worldRuleSeed-Muster); je Art zählt
     // ein Akt-Zähler hoch → jeder neue Bau derselben Welt ein ANDERER, aber deterministischer Same. Die Siedlung trägt die
     // Art "stadt". Leser: `spawnSettlement` (Chat `dorf`), jeder Chat-Satz mit Same (`baue … hier`, Insel, Fraktal, der
-    // Studio-Hain — der Same reist im Programm) und der Strom jedes Programms ohne eigenen Seed (`dslCtx`).
+    // Studio-Hain — der Same reist im Programm), der Strom jedes Programms ohne eigenen Seed (`dslCtx`), der Standard-Same
+    // der Wurzel `spawnArchitecture` (Bau einer Kreatur, Plattform, Portal), der Würfel der Werkstatt, die Komposition des
+    // Nexus. Der Zähler ist Welt-Gedächtnis (`worldMeta.bauSame`, reist im Snapshot und zum Gast): als Sitzungs-Feld
+    // begann er nach jedem Reload neu, und derselbe Satz am selben Ort stellte einen deckungsgleichen zweiten Hain.
     _bauSame(art) {
-        const wm = this.state.worldMeta || {};
-        const z = this._bauSameZaehler || (this._bauSameZaehler = {}); // Instanz-Feld (nicht serialisiert, kein audit-Feld)
-        const n = (z[art] = (z[art] || 0) + 1);
+        const wm = this.state.worldMeta || (this.state.worldMeta = {});
+        const z = wm.bauSame && typeof wm.bauSame === "object" ? wm.bauSame : (wm.bauSame = {});
+        const n = (z[art] = (Number(z[art]) || 0) + 1);
         const s = `${wm.seed || "anazh-realm-seed"}:${art}:${n}`;
         let h = 2166136261 >>> 0;
         for (let i = 0; i < s.length; i++) {
@@ -69772,13 +69768,26 @@ class AnazhRealm {
         return h >>> 0 || 1;
     }
     // Der Strom EINES Samens (LCG, [0, 1)): was ein Akt würfelt — Streuung, Drehung, Größe — ist eine Funktion seines Samens,
-    // auf jedem Peer und nach jedem Reload dieselbe. Leser: `dslCtx` (der Programm-Strom) und `_dslSpawnStudioItems`.
+    // auf jedem Peer und nach jedem Reload dieselbe. Das EINE LCG der Welt: Leser `_streamRng` (der Strom eines Namens),
+    // `dslCtx` (der Programm-Strom), `_dslSpawnStudioItems`, die Nexus-Komposition und der Schwebe-Takt eines UFOs.
     _samenStrom(same) {
         let s = Number(same) >>> 0 || 1;
         return () => {
             s = (s * 1664525 + 1013904223) >>> 0;
             return s / 4294967296;
         };
+    }
+    // DER SAME EINES WERKS (Gegenprüfung 08.10.): EIN Same je Bauplan — der Wurf der Werkstatt (`_grownSeed` · `_rockSeedBase`
+    // · `_crystalSeedBase`), sonst sein Name (ein Studio-Rezept ohne Bauplan: seine id) —, gehasht in die Gestalt-Wahl
+    // (`_foundryVariantFor`). Leser: die Werkstatt-Vorschau (Bauplan und Rezept), die Hand, das Phantom UND das Setzen
+    // (`confirmBuild`): was die Vorschau zeigt, zeigt das Phantom, und genau das steht. Befund: vier Kopien des Hashes, und
+    // das Setzen würfelte den Samen aus Math.random — die Eiche des Phantoms (Gestalt 2) stand als Gestalt 1.
+    _werkSame(bp, name) {
+        const wurf = bp ? bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase : null;
+        const s = String(wurf != null ? wurf : name != null ? name : bp && bp.name);
+        let h = 0;
+        for (let i = 0; i < s.length; i++) h = (Math.imul(h, 131) + s.charCodeAt(i)) >>> 0;
+        return h;
     }
     // ═══ WORLDGEN-AUTO-DÖRFER (der Worldgen-Konsument des "settlement"-Kanals) ═══
     // Γ5: je Welt-Zelle (SIEDLUNG.cellM) entscheidet FNV-1a(worldSeed:dorf:cx,cz) Existenz (1 von
@@ -77000,6 +77009,12 @@ class AnazhRealm {
         // nichts (Befund: der Werkstatt-Baum stand auf der Lichtung, die der Satz der KI verweigert — zwei Mach-Akte, zwei
         // Urteile —, und der Grundriss räumte ihn beim nächsten Laden still). Eine Absage kostet nie Material.
         // Ω5 — ein im schöpfer-Modus (gate.free) gebautes Werk ist freeBorn: es erntet zu 0 (das Perpetuum-Verbot).
+        // Das Werk IST das Phantom (Gegenprüfung 08.10.): sein Same ist der EINE des Bauplans (`_werkSame` — dieselbe Gestalt
+        // wie Phantom, Werkstatt-Vorschau und Hand), seine Drehung die des Phantoms; beides reist zum Mitspieler. Befund:
+        // der Standard-Same der Wurzel war Math.random, das Werk stand mit Drehung 0, der Mitspieler bekam den Samen 0.
+        const same = this._werkSame(bpL, name);
+        const rot = bm.phantomMesh.rotation;
+        const dreh = rot && Number.isFinite(rot.y) ? rot.y : 0;
         let gate = null;
         let wand = null;
         const setzen = () => {
@@ -77007,6 +77022,8 @@ class AnazhRealm {
             if (!gate.ok) return null;
             return this.spawnArchitecture(name, spawnPos, {
                 id: archId,
+                seed: same,
+                rotationY: dreh,
                 freeBorn: gate.free === true,
                 studioOv: bmStamp || undefined,
             });
@@ -77031,9 +77048,8 @@ class AnazhRealm {
         }
         if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pBroadcastDsl === "function") {
             const posNode = ["at", spawnPos.x, spawnPos.y, spawnPos.z];
-            const spawnOp = bmStamp
-                ? ["spawn_blueprint", bm.blueprintName, posNode, 0, archId, bmStamp]
-                : ["spawn_blueprint", bm.blueprintName, posNode, 0, archId];
+            // Same und Drehung des stehenden Werks (Slot 3 und 7; Slot 6 der Stempel oder null).
+            const spawnOp = ["spawn_blueprint", bm.blueprintName, posNode, steht.seed, archId, bmStamp || null, dreh];
             const ownBp = this.state.blueprints[bm.blueprintName];
             const prog =
                 ownBp && !ownBp.builtIn && Array.isArray(ownBp.parts)
@@ -82168,15 +82184,9 @@ class AnazhRealm {
         if (!f) return null;
         // Würfel + LOD-Knöpfe schreiben Samen + Stufe in den Bauplan (`bp._grownSeed`/`_rockSeedBase`/
         // `_crystalSeedBase` · `bp._recipeLod`); die Studio-Vorschau LIEST sie (neuer Wurf = andere
-        // Variante). Der Same wird gehasht — dieselbe Naht wie die Welt (`_foundryVariantFor`).
+        // Variante). Der Same des Werks (`_werkSame`) — derselbe, den das Phantom zeigt und das Setzen stellt.
         const bp = this.state.blueprints ? this.state.blueprints[bpName] : null;
-        const rawSeed =
-            (bp && (bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase)) != null
-                ? bp._grownSeed || bp._rockSeedBase || bp._crystalSeedBase
-                : bpName;
-        let seedNum = 0;
-        const seedStr = String(rawSeed);
-        for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
+        const seedNum = this._werkSame(bp, bpName);
         // W-A1 — die Varianten-Wahl (`_foundryVariantFor`) lebt jetzt in der EINEN
         // Studio-Quelle `_workshopStudioPreviewFrom` (seedNum reist als Parameter).
         let lod = bp && Number.isFinite(bp._recipeLod) ? bp._recipeLod | 0 : 0;
@@ -82565,9 +82575,7 @@ class AnazhRealm {
             p.dirty = true;
             return;
         }
-        let seedNum = 0;
-        const seedStr = String(preset);
-        for (let i = 0; i < seedStr.length; i++) seedNum = (Math.imul(seedNum, 131) + seedStr.charCodeAt(i)) >>> 0;
+        const seedNum = this._werkSame(null, preset); // der Same eines Rezepts ohne Bauplan: seine id
         const ov = this._workshopStudioOvFor(preset);
         // ERFINDER-WELLE — die Rezept-Vorschau ehrt die LOD-Wahl (ws.recipeLod, generisch
         // aus kindStages — z. B. haus L0/L1/L2); Default 0 = byte-alt.
@@ -84940,11 +84948,13 @@ class AnazhRealm {
                     nd.conifer = nd.api >= 0.72;
                     this._workshopRegrowRecipe(bp, nd, bp._grownSeed || `${bp._grownSpecies}-studio`);
                 },
+                // Der Würfel zieht aus dem Welt-Strom (`_bauSame`, Γ5 — wie Fels und Kristall unten): jeder Wurf ein neues
+                // Individuum, das Vorschau, Phantom und Werk teilen (`_werkSame`), nie Math.random.
                 dice: () =>
                     this._workshopRegrowRecipe(
                         bp,
                         bp._recipeDials || this._treeRecipeDials(bp._grownSpecies, grammar),
-                        `${bp._grownSpecies}-studio-${Math.floor(Math.random() * 1e9).toString(36)}`
+                        `${bp._grownSpecies}-studio-${this._bauSame("wuerfel:baum").toString(36)}`
                     ),
                 reset: () => {
                     delete bp._recipeDials;
@@ -84969,7 +84979,7 @@ class AnazhRealm {
                 hasLod: true,
                 apply: (nd) => this._workshopRegrowRock(bp, nd, bp._rockSeedBase),
                 dice: () =>
-                    this._workshopRegrowRock(bp, bp._rockRecipe || cur, (Math.floor(Math.random() * 1e8) + 1) >>> 0),
+                    this._workshopRegrowRock(bp, bp._rockRecipe || cur, (this._bauSame("wuerfel:fels") % 1e8) + 1),
                 reset: () => this._workshopRegrowRock(bp, null, null),
             };
         }
@@ -84994,7 +85004,11 @@ class AnazhRealm {
             ],
             apply: (nd) => this._workshopRegrowCrystal(bp, nd, bp._crystalSeedBase),
             dice: () =>
-                this._workshopRegrowCrystal(bp, bp._crystalRecipe || cur, (Math.floor(Math.random() * 1e8) + 1) >>> 0),
+                this._workshopRegrowCrystal(
+                    bp,
+                    bp._crystalRecipe || cur,
+                    (this._bauSame("wuerfel:kristall") % 1e8) + 1
+                ),
             reset: () => this._workshopRegrowCrystal(bp, null, null),
         };
     }

@@ -627,6 +627,9 @@ const FORBIDDEN = [
     { token: "_slopeProbeH", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
     { token: "_siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT", fiel: "Welle L — kein Siedlungs-Zwilling (fachwerk SIEDLUNG)" },
     { token: "_settlementCount", fiel: "Welle L — der Bau-Same je Art (_bauSame)" },
+    // DER SAME DES WERKS (Gegenprüfung 08.10.): der Zähler des Welt-Stroms ist Welt-Gedächtnis, der Same eines Werks EINER.
+    { token: "_bauSameZaehler", fiel: "Gegenprüfung 08.10. — der Zähler des Welt-Stroms reist in worldMeta.bauSame" },
+    { token: "Math.imul(seedNum, 131)", fiel: "Gegenprüfung 08.10. — EIN Same je Werk (_werkSame), vier Kopien fielen" },
     // D5 (Integration Welle L, 07.10.): das Tier am gedrehten Haus — der OBB-Zweig des Kapsel-Lösers ließ den Kontakt-
     // Empfänger des Tiers fallen und drehte die Parkour-Wand des Spielers über eine Zeit-Gleichheit zurück; die Gier-Ordnung
     // YXZ setzte der Takt je Frame neu. Der Kontakt reist im Empfänger (`_wandKontaktSetzen`), YXZ setzt `spawnCreatureAt`.
