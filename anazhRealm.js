@@ -32761,22 +32761,145 @@ class AnazhRealm {
         return { submerged: true, surfaceY };
     }
 
-    // DIE EINE SZENEN-TIEFE: jeder r184-ViewportDepthTextureNode hält seinen EIGENEN Klon je Render-Ziel und kopiert
-    // die Tiefe in jedem Pass, der ihn liest (updateBefore). Wasser (bis V18.529 der Modul-Knoten der linearen Tiefe)
-    // und Feld-Pass (ein zweiter `viewportDepthTexture()`) zogen zwei Kopien derselben Szenen-Tiefe — je Frame zwei
-    // Vollbild-Kopien, bei 1080p 2 × 7,9 MB (gemessen 04.10.: zwei „szene:tiefenkopie" am Szene-Ziel). Beide Leser
-    // lesen diesen EINEN Knoten; der Name reist mit dem Klon in den VRAM-Zensus.
+    // DIE EINE SZENEN-TIEFE: Wasser (bis V18.529 der Modul-Knoten der linearen Tiefe) und Feld-Pass (ein zweiter
+    // `viewportDepthTexture()`) zogen zwei Kopien derselben Szenen-Tiefe (gemessen 04.10.: zwei „szene:tiefenkopie" am
+    // Szene-Ziel) — beide Leser lesen diesen EINEN Knoten. DAS TIEFEN-ABBILD (0710-1 P2, Runde 2, Frage 1): beide Leser
+    // schreiben selbst Tiefe (Wasser `depthWrite`, der March seine Fragment-Tiefe), also braucht ihr Lesen eine Kopie im
+    // Pass-Bruch — r184 kennt keinen nur-lesend angehängten Tiefen-Anhang. Aber keiner braucht sie Pixel für Pixel: das
+    // Wasser rechnet den optischen Weg zum Grund (weiche Ufer), der March bricht an der Szenen-Tiefe ab (dahinter verwürfe
+    // ihn der Tiefentest). Die volle Kopie (depth24plus, 7,9 MB bei 1080p) wird ein Abbild in halber Auflösung, je Texel die
+    // FERNSTE Tiefe seiner 2×2 Pixel (r32float, 2,1 MB): der March läuft am Rand höchstens einen Pixel weiter (der Test
+    // verwirft), das Wasser liest an der Kante eines Gegenstands im Wasser den Grund dahinter, nie den Gegenstand. Gezeichnet
+    // im Pass-Bruch des Hauptbilds (`_tiefenAbbild`); der WebGL2-Rückfall und der Null-Renderer behalten r184s
+    // Viewport-Tiefe.
+    // DER WERT IST EIN SKALAR: r184s Viewport-Tiefe ist ein Knoten auf einer Tiefen-Textur (Typ float); das Abbild ist eine
+    // r32float-Farbtextur, ihr Knoten liefert vec4 (d, 0, 0, 1). Roh weitergereicht, rechnete das Wasser seinen optischen Weg
+    // als vec4 — der Durchlass (Beer-Lambert) weitete `vec3(wK)` und die Luma-Gewichte auf vec4 mit 1,0 und zählte die vierte
+    // Komponente mit (gemessen 07.10., GTX 1060, Nord-Ufer: das Becken türkis statt grau, 99/131/116 → 114/166/147). Die
+    // Leser bekommen `.x`; `_szeneTiefeKnoten` bleibt der Textur-Knoten (Zug, Zerleg-Linse, gate:post-kette).
     _szeneTiefe() {
-        if (!this._szeneTiefeKnoten) {
-            this._szeneTiefeKnoten = THREE.TSL.viewportDepthTexture();
+        if (this._szeneTiefeWert) return this._szeneTiefeWert;
+        const rend = this.state.renderer;
+        const T = THREE.TSL;
+        if (!rend || rend._isHeadlessNull || !rend.backend || rend.backend.isWebGPUBackend !== true) {
+            this._szeneTiefeKnoten = T.viewportDepthTexture();
             this._szeneTiefeKnoten.defaultFramebuffer.name = "szene:tiefenkopie";
+            this._szeneTiefeWert = this._szeneTiefeKnoten;
+            return this._szeneTiefeWert;
         }
-        return this._szeneTiefeKnoten;
+        const abbild = new THREE.DataTexture(new Float32Array(1), 1, 1, THREE.RedFormat, THREE.FloatType);
+        abbild.name = "szene:tiefenabbild";
+        // ein Ziel ohne hochgeladene Daten: r184 legt es an, gezeichnet wird es im Pass-Bruch
+        abbild.isRenderTargetTexture = true;
+        abbild.minFilter = THREE.NearestFilter;
+        abbild.magFilter = THREE.NearestFilter;
+        abbild.generateMipmaps = false;
+        const knoten = T.texture(abbild, T.screenUV);
+        // je Render EINMAL, ausgelöst vom ersten Leser, der zeichnet (wie r184s Viewport-Tiefe)
+        knoten.updateBeforeType = "render";
+        knoten.updateBefore = (frame) => this._tiefenAbbild(frame, abbild);
+        this._szeneTiefeKnoten = knoten;
+        this._szeneTiefeWert = knoten.x;
+        return this._szeneTiefeWert;
     }
 
-    // DIE TIEFE NACH DEM REALLOC: die Leser der Viewport-Tiefe (r184 ViewportDepthTextureNode, ein MSAA-Klon je
-    // Render-Ziel, kopiert im Pass-Bruch; der EINE Knoten `_szeneTiefe`) sind das Wasser (weiche Ufer) und der
-    // Feld-Pass (die Tiefen-Grenze des Marchs). Ein Resize (`setSize`) legt Szene-Tiefe und Klon neu an, die
+    // DER ZUG DES TIEFEN-ABBILDS: im Hauptbild (Post-Kette oder Direktpfad — die Szene mit der Spiel-Kamera) bricht r184s
+    // eigener Weg den Pass (`backend.copyFramebufferToTexture`: Pass beenden, auf demselben Encoder kopieren, mit `load` neu
+    // beginnen); kopiert wird in eine 1×1-Attrappe der Szenen-Tiefe, und genau diese eine Encoder-Kopie wird zum Abbild-Pass
+    // (ein Vollbild-Dreieck lädt je Pixel des Abbilds die 2×2 Szenen-Tiefen und schreibt ihr Maximum). So bleibt der Bruch
+    // r184s Choreographie (gate:vendor-anker pinnt sie), und die Tiefe des Hauptbilds steht im Abbild, bevor der erste
+    // Leser zeichnet.
+    _tiefenAbbild(frame, abbild) {
+        const st = this.state;
+        const rend = frame.renderer;
+        if (frame.scene !== st.scene || frame.camera !== st.camera) return;
+        const ctx = rend._currentRenderContext;
+        if (!ctx || !ctx.depthTexture) return;
+        const be = rend.backend;
+        const quelle = be.get(ctx.depthTexture).texture;
+        if (!quelle) return;
+        const w = Math.max(1, Math.ceil(quelle.width / 2)),
+            h = Math.max(1, Math.ceil(quelle.height / 2));
+        if (abbild.image.width !== w || abbild.image.height !== h) {
+            abbild.image = { data: null, width: w, height: h };
+            abbild.needsUpdate = true;
+        }
+        rend._textures.updateTexture(abbild);
+        const ziel = be.get(abbild).texture;
+        let A = this._tiefenAbbildGpu;
+        if (!A) {
+            const modul = be.device.createShaderModule({
+                label: "szene:tiefenabbild",
+                code:
+                    "@group(0) @binding(0) var tiefe: texture_depth_2d;\n" +
+                    "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
+                    "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
+                    "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
+                    "}\n" +
+                    "@fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f {\n" +
+                    "    let q = vec2i(textureDimensions(tiefe)) - vec2i(1, 1);\n" +
+                    "    let b = vec2i(p.xy) * 2;\n" +
+                    "    var d = 0.0;\n" +
+                    "    for (var j = 0; j < 2; j++) {\n" +
+                    "        for (var i = 0; i < 2; i++) { d = max(d, textureLoad(tiefe, min(b + vec2i(i, j), q), 0)); }\n" +
+                    "    }\n" +
+                    "    return vec4f(d, 0.0, 0.0, 1.0);\n" +
+                    "}\n",
+            });
+            // die 1×1-Attrappe der Szenen-Tiefe: r184 kopiert im Pass-Bruch in sie, die Kopie wird zum Abbild-Pass
+            const bruch = new THREE.DepthTexture(1, 1);
+            bruch.name = "szene:tiefenabbild:bruch";
+            A = this._tiefenAbbildGpu = {
+                pipe: be.device.createRenderPipeline({
+                    label: "szene:tiefenabbild",
+                    layout: "auto",
+                    vertex: { module: modul, entryPoint: "vs" },
+                    fragment: { module: modul, entryPoint: "fs", targets: [{ format: "r32float" }] },
+                    primitive: { topology: "triangle-list" },
+                }),
+                attrappe: bruch,
+                rechteck: new THREE.Vector4(0, 0, 1, 1),
+                quelle: null,
+                ziel: null,
+            };
+        }
+        if (A.quelle !== quelle || A.ziel !== ziel) {
+            A.gruppe = be.device.createBindGroup({
+                layout: A.pipe.getBindGroupLayout(0),
+                entries: [{ binding: 0, resource: quelle.createView({ aspect: "depth-only" }) }],
+            });
+            A.ansicht = ziel.createView();
+            A.quelle = quelle;
+            A.ziel = ziel;
+        }
+        A.attrappe.type = quelle.format === "depth32float" ? THREE.FloatType : THREE.UnsignedIntType;
+        rend._textures.updateTexture(A.attrappe);
+        const attrappe = be.get(A.attrappe).texture;
+        const E = GPUCommandEncoder.prototype;
+        const kopieRoh = E.copyTextureToTexture;
+        E.copyTextureToTexture = function (von, nach, groesse) {
+            if (!nach || nach.texture !== attrappe) return kopieRoh.call(this, von, nach, groesse);
+            const pass = this.beginRenderPass({
+                label: "szene:tiefenabbild",
+                colorAttachments: [{ view: A.ansicht, loadOp: "clear", storeOp: "store", clearValue: [1, 0, 0, 1] }],
+            });
+            pass.setPipeline(A.pipe);
+            pass.setBindGroup(0, A.gruppe);
+            pass.draw(3);
+            pass.end();
+            return undefined;
+        };
+        try {
+            be.copyFramebufferToTexture(A.attrappe, ctx, A.rechteck);
+        } finally {
+            E.copyTextureToTexture = kopieRoh;
+        }
+    }
+
+    // DIE TIEFE NACH DEM REALLOC: die Leser der Szenen-Tiefe (der EINE Knoten `_szeneTiefe` — auf WebGPU das
+    // Tiefen-Abbild, im Rückfall r184s ViewportDepthTextureNode mit einem Klon je Render-Ziel, beide gezogen im
+    // Pass-Bruch) sind das Wasser (weiche Ufer) und der Feld-Pass (die Tiefen-Grenze des Marchs). Ein Resize
+    // (`setSize`) legt Szene-Tiefe und Abbild (Klon) neu an, die
     // Textur-Bindung eines Lesers zieht nicht nach: jeder Submit des Hauptpasses fällt („Destroyed texture … used in a
     // submit", renderContext des Szene-Passes), die Welt bleibt SCHWARZ — gemessen 03.10. (echte GPU, Fenster
     // 1920→1600→1920). Das Wasser-Material wird frisch gebaut (gleicher WGSL → Programm aus dem Cache), alle
@@ -35696,8 +35819,9 @@ class AnazhRealm {
             envUnten: U.envUnten,
             envMitte: U.envMitte,
             envOben: U.envOben,
-            // Die Szenen-Tiefe VOR dem Feld-Pass (r184-Viewport-Tiefe, Kopie im Pass-Bruch wie beim Wasser): die
-            // Grenze des Marchs. Ein Leser der Viewport-Tiefe bindet nach jedem Resize neu (_tiefenLeserNeuBinden).
+            // Die Szenen-Tiefe VOR dem Feld-Pass (das Tiefen-Abbild `_szeneTiefe`, gezeichnet im Pass-Bruch wie beim
+            // Wasser, je Texel die fernste Tiefe seiner 2×2 Pixel): die Grenze des Marchs — am Rand läuft er höchstens
+            // einen Pixel weiter, der Tiefentest verwirft. Ein Leser bindet nach jedem Resize neu (_tiefenLeserNeuBinden).
             szeneTiefe: this._szeneTiefe().x,
             // Die Schwund-Blende liest Pixel und Rotation der Stufen-Blende (`uDitherT`, dieselbe Uniform).
             schirm: TSL.screenCoordinate.xy,

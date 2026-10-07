@@ -108,7 +108,16 @@ const ANKER = [
     // Der Fenster-Wechsel: die Viewport-Tiefe ist ein Klon je Render-Ziel (der EINE Leser bindet nach setSize neu)
     { file: "vendor/three.webgpu.min.js", sub: "getTextureForReference(e=null){", organ: "_tiefenLeserNeuBinden (Viewport-Tiefen-Klon je Ziel)" },
     // Der Name der Viewport-Tiefe: EIN geteiltes Original je Seite, jeder Klon je Ziel erbt seinen Namen
-    { file: "vendor/three.webgpu.min.js", sub: '"ViewportDepthTextureNode"}constructor(e=ud,t=null,r=null){null===r&&(null===Kp&&(Kp=new Z),r=Kp)', organ: "_szeneTiefe (szene:tiefenkopie am geteilten Original)" },
+    { file: "vendor/three.webgpu.min.js", sub: '"ViewportDepthTextureNode"}constructor(e=ud,t=null,r=null){null===r&&(null===Kp&&(Kp=new Z),r=Kp)', organ: "_szeneTiefe (WebGL2-Rückfall und Null-Renderer: r184s Viewport-Tiefe, szene:tiefenkopie)" },
+    // DAS TIEFEN-ABBILD (0710-1 P2, Runde 2): r184s Bruch-Weg (Pass beenden, auf demselben Encoder kopieren, mit load neu
+    // beginnen) trägt den Abbild-Pass — seine Quelle ist die Tiefe des Kontexts, seine Kopie die EINE Encoder-Stelle, die
+    // `_tiefenAbbild` für die Attrappe durch den Abbild-Pass ersetzt; der Knoten zieht je Render einmal; r32float bindet
+    // r184 als (unfilterable-)float.
+    { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture", organ: "_tiefenAbbild (Quelle des Bruchs = die Tiefe des Kontexts)" },
+    { file: "vendor/three.webgpu.min.js", sub: 's.currentPass?(s.currentPass.end(),a=s.encoder):a=this.device.createCommandEncoder({label:"copyFramebufferToTexture_"+e.id}),a.copyTextureToTexture({texture:i,origin:[r.x,r.y,0]},{texture:n},[r.z,r.w])', organ: "_tiefenAbbild (Pass-Ende und die EINE Encoder-Kopie)" },
+    { file: "vendor/three.webgpu.min.js", sub: "s.currentPass=a.beginRenderPass(e),s.currentSets={attributes:{},bindingGroups:[],pipeline:null,index:null}", organ: "_tiefenAbbild (der Neubeginn mit load)" },
+    { file: "vendor/three.webgpu.min.js", sub: "else if(t===ri.RENDER){const t=this._getMaps(this.updateBeforeMap,r);if(t.renderId!==this.renderId)", organ: "_szeneTiefe (der Abbild-Knoten zieht je Render einmal)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'e===K&&(this.backend.hasFeature("float32-filterable")?t.sampleType=Gw:t.sampleType=zw)', organ: "_szeneTiefe (das r32float-Abbild als float-Textur gebunden)" },
     { file: "vendor/three.webgpu.min.js", sub: "if(!1===r.has(e)){const s=t.clone();r.set(e,s)}return r.get(e)}", organ: "_szeneTiefe (der Klon je Ziel trägt den Namen)" },
     // Der Schatten-Takt (_loopShadowUpdate): der EINE Leser je Licht, die Matrix nur im Schatten-Render, die
     // Matrix-Uniform rechnet nur bei abgeschalteter Map selbst nach — sonst bliebe eine übersprungene Kaskade
