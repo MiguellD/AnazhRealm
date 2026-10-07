@@ -67651,6 +67651,16 @@ class AnazhRealm {
         if (!bp) return 0;
         const world = this.worldFieldAt(x, z);
         const tags = this.computeCompoundTags(bp);
+        // Fünfte Stimme: feuchte resoniert mit lebendig (Bäume folgen Flüssen; brennbar resoniert nicht).
+        // Der Populator reicht feuchte je Sample (kein Hot-Path-Bucket-Walk); fehlt sie, misst der seltene
+        // Direkt-Aufrufer (Diag/UI) selbst. Legacy-Welten: _feuchteAt → 0.
+        return this._affinitaet(tags, world, Number.isFinite(feuchte) ? feuchte : this._feuchteAt(x, z));
+    }
+
+    // DIE AFFINITÄT (die EINE Formel): Bauplan-Tags × Welt-Feld an einer Stelle × Feuchte. Der Populator rechnet das
+    // Feld je Sample EINMAL und die Tags je Chunk EINMAL (`_vegetationSampleSpawn`) — bis Welle K rechnete jeder der
+    // zwölf Kandidaten je Sample beides neu (sechs Rausch-Abfragen, alle Teile des Bauplans).
+    _affinitaet(tags, world, fw) {
         if (!tags) return 0;
         let score = 0;
         // Vier Achsen × Tag-Wert. Wenn eine Welt-Achse hoch und der Bauplan
@@ -67659,10 +67669,6 @@ class AnazhRealm {
         score += world.dichte * (tags.dichte || 0);
         score += world.glut * (tags.brennbar || 0); // glut → brennbar (Material-Achse)
         score += world.magieleitung * (tags.magieleitung || 0);
-        // Fünfte Stimme: feuchte resoniert mit lebendig (Bäume folgen Flüssen; brennbar resoniert nicht).
-        // Der Populator reicht feuchte je Sample (kein Hot-Path-Bucket-Walk); fehlt sie, misst der seltene
-        // Direkt-Aufrufer (Diag/UI) selbst. Legacy-Welten: _feuchteAt → 0.
-        const fw = Number.isFinite(feuchte) ? feuchte : this._feuchteAt(x, z);
         score += fw * (tags.lebendig || 0) * AnazhRealm.FEUCHTE.affinitaetGewicht;
         return Math.max(0, Math.min(1, score / 4));
     }
@@ -73358,7 +73364,7 @@ class AnazhRealm {
         return `fels_var${idx}`;
     }
 
-    _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn) {
+    _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn, tagsJe) {
         // Nichts wächst im Wasser (0.4 m Marge gegen knöcheltiefes Ufer). Eine Quelle: `_isAboveWaterAt` —
         // alle wasser-respektierenden Welt-Schichten lesen denselben Helfer.
         if (!this._isAboveWaterAt(sampleX, sampleZ, 0.4)) return 0;
@@ -73389,16 +73395,28 @@ class AnazhRealm {
         ];
         // Nie Math.random im Worldgen: worldFieldAt() initialisiert state.worldField (inkl. rngNoise, seed-
         // gebunden) lazy — sonst würfelt jeder Peer anders (P2P-Drift).
-        if (!this.state.worldField || !this.state.worldField.rngNoise) this.worldFieldAt(sampleX, sampleZ);
+        // Das Welt-Feld dieser Stelle EINMAL (es initialisiert auch den Rausch-Satz samt rngNoise): jede Affinität und
+        // jeder Wald-/Busch-Wurf dieses Samples liest es.
+        const welt = this.worldFieldAt(sampleX, sampleZ);
         const rng = this.state.worldField && this.state.worldField.rngNoise;
         // Γ1 — die FEUCHTE einmal pro Sample (surfaceY liegt hier schon vor;
         // der Bucket-Walk läuft 1× statt 1× je Kandidat) → alle Affinitäts-
         // Aufrufe dieses Samples lesen denselben Wert.
         const feuchte = this._feuchteAt(sampleX, sampleZ, surfaceY);
+        const fw = Number.isFinite(feuchte) ? feuchte : this._feuchteAt(sampleX, sampleZ);
+        // die Tags je Bauplan aus der Tafel des Chunks (`_populateVoxelChunkVegetation`), sonst einmal hier
+        const tafel = tagsJe || new Map();
+        const affinitaet = (name) => {
+            const bp = this.state.blueprints && this.state.blueprints[name];
+            if (!bp) return 0;
+            let tags = tafel.get(bp);
+            if (tags === undefined) tafel.set(bp, (tags = this.computeCompoundTags(bp)));
+            return this._affinitaet(tags, welt, fw);
+        };
 
         if ((seedForSpawn % 1000) / 1000 < LANDMARK_RATE) {
-            const affBogen = this.spawnAffinityForBlueprint("felsbogen", sampleX, sampleZ, feuchte);
-            const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ, feuchte);
+            const affBogen = affinitaet("felsbogen");
+            const affTurm = affinitaet("felsturm");
             if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
                 const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
                 // Enqueue statt sofort spawnen: der Streaming-Pump öffnet 9+ Chunks mit je bis zu 64 Samples, jeder
@@ -73430,7 +73448,7 @@ class AnazhRealm {
         let bestName = null;
         let bestAffinity = 0;
         for (const name of candidates) {
-            const aff = this.spawnAffinityForBlueprint(name, sampleX, sampleZ, feuchte);
+            const aff = affinitaet(name);
             if (aff > bestAffinity) {
                 bestAffinity = aff;
                 bestName = name;
@@ -73495,8 +73513,7 @@ class AnazhRealm {
             }
         }
         if (isTree) {
-            const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
-            const lebendig = f ? f.lebendig : 0;
+            const lebendig = welt.lebendig;
             chance = Math.min(0.4, BASE_RATE * bestAffinity * (0.4 + lebendig * 0.9));
             // Wald-Maske = die volle Platzierungs-Ökologie aus der EINEN Quelle `_placementDensityFactor` (Stand-
             // Klump × Slope-flach × Feuchte × Höhe × Perf): echte Wälder mit Rand + Lichtungen statt glatter
@@ -73511,8 +73528,7 @@ class AnazhRealm {
             if (isTree) {
                 const BUSH_RATE = 0.18; // Erst-Wurf-Wert; browser-justierbar
                 const bushProbe = (rng.noise2D(sampleX * 0.47 - 2.1, sampleZ * 0.47 + 6.3) + 1) / 2;
-                const f2 = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
-                const lebendig2 = f2 ? f2.lebendig : 0;
+                const lebendig2 = welt.lebendig;
                 // Der Unterwuchs folgt derselben Platzierungs-Ökologie über den ':meadow'-Stand (λ~40 m Dickicht) →
                 // dicht in feuchten flachen Lücken, licht am Hang.
                 const meadowF = this._placementDensityFactor(sampleX, sampleZ, surfaceY, "meadow");
@@ -74903,6 +74919,8 @@ class AnazhRealm {
         const prevImmediate = this._vegSpawnImmediate || false;
         this._vegSpawnImmediate = !!opts.immediate;
         let spawned = 0;
+        // die Bauplan-Tags je Chunk EINMAL (Pläne und Stoffe ändern sich in diesem synchronen Lauf nicht)
+        const tagsJe = new Map();
         try {
             for (let zi = 0; zi < SAMPLES; zi++) {
                 for (let xi = 0; xi < SAMPLES; xi++) {
@@ -74911,7 +74929,7 @@ class AnazhRealm {
                     const surfaceY = this._voxelSurfaceY(sampleX, sampleZ);
                     if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
                     const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
-                    spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn);
+                    spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn, tagsJe);
                 }
             }
             // Die Bäume pflanzt der Wald-Generator (`_forestPlantChunk`, zell-deterministisch: Poisson-Disc +

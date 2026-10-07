@@ -30730,9 +30730,9 @@ async function checkBandGammaGenese(ctx) {
             out.schilfData = !!(boden && boden.schilf && Array.isArray(boden.schilf.ufer) && boden.schilf.ring === "nah");
             out.farnDual = !!(boden && boden.farn && Array.isArray(boden.farn.licht) && boden.farn.feuchtLicht > 0);
             out.bodenLiest = /_feuchteAt/.test(window.__codeOf(r._terrainMaterialAt));
-            out.spawnReicht = /spawnAffinityForBlueprint\([^)]*feuchte\)/.test(
-                window.__codeOf(r._vegetationSampleSpawn)
-            );
+            out.spawnReicht =
+                /const fw = Number\.isFinite\(feuchte\) \? feuchte/.test(window.__codeOf(r._vegetationSampleSpawn)) &&
+                /_affinitaet\([^)]*fw\)/.test(window.__codeOf(r._vegetationSampleSpawn));
             // (6) Γ5 — Math.random-Zensus (Kommentare gestrippt; der CODE darf
             // im Worldgen nie würfeln — P2P-Drift-Klasse).
             const fns = [
@@ -30745,6 +30745,7 @@ async function checkBandGammaGenese(ctx) {
                 "worldFieldAt",
                 "_clumpAt",
                 "spawnAffinityForBlueprint",
+                "_affinitaet",
             ];
             out.randHits = fns.filter((fn) => {
                 const f = r[fn];
