@@ -11,7 +11,8 @@
 //                   die nachhinkende Lage als Sim-Wahrheit (Befund: 114 von 114 Frames)        Soll 0
 //       weg       — Sim-Weg (Σ der Sim-Schritte) gegen Fahr-Weg (Σ der Wagen-Lage je Frame)
 //                   (Befund: 25,95 m simuliert, 10,27 m gefahren)                                Soll ±2 % (min 0,4 m)
-//       luft      — Sim-Schritte, in denen der Reiter im Sattel „in der Luft" gilt
+//       luft      — Sim-Schritte, in denen der Reiter nicht auf seinem Sitz sitzt oder der geerdete Wagen auf keinem
+//                   seiner vier Aufstandspunkte steht (die Lage selbst, nie das Flag isInAir — Gegenprüfung 07.10.)
 //                   (Befund: 421 von 421)                                                         Soll 0
 //       gier      — die Gier dreht in Frames OHNE Sim-Schritt (das Frame-Flag: in 14 von 192 Frames 82,4°)   Soll ≤ 0,5°
 //     T2 am Hang ohne Taste: der Wagen HÄLT (die Haltebremse bis zum Reibkreis) und dreht nicht (Befund: rollte mit
@@ -186,14 +187,16 @@ function pflichtWand(stamm) {
     for (const n of FAHR_LESER) koerper[n] = fnBody(st, new RegExp("\\n {4}" + n + "\\([^)]*\\) \\{")) || "";
     const fehlt = FAHR_LESER.filter((n) => !koerper[n]);
     const still = ["_fahrSatz", "_rittEbene"].filter(
-        (n) => /typeof\s+VC\b|typeof\s+\w+\.fahr\w+\s*!==/.test(koerper[n]) || !/_fahrSchrittGesetz\(\)/.test(koerper[n])
+        (n) =>
+            /typeof\s+VC\b|typeof\s+\w+\.fahr\w+\s*!==/.test(koerper[n]) || !/_fahrSchrittGesetz\(\)/.test(koerper[n])
     );
     const zwillinge = [];
     for (const n of FAHR_LESER) {
         const b = koerper[n];
         // dazu die Ebenen-Klammer als Literal (±0,7 rad = FAHR.schritt.ebeneMax) in Stand und Ritt ohne Fahr-Gesetz
-        const treffer = (b.match(/__vehicleCore|FAHR\.schritt|\b0\.34\b|:\s*0\.7\)|:\s*0\.6\)|0\.5 \* radR|Math\.min\(0\.7,/g) || [])
-            .length;
+        const treffer = (
+            b.match(/__vehicleCore|FAHR\.schritt|\b0\.34\b|:\s*0\.7\)|:\s*0\.6\)|0\.5 \* radR|Math\.min\(0\.7,/g) || []
+        ).length;
         if (treffer) zwillinge.push(`${n} ${treffer}×`);
     }
     return [
@@ -207,7 +210,11 @@ function pflichtWand(stamm) {
             still.length === 0 && /_kernPflichtBruch\(/.test(koerper._fahrSatz),
             still.join(", "),
         ],
-        ["P3 keine Literal-Zwillinge der FAHR.schritt-Zeilen in den Fahr-Lesern", zwillinge.length === 0, zwillinge.join(" · ")],
+        [
+            "P3 keine Literal-Zwillinge der FAHR.schritt-Zeilen in den Fahr-Lesern",
+            zwillinge.length === 0,
+            zwillinge.join(" · "),
+        ],
     ];
 }
 
@@ -261,7 +268,12 @@ function kernProbe(VC) {
         for (let it = 0; it < 22; it++) {
             const a = (lo + hi) / 2;
             const t = Math.tan(rad(a));
-            const m = lauf(pid, (x) => x * t, 240, () => ({ throttle: 1 }));
+            const m = lauf(
+                pid,
+                (x) => x * t,
+                240,
+                () => ({ throttle: 1 })
+            );
             if (m.z.x > 0.5) lo = a;
             else hi = a;
         }
@@ -273,8 +285,18 @@ function kernProbe(VC) {
     }
     out.push(["K2 Reibkreis längs: kein Rezept steigt steiler als tan α = μ", k2, grenzen.join(" · ")]);
     // K3 — Halt am 21°-Hang ohne Eingabe; über dem Reibkreis (50°) rutscht der Wagen.
-    const h21 = lauf("gt", (x) => x * Math.tan(rad(21)), 300, () => ({}));
-    const h50 = lauf("gt", (x) => x * Math.tan(rad(50)), 120, () => ({}));
+    const h21 = lauf(
+        "gt",
+        (x) => x * Math.tan(rad(21)),
+        300,
+        () => ({})
+    );
+    const h50 = lauf(
+        "gt",
+        (x) => x * Math.tan(rad(50)),
+        120,
+        () => ({})
+    );
     out.push([
         "K3 Halt: 21°-Hang ohne Eingabe hält (≤ 0,01 m, Gier 0), 50° rutscht",
         Math.abs(h21.z.x) <= 0.01 && Math.abs(h21.z.yaw) < 1e-6 && h50.z.x < -1,
@@ -297,7 +319,12 @@ function kernProbe(VC) {
     };
     const k12 = lauf("gt", kuppe(12), 600, () => ({ throttle: 1 }), -60);
     const k40 = lauf("gt", kuppe(40), 600, () => ({ throttle: 1 }), -60);
-    const kl = lauf("gt", (x) => (x < 10 ? 0 : -7), 240, () => ({ throttle: 1 }));
+    const kl = lauf(
+        "gt",
+        (x) => (x < 10 ? 0 : -7),
+        240,
+        () => ({ throttle: 1 })
+    );
     out.push([
         "K5 Vertikale: Kuppe R 12 m hebt ab, R 40 m nicht; die 7-m-Klippe ohne Höhen-Sprung > 0,5 m je Schritt, gelandet",
         k12.luft > 0 && k40.luft === 0 && kl.luft > 0 && kl.sprung <= 0.5 && !kl.z.luft && Math.abs(kl.z.y + 7) <= 0.05,
@@ -341,7 +368,19 @@ function kernProbe(VC) {
 }
 
 // ── DAS STATIONS-VERDIKT (pure Funktion; Browser-Probe UND Selbst-Test). ──
-const STATION = { laborM: 0.01, sprungM: 0.5, querM: 0.3, huelleM: 0.05, beruehrtM: 0.3, rolleRad: 1, lenkRad: 0.1, spaltM: 0.03, schubM: 0.01, sattelRad: 0.01, standM: 0.05 };
+const STATION = {
+    laborM: 0.01,
+    sprungM: 0.5,
+    querM: 0.3,
+    huelleM: 0.05,
+    beruehrtM: 0.3,
+    rolleRad: 1,
+    lenkRad: 0.1,
+    spaltM: 0.03,
+    schubM: 0.01,
+    sattelRad: 0.01,
+    standM: 0.05,
+};
 function stationVerdict(s) {
     const out = [];
     if (!s || !s.kern) return ["kern ohne fahrSchritt"];
@@ -355,14 +394,16 @@ function stationVerdict(s) {
     }
     const ab = s.absteigen;
     if (!ab) out.push("absteigen keine Probe");
-    else if (!ab.imFlug || !(ab.hoehe >= 1)) out.push(`absteigen nicht im Flug (vakuös, ${(ab.hoehe || 0).toFixed(2)} m)`);
+    else if (!ab.imFlug || !(ab.hoehe >= 1))
+        out.push(`absteigen nicht im Flug (vakuös, ${(ab.hoehe || 0).toFixed(2)} m)`);
     else {
         if (!(Math.abs(ab.ueberBoden) <= STATION.standM))
             out.push(`absteigen-luft: der Wagen hängt ${ab.ueberBoden.toFixed(2)} m über der Ebene seiner Räder`);
         if (!(ab.sprung <= STATION.sprungM)) out.push(`absteigen-sprung ${ab.sprung.toFixed(2)} m je Schritt`);
     }
     if (!s.quer) out.push("querhang nicht gefunden");
-    else if (!(s.quer.drift >= STATION.querM)) out.push(`querhang ohne Abtrieb (Quer-Abdrift ${s.quer.drift.toFixed(2)} m)`);
+    else if (!(s.quer.drift >= STATION.querM))
+        out.push(`querhang ohne Abtrieb (Quer-Abdrift ${s.quer.drift.toFixed(2)} m)`);
     const rd = s.raeder;
     if (!rd) out.push("raeder keine Probe");
     else {
@@ -373,27 +414,31 @@ function stationVerdict(s) {
                 out.push(`raeder lenken nicht (vorn ${rd.lenk.toFixed(3)} · hinten ${rd.lenkHinten.toFixed(3)} rad)`);
             // der Bremssattel (R:s) steht je Ecke als eigenes Leaf und hängt an der Nabe wie im Labor: er rollt nie
             if (!(rd.stehend > 0)) out.push("raeder ohne Sattel (kein stehendes Rad-Leaf)");
-            else if (!(rd.stehRolle <= STATION.sattelRad)) out.push(`raeder Sattel rollt (${rd.stehRolle.toFixed(2)} rad)`);
+            else if (!(rd.stehRolle <= STATION.sattelRad))
+                out.push(`raeder Sattel rollt (${rd.stehRolle.toFixed(2)} rad)`);
         }
         if (!(rd.tauchBremse <= STATION.spaltM)) out.push(`raeder tauchen beim Bremsen ${rd.tauchBremse.toFixed(3)} m`);
         if (!(rd.spaltP75 <= STATION.spaltM)) out.push(`raeder Spalt p75 ${rd.spaltP75.toFixed(3)} m`);
     }
     const pf = s.pflicht;
     if (!pf) out.push("pflicht keine Probe");
-    else if (pf.satz !== "bruch" || pf.ebene !== "bruch") out.push(`pflicht still (fahrSatz ${pf.satz} · rittEbene ${pf.ebene})`);
+    else if (pf.satz !== "bruch" || pf.ebene !== "bruch")
+        out.push(`pflicht still (fahrSatz ${pf.satz} · rittEbene ${pf.ebene})`);
     const hg = s.huelleHang;
     if (!hg) out.push("huelle-hang keine Probe");
     else if (!(hg.schub >= 0.5)) out.push(`huelle-hang vakuös (Schub ${(hg.schub || 0).toFixed(2)} m)`);
     else if (!(hg.eindringen <= 0.01)) out.push(`huelle-hang Schub ins Gelände ${hg.eindringen.toFixed(2)} m`);
     if (!s.huelleSchub) out.push("huelle-schub keine Probe");
-    else if (!(s.huelleSchub.weg <= STATION.schubM)) out.push(`huelle-schub ein Wesen schob den Wagen ${s.huelleSchub.weg.toFixed(2)} m`);
+    else if (!(s.huelleSchub.weg <= STATION.schubM))
+        out.push(`huelle-schub ein Wesen schob den Wagen ${s.huelleSchub.weg.toFixed(2)} m`);
     for (const [k, name] of [
         ["huelleBlock", "fels"],
         ["huelleBaer", "baer"],
     ]) {
         const h = s[k];
         if (!h) out.push(`huelle-${name} keine Probe`);
-        else if (!(h.abstand <= STATION.beruehrtM)) out.push(`huelle-${name} keine Berührung (Abstand ${h.abstand.toFixed(2)} m)`);
+        else if (!(h.abstand <= STATION.beruehrtM))
+            out.push(`huelle-${name} keine Berührung (Abstand ${h.abstand.toFixed(2)} m)`);
         else if (!(h.tief <= STATION.huelleM)) out.push(`huelle-${name} Eindringen ${h.tief.toFixed(2)} m`);
     }
     return out;
@@ -441,6 +486,38 @@ async function probeLeben(expected) {
     // DIE ZÄHLER am echten Takt: der Teleport-Zweig des Akkumulators (exakt seine Bedingung), der Weg je Sim-Schritt,
     // und die Spur je Sim-Schritt (Eingabe + Fahr-Zustand) für den Labor-Vergleich.
     const z = { teleport: 0, schritte: 0, luft: 0, simWeg: 0, an: false, spur: null, ent: null };
+    // DIE ECHTE VERTIKALE (Gegenprüfung 07.10.: `isInAir` ist im Sattel bedingungslos geerdet — die alte Zählung konnte nie
+    // mehr rot werden). Nach jedem Sim-Schritt: (a) der Reiter sitzt auf dem Sitz seines Werks (Basis − 0,5 + Sitz-Höhe +
+    // Hub der Feder, ±0,05 m), (b) ein Gesetz-Wagen, den der Kern geerdet nennt, steht auf mindestens einem seiner vier
+    // Aufstandspunkte (kein Punkt mehr als 0,05 m über seinem Boden) — beides misst die Lage selbst —, und (c) steht das
+    // Werk, gilt der Reiter nicht als in der Luft (der Befund F-D10: 421 von 421 Schritten; die Wand gegen den Rückfall).
+    const inDerLuft = () => {
+        const pl = st.player;
+        const me = pl && pl.mountedArch !== null && pl.mountedArch !== undefined ? r._mountedEntry : null;
+        if (!me || !me.position) return !!st.isInAir;
+        const fz = me._fahr;
+        if (st.isInAir && !(fz && fz.luft)) return true;
+        const sitz = Number.isFinite(me._sitzHeight) ? me._sitzHeight : 0;
+        const hub = fz && Number.isFinite(fz.fHub) ? fz.fHub : Number.isFinite(me._rideHeave) ? me._rideHeave : 0;
+        if (Math.abs(st.playerMesh.position.y - (me.position.y - 0.5 + sitz + hub)) > 0.05) return true;
+        if (!fz || fz.luft || !Number.isFinite(fz.y) || typeof r._rittAufstand !== "function") return false;
+        const a = r._rittAufstand(me);
+        const boden = r._fahrBoden(me);
+        const yk = (Number.isFinite(me._rideYaw) ? me._rideYaw : 0) - Math.PI / 2; // der Rahmen des Kerns
+        const fx = Math.cos(yk);
+        const fzz = -Math.sin(yk);
+        const lx = -Math.sin(yk);
+        const lz = -Math.cos(yk);
+        let minSpalt = Infinity;
+        for (const l of [a.vorn, a.hinten])
+            for (const q of [a.quer, -a.quer]) {
+                const px = me.position.x + fx * l + lx * q;
+                const pz = me.position.z + fzz * l + lz * q;
+                const y = fz.y + Math.tan(fz.steig || 0) * l + Math.tan(fz.wank || 0) * q;
+                minSpalt = Math.min(minSpalt, y - boden(px, pz));
+            }
+        return minSpalt > 0.05;
+    };
     r._loopFixedStep = function (realDt, ct) {
         const m = st.playerMesh;
         if (z.an && st._fixedSimPos && !(st._fixedRenderPos && m.position.equals(st._fixedRenderPos))) z.teleport++;
@@ -461,7 +538,7 @@ async function probeLeben(expected) {
         if (z.an) {
             z.simWeg += Math.hypot(m.x - x0, m.z - z0);
             z.schritte++;
-            if (st.isInAir) z.luft++;
+            if (inDerLuft()) z.luft++;
         }
         if (z.spur && z.ent && z.ent._fahr) {
             const q = z.ent._fahr;
@@ -604,6 +681,43 @@ async function probeLeben(expected) {
         // (1) Der GT geradeaus, W gehalten (Fahrt +x).
         const gt = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
         res.gt = gt ? fahrt(gt, 240, true) : { gestartet: false };
+        // DIE VERTIKALE SIEHT IHRE TÄTER (am lebenden Ritt): (a) der Reiter 0,3 m über dem Sitz, (b) der geerdete Wagen
+        // 0,3 m über seinem Boden (im Stand, der Kern nennt ihn geerdet) — je 10 Frames mit einem Eingriff nach dem
+        // Ritt-Schritt; die Zählung muss feuern.
+        if (gt && typeof P._rittSchritt === "function") {
+            const eingriff = (fn, w) => {
+                r._rittSchritt = function (dt) {
+                    P._rittSchritt.call(this, dt);
+                    fn();
+                };
+                const m = fahrt(gt, 10, w);
+                delete r._rittSchritt;
+                return m.luft;
+            };
+            res.luftTaeter = {
+                sitz: eingriff(() => {
+                    st.playerMesh.position.y += 0.3;
+                }, true),
+                wagen: (() => {
+                    // erst steht er (die Fahrt fällt, 30 Frames ohne Taste: Halt am Stand)
+                    if (gt._fahr) {
+                        gt._fahr.vlong = 0;
+                        gt._fahr.vlat = 0;
+                        gt._fahr.yawRate = 0;
+                        gt._fahr.vy = 0; // auch die Steig-Rate des Hangs (sonst hüpft er aus dem Stand)
+                    }
+                    if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+                    fahrt(gt, 30, false);
+                    return eingriff(() => {
+                        if (gt._fahr && !gt._fahr.luft) {
+                            gt._fahr.y += 0.3;
+                            gt.position.y += 0.3;
+                            st.playerMesh.position.y += 0.3;
+                        }
+                    }, false);
+                })(),
+            };
+        }
         if (gt) weg(gt);
         // (2) Am Hang ohne Taste: der GT steht bergauf (der Befund: rollte zurück und drehte sich 84°).
         let hang = null;
@@ -647,7 +761,11 @@ async function probeLeben(expected) {
         const gR = await setzen("fahrzeug_gt", start.x, start.z, Math.PI / 2);
         if (gR) {
             const preset = r._foundryPresetForEntry(gR);
-            const flat = r._foundryFlattenFor(gR, preset, Number.isFinite(gR._servedLod) ? gR._servedLod : gR._lodLevel);
+            const flat = r._foundryFlattenFor(
+                gR,
+                preset,
+                Number.isFinite(gR._servedLod) ? gR._servedLod : gR._lodLevel
+            );
             const hu = r._fahrzeugGesetzFor(gR).drive.huelle;
             const radR = hu.radR * (Number.isFinite(gR.scale) ? gR.scale : 1);
             const rad = [];
@@ -668,6 +786,15 @@ async function probeLeben(expected) {
             let lenkHinten = 0;
             let tauchBremse = 0;
             const spalte = [];
+            const spalteSicht = [];
+            // die Boden-Karte des gezeichneten Meshs (`_chunkSurfaceAt` je Chunk, bilinear); null ohne Karte
+            const cfgB = r._voxelChunkConfig(0);
+            const sicht = (x, zz) => {
+                const cx = Math.floor(x / cfgB.span);
+                const cz = Math.floor(zz / cfgB.span);
+                const ce = st.voxelChunks ? st.voxelChunks.get(`${cx},${cz}`) : null;
+                return ce && ce.surfMap ? r._chunkSurfaceAt(ce, cx, cz, x, zz) : null;
+            };
             let phase = "w";
             const P5 = r._stepFixedSim;
             r._stepFixedSim = function (simTime, dt) {
@@ -706,7 +833,9 @@ async function probeLeben(expected) {
                         const xAchse = [e[0], e[1], e[2]];
                         if (!relStart.has(key)) relStart.set(key, yAchse);
                         const y0 = relStart.get(key);
-                        const c = (y0[0] * yAchse[0] + y0[1] * yAchse[1] + y0[2] * yAchse[2]) / (Math.hypot(...y0) * Math.hypot(...yAchse));
+                        const c =
+                            (y0[0] * yAchse[0] + y0[1] * yAchse[1] + y0[2] * yAchse[2]) /
+                            (Math.hypot(...y0) * Math.hypot(...yAchse));
                         rolle = Math.max(rolle, Math.acos(Math.max(-1, Math.min(1, c))));
                         if (phase === "a") {
                             // Gier der Nabe im Aufbau: die Achse z des Rades (die Drehachse) gegen die Quer-Achse z des Aufbaus
@@ -725,12 +854,18 @@ async function probeLeben(expected) {
                         }
                 }
                 let spalt = 0;
+                let spaltS = -1;
                 for (const p of punkte) {
                     const d = p.y - hh(p.x, p.z);
                     spalt = Math.max(spalt, Math.abs(d));
                     if (phase === "s" && p.front) tauchBremse = Math.max(tauchBremse, -d);
+                    // DIE SICHT (Gegenprüfung 07.10., Entscheid D1: nur messen und benennen — die Sim bleibt auf dem Gesetz):
+                    // derselbe Aufstandspunkt gegen den GEZEICHNETEN Boden (die Boden-Karte des fertigen Meshs, Lehre 22)
+                    const ys = sicht(p.x, p.z);
+                    if (ys !== null) spaltS = Math.max(spaltS, Math.abs(p.y - ys));
                 }
                 spalte.push(spalt);
+                if (spaltS >= 0) spalteSicht.push(spaltS);
             };
             tasten(true, false);
             for (let i = 0; i < 90; i++) frame(i);
@@ -745,6 +880,7 @@ async function probeLeben(expected) {
             tasten(false);
             r._stepFixedSim = P5;
             spalte.sort((a, b) => a - b);
+            spalteSicht.sort((a, b) => a - b);
             S.raeder = {
                 leaves: rad.length,
                 stehend: steh.length,
@@ -755,6 +891,9 @@ async function probeLeben(expected) {
                 tauchBremse,
                 spaltP75: spalte.length ? spalte[Math.floor(spalte.length * 0.75)] : Infinity,
                 spaltMax: spalte.length ? spalte[spalte.length - 1] : Infinity,
+                sichtSchritte: spalteSicht.length,
+                sichtP75: spalteSicht.length ? spalteSicht[Math.floor(spalteSicht.length * 0.75)] : null,
+                sichtMax: spalteSicht.length ? spalteSicht[spalteSicht.length - 1] : null,
             };
             weg(gR);
         }
@@ -952,7 +1091,11 @@ async function probeLeben(expected) {
                 for (let s = -8; s <= 8 && gut; s += 2) {
                     const [ax, az] = grad(x + cx * s, zz + cz * s);
                     const ag = Math.hypot(ax, az);
-                    if (!(ag >= 0.3) || (ax * gx + az * gz) / (ag * g) < Math.cos(0.35) || nass(x + cx * s, zz + cz * s))
+                    if (
+                        !(ag >= 0.3) ||
+                        (ax * gx + az * gz) / (ag * g) < Math.cos(0.35) ||
+                        nass(x + cx * s, zz + cz * s)
+                    )
                         gut = false;
                 }
                 if (!gut) continue;
@@ -1094,7 +1237,11 @@ async function probeLeben(expected) {
         };
         S.huelleBlock = await huelleProbe({
             setzen: (x, zz) => {
-                const b = r.spawnArchitecture("stein_block", { x, y: hh(x, zz) + 0.5, z: zz }, { silent: true, precise: true });
+                const b = r.spawnArchitecture(
+                    "stein_block",
+                    { x, y: hh(x, zz) + 0.5, z: zz },
+                    { silent: true, precise: true }
+                );
                 if (b) r._populateBlockerAABBs(b);
                 return b && b.blockerAABBs && b.blockerAABBs.length ? b : null;
             },
@@ -1129,9 +1276,16 @@ async function probeLeben(expected) {
                 const z0 = gS.position.z;
                 const ab = h.noseX + 0.5 * SEPW.radiusBaseM * 1.0 - 0.5;
                 st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1);
-                const c = r.spawnCreatureAt(x0 + ux * ab, hh(x0 + ux * ab, z0 + uz * ab) + 0.5, z0 + uz * ab, "calm", "baer", {
-                    precise: true,
-                });
+                const c = r.spawnCreatureAt(
+                    x0 + ux * ab,
+                    hh(x0 + ux * ab, z0 + uz * ab) + 0.5,
+                    z0 + uz * ab,
+                    "calm",
+                    "baer",
+                    {
+                        precise: true,
+                    }
+                );
                 if (c) {
                     // derselbe Abstand mit der echten Größe des Bären (bodySize), 0,5 m im Bug
                     const rc = 0.5 * SEPW.radiusBaseM * (c.userData.bodySize || 1);
@@ -1174,7 +1328,17 @@ async function probeLeben(expected) {
                             {
                                 id: -7,
                                 position: { x: -k.hw - 0.1, y: 0, z: 0 },
-                                blockerAABBs: [{ minX: -k.hw - 1.0, maxX: -k.hw + 0.8, minZ: -1, maxZ: 1, botY: -1, topY: 3, dick: 5 }],
+                                blockerAABBs: [
+                                    {
+                                        minX: -k.hw - 1.0,
+                                        maxX: -k.hw + 0.8,
+                                        minZ: -1,
+                                        maxZ: 1,
+                                        botY: -1,
+                                        topY: 3,
+                                        dick: 5,
+                                    },
+                                ],
                             },
                         ],
                         creatures: [],
@@ -1229,7 +1393,11 @@ async function probeLeben(expected) {
             ["keine Fahrt (0 m)", { simWeg: 0, fahrWeg: 0 }, "sim-weg"],
         ]) {
             const v = taktVerdict(Object.assign({}, gesund, bruch));
-            check(`Selbst-Test: ‚${name}' → die Linse nennt ${soll}`, v.length >= 1 && v[0].startsWith(soll), v.join(" · "));
+            check(
+                `Selbst-Test: ‚${name}' → die Linse nennt ${soll}`,
+                v.length >= 1 && v[0].startsWith(soll),
+                v.join(" · ")
+            );
         }
         check("Selbst-Test: nicht gestartet → die Linse feuert", taktVerdict({ gestartet: false }).length === 1);
         const steht = { gestartet: true, frames: 180, teleport: 0, fahrWeg: 0.0, gierGesamt: 0, v: 0 };
@@ -1247,7 +1415,17 @@ async function probeLeben(expected) {
             klippe: { sprung: 0.2, luft: 40 },
             absteigen: { imFlug: true, hoehe: 2.1, ueberBoden: 0.0, sprung: 0.2 },
             quer: { drift: 1.2 },
-            raeder: { leaves: 4, stehend: 4, stehRolle: 0, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01, spaltMax: 0.05 },
+            raeder: {
+                leaves: 4,
+                stehend: 4,
+                stehRolle: 0,
+                rolle: 12,
+                lenk: 0.4,
+                lenkHinten: 0,
+                tauchBremse: 0.0,
+                spaltP75: 0.01,
+                spaltMax: 0.05,
+            },
             huelleBlock: { tief: 0.0, abstand: 0.02 },
             huelleSchub: { weg: 0 },
             huelleHang: { schub: 0.8, eindringen: 0 },
@@ -1259,32 +1437,127 @@ async function probeLeben(expected) {
             ["kein Fahr-Schritt im Kern", { kern: false }, "kern"],
             ["Welt weicht 0,4 m vom Labor ab", { labor: { schritte: 180, maxM: 0.4, bei: 50 } }, "labor≠welt"],
             ["7,95 m Höhen-Sprung in einem Schritt (F-D6)", { klippe: { sprung: 7.95, luft: 40 } }, "klippe-sprung"],
-            ["im Flug abgestiegen: der Wagen hängt 2,4 m in der Luft (Gegenprüfung 07.10.)", { absteigen: { imFlug: true, hoehe: 2.4, ueberBoden: 2.4, sprung: 0 } }, "absteigen-luft"],
-            ["im Flug abgestiegen: der Wagen springt 2,4 m auf den Boden (Teleport)", { absteigen: { imFlug: true, hoehe: 2.4, ueberBoden: 0, sprung: 2.4 } }, "absteigen-sprung"],
-            ["am Boden abgestiegen (vakuös)", { absteigen: { imFlug: false, hoehe: 0.1, ueberBoden: 0, sprung: 0 } }, "absteigen nicht im Flug"],
+            [
+                "im Flug abgestiegen: der Wagen hängt 2,4 m in der Luft (Gegenprüfung 07.10.)",
+                { absteigen: { imFlug: true, hoehe: 2.4, ueberBoden: 2.4, sprung: 0 } },
+                "absteigen-luft",
+            ],
+            [
+                "im Flug abgestiegen: der Wagen springt 2,4 m auf den Boden (Teleport)",
+                { absteigen: { imFlug: true, hoehe: 2.4, ueberBoden: 0, sprung: 2.4 } },
+                "absteigen-sprung",
+            ],
+            [
+                "am Boden abgestiegen (vakuös)",
+                { absteigen: { imFlug: false, hoehe: 0.1, ueberBoden: 0, sprung: 0 } },
+                "absteigen nicht im Flug",
+            ],
             ["Querhang ohne Abtrieb: 0,00 m (F-D7)", { quer: { drift: 0.0 } }, "querhang"],
             ["Bug 1,85 m im Fels (F-D4)", { huelleBlock: { tief: 1.85, abstand: 0 } }, "huelle-fels Eindringen"],
-            ["die starre Instanz: kein Rad-Leaf (F-D8)", { raeder: { leaves: 0, rolle: 0, lenk: 0, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01 } }, "raeder starr"],
-            ["Vorderräder 0,09 m im Boden beim Bremsen (F-D8)", { raeder: { leaves: 4, stehend: 4, stehRolle: 0, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0.09, spaltP75: 0.01 } }, "raeder tauchen"],
-            ["die Räder lenken nicht (F-D8)", { raeder: { leaves: 4, stehend: 4, stehRolle: 0, rolle: 12, lenk: 0, lenkHinten: 0, tauchBremse: 0, spaltP75: 0.01 } }, "raeder lenken nicht"],
-            ["der Bremssattel rollt mit dem Rad (Gegenprüfung 07.10.)", { raeder: { leaves: 4, stehend: 4, stehRolle: 3.1, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0, spaltP75: 0.01 } }, "raeder Sattel rollt"],
-            ["kein Sattel an der Nabe", { raeder: { leaves: 4, stehend: 0, stehRolle: 0, rolle: 12, lenk: 0.4, lenkHinten: 0, tauchBremse: 0, spaltP75: 0.01 } }, "raeder ohne Sattel"],
+            [
+                "die starre Instanz: kein Rad-Leaf (F-D8)",
+                { raeder: { leaves: 0, rolle: 0, lenk: 0, lenkHinten: 0, tauchBremse: 0.0, spaltP75: 0.01 } },
+                "raeder starr",
+            ],
+            [
+                "Vorderräder 0,09 m im Boden beim Bremsen (F-D8)",
+                {
+                    raeder: {
+                        leaves: 4,
+                        stehend: 4,
+                        stehRolle: 0,
+                        rolle: 12,
+                        lenk: 0.4,
+                        lenkHinten: 0,
+                        tauchBremse: 0.09,
+                        spaltP75: 0.01,
+                    },
+                },
+                "raeder tauchen",
+            ],
+            [
+                "die Räder lenken nicht (F-D8)",
+                {
+                    raeder: {
+                        leaves: 4,
+                        stehend: 4,
+                        stehRolle: 0,
+                        rolle: 12,
+                        lenk: 0,
+                        lenkHinten: 0,
+                        tauchBremse: 0,
+                        spaltP75: 0.01,
+                    },
+                },
+                "raeder lenken nicht",
+            ],
+            [
+                "der Bremssattel rollt mit dem Rad (Gegenprüfung 07.10.)",
+                {
+                    raeder: {
+                        leaves: 4,
+                        stehend: 4,
+                        stehRolle: 3.1,
+                        rolle: 12,
+                        lenk: 0.4,
+                        lenkHinten: 0,
+                        tauchBremse: 0,
+                        spaltP75: 0.01,
+                    },
+                },
+                "raeder Sattel rollt",
+            ],
+            [
+                "kein Sattel an der Nabe",
+                {
+                    raeder: {
+                        leaves: 4,
+                        stehend: 0,
+                        stehRolle: 0,
+                        rolle: 12,
+                        lenk: 0.4,
+                        lenkHinten: 0,
+                        tauchBremse: 0,
+                        spaltP75: 0.01,
+                    },
+                },
+                "raeder ohne Sattel",
+            ],
             ["der Bär ganz im Wagen (F-L5)", { huelleBaer: { tief: 1.6, abstand: 0 } }, "huelle-baer Eindringen"],
             ["nie berührt (vakuös)", { huelleBlock: { tief: 0, abstand: 6.5 } }, "huelle-fels keine Berührung"],
             ["ein Bär schiebt den stehenden Wagen 0,5 m", { huelleSchub: { weg: 0.5 } }, "huelle-schub"],
-            ["ein Kasten schiebt die Hülle 0,5 m in den Hang (Befund 07.10.)", { huelleHang: { schub: 0.8, eindringen: 0.5 } }, "huelle-hang Schub"],
+            [
+                "ein Kasten schiebt die Hülle 0,5 m in den Hang (Befund 07.10.)",
+                { huelleHang: { schub: 0.8, eindringen: 0.5 } },
+                "huelle-hang Schub",
+            ],
             ["der Kasten schiebt nicht (vakuös)", { huelleHang: { schub: 0, eindringen: 0 } }, "huelle-hang vakuös"],
-            ["ein alter Kern: fahrSatz und rittEbene still null (Gegenprüfung 07.10.)", { pflicht: { satz: "null", ebene: "null" } }, "pflicht still"],
+            [
+                "ein alter Kern: fahrSatz und rittEbene still null (Gegenprüfung 07.10.)",
+                { pflicht: { satz: "null", ebene: "null" } },
+                "pflicht still",
+            ],
         ]) {
             const v = stationVerdict(Object.assign({}, gutS, bruch));
-            check(`Selbst-Test S: ‚${name}' → die Linse nennt ${soll}`, v.length >= 1 && v[0].startsWith(soll), v.join(" · "));
+            check(
+                `Selbst-Test S: ‚${name}' → die Linse nennt ${soll}`,
+                v.length >= 1 && v[0].startsWith(soll),
+                v.join(" · ")
+            );
         }
         // Die statischen Wände feuern auf den Vor-Stand.
         const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
         const garage = fs.readFileSync(path.join(root, "worlds/garage/garage.js"), "utf8");
         const kern = fs.readFileSync(path.join(root, "vehicle-core.js"), "utf8");
         const gruen = taktWand(quelle);
-        check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
+        check(
+            "Selbst-Test W: der Arbeitsbaum ist grün",
+            gruen.every((w) => w[1]),
+            gruen
+                .filter((w) => !w[1])
+                .map((w) => w[0])
+                .join(" | ")
+        );
         const vorStand = quelle
             .replace("        this._rittSchritt(dt);\n", "")
             .replace(
@@ -1298,7 +1571,14 @@ async function probeLeben(expected) {
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
         const kGruen = fahrWand(quelle, garage, kern);
-        check("Selbst-Test K1: der Arbeitsbaum ist grün", kGruen.every((w) => w[1]), kGruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
+        check(
+            "Selbst-Test K1: der Arbeitsbaum ist grün",
+            kGruen.every((w) => w[1]),
+            kGruen
+                .filter((w) => !w[1])
+                .map((w) => w[0])
+                .join(" | ")
+        );
         const kRot = fahrWand(
             quelle.replace(/(\n {4}_loopPlayerMovement\(currentTime, dtOverride\) \{)/, "$1\n        let FlatF = 0;"),
             garage.replace(/(\nfunction updateVehicle\(dt,t\)\{)/, "$1let FlatF=0;"),
@@ -1313,10 +1593,17 @@ async function probeLeben(expected) {
         check(
             "Selbst-Test P: der Arbeitsbaum ist grün",
             pGruen.every((w) => w[1]),
-            pGruen.filter((w) => !w[1]).map((w) => w[0] + " " + w[2]).join(" | ")
+            pGruen
+                .filter((w) => !w[1])
+                .map((w) => w[0] + " " + w[2])
+                .join(" | ")
         );
         const hGruen = huelleWand(quelle);
-        check("Selbst-Test H5: der Arbeitsbaum ist grün", hGruen.every((w) => w[1]), hGruen.map((w) => w[2]).join(" | "));
+        check(
+            "Selbst-Test H5: der Arbeitsbaum ist grün",
+            hGruen.every((w) => w[1]),
+            hGruen.map((w) => w[2]).join(" | ")
+        );
         const hRot = huelleWand(
             quelle.replace(
                 /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
@@ -1341,7 +1628,9 @@ async function probeLeben(expected) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
         }
-        console.log("\n✅ SELBST-TEST GRÜN — die Fahr-Linse nennt Teleport, Weg, Luft, Gier, Halt, Kopie, Sprung und Querhang beim Namen.");
+        console.log(
+            "\n✅ SELBST-TEST GRÜN — die Fahr-Linse nennt Teleport, Weg, Luft, Gier, Halt, Kopie, Sprung und Querhang beim Namen."
+        );
         process.exit(0);
     }
 
@@ -1370,7 +1659,8 @@ async function probeLeben(expected) {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-    const messort = JSON.parse(fs.readFileSync(path.join(root, "spec/profiband/haushalt.json"), "utf8")).messort.spieler;
+    const messort = JSON.parse(fs.readFileSync(path.join(root, "spec/profiband/haushalt.json"), "utf8")).messort
+        .spieler;
     const out = await page.evaluate(probeLeben, { messort });
     await browser.close();
     server.close();
@@ -1386,6 +1676,14 @@ async function probeLeben(expected) {
         "T1 GT geradeaus (W, wechselnde Frame-Zeiten): kein Teleport, Sim-Weg = Fahr-Weg, Reiter sitzt, keine Gier ohne Sim-Schritt",
         vGt.length === 0,
         `${zeile(out.gt)}${vGt.length ? " — Täter: " + vGt.join(", ") : ""}`
+    );
+    const lt = out.luftTaeter;
+    check(
+        "T0 die echte Vertikale sieht ihre Täter: Reiter 0,3 m über dem Sitz und geerdeter Wagen 0,3 m über dem Boden zählen als Luft",
+        !!lt && lt.sitz > 0 && lt.wagen > 0,
+        lt
+            ? `Reiter über dem Sitz → luft ${lt.sitz} · Wagen über dem Boden → luft ${lt.wagen} (je 10 Frames)`
+            : "keine Probe"
     );
     const vHang = haltVerdict(out.gtHang);
     check(
@@ -1452,7 +1750,14 @@ async function probeLeben(expected) {
     check(
         "R2 die Räder stehen auf dem Boden: beim Bremsen taucht kein Vorderrad ein (≤ 0,03 m), Rad-Spalt p75 ≤ 0,03 m",
         !hat("kern") && !hat("raeder tauchen") && !hat("raeder Spalt") && !hat("raeder keine"),
-        R ? `Eintauchen beim Bremsen ${R.tauchBremse.toFixed(3)} m · Rad-Spalt p75 ${R.spaltP75.toFixed(3)} m (max ${R.spaltMax.toFixed(3)})` : "keine Probe"
+        R
+            ? `Eintauchen beim Bremsen ${R.tauchBremse.toFixed(3)} m · Rad-Spalt p75 ${R.spaltP75.toFixed(3)} m (max ${R.spaltMax.toFixed(3)})` +
+                  ` · gegen den GEZEICHNETEN Boden (Sicht, nur gemessen — D1): ${
+                      R.sichtSchritte
+                          ? `p75 ${R.sichtP75.toFixed(3)} m, max ${R.sichtMax.toFixed(3)} m in ${R.sichtSchritte} Schritten`
+                          : "keine Boden-Karte"
+                  }`
+            : "keine Probe"
     );
     check(
         "P4 ein alter Kern ohne fahrGesetz/fahrEbene bricht im Spiel laut (KERN-PFLICHT), nie still der richtungs-folgende Ritt",

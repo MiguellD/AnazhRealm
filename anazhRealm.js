@@ -88514,7 +88514,9 @@ class AnazhRealm {
         const probeStart = feetY + AnazhRealm.PLAYER_STEP_UP;
         const buriedDeep = !geritten && this._fieldSolid(nx, probeStart, nz); // Füße > STEP_UP tief im Soliden?
         if (geritten) {
-            grounded = true; // der Reiter sitzt auf dem Gefährt, das auf seinen Rädern steht
+            // der Reiter sitzt auf dem Gefährt (auch im Flug des Wagens: er fliegt mit ihm, nie für sich — die Vertikale
+            // trägt der Fahr-Schritt; gate:fahr-leben T misst die Lage selbst: Sitz und Aufstand, nie dieses Flag)
+            grounded = true;
         } else if (buriedDeep) {
             // 8a. ANTI-CLIP: stecken die Füße TIEF im Terrain, scannt die Probe AUFWÄRTS zur Oberkante (30 m,
             // nur im seltenen Penetrations-Fall) und setzt den Spieler BEDINGUNGSLOS hoch — er darf NIE im
