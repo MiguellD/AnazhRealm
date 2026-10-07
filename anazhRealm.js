@@ -30241,7 +30241,7 @@ class AnazhRealm {
         const key = `${cx},${cz}`;
         if (fresh.kind === "empty") {
             this.state.voxelChunks.set(key, { empty: true });
-            this._weltRegt(); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte
+            this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
             return null;
         }
         // DER SATZ (Welle B): der Boden ist ein BEREICH im Boden-Satz (ein Befehl je Pass für den ganzen Ring);
@@ -30265,7 +30265,7 @@ class AnazhRealm {
             hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
         };
         this.state.voxelChunks.set(key, entry);
-        this._weltRegt(); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte
+        this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
         // Gras nur im Nah-Ring (Distanz-Gate unten); Iso-Wasser ist der EINZIGE Wasser-Render-Pfad,
         // Streu-Strukturen idempotent je Chunk einmal. span ist über alle LODs gleich (43.2 m) → derselbe
         // Gras-Build trägt LOD 0 und LOD 1.
@@ -30688,7 +30688,7 @@ class AnazhRealm {
             this.state.voxelRebuildAttempts.set(key, attempts);
             if (attempts >= 3) {
                 this.state.voxelChunks.set(key, { empty: true });
-                this._weltRegt(); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte
+                this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
                 this.state.voxelRebuildAttempts.delete(key);
                 this.log(`Voxel-Chunk ${key}: 3× OOM, als empty markiert`, "INFO");
                 return false;
@@ -30765,7 +30765,7 @@ class AnazhRealm {
             this.state.voxelRebuildAttempts.set(key, attempts);
             if (attempts >= 3) {
                 this.state.voxelChunks.set(key, { empty: true });
-                this._weltRegt(); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte
+                this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
                 this.state.voxelRebuildAttempts.delete(key);
                 this.log(`Voxel-Chunk ${key}: 3× OOM beim Stream-Build, als empty markiert`, "INFO");
             }
@@ -30820,7 +30820,7 @@ class AnazhRealm {
         // Welle A — ausstehenden Gras-Build für diesen Chunk verwerfen.
         if (this.state.pendingGrass) this.state.pendingGrass.delete(key);
         this.state.voxelChunks.delete(key);
-        this._weltRegt(); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte
+        this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
         // triggert einen unnötigen Rebuild im nächsten Tick.
@@ -33343,7 +33343,7 @@ class AnazhRealm {
         }
         const nw = st.nahWiese;
         // DIE STAND-WACHE: stehen Auge, Chunks und Studio-Vorlagen, steht jede Kachel — kein Gang.
-        if (this._standRuht("nahWiese", 1)) return 0;
+        if (this._standRuht("nahWiese", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M })) return 0;
         let gefallen = 0;
         const cam = st.camera.position;
         const tcx = Math.floor(cam.x / NW.kachel);
@@ -33924,7 +33924,7 @@ class AnazhRealm {
         if (!st.nahStreu) st.nahStreu = { kacheln: new Map(), senken: new Map(), offen: 0 };
         const ns = st.nahStreu;
         // DIE STAND-WACHE: stehen Auge, Chunks, Ernte und Buch, steht jede Kachel in ihrem Zustand — kein Gang.
-        if (this._standRuht("nahStreu", 1)) return 0;
+        if (this._standRuht("nahStreu", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M })) return 0;
         let gefallen = 0;
         const cam = st.camera.position;
         const tcx = Math.floor(cam.x / NS.kachel);
@@ -35007,7 +35007,7 @@ class AnazhRealm {
         if (!fr.zoneVerts) return;
         // DIE STAND-WACHE (Welle K): die Höhe eines Saum-Punkts hängt nur an der Chunk-Menge (`_chunkDecktRing`), dem
         // Wasserspiegel und dem Anker — steht das alles, ging eine volle Runde ohne neuen Punkt, schläft die Wache.
-        if (this._standRuht("deckWache", fr.zoneVerts)) return;
+        if (this._standRuht("deckWache", fr.zoneVerts, fr.gen | 0, "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
         // DAS GESETZ DES SAUMS, EINMAL JE ANKER: die gemischte Deck-Höhe (Makro + volles Gesetz, `_fernRingDeckMisch`)
@@ -37220,7 +37220,7 @@ class AnazhRealm {
             : 6;
         // DIE STAND-WACHE: steht der Ring (jede Zelle in ihrer Stufe, keiner wartet) und regt sich nichts, geht der Gang
         // nicht — Ring, Prune und Wasser-Weckruf lesen nur Spieler-Zelle und Chunk-Menge. Nachwuchs läuft weiter.
-        if (this._standRuht("strom", 1)) {
+        if (this._standRuht("strom", 1, pcx + "," + pcz, "boden")) {
             this._tickFoliageGrowth();
             return 0;
         }
@@ -51871,7 +51871,7 @@ class AnazhRealm {
         if (!Array.isArray(archs) || archs.length === 0) return 0;
         // DIE STAND-WACHE: ging die Stufen-Wahl eine volle Runde über alle Einträge, ohne zu wechseln und ohne dass einer
         // wartete, und regt sich nichts (Ort, Bau-Menge, Ankunft, Regler), wählt sie dieselben Stufen — kein Gang.
-        if (this._standRuht("archLod", archs.length)) return 0;
+        if (this._standRuht("archLod", archs.length, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return 0;
         let regung = 0;
         let offen = 0;
         // Rolling cursor: jeder Tick walkt nur einen Slice des Arrays. Bei
@@ -53168,7 +53168,7 @@ class AnazhRealm {
         // nichts (Ort, Streu-Menge, Ankunft, Regler), wählt sie dieselben Stufen — kein Gang.
         let zellen = 0;
         for (const reg of map.values()) if (reg && Array.isArray(reg.cells)) zellen += reg.cells.length;
-        if (this._standRuht("streuLod", zellen)) return 0;
+        if (this._standRuht("streuLod", zellen, { pos: playerPos, rand: AnazhRealm.STAND_RAND_M })) return 0;
         let regung = 0;
         let offen = 0;
         const cur = this._scatterLodCursor;
@@ -53374,6 +53374,7 @@ class AnazhRealm {
         if (g._ofenKey && this._pipeOfenDone) this._pipeOfenDone.delete(g._ofenKey);
         this.state.archInstanceGroups.delete(groupKey);
         if (g.wahl) this._instanzWahlGruppen().delete(g);
+        g._wahlJe = null; // eine entsorgte Gruppe hält keine Wahl (ihre Marken zeigen auf freigegebene Slots)
         if (g.satz) this._bauSatzMarke(groupKey, g.satz); // Welle 6 — der Bereich verlässt den Satz im nächsten Takt
         if (g.mesh) {
             // SUBMIT-WAL — parent-bewusst (die scene.remove-Falle): eine regionale Gruppe hängt in ihrer
@@ -72313,7 +72314,8 @@ class AnazhRealm {
         if (!this._foundryEnabled()) return 0;
         // Die Foundry wartet aufs Terrain: baute in DIESEM Frame ein Terrain-Chunk, konvergiert sie nicht
         // (terrain-first wie der scatterDeco-Job) — der Boot-/Streaming-Fill bleibt leicht.
-        if (this.state._frameChunksBuilt) return 0;
+        // Ohne Urteil (der Bau wartet) bleibt der Cull-Gang wach: 1 Wartender, bis ein Frame ohne Chunk-Bau den Scan trägt.
+        if (this.state._frameChunksBuilt) return 1;
         const f = this._foundry;
         if (!f || !f.ready) return 0; // erst wenn das Studio antwortet (sonst wuerde jeder Eintrag verhungern)
         const archs = this.state.architectures;
@@ -72370,7 +72372,7 @@ class AnazhRealm {
                     else if (entry.mesh) this._cullArchitectureMesh(entry);
                 }
                 this._rebuildArchitectureMesh(entry);
-                this._weltRegt();
+                this._bauRegt(); // die Gestalt dockte an: Stufen-Wahl und Cull gehen
                 placeBudget--;
             } else if (cold) {
                 // NICHT gedockt → EINE Studio-Bake-Anfrage anstoßen (der Eintrag bleibt kalt, bis das
@@ -75156,7 +75158,7 @@ class AnazhRealm {
         // DIE STAND-WACHE: ging der Gang über alle Einträge ohne Bau, Räumung und Wartende, und regt sich nichts (Ort,
         // Bau-Menge, Ankunft, Cull-Radius), träfe er dieselben Urteile — kein Gang (gemessen 07.10., Mess-Wiese, Stand:
         // 1540 Einträge je Takt, 0 Bauten, 0 Räumungen).
-        if (this._standRuht("archCull", 1)) return;
+        if (this._standRuht("archCull", 1, { pos: playerPos, rand: AnazhRealm.STAND_RAND_FERN_M }, "bau")) return;
         let regung = 0;
         const radius = this.state.architectureCullingRadius;
         const radiusSq = radius * radius;
@@ -89465,39 +89467,36 @@ class AnazhRealm {
     // ═══ DIE STAND-WACHE (Welle K, Lehre 25, Gebot 7) ═══
     // Befund 07.10. (OMEN, GTX 1060, Mess-Wiese, Regler voll, der Spieler STEHT): `_loopVoxelStreaming` kostete 3,27 ms je
     // Frame, `tickArchitectureCulling` · `_tickArchitectureLOD` · `_lodTreeVisHeight` · noise2D standen im Selbstzeit-Top.
-    // Gezählt an der Mess-Wiese (Radeon, eingeschwungen, Stand): je Takt gingen die Fege-Takte 256 Bau-Einträge (Stufen-
-    // Wahl), 1540 Einträge (Cull), 160 Streu-Zellen (Stufen-Wahl), 137 Nah-Streu-Kacheln, 128 Saum-Punkte des Fern-Rings
-    // (256 Gesetz-Höhen, ~6 000 noise2D) und 25 Ring-Zellen durch — und änderten nichts: 0 Wechsel, 0 Bauten, 0 Punkte.
+    // Gezählt an der Mess-Wiese (Radeon, eingeschwungen, Stand): je Frame gingen die Fege-Takte ~6 000 Blatt-Rufe — Ring 83,
+    // Stufen-Wahl 1 710, Cull 3 512, Streu 480, Nah-Streu 138, Nah-Wiese 6, Saum 384 (~6 000 noise2D) — und änderten nichts.
     // DAS GESETZ: ein Fege-Takt (ein Gang über die Nachbarschaft — Ring, Einträge, Zellen, Kacheln, Saum-Punkte) fragt vor
-    // dem Gang `_standRuht(name, runde)` und meldet danach `_standMeldet(name, besucht, gewirkt, offen)`. Er schläft, sobald
-    // er unter EINEM Stempel (`_standStempel`) einen vollen Gang (`runde` Einheiten) ohne Wirkung und ohne Offenes ging.
-    // Jede Änderung einer Eingabe weckt ihn: der Ort (Spieler oder Auge um mehr als STAND_RAND_M), die Welt-Regung
-    // (`_weltRegt`: jede Mengen-Änderung — Chunk, Bau, Streu-Region, Ernte — und jede Wirkung eines Fege-Takts, sie weckt
-    // die anderen), die Foundry-Ankunft, die Regler (Wahrnehmungs-Faktor, lodRef, Ring, Cull-Radius), der Wasserspiegel.
-    // Offenes (ein Asset lädt, ein Budget ist leer) hält nur den eigenen Takt wach. Die Zeit weckt nie: Takte mit eigener
-    // Uhr (Nachwuchs, Jahreszeit, Regen, Wasser-Automat, Karten-Bäcker, Dirty-Chunks) stehen nicht unter der Wache.
-    // Die Wand: gate:stand-takt (Ruhe 0 Einheiten, Gehen arbeitet, ein Bau im Stand weckt, der Bruch fällt rot).
-    _weltRegt() {
+    // dem Gang `_standRuht(name, runde, ort, art)` und meldet danach `_standMeldet(name, besucht, gewirkt, offen)`. Er
+    // schläft, sobald er unter seinem Stempel und an SEINEM Ort einen vollen Gang (`runde` Einheiten) ohne Wirkung und ohne
+    // Offenes ging. Was ihn weckt, ist genau, was seine Urteile lesen:
+    //   · der Stempel (`_standStempel`) — die Welt-Regung (`_weltRegt`: jede Mengen-Änderung — Chunk, Bau, Streu-Region,
+    //     Ernte, Pfad, Studio-Buch), die Foundry-Ankunft, die Regler (Wahrnehmungs-Faktor, lodRef, Ring, Cull-Radius), der
+    //     Wasserspiegel; die BODEN-Takte (Ring, Saum) lesen nur ihren Boden-Stempel (`_standStempelBoden`: die Chunk-Menge,
+    //     die Ring-Regler, der Wasserspiegel);
+    //   · die BAU-Takte (Stufen-Wahl, Cull) lesen einander: wirkt einer (eine Stufe, ein Mesh), gehen beide (`_bauRegt`);
+    //     die Wirkung der Streu, der Kacheln, des Saums weckt niemanden sonst — sie geht nur selbst noch einmal;
+    //   · der Ort: der Ring die Spieler-Zelle, der Saum die Anker-Generation des Fern-Rings, Stufen-Wahlen und Kacheln Spieler
+    //     oder Auge auf STAND_RAND_M, der Cull (Urteile ab 100 m) auf STAND_RAND_FERN_M — so kostet Gehen nur, was es ändert.
+    // Offenes (ein Asset lädt, ein Budget ist leer) hält nur den eigenen Takt wach. Die Zeit weckt nie: Takte mit eigener Uhr
+    // (Nachwuchs, Jahreszeit, Regen, Wasser-Automat, Karten-Bäcker, Dirty-Chunks) stehen nicht unter der Wache.
+    // Die Wand: gate:stand-takt (Ruhe 0, Treue, Wecken, Gehen, Strom; der Bruch fällt rot).
+    // `boden`: die Chunk-Menge regt sich — das weckt auch die Boden-Takte.
+    _weltRegt(boden) {
         this._weltRegung = (this._weltRegung | 0) + 1;
+        if (boden) this._bodenRegung = (this._bodenRegung | 0) + 1;
     }
 
-    // Der EINE Stempel der Wache: wächst, sobald eine Eingabe der Fege-Takte sich ändert (der Ort verankert — ein Zittern
-    // der Physik um Millimeter weckt nichts).
+    // Der EINE Stempel der Wache: wächst, sobald eine ortsfreie Eingabe der Fege-Takte sich ändert.
     _standStempel() {
         const st = this.state;
-        const W = this._standWache || (this._standWache = { stempel: 0, v: [], ap: null, ac: null, takte: new Map() });
-        const R2 = AnazhRealm.STAND_RAND_M * AnazhRealm.STAND_RAND_M;
-        let neu = false;
-        const ort = (pos, a) => {
-            if (!pos) return a;
-            if (a && (pos.x - a.x) ** 2 + (pos.y - a.y) ** 2 + (pos.z - a.z) ** 2 <= R2) return a;
-            neu = true;
-            return { x: pos.x, y: pos.y, z: pos.z };
-        };
-        W.ap = ort(st.playerMesh ? st.playerMesh.position : null, W.ap);
-        W.ac = ort(st.camera ? st.camera.position : null, W.ac);
+        const W = this._standWache || (this._standWache = { stempel: 0, v: [], takte: new Map() });
         const v = W.v;
-        let i = 0;
+        let i = 0,
+            neu = false;
         const setze = (x) => {
             if (!Object.is(v[i], x)) {
                 v[i] = x;
@@ -89521,13 +89520,67 @@ class AnazhRealm {
         return W.stempel;
     }
 
-    // Schläft der Fege-Takt `name`? Ja, wenn er unter dem jetzigen Stempel `runde` Einheiten ohne Wirkung ging.
-    _standRuht(name, runde) {
-        const s = this._standStempel();
+    // Der Stempel der BODEN-Takte: der Ring liest Chunk-Menge, Ring-Regler und Spieler-Zelle, der Saum Chunk-Menge,
+    // Wasserspiegel und Anker — die Wirkung der anderen Fege-Takte (eine Stufe, ein Bau, eine Kachel) weckt sie nicht. Beim
+    // Gehen gehen sie nur, wo die Zelle oder der Anker wechselt oder ein Chunk kommt und geht.
+    _standStempelBoden() {
+        const st = this.state;
+        const W = this._standWache || (this._standWache = { stempel: 0, v: [], takte: new Map() });
+        const b = W.boden || (W.boden = { stempel: 0, v: [] });
+        const jetzt = [
+            this._bodenRegung | 0,
+            st.chunkRingRadius,
+            st._activeRingRadius,
+            st.waterLevel,
+            st.voxelTerrainActive === true,
+        ];
+        if (jetzt.some((x, i) => !Object.is(b.v[i], x))) {
+            b.v = jetzt;
+            b.stempel++;
+        }
+        return b.stempel;
+    }
+
+    // Schläft der Fege-Takt `name`? Ja, wenn er unter dem jetzigen Stempel (`boden`: dem der Boden-Takte) und an seinem Ort
+    // `runde` Einheiten ohne Wirkung ging. `ort`: ein Wert, den der Takt liest (die Spieler-Zelle, die Anker-Generation —
+    // neu, sobald er anders ist), oder `{ pos, rand }`: ein Anker, neu, sobald `pos` mehr als `rand` Meter von ihm weg ist
+    // (ein Zittern der Physik um Millimeter weckt nichts).
+    _standRuht(name, runde, ort, art) {
+        const s = art === "boden" ? this._standStempelBoden() : this._standStempel();
         const W = this._standWache;
         let t = W.takte.get(name);
-        if (!t) W.takte.set(name, (t = { stempel: s, leer: 0, ruht: 0, arbeit: 0 }));
-        else if (t.stempel !== s) {
+        if (!t) {
+            t = {
+                stempel: s,
+                ort: undefined,
+                anker: null,
+                bau: art === "bau",
+                bauRegung: -1,
+                leer: 0,
+                ruht: 0,
+                arbeit: 0,
+            };
+            W.takte.set(name, t);
+        }
+        let neu = t.stempel !== s;
+        // DIE BAU-TAKTE (Stufen-Wahl und Cull) lesen einander: eine neue Stufe, ein gebautes oder geräumtes Mesh weckt beide —
+        // nie die Streu, die Kacheln oder den Boden, die ihre Urteile nicht lesen.
+        if (t.bau && t.bauRegung !== (this._bauRegung | 0)) {
+            t.bauRegung = this._bauRegung | 0;
+            neu = true;
+        }
+        if (ort !== null && typeof ort === "object") {
+            const p = ort.pos;
+            const a = t.anker;
+            if (p && (!a || (p.x - a.x) ** 2 + (p.y - a.y) ** 2 + (p.z - a.z) ** 2 > ort.rand * ort.rand)) {
+                t.anker = { x: p.x, y: p.y, z: p.z };
+                neu = true;
+            }
+        } else if (!Object.is(t.ort, ort)) {
+            t.ort = ort;
+            neu = true;
+        }
+        if (neu) {
             t.stempel = s;
             t.leer = 0;
         }
@@ -89538,17 +89591,22 @@ class AnazhRealm {
         return false;
     }
 
-    // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (weckt alle), `offen` = er wartet auf
-    // etwas (hält sich selbst wach).
+    // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (er geht noch einmal; ein Bau-Takt weckt
+    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach).
     _standMeldet(name, besucht, gewirkt, offen) {
         const t = this._standWache ? this._standWache.takte.get(name) : null;
         if (!t) return;
         t.arbeit += besucht;
         if (gewirkt) {
             t.leer = 0;
-            this._weltRegt();
+            if (t.bau) this._bauRegt();
         } else if (offen) t.leer = 0;
         else t.leer += besucht;
+    }
+
+    // Ein Bau-Eintrag änderte Stufe oder Gestalt (ein Bau-Takt wirkte, ein Studio-Asset dockte an): die Bau-Takte gehen.
+    _bauRegt() {
+        this._bauRegung = (this._bauRegung | 0) + 1;
     }
 
     // Dispatcher-Lauf (Verteil-Schicht, KEIN zweiter Regler): die fixen günstigen Ticks (vegSpawns/
@@ -91113,7 +91171,14 @@ class AnazhRealm {
             if (g.wahl !== art) continue;
             const m = g.mesh;
             const n = g.liveCount | 0;
-            if (!m || n === 0 || m.visible === false) continue;
+            if (!m || n === 0 || m.visible === false) {
+                // Eine leere oder verborgene Gruppe zeichnet in diesem Pass nichts: ihre gehaltene Wahl fällt mit (die
+                // nächste sichtbare Belegung wählt neu). Sonst hielt sie die Marke eines freigegebenen Slots — CI 07.10.,
+                // gate:sicht-arbeit (I): der Stufen-Wechsel einer einzelnen Erle 1→0 leerte f:weide|1|1:0#S, k0 und k1
+                // hielten Slot −1.
+                if (g._wahlJe && L) g._wahlJe.delete(L.key);
+                continue;
+            }
             // die Wahl steht (Welle C): die Gruppe liegt (wieder), wie dieser Pass sie zuletzt ordnete
             if (this._instanzWahlSteht(g, L)) {
                 AnazhRealm._instanzZahl(m, g._wahlJe.get(L.key).refs.length);
@@ -95890,10 +95955,13 @@ AnazhRealm.ARCH_PLATZ_MS = 4;
 // Rand (`_archKartenHorizont`) und räumt sie erst so weit dahinter — ein Spieler, der am Horizont-Rand pendelt, lässt
 // keine Karte flattern.
 AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
-// Der Rand der Stand-Wache (m, `_standStempel`): erst wenn Spieler oder Auge so weit vom Anker weg sind, gilt der Ort als
-// neu und die Fege-Takte gehen wieder. Das Zittern der Physik im Stand (gemessen 07.10., Mess-Wiese: 7 mm je Frame)
-// weckt nichts; die Stufen-Wahl trägt eine Hysterese von Metern, der Cull-Radius 100–150 m.
+// Der Rand der Stand-Wache (m, `_standRuht`): erst wenn Spieler oder Auge so weit vom Anker eines Fege-Takts weg sind,
+// gilt sein Ort als neu und er geht wieder. Das Zittern der Physik im Stand (gemessen 07.10., Mess-Wiese: bis 5 mm je
+// Takt, nur in der Höhe) weckt nichts; die Stufen-Wahlen tragen eine Hysterese von Metern, die Nah-Streu ihre Armlänge
+// mit 0,75 m Austritts-Rand. Der Cull urteilt erst ab der Mesh-Zone (Cull-Radius 100–150 m) und am Karten-Horizont
+// (Totband 16 m): ihm genügt ein Meter (`STAND_RAND_FERN_M`) — beim Gehen geht er viermal seltener.
 AnazhRealm.STAND_RAND_M = 0.25;
+AnazhRealm.STAND_RAND_FERN_M = 1;
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
 // seinem Samen (Salz: der Hash-Kanal des Saums, `_pcg2d`) — der Wald dünnt aus, jeder Baum steht ganz oder gar nicht.
 AnazhRealm.KARTEN_HORIZONT_SAUM_M = 32;

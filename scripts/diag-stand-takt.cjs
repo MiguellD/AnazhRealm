@@ -12,7 +12,8 @@
 //       Welle): jeder Takt arbeitet (die Linse sieht ihn), und KEINER ändert die Welt (die Wache verschlief nichts);
 //   (W) WECKEN — ein Baum entsteht im Stand: Cull und Stufen-Wahl gehen, der Baum trägt danach seine Stufe, die Wache
 //       schläft wieder (0 Einheiten);
-//   (G) GEHEN — W gehalten: Ring, Stufen-Wahl und Cull arbeiten, der Spieler kommt voran;
+//   (G) GEHEN — W gehalten: Stufen-Wahlen, Cull und Nah-Streu arbeiten, der Spieler kommt voran — und Gehen kostet nur
+//       die Änderung: in derselben Spieler-Zelle geht der Ring nicht, ohne neuen Anker des Fern-Rings der Saum nicht;
 //   (T) STROM — nach der Ruhe ein Sprung an einen fremden Ort: der Spieler-Chunk steht (Streaming heilig, Lehre 13);
 //   (C) CODE — jeder Fege-Takt fragt `_standRuht` und meldet `_standMeldet`; (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, stumpfe Linse,
@@ -38,7 +39,12 @@ function selbsttest() {
     const gruen = {
         ruhe: phase(0, 30),
         bruch: phase(40, 6),
-        gehen: Object.assign(phase(30, 40), { weg: 6.2 }),
+        gehen: (() => {
+            const g = Object.assign(phase(30, 40), { weg: 6.2, zelleGleich: true, ankerGleich: true });
+            Object.assign(g.takte.strom, { summe: 0, mittel: 0, max: 0, mitArbeit: 0 });
+            Object.assign(g.takte.deckWache, { summe: 0, mittel: 0, max: 0, mitArbeit: 0 });
+            return g;
+        })(),
         wecken: {
             eintrag: true,
             versorgt: true,
@@ -99,9 +105,19 @@ function selbsttest() {
             /WECKEN: nach dem Bau schläft die Wache nicht wieder \(7020/,
         ],
         [
-            "starres Gehen (der Ring hält)",
-            (b) => Object.assign(b.gehen.takte.strom, { summe: 0, mitArbeit: 0 }),
-            /STARR: beim Gehen arbeitet strom nicht/,
+            "starres Gehen (der Cull hält)",
+            (b) => Object.assign(b.gehen.takte.archCull, { summe: 0, mitArbeit: 0 }),
+            /STARR: beim Gehen arbeitet archCull nicht/,
+        ],
+        [
+            "der Ring geht beim Gehen in derselben Zelle",
+            (b) => Object.assign(b.gehen.takte.strom, { summe: 2490, mitArbeit: 30 }),
+            /GEHEN: der Ring geht ohne Zellen-Wechsel \(2490 Einheiten\)/,
+        ],
+        [
+            "der Saum geht beim Gehen ohne neuen Anker",
+            (b) => Object.assign(b.gehen.takte.deckWache, { summe: 3840, mitArbeit: 30 }),
+            /GEHEN: der Saum geht ohne neuen Anker \(3840 Einheiten\)/,
         ],
         ["Gehen ohne Weg", (b) => (b.gehen.weg = 0.2), /BEWEGUNG: beim Gehen kam der Spieler 0.2 m voran/],
         [
@@ -318,6 +334,10 @@ const server = http.createServer((req, res) => {
                 // (G) GEHEN: W gehalten
                 {
                     const p0 = st.playerMesh.position.clone();
+                    const span = r._voxelChunkConfig(0).span;
+                    const zelle = (p) => Math.floor(p.x / span) + "," + Math.floor(p.z / span);
+                    const z0 = zelle(p0);
+                    const g0 = st.fernRing ? st.fernRing.gen | 0 : -1;
                     st.keys = { w: true };
                     try {
                         aus.gehen = await phase(120);
@@ -326,6 +346,8 @@ const server = http.createServer((req, res) => {
                     }
                     const p1 = st.playerMesh.position;
                     aus.gehen.weg = +Math.hypot(p1.x - p0.x, p1.z - p0.z).toFixed(2);
+                    aus.gehen.zelleGleich = zelle(p1) === z0;
+                    aus.gehen.ankerGleich = (st.fernRing ? st.fernRing.gen | 0 : -1) === g0;
                 }
                 // (T) STROM: erst Ruhe, dann der Sprung an einen fremden Ort — der Spieler-Chunk muss kommen
                 {

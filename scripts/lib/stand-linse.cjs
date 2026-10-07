@@ -47,8 +47,11 @@ const BLAETTER = [
     "_fernRingPunkt",
     "_terrainMacroSurfaceY",
 ];
+// Takte mit EIGENER Uhr, die ein Fege-Takt auch im Schlaf ruft (der Nachwuchs im Ring): ihre Blatt-Rufe gehören keinem
+// Fege-Takt (gemessen 07.10., Gate beim Gehen: 34,65 Einheiten je Frame „Ring" waren Nachwuchs-Höhen).
+const EIGENE_UHR = ["_tickFoliageGrowth"];
 
-function standLinseAn(takte, blaetter) {
+function standLinseAn(takte, blaetter, eigeneUhr) {
     const r = window.anazhRealm;
     const P = Object.getPrototypeOf(r);
     const namen = Object.keys(takte);
@@ -78,8 +81,21 @@ function standLinseAn(takte, blaetter) {
         if (typeof P[b] !== "function" || orig[b]) continue;
         const f = (orig[b] = P[b]);
         P[b] = function (...a) {
-            if (stapel.length) frame[stapel[stapel.length - 1]]++;
+            const oben = stapel[stapel.length - 1];
+            if (oben) frame[oben]++;
             return f.apply(this, a);
+        };
+    }
+    for (const m of eigeneUhr || []) {
+        if (typeof P[m] !== "function" || orig[m]) continue;
+        const f = (orig[m] = P[m]);
+        P[m] = function (...a) {
+            stapel.push("");
+            try {
+                return f.apply(this, a);
+            } finally {
+                stapel.pop();
+            }
         };
     }
     // DIE TREUE: jeder Gang, der die Welt änderte (`_standMeldet(…, gewirkt)`) — nach einer Ruhe zeigt ein Gang mit
@@ -308,9 +324,20 @@ function standUrteil(b) {
     const G = b.gehen;
     if (!G || !G.frames) v.push("LEER: keine Geh-Phase");
     else {
-        for (const n of ["strom", "archLod", "archCull"])
+        for (const n of ["archLod", "archCull", "streuLod", "nahStreu"])
             if (!G.takte[n] || !(G.takte[n].summe > 0))
                 v.push(`STARR: beim Gehen arbeitet ${n} nicht — eine gehaltene Wahl wäre ein Loch`);
+        // Gehen kostet nur die Änderung: der Ring liest die Spieler-Zelle, der Saum die Anker-Generation des Fern-Rings
+        if (G.zelleGleich && G.takte.strom && G.takte.strom.summe > 0)
+            v.push(
+                `GEHEN: der Ring geht ohne Zellen-Wechsel (${G.takte.strom.summe} Einheiten) — Gehen kostet mehr als die Änderung`
+            );
+        if (G.ankerGleich && G.takte.deckWache && G.takte.deckWache.summe > 0)
+            v.push(
+                `GEHEN: der Saum geht ohne neuen Anker (${G.takte.deckWache.summe} Einheiten) — Gehen kostet mehr als die Änderung`
+            );
+        if (G.zelleGleich === undefined || G.ankerGleich === undefined)
+            v.push("LEER: die Geh-Phase nennt Zelle und Anker nicht");
         if (!(G.weg > 1)) v.push(`BEWEGUNG: beim Gehen kam der Spieler ${G.weg} m voran (Soll > 1 m)`);
     }
     const W = b.wecken;
@@ -353,7 +380,7 @@ module.exports = {
     standPhase,
     standUrteil,
     STAND_INSTALL:
-        `window.__standLinseAn = () => (${standLinseAn.toString()})(${JSON.stringify(TAKTE)}, ${JSON.stringify(BLAETTER)});` +
+        `window.__standLinseAn = () => (${standLinseAn.toString()})(${JSON.stringify(TAKTE)}, ${JSON.stringify(BLAETTER)}, ${JSON.stringify(EIGENE_UHR)});` +
         `window.__standPhase = ${standPhase.toString()};` +
         `window.__standLauf = ${standLauf.toString()};`,
 };

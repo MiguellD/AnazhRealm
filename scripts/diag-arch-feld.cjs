@@ -151,13 +151,15 @@ function schlangenGesetz(src) {
     const b = src.indexOf("\n    }\n", a);
     const body = src.slice(a, b);
     const za = body.indexOf("if (distSq <= radiusSq) {");
-    const ze = body.indexOf("} else {", za);
+    // der Zweig endet, wo der ferne beginnt (seit Welle K trägt der Ziegel-Ruf einen Block: sein `} else {` ist inner)
+    const ze = body.indexOf("entry._ziegelNah = false;", za);
     if (za < 0 || ze < 0) return { ok: false, grund: "Mesh-Zonen-Zweig nicht gefunden" };
     const zweig = body.slice(za, ze).replace(/\/\/.*$/gm, "");
     const rufe = (zweig.match(/this\._archZiegelFern\(entry\)/g) || []).length;
+    // bewacht: der Ruf steht nur unter der Wache des Slots (die Stand-Wache zählt, ob er wirkte)
     const bewacht = (
         zweig.match(
-            /if \(entry\._ziegelSlot \|\| entry\._ziegelGebacken \|\| ohneFeld\) this\._archZiegelFern\(entry\)/g
+            /if \(entry\._ziegelSlot \|\| entry\._ziegelGebacken \|\| ohneFeld\) \{\s*if \(this\._archZiegelFern\(entry\)\) regung\+\+;/g
         ) || []
     ).length;
     const schlange = /ziegelOffen\.push\(entry\)/.test(zweig);
@@ -178,9 +180,13 @@ function schlangenGesetz(src) {
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     if (process.argv.includes("--selftest")) {
         const kaputt = stamm.replace(
-            "if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) this._archZiegelFern(entry);\n                else {\n                    // Steht",
-            "this._archZiegelFern(entry);\n                if (false) {\n                    // Steht"
+            "if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {\n                    if (this._archZiegelFern(entry)) regung++;\n                } else {\n                    // Steht",
+            "if (this._archZiegelFern(entry)) regung++;\n                if (false) {\n                    // Steht"
         );
+        if (kaputt === stamm) {
+            console.log("❌ SELBST-TEST S: der Bruch greift nicht (der Ziegel-Ruf der Mesh-Zone hat eine andere Gestalt)");
+            process.exit(1);
+        }
         const heil = schlangenGesetz(stamm);
         const bruch = schlangenGesetz(kaputt);
         // der zweite Bruch: Wartende verbrauchen wieder Versuche (der Sprung fällt)
