@@ -343,7 +343,7 @@ function pufferZensus() {
     };
 }
 
-// DIE FALTUNG EINES VRAM-LABELS — EINE Regel für den Abgriff beim Anlegen (werkbank `vramAbgriff`), das Umbuchen des
+// DIE FALTUNG EINES VRAM-LABELS — EINE Regel für den Abgriff beim Anlegen (scripts/lib/vram-abgriff.cjs), das Umbuchen des
 // Textur-Zensus und das Urteil (band-urteil `erzeugerOf`): eine Ziffern-Folge fällt zu `#`, wenn sie ein Schlüssel-Teil
 // ist — hinter einem Trenner (`eiche|3|summer` → `eiche|#|summer`, `NodeBuffer_412` → `NodeBuffer_#`), als r184-
 // Kennung vor `_` (`bindingBuffer1381_object`, `bindingBuffer3_render` → `bindingBuffer#_…`) oder ab zwei Ziffern am
