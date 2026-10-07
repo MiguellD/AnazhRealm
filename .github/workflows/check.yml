@@ -654,6 +654,14 @@ jobs:
               # (S1 Waende: die Daten rufen beim Laden keine Transzendente, Ratschen-Zeile v7).
               run: npm run gate:daten-contract
 
+            - name: Ofen-Vertrag (S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren)
+              # spec/asset-contract/ofen: der Guss von foundry-core BAKERS_BY_KIND.kreatur/.koerper (wolf, fox, bear,
+              # deer, mensch x Stufe 0/1) als sha256 je Stoff-Klasse x Gelenk (189), je Gelenk (284) und je Beipack —
+              # bis S1 nur von Hand bewiesen (3a0248e8, 8e6f628c). Node-direkt im vm wie der Foundry-Worker;
+              # Determinismus, Samen-Invarianz, Plattform-Probe (pow 0, sin/cos benannt), Selbst-Test: ein
+              # verschobenes Gelenk und eine falsche Stoff-Zuordnung werden rot beim Namen.
+              run: npm run gate:ofen-contract
+
             - name: Die Klang-Linse (Welle 5 Klang — jede klingende Quelle traegt ein Gesetz)
               # An den vier Mess-Orten (Mess-Wiese · Seeufer · Waldinneres · Dorf, aus dem Gesetz gefunden):
               # jede laufende Quelle ist im klang-Gesetzbuch gebaut oder ein benannter Wirt-Leser (sonst

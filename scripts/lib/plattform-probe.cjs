@@ -21,7 +21,8 @@
 //
 //   const { plattformProbe } = require("./lib/plattform-probe.cjs");
 //   const r = await plattformProbe({ laden: () => frischerKern, bauen: (kern) => ({ fall: sha256, … }), einzeln?, nennen? });
-//   nennen(kipptJe) → true: die Täter-Stellen werden gesucht (Vorgabe immer; eine Ratsche sucht nur, wenn sie reißt)
+//   nennen(kipptJe) → true | [Funktionen]: die Täter-Stellen werden gesucht (Vorgabe immer; eine Ratsche sucht nur
+//   für die Funktionen, die ihre Zeile reißen)
 //   einzeln — Funktionen, die je für sich driften (die benannten Zeilen einer Ratsche); der Rest driftet gemeinsam und
 //   wird nur dann je Funktion zerlegt, wenn er kippt. Bauten: 2 + 2 × einzeln + 2 (+ 2 je Rest-Funktion, wenn er kippt).
 //   r.kippt   — Fälle, deren Bytes am letzten Bit einer Transzendenten hängen ([] = plattformgleich)
@@ -159,8 +160,9 @@ async function probeAblauf({ lauf, drift = [1, -1], einzeln = [], nennen = () =>
     // je Täter-Funktion: die kleinste Grenze, ab der die Drift der ersten Aufrufe kippt (Halbierung); der Aufruf an der
     // Grenze ist der Täter — sein Stapel nennt die Kern-Zeile. Nur, wenn der Aufrufer es verlangt (eine Ratsche nennt
     // nur, wenn sie reißt — die Halbierung kostet ~20 Bauten je Funktion).
-    if (kippt.size && nennen(kipptJe, faelle.length)) {
-        for (const n of Object.keys(kipptJe)) {
+    const zuNennen = kippt.size ? nennen(kipptJe, faelle.length) : false;
+    if (zuNennen) {
+        for (const n of Array.isArray(zuNennen) ? zuNennen : Object.keys(kipptJe)) {
             for (const d of drift) {
                 if (!kipptIn(await nurR(d, [n])).length) continue;
                 let lo = 0;
@@ -267,7 +269,12 @@ async function probeWand(satz, { laden, bauen, lauf, funktionen }, check) {
     const R = ratscheLesen();
     const zeile = R.saetze[satz];
     const einzeln = Object.keys((zeile && zeile.kippt) || {});
-    const nennen = (kipptJe, faelle) => ratscheUrteil(satz, { faelle, kipptJe }, R).rot.length > 0;
+    // nur die Funktionen, die ihre Zeile reißen, werden halbiert (die Halbierung kostet ~20 Güsse je Funktion)
+    const nennen = (kipptJe) =>
+        Object.keys(kipptJe).filter((n) => {
+            const grenze = n === "pow" && !(zeile && zeile.powWirt) ? 0 : ((zeile && zeile.kippt) || {})[n] || 0;
+            return kipptJe[n].length > grenze;
+        });
     const PP = lauf
         ? await probeAblauf({ lauf, einzeln, nennen })
         : await plattformProbe({ laden, bauen, funktionen, einzeln, nennen });

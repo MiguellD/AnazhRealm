@@ -91,6 +91,20 @@
             "transzendentenFrei": true,
             "kippt": {},
             "soll": "0 - erreicht: PRESETS und PARAMS rufen beim Laden keine Transzendente"
+        },
+        "ofen": {
+            "kern": "foundry-core.js (Ofen, BAKERS_BY_KIND.kreatur/.koerper) + tetrapoda-core.js + koerper-core.js",
+            "faelle": 483,
+            "probe": "jede Klasse des Ofen-Goldens (189 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks)",
+            "kippt": {
+                "cos": 269,
+                "sin": 220
+            },
+            "taeter": {
+                "cos": "tetrapoda-core.js:1722 cos (frontYReach, die Reichweite des Vorderlaufs)",
+                "sin": "tetrapoda-core.js:2018 sin (femVec, der Oberschenkel-Winkel)"
+            },
+            "soll": "0 - EIN Byte-Raster am Ofen-Ausgang; es kommt mit dem W3c-Akt (Kreatur-Grobstufe geskinnt), pow ist seit S1 an skullR und legMuscle gerastert"
         }
     }
 }
