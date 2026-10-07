@@ -26951,6 +26951,15 @@ class AnazhRealm {
         return 18;
     }
 
+    // DIE AQUIFER-REGEL als EINE Rechnung (Zell-Bau, Worker-Spiegel `aquiferTrocken`, die Decke am Körper): eine Zelle ist
+    // trockene Höhle, wenn sie tiefer als AQUIFER_TIEFE_M unter der Makro-Fläche und über dem Wassertisch liegt UND Fels über
+    // ihr steht (`unterFels`). Unter offenem Himmel (eine Schlucht) ist eine Zelle nie Höhle: bis zur Gegenprüfung 07.10.
+    // (Runde 3) trocknete die Regel jeden Fluss, der sich tiefer als 18 m unter die Makro-Fläche schneidet (Quelle der Kachel
+    // −664/−2264: Spiegel 90,38 über dem Schlucht-Boden 86,32, der Körper trocken, das Sheet hing schräg über der Schlucht).
+    static _aquiferTrocken(cy, makroY, tischY, unterFels) {
+        return unterFels && cy < makroY - AnazhRealm.AQUIFER_TIEFE_M && cy > tischY;
+    }
+
     // Welle C — der Schwarz-Floor für Flach-Farb-Strukturen (Eigen-Leuchten in
     // der Materialfarbe, hebt Stein/Eisen nachts über Schwarz). Browser-justierbar.
     static get STRUCTURE_EMISSIVE() {
@@ -27291,25 +27300,71 @@ class AnazhRealm {
         // surf-18) über dem globalen Wassertisch (`waterLevel`) bleibt trocken, darunter nass.
         // MUSS bit-identisch im Worker.
         const aquiferY = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-        const AQ_DEPTH = AnazhRealm.AQUIFER_TIEFE_M; // Tiefe unter surf, ab der die Aquifer-Regel greift
         const colSurf = new Float64Array(dim * dim);
         for (let k = 0; k < dim; k++) {
             const cz = oz + (k + 0.5) * step;
             for (let i = 0; i < dim; i++) colSurf[i + k * dim] = this._terrainMacroSurfaceY(ox + (i + 0.5) * step, cz);
         }
-        const caveDry = (i, k, cy) => cy < colSurf[i + k * dim] - AQ_DEPTH && cy > aquiferY;
+        // Fels über der Zelle: die Unterkante der obersten FESTEN Zelle der Spalte (Bau-Stempel eingeschlossen) — darunter
+        // ist eine Zelle bedeckt, darüber steht sie unter offenem Himmel (`AnazhRealm._aquiferTrocken`).
+        const colFels = new Float64Array(dimSq).fill(-Infinity);
+        for (let idx0 = 0; idx0 < dimSq; idx0++) {
+            for (let j = jMax; j >= 0; j--) {
+                if (cells[idx0 + j * dimSq] !== STATE.SOLID) continue;
+                colFels[idx0] = oy + j * step;
+                break;
+            }
+        }
+        const caveDry = (i, k, cy) =>
+            AnazhRealm._aquiferTrocken(cy, colSurf[i + k * dim], aquiferY, cy < colFels[i + k * dim]);
+        // DER BODEN JE SPALTE (Gegenprüfung 07.10., Runde 3): der tiefste Null-Durchgang der Dichte an den vier Ecken der Spalte
+        // (das Gitter, aus dem auch der Mesher die Fläche setzt) — das Wasser der Spalte steht, wo es über irgendeinem Teil
+        // ihres Bodens steht. Das Ufer-Urteil des Spiegels und die Deck-Zelle lesen ihn, wie der Körper seinen Boden liest
+        // (`_koerperWasser`); bis zur Gegenprüfung las das Ufer-Urteil die Makro-Fläche (an den Seen der Kacheln bis 4,6 m über
+        // dem Boden): der Körper stand im Ufer-Wasser, das die Welt nicht zeichnete. Reicht das Gelände über das Band, trägt
+        // die Ecke kein Wasser; ohne Gelände im Band die Makro-Fläche.
+        const colBoden = new Float64Array(dimSq);
+        {
+            const jTop = Math.min(dimY, jMax + 1);
+            for (let k = 0; k < dim; k++) {
+                for (let i = 0; i < dim; i++) {
+                    let b = Infinity;
+                    let gelaende = false;
+                    for (let e = 0; e < 4; e++) {
+                        const g = i + 1 + (e & 1) + (k + 1 + (e >> 1)) * NxNy;
+                        for (let j = jTop; j >= 0; j--) {
+                            const dS = density[g + j * Nx];
+                            if (!(dS > 0)) continue;
+                            gelaende = true;
+                            const dD = j + 1 <= dimY ? density[g + (j + 1) * Nx] : 1;
+                            if (dD <= 0) b = Math.min(b, oy + j * step + (step * dS) / (dS - dD));
+                            break;
+                        }
+                    }
+                    colBoden[i + k * dim] = gelaende ? b : colSurf[i + k * dim];
+                }
+            }
+        }
         // Die EINE kanonische Wasserspiegel-Höhe `colL` PRO SPALTE, terrain-gated (`_atlasWaterLevelAt` mit
-        // dem echten Spalten-Terrain-Top → Ufer füllt sub-zellig, Land bleibt trocken). `colSrc` = echte
-        // Atlas-Wasser-Quelle (Seed).
+        // dem Boden der Spalte → Ufer füllt sub-zellig, Land bleibt trocken). `colSrc` = echte
+        // Atlas-Wasser-Quelle (Seed). Gefragt wird an der Mitte UND den vier Ecken der Spalte (das Höchste): die Ränder des
+        // Gesetzes (das 16-m-Raster der Seen und ihres Ufers, die Krone des Flusses) liegen nicht auf dem 1,8-m-Gitter — an
+        // der Mitte allein zeichnete die Welt einen Ufer-Streifen nicht, in dem der Körper stand (Gegenprüfung 07.10., Runde 3).
         const colL = new Float64Array(dimSq);
         const colSrc = new Uint8Array(dimSq);
+        const spalteL = (i, k, boden) => {
+            let l = this._atlasWaterLevelAt(ox + (i + 0.5) * step, oz + (k + 0.5) * step, boden);
+            for (let e = 0; e < 4; e++) {
+                const le = this._atlasWaterLevelAt(ox + (i + (e & 1)) * step, oz + (k + (e >> 1)) * step, boden);
+                if (le > l) l = le;
+            }
+            return l;
+        };
         for (let k = 0; k < dim; k++) {
-            const cz = oz + (k + 0.5) * step;
             for (let i = 0; i < dim; i++) {
-                const cxw = ox + (i + 0.5) * step;
                 const idx0 = i + k * dim;
-                colL[idx0] = this._atlasWaterLevelAt(cxw, cz, colSurf[idx0]);
-                colSrc[idx0] = this._atlasWaterLevelAt(cxw, cz, Infinity) > -Infinity ? 1 : 0;
+                colL[idx0] = spalteL(i, k, colBoden[idx0]);
+                colSrc[idx0] = spalteL(i, k, Infinity) > -Infinity ? 1 : 0;
             }
         }
         // OOB-Ring: ein Wasser-Körper jenseits der Kante flutet herein → die
@@ -27380,15 +27435,6 @@ class AnazhRealm {
                 if (topCy < aquiferY - SHELF_MIN_DEPTH) {
                     colL[idx0] = lvl0 > -Infinity ? lvl0 : aquiferY;
                     colSrc[idx0] = 1;
-                    // Zell-Quantisierungs-Wand: eine ~2-m-Wassersäule kann durchs 1.8-m-Gitter fallen (keine AIR-Mitte
-                    // unter dem Spiegel) → dann trägt die DECK-Zelle das flache Wasser (ihr Intervall schneidet den
-                    // Spiegel per Konstruktion). Kein queue-Push nötig; _skyOpenWaterFilter behält sie (AIR drüber).
-                    const lvl = colL[idx0];
-                    const deckCy = topCy + step;
-                    if (deckCy > lvl && topJ + 1 <= jMax) {
-                        const deckIdx = idx0 + (topJ + 1) * dimSq;
-                        if (cells[deckIdx] === AIR) cells[deckIdx] = WATER;
-                    }
                 }
             }
         }
@@ -27438,6 +27484,77 @@ class AnazhRealm {
             pushN(i, k - 1, j);
             pushN(i, k, j + 1);
             pushN(i, k, j - 1);
+        }
+        // 4b) DIE DECK-ZELLE (EINE Regel für jedes flache Wasser, Gegenprüfung 07.10., Runde 3): liegt der Spiegel einer
+        //    Quell-Spalte über ihrem Boden, aber unter der Mitte ihrer ersten freien Zelle (ein Rinnsal, ein flaches Ufer, die
+        //    Küsten-Schelfe), fällt das Wasser durchs 1,8-m-Gitter — der Körper las es (`_koerperWasser`: der Spiegel des
+        //    Gesetzes über dem Boden), die Welt zeichnete es nicht (der Bach der Mess-Wiese: Körper nass in 104 von 104
+        //    Querschnitten, gezeichnet in 52). Dann trägt die DECK-Zelle das Wasser, und das Sheet zeichnet in ihr den Spiegel
+        //    des Gesetzes (`_computeWaterSheetData`). Der Boden der Spalte ist der Null-Durchgang der Dichte zwischen ihrer
+        //    obersten festen Zelle und der Deck-Zelle (dort setzt auch der Mesher die Fläche); eine gestempelte Zelle (Bau)
+        //    trägt keinen Boden. Eine Quell-Spalte trägt ihr flaches Wasser immer, eine Ufer-Spalte, wenn sie an Wasser grenzt
+        //    (an der Oberfläche einer Nachbar-Spalte im Chunk, auch einer Deck-Zelle — der flache Ufer-Streifen wächst vom
+        //    Wasser her). Kein queue-Push: die Deck-Zelle flutet nichts weiter; `_skyOpenWaterFilter` behält sie (Luft
+        //    darüber). Bis zur Gegenprüfung trug nur die Küsten-Schelfe diese Regel, ohne Boden-Urteil. Worker bit-identisch.
+        const deckZelle = (i, k) => {
+            const idx0 = i + k * dim;
+            const lvl = colL[idx0];
+            if (!(lvl > -Infinity)) return -1;
+            let topJ = -1;
+            for (let j = jMax; j >= 0; j--) {
+                const c = cells[idx0 + j * dimSq];
+                if (c === AIR) continue;
+                if (c === STATE.SOLID) topJ = j;
+                break; // eine Wasser-Zelle: die Spalte trägt ihr Wasser schon
+            }
+            if (topJ < 0 || topJ + 1 > jMax) return -1;
+            const deckIdx = idx0 + (topJ + 1) * dimSq;
+            const topCy = oy + (topJ + 0.5) * step;
+            // der Spiegel liegt in der Deck-Zelle oder in der festen Zelle darunter (bis dorthin zeichnet das Sheet ihn,
+            // `_computeWaterSheetData`), über dem Boden der Spalte; die feste Zelle ist Gelände, kein Bau-Stempel
+            if (cells[deckIdx] !== AIR || topCy + step <= lvl || !(lvl > topCy - 0.5 * step)) return -1;
+            if (!(cellD(i, topJ, k) > 0) || !(lvl > colBoden[idx0])) return -1;
+            return deckIdx;
+        };
+        const nassOben = new Uint8Array(dimSq);
+        const offen = [];
+        for (let idx0 = 0; idx0 < dimSq; idx0++) {
+            for (let j = jMax; j >= 0; j--) {
+                const c = cells[idx0 + j * dimSq];
+                if (c === AIR) continue;
+                if (c === WATER) {
+                    nassOben[idx0] = 1;
+                    offen.push(idx0);
+                }
+                break;
+            }
+        }
+        for (let idx0 = 0; idx0 < dimSq; idx0++) {
+            if (!colSrc[idx0] || nassOben[idx0]) continue;
+            const d = deckZelle(idx0 % dim, (idx0 / dim) | 0);
+            if (d < 0) continue;
+            cells[d] = WATER;
+            nassOben[idx0] = 1;
+            offen.push(idx0);
+        }
+        for (let h = 0; h < offen.length; h++) {
+            const i = offen[h] % dim;
+            const k = (offen[h] / dim) | 0;
+            for (const [ni, nk] of [
+                [i + 1, k],
+                [i - 1, k],
+                [i, k + 1],
+                [i, k - 1],
+            ]) {
+                if (ni < 0 || nk < 0 || ni >= dim || nk >= dim) continue;
+                const n0 = ni + nk * dim;
+                if (nassOben[n0]) continue;
+                const d = deckZelle(ni, nk);
+                if (d < 0) continue;
+                cells[d] = WATER;
+                nassOben[n0] = 1;
+                offen.push(n0);
+            }
         }
         // 5) 3D-Konnektivität: eine WATER-Zelle ist nur echt, wenn sie durch Wasser mit der OFFENEN
         //    ATMOSPHÄRE verbunden ist („komme ich zur Oberfläche?", nicht „Deckel über mir?") — erhält die
@@ -27710,6 +27827,9 @@ class AnazhRealm {
         const topG = new Float64Array(GW * GW).fill(NaN); // NaN = trocken
         const solidG = new Float64Array(GW * GW); // Boden-Anker (Unterkante der höchsten SOLID-Zelle)
         const depthG = new Float64Array(GW * GW); // Wasser-Säulen-Dicke (aDepth)
+        // RUHENDES Wasser je Spalte (1): das Dach IST der Spiegel des Gesetzes — kein Live-Delta, keine Klemme. Seine Vertices
+        // tragen den Spiegel des Gesetzes an ihrem eigenen Ort (`addVert`), nie das Mittel der Nachbar-Dächer.
+        const ruhG = new Uint8Array(GW * GW);
         for (let ck = -PAD; ck < dim + PAD; ck++) {
             for (let ci = -PAD; ci < dim + PAD; ci++) {
                 const gi = ci + PAD + (ck + PAD) * GW;
@@ -27773,22 +27893,37 @@ class AnazhRealm {
                 }
                 const faceY = oy + (sc.floodTopJ + 1) * step; // Zell-Dach (quantisiert)
                 // RUHE: sub-zellig der Body-Spiegel `L` (das Gesetz `_atlasWaterLevelAt`: Ozean, See, der Fluss-Spiegel
-                // — stromab nie steigend, quer waagrecht), clamp ±1 Zelle ums Dach (gegen Atlas/Zell-Drift).
+                // — stromab nie steigend, quer waagrecht), geklemmt von der Unterkante der Zelle unter dem Dach bis eine
+                // Zelle darüber (gegen Atlas/Zell-Drift): die Deck-Zelle (`_buildVoxelChunkWaterCells` 4b) trägt einen
+                // Spiegel, der in der obersten festen Zelle liegt (ein Rinnsal über seinem Boden).
                 const wx = ox + (ci + 0.5) * step;
                 const wz = oz + (ck + 0.5) * step;
-                // Das Bett reist mit (solidG + step = Bett-OBERFLÄCHE): nasse Flood-Spalten behalten ihre
-                // Rim-Füllung (Bett < rim per Flood); nur „unbekannt" (−Inf) verliert sie.
-                const L = this._atlasWaterLevelAt(wx, wz, solidG[gi] + step);
-                let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
+                // Das Ufer-Urteil liest die Unterkante der obersten festen Zelle: die Spalte IST nass (das Zell-Gesetz flutete
+                // sie über dem tiefsten Boden ihrer Ecken), nur „unbekannt" (−Inf) verliert die Rim-Füllung; bis zur
+                // Gegenprüfung 07.10. (Runde 3) las es die Oberkante. Gefragt wird wie im Zell-Gesetz an der Mitte und den
+                // vier Ecken (das Höchste): eine Spalte, die das Wasser nur an einer Ecke trägt, zeichnete sonst ihr Zell-Dach.
+                let L = this._atlasWaterLevelAt(wx, wz, solidG[gi]);
+                for (let e = 0; e < 4; e++) {
+                    const le = this._atlasWaterLevelAt(
+                        ox + (ci + (e & 1)) * step,
+                        oz + (ck + (e >> 1)) * step,
+                        solidG[gi]
+                    );
+                    if (le > L) L = le;
+                }
+                let top = L > -Infinity ? Math.max(faceY - 2 * step, Math.min(faceY + step, L)) : faceY;
+                let ruht = L > -Infinity && top === L;
                 // LIVE: der CA-Delta obendrauf (gezeichnetes Live-Dach − Flood-Dach, geclampt).
                 if (dach) {
                     const floodRel = (sc.floodTopJ + 1) * step;
                     const liveRel = live < 0 ? 0 : live * step;
                     let d = liveRel - floodRel;
                     if (d > -0.05 && d < 0.05) d = 0;
+                    if (d !== 0) ruht = false;
                     top += Math.max(-14, Math.min(4, d));
                 }
                 topG[gi] = top;
+                ruhG[gi] = ruht ? 1 : 0;
                 // depthG (aDepth) wird GLOBAL als kontinuierliche Tiefe gesetzt (V18.377, s.u.).
             }
         }
@@ -28021,6 +28156,9 @@ class AnazhRealm {
             const wz = oz + k * step;
             let sum = 0;
             let n = 0;
+            let rohMin = Infinity;
+            let rohMax = -Infinity;
+            let ruht = true;
             let dsum = 0;
             let sfx = 0;
             let sfz = 0;
@@ -28037,6 +28175,9 @@ class AnazhRealm {
                 if (!Number.isNaN(v)) {
                     sum += v;
                     n++;
+                    if (topRawG[gi2] < rohMin) rohMin = topRawG[gi2];
+                    if (topRawG[gi2] > rohMax) rohMax = topRawG[gi2];
+                    if (!ruhG[gi2]) ruht = false;
                     dsum += depthG[gi2];
                     sfx += flowXG[gi2];
                     sfz += flowZG[gi2];
@@ -28045,19 +28186,30 @@ class AnazhRealm {
                 const sv = solidG[gi2];
                 if (sv < anchor) anchor = sv;
             }
-            // Nasser Vertex: das geglättete Wasser-Dach. Anker-Vertex (kein nasser Nachbar): UNTER das Terrain
-            // (`solidG` = Unterkante der höchsten SOLID-Zelle), MIN über die 4 Nachbar-Spalten — nie MAX (griffe
-            // an Klippen/Überhängen die Wand → schwebende Kante); die Kante taucht am Ufer-Fuß ein.
-            const surfY = n > 0 ? sum / n : anchor - 0.5;
-            const depthM = n > 0 ? dsum / n : 0;
-            const id = positions.length / 3;
-            vertIsAnchor[id] = n === 0;
             // UNIFORMER Jitter (keine Steigungs-Skala): `slopeMax` ist pro Chunk verschieden → verschiedene
             // Magnituden an Rand-Vertices = Riss. Gleiche Amplitude + globaler-Index-Hash → Rand-Vertices fallen
             // exakt zusammen; auf flachem Wasser ist horizontaler Jitter unsichtbar. `slopeMax` bleibt für
             // aSlope/Whitewater.
             const _jdir = _jhash(cx * dim + i, cz * dim + k) * _jitAmp;
             const _jdir2 = _jhash(cz * dim + k + 8191, cx * dim + i + 131071) * _jitAmp;
+            // Nasser Vertex: RUHT das Wasser aller nassen Nachbar-Spalten, trägt er den Spiegel des Gesetzes an seinem
+            // eigenen Ort (dieselbe Zahl, die der Körper dort liest, `_koerperWasser`; jenseits der Krone der Fluss-Spiegel quer,
+            // `_hydroSpiegelQuer`), gehalten zwischen die rohen Dächer der nassen Nachbar-Spalten (ein fremdes Wasser am Ort des
+            // Vertex — ein See-Feld daneben — hebt ihn nie) — das Mittel der GEGLÄTTETEN Dächer zog am Ende eines steilen Laufs
+            // das Wasser unter den Boden
+            // (Quelle der Kachel −1624/−1080: Spiegel 74,04, gezeichnet 73,00, Boden 73,62). Sonst (Live-Delta, Klemme) das
+            // geglättete Wasser-Dach. Anker-Vertex (kein nasser Nachbar): UNTER das Terrain (`solidG` = Unterkante der
+            // höchsten SOLID-Zelle), MIN über die 4 Nachbar-Spalten — nie MAX (griffe an Klippen/Überhängen die Wand →
+            // schwebende Kante); die Kante taucht am Ufer-Fuß ein.
+            let surfY = anchor - 0.5;
+            if (n > 0 && ruht) {
+                const Lv = this._atlasWaterLevelAt(wx + _jdir, wz + _jdir2, Infinity);
+                const Lq = Lv > -Infinity ? Lv : this._hydroSpiegelQuer(wx + _jdir, wz + _jdir2);
+                surfY = Lq > -Infinity ? Math.max(rohMin, Math.min(rohMax, Lq)) : rohMax;
+            } else if (n > 0) surfY = sum / n;
+            const depthM = n > 0 ? dsum / n : 0;
+            const id = positions.length / 3;
+            vertIsAnchor[id] = n === 0;
             positions.push(wx + _jdir, surfY, wz + _jdir2);
             // aFlow: der Vertex mittelt die 4 geglätteten Nachbar-Spalten von flowXG/flowZG (sfx/sfz im
             // wet-Loop) → kein Regime-Patchwork, naht-exakt; der Blur trägt das Tapern zur Mündung/Bank.
@@ -31655,6 +31807,39 @@ class AnazhRealm {
         };
     }
 
+    // DER SPIEGEL QUER (Gegenprüfung 07.10., Runde 3): der Spiegel des nächsten Fluss-Segments an (x, z), auch jenseits der
+    // Krone — der Fluss-Spiegel liegt quer waagrecht (`_hydroRiverSpiegel`). Nur das Wasser-Sheet liest ihn, für Rand-Vertices
+    // jenseits der Krone (dort taucht das Sheet unter den Boden; das Mittel oder ein Extrem der Nachbar-Dächer setzte das Ende
+    // eines steilen Laufs zu tief oder zu hoch). −Infinity ohne Segment im Bucket. Worker bit-identisch (`hydroSpiegelQuer`).
+    _hydroSpiegelQuer(x, z) {
+        const h = this._hydroFor(x, z);
+        if (!h || !h.ready || !h.riverBuckets) return -Infinity;
+        const bs = h.bucketSize;
+        const bd = h.bucketsDim;
+        const bi = Math.floor((x - h.originX) / bs);
+        const bj = Math.floor((z - h.originZ) / bs);
+        if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return -Infinity;
+        const list = h.riverBuckets[bj * bd + bi];
+        if (!list) return -Infinity;
+        let bestD = Infinity;
+        let spiegel = -Infinity;
+        for (let s = 0; s < list.length; s++) {
+            const seg = list[s];
+            const ex = seg.bx - seg.ax;
+            const ez = seg.bz - seg.az;
+            const len2 = ex * ex + ez * ez || 1;
+            let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+            if (t < 0) t = 0;
+            else if (t > 1) t = 1;
+            const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
+            if (dist < bestD) {
+                bestD = dist;
+                spiegel = seg.sA + (seg.sB - seg.sA) * t;
+            }
+        }
+        return spiegel;
+    }
+
     // Phase 1 — Surface-Sampling: Region-Raster mit `_terrainMacroSurfaceY` OHNE Detail-Oktave
     // (`includeDetail=false`): die aliast bei 16-m-Abtastung (±4 m, λ~22 m) und übertrifft das Makro-
     // Gefälle je Zelle — die Drainage folgte dem Rauschen. Keine 3D-Roughness/Höhlen; 3 Noise-Calls je
@@ -32475,13 +32660,14 @@ class AnazhRealm {
     // und Schritt-Klang lesen nur sie. Bis V18.531 trug der Spieler das Dach der obersten Wasser-ZELLE (1,8-m-Raster: in
     // Ruhe 0,47 m über dem See, im Fluss 0,17 m über der Lauf-Fläche), das Tier den rohen Spiegel, der Mitspieler den
     // Meeresspiegel. Rückgabe: Spiegel (m) oder −Infinity (kein Wasser).
-    // DIE DECKE (D11, Gegenprüfung 07.10.): Wasser zählt für einen Körper nur, wo das Zell-Gesetz es führt. Liegt die
-    // Zelle des Körpers (die erste nicht-feste über seinem Grund) mit ihrer Mitte unter dem Spiegel und hält das Zell-
-    // Gesetz sie trocken (die Aquifer-Regel caveDry, `_skyOpenWaterFilter`, keine Verbindung zur Quelle), ist dort kein
-    // Wasser — außer der Live-Automat trägt es in genau diese Zelle (dann sein zusammenhängendes Dach darüber). Sub-zelliges
-    // Ufer-Wasser (die Zellen-Mitte über dem Spiegel) bleibt der Spiegel des Gesetzes. Bis 8f09227d las der Körper den
-    // Spiegel ohne Decke: in trockenen Höhlen unter und neben dem See der Mess-Wiese 3511 von 3511 Proben „nass" — der
-    // Spieler schwamm, die Kamera tauchte, das Tier schwamm auf dem Höhlen-Boden.
+    // DIE DECKE (D11, Gegenprüfung 07.10.): Wasser zählt für einen Körper nur, wo das Zell-Gesetz es führt — und das Zell-
+    // Gesetz führt jedes Wasser, auch das flache (die Deck-Zelle, `_buildVoxelChunkWaterCells` 4b). Ist die Zelle des Körpers
+    // (die erste nicht-feste über seinem Grund) nicht geflutet, ist dort kein Wasser (Decke, Aquifer-Regel, keine Verbindung
+    // zum Wasser) — außer der Live-Automat trägt es in genau diese Zelle (dann sein zusammenhängendes Dach darüber). Bis
+    // 8f09227d las der Körper den Spiegel ohne Decke: in trockenen Höhlen unter und neben dem See der Mess-Wiese 3511 von
+    // 3511 Proben „nass"; bis zur Gegenprüfung (Runde 3) las er das flache Ufer als sub-zelliges Wasser, das die Welt nicht
+    // zeichnete (in Senken neben den Seen der Kacheln, ohne Verbindung zum See), und rechnete die Aquifer-Regel ein zweites
+    // Mal.
     // DIE GESTALT (D10): mit `gestalt` (`{ linie }` — die Wasserlinie über der Unterkante des Körpers; Infinity = sie trägt
     // nie) schreibt die Wahrheit die LAGE hinein: `gestalt.lage = { tiefe, schwimmt, unterkante }` — der Körper schwimmt,
     // sobald die Säule über seinem Grund die Linie übersteigt (seine Unterkante liegt dann auf Spiegel − Linie), sonst steht er
@@ -32541,28 +32727,11 @@ class AnazhRealm {
             }
         }
         if (!endlich || !(spiegel > grundY)) return spiegel;
-        // Die Zelle des Körpers und das Urteil des Zell-Gesetzes über sie: geflutet (WATER) trägt sie den Spiegel; sonst
-        // ist sie trocken, wenn eine FEST-Zelle zwischen ihr und dem Spiegel liegt (die Decke: das Wasser käme nur durch
-        // Fels herein — `_skyOpenWaterFilter` trocknet so jede Blase) oder die Aquifer-Regel sie hält (caveDry: tiefer als
-        // 18 m unter der Makro-Fläche und über dem Wassertisch, `_buildVoxelChunkWaterCells`). Offen nach oben bleibt sie
-        // der Spiegel des Gesetzes (das sub-zellige Ufer).
+        // Die Zelle des Körpers und das Urteil des Zell-Gesetzes über sie: geflutet (WATER) trägt sie den Spiegel.
         const ZS = AnazhRealm.CELL_STATE;
         let jK = Math.max(0, Math.min(dimY - 1, Math.floor((grundY - oy) / step)));
         for (let n = 0; n < 2 && jK + 1 < dimY && cells[b + jK * dq] === ZS.SOLID; n++) jK++;
         if (cells[b + jK * dq] === ZS.WATER) return spiegel;
-        let decke = false;
-        for (let j = jK + 1; j < dimY && oy + j * step < spiegel; j++) {
-            if (cells[b + j * dq] === ZS.SOLID) {
-                decke = true;
-                break;
-            }
-        }
-        if (!decke) {
-            const cy = oy + (jK + 0.5) * step;
-            const aquiferY = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
-            const colSurf = this._terrainMacroSurfaceY(cx * span + (i + 0.5) * step, cz * span + (k + 0.5) * step);
-            if (!(cy < colSurf - AnazhRealm.AQUIFER_TIEFE_M && cy > aquiferY)) return spiegel;
-        }
         if (!lvl || !(lvl[b + jK * dq] > 0.5)) return -Infinity;
         let jT = jK;
         while (jT + 1 < dimY && cells[b + (jT + 1) * dq] !== ZS.SOLID && lvl[b + (jT + 1) * dq] > 0.5) jT++;
@@ -90766,8 +90935,9 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // liest kein Boot die alte Form — seit Welle 7 trägt er den Höhlen-Graph (`hTri` · `hKnoten` · `hSeiten` · `hKanten`); seit
 // Welle L liegt das Fluss-Bett auf dem Spiegel (`_hydrosphereCarveAt`): ein alter Chunk trüge den alten Kanal; und die
 // Ufer-Farbe läuft mit der Kronen-Blende aus (`_waterLevelAt` → `ufer`): ein alter Chunk trüge das Rauten-Schachbrett; seit
-// der Gegenprüfung läuft die Bank mit ihrer Neigung ins Gelände (Kanal und Damm): ein alter Chunk trüge die Gleit-Wand.
-AnazhRealm.CHUNK_IDB_FORM = "bank-boeschung";
+// der Gegenprüfung läuft die Bank mit ihrer Neigung ins Gelände (Kanal und Damm): ein alter Chunk trüge die Gleit-Wand; seit
+// Runde 3 trägt die Deck-Zelle das flache Wasser und das Ufer liest den Boden der Spalte: alte Zellen zeichneten den Bach nicht.
+AnazhRealm.CHUNK_IDB_FORM = "deck-zelle";
 // DIE HÖHLEN-SICHT (Welle 7, `_hoehlenSicht`): der Saum jeder Mündungs-, Portal-, Rand- und Luft-Box — `schritte` Gitter-
 // Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
 // Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).
