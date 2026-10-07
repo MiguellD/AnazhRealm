@@ -1,0 +1,26 @@
+# Lauf am Arbeitsbaum = 884111fc (vor dem Commit, 4 Dateien geändert), seriell; die Zeilen eines überlappenden, abgebrochenen Vorlaufs (17:29:28–17:30:56) sind entfernt.
+17:29:03 START 7e5180d0 4 geaendert
+17:31:49 SCHRITT format EXIT=0 (166 s)
+17:31:56 SCHRITT lint EXIT=0 (7 s)
+17:32:24 SCHRITT check EXIT=0 (28 s)
+17:32:28 SCHRITT profiband EXIT=0 (4 s)
+17:32:41 SCHRITT page-error EXIT=0 (12 s)
+17:32:48 SCHRITT fenster-wechsel EXIT=0 (7 s)
+17:32:52 SCHRITT feld-stellvertreter EXIT=0 (4 s)
+17:32:57 SCHRITT schatten-takt EXIT=0 (4 s)
+17:33:25 SCHRITT schatten-werfer EXIT=0 (28 s)
+17:35:18 SCHRITT fluss EXIT=0 (114 s)
+17:35:26 SCHRITT godray EXIT=0 (7 s)
+17:35:35 SCHRITT luft-sicht EXIT=0 (9 s)
+17:35:43 SCHRITT himmel-tag EXIT=0 (8 s)
+17:36:50 SCHRITT gpu-lens EXIT=0 (67 s)
+17:37:24 SCHRITT analog-nah EXIT=0 (34 s)
+17:37:39 SCHRITT post-kette EXIT=0 (15 s)
+17:37:53 SCHRITT ziel-zensus EXIT=0 (14 s)
+17:38:03 SCHRITT kamera-treue EXIT=0 (10 s)
+17:38:10 SCHRITT look-lens EXIT=0 (7 s)
+17:38:11 SCHRITT look-golden EXIT=0 (1 s)
+17:38:40 SCHRITT playtest-fast EXIT=0 (29 s)
+17:41:27 SCHRITT playtest EXIT=1 (167 s)
+17:41:27 WAENDE ENDE
+17:44 playtest (Wiederholung allein) EXIT=0 — Alle Invarianten OK, DER HÜPFER 0.51 / 0.33 m

@@ -1,0 +1,43 @@
+ZIEL-ZENSUS — 27 Texturen, 96.8 MB · 12 Frames · Leinwand 1920×1080
+
+   MB  Name                              Form                        Erzeuger · Schreiber → Leser (zuletzt)
+ 15.82  output                            rgba16float 1920×1080       r184 PassNode · _ensurePostProcessing · haupt → haupt, TRAA (TRAA (Frame 12))
+ 15.82  TRAANode.history                  rgba16float 1920×1080       vendor/TRAANode.js · _ensurePostProcessing · post (Kopie), TRAA-Vortiefe → TRAA, TRAA-Vortiefe (TRAA-Vortiefe (Frame 12)) · trägt über den Frame
+ 15.82  TRAANode.resolve                  rgba16float 1920×1080       vendor/TRAANode.js · _ensurePostProcessing · TRAA → post (Kopie), post (post (Frame 12))
+  8.00  kaskade0:tiefe                    depth16unorm 2048×2048      anazhRealm.js · _kaskadenZiele · k0 → haupt (haupt (Frame 12))
+  8.00  kaskade1:tiefe                    depth16unorm 2048×2048      anazhRealm.js · _kaskadenZiele · k1 → haupt (haupt (Frame 12)) · trägt über den Frame
+  7.91  depth                             depth24plus 1920×1080       r184 PassNode · _ensurePostProcessing · haupt → haupt (Kopie), haupt, TRAA, TRAA-Vortiefe (TRAA-Vortiefe (Frame 12))
+  7.91  szene:tiefenkopie                 depth24plus 1920×1080       anazhRealm.js · _szeneTiefe · haupt (Kopie) → haupt (haupt (Frame 12))
+  3.96  TRAANode.history:tiefe            depth16unorm 1920×1080      vendor/TRAANode.js · _ensurePostProcessing · TRAA-Vortiefe → TRAA, TRAA-Vortiefe (TRAA-Vortiefe (Frame 12)) · trägt über den Frame
+  2.67  karte-albedo:atlas                bc1-rgba-unorm-srgb 128×20  anazhRealm.js · _impostorAtlasTexturen · — → haupt (haupt (Frame 12)) · trägt über den Frame
+  2.00  wege-karte:fern                   rg8unorm 1024×1024          anazhRealm.js · _wegeKarteEnsure · — → k0, haupt, k1 (haupt (Frame 12)) · trägt über den Frame
+  2.00  wege-karte:nah                    rg8unorm 1024×1024          anazhRealm.js · _wegeKarteEnsure · — → k0, haupt, k1 (haupt (Frame 12)) · trägt über den Frame
+  1.88  feld-pass-panorama                rgba32float 768×160         anazhRealm.js · _feldPassEnsure · — → haupt (haupt (Frame 12)) · trägt über den Frame
+  1.33  karte-normal:atlas                bc5-rg-unorm 64×1024×16     anazhRealm.js · _impostorAtlasTexturen · — → haupt (haupt (Frame 12)) · trägt über den Frame
+  0.75  rausch-atlas                      rgba8unorm 768×256          anazhRealm.js · _rauschAtlas · — → k0, haupt, k1 (haupt (Frame 12)) · trägt über den Frame
+  0.67  laub-cluster-atlas                bc1-rgba-unorm-srgb 2048×5  anazhRealm.js · _ensureFoliageClusterAtlas · — → k0, haupt, k1 (haupt (Frame 12)) · trägt über den Frame
+  0.50  welt-march-liste                  rgba32float 4096×8          anazhRealm.js · _weltMarchEnsure · — → haupt (haupt (Frame 12)) · trägt über den Frame
+  0.33  PMREM.cubeUv                      rgba16float 336×128         r184 PMREMGenerator · _ensureSkyEnvironment · — → haupt (haupt (Frame 12)) · trägt über den Frame
+  0.33  PMREM.cubeUv                      rgba16float 336×128         r184 PMREMGenerator · _ensureSkyEnvironment · — → — (—)
+  0.25  kronen-streu:fern                 r8unorm 512×512             anazhRealm.js · _wegeKarteEnsure · — → k0, haupt, k1 (haupt (Frame 12)) · trägt über den Frame
+  0.25  kronen-streu:nah                  r8unorm 512×512             anazhRealm.js · _wegeKarteEnsure · — → k0, haupt, k1 (haupt (Frame 12)) · trägt über den Frame
+  0.25  welt-march-kapseln                rgba32float 4096×4          anazhRealm.js · _weltMarchEnsure · — → haupt (haupt (Frame 12)) · trägt über den Frame
+  0.16  PMREM.cubeUv:tiefe                depth24plus 336×128         r184 PMREMGenerator · _ensureSkyEnvironment · — → — (—)
+  0.16  PMREM.cubeUv:tiefe                depth24plus 336×128         r184 PMREMGenerator · _ensureSkyEnvironment · — → — (—)
+
+  Hinweis: RUHT: PMREM.cubeUv:tiefe (depth24plus 336×128, 0.16 MB) — im Fenster weder gelesen noch geschrieben
+  Hinweis: RUHT: PMREM.cubeUv (rgba16float 336×128, 0.33 MB) — im Fenster weder gelesen noch geschrieben
+  Hinweis: RUHT: PMREM.cubeUv:tiefe (depth24plus 336×128, 0.16 MB) — im Fenster weder gelesen noch geschrieben
+  Hinweis: KANAL: PMREM.cubeUv (rgba16float) — Kanal a=1 an diesem Ort konstant
+  Hinweis: KANAL: himmel-umgebung (rgba8unorm-srgb) — Kanal a=255 an diesem Ort konstant
+  Hinweis: KANAL: output (rgba16float) — Kanal a=1 an diesem Ort konstant
+  Hinweis: KANAL: TRAANode.history (rgba16float) — Kanal a=1 an diesem Ort konstant
+  Hinweis: KANAL: TRAANode.resolve (rgba16float) — Kanal a=1 an diesem Ort konstant
+  Hinweis: KANAL: wege-karte:fern (rg8unorm) — Kanal g=0 an diesem Ort konstant
+  Hinweis: KANAL: wege-karte:nah (rg8unorm) — Kanal g=0 an diesem Ort konstant
+  Hinweis: FORMAT: welt-march-liste — in 16 bit verlöre der Inhalt bis 1 absolut (100 % relativ)
+  Hinweis: FORMAT: welt-march-kapseln — in 16 bit verlöre der Inhalt bis 0.5 absolut (100 % relativ), 81 Werte über 65 504 (Überlauf)
+  Hinweis: FORMAT: feld-pass-panorama — in 16 bit verlöre der Inhalt bis 7.99 absolut (0.046 % relativ)
+
+GRÜN — jedes Ziel hat einen Leser, keine Klasse fällt.
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p2\k4-ziele.json
