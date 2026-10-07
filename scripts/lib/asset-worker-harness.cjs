@@ -250,14 +250,17 @@ function pageHtml() {
   // des Teils in Schlüssel-Ordnung — Vertex-Attribute (Name, itemSize, Bytes), Index (Bytes), alles andere als JSON
   // (Teil-Art, Stoff-Regler, Tür-Scharnier, Gelenk, Wurf, Seh-Klasse …) — kein Puffer-Transport. Beipack-Einträge
   // (kind "__…" ohne position) zählen nicht, wie in fingerprintMeshes. Zwei FNV-1a-Bahnen verschiedener Saat.
+  // \`nichtEndlich\` zählt NaN/Inf in den Fließkomma-Puffern: ein Bau, der rechnet, aber nicht rechnen kann, ist gebrochen.
   const bauHash = (meshes) => {
-    let a = 0x811c9dc5 | 0, b = 0x2f0a1c3d | 0, bytes = 0, teile = 0;
+    let a = 0x811c9dc5 | 0, b = 0x2f0a1c3d | 0, bytes = 0, teile = 0, nichtEndlich = 0;
     const ein = (x) => { a = Math.imul(a ^ x, 16777619); b = Math.imul(b ^ (x + 0x9e), 16777619); };
     const text = (s) => { s = String(s); for (let i = 0; i < s.length; i++) ein(s.charCodeAt(i) & 255); ein(0); };
     const puffer = (arr) => {
       const u = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
       for (let i = 0; i < u.length; i++) ein(u[i]);
       bytes += u.length;
+      if (arr instanceof Float32Array || arr instanceof Float64Array)
+        for (let i = 0; i < arr.length; i++) if (!Number.isFinite(arr[i])) nichtEndlich++;
     };
     for (const m of meshes) {
       if (!m || (typeof m.kind === "string" && m.kind.startsWith("__") && !m.position)) continue;
@@ -271,7 +274,7 @@ function pageHtml() {
       }
     }
     const hex = (x) => ("0000000" + (x >>> 0).toString(16)).slice(-8);
-    return { hash: hex(a) + hex(b), teile, bytes };
+    return { hash: hex(a) + hex(b), teile, bytes, nichtEndlich };
   };
   window.__bauHashListe = async (liste) => {
     poolMehr(Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) >> 1)));

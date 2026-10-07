@@ -5,7 +5,9 @@
 // den Bau ändert: die Linse baut je Art über die ECHTE Foundry-Brücke (asset-worker-harness, dieselben Kerne wie der
 // Worker) das Rezept ohne ov und mit ov {id: min} bzw. {id: max} und vergleicht den Bau-Hash (jedes gelieferte Byte:
 // Teil-Art, Stoff, Attribute, Index). Ein Regler ist TOT, wenn er an KEINEM Rezept seiner Art den Hash bewegt — dann
-// nennt ihn die Linse beim Namen (Kern · Art · id · Grund).
+// nennt ihn die Linse beim Namen (Kern · Art · id · Grund). Ein Bau mit dem Regler-Wert, der BRICHT (0 Teile: der
+// Bäcker wirft, die Brücke fängt und liefert []; oder NaN/Inf in einem Fließkomma-Puffer), wirkt nie: er ist ein
+// benannter Fehler und immer rot, ohne Ratsche.
 //
 // Die RATSCHE (spec/vertraege/ratsche.json, Block `reglerTot`): die Liste der toten Regler darf nur schrumpfen.
 // Ein neuer toter Regler ist rot (beim Namen); ein geheilter ist ebenfalls rot, bis seine Zeile im selben Commit
@@ -13,7 +15,8 @@
 // = 0 tote Regler).
 //
 //   node scripts/diag-regler-wirkt.cjs --selftest   die Linse feuert: der alte Brücken-Defekt (W-A1: ov kam nicht
-//                                                   an, die Brücke reichte null) macht jeden Regler tot → rot
+//                                                   an, die Brücke reichte null) macht jeden Regler tot → rot; ein
+//                                                   Regler, dessen Bau wirft bzw. NaN rechnet → BRICHT beim Namen
 //   node scripts/diag-regler-wirkt.cjs              Messung gegen die Ratsche
 //   node scripts/diag-regler-wirkt.cjs --messen     nur messen und ausgeben (kein Urteil)
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561.
@@ -56,8 +59,19 @@ function ersteStufe(rc, art) {
     return st && st.length ? Math.min(...st) : 0;
 }
 
-// Die Messung: je Art × Regler über die Rezepte der Art, bis einer den Hash bewegt. `ohneOv` spielt den alten
-// Brücken-Defekt ein (der Selbsttest): die Bau-Nachricht trägt den Regler-Wert nicht.
+// DER GEBROCHENE BAU: 0 Teile (der Bäcker wirft — die Brücke fängt und liefert [] — oder liefert nichts) oder
+// nicht-endliche Zahlen in einem Fließkomma-Puffer (der Bäcker rechnet mit einem Wert, den er nicht rechnen kann).
+// Ein gebrochener Bau hat einen anderen Hash als die Basis, aber er WIRKT nicht: er ist ein benannter Fehler (rot).
+function bauBruch(r) {
+    if (!r || !r.teile) return "0 Teile (der Bau wirft oder liefert nichts)";
+    if (r.nichtEndlich) return r.nichtEndlich + " nicht-endliche Werte (NaN/Inf) in den Puffern";
+    return null;
+}
+
+// Die Messung: je Art × Regler über die Rezepte der Art, bis einer den Hash bewegt. Die Täter des Selbsttests:
+// `ohneOv` (der alte Brücken-Defekt W-A1: die Bau-Nachricht trägt den Regler-Wert nicht) und `bruch` = id eines
+// Reglers, dessen Bau bricht (min: die Nachricht nennt ein Rezept, das das Buch nicht kennt — der Worker wirft, die
+// Brücke liefert 0 Teile; max: der Wert ist Text — der Bäcker rechnet NaN).
 async function messen(h, opts) {
     const o = opts || {};
     const env = await h.getData("get-book");
@@ -74,11 +88,18 @@ async function messen(h, opts) {
             .filter((id) => buch[id] && buch[id].kind === art)
             .sort();
         const lod = ersteStufe(rc, art);
-        for (const d of pbk[art]) zeilen.push({ kern: kerne[art] || "phyto", art, id: d.id, d, rezepte, lod, wirkt: false, grund: "", an: null });
+        for (const d of pbk[art])
+            zeilen.push({ kern: kerne[art] || "phyto", art, id: d.id, d, rezepte, lod, wirkt: false, grund: "", an: null, bricht: [] });
     }
     const msg = (preset, lod, ov) => {
         const m = { presetId: preset, seed: SEED, lod };
         if (ov && !o.ohneOv) m.ov = ov;
+        const k = ov && Object.keys(ov)[0];
+        if (k && o.bruch === k) {
+            const z = zeilen.find((x) => x.id === k);
+            if (ov[k] === z.d.min) m.presetId = "__taeter_unbekannt__";
+            else m.ov = { [k]: "kein-wert" };
+        }
         return m;
     };
     // Runde je Rezept-Index: alle noch toten Zeilen am i-ten Rezept ihrer Art (die Basis je Rezept einmal).
@@ -111,6 +132,11 @@ async function messen(h, opts) {
             if (pl.basis) return;
             const b = basis.get(pl.p + "|" + pl.z.lod);
             if (!b || !b.teile) return;
+            const bruch = bauBruch(res[i]);
+            if (bruch) {
+                pl.z.bricht.push(`${pl.z.id}=${pl.wert} an ${pl.p}: ${bruch}`);
+                return;
+            }
             if (res[i].hash !== b.hash && !pl.z.wirkt) {
                 pl.z.wirkt = true;
                 pl.z.an = pl.p;
@@ -132,10 +158,14 @@ async function messen(h, opts) {
               ? "kein Bau: die Brücke liefert für die Art 0 Teile (ov ohne Leser)"
               : "bewegt den Bau an keinem der " + z.rezepte.length + " Rezepte (min " + z.d.min + " · max " + z.d.max + ")";
     }
+    for (const z of zeilen) if (z.bricht.length) z.grund = "BRICHT — " + z.bricht.slice(0, 2).join(" · ") + (z.bricht.length > 2 ? " …" : "");
     return { zeilen, builds };
 }
 
 const name = (z) => z.kern + ":" + z.art + ":" + z.id;
+// Drei Urteile je Zeile: wirkt · bricht (ein Bau mit diesem Regler ist gebrochen — immer rot, nie Ratsche) · tot.
+const bricht = (z) => z.bricht.length > 0;
+const tot = (z) => !z.wirkt && !bricht(z);
 
 // Das Urteil gegen die Ratsche (rein, ohne Browser): neu tot = rot, geheilt = rot bis die Zeile fällt.
 function vergleich(tot, ratsche) {
@@ -155,12 +185,18 @@ function ratscheLesen() {
 function bericht(zeilen) {
     const jeKern = {};
     for (const z of zeilen) {
-        const k = (jeKern[z.kern] = jeKern[z.kern] || { zeilen: 0, tot: 0 });
+        const k = (jeKern[z.kern] = jeKern[z.kern] || { zeilen: 0, wirkt: 0, tot: 0, bricht: 0 });
         k.zeilen++;
-        if (!z.wirkt) k.tot++;
+        if (z.wirkt && !bricht(z)) k.wirkt++;
+        if (tot(z)) k.tot++;
+        if (bricht(z)) k.bricht++;
     }
-    for (const k of Object.keys(jeKern).sort())
-        console.log(`  ${k.padEnd(10)} ${String(jeKern[k].zeilen - jeKern[k].tot).padStart(3)} wirken · ${String(jeKern[k].tot).padStart(3)} tot (von ${jeKern[k].zeilen})`);
+    for (const k of Object.keys(jeKern).sort()) {
+        const j = jeKern[k];
+        console.log(
+            `  ${k.padEnd(10)} ${String(j.wirkt).padStart(3)} wirken · ${String(j.tot).padStart(3)} tot${j.bricht ? ` · ${j.bricht} BRICHT` : ""} (von ${j.zeilen})`
+        );
+    }
     return jeKern;
 }
 
@@ -175,20 +211,33 @@ async function selbsttest() {
     // (b) der Täter am echten Kanal: die Brücke bekommt den Regler-Wert nicht (der W-A1-Defekt) — jede Zeile der Art
     // vehicle wird tot und beim Namen genannt; ohne Täter wirkt dieselbe Art.
     let taeter = null,
-        heil = null;
+        heil = null,
+        brecher = null;
     await runWithWorker(PORT, async (h) => {
         taeter = await messen(h, { nurArt: "vehicle", ohneOv: true });
         heil = await messen(h, { nurArt: "vehicle" });
+        // (c) der Täter „ein Regler bricht den Bau" am echten Kanal: radstand min → der Worker wirft (0 Teile),
+        // max → Text statt Zahl (NaN-Bau). Beide Bauten haben einen anderen Hash als die Basis — die Linse von vorher
+        // zählte sie als „wirkt"; jetzt ist radstand BRICHT beim Namen und nie „wirkt".
+        brecher = await messen(h, { nurArt: "vehicle", bruch: "radstand" });
     });
-    const tTot = taeter.zeilen.filter((z) => !z.wirkt).map(name);
-    const hTot = heil.zeilen.filter((z) => !z.wirkt).map(name);
+    const tTot = taeter.zeilen.filter(tot).map(name);
+    const hTot = heil.zeilen.filter(tot).map(name);
     const ratsche = ratscheLesen();
     const vT = vergleich(tTot, { tot: Object.fromEntries(Object.keys(ratsche.tot).filter((n) => n.includes(":vehicle:")).map((n) => [n, ""])) });
     const kanal = taeter.zeilen.length > 0 && tTot.length === taeter.zeilen.length && !vT.ok && hTot.length < tTot.length;
     console.log(
         `${kanal ? "✅" : "❌"} SELBST-TEST Täter (ov erreicht die Brücke nicht): ${tTot.length}/${taeter.zeilen.length} Regler der Art vehicle tot → rot (neu tot: ${vT.neu.slice(0, 3).join(", ")}${vT.neu.length > 3 ? " …" : ""}) · ohne Täter ${hTot.length} tot`
     );
-    return rein && kanal;
+    const zB = brecher.zeilen.find((z) => z.id === "radstand");
+    const andereB = brecher.zeilen.filter((z) => z !== zB && bricht(z)).map(name);
+    const bruchArten = zB ? new Set(zB.bricht.map((b) => (/0 Teile/.test(b) ? "leer" : /nicht-endliche/.test(b) ? "nan" : "?"))) : new Set();
+    const bruchOk =
+        !!zB && bricht(zB) && !zB.wirkt && bruchArten.has("leer") && bruchArten.has("nan") && !andereB.length && !heil.zeilen.some(bricht);
+    console.log(
+        `${bruchOk ? "✅" : "❌"} SELBST-TEST Täter (ein Regler bricht den Bau): ${zB ? name(zB) + " " + (bricht(zB) ? "BRICHT" : zB.wirkt ? "„wirkt“" : "tot") : "fehlt"} — ${zB ? zB.bricht.slice(0, 2).join(" · ") : ""} · andere BRICHT ${andereB.length} · ohne Täter BRICHT ${heil.zeilen.filter(bricht).length}`
+    );
+    return rein && kanal && bruchOk;
 }
 
 (async () => {
@@ -200,21 +249,24 @@ async function selbsttest() {
     await runWithWorker(PORT, async (h) => {
         m = await messen(h, {});
     });
-    const tot = m.zeilen.filter((z) => !z.wirkt);
+    const toteZ = m.zeilen.filter(tot);
+    const brechend = m.zeilen.filter(bricht);
     console.log(`Regler-wirkt: ${m.zeilen.length} PARAMS-Zeilen, ${m.builds} Bauten über die echte Brücke (Seed ${SEED}, erste Stufe je Art)`);
     bericht(m.zeilen);
-    for (const z of tot) console.log(`  TOT ${name(z)} — ${z.grund}`);
+    for (const z of toteZ) console.log(`  TOT ${name(z)} — ${z.grund}`);
+    for (const z of brechend) console.log(`❌ BRICHT ${name(z)} — ${z.grund}`);
     if (process.argv.includes("--messen")) {
-        for (const z of m.zeilen.filter((x) => x.wirkt)) console.log(`  wirkt ${name(z)} — ${z.grund}`);
+        for (const z of m.zeilen.filter((x) => x.wirkt && !bricht(x))) console.log(`  wirkt ${name(z)} — ${z.grund}`);
         process.exit(0);
     }
     const ratsche = ratscheLesen();
-    const v = vergleich(tot.map(name), ratsche);
-    for (const n of v.neu) console.log(`❌ NEU TOT: ${n} — ${tot.find((z) => name(z) === n).grund}`);
+    const v = vergleich(toteZ.map(name), ratsche);
+    for (const n of v.neu) console.log(`❌ NEU TOT: ${n} — ${toteZ.find((z) => name(z) === n).grund}`);
     for (const n of v.geheilt) console.log(`❌ GEHEILT: ${n} wirkt jetzt — die Zeile fällt im selben Commit aus spec/vertraege/ratsche.json (reglerTot.tot), die Ratsche sinkt`);
     const soll = ratsche.soll;
-    if (!v.ok) process.exit(1);
-    console.log(`✅ gate:regler-wirkt: ${m.zeilen.length - tot.length}/${m.zeilen.length} Regler wirken · ${tot.length} tot = Ratsche ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle})`);
+    if (!v.ok || brechend.length) process.exit(1);
+    const wirkend = m.zeilen.filter((z) => z.wirkt && !bricht(z)).length;
+    console.log(`✅ gate:regler-wirkt: ${wirkend}/${m.zeilen.length} Regler wirken · 0 brechen · ${toteZ.length} tot = Ratsche ${Object.keys(ratsche.tot).length} (Soll ${soll}, ${ratsche.sollQuelle})`);
     process.exit(0);
 })().catch((e) => {
     console.error("regler-wirkt-Fehler:", (e && e.stack) || e);
