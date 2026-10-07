@@ -91,6 +91,13 @@ jobs:
               # Hand, doppelte Augäpfel, doppelter Pupillen-Abstand → rot.
               run: npm run gate:mensch-anatomie
 
+            - name: Wasser-Urteil (Welle L — das Urteil der Wasser-Linse gegen jeden Täter, ohne Browser)
+              # GPU-frei, reines Node: ein grüner Befund bleibt grün, jeder Täter der Wasser-Wand (Fluss bergauf, Buckel,
+              # Quelle, Steilwand, Kanal-Parität, Körper am Grund, Zell-Dach, Höhle, Wagen, Rand-Streifen, Ufer-Flut, die
+              # Leser der EINEN Wahrheit, Schilf-Sprung, Zebra, Regen …) fällt beim Namen rot. Die Linse selbst läuft
+              # im playtest-Job (gate:wasser-leben und gate:wasser-leben:bild).
+              run: node scripts/diag-wasser-leben.cjs --selftest
+
             - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
               # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
               # künftiger Agent die zwei Konsumenten (Richter `_phytoGrowSkeleton` vs Foundry
@@ -672,6 +679,15 @@ jobs:
               # in BEIDEN Stufen-Gruppen, außerhalb exakt einer, nie 0, Slot-Bilanz dicht (kein Leck).
               run: npm run gate:foundry-crossfade
 
+            - name: Wasser-Wand (Welle L — Q6 + Q7, die Proben rufen die Chokepoints selbst)
+              # Null-Renderer an der Mess-Wiese (Sync-Bau, Worker ausgehängt): der Fluss-Spiegel stromab nie steigend,
+              # quer waagrecht, die Quelle ein Rinnsal, die Bank nie steiler als der Fels, Kanal Main = Worker; der
+              # Körper nach seiner Gestalt im Wasser (Hineingehen, Brustkorb-Linie, Kraulen, Eintauchen, Tier, Mitspieler,
+              # Licht, Medium), die Decke über trockenen Höhlen, der Wagen watet und das Boot treibt, keine Ufer-Flut,
+              # Klang · Tier-Scheu · Küsten-Sheet lesen die EINE Wahrheit, die Ufer-Bänder stetig über die Krone. --selftest
+              # zuerst.
+              run: npm run gate:wasser-leben
+
             - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
               # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
               # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).
@@ -696,6 +712,12 @@ jobs:
               # satzfrei binnen 120 Takten. --selftest zuerst: ein
               # erzwungener Kapsel-Satz in 20 m wird rot und genannt.
               run: npm run gate:analog-nah
+
+            - name: Wasser-Bild (echter Renderer — das Wasser-Material und der Regen)
+              # Fährt den ECHTEN Renderer (swiftshader, Software-Holz) mit dem echten Wasser-Material auf einem Fluss-Bogen:
+              # kein Zebra bei Wasser-Uhr 3600 s gegen 60 s, kein Schaum ohne Gesetz-Grund, der Sturm bewegt das Wasser
+              # (Wind-Zeile des Gesetzes); der Sturm-Regen allein auf Schwarz zeigt Schlieren, quer zum Wind geneigt.
+              run: npm run gate:wasser-leben:bild
 
             - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
               # Die LINSE gegen den asymmetrischen-Verifikations-Riss: das Gate misst Mechanik, nicht
