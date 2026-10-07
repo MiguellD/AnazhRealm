@@ -26,6 +26,11 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
+// DER MESSORT (spec/profiband/haushalt.json `messorte`, S1 W1f): die Linse steht an der Mess-Wiese in IHREM Zustand —
+// Spieler und Dorf-Zug (`dorfZug: false` = `window.__anazhAutoSettlement = false`). Mit laufendem Zug baute das Auto-Dorf
+// je nach Bildrate in der Ruhe ein Haus (haus_griechisch 23,6 m, „Studio-Stufe L2 lädt") — zwei Läufe maßen zwei Welten
+// (Integration Welle L: an ad134ca7 1 von 7 Läufen rot, nach dem Fahr-Merge 5 von 9).
+const ORT = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort;
 const PORT = Number(process.env.ANALOG_NAH_PORT || 4477);
 const SELBST = process.argv.includes("--selftest");
 const GRENZE_E = 1500; // Takte bis zum ersten satzfreien Zustand nach dem Boot
@@ -177,7 +182,11 @@ function urteil(z) {
         if (t.startsWith("[N]")) {
             phase = t.slice(4, 60);
             console.log("  " + t);
-        } else if ((m.type() === "error" || m.type() === "warning") && /webgpu|gpu|dawn|device|lost/i.test(t) && gpuMeldungen < 12) {
+        } else if (
+            (m.type() === "error" || m.type() === "warning") &&
+            /webgpu|gpu|dawn|device|lost/i.test(t) &&
+            gpuMeldungen < 12
+        ) {
             gpuMeldungen++;
             console.log(`  [GPU-Konsole] Phase „${phase}" +${Date.now() - t0} ms: ${t.slice(0, 300)}`);
         }
@@ -197,6 +206,9 @@ function urteil(z) {
             return org.apply(this, arguments);
         };
     });
+    await page.evaluateOnNewDocument((dorfZug) => {
+        if (dorfZug === false) window.__anazhAutoSettlement = false;
+    }, ORT.dorfZug);
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
     const res = await page.evaluate(
         async (k) => {
@@ -249,8 +261,8 @@ function urteil(z) {
                 const z = r._analogZensus();
                 return z ? z.nah.filter((a) => !a.schwindet || a.haengt) : null;
             };
-            const X = -900,
-                Z = -850;
+            const X = k.ort[0],
+                Z = k.ort[1];
             setze(X, Z);
             await tick();
             if (k.selbst) {
@@ -394,7 +406,7 @@ function urteil(z) {
                 taktFehler: { n: taktFehlerN, erster: taktFehler1 },
             };
         },
-        { selbst: SELBST, grenzeE: GRENZE_E, ruhe: RUHE, grenzeT: GRENZE_T }
+        { selbst: SELBST, grenzeE: GRENZE_E, ruhe: RUHE, grenzeT: GRENZE_T, ort: ORT.spieler }
     );
     await browser.close();
     server.close();
