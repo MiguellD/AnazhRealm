@@ -256,6 +256,12 @@ function werkVerdict(m) {
     else if (m.phantomKey !== m.werkKey) out.push(`das Phantom zeigt ${m.phantomKey}, es steht ${m.werkKey}`);
     if (!gleich(m.phantomDreh, m.werkDreh))
         out.push(`das Phantom blickt ${m.phantomDreh} rad, das Werk ${m.werkDreh} rad`);
+    // Das Werk steht nie im Spieler (die EINE Spieler-Klemme, Gegenprüfung 08.10. „das Phantom umhüllt die Kamera").
+    if (!(m.mindest > 0)) out.push("kein Spieler-Abstand des Werks (Vorbedingung)");
+    else if (!(m.abstand >= m.mindest - 0.01))
+        out.push(
+            `das Phantom steht ${m.abstand} m vor dem Spieler, das Werk reicht ${m.reicht} m (Soll ≥ ${m.mindest} m)`
+        );
     if (m.gesendetSame !== m.werkSame)
         out.push(`der Mitspieler bekommt den Samen ${m.gesendetSame}, das Werk trägt ${m.werkSame}`);
     const e = m.empfang || {};
@@ -920,6 +926,25 @@ async function probe(argW) {
             }
             m.phantomKey = bm.phantomMesh ? keyVon(bm.phantomMesh.userData.foundrySrcGroup) : null;
             m.phantomDreh = bm.phantomMesh ? +bm.phantomMesh.rotation.y.toFixed(6) : null;
+            // Wie nah das Phantom dem Spieler kommt, wenn er nach unten blickt (−0,45 … −1,4 rad: der Blick-Strahl trifft den
+            // Boden immer näher), und wie weit sein Werk reicht (der Footprint der Spieler-Klemme). Danach der Blick der Probe.
+            if (bm.phantomMesh) {
+                let naechst = Infinity;
+                for (const pitch of [-0.45, -0.7, -0.95, -1.2, -1.4]) {
+                    st.pitch = pitch;
+                    await tick(2, 30);
+                    r.tickBuildMode();
+                    const pp = st.playerMesh.position;
+                    const q = bm.phantomMesh.position;
+                    naechst = Math.min(naechst, Math.hypot(q.x - pp.x, q.z - pp.z));
+                }
+                st.pitch = -0.45;
+                await tick(2, 30);
+                r.tickBuildMode();
+                m.abstand = +naechst.toFixed(2);
+                m.reicht = +r._blueprintFootprintRadius(NAME).toFixed(2);
+                m.mindest = +(m.reicht + r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN).toFixed(2);
+            }
             // Die Naht zum Mitspieler: das Programm, das der Sender schickt.
             st.p2p = Object.assign({}, p2pAlt || {}, { enabled: true });
             r.p2pBroadcastDsl = (prog) => gesendet.push(JSON.parse(JSON.stringify(prog)));
@@ -1438,6 +1463,9 @@ async function probe(argW) {
             gesendetSame: 1785671328,
             empfang: { steht: true, key: "eiche|2|0", dreh: -0.7, tint: "1.0/0.98/1.0" },
             reload: { erst: 540370045, weiter: 490037188, nachReload: 490037188 },
+            abstand: 6.51,
+            reicht: 3.01,
+            mindest: 6.51,
         };
         check(
             "Selbst-Test Werk-Same: gesund == 0 Täter",
@@ -1472,6 +1500,11 @@ async function probe(argW) {
                 "der Zähler vergisst den Reload (Befund)",
                 mitK({ reload: { erst: 540370045, weiter: 490037188, nachReload: 540370045 } }),
                 "nach dem Reload wiederholt der Welt-Strom",
+            ],
+            [
+                "das Phantom umhüllt den Spieler (Gegenprüfung 08.10.)",
+                mitK({ abstand: 3.1 }),
+                "das Phantom steht 3.1 m vor dem Spieler",
             ],
         ]) {
             const v = werkVerdict(bruch);
@@ -1703,7 +1736,7 @@ async function probe(argW) {
     check(
         "Werk-Same das Setzen stellt Gestalt und Drehung des Phantoms ohne Math.random, der Mitspieler baut dasselbe Werk, der Welt-Strom übersteht den Reload",
         vK.length === 0,
-        `${km.gestartet ? `Math.random ${km.zuege} · Phantom ${km.phantomKey} @ ${km.phantomDreh} rad → Werk ${km.werkKey} @ ${km.werkDreh} rad (Same ${km.werkSame}) · gesendet Same ${km.gesendetSame} → Mitspieler ${ke.steht ? `${ke.key} @ ${ke.dreh} rad, Tönung ${ke.tint === km.werkTint ? "gleich" : "anders"}` : "nichts"} · Strom ${kr.erst} → ${kr.weiter}, nach Reload ${kr.nachReload}` : "nicht gestartet"}${vK.length ? " — Täter: " + vK.join(", ") : ""}`
+        `${km.gestartet ? `Math.random ${km.zuege} · Phantom ${km.abstand} m vor dem Spieler (Soll ≥ ${km.mindest} m) · Phantom ${km.phantomKey} @ ${km.phantomDreh} rad → Werk ${km.werkKey} @ ${km.werkDreh} rad (Same ${km.werkSame}) · gesendet Same ${km.gesendetSame} → Mitspieler ${ke.steht ? `${ke.key} @ ${ke.dreh} rad, Tönung ${ke.tint === km.werkTint ? "gleich" : "anders"}` : "nichts"} · Strom ${kr.erst} → ${kr.weiter}, nach Reload ${kr.nachReload}` : "nicht gestartet"}${vK.length ? " — Täter: " + vK.join(", ") : ""}`
     );
     console.log("=== BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH ===");
     const bm = out.brenn || {};

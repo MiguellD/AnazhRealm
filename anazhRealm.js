@@ -77148,7 +77148,7 @@ class AnazhRealm {
         const fallback = { x: fallbackX, y: fallbackY, z: fallbackZ, isStable: false, hit: false };
         // P3 — der Raycast ist feld-nativ (`_runRaycast` → `_fieldRaycast`); nur die Kamera nötig.
         if (!this.state.camera) {
-            return fallback;
+            return this._phantomAusserhalb(fallback);
         }
         const cam = this.state.camera;
         const cp = cam.position;
@@ -77174,7 +77174,23 @@ class AnazhRealm {
                 hit: true,
             };
         });
-        return result;
+        return this._phantomAusserhalb(result);
+    }
+
+    // DAS WERK STEHT NIE IM SPIELER (Gegenprüfung 08.10.: nah umhüllte das Phantom eines Baums die Kamera — der Blick nach
+    // unten stellte die Eiche 0,4 m neben den Spieler —, und das Setzen stellt das Werk bit-treu an das Phantom, ohne Klemme):
+    // der Ort des Phantoms geht durch die EINE Spieler-Klemme der Wurzel (`_structureSpawnPos`: Footprint + Rand nach außen,
+    // kleine Werke bleiben, wo der Blick trifft). Am geschobenen Ort steht es auf dem Boden des Gesetzes und trägt, wenn der
+    // Boden begehbar ist (Normale-Y > 0,5 wie der Blick-Strahl).
+    _phantomAusserhalb(ziel) {
+        const bm = this.state.buildMode;
+        const weg =
+            bm && bm.blueprintName ? this._structureSpawnPos(bm.blueprintName, ziel, { state: this.state }) : ziel;
+        if (weg === ziel) return ziel;
+        const h = (dx, dz) => this.getTerrainHeightAt(weg.x + dx, weg.z + dz);
+        const gx = (h(1, 0) - h(-1, 0)) / 2;
+        const gz = (h(0, 1) - h(0, -1)) / 2;
+        return { x: weg.x, y: h(0, 0), z: weg.z, isStable: 1 / Math.sqrt(1 + gx * gx + gz * gz) > 0.5, hit: true };
     }
 
     // Tint 30 % grün (0x88ff88) bei stabilem Kontakt, sonst rot (0xff8888) — dort, wo der Stoff seine Farbe liest: ein
