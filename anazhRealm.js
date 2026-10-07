@@ -64924,6 +64924,7 @@ class AnazhRealm {
     _lodSlotStamp(g, slot, scale, occluded, leaf) {
         const geom = g && g.mesh && g.mesh.geometry;
         if (!geom || !geom.userData || !geom.userData._lodFacade) return;
+        g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`): Sichthöhe und Karte der Wahl
         const s = Number.isFinite(scale) && scale > 0 ? scale : 1;
         const a0 = geom.attributes.aH0;
         if (a0 && a0.isInstancedBufferAttribute && slot < a0.array.length) {
@@ -65184,6 +65185,7 @@ class AnazhRealm {
         g.slotRef[slot] = ref;
         g.slotEntry[slot] = entry || null;
         g.liveCount = slot + 1;
+        g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`): jede Wahl eines Passes wählt neu
         AnazhRealm._instanzZahl(g.mesh, g.liveCount);
         // SUBMIT-WAL — der Aufrufer schreibt gleich Matrix/Farbe in diesen Slot
         // (synchron, vor dem nächsten Render): das Region-Bundle re-recorden.
@@ -65211,6 +65213,7 @@ class AnazhRealm {
         g.slotEntry[letzt] = null;
         ref.slot = -1;
         g.liveCount = letzt;
+        g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`)
         AnazhRealm._instanzZahl(g.mesh, letzt);
         this._archMeshBundleTouch(g.mesh); // SUBMIT-WAL — count-/Matrix-Mutation → Region-Bundle re-recorden
         // V12.0-perf.e-fix — boundingSphere invalidieren: InstancedMesh.raycast
@@ -65222,7 +65225,14 @@ class AnazhRealm {
 
     // Zwei lebende Slots tauschen ihre Bewohner — Instanz-Größen, Marken (die Halter lesen `slot` frisch) und Einträge.
     _archGroupTausch(g, a, b) {
+        // der Tausch der Wahl zählt, um wie viel er die Versionen hebt (der Slot-Stand zieht es ab, `_instanzSlotStand`)
+        const im = g.mesh.instanceMatrix;
+        const ak = g.mesh.geometry.attributes.aKarte;
+        const v = im.version,
+            vk = ak ? ak.version : 0;
         AnazhRealm._instanzTausch(g.mesh, a, b);
+        g._tauschMat = (g._tauschMat | 0) + (im.version - v);
+        if (ak) g._tauschKarte = (g._tauschKarte | 0) + (ak.version - vk);
         const ra = g.slotRef[a],
             rb = g.slotRef[b];
         ra.slot = b;
@@ -84685,9 +84695,15 @@ class AnazhRealm {
     // längste Licht-Weg der Box — der Fall vom höchsten Werfer zum tiefsten Empfänger, geteilt durch die Höhe des Lichts,
     // höchstens die Tiefe der Box; an der Mess-Wiese k0 0,10–0,17 m und k1 0,22–0,47 m je Texel; ohne Kaskaden die EINE
     // Karte des Richtlichts, ihr Texel über ihre Tiefe). Die Schattierung trägt jede kleinere Stufe: N·L ändert sich um
-    // höchstens α, unter einer 8-bit-Stufe (`SONNEN_STUFE_SCHATTIERUNG` = 1/255) — die Obergrenze ohne Karte.
+    // höchstens α, unter einer 8-bit-Stufe (`SONNEN_STUFE_SCHATTIERUNG` = 1/255), und die Sonnenscheibe am Himmel springt um
+    // höchstens ein Pixel des Schirms (das Sichtfeld je Bildzeile — Gegenprüfung 07.10.: 1/255 rad waren bei 1080p und 75°
+    // drei Pixel, 42 % der Scheibe) — die Obergrenze ohne Karte.
     _sonnenStufe() {
         let stufe = AnazhRealm.SONNEN_STUFE_SCHATTIERUNG;
+        const cam = this.state.camera,
+            schirm = this.state.renderer && this.state.renderer.domElement;
+        if (cam && cam.isPerspectiveCamera === true && schirm && schirm.height > 0)
+            stufe = Math.min(stufe, (cam.fov * Math.PI) / 180 / schirm.height);
         const csm = this.state.csmNode;
         if (csm) {
             const fits = csm._anazhFit;
@@ -89855,7 +89871,7 @@ class AnazhRealm {
                 rendert = true;
             }
             // auf ihrem Takt rendert die Kaskade mit derselben Box, solange sie hält (`_kaskadeHaelt`)
-            if (rendert && !(deckt && this._kaskadeHaelt(alt, S, huellen)))
+            if (rendert && !(deckt && this._kaskadeHaelt(csm, i, alt, S, huellen, n)))
                 csm._anazhFit[i] = this._kaskadeFit(csm, i, huellen, S, n, alt);
         }
     }
@@ -89983,12 +89999,50 @@ class AnazhRealm {
     // rendert die Kaskade auf ihrem Takt mit DERSELBEN Kamera: die Karte fängt die bewegten Werfer, die Lage des Passes steht
     // (`_passLageGen`) und keine Wahl rechnet neu. Bis hier legte jeder Takt-Render die Box neu an die Scheibe — beim Drehen
     // trug jeder Render eine neue Lage (OMEN-Urteil 06.10.: Drehen 360 × 1° teurer als vorher). Die Box bleibt so groß wie
-    // gerastet; dreht die Scheibe aus ihr heraus oder hebt sich ein Werfer, legt sie sich neu (`_kaskadeFit`).
-    _kaskadeHaelt(alt, S, huellen) {
+    // gerastet; dreht die Scheibe aus ihr heraus oder hebt sich ein Werfer, legt sie sich neu (`_kaskadeFit`). Und sie hat die
+    // Größe, die der Fit der jetzigen Scheibe legte (`_kaskadeMass` samt Hysterese — Gegenprüfung 07.10.: nach dem Hineinzoomen
+    // hielt die größere Box ihre gröberen Texel bis zur nächsten Stufe der Sonne).
+    _kaskadeHaelt(csm, i, alt, S, huellen, n) {
         const a = alt.basisInv.elements,
             b = S.basisInv.elements;
-        for (let i = 0; i < 16; i++) if (!(Math.abs(a[i] - b[i]) <= 1e-9)) return false;
+        for (let j = 0; j < 16; j++) if (!(Math.abs(a[j] - b[j]) <= 1e-9)) return false;
+        let x0 = Infinity,
+            x1 = -Infinity,
+            y0 = Infinity,
+            y1 = -Infinity;
+        for (let k = 0; k < n; k++) {
+            const p = S.v.copy(S.punkte[k]).applyMatrix4(S.basisInv);
+            if (p.x < x0) x0 = p.x;
+            if (p.x > x1) x1 = p.x;
+            if (p.y < y0) y0 = p.y;
+            if (p.y > y1) y1 = p.y;
+        }
+        const sh = csm.lights[i].shadow;
+        const schritt = this._kaskadeSchritt(csm, i, S);
+        if (
+            this._kaskadeMass(x1 - x0, sh.mapSize.width, alt.W, schritt) !== alt.W ||
+            this._kaskadeMass(y1 - y0, sh.mapSize.height, alt.H, schritt) !== alt.H
+        )
+            return false;
         return this._kaskadenWerferOben(huellen, S, alt.x0, alt.x1, alt.y0, alt.y1) <= alt.zt;
+    }
+
+    // DER RAST der Box der Kaskade i: Scheiben-Tiefe (mit dem Fade-Saum) / rasterTeiler.
+    _kaskadeSchritt(csm, i, S) {
+        const cam = csm.camera;
+        const far = Math.min(cam.far, csm.maxFar);
+        const ab = this._kaskadenSaum(csm.breaks, i, csm.fade === true, S.saum);
+        return Math.max(1, ((ab[1] - ab[0]) * (far - cam.near)) / AnazhRealm.SCHATTEN_KASKADE.rasterTeiler);
+    }
+
+    // DIE GRÖSSE der Box über eine Ausdehnung `w` (Karte `n` Texel): sie rastet und trägt mindestens einen Texel Luft je Seite
+    // (der Raster-Versatz des Zentrums); eine alte Größe `altM` hält, solange sie die Scheibe so deckt und höchstens einen
+    // Schritt zu groß ist (Hysterese gegen das Pendeln an einer Raster-Kante).
+    _kaskadeMass(w, n, altM, schritt) {
+        let m = schritt * Math.ceil(w / schritt);
+        if (m - w < (2 * m) / n) m += schritt;
+        if (altM && altM - w >= (2 * altM) / n && altM <= m + schritt) return altM;
+        return m;
     }
 
     // Deckt die gerenderte Box (in IHRER Licht-Basis) die Empfänger-Punkte noch — und liegen sie in der Wahl-Scheibe, gegen
@@ -90038,21 +90092,10 @@ class AnazhRealm {
             if (p.z < z0) z0 = p.z;
             if (p.z > z1) z1 = p.z;
         }
-        const cam = csm.camera;
-        const far = Math.min(cam.far, csm.maxFar);
-        const ab = this._kaskadenSaum(csm.breaks, i, csm.fade === true, S.saum);
-        const schritt = Math.max(1, ((ab[1] - ab[0]) * (far - cam.near)) / K.rasterTeiler);
-        // Die Größe rastet und trägt mindestens einen Texel Luft je Seite (der Raster-Versatz des Zentrums); eine Größe
-        // hält, solange sie die Scheibe so deckt und höchstens einen Schritt zu groß ist (Hysterese gegen das Pendeln
-        // an einer Raster-Kante).
-        const mass = (w, n, altM) => {
-            let m = schritt * Math.ceil(w / schritt);
-            if (m - w < (2 * m) / n) m += schritt;
-            if (altM && altM - w >= (2 * altM) / n && altM <= m + schritt) return altM;
-            return m;
-        };
-        const W = mass(x1 - x0, sh.mapSize.width, alt && alt.W);
-        const H = mass(y1 - y0, sh.mapSize.height, alt && alt.H);
+        // Die Größe rastet (`_kaskadeMass`, Schritt `_kaskadeSchritt`)
+        const schritt = this._kaskadeSchritt(csm, i, S);
+        const W = this._kaskadeMass(x1 - x0, sh.mapSize.width, alt && alt.W, schritt);
+        const H = this._kaskadeMass(y1 - y0, sh.mapSize.height, alt && alt.H, schritt);
         const tx = W / sh.mapSize.width,
             ty = H / sh.mapSize.height;
         const cx = Math.round((x0 + x1) / 2 / tx) * tx;
@@ -90583,20 +90626,22 @@ class AnazhRealm {
     // Anker und jeder Leser, der mitten in ihr neu wählt: ein Satz mit neuem Stand, eine Gruppe mit neuen Slots) urteilt vom
     // Blick ihres Frames und liegt höchstens den halben Rand vom Anker, gegen die jetzige Lage also höchstens den ganzen —
     // den ihr Rand trägt. Die Kamera dreht mit dem Hebel 1 gegen ihren Dreh-Rand (`drehRand`, Bogenmaß), das Licht mit dem
-    // längsten Licht-Weg gegen seinen Licht-Rand (Meter). Gemessen 07.10. (gate:sicht-arbeit (D), Mess-Wiese): hielt die
+    // längsten Licht-Weg gegen seinen Licht-Rand (Meter), jeder Ort der Lage (Auge, Ebenen, Band) gegen den Halt `haltM`. Gemessen 07.10. (gate:sicht-arbeit (D), Mess-Wiese): hielt die
     // Kamera bis zum ganzen Rand, fielen nach einer Neu-Wahl mitten in der Drehung 12 Zellen und Instanzen am Bildrand weg.
     _wahlHaelt(dreh, hebel, rand) {
         return dreh * hebel <= rand / 2;
     }
 
     // Hält die Lage `s` gegen ihren Anker `a` (Aufbau `_passLageGen`)? Orte (das Auge, die Konstanten der Ebenen, der Boden
-    // der Kaskaden-Box) um höchstens haltM, Richtungen bis auf die Rundung — eine Perspektive: ihre Projektion gleich, ihre
+    // der Kaskaden-Box) um höchstens den halben Halt (`_wahlHaelt` gegen haltM), Richtungen bis auf die Rundung — eine Perspektive: ihre Projektion gleich, ihre
     // Drehung (der Winkel zwischen Anker und Kamera, cos = (Spur(R0ᵀ·R) − 1) / 2) nach dem Gesetz des Halts gegen den
     // Dreh-Rand (`_wahlHaelt`) —, alles andere gleich; eine Kaskade mit Box über die Stufen der Sonne nach ihrem Licht-Rand
     // (unten), nach demselben Gesetz.
     _passLageHaelt(a, s, anker) {
         const PW = AnazhRealm.PASS_WAHL;
         const H = PW.haltM;
+        // jeder Ort hält nach dem Gesetz des Halts: höchstens den halben Halt vom Anker (`_wahlHaelt`)
+        const steht = (d) => this._wahlHaelt(d, 1, H);
         if (s[84] !== a[84] || s[27] !== a[27]) return false;
         // DIE KASKADE UNTER DER LAUFENDEN SONNE (orthogonal, mit Box): ihre echten Werfer bestimmen die Empfänger (die
         // Wahl-Scheibe und ihr Höhenband) und das Licht — Box, Auge und Licht-Basis legt der Fit aus ihnen. Die Lage hält,
@@ -90607,10 +90652,10 @@ class AnazhRealm {
         // gegen die jetzige Lage also höchstens den ganzen.
         if (s[84] === 0 && s[27] === 1) {
             for (let o = 28; o < 52; o += 4) {
-                if (!(Math.abs(s[o + 3] - a[o + 3]) <= H)) return false;
+                if (!steht(Math.abs(s[o + 3] - a[o + 3]))) return false;
                 for (let j = 0; j < 3; j++) if (!(Math.abs(s[o + j] - a[o + j]) <= 1e-9)) return false;
             }
-            if (s[53] !== a[53] || !(Math.abs(s[87] - a[87]) <= H) || !(Math.abs(s[88] - a[88]) <= H)) return false;
+            if (s[53] !== a[53] || !steht(Math.abs(s[87] - a[87])) || !steht(Math.abs(s[88] - a[88]))) return false;
             for (let i = 66; i < 75; i++) if (s[i] !== a[i]) return false;
             const cx = a[64] * s[65] - a[65] * s[64],
                 cy = a[65] * s[63] - a[63] * s[65],
@@ -90624,17 +90669,17 @@ class AnazhRealm {
         const dx = s[0] - a[0],
             dy = s[1] - a[1],
             dz = s[2] - a[2];
-        if (!(dx * dx + dy * dy + dz * dz <= H * H)) return false;
+        if (!steht(Math.sqrt(dx * dx + dy * dy + dz * dz))) return false;
         const persp = s[84] === 1;
         // perspektivisch die Projektion (3…26), orthogonal die Ebenen des Frustums; dazu die Wahl-Scheibe (28…51) — die
         // Richtung bis auf die Rundung, die Konstante um haltM
         if (persp) for (let i = 3; i < 27; i++) if (s[i] !== a[i]) return false;
         for (let p = persp ? 6 : 0; p < 12; p++) {
             const o = p < 6 ? 3 + 4 * p : 28 + 4 * (p - 6);
-            if (!(Math.abs(s[o + 3] - a[o + 3]) <= H)) return false;
+            if (!steht(Math.abs(s[o + 3] - a[o + 3]))) return false;
             for (let j = 0; j < 3; j++) if (!(Math.abs(s[o + j] - a[o + j]) <= 1e-9)) return false;
         }
-        if (!(Math.abs(s[52] - a[52]) <= H) || s[53] !== a[53]) return false;
+        if (!steht(Math.abs(s[52] - a[52])) || s[53] !== a[53]) return false;
         // die Richtungen: die Licht-Basis (54…62), das Licht (63…65), die Drehung der Kamera (75…83)
         for (let i = 54; i < 66; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
         if (persp) {
@@ -90765,19 +90810,23 @@ class AnazhRealm {
     }
 
     // STEHT die Wahl einer Gruppe (Welle C)? Dieser Pass (`L.key`: haupt · k<i>) wählte sie zuletzt in derselben Lage
-    // (`L.gen`), und seither schrieb niemand ihre Slots außer der Wahl selbst: die Version der Instanz-Matrizen (jeder Tausch,
-    // Umzug, Eintritt hebt sie) und des Karten-Stempels (`aKarte`: Quad und Sichthöhe) ist die nach dem letzten Wahl-Schritt
-    // (`_wahlVer`), dieselbe Geometrie, derselbe Stoff, dieselbe Zahl. Eine Schatten-Gruppe ordnen BEIDE Kaskaden eines Frames
-    // (ein Puffer, zwei Präfixe): hat die andere sie umgeordnet, rücken die gemerkten Instanzen dieses Passes (ihre Slot-Marken,
-    // `slotRef`) wieder nach vorn — ein Tausch je verschobene, keine Prüfung.
+    // (`L.gen`), ihr SLOT-STAND ist der, den er dabei merkte (`_instanzSlotStand`), und Geometrie, Stoff und Zahl sind dieselben.
+    // Eine Schatten-Gruppe ordnen BEIDE Kaskaden eines Frames (ein Puffer, zwei Präfixe): hat die andere sie umgeordnet, rücken
+    // die gemerkten Instanzen dieses Passes (ihre Slot-Marken, `slotRef`) wieder nach vorn — ein Tausch je verschobene, keine
+    // Prüfung. Gegenprüfung 07.10.: bis hier merkte die GRUPPE die Version ihrer Slots nach der letzten Wahl (`_wahlVer`) —
+    // ordnete k0 nach einem fremden Schreiber neu (der Stufen-Wechsel eines Baums: Freigeben + Belegen, die Zahl bleibt), fand
+    // k1 alles gleich und hielt ihre alten Marken, darunter eine freigegebene (Slot −1): der Tausch schrieb NaN in einen
+    // lebenden Slot und warf in jedem Frame dieser Kaskade (gate:sicht-arbeit (I): 2 Würfe, 2 NaN-Slots, 1 fehlender Werfer).
     _instanzWahlSteht(g, L) {
         const w = g._wahlJe ? g._wahlJe.get(L.key) : null;
         if (!w || w.gen !== L.gen) return false;
         const m = g.mesh;
-        const ak = m.geometry.attributes.aKarte;
+        const jetzt = this._instanzSlotStand(g, this._slotStandJetzt || (this._slotStandJetzt = {}));
         if (
-            m.instanceMatrix.version !== g._wahlVer ||
-            (ak ? ak.version : -1) !== g._wahlKarte ||
+            jetzt.belegt !== w.belegt ||
+            jetzt.im !== w.im ||
+            jetzt.vMat !== w.vMat ||
+            jetzt.vKarte !== w.vKarte ||
             w.geo !== m.geometry ||
             w.mat !== g.mat ||
             w.live !== (g.liveCount | 0)
@@ -90791,32 +90840,40 @@ class AnazhRealm {
             this._archGroupTausch(g, i, j);
             tausch++;
         }
-        if (tausch > 0) {
-            if (g.wahl === "haupt") this._archMeshBundleTouch(m);
-            this._instanzWahlVersion(g);
-        }
+        if (tausch > 0 && g.wahl === "haupt") this._archMeshBundleTouch(m);
         return true;
     }
 
     _instanzWahlMerke(g, L, kk) {
         const je = g._wahlJe || (g._wahlJe = new Map());
         let w = je.get(L.key);
-        if (!w) je.set(L.key, (w = { gen: 0, geo: null, mat: null, live: 0, refs: null }));
+        if (!w)
+            je.set(
+                L.key,
+                (w = { gen: 0, geo: null, mat: null, live: 0, refs: null, belegt: 0, im: null, vMat: 0, vKarte: 0 })
+            );
         const m = g.mesh;
         w.gen = L.gen;
         w.geo = m.geometry;
         w.mat = g.mat;
         w.live = g.liveCount | 0;
         w.refs = g.slotRef.slice(0, kk);
-        this._instanzWahlVersion(g);
+        this._instanzSlotStand(g, w);
     }
 
-    // Die Versionen der Slots nach einem Schritt der Wahl (jeder andere Schreiber hebt sie darüber hinaus).
-    _instanzWahlVersion(g) {
+    // DER SLOT-STAND einer Instanz-Gruppe (Welle C) — was ihre Slots trägt, ohne die Ordnung der Wahl: Belegen, Freigeben und
+    // Stempel (`g.slotStand`), der Puffer ihrer Instanz-Matrizen und die Versionen der Matrizen und des Karten-Stempels, von
+    // denen die Tausche der Wahl abgezogen sind (`_archGroupTausch` zählt, was sie selbst hebt). Ihn hebt jeder fremde
+    // Schreiber — auch eine Tür, die schwingt —, nie die Wahl eines Passes; jeder Pass merkt ihn in seiner Wahl. Schreibt den
+    // Stand in `aus`.
+    _instanzSlotStand(g, aus) {
         const m = g.mesh;
         const ak = m.geometry.attributes.aKarte;
-        g._wahlVer = m.instanceMatrix.version;
-        g._wahlKarte = ak ? ak.version : -1;
+        aus.belegt = g.slotStand | 0;
+        aus.im = m.instanceMatrix;
+        aus.vMat = m.instanceMatrix.version - (g._tauschMat | 0);
+        aus.vKarte = ak ? ak.version - (g._tauschKarte | 0) : -1;
+        return aus;
     }
 
     _instanzWahlZurueck(liste) {

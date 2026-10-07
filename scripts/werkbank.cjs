@@ -31,8 +31,8 @@
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
 //   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
 //                                                           ruht (scripts/lib/takt-linse.cjs)
-//   node scripts/werkbank.cjs sicht [--ruhe n] [--sonne n] [--drehen n] [--gehen n] [--tag laeuft|steht] [--ein s]
-//                                                           [--regler voll]
+//   node scripts/werkbank.cjs sicht [--ruhe n] [--sonne n] [--drehen n] [--dreh-grad g] [--gehen n] [--tag laeuft|steht]
+//                                                           [--ein s] [--regler voll]
 //                                                           DIE SICHT-LINSE: was die Sicht-Kette je gerendertem Frame
 //                                                           arbeitet (Pässe · Prüfungen · Ecken · Bytes · Treffer) im
 //                                                           echten Loop — Ruhe, Ruhe mit laufender Sonne (die Tageslänge
@@ -1074,6 +1074,7 @@ async function starte() {
                         ruhe: b.ruhe != null ? Number(b.ruhe) : 120,
                         sonne: b.sonne != null ? Number(b.sonne) : 0,
                         drehen: b.drehen != null ? Number(b.drehen) : 360,
+                        drehGrad: b.drehGrad != null ? Number(b.drehGrad) : 1,
                         gehen: b.gehen != null ? Number(b.gehen) : 120,
                         tag: b.tag || "laeuft",
                         regler: b.regler || "voll",
@@ -1349,6 +1350,7 @@ async function starte() {
             ruhe: opt("--ruhe"),
             sonne: opt("--sonne"),
             drehen: opt("--drehen"),
+            drehGrad: opt("--dreh-grad"),
             gehen: opt("--gehen"),
             tag: opt("--tag", "laeuft"),
             ein: opt("--ein"),

@@ -71,9 +71,15 @@ function sichtLinse(cfg) {
     };
     z = neu();
     const orig = {};
+    // ein Leser, den die Welt nicht trägt, ist ein blinder Fleck der Linse — er steht beim Namen im Urteil, nie still
+    const fehlt = [];
     const leser = new Set(cfg.kette);
     const huelle = (name, art) => {
-        if (typeof P[name] !== "function" || orig[name]) return;
+        if (orig[name]) return;
+        if (typeof P[name] !== "function") {
+            if (!fehlt.includes(name)) fehlt.push(name);
+            return;
+        }
         const f = (orig[name] = P[name]);
         P[name] = function (...a) {
             if (art === "kette") {
@@ -161,7 +167,7 @@ function sichtLinse(cfg) {
             b0 = bytes();
             bj0 = bytesJe();
             lichtDreht();
-            return { gehuellt: Object.keys(orig) };
+            return { gehuellt: Object.keys(orig), fehlt: fehlt.slice() };
         },
         // Die Zähler seit dem letzten frame() — und frisch weiter.
         frame() {
@@ -181,6 +187,7 @@ function sichtLinse(cfg) {
             for (const n of ["_hoehlenSicht", "_hoehlenSichtLicht", "_chunkSatzAbschnitt"]) ruhe += o.aufrufe[n] || 0;
             o.arbeit = ruhe;
             o.trefferSumme = Object.values(o.treffer).reduce((a, x) => a + x, 0);
+            o.fehlt = fehlt;
             lichtOffen = lichtDreht() || lichtOffen;
             o.licht = lichtOffen;
             if (o.paesse > 0) lichtOffen = 0;
@@ -281,6 +288,8 @@ function sichtPhase(frames, ab) {
         instanzBehalten: st((f) => f.pruefung._instanzBehalten || 0),
         werferTrifft: st((f) => f.trifft._werferWahlPass || 0),
         hinaus: st((f) => (f.aufrufe._hoehlenHinaus || 0) + (f.aufrufe._hoehlenAusgang || 0)),
+        // die Leser, die die Linse nicht hüllen konnte (die Welt trägt sie nicht)
+        fehlt: fs.length && fs[0].fehlt ? fs[0].fehlt.slice() : [],
     };
 }
 
@@ -337,6 +346,11 @@ function sichtUrteil(b) {
                 );
         }
     }
+    // die Linse sieht jeden Leser der Kette (ein fehlender zählte still nichts)
+    const blind = new Set();
+    for (const n of ["ruhe", "sonne", "drehen", "gehen"]) for (const x of (b[n] && b[n].fehlt) || []) blind.add(x);
+    if (blind.size)
+        v.push(`LINSE BLIND: die Welt trägt die Leser ${[...blind].join(", ")} nicht — ihre Arbeit zählt nichts`);
     const R = b.ruhe;
     if (!R || !(R.frames > 0)) v.push("LEER: keine Ruhe-Phase gemessen (die Linse prüfte nichts)");
     else {
@@ -434,7 +448,8 @@ function sichtLauf(k) {
         // Pässen EINMAL dicht (die ferne Kaskade rendert jeden dritten Frame); das ist die Arbeit der Änderung davor
         let vorlauf = k.vorlauf != null ? k.vorlauf : 120;
         rend.setAnimationLoop((t) => {
-            if (messen && phase && phase.name === "drehen") st.yaw += Math.PI / 180;
+            // Drehen: `drehGrad` je Frame (1° — darüber wählt jeder Frame neu: der Halt reicht einen halben Dreh-Rand)
+            if (messen && phase && phase.name === "drehen") st.yaw += ((k.drehGrad || 1) * Math.PI) / 180;
             r._gameLoopTick(t);
             const f = L.frame();
             if (!messen || !phase || f.paesse === 0) return;

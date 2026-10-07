@@ -37,6 +37,17 @@ function urteil(b) {
     // die Wand friert die Welt ein: in KEINEM Ruhe-Frame Arbeit oder ein Byte
     const v = SICHT.sichtUrteil(Object.assign({ streng: true }, b));
     if (!b.sonne) v.push("LEER: keine Phase mit laufender Sonne (kein Richtlicht?) — (L) prüfte nichts");
+    const I = b.instanzTreue;
+    if (!I || !(I.faelle && I.faelle.length >= 2))
+        v.push(
+            `LEER: Instanz-Treue ohne beide Fälle (${I && I.faelle ? I.faelle.join(", ") : "keine Messung"}) — (I) prüfte nicht alles`
+        );
+    else if (I.wuerfe > 0 || I.nan > 0 || I.tot > 0 || I.fehlen > 0)
+        v.push(
+            `INSTANZ: nach einem fremden Schreiber (${I.faelle.join(", ")}) ${I.wuerfe} Würfe, ${I.nan} NaN-Slots, ` +
+                `${I.tot} tote Marken, ${I.fehlen} fehlende Werfer — eine Kaskade hielt ihre Wahl: ${I.namen.join(" · ")}`
+        );
+    else if (!(I.geprueft > 0)) v.push("LEER: Instanz-Treue ohne Werfer im Gesetz");
     const D = b.drehTreue;
     if (!D) v.push("LEER: keine Dreh-Treue gemessen — (D) prüfte nichts");
     else if (!D.gehalten)
@@ -97,6 +108,15 @@ function selbsttest() {
         bruch: phase(4000, 0, 0),
         treue: { geprueft: 12, abweichung: [] },
         drehTreue: { grenze: 0.0348, gehalten: true, loecher: 0, namen: [], geprueft: 500 },
+        instanzTreue: {
+            faelle: ["Freigeben+Belegen g", "Stufen-Wechsel g 1→0"],
+            wuerfe: 0,
+            nan: 0,
+            tot: 0,
+            fehlen: 0,
+            geprueft: 40,
+            namen: [],
+        },
         code: { lageGen: true, satzLiest: true, instanzLiest: true, wieseLiest: true, zweiteSignatur: false },
         pageErrors: [],
     };
@@ -159,12 +179,34 @@ function selbsttest() {
         ["keine Sonne", (b) => delete b.sonne, /LEER: keine Phase mit laufender Sonne/],
         ["keine Ruhe", (b) => delete b.ruhe, /LEER: keine Ruhe-Phase/],
         [
+            "ein Leser fehlt der Welt (die Linse hüllt ihn nicht)",
+            (b) => (b.ruhe.fehlt = ["_hoehlenSichtLicht"]),
+            /LINSE BLIND: die Welt trägt die Leser _hoehlenSichtLicht nicht/,
+        ],
+        [
             "Loch nach der Neu-Wahl in der Drehung",
             (b) => Object.assign(b.drehTreue, { loecher: 7, namen: ["boden Zelle"] }),
             /DREH-TREUE: 7 Löcher/,
         ],
         ["Drehfolge ohne Halt", (b) => (b.drehTreue.gehalten = false), /DREH-TREUE VAKUÖS/],
         ["keine Dreh-Treue", (b) => delete b.drehTreue, /LEER: keine Dreh-Treue/],
+        [
+            "die zweite Kaskade hält eine tote Marke",
+            (b) =>
+                Object.assign(b.instanzTreue, {
+                    wuerfe: 1,
+                    nan: 1,
+                    tot: 1,
+                    namen: ["Wurf: Cannot set properties of undefined (setting 'slot')"],
+                }),
+            /INSTANZ: .*1 Würfe, 1 NaN-Slots, 1 tote Marken/,
+        ],
+        ["ein Werfer fehlt der Kaskade", (b) => (b.instanzTreue.fehlen = 2), /INSTANZ: .*2 fehlende Werfer/],
+        [
+            "Instanz-Treue ohne den echten Weg",
+            (b) => b.instanzTreue.faelle.pop(),
+            /LEER: Instanz-Treue ohne beide Fälle/,
+        ],
         ["keine Generation", (b) => (b.code.lageGen = false), /CODE: `_passWahlLage` legt keine/],
         ["Satz fragt nicht", (b) => (b.code.satzLiest = false), /CODE: `_chunkSatzPass` fragt/],
         ["Instanz fragt nicht", (b) => (b.code.instanzLiest = false), /CODE: `_instanzWahlPass` fragt/],
@@ -464,6 +506,126 @@ const server = http.createServer((req, res) => {
                 }
                 aus.drehTreue = D;
             }
+            // (I) DIE INSTANZ-TREUE DER KASKADEN (Gegenprüfung 07.10.): beide Kaskaden ordnen dieselbe Schatten-Gruppe. Ein
+            // fremder Schreiber, der die Zahl lässt (Freigeben + Belegen; der echte Weg: der Stufen-Wechsel eines Baums,
+            // `_switchArchitectureLOD`), muss JEDE Kaskade neu wählen lassen: keine tote Marke (Slot −1), kein Wurf, kein NaN
+            // in einem lebenden Slot, und jeder Werfer, den das Gesetz in der Lage einer Kaskade trifft, steht in ihrer Wahl.
+            {
+                stelle(0, 0);
+                reif();
+                const I = { faelle: [], wuerfe: 0, nan: 0, tot: 0, fehlen: 0, geprueft: 0, namen: [] };
+                const nenne = (x) => {
+                    if (I.namen.length < 6) I.namen.push(x);
+                };
+                r._instanzWahlPass = function (...a) {
+                    try {
+                        return P._instanzWahlPass.apply(this, a);
+                    } catch (e) {
+                        I.wuerfe++;
+                        nenne("Wurf: " + ((e && e.message) || e));
+                    }
+                };
+                const pruefe = (g, fall) => {
+                    const a = g.mesh.instanceMatrix.array;
+                    for (let i = 0; i < (g.liveCount | 0) * 16; i++)
+                        if (!Number.isFinite(a[i])) {
+                            I.nan++;
+                            nenne(fall + ": NaN in " + (g.mesh.name || g.key));
+                            break;
+                        }
+                    kaskaden.forEach((c, k) => {
+                        S.m.multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
+                        S.frustum.setFromProjectionMatrix(S.m, c.coordinateSystem);
+                        const Lk = r._passWahlLage(S, c, k);
+                        const w = g._wahlJe && g._wahlJe.get("k" + k);
+                        const gehalten = new Set(w ? w.refs : []);
+                        for (const ref of gehalten)
+                            if (!(ref.slot >= 0)) {
+                                I.tot++;
+                                nenne(`${fall}: k${k} hält eine tote Marke`);
+                            }
+                        const fenster = Lk.an && r._instanzFensterGilt(g);
+                        for (let j = 0; j < (g.liveCount | 0); j++) {
+                            if (!r._instanzBehalten(g, j, Lk, fenster)) continue;
+                            I.geprueft++;
+                            if (!gehalten.has(g.slotRef[j])) {
+                                I.fehlen++;
+                                nenne(`${fall}: k${k} fehlt ein Werfer`);
+                            }
+                        }
+                    });
+                };
+                const gruppe = (pass) => {
+                    for (const x of r._instanzWahlGruppen()) {
+                        const w0 = x._wahlJe && x._wahlJe.get("k0"),
+                            w1 = x._wahlJe && x._wahlJe.get("k1");
+                        if (x.wahl === "schatten" && x.mesh && w0 && w1 && w1.refs.length > 0 && (x.liveCount | 0) >= 2)
+                            if (!pass || pass(x, w1)) return [x, w1];
+                    }
+                    return [null, null];
+                };
+                try {
+                    frame();
+                    frame();
+                    // Fall 1: Freigeben + Belegen (die Zahl bleibt), k0 rechnet zuerst
+                    {
+                        const [g, w1] = gruppe(null);
+                        if (g) {
+                            const R = w1.refs[0];
+                            const m = new T.Matrix4();
+                            g.mesh.getMatrixAt(R.slot, m);
+                            r._archGroupFree(g, R);
+                            const R2 = r._archGroupAlloc(g, null);
+                            g.mesh.setMatrixAt(R2.slot, m);
+                            g.mesh.instanceMatrix.needsUpdate = true;
+                            r._instanzWahlZurueck([g]);
+                            frame();
+                            pruefe(g, "Freigeben+Belegen");
+                            I.faelle.push("Freigeben+Belegen " + (g.mesh.name || g.key));
+                        }
+                    }
+                    // Fall 2: der echte Weg — der Stufen-Wechsel eines Baums, dessen Zwilling die k1-Wahl trägt
+                    {
+                        let treffer = null;
+                        for (const x of r._instanzWahlGruppen()) {
+                            const w1 = x.wahl === "schatten" && x._wahlJe && x._wahlJe.get("k1");
+                            if (!w1 || !x._wahlJe.get("k0") || !x.mesh) continue;
+                            for (const R of w1.refs) {
+                                const e = (st.architectures || []).find(
+                                    (en) =>
+                                        en && ((en.instSlots || []).includes(R) || (en.instSlotsBand || []).includes(R))
+                                );
+                                if (e) {
+                                    treffer = [x, R, e];
+                                    break;
+                                }
+                            }
+                            if (treffer) break;
+                        }
+                        if (treffer) {
+                            const [g, R, e] = treffer;
+                            const lod0 = e._lodLevel | 0;
+                            let ok = false;
+                            for (const ziel of [0, 1, 2])
+                                if (ziel !== lod0 && r._switchArchitectureLOD(e, ziel) && R.slot === -1) {
+                                    ok = true;
+                                    break;
+                                }
+                            if (ok) {
+                                r._instanzWahlZurueck([g]);
+                                frame();
+                                pruefe(g, "Stufen-Wechsel");
+                                I.faelle.push(
+                                    "Stufen-Wechsel " + (g.mesh.name || g.key) + " " + lod0 + "→" + (e._lodLevel | 0)
+                                );
+                            }
+                        }
+                    }
+                } finally {
+                    delete r._instanzWahlPass;
+                }
+                aus.instanzTreue = I;
+            }
             // (L) RUHE MIT LAUFENDER SONNE: die Tageslänge des Spiels, 60 Frames je s; das Licht folgt `_applyDayNightToScene`,
             // die Stellvertreter-Kaskaden stehen entlang des Lichts (ihre Mitte ein halbes Feld vor dem Auge)
             stelle(0, 0);
@@ -561,6 +723,12 @@ const server = http.createServer((req, res) => {
                 `Stufe ${befund.sonne.stufe} rad), die Kette arbeitete in ${befund.sonne.arbeitFrames}`
         );
     console.log(`  Treue: ${befund.treue.geprueft} Wahlen verglichen, ${befund.treue.abweichung.length} Abweichungen`);
+    if (befund.instanzTreue)
+        console.log(
+            `  Instanz-Treue: ${befund.instanzTreue.faelle.join(", ")} · ${befund.instanzTreue.geprueft} geprüft · ` +
+                `${befund.instanzTreue.wuerfe} Würfe, ${befund.instanzTreue.nan} NaN, ${befund.instanzTreue.tot} tote Marken, ` +
+                `${befund.instanzTreue.fehlen} fehlen ${befund.instanzTreue.namen.join(" · ")}`
+        );
     if (befund.drehTreue)
         console.log(
             `  Dreh-Treue: Grenze ${befund.drehTreue.grenze} rad, gehalten ${befund.drehTreue.gehalten}, ` +
