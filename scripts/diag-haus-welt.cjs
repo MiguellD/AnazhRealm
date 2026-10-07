@@ -106,14 +106,14 @@ const BASIS = {
     ],
     // die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen)
     bauwand: [
-        ["if (!this._bauFrei(wx, wz, slot.phi || 0,", "if (false && !this._bauFrei(wx, wz, slot.phi || 0,"],
+        ["if (!this._bauFrei(wx, wz, ry,", "if (false && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
     // die Höhe des Footprints aus vier Ecken + Mitte, ohne den Tür-Vorplatz (der Stand vor dem Raster)
     raster: [
         ["const nx = Math.min(12, Math.max(1, Math.ceil(obb.ex)));", "const nx = 1;"],
         ["const nz = Math.min(12, Math.max(1, Math.ceil(obb.ez)));", "const nz = 1;"],
-        ["if (tuS && Number.isFinite(tuS.x) && Number.isFinite(tuS.z) && Number.isFinite(tuS.w))", "if (false)"],
+        ["if (tu && Number.isFinite(tu.x) && Number.isFinite(tu.z) && Number.isFinite(tu.w))", "if (false)"],
     ],
     // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
     kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],
@@ -1001,7 +1001,9 @@ function urteil(o) {
             if (!w.ruhe) f.push("W8 Aufbau: Chunk, Wald-Schlange und Nah-Streu kamen an der Plattform nicht zur Ruhe");
             if (w.promoRest > 0) f.push(`W8 Aufbau: ${w.promoRest} Baum-Zellen im Promotions-Ring der Plattform blieben offen`);
             if (!(w.baeume >= 3)) f.push(`W8 Aufbau: ${w.baeume} Bäume im 60-m-Kreis der Plattform (Soll ≥ 3 — sonst sieht die Probe keinen Wald)`);
-            if (!w.streuSteht || !(w.zellen >= 20)) f.push(`W8 Aufbau: ${w.zellen} lebende Streu-Zellen im 40-m-Kreis${w.streuSteht ? "" : " (die Regionen kamen nicht zur Ruhe)"} (Soll ≥ 20)`);
+            // Die Vorbedingung (die Probe sieht Wald): seit das Drehbuch-Dorf der Phase „haus" VOR dem Spieler steht (Leben-Schau
+            // 07.10., `_siedlungsAnker`), liegen seine nächsten Häuser im 40-m-Kreis und tragen keine Streu — 20 → 19 Zellen.
+            if (!w.streuSteht || !(w.zellen >= 15)) f.push(`W8 Aufbau: ${w.zellen} lebende Streu-Zellen im 40-m-Kreis${w.streuSteht ? "" : " (die Regionen kamen nicht zur Ruhe)"} (Soll ≥ 15)`);
             if (!(w.pflanzen >= 20)) f.push(`W8 Aufbau: ${w.pflanzen} Kachel-Pflanzen im 30-m-Kreis (Soll ≥ 20)`);
             if (!(w.gegenprobe >= 1)) f.push(`W8 Aufbau: der Hain der KI wuchs 150 m weiter nicht (${w.gegenprobe}; ${(w.kiFehler || []).join(" ")}) — die Probe ist blind`);
             const ueber = [];
