@@ -1145,6 +1145,27 @@ async function probeLeben(expected) {
                         gut = false;
                 }
                 if (!gut) continue;
+                // Die Fahrt-Linie ist frei von Bauten und Stämmen (wie die Gasse von H): seit die Stamm-Hülle eines Studio-Baums
+                // im Weltmaß steht (Leben-Schau 07.10., Kollision == Optik), hält ein Stamm den Wagen — in der CI nach 3,2 m.
+                const sx0 = x - cx * 8;
+                const sz0 = zz - cz * 8;
+                let blockiert = false;
+                for (const e of st.architectures) {
+                    if (blockiert) break;
+                    if (!e || !e.position || !e.blockerAABBs) continue;
+                    if (Math.hypot(e.position.x - x, e.position.z - zz) > 40) continue;
+                    for (const b of e.blockerAABBs) {
+                        const bx = (b.minX + b.maxX) / 2 - sx0;
+                        const bz = (b.minZ + b.maxZ) / 2 - sz0;
+                        const l = bx * cx + bz * cz;
+                        const q = Math.abs(bx * cz - bz * cx);
+                        if (l > -4 && l < 22 && q < 3 + Math.max(b.maxX - b.minX, b.maxZ - b.minZ) / 2) {
+                            blockiert = true;
+                            break;
+                        }
+                    }
+                }
+                if (blockiert) continue;
                 qh = { x: x - cx * 8, z: zz - cz * 8, grad: (Math.atan(g) * 180) / Math.PI, fahrt: Math.atan2(cx, cz) };
             }
         S.querOrt = qh;
