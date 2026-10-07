@@ -1,0 +1,89 @@
+{
+ "ort": {
+  "boden": 21.66,
+  "lauf": null,
+  "ueberWasser": false
+ },
+ "zeilen": [
+  {
+   "gier": 0,
+   "weg": 1.11,
+   "vMax": 0.3,
+   "afloat": false,
+   "nass": 360,
+   "n": 360,
+   "laufEnde": null,
+   "bodenEnde": 22.04
+  },
+  {
+   "gier": 45,
+   "weg": 9.95,
+   "vMax": 8.9,
+   "afloat": false,
+   "nass": 256,
+   "n": 360,
+   "laufEnde": null,
+   "bodenEnde": 21.58
+  },
+  {
+   "gier": 90,
+   "weg": 4.85,
+   "vMax": 6.42,
+   "afloat": false,
+   "nass": 300,
+   "n": 360,
+   "laufEnde": null,
+   "bodenEnde": 22.16
+  },
+  {
+   "gier": 135,
+   "weg": 21.05,
+   "vMax": 12.95,
+   "afloat": false,
+   "nass": 154,
+   "n": 360,
+   "laufEnde": null,
+   "bodenEnde": 21.23
+  },
+  {
+   "gier": 180,
+   "weg": 4.99,
+   "vMax": 7.1,
+   "afloat": false,
+   "nass": 308,
+   "n": 360,
+   "laufEnde": null,
+   "bodenEnde": 21.69
+  },
+  {
+   "gier": 225,
+   "weg": 5.93,
+   "vMax": 6.44,
+   "afloat": true,
+   "nass": 299,
+   "n": 360,
+   "laufEnde": 22.93,
+   "bodenEnde": 20.36
+  },
+  {
+   "gier": 270,
+   "weg": 5.95,
+   "vMax": 7.69,
+   "afloat": false,
+   "nass": 302,
+   "n": 360,
+   "laufEnde": null,
+   "bodenEnde": 21.02
+  },
+  {
+   "gier": 315,
+   "weg": 7.11,
+   "vMax": 6.75,
+   "afloat": false,
+   "nass": 0,
+   "n": 360,
+   "laufEnde": null,
+   "bodenEnde": 23.74
+  }
+ ]
+}
