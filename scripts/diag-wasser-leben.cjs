@@ -21,8 +21,12 @@
 //                   Spieler schwamm, Kamera tauchte, Tier schwamm.
 //   K11 (D10)       der Straßenwagen trieb im See mit der Dichte des Holzkarren-Spenders; treibend nickte das Boot mit dem
 //                   Seegrund (Wank-Ziel 29,5°). W2: der Rand-Streifen des Sees war für das Gefährt blind (0 von 13).
-//   F5              die Quelle bricht in voller Breite oder Tiefe aus dem Boden (gegen den kleinsten vollen Fluss des
-//                   Gesetzes).
+//   F5              jede Quelle der Welt im Mess-Ring (64, ohne Filter): bricht sie aus dem Nichts (breiter oder tiefer als die
+//                   Hülle des Gesetzes — das Rinnsal plus quellWeitung je Meter, 5040e8f7: 43 von 43, die Quelle −456/872
+//                   11,75 m / 1,62 m), ist sie trocken, liest der Körper auf ihrem Lauf Wasser, das die Welt nicht zeichnet
+//                   (5040e8f7: 487 von 1322 Querschnitten), oder zeichnet die Welt Wasser, in dem der Körper trocken steht.
+//   F8              der Bach der Mess-Wiese (Gegenprüfung 07.10., Runde 3): gezeichnet gegen den Körper je Querschnitt
+//                   (5040e8f7: gezeichnet 54 von 104, unsichtbar 39).
 //   F7              die Bank des Kanals ist eine Steilwand (8f09227d: 18 von 42 Profilen steiler als der Fels, p90 68,9°).
 //   FP              die Kanal-Parität Main ↔ Worker (NaN = Probe kaputt, nie Befund).
 //   K12             die Leser der EINEN Wahrheit: Klang-Nässe (`_nassAt`) und Tier-Scheu (`_creatureWaterContextAt`) lasen das
@@ -97,13 +101,46 @@ function urteil(b) {
     if (b.quelle) {
         const q = b.quelle;
         if (q.fehler) v.push(`F5: ${q.fehler}`);
-        else if (!(q.quellen >= 4)) v.push(`F5 LEER: nur ${q.quellen} Quellen gemessen`);
-        else if (q.breiter > 0 || q.tiefer > 0)
-            v.push(
-                `F5 QUELLE: von ${q.quellen} Quellen brechen ${q.breiter} breiter als das Bett des kleinsten vollen Flusses ` +
-                    `(${q.sollBreite} m) und ${q.tiefer} tiefer als die Hälfte seines Wassers (${q.sollTiefe} m) aus dem Boden ` +
-                    `(nass p50 ${q.breiteP50} m, max ${q.breiteMax} m; tief p50 ${q.tiefeP50} m, max ${q.tiefeMax} m)`
-            );
+        else if (!(q.quellen >= 30)) v.push(`F5 LEER: nur ${q.quellen} Quellen gemessen`);
+        else {
+            if (q.spruenge > 0)
+                v.push(
+                    `F5 SPRUNG: ${q.spruenge} von ${q.quellen - q.gespeist} Quellen brechen aus dem Nichts — breiter oder tiefer ` +
+                        `als die Hülle des Gesetzes (am Ursprung ${q.huelle0[0]} m breit, ${q.huelle0[1]} m tief; gemessen p50 ` +
+                        `${q.breiteP50} m / ${q.tiefeP50} m, max ${q.breiteMax} m / ${q.tiefeMax} m)`
+                );
+            if (q.trocken > 0)
+                v.push(`F5 TROCKEN: ${q.trocken} von ${q.quellen} Quellen tragen auf ihren ersten 16 m kein Wasser`);
+            if (q.unsichtbar > 0)
+                v.push(
+                    `F5 UNSICHTBAR: in ${q.unsichtbar} von ${q.querschnitte} Querschnitten der Quell-Läufe liest der Körper ` +
+                        "Wasser, das die Welt nicht zeichnet"
+                );
+            if (q.phantom > 0)
+                v.push(
+                    `F5 PHANTOM: in ${q.phantom} von ${q.querschnitte} Querschnitten der Quell-Läufe zeichnet die Welt Wasser, ` +
+                        "in dem der Körper trocken steht"
+                );
+        }
+    }
+    // F8 = der Bach der Mess-Wiese (Gegenprüfung 07.10., Runde 3): das gezeichnete Wasser gegen den Körper
+    if (b.bach) {
+        const k = b.bach;
+        if (k.fehler) v.push(`F8: ${k.fehler}`);
+        else if (!(k.querschnitte >= 80 && k.koerperNass >= 80))
+            v.push(`F8 LEER: nur ${k.querschnitte} Querschnitte, ${k.koerperNass} mit Körper-Wasser`);
+        else {
+            if (k.unsichtbar > 0)
+                v.push(
+                    `F8 UNSICHTBAR: der Bach der Mess-Wiese — in ${k.unsichtbar} von ${k.querschnitte} Querschnitten liest der ` +
+                        `Körper Wasser, das die Welt nicht zeichnet (gezeichnet ${k.gezeichnet}, Körper nass ${k.koerperNass})`
+                );
+            if (k.phantom > 0)
+                v.push(
+                    `F8 PHANTOM: der Bach der Mess-Wiese — in ${k.phantom} von ${k.querschnitte} Querschnitten zeichnet die ` +
+                        "Welt Wasser, in dem der Körper trocken steht"
+                );
+        }
     }
     if (b.bank) {
         const k = b.bank;
@@ -391,16 +428,20 @@ function selbsttest() {
         },
         kanal: { punkte: 6, zellen: 18000, abweichend: 0, maxDelta: 0, nanMain: 0, nanWorker: 0 },
         quelle: {
-            quellen: 11,
-            sollBreite: 5.48,
-            sollTiefe: 0.86,
-            breiter: 0,
-            tiefer: 0,
-            breiteP50: 3.75,
-            breiteMax: 4.5,
-            tiefeP50: 0.52,
-            tiefeMax: 0.6,
+            quellen: 64,
+            gespeist: 19,
+            huelle0: [2.83, 0.35],
+            spruenge: 0,
+            trocken: 0,
+            querschnitte: 1322,
+            unsichtbar: 0,
+            phantom: 0,
+            breiteP50: 2,
+            breiteMax: 2.75,
+            tiefeP50: 0.31,
+            tiefeMax: 0.33,
         },
+        bach: { querschnitte: 104, koerperNass: 104, gezeichnet: 103, unsichtbar: 0, phantom: 0 },
         bank: { profile: 60, felsGrad: 54.5, winkelP50: 30, winkelP90: 45, winkelMax: 60, fels: 2, felsAnteil: 0.033 },
         hoehle: {
             proben: 3500,
@@ -485,8 +526,14 @@ function selbsttest() {
         ["FP ZWEI KANÄLE", (b) => Object.assign(b.kanal, { abweichend: 412, maxDelta: 3.1 })],
         ["FP PROBE KAPUTT", (b) => Object.assign(b.kanal, { abweichend: 0, maxDelta: null, nanMain: 19074 })],
         ["FP LEER", (b) => (b.kanal.zellen = 0)],
-        ["F5 QUELLE", (b) => Object.assign(b.quelle, { breiter: 11, tiefer: 12, breiteP50: 14.5, tiefeP50: 3.38 })],
-        ["F5 LEER", (b) => (b.quelle.quellen = 0)],
+        ["F5 SPRUNG", (b) => Object.assign(b.quelle, { spruenge: 43, breiteMax: 12.75, tiefeMax: 1.73 })],
+        ["F5 TROCKEN", (b) => (b.quelle.trocken = 1)],
+        ["F5 UNSICHTBAR", (b) => (b.quelle.unsichtbar = 487)],
+        ["F5 PHANTOM", (b) => (b.quelle.phantom = 2)],
+        ["F5 LEER", (b) => (b.quelle.quellen = 16)],
+        ["F8 UNSICHTBAR", (b) => Object.assign(b.bach, { gezeichnet: 54, unsichtbar: 39 })],
+        ["F8 PHANTOM", (b) => (b.bach.phantom = 3)],
+        ["F8 LEER", (b) => (b.bach.querschnitte = 0)],
         ["F7 STEILWAND", (b) => Object.assign(b.bank, { fels: 18, felsAnteil: 0.429, winkelP90: 68.9 })],
         ["F7 LEER", (b) => (b.bank.profile = 0)],
         ["K10 HÖHLE", (b) => Object.assign(b.hoehle, { nass: 3511, nassUnter: 766, nassNeben: 2745, maxM: 54.3 })],
@@ -677,19 +724,25 @@ async function lauf() {
                 }
                 st.voxelWorker = worker;
             });
-            befund.fluss = await page.evaluate(() => window.__wasserFluss());
-            befund.quelle = await page.evaluate(() => window.__wasserQuelle({}));
-            befund.kanal = await page.evaluate(() => window.__wasserKanalParitaet({}));
-            befund.koerper = await page.evaluate(() => window.__wasserKoerper({}));
+            // `--nur a,b`: nur diese Proben (Werkbank-Fragen; das Gate fährt alle)
+            const nurI = process.argv.indexOf("--nur");
+            const NUR = nurI >= 0 ? new Set(process.argv[nurI + 1].split(",")) : null;
+            const soll = (n) => !NUR || NUR.has(n);
+            if (soll("fluss")) befund.fluss = await page.evaluate(() => window.__wasserFluss());
+            if (soll("kanal")) befund.kanal = await page.evaluate(() => window.__wasserKanalParitaet({}));
+            if (soll("koerper")) befund.koerper = await page.evaluate(() => window.__wasserKoerper({}));
             // am See der Mess-Wiese: die Höhlen darunter und daneben (D11), das Gefährt (D10, W-W2)
-            befund.hoehle = await page.evaluate(() => window.__wasserHoehle({}));
-            befund.wagen = await page.evaluate(() => window.__wasserWagen({}));
-            befund.ufer = await page.evaluate(() => window.__wasserUfer({}));
-            befund.uferFarbe = await page.evaluate(() => window.__wasserUferFarbe({}));
+            if (soll("hoehle")) befund.hoehle = await page.evaluate(() => window.__wasserHoehle({}));
+            if (soll("wagen")) befund.wagen = await page.evaluate(() => window.__wasserWagen({}));
+            if (soll("ufer")) befund.ufer = await page.evaluate(() => window.__wasserUfer({}));
+            if (soll("uferFarbe")) befund.uferFarbe = await page.evaluate(() => window.__wasserUferFarbe({}));
             // nach der Ufer-Probe steht die Welt am Fluss der Mess-Wiese: die Bank
-            befund.bank = await page.evaluate(() => window.__wasserBank({}));
-            // zuletzt (sie stellt die Welt an den See und an die Küste): die Leser der EINEN Wahrheit
-            befund.leser = await page.evaluate(() => window.__wasserLeser({}));
+            if (soll("bank")) befund.bank = await page.evaluate(() => window.__wasserBank({}));
+            // (sie stellt die Welt an den See und an die Küste): die Leser der EINEN Wahrheit
+            if (soll("leser")) befund.leser = await page.evaluate(() => window.__wasserLeser({}));
+            // zuletzt (sie bauen die Chunks an jeder Quelle und am Bach selbst): das gezeichnete Wasser gegen den Körper
+            if (soll("quelle")) befund.quelle = await page.evaluate(() => window.__wasserQuelle({ alle: true }));
+            if (soll("bach")) befund.bach = await page.evaluate(() => window.__wasserBach({}));
         }
         const v = urteil(befund);
         console.log(JSON.stringify(Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) }), null, 1));

@@ -1344,94 +1344,500 @@ function wasserWagen(opts) {
     })();
 }
 
+// ── DAS GEZEICHNETE WASSER (Gegenprüfung 07.10., Runde 3: „die Linse misst das BILD, nicht die Funktion") ──
+// Was die Welt als Wasser ZEICHNET: die Dreiecke des Wasser-Sheets je Chunk (`state.voxelChunkWaterIso`, dieselbe Geometrie,
+// die der Renderer bekommt) über dem sichtbaren Boden (die oberste Fläche des fertigen Chunk-Meshes, `entry.mesh`; Lehre 22:
+// sichtbar ist das Mesh, nie das Gesetz). Die Chunks baut die Probe dort, wo sie misst (`sichere`). `at(x, z)`: { boden,
+// wasser, sichtbar } (sichtbar = das Sheet liegt dort mehr als 2 cm über dem gezeichneten Boden) oder null (kein Chunk).
+function wasserSichtNetz() {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const cfg = r._voxelChunkConfig(0);
+    const span = cfg.span;
+    const B = 0.9; // Kante der Dreiecks-Fächer (m)
+    const netze = new Map();
+    const boeden = new Map();
+    const faecherVon = (m) => {
+        let n = null;
+        if (m && m.geometry && m.geometry.attributes && m.geometry.attributes.position) {
+            const pos = m.geometry.attributes.position.array;
+            const ix = m.geometry.index ? m.geometry.index.array : null;
+            const triN = ix ? ix.length / 3 : pos.length / 9;
+            const faecher = new Map();
+            for (let t = 0; t < triN; t++) {
+                const a = ix ? ix[3 * t] : 3 * t,
+                    b = ix ? ix[3 * t + 1] : 3 * t + 1,
+                    c = ix ? ix[3 * t + 2] : 3 * t + 2;
+                const x0 = Math.min(pos[3 * a], pos[3 * b], pos[3 * c]),
+                    x1 = Math.max(pos[3 * a], pos[3 * b], pos[3 * c]);
+                const z0 = Math.min(pos[3 * a + 2], pos[3 * b + 2], pos[3 * c + 2]),
+                    z1 = Math.max(pos[3 * a + 2], pos[3 * b + 2], pos[3 * c + 2]);
+                for (let fz = Math.floor(z0 / B); fz <= Math.floor(z1 / B); fz++)
+                    for (let fx = Math.floor(x0 / B); fx <= Math.floor(x1 / B); fx++) {
+                        const k = fx + "," + fz;
+                        let l = faecher.get(k);
+                        if (!l) faecher.set(k, (l = []));
+                        l.push(a, b, c);
+                    }
+            }
+            n = { pos, faecher };
+        }
+        return n;
+    };
+    const netz = (key) => {
+        if (!netze.has(key)) netze.set(key, faecherVon(st.voxelChunkWaterIso && st.voxelChunkWaterIso.get(key)));
+        return netze.get(key);
+    };
+    const bodenNetz = (key) => {
+        if (!boeden.has(key)) {
+            const e = st.voxelChunks && st.voxelChunks.get(key);
+            boeden.set(key, faecherVon(e && e.mesh));
+        }
+        return boeden.get(key);
+    };
+    // die oberste Fläche eines Netzes an (x, z): das höchste Dreieck darüber (baryzentrisch in xz) oder null
+    const hoehe = (n, x, z) => {
+        if (!n) return null;
+        const l = n.faecher.get(Math.floor(x / B) + "," + Math.floor(z / B));
+        if (!l) return null;
+        const p = n.pos;
+        let best = null;
+        for (let i = 0; i < l.length; i += 3) {
+            const a = 3 * l[i],
+                b = 3 * l[i + 1],
+                c = 3 * l[i + 2];
+            const d = (p[b + 2] - p[c + 2]) * (p[a] - p[c]) + (p[c] - p[b]) * (p[a + 2] - p[c + 2]);
+            if (Math.abs(d) < 1e-12) continue;
+            const u = ((p[b + 2] - p[c + 2]) * (x - p[c]) + (p[c] - p[b]) * (z - p[c + 2])) / d;
+            const v = ((p[c + 2] - p[a + 2]) * (x - p[c]) + (p[a] - p[c]) * (z - p[c + 2])) / d;
+            const w = 1 - u - v;
+            if (u < -1e-6 || v < -1e-6 || w < -1e-6) continue;
+            const y = u * p[a + 1] + v * p[b + 1] + w * p[c + 1];
+            if (best === null || y > best) best = y;
+        }
+        return best;
+    };
+    // BEREIT ist ein Chunk, dessen Sheet gebaut wurde, nachdem sein Ring (die acht Nachbarn, deren Zellen es liest) als LOD-0-
+    // Chunks stand — synchron, Worker ausgehängt, erst wenn eine Probe ihn braucht.
+    const bereit = new Set();
+    const sichere = (cx, cz) => {
+        const key = cx + "," + cz;
+        if (bereit.has(key)) return;
+        const w = st.voxelWorker;
+        st.voxelWorker = null;
+        try {
+            for (let dz = -1; dz <= 1; dz++)
+                for (let dx = -1; dx <= 1; dx++) {
+                    const e = st.voxelChunks && st.voxelChunks.get(cx + dx + "," + (cz + dz));
+                    if (!e) r._ensureVoxelChunkAt(cx + dx, cz + dz, 0);
+                    else if (!e.empty && (e.lod || 0) !== 0)
+                        r._rebuildVoxelChunk(cx + dx, cz + dz, 0, { forceSync: true });
+                }
+            r._buildVoxelChunkWaterIsoSurface(cx, cz);
+        } finally {
+            st.voxelWorker = w;
+        }
+        netze.delete(key);
+        boeden.delete(key);
+        bereit.add(key);
+    };
+    // ein Netz endet nicht genau an seiner Chunk-Kante (Surface-Nets-Vertices in den Zellen; die Wasser-Vertices sind bis
+    // 0,54 m versetzt): die oberste Fläche über die Netze des Chunks und der Nachbarn, deren Kante näher als 0,6 m liegt
+    const oben = (von, x, z) => {
+        const cx = Math.floor(x / span),
+            cz = Math.floor(z / span);
+        let best = null;
+        for (let dz = -1; dz <= 1; dz++)
+            for (let dx = -1; dx <= 1; dx++) {
+                if (dx && Math.abs(x - (cx + (dx > 0 ? 1 : 0)) * span) > 0.6) continue;
+                if (dz && Math.abs(z - (cz + (dz > 0 ? 1 : 0)) * span) > 0.6) continue;
+                if (von === netz) sichere(cx + dx, cz + dz);
+                const y = hoehe(von(cx + dx + "," + (cz + dz)), x, z);
+                if (y !== null && (best === null || y > best)) best = y;
+            }
+        return best;
+    };
+    const sheetY = (x, z) => oben(netz, x, z);
+    const at = (x, z) => {
+        const cx = Math.floor(x / span),
+            cz = Math.floor(z / span);
+        sichere(cx, cz);
+        const e = st.voxelChunks && st.voxelChunks.get(cx + "," + cz);
+        if (!e || e.empty || (e.lod || 0) !== 0) return null;
+        const wasser = sheetY(x, z);
+        const boden = oben(bodenNetz, x, z);
+        return { boden, wasser, sichtbar: wasser !== null && boden !== null && wasser > boden + 0.02 };
+    };
+    // Ein Querschnitt (je 0,25 m von −halb bis +halb um (x, z), quer zur Richtung (nx, nz)): der KÖRPER (die EINE Wahrheit
+    // `_koerperWasser` über dem Boden des Gesetzes, nass ab 5 cm — Breite und Tiefe: die zusammenhängende nasse Strecke, die
+    // der Mitte am nächsten liegt, und ihr Maximum) und der VERGLEICH mit dem BILD. Verglichen wird über dem höheren der
+    // beiden Böden (Gesetz und gezeichnetes Mesh, `at`): Wasser, das mehr als 5 cm darüber steht, MUSS der Körper lesen und
+    // die Welt zeichnen (`sichtK` · `breiteB`). Liegt das gezeichnete Mesh über dem Wasser des Körpers, ist es VERDECKT
+    // (`verdeckt`, Lehre 22: das 1,8-m-Mesh trägt die Feinform des Gesetzes nicht — die Boden-Domäne, gezählt, nicht geurteilt).
+    // der Körper liest die EINE Wahrheit (`_koerperWasser`); vor ihr (cf9a07ba) den Spiegel des Gesetzes über seinem Boden
+    const koerper = (x, z, y) =>
+        typeof r._koerperWasser === "function" ? r._koerperWasser(x, z, y) : r._atlasWaterLevelAt(x, z, y);
+    const quer = (x, z, nx, nz, halb) => {
+        const n = Math.round(halb / 0.25);
+        const k = [],
+            kQ = [],
+            kS = [],
+            bS = [];
+        let koerperSpur = false,
+            bildKlar = false;
+        let unbekannt = 0,
+            verdeckt = 0;
+        for (let i = -n; i <= n; i++) {
+            const px = x + nx * i * 0.25,
+                pz = z + nz * i * 0.25;
+            const y = r._voxelSurfaceY(px, pz);
+            const kw = Number.isFinite(y) ? koerper(px, pz, y) : -Infinity;
+            const kn = Number.isFinite(y) && kw > y + 0.05;
+            k.push(kn ? kw - y : 0);
+            // das Wasser des FLUSSES selbst (sein Spiegel ist der des Körpers; ein See daneben zählt nicht zum Lauf)
+            const rv = kn ? r._hydroRiverAt(px, pz) : null;
+            kQ.push(rv && Math.abs(rv.surfaceY - kw) < 0.02 ? kw - y : 0);
+            const s = at(px, pz);
+            if (!s || s.boden === null) {
+                unbekannt++;
+                kS.push(0);
+                bS.push(0);
+                continue;
+            }
+            const G = Number.isFinite(y) ? Math.max(y, s.boden) : s.boden;
+            const ks = kn && kw > G + 0.05;
+            if (kn && !ks) verdeckt++;
+            kS.push(ks ? kw - G : 0);
+            // gezeichnet heißt sichtbar (2 cm über dem gezeichneten Boden, wie `at`); ein Phantom ist gezeichnetes Wasser
+            // ab 5 cm, wo der Körper nicht einmal 2 cm liest (die Interpolation des 1,8-m-Gitters trägt ±3 cm)
+            bS.push(s.wasser !== null && s.wasser > G + 0.02 ? s.wasser - G : 0);
+            if (kn && kw > G + 0.02) koerperSpur = true;
+            if (s.wasser !== null && s.wasser > G + 0.05) bildKlar = true;
+        }
+        const spanne = (A) => {
+            let best = -1;
+            for (let i = 0; i < A.length; i++)
+                if (A[i] > 0 && (best < 0 || Math.abs(i - n) < Math.abs(best - n))) best = i;
+            if (best < 0) return { breite: 0, tiefe: 0 };
+            let lo = best,
+                hi = best,
+                tiefe = A[best];
+            while (lo > 0 && A[lo - 1] > 0) tiefe = Math.max(tiefe, A[--lo]);
+            while (hi < A.length - 1 && A[hi + 1] > 0) tiefe = Math.max(tiefe, A[++hi]);
+            return { breite: (hi - lo + 1) * 0.25, tiefe };
+        };
+        const K = spanne(k),
+            Q = spanne(kQ),
+            Bi = spanne(bS);
+        return {
+            breiteK: K.breite,
+            tiefeK: K.tiefe,
+            breiteQ: Q.breite,
+            tiefeQ: Q.tiefe,
+            tiefeMitte: kQ[n],
+            sichtK: kS.some((v) => v > 0),
+            koerperSpur,
+            bildKlar,
+            breiteB: Bi.breite,
+            tiefeB: Bi.tiefe,
+            unbekannt,
+            verdeckt,
+        };
+    };
+    return { at, quer, span };
+}
+
+// Das Urteil je Querschnitt einer Folge (je 2 m längs eines Laufs): UNSICHTBAR, wenn der Körper hier Wasser 5 cm über beiden
+// Böden liest und weder hier noch im Querschnitt davor oder danach Wasser sichtbar gezeichnet ist (2 cm über dem gezeichneten
+// Boden); PHANTOM, wenn hier Wasser 5 cm über beiden Böden gezeichnet ist und der Körper weder hier noch davor oder danach
+// 2 cm Wasser liest. Die Nachbarn sind die Auflösung des Bilds: das Sheet ist ein 1,8-m-Gitter, sein Wasser liegt eine Zelle
+// weit um jede nasse Spalte, linear zwischen den Spiegeln seiner Ecken.
+function wasserSichtUrteil(folge, i) {
+    const s = folge[i],
+        v = folge[i - 1],
+        n = folge[i + 1];
+    const bild = (q) => !!q && q.breiteB > 0;
+    const spur = (q) => !!q && q.koerperSpur;
+    if (s.sichtK && !bild(s) && !bild(v) && !bild(n)) return "unsichtbar";
+    if (s.bildKlar && !spur(s) && !spur(v) && !spur(n)) return "phantom";
+    return null;
+}
+
 // ── Q7-Gestalt: die Quelle (W-F5, Befund 06.10.: „8,5 m nass, 2,36 m tief aus dem Nichts; alle 16 Quellen 8,2–11,9 m") ──
-// Je Fluss der Heimat-Region, der als QUELLE beginnt (nicht am Rand eines Sees — ein Abfluss ist keine Quelle; trägt der
-// Stand den Quell-Anteil `quelle`, nur die Quellen auf dem kleinsten Anteil — ein Lauf, der aus zusammenfließenden
-// Rinnsalen schon breit beginnt, ist keine Quelle): sein Querschnitt an der Quelle (nur der FLUSS — `_hydroRiverAt`, sein
-// Spiegel über dem Boden `_voxelSurfaceY` + 5 cm, 0,25-m-Schritte bis ±15 m, die zusammenhängende nasse Strecke um die Mitte)
-// gegen den KLEINSTEN VOLLEN FLUSS des Gesetzes (an der Schwelle riverThresholdMin: Bett-Breite widthMin + widthK · √Schwelle,
-// Wasser-Tiefe (1 − Freibord) · Bett-Tiefe): eine Quelle bricht nie in voller Breite oder Tiefe aus dem Boden — nass höchstens
-// so breit wie sein Bett, in der Mitte höchstens halb so tief.
+// JEDE Quelle der Welt im Mess-Ring: alle Flüsse der Heimat-Region und jeder berechneten Kachel (mit der Kachel des Bachs der
+// Mess-Wiese), ohne Filter. Je Quelle die Querschnitte (±15 m quer zum Lauf, je 2 m) vom Ursprung längs ihres EIGENEN Laufs
+// (bis vor das Segment, das in einen See oder einen anderen Fluss mündet, höchstens 48 m): der KÖRPER (`_koerperWasser`,
+// Breite und Tiefe über dem Boden des Gesetzes) und das BILD (das gezeichnete Sheet, `__wasserSichtNetz`).
+// GESPEIST ist eine Quelle, die das Gesetz breiter als das Rinnsal beginnt (ein Abfluss) UND an deren Ursprung wirklich See-
+// Wasser steht (Körper-Wasser, das nicht der Fluss trägt, bis 10 m um den Ursprung): ihr Wasser kommt nicht aus dem Nichts.
+// Jede andere ist eine QUELLE im Sinn des Gesetzes, und das Wasser des FLUSSES (sein Spiegel ist der des Körpers; ein See
+// daneben zählt nie) darf auf ihrem ersten Segment nicht breiter sein als die HÜLLE des Gesetzes und am Ursprung nicht
+// tiefer (dahinter trägt der Fluss die Breiten seiner Punkte, Biegungen weiten den Querschnitt): das Rinnsal (quellBett)
+// plus quellWeitung je Meter Lauf, das Wasser bis zur Krone (Bett-Tiefe je Breite höchstens die des kleinsten vollen Flusses
+// dieser Welt, die Schwelle aus maxAccum; Neigung bankNeigung); Mess-Körnung zwei Proben
+// (0,5 m) in der Breite, 5 cm in der Tiefe (in der Mitte des Laufs). Ein SPRUNG ist ein Querschnitt über der Hülle (am
+// Ursprung: die Quelle bricht aus dem Nichts). Eine Quelle ohne Körper-Wasser auf ihren ersten 16 m ist TROCKEN (nie grün).
+// Unsichtbar/Phantom: `__wasserSichtUrteil` je Querschnitt.
 function wasserQuelle(opts) {
     const o = opts || {};
     const r = window.anazhRealm;
     const st = r.state;
-    const h = st.hydrosphere;
-    if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre" };
+    if (!st.hydrosphere || !st.hydrosphere.ready) return { fehler: "keine Hydrosphäre" };
     const HC = r.constructor.HYDROSPHERE;
     const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
-    const bettVoll = HC.widthMin + HC.widthK * Math.sqrt(HC.riverThresholdMin);
-    const tiefeVoll =
-        (1 - (Number.isFinite(HC.spiegelFreibord) ? HC.spiegelFreibord : 0.25)) *
-        (HC.carveBedMin + HC.carveBedK * bettVoll);
-    const sollBreite = bettVoll,
-        sollTiefe = tiefeVoll * 0.5;
-    const schnitt = (a, b) => {
-        const fl = Math.hypot(b.x - a.x, b.z - a.z) || 1;
-        const nx = -(b.z - a.z) / fl,
-            nz = (b.x - a.x) / fl;
-        const tiefeAt = (d) => {
-            const x = a.x + nx * d,
-                z = a.z + nz * d;
-            const y = r._voxelSurfaceY(x, z);
-            const rv = r._hydroRiverAt(x, z);
-            return Number.isFinite(y) && rv && rv.surfaceY > y + 0.05 ? rv.surfaceY - y : 0;
+    // die Hülle des Gesetzes (fehlt eine Größe im Stand, gilt die des Gesetzes von heute)
+    const F = Number.isFinite(HC.spiegelFreibord) ? HC.spiegelFreibord : 0.25;
+    const sN = Number.isFinite(HC.bankNeigung) ? HC.bankNeigung : 0.7;
+    const qBett = Number.isFinite(HC.quellBett) ? HC.quellBett : 1.2;
+    const G = Number.isFinite(HC.quellWeitung) ? HC.quellWeitung : 0.25;
+    const huelleVon = (h) => {
+        const thr = Math.max(HC.riverThresholdMin, ((h.stats && h.stats.maxAccum) || 0) * HC.riverThresholdFrac);
+        const bett = HC.widthMin + HC.widthK * Math.sqrt(thr);
+        const dRel = HC.carveBedMin / bett + HC.carveBedK;
+        const huelle = (s) => {
+            const w = qBett + G * Math.max(0, s);
+            return { breite: w * (1 + (2 * dRel) / sN) + 0.5, tiefe: (1 - F) * dRel * w + 0.05 };
         };
-        const t0 = tiefeAt(0);
-        if (!(t0 > 0)) return { breite: 0, tiefe: 0 };
-        let breite = 0.25;
-        for (const sg of [-1, 1]) for (let d = 0.25; d <= 15 && tiefeAt(d * sg) > 0; d += 0.25) breite += 0.25;
-        return { breite, tiefe: t0 };
+        huelle.rinnsal = qBett;
+        return huelle;
     };
-    // am Rand eines Sees (seine Zelle oder eine der acht Nachbarn trägt See-Wasser)
-    const amSee = (x, z) => {
-        const ci = Math.floor((x - h.originX) / h.cell),
-            cj = Math.floor((z - h.originZ) / h.cell);
-        for (let dj = -1; dj <= 1; dj++)
-            for (let di = -1; di <= 1; di++) {
-                const ni = ci + di,
-                    nj = cj + dj;
-                if (ni >= 0 && nj >= 0 && ni < h.dim && nj < h.dim && h.water.waterKind[ni + nj * h.dim] === 2)
-                    return true;
-            }
-        return false;
+    // die Kachel des Bachs der Mess-Wiese (−856/−1160) gehört immer zum Mess-Ring
+    if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(-856, -1160, 64);
+    const regionen = [];
+    const dazu = (h) => {
+        if (h && h.ready && Array.isArray(h.rivers) && regionen.indexOf(h) < 0) regionen.push(h);
+    };
+    dazu(st.hydrosphere);
+    if (st.hydroTiles) for (const h of st.hydroTiles.values()) dazu(h);
+    const sicht = window.__wasserSichtNetz();
+    const koerperNass = (x, z) => {
+        const y = r._voxelSurfaceY(x, z);
+        if (!Number.isFinite(y)) return false;
+        const w = typeof r._koerperWasser === "function" ? r._koerperWasser(x, z, y) : r._atlasWaterLevelAt(x, z, y);
+        return w > y + 0.05;
     };
     let quellen = 0,
-        breiter = 0,
-        tiefer = 0;
-    const breiten = [],
-        tiefen = [];
-    const beispiele = [];
-    const gesehen = new Set();
-    for (const rv of h.rivers) {
-        const P = rv.points;
-        if (P.length < 2 || P[0].inLake || amSee(P[0].x, P[0].z)) continue;
-        if (Number.isFinite(P[0].quelle) && P[0].quelle > HC.quellBreite + 1e-9) continue;
-        const schl = Math.round(P[0].x) + "," + Math.round(P[0].z);
-        if (gesehen.has(schl)) continue;
-        gesehen.add(schl);
-        const q = schnitt(P[0], P[1]);
-        quellen++;
-        breiten.push(q.breite);
-        tiefen.push(q.tiefe);
-        const zuBreit = q.breite > sollBreite,
-            zuTief = q.tiefe > sollTiefe;
-        if (zuBreit) breiter++;
-        if (zuTief) tiefer++;
-        if ((zuBreit || zuTief) && beispiele.length < (o.beispiele || 4))
-            beispiele.push([R(P[0].x, 0), R(P[0].z, 0), R(q.breite), R(q.tiefe)]);
+        gespeist = 0,
+        spruenge = 0,
+        trocken = 0,
+        unsichtbar = 0,
+        phantom = 0,
+        querschnitte = 0,
+        verdeckt = 0;
+    const breiten0 = [],
+        tiefen0 = [],
+        beispiele = [],
+        alle = [];
+    for (const h of regionen) {
+        const huelle = huelleVon(h);
+        // wie viele Flüsse tragen einen Punkt (ein geteilter Unterlauf beendet den eigenen Lauf einer Quelle)
+        const traeger = new Map();
+        for (const rv of h.rivers) {
+            const gesehen = new Set();
+            for (const p of rv.points) {
+                const k = p.x + "," + p.z;
+                if (gesehen.has(k)) continue;
+                gesehen.add(k);
+                traeger.set(k, (traeger.get(k) || 0) + 1);
+            }
+        }
+        const ursprung = new Set();
+        for (const rv of h.rivers) {
+            const P = rv.points;
+            if (!P || P.length < 2) continue;
+            const k0 = P[0].x + "," + P[0].z;
+            if (ursprung.has(k0)) continue;
+            ursprung.add(k0);
+            const fl = Math.hypot(P[1].x - P[0].x, P[1].z - P[0].z) || 1;
+            const fx = (P[1].x - P[0].x) / fl,
+                fz = (P[1].z - P[0].z) / fl;
+            const lauf = [];
+            let s = 0;
+            for (let i = 0; i + 1 < P.length && s <= 48; i++) {
+                // der eigene Lauf endet vor dem Segment, das in einen See oder einen anderen Fluss mündet
+                const b = P[i + 1];
+                if (b.inLake || (traeger.get(b.x + "," + b.z) || 0) > 1) break;
+                const a = P[i];
+                const L = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+                const nx = -(b.z - a.z) / L,
+                    nz = (b.x - a.x) / L;
+                for (let t = 0; t < L && s <= 48; t += 2, s += 2)
+                    lauf.push(
+                        Object.assign(
+                            sicht.quer(a.x + ((b.x - a.x) * t) / L, a.z + ((b.z - a.z) * t) / L, nx, nz, 15),
+                            { s, seg: i }
+                        )
+                    );
+            }
+            if (!lauf.length) lauf.push(Object.assign(sicht.quer(P[0].x, P[0].z, -fz, fx, 15), { s: 0, seg: 0 }));
+            quellen++;
+            const q0 = lauf[0];
+            breiten0.push(q0.breiteQ);
+            tiefen0.push(q0.tiefeMitte);
+            // GESPEIST: das Gesetz beginnt die Quelle breiter als das Rinnsal (ein Abfluss) — und am Ursprung steht wirklich
+            // See-Wasser (Körper-Wasser, das nicht der Fluss trägt, bis 10 m um den Ursprung). Behauptet das Gesetz einen
+            // Abfluss ohne See, ist es ein Sprung.
+            const abfluss = P[0].width > huelle.rinnsal * 1.001;
+            let seeNah = false;
+            for (let d = 0.5; d <= 10 && !seeNah; d += 0.5)
+                for (let a = 0; a < 8 && !seeNah; a++) {
+                    const x = P[0].x + Math.cos((a * Math.PI) / 4) * d,
+                        z = P[0].z + Math.sin((a * Math.PI) / 4) * d;
+                    if (!koerperNass(x, z)) continue;
+                    const rvS = r._hydroRiverAt(x, z);
+                    const y = r._voxelSurfaceY(x, z);
+                    const w =
+                        typeof r._koerperWasser === "function"
+                            ? r._koerperWasser(x, z, y)
+                            : r._atlasWaterLevelAt(x, z, y);
+                    seeNah = !(rvS && Math.abs(rvS.surfaceY - w) < 0.02);
+                }
+            const gespeistJa = abfluss && seeNah;
+            if (gespeistJa) gespeist++;
+            let ueber = null;
+            if (!gespeistJa)
+                for (const q of lauf) {
+                    if (q.seg > 0) break; // die Quelle ist ihr erstes Segment; dahinter trägt der Fluss seine Punkt-Breiten
+                    const hl = huelle(q.s);
+                    if (q.breiteQ > hl.breite || (q.s === 0 && q.tiefeMitte > hl.tiefe)) {
+                        ueber = q;
+                        break;
+                    }
+                }
+            if (ueber) spruenge++;
+            let unsicht = 0,
+                phant = 0,
+                nassFrueh = false;
+            for (let i = 0; i < lauf.length; i++) {
+                const q = lauf[i];
+                querschnitte++;
+                const u = window.__wasserSichtUrteil(lauf, i);
+                if (u === "unsichtbar") unsicht++;
+                if (u === "phantom") phant++;
+                verdeckt += q.verdeckt;
+                if (q.s <= 16 && q.breiteK > 0) nassFrueh = true;
+            }
+            unsichtbar += unsicht;
+            phantom += phant;
+            if (!nassFrueh) trocken++;
+            // je Quelle: x, z, gespeist, Körper-Breite und -Tiefe am Ursprung, Bild-Breite am Ursprung, Sprung (s, Breite,
+            // Tiefe gegen die Hülle), unsichtbare und Phantom-Querschnitte, Querschnitte
+            const zeile = [
+                R(P[0].x, 0),
+                R(P[0].z, 0),
+                gespeistJa ? 1 : 0,
+                R(q0.breiteQ),
+                R(q0.tiefeMitte),
+                R(q0.breiteB),
+                ueber
+                    ? [
+                          ueber.s,
+                          R(ueber.breiteQ),
+                          R(ueber.tiefeMitte),
+                          R(huelle(ueber.s).breite),
+                          R(huelle(ueber.s).tiefe),
+                      ]
+                    : 0,
+                unsicht,
+                phant,
+                lauf.length,
+            ];
+            alle.push(zeile);
+            if ((ueber || !nassFrueh || unsicht > 0 || phant > 0) && beispiele.length < (o.beispiele || 6))
+                beispiele.push(zeile);
+        }
     }
     const p50 = (A) => (A.length ? A.slice().sort((x, y) => x - y)[A.length >> 1] : 0);
+    const h0 = huelleVon(st.hydrosphere)(0);
     return {
         quellen,
-        sollBreite: R(sollBreite),
-        sollTiefe: R(sollTiefe),
-        breiter,
-        tiefer,
-        breiteP50: R(p50(breiten)),
-        breiteMax: R(breiten.length ? Math.max(...breiten) : 0),
-        tiefeP50: R(p50(tiefen)),
-        tiefeMax: R(tiefen.length ? Math.max(...tiefen) : 0),
+        gespeist,
+        regionen: regionen.length,
+        huelle0: [R(h0.breite), R(h0.tiefe)],
+        spruenge,
+        trocken,
+        querschnitte,
+        unsichtbar,
+        phantom,
+        verdeckt,
+        breiteP50: R(p50(breiten0)),
+        breiteMax: R(breiten0.length ? Math.max(...breiten0) : 0),
+        tiefeP50: R(p50(tiefen0)),
+        tiefeMax: R(tiefen0.length ? Math.max(...tiefen0) : 0),
+        beispiele,
+        alle: o.alle ? alle : undefined,
+    };
+}
+
+// ── Q7-Bild: der Bach der Mess-Wiese (Gegenprüfung 07.10., Runde 3: „gezeichnet 17 → 0 von 17 Segmenten") ──
+// Der Fluss der Kachel durch −856/−1160 von seiner Quelle an, die ersten zehn Segmente, je 2 m ein Querschnitt ±5 m (wie die
+// Gegenprüfung): trägt der KÖRPER dort Wasser (`_koerperWasser` über dem Boden des Gesetzes) und ZEICHNET die Welt dort
+// Wasser (das Sheet über dem gezeichneten Boden, `__wasserSichtNetz`)? Unsichtbar = der Körper liest Wasser, das niemand
+// sieht; Phantom = gezeichnetes Wasser, in dem der Körper trocken steht.
+function wasserBach(opts) {
+    const o = opts || {};
+    const r = window.anazhRealm;
+    const R = (x, n = 2) => (Number.isFinite(x) ? Math.round(x * 10 ** n) / 10 ** n : null);
+    const ZX = Number.isFinite(o.x) ? o.x : -856,
+        ZZ = Number.isFinite(o.z) ? o.z : -1160;
+    if (typeof r._ensureHydroTilesAround === "function") r._ensureHydroTilesAround(ZX, ZZ, 64);
+    const h = r._hydroFor(ZX, ZZ);
+    if (!h || !h.ready || !Array.isArray(h.rivers)) return { fehler: "keine Hydrosphäre am Bach" };
+    let rv = null,
+        bd = Infinity;
+    for (const f of h.rivers)
+        for (const p of f.points) {
+            const d = Math.hypot(p.x - ZX, p.z - ZZ);
+            if (d < bd) {
+                bd = d;
+                rv = f;
+            }
+        }
+    if (!rv || bd > 40) return { fehler: `kein Fluss an ${ZX}/${ZZ} (nächster Punkt ${R(bd)} m)` };
+    const P = rv.points;
+    const sicht = window.__wasserSichtNetz();
+    const segmente = Math.min(o.segmente || 10, P.length - 1);
+    let querschnitte = 0,
+        koerper = 0,
+        bild = 0,
+        unsichtbar = 0,
+        phantom = 0,
+        verdeckt = 0;
+    const beispiele = [];
+    const schnitte = [];
+    for (let q = 0; q < segmente; q++) {
+        const a = P[q],
+            b = P[q + 1];
+        const L = Math.hypot(b.x - a.x, b.z - a.z) || 1;
+        const nx = -(b.z - a.z) / L,
+            nz = (b.x - a.x) / L;
+        for (let t = 0; t < L; t += 2) {
+            const x = a.x + ((b.x - a.x) * t) / L,
+                z = a.z + ((b.z - a.z) * t) / L;
+            schnitte.push(Object.assign(sicht.quer(x, z, nx, nz, 5), { x, z }));
+        }
+    }
+    for (let i = 0; i < schnitte.length; i++) {
+        const s = schnitte[i];
+        querschnitte++;
+        verdeckt += s.verdeckt;
+        if (s.breiteK > 0) koerper++;
+        if (s.breiteB > 0) bild++;
+        const u = window.__wasserSichtUrteil(schnitte, i);
+        if (u === "unsichtbar") unsichtbar++;
+        if (u === "phantom") phantom++;
+        if (u && beispiele.length < (o.beispiele || 6))
+            beispiele.push([u, R(s.x, 1), R(s.z, 1), R(s.breiteK), R(s.tiefeK), R(s.breiteB), R(s.tiefeB)]);
+    }
+    return {
+        quelle: [R(P[0].x, 0), R(P[0].z, 0)],
+        segmente,
+        querschnitte,
+        koerperNass: koerper,
+        gezeichnet: bild,
+        unsichtbar,
+        phantom,
+        verdeckt,
         beispiele,
     };
 }
@@ -1725,7 +2131,10 @@ module.exports = {
         `window.__wasserLeser = ${wasserLeser.toString()};` +
         `window.__wasserHoehle = ${wasserHoehle.toString()};` +
         `window.__wasserWagen = ${wasserWagen.toString()};` +
+        `window.__wasserSichtNetz = ${wasserSichtNetz.toString()};` +
+        `window.__wasserSichtUrteil = ${wasserSichtUrteil.toString()};` +
         `window.__wasserQuelle = ${wasserQuelle.toString()};` +
+        `window.__wasserBach = ${wasserBach.toString()};` +
         `window.__wasserBank = ${wasserBank.toString()};` +
         `window.__wasserFluss = ${wasserFluss.toString()};` +
         `window.__wasserKroneVon = ${__wasserKroneVon.toString()};` +
