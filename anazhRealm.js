@@ -88001,6 +88001,7 @@ class AnazhRealm {
     // (kein innerHTML → CSP-rein), headless-sicher; feuert nur ohne navigator.gpu.
     _showWebGPUGate() {
         if (typeof document === "undefined" || !document.body) return;
+        this._ladeschirmWeg(); // das Tor ist die Antwort — der Ladeschirm läge über ihm
         try {
             if (document.getElementById("webgpu-gate")) return;
             const overlay = document.createElement("div");
@@ -88265,6 +88266,7 @@ class AnazhRealm {
                         "Versuche ?holz=kienspan (kleiner Ring, kein AA) oder einen anderen Browser.",
                     "ERROR"
                 );
+                this._ladeschirmStand("die Grafikkarte antwortet seit 25 s nicht — versuche ?holz=kienspan");
             }
         }, 25000);
         renderer
@@ -88354,6 +88356,7 @@ class AnazhRealm {
                 }
             })
             .catch((err) => {
+                this._ladeschirmStand(`die Grafikkarte verweigert die Welt: ${err && err.message}`);
                 this.log(
                     `WebGPU-Renderer init() scheiterte (${err.message}). ` +
                         "navigator.gpu existiert aber requestAdapter/requestDevice scheitert — " +
@@ -88362,6 +88365,12 @@ class AnazhRealm {
                 );
             });
         this.state.renderer = renderer;
+        // Der Null-Renderer zeigt kein Bild, auf das der Ladeschirm warten könnte (sein Loop pumpt nur auf Zuruf):
+        // er weicht sofort, die UI der Linsen bleibt klickbar.
+        if (renderer._isHeadlessNull) {
+            this.state._weltbildDa = performance.now();
+            this._ladeschirmWeg();
+        }
         this.log("Renderer initialisiert mit Schattenunterstützung (webgpu)", "INFO");
         this.state.selfAwareness.components.push("renderer");
 
@@ -92681,6 +92690,8 @@ class AnazhRealm {
             this._leinwandTiefe(true);
             this.state.renderer.render(this.state.scene, this.state.camera);
         }
+        // Das erste fertige Weltbild nimmt den Ladeschirm weg (L2: nie die schwarze Leinwand).
+        if (!this.state._weltbildDa) this._ankunftsBild();
         // GPU-Last in den perfSense-Frame-Akku (Draw-Calls + Dreiecke, alle Pässe). Im r184-WebGPU-Info ist
         // `render.calls` ein LEBENSZEIT-Zähler der render()-Aufrufe (reset() löscht ihn nicht) → er
         // vergiftete HUD/Flugschreiber/Regler mit wachsender Phantom-Last. Pro Frame zählt
@@ -92728,6 +92739,44 @@ class AnazhRealm {
     }
 
     // Kein Renderer-Hot-Swap nach WebGL: NodeMaterials rendern nur auf WebGPURenderer (schwarze Welt).
+
+    // DAS ERSTE WELTBILD (Leben-Schau 07.10., L2): ein neuer Spieler sah als erstes Bild die schwarze Leinwand unter fertiger
+    // UI — gemessen auf der Radeon 3,7 s bis 25,5 s nach dem Laden (der Weltbau hält den Haupt-Thread), dann sprang die Welt
+    // herein. Der Ladeschirm (index.html, `#ladeschirm`) steht ab dem ersten Bild der Seite (sein Glimmen läuft im
+    // Compositor weiter, auch wenn der Weltbau den Haupt-Thread hält) und weicht nach dem ersten Frame, in dem der Boden
+    // unter dem Spieler steht (`_builtRingRadius` ≥ 0: sein Chunk ist gemesht; Himmel, Panorama, Genesis-Plattform und Ring
+    // stehen da schon). Bis dahin sagt die Stand-Zeile, worauf die Welt wartet.
+    _ankunftsBild() {
+        const st = this.state;
+        if (st._weltbildDa) return true;
+        const gebaut = this._builtRingRadius();
+        if (!(gebaut != null && gebaut >= 0 && st.playerMesh)) {
+            this._ladeschirmStand(st.playerMesh ? "der Boden unter dir wächst" : "die Welt entsteht");
+            return false;
+        }
+        st._weltbildDa = performance.now();
+        this._ladeschirmWeg();
+        return true;
+    }
+
+    // Die Stand-Zeile des Ladeschirms (nur solange er steht).
+    _ladeschirmStand(text) {
+        if (typeof document === "undefined") return;
+        const el = document.getElementById("ladeschirm-stand");
+        if (el && el.textContent !== text) el.textContent = text;
+    }
+
+    // Der Ladeschirm weicht: nach dem ersten fertigen Weltbild, oder dem WebGPU-Tor (das Tor IST die Antwort — unter dem
+    // Ladeschirm läge es unsichtbar).
+    _ladeschirmWeg() {
+        if (typeof document === "undefined") return;
+        const el = document.getElementById("ladeschirm");
+        if (!el || el.hidden) return;
+        el.classList.add("weg");
+        setTimeout(() => {
+            el.hidden = true;
+        }, 750);
+    }
 
     // Ist eine Schublade offen? Die DOM-Wahrheit (ein sichtbarer .drawer), nicht ein Merker — der Werkstatt-, Hof- oder
     // Bibliotheks-Drawer gehört der UI, nie der Welt (Welle L, Q9).
@@ -98165,6 +98214,10 @@ function _bootAnazhRealm() {
     if (typeof window !== "undefined") {
         window.anazhRealm = anazhRealm;
     }
-    anazhRealm.init();
+    // Ein Boot, der scheitert, sagt es auf dem Ladeschirm (nie ein stummes Warten).
+    Promise.resolve(anazhRealm.init()).catch((e) => {
+        anazhRealm._ladeschirmStand(`die Welt konnte nicht erwachen: ${(e && e.message) || e}`);
+        throw e;
+    });
 }
 _bootAnazhRealm();
