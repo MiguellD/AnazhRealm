@@ -39,6 +39,13 @@
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
 //   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
 //                                                           ruht (scripts/lib/takt-linse.cjs)
+//   node scripts/werkbank.cjs sicht [--ruhe n] [--sonne n] [--drehen n] [--dreh-grad g] [--gehen n] [--tag laeuft|steht]
+//                                                           [--ein s] [--regler voll]
+//                                                           DIE SICHT-LINSE: was die Sicht-Kette je gerendertem Frame
+//                                                           arbeitet (Pässe · Prüfungen · Ecken · Bytes · Treffer) im
+//                                                           echten Loop — Ruhe, Ruhe mit laufender Sonne (die Tageslänge
+//                                                           des Spiels), Drehen (1°/Frame), Gehen
+//                                                           (scripts/lib/sicht-linse.cjs, Urteil wie gate:sicht-arbeit)
 //   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei] [--ruhe max-s]
 //                                                           DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach
 //                                                           `--ein` Sekunden Einschwingen misst er `sek` Sekunden
@@ -130,6 +137,7 @@ const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
 const { ZAEHLER_INSTALL, FALTE_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
+const SICHT = require("./lib/sicht-linse.cjs");
 const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
@@ -896,6 +904,7 @@ async function starte() {
         await page.evaluate(ZAEHLER_INSTALL);
         await page.evaluate(FLUSS_INSTALL);
         await page.evaluate(TAKT_INSTALL);
+        await page.evaluate(SICHT.SICHT_INSTALL);
         await page.evaluate(FERNWALD_INSTALL);
         await page.evaluate(ZL.ZERLEGE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
@@ -1314,6 +1323,19 @@ async function starte() {
                         extra: b.extra ? String(b.extra).split(",") : [],
                     });
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
+                }
+                if (req.url === "/sicht") {
+                    const o = await page.evaluate((k) => window.__sichtLauf(k), {
+                        ein: Number(b.ein) || 5,
+                        ruhe: b.ruhe != null ? Number(b.ruhe) : 120,
+                        sonne: b.sonne != null ? Number(b.sonne) : 0,
+                        drehen: b.drehen != null ? Number(b.drehen) : 360,
+                        drehGrad: b.drehGrad != null ? Number(b.drehGrad) : 1,
+                        gehen: b.gehen != null ? Number(b.gehen) : 120,
+                        tag: b.tag || "laeuft",
+                        regler: b.regler || "voll",
+                    });
+                    return send(Object.assign(o, { urteil: SICHT.sichtUrteil(o), ms: Date.now() - t0 }));
                 }
                 if (req.url === "/fluss") {
                     const o = await page.evaluate(() => {
@@ -1799,6 +1821,17 @@ async function starte() {
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
     else if (cmd === "takt") o = await rufe("/takt", { n: a[0], extra: opt("--extra", "") });
+    else if (cmd === "sicht")
+        o = await rufe("/sicht", {
+            ruhe: opt("--ruhe"),
+            sonne: opt("--sonne"),
+            drehen: opt("--drehen"),
+            drehGrad: opt("--dreh-grad"),
+            gehen: opt("--gehen"),
+            tag: opt("--tag", "laeuft"),
+            ein: opt("--ein"),
+            regler: opt("--regler", "voll"),
+        });
     else if (cmd === "zaehlen")
         o = await rufe(
             "/zaehlen",

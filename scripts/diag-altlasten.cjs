@@ -606,6 +606,9 @@ const FORBIDDEN = [
         fiel: "Studio-Welle S1 — gate:portal-konformanz (die echte Heimat, die echte Form)",
         auch: ["package.json"],
     },
+    // DIE LAGE STEHT (Welle C): die Nah-Wiese trug eine eigene Kamera-Signatur, jeder andere Leser rechnete je Pass neu. EIN
+    // Gesetz der Lage (`_passLageGen`, `L.gen`) gilt allen Lesern der Sicht-Kette.
+    { token: "_sichtSteht", fiel: "Welle C — EIN Gesetz der Lage je Pass (_passLageGen, L.gen)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

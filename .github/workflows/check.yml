@@ -374,6 +374,13 @@ jobs:
               # Wiese zeichnet weniger Höhle, als ihr Frustum trägt. --selftest zuerst: injizierte Täter fallen rot.
               run: npm run gate:hoehlen-sicht
 
+            - name: Sicht-Arbeit (Welle C — die Sicht-Kette kostet, was sich ändert, nie die Weltgröße)
+              # An der Mess-Wiese, Null-Renderer: das Hauptbild über den EINEN Haken, zwei Stellvertreter-Kaskaden über den
+              # Satz-Chokepoint samt Instanz-Wahl; die Sicht-Linse zählt je Frame Prüfungen, Ecken, Index-Bytes und Treffer.
+              # In Ruhe 0 Arbeit und 0 Bytes ab dem ersten Frame, beim Drehen und Gehen rechnet jede neue Lage, die gehaltene
+              # Wahl ist die frisch gerechnete, ein eingeschmuggelter Cache-Bruch fällt rot. --selftest zuerst.
+              run: npm run gate:sicht-arbeit
+
             - name: Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)
               # P3a: die Foundry ist ein Worker (nicht mehr ein iframe) → sie produziert echte Assets AUCH
               # im Null-Renderer-Gate. Beweist, dass die Pipeline im Gate-Kontext LIEST (heilt W1: vorher
