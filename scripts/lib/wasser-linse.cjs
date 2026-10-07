@@ -1418,13 +1418,16 @@ function wasserSichtNetz() {
         return best;
     };
     // BEREIT ist ein Chunk, dessen Sheet gebaut wurde, nachdem sein Ring (die acht Nachbarn, deren Zellen es liest) als LOD-0-
-    // Chunks stand — synchron, Worker ausgehängt, erst wenn eine Probe ihn braucht.
+    // Chunks stand — synchron, Worker ausgehängt, erst wenn eine Probe ihn braucht. Ein Nachbar, den die Probe dafür (neu)
+    // baut, zeichnet sein Wasser im selben Zug (die Welt heilt ihn im nächsten Takt; bis Runde 4 blieb er ohne Sheet, und die
+    // Probe las noch die Fächer seines alten Meshs): Körper und Bild lesen dieselbe Welt.
     const bereit = new Set();
     const sichere = (cx, cz) => {
         const key = cx + "," + cz;
         if (bereit.has(key)) return;
         const w = st.voxelWorker;
         st.voxelWorker = null;
+        const ring = [];
         try {
             for (let dz = -1; dz <= 1; dz++)
                 for (let dx = -1; dx <= 1; dx++) {
@@ -1432,13 +1435,22 @@ function wasserSichtNetz() {
                     if (!e) r._ensureVoxelChunkAt(cx + dx, cz + dz, 0);
                     else if (!e.empty && (e.lod || 0) !== 0)
                         r._rebuildVoxelChunk(cx + dx, cz + dz, 0, { forceSync: true });
+                    ring.push([cx + dx, cz + dz]);
                 }
             r._buildVoxelChunkWaterIsoSurface(cx, cz);
+            for (const [nx, nz] of ring) {
+                const nk = nx + "," + nz;
+                const ne = st.voxelChunks && st.voxelChunks.get(nk);
+                if (ne && ne.waterCells && !(st.voxelChunkWaterIso && st.voxelChunkWaterIso.has(nk)))
+                    r._buildVoxelChunkWaterIsoSurface(nx, nz);
+            }
         } finally {
             st.voxelWorker = w;
         }
-        netze.delete(key);
-        boeden.delete(key);
+        for (const [nx, nz] of ring) {
+            netze.delete(nx + "," + nz);
+            boeden.delete(nx + "," + nz);
+        }
         bereit.add(key);
     };
     // ein Netz endet nicht genau an seiner Chunk-Kante (Surface-Nets-Vertices in den Zellen; die Wasser-Vertices sind bis
@@ -1473,8 +1485,9 @@ function wasserSichtNetz() {
     // dem höheren der beiden Böden (Gesetz `y` und gezeichnetes Mesh `s.boden`, G): PHANTOM, wo die Welt Wasser 5 cm über G
     // zeichnet und der Körper an seinem Grund keine 2 cm liest; UNSICHTBAR, wo der Körper Wasser 5 cm über G liest und die
     // Welt keine 2 cm zeichnet. Keine Nachbar-Toleranz, keine Querschnitts-Existenz: Breite gegen Breite, Fläche gegen Fläche.
-    const punkt = (px, pz, y, kw) => {
-        const s = at(px, pz);
+    // `s` ist `at(px, pz)`, gelesen VOR dem Körper: `at` baut die Chunks und Sheets, wo die Probe misst — Körper und Bild lesen
+    // dieselbe Welt.
+    const punkt = (s, y, kw) => {
         if (!s || s.boden === null) return null;
         const G = Number.isFinite(y) ? Math.max(y, s.boden) : s.boden;
         const kNass = Number.isFinite(y) && kw > y + 0.02;
@@ -1492,7 +1505,9 @@ function wasserSichtNetz() {
     // der Körper liest die EINE Wahrheit (`_koerperWasser`); vor ihr (cf9a07ba) den Spiegel des Gesetzes über seinem Boden
     const koerper = (x, z, y) =>
         typeof r._koerperWasser === "function" ? r._koerperWasser(x, z, y) : r._atlasWaterLevelAt(x, z, y);
-    const quer = (x, z, nx, nz, halb) => {
+    // `eigen(px, pz)` (optional): liegt der Punkt im Kanal DIESES Flusses (bis zu seiner Krone)? Dann ist das Körper-Wasser dort
+    // das Wasser des Flusses selbst (`kQ`); ohne `eigen` das Wasser, dessen Spiegel der des Flusses an diesem Ort ist.
+    const quer = (x, z, nx, nz, halb, eigen) => {
         const n = Math.round(halb / 0.25);
         const k = [],
             kQ = [],
@@ -1506,14 +1521,20 @@ function wasserSichtNetz() {
         for (let i = -n; i <= n; i++) {
             const px = x + nx * i * 0.25,
                 pz = z + nz * i * 0.25;
+            const s = at(px, pz);
             const y = r._voxelSurfaceY(px, pz);
             const kw = Number.isFinite(y) ? koerper(px, pz, y) : -Infinity;
             const kn = Number.isFinite(y) && kw > y + 0.05;
             k.push(kn ? kw - y : 0);
-            // das Wasser des FLUSSES selbst (sein Spiegel ist der des Körpers; ein See daneben zählt nicht zum Lauf)
-            const rv = kn ? r._hydroRiverAt(px, pz) : null;
-            kQ.push(rv && Math.abs(rv.surfaceY - kw) < 0.02 ? kw - y : 0);
-            const p = punkt(px, pz, y, kw);
+            // das Wasser des FLUSSES selbst (ein See, ein anderer Fluss daneben zählt nicht zum Lauf)
+            let eigenes = false;
+            if (kn && eigen) eigenes = eigen(px, pz);
+            else if (kn) {
+                const rv = r._hydroRiverAt(px, pz);
+                eigenes = !!rv && Math.abs(rv.surfaceY - kw) < 0.02;
+            }
+            kQ.push(eigenes ? kw - y : 0);
+            const p = punkt(s, y, kw);
             if (!p) {
                 unbekannt++;
                 bS.push(0);
@@ -1571,10 +1592,11 @@ function wasserSichtNetz() {
         const R2 = (v) => Math.round(v * 100) / 100;
         for (let z = z0; z <= z1; z += d)
             for (let x = x0; x <= x1; x += d) {
+                const s = at(x, z);
                 const y = r._voxelSurfaceY(x, z);
                 if (!Number.isFinite(y)) continue;
                 const kw = koerper(x, z, y);
-                const p = punkt(x, z, y, kw);
+                const p = punkt(s, y, kw);
                 if (!p) continue;
                 punkte++;
                 if (p.k5) koerperN++;
@@ -1608,9 +1630,11 @@ function wasserSichtNetz() {
 // (bis vor das Segment, das in einen See oder einen anderen Fluss mündet, höchstens 48 m): der KÖRPER (`_koerperWasser`,
 // Breite und Tiefe über dem Boden des Gesetzes) und das BILD (das gezeichnete Sheet, `__wasserSichtNetz`).
 // GESPEIST ist eine Quelle, die das Gesetz breiter als das Rinnsal beginnt (ein Abfluss) UND an deren Ursprung wirklich See-
-// Wasser steht (Körper-Wasser, das nicht der Fluss trägt, bis 10 m um den Ursprung): ihr Wasser kommt nicht aus dem Nichts.
-// Jede andere ist eine QUELLE im Sinn des Gesetzes, und das Wasser des FLUSSES (sein Spiegel ist der des Körpers; ein See
-// daneben zählt nie) darf auf ihrem ersten Segment nicht breiter sein als die HÜLLE des Gesetzes und am Ursprung nicht
+// Wasser steht (Körper-Wasser, das der See- oder Meeres-Spiegel des Gesetzes trägt, bis 10 m um den Ursprung): ihr Wasser
+// kommt nicht aus dem Nichts.
+// Jede andere ist eine QUELLE im Sinn des Gesetzes, und das Wasser des FLUSSES (das Körper-Wasser im Kanal ihres EIGENEN
+// Laufs bis zur Krone; ein See, ein anderer Fluss daneben zählt nie) darf auf ihrem ersten Segment nicht breiter sein als die
+// HÜLLE des Gesetzes und am Ursprung nicht
 // tiefer (dahinter trägt der Fluss die Breiten seiner Punkte, Biegungen weiten den Querschnitt): das Rinnsal (quellBett)
 // plus quellWeitung je Meter Lauf, das Wasser bis zur Krone (Bett-Tiefe je Breite höchstens die des kleinsten vollen Flusses
 // dieser Welt, die Schwelle aus maxAccum; Neigung bankNeigung); Mess-Körnung zwei Proben
@@ -1692,6 +1716,27 @@ function wasserQuelle(opts) {
             const fl = Math.hypot(P[1].x - P[0].x, P[1].z - P[0].z) || 1;
             const fx = (P[1].x - P[0].x) / fl,
                 fz = (P[1].z - P[0].z) / fl;
+            // der Kanal DIESER Quelle: bis zur Krone ihrer eigenen Segmente (der gezeichnete Spiegel liegt auf dem
+            // 1,8-m-Gitter, ein Spiegel-Vergleich auf 2 cm trennte nicht mehr; ein Nachbar-Fluss zählte als eigenes Wasser)
+            const eigenSeg = [];
+            const eigen = (px, pz) => {
+                for (const [a, b, krA, krB] of eigenSeg) {
+                    const ex = b.x - a.x,
+                        ez = b.z - a.z,
+                        l2 = ex * ex + ez * ez || 1;
+                    const t = Math.max(0, Math.min(1, ((px - a.x) * ex + (pz - a.z) * ez) / l2));
+                    if (Math.hypot(px - (a.x + ex * t), pz - (a.z + ez * t)) <= krA + (krB - krA) * t) return true;
+                }
+                return false;
+            };
+            for (let i = 0; i + 1 < P.length; i++) {
+                if (P[i + 1].inLake || (traeger.get(P[i + 1].x + "," + P[i + 1].z) || 0) > 1) break;
+                // die Krone des Gesetzes, längs des Segments zwischen seinen Punkten (wie `_hydroRiverAt`)
+                eigenSeg.push([P[i], P[i + 1], window.__wasserKroneVon(r, P[i]), window.__wasserKroneVon(r, P[i + 1])]);
+                if (eigenSeg.length > 32) break;
+            }
+            if (!eigenSeg.length)
+                eigenSeg.push([P[0], P[1], window.__wasserKroneVon(r, P[0]), window.__wasserKroneVon(r, P[1])]);
             const lauf = [];
             let s = 0;
             for (let i = 0; i + 1 < P.length && s <= 48; i++) {
@@ -1705,12 +1750,13 @@ function wasserQuelle(opts) {
                 for (let t = 0; t < L && s <= 48; t += 2, s += 2)
                     lauf.push(
                         Object.assign(
-                            sicht.quer(a.x + ((b.x - a.x) * t) / L, a.z + ((b.z - a.z) * t) / L, nx, nz, 15),
+                            sicht.quer(a.x + ((b.x - a.x) * t) / L, a.z + ((b.z - a.z) * t) / L, nx, nz, 15, eigen),
                             { s, seg: i }
                         )
                     );
             }
-            if (!lauf.length) lauf.push(Object.assign(sicht.quer(P[0].x, P[0].z, -fz, fx, 15), { s: 0, seg: 0 }));
+            if (!lauf.length)
+                lauf.push(Object.assign(sicht.quer(P[0].x, P[0].z, -fz, fx, 15, eigen), { s: 0, seg: 0 }));
             quellen++;
             const q0 = lauf[0];
             breiten0.push(q0.breiteQ);
@@ -1725,13 +1771,10 @@ function wasserQuelle(opts) {
                     const x = P[0].x + Math.cos((a * Math.PI) / 4) * d,
                         z = P[0].z + Math.sin((a * Math.PI) / 4) * d;
                     if (!koerperNass(x, z)) continue;
-                    const rvS = r._hydroRiverAt(x, z);
-                    const y = r._voxelSurfaceY(x, z);
-                    const w =
-                        typeof r._koerperWasser === "function"
-                            ? r._koerperWasser(x, z, y)
-                            : r._atlasWaterLevelAt(x, z, y);
-                    seeNah = !(rvS && Math.abs(rvS.surfaceY - w) < 0.02);
+                    // See-Wasser: Körper-Wasser, das der See- oder Meeres-Spiegel des Gesetzes trägt (nicht der Fluss)
+                    const uf = { see: -Infinity, fluss: null, ufer: 0 };
+                    r._waterLevelAt(x, z, uf);
+                    seeNah = uf.see > r._voxelSurfaceY(x, z) + 0.05;
                 }
             const gespeistJa = abfluss && seeNah;
             if (gespeistJa) gespeist++;
@@ -1904,7 +1947,7 @@ function wasserSee(opts) {
 // Je Kachel im Gebiet (ein Fenster [x0, z0, x1, z1] oder der Korridor ±radius um einen Lauf) die Pflanzen, wie die Welt sie
 // setzt: die Nah-Streu (`_nahStreuKachel`, jede Art ohne Ufer-Band) und die Nah-Wiese (`_nahWieseKachelBueschel`, das Gras).
 // Im Wasser steht eine Pflanze, über deren Fuß (der gerenderte Boden, auf dem sie steht) die Welt mehr als 5 cm Wasser
-// zeichnet. Arten mit Ufer-Band (Schilf) stehen dort nach ihrem Gesetz — gezählt, nicht geurteilt.
+// zeichnet — über dem gezeichneten Boden an ihrem Ort, sichtbar (ein Sheet unter dem Gelände trägt keine Pflanze). Arten mit Ufer-Band (Schilf) stehen dort nach ihrem Gesetz — gezählt, nicht geurteilt.
 function wasserFlora(opts) {
     const o = opts || {};
     const r = window.anazhRealm;
@@ -1938,7 +1981,9 @@ function wasserFlora(opts) {
     }
     const imWasser = (x, y, z) => {
         const s = sicht.at(x, z);
-        return s && s.wasser !== null && s.wasser > y + 0.05 ? s.wasser - y : 0;
+        if (!s || s.wasser === null) return 0;
+        const G = s.boden !== null ? Math.max(y, s.boden) : y;
+        return s.wasser > G + 0.05 ? s.wasser - y : 0;
     };
     const streu = { kacheln: 0, warten: 0, pflanzen: 0, ufer: 0, imWasser: 0, maxM: 0, jeArt: {}, bsp: [] };
     const KS = r.constructor.NAH_STREU.kachel;
