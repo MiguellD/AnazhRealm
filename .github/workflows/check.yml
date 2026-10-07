@@ -682,6 +682,13 @@ jobs:
               # Element-Adapter → jede Wand rot und beim Namen.
               run: npm run gate:portal-konformanz
 
+            - name: Regler wirkt (W1 d — jede PARAMS-Zeile bewegt den Bau, tote Regler beim Namen)
+              # Je Art über die echte Foundry-Brücke (asset-worker-harness): das Rezept ohne ov und mit ov {id: min|max};
+              # ein Regler, der an keinem Rezept seiner Art den Bau-Hash bewegt, ist tot und wird genannt. Ratsche
+              # (spec/vertraege/ratsche.json reglerTot): 26 von 113 tot → Soll 0. --selftest zuerst: die Brücke ohne ov
+              # (der W-A1-Defekt) macht jeden vehicle-Regler tot → rot.
+              run: npm run gate:regler-wirkt
+
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
               # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
               # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per

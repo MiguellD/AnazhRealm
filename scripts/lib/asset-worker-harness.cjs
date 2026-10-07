@@ -245,6 +245,47 @@ function pageHtml() {
     }));
     return out;
   };
+  // DER BAU-HASH VIELER STUFEN (W1 d, gate:regler-wirkt): jede Stufe über die echte Brücke gebaut (mit ov, dem
+  // Regler-Kanal der Werkstatt) und im Seiten-Kontext zu EINEM Hash über jedes gelieferte Byte gefaltet: jedes Feld
+  // des Teils in Schlüssel-Ordnung — Vertex-Attribute (Name, itemSize, Bytes), Index (Bytes), alles andere als JSON
+  // (Teil-Art, Stoff-Regler, Tür-Scharnier, Gelenk, Wurf, Seh-Klasse …) — kein Puffer-Transport. Beipack-Einträge
+  // (kind "__…" ohne position) zählen nicht, wie in fingerprintMeshes. Zwei FNV-1a-Bahnen verschiedener Saat.
+  const bauHash = (meshes) => {
+    let a = 0x811c9dc5 | 0, b = 0x2f0a1c3d | 0, bytes = 0, teile = 0;
+    const ein = (x) => { a = Math.imul(a ^ x, 16777619); b = Math.imul(b ^ (x + 0x9e), 16777619); };
+    const text = (s) => { s = String(s); for (let i = 0; i < s.length; i++) ein(s.charCodeAt(i) & 255); ein(0); };
+    const puffer = (arr) => {
+      const u = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
+      for (let i = 0; i < u.length; i++) ein(u[i]);
+      bytes += u.length;
+    };
+    for (const m of meshes) {
+      if (!m || (typeof m.kind === "string" && m.kind.startsWith("__") && !m.position)) continue;
+      teile++;
+      for (const k of Object.keys(m).sort()) {
+        const v = m[k];
+        text(k);
+        if (v && v.array && v.itemSize) { text(v.itemSize); puffer(v.array); }
+        else if (k === "index" && v && v.buffer) puffer(v);
+        else text(JSON.stringify(v === undefined ? null : v));
+      }
+    }
+    const hex = (x) => ("0000000" + (x >>> 0).toString(16)).slice(-8);
+    return { hash: hex(a) + hex(b), teile, bytes };
+  };
+  window.__bauHashListe = async (liste) => {
+    poolMehr(Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) >> 1)));
+    const out = new Array(liste.length);
+    let next = 0;
+    await Promise.all(pool.map(async (frag) => {
+      while (next < liste.length) {
+        const i = next++;
+        const r = await frag(Object.assign({ type: "build-asset" }, liste[i]));
+        out[i] = bauHash(r.meshes || []);
+      }
+    }));
+    return out;
+  };
 })();
 </script></body>`;
 }
@@ -293,12 +334,19 @@ async function runWithWorker(port, cb) {
                 out.push(...(await page.evaluate((l) => window.__kostenListe(l), liste.slice(i, i + 120))));
             return out;
         };
+        // Der Bau-Hash vieler Stufen (gate:regler-wirkt), in Scheiben wie die Kosten-Liste.
+        const bauHashListe = async (liste) => {
+            const out = [];
+            for (let i = 0; i < liste.length; i += 120)
+                out.push(...(await page.evaluate((l) => window.__bauHashListe(l), liste.slice(i, i + 120))));
+            return out;
+        };
         const getData = (type) => page.evaluate((t) => window.__aget(t), type);
         const atlas = () => page.evaluate(() => window.__atlas());
         const atlasAlpha = () => page.evaluate(() => window.__atlasAlpha());
         const atlasBild = () => page.evaluate(() => window.__atlasBild());
         const karte = (presetId, seed, stoer) => page.evaluate((p, sd, st) => window.__karte(p, sd, st), presetId, seed, stoer || null);
-        const out = await cb({ build, kostenListe, getData, atlas, atlasAlpha, atlasBild, karte, pageErrors });
+        const out = await cb({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, atlasBild, karte, pageErrors });
         if (pageErrors.length) throw new Error("Seiten-Fehler: " + pageErrors.slice(0, 3).join(" · "));
         return out;
     } finally {

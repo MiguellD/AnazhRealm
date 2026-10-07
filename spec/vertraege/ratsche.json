@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "zweck": "DIE RATSCHEN DER VERTRAGS-WÄNDE (Studio-Welle S1, Synthese W1 c/d/e): je Klasse die benannte Ist-Liste, die nur SCHRUMPFEN darf, und das Soll der Synthese daneben. Ein neuer Eintrag ist rot (beim Namen); ein geheilter ebenfalls, bis seine Zeile im selben Commit fällt — die Zahl sinkt und wächst nie still zurück. Heben ist ein begründeter Akt von Hand im Commit. Leser: gate:portal-konformanz (dslEinzelwort, readyEcho).",
+    "zweck": "DIE RATSCHEN DER VERTRAGS-WÄNDE (Studio-Welle S1, Synthese W1 c/d/e): je Klasse die benannte Ist-Liste, die nur SCHRUMPFEN darf, und das Soll der Synthese daneben. Ein neuer Eintrag ist rot (beim Namen); ein geheilter ebenfalls, bis seine Zeile im selben Commit fällt — die Zahl sinkt und wächst nie still zurück. Heben ist ein begründeter Akt von Hand im Commit. Leser: gate:portal-konformanz (dslEinzelwort, readyEcho) und gate:regler-wirkt (reglerTot).",
     "dslEinzelwort": {
         "zweck": "Der Spieler tippt im Portal EIN Wort in die Konsole; die Heimat schickt es flach als [\"w\", …args] (_portalParseWorldCommand → _portalForwardDsl). Stumm = die Welt-UI zeigt keine Wirkung, obwohl dieselbe Welt die chain-Form umsetzt (Kontrolle K4). Ursache je Studio: die Brücke liest op[0] je ELEMENT des Programms — aus \"gt\" wird \"g\" (Synthese §0.1).",
         "soll": 0,
@@ -12,5 +12,38 @@
         "soll": 0,
         "sollQuelle": "Synthese §4 W4 (Hülle): Brücken 13 → 1",
         "welten": ["fachwerk", "garage", "klang", "koerperstudio", "portale", "schmiede", "tetrapoda"]
+    },
+    "reglerTot": {
+        "zweck": "Ein Regler aus PARAMS_BY_KIND, den die Werkstatt rendert, dessen Wert (ov über build-asset) den Bau-Hash an KEINEM Rezept seiner Art bewegt (Seed 1, erste Stufe der Art, min und max). Schlüssel kern:art:id, Wert = der Befund.",
+        "soll": 0,
+        "sollQuelle": "Synthese §4 W1 „tote Regler beim Namen“, W4 „Regler-wirkt-Probe grün“ (Regler-Generator mit fest/festText, N2)",
+        "tot": {
+            "klang:klang:bpm": "kein Bau: build-asset baut die Art klang nicht (MESHFREI, kein Bäcker) — die Musik der Welt liest das Rezept, nie ov (Synthese W4 f: studioOv bekommt einen Leser)",
+            "klang:klang:color": "kein Bau (wie bpm)",
+            "klang:klang:darkness": "kein Bau (wie bpm)",
+            "klang:klang:flow": "kein Bau (wie bpm)",
+            "klang:klang:space": "kein Bau (wie bpm)",
+            "klang:klang:swing": "kein Bau (wie bpm)",
+            "klang:klang:tension": "kein Bau (wie bpm)",
+            "koerper:koerper:age": "der Mensch-Bäcker (foundry-core bakeMenschInstance) liest ov.dials, die Werkstatt schickt die B4-Form {id: wert} — kein Leser",
+            "koerper:koerper:arms": "wie age",
+            "koerper:koerper:gender": "wie age",
+            "koerper:koerper:hairLen": "wie age",
+            "koerper:koerper:hairVol": "wie age",
+            "koerper:koerper:height": "wie age",
+            "koerper:koerper:mass": "wie age",
+            "koerper:koerper:tone": "wie age",
+            "porta:gate:energy": "Membran-/Innenwelt-Regler: bewegt den Bau an keinem der 7 Tore (der Leser ist der Labor-Shader)",
+            "porta:gate:fog": "wie energy",
+            "porta:gate:fractal": "wie energy",
+            "porta:gate:reflect": "wie energy",
+            "porta:gate:swirl": "wie energy",
+            "porta:gate:temp": "wie energy",
+            "porta:gate:tunnel": "wie energy",
+            "porta:gate:twist": "wie energy",
+            "porta:gate:wave": "wie energy",
+            "schmiede:weapon:schaftR": "bewegt den Bau an keinem der 21 Rezepte",
+            "vehicle:vehicle:grip": "Fahr-Regler: der Bau trägt ihn nicht, das Fahr-Gesetz der Welt (_fahrzeugGesetzFor) liest Rezept s+fx, nie ov"
+        }
     }
 }

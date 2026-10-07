@@ -154,6 +154,7 @@
         "gate:perf-parity": "node scripts/diag-perf-parity.cjs",
         "gate:studio-vertrag": "node scripts/diag-studio-vertrag.cjs",
         "gate:portal-konformanz": "node scripts/diag-portal-konformanz.cjs --selftest && node scripts/diag-portal-konformanz.cjs",
+        "gate:regler-wirkt": "node scripts/diag-regler-wirkt.cjs --selftest && node scripts/diag-regler-wirkt.cjs",
         "verify:ring9": "node scripts/verify-ring9.cjs",
         "smoke:multiuser": "node scripts/smoke-multiuser.cjs",
         "smoke:webrtc": "node scripts/smoke-webrtc.cjs",
