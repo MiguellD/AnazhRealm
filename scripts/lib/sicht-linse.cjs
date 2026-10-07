@@ -74,6 +74,27 @@ function sichtLinse(cfg) {
     const familie = (s) => String(s && s.art).split("|")[0];
     // der Grund der letzten Wahl je Satz (`_satzAbschnittSteht` = false): ihre Bytes tragen ihn
     const wahlGrund = new WeakMap();
+    // DIE SCHULD DER FOLGE: das Verdichten (`dicht`) und das Umlegen (`umlegen`) sind die Arbeit einer Änderung davor — nur,
+    // solange eine Wahl sie schuldet. Jede neue Wahl eines Passes (`_satzAbschnittMerke`) schuldet ihrem Abschnitt („Familie
+    // Pass") EIN Verdichten und ihrem Satz („Familie") EIN Umlegen; ein Verdichten ohne offene Schuld (ein Abschnitt, der
+    // sich in Ruhe immer wieder dicht legt) heißt `dicht:ohne`, ein Umlegen ohne Wahl `umlegen:ohne` — Bytes ohne Grund.
+    // Was vor der Linse geschah, schuldet sie ab `an()` (ein Abschnitt mit Lücken, ein Satz über dem Verschnitt).
+    const schuld = new Set();
+    const schuldSaat = () => {
+        schuld.clear();
+        const ss = r.state.chunkSaetze;
+        if (!ss) return;
+        const V = (r.constructor.CHUNK_SATZ_ABSCHNITT || {}).verschnitt || 0;
+        for (const s of ss.values()) {
+            const fam = familie(s);
+            let belegt = 0;
+            for (const ab of s.abschnitte.values()) {
+                belegt += ab.kap;
+                if (!ab.dicht) schuld.add(fam + " " + ab.key);
+            }
+            if (s.iEnde - belegt > s.iKap * V) schuld.add(fam);
+        }
+    };
     // der Pass, in dem gerade geprüft wird (haupt · k<i> · anders) — die Prüfungen je Pass
     let pass = "?";
     const passName = (kam) => {
@@ -95,11 +116,26 @@ function sichtLinse(cfg) {
         const f = (orig[name] = P[name]);
         P[name] = function (...a) {
             if (art === "grund") {
-                stapel.push(name);
+                // `_chunkSatzRuht(s, ab, key)` · `_chunkSatzUmlegen(s, neu, kap, wer)`: der Grund trägt, ob eine Wahl ihn schuldet
+                const fam = familie(a[0]);
+                const ruht = name === "_chunkSatzRuht";
+                const kd = fam + " " + a[2];
+                const inWahl = stapel.includes("_chunkSatzAbschnitt");
+                const g = ruht
+                    ? schuld.has(kd)
+                        ? "dicht"
+                        : "dicht:ohne"
+                    : inWahl || schuld.has(fam)
+                      ? "umlegen"
+                      : "umlegen:ohne";
+                stapel.push(name + "|" + g);
                 try {
                     return f.apply(this, a);
                 } finally {
                     stapel.pop();
+                    if (ruht) {
+                        if (a[1] && a[1].dicht) schuld.delete(kd);
+                    } else if (!inWahl) schuld.delete(fam);
                 }
             }
             if (art === "schreib") {
@@ -107,8 +143,7 @@ function sichtLinse(cfg) {
                 let g = "?";
                 for (let i = stapel.length - 1; i >= 0; i--) {
                     const n = stapel[i];
-                    if (n === "_chunkSatzRuht") g = "dicht";
-                    else if (n === "_chunkSatzUmlegen") g = "umlegen";
+                    if (n.startsWith("_chunkSatzRuht|") || n.startsWith("_chunkSatzUmlegen|")) g = n.split("|")[1];
                     else if (n === "_chunkSatzAbschnitt") g = "wahl:" + (wahlGrund.get(a[0]) || "?");
                     else continue;
                     break;
@@ -176,6 +211,11 @@ function sichtLinse(cfg) {
                         ? "satz " + String(a[0].art).split("|")[0] + "|" + a[1].key
                         : "gruppe " + ((a[0].mesh && a[0].mesh.name) || a[0].key || "?");
                 z.neu[w] = (z.neu[w] || 0) + 1;
+                // die neue Wahl schuldet ihrem Abschnitt ein Verdichten und ihrem Satz ein Umlegen
+                if (name === "_satzAbschnittMerke") {
+                    schuld.add(familie(a[0]) + " " + a[1].key);
+                    schuld.add(familie(a[0]));
+                }
             }
             return o;
         };
@@ -236,18 +276,44 @@ function sichtLinse(cfg) {
     let lichtVor = null;
     // eine Drehung in einem Tick ohne Pass (der Loop rendert nicht jeden Tick) zählt zum nächsten gerenderten Frame
     let lichtOffen = 0;
-    // die Kamera des Hauptbilds: steht ihre Welt-Matrix gegen den Frame davor? (dieselbe Offen-Regel wie das Licht)
-    let kameraVor = null;
+    // die Kamera des Hauptbilds: wandert ihr Auge über den Halt der Lage oder dreht ihr Blick über den halben Dreh-Rand gegen
+    // den ANKER (`sichtKameraBewegt`), ist der Frame eine Änderung, und der Anker rückt nach (dieselbe Offen-Regel wie das
+    // Licht). Das Auge der Spiel-Kamera atmet im Stand um Millimeter — gegen den Frame davor zählte jeder Ruhe-Frame als
+    // bewegt (Radeon, Mess-Wiese, 07.10.: 299 von 299), und die Linse entschuldigte jede Arbeit und jedes Byte.
+    let kameraAnker = null;
     let kameraOffen = 0;
     const kameraBewegt = () => {
         const c = r.state.camera;
         if (!c) return 0;
-        const e = Array.from(c.matrixWorld.elements);
-        const vor = kameraVor;
-        kameraVor = e;
-        if (!vor) return 0;
-        for (let i = 0; i < 16; i++) if (Math.abs(e[i] - vor[i]) > 1e-9) return 1;
-        return 0;
+        // Welt-Matrix (16) und Projektion ohne den Versatz der zeitlichen Auflösung (Elemente 8 und 9 — TRAA)
+        const e = Array.from(c.matrixWorld.elements).concat(
+            Array.from(c.projectionMatrix.elements).map((x, i) => (i === 8 || i === 9 ? 0 : x))
+        );
+        if (!kameraAnker) {
+            kameraAnker = e;
+            return 0;
+        }
+        const PW = r.constructor.PASS_WAHL || {};
+        if (!window.__sichtKameraBewegt(kameraAnker, e, PW.haltM, PW.drehRand)) return 0;
+        kameraAnker = e;
+        return 1;
+    };
+    // DIE BLENDE (die LIVE-Uniforms jeder LOD-Maske: an · Auge · Perf-Streck · Bezug · die Kanten des Blend-Gesetzes — der
+    // Regler legt sie): ändert sie sich, wählt jeder Pass neu (`_passLageHaelt`: die Blende gleich). Das ist eine Änderung.
+    let blendeVor = null;
+    let blendeOffen = 0;
+    const blendeDreht = () => {
+        const lu = r.state.lodUniforms;
+        const v = (u) =>
+            u && u.value != null ? (typeof u.value === "number" ? u.value : u.value.x + "," + u.value.z) : "-";
+        const jetzt = lu
+            ? [lu.uLodMaskOn, lu.uLodAuge, lu.uLodPerf, lu.uLodRef, lu.uLodD0, lu.uLodD1, lu.uLodFade, lu.uLodFade0]
+                  .map(v)
+                  .join("|")
+            : "";
+        const vor = blendeVor;
+        blendeVor = jetzt;
+        return vor !== null && vor !== jetzt ? 1 : 0;
     };
     const lichtDreht = () => {
         const dl = r.state.directionalLight;
@@ -274,9 +340,11 @@ function sichtLinse(cfg) {
             z = neu();
             b0 = bytes();
             bj0 = bytesJe();
+            schuldSaat();
             inhalt();
             lichtDreht();
             kameraBewegt();
+            blendeDreht();
             return { gehuellt: Object.keys(orig), fehlt: fehlt.slice() };
         },
         // Die Zähler seit dem letzten frame() — und frisch weiter.
@@ -314,6 +382,9 @@ function sichtLinse(cfg) {
             kameraOffen = kameraBewegt() || kameraOffen;
             o.kamera = kameraOffen;
             if (o.paesse > 0) kameraOffen = 0;
+            blendeOffen = blendeDreht() || blendeOffen;
+            o.blende = blendeOffen;
+            if (o.paesse > 0) blendeOffen = 0;
             o.tag = r.state.timeOfDay;
             o.stufe = r.state._sonne && r.state._sonne.stufe > 0 ? r.state._sonne.stufe : null;
             // der Licht-Rand der Kaskaden mit Box (`PASS_WAHL.lichtRandTexel`): trägt ihn jede gerade gehaltene Lage?
@@ -343,10 +414,12 @@ function sichtLinse(cfg) {
 
 // DIE BYTES UND IHR GRUND (rein, K 07.10.): je Frame die Index-Bytes nach Klasse — `aenderung` (eine neue Wahl, deren
 // Grund im selben Frame geschah: die Lage eines Passes bei gedrehtem Licht, der Inhalt ihrer Familie — Bereich, Hülle,
-// Ordnung, Verdichten: Streaming, ein Bau, ein Asset), `folge` (die Arbeit einer Änderung davor: das Verdichten einer ruhenden
-// Wahl nach `dichtNach` Pässen, das Umlegen aller Abschnitte, eine fremd geleerte Liste) und `ohne` (kein Grund — der Täter,
-// je „Familie Grund Pass"). Bytes, die der Schreiber-Haken nicht sah, haben keinen Grund („? ungesehen" — die Linse ist
-// blind). Die Lage eines Passes ändert sich mit der Kamera (jeder Pass) oder dem Licht (nur die Kaskaden `k<i>`).
+// Ordnung, Verdichten: Streaming, ein Bau, ein Asset), `folge` (die Arbeit einer Änderung davor, solange eine Wahl sie schuldet:
+// das Verdichten einer ruhenden Wahl nach `dichtNach` Pässen, das Umlegen aller Abschnitte, eine fremd geleerte Liste) und
+// `ohne` (kein Grund — der Täter, je „Familie Grund Pass"; `dicht:ohne` · `umlegen:ohne`: die Folge, die keine Wahl
+// schuldet). Bytes, die der Schreiber-Haken nicht sah, haben keinen Grund („? ungesehen" — die Linse ist blind). Die Lage
+// eines Passes ändert sich mit der Kamera über den Halt (`kamera`) und der Blende des Reglers (`blende`, jeder Pass) oder
+// dem Licht (nur die Kaskaden `k<i>`).
 function sichtBytesKlasse(f) {
     const aus = { aenderung: 0, folge: 0, ohne: 0, aenderungJe: {}, folgeJe: {}, ohneJe: {} };
     let gesehen = 0;
@@ -355,7 +428,8 @@ function sichtBytesKlasse(f) {
         const [fam, g, pass] = k.split(" ");
         let kl = "ohne";
         if (g === "dicht" || g === "umlegen" || g === "wahl:liste") kl = "folge";
-        else if (g === "wahl:lage") kl = f.kamera || (f.licht && /^k\d+$/.test(pass || "")) ? "aenderung" : "ohne";
+        else if (g === "wahl:lage")
+            kl = f.kamera || f.blende || (f.licht && /^k\d+$/.test(pass || "")) ? "aenderung" : "ohne";
         else if (/^wahl:(stand|neu|boden|hoehle)$/.test(g)) kl = f.inhalt && f.inhalt[fam] ? "aenderung" : "ohne";
         aus[kl] += b;
         aus[kl + "Je"][k] = (aus[kl + "Je"][k] || 0) + b;
@@ -366,16 +440,34 @@ function sichtBytesKlasse(f) {
     }
     return aus;
 }
-// Die Arbeit eines Frames ohne Änderung: eine bewegte Kamera oder ein geänderter Satz-Inhalt erklären die ganze Arbeit,
-// ein gedrehtes Licht die Arbeit der Kaskaden-Pässe (je Pass `jePass`) — was bleibt, ist ein Cache-Bruch.
+// DIE KAMERA BEWEGT SICH (rein): Anker und jetzt je Welt-Matrix (Elemente 0–15, Spalten-Folge), dahinter optional die
+// Projektion ohne den Versatz der zeitlichen Auflösung (16–31) — das Auge wanderte um mehr als den halben Halt (`haltM`,
+// `_wahlHaelt`: jeder Ort der Lage hält bis zur Hälfte), eine Achse des Blicks (Blick −z, Oben +y) drehte um mehr als den
+// halben Dreh-Rand (`drehRand`), oder die Projektion änderte sich (Sichtfeld, Seiten, Nah/Fern — die Lage einer Perspektive
+// verlangt sie gleich). Das Atmen des Auges im Stand (±4 mm, keine Drehung) ist keine Bewegung.
+function sichtKameraBewegt(a, e, haltM, drehRand) {
+    const halt = (Number.isFinite(haltM) ? haltM : 0.02) / 2;
+    const dreh = (Number.isFinite(drehRand) ? drehRand : Math.PI / 90) / 2;
+    if (Math.hypot(e[12] - a[12], e[13] - a[13], e[14] - a[14]) > halt) return true;
+    for (let i = 16; i < Math.min(a.length, e.length); i++) if (a[i] !== e[i]) return true;
+    for (const o of [4, 8]) {
+        const la = Math.hypot(a[o], a[o + 1], a[o + 2]) || 1,
+            le = Math.hypot(e[o], e[o + 1], e[o + 2]) || 1;
+        const c = (a[o] * e[o] + a[o + 1] * e[o + 1] + a[o + 2] * e[o + 2]) / (la * le);
+        if (Math.acos(Math.max(-1, Math.min(1, c))) > dreh) return true;
+    }
+    return false;
+}
+// Die Arbeit eines Frames ohne Änderung: eine bewegte Kamera, eine neue Blende oder ein geänderter Satz-Inhalt erklären die
+// ganze Arbeit, ein gedrehtes Licht die Arbeit der Kaskaden-Pässe (je Pass `jePass`) — was bleibt, ist ein Cache-Bruch.
 function sichtArbeitOhne(f) {
-    if (f.kamera || (f.inhalt && Object.keys(f.inhalt).length)) return 0;
+    if (f.kamera || f.blende || (f.inhalt && Object.keys(f.inhalt).length)) return 0;
     if (!f.licht) return f.arbeit;
     let n = 0;
     for (const [k, x] of Object.entries(f.jePass || {})) if (!/^k\d+$/.test(k)) n += x.pruefung;
     return n;
 }
-const sichtAenderung = (f) => !!(f.licht || f.kamera || (f.inhalt && Object.keys(f.inhalt).length));
+const sichtAenderung = (f) => !!(f.licht || f.kamera || f.blende || (f.inhalt && Object.keys(f.inhalt).length));
 
 // Die Statistik einer Phase: je Zähl-Größe Mittel · Median · Maximum über die Frames (ab `ab`).
 function sichtPhase(frames, ab) {
@@ -431,6 +523,8 @@ function sichtPhase(frames, ab) {
                 warum: f.warum,
                 inhalt: f.inhalt,
                 licht: f.licht,
+                kamera: f.kamera,
+                blende: f.blende,
             });
     });
     // je Klasse die Summe je „Familie Grund" über die Phase (die Änderung beim Namen, der Täter beim Namen)
@@ -481,6 +575,8 @@ function sichtPhase(frames, ab) {
         inhaltJe,
         // die Frames mit einer Änderung (Kamera, Licht, Inhalt) und je Frame die Arbeit, die keine Änderung erklärt
         aenderungFrames: fs.length - ohneAenderung.length,
+        kameraFrames: fs.filter((f) => f.kamera).length,
+        blendeFrames: fs.filter((f) => f.blende).length,
         arbeitOhne: (() => {
             const x = fs.map((f) => window.__sichtArbeitOhne(f)).sort((a, b) => a - b);
             return {
@@ -624,6 +720,16 @@ function sichtUrteil(b) {
                 "LINSE STUMPF: ein eingeschmuggelter Cache-Bruch (die Lage jedes Passes neu) arbeitet in Ruhe nicht"
             );
     }
+    // der Byte-Bruch (`b.byteBruch`): jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es schuldet —
+    // die Linse muss die Bytes OHNE Änderung zählen und den Grund `dicht:ohne` beim Namen nennen
+    if (b.byteBruch !== undefined) {
+        const x = b.byteBruch;
+        if (!x || !(x.ohneFrames > 0) || !Object.keys(x.bytesOhneJe || {}).some((k) => / dicht:ohne /.test(k)))
+            v.push(
+                "LINSE STUMPF: ein eingeschmuggelter Byte-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu) zählt " +
+                    `nicht als Bytes ohne Änderung (${x ? x.ohneFrames : "?"} Frames, ${JSON.stringify((x && x.bytesOhneJe) || {})})`
+            );
+    }
     return v;
 }
 
@@ -745,6 +851,7 @@ module.exports = {
     SICHT_TREFFER,
     SICHT_NEU,
     RUHE_LESER,
+    sichtKameraBewegt,
     sichtBytesKlasse,
     sichtArbeitOhne,
     sichtPhase,
@@ -759,6 +866,7 @@ module.exports = {
             schreib: SICHT_SCHREIB,
             ruheLeser: RUHE_LESER,
         })});` +
+        `window.__sichtKameraBewegt = ${sichtKameraBewegt.toString()};` +
         `window.__sichtBytesKlasse = ${sichtBytesKlasse.toString()};` +
         `window.__sichtAenderung = ${sichtAenderung.toString()};` +
         `window.__sichtArbeitOhne = ${sichtArbeitOhne.toString()};` +

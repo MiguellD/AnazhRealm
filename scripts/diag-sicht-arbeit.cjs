@@ -16,6 +16,9 @@
 //   (T) TREUE — die gehaltene Wahl ist die frisch gerechnete: nach der Ruhe vergisst die Kette jede Lage, ein Frame
 //       rechnet alles neu — je Satz × Pass dieselben Zellen in derselben Folge, je Gruppe der Wahl dieselbe Zahl;
 //   (S) SCHARF — ein eingeschmuggelter Cache-Bruch (die Lage-Erinnerung fällt je Pass) arbeitet in Ruhe und fällt rot;
+//       ein eingeschmuggelter Byte-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es
+//       schuldet) zählt als Bytes OHNE Änderung und steht als `dicht:ohne` beim Namen (K, 07.10.: die Linse trennt die Bytes
+//       einer Änderung — Licht, Kamera über den Halt, Satz-Inhalt — und ihre geschuldete Folge von den Bytes ohne Grund);
 //   (L) RUHE MIT LAUFENDER SONNE (07.10. — der Tag steht im Spiel nie): die Tageszeit läuft mit der Tageslänge des Spiels
 //       (60 Frames je s), das Licht folgt `_applyDayNightToScene`, die Stellvertreter-Kaskaden stehen entlang des Lichts
 //       (dreht es, drehen sie): das Licht hat eine Stufe und dreht nur an ihr, die Kette arbeitet nur, wo eine Stufe fiel
@@ -37,6 +40,7 @@ function urteil(b) {
     // die Wand friert die Welt ein: in KEINEM Ruhe-Frame Arbeit oder ein Byte
     const v = SICHT.sichtUrteil(Object.assign({ streng: true }, b));
     if (!b.sonne) v.push("LEER: keine Phase mit laufender Sonne (kein Richtlicht?) — (L) prüfte nichts");
+    if (!b.byteBruch) v.push("LEER: kein Byte-Bruch gemessen — (S) prüfte die Bytes ohne Änderung nicht");
     const I = b.instanzTreue;
     if (!I || !(I.faelle && I.faelle.length >= 2))
         v.push(
@@ -111,6 +115,7 @@ function selbsttest() {
         drehen: phase(4000, 0, 0),
         gehen: phase(5000, 0, 0),
         bruch: phase(4000, 0, 0),
+        byteBruch: Object.assign(phase(0, 960, 9), { bytesOhneJe: { "boden dicht:ohne haupt": 9600 } }),
         treue: { geprueft: 12, abweichung: [] },
         drehTreue: { grenze: 0.0348, gehalten: true, loecher: 0, namen: [], geprueft: 500 },
         instanzTreue: {
@@ -149,19 +154,60 @@ function selbsttest() {
     });
     const v2 = urteil(mitAenderung);
     if (v2.length) fehler.push("Ruhe mit Änderung fällt rot: " + v2.join(" · "));
-    console.log(`  ${v2.length ? "❌" : "✅"} Selbsttest Ruhe mit Änderung (Licht, Inhalt) → ${v2.join(" · ") || "grün"}`);
+    console.log(
+        `  ${v2.length ? "❌" : "✅"} Selbsttest Ruhe mit Änderung (Licht, Inhalt) → ${v2.join(" · ") || "grün"}`
+    );
     // DIE KLASSE JE BYTE (`sichtBytesKlasse`): der Grund des Schreibers gegen die Änderung im selben Frame
     const kl = (f) => SICHT.sichtBytesKlasse(f);
     const klassen = [
-        ["Inhalt änderte sich", { bytes: 100, bytesGrund: { "boden wahl:stand haupt": 100 }, inhalt: { boden: { stand: 1 } } }, "aenderung"],
+        [
+            "Inhalt änderte sich",
+            { bytes: 100, bytesGrund: { "boden wahl:stand haupt": 100 }, inhalt: { boden: { stand: 1 } } },
+            "aenderung",
+        ],
         ["Stand ohne Inhalt", { bytes: 100, bytesGrund: { "boden wahl:stand haupt": 100 }, inhalt: {} }, "ohne"],
-        ["Inhalt einer anderen Familie", { bytes: 100, bytesGrund: { "boden wahl:neu k0": 100 }, inhalt: { wasser: { stand: 1 } } }, "ohne"],
-        ["Licht drehte (Kaskade)", { bytes: 100, bytesGrund: { "boden wahl:lage k0": 100 }, licht: 1, inhalt: {} }, "aenderung"],
-        ["Licht drehte (Hauptbild)", { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, licht: 1, inhalt: {} }, "ohne"],
-        ["Kamera bewegt (Hauptbild)", { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, kamera: 1, inhalt: {} }, "aenderung"],
+        [
+            "Inhalt einer anderen Familie",
+            { bytes: 100, bytesGrund: { "boden wahl:neu k0": 100 }, inhalt: { wasser: { stand: 1 } } },
+            "ohne",
+        ],
+        [
+            "Licht drehte (Kaskade)",
+            { bytes: 100, bytesGrund: { "boden wahl:lage k0": 100 }, licht: 1, inhalt: {} },
+            "aenderung",
+        ],
+        [
+            "Licht drehte (Hauptbild)",
+            { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, licht: 1, inhalt: {} },
+            "ohne",
+        ],
+        [
+            "Kamera bewegt (Hauptbild)",
+            { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, kamera: 1, inhalt: {} },
+            "aenderung",
+        ],
         ["Lage ohne Licht", { bytes: 100, bytesGrund: { "boden wahl:lage k1": 100 }, licht: 0, inhalt: {} }, "ohne"],
-        ["Verdichten einer ruhenden Wahl", { bytes: 100, bytesGrund: { "bauSatz dicht k0": 100 }, inhalt: {} }, "folge"],
+        [
+            "Blende des Reglers (Hauptbild)",
+            { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, blende: 1, inhalt: {} },
+            "aenderung",
+        ],
+        [
+            "Verdichten einer ruhenden Wahl",
+            { bytes: 100, bytesGrund: { "bauSatz dicht k0": 100 }, inhalt: {} },
+            "folge",
+        ],
         ["Umlegen", { bytes: 100, bytesGrund: { "boden umlegen haupt": 100 }, inhalt: {} }, "folge"],
+        [
+            "Verdichten ohne Schuld",
+            { bytes: 100, bytesGrund: { "bauSatz dicht:ohne k0": 100 }, licht: 1, inhalt: {} },
+            "ohne",
+        ],
+        [
+            "Umlegen ohne Wahl",
+            { bytes: 100, bytesGrund: { "boden umlegen:ohne haupt": 100 }, kamera: 1, inhalt: {} },
+            "ohne",
+        ],
         ["ungesehene Bytes", { bytes: 100, bytesGrund: {}, inhalt: {} }, "ohne"],
     ];
     for (const [name, f, soll] of klassen) {
@@ -172,6 +218,29 @@ function selbsttest() {
     }
     if (!kl({ bytes: 100, bytesGrund: {}, inhalt: {} }).ohneJe["? ungesehen"])
         fehler.push("ungesehene Bytes stehen nicht beim Namen");
+    // DIE KAMERA BEWEGT SICH (`sichtKameraBewegt`): das Atmen des Auges im Stand ist keine Bewegung (sonst entschuldigte die
+    // Linse jeden Ruhe-Frame — Radeon 07.10.: 299 von 299), ein Schritt über den Halt und eine Drehung über den halben
+    // Dreh-Rand sind es
+    const mat = (yawGrad, x, y, z) => {
+        const w = (yawGrad * Math.PI) / 180;
+        const c = Math.cos(w),
+            s = Math.sin(w);
+        return [c, 0, -s, 0, 0, 1, 0, 0, s, 0, c, 0, x, y, z, 1];
+    };
+    const HALT = 0.02,
+        DREH = (2 * Math.PI) / 180;
+    const proj = (fern) => [1.3, 0, 0, 0, 0, 2.3, 0, 0, 0, 0, -1, -1, 0, 0, -0.2 * fern, 0];
+    for (const [name, b, soll] of [
+        ["Atmen ±4 mm", mat(0, -900, 64.004, -850).concat(proj(1)), false],
+        ["Schritt 1,5 cm (über dem halben Halt)", mat(0, -900.015, 64, -850).concat(proj(1)), true],
+        ["Drehung 0,5°", mat(0.5, -900, 64, -850).concat(proj(1)), false],
+        ["Drehung 1,5°", mat(1.5, -900, 64, -850).concat(proj(1)), true],
+        ["Projektion (Fern-Ebene)", mat(0, -900, 64, -850).concat(proj(1.01)), true],
+    ]) {
+        const k = SICHT.sichtKameraBewegt(mat(0, -900, 64, -850).concat(proj(1)), b, HALT, DREH);
+        if (k !== soll) fehler.push(`Kamera „${name}": ${k} statt ${soll}`);
+        console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Kamera „${name}" → ${k ? "bewegt" : "steht"}`);
+    }
     // DIE ARBEIT OHNE ÄNDERUNG je Frame (`sichtArbeitOhne`): Kamera und Inhalt erklären alles, das Licht nur die Kaskaden
     const ao = (f) => SICHT.sichtArbeitOhne(f);
     const jp = { haupt: { pruefung: 7 }, k0: { pruefung: 50 } };
@@ -179,6 +248,7 @@ function selbsttest() {
         ["ruhig", { arbeit: 57, jePass: jp, inhalt: {} }, 57],
         ["Licht drehte", { arbeit: 57, jePass: jp, licht: 1, inhalt: {} }, 7],
         ["Kamera bewegt", { arbeit: 57, jePass: jp, kamera: 1, inhalt: {} }, 0],
+        ["Blende neu", { arbeit: 57, jePass: jp, blende: 1, inhalt: {} }, 0],
         ["Inhalt änderte sich", { arbeit: 57, jePass: jp, inhalt: { bauSatz: { stand: 1 } } }, 0],
     ]) {
         const n = ao(f);
@@ -193,7 +263,11 @@ function selbsttest() {
         ],
         [
             "ein Ausreißer in Ruhe",
-            (b) => ((b.ruhe.arbeit.max = 30), (b.ruhe.arbeitFrames = 1), (b.ruhe.arbeitOhne = { frames: 1, median: 0, max: 30 })),
+            (b) => (
+                (b.ruhe.arbeit.max = 30),
+                (b.ruhe.arbeitFrames = 1),
+                (b.ruhe.arbeitOhne = { frames: 1, median: 0, max: 30 })
+            ),
             /RUHE: die Sicht-Kette arbeitet in Ruhe/,
         ],
         [
@@ -218,6 +292,21 @@ function selbsttest() {
         ],
         ["Treue ohne Vergleich", (b) => (b.treue.geprueft = 0), /LEER: Treue ohne Vergleich/],
         ["stumpfe Linse", (b) => (b.bruch = phase(0, 0, 9)), /LINSE STUMPF/],
+        [
+            "stumpfe Byte-Linse (der Byte-Bruch schreibt nichts)",
+            (b) => (b.byteBruch = phase(0, 0, 9)),
+            /LINSE STUMPF: ein eingeschmuggelter Byte-Bruch/,
+        ],
+        [
+            "stumpfe Byte-Linse (der Byte-Bruch heißt Folge)",
+            (b) =>
+                (b.byteBruch = Object.assign(phase(0, 0, 9), {
+                    bytes: { mittel: 960, median: 960, max: 960 },
+                    schreibFrames: 10,
+                })),
+            /LINSE STUMPF: ein eingeschmuggelter Byte-Bruch/,
+        ],
+        ["kein Byte-Bruch", (b) => delete b.byteBruch, /LEER: kein Byte-Bruch gemessen/],
         [
             "das Licht dreht je Frame (die Basis)",
             (b) => (b.sonne = sonne(120, 120, null)),
@@ -728,6 +817,22 @@ const server = http.createServer((req, res) => {
             } finally {
                 delete r._passWahlLage;
             }
+            // (S) SCHARF FÜR DIE BYTES: der eingeschmuggelte Byte-Bruch — jeder ruhende Abschnitt verliert je Pass seine
+            // Dicht-Marke und legt sich neu, ohne dass eine Wahl es schuldet; die Linse zählt die Bytes OHNE Änderung und
+            // nennt `dicht:ohne` (die Hülle der Linse am Prototyp bleibt der Weg)
+            stelle(0, 0);
+            reif();
+            const dichtNach = r.constructor.CHUNK_SATZ_ABSCHNITT.dichtNach;
+            r._chunkSatzRuht = function (s, ab, key) {
+                ab.dicht = false;
+                if (ab.ruhe < dichtNach) ab.ruhe = dichtNach;
+                return P._chunkSatzRuht.call(this, s, ab, key);
+            };
+            try {
+                aus.byteBruch = window.__sichtPhase(phase(6), 1);
+            } finally {
+                delete r._chunkSatzRuht;
+            }
             L.aus();
             const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
             aus.code.lageGen = /this\._passLageGen\(/.test(code(P._passWahlLage));
@@ -776,7 +881,8 @@ const server = http.createServer((req, res) => {
         console.log(
             `  kalt    der erste Ruhe-Frame: Arbeit ${k.arbeit} · Ecken ${k.ecken} · Bytes ${k.bytes} · Treffer ${k.trefferSumme}`
         );
-    for (const n of ["ruhe", "sonne", "drehen", "gehen", "bruch"]) if (befund[n]) console.log(zeile(n, befund[n]));
+    for (const n of ["ruhe", "sonne", "drehen", "gehen", "bruch", "byteBruch"])
+        if (befund[n]) console.log(zeile(n, befund[n]));
     if (befund.sonne)
         console.log(
             `  Sonne: das Licht drehte in ${befund.sonne.lichtFrames} von ${befund.sonne.frames} Frames (${befund.sonne.sonneRad} rad, ` +
