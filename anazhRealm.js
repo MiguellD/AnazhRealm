@@ -50685,7 +50685,9 @@ class AnazhRealm {
 
     // DER BODEN unter den Rädern des Fahr-Schritts: das Boden-Gesetz; ein schwimmendes Werk (floats) reitet die Lauf-
     // Fläche, wo sie über dem Terrain liegt (Wasserlinie = Lauf-Fläche − Tauchtiefe, `_rittTauchTiefe`). Je Werk EINE
-    // Funktion (kein Abschluss je Schritt).
+    // Funktion (kein Abschluss je Schritt). INTEGRATIONS-NAHT (Entscheide D4/D10 der Welle L): die Wasser-Wahrheit gehört
+    // der Familie wasser — `_waterRunSurfaceAt` fällt dort; nach dem Merge liest diese Stelle (wie die zwei in
+    // `_rittSchritt`) `_koerperWasser(x, z, grund, gestalt)`, kein zweiter Wasser-Leser.
     _fahrBoden(entry) {
         if (entry._fahrBodenFn) return entry._fahrBodenFn;
         const prof = this._vehicleProfile(entry);
@@ -50793,7 +50795,12 @@ class AnazhRealm {
         const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
         const rideProf = this._vehicleProfile(entry);
         // `_afloat` = reitet das Gefährt in DIESEM Schritt auf der Lauf-Fläche (am Ursprung, dieselbe Wasserlinie wie der
-        // Boden des Fahr-Schritts): _stepCharacter (4b) liest es als Boots-Gate der Strömungs-Advektion.
+        // Boden des Fahr-Schritts): _stepCharacter (4b) liest es als Boots-Gate der Strömungs-Advektion. Die zwei Lauf-
+        // Flächen-Lesungen dieses Schritts sind INTEGRATIONS-NAHT (D4/D10, Familie wasser: `_koerperWasser`, s. `_fahrBoden`).
+        // BENANNT GEFALLEN (Welle L, Q13): die Schwimm-Feder — exportDrive.spring {k, c} federte vorher die Aufsitz-Höhe
+        // eines schwimmenden Werks gegen die Wasserlinie (ein zweiter Vertikal-Integrator neben dem Kern). Jetzt reitet ein
+        // Gesetz-Werk die Wasserlinie auf der ballistischen Vertikale des Fahr-Schritts (`_fahrBoden`), seine Feder federt
+        // den Aufbau (Nick · Wank · Hub); ein Werk ohne Fahr-Gesetz folgt ihr mit exp-k 8.
         entry._afloat = false;
         const t0 = this.getTerrainHeightAt(pm.x, pm.z);
         if (rideProf && rideProf.floats && Number.isFinite(t0)) {
@@ -88026,7 +88033,11 @@ class AnazhRealm {
     // ganz im Wagen). Der Körper des Gesetz-Fahrzeugs ist seine Hülle: ein Rechteck längs der Fahrt (Bug bis Heck, ±halbe
     // Karosserie-Breite), das Band von der Rad-Ebene + Stufe (radR/2, vehicle-core FAHR.schritt.stufeRad) bis zum Dach.
     // Studio-Fahrzeug: exportDrive.huelle; Teile-Werk: seine Hülle (die halbe Spanne längs, die halbe Breite quer). null:
-    // kein Fahr-Gesetz (dann trägt die Reiter-Kapsel).
+    // kein Fahr-Gesetz (dann trägt die Reiter-Kapsel). ZWEI ROLLEN, BENANNT (Gegenprüfung 07.10.): fahrend kollidiert der
+    // Wagen als DIESES gedrehte Rechteck; als Hindernis für andere (Spieler-Kapsel, Wesen, ein zweiter Wagen) steht er als
+    // seine Teil-Boxen (`_populateBlockerAABBs`: achsparallele AABBs je Teil, im Ritt bis 0,5 m nachgezogen, beim Abstieg
+    // und nach dem Nachlauf exakt). Dieselbe Form in beiden Rollen trägt die gedrehte Box (OBB) — die gehört nach Entscheid
+    // D5 der Familie koerper-haus (`box.obb`); `_resolveHuelleVsAABB` liest sie nach der Integration.
     _fahrHuelle(entry) {
         if (!entry || !entry._fahr || !entry._fahrSatz || !Number.isFinite(entry._fahr.y)) return null;
         if (entry._fahrHuelleKette) return entry._fahrHuelleKette;
