@@ -76,11 +76,36 @@ function check(name, ok, detail) {
 // das Spiel eine Wache trägt (an altem Code ist diese Zahl der Befund).
 function geraeteHoerer() {
     if (typeof GPUAdapter === "undefined" || window.__frostHoer) return;
-    const H = (window.__frostHoer = { devices: 0, n: 0, erste: [] });
+    const H = (window.__frostHoer = { devices: 0, n: 0, erste: [], bauOffen: 0, bereiche: 0, verloren: [] });
+    // Wer hält eine Meldung zurück? Offene async Pipeline-Bauten und offene Fehler-Bereiche (aller Devices) — die
+    // Täter-Probe nennt beide, wenn das Wort einer Validierung ausbleibt.
+    const P = GPUDevice.prototype;
+    const bau = P.createRenderPipelineAsync;
+    if (bau)
+        P.createRenderPipelineAsync = function (d) {
+            H.bauOffen++;
+            const p = bau.call(this, d);
+            p.then(
+                () => H.bauOffen--,
+                () => H.bauOffen--
+            );
+            return p;
+        };
+    const auf = P.pushErrorScope,
+        zu = P.popErrorScope;
+    P.pushErrorScope = function (f) {
+        H.bereiche++;
+        return auf.call(this, f);
+    };
+    P.popErrorScope = function () {
+        H.bereiche--;
+        return zu.call(this);
+    };
     const rd = GPUAdapter.prototype.requestDevice;
     GPUAdapter.prototype.requestDevice = async function (d) {
         const dev = await rd.call(this, d);
         const nr = H.devices++;
+        dev.lost.then((i) => H.verloren.push(`device ${nr}: ${i.reason} ${String(i.message).slice(0, 120)}`));
         dev.addEventListener("uncapturederror", (ev) => {
             H.n++;
             if (H.erste.length < 6)
@@ -381,6 +406,9 @@ function pruefRaum(echt) {
                 kaputt,
                 hoer: H ? H.n : -1,
                 hoerErste: H ? H.erste : [],
+                bauOffen: H ? H.bauOffen : -1,
+                bereiche: H ? H.bereiche : -1,
+                verloren: H ? H.verloren : [],
                 devices: H ? H.devices : -1,
                 indexWache: r._indexWache ? { n: r._indexWache.n, brueche: r._indexWache.brueche.slice(0, 8) } : null,
                 gpuWache: r._gpuWache ? { n: r._gpuWache.n } : null,
@@ -477,6 +505,21 @@ function pruefRaum(echt) {
         true
     );
 
+    // DER NACHLAUF: eine Validierung, die r184 in einem offenen Pipeline-Fehler-Bereich fängt, meldet sich erst, wenn der
+    // async Pipeline-Bau endet (CI 07.10., Linux: später als der Schritt) — 3 s Zeichnen, dann darf kein Wort nachkommen.
+    await page.evaluate(async () => {
+        const t = performance.now();
+        while (performance.now() - t < 3000) await window.__frostWand.zeichne(1);
+    });
+    {
+        const l = await lage();
+        check(
+            "Nachlauf: kein verspätetes Wort einer Validierung",
+            l.hoer === 0 && (!l.gpuWache || l.gpuWache.n === 0),
+            l.hoer ? `${l.hoer} Meldungen: ${l.hoerErste.join(" | ")}` : ""
+        );
+    }
+
     // DIE TÄTER — die Wand beweist sich an jedem Lauf.
     console.log("\n=== DIE TÄTER (die Wachen und die Bild-Probe beißen) ===");
     const t1 = await page.evaluate(async () => {
@@ -530,7 +573,18 @@ function pruefRaum(echt) {
     if (!t2) check("T2 der Mensch trägt einen schmalen Index auf der Welt-GPU", false, "kein Ziel");
     else {
         const steht = await bildPaar("taeter-format");
-        const l = await lage();
+        // Das Wort der Validierung kommt, wenn sie gemeldet wird: sofort (uncapturederror) oder mit dem Ende des async
+        // Pipeline-Baus, der den Fehler-Bereich offen hielt — die Wand zeichnet weiter und wartet höchstens 30 s.
+        const tWort = Date.now();
+        let l = await lage();
+        while ((l.hoer === 0 || !l.gpuWache || !(l.gpuWache.n > t2.vor)) && Date.now() - tWort < 30000) {
+            await zeichne(1);
+            await new Promise((res) => setTimeout(res, 250));
+            l = await lage();
+        }
+        console.log(
+            `  T2 das Wort der Validierung nach ${Date.now() - tWort} ms (offene Pipeline-Bauten ${l.bauOffen}, offene Fehler-Bereiche ${l.bereiche}, verlorene Devices ${JSON.stringify(l.verloren)})`
+        );
         const genannt =
             l.indexWache && l.indexWache.brueche.find((b) => b.art === "format" && b.geometrie === t2.geometrie);
         check(
