@@ -415,8 +415,26 @@ jobs:
               # An der Mess-Wiese, Null-Renderer: das Hauptbild über den EINEN Haken, zwei Stellvertreter-Kaskaden über den
               # Satz-Chokepoint samt Instanz-Wahl; die Sicht-Linse zählt je Frame Prüfungen, Ecken, Index-Bytes und Treffer.
               # In Ruhe 0 Arbeit und 0 Bytes ab dem ersten Frame, beim Drehen und Gehen rechnet jede neue Lage, die gehaltene
-              # Wahl ist die frisch gerechnete, ein eingeschmuggelter Cache-Bruch fällt rot. --selftest zuerst.
+              # Wahl ist die frisch gerechnete, ein eingeschmuggelter Cache-Bruch fällt rot. Ein Satz-Inhalt zählt nur mit
+              # Beleg (Bereich, Anker, Hülle) - ein eingeschmuggelter Stand-Bruch (der Satz zählt nur seinen Stand) fällt
+              # als stand:ohne beim Namen rot. Das atmende Auge (Kamera und Maske +-1 mm, unter dem Halt) arbeitet nicht,
+              # und die gehaltene Wahl trägt eine Instanz an der Kante ihres Fensters (ohne den Halt als Rand fehlt sie).
+              # --selftest zuerst.
               run: npm run gate:sicht-arbeit
+
+            - name: Wetter-Wache (Welle K — Halt heisst Halt, jeder Schreiber beim Namen)
+              # Null-Renderer, eine echte Welt: unter der Buehne versucht jeder Schreiber-Weg des Spiels das Wetter zu drehen
+              # (Emotion sorrow, Nexus, Gesetz, Mensch, Mitspieler, Auto-Zug) - das Wetter bleibt sunny, jeder Zug steht als
+              # verweigert beim Namen seiner Quelle; ein roher Schreiber am _setWeather vorbei faellt rot; ohne Halt wirkt
+              # das Spiel wie immer; im Stamm schreibt nur _setWeather und das Laden. --selftest zuerst.
+              run: npm run gate:wetter-wache
+
+            - name: Stand-Takt (Welle K — im Stand kostet die Welt nichts, Gehen kostet die Änderung)
+              # An der Mess-Wiese, Null-Renderer, Fern-Ring über seinen Haken, Foundry an, der Regler hält: die Stand-Linse
+              # zählt je Frame die Blatt-Rufe der Fege-Takte (Ring, Stufen-Wahl, Cull, Streu, Nah-Streu, Nah-Wiese, Saum).
+              # In Ruhe 0 Einheiten; mit gebrochener Wache arbeitet jeder Takt und keiner ändert die Welt (nichts verschlafen);
+              # ein Baum und ein Regler-Schritt wecken, Gehen arbeitet, ein Sprung baut den Spieler-Chunk. --selftest zuerst.
+              run: npm run gate:stand-takt
 
             - name: Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)
               # P3a: die Foundry ist ein Worker (nicht mehr ein iframe) → sie produziert echte Assets AUCH
@@ -813,6 +831,16 @@ jobs:
               # ohne Leinwand-Tiefe. Dazu die Shader-Kosten-Linse am erzeugten WGSL der Ausgabe (hoechstens 9 unbedingte
               # Abtastungen, Godrays und Kontrast im Zweig hinter ihrer Staerke) und die Godrays mit der Sonne im Bild.
               run: npm run gate:post-kette
+
+            - name: Kamera-Treue und Stand-Wand (echter Renderer — der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)
+              # Faehrt den ECHTEN Renderer (swiftshader, kienspan, Schatten an) an einer eigenen Buehne: die Aufnahme verfolgt
+              # jeden Draw trotz Schatten-Render, kein Bundle unter dem Override-Stoff, der Replay zeichnet Blick Y wie der
+              # direkte Pfad. Dazu die STAND-WAND (Welle K): Programme mit denselben Quellen teilen EINE geteilte Gruppe, im
+              # Stand je Render kein Voll-Refresh, kein Upload, kein zweiter Gang ueber einen Knoten oder eine Gruppe; eine
+              # Aenderung im Stand zeichnet wie der volle Refresh; VERSCHACHTELT: ein Schatten-Render, dessen Werfer ohne
+              # Diaet die Kamera-Knoten ueber die Vendor-Bahn stellt, laesst keinen Stempel ueberleben (181d3c9e: 0,11).
+              # --selftest zuerst: injizierte Taeter fallen rot.
+              run: npm run gate:kamera-treue
 
             - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
               # Die LINSE gegen den asymmetrischen-Verifikations-Riss: das Gate misst Mechanik, nicht

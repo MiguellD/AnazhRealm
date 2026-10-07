@@ -31,15 +31,122 @@ function saisonFest() {
 
 // DIE WETTER-WACHE der Bühne (die EINE Stelle, die das Wetter einer Messung hält): die Uhr des Auto-Zugs
 // (`weatherEffectTime`, Zug bei 120 s) steht eingefroren unter 0 — ein schon eingefrorener Wert bleibt, wie er ist. Die
-// Bühne ruft sie, und jede Schleife, die Takte am Stück fährt (`werkbank lauf`, die Schirm-Wand), ruft sie je Takt: der
-// EINE Wetter-Schreiber des Spiels (`_setWeather`, auch der Emotions-Effekt „hope → sunny") setzt die Uhr auf 0, der
-// nächste Takt friert sie wieder ein. Bis 07.10. setzte die Bühne selbst die Uhr auf 0 (über `_setWeather`): jede Bühne
-// (`lauf`, `band`, jede Sonde) taute ein eingefrorenes Wetter auf, und 120 s freier Takte später zog Regen ins Bild (OMEN:
-// „rainy" in 2 von 4 Boots; Werkbank: eingefroren → lauf → Uhr 17,6 → 120 s frei → rainy).
+// Bühne ruft sie, und jede Schleife, die Takte am Stück fährt (`werkbank lauf`, die Schirm-Wand), ruft sie je Takt. Die
+// eingefrorene Uhr IST der Halt: der EINE Wetter-Schreiber des Spiels (`_setWeather`) verweigert jeden Zug, solange sie
+// unter 0 steht — Emotions-Effekt, Nexus, Gesetz, Mitspieler, Auto-Zug; im Spiel zählt die Uhr von 0 aufwärts. Bis 07.10.
+// hielt die Wache nur die Uhr (OMEN, V18.534, ein B-Boot: die Uhr eingefroren, das Wetter trotzdem sunny → rainy), davor
+// taute die Bühne selbst die Uhr (jede Bühne, 120 s freier Takte später zog Regen ins Bild).
 function wetterHalten() {
     const st = window.anazhRealm.state;
+    window.__wetterSpion();
     const u = st.weatherEffectTime;
     if (!(Number.isFinite(u) && u < 0)) st.weatherEffectTime = -1e9;
+}
+
+// DER WETTER-SPION (die Linse der Wache): JEDER Schreiber des Wetters beim Namen. Der EINE Wetter-Schreiber des Spiels
+// (`_setWeather`) bucht je Aufruf seine Quelle (die DSL-Quelle — `emotion:sorrow` · `nexus` · `rule:…` · `human` · `remote:…`
+// —, „auto-zug", „buehne") und die Spiel-Rahmen seines Stapels; ein verweigerter Zug (die Wache hält) steht als
+// „verweigert" im Buch. `state.weather` selbst trägt einen Accessor: wer das Wort am `_setWeather` vorbei schreibt, steht
+// als „roh" mit seinem Stapel im Buch. Die Hülle ruft den Schreiber des Prototyps je Aufruf (`werkbank methode` tauscht
+// ihn live). Das Buch liest `__wetterBuch(seit)`, das Urteil `wetterUrteil` (rein, unten).
+function wetterSpion() {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const S =
+        window.__wetterSpionBuch ||
+        (window.__wetterSpionBuch = { seq: 0, buch: [], staende: new WeakSet(), quelle: null, stapel: null });
+    if (S.staende.has(st)) return S;
+    S.staende.add(st);
+    // die Spiel-Rahmen des Stapels (anazhRealm.js), der jüngste zuerst — die Rahmen der Linse zählen nicht. Ein DSL-Programm
+    // trägt beliebig tief verschachtelte Interpreter-Rahmen (dslEval ← random ← dslEval ← repeat …): der Name ist dann der
+    // Effekt und wer `dslRun` rief (der Täter: Emotion, Nexus, Gesetz …).
+    const wer = () => {
+        const lim = Error.stackTraceLimit;
+        Error.stackTraceLimit = 60;
+        const zeilen = String(new Error().stack || "").split("\n");
+        Error.stackTraceLimit = lim;
+        const namen = [];
+        for (const l of zeilen) {
+            if (!/anazhRealm\.js/.test(l)) continue;
+            const m = /at (?:async )?(?:new )?([^\s(]+) \(/.exec(l);
+            namen.push(m ? m[1].replace(/^(AnazhRealm|Object)\./, "") : "(anonym)");
+        }
+        if (!namen.length) return "Sonde (kein Spiel-Rahmen)";
+        const lauf = namen.indexOf("dslRun");
+        if (lauf > 1) return [namen[0], "…", ...namen.slice(lauf, lauf + 4)].join(" ← ");
+        return namen.slice(0, 6).join(" ← ");
+    };
+    const buche = (e) => {
+        e.seq = ++S.seq;
+        e.t = Math.round(performance.now());
+        e.uhr = Number.isFinite(st.weatherEffectTime) ? +st.weatherEffectTime.toFixed(1) : null;
+        S.buch.push(e);
+        if (S.buch.length > 500) S.buch.splice(0, S.buch.length - 500);
+    };
+    let wert = st.weather;
+    Object.defineProperty(st, "weather", {
+        configurable: true,
+        enumerable: true,
+        get: () => wert,
+        set: (v) => {
+            if (v !== wert)
+                buche({
+                    art: S.quelle != null ? "schreiber" : "roh",
+                    von: wert,
+                    zu: v,
+                    quelle: S.quelle,
+                    stapel: S.stapel || wer(),
+                });
+            wert = v;
+        },
+    });
+    if (!Object.prototype.hasOwnProperty.call(r, "_setWeather"))
+        r._setWeather = function (name, quelle) {
+            const vor = this.state.weather;
+            const q0 = S.quelle,
+                s0 = S.stapel;
+            S.quelle = quelle || "?";
+            S.stapel = wer();
+            try {
+                const ok = Object.getPrototypeOf(this)._setWeather.call(this, name, quelle);
+                if (ok === false && name !== vor && name in this.constructor.WEATHER_INTENSITY)
+                    buche({ art: "verweigert", von: vor, zu: name, quelle: S.quelle, stapel: S.stapel });
+                return ok;
+            } finally {
+                S.quelle = q0;
+                S.stapel = s0;
+            }
+        };
+    return S;
+}
+
+// Das Buch des Spions seit `seit` (seq) und der Stand der Wache jetzt.
+function wetterBuch(seit) {
+    const S = window.__wetterSpion();
+    const st = window.anazhRealm.state;
+    const u = st.weatherEffectTime;
+    return {
+        seq: S.seq,
+        wetter: st.weather,
+        uhr: Number.isFinite(u) ? +u.toFixed(1) : null,
+        fest: Number.isFinite(u) && u < 0,
+        buch: S.buch.filter((e) => e.seq > (seit || 0)),
+    };
+}
+
+// Die Bühne setzt das Wetter IHRER Messung: der Halter selbst ist der eine Schreiber, den der Halt durchlässt — die Uhr
+// taut für DIESEN Zug (Quelle „buehne") und steht danach wieder, wie sie stand (oder eingefroren). Der Cross-Fade fällt.
+function wetterSetzen(wort) {
+    const r = window.anazhRealm;
+    const st = r.state;
+    window.__wetterSpion();
+    const uhr = st.weatherEffectTime;
+    st.weatherEffectTime = 0;
+    r._setWeather(wort, "buehne");
+    st.weatherEffectTime = uhr;
+    window.__wetterHalten();
+    st.weatherTransition = null;
+    return st.weather;
 }
 
 function buehne() {
@@ -49,14 +156,8 @@ function buehne() {
     if (typeof r.setSeason === "function") r.setSeason("sommer");
     if (st.world) st.world.timeOfDay = 0.5;
     st.timeOfDay = 0.5;
-    // Das Wetter hält wie die Saison: Sonne, und die Uhr des Auto-Zugs wie vor dem Schreiber — dann eingefroren
-    // (`__wetterHalten`).
-    const wetterUhr = st.weatherEffectTime;
-    if (typeof r._setWeather === "function") r._setWeather("sunny");
-    else st.weather = "sunny";
-    st.weatherEffectTime = wetterUhr;
-    window.__wetterHalten();
-    st.weatherTransition = null;
+    // Das Wetter hält wie die Saison: Sonne über den EINEN Schreiber, dann eingefroren (`__wetterSetzen`).
+    window.__wetterSetzen("sunny");
     if (typeof r._tickRain === "function") r._tickRain(performance.now());
     if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
     // Die Himmels-Umgebung (IBL) malt der Loop aus der Nebel-Farbe — gedrosselt und nur bei Drift. Bei
@@ -242,9 +343,102 @@ function ausgabeAufnahme(W, H, warm, opt) {
     })();
 }
 
+// DAS URTEIL DER WETTER-WACHE (rein, Node): `w` = { vorher, nachher, uhrVorher, uhrNachher, buch } — `buch` die Einträge des
+// Spions im Fenster einer Messung. ROT: ein Schreiber (nicht die Bühne) drehte das Wetter, ein roher Schreiber schrieb am
+// `_setWeather` vorbei, die Uhr taut nach der Messung, oder ein eingefrorenes Wort ist danach ein anderes. Verweigerte Züge
+// (die Wache hielt) sind grün und stehen je Quelle beim Namen.
+function wetterUrteil(w) {
+    const fest = (u) => Number.isFinite(u) && u < 0;
+    const taeter = [];
+    const verweigert = {};
+    for (const e of w.buch || []) {
+        if (e.art === "verweigert") {
+            const k = `${e.quelle} → ${e.zu}`;
+            verweigert[k] = (verweigert[k] || 0) + 1;
+            continue;
+        }
+        if (e.quelle === "buehne") continue;
+        const name = e.quelle && e.quelle !== "?" ? `${e.quelle} (${e.stapel})` : e.stapel;
+        taeter.push(`${e.art === "roh" ? "ROH am _setWeather vorbei: " : ""}${e.von} → ${e.zu} durch ${name}`);
+    }
+    if (!fest(w.uhrNachher)) taeter.push(`die Uhr des Auto-Zugs taut (${w.uhrNachher})`);
+    if (fest(w.uhrVorher) && w.nachher !== w.vorher && !taeter.length)
+        taeter.push(`${w.vorher} → ${w.nachher} ohne gebuchten Schreiber (der Spion ist blind)`);
+    return Object.assign({}, w, { urteil: taeter.length ? "ROT" : "GRUEN", taeter, verweigert });
+}
+
+// DER SELBSTTEST DES URTEILS (rein): jeder Täter fällt rot und steht beim Namen, Verweigerung und Bühne bleiben grün.
+function wetterSelbsttest() {
+    const v = [];
+    const fest = { vorher: "sunny", nachher: "sunny", uhrVorher: -1e9, uhrNachher: -1e9 };
+    const nex = { art: "schreiber", von: "sunny", zu: "rainy", quelle: "nexus", stapel: "weather ← dslEval ← dslRun" };
+    const faelle = [
+        ["ruhig", Object.assign({ buch: [] }, fest), "GRUEN", null],
+        ["nexus", Object.assign({}, fest, { nachher: "rainy", buch: [nex] }), "ROT", "nexus"],
+        [
+            "hin und zurück",
+            Object.assign({}, fest, { buch: [nex, Object.assign({}, nex, { von: "rainy", zu: "sunny" })] }),
+            "ROT",
+            "nexus",
+        ],
+        [
+            "roh",
+            Object.assign({}, fest, {
+                nachher: "rainy",
+                buch: [{ art: "roh", von: "sunny", zu: "rainy", quelle: null, stapel: "_loopFoo" }],
+            }),
+            "ROT",
+            "ROH",
+        ],
+        [
+            "alter Stand",
+            Object.assign({}, fest, {
+                nachher: "rainy",
+                buch: [
+                    Object.assign({}, nex, { quelle: "?", stapel: "weather ← dslEval ← dslRun ← _loopNexusUpdate" }),
+                ],
+            }),
+            "ROT",
+            "_loopNexusUpdate",
+        ],
+        ["taut", Object.assign({ buch: [] }, fest, { uhrNachher: 17.6 }), "ROT", "taut"],
+        ["blind", Object.assign({ buch: [] }, fest, { nachher: "rainy" }), "ROT", "blind"],
+        [
+            "bühne",
+            Object.assign({}, fest, {
+                buch: [{ art: "schreiber", von: "rainy", zu: "sunny", quelle: "buehne", stapel: "x" }],
+            }),
+            "GRUEN",
+            null,
+        ],
+        [
+            "verweigert",
+            Object.assign({}, fest, {
+                buch: [{ art: "verweigert", von: "sunny", zu: "rainy", quelle: "emotion:sorrow", stapel: "y" }],
+            }),
+            "GRUEN",
+            null,
+        ],
+    ];
+    for (const [name, w, soll, taeter] of faelle) {
+        const u = wetterUrteil(w);
+        if (u.urteil !== soll) v.push(`${name}: ${u.urteil} statt ${soll}`);
+        if (taeter && !u.taeter.some((t) => t.includes(taeter)))
+            v.push(`${name}: der Täter „${taeter}" steht nicht im Urteil`);
+    }
+    const vw = wetterUrteil(faelle[8][1]).verweigert;
+    if (vw["emotion:sorrow → rainy"] !== 1) v.push("verweigert: die verweigerte Quelle steht nicht beim Namen");
+    return v;
+}
+
 module.exports = {
+    wetterUrteil,
+    wetterSelbsttest,
     AUSGABE_INSTALL:
         `window.__ausgabeAufnahme = ${ausgabeAufnahme.toString()};` +
+        `window.__wetterSpion = ${wetterSpion.toString()};` +
+        `window.__wetterBuch = ${wetterBuch.toString()};` +
+        `window.__wetterSetzen = ${wetterSetzen.toString()};` +
         `window.__wetterHalten = ${wetterHalten.toString()};` +
         `window.__buehne = ${buehne.toString()};` +
         `window.__tiereHalten = ${tiereHalten.toString()};` +
