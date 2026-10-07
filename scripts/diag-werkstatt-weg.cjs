@@ -185,7 +185,14 @@ function wegVerdict(m) {
         );
     if (!(m.sucheHaus > 0)) out.push(`die Suche „haus" findet kein Haus (${m.sucheHaus})`);
     const l = m.lichtung || {};
-    if (l.wand !== "lichtung") out.push(`das Phantom über der Lichtung färbt sich nicht (Urteil ${l.wand})`);
+    if (l.wand !== "lichtung") out.push(`das Phantom über der Lichtung urteilt nicht (Urteil ${l.wand})`);
+    // Die Tönung im Stoff (Gegenprüfung 08.10.): der Studio-Stoff liest seine Farbe aus colorNode, die Tönung muss dort wirken.
+    const tl = l.toenung || {};
+    if (!(tl.stoffe > 0)) out.push("kein Studio-Phantom über der Lichtung (Vorbedingung)");
+    else if (tl.lesen !== tl.stoffe)
+        out.push(`das Phantom färbt sich nicht: ${tl.lesen}/${tl.stoffe} Stoffe lesen die Tönung`);
+    if (tl.farbe !== "rot") out.push(`das Phantom über der Lichtung steht ${tl.farbe} (Soll rot)`);
+    if (ph.farbe !== "grün") out.push(`das Phantom am freien Ort steht ${ph.farbe} (Soll grün)`);
     if (l.steht > 0)
         out.push(`auf der Lichtung steht ${l.steht} Eiche (die Natur-Wand gilt dem Satz, nicht dem Bau-Modus)`);
     if (!/Lichtung/.test(l.zeile || "")) out.push(`die Lichtung verweigert stumm („${(l.zeile || "").slice(0, 50)}")`);
@@ -367,6 +374,14 @@ function wand(src) {
                 "W8 EIN Same je Werk (`_werkSame`: Vorschau · Hand · Phantom · Setzen), das Setzen trägt Same und Drehung des Phantoms, die Nachricht an den Mitspieler den Samen des Werks",
                 hash === 1 && !ohne.length && /rotationY: dreh/.test(setzen) && !null0,
                 `Same-Hash ${hash}× · ohne _werkSame: ${ohne.join(", ") || "keiner"} · Samen 0 im Broadcast ${null0 ? "ja" : "nein"}`,
+            ];
+        })(),
+        (() => {
+            const geist = fnBody(nc, /\n {4}_ghostMaterialFor\(mat\) \{/) || "";
+            const toen = fnBody(nc, /\n {4}_applyPhantomTint\(phantom, isStable\) \{/) || "";
+            return [
+                "W10 die Tönung des Phantoms wirkt im Stoff: der Geist-Stoff mischt den EINEN Tönungs-Uniform in seinen colorNode (`_phantomTint`), `_applyPhantomTint` setzt ihn",
+                /this\._phantomTint\(\)/.test(geist) && /g\.colorNode = /.test(geist) && /\.value\.set\(/.test(toen),
             ];
         })(),
         (() => {
@@ -610,6 +625,36 @@ async function probe(argW) {
             if (st.player.equipped) st.player.equipped.held = null;
             r._spielerSagtLetzte = null;
         };
+        // Die Tönung des Phantoms: welche Studio-Stoffe (colorNode) den EINEN Tönungs-Uniform im Knoten-Graphen lesen, und
+        // seine Farbe (rot: das Setzen wird abgelehnt, grün: es trägt).
+        const liest = (knoten, ziel) => {
+            const gesehen = new Set();
+            const stapel = [knoten];
+            while (stapel.length && gesehen.size < 2000) {
+                const k = stapel.pop();
+                if (!k || gesehen.has(k)) continue;
+                if (k === ziel) return true;
+                gesehen.add(k);
+                try {
+                    for (const c of k.getChildren()) stapel.push(c);
+                } catch (_e) {}
+            }
+            return false;
+        };
+        const toenung = (phantom) => {
+            const t = r._phantomTintU || null;
+            let stoffe = 0;
+            let lesen = 0;
+            if (phantom)
+                phantom.traverse((o) => {
+                    if (!o.isMesh || !o.material || !o.material.colorNode) return;
+                    stoffe++;
+                    if (t && liest(o.material.colorNode, t)) lesen++;
+                });
+            const c = t && t.value;
+            const farbe = !c ? "ohne Tönung" : c.r > c.g * 1.5 ? "rot" : c.g > c.r * 1.5 ? "grün" : "grau";
+            return { stoffe, lesen, farbe };
+        };
         const klickeWeg = async (weg, name) => {
             const e = {};
             if (weg === "werkstatt") {
@@ -668,7 +713,12 @@ async function probe(argW) {
                             const ma = o.material;
                             if ((ma.transparent ? ma.opacity : 1) < (ma.alphaTest || 0)) verworfen++;
                         });
-                        m.phantom = { studio: !!bm.phantomMesh.userData.studioGhost, meshes, verworfen };
+                        m.phantom = {
+                            studio: !!bm.phantomMesh.userData.studioGhost,
+                            meshes,
+                            verworfen,
+                            farbe: toenung(bm.phantomMesh).farbe,
+                        };
                     }
                     r.tryMousePlace();
                 }
@@ -743,6 +793,7 @@ async function probe(argW) {
             m.lichtung = {
                 wand: st.buildMode.phantomWand || false,
                 phantomAbstand: ph ? +Math.hypot(ph.x - P.x, ph.z - P.z).toFixed(1) : null,
+                toenung: toenung(st.buildMode.phantomMesh),
             };
             r.tryMousePlace();
             const neu = st.architectures.filter(
@@ -1210,9 +1261,14 @@ async function probe(argW) {
                 },
             },
             werke: { Haus: 1, GT: 1 },
-            phantom: { studio: true, meshes: 2, verworfen: 0 },
+            phantom: { studio: true, meshes: 2, verworfen: 0, farbe: "grün" },
             sucheHaus: 32,
-            lichtung: { wand: "lichtung", steht: 0, zeile: "Eiche: die Lichtung der Genesis-Plattform bleibt frei" },
+            lichtung: {
+                wand: "lichtung",
+                steht: 0,
+                zeile: "Eiche: die Lichtung der Genesis-Plattform bleibt frei",
+                toenung: { stoffe: 2, lesen: 2, farbe: "rot" },
+            },
         };
         check(
             "Selbst-Test L-Werkstatt: gesund == 0 Täter",
@@ -1264,6 +1320,20 @@ async function probe(argW) {
                 "die Suche findet kein Haus (Befund)",
                 Object.assign({}, gesundG, { sucheHaus: 0 }),
                 'die Suche „haus" findet kein Haus',
+            ],
+            [
+                "das Phantom färbt sich nicht (Gegenprüfung 08.10.)",
+                Object.assign({}, gesundG, {
+                    lichtung: Object.assign({}, gesundG.lichtung, { toenung: { stoffe: 2, lesen: 0, farbe: "rot" } }),
+                }),
+                "das Phantom färbt sich nicht: 0/2",
+            ],
+            [
+                "das Phantom steht grün über der Lichtung",
+                Object.assign({}, gesundG, {
+                    lichtung: Object.assign({}, gesundG.lichtung, { toenung: { stoffe: 2, lesen: 2, farbe: "grün" } }),
+                }),
+                "das Phantom über der Lichtung steht grün",
             ],
             [
                 "die Eiche steht auf der Lichtung",
@@ -1453,6 +1523,11 @@ async function probe(argW) {
                 "W8",
             ],
             [
+                "die Tönung schreibt wieder nur material.color (Gegenprüfung 08.10.)",
+                quelle.replace("g.colorNode = ", "g.colorNodeAlt = "),
+                "W10",
+            ],
+            [
                 "ein zweites LCG im Strom-Gesetz",
                 quelle.replace(
                     "        return this._samenStrom(h >>> 0);",
@@ -1533,7 +1608,7 @@ async function probe(argW) {
     check(
         "L-Werkstatt jeder Weg (Werkstatt · Rezeptbuch · Hotbar) führt zum stehenden Werk, frieden zahlt einmal, jede Absage spricht, die Lichtung sagt warum",
         vG.length === 0,
-        `${gm.gestartet ? `${tragen}/6 Wege tragen · ${LAGEN.map((l) => `${l}: ${WEGE.map((w) => zelle(l, w)).join(", ")}`).join(" · ")} · Werkstatt ${JSON.stringify(gm.werke)} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Lichtung ${JSON.stringify({ wand: gm.lichtung && gm.lichtung.wand, steht: gm.lichtung && gm.lichtung.steht })}` : "nicht gestartet"}${vG.length ? " — Täter: " + vG.join(", ") : ""}`
+        `${gm.gestartet ? `${tragen}/6 Wege tragen · ${LAGEN.map((l) => `${l}: ${WEGE.map((w) => zelle(l, w)).join(", ")}`).join(" · ")} · Werkstatt ${JSON.stringify(gm.werke)} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Lichtung ${JSON.stringify({ wand: gm.lichtung && gm.lichtung.wand, steht: gm.lichtung && gm.lichtung.steht, toenung: gm.lichtung && gm.lichtung.toenung })}` : "nicht gestartet"}${vG.length ? " — Täter: " + vG.join(", ") : ""}`
     );
     console.log("=== DER SAME DES WERKS — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER ===");
     const km = out.werk || {};

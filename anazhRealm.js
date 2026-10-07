@@ -61312,6 +61312,9 @@ class AnazhRealm {
     // die Alpha mit `opacity` VOR dem Test — jeder Studio-Stoff trägt alphaTest 0,5 (der Dither der LOD-Maske und die
     // Blatt-Kontur fallen in die Alpha), bei Deckkraft 0,4 fiel JEDES Fragment (0,4 < 0,5): das Phantom eines Baums, Hauses,
     // Tors war unsichtbar, der Spieler zielte ins Leere. Mit alphaTest × Deckkraft fällt genau, was das Werk selbst verwirft.
+    // Die Tönung wirkt, wo der Stoff seine Farbe liest (Gegenprüfung 08.10.): ein Studio-Stoff liest colorNode (die Vertex-
+    // Farbe), nie `material.color` — sein Geist mischt den EINEN Tönungs-Uniform (`_phantomTint`) zu 30 % in colorNode.rgb,
+    // die Alpha (Blatt-Kontur, LOD-Dither) bleibt. Befund: das Phantom über der Lichtung stand grau, nur die HUD-Zeile rot.
     _ghostMaterialFor(mat) {
         if (!mat) return mat;
         if (!this._ghostMatCache) this._ghostMatCache = new WeakMap();
@@ -61322,9 +61325,26 @@ class AnazhRealm {
             g.opacity = 0.4;
             g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;
             g.depthWrite = false;
+            const tint = mat.colorNode ? this._phantomTint() : null;
+            if (tint) {
+                const TSL = THREE.TSL;
+                const farbe = TSL.vec4(mat.colorNode);
+                g.colorNode = TSL.vec4(TSL.mix(farbe.rgb, tint, 0.3), farbe.a);
+            }
             this._ghostMatCache.set(mat, g);
         }
         return g;
+    }
+
+    // DER EINE Tönungs-Uniform jedes Geist-Stoffs (linear, aus dem sRGB-Hex — das Farb-Gesetz): `_applyPhantomTint` setzt
+    // ihn je Takt (grün: das Setzen trägt, rot: es wird abgelehnt). Es gibt nur ein Phantom zugleich.
+    _phantomTint() {
+        if (!this._phantomTintU) {
+            const TSL = typeof THREE !== "undefined" ? THREE.TSL : null;
+            if (!TSL || typeof TSL.uniform !== "function") return null;
+            this._phantomTintU = TSL.uniform(new THREE.Color(0x88ff88));
+        }
+        return this._phantomTintU;
     }
 
     // Der Ghost IST der finale Eintrag (`_rebuildArchitectureMesh`: Foundry-Preset → `_foundryFlattenFor`, Stufe 0): derselbe
@@ -77155,16 +77175,18 @@ class AnazhRealm {
         return result;
     }
 
-    // Tint 30 % grün (0x88ff88) bei stabilem Kontakt, sonst rot (0xff8888) über der Material-Farbe.
-    // Original-Farbe EINMAL je Mesh in userData cachen — sonst wird die getintete Farbe zur Basis (Drift).
+    // Tint 30 % grün (0x88ff88) bei stabilem Kontakt, sonst rot (0xff8888) — dort, wo der Stoff seine Farbe liest: ein
+    // Studio-Stoff (colorNode) über den EINEN Tönungs-Uniform (`_phantomTint`, im Geist-Stoff verdrahtet), ein Stoff ohne
+    // colorNode (der Spender-Geist) über `material.color` — Original-Farbe EINMAL je Mesh cachen (sonst Drift).
     _applyPhantomTint(phantom, isStable) {
         if (!phantom) return;
         const targetColor = isStable ? 0x88ff88 : 0xff8888;
+        if (this._phantomTintU) this._phantomTintU.value.set(targetColor);
         const tr = (targetColor >> 16) & 0xff;
         const tg = (targetColor >> 8) & 0xff;
         const tb = targetColor & 0xff;
         phantom.traverse((node) => {
-            if (node.material && node.material.color) {
+            if (node.material && node.material.color && !node.material.colorNode) {
                 if (node.userData._origColor === undefined) {
                     node.userData._origColor = node.material.color.getHex();
                 }
