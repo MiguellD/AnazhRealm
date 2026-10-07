@@ -440,7 +440,7 @@ function validateManifest(m) {
         const a = m.arena;
         // SPIEGEL-ZENSUS 17.07. — die gereisten Zensus-Zeilen sind Vertrag:
         // je Block deckt EIN Wander-Feld mit (windupFrac = Hieb-Geometrie,
-        // stossCap = Knockback-Wucht, muendungM = Pfeil-Flug — dieselben
+        // wucht = die Wucht des Stoßes (das EINE Impuls-Gesetz, 0710-2), muendungM = Pfeil-Flug — dieselben
         // Felder, die die _arenaGesetz-Gültigkeits-Wand des Wirts prüft).
         if (
             !a.schwung ||
@@ -448,13 +448,14 @@ function validateManifest(m) {
             !Number.isFinite(a.schwung.windupFrac) ||
             !a.gefuehl ||
             !Number.isFinite(a.gefuehl.keRefJ) ||
-            !Number.isFinite(a.gefuehl.stossCap) ||
+            !Number.isFinite(a.gefuehl.wucht) ||
+            !Number.isFinite(a.gefuehl.pProKb) ||
             !a.bogen ||
             !Number.isFinite(a.bogen.mArrow) ||
             !Number.isFinite(a.bogen.muendungM)
         )
             v.push(
-                "§B6+ ARENA unvollständig (schwung.dauerProSqrtI/windupFrac · gefuehl.keRefJ/stossCap · bogen.mArrow/muendungM)"
+                "§B6+ ARENA unvollständig (schwung.dauerProSqrtI/windupFrac · gefuehl.keRefJ/wucht/pProKb · bogen.mArrow/muendungM)"
             );
     }
     if (m.fahr) {

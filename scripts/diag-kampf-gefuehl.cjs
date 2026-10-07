@@ -78,6 +78,32 @@ const path = require("path");
 const root = path.resolve(__dirname, "..");
 // Port über KAMPF_GEFUEHL_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4451.
 const PORT = Number(process.env.KAMPF_GEFUEHL_PORT || 4451);
+
+// (T13) DAS URTEIL DES RÜCKSTOSSES (0710-2, K-D9 — pure Funktion, Probe UND Selbst-Test): kein Positions-Satz im Treffer-
+// Takt, der Fuchs fliegt, die Masse des Leibs teilt den Stoß (Fuchs ≥ 3 × Bär mit derselben Keule), der Impuls der Waffe
+// wirkt (Keule ≥ 1,15 × Dolch am selben Fuchs). Vorher: 2,16 m für jede Waffe und jedes Ziel, in EINEM Takt.
+const RUECK = { satzM: 0.05, fuchsMinM: 0.3, masse: 3, waffe: 1.15 };
+function rueckVerdict(R) {
+    if (!R || !R.fuchsDolch || !R.fuchsKeule || !R.baerDolch || !R.baerKeule)
+        return ["rueckstoss keine Probe (ein Hieb traf nicht oder ein Gerät fehlt)"];
+    const v = [];
+    const satz = Math.max(R.fuchsDolch.sprung, R.fuchsKeule.sprung, R.baerDolch.sprung, R.baerKeule.sprung);
+    if (!(satz <= RUECK.satzM))
+        v.push(
+            `rueckstoss-satz: ein Ziel springt im Treffer-Takt ${satz.toFixed(2)} m (ein Positions-Satz, kein Stoß)`
+        );
+    if (!(R.fuchsKeule.weg >= RUECK.fuchsMinM))
+        v.push(`rueckstoss-fuchs: die Keule stößt den Fuchs nur ${R.fuchsKeule.weg.toFixed(2)} m (er fliegt nicht)`);
+    if (!(R.fuchsKeule.weg >= RUECK.masse * R.baerKeule.weg))
+        v.push(
+            `rueckstoss-masse: Fuchs ${R.fuchsKeule.weg.toFixed(2)} m gegen Bär ${R.baerKeule.weg.toFixed(2)} m mit derselben Keule — die Masse teilt den Stoß nicht`
+        );
+    if (!(R.fuchsKeule.weg >= RUECK.waffe * R.fuchsDolch.weg))
+        v.push(
+            `rueckstoss-waffe: Keule ${R.fuchsKeule.weg.toFixed(2)} m gegen Dolch ${R.fuchsDolch.weg.toFixed(2)} m am selben Fuchs — der Impuls der Waffe wirkt nicht`
+        );
+    return v;
+}
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -140,7 +166,15 @@ async function WELLE_L() {
     const zaehl = { schwung: 0, carve: 0, fill: 0, gegenwehr: 0 };
     r.damageCreature = function (c, amount, opts) {
         const res = orig.damageCreature.call(this, c, amount, opts);
-        treff.push({ c, amount, src: opts && opts.source, t: T, ok: !!(res && res.ok) });
+        const st0 = opts && opts.stoss;
+        treff.push({
+            c,
+            amount,
+            src: opts && opts.source,
+            t: T,
+            ok: !!(res && res.ok),
+            stoss: st0 ? { p: st0.p, m: st0.m } : null,
+        });
         return res;
     };
     r._kampfHitJuice = function (...a) {
@@ -324,6 +358,57 @@ async function WELLE_L() {
             w.z.stopGross !== null &&
             w.z.stopKeule !== null &&
             Math.abs(w.z.stopKeule - w.z.stopGross) / Math.max(w.z.stopKeule, w.z.stopGross) >= 0.1;
+        // (T13) DER RÜCKSTOSS JE MASSE UND WAFFE (0710-2, K-D9 — jedes Ziel sprang bei JEDER Waffe 2,16 m, eine Kappe, in
+        // EINEM Takt): ein frischer Fuchs und ein frischer Bär, Dolch und Keule, je EIN Hieb auf die Brust. Für die Probe
+        // steht der Steuer-Schritt der Tiere (die Naht `_steuerGesetz`, danach restauriert): kein Wunsch, keine Flucht nach dem
+        // Treffer bewegt das Ziel — der Weg nach 1,5 s Kreatur-Takt ist allein der Stoß. Gemessen: der Sprung im Treffer-Takt
+        // und der Weg danach.
+        const fuchsR = setze("fuchs");
+        const baer = setze("baer");
+        const rueck = (c, name) => {
+            if (!c || !s.blueprints[name]) return null;
+            ausruesten(name);
+            stelle(c, 1.1);
+            c.userData._stossV = null;
+            c.userData._steuer = { gier: c.rotation.y, v: 0 };
+            zielen(punkt(c, null));
+            const x0 = c.position.x,
+                z0 = c.position.z;
+            const t = traf(schwung(), c);
+            if (!t) return null;
+            const sprung = Math.hypot(c.position.x - x0, c.position.z - z0);
+            const sv = c.userData._stossV;
+            const dv = sv ? Math.hypot(sv.x, sv.z) : 0;
+            const masse = typeof r._kreaturMasse === "function" ? r._kreaturMasse(c) : null;
+            const steuerRoh = A._steuerGesetz;
+            const steht = Object.create(steuerRoh.call(A));
+            steht.steuerSchritt = (st) => {
+                st.v = 0;
+            };
+            A._steuerGesetz = () => steht;
+            try {
+                for (let k = 0; k < 90; k++) r.updateCreatures(1 / 60);
+            } finally {
+                A._steuerGesetz = steuerRoh;
+            }
+            const weg = Math.hypot(c.position.x - x0, c.position.z - z0);
+            parke(c);
+            return {
+                sprung: +sprung.toFixed(3),
+                weg: +weg.toFixed(3),
+                dv: +dv.toFixed(3),
+                masse: masse === null ? null : +masse.toFixed(1),
+                p: t.stoss && Number.isFinite(t.stoss.p) ? +t.stoss.p.toFixed(2) : null,
+                m: t.stoss && Number.isFinite(t.stoss.m) ? +t.stoss.m.toFixed(2) : null,
+            };
+        };
+        w.z.rueck = {
+            fuchsDolch: rueck(fuchsR, "klinge_dolch"),
+            fuchsKeule: rueck(fuchsR, "klinge_keule"),
+            baerDolch: rueck(baer, "klinge_dolch"),
+            baerKeule: rueck(baer, "klinge_keule"),
+        };
+        parke(hirsch);
         // (T4) keine Schadens-Kappe: je Nahkampf-Rezept EIN Hieb auf die Brust, Faktor = Schaden ÷ (Kraft × Güte × Zone)
         const sc = globalThis.__schmiedeCore;
         const ZT = A._arenaGesetz().zonen || null;
@@ -1712,6 +1797,36 @@ async function WELLE_L() {
         check(c.eineGuete, "Q8 K-D7: EINE Güte je Gerät — Schaden, Werkstoff-Kraft und Equip-Fold lesen das Lehren-Urteil des Kerns");
         check(c.pfeilImpuls, "Q8 K-D8: der Pfeil trägt seine Energie in den Schaden (25 %-Auszug ≤ 0,5 × voll)");
         check(c.pfeilWand, "Q8 K-D8: eine Wand hält den Pfeil (0 Treffer dahinter, frei 1)");
+        const rz = z.rueck || {};
+        const rw = (m) =>
+            m
+                ? `Sprung ${m.sprung} m · Weg ${m.weg} m (Δv ${m.dv} m/s, Leib ${m.masse} kg, Schlag p ${m.p} · m ${m.m})`
+                : "–";
+        console.log(
+            `  (T13) Rückstoß: Fuchs Dolch ${rw(rz.fuchsDolch)} · Fuchs Keule ${rw(rz.fuchsKeule)} · Bär Dolch ${rw(rz.baerDolch)} · Bär Keule ${rw(rz.baerKeule)}`
+        );
+        const rv = rueckVerdict(z.rueck);
+        check(
+            rv.length === 0,
+            "Q8 K-D9: der Rückstoß folgt dem EINEN Impuls-Gesetz — kein Satz im Treffer-Takt, der Fuchs fliegt (≥ 0,3 m), die Masse teilt (Fuchs ≥ 3 × Bär), die Waffe wirkt (Keule ≥ 1,15 × Dolch)" +
+                (rv.length ? " — " + rv.join(" · ") : "")
+        );
+        // der Selbst-Test des Urteils: der Befund (2,16 m in EINEM Takt für jede Waffe und jedes Ziel) fällt rot beim Namen
+        const alt = { sprung: 2.16, weg: 2.16 };
+        const rvAlt = rueckVerdict({ fuchsDolch: alt, fuchsKeule: alt, baerDolch: alt, baerKeule: alt });
+        const rvGut = rueckVerdict({
+            fuchsDolch: { sprung: 0, weg: 0.5 },
+            fuchsKeule: { sprung: 0, weg: 0.9 },
+            baerDolch: { sprung: 0, weg: 0.01 },
+            baerKeule: { sprung: 0, weg: 0.02 },
+        });
+        check(
+            rvGut.length === 0 &&
+                ["rueckstoss-satz", "rueckstoss-masse", "rueckstoss-waffe"].every((t) =>
+                    rvAlt.some((x) => x.startsWith(t))
+                ),
+            "Selbst-Test K-D9: der Befund (2,16 m überall, in EINEM Takt) nennt Satz, Masse und Waffe; ein gesunder Stoß bleibt grün"
+        );
         check(c.bogenVerschleiss, "Q8 K-D6: der Bogen verschleißt wie die Klinge — wear 0,5 trifft mit 0,65, jeder Schuss zehrt, verbraucht (0,02) löst er nicht");
         check(c.einRohSchaden, "Q8 K-D6: JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden");
         check(c.kernPflichtZone, "Q8 K-D3: fehlt tetrapoda trefferZone, bricht der Treffer-Test laut und benannt (nie still null je Tier)");

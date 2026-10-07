@@ -291,8 +291,8 @@ Komponenten-SÄTZE, keine Klassen):
   GEFALLEN; `MAX_PFEILE` blieb ehrlich Wirts-Deckel). Spiegel-Zensus 17.07. (V18.486+,
   rein additiv): `schwung` trägt auch die Hieb-GEOMETRIE (`windupFrac
   strikeFrac arcHalfRad bladeRadiusM reachBaseM reachMaxM shoulderH`),
-  `gefuehl` den Stoß + das Tod-Kippen (`stossCap stossProKb stossSkala
-  kippDauerSec kippNachklangSec`), `bogen` den Pfeil-Flug (`maxFlugSec
+  `gefuehl` den Stoß + das Tod-Kippen (`wucht pProKb` — der Stoß ist seit 0710-2 das EINE
+  Impuls-Gesetz des Wirts, AnazhRealm.STOSS; `kippDauerSec kippNachklangSec`), `bogen` den Pfeil-Flug (`maxFlugSec
   radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
   Schadens-Faktor; `gueteAnteil(rezeptId, ov?)` (Welle L, additiv) — derselbe

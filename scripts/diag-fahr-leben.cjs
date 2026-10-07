@@ -59,6 +59,9 @@
 //          eigene Fahrt, er fährt weiter.
 //       L2 SPALTKANTE (−904/−975, 11,4 m/s in +x): eine unsichtbare Wand stoppte den Wagen in EINEM Schritt (11,44 →
 //          0,19 m/s), Gas danach 0,00 m. Soll: er fährt über die Kante und FÄLLT.
+//       L3–L5 DER STOSS (Schau: Baum 10,41 → 0,16 · geparkter GT 11,28 → 0,00 · Bär 9,27 → 0,17 m/s, je EIN Frame, ohne
+//          Folge): aus 9 m Anlauf in der freien Gasse gegen Fels, geparkten GT und Bären (nicht gehalten). Soll: das EINE
+//          Impuls-Gesetz — am Fels Rückprall, der Gegner bekommt seinen Impuls nach Masse, ein Stoß-Ereignis (Kamera, Klang).
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
@@ -457,6 +460,13 @@ const STATION = {
     wegM: 5, // so weit fährt der GT mit W nach dem Kontakt mindestens (er steht nie für immer)
     randM: 10, // der Spalt ist ein Spalt: der Rand liegt so hoch über seinem Grund (sonst ist L2 vakuös)
     fallM: 3, // so tief fällt der Wagen hinter der Kante mindestens
+    // L3–L5 der Stoß (0710-2): das EINE Impuls-Gesetz (Masse aus Leib und Kern, Stoß-Zahl, Impuls-Austausch)
+    stossVMin: 3, // m/s: so schnell fährt der GT mindestens in den Stoß (sonst ist die Probe vakuös)
+    rueckprallMs: -0.3, // m/s: so weit rückwärts prallt der Wagen am Fels in den 8 Schritten nach dem Stoß mindestens
+    wagenWegM: 0.3, // m: so weit rutscht der gestoßene geparkte GT mindestens
+    wagenFahrt: 0.2, // Anteil der Fahrt, den der stoßende Wagen nach dem Stoß mit einem gleich schweren behält
+    baerWegM: 0.5, // m: so weit stößt der Wagen den Bären mindestens
+    baerFahrt: 0.5, // Anteil der Fahrt, den der Wagen nach dem Stoß mit dem leichteren Bären behält
 };
 function stationVerdict(s) {
     const out = [];
@@ -544,6 +554,46 @@ function stationVerdict(s) {
         if (!(hf.schubMax <= STATION.versetztM))
             out.push(`hangfuss-schub: der Kontakt-Löser versetzt den Wagen in EINEM Schritt ${hf.schubMax.toFixed(2)} m`);
         if (!(hf.weg >= STATION.wegM)) out.push(`hangfuss-steht: mit W nur ${hf.weg.toFixed(2)} m gefahren`);
+    }
+    // L3–L5 DER STOSS (0710-2): ein Stoß hat eine Folge — Rückprall am Fels, der Gegner bekommt seinen Impuls, ein Ereignis
+    // für Kamera und Klang.
+    for (const [k, name] of [
+        ["stossFels", "stoss-fels"],
+        ["stossWagen", "stoss-wagen"],
+        ["stossBaer", "stoss-baer"],
+    ]) {
+        const m = s[k];
+        if (!m) {
+            out.push(`${name} keine Probe`);
+            continue;
+        }
+        if (!(m.kontakt >= 0 && m.vVor >= STATION.stossVMin)) {
+            out.push(`${name} vakuös (kein Stoß aus ≥ 3 m/s: Kontakt ${m.kontakt}, ${(m.vVor || 0).toFixed(2)} m/s)`);
+            continue;
+        }
+        const was = `${m.vVor.toFixed(2)} → ${m.vNach.toFixed(2)} m/s`;
+        if (k === "stossFels" && !(m.vMinNach <= STATION.rueckprallMs))
+            out.push(
+                `${name}: kein Rückprall (${was}, kleinste Fahrt danach ${m.vMinNach.toFixed(2)} m/s) — ein Stopp ohne Folge`
+            );
+        if (k === "stossWagen") {
+            if (!(m.zielWeg >= STATION.wagenWegM))
+                out.push(
+                    `${name}: der geparkte GT bewegt sich ${m.zielWeg.toFixed(2)} m (${was}) — er bekommt keinen Impuls`
+                );
+            if (!(m.vNach >= STATION.wagenFahrt * m.vVor))
+                out.push(`${name}: der Wagen steht nach dem Stoß (${was}) — kein Impuls-Austausch`);
+        }
+        if (k === "stossBaer") {
+            if (!(m.zielWeg >= STATION.baerWegM))
+                out.push(`${name}: der Bär bewegt sich ${m.zielWeg.toFixed(2)} m (${was}) — er bekommt keinen Impuls`);
+            if (!(m.vNach >= STATION.baerFahrt * m.vVor))
+                out.push(`${name}: der Wagen steht am Bären (${was}) — kein Impuls-Austausch nach Masse`);
+        }
+        if (!(m.ereignisse >= 1 && m.ruck > 0))
+            out.push(
+                `${name}: kein Stoß-Ereignis (${m.ereignisse} Ereignisse, Kamera-Ruck ${(m.ruck || 0).toFixed(2)}) — keine Rückmeldung`
+            );
     }
     // L2 DIE SPALTKANTE (0710-2): der Wagen fährt über die Kante und fällt.
     const sp = s.spalt;
@@ -1720,6 +1770,109 @@ async function probeLeben(expected) {
             S.spalt.rand = hh(-904, -975);
             S.spalt.grund = Math.min(hh(-898, -975), hh(-897, -975));
         }
+        // L3–L5 DER STOSS (Leben-Schau 07.10.: Baum 10,41 → 0,16 · geparkter GT 11,28 → 0,00 · Bär 9,27 → 0,17 m/s, je in
+        // EINEM Frame, kein Rückprall, der Gegner bewegt sich nicht, keine Rückmeldung): der GT fährt mit W aus 9 m Anlauf
+        // in der freien Gasse auf das Hindernis, das NICHT gehalten wird. Kontakt = der erste Schritt, in dem der Kontakt-
+        // Löser Lage oder Fahrt nahm (`z.kontakt`, der Mitschnitt am EINEN Kontakt-Löser); gemessen: die Fahrt davor und danach, die kleinste in den 8 Schritten danach (der
+        // Rückprall), der Weg des Getroffenen längs der Fahrt, die Stoß-Ereignisse (`_stossEreignis`) und der Kamera-Ruck.
+        const stossProbe = async (h) => {
+            if (!gasse) return null;
+            const gS = await setzen("fahrzeug_gt", gasse.x, gasse.z, gasse.fahrt);
+            if (!gS) return null;
+            const ux = Math.sin(gasse.fahrt);
+            const uz = Math.cos(gasse.fahrt);
+            for (const cr of (st.creatures || []).slice())
+                if (
+                    cr &&
+                    cr.position &&
+                    Math.hypot(cr.position.x - (gasse.x + ux * 8), cr.position.z - (gasse.z + uz * 8)) < 30
+                )
+                    r.removeCreature(cr);
+            const ziel = await h.setzen(gS.position.x + ux * 9, gS.position.z + uz * 9);
+            if (!ziel) {
+                weg(gS);
+                return null;
+            }
+            const p0 = h.lage(ziel);
+            const m = { kontakt: -1, vVor: 0, vNach: 0, vMinNach: Infinity, schritte: 0, ereignisse: 0, ruck: 0 };
+            const evRoh = r._stossEreignis;
+            if (typeof evRoh === "function")
+                r._stossEreignis = function (...a) {
+                    m.ereignisse++;
+                    return evRoh.apply(this, a);
+                };
+            st._landImpactPending = 0;
+            const PF = r._stepFixedSim;
+            let vPrev = 0;
+            r._stepFixedSim = function (simTime, dt) {
+                PF.call(this, simTime, dt);
+                const v = st.playerVel.x() * ux + st.playerVel.z() * uz;
+                m.ruck = Math.max(m.ruck, st._landImpactPending || 0);
+                if (m.kontakt < 0 && vPrev > 2 && z.kontakt) {
+                    m.kontakt = m.schritte;
+                    m.vVor = vPrev;
+                    m.vNach = v;
+                    m.vMinNach = v;
+                } else if (m.kontakt >= 0 && m.schritte - m.kontakt <= 8) m.vMinNach = Math.min(m.vMinNach, v);
+                vPrev = v;
+                m.schritte++;
+            };
+            tasten(true, false);
+            for (let i = 0; i < 150; i++) frame(i);
+            tasten(false);
+            r._stepFixedSim = PF;
+            if (typeof evRoh === "function") delete r._stossEreignis;
+            if (!Number.isFinite(m.vMinNach)) m.vMinNach = m.vNach;
+            const p1 = h.lage(ziel);
+            m.zielWeg = (p1.x - p0.x) * ux + (p1.z - p0.z) * uz;
+            weg(gS);
+            h.weg(ziel);
+            return m;
+        };
+        S.stossFels = await stossProbe({
+            setzen: (x, zz) => {
+                const b = r.spawnArchitecture(
+                    "stein_block",
+                    { x, y: hh(x, zz) + 0.5, z: zz },
+                    { silent: true, precise: true }
+                );
+                return b && b.blockerAABBs && b.blockerAABBs.length ? b : null;
+            },
+            lage: (b) => ({ x: b.position.x, z: b.position.z }),
+            weg: (b) => r.removeArchitecture(b),
+        });
+        S.stossWagen = await stossProbe({
+            setzen: async (x, zz) => {
+                const e = r.spawnArchitecture(
+                    "fahrzeug_gt",
+                    { x, y: hh(x, zz) + 0.5, z: zz },
+                    { silent: true, precise: true, rotationY: gasse.fahrt - Math.PI / 2 }
+                );
+                if (!e) return null;
+                const dlP = performance.now() + 45000;
+                while (!e.instanced && !e.mesh && performance.now() < dlP) {
+                    r._rebuildArchitectureMesh(e);
+                    if (e.instanced || e.mesh) break;
+                    await new Promise((r4) => setTimeout(r4, 200));
+                }
+                return e.blockerAABBs && e.blockerAABBs.length ? e : null;
+            },
+            lage: (e) => ({ x: e.position.x, z: e.position.z }),
+            weg: (e) => r.removeArchitecture(e),
+        });
+        S.stossBaer = await stossProbe({
+            setzen: (x, zz) => {
+                st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1);
+                const c = r.spawnCreatureAt(x, hh(x, zz) + 0.5, zz, "calm", "baer", { precise: true });
+                if (!c) return null;
+                c.position.set(x, hh(x, zz), zz);
+                c.rotation.y = gasse.fahrt + Math.PI / 2; // quer zur Fahrt, die Flanke zum Bug
+                if (typeof r.assignCreatureTask === "function") r.assignCreatureTask(c, "wait");
+                return c;
+            },
+            lage: (c) => ({ x: c.position.x, z: c.position.z }),
+            weg: (c) => r.removeCreature(c),
+        });
     } catch (e) {
         res.err = (e && e.stack) || String(e);
     }
@@ -1791,6 +1944,9 @@ async function probeLeben(expected) {
             pflicht: { satz: "bruch", ebene: "bruch" },
             hangfuss: { ziel: true, kontakte: 4, unterMax: 0.12, unterN: 2, schubMax: 0.17, weg: 21 },
             spalt: { rand: 32.4, grund: 15, xMax: -896, yMin: 18 },
+            stossFels: { kontakt: 40, vVor: 6.5, vNach: -1.3, vMinNach: -1.3, ereignisse: 1, ruck: 3, zielWeg: 0 },
+            stossWagen: { kontakt: 40, vVor: 6.5, vNach: 2.3, vMinNach: 2.3, ereignisse: 1, ruck: 3, zielWeg: 2.1 },
+            stossBaer: { kontakt: 40, vVor: 6.5, vNach: 5.0, vMinNach: 5.0, ereignisse: 1, ruck: 2, zielWeg: 3.2 },
         };
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
         for (const [name, bruch, soll] of [
@@ -1820,6 +1976,63 @@ async function probeLeben(expected) {
                 "spalt-wand",
             ],
             ["Spalt ohne Spalt (vakuös)", { spalt: { rand: 32.4, grund: 31, xMax: -896, yMin: 18 } }, "spalt vakuös"],
+            [
+                "Fels: 10,41 → 0,16 m/s in EINEM Frame, kein Rückprall (Leben-Schau 07.10.)",
+                {
+                    stossFels: {
+                        kontakt: 40,
+                        vVor: 10.41,
+                        vNach: 0.16,
+                        vMinNach: 0.16,
+                        ereignisse: 1,
+                        ruck: 3,
+                        zielWeg: 0,
+                    },
+                },
+                "stoss-fels: kein Rückprall",
+            ],
+            [
+                "geparkter GT: 11,28 → 0,00 m/s, er bewegt sich nicht (Leben-Schau 07.10.)",
+                {
+                    stossWagen: { kontakt: 40, vVor: 11.28, vNach: 0, vMinNach: 0, ereignisse: 1, ruck: 3, zielWeg: 0 },
+                },
+                "stoss-wagen: der geparkte GT bewegt sich",
+            ],
+            [
+                "Bär: 9,27 → 0,17 m/s, der Bär bewegt sich nicht (Leben-Schau 07.10.)",
+                {
+                    stossBaer: {
+                        kontakt: 40,
+                        vVor: 9.27,
+                        vNach: 0.17,
+                        vMinNach: 0.17,
+                        ereignisse: 1,
+                        ruck: 2,
+                        zielWeg: 0,
+                    },
+                },
+                "stoss-baer: der Bär bewegt sich",
+            ],
+            [
+                "Stoß ohne Ereignis (keine Kamera, kein Klang)",
+                {
+                    stossFels: {
+                        kontakt: 40,
+                        vVor: 6.5,
+                        vNach: -1.3,
+                        vMinNach: -1.3,
+                        ereignisse: 0,
+                        ruck: 0,
+                        zielWeg: 0,
+                    },
+                },
+                "stoss-fels: kein Stoß-Ereignis",
+            ],
+            [
+                "Stoß aus dem Stand (vakuös)",
+                { stossBaer: { kontakt: -1, vVor: 0, vNach: 0, vMinNach: 0, ereignisse: 0, ruck: 0, zielWeg: 0 } },
+                "stoss-baer vakuös",
+            ],
             ["kein Fahr-Schritt im Kern", { kern: false }, "kern"],
             ["Welt weicht 0,4 m vom Labor ab", { labor: { schritte: 180, maxM: 0.4, bei: 50 } }, "labor≠welt"],
             ["7,95 m Höhen-Sprung in einem Schritt (F-D6)", { klippe: { sprung: 7.95, luft: 40 } }, "klippe-sprung"],
@@ -2272,6 +2485,26 @@ async function probeLeben(expected) {
         L2
             ? `Rand ${L2.rand.toFixed(1)} m, Grund ${L2.grund.toFixed(1)} m · bis x ${L2.xMax.toFixed(2)} · tiefste Höhe ${L2.yMin.toFixed(2)} m · größter Schub ${L2.schubMax.toFixed(3)} m · ${L2.weg.toFixed(1)} m gefahren`
             : "keine Probe"
+    );
+    const z2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : "–");
+    const sz = (m) =>
+        m
+            ? `Fahrt ${z2(m.vVor)} → ${z2(m.vNach)} m/s (kleinste danach ${z2(m.vMinNach)}) · Gegner ${z2(m.zielWeg)} m · ${m.ereignisse} Stoß-Ereignisse · Kamera-Ruck ${z2(m.ruck)}`
+            : "keine Probe";
+    check(
+        "L3 Stoß am Fels (der Baum der Schau: 10,41 → 0,16 m/s): der Wagen prallt zurück (≤ −0,3 m/s), Kamera und Klang hören den Stoß",
+        !hat("kern") && !hat("stoss-fels"),
+        sz(S.stossFels)
+    );
+    check(
+        "L4 Stoß an den geparkten GT (Schau: 11,28 → 0,00): er bekommt seinen Impuls und rutscht (≥ 0,3 m), der stoßende behält Fahrt (≥ 20 %)",
+        !hat("kern") && !hat("stoss-wagen"),
+        sz(S.stossWagen)
+    );
+    check(
+        "L5 Stoß an den Bären (Schau: 9,27 → 0,17): der Bär bekommt seinen Impuls (≥ 0,5 m), der schwerere Wagen behält Fahrt (≥ 50 %)",
+        !hat("kern") && !hat("stoss-baer"),
+        sz(S.stossBaer)
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
