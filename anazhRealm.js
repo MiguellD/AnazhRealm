@@ -72753,25 +72753,171 @@ class AnazhRealm {
     // ungeweitet an: das Weiten fragt `normalized` (für einen Index bedeutungslos), die Hülle setzt es nur für das Anlegen.
     // Ein 16-bit-Index, der danach teilweise neu schreibt, bräche an der 4-Byte-Ausrichtung von writeBuffer — die Sätze
     // (die einzigen Index-Schreiber) tragen Uint32 (gate:vendor-anker pinnt beide Vendor-Stellen).
-    _index16(renderer) {
+    //
+    // DAS BACKEND-GESETZ (Frost 07.10.): die Hüllen des WebGPU-Backends sitzen an der KLASSE, nie an einer Instanz. Die
+    // Seite trägt fünf WebGPU-Renderer (Welt · Werkstatt · Ich-, Hof-, Feed-Bühne), und sie TEILEN Geometrie (die Mensch-
+    // Vorlage `sharedGeom`, die Studio-Gestalten). r184 schreibt beim Anlegen die geweitete Form in das GETEILTE Attribut
+    // zurück (`createAttribute`: `array = new Uint32Array(array)`), und der Draw bindet das Index-Format nach dem Array-Typ.
+    // Befund (echte GPU, Radeon 890M, main V18.534): die Hülle lag nur an der Welt-Instanz; Tab öffnete die Ich-Bühne, ihr
+    // Backend weitete die Mensch-Indizes, die Welt band acht Mensch-Meshes als uint32 auf 16-bit-Puffern („Index range …
+    // does not fit", 1 760 Meldungen in Sekunden), jeder Render-Kontext der Welt wurde verworfen — das Bild stand, die Uhr
+    // lief. Gerufen direkt nach dem Bau des Welt-Renderers (vor jedem init, vor jedem Attribut): jedes Backend der Seite
+    // erbt (1) den schmalen Index und das Index-Maximum, gebucht am EINEN Weg jedes Index auf die GPU (Anlegen ganz,
+    // Nachschreiben nur die geschriebenen Bereiche — die Sätze schreiben je Pass), (2) die Index-Wache am Draw (ein
+    // Vergleich), (3) die GPU-Wache an seinem Device und an der Konsolen-Funktion von three.
+    _backendGesetz(renderer) {
         const be = renderer && renderer.backend;
-        if (!be || be.isWebGPUBackend !== true || be.__anazhIndex16 || typeof be.createIndexAttribute !== "function")
-            return;
-        be.__anazhIndex16 = true;
-        const roh = be.createIndexAttribute;
-        be.createIndexAttribute = function (attr) {
-            if (!(attr && attr.array instanceof Uint16Array) || attr.normalized !== false) return roh.call(this, attr);
-            attr.normalized = true;
+        if (!be || be.isWebGPUBackend !== true) return;
+        const P = Object.getPrototypeOf(be);
+        if (!P || P.__anazhGesetz === true) return;
+        P.__anazhGesetz = true;
+        const realm = this;
+        const anlegen = P.createIndexAttribute;
+        P.createIndexAttribute = function (attr) {
+            const schmal = !!attr && attr.array instanceof Uint16Array && attr.normalized === false;
+            if (schmal) attr.normalized = true;
+            let aus;
             try {
-                return roh.call(this, attr);
+                aus = anlegen.call(this, attr);
             } finally {
-                attr.normalized = false;
+                if (schmal) attr.normalized = false;
             }
+            const d = this.get(attr);
+            // die Puffer-Größe einmal gelesen (GPUBuffer.size ist ein Binding-Aufruf — je Draw kostete er ~0,3 µs)
+            d.__indexBytes = d.buffer ? d.buffer.size : 0;
+            AnazhRealm._indexMaxBuchen(d, attr.array, null);
+            return aus;
         };
+        const nachschreiben = P.updateAttribute;
+        P.updateAttribute = function (attr) {
+            const d = this.get(attr);
+            if (d.__indexMax !== undefined) AnazhRealm._indexMaxBuchen(d, attr.array, attr.updateRanges);
+            return nachschreiben.call(this, attr);
+        };
+        const zeichnen = P.draw;
+        P.draw = function (ro, info) {
+            const idx = ro.getIndex();
+            if (idx !== null) realm._indexWacheDraw(this, ro, idx);
+            return zeichnen.call(this, ro, info);
+        };
+        const init = P.init;
+        P.init = async function (r) {
+            const aus = await init.call(this, r);
+            realm._gpuWacheAn(this.device, (r && r.domElement && r.domElement.id) || "welt");
+            return aus;
+        };
+        this._gpuWacheKonsole();
     }
-    // Die schmalen Formen eines Assets (W7, Kosten ins Asset): ein Index über ≤ 65 535 Vertices trägt 16 bit (`_index16`
-    // hält ihn so auf der GPU), ein Haut-Gewicht 16 bit normiert (unorm16x4 statt float32x4 — 2 statt 4 B je Komponente;
+    // DIE INDEX-WACHE (Frost 07.10.) — am Draw jedes Backends, je gezeichneter Geometrie: das Format, das der Draw bindet
+    // (der Array-Typ), passt in den Puffer, der auf der GPU liegt, und kein gezeichneter Index greift über die Vertex-Zahl.
+    // Ein Bruch steht beim NAMEN im Log (Objekt-Pfad · Geometrie · Zahlen · Backend), einmal je Geometrie und Art, gezählt
+    // in `_indexWache` — vor der Device-Meldung, die nur „Index range … does not fit" kennt. Kosten: je Draw ein Vergleich
+    // gegen das am Anlegen/Nachschreiben gebuchte Maximum (`_indexMaxBuchen`); den gezeichneten Bereich liest sie nur im
+    // Verdacht (Maximum ≥ Vertex-Zahl — ein Satz trägt Luft hinter seinem Hochwasser), einmal je Version und Bereich.
+    _indexWacheDraw(be, ro, idx) {
+        const d = be.get(idx);
+        const bytes = d.__indexBytes;
+        if (!(bytes > 0)) return;
+        const arr = idx.array;
+        let art = null,
+            detail = null;
+        if (arr.byteLength > bytes) {
+            art = "format";
+            detail = `${idx.count} × ${arr.constructor.name} = ${arr.byteLength} B gebunden, der Puffer trägt ${bytes} B`;
+        } else {
+            const pos = ro.geometry.attributes.position;
+            if (!pos || !(d.__indexMax >= pos.count)) return;
+            const p = ro.getDrawParameters();
+            if (p === null) return;
+            const schluessel = idx.version + ":" + p.firstVertex + ":" + p.vertexCount + ":" + pos.count;
+            if (!d.__wacheBereich || d.__wacheBereich.schluessel !== schluessel) {
+                let m = 0;
+                const bis = Math.min(arr.length, p.firstVertex + p.vertexCount);
+                for (let i = p.firstVertex; i < bis; i++) if (arr[i] > m && arr[i] !== 4294967295) m = arr[i];
+                d.__wacheBereich = { schluessel, max: m };
+            }
+            if (d.__wacheBereich.max < pos.count) return;
+            art = "bereich";
+            detail = `Index ${d.__wacheBereich.max} ≥ ${pos.count} Vertices im gezeichneten Bereich`;
+        }
+        const W = this._indexWache || (this._indexWache = { n: 0, brueche: [] });
+        W.n++;
+        const geo = ro.geometry.id;
+        if (W.brueche.length >= 24 || W.brueche.some((b) => b.geometrie === geo && b.art === art)) return;
+        const teile = [];
+        for (let o = ro.object; o && teile.length < 7; o = o.parent) teile.unshift(o.name || o.type);
+        const objekt = teile.join("/");
+        const backend = (be.renderer && be.renderer.domElement && be.renderer.domElement.id) || "welt";
+        W.brueche.push({ art, objekt, geometrie: geo, detail, backend });
+        this.log(`INDEX-WACHE (${art}, ${backend}): ${objekt} · Geometrie ${geo} — ${detail}`, "ERROR");
+    }
+    // DIE GPU-WACHE (Frost 07.10.) — kein WebGPU-Validierungsfehler bleibt still. Zwei Wege führen eine Validierung aus der
+    // GPU: (1) `uncapturederror` je Device (jedes Backend der Seite, nach seinem init) und (2) r184s eigene Fehler-Bereiche —
+    // der async Pipeline-Bau hält `pushErrorScope` über ein await offen, jede Validierung dazwischen (auch ein fremder Draw)
+    // landet dort, wird als THREE-Konsolenzeile gemeldet und markiert DIESE Pipeline für immer als kaputt (`error`, ihr Stoff
+    // zeichnet nie wieder). Beide melden an `_gpuWacheMeldung`: beim Namen ins Log (die ersten 12 verschiedenen ganz, danach
+    // die Zahl bei jeder Zehner-Potenz), gezählt in `_gpuWache`. Ein verworfener Befehlspuffer ist ein verlorenes Bild.
+    _gpuWacheAn(device, name) {
+        if (!device || device.__anazhWache === true || typeof device.addEventListener !== "function") return;
+        device.__anazhWache = true;
+        device.addEventListener("uncapturederror", (ev) =>
+            this._gpuWacheMeldung(name, String((ev && ev.error && ev.error.message) || (ev && ev.error) || "?"))
+        );
+    }
+    _gpuWacheKonsole() {
+        if (typeof THREE === "undefined" || typeof THREE.setConsoleFunction !== "function") return;
+        const vorher = typeof THREE.getConsoleFunction === "function" ? THREE.getConsoleFunction() : null;
+        if (vorher && vorher.__anazhWache === true) return;
+        const route = (art, msg, ...rest) => {
+            if ((art === "error" || art === "warn") && AnazhRealm.GPU_VALIDIERUNG_RE.test(String(msg)))
+                this._gpuWacheMeldung("three", String(msg).replace(/^THREE\./, ""));
+            if (vorher) return vorher(art, msg, ...rest);
+            const aus = console[art] || console.log;
+            if (rest[0] && rest[0].isStackTrace) aus(rest[0].getError(msg));
+            else aus(msg, ...rest);
+        };
+        route.__anazhWache = true;
+        THREE.setConsoleFunction(route);
+    }
+    _gpuWacheMeldung(quelle, msg) {
+        const W = this._gpuWache || (this._gpuWache = { n: 0, meldungen: [] });
+        W.n++;
+        const kopf = msg.split("\n")[0].slice(0, 200);
+        if (W.meldungen.length < 12 && !W.meldungen.some((m) => m.kopf === kopf)) {
+            W.meldungen.push({ quelle, kopf, n: W.n });
+            this.log(`GPU-VALIDIERUNG (${quelle}, #${W.n}): ${msg.slice(0, 600)}`, "ERROR");
+        } else if (Number.isInteger(Math.log10(W.n)))
+            this.log(`GPU-VALIDIERUNG: ${W.n} Meldungen (zuletzt ${quelle}: ${kopf})`, "ERROR");
+    }
+    // Die Handschrift einer Dawn-Validierung (Kontext-Zeile „ - While …", ein ungültiges Objekt, ein Bereich, der nicht passt).
+    static get GPU_VALIDIERUNG_RE() {
+        return /\n\s*-\s*While |\[Invalid [A-Za-z]+|does not fit in|GPUValidationError/;
+    }
+    // Die schmalen Formen eines Assets (W7, Kosten ins Asset): ein Index über ≤ 65 535 Vertices trägt 16 bit (das Backend-
+    // Gesetz hält ihn so auf der GPU), ein Haut-Gewicht 16 bit normiert (unorm16x4 statt float32x4 — 2 statt 4 B je Komponente;
     // der Shader liest dasselbe vec4, die Abweichung ≤ 1/131 070 je Gewicht).
+    // Das Index-Maximum am Weg auf die GPU (Frost 07.10., `_backendGesetz`): das Anlegen und ein Voll-Schreiben lesen das
+    // ganze Array, ein Teil-Schreiben nur seine Bereiche (die obere Schranke wächst, wie die Daten auf der GPU wachsen) —
+    // die Kosten folgen den geschriebenen Bytes, nie der Puffer-Größe. 0xFFFFFFFF ist der Neustart-Index, kein Vertex.
+    static _indexMaxBuchen(d, arr, bereiche) {
+        const teil = !!bereiche && bereiche.length > 0 && d.__indexMax !== undefined;
+        const n = arr.length;
+        let m = teil ? d.__indexMax : 0;
+        if (teil)
+            for (let k = 0; k < bereiche.length; k++) {
+                const b = Math.min(n, bereiche[k].start + bereiche[k].count);
+                for (let i = Math.max(0, bereiche[k].start); i < b; i++) {
+                    const v = arr[i];
+                    if (v > m && v !== 4294967295) m = v;
+                }
+            }
+        else
+            for (let i = 0; i < n; i++) {
+                const v = arr[i];
+                if (v > m && v !== 4294967295) m = v;
+            }
+        d.__indexMax = m;
+    }
     static _indexSchmal(arr, nVertices) {
         return nVertices <= 65535 && !(arr instanceof Uint16Array) ? Uint16Array.from(arr) : arr;
     }
@@ -87015,6 +87161,9 @@ class AnazhRealm {
         // (Depth24Plus statt Depth24PlusStencil8) — 4 Bytes/Pixel statt 5.
         renderer.stencil = false;
         this.log("WebGPU-Renderer instantiiert — init() läuft asynchron …", "INFO");
+        // Das Backend-Gesetz an der KLASSE, bevor irgendein Backend der Seite (Welt oder Bühne) ein Attribut anlegt oder sein
+        // Device holt (`_backendGesetz`: schmaler Index · Index-Wache · GPU-Wache).
+        this._backendGesetz(renderer);
         this._configureRenderer(renderer);
         this.state.rendererReady = false;
         // JEDES-HOLZ — der Boot-Wächter: ein still hängendes init() (Software-
@@ -87063,7 +87212,6 @@ class AnazhRealm {
                     /* fail-soft — die Wand selbst urteilt je Konsument */
                 }
                 this._renderObjektRegister(renderer);
-                this._index16(renderer);
                 // Hitch-Telemetrie (d) Upload-Bytes: JEDER Upload läuft durch device.queue.writeBuffer — ein
                 // Laufzeit-Wrap hier zählt alles, die vendor-Datei bleibt byte-alt. Idempotent über __anazhTap;
                 // Konsum je Frame in _perfSenseFoldFrame.

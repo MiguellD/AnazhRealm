@@ -31,7 +31,7 @@
 //      bleibt in der Kugel — kein Pop am Bildrand. (S3) Starr-Bindung gestubbt →
 //      die Linse zählt die unverschmolzenen Teile.
 //  (T) SCHMAL (W7): jeder Index über ≤ 65 535 Vertices trägt 16 bit (r184 weitete ihn auf 32, der Stamm hält ihn
-//      schmal — `_index16`), jedes Haut-Gewicht unorm16 (Wolf · Mensch). (S4) die alten Formen gestubbt → die Linse
+//      schmal — `_backendGesetz`), jedes Haut-Gewicht unorm16 (Wolf · Mensch). (S4) die alten Formen gestubbt → die Linse
 //      nennt die breiten Puffer.
 //  (S) SELBST-TESTS (die Linse feuert): (S1) mit gestubbter Raten-Leiter
 //      (_creatureAnimDiv ≡ 1) tickt auch die Hinter-Kreatur voll — der
@@ -421,7 +421,7 @@ const server = http.createServer((req, res) => {
             A._ofenStarrBinden = saveStarr; // restaurieren (Gate-Hook-Lehre)
             A._tierOfenMemo = saveMemo;
             o.checks.s3LensFires = !!o.s3Roh && o.s3Roh.unverschmolzen > 0;
-            // (T) SCHMAL (W7): r184 weitet jeden 16-bit-Index auf 32 bit (der Stamm hält ihn schmal, `_index16`), die Foundry
+            // (T) SCHMAL (W7): r184 weitet jeden 16-bit-Index auf 32 bit (der Stamm hält ihn schmal, `_backendGesetz`), die Foundry
             // lieferte Uint32-Indizes und float32-Haut-Gewichte — der Spieler trug 8 MB, 1,7 MB davon Breite ohne Gewinn.
             o.checks.tSchmal = !!o.rWolf && !!o.rMensch && o.rWolf.breit.length === 0 && o.rMensch.breit.length === 0;
             // (S4) SELBST-TEST: mit den alten Formen (Index wie geliefert, Gewicht float32) nennt die Linse die Breite
