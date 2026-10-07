@@ -706,6 +706,64 @@ function gpuBank(k) {
     })();
 }
 
+// DER TIER-ZÄHLER (Seiten-Kontext, OMEN 07.10.): die Tiere streuen zwischen Boots stark (0–3 Arten im Bild, 11–101 Befehle)
+// und waren der größte unbenannte Störfaktor jeder ABAB-Folge — je Messung steht ihre Zahl daneben, ein Weltzustand, kein
+// Urteil: gesamt, im Sichtkegel des Hauptbilds (davon nah ≤ `ANALOG_NAH_M`), mit Schatten-Wurf je Kaskade (ein sichtbarer
+// werfender Leib, dessen Hülle das Frustum der Kaskaden-Kamera trifft), die Arten (die Gattung) gesamt und im Sichtkegel.
+function tierZahl() {
+    const r = window.anazhRealm;
+    const T = window.THREE;
+    const st = r.state;
+    const frustum = (kam) => {
+        if (!kam || !kam.projectionMatrix || !kam.matrixWorldInverse) return null;
+        const m = new T.Matrix4().multiplyMatrices(kam.projectionMatrix, kam.matrixWorldInverse);
+        return new T.Frustum().setFromProjectionMatrix(m, kam.coordinateSystem);
+    };
+    const cam = st.camera;
+    const sicht = frustum(cam);
+    const csm = st.csmNode;
+    const dl = st.directionalLight;
+    const kaskaden =
+        csm && csm.lights && csm.lights.length
+            ? csm.lights.map((l) => l && l.shadow && l.shadow.camera)
+            : dl && dl.shadow && dl.shadow.camera
+              ? [dl.shadow.camera]
+              : [];
+    const kf = kaskaden.map(frustum);
+    const nahM = r.constructor.ANALOG_NAH_M || 64;
+    const aus = { gesamt: 0, sicht: 0, sichtNah: 0, schatten: {}, arten: {}, artenSicht: {} };
+    kf.forEach((_, i) => (aus.schatten["k" + i] = 0));
+    const huelle = new T.Box3(),
+        teil = new T.Box3(),
+        kugel = new T.Sphere();
+    for (const c of st.creatures || []) {
+        if (!c || !c.position) continue;
+        aus.gesamt++;
+        // die Art: die Gattung am Körper (Studio-Rezept, z. B. „deer"), sonst die Seele
+        const art = (c.userData && (c.userData.gattung || c.userData.soul)) || "?";
+        aus.arten[art] = (aus.arten[art] || 0) + 1;
+        // die Hülle der sichtbaren Leiber (nah das Studio-Tier, fern bleibt der Ort mit 1 m) und ob einer davon wirft
+        huelle.makeEmpty();
+        let wirft = false;
+        c.traverseVisible((n) => {
+            if (!n.isMesh || !n.geometry) return;
+            if (!n.geometry.boundingBox) n.geometry.computeBoundingBox();
+            teil.copy(n.geometry.boundingBox).applyMatrix4(n.matrixWorld);
+            huelle.union(teil);
+            if (n.castShadow) wirft = true;
+        });
+        if (huelle.isEmpty()) kugel.set(c.position, 1);
+        else huelle.getBoundingSphere(kugel);
+        if (sicht && sicht.intersectsSphere(kugel)) {
+            aus.sicht++;
+            aus.artenSicht[art] = (aus.artenSicht[art] || 0) + 1;
+            if (cam.position.distanceTo(c.position) <= nahM) aus.sichtNah++;
+        }
+        if (wirft) kf.forEach((f, i) => f && f.intersectsSphere(kugel) && aus.schatten["k" + i]++);
+    }
+    return aus;
+}
+
 // DAS EINSCHWINGEN DER BAND-MESSUNG (Seiten-Kontext): der Spiel-Takt läuft mit der Bühne (Mittag · Sonne · Sommer),
 // bis der Bau ruht — die Foundry-Schlange leer und kein Auftrag im Flug, kein Karten-Bake offen, kein Streu-Nachschub,
 // keine aufgeschobene Streu-Region, kein Chunk im Bau, und die Zahl der Chunks, der lebenden Instanzen und der
@@ -900,6 +958,7 @@ async function starte() {
         await page.evaluate(FLUSS_INSTALL);
         await page.evaluate(TAKT_INSTALL);
         await page.evaluate(SICHT.SICHT_INSTALL);
+        await page.evaluate(`window.__tierZahl = ${tierZahl.toString()};`);
         await page.evaluate(FERNWALD_INSTALL);
         await page.evaluate(ZL.ZERLEGE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
@@ -1087,7 +1146,8 @@ async function starte() {
                     );
                 // DIE WACHEN der Mess-Folge (scripts/omen-messfolge.cjs, nach jedem Schritt): der Stempel-Pool, das Buch des
                 // Wetter-Spions seit `seit`, der gestellte Ort (Aufstellung, Dorf-Zug, Ort-Takt, Gier, Spieler), das Fenster
-                // (Viewport und Zeichen-Puffer), die Seiten-Fehler — das Urteil spricht die Folge (`wachenUrteil`).
+                // (Viewport und Zeichen-Puffer), die Seiten-Fehler — das Urteil spricht die Folge (`wachenUrteil`); dazu die
+                // Tiere (`tierZahl`: ein Weltzustand neben jeder Messung, kein Urteil).
                 if (req.url === "/wache") {
                     const w = await page.evaluate((seit) => {
                         const r = window.anazhRealm;
@@ -1103,6 +1163,7 @@ async function starte() {
                                 spieler: [pm.x, pm.z].map((x) => +x.toFixed(1)),
                             },
                             fenster: { innen: [window.innerWidth, window.innerHeight], puffer: [db.x, db.y] },
+                            tiere: typeof window.__tierZahl === "function" ? window.__tierZahl() : null,
                             version: r.constructor.VERSION,
                         };
                     }, Number(b.seit) || 0);
