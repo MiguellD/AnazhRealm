@@ -344,6 +344,10 @@ function lauf(k) {
         const st = r.state;
         const rend = st.renderer;
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+        // DIE WETTER-WACHE: der Zustand vor dem Lauf (Wort und Uhr des Auto-Zugs) — eine Uhr unter 0 ist eingefroren (der
+        // Zug wartet auf 120 s). Hält der Lauf einen eingefrorenen Zustand nicht (Wort anders oder die Uhr läuft wieder),
+        // ist der Lauf ROT: das Wetter danach ist nicht mehr das der Sequenz.
+        const wetterVor = { wetter: st.weather, uhr: st.weatherEffectTime };
         window.__buehne();
         // Die Tiere halten still (Vergleichbarkeit) — außer `--tiere frei`: der Halte-Griff setzt x/z je Takt zurück,
         // die Tier-KI sucht dann jeden Takt neu (Feld-Raycasts), das kostet CPU, die das Spiel so nie zahlt.
@@ -363,8 +367,8 @@ function lauf(k) {
             tRenderVor = null,
             gpuAm = r._gpuTsAtMs;
         rend.setAnimationLoop((t) => {
-            // Das Wetter hält (der 120-s-Zug brachte im ersten Lauf Regen ins Messfenster).
-            st.weatherEffectTime = Math.min(st.weatherEffectTime || 0, 100);
+            // Das Wetter hält die Wetter-Wache der Bühne (scripts/lib/ausgabe-aufnahme.cjs) je Takt.
+            window.__wetterHalten();
             const c0 = performance.now();
             const g0 = r._gpuLeine ? r._gpuLeine.gerendert : 0;
             const z = (uhr.frameZ = {});
@@ -589,6 +593,20 @@ function lauf(k) {
                 chunks: st.voxelChunks ? st.voxelChunks.size : 0,
                 ruhe,
                 wetter: st.weather,
+                wetterHalt: (() => {
+                    const fest = (u) => Number.isFinite(u) && u < 0;
+                    const w = {
+                        vorher: wetterVor.wetter,
+                        nachher: st.weather,
+                        uhrVorher: Number.isFinite(wetterVor.uhr) ? +wetterVor.uhr.toFixed(1) : null,
+                        uhrNachher: Number.isFinite(st.weatherEffectTime) ? +st.weatherEffectTime.toFixed(1) : null,
+                        festVorher: fest(wetterVor.uhr),
+                        festNachher: fest(st.weatherEffectTime),
+                    };
+                    w.urteil =
+                        !w.festVorher || (w.festNachher && w.nachher === w.vorher) ? "GRUEN" : "ROT";
+                    return w;
+                })(),
                 saison: st.season,
             };
         } finally {
@@ -1729,7 +1747,7 @@ async function starte() {
             );
         console.log(`\nRatsche nachgezogen (${r.aenderungen.length}): ${r.aenderungen.join(" · ") || "nichts fiel"}`);
         process.exit(0);
-    } else if (cmd === "lauf")
+    } else if (cmd === "lauf") {
         o = await rufe("/lauf", {
             sek: a[0],
             ein: opt("--ein"),
@@ -1737,7 +1755,13 @@ async function starte() {
             tiere: opt("--tiere", "halten"),
             ruhe: opt("--ruhe", 0),
         });
-    else if (cmd === "profil")
+        // Die Wetter-Wache: ein Lauf, der ein eingefrorenes Wetter nicht hält, endet mit Exit 1.
+        if (o && o.wetterHalt && o.wetterHalt.urteil === "ROT") {
+            console.log(JSON.stringify(o, null, 1));
+            console.log(`WETTER-WACHE ROT: ${JSON.stringify(o.wetterHalt)}`);
+            process.exit(1);
+        }
+    } else if (cmd === "profil")
         o = await rufe("/profil", {
             sek: a[0],
             regler: opt("--regler", "voll"),

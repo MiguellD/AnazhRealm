@@ -187,7 +187,7 @@ async function welt() {
             st._frameOverBudget = false;
             st.timeOfDay = 0.5;
             if (st.world) st.world.timeOfDay = 0.5;
-            st.weatherEffectTime = Math.min(st.weatherEffectTime || 0, 100);
+            window.__wetterHalten();
             try {
                 r._gameLoopTick(performance.now());
             } catch (_e) {}

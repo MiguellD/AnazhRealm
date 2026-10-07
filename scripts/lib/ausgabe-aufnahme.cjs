@@ -29,6 +29,19 @@ function saisonFest() {
     else setTimeout(saisonFest, 50);
 }
 
+// DIE WETTER-WACHE der Bühne (die EINE Stelle, die das Wetter einer Messung hält): die Uhr des Auto-Zugs
+// (`weatherEffectTime`, Zug bei 120 s) steht eingefroren unter 0 — ein schon eingefrorener Wert bleibt, wie er ist. Die
+// Bühne ruft sie, und jede Schleife, die Takte am Stück fährt (`werkbank lauf`, die Schirm-Wand), ruft sie je Takt: der
+// EINE Wetter-Schreiber des Spiels (`_setWeather`, auch der Emotions-Effekt „hope → sunny") setzt die Uhr auf 0, der
+// nächste Takt friert sie wieder ein. Bis 07.10. setzte die Bühne selbst die Uhr auf 0 (über `_setWeather`): jede Bühne
+// (`lauf`, `band`, jede Sonde) taute ein eingefrorenes Wetter auf, und 120 s freier Takte später zog Regen ins Bild (OMEN:
+// „rainy" in 2 von 4 Boots; Werkbank: eingefroren → lauf → Uhr 17,6 → 120 s frei → rainy).
+function wetterHalten() {
+    const st = window.anazhRealm.state;
+    const u = st.weatherEffectTime;
+    if (!(Number.isFinite(u) && u < 0)) st.weatherEffectTime = -1e9;
+}
+
 function buehne() {
     const r = window.anazhRealm;
     const st = r.state;
@@ -36,8 +49,13 @@ function buehne() {
     if (typeof r.setSeason === "function") r.setSeason("sommer");
     if (st.world) st.world.timeOfDay = 0.5;
     st.timeOfDay = 0.5;
+    // Das Wetter hält wie die Saison: Sonne, und die Uhr des Auto-Zugs wie vor dem Schreiber — dann eingefroren
+    // (`__wetterHalten`).
+    const wetterUhr = st.weatherEffectTime;
     if (typeof r._setWeather === "function") r._setWeather("sunny");
     else st.weather = "sunny";
+    st.weatherEffectTime = wetterUhr;
+    window.__wetterHalten();
     st.weatherTransition = null;
     if (typeof r._tickRain === "function") r._tickRain(performance.now());
     if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
@@ -183,6 +201,7 @@ function ausgabeAufnahme(W, H, warm) {
 module.exports = {
     AUSGABE_INSTALL:
         `window.__ausgabeAufnahme = ${ausgabeAufnahme.toString()};` +
+        `window.__wetterHalten = ${wetterHalten.toString()};` +
         `window.__buehne = ${buehne.toString()};` +
         `window.__tiereHalten = ${tiereHalten.toString()};` +
         `(${saisonFest.toString()})();`,
