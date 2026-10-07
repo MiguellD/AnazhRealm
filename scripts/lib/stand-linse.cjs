@@ -274,12 +274,14 @@ function standLauf(k) {
 // DAS URTEIL (gate:stand-takt; `werkbank stand` urteilt nur über die Ruhe):
 //   RUHE    — in KEINEM Frame der Ruhe arbeitet ein Fege-Takt (0 Einheiten);
 //   SCHARF  — derselbe Stand mit gebrochener Wache (jeder Takt geht) zeigt JEDEN Takt arbeitend (die Linse sieht ihn);
-//   TREUE   — mit gebrochener Wache ändert kein Takt die Welt, und jede Treue-Phase geht jeden Takt eine volle Runde;
+//   TREUE   — mit gebrochener Wache ändert kein Takt die Welt, und jede Treue-Phase geht jeden Takt eine volle,
+//             stehende Runde;
 //   TÄTER   — je Takt mit einer Runde über mehrere Gänge findet die Treue-Phase die still verstellte Einheit in der
 //             zweiten Rundenhälfte (Stufen-Wahl, Streu, Saum);
-//   SCHREIBER — jeder Schreiber eines bewachten Zustands trägt seinen Weckruf (`schreiberWand`, der Stamm als AST);
+//   SCHREIBER — jeder Schreiber eines bewachten Zustands ist auf jedem Pfad von seinem Weckruf gedeckt (`schreiberWand`);
 //   GEHEN   — beim Gehen arbeiten Ring, Stufen-Wahl und Cull (die Änderung kostet), und der Spieler kommt voran;
-//   WECKEN  — ein Bau im Stand weckt Cull und Stufen-Wahl, der Bau steht danach, und die Wache schläft wieder;
+//   WECKEN  — ein Bau im Stand weckt Cull und Stufen-Wahl, der Bau steht danach, und die Wache schläft wieder; ein
+//             Regler-Schritt weckt den Cull, ein Wahrnehmungs-Schritt (LOD_DISTANCES) Stufen-Wahl und Streu;
 //   STROM   — ein Sprung an einen fremden Ort baut den Spieler-Chunk (Streaming heilig), auch nach der Ruhe;
 //   CODE    — jeder Fege-Takt fragt `_standRuht` und meldet `_standMeldet`;
 //   PAGE    — kein Page-Error.
@@ -325,6 +327,12 @@ function standUrteil(b) {
                 v.push(
                     `TREUE-LÜCKE: ${n} (${TAKTE[n]}) ging ${wo} ${t.gang} von ${t.runde} Einheiten seiner Runde — die ` +
                         `Treue sah nur einen Teil der Welt`
+                );
+            // die Runde muss während der Phase stehen: wächst sie, liegen die neuen Einheiten hinter dem Cursor ungesehen
+            if (t && t.rundeVon !== undefined)
+                v.push(
+                    `TREUE-LÜCKE: ${n} (${TAKTE[n]}) änderte ${wo} seine Runde (${t.rundeVon} → ${t.runde} Einheiten) — ` +
+                        `Einheiten hinter dem Cursor blieben ungesehen`
                 );
         }
     };
@@ -375,6 +383,15 @@ function standUrteil(b) {
         if (!W.regler) v.push("LEER: kein Regler-Schritt in der Weck-Phase");
         else if (!W.regler.takte.archCull || !(W.regler.takte.archCull.summe > 0))
             v.push("WECKEN: ein Regler-Schritt (der Cull-Radius) weckt archCull nicht — der Rand bliebe stehen");
+        // der Stempel liest die Wahrnehmung selbst (kein Weckruf am Schreiber): eine neue LOD-Distanz weckt die Stufen-Wahlen
+        if (!W.wahrnehmung) v.push("LEER: kein Wahrnehmungs-Schritt in der Weck-Phase");
+        else
+            for (const n of ["archLod", "streuLod"])
+                if (!W.wahrnehmung.takte[n] || !(W.wahrnehmung.takte[n].summe > 0))
+                    v.push(
+                        `WECKEN: ein Wahrnehmungs-Schritt (LOD_DISTANCES, ohne Weckruf) weckt ${n} nicht — der Stempel ` +
+                            `liest die Wahrnehmung nicht`
+                    );
         if (W.eintrag && !W.versorgt)
             v.push("WECKEN: der neue Bau trägt nach dem Wecken weder Stufe noch Gestalt (der Cull-Gang ging ihn nie)");
         if (!W.nachher || W.nachher.summe > 0)
@@ -431,21 +448,38 @@ function standUrteil(b) {
 // ─── DIE SCHREIBER-WAND (Gebot 10: die Linse nennt den Täter beim Namen — nie Wachsamkeit) ───
 // Die Wache schläft unter ihrem Stempel; was sie weckt, ist der Weckruf an jedem Schreiber eines Zustands, den die Fege-
 // Takte lesen. Ein Schreiber ohne Weckruf hielte die Welt unter einer schlafenden Wache fest (bis zum nächsten Schritt des
-// Spielers). Warum eine Wand und keine selbst weckende Engstelle: die bewachten Zustände sind drei Behälter verschiedener
-// Art (Map, Array, Map) und ein Feld der Chunk-Einträge — ein selbst weckender Behälter ließe die Neu-Zuweisung
-// (`= new Map()`, `= []`, `.length = 0`) offen und bräuchte dieselbe Wand. Die Wand liest den Stamm als AST (acorn —
-// Kommentare und Zeichenketten fallen mit dem Parser), findet JEDEN Schreiber eines bewachten Zustands — direkt
-// (`this.state.F.set`), über einen Alias (`const map = st.F`, `const { F } = st`), über einen Zugriff (eine Methode, die F
-// zurückgibt: `_ensureScatterRegionMap()`), per Index, Länge, Zuweisung oder `delete` — und verlangt den Weckruf im
-// SELBEN Methoden-Körper (die äußerste Funktion: Methode, statische Zuweisung; Rückrufe darin zählen zu ihr). Ein leerer
-// Behälter, wo keiner war (`if (!st.F) st.F = new Map()`, `st.F ||= []`), ändert keine Menge und ist kein Schreiber.
-// `boden`: die Boden-Takte (Ring, Saum) lesen den Zustand — der Weckruf ist `_weltRegt(true)`.
+// Spielers). Warum eine Wand und keine selbst weckende Engstelle: die bewachten Zustände sind Behälter verschiedener Art
+// (Map, Array) und Felder der Einträge — ein selbst weckender Behälter ließe die Neu-Zuweisung (`= new Map()`, `= []`,
+// `.length = 0`) offen und bräuchte dieselbe Wand. Was die Takte ortsfrei lesen (Regler, Studio-Antwort, Buch,
+// Wahrnehmung, LOD-Distanzen), liest der Stempel selbst — dort gibt es keinen Schreiber, der vergessen könnte.
+// Die Wand liest den Stamm als AST (acorn — Kommentare und Zeichenketten fallen mit dem Parser) und findet JEDEN Schreiber
+// eines bewachten Zustands: direkt (`this.state.F.set`), über Alias (`const map = st.F`, `const { F } = st`, `x = st.F`,
+// `for (const m of [st.F])`), Element (`F.get(k).add(…)`, `for (const [k, v] of F)`), Zugriff (eine Methode, ein Getter, ein
+// lokaler Pfeil, ein Feld, das F hält), Index, Länge, Zuweisung, Zerlegung, `delete`, `Object.assign`, `op.call/apply`,
+// `Reflect.apply` und einen Helfer, der sein Argument schreibt. Der Weckruf muss den Schreiber auf JEDEM PFAD decken: eine
+// Weck-Anweisung in der Anweisungsliste des Schreibers oder einer umschließenden Liste derselben Funktion, VOR ihm, oder
+// NACH ihm ohne möglichen Austritt dazwischen (`return`, `throw`, `break`, `continue`) — ein Geschwister-Zweig deckt nie,
+// ein Rückruf (eine eigene Funktion) nur mit eigenem Weckruf. Weck-Anweisung ist `this._weltRegt()` (für Boden-Zustände
+// `_weltRegt(true)`) oder der Ruf einer Methode, die ihn als erste mögliche Tat trägt (`_scatterRegionWork`,
+// `_nahWieseNeuIn`). Ein Helfer ohne eigenen Weckruf ist entlastet, wenn JEDER Ruf von ihm gedeckt ist (oder im Eigner-Takt
+// liegt, dessen Wirkung `_standMeldet` meldet); sonst nennt die Wand ihn und den ungedeckten Rufer. Ein leerer Behälter, wo
+// keiner war (`if (!st.F) st.F = new Map()`, `st.F ||= []`), ändert keine Menge und ist kein Schreiber.
+// `boden`: die Boden-Takte (Ring, Saum) lesen den Zustand · `innen`: Elemente sind selbst Mengen · `ersetzen`: ein Feld,
+// dessen Wert der Takt liest (nur Ersetzen und `delete` schreiben, nicht sein Inhalt) · `eigner`: nur dieser Fege-Takt liest
+// den Zustand — seine eigenen Schreiber melden ihre Wirkung selbst. `A.B` ist das Feld B eines A (`nw.kacheln` mit
+// `nw = st.nahWiese`), `A[]` ein Element von A (`A.get(k)`, for-of). `dynamisch`: ein Schreiber mit berechnetem Schlüssel
+// auf `state` (`st[k] = …`) — er kann jeden Zustand treffen und braucht den Boden-Weckruf.
 const BEWACHT = {
-    voxelChunks: { menge: true, boden: true }, // Ring, Saum, Nah-Kacheln (die Boden-Karte)
-    waterCells: { menge: false, boden: true }, // ein Feld des Chunk-Eintrags: der Wasser-Weckruf des Rings
-    architectures: { menge: true, boden: false }, // Stufen-Wahl, Cull
-    scatterRegions: { menge: true, boden: false }, // die Streu-Stufen-Wahl
-    scatterHarvested: { menge: true, boden: false }, // die Nah-Streu (die Ernte)
+    voxelChunks: { boden: true }, // Ring, Saum, Nah-Kacheln (die Boden-Karte)
+    waterCells: { boden: true, ersetzen: true }, // ein Feld des Chunk-Eintrags: der Wasser-Weckruf des Rings liest es
+    architectures: {}, // Stufen-Wahl, Cull
+    scatterRegions: {}, // die Streu-Stufen-Wahl
+    cells: {}, // die Zellen einer Streu-Region (die Streu-Stufen-Wahl geht sie)
+    scatterHarvested: { innen: true }, // die Nah-Streu (die Ernte)
+    "nahWiese.kacheln": { eigner: "_tickNahWiese" }, // die Kacheln der Nah-Wiese
+    "nahStreu.kacheln": { eigner: "_tickNahStreu" }, // die Kacheln der Nah-Streu
+    zustand: { eigner: "_tickNahStreu", ersetzen: true }, // der Bau-Zustand einer Nah-Streu-Kachel (null = neu bauen)
+    "state[…]": { boden: true, dynamisch: true }, // ein berechneter Schlüssel auf `state`
 };
 const SCHREIB_OPS = new Set([
     "set",
@@ -463,14 +497,15 @@ const SCHREIB_OPS = new Set([
     "copyWithin",
 ]);
 
-// quelle (Text eines Skripts) → { befunde: [{ methode, feld, zeile, ruf }], schreiber: { feld: [Methoden] }, einheiten }
-function schreiberWand(quelle) {
+// quelle (Text eines Skripts) → die Analyse; `urteil(gestrichen)` urteilt mit (optional) gestrichenen Weckrufen (Knoten aus
+// `weckrufe`) — die Mutations-Probe streicht je einen und braucht dafür keinen zweiten Parser-Lauf.
+function schreiberAnalyse(quelle) {
     const acorn = require("acorn");
     const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
     const kinder = (n) => {
         const out = [];
         for (const k in n) {
-            if (k === "type" || k === "start" || k === "end" || k === "loc") continue;
+            if (k === "type" || k === "start" || k === "end" || k === "loc" || k.charCodeAt(0) === 95) continue;
             const v = n[k];
             if (Array.isArray(v)) {
                 for (const x of v) if (x && typeof x.type === "string") out.push(x);
@@ -480,6 +515,12 @@ function schreiberWand(quelle) {
     };
     const istFn = (n) =>
         n.type === "FunctionDeclaration" || n.type === "FunctionExpression" || n.type === "ArrowFunctionExpression";
+    const istSchleife = (n) =>
+        n.type === "ForStatement" ||
+        n.type === "ForInStatement" ||
+        n.type === "ForOfStatement" ||
+        n.type === "WhileStatement" ||
+        n.type === "DoWhileStatement";
     const text = (n) => quelle.slice(n.start, n.end).replace(/\s+/g, "");
     const prop = (m) =>
         m && m.type === "MemberExpression"
@@ -491,8 +532,10 @@ function schreiberWand(quelle) {
             : null;
     const schluessel = (k) =>
         !k ? "?" : k.type === "Identifier" ? k.name : k.type === "Literal" ? String(k.value) : "?";
-    // 1. die Einheiten: jede äußerste Funktion; was außerhalb jeder Funktion steht, ist das Modul
-    const modul = { name: "(Modul)", knoten: [] };
+    const ohneAwait = (x) => (x && x.type === "AwaitExpression" ? x.argument : x);
+    // 1. die Einheiten (jede äußerste Funktion; was außerhalb steht, ist das Modul) und die Eltern-Zeiger (`_p`), in EINEM
+    // Durchlauf je Einheit gesammelt: Deklarationen, Zuweisungen, Rufe, Rückgaben, `delete`, for-of
+    const modul = { name: "(Modul)", knoten: [], fn: null };
     const einheiten = [modul];
     const nameVon = (n, e) => {
         if (n.type === "FunctionDeclaration" && n.id) return n.id.name;
@@ -504,8 +547,15 @@ function schreiberWand(quelle) {
         return "(anonym@" + n.loc.start.line + ")";
     };
     (function sammle(n, eltern) {
+        n._p = eltern;
         if (istFn(n)) {
-            einheiten.push({ name: nameVon(n, eltern), knoten: [n], fn: n });
+            einheiten.push({
+                name: nameVon(n, eltern),
+                kurz: "",
+                getter: !!eltern && eltern.type === "MethodDefinition" && eltern.kind === "get",
+                knoten: [n],
+                fn: n,
+            });
             return;
         }
         for (const c of kinder(n)) {
@@ -513,25 +563,196 @@ function schreiberWand(quelle) {
             sammle(c, n);
         }
     })(ast, null);
-    // EIN Durchlauf je Einheit (geschachtelte Funktionen zählen zu ihr): er sammelt, was die Wand liest — Deklarationen,
-    // Zuweisungen, Rufe, Rückgaben, `delete` — mit dem Urteil „leerer Behälter, wo keiner war" (es liest die Eltern-Kette).
+    for (const E of einheiten) {
+        E.kurz = E.name.replace(/^static /, "").replace(/^.*\./, "");
+        const L = (E.l = { dekl: [], zuw: [], ruf: [], rueck: [], del: [], forOf: [] });
+        const geh = (n, p) => {
+            n._p = p;
+            const t = n.type;
+            if (t === "VariableDeclarator") L.dekl.push(n);
+            else if (t === "AssignmentExpression") L.zuw.push(n);
+            else if (t === "CallExpression") L.ruf.push(n);
+            else if (t === "ReturnStatement") L.rueck.push(n);
+            else if (t === "UnaryExpression" && n.operator === "delete") L.del.push(n);
+            else if (t === "ForOfStatement") L.forOf.push(n);
+            for (const c of kinder(n)) if (!(E === modul && istFn(c))) geh(c, n); // im Modul ist jede Funktion ihre Einheit
+        };
+        for (const k of E.knoten) geh(k, k._p);
+    }
+    const felder = Object.keys(BEWACHT);
+    // die Pfade: jeder bewachte Zustand, seine Vorgänger (`nahWiese` vor `nahWiese.kacheln`) und seine Elemente (`F[]`)
+    const pfade = new Set();
+    for (const F of felder) {
+        const t = F.split(".");
+        for (let i = 1; i <= t.length; i++) {
+            const P = t.slice(0, i).join(".");
+            pfade.add(P);
+            if (P.endsWith("[]")) pfade.add(P.slice(0, -2));
+        }
+        if (BEWACHT[F].innen) pfade.add(F + "[]");
+    }
+    const leerJe = () => Object.fromEntries([...pfade].map((P) => [P, new Set()]));
+    const zugriff = leerJe(); // Methoden, die P zurückgeben
+    const getter = leerJe(); // Getter, die P zurückgeben
+    const feldAlias = leerJe(); // Eigenschaften, die P halten (`this._ref = st.F`)
+    for (const E of einheiten) {
+        E.alias = leerJe();
+        E.pfeil = leerJe(); // lokale Pfeile, die P zurückgeben
+    }
+    const vorgaenger = (P) => {
+        const i = P.lastIndexOf(".");
+        return i < 0 ? null : P.slice(0, i);
+    };
+    const letztes = (P) => P.slice(P.lastIndexOf(".") + 1);
+    // Ist `n` eine Referenz auf den Pfad P (in der Einheit E)?
+    const istRef = (n, P, E) => {
+        if (!n) return false;
+        switch (n.type) {
+            case "ChainExpression":
+            case "ParenthesizedExpression":
+                return istRef(n.expression, P, E);
+            case "LogicalExpression":
+                return n.operator === "&&" ? istRef(n.right, P, E) : istRef(n.left, P, E) || istRef(n.right, P, E);
+            case "ConditionalExpression":
+                return istRef(n.consequent, P, E) || istRef(n.alternate, P, E);
+            case "AssignmentExpression":
+                return istRef(n.left, P, E);
+            case "SequenceExpression":
+                return istRef(n.expressions[n.expressions.length - 1], P, E);
+            case "Identifier":
+                return E.alias[P].has(n.name);
+            case "MemberExpression": {
+                if (P.endsWith("[]")) return false;
+                const p = prop(n);
+                if (p === null) return false;
+                if (feldAlias[P].has(p) || getter[P].has(p)) return true;
+                if (p !== letztes(P)) return false;
+                const v = vorgaenger(P);
+                return v === null || istRef(n.object, v, E);
+            }
+            case "CallExpression": {
+                const c = n.callee;
+                if (P.endsWith("[]"))
+                    return c.type === "MemberExpression" && prop(c) === "get" && istRef(c.object, P.slice(0, -2), E);
+                if (c.type === "Identifier") return E.pfeil[P].has(c.name);
+                return zugriff[P].has(prop(c) || "");
+            }
+        }
+        return false;
+    };
+    const pfeilGibt = (f, P, E) =>
+        !!f &&
+        (f.type === "ArrowFunctionExpression" || f.type === "FunctionExpression") &&
+        (f.body.type !== "BlockStatement"
+            ? istRef(f.body, P, E)
+            : f.body.body.length === 1 &&
+              f.body.body[0].type === "ReturnStatement" &&
+              istRef(f.body.body[0].argument, P, E));
+    // 2. Aliase, Zugriffe, Getter und Feld-Aliase bis zum gemeinsamen Fixpunkt
+    for (let neu = true, runde = 0; neu && runde < 8; runde++) {
+        neu = false;
+        const dazu = (S, x) => {
+            if (!S.has(x)) {
+                S.add(x);
+                neu = true;
+            }
+        };
+        for (const E of einheiten) {
+            const bindet = (id, init, P) => {
+                if (!id || !init) return;
+                if (id.type === "Identifier") {
+                    if (istRef(init, P, E)) dazu(E.alias[P], id.name);
+                    if (pfeilGibt(init, P, E)) dazu(E.pfeil[P], id.name);
+                } else if (id.type === "ObjectPattern" && !P.endsWith("[]")) {
+                    const v = vorgaenger(P);
+                    if (v !== null && !istRef(init, v, E)) return;
+                    for (const q of id.properties)
+                        if (q.type === "Property" && schluessel(q.key) === letztes(P)) {
+                            const w = q.value.type === "AssignmentPattern" ? q.value.left : q.value;
+                            if (w.type === "Identifier") dazu(E.alias[P], w.name);
+                        }
+                }
+            };
+            for (const P of pfade) {
+                for (const d of E.l.dekl) bindet(d.id, d.init, P);
+                if (E.fn) for (const q of E.fn.params) if (q.type === "AssignmentPattern") bindet(q.left, q.right, P);
+                for (const z of E.l.zuw) {
+                    if (z.operator !== "=") continue;
+                    if (z.left.type === "Identifier") bindet(z.left, z.right, P);
+                    else if (z.left.type === "MemberExpression" && !z.left.computed && !P.endsWith("[]")) {
+                        const p = prop(z.left);
+                        if (p && p !== letztes(P) && istRef(z.right, P, E)) dazu(feldAlias[P], p);
+                    }
+                }
+                for (const f of E.l.forOf) {
+                    const d = f.left.type === "VariableDeclaration" ? f.left.declarations[0].id : f.left;
+                    // for (const m of [st.F]) → m ist F
+                    if (f.right.type === "ArrayExpression" && f.right.elements.some((x) => istRef(x, P, E)))
+                        if (d.type === "Identifier") dazu(E.alias[P], d.name);
+                    // for (const [k, v] of F) / for (const v of F.values()) → v ist ein Element
+                    if (P.endsWith("[]")) {
+                        const M = P.slice(0, -2);
+                        const r = f.right;
+                        const ueberWerte =
+                            r.type === "CallExpression" && prop(r.callee) === "values" && istRef(r.callee.object, M, E);
+                        if (
+                            istRef(r, M, E) &&
+                            d.type === "ArrayPattern" &&
+                            d.elements[1] &&
+                            d.elements[1].type === "Identifier"
+                        )
+                            dazu(E.alias[P], d.elements[1].name);
+                        if (ueberWerte && d.type === "Identifier") dazu(E.alias[P], d.name);
+                    }
+                }
+                if (E !== modul)
+                    for (const r of E.l.rueck)
+                        if (r.argument && !P.endsWith("[]") && istRef(r.argument, P, E))
+                            dazu(E.getter ? getter[P] : zugriff[P], E.kurz);
+            }
+        }
+    }
+    // 3. die Helfer, die ein Argument als Menge schreiben (`_hilf(a, x) { a.push(x) }`): Index je Methode
+    const paramSchreib = new Map();
+    for (const E of einheiten) {
+        if (!E.fn) continue;
+        const namen = E.fn.params.map((q) => (q.type === "Identifier" ? q.name : null));
+        const geschrieben = new Set();
+        const ziel = (o) => {
+            const x = o && o.type === "ChainExpression" ? o.expression : o;
+            return x && x.type === "Identifier" ? namen.indexOf(x.name) : -1;
+        };
+        for (const c of E.l.ruf)
+            if (c.callee.type === "MemberExpression" && SCHREIB_OPS.has(prop(c.callee) || "")) {
+                const i = ziel(c.callee.object);
+                if (i >= 0) geschrieben.add(i);
+            }
+        for (const z of E.l.zuw)
+            if (z.left.type === "MemberExpression" && (z.left.computed || prop(z.left) === "length")) {
+                const i = ziel(z.left.object);
+                if (i >= 0) geschrieben.add(i);
+            }
+        if (geschrieben.size) paramSchreib.set(E.kurz, geschrieben);
+    }
+    // 4. die Schreiber: je Einheit und Zustand die Schreib-Knoten
     const leer = (n) =>
         (n.type === "NewExpression" &&
             n.callee.type === "Identifier" &&
             /^(Map|Set|WeakMap|WeakSet)$/.test(n.callee.name) &&
             n.arguments.length === 0) ||
         (n.type === "ArrayExpression" && n.elements.length === 0);
-    const hatNicht = (test, ziel) => {
+    const nennt = (n, ziel) => {
         let ja = false;
-        (function such(n) {
-            if (ja || !n) return;
-            if (n.type === "UnaryExpression" && n.operator === "!" && text(n.argument) === ziel) ja = true;
-            else for (const c of kinder(n)) such(c);
-        })(test);
+        (function such(x) {
+            if (ja || !x) return;
+            if (text(x) === ziel) ja = true;
+            else for (const c of kinder(x)) such(c);
+        })(n);
         return ja;
     };
-    // `if (!st.F) st.F = new Map()` · `st.F ||= []` · `st.F = st.F || new Map()`: ein leerer Behälter, wo keiner war
-    const anlage = (a, eltern) => {
+    // `if (!st.F) st.F = new Map()` (jede Klausel des Tests nennt st.F) · `st.F ||= []` · `st.F = st.F || new Map()` ·
+    // `st.F || (st.F = new Map())`: ein leerer Behälter, wo keiner war
+    const anlage = (a) => {
         if (a.operator === "||=" || a.operator === "??=") return leer(a.right);
         if (a.operator !== "=") return false;
         const ziel = text(a.left);
@@ -543,139 +764,336 @@ function schreiberWand(quelle) {
         )
             return true;
         if (!leer(a.right)) return false;
-        for (let i = eltern.length - 1; i >= 0; i--) {
-            const e = eltern[i];
+        const p = a._p;
+        if (p && p.type === "LogicalExpression" && p.right === a && p.operator !== "&&" && text(p.left) === ziel)
+            return true;
+        for (let x = a, e = a._p; e && !istFn(e); x = e, e = e._p) {
             if (e.type !== "IfStatement") continue;
-            return (eltern[i + 1] || a) === e.consequent && hatNicht(e.test, ziel);
+            if (x !== e.consequent) return false;
+            const t = e.test;
+            const klauseln = [];
+            (function teile(k) {
+                if (k.type === "LogicalExpression" && k.operator === "||") {
+                    teile(k.left);
+                    teile(k.right);
+                } else klauseln.push(k);
+            })(t);
+            return (
+                klauseln.some((k) => k.type === "UnaryExpression" && k.operator === "!" && text(k.argument) === ziel) &&
+                klauseln.every((k) => nennt(k, ziel))
+            );
         }
         return false;
     };
-    const felder = Object.keys(BEWACHT);
-    const istFeld = new Set(felder);
-    for (const E of einheiten) {
-        const L = (E.l = { dekl: [], zuw: [], ruf: [], rueck: [], del: [] });
-        const eltern = [];
-        const geh = (n) => {
-            const t = n.type;
-            if (t === "VariableDeclarator") L.dekl.push(n);
-            else if (t === "AssignmentExpression") {
-                L.zuw.push(n);
-                if (istFeld.has(prop(n.left) || "")) n._anlage = anlage(n, eltern);
-            } else if (t === "CallExpression") L.ruf.push(n);
-            else if (t === "ReturnStatement") L.rueck.push(n);
-            else if (t === "UnaryExpression" && n.operator === "delete") L.del.push(n);
-            eltern.push(n);
-            for (const c of kinder(n)) if (!(E === modul && istFn(c))) geh(c); // im Modul ist jede Funktion ihre Einheit
-            eltern.pop();
-        };
-        for (const k of E.knoten) geh(k);
-    }
-    const zugriff = Object.fromEntries(felder.map((f) => [f, new Set()])); // Methoden, die F zurückgeben
-    // Ist `n` eine Referenz auf den bewachten Zustand F (in der Einheit E)?
-    const istRef = (n, F, E) => {
-        if (!n) return false;
-        if (n.type === "MemberExpression") return prop(n) === F;
-        if (n.type === "Identifier") return E.alias[F].has(n.name);
-        if (n.type === "CallExpression") return zugriff[F].has(prop(n.callee) || "");
-        if (n.type === "LogicalExpression") return istRef(n.left, F, E);
-        return false;
+    const ziele = (muster, aus) => {
+        if (!muster) return aus;
+        if (muster.type === "MemberExpression") aus.push(muster);
+        else if (muster.type === "ObjectPattern")
+            for (const q of muster.properties) ziele(q.type === "RestElement" ? q.argument : q.value, aus);
+        else if (muster.type === "ArrayPattern") for (const q of muster.elements) ziele(q, aus);
+        else if (muster.type === "AssignmentPattern") ziele(muster.left, aus);
+        else if (muster.type === "RestElement") ziele(muster.argument, aus);
+        return aus;
     };
-    // die Aliase einer Einheit bis zum Fixpunkt (`const a = st.F; const b = a;`, `const { F } = st`, `x = st.F`)
-    const aliase = (E) => {
-        E.alias = Object.fromEntries(felder.map((f) => [f, new Set()]));
-        for (let neu = true; neu;) {
-            neu = false;
-            const dazu = (F, name) => {
-                if (!E.alias[F].has(name)) {
-                    E.alias[F].add(name);
-                    neu = true;
-                }
-            };
+    const schreibtFeld = (m, F, E) => {
+        // eine Eigenschaft F (oder ihr Vorgänger) wird ersetzt
+        const p = prop(m);
+        if (p === null) return false;
+        let P = F;
+        for (;;) {
+            if (p === letztes(P)) {
+                const v = vorgaenger(P);
+                if (v === null || istRef(m.object, v, E)) return true;
+            }
+            P = vorgaenger(P);
+            if (P === null) return false;
+        }
+    };
+    const istOp = (m) => m && m.type === "MemberExpression" && SCHREIB_OPS.has(prop(m) || "");
+    // der Inhalt eines Zustands (Ops, Index, Länge, Ziel eines Mutators) — ein `ersetzen`-Feld schreibt nur sein Ersetzen
+    const refOderElement = (n, F, E) =>
+        !BEWACHT[F].ersetzen && (istRef(n, F, E) || (!!BEWACHT[F].innen && istRef(n, F + "[]", E)));
+    for (const E of einheiten) {
+        E.schreibt = []; // [{ F, n }]
+        const merke = (F, n) => E.schreibt.push({ F, n });
+        for (const c of E.l.ruf) {
+            const k = c.callee.type === "ChainExpression" ? c.callee.expression : c.callee;
             for (const F of felder) {
-                if (!BEWACHT[F].menge) continue;
-                for (const d of E.l.dekl) {
-                    if (!d.init) continue;
-                    if (d.id.type === "Identifier" && istRef(d.init, F, E)) dazu(F, d.id.name);
-                    if (d.id.type === "ObjectPattern")
-                        for (const q of d.id.properties)
-                            if (q.type === "Property" && schluessel(q.key) === F) {
-                                const v = q.value.type === "AssignmentPattern" ? q.value.left : q.value;
-                                if (v.type === "Identifier") dazu(F, v.name);
-                            }
+                if (istOp(k) && refOderElement(k.object, F, E)) merke(F, c);
+                else if (k.type === "MemberExpression" && /^(call|apply)$/.test(prop(k) || "") && istOp(k.object)) {
+                    if (refOderElement(c.arguments[0], F, E)) merke(F, c);
+                } else if (text(k) === "Reflect.apply" && istOp(c.arguments[0])) {
+                    if (refOderElement(c.arguments[1], F, E)) merke(F, c);
+                } else if (text(k) === "Object.assign") {
+                    const v = vorgaenger(F);
+                    if (refOderElement(c.arguments[0], F, E)) merke(F, c);
+                    else if (
+                        (v === null || istRef(c.arguments[0], v, E)) &&
+                        c.arguments
+                            .slice(1)
+                            .some(
+                                (o) =>
+                                    o.type === "ObjectExpression" &&
+                                    o.properties.some((q) => q.type === "Property" && schluessel(q.key) === letztes(F))
+                            )
+                    )
+                        merke(F, c);
+                } else if (k.type === "MemberExpression" && paramSchreib.has(prop(k) || "")) {
+                    for (const i of paramSchreib.get(prop(k))) if (refOderElement(c.arguments[i], F, E)) merke(F, c);
                 }
-                for (const z of E.l.zuw)
-                    if (z.operator === "=" && z.left.type === "Identifier" && istRef(z.right, F, E))
-                        dazu(F, z.left.name);
             }
         }
-    };
-    // die Zugriffe bis zum Fixpunkt: eine Methode, die F zurückgibt, ist F (ihr Ruf ist eine Referenz)
-    for (let neu = true; neu;) {
-        neu = false;
-        for (const E of einheiten) {
-            aliase(E);
-            if (E === modul) continue;
-            const kurz = E.name.replace(/^static /, "").replace(/^.*\./, "");
-            for (const r of E.l.rueck)
-                for (const F of felder)
-                    if (BEWACHT[F].menge && r.argument && istRef(r.argument, F, E) && !zugriff[F].has(kurz)) {
-                        zugriff[F].add(kurz);
-                        neu = true;
-                    }
-        }
-    }
-    // die Schreiber und ihre Weckrufe
-    const befunde = [];
-    const schreiber = Object.fromEntries(felder.map((f) => [f, []]));
-    for (const E of einheiten) {
-        const schreibt = {};
-        const merke = (F, n) => {
-            if (!schreibt[F] || n.loc.start.line < schreibt[F]) schreibt[F] = n.loc.start.line;
-        };
-        let weckt = false,
-            wecktBoden = false;
-        for (const c of E.l.ruf) {
-            const pc = prop(c.callee) || "";
-            if (pc === "_weltRegt") {
-                weckt = true;
-                const a0 = c.arguments[0];
-                if (a0 && a0.type === "Literal" && a0.value === true) wecktBoden = true;
-            } else if (SCHREIB_OPS.has(pc))
-                for (const F of felder) if (BEWACHT[F].menge && istRef(c.callee.object, F, E)) merke(F, c);
-        }
         for (const z of E.l.zuw) {
-            if (z.left.type !== "MemberExpression") continue;
-            const pz = prop(z.left);
+            const L = z.left;
             for (const F of felder) {
-                if (pz === F) {
-                    if (!z._anlage) merke(F, z);
-                } else if (BEWACHT[F].menge && (z.left.computed || pz === "length") && istRef(z.left.object, F, E))
-                    merke(F, z);
+                if (L.type === "MemberExpression") {
+                    if (schreibtFeld(L, F, E)) {
+                        if (!anlage(z)) merke(F, z);
+                    } else if ((L.computed || prop(L) === "length") && refOderElement(L.object, F, E)) merke(F, z);
+                } else if (L.type === "ObjectPattern" || L.type === "ArrayPattern") {
+                    if (ziele(L, []).some((m) => schreibtFeld(m, F, E))) merke(F, z);
+                }
             }
         }
         for (const d of E.l.del) {
             const a = d.argument;
             if (a.type !== "MemberExpression") continue;
             for (const F of felder)
-                if (prop(a) === F || (BEWACHT[F].menge && a.computed && istRef(a.object, F, E))) merke(F, d);
+                if (schreibtFeld(a, F, E) || (a.computed && refOderElement(a.object, F, E))) merke(F, d);
         }
-        for (const F of Object.keys(schreibt)) {
-            schreiber[F].push(E.name);
-            if (BEWACHT[F].boden ? !wecktBoden : !weckt)
-                befunde.push({
-                    methode: E.name,
-                    feld: F,
-                    zeile: schreibt[F],
-                    ruf: BEWACHT[F].boden ? "_weltRegt(true)" : "_weltRegt()",
-                });
-        }
+        // ein berechneter Schlüssel auf `state` (oder einem Alias davon): er kann jeden bewachten Zustand treffen
+        const wurzel = new Set(
+            E.l.dekl
+                .filter((d) => d.id.type === "Identifier" && d.init && prop(d.init) === "state")
+                .map((d) => d.id.name)
+        );
+        const aufState = (m) =>
+            !!m &&
+            m.type === "MemberExpression" &&
+            m.computed &&
+            m.property.type !== "Literal" &&
+            (prop(m.object) === "state" || (m.object.type === "Identifier" && wurzel.has(m.object.name)));
+        for (const z of E.l.zuw) if (aufState(z.left)) merke("state[…]", z);
+        for (const d of E.l.del) if (aufState(d.argument)) merke("state[…]", d);
     }
-    return {
-        befunde,
-        schreiber,
-        einheiten: einheiten.length,
-        zugriff: Object.fromEntries(felder.map((f) => [f, [...zugriff[f]]])),
+    // 5. die Weckrufe (jeder Ruf von `_weltRegt` im Stamm — die Mutations-Probe streicht je einen)
+    const weckrufe = [];
+    for (const E of einheiten)
+        for (const c of E.l.ruf)
+            if (prop(c.callee) === "_weltRegt") weckrufe.push({ knoten: c, methode: E.name, zeile: c.loc.start.line });
+    // die Rufe je Methoden-Name (für Wecker und Helfer)
+    const methoden = new Map(); // kurz → [Einheit]
+    for (const E of einheiten)
+        if (E.fn && E !== modul) (methoden.get(E.kurz) || methoden.set(E.kurz, []).get(E.kurz)).push(E);
+    const rufer = new Map(); // kurz → [{ E, c }]
+    for (const E of einheiten)
+        for (const c of E.l.ruf) {
+            const k = c.callee.type === "ChainExpression" ? c.callee.expression : c.callee;
+            const m = k.type === "MemberExpression" ? prop(k) : null;
+            if (m && methoden.has(m)) (rufer.get(m) || rufer.set(m, []).get(m)).push({ E, c });
+        }
+    // Kann eine Anweisung (oder Liste) ihre Liste verlassen? → Menge der Austritts-Arten
+    // (je Anweisung einmal gerechnet: die Austritte hängen an keinem Weckruf — die Mutations-Probe urteilt viele Male)
+    const austritte = (s, aus) => {
+        if (!s) return aus;
+        if (!s._aus) s._aus = [...austritteRoh(s, new Set())];
+        for (const a of s._aus) aus.add(a);
+        return aus;
     };
+    const austritteRoh = (s, aus) => {
+        (function geh(n, schleife, wahl) {
+            if (!n || istFn(n)) return;
+            const t = n.type;
+            if (t === "ReturnStatement" || t === "ThrowStatement") aus.add("return");
+            else if (t === "BreakStatement") {
+                if (n.label) aus.add("label");
+                else if (!schleife && !wahl) aus.add("break");
+            } else if (t === "ContinueStatement") {
+                if (n.label) aus.add("label");
+                else if (!schleife) aus.add("continue");
+            }
+            const s2 = schleife || istSchleife(n);
+            const w2 = wahl || t === "SwitchStatement";
+            for (const c of kinder(n)) geh(c, s2, w2);
+        })(s, false, false);
+        return aus;
+    };
+    const listeVon = (p) =>
+        p.type === "BlockStatement" || p.type === "Program" || p.type === "StaticBlock"
+            ? p.body
+            : p.type === "SwitchCase"
+              ? p.consequent
+              : null;
+    return {
+        felder,
+        weckrufe,
+        einheiten: einheiten.length,
+        zugriff: Object.fromEntries(felder.map((f) => [f, [...zugriff[f], ...getter[f]]])),
+        // DAS URTEIL bei gestrichenen Weckrufen (`gestrichen`: eine Menge von Ruf-Knoten aus `weckrufe`)
+        urteil(gestrichen) {
+            const weg = gestrichen || new Set();
+            // die Wecker: eine Methode, deren Körper vor jedem möglichen Austritt eine Weck-Anweisung trägt (Fixpunkt)
+            const wecker = { welt: new Set(), boden: new Set() };
+            const weckRuf = (c, art) => {
+                c = ohneAwait(c);
+                if (!c || c.type !== "CallExpression" || weg.has(c)) return false;
+                const k = c.callee.type === "ChainExpression" ? c.callee.expression : c.callee;
+                const m = k.type === "MemberExpression" ? prop(k) : null;
+                if (m === "_weltRegt") {
+                    const a0 = c.arguments[0];
+                    return art !== "boden" || (!!a0 && a0.type === "Literal" && a0.value === true);
+                }
+                return !!m && wecker[art].has(m);
+            };
+            const weckAnw = (s, art) =>
+                (s.type === "ExpressionStatement" && weckRuf(s.expression, art)) ||
+                (s.type === "ReturnStatement" && weckRuf(s.argument, art)) ||
+                (s.type === "VariableDeclaration" &&
+                    s.declarations.length === 1 &&
+                    weckRuf(s.declarations[0].init, art));
+            for (let neu = true; neu;) {
+                neu = false;
+                for (const E of einheiten) {
+                    if (!E.fn || E.fn.body.type !== "BlockStatement") continue;
+                    for (const art of ["welt", "boden"]) {
+                        if (wecker[art].has(E.kurz)) continue;
+                        const aus = new Set();
+                        for (const s of E.fn.body.body) {
+                            if (weckAnw(s, art)) {
+                                wecker[art].add(E.kurz);
+                                neu = true;
+                                break;
+                            }
+                            if (austritte(s, aus).size) break;
+                        }
+                    }
+                }
+            }
+            // Deckt eine Weck-Anweisung den Knoten auf jedem Pfad (in seiner eigenen Funktion)?
+            const gedeckt = (n, art) => {
+                const aus = new Set();
+                for (let kind = n, p = n._p; p; kind = p, p = p._p) {
+                    if (istFn(p)) return false;
+                    const t = p.type;
+                    if ((t === "ReturnStatement" || t === "ThrowStatement") && kind === p.argument) aus.add("return");
+                    if (t === "IfStatement" && kind === p.test) {
+                        austritte(p.consequent, aus);
+                        austritte(p.alternate, aus);
+                    }
+                    if (istSchleife(p) && kind === p.body) {
+                        aus.delete("break");
+                        aus.delete("continue");
+                    }
+                    if (t === "SwitchStatement") aus.delete("break");
+                    const L = listeVon(p);
+                    if (!L) continue;
+                    const i = L.indexOf(kind);
+                    for (let j = 0; j < i; j++) if (weckAnw(L[j], art)) return true;
+                    for (let j = i + 1; j < L.length; j++) {
+                        if (!aus.size && weckAnw(L[j], art)) return true;
+                        austritte(L[j], aus);
+                    }
+                }
+                return false;
+            };
+            const imRueckruf = (n, E) => {
+                for (let p = n._p; p; p = p._p) if (istFn(p)) return p !== E.fn;
+                return false;
+            };
+            // DIE PFLICHT: ein ungedeckter Schreib-Knoten verpflichtet seine Methode; ein ungedeckter Ruf einer verpflichteten
+            // Methode verpflichtet den Rufer (bis zum Fixpunkt) — der Eigner-Takt nimmt die Pflicht für seinen Zustand ab.
+            const art = (F) => (BEWACHT[F].boden ? "boden" : "welt");
+            const offen = new Map(); // Einheit → Map(F → [{ n, innen, ueber }])
+            const schreiber = Object.fromEntries(felder.map((f) => [f, []]));
+            const dazu = (E, F, x) => {
+                const je = offen.get(E) || offen.set(E, new Map()).get(E);
+                const xs = je.get(F) || je.set(F, []).get(F);
+                if (xs.some((y) => y.n === x.n)) return false;
+                xs.push(x);
+                return true;
+            };
+            const frei = (C, c, F) => C.kurz === BEWACHT[F].eigner || gedeckt(c, art(F));
+            for (const E of einheiten)
+                for (const { F, n } of E.schreibt) {
+                    if (!schreiber[F].includes(E.name)) schreiber[F].push(E.name);
+                    if (!frei(E, n, F)) dazu(E, F, { n, innen: imRueckruf(n, E), ueber: null });
+                }
+            for (let neu = true; neu;) {
+                neu = false;
+                for (const [E, je] of [...offen])
+                    for (const F of [...je.keys()])
+                        for (const { E: C, c } of rufer.get(E.kurz) || [])
+                            if (!frei(C, c, F) && dazu(C, F, { n: c, innen: imRueckruf(c, C), ueber: E.name }))
+                                neu = true;
+            }
+            // ENTLASTET ist eine verpflichtete Methode, wenn JEDER Ruf von ihr frei ist oder aus einer entlasteten Methode
+            // kommt — nie aus einem Rückruf (der läuft später) und nie ohne Rufer (kleinster Fixpunkt: ein Kreis bleibt rot).
+            const entlastet = new Set(); // `${name}|${F}`
+            const schuld = (E, F) => {
+                const rs = rufer.get(E.kurz) || [];
+                if (!E.fn || !rs.length) return { C: null };
+                for (const { E: C, c } of rs) {
+                    if (frei(C, c, F)) continue;
+                    if (!imRueckruf(c, C) && entlastet.has(`${C.name}|${F}`)) continue;
+                    return { C, c };
+                }
+                return null;
+            };
+            for (let neu = true; neu;) {
+                neu = false;
+                for (const [E, je] of offen)
+                    for (const [F, xs] of je) {
+                        const s = `${E.name}|${F}`;
+                        if (entlastet.has(s) || xs.some((x) => x.innen) || schuld(E, F) !== null) continue;
+                        entlastet.add(s);
+                        neu = true;
+                    }
+            }
+            const kette = (E, F, tiefe) => {
+                const s = schuld(E, F);
+                if (!s) return "?";
+                if (!s.C) return E.fn ? "kein Rufer im Stamm" : "auf Modul-Ebene";
+                const hier = `${s.C.name} (Zeile ${s.c.loc.start.line})`;
+                if (imRueckruf(s.c, s.C)) return hier + " im Rückruf";
+                return tiefe < 4 && s.C !== E ? hier + " ← " + kette(s.C, F, tiefe + 1) : hier;
+            };
+            const befunde = [];
+            for (const [E, je] of offen)
+                for (const [F, xs] of je) {
+                    const direkt = xs.filter((x) => x.ueber === null);
+                    if (!direkt.length || entlastet.has(`${E.name}|${F}`)) continue;
+                    const innen = direkt.find((x) => x.innen);
+                    befunde.push({
+                        methode: E.name,
+                        feld: F,
+                        zeile: Math.min(...direkt.map((x) => x.n.loc.start.line)),
+                        ruf: art(F) === "boden" ? "_weltRegt(true)" : "_weltRegt()",
+                        weil: innen
+                            ? `im Rückruf (Zeile ${innen.n.loc.start.line}) ohne eigenen Weckruf`
+                            : `ungedeckt über ${kette(E, F, 0)}`,
+                    });
+                }
+            return { befunde, schreiber };
+        },
+    };
+}
+
+// quelle → { befunde, schreiber, einheiten, zugriff, weckrufe }
+function schreiberWand(quelle) {
+    const a = schreiberAnalyse(quelle);
+    const u = a.urteil();
+    return { ...u, einheiten: a.einheiten, zugriff: a.zugriff, weckrufe: a.weckrufe.length };
+}
+
+// DIE MUTATIONS-PROBE: je einen Weckruf des Stamms streichen — jeder trägt (die Wand fällt rot beim Namen), sonst ist er
+// überflüssig. → [{ methode, zeile, befunde }]
+function weckProbe(quelle) {
+    const a = schreiberAnalyse(quelle);
+    return a.weckrufe.map((w) => ({
+        methode: w.methode,
+        zeile: w.zeile,
+        befunde: a.urteil(new Set([w.knoten])).befunde,
+    }));
 }
 
 // Das Urteil der Schreiber-Wand: jeder Schreiber ohne Weckruf beim Namen; eine Wand, die einen bewachten Zustand nie
@@ -685,11 +1103,10 @@ function schreiberUrteil(s) {
     if (!s || !s.schreiber) return ["LEER: keine Schreiber-Wand"];
     for (const b of s.befunde)
         v.push(
-            `SCHREIBER: ${b.methode} schreibt ${b.feld} (Zeile ${b.zeile}) ohne ${b.ruf} im selben Methoden-Körper — ` +
-                `die Wache verschliefe die Änderung`
+            `SCHREIBER: ${b.methode} schreibt ${b.feld} (Zeile ${b.zeile}) ohne ${b.ruf} auf jedem Pfad — ${b.weil || "ungedeckt"}`
         );
     for (const F of Object.keys(BEWACHT))
-        if (!s.schreiber[F] || s.schreiber[F].length === 0)
+        if (!BEWACHT[F].dynamisch && (!s.schreiber[F] || s.schreiber[F].length === 0))
             v.push(`STUMPF: die Schreiber-Wand sieht keinen Schreiber von ${F} — der bewachte Zustand heißt anders`);
     return v;
 }
@@ -698,7 +1115,9 @@ module.exports = {
     TAKTE,
     BLAETTER,
     BEWACHT,
+    schreiberAnalyse,
     schreiberWand,
+    weckProbe,
     schreiberUrteil,
     standPhase,
     standUrteil,

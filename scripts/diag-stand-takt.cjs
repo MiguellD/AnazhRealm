@@ -11,21 +11,25 @@
 //   (S) SCHARF + TREUE — derselbe Stand mit gebrochener Wache (`_standRuht` schläft nie, jeder Takt geht wie vor der
 //       Welle): jeder Takt arbeitet (die Linse sieht ihn), und KEINER ändert die Welt (die Wache verschlief nichts) — die
 //       Phase läuft, bis JEDER Takt eine volle Runde ging (die Runde nennt er `_standRuht`; bis 07.10. 6 Frames: die Streu
-//       ging 960 von 1 845 Zellen, der Saum 768 von 1 728 Punkten — für den Rest der Runde war die Treue blind);
+//       ging 960 von 1 845 Zellen, der Saum 768 von 1 728 Punkten — für den Rest der Runde war die Treue blind), und die
+//       Runde steht während der Phase (wächst sie, blieben Einheiten hinter dem Cursor ungesehen);
 //   (X) TÄTER — je Takt, dessen Runde mehrere Gänge braucht (Stufen-Wahl, Streu, Saum), steht in der zweiten Hälfte seiner
 //       Runde eine still verstellte Einheit: die Treue-Phase findet jede;
 //   (W) WECKEN — ein Baum entsteht im Stand: Cull und Stufen-Wahl gehen, der Baum trägt danach seine Stufe, die Wache
-//       schläft wieder (0 Einheiten);
+//       schläft wieder (0 Einheiten); ein Regler-Schritt weckt den Cull, ein Wahrnehmungs-Schritt (LOD_DISTANCES, ohne
+//       Weckruf geschrieben — der Stempel liest ihn selbst) die Stufen-Wahl und die Streu;
 //   (G) GEHEN — W gehalten: Stufen-Wahlen, Cull und Nah-Streu arbeiten, der Spieler kommt voran — und Gehen kostet nur
 //       die Änderung: in derselben Spieler-Zelle geht der Ring nicht, ohne neuen Anker des Fern-Rings der Saum nicht;
 //   (T) STROM — nach der Ruhe ein Sprung an einen fremden Ort: der Spieler-Chunk steht (Streaming heilig, Lehre 13);
 //   (C) CODE — jeder Fege-Takt fragt `_standRuht` und meldet `_standMeldet`; SCHREIBER — jeder Schreiber eines bewachten
-//       Zustands (Chunk-Menge, Wasser-Zellen, Bau-Menge, Streu-Regionen, Ernte) trägt im selben Methoden-Körper seinen
-//       Weckruf (`schreiberWand`, der Stamm als AST); (P) kein Page-Error.
+//       Zustands (Chunk-Menge, Wasser-Zellen, Bau-Menge, Streu-Regionen und -Zellen, Ernte, Nah-Kacheln) ist auf JEDEM
+//       PFAD von seinem Weckruf gedeckt (`schreiberWand`, der Stamm als AST); (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, stumpfe Linse,
-// ein verschlafener Wechsel, eine halbe Runde, ein ungesehener Täter, ein Bau, der nicht weckt, starres Gehen,
-// verhungernder Strom, ein Takt ohne Wache, ein Schreiber ohne Weckruf, Page-Error — MUSS rot fallen und ihn beim Namen
-// nennen; dazu die Schreiber-Wand am Stamm selbst (grün) und mit einem eingeschmuggelten Schreiber (rot beim Namen).
+// ein verschlafener Wechsel, eine halbe oder wachsende Runde, ein ungesehener Täter, ein Bau, der nicht weckt, starres
+// Gehen, verhungernder Strom, ein Takt ohne Wache, ein Schreiber ohne Weckruf, Page-Error — MUSS rot fallen und ihn beim
+// Namen nennen; dazu die Schreiber-Wand am Stamm selbst (grün), mit einem eingeschmuggelten Schreiber (rot beim Namen),
+// die MUTATIONS-PROBE (je einen Weckruf des Stamms streichen: jeder fällt rot) und jede Form eines Schreibers und jeder
+// ungedeckte Pfad (rot) neben Anlage, Wecker-Ruf, gedecktem Helfer und Eigner-Takt (grün).
 //   node scripts/diag-stand-takt.cjs [--selftest]   (npm run gate:stand-takt; Port STAND_TAKT_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -86,6 +90,7 @@ function selbsttest() {
             nachher: phase(0, 20),
             treue: treuPhase(40),
             regler: phase(12, 10),
+            wahrnehmung: phase(30, 4),
         },
         strom: { spielerChunk: true, x: -300, z: -850, takte: 40 },
         code: Object.fromEntries(namen.map((n) => [n, { fragt: true, meldet: true }])),
@@ -211,6 +216,16 @@ function selbsttest() {
         ],
         ["keine Täter-Probe", (b) => delete b.taeter, /LEER: keine Täter-Probe der Treue/],
         [
+            "die Runde der Stufen-Wahl wächst während der Treue-Phase",
+            (b) => Object.assign(b.bruch.takte.archLod, { rundeVon: 1638, runde: 1702, gang: 3584 }),
+            /TREUE-LÜCKE: archLod \(_tickArchitectureLOD\) änderte nach der Ruhe seine Runde \(1638 → 1702 Einheiten\)/,
+        ],
+        [
+            "ein Wahrnehmungs-Schritt weckt die Streu nicht (der Stempel liest die LOD-Distanzen nicht)",
+            (b) => Object.assign(b.wecken.wahrnehmung.takte.streuLod, { summe: 0, mitArbeit: 0 }),
+            /WECKEN: ein Wahrnehmungs-Schritt \(LOD_DISTANCES, ohne Weckruf\) weckt streuLod nicht/,
+        ],
+        [
             "ein Schreiber ohne Weckruf",
             (b) =>
                 b.schreiber.befunde.push({
@@ -247,9 +262,10 @@ function selbsttest() {
 }
 
 // DIE SCHREIBER-WAND am Stamm (acorn, ohne Browser — sie läuft in `npm run check`): der Stamm ist grün; ein eingeschmuggelter
-// Schreiber ohne Weckruf fällt rot beim Namen; jede Form eines Schreibers (Alias, Zerlegung, Zugriff, Index, Länge,
-// Neu-Zuweisung, Boden ohne `true`, Feld, `delete`, statische Zuweisung) wird gefunden; die leere Anlage, der weckende
-// Schreiber und der Leser bleiben grün.
+// Schreiber ohne Weckruf fällt rot beim Namen; DIE MUTATIONS-PROBE streicht je einen Weckruf des Stamms — jeder fällt rot
+// (ein grüner Weckruf ist überflüssig oder die Wand blind), die Weckrufe von `_finalizeVoxelChunkBuild` (Geschwister-Zweige)
+// und `_scatterRegionWork` (der Hauptpfad von `_scatterRegion`) beim Namen; jede Form eines Schreibers und jeder ungedeckte
+// Pfad wird gefunden; Anlage, Wecker-Ruf, gedeckter Helfer, Eigner-Takt und Leser bleiben grün.
 function schreiberSelbsttest(fehler) {
     const fs = require("fs");
     const path = require("path");
@@ -260,7 +276,8 @@ function schreiberSelbsttest(fehler) {
         .map(([f, m]) => `${f} ${m.length}`)
         .join(" · ");
     console.log(
-        `  ${wv.length ? "❌" : "✅"} Schreiber-Wand am Stamm (${zahl} Methoden) → ${wv.join(" · ") || "jeder weckt"}`
+        `  ${wv.length ? "❌" : "✅"} Schreiber-Wand am Stamm (${zahl} Methoden, ${wand.weckrufe} Weckrufe) → ` +
+            (wv.join(" · ") || "jeder Pfad weckt")
     );
     if (wv.length) fehler.push("der Stamm: " + wv.join(" · "));
     const anker = "\n    _bauRegt() {";
@@ -274,8 +291,33 @@ function schreiberSelbsttest(fehler) {
         if (!ok) fehler.push("ein eingeschmuggelter Schreiber im Stamm fällt nicht rot beim Namen: " + v.join(" · "));
         console.log(`  ${ok ? "✅" : "❌"} Selbsttest „ein Schreiber ohne Weckruf im Stamm" → rot: ${v.join(" · ")}`);
     }
+    // DIE MUTATIONS-PROBE: je einen Weckruf streichen
+    const probe = STAND.weckProbe(stamm);
+    const gruen = probe.filter((p) => !p.befunde.length);
+    for (const p of gruen) fehler.push(`Weckruf ${p.methode} (Zeile ${p.zeile}) gestrichen → die Wand bleibt grün`);
+    console.log(
+        `  ${gruen.length ? "❌" : "✅"} Mutations-Probe: ${probe.length - gruen.length} von ${probe.length} Weckrufen ` +
+            `fallen gestrichen rot` +
+            (gruen.length ? " — grün: " + gruen.map((p) => `${p.methode}:${p.zeile}`).join(", ") : "")
+    );
+    const benannt = [
+        ["_finalizeVoxelChunkBuild", "_finalizeVoxelChunkBuild", 2],
+        ["_scatterRegionWork", "_scatterRegion", 1],
+    ];
+    for (const [wo, nennt, soll] of benannt) {
+        const ps = probe.filter((p) => p.methode === wo);
+        const ok = ps.length === soll && ps.every((p) => p.befunde.some((b) => b.methode === nennt));
+        if (!ok)
+            fehler.push(`der gestrichene Weckruf in ${wo} nennt ${nennt} nicht (${ps.length} von ${soll} Weckrufen)`);
+        for (const p of ps)
+            console.log(
+                `  ${ok ? "✅" : "❌"} Selbsttest „Weckruf ${wo}:${p.zeile} gestrichen" → rot: ` +
+                    p.befunde.map((b) => `${b.methode} schreibt ${b.feld}`).join(", ")
+            );
+    }
     const formen = [
         "class X {",
+        // die Formen eines Schreibers
         "    _alias() { const arches = this.state.architectures; arches.splice(0, 1); }",
         '    _zerlegt() { const { voxelChunks: c } = this.state; c.delete("0,0"); }',
         "    _karte() { return this.state.scatterRegions; }",
@@ -284,17 +326,67 @@ function schreiberSelbsttest(fehler) {
         "    _laenge() { this.state.architectures.length = 0; }",
         "    _neu() { this.state.voxelChunks = new Map(); }",
         "    _bodenOhneTrue(k) { this.state.voxelChunks.set(k, {}); this._weltRegt(); }",
-        "    _feld(e) { e.waterCells = null; }",
-        "    _feldWeg(e) { delete e.waterCells; }",
+        "    _feld(k) { const e = this.state.voxelChunks.get(k); e.waterCells = null; }",
+        "    _feldParam(e) { e.waterCells = null; }",
+        "    _assignFeld(e, w) { Object.assign(e, { waterCells: w }); }",
+        "    _dynamisch(n) { this.state[n] = []; }",
+        "    _dynamischAlias(n) { const st = this.state; delete st[n]; }",
+        "    _feldWeg(k) { for (const [, e] of this.state.voxelChunks) delete e.waterCells; }",
         "    _ernte() { const h = this.state.scatterHarvested || new Map(); h.clear(); }",
+        "    _element(k, i) { this.state.scatterHarvested.get(k).add(i); }",
+        "    get _getter() { return this.state.architectures; }",
+        "    _ueberGetter(x) { this._getter.push(x); }",
+        "    _merk() { this._halt = this.state.voxelChunks; }",
+        "    _ueberFeld(k) { this._halt.set(k, {}); }",
+        "    _assign(xs) { Object.assign(this.state.architectures, xs); }",
+        "    _protoRuf(k) { Map.prototype.set.call(this.state.voxelChunks, k, {}); }",
+        "    _reflect(k) { Reflect.apply(Map.prototype.set, this.state.voxelChunks, [k, {}]); }",
+        "    _pushApply(xs) { Array.prototype.push.apply(this.state.architectures, xs); }",
+        "    _hilfArg(a, x) { a.push(x); }",
+        "    _ueberArg(x) { this._hilfArg(this.state.architectures, x); }",
+        "    _forOf(k) { for (const m of [this.state.voxelChunks]) m.set(k, {}); }",
+        "    _bedingt(x, c) { const a = c ? this.state.architectures : []; a.push(x); }",
+        "    _zerlegtZuweisung(s) { ({ architectures: this.state.architectures } = s); }",
+        "    _pfeil(x) { const g = () => this.state.architectures; g().push(x); }",
+        "    _paramVorgabe(k, { voxelChunks } = this.state) { voxelChunks.set(k, {}); }",
+        "    _optional(x) { this.state.architectures?.push(x); }",
+        "    _anlageMitBedingung(r) { if (!this.state.voxelChunks || r) this.state.voxelChunks = new Map(); }",
+        "    _filterNeu() { this.state.architectures = this.state.architectures.filter((a) => a); }",
+        "    _kachelFremd(k) { this.state.nahWiese.kacheln.delete(k); }",
+        "    _zustandFremd(k) { const ns = this.state.nahStreu; const x = ns.kacheln.get(k); x.zustand = null; }",
+        "    _zelle(region, rec) { region.cells.push(rec); }",
+        '    _fremd() { const snap = {}; snap.architectures = []; snap.voxel = new Map(); snap.voxel.set("a", 1); }',
+        // die ungedeckten Pfade
+        "    _fruehRaus(x, c) { this.state.architectures.push(x); if (c) return; this._weltRegt(); }",
+        "    _geschwister(k, c) { if (c) { this.state.voxelChunks.set(k, 1); } else { this._weltRegt(true); } }",
+        "    _bedingterWeckruf(k, c) { this.state.scatterRegions.delete(k); if (c) this._weltRegt(); }",
+        "    _spaeter(x) { this._weltRegt(); setTimeout(() => this.state.architectures.push(x), 0); }",
+        "    _dannRuf(k) { this._weltRegt(true); Promise.resolve().then(() => this.state.voxelChunks.set(k, {})); }",
+        "    _schleifeRaus(xs) { for (const x of xs) { this.state.architectures.push(x); if (!x) break; this._weltRegt(); } }",
+        "    _hilfUngedeckt(k) { this.state.scatterRegions.delete(k); }",
+        "    _ungedeckterRufer(k) { this._hilfUngedeckt(k); }",
+        // grün: Anlage, Wecker-Ruf, gedeckter Helfer, Eigner-Takt, Schleifen, Leser, fremde Kacheln und Wasser-Zellen
         "    _anlage() { if (!this.state.voxelChunks) this.state.voxelChunks = new Map(); }",
         "    _anlageOder() { this.state.scatterRegions = this.state.scatterRegions || new Map(); }",
         "    _weckt(e) { this.state.architectures.push(e); this._weltRegt(); }",
         "    _wecktBoden(k) { const m = this.state.voxelChunks; m.delete(k); this._weltRegt(true); }",
         "    _liest() { return this.state.architectures.filter((a) => a.x > 0).length; }",
-        '    _fremd() { const snap = {}; snap.architectures = []; snap.voxel = new Map(); snap.voxel.set("a", 1); }',
+        "    _wecker(n) { const a = n + 1; this._weltRegt(); return a; }",
+        "    _ueberWecker(k) { this.state.scatterRegions.set(k, { cells: [] }); return this._wecker(1); }",
+        "    _hilfGedeckt(k) { this.state.scatterRegions.delete(k); }",
+        "    _gedeckterRufer(k) { this._weltRegt(); this._hilfGedeckt(k); }",
+        '    _tickNahWiese() { this.state.nahWiese.kacheln.clear(); this._hilfEigner("a"); }',
+        "    _hilfEigner(k) { this.state.nahWiese.kacheln.delete(k); }",
+        "    _schleife(xs) { for (const x of xs) { if (!x) continue; this._weltRegt(); this.state.architectures.push(x); } }",
+        "    _nachSchleife(xs) { for (const x of xs) this.state.architectures.push(x); this._weltRegt(); }",
+        "    _hoehle(H) { const K = H.kacheln || (H.kacheln = new Map()); K.set(1, 2); }",
+        "    _frisch(d) { return { waterCells: d.waterCells, lod: 0 }; }",
+        "    _inhalt(k) { const e = this.state.voxelChunks.get(k); e.waterCells[0] = 1; e.waterCells.fill(0); }",
+        '    _stateLiteral() { this.state["x"] = 1; }',
         "}",
         'X._statisch = function (st) { st.scatterRegions.delete("a"); };',
+        "function _wurf(realm) { realm.worker.onmessage = (e) => { realm.state.voxelChunks.set(e.k, e); }; }",
+        "if (typeof window !== 'undefined') window.realm.state.architectures.push({});",
     ].join("\n");
     const s = STAND.schreiberWand(formen);
     const rot = {
@@ -307,23 +399,60 @@ function schreiberSelbsttest(fehler) {
         _bodenOhneTrue: "voxelChunks",
         _feld: "waterCells",
         _feldWeg: "waterCells",
+        _feldParam: "waterCells",
+        _assignFeld: "waterCells",
+        _dynamisch: "state[…]",
+        _dynamischAlias: "state[…]",
         _ernte: "scatterHarvested",
-        "X._statisch": "scatterRegions",
+        _element: "scatterHarvested",
+        _ueberGetter: "architectures",
+        _ueberFeld: "voxelChunks",
+        _assign: "architectures",
+        _protoRuf: "voxelChunks",
+        _reflect: "voxelChunks",
+        _pushApply: "architectures",
+        _ueberArg: "architectures",
+        _forOf: "voxelChunks",
+        _bedingt: "architectures",
+        _zerlegtZuweisung: "architectures",
+        _pfeil: "architectures",
+        _paramVorgabe: "voxelChunks",
+        _optional: "architectures",
+        _anlageMitBedingung: "voxelChunks",
+        _filterNeu: "architectures",
+        _kachelFremd: "nahWiese.kacheln",
+        _zustandFremd: "zustand",
+        _zelle: "cells",
         // ein Objekt, das nur so heißt wie ein bewachter Zustand, ist ein Schreiber (die Wand liest Namen, keine Typen —
         // lieber ein benannter Fehlalarm als ein stiller Schreiber)
         _fremd: "architectures",
+        _fruehRaus: "architectures",
+        _geschwister: "voxelChunks",
+        _bedingterWeckruf: "scatterRegions",
+        _spaeter: "architectures",
+        _dannRuf: "voxelChunks",
+        _schleifeRaus: "architectures",
+        _hilfUngedeckt: "scatterRegions",
+        "X._statisch": "scatterRegions",
+        _wurf: "voxelChunks",
+        "(Modul)": "architectures",
     };
-    for (const [m, f] of Object.entries(rot)) {
-        const ok = s.befunde.some((b) => b.methode === m && b.feld === f);
-        if (!ok) fehler.push(`Schreiber-Form ${m} (${f}): die Wand nennt sie nicht`);
-        console.log(`  ${ok ? "✅" : "❌"} Selbsttest Schreiber-Form „${m}" → ${f} ${ok ? "rot" : "UNGESEHEN"}`);
-    }
+    const ungesehen = [];
+    for (const [m, f] of Object.entries(rot))
+        if (!s.befunde.some((b) => b.methode === m && b.feld === f)) ungesehen.push(`${m} (${f})`);
+    for (const u of ungesehen) fehler.push(`Schreiber-Form ${u}: die Wand nennt sie nicht`);
+    console.log(
+        `  ${ungesehen.length ? "❌" : "✅"} Selbsttest Schreiber-Formen und ungedeckte Pfade: ` +
+            `${Object.keys(rot).length - ungesehen.length} von ${Object.keys(rot).length} rot beim Namen` +
+            (ungesehen.length ? " — UNGESEHEN: " + ungesehen.join(", ") : "")
+    );
     const zuviel = s.befunde.filter((b) => !(b.methode in rot));
     if (zuviel.length)
         fehler.push("die Wand schlägt bei Unschuldigen an: " + zuviel.map((b) => `${b.methode}/${b.feld}`).join(", "));
     console.log(
-        `  ${zuviel.length ? "❌" : "✅"} Selbsttest: Anlage, weckende Schreiber und Leser bleiben grün` +
-            (zuviel.length ? " — " + zuviel.map((b) => b.methode).join(", ") : "")
+        `  ${zuviel.length ? "❌" : "✅"} Selbsttest: Anlage, Wecker-Ruf, gedeckter Helfer, Eigner-Takt, Schleifen und ` +
+            `Leser bleiben grün` +
+            (zuviel.length ? " — " + zuviel.map((b) => `${b.methode}/${b.feld} (${b.weil})`).join(", ") : "")
     );
 }
 
@@ -473,9 +602,13 @@ const server = http.createServer((req, res) => {
                     };
                     const a0 = Object.fromEntries(namen.map((n) => [n, arbeit(n)]));
                     const runden = {};
+                    const rundeVon = {}; // die erste Runde, wenn sie sich während der Phase änderte
                     const gang = () => Object.fromEntries(namen.map((n) => [n, arbeit(n) - a0[n]]));
                     P._standRuht = function (...a) {
-                        runden[a[0]] = Math.max(1, a[1] | 0);
+                        const r = Math.max(1, a[1] | 0);
+                        if (runden[a[0]] !== undefined && runden[a[0]] !== r && !(a[0] in rundeVon))
+                            rundeVon[a[0]] = runden[a[0]];
+                        runden[a[0]] = r;
                         ruheRuf.apply(this, a);
                         return false;
                     };
@@ -498,7 +631,12 @@ const server = http.createServer((req, res) => {
                     const ph = window.__standPhase(fs);
                     const g = gang();
                     for (const n of namen)
-                        if (ph.takte[n]) Object.assign(ph.takte[n], { runde: runden[n], gang: g[n] });
+                        if (ph.takte[n])
+                            Object.assign(
+                                ph.takte[n],
+                                { runde: runden[n], gang: g[n] },
+                                n in rundeVon ? { rundeVon: rundeVon[n] } : {}
+                            );
                     return ph;
                 };
                 // (S) SCHARF + TREUE: jeder Takt geht, keiner wirkt
@@ -623,6 +761,14 @@ const server = http.createServer((req, res) => {
                     W.regler = await phase(10);
                     st.architectureCullingRadius = rad;
                     await bisRuhe(600);
+                    // ein Wahrnehmungs-Schritt (die LOD-Distanz L1→L2, `LOD_DISTANCES.thresh12`, ohne Weckruf geschrieben): der
+                    // Stempel liest ihn selbst — Stufen-Wahl und Streu gehen
+                    const D = r.constructor.LOD_DISTANCES;
+                    const d12 = D.thresh12;
+                    D.thresh12 = d12 + 0.5;
+                    W.wahrnehmung = await phase(4);
+                    D.thresh12 = d12;
+                    await bisRuhe(600);
                     aus.wecken = W;
                 }
                 // (G) GEHEN: W gehalten
@@ -730,6 +876,7 @@ const server = http.createServer((req, res) => {
         if (W.phase) console.log(zeile("wecken", W.phase));
         if (W.nachher) console.log(zeile("nachher", W.nachher));
         if (W.regler) console.log(zeile("regler", W.regler));
+        if (W.wahrnehmung) console.log(zeile("wahrn.", W.wahrnehmung));
     }
     if (befund.strom)
         console.log(

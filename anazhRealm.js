@@ -34227,13 +34227,13 @@ class AnazhRealm {
         // persistiert (Flora wächst nach).
         if (!this.state.scatterHarvested) this.state.scatterHarvested = new Map();
         let jeKachel = this.state.scatterHarvested.get(pick.key);
+        if (jeKachel && jeKachel.has(pick.id)) return false; // schon gepflückt (Doppel-Klick-Race)
+        this._weltRegt(); // die Ernte ändert die Kachel: die Nah-Streu baut sie neu (der Weckruf vor jedem Schreiben)
         if (!jeKachel) {
             jeKachel = new Map();
             this.state.scatterHarvested.set(pick.key, jeKachel);
         }
-        if (jeKachel.has(pick.id)) return false; // schon gepflückt (Doppel-Klick-Race)
         jeKachel.set(pick.id, performance.now());
-        this._weltRegt(); // die Ernte ändert die Kachel: die Nah-Streu baut sie neu
         // Die Pflanze verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte, Rute + Laub): sie tritt aus dem Block
         // ihrer Kachel in jeder Senke aus, der Bereich im Satz legt sich neu (`_streuNahLuecke`).
         for (const sk of kachel.senken) {
@@ -34264,17 +34264,14 @@ class AnazhRealm {
         const ttl = AnazhRealm.FORAGE.regrowMs;
         const ns = this.state.nahStreu;
         for (const [key, jeKachel] of sh) {
-            let nach = false;
-            for (const [id, t] of jeKachel) {
-                if (now - t > ttl) {
-                    jeKachel.delete(id);
-                    nach = true;
-                }
-            }
+            const alt = [];
+            for (const [id, t] of jeKachel) if (now - t > ttl) alt.push(id);
+            if (!alt.length) continue;
+            this._weltRegt(); // die Flora wächst nach: die Nah-Streu baut die Kachel neu (der Weckruf vor jedem Schreiben)
+            for (const id of alt) jeKachel.delete(id);
             if (jeKachel.size === 0) sh.delete(key);
-            const k = nach && ns ? ns.kacheln.get(key) : null;
+            const k = ns ? ns.kacheln.get(key) : null;
             if (k) k.zustand = null;
-            if (nach) this._weltRegt(); // die Flora wächst nach: die Nah-Streu baut die Kachel neu
         }
     }
 
@@ -66141,27 +66138,23 @@ class AnazhRealm {
     _nahWieseNeuIn(x0, z0, x1, z1) {
         this._weltRegt(); // die Kacheln fallen: die Stand-Wache weckt Wiese und Streu
         let n = 0;
-        // Die Wiese-Kachel trägt nur Daten (der Sicht-Satz legt sich neu), die Streu-Kachel tritt aus ihren Senken aus.
+        const imRechteck = (key, K) => {
+            const [tx, tz] = key.split(",").map(Number);
+            return !((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1);
+        };
+        // Die Wiese-Kachel trägt nur Daten (der Sicht-Satz legt sich neu), die Streu-Kachel tritt aus ihren Senken aus. Die
+        // Kacheln fallen HIER, unter dem Weckruf oben (kein Rückruf: die Schreiber-Wand deckt nur den eigenen Pfad).
+        const nw = this.state.nahWiese;
+        if (nw)
+            for (const key of [...nw.kacheln.keys()])
+                if (imRechteck(key, AnazhRealm.NAH_WIESE.kachel) && this._nahWieseKachelFaellt(key)) n++;
         const ns = this.state.nahStreu;
-        const ringe = [
-            [this.state.nahWiese, AnazhRealm.NAH_WIESE.kachel, (key) => this._nahWieseKachelFaellt(key)],
-            [
-                ns,
-                AnazhRealm.NAH_STREU.kachel,
-                (key, k) => {
-                    this._nahStreuKachelEntsorgen(k);
-                    return ns.kacheln.delete(key);
-                },
-            ],
-        ];
-        for (const [ring, K, weg] of ringe) {
-            if (!ring) continue;
-            for (const [key, k] of [...ring.kacheln]) {
-                const [tx, tz] = key.split(",").map(Number);
-                if ((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1) continue;
-                if (weg(key, k)) n++;
+        if (ns)
+            for (const [key, k] of [...ns.kacheln]) {
+                if (!imRechteck(key, AnazhRealm.NAH_STREU.kachel)) continue;
+                this._nahStreuKachelEntsorgen(k);
+                if (ns.kacheln.delete(key)) n++;
             }
-        }
         return n;
     }
 
@@ -68188,8 +68181,7 @@ class AnazhRealm {
                         const m = ev.data;
                         if (!m || typeof m !== "object") return;
                         if (m.type === "ready" && m.world === "terrain") {
-                            f.ready = true;
-                            this._weltRegt(); // das Studio antwortet: die Fege-Takte fragen neu
+                            f.ready = true; // der Stand-Stempel liest die Antwort selbst (`_standStempel`)
                             // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung) in
                             // EINEM Roundtrip ziehen, DANN die Assets vorwärmen.
                             try {
@@ -68425,8 +68417,7 @@ class AnazhRealm {
     _foundryIngestRenderConfig(config) {
         if (!config || typeof config !== "object") return;
         this.state.studioRenderConfig = config;
-        AnazhRealm._studioRenderConfig = config;
-        this._weltRegt(); // die Wahrnehmung (LOD-Distanzen, Sichtweite) ist neu: die Fege-Takte wählen neu
+        AnazhRealm._studioRenderConfig = config; // der Stand-Stempel liest die Wahrnehmung selbst (`_standStempel`)
         // LOD-Distanzen/Fades in die EINE LOD-Quelle (LOD_DISTANCES ist jetzt mutable — die Defaults
         // matchen die Vorlage schon; hier folgt AnazhRealm einem LIVE-Edit des Config-Blocks).
         const L = config.lod;
@@ -89475,8 +89466,10 @@ class AnazhRealm {
     // dem Gang `_standRuht(name, runde, ort, art)` und meldet danach `_standMeldet(name, besucht, gewirkt, offen)`. Er
     // schläft, sobald er unter seinem Stempel und an SEINEM Ort einen vollen Gang (`runde` Einheiten) ohne Wirkung und ohne
     // Offenes ging. Was ihn weckt, ist genau, was seine Urteile lesen:
-    //   · der Stempel (`_standStempel`) — die Welt-Regung (`_weltRegt`: jede Mengen-Änderung — Chunk, Bau, Streu-Region,
-    //     Ernte, Pfad, Studio-Buch), die Foundry-Ankunft, die Regler (Wahrnehmungs-Faktor, lodRef, Ring, Cull-Radius), der
+    //   · der Stempel (`_standStempel`) — die Welt-Regung (`_weltRegt`: jede Mengen-Änderung — Chunk, Bau, Streu-Region und
+    //     ihre Zellen, Ernte, Kacheln; gate:stand-takt SCHREIBER verlangt den Weckruf auf jedem Pfad jedes Schreibers), die
+    //     Foundry-Ankunft, die Antwort und das Buch des Studios, die Wahrnehmung und die LOD-Distanzen, die Regler
+    //     (Wahrnehmungs-Faktor, lodRef, Ring, Cull-Radius), der
     //     Wasserspiegel; die BODEN-Takte (Ring, Saum) lesen nur ihren Boden-Stempel (`_standStempelBoden`: die Chunk-Menge,
     //     die Ring-Regler, der Wasserspiegel);
     //   · die BAU-Takte (Stufen-Wahl, Cull) lesen einander: wirkt einer (eine Stufe, ein Mesh), gehen beide (`_bauRegt`);
@@ -89512,7 +89505,20 @@ class AnazhRealm {
         setze(st.chunkRingRadius);
         setze(st._activeRingRadius); // der Boot-Ring wächst bis zum Ziel (`_voxelChunkConfig`)
         setze(st.architectureCullingRadius);
-        setze(this._foundry ? this._foundry.ankunft | 0 : -1);
+        const f = this._foundry;
+        setze(f ? f.ankunft | 0 : -1);
+        // was die Takte ortsfrei vom Studio lesen, liest der Stempel selbst (kein Schreiber kann den Weckruf vergessen): die
+        // Antwort des Studios, das Buch (Rezepte, Vorlagen), die Wahrnehmung (Stufen-Klammer, Budget, Sichtweite) und die
+        // LOD-Distanzen, die `_foundryIngestRenderConfig` (oder wer auch immer) in die EINE LOD-Quelle schreibt
+        setze(!!(f && f.ready));
+        setze(f ? f.recipes : null);
+        setze(AnazhRealm._studioRenderConfig);
+        const D = AnazhRealm.LOD_DISTANCES;
+        setze(D.thresh01);
+        setze(D.thresh12);
+        setze(D.hysteresis);
+        setze(D.fade);
+        setze(D.fade0);
         setze(st.waterLevel);
         setze(st.foundryCrossfade === true);
         setze(!!(st.atmosphere && st.atmosphere.treeLOD === false));
