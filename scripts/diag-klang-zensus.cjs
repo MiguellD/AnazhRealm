@@ -281,15 +281,17 @@ function werkzeug() {
             // ARMLÄNGE an der Glut: 1 m vor dem Bau (das Knistern aus nächster Nähe — die Spitzen-Probe).
             orte.glutArm = { x: ex + (wx - ex) / d, z: ez + (wz - ez) / d, glut: { x: ex, z: ez, typ: glut.e.type } };
         }
-        // ARMLÄNGE am Wasserfall: der nächste Fall der Region, der nächste trockene Punkt 3–12 m neben seinem Fuß (der
-        // Fuß liegt im Becken).
+        // ARMLÄNGE am Wasserfall: der nächste Fall der Region, der nächste trockene Punkt 3–24 m neben seinem Fuß (der
+        // Fuß liegt im Becken). Seit die Bank mit ihrer Neigung ins Gelände läuft (Welle L, Gegenprüfung 07.10.), reicht
+        // das Becken eines Falls bis zur Krone seines Kanals: am 9,1-m-Fall der Mess-Wiese ist kein Punkt ≤ 12 m trocken.
+        // Das SOLL misst die Ferne mit (SOLL.fallArm).
         const h = r._hydroFor(wx, wz);
         let wfN = null;
         for (const f of (h && h.waterfalls) || []) {
             const d = Math.hypot(f.x - wx, f.z - wz);
             if (!wfN || d < wfN.d) wfN = { f, d };
         }
-        for (const rad of wfN ? [3, 4, 5, 6, 8, 10, 12] : []) {
+        for (const rad of wfN ? [3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 24] : []) {
             for (let a = 0; a < 16 && !orte.fallArm; a++) {
                 const ang = (a / 16) * Math.PI * 2;
                 const x = wfN.f.x + Math.sin(ang) * rad;
@@ -553,10 +555,16 @@ const SOLL = {
     // Der Fall am nächsten trockenen Punkt (≤ 12 m): der kleinste Fall des Gesetzes (waterfallMinDrop 6 m) trägt dort
     // −14 − 20·lg(12/5) = −21,6 dB. (Bis Welle L stand hier ≥ −18 für den „17-m-Fall“ der Mess-Wiese — das war der
     // 13-m-Kessel unter einem 4,3-m-Spiegel-Sturz; der Spiegel ist seit Welle L das Gesetz, der Kessel kein Fall.)
-    fallArm: (m) => [
-        ["fall ≥ −22", m.fall.db >= -22],
-        ["fall ≥ wind + 10", m.fall.db >= m.wind.db + 10],
-    ],
+    // Liegt der nächste trockene Punkt weiter (das Becken reicht bis zur Krone, `ort.fall.d`), fällt das Soll mit der
+    // Ferne wie das Gesetz: −14 − 20·lg(d/5) − 0,4 (bei 12 m −22,0 wie bisher; das Labor misst in 12 m).
+    fallArm: (m, _alle, ort) => {
+        const d = ort && ort.fall && ort.fall.d > 12 ? ort.fall.d : 12;
+        const grenze = Math.round((-14 - 20 * Math.log10(d / 5) - 0.4) * 10) / 10;
+        return [
+            [`fall ≥ ${grenze} (in ${d} m)`, m.fall.db >= grenze],
+            ["fall ≥ wind + 10", m.fall.db >= m.wind.db + 10],
+        ];
+    },
 };
 // Band je Stimme (spektraler Schwerpunkt des Offline-Renders, Hz).
 const BAND = {
@@ -1165,7 +1173,8 @@ function urteile(daten, offline, lab, ereig, phasen, spitzen) {
     }
     for (const [name, m] of Object.entries(mixAlle)) {
         if (!SOLL[name]) continue;
-        for (const [txt, ok] of SOLL[name](m, mixAlle)) if (!ok) rot.push(`S ${name}: ${txt} verfehlt`);
+        for (const [txt, ok] of SOLL[name](m, mixAlle, daten[name] && daten[name].ort))
+            if (!ok) rot.push(`S ${name}: ${txt} verfehlt`);
     }
     // Der Wald-Ort ist aus der Kronen-Karte gewählt, die auch das Ohr liest — geprüft wird er am BESTAND, an den
     // Objekten der Welt (stehende Bäume ≤ 15 m, Einträge + Streu-Zellen): mindestens doppelt so dicht wie die Wiese.
