@@ -63,17 +63,16 @@
 //       die Zellen des Gesetzes (es schneidet Zellen, die das Frustum allein zöge: nicht vakuös)
 //   Z1  die Karten-Ziele: Farbe r8 (der Filter liest sie nur mit shadowMap.transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
-//   Z2  die Bildziele je Leser: EIN Weg zu compileAsync (`_kompiliere`, gegen das Ziel des Szenen-Passes), EINE
+//   Z2  die Bildziele je Leser: KEIN Weg zu compileAsync (die Erst-Zeichnung baut im Pass, `_configureRenderer`), EINE
 //       Szenen-Tiefe (`_szeneTiefe`), kein Modul-Knoten der linearen Tiefe, kein namenloses Bildziel (convertToTexture)
 //   A1  Absenz: kein Frustum-Schreiber nimmt Inseln/Mesh-Tieren den Schatten; das Addon schreibt keine Box (updateBefore
-//       und _updateShadowBounds stumm), der Haken des Haupt-Passes stellt die Kaskaden (Konsum), Schatten-Pässe und
-//       Kompilate stellen nichts; die Sicht je Pass schaltet keine Bundle-Eigenschaft
+//       und _updateShadowBounds stumm), der Haken des Haupt-Passes stellt die Kaskaden (Konsum), Schatten-Pässe stellen
+//       nichts; die Sicht je Pass schaltet keine Bundle-Eigenschaft
 //   S1  Selbsttest: die alte Regel (jeder Pass liest das Haupt-Urteil) muss W1/W2/W3/W4 rot machen
 //   S3  Selbsttest: die alte Hüllen-Regel (nur Bundles) muss W5 rot machen
 //   S4  Selbsttest: die beiden alten Frustum-Schreiber der Tiere fängt die Absenz-Regel
 //   S5  Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera (der Zweit-Schreiber ist echt)
-//   S6  Selbsttest: ein Kompilat ohne Wache stellt die Kaskaden
-//   S7  Selbsttest: ein zweiter compileAsync-Ruf, eine zweite Szenen-Tiefe machen Z2 rot
+//   S7  Selbsttest: ein compileAsync-Ruf, eine zweite Szenen-Tiefe machen Z2 rot
 //   S8  Selbsttest: die alte Regel (der Satz zeichnet den ganzen Ring in jedem Pass) macht W7 rot
 //   S9  Selbsttest: die alte Regel (eine globale Gruppe zeichnet jede Instanz in jedem Pass) macht W8 rot, beim Namen
 //   S10 Selbsttest: urteilt EIN Leser nach der alten Box (das Frustum allein, ohne Licht-Kapsel) — die Zellen, die Werfer
@@ -174,7 +173,7 @@ function bildZiele(src) {
         namenlos: n(/convertToTexture\(/g),
     };
 }
-const bildZieleGut = (z) => z.kompilat === 1 && z.tiefe === 1 && z.linear === 0 && z.namenlos === 0;
+const bildZieleGut = (z) => z.kompilat === 0 && z.tiefe === 1 && z.linear === 0 && z.namenlos === 0;
 
 function probe(selbsttest) {
     const r = window.anazhRealm;
@@ -1333,9 +1332,9 @@ function probe(selbsttest) {
                 csm._shadowNodes.every((sn) => Object.prototype.hasOwnProperty.call(sn, "setupRenderTarget")),
         };
     }
-    // ── Z2 (Seite): der EINE Kompilier-Weg und die EINE Szenen-Tiefe leben in ihren Methoden ──
+    // ── Z2 (Seite): die EINE Szenen-Tiefe lebt in ihrer Methode, die Erst-Zeichnung am Renderer (kein Kompilat daneben) ──
     aus.z2 = {
-        kompiliere: /\.compileAsync\(/.test(window.__codeOf(r._kompiliere)),
+        erstZeichnung: st.renderer.__anazhErstZeichnung === true && typeof r._erstZeichnungStand === "function",
         szeneTiefe: /viewportDepthTexture\(/.test(window.__codeOf(r._szeneTiefe)),
     };
 
@@ -1392,22 +1391,7 @@ function probe(selbsttest) {
         const lp = csm.lights[0].position.clone();
         let nAddon = -1,
             nSchatten = -1,
-            nHaupt = -1,
-            nKompilat = -1,
-            nOhneWache = -1;
-        // ein Kompilat wie r184-compileAsync: der Vorher-Haken der Szene läuft synchron, der Nachher-Haken nie
-        const schein = {
-            compileAsync(obj, kamera, sc) {
-                (sc || obj).onBeforeRender(this, obj, kamera, null);
-                return Promise.resolve();
-            },
-            getRenderTarget: () => null,
-            setRenderTarget() {},
-            getMRT: () => null,
-            setMRT() {},
-        };
-        const rRoh = st.renderer,
-            ppRoh = st.postProcessingFailed;
+            nHaupt = -1;
         try {
             // das Addon-updateBefore ist stumm (es lief NACH den Karten), der Haken des Haupt-Passes stellt die Kaskaden
             csm.updateBefore({});
@@ -1418,24 +1402,13 @@ function probe(selbsttest) {
             st.scene.onBeforeRender(st.renderer, st.scene, cam, null);
             st.scene.onAfterRender(st.renderer, st.scene, cam, null);
             nHaupt = n;
-            st.renderer = schein;
-            st.postProcessingFailed = true; // das Leinwand-Ziel: _kompiliere stellt kein Szenen-Ziel um
-            r._kompiliere(st.scene, cam, null);
-            nKompilat = n;
-            if (selbsttest) {
-                Promise.resolve(schein.compileAsync(st.scene, cam, null)); // ohne die Wache
-                nOhneWache = n;
-            }
         } finally {
-            st.renderer = rRoh;
-            st.postProcessingFailed = ppRoh;
             delete r._kaskadenPassen;
             st.scene.onAfterRender(st.renderer, st.scene, cam, null);
         }
-        aus.a1.konsum = nAddon === 0 && nSchatten === 0 && nHaupt === 1 && nKompilat === 1;
+        aus.a1.konsum = nAddon === 0 && nSchatten === 0 && nHaupt === 1;
         aus.a1.addonStumm = nAddon === 0 && lp.equals(csm.lights[0].position);
-        aus.a1.zaehl = { addon: nAddon, schatten: nSchatten, haupt: nHaupt, kompilat: nKompilat };
-        if (selbsttest) aus.s6 = nOhneWache === nKompilat + 1;
+        aus.a1.zaehl = { addon: nAddon, schatten: nSchatten, haupt: nHaupt };
     }
     return aus;
 }
@@ -1651,8 +1624,8 @@ function probe(selbsttest) {
             JSON.stringify(a.z1)
         );
         check(
-            "Z2 Bildziele je Leser: EIN compileAsync (_kompiliere), EINE Szenen-Tiefe (_szeneTiefe), kein namenloses Ziel",
-            bildZieleGut(z2) && a.z2.kompiliere && a.z2.szeneTiefe,
+            "Z2 Bildziele je Leser: kein compileAsync (die Erst-Zeichnung), EINE Szenen-Tiefe (_szeneTiefe), kein namenloses Ziel",
+            bildZieleGut(z2) && a.z2.erstZeichnung && a.z2.szeneTiefe,
             `${JSON.stringify(z2)} · ${JSON.stringify(a.z2)}`
         );
         check("A1 kein Frustum-Schreiber für Inseln", a.a1.inselnFrei);
@@ -1728,9 +1701,8 @@ function probe(selbsttest) {
             );
             check("S4 Selbsttest: die Absenz-Regel fängt beide alten Frustum-Schreiber der Tiere", a.s4 === true);
             check("S5 Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera", a.s5 === true);
-            check("S6 Selbsttest: ein Kompilat ohne Wache stellt die Kaskaden", a.s6 === true);
             const zs = bildZiele(stamm + "\nr.compileAsync(o, k);\nconst t = TSL.viewportDepthTexture();\n");
-            check("S7 Selbsttest: ein zweiter Kompilier-Weg, eine zweite Szenen-Tiefe machen Z2 rot", !bildZieleGut(zs));
+            check("S7 Selbsttest: ein Kompilier-Weg, eine zweite Szenen-Tiefe machen Z2 rot", !bildZieleGut(zs));
         }
         check("keine Page-Errors", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
     } catch (e) {

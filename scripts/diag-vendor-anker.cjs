@@ -4,7 +4,7 @@
 //
 // Der Stamm patcht/liest den minifizierten three-r184-Vendor zur Laufzeit an
 // seinen Organen (Observer-Diät + Kamera-Treue · Schatten-Diät · Schatten-Stoff ·
-// Bundle-Wahrheit · Bundle-Reihenfolge · Replay-Buchung · Reife-Wache · Uniform-
+// Bundle-Wahrheit · Bundle-Reihenfolge · Replay-Buchung · Erst-Zeichnung · Uniform-
 // Heimat · Schatten-Takt · Instanz-Puffer-Name · Satz-Teil-Upload). Jeder dieser
 // Eingriffe hängt an EXAKTEN Vendor-Wahrheiten (Methoden-/Feld-Namen, Verhaltens-
 // Signaturen) — auch an PRIVATEN (_renderScene, _currentRenderBundle, _bindings.
@@ -97,9 +97,27 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "S.length>0&&this._renderBundles(S,l,R),!0===this.opaque&&w.length>0&&this._renderObjects(w,t,l,R)", organ: "Bundle-Reihenfolge (Bundles vor den opaken Direkt-Draws)" },
     { file: "vendor/three.webgpu.min.js", sub: "addBundle(e,t){this.get(e).renderBundles.push(this.get(t).bundleGPU)}", organ: "Bundle-Reihenfolge (die gesammelte Liste)" },
     { file: "vendor/three.webgpu.min.js", sub: "t.currentSets={attributes:{},bindingGroups:[],pipeline:null,index:null},t.renderBundles=[]", organ: "Bundle-Reihenfolge (Pass-Zustand nach executeBundles)" },
-    // Reife-Wache (Record droppt unfertige Pipelines + versiegelt danach)
+    // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): der Stamm bildet `_renderObjectDirect` nach (ändert r184 den Körper,
+    // zieht die Nachbildung nach), baut den Stoff im Pass je Render-Aufruf (`info.calls`) höchstens einmal und lässt die
+    // Pipeline asynchron entstehen (`getForRender(ro, promises)`); der Record droppt unfertige Draws und versiegelt danach.
     { file: "vendor/three.webgpu.min.js", sub: "isReady(u)&&", organ: null, weich: true },
-    { file: "vendor/three.webgpu.min.js", sub: "u.version=s.version", organ: "_bundleReifeWache (Record-Versiegelung)" },
+    { file: "vendor/three.webgpu.min.js", sub: "u.version=s.version", organ: "_erstNeuAufnehmen (die Marke fällt nach der Versiegelung)" },
+    {
+        file: "vendor/three.webgpu.min.js",
+        sub: "_renderObjectDirect(e,t,r,s,i,n,a,o){const u=this._objects.get(e,t,r,s,i,this._currentRenderContext,a,o);if(u.drawRange=e.geometry.drawRange,u.group=n,null!==this._currentRenderBundle){this.backend.get(this._currentRenderBundle).renderObjects.push(u),u.bundle=this._currentRenderBundle.bundleGroup}const l=this._nodes.needsRefresh(u);l&&(this._nodes.updateBefore(u),this._geometries.updateForRender(u),this._nodes.updateForRender(u),this._bindings.updateForRender(u)),this._pipelines.updateForRender(u),this._pipelines.isReady(u)&&(this.backend.draw(u,this.info),l&&this._nodes.updateAfter(u))}",
+        organ: "Erst-Zeichnung (die Nachbildung von _renderObjectDirect)",
+    },
+    { file: "vendor/three.webgpu.min.js", sub: "this._handleObjectFunction=this._renderObjectDirect,this.info.calls++,this.info.render.calls++", organ: "Erst-Zeichnung (jeder Render liest die Methode am Exemplar; info.calls zählt je Render-Aufruf)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateForRender(e){this.getForRender(e)}", organ: "Erst-Zeichnung (der Vendor-Draw baut die Pipeline ohne Versprechen = synchron)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getForRender(e,t=null){const{backend:r}=this,s=this.get(e);if(this._needsRenderUpdate(e))", organ: "Erst-Zeichnung (die Pipeline mit Versprechen-Liste)" },
+    { file: "vendor/three.webgpu.min.js", sub: "null===t)h.pipeline=d.createRenderPipeline(A)", organ: "Erst-Zeichnung (ohne Liste synchron)" },
+    { file: "vendor/three.webgpu.min.js", sub: "h.pipeline=await d.createRenderPipelineAsync(A)", organ: "Erst-Zeichnung (mit Liste asynchron)" },
+    { file: "vendor/three.webgpu.min.js", sub: "isReady(e){const t=this.get(e).pipeline;if(void 0===t)return!1;const r=this.backend.get(t);return void 0!==r.pipeline&&null!==r.pipeline}", organ: "Erst-Zeichnung (gezeichnet wird ab der fertigen Pipeline)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getForRenderCacheKey(e){return e.initialCacheKey}", organ: "Erst-Zeichnung (ein Bau-Cache-Treffer ist kein Bau)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this._nodeBuilderState=null", organ: "Erst-Zeichnung (der gebaute Stoff am RenderObject)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getNodeBuilderState(){return this._nodeBuilderState||(this._nodeBuilderState=this._nodes.getForRender(this))}", organ: "Erst-Zeichnung (needsRefresh baut den Stoff synchron)" },
+    // Warum kein Vorwärmen: r184-compileAsync liest die Attribute (→ synchroner Knoten-Bau) VOR seinem asynchronen Bau
+    { file: "vendor/three.webgpu.min.js", sub: "this._geometries.updateForRender(t),await this._nodes.getForRenderAsync(t)", organ: "Erst-Zeichnung (das Vendor-Kompilat baut synchron — kein Vorwärmen daneben)" },
     // Bundle-Pass-Physik (Wasser bleibt draußen, solange der Copy den Pass bricht)
     { file: "vendor/three.webgpu.min.js", sub: "currentPass.end()", organ: "Wasser-Bundle-Wand (copyFramebufferToTexture-Pass-Bruch)" },
     // Bundle-Replay-Buchung: die Draw-Wahrheit im Info (der Replay zieht aufgenommene RenderObjects)
@@ -150,9 +168,6 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: 'return s.texture.name="ShadowMap",s.texture.type=e.mapType,s.depthTexture=r,{shadowMap:s,depthTexture:r}}', organ: "_kaskadenZiele (… und Farbe, die Hülle setzt r8 + 16 bit)" },
     { file: "vendor/three.webgpu.min.js", sub: "g.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,p);const v=t.isArrayCamera", organ: "_passSicht (der Vorher-Haken je Render, vor der Projektion — auch im Schatten-Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "l.onAfterRender(this,e,t,p),this.inspector.finishRender", organ: "_passSicht (der Nachher-Haken je Render)" },
-    { file: "vendor/three.webgpu.min.js", sub: "c.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,d);const g=this._renderLists.get(l,t)", organ: "_kompiliere (compileAsync ruft den Vorher-Haken synchron — die Wache _imKompilat)" },
-    // compileAsync wartet vor dem Lesen des Ziels auf init() — ein Kompilat davor läse die Leinwand (23,7 MB Rahmenpuffer)
-    { file: "vendor/three.webgpu.min.js", sub: "!1===this._initialized&&await this.init();const s=this._nodes.nodeFrame,i=s.renderId,n=this._currentRenderContext", organ: "_kompiliere (erst init, dann das Ziel)" },
     // instanceMatrix-Versions-Wächter (Kern-Setter)
     { file: "vendor/three.core.min.js", sub: "set needsUpdate(", organ: "Diät-Versions-Wächter (Attribut-Versionen)" },
     // Der Satz (Welle B): ein Chunk ist ein Bereich im Pool-Puffer — sein Upload ist ein Teil-Schreiben ab dem

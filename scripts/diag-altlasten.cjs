@@ -609,6 +609,19 @@ const FORBIDDEN = [
     // DIE LAGE STEHT (Welle C): die Nah-Wiese trug eine eigene Kamera-Signatur, jeder andere Leser rechnete je Pass neu. EIN
     // Gesetz der Lage (`_passLageGen`, `L.gen`) gilt allen Lesern der Sicht-Kette.
     { token: "_sichtSteht", fiel: "Welle C — EIN Gesetz der Lage je Pass (_passLageGen, L.gen)" },
+    // DIE ERST-ZEICHNUNG (Welle K, Hänger): die erste Zeichnung baut den Stoff im Pass (je Render-Aufruf einer) und lässt die
+    // Pipeline asynchron entstehen — am EINEN Ort (`_configureRenderer`). Die Vorwärmer daneben fallen: das r184-compileAsync
+    // baute die Knoten ohnehin synchron (Attribute vor dem asynchronen Bau), der Boot-Schuss trug 40 Bauten in einem Fenster.
+    { token: "compileAsync", fiel: "Welle K — die Erst-Zeichnung (kein Kompilat neben dem Render)" },
+    { token: "_warmCompilePipeline", fiel: "Welle K — die Erst-Zeichnung" },
+    { token: "_bootWarmCompileScene", fiel: "Welle K — die Erst-Zeichnung" },
+    { token: "_kompiliere", fiel: "Welle K — die Erst-Zeichnung" },
+    { token: "_imKompilat", fiel: "Welle K — kein Kompilat, keine Wache" },
+    { token: "_pipeOfenMerke", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
+    { token: "_pipeOfenTick", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
+    { token: "_pipeOfenDone", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
+    { token: "_bundleReifeWache", fiel: "Welle K — die Erst-Zeichnung nimmt das Bundle neu auf, wenn die Pipeline steht" },
+    { token: "_foundryWarmedMats", fiel: "Welle K — die Erst-Zeichnung" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

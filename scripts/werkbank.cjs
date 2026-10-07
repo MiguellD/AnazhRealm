@@ -59,6 +59,7 @@
 //                                                           den Takt trägt, beim Namen (nach einem `lauf`)
 //   node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten] [--wandern kreis]
 //                                     [--schwelle ms] [--probe] [--json datei] | haenger --selbsttest
+//                                     | haenger --erst [ABBAABBA] [--ein s] [--art wolf]
 //                                                           DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte
 //                                                           Lauf unter dem Chrome-Profiler (1 ms), je Frame über der
 //                                                           Schwelle (100 ms) die Ursache beim Namen — TAKT (die Engstelle
@@ -1751,6 +1752,16 @@ async function starte() {
                 }
                 // DIE HÄNGER-LINSE (scripts/lib/haenger-linse.cjs): der echte Lauf unter dem Chrome-Profiler (1 ms), je
                 // Frame über der Schwelle die Ursache beim Namen (TAKT · NEBEN · GC · GPU und die Engstelle).
+                // DIE ERST-PROBE (scripts/lib/haenger-linse.cjs): ABBA in EINER Welt — der Vendor-Weg gegen die Erst-Zeichnung
+                if (req.url === "/erst-probe") {
+                    const aus = await page.evaluate((k) => window.__erstProbe(k), {
+                        folge: b.folge || "ABBAABBA",
+                        ein: b.ein != null ? Number(b.ein) : 15,
+                        art: b.art || "wolf",
+                    });
+                    const u = HL.erstUrteil(aus);
+                    return send(Object.assign({ aus, ms: Date.now() - t0 }, u));
+                }
                 if (req.url === "/haenger") {
                     const cdp = await page.target().createCDPSession();
                     await cdp.send("Profiler.enable");
@@ -1987,6 +1998,19 @@ async function starte() {
                     : "SELBSTTEST GRÜN: die Hänger-Linse nennt Takt-Last, Neben-Last, Collector und GPU-Warten nach synchronen Pipelines beim Namen, die Eichung legt den Profiler auf die Seiten-Uhr"
             );
             process.exit(f.length ? 1 : 0);
+        }
+        // `--erst [folge]`: die Erst-Probe (ABBA in einer Welt, Exit 1 bei einem Befund)
+        if (argv.includes("--erst")) {
+            const i = argv.indexOf("--erst");
+            const folge = argv[i + 1] && /^[AB]+$/.test(argv[i + 1]) ? argv[i + 1] : "ABBAABBA";
+            const e = await rufe("/erst-probe", { folge, ein: opt("--ein"), art: opt("--art") });
+            if (!e || !e.tabelle) {
+                console.log(JSON.stringify(e, null, 1));
+                process.exit(1);
+            }
+            console.log(e.tabelle);
+            if (e.befunde.length) console.log("\nLINSE ROT:\n  " + e.befunde.join("\n  "));
+            process.exit(e.befunde.length ? 1 : 0);
         }
         // `--auswerten <x.roh.json>`: ein gesicherter Lauf neu geurteilt (nur Node — eine andere Schwelle, eine neue Linse)
         if (opt("--auswerten")) {

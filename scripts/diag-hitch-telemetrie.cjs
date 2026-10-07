@@ -1,11 +1,17 @@
 // diag-hitch-telemetrie.cjs — DIE HITCH-LINSE (das-feld-zeichnet §5.1): beweist
-// KONSUM der vier neuen Flugschreiber-Zähler (LongTasks · GC/Heap-Delta ·
+// KONSUM der vier Flugschreiber-Zähler (LongTasks · GC/Heap-Delta ·
 // Pipeline-Compiles · Upload-Bytes), nie bloße Existenz (Lehre 5). Band 7
-// (V18.485): der PIPELINE-WARM-OFEN münzt Konsum-Familien am Gruppen-
-// Chokepoint und die Wärm-Maschine frisst sie (force-Pump, Queue → leer). Ein ECHTER
-// WebGPU-Lauf (swiftshader-Vulkan, wie diag-blick.cjs — KEIN Null-Renderer):
-// der Boot SELBST ist der Konsum-Beweis (Warm-Compile erzeugt Pipelines,
-// Chunk-Uploads erzeugen writeBuffer-Bytes, swiftshader erzeugt LongTasks).
+// (Welle K): DIE ERST-ZEICHNUNG — die erste Zeichnung eines neuen Stoffs in der
+// Welt-Szene baut seine Knoten im Pass, je Render-Aufruf höchstens einen (weitere nur
+// unter ERST_BAU_MS), und lässt seine Pipeline asynchron entstehen; kein Frame trägt
+// eine synchrone Pipeline der Welt (die Hänger-Klasse: 1,4–4,2 s Warten an der
+// Radeon, „GPU: Pipeline synchron (haupt tier:baer)"). Die Probe stellt drei neue
+// Stoffe vor die Kamera (Konsum: alle drei zeichnen), der Gegen-Lauf derselben Probe
+// auf dem Vendor-Weg MUSS rot sein (synchrone Pipeline, mehrere Bauten in einem
+// Aufruf). Ein ECHTER WebGPU-Lauf (swiftshader-Vulkan, Software-Holz kienspan —
+// KEIN Null-Renderer): der Boot SELBST ist der Konsum-Beweis (die Erst-Zeichnung
+// baut und kompiliert, Chunk-Uploads erzeugen writeBuffer-Bytes, swiftshader
+// erzeugt LongTasks).
 //
 //   node scripts/diag-hitch-telemetrie.cjs
 //   Exit 0 = alle Bänder GRÜN (inkl. Selbst-Test: ein Fake-Trace ohne die neuen
@@ -58,9 +64,9 @@ function pruefeTraceFelder(trace) {
     const pp = trace.steadyState && trace.steadyState.pipelines;
     if (!pp || typeof pp.total !== "number" || typeof pp.neuProS !== "number")
         maengel.push("steadyState.pipelines {total,neuProS} fehlt oder ist nicht numerisch");
-    // V18.485 — der Warm-Ofen reist im selben Pipeline-Block (Familien/gewärmt/offen).
-    if (!pp || typeof pp.ofenFamilien !== "number" || typeof pp.ofenGewaermt !== "number")
-        maengel.push("steadyState.pipelines {ofenFamilien,ofenGewaermt} fehlt oder ist nicht numerisch");
+    // Welle K — die Erst-Zeichnung reist im selben Pipeline-Block (Bauten · verschoben · asynchron · offen).
+    if (!pp || typeof pp.erstBauN !== "number" || typeof pp.erstPipeAsync !== "number" || typeof pp.erstVerschoben !== "number")
+        maengel.push("steadyState.pipelines {erstBauN,erstVerschoben,erstPipeAsync} fehlt oder ist nicht numerisch");
     if (!trace.steadyState || typeof trace.steadyState.uploadKBProS !== "number")
         maengel.push("steadyState.uploadKBProS fehlt oder ist nicht numerisch");
     return maengel;
@@ -79,7 +85,8 @@ function pruefeTraceFelder(trace) {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     // KEIN Null-Renderer — die Zähler brauchen den echten WebGPU-Pfad (Tap + Pipelines).
-    await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    // Software-Holz (Lehre 26): auf „voll" kostet auf swiftshader ein Compile 50–70 s; die Linse prüft Zähler und Gesetz.
+    await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
 
     const gpu = await page.evaluate(async () => {
         if (!navigator.gpu) return "kein navigator.gpu";
@@ -189,29 +196,149 @@ function pruefeTraceFelder(trace) {
             upBytes: fr.upBytes,
             uploadBytesEwma: sns.uploadBytesEwma,
         };
-        // (4b) V18.485 — DER PIPELINE-WARM-OFEN: der Boot münzt Konsum-Familien
-        // (InstancedMesh am Gruppen-Chokepoint); die Wärm-Maschine wird
-        // hier DETERMINISTISCH leergepumpt (force-Seam — das Budget-Tor gehört dem
-        // Spiel, die Linse prüft die Maschine) und muss danach leer sein.
-        const ofenVor = {
-            familien: r._pipeOfenDone ? r._pipeOfenDone.size : 0,
-            offen: r._pipeOfenQueue ? r._pipeOfenQueue.length : 0,
-            gewaermt: r._pipeOfenGewaermt || 0,
+        // (4b) Welle K — DIE ERST-ZEICHNUNG: drei neue Stoffe vor die Kamera, einmal am EINEN Ort (die Nachbildung von
+        // `_renderObjectDirect` am Renderer-Exemplar) und einmal auf dem Vendor-Weg (der Gegen-Lauf, MUSS rot sein). Gezählt
+        // am Gerät (createRenderPipeline synchron · …Async) und am Knoten-Bau (Nodes.getForRender ohne Cache-Treffer) je
+        // Render-Aufruf der Welt-Szene; ein Haken über renderObject trägt die Szene des laufenden Draws.
+        const ESt = r._erstZeichnung || null;
+        res.erst = {
+            daStamm: rend.__anazhErstZeichnung === true && Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
+            boot: ESt
+                ? { bauN: ESt.bauN, bauMs: Math.round(ESt.bauMs), verschoben: ESt.verschoben, pipeAsync: ESt.pipeAsync }
+                : null,
+            budgetMs: r.constructor.ERST_BAU_MS,
         };
-        const pumpMax = Math.min(ofenVor.offen + 4, 256);
-        for (let i = 0; i < pumpMax && r._pipeOfenQueue && r._pipeOfenQueue.length; i++) {
+        const welt = r.state.scene;
+        const Z = { cur: null, sync: 0, async: 0, bau: new Map() };
+        const GP = GPUDevice.prototype;
+        const crp = GP.createRenderPipeline,
+            crpa = GP.createRenderPipelineAsync;
+        GP.createRenderPipeline = function (d) {
+            if (Z.cur === welt) Z.sync++;
+            return crp.call(this, d);
+        };
+        GP.createRenderPipelineAsync = function (d) {
+            if (Z.cur === welt) Z.async++;
+            return crpa.call(this, d);
+        };
+        const roRoh = rend.renderObject;
+        rend.renderObject = function (o, sc) {
+            const vor = Z.cur;
+            Z.cur = sc;
             try {
-                r._pipeOfenTick(true);
-            } catch (_e) {}
-            await sleep(15);
-        }
-        res.ofen = {
-            familien: r._pipeOfenDone ? r._pipeOfenDone.size : 0,
-            offenVor: ofenVor.offen,
-            offenNach: r._pipeOfenQueue ? r._pipeOfenQueue.length : 0,
-            gewaermt: r._pipeOfenGewaermt || 0,
-            tickDa: typeof r._pipeOfenTick === "function",
+                return roRoh.apply(this, arguments);
+            } finally {
+                Z.cur = vor;
+            }
         };
+        const NB = rend._nodes,
+            gfr = NB.getForRender;
+        NB.getForRender = function (ro, asyncBau) {
+            const kalt =
+                !asyncBau &&
+                this.get(ro).nodeBuilderState === undefined &&
+                this.nodeBuilderCache.get(this.getForRenderCacheKey(ro)) === undefined;
+            const t0 = performance.now();
+            const aus = gfr.apply(this, arguments);
+            if (kalt && Z.cur === welt) {
+                const k = rend.info.calls;
+                const b = Z.bau.get(k) || { n: 0, ms: 0, vorMs: [] };
+                b.vorMs.push(b.ms);
+                b.n++;
+                b.ms += performance.now() - t0;
+                Z.bau.set(k, b);
+            }
+            return aus;
+        };
+        const TSL = window.THREE.TSL;
+        let serie = 0;
+        const bild = () => {
+            try {
+                r._loopRender(performance.now() / 1000);
+            } catch (_e) {
+                /* die Linse misst, nie stören */
+            }
+        };
+        // DIE RUHE vor jeder Probe: die Welt hat jede erste Zeichnung gebaut und jede Pipeline steht (10 Bilder ohne
+        // verschobene Erst-Zeichnung, keine offene Pipeline) — die Probe teilt das Budget sonst mit dem Boot-Rest.
+        const ruhe = async () => {
+            const t0 = performance.now();
+            let still = 0;
+            while (still < 10 && performance.now() - t0 < 150000) {
+                const v0 = ESt ? ESt.verschoben : 0;
+                bild();
+                await sleep(20);
+                still = (ESt ? ESt.verschoben === v0 && ESt.offen.size === 0 : true) ? still + 1 : 0;
+            }
+            return Math.round(performance.now() - t0);
+        };
+        const probe = async (vendor) => {
+            const ruheMs = await ruhe();
+            Z.sync = Z.async = 0;
+            Z.bau.clear();
+            const eigen = Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect");
+            const stamm = rend._renderObjectDirect;
+            if (vendor && eigen) delete rend._renderObjectDirect;
+            const cam = r.state.camera;
+            const dir = new window.THREE.Vector3();
+            cam.getWorldDirection(dir);
+            const meshes = [];
+            const gezeichnet = new Set();
+            const drawRoh = rend.backend.draw;
+            rend.backend.draw = function (ro) {
+                if (ro && ro.object && ro.object.userData.__erstProbe) gezeichnet.add(ro.object);
+                return drawRoh.apply(this, arguments);
+            };
+            for (let i = 0; i < 3; i++) {
+                serie++;
+                // ein Stoff wie der eines Tiers (beleuchtet), mit einer eigenen Konstante: ein neues Programm, eine neue Pipeline
+                const m = new window.THREE.MeshStandardNodeMaterial({ roughness: 0.8 });
+                m.colorNode = TSL.vec3(0.2 + 0.0013 * serie, 0.45, 0.25 + 0.07 * i);
+                const mesh = new window.THREE.Mesh(new window.THREE.BoxGeometry(0.6, 0.6, 0.6), m);
+                mesh.position.copy(cam.position).addScaledVector(dir, 4);
+                mesh.position.x += (i - 1) * 0.8;
+                mesh.frustumCulled = false;
+                mesh.userData.__erstProbe = true;
+                welt.add(mesh);
+                meshes.push(mesh);
+            }
+            let frames = 0;
+            const t0 = performance.now();
+            try {
+                while (gezeichnet.size < meshes.length && performance.now() - t0 < 200000) {
+                    bild();
+                    frames++;
+                    await sleep(20);
+                }
+            } finally {
+                rend.backend.draw = drawRoh;
+                if (vendor && eigen) rend._renderObjectDirect = stamm;
+                for (const m of meshes) {
+                    welt.remove(m);
+                    m.geometry.dispose();
+                }
+            }
+            let maxBau = 0,
+                ueberBudget = 0;
+            for (const b of Z.bau.values()) {
+                maxBau = Math.max(maxBau, b.n);
+                for (let j = 1; j < b.vorMs.length; j++) if (b.vorMs[j] >= res.erst.budgetMs) ueberBudget++;
+            }
+            return {
+                sync: Z.sync,
+                async: Z.async,
+                aufrufeMitBau: Z.bau.size,
+                maxBau,
+                ueberBudget,
+                gezeichnet: gezeichnet.size,
+                frames,
+                ms: Math.round(performance.now() - t0),
+                ruheMs,
+            };
+        };
+        res.erst.probe = await probe(false);
+        res.erst.gegen = await probe(true);
+        res.erst.zurueck = Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect");
         // (5) Trace direkt bauen (EINE Quelle — kein Warten auf den 4-s-Save).
         let trace = null;
         try {
@@ -320,14 +447,29 @@ function pruefeTraceFelder(trace) {
             : traceMaengel.join(" · ") + (out.traceWurf ? ` · Wurf: ${out.traceWurf}` : "")
     );
 
-    // Band 7 — V18.485 DER PIPELINE-WARM-OFEN: der Boot münzt Familien (Konsum-
-    // Archetypen entstehen beim Streamen), die Wärm-Maschine wärmt sie und die
-    // Queue ist nach dem Pump LEER (die Maschine frisst, was gemünzt wurde).
-    const of = out.ofen || {};
+    // Band 7 — Welle K DIE ERST-ZEICHNUNG: der Boot trug seine ersten Zeichnungen über den EINEN Ort (Konsum), die Probe
+    // (drei neue Stoffe) zeichnet ohne synchrone Pipeline der Welt und baut je Render-Aufruf nur unter dem Budget, der
+    // Gegen-Lauf derselben Probe auf dem Vendor-Weg ist ROT (sonst wäre die Wand blind).
+    const ez = out.erst || {};
+    const eb = ez.boot || {};
     band(
-        of.tickDa === true && of.familien > 0 && of.gewaermt > 0 && of.offenNach === 0,
-        "PIPELINE-WARM-OFEN (Konsum)",
-        `Familien=${of.familien} · gewärmt=${of.gewaermt} · Queue vor Pump=${of.offenVor} · nach Pump=${of.offenNach}`
+        ez.daStamm === true && eb.bauN > 0 && eb.pipeAsync > 0,
+        "ERST-ZEICHNUNG (Konsum im Boot)",
+        `am Renderer=${ez.daStamm} · Knoten-Bauten im Pass ${eb.bauN} (Σ ${eb.bauMs} ms) · verschoben ${eb.verschoben} · Pipelines asynchron ${eb.pipeAsync}`
+    );
+    const pr = ez.probe || {};
+    band(
+        pr.gezeichnet === 3 && pr.sync === 0 && pr.async >= 3 && pr.ueberBudget === 0,
+        "ERST-ZEICHNUNG (Probe: drei neue Stoffe — gezeichnet, 0 synchrone Pipelines der Welt, kein Bau über dem Budget)",
+        `Ruhe davor ${pr.ruheMs} ms · gezeichnet ${pr.gezeichnet}/3 nach ${pr.frames} Frames (${pr.ms} ms) · synchron ${pr.sync} · asynchron ${pr.async} · ` +
+            `Aufrufe mit Bau ${pr.aufrufeMitBau} · max ${pr.maxBau} Bauten je Aufruf · über dem Budget (${ez.budgetMs} ms) ${pr.ueberBudget}`
+    );
+    const gg = ez.gegen || {};
+    band(
+        gg.gezeichnet === 3 && gg.sync >= 1 && gg.ueberBudget >= 1 && ez.zurueck === true,
+        "ERST-ZEICHNUNG Gegen-Lauf (der Vendor-Weg MUSS rot sein: synchrone Pipeline, Bauten über dem Budget)",
+        `synchron ${gg.sync} · asynchron ${gg.async} · max ${gg.maxBau} Bauten je Aufruf · über dem Budget ${gg.ueberBudget} · ` +
+            `gezeichnet ${gg.gezeichnet}/3 nach ${gg.frames} Frames · der EINE Ort danach zurück=${ez.zurueck}`
     );
 
     // Band 6 — kein pageerror.

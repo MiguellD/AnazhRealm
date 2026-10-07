@@ -23,6 +23,7 @@
 //   Werkbank:  node scripts/werkbank.cjs haenger [sek] [--ein s] [--regler voll|frei] [--tiere frei|halten]
 //                                               [--wandern kreis] [--schwelle ms] [--probe] [--json datei]
 //              node scripts/werkbank.cjs haenger --selbsttest     (ohne Welt: die Auswertung gegen erfundene Hänger)
+//              node scripts/werkbank.cjs haenger --erst [ABBAABBA]   (die Erst-Probe, ABBA in einer Welt — unten)
 //   `--probe` schmuggelt zwei Hänger bekannter Ursache in den echten Lauf (250 ms im Takt in `__haengerProbeTakt`,
 //   250 ms neben dem Takt in `__haengerProbeNeben`) — die Linse muss beide beim Namen nennen, sonst Exit 1.
 
@@ -273,6 +274,12 @@ function haengerLauf(k) {
             H.an = true;
             messen = true;
             const tMess0 = performance.now();
+            // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
+            const erstStand = () => {
+                const E = r._erstZeichnung;
+                return E ? { bauN: E.bauN, bauMs: E.bauMs, verschoben: E.verschoben, pipeAsync: E.pipeAsync } : null;
+            };
+            const erst0 = erstStand();
             const probe = [];
             if (k.probe) {
                 const dauer = k.sek * 1000;
@@ -292,6 +299,7 @@ function haengerLauf(k) {
             messen = false;
             H.an = false;
             const tMess1 = performance.now();
+            const erst1 = erstStand();
             const eich1 = window.__haengerEichmarke(8);
             const pm = st.playerMesh.position;
             return {
@@ -308,6 +316,16 @@ function haengerLauf(k) {
                 chunks: st.voxelChunks ? st.voxelChunks.size : 0,
                 loadScale: st.perfSense ? +st.perfSense.loadScale.toFixed(2) : null,
                 wetter: st.weather,
+                erst:
+                    erst0 && erst1
+                        ? {
+                              bauN: erst1.bauN - erst0.bauN,
+                              bauMs: +(erst1.bauMs - erst0.bauMs).toFixed(1),
+                              verschoben: erst1.verschoben - erst0.verschoben,
+                              pipeAsync: erst1.pipeAsync - erst0.pipeAsync,
+                              offen: r._erstZeichnung.offen.size,
+                          }
+                        : null,
             };
         } finally {
             messen = false;
@@ -709,6 +727,7 @@ function haengerAuswerten(roh, profil, opts) {
             loadScale: roh.loadScale,
             wetter: roh.wetter,
         },
+        erst: roh.erst || null,
     };
 }
 
@@ -746,6 +765,11 @@ function haengerTabelle(a) {
                       .join(" · ")} — bei s ${pp.zeiten.slice(0, 12).join(", ")}`
                 : "")
     );
+    if (a.erst)
+        z.push(
+            `Erst-Zeichnung: ${a.erst.bauN} Knoten-Bauten im Pass (Σ ${a.erst.bauMs} ms) · ${a.erst.verschoben} auf den nächsten ` +
+                `Aufruf verschoben · ${a.erst.pipeAsync} Pipelines asynchron · ${a.erst.offen} offen`
+        );
     const kb = a.knotenBau || {};
     z.push(
         `Knoten-Bau synchron: ${kb.sync} Bauten · Σ ${kb.ms} ms · max ${kb.maxMs} ms · ${kb.ueber16} über 16,7 ms` +
@@ -946,7 +970,185 @@ function selbsttest() {
         f.push("ohne Profil: Takt-Hänger nicht als TAKT gezählt");
     if (!haengerLinsenBefunde(ohne).length)
         f.push("ohne Profil meldet die Linse keinen Befund (sie wäre blind und grün)");
+    // die Erst-Probe: ein sauberes ABBA ohne Befund; ein A ohne synchrone Pipeline (blind), ein B mit einer (der Bruch) und ein B
+    // mit weniger gezeichneten Teilen (verschluckt) nennt das Urteil je beim Namen
+    const d = (art, max, sync, gezeichnet) => ({ art, max, ruheMax: 20, p50: 9, sync, async: 18 - sync, gezeichnet, teile: 16, gussMs: 40 });
+    const sauber = erstUrteil([d("A", 2900, 17, 11), d("B", 130, 0, 11), d("B", 110, 0, 11), d("A", 2000, 19, 11)]);
+    if (sauber.befunde.length || sauber.medianA !== 2000 || sauber.medianB !== 110)
+        f.push("Erst-Probe: sauberes ABBA geurteilt als " + JSON.stringify([sauber.befunde, sauber.medianA, sauber.medianB]));
+    const kaputt = erstUrteil([d("A", 20, 0, 11), d("B", 900, 3, 9)]).befunde;
+    for (const w of ["blind", "kompiliert im Frame", "verschluckt"])
+        if (!kaputt.some((b) => b.includes(w))) f.push(`Erst-Probe: „${w}" nicht genannt`);
     return f;
+}
+
+// ── DIE ERST-PROBE (Welle K): ABBA in EINER Welt ─────────────────────────────────────────────────────────────────────
+// Die Hänger-Klasse „eine erste Zeichnung trägt synchron ihren Bau" am echten Gerät, A gegen B in derselben Welt: je
+// Durchgang ein Tier aus dem echten Guss (`spawnCreatureAt`) mit frischen Stoffen (eine eigene Farb-Konstante je Durchgang:
+// neue Programme, neue Pipelines) und drei frische Würfel vor der Kamera, alle werfen Schatten. A = der Vendor-Weg (die
+// Nachbildung am Renderer-Exemplar ist entfernt: Knoten-Bau und Pipeline synchron im Frame), B = die Erst-Zeichnung
+// (`_configureRenderer`: je Render-Aufruf ein Bau, die Pipeline asynchron). Gemessen je Durchgang: der längste Abstand
+// zweier Bilder (rAF) in 5 s ab dem Auftrag gegen 2 s Ruhe davor, synchrone und asynchrone Pipelines, gezeichnete Teile.
+//   node scripts/werkbank.cjs haenger --erst [ABBAABBA]
+function erstProbe(k) {
+    return (async () => {
+        const r = window.anazhRealm;
+        const st = r.state;
+        const rend = st.renderer;
+        const T = window.THREE;
+        const TSL = T.TSL;
+        const welt = st.scene;
+        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+        if (window.__buehne) window.__buehne();
+        if (window.__tiereHalten) window.__tiereHalten();
+        rend.setAnimationLoop((t) => {
+            if (window.__wetterHalten) window.__wetterHalten();
+            if (window.__ortSchritt) window.__ortSchritt();
+            r._gameLoopTick(t);
+        });
+        const Z = (window.__erstZ = window.__erstZ || { sync: 0, async: 0 });
+        if (!window.__erstHaken) {
+            const GP = GPUDevice.prototype;
+            const crp = GP.createRenderPipeline,
+                crpa = GP.createRenderPipelineAsync;
+            GP.createRenderPipeline = function (d) {
+                window.__erstZ.sync++;
+                return crp.call(this, d);
+            };
+            GP.createRenderPipelineAsync = function (d) {
+                window.__erstZ.async++;
+                return crpa.call(this, d);
+            };
+            window.__erstHaken = true;
+        }
+        const fenster = async (ms) => {
+            const t = [];
+            const t0 = performance.now();
+            while (performance.now() - t0 < ms) {
+                await new Promise((res) => requestAnimationFrame(res));
+                t.push(performance.now());
+            }
+            let max = 0;
+            const d = [];
+            for (let i = 1; i < t.length; i++) {
+                d.push(t[i] - t[i - 1]);
+                max = Math.max(max, t[i] - t[i - 1]);
+            }
+            d.sort((a, b) => a - b);
+            return { n: t.length, max: +max.toFixed(1), p50: +(d[Math.floor(d.length / 2)] || 0).toFixed(1) };
+        };
+        const aus = [];
+        try {
+            await sleep((k.ein != null ? k.ein : 15) * 1000);
+            let serie = window.__erstSerie || 0;
+            for (const art of String(k.folge || "ABBAABBA")) {
+                const vendor = art === "A";
+                const eigen = Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect");
+                const stamm = rend._renderObjectDirect;
+                if (vendor && eigen) delete rend._renderObjectDirect;
+                const gezeichnet = new Set();
+                const drawRoh = rend.backend.draw;
+                rend.backend.draw = function (ro) {
+                    if (ro && ro.object && ro.object.userData.__erstProbe) gezeichnet.add(ro.object);
+                    return drawRoh.apply(this, arguments);
+                };
+                const teile = [];
+                let tier = null;
+                let gussMs = 0;
+                try {
+                    const ruhe = await fenster(2000);
+                    Z.sync = Z.async = 0;
+                    serie++;
+                    window.__erstSerie = serie;
+                    const cam = st.camera;
+                    const dir = new T.Vector3();
+                    cam.getWorldDirection(dir);
+                    const px = cam.position.x + dir.x * 7,
+                        pz = cam.position.z + dir.z * 7;
+                    const gy = typeof r.getTerrainHeightAt === "function" ? r.getTerrainHeightAt(px, pz) : cam.position.y;
+                    const g0 = performance.now();
+                    tier = r.spawnCreatureAt(px, gy + 0.3, pz, "happy", k.art || "wolf", { bodySize: 1, precise: true });
+                    gussMs = performance.now() - g0;
+                    if (tier)
+                        tier.traverse((o) => {
+                            if (o.isMesh && o.material && !Array.isArray(o.material)) {
+                                const m = o.material.clone();
+                                m.colorNode = TSL.vec3(0.3 + 0.00137 * serie, 0.35, 0.2);
+                                o.material = m;
+                                o.userData.__erstProbe = true;
+                                teile.push(o);
+                            }
+                        });
+                    for (let i = 0; i < 3; i++) {
+                        const m = new T.MeshStandardNodeMaterial({ roughness: 0.8 });
+                        m.colorNode = TSL.vec3(0.2 + 0.00113 * serie, 0.45, 0.25 + 0.07 * i);
+                        const w = new T.Mesh(new T.BoxGeometry(0.6, 0.6, 0.6), m);
+                        w.position.set(
+                            cam.position.x + dir.x * 4 + (i - 1) * 0.8,
+                            cam.position.y + dir.y * 4,
+                            cam.position.z + dir.z * 4
+                        );
+                        w.castShadow = true;
+                        w.userData.__erstProbe = true;
+                        welt.add(w);
+                        teile.push(w);
+                    }
+                    const f = await fenster(5000);
+                    aus.push({
+                        art,
+                        ruheMax: ruhe.max,
+                        max: f.max,
+                        p50: f.p50,
+                        bilder: f.n,
+                        sync: Z.sync,
+                        async: Z.async,
+                        gezeichnet: gezeichnet.size,
+                        teile: teile.length,
+                        gussMs: +gussMs.toFixed(1),
+                    });
+                } finally {
+                    rend.backend.draw = drawRoh;
+                    if (vendor && eigen) rend._renderObjectDirect = stamm;
+                    for (const w of teile)
+                        if (w.parent === welt) {
+                            welt.remove(w);
+                            w.geometry.dispose();
+                        }
+                    if (tier) r.removeCreature(tier);
+                }
+            }
+        } finally {
+            rend.setAnimationLoop(null);
+        }
+        return aus;
+    })();
+}
+
+// Das Urteil der Erst-Probe (Node, rein): die Mediane je Seite, und die Linse prüft sich — ohne synchrone Pipeline in A
+// trug die Probe keine neuen Stoffe (blind), eine synchrone Pipeline in B ist der Bruch des Gesetzes, und B zeichnet in
+// jedem Durchgang mindestens die Teile, die A im Median zeichnet (nichts verschluckt).
+function erstUrteil(aus) {
+    const med = (xs) => {
+        const s = xs.slice().sort((a, b) => a - b);
+        return s.length ? s[Math.floor((s.length - 1) / 2)] : null;
+    };
+    const A = aus.filter((x) => x.art === "A"),
+        B = aus.filter((x) => x.art === "B");
+    const befunde = [];
+    if (!A.length || !B.length) befunde.push("die Folge braucht A und B");
+    for (const x of A) if (x.sync === 0) befunde.push("A ohne synchrone Pipeline (die Probe trug keine neuen Stoffe — blind)");
+    for (const x of B) if (x.sync > 0) befunde.push(`B mit ${x.sync} synchronen Pipelines (die Erst-Zeichnung kompiliert im Frame)`);
+    const gA = med(A.map((x) => x.gezeichnet));
+    for (const x of B) if (gA != null && x.gezeichnet < gA) befunde.push(`B zeichnete ${x.gezeichnet} Teile, A ${gA} (verschluckt)`);
+    const zeile = (x) =>
+        `  ${x.art}  max ${String(x.max).padStart(7)} ms (Ruhe ${x.ruheMax})  p50 ${x.p50}  synchron ${x.sync}  ` +
+        `asynchron ${x.async}  gezeichnet ${x.gezeichnet}/${x.teile}  Guss ${x.gussMs} ms`;
+    const tabelle =
+        `ERST-PROBE (ABBA in einer Welt): längster Frame-Abstand in 5 s ab dem Auftrag — Median A ${med(A.map((x) => x.max))} ms · ` +
+        `B ${med(B.map((x) => x.max))} ms; synchrone Pipelines je Durchgang A ${med(A.map((x) => x.sync))} · ` +
+        `B ${med(B.map((x) => x.sync))}\n` +
+        aus.map(zeile).join("\n");
+    return { tabelle, befunde, medianA: med(A.map((x) => x.max)), medianB: med(B.map((x) => x.max)) };
 }
 
 module.exports = {
@@ -955,10 +1157,12 @@ module.exports = {
     haengerTabelle,
     haengerLinsenBefunde,
     selbsttest,
+    erstUrteil,
     HAENGER_INSTALL:
         `window.__haengerAn = ${haengerAn.toString()};` +
         `window.__haengerEichmarke = ${haengerEichmarke.toString()};` +
         `window.__haengerProbeTakt = ${__haengerProbeTakt.toString()};` +
         `window.__haengerProbeNeben = ${__haengerProbeNeben.toString()};` +
-        `window.__haengerLauf = ${haengerLauf.toString()};`,
+        `window.__haengerLauf = ${haengerLauf.toString()};` +
+        `window.__erstProbe = ${erstProbe.toString()};`,
 };
