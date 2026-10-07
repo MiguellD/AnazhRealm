@@ -9688,11 +9688,13 @@ class AnazhRealm {
         }
     }
 
-    // Steht an (x, z) Wasser? Der Boden (Voxel-Surface) liegt mehr als 5 cm unter dem Wasser-Spiegel; eine Höhle, ein
-    // Loch (Surface null) trägt kein Wasser. Die EINE Nässe des Klangs: der Hör-Ring und der Wasser-Hauch lesen sie.
+    // Steht an (x, z) Wasser? Der Boden (Voxel-Surface) liegt mehr als 5 cm unter der EINEN Wasser-Wahrheit am Körper
+    // (`_koerperWasser` über diesem Boden: See, Fluss bis zur Krone, Rand, Aquifer, Decke); eine Höhle, ein Loch (Surface
+    // null) trägt kein Wasser. Die EINE Nässe des Klangs: der Hör-Ring und der Wasser-Hauch lesen sie. Bis zur Gegenprüfung
+    // las sie das 3×3-gedehnte `_waterLevelAt` (eine zweite Wahrheit neben dem Körper).
     _nassAt(x, z) {
         const boden = this._voxelSurfaceY(x, z);
-        return boden !== null && Number.isFinite(boden) && boden < this._waterLevelAt(x, z) - 0.05;
+        return boden !== null && Number.isFinite(boden) && boden < this._koerperWasser(x, z, boden) - 0.05;
     }
 
     // Glut-Bauten im Hör-Radius: je Frame `n` Einträge von state.architectures (rund um die Liste); ein voller Umlauf
@@ -21225,7 +21227,9 @@ class AnazhRealm {
             {
                 const grundW = this._creatureGroundY(creature);
                 const tbW = udW._tierBaum;
-                udW._wasserlinie = tbW && tbW.bein ? tbW.bein[0].h * (creature.scale.x || 1) : 0;
+                // Ohne Gestalt-Baum (ein Wesen, das noch keinen trägt) liegt die Linie auf der Schwimm-Tiefe des Gesetzes —
+                // bis zur Gegenprüfung 0: das Wesen stand still AUF dem Spiegel.
+                udW._wasserlinie = tbW && tbW.bein ? tbW.bein[0].h * (creature.scale.x || 1) : VGL.wasser.schwimmTiefeM;
                 const spiegelW = Number.isFinite(grundW)
                     ? this._koerperWasser(creature.position.x, creature.position.z, grundW)
                     : -Infinity;
@@ -31073,9 +31077,11 @@ class AnazhRealm {
         const z = creature.position.z;
         const cy = creature.position.y;
         // V17.113 — `surfaceY` kommt jetzt aus `_creatureGroundY` (gecacht) statt
-        // einem eigenen `_voxelSurfaceY`-Scan → kein Doppel-Scan pro Kreatur.
-        const waterY = this._waterLevelAt(x, z);
+        // einem eigenen `_voxelSurfaceY`-Scan → kein Doppel-Scan pro Kreatur. Das Wasser ist die EINE Wahrheit am Körper
+        // (`_koerperWasser` über diesem Grund — dieselbe, die Lage und Schwimmen des Tiers trägt); bis zur Gegenprüfung las
+        // die Ufer-Scheu das 3×3-gedehnte `_waterLevelAt`.
         const surfY = surfaceY === null || !Number.isFinite(surfaceY) ? cy : surfaceY;
+        const waterY = this._koerperWasser(x, z, surfY);
         const depthBelow = waterY - surfY;
         const inWater = depthBelow > 0;
         const submerged = cy < waterY - 0.1;
@@ -31094,7 +31100,10 @@ class AnazhRealm {
             const dx = d === 0 ? 1 : d === 1 ? -1 : 0;
             const dz = d === 2 ? 1 : d === 3 ? -1 : 0;
             for (let step = STEP; step <= MAX; step += STEP) {
-                if (this._isAboveWaterAt(x + dx * step, z + dz * step, 0.1)) {
+                const lx = x + dx * step;
+                const lz = z + dz * step;
+                const lb = this._voxelSurfaceY(lx, lz);
+                if (lb !== null && Number.isFinite(lb) && lb > this._koerperWasser(lx, lz, lb) + 0.1) {
                     if (step < bestDist) {
                         bestDist = step;
                         bestDx = dx;
@@ -32507,8 +32516,17 @@ class AnazhRealm {
         const b = i + k * dim;
         const lvlMap = this.state.waterLevelCells;
         const lvl = lvlMap && lvlMap.size ? lvlMap.get(key) : null;
+        const atlasLand = !(spiegel > -Infinity);
+        const sc = lvl || atlasLand ? this._caColumnScan(cells, lvl, b, dq, dimY) : null;
+        // DER KÜSTEN-AQUIFER: flutet das Zell-Gesetz die Spalte unter dem Wassertisch, wo der Atlas Land sagt (die 3D-Rauheit
+        // taucht das Gelände unter den Meeresspiegel, `_buildVoxelChunkWaterCells`), steht das Wasser auf dem Wassertisch —
+        // wie das Sheet es zeichnet. Bis zur Gegenprüfung stand der Körper dort trocken (an der Küste −88/−880 110 von 110
+        // Spalten, in denen das Sheet Wasser über dem Boden zeichnet), Klang und Tier-Scheu lasen das Meer überall.
+        if (atlasLand && sc.floodTopJ >= 0) {
+            const tisch = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
+            if (oy + sc.floodTopJ * step < tisch) spiegel = tisch;
+        }
         if (lvl) {
-            const sc = this._caColumnScan(cells, lvl, b, dq, dimY);
             const liveRel = sc.liveTopJ >= 0 ? (sc.liveTopJ + sc.liveFrac) * step : -1;
             if (sc.floodTopJ < 0) {
                 // Live-Wasser jenseits der Flut (ein gegrabener Kanal, ein Stau): sein Dach.
@@ -33429,12 +33447,16 @@ class AnazhRealm {
         return arten;
     }
 
-    // Der Wasser-Spiegel, an dem das Ufer-Band des Boden-Gesetzes misst: See und Meer (`_waterLevelAt`) oder — im
-    // Fluss-Kanal samt Bank-Rampe — die Fluss-Oberfläche (`_hydroRiverAt`); der Schilfgürtel säumt beide.
-    _nahStreuSpiegel(x, z) {
-        const see = this._waterLevelAt(x, z);
-        const fluss = this._hydroRiverAt(x, z);
-        return fluss && Number.isFinite(fluss.surfaceY) ? Math.max(see, fluss.surfaceY) : see;
+    // Das Gewicht einer Nah-Streu-Art nach dem Boden-Gesetz (`core.bodenGewicht`) über der Höhe über dem Wasser: das
+    // Ufer-Band (Schilf) über beiden Bezügen — See/Meer voll, der Fluss mit seiner Kronen-Blende, das Maximum (stetig über
+    // die Krone, wie Strand und Schlick in `_bodenFarbeAt`); jede andere Art über der EINEN Wahrheit am Körper (`u.ufer` =
+    // Boden − `_koerperWasser`). `uf` = `_waterLevelAt(x, z, aus)`, `y` der Boden.
+    _nahStreuBodenGewicht(core, zeile, u, uf, y) {
+        if (!zeile.ufer) return core.bodenGewicht(zeile, u);
+        let w = core.bodenGewicht(zeile, Object.assign({}, u, { ufer: y - uf.see }));
+        if (uf.fluss !== null && uf.ufer > 0)
+            w = Math.max(w, uf.ufer * core.bodenGewicht(zeile, Object.assign({}, u, { ufer: y - uf.fluss })));
+        return w;
     }
 
     // Die Pflanzen einer Kachel nach dem Boden-Gesetz: je Zelle (NAH_STREU.zelle) EINE Umwelt-Messung (Kronen-Licht
@@ -33477,10 +33499,17 @@ class AnazhRealm {
                 if (this._pfadFeldAt(x, z, y) > 0.5) continue; // Ufer-Pfad und Siedlungs-Weg bleiben frei (Labor: trailAt < 3 m)
                 const feucht = this._feuchteAt(x, z, y);
                 const feld = this.worldFieldAt(x, z);
+                // Die Höhe über dem Wasser: für das Ufer-Band (Schilf) über beiden Bezügen (`_waterLevelAt` → see · fluss ·
+                // ufer, wie Strand und Schlick in `_bodenFarbeAt`: das Band über See/Meer und das über dem Fluss mit seiner
+                // Kronen-Blende, das Maximum — stetig über die Krone), für jede andere Art über der EINEN Wahrheit am Körper
+                // (`_koerperWasser`: nie im Wasser). Bis zur Gegenprüfung las die Streu das Maximum der Spiegel — an der
+                // Krone sprang der Bezug auf den Meeresspiegel (der Kronen-Sprung, den 463c4fda in der Boden-Farbe heilte).
+                const uf = { see: 0, fluss: null, ufer: 0 };
+                this._waterLevelAt(x, z, uf);
                 const u = {
                     licht: this._canopyLightAt(x, z, y, feucht),
                     feucht,
-                    ufer: y - this._nahStreuSpiegel(x, z),
+                    ufer: y - this._koerperWasser(x, z, y),
                     fels: feld ? feld.dichte : null,
                     hang: this._slopeAt(x, z, (px, pz) => {
                         const v = this._chunkSurfaceAt(o.e, o.cx, o.cz, px, pz);
@@ -33489,7 +33518,8 @@ class AnazhRealm {
                 };
                 for (let a = 0; a < arten.length; a++) {
                     const A = arten[a];
-                    const lam = A.zeile.dichte * Z * Z * 0.01 * core.bodenGewicht(A.zeile, u) * last;
+                    const gw = this._nahStreuBodenGewicht(core, A.zeile, u, uf, y);
+                    const lam = A.zeile.dichte * Z * Z * 0.01 * gw * last;
                     if (!(lam > 0)) continue;
                     let hs =
                         ((gi * 73856093) ^ (gj * 19349663) ^ ((a + 1) * 0x85ebca6b) ^ seedInt ^ 0x5eedb0de) >>> 0 || 1;
@@ -33515,7 +33545,7 @@ class AnazhRealm {
                         }
                         const py = this._chunkSurfaceAt(op.e, op.cx, op.cz, px, pz);
                         if (py === null) continue;
-                        if (!A.zeile.ufer && py < this._nahStreuSpiegel(px, pz) + 0.1) continue;
+                        if (!A.zeile.ufer && py < this._koerperWasser(px, pz, py) + 0.1) continue;
                         chunks.set(op.ck, op.e.surfMap);
                         items.push({ art: a, id: `${gi}|${gj}|${a}|${i}`, x: px, y: py, z: pz, rot, s, same, ordnung });
                     }

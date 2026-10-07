@@ -184,10 +184,9 @@ function werkzeug() {
         }
         return { takte, chunks: last };
     };
-    W.nass = (x, z) => {
-        const b = r._voxelSurfaceY(x, z);
-        return b !== null && Number.isFinite(b) && b < r._waterLevelAt(x, z) - 0.05;
-    };
+    // Die Nässe des Klangs ist SEINE (`_nassAt`: der Boden unter der EINEN Wasser-Wahrheit am Körper) — die Linse rechnet
+    // sie nie nach (bis Welle L ein Zwilling über das 3×3-gedehnte `_waterLevelAt`).
+    W.nass = (x, z) => r._nassAt(x, z);
     W.fliesst = (x, z) => !!r._waterFlowAt(x, z);
     // Die Brenn-Fläche eines Baus (Grundfläche seiner Glut-Teile) — wie das Ohr sie misst (`_glutFlaeche`).
     W.glutFlaeche = (e) => {
@@ -581,8 +580,9 @@ async function messeOrt(page, name, ort, stubs) {
             const P = Object.getPrototypeOf(r);
             const alt = {};
             if (stubs && stubs.ohneWasser) {
-                alt._waterLevelAt = P._waterLevelAt;
-                P._waterLevelAt = () => -1e9;
+                // das Wasser an seiner Quelle weg: die EINE Wahrheit am Körper (die Nässe des Klangs liest sie)
+                alt._koerperWasser = P._koerperWasser;
+                P._koerperWasser = () => -Infinity;
             }
             const um0 = st.symphony.umwelt;
             if (stubs && stubs.ohneWerkstatt && um0) {
@@ -609,7 +609,7 @@ async function messeOrt(page, name, ort, stubs) {
                 const hauptSynthese = syn0 === null || syn1 === null ? null : syn1 - syn0;
                 return { name, ort, um, aus, laufend, zensus, baeume, hauptSynthese };
             } finally {
-                if (alt._waterLevelAt) P._waterLevelAt = alt._waterLevelAt;
+                if (alt._koerperWasser) P._koerperWasser = alt._koerperWasser;
                 if (alt.graph) {
                     um0.graph.stopAlle();
                     um0.graph = alt.graph;
@@ -764,6 +764,7 @@ async function kosten(page, stubs) {
         let imTakt = false;
         const fns = {
             _voxelSurfaceY: "boden",
+            _koerperWasser: "wasser",
             _waterLevelAt: "wasser",
             _waterFlowAt: "stroemung",
             _hydroRiverAt: "fluss",

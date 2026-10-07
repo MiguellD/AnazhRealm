@@ -23858,12 +23858,13 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe, psy);
         out.perfMs = performance.now() - t0;
 
-        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` ist der EINZIGE `_voxelSurfaceY`-Leser;
-        // der Helper selbst liest `_waterLevelAt` + `_isAboveWaterAt`.
+        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` ist der EINZIGE `_voxelSurfaceY`-Leser des Tiers;
+        // der Helper liest die EINE Wasser-Wahrheit am Körper (`_koerperWasser`, Welle L) — Tiefe UND Ufer-Suche —, nie
+        // mehr das 3×3-gedehnte `_waterLevelAt` / `_isAboveWaterAt` (die zweite Wahrheit der Ufer-Scheu).
         const helperSrc = window.__codeOf(r._creatureWaterContextAt);
         out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(window.__codeOf(r._creatureGroundY));
-        out.usesWaterLevelAt = /_waterLevelAt\(/.test(helperSrc);
-        out.usesIsAboveWaterAt = /_isAboveWaterAt\(/.test(helperSrc);
+        out.usesKoerperWasser = (helperSrc.match(/_koerperWasser\(/g) || []).length >= 2;
+        out.ohneZweiteWahrheit = !/_waterLevelAt\(|_isAboveWaterAt\(/.test(helperSrc);
 
         // BODEN-CACHE: die teuren `_voxelSurfaceY`-Scans sind pro Frame per Budget gedeckelt, nicht 1–2×
         // pro Kreatur. Das Budget dekrementiert je echtem Scan → hier als Scan-Zähler gelesen.
@@ -23935,8 +23936,14 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         "Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25, via _creatureGroundY)",
         res.usesVoxelSurfaceY === true
     );
-    check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
-    check("Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)", res.usesIsAboveWaterAt === true);
+    check(
+        "Welle L: Helper liest die EINE Wasser-Wahrheit am Körper (_koerperWasser: Tiefe und Ufer-Suche)",
+        res.usesKoerperWasser === true
+    );
+    check(
+        "Welle L: Helper liest keine zweite Wahrheit (_waterLevelAt / _isAboveWaterAt)",
+        res.ohneZweiteWahrheit === true
+    );
     check("V17.113 Kreatur-FPS-Dirigent: _creatureGroundY (Boden-Cache) existiert", res.groundCacheFn === true);
     if (res.groundCacheFn) {
         check("V17.113: erster Boden-Zugriff scannt (Budget dekrementiert)", res.gFirstScan === true);
@@ -24229,8 +24236,9 @@ async function checkBandNahStreu(ctx) {
             /bodenGewicht/.test(kSrc) &&
             /_canopyLightAt/.test(kSrc) &&
             /_feuchteAt/.test(kSrc) &&
-            /_nahStreuSpiegel/.test(kSrc) &&
-            /_hydroRiverAt/.test(window.__codeOf(r._nahStreuSpiegel)) &&
+            /_nahStreuBodenGewicht\(/.test(kSrc) &&
+            /_koerperWasser\(/.test(kSrc) &&
+            /uf\.fluss/.test(window.__codeOf(r._nahStreuBodenGewicht)) &&
             /_foundryFlattenFor/.test(tSrc) &&
             /_foundryDeclaredStage/.test(tSrc) &&
             /_foundryVariantFor/.test(tSrc) &&
@@ -30644,7 +30652,7 @@ async function checkBandGammaGenese(ctx) {
                 /bodenGewicht/.test(kSrc) &&
                 /_feuchteAt/.test(kSrc) &&
                 /_canopyLightAt/.test(kSrc) &&
-                /_nahStreuSpiegel/.test(kSrc);
+                /_nahStreuBodenGewicht\(/.test(kSrc);
             out.schilfData = !!(boden && boden.schilf && Array.isArray(boden.schilf.ufer) && boden.schilf.ring === "nah");
             out.farnDual = !!(boden && boden.farn && Array.isArray(boden.farn.licht) && boden.farn.feuchtLicht > 0);
             out.bodenLiest = /_feuchteAt/.test(window.__codeOf(r._terrainMaterialAt));
