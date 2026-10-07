@@ -9690,11 +9690,12 @@ class AnazhRealm {
 
     // Steht an (x, z) Wasser? Der Boden (Voxel-Surface) liegt mehr als 5 cm unter der EINEN Wasser-Wahrheit am Körper
     // (`_koerperWasser` über diesem Boden: See, Fluss bis zur Krone, Rand, Aquifer, Decke); eine Höhle, ein Loch (Surface
-    // null) trägt kein Wasser. Die EINE Nässe des Klangs: der Hör-Ring und der Wasser-Hauch lesen sie. Bis zur Gegenprüfung
-    // las sie das 3×3-gedehnte `_waterLevelAt` (eine zweite Wahrheit neben dem Körper).
-    _nassAt(x, z) {
+    // null) trägt kein Wasser. Die EINE Nässe des Klangs (der Hör-Ring und der Wasser-Hauch) und — mit `marge` (m über dem
+    // Spiegel, der Rand zählt mit) — des Trink-Ziels der Tiere (`_findNearestWaterPoint`). Bis zur Gegenprüfung las der
+    // Klang das 3×3-gedehnte `_waterLevelAt`, das Trink-Ziel `_isAboveWaterAt` (zwei Wahrheiten neben dem Körper).
+    _nassAt(x, z, marge = -0.05) {
         const boden = this._voxelSurfaceY(x, z);
-        return boden !== null && Number.isFinite(boden) && boden < this._koerperWasser(x, z, boden) - 0.05;
+        return boden !== null && Number.isFinite(boden) && boden < this._koerperWasser(x, z, boden) + marge;
     }
 
     // Glut-Bauten im Hör-Radius: je Frame `n` Einträge von state.architectures (rund um die Liste); ein voller Umlauf
@@ -20163,8 +20164,10 @@ class AnazhRealm {
         return out.set(nx * speed, 0, nz * speed);
     }
 
-    // Ring-Scan: 8 Himmelsrichtungen × konzentrische Ringe in 4-m-Schritten bis radius; der erste
-    // Treffer (`_isAboveWaterAt` false) gewinnt — innen nach außen = kürzeste Distanz. → {x, z} | null.
+    // Ring-Scan: 8 Himmelsrichtungen × konzentrische Ringe in 4-m-Schritten bis radius; der erste Treffer gewinnt —
+    // innen nach außen = kürzeste Distanz. Treffer = Wasser oder sein Rand (bis 0,2 m über dem Spiegel), wie der Körper
+    // es trägt (`_nassAt` über `_koerperWasser`); bis zur Gegenprüfung `_isAboveWaterAt` (34 von 451 Zielen trocken).
+    // → {x, z} | null.
     _findNearestWaterPoint(cx, cz, radius) {
         const STEP = 4;
         const DIRS = 8;
@@ -20173,7 +20176,7 @@ class AnazhRealm {
                 const angle = (d / DIRS) * Math.PI * 2;
                 const x = cx + Math.cos(angle) * r;
                 const z = cz + Math.sin(angle) * r;
-                if (!this._isAboveWaterAt(x, z, 0.2)) {
+                if (this._nassAt(x, z, 0.2)) {
                     return { x, z };
                 }
             }

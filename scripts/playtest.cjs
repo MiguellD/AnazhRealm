@@ -24126,9 +24126,8 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         const STEP = 6;
         for (let dx = -SCAN; dx <= SCAN && !waterSpot; dx += STEP) {
             for (let dz = -SCAN; dz <= SCAN && !waterSpot; dz += STEP) {
-                const sy = r._voxelSurfaceY(dx, dz);
-                if (sy === null || !Number.isFinite(sy)) continue;
-                if (!r._isAboveWaterAt(dx, dz, 0.1)) waterSpot = { x: dx, z: dz };
+                // das Wasser, wie der Körper es trägt (Welle L: das Trink-Ziel liest `_nassAt` über `_koerperWasser`)
+                if (r._nassAt(dx, dz, 0.1)) waterSpot = { x: dx, z: dz };
             }
         }
         out.waterFound = waterSpot !== null;
