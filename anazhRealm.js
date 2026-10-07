@@ -89641,6 +89641,70 @@ class AnazhRealm {
         }
     }
 
+    // DIE VORTIEFE IN 16 BIT (0710-1 P2, Runde 2): der Resolve der zeitlichen Auflösung liest die Vortiefe nur gegen die
+    // Schwelle der Disokklusion (vendor/TRAANode.js: `depthThreshold = 0.0005`, `samplePreviousDepth` → `isDisocclusion`) —
+    // eine Stufe von depth16unorm (1/65535 ≈ 1,5·10⁻⁵) liegt 33-fach darunter. r184 kopierte die Szenen-Tiefe
+    // (depth24plus, 4 Byte) Byte für Byte in die Tiefe des Geschichts-Ziels, und eine Kopie verlangt dasselbe Format: 7,9 MB
+    // bei 1080p. Jetzt trägt die Vortiefe 16 bit (3,95 MB), und an der EINEN Stelle, an der der Knoten kopiert
+    // (`renderer.copyTextureToTexture(currentDepth, _historyRenderTarget.depthTexture)`), zeichnet ein Vollbild-Quad die
+    // Szenen-Tiefe als Fragment-Tiefe in das Geschichts-Ziel — Farbe ungeschrieben (die Geschichte bleibt, wie sie ist),
+    // Tiefe ohne Test (jedes Pixel), geladen Texel für Texel (`load`, kein Filter). Jeder andere Kopier-Ruf fährt r184.
+    // Das Geschichts-Ziel trägt seine Tiefe als Anhang (`depthBuffer`, sonst baut r184 keinen Tiefen-Anhang) — dauerhaft:
+    // r184 hält den Pass-Deskriptor je Ziel ohne den Schalter im Schlüssel, ein Zug mit umgeschaltetem Anhang fände einen
+    // Deskriptor ohne Tiefe (gate:ziel-zensus, Probe mit vorher geleertem Ziel: "setting depthLoadOp" auf undefined). Die
+    // Geschichte zeichnet sonst niemand. gate:vendor-anker pinnt die Kopier-Stelle des Knotens, gate:ziel-zensus (d) den Weg.
+    _traaVortiefe(traa) {
+        const rend = this.state.renderer;
+        const ziel = traa && traa._historyRenderTarget;
+        const T = THREE.TSL;
+        if (!ziel || !ziel.depthTexture || !rend || typeof rend.copyTextureToTexture !== "function" || !T) {
+            this.log(
+                "TRAA-VORTIEFE: Geschichts-Ziel oder Kopier-Weg fehlt (Vendor-Drift) — die Vortiefe bleibt 32 bit",
+                "ERROR"
+            );
+            return;
+        }
+        const tiefe = ziel.depthTexture;
+        tiefe.type = THREE.UnsignedShortType;
+        ziel.depthBuffer = true;
+        // der Platzhalter der Quelle (1×1, bis der erste Zug die Szenen-Tiefe einsetzt) trägt seinen Namen wie jede Textur
+        const platzhalter = new THREE.DepthTexture(1, 1);
+        platzhalter.name = "TRAA-Vortiefe:quelle";
+        const quelle = T.texture(platzhalter);
+        const stoff = new THREE.MeshBasicNodeMaterial();
+        stoff.name = "TRAA-Vortiefe";
+        stoff.colorWrite = false;
+        stoff.depthWrite = true;
+        stoff.depthTest = true;
+        stoff.depthFunc = THREE.AlwaysDepth;
+        stoff.depthNode = quelle.load(T.ivec2(T.screenCoordinate.xy)).r;
+        // Der Vollbild-Zug: eine eigene Szene (ihr Name nennt den Pass an der Pass-Uhr) mit einer 2×2-Fläche vor einer
+        // Orthogonal-Kamera — r184s QuadMesh lebt nur im three/webgpu-Bündel, nicht im THREE der Seite (three-bootstrap.js).
+        const szene = new THREE.Scene();
+        szene.name = "TRAA-Vortiefe";
+        const kamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+        const flaeche = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), stoff);
+        flaeche.frustumCulled = false;
+        flaeche.position.z = -0.5;
+        szene.add(flaeche);
+        const roh = rend.copyTextureToTexture;
+        rend.copyTextureToTexture = function (von, nach, ...rest) {
+            if (nach !== tiefe || !von || von.isDepthTexture !== true) return roh.call(this, von, nach, ...rest);
+            quelle.value = von;
+            const vorZiel = this.getRenderTarget();
+            const vorLeeren = this.autoClear;
+            this.autoClear = false;
+            try {
+                this.setRenderTarget(ziel);
+                this.render(szene, kamera);
+            } finally {
+                this.setRenderTarget(vorZiel);
+                this.autoClear = vorLeeren;
+            }
+            return undefined;
+        };
+    }
+
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
     // aus TSL-Primitiven selbst gebaut (kein Vendor-Addon). Lazy nach rendererReady; bei jedem Fehler
     // postProcessingFailed=true → der Loop rendert direkt renderer.render() (nie schwarzer Schirm).
@@ -89712,13 +89776,12 @@ class AnazhRealm {
             // Die Platzhalter-Tiefe des Knotens (1×1, bis die Geschichte ihre Tiefe trägt) hat weder Namen noch Ziel —
             // die Band-Linse nennt jedes Textur-Objekt beim Erzeuger (gate:vendor-anker pinnt die Vendor-Zeile).
             if (traa) traa._previousDepthNode.value.name = "TRAANode.vortiefe";
-            // DIE VORTIEFE DER GESCHICHTE: je Frame kopiert der Knoten die Szenen-Tiefe in die Tiefe seines Geschichts-Ziels
-            // (r184 `copyTextureToTexture(currentDepth, _historyRenderTarget.depthTexture)`, 7,9 MB bei 1080p), der Resolve
-            // des nächsten Frames liest sie als Vortiefe (`samplePreviousDepth` → Disokklusion: wo die reprojizierte Vortiefe
-            // vor der jetzigen liegt, fällt die Geschichte — sonst zieht jede freigelegte Kante einen Geist). Die Kopie bleibt;
-            // die Frame-Anatomie sah sie namenlos („post: depth → ?"), der Name ist der, den die Band-Linse ihr über das Ziel
-            // gibt (`<ziel>:tiefe`) — der VRAM-Schlüssel bleibt derselbe.
+            // DIE VORTIEFE DER GESCHICHTE: je Frame bringt der Knoten die Szenen-Tiefe in die Tiefe seines Geschichts-Ziels, der
+            // Resolve des nächsten Frames liest sie als Vortiefe (`samplePreviousDepth` → Disokklusion: wo die reprojizierte
+            // Vortiefe vor der jetzigen liegt, fällt die Geschichte — sonst zieht jede freigelegte Kante einen Geist). Sie trägt
+            // 16 bit (`_traaVortiefe`); der Name ist der, den die Band-Linse ihr über das Ziel gibt (`<ziel>:tiefe`).
             if (traa) traa._historyRenderTarget.depthTexture.name = "TRAANode.history:tiefe";
+            if (traa) this._traaVortiefe(traa);
             if (traa) sceneColor = traa.getTextureNode();
 
             const u = {

@@ -11,6 +11,8 @@
 //   (b) KARTE OHNE FARBE — eine Schatten-Bühne in der Welt (Richtungslicht, ein r184-Schatten-Knoten durch die Hülle
 //       `_kaskadenZiele`, wie jede Kaskade): der Schatten-Pass zeichnet ohne Farb-Anhang (die Farbe der Karte hat keine
 //       GPU-Textur), der Schatten fällt (unter der Kiste dunkler als daneben), keine GPU-Validierung meldet sich.
+//   (d) VORTIEFE — die Geschichts-Tiefe der zeitlichen Auflösung trägt 16 bit: ein Ziel wie der Knoten es baut durch
+//       `_traaVortiefe`, der Kopier-Ruf des Knotens zeichnet den Verlauf einer Ebene hinein, die Farbe der Geschichte bleibt.
 //   (c) SELBSTTEST IM FRAME — je Klasse ein eingeschmuggelter Täter nach jedem `_loopRender` (`__zielSchmuggel`): jeder
 //       fällt beim Namen rot, nach dem Abbau steht kein Name des Selbsttests mehr im Zensus.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil an gebauten Läufen — sauber grün, je Klasse ein
@@ -40,6 +42,16 @@ function urteil(z) {
         if (!(k.dunkler >= SCHATTEN_MIN))
             v.push(`KARTE: unter der Kiste ist es nur ${k.dunkler} dunkler als daneben (Soll ≥ ${SCHATTEN_MIN}) — der Schatten fällt nicht`);
     }
+    const vt = z.vortiefe || {};
+    if (!vt.gelaufen) v.push("VORTIEFE: die Probe lief nicht (die Wand ist blind für die 16-bit-Vortiefe)");
+    else {
+        if (!vt.typ || vt.format !== "depth16unorm") v.push(`VORTIEFE: die Geschichts-Tiefe trägt ${vt.format}, nicht depth16unorm`);
+        if (!(vt.oben > vt.mitte && vt.mitte > vt.unten && vt.unten > 0 && vt.oben < 0.9999))
+            v.push(`VORTIEFE: die Vortiefe trägt den Verlauf der Ebene nicht (oben ${vt.oben} · Mitte ${vt.mitte} · unten ${vt.unten})`);
+        const soll = [0.25, 0.5, 0.75];
+        if (!(vt.farbe && vt.farbe.every((x, i) => Math.abs(x - soll[i]) < 0.01)))
+            v.push(`VORTIEFE: die Farbe der Geschichte änderte sich (${JSON.stringify(vt.farbe)} statt ${JSON.stringify(soll)})`);
+    }
     for (const f of z.gpuFehler || []) v.push("GPU: " + f);
     for (const f of z.seitenFehler || []) v.push("SEITE: " + f);
     const s = z.selbst || [];
@@ -54,6 +66,7 @@ function selbsttest() {
     const gruen = {
         zensusRot: [],
         karte: { gelaufen: true, huelle: true, farbeGpu: false, farbAnhaenge: 0, schattenPaesse: 3, dunkler: 60 },
+        vortiefe: { gelaufen: true, typ: true, format: "depth16unorm", oben: 0.99, mitte: 0.98, unten: 0.95, farbe: [0.25, 0.5, 0.75] },
         gpuFehler: [],
         seitenFehler: [],
         selbst: [{ muss: "OHNE LESER", ok: true }],
@@ -72,6 +85,9 @@ function selbsttest() {
         { name: "Schatten fällt nicht", z: mit((z) => (z.karte.dunkler = 1)), muss: /der Schatten fällt nicht/ },
         { name: "Hülle fehlt", z: mit((z) => (z.karte.huelle = false)), muss: /trägt die Hülle nicht/ },
         { name: "Bühne blind", z: mit((z) => (z.karte = {})), muss: /lief nicht/ },
+        { name: "Vortiefe 32 bit", z: mit((z) => (z.vortiefe.format = "depth24plus")), muss: /trägt depth24plus/ },
+        { name: "Vortiefe leer", z: mit((z) => Object.assign(z.vortiefe, { oben: 1, mitte: 1, unten: 1 })), muss: /trägt den Verlauf der Ebene nicht/ },
+        { name: "Geschichte überschrieben", z: mit((z) => (z.vortiefe.farbe = [0, 0, 0])), muss: /Farbe der Geschichte änderte sich/ },
         { name: "GPU-Validierung", z: mit((z) => (z.gpuFehler = ["Attachment state mismatch"])), muss: /GPU: Attachment/ },
         { name: "Schmuggel blind", z: mit((z) => (z.selbst = [{ muss: "TEILBAR", ok: false }])), muss: /blind für TEILBAR/ },
         { name: "Schmuggel bleibt", z: mit((z) => (z.rest = ["zensus-selbsttest:bloom"])), muss: /noch im Zensus/ },
@@ -218,6 +234,80 @@ function karteOhneFarbe() {
     })();
 }
 
+// DIE VORTIEFE IN 16 BIT (Seite): eine schräge Ebene in ein Ziel mit depth24plus-Tiefe, ein Geschichts-Ziel wie der
+// TRAA-Knoten es baut (Farbe rgba16float + DepthTexture) durch `_traaVortiefe`, dessen Farbe bekannt ist; dann der
+// Kopier-Ruf des Knotens (`renderer.copyTextureToTexture(Tiefe, Geschichts-Tiefe)`). Gelesen: die Vortiefe (depth16unorm)
+// trägt den Verlauf der Ebene (oben fern, unten nah, nie die Leere 1,0), die Farbe der Geschichte ist unberührt.
+function vortiefeProbe() {
+    return (async () => {
+        const r = window.anazhRealm,
+            T = window.THREE;
+        const rend = r.state.renderer;
+        const be = rend.backend;
+        const dev = be.device;
+        const N = 128;
+        const quelle = new T.RenderTarget(N, N, { depthBuffer: true });
+        quelle.texture.name = "ziel-zensus:vortiefe-quelle";
+        quelle.depthTexture = new T.DepthTexture(N, N);
+        const szene = new T.Scene();
+        szene.name = "ziel-zensus:vortiefe-buehne";
+        const kam = new T.PerspectiveCamera(60, 1, 0.5, 400);
+        kam.position.set(0, 4, 6);
+        kam.lookAt(0, 0, 0);
+        kam.updateMatrixWorld(true);
+        const ebene = new T.Mesh(new T.PlaneGeometry(800, 800), new T.MeshBasicNodeMaterial({ color: 0x808080 }));
+        ebene.rotation.x = -Math.PI / 2;
+        szene.add(ebene);
+        const gesch = new T.RenderTarget(N, N, { depthBuffer: false, type: T.HalfFloatType, depthTexture: new T.DepthTexture() });
+        gesch.texture.name = "ziel-zensus:vortiefe-geschichte";
+        r._traaVortiefe({ _historyRenderTarget: gesch });
+        const aus = { gelaufen: false, typ: gesch.depthTexture.type === T.UnsignedShortType };
+        const vorFarbe = rend.getClearColor(new T.Color()),
+            vorAlpha = rend.getClearAlpha();
+        try {
+            rend.setRenderTarget(quelle);
+            rend.render(szene, kam);
+            rend.initRenderTarget(gesch);
+            rend.setRenderTarget(gesch);
+            rend.setClearColor(new T.Color(0.25, 0.5, 0.75), 1);
+            rend.clear(true, false, false);
+            rend.setRenderTarget(null);
+            rend.copyTextureToTexture(quelle.depthTexture, gesch.depthTexture);
+            await dev.queue.onSubmittedWorkDone();
+            const lies = async (tex, bpp) => {
+                const g = be.get(tex).texture;
+                const bpr = Math.ceil((N * bpp) / 256) * 256;
+                const buf = dev.createBuffer({ size: bpr * N, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+                const enc = dev.createCommandEncoder();
+                enc.copyTextureToBuffer({ texture: g }, { buffer: buf, bytesPerRow: bpr }, [N, N]);
+                dev.queue.submit([enc.finish()]);
+                await buf.mapAsync(GPUMapMode.READ);
+                const kopie = buf.getMappedRange().slice(0);
+                buf.unmap();
+                buf.destroy();
+                return { format: g.format, daten: kopie, bpr };
+            };
+            const t = await lies(gesch.depthTexture, 2);
+            const u16 = new Uint16Array(t.daten);
+            const bei = (y) => u16[(y * t.bpr) / 2 + N / 2] / 65535;
+            aus.format = t.format;
+            aus.oben = +bei(8).toFixed(4);
+            aus.mitte = +bei(N / 2).toFixed(4);
+            aus.unten = +bei(N - 8).toFixed(4);
+            const f = await lies(gesch.texture, 8);
+            const h16 = new Float16Array(f.daten);
+            aus.farbe = [0, 1, 2].map((c) => +h16[(N / 2) * (f.bpr / 2) + (N / 2) * 4 + c].toFixed(3));
+            aus.gelaufen = true;
+        } finally {
+            rend.setClearColor(vorFarbe, vorAlpha);
+            rend.setRenderTarget(null);
+            quelle.dispose();
+            gesch.dispose();
+        }
+        return aus;
+    })();
+}
+
 (async () => {
     console.log("=== ZIEL-ZENSUS — die Wand am echten Frame (WebGPU auf swiftshader) ===");
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
@@ -294,6 +384,9 @@ function karteOhneFarbe() {
         // (b) die Karte ohne Farbe
         out.karte = await page.evaluate(karteOhneFarbe);
         log(`Karte ohne Farbe: ${JSON.stringify(out.karte)}`);
+        // (d) die Vortiefe in 16 bit
+        out.vortiefe = await page.evaluate(vortiefeProbe);
+        log(`Vortiefe: ${JSON.stringify(out.vortiefe)}`);
         out.gpuFehler = await page.evaluate(() => window.__gpuFehlerZ.slice(0, 5));
     } catch (e) {
         out.abbruch = (e && e.message) || String(e);
@@ -309,6 +402,7 @@ function karteOhneFarbe() {
     }
     console.log(
         `\n✅ GRÜN — kein Ziel ohne Leser, keine Klasse fällt; die Schatten-Karte zeichnet ohne Farbe (${out.karte.schattenPaesse} Pässe, ` +
-            `0 Farb-Anhänge, Schatten ${out.karte.dunkler} dunkler); ${out.selbst.length} eingeschmuggelte Täter beim Namen und restlos fort.`
+            `0 Farb-Anhänge, Schatten ${out.karte.dunkler} dunkler); die Vortiefe trägt 16 bit (Verlauf ${out.vortiefe.oben} → ${out.vortiefe.unten}, ` +
+            `Geschichte unberührt); ${out.selbst.length} eingeschmuggelte Täter beim Namen und restlos fort.`
     );
 })();
