@@ -83,7 +83,8 @@ async function probefahrt(page, fr) {
     await warte(600);
     const hud = await fr.evaluate(() => {
         const h = document.getElementById("hud");
-        return !!h && h.style.display === "block";
+        // sichtbar = berechnet nicht „none" (die Garage darf den HUD als block oder flex zeigen)
+        return !!h && getComputedStyle(h).display !== "none";
     });
     await fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW" })));
     await warte(1600);
