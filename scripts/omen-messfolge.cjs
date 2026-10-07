@@ -7,8 +7,9 @@
 // Ordnung, prüft nach jedem Schritt jede Wache und schreibt EIN JSON je Boot — jeder Stand misst gleich.
 //
 //   DIE FOLGE: boot · dorf-aus (`window.__anazhAutoSettlement = false`, vor dem Umstellen) · fenster 1920 1080 · umstellen
-//   --ort wiese · buehne (einmal: Mittag · Sonne · Sommer, das Wetter gehalten) · lauf voll · lauf frei · gpu-bank · band ·
-//   profil — und stop.
+//   --ort wiese · buehne (einmal: Mittag · Sonne · Sommer, das Wetter gehalten) · lauf voll · lauf frei (je `lauf 30 --ein 20
+//   --ruhe 300 --tiere frei`) · gpu-bank (12 × 3 je Blick: Gier 0 und −0,88, danach zurück zur Gier des Orts) · band ·
+//   profil (12 s, Regler voll, Top 60) — und stop.
 //   DIE WACHEN nach jedem Schritt (`/wache` der Werkbank):
 //     WETTER   ab der Bühne: kein Schreiber dreht das Wetter (das Buch des Wetter-Spions, `wetterUrteil`), die Uhr des
 //              Auto-Zugs steht eingefroren, das Wort bleibt „sunny";
@@ -23,7 +24,7 @@
 //   die Zahlen stehen trotzdem im JSON, beim Namen markiert), 2 = Abbruch.
 //
 //   node scripts/omen-messfolge.cjs [--port 4490] [--seite http://localhost:4312] [--serie <name>] [--datei f.json]
-//                                   [--lauf-sek 20] [--ein 40] [--ruhe 300] [--profil-sek 12] [--proben 6]
+//                                   [--lauf-sek 30] [--ein 20] [--ruhe 300] [--profil-sek 12] [--proben 6]
 //   node scripts/omen-messfolge.cjs --selbsttest       (ohne Welt: jede Wache und die Folge-Regel fallen bei ihrem Täter rot)
 //
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
@@ -45,13 +46,26 @@ const opt = (k, d) => {
 };
 
 // DIE FOLGE — fest; die Ordnung ist das Gesetz der Messung.
-const FOLGE = ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "lauf-voll", "lauf-frei", "gpu-bank", "band", "profil"];
+const FOLGE = [
+    "boot",
+    "dorf-aus",
+    "fenster",
+    "umstellen",
+    "buehne",
+    "lauf-voll",
+    "lauf-frei",
+    "gpu-bank",
+    "band",
+    "profil",
+];
 const FENSTER = [1920, 1080];
 const ORT = "wiese";
 // die messenden Schritte (Ort und Fenster gelten vor und nach ihnen), die Leser der Pass-Stempel und die Pool-Füller
 const MESSEN = new Set(["lauf-voll", "lauf-frei", "gpu-bank", "band", "profil"]);
 const STEMPEL_LESER = new Set(["lauf-voll", "lauf-frei"]);
 const POOL_FUELLER = new Set(["gpu-bank", "band"]);
+// die Blicke der GPU-Bank (Gier, Bogenmaß): der Blick des Orts und der Schräg-Blick, in dem die ferne Kaskade mehr nimmt
+const BANK_GIER = [0, -0.88];
 
 // DIE FOLGE-REGEL (rein): die gefahrenen Schritte gegen das Gesetz der Messung — jeder Bruch beim Namen.
 function folgeUrteil(namen) {
@@ -71,7 +85,8 @@ function folgeUrteil(namen) {
     const erstesMessen = namen.findIndex((n) => MESSEN.has(n));
     if (erstesMessen >= 0) {
         for (const n of ["dorf-aus", "fenster", "umstellen", "buehne"])
-            if (pos(n) < 0 || pos(n) > erstesMessen) v.push(`FOLGE: „${n}" fehlt vor dem ersten Messen (${namen[erstesMessen]})`);
+            if (pos(n) < 0 || pos(n) > erstesMessen)
+                v.push(`FOLGE: „${n}" fehlt vor dem ersten Messen (${namen[erstesMessen]})`);
     }
     if (pos("dorf-aus") > pos("umstellen") && pos("umstellen") >= 0)
         v.push("FOLGE: der Dorf-Zug ruht erst nach dem Umstellen — der Ort stand mit laufendem Zug");
@@ -92,7 +107,8 @@ function wachenUrteil(name, vor, nach, ort, gehalten) {
             buch: nach.wetter.buch,
         });
         for (const t of w.taeter) v.push(`WETTER ${name}: ${t}`);
-        if (nach.wetter.wetter !== "sunny") v.push(`WETTER ${name}: das Wetter ist „${nach.wetter.wetter}", die Bühne hält „sunny"`);
+        if (nach.wetter.wetter !== "sunny")
+            v.push(`WETTER ${name}: das Wetter ist „${nach.wetter.wetter}", die Bühne hält „sunny"`);
     }
     const s0 = vor && vor.stempel,
         s1 = nach.stempel;
@@ -123,7 +139,10 @@ function wachenUrteil(name, vor, nach, ort, gehalten) {
             }
             for (const f of BAND.ortGestellt(ort, w.ort)) v.push(`ORT ${name} (${wann}): ${f}`);
             const d = Math.hypot(w.ort.spieler[0] - ort.spieler[0], w.ort.spieler[1] - ort.spieler[1]);
-            if (!(d <= 8)) v.push(`ORT ${name} (${wann}): der Spieler steht ${d.toFixed(1)} m vom Messort ${ort.spieler.join(" ")}`);
+            if (!(d <= 8))
+                v.push(
+                    `ORT ${name} (${wann}): der Spieler steht ${d.toFixed(1)} m vom Messort ${ort.spieler.join(" ")}`
+                );
             const f = w.fenster && w.fenster.innen;
             if (!f || f[0] !== FENSTER[0] || f[1] !== FENSTER[1])
                 v.push(`FENSTER ${name} (${wann}): ${f ? f.join(" × ") : "?"} statt ${FENSTER.join(" × ")}`);
@@ -185,8 +204,8 @@ async function folge() {
     const SEITE = String(opt("--seite", process.env.WERKBANK_SEITE || "http://localhost:4312"));
     const SERIE = opt("--serie", "");
     const P = {
-        laufSek: Number(opt("--lauf-sek", 20)),
-        ein: Number(opt("--ein", 40)),
+        laufSek: Number(opt("--lauf-sek", 30)),
+        ein: Number(opt("--ein", 20)),
         ruhe: Number(opt("--ruhe", 300)),
         profilSek: Number(opt("--profil-sek", 12)),
         proben: Number(opt("--proben", 6)),
@@ -203,14 +222,24 @@ async function folge() {
     const datei = path.resolve(
         opt(
             "--datei",
-            path.join(root, "artifacts", "omen", `messfolge-${(sha || "ohne-git").slice(0, 8)}-${start.toISOString().replace(/[:.]/g, "-")}.json`)
+            path.join(
+                root,
+                "artifacts",
+                "omen",
+                `messfolge-${(sha || "ohne-git").slice(0, 8)}-${start.toISOString().replace(/[:.]/g, "-")}.json`
+            )
         )
     );
     fs.mkdirSync(path.dirname(datei), { recursive: true });
     const { ort } = BAND.ladeSpec(ORT);
     const aus = {
         folge: FOLGE,
-        stand: { sha, zweig: git("rev-parse --abbrev-ref HEAD"), schmutzig: !!git("status --porcelain"), version: null },
+        stand: {
+            sha,
+            zweig: git("rev-parse --abbrev-ref HEAD"),
+            schmutzig: !!git("status --porcelain"),
+            version: null,
+        },
         start: start.toISOString(),
         rechner: { name: os.hostname(), cpu: (os.cpus()[0] || {}).model || null },
         parameter: Object.assign({ port: PORT, seite: SEITE, serie: SERIE || null, ort: ORT, fenster: FENSTER }, P),
@@ -255,7 +284,8 @@ async function folge() {
         const nach = await R("/wache", { seit: vor && vor.wetter ? vor.wetter.seq : 0 });
         e.wache = nach;
         e.befunde = wachenUrteil(name, vor, nach, ort, gehalten && name !== "buehne");
-        if (name === "buehne" && nach.wetter.wetter !== "sunny") e.befunde.push(`WETTER buehne: „${nach.wetter.wetter}" nach der Bühne`);
+        if (name === "buehne" && nach.wetter.wetter !== "sunny")
+            e.befunde.push(`WETTER buehne: „${nach.wetter.wetter}" nach der Bühne`);
         if (abbruchVon(e.ergebnis)) e.befunde.push(`SCHRITT ${name}: ${abbruchVon(e.ergebnis)}`);
         aus.befunde.push(...e.befunde);
         for (const b of e.befunde) console.log(`  ROT ${b}`);
@@ -277,8 +307,32 @@ async function folge() {
         const lauf = (regler) => R("/lauf", { sek: P.laufSek, ein: P.ein, ruhe: P.ruhe, regler, tiere: "frei" });
         aus.kurz.laufVoll = laufKurz(await schritt("lauf-voll", () => lauf("voll")));
         aus.kurz.laufFrei = laufKurz(await schritt("lauf-frei", () => lauf("frei")));
-        const bank = await schritt("gpu-bank", () => R("/gpu-bank", { n: 12, runden: 3 }));
-        aus.kurz.gpuBank = bank ? { gpuJeFrameMs: bank.gpuJeFrameMs, cpuJeFrameMs: bank.cpuJeFrameMs } : null;
+        // DIE BANK je Blick (Gier 0 und −0,88: der ferne Schatten nimmt je Blick andere Gruppen mit), danach steht der Blick
+        // wieder auf der Gier des Orts — die Ort-Wache nach dem Schritt prüft es
+        const blick = (g) =>
+            R("/eval", {
+                code:
+                    `r.state.yaw = ${g}; r.state.pitch = 0;` +
+                    "for (let i = 0; i < 20; i++) { window.__wetterHalten(); if (window.__ortSchritt) window.__ortSchritt(); " +
+                    "r._gameLoopTick(performance.now()); await new Promise((s) => setTimeout(s, 16)); } " +
+                    "r.state.renderer.setAnimationLoop(null); return r.state.yaw;",
+            });
+        const bank = await schritt("gpu-bank", async () => {
+            const je = {};
+            for (const g of BANK_GIER) {
+                await blick(g);
+                je[String(g)] = await R("/gpu-bank", { n: 12, runden: 3 });
+            }
+            await blick(BAND.ortGier(ort));
+            return je;
+        });
+        aus.kurz.gpuBank = {};
+        for (const g of BANK_GIER) {
+            const b = bank && bank[String(g)];
+            if (abbruchVon(b)) aus.befunde.push(`SCHRITT gpu-bank (Gier ${g}): ${abbruchVon(b)}`);
+            aus.kurz.gpuBank[String(g)] =
+                b && !abbruchVon(b) ? { gpuJeFrameMs: b.gpuJeFrameMs, cpuJeFrameMs: b.cpuJeFrameMs } : b;
+        }
         const bandDatei = path.join(os.tmpdir(), `messfolge-band-${PORT}-${Date.now()}.json`);
         const band = await schritt("band", () => R("/band", { ort: ORT, datei: bandDatei, proben: P.proben }));
         // die Band-Messung reist im EINEN JSON mit (die Werkbank schrieb sie in eine Zwischen-Datei)
@@ -289,11 +343,14 @@ async function folge() {
             fs.rmSync(bandDatei, { force: true });
             schreibe();
         }
-        aus.kurz.band = band ? { urteil: band.urteil, linse: band.linse, stempel: band.stempel && band.stempel.urteil } : null;
+        aus.kurz.band = band
+            ? { urteil: band.urteil, linse: band.linse, stempel: band.stempel && band.stempel.urteil }
+            : null;
         const prof = await schritt("profil", () =>
-            R("/profil", { sek: P.profilSek, regler: "voll", tiere: "frei", top: 40 })
+            R("/profil", { sek: P.profilSek, regler: "voll", tiere: "frei", top: 60 })
         );
-        aus.kurz.profil = prof && !abbruchVon(prof) ? { frames: prof.frames, fps: prof.fps, selbst: prof.selbst.slice(0, 12) } : null;
+        aus.kurz.profil =
+            prof && !abbruchVon(prof) ? { frames: prof.frames, fps: prof.fps, selbst: prof.selbst.slice(0, 12) } : null;
         if (prof && prof.wetterHalt && prof.wetterHalt.urteil === "ROT")
             aus.befunde.push(...prof.wetterHalt.taeter.map((t) => `WETTER profil (Lauf): ${t}`));
     } catch (e) {
@@ -301,7 +358,8 @@ async function folge() {
         aus.abbruch = abbruch;
     } finally {
         aus.befunde.push(...folgeUrteil(gefahren).filter(() => !abbruch));
-        if (!abbruch && gefahren.length !== FOLGE.length) aus.befunde.push(`FOLGE: ${gefahren.length} von ${FOLGE.length} Schritten gefahren`);
+        if (!abbruch && gefahren.length !== FOLGE.length)
+            aus.befunde.push(`FOLGE: ${gefahren.length} von ${FOLGE.length} Schritten gefahren`);
         aus.ende = new Date().toISOString();
         aus.urteil = abbruch ? "ABBRUCH" : aus.befunde.length ? "ROT" : "GRUEN";
         try {
@@ -324,8 +382,11 @@ async function folge() {
                     `${l.cpuTaktMs.p50}/${l.cpuTaktMs.p95} · render-EWMA ${l.renderEwmaMs}`
             );
     }
-    if (aus.kurz.gpuBank) console.log(`  gpu-bank: ${aus.kurz.gpuBank.gpuJeFrameMs} ms je Frame`);
-    if (aus.kurz.band) console.log(`  band: ${aus.kurz.band.urteil} (Linse ${aus.kurz.band.linse}, Stempel ${aus.kurz.band.stempel})`);
+    for (const [g, b] of Object.entries(aus.kurz.gpuBank || {}))
+        if (b && b.gpuJeFrameMs != null)
+            console.log(`  gpu-bank Gier ${g}: ${b.gpuJeFrameMs} ms je Frame (CPU ${b.cpuJeFrameMs})`);
+    if (aus.kurz.band)
+        console.log(`  band: ${aus.kurz.band.urteil} (Linse ${aus.kurz.band.linse}, Stempel ${aus.kurz.band.stempel})`);
     process.exit(abbruch ? 2 : aus.befunde.length ? 1 : 0);
 }
 
@@ -346,13 +407,23 @@ function selbsttest() {
     pruefe("ohne Bühne", folgeUrteil(FOLGE.filter((n) => n !== "buehne")), /„buehne" fehlt vor dem ersten Messen/);
     const spaet = FOLGE.filter((n) => n !== "dorf-aus");
     spaet.splice(spaet.indexOf("umstellen") + 1, 0, "dorf-aus");
-    pruefe("Dorf-Zug erst nach dem Umstellen", folgeUrteil(spaet), /Dorf-Zug ruht erst nach dem Umstellen|„dorf-aus" nach/);
+    pruefe(
+        "Dorf-Zug erst nach dem Umstellen",
+        folgeUrteil(spaet),
+        /Dorf-Zug ruht erst nach dem Umstellen|„dorf-aus" nach/
+    );
     const wache = (o) =>
         Object.assign(
             {
                 wetter: { seq: 0, wetter: "sunny", uhr: -1e9, fest: true, buch: [] },
                 stempel: { ueberlauf: 0, spitze: 40, pool: { stand: 0, max: 2048 }, taeter: {} },
-                ort: { ort: "wiese", dorfZug: false, ortTakt: [], gier: BAND.ortGier(ort), spieler: ort.spieler.slice() },
+                ort: {
+                    ort: "wiese",
+                    dorfZug: false,
+                    ortTakt: [],
+                    gier: BAND.ortGier(ort),
+                    spieler: ort.spieler.slice(),
+                },
                 fenster: { innen: FENSTER.slice(), puffer: FENSTER.slice() },
             },
             o
@@ -375,15 +446,31 @@ function selbsttest() {
             ],
         },
     });
-    pruefe("Wetter dreht (Emotion)", wachenUrteil("lauf-voll", wache(), regen, ort, true), /WETTER lauf-voll: sunny → rainy durch emotion:sorrow/);
+    pruefe(
+        "Wetter dreht (Emotion)",
+        wachenUrteil("lauf-voll", wache(), regen, ort, true),
+        /WETTER lauf-voll: sunny → rainy durch emotion:sorrow/
+    );
     pruefe(
         "Wetter taut",
-        wachenUrteil("lauf-frei", wache(), wache({ wetter: { seq: 0, wetter: "sunny", uhr: 17.6, fest: false, buch: [] } }), ort, true),
+        wachenUrteil(
+            "lauf-frei",
+            wache(),
+            wache({ wetter: { seq: 0, wetter: "sunny", uhr: 17.6, fest: false, buch: [] } }),
+            ort,
+            true
+        ),
         /taut/
     );
     pruefe(
         "Pool läuft über",
-        wachenUrteil("band", wache(), wache({ stempel: { ueberlauf: 927, pool: { stand: 2048, max: 2048 }, taeter: { "PMREM.cubeUv": 806 } } }), ort, true),
+        wachenUrteil(
+            "band",
+            wache(),
+            wache({ stempel: { ueberlauf: 927, pool: { stand: 2048, max: 2048 }, taeter: { "PMREM.cubeUv": 806 } } }),
+            ort,
+            true
+        ),
         /STEMPEL band: 927 verweigerte Abfragen .*PMREM\.cubeUv 806/
     );
     pruefe(
@@ -393,7 +480,13 @@ function selbsttest() {
     );
     pruefe(
         "Spieler gewandert",
-        wachenUrteil("profil", wache({ ort: Object.assign({}, wache().ort, { spieler: [-860, -850] }) }), wache(), ort, true),
+        wachenUrteil(
+            "profil",
+            wache({ ort: Object.assign({}, wache().ort, { spieler: [-860, -850] }) }),
+            wache(),
+            ort,
+            true
+        ),
         /der Spieler steht 40\.0 m vom Messort/
     );
     pruefe(
