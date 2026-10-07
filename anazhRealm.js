@@ -33519,6 +33519,13 @@ class AnazhRealm {
         const gewollt = new Set(wunsch.map((w) => w.key));
         for (const key of [...nw.kacheln.keys()]) if (!gewollt.has(key)) this._nahWieseKachelFaellt(key);
         wunsch.sort((a, b) => a.d - b.d);
+        // Buch und Render-Config docken in EINER Nachricht (wie `_nahStreuArten`): solange beide fehlen, wartet die Wiese —
+        // ein Budget vor dem Buch ist kein Bruch, sondern noch nicht da. Bis Welle K las sie das Budget im ersten Takt nach
+        // dem Boot und warf KERN-PFLICHT, bis das Buch kam (gate:post-kette sah es, sobald der Boot schneller zeichnete).
+        if (!AnazhRealm._studioRenderConfig || !this._foundry || !this._foundry.recipes) {
+            nw.offen = wunsch.length || 1;
+            return 0;
+        }
         nw.offen = 0;
         // Die zwei Studio-Vorlagen je Stufe (Foundry-Cache; eine Anfrage, falls noch kalt) — einmal je Takt. Der Wurf
         // ist das Studio-Budget (B2c grass[stufe].schatten): die Nah-Wiese legt ihren Satz am AUGE — ein Werfer bräuchte
