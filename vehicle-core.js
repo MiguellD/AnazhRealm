@@ -2121,7 +2121,7 @@
         function seatRow(cx) {
             for (const z of [-0.4, 0.4]) {
                 g.add(B(cx, ySill + 0.11, z, 0.27, 0.055, 0.24, M.seat)); // Sitzfläche
-                g.add(B(cx - 0.28, ySill + 0.37, z, 0.055, 0.26, 0.23, M.seat, 0.13)); // Lehne (lehnt nach hinten)
+                g.add(B(cx - 0.28, ySill + 0.37, z, 0.055, 0.26, 0.23, M.seat, FAHR.sitzLehneRad)); // Lehne (lehnt nach hinten)
                 g.add(B(cx - 0.35, ySill + 0.62, z, 0.07, 0.075, 0.11, M.seat));
             }
         } // Kopfstütze
@@ -2212,6 +2212,16 @@
         //    Dichte der geschlossenen Huelle (Blech, Motor, Kabine voll Luft): ein GT mit 9,6 m³ wiegt 1,4 t. Der Wirt
         //    liest sie fuer jeden Stoss (vorher hielt er die Zahl selbst: STOSS.dichteWagen — eine Studio-Groesse im Wirt). ──
         masseDichte: 150,
+        // ── 0710-4 Klasse 4 (rein additive DATEN-Zeilen — Praezedenz: masseDichte) — DER REITER IM WAGEN: die Lehne des
+        //    Fahrersitzes (rad nach hinten; der Bau der Sitzreihe liest sie, der Wirt neigt den Rumpf des Reiters mindestens
+        //    so weit), der Kopf-Freiraum unter der Dachlinie (m: Dachhaut + Luft ueber dem Scheitel) und die steilste
+        //    Lehne (rad), bis zu der der Wirt den Rumpf neigt, damit der Scheitel unter der Dachlinie bleibt. 1,15 traegt
+        //    den Menschen des Koerper-Kerns in jede Gestalt dieses Buchs: die flachen Wagen fordern sie (GT 61°, Supersport
+        //    64° — ihre Tiefe Bauch→Dachlinie ist 0,89 / 0,855 m, der sitzende Mensch braucht ~1,1 m; die Wagen-Tiefe ist
+        //    ein Posten der Studio-Welle S3). ──
+        sitzLehneRad: 0.13,
+        kopfFreiraumM: 0.05,
+        sitzLehneMaxRad: 1.15,
         // ── FAHR-GEFUEHL (rein additive DATEN-Zeile — Praezedenz: hostEmergent) —
         // DIE LENK-/DRIFT-GESETZE der Probefahrt fuer den Welt-Ritt: sfK ist die
         // selbstzentrierende Lenkung des Labs (sf = 1/(1 + v·sfK), updateVehicle

@@ -467,9 +467,11 @@ const STATION = {
     wagenFahrt: 0.2, // Anteil der Fahrt, den der stoßende Wagen nach dem Stoß mit einem gleich schweren behält
     baerWegM: 0.5, // m: so weit stößt der Wagen den Bären mindestens
     baerFahrt: 0.5, // Anteil der Fahrt, den der Wagen nach dem Stoß mit dem leichteren Bären behält
-    spielerAbprall: 0.25, // Anteil der Fahrt in den Wagen, den der Spieler nach dem Kontakt höchstens behält (0710-4)
     wagenHaltM: 0.05, // m: so weit rutscht ein gebremster GT höchstens, wenn ein Mensch gegen ihn läuft
     lockstepM: 1e-6, // m: so weit dürfen Wagen und Bär nach 200 Sim-Schritten je nach Bildrate abweichen (0710-5)
+    sitzM: 0.03, // m: so weit dürfen die Oberschenkel über oder in der Sitzfläche liegen (0710-4 Klasse 4)
+    ankerM: 0.05, // m: so weit darf das Hüftgelenk neben dem Sitz-Anker stehen
+    blickGrad: 5, // °: so weit darf der sitzende Leib neben die Fahrt schauen
     spielerDv: 0.3, // m/s: so viel bekommt der Spieler mindestens vom rutschenden GT
     spielerTiefM: 0.12, // m: höchstens EIN Frame der Anfahrt (zwei Sim-Schritte bei 3,5 m/s) zwischen Kapsel und Blocker-Box — die
     // Lage des Spielers setzt sein Sim-Schritt (der Stoß trägt ihn im nächsten fort), die Blocker-Boxen des rutschenden Wagens
@@ -616,9 +618,13 @@ function stationVerdict(s) {
             out.push(
                 `spieler-wagen: der Spieler erreicht den GT nicht im Lauf (vakuös, ${(sw.a.vorKontakt || 0).toFixed(2)} m/s)`
             );
-        else if (!(sw.a.nachKontakt <= STATION.spielerAbprall * sw.a.vorKontakt))
+        else if (!(sw.a.paare >= 1))
             out.push(
-                `spieler-wagen: der Spieler läuft gegen den GT und behält seine Fahrt (${sw.a.vorKontakt.toFixed(2)} → ${sw.a.nachKontakt.toFixed(2)} m/s) — kein Impuls`
+                `spieler-wagen: der Spieler läuft gegen den GT (${sw.a.vorKontakt.toFixed(2)} m/s) und kein Stoß fällt — kein Impuls`
+            );
+        else if (!(sw.a.prallNach <= 0))
+            out.push(
+                `spieler-wagen: nach dem Stoß läuft der Spieler noch mit ${(sw.a.prallNach * 100).toFixed(0)} % seiner Fahrt in den Wagen — er prallt nicht ab`
             );
         if (!(sw.a.wagenWeg <= STATION.wagenHaltM))
             out.push(
@@ -633,6 +639,35 @@ function stationVerdict(s) {
         if (!(sw.b.minAbstand >= -STATION.spielerTiefM))
             out.push(`wagen-spieler: der GT schiebt sich ${(-sw.b.minAbstand).toFixed(2)} m in den Spieler`);
     }
+    // L9 DER REITER IM WAGEN (0710-4 Klasse 4)
+    const rw = s.reiter;
+    if (!rw || !rw.length) out.push("reiter keine Probe");
+    else
+        for (const q of rw) {
+            if (q.fehler || q.sitz === null) {
+                out.push(`reiter ${q.typ}: ${q.fehler || "kein Sitz-Anker"}`);
+                continue;
+            }
+            if (q.dach !== null && !(q.oben <= q.dach))
+                out.push(`reiter ${q.typ}: die Oberkante steht ${(q.oben - q.dach).toFixed(3)} m über der Dachlinie`);
+            if (!(Math.abs(q.schenkel - q.sitz) <= STATION.sitzM))
+                out.push(
+                    `reiter ${q.typ}: die Oberschenkel liegen ${Math.abs(q.schenkel - q.sitz).toFixed(3)} m ${q.schenkel > q.sitz ? "über" : "unter"} der Sitzfläche`
+                );
+            if (!(Math.hypot(q.ankerL, q.ankerQ) <= STATION.ankerM))
+                out.push(
+                    `reiter ${q.typ}: das Hüftgelenk steht ${q.ankerL.toFixed(2)} m längs / ${q.ankerQ.toFixed(2)} m quer neben dem Sitz-Anker`
+                );
+            if (!(q.blickGrad <= STATION.blickGrad))
+                out.push(
+                    `reiter ${q.typ}: der Leib schaut ${q.blickGrad.toFixed(0)}° neben die Fahrt (er folgt der Maus)`
+                );
+        }
+    if (s.reiterStand && !(s.reiterStand.abw <= 1e-6))
+        // die Gier des Beckens setzt der Gang selbst
+        out.push(
+            `reiter: nach dem Absteigen steht der Wurzel-Knochen ${s.reiterStand.abw.toFixed(3)} m neben seinem Stand (Gier ${(s.reiterStand.gier || 0).toFixed(3)})`
+        );
     // L7/L8 DER STOSS IM SIM-SCHRITT (0710-5)
     const lw = s.leibWand;
     if (!lw) out.push("leib-wand keine Probe");
@@ -1857,7 +1892,13 @@ async function probeLeben(expected) {
                 ereignisse: 0,
                 ruck: 0,
                 ohneAnnaeherung: 0,
+                ohneWer: {}, // der Partner je Stoß ohne Annäherung
+                erster: null, // der erste Kontakt: wer, unter welchem Winkel, wie weit vor dem Ziel
+                gasseTiere: 0, // die meisten Tiere zugleich in der Gasse (3 m quer, −3…12 m längs)
+                gasseArten: [],
             };
+            let schrittEv = []; // die Stoß-Partner dieses Sim-Schritts
+            const nenne = (w) => schrittEv.push(w);
             // DIE ANNÄHERUNG je Stoß des eigenen Wagens: die Fahrt in die Berührung (vor dem Löser) gegen die Geschwindigkeit
             // des Gegners längs derselben Normalen (Leib: Steuer-Schritt + getragener Stoß; Wagen: sein Fahr-Zustand).
             let vEin = null;
@@ -1871,8 +1912,11 @@ async function probeLeben(expected) {
                     vEin = alt;
                 }
             };
-            const annaeherung = (gx, gz, nx, nz) => {
-                if (vEin && !(vEin.x * nx + vEin.z * nz > gx * nx + gz * nz + 1e-6)) m.ohneAnnaeherung++;
+            const annaeherung = (gx, gz, nx, nz, wer) => {
+                if (vEin && !(vEin.x * nx + vEin.z * nz > gx * nx + gz * nz + 1e-6)) {
+                    m.ohneAnnaeherung++;
+                    m.ohneWer[wer] = (m.ohneWer[wer] || 0) + 1;
+                }
             };
             const KSroh = r._kreaturStoss;
             r._kreaturStoss = function (c, nx, nz, dv) {
@@ -1880,11 +1924,14 @@ async function probeLeben(expected) {
                 const sw = ud._steuer;
                 const sv = ud._stossV;
                 const v = sw && Number.isFinite(sw.v) ? sw.v : 0;
+                const wer = "Tier " + (ud.soul || c.name || "?");
+                if (vEin) nenne(wer);
                 annaeherung(
                     (v ? Math.sin(sw.gier) * v : 0) + (sv ? sv.x : 0),
                     (v ? Math.cos(sw.gier) * v : 0) + (sv ? sv.z : 0),
                     nx,
-                    nz
+                    nz,
+                    wer
                 );
                 return KSroh.call(this, c, nx, nz, dv);
             };
@@ -1893,12 +1940,15 @@ async function probeLeben(expected) {
                 const d = Math.hypot(dvx, dvz);
                 const f = e._fahr;
                 const fahrt = f && Number.isFinite(f.vlong) && Number.isFinite(f.yaw);
+                const wer = "Wagen " + (e.type || "?") + (e === gS ? " (der eigene)" : "");
+                if (vEin) nenne(wer);
                 if (d > 0)
                     annaeherung(
                         fahrt ? f.vlong * Math.cos(f.yaw) - f.vlat * Math.sin(f.yaw) : 0,
                         fahrt ? -f.vlong * Math.sin(f.yaw) - f.vlat * Math.cos(f.yaw) : 0,
                         dvx / d,
-                        dvz / d
+                        dvz / d,
+                        wer
                     );
                 return WSroh.call(this, e, G, dvx, dvz);
             };
@@ -1906,12 +1956,14 @@ async function probeLeben(expected) {
             if (typeof evRoh === "function")
                 r._stossEreignis = function (...a) {
                     m.ereignisse++;
+                    nenne(`Ereignis Δv ${Number.isFinite(a[1]) ? a[1].toFixed(2) : "?"}`);
                     return evRoh.apply(this, a);
                 };
             st._landImpactPending = 0;
             const PF = r._stepFixedSim;
             let vPrev = 0;
             r._stepFixedSim = function (simTime, dt) {
+                schrittEv = [];
                 PF.call(this, simTime, dt);
                 const v = st.playerVel.x() * ux + st.playerVel.z() * uz;
                 m.ruck = Math.max(m.ruck, st._landImpactPending || 0);
@@ -1920,7 +1972,34 @@ async function probeLeben(expected) {
                     m.vVor = vPrev;
                     m.vNach = v;
                     m.vMinNach = v;
+                    // wer, unter welchem Winkel (Fahrt gegen die Richtung zum Ziel), wie weit vor dem Ziel (längs der Gasse)
+                    const pz = h.lage(ziel);
+                    const wx = pz.x - gS.position.x;
+                    const wz = pz.z - gS.position.z;
+                    const vx2 = st.playerVel.x();
+                    const vz2 = st.playerVel.z();
+                    const cw = (vPrev * (wx * ux + wz * uz)) / Math.max(1e-9, Math.hypot(wx, wz) * Math.abs(vPrev));
+                    m.erster = {
+                        mit: schrittEv.length ? schrittEv.join(" + ") : "der Löser ohne Stoß",
+                        winkel: +((Math.acos(Math.max(-1, Math.min(1, cw))) * 180) / Math.PI).toFixed(1),
+                        abstand: +(wx * ux + wz * uz).toFixed(2),
+                        quer: +Math.abs(wx * uz - wz * ux).toFixed(2),
+                        vQuer: +Math.abs(vx2 * uz - vz2 * ux).toFixed(2),
+                    };
                 } else if (m.kontakt >= 0 && m.schritte - m.kontakt <= 8) m.vMinNach = Math.min(m.vMinNach, v);
+                // die Gasse: Tiere, die während der Probe hineinkommen
+                let n = 0;
+                for (const cr of st.creatures || []) {
+                    if (!cr || !cr.position) continue;
+                    const dx = cr.position.x - gasse.x;
+                    const dz = cr.position.z - gasse.z;
+                    const l = dx * ux + dz * uz;
+                    if (l < -3 || l > 12 || Math.abs(dx * uz - dz * ux) > 3) continue;
+                    n++;
+                    const art = (cr.userData && cr.userData.soul) || "?";
+                    if (m.gasseArten.indexOf(art) < 0) m.gasseArten.push(art);
+                }
+                m.gasseTiere = Math.max(m.gasseTiere, n);
                 vPrev = v;
                 m.schritte++;
             };
@@ -2050,12 +2129,51 @@ async function probeLeben(expected) {
                     st._fieldVy = 0;
                     st.yaw = gasse.fahrt;
                     const p0 = { x: e.position.x, z: e.position.z };
-                    const m = { minAbstand: Infinity, wagenWeg: 0, kontakt: -1, vorKontakt: 0, nachKontakt: Infinity };
+                    const m = {
+                        minAbstand: Infinity,
+                        wagenWeg: 0,
+                        kontakt: -1,
+                        vorKontakt: 0,
+                        nachKontakt: Infinity,
+                        aufstieg: 0, // wie hoch der Fuß nach dem Kontakt über dem Boden stand (der Spieler stieg auf den Wagen)
+                        schub: 0, // in wie vielen Schritten der Wagen den Spieler aus seiner Hülle schob
+                        paare: 0, // Stöße Wagen → Spieler mit Fahrt in den Wagen
+                        prallNach: -Infinity, // der größte Rest-Anteil der Fahrt in den Wagen (relativ) NACH dem Stoß (≤ 0: er prallt ab)
+                    };
+                    const SProh = r._stossPaar;
+                    r._stossPaar = function (qa, qb, nx, nz) {
+                        if (qb !== st.playerMesh) return SProh.call(this, qa, qb, nx, nz);
+                        // die Fahrt des Spielers in den Wagen RELATIV zum Wagen (n zeigt vom Wagen zum Spieler; der Wagen mit
+                        // seiner echten Geschwindigkeit vor und nach dem Stoß — die Handbremse hält ihn)
+                        const rel = () => {
+                            const w = r._fahrWagenGeschw(qa);
+                            return -((st.playerVel.x() - (w ? w.x : 0)) * nx + (st.playerVel.z() - (w ? w.z : 0)) * nz);
+                        };
+                        const vor = rel();
+                        const J = SProh.call(this, qa, qb, nx, nz);
+                        const nach = rel();
+                        if (vor > 0.05) {
+                            m.paare++;
+                            m.prallNach = Math.max(m.prallNach, nach / vor);
+                        }
+                        return J;
+                    };
+                    const SQroh = r._stepCharacterStructures;
+                    r._stepCharacterStructures = function (pos, feetY, headY, radius, huelle, quellen) {
+                        const n0 = quellen ? quellen.length : 0;
+                        const t = SQroh.call(this, pos, feetY, headY, radius, huelle, quellen);
+                        if (!huelle && quellen && quellen.length > n0 && m.kontakt >= 0) m.schub++;
+                        return t;
+                    };
                     tasten(true);
                     let vorher = 0;
                     for (let i = 0; i < 240; i++) {
                         frame(i);
                         const ab = kapselAbstand(e);
+                        if (m.kontakt >= 0 && i - m.kontakt <= 30) {
+                            const pmA = st.playerMesh.position;
+                            m.aufstieg = Math.max(m.aufstieg, pmA.y - 0.5 - hh(pmA.x, pmA.z)); // Fuß = Ursprung − 0,5
+                        }
                         m.minAbstand = Math.min(m.minAbstand, ab);
                         const vU = st.playerVel.x() * ux + st.playerVel.z() * uz; // die Fahrt des Spielers in den Wagen
                         if (m.kontakt < 0 && ab <= 0.02) {
@@ -2066,6 +2184,8 @@ async function probeLeben(expected) {
                         vorher = vU;
                     }
                     tasten(false);
+                    delete r._stepCharacterStructures;
+                    delete r._stossPaar;
                     for (let i = 0; i < 60; i++) frame(240 + i);
                     m.wagenWeg = Math.hypot(e.position.x - p0.x, e.position.z - p0.z);
                     r.removeArchitecture(e);
@@ -2280,6 +2400,110 @@ async function probeLeben(expected) {
                 A._steuerGesetz = steuerRoh;
             }
         }
+        // L9 DER REITER IM WAGEN (0710-4 Klasse 4): je Wagen-Art und am Karren (Teile-Werk) aufsitzen, der Spieler schaut
+        // quer zur Fahrt (die Maus ist nicht der Wagen), einschwingen — dann die HAUT des Reiters: jede Ecke jedes sichtbaren
+        // Meshes der Nah-Gestalt über ihre Knochen. Gemessen über der Rad-Ebene (Ursprung − 0,5): die Oberkante gegen die
+        // Dachlinie des Kerns (huelle.yRoof), die Unterseite der Oberschenkel gegen die Sitzfläche (der Sitz-Anker), das
+        // Hüftgelenk (Mitte beider) gegen den Anker längs/quer im Rahmen des Wagens, der Blick des Leibs gegen die Fahrt;
+        // nach dem Absteigen steht die Hüfte, wo sie vorher stand.
+        if (start) {
+            const T = window.THREE;
+            const V = new T.Vector3();
+            const H1 = new T.Vector3();
+            const H2 = new T.Vector3();
+            const pm = st.playerMesh;
+            const rigR = () => pm.userData && pm.userData.rig;
+            const huefteRel = () => {
+                const rg = rigR();
+                pm.updateMatrixWorld(true);
+                rg.legL.hip.getWorldPosition(H1);
+                rg.legR.hip.getWorldPosition(H2);
+                return { x: (H1.x + H2.x) / 2, y: (H1.y + H2.y) / 2, z: (H1.z + H2.z) / 2 };
+            };
+            if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
+            for (let i = 0; i < 6; i++) frame(i);
+            const wurzel0 = rigR().hips.position.clone(); // der Wurzel-Knochen vor dem ersten Aufsitzen
+            const reiter = [];
+            const typen = Object.keys(st.blueprints)
+                .filter((n) => /^fahrzeug_/.test(n))
+                .sort();
+            for (const typ of typen) {
+                const e = await setzen(typ, start.x, start.z, Math.PI / 2);
+                if (!e) {
+                    reiter.push({ typ, fehler: "kein Aufsitzen" });
+                    continue;
+                }
+                st.yaw = gierUnwrap(e) + Math.PI / 2; // der Spieler schaut quer zur Fahrt
+                for (let i = 0; i < 6; i++) frame(i);
+                const rg = rigR();
+                const nah = (pm.userData._menschFern && pm.userData._menschFern.nah) || pm;
+                const schenkel = new Set([rg.legL.hip, rg.legR.hip]);
+                let oben = -Infinity;
+                let unten = Infinity;
+                pm.updateMatrixWorld(true);
+                nah.traverse((o) => {
+                    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+                    for (let n = o; n && n !== pm; n = n.parent) if (!n.visible) return; // die Fern-Gestalt ist verborgen
+                    const pos = o.geometry.attributes.position;
+                    const sw = o.isSkinnedMesh ? o.geometry.attributes.skinWeight : null;
+                    const si = o.isSkinnedMesh ? o.geometry.attributes.skinIndex : null;
+                    for (let i = 0; i < pos.count; i++) {
+                        o.getVertexPosition(i, V);
+                        V.applyMatrix4(o.matrixWorld);
+                        if (V.y > oben) oben = V.y;
+                        if (!sw) continue;
+                        let bw = -1;
+                        let kn = null;
+                        for (let k = 0; k < 4; k++) {
+                            const w = sw.getComponent(i, k);
+                            if (w > bw) {
+                                bw = w;
+                                kn = o.skeleton.bones[si.getComponent(i, k)];
+                            }
+                        }
+                        if (schenkel.has(kn) && V.y < unten) unten = V.y;
+                    }
+                });
+                const sc = Number.isFinite(e.scale) ? e.scale : 1;
+                const fzg = r._fahrzeugGesetzFor(e);
+                const d = fzg && fzg.drive;
+                let sitz = d && d.sitz ? d.sitz : null;
+                if (!sitz) {
+                    const bp = st.blueprints[e.type];
+                    sitz = bp ? r._attachPointFor(bp, "sitz").point : null;
+                }
+                const basis = e.position.y - 0.5;
+                const th = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+                const h = huefteRel();
+                const dx = h.x - e.position.x;
+                const dz = h.z - e.position.z;
+                const lx = dx * Math.cos(th) - dz * Math.sin(th); // der Rahmen des Wagens (R_y(−θ))
+                const lz = dx * Math.sin(th) + dz * Math.cos(th);
+                rg.hips.getWorldDirection(V); // das Modell schaut längs +z
+                const fx = e._fahrAchseX ? Math.cos(th) : Math.sin(th);
+                const fz = e._fahrAchseX ? -Math.sin(th) : Math.cos(th);
+                const cosB = (V.x * fx + V.z * fz) / Math.max(1e-9, Math.hypot(V.x, V.z));
+                reiter.push({
+                    typ,
+                    oben: +(oben - basis).toFixed(3),
+                    dach: d && d.huelle && Number.isFinite(d.huelle.yRoof) ? +(d.huelle.yRoof * sc).toFixed(3) : null,
+                    schenkel: +(unten - basis).toFixed(3),
+                    sitz: sitz ? +(sitz.y * sc).toFixed(3) : null,
+                    ankerL: sitz ? +(lx - sitz.x * sc).toFixed(3) : null,
+                    ankerQ: sitz ? +(lz - sitz.z * sc).toFixed(3) : null,
+                    blickGrad: +((Math.acos(Math.max(-1, Math.min(1, cosB))) * 180) / Math.PI).toFixed(1),
+                    lehneGrad: rg.spine ? +((-rg.spine.rotation.x * 180) / Math.PI).toFixed(1) : null,
+                });
+                weg(e);
+            }
+            for (let i = 0; i < 6; i++) frame(i);
+            S.reiter = reiter;
+            const w1 = rigR().hips;
+            S.reiterStand = {
+                abw: +Math.hypot(w1.position.x - wurzel0.x, w1.position.z - wurzel0.z).toFixed(4),
+                gier: +Math.abs(w1.rotation.y).toFixed(4),
+            };
+        }
     } catch (e) {
         res.err = (e && e.stack) || String(e);
     }
@@ -2355,11 +2579,43 @@ async function probeLeben(expected) {
             stossWagen: { kontakt: 40, vVor: 6.5, vNach: 2.3, vMinNach: 2.3, ereignisse: 1, ruck: 3, zielWeg: 2.1 },
             stossBaer: { kontakt: 40, vVor: 6.5, vNach: 5.0, vMinNach: 5.0, ereignisse: 1, ruck: 2, zielWeg: 3.2 },
             spielerWagen: {
-                a: { minAbstand: 0, wagenWeg: 0.002, kontakt: 100, vorKontakt: 4.2, nachKontakt: -0.1 },
+                a: {
+                    minAbstand: 0,
+                    wagenWeg: 0.002,
+                    kontakt: 100,
+                    vorKontakt: 4.2,
+                    nachKontakt: -0.1,
+                    paare: 3,
+                    prallNach: -0.03,
+                },
                 b: { minAbstand: 0, spielerDv: 3.2, angestossen: true },
             },
             leibWand: { 60: { durch: 0, n: 10 }, 30: { durch: 0, n: 10 }, gemischt: { durch: 0, n: 10 } },
             lockstep: { abw: 0, baerAbw: 0 },
+            reiter: [
+                {
+                    typ: "fahrzeug_gt",
+                    oben: 1.15,
+                    dach: 1.2,
+                    schenkel: 0.475,
+                    sitz: 0.475,
+                    ankerL: 0,
+                    ankerQ: 0,
+                    blickGrad: 0,
+                    lehneGrad: 25,
+                },
+                {
+                    typ: "fahrzeug_wagen",
+                    oben: 2,
+                    dach: null,
+                    schenkel: 1.02,
+                    sitz: 1.025,
+                    ankerL: 0,
+                    ankerQ: 0,
+                    blickGrad: 1,
+                },
+            ],
+            reiterStand: { abw: 0 },
         };
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
         for (const [name, bruch, soll] of [
@@ -2461,7 +2717,7 @@ async function probeLeben(expected) {
                 "der Spieler läuft gegen den GT ohne Folge, der GT schiebt sich in den Spieler (0710-4)",
                 {
                     spielerWagen: {
-                        a: { minAbstand: 0, wagenWeg: 0, kontakt: 100, vorKontakt: 4.2, nachKontakt: 4.1 },
+                        a: { minAbstand: 0, wagenWeg: 0, kontakt: 100, vorKontakt: 4.2, nachKontakt: 4.1, paare: 0 },
                         b: { minAbstand: -0.6, spielerDv: 0, angestossen: true },
                     },
                 },
@@ -2476,6 +2732,25 @@ async function probeLeben(expected) {
                 "der Wagen steht je nach Bildrate anders (Gegenprüfung 0710-5: 0,06 m nach 200 Schritten)",
                 { lockstep: { abw: 0.06, baerAbw: 0 } },
                 "lockstep",
+            ],
+            [
+                "der Reiter ragt aus dem GT, schwebt über dem Sitz und schaut mit der Maus (Gegenprüfung 0710-4 Klasse 4)",
+                {
+                    reiter: [
+                        {
+                            typ: "fahrzeug_gt",
+                            oben: 2.175,
+                            dach: 1.2,
+                            schenkel: 0.72,
+                            sitz: 0.475,
+                            ankerL: 0.3,
+                            ankerQ: 0.4,
+                            blickGrad: 90,
+                            lehneGrad: 0,
+                        },
+                    ],
+                },
+                "reiter fahrzeug_gt",
             ],
             [
                 "der Bär steht je nach Bildrate anders, der Wagen gleich (Gegenprüfung 0710-5: 1,39 m)",
@@ -2943,7 +3218,13 @@ async function probeLeben(expected) {
     const z2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : "–");
     const sz = (m) =>
         m
-            ? `Fahrt ${z2(m.vVor)} → ${z2(m.vNach)} m/s (kleinste danach ${z2(m.vMinNach)}) · Gegner ${z2(m.zielWeg)} m · ${m.ereignisse} Stoß-Ereignisse · Kamera-Ruck ${z2(m.ruck)} · ohne Annäherung ${m.ohneAnnaeherung}`
+            ? `Fahrt ${z2(m.vVor)} → ${z2(m.vNach)} m/s (kleinste danach ${z2(m.vMinNach)}) · Gegner ${z2(m.zielWeg)} m · ${m.ereignisse} Stoß-Ereignisse · Kamera-Ruck ${z2(m.ruck)} · ohne Annäherung ${m.ohneAnnaeherung}${
+                  m.ohneAnnaeherung && m.ohneWer
+                      ? ` (${Object.entries(m.ohneWer)
+                            .map(([w, k]) => `${w} ×${k}`)
+                            .join(", ")})`
+                      : ""
+              }${m.erster ? ` · erster Kontakt: ${m.erster.mit}, ${m.erster.winkel}° zur Richtung des Ziels, ${m.erster.abstand} m davor (${m.erster.quer} m quer), Quer-Fahrt ${m.erster.vQuer} m/s` : ""}${m.gasseTiere ? ` · Tiere in der Gasse: ${m.gasseTiere} (${m.gasseArten.join(", ")})` : ""}`
             : "keine Probe";
     check(
         "L3 Stoß am Fels (der Baum der Schau: 10,41 → 0,16 m/s): der Wagen prallt zurück (≤ −0,3 m/s), Kamera und Klang hören den Stoß",
@@ -2965,7 +3246,7 @@ async function probeLeben(expected) {
         "L6 Spieler und Wagen (0710-4): der laufende Spieler prallt am gebremsten GT ab (der Wagen hält), ein rutschender GT stößt den stehenden Spieler — Impuls nach Masse, keine Durchdringung",
         !hat("kern") && !hat("spieler-wagen") && !hat("wagen-spieler"),
         swz.a && swz.b
-            ? `Spieler → GT: Fahrt in den Wagen ${swz.a.vorKontakt.toFixed(2)} → ${swz.a.nachKontakt.toFixed(2)} m/s, Wagen ${swz.a.wagenWeg.toFixed(3)} m gerutscht, tiefste Berührung ${swz.a.minAbstand.toFixed(3)} m · GT → Spieler: Spieler ${swz.b.spielerDv.toFixed(2)} m/s, tiefste Berührung ${swz.b.minAbstand.toFixed(3)} m`
+            ? `Spieler → GT: Fahrt in den Wagen ${swz.a.vorKontakt.toFixed(2)} → ${swz.a.nachKontakt.toFixed(2)} m/s, Wagen ${swz.a.wagenWeg.toFixed(3)} m gerutscht, tiefste Berührung ${swz.a.minAbstand.toFixed(3)} m, Schub des Wagens in ${swz.a.schub} Schritten, ${swz.a.paare} Stöße (Rest der Fahrt in den Wagen danach höchstens ${Number.isFinite(swz.a.prallNach) ? (swz.a.prallNach * 100).toFixed(0) : "–"} %), Fuß bis ${Number.isFinite(swz.a.aufstieg) ? swz.a.aufstieg.toFixed(2) : "–"} m über dem Boden · GT → Spieler: Spieler ${swz.b.spielerDv.toFixed(2)} m/s, tiefste Berührung ${swz.b.minAbstand.toFixed(3)} m`
             : "keine Probe"
     );
     const lwz = S.leibWand || {};
@@ -2982,6 +3263,16 @@ async function probeLeben(expected) {
         S.lockstep
             ? `Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}` : ""}`
             : "keine Probe"
+    );
+    const reiterZeile = (q) =>
+        q.fehler || q.sitz === null
+            ? `${q.typ} ${q.fehler || "ohne Sitz"}`
+            : `${q.typ.replace("fahrzeug_", "")}: Kopf ${q.dach === null ? "offen" : (q.oben - q.dach).toFixed(2)} · Schenkel ${(q.schenkel - q.sitz).toFixed(2)} · Anker ${Math.hypot(q.ankerL, q.ankerQ).toFixed(2)} · Blick ${q.blickGrad.toFixed(0)}° · Lehne ${q.lehneGrad}°`;
+    check(
+        "L9 der Reiter im Wagen (0710-4 Klasse 4): je Wagen-Art die Oberkante ≤ Dachlinie, die Oberschenkel auf dem Polster, das Hüftgelenk über dem Sitz-Anker, der Leib schaut längs der Fahrt (die Maus quer); abgestiegen steht er wie vorher",
+        !hat("kern") && !hat("reiter"),
+        (S.reiter || []).map(reiterZeile).join(" · ") +
+            (S.reiterStand ? ` · abgestiegen: Wurzel ${S.reiterStand.abw} m, Gier ${S.reiterStand.gier}` : "")
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {

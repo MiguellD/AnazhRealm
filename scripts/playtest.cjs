@@ -29297,7 +29297,9 @@ async function checkBandM3RittVollendet(ctx) {
             r.state.player.animationLastTick = -Infinity;
             r.animatePlayerSoul(10.0);
             const parts = r.state.playerMesh.userData.parts;
-            out.seatPose = !!parts && Math.abs(parts.leftLeg.rotation.x - -1.3) < 1e-6;
+            // angewinkelt = der Oberschenkel mindestens 69° nach vorn (0710-4 Klasse 4: er liegt waagerecht auf der Sitzfläche,
+            // −π/2; vorher pinnte der Check das Literal −1,3 der alten Pose)
+            out.seatPose = !!parts && parts.leftLeg.rotation.x <= -1.2;
             r.dismountArchitecture();
             r.animatePlayerSoul(10.1);
             out.poseCleared = !!parts && Math.abs(parts.leftLeg.rotation.x) < 0.6; // Idle ≈ 0
