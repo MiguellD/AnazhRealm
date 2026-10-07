@@ -62,7 +62,11 @@
 //      hinter dich · (S4) _geraetGraebt ≡ true → das Schwert schüttet auf · (S5) _kreaturGliedTreffer ≡ null → kein
 //      Treffer · (S6) der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist
 //      rot · (S7) ein Wurf-Täter setzt seinen Schaden selbst zusammen (die alte Pfeil-Zeile) → die Klassen-Linse nennt
-//      ihn · (S8) ohne das Vorbacken → der erste Hieb zerlegt die Haut. Jede Naht restauriert.
+//      ihn · (S8) ohne das Vorbacken → der erste Hieb zerlegt die Haut · (S9) der Leib ohne Glieder (Reichweite halb +
+//      radius) → das Grob-Tor weist Kopf und Rute ab, die Deckungs-Probe T12 nennt sie. Jede Naht restauriert.
+//  (KEIN DRITTER LEIB, Integration Welle L) G3: Klinge und Pfeil fragen das EINE Grob-Tor _trefferErreichbar, es liest
+//      den kreatur-Leib (_kreaturLeib.reichweite) · T12: das Tor deckt die Gestalt (jedes Ende jeder Treffer-Glied-Kapsel,
+//      vier Gattungen in jeder Größen-Grenze, 90 Spiel-Takte).
 //
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────
@@ -723,6 +727,115 @@ async function WELLE_L() {
             }
             w.z.typeofSelbst = selbst.join(",") || "–";
             w.c.keinTypeofSelbst = selbst.length === 0;
+        }
+        // (G3) KEIN DRITTER LEIB (Integration Welle L, Gesetz #0): Klinge und Pfeil fragen das EINE Grob-Tor
+        // (_trefferErreichbar), und das liest den kreatur-Leib (_kreaturLeib) — kein eigenes Körpermaß (2 × Skala) im
+        // Treffer-Pfad.
+        {
+            const sw = codeVon("_kampfSweepTick");
+            const pf = codeVon("_tickPfeile");
+            w.z.grobFremd = ((sw + pf).match(/\.scale\.x\b/g) || []).length;
+            w.c.grobLiestLeib =
+                /this\._trefferErreichbar\(/.test(sw) &&
+                /this\._trefferErreichbar\(/.test(pf) &&
+                /this\._kreaturLeib\(/.test(codeVon("_trefferErreichbar")) &&
+                w.z.grobFremd === 0;
+        }
+        // (T12) DAS GROB-TOR DECKT DIE GESTALT: jede Gattung in jeder Größen-Grenze (VERHALTEN.groessen), 90 Spiel-Takte;
+        // je Probe jedes Ende jeder Treffer-Glied-Kapsel (+ ihr Radius) — ein Punkt der Gestalt, den das Tor abweist,
+        // wäre ein Treffer, den die Gestalt nie richten darf. Gemessen wird die RÄUMLICHE Spanne vom Fuß-Ursprung (das Tor
+        // fragt waagrecht): sie deckt das Tier in jeder Lage (gekippt, am Hang, im Sprung), nicht nur in der gezeigten.
+        // Ohne die Naht (Vorher-Stand) misst sie das alte Inline-Tor.
+        const grobTor = fn("_trefferErreichbar")
+            ? (c, x, z, sp) => r._trefferErreichbar(c, x, z, sp)
+            : (c, x, z, sp) => {
+                  const L = Math.max(0.3, c.scale.x || 1);
+                  return Math.hypot(c.position.x - x, c.position.z - z) <= sp + 2 * L;
+              };
+        const gestaltSchar = [];
+        {
+            const G = A._verhaltenGesetz().groessen;
+            const groessen = [...new Set(G.flatMap((k) => [k.min, k.max]))].sort((a, b) => a - b);
+            let n = 0;
+            for (const seele of ["wesen", "wolf", "fuchs", "baer"]) {
+                for (const bs of groessen) {
+                    s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 8);
+                    const ort = pm.position;
+                    const c = r.spawnCreatureAt(ort.x + 300, ort.y, ort.z + 300, "happy", seele, { bodySize: bs });
+                    if (!c) continue;
+                    tiere.push(c);
+                    stelle(c, 12 + 4 * Math.floor(n / 8), -14 + 4 * (n % 8));
+                    gestaltSchar.push({ c, seele, bs });
+                    n++;
+                }
+            }
+        }
+        const gestaltDeckung = () => {
+            const v = V3();
+            const o = { proben: 0, ausserhalb: 0, jeL: {}, taeter: [] };
+            for (const e of gestaltSchar) {
+                const c = e.c;
+                const gl = r._kreaturTrefferGlieder(c);
+                if (!gl) continue;
+                c.updateMatrixWorld(true);
+                const L = r._kreaturHueftL(c);
+                for (const g of gl) {
+                    const rr = g.r * g.anker.matrixWorld.getMaxScaleOnAxis();
+                    for (const q of [g.a, g.b]) {
+                        v.copy(q).applyMatrix4(g.anker.matrixWorld);
+                        const dx = v.x - c.position.x,
+                            dz = v.z - c.position.z;
+                        const d = Math.hypot(dx, dz);
+                        const h = Math.hypot(dx, v.y - c.position.y, dz) + rr;
+                        o.proben++;
+                        o.jeL[e.seele] = Math.max(o.jeL[e.seele] || 0, h / L);
+                        // der äußerste Punkt der Kapsel in dieser Richtung, mit Spanne 0 befragt
+                        const ux = d > 1e-9 ? dx / d : 1,
+                            uz = d > 1e-9 ? dz / d : 0;
+                        if (!grobTor(c, c.position.x + ux * h, c.position.z + uz * h, 0)) {
+                            o.ausserhalb++;
+                            if (o.taeter.length < 3) o.taeter.push(e.seele + "@" + e.bs.toFixed(2));
+                        }
+                    }
+                }
+            }
+            return o;
+        };
+        {
+            const summe = { proben: 0, ausserhalb: 0, jeL: {}, taeter: [] };
+            for (let k = 0; k < 90; k++) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+                if (k % 6) continue;
+                const o = gestaltDeckung();
+                summe.proben += o.proben;
+                summe.ausserhalb += o.ausserhalb;
+                for (const [g, x] of Object.entries(o.jeL)) summe.jeL[g] = Math.max(summe.jeL[g] || 0, x);
+                for (const t of o.taeter) if (summe.taeter.length < 3) summe.taeter.push(t);
+            }
+            w.z.grob = summe;
+            w.c.grobDeckt = summe.proben > 0 && summe.ausserhalb === 0;
+        }
+        // (S9) SELBST-TEST mit dem Täter: der Leib ohne seine Glieder (Reichweite = halb + radius, der Kontakt-Leib) —
+        // Kopf und Rute liegen draußen, die Deckungs-Probe nennt sie
+        if (fn("_trefferErreichbar")) {
+            const svLeib = r._kreaturLeib;
+            r._kreaturLeib = function (cr, L, out) {
+                const o = svLeib.call(this, cr, L, out);
+                o.reichweite = o.halb + o.radius;
+                return o;
+            };
+            try {
+                w.z.s9 = gestaltDeckung();
+            } finally {
+                delete r._kreaturLeib;
+            }
+            w.c.s9 = w.z.s9.ausserhalb > 0;
+        }
+        for (const e of gestaltSchar) {
+            r.removeCreature(e.c);
+            tiere.splice(tiere.indexOf(e.c), 1);
         }
 
         // ═══ Q9 — MAUS-ABSICHT ═══
@@ -1577,6 +1690,11 @@ async function WELLE_L() {
         console.log(
             `       kalter erster Treffer ${z.kalt ? z.kalt.gattung + ": traf " + z.kalt.traf + ", zerlegt " + z.kalt.zerlegt + " Vertices" : "–"} · Täter S8 ${z.s8 ? z.s8.gattung + ": zerlegt " + z.s8.zerlegt : "–"} · Sweep Math.sin/cos ${z.sweepFormel} · typeof-Selbst ${z.typeofSelbst}`
         );
+        const gr = z.grob || {};
+        const jeL = gr.jeL ? Object.entries(gr.jeL).map(([g, x]) => g + " " + x.toFixed(2)).join(" · ") : "–";
+        console.log(
+            `       Grob-Tor: Körpermaße außerhalb des Leibs ${z.grobFremd} · Gestalt-Proben ${gr.proben || 0}, außerhalb ${gr.ausserhalb === undefined ? "–" : gr.ausserhalb}${gr.taeter && gr.taeter.length ? " (" + gr.taeter.join(", ") + ")" : ""} · Gestalt je L ${jeL} · Täter S9 außerhalb ${z.s9 ? z.s9.ausserhalb + " (" + z.s9.taeter.join(", ") + ")" : "–"}`
+        );
         console.log(
             `  (Q9) 3rd: Fadenkreuz ${z.dritte && z.dritte.fadenkreuz}/10, frei ${z.dritte && z.dritte.frei}, Schwünge ${z.dritte && z.dritte.schwuenge}, Krater ${z.dritte && z.dritte.krater}, Treffer ${z.dritte && z.dritte.treffer} · Halten nach dem Stoß ${z.haltenKrater} Krater · RMB Schwert ${z.rmbSchwert}/3, Spaten ${z.rmbSpaten}, Hand ${z.rmbHand} · Werkstatt: der Canvas greift ${z.werkstattGriffe}/4 (ohne Schublade ${z.ohneWerkstattGriffe}/1) · FERTIGEN ${JSON.stringify(z.fertigen)}`
         );
@@ -1600,6 +1718,8 @@ async function WELLE_L() {
         check(c.kaltVorgebacken, "Q8 Lehre 14: der erste Treffer auf eine Gattung zerlegt keine Haut — die Treffer-Glieder sind vorgebacken (die EINE Bake-Uhr)");
         check(c.sweepBlickVorn, "Q10: der Klingen-Sweep liest _blickVorn (keine Inline-Kopie der Vorwärts-Formel)");
         check(c.keinTypeofSelbst, "Welle L: keine typeof-Probe auf eine eigene Methode in den Kampf- und Maus-Methoden der Welle");
+        check(c.grobLiestLeib, "Gesetz #0: Klinge und Pfeil fragen das EINE Grob-Tor (_trefferErreichbar), es liest den kreatur-Leib — kein drittes Körpermaß");
+        check(c.grobDeckt, "Gesetz #0: das Grob-Tor deckt die Gestalt — kein Ende einer Treffer-Glied-Kapsel liegt außerhalb (vier Gattungen × Größen-Grenzen, 90 Takte)");
         check(c.keinPanzer, "Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt, der Angriff steigt)");
         check(c.gegenwehr, "Q8 K-D16: Gegenwehr > 0 bei 20 Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)");
         check(c.dritteSchwingt, "Q9 K-D1: 3rd-Person — jeder freie Klick auf das Tier im Fadenkreuz schwingt (≥ 8 von 10 frei), 0 Krater");
@@ -1616,6 +1736,7 @@ async function WELLE_L() {
         check(c.s6 === true, "SELBST-TEST (S6): der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist rot");
         check(c.s7 === true, "SELBST-TEST (S7): ein Wurf-Täter setzt Kraft × Wirkung × Zone selbst zusammen → die Klassen-Linse nennt ihn");
         check(c.s8 === true, "SELBST-TEST (S8): ohne das Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)");
+        check(c.s9 === true, "SELBST-TEST (S9): der Leib ohne Glieder (Reichweite = halb + radius) → Kopf und Rute liegen außerhalb, die Deckungs-Probe nennt sie");
     }
     console.log(
         `\n  ${ok ? "✅ GRÜN — die gerechnete Schwungphysik erreicht den Kampf: √I führt · die Klinge trifft · die Sim steht nie" : "❌ ROT — das Kampf-Gefühl trägt nicht"}\n`

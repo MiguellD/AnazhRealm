@@ -20185,6 +20185,11 @@ class AnazhRealm {
     // ragt nicht in die Wand, die Flanke darf an ihr vorbei), je Achse der halbe Rumpf als Radius (0,3·L), die Höhe vom Fuß
     // bis zum Kopf (1,8·L). L ist die Hüft-Höhe der Gestalt (dieselbe L, an der das Gang- und das Steuer-Gesetz messen; die
     // Art unterscheidet die Gestalt, nie ein Tag). `out` wird überschrieben (allokationsfrei im Takt).
+    // Die REICHWEITE ist die waagrechte Spanne der ganzen Gestalt um die Mitte: an den End-Achsen hängt höchstens ein Glied
+    // von Leib-Höhe (Hals mit Kopf, Rute) — halb + Höhe. Sie liest, wer wissen muss, ob eine Strecke das Tier ÜBERHAUPT
+    // erreichen kann (das Grob-Tor des Treffers, _trefferErreichbar), bevor die Gestalt selbst richtet. Gemessen über die
+    // Treffer-Glieder als räumliche Spanne vom Fuß-Ursprung (sie deckt jede Lage des Leibs), vier Gattungen × acht Größen
+    // im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12).
     _kreaturLeib(creature, L, out) {
         const l = L > 0 ? L : this._kreaturHueftL(creature);
         const o = out || {};
@@ -20192,6 +20197,7 @@ class AnazhRealm {
         o.radius = Math.max(0.12, 0.3 * l);
         o.halb = 0.8 * l;
         o.hoehe = Math.max(0.5, 1.8 * l);
+        o.reichweite = o.halb + o.hoehe;
         o.fx = Math.sin(creature.rotation.y);
         o.fz = Math.cos(creature.rotation.y);
         return o;
@@ -21465,7 +21471,7 @@ class AnazhRealm {
                                     const e = pool[nb.length] || (pool[nb.length] = { x: 0, z: 0, gattung: null });
                                     e.x = o.position.x;
                                     e.z = o.position.z;
-                                    e.gattung = o.userData && o.userData.gattung;
+                                    e.gattung = this._kreaturGattung(o); // die EINE Gattungs-Quelle
                                     nb.push(e);
                                 }
                             }
@@ -21474,7 +21480,7 @@ class AnazhRealm {
                             const zug = AnazhRealm._steuerGesetz().herdeZug(
                                 creature.position.x,
                                 creature.position.z,
-                                creature.userData.gattung,
+                                this._kreaturGattung(creature),
                                 nb,
                                 VG.herde,
                                 this._herdeZug || (this._herdeZug = { x: 0, z: 0, n: 0 })
@@ -37004,7 +37010,7 @@ class AnazhRealm {
                 z.grund = grundBau(e);
             } else if (t && t.tier) {
                 const u = t.tier.userData || {};
-                z.name = (u.gattung || u.recipe || u.soul || "tier") + "#" + t.tier.id;
+                z.name = this._kreaturGattung(t.tier) + "#" + t.tier.id;
                 z.grund = u._kzNah ? "nah, der Satz schwindet" : "Fern-Hysterese (Nah-Grenze " + N + " m)";
             } else if (bloc) {
                 z.name = "Gesetz-Block " + (h.brick.slot | 0);
@@ -71757,6 +71763,19 @@ class AnazhRealm {
         if (naechstes && this._weltBakeErlaubt(naechstD2)) this._kreaturTrefferGlieder(naechstes);
     }
 
+    // DAS GROB-TOR DES TREFFERS (Integration Welle L, Gesetz #0): kann eine Strecke, die waagrecht höchstens `spanne` um
+    // (x, z) liegt, das Tier überhaupt erreichen? Es liest den EINEN Leib des Tiers (_kreaturLeib.reichweite — dieselbe
+    // Größe, mit der das Tier gegen Hüllen und Wagen löst), nie ein eigenes Körpermaß; Klinge und Pfeil fragen HIER, bevor
+    // die Gestalt (_kreaturGliedTreffer) richtet. Vorher schätzte jeder Treffer-Pfad den Leib selbst als 2 × Skala — ein
+    // dritter Leib neben dem kreatur-Leib und der Gestalt.
+    _trefferErreichbar(cr, x, z, spanne) {
+        const leib = this._kreaturLeib(cr, 0, this._trefferLeib || (this._trefferLeib = {}));
+        const r = spanne + leib.reichweite;
+        const dx = cr.position.x - x;
+        const dz = cr.position.z - z;
+        return dx * dx + dz * dz <= r * r;
+    }
+
     // DER TREFFER gegen die Gestalt: kleinste Distanz einer Strecke (die Klinge, der Pfeil-Flug) zu jeder Glied-Kapsel
     // des Tiers. Trifft sie (Abstand ≤ Strecken-Radius + Glied-Radius), liefert er das tiefste Glied: seine Zone
     // (der Rumpf teilt sich am Kopf — die Hälfte zum Kopf ist Brust, die andere Bauch) und den Strecken-Parameter s
@@ -76807,8 +76826,7 @@ class AnazhRealm {
             const tx = c.position.x - ox;
             const tz = c.position.z - oz;
             if (tx * fx + tz * fz <= 0) continue; // NIE hinter dem Rücken (die Wand)
-            const L = Math.max(0.3, c.scale.x || 1);
-            if (tx * tx + tz * tz > (reach + 2 * L) * (reach + 2 * L)) continue; // Grob-Gate
+            if (!this._trefferErreichbar(c, ox, oz, reach + K.bladeRadiusM)) continue; // das Grob-Tor (der Leib)
             const tr = this._kreaturGliedTreffer(c, ax, ay, az, bx, by, bz, K.bladeRadiusM);
             if (!tr) continue;
             sw.hits.add(c);
@@ -77311,10 +77329,7 @@ class AnazhRealm {
             for (let c = 0; c < creatures.length; c++) {
                 const cr = creatures[c];
                 if (!cr || !cr.userData || cr.userData.dying) continue;
-                const L = Math.max(0.3, cr.scale.x || 1);
-                const tx = cr.position.x - ex;
-                const tz = cr.position.z - ez;
-                if (tx * tx + tz * tz > (stepR + 2 * L) * (stepR + 2 * L)) continue; // Grob-Gate
+                if (!this._trefferErreichbar(cr, ex, ez, stepR + B.radiusM)) continue; // das Grob-Tor (der Leib)
                 const tr = this._kreaturGliedTreffer(cr, ox, oy, oz, ex, ey, ez, B.radiusM);
                 if (tr && (!hitTr || tr.s < hitTr.s)) {
                     hit = cr;

@@ -583,7 +583,8 @@ jobs:
               # · Q9: 3rd-Person-Klick schwingt (0 Krater), Halten gräbt nicht, RMB mit Schwert schüttet nie auf,
               # offene Werkstatt = tauber Canvas, ein Bauwerk geht in den Bau-Modus · Q10: Ego-Neigung −90° = Blick
               # −90°, „vor dir" liegt vor dem Blick, der Pfeil fliegt aufs Fadenkreuz, der Sweep liest _blickVorn.
-              # Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S8.
+              # Kein dritter Leib: Klinge und Pfeil fragen das EINE Grob-Tor, es liest den kreatur-Leib und deckt die
+              # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S9.
               run: npm run gate:kampf-gefuehl
 
             - name: Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)

@@ -658,6 +658,14 @@ const FORBIDDEN = [
     { token: "mEffDmgMax", fiel: "Welle L Q8" },
     { token: "mEffRefKg", fiel: "Welle L Q8 — die Wirkung ist Energie gegen keRefJ" },
     { token: "zugJouleRef", fiel: "Welle L Q8 — E = ableitenBogen(task).energie (die Studio-Energie)" },
+    // KEIN DRITTER LEIB (Integration Welle L, Stufe kampf-maus, Gesetz #0): Klinge und Pfeil schätzten den Leib des Tiers je
+    // selbst als 2 × Skala; das Grob-Tor liest den EINEN Leib (_kreaturLeib.reichweite, _trefferErreichbar). Die Gattung
+    // eines Tiers liest jeder Leser aus _kreaturGattung (Herden-Zug, Analog-Zensus), nie aus einer eigenen Kette.
+    { token: "Math.max(0.3, c.scale.x", fiel: "Integration L — das Grob-Tor liest den Leib (_trefferErreichbar)" },
+    { token: "Math.max(0.3, cr.scale.x", fiel: "Integration L — das Grob-Tor liest den Leib (_trefferErreichbar)" },
+    { token: "o.userData && o.userData.gattung", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
+    { token: "creature.userData.gattung", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
+    { token: "u.gattung || u.recipe", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
