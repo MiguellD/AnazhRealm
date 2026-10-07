@@ -1261,20 +1261,13 @@ class AnazhRealm {
     }
 
     dslCtx(opts = {}) {
-        const seedRng = (s) => {
-            // Deterministischer LCG, wenn ein Seed gegeben ist. Sonst Math.random.
-            if (typeof s !== "number") return Math.random;
-            let state = s >>> 0 || 1;
-            return () => {
-                state = (state * 1664525 + 1013904223) >>> 0;
-                return state / 4294967296;
-            };
-        };
+        // Der Strom eines Programms: sein Seed, sonst der nächste Same des Welt-Stroms (`_bauSame`, Γ5) — nie
+        // Math.random (Befund D10: der Hain zog 24 Würfe aus Math.random, ein KI-Programm ohne Seed 13).
         return {
             state: this.state,
             realm: this,
             startTime: performance.now() / 1000,
-            rng: seedRng(opts.seed),
+            rng: this._samenStrom(typeof opts.seed === "number" ? opts.seed : this._bauSame("dsl")),
             budget: opts.budget || this.dslDefaultBudget(),
             log: opts.log || [],
             source: opts.source || "unknown",
@@ -2979,14 +2972,16 @@ class AnazhRealm {
     }
 
     // Platzier-Schleife des Co-Schöpfers: n Stück im Jitter-Kreis um pos, je ein trockener Fleck
-    // (max 4 Würfe, _isAboveWaterAt), geerdet auf die Voxel-Oberfläche (+0.5), Drehung + Baum-Größe aus
-    // dem Programm-RNG (deterministisch), Preset-Stempel am Eintrag. Budget wie jeder Spawn-Op. Natur (Baum, Strauch, Fels
+    // (max 4 Würfe, _isAboveWaterAt), geerdet auf die Voxel-Oberfläche (+0.5), Streuung + Drehung + Baum-Größe aus dem
+    // Strom des Samens (`_samenStrom`: der Hain ist eine Funktion seines Samens, auf jedem Peer derselbe; ohne Samen der
+    // nächste des Welt-Stroms), Preset-Stempel am Eintrag. Budget wie jeder Spawn-Op. Natur (Baum, Strauch, Fels
     // — `_istNatur`) setzt durch die EINE Natur-Wand (`_naturSetzen`): kein Hain der KI wächst in einem Haus.
     _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter) {
         const stamp = this._studioStampFor(name);
         const istBaum = name.startsWith("baum_");
         const natur = this._istNatur({ type: name });
-        const baseSeed = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
+        const baseSeed = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : this._bauSame("studio:" + name);
+        const wurf = this._samenStrom(baseSeed);
         let spawned = 0;
         const weicht = {};
         const absage = (wo) => (weicht[wo] = (weicht[wo] || 0) + 1);
@@ -3000,16 +2995,16 @@ class AnazhRealm {
                 trocken = false;
             for (let t = 0; t < 4 && !trocken; t++) {
                 const off = n > 1 || t > 0 ? Math.max(jitter, 2.5) : 0;
-                x = pos.x + (ctx.rng() - 0.5) * 2 * off;
-                z = pos.z + (ctx.rng() - 0.5) * 2 * off;
+                x = pos.x + (wurf() - 0.5) * 2 * off;
+                z = pos.z + (wurf() - 0.5) * 2 * off;
                 trocken = typeof this._isAboveWaterAt !== "function" || this._isAboveWaterAt(x, z, 0.2);
             }
             if (!trocken) continue;
             ctx.budget.spawnsLeft--;
             const sy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : NaN;
             const y = Number.isFinite(sy) ? sy + 0.5 : pos.y;
-            const opts = { seed: (baseSeed + i) >>> 0, rotationY: ctx.rng() * Math.PI * 2 };
-            if (istBaum) opts.scale = 0.8 + ctx.rng() * 0.45;
+            const opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2 };
+            if (istBaum) opts.scale = 0.8 + wurf() * 0.45;
             if (stamp) opts.studioOv = stamp;
             const ort = { x, y, z };
             if (natur ? this._naturSetzen(name, ort, opts, null, absage) : this.spawnArchitecture(name, ort, opts))
@@ -8754,7 +8749,7 @@ class AnazhRealm {
                     const map = { dorf: "village", tempel: "temple", wasserfall: "waterfall" };
                     const t = (m[1] || "tempel").toLowerCase();
                     const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
-                    const seed = Math.floor(Math.random() * 0xffffffff);
+                    const seed = this._bauSame("fraktal"); // der Same aus dem Welt-Strom, nie Math.random (Befund D10)
                     return {
                         program: ["spawn_fractal", ["at", p.x, p.y, p.z], map[t], 2, 0.5, seed],
                         describe: `Fraktal-${t} gebaut (depth 2, ratio 0.5)`,
@@ -8791,7 +8786,7 @@ class AnazhRealm {
                 re: /^(?:setze|erschaffe|baue)\s+insel\s+hier\s*$/i,
                 build: () => {
                     const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
-                    const seed = Math.floor(Math.random() * 0xffffffff);
+                    const seed = this._bauSame("insel"); // der Same aus dem Welt-Strom, nie Math.random (Befund D10)
                     return {
                         program: ["spawn_island", ["at", p.x, p.y, p.z], 6, seed],
                         describe: "Schwebende Insel gesetzt",
@@ -9069,7 +9064,8 @@ class AnazhRealm {
                     // „einen eichenHAIN" / „einen wald" = ein Hain, nicht ein Baum
                     if ((m[3] || /^(wald|hain)$/.test(wort)) && (!z || ZAHL[z] === 1)) n = 6;
                     const pos = m[4] ? ["near_water", 80] : ["at_player_forward", m[5] ? 6 : 10];
-                    const seed = Math.floor(Math.random() * 0xffffffff);
+                    // der Same aus dem Welt-Strom je Art (Befund D10: Math.random — kein Reload zog denselben Hain)
+                    const seed = this._bauSame("studio:" + name);
                     const wo = m[4] ? "am Wasser" : "vor dir";
                     // Der Spieler liest das Label der Art („Eiche"), nie die interne id („baum_eiche", Befund V-D8).
                     const bp = this.state.blueprints && this.state.blueprints[name];
@@ -69626,7 +69622,8 @@ class AnazhRealm {
     }
     // DER BAU-SAME (Γ5): zieht aus dem Welt-Seed-Stream (Suffix ":<art>", FNV-1a — das _worldRuleSeed-Muster); je Art zählt
     // ein Akt-Zähler hoch → jeder neue Bau derselben Welt ein ANDERER, aber deterministischer Same. Die Siedlung trägt die
-    // Art "stadt". Leser: `spawnSettlement` (Chat `dorf`) und der Chat-Satz „baue … hier" (der Same reist im Programm).
+    // Art "stadt". Leser: `spawnSettlement` (Chat `dorf`), jeder Chat-Satz mit Same (`baue … hier`, Insel, Fraktal, der
+    // Studio-Hain — der Same reist im Programm) und der Strom jedes Programms ohne eigenen Seed (`dslCtx`).
     _bauSame(art) {
         const wm = this.state.worldMeta || {};
         const z = this._bauSameZaehler || (this._bauSameZaehler = {}); // Instanz-Feld (nicht serialisiert, kein audit-Feld)
@@ -69638,6 +69635,15 @@ class AnazhRealm {
             h = Math.imul(h, 16777619) >>> 0;
         }
         return h >>> 0 || 1;
+    }
+    // Der Strom EINES Samens (LCG, [0, 1)): was ein Akt würfelt — Streuung, Drehung, Größe — ist eine Funktion seines Samens,
+    // auf jedem Peer und nach jedem Reload dieselbe. Leser: `dslCtx` (der Programm-Strom) und `_dslSpawnStudioItems`.
+    _samenStrom(same) {
+        let s = Number(same) >>> 0 || 1;
+        return () => {
+            s = (s * 1664525 + 1013904223) >>> 0;
+            return s / 4294967296;
+        };
     }
     // ═══ WORLDGEN-AUTO-DÖRFER (der Worldgen-Konsument des "settlement"-Kanals) ═══
     // Γ5: je Welt-Zelle (SIEDLUNG.cellM) entscheidet FNV-1a(worldSeed:dorf:cx,cz) Existenz (1 von

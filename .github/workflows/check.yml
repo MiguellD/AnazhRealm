@@ -781,6 +781,12 @@ jobs:
               # bricht jede Stelle einzeln.
               run: npm run gate:v1-pfad
 
+            - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
+              # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen:
+              # jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest bricht Verdikte
+              # und Wand je einzeln.
+              run: npm run gate:werkstatt-weg
+
             - name: Die GPU-Fehler-Linse (Welle L - V-D7, Selbsttest)
               # Die Werkbank nennt jede WebGPU-Validierung mit Pass und Objekt (scripts/lib/gpu-fehler.cjs); der
               # Selbsttest zeichnet auf einer nackten WebGPU-Seite einmal ohne Vertex-Slot - die Linse muss ihn nennen.
