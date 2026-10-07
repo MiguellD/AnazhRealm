@@ -29,6 +29,13 @@
  * Selbst-Test: `node scripts/diag-source-probes.cjs --selftest` beweist, dass der
  * Detektor eine synthetische stale Probe FÄNGT (der gpu-lens-`warmupCompiles>0`-
  * Guard: die Linse muss feuern KÖNNEN, sonst ist grün bedeutungslos).
+ *
+ * DIE NEBENWELT-QUELL-WAND (Studio-Welle S1): die Gate-Dateien LESEN keine Datei einer
+ * Nebenwelt (`worlds/…` — per fs.readFile*, fetch oder require). Eine Welt beweist ihr
+ * KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die echte
+ * Heimat (ready + Manifest, Ereignis im Journal, das Mitgebrachte in der Welt-UI, Esc heim,
+ * Quellen-Wand). Im Voll-Playtest standen 26 Regex-/fetch-Proben auf Welt-Quelltext und
+ * 4 Manifest-Proben auf Welt-Dateien — jetzt 0; die Wand hält 0.
  */
 
 'use strict';
@@ -51,17 +58,36 @@ const CODE_FILES = ['anazhRealm.js', 'voxel-worker.js'];
  * Strippt JS-Kommentare (Block + Zeile) UND String-/Template-Literale, ohne über
  * `://` (URLs) oder `//` in Strings zu stolpern. Wir brauchen nur die CODE-Tokens
  * für die Proben-Extraktion bzw. die Symbol-Existenz — Strings/Kommentare nicht.
+ * Regex-Literale sind ein eigener Zustand: ein Anführungszeichen IM Regex (`/"exit"/`,
+ * `/["']x["']/`) öffnete vorher einen String, und die Parität kippte für den Rest der
+ * Datei — ein Schnitt an einer Regex-Probe blendete 15 r.<symbol>-Proben weiter unten aus
+ * (204 → 189). `keepStrings` behält die Literale (für die Nebenwelt-Quell-Wand).
  */
-function stripCommentsAndStrings(src) {
+const REGEX_DAVOR = '(,=:[!&|?{};+-*%<>~^';
+const REGEX_WORT = /(?:^|[^\w$])(?:return|typeof|case|in|of|delete|void|throw|new|else|do|yield|await)\s*$/;
+function stripCommentsAndStrings(src, keepStrings) {
+  const k = !!keepStrings;
   let out = '';
   let i = 0;
   const n = src.length;
-  let state = 'code'; // code | line | block | sq | dq | tpl
+  let state = 'code'; // code | line | block | sq | dq | tpl | re
+  let prev = ''; // das letzte bedeutsame Code-Zeichen ('"' = ein Literal endete, ein Operand)
+  let reKlasse = false;
   while (i < n) {
     const c = src[i];
     const c2 = i + 1 < n ? src[i + 1] : '';
     if (state === 'code') {
-      if (c === '/' && c2 === '/') {
+      if (
+        c === '/' &&
+        c2 !== '/' &&
+        c2 !== '*' &&
+        (prev === '' || REGEX_DAVOR.includes(prev) || (/[A-Za-z_$]/.test(prev) && REGEX_WORT.test(out.slice(-24))))
+      ) {
+        state = 're';
+        reKlasse = false;
+        out += k ? c : ' ';
+        i++;
+      } else if (c === '/' && c2 === '/') {
         state = 'line';
         i += 2;
       } else if (c === '/' && c2 === '*') {
@@ -69,18 +95,38 @@ function stripCommentsAndStrings(src) {
         i += 2;
       } else if (c === "'") {
         state = 'sq';
-        out += ' ';
+        out += k ? c : ' ';
         i++;
       } else if (c === '"') {
         state = 'dq';
-        out += ' ';
+        out += k ? c : ' ';
         i++;
       } else if (c === '`') {
         state = 'tpl';
-        out += ' ';
+        out += k ? c : ' ';
         i++;
       } else {
         out += c;
+        if (!/\s/.test(c)) prev = c;
+        i++;
+      }
+    } else if (state === 're') {
+      if (c === '\\') {
+        if (k) out += c + c2;
+        i += 2;
+      } else if (c === '\n') {
+        // ein Regex endet nie über die Zeile — war es keiner, fängt der Zustand sich hier
+        state = 'code';
+        out += c;
+        i++;
+      } else {
+        if (c === '[') reKlasse = true;
+        else if (c === ']') reKlasse = false;
+        else if (c === '/' && !reKlasse) {
+          state = 'code';
+          prev = '"';
+        }
+        if (k) out += c;
         i++;
       }
     } else if (state === 'line') {
@@ -99,37 +145,103 @@ function stripCommentsAndStrings(src) {
       }
     } else if (state === 'sq') {
       if (c === '\\') {
+        if (k) out += c + c2;
         i += 2;
       } else if (c === "'") {
         state = 'code';
+        prev = '"';
+        if (k) out += c;
         i++;
       } else {
+        if (k) out += c;
         i++;
       }
     } else if (state === 'dq') {
       if (c === '\\') {
+        if (k) out += c + c2;
         i += 2;
       } else if (c === '"') {
         state = 'code';
+        prev = '"';
+        if (k) out += c;
         i++;
       } else {
+        if (k) out += c;
         i++;
       }
     } else if (state === 'tpl') {
       // Template-Literale könnten ${...}-Code tragen; konservativ als String behandeln
       // (Source-Proben stehen nie in einem Template — sie sind echter JS-Aufruf-Code).
       if (c === '\\') {
+        if (k) out += c + c2;
         i += 2;
       } else if (c === '`') {
         state = 'code';
+        prev = '"';
+        if (k) out += c;
         i++;
       } else {
-        if (c === '\n') out += '\n';
+        if (c === '\n' || k) out += c;
         i++;
       }
     }
   }
   return out;
+}
+
+/**
+ * DIE NEBENWELT-QUELL-WAND: jeder Lese-Aufruf (readFileSync · readFile · fetch · require)
+ * im de-kommentierten Code, dessen Argument ein String-Literal `worlds` bzw. `worlds/…`
+ * trägt. Das Argument reicht bis zur schließenden Klammer (Klammern gezählt). Ein Pfad als
+ * Datenwert (`{ world: "worlds/skeleton/index.html" }`) ist kein Lesen und bleibt frei.
+ */
+function findWorldSourceReads(codeNoComments) {
+  const hits = [];
+  const re = /\b(readFileSync|readFile|fetch|require)\s*\(/g;
+  let m;
+  while ((m = re.exec(codeNoComments)) !== null) {
+    let depth = 1;
+    let j = re.lastIndex;
+    while (j < codeNoComments.length && depth > 0 && j - re.lastIndex < 400) {
+      const c = codeNoComments[j];
+      if (c === '(') depth++;
+      else if (c === ')') depth--;
+      j++;
+    }
+    const arg = codeNoComments.slice(re.lastIndex, j);
+    if (/["'`]worlds(?:["'`]|\/)/.test(arg)) {
+      const line = codeNoComments.slice(0, m.index).split('\n').length;
+      hits.push({ line, call: m[1], arg: arg.replace(/\s+/g, ' ').slice(0, 110) });
+    }
+  }
+  return hits;
+}
+
+function scanWorldSourceReads(gateFiles) {
+  const out = [];
+  for (const f of gateFiles) {
+    const p = path.join(ROOT, f);
+    if (!fs.existsSync(p)) continue;
+    for (const h of findWorldSourceReads(stripCommentsAndStrings(fs.readFileSync(p, 'utf8'), true))) out.push({ file: f, ...h });
+  }
+  return out;
+}
+
+// Die synthetischen Fälle der Wand (Selftest + Always-on-Guard): drei Lese-Arten fangen, Datenwert und Kommentar frei.
+function worldWallSelfCheck() {
+  const fang = [
+    'const src = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid/fluid.js"), "utf8");',
+    "const b = await (await fetch('worlds/skeleton/skeleton.js')).text();",
+    'const m = JSON.parse(fs.readFileSync(\n  path.join(__dirname, "..", "worlds", file),\n  "utf8"));',
+  ];
+  const frei = [
+    'r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }, "fb");',
+    '// fs.readFileSync(path.join(__dirname, "..", "worlds", "x.js"))\nconst y = 1;',
+    'const src = await fetch("voxel-worker.js").then((x) => x.text());',
+  ];
+  const gefangen = fang.filter((c) => findWorldSourceReads(stripCommentsAndStrings(c, true)).length === 1).length;
+  const falsch = frei.filter((c) => findWorldSourceReads(stripCommentsAndStrings(c, true)).length > 0).length;
+  return { ok: gefangen === fang.length && falsch === 0, gefangen, von: fang.length, falsch };
 }
 
 /**
@@ -219,7 +331,9 @@ function runSelfTest() {
   const fromComment = extractProbes(stripCommentsAndStrings(commentSrc));
   const commentLeak = fromComment.has('_totallyFakeCommentSym');
   console.log(`[selftest] Kommentar-Symbol fälschlich extrahiert: ${commentLeak ? 'JA' : 'NEIN'}`);
-  const ok = detected && !realDetectedStale && !commentLeak;
+  const wand = worldWallSelfCheck();
+  console.log(`[selftest] Nebenwelt-Quell-Wand: ${wand.gefangen}/${wand.von} Welt-Lesungen gefangen · ${wand.falsch} Datenwert/Kommentar fälschlich gefangen`);
+  const ok = detected && !realDetectedStale && !commentLeak && wand.ok;
   console.log(ok ? '\n✅ SELFTEST OK — die Linse feuert auf stale, schweigt auf real, ignoriert Kommentare.' : '\n❌ SELFTEST FEHLGESCHLAGEN.');
   process.exit(ok ? 0 : 1);
 }
@@ -237,9 +351,10 @@ function selfCheckOrDie() {
   const ignoresComment = !extractProbes(stripCommentsAndStrings('// __codeOf(r.ghostSym)\n')).has(
     'ghostSym'
   );
-  if (!(flagsStale && keepsReal && extractsCode && ignoresComment)) {
+  const wand = worldWallSelfCheck().ok;
+  if (!(flagsStale && keepsReal && extractsCode && ignoresComment && wand)) {
     console.error(
-      `❌ SELFCHECK FEHLGESCHLAGEN — die Linse ist blind (stale:${flagsStale} real:${keepsReal} extract:${extractsCode} comment:${ignoresComment}). Kein verlässliches Grün.`
+      `❌ SELFCHECK FEHLGESCHLAGEN — die Linse ist blind (stale:${flagsStale} real:${keepsReal} extract:${extractsCode} comment:${ignoresComment} welt-wand:${wand}). Kein verlässliches Grün.`
     );
     process.exit(2);
   }
@@ -255,9 +370,21 @@ function main() {
   console.log(`Code-Korpus-Symbole: ${symbolCount}`);
   console.log(`Geprüfte r.<symbol>-Proben (unique): ${probes.size}`);
 
+  const welt = scanWorldSourceReads(GATE_FILES);
+  if (welt.length) {
+    console.log(`\n⛔ ${welt.length} NEBENWELT-QUELL-PROBE(N) — eine Gate-Datei liest eine Welt-Datei (Existenz statt Konsum):`);
+    for (const h of welt) console.log(`  • ${h.file}:${h.line}  ${h.call}(${h.arg})`);
+    console.log(
+      '\nEine Welt beweist ihr KONSUM (gate:portal-konformanz: ready + Manifest, Ereignis im Journal,' +
+        '\ndas Mitgebrachte in der Welt-UI, Esc heim, Quellen-Wand), nie ein Quelltext-Zitat.'
+    );
+  } else {
+    console.log('Nebenwelt-Quell-Wand: 0 Lese-Aufrufe auf worlds/ in den Gate-Dateien.');
+  }
+
   if (stale.length === 0) {
     console.log(`\n✅ Alle ${probes.size} geprobten Symbole existieren im Code — keine stale Probe.`);
-    process.exit(0);
+    process.exit(welt.length ? 1 : 0);
   }
 
   console.log(`\n⛔ ${stale.length} STALE PROBE(N) — geprobtes Symbol existiert NICHT (mehr) im Code:`);

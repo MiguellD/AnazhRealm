@@ -42932,26 +42932,8 @@ async function checkBandW12WorldPortal(ctx) {
         const csp = cspMeta ? cspMeta.getAttribute("content") || "" : "";
         out.cspFrameSrc = /frame-src\s+'self'/.test(csp);
 
-        // Skelett-Welt-Seite + Skript werden ausgeliefert.
-        try {
-            const htmlRes = await fetch("worlds/skeleton/index.html");
-            const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
-            out.skeletonHtmlServed =
-                htmlRes.ok &&
-                /SKELETT-WELT/.test(htmlBody) &&
-                /id="avatar-name"/.test(htmlBody) &&
-                /skeleton\.js/.test(htmlBody);
-            const jsRes = await fetch("worlds/skeleton/skeleton.js");
-            const jsBody = jsRes.ok ? await jsRes.text() : "";
-            out.skeletonJsServed =
-                jsRes.ok &&
-                /addEventListener\("message"/.test(jsBody) &&
-                /"ready"/.test(jsBody) &&
-                /"enter"/.test(jsBody);
-        } catch (e) {
-            out.skeletonHtmlServed = false;
-            out.skeletonJsServed = false;
-        }
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         // Overlay-Methoden.
         out.buildMethod = typeof r._buildPortalOverlay === "function";
@@ -42984,8 +42966,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     if (w12c2Results && !w12c2Results.error) {
         check("W12 P1 C2: CSP enthält frame-src 'self'", w12c2Results.cspFrameSrc);
-        check("W12 P1 C2: Skelett-Welt-Seite wird ausgeliefert", w12c2Results.skeletonHtmlServed);
-        check("W12 P1 C2: skeleton.js mit Handshake wird ausgeliefert", w12c2Results.skeletonJsServed);
         check("W12 P1 C2: _buildPortalOverlay-Methode existiert", w12c2Results.buildMethod);
         check("W12 P1 C2: _disposePortalOverlay-Methode existiert", w12c2Results.disposeMethod);
         check("W12 P1 C2: _portalSendEnter-Methode existiert", w12c2Results.sendEnterMethod);
@@ -43079,16 +43059,8 @@ async function checkBandW12WorldPortal(ctx) {
         out.promptHiddenWhenNone = !!promptEl && promptEl.hidden === true;
         out.tryEnterFailsWhenNone = r._tryEnterPortalAtPlayer() === false;
 
-        // skeleton.js meldet Esc als {type:"exit"} an die Heimat-Welt.
-        try {
-            const jsRes = await fetch("worlds/skeleton/skeleton.js");
-            const jsBody = jsRes.ok ? await jsRes.text() : "";
-            out.skeletonForwardsEsc = /Escape/.test(jsBody) && /"exit"/.test(jsBody);
-        } catch (e) {
-            out.skeletonForwardsEsc = false;
-        }
-        // _buildPortalOverlay behandelt die exit-Nachricht der Sub-Welt.
-        out.overlayHandlesExit = /"exit"/.test(window.__codeOf(r._buildPortalOverlay));
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         return out;
     });
@@ -43115,8 +43087,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P1 C3: _tryEnterPortalAtPlayer betritt ein nahes Portal", w12c3Results.tryEnterWorks);
         check("W12 P1 C3: Prompt verschwindet ohne Portal in Reichweite", w12c3Results.promptHiddenWhenNone);
         check("W12 P1 C3: _tryEnterPortalAtPlayer scheitert ohne Portal", w12c3Results.tryEnterFailsWhenNone);
-        check("W12 P1 C3: skeleton.js meldet Esc als exit an die Heimat-Welt", w12c3Results.skeletonForwardsEsc);
-        check("W12 P1 C3: _buildPortalOverlay behandelt die exit-Nachricht", w12c3Results.overlayHandlesExit);
     } else {
         check(
             "W12 P1 C3: Betreten/Pause/Rückkehr Tests laufen",
@@ -43130,38 +43100,8 @@ async function checkBandW12WorldPortal(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // Fluid-Welt-Seite + Skript + vendored Engine werden ausgeliefert.
-        try {
-            const htmlRes = await fetch("worlds/fluid/index.html");
-            const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
-            out.fluidHtmlServed =
-                htmlRes.ok &&
-                /Strom-Welt/.test(htmlBody) &&
-                /id="avatar-name"/.test(htmlBody) &&
-                /type="module"/.test(htmlBody) &&
-                /fluid\.js/.test(htmlBody);
-            const jsRes = await fetch("worlds/fluid/fluid.js");
-            const jsBody = jsRes.ok ? await jsRes.text() : "";
-            out.fluidJsServed =
-                jsRes.ok &&
-                /FluidSimulation/.test(jsBody) &&
-                /"ready"/.test(jsBody) &&
-                /"enter"/.test(jsBody) &&
-                /"exit"/.test(jsBody) &&
-                jsBody.includes("./lib/");
-            const coreRes = await fetch("worlds/fluid/lib/three.core.min.js");
-            const modRes = await fetch("worlds/fluid/lib/three.module.min.js");
-            const fxRes = await fetch("worlds/fluid/lib/three-fluid-fx.es.js");
-            out.engineVendored = coreRes.ok && modRes.ok && fxRes.ok;
-            const fxBody = fxRes.ok ? await fxRes.text() : "";
-            // three-fluid-fx ist gepatcht: kein bare "three"-Import mehr.
-            out.fxPatched = fxBody.includes('from "./three.module.min.js"') && !fxBody.includes('from "three"');
-        } catch (e) {
-            out.fluidHtmlServed = false;
-            out.fluidJsServed = false;
-            out.engineVendored = false;
-            out.fxPatched = false;
-        }
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         // Built-in welt_strom-Portal.
         const ws = r.state.blueprints && r.state.blueprints.welt_strom;
@@ -43192,10 +43132,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12p2Results && !w12p2Results.error) {
-        check("W12 P2 C1: Fluid-Welt-Seite wird ausgeliefert", w12p2Results.fluidHtmlServed);
-        check("W12 P2 C1: fluid.js (FluidSimulation + Handshake) wird ausgeliefert", w12p2Results.fluidJsServed);
-        check("W12 P2 C1: Engine vendored (three.core/module + three-fluid-fx)", w12p2Results.engineVendored);
-        check("W12 P2 C1: three-fluid-fx three-Import auf lib gepatcht", w12p2Results.fxPatched);
         check("W12 P2 C1: Built-in welt_strom-Portal existiert", w12p2Results.stromExists);
         check("W12 P2 C1: welt_strom hat role:'portal'", w12p2Results.stromIsPortal);
         check("W12 P2 C1: welt_strom portalMeta zeigt auf die Fluid-Welt", w12p2Results.stromMeta);
@@ -43273,20 +43209,8 @@ async function checkBandW12WorldPortal(ctx) {
         out.bodyClassCleared = !document.body.classList.contains("in-portal");
         if (entry) r.removeArchitecture(entry);
 
-        // Sub-Welt-Adapter werden ausgeliefert.
-        try {
-            const fxBody = await (await fetch("worlds/fluid/fluid.js")).text();
-            out.fluidAdapter =
-                /function applyDsl/.test(fxBody) && /"dsl"/.test(fxBody) && /function setEnergy/.test(fxBody);
-            // Render-Fix: das Dichtefeld (densityTexture) + Auto-Splats.
-            out.fluidRenders = /densityTexture/.test(fxBody) && /addSplat/.test(fxBody) && /uBackdrop/.test(fxBody);
-            const skBody = await (await fetch("worlds/skeleton/skeleton.js")).text();
-            out.skeletonAdapter = /function applyDsl/.test(skBody) && /"dsl"/.test(skBody);
-        } catch (e) {
-            out.fluidAdapter = false;
-            out.fluidRenders = false;
-            out.skeletonAdapter = false;
-        }
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         return out;
     });
@@ -43307,9 +43231,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2 C2: _portalRouteDsl — Stufe 0 (ausgestellt, stumm)", w12bridgeResults.routeExhibited);
         check("W12 P2 C2: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt", w12bridgeResults.homeWeatherUntouched);
         check("W12 P2 C2: exitPortal räumt body.in-portal", w12bridgeResults.bodyClassCleared);
-        check("W12 P2 C2: Fluid-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.fluidAdapter);
-        check("W12 P2 C2: Strom-Welt rendert Dichtefeld + Auto-Splats", w12bridgeResults.fluidRenders);
-        check("W12 P2 C2: Skelett-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.skeletonAdapter);
     } else {
         check("W12 P2 C2: DSL-Brücke Tests laufen", false, w12bridgeResults ? w12bridgeResults.error : "no result");
     }
@@ -43319,34 +43240,8 @@ async function checkBandW12WorldPortal(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // Phytogenesis-Welt-Dateien + vendored Engine werden ausgeliefert.
-        try {
-            const htmlRes = await fetch("worlds/terrain/index.html");
-            const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
-            out.terrainHtmlServed =
-                htmlRes.ok &&
-                /Phytogenesis/.test(htmlBody) &&
-                /id="avatar-name"/.test(htmlBody) &&
-                /three-r128\.min\.js/.test(htmlBody) &&
-                /phytogenesis\.js/.test(htmlBody);
-            const jsRes = await fetch("worlds/terrain/phytogenesis.js");
-            const jsBody = jsRes.ok ? await jsRes.text() : "";
-            out.terrainJsServed =
-                jsRes.ok &&
-                /PRESETS/.test(jsBody) &&
-                /function applyDsl/.test(jsBody) &&
-                /"ready"/.test(jsBody) &&
-                /"enter"/.test(jsBody) &&
-                /"exit"/.test(jsBody) &&
-                /pointerlockerror/.test(jsBody);
-            const threeRes = await fetch("worlds/terrain/lib/three-r128.min.js");
-            const terrRes = await fetch("worlds/terrain/lib/UnrealBloomPass.js");
-            out.terrainEngineVendored = threeRes.ok && terrRes.ok;
-        } catch (e) {
-            out.terrainHtmlServed = false;
-            out.terrainJsServed = false;
-            out.terrainEngineVendored = false;
-        }
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         // Built-in welt_terrain-Portal + Manifest.
         const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
@@ -43380,9 +43275,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12terrainResults && !w12terrainResults.error) {
-        check("W12 P2: Phytogenesis-Welt-Seite wird ausgeliefert", w12terrainResults.terrainHtmlServed);
-        check("W12 P2: phytogenesis.js (PRESETS + Handshake) wird ausgeliefert", w12terrainResults.terrainJsServed);
-        check("W12 P2: Phytogenesis-Engine vendored (three r128 + Bloom)", w12terrainResults.terrainEngineVendored);
         check("W12 P2: Built-in welt_terrain-Portal existiert", w12terrainResults.terrainExists);
         check("W12 P2: welt_terrain hat role:'portal'", w12terrainResults.terrainIsPortal);
         check("W12 P2: welt_terrain portalMeta zeigt auf die Phytogenesis-Welt", w12terrainResults.terrainMeta);
@@ -43700,22 +43592,9 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
     }
 
-    // W12 P3a — die drei Welt-Adapter melden Ereignisse zurück (Quell-Check).
-    try {
-        for (const [w, file] of [
-            ["Skelett", "skeleton/skeleton.js"],
-            ["Strom", "fluid/fluid.js"],
-            ["Phytogenesis", "terrain/phytogenesis.js"],
-        ]) {
-            const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
-            check(
-                `W12 P3a: ${w}-Welt-Adapter meldet Ereignisse zurück`,
-                /function sendEvent/.test(src) && /type:\s*"event"/.test(src) && /sendEvent\("/.test(src)
-            );
-        }
-    } catch (err) {
-        check("W12 P3a: Welt-Adapter-Quell-Check läuft", false, err && err.message);
-    }
+    // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+    // echte Heimat (K1 ready + das Manifest der Welt in der Heimat · K4 das Ereignis im Journal · K7 das Mitgebrachte in
+    // der Welt-UI); die Nebenwelt-Quell-Wand in gate:source-probes hält diese Datei frei von Welt-Lesungen.
 
     // ### W12 Phase 3 — Teil B: die native Manifest-Stufe ###
     const w12p3bResults = await safeEvaluate(page, () => {
@@ -43801,44 +43680,9 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P3b: Teil-B-Tests laufen", false, w12p3bResults ? w12p3bResults.error : "no result");
     }
 
-    // W12 P3b — die manifest.json-Dateien + die Adapter-Verdrahtung (Quell-Check).
-    try {
-        let fluidManifestHasFlut = false;
-        for (const [w, id, file] of [
-            ["Skelett", "skeleton", "skeleton/manifest.json"],
-            ["Strom", "fluid", "fluid/manifest.json"],
-            ["Terrain", "terrain", "terrain/manifest.json"],
-        ]) {
-            const m = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8"));
-            check(
-                `W12 P3b: ${w}-Welt hat ein valides manifest.json`,
-                m &&
-                    m.schemaVersion === "1.0" &&
-                    m.id === id &&
-                    typeof m.label === "string" &&
-                    Array.isArray(m.dsl) &&
-                    m.dsl.length > 0 &&
-                    m.dsl.every((op) => typeof op === "string")
-            );
-            if (id === "fluid") fluidManifestHasFlut = m.dsl.includes("flut");
-        }
-        check("W12 P3b: das fluid-Manifest deklariert 'flut' (jenseits des Registry-Literals)", fluidManifestHasFlut);
-        for (const [w, file] of [
-            ["Skelett", "skeleton/skeleton.js"],
-            ["Strom", "fluid/fluid.js"],
-            ["Phytogenesis", "terrain/phytogenesis.js"],
-        ]) {
-            const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
-            check(
-                `W12 P3b: ${w}-Welt-Adapter lädt manifest.json + meldet es im ready`,
-                /fetch\(\s*["']\.\/manifest\.json["']\s*\)/.test(src) && /announceReady/.test(src)
-            );
-        }
-        const fluidSrc = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid/fluid.js"), "utf8");
-        check('W12 P3b: der fluid-Adapter behandelt das native Wort "flut"', /op === "flut"/.test(fluidSrc));
-    } catch (err) {
-        check("W12 P3b: manifest.json-/Adapter-Quell-Check läuft", false, err && err.message);
-    }
+    // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+    // echte Heimat (K1 ready + das Manifest der Welt in der Heimat · K4 das Ereignis im Journal · K7 das Mitgebrachte in
+    // der Welt-UI); die Nebenwelt-Quell-Wand in gate:source-probes hält diese Datei frei von Welt-Lesungen.
 }
 
 // V9.52-d Sub-Welle d — Band-Funktion (W13 Phase 1+2+3 (Vibe-Pass + Bauplan-Signaturen + Multi-User-Identität) + W14 Phase 1+2A+2B+3 (Bibliothek + Welt-Manifest + Schaffen reist mit + Empfang)).
@@ -44735,34 +44579,9 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     } else {
         check("W13 V2: enter-Payload-Tests laufen", false, w13v2Results ? w13v2Results.error : "no result");
     }
-    // W13 V2 — die Sub-Welten empfangen + zeigen das Schaffen (Quell-Check).
-    try {
-        const skJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "skeleton", "skeleton.js"), "utf8");
-        check(
-            "W13 V2: skeleton.js hat renderBrought + liest soul/materials/tools",
-            /function renderBrought/.test(skJs) &&
-                /avatar\.soul/.test(skJs) &&
-                /avatar\.materials/.test(skJs) &&
-                /avatar\.tools/.test(skJs)
-        );
-        check(
-            "W13 V2: skeleton.js rendert den Payload als Text + säubert Material-Farben",
-            /textContent/.test(skJs) && /0xffffff/.test(skJs) && !/innerHTML/.test(skJs)
-        );
-        const skHtml = fs.readFileSync(path.join(__dirname, "..", "worlds", "skeleton", "index.html"), "utf8");
-        check(
-            "W13 V2: skeleton/index.html trägt das Mitgebracht-Panel",
-            /id="brought"/.test(skHtml) && /brought-mats/.test(skHtml) && /brought-tools/.test(skHtml)
-        );
-        const flJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid", "fluid.js"), "utf8");
-        const teJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "terrain", "phytogenesis.js"), "utf8");
-        check(
-            "W13 V2: fluid + phytogenesis zeigen den Vibe-Pass-Fingerprint des Reisenden",
-            /avatar\.fingerprint/.test(flJs) && /avatar\.fingerprint/.test(teJs)
-        );
-    } catch (err) {
-        check("W13 V2: Sub-Welt-Quell-Checks laufen", false, err && err.message);
-    }
+    // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+    // echte Heimat (K1 ready + das Manifest der Welt in der Heimat · K4 das Ereignis im Journal · K7 das Mitgebrachte in
+    // der Welt-UI); die Nebenwelt-Quell-Wand in gate:source-probes hält diese Datei frei von Welt-Lesungen.
 
     // ### W14 Phase 3 — fremde Welten empfangen ###
     const w14p3Results = await safeEvaluate(page, async () => {
@@ -45497,10 +45316,8 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         out.uiSchwarmCard = Array.from(document.querySelectorAll("#library-list .library-card")).some((c) =>
             /Schwarm-Welt/.test(c.textContent)
         );
-        // worlds/schwarm/index.html ist erreichbar (echte Datei).
-        out.worldReachable = await fetch("worlds/schwarm/index.html")
-            .then((res) => res.ok)
-            .catch(() => false);
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
         // Aufräumen.
         delete r.state.blueprints["portal_schwarm"];
         for (let i = 0; i < r.state.player.inventory.length; i++) {
@@ -45557,7 +45374,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         );
         check("Untrusted-Tor: trust überlebt den buildStateSnapshot/loadState-Rundlauf", sandboxResults.trustRoundtrip);
         check("Untrusted-Tor: renderLibraryUI rendert eine Schwarm-Welt-Karte", sandboxResults.uiSchwarmCard);
-        check("Untrusted-Tor: worlds/schwarm/index.html ist erreichbar", sandboxResults.worldReachable);
     } else {
         check("Untrusted-Tor: V8.70-Tests laufen", false, sandboxResults ? sandboxResults.error : "no result");
     }

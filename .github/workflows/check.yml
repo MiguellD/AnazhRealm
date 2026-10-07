@@ -702,6 +702,32 @@ jobs:
               # in BEIDEN Regimen (Hook -> Part-Pfad).
               run: npm run gate:portal-gestalt
 
+            - name: Portal-Konformanz (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)
+              # Bootet die echte Heimat (Null-Renderer, ohne Foundry) und betritt alle 13 Welten über den echten Weg
+              # (Bibliothek → obtainPortalForWorld → _buildPortalOverlay; die übersetzte über acceptTranslatedManifest +
+              # buildTranslatedWorld mit gestubbtem LLM). K1 ready (das Manifest-Soll steht in WELTEN: skeleton, fluid und
+              # terrain liefern ihr manifest.json und stehen in der Heimat auf „nativ" mit Label und jedem Wort; fehlt es,
+              # ist K1 rot beim Namen, ebenso ein Manifest ohne Soll-Zeile) · K2 der Handshake endet (höchstens 3 enter;
+              # vorher 106 bis 202 Runden Ping-Pong je Studio) · K3 eine fremde Seite steuert keine Welt · K4 die chain-Form wirkt sichtbar (Journal
+              # der Heimat bzw. Zustand der Welt-UI; dazu die Probefahrt der Garage und das bewegte Bild der Strom-Welt) ·
+              # K5 Esc bringt heim · K6 keine Seiten-Fehler · K7 die Welt zeigt das Mitgebrachte (skeleton: Seele, eigenes
+              # Material als Text mit gesäuberter Farbe, Werkzeug, Vibe-Pass; fluid/terrain: Vibe-Pass am Namen).
+              # Ratschen (spec/vertraege/ratsche.json): DSL-Einzelwort stumm 7 → Soll 0 · ready-Echo 7 → 0.
+              # --selftest zuerst: begegnung ohne Quellen-Prüfung, die Heimat beantwortet jede ready, skeleton mit
+              # Element-Adapter und Markup-Panel, skeleton und terrain ohne Manifest (der Server antwortet 404), fluid
+              # meldet ihr Manifest ohne „flut", die garage trägt eins ohne Soll-Zeile → jede Wand rot und beim Namen.
+              run: npm run gate:portal-konformanz
+
+            - name: Regler wirkt (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)
+              # Je Art an dem Kanal, den die Werkstatt-Vorschau nimmt: die MESHFREI-Arten (koerper · kreatur · klang) gießt
+              # der Host-Ofen der echten Heimat (Null-Renderer, der Wert aus ws.studioOv), die übrigen baut die echte
+              # Foundry-Brücke (asset-worker-harness, ov {id: min|max}). Tot = bewegt an keinem Rezept seiner Art den Hash;
+              # BRICHT (rot) = der Bau wirft, bleibt leer, trägt NaN oder den Not-Körper. Ratschen (spec/vertraege/ratsche.json):
+              # reglerTot 18 von 113 → Soll 0 · reglerBudget (Rand-Wert über der Budget-Zeile) 9 → Soll 0. --selftest zuerst:
+              # die Brücke ohne ov → jeder vehicle-Regler tot; ein Regler-Bau, der wirft bzw. NaN rechnet → BRICHT; der Ofen
+              # ohne den Wert → jeder koerper-Regler tot; der Mensch-Bäcker wirft → Not-Körper → BRICHT.
+              run: npm run gate:regler-wirkt
+
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
               # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
               # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per

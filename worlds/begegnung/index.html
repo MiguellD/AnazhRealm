@@ -111,6 +111,9 @@
 
                 // --- die Brücke: Heimat → Welt ---
                 window.addEventListener("message", function (event) {
+                    // Nur die Heimat spricht (wie jede andere Welt): eine fremde Seite, die dieses Fenster erreicht,
+                    // setzt keine Gefährten und keine Eingaben (gate:portal-konformanz K3).
+                    if (event.source !== window.parent) return;
                     var msg = event.data;
                     if (!msg || typeof msg !== "object") return;
                     if (msg.type === "enter" && msg.avatar && typeof msg.avatar.name === "string") {

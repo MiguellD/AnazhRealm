@@ -47025,7 +47025,14 @@ class AnazhRealm {
                 // ready {inputActions:[...]} deklariert die Input-Brücke: AnazhRealms Tasten erreichen die Welt
                 // als semantische Aktionen.
                 if (Array.isArray(msg.inputActions)) this._portalEnableInputBridge(msg.inputActions);
-                this._portalSendEnter();
+                // DER HANDSHAKE IST ENDLICH: nur die ERSTE ready je Overlay bekommt ein enter (der load-Hörer schickt
+                // seins ohnehin, auch nach einem Reload der Welt). Sieben Studios beantworten jedes enter mit einer neuen
+                // ready — die Antwort auf jede ready war ein Ping-Pong von 106–202 Runden je Betreten, bis der
+                // Kanal-Deckel eine Meldung verwarf (gate:portal-konformanz K2).
+                if (!po.enterAufReady) {
+                    po.enterAufReady = true;
+                    this._portalSendEnter();
+                }
             }
             // Die Sub-Welt meldet Esc (Fokus liegt im iframe) → Heimkehr.
             else if (msg.type === "exit") this.exitPortal();
@@ -47074,6 +47081,8 @@ class AnazhRealm {
             // KI-Übersetzer Phase 2 — gesetzt für eine übersetzte Welt: sagt
             // _portalSendEnter, welche deklarative Szene es mitschicken muss.
             translatedWorldId: meta.translatedWorldId || null,
+            // Der Handshake beantwortet nur die erste ready mit einem enter (onMessage oben).
+            enterAufReady: false,
             // W12 Phase 3 — Drei-Stufen-Klarheit: kein Manifest → ausgestellt;
             // portalMeta-Manifest → übersetzt; meldet die Welt ihr eigenes
             // (ready-Handshake) → nativ. _portalReceiveManifest hebt auf nativ.
