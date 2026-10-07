@@ -285,7 +285,7 @@ Komponenten-SÄTZE, keine Klassen):
   Quer-Slip, Shift = Handbremse); ohne `lenkung` byte-alt richtungs-folgend.
 - **`ARENA` (V18.483, schmiede-core, Namensraum-Export):** das Arena-Gefühl
   als Daten (`schwung { dauerProSqrtI min max hand } · gefuehl { freezeMin/Max
-  dipMin/Max keRefJ } · bogen { mArrow zugJouleRef auszugSec fovZug fovRuhe
+  dipMin/Max keRefJ } · bogen { mArrow auszugSec fovZug fovRuhe
   minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`, fail-closed
   (Kern-Pflicht 17.07.: `ARENA_FALLBACK` + `SWING_/BOGEN_LAWS` sind
   GEFALLEN; `MAX_PFEILE` blieb ehrlich Wirts-Deckel). Spiegel-Zensus 17.07. (V18.486+,
@@ -295,9 +295,21 @@ Komponenten-SÄTZE, keine Klassen):
   kippDauerSec kippNachklangSec`), `bogen` den Pfeil-Flug (`maxFlugSec
   radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
-  Schadens-Faktor (Leser `_heldGueteFaktor`, beide Angriffs-Pfade). Alle
+  Schadens-Faktor; `gueteAnteil(rezeptId, ov?)` (Welle L, additiv) — derselbe
+  Lehren-Anteil ∈ [0, 1] als die EINE Güte eines Schmiede-Geräts (Leser
+  `computeBlueprintQuality` → Schaden `_heldGueteFaktor`, Werkstoff-Kraft, Equip-Fold). Alle
   Blöcke leben NUR im Gesetzbuch — der Stamm trägt keinen Zahlen-Zwilling
   mehr (ZWILLINGS-ABSENZ-WAND).
+  Welle L (06.10.): `trefferUrteil(m, treffer)` — die Treffer-Physik des Prüfstands
+  (Stich · Schnitt · Schlag, KE, Impuls p = mEff·v, Durchdringung, Zone) aus der
+  Shell (`landMelee`) in den Kern; Shell UND Welt richten damit (Beweis: 8500/8500
+  Prüfstand-Urteile byte-gleich). `kampfMasze` trägt die Messung (`mess`), `zonen`
+  die Trefferzonen-Tafel (Kopf 2,4 · Brust 1,5 · Bauch 1,2 · Bein 0,8 · Fuß 0,6),
+  tetrapoda `TREFFER_ZONE`/`trefferZone` die Zone je Glied. Gefallen: die Säule
+  `schwung.kapselRK/RMin/Y0/Y1` (Treffer gegen die Glieder-Kapseln), die Klemme
+  `guete.mEffDmgMin/Max` samt `guete.mEffRefKg` (die Wirkung eines Treffers ist seine
+  Energie gegen `gefuehl.keRefJ`, für Schaden UND Hit-Stop), die Wirts-Eichung
+  `bogen.zugJouleRef` (E = `ableitenBogen(task).energie`).
 - **`VERHALTEN` (V18.483, tetrapoda-core, Namensraum-Export):** die
   Verhaltens-Seele (`aktionen { <name>: { dauer profil dreh? kopfSweep?
   rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)

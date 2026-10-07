@@ -36,6 +36,34 @@
 //      nichts — die Treffer-Messung fließt durch die echte Kapsel-Mathe.
 //      Beide Stubs restauriert (Gate-Hook-Lehre).
 //
+// WELLE L (06.10.) — die Leben-Prüfung „Kampf" (artifacts/profiband/leben/befund-kampf.md) als Linse am ECHTEN
+// Chokepoint, gespielt wie ein Mensch: das Fadenkreuz wird über Gier und Neigung durch die ECHTE Kamera
+// (_loopCamera, 1st und 3rd) auf das Ziel geführt, geklickt wird über den EINEN Dispatcher (tryMouseBreak /
+// _tickHarvest / tryMousePlace / Canvas-mousedown), geschlagen über _beginPlayerSwing + _tickKampfSchwung.
+// Gezählt wird nur mitlaufend (damageCreature, _kampfHitJuice, _beginPlayerSwing, dslRun-Voxel-Ops); keine Probe
+// ersetzt die Stelle, an der ein Defekt saß (Q0). Die Voxel-Ops werden gezählt und nicht ausgeführt (der Krater ist
+// das Urteil des Dispatchers, nicht des Schnitzers).
+//  (Q8 TREFFER) Zone wirkt (Kopf ÷ Hinterlauf, jeder Treffer trägt eine Zone) · hangab (Hirsch 1,6 m/−0,62 m, Fuchs
+//      1,3 m/−0,6 m) und klein flach (Hirsch L 0,64) je ≥ 8/10 · Hit-Stop-Energie Keule ≠ Grossschwert (≥ 10 %) · keine Schadens-Kappe (höchstens
+//      2 von 17 Rezepten auf dem Maximal-Faktor) · Gegenwehr > 0 bei 20 Treffern in 1,6 m (pfad) · die Hand ist
+//      kein Panzer (defense/hpMax gleich) · Kampf verschleißt, ein verbrauchtes Gerät schlägt nicht · der Pfeil:
+//      Schaden ∝ Energie (25 %-Auszug ≤ 0,5 × voll) und eine Wand hält ihn (0 Treffer dahinter) · die fünf
+//      Phantom-Leser sind aus dem Stamm verschwunden · EINE Güte je Gerät (Schaden, Werkstoff-Kraft, Fold) · der Bogen
+//      verschleißt wie die Klinge (wear 0,5 → 0,65 des Schadens, jeder Schuss zehrt, verbraucht löst er nicht) und
+//      JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden · fehlt
+//      tetrapoda trefferZone, bricht der Treffer-Test laut · der erste Treffer auf eine Gattung zerlegt keine Haut
+//      (vorgebacken im Takt der EINEN Bake-Uhr) · der Sweep liest _blickVorn · keine typeof-Probe auf eine eigene Methode.
+//  (Q9 MAUS) 3rd-Person 10 Klicks auf ein Tier in 2 m → 10 Schwünge, 0 Krater · 1st-Person Halten nach dem Stoß →
+//      0 Krater · RMB mit Schwert → 0 Aufschüttungen (Spaten und leere Hand schütten weiter) · offene Werkstatt →
+//      4 Canvas-Klicks, 0 Griffe in die Welt · FERTIGEN eines Bauwerks → Bau-Modus, die Hand bleibt leer.
+//  (Q10 BLICK) Ego-Neigung −90° → Blick −90° · jedes „vor dir" (at_player_forward, „baue dorf hier") liegt vor dem
+//      Blick (cos > 0,9) · der Pfeil fliegt aufs Fadenkreuz (< 1° bei 45° Steigung).
+//  SELBST-TESTS (nur wo die Naht existiert): (S3) _blickVorn mit der alten −(sin, cos)-Richtung → „vor dir" kippt
+//      hinter dich · (S4) _geraetGraebt ≡ true → das Schwert schüttet auf · (S5) _kreaturGliedTreffer ≡ null → kein
+//      Treffer · (S6) der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist
+//      rot · (S7) ein Wurf-Täter setzt seinen Schaden selbst zusammen (die alte Pfeil-Zeile) → die Klassen-Linse nennt
+//      ihn · (S8) ohne das Vorbacken → der erste Hieb zerlegt die Haut. Jede Naht restauriert.
+//
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
@@ -67,6 +95,898 @@ const server = http.createServer((req, res) => {
     });
 });
 
+// ── WELLE L — die Proben der Leben-Prüfung „Kampf" (Seiten-Funktion; läuft auf JEDEM Stand: fehlt eine Naht, misst
+// die Probe das Verhalten trotzdem — so ist die Linse auf dem Vorher-Stand rot und benennt den Defekt) ──
+async function WELLE_L() {
+    const r = window.anazhRealm,
+        s = r.state,
+        A = r.constructor,
+        p = s.player,
+        pm = s.playerMesh;
+    const w = { z: {}, c: {}, fehler: [] };
+    const fn = (n) => typeof r[n] === "function";
+    const V3 = () => new THREE.Vector3();
+    const grad = (rad) => (rad * 180) / Math.PI;
+    const saved = {
+        yaw: s.yaw,
+        pitch: s.pitch,
+        cam: s.cameraMode,
+        held: p.equipped ? p.equipped.held : null,
+        swing: p._swing,
+        hitStop: p._hitStopUntil,
+        mode: r.getGameMode(),
+        maxC: s.maxCreatures,
+        lock: s.isPointerLocked,
+        hp: p.hp,
+        grace: p.respawnGraceUntil,
+        breakHeld: p.breakHeld,
+        hotbar: Array.isArray(s.hotbar) ? s.hotbar.slice() : s.hotbar,
+    };
+    // ── die mitlaufenden Zähler (rufen IMMER durch; nur die Voxel-Ops werden gezählt statt geschnitzt) ──
+    const orig = {
+        damageCreature: r.damageCreature,
+        juice: r._kampfHitJuice,
+        swing: r._beginPlayerSwing,
+        dsl: r.dslRun,
+        damagePlayer: r.damagePlayer,
+    };
+    let T = 50000; // die Anzeige-Uhr der Probe (Kamera + Schwung), synthetisch
+    const treff = [];
+    const juice = [];
+    const zaehl = { schwung: 0, carve: 0, fill: 0, gegenwehr: 0 };
+    r.damageCreature = function (c, amount, opts) {
+        const res = orig.damageCreature.call(this, c, amount, opts);
+        treff.push({ c, amount, src: opts && opts.source, t: T, ok: !!(res && res.ok) });
+        return res;
+    };
+    r._kampfHitJuice = function (...a) {
+        // neu: (creature, now, urteil, keEigen) — die Zone reist im Urteil; alt: (creature, now, keOpt, zoneKind)
+        const z = a[2] && typeof a[2] === "object" ? a[2].zone || null : typeof a[3] === "string" ? a[3] : null;
+        juice.push({ zone: z, t: T });
+        return orig.juice.apply(this, a);
+    };
+    r._beginPlayerSwing = function () {
+        const ok = orig.swing.call(this);
+        if (ok) zaehl.schwung++;
+        return ok;
+    };
+    r.dslRun = function (prog, opts) {
+        const op = Array.isArray(prog) ? prog[0] : null;
+        if (op === "voxel_carve") return (zaehl.carve++, { ok: true });
+        if (op === "voxel_fill") return (zaehl.fill++, { ok: true });
+        return orig.dsl.call(this, prog, opts);
+    };
+    r.damagePlayer = function (amount, source) {
+        if (source === "gegenwehr") zaehl.gegenwehr++;
+        return orig.damagePlayer.call(this, amount, source);
+    };
+    const tiere = [];
+    try {
+        const kamera = () => {
+            T += 0.02;
+            r._loopCamera(T);
+            s.camera.updateMatrixWorld(true);
+        };
+        const camDir = () => s.camera.getWorldDirection(V3());
+        // Das Fadenkreuz auf einen Welt-Punkt führen wie die Hand des Spielers: Gier und Neigung nachführen, bis der
+        // Strahl der ECHTEN Kamera ihn trifft (beide Kamera-Arten; die Neigung in der Spiel-Klemme ±90°).
+        // Rückgabe: der Rest-Winkel in Grad (ein unerreichbarer Blick bleibt als Fehler stehen).
+        const zielen = (pt) => {
+            const fehler = () => {
+                kamera();
+                const c = s.camera.position;
+                const d = camDir();
+                const v = V3()
+                    .set(pt.x - c.x, pt.y - c.y, pt.z - c.z)
+                    .normalize();
+                const gy = Math.atan2(v.x, v.z) - Math.atan2(d.x, d.z);
+                return {
+                    gy: Math.atan2(Math.sin(gy), Math.cos(gy)),
+                    gp: Math.asin(Math.max(-1, Math.min(1, v.y))) - Math.asin(Math.max(-1, Math.min(1, d.y))),
+                    ang: d.angleTo(v),
+                };
+            };
+            const kl = (x) => Math.max(-Math.PI / 2, Math.min(Math.PI / 2, x));
+            for (let it = 0; it < 40; it++) {
+                const e = fehler();
+                if (e.ang < 2e-4) break;
+                s.yaw += e.gy;
+                const p0 = s.pitch;
+                const e0 = fehler().gp;
+                s.pitch = kl(p0 + (p0 > 1.5 ? -0.01 : 0.01));
+                const ab = (fehler().gp - e0) / (s.pitch - p0);
+                s.pitch = Math.abs(ab) > 1e-6 ? kl(p0 - Math.max(-0.5, Math.min(0.5, e0 / ab))) : p0;
+            }
+            return grad(fehler().ang);
+        };
+        const fussY = () => pm.position.y - 0.5;
+        const setze = (seele) => {
+            s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 8);
+            const c = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 300, "happy", seele);
+            if (c) tiere.push(c);
+            return c;
+        };
+        // vor den Spieler stellen (Breitseite, Füße auf der Fuß-Höhe des Spielers + dy), unverwundbar gezählt
+        const stelle = (c, d, seit = 0, dy = 0) => {
+            c.position.set(pm.position.x + seit, fussY() + dy, pm.position.z + d);
+            c.rotation.set(0, Math.PI / 2, 0);
+            c.userData.hp = 1e6;
+            c.userData.fearUntil = 0;
+            c.updateMatrixWorld(true);
+        };
+        const parke = (c) => stelle(c, 60, 60 + tiere.indexOf(c) * 4);
+        const punkt = (c, teil) => {
+            c.updateMatrixWorld(true);
+            const tb = c.userData._tierBaum;
+            const o = teil && tb && tb.teile && tb.teile[teil];
+            if (o) return o.getWorldPosition(V3());
+            return new THREE.Box3().setFromObject(c).getCenter(V3());
+        };
+        const schwung = () => {
+            p._swing = null;
+            p._hitStopUntil = 0;
+            const n0 = treff.length,
+                j0 = juice.length;
+            const ok = r._beginPlayerSwing();
+            if (!ok || !p._swing) return { ok: false, treff: [], juice: [] };
+            p._swing.lastT = T;
+            for (let k = 0; k < 1200 && p._swing; k++) {
+                T += 0.005;
+                r._tickKampfSchwung(T);
+            }
+            return { ok: true, treff: treff.slice(n0), juice: juice.slice(j0) };
+        };
+        const ausruesten = (name) => {
+            const res = r.equipHeld(name);
+            if (name && !(res && res.ok)) w.fehler.push("equipHeld " + name + ": " + (res && res.reason));
+        };
+        const traf = (sw, c) => sw.treff.find((t) => t.c === c && t.src === "player") || null;
+        if (fn("setCameraMode")) r.setCameraMode("first");
+        if (fn("closeAllDrawers")) r.closeAllDrawers();
+        if (s.buildMode && s.buildMode.active && fn("_clearBuildMode")) r._clearBuildMode();
+
+        // ═══ Q8 — TREFFER ═══
+        const hirsch = setze("wesen");
+        const fuchs = setze("fuchs");
+        if (!hirsch || !fuchs) throw new Error("Kreatur-Spawn fehlgeschlagen");
+        const L0 = hirsch.scale.x;
+        parke(fuchs);
+        ausruesten("klinge_langschwert");
+        // (T1) die Zone wirkt: Kopf und Hinterlauf desselben Hirschs, dieselbe Klinge
+        stelle(hirsch, 1.6);
+        w.z.zielKopf = zielen(punkt(hirsch, "headGroup"));
+        const sK = schwung();
+        stelle(hirsch, 1.6);
+        w.z.zielBein = zielen(punkt(hirsch, "hlP"));
+        const sB = schwung();
+        const aK = traf(sK, hirsch),
+            aB = traf(sB, hirsch);
+        w.z.zoneKopfBein = aK && aB ? aK.amount / aB.amount : null;
+        const jz = [...sK.juice, ...sB.juice];
+        w.z.zonen = jz.map((j) => j.zone);
+        w.c.zoneJederTreffer = jz.length >= 2 && jz.every((j) => !!j.zone);
+        w.c.zoneWirkt = w.z.zoneKopfBein !== null && w.z.zoneKopfBein >= 1.5;
+        // (T2) hangab und klein auf gleicher Höhe, je 10 Hiebe mit dem Fadenkreuz auf der Leibes-Mitte: der Hirsch
+        // des Befunds (1,6 m, Füße 0,62 m unter deinen — „hangab 2/5"), der Fuchs 1,3 m vor dir 0,6 m tiefer, der
+        // kleine Hirsch L 0,64 auf gleicher Höhe („1 aus 10"). Jedes Ziel liegt in der Reichweite der Klinge (Schulter
+        // 1,7 m über dem Fuß, Langschwert 2,1 m + Klingen-Radius) — was die Klinge erreicht und das Fadenkreuz trägt,
+        // trifft sie.
+        const seiten = [-0.3, -0.15, 0, 0.15, 0.3, -0.22, 0.22, -0.05, 0.05, 0.1];
+        const serie = (c, d, dy) => {
+            let n = 0;
+            for (const sx of seiten) {
+                stelle(c, d, sx, dy);
+                zielen(punkt(c, null));
+                if (traf(schwung(), c)) n++;
+            }
+            return n;
+        };
+        w.z.hangabHirsch = serie(hirsch, 1.6, -0.62);
+        parke(hirsch);
+        w.z.hangabFuchs = serie(fuchs, 1.3, -0.6);
+        parke(fuchs);
+        hirsch.scale.setScalar(0.64);
+        w.z.kleinFlach = serie(hirsch, 1.6, 0);
+        hirsch.scale.setScalar(L0);
+        w.c.hangab = w.z.hangabHirsch >= 8 && w.z.hangabFuchs >= 8;
+        w.c.kleinFlach = w.z.kleinFlach >= 8;
+        // (S5) SELBST-TEST: ohne Glieder-Treffer trifft die Klinge nichts (die Serie misst die Gestalt)
+        if (fn("_kreaturGliedTreffer")) {
+            const sv = r._kreaturGliedTreffer;
+            r._kreaturGliedTreffer = () => null;
+            try {
+                hirsch.scale.setScalar(0.64);
+                w.z.s5 = serie(hirsch, 1.6, 0);
+            } finally {
+                r._kreaturGliedTreffer = sv;
+                hirsch.scale.setScalar(L0);
+            }
+            w.c.s5 = w.z.s5 === 0;
+        }
+        // (T3) die Hit-Stop-Energie: Grossschwert und Keule auf denselben Brust-Punkt
+        const G = A._arenaGesetz().gefuehl;
+        const stopEnergie = (name) => {
+            ausruesten(name);
+            stelle(hirsch, 1.6);
+            zielen(punkt(hirsch, null));
+            const t = traf(schwung(), hirsch);
+            if (!t) return null;
+            const e = (p._hitStopUntil - t.t - G.freezeMinSec) / (G.freezeMaxSec - G.freezeMinSec);
+            return e * G.keRefJ;
+        };
+        w.z.stopGross = stopEnergie("klinge_grossschwert");
+        w.z.stopKeule = stopEnergie("klinge_keule");
+        w.c.hitStopEnergie =
+            w.z.stopGross !== null &&
+            w.z.stopKeule !== null &&
+            Math.abs(w.z.stopKeule - w.z.stopGross) / Math.max(w.z.stopKeule, w.z.stopGross) >= 0.1;
+        // (T4) keine Schadens-Kappe: je Nahkampf-Rezept EIN Hieb auf die Brust, Faktor = Schaden ÷ (Kraft × Güte × Zone)
+        const sc = globalThis.__schmiedeCore;
+        const ZT = A._arenaGesetz().zonen || null;
+        const faktoren = [];
+        for (const id of Object.keys(sc.REZEPT_ZU_GATTUNG)) {
+            const g = sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[id]];
+            if (g && g.task && g.task.art === "bogen") continue;
+            const name = "klinge_" + id;
+            if (!s.blueprints[name]) continue;
+            ausruesten(name);
+            r._setBlueprintWear(s.blueprints[name], 1);
+            stelle(hirsch, 1.5);
+            zielen(punkt(hirsch, null));
+            const sw = schwung();
+            const t = traf(sw, hirsch);
+            if (!t) {
+                faktoren.push({ id, f: null });
+                continue;
+            }
+            const z = sw.juice.length && sw.juice[0].zone;
+            const zm = z && ZT && ZT[z] ? ZT[z].mul : 1;
+            faktoren.push({ id, f: t.amount / ((p.stats.damage || 5) * r._heldGueteFaktor() * zm) });
+        }
+        const fs = faktoren.filter((x) => x.f !== null).map((x) => x.f);
+        const fMax = Math.max(...fs);
+        w.z.faktoren = faktoren.map((x) => x.id + ":" + (x.f === null ? "-" : x.f.toFixed(2))).join(" ");
+        w.z.aufDerKappe = fs.filter((f) => f >= fMax * 0.99).length;
+        w.z.nahkampfRezepte = faktoren.length;
+        w.c.keineKappe = fs.length >= 15 && w.z.aufDerKappe <= 2;
+        // (T5) die Gegenwehr: 20 Treffer mit Rückstoß aus 1,6 m im Modus pfad
+        r.setGameMode("pfad");
+        p.hp = 1e9;
+        p.respawnGraceUntil = -Infinity;
+        const g0 = zaehl.gegenwehr;
+        for (let i = 0; i < 20; i++) {
+            stelle(hirsch, 1.6);
+            r.damageCreature(hirsch, 5, {
+                source: "player",
+                fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
+                knockback: 16,
+            });
+        }
+        w.z.gegenwehr = zaehl.gegenwehr - g0;
+        r.setGameMode(saved.mode);
+        p.hp = saved.hp;
+        w.c.gegenwehr = w.z.gegenwehr > 0;
+        // (T6) die Hand ist kein Panzer
+        ausruesten(null);
+        const st0 = r.computePlayerStats().stats;
+        const leer = { d: st0.defense, hp: st0.hpMax, dmg: st0.damage };
+        ausruesten("klinge_langschwert");
+        const st1 = r.computePlayerStats().stats;
+        w.z.panzer = `defense ${leer.d.toFixed(2)}→${st1.defense.toFixed(2)} · hpMax ${leer.hp.toFixed(1)}→${st1.hpMax.toFixed(1)} · damage ${leer.dmg.toFixed(2)}→${st1.damage.toFixed(2)}`;
+        w.c.keinPanzer = st1.defense === leer.d && st1.hpMax === leer.hp && st1.damage > leer.dmg;
+        // (T7) Verschleiß: 16 Treffer zehren die Klinge, ein verbrauchtes Gerät schlägt nicht
+        const bpL = s.blueprints.klinge_langschwert;
+        r._setBlueprintWear(bpL, 1);
+        let n7 = 0;
+        for (let i = 0; i < 16; i++) {
+            stelle(hirsch, 1.6);
+            zielen(punkt(hirsch, null));
+            if (traf(schwung(), hirsch)) n7++;
+        }
+        w.z.wear16 = r._blueprintWear(bpL);
+        w.z.treffer16 = n7;
+        r._setBlueprintWear(bpL, 0.02);
+        stelle(hirsch, 1.6);
+        zielen(punkt(hirsch, null));
+        w.z.trefferVerbraucht = traf(schwung(), hirsch) ? 1 : 0;
+        r._setBlueprintWear(bpL, 1);
+        w.c.verschleiss = n7 >= 12 && w.z.wear16 < 0.99 && w.z.trefferVerbraucht === 0;
+        // (T8) der Pfeil: Impuls im Schaden, die Wand hält ihn
+        ausruesten("klinge_langbogen");
+        const rec = fn("_heldBogenRecipe") ? r._heldBogenRecipe() : null;
+        const schuss = (frac, ziel) => {
+            const n0 = treff.length;
+            const list = s._pfeile || [];
+            const vorher = list.length;
+            p._shotCooldownUntil = 0;
+            p._swing = null;
+            r._beginPlayerShot(rec, frac);
+            const pf = (s._pfeile || [])[vorher];
+            if (!pf) return { flog: false, treffer: null };
+            for (let k = 1; k <= 360 && s._pfeile.includes(pf); k++) r._tickPfeile(pf.born + k / 120);
+            const t = treff.slice(n0).find((x) => x.c === ziel);
+            return { flog: true, treffer: t || null };
+        };
+        if (!rec) w.fehler.push("Bogen-Rezept kalt");
+        else {
+            stelle(hirsch, 2.5);
+            zielen(punkt(hirsch, null));
+            const voll = schuss(1, hirsch);
+            stelle(hirsch, 2.5);
+            zielen(punkt(hirsch, null));
+            const viertel = schuss(0.25, hirsch);
+            w.z.pfeilVoll = voll.treffer ? voll.treffer.amount : null;
+            w.z.pfeilViertel = viertel.treffer ? viertel.treffer.amount : null;
+            w.c.pfeilImpuls =
+                w.z.pfeilVoll !== null && w.z.pfeilViertel !== null && w.z.pfeilViertel <= 0.5 * w.z.pfeilVoll;
+            // die Wand: ein Stein-Riegel 4 m vor dem Spieler, der Hirsch 9 m dahinter
+            s.blueprints._kg_wand = {
+                name: "_kg_wand",
+                parts: [
+                    {
+                        shape: "box",
+                        material: "stein",
+                        size: { x: 6, y: 4, z: 0.4 },
+                        position: { x: 0, y: 2, z: 0 },
+                    },
+                ],
+            };
+            const wand = r.spawnArchitecture(
+                "_kg_wand",
+                { x: pm.position.x, y: pm.position.y, z: pm.position.z + 4 },
+                { precise: true, seed: 1 } // genau dort (keine Spieler-Klemme), der Fuß der Wand auf deinem
+            );
+            if (!wand) w.fehler.push("Wand-Spawn fehlgeschlagen");
+            stelle(hirsch, 13);
+            zielen(punkt(hirsch, null));
+            const hinter = schuss(1, hirsch);
+            w.z.pfeilHinterWand = hinter.treffer ? 1 : 0;
+            if (wand) r.removeArchitecture(wand);
+            delete s.blueprints._kg_wand;
+            stelle(hirsch, 13);
+            zielen(punkt(hirsch, null));
+            const frei = schuss(1, hirsch);
+            w.z.pfeilFrei = frei.treffer ? 1 : 0;
+            w.c.pfeilWand = !!wand && w.z.pfeilHinterWand === 0 && w.z.pfeilFrei === 1;
+            // (T7b) der Bogen ist eine geführte Waffe wie die Klinge (K-D6 ganz): sein Verschleiß wirkt im Schaden
+            // (wear 0,5 → _wearStatFactor 0,65 des vollen), jeder Schuss zehrt ihn, ein verbrauchter Bogen (wear 0,02,
+            // unter WEAR_KAPUTT_SCHWELLE) löst nicht — dieselbe Wand wie Hieb und Abbau.
+            const bpB = s.blueprints.klinge_langbogen;
+            const bogenBei = (wear) => {
+                r._setBlueprintWear(bpB, wear);
+                stelle(hirsch, 2.5);
+                zielen(punkt(hirsch, null));
+                const sh = schuss(1, hirsch);
+                return { flog: sh.flog, amount: sh.treffer ? sh.treffer.amount : null, nach: r._blueprintWear(bpB) };
+            };
+            const bogenProbe = () => {
+                const b1 = bogenBei(1),
+                    b5 = bogenBei(0.5),
+                    b02 = bogenBei(0.02);
+                r._setBlueprintWear(bpB, 1);
+                const F = A.WEAR_STAT_FLOOR;
+                const soll = F + (1 - F) * 0.5;
+                const verh = b1.amount && b5.amount !== null ? b5.amount / b1.amount : null;
+                return {
+                    voll: b1.amount,
+                    halb: b5.amount,
+                    verh,
+                    soll,
+                    zehrtVoll: 1 - b1.nach,
+                    zehrtHalb: 0.5 - b5.nach,
+                    verbrauchtFlog: b02.flog ? 1 : 0,
+                    verbrauchtTraf: b02.amount !== null ? 1 : 0,
+                    ok:
+                        verh !== null &&
+                        Math.abs(verh - soll) < 0.01 &&
+                        b1.nach < 1 &&
+                        b5.nach < 0.5 &&
+                        !b02.flog &&
+                        b02.amount === null,
+                };
+            };
+            w.z.bogen = bogenProbe();
+            w.c.bogenVerschleiss = w.z.bogen.ok;
+            // (S6) SELBST-TEST mit dem Täter: der Pfeil ohne Verschleiß (Faktor ≡ 1, kein Zehren — der alte Zwilling)
+            {
+                const svF = r._wearStatFactor,
+                    svV = r._kampfVerschleiss;
+                r._wearStatFactor = () => 1;
+                r._kampfVerschleiss = () => {};
+                try {
+                    w.z.s6 = bogenProbe();
+                } finally {
+                    r._wearStatFactor = svF;
+                    r._kampfVerschleiss = svV;
+                    delete r._wearStatFactor;
+                    delete r._kampfVerschleiss;
+                    r._setBlueprintWear(bpB, 1);
+                }
+                w.c.s6 = w.z.s6.ok === false;
+            }
+        }
+        // (T7c) die KLASSE der Waffen-Schadens-Pfade: jede Methode, die ein Wesen im Namen des Spielers schädigt
+        // (damageCreature mit source "player"), rechnet ihren Schaden im EINEN Roh-Schaden-Gesetz _kampfRohSchaden —
+        // kein Pfad setzt Kraft × Wirkung × Zone selbst zusammen (der Pfeil tat es, ohne Verschleiß).
+        {
+            const klasse = () => {
+                const tat = [];
+                const pfade = [];
+                for (const k of Object.getOwnPropertyNames(A.prototype)) {
+                    const d = Object.getOwnPropertyDescriptor(A.prototype, k);
+                    if (k === "constructor" || !d || typeof d.value !== "function") continue; // constructor = die ganze Klasse
+                    const code = String(d.value)
+                        .replace(/\/\/.*$/gm, "")
+                        .replace(/\/\*[\s\S]*?\*\//g, "");
+                    if (!/damageCreature\(/.test(code) || !/source:\s*"player"/.test(code)) continue;
+                    pfade.push(k);
+                    if (!/_kampfRohSchaden\(/.test(code)) tat.push(k);
+                }
+                return { pfade, tat };
+            };
+            const kl = klasse();
+            w.z.schadensPfade = kl.pfade.join(",");
+            w.z.schadensZwillinge = kl.tat.join(",") || "–";
+            w.c.einRohSchaden = kl.pfade.length >= 2 && kl.tat.length === 0;
+            // (S7) SELBST-TEST mit dem Täter: ein Waffen-Pfad, der seinen Schaden selbst zusammensetzt (die Pfeil-Zeile
+            // von d1ab1c64 wörtlich, als Wurf verkleidet) — die Klassen-Linse muss ihn beim Namen nennen
+            A.prototype.__taeterWurf = function (hit, pf, urteil) {
+                return this.damageCreature(hit, pf.kraft * this._trefferWirkung(urteil) * urteil.zoneMul, {
+                    source: "player",
+                });
+            };
+            try {
+                const kt = klasse();
+                w.z.s7 = kt.tat.join(",") || "–";
+                w.c.s7 = kt.tat.includes("__taeterWurf");
+            } finally {
+                delete A.prototype.__taeterWurf;
+            }
+        }
+        // (T9) EINE Güte je Gerät: der Schadens-Faktor (_heldGueteFaktor) und die Güte des Werks (computeBlueprintQuality —
+        // Werkstoff-Kraft, Equip-Fold) lesen dasselbe Lehren-Urteil des Kerns (schmiede gueteFaktor → Anteil)
+        {
+            const GU = A._arenaGesetz().guete;
+            let uneins = 0,
+                n9 = 0;
+            const proben9 = [];
+            for (const id of Object.keys(sc.REZEPT_ZU_GATTUNG)) {
+                const name = "klinge_" + id;
+                if (!s.blueprints[name]) continue;
+                ausruesten(name);
+                const anteil = (sc.gueteFaktor(id) - GU.faktorLeer) / (GU.faktorVoll - GU.faktorLeer);
+                const q = r.computeBlueprintQuality(s.blueprints[name]);
+                const gF = r._heldGueteFaktor();
+                const gSoll = GU.faktorLeer + (GU.faktorVoll - GU.faktorLeer) * q;
+                n9++;
+                const eins = Math.abs(q - anteil) < 1e-9 && Math.abs(gF - gSoll) < 1e-9;
+                if (!eins) {
+                    uneins++;
+                    if (proben9.length < 4) proben9.push(`${id}: Güte ${q.toFixed(2)} · Lehre ${anteil.toFixed(2)} · Schaden ×${gF.toFixed(2)}`);
+                }
+            }
+            w.z.gueteUneins = uneins;
+            w.z.gueteGeraete = n9;
+            w.z.gueteProben = proben9.join(" | ");
+            w.c.eineGuete = n9 >= 17 && uneins === 0;
+        }
+        // die fünf Phantom-Leser (0 Definitionen im Kern) — kein Aufruf im Stamm
+        // (Absenz über den Code ohne Kommentare — Kommentare dürfen die Gefallenen zitieren, Lehre 6)
+        const stamm = Object.getOwnPropertyNames(A.prototype)
+            .map((k) => {
+                const d = Object.getOwnPropertyDescriptor(A.prototype, k);
+                return d && typeof d.value === "function"
+                    ? String(d.value)
+                          .replace(/\/\/.*$/gm, "")
+                          .replace(/\/\*[\s\S]*?\*\//g, "")
+                    : "";
+            })
+            .join("\n");
+        w.z.phantome = (stamm.match(/\b(zoneMulAt|zoneKindAt|zoneJuiceAt|handlingMul|handlingWindF)\b/g) || []).length;
+        w.c.keinePhantome = w.z.phantome === 0;
+        const codeVon = (name) =>
+            fn(name)
+                ? String(A.prototype[name])
+                      .replace(/\/\/.*$/gm, "")
+                      .replace(/\/\*[\s\S]*?\*\//g, "")
+                : "";
+        // (T10) KERN-PFLICHT des Treffer-Volumens: fehlt tetrapoda trefferZone, bricht der erste Treffer-Test LAUT
+        // (_kernPflichtBruch, benannt) — nie still null, das je Tier gespeichert jedes Wesen unverwundbar machte.
+        // Gegenprobe: mit dem Kern trägt dasselbe Tier seine Glieder, jedes mit Zone.
+        {
+            const frisch = setze("wesen");
+            const tcEcht = globalThis.__tetrapodaCore;
+            let bruch = null,
+                rueck;
+            globalThis.__tetrapodaCore = Object.assign({}, tcEcht, { trefferZone: undefined });
+            try {
+                rueck = r._kreaturTrefferGlieder(frisch);
+            } catch (e) {
+                bruch = String((e && e.message) || e);
+            } finally {
+                globalThis.__tetrapodaCore = tcEcht;
+            }
+            w.z.kernOhneZone = bruch
+                ? /tetrapoda:trefferZone/.test(bruch)
+                    ? "Bruch benannt"
+                    : "Bruch ohne Namen"
+                : rueck === null
+                  ? "still null" + (frisch.userData._trefferGlieder === null ? ", je Tier gespeichert" : "")
+                  : "Liste";
+            delete frisch.userData._trefferGlieder;
+            const gl = r._kreaturTrefferGlieder(frisch);
+            w.z.kernMitZone = Array.isArray(gl) ? gl.length : 0;
+            w.c.kernPflichtZone =
+                w.z.kernOhneZone === "Bruch benannt" && Array.isArray(gl) && gl.length > 0 && gl.every((g) => !!g.zone);
+            r.removeCreature(frisch);
+            tiere.splice(tiere.indexOf(frisch), 1);
+        }
+        // (T11) der KALTE ERSTE TREFFER je Gattung (Lehre 14): ein Tier einer Gattung, deren Treffer-Glieder noch niemand
+        // kennt, steht in der Welt, die Welt läuft 60 Spiel-Takte, dann der erste Hieb — gezählt werden die Haut-Vertices,
+        // die der Hieb SELBST zerlegt (_kreaturGliederGruppen im Treffer-Pfad). Vorgebacken (die EINE Bake-Uhr): 0.
+        const gattungVon = (c) => {
+            const ud = c.userData || {};
+            return (
+                ud.gattung ||
+                ud.recipe ||
+                ud.preset ||
+                (A.TETRAPODA_SOUL_MAP && A.TETRAPODA_SOUL_MAP[ud.soul || "wesen"]) ||
+                ud.soul ||
+                "wesen"
+            );
+        };
+        const kalterTreffer = (seele) => {
+            ausruesten("klinge_langschwert");
+            const c = setze(seele);
+            if (!c) return { traf: false, zerlegt: null };
+            if (r._trefferGliedNamen) r._trefferGliedNamen.delete(gattungVon(c));
+            stelle(c, 9, 4);
+            for (let k = 0; k < 60; k++) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+            }
+            p._swing = null;
+            p._hitStopUntil = 0;
+            let zerlegt = 0;
+            const svG = r._kreaturGliederGruppen;
+            r._kreaturGliederGruppen = function (cr) {
+                const G = svG.call(this, cr);
+                if (G) for (const [, g] of G.gruppen) zerlegt += g.verts;
+                return G;
+            };
+            let t = null;
+            try {
+                stelle(c, 1.6);
+                zielen(punkt(c, null));
+                t = traf(schwung(), c);
+            } finally {
+                r._kreaturGliederGruppen = svG;
+                delete r._kreaturGliederGruppen;
+            }
+            parke(c);
+            return { traf: !!t, zerlegt, gattung: gattungVon(c) };
+        };
+        w.z.kalt = kalterTreffer("baer");
+        w.c.kaltVorgebacken = w.z.kalt.traf && w.z.kalt.zerlegt === 0;
+        // (S8) SELBST-TEST mit dem Täter: ohne das Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)
+        if (fn("_tickTrefferGliederVorbacken")) {
+            r._tickTrefferGliederVorbacken = () => {};
+            try {
+                w.z.s8 = kalterTreffer("wolf");
+            } finally {
+                delete r._tickTrefferGliederVorbacken;
+            }
+            w.c.s8 = w.z.s8.traf && w.z.s8.zerlegt > 0;
+        }
+        // (G1) der Klingen-Sweep liest die EINE Vorwärts-Richtung (_blickVorn) — keine Inline-Kopie der Formel
+        {
+            const sw = codeVon("_kampfSweepTick");
+            w.z.sweepFormel = (sw.match(/Math\.(sin|cos)\(/g) || []).length;
+            w.c.sweepBlickVorn = /this\._blickVorn\(/.test(sw) && w.z.sweepFormel === 0;
+        }
+        // (G2) keine typeof-Probe auf eine EIGENE Methode in den Methoden, die die Welle L (Kampf und Maus) schrieb —
+        // die Methode existiert immer; die Probe wäre ein stiller Rückfall, nie ein Vertrag
+        {
+            const welleL = [
+                "fertigeBlueprint",
+                "_ruestungDaempft",
+                "_kreaturGliederGruppen",
+                "_gliedKapselMemo",
+                "_kreaturTrefferGlieder",
+                "_kreaturGliedTreffer",
+                "_kreaturGattung",
+                "_tickTrefferGliederVorbacken",
+                "_bauModusFuer",
+                "_kampfKlingenAchse",
+                "_kampfUrteil",
+                "_kampfKraft",
+                "_kampfRohSchaden",
+                "_trefferWirkung",
+                "_kampfStats",
+                "_kampfVerschleiss",
+                "_geraetVerbraucht",
+                "_eigenwerkSchwungKE",
+                "_schmiedeGueteAnteil",
+                "_schmiedeGestalt",
+                "_geraetGraebt",
+                "_blickVorn",
+                "_blickGierZu",
+                "_blickZiel",
+                "_uiSchubladeOffen",
+                "_uiZeigerFrei",
+            ];
+            const selbst = [];
+            for (const m of welleL) {
+                for (const x of codeVon(m).matchAll(/typeof this\.([\w$]+) === "function"/g))
+                    if (typeof A.prototype[x[1]] === "function") selbst.push(m + "→" + x[1]);
+            }
+            w.z.typeofSelbst = selbst.join(",") || "–";
+            w.c.keinTypeofSelbst = selbst.length === 0;
+        }
+
+        // ═══ Q9 — MAUS-ABSICHT ═══
+        ausruesten("klinge_langschwert");
+        s.isPointerLocked = true;
+        // (M1) 3rd-Person: 10 Klicks auf den Hirsch 2 m vor dir. Liegt ein Bau näher auf dem Kamera-Strahl (die
+        // Start-Plattform), gilt das Nächste — der Klick zählt dann als verdeckt, nie als Treffer-Probe.
+        if (fn("setCameraMode")) r.setCameraMode("third");
+        const z1 = { c: zaehl.carve, t: treff.length };
+        let fk = 0,
+            frei = 0,
+            freiSchwung = 0;
+        for (let i = 0; i < 10; i++) {
+            stelle(hirsch, 2);
+            zielen(punkt(hirsch, null));
+            const pick = r._pickCreatureAtCrosshair();
+            const imKreuz = !!(pick && pick.creature === hirsch);
+            if (imKreuz) fk++;
+            const ap = r._pickArchitectureAtCrosshair();
+            const istFrei =
+                imKreuz &&
+                !(ap && ap.point && s.camera.position.distanceTo(ap.point) < s.camera.position.distanceTo(pick.point));
+            if (istFrei) frei++;
+            p._swing = null;
+            p.breakHeld = false;
+            p.stamina = (p.stats && p.stats.staminaMax) || 100; // zwischen zwei Klicks atmet der Spieler
+            const s0 = zaehl.schwung;
+            r.tryMouseBreak();
+            if (istFrei && zaehl.schwung > s0) freiSchwung++;
+            if (p._swing) {
+                p._swing.lastT = T;
+                for (let k = 0; k < 1200 && p._swing; k++) {
+                    T += 0.005;
+                    r._tickKampfSchwung(T);
+                }
+            }
+        }
+        w.z.dritte = {
+            fadenkreuz: fk,
+            frei,
+            schwuenge: freiSchwung,
+            krater: zaehl.carve - z1.c,
+            treffer: treff.slice(z1.t).filter((t) => t.c === hirsch).length,
+        };
+        w.c.dritteSchwingt = fk === 10 && frei >= 8 && freiSchwung === frei && w.z.dritte.krater === 0;
+        // (M2) 1st-Person: Drücken auf den Hirsch, der Stoß schiebt ihn fort, das Halten setzt nach
+        if (fn("setCameraMode")) r.setCameraMode("first");
+        stelle(hirsch, 1.6);
+        zielen(punkt(hirsch, null));
+        const z2 = zaehl.carve;
+        p._swing = null;
+        p.breakHeld = true;
+        p.lastHarvestStrikeAt = performance.now() / 1000;
+        r.tryMouseBreak();
+        stelle(hirsch, 1.6, 7); // aus dem Fadenkreuz geschoben
+        for (let i = 0; i < 6; i++) {
+            if (p._swing) {
+                p._swing.lastT = T;
+                for (let k = 0; k < 1200 && p._swing; k++) {
+                    T += 0.005;
+                    r._tickKampfSchwung(T);
+                }
+            }
+            p.lastHarvestStrikeAt = -Infinity;
+            r._tickHarvest();
+        }
+        p.breakHeld = false;
+        p._swing = null;
+        w.z.haltenKrater = zaehl.carve - z2;
+        w.c.haltenOhneKrater = w.z.haltenKrater === 0;
+        // (M3) RMB: Schwert schüttet nie auf; Spaten und leere Hand schon
+        parke(hirsch);
+        const boden = (d) => {
+            s.yaw = 0;
+            zielen({ x: pm.position.x, y: fussY(), z: pm.position.z + d });
+        };
+        const rmb = (n) => {
+            const f0 = zaehl.fill;
+            for (let i = 0; i < n; i++) r.tryMousePlace();
+            return zaehl.fill - f0;
+        };
+        boden(4);
+        w.z.rmbSchwert = rmb(3);
+        ausruesten("klinge_spaten");
+        boden(4);
+        w.z.rmbSpaten = rmb(1);
+        ausruesten(null);
+        boden(4);
+        w.z.rmbHand = rmb(1);
+        w.c.rmbSchwert = w.z.rmbSchwert === 0 && w.z.rmbSpaten === 1 && w.z.rmbHand === 1;
+        // (S4) SELBST-TEST: gräbt jedes Gerät, schüttet das Schwert auf
+        if (fn("_geraetGraebt")) {
+            const sv = r._geraetGraebt;
+            r._geraetGraebt = () => true;
+            try {
+                ausruesten("klinge_langschwert");
+                boden(4);
+                w.z.s4 = rmb(1);
+            } finally {
+                r._geraetGraebt = sv;
+            }
+            w.c.s4 = w.z.s4 === 1;
+        }
+        // (M4) die offene Werkstatt: 4 Klicks auf den Canvas — gezählt wird, wie oft der Canvas in die Welt greift
+        // (sein Dispatcher tryMouseBreak; hier gezählt statt ausgeführt, die Probe misst den Canvas, nicht das Ziel)
+        ausruesten(null);
+        boden(4);
+        const cv = document.getElementById("world-canvas");
+        const tmbOrig = r.tryMouseBreak;
+        let griffe = 0;
+        r.tryMouseBreak = () => (griffe++, true);
+        try {
+            r.toggleDrawer("werkstatt");
+            const offen = !!document.querySelector('.drawer[data-drawer="werkstatt"]:not([hidden])');
+            s.isPointerLocked = true; // der Zeiger war gefangen, als die Schublade aufging (Befund V-D2)
+            for (let i = 0; i < 4 && cv; i++) {
+                cv.dispatchEvent(new MouseEvent("mousedown", { button: 0, bubbles: true }));
+                cv.dispatchEvent(new MouseEvent("mouseup", { button: 0, bubbles: true }));
+            }
+            w.z.werkstattGriffe = cv ? griffe : null;
+            r.closeAllDrawers();
+            // Gegenprobe: ohne Schublade greift derselbe Klick in die Welt
+            s.isPointerLocked = true;
+            griffe = 0;
+            if (cv) {
+                cv.dispatchEvent(new MouseEvent("mousedown", { button: 0, bubbles: true }));
+                cv.dispatchEvent(new MouseEvent("mouseup", { button: 0, bubbles: true }));
+            }
+            w.z.ohneWerkstattGriffe = cv ? griffe : null;
+            w.c.werkstattTaub = offen && w.z.werkstattGriffe === 0 && w.z.ohneWerkstattGriffe === 1;
+        } finally {
+            r.tryMouseBreak = tmbOrig;
+            delete r.tryMouseBreak;
+            p.breakHeld = false;
+        }
+        // (M5) FERTIGEN eines Bauwerks (die Eiche) → der Bau-Modus, nicht die Hand
+        r.setGameMode("schöpfer");
+        const fert = r.fertigeBlueprint("baum_eiche");
+        w.z.fertigen = {
+            ok: !!(fert && fert.ok),
+            hand: (p.equipped && p.equipped.held) || null,
+            bauModus: !!(s.buildMode && s.buildMode.active && s.buildMode.blueprintName === "baum_eiche"),
+        };
+        w.c.fertigenBaut = w.z.fertigen.bauModus && w.z.fertigen.hand !== "baum_eiche";
+        if (s.buildMode && s.buildMode.active && fn("_clearBuildMode")) r._clearBuildMode();
+        ausruesten(null);
+        r.setGameMode(saved.mode);
+        s.isPointerLocked = saved.lock;
+
+        // ═══ Q10 — BLICK-WAHRHEIT ═══
+        if (fn("setCameraMode")) r.setCameraMode("first");
+        const blickBei = (pitch) => {
+            s.pitch = pitch;
+            kamera();
+            return grad(Math.asin(Math.max(-1, Math.min(1, camDir().y))));
+        };
+        w.z.blick90 = blickBei(-Math.PI / 2);
+        w.z.blick57 = blickBei(-1.0);
+        w.c.egoBlick = Math.abs(w.z.blick90 + 90) < 0.5 && Math.abs(w.z.blick57 - grad(-1.0)) < 0.5;
+        // „vor dir": at_player_forward und „baue dorf hier" gegen den Blick der Kamera (waagrecht)
+        const vorDir = (naht) => {
+            let min = Infinity;
+            for (const y of [0, 0.9, 2.4, -1.7]) {
+                s.yaw = y;
+                s.pitch = 0;
+                kamera();
+                const d = camDir();
+                const h = Math.hypot(d.x, d.z) || 1;
+                // die Naht (Selbst-Test) gilt nur der DSL-Position, nie der Kamera
+                const sv = naht ? r._blickVorn : null;
+                if (naht) r._blickVorn = naht;
+                let pos;
+                try {
+                    pos = r.dslPositions.at_player_forward([10], { state: s, rng: () => 0.5 });
+                } finally {
+                    if (naht) {
+                        r._blickVorn = sv;
+                        delete r._blickVorn;
+                    }
+                }
+                const vx = pos.x - pm.position.x,
+                    vz = pos.z - pm.position.z;
+                min = Math.min(min, (vx * d.x + vz * d.z) / (h * (Math.hypot(vx, vz) || 1)));
+            }
+            return min;
+        };
+        w.z.vorDirCos = vorDir();
+        s.yaw = 0.9;
+        s.pitch = 0;
+        kamera();
+        const dD = camDir();
+        const dsl = r.parseChatToDsl("baue dorf hier");
+        const at = dsl && dsl.program && Array.isArray(dsl.program[1]) ? dsl.program[1] : null;
+        w.z.dorfCos = at
+            ? ((at[1] - pm.position.x) * dD.x + (at[3] - pm.position.z) * dD.z) /
+              (Math.hypot(dD.x, dD.z) * (Math.hypot(at[1] - pm.position.x, at[3] - pm.position.z) || 1))
+            : null;
+        w.c.vorDir = w.z.vorDirCos > 0.9 && w.z.dorfCos !== null && w.z.dorfCos > 0.9;
+        // (S3) SELBST-TEST: die alte −(sin, cos)-Richtung in der Naht → „vor dir" kippt hinter dich
+        if (fn("_blickVorn")) {
+            const echt = r._blickVorn;
+            w.z.s3 = vorDir((yaw, pitch, out) => {
+                const o = echt.call(r, yaw, pitch, out);
+                o.x = -o.x;
+                o.z = -o.z;
+                return o;
+            });
+            w.c.s3 = w.z.s3 < 0;
+        }
+        // der Pfeil aufs Fadenkreuz bei 45° Steigung
+        if (rec) {
+            ausruesten("klinge_langbogen");
+            s.yaw = 0;
+            s.pitch = Math.PI / 4;
+            kamera();
+            const d = camDir();
+            const vorher = (s._pfeile || []).length;
+            p._shotCooldownUntil = 0;
+            r._beginPlayerShot(rec, 1);
+            const pf = (s._pfeile || [])[vorher];
+            if (pf) {
+                const v = V3().set(pf.vx, pf.vy, pf.vz).normalize();
+                w.z.pfeilFadenkreuz = grad(v.angleTo(d));
+                r._pfeilDespawn(pf);
+                s._pfeile.splice(s._pfeile.indexOf(pf), 1);
+            }
+            w.c.pfeilFadenkreuz = Number.isFinite(w.z.pfeilFadenkreuz) && w.z.pfeilFadenkreuz < 1;
+        }
+    } catch (e) {
+        w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
+    } finally {
+        r.damageCreature = orig.damageCreature;
+        r._kampfHitJuice = orig.juice;
+        r._beginPlayerSwing = orig.swing;
+        r.dslRun = orig.dsl;
+        r.damagePlayer = orig.damagePlayer;
+        delete r.damageCreature;
+        delete r._kampfHitJuice;
+        delete r._beginPlayerSwing;
+        delete r.dslRun;
+        delete r.damagePlayer;
+        for (const c of tiere) if (s.creatures.indexOf(c) !== -1) r.removeCreature(c);
+        for (const pf of (s._pfeile || []).slice()) r._pfeilDespawn(pf);
+        if (s._pfeile) s._pfeile.length = 0;
+        try {
+            r.equipHeld(saved.held || null);
+        } catch (_e) {}
+        if (s.buildMode && s.buildMode.active && fn("_clearBuildMode")) r._clearBuildMode();
+        if (Array.isArray(saved.hotbar)) s.hotbar = saved.hotbar;
+        if (r.getGameMode() !== saved.mode) r.setGameMode(saved.mode);
+        if (fn("setCameraMode")) r.setCameraMode(saved.cam);
+        s.yaw = saved.yaw;
+        s.pitch = saved.pitch;
+        s.isPointerLocked = saved.lock;
+        p.hp = saved.hp;
+        p.respawnGraceUntil = saved.grace;
+        p.breakHeld = saved.breakHeld;
+        p._swing = saved.swing;
+        p._hitStopUntil = saved.hitStop;
+        s.maxCreatures = saved.maxC;
+    }
+    return w;
+}
+
 (async () => {
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
@@ -86,6 +1006,7 @@ const server = http.createServer((req, res) => {
         window.__anazhHeadlessNullRenderer = true; // GPU-frei, Produktions-Boot
     });
     let out = null;
+    let welle = null;
     try {
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "networkidle0", timeout: 120000 });
         await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
@@ -235,6 +1156,10 @@ const server = http.createServer((req, res) => {
             p.equipped = { held: "_kg_klinge" };
             s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4);
             s.yaw = 0; // Blick nach +z (die _loopCamera-Konvention)
+            s.pitch = 0;
+            // die Klinge folgt dem Fadenkreuz (Welle L): die ECHTE Kamera steht auf dem Blick
+            if (typeof r.setCameraMode === "function") r.setCameraMode("first");
+            r._loopCamera(900);
             p._hitStopUntil = 0;
             p._swing = null;
 
@@ -248,6 +1173,14 @@ const server = http.createServer((req, res) => {
             const cNeben = spawnBei(0.9, Math.min(1.8, reach - 0.4)); // NEBEN dem Crosshair, in der Kapsel
             const cRuecken = spawnBei(0, -2.0); // HINTER dem Rücken
             if (!cNeben || !cRuecken) return { error: "Kreatur-Spawn fehlgeschlagen (Cap?)" };
+            // Das Fadenkreuz steht 0,9 m NEBEN dem Ziel auf seiner Leibes-Höhe (Gier 0, die Neigung auf die Mitte):
+            // die Klinge zielt durchs Fadenkreuz und fegt den Bogen ±arcHalf (Welle L).
+            {
+                const b = new THREE.Box3().setFromObject(cNeben);
+                const c = s.camera.position;
+                s.pitch = Math.atan2((b.min.y + b.max.y) / 2 - c.y, Math.max(0.5, cNeben.position.z - c.z));
+                r._loopCamera(901);
+            }
 
             const schwinge = (t0) => {
                 // ein voller Schwung über die synthetische Anzeige-Uhr; zählt die
@@ -257,6 +1190,7 @@ const server = http.createServer((req, res) => {
                 if (!okStart || !p._swing) return { okStart: false, hits: 0 };
                 p._swing.lastT = t0;
                 let hits = 0;
+                let tHit = null;
                 let prevHp = cNeben.userData.hp;
                 let t = t0;
                 for (let k = 0; k < 200 && p._swing; k++) {
@@ -264,10 +1198,11 @@ const server = http.createServer((req, res) => {
                     r._tickKampfSchwung(t);
                     if (cNeben.userData.hp < prevHp) {
                         hits++;
+                        if (tHit === null) tHit = t;
                         prevHp = cNeben.userData.hp;
                     }
                 }
-                return { okStart: true, hits, tEnd: t };
+                return { okStart: true, hits, tEnd: t, tHit };
             };
 
             // ── (B) SWEEP: Neben-Ziel EINMAL, Rücken-Ziel NIE, Juice feuert ──
@@ -279,7 +1214,10 @@ const server = http.createServer((req, res) => {
             o.checks.bTrifftNeben = lauf1.okStart && cNeben.userData.hp < hpNeben0;
             o.checks.bDedupEinmal = lauf1.hits === 1;
             o.checks.bNieRuecken = cRuecken.userData.hp === hpRueck0 && !cRuecken.userData.dying;
-            o.checks.bHitStopGesetzt = Number.isFinite(p._hitStopUntil) && p._hitStopUntil > 1000;
+            // das Hit-Stop-Fenster liegt im Gesetz-Band [freezeMinSec, freezeMaxSec] ab dem Treffer-Takt
+            o.freeze = lauf1.tHit !== null ? p._hitStopUntil - lauf1.tHit : null;
+            o.checks.bHitStopGesetzt =
+                o.freeze !== null && o.freeze >= G.freezeMinSec - 1e-9 && o.freeze <= G.freezeMaxSec + 1e-9;
             o.checks.bKameraImpuls = (s._landImpactPending || 0) >= G.dipMin - 1e-9;
             // ein zweiter Schwung trifft WIEDER (der Dedup gilt JE Schwung, nicht
             // global) — das Ziel re-pinnen (der Knockback schob es hinaus).
@@ -443,7 +1381,9 @@ const server = http.createServer((req, res) => {
                         let dmgF = null;
                         try {
                             reach = r._kampfBladeReach();
-                            dmgF = r._heldSchmiedeFaktor();
+                            // die WIRKUNG des Treffer-Urteils (Welle L: seine Energie gegen keRefJ, keine Klemme)
+                            // bei EINEM Klingen-Tempo — die Ordnung trägt die gemessene Masse.
+                            dmgF = r._trefferWirkung(r._kampfUrteil(20, 0, null));
                         } finally {
                             r._heldImplementBlueprint = heldSaved;
                         }
@@ -515,6 +1455,7 @@ const server = http.createServer((req, res) => {
 
             return o;
         });
+        welle = await page.evaluate(WELLE_L);
     } catch (e) {
         out = { error: (e && e.message) || String(e) };
     }
@@ -575,7 +1516,10 @@ const server = http.createServer((req, res) => {
         check(c.bDedupEinmal, `(B) dedupliziert je Schwung: GENAU EIN Treffer (${out.sweep.hits})`);
         check(c.bZweiterSchwungTrifft, "(B) ein zweiter Schwung trifft wieder (Dedup gilt JE Schwung)");
         check(c.bNieRuecken, "(B) NIE ein Ziel hinter dem Rücken (die Wand im Sweep-Chokepoint)");
-        check(c.bHitStopGesetzt, "(B) der Treffer öffnet das Hit-Stop-Fenster (60–100 ms)");
+        check(
+            c.bHitStopGesetzt,
+            `(B) der Treffer öffnet das Hit-Stop-Fenster im Gesetz-Band (${out.freeze !== null ? (out.freeze * 1000).toFixed(0) + " ms" : "kein Treffer"})`
+        );
         check(c.bKameraImpuls, "(B) Kamera-Impuls über den BESTEHENDEN Landungs-Dip (_landImpactPending)");
         check(c.juiceKanaele, "(B) Hit-Juice wired: Kamera-Dip + Klang-One-Shot in _kampfHitJuice");
         check(c.klangEineMaschine, "(B) Klang über die EXISTIERENDE Maschine (masterGain, kein zweiter AudioContext)");
@@ -600,6 +1544,78 @@ const server = http.createServer((req, res) => {
         check(c.eRueckstandsfrei, "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt");
         check(c.layerImRigPfad, "(E) KONSUM: animatePlayerSoul wendet den Schwung-Layer an");
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
+    }
+    console.log("\n  ── WELLE L — Treffer · Maus · Blick (die Leben-Prüfung „Kampf“ als Linse) ──\n");
+    if (!welle) {
+        console.log("FEHLER: die Welle-L-Proben liefen nicht");
+        ok = false;
+    } else {
+        const z = welle.z,
+            c = welle.c;
+        const f1 = (v) => (v === null || v === undefined ? "–" : Number(v).toFixed(2));
+        if (welle.fehler.length) console.log("  Fehler: " + welle.fehler.join(" · "));
+        console.log(
+            `  (Q8) Zone Kopf÷Bein ${f1(z.zoneKopfBein)} (Ziel-Rest ${f1(z.zielKopf)}°/${f1(z.zielBein)}°, Zonen ${JSON.stringify(z.zonen)}) · hangab Hirsch ${z.hangabHirsch}/10, Fuchs ${z.hangabFuchs}/10 · klein flach ${z.kleinFlach}/10`
+        );
+        console.log(
+            `       Hit-Stop-Energie Grossschwert ${f1(z.stopGross)} J · Keule ${f1(z.stopKeule)} J · Kappe ${z.aufDerKappe} von ${z.nahkampfRezepte} · Gegenwehr ${z.gegenwehr}/20`
+        );
+        console.log(`       Faktoren ${z.faktoren}`);
+        console.log(
+            `       ${z.panzer} · Verschleiß wear ${f1(z.wear16)} nach ${z.treffer16} Treffern, verbraucht ${z.trefferVerbraucht} Treffer · Phantome ${z.phantome} · Güte uneins ${z.gueteUneins} von ${z.gueteGeraete}${z.gueteProben ? " (" + z.gueteProben + ")" : ""}`
+        );
+        console.log(
+            `       Pfeil voll ${f1(z.pfeilVoll)} · 25 % ${f1(z.pfeilViertel)} · hinter der Wand ${z.pfeilHinterWand} · frei ${z.pfeilFrei}`
+        );
+        const bg = z.bogen || {};
+        console.log(
+            `       Bogen-Verschleiß: wear 1 ${f1(bg.voll)} · wear 0,5 ${f1(bg.halb)} (÷ ${f1(bg.verh)}, Soll ${f1(bg.soll)}) · zehrt je Schuss ${bg.zehrtVoll === undefined ? "–" : bg.zehrtVoll.toFixed(4)}/${bg.zehrtHalb === undefined ? "–" : bg.zehrtHalb.toFixed(4)} · verbraucht (0,02) flog ${bg.verbrauchtFlog}, traf ${bg.verbrauchtTraf} · Täter S6 ok=${z.s6 ? z.s6.ok : "–"}`
+        );
+        console.log(
+            `       Waffen-Schadens-Pfade ${z.schadensPfade} · ohne _kampfRohSchaden: ${z.schadensZwillinge} · Täter S7 nennt ${z.s7 || "–"} · trefferZone fehlt → ${z.kernOhneZone} (mit Kern ${z.kernMitZone} Glieder)`
+        );
+        console.log(
+            `       kalter erster Treffer ${z.kalt ? z.kalt.gattung + ": traf " + z.kalt.traf + ", zerlegt " + z.kalt.zerlegt + " Vertices" : "–"} · Täter S8 ${z.s8 ? z.s8.gattung + ": zerlegt " + z.s8.zerlegt : "–"} · Sweep Math.sin/cos ${z.sweepFormel} · typeof-Selbst ${z.typeofSelbst}`
+        );
+        console.log(
+            `  (Q9) 3rd: Fadenkreuz ${z.dritte && z.dritte.fadenkreuz}/10, frei ${z.dritte && z.dritte.frei}, Schwünge ${z.dritte && z.dritte.schwuenge}, Krater ${z.dritte && z.dritte.krater}, Treffer ${z.dritte && z.dritte.treffer} · Halten nach dem Stoß ${z.haltenKrater} Krater · RMB Schwert ${z.rmbSchwert}/3, Spaten ${z.rmbSpaten}, Hand ${z.rmbHand} · Werkstatt: der Canvas greift ${z.werkstattGriffe}/4 (ohne Schublade ${z.ohneWerkstattGriffe}/1) · FERTIGEN ${JSON.stringify(z.fertigen)}`
+        );
+        console.log(
+            `  (Q10) Ego-Neigung −90° → ${f1(z.blick90)}°, −57,3° → ${f1(z.blick57)}° · vor dir min cos ${f1(z.vorDirCos)} · „baue dorf hier" cos ${f1(z.dorfCos)} · Pfeil↔Fadenkreuz ${f1(z.pfeilFadenkreuz)}°\n`
+        );
+        check(c.zoneJederTreffer, "Q8 K-D2: jeder Treffer trägt eine Zone (die Phantom-Zone war null in 222/222)");
+        check(c.zoneWirkt, "Q8 K-D2: die Zone wirkt — Kopf ÷ Bein ≥ 1,5 (dieselbe Klinge, derselbe Hirsch)");
+        check(c.keinePhantome, "Q8 K-D2: die fünf Phantom-Leser (zoneMulAt/…/handlingWindF) sind aus dem Stamm verschwunden");
+        check(c.hangab, "Q8 K-D3: hangab (Hirsch 1,6 m/−0,62 m, Fuchs 1,3 m/−0,6 m) je ≥ 8/10 — die Klinge folgt dem Fadenkreuz");
+        check(c.kleinFlach, "Q8 K-D3: klein auf gleicher Höhe (Hirsch L 0,64) ≥ 8/10 — getroffen wird die Gestalt");
+        check(c.hitStopEnergie, "Q8 K-D4: der Hit-Stop ist energie-skaliert — Keule ≠ Grossschwert (≥ 10 %)");
+        check(c.keineKappe, "Q8 K-D5: keine Schadens-Kappe — höchstens 2 Nahkampf-Rezepte auf dem Maximal-Faktor");
+        check(c.verschleiss, "Q8 K-D6: Kampf verschleißt die Klinge, ein verbrauchtes Gerät schlägt nicht");
+        check(c.eineGuete, "Q8 K-D7: EINE Güte je Gerät — Schaden, Werkstoff-Kraft und Equip-Fold lesen das Lehren-Urteil des Kerns");
+        check(c.pfeilImpuls, "Q8 K-D8: der Pfeil trägt seine Energie in den Schaden (25 %-Auszug ≤ 0,5 × voll)");
+        check(c.pfeilWand, "Q8 K-D8: eine Wand hält den Pfeil (0 Treffer dahinter, frei 1)");
+        check(c.bogenVerschleiss, "Q8 K-D6: der Bogen verschleißt wie die Klinge — wear 0,5 trifft mit 0,65, jeder Schuss zehrt, verbraucht (0,02) löst er nicht");
+        check(c.einRohSchaden, "Q8 K-D6: JEDER Waffen-Schadens-Pfad (damageCreature im Namen des Spielers) rechnet im EINEN _kampfRohSchaden");
+        check(c.kernPflichtZone, "Q8 K-D3: fehlt tetrapoda trefferZone, bricht der Treffer-Test laut und benannt (nie still null je Tier)");
+        check(c.kaltVorgebacken, "Q8 Lehre 14: der erste Treffer auf eine Gattung zerlegt keine Haut — die Treffer-Glieder sind vorgebacken (die EINE Bake-Uhr)");
+        check(c.sweepBlickVorn, "Q10: der Klingen-Sweep liest _blickVorn (keine Inline-Kopie der Vorwärts-Formel)");
+        check(c.keinTypeofSelbst, "Welle L: keine typeof-Probe auf eine eigene Methode in den Kampf- und Maus-Methoden der Welle");
+        check(c.keinPanzer, "Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt, der Angriff steigt)");
+        check(c.gegenwehr, "Q8 K-D16: Gegenwehr > 0 bei 20 Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)");
+        check(c.dritteSchwingt, "Q9 K-D1: 3rd-Person — jeder freie Klick auf das Tier im Fadenkreuz schwingt (≥ 8 von 10 frei), 0 Krater");
+        check(c.haltenOhneKrater, "Q9 K-D1: 1st-Person — das Halten nach dem Stoß gräbt nicht (0 Krater)");
+        check(c.rmbSchwert, "Q9 K-D17: RMB mit dem Schwert schüttet nie auf (Spaten und leere Hand schon)");
+        check(c.werkstattTaub, "Q9 V-D2: bei offener Werkstatt ist der Canvas taub (0 von 4 Griffen; ohne Schublade greift er)");
+        check(c.fertigenBaut, "Q9 V-k11: FERTIGEN eines Bauwerks öffnet den Bau-Modus, die Hand bleibt leer");
+        check(c.egoBlick, "Q10 K-D14: die Ego-Neigung ist der Blick (−90° → −90°, −57,3° → −57,3°)");
+        check(c.vorDir, "Q10 V-D4: jedes „vor dir“ liegt vor dem Blick (at_player_forward, „baue dorf hier“: cos > 0,9)");
+        check(c.pfeilFadenkreuz, "Q10 K-D14: der Pfeil fliegt aufs Fadenkreuz (< 1° bei 45° Steigung)");
+        check(c.s3 === true, "SELBST-TEST (S3): _blickVorn mit der alten −(sin, cos)-Richtung → „vor dir“ kippt hinter dich");
+        check(c.s4 === true, "SELBST-TEST (S4): _geraetGraebt ≡ wahr → das Schwert schüttet auf (die Linse sieht den Rückfall)");
+        check(c.s5 === true, "SELBST-TEST (S5): _kreaturGliedTreffer ≡ null → kein Treffer (die Serie misst die Gestalt)");
+        check(c.s6 === true, "SELBST-TEST (S6): der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist rot");
+        check(c.s7 === true, "SELBST-TEST (S7): ein Wurf-Täter setzt Kraft × Wirkung × Zone selbst zusammen → die Klassen-Linse nennt ihn");
+        check(c.s8 === true, "SELBST-TEST (S8): ohne das Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)");
     }
     console.log(
         `\n  ${ok ? "✅ GRÜN — die gerechnete Schwungphysik erreicht den Kampf: √I führt · die Klinge trifft · die Sim steht nie" : "❌ ROT — das Kampf-Gefühl trägt nicht"}\n`

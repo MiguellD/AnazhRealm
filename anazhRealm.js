@@ -2956,15 +2956,9 @@ class AnazhRealm {
             at_player_forward: ([dist], ctx) => {
                 const d = c(dist, 1, 50) || 5;
                 const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
-                const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : 0;
-                // yaw=0 → Blick nach +X. -sin(yaw), 0, -cos(yaw) ist die
-                // Standard-„forward"-Richtung im AnazhRealm-Coord-System
-                // (gleicher Vektor wie der Phantom-Distance-Pfad).
-                return {
-                    x: p.x - Math.sin(yaw) * d,
-                    y: p.y,
-                    z: p.z - Math.cos(yaw) * d,
-                };
+                // „vor dir" liest die EINE Vorwärts-Richtung (_blickVorn, waagrecht) — dieselbe wie Kamera und Phantom.
+                const v = this._blickVorn(ctx.state.yaw, 0);
+                return { x: p.x + v.x * d, y: p.y, z: p.z + v.z * d };
             },
             near_player: ([radius], ctx) => {
                 const r = c(radius, 1, 100);
@@ -8606,10 +8600,10 @@ class AnazhRealm {
                     // Forward-Offset 8 m statt Spieler-Position: die Bauwerke sind ~6–10 m groß, sonst steht der
                     // Spieler MITTEN darin. Position + Seed zur Build-Zeit eingebettet (Multi-User-Determinismus).
                     const p = this.state.playerMesh ? this.state.playerMesh.position : this._defaultSpawnPos();
-                    const yaw = typeof this.state.yaw === "number" ? this.state.yaw : 0;
+                    const vorn = this._blickVorn(this.state.yaw, 0); // die EINE Vorwärts-Richtung
                     const dist = 8;
-                    const fx = p.x - Math.sin(yaw) * dist;
-                    const fz = p.z - Math.cos(yaw) * dist;
+                    const fx = p.x + vorn.x * dist;
+                    const fz = p.z + vorn.z * dist;
                     // der Same aus dem Welt-Strom (`_bauSame`; das Dorf derselbe Strom wie `dorf`) — nie Math.random
                     // (Lehre 7: Peers und Reloads würfelten verschiedene Dörfer)
                     const seed = this._bauSame(kind === "dorf" ? "stadt" : kind);
@@ -11585,6 +11579,7 @@ class AnazhRealm {
             d.hidden = d.getAttribute("data-drawer") !== name;
         }
         this.state.uiActiveDrawer = name;
+        this._uiZeigerFrei(); // die Schublade gehört der Maus (Welle L, V-D2)
         // toggleDrawer ruft den Werkstatt-Lifecycle-Hook (Lazy-Init der 3D-Preview + RAF-Start) —
         // sonst bleiben Drawer-Shortcuts/API-Calls ohne Preview (state.workshop.preview === null).
         if (typeof this._workshopHandleDrawerChange === "function") {
@@ -11625,6 +11620,7 @@ class AnazhRealm {
                 const isThis = drawer.getAttribute("data-drawer") === name;
                 drawer.hidden = !isThis;
             }
+            this._uiZeigerFrei(); // die Schublade gehört der Maus (Welle L, V-D2)
             // UI-Putz: die Bibliothek beim Öffnen sofort füllen — die migrierten Welt-
             // Sektionen (Stammbaum/Tagebuch/Andere Welten) + die Welten-Liste.
             if (name === "bibliothek") {
@@ -18914,9 +18910,19 @@ class AnazhRealm {
         creature.userData.statTags = computed.tags;
     }
 
-    // Schaden (symmetrisch zum Spieler, DIESELBE computeCreatureStats-Pipeline für hpMax + defense):
-    // `dealt = max(1, amount − defense)` (keine Unverwundbarkeit); hp ≤ 0 → Kampf-Tod (Loot +
-    // removeCreature). Knockback nur, wenn der Angreifer Ort + Wucht liefert (opts.fromPos/knockback).
+    // DIE RÜSTUNG DÄMPFT, SIE SCHLUCKT NICHT (Welle L, Befund K-D5): dealt = roh² / (roh + defense) — ein Treffer so stark
+    // wie die Rüstung bringt die Hälfte durch, ein dreimal stärkerer drei Viertel, ein schwacher einen Bruchteil, nie 0.
+    // Die flache Wand max(1, roh − defense) fraß die leichten Klingen: der Dolch (roh 18,89 gegen defense 11,9) verlor
+    // 63 %, jeder Treffer unter 12,9 roh blieb bei 1. EIN Gesetz für Wesen und Spieler (damageCreature, damagePlayer).
+    _ruestungDaempft(roh, defense) {
+        const r = Math.max(0, Number(roh) || 0);
+        const d = Math.max(0, Number(defense) || 0);
+        return r > 0 ? (r * r) / (r + d) : 0;
+    }
+
+    // Schaden (symmetrisch zum Spieler, DIESELBE computeCreatureStats-Pipeline für hpMax + defense): die Rüstung dämpft
+    // (_ruestungDaempft); hp ≤ 0 → Kampf-Tod (Loot + removeCreature). Knockback nur, wenn der Angreifer Ort + Wucht
+    // liefert (opts.fromPos/knockback).
     damageCreature(creature, amount, opts = {}) {
         if (!creature || !creature.userData || creature.userData.kind !== "creature") {
             return { ok: false, reason: "not_creature" };
@@ -18930,23 +18936,8 @@ class AnazhRealm {
                 ? creature.userData.stats
                 : this.computeCreatureStats(creature).stats;
         if (typeof creature.userData.hp !== "number") creature.userData.hp = stats.hpMax; // lazy-init (Restore/alt)
-        const defense = Math.max(0, stats.defense || 0);
-        const dealt = Math.max(1, (Number(amount) || 0) - defense);
+        const dealt = this._ruestungDaempft(amount, stats.defense);
         creature.userData.hp -= dealt;
-        // Knockback nur, wenn der Angreifer Ort + Wucht liefert (LMB-Angriff; der DSL-Op gibt keinen),
-        // ∝ dessen knockback-Stat.
-        if (opts.fromPos && (opts.knockback || 0) > 0) {
-            // Feld-nativer Knockback: direkter Positions-Stoß weg vom Angreifer; `_creatureGroundY` erdet im
-            // nächsten updateCreatures-Frame. Klemme + Skalen aus dem schmiede-Gesetzbuch
-            // (ARENA.gefuehl: push = min(stossCap, kb·stossProKb)·stossSkala).
-            const G = AnazhRealm._arenaGesetz().gefuehl;
-            const dx = creature.position.x - opts.fromPos.x;
-            const dz = creature.position.z - opts.fromPos.z;
-            const len = Math.hypot(dx, dz) || 1;
-            const push = Math.min(G.stossCap, opts.knockback * G.stossProKb);
-            creature.position.x += (dx / len) * push * G.stossSkala;
-            creature.position.z += (dz / len) * push * G.stossSkala;
-        }
         if (creature.userData.hp <= 0) {
             this._creatureCombatDeath(creature, opts.source || "unknown");
             return { ok: true, dealt, killed: true };
@@ -18980,6 +18971,21 @@ class AnazhRealm {
                 this.damagePlayer(counter, "gegenwehr");
                 this.log(`${creature.userData.name || "Ein Wesen"} wehrt sich!`, "INFO");
             }
+        }
+        // Knockback nur, wenn der Angreifer Ort + Wucht liefert (LMB-Angriff; der DSL-Op gibt keinen),
+        // ∝ dessen knockback-Stat — NACH der Gegenwehr (Welle L, Befund K-D16): der Stoß kam vorher und schob jedes
+        // Ziel aus der Biss-Reichweite (Ziel in 1,6 m → 3,76 m), 0 Konter bei 96 Treffern.
+        if (opts.fromPos && (opts.knockback || 0) > 0) {
+            // Feld-nativer Knockback: direkter Positions-Stoß weg vom Angreifer; `_creatureGroundY` erdet im
+            // nächsten updateCreatures-Frame. Klemme + Skalen aus dem schmiede-Gesetzbuch
+            // (ARENA.gefuehl: push = min(stossCap, kb·stossProKb)·stossSkala).
+            const G = AnazhRealm._arenaGesetz().gefuehl;
+            const dx = creature.position.x - opts.fromPos.x;
+            const dz = creature.position.z - opts.fromPos.z;
+            const len = Math.hypot(dx, dz) || 1;
+            const push = Math.min(G.stossCap, opts.knockback * G.stossProKb);
+            creature.position.x += (dx / len) * push * G.stossSkala;
+            creature.position.z += (dz / len) * push * G.stossSkala;
         }
         this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
         return { ok: true, dealt, killed: false };
@@ -44124,12 +44130,10 @@ class AnazhRealm {
             const resist = Math.max(0, Math.min(0.9, stats.heatResist || 0));
             scaled = value * (1 - resist);
         }
-        // Kreatur-Schläge (jagd/gegenwehr) dämpft die Rüstung FLACH: dealt = max(1, amount − defense) — EXAKT
-        // die Formel aus damageCreature. Andere Quellen (Fall/Hitze/Welt) bleiben ungedämpft.
+        // Kreatur-Schläge (jagd/gegenwehr) dämpft die Rüstung — DASSELBE Gesetz wie bei den Wesen (_ruestungDaempft).
+        // Andere Quellen (Fall/Hitze/Welt) bleiben ungedämpft.
         const creatureStrike = source === "jagd" || source === "gegenwehr";
-        if (creatureStrike) {
-            scaled = Math.max(1, scaled - Math.max(0, stats.defense || 0));
-        }
+        if (creatureStrike) scaled = this._ruestungDaempft(scaled, stats.defense);
         const hpBefore = Number(this.state.player.hp) || 0;
         const hp = Math.max(0, hpBefore - scaled);
         this.state.player.hp = hp;
@@ -44968,8 +44972,8 @@ class AnazhRealm {
         return AnazhRealm.WEAR_PER_STRIKE_BASE * scale;
     }
 
-    // wear-Faktor auf Equip-Stats (HELD_STAT_WEIGHT-Pfad), linear: wear=0 → WEAR_STAT_FLOOR (0.3, nie 0 —
-    // ein kaputtes Werkzeug wirkt noch), wear=1 → 1.0. Liest computePlayerStats für held-Geräte.
+    // wear-Faktor auf den Treffer-Schaden des gehaltenen Geräts, linear: wear=0 → WEAR_STAT_FLOOR (0.3, nie 0 —
+    // ein abgenutztes Werkzeug wirkt noch), wear=1 → 1.0. Der EINE Leser: _kampfKraft (Welle L, K-D6 — Klinge und Pfeil).
     _wearStatFactor(bp) {
         const w = this._blueprintWear(bp);
         const floor = AnazhRealm.WEAR_STAT_FLOOR;
@@ -45117,6 +45121,13 @@ class AnazhRealm {
         if (bp && bp.role === "armor") return this.forgeArmor(name);
         if (bp && bp.role === "soul") return this.forgeAvatar(name);
         if (bp && bp.role === "consumable") return this.brewConsumable(name);
+        // Ein Bauwerk wird gebaut, nicht gehalten (Welle L, V-k11): der Bau-Modus übernimmt (confirmBuild zahlt beim
+        // Setzen); die Schublade schließt, damit das Phantom in der Welt steht.
+        if (bp && this._isPlaceableBlueprint(bp)) {
+            const res = this._bauModusFuer(name);
+            if (res.ok) this.closeAllDrawers();
+            return res.ok ? { ok: true, bauModus: true, slot: res.slot } : res;
+        }
         return this.forgeBlueprint(name);
     }
 
@@ -52021,10 +52032,6 @@ class AnazhRealm {
         // Equipped-Stat-Stacking, je Quelle präzisions-moduliert:
         // finalTags[t] = soul[t] + armor[t]·armorWeight·armorPrec + tool[t]·toolWeight·toolPrec + Boosts
         const equipped = (this.state.player && this.state.player.equipped) || {};
-        // Das EINE gehaltene Gerät (Werkzeug + Waffe verschmolzen, _heldImplementBlueprint) faltet mit
-        // HELD_STAT_WEIGHT in den Spieler-Compound — es bestimmt Angriff wie Abbau, kein Rollen-Schloss.
-        // Über den kanonischen _foldEquippedStatTags (geteilt mit der Kreatur).
-        this._foldEquippedStatTags(finalTags, this._heldImplementBlueprint(), AnazhRealm.HELD_STAT_WEIGHT, "held");
         // Rüstung-Beitrag (ein eigener GETRAGENER Slot, aus Bauplan mit role:"armor")
         if (equipped.armor && this.state.blueprints[equipped.armor]) {
             const bp = this.state.blueprints[equipped.armor];
@@ -52046,6 +52053,18 @@ class AnazhRealm {
         }
         // V18.312 (Gesetz #0) — Tags → Stats + Invers-dichte-Floor über die kanonische Quelle (geteilt mit der Kreatur).
         const stats = this._statsFromTags(finalTags);
+        // DIE HAND IST KEIN PANZER (Welle L 06.10., Befund K-D15): das EINE gehaltene Gerät (Werkzeug + Waffe
+        // verschmolzen, _heldImplementBlueprint) faltet mit HELD_STAT_WEIGHT über den kanonischen
+        // _foldEquippedStatTags NUR in die Angriffs-Größen (AnazhRealm.HELD_ANGRIFF_STATS) — es bestimmt Angriff wie
+        // Abbau. Vorher faltete es in ALLE Stats: jede Eisenwaffe hob defense 12,8 → 20,94 und hpMax 134 → 185,2, ein
+        // Wolf-Biss (roh 15,8) kostete 1 HP. Schutz kommt nur aus dem Slot armor.
+        const heldBp = this._heldImplementBlueprint();
+        if (heldBp) {
+            const angriffTags = { ...finalTags };
+            this._foldEquippedStatTags(angriffTags, heldBp, AnazhRealm.HELD_STAT_WEIGHT, "held");
+            const angriff = this._statsFromTags(angriffTags);
+            for (const k of AnazhRealm.HELD_ANGRIFF_STATS) stats[k] = angriff[k];
+        }
         // Soul-Größe hebt HP/Stamina/Mana (sqrt-Skalierung: größer = robuster, nicht linear) und senkt
         // speed/attackSpeed/jumpPower (größer = langsamer, nicht stärker in allem). Built-in-Seelen NEUTRAL
         // (sizeFactor 1); Custom-Avatare bekommen den Hebel aus der Substanz (0.7 → ~84 %, 1.7 → ~130 %).
@@ -58842,8 +58861,16 @@ class AnazhRealm {
         return null;
     }
 
+    // DIE EINE GÜTE EINES WERKS ∈ [0, 1] (Welle L, Befund K-D7 — vorher drei Wahrheiten: der Lehren-Faktor des Kerns im
+    // Schaden, forgedPrecision in der Werkstoff-Kraft, die Teile-Präzision im Equip-Fold): ein Schmiede-Gerät trägt das
+    // Lehren-Urteil des Kerns über Gestalt und Prägung (_schmiedeGueteAnteil), ein geschmiedetes Eigenwerk den
+    // eingefrorenen Werk-Stand (forgedPrecision), ein Plan die Präzision seiner Teile. Leser: der Schadens-Faktor
+    // (_heldGueteFaktor), die Werkstoff-Kraft (_implementProfileForBlueprint), der Equip-Fold, Rüstung und Konsum.
     computeBlueprintQuality(blueprint) {
         if (!blueprint || !Array.isArray(blueprint.parts)) return 1.0;
+        const lehre = this._schmiedeGueteAnteil(blueprint);
+        if (lehre !== null) return lehre;
+        if (Number.isFinite(blueprint.forgedPrecision)) return blueprint.forgedPrecision;
         return this._compoundAvgPrecisionFromParts(blueprint.parts);
     }
 
@@ -67033,10 +67060,11 @@ class AnazhRealm {
         let d = Math.hypot(dx, dz);
         if (d >= clearance) return pos; // schon weit genug — unberührt
         if (d < 1e-3) {
-            // ~auf dem Spieler → vor ihn (Blickrichtung; yaw=0 → Blick nach −z/−x)
+            // ~auf dem Spieler → vor ihn (die EINE Vorwärts-Richtung)
             const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : ctx.rng ? ctx.rng() * Math.PI * 2 : 0;
-            dx = -Math.sin(yaw);
-            dz = -Math.cos(yaw);
+            const vorn = this._blickVorn(yaw, 0);
+            dx = vorn.x;
+            dz = vorn.z;
             d = 1;
         }
         const nx = pp.x + (dx / d) * clearance;
@@ -69158,8 +69186,8 @@ class AnazhRealm {
                 const dx = cx - pm.position.x;
                 const dz = cz - pm.position.z;
                 if (Math.hypot(dx, dz) > 0.5) {
-                    // yaw: 0 → −z; sin/cos wie Chat-Bau-Offset
-                    this.state.yaw = Math.atan2(-dx, -dz);
+                    // der Blick zu den Häusern (die Umkehrung der EINEN Vorwärts-Richtung)
+                    this.state.yaw = this._blickGierZu(dx, dz);
                 }
             }
             const nHaus = houses.length;
@@ -71509,11 +71537,11 @@ class AnazhRealm {
     // (Der GLIED-BÄCKER der Voxel-Ära fiel mit dem Schöpfer-Wort „analog!" —
     // die Kreatur-Glieder sind Kapsel-GESETZE, _gliedKapselFit ist die Naht.)
 
-    // Glieder einer Kreatur: jedes Mesh gehört seinem nächsten artikulierten Anker (die Gruppen, die
-    // _animateTierBaum rotiert); Mini-Gruppen verschmelzen in den Eltern-Anker, Deckel 12 je Tier. Der
-    // Fern-Standbild-Ast backt NIE (Doppel-Körper). Ganz oder gar nicht: reicht der Atlas nicht, fällt
-    // das ganze Tier.
-    _kreaturGliederBacken(cr, einblenden) {
+    // DIE GLIEDER DER GESTALT — EINE Quelle für Fern-Bild UND Treffer (Welle L 06.10.): jedes Mesh gehört seinem
+    // nächsten artikulierten Anker (die Gruppen, die _animateTierBaum rotiert; die Tier-Haut zerfällt je dominantem
+    // Bone), Mini-Gruppen verschmelzen in den Eltern-Anker, Deckel 12 je Tier. Der Fern-Standbild-Ast zählt NIE
+    // (Doppel-Körper). Liefert { gruppen: Map(Anker → {meshes, verts}), wurzel, gattung } oder null.
+    _kreaturGliederGruppen(cr) {
         const tb = cr.userData && cr.userData._tierBaum;
         const anker = new Set();
         if (tb && tb.teile) for (const k in tb.teile) if (tb.teile[k] && tb.teile[k].isObject3D) anker.add(tb.teile[k]);
@@ -71609,31 +71637,52 @@ class AnazhRealm {
             if (!kleinster) break;
             merge(kleinster, zielVon(kleinster));
         }
-        // Analog-Import: das Glied wird KAPSEL (Achse + Radius + Farbe aus dem Skelett-Raum, ~32 Byte statt
-        // 128 KB Brick), DEDUP je Gattung + Glied; jede Instanz posiert sie per eigener Knochen-Matrix. Der
-        // March digitalisiert am Schirm; Voxel-Glieder-Bricks gibt es nicht mehr (kein Parallelpfad).
-        const glieder = [];
-        // Dedup Gattung×Glied (PFLICHT-OFFEN A): EINE kanonische Quelle —
-        // gattung/recipe/preset, sonst TETRAPODA_SOUL_MAP[soul], sonst soul.
-        const ud = cr.userData || {};
+        return { gruppen, wurzel, gattung: this._kreaturGattung(cr) };
+    }
+
+    // DIE GATTUNG eines Tiers — Dedup Gattung×Glied (PFLICHT-OFFEN A): EINE kanonische Quelle für Fern-Satz, Treffer-
+    // Volumen und Vorbacken (_tickTrefferGliederVorbacken) — gattung/recipe/preset, sonst TETRAPODA_SOUL_MAP[soul],
+    // sonst soul.
+    _kreaturGattung(cr) {
+        const ud = (cr && cr.userData) || {};
         const soul = ud.soul || "wesen";
-        const gattung =
+        return (
             ud.gattung ||
             ud.recipe ||
             ud.preset ||
             (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[soul]) ||
-            soul;
-        for (const [a, g] of gruppen) {
+            soul
+        );
+    }
+
+    // Die Glied-Kapsel im Anker-Raum, EINMAL je Gattung × Glied gepasst (der Schlüssel des Fern-Satzes): das Fern-Bild
+    // (_kreaturGliederBacken) und das Treffer-Volumen (_kreaturTrefferGlieder) lesen DIESELBE Passung.
+    _gliedKapselMemo(key, anker, meshes) {
+        const memo = this._gliedKapseln || (this._gliedKapseln = new Map());
+        if (memo.has(key)) return memo.get(key);
+        anker.updateMatrixWorld(true);
+        const k = this._gliedKapselFit(meshes, new THREE.Matrix4().copy(anker.matrixWorld).invert());
+        memo.set(key, k);
+        return k;
+    }
+
+    // Der Fern-Satz einer Kreatur: je Glied EINE Kapsel im Welt-March (Ganz oder gar nicht: reicht der Atlas nicht,
+    // fällt das ganze Tier).
+    _kreaturGliederBacken(cr, einblenden) {
+        const G = this._kreaturGliederGruppen(cr);
+        if (!G) return null;
+        // Analog-Import: das Glied wird KAPSEL (Achse + Radius + Farbe aus dem Skelett-Raum, ~32 Byte statt
+        // 128 KB Brick), DEDUP je Gattung + Glied; jede Instanz posiert sie per eigener Knochen-Matrix. Der
+        // March digitalisiert am Schirm; Voxel-Glieder-Bricks gibt es nicht mehr (kein Parallelpfad).
+        const glieder = [];
+        for (const [a, g] of G.gruppen) {
             a.updateMatrixWorld(true);
-            const key = `kapsel:${gattung}:${a.name || "wurzel"}`;
+            const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
             const meshes = g.meshes;
             const handle = this._weltKapselSpawn(
                 key,
                 a.matrixWorld,
-                () => {
-                    const inv = new THREE.Matrix4().copy(a.matrixWorld).invert();
-                    return this._gliedKapselFit(meshes, inv);
-                },
+                () => this._gliedKapselMemo(key, a, meshes),
                 einblenden
             );
             if (!handle) {
@@ -71643,6 +71692,116 @@ class AnazhRealm {
             glieder.push({ teil: a, handle });
         }
         return glieder.length ? glieder : null;
+    }
+
+    // DAS TREFFER-VOLUMEN eines Tiers (Welle L 06.10., Befund K-D3): seine Glieder-Kapseln — dieselbe Passung wie
+    // das Fern-Bild (_gliedKapselMemo), jede mit der Zone ihres Glieds (tetrapoda trefferZone). Die senkrechte Säule
+    // 0,1 L…1,4 L war gattungs- und höhenblind (Hirsch L 0,64 flach 1 Treffer aus 10, hangab 2 aus 8). Die Glied-Liste
+    // je Gattung entsteht EINMAL (die Gruppen-Bildung zerlegt die Haut je Bone — vorgebacken,
+    // _tickTrefferGliederVorbacken); jedes weitere Tier löst nur die Namen an SEINEN Teilen auf. Die laufende Pose
+    // trägt jeder Test über die Welt-Matrix des Ankers.
+    _kreaturTrefferGlieder(cr) {
+        const u = cr && cr.userData;
+        if (!u) return null;
+        if (u._trefferGlieder !== undefined) return u._trefferGlieder;
+        // KERN-PFLICHT (Welle L): ohne tetrapoda trefferZone gibt es kein Treffer-Volumen — ein lauter BRUCH wie im
+        // Treffer-Urteil (_kampfUrteil), nie ein still je Tier gespeichertes null (jedes Wesen wäre unverwundbar).
+        const tc = globalThis.__tetrapodaCore;
+        if (!tc || typeof tc.trefferZone !== "function") AnazhRealm._kernPflichtBruch("tetrapoda:trefferZone");
+        const tb = u._tierBaum;
+        if (!tb) return (u._trefferGlieder = null); // kein Studio-Leib (nur _buildCreatureGroup baut einen): keine Gestalt
+        const gattung = this._kreaturGattung(cr);
+        const namenMemo = this._trefferGliedNamen || (this._trefferGliedNamen = new Map());
+        let namen = namenMemo.get(gattung);
+        if (!namen) {
+            const G = this._kreaturGliederGruppen(cr);
+            if (!G) return (u._trefferGlieder = null);
+            namen = [];
+            for (const [a, g] of G.gruppen) {
+                const name = a === G.wurzel ? "" : a.name;
+                const key = `kapsel:${G.gattung}:${a.name || "wurzel"}`;
+                if (this._gliedKapselMemo(key, a, g.meshes)) namen.push({ name, key });
+            }
+            namenMemo.set(gattung, namen);
+        }
+        const liste = [];
+        for (const nm of namen) {
+            const anker = nm.name ? tb.teile && tb.teile[nm.name] : tb.wrap || cr;
+            const k = this._gliedKapseln && this._gliedKapseln.get(nm.key);
+            if (!anker || !k) continue;
+            liste.push({ anker, a: k.a, b: k.b, r: k.r, zone: tc.trefferZone(nm.name || "wolf") });
+        }
+        u._trefferGlieder = liste.length ? liste : null;
+        return u._trefferGlieder;
+    }
+
+    // DIE TREFFER-GLIEDER VORGEBACKEN (Welle L, Lehre 14): die Glied-Liste einer Gattung entstand beim ERSTEN Treffer —
+    // der Hieb zerlegte die Haut synchron (_kreaturGliederGruppen: 28–32 Tsd. Vertices je Gattung in 57–83 Bone-Stücke
+    // kopiert, dazu bis 12 Kapsel-Fits). Steht ein Tier einer noch kalten Gattung in der Welt, bäckt der Frame sie vor:
+    // das NÄCHSTE solche Tier zuerst, EINE Gattung je Erlaubnis der EINEN Bake-Uhr (_weltBakeErlaubt — derselbe Takt wie
+    // der Fern-Satz, der dieselbe Zerlegung je Tier trägt); der Treffer liest danach nur das Memo.
+    _tickTrefferGliederVorbacken() {
+        const namen = this._trefferGliedNamen;
+        let naechstes = null;
+        let naechstD2 = Infinity;
+        for (const cr of this.state.creatures || []) {
+            const u = cr && cr.userData;
+            if (!u || u.dying || !u._tierBaum || u._trefferGlieder !== undefined) continue;
+            if (namen && namen.has(this._kreaturGattung(cr))) continue;
+            const d2 = this._spielerD2(cr.position.x, cr.position.z);
+            if (d2 < naechstD2) {
+                naechstD2 = d2;
+                naechstes = cr;
+            }
+        }
+        if (naechstes && this._weltBakeErlaubt(naechstD2)) this._kreaturTrefferGlieder(naechstes);
+    }
+
+    // DER TREFFER gegen die Gestalt: kleinste Distanz einer Strecke (die Klinge, der Pfeil-Flug) zu jeder Glied-Kapsel
+    // des Tiers. Trifft sie (Abstand ≤ Strecken-Radius + Glied-Radius), liefert er das tiefste Glied: seine Zone
+    // (der Rumpf teilt sich am Kopf — die Hälfte zum Kopf ist Brust, die andere Bauch) und den Strecken-Parameter s
+    // des Kontakts (der Hebel der Klinge, der Ort im Flug). null = vorbei.
+    _kreaturGliedTreffer(cr, ax, ay, az, bx, by, bz, radius) {
+        const gl = this._kreaturTrefferGlieder(cr);
+        if (!gl) return null;
+        cr.updateMatrixWorld(true);
+        const v = this._trefferVek || (this._trefferVek = [new THREE.Vector3(), new THREE.Vector3()]);
+        let best = null;
+        let bestTiefe = Infinity;
+        for (const g of gl) {
+            const pa = v[0].copy(g.a).applyMatrix4(g.anker.matrixWorld);
+            const pb = v[1].copy(g.b).applyMatrix4(g.anker.matrixWorld);
+            const rr = radius + g.r * g.anker.matrixWorld.getMaxScaleOnAxis();
+            const d2 = this._segSegDistSq(ax, ay, az, bx, by, bz, pa.x, pa.y, pa.z, pb.x, pb.y, pb.z);
+            if (d2 > rr * rr) continue;
+            const tiefe = Math.sqrt(d2) - rr;
+            if (tiefe >= bestTiefe) continue;
+            bestTiefe = tiefe;
+            const st = this._segSegST;
+            let zone = g.zone;
+            if (zone === "rumpf") {
+                // Brust oder Bauch: der Kontakt auf der Rumpf-Achse, gemessen am Kopf (die Hälfte zum Kopf ist Brust).
+                const kopf = cr.userData._tierBaum.teile && cr.userData._tierBaum.teile.headGroup;
+                let brust = true;
+                if (kopf) {
+                    const k = this._trefferKopf || (this._trefferKopf = new THREE.Vector3());
+                    kopf.getWorldPosition(k);
+                    const t = st.t;
+                    const cx = pa.x + (pb.x - pa.x) * t,
+                        cy = pa.y + (pb.y - pa.y) * t,
+                        cz = pa.z + (pb.z - pa.z) * t;
+                    const mx = (pa.x + pb.x) / 2,
+                        my = (pa.y + pb.y) / 2,
+                        mz = (pa.z + pb.z) / 2;
+                    brust =
+                        (cx - k.x) * (cx - k.x) + (cy - k.y) * (cy - k.y) + (cz - k.z) * (cz - k.z) <=
+                        (mx - k.x) * (mx - k.x) + (my - k.y) * (my - k.y) + (mz - k.z) * (mz - k.z);
+                }
+                zone = brust ? "brust" : "bauch";
+            }
+            best = { zone, s: st.s };
+        }
+        return best;
     }
 
     // Kapsel-Fit: Glied-Meshes im Knochen-LOKALEN Raum → EINE Kapsel entlang der größten Ausdehnung
@@ -75828,6 +75987,26 @@ class AnazhRealm {
         this.log(`Bau-Modus: ${blueprintName} (Slot ${idx + 1})`, "INFO");
     }
 
+    // EIN BAUWERK GEHT IN DEN BAU-MODUS, NIE IN DIE HAND (Welle L, Befund V-k11): sein Hotbar-Platz (vorhanden, sonst
+    // der erste freie) wird gewählt — das Phantom steht vor dir, RMB oder F setzt es. Werkstatt-FERTIGEN legte die Eiche
+    // (7,8 × 8,8 × 6,4 m) in die Hand, RMB schüttete dann auf, und keine UI leerte die Hand. Ohne freien Platz: laut.
+    _bauModusFuer(name) {
+        if (!name || !this.state.blueprints || !this.state.blueprints[name]) return { ok: false, reason: "unknown" };
+        const hb = this.state.hotbar || [];
+        let idx = hb.indexOf(name);
+        if (idx < 0) {
+            idx = hb.findIndex((x) => !x);
+            if (idx < 0) {
+                this.log(`Bauen: die Hotbar ist voll — leere einen Platz für „${name}".`, "INFO");
+                return { ok: false, reason: "hotbar_voll" };
+            }
+            this.setHotbarSlot(idx, name);
+        }
+        const bm = this.state.buildMode;
+        if (!(bm.active && bm.slotIndex === idx && bm.blueprintName === name)) this.selectHotbarSlot(idx);
+        return { ok: !!(bm.active && bm.blueprintName === name), slot: idx };
+    }
+
     // Bauplan in einen Hotbar-Slot legen. Persistiert sich automatisch via
     // Save. UI im Spieler-Drawer ruft das auf.
     setHotbarSlot(slotIndex, blueprintName) {
@@ -76143,10 +76322,11 @@ class AnazhRealm {
         const bm = this.state.buildMode;
         const p = this.state.playerMesh.position;
         const sf = this.state.scaleFactor || 1;
-        // Fallback-Position: yaw-Ring vor dem Spieler.
-        const fallbackX = p.x + Math.sin(this.state.yaw) * bm.phantomDistance;
+        // Fallback-Position: vor dem Spieler (die EINE Vorwärts-Richtung, waagrecht).
+        const vorn = this._blickVorn(this.state.yaw, 0);
+        const fallbackX = p.x + vorn.x * bm.phantomDistance;
         const fallbackY = p.y - 0.5;
-        const fallbackZ = p.z + Math.cos(this.state.yaw) * bm.phantomDistance;
+        const fallbackZ = p.z + vorn.z * bm.phantomDistance;
         const fallback = { x: fallbackX, y: fallbackY, z: fallbackZ, isStable: false, hit: false };
         // P3 — der Raycast ist feld-nativ (`_runRaycast` → `_fieldRaycast`); nur die Kamera nötig.
         if (!this.state.camera) {
@@ -76508,6 +76688,8 @@ class AnazhRealm {
         const p = this.state.player;
         if (!p) return false;
         if (p._swing && p._swing.t < p._swing.dauer) return false; // noch im Schwung
+        // WERKZEUG-WAND (Welle L, K-D6): ein verbrauchtes Gerät schlägt nicht — dieselbe Wand wie Schuss und Abbau.
+        if (this._geraetVerbraucht(this._heldImplementBlueprint(), "Hieb")) return false;
         const now = performance.now() / 1000;
         p.lastAttackAt = now; // Alt-Leser bleiben versorgt (reine Chronik, kein Gate mehr)
         this._consumeMouseStamina();
@@ -76515,22 +76697,14 @@ class AnazhRealm {
         // Geräts (V17.57 W2-B: das eine „in der Hand"-Ding — Werkzeug + Waffe verschmolzen).
         const weaponName = p.equipped && p.equipped.held;
         this._feelAction("attack", weaponName ? { blueprint: weaponName } : undefined);
-        // SPIEGEL-ZENSUS — die Phasen-Anteile wohnen im schmiede-Gesetzbuch
-        // (ARENA.schwung, fail-closed — Kern-Pflicht).
+        // SPIEGEL-ZENSUS — die Phasen-Anteile wohnen im schmiede-Gesetzbuch (ARENA.schwung, fail-closed —
+        // Kern-Pflicht). Die Ausholzeit ist der Anteil der EINEN Dauer ∝ √I (der Phantom-Faktor fiel, Welle L).
         const K = AnazhRealm._arenaGesetz().schwung;
         const dauer = this._playerSwingDauer();
-        // V18.491.123 ARENA.handlingWindF; strikeFrac/dauer formula unchanged.
-        let windMul = 1;
-        const kmW = this._schmiedeKampfMasze(this._heldImplementBlueprint());
-        const scW = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-        if (kmW && Number.isFinite(kmW.traegheit) && scW && typeof scW.handlingWindF === "function") {
-            const wf = scW.handlingWindF(kmW.traegheit);
-            if (Number.isFinite(wf) && wf > 0) windMul = wf;
-        }
         p._swing = {
             t: 0,
             dauer,
-            windupSec: dauer * K.windupFrac * windMul,
+            windupSec: dauer * K.windupFrac,
             strikeSec: dauer * K.strikeFrac,
             weapon: weaponName || null,
             hits: new Set(), // Dedup je Schwung: EINE Klinge trifft EIN Wesen EINMAL
@@ -76590,32 +76764,43 @@ class AnazhRealm {
     }
 
     // ═══ KAMPF-GEFÜHL — DER KLINGEN-SWEEP (nur Strike-Phase) ═══
-    // Klinge = Welt-KAPSEL ab Schulter, fegt über den Strike von +arcHalf nach −arcHalf um den Blick;
-    // Länge/Achse aus _kampfBladeReach; Test gegen Kreatur-Kapseln (vertikal ∝ scale.x).
-    // Invarianten HIER: nie ein Ziel hinter dem Rücken (dot ≤ 0), Dedup je Schwung (hits-Set),
-    // sterbende Wesen inert.
+    // Klinge = Welt-KAPSEL ab dem Schultergelenk, fegt über den Strike von +arcHalf nach −arcHalf um die Klingen-
+    // Achse; die Achse ZIELT auf das Fadenkreuz (_kampfKlingenAchse — Gier UND Neigung, Welle L K-D3), getroffen wird
+    // die GESTALT des Tiers (_kreaturGliedTreffer: Glieder-Kapseln, Zone je Glied), das Urteil fällt der Kern
+    // (schmiede trefferUrteil, Klingen-Tempo ω·r am Kontakt). Invarianten HIER: nie ein Ziel hinter dem Rücken
+    // (dot ≤ 0), Dedup je Schwung (hits-Set), sterbende Wesen inert.
     _kampfSweepTick(sw, nowSec) {
         const pm = this.state.playerMesh;
         const creatures = this.state.creatures;
         if (!pm || !Array.isArray(creatures) || !creatures.length) return;
         const K = AnazhRealm._arenaGesetz().schwung;
         const s = Math.max(0, Math.min(1, (sw.t - sw.windupSec) / Math.max(1e-6, sw.strikeSec)));
-        const yaw = Number.isFinite(this.state.yaw) ? this.state.yaw : pm.rotation.y || 0;
-        const fx = Math.sin(yaw);
-        const fz = Math.cos(yaw); // Blickrichtung (die _loopCamera-Konvention)
-        const arcYaw = yaw + K.arcHalfRad * (1 - 2 * s);
-        const dx = Math.sin(arcYaw);
-        const dz = Math.cos(arcYaw);
         const ox = pm.position.x;
         // V18.491.148 STUDIO_VIS.host=world-fp — Feel; schwung.shoulderH world (not Lab anthro).
         const oy = pm.position.y + K.shoulderH;
         const oz = pm.position.z;
         const reach = Number.isFinite(sw.reach) ? sw.reach : this._kampfBladeReach();
-        const ax = ox + dx * 0.25; // die Kapsel beginnt VOR dem Körper (nicht im Torso)
-        const az = oz + dz * 0.25;
-        const bx = ox + dx * reach;
-        const bz = oz + dz * reach;
-        const p = this.state.player;
+        const achse = this._kampfKlingenAchse(ox, oy, oz, reach);
+        // die Wand („nie hinter dem Rücken") misst waagrecht entlang der Achse, die Klinge läuft auf dem Bogen um sie —
+        // beide Richtungen aus der EINEN Vorwärts-Formel (_blickVorn), nie aus einer Inline-Kopie
+        const v = this._sweepVek || (this._sweepVek = [{}, {}]);
+        const vorn = this._blickVorn(achse.yaw, 0, v[0]);
+        const fx = vorn.x;
+        const fz = vorn.z;
+        const arcYaw = achse.yaw + K.arcHalfRad * (1 - 2 * s);
+        const klinge = this._blickVorn(arcYaw, achse.pitch, v[1]);
+        const dx = klinge.x;
+        const dy = klinge.y;
+        const dz = klinge.z;
+        // die Kapsel beginnt VOR dem Körper (nicht im Torso)
+        const ax = ox + dx * 0.25,
+            ay = oy + dy * 0.25,
+            az = oz + dz * 0.25;
+        const bx = ox + dx * reach,
+            by = oy + dy * reach,
+            bz = oz + dz * reach;
+        // das Winkel-Tempo der Strike-Phase (der Bogen 2·arcHalf in strikeSec): die Klinge am Hebel r läuft ω·r
+        const omega = (2 * K.arcHalfRad) / Math.max(0.05, sw.strikeSec);
         for (let i = 0; i < creatures.length; i++) {
             const c = creatures[i];
             if (!c || !c.userData || c.userData.dying || sw.hits.has(c)) continue;
@@ -76624,43 +76809,131 @@ class AnazhRealm {
             if (tx * fx + tz * fz <= 0) continue; // NIE hinter dem Rücken (die Wand)
             const L = Math.max(0.3, c.scale.x || 1);
             if (tx * tx + tz * tz > (reach + 2 * L) * (reach + 2 * L)) continue; // Grob-Gate
-            // KAPSEL-GESETZ (18.07.): die Trefferfläche liest ARENA.schwung
-            // (kapselRK/RMin/Y0/Y1 — die Wirts-Literale sind gefallen).
-            const rc = Math.max(K.kapselRMin, K.kapselRK * L);
-            const d2 = this._segSegDistSq(
-                ax,
-                oy,
-                az,
-                bx,
-                oy,
-                bz,
-                c.position.x,
-                c.position.y + K.kapselY0 * L,
-                c.position.z,
-                c.position.x,
-                c.position.y + K.kapselY1 * L,
-                c.position.z
-            );
-            const rr = K.bladeRadiusM + rc;
-            if (d2 > rr * rr) continue;
+            const tr = this._kreaturGliedTreffer(c, ax, ay, az, bx, by, bz, K.bladeRadiusM);
+            if (!tr) continue;
             sw.hits.add(c);
-            const stats = p && p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
-            // WAFFEN-GÜTE — die GEMESSENE Schmiede-Arbeit (Lehren-Urteil des
-            // Kerns) skaliert den Schaden; kein schmiede-Gerät / Kern kalt → 1.
-            // ZONE_PICK.host = "y-capsule" — Feel .117; bladeY→yFrac→zoneMulAt/zoneKindAt; XZ-blind (no Host limb pick).
-            const bladeY = oy;
-            const yFrac = Math.max(0, Math.min(1, (bladeY - c.position.y) / L));
-            const scZ = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-            const zoneMul = (scZ && typeof scZ.zoneMulAt === "function" && scZ.zoneMulAt(yFrac)) || 1;
-            const zoneKind = scZ && typeof scZ.zoneKindAt === "function" ? scZ.zoneKindAt(yFrac) : undefined;
-            const res = this.damageCreature(c, (stats.damage || 5) * this._heldSchmiedeFaktor() * zoneMul, {
+            const hebel = 0.25 + tr.s * (reach - 0.25);
+            const urteil = this._kampfUrteil(omega * hebel, 0, tr.zone);
+            const bp = this._heldImplementBlueprint();
+            const roh = this._kampfRohSchaden(urteil, tr.zone, this._kampfKraft());
+            this._kampfVerschleiss(bp);
+            const res = this.damageCreature(c, roh, {
                 source: "player",
                 fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
-                knockback: stats.knockback || 0,
-                zoneKind,
+                knockback: this._kampfStats().knockback || 0,
             });
-            if (res && res.ok) this._kampfHitJuice(c, nowSec, undefined, zoneKind);
+            if (res && res.ok) this._kampfHitJuice(c, nowSec, urteil, urteil ? null : this._eigenwerkSchwungKE(bp));
         }
+    }
+
+    // DIE KLINGE FOLGT DEM BLICK (Welle L, K-D3): die Klingen-Achse zielt vom Schultergelenk O auf den Punkt, an dem
+    // der Strahl des Fadenkreuzes (die Kamera — in der 1st-Person das Auge, in der 3rd die Verfolger-Kamera) die
+    // Reichweiten-Kugel um O verlässt. Ein Fuchs 1 m tiefer in 1,8 m liegt so auf der Klinge, wenn das Fadenkreuz auf
+    // ihm liegt — die alte Klinge fegte waagrecht in Schulterhöhe. Ohne Kamera der Blick selbst.
+    _kampfKlingenAchse(ox, oy, oz, reach) {
+        const cam = this.state.camera;
+        const yaw0 = Number.isFinite(this.state.yaw) ? this.state.yaw : 0;
+        const pitch0 = Number.isFinite(this.state.pitch) ? this.state.pitch : 0;
+        if (!cam || typeof cam.getWorldDirection !== "function") return { yaw: yaw0, pitch: pitch0 };
+        const d = cam.getWorldDirection(this._klingeBlick || (this._klingeBlick = new THREE.Vector3()));
+        const wx = cam.position.x - ox,
+            wy = cam.position.y - oy,
+            wz = cam.position.z - oz;
+        // |w + d·s| = reach → s² + 2·s·(d·w) + |w|² − reach² = 0; die ferne Wurzel ist der Austritt.
+        const b = d.x * wx + d.y * wy + d.z * wz;
+        const disc = b * b - (wx * wx + wy * wy + wz * wz - reach * reach);
+        let tx = d.x,
+            ty = d.y,
+            tz = d.z;
+        if (disc >= 0) {
+            const sAus = -b + Math.sqrt(disc);
+            if (sAus > 0) {
+                tx = wx + d.x * sAus;
+                ty = wy + d.y * sAus;
+                tz = wz + d.z * sAus;
+            }
+        }
+        return { yaw: Math.atan2(tx, tz), pitch: Math.atan2(ty, Math.hypot(tx, tz)) };
+    }
+
+    // DAS TREFFER-URTEIL der Welt (Welle L, K-D2): das gehaltene Studio-Gerät richtet der Kern (schmiede
+    // trefferUrteil über seine Messung kampfMasze.mess — Schnitt · Stich · Schlag, KE, Impuls, Zone). Faust und
+    // Eigenwerke ohne Schmiede-Rezept haben keine Messung → null (sie tragen die Hand ×1).
+    _kampfUrteil(vLat, vAx, zone) {
+        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (!sc || typeof sc.trefferUrteil !== "function") AnazhRealm._kernPflichtBruch("schmiede:trefferUrteil");
+        const bp = this._heldImplementBlueprint();
+        const km = bp ? this._schmiedeKampfMasze(bp) : null;
+        if (!km || !km.mess) return null;
+        return sc.trefferUrteil(km.mess, { vLat, vAx, edgeQ: 1, zone });
+    }
+
+    // DER ROH-SCHADEN EINES TREFFERS (Welle L, K-D5 + K-D6) — das EINE Gesetz für JEDE geführte Waffe, Klinge wie Pfeil:
+    // Kraft der Führung (_kampfKraft: Körper × Güte × Verschleiß) × Wirkung × Zone. Wirkung = die Energie des Urteils
+    // gegen die Arena-Eichung keRefJ (_trefferWirkung) — keine Klemme: die alte mEff-Klemme [0,6; 2,2] setzte 10 von 17
+    // Rezepten auf 2,2. Ohne Urteil (Faust, Eigenwerk) Wirkung 1; die Zone liest dieselbe Tafel (schmiede ARENA.zonen).
+    _kampfRohSchaden(urteil, zone, kraft) {
+        const A = AnazhRealm._arenaGesetz();
+        const zoneMul = urteil ? urteil.zoneMul : A.zonen[zone] ? A.zonen[zone].mul : 1;
+        return kraft * this._trefferWirkung(urteil) * zoneMul;
+    }
+
+    // DIE KRAFT DER FÜHRUNG (Welle L, K-D6): Körper (stats.damage) × Güte × Verschleiß des gehaltenen Geräts, gelesen im
+    // Augenblick des Hiebs oder des Lösens — der Pfeil trägt sie durch den Flug (ein Griff zur anderen Waffe ändert keinen
+    // Pfeil in der Luft). Der einzige Leser von _wearStatFactor: vorher setzte der Pfeil seine Kraft selbst zusammen,
+    // ohne Verschleiß (ein Bogen bei wear 0,5 traf voll). Die Faust: Güte 1, Verschleiß 1.
+    _kampfKraft() {
+        const bp = this._heldImplementBlueprint();
+        return this._kampfStats().damage * this._heldGueteFaktor() * (bp ? this._wearStatFactor(bp) : 1);
+    }
+
+    // DIE WERKZEUG-WAND (Welle L, K-D6): ein verbrauchtes Gerät (wear unter WEAR_KAPUTT_SCHWELLE) führt nichts — kein
+    // Hieb, kein Schuss, kein Abbau — und kostet nichts; der Spieler bekommt den Reparatur-Aufruf. Die Hand (bp null)
+    // verbraucht nie. EINE Wand für jede Führung: vorher trugen Hieb und Abbau je ihre Kopie, der Bogen keine.
+    _geraetVerbraucht(bp, verb) {
+        if (!bp) return false;
+        const wear = this._blueprintWear(bp);
+        if (wear >= AnazhRealm.WEAR_KAPUTT_SCHWELLE) return false;
+        this.log(
+            `${verb}: „${bp.label || bp.name}" ist verbraucht (${Math.round(wear * 100)} %) — repariere es (eine Material-Geste am Werkzeug) oder lege ein neues an.`,
+            "INFO"
+        );
+        return true;
+    }
+
+    // DIE WIRKUNG EINES TREFFERS: die Energie des Urteils (KE am Kontakt — Schnitt · Stich · Schlag) gegen die
+    // Arena-Eichung keRefJ (114 J: der Kriegsbogen-Pfeil des Studios, ein sauberer Langschwert-Schnitt) — dieselbe Größe,
+    // nach der das Labor richtet (Prüfstand e = KE × Zone) und der Hit-Stop skaliert. Klinge und Pfeil stehen so auf EINER
+    // Skala: der volle Kriegsbogen 1,0, der Langbogen 0,70, ein Viertel-Auszug 0,06 des vollen. Ohne Urteil 1.
+    _trefferWirkung(urteil) {
+        if (!urteil) return 1;
+        return urteil.KE / AnazhRealm._arenaGesetz().gefuehl.keRefJ;
+    }
+
+    // Die Kampf-Stats des Spielers (die EINE Stat-Wahrheit recomputePlayerStats; kalt → einmal rechnen).
+    _kampfStats() {
+        const p = this.state.player;
+        return p && p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
+    }
+
+    // DER VERSCHLEISS DER FÜHRUNG (Welle L, K-D6): jeder Klingen-Treffer und jeder Schuss zehrt das gehaltene Gerät wie
+    // ein Abbau-Hieb (_wearPerStrike) — bis hierher zehrte nur der Abbau, Kampf ließ die Klinge ewig neu (wear 0,9968
+    // nach 16 Treffern) und den Bogen ebenso, und den Faktor _wearStatFactor las niemand.
+    _kampfVerschleiss(bp) {
+        if (!bp) return;
+        this._setBlueprintWear(bp, this._blueprintWear(bp) - this._wearPerStrike(bp));
+    }
+
+    // Die Schwung-Energie eines Eigenwerks ohne Schmiede-Messung (Ω-Φ4: ½·I·ω², I aus _swingDynamics — deren einzige
+    // Quelle, anderer Definitionsbereich als kampfMasze); die Faust 0.
+    _eigenwerkSchwungKE(bp) {
+        if (!bp) return 0;
+        const K = AnazhRealm._arenaGesetz().schwung;
+        const I = this._swingDynamics(bp).swingInertia;
+        const sw = this.state.player && this.state.player._swing;
+        const dauer = sw && Number.isFinite(sw.dauer) ? sw.dauer : this._playerSwingDauer();
+        const omega = (2 * K.arcHalfRad) / Math.max(0.05, dauer * K.strikeFrac);
+        return I > 0 ? 0.5 * I * omega * omega : 0;
     }
 
     // Kleinste Quadrat-Distanz zweier Strecken (Ericson, Real-Time Collision
@@ -76706,53 +76979,25 @@ class AnazhRealm {
         const cx = p1x + d1x * s - (p2x + d2x * t);
         const cy = p1y + d1y * s - (p2y + d2y * t);
         const cz = p1z + d1z * s - (p2z + d2z * t);
+        // die Parameter des Nah-Paars (s auf der ersten, t auf der zweiten Strecke) für den Treffer-Ort
+        const st = this._segSegST || (this._segSegST = { s: 0, t: 0 });
+        st.s = s;
+        st.t = t;
         return cx * cx + cy * cy + cz * cz;
     }
 
     // ═══ KAMPF-GEFÜHL — HIT-JUICE (render-seitig, nie Sim) ═══
-    // (1) Hit-Stop 60–100 ms pausiert NUR die Anzeige-Uhr (_hitStopUntil). (2) Kamera-Impuls über den
-    // Landungs-Dip (_landImpactPending → LAND_DIP_*), kein zweiter Kamera-Kanal. (3) Timbre-One-Shot über
-    // state.symphony, kein zweiter AudioContext. Stop/Dip skalieren mit KE = ½·I·ω² × scale.x (keRefJ);
-    // der Pfeil reicht seine Flug-Energie als keOpt. Kern kalt → fester Stop/Dip (min==max).
-    _kampfHitJuice(creature, nowSec, keOpt, zoneKind) {
-        const K = AnazhRealm._arenaGesetz().schwung;
+    // (1) Hit-Stop pausiert NUR die Anzeige-Uhr (_hitStopUntil). (2) Kamera-Impuls über den Landungs-Dip
+    // (_landImpactPending → LAND_DIP_*), kein zweiter Kamera-Kanal. (3) Timbre-One-Shot über state.symphony, kein
+    // zweiter AudioContext. Stop und Dip skalieren mit der TREFFER-ENERGIE des Urteils (KE am Kontakt, Schnitt ·
+    // Stich · Schlag) gegen die Arena-Eichung keRefJ (Welle L, K-D4: Grossschwert und Keule stoppten mit 19,5–20,5 J
+    // gleich — KE = ½·I·ω² ist bei ω ∝ 1/√I je Waffe konstant). Die Zone wirkt im Schaden, nicht in der Energie des
+    // Schlags (mit ihr lag jeder Brust-Treffer der schweren Klingen auf der Kappe keRefJ). Eigenwerke reichen ihre
+    // Ω-Φ4-Energie (keEigen), die Faust 0.
+    _kampfHitJuice(creature, nowSec, urteil, keEigen) {
         const G = AnazhRealm._arenaGesetz().gefuehl;
-        let ke = Number.isFinite(keOpt) ? keOpt : 0;
-        let km = null; // hoist: KE branch + handlingMul reuse (no double blueprint fetch)
-        if (!Number.isFinite(keOpt)) {
-            const bp = this._heldImplementBlueprint();
-            if (bp) {
-                // EINHEITSBREI-SCHNITT (18.07.): dieselbe Trägheits-Quelle wie
-                // die Dauer (kampfMasze für Studio-Klingen, Ω-Φ4 für Eigenwerke)
-                // — KE und Dauer rechnen nie in gemischten Einheiten.
-                km = this._schmiedeKampfMasze(bp);
-                const I = km && km.traegheit > 0 ? km.traegheit : this._swingDynamics(bp).swingInertia;
-                const sw = this.state.player && this.state.player._swing;
-                const dauer = sw && Number.isFinite(sw.dauer) ? sw.dauer : this._playerSwingDauer();
-                const omega = (2 * K.arcHalfRad) / Math.max(0.05, dauer * K.strikeFrac);
-                if (I > 0) ke = 0.5 * I * omega * omega;
-            }
-        }
-        const L = Math.max(0.3, (creature && creature.scale && creature.scale.x) || 1);
-        // TREFFERZONEN .115 — juiceMul skaliert Feel (freeze/dip); Schaden bleibt zoneMul.
-        // Fail-closed ohne kind (kein Fake-Boost); mit kind: × zoneJuiceAt, clamp 0.5..1.6.
-        let e = Math.max(0, Math.min(1, (ke * Math.min(2, L)) / Math.max(1, G.keRefJ)));
-        if (zoneKind) {
-            const scJ = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-            const jm = scJ && typeof scJ.zoneJuiceAt === "function" ? scJ.zoneJuiceAt(zoneKind) : 1.0;
-            e = Math.max(0.5, Math.min(1.6, e * (Number.isFinite(jm) && jm > 0 ? jm : 1.0)));
-            if (creature && creature.userData) creature.userData.lastZoneKind = zoneKind;
-        }
-        // V18.491.122 ARENA.handling; damage unchanged (mEff).
-        if (!km) {
-            const bpH = this._heldImplementBlueprint();
-            km = bpH ? this._schmiedeKampfMasze(bpH) : null;
-        }
-        const scH = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-        if (km && Number.isFinite(km.masseKg) && scH && typeof scH.handlingMul === "function") {
-            const hm = scH.handlingMul(km.masseKg);
-            if (Number.isFinite(hm) && hm > 0) e = Math.max(0.5, Math.min(1.6, e * hm));
-        }
+        const ke = urteil ? urteil.KE : Number.isFinite(keEigen) ? keEigen : 0;
+        const e = Math.max(0, Math.min(1, ke / Math.max(1, G.keRefJ)));
         const p = this.state.player;
         if (p) p._hitStopUntil = nowSec + G.freezeMinSec + (G.freezeMaxSec - G.freezeMinSec) * e;
         this.state._landImpactPending = Math.max(
@@ -76778,36 +77023,61 @@ class AnazhRealm {
     }
 
     // ═══ WAFFEN-GÜTE — DIE SCHMIEDE-ARBEIT ERREICHT DEN KAMPF ═══
-    // Der EINE Güte-Faktor __schmiedeCore.gueteFaktor (bestandener Lehren-Anteil → linear
-    // [ARENA.guete.faktorLeer, faktorVoll]); Klingen-Sweep UND Pfeil multiplizieren ihn auf stats.damage.
-    // Die Prägung (bp.studioOv) reist als ov in die Messung. Kern kalt / kein Rezept → 1.
-    // Memo je preset|ov-Hash (Guss-gefroren), gedeckelt.
+    // Der Schadens-Faktor des gehaltenen Geräts: die EINE Güte (computeBlueprintQuality) linear auf
+    // [ARENA.guete.faktorLeer, faktorVoll]; Klingen-Sweep UND Pfeil multiplizieren ihn auf stats.damage. Die Faust 1.
     _heldGueteFaktor() {
-        const eq = this.state.player && this.state.player.equipped;
-        const held = eq && eq.held;
-        if (!held) return 1;
+        const bp = this._heldImplementBlueprint();
+        if (!bp) return 1;
+        const G = AnazhRealm._arenaGesetz().guete;
+        return G.faktorLeer + (G.faktorVoll - G.faktorLeer) * this.computeBlueprintQuality(bp);
+    }
+
+    // Der Lehren-Anteil eines Schmiede-Geräts (schmiede gueteAnteil über Gestalt + Prägung, SYNCHRON und Lockstep-fest wie
+    // die Kampf-Maße); null = kein Schmiede-Gerät. Memo je Gestalt|ov-Hash (Guss-gefroren), gedeckelt.
+    _schmiedeGueteAnteil(bp) {
+        const gestalt = this._schmiedeGestalt(bp);
+        if (!gestalt) return null;
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-        if (!sc || typeof sc.gueteFaktor !== "function") return 1;
-        const f = this._foundry;
-        if (!f || !f.recipes) return 1;
-        const preset =
-            typeof this._foundryPresetForEntry === "function" ? this._foundryPresetForEntry({ type: held }) : null;
-        if (!preset || !f.recipes[preset]) return 1;
-        const bp = this.state.blueprints && this.state.blueprints[held];
-        const ov = bp && typeof this._artifactStudioOv === "function" ? this._artifactStudioOv(bp) : null;
-        const key = preset + (ov ? "|ov:" + this._studioOvHash(ov) : "");
-        const memo = this._gueteFaktorMemo || (this._gueteFaktorMemo = new Map());
+        if (!sc || typeof sc.gueteAnteil !== "function") AnazhRealm._kernPflichtBruch("schmiede:gueteAnteil");
+        const ov = this._artifactStudioOv(bp);
+        const key = gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");
+        const memo = this._gueteAnteilMemo || (this._gueteAnteilMemo = new Map());
         let v = memo.get(key);
         if (v === undefined) {
-            v = 1;
-            try {
-                const g = sc.gueteFaktor(preset, ov || undefined);
-                if (Number.isFinite(g) && g > 0) v = g;
-            } catch (_e) {}
+            const a = sc.gueteAnteil(gestalt, ov || undefined);
+            v = a === null || !Number.isFinite(a) ? null : Math.max(0, Math.min(1, a));
             if (memo.size > 64) memo.clear(); // gedeckelt (jeder Guss ein Schlüssel)
             memo.set(key, v);
         }
         return v;
+    }
+
+    // Die Schmiede-Gattung eines Bauplans, SYNCHRON und Lockstep-fest: die studioGestalt-Zeile oder der
+    // KIND_POLICY.weapon-Präfix (nie der async Buch-Stand); null = kein Schmiede-Gerät (Eigenwerk, Bauwerk).
+    _schmiedeGestalt(bp) {
+        if (!bp) return null;
+        if (typeof bp.studioGestalt === "string") return bp.studioGestalt;
+        if (typeof bp.name === "string") {
+            const pol = AnazhRealm.KIND_POLICY.weapon;
+            if (pol && pol.prefix && bp.name.indexOf(pol.prefix) === 0) return bp.name.slice(pol.prefix.length);
+        }
+        return null;
+    }
+
+    // GRÄBT DIESES GERÄT? (die Maus-Absicht, Welle L Q9): die leere Hand und die Grab-Geräte der Schmiede (Werk-Art
+    // graben · pick: Spaten, Schaufel, Spitzhacke) graben und schütten auf; Klinge, Keil, Wucht und Bogen nie. Ein
+    // Eigenwerk gräbt, wenn es keine Klinge ist (_implementAffordanceLabel — die Form entscheidet); ein Bauwerk nie.
+    _geraetGraebt(bp) {
+        if (!bp) return true;
+        if (this._isPlaceableBlueprint(bp)) return false;
+        const gestalt = this._schmiedeGestalt(bp);
+        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (gestalt && sc && sc.REZEPT_ZU_GATTUNG && sc.GATTUNGEN) {
+            const g = sc.GATTUNGEN[sc.REZEPT_ZU_GATTUNG[gestalt]];
+            const art = g && g.task ? g.task.art : null;
+            return art === "graben" || art === "pick";
+        }
+        return this._implementAffordanceLabel(bp) !== "Klinge";
     }
 
     // ═══ DIE KAMPF-MASSE DER GATTUNG ═══
@@ -76819,13 +77089,7 @@ class AnazhRealm {
         if (!bp) return null;
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
         if (!sc || typeof sc.kampfMasze !== "function") return null;
-        let gestalt = typeof bp.studioGestalt === "string" ? bp.studioGestalt : null;
-        if (!gestalt && typeof bp.name === "string") {
-            const pol = AnazhRealm.KIND_POLICY.weapon;
-            if (pol && pol.prefix && bp.name.indexOf(pol.prefix) === 0) {
-                gestalt = bp.name.slice(pol.prefix.length);
-            }
-        }
+        const gestalt = this._schmiedeGestalt(bp);
         if (!gestalt) return null;
         const ov = typeof this._artifactStudioOv === "function" ? this._artifactStudioOv(bp) : null;
         const key = gestalt + (ov ? "|ov:" + this._studioOvHash(ov) : "");
@@ -76841,19 +77105,6 @@ class AnazhRealm {
             memo.set(key, v);
         }
         return v;
-    }
-
-    // Schadens-Faktor des gehaltenen Geräts: Güte × mEff/ARENA.guete.mEffRefKg (geklemmt).
-    // Kein schmiede-Rezept → nur die Güte.
-    _heldSchmiedeFaktor() {
-        const g = this._heldGueteFaktor();
-        const bp = this._heldImplementBlueprint();
-        const km = bp ? this._schmiedeKampfMasze(bp) : null;
-        if (!km || !Number.isFinite(km.mEff)) return g;
-        const G = AnazhRealm._arenaGesetz().guete;
-        if (!G || !Number.isFinite(G.mEffRefKg) || !(G.mEffRefKg > 0)) return g;
-        const f = Math.max(G.mEffDmgMin, Math.min(G.mEffDmgMax, km.mEff / G.mEffRefKg));
-        return g * f;
     }
 
     // Bogen-Auszug (render-seitig): beim Spannen verengt sich die FOV fovRuhe→fovZug über auszugSec,
@@ -76931,15 +77182,21 @@ class AnazhRealm {
         this._beginPlayerShot(rec, frac);
     }
 
-    // Klick = EIN Pfeil. Spann-Cooldown = _playerSwingDauer (∝ √I, die EINE Quelle). v0 = √(2·E/mArrow),
-    // E = zugJouleRef·zugkraft·auszug, × drawFrac. Richtung = Blick (yaw+pitch wie _loopCamera),
-    // Start an der Schulter (ARENA.schwung.shoulderH). Deterministisch; Stamina + Affekt wie der Hieb.
+    // Klick = EIN Pfeil. Spann-Cooldown = _playerSwingDauer (∝ √I, die EINE Quelle). DIE EINE SCHUSS-PHYSIK (Welle L,
+    // K-D8): E = ableitenBogen(task).energie — die Pfeil-Energie des Studios (SI, gegen Stretton 114 J geeicht),
+    // v0 = √(2·E/mArrow) × Auszug; die Welt-Eichung zugJouleRef (28,9 J·zug·aus, 25–41 % der Studio-Energie) ist
+    // GEFALLEN. Richtung = vom Mündungs-Punkt auf den Fadenkreuz-Punkt (_blickZiel — 1st und 3rd zielen durch
+    // dieselbe Kamera). Deterministisch; Stamina + Affekt wie der Hieb. Der Bogen ist eine geführte Waffe wie die Klinge
+    // (Welle L, K-D6): dieselbe Werkzeug-Wand, der Pfeil trägt die Kraft der Führung (_kampfKraft, mit Verschleiß) in
+    // das EINE Roh-Schaden-Gesetz, und jeder Schuss zehrt den Bogen (_kampfVerschleiss).
     _beginPlayerShot(rec, drawFrac) {
         const p = this.state.player;
         const pm = this.state.playerMesh;
         if (!p || !pm) return false;
         const now = performance.now() / 1000;
         if (Number.isFinite(p._shotCooldownUntil) && now < p._shotCooldownUntil) return false;
+        const bp = this._heldImplementBlueprint();
+        if (this._geraetVerbraucht(bp, "Schuss")) return false;
         const dauer = this._playerSwingDauer();
         p._shotCooldownUntil = now + dauer;
         p.lastAttackAt = now;
@@ -76949,64 +77206,69 @@ class AnazhRealm {
         const task = rec && rec.fx && rec.fx.task ? rec.fx.task : null;
         const zug = task && Number.isFinite(task.zugkraft) && task.zugkraft > 0 ? task.zugkraft : 1;
         const aus = task && Number.isFinite(task.auszug) && task.auszug > 0 ? task.auszug : 1;
-        // DIE EINE SCHUSS-PHYSIK (wie der Arena-Schießstand): v0 = √(2·E/mArrow),
-        // E = zugJouleRef·zugkraft·auszug; auch die NaN-Wand leitet aus dieser Joule-Eichung ab.
         const AB = AnazhRealm._arenaGesetz().bogen;
-        // Das Wurfarm-Material (task.material) skaliert die Joule-Eichung über ableitenBogen RELATIV zum
-        // holz-Anker (holz ⇒ Faktor 1). Fail-closed: ein Kern ohne BOGENMAT/ableitenBogen ist ein BRUCH,
-        // nie ein stiller holz-Anker; ⇒ 1 bleibt NUR bei Material unbekannt/holz (der Kern ankert gleich).
-        // Die Buch-Probe läuft über BOGENMAT.holz — der Anker existiert im lebenden Buch immer.
-        let matMul = 1;
-        const bmName = task && typeof task.material === "string" ? task.material : null;
-        if (bmName && bmName !== "holz") {
-            const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-            if (!sc || typeof sc.ableitenBogen !== "function" || !AnazhRealm.Gesetz("schmiede:BOGENMAT.holz", null))
-                AnazhRealm._kernPflichtBruch("schmiede:BOGENMAT/ableitenBogen");
-            if (AnazhRealm.Gesetz("schmiede:BOGENMAT." + bmName, null)) {
-                const eMat = sc.ableitenBogen({ auszug: aus, zugkraft: zug, material: bmName }).energie;
-                const eHolz = sc.ableitenBogen({ auszug: aus, zugkraft: zug, material: "holz" }).energie;
-                if (!(Number.isFinite(eMat) && Number.isFinite(eHolz) && eHolz > 0))
-                    AnazhRealm._kernPflichtBruch("schmiede:ableitenBogen.energie");
-                matMul = eMat / eHolz;
-            } // sonst: Material nicht im lebenden Buch → holz-Anker (die legitime Weiche)
-        }
-        let v0 = Math.sqrt((2 * AB.zugJouleRef * zug * aus * matMul) / Math.max(0.001, AB.mArrow));
+        // Fail-closed: ein Kern ohne ableitenBogen ist ein BRUCH; ein Wurfarm-Material, das das lebende Buch nicht
+        // trägt, schießt mit dem holz-Anker (die legitime Weiche, BOGENMAT.holz lebt im Buch immer).
+        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (!sc || typeof sc.ableitenBogen !== "function" || !AnazhRealm.Gesetz("schmiede:BOGENMAT.holz", null))
+            AnazhRealm._kernPflichtBruch("schmiede:BOGENMAT/ableitenBogen");
+        const bmName = task && typeof task.material === "string" ? task.material : "holz";
+        const material = AnazhRealm.Gesetz("schmiede:BOGENMAT." + bmName, null) ? bmName : "holz";
+        const E = sc.ableitenBogen({ auszug: aus, zugkraft: zug, material }).energie;
+        if (!(Number.isFinite(E) && E > 0)) AnazhRealm._kernPflichtBruch("schmiede:ableitenBogen.energie");
+        let v0 = Math.sqrt((2 * E) / Math.max(0.001, AB.mArrow));
         if (Number.isFinite(drawFrac)) v0 *= Math.max(0, Math.min(1, drawFrac));
-        if (!Number.isFinite(v0) || v0 <= 0) v0 = Math.sqrt((2 * AB.zugJouleRef) / Math.max(0.001, AB.mArrow)); // NaN-Wand
-        const yaw = Number.isFinite(this.state.yaw) ? this.state.yaw : pm.rotation.y || 0;
-        const pitch = Number.isFinite(this.state.pitch) ? this.state.pitch : 0;
-        const cp = Math.cos(pitch);
-        const dx = Math.sin(yaw) * cp;
-        const dy = Math.sin(pitch);
-        const dz = Math.cos(yaw) * cp;
-        const stats = p.stats && Number.isFinite(p.stats.damage) ? p.stats : this.computePlayerStats().stats;
+        const K = AnazhRealm._arenaGesetz().schwung;
+        // die Mündung VOR der Schulter in Blickrichtung, die Flugbahn auf den Fadenkreuz-Punkt
+        const blick = this._blickVorn(
+            Number.isFinite(this.state.yaw) ? this.state.yaw : pm.rotation.y || 0,
+            Number.isFinite(this.state.pitch) ? this.state.pitch : 0
+        );
+        const mx = pm.position.x + blick.x * AB.muendungM;
+        // V18.491.148 STUDIO_VIS.host=world-fp — Feel; bow muzzle at schwung.shoulderH.
+        const my = pm.position.y + K.shoulderH + blick.y * AB.muendungM;
+        const mz = pm.position.z + blick.z * AB.muendungM;
+        const ziel = this._blickZiel(AnazhRealm.BLICK_ZIEL_M);
+        let dx = ziel.x - mx,
+            dy = ziel.y - my,
+            dz = ziel.z - mz;
+        const dl = Math.hypot(dx, dy, dz);
+        if (dl > 1e-6) {
+            dx /= dl;
+            dy /= dl;
+            dz /= dl;
+        } else {
+            dx = blick.x;
+            dy = blick.y;
+            dz = blick.z;
+        }
         const list = this.state._pfeile || (this.state._pfeile = []);
         while (list.length >= AnazhRealm.MAX_PFEILE) this._pfeilDespawn(list.shift()); // bounded (Wirts-Deckel)
-        const K = AnazhRealm._arenaGesetz().schwung;
         const pf = {
-            x: pm.position.x + dx * AB.muendungM,
-            // V18.491.148 STUDIO_VIS.host=world-fp — Feel; bow muzzle at schwung.shoulderH.
-            y: pm.position.y + K.shoulderH + dy * AB.muendungM,
-            z: pm.position.z + dz * AB.muendungM,
+            x: mx,
+            y: my,
+            z: mz,
             vx: dx * v0,
             vy: dy * v0,
             vz: dz * v0,
             born: now,
             lastT: now,
-            // Auch der Pfeil trägt die Waffen-Güte; kampfMasze(bogen) = null → mEff-Faktor 1 (die Schuss-Kraft
-            // reist schon als zugkraft×auszug, nie doppelt). Der Falsy-Arm liest die Gesetz-Base (_kampfKoeff).
-            dmg: (stats.damage || AnazhRealm._kampfKoeff("damage").base) * this._heldSchmiedeFaktor(),
-            kb: stats.knockback || 0,
+            // die Kraft der Führung beim Lösen (Körper × Güte × Verschleiß, _kampfKraft) — die Wirkung urteilt der
+            // Treffer aus der Energie des Pfeils (trefferUrteil, Stich), der Schaden ist _kampfRohSchaden.
+            kraft: this._kampfKraft(),
+            kb: this._kampfStats().knockback || 0,
             mesh: null,
         };
+        this._kampfVerschleiss(bp); // der Schuss zehrt den Bogen — NACH dem Lesen der Kraft, wie der Klingen-Treffer
         this._pfeilMeshAttach(pf);
         list.push(pf);
         return true;
     }
 
-    // Pfeil-Tick (Anzeige-Uhr, NACH der fixen Sim): semi-implizit in state.gravity; Treffer über den
-    // EINEN Sweep-Kern _segSegDistSq (Flug-Segment vs Kreatur-Kapsel wie beim Klingen-Sweep); Schaden
-    // via damageCreature + Hit-Juice. Terrain stoppt, Lebenszeit deckelt; MAX_PFEILE, kein Snapshot.
+    // Pfeil-Tick (Anzeige-Uhr, NACH der fixen Sim): semi-implizit in state.gravity. Das Flug-Segment (alt → neu) trifft
+    // zuerst die WELT (Gelände UND Bauten — _fieldRaycast, die EINE Welt-Kollision; Welle L K-D8: 3 von 3 Pfeilen
+    // flogen durch ein Haus), davor die GESTALT eines Tiers (_kreaturGliedTreffer, Zone je Glied); das Urteil ist der
+    // Stich des Kerns (trefferUrteil: KE = ½·m·v² trägt Schaden und Hit-Stop). Lebenszeit deckelt; MAX_PFEILE, kein Snapshot.
     _tickPfeile(nowSec) {
         const list = this.state._pfeile;
         if (!list || !list.length) return;
@@ -77037,62 +77299,43 @@ class AnazhRealm {
                 list.splice(i, 1);
                 continue;
             }
-            // Treffer: Flug-Segment (alt→neu) gegen die Kreatur-Kapseln.
+            // Die Welt zuerst: wo das Segment Gelände oder Bau trifft, endet der Flug (ein Tier dahinter bleibt heil).
+            const wand = this._fieldRaycast(ox, oy, oz, pf.x, pf.y, pf.z);
+            const ex = wand.hit ? wand.x : pf.x,
+                ey = wand.hit ? wand.y : pf.y,
+                ez = wand.hit ? wand.z : pf.z;
+            // Treffer: das Flug-Segment (alt → Wand oder neu) gegen die Glieder jedes Tiers; das früheste gewinnt.
             let hit = null;
+            let hitTr = null;
+            const stepR = Math.hypot(ex - ox, ey - oy, ez - oz);
             for (let c = 0; c < creatures.length; c++) {
                 const cr = creatures[c];
                 if (!cr || !cr.userData || cr.userData.dying) continue;
                 const L = Math.max(0.3, cr.scale.x || 1);
-                const tx = cr.position.x - pf.x;
-                const tz = cr.position.z - pf.z;
-                const stepR = Math.hypot(pf.x - ox, pf.y - oy, pf.z - oz) + 2 * L;
-                if (tx * tx + tz * tz > stepR * stepR) continue; // Grob-Gate
-                const rr = B.radiusM + Math.max(0.35, 0.55 * L);
-                const d2 = this._segSegDistSq(
-                    ox,
-                    oy,
-                    oz,
-                    pf.x,
-                    pf.y,
-                    pf.z,
-                    cr.position.x,
-                    cr.position.y + 0.1 * L,
-                    cr.position.z,
-                    cr.position.x,
-                    cr.position.y + 1.4 * L,
-                    cr.position.z
-                );
-                if (d2 <= rr * rr) {
+                const tx = cr.position.x - ex;
+                const tz = cr.position.z - ez;
+                if (tx * tx + tz * tz > (stepR + 2 * L) * (stepR + 2 * L)) continue; // Grob-Gate
+                const tr = this._kreaturGliedTreffer(cr, ox, oy, oz, ex, ey, ez, B.radiusM);
+                if (tr && (!hitTr || tr.s < hitTr.s)) {
                     hit = cr;
-                    break;
+                    hitTr = tr;
                 }
             }
             if (hit) {
-                // ZONE_PICK.host = "y-capsule" — Feel .117; hitY→zoneMulAt/zoneKindAt; XZ-blind.
-                const hitL = Math.max(0.3, hit.scale.x || 1);
-                const hitYFrac = Math.max(0, Math.min(1, (pf.y - hit.position.y) / hitL));
-                const scZ = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
-                const zoneMul = (scZ && typeof scZ.zoneMulAt === "function" && scZ.zoneMulAt(hitYFrac)) || 1;
-                const zoneKind = scZ && typeof scZ.zoneKindAt === "function" ? scZ.zoneKindAt(hitYFrac) : undefined;
-                const res = this.damageCreature(hit, pf.dmg * zoneMul, {
+                const vv = Math.sqrt(pf.vx * pf.vx + pf.vy * pf.vy + pf.vz * pf.vz);
+                const sc = globalThis.__schmiedeCore;
+                const urteil = sc.trefferUrteil({ M: B.mArrow, mEffFrac: 1 }, { vLat: 0, vAx: vv, zone: hitTr.zone });
+                const res = this.damageCreature(hit, this._kampfRohSchaden(urteil, hitTr.zone, pf.kraft), {
                     source: "player",
                     fromPos: { x: ox, y: oy, z: oz },
                     knockback: pf.kb,
-                    zoneKind,
                 });
-                // ARENA-GEFÜHL — der Pfeil reicht seine ECHTE Flug-Energie
-                // (½·mArrow·v², dieselbe Arena-Eichung) in die Hit-Juice.
-                if (res && res.ok) {
-                    const vv = pf.vx * pf.vx + pf.vy * pf.vy + pf.vz * pf.vz;
-                    this._kampfHitJuice(hit, nowSec, 0.5 * AnazhRealm._arenaGesetz().bogen.mArrow * vv, zoneKind);
-                }
+                if (res && res.ok) this._kampfHitJuice(hit, nowSec, urteil, null);
                 this._pfeilDespawn(pf);
                 list.splice(i, 1);
                 continue;
             }
-            // Terrain stoppt den Flug (die EINE Boden-Wahrheit).
-            const gY = this.getTerrainHeightAt(pf.x, pf.z);
-            if (Number.isFinite(gY) && pf.y <= gY) {
+            if (wand.hit) {
                 this._pfeilDespawn(pf);
                 list.splice(i, 1);
                 continue;
@@ -77200,12 +77443,9 @@ class AnazhRealm {
         const pointedFrac = this._blueprintPointedFraction(bp);
         const sharpness = pointedFrac * (t.härte || 0);
         const bluntness = 1 - pointedFrac;
-        // Die Schmiede-PRÄZISION moduliert die Welt-Kraft (besseres Gerät bricht/schneidet kräftiger).
-        // Eingefroren als forgedPrecision (Snapshot), sonst live aus den Parts; ohne opChain = 1.0 → Faktor 1.
-        const precision = Number.isFinite(bp.forgedPrecision)
-            ? bp.forgedPrecision
-            : this._compoundAvgPrecisionFromParts(bp.parts);
-        const precMul = 0.5 + 0.5 * precision;
+        // Die GÜTE des Werks moduliert die Welt-Kraft (besseres Gerät bricht/schneidet kräftiger) — die EINE Güte
+        // (computeBlueprintQuality: Lehren-Urteil, eingefrorener Werk-Stand oder die Teile; ohne opChain 1.0 → Faktor 1).
+        const precMul = 0.5 + 0.5 * this.computeBlueprintQuality(bp);
         const minePower =
             (H.toolMineBase + bluntness * ((t.härte || 0) * H.mineFromHärte + (t.dichte || 0) * H.mineFromDichte)) *
             precMul;
@@ -77408,21 +77648,10 @@ class AnazhRealm {
     // true, solange der Hieb zählt; false bei Erschöpfung.
     _strikeArchitecture(entry) {
         if (!entry) return false;
-        // WERKZEUG-WAND: ein verbrauchtes Gerät schlägt nicht — VOR der Stamina-Wand (kaputt kostet nichts).
-        // Modus-unabhängig (schöpfer darf reparieren, nicht mit Kaputtem arbeiten).
-        // Hände/leerer Slot → keine wear, durchlassen.
-        const heldName = this.state.player && this.state.player.equipped ? this.state.player.equipped.held : null;
-        const heldBp = heldName && this.state.blueprints ? this.state.blueprints[heldName] : null;
-        if (heldBp) {
-            const wear = this._blueprintWear(heldBp);
-            if (wear < AnazhRealm.WEAR_KAPUTT_SCHWELLE) {
-                this.log(
-                    `Abbauen: „${heldBp.label || heldName}" ist verbraucht (${Math.round(wear * 100)} %) — repariere es (eine Material-Geste am Werkzeug) oder lege ein neues an.`,
-                    "INFO"
-                );
-                return false;
-            }
-        }
+        // WERKZEUG-WAND (_geraetVerbraucht): ein verbrauchtes Gerät schlägt nicht — VOR der Stamina-Wand (kaputt kostet
+        // nichts), modus-unabhängig (schöpfer darf reparieren, nicht mit Kaputtem arbeiten); die Hand verbraucht nie.
+        const heldBp = this._heldImplementBlueprint();
+        if (this._geraetVerbraucht(heldBp, "Abbauen")) return false;
         const fit = this._harvestFitness(entry);
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         if (mode === "pfad") {
@@ -77435,12 +77664,10 @@ class AnazhRealm {
         }
         // wear zehrt zusätzlich zur Stamina, modus-unabhängig — sonst wäre Werkzeug im frieden ein Perpetuum.
         // Die Wand oben verhindert negative wear.
-        if (heldBp) {
-            const before = this._blueprintWear(heldBp);
-            this._setBlueprintWear(heldBp, before - this._wearPerStrike(heldBp));
-            // Equip-Stats (HELD_STAT_WEIGHT) lesen wear-Faktor — neu berechnen.
-            if (typeof this.recomputePlayerStats === "function") this.recomputePlayerStats();
-        }
+        // Derselbe Verschleiß wie im Kampf (_kampfVerschleiss). Kein Stat-Neubau: kein Stat liest wear (der Faktor
+        // _wearStatFactor wirkt im Treffer-Schaden), und recomputePlayerStats setzt HP und Ausdauer auf das Maximum —
+        // jeder Abbau-Hieb heilte und gab die eben gezahlte Ausdauer zurück (Welle L, K-D6).
+        this._kampfVerschleiss(heldBp);
         entry.harvestProgress = (entry.harvestProgress || 0) + fit.progress;
         if (entry.harvestProgress < 1) return true; // der Hieb zählt — das Bauwerk steht noch
         const archId = entry.id;
@@ -77467,12 +77694,12 @@ class AnazhRealm {
     }
 
     // V17.55 W1 — HALTEN-zum-Abbauen: solange die Abbau-Taste gehalten wird (+ Pointer-Lock,
-    // Inventar zu), wird in der strikeInterval-Kadenz auto-gehiebt → kontinuierliches Mahlen
-    // (frame-rate-unabhängig, Intervall-gegated; der erste Hieb kommt sofort beim mousedown).
+    // Inventar und Schubladen zu), wird in der strikeInterval-Kadenz nachgesetzt — mit DEMSELBEN Verb wie beim Drücken
+    // (die Maus-Absicht, p._mausVerb): der Hieb schlägt weiter, auch wenn der Stoß das Tier aus dem Fadenkreuz schob.
     _tickHarvest() {
         const p = this.state.player;
         if (!p || !p.breakHeld) return;
-        if (!this.state.isPointerLocked || this.state.inventoryOpen) {
+        if (!this.state.isPointerLocked || this.state.inventoryOpen || this._uiSchubladeOffen()) {
             p.breakHeld = false;
             return;
         }
@@ -77480,10 +77707,17 @@ class AnazhRealm {
         const last = Number.isFinite(p.lastHarvestStrikeAt) ? p.lastHarvestStrikeAt : -Infinity;
         if (now - last < (AnazhRealm.HARVEST.strikeIntervalSec || 0.2)) return;
         p.lastHarvestStrikeAt = now;
-        this.tryMouseBreak();
+        this.tryMouseBreak(p._mausVerb || undefined);
     }
 
-    tryMouseBreak() {
+    // DIE MAUS-ABSICHT (Welle L 06.10., Klasse Q9) — der EINE Dispatcher des linken Klicks. Beim DRÜCKEN liest er das
+    // Ziel am Fadenkreuz und das gehaltene Gerät: Kreatur in Nahkampf-Weite vom SCHULTERGELENK (nie von der Kamera: in
+    // der 3rd-Person lagen 8,1 m zwischen Kamera und Hirsch, Tor 6 m) → Hieb · Bau → Abbau · Klein-Flora → Pflücken ·
+    // sonst gräbt nur ein Grab-Gerät (Spaten, Schaufel, Spitzhacke) oder die leere Hand; jedes andere Gerät schwingt
+    // ins Leere (Luftschlag). `gehalten` = das Verb des Drückens (der Halte-Tick): es wiederholt sich, nie ein anderes —
+    // ein Hieb bleibt Hieb, ein gefallener Bau beendet das Abbauen. Vorher: 3rd-Person 10 Klicks → 0 Schwünge,
+    // 8 Krater; 1st-Person grub der Halte-Tick nach dem Stoß (6 Krater auf 10 Klicks).
+    tryMouseBreak(gehalten) {
         // Ein gehaltener Bogen beansprucht den Klick VOR Nahkampf/Abbau.
         // Buch kalt / kein Bogen → die Pfade darunter laufen unverändert.
         const bogenRec = this._heldBogenRecipe();
@@ -77507,35 +77741,52 @@ class AnazhRealm {
             };
             return true;
         }
-        // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite
-        // UND näher als eine Architektur wird ANGEGRIFFEN statt abgebaut (sonst Architektur
-        // → harvest, sonst → carve). So bleibt der Abbau-Pfad heil, der Kampf legt sich davor.
+        // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite UND näher als eine
+        // Architektur wird ANGEGRIFFEN statt abgebaut. _pickCreatureAtCrosshair liefert {creature, point} (far 30);
+        // das Nahkampf-Tor misst vom Schultergelenk des Spielers (ARENA.schwung.reachMaxM).
         const creaturePick = this._pickCreatureAtCrosshair();
         const pick = this._pickArchitectureAtCrosshair();
+        let verb = null;
         if (creaturePick && creaturePick.point) {
-            // das bestehende _pickCreatureAtCrosshair liefert {creature, point} (far 30) —
-            // die Distanz aus dem point + das Nahkampf-Reach-Gate hier (kein Methoden-Change,
-            // der andere Aufrufer bleibt unberührt; V17.9: reuse statt Duplikat).
-            const creatureDist = this.state.camera.position.distanceTo(creaturePick.point);
+            const K = AnazhRealm._arenaGesetz().schwung;
+            const pmB = this.state.playerMesh;
+            const pt = creaturePick.point;
+            const nahDist = pmB
+                ? Math.hypot(pt.x - pmB.position.x, pt.y - (pmB.position.y + K.shoulderH), pt.z - pmB.position.z)
+                : Infinity;
+            const creatureDist = this.state.camera.position.distanceTo(pt);
             const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
-            if (creatureDist <= AnazhRealm._arenaGesetz().schwung.reachMaxM && creatureDist <= archDist) {
-                const gate = this._mouseActionStaminaGate();
-                if (!gate.ok) {
-                    this.log(`Angriff: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
-                    return false;
-                }
-                return this._playerAttackCreature(creaturePick.creature);
+            if (nahDist <= K.reachMaxM && creatureDist <= archDist) verb = "hieb";
+        }
+        // S6-B (V18.133) — FORAGING vor dem Graben: nahe Klein-Vegetation in Arm-Laenge wird GEPFLUECKT (wer auf die
+        // Bluete zielt, will sie — kein Loch darunter). Reichweite 6 m « der 30-m-Grabe-Ray.
+        const flora = !verb && !(pick && pick.entry) ? this._pickScatterAtCrosshair() : null;
+        if (!verb) {
+            if (pick && pick.entry) verb = "abbau";
+            else if (flora) verb = "pfluecken";
+            else verb = this._geraetGraebt(this._heldImplementBlueprint()) ? "graben" : "hieb";
+        }
+        const pV = this.state.player;
+        if (gehalten) {
+            if (verb !== gehalten) {
+                if (gehalten !== "hieb") return false; // das Ziel des Drückens ist fort: das Halten endet hier
+                verb = "hieb";
             }
+        } else if (pV) pV._mausVerb = verb;
+        if (verb === "hieb") {
+            const gate = this._mouseActionStaminaGate();
+            if (!gate.ok) {
+                this.log(`Angriff: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
+                return false;
+            }
+            // der Schwung löst das Ziel in der Strike-Phase auf (Kreatur → Treffer, Leere → Luftschlag)
+            return this._playerAttackCreature(creaturePick && creaturePick.creature);
         }
         // V17.55 W1 — Abbauen kostet jetzt MÜHE: ein Bauwerk wird per Hieb-Fortschritt
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
-        if (pick && pick.entry) return this._strikeArchitecture(pick.entry);
-        // S6-B (V18.133) — FORAGING vor dem Graben: nahe Klein-Vegetation in
-        // Arm-Laenge wird GEPFLUECKT (wer auf die Bluete zielt, will sie —
-        // kein Loch darunter). Reichweite 6 m « der 30-m-Grabe-Ray.
-        const flora = this._pickScatterAtCrosshair();
-        if (flora) return this._harvestScatterPick(flora);
+        if (verb === "abbau") return this._strikeArchitecture(pick.entry);
+        if (verb === "pfluecken") return this._harvestScatterPick(flora);
         const target = this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
@@ -77658,9 +77909,19 @@ class AnazhRealm {
     }
 
     tryMousePlace() {
+        // DIE MAUS-ABSICHT (Welle L, Q9) — rechts: ein Bauwerk in der Hand geht in den Bau-Modus (die Hand wird frei;
+        // die Eiche lag 7,8 × 8,8 × 6,4 m in der Hand, RMB schüttete auf), aufgeschüttet wird nur mit einem Grab-Gerät
+        // oder der leeren Hand — eine Waffe schüttet nie auf (RMB mit Schwert: 3 × voxel_fill r 3,5 m, Spieler +4 m).
+        const heldP = this._heldImplementBlueprint();
+        const bauModusAn = this.state.buildMode && this.state.buildMode.active;
+        if (!bauModusAn && heldP && this._isPlaceableBlueprint(heldP)) {
+            this.equipHeld(null);
+            return this._bauModusFuer(heldP.name).ok;
+        }
         // Phase 3b — ist das Voxel-Terrain aktiv und KEIN Bau-Modus aktiv,
         // schüttet der RMB Boden auf (das Gegenstück zum LMB-Graben).
-        if (this.state.voxelTerrainActive && (!this.state.buildMode || !this.state.buildMode.active)) {
+        if (this.state.voxelTerrainActive && !bauModusAn) {
+            if (!this._geraetGraebt(heldP)) return false; // Waffe/Werkzeug: kein Aufschütten (Stich: nach v1.0)
             const fillGate = this._mouseActionStaminaGate();
             if (!fillGate.ok) {
                 this.log(`Aufschütten: zu wenig Stamina (${fillGate.have}/${fillGate.cost}).`, "INFO");
@@ -82615,6 +82876,8 @@ class AnazhRealm {
         if (role === "workshop-station" || role === "portal" || role === "vehicle") return;
         if (role === "soul" && bp.builtIn) return;
         const isSoul = role === "soul";
+        // Ein Bauwerk wird gebaut (fertigeBlueprint → Bau-Modus, Welle L V-k11), ein Gerät geht in die Hand.
+        const bauwerk = role !== "armor" && !isSoul && role !== "consumable" && this._isPlaceableBlueprint(bp);
         const verb =
             role === "armor"
                 ? "Rüstung weben (tragen)"
@@ -82622,7 +82885,9 @@ class AnazhRealm {
                   ? "Körper formen (verkörpern)"
                   : role === "consumable"
                     ? "Trank brauen (trinken)"
-                    : "Gerät schmieden (in die Hand)";
+                    : bauwerk
+                      ? "Bauen (das Phantom steht vor dir)"
+                      : "Gerät schmieden (in die Hand)";
         const row = document.createElement("div");
         row.className = "stat-row workshop-fertigen-row";
         // Step 1 — kein „Werk"-stat-label mehr: das _workshopAppendWerkHeading darüber trägt
@@ -90152,6 +90417,7 @@ class AnazhRealm {
         // unter Last jeden 4. Frame) — beim Boot an der Mess-Wiese standen 60 s lang 10 von 11 Karten ungebacken in der
         // Schlange, und jeder Baum, der seine Karte brauchte, blieb als Kapsel-Klumpen stehen (141 Sätze < 64 m).
         this._tickImpostorBake();
+        this._tickTrefferGliederVorbacken(); // die Treffer-Glieder einer kalten Gattung, im Takt der EINEN Bake-Uhr
         this._tickScatterLod(playerPos, 4, 160); // V18.464 — der Fernwald folgt der LIVE-Distanz (baum-D1)
         this._tickFernRing(playerPos); // STUFE 2 (das-feld-zeichnet §2) — der Horizont-Tick (headless-default No-op)
         this._tickWegeKarte(playerPos); // Wege- und Kronen-Karte folgen dem Spieler (No-op ohne Weg und Krone)
@@ -90210,6 +90476,50 @@ class AnazhRealm {
         for (const ch of player.children) {
             if (ch && ch.userData && ch.userData._creatureSkin) ch.visible = third;
         }
+    }
+
+    // DIE BLICK-WAHRHEIT (Welle L 06.10., Befunde K-D14 + V-D4): EINE Vorwärts-Richtung aus Gier und Neigung,
+    // (sin yaw · cos pitch, sin pitch, cos yaw · cos pitch) — yaw 0 blickt nach +z. Sie lesen die Ego-Kamera, der
+    // Pfeil, das Bau-Phantom, jede „vor dir"-Position der DSL und das Dorf-Ausrichten (Neigung 0 = waagrecht vorn).
+    // Vorher rechnete jeder Leser seine eigene: die Kamera ohne cos(pitch) (Blick bei Pitch −90° nur −45°), „vor dir"
+    // mit −(sin, cos) (die Birken standen HINTER dir, cos −0,96…−1,00). Die Neigung bleibt eine Haaresbreite unter
+    // ±90° (lookAt braucht eine waagrechte Spur der Gier).
+    _blickVorn(yaw, pitch, out) {
+        const g = Math.PI / 2 - 1e-3;
+        const p = Math.max(-g, Math.min(g, Number.isFinite(pitch) ? pitch : 0));
+        const y = Number.isFinite(yaw) ? yaw : 0;
+        const o = out || {};
+        const cp = Math.cos(p);
+        o.x = Math.sin(y) * cp;
+        o.y = Math.sin(p);
+        o.z = Math.cos(y) * cp;
+        return o;
+    }
+
+    // Die Gier, die in die Richtung (dx, dz) blickt — die Umkehrung von _blickVorn (Dorf-Ausrichten).
+    _blickGierZu(dx, dz) {
+        return Math.atan2(dx, dz);
+    }
+
+    // DER FADENKREUZ-PUNKT: wo der Strahl der Kamera (1st das Auge, 3rd die Verfolger-Kamera — beide durch das
+    // Fadenkreuz) die Welt trifft (Gelände und Bauten, _raycastWorldHit), sonst der Punkt in maxDist auf dem Strahl.
+    // Der Pfeil zielt darauf: aus der Mündung an der Schulter kreuzt er das Fadenkreuz am Ziel.
+    _blickZiel(maxDist) {
+        const cam = this.state.camera;
+        if (!cam || typeof cam.getWorldDirection !== "function") {
+            const pm = this.state.playerMesh;
+            const v = this._blickVorn(this.state.yaw, this.state.pitch);
+            const o = pm ? pm.position : { x: 0, y: 0, z: 0 };
+            return { x: o.x + v.x * maxDist, y: o.y + 1.6 + v.y * maxDist, z: o.z + v.z * maxDist };
+        }
+        const hit = this._raycastWorldHit(maxDist);
+        if (hit && hit.hit) return { x: hit.x, y: hit.y, z: hit.z };
+        const d = cam.getWorldDirection(this._blickZielDir || (this._blickZielDir = new THREE.Vector3()));
+        return {
+            x: cam.position.x + d.x * maxDist,
+            y: cam.position.y + d.y * maxDist,
+            z: cam.position.z + d.z * maxDist,
+        };
     }
 
     _loopCamera(currentTime) {
@@ -90346,11 +90656,12 @@ class AnazhRealm {
                     eyeY = Math.min(eyeY, player.position.y + 0.55 + headroomFP - 0.12);
                 }
                 camera.position.set(player.position.x, eyeY, player.position.z);
-                camera.lookAt(
-                    player.position.x + Math.sin(this.state.yaw),
-                    eyeY + Math.sin(this.state.pitch),
-                    player.position.z + Math.cos(this.state.yaw)
+                const blick = this._blickVorn(
+                    this.state.yaw,
+                    this.state.pitch,
+                    this._egoBlick || (this._egoBlick = {})
                 );
+                camera.lookAt(player.position.x + blick.x, eyeY + blick.y, player.position.z + blick.z);
             }
             if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                 this.log(
@@ -91915,6 +92226,25 @@ class AnazhRealm {
 
     // Kein Renderer-Hot-Swap nach WebGL: NodeMaterials rendern nur auf WebGPURenderer (schwarze Welt).
 
+    // Ist eine Schublade offen? Die DOM-Wahrheit (ein sichtbarer .drawer), nicht ein Merker — der Werkstatt-, Hof- oder
+    // Bibliotheks-Drawer gehört der UI, nie der Welt (Welle L, Q9).
+    _uiSchubladeOffen() {
+        if (typeof document === "undefined" || typeof document.querySelector !== "function") return false;
+        return !!document.querySelector(".drawer[data-drawer]:not([hidden])");
+    }
+
+    // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.
+    _uiZeigerFrei() {
+        if (this.state.player) this.state.player.breakHeld = false;
+        if (typeof document !== "undefined" && document.pointerLockElement && document.exitPointerLock) {
+            try {
+                document.exitPointerLock();
+            } catch (_e) {
+                /* Policy: kein Lock, nichts zu lösen */
+            }
+        }
+    }
+
     // Maus-Listener (Pointer-Lock-Click + Mousedown-Action) als Methode.
     // Wird in createScene am initial-Canvas gerufen.
     _attachWorldCanvasInputListeners(canvas) {
@@ -91922,16 +92252,18 @@ class AnazhRealm {
         canvas.addEventListener("click", () => {
             // Welle 6.C1 Drag-Fix: Inventar offen → Canvas-Click NICHT
             // re-locken. Sonst würde ein Klick neben das Overlay den
-            // Pointer-Lock wieder aktivieren und Drag&Drop tot machen.
-            if (this.state.inventoryOpen) return;
+            // Pointer-Lock wieder aktivieren und Drag&Drop tot machen. Dasselbe für jede offene Schublade (Welle L).
+            if (this.state.inventoryOpen || this._uiSchubladeOffen()) return;
             if (document.pointerLockElement === canvas) return;
             const p = canvas.requestPointerLock();
             if (p && typeof p.catch === "function") p.catch(() => {}); // Ablehnung (Policy) ist kein Seiten-Fehler
         });
-        // Maus-Aktionen (abbauen/platzieren) nur mit aktivem Pointer-Lock und geschlossenem Inventar
-        // (Drag&Drop hat eigene Listener). Im Rebind-Capture bindet der erste Maus-Button die Aktion.
+        // Maus-Aktionen (abbauen/platzieren) nur mit aktivem Pointer-Lock, geschlossenem Inventar und geschlossener
+        // Schublade (Drag&Drop hat eigene Listener): IST DIE UI OFFEN, IST DER CANVAS TAUB (Welle L, Befund V-D2 — mit
+        // offener Werkstatt und gefangenem Zeiger gruben 4 Klicks auf „Bauplan …" 4 Krater r 3,5 m). Im Rebind-Capture
+        // bindet der erste Maus-Button die Aktion.
         canvas.addEventListener("mousedown", (event) => {
-            if (this.state.inventoryOpen) return;
+            if (this.state.inventoryOpen || this._uiSchubladeOffen()) return;
             if (this.state.keybindRebind) {
                 const code = this._eventToBindingCode(event);
                 if (code) {
@@ -93281,7 +93613,7 @@ AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     magicResist: (t) => (t.magieleitung || 0) * 0.4 + (t.resoniert || 0) * 0.3,
     heatResist: (t) => (t.wärmeleitung || 0) * 0.5 - (t.brennbar || 0) * 0.3,
     // defense (physisch) ∝ dichte + härte; ergänzt magicResist/heatResist zum Defense-Trio, base-los
-    // (ein weiches Wesen blockt ~0). Konsum als flache Reduktion: dealt = max(1, amount − defense).
+    // (ein weiches Wesen blockt ~0). Konsum: die Rüstung dämpft, dealt = roh² / (roh + defense) (_ruestungDaempft).
     defense: (t) => {
         const K = AnazhRealm._kampfKoeff("defense");
         return K.base + (t.dichte || 0) * K.dichte + (t.härte || 0) * K.haerte;
@@ -93342,6 +93674,12 @@ AnazhRealm.HELD_MESH = Object.freeze({
 // Konsumenten lesen _arenaGesetz(), fail-closed. Die Mechanik hält gate:kampf-gefuehl.
 // maxPfeile ist Wirts-Infrastruktur (Perf-Deckel lebender Pfeile), kein Gefühls-Gesetz:
 AnazhRealm.MAX_PFEILE = 16;
+// Die Weite des Fadenkreuz-Punkts (_blickZiel): der Pfeil zielt auf den Welt-Treffer des Blicks bis hierhin, dahinter
+// auf den Punkt in dieser Weite (die Parallaxe Mündung ↔ Auge fällt dort unter 0,3°).
+AnazhRealm.BLICK_ZIEL_M = 80;
+// Die Angriffs-Größen, in die das gehaltene Gerät faltet (computePlayerStats, K-D15): Schaden, Rückschlag, Tempo,
+// Präzision — nie Schutz, Leben, Ausdauer oder Gang.
+AnazhRealm.HELD_ANGRIFF_STATS = Object.freeze(["damage", "knockback", "attackSpeed", "precision"]);
 // ═══ ARENA-GEFÜHL — DER EINE GEFÜHLS-LESER ═══
 // Schwung-Konstanten · energie-skalierter Hit-Stop/Dip · die EINE Bogen-Physik + Auszug ·
 // Waffen-Güte aus __schmiedeCore.ARENA. Fail-closed; Memo nur im Erfolgs-Fall.
@@ -96488,7 +96826,7 @@ AnazhRealm.WEAR_PER_STRIKE_BASE = 0.018; // ein voll-neues Werkzeug hält ~55 Hi
 AnazhRealm.WEAR_HARDNESS_FLOOR = 0.4; // härte<0.4 → trägt den Voll-Basis-Verschleiß
 AnazhRealm.WEAR_HARDNESS_CEIL = 3.0; // härte≥3 (eisen+) → ~1/3 Verschleiß (hartes Werkzeug widersteht)
 AnazhRealm.WEAR_KAPUTT_SCHWELLE = 0.05; // unter 5 % wear → Hieb scheitert, Reparatur-Aufruf
-AnazhRealm.WEAR_STAT_FLOOR = 0.3; // wear-Faktor auf attack/break-Stats: min 30 % auch bei 0 % wear
+AnazhRealm.WEAR_STAT_FLOOR = 0.3; // wear-Faktor auf den Treffer-Schaden: min 30 % auch bei 0 % wear
 AnazhRealm.REPAIR_COST_FRACTION = 0.5; // eine Reparatur kostet 50 % der Voll-Bau-Kosten × Schaden
 AnazhRealm.REPAIR_TARGET_WEAR = 1.0; // eine erfolgreiche Reparatur stellt voll her
 // Portal-Rückkanal (_portalReceiveEvent: Sub-Welt → Heimat-Journal) deckelt Ereignisse je Sekunde —

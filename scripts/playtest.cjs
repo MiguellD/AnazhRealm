@@ -4079,7 +4079,8 @@ async function checkBandV1757HeldSlot(ctx) {
         r.equipHeld(wName);
         const armed = r.computePlayerStats().stats;
         out.heldRaisesDamage = armed.damage > base.damage + 0.01; // härte → mehr Schaden
-        out.heldRaisesDefense = armed.defense > base.defense; // das Defense-Trio fließt mit
+        // Welle L (K-D15): die Hand ist kein Panzer — das Gerät faltet nur in die Angriffs-Größen
+        out.heldKeinPanzer = armed.defense === base.defense && armed.hpMax === base.hpMax;
 
         // (5) abnehmen → zurück auf die Baseline (kein Rest-Effekt)
         r.equipHeld(null);
@@ -4121,8 +4122,8 @@ async function checkBandV1757HeldSlot(ctx) {
         res.heldRaisesDamage
     );
     check(
-        "V17.57 W2-B: KONSUM — das harte Gerät hebt auch die Verteidigung (das Defense-Trio fließt)",
-        res.heldRaisesDefense
+        "Welle L K-D15: die Hand ist kein Panzer — das harte Gerät lässt Verteidigung und HP unberührt (nur Angriff)",
+        res.heldKeinPanzer
     );
     check("V17.57 W2-B: Gerät abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
     check(
@@ -4137,7 +4138,7 @@ async function checkBandV1757HeldSlot(ctx) {
 }
 
 // Kreatur-Kampf symmetrisch zum Spieler: computeCreatureStats liefert hpMax + defense;
-// `dealt = max(1, amount − defense)`; hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien nur für den
+// die Rüstung dämpft (`dealt = roh² / (roh + defense)`, Welle L K-D5 — die flache Wand max(1, roh − defense) fiel); hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien nur für den
 // Spieler-Töter, removeCreature). Konsument ist der damage_creature-DSL-Op.
 async function checkBandV1753CreatureCombat(ctx) {
     const { page, check } = ctx;
@@ -4166,17 +4167,21 @@ async function checkBandV1753CreatureCombat(ctx) {
             Math.abs(c1.userData.hp - stats1.hpMax) < 1e-6 &&
             c1.userData.hp > 0;
 
-        // (2) KONSUM — damageCreature reduziert hp um max(1, amount − defense)
+        // (2) KONSUM — damageCreature dämpft: dealt = roh² / (roh + defense)
         const def1 = Math.max(0, stats1.defense || 0);
         const hpBefore = c1.userData.hp;
-        const dmgR = r.damageCreature(c1, def1 + 10, { source: "world" });
+        const roh1 = def1 + 10;
+        const soll1 = (roh1 * roh1) / (roh1 + def1);
+        const dmgR = r.damageCreature(c1, roh1, { source: "world" });
         out.damageReduces =
             dmgR.ok &&
             !dmgR.killed &&
-            Math.abs(dmgR.dealt - 10) < 1e-6 &&
-            Math.abs(c1.userData.hp - (hpBefore - 10)) < 1e-6;
-        // (3) der Schadens-Floor — ein winziger Treffer macht mind. 1 (keine Unverwundbarkeit, kein 0-Schaden)
-        out.damageFloor = r.damageCreature(c1, 0.1, { source: "world" }).dealt === 1;
+            Math.abs(dmgR.dealt - soll1) < 1e-6 &&
+            dmgR.dealt < roh1 &&
+            Math.abs(c1.userData.hp - (hpBefore - soll1)) < 1e-6;
+        // (3) ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit) — und nie mehr als er bringt
+        const winzig = r.damageCreature(c1, 0.1, { source: "world" }).dealt;
+        out.damageFloor = winzig > 0 && winzig < 0.1;
 
         // (4) ein Nicht-Kreatur-Ziel (der Spieler-Mesh) wird abgelehnt
         out.rejectsNonCreature = !r.damageCreature(r.state.playerMesh, 10, {}).ok;
@@ -4228,11 +4233,8 @@ async function checkBandV1753CreatureCombat(ctx) {
         res.methodsExist
     );
     check("V17.53 Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
-    check("V17.53 Kampf C: KONSUM — damageCreature reduziert hp um max(1, amount − defense)", res.damageReduces);
-    check(
-        "V17.53 Kampf C: der Schadens-Floor — ein winziger Treffer macht mind. 1 Schaden (keine Unverwundbarkeit)",
-        res.damageFloor
-    );
+    check("V17.53 Kampf C: KONSUM — damageCreature dämpft (roh² / (roh + defense), Welle L K-D5)", res.damageReduces);
+    check("V17.53 Kampf C: ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit)", res.damageFloor);
     check("V17.53 Kampf C: ein Nicht-Kreatur-Ziel wird abgelehnt (not_creature)", res.rejectsNonCreature);
     check("V17.53 Kampf C: der Loot sind die Body-Materialien der Kreatur (nicht leer)", res.lootNonEmpty);
     check(
@@ -4285,8 +4287,19 @@ async function checkBandV1754PlayerAttack(ctx) {
         // Der Klick LÖST nur den 3-Phasen-Schwung aus, das Treffen macht der Klingen-Sweep der Strike-Phase
         // → Ziel VOR den Spieler (Sweep-Reichweite), Schwung synthetisch über die Anzeige-Uhr treiben.
         const savedYaw = r.state.yaw;
+        const savedPitch = r.state.pitch;
+        const savedCam = r.state.cameraMode;
         r.state.yaw = 0;
         c1.position.set(pm.x, pm.y, pm.z + 1.6);
+        // Die Klinge zielt durchs Fadenkreuz (Welle L, K-D3): die ECHTE Kamera auf die Leibes-Mitte richten.
+        r.setCameraMode("first");
+        r._loopCamera(performance.now() / 1000);
+        {
+            const b = new THREE.Box3().setFromObject(c1);
+            const cp = r.state.camera.position;
+            r.state.pitch = Math.atan2((b.min.y + b.max.y) / 2 - cp.y, Math.max(0.5, c1.position.z - cp.z));
+            r._loopCamera(performance.now() / 1000);
+        }
         p._swing = null;
         p.lastAttackAt = -Infinity;
         setEmo({});
@@ -4309,6 +4322,8 @@ async function checkBandV1754PlayerAttack(ctx) {
         out.cooldownGates = atkA === true && atkB === false && c1.userData.hp === hp1Mid;
         p._swing = null;
         r.state.yaw = savedYaw;
+        r.state.pitch = savedPitch;
+        r.setCameraMode(savedCam);
 
         // (4) die SCHULD ist lebendig-gegated: ein Spieler-Kill eines lebendig-Wesens → sorrow
         // (der W4-Kontext-Appraisal: derselbe lebendig-Tag, im Tötungs-Kontext zu Schmerz)
@@ -5127,7 +5142,7 @@ async function checkBandV1763ForgeArmor(ctx) {
         blu.__geraet = {
             name: "__geraet",
             parts: [
-                { shape: "box", material: "stein", size: { x: 0.6, y: 0.6, z: 0.6 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "stein", size: { x: 0.15, y: 1.2, z: 0.15 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
         const fertHeld = r.fertigeBlueprint("__geraet");
@@ -5430,7 +5445,7 @@ async function checkBandV1766FertigenFlow(ctx) {
         blu.__s7_forge = {
             name: "__s7_forge",
             parts: [
-                { shape: "box", material: "eisen", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "eisen", size: { x: 0.2, y: 1.6, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
         // V17.88 — die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
@@ -5463,7 +5478,7 @@ async function checkBandV1766FertigenFlow(ctx) {
         blu.__s7_plain = {
             name: "__s7_plain",
             parts: [
-                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "stein", size: { x: 0.2, y: 1.8, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
         r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
@@ -28599,9 +28614,8 @@ async function checkBandPhaseEThreat(ctx) {
             const lamm = r.spawnCreatureAt(pm.x + 3.5, pm.y, pm.z + 1, "happy", "wesen");
             spawned.push(lamm);
             out.gentleNoHunt = r._creatureHuntDrive(lamm, 0) === false;
-            // (3) der BISS: HP sinkt durchs damagePlayer-Tor, der Cooldown deckelt, die Rüstung dämpft FLACH.
-            // Die Probe isoliert die Abwehr (0 vs 3): mit der Basis-defense klemmt der weiche Biss (max(2,…))
-            // sonst beidseitig auf der max(1,…)-Untergrenze.
+            // (3) der BISS: HP sinkt durchs damagePlayer-Tor, der Cooldown deckelt, die Rüstung dämpft
+            // (_ruestungDaempft, dasselbe Gesetz wie bei den Wesen). Die Probe isoliert die Abwehr (0 vs 3).
             const savedDef = p.stats.defense;
             p.stats.defense = 0;
             p.hp = p.stats.hpMax || 100;
@@ -39901,18 +39915,19 @@ async function checkBandWelle6XAudit(ctx) {
         // --- C1: at_player_forward DSL-Resolver
         out.atPlayerForwardExists = !!r.dslPositions.at_player_forward;
         if (r.dslPositions.at_player_forward) {
-            // Spieler bei (10, 50, 20), yaw=0 → forward ist -Z.
-            // at_player_forward(8) sollte (10, 50, 12) liefern.
+            // Spieler bei (10, 50, 20), yaw=0 → der Blick geht nach +Z (die EINE Vorwärts-Richtung _blickVorn,
+            // dieselbe wie Kamera und Phantom — Welle L, Befund V-D4: die alte Probe schrieb „hinter dir" fest).
+            // at_player_forward(8) liefert (10, 50, 28).
             r.state.playerMesh.position.set(10, 50, 20);
             r.state.yaw = 0;
             const ctx = { state: r.state, rng: () => 0.5 };
             const pos = r.dslPositions.at_player_forward([8], ctx);
             out.atPlayerForwardOffset =
-                Math.abs(pos.x - 10) < 0.01 && Math.abs(pos.y - 50) < 0.01 && Math.abs(pos.z - 12) < 0.01;
-            // Mit yaw=π/2 → forward ist -X. at_player_forward(5) → (5, 50, 20)
+                Math.abs(pos.x - 10) < 0.01 && Math.abs(pos.y - 50) < 0.01 && Math.abs(pos.z - 28) < 0.01;
+            // Mit yaw=π/2 → der Blick geht nach +X. at_player_forward(5) → (15, 50, 20)
             r.state.yaw = Math.PI / 2;
             const pos2 = r.dslPositions.at_player_forward([5], ctx);
-            out.atPlayerForwardYawAware = Math.abs(pos2.x - 5) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
+            out.atPlayerForwardYawAware = Math.abs(pos2.x - 15) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
             // Reset
             r.state.yaw = 0;
         }
@@ -39930,9 +39945,9 @@ async function checkBandWelle6XAudit(ctx) {
                 dslOut.program[1][0] === "at" &&
                 typeof dslOut.program[2] === "number";
             // Position ist NICHT bei (0,0,0) — sondern 8m vor dem
-            // Spieler. yaw=0 → forward ist -Z, also z ≈ -8.
+            // Spieler. yaw=0 → der Blick geht nach +Z, also z ≈ +8.
             const z = dslOut.program[1][3];
-            out.chatBuildDorfForwardOffset = Math.abs(z - -8) < 0.5;
+            out.chatBuildDorfForwardOffset = Math.abs(z - 8) < 0.5;
         }
 
         // --- C3: _canSoulJumpFromSlope existiert
@@ -40017,14 +40032,14 @@ async function checkBandWelle6XAudit(ctx) {
             "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
             wave6x3Results.atPlayerForwardOffset
         );
-        check("Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → -X)", wave6x3Results.atPlayerForwardYawAware);
+        check("Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → +X, die EINE Vorwärts-Richtung)", wave6x3Results.atPlayerForwardYawAware);
         check("Welle 6.X.3 C1: Chat 'baue dorf hier' parst zu DSL", wave6x3Results.chatBuildDorfParses);
         check(
             "Welle 6.X.3 C1: Chat 'baue dorf hier' Format [spawn_village, at, seed]",
             wave6x3Results.chatBuildDorfFormat
         );
         check(
-            "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ -8)",
+            "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ +8, vor dem Blick)",
             wave6x3Results.chatBuildDorfForwardOffset
         );
         check("Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert", wave6x3Results.canJumpFromSlopeExists);
