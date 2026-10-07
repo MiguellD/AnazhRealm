@@ -9019,7 +9019,7 @@ class AnazhRealm {
                 }),
             },
             // "baue <bauplan>": der Spieler ist Material-Quelle, die Kreatur baut daraus. pfad konsumiert aus
-            // dem Spieler-Inventar (lehnt bei Mangel ab); frieden+schöpfer bauen kostenlos (_buildMaterialGate).
+            // dem Spieler-Inventar, frieden ebenso (S2), frei baut nur schöpfer (_buildMaterialGate).
             {
                 example: "baue stein_block",
                 re: /^(?:baue|errichte|erschaffe|construct)\s+([a-zäöüß0-9_-]+)$/i,
@@ -20753,7 +20753,7 @@ class AnazhRealm {
     }
 
     // Build = Umkehrung zu gather: take (zum Spieler, Material aus dem Inventar, modus-gated via
-    // _buildMaterialGate — frieden+schöpfer kostenlos) → walk (bis CREATURE_BUILD_PLACEMENT_DIST) →
+    // _buildMaterialGate — pfad und frieden zahlen, schöpfer frei) → walk (bis CREATURE_BUILD_PLACEMENT_DIST) →
     // spawn (Architektur am Kreatur-Ort). Ablehnungen fallen auf wander mit memory + Journal.
     _tickCreatureBuild(creature, task) {
         const out = this._creatureTaskOutDir();
@@ -23537,6 +23537,21 @@ class AnazhRealm {
             chatOutput.appendChild(line);
             chatOutput.scrollTop = chatOutput.scrollHeight;
         } catch (_) {}
+    }
+    // DER SPIELER-KANAL (Welle L Folge, L-Rückmeldung): was der Spieler wollte und die Welt verweigert oder ihm nimmt, hört
+    // er — eine Zeile im Chat (#chat-output; der Fading-Feed zeigt sie über der Welt) und im Log. Dieselbe Zeile binnen 2 s
+    // einmal (ein gehaltener Rechtsklick spammt nicht). Befund: „Bauen: nicht genug Material", „Sonnen-Brennglas entzündete"
+    // standen nur im eingeklappten Log. Leser: jede Absage des Bau-Flusses (FERTIGEN, Bau-Modus, Setzen) und jede
+    // Zerstörung, die die Welt selbst wirkt.
+    _spielerSagt(text) {
+        const t = String(text || "");
+        if (!t) return;
+        this.log(t, "INFO");
+        const jetzt = performance.now();
+        const alt = this._spielerSagtLetzte;
+        if (alt && alt.t === t && jetzt - alt.ms < 2000) return;
+        this._spielerSagtLetzte = { t, ms: jetzt };
+        this._chatEcho(t);
     }
     processChatCommand(command) {
         // Chat-Naht: ZWSP/BOM/Weird-Spaces killen sonst exakte Patterns
@@ -45348,11 +45363,19 @@ class AnazhRealm {
         if (bp && bp.role === "soul") return this.forgeAvatar(name);
         if (bp && bp.role === "consumable") return this.brewConsumable(name);
         // Ein Bauwerk wird gebaut, nicht gehalten (Welle L, V-k11): der Bau-Modus übernimmt (confirmBuild zahlt beim
-        // Setzen); die Schublade schließt, damit das Phantom in der Welt steht.
+        // Setzen); Schublade und Inventar schließen, damit das Phantom in der Welt steht. Der EINE Weg jedes Bauwerks —
+        // Werkstatt-FERTIGEN und Rezeptbuch („Bauen") rufen ihn (Welle L Folge: das Rezeptbuch zahlte beim Fertigen UND
+        // beim Setzen und legte das Werk ins Inventar). Kann das Setzen nicht tragen (`_bauVorabTor`: das Gesetz des
+        // Modus), sagt FERTIGEN es, statt in einen Bau-Modus zu führen, der nur abgelehnt werden kann.
         if (bp && this._isPlaceableBlueprint(bp)) {
+            const vorab = this._bauVorabTor(name);
+            if (!vorab.ok) return vorab;
             const res = this._bauModusFuer(name);
-            if (res.ok) this.closeAllDrawers();
-            return res.ok ? { ok: true, bauModus: true, slot: res.slot } : res;
+            if (res.ok) {
+                this.closeAllDrawers();
+                if (this.state.inventoryOpen) this.toggleInventoryOverlay(false);
+            }
+            return res.ok ? { ok: true, bauModus: true, slot: res.slot, free: !!vorab.free } : res;
         }
         return this.forgeBlueprint(name);
     }
@@ -74722,14 +74745,21 @@ class AnazhRealm {
     // in den Gassen der Stadt (N-D5, S-W4), und die Streu lief an der Wand vorbei; an der Genesis-Scheibe wich nur der Wald
     // (ein eigener Filter im Pflanz-Gang): 28 promotete Bäume, 23 Streu-Zellen, 4 Kachel-Pflanzen und der Hain der KI standen
     // über ihr (gate:haus-welt W8). `absage(wo)` hört, wo ein Wurf fiel ("haus" | "lichtung") — der Hain der KI und des
-    // Chats sagt es laut (`_naturAbsageSatz`), nie still „gewachsen".
+    // Chats sagt es laut (`_naturAbsageSatz`), nie still „gewachsen". Seit Welle L Folge setzt auch der Spieler durch sie:
+    // der Bau-Modus (`confirmBuild`) und sein Phantom (`tickBuildMode`, das Urteil `_naturWand`).
     _naturSetzen(name, position, opts, setzen, absage) {
-        const wo = position ? this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts)) : false;
+        const wo = this._naturWand(name, position, opts);
         if (wo) {
             if (absage) absage(wo);
             return null;
         }
         return setzen ? setzen() : this.spawnArchitecture(name, position, opts);
+    }
+
+    // Das Urteil der Natur-Wand für einen Wurf an `position` ("haus" | "lichtung" | false) — der EINE Leser von Grundriss und
+    // Krone; `_naturSetzen` setzt danach, das Bau-Phantom färbt sich danach.
+    _naturWand(name, position, opts) {
+        return position ? this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts)) : false;
     }
 
     // Der Satz der Natur-Wand nach einem Programm: lagen Würfe eines Hains (`spawn_tree`, `spawn_studio`) in einem Grundriss,
@@ -74747,9 +74777,8 @@ class AnazhRealm {
         }
         if (!lichtung && !haus) return null;
         const gruende = [];
-        if (lichtung)
-            gruende.push("die Lichtung der Genesis-Plattform bleibt frei, keine Krone steht über ihrer Scheibe");
-        if (haus) gruende.push("im Grundriss eines Hauses wächst nichts");
+        if (lichtung) gruende.push(AnazhRealm.NATUR_WAND_GRUND.lichtung);
+        if (haus) gruende.push(AnazhRealm.NATUR_WAND_GRUND.haus);
         const g = gruende.join("; ");
         return gesetzt
             ? { satz: `${lichtung + haus} davon wuchsen nicht: ${g}.`, nichts: false }
@@ -76605,15 +76634,23 @@ class AnazhRealm {
         let idx = hb.indexOf(name);
         if (idx < 0) {
             idx = hb.findIndex((x) => !x);
-            if (idx < 0) {
-                this.log(`Bauen: die Hotbar ist voll — leere einen Platz für „${name}".`, "INFO");
-                return { ok: false, reason: "hotbar_voll" };
-            }
+            if (idx < 0) return { ok: false, reason: "hotbar_voll" }; // der Aufrufer sagt es (`_machTorHint`)
             this.setHotbarSlot(idx, name);
         }
         const bm = this.state.buildMode;
         if (!(bm.active && bm.slotIndex === idx && bm.blueprintName === name)) this.selectHotbarSlot(idx);
         return { ok: !!(bm.active && bm.blueprintName === name), slot: idx };
+    }
+
+    // DAS VORAB-TOR des Bau-Modus (Welle L Folge, L-Werkstatt): FERTIGEN führt nur dann in den Bau-Modus, wenn das Setzen
+    // tragen KANN — das Gesetz des Modus: frieden und pfad zahlen Material, frei baut nur schöpfer (S2, Schöpfer-Befund
+    // V17.60 „frieden bedeutet nicht gratis, das wäre der Schöpfer-Modus"). Es fragt `checkBuildCost`, ohne zu ziehen;
+    // gezogen wird beim Setzen (`confirmBuild`, das EINE Mach-Tor). Befund: in frieden führte FERTIGEN in den Bau-Modus, der
+    // Rechtsklick verweigerte, und die Absage stand nur im Log.
+    _bauVorabTor(name) {
+        if (this.getGameMode() === "schöpfer") return { ok: true, free: true };
+        const c = this.checkBuildCost(name);
+        return c.ok ? { ok: true } : { ok: false, reason: "not_enough_material", missing: c.missing, cost: c.cost };
     }
 
     // Bauplan in einen Hotbar-Slot legen. Persistiert sich automatisch via
@@ -76644,6 +76681,7 @@ class AnazhRealm {
         bm.active = false;
         bm.blueprintName = null;
         bm.phantomMesh = null;
+        bm.phantomWand = null;
         bm.phantomStudioPending = null; // B1 — kein Heil-Swap für einen verlassenen Bauplan
         this._updateBuildModeHud();
     }
@@ -76655,8 +76693,8 @@ class AnazhRealm {
     //
     // Vision §1.5 Schöpfer-darf-frei-erschaffen + §10.1 Modus-Symmetrie: harvest
     // ist die Materialien-IN-Quelle, build ist die Materialien-OUT-Senke. In
-    // pfad-Modus quantifiziert (Spielmechanik), in frieden+schöpfer kostenlos
-    // (Vision: Erstbegegnung umarmt, Schöpfer gehorcht). Die Kosten emergieren
+    // pfad UND frieden quantifiziert (S2, Schöpfer-Befund V17.60: „frieden bedeutet nicht gratis,
+    // das wäre der Schöpfer-Modus"), frei nur in schöpfer. Die Kosten emergieren
     // aus blueprint.parts via DERSELBEN Volumen-Formel wie harvestArchitecture
     // (HARVEST_VOLUME_TO_UNITS=4). Eine Konstante, beide Richtungen — bauen
     // einer 2.4³-stein_block kostet ~55 Stein und liefert beim harvest dieselben
@@ -76826,31 +76864,25 @@ class AnazhRealm {
         if (!bm.active || !bm.blueprintName || !bm.phantomMesh) return false;
         const p = bm.phantomMesh.position;
         const spawnPos = { x: p.x, y: p.y + 0.5, z: p.z };
+        const name = bm.blueprintName;
+        const bpL = this.state.blueprints[name];
+        const label = String((bpL && bpL.label) || name).split(/\s[·—(]/)[0];
+        // Jede Absage des Setzens spricht der Spieler-Kanal (`_spielerSagt`, Welle L Folge — Befund: „nicht genug
+        // Material" stand nur im eingeklappten Log, der Rechtsklick blieb stumm).
         // pfad: ein instabiles (rotes) Phantom darf nicht bauen (Normal-Y > 0.5 aus _resolvePhantomTarget).
         // frieden + schöpfer bleiben durchlässig.
         if (this.getGameMode() === "pfad" && !bm.phantomOnGround) {
-            this.log("Bauen: Standort ist nicht stabil (rote Markierung).", "INFO");
+            this._spielerSagt(`${label}: der Standort trägt nicht (rote Markierung) — ziel auf ebenen Boden.`);
             return false;
         }
         // Welle 9c — Welt-Werkstatt-Gate (modus-abhängig): pfad braucht passende
         // Werkstatt in der Nähe; frieden + schöpfer überspringen den Check.
-        const stationGate = this._workshopStationGate(bm.blueprintName, spawnPos);
+        const stationGate = this._workshopStationGate(name, spawnPos);
         if (!stationGate.ok) {
-            const label =
+            const dom =
                 (AnazhRealm.TOOL_DOMAIN_LABELS && AnazhRealm.TOOL_DOMAIN_LABELS[stationGate.neededDomain]) ||
                 stationGate.neededDomain;
-            this.log(`Bauen: Du brauchst eine Werkstatt der Domäne „${label}" in der Nähe.`, "INFO");
-            this._renderBuildModeHud && this._renderBuildModeHud();
-            return false;
-        }
-        // Material-Gate (modus-abhängig): pfad zieht Materialien ab oder
-        // lehnt bei Mangel ab; frieden + schöpfer bauen kostenlos.
-        const gate = this._buildMaterialGate(bm.blueprintName);
-        if (!gate.ok) {
-            const missingStr = Object.entries(gate.missing)
-                .map(([m, n]) => `${n}× ${m}`)
-                .join(", ");
-            this.log(`Bauen: nicht genug Material (fehlt: ${missingStr}).`, "INFO");
+            this._spielerSagt(`${label}: du brauchst eine Werkstatt der Domäne „${dom}" in der Nähe.`);
             this._renderBuildModeHud && this._renderBuildModeHud();
             return false;
         }
@@ -76861,14 +76893,42 @@ class AnazhRealm {
         // Werkstatt-Prägung (freier Bau: confirmBuild IST der Guss); EINE Quelle `_studioStampFor`.
         // Reist am Eintrag (Snapshot) und im place-DSL (Slot 6). Tiefe Kopie EINMAL + fail-closed VOR dem
         // Guss — sonst wirft ein nicht-serialisierbarer Wert nach Spawn, vor Broadcast (Welt-Spaltung).
-        const bmStamp = this._studioStampFor(bm.blueprintName);
-        // Ω5 — ein im schöpfer-Modus (gate.free) gebautes Werk ist freeBorn:
-        // es erntet zu 0 (das Perpetuum-Verbot — die Modus-Wäsche schließt).
-        this.spawnArchitecture(bm.blueprintName, spawnPos, {
-            id: archId,
-            freeBorn: gate.free === true,
-            studioOv: bmStamp || undefined,
-        });
+        const bmStamp = this._studioStampFor(name);
+        // Das Mach-Tor zieht das Material (das Gesetz des Modus: frieden und pfad zahlen, frei baut nur schöpfer — S2,
+        // `_makeCostGate`) erst, wenn die Natur-Wand den Ort freigibt: ein Natur-Werk (Baum, Strauch, Fels) setzt wie der
+        // Hain der KI durch `_naturSetzen` — die Lichtung der Genesis-Plattform bleibt frei, im Grundriss eines Hauses wächst
+        // nichts (Befund: der Werkstatt-Baum stand auf der Lichtung, die der Satz der KI verweigert — zwei Mach-Akte, zwei
+        // Urteile —, und der Grundriss räumte ihn beim nächsten Laden still). Eine Absage kostet nie Material.
+        // Ω5 — ein im schöpfer-Modus (gate.free) gebautes Werk ist freeBorn: es erntet zu 0 (das Perpetuum-Verbot).
+        let gate = null;
+        let wand = null;
+        const setzen = () => {
+            gate = this._buildMaterialGate(name);
+            if (!gate.ok) return null;
+            return this.spawnArchitecture(name, spawnPos, {
+                id: archId,
+                freeBorn: gate.free === true,
+                studioOv: bmStamp || undefined,
+            });
+        };
+        const steht = this._istNatur({ type: name })
+            ? this._naturSetzen(name, spawnPos, {}, setzen, (wo) => (wand = wo))
+            : setzen();
+        if (wand) {
+            this._spielerSagt(`${label}: ${AnazhRealm.NATUR_WAND_GRUND[wand]} — setz es ein paar Schritte weiter.`);
+            return false;
+        }
+        if (gate && !gate.ok) {
+            this._spielerSagt(`${label}: ${this._machTorHint(Object.assign({ reason: "not_enough_material" }, gate))}`);
+            this._renderBuildModeHud && this._renderBuildModeHud();
+            return false;
+        }
+        if (!steht) {
+            if (gate && gate.ok && !gate.free)
+                for (const [m, n] of Object.entries(gate.cost || {})) this.addMaterialToInventory(m, n);
+            this._spielerSagt(`${label}: hier steht es nicht — der Ort trägt das Werk nicht.`);
+            return false;
+        }
         if (this.state.p2p && this.state.p2p.enabled && typeof this.p2pBroadcastDsl === "function") {
             const posNode = ["at", spawnPos.x, spawnPos.y, spawnPos.z];
             const spawnOp = bmStamp
@@ -76888,7 +76948,7 @@ class AnazhRealm {
             const consumedStr = Object.entries(gate.cost)
                 .map(([m, n]) => `${n}× ${m}`)
                 .join(", ");
-            this.log(`Gebaut: ${bm.blueprintName} (verbraucht ${consumedStr}).`, "INFO");
+            this.log(`Gebaut: ${label} (verbraucht ${consumedStr}).`, "INFO");
         }
         // V17.30/V17.46 — erschaffen hebt joy + hope, GEFÄRBT von der Substanz des
         // Gebauten (lebendiges Holz ≠ toter Stein) + skaliert mit der Komplexität.
@@ -76921,7 +76981,18 @@ class AnazhRealm {
         bm.phantomMesh.position.set(target.x, target.y, target.z);
         bm.phantomMesh.rotation.y = -this.state.yaw;
         bm.phantomOnGround = target.isStable;
-        this._applyPhantomTint(bm.phantomMesh, target.isStable);
+        // Das Phantom sagt vor dem Klick, was das Setzen sagen wird: ein Natur-Werk über der Lichtung oder in einem Haus
+        // steht rot, das HUD nennt den Grund (das Urteil der EINEN Natur-Wand, `_naturWand`).
+        if (bm._naturFuer !== bm.blueprintName) {
+            bm._naturFuer = bm.blueprintName;
+            bm._natur = this._istNatur({ type: bm.blueprintName });
+        }
+        const wand = bm._natur ? this._naturWand(bm.blueprintName, target, {}) : false;
+        if (wand !== bm.phantomWand) {
+            bm.phantomWand = wand;
+            this._updateBuildModeHud();
+        }
+        this._applyPhantomTint(bm.phantomMesh, target.isStable && !wand);
     }
 
     // Raycast aus der Kamera gegen die Physik-Welt: erster Treffer in 30 m = Phantom-Position (der Pitch
@@ -78521,7 +78592,9 @@ class AnazhRealm {
         const bauModusAn = this.state.buildMode && this.state.buildMode.active;
         if (!bauModusAn && heldP && this._isPlaceableBlueprint(heldP)) {
             this.equipHeld(null);
-            return this._bauModusFuer(heldP.name).ok;
+            const bauRes = this._bauModusFuer(heldP.name);
+            if (!bauRes.ok) this._spielerSagt(`${heldP.label || heldP.name}: ${this._machTorHint(bauRes)}`);
+            return bauRes.ok;
         }
         // Phase 3b — ist das Voxel-Terrain aktiv und KEIN Bau-Modus aktiv,
         // schüttet der RMB Boden auf (das Gegenstück zum LMB-Graben).
@@ -78554,7 +78627,7 @@ class AnazhRealm {
         if (!this.state.buildMode || !this.state.buildMode.active) return false;
         const gate = this._mouseActionStaminaGate();
         if (!gate.ok) {
-            this.log(`Platzieren: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
+            this._spielerSagt(`Setzen: zu wenig Ausdauer (${gate.have}/${gate.cost}) — kurz verschnaufen.`);
             return false;
         }
         // role:"consumable" + RMB-Raycast trifft eine Kreatur → Trank-Übergabe statt Bau. Phantom +
@@ -78720,9 +78793,13 @@ class AnazhRealm {
             } else if (mode === "schöpfer") {
                 costLine = ` · <span style="color:#a8c8ff">Schöpfer: frei</span>`;
             }
+            // Die Natur-Wand am Phantom (`tickBuildMode`): der Grund, warum hier nichts wächst.
+            const wandLine = bm.phantomWand
+                ? ` · <span style="color:#e57b6c">${AnazhRealm.NATUR_WAND_GRUND[bm.phantomWand]} — weiter weg setzen</span>`
+                : "";
             hud.innerHTML =
                 `Bau: ${label} — ${fmt(kb.confirmBuild)}/${fmt(kb.place)} bauen, ` +
-                `${fmt(kb.cancelBuild)} verlassen, 1-9 Slot, ${fmt(kb.break)} abbauen${costLine}`;
+                `${fmt(kb.cancelBuild)} verlassen, 1-9 Slot, ${fmt(kb.break)} abbauen${costLine}${wandLine}`;
             hud.hidden = false;
         } else {
             hud.hidden = true;
@@ -79013,8 +79090,10 @@ class AnazhRealm {
             const miss = Object.entries(result.missing || {})
                 .map(([m, n]) => `${n}× ${m}`)
                 .join(" · ");
-            return `fehlt ${miss || "Material"} — sammeln oder abbauen, dann fertigen`;
+            // das Gesetz des Modus beim Namen (S2): frieden und pfad zahlen Material, frei ist nur schöpfer
+            return `fehlt ${miss || "Material"} — sammeln oder abbauen (Frieden und Pfad zahlen Material, frei ist nur Schöpfer)`;
         }
+        if (result.reason === "hotbar_voll") return "die Hotbar ist voll — leere einen Platz, dann bauen";
         if (result.reason === "no_workshop_station") {
             const label =
                 typeof this._stationLabelForDomain === "function"
@@ -79393,13 +79472,15 @@ class AnazhRealm {
         // eingefroren) — die Zeile sagt, warum ein Bauplan noch nicht wirkt.
         const status = document.createElement("span");
         status.className = "recipe-status";
-        const isWerk = Number.isFinite(bp && bp.forgedPrecision);
+        // Ein Bauwerk (place, vehicle) ist nie „Werk ✓": jedes Setzen zahlt (Frieden und Pfad), der Weg ist der Bau-Modus.
+        const bauwerk = kind === "place" || kind === "vehicle";
+        const isWerk = !bauwerk && Number.isFinite(bp && bp.forgedPrecision);
         status.textContent = isWerk ? "Werk ✓" : "Bauplan";
         status.title = isWerk
             ? "Gefertigt — die Präzision ist eingefroren, der Gebrauch ist frei."
-            : kind === "place"
-              ? "Reine Information — das Platzieren in der Welt zieht das Material (pfad)."
-              : "Reine Information — das Fertigen zieht das Material (pfad), dann ist der Gebrauch frei.";
+            : bauwerk
+              ? "Fertigen führt in den Bau-Modus — das Setzen in der Welt zieht das Material (Frieden und Pfad), frei ist nur Schöpfer."
+              : "Reine Information — das Fertigen zieht das Material (Frieden und Pfad), dann ist der Gebrauch frei.";
         status.style.opacity = "0.75";
         status.style.fontStyle = "italic";
         info.appendChild(status);
@@ -79417,9 +79498,9 @@ class AnazhRealm {
                   : kind === "place" || kind === "vehicle"
                     ? "Fertigen"
                     : "In die Hand";
-        if (kind === "vehicle") btn.title = "Fertigen — dann über die Hotbar in der Welt platzieren + reiten (E).";
+        if (bauwerk) btn.title = "Fertigen — das Phantom steht vor dir, Rechtsklick oder F setzt es.";
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
-        const free = mode === "schöpfer" || Number.isFinite(bp && bp.forgedPrecision);
+        const free = mode === "schöpfer" || isWerk;
         btn.disabled = !free && !check.ok;
         if (btn.disabled) {
             btn.title =
@@ -79436,7 +79517,7 @@ class AnazhRealm {
                 // W-C(a)/R-005 — das Mach-Tor spricht AN DER ZEILE (die Konsole
                 // ist zugeklappt — der Log allein erreichte nie jemanden).
                 this._showMachTorHint(row, res);
-                this.log(`„${label}": ${this._machTorHint(res)}`, "INFO");
+                this._spielerSagt(`${label}: ${this._machTorHint(res)}`);
             }
         });
         row.appendChild(btn);
@@ -79445,7 +79526,9 @@ class AnazhRealm {
 
     // Der EINE Crafting-Aktions-Pfad aus dem Rezeptbuch — rollen-gerecht (Use-Kind):
     // Gerät → in die Hand (wieldBlueprint, schmiedet mit Material+Station-Gate), Rüstung →
-    // schmieden + anlegen, Trank/Bauwerk → schmieden + ins Inventar.
+    // schmieden + anlegen, Trank → brauen + trinken, Bauwerk → der Bau-Modus (`fertigeBlueprint`, derselbe Weg wie
+    // Werkstatt-FERTIGEN; Welle L Folge: das Rezeptbuch zog das Material beim Fertigen UND beim Setzen und legte das Werk
+    // ins Inventar, von wo es nur über Inventar-Slot, Hotbar-Slot und Taste in die Welt kam).
     craftFromRecipe(name) {
         const bp = this.state.blueprints && this.state.blueprints[name];
         if (!bp) return { ok: false, reason: "blueprint_unknown" };
@@ -79459,12 +79542,7 @@ class AnazhRealm {
         if (kind === "drink") {
             return this.brewConsumable(name);
         }
-        if (kind === "place") {
-            const made = this._forgeMaterialAndFreeze(name);
-            if (!made.ok) return made;
-            this.addToInventory(name, 1);
-            return { ok: true, made: true, kind };
-        }
+        if (kind === "place") return this.fertigeBlueprint(name);
         // hold (Gerät/Waffe) + Default: schmieden (mit Gate) + in die Hand nehmen.
         return this.wieldBlueprint(name);
     }
@@ -83400,13 +83478,9 @@ class AnazhRealm {
         // werden gebaut, nicht gefertigt).
         const machZone = az || panel;
         const role = this._displayRole(bp);
-        // M2 — vehicle gehört zur place-Familie: gebaut (Phantom + confirmBuild), nicht gefertigt.
-        const canMake = !(
-            role === "workshop-station" ||
-            role === "portal" ||
-            role === "vehicle" ||
-            (role === "soul" && bp.builtIn)
-        );
+        // M2 — vehicle gehört zur place-Familie: FERTIGEN führt es wie jedes Bauwerk in den Bau-Modus (Phantom +
+        // confirmBuild, Welle L Folge).
+        const canMake = !(role === "workshop-station" || role === "portal" || (role === "soul" && bp.builtIn));
         if (canMake || !bp.builtIn) {
             this._workshopAppendWerkHeading(machZone);
             if (!bp.builtIn) this._workshopAppendSignatureRow(machZone, bp, ws);
@@ -83496,9 +83570,10 @@ class AnazhRealm {
         // Default) bestimmt den FERTIGEN-Akt: eine Spitzhacke wird „geschmiedet (in die Hand)", nicht
         // als Bauwerk behandelt — der Mach-Verb folgt der angezeigten Rolle.
         const role = this._displayRole(bp);
-        // Welt-platzierte Rollen (Station/Portal/Fahrzeug, M2) werden gebaut (confirmBuild), nicht
-        // gefertigt; eine geborene (built-in) Seele wird nicht geformt.
-        if (role === "workshop-station" || role === "portal" || role === "vehicle") return;
+        // Station und Portal werden über ihren eigenen Akt gesetzt, eine geborene (built-in) Seele wird nicht geformt. Das
+        // Fahrzeug ist ein Bauwerk wie jedes (M2: Phantom + confirmBuild) — FERTIGEN führt es in den Bau-Modus (Welle L
+        // Folge: die Werkstatt hatte für den GT keinen Weg in die Welt).
+        if (role === "workshop-station" || role === "portal") return;
         if (role === "soul" && bp.builtIn) return;
         const isSoul = role === "soul";
         // Ein Bauwerk wird gebaut (fertigeBlueprint → Bau-Modus, Welle L V-k11), ein Gerät geht in die Hand.
@@ -83531,10 +83606,10 @@ class AnazhRealm {
                 this.log(`Gefertigt: „${bp.label || bp.name}" — ${verb}${wasFree ? " (frei)" : ""}.`, "INFO");
                 this._renderWorkshopDOM();
             } else {
-                // W-C(a)/R-005 — das Mach-Tor spricht AN DER FERTIGEN-Zeile
-                // (derselbe EINE Formatter wie Rüstungs-Slot + Rezeptbuch).
+                // W-C(a)/R-005 — das Mach-Tor spricht AN DER FERTIGEN-Zeile (derselbe EINE Formatter wie Rüstungs-Slot
+                // + Rezeptbuch) und im Spieler-Kanal (Welle L Folge: das Log ist eingeklappt).
                 this._showMachTorHint(row, res);
-                this.log(`Fertigen: ${this._machTorHint(res)}`, "ERROR");
+                this._spielerSagt(`${String(bp.label || bp.name).split(/\s[·—(]/)[0]}: ${this._machTorHint(res)}`);
             }
         });
         row.appendChild(btn);
@@ -96966,6 +97041,11 @@ AnazhRealm.GRASS_BLADE_H = 0.42;
 AnazhRealm._llmFuenferModell = function (model) {
     return typeof model === "string" && /^claude-(sonnet-5-5|opus-5|fable-5)/.test(model);
 };
+// Der Grund der Natur-Wand im Satz des Spielers (Leser: `_naturAbsageSatz` des Hains, `confirmBuild` und das Bau-HUD).
+AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
+    lichtung: "die Lichtung der Genesis-Plattform bleibt frei, keine Krone steht über ihrer Scheibe",
+    haus: "im Grundriss eines Hauses wächst nichts",
+});
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.
 AnazhRealm.STUDIO_SATZ =

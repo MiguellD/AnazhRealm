@@ -69,7 +69,8 @@ const BASIS = {
     obb: [["        const ob = box.obb;\n        if (ob) {", "        const ob = null;\n        if (ob) {"]],
     // die Natur wirft in den Grundriss, und das Dorf räumt nicht
     grundriss: [
-        ["const wo = position ? this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts)) : false;", "const wo = false;"],
+        // das Urteil der Wand lebt seit Welle L Folge in `_naturWand` (Bau-Modus und Phantom fragen es mit)
+        ["return position ? this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts)) : false;", "return false;"],
         ["if (entry) this._grundrissRaeumen(entry);", ""],
     ],
     // die Streu der Region räumt nicht, wenn das Dorf kommt
