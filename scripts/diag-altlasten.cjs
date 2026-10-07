@@ -627,6 +627,11 @@ const FORBIDDEN = [
     { token: "_slopeProbeH", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
     { token: "_siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT", fiel: "Welle L — kein Siedlungs-Zwilling (fachwerk SIEDLUNG)" },
     { token: "_settlementCount", fiel: "Welle L — der Bau-Same je Art (_bauSame)" },
+    // D5 (Integration Welle L, 07.10.): das Tier am gedrehten Haus — der OBB-Zweig des Kapsel-Lösers ließ den Kontakt-
+    // Empfänger des Tiers fallen und drehte die Parkour-Wand des Spielers über eine Zeit-Gleichheit zurück; die Gier-Ordnung
+    // YXZ setzte der Takt je Frame neu. Der Kontakt reist im Empfänger (`_wandKontaktSetzen`), YXZ setzt `spawnCreatureAt`.
+    { token: "kontaktVorher", fiel: "D5 — der Kontakt reist im Empfänger zurück (_wandKontaktSetzen)" },
+    { token: 'creature.rotation.order !== "YXZ"', fiel: "D5 — die Gier-Ordnung YXZ an EINER Stelle (spawnCreatureAt)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

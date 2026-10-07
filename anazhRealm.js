@@ -20231,10 +20231,10 @@ class AnazhRealm {
         // eine Boden-Stufe machte eine flache Box zur Wand), stößt der Kasten sie nicht quer durch sich hinaus — sie
         // geht frei heraus. Sonst sprang ein Tier je Frame um Meter (gemessen: Tempo-Sprünge bis 7000 m/s²).
         const rInnen2 = 0.81 * radius * radius;
-        // Kosten an Betroffene: eine Box, die der Leib weder erreicht (horizontal jenseits halb + radius) noch in der Höhe
+        // Kosten an Betroffene: eine Box, die der Leib weder erreicht (waagrecht jenseits halb + radius) noch in der Höhe
         // schneidet (unter der Stufe des Fußes oder über dem Kopf — der Löser würde sie als Wand übergehen), fällt vor
-        // jeder Achse heraus.
-        const reich = halb + radius;
+        // jeder Achse heraus. Reichweite und Innen-Test messen im Rahmen der gedrehten Box (`_boxAbstand2`, D5).
+        const reich2 = (halb + radius) * (halb + radius);
         const stufe = feetY + AnazhRealm.PLAYER_STEP_UP;
         for (const e of nah.liste) {
             const boxes = e.blockerAABBs;
@@ -20242,20 +20242,10 @@ class AnazhRealm {
             for (let b = 0; b < boxes.length; b++) {
                 const box = boxes[b];
                 if (box.topY <= stufe || box.botY >= headY) continue;
-                if (
-                    box.minX - p.x > reich ||
-                    p.x - box.maxX > reich ||
-                    box.minZ - p.z > reich ||
-                    p.z - box.maxZ > reich
-                )
-                    continue;
+                if (this._boxAbstand2(box, p.x, p.z) > reich2) continue;
                 for (let o = -1; o <= 1; o++) {
                     const off = o * halb;
-                    const qx0 = px0 + fx * off,
-                        qz0 = pz0 + fz * off;
-                    const ix = qx0 - Math.max(box.minX, Math.min(qx0, box.maxX));
-                    const iz = qz0 - Math.max(box.minZ, Math.min(qz0, box.maxZ));
-                    if (ix * ix + iz * iz < rInnen2) continue;
+                    if (this._boxAbstand2(box, px0 + fx * off, pz0 + fz * off) < rInnen2) continue;
                     q.x = p.x + fx * off;
                     q.z = p.z + fz * off;
                     const ax = q.x,
@@ -21687,7 +21677,6 @@ class AnazhRealm {
                 if (!Number.isFinite(hr)) hr = 0;
                 udP._hangPitch = hp;
                 udP._hangRoll = hr;
-                if (creature.rotation.order !== "YXZ") creature.rotation.order = "YXZ";
                 creature.rotation.x = hp;
                 creature.rotation.z = hr;
             }
@@ -89075,20 +89064,21 @@ class AnazhRealm {
             lb.botY = box.botY;
             const ax = lp.x;
             const az = lp.z;
-            const kontaktVorher = this.state._wandKontaktAt;
-            const st = this._resolveCapsuleVsAABB(lb, lp, feetY, headY, radius, supportTop);
+            // Der Kontakt der lokalen Lösung landet im lokalen Empfänger und reist gedreht zu SEINEM Körper zurück (D5): ein
+            // Tier (`kontakt`, _kreaturHuellenKontakt) schreibt nie die Parkour-Wand des Spielers — vorher fiel `kontakt` hier
+            // heraus, jedes Tier an einem gedrehten Haus schrieb state._wandKontakt* im Rahmen der Box.
+            const lk = this._obbKontakt || (this._obbKontakt = { nx: 0, nz: 0 });
+            lk.nx = 0;
+            lk.nz = 0;
+            const st = this._resolveCapsuleVsAABB(lb, lp, feetY, headY, radius, supportTop, lk);
             const px = lp.x - ax;
             const pz = lp.z - az;
             if (px !== 0 || pz !== 0) {
                 pos.x += px * ob.c + pz * ob.s;
                 pos.z += -px * ob.s + pz * ob.c;
-                if (this.state._wandKontaktAt !== kontaktVorher) {
-                    const nx = this.state._wandKontaktNx;
-                    const nz = this.state._wandKontaktNz;
-                    this.state._wandKontaktNx = nx * ob.c + nz * ob.s;
-                    this.state._wandKontaktNz = -nx * ob.s + nz * ob.c;
-                }
             }
+            if (lk.nx !== 0 || lk.nz !== 0)
+                this._wandKontaktSetzen(kontakt, lk.nx * ob.c + lk.nz * ob.s, -lk.nx * ob.s + lk.nz * ob.c);
             return st;
         }
         if (
@@ -89118,16 +89108,7 @@ class AnazhRealm {
                     // gratis ab: der horizontale Push IST der Kontakt (Normale =
                     // Push-Richtung, von der Wand weg). Die Parkour-Leser
                     // (Wandsprung/Klettern) lesen sie mit kurzem Verfall.
-                    // Ein Tier trägt seinen eigenen Kontakt-Empfänger (_kreaturHuellenKontakt) — die Wand-Wahrheit des
-                    // Spielers (Parkour) bleibt seine.
-                    if (kontakt) {
-                        kontakt.nx = dx / d;
-                        kontakt.nz = dz / d;
-                    } else {
-                        this.state._wandKontaktNx = dx / d;
-                        this.state._wandKontaktNz = dz / d;
-                        this.state._wandKontaktAt = performance.now() / 1000;
-                    }
+                    this._wandKontaktSetzen(kontakt, dx / d, dz / d);
                 } else {
                     // Achse genau in der Box → zur nächsten Seite hinausschieben
                     const toMinX = pos.x - box.minX + radius;
@@ -89143,6 +89124,42 @@ class AnazhRealm {
             }
         }
         return supportTop;
+    }
+
+    // DIE WAND-WAHRHEIT hat EINEN Schreiber: der Kapsel-Löser meldet die Normale (von der Wand weg, Welt-Rahmen) an den
+    // Körper, der ihn rief — ein Tier an seinen eigenen Empfänger (`kontakt`, _kreaturHuellenKontakt), der Spieler an die
+    // Parkour-Wand (state._wandKontakt*, Wandsprung/Klettern lesen sie mit kurzem Verfall).
+    _wandKontaktSetzen(kontakt, nx, nz) {
+        if (kontakt) {
+            kontakt.nx = nx;
+            kontakt.nz = nz;
+            return;
+        }
+        this.state._wandKontaktNx = nx;
+        this.state._wandKontaktNz = nz;
+        this.state._wandKontaktAt = performance.now() / 1000;
+    }
+
+    // Der waagrechte Abstand² eines Punkts zu einer Blocker-Box — im Rahmen der GEDREHTEN Box (`obb`, die Haus-Hülle und
+    // das Podest), sonst gegen die Welt-AABB; 0 im Inneren. Der Innen-Test und der Reichweiten-Filter des Tier-Leibs lesen
+    // ihn (D5): die Welt-AABB einer gedrehten Box ist größer als die Box — ein Tier in ihren Ecken galt als „innen" und ging
+    // frei durch die Wand.
+    _boxAbstand2(box, x, z) {
+        const ob = box.obb;
+        let ix;
+        let iz;
+        if (ob) {
+            const dx = x - ob.cx;
+            const dz = z - ob.cz;
+            const lx = dx * ob.c - dz * ob.s;
+            const lz = dx * ob.s + dz * ob.c;
+            ix = lx - Math.max(-ob.hx, Math.min(lx, ob.hx));
+            iz = lz - Math.max(-ob.hz, Math.min(lz, ob.hz));
+        } else {
+            ix = x - Math.max(box.minX, Math.min(x, box.maxX));
+            iz = z - Math.max(box.minZ, Math.min(z, box.maxZ));
+        }
+        return ix * ix + iz * iz;
     }
 
     _loopPlayerMovement(currentTime, dtOverride) {

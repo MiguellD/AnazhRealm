@@ -19,6 +19,8 @@
 //             Bewegung gleich mit und ohne Blick (Frustum + Zufall)
 //   hindernis (Q11) kein Feld-Strahl je Tier und Takt, kein Tier in der Wand; der Kontakt liest den EINEN Leib des Tiers
 //             (_kreaturLeib, D2), seine vordere Achse bleibt vor dem Stein
+//   gedreht   (D5) das Tier am GEDREHTEN Haus: die Haus-Hülle ist eine gedrehte Box (obb); der Leib löst im Rahmen der
+//             Box (Innen-Test, Reichweite, Kontakt), läuft nicht hindurch und schreibt nie die Parkour-Wand des Spielers
 //   nacht     (Q11) die Ruhe-Aktion hält den Leib an (Kritik §2.3: 81 % bewegt während ruhen)
 //   reload    (Q12) ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück (Kritik §2.5: hp heilte)
 //   peer      (Q3) die Sicht-Kopie beim Mitspieler dreht in die Laufrichtung und geht
@@ -944,6 +946,114 @@ async function kreaturProben(r, T, opts) {
         });
     });
 
+    // ── gedreht (D5): das Tier am GEDREHTEN Haus — die Hülle der Stufe reist als gedrehte Box (`_hausHuelleSetzen` →
+    // `_hausObb`, derselbe Weg wie der Beipack `__huelle` der Foundry); der Leib löst im Rahmen der Box und meldet seinen
+    // Kontakt an sich, nie an die Parkour-Wand des Spielers (state._wandKontakt*) ──
+    await buehne("gedreht", async (restore) => {
+        r.setGameMode("frieden");
+        // Täter 1: der OBB-Zweig reicht den Kontakt-Empfänger des Tiers nicht weiter (der Integrations-Stand vor D5).
+        if (taeter === "gedreht-kontakt")
+            decke(
+                restore,
+                "_resolveCapsuleVsAABB",
+                (alt) =>
+                    function (box, pos, f, h, rad, st, k) {
+                        return alt.call(this, box, pos, f, h, rad, st, box && box.obb ? null : k);
+                    }
+            );
+        // Täter 2: Innen-Test und Reichweite lesen die Welt-AABB der gedrehten Box (größer als die Box).
+        if (taeter === "gedreht-rahmen")
+            decke(
+                restore,
+                "_boxAbstand2",
+                (alt) =>
+                    function (box, x, z) {
+                        return alt.call(this, { minX: box.minX, maxX: box.maxX, minZ: box.minZ, maxZ: box.maxZ }, x, z);
+                    }
+            );
+        // Das Haus: eine Wand 8 × 0,8 m, 34° gedreht, als Hülle der Stufe (haus-lokal [x0,y0,z0,x1,y1,z1], in den Boden
+        // gesenkt, damit der Hang unter ihr nie eine Lücke lässt).
+        const PHI = 0.6;
+        s.blueprints._t_linse_haus = {
+            name: "_t_linse_haus",
+            parts: [
+                { shape: "box", material: "stein", position: { x: 0, y: 1.25, z: 0 }, size: { x: 8, y: 2.5, z: 0.8 } },
+            ],
+        };
+        const wo = frei(-60, 40, 30) || land(-60, 40);
+        const e = r.spawnArchitecture("_t_linse_haus", wo, { silent: true, rotationY: PHI });
+        restore.push(() => {
+            if (e) r.removeArchitecture(e);
+            delete s.blueprints._t_linse_haus;
+        });
+        if (!e) return { fehler: "Haus nicht gesetzt" };
+        r._hausHuelleSetzen(e, { stufe: 0, boxen: [-4, -3, -0.4, 4, 2.5, 0.4] });
+        const box = (e.blockerAABBs || []).find((b) => b.obb);
+        if (!box) return { fehler: "die Hülle trägt keine gedrehte Box" };
+        const ob = box.obb;
+        const lokal = (x, z) => {
+            const dx = x - ob.cx,
+                dz = z - ob.cz;
+            return { x: dx * ob.c - dz * ob.s, z: dx * ob.s + dz * ob.c };
+        };
+        // die Normale der Wand (lokal z) in der Welt, die Längs-Achse (lokal x)
+        const nx = ob.s,
+            nz = ob.c,
+            lx = ob.c,
+            lz = -ob.s;
+        pm.set(ob.cx + nx * 10, pm.y, ob.cz + nz * 10);
+        const c = tier({ x: ob.cx - nx * 8 + lx * 0.3, y: wo.y, z: ob.cz - nz * 8 + lz * 0.3 }, "wesen");
+        ruhig(c);
+        r.assignCreatureTask(c, "follow_player", {}, { silent: true });
+        const geschoben = kontaktZaehler(restore);
+        const leibVon = typeof A.prototype._kreaturLeib === "function" ? A.prototype._kreaturLeib : null;
+        let drin = 0,
+            kontaktFrames = 0,
+            spielerWand = 0,
+            vornMin = null,
+            seiteVorher = null,
+            querDurch = 0;
+        // Die Parkour-Wand des Spielers trägt je Takt eine Marke (NaN): jeder Schreiber im Tier-Takt überschreibt sie — auch
+        // derselbe Wert in derselben Millisekunde zählt. Danach kehrt der Zustand des Spielers zurück.
+        const wandVorher = [s._wandKontaktAt, s._wandKontaktNx, s._wandKontaktNz];
+        restore.push(() => {
+            [s._wandKontaktAt, s._wandKontaktNx, s._wandKontaktNz] = wandVorher;
+        });
+        const N2 = 900;
+        for (let k = 0; k < N2; k++) {
+            s._wandKontaktAt = s._wandKontaktNx = s._wandKontaktNz = NaN;
+            geschoben.clear();
+            takt(1 / 60);
+            if (!Number.isNaN(s._wandKontaktAt) || !Number.isNaN(s._wandKontaktNx) || !Number.isNaN(s._wandKontaktNz))
+                spielerWand++;
+            if (geschoben.size) kontaktFrames++;
+            const p = c.position;
+            const q = lokal(p.x, p.z);
+            if (Math.abs(q.x) < ob.hx && Math.abs(q.z) < ob.hz) drin++;
+            // quer durch die Wand: das Vorzeichen der Wand-Normale kippt, während die Achse innerhalb der Wand-Länge liegt
+            const seite = Math.sign(q.z);
+            if (seiteVorher !== null && seite !== 0 && seite !== seiteVorher && Math.abs(q.x) < ob.hx) querDurch++;
+            if (seite !== 0) seiteVorher = seite;
+            if (leibVon) {
+                const lb = leibVon.call(r, c);
+                const v = lokal(p.x + lb.fx * lb.halb, p.z + lb.fz * lb.halb);
+                const ax = Math.max(Math.abs(v.x) - ob.hx, 0),
+                    az = Math.max(Math.abs(v.z) - ob.hz, 0);
+                const ab =
+                    ax > 0 || az > 0 ? Math.hypot(ax, az) : -Math.min(ob.hx - Math.abs(v.x), ob.hz - Math.abs(v.z));
+                if (vornMin === null || ab < vornMin) vornMin = ab;
+            }
+        }
+        return {
+            gierGrad: +grad(PHI).toFixed(1),
+            kontaktFrames,
+            wandFrames: drin,
+            querDurch,
+            spielerWand,
+            vornMinM: vornMin === null ? null : +vornMin.toFixed(3),
+        };
+    });
+
     // ── nacht (Q11, Kritik §2.3): die Ruhe-Aktion hält den Leib an ──
     await buehne("nacht", async (restore) => {
         r.setGameMode("frieden");
@@ -1140,6 +1250,7 @@ const PROBEN = [
     "jagd",
     "herde",
     "hindernis",
+    "gedreht",
     "nacht",
     "peer",
     "zufall",
@@ -1230,6 +1341,21 @@ function urteil(name, z) {
             `die vordere Leib-Achse (Schnauze) ${z.vornMinM === null ? "ohne Leib" : -z.vornMinM + " m im Stein"}`
         );
     }
+    if (name === "gedreht") {
+        soll(z.kontaktFrames > 0, `kein Kontakt am gedrehten Haus (Probe vakuös)`);
+        soll(
+            z.wandFrames === 0 && z.querDurch === 0,
+            `${z.wandFrames} Frames in der gedrehten Wand, ${z.querDurch}× quer hindurch (der Folger läuft durch das Haus)`
+        );
+        soll(
+            z.vornMinM !== null && z.vornMinM > 0,
+            `die vordere Leib-Achse ${z.vornMinM === null ? "ohne Leib" : -z.vornMinM + " m in der gedrehten Wand"}`
+        );
+        soll(
+            z.spielerWand === 0,
+            `${z.spielerWand} Takte des Tiers schrieben die Parkour-Wand des Spielers (state._wandKontakt*)`
+        );
+    }
     if (name === "nacht") {
         soll(z.ruhFrames >= 300, `nur ${z.ruhFrames} Ruhe-Frames (Probe vakuös)`);
         soll(z.bewegtAnteil !== null && z.bewegtAnteil < 0.03, `${(z.bewegtAnteil * 100).toFixed(1)} % bewegt während ruhen`);
@@ -1277,6 +1403,10 @@ const TAETER = {
     hindernis: [
         ["hindernis", /Feld-Strahlen/],
         ["hindernis-leib", /benannten Leib/],
+    ],
+    gedreht: [
+        ["gedreht-kontakt", /Parkour-Wand des Spielers/],
+        ["gedreht-rahmen", /gedrehten Wand/],
     ],
     nacht: [["nacht", /bewegt während ruhen/]],
     peer: [["peer", /Sicht-Kopie/]],
