@@ -50,6 +50,14 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // WebGL2-Rückfall fuhr „voll"). Auf „voll" kostete ein Szenen-Render 7–110 s und jeder schwere Erst-Compile 50–70 s:
     // die Linse lief 21–65 min. Ihr Gegenstand bleibt ganz: Wiederholungs-Compiles im Leerlauf und bei der Env-
     // Regenerierung (Hauptpass); Churn im Schattenpass sieht sie auf diesem Holz nicht.
+    // DIE BÜHNE DER LINSE (Lehre 17; Mess-Lehre der Welle L): die Welt der Messung wächst nicht nach der Wand-Uhr. Bis zur
+    // Gegenprüfung 07.10. (Runde 3) zog das Wetter nach 120 s Spielzeit weiter, und das Start-Dorf wuchs, sobald ein Frame
+    // Luft hatte, mitten in den Warmup: auf dem langsamen Runner kam die Linse über die 120-s-Marke (der erste Erst-Compile
+    // 26-30 s statt 3 s), der Wetter-Takt hing 282 s, der Regen kompilierte 42 s, der Sternen-Himmel 71 s — 427-554 s je
+    // Lauf statt 75 s, zwei von drei Läufen rissen die Protokoll-Frist. Gemessen wird der Leerlauf EINER Welt: das Start-Dorf
+    // steht vor dem Warmup (der Settle wartet auf es), Mittag, Sonne, die Saison fest, der Wetter-Zug hält; die Bühnen-Wand
+    // am Ende nennt jede Drift beim Namen.
+    const SELBSTTEST_BUEHNE = process.argv.includes("--selbsttest-buehne");
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     // JEDER AUFRUF HAT EINEN NAMEN (CI 37122984563: die Linse riss nach 860 s die Protokoll-Frist und sagte nicht, in
@@ -94,6 +102,8 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                     S.stubbed = true;
                 }
                 if (r && r.state && r.state.rendererReady && typeof r._gameLoopTick === "function") {
+                    r.state.autoSeason = false; // die Saison hält (Bühne)
+                    r.state.weatherEffectTime = 0; // der Wetter-Zug hält (Bühne)
                     try { r._gameLoopTick(performance.now()); } catch (_e) {}
                     const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
                     S.sz = sz;
@@ -106,13 +116,19 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                     // die Chunk-Schwelle folgt dem Ring des Holzes (kienspan: Ring 2 = 25 Chunks; voll: Ring 4)
                     const ring = r.state.chunkRingRadius || 2;
                     const soll = Math.min(31, (2 * ring + 1) * (2 * ring + 1));
-                    if (sz >= soll && S.stableFor > 30 && (foundryRuhig || performance.now() - S.start > 180000)) S.done = true;
+                    // und das Start-Dorf steht (gewachsen oder kein Fleck) — es wächst nie in den Warmup hinein
+                    const wm = r.state.worldMeta || {};
+                    const dorfSteht =
+                        !!r._autoSettlementStartHopeless ||
+                        (!!(wm.settlementCells && wm.settlementCells.start) && !r._autoSettlementQueue && !r._autoSettlementPendingKey);
+                    S.dorf = dorfSteht;
+                    if (sz >= soll && S.stableFor > 30 && ((foundryRuhig && dorfSteht) || performance.now() - S.start > 180000)) S.done = true;
                 }
                 await new Promise((res) => setTimeout(res, 6));
             }
-            return { done: S.done, ms: performance.now() - S.start, sz: S.sz };
+            return { done: S.done, ms: performance.now() - S.start, sz: S.sz, dorf: S.dorf };
         });
-        if (st.done || st.ms > 240000) { log(`Settle: ${st.sz} Chunks nach ${Math.round(st.ms / 1000)} s${st.done ? "" : " (Wand)"}`); break; }
+        if (st.done || st.ms > 240000) { log(`Settle: ${st.sz} Chunks nach ${Math.round(st.ms / 1000)} s, Start-Dorf ${st.dorf ? "steht" : "wächst noch"}${st.done ? "" : " (Wand)"}`); break; }
     }
     await ruf("Settle-Drain", () => {
         const r = window.anazhRealm;
@@ -171,6 +187,14 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         if (typeof s.renderer.setAnimationLoop === "function") s.renderer.setAnimationLoop(null);
         const cam = s.camera, pm = s.playerMesh;
         if (cam && pm) { cam.position.set(pm.position.x, pm.position.y + 1.6, pm.position.z); cam.lookAt(pm.position.x + 30, pm.position.y + 1, pm.position.z); cam.updateMatrixWorld(true); }
+        // die Bühne: Mittag, Sonne, ohne Übergang — VOR dem Warmup (die Umgebung malt sich gleich danach aus diesem Himmel)
+        if (typeof r._setWeather === "function") r._setWeather("sunny");
+        s.weatherTransition = null;
+        s.weatherEffectTime = 0;
+        s.timeOfDay = 0.5;
+        if (s.world) s.world.timeOfDay = 0.5;
+        window.__buehneStand = () => ({ wetter: s.weather, uebergang: !!s.weatherTransition, saison: s.season, zeit: s.timeOfDay, bauten: (s.architectures || []).length });
+        window.__buehne0 = window.__buehneStand();
         try { r._ensureSkyEnvironment(true); } catch (_e) {}
         const cnt = () => window.__cc.gpuPipeline + window.__cc.glLink;
         window.__cnt = cnt;
@@ -241,6 +265,10 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             const eigen = Object.prototype.hasOwnProperty.call(r, "_loopRender");
             const echt = r._loopRender;
             r._loopRender = function () {};
+            if (!window.__buehneLos) {
+                s.weatherEffectTime = 0; // der Wetter-Zug hält (Bühne)
+                s.timeOfDay = window.__buehne0.zeit; // Mittag hält (ein Takt rückt die Uhr bis 1 s vor)
+            }
             try { r._gameLoopTick(performance.now()); } catch (_e) {} finally { if (eigen) r._loopRender = echt; else delete r._loopRender; }
             return { cc: cnt() - c0 };
         };
@@ -268,7 +296,11 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     if (!setup.err) {
         setup.scheiben = await warmNeu("Warmup");
         log(`Schlüssel-Warmup: ${setup.scheiben} Aufrufe`);
-        for (let i = 0; i < 10; i++) await frame(`Warmup-Frame ${i}`);
+        for (let i = 0; i < 10; i++) {
+            // SELBSTTEST: die Uhr der Welt läuft frei und der Wetter-Zug wird fällig — die Bühnen-Wand MUSS rot werden
+            if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; window.anazhRealm.state.weatherEffectTime = 1e6; });
+            await frame(`Warmup-Frame ${i}`);
+        }
         const nachStart = await ruf("Zähler", () => window.__cnt());
         let ruhig = 0,
             extra = 0,
@@ -322,11 +354,24 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         regen.spur = await ruf("Env-Spur", () => { const sp = window.__ccSpur.slice(0, 8); window.__ccSpur = null; return sp; });
     }
     setup.maxRuf = maxRuf;
+    // DIE BÜHNEN-WAND: hielt die Welt still? Jede Drift (Wetter, Übergang, Saison, Tageszeit, Bauten) beim Namen.
+    const buehne = await ruf("Bühne", () => ({ vor: window.__buehne0, nach: window.__buehneStand() }));
+    const kipp = [];
+    if (buehne.vor && buehne.nach) {
+        const v = buehne.vor, n = buehne.nach;
+        if (n.wetter !== v.wetter) kipp.push(`Wetter ${v.wetter} → ${n.wetter}`);
+        if (n.uebergang) kipp.push("Wetter-Übergang läuft");
+        if (n.saison !== v.saison) kipp.push(`Saison ${v.saison} → ${n.saison}`);
+        if (Math.abs(n.zeit - v.zeit) > 0.02) kipp.push(`Tageszeit ${v.zeit} → ${Math.round(n.zeit * 1000) / 1000}`);
+        if (n.bauten !== v.bauten) kipp.push(`Bauten ${v.bauten} → ${n.bauten}`);
+    } else kipp.push("kein Bühnen-Stand gelesen");
 
     await browser.close();
     server.close();
     console.log("===== STEHENDE LINSE — Idle/Env-GPU-Pipeline-Churn (echter Renderer) =====\n");
     if (pageErr) { console.error("⛔ Page-Error während des Laufs:", pageErr); process.exit(1); }
+    console.log(`  Bühne: ${kipp.length ? "GEKIPPT — " + kipp.join(" · ") : "hielt (Wetter, Saison, Tageszeit, Bauten unverändert)"}`);
+    if (kipp.length) { console.error("⛔ BÜHNE GEKIPPT: die Welt der Messung driftete — " + kipp.join(" · ")); process.exit(1); }
     if (regen.err) { console.error("⛔ LINSE NICHT LAUFFÄHIG:", regen.err); process.exit(1); }
     if (regen.spur && regen.spur.length) {
         console.log("  Compiles im Env-Fenster (Aufrufer):");
