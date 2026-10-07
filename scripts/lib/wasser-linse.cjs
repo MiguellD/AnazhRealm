@@ -1604,6 +1604,8 @@ function wasserBank(opts) {
 //   SCHEU     die Ufer-Scheu der Tiere (`_creatureWaterContextAt(…).inWater`) — dieselbe zweite Wahrheit.
 //   KÜSTE     das Sheet: wo die Zellen Wasser über dem Boden zeichnen (oberste WATER-Zelle über der obersten FEST-Zelle,
 //             ihr Spiegel über dem Boden) und der Atlas Land sagt, trägt der Körper es — er las dort nichts.
+//   TRINKEN   das Trink-Ziel der Tiere (`_findNearestWaterPoint`, auch „am Wasser" der DSL) liegt im Wasser oder an seinem
+//             Rand, wie der Körper es trägt — es las das 3×3-gedehnte `_isAboveWaterAt`.
 function wasserLeser(opts) {
     return (async () => {
         const o = opts || {};
@@ -1637,8 +1639,16 @@ function wasserLeser(opts) {
         const oy = (st.terrainBaseHeight || 0) - floorDrop;
         const dq = dim * dim;
         const tisch = typeof st.waterLevel === "number" ? st.waterLevel : 0;
-        const aus = { orte: [], spalten: 0, nass: 0, klang: 0, scheu: 0, kueste: { sichtbar: 0, trocken: 0 } };
-        const bsp = { klang: [], scheu: [], kueste: [] };
+        const aus = {
+            orte: [],
+            spalten: 0,
+            nass: 0,
+            klang: 0,
+            scheu: 0,
+            kueste: { sichtbar: 0, trocken: 0 },
+            trinken: { proben: 0, gefunden: 0, trocken: 0 },
+        };
+        const bsp = { klang: [], scheu: [], kueste: [], trinken: [] };
         const R1 = (v) => Math.round(v * 10) / 10;
         for (const [px, pz] of o.orte || [
             [-890, -650],
@@ -1683,6 +1693,27 @@ function wasserLeser(opts) {
                         }
                     }
             }
+            // TRINKEN: das Trink-Ziel der Tiere (und „am Wasser" der DSL) — `_findNearestWaterPoint` von jedem Land-Punkt
+            // eines 6-m-Gitters (±60 m) aus: das Ziel muss Wasser oder sein Rand sein, wie der Körper es trägt (Boden höchstens
+            // 0,2 m über `_koerperWasser`).
+            for (let dx = -60; dx <= 60; dx += 6)
+                for (let dz = -60; dz <= 60; dz += 6) {
+                    const x = px + dx,
+                        z = pz + dz;
+                    const b0 = r._voxelSurfaceY(x, z);
+                    if (!Number.isFinite(b0) || r._koerperWasser(x, z, b0) > b0) continue;
+                    aus.trinken.proben++;
+                    const ziel = r._findNearestWaterPoint(x, z, 30);
+                    if (!ziel) continue;
+                    aus.trinken.gefunden++;
+                    const b = r._voxelSurfaceY(ziel.x, ziel.z);
+                    const w = Number.isFinite(b) ? r._koerperWasser(ziel.x, ziel.z, b) : -Infinity;
+                    if (!(Number.isFinite(b) && b <= w + 0.2)) {
+                        aus.trinken.trocken++;
+                        if (bsp.trinken.length < 4)
+                            bsp.trinken.push([R1(ziel.x), R1(ziel.z), Number.isFinite(b) ? R1(b) : null]);
+                    }
+                }
         }
         aus.beispiele = bsp;
         return aus;

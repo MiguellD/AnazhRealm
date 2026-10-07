@@ -229,6 +229,13 @@ function urteil(b) {
                     `K12 TIER-SCHEU: in ${l.scheu} von ${l.spalten} Spalten sieht die Ufer-Scheu der Tiere Wasser anders, als ` +
                         `der Körper es trägt (z. B. ${JSON.stringify((bs.scheu || [])[0] || null)})`
                 );
+            const t = l.trinken || {};
+            if (!(t.gefunden >= 50)) v.push(`K12 LEER: nur ${t.gefunden || 0} Trink-Ziele gefunden`);
+            else if (t.trocken > 0)
+                v.push(
+                    `K12 TRINKEN: ${t.trocken} von ${t.gefunden} Trink-Zielen der Tiere liegen trocken (der Körper trägt dort ` +
+                        `kein Wasser; z. B. ${JSON.stringify((bs.trinken || [])[0] || null)})`
+                );
             const k = l.kueste || {};
             if (!(k.sichtbar >= 20))
                 v.push(`K12 LEER: nur ${k.sichtbar || 0} Küsten-Spalten mit Sheet-Wasser über Atlas-Land`);
@@ -420,7 +427,8 @@ function selbsttest() {
             klang: 0,
             scheu: 0,
             kueste: { sichtbar: 110, trocken: 0 },
-            beispiele: { klang: [], scheu: [], kueste: [] },
+            trinken: { proben: 480, gefunden: 450, trocken: 0 },
+            beispiele: { klang: [], scheu: [], kueste: [], trinken: [] },
         },
         uferFarbe: {
             proben: 24,
@@ -515,6 +523,7 @@ function selbsttest() {
         ["K12 TIER-SCHEU", (b) => (b.leser.scheu = 173)],
         ["K12 KÜSTE", (b) => (b.leser.kueste.trocken = 110)],
         ["K12 LEER", (b) => (b.leser.kueste.sichtbar = 0)],
+        ["K12 TRINKEN", (b) => (b.leser.trinken.trocken = 34)],
         ["K6 BAUMLOS", (b) => (b.koerper.baumlos.sohleUnterSpiegel = 0)],
         ["U3 SCHILF-SPRUNG", (b) => Object.assign(b.uferFarbe.schilf, { spruenge: 12, maxSprung: 0.61 })],
         ["U3 LEER", (b) => (b.uferFarbe.schilf.schritte = 0)],
