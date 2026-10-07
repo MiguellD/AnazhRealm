@@ -655,13 +655,15 @@ function selbsttest() {
             Math.abs(BAND.ortGier(gen.ort) - Math.PI / 2) < 1e-12 &&
             !BAND.ratschePruefen(gen.ratsche, haushalt).length
     );
-    // S22 — die Tor-Hülle des Orts (Soll-Zeile): 2 Tore × 26 Stoff-Züge, 368 000 Dreiecke im Hauptbild → 184 000 je Tor
-    // (3,07× das Band 60 000); eine Klasse anderer Art oder Stufe zählt nicht.
+    // S22 — die Tor-Hülle des Orts (Soll-Zeile): 2 Tore an zwei Orten (zwei Gestalten: 2 × 26 Stoff-Züge), 368 000 Dreiecke
+    // im Hauptbild → 184 000 je Tor (3,07× das Band 60 000); eine Klasse anderer Art oder Stufe zählt nicht, ein Zensus ohne
+    // Exemplar-Zahl (vor S1) trägt keine Soll-Zeile.
     const s22 = BAND.ortSoll(gen.ort, {
         klassen: [
-            { klasse: "f:drachentor:L0", stufe: 0, art: "gate", je: { haupt: 26 }, jeTris: { haupt: 368000 }, inst: 52 },
-            { klasse: "f:drachentor:L1", stufe: 1, art: "gate", je: { haupt: 26 }, jeTris: { haupt: 9e5 }, inst: 26 },
-            { klasse: "f:gt:L0", stufe: 0, art: "vehicle", je: { haupt: 12 }, jeTris: { haupt: 3e4 }, inst: 12 },
+            { klasse: "f:drachentor:L0", stufe: 0, art: "gate", je: { haupt: 52 }, jeTris: { haupt: 368000 }, inst: 52, exemplare: 2 },
+            { klasse: "f:drachentor:L1", stufe: 1, art: "gate", je: { haupt: 26 }, jeTris: { haupt: 9e5 }, inst: 26, exemplare: 1 },
+            { klasse: "f:gt:L0", stufe: 0, art: "vehicle", je: { haupt: 12 }, jeTris: { haupt: 3e4 }, inst: 12, exemplare: 1 },
+            { klasse: "f:ruine:L0", stufe: 0, art: "gate", je: { haupt: 7 }, jeTris: { haupt: 85652 }, inst: 7 },
         ],
     });
     t(

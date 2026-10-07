@@ -1,7 +1,20 @@
 {
     "version": 1,
     "zweck": "DIE RATSCHE DES GENESIS-RINGS (S1 W1f, der zweite Messort `genesis` in spec/profiband/haushalt.json): je Haushalt-Klasse × Pass (und je VRAM-Erzeuger) die obere Hülle einer Mess-Serie am Genesis-Ring — dieselbe Form und dieselben Regeln wie die Ratsche der Mess-Wiese (ratsche.json, dort der volle Zweck): eine Klasse darf nur FALLEN, `null` = ungemessen, gesetzt und gesenkt nur aus einer SERIE der echten GPU (`werkbank.cjs start --echt --serie <name>` · `umstellen --ort genesis` · `band --ort genesis --datei a.json` (mehrmals, dazu `reload` für den Zweit-Boot) · `ratsche --ort genesis a.json b.json …`). Der Ort: der Spieler in der Ring-Mitte, der Blick zur Plattform (+x), der Dorf-Zug ruht, Ring und Vorschauen baut der Ort-Takt.",
-    "gemessen": null,
+    "gemessen": {
+        "datum": "2026-10-07T01:41:21.586Z",
+        "ort": "genesis",
+        "geraet": "Radeon 890M (Integration, werkbank --echt, 1920x1080, DPR 1)",
+        "eingeschwungen": true,
+        "laeufe": 5,
+        "boots": [
+            "erst/1",
+            "erst/1",
+            "zweit/2",
+            "erst/1",
+            "zweit/2"
+        ]
+    },
     "toleranzPct": 1,
     "toleranzAbs": {
         "befehle": 2,
@@ -12,93 +25,93 @@
         "tier": "Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll."
     },
     "gesamt": {
-        "befehle": null,
-        "dreiecke": null,
-        "vramMB": null
+        "befehle": 240,
+        "dreiecke": 2444339,
+        "vramMB": 179.8
     },
     "klassen": {
         "boden": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 6,
+                "dreiecke": 102584
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 1,
+                "dreiecke": 72690
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 1,
+                "dreiecke": 65395
             }
         },
         "streu": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 2,
+                "dreiecke": 2182
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "karten": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 1,
+                "dreiecke": 880
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "baum": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 28,
+                "dreiecke": 220780
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 16,
+                "dreiecke": 124290
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 2,
+                "dreiecke": 2994
             }
         },
         "busch": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "nahWiese": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "tier": {
@@ -117,74 +130,104 @@
         },
         "bau": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 86,
+                "dreiecke": 1095115
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 57,
+                "dreiecke": 566532
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 17,
+                "dreiecke": 41480
             }
         },
         "formationen": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 1,
+                "dreiecke": 5120
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 1,
+                "dreiecke": 7360
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 1,
+                "dreiecke": 2240
             }
         },
         "einzelstuecke": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 19,
+                "dreiecke": 132161
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 1,
+                "dreiecke": 2536
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "leerHuellen": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         },
         "reserve": {
             "haupt": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k0": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             },
             "k1": {
-                "befehle": null,
-                "dreiecke": null
+                "befehle": 0,
+                "dreiecke": 0
             }
         }
     },
-    "vramMB": {}
+    "vramMB": {
+        "buf:szene": 71.2,
+        "tex:TRAANode.history": 23.7,
+        "tex:output": 15.8,
+        "tex:TRAANode.resolve": 15.8,
+        "tex:kaskade0": 12,
+        "tex:kaskade1": 12,
+        "tex:depth": 7.9,
+        "tex:szene": 7.9,
+        "tex:wege-karte": 4,
+        "tex:karte-albedo": 2.7,
+        "tex:feld-pass-panorama": 1.9,
+        "tex:karte-normal": 1.3,
+        "tex:PMREM.cubeUv": 1,
+        "tex:rausch-atlas": 0.8,
+        "tex:laub-cluster-atlas": 0.7,
+        "tex:welt-march-liste": 0.5,
+        "tex:kronen-streu": 0.5,
+        "buf:bindingBuffer": 0.4,
+        "tex:welt-march-kapseln": 0.3,
+        "tex:himmel-umgebung": 0,
+        "buf:bindingBufferundefined_UniformBuffer_": 0,
+        "buf:buffer_timestamp_resolve_render": 0,
+        "buf:buffer_timestamp_result_render": 0,
+        "tex:portal-membran": 0,
+        "tex:DFG_LUT": 0,
+        "buf:verwaist": 0,
+        "buf:bild": 0,
+        "buf:?": 0,
+        "tex:TRAANode.vortiefe": 0
+    }
 }

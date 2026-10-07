@@ -167,6 +167,7 @@ function zensusMax(proben) {
             if (Number.isFinite(e.dMax)) a.dMax = Number.isFinite(a.dMax) ? Math.max(a.dMax, e.dMax) : e.dMax;
             if (Number.isFinite(e.dMin)) a.dMin = Number.isFinite(a.dMin) ? Math.min(a.dMin, e.dMin) : e.dMin;
             a.inst = Math.max(a.inst || 0, e.inst || 0);
+            a.exemplare = Math.max(a.exemplare || 0, e.exemplare || 0);
         }
     const klassen = [...je.values()];
     for (const k of klassen) {
@@ -508,17 +509,18 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
 }
 
 // DIE SOLL-ZEILEN EINES ORTS (haushalt.messorte[].soll): je Studio-Klasse der Art `art` auf Stufe `stufe` die Hülle EINES
-// Exemplars im Pass `pass` — die Dreiecke des Passes geteilt durch die Exemplare je Zug (`inst` zählt jede Instanz jedes
-// Stoff-Zugs, `je[pass]` die Züge): an den Toren des Genesis-Rings die Tor-Hülle gegen das Band je Tor (W3d).
+// Exemplars im Pass `pass` — die Dreiecke des Passes geteilt durch die Exemplare (die verschiedenen Orte ihrer Instanzen,
+// draw-zaehler `exemplare`; zwei Tore einer Vorlage in zwei Gestalten sind zwei Züge-Sätze, `inst / Züge` zählte sie als
+// eines): an den Toren des Genesis-Rings die Tor-Hülle gegen das Band je Tor (W3d). Ein Zensus ohne Exemplar-Zahl (vor S1)
+// trägt keine Soll-Zeile.
 function ortSoll(ort, zensus) {
     const out = [];
     for (const s of ort.soll || [])
         for (const e of zensus.klassen || []) {
             if (e.art !== s.art || e.stufe !== s.stufe) continue;
-            const zuege = (e.je || {})[s.pass] || 0;
             const tris = (e.jeTris || {})[s.pass] || 0;
-            if (!zuege || !e.inst) continue;
-            const exemplare = e.inst / zuege;
+            const exemplare = e.exemplare || 0;
+            if (!tris || !exemplare) continue;
             const huelle = Math.round(tris / exemplare);
             out.push({
                 name: s.name,

@@ -18,7 +18,7 @@
     "messorte": [
         {
             "id": "wiese",
-            "titel": "Die Mess-Wiese (W0): Wald, Wiese, Streu und Fels fern vom Ursprung — der Ort der Band-Serie seit 04.10.",
+            "titel": "Die Mess-Wiese (W0): Wald, Wiese, Streu und Fels fern vom Ursprung — der Ort der Band-Serie seit 04.10. Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`): mit ihm baute der Zug je nach Bildrate während der Messung das Dorf der Zelle -4,-4 (12 Häuser, Fundament, Zaun) — gemessen 07.10. in je einer frischen Welt am Kopf 516e704a: VRAM 163,6 → 150,3 MB, bau im Hauptbild 4 → 2 Befehle.",
             "spieler": [
                 -900,
                 -850
@@ -27,7 +27,7 @@
                 -900,
                 -840
             ],
-            "dorfZug": true,
+            "dorfZug": false,
             "ortTakt": [],
             "ratsche": "ratsche.json"
         },
