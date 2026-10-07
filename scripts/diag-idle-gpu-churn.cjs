@@ -14,6 +14,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 // Port über IDLE_GPU_CHURN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4395.
 const PORT = Number(process.env.IDLE_GPU_CHURN_PORT || 4395);
 const root = path.resolve(__dirname, "..");
@@ -60,9 +61,13 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // 26-30 s statt 3 s), der Wetter-Takt hing 282 s, der Regen kompilierte 42 s, der Sternen-Himmel 71 s — 427-554 s je
     // Lauf statt 75 s, zwei von drei Läufen rissen die Protokoll-Frist. Gemessen wird der Leerlauf EINER Welt: das Start-Dorf
     // steht vor dem Warmup (der Settle wartet auf es), Mittag, Sonne, die Saison fest, der Wetter-Zug hält; die Bühnen-Wand
-    // am Ende nennt jede Drift beim Namen.
+    // am Ende nennt jede Drift beim Namen. Das Wetter hält die EINE Wetter-Wache der Bühne (scripts/lib/ausgabe-aufnahme.cjs:
+    // die Uhr des Auto-Zugs eingefroren unter 0, `_setWeather` verweigert dann JEDEN Zug — Auto-Zug, Emotion, Nexus, Gesetz,
+    // Mitspieler); bis zur Welle K hielt die Linse eine eigene Uhr (je Takt auf 0), an der jeder andere Schreiber vorbeikam.
+    // Ihr Spion nennt den Schreiber einer Drift beim Namen.
     const SELBSTTEST_BUEHNE = process.argv.includes("--selbsttest-buehne");
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await page.evaluate(AUSGABE_INSTALL);
 
     // JEDER AUFRUF HAT EINEN NAMEN (CI 37122984563: die Linse riss nach 860 s die Protokoll-Frist und sagte nicht, in
     // welchem Aufruf). `ruf` misst jeden evaluate, nennt jeden über LANG_MS beim Namen (mit seinen Compiles), und der
@@ -107,7 +112,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 }
                 if (r && r.state && r.state.rendererReady && typeof r._gameLoopTick === "function") {
                     r.state.autoSeason = false; // die Saison hält (Bühne)
-                    r.state.weatherEffectTime = 0; // der Wetter-Zug hält (Bühne)
+                    window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
                     try { r._gameLoopTick(performance.now()); } catch (_e) {}
                     const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
                     S.sz = sz;
@@ -200,14 +205,14 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         if (typeof s.renderer.setAnimationLoop === "function") s.renderer.setAnimationLoop(null);
         const cam = s.camera, pm = s.playerMesh;
         if (cam && pm) { cam.position.set(pm.position.x, pm.position.y + 1.6, pm.position.z); cam.lookAt(pm.position.x + 30, pm.position.y + 1, pm.position.z); cam.updateMatrixWorld(true); }
-        // die Bühne: Mittag, Sonne, ohne Übergang — VOR dem Warmup (die Umgebung malt sich gleich danach aus diesem Himmel)
-        if (typeof r._setWeather === "function") r._setWeather("sunny");
-        s.weatherTransition = null;
-        s.weatherEffectTime = 0;
+        // die Bühne: Mittag, Sonne, ohne Übergang — VOR dem Warmup (die Umgebung malt sich gleich danach aus diesem Himmel).
+        // Die Sonne setzt der Halter selbst (`__wetterSetzen`: der eine Zug, den der Halt durchlässt, danach hält die Uhr).
+        window.__wetterSetzen("sunny");
         s.timeOfDay = 0.5;
         if (s.world) s.world.timeOfDay = 0.5;
         window.__buehneStand = () => ({ wetter: s.weather, uebergang: !!s.weatherTransition, saison: s.season, zeit: s.timeOfDay, bauten: (s.architectures || []).length });
         window.__buehne0 = window.__buehneStand();
+        window.__wetterSeq0 = window.__wetterBuch(0).seq;
         try { r._ensureSkyEnvironment(true); } catch (_e) {}
         const cnt = () => window.__cc.gpuPipeline + window.__cc.glLink;
         window.__cnt = cnt;
@@ -280,7 +285,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             const echt = r._loopRender;
             r._loopRender = function () {};
             if (!window.__buehneLos) {
-                s.weatherEffectTime = 0; // der Wetter-Zug hält (Bühne)
+                window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
                 s.timeOfDay = window.__buehne0.zeit; // Mittag hält (ein Takt rückt die Uhr bis 1 s vor)
             }
             try { r._gameLoopTick(performance.now()); } catch (_e) {} finally { if (eigen) r._loopRender = echt; else delete r._loopRender; }
@@ -369,11 +374,17 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     }
     setup.maxRuf = maxRuf;
     // DIE BÜHNEN-WAND: hielt die Welt still? Jede Drift (Wetter, Übergang, Saison, Tageszeit, Bauten) beim Namen.
-    const buehne = await ruf("Bühne", () => ({ vor: window.__buehne0, nach: window.__buehneStand() }));
+    const buehne = await ruf("Bühne", () => ({ vor: window.__buehne0, nach: window.__buehneStand(), wetter: window.__wetterBuch(window.__wetterSeq0) }));
     const kipp = [];
+    // das Buch der Wache seit der Bühne: wer das Wetter drehte (Schreiber oder roh, mit Quelle und Spiel-Rahmen) und wen sie
+    // verweigerte (die Wache hielt — keine Drift, aber beim Namen)
+    const wb = (buehne.wetter && buehne.wetter.buch) || [];
+    const dreher = wb.filter((e) => e.art !== "verweigert").map((e) => `${e.von} → ${e.zu} durch ${e.quelle || e.art} (${e.stapel})`);
+    const verweigert = wb.filter((e) => e.art === "verweigert").map((e) => `${e.quelle} → ${e.zu}`);
     if (buehne.vor && buehne.nach) {
         const v = buehne.vor, n = buehne.nach;
-        if (n.wetter !== v.wetter) kipp.push(`Wetter ${v.wetter} → ${n.wetter}`);
+        if (n.wetter !== v.wetter) kipp.push(`Wetter ${v.wetter} → ${n.wetter}${dreher.length ? " [" + dreher.join(" · ") + "]" : ""}`);
+        else if (dreher.length) kipp.push(`Wetter gedreht: ${dreher.join(" · ")}`);
         if (n.uebergang) kipp.push("Wetter-Übergang läuft");
         if (n.saison !== v.saison) kipp.push(`Saison ${v.saison} → ${n.saison}`);
         if (Math.abs(n.zeit - v.zeit) > 0.02) kipp.push(`Tageszeit ${v.zeit} → ${Math.round(n.zeit * 1000) / 1000}`);
@@ -384,7 +395,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     server.close();
     console.log("===== STEHENDE LINSE — Idle/Env-GPU-Pipeline-Churn (echter Renderer) =====\n");
     if (pageErr) { console.error("⛔ Page-Error während des Laufs:", pageErr); process.exit(1); }
-    console.log(`  Bühne: ${kipp.length ? "GEKIPPT — " + kipp.join(" · ") : "hielt (Wetter, Saison, Tageszeit, Bauten unverändert)"}`);
+    console.log(`  Bühne: ${kipp.length ? "GEKIPPT — " + kipp.join(" · ") : "hielt (Wetter, Saison, Tageszeit, Bauten unverändert)"}${verweigert.length ? ` · die Wetter-Wache verweigerte ${verweigert.length} Zug/Züge: ${verweigert.slice(0, 6).join(" · ")}` : ""}`);
     if (kipp.length) { console.error("⛔ BÜHNE GEKIPPT: die Welt der Messung driftete — " + kipp.join(" · ")); process.exit(1); }
     if (regen.err) { console.error("⛔ LINSE NICHT LAUFFÄHIG:", regen.err); process.exit(1); }
     if (regen.spur && regen.spur.length) {
