@@ -6,7 +6,9 @@
 // `obtainPortalForWorld` → `_buildPortalOverlay`, die übersetzte Welt über `acceptTranslatedManifest` +
 // `buildTranslatedWorld` mit gestubbtem LLM). Gemessen wird nur, was die Heimat KONSUMIERT, und was die Welt sichtbar
 // tut (Journal der Heimat, Zustand der Welt-UI):
-//   K1 ready      die Heimat empfängt die ready-Meldung der Welt (der Handshake schließt)
+//   K1 ready      die Heimat empfängt die ready-Meldung der Welt (der Handshake schließt); trägt die Welt ein
+//                 manifest.json, steht die Heimat danach auf Stufe „nativ" mit dem Label und jedem Wort des Manifests
+//                 (die Welt las ihr Manifest und meldete es im ready — Konsum statt Quelltext-Zitat)
 //   K2 endlich    der Handshake endet: die Heimat schickt höchstens drei enter (about:blank · load · erste ready)
 //   K3 Quelle     eine FREMDE Seite (Geschwister-Frame der Heimat) schickt der Welt dieselbe Nachricht — die Welt
 //                 nimmt sie nicht an (event.source !== parent), nichts wirkt
@@ -14,6 +16,9 @@
 //                 Welt wirkt sichtbar (Journal-Ereignis bzw. Zustand der UI) — bei begegnung der Ko-Präsenz-Eintritt
 //   K5 Esc        Esc in der Welt bringt den Spieler heim (die Heimat schließt das Overlay)
 //   K6 fehlerfrei die Welt wirft keinen Seiten-Fehler
+//   K7 mitgebracht die Welt zeigt, was der Reisende mitbringt (W13 V2, der enter-Payload der Heimat): skeleton die
+//                 Seele, das eigene Material als TEXT (Markup im Namen bleibt Text) mit gesäuberter Farbe, das eigene
+//                 Werkzeug und den Vibe-Pass; fluid und terrain den Vibe-Pass am Namen des Reisenden
 // Dazu zwei RATSCHEN (spec/vertraege/ratsche.json — Ist darf nur fallen, Soll daneben):
 //   dslEinzelwort  der Spieler tippt EIN Wort in die Konsole (`processChatCommand`, die Heimat schickt die flache Form
 //                  ["w"]): wirkt es sichtbar oder bleibt die Welt stumm? (Synthese §0.1: 7 Studios lesen op[0] je
@@ -55,9 +60,9 @@ const MIME = {
 // (die Welt antwortet mit einem Ereignis). begegnung versteht keine DSL (dsl []), ihre Wirkung ist der Ko-Präsenz-
 // Eintritt eines Gefährten (peer-join → Ereignis).
 const WELTEN = [
-    { id: "skeleton", wort: "skybox_color 2a0a3a" },
-    { id: "fluid", wort: "flut", zusatz: stromZeichnet },
-    { id: "terrain", wort: "fichte" },
+    { id: "skeleton", wort: "skybox_color 2a0a3a", mitgebracht: "voll" },
+    { id: "fluid", wort: "flut", zusatz: stromZeichnet, mitgebracht: "pass" },
+    { id: "terrain", wort: "fichte", mitgebracht: "pass" },
     { id: "garage", wort: "supersport", ui: { sel: "#presets button.on", feld: "text", soll: "Supersport" }, zusatz: probefahrt },
     { id: "portale", wort: "maschine", ui: { sel: "#presets button.active", feld: "text", soll: "Maschine" } },
     { id: "schmiede", wort: "degen", ui: { sel: "#presets button.on", feld: "text", soll: "Degen" } },
@@ -109,6 +114,52 @@ async function stromZeichnet(page, fr) {
     return { ok: !rueckfall && bewegt, notiz: `Strom zeichnet: ${rueckfall ? "Rückfall — " + hud : "Engine steht"}, Bild ${bewegt ? "bewegt" : "steht"}` };
 }
 
+// K7 — WAS DER REISENDE MITBRINGT (statt der Regex-Proben „skeleton.js hat renderBrought / textContent / 0xffffff",
+// „index.html trägt das Mitgebracht-Panel", „fluid + phytogenesis zeigen avatar.fingerprint"): nach dem Boot legt die
+// Probe ein eigenes Material (Name mit Markup, Farbe über 24 Bit) und ein eigenes Werkzeug in den Zustand der Heimat;
+// der enter-Payload (`_portalEnterPayload`) trägt sie mit dem Vibe-Pass in die Welt, die Welt-UI zeigt sie.
+const MITGEBRACHT = { material: "<b>Konformanz-Glut</b>", farbe: 0x1fabcdef, randSoll: "rgb(171, 205, 239)", werkzeug: "Konformanz-Feile" };
+
+async function mitgebrachtPruefen(page, fr, art) {
+    const pl = await page.evaluate(() => window.anazhRealm._portalEnterPayload());
+    const notiz = [];
+    if (!pl.fingerprint) notiz.push("der enter-Payload trägt keinen Vibe-Pass");
+    if (art === "pass") {
+        const name = await fr.evaluate(() => {
+            const e = document.getElementById("avatar-name");
+            return e ? e.textContent : null;
+        });
+        const soll = pl.name + " · " + pl.fingerprint;
+        if (name !== soll) notiz.push(`der Name des Reisenden zeigt „${name}" statt „${soll}"`);
+        return { ok: !notiz.length, notiz };
+    }
+    if (!(pl.materials || []).some((m) => m.name === MITGEBRACHT.material)) notiz.push("das eigene Material reist nicht im enter-Payload");
+    const sicht = await fr.evaluate(() => {
+        const q = (id) => document.getElementById(id);
+        const b = q("brought");
+        const seele = document.querySelector("#brought-soul b");
+        const vl = q("vibe-line");
+        return {
+            verborgen: !b || b.hidden,
+            seele: seele ? seele.textContent : null,
+            mats: [...document.querySelectorAll("#brought-mats .brought-chip")].map((c) => ({ text: c.textContent, kinder: c.childElementCount, rand: c.style.borderColor })),
+            tools: [...document.querySelectorAll("#brought-tools .brought-chip")].map((c) => c.textContent),
+            vibe: vl && !vl.hidden ? vl.textContent : null,
+        };
+    });
+    if (sicht.verborgen) notiz.push("das Mitgebracht-Panel bleibt verborgen");
+    if (sicht.seele !== pl.soul.label) notiz.push(`die Seele zeigt „${sicht.seele}" statt „${pl.soul.label}"`);
+    const chip = sicht.mats.find((c) => c.text === MITGEBRACHT.material || c.text === "Konformanz-Glut");
+    if (!chip) notiz.push("das eigene Material fehlt im Panel");
+    else {
+        if (chip.text !== MITGEBRACHT.material || chip.kinder) notiz.push("der Material-Name wird als Markup gerendert, nicht als Text");
+        if (chip.rand !== MITGEBRACHT.randSoll) notiz.push(`die Material-Farbe ist nicht gesäubert (${chip.rand})`);
+    }
+    if (!sicht.tools.includes("⚒ " + MITGEBRACHT.werkzeug)) notiz.push("das eigene Werkzeug fehlt im Panel");
+    if (sicht.vibe !== "Vibe-Pass · " + pl.fingerprint) notiz.push(`die Vibe-Zeile zeigt „${sicht.vibe}"`);
+    return { ok: !notiz.length, notiz };
+}
+
 // Die übersetzte Welt: Manifest + die Szene, die das gestubbte LLM liefert (die Säuberung bleibt die echte).
 const UEBERSETZT = {
     manifest: { id: "konformanz-lava", label: "Konformanz-Lava", desc: "Eine glühende Probe-Welt.", dsl: ["sturm"] },
@@ -129,7 +180,13 @@ const TAETER = {
     // die Heimat vor dem Schnitt: JEDE ready bekommt ein enter zur Antwort (das Ping-Pong mit den Echo-Studios).
     "anazhRealm.js": [["if (!po.enterAufReady) {\n                    po.enterAufReady = true;\n                    this._portalSendEnter();\n                }", "this._portalSendEnter();"]],
     // skeleton mit dem Studio-Adapter: die Elemente des Programms je einzeln (aus ["w", arg] wird "w", arg).
-    "worlds/skeleton/skeleton.js": [["applyDsl(msg.program);", "msg.program.forEach(function (op) { applyDsl(op); });"]],
+    "worlds/skeleton/skeleton.js": [
+        ["applyDsl(msg.program);", "msg.program.forEach(function (op) { applyDsl(op); });"],
+        // das Manifest kommt nicht an (die Welt meldet ready ohne Wörterbuch) → K1 rot
+        ['fetch("./manifest.json")', 'fetch("./manifest-fehlt.json")'],
+        // das Mitgebrachte als Markup statt als Text → K7 rot
+        ['chip.textContent = String((m && m.name) || "?");', 'chip.innerHTML = String((m && m.name) || "?");'],
+    ],
 };
 
 function server(taeter) {
@@ -234,6 +291,7 @@ async function zaehler(page) {
             readyDsl: !!k.readyDsl,
             offen: !!po,
             stufe: po ? po.manifestStage : null,
+            label: po ? po.label : null,
             dsl: po && Array.isArray(po.dsl) ? po.dsl.slice() : null,
         };
     });
@@ -335,6 +393,24 @@ async function pruefeWelt(page, welt, fehlerLog) {
         aus.k.K1 = false;
         aus.notiz.push(`die ready trägt ein Wörterbuch, die Heimat steht auf „${z.stufe}"`);
     }
+    // Trägt die Welt ein manifest.json, meldet sie es im ready und die Heimat übernimmt es ganz (Stufe, Label, jedes Wort).
+    const manifestPfad = path.join(ROOT, "worlds", welt.id, "manifest.json");
+    if (fs.existsSync(manifestPfad)) {
+        const m = JSON.parse(fs.readFileSync(manifestPfad, "utf8"));
+        const fehlt = (m.dsl || []).filter((w) => !(z.dsl || []).includes(w));
+        if (z.stufe !== "nativ" || z.label !== m.label || fehlt.length) {
+            aus.k.K1 = false;
+            aus.notiz.push(
+                `das Manifest der Welt kommt nicht an: Stufe „${z.stufe}", Label „${z.label}"${fehlt.length ? ", es fehlen " + fehlt.slice(0, 3).join("/") : ""}`
+            );
+        }
+    }
+    if (welt.mitgebracht) {
+        const frM = page.frames().find((f) => f.url().includes("worlds/" + welt.id + "/"));
+        const k7 = frM ? await mitgebrachtPruefen(page, frM, welt.mitgebracht) : { ok: false, notiz: ["Welt-Frame nicht gefunden"] };
+        aus.k.K7 = k7.ok;
+        aus.notiz.push(...k7.notiz);
+    }
     aus.k.K2 = z.enters <= 3;
     aus.handshake = { readys: z.readys, enters: z.enters, ersteReadyMs: z.ersteReady, stufe: z.stufe };
     if (!aus.k.K2) aus.notiz.push(`Handshake ohne Ende: ${z.enters} enter, ${z.readys} ready in ${Math.round((Date.now() - t0) / 1000)} s`);
@@ -424,6 +500,15 @@ async function lauf(welten, taeter) {
             () => window.anazhRealm && window.anazhRealm.state && typeof window.anazhRealm._gameLoopTick === "function" && window.anazhRealm.state.blueprints,
             { timeout: 120000, polling: 200 }
         );
+        // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat (K7).
+        await page
+            .waitForFunction(() => !!(window.anazhRealm.state.vibePass && window.anazhRealm.state.vibePass.ready), { timeout: 30000, polling: 200 })
+            .catch(() => console.log("  (der Vibe-Pass steht nach 30 s nicht — K7 wird rot)"));
+        await page.evaluate((M) => {
+            const st = window.anazhRealm.state;
+            st.materials[M.material] = { builtIn: false, color: M.farbe, label: M.material, tags: {} };
+            st.tools.konformanz_feile = { builtIn: false, label: M.werkzeug, opName: "konformanz_op", opClass: "subtractive" };
+        }, MITGEBRACHT);
         const bootFehler = fehlerLog.length;
         if (bootFehler) console.log(`  (Heimat-Boot: ${bootFehler} Seiten-Fehler — ${fehlerLog[0]})`);
         fehlerLog.length = 0;
@@ -448,7 +533,7 @@ function ratscheVergleich(gemessen, bekannt) {
 }
 
 function drucke(e) {
-    const k = ["K1", "K2", "K3", "K4", "K5", "K6"].map((x) => (e.k[x] === undefined ? "·" : e.k[x] ? "✓" : "✗")).join(" ");
+    const k = ["K1", "K2", "K3", "K4", "K5", "K6", "K7"].map((x) => (e.k[x] === undefined ? "·" : e.k[x] ? "✓" : "✗")).join(" ");
     const hs = e.handshake ? ` ready ${e.handshake.readys} · enter ${e.handshake.enters}` : "";
     const ew = e.stumm === null ? "" : e.stumm ? " · Einzelwort STUMM" : " · Einzelwort wirkt";
     console.log(`  ${e.id.padEnd(14)} ${k}${hs}${ew}${e.echo ? " · Echo" : ""}${e.notiz.length ? " — " + e.notiz.join("; ") : ""}`);
@@ -468,6 +553,8 @@ async function selbsttest() {
         ["K2 rot: die Heimat beantwortet jede ready, garage spielt Ping-Pong", by.garage && by.garage.k.K2 === false, by.garage && by.garage.handshake ? `${by.garage.handshake.enters} enter` : ""],
         ["Ratsche rot: skeleton mit Element-Adapter ist NEU stumm", v.neu.includes("skeleton"), "neu stumm: " + v.neu.join(",")],
         ["Kontrolle: die chain-Form wirkt trotz Element-Adapter (der Täter trifft nur das Einzelwort)", by.skeleton && by.skeleton.k.K4 === true, ""],
+        ["K1 rot: skeleton meldet ihr Manifest nicht (die Heimat bleibt „übersetzt“)", by.skeleton && by.skeleton.k.K1 === false, by.skeleton ? by.skeleton.notiz.filter((n) => /Manifest/.test(n)).join("") : ""],
+        ["K7 rot: skeleton rendert den Material-Namen als Markup", by.skeleton && by.skeleton.k.K7 === false, by.skeleton ? by.skeleton.notiz.filter((n) => /Markup/.test(n)).join("") : ""],
     ];
     let ok = true;
     for (const [n, gut, d] of proben) {
@@ -480,7 +567,7 @@ async function selbsttest() {
 (async () => {
     if (process.argv.includes("--selftest")) process.exit((await selbsttest()) ? 0 : 1);
     const { ergebnisse } = await lauf(WELTEN, false);
-    console.log("Portal-Konformanz: K1 ready · K2 endlich · K3 Quelle · K4 wirkt · K5 Esc · K6 fehlerfrei");
+    console.log("Portal-Konformanz: K1 ready (+ Manifest) · K2 endlich · K3 Quelle · K4 wirkt · K5 Esc · K6 fehlerfrei · K7 mitgebracht");
     ergebnisse.forEach(drucke);
     const rot = [];
     for (const e of ergebnisse) for (const [k, v] of Object.entries(e.k)) if (v === false) rot.push(`${e.id} ${k}`);
@@ -505,7 +592,7 @@ async function selbsttest() {
         for (const x of rot) console.log(`❌ ${x}`);
         process.exit(1);
     }
-    console.log(`✅ gate:portal-konformanz: ${ergebnisse.length} Welten K1–K6 grün · Ratschen gehalten`);
+    console.log(`✅ gate:portal-konformanz: ${ergebnisse.length} Welten K1–K7 grün · Ratschen gehalten`);
     process.exit(0);
 })().catch((e) => {
     console.error("portal-konformanz-Fehler:", (e && e.stack) || e);

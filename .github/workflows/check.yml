@@ -673,13 +673,15 @@ jobs:
             - name: Portal-Konformanz (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)
               # Bootet die echte Heimat (Null-Renderer, ohne Foundry) und betritt alle 13 Welten über den echten Weg
               # (Bibliothek → obtainPortalForWorld → _buildPortalOverlay; die übersetzte über acceptTranslatedManifest +
-              # buildTranslatedWorld mit gestubbtem LLM). K1 ready · K2 der Handshake endet (höchstens 3 enter; vorher 106 bis
-              # 202 Runden Ping-Pong je Studio) · K3 eine fremde Seite steuert keine Welt · K4 die chain-Form wirkt sichtbar
-              # (Journal der Heimat bzw. Zustand der Welt-UI; dazu die Probefahrt der Garage und das bewegte Bild der
-              # Strom-Welt) · K5 Esc bringt heim · K6 keine
-              # Seiten-Fehler. Ratschen (spec/vertraege/ratsche.json): DSL-Einzelwort stumm 7 → Soll 0 · ready-Echo 7 → 0.
+              # buildTranslatedWorld mit gestubbtem LLM). K1 ready (und eine Welt mit manifest.json steht in der Heimat auf
+              # „nativ" mit Label und jedem Wort) · K2 der Handshake endet (höchstens 3 enter; vorher 106 bis 202 Runden
+              # Ping-Pong je Studio) · K3 eine fremde Seite steuert keine Welt · K4 die chain-Form wirkt sichtbar (Journal
+              # der Heimat bzw. Zustand der Welt-UI; dazu die Probefahrt der Garage und das bewegte Bild der Strom-Welt) ·
+              # K5 Esc bringt heim · K6 keine Seiten-Fehler · K7 die Welt zeigt das Mitgebrachte (skeleton: Seele, eigenes
+              # Material als Text mit gesäuberter Farbe, Werkzeug, Vibe-Pass; fluid/terrain: Vibe-Pass am Namen).
+              # Ratschen (spec/vertraege/ratsche.json): DSL-Einzelwort stumm 7 → Soll 0 · ready-Echo 7 → 0.
               # --selftest zuerst: begegnung ohne Quellen-Prüfung, die Heimat beantwortet jede ready, skeleton mit
-              # Element-Adapter → jede Wand rot und beim Namen.
+              # Element-Adapter, ohne Manifest und mit Markup-Panel → jede Wand rot und beim Namen.
               run: npm run gate:portal-konformanz
 
             - name: Regler wirkt (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)
