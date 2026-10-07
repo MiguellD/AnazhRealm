@@ -14,7 +14,8 @@
 //   G  kein WebGPU-Validierungsfehler auf irgendeinem Device (eigener Hörer, unabhängig vom Spiel: `uncapturederror` jedes
 //      Device UND die THREE-Konsolenzeile, mit der r184 eine Validierung aus seinem offenen Pipeline-Fehler-Bereich meldet)
 //   W  die Wachen des Spiels stehen und schweigen (`_indexWache` · `_gpuWache`)
-//   B  DAS BILD FOLGT: zwei Bilder des präsentierten Canvas bei gedrehter Kamera unterscheiden sich in ≥ 2 % der 16×16-Blöcke
+//   B  DAS BILD FOLGT: zwei Bilder bei gedrehter Kamera unterscheiden sich in ≥ 2 % der 16×16-Blöcke (echt: der präsentierte
+//      Canvas; headless: das Rücklese-Bild der Welt-GPU)
 // Danach DIE TÄTER (jeder Lauf — die Wand beweist sich selbst):
 //   T1 ein Probe-Mesh zeichnet einen Index ≥ seiner Vertex-Zahl → die Index-Wache nennt es („bereich")
 //   T2 ein Mensch-Index wird geweitet wie von einem fremden Backend → die Index-Wache nennt ihn („format") beim Pfad, die
@@ -157,8 +158,7 @@ function pruefRaum(echt) {
             o.frustumCulled = false;
         }
     });
-    const b = rend.domElement.getBoundingClientRect();
-    const cam = new T.PerspectiveCamera(45, b.width / Math.max(1, b.height), 0.05, 100);
+    const cam = new T.PerspectiveCamera(45, 16 / 9, 0.05, 100);
     cam.position.set(0, 1.0, 3.0);
     cam.lookAt(0, 0.7, 0);
     F.wurzel = scene;
@@ -170,6 +170,19 @@ function pruefRaum(echt) {
         }
         await rend.backend.device.queue.onSubmittedWorkDone();
         await new Promise((res) => setTimeout(res, 50));
+    };
+    // DAS BILD der Probe-Bühne: die Welt-GPU zeichnet in ein Ziel, das Ziel wird zurückgelesen (256 × 144, RGBA8 — eine Zeile
+    // 1 024 B, kein Zeilen-Rand). Der Linux-Runner setzt die WebGPU-Leinwand headless nicht in den Bildschirm-Schuss (CI
+    // 07.10.: zwei Schüsse gleich, obwohl die Welt-GPU zeichnete); der Rücklese-Weg zeigt, was der Pass schrieb — ein
+    // verworfener Befehlspuffer schreibt nichts, das Ziel behält das letzte Bild.
+    const ziel = new T.RenderTarget(256, 144);
+    F.bild = async () => {
+        scene.updateMatrixWorld(true);
+        rend.setRenderTarget(ziel);
+        rend.render(scene, cam);
+        rend.setRenderTarget(null);
+        const px = await rend.readRenderTargetPixelsAsync(ziel, 0, 0, 256, 144);
+        return { d: new Uint8Array(px.buffer, px.byteOffset, 256 * 144 * 4), w: 256, h: 144 };
     };
     F.drehe = () => (pivot.rotation.y += 1.1);
     F.mittag = () => {};
@@ -248,57 +261,89 @@ function pruefRaum(echt) {
         if (datei) fs.writeFileSync(datei, Buffer.from(b64, "base64"));
         return b64;
     };
-    const vergleich = (a, b) =>
-        page.evaluate(
-            async (a, b) => {
-                const lade = async (s) => {
-                    const bin = atob(s);
-                    const u8 = new Uint8Array(bin.length);
-                    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
-                    const bm = await createImageBitmap(new Blob([u8], { type: "image/png" }));
-                    const c = new OffscreenCanvas(bm.width, bm.height);
-                    const g = c.getContext("2d");
-                    g.drawImage(bm, 0, 0);
-                    return { d: g.getImageData(0, 0, bm.width, bm.height).data, w: bm.width, h: bm.height };
-                };
-                const A = await lade(a),
-                    B = await lade(b);
-                // Block-Mittel 16×16: die zeitliche Kantenglättung zittert über einem stehenden Bild Pixel für Pixel (Laub:
-                // 6 % der Pixel), ihr Block-Mittel bleibt (0,1 % der Blöcke); eine Drehung bewegt 70–97 % der Blöcke.
-                const K = 16,
-                    bw = Math.floor(A.w / K),
-                    bh = Math.floor(A.h / K);
-                let anders = 0;
-                for (let by = 0; by < bh; by++)
-                    for (let bx = 0; bx < bw; bx++) {
-                        let s = 0;
-                        for (let c = 0; c < 3; c++) {
-                            let ma = 0,
-                                mb = 0;
-                            for (let y = 0; y < K; y++)
-                                for (let x = 0; x < K; x++) {
-                                    const i = ((by * K + y) * A.w + bx * K + x) * 4 + c;
-                                    ma += A.d[i];
-                                    mb += B.d[i];
-                                }
-                            s += Math.abs(ma - mb) / (K * K);
-                        }
-                        if (s > 12) anders++;
+    // Der Vergleich zweier Bilder in der Seite: Block-Mittel 16×16 — die zeitliche Kantenglättung zittert über einem
+    // stehenden Bild Pixel für Pixel (Laub: 6 % der Pixel), ihr Block-Mittel bleibt (0,1 % der Blöcke); eine Drehung bewegt
+    // 70–97 % der Blöcke. Dazu das PNG eines Rücklese-Bilds für `--bilder`.
+    await page.evaluate(() => {
+        const F = window.__frostWand;
+        F.blockAnteil = (A, B) => {
+            const K = 16,
+                bw = Math.floor(A.w / K),
+                bh = Math.floor(A.h / K);
+            let anders = 0;
+            for (let by = 0; by < bh; by++)
+                for (let bx = 0; bx < bw; bx++) {
+                    let s = 0;
+                    for (let c = 0; c < 3; c++) {
+                        let ma = 0,
+                            mb = 0;
+                        for (let y = 0; y < K; y++)
+                            for (let x = 0; x < K; x++) {
+                                const i = ((by * K + y) * A.w + bx * K + x) * 4 + c;
+                                ma += A.d[i];
+                                mb += B.d[i];
+                            }
+                        s += Math.abs(ma - mb) / (K * K);
                     }
-                return anders / Math.max(1, bw * bh);
+                    if (s > 12) anders++;
+                }
+            return anders / Math.max(1, bw * bh);
+        };
+        F.ladePng = async (s) => {
+            const bin = atob(s);
+            const u8 = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+            const bm = await createImageBitmap(new Blob([u8], { type: "image/png" }));
+            const c = new OffscreenCanvas(bm.width, bm.height);
+            const g = c.getContext("2d");
+            g.drawImage(bm, 0, 0);
+            return { d: g.getImageData(0, 0, bm.width, bm.height).data, w: bm.width, h: bm.height };
+        };
+        F.alsPng = async (B) => {
+            const c = new OffscreenCanvas(B.w, B.h);
+            const px = new Uint8ClampedArray(B.d);
+            for (let i = 3; i < px.length; i += 4) px[i] = 255;
+            c.getContext("2d").putImageData(new ImageData(px, B.w, B.h), 0, 0);
+            const u8 = new Uint8Array(await (await c.convertToBlob({ type: "image/png" })).arrayBuffer());
+            let s = "";
+            for (let i = 0; i < u8.length; i++) s += String.fromCharCode(u8[i]);
+            return btoa(s);
+        };
+    });
+    // B — das Bild-Paar, dazwischen 63° Gier. Echt: der präsentierte Canvas (was der Spieler sieht). Headless: das
+    // Rücklese-Bild der Welt-GPU (F.bild — der Linux-Runner setzt die WebGPU-Leinwand nicht in den Bildschirm-Schuss).
+    const bildPaar = async (tag) => {
+        if (!ECHT) {
+            const r = await page.evaluate(async (mitPng) => {
+                const F = window.__frostWand;
+                const A = await F.bild();
+                F.drehe();
+                const B = await F.bild();
+                return {
+                    anteil: F.blockAnteil(A, B),
+                    png: mitPng ? [await F.alsPng(A), await F.alsPng(B)] : null,
+                };
+            }, !!BILDER);
+            if (r.png)
+                r.png.forEach((s, i) =>
+                    fs.writeFileSync(path.join(BILDER, `${tag}-${"ab"[i]}.png`), Buffer.from(s, "base64"))
+                );
+            return r.anteil;
+        }
+        await page.evaluate(() => window.__frostWand.mittag());
+        await zeichne(8);
+        const a = await schuss(BILDER && path.join(BILDER, tag + "-a.png"));
+        await page.evaluate(() => window.__frostWand.drehe());
+        await zeichne(8);
+        const b = await schuss(BILDER && path.join(BILDER, tag + "-b.png"));
+        return page.evaluate(
+            async (a, b) => {
+                const F = window.__frostWand;
+                return F.blockAnteil(await F.ladePng(a), await F.ladePng(b));
             },
             a,
             b
         );
-    // B — das Bild-Paar: zwei Bilder des präsentierten Canvas, dazwischen 63° Gier.
-    const bildPaar = async (tag) => {
-        await page.evaluate(() => window.__frostWand.mittag());
-        await zeichne(ECHT ? 8 : 2);
-        const a = await schuss(BILDER && path.join(BILDER, tag + "-a.png"));
-        await page.evaluate(() => window.__frostWand.drehe());
-        await zeichne(ECHT ? 8 : 2);
-        const b = await schuss(BILDER && path.join(BILDER, tag + "-b.png"));
-        return vergleich(a, b);
     };
     // I + G + W — der Index-Zensus der Welt-GPU, der eigene Hörer, die Wachen des Spiels.
     const lage = async () => {
