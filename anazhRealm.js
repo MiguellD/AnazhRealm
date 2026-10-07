@@ -4380,7 +4380,7 @@ class AnazhRealm {
             "",
             "Du kannst die Welt auch aus den STUDIOS wachsen lassen (dieselben Baupläne wie die Werkstatt des Spielers):",
             '  ["spawn_studio", <wort>, <position>, <anzahl>] — z.B. ["spawn_studio","eiche",["near_water",60],6] (ein Eichenhain am Wasser) oder ["spawn_studio","haus",["at_player_forward",14],1].',
-            `  Wörter, die die Welt JETZT kennt: ${this._studioWordsForPrompt() || "eiche, kiefer, fels"}.`,
+            `  Wörter, die die Welt JETZT kennt: ${this._studioWordsForPrompt() || "(das Studio-Buch lädt noch — kein Wort)"}.`,
             '  Positionen: ["near_player",r] · ["at_player_forward",d] · ["near_water",r] · ["far_player",min,max]. Anzahl 1–24.',
             "",
             "Du kannst auch ein STEHENDES GESETZ vorschlagen — eine Regel, die sich SELBST wiederholt, wann immer eine Bedingung gilt (statt einer einmaligen Geste):",
@@ -9047,32 +9047,37 @@ class AnazhRealm {
                 }),
             },
             // Satz → Studio (auch ohne KI-Schlüssel): "pflanz mir einen eichenhain am wasser", "bau ein haus".
-            // Das Wort löst über DIESELBEN Tabellen wie die Werkstatt auf (`_studioBlueprintForWord`); unbekannt
-            // → null, der Satz fällt an den LLM-Begleiter. Bewusst die LETZTE Regel: Spezifischeres gewinnt.
+            // Das Wort löst über den EINEN Wort-Katalog auf (`_studioBlueprintForWord`); unbekannt → null, der Satz fällt an
+            // den LLM-Begleiter, ohne ihn sagt `_studioSatzAbsage`, was die Studios kennen. Ein Hain/Wald ohne Art ist einer
+            // der Baum-Art (der Präfix-Stamm des Art-Gesetzes). Bewusst die LETZTE Regel: Spezifischeres gewinnt.
             {
                 example: "pflanz mir einen eichenhain am wasser",
-                re: /^(?:pflanz|setz|bau|stell|erschaff|mach|wachs)\w*\s+(?:mir\s+|uns\s+)?(?:(ein(?:en|e|ige)?|zwei|drei|vier|fünf|fuenf|sechs|sieben|acht|neun|zehn|\d+)\s+)?([a-zäöüß_]+?)(hain|wald|gruppe)?(?:\s+(?:am|an|beim|zum|ans)\s+(wasser|fluss|see|ufer|bach|meer)|\s+(hier|vor mir))?\s*[.!]?$/i,
+                re: AnazhRealm.STUDIO_SATZ,
                 build: (m) => {
-                    const wort = m[2].toLowerCase();
+                    const wort = (
+                        m[2] || (m[3] ? AnazhRealm.KIND_POLICY.tree.prefix.replace(/_+$/, "") : "")
+                    ).toLowerCase();
                     const name = this._studioBlueprintForWord(wort);
                     if (!name) return null;
                     const ZAHL = { ein: 1, eine: 1, einen: 1, einige: 5, zwei: 2, drei: 3, vier: 4, fünf: 5, fuenf: 5 };
-                    Object.assign(ZAHL, { sechs: 6, sieben: 7, acht: 8, neun: 9, zehn: 10 });
-                    const z = m[1] ? m[1].toLowerCase() : null;
+                    Object.assign(ZAHL, { sechs: 6, sieben: 7, acht: 8, neun: 9, zehn: 10, "ein paar": 3 });
+                    const z = m[1] ? m[1].toLowerCase().replace(/\s+/g, " ") : null;
                     let n = z ? (ZAHL[z] != null ? ZAHL[z] : parseInt(z, 10)) : m[3] ? 6 : 1;
                     if (!Number.isFinite(n) || n < 1) n = 1;
                     // „einen eichenHAIN" / „einen wald" = ein Hain, nicht ein Baum
-                    if ((m[3] || /^(wald|hain)$/.test(wort)) && (!z || ZAHL[z] === 1)) n = 6;
+                    if (m[3] && (!z || ZAHL[z] === 1)) n = 6;
                     const pos = m[4] ? ["near_water", 80] : ["at_player_forward", m[5] ? 6 : 10];
                     // der Same aus dem Welt-Strom je Art (Befund D10: Math.random — kein Reload zog denselben Hain)
                     const seed = this._bauSame("studio:" + name);
                     const wo = m[4] ? "am Wasser" : "vor dir";
-                    // Der Spieler liest das Label der Art („Eiche"), nie die interne id („baum_eiche", Befund V-D8).
+                    // Der Spieler liest das Label der Art („Eiche", „Alemannisch"), nie die interne id („baum_eiche", Befund
+                    // V-D8) — und ein Haus wächst nicht, es wird gebaut (die Art aus dem Wort-Katalog).
                     const bp = this.state.blueprints && this.state.blueprints[name];
-                    const label = (bp && bp.label) || name;
+                    const label = String((bp && bp.label) || name).split(/\s[·—(]/)[0];
+                    const natur = this._istNatur({ type: name });
                     return {
                         program: ["spawn_studio", wort, pos, n, seed],
-                        describe: `${n}× ${label} aus dem Studio ${wo} gewachsen`,
+                        describe: `${n}× ${label} aus dem Studio ${wo} ${natur ? "gewachsen" : "gebaut"}`,
                     };
                 },
             },
@@ -24261,9 +24266,23 @@ class AnazhRealm {
         return this._chatSystemPatternsCache;
     }
 
+    // Die Absage eines Studio-Satzes mit unbekanntem Wort (ohne KI-Begleiter): der Spieler hört, was die Studios kennen —
+    // aus dem EINEN Wort-Katalog (Befund L-Wortschatz: „bau mir eine scheune" hieß „Unbekannter Befehl. Meintest du 'baue
+    // dorf hier'?"). null, wenn der Satz kein Studio-Satz ist oder sein Wort auflöst.
+    _studioSatzAbsage(command) {
+        const m = String(command || "")
+            .trim()
+            .match(AnazhRealm.STUDIO_SATZ);
+        if (!m || !m[2] || this._studioBlueprintForWord(m[2])) return null;
+        const kennt = this._studioWordsForPrompt(true);
+        return kennt
+            ? `„${m[2]}" kennt kein Studio. Die Studios bauen — ${kennt}.`
+            : `„${m[2]}" kennt kein Studio — das Studio-Buch lädt noch.`;
+    }
+
     // Conversational-Fallback: Kreatur-Konversation (Welle 6.H Phase 2E V1),
     // LLM-Fallback (Schicht 2 — Claude/Gemini/OpenRouter), P2P-Voice-Pool
-    // (W7 Phase 3), sonst chatSuggest + Hilfetext.
+    // (W7 Phase 3), sonst Studio-Satz-Absage, chatSuggest + Hilfetext.
     _chatHandleConversationalFallback(command, appendChatOutput) {
         if (this._parseCreatureAddress && this._parseCreatureAddress(command)) {
             // „Name, text" oder „Name: text" geht an die Kreatur (nicht an Grok).
@@ -24285,6 +24304,11 @@ class AnazhRealm {
             // seine Stimme: die Anfrage läuft über ihn, das DSL-Programm der
             // Antwort durch meine eigene Sandbox.
             this._p2pRequestSharedVoice(command, appendChatOutput);
+            return;
+        }
+        const studioAbsage = this._studioSatzAbsage(command);
+        if (studioAbsage) {
+            appendChatOutput(studioAbsage);
             return;
         }
         const suggestion = this.chatSuggest(command);
@@ -70525,79 +70549,181 @@ class AnazhRealm {
         }
         return null;
     }
-    // Wort des Co-Schöpfers → Bauplan („eiche", „birken", „fels", ein Haus-/Tor-/Fahrzeug-Rezept). Liest
-    // DIESELBEN Tabellen wie die Werkstatt (Bauplan-Namen, LIVE-Buch über KIND_POLICY `<prefix><id>`,
-    // `_foundryPresetFor`) + die STUDIO_WORT-Brücke für Gattungs-Wörter. null = unbekannt (kein Raten).
+    // DER WORT-KATALOG (Welle L Folge, L-Wortschatz): ein Wort des Co-Schöpfers („eiche", „birken", „fachwerkhaus",
+    // „häuser", „wagen") löst über den EINEN Rezept-Katalog auf — die Studio-Arten des Buchs, ihre Bauplan-Träger, das
+    // Art-Gesetz (`KIND_POLICY`) und die Studios (`WORLD_REGISTRY`) —, nie über eine Hand-Liste (die Brücke STUDIO_WORT
+    // kannte neun Wörter, „bau mir ein fachwerkhaus" war unbekannt). Gefragt werden das Wort, seine Stämme (-en/-n/-e/-s/-er,
+    // der Plural-Umlaut: Häuser → Haus) und als Kompositum der Anfang eines Werk-Namens („fels" → Felsformation, ≥ 4
+    // Buchstaben, das erste in Katalog-Reihenfolge). null = unbekannt (kein Raten).
     _studioBlueprintForWord(word) {
         if (typeof word !== "string" || !word.trim()) return null;
-        const bps = this.state.blueprints || {};
-        const f = this._foundry;
-        const recipes = f && f.recipes ? f.recipes : null;
-        const KP = AnazhRealm.KIND_POLICY;
-        const w = word
-            .trim()
-            .toLowerCase()
-            .replace(/ä/g, "ae")
-            .replace(/ö/g, "oe")
-            .replace(/ü/g, "ue")
-            .replace(/ß/g, "ss")
-            .replace(/[\s-]+/g, "_");
+        const K = this._studioWortKatalog();
+        const w = AnazhRealm._wortFalten(word);
         const kandidaten = [w];
         for (const suf of ["en", "n", "e", "s", "er"])
             if (w.length > suf.length + 2 && w.endsWith(suf)) kandidaten.push(w.slice(0, -suf.length));
-        for (const t of kandidaten) {
-            if (bps[t]) return t;
-            if (bps["baum_" + t]) return "baum_" + t;
-            const rec = recipes && Object.prototype.hasOwnProperty.call(recipes, t) ? recipes[t] : null;
-            const pol = rec && KP[rec.kind];
-            if (pol && pol.prefix && bps[pol.prefix + t]) return pol.prefix + t;
-            // Ein Rezept ohne eigene Domänen-Zeile, dessen Gestalt ein Bauplan trägt (studioGestalt — die Ausstattung:
-            // feuerstelle → glutbrunnen, marktstand → marktstand_dorf, brunnen → brunnen_dorf): der Bauplan. Eine Art MIT
-            // Domänen-Zeile (Tor, Fahrzeug) löst nur über ihr Präfix — ein Tor-Wort fällt nie auf das welt_-Portal, das
-            // dieselbe Gestalt trägt (es wäre ein echtes Tor mit Trigger, kein Bauwerk).
-            if (rec && !(pol && pol.prefix)) {
-                const traeger = Object.keys(bps)
-                    .filter((n) => bps[n] && bps[n].studioGestalt === t && !bps[n]._foundryAutoSpecies)
-                    .sort();
-                if (traeger.length) return traeger[0];
-            }
+        for (const k of kandidaten.slice()) {
+            const ohne = k.replace(/aeu/g, "au").replace(/ae/g, "a").replace(/oe/g, "o").replace(/ue/g, "u");
+            if (ohne !== k) kandidaten.push(ohne);
         }
-        const WORT = AnazhRealm.STUDIO_WORT;
+        for (const stufe of K.stufen) for (const t of kandidaten) if (stufe.has(t)) return stufe.get(t);
         for (const t of kandidaten) {
-            const ziel = WORT[t];
-            if (ziel === "haus_") {
-                const haeuser = Object.keys(bps)
-                    .filter((n) => n.startsWith("haus_"))
-                    .sort();
-                if (haeuser.length) return haeuser[0];
-            } else if (ziel && bps[ziel]) return ziel;
+            if (t.length < 4) continue;
+            for (const s of [1, 3])
+                for (const [name, ziel] of K.stufen[s]) if (name.length > t.length && name.startsWith(t)) return ziel;
         }
         return null;
     }
 
-    // Die lebenden Wörter für das KI-Prompt (was der Co-Schöpfer JETZT pflanzen kann):
-    // aus dem LIVE-Rezeptbuch, gefiltert durch denselben Auflöser — nie ein Wort, das
-    // die Welt nicht bauen kann.
-    _studioWordsForPrompt() {
+    // Der Katalog der Wörter, gestuft (die frühere Stufe gewinnt; in einer Stufe das erste in Katalog-Reihenfolge, ein
+    // Art- oder Studio-Wort mit zwei Arten fällt als mehrdeutig weg):
+    //   (1) Bauplan-Namen, die Rezept-ids mit ihrem Träger, der Name hinter einem Art-Präfix (`baum_eiche` → „eiche", auch
+    //       bei kaltem Buch);
+    //   (2) die Namen der Werke: das Kopf-Wort des Rezept-`lab` und des Träger-Labels (vor „·"/„—": „Feuerstelle",
+    //       „Ziehbrunnen", „Alemannisch", „Kristall-Geode");
+    //   (3) die Art-Wörter des Art-Gesetzes: der Präfix-Stamm („baum", „haus", „fahrzeug") und der Stamm des Spenders,
+    //       der kein eigener Bauplan ist („fahrzeug_wagen" → „wagen") → das erste Werk der Art;
+    //   (4) die Studio-Namen, deren Kompositum-Kopf ein Art-Wort ist („Fachwerkhaus" → das erste Haus).
+    // Der Träger eines Rezepts: eine Art MIT Präfix nur über ihr Präfix — ein Tor-Wort fällt nie auf das welt_-Portal
+    // derselben Gestalt (ein echtes Tor mit Trigger, kein Bauwerk); sonst der Bauplan, der seine Gestalt trägt (die
+    // Ausstattung: feuerstelle → glutbrunnen), sonst der erste Bauplan seiner Studio-Art (`_foundryPresetForEntry`: der
+    // Fels). Gemerkt je Buch und Bauplan-Zahl. { stufen: [Map Wort → Bauplan] ×4, artVon: Bauplan → Art, woerter }.
+    _studioWortKatalog() {
+        const bps = this.state.blueprints || {};
         const f = this._foundry;
         const recipes = f && f.recipes ? f.recipes : {};
-        const gruppen = { tree: [], haus: [], gate: [], vehicle: [], ausstattung: [] };
-        for (const id of Object.keys(recipes)) {
-            const r = recipes[id];
-            if (r && gruppen[r.kind] && this._studioBlueprintForWord(id)) gruppen[r.kind].push(id);
+        const ids = Object.keys(recipes);
+        const namen = Object.keys(bps).sort();
+        const alt = this._wortKatalogMerker;
+        if (alt && alt.recipes === recipes && alt.nRez === ids.length && alt.nBp === namen.length) return alt;
+        const KP = AnazhRealm.KIND_POLICY;
+        const falte = AnazhRealm._wortFalten;
+        const kopf = (label) =>
+            String(label || "")
+                .split(/\s[·—(]|\s-\s/)[0]
+                .split(/[^A-Za-zÄÖÜäöüß]+/)
+                .filter((x) => x.length >= 3)
+                .map(falte);
+        const istTor = (n) => !bps[n] || bps[n].role === "portal";
+        const nachArt = {};
+        for (const n of namen) {
+            if (istTor(n) || bps[n]._foundryAutoSpecies) continue;
+            const pr = this._foundryPresetForEntry({ type: n });
+            if (pr && !nachArt[pr]) nachArt[pr] = n;
         }
-        if (!gruppen.tree.length)
-            for (const b of ["eiche", "kiefer", "birke", "tanne", "buche"])
-                if (this._studioBlueprintForWord(b)) gruppen.tree.push(b);
-        const stein = ["fels", "stein", "kristall"].filter((x) => this._studioBlueprintForWord(x));
-        const teile = [];
-        if (gruppen.tree.length) teile.push("Bäume: " + gruppen.tree.join(", "));
-        if (stein.length) teile.push("Stein: " + stein.join(", "));
-        if (gruppen.haus.length) teile.push("Häuser: haus, " + gruppen.haus.slice(0, 6).join(", "));
-        if (gruppen.gate.length) teile.push("Tore: " + gruppen.gate.join(", "));
-        if (gruppen.vehicle.length) teile.push("Fahrzeuge: " + gruppen.vehicle.join(", "));
-        if (gruppen.ausstattung.length) teile.push("Ausstattung: " + gruppen.ausstattung.join(", "));
-        return teile.join(" · ");
+        const traeger = {};
+        const artVon = {};
+        for (const id of ids) {
+            const rec = recipes[id];
+            const pol = rec && KP[rec.kind];
+            let t = null;
+            if (pol && pol.prefix) t = bps[pol.prefix + id] ? pol.prefix + id : null;
+            else if (rec)
+                t =
+                    namen.find((n) => !istTor(n) && bps[n].studioGestalt === id && !bps[n]._foundryAutoSpecies) ||
+                    nachArt[id] ||
+                    null;
+            if (!t) continue;
+            traeger[id] = t;
+            if (!artVon[t]) artVon[t] = rec.kind;
+        }
+        const stufen = [new Map(), new Map(), new Map(), new Map()];
+        const setze = (s, wort, ziel) => {
+            if (wort && ziel && !stufen[s].has(wort)) stufen[s].set(wort, ziel);
+        };
+        // Die sagbaren Wörter (Prompt und Absage): [Wort, Nennung] — Art- und Studio-Wörter zuerst, dann die Werke.
+        const gross = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+        const nennWoerter = [];
+        const werkWoerter = [];
+        // (1)
+        for (const n of namen) setze(0, n, n);
+        for (const id of ids)
+            if (traeger[id]) {
+                setze(0, falte(id), traeger[id]);
+                const lab = String(bps[traeger[id]].label || id).split(/\s[·—(]/)[0];
+                werkWoerter.push([falte(id), lab]);
+            }
+        for (const k of Object.keys(KP)) {
+            const px = KP[k].prefix;
+            if (!px) continue;
+            for (const n of namen)
+                if (n.startsWith(px) && !istTor(n)) {
+                    setze(0, n.slice(px.length), n);
+                    if (!artVon[n]) artVon[n] = k;
+                }
+        }
+        // (2)
+        for (const id of ids) {
+            const t = traeger[id];
+            if (t) for (const w of [...kopf(recipes[id].lab), ...kopf(bps[t].label)]) setze(1, w, t);
+        }
+        // (3) und (4): ein Wort, das zwei Arten benennt, fällt (Spender „tor_basis"/„haus_basis" → „basis").
+        const eindeutig = (s, paare) => {
+            const arten = new Map();
+            for (const [w, t] of paare) {
+                if (!arten.has(w)) arten.set(w, new Set());
+                arten.get(w).add(artVon[t]);
+            }
+            for (const [w, t] of paare)
+                if (arten.get(w).size === 1 && !stufen[s].has(w)) {
+                    setze(s, w, t);
+                    nennWoerter.push([w, gross(w)]);
+                }
+        };
+        const erstes = {};
+        for (const id of ids) if (traeger[id] && !erstes[recipes[id].kind]) erstes[recipes[id].kind] = traeger[id];
+        const artPaare = [];
+        for (const k of Object.keys(KP)) {
+            const px = KP[k].prefix;
+            const ziel = erstes[k] || (px ? namen.find((n) => n.startsWith(px) && !istTor(n)) : null);
+            if (!ziel) continue;
+            if (px) artPaare.push([px.replace(/_+$/, ""), ziel]);
+            const sp = KP[k].donor;
+            if (typeof sp === "string" && !bps[sp]) artPaare.push([sp.split("_").pop(), ziel]);
+        }
+        eindeutig(2, artPaare);
+        // (4) Ein Studio-Name, dessen Kopf (der letzte Teil des Kompositums) ein Art-Wort ist, ist ein Werk dieser Art:
+        // „Fachwerkhaus" ist ein Haus. „Anatomie", „Porta", „Phytogenesis" benennen keine Art und bleiben stumm.
+        const studioPaare = [];
+        for (const wdef of Object.values(AnazhRealm.WORLD_REGISTRY || {}))
+            for (const w of kopf(wdef && wdef.label))
+                for (const [art, ziel] of stufen[2])
+                    if (w.length > art.length && w.endsWith(art)) studioPaare.push([w, ziel]);
+        eindeutig(3, studioPaare);
+        const woerter = [...nennWoerter, ...werkWoerter];
+        this._wortKatalogMerker = { recipes, nRez: ids.length, nBp: namen.length, stufen, artVon, woerter };
+        return this._wortKatalogMerker;
+    }
+
+    // Die lebenden Wörter, gruppiert je Art (KI-Prompt und die Absage eines unbekannten Worts): aus dem EINEN Wort-Katalog —
+    // nie ein Wort, das die Welt nicht bauen kann. `nennen` = wie der Spieler sie liest („Fachwerkhaus", „Eiche"), sonst
+    // die Wörter des Programms („fachwerkhaus", „eiche").
+    _studioWordsForPrompt(nennen = false) {
+        const K = this._studioWortKatalog();
+        const GRUPPE = {
+            tree: "Bäume",
+            rock: "Stein",
+            haus: "Häuser",
+            gate: "Tore",
+            vehicle: "Fahrzeuge",
+            ausstattung: "Ausstattung",
+        };
+        const gruppen = {};
+        for (const [w, nennung] of K.woerter) {
+            const ziel = this._studioBlueprintForWord(w);
+            const art = ziel && K.artVon[ziel];
+            if (!GRUPPE[art]) continue;
+            const nenn = nennen ? nennung : w;
+            const g = (gruppen[art] = gruppen[art] || []);
+            if (!g.includes(nenn)) g.push(nenn);
+        }
+        const kappe = nennen ? 5 : 8;
+        return Object.keys(GRUPPE)
+            .filter((a) => gruppen[a] && gruppen[a].length)
+            .map(
+                (a) => `${GRUPPE[a]}: ${gruppen[a].slice(0, kappe).join(", ")}${gruppen[a].length > kappe ? " …" : ""}`
+            )
+            .join(" · ");
     }
 
     // Der Pflanz-Abstand je Bauplan: Bäume/Stein eng (ein Hain), Häuser/Tore/Fahrzeuge
@@ -96837,23 +96963,25 @@ AnazhRealm.GRASS_SLOPE = Object.freeze({ lo: 0.7, hi: 1.3 });
 AnazhRealm.GRASS_BLADE_H = 0.42;
 // Claude-5er-Generation (Sonnet 5.5 · Opus 5/5.5 · Fable 5/5.1): thinking immer an,
 // `output_config.effort`, serverseitige `fallbacks` — der EINE Prüfer für Header + Body.
-// STUDIO_WORT (unten) — die Wort-Brücke: NUR Gattungs-Wörter ohne eigenes Rezept/Bauplan (alles
-// Übrige löst `_studioBlueprintForWord` über die lebenden Tabellen); "haus_" = das erste
-// registrierte Studio-Haus (fachwerk-Rezept, alphabetisch).
 AnazhRealm._llmFuenferModell = function (model) {
     return typeof model === "string" && /^claude-(sonnet-5-5|opus-5|fable-5)/.test(model);
 };
-AnazhRealm.STUDIO_WORT = Object.freeze({
-    baum: "baum_eiche",
-    hain: "baum_eiche",
-    wald: "baum_eiche",
-    fels: "felsbrocken",
-    felsen: "felsbrocken",
-    stein: "stein_block",
-    kristall: "kristall_geode",
-    haus: "haus_",
-    haeuser: "haus_",
-});
+// DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
+// Hain/Wald/Gruppe · am Wasser | hier/vor mir.
+AnazhRealm.STUDIO_SATZ =
+    /^(?:pflanz|setz|bau|stell|erschaff|mach|wachs)\w*\s+(?:mir\s+|uns\s+)?(?:(ein\s+paar|ein(?:en|e|ige)?|zwei|drei|vier|fünf|fuenf|sechs|sieben|acht|neun|zehn|\d+)\s+)?([a-zäöüß_]*?)(hain|wald|gruppe)?(?:\s+(?:am|an|beim|zum|ans)\s+(wasser|fluss|see|ufer|bach|meer)|\s+(hier|vor mir))?\s*[.!]?$/i;
+// Die Faltung eines Worts für den Wort-Katalog (`_studioWortKatalog`): klein, Umlaute ausgeschrieben, ß → ss, Leer- und
+// Bindestriche → „_" (die Form der Bauplan-Namen und Rezept-ids).
+AnazhRealm._wortFalten = function (wort) {
+    return String(wort == null ? "" : wort)
+        .trim()
+        .toLowerCase()
+        .replace(/ä/g, "ae")
+        .replace(/ö/g, "oe")
+        .replace(/ü/g, "ue")
+        .replace(/ß/g, "ss")
+        .replace(/[\s-]+/g, "_");
+};
 // Die Streu-Region-Kantenlänge (= _bakeRegionConfig().sizeM, 256 m): Region-Bundles und Fern-Superregion der
 // Streu. Der platzierte Bau keyt seit Welle B nicht mehr regional (global in der Mesh-Zone).
 AnazhRealm.ARCH_REGION_M = 256;

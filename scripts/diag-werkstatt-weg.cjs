@@ -8,6 +8,12 @@
 //     Math.random. Gemessen: Math.random-Züge je Satz (Befund: Hain 1 + 24, Insel 1, Fraktal 1, KI ohne Seed 13) und die
 //     Wiederholung: derselbe Satz an derselben Stelle der Welt-Geschichte ergibt denselben Samen und dieselben Orte.
 //
+//   L-WORTSCHATZ — DER WORT-KATALOG IST DER REZEPT-KATALOG: jedes Wort löst über die Studio-Arten auf (Rezept-ids, Werk-Namen,
+//     Art-Wörter des Art-Gesetzes, Studio-Namen), nie über eine Hand-Liste. Befund: „bau mir ein fachwerkhaus" →
+//     „Unbekannter Befehl. Meintest du 'baue dorf hier'?", `_studioBlueprintForWord` null für fachwerkhaus · wagen. Gemessen:
+//     die Wörter des Befunds, jede platzierbare Studio-Art ihr Rezept-Wort, „bau mir ein fachwerkhaus" stellt ein Haus in
+//     die Welt, und ein unbekanntes Wort („scheune") sagt dem Spieler im Chat, was die Studios kennen.
+//
 //   node scripts/diag-werkstatt-weg.cjs [--selftest]          Port: WERKSTATT_WEG_PORT (Standard 4623)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
@@ -72,6 +78,42 @@ function sameVerdict(m) {
     return out;
 }
 
+// Die Wörter des Befunds (L-Wortschatz, Drehbuch 18) und ihre Studio-Art; unbekannt bleibt, was kein Studio baut.
+const WORT_SOLL = {
+    fachwerkhaus: "haus",
+    fachwerkhäuser: "haus",
+    häuser: "haus",
+    wagen: "vehicle",
+    gt: "vehicle",
+    birken: "tree",
+    eiche: "tree",
+    feuerstelle: "ausstattung",
+    ziehbrunnen: "ausstattung",
+    kristall: "rock",
+    fels: "rock",
+};
+const WORT_UNBEKANNT = ["scheune", "quasselstrippe"];
+function wortVerdict(m) {
+    if (!m || m.gestartet !== true) return ["start"];
+    const out = [];
+    for (const [w, art] of Object.entries(WORT_SOLL)) {
+        const e = m.woerter && m.woerter[w];
+        if (!e || !e.ziel) out.push(`„${w}" unbekannt`);
+        else if (e.art !== art) out.push(`„${w}" → ${e.ziel} (Art ${e.art}, Soll ${art})`);
+    }
+    for (const w of WORT_UNBEKANNT)
+        if (m.woerter && m.woerter[w] && m.woerter[w].ziel) out.push(`„${w}" → ${m.woerter[w].ziel} (geraten)`);
+    if (!(m.arten > 0)) out.push("keine platzierbare Studio-Art im Buch (Vorbedingung)");
+    if (m.artenOhneWort && m.artenOhneWort.length)
+        out.push(`Studio-Arten ohne Wort: ${m.artenOhneWort.slice(0, 6).join(", ")}`);
+    if (!(m.hausGebaut > 0)) out.push(`„bau mir ein fachwerkhaus" stellt kein Haus in die Welt („${m.hausZeile}")`);
+    if (!/kennt kein Studio/.test(m.absageZeile || "") || !/Fachwerkhaus/.test(m.absageZeile || ""))
+        out.push(
+            `die Absage eines unbekannten Worts nennt den Katalog nicht („${(m.absageZeile || "").slice(0, 80)}")`
+        );
+    return out;
+}
+
 // ── DIE STATISCHE WAND (Node, kommentarfrei). Liefert [name, ok, detail]. ──
 function wand(src) {
     const nc = ohneKommentare(src);
@@ -91,6 +133,21 @@ function wand(src) {
                 /this\._samenStrom\(baseSeed\)/.test(streu) &&
                 !/ctx\.rng\(\)/.test(streu),
         ],
+        (() => {
+            const aufl = fnBody(nc, /\n {4}_studioBlueprintForWord\(word\) \{/) || "";
+            const kat = fnBody(nc, /\n {4}_studioWortKatalog\(\) \{/) || "";
+            const wl = fnBody(nc, /\n {4}_studioWordsForPrompt\(nennen = false\) \{/) || "";
+            const hand =
+                (aufl + kat + wl).match(
+                    /"(?:baum_|haus_|fels|stein|kristall|eiche|kiefer|birke|tanne|buche|hain|wald)\w*"/g
+                ) || [];
+            const brücke = (nc.match(/AnazhRealm\.STUDIO_WORT\b/g) || []).length;
+            return [
+                "W3 der Wort-Katalog liest den Rezept-Katalog (kein STUDIO_WORT, keine Wort-Literale in Auflöser · Katalog · Wortliste)",
+                aufl.length > 0 && kat.length > 0 && wl.length > 0 && brücke === 0 && hand.length === 0,
+                `STUDIO_WORT ${brücke} · Wort-Literale ${hand.length}${hand.length ? " (" + hand.slice(0, 4).join(" ") + ")" : ""}`,
+            ];
+        })(),
     ];
 }
 
@@ -107,7 +164,7 @@ const server = http.createServer((req, res) => {
 });
 
 // ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
-async function probe() {
+async function probe(argW) {
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const out = {};
     const dl0 = performance.now() + 90000;
@@ -243,6 +300,49 @@ async function probe() {
     } catch (e) {
         out.same = Object.assign(out.same || {}, { err: (e && e.stack) || String(e) });
     }
+
+    // ── L-Wortschatz: der Wort-Katalog ist der Rezept-Katalog ──
+    try {
+        const m = { gestartet: false, woerter: {} };
+        out.wort = m;
+        if (!frei) throw new Error("kein freier Ort abseits der Lichtung");
+        const rec = r._foundry.recipes;
+        // Die Art eines Bauplans: die Studio-Art, deren Rezept er trägt (das Buch, nie der Name).
+        const artVon = (bp) => {
+            const pr = bp ? r._foundryPresetForEntry({ type: bp }) : null;
+            return pr && rec[pr] ? rec[pr].kind : null;
+        };
+        for (const w of [...Object.keys(argW.soll), ...argW.unbekannt]) {
+            const ziel = r._studioBlueprintForWord(w);
+            m.woerter[w] = { ziel, art: artVon(ziel) };
+        }
+        const PLATZ = ["tree", "rock", "haus", "gate", "vehicle", "ausstattung"];
+        const arten = Object.keys(rec).filter((id) => PLATZ.includes(rec[id].kind));
+        m.arten = arten.length;
+        m.artenOhneWort = arten.filter((id) => !r._studioBlueprintForWord(id));
+        // Der Satz an der Welt: „bau mir ein fachwerkhaus" vor dem Spieler (abseits der Lichtung) — ein Haus steht.
+        stelle();
+        const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
+        const vorher = new Set(st.architectures);
+        const n0 = zeilen().length;
+        r.processChatCommand("bau mir ein fachwerkhaus");
+        await tick(3, 30);
+        const neu = st.architectures.filter((a) => a && !vorher.has(a));
+        m.hausGebaut = neu.filter((a) => artVon(a.type) === "haus").length;
+        m.hausZeile = zeilen().slice(n0).join(" | ").slice(0, 160);
+        for (const a of neu) r.removeArchitecture(a);
+        // Ein unbekanntes Wort (ohne KI-Begleiter): die Absage im Spieler-Kanal nennt, was die Studios kennen.
+        const llmAlt = st.llm && st.llm.enabled;
+        if (st.llm) st.llm.enabled = false;
+        const n1 = zeilen().length;
+        r.processChatCommand("bau mir eine scheune");
+        await tick(1, 30);
+        if (st.llm) st.llm.enabled = llmAlt;
+        m.absageZeile = zeilen().slice(n1).join(" | ");
+        m.gestartet = true;
+    } catch (e) {
+        out.wort = Object.assign(out.wort || {}, { err: (e && e.stack) || String(e) });
+    }
     return out;
 }
 
@@ -320,6 +420,22 @@ async function probe() {
                 quelle.replace("x = pos.x + (wurf() - 0.5)", "x = pos.x + (ctx.rng() - 0.5)"),
                 "W2",
             ],
+            [
+                "die Hand-Liste kehrt zurück",
+                quelle.replace(
+                    "AnazhRealm._wortFalten = function",
+                    'AnazhRealm.STUDIO_WORT = Object.freeze({ haus: "haus_" });\nAnazhRealm._wortFalten = function'
+                ),
+                "W3",
+            ],
+            [
+                "ein Wort-Literal im Katalog",
+                quelle.replace(
+                    "const stufen = [new Map(), new Map(), new Map(), new Map()];",
+                    'const stufen = [new Map([["fels", "felsbrocken"]]), new Map(), new Map(), new Map()];'
+                ),
+                "W3",
+            ],
         ]) {
             const rot = wand(bruch)
                 .filter(([, ok]) => !ok)
@@ -328,6 +444,59 @@ async function probe() {
                 `Selbst-Test Wand: ‚${name}' → ${soll} rot`,
                 rot.some((n) => n.startsWith(soll)),
                 rot.join(" · ") || "alles grün"
+            );
+        }
+        // L-Wortschatz: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
+        const artVonSoll = Object.fromEntries(
+            Object.entries(WORT_SOLL).map(([w, a]) => [w, { ziel: "x_" + w, art: a }])
+        );
+        const gesundW = {
+            gestartet: true,
+            woerter: Object.assign({}, artVonSoll, { scheune: { ziel: null }, quasselstrippe: { ziel: null } }),
+            arten: 62,
+            artenOhneWort: [],
+            hausGebaut: 1,
+            absageZeile: '„scheune" kennt kein Studio. Die Studios bauen — Häuser: Haus, Fachwerkhaus …',
+        };
+        check(
+            "Selbst-Test L-Wortschatz: gesund == 0 Täter",
+            wortVerdict(gesundW).length === 0,
+            wortVerdict(gesundW).join(" · ")
+        );
+        const mitW = (o) => Object.assign({}, gesundW, o);
+        const wortWeg = (w) =>
+            mitW({ woerter: Object.assign({}, gesundW.woerter, { [w]: { ziel: null, art: null } }) });
+        for (const [name, bruch, soll] of [
+            ["fachwerkhaus unbekannt (Befund)", wortWeg("fachwerkhaus"), '„fachwerkhaus" unbekannt'],
+            ["wagen unbekannt (Befund)", wortWeg("wagen"), '„wagen" unbekannt'],
+            ["Häuser ohne den Plural-Umlaut", wortWeg("häuser"), '„häuser" unbekannt'],
+            [
+                "fels löst auf ein Haus",
+                mitW({ woerter: Object.assign({}, gesundW.woerter, { fels: { ziel: "haus_x", art: "haus" } }) }),
+                '„fels" → haus_x',
+            ],
+            [
+                "die Scheune geraten",
+                mitW({ woerter: Object.assign({}, gesundW.woerter, { scheune: { ziel: "haus_alemannisch" } }) }),
+                '„scheune" → haus_alemannisch',
+            ],
+            ["eine Studio-Art ohne Wort", mitW({ artenOhneWort: ["zacken"] }), "Studio-Arten ohne Wort: zacken"],
+            [
+                "der Satz baut kein Haus",
+                mitW({ hausGebaut: 0, hausZeile: "Unbekannter Befehl" }),
+                '„bau mir ein fachwerkhaus" stellt kein Haus',
+            ],
+            [
+                "die Absage rät (Befund)",
+                mitW({ absageZeile: "Unbekannter Befehl. Meintest du: 'baue dorf hier'?" }),
+                "die Absage eines unbekannten Worts",
+            ],
+        ]) {
+            const v = wortVerdict(bruch);
+            check(
+                `Selbst-Test L-Wortschatz: ‚${name}' → die Linse nennt ${soll}`,
+                v.some((t) => t.startsWith(soll)),
+                v.join(" · ")
             );
         }
         if (errs.length) {
@@ -352,7 +521,7 @@ async function probe() {
     const pageErrors = [];
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-    const out = await page.evaluate(probe);
+    const out = await page.evaluate(probe, { soll: WORT_SOLL, unbekannt: WORT_UNBEKANNT });
     await browser.close();
     server.close();
 
@@ -364,6 +533,16 @@ async function probe() {
         "D10 kein Satz würfelt aus Math.random, derselbe Satz an derselben Stelle der Welt-Geschichte ist derselbe Hain",
         vS.length === 0,
         `${sm.gestartet ? `Math.random-Züge ${SAETZE.map((s) => `${s} ${sm.zuege[s]}`).join(" · ")} · Hain ${sm.hainBaeume} Bäume, Samen ${JSON.stringify(sm.samen)}, Orte ±${sm.ortAbweichung} m · KI ohne Seed ±${sm.kiOrtAbweichung} m` : "nicht gestartet"}${vS.length ? " — Täter: " + vS.join(", ") : ""}`
+    );
+    console.log("=== L-WORTSCHATZ — DER WORT-KATALOG IST DER REZEPT-KATALOG ===");
+    const wm = out.wort || {};
+    if (wm.err) check("L-Wortschatz Probe ohne Ausnahme", false, wm.err.split("\n")[0]);
+    const vW = wortVerdict(wm);
+    const bekannt = Object.keys(WORT_SOLL).filter((w) => wm.woerter && wm.woerter[w] && wm.woerter[w].ziel).length;
+    check(
+        "L-Wortschatz jedes Wort des Befunds löst über die Studio-Arten auf, „bau mir ein fachwerkhaus“ stellt ein Haus, ein unbekanntes Wort hört den Katalog",
+        vW.length === 0,
+        `${wm.gestartet ? `${bekannt}/${Object.keys(WORT_SOLL).length} Wörter bekannt (fachwerkhaus → ${wm.woerter.fachwerkhaus && wm.woerter.fachwerkhaus.ziel}, wagen → ${wm.woerter.wagen && wm.woerter.wagen.ziel}) · ${wm.arten - (wm.artenOhneWort || []).length}/${wm.arten} Studio-Arten mit Wort · Haus gebaut ${wm.hausGebaut} · Absage „${(wm.absageZeile || "").slice(0, 70)}…"` : "nicht gestartet"}${vW.length ? " — Täter: " + vW.join(", ") : ""}`
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
