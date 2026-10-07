@@ -12,7 +12,8 @@
 //                                                           genesis): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360]
 //                                                           Bühne + echter Frame (Ausgabe-Pfad)
-//   node scripts/werkbank.cjs methode <name> [--terrain]   Methode aus anazhRealm.js (Arbeitsbaum)
+//   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus anazhRealm.js (Arbeitsbaum;
+//                                                           `--quelle`: aus einem anderen Stand, die Basis eines A/B)
 //                                                           live tauschen; --terrain baut das EINE
 //                                                           Chunk-Material neu und hängt es an alle Chunks
 //   node scripts/werkbank.cjs eval '<js>'                  Funktionsrumpf in der Seite (r = Welt, T = THREE)
@@ -39,6 +40,12 @@
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
 //   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
 //                                                           ruht (scripts/lib/takt-linse.cjs)
+//   node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten]
+//                                                           DIE STAND-LINSE (Welle K): was die Fege-Takte (Ring, Stufen-
+//                                                           Wahl, Cull, Streu, Nah-Streu, Nah-Wiese, Saum-Wache) im Stand
+//                                                           arbeiten — Einheiten, Zeit je Takt, Welt-Matrizen je Frame —
+//                                                           im echten Loop, Folge B A A B (A = die Wache gebrochen;
+//                                                           scripts/lib/stand-linse.cjs); Urteil: Ruhe 0 Einheiten
 //   node scripts/werkbank.cjs sicht [--ruhe n] [--sonne n] [--drehen n] [--dreh-grad g] [--gehen n] [--tag laeuft|steht]
 //                                                           [--ein s] [--regler voll]
 //                                                           DIE SICHT-LINSE: was die Sicht-Kette je gerendertem Frame
@@ -138,6 +145,7 @@ const { ZAEHLER_INSTALL, FALTE_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
 const SICHT = require("./lib/sicht-linse.cjs");
+const STAND = require("./lib/stand-linse.cjs");
 const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
@@ -905,6 +913,7 @@ async function starte() {
         await page.evaluate(FLUSS_INSTALL);
         await page.evaluate(TAKT_INSTALL);
         await page.evaluate(SICHT.SICHT_INSTALL);
+        await page.evaluate(STAND.STAND_INSTALL);
         await page.evaluate(FERNWALD_INSTALL);
         await page.evaluate(ZL.ZERLEGE_INSTALL);
         await page.evaluate(SK.SHADER_INSTALL);
@@ -1146,7 +1155,11 @@ async function starte() {
                     return send({ ergebnis: o, ms: Date.now() - t0 });
                 }
                 if (req.url === "/methode") {
-                    const quelle = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+                    // `--quelle <datei>`: die Methode aus einem anderen Stand (die Basis eines A/B in EINER Welt)
+                    const quelle = fs.readFileSync(
+                        b.quelle ? path.resolve(b.quelle) : path.join(root, "anazhRealm.js"),
+                        "utf8"
+                    );
                     const src = methodeAusQuelle(quelle, b.name);
                     if (!src) return send({ fehler: `Methode ${b.name} nicht gefunden` });
                     const o = await page.evaluate(
@@ -1323,6 +1336,18 @@ async function starte() {
                         extra: b.extra ? String(b.extra).split(",") : [],
                     });
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
+                }
+                if (req.url === "/stand") {
+                    const o = await page.evaluate((k) => window.__standLauf(k), {
+                        n: Number(b.n) || 120,
+                        ein: b.ein != null ? Number(b.ein) : 5,
+                        ruhe: b.ruhe != null ? Number(b.ruhe) : 120,
+                        regler: b.regler || "voll",
+                        tiere: b.tiere || "frei",
+                    });
+                    return send(
+                        Object.assign(o, { urteil: STAND.standUrteil(o), fehler: fehler.slice(-5), ms: Date.now() - t0 })
+                    );
                 }
                 if (req.url === "/sicht") {
                     const o = await page.evaluate((k) => window.__sichtLauf(k), {
@@ -1802,7 +1827,8 @@ async function starte() {
             w: Number(opt("--w", 640)),
             h: Number(opt("--h", 360)),
         });
-    else if (cmd === "methode") o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain") });
+    else if (cmd === "methode")
+        o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
     else if (cmd === "albedo") {
         o = await rufe("/albedo", { nur: opt("--nur"), ordner: opt("--ordner"), tafel: argv.includes("--tafel"), datei: opt("--datei") });
@@ -1821,6 +1847,14 @@ async function starte() {
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer") o = await rufe("/puffer", { top: opt("--top") });
     else if (cmd === "takt") o = await rufe("/takt", { n: a[0], extra: opt("--extra", "") });
+    else if (cmd === "stand")
+        o = await rufe("/stand", {
+            n: a[0],
+            ein: opt("--ein"),
+            ruhe: opt("--ruhe"),
+            regler: opt("--regler", "voll"),
+            tiere: opt("--tiere", "frei"),
+        });
     else if (cmd === "sicht")
         o = await rufe("/sicht", {
             ruhe: opt("--ruhe"),
