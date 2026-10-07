@@ -38477,17 +38477,25 @@ async function checkBandKonvergenzTierBaum(ctx) {
 // `hop`) integrierte die Höhe nur, solange der Impuls stieg — im Fall fror `_hopH` am Scheitel ein (der Körper sprang
 // auf den Boden zurück) und der nächste Sprung begann dort: an der Mess-Wiese stand ein Bär 7,6 m über dem Boden.
 // Wand: zwei Sprünge hintereinander am echten Kreatur-Takt (updateCreatures) — jeder endet mit dem Versatz 0 auf
-// der Höhe vor dem Sprung (der alte Takt hielt den Scheitel: 600 Takte ohne Landung).
+// der Höhe vor dem Sprung (der alte Takt hielt den Scheitel: 600 Takte ohne Landung). Der Fuchs lebt auf einer eigenen
+// Bühne (Tier-Liste und Gefühls-Liste der Probe): die Geburt hing an der Welt-Bevölkerung — stand sie an maxCreatures,
+// gab spawnCreatureAt null und das Band las „Scheitel ?" (Integration Welle L: 1 von 2 vollen Läufen rot).
 async function checkBandHuepfer(ctx) {
     const { page, check } = ctx;
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const st = r.state;
         const pm = st.playerMesh.position;
-        const c = r.spawnCreatureAt(pm.x + 30, pm.y, pm.z + 30, "happy", "fuchs", { precise: true });
-        if (!c) return { fehler: "Spawn" };
         const saved = st.creatures;
-        st.creatures = [c];
+        const savedE = st.creatureEmotions;
+        st.creatures = [];
+        st.creatureEmotions = [];
+        const c = r.spawnCreatureAt(pm.x + 30, pm.y, pm.z + 30, "happy", "fuchs", { precise: true });
+        if (!c) {
+            st.creatures = saved;
+            st.creatureEmotions = savedE;
+            return { fehler: "Spawn" };
+        }
         const takt = () => {
             const x = c.position.x,
                 z = c.position.z;
@@ -38514,8 +38522,9 @@ async function checkBandHuepfer(ctx) {
             a = sprung();
             b = sprung();
         } finally {
-            st.creatures = saved;
             r.removeCreature(c);
+            st.creatures = saved;
+            st.creatureEmotions = savedE;
         }
         return { a, b };
     });
@@ -38523,7 +38532,7 @@ async function checkBandHuepfer(ctx) {
         b = res && res.b;
     const z = (x) => (x && Number.isFinite(x.scheitel) ? x.scheitel.toFixed(2) : "?");
     check(
-        `DER HÜPFER landet: zwei Sprünge (Scheitel ${z(a)} / ${z(b)} m) enden mit Versatz 0 auf der Höhe vor dem Sprung`,
+        `DER HÜPFER landet: zwei Sprünge (Scheitel ${z(a)} / ${z(b)} m) enden mit Versatz 0 auf der Höhe vor dem Sprung${res && res.fehler ? " — " + res.fehler : ""}`,
         !!a &&
             !!b &&
             a.scheitel > 0.05 &&
