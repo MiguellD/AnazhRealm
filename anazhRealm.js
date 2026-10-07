@@ -32197,12 +32197,13 @@ class AnazhRealm {
     // Euler XYZ wie `sub.rotation.set(x,y,z)` PLUS entry.rotationY) transformieren, achsen-parallel
     // umhüllen. Nie max(sx,sz)-Quadrat: dünne Wände würden Quadrate (Tür-Lücken zu), rotierte Parts
     // ragten hinaus. Der EINE Chokepoint für Spieler-Kapsel · Raycast · Wasser-Stempel.
-    _blockerComputePartAABB(entry, part) {
+    _blockerComputePartAABB(entry, part, mul = 1) {
         if (!part || !part.size || !part.position) return null;
         // V13.13.1 — `entry.scale` exakt wie `_rebuildArchitectureMesh` anwenden
         // (groupOrigin + part.position·scale, Größe part.size·scale — der
-        // „Wasser-Schatten zur Struktur"-Befund, diag-scale-stamp).
-        const scale = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
+        // „Wasser-Schatten zur Struktur"-Befund, diag-scale-stamp). `mul`: die Welt-Skala des Studio-Baums
+        // (`_baumWeltSkala`), mit der er gezeichnet wird.
+        const scale = (Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1) * (mul > 0 ? mul : 1);
         const hx = ((part.size.x || 1) / 2) * scale;
         const hy = ((part.size.y || 1) / 2) * scale;
         const hz = ((part.size.z || 1) / 2) * scale;
@@ -32297,6 +32298,16 @@ class AnazhRealm {
     // Schreibt `entry.blockerAABBs` (nur solide Parts, `_isPartSolid`) — Spawn, Restore und Dismount-
     // Refresh laufen hier durch. Leser: Cell-Stempel (`_stampArchitectureSolidCellsInto`), Kapsel,
     // Raycast.
+    // Die Welt-Skala eines Studio-Baums: dieselbe, mit der er gezeichnet wird (`_foundryWorldScaleMatrix` seines Presets)
+    // — 1 für alles, was kein Studio-Baum ist (Haus, Tor, Wagen und Fels tragen ihre eigene Studio-Hülle).
+    _baumWeltSkala(entry) {
+        if (!entry || !this._foundryEnabled()) return 1;
+        const pr = this._foundryPresetForEntry(entry);
+        if (!pr || !this._foundryPresetIsTree(pr)) return 1;
+        const k = this._foundryWorldScaleMatrix(pr).elements[0];
+        return Number.isFinite(k) && k > 0 ? k : 1;
+    }
+
     _populateBlockerAABBs(entry) {
         // Tor-Gestalt (studioGestalt-Zeile ODER Katalog-Typ tor_*): die Kollision deckt die SICHTBARE
         // Studio-Form (Pfosten + Bogen aus deriveGate/deriveFrame, Öffnung FREI), nicht die Substanz-Parts.
@@ -32355,10 +32366,15 @@ class AnazhRealm {
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
         const solidAABBs = [];
-        const scD = Number.isFinite(entry.scale) ? entry.scale : 1;
+        // DIE STAMM-HÜLLE IM WELTMASS (Leben-Schau 07.10., L-Kamera / V-D1): der Studio-Baum steht in der Welt × seiner
+        // Welt-Skala (`_foundryWorldScaleMatrix`, 3,4–4,0), sein Stamm-Blocker stand im Vorlagen-Maß — 0,19 m halbe Breite
+        // und 0,6 m hoch an einer Kiefer, deren Stamm 13 m hoch steht: der Spieler lief durch den Stamm, die 3rd-Kamera
+        // stand in ihm (0,53 m von der Achse). Kollision == Optik: die Teile tragen dieselbe Skala wie die Gestalt.
+        const kWelt = this._baumWeltSkala(entry);
+        const scD = (Number.isFinite(entry.scale) ? entry.scale : 1) * kWelt;
         for (const part of bp.parts) {
             if (!this._isPartSolid(part)) continue;
-            const aabb = this._blockerComputePartAABB(entry, part);
+            const aabb = this._blockerComputePartAABB(entry, part, kWelt);
             if (!aabb) continue;
             // Welle L (Q5): ein STAMM (Zylinder-Teil) trägt seine Dicke — was dünner ist als die Stufe eines Rades (der
             // Hasel-Trieb, der Ast), überrollt die Hülle des Wagens (`_fahrHuelleKontakt`); die Kapsel liest das Feld nie.
@@ -53640,7 +53656,11 @@ class AnazhRealm {
                         : Number.isFinite(visH)
                           ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe
                           : 0;
-                    this._kronenStreuNeu(`s:${layer.name}:${cellX},${cellZ}`, tf.x, tf.z, kr);
+                    this._kronenStreuNeu(`s:${layer.name}:${cellX},${cellZ}`, tf.x, tf.z, kr, {
+                        krone: this._naturKrone(species, tf),
+                        y0: surfY,
+                        y1: Number.isFinite(visH) && visH > 0 ? surfY + visH : null,
+                    });
                 }
                 emitted++;
             }
@@ -66147,14 +66167,27 @@ class AnazhRealm {
     // vergaß der Umzug der fernen Stufe alles jenseits ihres Fensters, auch die Eintrags-Kronen, die nur beim Entstehen
     // eintragen; wer > 1 km lief und zurückkam, fand unter jedem Eintrags-Baum (Mess-Wiese: 722 von 789 Kronen) bis zum
     // Reload keine Streu. Der Raum-Index (`kronenZellen`) bindet die Kosten des Umzugs an den Streifen, nie an den Bestand.
-    _kronenStreuNeu(schluessel, x, z, radius) {
+    // `huelle` {krone, y0, y1}: die Krone des Baums IN DER WELT (`_naturKrone`: Radius der Art × Größe × Welt-Skala) und
+    // seine Höhe (Fuß bis Sichthöhe; y1 null = noch unbekannt) — die Kronen-Hülle, an der die 3rd-Kamera weicht
+    // (`_kameraKronenGrenze`); das Register trägt sie neben dem Streu-Radius (c[3..5]).
+    _kronenStreuNeu(schluessel, x, z, radius, huelle) {
         const wk = this._wegeKarteEnsure();
         if (!wk || !(radius > 0)) return;
+        const hk = huelle && huelle.krone > 0 ? huelle.krone : 0;
+        const h0 = huelle && Number.isFinite(huelle.y0) ? huelle.y0 : null;
+        const h1 = huelle && Number.isFinite(huelle.y1) ? huelle.y1 : null;
         // Dieselbe Krone zweimal (eine Region baut neu) malt nicht doppelt; eine GEÄNDERTE fällt erst heraus.
         const alt = wk.kronen.get(schluessel);
-        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) return;
+        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) {
+            alt[3] = hk;
+            alt[4] = h0;
+            alt[5] = h1;
+            if (hk > (wk.kronenWeltMax || 0)) wk.kronenWeltMax = hk;
+            return;
+        }
         if (alt) this._kronenStreuWeg(schluessel);
-        const c = [x, z, radius];
+        const c = [x, z, radius, hk, h0, h1];
+        if (hk > (wk.kronenWeltMax || 0)) wk.kronenWeltMax = hk;
         wk.kronen.set(schluessel, c);
         const zk = AnazhRealm._kronenZelle(x, z);
         let zelle = wk.kronenZellen.get(zk);
@@ -66865,6 +66898,7 @@ class AnazhRealm {
             wk.kronen.clear();
             wk.kronenZellen.clear();
             wk.kronenRandMax = 0;
+            wk.kronenWeltMax = 0;
             for (const stufe of wk.stufen) {
                 stufe.daten.fill(0);
                 stufe.zentriert = false;
@@ -67628,7 +67662,14 @@ class AnazhRealm {
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
         const _krone = this._kronenRadiusFuer(type, entry.scale);
-        if (_krone) this._kronenStreuNeu("a:" + entry.id, entry.position.x, entry.position.z, _krone);
+        if (_krone) {
+            const _h = this._lodTreeVisHeight(entry);
+            this._kronenStreuNeu("a:" + entry.id, entry.position.x, entry.position.z, _krone, {
+                krone: this._naturKrone(type, entry),
+                y0: entry.position.y,
+                y1: _h > 0 ? entry.position.y + _h : null,
+            });
+        }
         // Blocker-AABBs je Architektur cachen: solide Parts (dichte ≥ 0.3) ergeben `entry.blockerAABBs` für
         // den Cell-Stempel. Kein Type-Whitelist — die Substanz entscheidet (Stamm stempelt, Laub nicht).
         this._populateBlockerAABBs(entry);
@@ -68834,6 +68875,26 @@ class AnazhRealm {
         // `_ensureFoliageClusterAtlas` lädt sie, ohne im Haupt-Thread zu malen.
         if (m.blattAtlas && m.blattAtlas.rgba && Array.isArray(m.blattAtlas.rgba.mips) && m.blattAtlas.rgba.mips.length)
             this._blattAtlasBild = m.blattAtlas;
+        // Die Welt-Skala der Bäume steht (`PORTAL_RENDER_CONFIG.placement`): Stamm- und Kronen-Hülle der Bäume, die vor
+        // dem Buch entstanden (Reload mit kaltem Buch), messen jetzt im Weltmaß.
+        this._baumHuellenNachBuch();
+    }
+
+    // Stamm-Blocker (`_populateBlockerAABBs` × `_baumWeltSkala`) und Kronen-Hülle (`_kronenStreuNeu` c[3..5]) jedes
+    // Baum-Eintrags neu — einmal nach der Buch-Ankunft, die Kosten tragen nur die Baum-Einträge.
+    _baumHuellenNachBuch() {
+        for (const e of this.state.architectures || []) {
+            if (!e || !e.position || !/^baum_/.test(e.type || "")) continue;
+            this._populateBlockerAABBs(e);
+            const kr = this._kronenRadiusFuer(e.type, e.scale);
+            if (!kr) continue;
+            const h = this._lodTreeVisHeight(e);
+            this._kronenStreuNeu("a:" + e.id, e.position.x, e.position.z, kr, {
+                krone: this._naturKrone(e.type, e),
+                y0: e.position.y,
+                y1: h > 0 ? e.position.y + h : null,
+            });
+        }
     }
     // Siedlungs-Gesetz aus dem Buch (fachwerk-core SIEDLUNG, Feld `siedlung`): wo und wie viele Dörfer.
     // Ganz oder gar nicht: EIN nicht-finites Feld → kein Gesetz (`_siedlungGesetz` → null, kein Dorf — nie ein Ersatz).
@@ -91172,6 +91233,54 @@ class AnazhRealm {
         };
     }
 
+    // DIE KRONEN-HÜLLE DER 3RD-KAMERA (Leben-Schau 07.10., L-Kamera): die Kamera-Kollision traf nur Terrain und Strukturen,
+    // die Krone eines Baums nie — in 8 von 15 3rd-Person-Bildern hing die Kamera in Ästen und Nadeln, eine Nadelwand vor dem
+    // Spieler (und die Stamm-Hülle endet unter dem Kopf: die Kamera stand in einem Kiefernstamm). Jeder Baum trägt seine
+    // Hülle im Kronen-Register (`_kronenStreuNeu`, c[3..5]): die Krone in der Welt (`_naturKrone`) als senkrechter Zylinder
+    // um den Stamm, vom Fuß bis zur Sichthöhe. Die Regel: die Kamera geht nie tiefer in eine Krone, als der Spieler selbst
+    // steht — eine Krone, unter der er nicht steht, betritt sie nie; unter einer Krone kommt sie dem Stamm nie näher als
+    // er, aber nie näher als KAMERA_KRONEN_MIN_M an seine Brust. Gibt den Anteil t ∈ [0, 1] des Wegs Brust (tx, ty, tz) →
+    // Wunsch-Position (wx, wy, wz), den die Kamera gehen darf.
+    _kameraKronenGrenze(tx, ty, tz, wx, wy, wz) {
+        const wk = this.state.wegeKarte;
+        if (!wk || !wk.kronenZellen || !wk.kronenZellen.size) return 1;
+        const dx = wx - tx;
+        const dy = wy - ty;
+        const dz = wz - tz;
+        const a = dx * dx + dz * dz;
+        if (a < 1e-9) return 1;
+        const R = wk.kronenWeltMax || 0;
+        const Z = AnazhRealm.LAUB_STREU.zelleM;
+        const ABSTAND = AnazhRealm.KAMERA_KRONEN_ABSTAND;
+        let tMin = 1;
+        for (let gx = Math.floor((Math.min(tx, wx) - R) / Z); gx <= Math.floor((Math.max(tx, wx) + R) / Z); gx++)
+            for (let gz = Math.floor((Math.min(tz, wz) - R) / Z); gz <= Math.floor((Math.max(tz, wz) + R) / Z); gz++) {
+                const zelle = wk.kronenZellen.get(gx + "," + gz);
+                if (!zelle) continue;
+                for (const c of zelle.values()) {
+                    if (!(c[3] > 0)) continue;
+                    const fx = tx - c[0];
+                    const fz = tz - c[1];
+                    const r = Math.min(c[3], Math.hypot(fx, fz)) - ABSTAND;
+                    if (r <= 0) continue;
+                    const b = 2 * (fx * dx + fz * dz);
+                    const disc = b * b - 4 * a * (fx * fx + fz * fz - r * r);
+                    if (disc <= 0) continue;
+                    const t0 = (-b - Math.sqrt(disc)) / (2 * a);
+                    if (!(t0 > 0 && t0 < tMin)) continue;
+                    const y = ty + t0 * dy;
+                    if (c[4] != null && y < c[4] - 0.5) continue; // unter dem Fuß (am Hang)
+                    if (c[5] != null && y > c[5]) continue; // über der Krone
+                    tMin = t0;
+                }
+            }
+        // Der Spieler bleibt sichtbar: unter einer Krone rückt die Kamera nie näher als KAMERA_KRONEN_MIN_M an die Brust
+        // (ganz an den Spieler gezogen füllte sein Kopf das Bild). Ein Stamm hält sie davor trotzdem (die Struktur-Grenze
+        // im Aufrufer gewinnt, die Stamm-Hülle ist ein Bau-Blocker).
+        const ganz = Math.hypot(dx, dy, dz);
+        return Math.max(tMin, Math.min(1, AnazhRealm.KAMERA_KRONEN_MIN_M / ganz));
+    }
+
     _loopCamera(currentTime) {
         // ### Kamera ###
         // V9.44-f — player/camera kamen vorher aus der Bewegungs-Sektion
@@ -91244,9 +91353,9 @@ class AnazhRealm {
                 const tx = player.position.x;
                 const ty = player.position.y + 1.0;
                 const tz = player.position.z;
-                let finalX = camX;
-                let finalY = camY;
-                let finalZ = camZ;
+                // Der Anteil t des Wegs Brust → Wunsch-Position, den die Kamera gehen darf: Terrain/Struktur (Treffer × 0,85)
+                // und die Kronen-Hülle der Bäume (`_kameraKronenGrenze`) — das kleinere gewinnt.
+                let t = 1;
                 if (this.state.tmpVec1) {
                     const sf = this.state.scaleFactor || 1;
                     const rs = this.setVec(this.state.tmpVec1, tx / sf, ty / sf, tz / sf);
@@ -91257,11 +91366,14 @@ class AnazhRealm {
                         return { x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
                     });
                     if (hp) {
-                        finalX = tx + (hp.x - tx) * 0.85;
-                        finalY = ty + (hp.y - ty) * 0.85;
-                        finalZ = tz + (hp.z - tz) * 0.85;
+                        const ganz = Math.hypot(camX - tx, camY - ty, camZ - tz);
+                        if (ganz > 1e-6) t = Math.min(t, (0.85 * Math.hypot(hp.x - tx, hp.y - ty, hp.z - tz)) / ganz);
                     }
                 }
+                t = Math.min(t, this._kameraKronenGrenze(tx, ty, tz, camX, camY, camZ));
+                const finalX = tx + (camX - tx) * t;
+                const finalY = ty + (camY - ty) * t;
+                const finalZ = tz + (camZ - tz) * t;
                 camera.position.set(finalX, finalY, finalZ);
                 camera.lookAt(tx, ty, tz);
             } else {
@@ -98038,6 +98150,11 @@ AnazhRealm.EMOTION_FIELD = Object.freeze({
 // Chunks + Überlappung → Fall durch den Boden); kleine, intentional platzierte bleiben unangetastet.
 AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN = 3.5; // m über den Footprint hinaus
 AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional → nicht schieben
+// Der Abstand der 3rd-Kamera zur Kronen-Hülle (`_kameraKronenGrenze`): sie bleibt so weit außerhalb der Tiefe, in der der
+// Spieler selbst in der Krone steht (m).
+AnazhRealm.KAMERA_KRONEN_ABSTAND = 0.3;
+// Der kleinste Abstand der 3rd-Kamera zur Brust, den eine Krone erzwingen darf (m): darunter füllt der Kopf das Bild.
+AnazhRealm.KAMERA_KRONEN_MIN_M = 2.0;
 // Fällt der Spieler trotzdem durch (jede Ursache: Remesh-Timing, Teleport, …),
 // fängt ihn dieser Boden: unter dem Voxel-Boden (base−floorDrop ≈ −90 m) → zurück
 // an die Oberfläche. Bis V17.28 hatten NUR Kreaturen so eine Rettung (y < −50).
