@@ -1085,6 +1085,39 @@ async function starte() {
                             ms: Date.now() - t0,
                         })
                     );
+                // DIE WACHEN der Mess-Folge (scripts/omen-messfolge.cjs, nach jedem Schritt): der Stempel-Pool, das Buch des
+                // Wetter-Spions seit `seit`, der gestellte Ort (Aufstellung, Dorf-Zug, Ort-Takt, Gier, Spieler), das Fenster
+                // (Viewport und Zeichen-Puffer), die Seiten-Fehler — das Urteil spricht die Folge (`wachenUrteil`).
+                if (req.url === "/wache") {
+                    const w = await page.evaluate((seit) => {
+                        const r = window.anazhRealm;
+                        const st = r.state;
+                        const pm = st.playerMesh.position;
+                        const db = st.renderer.getDrawingBufferSize(new window.THREE.Vector2());
+                        return {
+                            wetter: window.__wetterBuch(seit),
+                            ort: {
+                                dorfZug: window.__anazhAutoSettlement !== false,
+                                ortTakt: window.__ortTakt || [],
+                                gier: st.yaw,
+                                spieler: [pm.x, pm.z].map((x) => +x.toFixed(1)),
+                            },
+                            fenster: { innen: [window.innerWidth, window.innerHeight], puffer: [db.x, db.y] },
+                            version: r.constructor.VERSION,
+                        };
+                    }, Number(b.seit) || 0);
+                    w.ort.ort = aktOrt;
+                    return send(
+                        Object.assign(w, {
+                            stempel: await stempel(),
+                            boot: { art: bootArt(), serie: boot.serie, ladungen: boot.ladungen },
+                            echt: ECHT,
+                            fehler: fehler.slice(),
+                            zerstoert: zerstoert.n,
+                            ms: Date.now() - t0,
+                        })
+                    );
+                }
                 if (req.url === "/status") {
                     const s = await page.evaluate(() => {
                         const st = window.anazhRealm.state;
@@ -1728,6 +1761,9 @@ async function starte() {
                     return send(
                         Object.assign(profilAuswerten(profile, Number(b.top) || 30), {
                             fps: l.fps,
+                            // die Frames des Fensters (die ms je Frame = gesampelt / Frames) und die Wetter-Wache des Laufs
+                            frames: l.frames,
+                            wetterHalt: wetterUrteil(l.wetterHalt),
                             ms: Date.now() - t0,
                         })
                     );

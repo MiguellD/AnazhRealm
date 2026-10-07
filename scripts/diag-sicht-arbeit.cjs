@@ -79,9 +79,14 @@ function selbsttest() {
         paesse: { mittel: 3, median: 3, max: 3 },
         arbeit: { mittel: arbeit, median: arbeit, max: arbeit },
         arbeitFrames: arbeit > 0 ? 10 : 0,
+        arbeitOhne: { frames: arbeit > 0 ? 10 : 0, median: arbeit, max: arbeit },
+        aenderungFrames: 0,
         schreibFrames: bytes > 0 ? 10 : 0,
+        ohneFrames: bytes > 0 ? 10 : 0,
         ecken: { mittel: 0, median: 0, max: 0 },
         bytes: { mittel: bytes, median: bytes, max: bytes },
+        bytesOhne: { mittel: bytes, median: bytes, max: bytes },
+        bytesOhneJe: bytes > 0 ? { "boden wahl:lage": bytes * 10 } : {},
         treffer: { mittel: treffer, median: treffer, max: treffer },
         hoehlenSicht: { mittel: 0, median: 0, max: 0 },
         hoehlenSichtLicht: { mittel: 0, median: 0, max: 0 },
@@ -132,21 +137,76 @@ function selbsttest() {
     const v1 = urteil(Object.assign(klon(), { sonne: randSonne(40, 32) }));
     if (v1.length) fehler.push("der grüne Befund mit Licht-Rand fällt rot: " + v1.join(" · "));
     console.log(`  ${v1.length ? "❌" : "✅"} Selbsttest grün mit Licht-Rand → ${v1.join(" · ") || "grün"}`);
+    // RUHE MIT ÄNDERUNG (K, 07.10.): Arbeit und Bytes in Frames mit gedrehtem Licht oder geändertem Satz-Inhalt sind die Arbeit
+    // der Änderung — grün; die Linse nennt sie (die Werkbank fällte die laufende Sonne als „schreibt ohne Änderung")
+    const mitAenderung = klon();
+    Object.assign(mitAenderung.ruhe, {
+        arbeit: { mittel: 800, median: 0, max: 10000 },
+        arbeitFrames: 66,
+        aenderungFrames: 80,
+        bytes: { mittel: 5291, median: 0, max: 232320 },
+        schreibFrames: 69,
+    });
+    const v2 = urteil(mitAenderung);
+    if (v2.length) fehler.push("Ruhe mit Änderung fällt rot: " + v2.join(" · "));
+    console.log(`  ${v2.length ? "❌" : "✅"} Selbsttest Ruhe mit Änderung (Licht, Inhalt) → ${v2.join(" · ") || "grün"}`);
+    // DIE KLASSE JE BYTE (`sichtBytesKlasse`): der Grund des Schreibers gegen die Änderung im selben Frame
+    const kl = (f) => SICHT.sichtBytesKlasse(f);
+    const klassen = [
+        ["Inhalt änderte sich", { bytes: 100, bytesGrund: { "boden wahl:stand haupt": 100 }, inhalt: { boden: { stand: 1 } } }, "aenderung"],
+        ["Stand ohne Inhalt", { bytes: 100, bytesGrund: { "boden wahl:stand haupt": 100 }, inhalt: {} }, "ohne"],
+        ["Inhalt einer anderen Familie", { bytes: 100, bytesGrund: { "boden wahl:neu k0": 100 }, inhalt: { wasser: { stand: 1 } } }, "ohne"],
+        ["Licht drehte (Kaskade)", { bytes: 100, bytesGrund: { "boden wahl:lage k0": 100 }, licht: 1, inhalt: {} }, "aenderung"],
+        ["Licht drehte (Hauptbild)", { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, licht: 1, inhalt: {} }, "ohne"],
+        ["Kamera bewegt (Hauptbild)", { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, kamera: 1, inhalt: {} }, "aenderung"],
+        ["Lage ohne Licht", { bytes: 100, bytesGrund: { "boden wahl:lage k1": 100 }, licht: 0, inhalt: {} }, "ohne"],
+        ["Verdichten einer ruhenden Wahl", { bytes: 100, bytesGrund: { "bauSatz dicht k0": 100 }, inhalt: {} }, "folge"],
+        ["Umlegen", { bytes: 100, bytesGrund: { "boden umlegen haupt": 100 }, inhalt: {} }, "folge"],
+        ["ungesehene Bytes", { bytes: 100, bytesGrund: {}, inhalt: {} }, "ohne"],
+    ];
+    for (const [name, f, soll] of klassen) {
+        const k = kl(f);
+        const ok = k[soll] === 100 && ["aenderung", "folge", "ohne"].every((x) => x === soll || k[x] === 0);
+        if (!ok) fehler.push(`Klasse „${name}": ${JSON.stringify(k)} statt ${soll}`);
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest Klasse „${name}" → ${soll}`);
+    }
+    if (!kl({ bytes: 100, bytesGrund: {}, inhalt: {} }).ohneJe["? ungesehen"])
+        fehler.push("ungesehene Bytes stehen nicht beim Namen");
+    // DIE ARBEIT OHNE ÄNDERUNG je Frame (`sichtArbeitOhne`): Kamera und Inhalt erklären alles, das Licht nur die Kaskaden
+    const ao = (f) => SICHT.sichtArbeitOhne(f);
+    const jp = { haupt: { pruefung: 7 }, k0: { pruefung: 50 } };
+    for (const [name, f, soll] of [
+        ["ruhig", { arbeit: 57, jePass: jp, inhalt: {} }, 57],
+        ["Licht drehte", { arbeit: 57, jePass: jp, licht: 1, inhalt: {} }, 7],
+        ["Kamera bewegt", { arbeit: 57, jePass: jp, kamera: 1, inhalt: {} }, 0],
+        ["Inhalt änderte sich", { arbeit: 57, jePass: jp, inhalt: { bauSatz: { stand: 1 } } }, 0],
+    ]) {
+        const n = ao(f);
+        if (n !== soll) fehler.push(`Arbeit ohne Änderung „${name}": ${n} statt ${soll}`);
+        console.log(`  ${n === soll ? "✅" : "❌"} Selbsttest Arbeit ohne Änderung „${name}" → ${n}`);
+    }
     const faelle = [
         [
             "Arbeit in Ruhe (die Basis)",
             (b) => (b.ruhe = phase(5200, 0, 0)),
-            /RUHE: die Sicht-Kette arbeitet in Ruhe 5200/,
+            /RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung \(Median 5200/,
         ],
         [
             "ein Ausreißer in Ruhe",
-            (b) => ((b.ruhe.arbeit.max = 30), (b.ruhe.arbeitFrames = 1)),
+            (b) => ((b.ruhe.arbeit.max = 30), (b.ruhe.arbeitFrames = 1), (b.ruhe.arbeitOhne = { frames: 1, median: 0, max: 30 })),
             /RUHE: die Sicht-Kette arbeitet in Ruhe/,
         ],
         [
             "Bytes in Ruhe",
-            (b) => ((b.ruhe.bytes = { mittel: 96, median: 0, max: 960 }), (b.ruhe.schreibFrames = 1)),
-            /RUHE: 96 Index-Bytes je Frame/,
+            (b) =>
+                Object.assign(b.ruhe, {
+                    bytes: { mittel: 96, median: 0, max: 960 },
+                    schreibFrames: 1,
+                    bytesOhne: { mittel: 96, median: 0, max: 960 },
+                    ohneFrames: 1,
+                    bytesOhneJe: { "bauSatz dicht?": 960 },
+                }),
+            /RUHE: 96 Index-Bytes je Frame ohne Änderung .*bauSatz dicht\? 960 B/,
         ],
         ["kein Treffer", (b) => (b.ruhe.treffer = { mittel: 0, median: 0, max: 0 }), /LINSE BLIND: kein Pass traf/],
         ["starres Drehen", (b) => (b.drehen.arbeit = { mittel: 0, median: 0, max: 0 }), /STARR: beim Drehen/],

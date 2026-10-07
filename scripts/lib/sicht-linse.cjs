@@ -39,6 +39,12 @@ const SICHT_PRUEFUNG = ["_passTrifft", "_hoehlenRect", "_hoehlenLichtLage", "_in
 const SICHT_TREFFER = ["_satzAbschnittSteht", "_instanzWahlSteht"];
 // Die Täter beim NAMEN: jede neu gerechnete Wahl (der Satz und sein Pass, die Gruppe).
 const SICHT_NEU = ["_satzAbschnittMerke", "_instanzWahlMerke"];
+// DIE BYTES BEIM GRUND (K, 07.10.): jedes Index-Byte eines Satzes (`_chunkSatzSchreib`) trägt den Grund seines Schreibers —
+// die neue Wahl eines Passes (`wahl:<warum die Wahl nicht stand>`: `stand` = der Satz änderte Bereich, Hülle oder Ordnung,
+// `neu` = der Abschnitt fehlte, `lage` = die Lage des Passes, `liste`/`hoehle`), das Verdichten einer ruhenden Wahl
+// (`dicht`), das Umlegen aller Abschnitte (`umlegen`). Der Grund ist der innerste Schreiber im Stapel.
+const SICHT_GRUND = ["_chunkSatzRuht", "_chunkSatzUmlegen"];
+const SICHT_SCHREIB = "_chunkSatzSchreib";
 // Leser, deren Prüfungen in Ruhe 0 sein MÜSSEN; die Werfer der Region-Bündel (eine Handvoll Bündel-Hüllen je Schatten-
 // Pass) zählt die Linse mit, das Urteil nennt sie, verlangt dort aber keine Null.
 // Der echte Loop: höchstens so viele Ruhe-Frames dürfen ein Ereignis der Welt tragen (die Wand fordert 0).
@@ -59,9 +65,15 @@ function sichtLinse(cfg) {
         verfehlt: {},
         neu: {},
         jePass: {},
+        // die Index-Bytes je „Familie Grund" und warum eine Satz-Wahl nicht stand (je „Familie Grund")
+        bytesGrund: {},
+        warum: {},
         paesse: 0,
         nach: 0,
     });
+    const familie = (s) => String(s && s.art).split("|")[0];
+    // der Grund der letzten Wahl je Satz (`_satzAbschnittSteht` = false): ihre Bytes tragen ihn
+    const wahlGrund = new WeakMap();
     // der Pass, in dem gerade geprüft wird (haupt · k<i> · anders) — die Prüfungen je Pass
     let pass = "?";
     const passName = (kam) => {
@@ -82,6 +94,29 @@ function sichtLinse(cfg) {
         }
         const f = (orig[name] = P[name]);
         P[name] = function (...a) {
+            if (art === "grund") {
+                stapel.push(name);
+                try {
+                    return f.apply(this, a);
+                } finally {
+                    stapel.pop();
+                }
+            }
+            if (art === "schreib") {
+                // der innerste Schreiber im Stapel nennt den Grund der Bytes
+                let g = "?";
+                for (let i = stapel.length - 1; i >= 0; i--) {
+                    const n = stapel[i];
+                    if (n === "_chunkSatzRuht") g = "dicht";
+                    else if (n === "_chunkSatzUmlegen") g = "umlegen";
+                    else if (n === "_chunkSatzAbschnitt") g = "wahl:" + (wahlGrund.get(a[0]) || "?");
+                    else continue;
+                    break;
+                }
+                const k = familie(a[0]) + " " + g + " " + a[1];
+                z.bytesGrund[k] = (z.bytesGrund[k] || 0) + 4 * a[4];
+                return f.apply(this, a);
+            }
             if (art === "kette") {
                 z.aufrufe[name] = (z.aufrufe[name] || 0) + 1;
                 if (name === "_passSicht") a[1] ? z.nach++ : z.paesse++;
@@ -114,6 +149,26 @@ function sichtLinse(cfg) {
             } else if (art === "treffer") {
                 const k = o ? "treffer" : "verfehlt";
                 z[k][name] = (z[k][name] || 0) + 1;
+                if (!o && name === "_satzAbschnittSteht") {
+                    // warum die Wahl dieses Passes nicht stand (die Felder von `_satzAbschnittMerke`)
+                    const [s, ab, L] = a;
+                    const w = ab && ab.wahl;
+                    const H = s.hoehle;
+                    const g = !w
+                        ? "neu"
+                        : w.gen !== L.gen
+                          ? "lage"
+                          : w.stand !== s.stand
+                            ? "stand"
+                            : w.liste !== ab.liste
+                              ? "liste"
+                              : H && w.boden !== H.boden
+                                ? "boden"
+                                : "hoehle";
+                    wahlGrund.set(s, g);
+                    const kw = familie(s) + " " + g;
+                    z.warum[kw] = (z.warum[kw] || 0) + 1;
+                }
             } else if (art === "neu") {
                 // der Satz × Pass bzw. die Gruppe, deren Wahl dieser Frame neu rechnete
                 const w =
@@ -139,10 +194,61 @@ function sichtLinse(cfg) {
     const bytes = () => Object.values(bytesJe()).reduce((a, x) => a + x, 0);
     let b0 = 0,
         bj0 = {};
+    // DER INHALT der Sätze je Frame: Stand (Bereich · Hülle · Ordnung), die Bereiche, die kamen (+), gingen (−) oder neu
+    // gebaut wurden (~), das Verdichten — eine Änderung der Welt beim Namen, gegen die die Bytes stehen
+    const inhaltVor = new Map();
+    let inhaltOffen = {};
+    const inhalt = () => {
+        const o = {};
+        const ss = r.state.chunkSaetze;
+        if (!ss) return o;
+        for (const s of ss.values()) {
+            const vor = inhaltVor.get(s);
+            const jetzt = { stand: s.stand || 0, verdichtet: s.verdichtet || 0, bloecke: new Map(s.bloecke) };
+            inhaltVor.set(s, jetzt);
+            if (!vor) continue;
+            const e = { stand: jetzt.stand - vor.stand, verdichtet: jetzt.verdichtet - vor.verdichtet, keys: [] };
+            let n = 0;
+            for (const [k, b] of jetzt.bloecke) {
+                const x = vor.bloecke.get(k);
+                if (x === b) continue;
+                n++;
+                if (e.keys.length < 4) e.keys.push((x ? "~" : "+") + k);
+            }
+            for (const k of vor.bloecke.keys())
+                if (!jetzt.bloecke.has(k)) {
+                    n++;
+                    if (e.keys.length < 4) e.keys.push("-" + k);
+                }
+            e.bereiche = n;
+            if (e.stand || e.verdichtet || n) {
+                const fam = familie(s);
+                const a = o[fam] || (o[fam] = { stand: 0, verdichtet: 0, bereiche: 0, keys: [] });
+                a.stand += e.stand;
+                a.verdichtet += e.verdichtet;
+                a.bereiche += e.bereiche;
+                a.keys.push(...e.keys.slice(0, 4 - a.keys.length));
+            }
+        }
+        return o;
+    };
     // die Licht-Richtung des Frames (Richtlicht: Ort − Ziel) — dreht sie gegen den Frame davor?
     let lichtVor = null;
     // eine Drehung in einem Tick ohne Pass (der Loop rendert nicht jeden Tick) zählt zum nächsten gerenderten Frame
     let lichtOffen = 0;
+    // die Kamera des Hauptbilds: steht ihre Welt-Matrix gegen den Frame davor? (dieselbe Offen-Regel wie das Licht)
+    let kameraVor = null;
+    let kameraOffen = 0;
+    const kameraBewegt = () => {
+        const c = r.state.camera;
+        if (!c) return 0;
+        const e = Array.from(c.matrixWorld.elements);
+        const vor = kameraVor;
+        kameraVor = e;
+        if (!vor) return 0;
+        for (let i = 0; i < 16; i++) if (Math.abs(e[i] - vor[i]) > 1e-9) return 1;
+        return 0;
+    };
     const lichtDreht = () => {
         const dl = r.state.directionalLight;
         if (!dl || !dl.target) return 0;
@@ -163,10 +269,14 @@ function sichtLinse(cfg) {
             for (const n of cfg.pruefung) huelle(n, "pruefung");
             for (const n of cfg.treffer) huelle(n, "treffer");
             for (const n of cfg.neu) huelle(n, "neu");
+            for (const n of cfg.grund) huelle(n, "grund");
+            huelle(cfg.schreib, "schreib");
             z = neu();
             b0 = bytes();
             bj0 = bytesJe();
+            inhalt();
             lichtDreht();
+            kameraBewegt();
             return { gehuellt: Object.keys(orig), fehlt: fehlt.slice() };
         },
         // Die Zähler seit dem letzten frame() — und frisch weiter.
@@ -179,6 +289,16 @@ function sichtLinse(cfg) {
             o.bytesJe = {};
             for (const k in bj) if (bj[k] !== (bj0[k] || 0)) o.bytesJe[k] = bj[k] - (bj0[k] || 0);
             bj0 = bj;
+            // eine Änderung in einem Takt ohne Pass (der Loop rendert nicht jeden Takt) zählt zum nächsten gerenderten Frame
+            for (const [fam, e] of Object.entries(inhalt())) {
+                const a = inhaltOffen[fam] || (inhaltOffen[fam] = { stand: 0, verdichtet: 0, bereiche: 0, keys: [] });
+                a.stand += e.stand;
+                a.verdichtet += e.verdichtet;
+                a.bereiche += e.bereiche;
+                a.keys.push(...e.keys.slice(0, Math.max(0, 4 - a.keys.length)));
+            }
+            o.inhalt = inhaltOffen;
+            if (o.paesse > 0) inhaltOffen = {};
             const p = o.pruefung;
             o.ecken = 8 * ((p._hoehlenRect || 0) + (p._hoehlenLichtLage || 0));
             let ruhe = (p._hoehlenRect || 0) + (p._hoehlenLichtLage || 0);
@@ -191,6 +311,9 @@ function sichtLinse(cfg) {
             lichtOffen = lichtDreht() || lichtOffen;
             o.licht = lichtOffen;
             if (o.paesse > 0) lichtOffen = 0;
+            kameraOffen = kameraBewegt() || kameraOffen;
+            o.kamera = kameraOffen;
+            if (o.paesse > 0) kameraOffen = 0;
             o.tag = r.state.timeOfDay;
             o.stufe = r.state._sonne && r.state._sonne.stufe > 0 ? r.state._sonne.stufe : null;
             // der Licht-Rand der Kaskaden mit Box (`PASS_WAHL.lichtRandTexel`): trägt ihn jede gerade gehaltene Lage?
@@ -218,9 +341,46 @@ function sichtLinse(cfg) {
     return L;
 }
 
+// DIE BYTES UND IHR GRUND (rein, K 07.10.): je Frame die Index-Bytes nach Klasse — `aenderung` (eine neue Wahl, deren
+// Grund im selben Frame geschah: die Lage eines Passes bei gedrehtem Licht, der Inhalt ihrer Familie — Bereich, Hülle,
+// Ordnung, Verdichten: Streaming, ein Bau, ein Asset), `folge` (die Arbeit einer Änderung davor: das Verdichten einer ruhenden
+// Wahl nach `dichtNach` Pässen, das Umlegen aller Abschnitte, eine fremd geleerte Liste) und `ohne` (kein Grund — der Täter,
+// je „Familie Grund Pass"). Bytes, die der Schreiber-Haken nicht sah, haben keinen Grund („? ungesehen" — die Linse ist
+// blind). Die Lage eines Passes ändert sich mit der Kamera (jeder Pass) oder dem Licht (nur die Kaskaden `k<i>`).
+function sichtBytesKlasse(f) {
+    const aus = { aenderung: 0, folge: 0, ohne: 0, aenderungJe: {}, folgeJe: {}, ohneJe: {} };
+    let gesehen = 0;
+    for (const [k, b] of Object.entries(f.bytesGrund || {})) {
+        gesehen += b;
+        const [fam, g, pass] = k.split(" ");
+        let kl = "ohne";
+        if (g === "dicht" || g === "umlegen" || g === "wahl:liste") kl = "folge";
+        else if (g === "wahl:lage") kl = f.kamera || (f.licht && /^k\d+$/.test(pass || "")) ? "aenderung" : "ohne";
+        else if (/^wahl:(stand|neu|boden|hoehle)$/.test(g)) kl = f.inhalt && f.inhalt[fam] ? "aenderung" : "ohne";
+        aus[kl] += b;
+        aus[kl + "Je"][k] = (aus[kl + "Je"][k] || 0) + b;
+    }
+    if ((f.bytes || 0) > gesehen) {
+        aus.ohne += f.bytes - gesehen;
+        aus.ohneJe["? ungesehen"] = (aus.ohneJe["? ungesehen"] || 0) + f.bytes - gesehen;
+    }
+    return aus;
+}
+// Die Arbeit eines Frames ohne Änderung: eine bewegte Kamera oder ein geänderter Satz-Inhalt erklären die ganze Arbeit,
+// ein gedrehtes Licht die Arbeit der Kaskaden-Pässe (je Pass `jePass`) — was bleibt, ist ein Cache-Bruch.
+function sichtArbeitOhne(f) {
+    if (f.kamera || (f.inhalt && Object.keys(f.inhalt).length)) return 0;
+    if (!f.licht) return f.arbeit;
+    let n = 0;
+    for (const [k, x] of Object.entries(f.jePass || {})) if (!/^k\d+$/.test(k)) n += x.pruefung;
+    return n;
+}
+const sichtAenderung = (f) => !!(f.licht || f.kamera || (f.inhalt && Object.keys(f.inhalt).length));
+
 // Die Statistik einer Phase: je Zähl-Größe Mittel · Median · Maximum über die Frames (ab `ab`).
 function sichtPhase(frames, ab) {
     const fs = frames.slice(ab || 0).filter((f) => f.paesse > 0);
+    for (const f of fs) f.klasse = window.__sichtBytesKlasse(f);
     const reihe = (g) => fs.map(g).sort((a, b) => a - b);
     const st = (g) => {
         const x = reihe(g);
@@ -251,6 +411,46 @@ function sichtPhase(frames, ab) {
     const bytesJe = {};
     for (const f of fs) for (const k in f.bytesJe || {}) bytesJe[k] = (bytesJe[k] || 0) + f.bytesJe[k] / fs.length;
     for (const k in bytesJe) bytesJe[k] = Math.round(bytesJe[k]);
+    // die Bytes je „Familie Grund" (Summe über die Phase) und warum eine Satz-Wahl nicht stand (Zahl der Pässe)
+    const summe = (feld) => {
+        const o = {};
+        for (const f of fs) for (const k in f[feld] || {}) o[k] = (o[k] || 0) + f[feld][k];
+        return o;
+    };
+    const bytesGrund = summe("bytesGrund");
+    const warum = summe("warum");
+    // die Schreib-Frames beim Namen: Bytes, Grund, warum die Wahl nicht stand, die Änderung des Inhalts im selben Frame
+    const schreibBelege = [];
+    fs.forEach((f, i) => {
+        if (f.bytes > 0 && schreibBelege.length < 24)
+            schreibBelege.push({
+                frame: i,
+                bytes: f.bytes,
+                klasse: { aenderung: f.klasse.aenderung, folge: f.klasse.folge, ohne: f.klasse.ohne },
+                grund: f.bytesGrund,
+                warum: f.warum,
+                inhalt: f.inhalt,
+                licht: f.licht,
+            });
+    });
+    // je Klasse die Summe je „Familie Grund" über die Phase (die Änderung beim Namen, der Täter beim Namen)
+    const klasseJe = (kl) => {
+        const o = {};
+        for (const f of fs) for (const k in f.klasse[kl + "Je"]) o[k] = (o[k] || 0) + f.klasse[kl + "Je"][k];
+        return o;
+    };
+    // die Bereiche, die sich in der Phase änderten (je Familie die ersten Schlüssel)
+    const inhaltJe = {};
+    for (const f of fs)
+        for (const [fam, e] of Object.entries(f.inhalt || {})) {
+            const a = inhaltJe[fam] || (inhaltJe[fam] = { frames: 0, stand: 0, verdichtet: 0, bereiche: 0, keys: [] });
+            a.frames++;
+            a.stand += e.stand;
+            a.verdichtet += e.verdichtet;
+            a.bereiche += e.bereiche;
+            for (const k of e.keys) if (a.keys.length < 8 && !a.keys.includes(k)) a.keys.push(k);
+        }
+    const ohneAenderung = fs.filter((f) => !window.__sichtAenderung(f));
     // DIE SONNE der Phase: in wie vielen Frames das Licht drehte, um wie viel die Sonne lief (Bogenmaß, aus der Tageszeit —
     // der Weg über den Tag ist 2π), ihre Stufe (`state._sonne.stufe`, null = keine)
     let sonneRad = 0;
@@ -269,6 +469,26 @@ function sichtPhase(frames, ab) {
         lichtRand: fs.some((f) => f.mitBox) ? Math.min(...fs.filter((f) => f.mitBox).map((f) => f.lichtRand || 0)) : 0,
         jePass,
         bytesJe,
+        bytesGrund,
+        warum,
+        schreibBelege,
+        // die Bytes je Klasse (Summe über die Phase) und die Frames mit Bytes ohne Grund
+        bytesAenderung: klasseJe("aenderung"),
+        bytesFolge: klasseJe("folge"),
+        bytesOhneJe: klasseJe("ohne"),
+        bytesOhne: st((f) => f.klasse.ohne),
+        ohneFrames: fs.filter((f) => f.klasse.ohne > 0).length,
+        inhaltJe,
+        // die Frames mit einer Änderung (Kamera, Licht, Inhalt) und je Frame die Arbeit, die keine Änderung erklärt
+        aenderungFrames: fs.length - ohneAenderung.length,
+        arbeitOhne: (() => {
+            const x = fs.map((f) => window.__sichtArbeitOhne(f)).sort((a, b) => a - b);
+            return {
+                frames: x.filter((a) => a > 0).length,
+                median: x.length ? x[Math.floor(x.length / 2)] : 0,
+                max: x.length ? x[x.length - 1] : 0,
+            };
+        })(),
         taeter,
         frames: fs.length,
         paesse: st((f) => f.paesse),
@@ -294,10 +514,12 @@ function sichtPhase(frames, ab) {
 }
 
 // DAS URTEIL (rein): Liste der Verstöße, leer = grün. `b.ruhe` / `b.drehen` / `b.gehen` sind Phasen (`sichtPhase`).
-//   (R) RUHE: nach dem ersten Frame keine neue Arbeit und kein Byte, und die Pässe treffen ihren Cache (sonst prüfte die
-//       Linse nichts). `b.streng` (die Wand, eingefrorene Welt): in KEINEM Frame; sonst (der echte Loop, die Welt lebt —
-//       ein Foundry-Asset kommt, eine Gruppe wird geräumt) der Median 0 und höchstens `RUHE_EREIGNIS` der Frames mit
-//       Arbeit bzw. Bytes: jedes solche Ereignis ist eine Änderung, die Linse nennt den Täter;
+//   (R) RUHE: nach dem ersten Frame keine neue Arbeit und kein Byte OHNE ÄNDERUNG, und die Pässe treffen ihren Cache (sonst
+//       prüfte die Linse nichts). Eine Änderung ist ein gedrehtes Licht (die Sonne läuft im Spiel) oder ein geänderter
+//       Satz-Inhalt (Streaming, ein Bau, ein Asset — `sichtBytesKlasse`); ihre Arbeit und ihre Bytes nennt die Linse, sie
+//       fallen nie rot. Ein Byte ohne Grund fällt in jedem Frame rot, beim Namen („Familie Grund"). Die Arbeit ohne Änderung:
+//       `b.streng` (die Wand, eingefrorene Welt) in KEINEM Frame; sonst (der echte Loop — eine Gruppe wird geräumt) der
+//       Median 0 und höchstens `RUHE_EREIGNIS` der Frames;
 //   (B) BEWEGUNG: wer dreht oder geht, rechnet neu — eine Phase ohne Arbeit hielte eine Wahl über eine neue Lage (Loch);
 //   (T) TREUE: die gehaltene Wahl ist die frisch gerechnete (`b.treue`: je Satz × Pass die Zellen, je Gruppe die Zahl);
 //   (S) SCHARF: ein eingeschmuggelter Cache-Bruch (`b.bruch`, eine Ruhe-Phase mit gebrochenem Cache) fällt rot;
@@ -354,20 +576,28 @@ function sichtUrteil(b) {
     const R = b.ruhe;
     if (!R || !(R.frames > 0)) v.push("LEER: keine Ruhe-Phase gemessen (die Linse prüfte nichts)");
     else {
+        // Arbeit und Bytes zählen in Ruhe nur OHNE Änderung: ein Frame, in dem das Licht drehte (die Sonne läuft im Spiel)
+        // oder ein Satz-Inhalt sich änderte (Streaming, ein Bau, ein Asset), arbeitet für die Änderung — die Linse nennt sie
+        // (`bytesAenderung`, `inhaltJe`), sie ist kein Cache-Bruch. Ein Byte ohne Grund ist es in JEDEM Frame.
         const erlaubt = b.streng ? 0 : Math.floor(R.frames * RUHE_EREIGNIS);
-        if (R.arbeit.median > 0 || R.arbeitFrames > erlaubt)
+        const A = R.arbeitOhne;
+        if (A.median > 0 || A.frames > erlaubt)
             v.push(
-                `RUHE: die Sicht-Kette arbeitet in Ruhe ${R.arbeit.mittel} Prüfungen je Frame (Median ${R.arbeit.median}, ` +
-                    `max ${R.arbeit.max}, in ${R.arbeitFrames} von ${R.frames} Frames; Höhlen-Sicht ${R.hoehlenSicht.mittel} + ` +
-                    `Licht ${R.hoehlenSichtLicht.mittel} Aufrufe, ` +
+                `RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung (Median ${A.median}, max ${A.max} Prüfungen, in ` +
+                    `${A.frames} von ${R.frames} Frames, ${R.aenderungFrames} mit Änderung; alle Frames Ø ${R.arbeit.mittel}, ` +
+                    `Höhlen-Sicht ${R.hoehlenSicht.mittel} + Licht ${R.hoehlenSichtLicht.mittel} Aufrufe, ` +
                     `Abschnitte ${R.abschnitt.mittel}, Ecken ${R.ecken.mittel}, Instanzen ${R.instanzBehalten.mittel}) — ` +
                     "nichts hat sich geändert, jede Prüfung ist ein Cache-Bruch" +
                     (R.taeter && R.taeter.length ? `; neu gerechnet je Frame: ${R.taeter.join(", ")}` : "")
             );
-        if (R.bytes.median > 0 || R.schreibFrames > erlaubt)
+        if (R.ohneFrames > 0)
             v.push(
-                `RUHE: ${R.bytes.mittel} Index-Bytes je Frame (max ${R.bytes.max}, in ${R.schreibFrames} von ${R.frames} ` +
-                    "Frames) — ein Pass schreibt ohne Änderung"
+                `RUHE: ${R.bytesOhne.mittel} Index-Bytes je Frame ohne Änderung (max ${R.bytesOhne.max}, in ${R.ohneFrames} ` +
+                    `von ${R.frames} Frames) — ein Pass schreibt ohne Änderung: ` +
+                    Object.entries(R.bytesOhneJe)
+                        .sort((x, y) => y[1] - x[1])
+                        .map(([k, n]) => `${k} ${n} B`)
+                        .join(" · ")
             );
         if (!(R.treffer.median > 0))
             v.push(
@@ -515,6 +745,8 @@ module.exports = {
     SICHT_TREFFER,
     SICHT_NEU,
     RUHE_LESER,
+    sichtBytesKlasse,
+    sichtArbeitOhne,
     sichtPhase,
     sichtUrteil,
     SICHT_INSTALL:
@@ -523,8 +755,13 @@ module.exports = {
             pruefung: SICHT_PRUEFUNG,
             treffer: SICHT_TREFFER,
             neu: SICHT_NEU,
+            grund: SICHT_GRUND,
+            schreib: SICHT_SCHREIB,
             ruheLeser: RUHE_LESER,
         })});` +
+        `window.__sichtBytesKlasse = ${sichtBytesKlasse.toString()};` +
+        `window.__sichtAenderung = ${sichtAenderung.toString()};` +
+        `window.__sichtArbeitOhne = ${sichtArbeitOhne.toString()};` +
         `window.__sichtPhase = ${sichtPhase.toString()};` +
         `window.__sichtLauf = ${sichtLauf.toString()};`,
 };
