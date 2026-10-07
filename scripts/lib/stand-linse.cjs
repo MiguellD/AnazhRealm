@@ -13,7 +13,8 @@
 //   Seite:     const L = window.__standLinseAn(); … je Frame L.frame() → { strom: n, archLod: n, … , ms: {…}, matrix }; L.aus()
 //              window.__standLauf({ ein, ruhe, n, regler, tiere }) — der echte Loop (rAF): Ruhe mit Wache (B), mit
 //              gebrochener Wache (A, jeder Takt geht wie vor der Welle), in der Folge B A A B
-//   Urteil:    standUrteil({ ruhe, gehen, wecken, bruch, code, pageErrors }) → [Verletzungen] (gate:stand-takt)
+//   Urteil:    standUrteil({ ruhe, gehen, wecken, bruch, taeter, schreiber, code, pageErrors }) → [Verletzungen]
+//   Wand:      schreiberWand(quelle) → { befunde, schreiber } — jeder Schreiber eines bewachten Zustands und sein Weckruf
 //   Werkbank:  node scripts/werkbank.cjs stand [n] [--ein s] [--ruhe max-s] [--regler voll|frei] [--tiere frei|halten]
 "use strict";
 
@@ -273,6 +274,10 @@ function standLauf(k) {
 // DAS URTEIL (gate:stand-takt; `werkbank stand` urteilt nur über die Ruhe):
 //   RUHE    — in KEINEM Frame der Ruhe arbeitet ein Fege-Takt (0 Einheiten);
 //   SCHARF  — derselbe Stand mit gebrochener Wache (jeder Takt geht) zeigt JEDEN Takt arbeitend (die Linse sieht ihn);
+//   TREUE   — mit gebrochener Wache ändert kein Takt die Welt, und jede Treue-Phase geht jeden Takt eine volle Runde;
+//   TÄTER   — je Takt mit einer Runde über mehrere Gänge findet die Treue-Phase die still verstellte Einheit in der
+//             zweiten Rundenhälfte (Stufen-Wahl, Streu, Saum);
+//   SCHREIBER — jeder Schreiber eines bewachten Zustands trägt seinen Weckruf (`schreiberWand`, der Stamm als AST);
 //   GEHEN   — beim Gehen arbeiten Ring, Stufen-Wahl und Cull (die Änderung kostet), und der Spieler kommt voran;
 //   WECKEN  — ein Bau im Stand weckt Cull und Stufen-Wahl, der Bau steht danach, und die Wache schläft wieder;
 //   STROM   — ein Sprung an einen fremden Ort baut den Spieler-Chunk (Streaming heilig), auch nach der Ruhe;
@@ -295,10 +300,10 @@ function standUrteil(b) {
         }
     // TREUE: derselbe Stand mit gebrochener Wache — jeder Takt geht, und keiner ändert die Welt (sonst verschlief die
     // Wache eine Änderung: eine Eingabe, die der Stempel nicht kennt).
-    const treue = (ph, wo) => {
+    const treue = (ph, wo, ohne) => {
         for (const n of namen) {
             const t = ph && ph.takte[n];
-            if (t && t.wirkt > 0)
+            if (t && t.wirkt > 0 && !(ohne && n in ohne))
                 v.push(
                     `TREUE: ${n} (${TAKTE[n]}) änderte mit gebrochener Wache ${wo} die Welt in ${t.wirkt} Gängen — die ` +
                         `Wache verschlief eine Änderung (eine Eingabe, die der Stempel nicht kennt)`
@@ -309,10 +314,25 @@ function standUrteil(b) {
         if (b.phasen && b.phasen.A) treue(b.phasen.A[0], "nach der Ruhe");
         return v;
     }
+    // DIE RUNDE: eine Treue-Phase geht JEDEN Takt mindestens eine volle Runde (die Einheiten, die er `_standRuht` als Runde
+    // nennt) — ein Teil der Runde sähe eine verschlafene Änderung dahinter nie (bis 07.10. liefen die Phasen 6 Frames: an
+    // der Mess-Wiese ging die Streu 960 von 1 845 Zellen, der Saum 768 von 1 728 Punkten, die Stufen-Wahl 1 536 von 1 638).
+    const runde = (ph, wo) => {
+        for (const n of namen) {
+            const t = ph && ph.takte[n];
+            if (!t || t.runde === undefined) v.push(`LEER: die Treue-Phase ${wo} nennt die Runde von ${n} nicht`);
+            else if (!(t.gang >= Math.max(1, t.runde)))
+                v.push(
+                    `TREUE-LÜCKE: ${n} (${TAKTE[n]}) ging ${wo} ${t.gang} von ${t.runde} Einheiten seiner Runde — die ` +
+                        `Treue sah nur einen Teil der Welt`
+                );
+        }
+    };
     const S = b.bruch;
     if (!S || !S.frames) v.push("LEER: keine Bruch-Phase — die Linse ist ungeprüft");
     else {
         treue(S, "nach der Ruhe");
+        runde(S, "nach der Ruhe");
         for (const n of namen) {
             const t = S.takte[n];
             if (!t || !(t.summe > 0))
@@ -348,7 +368,10 @@ function standUrteil(b) {
             if (!W.phase || !W.phase.takte[n] || !(W.phase.takte[n].summe > 0))
                 v.push(`WECKEN: ein Bau im Stand weckt ${n} nicht — die Wache verschliefe die Welt`);
         if (!W.treue) v.push("LEER: keine Treue nach dem Bau");
-        else treue(W.treue, "nach dem Bau");
+        else {
+            treue(W.treue, "nach dem Bau");
+            runde(W.treue, "nach dem Bau");
+        }
         if (!W.regler) v.push("LEER: kein Regler-Schritt in der Weck-Phase");
         else if (!W.regler.takte.archCull || !(W.regler.takte.archCull.summe > 0))
             v.push("WECKEN: ein Regler-Schritt (der Cull-Radius) weckt archCull nicht — der Rand bliebe stehen");
@@ -359,6 +382,37 @@ function standUrteil(b) {
                 `WECKEN: nach dem Bau schläft die Wache nicht wieder (${W.nachher ? W.nachher.summe : "?"} Einheiten in Ruhe)`
             );
     }
+    // DIE TÄTER: jeder Takt, dessen Runde mehrere Gänge braucht (Runde × Frames > Gang — der Gang eines Frames deckt sie
+    // nicht), trägt in der zweiten Hälfte seiner Runde eine still verstellte Einheit (eine Änderung ohne Weckruf); die
+    // Treue-Phase muss jede finden — sonst ist sie für die zweite Rundenhälfte blind.
+    const X = b.taeter;
+    if (!X || !X.phase || !X.je) v.push("LEER: keine Täter-Probe der Treue");
+    else {
+        for (const n of namen) {
+            const t = X.phase.takte[n];
+            const x = X.je[n];
+            const mehrGang = !!t && t.runde * X.phase.frames > t.gang;
+            if (!x) {
+                if (mehrGang)
+                    v.push(
+                        `LEER: kein Täter für ${n} (${TAKTE[n]}) — seine Runde (${t.runde} Einheiten) braucht mehrere Gänge`
+                    );
+                continue;
+            }
+            if (!(x.stelle >= x.runde / 2))
+                v.push(
+                    `LEER: der Täter von ${n} steht an Stelle ${x.stelle} von ${x.runde} — nicht in der zweiten Rundenhälfte`
+                );
+            if (!t || !(t.wirkt > 0))
+                v.push(
+                    `TREUE-TÄTER: die Treue-Phase sah die verschlafene Einheit von ${n} (${TAKTE[n]}) an Stelle ${x.stelle} ` +
+                        `von ${x.runde} nicht (gegangen ${t ? t.gang : "?"}) — für die zweite Rundenhälfte ist die Treue blind`
+                );
+        }
+        treue(X.phase, "mit den Tätern", X.je); // die Takte ohne Täter bleiben treu
+        runde(X.phase, "mit den Tätern");
+    }
+    for (const x of schreiberUrteil(b.schreiber)) v.push(x);
     const T = b.strom;
     if (!T) v.push("LEER: keine Strom-Phase");
     else if (!T.spielerChunk)
@@ -374,9 +428,278 @@ function standUrteil(b) {
     return v;
 }
 
+// ─── DIE SCHREIBER-WAND (Gebot 10: die Linse nennt den Täter beim Namen — nie Wachsamkeit) ───
+// Die Wache schläft unter ihrem Stempel; was sie weckt, ist der Weckruf an jedem Schreiber eines Zustands, den die Fege-
+// Takte lesen. Ein Schreiber ohne Weckruf hielte die Welt unter einer schlafenden Wache fest (bis zum nächsten Schritt des
+// Spielers). Warum eine Wand und keine selbst weckende Engstelle: die bewachten Zustände sind drei Behälter verschiedener
+// Art (Map, Array, Map) und ein Feld der Chunk-Einträge — ein selbst weckender Behälter ließe die Neu-Zuweisung
+// (`= new Map()`, `= []`, `.length = 0`) offen und bräuchte dieselbe Wand. Die Wand liest den Stamm als AST (acorn —
+// Kommentare und Zeichenketten fallen mit dem Parser), findet JEDEN Schreiber eines bewachten Zustands — direkt
+// (`this.state.F.set`), über einen Alias (`const map = st.F`, `const { F } = st`), über einen Zugriff (eine Methode, die F
+// zurückgibt: `_ensureScatterRegionMap()`), per Index, Länge, Zuweisung oder `delete` — und verlangt den Weckruf im
+// SELBEN Methoden-Körper (die äußerste Funktion: Methode, statische Zuweisung; Rückrufe darin zählen zu ihr). Ein leerer
+// Behälter, wo keiner war (`if (!st.F) st.F = new Map()`, `st.F ||= []`), ändert keine Menge und ist kein Schreiber.
+// `boden`: die Boden-Takte (Ring, Saum) lesen den Zustand — der Weckruf ist `_weltRegt(true)`.
+const BEWACHT = {
+    voxelChunks: { menge: true, boden: true }, // Ring, Saum, Nah-Kacheln (die Boden-Karte)
+    waterCells: { menge: false, boden: true }, // ein Feld des Chunk-Eintrags: der Wasser-Weckruf des Rings
+    architectures: { menge: true, boden: false }, // Stufen-Wahl, Cull
+    scatterRegions: { menge: true, boden: false }, // die Streu-Stufen-Wahl
+    scatterHarvested: { menge: true, boden: false }, // die Nah-Streu (die Ernte)
+};
+const SCHREIB_OPS = new Set([
+    "set",
+    "delete",
+    "clear",
+    "add",
+    "push",
+    "pop",
+    "shift",
+    "unshift",
+    "splice",
+    "sort",
+    "reverse",
+    "fill",
+    "copyWithin",
+]);
+
+// quelle (Text eines Skripts) → { befunde: [{ methode, feld, zeile, ruf }], schreiber: { feld: [Methoden] }, einheiten }
+function schreiberWand(quelle) {
+    const acorn = require("acorn");
+    const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
+    const kinder = (n) => {
+        const out = [];
+        for (const k in n) {
+            if (k === "type" || k === "start" || k === "end" || k === "loc") continue;
+            const v = n[k];
+            if (Array.isArray(v)) {
+                for (const x of v) if (x && typeof x.type === "string") out.push(x);
+            } else if (v && typeof v.type === "string") out.push(v);
+        }
+        return out;
+    };
+    const istFn = (n) =>
+        n.type === "FunctionDeclaration" || n.type === "FunctionExpression" || n.type === "ArrowFunctionExpression";
+    const text = (n) => quelle.slice(n.start, n.end).replace(/\s+/g, "");
+    const prop = (m) =>
+        m && m.type === "MemberExpression"
+            ? m.computed
+                ? m.property.type === "Literal"
+                    ? String(m.property.value)
+                    : null
+                : m.property.name
+            : null;
+    const schluessel = (k) =>
+        !k ? "?" : k.type === "Identifier" ? k.name : k.type === "Literal" ? String(k.value) : "?";
+    // 1. die Einheiten: jede äußerste Funktion; was außerhalb jeder Funktion steht, ist das Modul
+    const modul = { name: "(Modul)", knoten: [] };
+    const einheiten = [modul];
+    const nameVon = (n, e) => {
+        if (n.type === "FunctionDeclaration" && n.id) return n.id.name;
+        if (!e) return "(anonym)";
+        if (e.type === "MethodDefinition") return (e.static ? "static " : "") + schluessel(e.key);
+        if (e.type === "AssignmentExpression") return text(e.left);
+        if (e.type === "VariableDeclarator") return e.id.type === "Identifier" ? e.id.name : "(anonym)";
+        if (e.type === "Property" || e.type === "PropertyDefinition") return schluessel(e.key);
+        return "(anonym@" + n.loc.start.line + ")";
+    };
+    (function sammle(n, eltern) {
+        if (istFn(n)) {
+            einheiten.push({ name: nameVon(n, eltern), knoten: [n], fn: n });
+            return;
+        }
+        for (const c of kinder(n)) {
+            if (!istFn(c) && n === ast) modul.knoten.push(c);
+            sammle(c, n);
+        }
+    })(ast, null);
+    // EIN Durchlauf je Einheit (geschachtelte Funktionen zählen zu ihr): er sammelt, was die Wand liest — Deklarationen,
+    // Zuweisungen, Rufe, Rückgaben, `delete` — mit dem Urteil „leerer Behälter, wo keiner war" (es liest die Eltern-Kette).
+    const leer = (n) =>
+        (n.type === "NewExpression" &&
+            n.callee.type === "Identifier" &&
+            /^(Map|Set|WeakMap|WeakSet)$/.test(n.callee.name) &&
+            n.arguments.length === 0) ||
+        (n.type === "ArrayExpression" && n.elements.length === 0);
+    const hatNicht = (test, ziel) => {
+        let ja = false;
+        (function such(n) {
+            if (ja || !n) return;
+            if (n.type === "UnaryExpression" && n.operator === "!" && text(n.argument) === ziel) ja = true;
+            else for (const c of kinder(n)) such(c);
+        })(test);
+        return ja;
+    };
+    // `if (!st.F) st.F = new Map()` · `st.F ||= []` · `st.F = st.F || new Map()`: ein leerer Behälter, wo keiner war
+    const anlage = (a, eltern) => {
+        if (a.operator === "||=" || a.operator === "??=") return leer(a.right);
+        if (a.operator !== "=") return false;
+        const ziel = text(a.left);
+        if (
+            a.right.type === "LogicalExpression" &&
+            (a.right.operator === "||" || a.right.operator === "??") &&
+            text(a.right.left) === ziel &&
+            leer(a.right.right)
+        )
+            return true;
+        if (!leer(a.right)) return false;
+        for (let i = eltern.length - 1; i >= 0; i--) {
+            const e = eltern[i];
+            if (e.type !== "IfStatement") continue;
+            return (eltern[i + 1] || a) === e.consequent && hatNicht(e.test, ziel);
+        }
+        return false;
+    };
+    const felder = Object.keys(BEWACHT);
+    const istFeld = new Set(felder);
+    for (const E of einheiten) {
+        const L = (E.l = { dekl: [], zuw: [], ruf: [], rueck: [], del: [] });
+        const eltern = [];
+        const geh = (n) => {
+            const t = n.type;
+            if (t === "VariableDeclarator") L.dekl.push(n);
+            else if (t === "AssignmentExpression") {
+                L.zuw.push(n);
+                if (istFeld.has(prop(n.left) || "")) n._anlage = anlage(n, eltern);
+            } else if (t === "CallExpression") L.ruf.push(n);
+            else if (t === "ReturnStatement") L.rueck.push(n);
+            else if (t === "UnaryExpression" && n.operator === "delete") L.del.push(n);
+            eltern.push(n);
+            for (const c of kinder(n)) if (!(E === modul && istFn(c))) geh(c); // im Modul ist jede Funktion ihre Einheit
+            eltern.pop();
+        };
+        for (const k of E.knoten) geh(k);
+    }
+    const zugriff = Object.fromEntries(felder.map((f) => [f, new Set()])); // Methoden, die F zurückgeben
+    // Ist `n` eine Referenz auf den bewachten Zustand F (in der Einheit E)?
+    const istRef = (n, F, E) => {
+        if (!n) return false;
+        if (n.type === "MemberExpression") return prop(n) === F;
+        if (n.type === "Identifier") return E.alias[F].has(n.name);
+        if (n.type === "CallExpression") return zugriff[F].has(prop(n.callee) || "");
+        if (n.type === "LogicalExpression") return istRef(n.left, F, E);
+        return false;
+    };
+    // die Aliase einer Einheit bis zum Fixpunkt (`const a = st.F; const b = a;`, `const { F } = st`, `x = st.F`)
+    const aliase = (E) => {
+        E.alias = Object.fromEntries(felder.map((f) => [f, new Set()]));
+        for (let neu = true; neu;) {
+            neu = false;
+            const dazu = (F, name) => {
+                if (!E.alias[F].has(name)) {
+                    E.alias[F].add(name);
+                    neu = true;
+                }
+            };
+            for (const F of felder) {
+                if (!BEWACHT[F].menge) continue;
+                for (const d of E.l.dekl) {
+                    if (!d.init) continue;
+                    if (d.id.type === "Identifier" && istRef(d.init, F, E)) dazu(F, d.id.name);
+                    if (d.id.type === "ObjectPattern")
+                        for (const q of d.id.properties)
+                            if (q.type === "Property" && schluessel(q.key) === F) {
+                                const v = q.value.type === "AssignmentPattern" ? q.value.left : q.value;
+                                if (v.type === "Identifier") dazu(F, v.name);
+                            }
+                }
+                for (const z of E.l.zuw)
+                    if (z.operator === "=" && z.left.type === "Identifier" && istRef(z.right, F, E))
+                        dazu(F, z.left.name);
+            }
+        }
+    };
+    // die Zugriffe bis zum Fixpunkt: eine Methode, die F zurückgibt, ist F (ihr Ruf ist eine Referenz)
+    for (let neu = true; neu;) {
+        neu = false;
+        for (const E of einheiten) {
+            aliase(E);
+            if (E === modul) continue;
+            const kurz = E.name.replace(/^static /, "").replace(/^.*\./, "");
+            for (const r of E.l.rueck)
+                for (const F of felder)
+                    if (BEWACHT[F].menge && r.argument && istRef(r.argument, F, E) && !zugriff[F].has(kurz)) {
+                        zugriff[F].add(kurz);
+                        neu = true;
+                    }
+        }
+    }
+    // die Schreiber und ihre Weckrufe
+    const befunde = [];
+    const schreiber = Object.fromEntries(felder.map((f) => [f, []]));
+    for (const E of einheiten) {
+        const schreibt = {};
+        const merke = (F, n) => {
+            if (!schreibt[F] || n.loc.start.line < schreibt[F]) schreibt[F] = n.loc.start.line;
+        };
+        let weckt = false,
+            wecktBoden = false;
+        for (const c of E.l.ruf) {
+            const pc = prop(c.callee) || "";
+            if (pc === "_weltRegt") {
+                weckt = true;
+                const a0 = c.arguments[0];
+                if (a0 && a0.type === "Literal" && a0.value === true) wecktBoden = true;
+            } else if (SCHREIB_OPS.has(pc))
+                for (const F of felder) if (BEWACHT[F].menge && istRef(c.callee.object, F, E)) merke(F, c);
+        }
+        for (const z of E.l.zuw) {
+            if (z.left.type !== "MemberExpression") continue;
+            const pz = prop(z.left);
+            for (const F of felder) {
+                if (pz === F) {
+                    if (!z._anlage) merke(F, z);
+                } else if (BEWACHT[F].menge && (z.left.computed || pz === "length") && istRef(z.left.object, F, E))
+                    merke(F, z);
+            }
+        }
+        for (const d of E.l.del) {
+            const a = d.argument;
+            if (a.type !== "MemberExpression") continue;
+            for (const F of felder)
+                if (prop(a) === F || (BEWACHT[F].menge && a.computed && istRef(a.object, F, E))) merke(F, d);
+        }
+        for (const F of Object.keys(schreibt)) {
+            schreiber[F].push(E.name);
+            if (BEWACHT[F].boden ? !wecktBoden : !weckt)
+                befunde.push({
+                    methode: E.name,
+                    feld: F,
+                    zeile: schreibt[F],
+                    ruf: BEWACHT[F].boden ? "_weltRegt(true)" : "_weltRegt()",
+                });
+        }
+    }
+    return {
+        befunde,
+        schreiber,
+        einheiten: einheiten.length,
+        zugriff: Object.fromEntries(felder.map((f) => [f, [...zugriff[f]]])),
+    };
+}
+
+// Das Urteil der Schreiber-Wand: jeder Schreiber ohne Weckruf beim Namen; eine Wand, die einen bewachten Zustand nie
+// schreiben sieht, ist stumpf (ein umbenanntes Feld ließe sie leer laufen).
+function schreiberUrteil(s) {
+    const v = [];
+    if (!s || !s.schreiber) return ["LEER: keine Schreiber-Wand"];
+    for (const b of s.befunde)
+        v.push(
+            `SCHREIBER: ${b.methode} schreibt ${b.feld} (Zeile ${b.zeile}) ohne ${b.ruf} im selben Methoden-Körper — ` +
+                `die Wache verschliefe die Änderung`
+        );
+    for (const F of Object.keys(BEWACHT))
+        if (!s.schreiber[F] || s.schreiber[F].length === 0)
+            v.push(`STUMPF: die Schreiber-Wand sieht keinen Schreiber von ${F} — der bewachte Zustand heißt anders`);
+    return v;
+}
+
 module.exports = {
     TAKTE,
     BLAETTER,
+    BEWACHT,
+    schreiberWand,
+    schreiberUrteil,
     standPhase,
     standUrteil,
     STAND_INSTALL:

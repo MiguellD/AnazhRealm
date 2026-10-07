@@ -32691,6 +32691,8 @@ class AnazhRealm {
                 }
             }
             for (const [cx, cz] of neu) this._buildVoxelChunkWaterIsoSurface(cx, cz);
+            // die Wasser-Zellen der Chunks sind neu: der Ring weckt ihren Automaten (`_tickWaterCANearWake`), auch im Stand
+            this._weltRegt(true);
         }
         this.log(
             `V9.75: Hydrosphäre gerendert — Iso-Wasser (${hydro.waterfalls.length} Fall-Läufe im CA-Wildwasser)`,
