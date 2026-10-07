@@ -22282,6 +22282,59 @@ class AnazhRealm {
             };
             NM.__anazhSchattenDiaet = true;
         }
+        // DER EINE KNOTEN JE QUELLE (r184 gelesen, vendor/three.webgpu.min.js + vendor/CSMShadowNode.js): eine geteilte
+        // Uniform-Gruppe (renderGroup: Kamera · Lichter · Welt-Sätze) teilt r184 über Programme hinweg nur bei GLEICHEN
+        // Knoten — `_getBindGroup` schlüsselt sie nach den sortierten Knoten-ids, je Render-Kontext EIN Puffer. Zwei
+        // Erzeuger bauten ihre Knoten je Programm neu: `reference(…)` legt seinen Uniform-Knoten je ReferenceNode an
+        // (setNodeType), und der Schatten-Filter ruft es je Bau (ShadowNode: radius · mapSize je Kaskade); die CSM baut in
+        // `setup` je Programm camera.near · cascades · shadowFar. Jedes beleuchtete Programm trug so seine EIGENE Render-
+        // Gruppe, und jede Änderung von Kamera, TRAA-Zittern, Sonne oder Wind schrieb sie je Programm. Gemessen 07.10. an
+        // der Mess-Wiese (echte GPU, Stand, ein Frame): 192 Programme, 153 geteilte Gruppen, 121 Gruppen-Uploads und 1 042
+        // writeBuffer — dieselbe Kamera 80-mal hochgeladen. Ein Verweis einer geteilten Gruppe auf dasselbe Objekt und
+        // dieselbe Eigenschaft trägt jetzt EINEN Uniform-Knoten, die CSM baut ihren Knoten einmal je Instanz (TSL baut einen
+        // Knoten in jedem Programm für sich); Verweise ohne festes Objekt (je Zeichen-Objekt) bleiben je Knoten.
+        // gate:vendor-anker pinnt beide Stellen und den Schlüssel, gate:kamera-treue zählt die Gruppen am echten Bild.
+        const REF = THREE.TSL && typeof THREE.TSL.reference === "function" ? THREE.TSL.reference : null;
+        let refProto = REF ? Object.getPrototypeOf(REF("x", "float", { x: 0 })) : null;
+        while (refProto && !Object.prototype.hasOwnProperty.call(refProto, "setNodeType"))
+            refProto = Object.getPrototypeOf(refProto);
+        if (!refProto) this.log("EIN KNOTEN: r184-ReferenceNode.setNodeType nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!refProto.__anazhEinKnoten) {
+            const typRoh = refProto.setNodeType;
+            const jeQuelle = new WeakMap();
+            refProto.setNodeType = function (typ) {
+                const g = this.group;
+                const o = this.object;
+                if (!g || g.shared !== true || o === null || typeof o !== "object") return typRoh.call(this, typ);
+                let m = jeQuelle.get(o);
+                if (!m) jeQuelle.set(o, (m = new Map()));
+                const k = `${this.property}|${typ}|${this.count}|${g.name}|${this.name}`;
+                const n = m.get(k);
+                if (n) {
+                    this.node = n;
+                    return;
+                }
+                typRoh.call(this, typ);
+                m.set(k, this.node);
+            };
+            refProto.__anazhEinKnoten = true;
+        }
+        const CSM = THREE.CSMShadowNode;
+        if (typeof CSM !== "function" || typeof CSM.prototype.setup !== "function")
+            this.log("EIN KNOTEN: CSMShadowNode.setup nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!CSM.__anazhEinAufbau) {
+            const aufbauRoh = CSM.prototype.setup;
+            const aufbau = new WeakMap();
+            CSM.prototype.setup = function (builder) {
+                let n = aufbau.get(this);
+                if (n === undefined) {
+                    n = aufbauRoh.call(this, builder);
+                    aufbau.set(this, n);
+                }
+                return n;
+            };
+            CSM.__anazhEinAufbau = true;
+        }
         // Ab hier hängen die Eingriffe am Renderer-EXEMPLAR; der Null-Renderer (headless) zeichnet nie. Fehlt einem
         // echten Renderer eine der r184-Stellen, meldet sich der Eingriff laut (gate:vendor-anker pinnt jede).
         if (renderer._isHeadlessNull) return;
@@ -22383,6 +22436,32 @@ class AnazhRealm {
                     return aus;
                 };
                 renderer.__anazhBundleReihenfolge = true;
+            }
+            // EIN SCHREIBEN JE PUFFER: r184 lädt eine Uniform-Gruppe Bereich für Bereich hoch — je geänderter Uniform ein
+            // eigenes writeBuffer (bindingUtils.updateBinding). Kamera-Matrizen, Licht-Richtung und Zeit ändern sich
+            // zusammen: gemessen 07.10. (Mess-Wiese, Stand) 18 Gruppen-Uploads in 170 writeBuffer je Frame. Eine Gruppe
+            // mit mehreren geänderten Bereichen lädt jetzt EINEN Bereich vom ersten bis zum letzten (dazwischen liegen
+            // die gültigen Werte der Gruppe); r184 leert die Bereiche nach dem Upload (`_update`).
+            const be = renderer.backend;
+            if (typeof be.updateBinding !== "function")
+                this.log("EIN SCHREIBEN: r184-Backend.updateBinding nicht gefunden (Vendor-Drift)", "ERROR");
+            else if (!be.__anazhEinSchreiben) {
+                const bindungRoh = be.updateBinding;
+                be.updateBinding = function (b) {
+                    const rs = b && b.isNodeUniformsGroup === true ? b.updateRanges : null;
+                    if (rs && rs.length > 1) {
+                        let a = rs[0].start,
+                            z = a + rs[0].count;
+                        for (let i = 1; i < rs.length; i++) {
+                            if (rs[i].start < a) a = rs[i].start;
+                            if (rs[i].start + rs[i].count > z) z = rs[i].start + rs[i].count;
+                        }
+                        rs.length = 0;
+                        rs.push({ start: a, count: z - a });
+                    }
+                    return bindungRoh.call(this, b);
+                };
+                be.__anazhEinSchreiben = true;
             }
         }
         // DER SCHATTEN-STOFF JE OBJEKT: r184 setzt in `renderObject` je Objekt `alphaTest` (und Seite, Knoten) des
