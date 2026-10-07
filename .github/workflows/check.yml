@@ -380,7 +380,9 @@ jobs:
               # In Ruhe 0 Arbeit und 0 Bytes ab dem ersten Frame, beim Drehen und Gehen rechnet jede neue Lage, die gehaltene
               # Wahl ist die frisch gerechnete, ein eingeschmuggelter Cache-Bruch fällt rot. Ein Satz-Inhalt zählt nur mit
               # Beleg (Bereich, Anker, Hülle) - ein eingeschmuggelter Stand-Bruch (der Satz zählt nur seinen Stand) fällt
-              # als stand:ohne beim Namen rot. --selftest zuerst.
+              # als stand:ohne beim Namen rot. Das atmende Auge (Kamera und Maske +-1 mm, unter dem Halt) arbeitet nicht,
+              # und die gehaltene Wahl trägt eine Instanz an der Kante ihres Fensters (ohne den Halt als Rand fehlt sie).
+              # --selftest zuerst.
               run: npm run gate:sicht-arbeit
 
             - name: Wetter-Wache (Welle K — Halt heisst Halt, jeder Schreiber beim Namen)

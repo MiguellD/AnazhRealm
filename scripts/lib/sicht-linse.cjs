@@ -68,9 +68,33 @@ function sichtLinse(cfg) {
         // die Index-Bytes je „Familie Grund" und warum eine Satz-Wahl nicht stand (je „Familie Grund")
         bytesGrund: {},
         warum: {},
+        // je Kaskaden-Pass: drehte das Licht seit dem letzten Pass DIESER Kaskade? (`lichtJe`)
+        lichtJe: {},
         paesse: 0,
         nach: 0,
     });
+    // DAS LICHT JE KASKADE (07.10., echte GPU): eine Kaskade rendert nicht jeden Frame — dreht das Licht in einem Frame, in dem
+    // sie ruht, wählt sie erst in ihrem nächsten Pass neu, und der Frame davor trug die Drehung. Je Pass `k<i>` merkt die Linse
+    // die Licht-Richtung ihres letzten Passes; weicht die jetzige ab, ist die Drehung die benannte Ursache dieses Passes
+    // (vorher galt nur die Drehung gegen den Frame davor: Mess-Wiese, Radeon, 1 von 299 Ruhe-Frames „boden wahl:lage k1"
+    // ohne Grund — k1 rendert nach einem Frame mit Drehung, in dem sie ruhte).
+    const lichtBeiPass = {};
+    const lichtJetzt = () => {
+        const dl = r.state.directionalLight;
+        if (!dl || !dl.target) return null;
+        const x = dl.position.x - dl.target.position.x,
+            y = dl.position.y - dl.target.position.y,
+            zz = dl.position.z - dl.target.position.z;
+        const l = Math.hypot(x, y, zz) || 1;
+        return [x / l, y / l, zz / l];
+    };
+    const lichtPass = (k) => {
+        const j = lichtJetzt();
+        const v = lichtBeiPass[k];
+        lichtBeiPass[k] = j;
+        if (!j || !v) return;
+        if (1 - (v[0] * j[0] + v[1] * j[1] + v[2] * j[2]) > 1e-12) z.lichtJe[k] = 1;
+    };
     const familie = (s) => String(s && s.art).split("|")[0];
     // der Grund der letzten Wahl je Satz (`_satzAbschnittSteht` = false): ihre Bytes tragen ihn
     const wahlGrund = new WeakMap();
@@ -157,6 +181,12 @@ function sichtLinse(cfg) {
                 if (name === "_passSicht") a[1] ? z.nach++ : z.paesse++;
                 const vorher = pass;
                 if (name === "_passSicht") pass = a[1] ? "nach" : passName(a[0]);
+                if (name === "_passSicht" && !a[1] && /^k\d+$/.test(pass)) lichtPass(pass);
+                // die Arbeit je Pass (wie `arbeit`): die Aufrufe der Leser, deren Ruhe 0 sein muss
+                if (name === "_hoehlenSicht" || name === "_hoehlenSichtLicht" || name === "_chunkSatzAbschnitt") {
+                    const jp = z.jePass[pass] || (z.jePass[pass] = { pruefung: 0, ecken: 0, arbeit: 0 });
+                    jp.arbeit++;
+                }
                 stapel.push(name);
                 try {
                     return f.apply(this, a);
@@ -168,7 +198,7 @@ function sichtLinse(cfg) {
             const o = f.apply(this, a);
             if (art === "pruefung") {
                 z.pruefung[name] = (z.pruefung[name] || 0) + 1;
-                const jp = z.jePass[pass] || (z.jePass[pass] = { pruefung: 0, ecken: 0 });
+                const jp = z.jePass[pass] || (z.jePass[pass] = { pruefung: 0, ecken: 0, arbeit: 0 });
                 jp.pruefung++;
                 if (name === "_hoehlenRect" || name === "_hoehlenLichtLage") jp.ecken += 8;
                 if (name === "_passTrifft") {
@@ -180,7 +210,10 @@ function sichtLinse(cfg) {
                             break;
                         }
                     z.trifft[wer] = (z.trifft[wer] || 0) + 1;
-                }
+                    // die Arbeit je Pass zählt wie `arbeit`: die Prüfungen der Leser, deren Ruhe 0 sein muss (die Werfer der
+                    // Region-Bündel nennt die Linse, verlangt dort aber keine Null)
+                    if (cfg.ruheLeser.includes(wer)) jp.arbeit++;
+                } else jp.arbeit++;
             } else if (art === "treffer") {
                 const k = o ? "treffer" : "verfehlt";
                 z[k][name] = (z[k][name] || 0) + 1;
@@ -376,21 +409,33 @@ function sichtLinse(cfg) {
         return 1;
     };
     // DIE BLENDE (die LIVE-Uniforms jeder LOD-Maske: an · Auge · Perf-Streck · Bezug · die Kanten des Blend-Gesetzes — der
-    // Regler legt sie): ändert sie sich, wählt jeder Pass neu (`_passLageHaelt`: die Blende gleich). Das ist eine Änderung.
-    let blendeVor = null;
+    // Regler legt sie): ändert sie sich nach dem Gesetz der Lage (`_blendeHaelt` — das Auge über den halben Halt gegen den
+    // ANKER, alles andere gleich), wählt jeder Pass neu: eine Änderung, und der Anker rückt nach (`sichtBlendeBewegt`).
+    // Gegenprüfung 07.10.: die Linse verglich das Auge exakt — atmete es ±1 mm quer, hieß jeder Frame „Blende" und jede
+    // Arbeit war entschuldigt (14 999 Prüfungen je Frame GRÜN).
+    let blendeAnker = null;
     let blendeOffen = 0;
     const blendeDreht = () => {
         const lu = r.state.lodUniforms;
-        const v = (u) =>
-            u && u.value != null ? (typeof u.value === "number" ? u.value : u.value.x + "," + u.value.z) : "-";
+        const n = (u) => (u && typeof u.value === "number" ? u.value : null);
+        const auge = lu && lu.uLodAuge && lu.uLodAuge.value;
         const jetzt = lu
-            ? [lu.uLodMaskOn, lu.uLodAuge, lu.uLodPerf, lu.uLodRef, lu.uLodD0, lu.uLodD1, lu.uLodFade, lu.uLodFade0]
-                  .map(v)
-                  .join("|")
-            : "";
-        const vor = blendeVor;
-        blendeVor = jetzt;
-        return vor !== null && vor !== jetzt ? 1 : 0;
+            ? {
+                  ex: auge ? auge.x : null,
+                  ez: auge ? auge.z : null,
+                  werte: [lu.uLodMaskOn, lu.uLodPerf, lu.uLodRef, lu.uLodD0, lu.uLodD1, lu.uLodFade, lu.uLodFade0].map(
+                      n
+                  ),
+              }
+            : { ex: null, ez: null, werte: [] };
+        if (!blendeAnker) {
+            blendeAnker = jetzt;
+            return 0;
+        }
+        const PW = r.constructor.PASS_WAHL || {};
+        if (!window.__sichtBlendeBewegt(blendeAnker, jetzt, PW.haltM)) return 0;
+        blendeAnker = jetzt;
+        return 1;
     };
     const lichtDreht = () => {
         const dl = r.state.directionalLight;
@@ -423,7 +468,9 @@ function sichtLinse(cfg) {
             inhaltOhneOffen = {};
             inhalt(true);
             lichtDreht();
+            kameraAnker = null;
             kameraBewegt();
+            blendeAnker = null;
             blendeDreht();
             return { gehuellt: Object.keys(orig), fehlt: fehlt.slice() };
         },
@@ -560,8 +607,9 @@ function sichtSatzInhalt(vor, jetzt, offen) {
 // geleerte Liste, die offene Ordnung, das Verdichten des Satzes nach seinem Überhang) und `ohne` (kein Grund — der Täter, je
 // „Familie Grund Pass"; `dicht:ohne` · `umlegen:ohne`: die Folge, die keine Wahl schuldet; eine Wahl, deren Satz nur seinen
 // Stand zählte). Bytes, die der Schreiber-Haken nicht sah, haben keinen Grund („? ungesehen" — die Linse ist blind). Die Lage
-// eines Passes ändert sich mit der Kamera über den Halt (`kamera`) und der Blende des Reglers (`blende`, jeder Pass) oder
-// dem Licht (nur die Kaskaden `k<i>`). Ein Inhalt ohne `grund` (nur die Zähler des Spiels) entschuldigt nichts.
+// eines Passes ändert sich mit der Kamera über den Halt (`kamera`) und der Blende über den Halt (`blende`, jeder Pass) oder
+// dem Licht (nur die Kaskaden `k<i>`: im Frame selbst oder seit dem letzten Pass dieser Kaskade, `lichtJe`). Ein Inhalt ohne
+// `grund` (nur die Zähler des Spiels) entschuldigt nichts.
 function sichtBytesKlasse(f) {
     const aus = { aenderung: 0, folge: 0, ohne: 0, aenderungJe: {}, folgeJe: {}, ohneJe: {} };
     let gesehen = 0;
@@ -571,7 +619,10 @@ function sichtBytesKlasse(f) {
         let kl = "ohne";
         if (g === "dicht" || g === "umlegen" || g === "wahl:liste") kl = "folge";
         else if (g === "wahl:lage")
-            kl = f.kamera || f.blende || (f.licht && /^k\d+$/.test(pass || "")) ? "aenderung" : "ohne";
+            kl =
+                f.kamera || f.blende || (/^k\d+$/.test(pass || "") && (f.licht || (f.lichtJe && f.lichtJe[pass])))
+                    ? "aenderung"
+                    : "ohne";
         else if (/^wahl:(stand|neu|boden|hoehle)$/.test(g)) {
             const e = f.inhalt && f.inhalt[fam];
             kl = e && e.grund === "aenderung" ? "aenderung" : e && e.grund === "folge" ? "folge" : "ohne";
@@ -603,18 +654,42 @@ function sichtKameraBewegt(a, e, haltM, drehRand) {
     }
     return false;
 }
+// DIE BLENDE BEWEGT SICH (rein, Gegenprüfung 07.10.): Anker und jetzt je { ex, ez, werte } — das Auge der Maske (`uLodAuge`
+// in XZ) wanderte um mehr als den halben Halt (`haltM`, `_blendeHaelt` des Spiels: es ist ein Ort der Lage wie das Auge der
+// Kamera), oder ein Wert der Blende (an · Perf-Streck · Bezug · die Kanten des Blend-Gesetzes) änderte sich. Das Atmen des
+// Auges unter dem Halt ist keine Bewegung — es entschuldigt keine Arbeit.
+function sichtBlendeBewegt(a, e, haltM) {
+    const halt = (Number.isFinite(haltM) ? haltM : 0.02) / 2;
+    if ((a.ex == null) !== (e.ex == null)) return true;
+    if (e.ex != null && Math.hypot(e.ex - a.ex, e.ez - a.ez) > halt) return true;
+    const wa = a.werte || [],
+        we = e.werte || [];
+    if (wa.length !== we.length) return true;
+    for (let i = 0; i < we.length; i++) if (wa[i] !== we[i]) return true;
+    return false;
+}
 // Die Arbeit eines Frames ohne Änderung: eine bewegte Kamera, eine neue Blende oder ein Satz-Inhalt mit BENANNTEM Grund
 // (`grund`: Änderung oder ihre Folge) erklären die ganze Arbeit, ein gedrehtes Licht die Arbeit der Kaskaden-Pässe (je Pass
 // `jePass`) — was bleibt, ist ein Cache-Bruch. Die Zähler eines Satzes allein (Stand, Verdichten) erklären nichts.
 function sichtArbeitOhne(f) {
     if (f.kamera || f.blende || Object.values(f.inhalt || {}).some((e) => !!(e && e.grund))) return 0;
-    if (!f.licht) return f.arbeit;
+    const lj = f.lichtJe || {};
+    if (!f.licht && !Object.keys(lj).length) return f.arbeit;
+    // das Licht erklärt die Arbeit der Kaskaden, die es seit ihrem letzten Pass gedreht sah (bzw. im Frame selbst drehte);
+    // je Pass zählt dieselbe Arbeit wie `arbeit` (ohne die Werfer der Region-Bündel)
     let n = 0;
-    for (const [k, x] of Object.entries(f.jePass || {})) if (!/^k\d+$/.test(k)) n += x.pruefung;
+    for (const [k, x] of Object.entries(f.jePass || {}))
+        if (!/^k\d+$/.test(k) || !(f.licht || lj[k])) n += x.arbeit != null ? x.arbeit : x.pruefung;
     return n;
 }
 const sichtAenderung = (f) =>
-    !!(f.licht || f.kamera || f.blende || Object.values(f.inhalt || {}).some((e) => !!(e && e.grund)));
+    !!(
+        f.licht ||
+        f.kamera ||
+        f.blende ||
+        Object.keys(f.lichtJe || {}).length ||
+        Object.values(f.inhalt || {}).some((e) => !!(e && e.grund))
+    );
 
 // Die Statistik einer Phase: je Zähl-Größe Mittel · Median · Maximum über die Frames (ab `ab`).
 function sichtPhase(frames, ab) {
@@ -642,9 +717,10 @@ function sichtPhase(frames, ab) {
     const jePass = {};
     for (const f of fs)
         for (const k in f.jePass || {}) {
-            const x = jePass[k] || (jePass[k] = { pruefung: 0, ecken: 0 });
+            const x = jePass[k] || (jePass[k] = { pruefung: 0, ecken: 0, arbeit: 0 });
             x.pruefung += f.jePass[k].pruefung / fs.length;
             x.ecken += f.jePass[k].ecken / fs.length;
+            x.arbeit += (f.jePass[k].arbeit || 0) / fs.length;
         }
     for (const k in jePass) for (const g in jePass[k]) jePass[k][g] = +jePass[k][g].toFixed(1);
     const bytesJe = {};
@@ -671,6 +747,7 @@ function sichtPhase(frames, ab) {
                 inhalt: f.inhalt,
                 inhaltOhne: f.inhaltOhne,
                 licht: f.licht,
+                lichtJe: f.lichtJe,
                 kamera: f.kamera,
                 blende: f.blende,
             });
@@ -928,6 +1005,28 @@ function sichtUrteil(b) {
                     `nicht als Bytes ohne Änderung (${x ? x.ohneFrames : "?"} Frames, ${JSON.stringify((x && x.bytesOhneJe) || {})})`
             );
     }
+    // das atmende Auge (`b.auge`, Gegenprüfung 07.10.): die Kamera und mit ihr das Auge jeder Maske atmen ±1 mm quer, unter
+    // dem Halt — das ist keine Änderung: die Linse nennt es weder Kamera noch Blende, und die Kette arbeitet nicht (vorher
+    // verglich die Lage die Blende exakt, 14 999 Prüfungen je Frame, und die Linse entschuldigte sie als „Blende")
+    if (b.auge !== undefined) {
+        const x = b.auge;
+        if (!x || !(x.frames > 0)) v.push("LEER: keine Phase mit atmendem Auge gemessen");
+        else {
+            if (x.kameraFrames > 0 || x.blendeFrames > 0)
+                v.push(
+                    `LINSE STUMPF: das atmende Auge (±1 mm, unter dem Halt) heißt Bewegung — Kamera in ${x.kameraFrames}, ` +
+                        `Blende in ${x.blendeFrames} von ${x.frames} Frames; jede Arbeit darin wäre entschuldigt`
+                );
+            const A = x.arbeitOhne || { frames: 0, median: 0, max: 0 };
+            if (A.frames > 0 || x.ohneFrames > 0)
+                v.push(
+                    `AUGE: das Auge atmet unter dem Halt, doch die Sicht-Kette arbeitet ohne Änderung in ${A.frames} von ` +
+                        `${x.frames} Frames (Median ${A.median}, max ${A.max} Prüfungen, Bytes ohne Grund in ${x.ohneFrames}) — ` +
+                        "eine zweite Signatur neben dem Gesetz des Halts" +
+                        (x.taeter && x.taeter.length ? `; neu gerechnet je Frame: ${x.taeter.join(", ")}` : "")
+                );
+        }
+    }
     // der Stand-Bruch (`b.standBruch`, Gegenprüfung 07.10.): jeder Satz zählt je Frame seinen Stand, ohne dass ein Bereich, ein
     // Anker oder eine Hülle sich ändert — die Linse muss seine Arbeit als Arbeit OHNE Änderung zählen und `stand:ohne` beim
     // Namen nennen (vorher hieß der eigene Zähler „Inhalt geändert", und die Wand stand grün)
@@ -1068,6 +1167,7 @@ module.exports = {
     SICHT_NEU,
     RUHE_LESER,
     sichtKameraBewegt,
+    sichtBlendeBewegt,
     sichtSatzInhalt,
     sichtBytesKlasse,
     sichtArbeitOhne,
@@ -1085,6 +1185,7 @@ module.exports = {
             ruheLeser: RUHE_LESER,
         })});` +
         `window.__sichtKameraBewegt = ${sichtKameraBewegt.toString()};` +
+        `window.__sichtBlendeBewegt = ${sichtBlendeBewegt.toString()};` +
         `window.__sichtSatzInhalt = ${sichtSatzInhalt.toString()};` +
         `window.__sichtBytesKlasse = ${sichtBytesKlasse.toString()};` +
         `window.__sichtAenderung = ${sichtAenderung.toString()};` +

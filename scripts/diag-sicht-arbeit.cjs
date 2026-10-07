@@ -28,6 +28,11 @@
 //       (dreht es, drehen sie): das Licht hat eine Stufe und dreht nur an ihr, die Kette arbeitet nur, wo eine Stufe fiel
 //       (die Stellvertreter tragen keine Box — den Licht-Rand der echten Kaskaden, über den ihre Wahl die Stufen hält, prüft
 //       gate:schatten-werfer K8, im echten Loop `werkbank sicht --sonne`);
+//   (A) DAS ATMENDE AUGE (zweite Gegenprüfung 07.10.): die Kamera und mit ihr das Auge jeder Maske (`uLodAuge`) atmen ±1 mm
+//       quer, unter dem Halt — die Kette arbeitet nicht, und die Linse nennt es weder Kamera noch Blende (vorher verglich die
+//       Lage die Blende exakt, eine zweite Signatur neben `_wahlHaelt`: 14 999 Prüfungen je Frame, die Linse GRÜN); die
+//       BLENDE-TREUE: eine Instanz auf der Kante ihres Fensters, der Anker 3 mm jenseits, das Auge 9,5 mm herüber — die Lage
+//       hält, und die gehaltene Wahl trägt sie (der Halt als Rand des Fensters); ohne den Rand fehlt sie (scharf);
 //   (C) CODE — EIN Gesetz der Lage: `_passWahlLage` legt die Generation (`_passLageGen`), die Sätze, die Instanz-Wahl
 //       und die Nah-Wiese lesen sie (`_satzAbschnittSteht`, `_instanzWahlSteht`, `L.gen`); die eigene Kamera-Signatur der
 //       Nah-Wiese (`_sichtSteht`) ist gefallen; (P) kein Page-Error.
@@ -46,6 +51,31 @@ function urteil(b) {
     if (!b.sonne) v.push("LEER: keine Phase mit laufender Sonne (kein Richtlicht?) — (L) prüfte nichts");
     if (!b.byteBruch) v.push("LEER: kein Byte-Bruch gemessen — (S) prüfte die Bytes ohne Änderung nicht");
     if (!b.standBruch) v.push("LEER: kein Stand-Bruch gemessen — (S) prüfte die Satz-Arbeit ohne Ursache nicht");
+    // (A) das atmende Auge (die Phase urteilt `sichtUrteil`) und die Blende-Treue an der Kante eines Fensters
+    if (!b.augeAn) v.push("LEER: die Maske ist aus (uLodMaskOn) — (A) prüfte das Auge der Blende nicht");
+    else if (!b.auge) v.push("LEER: keine Phase mit atmendem Auge gemessen — (A) prüfte nichts");
+    const BT = b.blendeTreue;
+    if (b.augeAn) {
+        if (!BT || !BT.fall)
+            v.push("LEER: Blende-Treue ohne Instanz an der Kante eines Fensters — (A) prüfte die gehaltene Wahl nicht");
+        else if (!BT.gehalten)
+            v.push(
+                `BLENDE-TREUE VAKUÖS: die Lage hielt das Auge der Maske über 9,5 mm nicht (unter dem halben Halt) — ${BT.fall}`
+            );
+        else if (!BT.traegt)
+            v.push(`BLENDE-TREUE VAKUÖS: die Maske behält die Instanz an der Kante nicht — ${BT.fall}`);
+        else if (BT.loecher > 0)
+            v.push(
+                `BLENDE-TREUE: ${BT.loecher} Löcher — das Auge der Maske wanderte unter dem Halt, die gehaltene Wahl zeichnet ` +
+                    `nicht, was die Maske vom Auge dieses Frames behält: ${BT.namen.join(", ")} (Kante: ${BT.fall})`
+            );
+        const BO = b.blendeTreueOhneRand;
+        if (BT && BT.fall && BT.gehalten && !(BO && BO.loecher > 0))
+            v.push(
+                "LINSE STUMPF: ohne den Halt als Rand des Fensters fehlt der gehaltenen Wahl nichts " +
+                    `(${BO ? BO.loecher : "?"} Löcher) — die Blende-Treue prüft die Kante nicht`
+            );
+    }
     const I = b.instanzTreue;
     if (!I || !(I.faelle && I.faelle.length >= 2))
         v.push(
@@ -125,6 +155,24 @@ function selbsttest() {
             inhaltOhneFrames: 10,
             inhaltOhneJe: { "streuSatz stand:ohne": 50, "boden stand:ohne": 10 },
         }),
+        augeAn: true,
+        auge: Object.assign(phase(0, 0, 9), { kameraFrames: 0, blendeFrames: 0 }),
+        blendeTreue: {
+            gehalten: true,
+            traegt: true,
+            loecher: 0,
+            namen: [],
+            geprueft: 640,
+            fall: "f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)",
+        },
+        blendeTreueOhneRand: {
+            gehalten: true,
+            traegt: true,
+            loecher: 1,
+            namen: ["f:eiche|2|1:0 Slot 3"],
+            geprueft: 640,
+            fall: "f:eiche|2|1:0 Slot 3 (Stufe 1, Kante 18.400 m)",
+        },
         treue: { geprueft: 12, abweichung: [] },
         drehTreue: { grenze: 0.0348, gehalten: true, loecher: 0, namen: [], geprueft: 500 },
         instanzTreue: {
@@ -241,6 +289,21 @@ function selbsttest() {
         ],
         ["Lage ohne Licht", { bytes: 100, bytesGrund: { "boden wahl:lage k1": 100 }, licht: 0, inhalt: {} }, "ohne"],
         [
+            "Licht drehte seit dem letzten Pass der Kaskade (sie ruhte im Frame der Drehung)",
+            { bytes: 100, bytesGrund: { "boden wahl:lage k1": 100 }, licht: 0, lichtJe: { k1: 1 }, inhalt: {} },
+            "aenderung",
+        ],
+        [
+            "Licht drehte nur für die andere Kaskade",
+            { bytes: 100, bytesGrund: { "boden wahl:lage k1": 100 }, licht: 0, lichtJe: { k0: 1 }, inhalt: {} },
+            "ohne",
+        ],
+        [
+            "Licht je Kaskade für das Hauptbild",
+            { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, licht: 0, lichtJe: { haupt: 1 }, inhalt: {} },
+            "ohne",
+        ],
+        [
             "Blende des Reglers (Hauptbild)",
             { bytes: 100, bytesGrund: { "boden wahl:lage haupt": 100 }, blende: 1, inhalt: {} },
             "aenderung",
@@ -294,6 +357,25 @@ function selbsttest() {
         if (k !== soll) fehler.push(`Kamera „${name}": ${k} statt ${soll}`);
         console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Kamera „${name}" → ${k ? "bewegt" : "steht"}`);
     }
+    // DIE BLENDE BEWEGT SICH (`sichtBlendeBewegt`, Gegenprüfung 07.10.): das Auge der Maske ist ein Ort der Lage — sein Atmen
+    // unter dem halben Halt ist keine Bewegung (vorher exakt verglichen: jeder Frame hieß „Blende", jede Arbeit entschuldigt)
+    if (typeof SICHT.sichtBlendeBewegt !== "function")
+        fehler.push("LINSE: `sichtBlendeBewegt` fehlt — die Blende kennt das Gesetz des Halts nicht");
+    else {
+        const bl = (ex, ez, werte) => ({ ex, ez, werte: werte || [1, 1, 14, 20, 60, 6, 4] });
+        for (const [name, b, soll] of [
+            ["Atmen ±1 mm quer", bl(-900.001, -850), false],
+            ["Atmen 9 mm (unter dem halben Halt)", bl(-900.009, -850), false],
+            ["Schritt 1,5 cm", bl(-900.015, -850), true],
+            ["Perf-Streck neu", bl(-900, -850, [1, 1.1, 14, 20, 60, 6, 4]), true],
+            ["Kante des Blend-Gesetzes neu", bl(-900, -850, [1, 1, 14, 22, 60, 6, 4]), true],
+            ["Maske aus", bl(-900, -850, [0, 1, 14, 20, 60, 6, 4]), true],
+        ]) {
+            const k = SICHT.sichtBlendeBewegt(bl(-900, -850), b, 0.02);
+            if (k !== soll) fehler.push(`Blende „${name}": ${k} statt ${soll}`);
+            console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Blende „${name}" → ${k ? "bewegt" : "steht"}`);
+        }
+    }
     // DIE ARBEIT OHNE ÄNDERUNG je Frame (`sichtArbeitOhne`): Kamera und ein Inhalt mit benanntem Grund erklären alles, das
     // Licht nur die Kaskaden, der Stand eines Satzes allein nichts
     const ao = (f) => SICHT.sichtArbeitOhne(f);
@@ -301,6 +383,25 @@ function selbsttest() {
     for (const [name, f, soll] of [
         ["ruhig", { arbeit: 57, jePass: jp, inhalt: {} }, 57],
         ["Licht drehte", { arbeit: 57, jePass: jp, licht: 1, inhalt: {} }, 7],
+        [
+            "Licht drehte seit dem letzten Pass von k1 (nicht von k0)",
+            { arbeit: 87, jePass: Object.assign({ k1: { pruefung: 30 } }, jp), lichtJe: { k1: 1 }, inhalt: {} },
+            57,
+        ],
+        [
+            "die Werfer der Region-Bündel einer ruhenden Kaskade zählen nicht (wie `arbeit`)",
+            {
+                arbeit: 7,
+                jePass: {
+                    haupt: { pruefung: 7, arbeit: 7 },
+                    k0: { pruefung: 23, arbeit: 0 },
+                    k1: { pruefung: 5, arbeit: 5 },
+                },
+                lichtJe: { k1: 1 },
+                inhalt: {},
+            },
+            7,
+        ],
         ["Kamera bewegt", { arbeit: 57, jePass: jp, kamera: 1, inhalt: {} }, 0],
         ["Blende neu", { arbeit: 57, jePass: jp, blende: 1, inhalt: {} }, 0],
         [
@@ -505,6 +606,53 @@ function selbsttest() {
             /LINSE STUMPF: ein eingeschmuggelter Stand-Bruch/,
         ],
         ["kein Stand-Bruch", (b) => delete b.standBruch, /LEER: kein Stand-Bruch gemessen/],
+        [
+            "das atmende Auge arbeitet (der Täter der zweiten Gegenprüfung)",
+            (b) =>
+                (b.auge = Object.assign(phase(14999, 0, 0), {
+                    frames: 5,
+                    kameraFrames: 0,
+                    blendeFrames: 0,
+                    arbeitOhne: { frames: 5, median: 14999, max: 14999 },
+                    taeter: ["satz streuSatz|haupt ×5", "gruppe f:eiche|2|1:0#S ×2"],
+                })),
+            /AUGE: das Auge atmet unter dem Halt, doch die Sicht-Kette arbeitet ohne Änderung in 5 von 5 Frames \(Median 14999/,
+        ],
+        [
+            "die Linse nennt das atmende Auge Blende",
+            (b) =>
+                (b.auge = Object.assign(phase(14999, 0, 0), {
+                    frames: 5,
+                    kameraFrames: 0,
+                    blendeFrames: 5,
+                    aenderungFrames: 5,
+                    arbeitOhne: { frames: 0, median: 0, max: 0 },
+                })),
+            /LINSE STUMPF: das atmende Auge \(±1 mm, unter dem Halt\) heißt Bewegung — Kamera in 0, Blende in 5 von 5/,
+        ],
+        ["kein atmendes Auge", (b) => delete b.auge, /LEER: keine Phase mit atmendem Auge/],
+        ["die Maske ist aus", (b) => (b.augeAn = false), /LEER: die Maske ist aus/],
+        [
+            "Loch an der Kante des Fensters",
+            (b) => Object.assign(b.blendeTreue, { loecher: 1, namen: ["f:eiche|2|1:0 Slot 3"] }),
+            /BLENDE-TREUE: 1 Löcher — .*f:eiche\|2\|1:0 Slot 3/,
+        ],
+        [
+            "die Lage hält das Auge nicht",
+            (b) => (b.blendeTreue.gehalten = false),
+            /BLENDE-TREUE VAKUÖS: die Lage hielt/,
+        ],
+        [
+            "die Maske behält die Kante nicht",
+            (b) => (b.blendeTreue.traegt = false),
+            /BLENDE-TREUE VAKUÖS: die Maske behält/,
+        ],
+        ["keine Instanz an einer Kante", (b) => (b.blendeTreue.fall = null), /LEER: Blende-Treue ohne Instanz/],
+        [
+            "ohne Rand fehlt nichts (die Probe ist stumpf)",
+            (b) => (b.blendeTreueOhneRand.loecher = 0),
+            /LINSE STUMPF: ohne den Halt als Rand des Fensters fehlt der gehaltenen Wahl nichts/,
+        ],
         [
             "der Inhalt ändert sich in der eingefrorenen Welt",
             (b) =>
@@ -1105,6 +1253,167 @@ const server = http.createServer((req, res) => {
             } finally {
                 delete r._tickChunkSatz;
             }
+            // (A) DAS ATMENDE AUGE (Gegenprüfung 07.10.): die Kamera und mit ihr das Auge jeder Maske (`uLodAuge` — das Spiel
+            // legt es je Frame aus der Kamera) atmen ±1 mm quer, unter dem Halt: keine Lage ändert sich, die Kette arbeitet
+            // nicht, und die Linse nennt es weder Kamera noch Blende. Vorher verglich die Lage die Blende exakt — eine zweite
+            // Signatur neben dem Gesetz des Halts: 14 999 Prüfungen je Frame, und die Linse entschuldigte sie als „Blende".
+            const lu = st.lodUniforms;
+            aus.augeAn = !!(lu && lu.uLodAuge && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5);
+            if (aus.augeAn) {
+                const augeVorher = lu.uLodAuge.value.clone();
+                const genHaupt = () => (r._passLagen && r._passLagen.get("haupt") ? r._passLagen.get("haupt").gen : -1);
+                try {
+                    stelle(0, 0);
+                    cam.getWorldPosition(lu.uLodAuge.value);
+                    reif();
+                    aus.auge = window.__sichtPhase(
+                        phase(6, (i) => {
+                            stelle(0, 0);
+                            cam.position.x += (i % 2 ? 1 : -1) * 0.001;
+                            cam.updateMatrixWorld(true);
+                            cam.getWorldPosition(lu.uLodAuge.value);
+                        }),
+                        1
+                    );
+                    // (A) DIE BLENDE-TREUE: hält die Lage über das wandernde Auge der Maske, trägt die gehaltene Wahl jede
+                    // Instanz, deren Maske vom Auge DIESES Frames etwas behält — scharf an einer Instanz auf der Kante ihres
+                    // Fensters: der Anker liegt 3 mm jenseits (das Gesetz ohne Rand verwirft sie dort), dann wandert das Auge
+                    // 9,5 mm herüber (0,95 × der halbe Halt — die Lage hält, die Maske behält sie). Der Rand des Fensters
+                    // (`L.halt` in `_instanzFenster`) trägt sie; ohne ihn (`ohneRand`) fehlt sie — die Probe ist scharf.
+                    // Die Kamera steht; nur das Auge der Maske wandert.
+                    const lageHaupt = () => {
+                        S.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+                        S.frustum.setFromProjectionMatrix(S.m, cam.coordinateSystem);
+                        const Lw = r._passWahlLage(S, cam, -1);
+                        return Object.assign({}, Lw, {
+                            fr: new T.Frustum().copy(S.frustum),
+                            halt: 0,
+                            rand: 0,
+                            dreh: 0,
+                            licht: 0,
+                            fit: null,
+                            ax: cam.position.x,
+                            ay: cam.position.y,
+                            az: cam.position.z,
+                        });
+                    };
+                    const kante = () => {
+                        stelle(0, 0);
+                        cam.getWorldPosition(lu.uLodAuge.value);
+                        if (r._passLagen) r._passLagen.clear();
+                        frame();
+                        const L0 = lageHaupt();
+                        const ex = lu.uLodAuge.value.x,
+                            ez = lu.uLodAuge.value.z;
+                        for (const g of r._instanzWahlGruppen()) {
+                            if (g.wahl !== "haupt" || !g.mesh || !(g.liveCount > 0) || !r._instanzFensterGilt(g))
+                                continue;
+                            const a = g.mesh.instanceMatrix.array,
+                                mw = g.mesh.matrixWorld.elements;
+                            for (let j = 0; j < g.liveCount; j++) {
+                                if (!r._instanzBehalten(g, j, L0, false)) continue;
+                                const px = a[j * 16 + 12] + mw[12],
+                                    pz = a[j * 16 + 14] + mw[14];
+                                const l = Math.hypot(ex - px, ez - pz) || 1;
+                                const ux = (ex - px) / l,
+                                    uz = (ez - pz) / l;
+                                const behaelt = (t) =>
+                                    r._instanzFenster(
+                                        g,
+                                        j,
+                                        Object.assign({}, L0, { ex: px + ux * t, ez: pz + uz * t })
+                                    );
+                                const b0 = behaelt(0);
+                                if (b0 === behaelt(2000)) continue;
+                                let lo = 0,
+                                    hi = 2000;
+                                for (let k = 0; k < 60; k++) {
+                                    const mitte = 0.5 * (lo + hi);
+                                    if (behaelt(mitte) === b0) lo = mitte;
+                                    else hi = mitte;
+                                }
+                                // die Seite, auf der die Maske verwirft: jenseits (eine Stufe behält nah) bzw. diesseits (die
+                                // Karte behält fern) der Kante
+                                const s = b0 ? 1 : -1;
+                                const k0 = b0 ? hi : lo;
+                                const tA = k0 + s * 0.003,
+                                    tJ = k0 + s * (0.003 - 0.0095);
+                                if (tA < 0 || tJ < 0 || behaelt(tA) || !behaelt(tJ)) continue;
+                                // die Instanz beim Namen ihrer Slot-Marke (die Wahl ordnet die Slots um)
+                                return {
+                                    g,
+                                    ref: g.slotRef[j],
+                                    A: [px + ux * tA, pz + uz * tA],
+                                    J: [px + ux * tJ, pz + uz * tJ],
+                                    name: `${g.mesh.name || g.key} Slot ${j} (Stufe ${g.wahlStufe}, Kante ${k0.toFixed(3)} m)`,
+                                };
+                            }
+                        }
+                        return null;
+                    };
+                    const blendeTreue = (ohneRand) => {
+                        const B = { gehalten: false, loecher: 0, namen: [], geprueft: 0, fall: null, traegt: false };
+                        const f = kante();
+                        if (!f) return B;
+                        B.fall = f.name;
+                        if (ohneRand)
+                            r._instanzFenster = function (g, i, Lx) {
+                                const h = Lx.halt;
+                                Lx.halt = 0;
+                                try {
+                                    return P._instanzFenster.call(this, g, i, Lx);
+                                } finally {
+                                    Lx.halt = h;
+                                }
+                            };
+                        try {
+                            lu.uLodAuge.value.x = f.A[0];
+                            lu.uLodAuge.value.z = f.A[1];
+                            if (r._passLagen) r._passLagen.clear();
+                            frame();
+                            const g0 = genHaupt();
+                            lu.uLodAuge.value.x = f.J[0];
+                            lu.uLodAuge.value.z = f.J[1];
+                            frame();
+                            B.gehalten = g0 > 0 && genHaupt() === g0;
+                        } finally {
+                            delete r._instanzFenster;
+                        }
+                        // die Wahrheit: das Gesetz ohne Rand vom Auge DIESES Frames
+                        const Lt = Object.assign(lageHaupt(), { ex: f.J[0], ez: f.J[1] });
+                        for (const g of r._instanzWahlGruppen()) {
+                            const w = g.wahl === "haupt" && g._wahlJe ? g._wahlJe.get("haupt") : null;
+                            if (!w || !g.mesh) continue;
+                            const gezeichnet = new Set(w.refs);
+                            const fenster = Lt.an && r._instanzFensterGilt(g);
+                            for (let j = 0; j < (g.liveCount | 0); j++) {
+                                if (!r._instanzBehalten(g, j, Lt, fenster)) continue;
+                                B.geprueft++;
+                                const kantig = g === f.g && g.slotRef[j] === f.ref;
+                                if (kantig) B.traegt = true;
+                                if (!gezeichnet.has(g.slotRef[j])) {
+                                    B.loecher++;
+                                    if (B.namen.length < 6)
+                                        B.namen.push(
+                                            (g.mesh.name || g.key) +
+                                                " Slot " +
+                                                j +
+                                                (kantig ? " (die Instanz an der Kante)" : "")
+                                        );
+                                }
+                            }
+                        }
+                        return B;
+                    };
+                    aus.blendeTreue = blendeTreue(false);
+                    aus.blendeTreueOhneRand = blendeTreue(true);
+                } finally {
+                    delete r._instanzFenster;
+                    lu.uLodAuge.value.copy(augeVorher);
+                    stelle(0, 0);
+                    if (r._passLagen) r._passLagen.clear();
+                }
+            }
             L.aus();
             const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
             aus.code.lageGen = /this\._passLageGen\(/.test(code(P._passWahlLage));
@@ -1153,8 +1462,23 @@ const server = http.createServer((req, res) => {
         console.log(
             `  kalt    der erste Ruhe-Frame: Arbeit ${k.arbeit} · Ecken ${k.ecken} · Bytes ${k.bytes} · Treffer ${k.trefferSumme}`
         );
-    for (const n of ["ruhe", "sonne", "drehen", "gehen", "bruch", "byteBruch", "standBruch"])
+    for (const n of ["ruhe", "sonne", "drehen", "gehen", "bruch", "byteBruch", "standBruch", "auge"])
         if (befund[n]) console.log(zeile(n, befund[n]));
+    if (befund.auge)
+        console.log(
+            `  Auge (±1 mm, unter dem Halt): Arbeit in ${befund.auge.arbeitFrames} von ${befund.auge.frames} Frames, ` +
+                `Kamera ${befund.auge.kameraFrames}, Blende ${befund.auge.blendeFrames}, ohne Änderung ` +
+                `${befund.auge.arbeitOhne.frames}`
+        );
+    for (const [n, x] of [
+        ["Blende-Treue", befund.blendeTreue],
+        ["Blende-Treue ohne Rand", befund.blendeTreueOhneRand],
+    ])
+        if (x)
+            console.log(
+                `  ${n}: ${x.fall || "keine Kante"} · gehalten ${x.gehalten} · getragen ${x.traegt} · ${x.geprueft} geprüft, ` +
+                    `${x.loecher} Löcher ${x.namen.join(", ")}`
+            );
     for (const n of ["ruhe", "standBruch"])
         if (befund[n])
             console.log(
