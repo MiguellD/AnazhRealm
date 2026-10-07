@@ -72,6 +72,225 @@ function pruefeTraceFelder(trace) {
     return maengel;
 }
 
+// DIE ERST-ZEICHNUNGS-WAND (Seite): Haken und Proben unter `window.__erstWand`; jede Probe ist ein eigener, benannter
+// Aufruf aus Node (je unter der Protokoll-Frist — swiftshader kompiliert eine Pipeline in Sekunden).
+function erstWandInstall() {
+    const r = window.anazhRealm;
+    const rend = r.state.renderer;
+    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+    // (4b) Welle K — DIE ERST-ZEICHNUNG: drei neue Stoffe vor die Kamera, einmal am EINEN Ort (die Nachbildung von
+    // `_renderObjectDirect` am Renderer-Exemplar) und einmal auf dem Vendor-Weg (der Gegen-Lauf, MUSS rot sein). Gezählt
+    // am Gerät (createRenderPipeline synchron · …Async) und am Knoten-Bau (Nodes.getForRender ohne Cache-Treffer) je
+    // Render-Aufruf der Welt-Szene; ein Haken über renderObject trägt die Szene des laufenden Draws.
+    const ESt = r._erstZeichnung || null;
+    const res = { erst: null };
+    res.erst = {
+        daStamm: rend.__anazhErstZeichnung === true && Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
+        boot: ESt
+            ? { bauN: ESt.bauN, bauMs: Math.round(ESt.bauMs), verschoben: ESt.verschoben, pipeAsync: ESt.pipeAsync }
+            : null,
+        budgetMs: r.constructor.ERST_BAU_MS,
+    };
+    const welt = r.state.scene;
+    const Z = { cur: null, sync: 0, async: 0, bau: new Map() };
+    const GP = GPUDevice.prototype;
+    const crp = GP.createRenderPipeline,
+        crpa = GP.createRenderPipelineAsync;
+    GP.createRenderPipeline = function (d) {
+        if (Z.cur === welt) Z.sync++;
+        return crp.call(this, d);
+    };
+    GP.createRenderPipelineAsync = function (d) {
+        if (Z.cur === welt) Z.async++;
+        return crpa.call(this, d);
+    };
+    const roRoh = rend.renderObject;
+    rend.renderObject = function (o, sc) {
+        const vor = Z.cur;
+        Z.cur = sc;
+        try {
+            return roRoh.apply(this, arguments);
+        } finally {
+            Z.cur = vor;
+        }
+    };
+    const NB = rend._nodes,
+        gfr = NB.getForRender;
+    NB.getForRender = function (ro, asyncBau) {
+        const kalt =
+            !asyncBau &&
+            this.get(ro).nodeBuilderState === undefined &&
+            this.nodeBuilderCache.get(this.getForRenderCacheKey(ro)) === undefined;
+        const t0 = performance.now();
+        const aus = gfr.apply(this, arguments);
+        if (kalt && Z.cur === welt) {
+            const k = rend.info.calls;
+            const b = Z.bau.get(k) || { n: 0, ms: 0, vorMs: [] };
+            b.vorMs.push(b.ms);
+            b.n++;
+            b.ms += performance.now() - t0;
+            Z.bau.set(k, b);
+        }
+        return aus;
+    };
+    const TSL = window.THREE.TSL;
+    let serie = 0;
+    // ein Bild wie im Loop: der Szenen-Pass rendert je Node-Frame (updateBefore FRAME) — ohne den Frame-Schritt der
+    // Animations-Schleife zeichnete ein Hand-Aufruf nur das Post-Quad neu (wie gate:post-kette)
+    const bild = () => {
+        try {
+            if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+            r._loopRender(performance.now() / 1000);
+        } catch (_e) {
+            /* die Linse misst, nie stören */
+        }
+    };
+    // DIE BÜHNE der Proben: die Kamera sieht nur die Proben-Schicht (swiftshader rastert ein Welt-Bild in Sekunden — die
+    // Probe misst die Erst-Zeichnung, nie die Welt); die Proben-Objekte liegen in der Welt-Szene, ihr Weg ist der der Welt.
+    const SCHICHT = 31;
+    const buehne = async (fn) => {
+        const cam = r.state.camera;
+        const maske = cam.layers.mask;
+        cam.layers.set(SCHICHT);
+        try {
+            return await fn();
+        } finally {
+            cam.layers.mask = maske;
+        }
+    };
+    // DIE RUHE vor jeder Probe (auf der Bühne): keine Pipeline der Welt ist mehr offen — sie kompiliert sonst neben der
+    // Probe (höchstens 60 s).
+    const ruhe = async () => {
+        const t0 = performance.now();
+        while (ESt && ESt.offen.size > 0 && performance.now() - t0 < 60000) {
+            bild();
+            await sleep(50);
+        }
+        return Math.round(performance.now() - t0);
+    };
+    const probe = (vendor) => buehne(() => probeAufDerBuehne(vendor));
+    const probeAufDerBuehne = async (vendor) => {
+        const ruheMs = await ruhe();
+        Z.sync = Z.async = 0;
+        Z.bau.clear();
+        const eigen = Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect");
+        const stamm = rend._renderObjectDirect;
+        if (vendor && eigen) delete rend._renderObjectDirect;
+        const cam = r.state.camera;
+        const dir = new window.THREE.Vector3();
+        cam.getWorldDirection(dir);
+        const meshes = [];
+        const gezeichnet = new Set();
+        const drawRoh = rend.backend.draw;
+        rend.backend.draw = function (ro) {
+            if (ro && ro.object && ro.object.userData.__erstProbe) gezeichnet.add(ro.object);
+            return drawRoh.apply(this, arguments);
+        };
+        for (let i = 0; i < 3; i++) {
+            serie++;
+            // ein Stoff mit einer eigenen Konstante: ein neues Programm, eine neue Pipeline (unbeleuchtet — swiftshader
+            // kompiliert ihn in Sekunden; die Klasse ist dieselbe wie beim Tier, gemessen an der Radeon: haenger --erst)
+            const m = new window.THREE.MeshBasicNodeMaterial();
+            m.colorNode = TSL.vec3(0.2 + 0.0013 * serie, 0.45, 0.25 + 0.07 * i);
+            const mesh = new window.THREE.Mesh(new window.THREE.BoxGeometry(0.6, 0.6, 0.6), m);
+            mesh.position.copy(cam.position).addScaledVector(dir, 4);
+            mesh.position.x += (i - 1) * 0.8;
+            mesh.frustumCulled = false;
+            mesh.userData.__erstProbe = true;
+            mesh.layers.set(SCHICHT);
+            welt.add(mesh);
+            meshes.push(mesh);
+        }
+        let frames = 0;
+        const t0 = performance.now();
+        try {
+            while (gezeichnet.size < meshes.length && performance.now() - t0 < 200000) {
+                bild();
+                frames++;
+                await sleep(20);
+            }
+        } finally {
+            rend.backend.draw = drawRoh;
+            if (vendor && eigen) rend._renderObjectDirect = stamm;
+            for (const m of meshes) {
+                welt.remove(m);
+                m.geometry.dispose();
+            }
+        }
+        let maxBau = 0,
+            ueberBudget = 0;
+        for (const b of Z.bau.values()) {
+            maxBau = Math.max(maxBau, b.n);
+            for (let j = 1; j < b.vorMs.length; j++) if (b.vorMs[j] >= res.erst.budgetMs) ueberBudget++;
+        }
+        return {
+            sync: Z.sync,
+            async: Z.async,
+            aufrufeMitBau: Z.bau.size,
+            maxBau,
+            ueberBudget,
+            gezeichnet: gezeichnet.size,
+            frames,
+            ms: Math.round(performance.now() - t0),
+            ruheMs,
+        };
+    };
+    // DER NEUBAU: ein Würfel zeichnet (Erst-Weg), dann wechselt sein Stoff die Variante im selben Pass (ein Alpha-Test:
+    // neuer Schlüssel, ein Programm mit Verwerfen — durchsichtig wechselte er in einen anderen Pass, das wäre eine erste
+    // Zeichnung).
+    // Das Objekt, das schon zu sehen war, zeichnet im NÄCHSTEN Bild (wie der Vendor, im Frame), es blinkt nie aus. Der
+    // Gegen-Lauf vergisst, wo es schon zeichnete: dann wartet der Neubau auf seine Pipeline (Blinken).
+    const neubau = (vergessen) => buehne(() => neubauAufDerBuehne(vergessen));
+    const neubauAufDerBuehne = async (vergessen) => {
+        await ruhe();
+        serie++;
+        const cam = r.state.camera;
+        const dir = new window.THREE.Vector3();
+        cam.getWorldDirection(dir);
+        const m = new window.THREE.MeshBasicNodeMaterial();
+        m.colorNode = TSL.vec3(0.6, 0.2 + 0.0017 * serie, 0.3);
+        const mesh = new window.THREE.Mesh(new window.THREE.BoxGeometry(0.7, 0.7, 0.7), m);
+        mesh.position.copy(cam.position).addScaledVector(dir, 3.5);
+        mesh.frustumCulled = false;
+        mesh.layers.set(SCHICHT);
+        welt.add(mesh);
+        let bilder = 0;
+        const drawRoh = rend.backend.draw;
+        rend.backend.draw = function (ro) {
+            if (ro && ro.object === mesh) bilder++;
+            return drawRoh.apply(this, arguments);
+        };
+        const n0 = ESt ? ESt.neubauN : 0;
+        const gedaechtnis = ESt ? ESt.gezeichnet : null;
+        let sofort = false;
+        try {
+            const t0 = performance.now();
+            while (bilder === 0 && performance.now() - t0 < 200000) {
+                bild();
+                await sleep(20);
+            }
+            if (vergessen && ESt) ESt.gezeichnet = new WeakMap();
+            m.alphaTest = 0.5;
+            m.needsUpdate = true;
+            bilder = 0;
+            bild();
+            sofort = bilder > 0;
+        } finally {
+            rend.backend.draw = drawRoh;
+            if (ESt) ESt.gezeichnet = gedaechtnis;
+            welt.remove(mesh);
+            mesh.geometry.dispose();
+        }
+        return { sofort, neubauN: ESt ? ESt.neubauN - n0 : 0 };
+    };
+    window.__erstWand = {
+        stand: () => res.erst,
+        probe,
+        neubau,
+        zurueck: () => Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
+    };
+}
+
 (async () => {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
@@ -196,149 +415,6 @@ function pruefeTraceFelder(trace) {
             upBytes: fr.upBytes,
             uploadBytesEwma: sns.uploadBytesEwma,
         };
-        // (4b) Welle K — DIE ERST-ZEICHNUNG: drei neue Stoffe vor die Kamera, einmal am EINEN Ort (die Nachbildung von
-        // `_renderObjectDirect` am Renderer-Exemplar) und einmal auf dem Vendor-Weg (der Gegen-Lauf, MUSS rot sein). Gezählt
-        // am Gerät (createRenderPipeline synchron · …Async) und am Knoten-Bau (Nodes.getForRender ohne Cache-Treffer) je
-        // Render-Aufruf der Welt-Szene; ein Haken über renderObject trägt die Szene des laufenden Draws.
-        const ESt = r._erstZeichnung || null;
-        res.erst = {
-            daStamm: rend.__anazhErstZeichnung === true && Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
-            boot: ESt
-                ? { bauN: ESt.bauN, bauMs: Math.round(ESt.bauMs), verschoben: ESt.verschoben, pipeAsync: ESt.pipeAsync }
-                : null,
-            budgetMs: r.constructor.ERST_BAU_MS,
-        };
-        const welt = r.state.scene;
-        const Z = { cur: null, sync: 0, async: 0, bau: new Map() };
-        const GP = GPUDevice.prototype;
-        const crp = GP.createRenderPipeline,
-            crpa = GP.createRenderPipelineAsync;
-        GP.createRenderPipeline = function (d) {
-            if (Z.cur === welt) Z.sync++;
-            return crp.call(this, d);
-        };
-        GP.createRenderPipelineAsync = function (d) {
-            if (Z.cur === welt) Z.async++;
-            return crpa.call(this, d);
-        };
-        const roRoh = rend.renderObject;
-        rend.renderObject = function (o, sc) {
-            const vor = Z.cur;
-            Z.cur = sc;
-            try {
-                return roRoh.apply(this, arguments);
-            } finally {
-                Z.cur = vor;
-            }
-        };
-        const NB = rend._nodes,
-            gfr = NB.getForRender;
-        NB.getForRender = function (ro, asyncBau) {
-            const kalt =
-                !asyncBau &&
-                this.get(ro).nodeBuilderState === undefined &&
-                this.nodeBuilderCache.get(this.getForRenderCacheKey(ro)) === undefined;
-            const t0 = performance.now();
-            const aus = gfr.apply(this, arguments);
-            if (kalt && Z.cur === welt) {
-                const k = rend.info.calls;
-                const b = Z.bau.get(k) || { n: 0, ms: 0, vorMs: [] };
-                b.vorMs.push(b.ms);
-                b.n++;
-                b.ms += performance.now() - t0;
-                Z.bau.set(k, b);
-            }
-            return aus;
-        };
-        const TSL = window.THREE.TSL;
-        let serie = 0;
-        const bild = () => {
-            try {
-                r._loopRender(performance.now() / 1000);
-            } catch (_e) {
-                /* die Linse misst, nie stören */
-            }
-        };
-        // DIE RUHE vor jeder Probe: die Welt hat jede erste Zeichnung gebaut und jede Pipeline steht (10 Bilder ohne
-        // verschobene Erst-Zeichnung, keine offene Pipeline) — die Probe teilt das Budget sonst mit dem Boot-Rest.
-        const ruhe = async () => {
-            const t0 = performance.now();
-            let still = 0;
-            while (still < 10 && performance.now() - t0 < 150000) {
-                const v0 = ESt ? ESt.verschoben : 0;
-                bild();
-                await sleep(20);
-                still = (ESt ? ESt.verschoben === v0 && ESt.offen.size === 0 : true) ? still + 1 : 0;
-            }
-            return Math.round(performance.now() - t0);
-        };
-        const probe = async (vendor) => {
-            const ruheMs = await ruhe();
-            Z.sync = Z.async = 0;
-            Z.bau.clear();
-            const eigen = Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect");
-            const stamm = rend._renderObjectDirect;
-            if (vendor && eigen) delete rend._renderObjectDirect;
-            const cam = r.state.camera;
-            const dir = new window.THREE.Vector3();
-            cam.getWorldDirection(dir);
-            const meshes = [];
-            const gezeichnet = new Set();
-            const drawRoh = rend.backend.draw;
-            rend.backend.draw = function (ro) {
-                if (ro && ro.object && ro.object.userData.__erstProbe) gezeichnet.add(ro.object);
-                return drawRoh.apply(this, arguments);
-            };
-            for (let i = 0; i < 3; i++) {
-                serie++;
-                // ein Stoff wie der eines Tiers (beleuchtet), mit einer eigenen Konstante: ein neues Programm, eine neue Pipeline
-                const m = new window.THREE.MeshStandardNodeMaterial({ roughness: 0.8 });
-                m.colorNode = TSL.vec3(0.2 + 0.0013 * serie, 0.45, 0.25 + 0.07 * i);
-                const mesh = new window.THREE.Mesh(new window.THREE.BoxGeometry(0.6, 0.6, 0.6), m);
-                mesh.position.copy(cam.position).addScaledVector(dir, 4);
-                mesh.position.x += (i - 1) * 0.8;
-                mesh.frustumCulled = false;
-                mesh.userData.__erstProbe = true;
-                welt.add(mesh);
-                meshes.push(mesh);
-            }
-            let frames = 0;
-            const t0 = performance.now();
-            try {
-                while (gezeichnet.size < meshes.length && performance.now() - t0 < 200000) {
-                    bild();
-                    frames++;
-                    await sleep(20);
-                }
-            } finally {
-                rend.backend.draw = drawRoh;
-                if (vendor && eigen) rend._renderObjectDirect = stamm;
-                for (const m of meshes) {
-                    welt.remove(m);
-                    m.geometry.dispose();
-                }
-            }
-            let maxBau = 0,
-                ueberBudget = 0;
-            for (const b of Z.bau.values()) {
-                maxBau = Math.max(maxBau, b.n);
-                for (let j = 1; j < b.vorMs.length; j++) if (b.vorMs[j] >= res.erst.budgetMs) ueberBudget++;
-            }
-            return {
-                sync: Z.sync,
-                async: Z.async,
-                aufrufeMitBau: Z.bau.size,
-                maxBau,
-                ueberBudget,
-                gezeichnet: gezeichnet.size,
-                frames,
-                ms: Math.round(performance.now() - t0),
-                ruheMs,
-            };
-        };
-        res.erst.probe = await probe(false);
-        res.erst.gegen = await probe(true);
-        res.erst.zurueck = Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect");
         // (5) Trace direkt bauen (EINE Quelle — kein Warten auf den 4-s-Save).
         let trace = null;
         try {
@@ -366,6 +442,22 @@ function pruefeTraceFelder(trace) {
             : null;
         return res;
     }, LAUFZEIT_MS);
+    // Welle K — DIE ERST-ZEICHNUNG: Installation, Probe, Gegen-Lauf, Neubau, Neubau ohne Gedächtnis — je ein Aufruf
+    if (out && !out.fatal) {
+        const ruf = async (name, fn, arg) => {
+            const t0 = Date.now();
+            const v = await page.evaluate(fn, arg);
+            console.log(`  [Erst-Zeichnung] ${name}: ${Math.round((Date.now() - t0) / 1000)} s`);
+            return v;
+        };
+        await page.evaluate(`(${erstWandInstall.toString()})()`);
+        out.erst = await ruf("Stand", () => window.__erstWand.stand());
+        out.erst.probe = await ruf("Probe", (v) => window.__erstWand.probe(v), false);
+        out.erst.gegen = await ruf("Gegen-Lauf", (v) => window.__erstWand.probe(v), true);
+        out.erst.zurueck = await ruf("zurück", () => window.__erstWand.zurueck());
+        out.erst.neubau = await ruf("Neubau", (v) => window.__erstWand.neubau(v), false);
+        out.erst.neubauGegen = await ruf("Neubau ohne Gedächtnis", (v) => window.__erstWand.neubau(v), true);
+    }
 
     await browser.close();
     server.close();
@@ -466,10 +558,18 @@ function pruefeTraceFelder(trace) {
     );
     const gg = ez.gegen || {};
     band(
-        gg.gezeichnet === 3 && gg.sync >= 1 && gg.ueberBudget >= 1 && ez.zurueck === true,
-        "ERST-ZEICHNUNG Gegen-Lauf (der Vendor-Weg MUSS rot sein: synchrone Pipeline, Bauten über dem Budget)",
+        gg.gezeichnet === 3 && gg.sync >= 1 && gg.maxBau >= 2 && ez.zurueck === true,
+        "ERST-ZEICHNUNG Gegen-Lauf (der Vendor-Weg MUSS rot sein: synchrone Pipeline, alle Bauten in einem Aufruf)",
         `synchron ${gg.sync} · asynchron ${gg.async} · max ${gg.maxBau} Bauten je Aufruf · über dem Budget ${gg.ueberBudget} · ` +
             `gezeichnet ${gg.gezeichnet}/3 nach ${gg.frames} Frames · der EINE Ort danach zurück=${ez.zurueck}`
+    );
+
+    const nb = ez.neubau || {},
+        nbg = ez.neubauGegen || {};
+    band(
+        nb.sofort === true && nb.neubauN >= 1 && nbg.sofort === false,
+        "ERST-ZEICHNUNG Neubau (ein gezeichnetes Objekt wechselt die Variante: im nächsten Bild gezeichnet; vergessen MUSS es blinken)",
+        `gezeichnet im nächsten Bild ${nb.sofort} · Neubauten ${nb.neubauN} · Gegen-Lauf ohne Gedächtnis gezeichnet ${nbg.sofort}`
     );
 
     // Band 6 — kein pageerror.

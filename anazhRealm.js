@@ -14695,6 +14695,7 @@ class AnazhRealm {
                           erstVerschoben: this._erstZeichnung ? this._erstZeichnung.verschoben : 0,
                           erstPipeAsync: this._erstZeichnung ? this._erstZeichnung.pipeAsync : 0,
                           erstPipeOffen: this._erstZeichnung ? this._erstZeichnung.offen.size : 0,
+                          erstNeubauN: this._erstZeichnung ? this._erstZeichnung.neubauN : 0,
                       },
                       uploadKBProS: +(
                           ((s.uploadBytesEwma || 0) * (s.frameMs > 0 ? 1000 / s.frameMs : 0)) /
@@ -22443,8 +22444,12 @@ class AnazhRealm {
         // (2) der Knoten-Bau bleibt im Pass (er liest MRT, Ziel und contextNode des Renderers, die nur dort gelten — ein
         // buildAsync liefe daneben), aber je Render-Aufruf baut höchstens EINER (weitere nur, solange der Aufruf unter
         // ERST_BAU_MS baute); jeder andere zeichnet ab dem nächsten Aufruf. Ein Bundle, dessen Bürger so wartet, nimmt neu
-        // auf, sobald er zeichnen kann (der Vendor-Record droppt unfertige Draws und versiegelt das Bundle). Ein Render
-        // einer anderen Szene (die Umgebung, ein Post-Quad) zeichnet wie bisher — ein Einmal-Render bliebe leer. Das ist der
+        // auf, sobald er zeichnen kann (der Vendor-Record droppt unfertige Draws und versiegelt das Bundle). Das gilt der ERSTEN
+        // Zeichnung eines Objekts in einem Pass (Render-Kontext · Pass-Kennung): ein Objekt, das dort schon zeichnete, baut
+        // einen Neubau (ein Licht kam dazu — r184 schlüsselt das RenderObject je Lichter-Satz und verwirft den Vorgänger im
+        // selben `_objects.get` —, sein Stoff wechselte die Variante) wie der Vendor im Frame: was schon zu sehen war, blinkt
+        // nie aus; der Neubau zählt mit (`neubauN`). Ein Render einer anderen Szene (die Umgebung, ein Post-Quad) zeichnet wie
+        // bisher — ein Einmal-Render bliebe leer. Das ist der
         // EINE Ort der Klasse: kein Vorwärmen daneben (das r184-compileAsync baute die Knoten ohnehin synchron —
         // `_geometries.updateForRender` liest die Attribute vor `getForRenderAsync`).
         // Nodes und Pipelines legt erst init() an (dieser Eingriff läuft davor): die Nachbildung liest sie je Aufruf am
@@ -22454,6 +22459,27 @@ class AnazhRealm {
         else if (!renderer.__anazhErstZeichnung) {
             const welt = this;
             const E = this._erstZeichnungStand();
+            // der Vendor-Körper: auffrischen, Pipeline (asynchron mit Versprechen-Liste, sonst synchron), zeichnen, wenn sie steht
+            const zeichne = (rend, ro, aufnahme, asynchron) => {
+                const N = rend._nodes,
+                    P = rend._pipelines;
+                const refresh = N.needsRefresh(ro);
+                if (refresh) {
+                    N.updateBefore(ro);
+                    rend._geometries.updateForRender(ro);
+                    N.updateForRender(ro);
+                    rend._bindings.updateForRender(ro);
+                }
+                if (asynchron) {
+                    P.getForRender(ro, E.neu);
+                    if (E.neu.length > 0) welt._erstPipeline(P.get(ro).pipeline);
+                } else P.updateForRender(ro);
+                if (!P.isReady(ro)) return false;
+                if (aufnahme !== null) rend.backend.get(aufnahme).renderObjects.push(ro);
+                rend.backend.draw(ro, rend.info);
+                if (refresh) N.updateAfter(ro);
+                return true;
+            };
             renderer._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
                 const N = this._nodes,
                     P = this._pipelines;
@@ -22471,14 +22497,25 @@ class AnazhRealm {
                 ro.group = group;
                 const aufnahme = this._currentRenderBundle;
                 if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
-                const weltSzene = scene === welt.state.scene;
-                let bau = -1;
-                if (
-                    weltSzene &&
+                if (scene !== welt.state.scene) {
+                    zeichne(this, ro, aufnahme, false);
+                    return;
+                }
+                const ungebaut =
                     ro._nodeBuilderState === null &&
                     N.get(ro).nodeBuilderState === undefined &&
-                    N.nodeBuilderCache.get(ro.initialCacheKey) === undefined
-                ) {
+                    N.nodeBuilderCache.get(ro.initialCacheKey) === undefined;
+                const ctx = this._currentRenderContext.id;
+                const k = passId == null ? ctx : ctx + "|" + passId;
+                let pass = E.gezeichnet.get(object);
+                if (pass !== undefined && pass.has(k)) {
+                    // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
+                    if (ungebaut) E.neubauN++;
+                    zeichne(this, ro, aufnahme, false);
+                    return;
+                }
+                let bau = -1;
+                if (ungebaut) {
                     if (E.aufruf !== this.info.calls) {
                         E.aufruf = this.info.calls;
                         E.aufrufMs = 0;
@@ -22489,27 +22526,16 @@ class AnazhRealm {
                     }
                     bau = performance.now();
                 }
-                const refresh = N.needsRefresh(ro);
+                const gezeichnet = zeichne(this, ro, aufnahme, true);
                 if (bau >= 0) {
                     const ms = performance.now() - bau;
                     E.aufrufMs += ms;
                     E.bauN++;
                     E.bauMs += ms;
                 }
-                if (refresh) {
-                    N.updateBefore(ro);
-                    this._geometries.updateForRender(ro);
-                    N.updateForRender(ro);
-                    this._bindings.updateForRender(ro);
-                }
-                if (weltSzene) {
-                    P.getForRender(ro, E.neu);
-                    if (E.neu.length > 0) welt._erstPipeline(P.get(ro).pipeline);
-                } else P.updateForRender(ro);
-                if (P.isReady(ro)) {
-                    if (aufnahme !== null) this.backend.get(aufnahme).renderObjects.push(ro);
-                    this.backend.draw(ro, this.info);
-                    if (refresh) N.updateAfter(ro);
+                if (gezeichnet) {
+                    if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
+                    pass.add(k);
                 } else if (aufnahme !== null) welt._erstWartet(P.get(ro).pipeline, aufnahme.bundleGroup);
             };
             renderer.__anazhErstZeichnung = true;
@@ -22528,9 +22554,11 @@ class AnazhRealm {
                 bauMs: 0,
                 verschoben: 0,
                 pipeAsync: 0,
+                neubauN: 0,
                 neu: [],
                 offen: new Map(),
                 aufnehmen: new Set(),
+                gezeichnet: new WeakMap(), // Objekt → die Pässe (Render-Kontext|Pass-Kennung), in denen es schon zeichnete
             };
         return this._erstZeichnung;
     }

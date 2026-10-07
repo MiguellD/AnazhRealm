@@ -277,7 +277,9 @@ function haengerLauf(k) {
             // die Erst-Zeichnung (der EINE Ort in _configureRenderer): ihre Zähler über den Lauf
             const erstStand = () => {
                 const E = r._erstZeichnung;
-                return E ? { bauN: E.bauN, bauMs: E.bauMs, verschoben: E.verschoben, pipeAsync: E.pipeAsync } : null;
+                return E
+                    ? { bauN: E.bauN, bauMs: E.bauMs, verschoben: E.verschoben, pipeAsync: E.pipeAsync, neubauN: E.neubauN || 0 }
+                    : null;
             };
             const erst0 = erstStand();
             const probe = [];
@@ -323,6 +325,7 @@ function haengerLauf(k) {
                               bauMs: +(erst1.bauMs - erst0.bauMs).toFixed(1),
                               verschoben: erst1.verschoben - erst0.verschoben,
                               pipeAsync: erst1.pipeAsync - erst0.pipeAsync,
+                              neubauN: erst1.neubauN - erst0.neubauN,
                               offen: r._erstZeichnung.offen.size,
                           }
                         : null,
@@ -768,7 +771,8 @@ function haengerTabelle(a) {
     if (a.erst)
         z.push(
             `Erst-Zeichnung: ${a.erst.bauN} Knoten-Bauten im Pass (Σ ${a.erst.bauMs} ms) · ${a.erst.verschoben} auf den nächsten ` +
-                `Aufruf verschoben · ${a.erst.pipeAsync} Pipelines asynchron · ${a.erst.offen} offen`
+                `Aufruf verschoben · ${a.erst.pipeAsync} Pipelines asynchron · ${a.erst.offen} offen · ${a.erst.neubauN || 0} Neubauten ` +
+                `gezeichneter Objekte (im Frame)`
         );
     const kb = a.knotenBau || {};
     z.push(
