@@ -39,7 +39,11 @@
 //       07.10.: der Gang von 181d3c9e zeichnete hier 0,11.
 //   Die Wiederholung zählt je RENDER-ABSCHNITT (Render-Id und `info.calls`): nach einem verschachtelten Render stellt
 //   der äußere seine Knoten zu Recht ein zweites Mal.
-//   Die Bühne nimmt keinen Spiel-Loop an (die Welt bootet weiter und renderte sonst mitten hinein).
+//   Die Bühne nimmt keinen Spiel-Loop an (die Welt bootet weiter und renderte sonst mitten hinein), und die Wand zählt
+//   nach: LAUF — kein Bild der Spiel-Szene, kein Puffer des GPU-Kehraus während der Bühne. Ein Spiel-Frame nimmt der
+//   Bühne (nicht im Spiel-Graph) ihre Geometrie-Puffer, ein Replay danach zeichnete das Bild davor (0,3064 = X gegen Y,
+//   die roten Läufe auf integ-probe unter Last; nachgestellt mit einem Spiel-Takt zwischen Aufnahme und Replay, ohne
+//   Kehraus 1,0).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil über einen grünen Lauf und je einen injizierten
 // Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (npm run gate:kamera-treue)
@@ -52,6 +56,11 @@ const BLICK_GRENZE = 0.9; // Blick X und Blick Y sind verschiedene Bilder
 
 function urteil(z) {
     const v = [];
+    const l = z.lauf || {};
+    if (l.spielBilder !== 0 || l.kehraus !== 0)
+        v.push(
+            `LAUF: ${l.spielBilder} Spiel-Bilder während der Bühne, der GPU-Kehraus nahm ${l.kehraus} Geometrie-Puffer — der Spiel-Loop lief hinein (ein Replay danach zeichnet das Bild davor: 0,3064) — der Lauf ist ungültig`
+        );
     const a = z.aufnahme || {};
     if (!(a.gezeichnet > 0)) v.push("STAPEL: die Bühne nahm kein Bundle auf (die Probe ist blind)");
     else if (a.verfolgt !== a.gezeichnet)
@@ -112,6 +121,7 @@ function urteil(z) {
 function selbsttest() {
     const ruhig = { pruef: 13, voll: 0, uploads: 0, wiederholt: 0, wer: {} };
     const gruen = {
+        lauf: { spielBilder: 0, kehraus: 0 },
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
         bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
         stand: {
@@ -155,6 +165,8 @@ function selbsttest() {
         },
         { name: "Verschachtelt blind (Täter)", z: mit("stand.verschachtelt.direkt", { taeter: 1 }), muss: /nur aus der Render-Id zeichnet 1 gleich/ },
         { name: "kein verschachtelter Render", z: mit("stand.verschachtelt.replay", { renders: 0 }), muss: /VERSCHACHTELT replay: kein verschachtelter Render/ },
+        { name: "Spiel-Frame in der Bühne", z: mit("lauf", { spielBilder: 2, kehraus: 51 }), muss: /LAUF: 2 Spiel-Bilder .* nahm 51 Geometrie-Puffer/ },
+        { name: "Kehraus ohne Spiel-Bild", z: mit("lauf", { kehraus: 3 }), muss: /LAUF: 0 Spiel-Bilder .* nahm 3 Geometrie-Puffer/ },
     ];
     for (const f of faelle) {
         const v = urteil(f.z);
@@ -341,8 +353,18 @@ function buehne() {
                 this._currentRenderBundle = a;
             }
         };
+        // DER SPIEL-FRAME IN DER BÜHNE (Lauf-Kontrolle, Gegenprüfung 07.10.): ein Hauptbild der Spiel-Szene während der
+        // Bühne ist ein Spiel-Frame — sein GPU-Kehraus (`_gpuKehraus`) nimmt jedem Geometrie-Puffer die GPU, den der Spiel-
+        // Graph nicht trägt, also der ganzen Bühne; ein Bundle-Replay danach lädt keine Geometrie neu (r184 refresht im
+        // Replay nur Knoten und Bindungen), sein Pass verfällt, das Ziel behält das Bild davor. Nachgestellt (ein Spiel-
+        // Takt zwischen Aufnahme an X und Replay an Y): der Replay zeichnete Blick X (0,3064 gegen Y — die roten Läufe auf
+        // integ-probe unter Last, deren Bühne den Loop der bootenden Welt noch annahm), ohne Kehraus 1,0. Die Bühne nimmt
+        // keinen Spiel-Loop an; die Wand zählt nach (Spiel-Bilder, Puffer des Kehraus) und nennt einen Lauf ungültig.
+        let spielBilder = 0;
+        const kehrausVor = st._gpuKehrausN || 0;
         const zaehlUm = (bahn) =>
             function (sc, c, f) {
+                if (sc && sc === st.scene && !sc.overrideMaterial) spielBilder++;
                 if (sc && sc.overrideMaterial) {
                     if (sc.overrideMaterial.isShadowPassMaterial) stoffe.add(sc.overrideMaterial);
                     if (aufnahmeKontext) z.schattenRenders++;
@@ -651,6 +673,7 @@ function buehne() {
                 stand,
                 aufnahme,
                 stoffe: stoffe.size,
+                lauf: { spielBilder, kehraus: (st._gpuKehrausN || 0) - kehrausVor },
                 bild: {
                     replay: gleich(bReplay, wahrY),
                     fremd: gleich(bFremd, wahrY),
@@ -744,7 +767,7 @@ function buehne() {
         process.exit(1);
     }
     console.log(
-        `\n✅ GRÜN — die Aufnahme verfolgt ${out.aufnahme.verfolgt} von ${out.aufnahme.gezeichnet} Draws trotz Schatten-Render, ` +
+        `\n✅ GRÜN — LAUF: ${out.lauf.spielBilder} Spiel-Bilder, ${out.lauf.kehraus} Kehraus-Puffer in der Bühne; die Aufnahme verfolgt ${out.aufnahme.verfolgt} von ${out.aufnahme.gezeichnet} Draws trotz Schatten-Render, ` +
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
             `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
             `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.pruef} Prüfungen, 0 Voll-Refreshs, 0 Uploads, 0 wiederholte Gänge (direkt und Replay); nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (nie-Refresh ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +
