@@ -14696,6 +14696,7 @@ class AnazhRealm {
                           erstVerschoben: this._erstZeichnung ? this._erstZeichnung.verschoben : 0,
                           erstPipeAsync: this._erstZeichnung ? this._erstZeichnung.pipeAsync : 0,
                           erstPipeOffen: this._erstZeichnung ? this._erstZeichnung.offen.size : 0,
+                          erstPipeAbsagen: this._erstZeichnung ? this._erstZeichnung.absagenN : 0,
                           erstNeubauN: this._erstZeichnung ? this._erstZeichnung.neubauN : 0,
                       },
                       uploadKBProS: +(
@@ -22562,6 +22563,7 @@ class AnazhRealm {
             const zeichne = (rend, ro, aufnahme, asynchron) => {
                 const N = rend._nodes,
                     P = rend._pipelines;
+                E.bau = null; // das Versprechen gehört dem Bau DIESES Aufrufs (`_erstAbsageWache`)
                 const refresh = N.needsRefresh(ro);
                 if (refresh) {
                     N.updateBefore(ro);
@@ -22661,13 +22663,45 @@ class AnazhRealm {
                 verschoben: 0,
                 pipeAsync: 0,
                 bereitN: 0,
+                absagenN: 0,
+                wartetN: 0, // Draws, die nicht zeichnen konnten (ihre Pipeline stand nicht) — der Zähler jedes Backends
+                wartetAuf: null, // die Pipeline des letzten wartenden Draws (die Beweis-Aufnahme nennt sie)
                 neubauN: 0,
                 neu: [],
+                bau: null, // { p, label } — das Geräte-Versprechen des eben angelegten Baus
                 offen: new Map(),
+                namen: new WeakMap(), // Pipeline → ihr Label `renderPipeline_<Stoff>_<id>`
+                abgesagt: new WeakSet(),
                 aufnehmen: new Set(),
                 gezeichnet: new WeakMap(), // Objekt → die Pässe (Render-Kontext|Pass-Kennung), in denen es schon zeichnete
             };
         return this._erstZeichnung;
+    }
+
+    // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,
+    // vendor/three.webgpu.min.js 6:590437), und ein Fehler-Scope sieht asynchrone Fehler nach Spezifikation nie — ein Stoff,
+    // dessen Pipeline scheitert, bliebe STILL für immer unsichtbar (der synchrone Bau meldete denselben Fehler laut). Der EINE
+    // Abgriff am Gerät (wie der writeBuffer-Abgriff, nach init): das Original-Versprechen geht unverändert an r184 zurück,
+    // seine Absage meldet sich als ERROR `PIPELINE-ABSAGE <label>: <message>` (das Label nennt den Stoff:
+    // `renderPipeline_<Stoff>_<id>`, 6:589557), und die Erst-Zeichnung trägt die Pipeline aus ihrer Warteschlange aus
+    // (`_erstWartet` hält das Versprechen ihres Baus). Gerufen wird je Aufruf der Prototyp — Linsen hängen sich dort ein.
+    _erstAbsageWache(renderer) {
+        const be = renderer.backend;
+        const dev = be && be.isWebGPUBackend === true ? be.device : null;
+        if (!dev || dev.__anazhAbsage || typeof dev.createRenderPipelineAsync !== "function") return;
+        const E = this._erstZeichnungStand();
+        const welt = this;
+        dev.createRenderPipelineAsync = function (desc) {
+            const p = Object.getPrototypeOf(this).createRenderPipelineAsync.call(this, desc);
+            const label = (desc && desc.label) || "renderPipeline_(ohne Label)";
+            E.bau = { p, label };
+            p.catch((e) => {
+                E.absagenN++;
+                welt.log(`PIPELINE-ABSAGE ${label}: ${(e && e.message) || e}`, "ERROR");
+            });
+            return p;
+        };
+        dev.__anazhAbsage = true;
     }
 
     // DIE EINE WARTESCHLANGE der Erst-Zeichnung: ein Bürger, der nicht zeichnen kann, meldet sich hier an — auf jedem Weg
@@ -22683,8 +22717,11 @@ class AnazhRealm {
     // (2) Er wartet nur auf seinen KNOTEN-BAU (`pipe` null: der Aufruf hat sein Bau-Budget verbraucht): das Bundle nimmt
     //     nach der laufenden Aufnahme neu auf — r184 versiegelt an ihrem Ende (`u.version=s.version`, 6:413962) und schluckte
     //     eine Marke von mittendrin.
-    // Eine Pipeline, deren Bau scheitert (r184 schluckt die Absage von createRenderPipelineAsync), bleibt offen: die Beweis-
-    // Aufnahme nennt sie beim Namen und bricht ab.
+    // Eine Pipeline, deren Bau scheitert, meldet sich laut (`_erstAbsageWache`) und fällt aus der Warteschlange; ihr Bürger
+    // zählt weiter als wartender Draw — die Beweis-Aufnahme nennt ihn beim Namen und bricht ab.
+    // Der WebGL2-Rückfall kennt keine Bundles, und sein `_completeCompile` ersetzt das Datenobjekt der Pipeline (vendor
+    // 6:513930 über Backend.set 6:457928) — ein Setter am alten Objekt feuerte nie, die Schlange wüchse die ganze Sitzung:
+    // dort zählt der wartende Draw nur (`wartetN`), er versucht es im nächsten Aufruf selbst.
     _erstWartet(be, pipe, bg) {
         const E = this._erstZeichnung;
         if (!pipe) {
@@ -22697,12 +22734,24 @@ class AnazhRealm {
             E.aufnehmen.add(bg);
             return;
         }
+        E.wartetN++;
+        E.wartetAuf = pipe;
+        const bau = E.bau;
+        E.bau = null;
+        if (be.isWebGPUBackend !== true || E.abgesagt.has(pipe)) return;
         let bundles = E.offen.get(pipe);
         if (bundles === undefined) {
             const h = be.get(pipe);
             let wert = h.pipeline;
             const warten = (bundles = new Set());
             E.offen.set(pipe, warten);
+            if (bau !== null) {
+                E.namen.set(pipe, bau.label);
+                bau.p.catch(() => {
+                    E.abgesagt.add(pipe);
+                    E.offen.delete(pipe);
+                });
+            }
             Object.defineProperty(h, "pipeline", {
                 configurable: true,
                 enumerable: true,
@@ -87339,6 +87388,8 @@ class AnazhRealm {
                 } catch (_e) {
                     /* fail-soft — ohne Tap bleibt uploadBytes ehrlich 0, nie ein Boot-Wurf */
                 }
+                // die Absage einer asynchronen Pipeline meldet sich laut (r184 verschluckt sie)
+                this._erstAbsageWache(renderer);
                 // JEDES-HOLZ — DER DEVICE-LOSS-WÄCHTER: stirbt das GPU-Device
                 // (Software-Dawn, Treiber-Reset, TDR), wird es LAUT gemeldet +
                 // das Gate gezeigt, statt einer weißen Welt mit 60-fps-Lüge.

@@ -13,7 +13,9 @@
 // Aufnahme — beim Neubau gegen eine offene Pipeline und bei hängendem Fehler-Scope
 // (am Kopf 0febe3ef fehlten beide für immer); mit stummer Anmeldung MUSS er fehlen.
 // Die BEWEIS-AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs) wirft bei einer nie
-// bereiten Pipeline und nennt sie beim Namen, nie ein stilles Bild.
+// bereiten Pipeline und nennt sie beim Namen, nie ein stilles Bild. Die ABSAGE
+// einer Pipeline (r184 verschluckt sie) meldet sich als ERROR mit dem Stoff-Namen
+// (am Kopf 7a41911b: still); auf WebGL2 meldet sich kein Bürger an.
 // Ein ECHTER WebGPU-Lauf (swiftshader-Vulkan, Software-Holz kienspan —
 // KEIN Null-Renderer): der Boot SELBST ist der Konsum-Beweis (die Erst-Zeichnung
 // baut und kompiliert, Chunk-Uploads erzeugen writeBuffer-Bytes, swiftshader
@@ -493,6 +495,70 @@ function erstWandInstall() {
         }
         return { ruheMs, ruheOffen, wurf, bild };
     };
+    // DIE ABSAGE EINER PIPELINE: ein Stummel am Gerät sagt den Bau eines neuen Stoffs ab (r184 verschluckt die Absage,
+    // `catch(e){}`) — das Spiel MUSS sie als ERROR `PIPELINE-ABSAGE renderPipeline_<Stoff>_<id>` melden und die Pipeline aus
+    // der Warteschlange nehmen, und die Beweis-Aufnahme MUSS beim Namen abbrechen (der Bürger bleibt unsichtbar). Dazu die
+    // Backend-Weiche: auf WebGL2 meldet sich niemand an (dort ersetzt `_completeCompile` das Datenobjekt, ein Setter
+    // feuerte nie), der wartende Draw zählt nur.
+    const absage = () => buehne(() => absageAufDerBuehne());
+    const absageAufDerBuehne = async () => {
+        const ruheMs = await ruhe();
+        serie++;
+        const GP = GPUDevice.prototype;
+        const crpaRoh = GP.createRenderPipelineAsync;
+        GP.createRenderPipelineAsync = function (d) {
+            if (d && /wand-absage-stoff/.test(d.label || "")) return Promise.reject(new Error("der Stummel der Wand sagt ab"));
+            return crpaRoh.call(this, d);
+        };
+        const zeilen = [];
+        const eigenLog = Object.prototype.hasOwnProperty.call(r, "log");
+        const logRoh = r.log;
+        r.log = function (m, lvl) {
+            if (lvl === "ERROR" && /PIPELINE-ABSAGE/.test(String(m))) zeilen.push(String(m));
+            return logRoh.apply(this, arguments);
+        };
+        const M = new T3.MeshBasicNodeMaterial();
+        M.name = "wand-absage-stoff";
+        M.colorNode = TSL.vec3(0.71, 0.33, 0.09 + 0.0013 * serie);
+        const D = probeMesh(M, 0, 3.5);
+        welt.add(D);
+        const a0 = ESt.absagenN || 0;
+        let wurf = null;
+        let offenDanach = -1,
+            frames = 0;
+        try {
+            const t0 = performance.now();
+            while (zeilen.length === 0 && performance.now() - t0 < 60000) {
+                bild();
+                frames++;
+                await sleep(20);
+            }
+            for (let i = 0; i < 3; i++) bild();
+            offenDanach = ESt.offen.size;
+            try {
+                await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+            } catch (e) {
+                wurf = String((e && e.message) || e);
+            }
+        } finally {
+            GP.createRenderPipelineAsync = crpaRoh;
+            if (eigenLog) r.log = logRoh;
+            else delete r.log;
+            welt.remove(D);
+            D.geometry.dispose();
+        }
+        // die Backend-Weiche: eine Anmeldung auf WebGL2 trägt sich nicht in die Schlange ein, der wartende Draw zählt
+        let webgl = null;
+        if (typeof r._erstWartet === "function") {
+            const n0 = ESt.offen.size,
+                w0 = ESt.wartetN;
+            const attrappe = { cacheKey: "webgl-attrappe", vertexProgram: { name: "webgl" } };
+            r._erstWartet({ isWebGPUBackend: false, isWebGLBackend: true, get: () => ({}) }, attrappe, null);
+            webgl = { offenZuwachs: ESt.offen.size - n0, wartetZuwachs: ESt.wartetN - w0 };
+            ESt.offen.delete(attrappe);
+        }
+        return { ruheMs, ruheOffen, zeilen, absagen: (ESt.absagenN || 0) - a0, frames, offenDanach, wurf, webgl };
+    };
     window.__erstWand = {
         stand: () => res.erst,
         probe,
@@ -500,6 +566,7 @@ function erstWandInstall() {
         bundleNeubau,
         fehlerScope,
         aufnahme,
+        absage,
         zurueck: () => Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
     };
 }
@@ -677,6 +744,7 @@ function erstWandInstall() {
         out.erst.fehlerScopeGegen = await ruf("Hängender Fehler-Scope ohne Anmeldung", (v) => window.__erstWand.fehlerScope(v), true);
         await page.evaluate(AUSGABE_INSTALL);
         out.erst.aufnahme = await ruf("Beweis-Aufnahme mit offener Pipeline", () => window.__erstWand.aufnahme());
+        out.erst.absage = await ruf("Absage einer Pipeline", () => window.__erstWand.absage());
     }
 
     await browser.close();
@@ -839,6 +907,25 @@ function erstWandInstall() {
             aub.erst.offen === 0,
         "BEWEIS-AUFNAHME bricht laut ab (eine nie bereite Pipeline: Wurf mit ihrem Namen; ohne sie das Bild mit erst.offen 0)",
         `Wurf: ${au.wurf || "KEINER (still)"} · danach ${aub.wurf ? "Wurf " + aub.wurf : `Bild ${aub.pixel} Bytes, erst ${JSON.stringify(aub.erst)}`}`
+    );
+    const ab = ez.absage || {};
+    const abZeile = (ab.zeilen || [])[0] || "";
+    band(
+        /PIPELINE-ABSAGE renderPipeline_wand-absage-stoff_\d+: der Stummel der Wand sagt ab/.test(abZeile) &&
+            ab.absagen >= 1 &&
+            ab.offenDanach === 0 &&
+            ab.ruheOffen === 0 &&
+            typeof ab.wurf === "string" &&
+            /renderPipeline_wand-absage-stoff_\d+ \(ABGESAGT\)/.test(ab.wurf),
+        "ERST-ZEICHNUNG Absage einer Pipeline (ERROR mit dem Stoff-Namen, aus der Schlange, die Beweis-Aufnahme bricht beim Namen ab)",
+        `ERROR: ${abZeile ? abZeile.replace(/^.*\[ERROR\] /, "") : "KEINE (still)"} · Absagen ${ab.absagen} nach ${ab.frames} Frames · ` +
+            `offen danach ${ab.offenDanach} · Aufnahme: ${ab.wurf ? ab.wurf.replace(/^.*offene Pipelines: /, "") : "KEIN Wurf (still)"}`
+    );
+    const wg = ab.webgl || {};
+    band(
+        wg.offenZuwachs === 0 && wg.wartetZuwachs === 1,
+        "ERST-ZEICHNUNG WebGL2-Weiche (kein Bundle, kein Setter: die Anmeldung trägt sich nicht ein, der wartende Draw zählt)",
+        `Schlange +${wg.offenZuwachs} · wartende Draws +${wg.wartetZuwachs}`
     );
 
     // Band 6 — kein pageerror.

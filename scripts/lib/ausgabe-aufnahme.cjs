@@ -246,12 +246,19 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 const tE = performance.now();
                 let tFort = tE,
                     stand = "";
+                // der Name einer Pipeline: ihr Label (`renderPipeline_<Stoff>_<id>`), sonst Programm-Name und Schlüssel
+                const name = (p) =>
+                    (E.namen && E.namen.get(p)) ||
+                    `${(p.vertexProgram && p.vertexProgram.name) || "(ohne Stoff-Namen)"} [${p.cacheKey}]`;
                 for (;;) {
                     const b0 = E.bauN,
-                        v0 = E.verschoben;
+                        v0 = E.verschoben,
+                        w0 = E.wartetN;
                     frame();
                     await new Promise((res) => setTimeout(res, 0));
-                    if (E.offen.size === 0 && E.bauN === b0 && E.verschoben === v0) break;
+                    // der Blick steht, wenn ein Frame nichts baut, nichts verschiebt, kein Draw auf seine Pipeline wartet
+                    // und kein Bundle ohne einen Bürger versiegelt ist (der wartende Draw zählt auf jedem Backend)
+                    if (E.offen.size === 0 && E.bauN === b0 && E.verschoben === v0 && E.wartetN === w0) break;
                     const jetzt = performance.now();
                     const s = `${E.bauN}|${E.verschoben}|${E.offen.size}|${E.bereitN}`;
                     if (s !== stand) {
@@ -261,13 +268,16 @@ function ausgabeAufnahme(W, H, warm, opt) {
                     const frist = opt && opt.erstFristMs > 0 ? opt.erstFristMs : 120000;
                     if (jetzt - tFort > frist || jetzt - tE > 5 * frist) {
                         const namen = [];
-                        for (const p of E.offen.keys())
-                            namen.push(`${(p.vertexProgram && p.vertexProgram.name) || "(ohne Stoff-Namen)"} [${p.cacheKey}]`);
+                        for (const p of E.offen.keys()) namen.push(name(p));
+                        const wartet =
+                            E.wartetN !== w0 && E.wartetAuf
+                                ? `; ein Draw wartet auf ${name(E.wartetAuf)}${E.abgesagt && E.abgesagt.has(E.wartetAuf) ? " (ABGESAGT)" : ""}`
+                                : "";
                         throw new Error(
                             `ERST-ZEICHNUNG OFFEN — die Aufnahme bricht ab: offen ${E.offen.size} nach ${Math.round(
                                 (jetzt - tE) / 1000
                             )} s (davon ${Math.round((jetzt - tFort) / 1000)} s ohne Fortschritt), Bauten ${E.bauN - b0} und ` +
-                                `verschoben ${E.verschoben - v0} im letzten Frame; offene Pipelines: ${namen.slice(0, 12).join(" · ") || "-"}`
+                                `verschoben ${E.verschoben - v0} im letzten Frame; offene Pipelines: ${namen.slice(0, 12).join(" · ") || "-"}${wartet}`
                         );
                     }
                 }
