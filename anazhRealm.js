@@ -45606,15 +45606,7 @@ class AnazhRealm {
         if (stage.key === key) return;
         if (stage.pivot) {
             stage.scene.remove(stage.pivot);
-            stage.pivot.traverse((obj) => {
-                if (obj.isMesh || obj.isLine) {
-                    if (obj.geometry) this._queueDispose(obj.geometry);
-                    if (obj.material) {
-                        if (Array.isArray(obj.material)) obj.material.forEach((m) => this._queueDispose(m));
-                        else this._queueDispose(obj.material);
-                    }
-                }
-            });
+            this._disposeSoulGroup(stage.pivot);
             stage.pivot = null;
         }
         stage.key = key;
@@ -49797,6 +49789,11 @@ class AnazhRealm {
 
     // Tiefes Disposal eines alten Soul-Group: Geometrien + Materialien
     // freigeben, damit GPU-Speicher nicht volläuft bei häufigem Wechsel.
+    // DIE EINE ENTSORGUNGS-REGEL jeder Gruppe, die Welt-Vorlagen teilen kann (Frost-Nachbesserung 08.10.): Seelen-Avatar,
+    // Ich-, Hof- und Feed-Bühne, Werkstatt-Ofen. Die Bühnen bauen mit denselben Bauern wie die Welt (Mensch-Vorlage, Tier-
+    // Vorlagen, Klassen-Stoffe) und entsorgten beim Wechsel ALLES — Gegenprüfung (Radeon): 3 Wechsel wolf↔human legten
+    // 12 Geometrien und 8 Stoffe der Welt in die Entsorgung (den Kopf des Spieler-Leibs, die Haut), die Welt kompilierte
+    // neu (68 statt 19 Shader-Module). gate:weltbild-frost (S1/S2) hält es.
     _disposeSoulGroup(group) {
         if (!group) return;
         // NUR Geometries disposen, nie Materials: Compound-Groups teilen oft EIN Material, und
@@ -78525,15 +78522,7 @@ class AnazhRealm {
         if (stage.pivot && stage.soul === soulName) return; // schon auf der Bühne
         if (stage.pivot) {
             stage.scene.remove(stage.pivot);
-            stage.pivot.traverse((obj) => {
-                if (obj.isMesh || obj.isLine) {
-                    if (obj.geometry) this._queueDispose(obj.geometry);
-                    if (obj.material) {
-                        if (Array.isArray(obj.material)) obj.material.forEach((m) => this._queueDispose(m));
-                        else this._queueDispose(obj.material);
-                    }
-                }
-            });
+            this._disposeSoulGroup(stage.pivot);
             stage.pivot = null;
         }
         stage.soul = soulName || null;
@@ -79179,15 +79168,7 @@ class AnazhRealm {
         if (stage.pivot && stage.soul === soul) return;
         if (stage.pivot) {
             stage.scene.remove(stage.pivot);
-            stage.pivot.traverse((obj) => {
-                if (obj.isMesh || obj.isLine) {
-                    if (obj.geometry) this._queueDispose(obj.geometry);
-                    if (obj.material) {
-                        if (Array.isArray(obj.material)) obj.material.forEach((m) => this._queueDispose(m));
-                        else this._queueDispose(obj.material);
-                    }
-                }
-            });
+            this._disposeSoulGroup(stage.pivot);
             stage.pivot = null;
         }
         stage.soul = soul || null;
@@ -80863,19 +80844,7 @@ class AnazhRealm {
         const key = kind + "|" + preset + "|" + lodN + "|" + (ov ? JSON.stringify(ov) : "");
         const memo = this._wsOvenMemo;
         if (memo && memo.key === key && memo.group) return memo.group;
-        if (memo && memo.group) {
-            try {
-                memo.group.traverse((o) => {
-                    if (o.isMesh || o.isSkinnedMesh) {
-                        if (o.geometry) this._queueDispose(o.geometry);
-                        if (o.material) {
-                            if (Array.isArray(o.material)) o.material.forEach((m) => this._queueDispose(m));
-                            else this._queueDispose(o.material);
-                        }
-                    }
-                });
-            } catch (_e) {}
-        }
+        if (memo && memo.group) this._disposeSoulGroup(memo.group);
         this._wsOvenMemo = null;
         let group = null;
         if (kind === "kreatur") {

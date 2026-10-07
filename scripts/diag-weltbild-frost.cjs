@@ -16,6 +16,10 @@
 //   W  die Wachen des Spiels stehen und schweigen (`_indexWache` · `_gpuWache`)
 //   B  DAS BILD FOLGT: zwei Bilder bei gedrehter Kamera unterscheiden sich in ≥ 2 % der 16×16-Blöcke (echt: der präsentierte
 //      Canvas; headless: das Rücklese-Bild der Welt-GPU)
+// Dann DER SEELENWECHSEL (dieselbe Klasse: geteilte Geometrie und Stoffe über Renderer-Grenzen):
+//   S1 Ich-Bühne wolf↔human ×3, Hof-Bühne 4 Seelen ×2 (zwei Runden) legen keine Welt-Geometrie und keinen Welt-Stoff in
+//      die Entsorgung (`_disposeSoulGroup` ist die EINE Regel jeder Gruppe, die Welt-Vorlagen teilt)
+//   S2 die Welt-GPU kompiliert dabei nichts nach — Shader-Module und Pipelines gegen die geschlossene Bühne
 // Danach DIE TÄTER (jeder Lauf — die Wand beweist sich selbst):
 //   T1 ein Probe-Mesh zeichnet einen Index ≥ seiner Vertex-Zahl → die Index-Wache nennt es („bereich")
 //   T2 ein Mensch-Index wird geweitet wie von einem fremden Backend → die Index-Wache nennt ihn („format") beim Pfad, die
@@ -80,9 +84,22 @@ function geraeteHoerer() {
     // Wer hält eine Meldung zurück? Offene async Pipeline-Bauten und offene Fehler-Bereiche (aller Devices) — die
     // Täter-Probe nennt beide, wenn das Wort einer Validierung ausbleibt.
     const P = GPUDevice.prototype;
+    // Was jedes Device kompiliert (am Device-Objekt gezählt): die Seelen-Probe misst so, ob die Welt-GPU neu kompiliert.
+    const zaehle = (dev, art) => (dev.__frostBau || (dev.__frostBau = { module: 0, pipelines: 0 }))[art]++;
+    const modul = P.createShaderModule;
+    P.createShaderModule = function (d) {
+        zaehle(this, "module");
+        return modul.call(this, d);
+    };
+    const pipe = P.createRenderPipeline;
+    P.createRenderPipeline = function (d) {
+        zaehle(this, "pipelines");
+        return pipe.call(this, d);
+    };
     const bau = P.createRenderPipelineAsync;
     if (bau)
         P.createRenderPipelineAsync = function (d) {
+            zaehle(this, "pipelines");
             H.bauOffen++;
             const p = bau.call(this, d);
             p.then(
@@ -503,6 +520,144 @@ function pruefRaum(echt) {
             return b;
         },
         true
+    );
+
+    // S — DER SEELENWECHSEL (Nachbesserung 08.10., dieselbe Klasse „geteilte Geometrie und Stoffe über Renderer-Grenzen"):
+    // Ich- und Hof-Bühne bauen ihre Gestalt aus denselben Vorlagen wie die Welt und entsorgten beim Wechsel ALLES, was sie
+    // trugen — Gegenprüfung: 3 Wechsel wolf↔human legten 12 Geometrien und 8 Stoffe der Welt in die Entsorgung (den Kopf des
+    // Spieler-Leibs, die Haut), die Welt kompilierte neu. Die Probe: zwei Runden (Ich: wolf↔human ×3, Hof: 4 Seelen ×2), die
+    // erste wärmt (eine Seele, die die Welt nie zeigte, kompiliert einmal), die zweite misst gegen die geschlossene Bühne;
+    // gezählt wird jede Welt-Geometrie und jeder Welt-Stoff, den ein Wechsel in die Entsorgungs-Schlange legt.
+    const seelen = await page.evaluate(async (echt) => {
+        const r = window.anazhRealm;
+        const F = window.__frostWand;
+        const dev = r.state.renderer.backend.device;
+        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+        const welt = new Map();
+        const pfad = (o) => {
+            const t = [];
+            for (let x = o; x && t.length < 6; x = x.parent) t.unshift(x.name || x.type);
+            return t.join("/");
+        };
+        const sammle = (w) =>
+            w.traverse((o) => {
+                if (o.geometry && !welt.has(o.geometry)) welt.set(o.geometry, "Geometrie " + pfad(o));
+                const ms = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
+                for (const m of ms) if (!welt.has(m)) welt.set(m, `Stoff ${m.name || m.type} an ${pfad(o)}`);
+            });
+        sammle(r.state.scene);
+        if (F.wurzel !== r.state.scene) sammle(F.wurzel);
+        const entsorgt = [],
+            einzeln = new Set();
+        let alle = 0,
+            imWechsel = false; // gezählt wird nur, was ein Bühnen-Wechsel selbst entsorgt (echt streamt die Welt nebenher)
+        const roh = r._queueDispose;
+        r._queueDispose = function (obj) {
+            if (!imWechsel) return roh.call(this, obj);
+            alle++;
+            if (welt.has(obj)) {
+                entsorgt.push(welt.get(obj));
+                einzeln.add(obj);
+            }
+            return roh.call(this, obj);
+        };
+        // die Schlange leeren wie `_loopRender` (headless ruht der Takt; echt leert ihn der Takt selbst)
+        const leeren = async () => {
+            if (echt) return F.zeichne(8);
+            const s = Array.from(r.state.pendingDisposals);
+            r.state.pendingDisposals.clear();
+            await dev.queue.onSubmittedWorkDone();
+            for (const o of s)
+                try {
+                    o.dispose();
+                } catch (_e) {
+                    /* wie `_loopRender` */
+                }
+        };
+        const warte = async (holen) => {
+            const s0 = holen();
+            const c0 = s0 && s0.renderer ? s0.renderer.info.render.calls : 0;
+            const t = performance.now();
+            while (performance.now() - t < 20000) {
+                const s = holen();
+                if (s && s.renderer && s.renderer.info.render.calls > c0) return;
+                await sleep(50);
+            }
+        };
+        // ein Wechsel zählt, wenn die Bühne ihre Gestalt tauscht — mit den Geometrien, die er der Entsorgung vorlegt
+        let tausch = 0,
+            vorgelegt = 0;
+        const wechsle = async (holen, zeige) => {
+            const alt = holen() && holen().pivot;
+            imWechsel = true;
+            try {
+                zeige();
+            } finally {
+                imWechsel = false;
+            }
+            if (alt && holen().pivot !== alt) {
+                tausch++;
+                alt.traverse((o) => o.geometry && vorgelegt++);
+            }
+            await warte(holen);
+        };
+        const runde = async () => {
+            r.toggleInventoryOverlay(true);
+            for (let k = 0; k < 3; k++)
+                for (const s of ["wolf", "human"])
+                    await wechsle(
+                        () => r.state.ichStage,
+                        () => r._ichStageShow(s)
+                    );
+            r.toggleInventoryOverlay(false);
+            r.toggleDrawer("kreaturen");
+            for (let k = 0; k < 2; k++)
+                for (const s of ["wolf", "fuchs", "baer", "wesen"])
+                    await wechsle(
+                        () => r.state.hofStage,
+                        () => r._hofStageShow(s)
+                    );
+            r.closeAllDrawers();
+            await leeren();
+            await F.zeichne(echt ? 8 : 2);
+        };
+        const bau = () => Object.assign({ module: 0, pipelines: 0 }, dev.__frostBau);
+        await runde();
+        const vor = bau();
+        await F.zeichne(echt ? 8 : 2);
+        const ruhe = bau();
+        await runde();
+        const nach = bau();
+        delete r._queueDispose;
+        return {
+            welt: welt.size,
+            tausch,
+            vorgelegt,
+            alle,
+            entsorgt: entsorgt.length,
+            einzeln: einzeln.size,
+            geometrien: [...einzeln].filter((o) => o.isBufferGeometry).length,
+            namen: [...new Set(entsorgt)].slice(0, 6),
+            ruhe: { module: ruhe.module - vor.module, pipelines: ruhe.pipelines - vor.pipelines },
+            wechsel: { module: nach.module - ruhe.module, pipelines: nach.pipelines - ruhe.pipelines },
+        };
+    }, ECHT);
+    console.log(`\n[seelenwechsel] ${zeit()} · ${JSON.stringify(seelen).slice(0, 400)}`);
+    check(
+        "S1 Seelenwechsel (Ich wolf↔human ×3, Hof 4 Seelen ×2, zwei Runden): keine Welt-Geometrie, kein Welt-Stoff entsorgt",
+        seelen.entsorgt === 0,
+        `${seelen.entsorgt} von ${seelen.alle} Entsorgungen trafen die Welt (${seelen.geometrien} Geometrien + ${seelen.einzeln - seelen.geometrien} Stoffe einzeln): ${seelen.namen.join(" | ")}`
+    );
+    // nie vakuös: die Bühnen tauschten wirklich ihre Gestalt und legten der Entsorgung Geometrien vor
+    check(
+        "S1 die Probe wechselt wirklich (Ich ×6 + Hof ×8 je Runde, mit Geometrie)",
+        seelen.tausch >= 20 && seelen.vorgelegt > 0,
+        `${seelen.tausch} Wechsel, ${seelen.vorgelegt} Geometrien vorgelegt`
+    );
+    check(
+        "S2 die Welt-GPU kompiliert beim Seelenwechsel nichts nach (gegen die geschlossene Bühne)",
+        seelen.wechsel.module - seelen.ruhe.module <= 0 && seelen.wechsel.pipelines - seelen.ruhe.pipelines <= 0,
+        `Wechsel +${seelen.wechsel.module} Module / +${seelen.wechsel.pipelines} Pipelines, geschlossen +${seelen.ruhe.module} / +${seelen.ruhe.pipelines}`
     );
 
     // DER NACHLAUF: eine Validierung, die r184 in einem offenen Pipeline-Fehler-Bereich fängt, meldet sich erst, wenn der
