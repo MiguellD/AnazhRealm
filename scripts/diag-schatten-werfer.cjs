@@ -1334,7 +1334,10 @@ function probe(selbsttest) {
     }
     // ── Z2 (Seite): die EINE Szenen-Tiefe lebt in ihrer Methode, die Erst-Zeichnung am Renderer (kein Kompilat daneben) ──
     aus.z2 = {
-        erstZeichnung: st.renderer.__anazhErstZeichnung === true && typeof r._erstZeichnungStand === "function",
+        // der Null-Renderer trägt die Renderer-Eingriffe nie: die Erst-Zeichnung steht im Quelltext von _configureRenderer
+        erstZeichnung:
+            /renderer\._renderObjectDirect = function/.test(window.__codeOf(r._configureRenderer)) &&
+            typeof r._erstZeichnungStand === "function",
         szeneTiefe: /viewportDepthTexture\(/.test(window.__codeOf(r._szeneTiefe)),
     };
 
