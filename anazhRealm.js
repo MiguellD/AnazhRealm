@@ -68999,6 +68999,96 @@ class AnazhRealm {
     // (prefix + kultur, kein "haus_"-Literal); `_isAboveWaterAt` vor JEDEM Spawn; fehlender Blueprint/
     // fremde Kultur → Slot fällt GESCHLOSSEN aus. Γ5: aller Zufall lebt im Export, hier nur lesen +
     // platzieren (spawnArchitecture silent). Rückgabe true = platziert.
+    // DIE BAU-WAND (Integration Welle L, Stufe kampf-maus): ein Haus landet nie IN einem bestehenden Bau, und vor seiner
+    // Haustür bleibt der Zugang frei. Geprüft werden der Grundriss (haus-lokal Mitte {ox, oz}, halbe Maße {ex, ez}, Gier ry
+    // um den Slot-Ort x/z) und der Vorplatz der Tür (1,2 m vor der Front −z, Türbreite) gegen die Hülle jedes Baus, der
+    // keine Natur ist (die Natur weicht dem Haus: _grundrissRaeumen) — die Boxen über dem Boden des Hauses (Oberkante über
+    // bodenY + Stufe), gedreht im Rahmen ihrer obb; ein Haus ohne gestempelte Hülle mit seinem Grundriss. Berührung ist kein
+    // Überlapp (die Reihenhäuser einer Siedlung teilen ihre Wand). Seit „vor dir" vorn liegt (_blickVorn), gründet der
+    // Chat-Akt „dorf" sein Dorf vor dem Spieler — an der Start-Plattform stand ein Haus 3,6 m tief in ihr (die Treppe
+    // versperrt), ein zweites mit der Haustür an ihrer Wand (gate:haus-welt W1/W3/W7). Gibt false, wenn ein Bau im Weg ist.
+    _bauFrei(x, z, ry, fp, tuer, bodenY) {
+        const c = Math.cos(ry);
+        const s = Math.sin(ry);
+        const T = 0.05;
+        const flaeche = (lx, lz, hx, hz) => ({ cx: x + lx * c + lz * s, cz: z - lx * s + lz * c, hx, hz, c, s });
+        const flaechen = [flaeche(fp.ox, fp.oz, Math.max(0, fp.ex - T), Math.max(0, fp.ez - T))];
+        if (tuer && Number.isFinite(tuer.x) && Number.isFinite(tuer.z) && Number.isFinite(tuer.w))
+            flaechen.push(flaeche(tuer.x, tuer.z - 0.6, tuer.w / 2, 0.6 - T));
+        const R = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
+        const STEP = AnazhRealm.PLAYER_STEP_UP;
+        const b2 = this._bauFreiBox || (this._bauFreiBox = { cx: 0, cz: 0, hx: 0, hz: 0, c: 1, s: 0 });
+        const trifft = () => {
+            for (const a of flaechen) if (this._rechteckeSchneiden(a, b2)) return true;
+            return false;
+        };
+        for (const e of this.state.architectures || []) {
+            if (!e || !e.position) continue;
+            const r = R + (e._blockerReach || 0) + 8;
+            if (Math.abs(e.position.x - x) > r || Math.abs(e.position.z - z) > r) continue;
+            if (this._istNatur(e)) continue;
+            const boxen = e.blockerAABBs;
+            if (boxen && boxen.length) {
+                for (const b of boxen) {
+                    if (!(b.topY > bodenY + STEP)) continue;
+                    const ob = b.obb;
+                    if (ob) {
+                        b2.cx = ob.cx;
+                        b2.cz = ob.cz;
+                        b2.hx = ob.hx;
+                        b2.hz = ob.hz;
+                        b2.c = ob.c;
+                        b2.s = ob.s;
+                    } else {
+                        b2.cx = (b.minX + b.maxX) / 2;
+                        b2.cz = (b.minZ + b.maxZ) / 2;
+                        b2.hx = (b.maxX - b.minX) / 2;
+                        b2.hz = (b.maxZ - b.minZ) / 2;
+                        b2.c = 1;
+                        b2.s = 0;
+                    }
+                    if (trifft()) return false;
+                }
+                continue;
+            }
+            const g = this._grundrissVon(e);
+            if (!g) continue;
+            const ery = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+            b2.c = Math.cos(ery);
+            b2.s = Math.sin(ery);
+            b2.cx = e.position.x + g.ox * b2.c + g.oz * b2.s;
+            b2.cz = e.position.z - g.ox * b2.s + g.oz * b2.c;
+            b2.hx = g.ex;
+            b2.hz = g.ez;
+            if (trifft()) return false;
+        }
+        return true;
+    }
+
+    // Die Bau-Wand für einen runden Bau des Dorfs (Brunnen, Marktstand): das Quadrat in seinem Fußabdruck-Kreis (Radius aus
+    // dem Bauplan) — ein Nachbar, der den Kreis nur streift, sperrt nicht.
+    _bauFreiRund(type, x, z, bodenY) {
+        const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);
+        return this._bauFrei(x, z, 0, { ex: R, ez: R, ox: 0, oz: 0 }, null, bodenY);
+    }
+
+    // Schneiden sich zwei gedrehte Rechtecke der Ebene? Je Rechteck Mitte {cx, cz}, halbe Maße {hx, hz} und die Drehung
+    // {c, s} im Rahmen der Hülle (lokal → Welt: x = cx + lx·c + lz·s, z = cz − lx·s + lz·c; dieselbe wie `box.obb`).
+    // Trennende Achsen: die vier Kanten-Richtungen; Berührung zählt nicht.
+    _rechteckeSchneiden(a, b) {
+        const dx = b.cx - a.cx;
+        const dz = b.cz - a.cz;
+        for (let i = 0; i < 4; i++) {
+            const R = i < 2 ? a : b;
+            const nx = i % 2 === 0 ? R.c : R.s;
+            const nz = i % 2 === 0 ? -R.s : R.c;
+            const ra = a.hx * Math.abs(a.c * nx - a.s * nz) + a.hz * Math.abs(a.s * nx + a.c * nz);
+            const rb = b.hx * Math.abs(b.c * nx - b.s * nz) + b.hz * Math.abs(b.s * nx + b.c * nz);
+            if (Math.abs(dx * nx + dz * nz) >= ra + rb) return false;
+        }
+        return true;
+    }
+
     _spawnSettlementSlot(slot, origin, f, so) {
         if (!slot || typeof slot.kultur !== "string" || !origin) return false;
         const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
@@ -69008,7 +69098,7 @@ class AnazhRealm {
         const wx = origin.x + slot.x;
         const wz = origin.z + slot.z;
         if (!this._isAboveWaterAt(wx, wz, 0.2)) return false; // die Wasser-Wand
-        // Die Höhe urteilt über den FOOTPRINT: vier obb-Ecken (Export) + Zentrum; Basis = MAX (keine Ecke im
+        // Die Höhe urteilt über den FOOTPRINT: das obb-Raster (Export) + Zentrum + Tür-Vorplatz; Basis = MAX (kein Punkt im
         // Berg), Δh > SIEDLUNG.fundamentMaxDh → Slot fällt GESCHLOSSEN (kein schwebendes Haus). Der Eintrag
         // trägt `fundament` {ex,ez}; Podest + Blocker leiten die Tiefe LIVE aus dem Feld ab. Ohne obb
         // (fremder Export): Punkt-Höhe (must-ignore).
@@ -69028,20 +69118,40 @@ class AnazhRealm {
             const dzw = Number.isFinite(obb.cz) ? obb.cz - slot.z : 0;
             const ox = dxw * rc - dzw * rs;
             const oz = dxw * rs + dzw * rc;
-            for (let k = 0; k < 4; k++) {
-                const lx = ox + (k & 1 ? obb.ex : -obb.ex);
-                const lz = oz + (k & 2 ? obb.ez : -obb.ez);
+            // DER FOOTPRINT ALS RASTER (Integration Welle L): vier Ecken und die Mitte ließen den Buckel zwischen sich durch —
+            // an einer Kuppe der Front lag die Haustür 2,9 m unter dem Gelände, der Körper trat auf Höhe des Obergeschosses
+            // 0,92 m hinein (gate:haus-welt W1). Die Höhe urteilt über ein Raster (≤ 2 m, Fläche und Kanten) und über den
+            // Vorplatz der Haustür (1 m vor der Front −z; er hebt nur die Basis: die Tür liegt nie im Hang).
+            const nx = Math.min(12, Math.max(1, Math.ceil(obb.ex)));
+            const nz = Math.min(12, Math.max(1, Math.ceil(obb.ez)));
+            const probe = (lx, lz, auchMin) => {
                 const h = this.getTerrainHeightAt(wx + lx * rc + lz * rs, wz - lx * rs + lz * rc);
-                if (Number.isFinite(h)) {
-                    if (h > hMax) hMax = h;
-                    if (h < hMin) hMin = h;
+                if (!Number.isFinite(h)) return;
+                if (h > hMax) hMax = h;
+                if (auchMin && h < hMin) hMin = h;
+            };
+            for (let i = 0; i <= nx; i++)
+                for (let j = 0; j <= nz; j++)
+                    probe(ox + obb.ex * ((2 * i) / nx - 1), oz + obb.ez * ((2 * j) / nz - 1), true);
+            const tuS = slot.tuer;
+            if (tuS && Number.isFinite(tuS.x) && Number.isFinite(tuS.z) && Number.isFinite(tuS.w))
+                for (let i = -1; i <= 1; i++) {
+                    probe(tuS.x + (i * tuS.w) / 2, tuS.z - 0.25, false);
+                    probe(tuS.x + (i * tuS.w) / 2, tuS.z - 1, false);
                 }
-            }
             // ZENSUS 17.07. — die Klippen-Wand ist fachwerk-Gesetz (SIEDLUNG); kaltes Buch → kein Slot.
             const S = AnazhRealm._siedlungGesetz();
             if (!S || hMax - hMin > S.fundamentMaxDh) return false; // die Klippen-Wand (fail-closed)
             fundament = { ex: obb.ex, ez: obb.ez, ox, oz };
         }
+        // DIE BAU-WAND: kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand (_bauFrei).
+        const tu = slot.tuer;
+        const fp =
+            fundament ||
+            (tu && Number.isFinite(tu.W) && Number.isFinite(tu.D)
+                ? { ex: tu.W / 2, ez: tu.D / 2, ox: 0, oz: 0 }
+                : null);
+        if (!this._bauFrei(wx, wz, slot.phi || 0, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, hMax)) return false;
         const wy = hMax + 0.5;
         // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
         // die Häuser zählen in den Nexus-Cap, die V18.297-Hort-Lehre).
@@ -69086,6 +69196,7 @@ class AnazhRealm {
             if (!this._isAboveWaterAt(wx, wz, 0.2)) continue; // die Wasser-Wand (EINE Quelle)
             const wy = this.getTerrainHeightAt(wx, wz);
             if (!Number.isFinite(wy)) continue;
+            if (!this._bauFreiRund("brunnen_dorf", wx, wz, wy)) continue; // die Bau-Wand: nie in einem Bau
             const entry = this.spawnArchitecture(
                 "brunnen_dorf",
                 { x: wx, y: wy + 0.5, z: wz },
@@ -69110,6 +69221,7 @@ class AnazhRealm {
                 if (!this._isAboveWaterAt(wx, wz, 0.2)) continue;
                 const wy = this.getTerrainHeightAt(wx, wz);
                 if (!Number.isFinite(wy)) continue;
+                if (!this._bauFreiRund("marktstand_dorf", wx, wz, wy)) continue; // die Bau-Wand: nie in einem Bau
                 // Die Front (−z des Gesetzbuch-Stands) schaut zur Platz-Mitte — dieselbe Regel wie das Labor-Dorf.
                 const pz = plan.platz;
                 const entry = this.spawnArchitecture(

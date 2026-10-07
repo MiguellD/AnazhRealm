@@ -23,6 +23,12 @@
 //       der Front durch die Tür — vor der ersten Studio-Stufe (Kern-Hülle) und während die Fernstufe 2 bzw. 1 steht (die
 //       Solids des Gesetzbuchs, nie eine Stufen-Box); der Weg wird verfolgt (vor der Schwelle höchstens 1,3 m über dem
 //       Boden, nie 1 m darunter — kein Lauf über eine Mauer, kein Sturz), der Korridor ist begehbar (stetig, solide)
+//   W7  BAU IM BAU: kein Haus des Drehbuch-Dorfs steht in einem Bau, der vor ihm stand (Start-Plattform, Fels-Tor), und
+//       vor keiner Haustür steht dessen Wand — Grundriss und Tür-Vorplatz, abgetastet gegen die Hülle jedes Nicht-Natur-
+//       Baus über dem Boden des Hauses; dann derselbe Akt ein zweites Mal am selben Anker: kein Haus, kein Brunnen, kein
+//       Stand des zweiten Dorfs steht im ersten (seit „vor dir" vorn liegt, gründet das Dorf vor dem Spieler: an der
+//       Start-Plattform stand ein Haus 3,6 m tief in ihr). Dazu der Selbsttest „raster": die Höhe des Footprints aus vier
+//       Ecken und der Mitte (der alte Stand) legt eine Haustür in den Hang — W1 wird rot.
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js — GENAU die Probe dieses Defekts wird rot;
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · w4 · w4b · w6), der Hauptlauf alle.
 //   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]]
@@ -82,6 +88,17 @@ const BASIS = {
             "var hb = new THREE.Box3().setFromObject(g); var huelle = stufe === 0 ? { stufe: 0, boxen: gm.__solids } : { stufe: stufe, boxen: [hb.min.x, hb.min.y, hb.min.z, hb.max.x, hb.max.y, hb.max.z] };",
         ],
     ],
+    // die Siedlung baut ohne Bau-Wand (ein Haus darf in einem bestehenden Bau stehen)
+    bauwand: [
+        ["if (!this._bauFrei(wx, wz, slot.phi || 0,", "if (false && !this._bauFrei(wx, wz, slot.phi || 0,"],
+        ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
+    ],
+    // die Höhe des Footprints aus vier Ecken + Mitte, ohne den Tür-Vorplatz (der Stand vor dem Raster)
+    raster: [
+        ["const nx = Math.min(12, Math.max(1, Math.ceil(obb.ex)));", "const nx = 1;"],
+        ["const nz = Math.min(12, Math.max(1, Math.ceil(obb.ez)));", "const nz = 1;"],
+        ["if (tuS && Number.isFinite(tuS.x) && Number.isFinite(tuS.z) && Number.isFinite(tuS.w))", "if (false)"],
+    ],
     // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
     kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],
 };
@@ -139,6 +156,7 @@ async function proben(phasen) {
     // ── das Drehbuch-Dorf 7/18 am Spieler: der Akt des Chats „dorf 7 18" (ohne `position` gründet `spawnSettlement` beim
     // Spieler; die früheren Felder x/z las niemand — beide Dörfer der Linse standen am Start) ──
     const start = { x: pm.position.x, y: pm.position.y, z: pm.position.z };
+    const vorBau = new Set(s.architectures);
     r.spawnSettlement({ seed: 7, nH: 18 });
     const dorfHaeuser = () => s.architectures.filter((e) => e.type && e.type.startsWith("haus_") && e.tuer && e.fundament);
     // der Export reist durch den Foundry-Worker: warten, bis die Slots stehen
@@ -290,6 +308,85 @@ async function proben(phasen) {
             h.treppeSteigM = Math.round((pm.position.y - y0) * 100) / 100;
             h.treppeSollM = Math.round(fl.N * fl.rise * 100) / 100;
         }
+    }
+    // W7 BAU IM BAU: Grundriss (Raster 5 × 5) und Tür-Vorplatz (1,2 m vor der Front, 3 × 2) jedes Dorf-Hauses gegen die
+    // Boxen jedes Baus, der vor dem Dorf stand und keine Natur ist — eine Box zählt über dem Boden des Hauses (+ Stufe)
+    if (P.has("haus")) {
+        const STEP = A.PLAYER_STEP_UP;
+        const w7 = { haeuser: H.length, imBau: 0, taeter: [] };
+        for (const e of H) {
+            const f = e.fundament;
+            const tu = e.tuer;
+            const boden = e.position.y - 0.5;
+            const pkt = [];
+            for (let i = 0; i <= 4; i++)
+                for (let j = 0; j <= 4; j++)
+                    pkt.push(
+                        welt(e, (f.ox || 0) + (f.ex - 0.1) * (i / 2 - 1), (f.oz || 0) + (f.ez - 0.1) * (j / 2 - 1))
+                    );
+            if (tu && Number.isFinite(tu.w))
+                for (let i = 0; i <= 2; i++)
+                    for (const dz of [0.3, 1.1]) pkt.push(welt(e, tu.x + (tu.w / 2 - 0.05) * (i - 1), tu.z - dz));
+            for (const b of vorBau) {
+                if (!b.blockerAABBs || !b.position) continue;
+                if (Math.hypot(b.position.x - e.position.x, b.position.z - e.position.z) > 40 + (b._blockerReach || 0))
+                    continue;
+                if (r._istNatur(b)) continue;
+                let n = 0;
+                for (const q of pkt)
+                    if (b.blockerAABBs.some((bx) => bx.topY > boden + STEP && r._boxAbstand2(bx, q.x, q.z) === 0)) n++;
+                if (n) {
+                    w7.imBau++;
+                    if (w7.taeter.length < 4)
+                        w7.taeter.push(
+                            e.type +
+                                "@" +
+                                Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360) +
+                                "°in " +
+                                b.type +
+                                " (" +
+                                n +
+                                " Punkte)"
+                        );
+                }
+            }
+        }
+        // das zweite Dorf: derselbe Akt am Anker des ersten (worldMeta.settlementCells „d:7@x,z")
+        const zelle = Object.entries((s.worldMeta && s.worldMeta.settlementCells) || {}).find(([k]) =>
+            k.startsWith("d:7@")
+        );
+        if (zelle) {
+            const vorBau2 = new Set(s.architectures);
+            await r.spawnSettlement({ seed: 7, nH: 18, position: { x: zelle[1].x, y: start.y, z: zelle[1].z } });
+            await pumpe(8);
+            const neu = s.architectures.filter(
+                (e) => !vorBau2.has(e) && /^(haus_|brunnen_|marktstand_)/.test(e.type || "")
+            );
+            w7.zweitesDorf = neu.length;
+            w7.zweitesImBau = 0;
+            for (const e of neu) {
+                for (const b of vorBau2) {
+                    if (!b.blockerAABBs || !b.position || b === e) continue;
+                    if (
+                        Math.hypot(b.position.x - e.position.x, b.position.z - e.position.z) >
+                        30 + (b._blockerReach || 0)
+                    )
+                        continue;
+                    if (r._istNatur(b)) continue;
+                    const boden = e.position.y - 0.5;
+                    if (
+                        b.blockerAABBs.some(
+                            (bx) => bx.topY > boden + STEP && r._boxAbstand2(bx, e.position.x, e.position.z) === 0
+                        )
+                    ) {
+                        w7.zweitesImBau++;
+                        if (w7.taeter.length < 4) w7.taeter.push("zweites Dorf: " + e.type + " in " + b.type);
+                        break;
+                    }
+                }
+            }
+        }
+        o.w7 = w7;
     }
     // W4 GRUNDRISS: keine Natur im Grundriss — nach dem Pumpen der Natur-Schlange. Natur = ein Eintrag, dessen Art das
     // Gesetzbuch des Terrain-Studios trägt (`__terrainCore.PHYTO_PRESETS`: Baum, Strauch, Fels, Farn, Totholz …) oder
@@ -672,6 +769,9 @@ function urteil(o) {
         if (unten.length) f.push(`W3 Treppe: ${mitTreppe.length - unten.length} von ${mitTreppe.length} Läufen tragen ins OG (${unten.map((h) => h.typ + ":" + h.treppeSteigM + "/" + h.treppeSollM).join(" ")})`);
         const optik = hs.filter((h) => !(h.optikProzent >= 97));
         if (optik.length) f.push(`W5 Kollision == Optik: ${optik.length} Häuser unter 97 % (${optik.map((h) => h.typ + "@" + h.gierGrad + "°:" + h.optikProzent + " %").join(" ")})`);
+        if (!o.w7 || !(o.w7.haeuser >= 6)) f.push(`W7 Aufbau: ${o.w7 ? o.w7.haeuser : "?"} Dorf-Häuser abgetastet (Soll ≥ 6)`);
+        else if (o.w7.imBau || o.w7.zweitesImBau || !Number.isFinite(o.w7.zweitesDorf))
+            f.push(`W7 Bau im Bau: ${o.w7.imBau} Häuser in einem früheren Bau oder mit der Tür an seiner Wand, zweites Dorf am selben Anker ${o.w7.zweitesImBau}/${o.w7.zweitesDorf} im ersten (${o.w7.taeter.join(" · ") || "Akt fehlt"})`);
         const ueber = hs.filter((h) => !(h.grundrissUeberM <= 0.05));
         if (ueber.length) f.push(`W4c Grundriss deckt das Haus nicht: ${ueber.map((h) => h.typ + " " + h.grundrissUeberM + " m").join(" ")} (die Solids ragen aus der Fundament-Box)`);
     }
@@ -725,6 +825,7 @@ function zeile(o) {
         ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"} · W4c Überstand ${hs.map((h) => h.grundrissUeberM).join("/")} m` +
         ` · W4b Streu vorher ${o.w4b && o.w4b.streuVorher ? o.w4b.streuVorher.zellen : "?"} Zellen im Dorf-Kreis, unter den Häusern ${o.w4b && o.w4b.unterHaus ? o.w4b.unterHaus.geraeumt + " geräumt + " + o.w4b.unterHaus.lebend + " lebend" : "?"}, fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"}, Promotion ${o.w4b && o.w4b.promo ? o.w4b.promo.promoviert + " (warm " + o.w4b.promoWarm.promoviert + "), offen " + o.w4b.promo.rest : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
         ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %` +
+        ` · W7 Bau im Bau ${o.w7 ? o.w7.imBau + "/" + o.w7.haeuser + ", zweites Dorf " + o.w7.zweitesImBau + "/" + o.w7.zweitesDorf : "?"}` +
         ` · W6 Tür frontal ${(o.w6 || []).map((w) => w.kultur + (w.fehler ? ":" + w.fehler : " Kern " + w.kernDrinM + " m (" + w.kernBoxen + " Boxen) / " + (w.fern || []).map((fz) => "L" + fz.stufe + " " + fz.drinM + " m").join(" / "))).join(" · ")}`
     );
 }
@@ -790,6 +891,8 @@ function zeile(o) {
                 nahstreu: ["W4b Nah-Streu"],
                 fernstufe: ["W6 Fernstufe"],
                 kern: ["W6 Kern-Hülle"],
+                bauwand: ["W7 Bau im Bau"],
+                raster: ["W1 Tür"],
             };
             // die Phase je Täter (eine Welt fährt nur, was ihr Selbsttest rot machen soll — der Hauptlauf fährt alle)
             const phasenVon = {
@@ -802,6 +905,8 @@ function zeile(o) {
                 nahstreu: ["w4b"],
                 fernstufe: ["w6"],
                 kern: ["w6"],
+                bauwand: ["haus"],
+                raster: ["haus"],
             };
             for (const inj of Object.keys(soll).filter((k) => !NUR.length || NUR.includes(k))) {
                 const { o, pf } = await lauf(inj, phasenVon[inj]);
