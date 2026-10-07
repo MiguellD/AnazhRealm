@@ -148,7 +148,11 @@ jobs:
         # GPU-Linse selbst 11–16 min — Lauf 2136 kam mit 2 s Luft durch (30:02), Lauf 2137 lief
         # alle 53 Schritte GRÜN und wurde 4 s nach dem letzten vom 30-min-Limit „cancelled".
         # Die Laufzeit ist legitim (Echt-Renderer-Linsen); 45 hält eine Marge von ~50 %.
-        timeout-minutes: 45
+        # 90 (GEMESSEN 07.10.): mit den Linsen der Welle L (Haus begehbar 586 s, Studio-Dorf 296 s, Körper 124 s) erreicht
+        # der Job auf integ-l das Limit vor Schritt 76 — Lauf 37680812166 (integ-l 79f25cbd) und 37680772857 (welle-lf-
+        # werkstatt) liefen 76 Schritte GRÜN und wurden nach 45:13 min „cancelled"; die zwölf Schritte danach (V1-Pfad,
+        # Werkstatt-Weg, GPU-Churn 11–16 min, Nah-, Post-, Look-Linsen) erreichte kein Lauf. Rest-Schätzung ~30 min.
+        timeout-minutes: 90
         steps:
             - uses: actions/checkout@v4
 
