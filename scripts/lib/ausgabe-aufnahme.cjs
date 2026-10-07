@@ -331,18 +331,56 @@ function wetterSelbsttest() {
     const faelle = [
         ["ruhig", Object.assign({ buch: [] }, fest), "GRUEN", null],
         ["nexus", Object.assign({}, fest, { nachher: "rainy", buch: [nex] }), "ROT", "nexus"],
-        ["hin und zurück", Object.assign({}, fest, { buch: [nex, Object.assign({}, nex, { von: "rainy", zu: "sunny" })] }), "ROT", "nexus"],
-        ["roh", Object.assign({}, fest, { nachher: "rainy", buch: [{ art: "roh", von: "sunny", zu: "rainy", quelle: null, stapel: "_loopFoo" }] }), "ROT", "ROH"],
-        ["alter Stand", Object.assign({}, fest, { nachher: "rainy", buch: [Object.assign({}, nex, { quelle: "?", stapel: "weather ← dslEval ← dslRun ← _loopNexusUpdate" })] }), "ROT", "_loopNexusUpdate"],
+        [
+            "hin und zurück",
+            Object.assign({}, fest, { buch: [nex, Object.assign({}, nex, { von: "rainy", zu: "sunny" })] }),
+            "ROT",
+            "nexus",
+        ],
+        [
+            "roh",
+            Object.assign({}, fest, {
+                nachher: "rainy",
+                buch: [{ art: "roh", von: "sunny", zu: "rainy", quelle: null, stapel: "_loopFoo" }],
+            }),
+            "ROT",
+            "ROH",
+        ],
+        [
+            "alter Stand",
+            Object.assign({}, fest, {
+                nachher: "rainy",
+                buch: [
+                    Object.assign({}, nex, { quelle: "?", stapel: "weather ← dslEval ← dslRun ← _loopNexusUpdate" }),
+                ],
+            }),
+            "ROT",
+            "_loopNexusUpdate",
+        ],
         ["taut", Object.assign({ buch: [] }, fest, { uhrNachher: 17.6 }), "ROT", "taut"],
         ["blind", Object.assign({ buch: [] }, fest, { nachher: "rainy" }), "ROT", "blind"],
-        ["bühne", Object.assign({}, fest, { buch: [{ art: "schreiber", von: "rainy", zu: "sunny", quelle: "buehne", stapel: "x" }] }), "GRUEN", null],
-        ["verweigert", Object.assign({}, fest, { buch: [{ art: "verweigert", von: "sunny", zu: "rainy", quelle: "emotion:sorrow", stapel: "y" }] }), "GRUEN", null],
+        [
+            "bühne",
+            Object.assign({}, fest, {
+                buch: [{ art: "schreiber", von: "rainy", zu: "sunny", quelle: "buehne", stapel: "x" }],
+            }),
+            "GRUEN",
+            null,
+        ],
+        [
+            "verweigert",
+            Object.assign({}, fest, {
+                buch: [{ art: "verweigert", von: "sunny", zu: "rainy", quelle: "emotion:sorrow", stapel: "y" }],
+            }),
+            "GRUEN",
+            null,
+        ],
     ];
     for (const [name, w, soll, taeter] of faelle) {
         const u = wetterUrteil(w);
         if (u.urteil !== soll) v.push(`${name}: ${u.urteil} statt ${soll}`);
-        if (taeter && !u.taeter.some((t) => t.includes(taeter))) v.push(`${name}: der Täter „${taeter}" steht nicht im Urteil`);
+        if (taeter && !u.taeter.some((t) => t.includes(taeter)))
+            v.push(`${name}: der Täter „${taeter}" steht nicht im Urteil`);
     }
     const vw = wetterUrteil(faelle[8][1]).verweigert;
     if (vw["emotion:sorrow → rainy"] !== 1) v.push("verweigert: die verweigerte Quelle steht nicht beim Namen");

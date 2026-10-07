@@ -41,7 +41,9 @@ if (process.argv.includes("--selftest")) {
         console.log("\n❌ SELBSTTEST ROT — das Urteil der Wetter-Wache ist blind.");
         process.exit(1);
     }
-    console.log("✅ SELBSTTEST GRÜN — Schreiber, roh, tauende Uhr und blinder Spion fallen rot; Bühne und Verweigerung grün.");
+    console.log(
+        "✅ SELBSTTEST GRÜN — Schreiber, roh, tauende Uhr und blinder Spion fallen rot; Bühne und Verweigerung grün."
+    );
     process.exit(0);
 }
 
@@ -75,7 +77,13 @@ function probe() {
         const vor = { wetter: st.weather, uhr: st.weatherEffectTime, seq: window.__wetterBuch().seq };
         tat();
         const b = window.__wetterBuch(vor.seq);
-        return { vorher: vor.wetter, nachher: st.weather, uhrVorher: vor.uhr, uhrNachher: st.weatherEffectTime, buch: b.buch };
+        return {
+            vorher: vor.wetter,
+            nachher: st.weather,
+            uhrVorher: vor.uhr,
+            uhrNachher: st.weatherEffectTime,
+            buch: b.buch,
+        };
     };
     // jeder Schreiber-Weg des Spiels (der echte Code-Pfad, keine Abkürzung)
     const wege = {
@@ -88,7 +96,11 @@ function probe() {
         },
         nexus: () => {
             st.nexusWirk = 1e6;
-            st.nexusEvolutionQueue.push({ name: "wache", program: ["repeat", 2, ["weather", "stormy"]], source: "nexus" });
+            st.nexusEvolutionQueue.push({
+                name: "wache",
+                program: ["repeat", 2, ["weather", "stormy"]],
+                source: "nexus",
+            });
             r._loopNexusUpdate();
         },
         gesetz: () => {
@@ -104,7 +116,9 @@ function probe() {
     window.__buehne();
     for (const [n, w] of Object.entries(wege)) aus.halt[n] = fenster(w);
     // die Gesetze, die die Probe registrierte, fallen wieder (die freie Welt prüft nur den Menschen und den Auto-Zug)
-    st.worldRules = (st.worldRules || []).filter((x) => !(x.source === "human" && JSON.stringify(x.effect) === '["weather","rainy"]'));
+    st.worldRules = (st.worldRules || []).filter(
+        (x) => !(x.source === "human" && JSON.stringify(x.effect) === '["weather","rainy"]')
+    );
     // (S) der rohe Schreiber am `_setWeather` vorbei
     aus.roh = fenster(() => {
         st.weather = "rainy";
@@ -118,7 +132,9 @@ function probe() {
     window.__buehne();
     aus.ende = { wetter: st.weather, uhr: st.weatherEffectTime };
     // (Q) der Halt in der Engstelle
-    aus.engstelleLiest = /this\.state\.weatherEffectTime\s*<\s*0/.test(window.__codeOf(Object.getPrototypeOf(r)._setWeather));
+    aus.engstelleLiest = /this\.state\.weatherEffectTime\s*<\s*0/.test(
+        window.__codeOf(Object.getPrototypeOf(r)._setWeather)
+    );
     return aus;
 }
 
@@ -137,16 +153,23 @@ function urteil(S, quelle, pageErrors) {
         if (w.nachher !== "sunny") rot.push(`(H) HALT ${n}: das Wetter ist „${w.nachher}" unter der Bühne`);
         const soll = SOLL_QUELLE[n];
         if (soll && !Object.keys(u.verweigert).some((k) => k.startsWith(soll + " → ")))
-            rot.push(`(H) HALT ${n}: kein verweigerter Zug der Quelle „${soll}" im Buch (${JSON.stringify(u.verweigert)}) — der Weg schrieb nicht oder der Spion ist blind`);
+            rot.push(
+                `(H) HALT ${n}: kein verweigerter Zug der Quelle „${soll}" im Buch (${JSON.stringify(u.verweigert)}) — der Weg schrieb nicht oder der Spion ist blind`
+            );
     }
     const roh = wetterUrteil(S.roh);
     if (roh.urteil !== "ROT" || !roh.taeter.some((t) => /ROH am _setWeather vorbei/.test(t)))
-        rot.push(`(S) SCHARF: der rohe Schreiber fällt nicht rot beim Namen (${roh.urteil}: ${roh.taeter.join(" · ")})`);
-    if (S.frei.mensch.nachher !== "rainy") rot.push(`(F) FREI: der Mensch dreht das Wetter ohne Halt nicht (${S.frei.mensch.nachher})`);
+        rot.push(
+            `(S) SCHARF: der rohe Schreiber fällt nicht rot beim Namen (${roh.urteil}: ${roh.taeter.join(" · ")})`
+        );
+    if (S.frei.mensch.nachher !== "rainy")
+        rot.push(`(F) FREI: der Mensch dreht das Wetter ohne Halt nicht (${S.frei.mensch.nachher})`);
     if (S.frei.autoZug.nachher === S.frei.autoZug.vorher)
         rot.push(`(F) FREI: der Auto-Zug zieht ohne Halt nach 120 s nicht weiter (${S.frei.autoZug.nachher})`);
-    if (S.ende.wetter !== "sunny" || !(S.ende.uhr < 0)) rot.push(`(F) die Bühne stellt den Halt nicht wieder her (${JSON.stringify(S.ende)})`);
-    if (!S.engstelleLiest) rot.push("(Q) QUELLE: `_setWeather` liest den Halt nicht (`this.state.weatherEffectTime < 0`)");
+    if (S.ende.wetter !== "sunny" || !(S.ende.uhr < 0))
+        rot.push(`(F) die Bühne stellt den Halt nicht wieder her (${JSON.stringify(S.ende)})`);
+    if (!S.engstelleLiest)
+        rot.push("(Q) QUELLE: `_setWeather` liest den Halt nicht (`this.state.weatherEffectTime < 0`)");
     if (quelle.schreiber !== 2)
         rot.push(
             `(Q) QUELLE: \`this.state.weather =\` steht ${quelle.schreiber}× im Stamm (soll 2: _setWeather und das Laden) — ein Schreiber am EINEN Schreiber vorbei: ${quelle.orte.join(", ")}`
@@ -211,14 +234,18 @@ function urteil(S, quelle, pageErrors) {
     console.log(`  Scharf · roh      ${roh.urteil}  ${roh.taeter.join(" · ")}`);
     console.log(`  Frei · Mensch     ${S.frei.mensch.vorher} → ${S.frei.mensch.nachher}`);
     console.log(`  Frei · Auto-Zug   ${S.frei.autoZug.vorher} → ${S.frei.autoZug.nachher}`);
-    console.log(`  Quelle: \`this.state.weather =\` ${quelle.schreiber}× (${quelle.orte.join(", ")}), _setWeather liest den Halt: ${S.engstelleLiest}`);
+    console.log(
+        `  Quelle: \`this.state.weather =\` ${quelle.schreiber}× (${quelle.orte.join(", ")}), _setWeather liest den Halt: ${S.engstelleLiest}`
+    );
     const rot = urteil(S, quelle, pageErrors);
     if (rot.length) {
         console.error("\nROT:");
         for (const e of rot) console.error("  • " + e);
         process.exit(1);
     }
-    console.log("\nGRÜN — unter der Bühne dreht kein Schreiber das Wetter, jeder steht beim Namen; ohne Halt wirkt das Spiel wie immer.");
+    console.log(
+        "\nGRÜN — unter der Bühne dreht kein Schreiber das Wetter, jeder steht beim Namen; ohne Halt wirkt das Spiel wie immer."
+    );
     process.exit(0);
 })().catch((e) => {
     console.error("Wetter-Wache-Diag-Fehler:", (e && e.stack) || e);
