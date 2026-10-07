@@ -285,6 +285,8 @@ function pageHtml() {
         const i = next++;
         const r = await frag(Object.assign({ type: "build-asset" }, liste[i]));
         out[i] = bauHash(r.meshes || []);
+        // Der Budget-Bruch der Antwort (Studio-Vertrag B2c) reist mit: ein Regler-Wert, der die Stufe über ihre Zeile treibt.
+        out[i].budgetBruch = r.budgetBruch ? JSON.stringify(r.budgetBruch).slice(0, 200) : null;
       }
     }));
     return out;
