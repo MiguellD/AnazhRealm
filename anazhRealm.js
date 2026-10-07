@@ -8722,6 +8722,7 @@ class AnazhRealm {
                 // Build-Zeit einbetten — sonst sähen Mitspieler ein anderes Dorf an anderer Stelle. Damm routet über
                 // den generischen `spawn_blueprint`-Pfad; Dorf/Tempel/Wasserfall über eigene DSL-Ops.
                 example: "baue dorf hier",
+                hilfe: ["baue dorf hier"],
                 re: /^baue\s+(dorf|tempel|wasserfall|damm)\s+hier\s*$/i,
                 build: (m) => {
                     const kind = m[1].toLowerCase();
@@ -9056,6 +9057,13 @@ class AnazhRealm {
             // → null, der Satz fällt an den LLM-Begleiter. Bewusst die LETZTE Regel: Spezifischeres gewinnt.
             {
                 example: "pflanz mir einen eichenhain am wasser",
+                // die v1-Sätze der Hilfe (`_hilfeZeilen`): dieselbe Regel, je ein Wort des Studios
+                hilfe: [
+                    "pflanz mir einen eichenhain am wasser",
+                    "bau mir ein haus",
+                    "pflanz mir drei birken",
+                    "bau mir einen gt",
+                ],
                 re: /^(?:pflanz|setz|bau|stell|erschaff|mach|wachs)\w*\s+(?:mir\s+|uns\s+)?(?:(ein(?:en|e|ige)?|zwei|drei|vier|fünf|fuenf|sechs|sieben|acht|neun|zehn|\d+)\s+)?([a-zäöüß_]+?)(hain|wald|gruppe)?(?:\s+(?:am|an|beim|zum|ans)\s+(wasser|fluss|see|ufer|bach|meer)|\s+(hier|vor mir))?\s*[.!]?$/i,
                 build: (m) => {
                     const wort = m[2].toLowerCase();
@@ -23888,6 +23896,15 @@ class AnazhRealm {
         if (this._chatSystemPatternsCache) return this._chatSystemPatternsCache;
         this._chatSystemPatternsCache = [
             {
+                // DIE HILFE (Leben-Schau 07.10., L2): „hilfe" war unbekannt („Meintest du: 'warte'?"), „help" zeigte eine
+                // handgeschriebene Liste ohne einen v1-Satz. Sie liest die EINEN Tafeln (`_hilfeZeilen`).
+                example: "hilfe",
+                re: /^(?:hilfe|help|befehle|\?)$/i,
+                run: (m, append) => {
+                    for (const z of this._hilfeZeilen()) append(z);
+                },
+            },
+            {
                 // N5.7 (W-A5b) — der deliberate Siedlungs-Akt: „dorf" / „dorf 7" / „dorf 7 24".
                 // Async (Worker-Roundtrip) — spawnSettlement meldet ins Log, hier sofortiges Echo.
                 example: "dorf [seed] [häuser]",
@@ -24312,17 +24329,38 @@ class AnazhRealm {
                     return;
                 }
             }
-            appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
-        } else {
-            // Der System-Teil der Hilfe wird aus der EINEN Tabelle generiert (eine Hardcode-Liste daneben
-            // driftet); die DSL-Beispiele bleiben kuratiert (die volle Pattern-Liste wäre eine Textwand).
-            const sys = this.chatSystemPatterns.map((p) => `'${p.example}'`).join(", ");
             appendChatOutput(
-                "Unbekannter Befehl. DSL-Befehle: 'Setze Wetter rainy', 'Spawne Kreaturen 10', 'Ändere Sternenhimmel red', 'Setze Terrain Steilheit 0.8', 'Setze Terrain Basishöhe 5', 'Erhöhe Sprungkraft um 2', 'Heile Welt', 'Vereine Chaos Ordnung', 'Boden aktivieren/deaktivieren', 'Kreaturen aktivieren/deaktivieren', 'Erzähle <text>'. System: " +
-                    sys +
-                    "."
+                `Unbekannter Befehl. Meintest du: '${suggestion}'? („hilfe" zeigt, was die Welt versteht.)`
             );
+        } else {
+            // Keine zweite Liste: die Hilfe liest die EINEN Tafeln (`_hilfeZeilen`), hier steht nur der Weg dorthin.
+            appendChatOutput(`Unbekannter Befehl — sag „hilfe", dann zeigt dir die Welt, was sie versteht.`);
         }
+    }
+
+    // DIE HILFE aus den EINEN Quellen (Leben-Schau 07.10., L2): die Sätze der Welt (`chatDslPatterns`, je Regel ihr
+    // Beispiel und die `hilfe`-Beispiele der Regel), die System-Befehle (`chatSystemPatterns`) und die Tasten (die
+    // Belegung `state.keybindings` über `DEFAULT_KEYBINDINGS`, benannt mit `KEYBINDING_LABELS`). Vorher war „hilfe"
+    // unbekannt, und die Liste hinter „help" stand von Hand im Text (11 Beispiele, kein v1-Satz). Zuerst die Regeln mit
+    // `hilfe` (die v1-Sätze: der Studio-Satz, das Dorf), dann alle.
+    _hilfeZeilen() {
+        const dsl = this.chatDslPatterns;
+        const kb = this.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS;
+        const fmt = (c) => this._formatBindingCode(c);
+        const q = (s) => `„${s}"`;
+        const probier = [];
+        for (const p of dsl.concat(this.chatSystemPatterns))
+            if (Array.isArray(p.hilfe)) for (const b of p.hilfe) if (!probier.includes(b)) probier.push(b);
+        const tasten = AnazhRealm.KEYBINDING_ACTIONS.map(
+            (a) => `${fmt(kb[a] || AnazhRealm.DEFAULT_KEYBINDINGS[a])} ${AnazhRealm.KEYBINDING_LABELS[a] || a}`
+        );
+        return [
+            `Sprich mit der Welt: ${fmt(kb.chat || AnazhRealm.DEFAULT_KEYBINDINGS.chat)} öffnet das Gespräch, Enter sendet, Esc gibt die Welt zurück.`,
+            `Probier: ${probier.map(q).join(" · ")}`,
+            `Die Welt versteht: ${dsl.map((p) => q(p.example)).join(" · ")}`,
+            `System: ${this.chatSystemPatterns.map((p) => q(p.example)).join(" · ")}`,
+            `Tasten: WASD laufen · 1–9 Hotbar · ${tasten.join(" · ")}`,
+        ];
     }
 
     // Beschreibung → DSL-Programm. Vier bekannte Pattern + Catch-All als
@@ -88602,6 +88640,12 @@ class AnazhRealm {
             }
             // keys-Setzung erst NACH dem inInput-Check — sonst läuft der Avatar beim Tippen im Chat.
             if (inInput) return;
+            // DAS GESPRÄCH (Leben-Schau 07.10., L3): die Chat-Taste (Enter) öffnet das Feld — vorher öffneten Enter, T und
+            // „/" nichts, der Spieler musste Esc drücken und ins Feld klicken. Keine Spiel-Taste fällt dabei an.
+            if (this._actionForBindingCode(event.code) === "chat") {
+                if (this._chatOeffnen()) event.preventDefault();
+                return;
+            }
             this.state.keys[event.key.toLowerCase()] = true;
             // Pfeil-Tasten schreiben die KANONISCHEN Bewegungs-Tasten am EINEN Input-Chokepoint
             // (PFEIL_ALIAS); der Bewegungs-/Lenk-Pfad kennt nur w/a/s/d (kein Doppel-Leser).
@@ -88751,10 +88795,18 @@ class AnazhRealm {
             this.log("Fenstergröße angepasst", "INFO");
         });
 
+        // Das Feld: Enter sendet und gibt die Welt zurück, Esc gibt sie ohne Senden zurück (L3: nach dem Senden blieb
+        // der Fokus im Feld, W tippte ein „w", der Avatar stand).
         const chatInput = document.getElementById("chat-input");
-        chatInput.addEventListener("keypress", (event) => {
-            if (event.key === "Enter" && chatInput.value.trim()) {
-                this.processChatCommand(chatInput.value.trim());
+        chatInput.addEventListener("keydown", (event) => {
+            if (event.key === "Enter") {
+                const satz = chatInput.value.trim();
+                if (satz) this.processChatCommand(satz);
+                this._chatSchliessen();
+                event.preventDefault();
+            } else if (event.key === "Escape") {
+                this._chatSchliessen();
+                event.preventDefault();
             }
         });
         this.log("Chat-Steuerung initialisiert", "INFO");
@@ -92797,6 +92849,39 @@ class AnazhRealm {
         }
     }
 
+    // DAS GESPRÄCH ÖFFNEN (die Chat-Taste, L3): der Zeiger wird frei, jede gehaltene Taste fällt (W lief sonst weiter,
+    // während der Spieler tippt), der Fokus liegt im Feld. true, wenn das Feld den Fokus hat.
+    _chatOeffnen() {
+        if (typeof document === "undefined") return false;
+        const ci = document.getElementById("chat-input");
+        if (!ci) return false;
+        this._uiZeigerFrei();
+        this._alleTastenLos();
+        // Wer spricht, sieht das Feld: ein mit H ausgeblendetes HUD kommt zurück.
+        if (document.body) document.body.classList.remove("hud-hidden");
+        ci.focus();
+        return document.activeElement === ci;
+    }
+
+    // DAS GESPRÄCH SCHLIESSEN (Enter nach dem Senden, Esc): das Feld gibt den Fokus ab — W tippt nie mehr hinein — und der
+    // Zeiger kehrt in die Welt, wenn keine Schublade und kein Inventar offen ist (die Taste ist die Geste, die das Spiel
+    // für den Zeiger braucht; eine Absage der Seite ist kein Fehler, der Klick fängt ihn wie beim ersten Mal).
+    _chatSchliessen() {
+        if (typeof document === "undefined") return;
+        const ci = document.getElementById("chat-input");
+        if (ci && document.activeElement === ci) ci.blur();
+        if (this.state.inventoryOpen || this._uiSchubladeOffen() || this._portalOverlay) return;
+        const canvas = this.state.renderer && this.state.renderer.domElement;
+        if (!canvas || typeof canvas.requestPointerLock !== "function" || document.pointerLockElement === canvas)
+            return;
+        try {
+            const p = canvas.requestPointerLock();
+            if (p && typeof p.catch === "function") p.catch(() => {});
+        } catch (_e) {
+            /* Policy: kein Lock ohne Geste — der nächste Klick fängt den Zeiger */
+        }
+    }
+
     // Maus-Listener (Pointer-Lock-Click + Mousedown-Action) als Methode.
     // Wird in createScene am initial-Canvas gerufen.
     _attachWorldCanvasInputListeners(canvas) {
@@ -95229,6 +95314,8 @@ AnazhRealm.DEFAULT_KEYBINDINGS = Object.freeze({
     cameraToggle: "KeyV",
     // V18.109 — E8: der Hand-Tausch (Minecraft-Geste; F ist confirmBuild → G).
     swapHands: "KeyG",
+    // Das Gespräch (Leben-Schau 07.10., L3): Enter öffnet den Chat, Enter im Feld sendet und gibt die Welt zurück.
+    chat: "Enter",
 });
 AnazhRealm.KEYBINDING_ACTIONS = Object.freeze(Object.keys(AnazhRealm.DEFAULT_KEYBINDINGS));
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({
@@ -95244,6 +95331,7 @@ AnazhRealm.KEYBINDING_LABELS = Object.freeze({
     drawerEinstellungen: "Einstellungen-Drawer öffnen",
     cameraToggle: "Kamera: 1st/3rd-Person",
     swapHands: "Hand tauschen (Off-Hand)",
+    chat: "Gespräch öffnen (sprich mit der Welt)",
 });
 
 // MOTION_ROLE_SIGNATURES — die BEWEGUNGS-Rolle eines PARTS emergiert als argmax-Resonanz seines

@@ -26179,7 +26179,7 @@ async function checkBandWelle6Keybindings(ctx) {
             Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
         // V8.17: 11 Aktionen (6 Original + 5 Drawer/Camera-Shortcuts; UI-Putz: drawerWelt entfiel).
         out.hasActions =
-            Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 12; // V18.109 E8: + swapHands
+            Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 13; // V18.109 E8: + swapHands, L3: + chat
         out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
         const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
         out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
@@ -26284,7 +26284,7 @@ async function checkBandWelle6Keybindings(ctx) {
     if (wave6c3Results && !wave6c3Results.error) {
         check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
         check(
-            "Welle 6.C3/V8.17+E8: KEYBINDING_ACTIONS hat 12 Einträge (6 + 5 Drawer/Camera + swapHands)",
+            "Welle 6.C3/V8.17+E8+L3: KEYBINDING_ACTIONS hat 13 Einträge (6 + 5 Drawer/Camera + swapHands + chat)",
             wave6c3Results.hasActions
         );
         check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
