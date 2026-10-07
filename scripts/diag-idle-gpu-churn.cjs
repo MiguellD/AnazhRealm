@@ -410,6 +410,14 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         if (b.cc > 0) await abwarten(`Bild (${wo})`);
         return b;
     };
+    // DAS BAU-BUDGET DER ERST-ZEICHNUNG IM WARMUP: im Spiel baut sie je Render-Aufruf einen Stoff (AnazhRealm.ERST_BAU_MS)
+    // und verschiebt den Rest — ein Bundle mit N ungebauten Bürgern nimmt N-mal neu auf. Im Warmup der Linse tropften so die
+    // Bauten, die der Schlüssel-Warmup nicht deckt (bauSatz, creature, dorf-rauch — auf dem Vendor-Weg ebenso Nachzügler),
+    // über viele Bilder, und jeder späte Compile bezahlte den aufgestauten swiftshader-Rückstand aller Bilder davor (lokal
+    // 37-245 s je Aufruf, CI 37674425050 636 s Lauf und eine Bühnen-Drift; derselbe Code auf dem Vendor-Weg: alle Nachzügler
+    // in Warmup-Frame 0/1, längster Aufruf 9 s). Der Warmup baut darum ohne Budget (alles im ersten vollen Bild, wie der
+    // Vendor); vor der Ruhe gilt wieder das Budget des Spiels — Ruhe und Leerlauf messen das Spiel.
+    if (!setup.err) await ruf("Erst-Budget aus (Warmup)", () => { const C = window.anazhRealm.constructor; window.__erstBudget = C.ERST_BAU_MS; C.ERST_BAU_MS = Infinity; });
     if (!setup.err) {
         setup.scheiben = await warmNeu("Warmup");
         log(`Schlüssel-Warmup: ${setup.scheiben} Aufrufe`);
@@ -418,6 +426,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; window.anazhRealm.state.weatherEffectTime = 1e6; });
             await frame(`Warmup-Frame ${i}`);
         }
+        await ruf("Erst-Budget zurück", () => { window.anazhRealm.constructor.ERST_BAU_MS = window.__erstBudget; });
         const nachStart = await ruf("Zähler", () => window.__cnt());
         // DIE RUHE vor dem Leerlauf: 8 Bilder in Folge ohne Compile UND ohne Arbeit der Erst-Zeichnung (sie baut je Render-
         // Aufruf einen Stoff und verschiebt den Rest; ein Bild ohne Compile kann ihr noch verschobene Bauten lassen, die erst
