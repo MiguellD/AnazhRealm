@@ -40,7 +40,11 @@ function urteil(b) {
     const I = b.instanzTreue;
     if (!I || !(I.faelle && I.faelle.length >= 2))
         v.push(
-            `LEER: Instanz-Treue ohne beide Fälle (${I && I.faelle ? I.faelle.join(", ") : "keine Messung"}) — (I) prüfte nicht alles`
+            `LEER: Instanz-Treue ohne beide Fälle (${I && I.faelle ? I.faelle.join(", ") : "keine Messung"})` +
+                (I && I.leichen && I.leichen.length
+                    ? ` — ohne Prüfung: ${I.leichen.join(" · ")} (eine leere Gruppe zeichnet in keinem Pass)`
+                    : "") +
+                " — (I) prüfte nicht alles"
         );
     else if (I.wuerfe > 0 || I.nan > 0 || I.tot > 0 || I.fehlen > 0)
         v.push(
@@ -110,6 +114,7 @@ function selbsttest() {
         drehTreue: { grenze: 0.0348, gehalten: true, loecher: 0, namen: [], geprueft: 500 },
         instanzTreue: {
             faelle: ["Freigeben+Belegen g", "Stufen-Wechsel g 1→0"],
+            leichen: [],
             wuerfe: 0,
             nan: 0,
             tot: 0,
@@ -206,6 +211,14 @@ function selbsttest() {
             "Instanz-Treue ohne den echten Weg",
             (b) => b.instanzTreue.faelle.pop(),
             /LEER: Instanz-Treue ohne beide Fälle/,
+        ],
+        [
+            "der Stufen-Wechsel leert seine Gruppe (CI 37612012391)",
+            (b) => {
+                b.instanzTreue.faelle.pop();
+                b.instanzTreue.leichen.push("Stufen-Wechsel f:weide|1|1:0#S 1→0 leerte die Gruppe");
+            },
+            /LEER: Instanz-Treue ohne beide Fälle .* — ohne Prüfung: Stufen-Wechsel f:weide\|1\|1:0#S 1→0 leerte die Gruppe/,
         ],
         ["keine Generation", (b) => (b.code.lageGen = false), /CODE: `_passWahlLage` legt keine/],
         ["Satz fragt nicht", (b) => (b.code.satzLiest = false), /CODE: `_chunkSatzPass` fragt/],
@@ -513,7 +526,7 @@ const server = http.createServer((req, res) => {
             {
                 stelle(0, 0);
                 reif();
-                const I = { faelle: [], wuerfe: 0, nan: 0, tot: 0, fehlen: 0, geprueft: 0, namen: [] };
+                const I = { faelle: [], leichen: [], wuerfe: 0, nan: 0, tot: 0, fehlen: 0, geprueft: 0, namen: [] };
                 const nenne = (x) => {
                     if (I.namen.length < 6) I.namen.push(x);
                 };
@@ -584,9 +597,16 @@ const server = http.createServer((req, res) => {
                             I.faelle.push("Freigeben+Belegen " + (g.mesh.name || g.key));
                         }
                     }
-                    // Fall 2: der echte Weg — der Stufen-Wechsel eines Baums, dessen Zwilling die k1-Wahl trägt
+                    // Fall 2: der echte Weg — der Stufen-Wechsel eines Baums, dessen Zwilling die k1-Wahl trägt. Die Gruppe muss
+                    // den Wechsel ÜBERLEBEN: CI 37612012391 traf `f:weide|1|1:0#S` mit diesem Baum als einzigem Bewohner — der
+                    // Wechsel 1→0 leerte sie, der Null-Renderer räumte sie sofort (`_archGroupLeerDispose`), und die Linse
+                    // zählte die Marken der letzten Wahl einer Gruppe, die in keinem Pass mehr zeichnet, als „tot" (lokal
+                    // traf die Wahl eine Gruppe mit Nachbarn: grün — die Folge der Gruppen ist ihre Münz-Folge). Eine leere
+                    // Gruppe prüft die Klasse nicht: die Gefahr ist eine Kaskade, die über einer LEBENDEN Gruppe ihre alte Wahl
+                    // hält. Ein Baum mit Nachbarn in seiner Gruppe zuerst; ein Wechsel, der seine Gruppe leert, ist eine
+                    // Leiche — er zählt nicht als Fall, wird genannt, und der nächste Baum wechselt.
                     {
-                        let treffer = null;
+                        const kand = [];
                         for (const x of r._instanzWahlGruppen()) {
                             const w1 = x.wahl === "schatten" && x._wahlJe && x._wahlJe.get("k1");
                             if (!w1 || !x._wahlJe.get("k0") || !x.mesh) continue;
@@ -595,30 +615,33 @@ const server = http.createServer((req, res) => {
                                     (en) =>
                                         en && ((en.instSlots || []).includes(R) || (en.instSlotsBand || []).includes(R))
                                 );
-                                if (e) {
-                                    treffer = [x, R, e];
-                                    break;
-                                }
+                                if (e) kand.push([x, R, e, (x.liveCount | 0) >= 2 ? 0 : 1]);
                             }
-                            if (treffer) break;
                         }
-                        if (treffer) {
-                            const [g, R, e] = treffer;
+                        kand.sort((a, b) => a[3] - b[3]);
+                        let gewechselt = false;
+                        for (const [g, R, e] of kand) {
+                            if (gewechselt || I.leichen.length >= 4) break;
+                            if (!(R.slot >= 0) || g.slotRef[R.slot] !== R || !r._instanzWahlGruppen().has(g)) continue;
                             const lod0 = e._lodLevel | 0;
+                            const name = g.mesh.name || g.key;
                             let ok = false;
                             for (const ziel of [0, 1, 2])
                                 if (ziel !== lod0 && r._switchArchitectureLOD(e, ziel) && R.slot === -1) {
                                     ok = true;
                                     break;
                                 }
-                            if (ok) {
-                                r._instanzWahlZurueck([g]);
-                                frame();
-                                pruefe(g, "Stufen-Wechsel");
-                                I.faelle.push(
-                                    "Stufen-Wechsel " + (g.mesh.name || g.key) + " " + lod0 + "→" + (e._lodLevel | 0)
-                                );
+                            if (!ok) continue;
+                            const fall = "Stufen-Wechsel " + name + " " + lod0 + "→" + (e._lodLevel | 0);
+                            if (!r._instanzWahlGruppen().has(g) || !((g.liveCount | 0) > 0)) {
+                                I.leichen.push(fall + " leerte die Gruppe");
+                                continue;
                             }
+                            r._instanzWahlZurueck([g]);
+                            frame();
+                            pruefe(g, "Stufen-Wechsel");
+                            I.faelle.push(fall);
+                            gewechselt = true;
                         }
                     }
                 } finally {
@@ -727,7 +750,10 @@ const server = http.createServer((req, res) => {
         console.log(
             `  Instanz-Treue: ${befund.instanzTreue.faelle.join(", ")} · ${befund.instanzTreue.geprueft} geprüft · ` +
                 `${befund.instanzTreue.wuerfe} Würfe, ${befund.instanzTreue.nan} NaN, ${befund.instanzTreue.tot} tote Marken, ` +
-                `${befund.instanzTreue.fehlen} fehlen ${befund.instanzTreue.namen.join(" · ")}`
+                `${befund.instanzTreue.fehlen} fehlen ${befund.instanzTreue.namen.join(" · ")}` +
+                (befund.instanzTreue.leichen && befund.instanzTreue.leichen.length
+                    ? ` · ohne Prüfung: ${befund.instanzTreue.leichen.join(" · ")}`
+                    : "")
         );
     if (befund.drehTreue)
         console.log(
