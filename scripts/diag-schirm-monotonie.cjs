@@ -13,7 +13,8 @@
 // resize-Handler setzt):
 //   Q  QUELLE (kommentar-frei): eine Schirm-Größe (Zeichenpuffer · Canvas-Maß · Fenster-Maß · Bildschirm) liest nur die
 //      EINE Quelle `_schirmMessen`; die Erzeuger des Puffers und die UI-Lage stehen namentlich in der Erlaubnis — jede
-//      andere Methode ist ein zweiter Weg und wird mit Zeile genannt.
+//      andere Methode ist ein zweiter Weg und wird mit Zeile genannt — auch über einen Alias des Renderer-Canvas (eine
+//      Variable, der `….domElement` zugewiesen wird, und dort `.width/.height`).
 //   K  KONSUM: `_schirm()` folgt dem Fenster, und das Fell-Gesetz liest ihn im echten Takt — derselbe Wolf im selben
 //      Abstand trägt sein Fell im großen Fenster und im kleinen nicht (ein kleinerer Schirm schaltet früher ab).
 //   M  MONOTONIE: dieselbe Welt (Bühne Mittag · Sonne · Sommer je Takt gehalten, Tiere still, Regler headless voll,
@@ -24,8 +25,9 @@
 //      ohne den Schirm, die Drift steht im Bericht).
 // SELBSTTEST (--selftest, nach der Messung in derselben Welt): (a) ein eingeschmuggeltes Gesetz liest `_schirm()`
 // VERKEHRT (die Probe-Gruppe `schirmProbe` zeichnet mehr Instanzen, je kleiner der Schirm) → M rot, die Klasse genannt;
-// (b) eine eingeschmuggelte Zeile liest die Canvas-Höhe an `_schirm` vorbei → Q rot, die Methode genannt; (c) die Quelle
-// eingefroren (ein fester Schirm) → K rot.
+// (b) eine eingeschmuggelte Zeile liest die Canvas-Höhe an `_schirm` vorbei → Q rot, die Methode genannt; (d) dieselbe
+// Lesung über einen Alias (`leinwand = renderer.domElement`, `leinwand.height`) → Q rot; (c) die Quelle eingefroren (ein
+// fester Schirm) → K rot.
 //   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie; Port SCHIRM_PORT)
 "use strict";
 const puppeteer = require("puppeteer");
@@ -73,15 +75,30 @@ function ohneKommentare(src) {
         .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ""))
         .replace(/(^|[^:"'`\\])\/\/.*$/gm, "$1");
 }
+// DER ALIAS (Kette V18.534): eine Methode legt den Canvas des Renderers in eine eigene Variable (`schirm =
+// this.state.renderer.domElement`) und liest dort die Größe (`schirm.height`) — SCHIRM_RE sah nur `domElement.height`.
+// Je Methode merkt die Linse jede Variable, der ein `….domElement` zugewiesen wird (const/let/var, Komma-Liste oder
+// Zuweisung), und liest dann `<alias>.width/height/clientWidth/clientHeight` als Schirm-Lesung.
+const ALIAS_ZUWEISUNG = /(?:^|[\s,(;{])([A-Za-z_$][\w$]*)\s*=\s*[^;=]*?\bdomElement\b(?!\s*\.)/g;
 function quellBefunde(src) {
     const b = [];
     const zeilen = ohneKommentare(src).split("\n");
     let methode = null;
     let quelleLiest = false;
+    let aliase = new Set();
     zeilen.forEach((z, i) => {
         const k = KOPF.exec(z);
-        if (k) methode = k[1];
-        if (!SCHIRM_RE.test(z)) return;
+        if (k) {
+            methode = k[1];
+            aliase = new Set();
+        }
+        ALIAS_ZUWEISUNG.lastIndex = 0;
+        let m;
+        while ((m = ALIAS_ZUWEISUNG.exec(z))) aliase.add(m[1]);
+        const aliasLiest = [...aliase].some((a) =>
+            new RegExp("(?:^|[^\\w$.])" + a.replace(/\$/g, "\\$") + "\\.(?:width|height|clientWidth|clientHeight)\\b").test(z)
+        );
+        if (!SCHIRM_RE.test(z) && !aliasLiest) return;
         if (methode === "_schirmMessen") quelleLiest = true;
         if (!methode || !ERLAUBT[methode])
             b.push(`${methode || "?"} (Zeile ${i + 1}) liest die Schirm-Größe an \`_schirm\` vorbei: \`${z.trim().slice(0, 90)}\``);
@@ -498,6 +515,19 @@ function konsumBefunde(reihe) {
                 : ["Q blieb blind: " + (sb[0] || "kein Befund")]
         );
         for (const x of sb.slice(0, 2)) console.log(`      (Selbsttest) ${x}`);
+        // S(d) DER ALIAS-TÄTER: dieselbe Lesung über eine lokale Variable, der der Canvas des Renderers zugewiesen wird.
+        const aliasTaeter = src.replace(
+            "const pxJeM = this._schirm().pxJeM;",
+            "const leinwand = this.state.renderer && this.state.renderer.domElement;\n        const pxJeM = leinwand.height / 1.53;"
+        );
+        const sd = quellBefunde(aliasTaeter);
+        check(
+            "S(d) ein Alias des Renderer-Canvas (`leinwand = renderer.domElement`, `leinwand.height`): Q rot, die Methode genannt",
+            aliasTaeter !== src && sd.some((x) => /^_fellBildschirmGesetz \(Zeile \d+\)/.test(x))
+                ? []
+                : ["Q blieb blind für den Alias: " + (sd[0] || "kein Befund")]
+        );
+        for (const x of sd.slice(0, 2)) console.log(`      (Selbsttest) ${x}`);
         const sc = konsumBefunde(w.selbst.eingefroren);
         check(
             "S(c) die Quelle eingefroren (fester Schirm 1080): K rot",

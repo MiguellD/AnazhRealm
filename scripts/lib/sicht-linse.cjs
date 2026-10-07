@@ -450,6 +450,9 @@ function sichtLauf(k) {
         rend.setAnimationLoop((t) => {
             // Drehen: `drehGrad` je Frame (1° — darüber wählt jeder Frame neu: der Halt reicht einen halben Dreh-Rand)
             if (messen && phase && phase.name === "drehen") st.yaw += ((k.drehGrad || 1) * Math.PI) / 180;
+            // wie jeder Werkbank-Takt: die Wetter-Wache der Bühne und der Ort-Takt des gestellten Orts
+            window.__wetterHalten();
+            if (window.__ortSchritt) window.__ortSchritt();
             r._gameLoopTick(t);
             const f = L.frame();
             if (!messen || !phase || f.paesse === 0) return;

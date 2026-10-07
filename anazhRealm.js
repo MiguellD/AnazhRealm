@@ -84753,14 +84753,19 @@ class AnazhRealm {
     // höchstens die Tiefe der Box; an der Mess-Wiese k0 0,10–0,17 m und k1 0,22–0,47 m je Texel; ohne Kaskaden die EINE
     // Karte des Richtlichts, ihr Texel über ihre Tiefe). Die Schattierung trägt jede kleinere Stufe: N·L ändert sich um
     // höchstens α, unter einer 8-bit-Stufe (`SONNEN_STUFE_SCHATTIERUNG` = 1/255), und die Sonnenscheibe am Himmel springt um
-    // höchstens ein Pixel des Schirms (das Sichtfeld je Bildzeile — Gegenprüfung 07.10.: 1/255 rad waren bei 1080p und 75°
-    // drei Pixel, 42 % der Scheibe) — die Obergrenze ohne Karte.
+    // höchstens einen Bildpunkt, wo sie auch steht (Gegenprüfung 07.10.: 1/255 rad waren bei 1080p und 75° drei Pixel, 42 %
+    // der Scheibe) — die Obergrenze ohne Karte. DER PIXEL-WINKEL aus dem EINEN Schirm (`_schirm`: Zeichenpuffer B × H, die
+    // Brennweite f = pxJeM in Bildpunkten): ein Punkt im Winkel θ zur Blickachse liegt bei r = f·tan θ, eine Drehung um α
+    // schiebt ihn um α·(f² + r²)/f Bildpunkte — am weitesten in der Bildecke, r² = (B/2)² + (H/2)². Das Sichtfeld je Bildzeile
+    // (fov/H) ist nur der Mittelwert über die Höhe: bei 1080p und 75° schiebt es in der Mitte 0,85, am oberen Rand 1,36 und in
+    // der Ecke 2,94 Bildpunkte. Die Stufe nimmt die Ecke: f/(f² + r²) — höchstens ein Bildpunkt überall im Bild.
     _sonnenStufe() {
         let stufe = AnazhRealm.SONNEN_STUFE_SCHATTIERUNG;
-        const cam = this.state.camera,
-            schirm = this.state.renderer && this.state.renderer.domElement;
-        if (cam && cam.isPerspectiveCamera === true && schirm && schirm.height > 0)
-            stufe = Math.min(stufe, (cam.fov * Math.PI) / 180 / schirm.height);
+        const s = this._schirm();
+        if (s.pxJeM != null && s.breite > 0 && s.hoehe > 0) {
+            const f = s.pxJeM;
+            stufe = Math.min(stufe, f / (f * f + (s.breite / 2) ** 2 + (s.hoehe / 2) ** 2));
+        }
         const csm = this.state.csmNode;
         if (csm) {
             const fits = csm._anazhFit;
