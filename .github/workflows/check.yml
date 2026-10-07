@@ -631,6 +631,28 @@ jobs:
               # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
               run: npm run gate:settlement
 
+            - name: Das Studio-Dorf begehen (Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike)
+              # Das Fachwerk-Labor im Browser (WebGL, swiftshader): die Probe ruft die echten Lab-Pfade (buildDorf · promoteB ·
+              # demoteB · walkUpdate → moveAxis/gravity/overlap · Raycaster). B1 die Ganz-Haus-Hülle fällt mit der Promotion und
+              # kehrt mit der Demotion zurück · B2 die offene Haustür ist begehbar · B3 kein Treppen-Schritt endet im Solid, jeder
+              # Lauf (EG→OG, OG→2.OG, Speicher) erreicht seine Höhe, am Austritt steht der Kopf unter dem Dach · B4 die
+              # Keller-Decke ist nie die Wiesen-Platte · B5 von oben zeigt der Fluss Wasser · B6 Antike × 18/40/120 baut.
+              # --selftest: je Defekt serviert der Server die Basis-Zeile (Lab-Shell bzw. fachwerk-core) → genau seine Probe rot.
+              run: npm run gate:studio-begehen
+
+            - name: Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)
+              # Headless (Null-Renderer, die Boden-Karte ist das Mesh des Workers): K1 Becken auf dem Träger und im Sprung ·
+              # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 die
+              # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem Boden (die Rad-
+              # Ebene steht auf dem Gesetz, Entscheid D1). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
+              run: npm run gate:koerper-stand
+
+            - name: Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)
+              # Headless: das Drehbuch-Dorf 7/18, die Foundry liefert die Stufen, der Spieler geht über den Sim-Schritt.
+              # W1 Tür · W2 der Fuß auf der Diele des Gesetzbuchs · W3 die Treppe trägt ins OG · W4 kein Gewächs im
+              # Grundriss · W5 Kollision == Optik je Rasterpunkt. --selftest: Basis-Zeilen serviert → genau ihre Probe rot.
+              run: npm run gate:haus-welt
+
             - name: Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)
               # DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur (haus_ u. a.) lebt
               # in der EINEN LOD-Geschichte (_tickArchitectureLOD via instFoundry) — nah

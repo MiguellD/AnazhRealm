@@ -144,3 +144,23 @@ Kulturen × seed 7: L1 2251k → 561k Dreiecke (vorher 74–89 % von L0, jetzt
   trägt der Vertex den Grundton — vorher standen die Häuser der Welt in weißen
   Backsteinen (Beweis-Bild aaa9c, haus/arm). Die Materialien der kartenlosen
   Gruppe sind darum weiß (keine Doppel-Tönung in r128-Lesern).
+
+## Nachtrag TREPPEN-GESETZ (06.10.2026, Welle L) — Spur und Kopfraum
+
+Vertrags-Akt (Leben-Prüfung S-S2 „die Studio-Treppe ist begehbar"; Re-Mint von
+`haeuser.json` am 06.10.2026, Linse `gate:studio-begehen` B3):
+
+- **SPUR-GESETZ**: ab drei Geschossen läuft der zweite Lauf (OG→2.OG) auf der
+  rechten Schacht-Spur — sie hat jetzt Breite (0,90 m) auch ohne Speicher und
+  Keller. Vorher 0 m: der Lauf ins 2. OG war ein Null-Lauf mit invertierten
+  Tritt-Solids (44 von 270 Siedlungs-Häusern der Fixtures 7/18 · 7/120 · 11/40 ·
+  3/12 · 42/60). Kein Rezept am Lab-Start ist betroffen.
+- **KOPFRAUM-GESETZ**: der Speicherlauf mündet im Stehraum (|z| ≤ zBandTop,
+  Dach ≥ kopfSpar über dem Estrich); trüge ihn die Kehre unter die Schräge, läuft
+  er vom anderen Schacht-Ende zum First. Vorher trat er bei drei Geschossen unter
+  der Schräge aus (Kopfraum am Austritt 1,21 m, der Kopf stand im Dach).
+- Byte-Beweis: über 270 Siedlungs-Häuser ändern sich genau die 78 Häuser mit
+  Null-Spur oder gekehrtem Speicherlauf, 192 bleiben byte-gleich; von den 194
+  Golden-Fällen ändern sich genau die sechs `hanseatisch` (s7 · s12345 × L0/L1/L2 —
+  die einzige Kultur mit drei Geschossen und Speicher), `siedlung.json` und
+  `ausstattung.json` bleiben byte-gleich.

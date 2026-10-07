@@ -5415,6 +5415,12 @@ init();
                     console.error("[budget] " + msg.presetId + " L" + (msg.lod | 0) + ": " + JSON.stringify(budgetBruch));
                 }
             }
+            // DIE HÜLLE REIST MIT (Welle L, additiv, must-ignore): ein Haus (fachwerk buildInstance) trägt seine
+            // Kollisions-Liste haus-lokal — die Solids des Gesetzbuchs, jede Stufe die der Stufe 0 (hausSolids) — als
+            // Beipack-Eintrag neben den Meshes (das __skelett-Muster: kein neuer Kanal, die Platte trägt ihn gratis).
+            // Nach dem Budget-Ausgang: der Beipack ist kein Teil. Andere Gestalten tragen das Feld nie.
+            if (g && g.userData && g.userData.__huelle && Array.isArray(g.userData.__huelle.boxen))
+                meshes.push({ kind: "__huelle", huelle: { stufe: g.userData.__huelle.stufe, boxen: g.userData.__huelle.boxen } });
         } catch (e) {
             meshes = [];
             try {

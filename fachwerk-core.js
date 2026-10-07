@@ -197,7 +197,7 @@
   const DORMER = (hasAttic && !modern && P.hip<0.45 && Dp>5.5) ? (()=>{ const gx=clamp(((P.seed%5)-2)*0.5, -W/2+1.5, W/2-1.5), gW=clamp(W*0.16,1.15,1.6), zBack=-Dp*0.22, zFront=zBack-1.0; const yBack=roofSkinY(gx,zBack), baseY2=roofSkinY(gx,zFront)+0.02, frontTop=yBack-0.08; return (frontTop-baseY2>0.85)?{gx,gW,zBack,zFront,yBack,baseY2,frontTop}:null; })() : null;   // EINE Gauben-Quelle: Struktur (dachwerk) UND Dachhaut-Aussparung (dachdeckung) lesen sie
   const stW = NORM.treppe;                                    // Haupttreppe-Breite = Norm
   const mainW = ((levels.length>=2)||(levels.length===1&&hasAttic)) ? stW : 0;   // LINKE Spur: Haupt-/Estrichtreppe — nur wenn nach oben gegangen wird
-  const loftW = ((levels.length>=2&&hasAttic)||P.keller) ? 0.90 : 0;             // FIX Issue5: RECHTE Spur trägt Speicher- ODER Kellertreppe — Keller koppelt nicht mehr parasitär an den Speicher
+  const loftW = ((levels.length>=2&&hasAttic)||P.keller||levels.length>=3) ? 0.90 : 0;   // FIX Issue5: RECHTE Spur trägt Speicher- ODER Kellertreppe — Keller koppelt nicht mehr parasitär an den Speicher · SPUR-GESETZ (Welle L): ab drei Geschossen läuft der zweite Lauf (OG→2.OG) auf der RECHTEN Spur — sie hat Breite, auch ohne Speicher und Keller (vorher 0 m: die Treppe ins 2. OG war ein Null-Lauf, 44 von 270 Siedlungs-Häusern)
   const shaftHalf = (mainW+loftW)/2;                          // GESETZ: Schacht hält beide (ggf. nur eine) Spur nebeneinander, Breite daraus abgeleitet
   const fw  = Math.max(W*0.15, NORM.flur + shaftHalf + 0.06); // Flur-Halbbreite ABGELEITET: Lane = fw−Schacht/2 ≥ NORM.flur
 
@@ -308,7 +308,9 @@
   if(levels.length===1 && hasAttic){                                                        // GESETZ: kein Zwischengeschoss, aber ein NUTZBARER Estrich → es MUSS eine Treppe dorthin geben; bei flachem Dach KEINE Treppe (sonst sticht sie raus)
     flights.push({base:levels[0].y, tr:'L', x0:TRACK.L[0], x1:TRACK.L[1], zFoot:stZ0, dir:1, N:stN, rise:stRise, go:stGo, isLoft:false, atLevel:'attic', topEdge:'back', footEdge:'front'}); }
   let LOFT=null;
-  if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R', dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
+  if(hasLoft){ const i=levels.length-1, tr=(i%2===0)?'L':'R'; let dir=(i%2===0)?1:-1;          // Speicherlauf top→Dachboden (Raumspar)
+    const austritt=(d)=>Math.abs(((d>0)?stZ0:wz1)+d*(lRun+0.3));                            // KOPFRAUM-GESETZ (Welle L): der Speicherlauf mündet im STEHRAUM (|z| ≤ zBandTop: Dach ≥ kopfSpar über dem Estrich) — trüge die Kehre ihn unter die Schräge, läuft er vom anderen Schacht-Ende zum First (vorher bei drei Geschossen Kopfraum 1,2 m am Austritt: der Kopf stak im Dach)
+    if(austritt(dir)>zBandTop && austritt(-dir)<=zBandTop) dir=-dir;
     const zFoot=(dir>0)?stZ0:wz1, zTop=zFoot+dir*lRun, z0=Math.min(zFoot,zTop), z1=Math.max(zFoot,zTop);
     LOFT={x0:TRACK[tr][0],x1:TRACK[tr][1],z0,z1,xc:(TRACK[tr][0]+TRACK[tr][1])/2,base:levels[i].y,top:eaveY,N:lN,rise:lRise,go:lGo,dir,zFoot};
     flights.push({base:levels[i].y, tr, x0:TRACK[tr][0], x1:TRACK[tr][1], zFoot, dir, N:lN, rise:lRise, go:lGo, isLoft:true, atLevel:'attic', topEdge:(dir>0)?'back':'front', footEdge:(dir>0)?'front':'back'});
@@ -1279,16 +1281,19 @@
   function hof(){ const g=grp(); if(P.grundriss!=='hof') return g;   // INNENHOF (siheyuan/riad/cour d'honneur) — ADDITIV: zwei Arme + Torriegel um den offenen Hof, der Hof ist die Luft im Ring
     const armW=clamp(W*0.30,2.6,3.6), courtD=clamp(W*1.0,5,9), gateW=2.8, zF=-Dp/2, zC=zF-courtD;
     const wH=Math.min(eaveY-baseY-0.5, P.egH*0.92), wr=(P.stil==='stein'||P.stil==='klinker'||P.stil==='modern')?'putz':((P.stil==='huette'||P.stil==='stroh')?'holz':'gefach');
+    // HOFMAUER-SOLIDS (Welle L, additiv — kein beam ändert sich, Kollision == Optik): Boden, Querwände mit Tor-Lücke und Sturz,
+    // Lochwände der Arme, Pflaster und Brunnen tragen ihre Solids wie jede Wand des Hauses (vorher lief der Körper durch die
+    // ganze Hofmauer, die Welt-Fernstufe sah sie nur als Bounding-Box 8,2 m vor den Haus-Solids)
     const bar=(x0,x1,z0,z1,alongZ,gate)=>{ const cx=(x0+x1)/2,cz=(z0+z1)/2,lx=x1-x0,lz=z1-z0, rY=baseY+wH+(alongZ?lx:lz)/2*0.7;
-      beam(g,cx,baseY+0.04,cz,lx,0.08,lz,'boden');
-      const xWall=(zz)=>{ if(!gate){ beam(g,cx,baseY+wH/2,zz,lx,wH,0.22,wr); return; }   // ohne Korridor: volle Querwand
+      beam(g,cx,baseY+0.04,cz,lx,0.08,lz,'boden'); addSolid(cx,baseY+0.04,cz,lx,0.08,lz);
+      const xWall=(zz)=>{ if(!gate){ beam(g,cx,baseY+wH/2,zz,lx,wH,0.22,wr); addSolid(cx,baseY+wH/2,zz,lx,wH,0.22); return; }   // ohne Korridor: volle Querwand
         const gw2=gate.w/2, lh=Math.min(wH-0.25, gate.h), L=(gate.x-gw2)-x0, R=x1-(gate.x+gw2);   // EINGANGS-KORRIDOR (Sperrflaeche der Haustuer) bleibt frei → das Tor emergiert auf der Tuer-Achse, nicht hart gesetzt
-        if(L>0.05) beam(g,x0+L/2,baseY+wH/2,zz,L,wH,0.22,wr); if(R>0.05) beam(g,x1-R/2,baseY+wH/2,zz,R,wH,0.22,wr);   // Wandstuecke links/rechts vom Tor
-        if(wH>lh+0.05) beam(g,gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22,wr); };   // Sturz: die niedrige Wand bestimmt die Torform (flach, kein Bogen)
+        if(L>0.05){ beam(g,x0+L/2,baseY+wH/2,zz,L,wH,0.22,wr); addSolid(x0+L/2,baseY+wH/2,zz,L,wH,0.22); } if(R>0.05){ beam(g,x1-R/2,baseY+wH/2,zz,R,wH,0.22,wr); addSolid(x1-R/2,baseY+wH/2,zz,R,wH,0.22); }   // Wandstuecke links/rechts vom Tor
+        if(wH>lh+0.05){ beam(g,gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22,wr); addSolid(gate.x,baseY+(lh+wH)/2,zz,gate.w,wH-lh,0.22); } };   // Sturz: die niedrige Wand bestimmt die Torform (flach, kein Bogen)
       xWall(z0); xWall(z1);
       { const nzW=Math.max(1,Math.round(lz/2.2)), wcy=baseY+Math.min(wH-0.55,1.5), wfw=Math.min(0.8,lz/nzW*0.4), wfh=0.9, zh=[];   // HOF-FENSTER-GESETZ: Arme schauen in den Hof UND zur Strasse — LOCHWAND
         for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; zh.push({c:pz,w:wfw+0.12,b:wcy-wfh/2-0.03,t:wcy+wfh/2+0.03}); }
-        lochWand(g,false,x0,z0,z1,baseY,baseY+wH,zh,wr,0.22); lochWand(g,false,x1,z0,z1,baseY,baseY+wH,zh,wr,0.22);
+        lochWand(g,false,x0,z0,z1,baseY,baseY+wH,zh,wr,0.22,true); lochWand(g,false,x1,z0,z1,baseY,baseY+wH,zh,wr,0.22,true);
         for(let i2=0;i2<nzW;i2++){ const pz=z0+lz*(i2+0.5)/nzW; fensterAt(g,x0,wcy,pz,wfw,wfh,false); fensterAt(g,x1,wcy,pz,wfw,wfh,false); } }
       if(ROOFMODE==='flat'){ beam(g,cx,baseY+wH+0.06,cz,lx,0.12,lz,'putz'); }   // flaches Hof-Arm-Dach (Mediterran) statt Pultdach
       else { const half=(alongZ?lx:lz)/2, dy=rY-(baseY+wH), ang=Math.atan2(dy,half), len=Math.hypot(half,dy);
@@ -1297,11 +1302,11 @@
     bar(-W/2,-W/2+armW,zC+gateW,zF,true);            // linker Arm (First entlang z)   // Arm stößt an den Torriegel — kein Dach-Kreuz
     bar(W/2-armW,W/2,zC+gateW,zF,true);              // rechter Arm
     bar(-W/2,W/2,zC,zC+gateW,false,{x:doorX, w:doorW+0.9, h:P.doorH+0.3});           // Torriegel vorne (First entlang x)
-    beam(g,0,baseY+0.03,(zF+zC+gateW)/2,W-2*armW+0.3,0.06,courtD-gateW,'weg');   // Hofpflaster
-    const wz=(zF+zC+gateW)/2; beam(g,0,baseY+0.45,wz,1.1,0.9,1.1,'stein'); beam(g,0,baseY+0.92,wz,1.3,0.1,1.3,'stein');   // Brunnen in der Mitte
+    beam(g,0,baseY+0.03,(zF+zC+gateW)/2,W-2*armW+0.3,0.06,courtD-gateW,'weg'); addSolid(0,baseY+0.03,(zF+zC+gateW)/2,W-2*armW+0.3,0.06,courtD-gateW);   // Hofpflaster
+    const wz=(zF+zC+gateW)/2; beam(g,0,baseY+0.45,wz,1.1,0.9,1.1,'stein'); beam(g,0,baseY+0.92,wz,1.3,0.1,1.3,'stein'); addSolid(0,baseY+0.45,wz,1.1,0.9,1.1); addSolid(0,baseY+0.92,wz,1.3,0.1,1.3);   // Brunnen in der Mitte
     return g; }
-  // LOCHWAND-GESETZ — EINE Wand-mit-Öffnungen-Quelle: Vollsegmente zwischen den Löchern, Brüstungs- und Sturzband je Loch. Türen UND Fenster sind dieselbe Öffnungs-Art.
-  function lochWand(g,horiz,fix,a0,a1,y0,y1,holes,role,tk){ tk=tk||0.24; const B=(c,cy,len,hh)=>{ if(len<0.03||hh<0.03)return; horiz?beam(g,c,cy,fix,len,hh,tk,role):beam(g,fix,cy,c,tk,hh,len,role); };
+  // LOCHWAND-GESETZ — EINE Wand-mit-Öffnungen-Quelle: Vollsegmente zwischen den Löchern, Brüstungs- und Sturzband je Loch. Türen UND Fenster sind dieselbe Öffnungs-Art. sol (Welle L, additiv): jedes Segment trägt sein Solid (die Hofmauer); ohne sol bleibt die Wand ohne (die Aufrufer mit eigener Solid-Quelle).
+  function lochWand(g,horiz,fix,a0,a1,y0,y1,holes,role,tk,sol){ tk=tk||0.24; const B=(c,cy,len,hh)=>{ if(len<0.03||hh<0.03)return; horiz?beam(g,c,cy,fix,len,hh,tk,role):beam(g,fix,cy,c,tk,hh,len,role); if(sol){ if(horiz)addSolid(c,cy,fix,len,hh,tk); else addSolid(fix,cy,c,tk,hh,len); } };
     const hs=(holes||[]).filter(h=>h.c-h.w/2>a0-0.01&&h.c+h.w/2<a1+0.01).sort((p,q)=>p.c-q.c); let cur=a0;
     for(const h of hs){ const Lh=h.c-h.w/2,Rh=h.c+h.w/2; B((cur+Lh)/2,(y0+y1)/2,Lh-cur,y1-y0); if(h.b>y0+0.04)B(h.c,(y0+h.b)/2,h.w,h.b-y0); if(y1>h.t+0.04)B(h.c,(h.t+y1)/2,h.w,y1-h.t); cur=Rh; }
     B((cur+a1)/2,(y0+y1)/2,a1-cur,y1-y0); }
@@ -2761,23 +2766,61 @@
     //    2 = Warm-Pfad fragFuer(B,1) [wandTon] → fragFuer(B,2). KEIN hofFuer
     //    (Schnitt-Grenze (a)). Der Paritäts-Gate komponiert dieselben
     //    Primitive Shell-wörtlich und vergleicht byte-exakt. ──
+    // ── DIE HÜLLE DES GESETZBUCHS (Welle L, additiv, must-ignore) — die Solids
+    //    der Stufe 0, die JEDE Stufe trägt (Kollision == Optik in jeder Ferne:
+    //    die Welt kollidiert nie mit einer Stufen-Bounding-Box — sie lag beim
+    //    Hof-Haus 8,2 m vor den Solids, die Tür war von vorn unerreichbar).
+    //    Die fernen Stufen bauen dafür den Stufe-0-Bau OHNE die Teilsysteme, die
+    //    nie ein Solid setzen (SOLIDLOS: dieselben Solids byte-gleich, ~1/8 der
+    //    Bauzeit) — gate:fachwerk-contract prüft die Gleichheit je Kultur. ──
+    var SOLIDLOS = { gelaende: false, geruest: false, riegel: false, streben: false, zimmermann: false, gefache: false, giebel: false, dachwerk: false, dachdeckung: false, fenster: false, moebel: false, anbau: false, fluegel: false, balkon: false, kuppel: false, dachAlt: false, arkade: false, turm: false, zinnen: false, vorkragung: false, pilotis: false, terrasse: false, rundbau: false };
+    function stufe0Param(p) {
+        // ≡ promoteBauen (Lab): RING-A-WÜRDE — Türme sparen Möbel+Innenwände,
+        // Armut (p.arm, Dorf-Daten) spart Möbel; sonst der VOLLE Bau.
+        var turm = (p.storeys || 1) >= 6;
+        return Object.assign({}, p, {
+            nur: turm ? { moebel: false, innenwaende: false } : p.arm ? { moebel: false } : {},
+        });
+    }
+    function stufe0Bau(hp2) {
+        return (hp2.storeys || 1) > 11
+            ? stapelBau(hp2, { gelaende: false })
+            : (function () {
+                  var H = HAUS(THREE, mat, hp2);
+                  return { g: H.build({ gelaende: false }), H: H };
+              })();
+    }
+    // Die Solids eines Stufe-0-Baus haus-lokal als Zahlen-Zeile [x0,y0,z0,x1,y1,z1]… (der Aufsatz des Stapels um st.off).
+    function solidZeile(st) {
+        var solL = [];
+        var solAus = function (Hs, dy) {
+            if (!Hs || !Hs.solids) return;
+            for (var si = 0; si < Hs.solids.length; si++) {
+                var so = Hs.solids[si];
+                solL.push(so.min[0], so.min[1] + dy, so.min[2], so.max[0], so.max[1] + dy, so.max[2]);
+            }
+        };
+        solAus(st.H, 0);
+        if (st.topH) solAus(st.topH, st.off || 0);
+        return solL;
+    }
+    function hausSolids(p) {
+        var hp = stufe0Param(p);
+        hp.nur = Object.assign({}, SOLIDLOS, hp.nur);
+        var st = stufe0Bau(hp);
+        var z = solidZeile(st);
+        st.g.traverse(function (o) {
+            if (o.geometry) o.geometry.dispose();
+        });
+        return z;
+    }
     function buildStufe(p, stufe) {
         materials();
         var geoms = {};
         var turm = (p.storeys || 1) >= 6;
         if (stufe === 0) {
-            // ≡ promoteBauen (Lab): RING-A-WÜRDE — Türme sparen Möbel+Innenwände,
-            // Armut (p.arm, Dorf-Daten) spart Möbel; sonst der VOLLE Bau.
-            var hp2 = Object.assign({}, p, {
-                nur: turm ? { moebel: false, innenwaende: false } : p.arm ? { moebel: false } : {},
-            });
-            var st =
-                (p.storeys || 1) > 11
-                    ? stapelBau(hp2, { gelaende: false })
-                    : (function () {
-                          var H = HAUS(THREE, mat, hp2);
-                          return { g: H.build({ gelaende: false }), H: H };
-                      })();
+            var hp2 = stufe0Param(p);
+            var st = stufe0Bau(hp2);
             // ═══ DORF-ERLEBNIS (17.07., additiv) — DIE TÜR BLEIBT EIN FLÜGEL ═══
             // Haus-/Hintertür-Blätter (userData.side aus tueren()) werden NICHT in
             // die Rollen-Geoms verschmolzen, sondern JE Blatt eigen gebakt (haus-
@@ -2804,6 +2847,12 @@
                 tuerWraps.push(wg);
             }
             if (tuerWraps.length) geoms.__tuerFluegel = tuerWraps; // reist neben den Rollen-Geoms (vo-lose Zeile, geomsZuGruppe überspringt sie)
+            // ═══ DIE HÜLLE REIST (Welle L, additiv, must-ignore) — Kollision == Optik ═══
+            // Die Solids, die das Haus beim Bau sammelt (addSolid: Fundament, Böden mit Treppenloch, Tritte, Wände mit
+            // Öffnungen, Brüstungen, Kniestock, Außentreppe), reisen haus-lokal als Zahlen-Zeile [x0,y0,z0,x1,y1,z1]…
+            // — dieselbe Liste, die das Labor begeht (bauSolidsUndTueren). Die Welt stellte statt ihrer vier EG-Riegel
+            // auf (gedrehte Häuser 18–35 % begehbar, die Treppe Luft, der Fuß 0,50 m unter der Diele).
+            geoms.__solids = solidZeile(st);
             bakeLOD(st.g, p.col, geoms, 0, true); // LÜCKENLOS: alles=true (Kopf, Stufen-Wahrheit 0)
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
@@ -2820,6 +2869,7 @@
             mischeGeoms(geoms, fragFuer(B, stufe === 1 ? 1 : 2));
             B.frag = null;
             B.fragStufe = undefined;
+            geoms.__solids = hausSolids(p); // DIE HÜLLE DES GESETZBUCHS auch fern (nach dem Mesh: der Stufen-Bau bleibt byte-gleich)
         }
         return geoms;
     }
@@ -2886,8 +2936,11 @@
         // DORF-ERLEBNIS — die separierten Tür-Flügel (nur Stufe 0) reisen als
         // eigene Kinder mit Scharnier-userData mit (der porta-Flügel-Pfad).
         if (gm.__tuerFluegel) for (var tf = 0; tf < gm.__tuerFluegel.length; tf++) g.add(gm.__tuerFluegel[tf]);
-        g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe };
         g.updateMatrixWorld(true);
+        // DIE HÜLLE (Welle L): JEDE Stufe trägt die Solids des Gesetzbuchs (die der Stufe 0 — begehbar, Tür offen, die
+        // Hofmauer zu); die Welt kollidiert in jeder Ferne, wie das Haus nah gezeichnet ist, nie mit einer Stufen-Box.
+        var huelle = gm.__solids && gm.__solids.length ? { stufe: stufe, boxen: gm.__solids } : null;
+        g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe, __huelle: huelle };
         return g;
     }
 
@@ -4147,8 +4200,14 @@
             // + Hof-Bäume (Architektur-Spawns). Die Schichten ohne Welt-Wahrheit
             // (fluss/bruecken = Layout-interner Deko-Fluss, das Welt-Wasser ist
             // _isAboveWaterAt · graph = Diagnose-Meta · mauer/laternen = Stadt-
-            // Gestalt, Visionsscope gestrichen s. CLAUDE.md) sind aus dem
-            // Export GESTRICHEN — das Lab liest sein Layout direkt aus dorfLayout.
+            // Gestalt) sind aus dem Export GESTRICHEN — das Lab liest sein Layout
+            // direkt aus dorfLayout. Der Grund (Welle L, 06.10.; die frühere
+            // Begründung zitierte eine CLAUDE.md-Zeile, die es nie gab): die
+            // Stadt-Genese mit Mauer, Fluss und Brücken in der Welt ist NEUES
+            // Verhalten hinter dem Feature-Stopp bis v1.0 (docs/roadmap.md §0.v1;
+            // Leben-Synthese §5.3, NACH-V1) — offen, benannt: die Welt-Stadt zeigt
+            // keine Mauer, keine Laternen, keinen Siedlungs-Fluss (Messname
+            // gate:settlement „SCHICHT-VOLLENDUNG"); das Lab baut sie als Vorschau.
             roads: lay.roads,
             feldwege: lay.feldwege,
             platz: lay.platz,

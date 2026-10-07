@@ -50,7 +50,7 @@ const DORF_NORM=FC.DORF_NORM, EPOCHEN=FC.EPOCHEN, REGION_HIST=FC.REGION_HIST, LO
 // ════════════ DORF-BAU (Browser): misst reale Fußabdrücke, packt per dorfLayout, VERSCHMILZT statisch ════════════
 // VERSCHMELZUNGS-GESETZ: alle statischen Prims werden pro ROLLE in EIN indiziertes Mesh gebacken (Weltmatrix + Kulturfarbe×Patina in Vertexfarben)
 // → Draw-Calls fallen von ~Zehntausenden auf ~20. Tür-/Fensterflügel-Teilbäume bleiben LEBENDIG (Raycast + Mechanik unangetastet).
-let dorf=null, dorfGroup=null, dorfCellars=[];
+let dorf=null, dorfGroup=null, dorfCellars=[], dorfBodenY=null;                       // dorfBodenY: der EINE Dorf-Boden (Bild + Schritt), gesetzt von buildDorf
 function proxyGroup(hp){ const pr=PROXYHAUS(hp), g=new THREE.Group();
   pr.B.forEach(q=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(q.b[3],q.b[4],q.b[5]),M[q.r]||M.holz); m.position.set(q.b[0],q.b[1],q.b[2]); g.add(m); });
   pr.T2.forEach(q=>{ const bg=new THREE.BufferGeometry(), v=[]; q.verts.forEach(p2=>v.push(p2[0],p2[1],p2[2]));
@@ -110,7 +110,9 @@ function promoteFertig(pend){ const bi=pend.bi, B=dorfB[bi], st=pend.st;        
   const geoms={}; bakeLOD(st.g, B.p.col, geoms, 0); B.meshes=finalizeGeoms(geoms, true);      // EIN Bake-Pfad · ATOMAR: Vollbau erscheint im selben Frame, in dem die Hülle fällt — nie Lücke, nie Doppelbild
   wrap.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } });            // FLÜGEL-GESETZ: was bakeLOD lebend ließ (Türen/Fenster), muss auch GERENDERT werden
   dorfGroup.add(wrap); B.liveWrap=wrap;                                                      // FIX: wrap hing nie in der Szene → promovierte Häuser hatten unsichtbare Türen/Fenster (Loch-Fassade)
-  B.lod='voll'; B.dyn=true; B.H=st.H; bauSolidsUndTueren(B,st.H,bi);
+  B.lod='voll'; B.dyn=true; B.H=st.H;
+  { const ix=solids.indexOf(B.huelle); if(ix>=0) solids.splice(ix,1); }                     // HAUS-LEBENSZYKLUS: die Hülle fällt im selben Tick, in dem die Haus-Solids kommen — die offene Tür ist begehbar (vorher 4 von 4 promovierten Häusern zu)
+  bauSolidsUndTueren(B,st.H,bi);
   if(st.H.chimney){ const mc=st.H.chimney, mcx=(mc.min[0]+mc.max[0])/2, mcz=(mc.min[2]+mc.max[2])/2, c2=Math.cos(B.q.phi), s3=Math.sin(B.q.phi);
     dorfRauch.quellen.push({bi, x:B.q.x+mcx*c2+mcz*s3, y:mc.max[1]+0.2, z:B.q.z-mcx*s3+mcz*c2});          // RAUCH folgt der Promotion
     if(dorfRauch.quellen.length===1) fire.position.set(dorfRauch.quellen[0].x, dorfRauch.quellen[0].y+0.3, dorfRauch.quellen[0].z); }
@@ -126,6 +128,7 @@ function demoteB(bi){ const B=dorfB[bi]; if(!B||!B.dyn) return;                 
     if(doorList[k].blockObj){ const ix=solids.indexOf(doorList[k].blockObj); if(ix>=0)solids.splice(ix,1); }
     doorList.splice(k,1); }
   for(let k=dorfRauch.quellen.length-1;k>=0;k--) if(dorfRauch.quellen[k].bi===bi) dorfRauch.quellen.splice(k,1);
+  if(B.huelle) solids.push(B.huelle);                                                        // HAUS-LEBENSZYKLUS: fern trägt wieder die Hülle — kein Geister-Haus (vorher 0 Solids nach der Demotion)
   B.lod='chunk'; B.dyn=false; B.H=null; rebakeChunk(B.chunk, false); }
 function lodTick(now){ if(!dorf||!dorfB) return; if(now-lastLOD<240) return; lastLOD=now;     // DREI-RING-STREAMING, ZEITGESCHNITTEN: Bau und Einbau in getrennten Ticks — der schwerste Frame halbiert
   const T0=performance.now();
@@ -194,7 +197,7 @@ function buildDorf(dp){
       const geoms={}; bakeHaus(B.g, B.p.col, geoms); B.meshes=finalizeGeoms(geoms);
       bauSolidsUndTueren(B, B.H, i); }
     else { B.ext=ext[i];
-      const e=ext[i]; solids.push({min:[e.x0,0,e.z0],max:[e.x1,e.y1,e.z1], th:q.phi, tx:q.x, tz:q.z, bi:i});
+      const e=ext[i]; B.huelle={min:[e.x0,0,e.z0],max:[e.x1,e.y1,e.z1], th:q.phi, tx:q.x, tz:q.z, bi:i}; solids.push(B.huelle);   // HAUS-LEBENSZYKLUS: die Ganz-Haus-Hülle trägt fern; die Promotion tauscht sie gegen die Haus-Solids, die Demotion setzt sie zurück (EIN Zyklus je Haus)
       B.chunk=chunkKey(q.obb.cx,q.obb.cz);
       (dorfChunks[B.chunk]=dorfChunks[B.chunk]||{list:[],meshes:[],stufe:3,cx:0,cz:0,n:0}).list.push(i); } });
   for(const ck in dorfChunks){ const C=dorfChunks[ck]; C.cx=0; C.cz=0;
@@ -206,8 +209,7 @@ function buildDorf(dp){
     const bs=Math.max(0.55, Math.min(1.35, Math.sqrt((parseInt(document.getElementById('pBudget').value)||170000)/170000)));   /*Quelle: der REGLER selbst — norm.budget war Epochen-Konstante (GEMESSEN 100%)*/         /*BUDGET-WARMSTART-GESETZ: die Startlast FOLGT dem Prim-Regler — Radien skalieren mit sqrt(Budget), der Teller-Vollausbau war reglertaub*/
     C.stufe = dc<100*bs? 1 : (dc<220*bs? 2 : 3);
     rebakeChunk(ck, true); }
-  const W2=lay.welt, gnd=new THREE.Mesh(new THREE.BoxGeometry(W2.x1-W2.x0,0.3,W2.z1-W2.z0),M.gras);
-  gnd.position.set((W2.x0+W2.x1)/2,-0.17,(W2.z0+W2.z1)/2); gnd.receiveShadow=true; dorfGroup.add(gnd);
+  const W2=lay.welt;
   const glatt=(P)=>{ if(!P||P.length<3) return P;                                            // SPLINE-GESETZ: Catmull-Rom-Verdichtung (~2.2m) NUR am Band — der Graph bleibt unberührt; th aus der Spline selbst
     const gp=i=>P[Math.max(0,Math.min(P.length-1,i))], out=[];
     for(let i=0;i<P.length-1;i++){ const p0=gp(i-1),p1=gp(i),p2=gp(i+1),p3=gp(i+2);
@@ -229,6 +231,23 @@ function buildDorf(dp){
     const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(v,3)); bg.computeVertexNormals(); return bg; };
   const modernS=plan.jahr>1880&&plan.staedtisch;                                              // EPOCHEN-BELAG-GESETZ: Erde → Pflaster → Asphalt, Gehweg-Material je Zeit getrennt (Michis Raumplanung)
   const pflasterS=!modernS&&plan.staedtisch&&plan.jahr>=1640;                                 // Barock pflastert (1719 fiel durch die alte 1720-Grenze — GEMESSEN)                                 // Barock/Gründerzeit: gepflasterte Stadt
+  // DER DORF-BODEN — EINE Funktion dorfBodenY(x,z) trägt Bild UND Schritt (gravity liest dieselbe): 0 auf dem Land, im Fluss sein Bett (Mitte −1,25,
+  // Rand −0,75, das Ufer steigt bis zur Kaimauer bzw. über die Böschung auf 0) — der Wasserspiegel −0,53 liegt sichtbar darüber. Vorher deckte eine
+  // 0,3-m-Platte (−0,32 … −0,02) das Wasserband zu (37 von 112 Fluss-Punkten zeigten Wiese) und lief durch jeden Keller. Das Gitter zeigt nur seine
+  // OBERSEITE (FrontSide): aus dem Keller sieht man die Fundament-Unterseite (die Keller-Decke des Gesetzbuchs), nie die Wiese.
+  { const fp=lay.fluss?glatt(lay.fluss.pts):null, h=lay.fluss?lay.fluss.w/2:0, aus=(pflasterS||modernS)?h+0.62:h+1.6, B16=16, segs=[], fach=new Map();
+    if(fp){ for(let k=0;k+1<fp.length;k++){ const A=fp[k], B=fp[k+1], s={ax:A.x,az:A.z,dx:B.x-A.x,dz:B.z-A.z}; s.l2=s.dx*s.dx+s.dz*s.dz||1e-9; segs.push(s);
+        for(let gx=Math.floor((Math.min(A.x,B.x)-aus)/B16); gx<=Math.floor((Math.max(A.x,B.x)+aus)/B16); gx++) for(let gz=Math.floor((Math.min(A.z,B.z)-aus)/B16); gz<=Math.floor((Math.max(A.z,B.z)+aus)/B16); gz++){ const kk=gx+'_'+gz; (fach.get(kk)||fach.set(kk,[]).get(kk)).push(s); } } }
+    dorfBodenY=(x,z)=>{ if(!fp) return 0; const L=fach.get(Math.floor(x/B16)+'_'+Math.floor(z/B16)); if(!L) return 0; let d2=Infinity;
+      for(const s of L){ const t=Math.max(0,Math.min(1,((x-s.ax)*s.dx+(z-s.az)*s.dz)/s.l2)), ex=x-s.ax-s.dx*t, ez=z-s.az-s.dz*t, e2=ex*ex+ez*ez; if(e2<d2)d2=e2; }
+      const d=Math.sqrt(d2); if(d>=aus) return 0; if(d<=h) return -1.25+0.5*Math.pow(d/Math.max(0.01,h),2);
+      const u=(d-h)/(aus-h); return -0.75*(1-u*u*(3-2*u)); };
+    const SX=W2.x1-W2.x0, SZ=W2.z1-W2.z0, zelle=Math.max(1.0, Math.max(SX,SZ)/180), nx=Math.max(1,Math.ceil(SX/zelle)), nz=Math.max(1,Math.ceil(SZ/zelle));
+    const pos=new Float32Array((nx+1)*(nz+1)*3), idx=[];
+    for(let j=0;j<=nz;j++) for(let i=0;i<=nx;i++){ const x=W2.x0+SX*i/nx, z=W2.z0+SZ*j/nz, o=(j*(nx+1)+i)*3; pos[o]=x; pos[o+1]=dorfBodenY(x,z)-0.02; pos[o+2]=z; }
+    for(let j=0;j<nz;j++) for(let i=0;i<nx;i++){ const a=j*(nx+1)+i, b=a+1, c=a+nx+1, d=c+1; idx.push(a,c,b, b,c,d); }   // CCW von oben → Normale +y, FrontSide = Oberseite
+    const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3)); bg.setIndex(idx); bg.computeVertexNormals();
+    const gnd=new THREE.Mesh(bg,M.gras); gnd.receiveShadow=true; gnd.userData.dorfBoden=true; dorfGroup.add(gnd); }
   const asMat= modernS? new THREE.MeshLambertMaterial({color:0x43464c, side:THREE.DoubleSide})
              : pflasterS? new THREE.MeshLambertMaterial({color:0x8f8a82, side:THREE.DoubleSide}) : M.weg;
   const gwMat= modernS? new THREE.MeshLambertMaterial({color:0x9aa0a6, side:THREE.DoubleSide})
@@ -282,7 +301,8 @@ function buildDorf(dp){
     lay.mauer.towers.forEach(tw=>{ const tm=new THREE.Mesh(new THREE.BoxGeometry(3.6,8.4,3.6),mLay('stein')); tm.position.set(tw.x,4.2,tw.z); tm.castShadow=true; tm.receiveShadow=true; dorfGroup.add(tm);
       const td=new THREE.Mesh(new THREE.BoxGeometry(4.2,1.5,4.2),M.ziegel); td.position.set(tw.x,9.1,tw.z); td.castShadow=true; dorfGroup.add(td);
       solids.push({min:[tw.x-1.8,0,tw.z-1.8],max:[tw.x+1.8,8.4,tw.z+1.8]}); }); }
-  if(lay.fluss){ const wm=new THREE.MeshLambertMaterial({color:0x3d6d9c, side:THREE.DoubleSide});                   // FLUSS: Wasserband + Ufer
+  const wm=lay.fluss?new THREE.MeshLambertMaterial({color:0x3d6d9c, side:THREE.DoubleSide}):null;   // DAS WASSER-MATERIAL lebt im Funktions-Scope: die Antike-Ausstattung (Trog) liest es auch ohne Fluss (vorher `wm is not defined` in 3 von 3 städtischen Antiken)
+  if(lay.fluss){                                                                              // FLUSS: Wasserband + Ufer
     if(pflasterS||modernS){ const fp2=lay.fluss.pts, fw2=lay.fluss.w;                          // KAIMAUER-GESETZ: die Stadt fasst ihren Fluss in Stein — Uferkante 0.42 hoch entlang beider Seiten
       for(const sg2 of [-1,1]){ for(let k2=0;k2+1<fp2.length;k2++){ const A2=fp2[k2], B3=fp2[k2+1];
         const mx2=(A2.x+B3.x)/2 - Math.sin(A2.th)*sg2*(fw2/2+0.62), mz2=(A2.z+B3.z)/2 + Math.cos(A2.th)*sg2*(fw2/2+0.62);
@@ -299,11 +319,11 @@ function buildDorf(dp){
         const bx4=new THREE.Mesh(new THREE.BoxGeometry(ln4,0.14,1.75), mLay('lehm'));
         bx4.position.set((A4.x+B4.x)/2 - Math.sin(A4.th)*sg4*(fw4/2+0.72), -0.24, (A4.z+B4.z)/2 + Math.cos(A4.th)*sg4*(fw4/2+0.72));
         bx4.rotation.order='YXZ'; bx4.rotation.y=-A4.th; bx4.rotation.x=-neig*sg4; /*EULER-ORDER-GESETZ: erst ausrichten (Y), dann quer kippen (X) — bei XYZ kippte X um die WELTachse, 52/226*/ bx4.receiveShadow=true; dorfGroup.add(bx4); } } }
-    const m=new THREE.Mesh(rib(lay.fluss.pts, lay.fluss.w, -0.53), wm); m.receiveShadow=true; dorfGroup.add(m);   // WASSERSPIEGEL −0.53: Brücken bekommen LICHTE HÖHE, Pfeiler gründen echt
-    for(const q of lay.fluss.pts){ solids.push({min:[q.x-1.2,-.1,q.z-1.2],max:[q.x+1.2,0.02,q.z+1.2]}); } }
+    const m=new THREE.Mesh(rib(lay.fluss.pts, lay.fluss.w, -0.53), wm); m.receiveShadow=true; dorfGroup.add(m); }   // WASSERSPIEGEL −0.53: Brücken bekommen LICHTE HÖHE, Pfeiler gründen echt — der Schritt liest das Bett (dorfBodenY), die flachen Platten über dem Wasser fielen
   lay.bruecken.forEach(bk=>{ const ang=-bk.th;                                               // BRÜCKE: Deck + Geländer über dem Band
     const deck=new THREE.Mesh(new THREE.BoxGeometry(bk.len,0.26,bk.w),mLay('stein'));
     deck.position.set(bk.x,0.16,bk.z); deck.rotation.y=ang; deck.castShadow=true; deck.receiveShadow=true; dorfGroup.add(deck);
+    solids.push({min:[-bk.len/2,0.03,-bk.w/2],max:[bk.len/2,0.29,bk.w/2], th:ang, tx:bk.x, tz:bk.z});   // das DECK trägt (über dem Fluss-Bett): Oberkante 0,29 wie das Bild
     const tx2=Math.cos(bk.th), tz2=Math.sin(bk.th);                                           // BRÜCKEN-WÜRDE-GESETZ: sichtbare WAND-PFEILER + steinerne BOGENBLENDEN (alte Zeit) + WIDERLAGER — das Deck von R2 las sich als Brett, die 3cm-Pylonen verschwanden GESEHEN unsichtbar
     const spannT=(bk.len>16)? [-0.25,0,0.25] : (bk.len>9? [-0.22,0.22] : []);
     for(const t of spannT){ const py=new THREE.Mesh(new THREE.BoxGeometry(0.55,1.7,Math.max(1.2,bk.w-1.4)), mLay('stein'));
@@ -734,11 +754,11 @@ $('pTest').onclick=()=>{ const R=[];
     ok('Name: '+dorf.plan.name, !!dorf.plan.name&&dorf.plan.name.length>3);
     const bi=dorfB.findIndex(B=>B.lod==='chunk');
     if(bi>=0){ const s0=solids.length; promoteB(bi);
-      ok('Promotion: Meshes '+dorfB[bi].meshes.length+' · Solids +'+(solids.length-s0), dorfB[bi].meshes.length>0&&solids.length>s0&&dorfB[bi].lod==='voll');
+      ok('Promotion: Meshes '+dorfB[bi].meshes.length+' · Solids +'+(solids.length-s0)+' · Hülle weg', dorfB[bi].meshes.length>0&&solids.length>s0&&dorfB[bi].lod==='voll'&&!solids.includes(dorfB[bi].huelle));
       ok('Promotion: Türen/Fenster in Szene (liveWrap)', !!dorfB[bi].liveWrap&&dorfB[bi].liveWrap.parent===dorfGroup);
       ok('Leben: Rauch folgt Kamin ('+dorfRauch.quellen.length+' Quellen · Kamin: '+(!!(dorfB[bi].H&&dorfB[bi].H.chimney))+')', (dorfRauch.quellen.length>0)===!!(dorfB[bi].H&&dorfB[bi].H.chimney));   // INVARIANTE: Rauch ⟺ Kamin — ein kaminloses Haus DARF nicht rauchen
       demoteB(bi);
-      ok('Demotion: rückstandslos', dorfB[bi].meshes.length===0&&dorfB[bi].lod==='chunk'&&!dorfB[bi].liveWrap&&!solids.some(s=>s.bi===bi)); }
+      ok('Demotion: rückstandslos, die Hülle trägt wieder', dorfB[bi].meshes.length===0&&dorfB[bi].lod==='chunk'&&!dorfB[bi].liveWrap&&solids.filter(s=>s.bi===bi).length===1&&solids.includes(dorfB[bi].huelle)); }
     const ti=dorfB.findIndex(B=>B.lod==='chunk'&&(B.p.storeys||1)>=6);
     if(ti>=0){ const d0=doorList.length; promoteB(ti);
       ok('Turm-Feinstufe: Meshes '+dorfB[ti].meshes.length+' · Türen +'+(doorList.length-d0), dorfB[ti].meshes.length>0&&dorfB[ti].lod==='voll'&&doorList.length>d0);
@@ -839,15 +859,18 @@ dhint.style.cssText='position:fixed;left:50%;top:56%;transform:translateX(-50%);
 document.body.appendChild(dhint);
 function overlap(p,s){ let px=p.x, pz=p.z;   // KREIS-KOLLISIONS-GESETZ: Spieler in den lokalen Rahmen gedrehter Solids transformieren — exakt, da Kreis rotationsinvariant
   if(s.th!=null){ const c=Math.cos(s.th), si=Math.sin(s.th), dx=px-s.tx, dz=pz-s.tz; px=dx*c-dz*si; pz=dx*si+dz*c; }
-  return px-R<s.max[0]&&px+R>s.min[0] && p.y<s.max[1]&&p.y+PH>s.min[1] && pz-R<s.max[2]&&pz+R>s.min[2];}
+  if(!(p.y<s.max[1]&&p.y+PH>s.min[1])) return false;
+  const yk=p.y+PH-R, r=s.min[1]>yk? Math.sqrt(Math.max(0,R*R-(s.min[1]-yk)*(s.min[1]-yk))) : R;   // KOPF-KAPPE: der Körper endet oben rund (Halbkugel r=R) — der Kopf steht über der Achse, nie an der Zylinder-Kante (vorher stieß die Kante auf jeder Speichertreppe an den Estrich hinter dem Antritt: 0 von 4 Speicherläufen oben)
+  return px-r<s.max[0]&&px+r>s.min[0] && pz-r<s.max[2]&&pz+r>s.min[2];}
 function moveAxis(ax,d){if(!d)return;const i=ax==='x'?0:2;const p=player.pos;const oldA=p[ax],oldY=p.y;p[ax]+=d;
   let climb=p.y;
   for(const s of solids){if(overlap(p,s)){const top=s.max[1];
     if(top-p.y<=STEP){ if(top>climb)climb=top; }              // besteigbar (Stufe/Schwelle/Boden): höchste merken
     else { p[ax]=oldA; p.y=oldY; return; }}}                  // echte Wand: GANZE Achsbewegung zurück → nie penetrieren, nie quer rauswerfen
-  p.y=climb;}                                                  // erst wenn keine Wand blockierte: Stufe besteigen
+  p.y=climb;                                                   // erst wenn keine Wand blockierte: Stufe besteigen
+  if(climb>oldY){ for(const s of solids){ if(overlap(p,s)){ p[ax]=oldA; p.y=oldY; return; } } } }   // KOPF-GESETZ: die Stufe trägt nur, wenn der GANZE Körper (Fuß bis Kopf) auf ihr Platz hat — sonst bleibt der Schritt aus (vorher klemmte der Kopf im Dachboden-Boden, 0,000 m Weg)
 function gravity(dt){const p=player.pos;player.vy-=G*dt;p.y+=player.vy*dt;player.onGround=false;
-  let gf=0; const kcl=dorf?dorfCellars:((haus&&haus.cellar)?[haus.cellar]:[]);   // Dorf: JEDES Kellerhaus fällt auf seine Tiefe
+  let gf=(dorf&&dorfBodenY)?dorfBodenY(p.x,p.z):0; const kcl=dorf?dorfCellars:((haus&&haus.cellar)?[haus.cellar]:[]);   // Dorf: der EINE Dorf-Boden (im Fluss das Bett) · JEDES Kellerhaus fällt auf seine Tiefe
   for(const kc of kcl){ let px=p.x, pz=p.z; if(kc.th!=null){ const c=Math.cos(kc.th), si=Math.sin(kc.th), dx=px-kc.tx, dz=pz-kc.tz; px=dx*c-dz*si; pz=dx*si+dz*c; }
     if(px>kc.x0&&px<kc.x1&&pz>kc.z0&&pz<kc.z1){ gf=kc.floorY; break; } }
   if(p.y<gf){p.y=gf;player.vy=0;player.onGround=true;}

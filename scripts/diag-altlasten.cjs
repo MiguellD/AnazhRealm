@@ -621,6 +621,12 @@ const FORBIDDEN = [
     // die Ratsche des Profi-Bands führt keinen VRAM-Erzeuger, den es nicht mehr gibt
     { token: "welt-march-seiten", fiel: "Welle G — die Seiten-Textur fiel", auch: ["spec/profiband/ratsche.json"] },
     { token: "welt-march-folge", fiel: "Welle G — die Folge-Textur fiel", auch: ["spec/profiband/ratsche.json"] },
+    // WELLE L (koerper-haus, 06.10.) — die gefallenen Namen je Klasse (Q4 Stand der Sicht · Q5 Haus-Hülle · Q15 Siedlung).
+    { token: "_hausTuerBlockerParts", fiel: "Welle L — die Haus-Hülle der Stufe (_hausBlockerBoxen, OBB)" },
+    { token: "_slopeProbeV", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
+    { token: "_slopeProbeH", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
+    { token: "_siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT", fiel: "Welle L — kein Siedlungs-Zwilling (fachwerk SIEDLUNG)" },
+    { token: "_settlementCount", fiel: "Welle L — der Bau-Same je Art (_bauSame)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
