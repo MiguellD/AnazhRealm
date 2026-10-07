@@ -23409,7 +23409,8 @@ async function checkBandPhasenBF(ctx) {
                 creatures: r.state.creatures,
                 ce: r.state.creatureEmotions,
             };
-            const savedRandom = Math.random;
+            // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5, Welle L) — die Probe setzt den Strom, nie Math.random.
+            const hatteStrom = Object.prototype.hasOwnProperty.call(r, "_faunaRng");
             try {
                 r.state.weatherTransition = null;
                 r.state.weather = "rainy";
@@ -23425,7 +23426,7 @@ async function checkBandPhasenBF(ctx) {
                 };
                 r.state.creatures = [fake];
                 r.state.creatureEmotions = ["happy"];
-                Math.random = () => 0.05;
+                r._faunaRng = (zweck) => (zweck === "gefuehl" ? () => 0.05 : () => 0.99);
                 r.state.weather = "stormy";
                 r.updateCreatureEmotions();
                 const em = fake.userData.emotions;
@@ -23436,7 +23437,7 @@ async function checkBandPhasenBF(ctx) {
                 if (!/requestWeatherTransition/.test(window.__codeOf(r._setWeather))) return "_setWeather fadet nicht";
                 return true;
             } finally {
-                Math.random = savedRandom;
+                if (!hatteStrom) delete r._faunaRng;
                 r.state.weather = saved.w;
                 r.state.weatherTransition = saved.wt;
                 r.state.weatherEffectTime = saved.wet;
@@ -26772,8 +26773,12 @@ async function checkBandWelle6HCreatures(ctx) {
         out.spriteHasResoniert = (tagsWolf.resoniert || 0) > 0;
         out.wesenHasLebendig = (tagsWesen.lebendig || 0) > 0;
         out.geistHasLebendig = (r.computeCreatureCompoundTags(geist).lebendig || 0) > 0;
+        // Welle L (Q12): ein unbekannter Seelen-Wunsch ist eine laute Absage (null, geloggt), nie ein still gewürfelter
+        // Ersatz (`spawnCreatureAt(…, "hirsch")` ergab einen Bären) — und der Schild einer Seele findet sie.
+        const nVorAbsage = r.state.creatures.length;
         const fb = r.spawnCreatureAt(p.x + 4, p.y, p.z + 4, "happy", "fictional-soul");
-        out.unknownSoulFallback = !!fb && r.constructor.CREATURE_SOUL_NAMES.includes(fb.userData.soul);
+        out.unknownSoulAbsage = fb === null && r.state.creatures.length === nVorAbsage;
+        out.soulLabelFindet = r._pickCreatureSoulName(r.constructor.CREATURE_SOULS.wesen.label) === "wesen";
         out.spriteAuraOffset = Math.abs(r._creatureAuraOffsetY(sprite) - 0.75) < 0.01;
         out.wesenAuraOffset = Math.abs(r._creatureAuraOffsetY(wesen) - 0.8) < 0.01;
         out.spawnSpriteWorks = sprite && sprite.userData.soul === "wolf";
@@ -26930,7 +26935,8 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H P2A: wolf-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
         check("Welle 6.H P2A: wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
         check("Welle 6.H P2A: fuchs-Compound trägt lebendig > 0", wave6hP2aResults.geistHasLebendig);
-        check("Welle 6.H P2A: Unknown soulName fällt auf bekannte Seele zurück", wave6hP2aResults.unknownSoulFallback);
+        check("Welle L: ein unbekannter Seelen-Wunsch ist eine laute Absage (kein Ersatz-Tier)", wave6hP2aResults.unknownSoulAbsage);
+        check("Welle L: der Schild einer Seele (Hirsch) findet sie", wave6hP2aResults.soulLabelFindet);
         check("Welle 6.H P2A: _creatureAuraOffsetY(wolf) === 0.75", wave6hP2aResults.spriteAuraOffset);
         check("Welle 6.H P2A: _creatureAuraOffsetY(wesen) === 0.8", wave6hP2aResults.wesenAuraOffset);
         check(
@@ -38498,7 +38504,9 @@ async function checkBandHuepfer(ctx) {
         const sprung = () => {
             takt();
             const y0 = c.position.y;
-            r.creatureJump(c, 1);
+            c.userData._hopV = 0;
+            c.userData._hopH = 0;
+            r.creatureJump(c); // das Sprung-Gesetz: Höhe aus der Freude (hopHochM / hopBasisM)
             let scheitel = 0;
             let takte = 0;
             for (; takte < 600; takte++) {
@@ -46700,10 +46708,14 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const src = window.__codeOf(r.updateCreatures);
-        // Strukturell: Kohäsion nutzt distanceToSquared (kein sqrt),
-        // der Raycast ist distanz-/sicht-gegated, Scratch gepoolt.
-        out.usesDistanceSquared = /distanceToSquared/.test(src);
-        out.raycastGated = /OBSTACLE_RAYCAST_MAX_DIST_SQ/.test(src) && /inFrustum/.test(src);
+        // Strukturell (Welle L): die Kohäsion ist die Herden-Form des Kerns (tetrapoda herdeZug) über die 9 Gitter-Zellen
+        // um das Tier, und herdeZug misst das Quadrat vor jeder Wurzel (O(N²) entschärft); kein Hindernis-Strahl je Tier
+        // und Frame — der EINE Leib löst gegen die Hüllen (_kreaturHuellenKontakt). Scratch gepoolt.
+        const herde = String(r.constructor._steuerGesetz().herdeZug);
+        out.herdeImGitter =
+            /herdeZug\(/.test(src) && /flockGrid\.get\(/.test(src) && /dsq > H\.minAbstSq && dsq < H\.fensterSq/.test(herde);
+        out.leibStattStrahl =
+            /this\._kreaturHuellenKontakt\(/.test(src) && !/_runRaycast\(|_fieldRaycast\(/.test(src);
         out.scratchPooled = /_creatureScratchDir/.test(src);
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
         // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
@@ -46743,8 +46755,8 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     });
 
     if (v849Results && !v849Results.error) {
-        check("V8.49: Kohäsion nutzt distanceToSquared (kein sqrt, O(N²) entschärft)", v849Results.usesDistanceSquared);
-        check("V8.49: Hindernis-Raycast ist off-screen-/distanz-gegated", v849Results.raycastGated);
+        check("Welle L: die Kohäsion ist herdeZug über das Gitter (Quadrat vor der Wurzel, O(N²) entschärft)", v849Results.herdeImGitter);
+        check("Welle L: kein Hindernis-Strahl je Tier — der Leib löst gegen die Hüllen", v849Results.leibStattStrahl);
         check("V8.49: Scratch-Vektoren gepoolt (keine Pro-Kreatur-Allokation)", v849Results.scratchPooled);
         check("V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
         check("V8.49: Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);

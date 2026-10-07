@@ -418,6 +418,29 @@ const FORBIDDEN = [
     // nie beim Wurf (der Zweit-Boot pflanzt nicht neu); die Summe nimmt eine Krone exakt heraus, kein Voll-Neumalen.
     { token: "_kronenStreuNeu(`w:", fiel: "Integration 06.10. — spawnArchitecture trägt die Krone ein (a:<id>)" },
     { token: "kronen.neuMalen", fiel: "Integration 06.10. — _kronenStreuWeg nimmt eine Krone exakt aus der Summe" },
+    // WELLE L KREATUR (06.10., Leben-Prüfung Q1/Q2): der Hüpf-Würfel je Frame (R-D3: 21–26 % Luft-Frames, 2,4 % der
+    // Sprünge aus einer Aktion), der feste 0,05-s-Schritt des Hüpfers (bei 144 Hz ein Sechstel der Flugzeit) und das
+    // Wachsen-Relikt V7.66 (×1,01 je 5-%-Würfel, ohne Deckel; R-D2) kehren nicht zurück — der Hüpfer ist EIN Integrator
+    // auf dem Takt (v0 = √(2·g·h)), er startet nur aus einer Aktion, die Größe ist die Achse bodySize.
+    { token: '(emotion === "happy" ? 0.02 : 0.01)', fiel: "Welle L kreatur — der Hüpfer startet nur aus bound/pounce" },
+    { token: "_hopV * 0.05", fiel: "Welle L kreatur — der Hüpfer integriert auf delta (updateCreatures)" },
+    // DAS SPRUNG-GESETZ (Nachbesserung 07.10., Vertrags-Akt): die Huepf-Hoehe der Freude ist die EINE Quelle eines
+    // Sprungs (creatureJump, v0 = √(2·g·h)) — der lineare Faktor Hoehe → m/s und der Abflug in m/s der Aktionen (bound
+    // 3,2, pounce 4,5: der frohe Sprung stieg 0,52 statt 1,2 m) kehren weder im Stamm noch im Gesetzbuch zurueck.
+    { token: "impulsProM", fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (creatureJump)", auch: ["tetrapoda-core.js"] },
+    { token: "_hopV = def.hop", fiel: "Welle L kreatur — eine Aktion springt über creatureJump (das Sprung-Gesetz)" },
+    { token: "updateGrowth", fiel: "Welle L kreatur — die Größe ist bodySize aus der Identität, kein Wachsen-Würfel" },
+    { token: "lastGrowthUpdate", fiel: "Welle L kreatur — das Wachsen-Relikt fiel" },
+    // WELLE L KREATUR (Q3): die Witterungs-Jagd auf vier Himmelsachsen (R-D12) und die Sicht-Kopie, die die Gier des
+    // Senders hart setzt und nicht geht, kehren nicht zurück — der Gradient ist die zentrale Differenz, die Kopie zieht
+    // auf dem kurzen Bogen nach und läuft durch den Baum-Gang.
+    { token: "out.set(bestDx, 0, bestDz)", fiel: "Welle L kreatur — der Geruchs-Gradient (zentrale Differenz)" },
+    { token: "m.rotation.y = rc.tyaw || 0", fiel: "Welle L kreatur — _p2pTickRemoteCreatures zieht die Gier nach" },
+    // WELLE L KREATUR (Q11 + CPU): der Hindernis-Strahl je Tier und Frame (feste Diagonale, nur im Blick, Antwort ein
+    // Math.random-Stoß; 29–37 % der CPU im OMEN-Profil) kehrt nicht zurück — jedes Tier löst seine Achse über den EINEN
+    // Kontakt-Löser gegen die Hüllen (_kreaturHuellenKontakt), die Herde ist die Form des Kerns (herdeZug).
+    { token: "OBSTACLE_RAYCAST_MAX_DIST_SQ", fiel: "Welle L kreatur — _kreaturHuellenKontakt (kein Strahl je Frame)" },
+    { token: "hasHit = this._runRaycast(", fiel: "Welle L kreatur — _kreaturHuellenKontakt" },
     // Nachbesserung 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters — auch die Eintrags-
     // Kronen (a:), die nur beim Entstehen eintragen; der Raum-Index `kronenZellen` bindet die Kosten an den Streifen.
     { token: "this._kronenStreuUmzug(stufe, war, S === fernS)", fiel: "Nachbesserung 06.10. — kein Umzug vergisst eine Krone" },

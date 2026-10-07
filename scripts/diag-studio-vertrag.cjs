@@ -513,8 +513,12 @@ function validateManifest(m) {
             Number.isFinite(V.stimmung.schwellen.weideDiet) &&
             V.freude &&
             Number.isFinite(V.freude.tempoMul) &&
-            V.sprung &&
-            Number.isFinite(V.sprung.impulsProM) &&
+            // DAS SPRUNG-GESETZ (Welle L, Vertrags-Akt 07.10.): die Huepf-Hoehen sind die EINE Quelle eines Sprungs,
+            // eine Aktion traegt nur `hop: true` (der Abflug in m/s und sprung.impulsProM fielen).
+            Number.isFinite(V.freude.hopHochM) &&
+            Number.isFinite(V.freude.hopBasisM) &&
+            V.sprung === undefined &&
+            Object.values(V.aktionen || {}).every((a) => a.hop === undefined || a.hop === true) &&
             Array.isArray(V.groessen) &&
             V.groessen.length >= 2 &&
             V.separation &&
@@ -527,7 +531,7 @@ function validateManifest(m) {
             Number.isFinite(V.wasser.uferBias);
         if (!seeleOk)
             v.push(
-                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeRange/pirschStoppM · furcht.fleeThreshold/neugierStoppM · temperament{signaturen,profile,floor} · wandern.leashBaseM · stimmung.schwellen · freude/sprung/groessen/separation/aufgaben/herde/wasser)"
+                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeRange/pirschStoppM · furcht.fleeThreshold/neugierStoppM · temperament{signaturen,profile,floor} · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation/aufgaben/herde/wasser)"
             );
     }
     return v;
@@ -778,7 +782,7 @@ function validateManifest(m) {
                 // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke:
                 m.verhalten.stimmung.schwellen &&
                 m.verhalten.freude &&
-                m.verhalten.sprung &&
+                // (sprung fiel mit dem Sprung-Gesetz, Vertrags-Akt Welle L 07.10. — die Hoehe lebt in freude)
                 m.verhalten.groessen &&
                 m.verhalten.separation &&
                 m.verhalten.aufgaben &&
@@ -1047,6 +1051,27 @@ function validateManifest(m) {
             bvFx.some((s) => s.includes("VERHALTEN unvollständig")),
         `${bv.length + bvVer.length + bvMesh.length + bvFx.length} erkannt`
     );
+    // DAS SPRUNG-GESETZ (Welle L, Vertrags-Akt 07.10.): der echte tetrapoda-Kern, einmal mit dem Abflug in m/s einer
+    // Aktion (der alte bound-Zwilling 3,2) und einmal mit dem linearen sprung-Faktor — beide feuern die VERHALTEN-Wand.
+    {
+        const tEntry = CORES.find((c) => c.file === "tetrapoda-core.js");
+        const tm = tEntry ? loadCore(tEntry) : null;
+        const mitZwilling = (fn) => {
+            const V = JSON.parse(JSON.stringify(tm.verhalten));
+            fn(V);
+            return validateManifest(Object.assign({}, tm, { verhalten: V }));
+        };
+        const echt = tm ? validateManifest(tm).filter((s) => s.includes("VERHALTEN")) : ["kein Kern"];
+        const hopMs = tm ? mitZwilling((V) => (V.aktionen.bound.hop = 3.2)) : [];
+        const faktor = tm ? mitZwilling((V) => (V.sprung = { impulsProM: 2.2 })) : [];
+        check(
+            "SELBST-TEST: der Sprung-Zwilling (Abflug in m/s einer Aktion · sprung.impulsProM) feuert die VERHALTEN-Wand",
+            echt.length === 0 &&
+                hopMs.some((s) => s.includes("ohne sprung-Zwilling")) &&
+                faktor.some((s) => s.includes("ohne sprung-Zwilling")),
+            `echt ${echt.length} · m/s ${hopMs.length} · Faktor ${faktor.length}`
+        );
+    }
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);

@@ -394,7 +394,6 @@ class AnazhRealm {
             nexusLastEvolution: 0,
             nexusEvolutionInterval: 24.0, // V18.302 — ruhiger (war 10 s = die „endlose Churn"); perf-gestreckt unter Last
             nexusAutonomyLimit: 100,
-            lastGrowthUpdate: 0,
             lastSelfAnalysis: 0,
             // voxel-worker.js baut Density-Grids parallel zum Main-Thread (bit-identischer Spiegel).
             voxelWorker: null,
@@ -4686,7 +4685,8 @@ class AnazhRealm {
         const soulName = creature.userData.soul || "default";
         const phrases = pool[soulName] || pool.default || pool.wesen || [];
         if (phrases.length === 0) return false;
-        const tpl = phrases[Math.floor(Math.random() * phrases.length)];
+        // die Wahl der Worte zieht aus dem Fauna-Strom der Stimme (Γ5): dieselbe Welt, dieselben Worte
+        const tpl = phrases[Math.floor(this._faunaRng("stimme")() * phrases.length)];
         // Template-Variablen ersetzen. Unbekannte Variablen bleiben drin
         // (helfen beim Debug-Erkennen).
         const text = tpl.replace(/\$\{(\w+)\}/g, (m, key) => {
@@ -6703,13 +6703,34 @@ class AnazhRealm {
         const remote = this.state.p2p.remoteCreatures;
         if (!remote.size) return;
         const k = Math.min(1, (dt || 0.016) * 12); // sanftes Nachziehen
+        const TAU = Math.PI * 2;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
         for (const rc of remote.values()) {
             const m = rc.mesh;
             if (!m) continue;
+            const x0 = m.position.x,
+                z0 = m.position.z;
             m.position.x += ((rc.tx || 0) - m.position.x) * k;
             m.position.y += ((rc.ty || 0) - m.position.y) * k + Math.sin(t * 2 + m.position.x) * 0.002;
             m.position.z += ((rc.tz || 0) - m.position.z) * k;
-            if (m.rotation) m.rotation.y = rc.tyaw || 0;
+            // DIE SICHT-KOPIE GEHT (Q3): die Gier des Senders (der Steuer-Schritt schreibt sie, der Strom trägt sie) zieht
+            // auf dem kurzen Bogen nach, und der Gang läuft durch denselben Chokepoint wie beim Sender (der Baum-Gang
+            // misst sein Tempo selbst an der Lage). Vorher: Gier 0 vom Sender, kein Gang — die Kopie glitt.
+            if (m.rotation) {
+                let dg = (rc.tyaw || 0) - m.rotation.y;
+                dg -= TAU * Math.round(dg / TAU);
+                m.rotation.y += dg * k;
+            }
+            const sp = dt > 0 ? Math.hypot(m.position.x - x0, m.position.z - z0) / dt : 0;
+            // Kosten am Schirm: jenseits der Standbild-Schwelle der Welt-Tiere (TIER_FERN_DIST × Größe) ruht der Gang.
+            const fs = (m.scale && m.scale.x) || 1;
+            const ddx = pm ? m.position.x - pm.x : 0,
+                ddz = pm ? m.position.z - pm.z : 0;
+            if (m.userData && m.userData._tierBaum && ddx * ddx + ddz * ddz < AnazhRealm.TIER_FERN_DIST_SQ * fs * fs) {
+                const ud = m.userData;
+                ud.walkPhase = (ud.walkPhase || 0) + (sp > 0.1 ? (dt || 0) * 5.0 : 0);
+                this._animateCompoundMotion(m, null, t, ud.walkPhase, sp > 0.1, null);
+            }
         }
     }
 
@@ -16217,7 +16238,10 @@ class AnazhRealm {
 
     clearCreatures() {
         if (!this.state.creatures || this.state.creatures.length === 0) return;
-        this.state.creatures.forEach((creature) => this.removeCreature(creature));
+        // Über eine KOPIE: removeCreature spliced die Liste selbst — ein forEach über das Original übersprang jedes
+        // zweite Tier, das als eingefrorener Geist in der Szene blieb (Leben-Prüfung R-D14: 6 Tiere → 3 Geister,
+        // je ~46 Befehle; jeder Welt-Wechsel und jede Neu-Genese).
+        for (const creature of this.state.creatures.slice()) this.removeCreature(creature);
         this.state.creatures = [];
         this.state.creatureEmotions = [];
     }
@@ -16243,6 +16267,7 @@ class AnazhRealm {
             }
         }
         const chosenSoul = this._pickCreatureSoulName(soulName);
+        if (!chosenSoul) return null; // unbekannte Seele: laute Absage (geloggt), kein Ersatz-Tier
         // RELOAD-TREUE: beim Restore kommen die beim ersten Guss eingefrorenen Dials als opts.dialsOv, damit
         // die Kreatur wie GEGOSSEN wiederkehrt, auch wenn die aktuelle Übergabe inzwischen anders ist.
         // Frischer Spawn (kein dialsOv) liest die aktuelle Übergabe.
@@ -16250,6 +16275,9 @@ class AnazhRealm {
         const group = this._buildCreatureGroup(chosenSoul, gussOv ? { dialsOv: gussOv } : undefined);
         if (!group) return null;
         group.position.set(x, y, z);
+        // Die Gier ist die äußere Drehung (Q3): der Hang-Pitch (rotation.x) neigt den Leib um SEINE Querachse, auch wenn
+        // er nicht längs Welt-z läuft (in der XYZ-Ordnung kippte er bei Gier ≠ 0 seitlich).
+        group.rotation.order = "YXZ";
         group.visible = true;
         group.userData.kind = "creature";
         group.userData.soul = chosenSoul;
@@ -16257,11 +16285,11 @@ class AnazhRealm {
         // Studio-Rezept-Id wenn gemappt, sonst die Seele selbst (Custom/Geist).
         group.userData.gattung =
             (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[chosenSoul]) || chosenSoul;
-        group.userData.name = this._pickCreatureName();
         // Kreatur-Sicht-Sync — eine pro-Peer eindeutige netId für den
         // creature-pos-Strom (Mitspieler keyen ihre Sicht-Kopie damit).
         this.state._creatureNetSeq = (this.state._creatureNetSeq || 0) + 1;
         group.userData.netId = "c" + this.state._creatureNetSeq;
+        group.userData.name = this._pickCreatureName(group.userData.netId);
         // GRÖSSENKLASSE: jede Kreatur trägt eine Körpergröße (klein/normal/gross/GIGANT), deterministisch
         // aus ihrer netId (Peer-/Re-Wachstum-konsistent) oder aus dem Snapshot (opts.bodySize).
         // Das Template wird NUR UNIFORM skaliert — Symmetrie und Physik-Verhältnisse bleiben invariant.
@@ -16312,8 +16340,8 @@ class AnazhRealm {
         // + bei der „folge mir"-Geste; gewichtet die Contagion + den Schmerz des Verlusts.
         // Reaktiv, NICHT persistiert (wie der Task — die Beziehung wird gelebt, nicht gespeichert).
         group.userData.bond = 0;
-        // Kreatur-HP: init = hpMax aus DERSELBEN Stat-Pipeline wie der Spieler. Reaktiv, NICHT persistiert
-        // (Reload heilt auf voll); damageCreature lazy-init't ebenfalls.
+        // Kreatur-HP: init = hpMax aus DERSELBEN Stat-Pipeline wie der Spieler; der Snapshot trägt die Wunde
+        // (_serializeCreature → _restoreCreatureFromSnapshot, Q12); damageCreature lazy-init't ebenfalls.
         const _cStats = this.computeCreatureStats(group).stats;
         group.userData.hpMax = _cStats.hpMax;
         group.userData.hp = _cStats.hpMax;
@@ -16357,6 +16385,12 @@ class AnazhRealm {
             // S7 — die Körpergröße reist mit (Restore re-spawnt mit NEUER netId → bodySize
             // MUSS persistiert werden, sonst änderte das Wesen beim Reload seine Größe).
             bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
+            // Q12 (Kritik 06.10. §2.5): die Wunde und die Blickrichtung reisen mit — ein verwundeter Hirsch kehrte geheilt
+            // zurück (hp 97,3 → 115,4), jeder Leib blickte nach dem Reload nach +z.
+            hp: Number.isFinite(ud.hp) ? +ud.hp.toFixed(2) : undefined,
+            gier: Number.isFinite(creature.rotation && creature.rotation.y)
+                ? +creature.rotation.y.toFixed(4)
+                : undefined,
             // Eingefrorene Guss-Dials reisen mit — nur wenn unter einer Studio-Übergabe gegossen (Default-
             // Kreaturen tragen das Feld nicht); der Restore pinnt sie als dialsOv.
             gussDials:
@@ -16405,6 +16439,13 @@ class AnazhRealm {
         }
         if (Number.isFinite(snap.bornAt)) {
             c.userData.bornAt = snap.bornAt;
+        }
+        if (Number.isFinite(snap.hp) && snap.hp > 0) {
+            c.userData.hp = Math.min(Number.isFinite(c.userData.hpMax) ? c.userData.hpMax : snap.hp, snap.hp);
+        }
+        if (Number.isFinite(snap.gier)) {
+            c.rotation.y = snap.gier;
+            c.userData._steuer = { gier: snap.gier, v: 0 };
         }
         // Equipped-Slots defensiv restoren: tool muss in state.tools existieren, armor role:"armor" tragen —
         // sonst null (die Welt kann sich zwischen Save und Load geändert haben).
@@ -16580,15 +16621,27 @@ class AnazhRealm {
         return ok ? { ok: true, tagBonus } : { ok: false, reason: "boost_apply_failed" };
     }
 
-    _pickCreatureSoulName(requested) {
+    // Die Seele zu einem Wunsch: ein Schlüssel (wesen/wolf/fuchs/baer) oder ihr Schild ("Hirsch", "Bär"); ein
+    // unbekannter Wunsch ist eine laute Absage (null — spawnCreatureAt bricht ab), nie ein still gewürfelter Ersatz
+    // (die Kritik 06.10.: `spawnCreatureAt(…, "hirsch")` ergab einen Bären). Ohne Wunsch der Ambient-Pick aus dem
+    // Fauna-Strom (Γ5).
+    _pickCreatureSoulName(requested, rng = this._faunaRng()) {
         const souls = AnazhRealm.CREATURE_SOUL_NAMES;
-        if (typeof requested === "string" && souls.includes(requested)) return requested;
+        if (typeof requested === "string" && requested) {
+            if (souls.includes(requested)) return requested;
+            const norm = (t) => String(t).toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue");
+            const w = norm(requested);
+            const hit = souls.find((n) => norm(n) === w || norm(AnazhRealm.CREATURE_SOULS[n].label || "") === w);
+            if (hit) return hit;
+            this.log(`Kreatur-Seele „${requested}" unbekannt (${souls.join(", ")}) — kein Ersatz.`, "WARN");
+            return null;
+        }
         // PHASE E — Raubtier-Seelen entstehen nur auf BEWUSSTEN Wunsch
-        // (requested), nie aus dem Zufalls-/Ambient-Pick (sparsam: keine
+        // (requested), nie aus dem Ambient-Pick (sparsam: keine
         // friedliche Welt voll Aggression).
         const gentle = souls.filter((n) => !AnazhRealm.CREATURE_SOULS[n].predator);
         const pool = gentle.length ? gentle : souls;
-        return pool[Math.floor(Math.random() * pool.length)];
+        return pool[Math.min(pool.length - 1, Math.floor(rng() * pool.length))];
     }
 
     // Aura-Y-Offset folgt der Soul-Höhe (auraY-Hint pro Seele), damit die
@@ -16600,9 +16653,11 @@ class AnazhRealm {
         return soul && Number.isFinite(soul.auraY) ? soul.auraY : 0.9;
     }
 
-    _pickCreatureName() {
+    // Der Name aus der Identität (netId, Γ5): derselbe Wurf auf jedem Peer und nach jedem Reload-Guss.
+    _pickCreatureName(netId) {
         const pool = AnazhRealm.CREATURE_NAME_POOL;
-        return pool[Math.floor(Math.random() * pool.length)];
+        const g = this._rollGenome(String(netId == null ? "c0" : netId), "creature-name");
+        return pool[Math.min(pool.length - 1, Math.floor(g.axis("name") * pool.length))];
     }
 
     // ═══ DAS KREATUR-SKELETT-GESETZ ═══
@@ -17739,7 +17794,7 @@ class AnazhRealm {
         // Lab-Spiegel: BEH_PICK.host = "aktionen.profil".
         let VA = group.userData && group.userData._verhaltenAktion;
         if (VA) {
-            const nowS = performance.now() / 1000;
+            const nowS = this.state.creatureAnimationTime; // die Kreatur-Uhr, an der updateCreatures die Aktion stempelt
             if (nowS >= VA.bis || !VA.def) {
                 group.userData._verhaltenAktion = null;
                 VA = null;
@@ -17820,7 +17875,7 @@ class AnazhRealm {
         let drehY = 0;
         let sweepY = 0;
         if (VA && VA.def) {
-            const nowS = performance.now() / 1000;
+            const nowS = this.state.creatureAnimationTime;
             const d = VA.def;
             if (Number.isFinite(d.rollAmp)) roll += Math.sin(nowS * (d.rollRate || 10)) * d.rollAmp * fadeMul;
             if (Number.isFinite(d.dreh)) {
@@ -18471,8 +18526,9 @@ class AnazhRealm {
         if (!def) return;
         const dauer = Number.isFinite(def.dauer) ? def.dauer : 1;
         ud._verhaltenAktion = { name, def, start: nowS, bis: nowS + dauer };
-        // hop zündet den feld-nativen Hüpfer (dieselbe EINE Sprungmechanik).
-        if (Number.isFinite(def.hop) && def.hop > 0 && !(ud._hopV > 0)) ud._hopV = def.hop;
+        // hop: die Aktion springt — über das EINE Sprung-Gesetz (creatureJump: Höhe aus der Freude, Abflug √(2·g·h)); der
+        // Würfel je Frame ist gefallen, ein Sprung startet nur hier.
+        if (def.hop === true) this.creatureJump(creature);
         ud._verhaltenNext = nowS + dauer + alle[0] + ((h % 977) / 977) * (alle[1] - alle[0]);
     }
     // DER EINE BRÜCKEN-RESOLVER (MOTION_EMOTION_PROFILES, Vorrang-Zeilen; keine Achse über der Schwelle
@@ -18889,7 +18945,7 @@ class AnazhRealm {
                 strikeChance > 0 &&
                 pmPos &&
                 Math.hypot(pmPos.x - creature.position.x, pmPos.z - creature.position.z) < VG.jagd.strikeRange &&
-                Math.random() < strikeChance
+                this._faunaRng()() < strikeChance // der Wurf aus dem Fauna-Strom (Γ5), nie Math.random
             ) {
                 const counter = Math.max(2, (stats.damage || 4) * tProf.counterMul);
                 this.damagePlayer(counter, "gegenwehr");
@@ -19783,11 +19839,44 @@ class AnazhRealm {
         // SPIEGEL-ZENSUS — die Wariness-Gewichte wohnen im tetrapoda-Gesetzbuch
         // (VERHALTEN.furcht via _verhaltenGesetz, fail-soft byte-gleich).
         const NAT = AnazhRealm._verhaltenGesetz().furcht;
+        const ud = creature.userData || {};
+        // DIE BEDROHUNG (Q11): die Wariness liest JEDE Bedrohung — den Spieler (unten) und den jagenden Jäger in der
+        // Witterung — und merkt Ort und Flucht-Radius der stärksten (der Flucht-Zweig flieht von dort). Vorher las sie nur
+        // den Spieler: ein gebissener Hirsch wanderte neben dem Wolf weiter (R-D4/K-D11).
+        const von = ud._bedrohtVon || (ud._bedrohtVon = { x: 0, z: 0, r: 0 });
+        const wSpieler = this._creatureWarinessSpieler(creature, NAT, von);
+        const jaeger = this._kreaturJaeger;
+        if (!jaeger || !jaeger.length || this._creatureTemperament(creature) === "wild") return wSpieler;
+        let best = NAT.noticeRadius;
+        let J = null;
+        for (const j of jaeger) {
+            if (j === creature || !j.position) continue;
+            const d = Math.hypot(j.position.x - creature.position.x, j.position.z - creature.position.z);
+            if (d < best) {
+                best = d;
+                J = j;
+            }
+        }
+        // Ein jagender Jäger in der Witterung wiegt wie ein Treffer (combatFearWariness): die Beute flieht, solange sie
+        // ihn wittert (Flucht-Radius = noticeRadius).
+        if (!J || NAT.combatFearWariness < wSpieler) return wSpieler;
+        von.x = J.position.x;
+        von.z = J.position.z;
+        von.r = NAT.noticeRadius;
+        return NAT.combatFearWariness;
+    }
+
+    // Die Wariness vor dem SPIELER (Aura-Menace × Natur × Bindung × Modus + frische Kampf-Furcht); merkt seinen Ort und
+    // den Flucht-Radius in `von`.
+    _creatureWarinessSpieler(creature, NAT, von) {
         const now = performance.now() / 1000;
         const ud = creature.userData || {};
         const fearActive = Number.isFinite(ud.fearUntil) && now < ud.fearUntil;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return fearActive ? NAT.combatFearWariness : 0;
+        von.x = pm.x;
+        von.z = pm.z;
+        von.r = NAT.fleeRadius;
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
         if (!fearActive && dist > NAT.noticeRadius) return 0; // fern → neutral, das Wesen wandert
         const e = (this.state.player && this.state.player.emotions) || {};
@@ -19872,37 +19961,22 @@ class AnazhRealm {
             if (sources.length >= 12) break;
         }
         if (sources.length === 0) return null;
-        // Vier Probe-Richtungen, höchste Intensität gewinnt. Wir sampeln auch
-        // die EIGENE Position als Referenz — eine Richtung ist nur lohnend, wenn
-        // sie MEHR riecht als hier.
+        // DER GRADIENT des Geruchs (Q3): vier Proben im Abstand probeStep (±x, ±z) als zentrale Differenz — die Richtung
+        // ist die des Gefälles, nicht die beste von vier Himmelsachsen (R-D12: die Witterungs-Jagd lief zu 91–98,9 % auf
+        // einer Achse). Die Stärke des Gefälles über die Proben-Spanne ist der Gewinn eines Schritts bergauf im Geruch.
         const t = (performance.now() || 0) / 1000;
-        const here = this._scentAt(cx, cz, sources, { time: t });
-        const probes = [
-            { dx: 1, dz: 0 },
-            { dx: -1, dz: 0 },
-            { dx: 0, dz: 1 },
-            { dx: 0, dz: -1 },
-        ];
-        let bestDx = 0,
-            bestDz = 0,
-            bestGain = 0;
-        for (const p of probes) {
-            const px = cx + p.dx * probeStep;
-            const pz = cz + p.dz * probeStep;
-            const sHere = this._scentAt(px, pz, sources, { time: t });
-            const gain = sHere - here;
-            if (gain > bestGain) {
-                bestGain = gain;
-                bestDx = p.dx;
-                bestDz = p.dz;
-            }
-        }
-        // Gradient < 0.02 ist Rauschen → kein Tunnel-Drift; ein klarer downwind-Gradient (Beute in 20–30 m)
-        // liegt typisch bei 0.1–0.5 und geht immer durch.
-        if (bestGain < 0.02) return null;
-        // Direction-Vector zurück.
+        const ex = this._scentAt(cx + probeStep, cz, sources, { time: t });
+        const wx = this._scentAt(cx - probeStep, cz, sources, { time: t });
+        const nz = this._scentAt(cx, cz + probeStep, sources, { time: t });
+        const sz = this._scentAt(cx, cz - probeStep, sources, { time: t });
+        const gx = (ex - wx) / 2;
+        const gz = (nz - sz) / 2;
+        // Gradient < 0.02 je Proben-Schritt ist Rauschen → kein Tunnel-Drift; ein klarer downwind-Gradient (Beute in
+        // 20–30 m) liegt typisch bei 0.1–0.5 und geht immer durch.
+        const gain = Math.hypot(gx, gz);
+        if (gain < 0.02) return null;
         const out = this._creatureScentDirScratch || (this._creatureScentDirScratch = new THREE.Vector3());
-        out.set(bestDx, 0, bestDz);
+        out.set(gx / gain, 0, gz / gain);
         return out;
     }
 
@@ -19977,6 +20051,122 @@ class AnazhRealm {
         ud._moveChar = Object.freeze({ speedMul, leashM });
         ud._moveCharKey = key;
         return ud._moveChar;
+    }
+
+    // Die Hüft-Höhe L eines Tiers (m) — dieselbe L, an der das Gang-Gesetz die Schritt-Länge misst (tb.beinL × Körper-
+    // größe); ein Leib ohne Studio-Baum (Seele ohne Rezept) misst sie an seiner Körperlänge (Hüfte ≈ 0,45 × Länge).
+    _kreaturHueftL(creature) {
+        const tb = creature.userData && creature.userData._tierBaum;
+        const s = (creature.scale && creature.scale.x) || 1;
+        if (tb && tb.beinL > 0) return tb.beinL * s;
+        return 0.45 * this._creatureKoerperLaenge(creature);
+    }
+
+    // DAS ANKUNFTS-GESETZ am EINEN Ort (Q3, tetrapoda ankunftTempo): der Wunsch zu einem Ziel in Richtung (dx, dz),
+    // `rest` Meter vor dem Halt — höchstens vMax, nah am Halt nur das Tempo, aus dem die Brems-Grenze dort steht. Folgen,
+    // Pirsch, Neugier, Sammeln, Bauen und Trinken lesen es; vorher war jeder dieser Wege Gas oder Bremse (R-D17: 4 m/s
+    // oder 0, Tempo-Sprünge ~290 m/s²).
+    _kreaturZiel(out, dx, dz, rest, vMax) {
+        const d = Math.hypot(dx, dz);
+        if (!(d > 1e-6) || !(rest > 0) || !(vMax > 0)) return out.set(0, 0, 0);
+        const v = AnazhRealm._steuerGesetz().ankunftTempo(rest, vMax);
+        return out.set((dx / d) * v, 0, (dz / d) * v);
+    }
+
+    // DER LEIB DES TIERS (D2, Welle L): EINE benannte Größe je Tier, gelesen von jedem Körper, der ein Tier berührt (der
+    // Hüllen-Kontakt _kreaturHuellenKontakt; der Wagen liest denselben Leib, nie einen zweiten Kreis). Drei Achsen längs
+    // der Gier bei −halb · 0 · +halb (Becken, Rumpf-Mitte, Brust: der Vierbeiner ist ~1,6 Hüft-Höhen lang — die Schnauze
+    // ragt nicht in die Wand, die Flanke darf an ihr vorbei), je Achse der halbe Rumpf als Radius (0,3·L), die Höhe vom Fuß
+    // bis zum Kopf (1,8·L). L ist die Hüft-Höhe der Gestalt (dieselbe L, an der das Gang- und das Steuer-Gesetz messen; die
+    // Art unterscheidet die Gestalt, nie ein Tag). `out` wird überschrieben (allokationsfrei im Takt).
+    _kreaturLeib(creature, L, out) {
+        const l = L > 0 ? L : this._kreaturHueftL(creature);
+        const o = out || {};
+        o.L = l;
+        o.radius = Math.max(0.12, 0.3 * l);
+        o.halb = 0.8 * l;
+        o.hoehe = Math.max(0.5, 1.8 * l);
+        o.fx = Math.sin(creature.rotation.y);
+        o.fz = Math.cos(creature.rotation.y);
+        return o;
+    }
+
+    // DER KÖRPER DES TIERS GEGEN DIE HÜLLEN (Q11 + Lehre 25): jedes Tier — im Blick oder nicht — löst seine Achse gegen die
+    // soliden Part-Boxen naher Bauwerke über den EINEN Kontakt-Löser des Spielers (_resolveCapsuleVsAABB; die Hülle selbst
+    // ist das Gesetz von _populateBlockerAABBs). Die Nähe-Liste je Tier ist gecacht — neu nach 4 m Weg oder einer Sekunde
+    // Kreatur-Uhr —, die Boxen liest der Löser live (ein fahrendes Gefährt zieht sie mit). Vorher: ein Feld-Strahl je Tier
+    // und Frame auf eine feste Diagonale (DDA durchs Dichtefeld + Segment gegen JEDES Bauwerk), nur im Blick, die Antwort
+    // ein Math.random-Stoß — 29–37 % der CPU (OMEN-Profil), und die Tiere liefen durch Häuser (R-D7: 21 % der Frames).
+    _kreaturHuellenKontakt(creature, L, px0, pz0) {
+        const arches = this.state.architectures;
+        if (!arches || !arches.length) return;
+        const ud = creature.userData;
+        const p = creature.position;
+        const t = this.state.creatureAnimationTime;
+        let nah = ud._huellenNah;
+        if (!nah || Math.abs(p.x - nah.x) > 4 || Math.abs(p.z - nah.z) > 4 || !(t - nah.t < 1)) {
+            const liste = nah ? nah.liste : [];
+            liste.length = 0;
+            for (let a = 0; a < arches.length; a++) {
+                const e = arches[a];
+                if (!e || !e.position) continue;
+                const r = 8 + (e._blockerReach || 0);
+                if (Math.abs(e.position.x - p.x) > r || Math.abs(e.position.z - p.z) > r) continue;
+                liste.push(e);
+            }
+            nah = ud._huellenNah = { x: p.x, z: p.z, t, liste };
+        }
+        if (!nah.liste.length) return;
+        // DER LEIB (_kreaturLeib, die EINE benannte Größe): drei Achsen längs der Gier, je Achse sein Radius, die Höhe vom
+        // Fuß bis zum Kopf. Eine Achse, die der Löser schiebt, schiebt den ganzen Leib.
+        const leib = this._kreaturLeib(creature, L, this._kreaturLeibHuelle || (this._kreaturLeibHuelle = {}));
+        const radius = leib.radius;
+        const halb = leib.halb;
+        const feetY = p.y;
+        const headY = feetY + leib.hoehe;
+        const k = this._kreaturKontakt || (this._kreaturKontakt = { nx: 0, nz: 0 });
+        const q = this._kreaturAchse || (this._kreaturAchse = { x: 0, z: 0 });
+        const fx = leib.fx,
+            fz = leib.fz;
+        // Eine Wand hält nur, wer von AUSSEN kommt: stand die Achse schon vor dem Schritt im Kasten (geboren, gestoßen,
+        // eine Boden-Stufe machte eine flache Box zur Wand), stößt der Kasten sie nicht quer durch sich hinaus — sie
+        // geht frei heraus. Sonst sprang ein Tier je Frame um Meter (gemessen: Tempo-Sprünge bis 7000 m/s²).
+        const rInnen2 = 0.81 * radius * radius;
+        // Kosten an Betroffene: eine Box, die der Leib weder erreicht (horizontal jenseits halb + radius) noch in der Höhe
+        // schneidet (unter der Stufe des Fußes oder über dem Kopf — der Löser würde sie als Wand übergehen), fällt vor
+        // jeder Achse heraus.
+        const reich = halb + radius;
+        const stufe = feetY + AnazhRealm.PLAYER_STEP_UP;
+        for (const e of nah.liste) {
+            const boxes = e.blockerAABBs;
+            if (!boxes) continue;
+            for (let b = 0; b < boxes.length; b++) {
+                const box = boxes[b];
+                if (box.topY <= stufe || box.botY >= headY) continue;
+                if (
+                    box.minX - p.x > reich ||
+                    p.x - box.maxX > reich ||
+                    box.minZ - p.z > reich ||
+                    p.z - box.maxZ > reich
+                )
+                    continue;
+                for (let o = -1; o <= 1; o++) {
+                    const off = o * halb;
+                    const qx0 = px0 + fx * off,
+                        qz0 = pz0 + fz * off;
+                    const ix = qx0 - Math.max(box.minX, Math.min(qx0, box.maxX));
+                    const iz = qz0 - Math.max(box.minZ, Math.min(qz0, box.maxZ));
+                    if (ix * ix + iz * iz < rInnen2) continue;
+                    q.x = p.x + fx * off;
+                    q.z = p.z + fz * off;
+                    const ax = q.x,
+                        az = q.z;
+                    this._resolveCapsuleVsAABB(box, q, feetY, headY, radius, -Infinity, k);
+                    p.x += q.x - ax;
+                    p.z += q.z - az;
+                }
+            }
+        }
     }
 
     // CHARAKTER-WANDERN, die EINE Wander-Quelle (Flucht-Fallback + NEUTRAL): ein ZUG je Zeit-Slot
@@ -20165,11 +20355,9 @@ class AnazhRealm {
             // weiter via floatOffset im updateCreatures-Pfad.
             return out.set(0, 0, 0);
         }
-        // Phase 2: walk Richtung Ziel.
-        const nx = dx / dist;
-        const nz = dz / dist;
+        // Phase 2: walk Richtung Ziel (das Ankunfts-Gesetz bremst vor dem Halt).
         const speed = SPEED * this._creatureBodySpeedMultiplier(creature);
-        return out.set(nx * speed, 0, nz * speed);
+        return this._kreaturZiel(out, dx, dz, dist - HALT_DIST, speed);
     }
 
     // Ring-Scan: 8 Himmelsrichtungen × konzentrische Ringe in 4-m-Schritten bis radius; der erste
@@ -20210,9 +20398,7 @@ class AnazhRealm {
         if (dist <= haltDist) return out.set(0, 0, 0);
         const speed =
             emotion === "happy" ? AnazhRealm.CREATURE_FOLLOW_MAX_SPEED : AnazhRealm.CREATURE_FOLLOW_MAX_SPEED * 0.7;
-        const nx = dx / dist;
-        const nz = dz / dist;
-        return out.set(nx * speed, 0, nz * speed);
+        return this._kreaturZiel(out, dx, dz, dist - haltDist, speed);
     }
 
     // Welle 6.H Phase 2B.5 — zwei-Phasen-gather (Vision §1.1 Beziehungs-Geste):
@@ -20264,7 +20450,7 @@ class AnazhRealm {
                 AnazhRealm.CREATURE_GATHER_SPEED *
                 this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
                 this._creatureBodySpeedMultiplier(creature);
-            return out.set((dxp / distp) * speed, 0, (dzp / distp) * speed);
+            return this._kreaturZiel(out, dxp, dzp, distp - handover, speed);
         }
         // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
         let target = task.args._target;
@@ -20325,9 +20511,7 @@ class AnazhRealm {
             AnazhRealm.CREATURE_GATHER_SPEED *
             this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
             this._creatureBodySpeedMultiplier(creature);
-        const nx = dx / dist;
-        const nz = dz / dist;
-        return out.set(nx * speed, 0, nz * speed);
+        return this._kreaturZiel(out, dx, dz, dist - AnazhRealm.CREATURE_GATHER_HALT_DIST, speed);
     }
 
     // Build = Umkehrung zu gather: take (zum Spieler, Material aus dem Inventar, modus-gated via
@@ -20414,7 +20598,7 @@ class AnazhRealm {
                 this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
                 return out.set(0, 0, 0);
             }
-            return out.set((dxp / distp) * buildSpeed, 0, (dzp / distp) * buildSpeed);
+            return this._kreaturZiel(out, dxp, dzp, distp - handover, buildSpeed);
         }
         // WALK-PHASE: von Spieler weg bis Bau-Distanz, dann SPAWN.
         const dxp2 = creature.position.x - player.x;
@@ -20428,7 +20612,7 @@ class AnazhRealm {
                 // Spieler steht direkt auf der Kreatur — willkürliche Richtung.
                 return out.set(buildSpeed, 0, 0);
             }
-            return out.set((dxp2 / distp2) * buildSpeed, 0, (dzp2 / distp2) * buildSpeed);
+            return this._kreaturZiel(out, dxp2, dzp2, placement - distp2, buildSpeed);
         }
         // SPAWN-PHASE: am Kreatur-Ort. spawnArchitecture y+0.5-Konvention
         // (analog confirmBuild, kalibriert auf at_player wo player.y die
@@ -20649,21 +20833,14 @@ class AnazhRealm {
     // (`spawnCreatures`) UND die deferierte Progression (`_tickBootPhase3`). getTerrainHeightAt ist
     // voxel-aware. Symphonie kurz stumm (sonst N Pings).
     _spawnOneInitialCreature(soulName = null, spawnRadius = 50) {
-        const angle = Math.random() * Math.PI * 2;
         // V18.315 — FERN spawnen: das Wesen taucht aus der Distanz auf, statt dir vor die Füße zu ploppen; sein Satz
-        // blendet beim ersten Erscheinen ein (`einblenden`, der Nebel verdeckte die Geburt bis V18.530).
-        // (spawnRadius = Streu-Spanne oben drauf.)
-        const radius = AnazhRealm.CREATURE_SPAWN_FAR_MIN + Math.random() * Math.max(80, spawnRadius * 1.6);
-        const x = Math.cos(angle) * radius;
-        const z = Math.sin(angle) * radius;
+        // blendet beim ersten Erscheinen ein (`einblenden`). Der Ort ist das EINE Geburts-Gesetz (_kreaturGeburtsOrt:
+        // fern um den Spieler, außerhalb des Blicks), jeder Wurf aus dem Fauna-Strom (Γ5).
+        const rng = this._faunaRng();
+        const { x, z } = this._kreaturGeburtsOrt(rng, Math.max(80, spawnRadius * 1.6));
         const terrainHeight = this.getTerrainHeightAt(x, z);
-        const emotion = this._weatherIsWet()
-            ? Math.random() < 0.7
-                ? "sad"
-                : "happy"
-            : Math.random() < 0.7
-              ? "happy"
-              : "sad";
+        const nass = this._weatherIsWet();
+        const emotion = rng() < 0.7 ? (nass ? "sad" : "happy") : nass ? "happy" : "sad";
         const symBefore = this.state.symphony && this.state.symphony.enabled;
         if (this.state.symphony) this.state.symphony.enabled = false;
         this.spawnCreatureAt(x, terrainHeight + 1.0, z, emotion, soulName);
@@ -20982,18 +21159,19 @@ class AnazhRealm {
         // W4 (V17.48) — die emotionale CONTAGION + das Wachsen der Bindung leben HIER
         // (im Kreatur-Tick), nicht im Emotion-Tick → die Emotion-Kern-Ticks bleiben isoliert.
         this._tickEmotionContagion(delta);
-        // V8.49 — Scratch-Vektoren EINMAL angelegt + pro Kreatur pro Frame
-        // wiederverwendet, statt mehrere THREE.Vector3 je Kreatur zu allokieren
-        // (bei 120 Kreaturen waren das ~400 Allokationen/Frame → GC-Ruckeln).
+        // V8.49 — der Wunsch-Vektor EINMAL angelegt + pro Kreatur pro Frame wiederverwendet, statt je Kreatur zu
+        // allokieren (bei 120 Kreaturen waren das ~400 Allokationen/Frame → GC-Ruckeln).
         const scratchDir = this._creatureScratchDir || (this._creatureScratchDir = new THREE.Vector3());
-        const scratchA = this._creatureScratchA || (this._creatureScratchA = new THREE.Vector3());
-        const scratchB = this._creatureScratchB || (this._creatureScratchB = new THREE.Vector3());
         const playerPos = this.state.playerMesh.position;
         // DER KREATUR-ZIEGEL (Analog A): Tiere sind Kapsel-Feld — das Feld
         // WANDERT mit dem Tier (lebende Knochen-Matrix, Matrix der Matrix).
         this._tickKreaturZiegel(playerPos);
-        // V8.49 — Distanz-LOD: jenseits 70 m kein Hindernis-Raycast (² gespart).
-        const OBSTACLE_RAYCAST_MAX_DIST_SQ = 70 * 70;
+        // DIE JÄGER dieses Takts (Q11): wer jagt (der Zustand des Vor-Takts), ist eine Bedrohung für jede Beute in seiner
+        // Witterung — _creatureWariness liest die Liste (die Beute floh vorher nur vor dem Spieler, R-D4/K-D11).
+        const jaeger = this._kreaturJaeger || (this._kreaturJaeger = []);
+        jaeger.length = 0;
+        for (const c of this.state.creatures)
+            if (c && c.userData && c.userData._motionZustand === "jagd" && !c.userData.dying) jaeger.push(c);
         // Spatial-Hash fürs Flocking: 5-m-Buckets (= Flocking-Range `dsq < 25`), je Kreatur nur die 3×3-
         // Nachbar-Cells statt O(N²). Map + Buckets als Pool recycelt — keine Allokation pro Frame.
         const FLOCK_CELL = 5;
@@ -21065,16 +21243,22 @@ class AnazhRealm {
                 continue;
             }
             const emotion = this.state.creatureEmotions[i];
-            // Freie Bewegung konsumiert die EINE Stat-Pipeline: computeCreatureStats.speed / 7, geklemmt
-            // [0.6, 1.6], gecacht pro Soul×bodySize. Freude-Faktor + Hüpf-Höhen: tetrapoda VERHALTEN.freude.
+            // DAS TEMPO IN m/s (Q3): die Tempo-Einheit des Verhaltens aus dem Gang-Gesetz (tetrapoda tempoEinheit,
+            // tempo·√(g·L) an der Hüft-Höhe L — ein großes Tier läuft schneller, ein kleines kürzer), darauf der Charakter
+            // (computeCreatureStats.speed / 7, geklemmt [0.6, 1.6], gecacht pro Soul×bodySize) und die Freude
+            // (VERHALTEN.freude.tempoMul). Vorher war der Charakter-Faktor selbst die Geschwindigkeit in m/s (R-D6: das
+            // Tempo ein Verhältnis, nach Arten flach 1,10–1,30).
+            const hueftL = this._kreaturHueftL(creature);
             const speed =
-                (emotion === "happy" ? VGL.freude.tempoMul : 1) * this._creatureMoveCharacter(creature).speedMul;
-            const jumpHeight = emotion === "happy" ? VGL.freude.hopHochM : VGL.freude.hopBasisM;
+                (emotion === "happy" ? VGL.freude.tempoMul : 1) *
+                this._creatureMoveCharacter(creature).speedMul *
+                AnazhRealm._steuerGesetz().tempoEinheit(hueftL);
             // V17.29 — tendende Kreatur (Nexus/Spieler-getragen) träufelt Leben
             // in ihre Zelle (Leben sustainiert, wo es wohnt; rate-limitiert).
             this._tickCreatureLifeTrickle(creature, lifeTrickleNow);
 
-            // Im Sichtfeld? (nur für die Hindernis-Verfeinerung unten)
+            // Im Sichtfeld? Nur für die Sicht-Pflege unten (Aura, Fern-Guss, Fell) — nie für eine Bewegungs-Entscheidung
+            // (Q11: Herde und Hindernis hingen am Blick des Spielers, R-D5).
             const inFrustum = this.isInFrustum(creature);
 
             // EIN SICHTBARKEITS-BESITZER: trägt das Tier sein Feld, gehört `visible` dem Kreatur-Ziegel (der
@@ -21082,25 +21266,6 @@ class AnazhRealm {
             // Das Mesh-Tier ist sichtbar, gecullt wird JE PASS: jede Hülle trägt die Körper-Kugel (frustumCulled),
             // three prüft sie gegen den Blick UND gegen jede Kaskaden-Box — ein Tier hinter dem Blick wirft ins Bild.
             if (!this._kzBesitztFeld(creature)) creature.visible = this.state.creaturesHidden !== true;
-
-            // Hindernis-Raycast nur für sichtbare, nahe Kreaturen (≤70 m) — reine visuelle Verfeinerung; die
-            // Bewegung selbst läuft für ALLE Kreaturen.
-            let hasHit = false;
-            if (inFrustum && creature.position.distanceToSquared(playerPos) < OBSTACLE_RAYCAST_MAX_DIST_SQ) {
-                const rayStart = this.setVec(
-                    this.state.tmpVec1,
-                    creature.position.x / this.state.scaleFactor,
-                    (creature.position.y + 0.5) / this.state.scaleFactor,
-                    creature.position.z / this.state.scaleFactor
-                );
-                const rayEnd = this.setVec(
-                    this.state.tmpVec2,
-                    (creature.position.x + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor,
-                    (creature.position.y + 0.5) / this.state.scaleFactor,
-                    (creature.position.z + (emotion === "happy" ? 2 : -2)) / this.state.scaleFactor
-                );
-                hasHit = this._runRaycast(rayStart, rayEnd, (_cb, hit) => hit);
-            }
 
             // Das Distanz-Band bestimmt, wie oft die KI-Richtung neu rechnet. distSq (XZ) EINMAL hier (der
             // Wasser-Kontext nutzt es wieder), die Wurzel EINMAL (die Anim-Raten-Leiter liest sie).
@@ -21133,20 +21298,27 @@ class AnazhRealm {
                         // Brücke (das tetrapoda-hunt-Preset war TOTE Daten: kein Pfad
                         // wählte es je — jetzt pirscht der Jäger sichtbar).
                         this._kreaturZustandStempel(creature, "jagd");
-                        const toPrey = scratchA.subVectors(playerPos, creature.position);
-                        toPrey.y = 0;
-                        // SCHLUSS-WELLE — der Pirsch-Stopp ist Jagd-Gesetz (pirschStoppM).
-                        if (toPrey.length() > VG.jagd.pirschStoppM) {
-                            direction.copy(toPrey.normalize().multiplyScalar(speed * VG.jagd.speedBoost));
-                        }
+                        // Der Pirsch-Stopp ist Jagd-Gesetz (pirschStoppM), davor bremst das Ankunfts-Gesetz.
+                        this._kreaturZiel(
+                            direction,
+                            playerPos.x - creature.position.x,
+                            playerPos.z - creature.position.z,
+                            Math.hypot(playerPos.x - creature.position.x, playerPos.z - creature.position.z) -
+                                VG.jagd.pirschStoppM,
+                            speed * VG.jagd.speedBoost
+                        );
                         this._tickCreatureHuntStrike(creature);
                     } else if (wariness >= NAT.fleeThreshold) {
-                        // SCHEU/verschreckt — fort vom Spieler (schneller als das Schlendern; sonst Zufalls-Drift).
-                        const fromPlayer = scratchA.subVectors(creature.position, playerPos);
-                        fromPlayer.y = 0;
-                        if (fromPlayer.length() < NAT.fleeRadius) {
+                        // SCHEU/verschreckt — fort von der BEDROHUNG (Spieler, jagender Jäger; _creatureWariness merkt ihren
+                        // Ort und ihren Flucht-Radius), schneller als das Schlendern; sonst Charakter-Wandern.
+                        const B = creature.userData._bedrohtVon;
+                        const fx = creature.position.x - B.x;
+                        const fz = creature.position.z - B.z;
+                        const fd = Math.hypot(fx, fz);
+                        if (fd < B.r) {
                             this._kreaturZustandStempel(creature, "flucht");
-                            direction.copy(fromPlayer.normalize().multiplyScalar(speed * NAT.fleeSpeedBoost));
+                            const fv = fd > 1e-6 ? (speed * NAT.fleeSpeedBoost) / fd : 0;
+                            direction.set(fx * fv, 0, fz * fv);
                         } else {
                             this._kreaturZustandStempel(creature, null);
                             // V18.472 (C2) — die EINE Wander-Quelle (Charakter statt Rauschen).
@@ -21155,44 +21327,45 @@ class AnazhRealm {
                     } else if (wariness <= NAT.curiousThreshold) {
                         // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
                         this._kreaturZustandStempel(creature, null);
-                        const toPlayer = scratchA.subVectors(playerPos, creature.position);
-                        toPlayer.y = 0;
-                        // SCHLUSS-WELLE — der Neugier-Stopp ist Furcht-Gesetz (neugierStoppM).
-                        if (toPlayer.length() > NAT.neugierStoppM) {
-                            direction.copy(toPlayer.normalize().multiplyScalar(speed));
-                        }
-                        // V8.49 + V9.84 Perf-1.f — Schwarm-Kohäsion: nur für sichtbare Kreaturen (off-screen
-                        // ist Flocking unsichtbar), distanceToSquared (kein sqrt), nach 6 Nachbarn abbrechen,
-                        // Spatial-Hash (nur die 9 Cells um die eigene Kreatur). REUSE für die neugierige Schar.
-                        if (inFrustum) {
-                            // SCHLUSS-WELLE — die Flocking-Zahlen sind Herden-Gesetz
-                            // (tetrapoda VERHALTEN.herde, byte-gleiche Werte).
-                            const HERDE = VG.herde;
-                            let neighbors = 0;
-                            const gcx = Math.floor(creature.position.x / FLOCK_CELL);
-                            const gcz = Math.floor(creature.position.z / FLOCK_CELL);
-                            cellLoop: for (let dgx = -1; dgx <= 1; dgx++) {
-                                for (let dgz = -1; dgz <= 1; dgz++) {
-                                    const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
-                                    if (!bucket) continue;
-                                    for (let bi = 0; bi < bucket.length; bi++) {
-                                        const j = bucket[bi];
-                                        if (i === j) continue;
-                                        const otherCreature = this.state.creatures[j];
-                                        const dsq = creature.position.distanceToSquared(otherCreature.position);
-                                        if (dsq > HERDE.minAbstSq && dsq < HERDE.fensterSq) {
-                                            const toOther = scratchB.subVectors(
-                                                otherCreature.position,
-                                                creature.position
-                                            );
-                                            toOther.y = 0;
-                                            direction.add(toOther.normalize().multiplyScalar(HERDE.gewicht));
-                                            neighbors++;
-                                            if (neighbors >= HERDE.maxNachbarn) break cellLoop;
-                                        }
-                                    }
+                        // Der Neugier-Stopp ist Furcht-Gesetz (neugierStoppM), davor bremst das Ankunfts-Gesetz.
+                        const tpx = playerPos.x - creature.position.x;
+                        const tpz = playerPos.z - creature.position.z;
+                        this._kreaturZiel(direction, tpx, tpz, Math.hypot(tpx, tpz) - NAT.neugierStoppM, speed);
+                        // DIE HERDEN-FORM (Q11, tetrapoda herdeZug): Kohäsion nur zu Nachbarn DERSELBEN Gattung, für jedes
+                        // Tier — nie am Blick des Spielers (R-D5: nur im Frustum, artfremd). Kandidaten aus dem Gitter (die 9
+                        // Zellen um das Tier), die Zahlen VERHALTEN.herde, die Kosten trägt aiDiv.
+                        const nb = this._herdeNachbarn || (this._herdeNachbarn = []);
+                        const pool = this._herdePool || (this._herdePool = []);
+                        nb.length = 0;
+                        const gcx = Math.floor(creature.position.x / FLOCK_CELL);
+                        const gcz = Math.floor(creature.position.z / FLOCK_CELL);
+                        for (let dgx = -1; dgx <= 1; dgx++) {
+                            for (let dgz = -1; dgz <= 1; dgz++) {
+                                const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
+                                if (!bucket) continue;
+                                for (let bi = 0; bi < bucket.length; bi++) {
+                                    const j = bucket[bi];
+                                    if (i === j) continue;
+                                    const o = this.state.creatures[j];
+                                    const e = pool[nb.length] || (pool[nb.length] = { x: 0, z: 0, gattung: null });
+                                    e.x = o.position.x;
+                                    e.z = o.position.z;
+                                    e.gattung = o.userData && o.userData.gattung;
+                                    nb.push(e);
                                 }
                             }
+                        }
+                        if (nb.length) {
+                            const zug = AnazhRealm._steuerGesetz().herdeZug(
+                                creature.position.x,
+                                creature.position.z,
+                                creature.userData.gattung,
+                                nb,
+                                VG.herde,
+                                this._herdeZug || (this._herdeZug = { x: 0, z: 0, n: 0 })
+                            );
+                            direction.x += zug.x;
+                            direction.z += zug.z;
                         }
                     } else {
                         // Raubtier ("wild") wittert Beute in 50 m → folgt dem Geruch-Gradienten (`_scentAt`, Beute-Kreaturen
@@ -21255,32 +21428,44 @@ class AnazhRealm {
                 if (waterSurface !== null) udZ._motionZustand = "schwimmen";
                 else if (udZ._motionZustand === "schwimmen") udZ._motionZustand = null;
                 // Verhaltens-Tick (nahe Wesen, dieselbe 50-m-Wand): tempo bremst/stoppt die Bewegung unten, hop
-                // zündet beim Start den feld-nativen Hüpfer.
-                this._tickKreaturVerhalten(creature, i, performance.now() / 1000);
-                const VA = udZ._verhaltenAktion;
-                if (VA && VA.def && Number.isFinite(VA.def.tempo) && performance.now() / 1000 < VA.bis) {
+                // zündet beim Start den feld-nativen Hüpfer. Die Uhr der Aktion ist die Kreatur-Uhr (Q1: was den
+                // Körper bewegt, läuft im Takt — die Wand-Uhr ließ eine Aktion je nach Bildrate verschieden lang wirken).
+                this._tickKreaturVerhalten(creature, i, this.state.creatureAnimationTime);
+            }
+            // DER BEWEGUNGS-ANSPRUCH DER AKTION (Q11, Kritik §2.3): tempo bremst oder stoppt den Wunsch für JEDES Tier, das
+            // die Aktion trägt — die 50-m-Wand endet nur das Wählen neuer Aktionen. Vorher galt er nur in ihr: ein Tier, das
+            // hinaus wanderte, lag in der Ruhe-Pose und lief (95 % der Ruhe-Takte bewegt).
+            {
+                const VA = creature.userData._verhaltenAktion;
+                if (VA && VA.def && Number.isFinite(VA.def.tempo) && this.state.creatureAnimationTime < VA.bis) {
                     direction.multiplyScalar(Math.max(0, VA.def.tempo));
                 }
             }
 
-            if (hasHit) {
-                direction.x += (Math.random() - 0.5) * 2;
-                direction.z += (Math.random() - 0.5) * 2;
-            }
-
-            // STRÖMUNG wirkt auf SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ nasse Spalte, Tiefe > 0.5 —
-            // Land-Läufer nie). Quelle = DIESELBE `_waterFlowAt` wie beim Spieler. `direction` ist hier die
-            // Frame-Velocity, jeden Tick neu gebaut → Flow addiert 1:1 als Advektion; nach dem aiDir-Cache-Write,
-            // also nie stale in die KI-Richtung gebacken.
+            // DER STEUER-SCHRITT (Q3, tetrapoda steuerSchritt): `direction` ist der WUNSCH (Welt-XZ, m/s) aus Auftrag,
+            // Flucht, Jagd, Neugier, Wandern, Separation, Ufer-Scheu und Aktion. Er dreht die Gier mit der Wendegrenze
+            // der Art auf sich zu; der Leib läuft nur VORWÄRTS längs seiner Gier, mit dem Teil des Wunschs, der vor ihm
+            // liegt, das Tempo folgt mit Anfahr- und Brems-Grenze — die Gier IST die Laufrichtung. Vorher schrieb niemand
+            // rotation.y: die Tiere liefen im Krebsgang (R-D1: Lauf ↔ Blick p50 63–108°, rückwärts 30–59 % der Frames),
+            // Tempo-Sprünge ~290 m/s².
+            const udS = creature.userData;
+            const steuer = udS._steuer || (udS._steuer = { gier: creature.rotation.y || 0, v: 0 });
+            AnazhRealm._steuerGesetz().steuerSchritt(steuer, direction.x, direction.z, delta, hueftL);
+            creature.rotation.y = steuer.gier;
+            const px0 = creature.position.x;
+            const pz0 = creature.position.z;
+            creature.position.x += Math.sin(steuer.gier) * steuer.v * delta;
+            creature.position.z += Math.cos(steuer.gier) * steuer.v * delta;
+            // STRÖMUNG trägt SCHWIMMENDE Kreaturen (waterSurface !== null ⇔ nasse Spalte, Tiefe > 0.5 — Land-Läufer
+            // nie): eine Drift des Wassers, kein Wunsch des Tiers (Quelle = DIESELBE `_waterFlowAt` wie beim Spieler).
             if (waterSurface !== null) {
                 const _fl = this._waterFlowAt(creature.position.x, creature.position.z);
                 if (_fl) {
-                    direction.x += _fl.x;
-                    direction.z += _fl.z;
+                    creature.position.x += _fl.x * delta;
+                    creature.position.z += _fl.z * delta;
                 }
             }
-
-            creature.position.addScaledVector(direction, delta);
+            this._kreaturHuellenKontakt(creature, hueftL, px0, pz0);
 
             // Sanfter Decay des Innenlebens (~17 s Halbwert); ruhige Wesen werden sparse (null = kein Tick-Rest),
             // beim Ausklingen projiziert die Valenz auf "happy" zurück — getroffene Wesen erholen sich.
@@ -21304,7 +21489,7 @@ class AnazhRealm {
             {
                 const mroles = this._motionRolesForSoul(creature.userData.soul);
                 if (mroles) {
-                    const movingNow = direction.lengthSq() > 0.01;
+                    const movingNow = steuer.v > 0.1; // der Leib läuft (das Tempo des Steuer-Schritts), nicht der Wunsch
                     creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? delta * 5.0 : 0);
                     // ANIM-RATEN-LOD: walkPhase + creatureAnimationTime akkumulieren JEDEN Frame (Gang gleich schnell),
                     // ferne Wesen werten nur 1/2 · 1/4 aus ((aiFrame+i)-Stagger, kein Spike). Hinterm Standbild-Toggle
@@ -21377,23 +21562,22 @@ class AnazhRealm {
                 udP._hangPitch = hp;
                 creature.rotation.x = hp;
             }
-            // P3 — der feld-native Hüpfer (`creatureJump` setzt `_hopV`): ein decayender
-            // Versatz ON TOP der geerdeten baseY (kein Ammo-Body, die Erdung bleibt Wahrheit).
-            // Steigen UND Fallen integrieren: lief der Takt nur bei steigendem Impuls, fror die Höhe am Scheitel ein
-            // (der Körper sprang auf den Boden zurück), und der nächste Sprung begann dort — an der Mess-Wiese stand ein
-            // Bär 7,6 m über dem Boden (Blick-Tour 3, playtest „DER HÜPFER landet").
+            // DER HÜPFER (Q1): ein Versatz ON TOP der geerdeten baseY (die Erdung bleibt Wahrheit), EIN Integrator auf
+            // dem Takt `delta` — die Parabel des Gesetzes (g des Gang-Gesetzes), je Schritt exakt (h += v·dt − g·dt²/2),
+            // darum dieselbe Flugzeit bei jeder Bildrate; er startet nur aus einer Aktion (bound/pounce) über das EINE
+            // Sprung-Gesetz creatureJump (Höhe aus der Freude). Vorher rechnete er je Frame feste 0,05 s (bei 144 Hz
+            // ein Sechstel der Flugzeit) und ein Würfel je Frame zündete ihn (Leben-Prüfung R-D3: 21–26 % Luft-Frames).
             let hopOffset = 0;
-            if (creature.userData._hopV > 0 || creature.userData._hopH > 0) {
-                hopOffset = creature.userData._hopH || 0;
-                creature.userData._hopH = hopOffset + creature.userData._hopV * 0.05;
-                creature.userData._hopV -= 9.0 * 0.05; // Schwerkraft-Decay auf den Hüpf-Impuls
-                if (creature.userData._hopV <= 0 && creature.userData._hopH <= 0) {
-                    creature.userData._hopV = 0;
-                    creature.userData._hopH = 0;
-                } else if (creature.userData._hopH < 0) {
-                    creature.userData._hopH = 0;
-                    creature.userData._hopV = 0;
-                }
+            const udH = creature.userData;
+            if (udH._hopV > 0 || udH._hopH > 0) {
+                const g = AnazhRealm._hopSchwere();
+                const h = (udH._hopH || 0) + (udH._hopV || 0) * delta - 0.5 * g * delta * delta;
+                udH._hopV = (udH._hopV || 0) - g * delta;
+                if (!(h > 0)) {
+                    udH._hopH = 0;
+                    udH._hopV = 0;
+                } else udH._hopH = h;
+                hopOffset = udH._hopH;
             }
             creature.position.y = baseY + floatOffset + hopOffset;
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
@@ -21447,11 +21631,6 @@ class AnazhRealm {
                     const targetColor = emotion === "happy" ? this._creatureHappyColor : this._creatureNeutralColor;
                     creature.material.color.lerp(targetColor, 0.05);
                 }
-            }
-
-            // Springen basierend auf Emotion
-            if (Math.random() < (emotion === "happy" ? 0.02 : 0.01)) {
-                this.creatureJump(creature, jumpHeight);
             }
 
             // Kill Plane
@@ -22482,18 +22661,19 @@ class AnazhRealm {
         };
     }
 
-    creatureJump(creature, jumpHeight) {
-        // DETERMINISMUS-BOGEN P3 — kein Ammo-Body-Impuls mehr. Ein transienter Hüpf-Versatz
-        // (decay), der im `updateCreatures`-Loop ON TOP der feld-geerdeten baseY addiert wird —
-        // die Erdung (`_creatureGroundY`) bleibt die Wahrheit, der Hüpfer reitet darauf.
-        if (!creature || !creature.userData) return;
-        // SCHLUSS-WELLE — Höhe→Impuls-Faktor + Default-Höhe sind Gesetzbuch-
-        // Zeilen (tetrapoda VERHALTEN.sprung/freude, neben den hop-Werten).
-        const VG = AnazhRealm._verhaltenGesetz();
-        creature.userData._hopV = Math.max(
-            creature.userData._hopV || 0,
-            (jumpHeight || VG.freude.hopBasisM) * VG.sprung.impulsProM
-        );
+    // DAS SPRUNG-GESETZ (Q1, Welle L): der EINE Start eines Hüpfers. Die Höhe ist das Freude-Gesetz (VERHALTEN.freude): ein
+    // frohes Wesen springt hopHochM, jedes andere den Grund-Hüpfer hopBasisM — dasselbe Etikett, das sein Tempo hebt
+    // (freude.tempoMul). Der Abflug ist die Parabel v0 = √(2·g·h) mit dem g des Gang-Gesetzes; der Takt in updateCreatures
+    // trägt sie ON TOP der geerdeten Lage (die Erdung bleibt die Wahrheit). Eine Aktion mit `hop` (bound, pounce) zündet
+    // ihn (_tickKreaturVerhalten) — kein Abflug in m/s daneben (der alte `def.hop` war ein Zwilling: der frohe Sprung stieg
+    // 0,52 statt 1,2 m). Ein Wesen in der Luft springt nicht neu.
+    creatureJump(creature) {
+        const ud = creature && creature.userData;
+        if (!ud || ud._hopV > 0 || ud._hopH > 0) return false;
+        const F = AnazhRealm._verhaltenGesetz().freude;
+        const froh = this.state.creatureEmotions[this.state.creatures.indexOf(creature)] === "happy";
+        ud._hopV = Math.sqrt(2 * AnazhRealm._hopSchwere() * (froh ? F.hopHochM : F.hopBasisM));
+        return true;
     }
 
     isInFrustum(object, providedFrustum = null) {
@@ -23924,11 +24104,12 @@ class AnazhRealm {
     updateCreatureEmotions() {
         // Wetter = ambienter Achsen-Impuls auf das 6-Achsen-Innenleben (kein Binär-Würfel), das Etikett
         // fällt aus der Valenz-Projektion; 10 %-Stochastik (nicht alle fühlen gleichzeitig). Der Sturm ist
-        // ein eigenes Gefühl (chaos + awe), nicht bloß mehr Regen.
+        // ein eigenes Gefühl (chaos + awe), nicht bloß mehr Regen. Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5).
         const word = this.state.weather;
         const wet = this._weatherIsWet(word);
+        const rng = this._faunaRng("gefuehl");
         for (let i = 0; i < this.state.creatures.length; i++) {
-            if (Math.random() >= 0.1) continue;
+            if (rng() >= 0.1) continue;
             const c = this.state.creatures[i];
             if (!c || !c.userData) continue;
             const ud = c.userData;
@@ -43702,6 +43883,11 @@ class AnazhRealm {
             this.state.player.emotions.awe = Math.min(1, (this.state.player.emotions.awe || 0) + 0.2);
         }
         this.state.player.deathWoundIntensity = 1.0;
+        // Der Tod steigt ab — am Ort, wie dismountArchitecture: der Körper kehrt am Anker wieder, das Gefährt bleibt,
+        // wo er fiel (Leben-Prüfung V-k8: der Sattel riss den Wagen 85 m mit, er stand unter der Plattform).
+        if (this.state.player.mountedArch !== null && this.state.player.mountedArch !== undefined) {
+            this.dismountArchitecture();
+        }
         // Das dritte Verb: der Todesort trägt eine Lebens-Spur ins Feld.
         const pm = this.state.playerMesh;
         if (pm && pm.position && typeof this._depositLife === "function") {
@@ -77924,11 +78110,13 @@ class AnazhRealm {
                 const count = Math.max(1, Math.min(50, parseInt(btn.getAttribute("data-creature-spawn"), 10) || 1));
                 const soulName = select ? select.value : "";
                 const chosen = soulName && AnazhRealm.CREATURE_SOUL_NAMES.includes(soulName) ? soulName : null;
-                // Spawn ohne clear (state.creatures bleibt + N neue dazu).
+                // Spawn ohne clear (state.creatures bleibt + N neue dazu); der Ort im Ring 5–15 m um den Spieler zieht
+                // aus dem Fauna-Strom des Hofs (Γ5) — ein Tier ist Welt-Substanz, auch wenn eine Hand es ruft.
+                const rng = this._faunaRng("hof");
                 for (let i = 0; i < count; i++) {
                     const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 5, z: 0 };
-                    const ang = Math.random() * Math.PI * 2;
-                    const r = 5 + Math.random() * 10;
+                    const ang = rng() * Math.PI * 2;
+                    const r = 5 + rng() * 10;
                     this.spawnCreatureAt(p.x + Math.cos(ang) * r, p.y + 1, p.z + Math.sin(ang) * r, "happy", chosen);
                 }
                 this._renderCreatureListUI();
@@ -84185,7 +84373,7 @@ class AnazhRealm {
     // [ATMOSPHERE] Affinity-Pick: der Kandidat, dessen Compound-Tags am stärksten mit dem Welt-Feld an
     // (x, z) resonieren — Dot-Product über lebendig/dichte/glut/magieleitung, plus noise-Anteil (sonst
     // immer dieselbe Soul je Region). Liefert {pick, scoreMap} (Tests prüfen die Diskrimination).
-    _affinityPickFromCandidates(candidates, fieldAtPos, noise = 0.15) {
+    _affinityPickFromCandidates(candidates, fieldAtPos, noise = 0.15, rng = this._faunaRng()) {
         if (!Array.isArray(candidates) || candidates.length === 0) {
             return { pick: null, scoreMap: {} };
         }
@@ -84205,8 +84393,8 @@ class AnazhRealm {
                 const tagVal = tags[ax] || 0;
                 score += fieldVal * tagVal;
             }
-            // Noise: kleine Random-Komponente damit nicht jeder Spawn identisch ist
-            score += (Math.random() - 0.5) * noise;
+            // Noise: kleine Streuung, damit nicht jeder Spawn identisch ist — aus dem Strom des Aufrufers (Γ5)
+            score += (rng() - 0.5) * noise;
             scoreMap[cand.name || cand.id || "(unnamed)"] = score;
             if (score > bestScore) {
                 bestScore = score;
@@ -85303,19 +85491,19 @@ class AnazhRealm {
 
     // [ATMOSPHERE] Soul-Wahl für eine neue Kreatur per Affinity-Pick: Compound-Tags · Welt-Feld
     // (Dot-Product), höchste Resonanz gewinnt (dieselbe Logik wie spawnAffinityForBlueprint);
-    // noise 0.15 streut wiederholte Spawns. Optionales x, z ersetzt die Spieler-Position.
-    _pickFaunaSoulAtPlayer(x, z) {
+    // noise 0.15 streut wiederholte Spawns (aus dem Fauna-Strom). Optionales x, z ersetzt die Spieler-Position.
+    _pickFaunaSoulAtPlayer(x, z, rng = this._faunaRng()) {
         const pm = this.state.playerMesh;
         if ((!pm && (x === undefined || z === undefined)) || typeof this.worldFieldAt !== "function") {
-            return this._pickCreatureSoulName();
+            return this._pickCreatureSoulName(null, rng);
         }
         const px = x !== undefined ? x : pm.position.x;
         const pz = z !== undefined ? z : pm.position.z;
         const field = this.auraAt(px, pz); // §5 (V17.25): via auraAt (living Lese-API)
-        if (!field) return this._pickCreatureSoulName();
+        if (!field) return this._pickCreatureSoulName(null, rng);
         // Kandidaten: alle Built-in-Souls mit ihren Compound-Tags
         const souls = AnazhRealm.CREATURE_SOULS;
-        if (!souls) return this._pickCreatureSoulName();
+        if (!souls) return this._pickCreatureSoulName(null, rng);
         // PHASE E — Raubtiere kommen nicht ambient (predator-Filter, sparsam).
         const candidates = Object.keys(souls)
             .filter((name) => !souls[name].predator)
@@ -85323,8 +85511,8 @@ class AnazhRealm {
                 name,
                 tags: this._creatureSoulTags(name),
             }));
-        const { pick } = this._affinityPickFromCandidates(candidates, field);
-        return (pick && pick.name) || this._pickCreatureSoulName();
+        const { pick } = this._affinityPickFromCandidates(candidates, field, 0.15, rng);
+        return (pick && pick.name) || this._pickCreatureSoulName(null, rng);
     }
 
     // Findet die älteste Kreatur (kleinster bornAt). Für Tod-Wahl bei
@@ -85390,21 +85578,55 @@ class AnazhRealm {
         return true;
     }
 
-    // [ATMOSPHERE] Geburt: 6 Kandidaten-Positionen 12–25 m vom Spieler, je die affinity-beste Soul; der
-    // Kandidat mit höchstem Affinity-Score gewinnt. Stiller Spawn (kein Symphony-Ping).
+    // DER FAUNA-STROM (Lehre 7, Γ5): jeder Wurf des Tier-Lebens zieht aus einem seed-gebundenen Strom der Welt, nie aus
+    // Math.random (Peers und Reloads würfelten sonst verschiedene Faunen) — je ZWECK ein eigener Strom (das Stream-Gesetz
+    // `_streamRng`: ein Wurf mehr re-rollt nie einen anderen): "fauna" der Lebenszyklus (Geburts-Ort, Seele, Gemüt, Geburts-
+    // und Todes-Takt, Gegenwehr), "gefuehl" das Wetter-Gefühl, "stimme" die Wahl der Worte, "hof" der Ort einer Hof-Geburt.
+    // Wechselt die Welt (ihr Seed), beginnen die Ströme neu.
+    _faunaRng(zweck = "fauna") {
+        const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
+        let f = this._faunaStroeme;
+        if (!f || f.seed !== seed) f = this._faunaStroeme = { seed, rng: Object.create(null) };
+        return f.rng[zweck] || (f.rng[zweck] = this._streamRng(seed + "-" + zweck));
+    }
+
+    // DER GEBURTS-ORT — die Boot-Regel als EIN Gesetz für den Boot-Spawn UND die natürliche Geburt: fern
+    // (CREATURE_SPAWN_FAR_MIN + Streu-Spanne um den Spieler) und außerhalb des Blicks; das Wesen taucht aus der Distanz
+    // auf, sein Satz blendet ein (`einblenden`). Die Leben-Prüfung (R-D13) sah die Geburt 12–25 m vor dem Spieler, einen
+    // Hirsch 2 m neben ihm. Bis zu acht Würfe suchen einen Ort außerhalb des Blicks; fern ist jeder.
+    _kreaturGeburtsOrt(rng, spanne = 80) {
+        const pm = this.state.playerMesh;
+        const cx = pm ? pm.position.x : 0;
+        const cz = pm ? pm.position.z : 0;
+        const fr = this._frustumCache;
+        const v = this._geburtsOrtV || (this._geburtsOrtV = new THREE.Vector3());
+        let x = cx;
+        let z = cz;
+        for (let k = 0; k < 8; k++) {
+            const ang = rng() * Math.PI * 2;
+            const d = AnazhRealm.CREATURE_SPAWN_FAR_MIN + rng() * spanne;
+            x = cx + Math.cos(ang) * d;
+            z = cz + Math.sin(ang) * d;
+            if (!fr) break;
+            v.set(x, this.getTerrainHeightAt(x, z) + 1, z);
+            if (!fr.containsPoint(v)) break;
+        }
+        return { x, z };
+    }
+
+    // [ATMOSPHERE] Geburt: 6 Kandidaten-Orte nach dem Geburts-Gesetz (fern, außerhalb des Blicks), je die affinity-beste
+    // Soul; der Kandidat mit höchstem Affinity-Score gewinnt (bei Gleichstand der frühere Wurf). Stiller Spawn.
     _creatureNaturalBirth() {
         if (typeof this.spawnCreatureAt !== "function") return false;
         const pm = this.state.playerMesh;
         if (!pm) return false;
-        // 6 Kandidaten-Positionen + jeweilige Affinity-beste-Soul
+        const rng = this._faunaRng();
+        // 6 Kandidaten-Orte + jeweilige Affinity-beste-Soul
         const candidates = [];
         for (let i = 0; i < 6; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = 12 + Math.random() * 13;
-            const cx = pm.position.x + Math.cos(angle) * distance;
-            const cz = pm.position.z + Math.sin(angle) * distance;
-            const field = typeof this.worldFieldAt === "function" ? this.worldFieldAt(cx, cz) : null;
-            const soul = this._pickFaunaSoulAtPlayer(cx, cz);
+            const ort = this._kreaturGeburtsOrt(rng);
+            const field = typeof this.worldFieldAt === "function" ? this.worldFieldAt(ort.x, ort.z) : null;
+            const soul = this._pickFaunaSoulAtPlayer(ort.x, ort.z, rng);
             // Resonanz-Score: Soul-Tags · Field, total
             let score = 0;
             if (field && soul) {
@@ -85413,13 +85635,13 @@ class AnazhRealm {
                     score += (field[ax] || 0) * (tags[ax] || 0);
                 }
             }
-            candidates.push({ x: cx, z: cz, soul, score });
+            candidates.push({ x: ort.x, z: ort.z, soul, score });
         }
-        // Welt entscheidet: höchster Resonanz-Score gewinnt (+ kleine random
-        // Streuung damit keine zwei Geburten in derselben Region identisch sind)
-        candidates.sort((a, b) => b.score + Math.random() * 0.1 - (a.score + Math.random() * 0.1));
-        const best = candidates[0];
-        const y = pm.position.y + 2;
+        // Welt entscheidet: höchster Resonanz-Score gewinnt; der Strom streut schon die Orte.
+        let best = candidates[0];
+        for (const c of candidates) if (c.score > best.score) best = c;
+        const gY = this.getTerrainHeightAt(best.x, best.z);
+        const y = (Number.isFinite(gY) ? gY : pm.position.y) + 1;
         // Spawn (silent damit kein Ping-Schwall)
         const prevSymphony = this.state.symphony && this.state.symphony.enabled;
         if (prevSymphony) this.state.symphony.enabled = false;
@@ -85490,7 +85712,7 @@ class AnazhRealm {
             // Emotion-Modulation: hope beschleunigt Geburt, peace verlangsamt
             const baseBirth = this.constructor.FAUNA_BIRTH_PROBABILITY;
             const birthP = this._emotionModulate(baseBirth, { hope: 0.08, peace: -0.05 });
-            if (sinceBirth >= birthCd && Math.random() < Math.max(0.02, Math.min(0.5, birthP))) {
+            if (sinceBirth >= birthCd && this._faunaRng()() < Math.max(0.02, Math.min(0.5, birthP))) {
                 this._creatureNaturalBirth();
             }
         } else if (count > max) {
@@ -85498,7 +85720,7 @@ class AnazhRealm {
             // sorrow erhöht Tod, peace dämpft
             const baseDeath = this.constructor.FAUNA_DEATH_PROBABILITY;
             const deathP = this._emotionModulate(baseDeath, { sorrow: 0.1, peace: -0.06 });
-            if (sinceDeath >= deathCd && Math.random() < Math.max(0.02, Math.min(0.5, deathP))) {
+            if (sinceDeath >= deathCd && this._faunaRng()() < Math.max(0.02, Math.min(0.5, deathP))) {
                 const oldest = this._findOldestCreature();
                 if (oldest) this._creatureNaturalDeath(oldest);
             }
@@ -85520,7 +85742,7 @@ class AnazhRealm {
         // hinaus fortpflanzen; selbst-limitierend (kleine Chance, geteilter Cooldown, `max` bleibt die Wand).
         if (count >= target && count < max) {
             const sinceBirth = now - (this.state.faunaLifecycle.lastBirthAt || 0);
-            if (sinceBirth >= birthCd * 2 && Math.random() < 0.12) {
+            if (sinceBirth >= birthCd * 2 && this._faunaRng()() < 0.12) {
                 const creatures = this.state.creatures || [];
                 for (const c of creatures) {
                     const bond = (c && c.userData && c.userData.bond) || 0;
@@ -87525,7 +87747,7 @@ class AnazhRealm {
                 this.finalizePendingOutcomes(currentTime);
 
                 // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
-                this._loopWeatherAndGrowth(delta, currentTime);
+                this._loopWeatherAndGrowth(delta);
 
                 // ### Unendliches Terrain — Voxel-Streaming ### (V9.44-f)
                 _pt = performance.now();
@@ -88345,7 +88567,7 @@ class AnazhRealm {
     // (gibt die höchste als neuen supportTop). (2) WAND — eine Box, deren Oberkante über der
     // Stufe-hoch-Linie liegt + vertikal mit dem Körper überlappt, schiebt die Achse horizontal
     // heraus (gleiten). Mutiert pos.x/z. Bauwerke + Inseln teilen diese Mathematik.
-    _resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop) {
+    _resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop, kontakt = null) {
         const STEP = AnazhRealm.PLAYER_STEP_UP;
         const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
         const bodyLo = feetY + STEP;
@@ -88376,9 +88598,16 @@ class AnazhRealm {
                     // gratis ab: der horizontale Push IST der Kontakt (Normale =
                     // Push-Richtung, von der Wand weg). Die Parkour-Leser
                     // (Wandsprung/Klettern) lesen sie mit kurzem Verfall.
-                    this.state._wandKontaktNx = dx / d;
-                    this.state._wandKontaktNz = dz / d;
-                    this.state._wandKontaktAt = performance.now() / 1000;
+                    // Ein Tier trägt seinen eigenen Kontakt-Empfänger (_kreaturHuellenKontakt) — die Wand-Wahrheit des
+                    // Spielers (Parkour) bleibt seine.
+                    if (kontakt) {
+                        kontakt.nx = dx / d;
+                        kontakt.nz = dz / d;
+                    } else {
+                        this.state._wandKontaktNx = dx / d;
+                        this.state._wandKontaktNz = dz / d;
+                        this.state._wandKontaktAt = performance.now() / 1000;
+                    }
                 } else {
                     // Achse genau in der Box → zur nächsten Seite hinausschieben
                     const toMinX = pos.x - box.minX + radius;
@@ -88852,8 +89081,10 @@ class AnazhRealm {
         }
     }
 
-    _loopWeatherAndGrowth(delta, currentTime) {
-        // ### Kreaturen, Wetter, Wachstum ###
+    _loopWeatherAndGrowth(delta) {
+        // ### Kreaturen und Wetter ### — das Wachsen der Tiere (updateGrowth, ×1,01 je 5-%-Würfel, V7.66) ist gefallen:
+        // die Größe ist die Achse bodySize aus der Identität (Leben-Prüfung R-D2: ×1,05 in Minuten, der Reload setzte
+        // zurück).
         const _ct = performance.now();
         this.updateCreatures(delta);
         this._perfSenseLap("creatures", _ct);
@@ -88882,11 +89113,6 @@ class AnazhRealm {
             this._setWeather(next);
             this.log(`Das Wetter zieht zu ${next}`, "INFO");
             this.state.weatherEffectTime = 0;
-        }
-
-        if (currentTime - this.state.lastGrowthUpdate >= 1.0) {
-            this.updateGrowth(); // Fehler behoben
-            this.state.lastGrowthUpdate = currentTime;
         }
     }
 
@@ -90955,22 +91181,6 @@ class AnazhRealm {
         const vy = this._voxelSurfaceY(x, z);
         return typeof vy === "number" && Number.isFinite(vy) ? vy : this.state.terrainBaseHeight || 0;
     }
-
-    updateGrowth() {
-        // ### Wachstum aktualisieren ###
-        // Zweck: Dynamisches Wachstum von Kreaturen oder Terrain
-        // Learnings: Fehlte in V7.61, hinzugefügt für V7.66 zur Vollständigkeit
-        if (this.state.creatures.length > 0) {
-            this.state.creatures.forEach((creature, index) => {
-                if (Math.random() < 0.05) {
-                    // 5% Chance pro Frame
-                    creature.scale.multiplyScalar(1.01); // Leichtes Wachstum
-                    this.log(`Kreatur ${index} wächst: Skala ${creature.scale.x.toFixed(2)}`, "DEBUG");
-                }
-            });
-        }
-        this.log("Wachstum aktualisiert", "DEBUG");
-    }
 }
 
 // ===== ATLAS §26 · AUSSEN-KONSTANTEN — VERSION · Tag-Schlüssel · Signatur-Tabellen · frozen Welt-Daten =====
@@ -92086,8 +92296,8 @@ AnazhRealm._verhaltenGesetz = function () {
             Number.isFinite(v.stimmung.schwellen.weideDiet) &&
             v.freude &&
             Number.isFinite(v.freude.tempoMul) &&
-            v.sprung &&
-            Number.isFinite(v.sprung.impulsProM) &&
+            Number.isFinite(v.freude.hopHochM) &&
+            Number.isFinite(v.freude.hopBasisM) &&
             Array.isArray(v.groessen) &&
             v.groessen.length >= 2 &&
             v.separation &&
@@ -92104,6 +92314,33 @@ AnazhRealm._verhaltenGesetz = function () {
         }
     } catch (_e) {}
     return AnazhRealm._kernPflichtBruch("tetrapoda:VERHALTEN");
+};
+// Die Schwere des Hüpfers: das g des Gang-Gesetzes (tetrapoda GANG_GESETZ.g) — der Abflug ist v0 = √(2·g·h), der Flug
+// die Parabel (updateCreatures integriert sie auf dem Takt). Fail-closed wie jedes Kern-Gesetz.
+AnazhRealm._hopSchwere = function () {
+    const g = AnazhRealm.Gesetz("tetrapoda:GANG_GESETZ.g", null);
+    return Number.isFinite(g) && g > 0 ? g : AnazhRealm._kernPflichtBruch("tetrapoda:GANG_GESETZ.g");
+};
+// DAS STEUER-GESETZ (tetrapoda STEUER_GESETZ + steuerSchritt · tempoEinheit · ankunftTempo · herdeZug, Welle L): der EINE
+// Steuer-Schritt je Tier und Takt, das Ankunfts-Gesetz, die Tempo-Einheit √(g·L) und die Herden-Form. Fail-closed.
+AnazhRealm._steuerGesetz = function () {
+    if (AnazhRealm._steuerGesetzMemo) return AnazhRealm._steuerGesetzMemo;
+    const S = AnazhRealm.Gesetz("tetrapoda:STEUER_GESETZ", null);
+    const k = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    if (
+        S &&
+        Number.isFinite(S.tempo) &&
+        Number.isFinite(S.wende) &&
+        k &&
+        typeof k.steuerSchritt === "function" &&
+        typeof k.tempoEinheit === "function" &&
+        typeof k.ankunftTempo === "function" &&
+        typeof k.herdeZug === "function"
+    ) {
+        AnazhRealm._steuerGesetzMemo = k;
+        return k;
+    }
+    return AnazhRealm._kernPflichtBruch("tetrapoda:STEUER_GESETZ");
 };
 AnazhRealm.STAT_FROM_TAGS = Object.freeze({
     // hpMax/damage/knockback/defense lesen ihre Koeffizienten via _kampfKoeff aus dem Gesetzbuch
