@@ -9851,7 +9851,18 @@ class AnazhRealm {
     // null) trägt kein Wasser. Die EINE Nässe des Klangs (der Hör-Ring und der Wasser-Hauch) und — mit `marge` (m über dem
     // Spiegel, der Rand zählt mit) — des Trink-Ziels der Tiere (`_findNearestWaterPoint`). Bis zur Gegenprüfung las der
     // Klang das 3×3-gedehnte `_waterLevelAt`, das Trink-Ziel `_isAboveWaterAt` (zwei Wahrheiten neben dem Körper).
+    // DER BILLIGE BEWEIS ZUERST (Lehre 25; Integration Welle L: wasser × auge-v1 R2): die Wahrheit am Körper trägt an (x, z)
+    // höchstens das gezeichnete Wasser (geladener Chunk, `_wasserBildAt`) bzw. ohne Chunk den Spiegel des Gesetzes samt Rand
+    // und voller Fluss-Breite (`_atlasWaterLevelAt` mit einem Boden unter allem) — gleich über welchem Boden, die Decke nimmt
+    // nur. Ist dort kein Wasser, ist die Spalte trocken ohne Scan; ist ein Gitterpunkt über dieser Obergrenze + Marge Fels
+    // (`_felsUeber`), liegt der Boden darüber — trocken ohne Scan. Nur Spalten, an denen Wasser sein kann, zahlen den
+    // Spalten-Scan `_voxelSurfaceY`; das Urteil bleibt dasselbe. Die dichte Wasser-Suche scannte nach dem Merge je Probe
+    // (gate:v1-pfad R2 trocken 40 m: 351 Scans, Soll ≤ 80).
     _nassAt(x, z, marge = -0.05) {
+        const bild = this._wasserBildAt(x, z);
+        const oben = bild === undefined ? this._atlasWaterLevelAt(x, z, -1e9) : bild;
+        if (oben === null || !(oben > -Infinity)) return false;
+        if (this._felsUeber(x, z, oben + marge)) return false;
         const boden = this._voxelSurfaceY(x, z);
         return boden !== null && Number.isFinite(boden) && boden < this._koerperWasser(x, z, boden) + marge;
     }

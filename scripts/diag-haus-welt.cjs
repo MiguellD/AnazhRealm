@@ -502,7 +502,11 @@ async function proben(phasen) {
                     if (d < L.r) w8.aufScheibe++;
                 }
             // DIE STREU der Lichtung: innerhalb 64 m um den Spieler baut keine Region Streu (`SCATTER.innerM`) — der Spieler
-            // steht 120 m daneben, die Regionen über der Plattform bauen neu (durch die Wand), gezählt im 40-m-Kreis
+            // steht 120 m daneben, die Regionen über der Plattform bauen neu (durch die Wand). Der Aufbau zählt die lebenden
+            // Zellen dieser neu gebauten Regionen (die Menge, über die die Wand urteilt); der 40-m-Kreis steht als Zahl daneben
+            // (Integration Welle L wasser: dort standen vorher 20 von Soll 20, mit dem Wald nach dem Merge 16 — vier Baum-
+            // Zellen fielen unter die Kronen von vier Wald-Bäumen mehr im 60-m-Kreis, Gelände und Wasser an ihnen gleich).
+            let keysW8 = null;
             {
                 let fx = null;
                 for (let a = 0; a < 16 && fx === null; a++) {
@@ -517,6 +521,7 @@ async function proben(phasen) {
                     const keys = new Set();
                     for (const dx of [-40, 0, 40]) for (const dz of [-40, 0, 40]) keys.add(`${Math.floor((L.x + dx) / RM)},${Math.floor((L.z + dz) / RM)}`);
                     for (const k of keys) r._disposeScatterRegion(k);
+                    keysW8 = keys;
                     const steht = () =>
                         [...keys].every((q) => {
                             const rg = s.scatterRegions && s.scatterRegions.get(q);
@@ -527,13 +532,15 @@ async function proben(phasen) {
                     w8.streuSteht = steht();
                 }
                 w8.zellen = 0;
+                w8.zellenNeu = 0;
                 w8.zellenUeber = 0;
                 w8.je = {};
-                for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
+                for (const [rk, region] of (s.scatterRegions && s.scatterRegions.entries()) || [])
                     for (const c of region.cells || []) {
                         if (!((c.slots && c.slots.length) || c.feld)) continue;
                         const d = abstand(c.x, c.z);
                         if (d < 40) w8.zellen++;
+                        if (keysW8 && keysW8.has(rk)) w8.zellenNeu++;
                         if (d < L.r + (c.promotable ? krone(c.species, c.scale) : 0)) {
                             w8.zellenUeber++;
                             w8.je[c.layer] = (w8.je[c.layer] || 0) + 1;
@@ -1001,7 +1008,7 @@ function urteil(o) {
             if (!w.ruhe) f.push("W8 Aufbau: Chunk, Wald-Schlange und Nah-Streu kamen an der Plattform nicht zur Ruhe");
             if (w.promoRest > 0) f.push(`W8 Aufbau: ${w.promoRest} Baum-Zellen im Promotions-Ring der Plattform blieben offen`);
             if (!(w.baeume >= 3)) f.push(`W8 Aufbau: ${w.baeume} Bäume im 60-m-Kreis der Plattform (Soll ≥ 3 — sonst sieht die Probe keinen Wald)`);
-            if (!w.streuSteht || !(w.zellen >= 20)) f.push(`W8 Aufbau: ${w.zellen} lebende Streu-Zellen im 40-m-Kreis${w.streuSteht ? "" : " (die Regionen kamen nicht zur Ruhe)"} (Soll ≥ 20)`);
+            if (!w.streuSteht || !(w.zellenNeu >= 20)) f.push(`W8 Aufbau: ${w.zellenNeu} lebende Streu-Zellen in den neu gebauten Regionen um die Plattform (im 40-m-Kreis ${w.zellen})${w.streuSteht ? "" : " (die Regionen kamen nicht zur Ruhe)"} (Soll ≥ 20)`);
             if (!(w.pflanzen >= 20)) f.push(`W8 Aufbau: ${w.pflanzen} Kachel-Pflanzen im 30-m-Kreis (Soll ≥ 20)`);
             if (!(w.gegenprobe >= 1)) f.push(`W8 Aufbau: der Hain der KI wuchs 150 m weiter nicht (${w.gegenprobe}; ${(w.kiFehler || []).join(" ")}) — die Probe ist blind`);
             const ueber = [];
@@ -1054,7 +1061,7 @@ function zeile(o) {
         ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"} · W4c Überstand ${hs.map((h) => h.grundrissUeberM).join("/")} m` +
         ` · W4b Streu vorher ${o.w4b && o.w4b.streuVorher ? o.w4b.streuVorher.zellen : "?"} Zellen im Dorf-Kreis, unter den Häusern ${o.w4b && o.w4b.unterHaus ? o.w4b.unterHaus.geraeumt + " geräumt + " + o.w4b.unterHaus.lebend + " lebend" : "?"}, fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"}, Promotion ${o.w4b && o.w4b.promo ? o.w4b.promo.promoviert + " (warm " + o.w4b.promoWarm.promoviert + "), offen " + o.w4b.promo.rest : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
         ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %` +
-        ` · W8 Lichtung ${o.w8 ? (o.w8.fehler || `Natur ${o.w8.naturUeber} · Streu ${o.w8.zellenUeber}/${o.w8.zellen} · Kachel ${o.w8.aufScheibe}/${o.w8.pflanzen} · KI Plattform ${o.w8.kiPlattform} (benannt ${o.w8.kiWeichtPlattform}) · KI Haus ${o.w8.kiHaus} (benannt ${o.w8.kiWeichtHaus}) · Satz „${o.w8.chatSatz}" · Gegenprobe ${o.w8.gegenprobe} · ${o.w8.baeume} Bäume im 60-m-Kreis`) : "?"}` +
+        ` · W8 Lichtung ${o.w8 ? (o.w8.fehler || `Natur ${o.w8.naturUeber} · Streu ${o.w8.zellenUeber}/${o.w8.zellen} (Regionen ${o.w8.zellenNeu}) · Kachel ${o.w8.aufScheibe}/${o.w8.pflanzen} · KI Plattform ${o.w8.kiPlattform} (benannt ${o.w8.kiWeichtPlattform}) · KI Haus ${o.w8.kiHaus} (benannt ${o.w8.kiWeichtHaus}) · Satz „${o.w8.chatSatz}" · Gegenprobe ${o.w8.gegenprobe} · ${o.w8.baeume} Bäume im 60-m-Kreis`) : "?"}` +
         ` · W7 Bau im Bau ${o.w7 ? o.w7.imBau + "/" + o.w7.haeuser + ", zweites Dorf " + o.w7.zweitesImBau + "/" + o.w7.zweitesDorf : "?"}` +
         ` · W6 Tür frontal ${(o.w6 || []).map((w) => w.kultur + (w.fehler ? ":" + w.fehler : " Kern " + w.kernDrinM + " m (" + w.kernBoxen + " Boxen) / " + (w.fern || []).map((fz) => "L" + fz.stufe + " " + fz.drinM + " m").join(" / "))).join(" · ")}`
     );
