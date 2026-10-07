@@ -1,0 +1,109 @@
+13:30:05 SERIE START  A=78d66a63 (mess-d)  B=9f50dc1d (mess-kmw)  Instrument=9f50dc1d
+13:30:05 anazhRealm.js  A=e2bd66ffd997735e  B=c3a6530dbd320e1f
+13:30:11 1A boot (Versuch 1)  GPU[61, 139 MHz, 12 %, P8] eigene-reste=0
+13:30:12 1A Seite A geliefert (e2bd66ffd997735e)
+13:33:03 1A exit=1  ROT |  | WETTER lauf-voll: sunny → rainy durch weather ← dslEval ← _tickWorldRules ← (anonym) ; WETTER lauf-voll: das Wetter ist „rainy", die Bühne hält „sunny" ; WETTER lauf-frei: sunny → rainy durch weather ← dslEval ← _tickWorldRules ← (anonym) ; WETTER lauf-frei: das Wetter ist „rainy", die Bühne hält „sunny" ; WETTER gpu-bank: sunny → rainy durch weather ← dslEval ← _tickWorldRules ← (anonym) ; WETTER band: sunny → rainy durch weather ← dslEval ← _tickWorldRules ← (anonym)
+      [folge] gpu-bank …
+        ROT WETTER gpu-bank: sunny → rainy durch weather ← dslEval ← _tickWorldRules ← (anonym)
+        ROT WETTER band: sunny → rainy durch weather ← dslEval ← _tickWorldRules ← (anonym)
+        ROT WETTER band: sunny → rainy durch weather ← dslEval ← _tickWorldRules ← (anonym)
+        ROT WETTER band: sunny → rainy durch weather ← dslEval ← _tickWorldRules ← (anonym)
+        ROT WETTER band: sunny → rainy durch weather ← dslEval ← _tickWorldRules ← (anonym)
+        ROT WETTER band: sunny → rainy durch weather ← dslEval ← _tickWorldRules ← (anonym)
+        laufVoll: 28.4 fps · Frame p50/p95/max 25.3/58.3/2800 ms · CPU p50/p95 19.6/54.2 · render-EWMA 5.6
+        laufFrei: 42.4 fps · Frame p50/p95/max 24.9/33.4/608.4 ms · CPU p50/p95 19.5/25.2 · render-EWMA 5.67
+        gpu-bank Gier 0: 15.18 ms je Frame (CPU 4.58)
+        gpu-bank Gier -0.88: 13.41 ms je Frame (CPU 4.27)
+        band: ROT (Linse ROT, Stempel GRUEN)
+13:33:03 1A verworfen (1), wiederhole
+13:33:39 1A boot (Versuch 2)  GPU[69, 139 MHz, 22 %, P8] eigene-reste=0
+13:33:39 1A Seite A geliefert (e2bd66ffd997735e)
+13:36:23 1A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 47.6 fps · Frame p50/p95/max 16.8/41.6/91.7 ms · CPU p50/p95 12.5/39.8 · render-EWMA 5.1
+        laufFrei: 54.7 fps · Frame p50/p95/max 16.7/25.1/283.4 ms · CPU p50/p95 13.3/19 · render-EWMA 4.93
+        gpu-bank Gier 0: 13.42 ms je Frame (CPU 4.01)
+        gpu-bank Gier -0.88: 12.09 ms je Frame (CPU 3.66)
+        band: ROT (Linse ROT, Stempel GRUEN)
+13:36:24 1A Pause 60 s  GPU[81, 1721 MHz, 2 %, P0] eigene-reste=0
+13:37:29 2B boot (Versuch 1)  GPU[70, 949 MHz, 4 %, P0] eigene-reste=0
+13:37:30 2B Seite B geliefert (c3a6530dbd320e1f)
+13:40:15 2B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 47.6 fps · Frame p50/p95/max 16.8/41.6/58.4 ms · CPU p50/p95 12.3/38.1 · render-EWMA 4.65
+        laufFrei: 54.8 fps · Frame p50/p95/max 16.7/25.1/266.1 ms · CPU p50/p95 10.9/17.4 · render-EWMA 6.07
+        gpu-bank Gier 0: 15.58 ms je Frame (CPU 3.8)
+        gpu-bank Gier -0.88: 13.19 ms je Frame (CPU 2.44)
+        band: ROT (Linse ROT, Stempel GRUEN)
+13:40:15 2B Pause 60 s  GPU[81, 1822 MHz, 1 %, P0] eigene-reste=0
+13:41:21 3A boot (Versuch 1)  GPU[68, 139 MHz, 14 %, P8] eigene-reste=0
+13:41:21 3A Seite A geliefert (e2bd66ffd997735e)
+13:44:04 3A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 39 fps · Frame p50/p95/max 24.9/41.7/1791.6 ms · CPU p50/p95 17.3/40.9 · render-EWMA 6.41
+        laufFrei: 44.9 fps · Frame p50/p95/max 24.8/33.4/266.7 ms · CPU p50/p95 19.3/24.7 · render-EWMA 5.39
+        gpu-bank Gier 0: 15.46 ms je Frame (CPU 4.38)
+        gpu-bank Gier -0.88: 14 ms je Frame (CPU 3.26)
+        band: ROT (Linse ROT, Stempel GRUEN)
+13:44:05 3A Pause 60 s  GPU[81, 1771 MHz, 2 %, P0] eigene-reste=0
+13:45:10 4B boot (Versuch 1)  GPU[68, 139 MHz, 15 %, P8] eigene-reste=0
+13:45:11 4B Seite B geliefert (c3a6530dbd320e1f)
+13:47:55 4B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 51.2 fps · Frame p50/p95/max 16.7/33.4/433.2 ms · CPU p50/p95 11/26.5 · render-EWMA 4.56
+        laufFrei: 50.6 fps · Frame p50/p95/max 16.7/33.3/283.3 ms · CPU p50/p95 13.6/18.9 · render-EWMA 4.23
+        gpu-bank Gier 0: 14.95 ms je Frame (CPU 2.71)
+        gpu-bank Gier -0.88: 13.39 ms je Frame (CPU 3.14)
+        band: ROT (Linse ROT, Stempel GRUEN)
+13:47:56 4B Pause 60 s  GPU[81, 1809 MHz, 2 %, P0] eigene-reste=0
+13:49:01 5A boot (Versuch 1)  GPU[68, 139 MHz, 0 %, P8] eigene-reste=0
+13:49:01 5A Seite A geliefert (e2bd66ffd997735e)
+13:51:45 5A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 49.3 fps · Frame p50/p95/max 16.7/33.4/50 ms · CPU p50/p95 12.3/36.4 · render-EWMA 4.94
+        laufFrei: 55.2 fps · Frame p50/p95/max 16.7/25.1/249.5 ms · CPU p50/p95 11.3/18 · render-EWMA 4.76
+        gpu-bank Gier 0: 15.02 ms je Frame (CPU 2.93)
+        gpu-bank Gier -0.88: 13.23 ms je Frame (CPU 2.38)
+        band: ROT (Linse ROT, Stempel GRUEN)
+13:51:46 5A Pause 60 s  GPU[81, 1822 MHz, 0 %, P0] eigene-reste=0
+13:52:51 6B boot (Versuch 1)  GPU[69, 139 MHz, 14 %, P8] eigene-reste=0
+13:52:52 6B Seite B geliefert (c3a6530dbd320e1f)
+13:55:38 6B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 50.4 fps · Frame p50/p95/max 16.7/33.4/374.9 ms · CPU p50/p95 11.3/27.8 · render-EWMA 4.12
+        laufFrei: 40.4 fps · Frame p50/p95/max 24.9/33.4/1550 ms · CPU p50/p95 19/27.7 · render-EWMA 5.17
+        gpu-bank Gier 0: 15.35 ms je Frame (CPU 4.37)
+        gpu-bank Gier -0.88: 15.01 ms je Frame (CPU 4.43)
+        band: ROT (Linse ROT, Stempel GRUEN)
+13:55:39 6B Pause 60 s  GPU[80, 1771 MHz, 2 %, P0] eigene-reste=0
+13:56:44 7A boot (Versuch 1)  GPU[68, 139 MHz, 14 %, P8] eigene-reste=0
+13:56:45 7A Seite A geliefert (e2bd66ffd997735e)
+13:59:28 7A exit=1  ROT |  | WETTER lauf-voll: sunny → rainy durch weather ← … ← dslRun ← _loopNexusUpdate ← (anonym) ; WETTER lauf-voll: rainy → sunny durch weather ← dslEval ← _tickWorldRules ← (anonym)
+      [folge] gpu-bank …
+        laufVoll: 46.8 fps · Frame p50/p95/max 16.7/33.4/1866.6 ms · CPU p50/p95 12.1/27.1 · render-EWMA 4.75
+        laufFrei: 49.4 fps · Frame p50/p95/max 16.8/33.2/408.3 ms · CPU p50/p95 13.7/18.1 · render-EWMA 3.96
+        gpu-bank Gier 0: 14.72 ms je Frame (CPU 3.25)
+        gpu-bank Gier -0.88: 13.48 ms je Frame (CPU 2.78)
+        band: ROT (Linse ROT, Stempel GRUEN)
+13:59:29 7A verworfen (1), wiederhole
+14:00:04 7A boot (Versuch 2)  GPU[72, 139 MHz, 0 %, P8] eigene-reste=0
+14:00:05 7A Seite A geliefert (e2bd66ffd997735e)
+14:02:49 7A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 47.5 fps · Frame p50/p95/max 16.8/41.6/58.4 ms · CPU p50/p95 12.3/38.9 · render-EWMA 4.15
+        laufFrei: 55.8 fps · Frame p50/p95/max 16.7/25.1/266.6 ms · CPU p50/p95 11/16.8 · render-EWMA 4.24
+        gpu-bank Gier 0: 14.98 ms je Frame (CPU 2.77)
+        gpu-bank Gier -0.88: 14.06 ms je Frame (CPU 2.72)
+        band: ROT (Linse ROT, Stempel GRUEN)
+14:02:50 7A Pause 60 s  GPU[81, 1721 MHz, 2 %, P0] eigene-reste=0
+14:03:55 8B boot (Versuch 1)  GPU[69, 139 MHz, 3 %, P8] eigene-reste=0
+14:03:55 8B Seite B geliefert (c3a6530dbd320e1f)
+14:06:40 8B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 49.4 fps · Frame p50/p95/max 16.7/33.4/416.7 ms · CPU p50/p95 11.7/25.8 · render-EWMA 4.29
+        laufFrei: 55.1 fps · Frame p50/p95/max 16.7/25.1/258.4 ms · CPU p50/p95 10.9/19.3 · render-EWMA 7.1
+        gpu-bank Gier 0: 14.79 ms je Frame (CPU 3.42)
+        gpu-bank Gier -0.88: 13.55 ms je Frame (CPU 3.3)
+        band: ROT (Linse ROT, Stempel GRUEN)
+14:06:41 8B Pause 60 s  GPU[81, 1784 MHz, 2 %, P0] eigene-reste=0
+14:07:45 ALLES ENDE

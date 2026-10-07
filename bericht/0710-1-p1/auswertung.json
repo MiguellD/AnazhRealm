@@ -1,0 +1,760 @@
+{
+ "zeilen": [
+  {
+   "N": "1A",
+   "S": "A",
+   "verworfen": 1,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 47.6,
+    "p50": 16.8,
+    "p95": 41.6,
+    "max": 91.7,
+    "cpu50": 12.5,
+    "cpu95": 39.8,
+    "render": 5.1,
+    "creatures": 2.77,
+    "streaming": 3.22,
+    "gpuD50": 19.8,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 54.7,
+    "p50": 16.7,
+    "p95": 25.1,
+    "max": 283.4,
+    "cpu50": 13.3,
+    "cpu95": 19,
+    "render": 4.93,
+    "creatures": 3.32,
+    "streaming": 4.1,
+    "gpuD50": 17.7,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 13.42,
+   "bank0cpu": 4.01,
+   "bank88": 12.09,
+   "bank88cpu": 3.66,
+   "bandBefehle": 105,
+   "bandTris": 871979,
+   "bandVram": 143.4,
+   "bandGpu": 17.49,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {},
+   "gpuStart": "69, 139 MHz, 22 %, P8",
+   "version": "18.534.0",
+   "tierBefehle": 15,
+   "tierTrisK": 81
+  },
+  {
+   "N": "2B",
+   "S": "B",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 47.6,
+    "p50": 16.8,
+    "p95": 41.6,
+    "max": 58.4,
+    "cpu50": 12.3,
+    "cpu95": 38.1,
+    "render": 4.65,
+    "creatures": 2.92,
+    "streaming": 3.69,
+    "gpuD50": 19.5,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 54.8,
+    "p50": 16.7,
+    "p95": 25.1,
+    "max": 266.1,
+    "cpu50": 10.9,
+    "cpu95": 17.4,
+    "render": 6.07,
+    "creatures": 2.67,
+    "streaming": 3.26,
+    "gpuD50": 18.6,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 15.58,
+   "bank0cpu": 3.8,
+   "bank88": 13.19,
+   "bank88cpu": 2.44,
+   "bandBefehle": 105,
+   "bandTris": 872563,
+   "bandVram": 149.5,
+   "bandGpu": 17.01,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {},
+   "gpuStart": "70, 949 MHz, 4 %, P0",
+   "version": "18.534.0",
+   "tierBefehle": 15,
+   "tierTrisK": 81
+  },
+  {
+   "N": "3A",
+   "S": "A",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 39,
+    "p50": 24.9,
+    "p95": 41.7,
+    "max": 1791.6,
+    "cpu50": 17.3,
+    "cpu95": 40.9,
+    "render": 6.41,
+    "creatures": 9.41,
+    "streaming": 2.03,
+    "gpuD50": 21.2,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 44.9,
+    "p50": 24.8,
+    "p95": 33.4,
+    "max": 266.7,
+    "cpu50": 19.3,
+    "cpu95": 24.7,
+    "render": 5.39,
+    "creatures": 8.27,
+    "streaming": 2.1,
+    "gpuD50": 20.6,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 15.46,
+   "bank0cpu": 4.38,
+   "bank88": 14,
+   "bank88cpu": 3.26,
+   "bandBefehle": 153,
+   "bandTris": 1144438,
+   "bandVram": 149,
+   "bandGpu": 17.47,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {},
+   "gpuStart": "68, 139 MHz, 14 %, P8",
+   "version": "18.534.0",
+   "tierBefehle": 63,
+   "tierTrisK": 349
+  },
+  {
+   "N": "4B",
+   "S": "B",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 51.2,
+    "p50": 16.7,
+    "p95": 33.4,
+    "max": 433.2,
+    "cpu50": 11,
+    "cpu95": 26.5,
+    "render": 4.56,
+    "creatures": 2.39,
+    "streaming": 3.11,
+    "gpuD50": 18.4,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 50.6,
+    "p50": 16.7,
+    "p95": 33.3,
+    "max": 283.3,
+    "cpu50": 13.6,
+    "cpu95": 18.9,
+    "render": 4.23,
+    "creatures": 6.58,
+    "streaming": 2.74,
+    "gpuD50": 19,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 14.95,
+   "bank0cpu": 2.71,
+   "bank88": 13.39,
+   "bank88cpu": 3.14,
+   "bandBefehle": 101,
+   "bandTris": 814577,
+   "bandVram": 149.6,
+   "bandGpu": 15.58,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {
+    "nexus→rainy": 2
+   },
+   "gpuStart": "68, 139 MHz, 15 %, P8",
+   "version": "18.534.0",
+   "tierBefehle": 11,
+   "tierTrisK": 18
+  },
+  {
+   "N": "5A",
+   "S": "A",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 49.3,
+    "p50": 16.7,
+    "p95": 33.4,
+    "max": 50,
+    "cpu50": 12.3,
+    "cpu95": 36.4,
+    "render": 4.94,
+    "creatures": 2.99,
+    "streaming": 3.33,
+    "gpuD50": 19.7,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 55.2,
+    "p50": 16.7,
+    "p95": 25.1,
+    "max": 249.5,
+    "cpu50": 11.3,
+    "cpu95": 18,
+    "render": 4.76,
+    "creatures": 2.72,
+    "streaming": 3.17,
+    "gpuD50": 18.4,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 15.02,
+   "bank0cpu": 2.93,
+   "bank88": 13.23,
+   "bank88cpu": 2.38,
+   "bandBefehle": 105,
+   "bandTris": 884293,
+   "bandVram": 149.4,
+   "bandGpu": 16.23,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {},
+   "gpuStart": "68, 139 MHz, 0 %, P8",
+   "version": "18.534.0",
+   "tierBefehle": 15,
+   "tierTrisK": 88
+  },
+  {
+   "N": "6B",
+   "S": "B",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 50.4,
+    "p50": 16.7,
+    "p95": 33.4,
+    "max": 374.9,
+    "cpu50": 11.3,
+    "cpu95": 27.8,
+    "render": 4.12,
+    "creatures": 2.68,
+    "streaming": 3.62,
+    "gpuD50": 18.7,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 40.4,
+    "p50": 24.9,
+    "p95": 33.4,
+    "max": 1550,
+    "cpu50": 19,
+    "cpu95": 27.7,
+    "render": 5.17,
+    "creatures": 11.81,
+    "streaming": 1.81,
+    "gpuD50": 22.4,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 15.35,
+   "bank0cpu": 4.37,
+   "bank88": 15.01,
+   "bank88cpu": 4.43,
+   "bandBefehle": 179,
+   "bandTris": 1244841,
+   "bandVram": 154.5,
+   "bandGpu": 17.94,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {
+    "nexus→rainy": 1
+   },
+   "gpuStart": "69, 139 MHz, 14 %, P8",
+   "version": "18.534.0",
+   "tierBefehle": 89,
+   "tierTrisK": 448
+  },
+  {
+   "N": "7A",
+   "S": "A",
+   "verworfen": 1,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 47.5,
+    "p50": 16.8,
+    "p95": 41.6,
+    "max": 58.4,
+    "cpu50": 12.3,
+    "cpu95": 38.9,
+    "render": 4.15,
+    "creatures": 2.85,
+    "streaming": 3.68,
+    "gpuD50": 19.7,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 55.8,
+    "p50": 16.7,
+    "p95": 25.1,
+    "max": 266.6,
+    "cpu50": 11,
+    "cpu95": 16.8,
+    "render": 4.24,
+    "creatures": 2.75,
+    "streaming": 3.21,
+    "gpuD50": 17.9,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 14.98,
+   "bank0cpu": 2.77,
+   "bank88": 14.06,
+   "bank88cpu": 2.72,
+   "bandBefehle": 105,
+   "bandTris": 873936,
+   "bandVram": 149.3,
+   "bandGpu": 15.97,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {},
+   "gpuStart": "72, 139 MHz, 0 %, P8",
+   "version": "18.534.0",
+   "tierBefehle": 15,
+   "tierTrisK": 81
+  },
+  {
+   "N": "8B",
+   "S": "B",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 49.4,
+    "p50": 16.7,
+    "p95": 33.4,
+    "max": 416.7,
+    "cpu50": 11.7,
+    "cpu95": 25.8,
+    "render": 4.29,
+    "creatures": 2.74,
+    "streaming": 3.69,
+    "gpuD50": 19.3,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 55.1,
+    "p50": 16.7,
+    "p95": 25.1,
+    "max": 258.4,
+    "cpu50": 10.9,
+    "cpu95": 19.3,
+    "render": 7.1,
+    "creatures": 7.29,
+    "streaming": 2.31,
+    "gpuD50": 18.4,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 14.79,
+   "bank0cpu": 3.42,
+   "bank88": 13.55,
+   "bank88cpu": 3.3,
+   "bandBefehle": 105,
+   "bandTris": 813956,
+   "bandVram": 149.4,
+   "bandGpu": 16.77,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {},
+   "gpuStart": "69, 139 MHz, 3 %, P8",
+   "version": "18.534.0",
+   "tierBefehle": 15,
+   "tierTrisK": 17
+  }
+ ],
+ "profil": {
+  "A": {
+   "_fieldRaycast anazhRealm.js": [
+    15.9,
+    25.2,
+    19.7,
+    17.2
+   ],
+   "(program) :0": [
+    6.8,
+    6.7,
+    5.5,
+    6
+   ],
+   "updateMatrixWorld three.core.min.js": [
+    4.3,
+    5.1,
+    4,
+    4.3
+   ],
+   "_runRaycast anazhRealm.js": [
+    3.5,
+    6.2,
+    4.4,
+    3.7
+   ],
+   "_stepCharacterStructures anazhRealm.js": [
+    2.8,
+    2.5,
+    2.4,
+    2.5
+   ],
+   "loop anazhRealm.js": [
+    2.6,
+    1.5,
+    2.5,
+    2.8
+   ],
+   "noise2D simplex-noise.js": [
+    2.2,
+    1.3,
+    2.1,
+    2.3
+   ],
+   "writeBuffer :0": [
+    2,
+    1.9,
+    1.7,
+    1.7
+   ],
+   "tickAffordances anazhRealm.js": [
+    1.7,
+    1,
+    0.8,
+    0.9
+   ],
+   "tickArchitectureCulling anazhRealm.js": [
+    1.7,
+    0.8,
+    1.5,
+    1.7
+   ],
+   "_lodTreeVisHeight anazhRealm.js": [
+    1.7,
+    0.9,
+    1.5,
+    1.8
+   ],
+   "update three.webgpu.min.js": [
+    1.6,
+    2.1,
+    1.5,
+    1.9
+   ],
+   "_foundryEnabled anazhRealm.js": [
+    1.6,
+    1.3,
+    1.8
+   ],
+   "_stepCharacter anazhRealm.js": [
+    1.5,
+    1.4,
+    1.4,
+    1.3
+   ],
+   "_foundrySichtHoehe anazhRealm.js": [
+    1.5,
+    0.8,
+    1.5,
+    1.9
+   ],
+   "_resolveCapsuleVsAABB anazhRealm.js": [
+    1.5,
+    1.4,
+    1.2,
+    1.5
+   ],
+   "updateByType three.webgpu.min.js": [
+    1.4,
+    1.6,
+    1.4
+   ],
+   "_tickNahStreu anazhRealm.js": [
+    1.4,
+    1.2,
+    1.4
+   ],
+   "_updateDorfRauch anazhRealm.js": [
+    1.1,
+    0.9,
+    1.1
+   ],
+   "(garbage collector) :0": [
+    1,
+    0.8,
+    1.3,
+    1.2
+   ],
+   "_terrainMacroSurfaceY anazhRealm.js": [
+    0.9,
+    0.8,
+    0.8,
+    1
+   ],
+   "_macroSurfaceContribution anazhRealm.js": [
+    0.9,
+    0.8,
+    1
+   ],
+   "_runFrameScheduler anazhRealm.js": [
+    0.9,
+    0.9
+   ],
+   "_weltFeldMatrix anazhRealm.js": [
+    0.9
+   ],
+   "AnazhRealm._diaetGeteiltSchreiben anazhRealm.js": [
+    0.8,
+    0.7
+   ],
+   "_renderObjectDirect three.webgpu.min.js": [
+    1.2
+   ],
+   "_update three.webgpu.min.js": [
+    1,
+    0.8,
+    1.7
+   ],
+   "multiplyMatrices three.core.min.js": [
+    0.9
+   ],
+   "_projectObject three.webgpu.min.js": [
+    0.9
+   ],
+   "get three.webgpu.min.js": [
+    0.9
+   ],
+   "computeCompoundTags anazhRealm.js": [
+    0.8
+   ],
+   "updateForRender three.webgpu.min.js": [
+    0.8
+   ],
+   "(idle) :0": [
+    3
+   ],
+   "_tickArchitectureLOD anazhRealm.js": [
+    0.8
+   ],
+   "_fernRingDeckWache anazhRealm.js": [
+    0.8
+   ]
+  },
+  "B": {
+   "_fieldRaycast anazhRealm.js": [
+    25,
+    27.5,
+    32.8,
+    22
+   ],
+   "(program) :0": [
+    8.1,
+    5.3,
+    5.9,
+    8.3
+   ],
+   "_runRaycast anazhRealm.js": [
+    5.1,
+    5.4,
+    8.3,
+    4.5
+   ],
+   "updateMatrixWorld three.core.min.js": [
+    4.5,
+    4.3,
+    3.9,
+    4.7
+   ],
+   "_stepCharacterStructures anazhRealm.js": [
+    2.5,
+    2.5,
+    2.4,
+    2.6
+   ],
+   "loop anazhRealm.js": [
+    2.2,
+    2.2,
+    1.2,
+    2.3
+   ],
+   "noise2D simplex-noise.js": [
+    1.9,
+    2,
+    1.3,
+    2.1
+   ],
+   "writeBuffer :0": [
+    1.6,
+    1.3,
+    1.8,
+    1.7
+   ],
+   "_lodTreeVisHeight anazhRealm.js": [
+    1.5,
+    1.3,
+    0.7,
+    1.5
+   ],
+   "_resolveCapsuleVsAABB anazhRealm.js": [
+    1.4,
+    1.8,
+    1.3,
+    1.5
+   ],
+   "_foundrySichtHoehe anazhRealm.js": [
+    1.3,
+    1.4,
+    0.6,
+    1.4
+   ],
+   "update three.webgpu.min.js": [
+    1.2,
+    1.3,
+    1.6,
+    1.5
+   ],
+   "updateByType three.webgpu.min.js": [
+    1.2,
+    1.3,
+    1.3,
+    1.2
+   ],
+   "tickArchitectureCulling anazhRealm.js": [
+    1.2,
+    1.3,
+    0.7,
+    1.2
+   ],
+   "_stepCharacter anazhRealm.js": [
+    1.2,
+    1.2,
+    1.2,
+    1.3
+   ],
+   "_foundryEnabled anazhRealm.js": [
+    1.1,
+    1.1,
+    1.4
+   ],
+   "(garbage collector) :0": [
+    1.1,
+    0.9,
+    0.8,
+    0.9
+   ],
+   "_tickNahStreu anazhRealm.js": [
+    1.1,
+    1.1,
+    1.2
+   ],
+   "_macroSurfaceContribution anazhRealm.js": [
+    0.9,
+    0.8,
+    0.8
+   ],
+   "multiplyMatrices three.core.min.js": [
+    0.9,
+    0.9
+   ],
+   "updateCreatures anazhRealm.js": [
+    0.8,
+    0.8,
+    0.8
+   ],
+   "_terrainMacroSurfaceY anazhRealm.js": [
+    0.8,
+    0.8,
+    0.9
+   ],
+   "_updateDorfRauch anazhRealm.js": [
+    0.7,
+    0.8,
+    0.9
+   ],
+   "_weltFeldMatrix anazhRealm.js": [
+    0.7,
+    0.8
+   ],
+   "_projectObject three.webgpu.min.js": [
+    0.7,
+    0.8,
+    1.1,
+    0.8
+   ],
+   "(idle) :0": [
+    0.7
+   ],
+   "AnazhRealm._diaetRefresh anazhRealm.js": [
+    0.7
+   ],
+   "AnazhRealm._diaetGeteiltSchreiben anazhRealm.js": [
+    0.7,
+    0.8
+   ],
+   "computeCompoundTags anazhRealm.js": [
+    1.3
+   ],
+   "computeCreatureCompoundTags anazhRealm.js": [
+    0.9
+   ],
+   "_renderObjectDirect three.webgpu.min.js": [
+    0.9
+   ],
+   "_update three.webgpu.min.js": [
+    0.9
+   ],
+   "get three.webgpu.min.js": [
+    0.7
+   ],
+   "_draw three.webgpu.min.js": [
+    0.6
+   ]
+  }
+ }
+}
