@@ -395,8 +395,9 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
 
-    // B-e fährt an der MESS-WIESE (spec/profiband/haushalt.json messort) — der Spawn liegt im Gebirge (Stufen bis 24 m).
-    const messort = JSON.parse(fs.readFileSync(path.join(root, "spec/profiband/haushalt.json"), "utf8")).messort.spieler;
+    // B-e fährt an der MESS-WIESE (spec/profiband/haushalt.json, Messort `wiese`) — der Spawn liegt im Gebirge (Stufen
+    // bis 24 m).
+    const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
     const nodeExpected = { gt: gtExp, supersport: ssExp, messort };
     const out = await page.evaluate(async (expected) => {
         const res = { book: {}, prof: {}, emerg: {} };

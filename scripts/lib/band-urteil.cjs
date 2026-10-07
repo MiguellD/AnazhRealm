@@ -1,6 +1,7 @@
-// band-urteil.cjs — DAS URTEIL DER BAND-LINSE (W0): der Zensus der Mess-Wiese (Klasse × Stufe × Pass, aus
+// band-urteil.cjs — DAS URTEIL DER BAND-LINSE (W0): der Zensus eines Messorts (Klasse × Stufe × Pass, aus
 // scripts/lib/draw-zaehler.cjs, die Klasse ist die Täter-Klasse des Stamms), der VRAM je Erzeuger und die GPU-Zeit
-// gegen den Haushalt (spec/profiband/haushalt.json) und die Ratsche (spec/profiband/ratsche.json) → die Tabelle
+// gegen den Haushalt (spec/profiband/haushalt.json) und die Ratsche des Orts (`messorte[].ratsche`: ratsche.json die
+// Mess-Wiese, ratsche-genesis.json der Genesis-Ring) → die Tabelle
 // Ist/Soll/Täter und ZWEI Urteile:
 //
 //   BAND     das Profi-Band selbst (Befehle · Dreiecke · VRAM · GPU-Zeit je Frame): ROT, solange ein Ist darüber liegt
@@ -21,8 +22,8 @@
 // Eine FREIE Klasse (`ratsche.frei`, je Grund mit dem Gate der Kosten je Einheit) misst den Weltzustand — die Tiere
 // wandern —, die Ratsche hält sie nicht und die Summen-Ratsche zählt nur die gebundenen Klassen; im Band zählt sie voll.
 //
-//   Werkbank:  node scripts/werkbank.cjs band               (die echte Messung, Integration auf der echten GPU)
-//              node scripts/werkbank.cjs ratsche <band-*.json …>   (die Ratsche aus der Hülle einer Serie)
+//   Werkbank:  node scripts/werkbank.cjs umstellen --ort <id> · band --ort <id>   (die echte Messung am Ort, echte GPU)
+//              node scripts/werkbank.cjs ratsche --ort <id> <band-*.json …>   (die Ratsche des Orts aus der Hülle einer Serie)
 //   Wand:      node scripts/diag-profiband.cjs              (Schema, Summe <= Band, Selbsttests gegen injizierte Fälle)
 "use strict";
 const fs = require("fs");
@@ -31,11 +32,70 @@ const { vramFalte } = require("./draw-zaehler.cjs");
 
 const SPEC = path.join(__dirname, "..", "..", "spec", "profiband");
 
-function ladeSpec() {
+// DIE MESSORTE (S1 W1f): das Band gilt überall, gemessen wird an benannten Orten — die Mess-Wiese (W0, Wald und
+// Wiese fern vom Ursprung) und der Genesis-Ring (die Ankunft: zehn Kern-Portale, die Vorschauen). Je Ort Spieler,
+// Blick, Dorf-Zug, Ort-Takt und seine EIGENE Ratsche (die Kosten zweier Orte sind zwei Hüllen, nie eine). Ohne Wahl
+// gilt der erste Ort (die Mess-Wiese, die Serie seit 04.10.).
+function ortOf(haushalt, id) {
+    const orte = (haushalt && haushalt.messorte) || [];
+    const o = id == null ? orte[0] : orte.find((x) => x.id === id);
+    if (!o) throw new Error(`unbekannter Messort „${id}" (messorte: ${orte.map((x) => x.id).join(", ")})`);
+    return o;
+}
+
+function ladeSpec(ortId) {
+    const haushalt = JSON.parse(fs.readFileSync(path.join(SPEC, "haushalt.json"), "utf8"));
+    const ort = ortOf(haushalt, ortId);
     return {
-        haushalt: JSON.parse(fs.readFileSync(path.join(SPEC, "haushalt.json"), "utf8")),
-        ratsche: JSON.parse(fs.readFileSync(path.join(SPEC, "ratsche.json"), "utf8")),
+        haushalt,
+        ort,
+        ratsche: JSON.parse(fs.readFileSync(path.join(SPEC, ort.ratsche), "utf8")),
     };
+}
+
+// Die Ratsche eines Orts schreiben (`werkbank ratsche --ort <id>`): dieselbe Form wie gelesen.
+function schreibeRatsche(ort, ratsche) {
+    fs.writeFileSync(path.join(SPEC, ort.ratsche), JSON.stringify(ratsche, null, 4) + "\n");
+}
+
+// Der Blick eines Orts als Gier des Stamms: die Kamera sieht entlang (sin yaw, 0, cos yaw) (gemessen an der Welt:
+// yaw 0 → +z, π/2 → +x), also yaw = atan2(dx, dz) zum Blickpunkt.
+function ortGier(ort) {
+    return Math.atan2(ort.blick[0] - ort.spieler[0], ort.blick[1] - ort.spieler[1]);
+}
+
+// Das Schema der Messorte: eindeutige ids, Spieler und Blick als [x, z], der Dorf-Zug als Wahrheitswert, der Ort-Takt
+// als Liste von Stamm-Methoden (die Wand H6 in diag-profiband prüft, dass der Stamm sie trägt), die Ratsche als Datei
+// in spec/profiband, die Soll-Zeilen benannt.
+function messortePruefen(h) {
+    const f = [];
+    const orte = h && h.messorte;
+    if (!Array.isArray(orte) || !orte.length) return ["messorte fehlt (mindestens ein Ort)"];
+    const ids = new Set();
+    const dateien = new Set();
+    const xz = (v) => Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === "number" && Number.isFinite(n));
+    for (const o of orte) {
+        if (!o || typeof o.id !== "string" || !/^[a-z][a-z0-9-]*$/.test(o.id) || ids.has(o.id))
+            f.push(`Messort ohne/mit doppelter id: ${o && o.id}`);
+        ids.add(o && o.id);
+        if (!o.titel) f.push(`${o.id}: titel fehlt`);
+        if (!xz(o.spieler)) f.push(`${o.id}: spieler ist kein [x, z]`);
+        if (!xz(o.blick)) f.push(`${o.id}: blick ist kein [x, z]`);
+        else if (xz(o.spieler) && Math.hypot(o.blick[0] - o.spieler[0], o.blick[1] - o.spieler[1]) < 1)
+            f.push(`${o.id}: blick liegt auf dem Spieler (keine Richtung)`);
+        if (typeof o.dorfZug !== "boolean") f.push(`${o.id}: dorfZug ist kein Wahrheitswert`);
+        if (!Array.isArray(o.ortTakt) || o.ortTakt.some((m) => typeof m !== "string" || !/^_?[A-Za-z]\w*$/.test(m)))
+            f.push(`${o.id}: ortTakt ist keine Liste von Methoden-Namen`);
+        if (typeof o.ratsche !== "string" || !/^ratsche(-[a-z0-9-]+)?\.json$/.test(o.ratsche))
+            f.push(`${o.id}: ratsche ist keine Datei ratsche[-<ort>].json`);
+        else if (dateien.has(o.ratsche)) f.push(`${o.id}: die Ratsche ${o.ratsche} trägt schon ein anderer Ort`);
+        else if (!fs.existsSync(path.join(SPEC, o.ratsche))) f.push(`${o.id}: die Ratsche ${o.ratsche} fehlt`);
+        dateien.add(o.ratsche);
+        for (const s of o.soll || [])
+            if (!s.name || !s.quelle || !(s.dreieckeJeTor > 0) || !s.art || !Number.isInteger(s.stufe) || !s.pass)
+                f.push(`${o.id}: Soll-Zeile ohne name/art/stufe/pass/dreieckeJeTor/quelle`);
+    }
+    return f;
 }
 
 const familieOf = (klasse) => {
@@ -107,6 +167,7 @@ function zensusMax(proben) {
             if (Number.isFinite(e.dMax)) a.dMax = Number.isFinite(a.dMax) ? Math.max(a.dMax, e.dMax) : e.dMax;
             if (Number.isFinite(e.dMin)) a.dMin = Number.isFinite(a.dMin) ? Math.min(a.dMin, e.dMin) : e.dMin;
             a.inst = Math.max(a.inst || 0, e.inst || 0);
+            a.exemplare = Math.max(a.exemplare || 0, e.exemplare || 0);
         }
     const klassen = [...je.values()];
     for (const k of klassen) {
@@ -155,8 +216,10 @@ function haushaltPruefen(h) {
     if (!h || h.version !== 1) f.push("haushalt.version ist nicht 1");
     const b = (h && h.band) || {};
     for (const k of ["befehle", "dreiecke", "vramMB", "gpuMs"]) if (!(b[k] > 0)) f.push(`band.${k} fehlt`);
-    const paesse = h && h.messort && h.messort.paesse;
-    if (!Array.isArray(paesse) || !paesse.length) f.push("messort.paesse fehlt");
+    const paesse = h && h.paesse;
+    if (!Array.isArray(paesse) || !paesse.length) f.push("paesse fehlt");
+    if (!h || typeof h.geraet !== "string" || !h.geraet) f.push("geraet fehlt");
+    f.push(...messortePruefen(h));
     const kl = (h && h.klassen) || [];
     if (!kl.length) f.push("keine Klassen");
     const ids = new Set();
@@ -207,7 +270,7 @@ function ratschePruefen(r, h) {
     for (const k of ["befehle", "dreiecke", "vramMB"])
         if (!r.gesamt || !nullOderZahl(r.gesamt[k])) f.push(`gesamt.${k} ist weder null noch Zahl >= 0`);
     const ids = (h.klassen || []).map((k) => k.id);
-    const paesse = h.messort.paesse;
+    const paesse = h.paesse;
     for (const id of ids) {
         const e = r.klassen && r.klassen[id];
         if (!e) {
@@ -250,8 +313,8 @@ function ueberRatsche(ist, r, ratsche, groesse) {
 // vram     = { mb, liste: [{k, mb, n}] } (der VRAM-Abgriff der Werkbank, nur WebGPU) oder null
 // texturen = { mb, erzeuger: [{erzeuger, mb, n}], unbenannt: [Spur] } (Textur-Objekte, jedes Backend) oder null
 // gpu      = { gpuJeFrameMs } (die GPU-Bank) oder null
-function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche }) {
-    const paesse = haushalt.messort.paesse;
+function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
+    const paesse = haushalt.paesse;
     const rot = [];
     const zeilen = new Map();
     const zeile = (id, titel, soll) => {
@@ -440,7 +503,35 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche }) {
         klassen: [...zeilen.values()],
         vram: speicher,
         texturen: texturen ? { n: texturen.n, mb: texturen.mb, erzeuger: texturen.erzeuger } : null,
+        ort: ort ? ort.id : null,
+        soll: ort ? ortSoll(ort, zensus) : [],
     };
+}
+
+// DIE SOLL-ZEILEN EINES ORTS (haushalt.messorte[].soll): je Studio-Klasse der Art `art` auf Stufe `stufe` die Hülle EINES
+// Exemplars im Pass `pass` — die Dreiecke des Passes geteilt durch die Exemplare (die verschiedenen Orte ihrer Instanzen,
+// draw-zaehler `exemplare`; zwei Tore einer Vorlage in zwei Gestalten sind zwei Züge-Sätze, `inst / Züge` zählte sie als
+// eines): an den Toren des Genesis-Rings die Tor-Hülle gegen das Band je Tor (W3d). Ein Zensus ohne Exemplar-Zahl (vor S1)
+// trägt keine Soll-Zeile.
+function ortSoll(ort, zensus) {
+    const out = [];
+    for (const s of ort.soll || [])
+        for (const e of zensus.klassen || []) {
+            if (e.art !== s.art || e.stufe !== s.stufe) continue;
+            const tris = (e.jeTris || {})[s.pass] || 0;
+            const exemplare = e.exemplare || 0;
+            if (!tris || !exemplare) continue;
+            const huelle = Math.round(tris / exemplare);
+            out.push({
+                name: s.name,
+                klasse: e.klasse,
+                exemplare: +exemplare.toFixed(2),
+                huelle,
+                soll: s.dreieckeJeTor,
+                faktor: +(huelle / s.dreieckeJeTor).toFixed(2),
+            });
+        }
+    return out.sort((x, y) => y.huelle - x.huelle);
 }
 
 // DIE RATSCHE NACHZIEHEN (`werkbank ratsche`, die Hülle einer eingeschwungenen Serie der echten GPU, nur ohne Linsen-
@@ -514,6 +605,7 @@ function bandTabelle(u) {
             )
             .join(" · ");
     z.push(kopfBand);
+    if (u.ort) z.push(`ORT ${u.ort}`);
     z.push("");
     z.push(
         pad("Klasse", 15) +
@@ -548,6 +640,12 @@ function bandTabelle(u) {
             `  Abstand ${u.abstand.befehle}× Befehle · ${u.abstand.dreiecke}× Dreiecke`
     );
     for (const r of u.klassen) if (r.frei) z.push(`* ${r.id} ist frei (keine Ratsche): ${r.frei}`);
+    // Die Soll-Zeilen des Orts (die Hülle EINES Exemplars gegen ihr Band): benannt, nie Teil des Urteils — das Band selbst
+    // urteilt über die Summe, die Ratsche über die Klasse.
+    for (const x of u.soll || [])
+        z.push(
+            `SOLL ${x.name} ${x.klasse}: ${x.huelle} Dreiecke je Exemplar (${x.exemplare} im Bild) / ${x.soll} (${x.faktor}×)`
+        );
     if (Object.keys(u.ausserhalb || {}).length)
         z.push(
             `außerhalb des Haushalts (Post-Kette): ${Object.entries(u.ausserhalb)
@@ -606,6 +704,11 @@ function bandTabelle(u) {
 
 module.exports = {
     ladeSpec,
+    ortOf,
+    ortGier,
+    ortSoll,
+    messortePruefen,
+    schreibeRatsche,
     haushaltPruefen,
     ratschePruefen,
     bandUrteil,

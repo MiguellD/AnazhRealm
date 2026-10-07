@@ -1,0 +1,519 @@
+{
+    "version": 1,
+    "zweck": "DIE ALBEDO-TAFEL LABOR ↔ WELT (S1 W1e): je Klasse des Studio-Befunds (Rinde · Laub · Fels · Boden · Haus · Metall/Lack · Haut/Fell · Klinge) ein Exemplar im r128-Labor und in der Welt, gemessen mit EINER Rechnung (scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs `albedoAuswerten`): weißes Umgebungslicht, Schuss hell − Schuss dunkel, Metall auf 0 (Basis-Albedo), jeder geschriebene Pixel, geeicht an der 18-%-Karte (0,180 auf beiden Seiten). Je Zeile Labor-Y, Welt-Y (Rec.-709-Luma, linear), das Verhältnis Labor/Welt und die RATSCHE (|ln Verhältnis| des letzten Nachzugs — sie darf nur fallen, solange W5 das FARB-GESETZ in jedem Kern offen hält). SOLL (W5): jede Zeile innerhalb `toleranz`. Je Studio die 18-%-Karte unter dem Labor-Licht (k·L = Belichtung × Leuchtdichte, Soll 0,3147 = AnazhRealm.BELICHTUNG.zielKarte) und der Pixel des Labor-Ausgabe-Wegs (Welt 173). Gemessen: Welt `werkbank.cjs albedo --tafel` am Ort, Labor `diag-albedo-tafel.cjs --labor`, Nachzug `--nachziehen welt.json labor.json`; Wand `npm run gate:albedo-tafel`.",
+    "toleranz": 0.1,
+    "messRand": 0.04,
+    "karte": {
+        "albedo": 0.18,
+        "eichRand": 0.003
+    },
+    "belichtung": {
+        "zielKarte": 0.3147,
+        "quelle": "AnazhRealm.BELICHTUNG (anazhRealm.js, V18.507): die 18-%-Karte nach der Belichtung auf Mittelgrau + 1 EV; Welt-Ausgabe 173"
+    },
+    "gemessen": {
+        "labor": {
+            "datum": "2026-10-07T01:39:26.250Z",
+            "geraet": "ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+            "echt": true
+        },
+        "welt": {
+            "datum": "2026-10-07T01:37:39.928Z",
+            "geraet": "amd rdna-3",
+            "ort": "genesis",
+            "spieler": [
+                0,
+                0
+            ],
+            "echt": true
+        }
+    },
+    "zeilen": [
+        {
+            "id": "rinde",
+            "gruppe": "Rinde",
+            "titel": "Eiche, Rinde (Stamm, Äste, Wurzeln)",
+            "labor": {
+                "studio": "terrain",
+                "aktion": {
+                    "klick": "#ui [data-p=\"eiche\"]"
+                },
+                "stoff": {
+                    "kind": "^bark$"
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "baum_eiche",
+                    "radius": 5
+                },
+                "klasse": "^f:eiche:L[01]$",
+                "stoff": {
+                    "kind": "^bark$"
+                }
+            },
+            "ist": {
+                "labor": {
+                    "Y": 0.0906,
+                    "rgb": "0.1084/0.0881/0.0629",
+                    "pixel": 76240
+                },
+                "welt": {
+                    "Y": 0.0941,
+                    "rgb": "0.1123/0.0915/0.0657",
+                    "pixel": 23629
+                },
+                "verhaeltnis": 0.9628
+            },
+            "ratsche": 0.0379
+        },
+        {
+            "id": "laub",
+            "gruppe": "Laub",
+            "titel": "Eiche, Laub (Blatt-Karten im Sommer)",
+            "labor": {
+                "studio": "terrain",
+                "aktion": {
+                    "klick": "#ui [data-p=\"eiche\"]"
+                },
+                "stoff": {
+                    "kind": "^foliage(Tex)?$"
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "baum_eiche",
+                    "radius": 5
+                },
+                "klasse": "^f:eiche:L[01]$",
+                "stoff": {
+                    "kind": "^foliage(Tex)?$"
+                }
+            },
+            "ist": {
+                "labor": {
+                    "Y": 0.1813,
+                    "rgb": "0.1284/0.2108/0.0451",
+                    "pixel": 161543
+                },
+                "welt": {
+                    "Y": 0.2242,
+                    "rgb": "0.1241/0.2711/0.0535",
+                    "pixel": 58741
+                },
+                "verhaeltnis": 0.8087
+            },
+            "ratsche": 0.2123
+        },
+        {
+            "id": "fels",
+            "gruppe": "Fels",
+            "titel": "Felszacken (Studio-Vorlage zacken; in der Welt der Felsbogen am Genesis-Ring im Formationen-Satz)",
+            "labor": {
+                "studio": "terrain",
+                "aktion": {
+                    "klick": "#ui [data-p=\"zacken\"]"
+                },
+                "stoff": {
+                    "r": [
+                        0.5,
+                        1
+                    ]
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "felsbogen",
+                    "radius": 5
+                },
+                "klasse": "^formationenSatz$",
+                "stoff": {
+                    "kind": "^unknown$",
+                    "r": [
+                        0.5,
+                        1
+                    ]
+                }
+            },
+            "ist": {
+                "labor": {
+                    "Y": 0.5042,
+                    "rgb": "0.5317/0.5026/0.4383",
+                    "pixel": 307925
+                },
+                "welt": {
+                    "Y": 0.4772,
+                    "rgb": "0.5064/0.475/0.4128",
+                    "pixel": 15979
+                },
+                "verhaeltnis": 1.0566
+            },
+            "ratsche": 0.0551
+        },
+        {
+            "id": "boden",
+            "gruppe": "Boden",
+            "titel": "Boden von oben (Labor: der Wald-Boden der Pflanzen-Welt aus PORTAL_GROUND; Welt: der Boden-Satz unter dem Spieler)",
+            "labor": {
+                "studio": "terrain",
+                "aktion": {
+                    "wald": true
+                },
+                "wurzel": "scene",
+                "nur": [
+                    "_terMat"
+                ],
+                "blick": "oben"
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "boden"
+                },
+                "klasse": "^bodenSatz$",
+                "blick": "oben"
+            },
+            "ist": {
+                "labor": {
+                    "Y": 0.3231,
+                    "rgb": "0.3875/0.3152/0.2113",
+                    "pixel": 256000
+                },
+                "welt": {
+                    "Y": 0.0995,
+                    "rgb": "0.1167/0.0962/0.0813",
+                    "pixel": 256000
+                },
+                "verhaeltnis": 3.2472
+            },
+            "ratsche": 1.1778
+        },
+        {
+            "id": "haus",
+            "gruppe": "Haus",
+            "titel": "Fachwerkhaus alemannisch, die Bau-Stoffe (Putz, Holz, Dach: Seh-Klasse stoff); im Labor ohne Gelände und Garten (der Vertrags-Bau trägt sie nie, fachwerk-core Kopf (c)) — Komposition: Labor die Kultur auf Saat 3, Welt die Vorschau-Gestalt mit ihren Studio-Reglern",
+            "labor": {
+                "studio": "fachwerk",
+                "aktion": [
+                    {
+                        "waehle": "#pK",
+                        "wert": "alemannisch"
+                    },
+                    {
+                        "klick": "#pTerrain"
+                    }
+                ],
+                "stoff": {
+                    "seh": "stoff"
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "haus_alemannisch",
+                    "radius": 9
+                },
+                "klasse": "^(bauSatz|f:alemannisch:L[01])$",
+                "stoff": {
+                    "seh": "stoff"
+                }
+            },
+            "ist": {
+                "labor": {
+                    "Y": 0.0841,
+                    "rgb": "0.1433/0.0705/0.0441",
+                    "pixel": 407007
+                },
+                "welt": {
+                    "Y": 0.1665,
+                    "rgb": "0.285/0.1385/0.0947",
+                    "pixel": 174392
+                },
+                "verhaeltnis": 0.5051
+            },
+            "ratsche": 0.683
+        },
+        {
+            "id": "lack",
+            "gruppe": "Metall/Lack",
+            "titel": "Wagen gt, der Lack (Seh-Klasse metall mit Klarlack; die Gestalt der Welt wählt ihn aus dem LACK_GESETZ, das Labor-Farbfeld derselbe)",
+            "labor": {
+                "studio": "garage",
+                "aktion": {
+                    "klick": "#paintrow .sw",
+                    "index": 4
+                },
+                "stoff": {
+                    "seh": "metall",
+                    "cc": [
+                        0.5,
+                        1
+                    ]
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "fahrzeug_gt",
+                    "radius": 4
+                },
+                "klasse": "^f:gt:L0$",
+                "stoff": {
+                    "seh": "metall",
+                    "cc": [
+                        0.5,
+                        1
+                    ]
+                }
+            },
+            "ist": {
+                "labor": {
+                    "Y": 0.0066,
+                    "rgb": "0.0056/0.0065/0.0097",
+                    "pixel": 245421
+                },
+                "welt": {
+                    "Y": 0.006,
+                    "rgb": "0.0051/0.006/0.0089",
+                    "pixel": 82646
+                },
+                "verhaeltnis": 1.1
+            },
+            "ratsche": 0.0953
+        },
+        {
+            "id": "tor",
+            "gruppe": "Metall/Lack",
+            "titel": "Tor Kathedrale, Stein und Metall des Gesetzbuchs (Seh-Klasse metall; in der Welt das Ring-Portal welt_portale)",
+            "labor": {
+                "studio": "portale",
+                "stoff": {
+                    "seh": "metall"
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "welt_portale",
+                    "radius": 5
+                },
+                "klasse": "^f:kathedrale:L0$",
+                "stoff": {
+                    "seh": "metall"
+                }
+            },
+            "ist": {
+                "labor": {
+                    "Y": 0.6496,
+                    "rgb": "0.8196/0.6364/0.2799",
+                    "pixel": 7583
+                },
+                "welt": {
+                    "Y": 0.6496,
+                    "rgb": "0.8196/0.6364/0.2799",
+                    "pixel": 2561
+                },
+                "verhaeltnis": 1
+            },
+            "ratsche": 0
+        },
+        {
+            "id": "haut",
+            "gruppe": "Haut/Fell",
+            "titel": "Mensch, die Haut im Ton Mahagoni 0x5f3826 (der Ton des Spieler-Leibs dieser Welt; Labor: das Farbfeld Mahagoni des Körperstudios)",
+            "labor": {
+                "studio": "koerperstudio",
+                "nur": [
+                    "matSkin"
+                ],
+                "aktion": {
+                    "klick": "#skinTones .sw",
+                    "index": 6
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "spieler",
+                    "radius": 2
+                },
+                "klasse": "^spieler$",
+                "stoff": {
+                    "kind": "^(haut|skin)$"
+                }
+            },
+            "ist": {
+                "labor": {
+                    "Y": 0.2411,
+                    "rgb": "0.3626/0.2146/0.145",
+                    "pixel": 76529
+                },
+                "welt": {
+                    "Y": 0.0546,
+                    "rgb": "0.1149/0.0402/0.0205",
+                    "pixel": 59569
+                },
+                "verhaeltnis": 4.4158
+            },
+            "ratsche": 1.4852
+        },
+        {
+            "id": "fell",
+            "gruppe": "Haut/Fell",
+            "titel": "Wolf, das Fell (Labor: Leib und Strähnen des Wolfs, Rauheit ab 0,85 — ohne Nase, Augen, Krallen, Zähne; Welt: die Fell-Haut)",
+            "labor": {
+                "studio": "tetrapoda",
+                "aktion": {
+                    "klick": "[data-p=\"wolf\"]"
+                },
+                "stoff": {
+                    "r": [
+                        0.85,
+                        1
+                    ]
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "tier",
+                    "name": "wolf",
+                    "radius": 3
+                },
+                "klasse": "^tier:wolf$",
+                "stoff": {
+                    "kind": "^fell$"
+                }
+            },
+            "ist": {
+                "labor": {
+                    "Y": 0.2272,
+                    "rgb": "0.2472/0.2247/0.1941",
+                    "pixel": 142609
+                },
+                "welt": {
+                    "Y": 0.1932,
+                    "rgb": "0.2384/0.1867/0.125",
+                    "pixel": 48389
+                },
+                "verhaeltnis": 1.176
+            },
+            "ratsche": 0.1621
+        },
+        {
+            "id": "klinge",
+            "gruppe": "Klinge",
+            "titel": "Langschwert, der Stahl (Seh-Klasse metall: Klinge, Parier, Knauf)",
+            "labor": {
+                "studio": "schmiede",
+                "stoff": {
+                    "seh": "metall"
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "architektur",
+                    "name": "klinge_langschwert",
+                    "radius": 2
+                },
+                "klasse": "^f:langschwert:L0$",
+                "stoff": {
+                    "seh": "metall"
+                }
+            },
+            "ist": {
+                "labor": {
+                    "Y": 0.3322,
+                    "rgb": "0.3642/0.3258/0.3022",
+                    "pixel": 17450
+                },
+                "welt": {
+                    "Y": 0.3493,
+                    "rgb": "0.388/0.3419/0.3081",
+                    "pixel": 6473
+                },
+                "verhaeltnis": 0.951
+            },
+            "ratsche": 0.0502
+        }
+    ],
+    "karten": {
+        "terrain": {
+            "ist": {
+                "kL": 0.7482,
+                "ausgabe": [
+                    186,
+                    193,
+                    184
+                ]
+            },
+            "ratsche": 0.866
+        },
+        "garage": {
+            "ist": {
+                "kL": 0.6468,
+                "ausgabe": [
+                    207,
+                    210,
+                    212
+                ]
+            },
+            "ratsche": 0.7204
+        },
+        "portale": {
+            "ist": {
+                "kL": 0.8023,
+                "ausgabe": [
+                    197,
+                    207,
+                    202
+                ]
+            },
+            "ratsche": 0.9359
+        },
+        "schmiede": {
+            "ist": {
+                "kL": 0.6427,
+                "ausgabe": [
+                    170,
+                    158,
+                    146
+                ]
+            },
+            "ratsche": 0.7141
+        },
+        "fachwerk": {
+            "ist": {
+                "kL": 0.4922,
+                "ausgabe": [
+                    198,
+                    196,
+                    193
+                ]
+            },
+            "ratsche": 0.4472
+        },
+        "koerperstudio": {
+            "ist": {
+                "kL": 0.699,
+                "ausgabe": [
+                    170,
+                    181,
+                    178
+                ]
+            },
+            "ratsche": 0.798
+        },
+        "tetrapoda": {
+            "ist": {
+                "kL": 0.8802,
+                "ausgabe": [
+                    255,
+                    255,
+                    255
+                ]
+            },
+            "ratsche": 1.0285
+        }
+    }
+}

@@ -54,6 +54,16 @@ function drawZensus(opts) {
         const nah = {};
         const unbenannt = new Map();
         const cam = st.camera.position;
+        // DIE EXEMPLARE (Soll-Zeilen der Messorte): ein Bau-Eintrag belegt je Stoff einen Platz seiner Instanz-Gruppen
+        // (`instSlots`: Gruppen-Schlüssel + Platz) — der Eintrag hinter einer gezeichneten Instanz ist das Exemplar. Ohne
+        // Eintrag (Satz, Tier, Einzelstück) zählt der Ort.
+        const slotEintrag = new Map();
+        for (const e of st.architectures || [])
+            for (const s of e.instSlots || []) {
+                let m = slotEintrag.get(s.key);
+                if (!m) slotEintrag.set(s.key, (m = new Map()));
+                m.set(s.slot, e.id);
+            }
         const roh = rend._renderObjectDirect;
         rend._renderObjectDirect = function (object, material, scene, camera, ...rest) {
             const kl = klasse(object);
@@ -75,7 +85,10 @@ function drawZensus(opts) {
             e.tris += tris;
             // Die Nähe der Klasse im Hauptbild: jede Instanz bzw. das Objekt.
             if (pass === "haupt") {
-                const w = nah[kl] || (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0 });
+                // Die EXEMPLARE einer Klasse: die Bau-Einträge hinter ihren Instanzen (ein Tor zeichnet je Stoff einen Zug,
+                // `inst` zählt jede Instanz jedes Zugs, die Türflügel tragen eigene Orte — der Eintrag zählt das Tor einmal),
+                // ohne Eintrag die verschiedenen Orte (auf 0,5 m).
+                const w = nah[kl] || (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0, orte: new Set(), eintraege: new Set() });
                 const mw = object.matrixWorld.elements;
                 const miss = (x, y, z) => {
                     const wx = mw[0] * x + mw[4] * y + mw[8] * z + mw[12];
@@ -83,14 +96,18 @@ function drawZensus(opts) {
                     const wz = mw[2] * x + mw[6] * y + mw[10] * z + mw[14];
                     const d = Math.hypot(wx - cam.x, wy - cam.y, wz - cam.z);
                     w.inst++;
+                    w.orte.add(Math.round(wx * 2) + "," + Math.round(wy * 2) + "," + Math.round(wz * 2));
                     if (d < w.dMin) w.dMin = d;
                     if (d > w.dMax) w.dMax = d;
                 };
                 if (object.isInstancedMesh && object.instanceMatrix) {
                     const a = object.instanceMatrix.array;
+                    const ein = slotEintrag.get(object.userData && object.userData.archInstanceKey);
                     for (let i = 0; i < object.count; i++) {
                         const b = i * 16;
                         miss(a[b + 12], a[b + 13], a[b + 14]);
+                        const id = ein ? ein.get(i) : undefined;
+                        if (id != null) w.eintraege.add(id);
                     }
                 } else if (g && g.boundingSphere) {
                     const c = g.boundingSphere.center;
@@ -178,6 +195,7 @@ function drawZensus(opts) {
                     je: v.je,
                     jeTris: v.jeTris,
                     inst: w ? w.inst : 0,
+                    exemplare: w ? w.eintraege.size || w.orte.size : 0,
                     dMin: w && Number.isFinite(w.dMin) ? Math.round(w.dMin) : null,
                     dMax: w && w.inst ? Math.round(w.dMax) : null,
                 };

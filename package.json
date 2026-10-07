@@ -169,6 +169,7 @@
         "gate:boot-foliage-ring": "node scripts/diag-boot-foliage-ring.cjs",
         "gate:altlasten": "node scripts/diag-altlasten.cjs --selftest && node scripts/diag-altlasten.cjs",
         "gate:profiband": "node scripts/diag-profiband.cjs --selftest && node scripts/diag-profiband.cjs",
+        "gate:albedo-tafel": "node scripts/diag-albedo-tafel.cjs --selftest && node scripts/diag-albedo-tafel.cjs",
         "gate:koerper-kern": "node scripts/diag-koerper-kern.cjs --selftest && node scripts/diag-koerper-kern.cjs",
         "gate:apparat": "node scripts/diag-apparat.cjs --selftest && node scripts/diag-apparat.cjs && node scripts/diag-vendor-anker.cjs",
         "gate:leistungs-vertrag": "node scripts/diag-leistungs-vertrag.cjs",

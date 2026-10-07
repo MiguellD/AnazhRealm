@@ -26,7 +26,10 @@ const fs = require("fs");
 const puppeteer = require("puppeteer");
 
 const SERVER_JS = path.resolve("save-server.js");
-const SERVER_URL = "http://127.0.0.1:4312/index.html";
+// Der Port des eigenen save-servers (TAILLE_PORT, sonst 4312): parallele Worktrees fahren je einen eigenen — auf einem
+// belegten Port fände die Seite den FREMDEN Server und prüfte dessen Dateien.
+const TAILLE_PORT = Number(process.env.TAILLE_PORT || 4312);
+const SERVER_URL = `http://127.0.0.1:${TAILLE_PORT}/index.html`;
 const GOLDEN_DIR = path.resolve("spec/golden/v1");
 
 // Das EINGEFRORENE Test-Schlüsselpaar der goldenen Dateien (nur für golden —
@@ -45,7 +48,10 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
 
 function startSaveServer() {
     return new Promise((resolve, reject) => {
-        const proc = spawn("node", [SERVER_JS], { stdio: ["ignore", "pipe", "pipe"] });
+        const proc = spawn("node", [SERVER_JS], {
+            stdio: ["ignore", "pipe", "pipe"],
+            env: Object.assign({}, process.env, { PORT: String(TAILLE_PORT) }),
+        });
         let ready = false;
         const to = setTimeout(() => !ready && reject(new Error("server timeout")), 5000);
         proc.stdout.on("data", (c) => {
