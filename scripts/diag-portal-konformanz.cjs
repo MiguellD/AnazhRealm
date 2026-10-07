@@ -271,6 +271,18 @@ async function zustand(page, welt) {
     return { journal, ui };
 }
 const wirkt = (welt, vor, nach) => (welt.ui ? nach.ui === welt.ui.soll && vor.ui !== welt.ui.soll : nach.journal > vor.journal);
+// Auf eine Wirkung warten, bis sie steht oder die Frist um ist (ein Preset-Bau des Labors kann auf dem CPU-Raster
+// dauern, bevor die Welt ihr Ereignis schickt) — eine Frist gegen den Hänger, keine Messung.
+const WIRKUNG_FRIST_MS = 6000;
+async function bisWirkung(page, welt, gut) {
+    const t0 = Date.now();
+    let n = await zustand(page, welt);
+    while (!gut(n) && Date.now() - t0 < WIRKUNG_FRIST_MS) {
+        await warte(200);
+        n = await zustand(page, welt);
+    }
+    return n;
+}
 
 // Die fremde Seite schickt der Welt eine Nachricht (als ihre eigene).
 async function fremdSchicken(page, nachricht) {
@@ -342,7 +354,7 @@ async function pruefeWelt(page, welt, fehlerLog) {
         : { type: "peer-join", peerId: "fremd-konformanz", name: "Fremder" };
     let vor = await zustand(page, welt);
     await fremdSchicken(page, fremd);
-    await warte(900);
+    await warte(1500);
     let nach = await zustand(page, welt);
     aus.k.K3 = !wirkt(welt, vor, nach) && nach.journal === vor.journal;
     if (!aus.k.K3) aus.notiz.push("eine fremde Seite steuert die Welt (event.source ungeprüft)");
@@ -350,8 +362,7 @@ async function pruefeWelt(page, welt, fehlerLog) {
     if (programm) {
         vor = nach;
         await page.evaluate((w) => window.anazhRealm.processChatCommand(w), welt.wort);
-        await warte(1200);
-        nach = await zustand(page, welt);
+        nach = await bisWirkung(page, welt, (n) => wirkt(welt, vor, n));
         aus.stumm = !wirkt(welt, vor, nach);
         aus.einzelwort = { programm, vor, nach };
     }
@@ -365,10 +376,11 @@ async function pruefeWelt(page, welt, fehlerLog) {
             po.iframe.contentWindow.postMessage({ type: "peer-join", peerId: "gefaehrte-konformanz", name: "Gefährtin" }, "*");
         });
     }
-    await warte(1200);
-    nach = await zustand(page, welt);
     // Die Studios zeigen die chain-Wirkung am Soll-Zustand (nach dem Einzelwort kann er schon stehen).
-    let k4 = welt.ui ? nach.ui === welt.ui.soll : nach.journal > vor.journal;
+    const vorK4 = vor;
+    const k4Pruef = (n) => (welt.ui ? n.ui === welt.ui.soll : n.journal > vorK4.journal);
+    nach = await bisWirkung(page, welt, k4Pruef);
+    let k4 = k4Pruef(nach);
     if (!k4) aus.notiz.push("die Heimat-Form chain wirkt nicht sichtbar");
     const fr = page.frames().find((f) => f.url().includes("worlds/" + welt.id + "/"));
     if (welt.zusatz && fr) {
