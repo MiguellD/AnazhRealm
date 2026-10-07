@@ -1279,6 +1279,7 @@ class AnazhRealm {
             log: opts.log || [],
             source: opts.source || "unknown",
             programId: opts.programId || `prog_${this.state.dsl.nextEntryId++}`,
+            orte: new Map(), // Positions-Knoten → aufgelöste Orte (`dslEvalPos`; der Absender schickt sie mit)
         };
     }
 
@@ -1323,7 +1324,7 @@ class AnazhRealm {
             this.state.p2p.enabled &&
             this.state.p2p.connected
         ) {
-            this.p2pBroadcastDsl(program);
+            this.p2pBroadcastDsl(this._dslMitOrten(program, ctx));
         }
         return { ok: outcome.errors === 0, log: ctx.log, outcome, programId: ctx.programId };
     }
@@ -1498,7 +1499,10 @@ class AnazhRealm {
         try {
             fn.call(this, args, ctx);
         } catch (err) {
-            ctx.log.push({ event: "op_exception", op: String(op), message: err.message });
+            // Ein verlangter Ort fehlt (`dslEvalPos`): sein Eintrag `invalid_position` steht schon im Log — er nennt jetzt
+            // auch die Op, die er abbrach. Alles andere ist ein Fehler der Op.
+            if (err && err.dslKeinOrt && err.dslKeinOrt.eintrag) err.dslKeinOrt.eintrag.effekt = String(op);
+            else ctx.log.push({ event: "op_exception", op: String(op), message: err.message });
         }
         ctx.budget.depthLeft++;
     }
@@ -1510,18 +1514,105 @@ class AnazhRealm {
         return { x: 0, y: 50, z: 0 };
     }
 
+    // Ein Positions-Knoten → {x, y, z} — oder die Op scheitert LAUT und benannt. DIE ENGSTELLE des Orts-Vertrags (Welle L,
+    // V-k5-Klasse): ein verlangter Ort, den es nicht gibt (der Auflöser kennt keinen — near_water ohne Wasser —, er ist
+    // unbekannt, er wirft), wird nie still ein anderer (bis 06.10. der Spieler-Ort bzw. der Ursprung; danach null, das
+    // neun Ops als TypeError trafen und `spawn_village` über `spawnSettlement` doch auf den Spieler-Ort setzte). Der
+    // Knoten schreibt EINEN Log-Eintrag `invalid_position` mit dem Grund („kein Wasser im Umkreis von 60 m") und wirft
+    // `_dslKeinOrt`: `dslEval` bricht genau diese Op ab (die chain läuft weiter und meldet ehrlich), eine Bedingung ist
+    // falsch. Keine Op sieht je null. NUR ohne Knoten (`node == null`, nicht verlangt) gilt der Default-Spawn; jeder andere
+    // Knoten, der keiner ist (ein Text — die KI schreibt "near_water" ohne Klammern —, eine Zahl, ein Objekt, []), ist ein
+    // ungültiger Ort und scheitert ebenso benannt (bis 07.10. wurde er still der Ursprung). Jeder aufgelöste Knoten merkt
+    // sich seinen Ort im Kontext (`ctx.orte`): der Absender schickt ihn mit (V-k6, `_dslMitOrten`).
     dslEvalPos(node, ctx) {
-        if (!Array.isArray(node) || node.length === 0) return this._defaultSpawnPos();
-        const fn = this.dslPositions[node[0]];
-        if (!fn) {
-            ctx.log.push({ event: "unknown_position_op", op: String(node[0]) });
-            return this._defaultSpawnPos();
+        if (node == null) return this._defaultSpawnPos();
+        let op = null;
+        let pos = null;
+        let grund = null;
+        if (!Array.isArray(node)) grund = `„${this._dslZeig(node)}“ ist kein Ort-Knoten`;
+        else if (node.length === 0) grund = "leerer Ort-Knoten";
+        else {
+            op = String(node[0]);
+            const fn = this.dslPositions[node[0]];
+            if (!fn) grund = `unbekannter Ort „${op}“`;
+            else {
+                try {
+                    pos = fn.call(this, node.slice(1), ctx);
+                } catch (err) {
+                    grund = err && err.dslKeinOrt ? err.dslKeinOrt.grund : `${op} warf: ${(err && err.message) || err}`;
+                }
+                if (!grund && !(pos && Number.isFinite(pos.x) && Number.isFinite(pos.y) && Number.isFinite(pos.z)))
+                    grund = `${op} fand keinen Ort`;
+            }
         }
-        try {
-            return fn.call(this, node.slice(1), ctx);
-        } catch {
-            return this._defaultSpawnPos();
+        if (grund) {
+            const eintrag = { event: "invalid_position", op, grund, program_id: ctx.programId };
+            ctx.log.push(eintrag);
+            const fehler = this._dslKeinOrt(op, grund);
+            fehler.dslKeinOrt.eintrag = eintrag;
+            throw fehler;
         }
+        if (ctx.orte) {
+            const liste = ctx.orte.get(node);
+            if (liste) liste.push(pos);
+            else ctx.orte.set(node, [pos]);
+        }
+        return pos;
+    }
+
+    // Der EINE Fehler „verlangter Ort fehlt": ein Positions-Auflöser wirft ihn mit seinem Grund, `dslEvalPos` reicht ihn
+    // benannt weiter, `dslEval` bricht daran die Op ab.
+    _dslKeinOrt(op, grund) {
+        const fehler = new Error(grund);
+        fehler.dslKeinOrt = { op, grund };
+        return fehler;
+    }
+
+    // Ein ungültiger Wert, wie er im Grund steht (Text als Text, Liste/Objekt als JSON, sonst wie er ist).
+    _dslZeig(v) {
+        return Array.isArray(v) || (v !== null && typeof v === "object") ? JSON.stringify(v) : String(v);
+    }
+
+    // DER EINE ZAHLEN-LESER der Orte (Koordinate, Radius, Abstand, Spanne): fehlt die Zahl (`v == null`), gilt ihr
+    // dokumentierter Default — hat sie keinen, fehlt der Ort; steht sie da und ist keine endliche Zahl (Text, leer,
+    // Wahrheitswert, Liste), gibt es den Ort nicht. Nie still die 0 oder die Untergrenze (Lehre 17: `Number(null) === 0`;
+    // `dslClamp` gab für jedes Ungültige `lo` — „near_water" ohne Radius suchte 8 statt 60 m, `at` mit null stand bei 0,
+    // „far_player" ohne Abstände setzte das Dorf neben den Spieler).
+    _dslOrtZahl(op, was, v, lo, hi, def) {
+        if (v == null) {
+            if (def == null) throw this._dslKeinOrt(op, `${op}: ${was} fehlt`);
+            return def;
+        }
+        const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
+        if (!Number.isFinite(n)) throw this._dslKeinOrt(op, `${op}: ${was} „${this._dslZeig(v)}“ ist keine Zahl`);
+        return Math.min(hi, Math.max(lo, n));
+    }
+
+    // Der Spieler-Ort eines spieler-relativen Auflösers — ohne Spieler gibt es den Ort nicht (bis 07.10. der Ursprung).
+    _dslSpielerOrt(op, ctx) {
+        const pm = ctx.state.playerMesh;
+        if (!pm) throw this._dslKeinOrt(op, `${op}: kein Spieler in der Welt`);
+        return pm.position;
+    }
+
+    // DER ABSENDER LÖST DIE ORTE AUF (Welle L, Befund V-k6): ein Programm mit spieler-relativen Orten
+    // (at_player_forward, near_water, near_player …) lief beim Empfänger gegen DESSEN Spieler — die Birken des Senders
+    // standen 7,3/8,9 m beim Empfänger, 203/206 m vom Sender. Jeder Knoten, den der Lauf beim Absender genau EINMAL
+    // auflöste, reist als ["at", x, y, z]; ein mehrfach aufgelöster (Schleife) reist als Knoten (benannt im Log).
+    _dslMitOrten(program, ctx) {
+        const orte = ctx && ctx.orte;
+        if (!orte || !orte.size) return program;
+        let mehrfach = 0;
+        const kopie = (n) => {
+            if (!Array.isArray(n)) return n;
+            const o = orte.get(n);
+            if (o && o.length === 1) return ["at", o[0].x, o[0].y, o[0].z];
+            if (o && o.length > 1) mehrfach++;
+            return n.map(kopie);
+        };
+        const out = kopie(program);
+        if (mehrfach) ctx.log.push({ event: "position_mehrfach_relativ", count: mehrfach, program_id: ctx.programId });
+        return out;
     }
 
     dslEvalCond(node, ctx) {
@@ -1538,12 +1629,11 @@ class AnazhRealm {
         }
     }
 
-    // Feld-DSL-Helfer (field_above/field_below, deposit_life/deposit_emotion): eine Feld-Op ohne Ort
-    // meint "wo der Spieler ist" → Default at_player (NICHT der Ursprung wie dslEvalPos bei leerem Node).
+    // Feld-DSL-Helfer (field_above/field_below, deposit_life/deposit_emotion): eine Feld-Op OHNE Ort (`posNode == null`)
+    // meint "wo der Spieler ist" → at_player (NICHT der Ursprung wie dslEvalPos ohne Knoten); ein Knoten, der keiner ist
+    // (ein Text, []), scheitert an der Engstelle benannt — nie still beim Spieler.
     _dslRulePos(posNode, ctx) {
-        return Array.isArray(posNode) && posNode.length > 0
-            ? this.dslEvalPos(posNode, ctx)
-            : this.dslEvalPos(["at_player"], ctx);
+        return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);
     }
 
     // Liest EINE Feld-Achse über auraAt: die vier frozen Achsen (lebendig/dichte/glut/magieleitung)
@@ -1763,6 +1853,10 @@ class AnazhRealm {
             // dslEval — sonst verschmutzt der Effekt seine eigene Baseline.
             this._measureRuleReward(r, currentTime);
             const rp = this._ruleRewardPos(r.effect, ctx);
+            if (!rp) {
+                r.errors = (r.errors || 0) + 1; // der verlangte Ort fehlt (benannt im Log) — kein Effekt, keine Messung
+                continue;
+            }
             r._vBase = this._observeFieldWohl(rp.x, rp.z, currentTime);
             r._vPos = rp;
             r._vPending = true;
@@ -1863,7 +1957,7 @@ class AnazhRealm {
 
     // Mess-Ort des Regel-Rewards: der erste Positions-Knoten im Effekt-AST (at_field_need/at_player/…),
     // resolved wie der Effekt (gleicher Tick, gleicher State → derselbe Punkt); ohne Positions-Knoten
-    // (z. B. weather) die Spieler-Position.
+    // (z. B. weather) der Spieler-Ort — über denselben Knoten at_player, also ohne Spieler kein Mess-Ort (nie der Ursprung).
     _ruleRewardPos(effectNode, ctx) {
         const posOps = this.dslPositions;
         let found = null;
@@ -1876,12 +1970,16 @@ class AnazhRealm {
             for (const a of node) if (Array.isArray(a)) scan(a);
         };
         scan(effectNode);
-        if (found) {
-            const p = this.dslEvalPos(found, ctx);
-            if (p && typeof p.x === "number") return { x: p.x, z: p.z };
+        // Den Ort gibt es nicht (`dslEvalPos` hat ihn benannt ins Log geschrieben): kein Mess-Ort — der Effekt fände ihn
+        // ebenso wenig, das Feuern ist ein Fehler der Regel, nie eine Messung am Spieler oder am Ursprung.
+        let p;
+        try {
+            p = this.dslEvalPos(found || ["at_player"], ctx);
+        } catch (err) {
+            if (err && err.dslKeinOrt) return null;
+            throw err;
         }
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
-        return pm ? { x: pm.x, z: pm.z } : { x: 0, z: 0 };
+        return { x: p.x, z: p.z };
     }
 
     // Das erste Erwachen einer Mensch-Regel als Welt-Erinnerung; idempotent über die Signatur (seen
@@ -1931,29 +2029,19 @@ class AnazhRealm {
             // voxel_carve/voxel_fill(x, y, z, r): die DSL-Form des Voxel-Edits — eine Welt-Mod-Op
             // (broadcastable, history-trackable, multi-user-synchron). Bewusst NICHT im dslComposeAtomic-Pool:
             // der Nexus soll die Geometrie unter dem Spieler nicht willkürlich umpflügen.
+            // Der Ort des Edits ist ein at-Knoten an der Engstelle (`dslEvalPos`): eine fehlende oder ungültige Koordinate
+            // bricht die Op benannt ab (bis 07.10. machte `Number(null)` daraus die 0 — der Edit grub am Ursprung).
             voxel_carve: ([x, y, z, radius], ctx) => {
-                const cx = Number(x);
-                const cy = Number(y);
-                const cz = Number(z);
-                if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(cz)) {
-                    ctx.log.push({ event: "voxel_carve_invalid_pos" });
-                    return;
-                }
+                const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.carveVoxelSphere(cx, cy, cz, r);
-                ctx.log.push({ event: "voxel_carved", x: cx, y: cy, z: cz, r });
+                this.carveVoxelSphere(p.x, p.y, p.z, r);
+                ctx.log.push({ event: "voxel_carved", x: p.x, y: p.y, z: p.z, r });
             },
             voxel_fill: ([x, y, z, radius], ctx) => {
-                const cx = Number(x);
-                const cy = Number(y);
-                const cz = Number(z);
-                if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(cz)) {
-                    ctx.log.push({ event: "voxel_fill_invalid_pos" });
-                    return;
-                }
+                const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.fillVoxelSphere(cx, cy, cz, r);
-                ctx.log.push({ event: "voxel_filled", x: cx, y: cy, z: cz, r });
+                this.fillVoxelSphere(p.x, p.y, p.z, r);
+                ctx.log.push({ event: "voxel_filled", x: p.x, y: p.y, z: p.z, r });
             },
             time_of_day: ([value]) => {
                 this.state.timeOfDay = c(value, 0, 1);
@@ -2066,7 +2154,7 @@ class AnazhRealm {
                     return;
                 }
                 const n = c(count, 1, 24);
-                const pos = this.dslEvalPos(positionNode, ctx);
+                const pos = this.dslEvalPos(positionNode, ctx); // kein Ort → `dslEvalPos` bricht die Op benannt ab
                 const abstand = this._studioSpawnAbstand(name);
                 const jitter = n > 1 ? abstand * Math.sqrt(n) : 0;
                 const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter);
@@ -2391,7 +2479,7 @@ class AnazhRealm {
             },
             creature_task_nearest: ([taskName, paramArg], ctx) => {
                 const args = this._buildCreatureTaskArgs(String(taskName), paramArg);
-                const player = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                const player = this.dslEvalPos(["at_player"], ctx); // ohne Spieler keine „nächste" — nie die am Ursprung
                 const target = this.assignTaskToNearestCreature(player, String(taskName), args);
                 if (ctx && ctx.log) {
                     ctx.log.push({
@@ -2924,19 +3012,22 @@ class AnazhRealm {
 
     get dslPositions() {
         if (this._dslPositionsCache) return this._dslPositionsCache;
-        const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
+        // Jede Zahl eines Orts liest `_dslOrtZahl` (fehlt → ihr dokumentierter Default oder kein Ort; ungültig → kein Ort),
+        // jeder spieler-relative Ort `_dslSpielerOrt` (kein Spieler → kein Ort): ein Auflöser liefert einen endlichen Ort
+        // oder wirft `_dslKeinOrt` mit dem Grund — nie still die Untergrenze, die 0 oder den Ursprung.
+        const zahl = (op, was, v, lo, hi, def) => this._dslOrtZahl(op, was, v, lo, hi, def);
+        const spieler = (op, ctx) => this._dslSpielerOrt(op, ctx);
         this._dslPositionsCache = {
             at_player: (_args, ctx) => {
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                const p = spieler("at_player", ctx);
                 return { x: p.x, y: p.y, z: p.z };
             },
             // Punkt des größten BEDARFS (niedrigste lebendig, via auraAt) in einem 8-Punkt-Ring um den
             // Spieler (Default-Radius 50 m): der Nexus trägt Leben dorthin, wo es FEHLT, statt Üppiges zu
             // verstärken.
             at_field_need: ([radius], ctx) => {
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
-                if (typeof this.auraAt !== "function") return { x: p.x, y: p.y, z: p.z };
-                const r = c(radius, 10, 120) || 50;
+                const p = spieler("at_field_need", ctx);
+                const r = zahl("at_field_need", "Radius", radius, 10, 120, 50);
                 let best = null;
                 let bestLeb = Infinity;
                 for (let i = 0; i < 8; i++) {
@@ -2949,20 +3040,21 @@ class AnazhRealm {
                         best = { x: sx, z: sz };
                     }
                 }
-                return best ? { x: best.x, y: p.y, z: best.z } : { x: p.x, y: p.y, z: p.z };
+                if (!best) throw this._dslKeinOrt("at_field_need", "at_field_need: das Feld kennt im Ring keinen Wert");
+                return { x: best.x, y: p.y, z: best.z };
             },
             // Spawn-Position VOR dem Spieler statt in ihm: yaw-Vektor × dist (Default 5 m; Chat-Patterns
             // nutzen 8 m, da Standard-Strukturen ~6–10 m groß sind).
             at_player_forward: ([dist], ctx) => {
-                const d = c(dist, 1, 50) || 5;
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                const d = zahl("at_player_forward", "Abstand", dist, 1, 50, 5);
+                const p = spieler("at_player_forward", ctx);
                 // „vor dir" liest die EINE Vorwärts-Richtung (_blickVorn, waagrecht) — dieselbe wie Kamera und Phantom.
                 const v = this._blickVorn(ctx.state.yaw, 0);
                 return { x: p.x + v.x * d, y: p.y, z: p.z + v.z * d };
             },
             near_player: ([radius], ctx) => {
-                const r = c(radius, 1, 100);
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                const r = zahl("near_player", "Radius", radius, 1, 100);
+                const p = spieler("near_player", ctx);
                 const angle = ctx.rng() * Math.PI * 2;
                 const dist = ctx.rng() * r;
                 return { x: p.x + Math.cos(angle) * dist, y: p.y, z: p.z + Math.sin(angle) * dist };
@@ -2972,32 +3064,34 @@ class AnazhRealm {
             // an _defaultSpawnPos() wäre falsch, falls dieser je driftet.
             at_origin: () => ({ x: 0, y: 50, z: 0 }),
             random_position: ([range], ctx) => {
-                const r = c(range, 1, 500);
+                const r = zahl("random_position", "Spanne", range, 1, 500);
                 return { x: (ctx.rng() - 0.5) * 2 * r, y: 50, z: (ctx.rng() - 0.5) * 2 * r };
             },
             // FERNE Schale (minR..maxR) um den Spieler, JENSEITS des Cull-Radius: der Nexus baut am
             // Horizont statt auf dem Spieler (Bauten im Cull-Radius stapelten sich und wurden nie gecullt).
-            // Höhe aus getTerrainHeightAt (kennt den Boden auch ungestreamt).
+            // Höhe aus getTerrainHeightAt (kennt den Boden auch ungestreamt). Ohne Mindest-Abstand gibt es die Schale nicht
+            // (bis 07.10. 1–2 m: das Dorf „in der Ferne" stand beim Spieler); ohne Höchst-Abstand ist sie 1 m breit.
             far_player: ([minR, maxR], ctx) => {
-                const lo = c(minR, 1, 1000);
-                const hi = Math.max(lo + 1, c(maxR, 1, 1000));
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                const lo = zahl("far_player", "Mindest-Abstand", minR, 1, 1000);
+                const hi = Math.max(lo + 1, zahl("far_player", "Höchst-Abstand", maxR, 1, 1000, lo));
+                const p = spieler("far_player", ctx);
                 const angle = ctx.rng() * Math.PI * 2;
                 const dist = lo + ctx.rng() * (hi - lo);
                 const x = p.x + Math.cos(angle) * dist;
                 const z = p.z + Math.sin(angle) * dist;
-                const y = typeof this.getTerrainHeightAt === "function" ? this.getTerrainHeightAt(x, z) : p.y;
+                const y = this.getTerrainHeightAt(x, z);
                 return { x, y, z };
             },
             // V18.492 — „am Wasser": das nächste Wasser im Umkreis, von dort zurück zum
-            // Spieler bis zum ersten trockenen Ufer-Fleck (+2 m landeinwärts). Kein Wasser
-            // in Reichweite → der Spieler-Ort (der Aufrufer bleibt handlungsfähig).
+            // Spieler bis zum ersten trockenen Ufer-Fleck (+2 m landeinwärts). Kein Wasser in Reichweite oder kein
+            // trockenes Ufer zwischen Wasser und Spieler → KEIN Ort (`_dslKeinOrt` mit dem Grund, `dslEvalPos` bricht die
+            // Op benannt ab, der Satz sagt es laut). Bis 06.10. fiel es still auf den Spieler-Ort — Befund V-k5: 6 Eichen
+            // 3,3–7,4 m um den Spieler, der Fluss 85 m fort, der Chat „am Wasser".
             near_water: ([radius], ctx) => {
-                const r = c(radius, 8, 200) || 60;
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
-                const w =
-                    typeof this._findNearestWaterPoint === "function" ? this._findNearestWaterPoint(p.x, p.z, r) : null;
-                if (!w) return { x: p.x, y: p.y, z: p.z };
+                const r = zahl("near_water", "Radius", radius, 8, 200, 60);
+                const p = spieler("near_water", ctx);
+                const w = this._findNearestWaterPoint(p.x, p.z, r);
+                if (!w) throw this._dslKeinOrt("near_water", `kein Wasser im Umkreis von ${Math.round(r)} m`);
                 const dx = p.x - w.x,
                     dz = p.z - w.z;
                 const L = Math.hypot(dx, dz) || 1;
@@ -3006,12 +3100,14 @@ class AnazhRealm {
                         z = w.z + (dz / L) * s;
                     if (this._isAboveWaterAt(x, z, 0.4)) return { x: x + (dx / L) * 2, y: p.y, z: z + (dz / L) * 2 };
                 }
-                return { x: p.x, y: p.y, z: p.z };
+                throw this._dslKeinOrt("near_water", "kein trockenes Ufer zwischen dem Wasser und dir");
             },
+            // Ein Ort in Koordinaten: x, y und z sind verlangt (jeder Erzeuger — Chat, Absender, Spieler-Wille — setzt alle
+            // drei); bis 07.10. wurde eine fehlende oder ungültige zur 0 bzw. 50 (`Number(null) === 0`).
             at: ([x, y, z]) => ({
-                x: Number.isFinite(Number(x)) ? Number(x) : 0,
-                y: Number.isFinite(Number(y)) ? Number(y) : 50,
-                z: Number.isFinite(Number(z)) ? Number(z) : 0,
+                x: zahl("at", "x", x, -Infinity, Infinity),
+                y: zahl("at", "y", y, -Infinity, Infinity),
+                z: zahl("at", "z", z, -Infinity, Infinity),
             }),
         };
         return this._dslPositionsCache;
@@ -4459,6 +4555,10 @@ class AnazhRealm {
             return { error: `Kurze Pause — ${(llm.minGapSeconds - (nowSec - llm.lastResponseAt)).toFixed(1)} s` };
         }
         llm.inFlight = true;
+        // Wohin die Anfrage ging (der Fehler-Klassifizierer liest den Endpunkt-Host, V-D6).
+        let zielUrl = null,
+            zielLokal = false,
+            ueberProxy = false;
         try {
             // Welle 6.H Phase 2E V1 — wenn systemPromptOverride gegeben (z. B.
             // Kreatur-Persona), nutze diesen statt den Welt-Grok-Prompt. Der
@@ -4475,6 +4575,9 @@ class AnazhRealm {
             // umgangen — kein CORS-Problem, und der Proxy scheiterte am https-only-Check.
             const isLocalUrl = /^https?:\/\/(localhost|127\.0\.0\.1)([:/]|$)/i.test(url);
             const useProxy = !!(cfg && cfg.useProxy) && !isLocalUrl;
+            zielUrl = url;
+            zielLokal = isLocalUrl;
+            ueberProxy = useProxy;
             const fetchUrl = useProxy ? "http://localhost:4312/api/proxy/llm" : url;
             const fetchBody = useProxy ? JSON.stringify({ url, headers, body }) : JSON.stringify(body);
             const fetchHeaders = useProxy ? { "content-type": "application/json" } : headers;
@@ -4508,14 +4611,25 @@ class AnazhRealm {
             // Browser-Fehler bei CORS-Block + Netzwerk-Down.
             const rawMsg = err.message || String(err);
             const isCorsLikely = /Failed to fetch|NetworkError|TypeError|CORS|preflight/i.test(rawMsg);
-            if (isCorsLikely && this.state.llm.provider === "ollama") {
-                const cfg2 = this.state.llm.providerConfig.ollama;
-                const usingProxy = !!(cfg2 && cfg2.useProxy);
-                if (usingProxy) {
+            // DER KLASSIFIZIERER LIEST DEN ENDPUNKT-HOST (Welle L, Befund V-D6): ein lokaler Endpunkt kann nicht an
+            // CORS scheitern — „Failed to fetch" heißt dort, der Dienst läuft nicht (ERR_CONNECTION_REFUSED). Bis 06.10.
+            // nannte jeder Fehlschlag bei Ollama „Cloud blockt Browser-Direct-Call (CORS)" und riet zu dem lokalen
+            // Ollama, das schon eingestellt war.
+            let zielHost = "";
+            try {
+                zielHost = zielUrl ? new URL(zielUrl).host : "";
+            } catch (_eU) {}
+            if (isCorsLikely && zielLokal && !ueberProxy) {
+                const pv = this.state.llm.provider;
+                llm.lastError =
+                    `Keine Antwort von ${zielHost || "localhost"} — der lokale Dienst läuft nicht` +
+                    (pv === "ollama" ? " (starte ihn: `ollama serve`)." : ".");
+            } else if (isCorsLikely && this.state.llm.provider === "ollama") {
+                if (ueberProxy) {
                     llm.lastError = "Proxy nicht erreichbar (läuft 'npm run dev' / save-server auf Port 4312?).";
                 } else {
                     llm.lastError =
-                        "Cloud blockt Browser-Direct-Call (CORS). Optionen: " +
+                        `${zielHost || "Die Cloud"} blockt den Browser-Direct-Call (CORS). Optionen: ` +
                         "(a) lokales Ollama auf localhost:11434, " +
                         "(b) aktiviere 'Proxy über save-server' im Einstellungen-Drawer (braucht `npm run dev`), " +
                         "(c) Provider mit CORS-Header (Groq, Gemini, OpenRouter).";
@@ -4640,7 +4754,7 @@ class AnazhRealm {
                 });
             } else {
                 const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
-                appendChatOutput(`(Grok-Vorschlag abgelehnt: ${reason ? reason.event : "Sandbox"})`);
+                appendChatOutput(`(Grok-Vorschlag abgelehnt: ${reason ? reason.grund || reason.event : "Sandbox"})`);
             }
         }
         this.llmUpdateStatus();
@@ -8942,9 +9056,12 @@ class AnazhRealm {
                     const pos = m[4] ? ["near_water", 80] : ["at_player_forward", m[5] ? 6 : 10];
                     const seed = Math.floor(Math.random() * 0xffffffff);
                     const wo = m[4] ? "am Wasser" : "vor dir";
+                    // Der Spieler liest das Label der Art („Eiche"), nie die interne id („baum_eiche", Befund V-D8).
+                    const bp = this.state.blueprints && this.state.blueprints[name];
+                    const label = (bp && bp.label) || name;
                     return {
                         program: ["spawn_studio", wort, pos, n, seed],
-                        describe: `${n}× ${name} aus dem Studio ${wo} gewachsen`,
+                        describe: `${n}× ${label} aus dem Studio ${wo} gewachsen`,
                     };
                 },
             },
@@ -20462,12 +20579,15 @@ class AnazhRealm {
         return this._kreaturZiel(out, dx, dz, dist - HALT_DIST, speed);
     }
 
-    // Ring-Scan: 8 Himmelsrichtungen × konzentrische Ringe in 4-m-Schritten bis radius; der erste
-    // Treffer (`_isAboveWaterAt` false) gewinnt — innen nach außen = kürzeste Distanz. → {x, z} | null.
+    // Ring-Scan: konzentrische Ringe in 4-m-Schritten bis radius, je Ring so viele Richtungen, dass der Bogen
+    // zwischen zwei Proben ≤ 4 m bleibt (bis 06.10. 8 Strahlen: bei 80 m lagen 63 m zwischen zwei Proben, ein Bach
+    // fiel durch); der erste Treffer (`_isAboveWaterAt` false — die Hydrosphäre: See, Fluss, Tarn, Meer) gewinnt —
+    // innen nach außen = kürzeste Distanz. Eine trockene Probe kostet den Fels-Beweis (1–3 Dichte-Proben), den Spalten-Scan
+    // zahlt nur das Ufer (R2: ohne Wasser im 200-m-Kreis 8037 → 4 Scans). → {x, z} | null.
     _findNearestWaterPoint(cx, cz, radius) {
         const STEP = 4;
-        const DIRS = 8;
         for (let r = STEP; r <= radius; r += STEP) {
+            const DIRS = Math.max(8, Math.ceil((2 * Math.PI * r) / STEP));
             for (let d = 0; d < DIRS; d++) {
                 const angle = (d / DIRS) * Math.PI * 2;
                 const x = cx + Math.cos(angle) * r;
@@ -23702,8 +23822,19 @@ class AnazhRealm {
         this.state.dsl.lastUserProgram = parsed.program;
         this.state.dsl.lastUserOutcome = result.outcome;
         this.state.dsl.lastUserAt = performance.now() / 1000;
+        // Ein Ort, den es nicht gibt, wird laut gesagt, mit seinem Grund (V-k5, `dslEvalPos`): „Kein Wasser im Umkreis von
+        // 80 m — am Wasser wächst hier nichts."
+        const ohneOrt = result.log.find((e) => e.event === "invalid_position");
         if (result.ok) {
             appendChatOutput(parsed.describe);
+        } else if (ohneOrt) {
+            const grund = String(ohneOrt.grund || "kein Ort");
+            const satz = grund.charAt(0).toUpperCase() + grund.slice(1);
+            appendChatOutput(
+                ohneOrt.op === "near_water"
+                    ? `${satz} — am Wasser wächst hier nichts. Geh näher an ein Ufer.`
+                    : `${satz} — nichts geschah.`
+            );
         } else {
             const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
             appendChatOutput(`Befehl lief, aber mit Auffälligkeit: ${reason ? reason.event : "siehe Log"}`);
@@ -24550,10 +24681,10 @@ class AnazhRealm {
 
     // Deterministischer (alle Peers gleich) offener, flacher, trockener Spawn-Punkt: Ring-Spirale um
     // (0,0), der ERSTE Punkt, der (a) kein Kavernenboden ist (surf ≥ macro − 6; `getTerrainHeightAt` ist
-    // die echte Voxel-Oberfläche), (b) trocken liegt (surf > waterLevel + 1.5), (c) flach ist
-    // (±6-m-Proben, Δ ≤ 3.5 m). Nichts gefunden bis 240 m → (0,0).
+    // die echte Voxel-Oberfläche), (b) trocken liegt — über JEDEM Wasser (`_isAboveWaterAt`, Marge 1,5 m: See,
+    // Fluss, Tarn; bis 06.10. nur über dem Meeresspiegel), (c) flach ist (±6-m-Proben, Δ ≤ 3.5 m). Die Lichtung um
+    // die Plattform hält der Wald selbst frei (`_genesisLichtung`, Befund V-D1). Nichts gefunden bis 240 m → (0,0).
     _findOpenSpawnSpot() {
-        const wl = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
         const candidates = [[0, 0]];
         for (let r = 12; r <= 240; r += 12) {
             for (let a = 0; a < 8; a++) {
@@ -24566,7 +24697,7 @@ class AnazhRealm {
             if (!Number.isFinite(surf)) continue;
             const macro = this._terrainMacroSurfaceY(x, z);
             if (Number.isFinite(macro) && surf < macro - 6) continue; // Kavernen-/Kraterboden
-            if (surf < wl + 1.5) continue; // nass
+            if (!this._isAboveWaterAt(x, z, 1.5)) continue; // nass (jedes Wasser)
             let flat = true;
             for (const [dx, dz] of [
                 [6, 0],
@@ -24587,12 +24718,11 @@ class AnazhRealm {
         return { x: 0, z: 0, y: Number.isFinite(h0) ? h0 : 0 };
     }
 
-    // Genesis-Plattform, idempotent (nur wenn keine start_plattform existiert, z. B. nach Reload);
-    // der Spieler steht oben drauf. Der Punkt kommt aus `_findOpenSpawnSpot`.
+    // Genesis-Plattform, idempotent (nur wenn keine start_plattform existiert, z. B. nach Reload — die EINE Quelle
+    // `_genesisPlattform` sagt es); der Spieler steht oben drauf. Der Punkt kommt aus `_findOpenSpawnSpot`.
     _ensureGenesisPlatform() {
         if (!this.state.architectures) return;
-        const exists = this.state.architectures.some((a) => a && a.type === "start_plattform");
-        if (exists) return;
+        if (this._genesisPlattform()) return;
         const spot = this._findOpenSpawnSpot();
         const h0 = spot.y;
         // Plattform 5 m über dem Terrain (genug Überblick, nicht
@@ -31754,12 +31884,15 @@ class AnazhRealm {
     }
 
     // Ist (x,z) trockenes Land? true, wenn die Voxel-Surface ≥ `marge` m über dem Wasser-Spiegel liegt.
-    // EINE Quelle für alle Schichten, die Wasser kennen müssen (Vegetation, Bauwerke, Küste, Kreaturen);
-    // `surfaceY = null` (Höhle/Loch) zählt nicht als Land. Kosten = `_waterLevelAt`.
+    // EINE Quelle für alle Schichten, die Wasser kennen müssen (Vegetation, Bauwerke, Küste, Kreaturen, die Wasser-Suche);
+    // `surfaceY = null` (Höhle/Loch) zählt nicht als Land. Der billige Beweis zuerst (Lehre 25): ist ein Gitterpunkt des
+    // Scans über Spiegel + Marge Fels (`_felsUeber`, EINE Dichte-Probe), ist die Spalte trocken — dasselbe Urteil, ohne den
+    // Scan. Nur Spalten am Wasser (und was der Beweis nicht trägt) zahlen `_voxelSurfaceY`.
     _isAboveWaterAt(x, z, marge = 0) {
+        const waterY = this._waterLevelAt(x, z);
+        if (this._felsUeber(x, z, waterY + marge)) return true;
         const surfaceY = this._voxelSurfaceY(x, z);
         if (surfaceY === null || !Number.isFinite(surfaceY)) return false;
-        const waterY = this._waterLevelAt(x, z);
         return surfaceY > waterY + marge;
     }
 
@@ -31776,6 +31909,47 @@ class AnazhRealm {
             if (g !== null) return g;
         }
         return this._voxelSurfaceY(x, z);
+    }
+
+    // DER FELS-BEWEIS (Welle L, R2): liegt `_voxelSurfaceY(x, z)` sicher über `hoehe`? Der Scan läuft von oben über sein
+    // Gitter und nimmt den ERSTEN Fels — ist ein Gitterpunkt über `hoehe` Fels, liegt die Oberfläche dort oder höher.
+    // Dichte-Proben an genau diesen Gitterpunkten (dieselbe Subtraktions-Kette, derselbe Spalten-Kontext, dieselbe Dichte
+    // `_fieldDensityAt` samt Edits) statt des Scans: (1) der höchste Punkt unter dem Rauheits-Band (surf − 12·roughScale —
+    // dort ist Fels, wo keine Höhle ist), sonst der tiefste über `hoehe`; (2) ist der tiefste über `hoehe` Luft und der
+    // darunter Fels, liegt die Oberfläche auf der Kante dazwischen (die Interpolation des Scans, bitgleich) — oder höher,
+    // falls darüber noch Fels hängt. false = unbewiesen, der Scan entscheidet. Die Wasser-Suche (`_findNearestWaterPoint`)
+    // fragte je Probe den vollen Scan: trocken 351/1330/8037 Spalten für 40/80/200 m. `gate:v1-pfad` (R2) misst das Urteil
+    // gegen den vollen Scan.
+    _felsUeber(x, z, hoehe) {
+        if (!Number.isFinite(hoehe)) return false;
+        const ctx = this._terrainColumnContextIn(x, z, this._felsScratch || (this._felsScratch = {}));
+        if (!Number.isFinite(ctx.surf)) return false;
+        const cfg = this._voxelChunkConfig();
+        const floorY = ctx.base - cfg.floorDrop;
+        const top = floorY + cfg.dimY * cfg.step - 8;
+        const bottom = floorY + 12;
+        const skipAbove = Math.max(ctx.surf + 12 + 4 * cfg.step, this._voxelEditsFillTop() + 2);
+        const band = ctx.surf - 12 * ctx.roughScale;
+        let unterBand = null,
+            tiefster = null;
+        for (let y = top; y >= bottom && y > hoehe; y -= 1.2) {
+            tiefster = y;
+            if (unterBand === null && y <= band) unterBand = y;
+        }
+        if (tiefster === null) return false;
+        // (1) ein Gitterpunkt über `hoehe` ist Fels (über `skipAbove` sieht der Scan nur Luft)
+        if (unterBand !== null && unterBand <= skipAbove && this._fieldDensityAt(x, unterBand, z, ctx) > 0) return true;
+        if (unterBand === tiefster) return false; // dieselbe Probe — Luft, der Scan entscheidet
+        if (tiefster > skipAbove) return false;
+        const dOben = this._fieldDensityAt(x, tiefster, z, ctx);
+        if (dOben > 0) return true;
+        // (2) die Kante unter dem tiefsten Punkt über `hoehe`
+        const unten = tiefster - 1.2;
+        if (unten < bottom) return false;
+        const dUnten = this._fieldDensityAt(x, unten, z, ctx);
+        if (!(dUnten > 0)) return false;
+        const t = dUnten - dOben > 1e-9 ? dUnten / (dUnten - dOben) : 0;
+        return unten + 1.2 * Math.min(1, Math.max(0, t)) > hoehe;
     }
 
     // Boden-Cache je Kreatur: der Boden unter dem Körper (`_kreaturBodenUnter`) nur neu scannen, wenn sie sich > 0.5 m
@@ -44185,13 +44359,13 @@ class AnazhRealm {
         if (pm && pm.position && typeof this._depositLife === "function") {
             this._depositLife(pm.position.x, pm.position.z);
         }
-        // Rückkehr am Genesis-Anker (die Start-Plattform); ohne Anker der
-        // offene Spawn-Spot — dieselben Quellen wie der Welt-Ursprung.
-        const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");
+        // Rückkehr am Genesis-Anker (die Start-Plattform, `_genesisPlattform` — die EINE Quelle des Genesis-Orts); ohne
+        // Anker der offene Spawn-Spot.
+        const anchor = this._genesisPlattform();
         let ax = 0;
         let az = 0;
         let ay = null;
-        if (anchor && anchor.position) {
+        if (anchor) {
             ax = anchor.position.x;
             az = anchor.position.z;
             ay = anchor.position.y + 2.2;
@@ -46155,7 +46329,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = s.renderer.render(s.scene, s.camera);
+                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
                 if (rr && typeof rr.catch === "function")
                     rr.catch((e) => this.log(`Feed-Vorschau-Render: ${e && e.message}`, "INFO"));
             }
@@ -51556,6 +51730,15 @@ class AnazhRealm {
     // Spieler hält Zoom-Geste (z. B. rechtsklick): wenn ein magnifying-
     // Compound in Blick-Richtung in Reichweite ist, reduziere camera.fov.
     // setZoomActive(false) stellt den Original-FOV wieder her.
+    // ALLE TASTEN LOS (die Tasten-Wand, V-k4): Fokus-Verlust, Unsichtbarkeit und Zeiger-Verlust lösen jede gehaltene
+    // Taste (state.keys), den Zoom und das Mahlen — die EINE Stelle, die die Eingabe auf „nichts gedrückt" setzt.
+    _alleTastenLos() {
+        const k = this.state.keys;
+        if (k) for (const n in k) k[n] = false;
+        if (this.state._zoomActive) this.setZoomActive(false);
+        if (this.state.player) this.state.player.breakHeld = false;
+    }
+
     setZoomActive(active) {
         const cam = this.state.camera;
         if (!cam) return false;
@@ -69320,7 +69503,8 @@ class AnazhRealm {
             const zeile = nearest
                 ? `Bauten n=${list.length} haus=${nHaus} ziegel=${nZiegel} nah=${nearest.e.type} @${Math.round(nearest.e.position.x)}/${Math.round(nearest.e.position.y)}/${Math.round(nearest.e.position.z)} d=${Math.round(nearest.d)}m`
                 : `Bauten n=${list.length} haus=${nHaus} ziegel=${nZiegel} placed=${res && res.placed}`;
-            this._chatEcho?.(zeile);
+            // Die Zählung ist Entwickler-Telemetrie: sie geht ins Log, nie in den Spieler-Chat (Befund V-D8: „Bauten
+            // n=330 haus=21 ziegel=10 nah=… d=10m" nach jeder Dorf-Gründung).
             this.log(zeile, "INFO");
             // Hand-Dichte: nächstes haus_ sofort meshen (nicht auf Cull-Budget warten)
             if (nearest && nearest.e && typeof this._rebuildArchitectureMesh === "function") {
@@ -69345,6 +69529,14 @@ class AnazhRealm {
         // o.nH führt der Kern-Default (fachwerk DORF: DP.nH — die EINE
         // Wahrheit; der divergente Stamm-Zwilling 18 vs Kern 24 ist gefallen).
         let nH = Number.isFinite(o.nH) ? Math.max(4, Math.min(120, Number(o.nH))) : undefined;
+        // Ein VERLANGTER Ort, den es nicht gibt, wird nie der Spieler-Ort (V-k5-Klasse): ohne `position` gründet der
+        // Akt beim Spieler (Chat „dorf"), mit `position` nur dort — eine leere oder unendliche ist eine laute Absage.
+        if ("position" in o && !(o.position && Number.isFinite(o.position.x) && Number.isFinite(o.position.z))) {
+            const msg = "Siedlung ohne Ort: der verlangte Ort fehlt — keine Gründung (nie still beim Spieler).";
+            this.log(msg, "ERROR");
+            this._chatEcho?.(msg);
+            return null;
+        }
         const pm = this.state.playerMesh;
         const base =
             o.position || (pm ? { x: pm.position.x, y: pm.position.y, z: pm.position.z } : { x: 0, y: 0, z: 0 });
@@ -69447,9 +69639,26 @@ class AnazhRealm {
     }
     // Site-Wände am Anker (die Slot-Wände prüft `_spawnSettlementSlot` je Haus zusätzlich). `noSpawnClear`
     // öffnet NUR dem Start-Dorf die Spawn-Klar-Wand; Wasser/Steil bleiben für jede Site dieselbe Wand.
+    // DER GENESIS-ORT (EINE Quelle): die Mitte der Start-Plattform — dort kommt der Spieler an, um sie stehen die
+    // Kern-Portale (Schöpfer V18.486: „die kernportale um die genesis-plattform anordnen"), um sie bleibt die
+    // Warmup-Welt dorffrei und wächst das Start-Dorf. Ohne Plattform der Welt-Ursprung. Bis 06.10. lasen diese vier
+    // den Ursprung, während die Plattform dort stand, wo `_findOpenSpawnSpot` Platz fand (36 m daneben, seit der
+    // Kronen-Wand V-D1 dort, wo kein Baum durch die Scheibe wächst).
+    _genesisMitte() {
+        const p = this._genesisPlattform();
+        return p ? { x: p.position.x, z: p.position.z } : { x: 0, z: 0 };
+    }
+    _genesisPlattform() {
+        const p = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");
+        return p && p.position ? p : null;
+    }
+
     _autoSettlementSiteOk(x, z, noSpawnClear) {
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (spawnClearM)
-        if (!noSpawnClear && Math.hypot(x, z) < A.spawnClearM) return false; // die Warmup-Welt bleibt dorffrei
+        if (!noSpawnClear) {
+            const g = this._genesisMitte();
+            if (Math.hypot(x - g.x, z - g.z) < A.spawnClearM) return false; // die Warmup-Welt bleibt dorffrei
+        }
         if (!this._isAboveWaterAt(x, z, 0.2)) return false; // die Wasser-Wand (EINE Quelle)
         const slope = this._slopeAt ? this._slopeAt(x, z) : 0;
         // ZENSUS 17.07. — die Steil-Wand ist fachwerk-Gesetz (SIEDLUNG.slopeMax).
@@ -69480,24 +69689,25 @@ class AnazhRealm {
     // `_autoSettlementStartInfo` (unten): EINMAL je Welt ein Start-Dorf ~110–170 m vom Spawn (Γ5
     // ":startdorf"), Radien × 8 Winkel durch `_autoSettlementSiteOk` mit offener Spawn-Klar-Wand.
     // GENESIS-PORTAL-RING: EINMAL je Welt stehen alle Built-in-Portale (WORLD_REGISTRY) im Kreis um den
-    // Ursprung, deterministisch. Doppelt idempotent: worldMeta-Stempel UND Existenz-Probe (ein
+    // Genesis-Ort (`_genesisMitte`), deterministisch. Doppelt idempotent: worldMeta-Stempel UND Existenz-Probe (ein
     // restauriertes Ring-Portal setzt den Stempel nach). Terrain/Bauplan nicht bereit → nächster Tick.
     _genesisPortalRing(playerPos) {
         const st = this.state;
         const wm = st.worldMeta;
         if (!wm || wm.genesisPortalRing || this._genesisRingFertig) return;
-        if (playerPos.x * playerPos.x + playerPos.z * playerPos.z > 60 * 60) return; // nur am Genesis-Ort
+        const M = this._genesisMitte();
+        if ((playerPos.x - M.x) ** 2 + (playerPos.z - M.z) ** 2 > 60 * 60) return; // nur am Genesis-Ort
         const bps = st.blueprints || {};
         const namen = Object.keys(bps).filter((n) => {
             const b = bps[n];
             return b && b.builtIn && b.role === "portal" && b.portalMeta && b.portalMeta.world;
         });
         if (!namen.length) return;
-        // Existenz-Probe: trägt die Welt schon ein Ring-Portal nahe des Ursprungs
+        // Existenz-Probe: trägt die Welt schon ein Ring-Portal nahe des Genesis-Orts
         // (Restore eines Saves ohne Stempel), gilt der Ring als gebaut.
         for (const e of st.architectures || []) {
             if (!e || !e.position) continue;
-            const d2 = e.position.x * e.position.x + e.position.z * e.position.z;
+            const d2 = (e.position.x - M.x) ** 2 + (e.position.z - M.z) ** 2;
             if (d2 <= 20 * 20 && namen.includes(e.type)) {
                 this._genesisRingFertig = true;
                 wm.genesisPortalRing = true;
@@ -69508,8 +69718,8 @@ class AnazhRealm {
         let gebaut = 0;
         for (let i = 0; i < namen.length; i++) {
             const a = (i / namen.length) * 2 * Math.PI;
-            const x = Math.cos(a) * R;
-            const z = Math.sin(a) * R;
+            const x = M.x + Math.cos(a) * R;
+            const z = M.z + Math.sin(a) * R;
             const y = this.getTerrainHeightAt(x, z);
             if (!Number.isFinite(y)) return; // Terrain reift noch — nächster Tick
             const entry = this.spawnArchitecture(namen[i], { x, y, z }, { seed: ((i + 1) * 7919) >>> 0 });
@@ -69566,11 +69776,13 @@ class AnazhRealm {
                 });
             return;
         }
+        // ~8 m radial nach außen, vom Genesis-Ort aus gesehen (der Ring steht um ihn).
+        const M = this._genesisMitte();
         const px = portal.position.x || 0;
         const pz = portal.position.z || 0;
-        const len = Math.hypot(px, pz) || 1;
-        const ox = px + (px / len) * 8;
-        const oz = pz + (pz / len) * 8;
+        const len = Math.hypot(px - M.x, pz - M.z) || 1;
+        const ox = px + ((px - M.x) / len) * 8;
+        const oz = pz + ((pz - M.z) / len) * 8;
         const y = this.getTerrainHeightAt(ox, oz);
         if (!Number.isFinite(y)) return;
         // Deterministische Seeds: fachwerk 49177 · garage 49178 · schmiede 49179 · portale 49180.
@@ -69669,11 +69881,12 @@ class AnazhRealm {
             h = Math.imul(h, 16777619) >>> 0;
         }
         const phase = (((h >>> 8) & 0xff) / 255) * 2 * Math.PI;
+        const M = this._genesisMitte(); // um den Genesis-Ort, wo der Spieler ankommt
         for (let ri = 0; ri < A.startRadiusM.length; ri++) {
             for (let i = 0; i < 8; i++) {
                 const a = phase + (i / 8) * 2 * Math.PI;
-                const x = Math.cos(a) * A.startRadiusM[ri];
-                const z = Math.sin(a) * A.startRadiusM[ri];
+                const x = M.x + Math.cos(a) * A.startRadiusM[ri];
+                const z = M.z + Math.sin(a) * A.startRadiusM[ri];
                 if (!this._autoSettlementSiteOk(x, z, true)) continue;
                 return { key: "start", seed: h >>> 0 || 1, nH: S.nHMin + ((h >>> 24) % S.nHSpan), x, z };
             }
@@ -69745,6 +69958,25 @@ class AnazhRealm {
     }
     // Der Worldgen-Konsument des "settlement"-Kanals — gerufen aus dem Idle-Pass
     // `_tickScatterStreaming` (feuert nur, wenn das Chunk-Streaming nichts baut).
+    // DER GENESIS-ORT VOR JEDEM BUDGET (Existenz vor Framerate, Lehre 13): der Ring der Kern-Portale (einmalig je Welt,
+    // Schöpfer 17.07.) und die Portal-Vorschauen (GT, Haus, Esse, Tor; nur bei Tor-Nähe, frühes Await-Book) stehen in
+    // ihrem eigenen Takt (1×/s), nie hinter den Dorf-Akten. Bis 06.10. lagen sie im Siedlungs-Takt hinter
+    // `_frameOverBudget` (und der Siedlungs-Takt im Deko-Job, der bei leerem Budget wartet): auf der echten GPU (Radeon
+    // 890M, frische Welt) war das Budget in 160 von 160 Proben über 40 s überschritten — kein Ring, kein GT am Ring, der
+    // v1-Schritt 6 ohne Wagen. Headless ruht er wie der Siedlungs-Takt (der Hook führt, Gate-Treue).
+    _tickGenesisOrt(currentTime) {
+        const st = this.state;
+        const pm = st.playerMesh;
+        if (!pm) return;
+        const hook = typeof window !== "undefined" ? window.__anazhAutoSettlement : undefined;
+        if (hook === false) return;
+        if (hook !== true && st.renderer && st.renderer._isHeadlessNull) return;
+        if (this._genesisOrtT && currentTime - this._genesisOrtT < 1000) return;
+        this._genesisOrtT = currentTime; // Instanz-Feld (die _editSaveTimer-Klasse: nicht serialisiert)
+        this._genesisPortalRing(pm.position);
+        this._portalApproachPrefetch(pm.position);
+    }
+
     _tickAutoSettlement(playerPos) {
         const st = this.state;
         if (!playerPos) return;
@@ -69784,12 +70016,6 @@ class AnazhRealm {
         if (!this._autoSettlementChannelLive()) return; // der Dispatch-Kanal entscheidet (M8)
         const wm = st.worldMeta || {};
         const cells = wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : null;
-        // DER GENESIS-PORTAL-RING zuerst (einmalig je Welt, Schöpfer 17.07.) —
-        // dieselbe Tick-Heimat wie das Start-Dorf (Kanal lebt, Spieler am Ursprung).
-        this._genesisPortalRing(playerPos);
-        // V18.491.81 — Portal-approach Prefetch: Preview-Typen nur bei Tor-Nähe
-        // (+ frühes Await-Book), nicht Boot-breit. Helper `_ensurePortalPreview` bleibt.
-        this._portalApproachPrefetch(playerPos);
         // Wege-Rebuild: Zellen mit Gedächtnis {seed,nH,x,z} bauen ihre Wege je Session lazy aus DEMSELBEN
         // Export am gemerkten Anker neu (nurWege — Häuser/Brunnen sind persistiert). Alt-Saves mit Wert 1 →
         // keine Wege. EIN Roundtrip zur Zeit, nur nahe Zellen.
@@ -69813,12 +70039,13 @@ class AnazhRealm {
                 return; // EIN Dorf-Akt pro Tick
             }
         }
-        // Start-Dorf zuerst (einmalig je Welt): nur nahe des Ursprungs materialisieren (kein Fern-Spawn hinter
+        // Start-Dorf zuerst (einmalig je Welt): nur nahe des Genesis-Orts materialisieren (kein Fern-Spawn hinter
         // dem Rücken). Fail-closed + session-gemerkt: eine Welt ohne Fleck urteilt immer gleich.
+        const gM = this._genesisMitte();
         if (
             (!cells || !cells.start) &&
             !this._autoSettlementStartHopeless &&
-            playerPos.x * playerPos.x + playerPos.z * playerPos.z <= A.nearM * A.nearM
+            (playerPos.x - gM.x) ** 2 + (playerPos.z - gM.z) ** 2 <= A.nearM * A.nearM
         ) {
             const si = this._autoSettlementStartInfo();
             if (!si)
@@ -72541,14 +72768,14 @@ class AnazhRealm {
                 // (gemessen 04.10., Werkbank, Mess-Wiese: ein Strauch auf 8,9 m zu 66 % durchsichtig, die L0-Hälfte der
                 // Blende fehlte), aber im L1/L2-Band zum Billboard AUS (Stufe 3) — ungemaskt stand sie dort doppelt mit
                 // dem Billboard und sprang am Bandende weg. Seit Welle 6 trägt der Strauch die Kette wie der Baum.
-                const _aLodVal =
-                    _isTree && _lodS === 0
-                        ? 1
-                        : _isTree && _lodS === 1
-                          ? this._foundryDeclaredStage(stage.preset, 0) === 0
-                              ? 2
-                              : 3
-                          : 0;
+                // Dieselbe Regel von der anderen Seite: die L0 weicht der L1 (1) nur, wo die Art eine L1 deklariert; sonst
+                // ist sie die einzige Nah-Stufe (3) und weicht nur der Karte, die jede Karten-Art trägt (KIND_POLICY.impostor,
+                // `_foundryFlattenFor` baut sie vor der Stufen-Klammer). Wagen und Tore (kindStages [0]) trugen Stempel 1 und
+                // dithern ab 8 m zu einer L1, die es nicht gibt — gemessen 06.10. (echte GPU, nur die Gestalt im Bild,
+                // Leuchtdichte gegen die ungemaskte): GT bei 9,6 m 0,69, bei 12-45 m 0,08-0,15 — der eigene Wagen der
+                // Verfolger-Kamera ein Geist, jeder geparkte Wagen und jedes Tor zwischen 12 m und dem Karten-Band fort.
+                const _hat = (s) => this._foundryDeclaredStage(stage.preset, s) === s;
+                const _aLodVal = !_isTree ? 0 : _lodS === 0 ? (_hat(1) ? 1 : 3) : _lodS === 1 ? (_hat(0) ? 2 : 3) : 0;
                 const _h0 = this._foundryGruppenHoehe(group, stage && stage.preset);
                 const _D = AnazhRealm.LOD_DISTANCES;
                 const _capL = _D && Number.isFinite(_D.leafVisCap) ? _D.leafVisCap : 24;
@@ -73737,6 +73964,77 @@ class AnazhRealm {
         sys.mesh.geometry.attributes.position.needsUpdate = true;
     }
 
+    // Steht der geborene Dart `d` der Zelle (gx, gz)? Kronen-Schüchternheit: er steht, wenn KEIN besserer Dart (prio,
+    // Positions-Tiebreak) in ±2 Nachbarzellen konkurriert. Rein → reihenfolge-unabhängig; strikte Total-Ordnung → kein
+    // Paar akzeptierter Zentren < pack·(Ti+Tj). Shared shy-Distanz (phyto-core forestTooClose) + named prio-max
+    // (forestPrioWins); FOREST_TOPOLOGY.host = "cell" (Feel-Entscheid .116). Einziger Leser ist der Pflanz-Gang
+    // (`_forestPlantChunk`) — die Spawn-Wahl liest den Wald nicht, die Genesis-Lichtung hält ihn von der Plattform fern.
+    _forestDartSteht(d, gx, gz, cellDarts) {
+        const F = AnazhRealm.FOREST;
+        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        const tooClose = core && typeof core.forestTooClose === "function" ? core.forestTooClose : null;
+        const prioWins = core && core.forestPrioWins;
+        for (let ax = -2; ax <= 2; ax++) {
+            for (let az = -2; az <= 2; az++) {
+                const nb = cellDarts(gx + ax, gz + az);
+                for (let k = 0; k < nb.length; k++) {
+                    const o = nb[k];
+                    if (o === d) continue; // sich selbst (eigene Zelle) überspringen
+                    const dx = d.x - o.x;
+                    const dz = d.z - o.z;
+                    // Distance: shared forestTooClose; Host residual = prio-max (nicht Lab sequential reject).
+                    const conflict = tooClose
+                        ? tooClose(dx, dz, d.T, o.T, F.pack)
+                        : (() => {
+                              const md = F.pack * (d.T + o.T);
+                              return dx * dx + dz * dz < md * md;
+                          })();
+                    if (!conflict) continue; // kein Konflikt
+                    // Konflikt: „besser" = forestPrioWins (prio, Tiebreak x dann z).
+                    const better = prioWins
+                        ? prioWins(o, d)
+                        : o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
+                    if (better) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // DIE GENESIS-LICHTUNG (Befund V-D1, 06.10.): um die Start-Plattform wächst kein Baum, dessen Krone in der Welt über
+    // die Scheibe reicht. Bis 06.10. stand eine Tanne 2,0 m vom Plattform-Mittelpunkt: der erste Blick jedes neuen Spielers
+    // eine Nadelwand, der Stamm-Blocker 1,2 m unter der Oberkante (der Spieler lief durch den Stamm). Eine kronenfreie
+    // Stelle sucht die Spawn-Wahl nicht: in der Default-Welt hat keine flache, trockene Stelle bis 240 m eine (gemessen
+    // 06.10.: 161 Kandidaten, 0 frei) — der Genesis-Ort ist die Lichtung, der Wald weicht ihm. Rückgabe {x, z, r} oder null.
+    _genesisLichtung() {
+        const p = this._genesisPlattform();
+        if (!p) return null;
+        const pb = this.state.blueprints && this.state.blueprints.start_plattform;
+        const p0 = pb && Array.isArray(pb.parts) && pb.parts[0] && pb.parts[0].size;
+        const r = p0 && Number.isFinite(p0.x) ? p0.x / 2 : 0; // die Stein-Scheibe (cylinder: size.x = Durchmesser)
+        return { x: p.position.x, z: p.position.z, r };
+    }
+    // Die Krone eines Wald-Wurfs in der Welt: Kronen-Schüchternheit T (Vorlagen-Maß) × die Welt-Skala seiner Art
+    // (`_foundryWorldScaleMatrix`, dieselbe, mit der der Baum gezeichnet wird). Gemessen 06.10. (echte GPU, die weiteste
+    // Ast-Spitze der gezeichneten Instanz): die Studio-Tanne trägt bei T 3,0 m Äste bis 11,7 m, die Fichte bei T 2,6 m
+    // bis 13,2 m, die Birke bei T 3,6 m bis 12,4 m.
+    _forestKroneWelt(d) {
+        // Die Welt-Skala je Art einmal gelesen (der Pflanz-Gang fragt je stehendem Wurf); die LIVE-Quelle der Skala
+        // (`PORTAL_RENDER_CONFIG.placement`) leert den Merker mit ihrer Identität.
+        const rc = AnazhRealm._studioRenderConfig;
+        const quelle = rc && rc.placement ? rc.placement : null;
+        if (!this._kroneWeltK || this._kroneWeltQuelle !== quelle) {
+            this._kroneWeltK = new Map();
+            this._kroneWeltQuelle = quelle;
+        }
+        let k = this._kroneWeltK.get(d.sp);
+        if (k === undefined) {
+            k = this._foundryWorldScaleMatrix(this._foundryPresetFor(d.sp)).elements[0] || 1;
+            this._kroneWeltK.set(d.sp, k);
+        }
+        return d.T * k;
+    }
+
     _forestPlantChunk(cx, cz) {
         if (!this.state.scene || !this.state.blueprints) return 0;
         const F = AnazhRealm.FOREST;
@@ -73752,12 +74050,6 @@ class AnazhRealm {
         const c1x = Math.floor((ox + span) / CELL);
         const c0z = Math.floor(oz / CELL);
         const c1z = Math.floor((oz + span) / CELL);
-        // Shared shy-Distanz (phyto-core forestTooClose) + named prio-max (forestPrioWins).
-        // FOREST_TOPOLOGY.host = "cell" (phyto-core) — Feel-Entscheid .116; chunk order-independent; no fake merge with Lab disk.
-        const _coreShy = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        const forestTooClose =
-            _coreShy && typeof _coreShy.forestTooClose === "function" ? _coreShy.forestTooClose : null;
-        const forestPrioWins = _coreShy && _coreShy.forestPrioWins;
         // Born-Dart-Memo (lokal je Aufruf → KEIN chunk-übergreifender mutabler Zustand →
         // Reihenfolge-Unabhängigkeit). `_forestCellDarts` ist rein → jede Zelle einmal.
         const memo = new Map();
@@ -73771,46 +74063,19 @@ class AnazhRealm {
             return d;
         };
         let planted = 0;
+        const lichtung = this._genesisLichtung(); // der Genesis-Ort ist eine Lichtung (V-D1)
         for (let gz = c0z; gz <= c1z; gz++) {
             for (let gx = c0x; gx <= c1x; gx++) {
                 const own = cellDarts(gx, gz);
                 for (const d of own) {
                     // Nur Darts, deren POSITION in DIESEN Chunk fällt (disjunkt → einmal).
                     if (d.x < ox || d.x >= ox + span || d.z < oz || d.z >= oz + span) continue;
-                    // Kronen-Schüchternheit: der Dart steht, wenn KEIN besserer Dart (prio, Positions-Tiebreak) in ±2
-                    // Nachbarzellen konkurriert. Rein → reihenfolge-unabhängig; strikte Total-Ordnung → kein Paar
-                    // akzeptierter Zentren < pack·(Ti+Tj).
-                    let accepted = true;
-                    for (let ax = -2; ax <= 2 && accepted; ax++) {
-                        for (let az = -2; az <= 2 && accepted; az++) {
-                            const nb = cellDarts(gx + ax, gz + az);
-                            for (let k = 0; k < nb.length; k++) {
-                                const o = nb[k];
-                                if (o === d) continue; // sich selbst (eigene Zelle) überspringen
-                                const dx = d.x - o.x;
-                                const dz = d.z - o.z;
-                                // Distance: shared forestTooClose; Host residual = prio-max (nicht Lab sequential reject).
-                                const conflict = forestTooClose
-                                    ? forestTooClose(dx, dz, d.T, o.T, F.pack)
-                                    : (() => {
-                                          const md = F.pack * (d.T + o.T);
-                                          return dx * dx + dz * dz < md * md;
-                                      })();
-                                if (!conflict) continue; // kein Konflikt
-                                // Konflikt: „besser" = forestPrioWins (prio, Tiebreak x dann z).
-                                const better = forestPrioWins
-                                    ? forestPrioWins(o, d)
-                                    : o.prio > d.prio ||
-                                      (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
-                                if (better) {
-                                    accepted = false;
-                                    break;
-                                }
-                            }
-                            if (!accepted) break;
-                        }
-                    }
-                    if (!accepted) continue;
+                    if (!this._forestDartSteht(d, gx, gz, cellDarts)) continue;
+                    if (
+                        lichtung &&
+                        Math.hypot(d.x - lichtung.x, d.z - lichtung.z) < lichtung.r + this._forestKroneWelt(d)
+                    )
+                        continue;
                     // Dichte = die Vorlage: das Studio dünnt den Wald NIE (volle Dichte, Last über LOD + Sicht-Kappung).
                     // Im Studio-Regime ist fd=1 → dieser Check feuert nie; sonst dünnt der Perf-Regler.
                     if (fd < 1 && d.keep >= fd) continue;
@@ -78761,8 +79026,9 @@ class AnazhRealm {
 
     // Rezeptbuch: craftbare Baupläne nach Verwendung gruppiert, je Zeile Kosten + rollen-gerechter
     // Fertigen-Knopf (disabled ohne Material). Signatur = wovon der INHALT abhängt (Bauplan-Namen +
-    // Inventar-Materialien + Part-Edit-Tick), NICHT die Slot-Auswahl (`_recipeRow` liest sie nicht) —
-    // sonst Voll-Rebuild bei jeder Slot-Wahl.
+    // Inventar-Materialien + Part-Edit-Tick + Spielmodus — `_recipeRow` gibt den Knopf in schöpfer frei; bis 06.10.
+    // fehlte der Modus, Befund V-D5: in schöpfer blieb „Es fehlt: 44× holz, 50× laub" gesperrt stehen), NICHT die
+    // Slot-Auswahl (`_recipeRow` liest sie nicht) — sonst Voll-Rebuild bei jeder Slot-Wahl.
     _recipeBookSignature() {
         const bps = this.state.blueprints || {};
         const inv = (this.state.player && this.state.player.inventory) || [];
@@ -78774,7 +79040,9 @@ class AnazhRealm {
             .sort()
             .map((m) => m + have[m])
             .join(",");
-        return Object.keys(bps).join("|") + "#" + matSig + "#" + (this.state._bpEditTick || 0);
+        return (
+            Object.keys(bps).join("|") + "#" + matSig + "#" + (this.state._bpEditTick || 0) + "#" + this.getGameMode()
+        );
     }
 
     renderRecipeBook() {
@@ -79316,7 +79584,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = s.renderer.render(s.scene, s.camera);
+                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
                 if (rr && typeof rr.catch === "function")
                     rr.catch((e) => this.log(`Hof-Bühne-Render: ${e && e.message}`, "INFO"));
             }
@@ -79983,7 +80251,7 @@ class AnazhRealm {
                 s.pivot.rotation.y = s.yaw;
             }
             if (s.rendererReady) {
-                const rr = s.renderer.render(s.scene, s.camera);
+                const rr = this._buehneRender(s.renderer, s.scene, s.camera);
                 if (rr && typeof rr.catch === "function")
                     rr.catch((e) => this.log(`Ich-Bühne-Render: ${e && e.message}`, "INFO"));
             }
@@ -82094,9 +82362,26 @@ class AnazhRealm {
         // Erst nach WebGPURenderer.init() rendern (rendererReady, wie das Haupt-Loop-Gate). render() ist
         // auf der GPU async — ein Pipeline-Compile-Reject wird geloggt statt unhandled.
         if (!p.rendererReady) return;
-        const renderResult = p.renderer.render(p.scene, p.camera);
+        const renderResult = this._buehneRender(p.renderer, p.scene, p.camera);
         if (renderResult && typeof renderResult.catch === "function") {
             renderResult.catch((err) => this.log(`Workshop-Preview-Render: ${err && err.message}`, "INFO"));
+        }
+    }
+
+    // DIE BÜHNE ZEIGT IHR WERK GANZ (Welle L, Befund V-D3): ein Neben-Renderer (Werkstatt-Vorschau, Feed-, Hof-,
+    // Ich-Bühne) zeichnet EIN Werk in EINER Stufe aus seiner eigenen Kamera. Die LOD-Maske misst vom Welt-Auge
+    // (`uLodAuge`, je Frame aus der Haupt-Kamera) und gehört der Welt: die Vorschau-Eiche im Ursprung lag vom Auge
+    // auf der Plattform 36 m weit, jenseits ihrer L0-Kante — 29 Meshes mit 21 108 Dreiecken in der Szene, 0 im Bild.
+    // Um den Bühnen-Render steht die Maske aus (uLodMaskOn 0; der geteilte renderGroup-Satz lädt je render() neu),
+    // danach zurück auf den Welt-Stand. Jeder Neben-Renderer zeichnet NUR hier.
+    _buehneRender(renderer, scene, camera) {
+        const lu = this.state.lodUniforms;
+        const an = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
+        if (an !== null) lu.uLodMaskOn.value = 0;
+        try {
+            return renderer.render(scene, camera);
+        } finally {
+            if (an !== null) lu.uLodMaskOn.value = an;
         }
     }
 
@@ -88307,6 +88592,13 @@ class AnazhRealm {
                 this.setZoomActive(false);
             }
         });
+        // DIE TASTEN-WAND (Welle L, Befund V-k4): verliert das Fenster den Fokus (Fensterwechsel), wird die Seite
+        // unsichtbar oder fällt der Zeiger-Lock, erreicht das keyup der gehaltenen Taste diese Seite nie — W blieb
+        // gedrückt, der Avatar lief 4,63 m in 278 Frames ohne Taste. Jeder dieser Wechsel löst ALLE Tasten.
+        window.addEventListener("blur", () => this._alleTastenLos());
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") this._alleTastenLos();
+        });
         this.log("Tastatureingaben initialisiert: WASD, Space, Shift", "INFO");
 
         // Maus-Listener-Bindung als Methode (initial-Canvas).
@@ -88342,8 +88634,8 @@ class AnazhRealm {
         );
         document.addEventListener("pointerlockchange", () => {
             this.state.isPointerLocked = document.pointerLockElement === canvas;
-            // V17.55 W1 — verliert der Spieler den Lock (Esc/UI), stoppt das Mahlen.
-            if (!this.state.isPointerLocked && this.state.player) this.state.player.breakHeld = false;
+            // V17.55 W1 — verliert der Spieler den Lock (Esc/UI), stoppt das Mahlen und jede gehaltene Taste (V-k4).
+            if (!this.state.isPointerLocked) this._alleTastenLos();
             this.log(`Pointer-Lock: ${this.state.isPointerLocked ? "Aktiv" : "Inaktiv"}`, "INFO");
         });
         document.addEventListener("mousemove", (event) => {
@@ -88725,6 +89017,9 @@ class AnazhRealm {
 
                 // ### Haus-Türen ### (DORF-ERLEBNIS — die Tür öffnet sich dem Reisenden)
                 this._tickHausTueren(currentTime);
+
+                // ### Der Genesis-Ort ### (Ring der Kern-Portale + Portal-Vorschauen, vor jedem Budget)
+                this._tickGenesisOrt(currentTime);
 
                 // ### Kamin-Rauch ### (.105 — Quellen + minimale Lab-Partikel)
                 this._updateDorfRauch(delta);
@@ -93054,8 +93349,8 @@ AnazhRealm.KIND_SUBSTANCE = Object.freeze({
 // (`_placeDispatch` → null); settlement = spawnSettlement + Worldgen-Konsument `_tickAutoSettlement`.
 AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1, site: 1, settlement: 1 });
 // Worldgen-Auto-Dorf-Daten (Konsument `_tickAutoSettlement`, Wände + Γ5-Disziplin dort):
-// nearM Materialisierungs-Distanz · spawnClearM dorffreier Radius um den Ursprung (nearM < spawnClearM → am
-// Spawn wirkt nur das START-DORF) · siteProbeR zwei Probe-Ringe (×cellM), falls der Anker scheitert ·
+// nearM Materialisierungs-Distanz · spawnClearM dorffreier Radius um den Genesis-Ort (nearM < spawnClearM →
+// am Spawn wirkt nur das START-DORF) · siteProbeR zwei Probe-Ringe (×cellM), falls der Anker scheitert ·
 // startRadiusM Start-Dorf-Radien (einmalig je Welt, Seed ":startdorf") · perTick Häuser je Idle-Tick ·
 // drosselTakte das Tempo über dem Frame-Budget.
 // DAS WIRT-STREAMING der Auto-Dörfer (nur Host-Größen: wann und wie schnell die Welt baut). Das SIEDLUNGS-GESETZ
@@ -94988,8 +95283,11 @@ AnazhRealm.TIER_FERN_DIST_SQ = 35 * 35;
 // wrap↔fern-Chokepoint in updateCreatures (gate:tier-fern).
 AnazhRealm.TIER_FERN_HYST = 0.1;
 // Mensch-Fern-Guss (Peers): jenseits trägt die Menschen-Gestalt den gemergten lod1-Guss (wenige
-// Draws, kein Rig-Tick). 40 m: die Schritt-Amplitude ist dort < 2.6 px, näher wäre sie sichtbar
-// eingefroren. Als Quadrat (distSq XZ); EIN Leser: _menschFernToggle.
+// Draws, kein Rig-Tick). 40 m ist eine KOSTEN-Grenze, keine Pixel-Grenze: gemessen 06.10. (Leben-Prüfung N-D7, echte
+// GPU) spreizen die Beine in 38 m noch 10,4–10,6 px bei 720 p (15,6 px bei 1080 p) — die „< 2,6 px" dieser Zeile
+// stimmten nie, unter 2,6 px fällt der Schwung erst jenseits ~150 m (720 p). Jenseits 44 m (Hysterese) gleitet ein
+// Peer als Standbild, bis die Grobstufe die Gang-Phase trägt (Mensch-L1, synthese W3c/W3g). Als Quadrat (distSq XZ);
+// EIN Leser: _menschFernToggle.
 AnazhRealm.MENSCH_FERN_DIST_SQ = 40 * 40;
 
 // HARVEST_VOLUME_TO_UNITS — Volumen→Material-Einheiten für harvestArchitecture: k=4 →

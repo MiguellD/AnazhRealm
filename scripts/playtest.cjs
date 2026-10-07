@@ -11257,13 +11257,13 @@ async function checkBandRing11AndW7Mesh(ctx) {
         r.dslRun(["voxel_fill", 0, 50, 0, 3], { source: "playtest" });
         out.voxelFillAddsEdit =
             r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode === "fill";
-        // Invalid pos (NaN) → kein Edit + invalid-Log
+        // Invalid pos (NaN) → kein Edit + der benannte Eintrag der Orts-Engstelle (`dslEvalPos`, Welle L V-k5)
         const before = r.state.worldMeta.voxelEdits.length;
         const invalidResult = r.dslRun(["voxel_carve", NaN, 0, 0, 3], { source: "playtest" });
         out.voxelCarveRejectsInvalidPos =
             r.state.worldMeta.voxelEdits.length === before &&
             invalidResult.log &&
-            invalidResult.log.some((l) => l.event === "voxel_carve_invalid_pos");
+            invalidResult.log.some((l) => l.event === "invalid_position" && l.effekt === "voxel_carve");
         r.setGameMode(oldMode);
         r.state.worldMeta.voxelEdits = [];
 
@@ -38212,9 +38212,39 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
                 : null;
             const alt = r.parseChatToDsl("pflanze baum hier");
             out.altGesteBleibt = !!alt && alt.program[0] === "spawn_tree";
-            const nw = r.dslPositions.near_water([160], { state: r.state, rng: Math.random });
-            out.nearWater = !!nw && Number.isFinite(nw.x) && Number.isFinite(nw.z);
-            out.nearWaterTrocken = !!nw && r._isAboveWaterAt(nw.x, nw.z, 0.3);
+            // Welle L (V-k5): near_water liefert einen trockenen Ufer-Ort am Wasser — oder, ohne Wasser im Umkreis, KEINEN
+            // (die Engstelle `dslEvalPos` wirft benannt), nie still den Spieler-Ort. Ob es Wasser gibt, sagt ein EIGENES
+            // 4-m-Raster über den Kreis (nicht die Such-Funktion des Spiels); der Rand-Gürtel 150–166 m gilt beides.
+            const pm0 = r.state.playerMesh.position;
+            let nassNah = false,
+                nassFern = false;
+            const nassPunkte = [];
+            for (let dz = -166; dz <= 166; dz += 4)
+                for (let dx = -166; dx <= 166; dx += 4) {
+                    const d = Math.hypot(dx, dz);
+                    if (d > 166 || r._isAboveWaterAt(pm0.x + dx, pm0.z + dz, 0.2)) continue;
+                    nassFern = true;
+                    if (d <= 150) nassNah = true;
+                    nassPunkte.push([pm0.x + dx, pm0.z + dz]);
+                }
+            let nw = null,
+                nwFehler = null;
+            const nwCtx = r.dslCtx({ source: "test" });
+            try {
+                nw = r.dslEvalPos(["near_water", 160], nwCtx);
+            } catch (e) {
+                nwFehler = e && e.dslKeinOrt ? e.dslKeinOrt.grund : String(e);
+            }
+            const amWasser =
+                !!nw &&
+                Number.isFinite(nw.x) &&
+                Number.isFinite(nw.z) &&
+                Math.hypot(nw.x - pm0.x, nw.z - pm0.z) > 0.5 &&
+                nassPunkte.some(([x, z]) => Math.hypot(x - nw.x, z - nw.z) <= 8);
+            const benannt = nwFehler === "kein Wasser im Umkreis von 160 m";
+            out.nearWater = nassNah ? amWasser : !nassFern ? benannt : amWasser || benannt;
+            out.nearWaterBefund = { nassNah, nassFern, nw, nwFehler };
+            out.nearWaterTrocken = nw ? r._isAboveWaterAt(nw.x, nw.z, 0.3) : benannt;
             const prompt = r.llmBuildSystemPrompt();
             out.promptOp = /spawn_studio/.test(prompt) && /near_water/.test(prompt);
             out.promptWoerter = /Bäume: /.test(prompt);
@@ -38296,7 +38326,11 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
         "V18.493 Co-Schöpfer: die spezifischere alte Geste bleibt („pflanze baum hier“ → spawn_tree)",
         R.altGesteBleibt === true
     );
-    check("V18.493 Co-Schöpfer: near_water liefert einen endlichen Ort", R.nearWater === true);
+    check(
+        "V18.493 Co-Schöpfer: near_water liefert einen Ufer-Ort am Wasser (eigenes 4-m-Raster) — ohne Wasser im Umkreis KEINEN, benannt (nie still den Spieler-Ort)",
+        R.nearWater === true && R.nearWaterTrocken === true,
+        JSON.stringify(R.nearWaterBefund)
+    );
     check(
         "V18.493 Co-Schöpfer: das KI-Prompt lehrt spawn_studio + near_water + die lebenden Wörter; Regeln dürfen es nicht",
         R.promptOp === true && R.promptWoerter === true && R.ruleVerbot === true

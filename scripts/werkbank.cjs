@@ -106,6 +106,10 @@
 //                                                           Läufe der echten GPU am Messort (jeder Lauf an DIESEM Ort), eingeschwungen, Erst- und Zweit-Boot — die
 //                                                           Hülle zieht nach (setzt, senkt, hebt nie), nur bei sauberer
 //                                                           LINSE
+//   node scripts/werkbank.cjs gpu-fehler                     DIE GPU-FEHLER-LINSE: jede WebGPU-Validierung (Device-Meldung mit
+//                                                           Pass) und jeder Draw ohne gesetzten Vertex-Slot, mit Pipeline,
+//                                                           Pass und three-Objekt (scripts/lib/gpu-fehler.cjs); nur nach
+//                                                           `start --gpu-fehler` (sie hüllt jeden Draw — nie mit Zeit-Läufen)
 //   node scripts/werkbank.cjs reload | status | stop
 //
 // DIE MESS-SERIE: jeder `start` fährt ein eigenes Browser-Profil (Scratch, beim `stop` gelöscht) — der erste Boot ist
@@ -131,6 +135,7 @@ const { ZAEHLER_INSTALL, FALTE_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
 const { TAKT_INSTALL } = require("./lib/takt-linse.cjs");
 const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
+const { GPU_FEHLER_INSTALL, GPU_FEHLER_OBJEKT } = require("./lib/gpu-fehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
 const SK = require("./lib/shader-kosten.cjs");
@@ -148,6 +153,9 @@ const SEITEN_PORT = PORT - 1;
 // kleiner Ring) — Kosten-Fragen für das Schöpfer-Holz stellen `--holz voll`.
 const HOLZ = opt("--holz", process.env.WERKBANK_HOLZ || "");
 const ECHT = argv.includes("--echt");
+// DIE GPU-FEHLER-LINSE nur auf Zuruf (`start --gpu-fehler`): sie hüllt jeden Draw in eine JS-Probe — eine Zeit-Messung
+// (lauf, gpu-bank, band) liefe sonst mit ihrer Last.
+const GPU_FEHLER = argv.includes("--gpu-fehler");
 // DIE SEITE der echten Welt: `--seite` (oder WERKBANK_SEITE) hat EINE Bedeutung — die URL des save-servers
 // (Ursprung, z. B. http://localhost:4312), nie eine Portnummer. Alles andere bricht laut ab, statt still eine
 // falsche Adresse („5312/") zu bauen.
@@ -861,6 +869,8 @@ async function starte() {
     if (!ECHT) await page.setViewport({ width: 640, height: 360 });
     await page.evaluateOnNewDocument(FALTE_INSTALL);
     await page.evaluateOnNewDocument(vramAbgriff);
+    // DIE GPU-FEHLER-LINSE (V-D7): jede WebGPU-Validierung mit Pass und Objekt beim Namen (scripts/lib/gpu-fehler.cjs).
+    if (GPU_FEHLER) await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
     const fehler = [];
     const zerstoert = { n: 0 };
     // Der Zeuge des vollen Stempel-Pools (r184 warnt nur EINMAL je Seite — warnOnce): die Zahl zählt
@@ -907,6 +917,15 @@ async function starte() {
             )
                 await new Promise((r) => setTimeout(r, 200));
         });
+        await page.evaluate(async () => {
+            const dl = performance.now() + 60000;
+            while (
+                !(window.anazhRealm && window.anazhRealm.state.renderer && window.anazhRealm.state.renderer.backend) &&
+                performance.now() < dl
+            )
+                await new Promise((r) => setTimeout(r, 200));
+        });
+        if (GPU_FEHLER) await page.evaluate(GPU_FEHLER_OBJEKT);
     };
     await lade();
     await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
@@ -1098,9 +1117,21 @@ async function starte() {
                             zerstoert: zerstoert.n,
                             stempel: await stempel(),
                             fehler: fehler.slice(-12),
+                            gpuFehler: await page.evaluate(() => {
+                                const F = window.__gpuFehler;
+                                return F ? { device: F.device.length, drawsOhneSlot: F.draws.length } : null;
+                            }),
                         })
                     );
                 }
+                // DIE GPU-FEHLER-LINSE (V-D7): jede Device-Meldung und jeder Draw ohne gesetzten Vertex-Slot, mit Objekt.
+                if (req.url === "/gpu-fehler")
+                    return send(
+                        Object.assign(
+                            await page.evaluate(() => window.__gpuFehler || { fehlt: "Abgriff nicht installiert" }),
+                            { ms: Date.now() - t0 }
+                        )
+                    );
                 if (req.url === "/umstellen") {
                     if (b.ort) {
                         const ort = BAND.ladeSpec(b.ort).ort;
@@ -1896,6 +1927,7 @@ async function starte() {
         });
     else if (cmd === "schirm") o = await rufe("/schirm", { datei: opt("--datei"), regler: opt("--regler", "frei") });
     else if (cmd === "fenster") o = await rufe("/fenster", { w: a[0], h: a[1] });
+    else if (cmd === "gpu-fehler") o = await rufe("/gpu-fehler", {});
     else if (cmd === "gpu-bank") o = await rufe("/gpu-bank", { n: a[0], runden: opt("--runden", 3) });
     else if (cmd === "zerlegen") {
         const bi = argv.indexOf("--bilder");

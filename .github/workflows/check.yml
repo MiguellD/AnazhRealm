@@ -773,6 +773,17 @@ jobs:
               # in BEIDEN Stufen-Gruppen, außerhalb exakt einer, nie 0, Slot-Bilanz dicht (kein Leck).
               run: npm run gate:foundry-crossfade
 
+            - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
+              # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
+              # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
+              # bricht jede Stelle einzeln.
+              run: npm run gate:v1-pfad
+
+            - name: Die GPU-Fehler-Linse (Welle L - V-D7, Selbsttest)
+              # Die Werkbank nennt jede WebGPU-Validierung mit Pass und Objekt (scripts/lib/gpu-fehler.cjs); der
+              # Selbsttest zeichnet auf einer nackten WebGPU-Seite einmal ohne Vertex-Slot - die Linse muss ihn nennen.
+              run: npm run gate:gpu-fehler
+
             - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
               # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
               # (Crash · Welt/Terrain baut · Avatar-Rig/Kreatur/Bauplan baut · Resonanz-Rollen · Stats).
