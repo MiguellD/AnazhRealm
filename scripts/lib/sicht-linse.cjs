@@ -234,42 +234,119 @@ function sichtLinse(cfg) {
     const bytes = () => Object.values(bytesJe()).reduce((a, x) => a + x, 0);
     let b0 = 0,
         bj0 = {};
-    // DER INHALT der Sätze je Frame: Stand (Bereich · Hülle · Ordnung), die Bereiche, die kamen (+), gingen (−) oder neu
-    // gebaut wurden (~), das Verdichten — eine Änderung der Welt beim Namen, gegen die die Bytes stehen
+    // DER INHALT der Sätze je Frame — nur aus UNABHÄNGIGEN Belegen (Gegenprüfung 07.10.): ein Bereich kam (+), ging (−) oder
+    // wurde neu gebaut (~), der Anker der Ordnung zog um (der Spieler wechselte den Chunk), eine Hülle (Bereich oder Zelle)
+    // änderte ihre Lage (`^`, ein Geomorph). Der Stand eines Satzes (`s.stand`) und sein Verdichten-Zähler sind die
+    // Cache-Schlüssel des Spiels selbst — sie belegen NICHTS: ein Stand, den kein Beleg trägt, ist Satz-Arbeit OHNE Ursache
+    // (`<Familie> stand:ohne`), beim Namen. Die geschuldete Folge trägt ihre Ursache (`sichtSatzInhalt`). Vorher zählten
+    // `s.stand` und `s.verdichtet` selbst als Änderung: ein eingeschmuggelter Stand-Bruch (15 072 Prüfungen je Frame) stand
+    // GRÜN, und jede Arbeit des Frames war entschuldigt.
     const inhaltVor = new Map();
     let inhaltOffen = {};
-    const inhalt = () => {
-        const o = {};
-        const ss = r.state.chunkSaetze;
-        if (!ss) return o;
-        for (const s of ss.values()) {
-            const vor = inhaltVor.get(s);
-            const jetzt = { stand: s.stand || 0, verdichtet: s.verdichtet || 0, bloecke: new Map(s.bloecke) };
-            inhaltVor.set(s, jetzt);
-            if (!vor) continue;
-            const e = { stand: jetzt.stand - vor.stand, verdichtet: jetzt.verdichtet - vor.verdichtet, keys: [] };
-            let n = 0;
-            for (const [k, b] of jetzt.bloecke) {
-                const x = vor.bloecke.get(k);
-                if (x === b) continue;
-                n++;
-                if (e.keys.length < 4) e.keys.push((x ? "~" : "+") + k);
-            }
-            for (const k of vor.bloecke.keys())
-                if (!jetzt.bloecke.has(k)) {
-                    n++;
-                    if (e.keys.length < 4) e.keys.push("-" + k);
-                }
-            e.bereiche = n;
-            if (e.stand || e.verdichtet || n) {
-                const fam = familie(s);
-                const a = o[fam] || (o[fam] = { stand: 0, verdichtet: 0, bereiche: 0, keys: [] });
-                a.stand += e.stand;
-                a.verdichtet += e.verdichtet;
-                a.bereiche += e.bereiche;
-                a.keys.push(...e.keys.slice(0, 4 - a.keys.length));
-            }
+    let inhaltOhneOffen = {};
+    // die Hülle eines Bereichs und seiner Zellen als Zahlen (gerechnet nur, wenn der Stand sich bewegte oder der Bereich neu ist)
+    const huelleZahlen = (b) => {
+        const zl = b.zellen || [];
+        const a = new Float64Array(6 * (1 + zl.length));
+        const setze = (h, o) => {
+            if (!h) return void a.fill(-1.5e308, o, o + 6);
+            a[o] = h.min.x;
+            a[o + 1] = h.min.y;
+            a[o + 2] = h.min.z;
+            a[o + 3] = h.max.x;
+            a[o + 4] = h.max.y;
+            a[o + 5] = h.max.z;
+        };
+        setze(b.huelle, 0);
+        for (let i = 0; i < zl.length; i++) setze(zl[i].huelle, 6 + 6 * i);
+        return a;
+    };
+    // DAS BILD eines Satzes: die Zähler des Spiels (Stand, Verdichten) und daneben die Belege (Bereiche mit Hülle, Anker, die
+    // offene Ordnung, Geometrie und Kapazität, der Überhang `ueberSeit`, den das Spiel selbst misst)
+    const satzBild = (s, vor) => {
+        const stand = s.stand || 0;
+        const bloecke = new Map();
+        for (const [k, b] of s.bloecke) {
+            const x = vor && vor.bloecke.get(k);
+            bloecke.set(k, { b, h: x && x.b === b && vor.stand === stand ? x.h : huelleZahlen(b) });
         }
+        return {
+            stand,
+            verdichtet: s.verdichtet || 0,
+            anker: s.anker,
+            schmutzig: !!s.schmutzig,
+            geom: s.geom,
+            vKap: s.vKap,
+            iKap: s.iKap,
+            ueber: s.ueberSeit >= 0,
+            bloecke,
+            offen: false,
+        };
+    };
+    // ein Eintrag je Familie: die Belege summiert, der Grund die stärkste Klasse (Änderung vor Folge)
+    const inhaltDazu = (ziel, fam, e) => {
+        const a =
+            ziel[fam] ||
+            (ziel[fam] = {
+                grund: null,
+                bereiche: 0,
+                anker: false,
+                huelle: 0,
+                ordnung: false,
+                verdichtet: 0,
+                stand: 0,
+                keys: [],
+            });
+        a.grund = a.grund === "aenderung" || e.grund === "aenderung" ? "aenderung" : "folge";
+        a.bereiche += e.bereiche || 0;
+        a.anker = a.anker || !!e.anker;
+        a.huelle += e.huelle || 0;
+        a.ordnung = a.ordnung || !!e.ordnung;
+        a.verdichtet += e.verdichtet || 0;
+        a.stand += e.stand || 0;
+        for (const k of e.keys || []) if (a.keys.length < 4) a.keys.push(k);
+    };
+    // `erstes` (an()): jedes Bild ist der Bezug; danach je Satz der Inhalt gegen sein Bild davor
+    const inhalt = (erstes) => {
+        const o = { inhalt: {}, ohne: {} };
+        const ss = r.state.chunkSaetze;
+        const da = new Set();
+        if (ss)
+            for (const s of ss.values()) {
+                da.add(s);
+                const fam = familie(s);
+                const vor = inhaltVor.get(s);
+                const jetzt = satzBild(s, vor);
+                if (!vor) {
+                    // die offene Ordnung eines Satzes, der vor der Linse schmutzig wurde, schuldet sie ab `an()`
+                    jetzt.offen = jetzt.schmutzig;
+                    inhaltVor.set(s, jetzt);
+                    if (!erstes)
+                        inhaltDazu(o.inhalt, fam, {
+                            grund: "aenderung",
+                            bereiche: jetzt.bloecke.size,
+                            keys: ["+" + s.art],
+                        });
+                    continue;
+                }
+                const e = window.__sichtSatzInhalt(vor, jetzt, vor.offen);
+                jetzt.offen = e.offen;
+                inhaltVor.set(s, jetzt);
+                if (e.grund) inhaltDazu(o.inhalt, fam, e);
+                if (e.ohne.stand > 0) o.ohne[fam + " stand:ohne"] = (o.ohne[fam + " stand:ohne"] || 0) + e.ohne.stand;
+                if (e.ohne.verdichtet > 0)
+                    o.ohne[fam + " verdichtet:ohne"] = (o.ohne[fam + " verdichtet:ohne"] || 0) + e.ohne.verdichtet;
+            }
+        for (const [s, vor] of inhaltVor)
+            if (!da.has(s)) {
+                inhaltVor.delete(s);
+                if (!erstes)
+                    inhaltDazu(o.inhalt, familie(s), {
+                        grund: "aenderung",
+                        bereiche: vor.bloecke.size,
+                        keys: ["-" + s.art],
+                    });
+            }
         return o;
     };
     // die Licht-Richtung des Frames (Richtlicht: Ort − Ziel) — dreht sie gegen den Frame davor?
@@ -341,7 +418,10 @@ function sichtLinse(cfg) {
             b0 = bytes();
             bj0 = bytesJe();
             schuldSaat();
-            inhalt();
+            inhaltVor.clear();
+            inhaltOffen = {};
+            inhaltOhneOffen = {};
+            inhalt(true);
             lichtDreht();
             kameraBewegt();
             blendeDreht();
@@ -358,15 +438,15 @@ function sichtLinse(cfg) {
             for (const k in bj) if (bj[k] !== (bj0[k] || 0)) o.bytesJe[k] = bj[k] - (bj0[k] || 0);
             bj0 = bj;
             // eine Änderung in einem Takt ohne Pass (der Loop rendert nicht jeden Takt) zählt zum nächsten gerenderten Frame
-            for (const [fam, e] of Object.entries(inhalt())) {
-                const a = inhaltOffen[fam] || (inhaltOffen[fam] = { stand: 0, verdichtet: 0, bereiche: 0, keys: [] });
-                a.stand += e.stand;
-                a.verdichtet += e.verdichtet;
-                a.bereiche += e.bereiche;
-                a.keys.push(...e.keys.slice(0, Math.max(0, 4 - a.keys.length)));
-            }
+            const inh = inhalt(false);
+            for (const [fam, e] of Object.entries(inh.inhalt)) inhaltDazu(inhaltOffen, fam, e);
+            for (const [k, n] of Object.entries(inh.ohne)) inhaltOhneOffen[k] = (inhaltOhneOffen[k] || 0) + n;
             o.inhalt = inhaltOffen;
-            if (o.paesse > 0) inhaltOffen = {};
+            o.inhaltOhne = inhaltOhneOffen;
+            if (o.paesse > 0) {
+                inhaltOffen = {};
+                inhaltOhneOffen = {};
+            }
             const p = o.pruefung;
             o.ecken = 8 * ((p._hoehlenRect || 0) + (p._hoehlenLichtLage || 0));
             let ruhe = (p._hoehlenRect || 0) + (p._hoehlenLichtLage || 0);
@@ -412,14 +492,76 @@ function sichtLinse(cfg) {
     return L;
 }
 
+// DER INHALT EINES SATZES zwischen zwei Bildern (rein, Gegenprüfung 07.10.): die Belege beim Namen, nie die Zähler des Spiels.
+// `vor`/`jetzt` je { stand, verdichtet, anker, schmutzig, geom, vKap, iKap, ueber, bloecke: Map(Schlüssel → { b, h }) } —
+// `b` der Bereich (Identität), `h` seine Hülle und die seiner Zellen als Zahlen. `offen` = die Ordnung, die ein Ein-/Austritt
+// davor offen ließ. Grund `aenderung`: ein Bereich kam, ging oder wurde neu gebaut, der Anker zog um, eine Hülle änderte sich
+// (der Stand bewegte sich mit ihr). Grund `folge`: die offene Ordnung lief (der Satz ist nicht mehr schmutzig) — oder das
+// Verdichten tauschte die Geometrie, nachdem das Spiel den Überhang maß (`ueber`). Ein Stand ohne einen dieser Belege heißt
+// `ohne.stand`, ein Verdichten-Zähler ohne Tausch oder ohne Überhang `ohne.verdichtet` — Satz-Arbeit OHNE Ursache.
+function sichtSatzInhalt(vor, jetzt, offen) {
+    const e = {
+        grund: null,
+        bereiche: 0,
+        anker: false,
+        huelle: 0,
+        ordnung: false,
+        verdichtet: 0,
+        stand: (jetzt.stand || 0) - (vor.stand || 0),
+        keys: [],
+        ohne: { stand: 0, verdichtet: 0 },
+        offen: false,
+    };
+    const name = (k) => {
+        if (e.keys.length < 4) e.keys.push(k);
+    };
+    for (const [k, x] of jetzt.bloecke) {
+        const y = vor.bloecke.get(k);
+        if (y && y.b === x.b) {
+            if (e.stand > 0 && y.h !== x.h) {
+                let gleich = !!y.h && !!x.h && y.h.length === x.h.length;
+                for (let i = 0; gleich && i < x.h.length; i++) if (x.h[i] !== y.h[i]) gleich = false;
+                if (!gleich) {
+                    e.huelle++;
+                    name("^" + k);
+                }
+            }
+            continue;
+        }
+        e.bereiche++;
+        name((y ? "~" : "+") + k);
+    }
+    for (const k of vor.bloecke.keys())
+        if (!jetzt.bloecke.has(k)) {
+            e.bereiche++;
+            name("-" + k);
+        }
+    e.anker = vor.anker !== jetzt.anker;
+    if (e.anker) name("anker " + jetzt.anker);
+    // die Ordnung: ein Ein-/Austritt macht den Satz schmutzig, das Spiel ordnet im nächsten Render — sie bleibt offen, solange
+    // er schmutzig ist, und läuft als Folge, wenn er es nicht mehr ist
+    e.ordnung = !!offen && vor.schmutzig && !jetzt.schmutzig;
+    e.offen = !!jetzt.schmutzig && (e.bereiche > 0 || !!offen);
+    const dV = (jetzt.verdichtet || 0) - (vor.verdichtet || 0);
+    if (dV > 0) {
+        if (vor.ueber && jetzt.geom !== vor.geom) e.verdichtet = dV;
+        else e.ohne.verdichtet = dV;
+    }
+    const aenderung = e.bereiche > 0 || e.anker || e.huelle > 0;
+    if (e.stand > 0 && !aenderung && !e.ordnung) e.ohne.stand = e.stand;
+    e.grund = aenderung ? "aenderung" : e.ordnung || e.verdichtet > 0 ? "folge" : null;
+    return e;
+}
+
 // DIE BYTES UND IHR GRUND (rein, K 07.10.): je Frame die Index-Bytes nach Klasse — `aenderung` (eine neue Wahl, deren
-// Grund im selben Frame geschah: die Lage eines Passes bei gedrehtem Licht, der Inhalt ihrer Familie — Bereich, Hülle,
-// Ordnung, Verdichten: Streaming, ein Bau, ein Asset), `folge` (die Arbeit einer Änderung davor, solange eine Wahl sie schuldet:
-// das Verdichten einer ruhenden Wahl nach `dichtNach` Pässen, das Umlegen aller Abschnitte, eine fremd geleerte Liste) und
-// `ohne` (kein Grund — der Täter, je „Familie Grund Pass"; `dicht:ohne` · `umlegen:ohne`: die Folge, die keine Wahl
-// schuldet). Bytes, die der Schreiber-Haken nicht sah, haben keinen Grund („? ungesehen" — die Linse ist blind). Die Lage
+// Grund im selben Frame geschah: die Lage eines Passes bei gedrehtem Licht, der Inhalt ihrer Familie mit BENANNTEM Grund —
+// ein Bereich, ein Anker, eine Hülle: Streaming, ein Bau, ein Geomorph), `folge` (die Arbeit einer Änderung davor, solange eine
+// Wahl sie schuldet: das Verdichten einer ruhenden Wahl nach `dichtNach` Pässen, das Umlegen aller Abschnitte, eine fremd
+// geleerte Liste, die offene Ordnung, das Verdichten des Satzes nach seinem Überhang) und `ohne` (kein Grund — der Täter, je
+// „Familie Grund Pass"; `dicht:ohne` · `umlegen:ohne`: die Folge, die keine Wahl schuldet; eine Wahl, deren Satz nur seinen
+// Stand zählte). Bytes, die der Schreiber-Haken nicht sah, haben keinen Grund („? ungesehen" — die Linse ist blind). Die Lage
 // eines Passes ändert sich mit der Kamera über den Halt (`kamera`) und der Blende des Reglers (`blende`, jeder Pass) oder
-// dem Licht (nur die Kaskaden `k<i>`).
+// dem Licht (nur die Kaskaden `k<i>`). Ein Inhalt ohne `grund` (nur die Zähler des Spiels) entschuldigt nichts.
 function sichtBytesKlasse(f) {
     const aus = { aenderung: 0, folge: 0, ohne: 0, aenderungJe: {}, folgeJe: {}, ohneJe: {} };
     let gesehen = 0;
@@ -430,7 +572,10 @@ function sichtBytesKlasse(f) {
         if (g === "dicht" || g === "umlegen" || g === "wahl:liste") kl = "folge";
         else if (g === "wahl:lage")
             kl = f.kamera || f.blende || (f.licht && /^k\d+$/.test(pass || "")) ? "aenderung" : "ohne";
-        else if (/^wahl:(stand|neu|boden|hoehle)$/.test(g)) kl = f.inhalt && f.inhalt[fam] ? "aenderung" : "ohne";
+        else if (/^wahl:(stand|neu|boden|hoehle)$/.test(g)) {
+            const e = f.inhalt && f.inhalt[fam];
+            kl = e && e.grund === "aenderung" ? "aenderung" : e && e.grund === "folge" ? "folge" : "ohne";
+        }
         aus[kl] += b;
         aus[kl + "Je"][k] = (aus[kl + "Je"][k] || 0) + b;
     }
@@ -458,16 +603,18 @@ function sichtKameraBewegt(a, e, haltM, drehRand) {
     }
     return false;
 }
-// Die Arbeit eines Frames ohne Änderung: eine bewegte Kamera, eine neue Blende oder ein geänderter Satz-Inhalt erklären die
-// ganze Arbeit, ein gedrehtes Licht die Arbeit der Kaskaden-Pässe (je Pass `jePass`) — was bleibt, ist ein Cache-Bruch.
+// Die Arbeit eines Frames ohne Änderung: eine bewegte Kamera, eine neue Blende oder ein Satz-Inhalt mit BENANNTEM Grund
+// (`grund`: Änderung oder ihre Folge) erklären die ganze Arbeit, ein gedrehtes Licht die Arbeit der Kaskaden-Pässe (je Pass
+// `jePass`) — was bleibt, ist ein Cache-Bruch. Die Zähler eines Satzes allein (Stand, Verdichten) erklären nichts.
 function sichtArbeitOhne(f) {
-    if (f.kamera || f.blende || (f.inhalt && Object.keys(f.inhalt).length)) return 0;
+    if (f.kamera || f.blende || Object.values(f.inhalt || {}).some((e) => !!(e && e.grund))) return 0;
     if (!f.licht) return f.arbeit;
     let n = 0;
     for (const [k, x] of Object.entries(f.jePass || {})) if (!/^k\d+$/.test(k)) n += x.pruefung;
     return n;
 }
-const sichtAenderung = (f) => !!(f.licht || f.kamera || f.blende || (f.inhalt && Object.keys(f.inhalt).length));
+const sichtAenderung = (f) =>
+    !!(f.licht || f.kamera || f.blende || Object.values(f.inhalt || {}).some((e) => !!(e && e.grund)));
 
 // Die Statistik einer Phase: je Zähl-Größe Mittel · Median · Maximum über die Frames (ab `ab`).
 function sichtPhase(frames, ab) {
@@ -522,6 +669,7 @@ function sichtPhase(frames, ab) {
                 grund: f.bytesGrund,
                 warum: f.warum,
                 inhalt: f.inhalt,
+                inhaltOhne: f.inhaltOhne,
                 licht: f.licht,
                 kamera: f.kamera,
                 blende: f.blende,
@@ -533,17 +681,41 @@ function sichtPhase(frames, ab) {
         for (const f of fs) for (const k in f.klasse[kl + "Je"]) o[k] = (o[k] || 0) + f.klasse[kl + "Je"][k];
         return o;
     };
-    // die Bereiche, die sich in der Phase änderten (je Familie die ersten Schlüssel)
+    // der Inhalt, der sich in der Phase mit BENANNTEM Grund änderte (je Familie die Belege und die ersten Schlüssel) — und die
+    // Satz-Arbeit ohne Ursache (je „Familie stand:ohne" bzw. „Familie verdichtet:ohne", Summe über die Phase)
     const inhaltJe = {};
     for (const f of fs)
         for (const [fam, e] of Object.entries(f.inhalt || {})) {
-            const a = inhaltJe[fam] || (inhaltJe[fam] = { frames: 0, stand: 0, verdichtet: 0, bereiche: 0, keys: [] });
+            if (!e || !e.grund) continue;
+            const a =
+                inhaltJe[fam] ||
+                (inhaltJe[fam] = {
+                    frames: 0,
+                    aenderung: 0,
+                    folge: 0,
+                    bereiche: 0,
+                    anker: 0,
+                    huelle: 0,
+                    ordnung: 0,
+                    verdichtet: 0,
+                    stand: 0,
+                    keys: [],
+                });
             a.frames++;
-            a.stand += e.stand;
-            a.verdichtet += e.verdichtet;
-            a.bereiche += e.bereiche;
-            for (const k of e.keys) if (a.keys.length < 8 && !a.keys.includes(k)) a.keys.push(k);
+            a[e.grund]++;
+            a.bereiche += e.bereiche || 0;
+            a.anker += e.anker ? 1 : 0;
+            a.huelle += e.huelle || 0;
+            a.ordnung += e.ordnung ? 1 : 0;
+            a.verdichtet += e.verdichtet || 0;
+            a.stand += e.stand || 0;
+            for (const k of e.keys || []) if (a.keys.length < 8 && !a.keys.includes(k)) a.keys.push(k);
         }
+    const inhaltOhneJe = summe("inhaltOhne");
+    const inhaltOhneFrames = fs.filter((f) => Object.keys(f.inhaltOhne || {}).length > 0).length;
+    const inhaltFrames = fs.filter((f) =>
+        Object.values(f.inhalt || {}).some((e) => !!(e && e.grund === "aenderung"))
+    ).length;
     const ohneAenderung = fs.filter((f) => !window.__sichtAenderung(f));
     // DIE SONNE der Phase: in wie vielen Frames das Licht drehte, um wie viel die Sonne lief (Bogenmaß, aus der Tageszeit —
     // der Weg über den Tag ist 2π), ihre Stufe (`state._sonne.stufe`, null = keine)
@@ -573,6 +745,9 @@ function sichtPhase(frames, ab) {
         bytesOhne: st((f) => f.klasse.ohne),
         ohneFrames: fs.filter((f) => f.klasse.ohne > 0).length,
         inhaltJe,
+        inhaltFrames,
+        inhaltOhneJe,
+        inhaltOhneFrames,
         // die Frames mit einer Änderung (Kamera, Licht, Inhalt) und je Frame die Arbeit, die keine Änderung erklärt
         aenderungFrames: fs.length - ohneAenderung.length,
         kameraFrames: fs.filter((f) => f.kamera).length,
@@ -611,14 +786,18 @@ function sichtPhase(frames, ab) {
 
 // DAS URTEIL (rein): Liste der Verstöße, leer = grün. `b.ruhe` / `b.drehen` / `b.gehen` sind Phasen (`sichtPhase`).
 //   (R) RUHE: nach dem ersten Frame keine neue Arbeit und kein Byte OHNE ÄNDERUNG, und die Pässe treffen ihren Cache (sonst
-//       prüfte die Linse nichts). Eine Änderung ist ein gedrehtes Licht (die Sonne läuft im Spiel) oder ein geänderter
-//       Satz-Inhalt (Streaming, ein Bau, ein Asset — `sichtBytesKlasse`); ihre Arbeit und ihre Bytes nennt die Linse, sie
-//       fallen nie rot. Ein Byte ohne Grund fällt in jedem Frame rot, beim Namen („Familie Grund"). Die Arbeit ohne Änderung:
-//       `b.streng` (die Wand, eingefrorene Welt) in KEINEM Frame; sonst (der echte Loop — eine Gruppe wird geräumt) der
-//       Median 0 und höchstens `RUHE_EREIGNIS` der Frames;
+//       prüfte die Linse nichts). Eine Änderung ist ein gedrehtes Licht (die Sonne läuft im Spiel) oder ein Satz-Inhalt mit
+//       BENANNTEM Grund (ein Bereich, ein Anker, eine Hülle: Streaming, ein Bau, ein Geomorph — `sichtSatzInhalt`); ihre
+//       Arbeit und ihre Bytes nennt die Linse, sie fallen nie rot. Ein Byte ohne Grund fällt in jedem Frame rot, beim Namen
+//       („Familie Grund"), ebenso Satz-Arbeit ohne Ursache (ein Stand oder ein Verdichten, den kein Beleg trägt — „Familie
+//       stand:ohne"). Die Arbeit ohne Änderung: `b.streng` (die Wand, eingefrorene Welt) in KEINEM Frame, und dort ist auch
+//       jede Inhalts-Änderung rot (die Welt steht); sonst (der echte Loop — eine Gruppe wird geräumt) der Median 0 und
+//       höchstens `RUHE_EREIGNIS` der Frames;
 //   (B) BEWEGUNG: wer dreht oder geht, rechnet neu — eine Phase ohne Arbeit hielte eine Wahl über eine neue Lage (Loch);
 //   (T) TREUE: die gehaltene Wahl ist die frisch gerechnete (`b.treue`: je Satz × Pass die Zellen, je Gruppe die Zahl);
-//   (S) SCHARF: ein eingeschmuggelter Cache-Bruch (`b.bruch`, eine Ruhe-Phase mit gebrochenem Cache) fällt rot;
+//   (S) SCHARF: ein eingeschmuggelter Cache-Bruch (`b.bruch`, eine Ruhe-Phase mit gebrochenem Cache) fällt rot; ein
+//       eingeschmuggelter Stand-Bruch (`b.standBruch`: jeder Satz zählt je Frame seinen Stand, kein Beleg ändert sich) zählt
+//       als Arbeit ohne Änderung und steht als `stand:ohne` beim Namen;
 //   (L) RUHE MIT LAUFENDER SONNE (`b.sonne`, die Tageslänge des Spiels — der Tag steht im Spiel nie): das Licht hat eine
 //       Stufe (`state._sonne.stufe`) und dreht nur an ihr (höchstens doppelt so oft wie die Drehung der Sonne durch die
 //       Stufe), und die Kette arbeitet nur, wo eine Stufe fiel (je Stufe höchstens ein Frame je Kaskade); eine Kaskade mit Box
@@ -695,6 +874,25 @@ function sichtUrteil(b) {
                         .map(([k, n]) => `${k} ${n} B`)
                         .join(" · ")
             );
+        // die Satz-Arbeit ohne Ursache: der Cache-Schlüssel eines Satzes zählt (Stand, Verdichten), ohne dass ein Bereich, ein
+        // Anker oder eine Hülle sich änderte — jede Wahl dieses Satzes rechnet neu, in jedem Frame ein Bruch
+        if (R.inhaltOhneFrames > 0)
+            v.push(
+                `RUHE: Satz-Arbeit ohne Ursache in ${R.inhaltOhneFrames} von ${R.frames} Frames — ` +
+                    Object.entries(R.inhaltOhneJe || {})
+                        .sort((x, y) => y[1] - x[1])
+                        .map(([k, n]) => `${k} ×${n}`)
+                        .join(" · ") +
+                    " (der Cache-Schlüssel eines Satzes zählt, kein Bereich, kein Anker, keine Hülle änderte sich)"
+            );
+        if (b.streng && R.inhaltFrames > 0)
+            v.push(
+                `RUHE: die Welt ist eingefroren, doch ihr Inhalt änderte sich in ${R.inhaltFrames} von ${R.frames} Frames (` +
+                    Object.entries(R.inhaltJe || {})
+                        .map(([fam, e]) => `${fam} ${e.keys.join(" ")}`)
+                        .join(" · ") +
+                    ") — die Ruhe misst nicht die Ruhe"
+            );
         if (!(R.treffer.median > 0))
             v.push(
                 "LINSE BLIND: kein Pass traf in Ruhe seinen Cache (die Wahl steht nie — oder die Linse sieht sie nicht)"
@@ -728,6 +926,24 @@ function sichtUrteil(b) {
             v.push(
                 "LINSE STUMPF: ein eingeschmuggelter Byte-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu) zählt " +
                     `nicht als Bytes ohne Änderung (${x ? x.ohneFrames : "?"} Frames, ${JSON.stringify((x && x.bytesOhneJe) || {})})`
+            );
+    }
+    // der Stand-Bruch (`b.standBruch`, Gegenprüfung 07.10.): jeder Satz zählt je Frame seinen Stand, ohne dass ein Bereich, ein
+    // Anker oder eine Hülle sich ändert — die Linse muss seine Arbeit als Arbeit OHNE Änderung zählen und `stand:ohne` beim
+    // Namen nennen (vorher hieß der eigene Zähler „Inhalt geändert", und die Wand stand grün)
+    if (b.standBruch !== undefined) {
+        const x = b.standBruch;
+        const benannt =
+            !!x && x.inhaltOhneFrames > 0 && Object.keys(x.inhaltOhneJe || {}).some((k) => / stand:ohne$/.test(k));
+        if (!benannt || !(x.arbeitOhne && x.arbeitOhne.frames > 0))
+            v.push(
+                "LINSE STUMPF: ein eingeschmuggelter Stand-Bruch (jeder Satz zählt je Frame seinen Stand, kein Bereich, kein " +
+                    "Anker, keine Hülle ändert sich) zählt als Änderung (" +
+                    (x
+                        ? `${x.aenderungFrames} von ${x.frames} Frames mit Änderung, Arbeit ohne Änderung in ` +
+                          `${x.arbeitOhne ? x.arbeitOhne.frames : "?"}, ohne Ursache ${JSON.stringify(x.inhaltOhneJe || {})}`
+                        : "keine Phase") +
+                    ")"
             );
     }
     return v;
@@ -852,8 +1068,10 @@ module.exports = {
     SICHT_NEU,
     RUHE_LESER,
     sichtKameraBewegt,
+    sichtSatzInhalt,
     sichtBytesKlasse,
     sichtArbeitOhne,
+    sichtAenderung,
     sichtPhase,
     sichtUrteil,
     SICHT_INSTALL:
@@ -867,6 +1085,7 @@ module.exports = {
             ruheLeser: RUHE_LESER,
         })});` +
         `window.__sichtKameraBewegt = ${sichtKameraBewegt.toString()};` +
+        `window.__sichtSatzInhalt = ${sichtSatzInhalt.toString()};` +
         `window.__sichtBytesKlasse = ${sichtBytesKlasse.toString()};` +
         `window.__sichtAenderung = ${sichtAenderung.toString()};` +
         `window.__sichtArbeitOhne = ${sichtArbeitOhne.toString()};` +

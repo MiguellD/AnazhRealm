@@ -19,6 +19,10 @@
 //       ein eingeschmuggelter Byte-Bruch (jeder ruhende Abschnitt legt sich je Pass dicht neu, ohne dass eine Wahl es
 //       schuldet) zählt als Bytes OHNE Änderung und steht als `dicht:ohne` beim Namen (K, 07.10.: die Linse trennt die Bytes
 //       einer Änderung — Licht, Kamera über den Halt, Satz-Inhalt — und ihre geschuldete Folge von den Bytes ohne Grund);
+//       ein eingeschmuggelter Stand-Bruch (jeder Satz zählt je Frame seinen Stand, kein Bereich, kein Anker, keine Hülle
+//       ändert sich — der Cache-Schlüssel churnt) zählt als Arbeit OHNE Änderung und steht als `stand:ohne` beim Namen
+//       (Gegenprüfung 07.10.: die Linse hielt `s.stand` selbst für „Inhalt geändert" und stand bei 15 072 Prüfungen je
+//       Frame GRÜN); in der eingefrorenen Welt fällt jede Inhalts-Änderung in Ruhe rot;
 //   (L) RUHE MIT LAUFENDER SONNE (07.10. — der Tag steht im Spiel nie): die Tageszeit läuft mit der Tageslänge des Spiels
 //       (60 Frames je s), das Licht folgt `_applyDayNightToScene`, die Stellvertreter-Kaskaden stehen entlang des Lichts
 //       (dreht es, drehen sie): das Licht hat eine Stufe und dreht nur an ihr, die Kette arbeitet nur, wo eine Stufe fiel
@@ -41,6 +45,7 @@ function urteil(b) {
     const v = SICHT.sichtUrteil(Object.assign({ streng: true }, b));
     if (!b.sonne) v.push("LEER: keine Phase mit laufender Sonne (kein Richtlicht?) — (L) prüfte nichts");
     if (!b.byteBruch) v.push("LEER: kein Byte-Bruch gemessen — (S) prüfte die Bytes ohne Änderung nicht");
+    if (!b.standBruch) v.push("LEER: kein Stand-Bruch gemessen — (S) prüfte die Satz-Arbeit ohne Ursache nicht");
     const I = b.instanzTreue;
     if (!I || !(I.faelle && I.faelle.length >= 2))
         v.push(
@@ -116,6 +121,10 @@ function selbsttest() {
         gehen: phase(5000, 0, 0),
         bruch: phase(4000, 0, 0),
         byteBruch: Object.assign(phase(0, 960, 9), { bytesOhneJe: { "boden dicht:ohne haupt": 9600 } }),
+        standBruch: Object.assign(phase(15072, 0, 0), {
+            inhaltOhneFrames: 10,
+            inhaltOhneJe: { "streuSatz stand:ohne": 50, "boden stand:ohne": 10 },
+        }),
         treue: { geprueft: 12, abweichung: [] },
         drehTreue: { grenze: 0.0348, gehalten: true, loecher: 0, namen: [], geprueft: 500 },
         instanzTreue: {
@@ -142,8 +151,18 @@ function selbsttest() {
     const v1 = urteil(Object.assign(klon(), { sonne: randSonne(40, 32) }));
     if (v1.length) fehler.push("der grüne Befund mit Licht-Rand fällt rot: " + v1.join(" · "));
     console.log(`  ${v1.length ? "❌" : "✅"} Selbsttest grün mit Licht-Rand → ${v1.join(" · ") || "grün"}`);
-    // RUHE MIT ÄNDERUNG (K, 07.10.): Arbeit und Bytes in Frames mit gedrehtem Licht oder geändertem Satz-Inhalt sind die Arbeit
-    // der Änderung — grün; die Linse nennt sie (die Werkbank fällte die laufende Sonne als „schreibt ohne Änderung")
+    // RUHE MIT ÄNDERUNG (K, 07.10.): Arbeit und Bytes in Frames mit gedrehtem Licht sind die Arbeit der Änderung — grün; die
+    // Linse nennt sie (die Werkbank fällte die laufende Sonne als „schreibt ohne Änderung"). Ein Satz-Inhalt mit benanntem
+    // Grund ist im echten Loop (nicht streng) eine Änderung — in der eingefrorenen Welt der Wand fällt er rot (Fall unten).
+    const loopInhalt = Object.assign(klon().ruhe, {
+        inhaltFrames: 3,
+        inhaltJe: { boden: { frames: 3, aenderung: 3, folge: 0, bereiche: 3, keys: ["+-901,-850"] } },
+    });
+    const vL = SICHT.sichtUrteil({ ruhe: loopInhalt });
+    if (vL.length) fehler.push("der echte Loop mit Inhalts-Änderung fällt rot: " + vL.join(" · "));
+    console.log(
+        `  ${vL.length ? "❌" : "✅"} Selbsttest echter Loop mit Inhalts-Änderung → ${vL.join(" · ") || "grün"}`
+    );
     const mitAenderung = klon();
     Object.assign(mitAenderung.ruhe, {
         arbeit: { mittel: 800, median: 0, max: 10000 },
@@ -154,21 +173,55 @@ function selbsttest() {
     });
     const v2 = urteil(mitAenderung);
     if (v2.length) fehler.push("Ruhe mit Änderung fällt rot: " + v2.join(" · "));
-    console.log(
-        `  ${v2.length ? "❌" : "✅"} Selbsttest Ruhe mit Änderung (Licht, Inhalt) → ${v2.join(" · ") || "grün"}`
-    );
-    // DIE KLASSE JE BYTE (`sichtBytesKlasse`): der Grund des Schreibers gegen die Änderung im selben Frame
+    console.log(`  ${v2.length ? "❌" : "✅"} Selbsttest Ruhe mit Änderung (Licht) → ${v2.join(" · ") || "grün"}`);
+    // DIE KLASSE JE BYTE (`sichtBytesKlasse`): der Grund des Schreibers gegen die Änderung im selben Frame — ein Satz-Inhalt
+    // zählt nur mit BENANNTEM Grund (`grund`), nie über die Zähler des Spiels (Stand, Verdichten)
     const kl = (f) => SICHT.sichtBytesKlasse(f);
     const klassen = [
         [
-            "Inhalt änderte sich",
-            { bytes: 100, bytesGrund: { "boden wahl:stand haupt": 100 }, inhalt: { boden: { stand: 1 } } },
+            "Inhalt änderte sich (ein Bereich kam)",
+            {
+                bytes: 100,
+                bytesGrund: { "boden wahl:stand haupt": 100 },
+                inhalt: { boden: { grund: "aenderung", bereiche: 1, stand: 1 } },
+            },
             "aenderung",
         ],
         ["Stand ohne Inhalt", { bytes: 100, bytesGrund: { "boden wahl:stand haupt": 100 }, inhalt: {} }, "ohne"],
         [
+            "Stand-Bruch (der Satz zählt nur seinen Stand)",
+            {
+                bytes: 100,
+                bytesGrund: { "streuSatz wahl:stand haupt": 100 },
+                inhalt: { streuSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] } },
+            },
+            "ohne",
+        ],
+        [
+            "Verdichten-Zähler ohne Grund",
+            {
+                bytes: 100,
+                bytesGrund: { "bauSatz wahl:neu k0": 100 },
+                inhalt: { bauSatz: { stand: 0, verdichtet: 1, bereiche: 0, keys: [] } },
+            },
+            "ohne",
+        ],
+        [
+            "Verdichten nach dem Überhang (die neue Wahl danach)",
+            {
+                bytes: 100,
+                bytesGrund: { "bauSatz wahl:neu k0": 100 },
+                inhalt: { bauSatz: { grund: "folge", verdichtet: 1 } },
+            },
+            "folge",
+        ],
+        [
             "Inhalt einer anderen Familie",
-            { bytes: 100, bytesGrund: { "boden wahl:neu k0": 100 }, inhalt: { wasser: { stand: 1 } } },
+            {
+                bytes: 100,
+                bytesGrund: { "boden wahl:neu k0": 100 },
+                inhalt: { wasser: { grund: "aenderung", bereiche: 1 } },
+            },
             "ohne",
         ],
         [
@@ -241,7 +294,8 @@ function selbsttest() {
         if (k !== soll) fehler.push(`Kamera „${name}": ${k} statt ${soll}`);
         console.log(`  ${k === soll ? "✅" : "❌"} Selbsttest Kamera „${name}" → ${k ? "bewegt" : "steht"}`);
     }
-    // DIE ARBEIT OHNE ÄNDERUNG je Frame (`sichtArbeitOhne`): Kamera und Inhalt erklären alles, das Licht nur die Kaskaden
+    // DIE ARBEIT OHNE ÄNDERUNG je Frame (`sichtArbeitOhne`): Kamera und ein Inhalt mit benanntem Grund erklären alles, das
+    // Licht nur die Kaskaden, der Stand eines Satzes allein nichts
     const ao = (f) => SICHT.sichtArbeitOhne(f);
     const jp = { haupt: { pruefung: 7 }, k0: { pruefung: 50 } };
     for (const [name, f, soll] of [
@@ -249,13 +303,217 @@ function selbsttest() {
         ["Licht drehte", { arbeit: 57, jePass: jp, licht: 1, inhalt: {} }, 7],
         ["Kamera bewegt", { arbeit: 57, jePass: jp, kamera: 1, inhalt: {} }, 0],
         ["Blende neu", { arbeit: 57, jePass: jp, blende: 1, inhalt: {} }, 0],
-        ["Inhalt änderte sich", { arbeit: 57, jePass: jp, inhalt: { bauSatz: { stand: 1 } } }, 0],
+        [
+            "Inhalt änderte sich",
+            { arbeit: 57, jePass: jp, inhalt: { bauSatz: { grund: "aenderung", bereiche: 1 } } },
+            0,
+        ],
+        ["Folge (die offene Ordnung lief)", { arbeit: 57, jePass: jp, inhalt: { boden: { grund: "folge" } } }, 0],
+        [
+            "Stand-Bruch (der Satz zählt nur seinen Stand)",
+            { arbeit: 57, jePass: jp, inhalt: { streuSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] } } },
+            57,
+        ],
     ]) {
         const n = ao(f);
         if (n !== soll) fehler.push(`Arbeit ohne Änderung „${name}": ${n} statt ${soll}`);
         console.log(`  ${n === soll ? "✅" : "❌"} Selbsttest Arbeit ohne Änderung „${name}" → ${n}`);
     }
+    // DER INHALT EINES SATZES aus seinen Belegen (`sichtSatzInhalt`, Gegenprüfung 07.10.): je Bild die Bereiche (Identität und
+    // Hülle), der Anker, die offene Ordnung, Geometrie und Überhang — der Stand und der Verdichten-Zähler belegen nichts
+    if (typeof SICHT.sichtSatzInhalt !== "function")
+        fehler.push("LINSE: `sichtSatzInhalt` fehlt — der Inhalt hat keine Belege");
+    else {
+        const A = {},
+            B = {},
+            C = {};
+        const H = (y) => Float64Array.from([0, y, 0, 16, y + 2, 16]);
+        const bild = (o) =>
+            Object.assign(
+                {
+                    stand: 10,
+                    verdichtet: 0,
+                    anker: "-57,-54",
+                    schmutzig: false,
+                    geom: "g1",
+                    vKap: 4096,
+                    iKap: 9000,
+                    ueber: false,
+                    bloecke: new Map([
+                        ["a", { b: A, h: H(60) }],
+                        ["b", { b: B, h: H(62) }],
+                    ]),
+                },
+                o
+            );
+        const mit = (m) => new Map([...bild({}).bloecke, ...m]);
+        const satzFaelle = [
+            ["Stand-Bruch (Stand +1, nichts sonst)", bild({}), bild({ stand: 11 }), false, null, { stand: 1 }],
+            [
+                "ein Bereich kam",
+                bild({}),
+                bild({ stand: 12, bloecke: mit([["c", { b: C, h: H(61) }]]) }),
+                false,
+                "aenderung",
+                {},
+            ],
+            [
+                "ein Bereich wurde neu gebaut",
+                bild({}),
+                bild({ stand: 12, bloecke: mit([["b", { b: C, h: H(62) }]]) }),
+                false,
+                "aenderung",
+                {},
+            ],
+            [
+                "ein Bereich ging",
+                bild({}),
+                bild({ stand: 11, bloecke: new Map([["a", { b: A, h: H(60) }]]) }),
+                false,
+                "aenderung",
+                {},
+            ],
+            ["der Anker zog um", bild({}), bild({ stand: 11, anker: "-58,-54" }), false, "aenderung", {}],
+            [
+                "ein Geomorph legt eine neue Hülle",
+                bild({}),
+                bild({ stand: 11, bloecke: mit([["a", { b: A, h: H(59.5) }]]) }),
+                false,
+                "aenderung",
+                {},
+            ],
+            [
+                "ein Geomorph ohne neue Hülle",
+                bild({}),
+                bild({ stand: 11, bloecke: mit([["a", { b: A, h: H(60) }]]) }),
+                false,
+                null,
+                { stand: 1 },
+            ],
+            ["die offene Ordnung läuft", bild({ schmutzig: true }), bild({ stand: 11 }), true, "folge", {}],
+            [
+                "eine Ordnung ohne offenen Grund",
+                bild({ schmutzig: true }),
+                bild({ stand: 11 }),
+                false,
+                null,
+                { stand: 1 },
+            ],
+            [
+                "das Verdichten nach dem Überhang",
+                bild({ ueber: true }),
+                bild({ verdichtet: 1, geom: "g2", vKap: 2048 }),
+                false,
+                "folge",
+                {},
+            ],
+            [
+                "ein Verdichten-Zähler ohne Tausch",
+                bild({ ueber: true }),
+                bild({ verdichtet: 1 }),
+                false,
+                null,
+                { verdichtet: 1 },
+            ],
+            [
+                "ein Verdichten ohne Überhang",
+                bild({}),
+                bild({ verdichtet: 1, geom: "g2", vKap: 2048 }),
+                false,
+                null,
+                { verdichtet: 1 },
+            ],
+        ];
+        for (const [name, vor, jetzt, offen, grund, ohne] of satzFaelle) {
+            const e = SICHT.sichtSatzInhalt(vor, jetzt, offen);
+            const ok =
+                e.grund === grund &&
+                (e.ohne.stand || 0) === (ohne.stand || 0) &&
+                (e.ohne.verdichtet || 0) === (ohne.verdichtet || 0);
+            if (!ok) fehler.push(`Satz-Inhalt „${name}": grund ${e.grund}, ohne ${JSON.stringify(e.ohne)}`);
+            console.log(
+                `  ${ok ? "✅" : "❌"} Selbsttest Satz-Inhalt „${name}" → ${e.grund || "kein Grund"}` +
+                    (e.ohne.stand || e.ohne.verdichtet ? ` (ohne Ursache: ${JSON.stringify(e.ohne)})` : "")
+            );
+        }
+        // die Ordnung bleibt offen, solange der Satz schmutzig ist (ein Austritt nach dem Render, geordnet im nächsten)
+        const o1 = SICHT.sichtSatzInhalt(
+            bild({}),
+            bild({ schmutzig: true, bloecke: mit([["c", { b: C, h: H(61) }]]) })
+        );
+        if (!o1.offen) fehler.push("Satz-Inhalt: ein Eintritt mit offener Ordnung lässt sie nicht offen");
+    }
+    // DER TÄTER DER GEGENPRÜFUNG, Frame für Frame durch dieselbe Phase und dasselbe Urteil wie im Lauf: in der eingefrorenen
+    // Welt zählt jeder Satz je Frame seinen Stand (15 072 Prüfungen je Frame, 5 von 5 Frames, kein Byte) — die Frames tragen,
+    // was die Linse sah: die Zähler des Spiels als Inhalt (die Basis-Linse des Zwischenstands entschuldigte damit alles) und
+    // den Stand ohne Ursache beim Namen (die geschnittene Linse)
+    const fenster = {};
+    new Function("window", SICHT.SICHT_INSTALL)(fenster);
+    global.window = fenster;
+    const churnFrame = () => ({
+        paesse: 3,
+        nach: 1,
+        arbeit: 15072,
+        // die Instanz-Wahl der Gruppen steht weiter (nur die Sätze churnen)
+        trefferSumme: 61,
+        bytes: 0,
+        bytesJe: {},
+        bytesGrund: {},
+        warum: { "streuSatz stand": 5, "bauSatz stand": 2, "boden stand": 2 },
+        aufrufe: { _chunkSatzAbschnitt: 16, _hoehlenSicht: 3, _hoehlenSichtLicht: 2 },
+        pruefung: { _passTrifft: 12109, _hoehlenRect: 1227 },
+        trifft: {},
+        treffer: { _instanzWahlSteht: 61 },
+        verfehlt: { _satzAbschnittSteht: 10 },
+        neu: { "satz streuSatz|haupt": 5, "satz bauSatz|haupt": 2 },
+        jePass: { haupt: { pruefung: 13336, ecken: 9816 }, k0: { pruefung: 1736, ecken: 0 } },
+        ecken: 9816,
+        inhalt: {
+            streuSatz: { stand: 5, verdichtet: 0, bereiche: 0, keys: [] },
+            bauSatz: { stand: 2, verdichtet: 0, bereiche: 0, keys: [] },
+            boden: { stand: 1, verdichtet: 0, bereiche: 0, keys: [] },
+        },
+        inhaltOhne: { "streuSatz stand:ohne": 5, "bauSatz stand:ohne": 2, "boden stand:ohne": 1 },
+        licht: 0,
+        kamera: 0,
+        blende: 0,
+        tag: 0.5,
+        stufe: null,
+        fehlt: [],
+    });
+    const churnPhase = () =>
+        SICHT.sichtPhase([churnFrame(), churnFrame(), churnFrame(), churnFrame(), churnFrame(), churnFrame()], 1);
     const faelle = [
+        [
+            "Stand-Churn ohne Ursache in Ruhe (der Täter der Gegenprüfung)",
+            (b) => (b.ruhe = churnPhase()),
+            /RUHE: Satz-Arbeit ohne Ursache in 5 von 5 Frames — streuSatz stand:ohne ×25/,
+        ],
+        [
+            "Stand-Churn ohne Ursache: die Arbeit ist Arbeit ohne Änderung",
+            (b) => (b.ruhe = churnPhase()),
+            /RUHE: die Sicht-Kette arbeitet in Ruhe ohne Änderung \(Median 15072, max 15072 Prüfungen, in 5 von 5 Frames/,
+        ],
+        [
+            "stumpfe Stand-Linse (der Stand-Bruch heißt Änderung)",
+            (b) => (b.standBruch = Object.assign(phase(0, 0, 0), { aenderungFrames: 10 })),
+            /LINSE STUMPF: ein eingeschmuggelter Stand-Bruch/,
+        ],
+        [
+            "stumpfe Stand-Linse (der Stand-Bruch steht ohne Namen)",
+            (b) => (b.standBruch = Object.assign(phase(15072, 0, 0), { inhaltOhneFrames: 0, inhaltOhneJe: {} })),
+            /LINSE STUMPF: ein eingeschmuggelter Stand-Bruch/,
+        ],
+        ["kein Stand-Bruch", (b) => delete b.standBruch, /LEER: kein Stand-Bruch gemessen/],
+        [
+            "der Inhalt ändert sich in der eingefrorenen Welt",
+            (b) =>
+                Object.assign(b.ruhe, {
+                    inhaltFrames: 2,
+                    inhaltJe: { boden: { frames: 2, aenderung: 2, bereiche: 2, keys: ["+-901,-850", "-899,-850"] } },
+                }),
+            /RUHE: die Welt ist eingefroren, doch ihr Inhalt änderte sich in 2 von 10 Frames \(boden \+-901,-850/,
+        ],
         [
             "Arbeit in Ruhe (die Basis)",
             (b) => (b.ruhe = phase(5200, 0, 0)),
@@ -833,6 +1091,20 @@ const server = http.createServer((req, res) => {
             } finally {
                 delete r._chunkSatzRuht;
             }
+            // (S) SCHARF FÜR DEN SATZ-STAND (Gegenprüfung 07.10.): der eingeschmuggelte Stand-Bruch — jeder Satz zählt je Frame
+            // seinen Stand, ohne dass ein Bereich, ein Anker oder eine Hülle sich ändert (der Cache-Schlüssel churnt, jede Wahl
+            // rechnet neu); die Linse zählt die Arbeit OHNE Änderung und nennt `stand:ohne`
+            stelle(0, 0);
+            reif();
+            r._tickChunkSatz = function () {
+                for (const x of st.chunkSaetze.values()) x.stand++;
+                return P._tickChunkSatz.call(this);
+            };
+            try {
+                aus.standBruch = window.__sichtPhase(phase(6), 1);
+            } finally {
+                delete r._tickChunkSatz;
+            }
             L.aus();
             const code = (f) => (typeof f === "function" ? window.__codeOf(f) : "");
             aus.code.lageGen = /this\._passLageGen\(/.test(code(P._passWahlLage));
@@ -881,8 +1153,16 @@ const server = http.createServer((req, res) => {
         console.log(
             `  kalt    der erste Ruhe-Frame: Arbeit ${k.arbeit} · Ecken ${k.ecken} · Bytes ${k.bytes} · Treffer ${k.trefferSumme}`
         );
-    for (const n of ["ruhe", "sonne", "drehen", "gehen", "bruch", "byteBruch"])
+    for (const n of ["ruhe", "sonne", "drehen", "gehen", "bruch", "byteBruch", "standBruch"])
         if (befund[n]) console.log(zeile(n, befund[n]));
+    for (const n of ["ruhe", "standBruch"])
+        if (befund[n])
+            console.log(
+                `  ${n}: Arbeit ohne Änderung in ${befund[n].arbeitOhne.frames} von ${befund[n].frames} Frames (Median ` +
+                    `${befund[n].arbeitOhne.median}), mit Änderung ${befund[n].aenderungFrames}, Inhalt mit Grund ` +
+                    `${JSON.stringify(befund[n].inhaltJe)}, ohne Ursache in ${befund[n].inhaltOhneFrames}: ` +
+                    JSON.stringify(befund[n].inhaltOhneJe)
+            );
     if (befund.sonne)
         console.log(
             `  Sonne: das Licht drehte in ${befund.sonne.lichtFrames} von ${befund.sonne.frames} Frames (${befund.sonne.sonneRad} rad, ` +
