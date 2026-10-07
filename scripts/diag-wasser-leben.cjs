@@ -25,6 +25,11 @@
 //                   Gesetzes).
 //   F7              die Bank des Kanals ist eine Steilwand (8f09227d: 18 von 42 Profilen steiler als der Fels, p90 68,9°).
 //   FP              die Kanal-Parität Main ↔ Worker (NaN = Probe kaputt, nie Befund).
+//   K12             die Leser der EINEN Wahrheit: Klang-Nässe (`_nassAt`) und Tier-Scheu (`_creatureWaterContextAt`) lasen das
+//                   3×3-gedehnte `_waterLevelAt` (am See der Mess-Wiese und an der Küste anders als der Körper); an der
+//                   Küste zeichnete das Sheet den Küsten-Aquifer über dem Boden, der Körper stand dort trocken. K6 BAUMLOS:
+//                   ein Wesen ohne Gestalt-Baum stand mit der Wasserlinie 0 AUF dem Spiegel.
+//   U3              der Schilf-Bezug der Nah-Streu sprang an der Krone auf den See-/Meeres-Spiegel.
 // Die Proben rufen die Chokepoints selbst (scripts/lib/wasser-linse.cjs): den Spiegel (`_waterRunSurfaceAt` vorher, `_atlasWaterLevelAt` nachher), den
 // Sim-Schritt `_stepFixedSim`, den Schritt-Klang `_schrittKlangTick`, das ECHTE Wasser-Material.
 //
@@ -120,6 +125,14 @@ function urteil(b) {
                     `U1 UFER-SPRUNG: die Boden-Farbe springt quer zum Fluss ${u.spruenge}-mal (Luma-Stufe bis ${u.maxSprung} ` +
                         `je 2 cm, z. B. ${JSON.stringify(u.beispiele[0] || null)})`
                 );
+            const sf = u.schilf;
+            if (!sf || sf.fehler) v.push(`U3: ${sf ? sf.fehler : "die Schilf-Probe lief nicht"}`);
+            else if (!(sf.schritte > 5000)) v.push(`U3 LEER: nur ${sf.schritte} Schilf-Schritte gemessen`);
+            else if (sf.spruenge > 0)
+                v.push(
+                    `U3 SCHILF-SPRUNG: das Ufer-Band der Nah-Streu (${sf.art}) springt quer zum Fluss ${sf.spruenge}-mal ` +
+                        `(Gewicht-Stufe bis ${sf.maxSprung} je 2 cm, z. B. ${JSON.stringify(sf.beispiele[0] || null)})`
+                );
             const p = u.paritaet;
             if (!p || !(p.vertices > 1000)) v.push("U2 LEER: die Farb-Parität verglich keinen Ufer-Chunk");
             else if (p.abweichend > 0)
@@ -199,6 +212,33 @@ function urteil(b) {
                 );
         }
     }
+    if (b.leser) {
+        const l = b.leser;
+        if (l.fehler) v.push(`K12: ${l.fehler}`);
+        else {
+            const bs = l.beispiele || {};
+            if (!(l.spalten >= 5000 && l.nass >= 500))
+                v.push(`K12 LEER: nur ${l.spalten} Spalten verglichen (${l.nass} nass)`);
+            if (l.klang > 0)
+                v.push(
+                    `K12 KLANG: in ${l.klang} von ${l.spalten} Spalten hört der Klang (_nassAt) Wasser anders, als der Körper ` +
+                        `es trägt (z. B. ${JSON.stringify((bs.klang || [])[0] || null)})`
+                );
+            if (l.scheu > 0)
+                v.push(
+                    `K12 TIER-SCHEU: in ${l.scheu} von ${l.spalten} Spalten sieht die Ufer-Scheu der Tiere Wasser anders, als ` +
+                        `der Körper es trägt (z. B. ${JSON.stringify((bs.scheu || [])[0] || null)})`
+                );
+            const k = l.kueste || {};
+            if (!(k.sichtbar >= 20))
+                v.push(`K12 LEER: nur ${k.sichtbar || 0} Küsten-Spalten mit Sheet-Wasser über Atlas-Land`);
+            else if (k.trocken > 0)
+                v.push(
+                    `K12 KÜSTE: in ${k.trocken} von ${k.sichtbar} Spalten zeichnet das Sheet den Küsten-Aquifer über dem Boden, ` +
+                        `der Körper steht dort trocken`
+                );
+        }
+    }
     if (b.ufer) {
         const u = b.ufer;
         if (u.fehler) v.push(`K8: ${u.fehler}`);
@@ -249,6 +289,14 @@ function urteil(b) {
                             `ihre Wasserlinie (Schultergelenk) liegt bei ${t.wasserlinie} m`
                     );
             }
+            const bl = k.baumlos;
+            if (!bl || !Number.isFinite(bl.sohleUnterSpiegel))
+                v.push("K6 LEER: die Probe des Wesens ohne Gestalt-Baum lief nicht");
+            else if (!(Math.abs(bl.sohleUnterSpiegel - bl.soll) <= S.tierLinie))
+                v.push(
+                    `K6 BAUMLOS: ein Wesen ohne Gestalt-Baum treibt mit der Sohle ${bl.sohleUnterSpiegel} m unter dem Spiegel, ` +
+                        `die Schwimm-Tiefe des Gesetzes ist ${bl.soll} m`
+                );
             if (!k.peer) v.push("K7 MITSPIELER: die Peer-Probe lief nicht");
             else if (!(Math.abs(k.peer.lehne) > 0.05))
                 v.push(`K7 MITSPIELER: der Peer-Körper an der Brustkorb-Linie schwimmt nicht (Lehne ${k.peer.lehne})`);
@@ -366,6 +414,14 @@ function selbsttest() {
             bugAb: { afloat: true, nickZielGrad: 0, wankZielGrad: 0, grundGrad: 29.3 },
         },
         ufer: { trocken: 180, geflutet: 0, maxFlutM: 0 },
+        leser: {
+            spalten: 26000,
+            nass: 6000,
+            klang: 0,
+            scheu: 0,
+            kueste: { sichtbar: 110, trocken: 0 },
+            beispiele: { klang: [], scheu: [], kueste: [] },
+        },
         uferFarbe: {
             proben: 24,
             schritte: 48000,
@@ -373,6 +429,7 @@ function selbsttest() {
             maxSprung: 0.01,
             beispiele: [],
             paritaet: { vertices: 6500, abweichend: 0, maxDiff: 0 },
+            schilf: { art: "schilf", schritte: 48000, spruenge: 0, maxSprung: 0.04, beispiele: [] },
         },
         regen: { litAnteil: 0.13, schlieren: 800, neigung: 0.56 },
         koerper: {
@@ -390,6 +447,7 @@ function selbsttest() {
                     amGrund: false,
                 }))
             ),
+            baumlos: { sohleUnterSpiegel: 0.5, soll: 0.5 },
             peer: { lehne: 0.4, meshKind: "soul" },
             licht: {
                 nachtOben: 0.03,
@@ -453,6 +511,13 @@ function selbsttest() {
         ["K9 HIMMEL", (b) => (b.koerper.licht.himmelGetaucht = [81, 132, 170])],
         ["K9 LEER", (b) => delete b.koerper.licht],
         ["K8 UFER-FLUT", (b) => Object.assign(b.ufer, { geflutet: 37, maxFlutM: 3.15 })],
+        ["K12 KLANG", (b) => (b.leser.klang = 163)],
+        ["K12 TIER-SCHEU", (b) => (b.leser.scheu = 173)],
+        ["K12 KÜSTE", (b) => (b.leser.kueste.trocken = 110)],
+        ["K12 LEER", (b) => (b.leser.kueste.sichtbar = 0)],
+        ["K6 BAUMLOS", (b) => (b.koerper.baumlos.sohleUnterSpiegel = 0)],
+        ["U3 SCHILF-SPRUNG", (b) => Object.assign(b.uferFarbe.schilf, { spruenge: 12, maxSprung: 0.61 })],
+        ["U3 LEER", (b) => (b.uferFarbe.schilf.schritte = 0)],
         ["K8 LEER", (b) => (b.ufer.trocken = 0)],
         [
             "U1 UFER-SPRUNG",
@@ -614,6 +679,8 @@ async function lauf() {
             befund.uferFarbe = await page.evaluate(() => window.__wasserUferFarbe({}));
             // nach der Ufer-Probe steht die Welt am Fluss der Mess-Wiese: die Bank
             befund.bank = await page.evaluate(() => window.__wasserBank({}));
+            // zuletzt (sie stellt die Welt an den See und an die Küste): die Leser der EINEN Wahrheit
+            befund.leser = await page.evaluate(() => window.__wasserLeser({}));
         }
         const v = urteil(befund);
         console.log(JSON.stringify(Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) }), null, 1));

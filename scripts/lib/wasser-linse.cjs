@@ -405,6 +405,28 @@ function wasserKoerper(opts) {
                         r.removeCreature(c);
                     }
                 }
+                // (6b) DAS WESEN OHNE GESTALT-BAUM (Gegenprüfung 07.10., gelb): trägt eine Kreatur keinen `_tierBaum`, liegt
+                // ihre Wasserlinie auf der Schwimm-Tiefe des Gesetzes (VERHALTEN.wasser.schwimmTiefeM) — bis dahin 0: sie
+                // stand still AUF dem Spiegel.
+                pm.position.set(mx + 8, spiegel + 1, mz);
+                const cB = r.spawnCreatureAt(mx, spiegel, mz, "happy", "wolf", { precise: true, bodySize: 1 });
+                if (cB) {
+                    delete cB.userData._tierBaum;
+                    const tiefenB = [];
+                    for (let k = 0; k < 90; k++) {
+                        const ohneHopf = !(cB.userData._hopV > 0) && !(cB.userData._hopH > 0);
+                        r.updateCreatures(0.05);
+                        cB.position.x = mx;
+                        cB.position.z = mz;
+                        if (k >= 30 && ohneHopf && !(cB.userData._hopH > 0)) tiefenB.push(spiegel - cB.position.y);
+                    }
+                    tiefenB.sort((a, b) => a - b);
+                    aus.baumlos = {
+                        sohleUnterSpiegel: tiefenB.length ? R(tiefenB[tiefenB.length >> 1], 3) : null,
+                        soll: R(r.constructor._verhaltenGesetz().wasser.schwimmTiefeM, 3),
+                    };
+                    r.removeCreature(cB);
+                }
             } finally {
                 pm.position.copy(playerAlt);
             }
@@ -633,6 +655,27 @@ function wasserUferFarbe(opts) {
             maxSprung = 0;
         const beispiele = [];
         const c = [0, 0, 0];
+        // U3 — DER SCHILF-BEZUG (Gegenprüfung 07.10., gelb): das Ufer-Band der Nah-Streu (Schilf, Boden-Zeile mit `ufer`) über
+        // der Höhe über dem Wasser, wie die Kachel es rechnet (`_nahStreuKachel`): vorher `_nahStreuSpiegel` = max(See,
+        // Fluss) — an der Krone sprang der Bezug auf den See-/Meeres-Spiegel —, nachher `_nahStreuBodenGewicht` (die
+        // Bänder über See und über dem Fluss mit seiner Kronen-Blende, das Maximum). Gemessen wird NUR der Ufer-Faktor
+        // (Licht, Feuchte, Fels, Hang bleiben leer: ihre eigenen Grenzen sind Gesetz, nicht Bezug). Sprung = Gewicht-Stufe
+        // > 0,1 zwischen zwei 2-cm-Nachbarn (stetig höchstens 0,05: das Band läuft über 0,3 m aus).
+        const core = globalThis.__phytoCore;
+        const arten = typeof r._nahStreuArten === "function" ? r._nahStreuArten() : null;
+        const schilfA = arten ? arten.find((A) => A.zeile && A.zeile.ufer) : null;
+        const schilfW = (x, z, y) => {
+            if (typeof r._nahStreuBodenGewicht === "function") {
+                const uf = { see: 0, fluss: null, ufer: 0 };
+                r._waterLevelAt(x, z, uf);
+                return r._nahStreuBodenGewicht(core, schilfA.zeile, { ufer: y - r._koerperWasser(x, z, y) }, uf, y);
+            }
+            return core.bodenGewicht(schilfA.zeile, { ufer: y - r._nahStreuSpiegel(x, z) });
+        };
+        let sSchritte = 0,
+            sSpruenge = 0,
+            sMax = 0;
+        const sBeispiele = [];
         for (const [a, b] of proben) {
             const fx = b.x - a.x,
                 fz = b.z - a.z,
@@ -642,14 +685,35 @@ function wasserUferFarbe(opts) {
             const weit = __wasserKroneVon(r, a) + 3;
             for (const sg of [-1, 1]) {
                 let vorL = null,
-                    vorY = null;
+                    vorY = null,
+                    vorS = null;
                 for (let d = 0; d <= weit; d += 0.02) {
                     const x = a.x + nx * d * sg,
                         z = a.z + nz * d * sg;
                     const y = r._voxelSurfaceY(x, z);
                     if (!Number.isFinite(y)) {
                         vorL = null;
+                        vorS = null;
                         continue;
+                    }
+                    if (schilfA && core) {
+                        const s = schilfW(x, z, y);
+                        if (vorS !== null && Math.abs(y - vorY) < 0.15) {
+                            sSchritte++;
+                            const st2 = Math.abs(s - vorS);
+                            if (st2 > sMax) sMax = st2;
+                            if (st2 > 0.1) {
+                                sSpruenge++;
+                                if (sBeispiele.length < 5)
+                                    sBeispiele.push([
+                                        Math.round(x * 10) / 10,
+                                        Math.round(z * 10) / 10,
+                                        Math.round(d * 100) / 100,
+                                        Math.round(st2 * 100) / 100,
+                                    ]);
+                            }
+                        }
+                        vorS = s;
                     }
                     r._bodenFarbeAt(x, y, z, c);
                     const l = L(c);
@@ -703,6 +767,15 @@ function wasserUferFarbe(opts) {
             maxSprung: Math.round(maxSprung * 1000) / 1000,
             beispiele,
             paritaet,
+            schilf: schilfA
+                ? {
+                      art: schilfA.id,
+                      schritte: sSchritte,
+                      spruenge: sSpruenge,
+                      maxSprung: Math.round(sMax * 1000) / 1000,
+                      beispiele: sBeispiele,
+                  }
+                : { fehler: "keine Nah-Streu-Art mit Ufer-Band (Buch oder Render-Config fehlt)" },
         };
     })();
 }
@@ -1523,8 +1596,102 @@ function wasserBank(opts) {
     };
 }
 
+// ── Q6: die Leser der EINEN Wasser-Wahrheit (Gegenprüfung 07.10., gelb: „es bleiben Leser neben der EINEN Wahrheit") ──
+// Je Spalte jedes geladenen Chunks (LOD 0) an zwei Orten — dem See der Mess-Wiese und der Küste des Meeres (−88/−880:
+// dort taucht die 3D-Rauheit das Gelände unter den Meeresspiegel, die Zellen fluten es als Küsten-Aquifer) — gegen die
+// EINE Wahrheit am Körper (`_koerperWasser` über dem Boden `_voxelSurfaceY`):
+//   KLANG     die Nässe des Klangs (`_nassAt`: Hör-Ring, Wasser-Hauch) — sie las das 3×3-gedehnte `_waterLevelAt`.
+//   SCHEU     die Ufer-Scheu der Tiere (`_creatureWaterContextAt(…).inWater`) — dieselbe zweite Wahrheit.
+//   KÜSTE     das Sheet: wo die Zellen Wasser über dem Boden zeichnen (oberste WATER-Zelle über der obersten FEST-Zelle,
+//             ihr Spiegel über dem Boden) und der Atlas Land sagt, trägt der Körper es — er las dort nichts.
+function wasserLeser(opts) {
+    return (async () => {
+        const o = opts || {};
+        const r = window.anazhRealm;
+        const st = r.state;
+        if (!st.hydrosphere || !st.hydrosphere.ready) return { fehler: "keine Hydrosphäre" };
+        const pm = st.playerMesh;
+        const strom = async (px, pz) => {
+            pm.position.set(px, r._voxelSurfaceY(px, pz) + 3, pz);
+            if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
+            const worker = st.voxelWorker;
+            st.voxelWorker = null;
+            const t0 = performance.now();
+            let last = -1,
+                still = performance.now();
+            for (;;) {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch (_e) {}
+                const n = st.voxelChunks ? st.voxelChunks.size : 0;
+                if (n !== last) {
+                    last = n;
+                    still = performance.now();
+                }
+                if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
+                await new Promise((res) => setTimeout(res, 0));
+            }
+            st.voxelWorker = worker;
+        };
+        const { dim, dimY, step, span, floorDrop } = r._voxelChunkConfig(0);
+        const oy = (st.terrainBaseHeight || 0) - floorDrop;
+        const dq = dim * dim;
+        const tisch = typeof st.waterLevel === "number" ? st.waterLevel : 0;
+        const aus = { orte: [], spalten: 0, nass: 0, klang: 0, scheu: 0, kueste: { sichtbar: 0, trocken: 0 } };
+        const bsp = { klang: [], scheu: [], kueste: [] };
+        const R1 = (v) => Math.round(v * 10) / 10;
+        for (const [px, pz] of o.orte || [
+            [-890, -650],
+            [-88, -880],
+        ]) {
+            await strom(px, pz);
+            aus.orte.push([px, pz, st.voxelChunks.size]);
+            const pcx = Math.floor(px / span),
+                pcz = Math.floor(pz / span);
+            for (const [key, e] of st.voxelChunks) {
+                if (!e || !e.waterCells || e.lod !== 0) continue;
+                const [cx, cz] = key.split(",").map(Number);
+                if (Math.abs(cx - pcx) > 3 || Math.abs(cz - pcz) > 3) continue;
+                const cells = e.waterCells;
+                for (let k = 0; k < dim; k++)
+                    for (let i = 0; i < dim; i++) {
+                        const x = cx * span + (i + 0.5) * step,
+                            z = cz * span + (k + 0.5) * step;
+                        const boden = r._voxelSurfaceY(x, z);
+                        if (!Number.isFinite(boden)) continue;
+                        aus.spalten++;
+                        const w = r._koerperWasser(x, z, boden);
+                        const nass = boden < w - 0.05;
+                        if (nass) aus.nass++;
+                        if (r._nassAt(x, z) !== nass) {
+                            aus.klang++;
+                            if (bsp.klang.length < 4) bsp.klang.push([R1(x), R1(z), R1(boden), R1(w)]);
+                        }
+                        const ctx = r._creatureWaterContextAt({ position: { x, y: boden, z }, userData: {} }, boden);
+                        if (ctx.inWater !== w > boden) {
+                            aus.scheu++;
+                            if (bsp.scheu.length < 4) bsp.scheu.push([R1(x), R1(z), R1(boden), R1(w)]);
+                        }
+                        const sc = r._caColumnScan(cells, null, i + k * dim, dq, dimY);
+                        if (!(sc.floodTopJ >= 0 && sc.floodTopJ > sc.solidTopJ)) continue;
+                        if (r._atlasWaterLevelAt(x, z, boden) > -Infinity) continue;
+                        if (!(Math.min(tisch, oy + (sc.floodTopJ + 1) * step) > boden + 0.05)) continue;
+                        aus.kueste.sichtbar++;
+                        if (!nass) {
+                            aus.kueste.trocken++;
+                            if (bsp.kueste.length < 4) bsp.kueste.push([R1(x), R1(z), R1(boden), R1(tisch)]);
+                        }
+                    }
+            }
+        }
+        aus.beispiele = bsp;
+        return aus;
+    })();
+}
+
 module.exports = {
     WASSER_INSTALL:
+        `window.__wasserLeser = ${wasserLeser.toString()};` +
         `window.__wasserHoehle = ${wasserHoehle.toString()};` +
         `window.__wasserWagen = ${wasserWagen.toString()};` +
         `window.__wasserQuelle = ${wasserQuelle.toString()};` +
