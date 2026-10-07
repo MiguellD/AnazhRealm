@@ -1,0 +1,35 @@
+{
+    "zweck": "DIE PLATTFORM-RATSCHE der Golden-Saetze (S1 Waende, 07.10.; Linse scripts/lib/plattform-probe.cjs). Jeder Golden-Fall baut noch einmal, waehrend die Transzendenten von Math um +-1 ULP verschoben rechnen. Math.pow ist die GEMESSENE Klasse (V8 12.4 der CI rundet anders als V8 13.6 lokal: v5 saebel cc26c7d8, v4 alle 16 Tore am Kopf 516e704a) - seine Drift kippt in keinem Satz ein Byte, hart. sin/cos/atan2/hypot/exp rundeten in beiden V8 gleich (213 707 verschiedene Aufrufe der Tore); wo ihre Drift die Bytes erreicht, steht der Kern hier BENANNT: je Funktion die Zahl der kippenden Probe-Faelle (darf nur fallen, heben ist ein begruendeter Akt im Commit) und die erste Taeter-Stelle. Soll je Satz: 0 - EIN Byte-Raster am Ausgang von buildInstance (das Muster porta-core/fachwerk-core ausRaster); es kommt mit dem naechsten Re-Mint des Kerns, nie als eigener Byte-Akt.",
+    "saetze": {
+        "v3": {
+            "kern": "vehicle-core.js",
+            "faelle": 12,
+            "kippt": { "atan2": 12, "sin": 12, "cos": 12, "hypot": 5 },
+            "taeter": {
+                "atan2": "vehicle-core.js:754 atan2 (Awin, der Windschutz-Winkel)",
+                "sin": "vehicle-core.js:392 sin (rotation.x = PI/2 -> Quaternion -> Float64-Matrix)",
+                "cos": "vehicle-core.js:392 cos (rotation.x = PI/2 -> Quaternion -> Float64-Matrix)",
+                "hypot": "vehicle-core.js:1769 hypot (lenA, die A-Saeule)"
+            },
+            "soll": "0 - das Raster kommt mit dem v3-Akt der W3 (Fahrzeug-L1)"
+        },
+        "v4": {
+            "kern": "porta-core.js",
+            "faelle": 9,
+            "kippt": {},
+            "soll": "0 - erreicht: porta-core ausRaster am Ausgang (S1, Re-Mint mit Grund: Node 22 rot 16/16)"
+        },
+        "v5": {
+            "kern": "schmiede-core.js",
+            "faelle": 23,
+            "kippt": { "cos": 19, "sin": 19, "atan2": 15, "hypot": 7 },
+            "taeter": {
+                "cos": "schmiede-core.js:800 cos (ring.rotation.z -> Quaternion -> Float64-Matrix)",
+                "sin": "schmiede-core.js:800 sin (ring.rotation.z -> Quaternion -> Float64-Matrix)",
+                "atan2": "schmiede-core.js:844 atan2 (ang, der Umfangs-Winkel)",
+                "hypot": "schmiede-core.js:500 hypot (tl, die Tangenten-Laenge)"
+            },
+            "soll": "0 - das Raster kommt mit dem v5-Akt der W3 (Klinge L0/L1)"
+        }
+    }
+}

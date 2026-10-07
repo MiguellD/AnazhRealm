@@ -65,3 +65,26 @@ three-r128.min.js)` (das vendorte UMD lädt in Node), dann
 `require(porta-core.js)` — kein Browser, keine swiftshader-Fragilität. Der
 Selbst-Test (korrumpiertes Golden → rot) beweist bei jedem Lauf, dass die
 Linse feuert.
+
+**Re-Mint W5 (05.10.2026, `82c988bf`, das FARB-GESETZ des Steins):** der Stein mischt linear
+zwischen Granit und Sandstein statt HSL roh; die Goldens waren schon an der Basis `aadb922`
+rot (`drachentor-s7-L0`), alle 16 Fälle neu geprägt — unter Node 24.
+
+**Re-Mint S1 Wände (07.10.2026, plattformgleich — das Byte-Raster am Ausgang):** am Kopf
+`516e704a` standen die Goldens unter Node 24 (V8 13.6) grün und unter Node 22 (V8 12.4, die
+CI) rot, 16 von 16 Fällen — die unbenannte Drift hinter `aadb922`. Gemessen (jeder
+verschiedene Transzendenten-Aufruf eines Tor-Baus unter Node 24 aufgenommen, unter Node 22
+nachgerechnet): 2405 von 40 148 verschiedenen `Math.pow`-Aufrufen runden anders, alle in three
+r128 — `CatmullRomCurve3` `'centripetal'` (`pow(d², 0,25)`, gerufen aus `tubeMesh` und den
+Bogen-Kurven) und `Color.convertSRGBToLinear` (`pow(c, 2,4)`, der Stein); `sin`, `cos`, `acos`,
+`atan2`, `hypot` (213 707 Aufrufe) runden gleich. Die Plattform-Probe (`scripts/lib/
+plattform-probe.cjs`, alle Transzendenten ±1 ULP) kippte jeden Fall auch über `sin`/`cos`
+(`rotation` → Quaternion → Float64-`matrixWorld`), `hypot` und `atan2`. Schnitt: `ausRaster`
+am Ausgang von `buildInstance` legt jede Zahl auf ein Gitter, das kein letztes Bit erreicht —
+Attribute 2^-12 (Normalen 2^-14), Lage und Maß 2^-16, Drehung (Quaternion) 2^-20,
+Stoff-Zahlen (Farbe, Emissive, roughness, metalness, opacity) 2^-16, −0 → 0. Byte-Akt alle 16
+Fälle, `objects`/`vertices` unverändert: `position` ≤ 1,22e-4 m (1 728 602 von 1 764 102
+Werten der 9 Bau-Fälle), `normal` ≤ 3,1e-5, `uv` ≤ 1,22e-4, `matrixWorld` ≤ 1,5e-5, Stoff-Farbe
+≤ 7,4e-6 (ein Hex kippt um 1/255). Danach: Node 22 und Node 24 grün, die Probe kippt 0 von 9
+Fällen (Ratsche `v4` = 0, `spec/asset-contract/plattform-ratsche.json`). Kein cv-Bump (die
+Naht ist dieselbe).

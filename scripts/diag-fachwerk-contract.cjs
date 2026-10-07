@@ -369,7 +369,8 @@ function compare(golden, actual) {
     for (let i = 1; i < diffs.length; i++) console.log(`      ↳ ${diffs[i]}`);
 
     // 9) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
-    const tampered = JSON.parse(JSON.stringify(golden));
+    // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
+    const tampered = JSON.parse(JSON.stringify({ cases: actual }));
     const k0 = Object.keys(tampered.cases)[0];
     tampered.cases[k0].sha256 = tampered.cases[k0].sha256.replace(
         /^./,
@@ -378,7 +379,7 @@ function compare(golden, actual) {
     const t1 = compare(tampered, actual);
     const actual2 = JSON.parse(JSON.stringify(actual));
     actual2[k0].objects += 1;
-    const t2 = compare(golden, actual2);
+    const t2 = compare({ cases: actual }, actual2);
     check(
         "SELBST-TEST: korruptes Golden (sha256) wird erkannt",
         t1.some((s) => s.includes("sha256"))

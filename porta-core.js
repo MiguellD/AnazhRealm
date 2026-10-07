@@ -372,6 +372,42 @@
       return {gate:gate,D:D,leafL:leafL,leafR:leafR,leafLB:leafLB,leafRB:leafRB,rimMat:rimMat};
     }
 
+    // ── DAS BYTE-RASTER AM AUSGANG (S1 Wände, 07.10.; das Muster fachwerk-core ausRaster) ──
+    // Befund: die v4-Goldens standen am Kopf 516e704a unter Node 24 (V8 13.6) grün und unter Node 22 (V8 12.4, die CI)
+    // rot, 16 von 16 Fällen: three r128 CatmullRomCurve3 'centripetal' (pow(d², 0,25)) und convertSRGBToLinear
+    // (pow(c, 2,4)) runden je V8 im letzten Bit anders (2405 von 40148 verschiedenen Aufrufen), und jede Zahl des Tors
+    // hängt an ihnen — die Plattform-Probe (scripts/lib/plattform-probe.cjs) kippt jeden Fall auch mit sin, cos, hypot
+    // und atan2 ±1 ULP. Das Raster legt jede Zahl des Ausgangs auf ein Gitter, das kein letztes Bit erreicht:
+    // Attribute 2^-12, Normalen 2^-14, Lage und Maß 2^-16, Drehung 2^-20, Stoff-Zahlen 2^-16; −0 → 0.
+    function rasterZahl(x, q) {
+        return Math.round(x * q) / q + 0;
+    }
+    function rasterStoff(m) {
+        if (!m) return;
+        if (m.color) m.color.setRGB(rasterZahl(m.color.r, 65536), rasterZahl(m.color.g, 65536), rasterZahl(m.color.b, 65536));
+        if (m.emissive) m.emissive.setRGB(rasterZahl(m.emissive.r, 65536), rasterZahl(m.emissive.g, 65536), rasterZahl(m.emissive.b, 65536));
+        var z = ["roughness", "metalness", "opacity", "emissiveIntensity"];
+        for (var i = 0; i < z.length; i++) if (typeof m[z[i]] === "number") m[z[i]] = rasterZahl(m[z[i]], 65536);
+    }
+    function ausRaster(g) {
+        g.traverse(function (o) {
+            o.position.set(rasterZahl(o.position.x, 65536), rasterZahl(o.position.y, 65536), rasterZahl(o.position.z, 65536));
+            o.scale.set(rasterZahl(o.scale.x, 65536), rasterZahl(o.scale.y, 65536), rasterZahl(o.scale.z, 65536));
+            var q = o.quaternion;
+            q.set(rasterZahl(q.x, 1048576), rasterZahl(q.y, 1048576), rasterZahl(q.z, 1048576), rasterZahl(q.w, 1048576));
+            if (o.geometry && o.geometry.attributes) {
+                var A = o.geometry.attributes;
+                for (var name in A) {
+                    var s = name === "normal" ? 16384 : 4096,
+                        arr = A[name].array;
+                    for (var k = 0; k < arr.length; k++) arr[k] = rasterZahl(arr[k], s);
+                }
+            }
+            if (Array.isArray(o.material)) for (var j = 0; j < o.material.length; j++) rasterStoff(o.material[j]);
+            else rasterStoff(o.material);
+        });
+    }
+
     // ── B2: buildInstance(rezeptId, seed, lod, ov?) — die EINE Bau-Funktion ──
     // Deterministisch (Lab-fester rng-Strom, s. Kopf: seed reserviert, Goldens
     // cv:4 frieren die Seed-Invarianz ein); lod wird auf die einzige getragene
@@ -385,6 +421,7 @@
         var p = gateParams(pre, ov || null);
         var R = buildGate(p, null);
         var g = R.gate;
+        ausRaster(g);
         g.userData = { kind: "gate", rezeptId: rezeptId, seed: seed, lod: 0 };
         g.updateMatrixWorld(true);
         return g;
