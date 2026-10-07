@@ -467,10 +467,13 @@ const STATION = {
     wagenFahrt: 0.2, // Anteil der Fahrt, den der stoßende Wagen nach dem Stoß mit einem gleich schweren behält
     baerWegM: 0.5, // m: so weit stößt der Wagen den Bären mindestens
     baerFahrt: 0.5, // Anteil der Fahrt, den der Wagen nach dem Stoß mit dem leichteren Bären behält
-    spielerWagenDv: 0.02, // m/s: so viel Fahrt bekommt der geparkte GT mindestens vom laufenden Spieler (0710-4)
+    spielerAbprall: 0.25, // Anteil der Fahrt in den Wagen, den der Spieler nach dem Kontakt höchstens behält (0710-4)
+    wagenHaltM: 0.05, // m: so weit rutscht ein gebremster GT höchstens, wenn ein Mensch gegen ihn läuft
+    lockstepM: 1e-6, // m: so weit dürfen Wagen und Bär nach 200 Sim-Schritten je nach Bildrate abweichen (0710-5)
     spielerDv: 0.3, // m/s: so viel bekommt der Spieler mindestens vom rutschenden GT
-    spielerTiefM: 0.08, // m: höchstens EIN Sim-Schritt der Anfahrt (bis 5 m/s · 1/60 s) steckt die Kapsel in der Hülle — die Lage
-    // des Spielers setzt sein Sim-Schritt, der Stoß trägt ihn im nächsten fort
+    spielerTiefM: 0.12, // m: höchstens EIN Frame der Anfahrt (zwei Sim-Schritte bei 3,5 m/s) zwischen Kapsel und Blocker-Box — die
+    // Lage des Spielers setzt sein Sim-Schritt (der Stoß trägt ihn im nächsten fort), die Blocker-Boxen des rutschenden Wagens
+    // folgen je Frame; gemessen 0,05–0,10 m je nach Kadenz, die Basis 0,14 m mit 0 m/s
 };
 function stationVerdict(s) {
     const out = [];
@@ -609,9 +612,17 @@ function stationVerdict(s) {
     const sw = s.spielerWagen;
     if (!sw || !sw.a || !sw.b) out.push("spieler-wagen keine Probe");
     else {
-        if (!(sw.a.wagenDv >= STATION.spielerWagenDv))
+        if (!(sw.a.kontakt >= 0 && sw.a.vorKontakt >= 1))
             out.push(
-                `spieler-wagen: der Spieler läuft gegen den GT, der Wagen bekommt ${(sw.a.wagenDv || 0).toFixed(3)} m/s — kein Impuls`
+                `spieler-wagen: der Spieler erreicht den GT nicht im Lauf (vakuös, ${(sw.a.vorKontakt || 0).toFixed(2)} m/s)`
+            );
+        else if (!(sw.a.nachKontakt <= STATION.spielerAbprall * sw.a.vorKontakt))
+            out.push(
+                `spieler-wagen: der Spieler läuft gegen den GT und behält seine Fahrt (${sw.a.vorKontakt.toFixed(2)} → ${sw.a.nachKontakt.toFixed(2)} m/s) — kein Impuls`
+            );
+        if (!(sw.a.wagenWeg <= STATION.wagenHaltM))
+            out.push(
+                `spieler-wagen: der gebremste GT rutscht ${sw.a.wagenWeg.toFixed(3)} m vom Spieler (die Bremse hält nicht)`
             );
         if (!(sw.a.minAbstand >= -STATION.spielerTiefM))
             out.push(`spieler-wagen: der Spieler steckt ${(-sw.a.minAbstand).toFixed(2)} m im Wagen`);
@@ -622,6 +633,21 @@ function stationVerdict(s) {
         if (!(sw.b.minAbstand >= -STATION.spielerTiefM))
             out.push(`wagen-spieler: der GT schiebt sich ${(-sw.b.minAbstand).toFixed(2)} m in den Spieler`);
     }
+    // L7/L8 DER STOSS IM SIM-SCHRITT (0710-5)
+    const lw = s.leibWand;
+    if (!lw) out.push("leib-wand keine Probe");
+    else
+        for (const k of ["60", "30", "gemischt"]) {
+            const m = lw[k];
+            if (!m || !(m.n >= 8)) out.push(`leib-wand ${k}: keine Probe`);
+            else if (m.durch > 0)
+                out.push(`leib-wand ${k}: der gestoßene Bär geht ${m.durch}/${m.n} Mal durch die 0,35-m-Wand`);
+        }
+    if (!s.lockstep) out.push("lockstep keine Probe");
+    else if (!(s.lockstep.abw <= STATION.lockstepM) || !(s.lockstep.baerAbw <= STATION.lockstepM))
+        out.push(
+            `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${s.lockstep.abw.toFixed(3)} m anders als bei 60 fps (Bär ${s.lockstep.baerAbw.toFixed(3)} m)${s.lockstep.erst ? ` — zuerst in Schritt ${s.lockstep.erst.schritt}: ${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}` : ""}`
+        );
     // L2 DIE SPALTKANTE (0710-2): der Wagen fährt über die Kante und fällt.
     const sp = s.spalt;
     if (!sp) out.push("spalt keine Probe");
@@ -1947,7 +1973,8 @@ async function probeLeben(expected) {
         S.stossBaer = await stossProbe({
             setzen: (x, zz) => {
                 st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1);
-                const c = r.spawnCreatureAt(x, hh(x, zz) + 0.5, zz, "calm", "baer", { precise: true });
+                // Größe 1 (die Gestalt-Masse wächst mit der Größe hoch drei: ein Bär der Größe 2 wiegt 2,7 t, mehr als der GT)
+                const c = r.spawnCreatureAt(x, hh(x, zz) + 0.5, zz, "calm", "baer", { precise: true, bodySize: 1 });
                 if (!c) return null;
                 c.position.set(x, hh(x, zz), zz);
                 c.rotation.y = gasse.fahrt + Math.PI / 2; // quer zur Fahrt, die Flanke zum Bug
@@ -1975,9 +2002,10 @@ async function probeLeben(expected) {
                 r.removeCreature(c);
             },
         });
-        // L6 SPIELER UND WAGEN (0710-4): (a) der Spieler läuft (W) gegen die Flanke eines geparkten GT — der Wagen bekommt
-        // seinen Impuls (sein Fahr-Zustand bewegt sich), der Spieler steckt nicht in ihm; (b) ein GT, angestoßen mit 5 m/s,
-        // rutscht auf den stehenden Spieler zu — der Spieler bekommt seinen Impuls, der Wagen schiebt ihn nicht durch.
+        // L6 SPIELER UND WAGEN (0710-4): (a) der Spieler läuft (W) gegen die Flanke eines geparkten GT — der Stoß nimmt ihm
+        // die Fahrt in den Wagen (er prallt ab, statt in die Box zu drücken), die Handbremse hält den Wagen (sie nimmt den
+        // Stoß eines Menschen auf), der Spieler steckt nicht in ihm; (b) ein GT, angestoßen mit 5 m/s, rutscht auf den
+        // stehenden Spieler zu — der Spieler bekommt seinen Impuls, der Wagen schiebt ihn nicht durch.
         if (gasse) {
             if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
             const ux = Math.sin(gasse.fahrt);
@@ -2022,15 +2050,20 @@ async function probeLeben(expected) {
                     st._fieldVy = 0;
                     st.yaw = gasse.fahrt;
                     const p0 = { x: e.position.x, z: e.position.z };
-                    const m = { minAbstand: Infinity, wagenDv: 0, wagenWeg: 0, kontakt: -1 };
+                    const m = { minAbstand: Infinity, wagenWeg: 0, kontakt: -1, vorKontakt: 0, nachKontakt: Infinity };
                     tasten(true);
+                    let vorher = 0;
                     for (let i = 0; i < 240; i++) {
                         frame(i);
-                        m.minAbstand = Math.min(m.minAbstand, kapselAbstand(e));
-                        const v = r._fahrWagenGeschw ? r._fahrWagenGeschw(e) : null;
-                        const dv = v ? Math.hypot(v.x, v.z) : 0;
-                        if (m.kontakt < 0 && dv > 1e-4) m.kontakt = i;
-                        m.wagenDv = Math.max(m.wagenDv, dv);
+                        const ab = kapselAbstand(e);
+                        m.minAbstand = Math.min(m.minAbstand, ab);
+                        const vU = st.playerVel.x() * ux + st.playerVel.z() * uz; // die Fahrt des Spielers in den Wagen
+                        if (m.kontakt < 0 && ab <= 0.02) {
+                            m.kontakt = i;
+                            m.vorKontakt = vorher;
+                        }
+                        if (m.kontakt >= 0 && i - m.kontakt <= 10) m.nachKontakt = Math.min(m.nachKontakt, vU);
+                        vorher = vU;
                     }
                     tasten(false);
                     for (let i = 0; i < 60; i++) frame(240 + i);
@@ -2063,6 +2096,189 @@ async function probeLeben(expected) {
                 }
             }
             S.spielerWagen = sw;
+        }
+        // L7 DER GESTOSSENE LEIB VOR DÜNNER WAND (0710-5): ein Bär (Größe 1, sein Steuer-Schritt steht) 3 m vor einer 0,35 m
+        // dünnen Wand wird mit 13,7 m/s gegen sie gedrückt (ein Wagen, der nachschiebt: 45 Frames je Frame neu gesetzt) — je
+        // Kadenz (60 fps, 30 fps, gemischte Frames 8–33 ms)
+        // zehn Versuche, Start-Abstand (über einen Frame-Weg), Lage quer und Phase des Akkumulators je Versuch versetzt. Gezählt: wie oft die Mitte des
+        // Bären hinter die Wand gerät. Vorher (der Stoß im Frame-Takt ohne Weg-Prüfung) 30 fps 9/10, gemischt 9/10.
+        // L8 LOCKSTEP (0710-5): ein GT (W) gegen einen stehenden Bären, die Lage des Wagens nach genau 200 Sim-Schritten bei
+        // 60 fps und bei gemischten Frames — sie muss gleich sein (der Stoß des Leibs lebt im festen Schritt).
+        if (start && gasse) {
+            if (st.player && st.player.mountedArch != null) r.dismountArchitecture();
+            const A = Object.getPrototypeOf(r).constructor;
+            const steuerRoh = A._steuerGesetz;
+            const steht = Object.create(steuerRoh.call(A));
+            steht.steuerSchritt = (sw2) => {
+                sw2.v = 0;
+            };
+            const KADENZ = { 60: [1000 / 60], 30: [1000 / 30], gemischt: [8, 33, 16, 25, 12, 30, 20, 9, 33, 14] };
+            const lauf = (muster, n, nachJedem) => {
+                for (let i = 0; i < n; i++) {
+                    tMs += muster[i % muster.length];
+                    r._gameLoopTick(tMs);
+                    if (nachJedem && nachJedem(i) === false) break;
+                }
+            };
+            A._steuerGesetz = () => steht;
+            try {
+                // L7
+                const wx = start.x + 14;
+                const wz = start.z;
+                const g = hh(wx, wz);
+                const wand = r.spawnArchitecture(
+                    "stein_block",
+                    { x: wx, y: g + 0.5, z: wz },
+                    { silent: true, precise: true }
+                );
+                if (wand) {
+                    const platte = () => {
+                        wand.blockerAABBs = [
+                            {
+                                minX: wx - 0.175,
+                                maxX: wx + 0.175,
+                                minZ: wz - 2,
+                                maxZ: wz + 2,
+                                botY: g - 0.5,
+                                topY: g + 3,
+                                dick: 3.5,
+                            },
+                        ];
+                        wand._blockerReach = 3;
+                    };
+                    // der Spieler steht zu Fuß neben der Probe (die Tiere ticken im Nah-Band)
+                    st.playerMesh.position.set(wx - 4, hh(wx - 4, wz + 6) + 1.2, wz + 6);
+                    st.playerVel.setValue(0, 0, 0);
+                    tasten(false);
+                    const L7 = {};
+                    for (const [name, muster] of Object.entries(KADENZ)) {
+                        let durch = 0;
+                        let n = 0;
+                        let tiefstX = -Infinity;
+                        for (let v = 0; v < 10; v++) {
+                            platte();
+                            const bz = wz - 0.9 + v * 0.2;
+                            // der Start-Abstand je Versuch um 4,5 cm versetzt: zehn Versuche decken einen ganzen Frame-Weg (30 fps,
+                            // ~0,45 m) — durch geht nur, wessen vordere Achse im Sprung über die Wandmitte kommt, ein Fenster von cm
+                            st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1); // die Probe braucht ihren Bären
+                            const bx = wx - 0.175 - 3 - v * 0.045;
+                            const b = r.spawnCreatureAt(bx, hh(bx, bz) + 0.5, bz, "calm", "baer", {
+                                precise: true,
+                                bodySize: 1,
+                            });
+                            if (!b) continue;
+                            b.position.set(bx, hh(bx, bz), bz);
+                            b.rotation.y = Math.PI / 2;
+                            b.userData._steuer = { gier: Math.PI / 2, v: 0 };
+                            b.userData._stossV = null;
+                            lauf([1 + v * 1.3], 1); // die Phase des Akkumulators je Versuch
+                            b.userData._stossV = { x: 13.7, z: 0 };
+                            let maxX = -Infinity;
+                            // der Stoß DRÜCKT wie ein Wagen, der nachschiebt: je Frame neu 13,7 m/s gegen die Wand (die Gegenprüfung:
+                            // Bär vor der Wand, Wagen 13,7 m/s) — liegt der Leib an der Wand, beginnt jeder Frame mit der Achse an ihr
+                            lauf(muster, 90, (i) => {
+                                maxX = Math.max(maxX, b.position.x);
+                                if (i < 45) b.userData._stossV = { x: 13.7, z: 0 };
+                            });
+                            n++;
+                            tiefstX = Math.max(tiefstX, maxX - (wx + 0.175));
+                            if (maxX > wx + 0.175) durch++;
+                            r.removeCreature(b);
+                        }
+                        L7[name] = { durch, n, ueber: +tiefstX.toFixed(3) };
+                    }
+                    r.removeArchitecture(wand);
+                    S.leibWand = L7;
+                }
+                // L8
+                const ux = Math.sin(gasse.fahrt);
+                const uz = Math.cos(gasse.fahrt);
+                const lockProbe = async (muster) => {
+                    const gS = await setzen("fahrzeug_gt", gasse.x, gasse.z, gasse.fahrt);
+                    if (!gS) return null;
+                    const bx = gasse.x + ux * 9;
+                    const bz = gasse.z + uz * 9;
+                    st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1);
+                    // die Gasse frei von anderen Tieren (dieselbe Räumung wie die Stoß-Proben)
+                    for (const cr of (st.creatures || []).slice())
+                        if (cr && cr.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 30)
+                            r.removeCreature(cr);
+                    const b = r.spawnCreatureAt(bx, hh(bx, bz) + 0.5, bz, "calm", "baer", {
+                        precise: true,
+                        bodySize: 1,
+                    });
+                    if (!b) {
+                        weg(gS);
+                        return null;
+                    }
+                    b.position.set(bx, hh(bx, bz), bz);
+                    b.rotation.y = gasse.fahrt + Math.PI / 2;
+                    b.userData._steuer = { gier: b.rotation.y, v: 0 };
+                    b.userData._stossV = null;
+                    st._fixedAccumulator = 0;
+                    const PF = r._stepFixedSim;
+                    let schritte = 0;
+                    let lage = null;
+                    const spur = [];
+                    r._stepFixedSim = function (simTime, dt) {
+                        PF.call(this, simTime, dt);
+                        schritte++;
+                        {
+                            const sv = b.userData._stossV;
+                            const pmT = st.playerMesh.position;
+                            spur.push([
+                                pmT.x,
+                                pmT.z,
+                                b.position.x,
+                                b.position.z,
+                                b.position.y,
+                                sv ? Math.hypot(sv.x, sv.z) : 0,
+                            ]);
+                        }
+                        // die Sim-Lage des Reiters (im Schritt die Wahrheit; die Lage des Werks folgt ihr je Frame)
+                        const pmS = st.playerMesh.position;
+                        if (schritte === 200) lage = { x: pmS.x, z: pmS.z, bx: b.position.x, bz: b.position.z };
+                    };
+                    tasten(true);
+                    try {
+                        lauf(muster, 2000, () => lage === null);
+                    } finally {
+                        r._stepFixedSim = PF;
+                        tasten(false);
+                    }
+                    weg(gS);
+                    r.removeCreature(b);
+                    if (lage) lage.spur = spur;
+                    return lage;
+                };
+                const l60 = await lockProbe(KADENZ[60]);
+                const lMix = await lockProbe(KADENZ.gemischt);
+                // der erste Schritt, in dem die Läufe auseinandergehen, und die Größe, die zuerst abweicht (die Linse nennt sie)
+                let erst = null;
+                if (l60 && lMix) {
+                    const namen = ["Wagen x", "Wagen z", "Bär x", "Bär z", "Bär y", "Bär Stoß"];
+                    for (let i = 0; i < Math.min(l60.spur.length, lMix.spur.length) && !erst; i++)
+                        for (let k = 0; k < namen.length; k++)
+                            if (l60.spur[i][k] !== lMix.spur[i][k]) {
+                                erst = {
+                                    schritt: i + 1,
+                                    groesse: namen[k],
+                                    d: +(lMix.spur[i][k] - l60.spur[i][k]).toFixed(5),
+                                };
+                                break;
+                            }
+                }
+                S.lockstep =
+                    l60 && lMix
+                        ? {
+                              abw: +Math.hypot(l60.x - lMix.x, l60.z - lMix.z).toFixed(6),
+                              baerAbw: +Math.hypot(l60.bx - lMix.bx, l60.bz - lMix.bz).toFixed(6),
+                              erst,
+                          }
+                        : null;
+            } finally {
+                A._steuerGesetz = steuerRoh;
+            }
         }
     } catch (e) {
         res.err = (e && e.stack) || String(e);
@@ -2139,9 +2355,11 @@ async function probeLeben(expected) {
             stossWagen: { kontakt: 40, vVor: 6.5, vNach: 2.3, vMinNach: 2.3, ereignisse: 1, ruck: 3, zielWeg: 2.1 },
             stossBaer: { kontakt: 40, vVor: 6.5, vNach: 5.0, vMinNach: 5.0, ereignisse: 1, ruck: 2, zielWeg: 3.2 },
             spielerWagen: {
-                a: { minAbstand: 0, wagenDv: 0.3, wagenWeg: 0.01, kontakt: 100 },
+                a: { minAbstand: 0, wagenWeg: 0.002, kontakt: 100, vorKontakt: 4.2, nachKontakt: -0.1 },
                 b: { minAbstand: 0, spielerDv: 3.2, angestossen: true },
             },
+            leibWand: { 60: { durch: 0, n: 10 }, 30: { durch: 0, n: 10 }, gemischt: { durch: 0, n: 10 } },
+            lockstep: { abw: 0, baerAbw: 0 },
         };
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
         for (const [name, bruch, soll] of [
@@ -2243,11 +2461,26 @@ async function probeLeben(expected) {
                 "der Spieler läuft gegen den GT ohne Folge, der GT schiebt sich in den Spieler (0710-4)",
                 {
                     spielerWagen: {
-                        a: { minAbstand: 0, wagenDv: 0, wagenWeg: 0, kontakt: -1 },
+                        a: { minAbstand: 0, wagenWeg: 0, kontakt: 100, vorKontakt: 4.2, nachKontakt: 4.1 },
                         b: { minAbstand: -0.6, spielerDv: 0, angestossen: true },
                     },
                 },
                 "spieler-wagen",
+            ],
+            [
+                "der gestoßene Bär geht bei 30 fps durch die Wand (Gegenprüfung 0710-5: 9/10)",
+                { leibWand: { 60: { durch: 0, n: 10 }, 30: { durch: 9, n: 10 }, gemischt: { durch: 0, n: 10 } } },
+                "leib-wand 30",
+            ],
+            [
+                "der Wagen steht je nach Bildrate anders (Gegenprüfung 0710-5: 0,06 m nach 200 Schritten)",
+                { lockstep: { abw: 0.06, baerAbw: 0 } },
+                "lockstep",
+            ],
+            [
+                "der Bär steht je nach Bildrate anders, der Wagen gleich (Gegenprüfung 0710-5: 1,39 m)",
+                { lockstep: { abw: 0, baerAbw: 1.39 } },
+                "lockstep",
             ],
             [
                 "Stoß aus dem Stand (vakuös)",
@@ -2729,10 +2962,25 @@ async function probeLeben(expected) {
     );
     const swz = S.spielerWagen || {};
     check(
-        "L6 Spieler und Wagen (0710-4): der laufende Spieler stößt den geparkten GT (der Wagen bekommt Fahrt), ein rutschender GT stößt den stehenden Spieler — Impuls nach Masse, keine Durchdringung",
+        "L6 Spieler und Wagen (0710-4): der laufende Spieler prallt am gebremsten GT ab (der Wagen hält), ein rutschender GT stößt den stehenden Spieler — Impuls nach Masse, keine Durchdringung",
         !hat("kern") && !hat("spieler-wagen") && !hat("wagen-spieler"),
         swz.a && swz.b
-            ? `Spieler → GT: Wagen ${swz.a.wagenDv.toFixed(3)} m/s, ${swz.a.wagenWeg.toFixed(3)} m gerutscht, tiefste Berührung ${swz.a.minAbstand.toFixed(3)} m · GT → Spieler: Spieler ${swz.b.spielerDv.toFixed(2)} m/s, tiefste Berührung ${swz.b.minAbstand.toFixed(3)} m`
+            ? `Spieler → GT: Fahrt in den Wagen ${swz.a.vorKontakt.toFixed(2)} → ${swz.a.nachKontakt.toFixed(2)} m/s, Wagen ${swz.a.wagenWeg.toFixed(3)} m gerutscht, tiefste Berührung ${swz.a.minAbstand.toFixed(3)} m · GT → Spieler: Spieler ${swz.b.spielerDv.toFixed(2)} m/s, tiefste Berührung ${swz.b.minAbstand.toFixed(3)} m`
+            : "keine Probe"
+    );
+    const lwz = S.leibWand || {};
+    const lwT = (k) =>
+        lwz[k] ? `${k}: ${lwz[k].durch}/${lwz[k].n} durch (am weitesten ${lwz[k].ueber} m hinter der Wand)` : k + " –";
+    check(
+        "L7 der gestoßene Leib vor dünner Wand (0710-5): 13,7 m/s gegen 0,35 m — bei 60 fps, 30 fps und gemischten Frames geht er nie hindurch",
+        !hat("kern") && !hat("leib-wand"),
+        ["60", "30", "gemischt"].map(lwT).join(" · ")
+    );
+    check(
+        "L8 Lockstep (0710-5): der Wagen steht nach 200 Sim-Schritten gegen einen Bären bei 60 fps und gemischten Frames an derselben Stelle",
+        !hat("kern") && !hat("lockstep"),
+        S.lockstep
+            ? `Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}` : ""}`
             : "keine Probe"
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);

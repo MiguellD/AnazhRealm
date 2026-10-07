@@ -184,8 +184,17 @@ const server = http.createServer((req, res) => {
             const spawn = (spot, soul, bodySize) =>
                 r.spawnCreatureAt(spot.x, spot.y, spot.z, "happy", soul, { precise: true, bodySize });
             const cleanup = (list) => list.forEach((c) => c && r.removeCreature(c));
+            // der Takt der Probe wie der Loop: der feste Sim-Schritt (der Stoß des Leibs und Leib an Leib, 0710-5), dann
+            // der Kreatur-Takt — vor 0710-5 lebte beides in updateCreatures (dort läuft die Probe unverändert)
+            const takt = (dt) => {
+                if (typeof r._kreaturStossSchritt === "function") {
+                    r._kreaturStossSchritt(dt);
+                    r._leibKontakte();
+                }
+                r.updateCreatures(dt);
+            };
             const tick = (n, dt) => {
-                for (let k = 0; k < n; k++) r.updateCreatures(dt);
+                for (let k = 0; k < n; k++) takt(dt);
             };
 
             // ── (A) SEPARATION: identisches Paar auf DEMSELBEN Punkt ──
@@ -241,7 +250,7 @@ const server = http.createServer((req, res) => {
                 px2 = bBig.position.x,
                 pz2 = bBig.position.z;
             for (let k = 0; k < 400; k++) {
-                r.updateCreatures(0.05);
+                takt(0.05);
                 pathSmall += Math.hypot(bSmall.position.x - px1, bSmall.position.z - pz1);
                 pathBig += Math.hypot(bBig.position.x - px2, bBig.position.z - pz2);
                 px1 = bSmall.position.x;
@@ -381,7 +390,7 @@ const server = http.createServer((req, res) => {
                     try {
                         let vaVor = vx(a);
                         for (let k = 0; k < 120; k++) {
-                            r.updateCreatures(1 / 60);
+                            takt(1 / 60);
                             const PA = achse(a);
                             const PB = achse(b);
                             res.minAbstand = Math.min(res.minAbstand, streckeAbstand(PA, PB) - PA.r - PB.r);
@@ -432,7 +441,7 @@ const server = http.createServer((req, res) => {
                         A._steuerGesetz = () => steht;
                         try {
                             for (let k = 0; k < 90; k++) {
-                                r.updateCreatures(1 / 60);
+                                takt(1 / 60);
                                 const PW = achse(w);
                                 const PS = {
                                     ax: pmM.position.x,

@@ -19056,8 +19056,8 @@ class AnazhRealm {
     }
 
     // Schaden (symmetrisch zum Spieler, DIESELBE computeCreatureStats-Pipeline für hpMax + defense): die Rüstung dämpft
-    // (_ruestungDaempft); hp ≤ 0 → Kampf-Tod (Loot + removeCreature). Knockback nur, wenn der Angreifer Ort + Wucht
-    // liefert (opts.fromPos/knockback).
+    // (_ruestungDaempft); hp ≤ 0 → Kampf-Tod (Loot + removeCreature). Der Rückstoß nur, wenn der Angreifer Ort und Stoß
+    // liefert (opts.fromPos + opts.stoss {p, m} — das EINE Impuls-Gesetz, AnazhRealm.STOSS; ein Feld knockback liest niemand).
     damageCreature(creature, amount, opts = {}) {
         if (!creature || !creature.userData || creature.userData.kind !== "creature") {
             return { ok: false, reason: "not_creature" };
@@ -19110,8 +19110,8 @@ class AnazhRealm {
         // DER RÜCKSTOSS (das EINE Impuls-Gesetz, AnazhRealm.STOSS — 0710-2, K-D9), nur wenn der Angreifer Ort und Stoß
         // liefert (LMB-Angriff, Pfeil; der DSL-Op gibt keinen) und NACH der Gegenwehr (Welle L, K-D16): der Schlag ist ein
         // Körper — die wirksame Masse m und sein Impuls p aus dem Treffer-Urteil des Schmiede-Kerns, verstärkt um die Wucht
-        // der Arena (`gefuehl.wucht`) —, das Ziel ruht mit der Masse seines Leibs; was der Leib bekommt, trägt ihn in
-        // updateCreatures, bis die Reibung es aufzehrt. Vorher ein Positions-Satz min(stossCap, kb·stossProKb)·stossSkala:
+        // der Arena (`gefuehl.wucht`) —, das Ziel ruht mit der Masse seines Leibs; was der Leib bekommt, trägt ihn im
+        // festen Sim-Schritt (`_kreaturStossSchritt`), bis die Reibung es aufzehrt. Vorher ein Positions-Satz min(stossCap, kb·stossProKb)·stossSkala:
         // 2,16 m für jede Waffe und jedes Ziel, in EINEM Frame.
         if (opts.fromPos && opts.stoss && opts.stoss.p > 0 && opts.stoss.m > 0) {
             const G = AnazhRealm._arenaGesetz().gefuehl;
@@ -20346,20 +20346,21 @@ class AnazhRealm {
     _leibMasse(koerper) {
         const LG = AnazhRealm._leibGesetz();
         const tb = koerper && koerper.userData ? koerper.userData._tierBaum : null;
-        const sk = this._leibMasseSkala || (this._leibMasseSkala = new THREE.Vector3());
-        if (tb && tb.leibV > 0) {
-            koerper.getWorldScale(sk);
-            return tb.leibV * sk.x * sk.y * sk.z * LG.tier;
-        }
+        // die Skala als Kette der LOKALEN Skalen bis zur Szene — nie über die Welt-Matrix (getWorldScale): die trägt die
+        // Hang-Neigung, die der Frame-Takt glättet, und die Masse wich je Bildrate im 1e-9-Bereich ab (0710-5, L8: der
+        // Stoß eines Bären unterschied sich ab Schritt 90, nach 200 Schritten stand der Wagen 0,07 m anders)
+        const kette = (o) => {
+            let v = 1;
+            for (let n = o; n && !n.isScene; n = n.parent) v *= n.scale.x * n.scale.y * n.scale.z;
+            return v;
+        };
+        if (tb && tb.leibV > 0) return tb.leibV * kette(koerper) * LG.tier;
         let avatar = null;
         if (koerper && typeof koerper.traverse === "function")
             koerper.traverse((o) => {
                 if (!avatar && o.userData && o.userData._leibV > 0) avatar = o;
             });
-        if (avatar) {
-            avatar.getWorldScale(sk);
-            return avatar.userData._leibV * sk.x * sk.y * sk.z * LG.mensch;
-        }
+        if (avatar) return avatar.userData._leibV * kette(avatar) * LG.mensch;
         return AnazhRealm._kernPflichtBruch("leib:Gestalt ohne Volumen (" + ((koerper && koerper.name) || "?") + ")");
     }
 
@@ -20465,7 +20466,7 @@ class AnazhRealm {
     // (der leichte weicht; die Lage des Spielers setzt allein sein Sim-Schritt — gegen ihn weicht das Tier ganz), und nähern
     // sie sich längs der Normalen, tauschen sie Impuls (`_stossPaar`): der Fuchs prallt am Bären ab, der Bär wankt kaum.
     // Vorher trennte nur der Herden-Abstand als Steuer-Wunsch (`_applyCreatureSeparation`) — Leiber gingen durcheinander,
-    // ohne Impuls. Paare in Index-Folge, ohne Frame-Delta, ohne Zufall (Lockstep).
+    // ohne Impuls. Paare in Index-Folge, ohne Frame-Delta, ohne Zufall, im festen Sim-Schritt (`_stepFixedSim`, 0710-5).
     _leibKontakte() {
         const st = this.state;
         const cr = st.creatures || [];
@@ -20542,14 +20543,20 @@ class AnazhRealm {
                 const wa = fest(KA) ? 0 : fest(KB) ? 1 : KB.m / (KA.m + KB.m);
                 const wb = fest(KB) ? 0 : fest(KA) ? 1 : KA.m / (KA.m + KB.m);
                 if (wa > 0) {
+                    const x0 = a.q.position.x;
+                    const z0 = a.q.position.z;
                     a.q.position.x -= nx * tief * wa;
                     a.q.position.z -= nz * tief * wa;
+                    this._kreaturHuellenKontakt(a.q, 0, x0, z0); // die Trennung schiebt nie in eine Wand
                     a.x = a.q.position.x;
                     a.z = a.q.position.z;
                 }
                 if (wb > 0) {
+                    const x0 = b.q.position.x;
+                    const z0 = b.q.position.z;
                     b.q.position.x += nx * tief * wb;
                     b.q.position.z += nz * tief * wb;
+                    this._kreaturHuellenKontakt(b.q, 0, x0, z0);
                     b.x = b.q.position.x;
                     b.z = b.q.position.z;
                 }
@@ -20565,6 +20572,68 @@ class AnazhRealm {
         if (!(dv > 0) || !st.playerVel || (st.player && st.player.mountedArch != null)) return;
         const v = st.playerVel;
         v.setValue(v.x() + nx * dv, v.y(), v.z() + nz * dv);
+    }
+
+    // DER GESTOSSENE LEIB IM SIM-SCHRITT (0710-5, Lehre 13: was einen Körper bewegt, läuft im festen Schritt): je Tier mit
+    // getragenem Stoß der Weg dieses Schritts — in Teil-Schritten von höchstens dem halben Leib-Radius, je Teil-Schritt die
+    // EINE Hülle (`_kreaturHuellenKontakt`): die Achse erreicht in einem Teil-Schritt nie die Mitte einer Wand, gleich wie
+    // dünn sie ist (dieselbe Regel wie der Deckel des Wagens: nie mehr als eine Stufe in eine Box je Schritt). Hält ein
+    // Hindernis den Leib, stirbt sein Stoß in das Hindernis (unelastisch); danach zehrt die Reibung μ·g·dt. Vorher bewegte
+    // updateCreatures ihn je Frame um _stossV·delta ohne Weg-Prüfung (30 fps und gemischte Frames: 9 von 10 Bären durch eine
+    // 0,35-m-Mauer; nach 200 Sim-Schritten stand der Bär 1,39 m, der Wagen 0,06 m anders, je nach Bildrate).
+    _kreaturStossSchritt(dt) {
+        const wesen = this.state.creatures;
+        if (!wesen || !wesen.length || !(dt > 0)) return;
+        const ST = AnazhRealm.STOSS;
+        const ab = ST.reibungLeib * Math.abs(this.state.gravity) * dt;
+        const leib = this._kreaturStossLeib || (this._kreaturStossLeib = {});
+        for (const c of wesen) {
+            const ud = c && c.userData;
+            const sv = ud && ud._stossV;
+            if (!sv) continue;
+            const sp = Math.hypot(sv.x, sv.z);
+            if (!(sp > Math.max(ab, ST.ruheMs))) {
+                ud._stossV = null;
+                continue;
+            }
+            const L = this._kreaturHueftL(c);
+            this._kreaturLeib(c, L, leib);
+            const teile = Math.max(1, Math.ceil((sp * dt) / Math.max(0.02, 0.5 * leib.radius)));
+            const h = dt / teile;
+            for (let k = 0; k < teile; k++) {
+                const x0 = c.position.x;
+                const z0 = c.position.z;
+                c.position.x += sv.x * h;
+                c.position.z += sv.z * h;
+                const kx = c.position.x;
+                const kz = c.position.z;
+                this._kreaturHuellenKontakt(c, L, x0, z0);
+                const hx = c.position.x - kx;
+                const hz = c.position.z - kz;
+                const hd = Math.hypot(hx, hz);
+                const vn = hd > 1e-6 ? (sv.x * hx + sv.z * hz) / hd : 0;
+                if (vn < 0) {
+                    sv.x -= (vn * hx) / hd;
+                    sv.z -= (vn * hz) / hd;
+                }
+            }
+            // die HÖHE des gleitenden Leibs gehört demselben Schritt (Q4: die Sim steht auf dem Gesetz, die Sicht liest es um
+            // den Stand-Leser): erdete erst der Frame-Takt (Budget, 0,5-m-Cache), lag die Höhe je Bildrate verschieden, und
+            // das Höhen-Band der Wagen-Hülle las sie (L8: Schritt 91, Bär y −0,016 m, nach 200 Schritten 0,07 m). Der
+            // Boden-Cache des Frames bekommt denselben Wert; der Frame-Takt lässt die Höhe stehen, solange der Stoß trägt.
+            const gesetz = this.getTerrainHeightAt(c.position.x, c.position.z);
+            const sicht = this._standSicht(c.position.x, c.position.z, gesetz, false);
+            c.position.y = Number.isFinite(sicht) ? sicht : gesetz;
+            ud.cachedGroundY = gesetz;
+            ud.cachedGroundX = c.position.x;
+            ud.cachedGroundZ = c.position.z;
+            const sp2 = Math.hypot(sv.x, sv.z);
+            if (!(sp2 > Math.max(ab, ST.ruheMs))) ud._stossV = null;
+            else {
+                sv.x *= (sp2 - ab) / sp2;
+                sv.z *= (sp2 - ab) / sp2;
+            }
+        }
     }
 
     // DER STOSS AUF EINEN LEIB: dv (m/s) längs (nx, nz) — er trägt den Leib, bis die Reibung ihn aufzehrt.
@@ -21962,38 +22031,10 @@ class AnazhRealm {
                     creature.position.z += _fl.z * delta;
                 }
             }
-            // DER STOSS (das EINE Impuls-Gesetz, AnazhRealm.STOSS): die Geschwindigkeit eines Treffers oder Wagens trägt den
-            // Leib, bis die Reibung am Boden sie aufzehrt (μ·g); der Hüllen-Kontakt danach hält ihn aus Wand und Bauwerk.
-            const stossV = udS._stossV;
-            if (stossV) {
-                const sp = Math.hypot(stossV.x, stossV.z);
-                const ab = AnazhRealm.STOSS.reibungLeib * Math.abs(this.state.gravity) * delta;
-                if (!(sp > Math.max(ab, AnazhRealm.STOSS.ruheMs))) udS._stossV = null;
-                else {
-                    creature.position.x += stossV.x * delta;
-                    creature.position.z += stossV.z * delta;
-                    const k = (sp - ab) / sp;
-                    stossV.x *= k;
-                    stossV.z *= k;
-                }
-            }
-            const kx0 = creature.position.x;
-            const kz0 = creature.position.z;
+            // Der STOSS, den ein Leib trägt, bewegt ihn im festen Sim-Schritt (`_kreaturStossSchritt`, 0710-5), nie hier im
+            // Frame-Takt: hier trug `_stossV · delta` ihn je Frame ohne Weg-Prüfung — bei 30 fps (0,46 m je Frame aus 13,7 m/s)
+            // sprang ein Bär 9 von 10 Mal durch eine 0,35-m-Wand, und der Wagen las das Frame-Gedächtnis im Sim-Schritt.
             this._kreaturHuellenKontakt(creature, hueftL, px0, pz0);
-            // Hält ein Hindernis den Leib, stirbt sein Stoß in das Hindernis (unelastisch, wie die Fahrt der Hülle an der
-            // Wand): sonst trüge ein eingeklemmter Leib eine Geschwindigkeit, die er nie ausführt, und der Wagen hinter ihm
-            // sähe ihn fortgleiten (Relativ-Geschwindigkeit ≤ 0, kein Stoß) und drückte je Schritt eine Stufe in ihn hinein.
-            const stossH = udS._stossV;
-            if (stossH) {
-                const hx = creature.position.x - kx0;
-                const hz = creature.position.z - kz0;
-                const hd = Math.hypot(hx, hz);
-                const vn = hd > 1e-6 ? (stossH.x * hx + stossH.z * hz) / hd : 0;
-                if (vn < 0) {
-                    stossH.x -= (vn * hx) / hd;
-                    stossH.z -= (vn * hz) / hd;
-                }
-            }
 
             // Sanfter Decay des Innenlebens (~17 s Halbwert); ruhige Wesen werden sparse (null = kein Tick-Rest),
             // beim Ausklingen projiziert die Valenz auf "happy" zurück — getroffene Wesen erholen sich.
@@ -22117,7 +22158,8 @@ class AnazhRealm {
                 } else udH._hopH = h;
                 hopOffset = udH._hopH;
             }
-            creature.position.y = baseY + floatOffset + hopOffset;
+            // ein gleitender Leib (er trägt einen Stoß) steht auf der Höhe seines Sim-Schritts (`_kreaturStossSchritt`)
+            if (!creature.userData._stossV) creature.position.y = baseY + floatOffset + hopOffset;
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
             // sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
             if (inFrustum) {
@@ -22180,8 +22222,6 @@ class AnazhRealm {
             // DETERMINISMUS-BOGEN P3 — kein Ammo-Body-Shadow mehr: die Kreatur-Position IST
             // die Wahrheit (feld-geerdet über `_creatureGroundY`), nichts zu synchronisieren.
         }
-        // LEIB AN LEIB (0710-4): nachdem jedes Tier seinen Schritt ging, lösen die Paare ihre Berührung (Lage + Impuls).
-        this._leibKontakte();
     }
 
     // ===== ATLAS §07 · CHUNK-STREAMING/PHYSIK — Voxel-Worker · Ring · feld-native Kollision =====
@@ -89812,6 +89852,9 @@ class AnazhRealm {
         this._rittSchritt(dt);
         // ein im Flug verlassener Gesetz-Wagen fällt auf der Vertikale des Kerns, bis er steht (Gegenprüfung 07.10.)
         if (this._fahrLos && this._fahrLos.size) this._fahrNachlauf(dt);
+        // DER GESTOSSENE LEIB und LEIB AN LEIB im Sim-Schritt (0710-5): was einen Körper bewegt, läuft im festen Schritt.
+        this._kreaturStossSchritt(dt);
+        this._leibKontakte();
         if (this.state._replayRec) this._replayCaptureFrame(dt);
         // Lockstep-MP: der Input dieses Fixed-Steps geht gebatcht übers P2P-Mesh; Peers simulieren den
         // Charakter durch DENSELBEN Schritt-Pfad. simTime reist im 1-Hz-Anker mit — der Ghost läuft auf
@@ -90304,6 +90347,16 @@ class AnazhRealm {
             vc.fahrStand(fz, G, this._fahrBoden(entry), 0);
             if (!Number.isFinite(fz.y)) return;
         }
+        // DIE HAFTUNG DER BREMSE (0710-4): ein abgestellter Wagen steht mit Handbremse — sie nimmt je Sim-Schritt bis zu
+        // handDecel · dt eines Stoßes auf (der Kern: G.handDecel), erst der Rest bewegt ihn. Vorher fuhr der Wagen jeden
+        // Stoß im selben Schritt, bevor die Bremse griff: ein Spieler, der mit W gegen einen geparkten GT drückte, schob ihn
+        // 0,27 m in 4 s (gate:fahr-leben L6).
+        const dv = Math.hypot(dvx, dvz);
+        const haft = (Number.isFinite(G.handDecel) ? G.handDecel : 0) * AnazhRealm.FIXED_DT;
+        if (!(dv > haft)) return;
+        const rest = (dv - haft) / dv;
+        dvx *= rest;
+        dvz *= rest;
         const cy = Math.cos(fz.yaw);
         const sy = Math.sin(fz.yaw);
         fz.vlong += dvx * cy - dvz * sy;
@@ -94708,10 +94761,11 @@ AnazhRealm._arenaGesetz = function () {
 // DAS EINE IMPULS-GESETZ (0710-2: der Stoß der Fahrt und der Rückstoß des Kampfs, K-D9): jeder Stoß zweier Körper —
 // Wagen an Fels, Wagen an Wagen, Wagen an Tier, Klinge und Pfeil am Tier — tauscht Impuls längs der Stoß-Normalen,
 // J = (1 + e) · v_rel / (1/mA + 1/mB) (ein starrer Gegner: 1/mB = 0), mit der Stoß-Zahl e des Paars. Die Masse kommt
-// aus dem Leib (das Tier: die Kapsel `_kreaturLeib` mal der Dichte des Gewebes) und aus dem Kern (der Wagen: carPhys
-// über den Fahr-Satz; der Schlag: die wirksame Masse des Schmiede-Urteils). Was ein Leib an Geschwindigkeit bekommt,
-// trägt ihn, bis die Reibung am Boden sie aufzehrt (`updateCreatures`) — der Bär rutscht wenig, der Fuchs fliegt;
-// ein gestoßener Wagen rutscht mit der Handbremse (`_fahrNachlauf`). Vorher stand der Wagen in EINEM Frame
+// aus dem Leib (Tier und Mensch: das Volumen der geschlossenen Haut mal der Dichte des Kerns, `_leibMasse`) und aus dem
+// Kern (der Wagen: carPhys-Volumen mal FAHR.masseDichte, `_fahrMasse`; der Schlag: die wirksame Masse des
+// Schmiede-Urteils). Was ein Leib an Geschwindigkeit bekommt, trägt ihn im festen Sim-Schritt, bis die Reibung am Boden
+// sie aufzehrt (`_kreaturStossSchritt`, der Weg gegen die EINE Hülle) — der Bär rutscht wenig, der Fuchs fliegt; ein
+// gestoßener Wagen rutscht mit der Handbremse (`_fahrNachlauf`). Vorher stand der Wagen in EINEM Frame
 // (Leben-Schau 07.10.: Baum 10,41 → 0,16, GT 11,28 → 0,00, Bär 9,27 → 0,17 m/s), und jeder Treffer versetzte jedes
 // Ziel 2,16 m (eine Kappe, kein Gesetz).
 AnazhRealm.STOSS = Object.freeze({

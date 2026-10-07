@@ -451,7 +451,14 @@ async function WELLE_L() {
             };
             A._steuerGesetz = () => steht;
             try {
-                for (let k = 0; k < 90; k++) r.updateCreatures(1 / 60);
+                // wie der Loop: der feste Sim-Schritt trägt den Stoß (0710-5), dann der Kreatur-Takt
+                for (let k = 0; k < 90; k++) {
+                    if (typeof r._kreaturStossSchritt === "function") {
+                        r._kreaturStossSchritt(1 / 60);
+                        r._leibKontakte();
+                    }
+                    r.updateCreatures(1 / 60);
+                }
             } finally {
                 A._steuerGesetz = steuerRoh;
             }

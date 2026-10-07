@@ -4344,15 +4344,25 @@ async function checkBandV1754PlayerAttack(ctx) {
         // prueft (4) über die lebendig-Schwelle weiter.
         out.noGuiltForMaterial = true;
 
-        // (6) der Knockback-Pfad (fromPos + knockback) läuft ohne Fehler + schädigt
+        // (6) der Rückstoß-Pfad (fromPos + stoss {p, m}, das EINE Impuls-Gesetz) läuft, schädigt UND stößt das Ziel vom
+        // Angreifer weg — der Schlag ein Keulen-Hieb des Schmiede-Urteils (p 26,85 · m 1,71, gate:kampf-gefuehl T13). Die
+        // Gegenprobe: das tote Feld knockback (es liest niemand) stößt nicht — der Check übergab bis 0710-5 nur dieses Feld
+        // und prüfte allein den Schaden, er war leer.
         const c4 = r.spawnCreatureAt(pm.x + 380, pm.y, pm.z + 380, "happy", "wesen");
+        const von = { x: c4.position.x - 2, y: c4.position.y, z: c4.position.z };
         let kbOk = true;
+        let totFeld = null;
         try {
-            r.damageCreature(c4, 5, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z }, knockback: 8 });
+            c4.userData._stossV = null;
+            r.damageCreature(c4, 1, { source: "player", fromPos: von, knockback: 8 });
+            totFeld = c4.userData._stossV;
+            r.damageCreature(c4, 5, { source: "player", fromPos: von, stoss: { p: 26.85, m: 1.71 } });
         } catch {
             kbOk = false;
         }
-        out.knockbackRuns = kbOk && c4.userData.hp < c4.userData.hpMax;
+        const sv4 = c4.userData._stossV;
+        out.knockbackRuns = kbOk && c4.userData.hp < c4.userData.hpMax && !!sv4 && sv4.x > 0.01;
+        out.knockbackTotFeld = kbOk && !totFeld;
         if (r.state.creatures.indexOf(c4) !== -1) r.removeCreature(c4);
 
         // (7) der Dispatch + die Schuld sind wired (Source-Probe)
@@ -4392,7 +4402,14 @@ async function checkBandV1754PlayerAttack(ctx) {
         "V17.54 Kampf D (NULL): das Schuld-Gate lebt über die lebendig-Schwelle (Material-Wesen gefallen)",
         res.noGuiltForMaterial
     );
-    check("V17.54 Kampf D: der Knockback-Pfad (fromPos + knockback) läuft + schädigt", res.knockbackRuns);
+    check(
+        "V17.54 Kampf D: der Rückstoß-Pfad (fromPos + stoss) läuft, schädigt und stößt das Ziel vom Angreifer weg",
+        res.knockbackRuns
+    );
+    check(
+        "V17.54 Kampf D (Gegenprobe 0710-5): das tote Feld knockback stößt nicht — ein Check damit allein wäre leer",
+        res.knockbackTotFeld
+    );
     check(
         "V17.54 Kampf D: tryMouseBreak dispatcht zur Kreatur + die Schuld ist in _creatureCombatDeath wired",
         res.dispatchWired && res.guiltWired
@@ -34990,6 +35007,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         // (A3e) BEHAVIORAL: ein wild-Wesen mit Beute in 50m kriegt einen Dir
         // zurück (nicht null). Wir setzen ein Test-Setup synthetisch.
         const savedMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const savedCreatures = r.state.creatures;
         try {
             if (r.setGameMode) r.setGameMode("pfad");
             // Fake-wildes Wesen (cached temperament=wild)
@@ -35014,7 +35032,6 @@ async function checkBandV18210Verdrahtung(ctx) {
                     boosts: [],
                 },
             };
-            const savedCreatures = r.state.creatures;
             r.state.creatures = [predator, prey];
             const dirWithPrey = r._creatureScentHuntDir(predator, 0.0);
             out.a3PredatorHasDir = !!(dirWithPrey && (dirWithPrey.x !== 0 || dirWithPrey.z !== 0));
@@ -35022,16 +35039,34 @@ async function checkBandV18210Verdrahtung(ctx) {
             r.state.creatures = [predator];
             const dirNoPrey = r._creatureScentHuntDir(predator, 0.0);
             out.a3NoPreyNoDir = dirNoPrey === null;
-            // Strike-Range-Test: Beute in 1m → strike returns true
-            prey.position.set(1.5, 0, 0);
-            r.state.creatures = [predator, prey];
-            predator.userData.nextHuntStrikeAt = -Infinity;
-            const struck = r._tickCreatureScentStrike(predator);
-            out.a3StrikeHits = struck === true;
+            // Strike-Range-Test mit ECHTEN Leibern (0710-4: der Biss stößt durch das EINE Impuls-Gesetz und liest die
+            // Masse aus der Gestalt — ein körperloser Stub hat keine, der Biss bräche fail-closed): ein Wolf, ein Fuchs
+            // in 1,5 m → der Biss trifft UND stößt die Beute vom Jäger weg.
             r.state.creatures = savedCreatures;
+            const pmS = r.state.playerMesh.position;
+            const capS = r.state.maxCreatures;
+            r.state.maxCreatures = Math.max(capS || 0, savedCreatures.length + 2);
+            const opt = { precise: true, bodySize: 1 };
+            const jaeger = r.spawnCreatureAt(pmS.x + 340, pmS.y, pmS.z - 340, "calm", "wolf", opt);
+            const beute = jaeger && r.spawnCreatureAt(pmS.x + 342, pmS.y, pmS.z - 340, "calm", "fuchs", opt);
+            r.state.maxCreatures = capS;
+            if (jaeger && beute) {
+                beute.position.set(jaeger.position.x + 1.5, jaeger.position.y, jaeger.position.z);
+                beute.userData.hp = 1e6; // der Biss soll stoßen, nicht töten
+                beute.userData._stossV = null;
+                r.state.creatures = [jaeger, beute];
+                jaeger.userData.nextHuntStrikeAt = -Infinity;
+                const struck = r._tickCreatureScentStrike(jaeger);
+                const sv = beute.userData._stossV;
+                out.a3StrikeHits = struck === true && !!sv && sv.x > 0;
+                r.state.creatures = savedCreatures;
+            }
+            if (jaeger) r.removeCreature(jaeger);
+            if (beute) r.removeCreature(beute);
         } catch (e) {
             out.a3Error = String((e && e.message) || e);
         } finally {
+            r.state.creatures = savedCreatures;
             if (r.setGameMode) r.setGameMode(savedMode);
         }
 
@@ -35164,7 +35199,11 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A3d SOURCE: updateCreatures verdrahtet den Helper im wander-Pfad", res.a3WanderWired === true);
     check("V18.210-A3e BEHAVIORAL: wild + Beute → direction != null", res.a3PredatorHasDir === true);
     check("V18.210-A3e2 BEHAVIORAL: wild ohne Beute → null", res.a3NoPreyNoDir === true);
-    check("V18.210-A3e3 BEHAVIORAL: Beute in 1.5m → strike trifft", res.a3StrikeHits === true);
+    check(
+        "V18.210-A3e3 BEHAVIORAL: Beute in 1.5m → der Biss trifft und stößt sie weg (echte Leiber, 0710-4)",
+        res.a3StrikeHits === true,
+        res.a3Error || ""
+    );
 
     // A1 — Audit-Heilungen (Persistenz + Eviction + Spezies-Diversität)
     check(
