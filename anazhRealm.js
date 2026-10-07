@@ -22443,13 +22443,16 @@ class AnazhRealm {
         // Stoff und Ziel synchron im Pass (wie das Vendor-Kompilat), das Objekt zeichnet ab dem Frame, in dem sie steht;
         // (2) der Knoten-Bau bleibt im Pass (er liest MRT, Ziel und contextNode des Renderers, die nur dort gelten — ein
         // buildAsync liefe daneben), aber je Render-Aufruf baut höchstens EINER (weitere nur, solange der Aufruf unter
-        // ERST_BAU_MS baute); jeder andere zeichnet ab dem nächsten Aufruf. Ein Bundle, dessen Bürger so wartet, nimmt neu
-        // auf, sobald er zeichnen kann (der Vendor-Record droppt unfertige Draws und versiegelt das Bundle). Das gilt der ERSTEN
+        // ERST_BAU_MS baute); jeder andere zeichnet ab dem nächsten Aufruf. Wer nicht zeichnen kann, meldet sich in der EINEN
+        // Warteschlange an (`_erstWartet`), auf JEDEM Weg — Erstbau, Neubau, fremde Szene: ein Bundle, dessen Bürger so wartet,
+        // nimmt neu auf, sobald die fertige Pipeline in r184s Zustand steht (der Vendor-Record droppt unfertige Draws und
+        // versiegelt das Bundle; das Vendor-Versprechen hängt am Fehler-Scope und zählt nie). Das gilt der ERSTEN
         // Zeichnung eines Objekts in einem Pass (Render-Kontext · Pass-Kennung): ein Objekt, das dort schon zeichnete, baut
         // einen Neubau (ein Licht kam dazu — r184 schlüsselt das RenderObject je Lichter-Satz und verwirft den Vorgänger im
         // selben `_objects.get` —, sein Stoff wechselte die Variante) wie der Vendor im Frame: was schon zu sehen war, blinkt
-        // nie aus; der Neubau zählt mit (`neubauN`). Ein Render einer anderen Szene (die Umgebung, ein Post-Quad) zeichnet wie
-        // bisher — ein Einmal-Render bliebe leer. Das ist der
+        // nicht aus — nur wenn eine Erst-Zeichnung seinen neuen Schlüssel eben asynchron anlegte, wartet er auf dieselbe
+        // Pipeline wie sie; der Neubau zählt mit (`neubauN`). Ein Render einer anderen Szene (die Umgebung, ein Post-Quad)
+        // zeichnet wie bisher — ein Einmal-Render bliebe leer. Das ist der
         // EINE Ort der Klasse: kein Vorwärmen daneben (das r184-compileAsync baute die Knoten ohnehin synchron —
         // `_geometries.updateForRender` liest die Attribute vor `getForRenderAsync`).
         // Nodes und Pipelines legt erst init() an (dieser Eingriff läuft davor): die Nachbildung liest sie je Aufruf am
@@ -22459,7 +22462,10 @@ class AnazhRealm {
         else if (!renderer.__anazhErstZeichnung) {
             const welt = this;
             const E = this._erstZeichnungStand();
-            // der Vendor-Körper: auffrischen, Pipeline (asynchron mit Versprechen-Liste, sonst synchron), zeichnen, wenn sie steht
+            // der Vendor-Körper: auffrischen, Pipeline (asynchron mit Versprechen-Liste, sonst synchron), zeichnen, wenn sie
+            // steht — sonst meldet sich der Bürger an. Auch der synchrone Weg trifft im Cache eine noch offene Pipeline (r184
+            // `getForRender`: Cache-Treffer → `e.pipeline=d`, ob fertig oder nicht), wenn eine Erst-Zeichnung ihren Schlüssel
+            // eben asynchron anlegte: ein Neubau wartet dann wie sie.
             const zeichne = (rend, ro, aufnahme, asynchron) => {
                 const N = rend._nodes,
                     P = rend._pipelines;
@@ -22471,18 +22477,25 @@ class AnazhRealm {
                     rend._bindings.updateForRender(ro);
                 }
                 if (asynchron) {
+                    // das Vendor-Versprechen einer neuen Pipeline wartet nach dem Bau noch auf popErrorScope — die Welt
+                    // hält es nicht (die Bereitschaft liest `_erstWartet` am Zustand)
                     P.getForRender(ro, E.neu);
-                    if (E.neu.length > 0) welt._erstPipeline(P.get(ro).pipeline);
+                    if (E.neu.length > 0) {
+                        E.neu.length = 0;
+                        E.pipeAsync++;
+                    }
                 } else P.updateForRender(ro);
-                if (!P.isReady(ro)) return false;
+                if (!P.isReady(ro)) {
+                    welt._erstWartet(rend.backend, P.get(ro).pipeline, aufnahme !== null ? aufnahme.bundleGroup : null);
+                    return false;
+                }
                 if (aufnahme !== null) rend.backend.get(aufnahme).renderObjects.push(ro);
                 rend.backend.draw(ro, rend.info);
                 if (refresh) N.updateAfter(ro);
                 return true;
             };
             renderer._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
-                const N = this._nodes,
-                    P = this._pipelines;
+                const N = this._nodes;
                 const ro = this._objects.get(
                     object,
                     material,
@@ -22521,7 +22534,7 @@ class AnazhRealm {
                         E.aufrufMs = 0;
                     } else if (E.aufrufMs >= AnazhRealm.ERST_BAU_MS) {
                         E.verschoben++;
-                        if (aufnahme !== null) welt._erstNeuAufnehmen(aufnahme.bundleGroup);
+                        if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
                     bau = performance.now();
@@ -22536,15 +22549,15 @@ class AnazhRealm {
                 if (gezeichnet) {
                     if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
                     pass.add(k);
-                } else if (aufnahme !== null) welt._erstWartet(P.get(ro).pipeline, aufnahme.bundleGroup);
+                }
             };
             renderer.__anazhErstZeichnung = true;
         }
     }
 
     // DER STAND DER ERST-ZEICHNUNG (der EINE Ort in `_configureRenderer`): je Render-Aufruf die Bau-Zeit, die Zähler für
-    // Flugschreiber und Hänger-Linse (Knoten-Bauten · verschobene Erst-Zeichnungen · asynchrone Pipelines) und je offener
-    // Pipeline die Bundles, die ohne ihren Bürger versiegelt wurden.
+    // Flugschreiber und Hänger-Linse (Knoten-Bauten · verschobene Erst-Zeichnungen · asynchrone Pipelines · bereit
+    // gewordene) und je offener Pipeline die Bundles, die ohne ihren Bürger versiegelt wurden.
     _erstZeichnungStand() {
         if (!this._erstZeichnung)
             this._erstZeichnung = {
@@ -22554,6 +22567,7 @@ class AnazhRealm {
                 bauMs: 0,
                 verschoben: 0,
                 pipeAsync: 0,
+                bereitN: 0,
                 neubauN: 0,
                 neu: [],
                 offen: new Map(),
@@ -22563,40 +22577,59 @@ class AnazhRealm {
         return this._erstZeichnung;
     }
 
-    // Eine neue Pipeline entsteht asynchron (`neu` trägt ihr Versprechen): bis sie steht, zeichnet kein Objekt mit ihr;
-    // steht sie, nimmt jedes Bundle neu auf, das ohne einen ihrer Bürger versiegelt wurde.
-    _erstPipeline(pipe) {
+    // DIE EINE WARTESCHLANGE der Erst-Zeichnung: ein Bürger, der nicht zeichnen kann, meldet sich hier an — auf jedem Weg
+    // (Erstbau, Neubau, fremde Szene); `bg` ist das Bundle, dessen Aufnahme ohne ihn versiegelt (null: ein direkter Draw,
+    // er versucht es im nächsten Aufruf selbst).
+    // (1) Er wartet auf seine PIPELINE (`pipe`): bereit ist sie, sobald r184 die fertige GPU-Pipeline in seinen Zustand
+    //     schreibt — `h.pipeline=await d.createRenderPipelineAsync(A)` (vendor/three.webgpu.min.js 6:590389), genau das Feld,
+    //     das `isReady` liest (6:221094). Ein Setter an diesem Feld nimmt im SELBEN Moment jedes Bundle neu auf, das ohne
+    //     einen ihrer Bürger versiegelt wurde (die Zuweisung läuft nach einem await, nie mitten in einer Aufnahme). Das
+    //     Vendor-Versprechen wartet danach noch auf `popErrorScope` (6:590447) — auf der Spielseite > 5 s, auf Windows-
+    //     swiftshader nie aufgelöst (gemessen 07.10.: ein Bundle-Bürger mit fertiger Pipeline 120 s ohne Neuaufnahme); an
+    //     ihm hängt nichts.
+    // (2) Er wartet nur auf seinen KNOTEN-BAU (`pipe` null: der Aufruf hat sein Bau-Budget verbraucht): das Bundle nimmt
+    //     nach der laufenden Aufnahme neu auf — r184 versiegelt an ihrem Ende (`u.version=s.version`, 6:413962) und schluckte
+    //     eine Marke von mittendrin.
+    // Eine Pipeline, deren Bau scheitert (r184 schluckt die Absage von createRenderPipelineAsync), bleibt offen: die Beweis-
+    // Aufnahme nennt sie beim Namen und bricht ab.
+    _erstWartet(be, pipe, bg) {
         const E = this._erstZeichnung;
-        const steht = Promise.all(E.neu);
-        E.neu.length = 0;
-        E.pipeAsync++;
-        if (!pipe || E.offen.has(pipe)) return;
-        const bundles = new Set();
-        E.offen.set(pipe, bundles);
-        steht.then(() => {
-            E.offen.delete(pipe);
-            for (const bg of bundles) bg.needsUpdate = true;
-        });
-    }
-
-    // Ein Bundle-Bürger wartet auf seine Pipeline: die Aufnahme versiegelt ohne ihn, das Bundle nimmt neu auf, wenn sie
-    // steht. Eine gescheiterte Pipeline (nie bereit, nicht offen) zieht keine Neuaufnahme nach sich.
-    _erstWartet(pipe, bg) {
-        const bundles = pipe ? this._erstZeichnung.offen.get(pipe) : undefined;
-        if (bundles) bundles.add(bg);
-    }
-
-    // Ein Bundle-Bürger wartet auf seinen Knoten-Bau (der Aufruf hat sein Bau-Budget verbraucht): das Bundle nimmt im
-    // nächsten Frame neu auf. Die Marke fällt NACH der laufenden Aufnahme — r184 versiegelt an ihrem Ende
-    // (`u.version = s.version`) und schluckte eine Marke von mittendrin.
-    _erstNeuAufnehmen(bg) {
-        const E = this._erstZeichnung;
-        if (E.aufnehmen.size === 0)
-            Promise.resolve().then(() => {
-                for (const b of E.aufnehmen) b.needsUpdate = true;
-                E.aufnehmen.clear();
+        if (!pipe) {
+            if (bg === null) return;
+            if (E.aufnehmen.size === 0)
+                Promise.resolve().then(() => {
+                    for (const b of E.aufnehmen) b.needsUpdate = true;
+                    E.aufnehmen.clear();
+                });
+            E.aufnehmen.add(bg);
+            return;
+        }
+        let bundles = E.offen.get(pipe);
+        if (bundles === undefined) {
+            const h = be.get(pipe);
+            let wert = h.pipeline;
+            const warten = (bundles = new Set());
+            E.offen.set(pipe, warten);
+            Object.defineProperty(h, "pipeline", {
+                configurable: true,
+                enumerable: true,
+                get: () => wert,
+                set: (v) => {
+                    wert = v;
+                    if (v === undefined || v === null) return;
+                    Object.defineProperty(h, "pipeline", {
+                        value: v,
+                        writable: true,
+                        configurable: true,
+                        enumerable: true,
+                    });
+                    E.offen.delete(pipe);
+                    E.bereitN++;
+                    for (const b of warten) b.needsUpdate = true;
+                },
             });
-        E.aufnehmen.add(bg);
+        }
+        if (bg !== null) bundles.add(bg);
     }
 
     // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer): No-op-Hülle ohne GPU —

@@ -8,7 +8,13 @@
 // Radeon, „GPU: Pipeline synchron (haupt tier:baer)"). Die Probe stellt drei neue
 // Stoffe vor die Kamera (Konsum: alle drei zeichnen), der Gegen-Lauf derselben Probe
 // auf dem Vendor-Weg MUSS rot sein (synchrone Pipeline, mehrere Bauten in einem
-// Aufruf). Ein ECHTER WebGPU-Lauf (swiftshader-Vulkan, Software-Holz kienspan —
+// Aufruf). Die BUNDLE-BÜRGER: ein Bürger, der in einer Aufnahme nicht zeichnen
+// kann, steht ≤ 2 Frames nach seiner fertigen Pipeline (r184-Zustand) wieder in der
+// Aufnahme — beim Neubau gegen eine offene Pipeline und bei hängendem Fehler-Scope
+// (am Kopf 0febe3ef fehlten beide für immer); mit stummer Anmeldung MUSS er fehlen.
+// Die BEWEIS-AUFNAHME (scripts/lib/ausgabe-aufnahme.cjs) wirft bei einer nie
+// bereiten Pipeline und nennt sie beim Namen, nie ein stilles Bild.
+// Ein ECHTER WebGPU-Lauf (swiftshader-Vulkan, Software-Holz kienspan —
 // KEIN Null-Renderer): der Boot SELBST ist der Konsum-Beweis (die Erst-Zeichnung
 // baut und kompiliert, Chunk-Uploads erzeugen writeBuffer-Bytes, swiftshader
 // erzeugt LongTasks).
@@ -19,6 +25,7 @@
 "use strict";
 const puppeteer = require("puppeteer");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -159,13 +166,15 @@ function erstWandInstall() {
         }
     };
     // DIE RUHE vor jeder Probe (auf der Bühne): keine Pipeline der Welt ist mehr offen — sie kompiliert sonst neben der
-    // Probe (höchstens 60 s).
+    // Probe (höchstens 60 s; was danach noch offen ist, trägt die Probe als `ruheOffen`, das Band urteilt).
+    let ruheOffen = 0;
     const ruhe = async () => {
         const t0 = performance.now();
         while (ESt && ESt.offen.size > 0 && performance.now() - t0 < 60000) {
             bild();
             await sleep(50);
         }
+        ruheOffen = ESt ? ESt.offen.size : 0;
         return Math.round(performance.now() - t0);
     };
     const probe = (vendor) => buehne(() => probeAufDerBuehne(vendor));
@@ -233,6 +242,7 @@ function erstWandInstall() {
             frames,
             ms: Math.round(performance.now() - t0),
             ruheMs,
+            ruheOffen,
         };
     };
     // DER NEUBAU: ein Würfel zeichnet (Erst-Weg), dann wechselt sein Stoff die Variante im selben Pass (ein Alpha-Test:
@@ -283,10 +293,213 @@ function erstWandInstall() {
         }
         return { sofort, neubauN: ESt ? ESt.neubauN - n0 : 0 };
     };
+    // DIE BUNDLE-BÜRGER: ein Bürger, der in einer Aufnahme nicht zeichnen kann, meldet sich in der EINEN Warteschlange an
+    // (`_erstWartet`), und sein Bundle nimmt neu auf, sobald die fertige Pipeline in r184s Zustand steht. Zwei Täter (die
+    // Gegenprüfung 07.10.): (A) DER NEUBAU BEI OFFENER PIPELINE — B zeichnet in Bundle b2; in EINEM Frame zeichnet A
+    // (derselbe Stoff, ein eigenes Bundle b1 davor) zum ersten Mal und der Stoff wechselt die Variante: A legt die neue
+    // Pipeline asynchron an, Bs Neubau trifft sie im Cache noch offen (r184 getForRender: Cache-Treffer → e.pipeline=d).
+    // (B) DER HÄNGENDE FEHLER-SCOPE — popErrorScope löst nie auf (auf der Spielseite > 5 s, auf Windows-swiftshader nie): ein
+    // neuer Stoff in einem Bundle, das Vendor-Versprechen seiner Pipeline erfüllt sich nie. Gemessen: wie viele Frames nach
+    // der fertigen Pipeline (r184-Zustand) trägt die Aufnahme des Bundles den Bürger wieder. Der Gegen-Lauf mit stummer
+    // Anmeldung MUSS ihn verlieren (sonst wäre die Wand blind).
+    const T3 = window.THREE;
+    const P3 = rend._pipelines;
+    // je Bundle-Gruppe und Aufnahme (Kamera · Kontext): die Objekte ihrer letzten Aufnahme
+    const traegt = new Map();
+    const traegtIn = (bg, obj) => {
+        const je = traegt.get(bg);
+        if (je) for (const objs of je.values()) if (objs.has(obj)) return true;
+        return false;
+    };
+    // je Probe-Objekt die Pipeline, an der sein letzter Draw nicht zeichnen konnte
+    const wartete = new Map();
+    const mitAufnahme = async (fn) => {
+        const eigenRb = Object.prototype.hasOwnProperty.call(rend, "_renderBundle");
+        const rbRoh = rend._renderBundle;
+        rend._renderBundle = function (bundle) {
+            const aus = rbRoh.apply(this, arguments);
+            const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
+            const d = this.backend.get(rb);
+            let je = traegt.get(bundle.bundleGroup);
+            if (!je) traegt.set(bundle.bundleGroup, (je = new Map()));
+            je.set(rb, new Set((d.renderObjects || []).map((ro) => ro.object)));
+            return aus;
+        };
+        const irRoh = P3.isReady;
+        P3.isReady = function (ro) {
+            const ok = irRoh.call(this, ro);
+            if (!ok && ro && ro.object && ro.object.userData.__bundleProbe) wartete.set(ro.object, this.get(ro).pipeline);
+            return ok;
+        };
+        try {
+            return await fn();
+        } finally {
+            if (eigenRb) rend._renderBundle = rbRoh;
+            else delete rend._renderBundle;
+            P3.isReady = irRoh;
+            traegt.clear();
+            wartete.clear();
+        }
+    };
+    const probeMesh = (mat, dx, d) => {
+        const cam = r.state.camera;
+        const dir = new T3.Vector3();
+        cam.getWorldDirection(dir);
+        const m = new T3.Mesh(new T3.BoxGeometry(0.6, 0.6, 0.6), mat);
+        m.position.copy(cam.position).addScaledVector(dir, d);
+        m.position.x += dx;
+        m.frustumCulled = false;
+        m.layers.set(SCHICHT);
+        m.userData.__bundleProbe = true;
+        return m;
+    };
+    // bis die Aufnahme des Bundles den Bürger trägt: gezählt die Frames ab der fertigen Pipeline (r184-Zustand); 30 Frames
+    // danach (oder 120 s) ist er unsichtbar
+    const bisSichtbar = async (bg, obj) => {
+        const t0 = performance.now();
+        let frames = 0,
+            nachBereit = -1,
+            bereitMs = -1;
+        const bereit = () => {
+            const pipe = wartete.get(obj);
+            if (!pipe) return false;
+            const p = rend.backend.get(pipe).pipeline;
+            return p !== undefined && p !== null;
+        };
+        while (!traegtIn(bg, obj)) {
+            if (nachBereit < 0 && bereit()) {
+                nachBereit = 0;
+                bereitMs = Math.round(performance.now() - t0);
+            }
+            if (nachBereit >= 30 || performance.now() - t0 > 120000) break;
+            bild();
+            frames++;
+            if (nachBereit >= 0) nachBereit++;
+            await sleep(20);
+        }
+        return {
+            sichtbar: traegtIn(bg, obj),
+            frames,
+            framesNachBereit: nachBereit,
+            bereitMs,
+            ms: Math.round(performance.now() - t0),
+        };
+    };
+    const stumm = () => {
+        r._erstWartet = () => {};
+    };
+    const laut = () => {
+        delete r._erstWartet;
+    };
+    // (A) der Neubau bei offener Pipeline
+    const bundleNeubau = (ohneAnmeldung) => buehne(() => mitAufnahme(() => bundleNeubauAufDerBuehne(ohneAnmeldung)));
+    const bundleNeubauAufDerBuehne = async (ohneAnmeldung) => {
+        const ruheMs = await ruhe();
+        serie++;
+        const M = new T3.MeshBasicNodeMaterial();
+        M.colorNode = TSL.vec3(0.31, 0.47, 0.12 + 0.0011 * serie);
+        const b2 = new T3.BundleGroup();
+        const B = probeMesh(M, 0.45, 4);
+        b2.add(B);
+        const b1 = new T3.BundleGroup();
+        const A = probeMesh(M, -0.45, 4);
+        b1.add(A);
+        welt.add(b2);
+        try {
+            // (1) B steht im Bundle (seine erste Zeichnung, die Anmeldung trägt sie)
+            const stand = await bisSichtbar(b2, B);
+            // (2) EIN Frame: A zeichnet zum ersten Mal (b1 vor b2), der Stoff wechselt die Variante, b2 nimmt neu auf
+            welt.remove(b2);
+            welt.add(b1);
+            welt.add(b2);
+            M.alphaTest = 0.5;
+            M.needsUpdate = true;
+            b2.needsUpdate = true;
+            wartete.clear();
+            if (ohneAnmeldung) stumm();
+            bild();
+            const pipeA = wartete.get(A),
+                pipeB = wartete.get(B);
+            // (3) bis die Aufnahme von b2 B wieder trägt
+            const nach = await bisSichtbar(b2, B);
+            return {
+                ruheMs,
+                ruheOffen,
+                stand: stand.sichtbar,
+                standMs: stand.ms,
+                offeneTreffer: !!pipeB && pipeB === pipeA,
+                ...nach,
+            };
+        } finally {
+            if (ohneAnmeldung) laut();
+            welt.remove(b1);
+            welt.remove(b2);
+            A.geometry.dispose();
+            B.geometry.dispose();
+        }
+    };
+    // (B) der hängende Fehler-Scope: popErrorScope poppt (der Stapel bleibt im Gleichgewicht), sein Versprechen löst nie auf
+    const fehlerScope = (ohneAnmeldung) => buehne(() => mitAufnahme(() => fehlerScopeAufDerBuehne(ohneAnmeldung)));
+    const fehlerScopeAufDerBuehne = async (ohneAnmeldung) => {
+        const ruheMs = await ruhe();
+        serie++;
+        const GP = GPUDevice.prototype;
+        const popRoh = GP.popErrorScope;
+        let haengt = 0;
+        GP.popErrorScope = function () {
+            haengt++;
+            popRoh.call(this).catch(() => {});
+            return new Promise(() => {});
+        };
+        const M = new T3.MeshBasicNodeMaterial();
+        M.colorNode = TSL.vec3(0.52, 0.18 + 0.0013 * serie, 0.61);
+        const bg = new T3.BundleGroup();
+        const C = probeMesh(M, 0, 3.5);
+        bg.add(C);
+        welt.add(bg);
+        if (ohneAnmeldung) stumm();
+        try {
+            const nach = await bisSichtbar(bg, C);
+            return { ruheMs, ruheOffen, haengt, ...nach };
+        } finally {
+            GP.popErrorScope = popRoh;
+            if (ohneAnmeldung) laut();
+            welt.remove(bg);
+            C.geometry.dispose();
+        }
+    };
+    // DIE BEWEIS-AUFNAHME bricht LAUT ab (scripts/lib/ausgabe-aufnahme.cjs): eine Pipeline, die nie bereit wird (eine
+    // Attrappe in der Warteschlange), lässt die Aufnahme nach ihrer Frist werfen und nennt sie beim Namen; ohne sie liefert
+    // dieselbe Aufnahme ihr Bild mit `erst.offen` 0 (bis 07.10. brach sie nach 60 s still ab, das Bild ohne Marke).
+    const aufnahme = () => buehne(() => aufnahmeAufDerBuehne());
+    const aufnahmeAufDerBuehne = async () => {
+        const ruheMs = await ruhe();
+        const attrappe = { vertexProgram: { name: "wand-attrappe" }, cacheKey: "nie-bereit" };
+        let wurf = null;
+        ESt.offen.set(attrappe, new Set());
+        try {
+            await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+        } catch (e) {
+            wurf = String((e && e.message) || e);
+        } finally {
+            ESt.offen.delete(attrappe);
+        }
+        let bild = null;
+        try {
+            const auf = await window.__ausgabeAufnahme(32, 18, 1, { erstFristMs: 3000 });
+            bild = { pixel: auf.u8.length, erst: auf.info.erst };
+        } catch (e) {
+            bild = { wurf: String((e && e.message) || e) };
+        }
+        return { ruheMs, ruheOffen, wurf, bild };
+    };
     window.__erstWand = {
         stand: () => res.erst,
         probe,
         neubau,
+        bundleNeubau,
+        fehlerScope,
+        aufnahme,
         zurueck: () => Object.prototype.hasOwnProperty.call(rend, "_renderObjectDirect"),
     };
 }
@@ -457,6 +670,13 @@ function erstWandInstall() {
         out.erst.zurueck = await ruf("zurück", () => window.__erstWand.zurueck());
         out.erst.neubau = await ruf("Neubau", (v) => window.__erstWand.neubau(v), false);
         out.erst.neubauGegen = await ruf("Neubau ohne Gedächtnis", (v) => window.__erstWand.neubau(v), true);
+        out.erst.bundleNeubau = await ruf("Bundle-Neubau bei offener Pipeline", (v) => window.__erstWand.bundleNeubau(v), false);
+        out.erst.bundleNeubauGegen = await ruf("Bundle-Neubau ohne Anmeldung", (v) => window.__erstWand.bundleNeubau(v), true);
+        // der hängende Fehler-Scope zuletzt: sein Stummel lässt jedes popErrorScope der Probe für immer offen
+        out.erst.fehlerScope = await ruf("Hängender Fehler-Scope", (v) => window.__erstWand.fehlerScope(v), false);
+        out.erst.fehlerScopeGegen = await ruf("Hängender Fehler-Scope ohne Anmeldung", (v) => window.__erstWand.fehlerScope(v), true);
+        await page.evaluate(AUSGABE_INSTALL);
+        out.erst.aufnahme = await ruf("Beweis-Aufnahme mit offener Pipeline", () => window.__erstWand.aufnahme());
     }
 
     await browser.close();
@@ -551,9 +771,9 @@ function erstWandInstall() {
     );
     const pr = ez.probe || {};
     band(
-        pr.gezeichnet === 3 && pr.sync === 0 && pr.async >= 3 && pr.ueberBudget === 0,
+        pr.gezeichnet === 3 && pr.sync === 0 && pr.async >= 3 && pr.ueberBudget === 0 && pr.ruheOffen === 0,
         "ERST-ZEICHNUNG (Probe: drei neue Stoffe — gezeichnet, 0 synchrone Pipelines der Welt, kein Bau über dem Budget)",
-        `Ruhe davor ${pr.ruheMs} ms · gezeichnet ${pr.gezeichnet}/3 nach ${pr.frames} Frames (${pr.ms} ms) · synchron ${pr.sync} · asynchron ${pr.async} · ` +
+        `Ruhe davor ${pr.ruheMs} ms (offen danach ${pr.ruheOffen}) · gezeichnet ${pr.gezeichnet}/3 nach ${pr.frames} Frames (${pr.ms} ms) · synchron ${pr.sync} · asynchron ${pr.async} · ` +
             `Aufrufe mit Bau ${pr.aufrufeMitBau} · max ${pr.maxBau} Bauten je Aufruf · über dem Budget (${ez.budgetMs} ms) ${pr.ueberBudget}`
     );
     const gg = ez.gegen || {};
@@ -570,6 +790,55 @@ function erstWandInstall() {
         nb.sofort === true && nb.neubauN >= 1 && nbg.sofort === false,
         "ERST-ZEICHNUNG Neubau (ein gezeichnetes Objekt wechselt die Variante: im nächsten Bild gezeichnet; vergessen MUSS es blinken)",
         `gezeichnet im nächsten Bild ${nb.sofort} · Neubauten ${nb.neubauN} · Gegen-Lauf ohne Gedächtnis gezeichnet ${nbg.sofort}`
+    );
+
+    // Die Bundle-Bürger: nach der fertigen Pipeline trägt die Aufnahme den Bürger in höchstens 2 Frames; der Gegen-Lauf
+    // mit stummer Anmeldung verliert ihn (30 Frames nach der fertigen Pipeline unsichtbar) — sonst wäre die Wand blind.
+    const BUNDLE_FRAMES = 2;
+    const bn = ez.bundleNeubau || {},
+        bng = ez.bundleNeubauGegen || {};
+    const bnWeg = (x) =>
+        `${x.sichtbar ? "sichtbar" : "UNSICHTBAR"} ${x.framesNachBereit} Frames nach der fertigen Pipeline (bereit nach ${x.bereitMs} ms, ` +
+        `${x.frames} Frames, ${x.ms} ms)`;
+    band(
+        bn.stand === true &&
+            bn.offeneTreffer === true &&
+            bn.sichtbar === true &&
+            bn.framesNachBereit >= 0 &&
+            bn.framesNachBereit <= BUNDLE_FRAMES &&
+            bn.ruheOffen === 0 &&
+            bng.offeneTreffer === true &&
+            bng.sichtbar === false &&
+            bng.bereitMs >= 0,
+        `ERST-ZEICHNUNG Bundle-Neubau bei offener Pipeline (der Bürger steht ≤ ${BUNDLE_FRAMES} Frames nach seiner Pipeline wieder in der Aufnahme; ohne Anmeldung MUSS er fehlen)`,
+        `B im Bundle ${bn.stand} (${bn.standMs} ms) · Neubau traf die offene Pipeline der Erst-Zeichnung ${bn.offeneTreffer} · ` +
+            `${bnWeg(bn)} · Ruhe offen ${bn.ruheOffen} · Gegen-Lauf: Treffer ${bng.offeneTreffer}, ${bnWeg(bng)}`
+    );
+    const fs_ = ez.fehlerScope || {},
+        fsg = ez.fehlerScopeGegen || {};
+    band(
+        fs_.haengt >= 1 &&
+            fs_.sichtbar === true &&
+            fs_.framesNachBereit >= 0 &&
+            fs_.framesNachBereit <= BUNDLE_FRAMES &&
+            fs_.ruheOffen === 0 &&
+            fsg.haengt >= 1 &&
+            fsg.sichtbar === false &&
+            fsg.bereitMs >= 0,
+        `ERST-ZEICHNUNG hängender Fehler-Scope (das Vendor-Versprechen erfüllt sich nie: der Bürger steht ≤ ${BUNDLE_FRAMES} Frames nach seiner Pipeline in der Aufnahme; ohne Anmeldung MUSS er fehlen)`,
+        `popErrorScope hängend ${fs_.haengt}× · ${bnWeg(fs_)} · Ruhe offen ${fs_.ruheOffen} · Gegen-Lauf: hängend ${fsg.haengt}×, ${bnWeg(fsg)}`
+    );
+    const au = ez.aufnahme || {},
+        aub = au.bild || {};
+    band(
+        typeof au.wurf === "string" &&
+            /ERST-ZEICHNUNG OFFEN/.test(au.wurf) &&
+            /wand-attrappe \[nie-bereit\]/.test(au.wurf) &&
+            aub.pixel === 32 * 18 * 4 &&
+            aub.erst &&
+            aub.erst.offen === 0,
+        "BEWEIS-AUFNAHME bricht laut ab (eine nie bereite Pipeline: Wurf mit ihrem Namen; ohne sie das Bild mit erst.offen 0)",
+        `Wurf: ${au.wurf || "KEINER (still)"} · danach ${aub.wurf ? "Wurf " + aub.wurf : `Bild ${aub.pixel} Bytes, erst ${JSON.stringify(aub.erst)}`}`
     );
 
     // Band 6 — kein pageerror.

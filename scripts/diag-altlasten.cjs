@@ -622,6 +622,11 @@ const FORBIDDEN = [
     { token: "_pipeOfenDone", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
     { token: "_bundleReifeWache", fiel: "Welle K — die Erst-Zeichnung nimmt das Bundle neu auf, wenn die Pipeline steht" },
     { token: "_foundryWarmedMats", fiel: "Welle K — die Erst-Zeichnung" },
+    // DIE BEREITSCHAFT AM ZUSTAND (Welle K, Nachbesserung): die Neuaufnahme hing am Vendor-Versprechen (es wartet auf
+    // popErrorScope: auf der Spielseite > 5 s, auf Windows-swiftshader nie) und der Neubau meldete sich nie an — EINE
+    // Warteschlange `_erstWartet`, bereit ist die Pipeline, sobald r184 sie in seinen Zustand schreibt.
+    { token: "_erstPipeline", fiel: "Welle K — die Bereitschaft liest den Zustand (_erstWartet), nie das Versprechen" },
+    { token: "_erstNeuAufnehmen", fiel: "Welle K — EINE Warteschlange (_erstWartet ohne Pipeline)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

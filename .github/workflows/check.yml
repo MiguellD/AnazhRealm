@@ -138,7 +138,9 @@ jobs:
         # Frame und blinkt nie aus. Die Hänger-Linse nannte an der Radeon 1,4–4,2 s Warten nach synchronen Pipelines eines
         # Tier-Erstbaus. Ein eigener Job (der playtest-Job steht mit ~41 min dicht an seiner Frist): ~5 min, echter Renderer
         # (swiftshader-WebGPU, kienspan) — Konsum im Boot, drei neue Stoffe ohne synchrone Pipeline der Welt, der Gegen-Lauf
-        # auf dem Vendor-Weg MUSS rot sein, der Neubau zeichnet im nächsten Bild (ohne Gedächtnis MUSS er blinken).
+        # auf dem Vendor-Weg MUSS rot sein, der Neubau zeichnet im nächsten Bild (ohne Gedächtnis MUSS er blinken), ein
+        # Bundle-Bürger steht ≤ 2 Frames nach seiner fertigen Pipeline wieder in der Aufnahme (Neubau gegen eine offene
+        # Pipeline, hängender Fehler-Scope; mit stummer Anmeldung MUSS er fehlen).
         runs-on: ubuntu-latest
         timeout-minutes: 20
         steps:
