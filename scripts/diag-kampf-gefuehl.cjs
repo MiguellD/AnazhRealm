@@ -61,7 +61,8 @@
 //  SELBST-TESTS (nur wo die Naht existiert): (S3) _blickVorn mit der alten −(sin, cos)-Richtung → „vor dir" kippt
 //      hinter dich · (S4) _geraetGraebt ≡ true → das Schwert schüttet auf · (S5) _kreaturGliedTreffer ≡ null → kein
 //      Treffer · (S6) der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist
-//      rot · (S8) ohne das Vorbacken → der erste Hieb zerlegt die Haut. Jede Naht restauriert.
+//      rot · (S7) ein Wurf-Täter setzt seinen Schaden selbst zusammen (die alte Pfeil-Zeile) → die Klassen-Linse nennt
+//      ihn · (S8) ohne das Vorbacken → der erste Hieb zerlegt die Haut. Jede Naht restauriert.
 //
 //   node scripts/diag-kampf-gefuehl.cjs
 // ─────────────────────────────────────────────────────────────────────────
@@ -508,21 +509,39 @@ async function WELLE_L() {
         // (damageCreature mit source "player"), rechnet ihren Schaden im EINEN Roh-Schaden-Gesetz _kampfRohSchaden —
         // kein Pfad setzt Kraft × Wirkung × Zone selbst zusammen (der Pfeil tat es, ohne Verschleiß).
         {
-            const tat = [];
-            const pfade = [];
-            for (const k of Object.getOwnPropertyNames(A.prototype)) {
-                const d = Object.getOwnPropertyDescriptor(A.prototype, k);
-                if (k === "constructor" || !d || typeof d.value !== "function") continue; // constructor = die ganze Klasse
-                const code = String(d.value)
-                    .replace(/\/\/.*$/gm, "")
-                    .replace(/\/\*[\s\S]*?\*\//g, "");
-                if (!/damageCreature\(/.test(code) || !/source:\s*"player"/.test(code)) continue;
-                pfade.push(k);
-                if (!/_kampfRohSchaden\(/.test(code)) tat.push(k);
+            const klasse = () => {
+                const tat = [];
+                const pfade = [];
+                for (const k of Object.getOwnPropertyNames(A.prototype)) {
+                    const d = Object.getOwnPropertyDescriptor(A.prototype, k);
+                    if (k === "constructor" || !d || typeof d.value !== "function") continue; // constructor = die ganze Klasse
+                    const code = String(d.value)
+                        .replace(/\/\/.*$/gm, "")
+                        .replace(/\/\*[\s\S]*?\*\//g, "");
+                    if (!/damageCreature\(/.test(code) || !/source:\s*"player"/.test(code)) continue;
+                    pfade.push(k);
+                    if (!/_kampfRohSchaden\(/.test(code)) tat.push(k);
+                }
+                return { pfade, tat };
+            };
+            const kl = klasse();
+            w.z.schadensPfade = kl.pfade.join(",");
+            w.z.schadensZwillinge = kl.tat.join(",") || "–";
+            w.c.einRohSchaden = kl.pfade.length >= 2 && kl.tat.length === 0;
+            // (S7) SELBST-TEST mit dem Täter: ein Waffen-Pfad, der seinen Schaden selbst zusammensetzt (die Pfeil-Zeile
+            // von d1ab1c64 wörtlich, als Wurf verkleidet) — die Klassen-Linse muss ihn beim Namen nennen
+            A.prototype.__taeterWurf = function (hit, pf, urteil) {
+                return this.damageCreature(hit, pf.kraft * this._trefferWirkung(urteil) * urteil.zoneMul, {
+                    source: "player",
+                });
+            };
+            try {
+                const kt = klasse();
+                w.z.s7 = kt.tat.join(",") || "–";
+                w.c.s7 = kt.tat.includes("__taeterWurf");
+            } finally {
+                delete A.prototype.__taeterWurf;
             }
-            w.z.schadensPfade = pfade.join(",");
-            w.z.schadensZwillinge = tat.join(",") || "–";
-            w.c.einRohSchaden = pfade.length >= 2 && tat.length === 0;
         }
         // (T9) EINE Güte je Gerät: der Schadens-Faktor (_heldGueteFaktor) und die Güte des Werks (computeBlueprintQuality —
         // Werkstoff-Kraft, Equip-Fold) lesen dasselbe Lehren-Urteil des Kerns (schmiede gueteFaktor → Anteil)
@@ -1553,7 +1572,7 @@ async function WELLE_L() {
             `       Bogen-Verschleiß: wear 1 ${f1(bg.voll)} · wear 0,5 ${f1(bg.halb)} (÷ ${f1(bg.verh)}, Soll ${f1(bg.soll)}) · zehrt je Schuss ${bg.zehrtVoll === undefined ? "–" : bg.zehrtVoll.toFixed(4)}/${bg.zehrtHalb === undefined ? "–" : bg.zehrtHalb.toFixed(4)} · verbraucht (0,02) flog ${bg.verbrauchtFlog}, traf ${bg.verbrauchtTraf} · Täter S6 ok=${z.s6 ? z.s6.ok : "–"}`
         );
         console.log(
-            `       Waffen-Schadens-Pfade ${z.schadensPfade} · ohne _kampfRohSchaden: ${z.schadensZwillinge} · trefferZone fehlt → ${z.kernOhneZone} (mit Kern ${z.kernMitZone} Glieder)`
+            `       Waffen-Schadens-Pfade ${z.schadensPfade} · ohne _kampfRohSchaden: ${z.schadensZwillinge} · Täter S7 nennt ${z.s7 || "–"} · trefferZone fehlt → ${z.kernOhneZone} (mit Kern ${z.kernMitZone} Glieder)`
         );
         console.log(
             `       kalter erster Treffer ${z.kalt ? z.kalt.gattung + ": traf " + z.kalt.traf + ", zerlegt " + z.kalt.zerlegt + " Vertices" : "–"} · Täter S8 ${z.s8 ? z.s8.gattung + ": zerlegt " + z.s8.zerlegt : "–"} · Sweep Math.sin/cos ${z.sweepFormel} · typeof-Selbst ${z.typeofSelbst}`
@@ -1595,6 +1614,7 @@ async function WELLE_L() {
         check(c.s4 === true, "SELBST-TEST (S4): _geraetGraebt ≡ wahr → das Schwert schüttet auf (die Linse sieht den Rückfall)");
         check(c.s5 === true, "SELBST-TEST (S5): _kreaturGliedTreffer ≡ null → kein Treffer (die Serie misst die Gestalt)");
         check(c.s6 === true, "SELBST-TEST (S6): der Pfeil ohne Verschleiß (_wearStatFactor ≡ 1, _kampfVerschleiss leer) → die Bogen-Probe ist rot");
+        check(c.s7 === true, "SELBST-TEST (S7): ein Wurf-Täter setzt Kraft × Wirkung × Zone selbst zusammen → die Klassen-Linse nennt ihn");
         check(c.s8 === true, "SELBST-TEST (S8): ohne das Vorbacken zerlegt der erste Hieb die Haut (die Linse zählt den Hieb)");
     }
     console.log(
