@@ -11241,13 +11241,13 @@ async function checkBandRing11AndW7Mesh(ctx) {
         r.dslRun(["voxel_fill", 0, 50, 0, 3], { source: "playtest" });
         out.voxelFillAddsEdit =
             r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode === "fill";
-        // Invalid pos (NaN) → kein Edit + invalid-Log
+        // Invalid pos (NaN) → kein Edit + der benannte Eintrag der Orts-Engstelle (`dslEvalPos`, Welle L V-k5)
         const before = r.state.worldMeta.voxelEdits.length;
         const invalidResult = r.dslRun(["voxel_carve", NaN, 0, 0, 3], { source: "playtest" });
         out.voxelCarveRejectsInvalidPos =
             r.state.worldMeta.voxelEdits.length === before &&
             invalidResult.log &&
-            invalidResult.log.some((l) => l.event === "voxel_carve_invalid_pos");
+            invalidResult.log.some((l) => l.event === "invalid_position" && l.effekt === "voxel_carve");
         r.setGameMode(oldMode);
         r.state.worldMeta.voxelEdits = [];
 

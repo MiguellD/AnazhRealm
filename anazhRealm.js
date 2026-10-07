@@ -1521,22 +1521,30 @@ class AnazhRealm {
     // neun Ops als TypeError trafen und `spawn_village` über `spawnSettlement` doch auf den Spieler-Ort setzte). Der
     // Knoten schreibt EINEN Log-Eintrag `invalid_position` mit dem Grund („kein Wasser im Umkreis von 60 m") und wirft
     // `_dslKeinOrt`: `dslEval` bricht genau diese Op ab (die chain läuft weiter und meldet ehrlich), eine Bedingung ist
-    // falsch. Keine Op sieht je null. Ohne Knoten (nicht verlangt) gilt der Default-Spawn. Jeder aufgelöste Knoten merkt
+    // falsch. Keine Op sieht je null. NUR ohne Knoten (`node == null`, nicht verlangt) gilt der Default-Spawn; jeder andere
+    // Knoten, der keiner ist (ein Text — die KI schreibt "near_water" ohne Klammern —, eine Zahl, ein Objekt, []), ist ein
+    // ungültiger Ort und scheitert ebenso benannt (bis 07.10. wurde er still der Ursprung). Jeder aufgelöste Knoten merkt
     // sich seinen Ort im Kontext (`ctx.orte`): der Absender schickt ihn mit (V-k6, `_dslMitOrten`).
     dslEvalPos(node, ctx) {
-        if (!Array.isArray(node) || node.length === 0) return this._defaultSpawnPos();
-        const op = String(node[0]);
-        const fn = this.dslPositions[node[0]];
+        if (node == null) return this._defaultSpawnPos();
+        let op = null;
         let pos = null;
         let grund = null;
-        if (!fn) grund = `unbekannter Ort „${op}“`;
+        if (!Array.isArray(node)) grund = `„${this._dslZeig(node)}“ ist kein Ort-Knoten`;
+        else if (node.length === 0) grund = "leerer Ort-Knoten";
         else {
-            try {
-                pos = fn.call(this, node.slice(1), ctx);
-            } catch (err) {
-                grund = err && err.dslKeinOrt ? err.dslKeinOrt.grund : `${op} warf: ${(err && err.message) || err}`;
+            op = String(node[0]);
+            const fn = this.dslPositions[node[0]];
+            if (!fn) grund = `unbekannter Ort „${op}“`;
+            else {
+                try {
+                    pos = fn.call(this, node.slice(1), ctx);
+                } catch (err) {
+                    grund = err && err.dslKeinOrt ? err.dslKeinOrt.grund : `${op} warf: ${(err && err.message) || err}`;
+                }
+                if (!grund && !(pos && Number.isFinite(pos.x) && Number.isFinite(pos.y) && Number.isFinite(pos.z)))
+                    grund = `${op} fand keinen Ort`;
             }
-            if (!grund && !(pos && Number.isFinite(pos.x) && Number.isFinite(pos.z))) grund = `${op} fand keinen Ort`;
         }
         if (grund) {
             const eintrag = { event: "invalid_position", op, grund, program_id: ctx.programId };
@@ -1559,6 +1567,33 @@ class AnazhRealm {
         const fehler = new Error(grund);
         fehler.dslKeinOrt = { op, grund };
         return fehler;
+    }
+
+    // Ein ungültiger Wert, wie er im Grund steht (Text als Text, Liste/Objekt als JSON, sonst wie er ist).
+    _dslZeig(v) {
+        return Array.isArray(v) || (v !== null && typeof v === "object") ? JSON.stringify(v) : String(v);
+    }
+
+    // DER EINE ZAHLEN-LESER der Orte (Koordinate, Radius, Abstand, Spanne): fehlt die Zahl (`v == null`), gilt ihr
+    // dokumentierter Default — hat sie keinen, fehlt der Ort; steht sie da und ist keine endliche Zahl (Text, leer,
+    // Wahrheitswert, Liste), gibt es den Ort nicht. Nie still die 0 oder die Untergrenze (Lehre 17: `Number(null) === 0`;
+    // `dslClamp` gab für jedes Ungültige `lo` — „near_water" ohne Radius suchte 8 statt 60 m, `at` mit null stand bei 0,
+    // „far_player" ohne Abstände setzte das Dorf neben den Spieler).
+    _dslOrtZahl(op, was, v, lo, hi, def) {
+        if (v == null) {
+            if (def == null) throw this._dslKeinOrt(op, `${op}: ${was} fehlt`);
+            return def;
+        }
+        const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
+        if (!Number.isFinite(n)) throw this._dslKeinOrt(op, `${op}: ${was} „${this._dslZeig(v)}“ ist keine Zahl`);
+        return Math.min(hi, Math.max(lo, n));
+    }
+
+    // Der Spieler-Ort eines spieler-relativen Auflösers — ohne Spieler gibt es den Ort nicht (bis 07.10. der Ursprung).
+    _dslSpielerOrt(op, ctx) {
+        const pm = ctx.state.playerMesh;
+        if (!pm) throw this._dslKeinOrt(op, `${op}: kein Spieler in der Welt`);
+        return pm.position;
     }
 
     // DER ABSENDER LÖST DIE ORTE AUF (Welle L, Befund V-k6): ein Programm mit spieler-relativen Orten
@@ -1595,12 +1630,11 @@ class AnazhRealm {
         }
     }
 
-    // Feld-DSL-Helfer (field_above/field_below, deposit_life/deposit_emotion): eine Feld-Op ohne Ort
-    // meint "wo der Spieler ist" → Default at_player (NICHT der Ursprung wie dslEvalPos bei leerem Node).
+    // Feld-DSL-Helfer (field_above/field_below, deposit_life/deposit_emotion): eine Feld-Op OHNE Ort (`posNode == null`)
+    // meint "wo der Spieler ist" → at_player (NICHT der Ursprung wie dslEvalPos ohne Knoten); ein Knoten, der keiner ist
+    // (ein Text, []), scheitert an der Engstelle benannt — nie still beim Spieler.
     _dslRulePos(posNode, ctx) {
-        return Array.isArray(posNode) && posNode.length > 0
-            ? this.dslEvalPos(posNode, ctx)
-            : this.dslEvalPos(["at_player"], ctx);
+        return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);
     }
 
     // Liest EINE Feld-Achse über auraAt: die vier frozen Achsen (lebendig/dichte/glut/magieleitung)
@@ -1924,7 +1958,7 @@ class AnazhRealm {
 
     // Mess-Ort des Regel-Rewards: der erste Positions-Knoten im Effekt-AST (at_field_need/at_player/…),
     // resolved wie der Effekt (gleicher Tick, gleicher State → derselbe Punkt); ohne Positions-Knoten
-    // (z. B. weather) die Spieler-Position.
+    // (z. B. weather) der Spieler-Ort — über denselben Knoten at_player, also ohne Spieler kein Mess-Ort (nie der Ursprung).
     _ruleRewardPos(effectNode, ctx) {
         const posOps = this.dslPositions;
         let found = null;
@@ -1937,20 +1971,16 @@ class AnazhRealm {
             for (const a of node) if (Array.isArray(a)) scan(a);
         };
         scan(effectNode);
-        if (found) {
-            // Den Ort gibt es nicht (`dslEvalPos` hat ihn benannt ins Log geschrieben): kein Mess-Ort — der Effekt fände ihn
-            // ebenso wenig, das Feuern ist ein Fehler der Regel, nie eine Messung am Spieler.
-            let p;
-            try {
-                p = this.dslEvalPos(found, ctx);
-            } catch (err) {
-                if (err && err.dslKeinOrt) return null;
-                throw err;
-            }
-            return { x: p.x, z: p.z };
+        // Den Ort gibt es nicht (`dslEvalPos` hat ihn benannt ins Log geschrieben): kein Mess-Ort — der Effekt fände ihn
+        // ebenso wenig, das Feuern ist ein Fehler der Regel, nie eine Messung am Spieler oder am Ursprung.
+        let p;
+        try {
+            p = this.dslEvalPos(found || ["at_player"], ctx);
+        } catch (err) {
+            if (err && err.dslKeinOrt) return null;
+            throw err;
         }
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
-        return pm ? { x: pm.x, z: pm.z } : { x: 0, z: 0 };
+        return { x: p.x, z: p.z };
     }
 
     // Das erste Erwachen einer Mensch-Regel als Welt-Erinnerung; idempotent über die Signatur (seen
@@ -2000,29 +2030,19 @@ class AnazhRealm {
             // voxel_carve/voxel_fill(x, y, z, r): die DSL-Form des Voxel-Edits — eine Welt-Mod-Op
             // (broadcastable, history-trackable, multi-user-synchron). Bewusst NICHT im dslComposeAtomic-Pool:
             // der Nexus soll die Geometrie unter dem Spieler nicht willkürlich umpflügen.
+            // Der Ort des Edits ist ein at-Knoten an der Engstelle (`dslEvalPos`): eine fehlende oder ungültige Koordinate
+            // bricht die Op benannt ab (bis 07.10. machte `Number(null)` daraus die 0 — der Edit grub am Ursprung).
             voxel_carve: ([x, y, z, radius], ctx) => {
-                const cx = Number(x);
-                const cy = Number(y);
-                const cz = Number(z);
-                if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(cz)) {
-                    ctx.log.push({ event: "voxel_carve_invalid_pos" });
-                    return;
-                }
+                const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.carveVoxelSphere(cx, cy, cz, r);
-                ctx.log.push({ event: "voxel_carved", x: cx, y: cy, z: cz, r });
+                this.carveVoxelSphere(p.x, p.y, p.z, r);
+                ctx.log.push({ event: "voxel_carved", x: p.x, y: p.y, z: p.z, r });
             },
             voxel_fill: ([x, y, z, radius], ctx) => {
-                const cx = Number(x);
-                const cy = Number(y);
-                const cz = Number(z);
-                if (!Number.isFinite(cx) || !Number.isFinite(cy) || !Number.isFinite(cz)) {
-                    ctx.log.push({ event: "voxel_fill_invalid_pos" });
-                    return;
-                }
+                const p = this.dslEvalPos(["at", x, y, z], ctx);
                 const r = c(radius, 0.5, 12);
-                this.fillVoxelSphere(cx, cy, cz, r);
-                ctx.log.push({ event: "voxel_filled", x: cx, y: cy, z: cz, r });
+                this.fillVoxelSphere(p.x, p.y, p.z, r);
+                ctx.log.push({ event: "voxel_filled", x: p.x, y: p.y, z: p.z, r });
             },
             time_of_day: ([value]) => {
                 this.state.timeOfDay = c(value, 0, 1);
@@ -2456,7 +2476,7 @@ class AnazhRealm {
             },
             creature_task_nearest: ([taskName, paramArg], ctx) => {
                 const args = this._buildCreatureTaskArgs(String(taskName), paramArg);
-                const player = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+                const player = this.dslEvalPos(["at_player"], ctx); // ohne Spieler keine „nächste" — nie die am Ursprung
                 const target = this.assignTaskToNearestCreature(player, String(taskName), args);
                 if (ctx && ctx.log) {
                     ctx.log.push({
@@ -2986,19 +3006,22 @@ class AnazhRealm {
 
     get dslPositions() {
         if (this._dslPositionsCache) return this._dslPositionsCache;
-        const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
+        // Jede Zahl eines Orts liest `_dslOrtZahl` (fehlt → ihr dokumentierter Default oder kein Ort; ungültig → kein Ort),
+        // jeder spieler-relative Ort `_dslSpielerOrt` (kein Spieler → kein Ort): ein Auflöser liefert einen endlichen Ort
+        // oder wirft `_dslKeinOrt` mit dem Grund — nie still die Untergrenze, die 0 oder den Ursprung.
+        const zahl = (op, was, v, lo, hi, def) => this._dslOrtZahl(op, was, v, lo, hi, def);
+        const spieler = (op, ctx) => this._dslSpielerOrt(op, ctx);
         this._dslPositionsCache = {
             at_player: (_args, ctx) => {
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                const p = spieler("at_player", ctx);
                 return { x: p.x, y: p.y, z: p.z };
             },
             // Punkt des größten BEDARFS (niedrigste lebendig, via auraAt) in einem 8-Punkt-Ring um den
             // Spieler (Default-Radius 50 m): der Nexus trägt Leben dorthin, wo es FEHLT, statt Üppiges zu
             // verstärken.
             at_field_need: ([radius], ctx) => {
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
-                if (typeof this.auraAt !== "function") return { x: p.x, y: p.y, z: p.z };
-                const r = c(radius, 10, 120) || 50;
+                const p = spieler("at_field_need", ctx);
+                const r = zahl("at_field_need", "Radius", radius, 10, 120, 50);
                 let best = null;
                 let bestLeb = Infinity;
                 for (let i = 0; i < 8; i++) {
@@ -3011,13 +3034,14 @@ class AnazhRealm {
                         best = { x: sx, z: sz };
                     }
                 }
-                return best ? { x: best.x, y: p.y, z: best.z } : { x: p.x, y: p.y, z: p.z };
+                if (!best) throw this._dslKeinOrt("at_field_need", "at_field_need: das Feld kennt im Ring keinen Wert");
+                return { x: best.x, y: p.y, z: best.z };
             },
             // Spawn-Position VOR dem Spieler statt in ihm: yaw-Vektor × dist (Default 5 m; Chat-Patterns
             // nutzen 8 m, da Standard-Strukturen ~6–10 m groß sind).
             at_player_forward: ([dist], ctx) => {
-                const d = c(dist, 1, 50) || 5;
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                const d = zahl("at_player_forward", "Abstand", dist, 1, 50, 5);
+                const p = spieler("at_player_forward", ctx);
                 const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : 0;
                 // yaw=0 → Blick nach +X. -sin(yaw), 0, -cos(yaw) ist die
                 // Standard-„forward"-Richtung im AnazhRealm-Coord-System
@@ -3029,8 +3053,8 @@ class AnazhRealm {
                 };
             },
             near_player: ([radius], ctx) => {
-                const r = c(radius, 1, 100);
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                const r = zahl("near_player", "Radius", radius, 1, 100);
+                const p = spieler("near_player", ctx);
                 const angle = ctx.rng() * Math.PI * 2;
                 const dist = ctx.rng() * r;
                 return { x: p.x + Math.cos(angle) * dist, y: p.y, z: p.z + Math.sin(angle) * dist };
@@ -3040,21 +3064,22 @@ class AnazhRealm {
             // an _defaultSpawnPos() wäre falsch, falls dieser je driftet.
             at_origin: () => ({ x: 0, y: 50, z: 0 }),
             random_position: ([range], ctx) => {
-                const r = c(range, 1, 500);
+                const r = zahl("random_position", "Spanne", range, 1, 500);
                 return { x: (ctx.rng() - 0.5) * 2 * r, y: 50, z: (ctx.rng() - 0.5) * 2 * r };
             },
             // FERNE Schale (minR..maxR) um den Spieler, JENSEITS des Cull-Radius: der Nexus baut am
             // Horizont statt auf dem Spieler (Bauten im Cull-Radius stapelten sich und wurden nie gecullt).
-            // Höhe aus getTerrainHeightAt (kennt den Boden auch ungestreamt).
+            // Höhe aus getTerrainHeightAt (kennt den Boden auch ungestreamt). Ohne Mindest-Abstand gibt es die Schale nicht
+            // (bis 07.10. 1–2 m: das Dorf „in der Ferne" stand beim Spieler); ohne Höchst-Abstand ist sie 1 m breit.
             far_player: ([minR, maxR], ctx) => {
-                const lo = c(minR, 1, 1000);
-                const hi = Math.max(lo + 1, c(maxR, 1, 1000));
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                const lo = zahl("far_player", "Mindest-Abstand", minR, 1, 1000);
+                const hi = Math.max(lo + 1, zahl("far_player", "Höchst-Abstand", maxR, 1, 1000, lo));
+                const p = spieler("far_player", ctx);
                 const angle = ctx.rng() * Math.PI * 2;
                 const dist = lo + ctx.rng() * (hi - lo);
                 const x = p.x + Math.cos(angle) * dist;
                 const z = p.z + Math.sin(angle) * dist;
-                const y = typeof this.getTerrainHeightAt === "function" ? this.getTerrainHeightAt(x, z) : p.y;
+                const y = this.getTerrainHeightAt(x, z);
                 return { x, y, z };
             },
             // V18.492 — „am Wasser": das nächste Wasser im Umkreis, von dort zurück zum
@@ -3063,8 +3088,8 @@ class AnazhRealm {
             // Op benannt ab, der Satz sagt es laut). Bis 06.10. fiel es still auf den Spieler-Ort — Befund V-k5: 6 Eichen
             // 3,3–7,4 m um den Spieler, der Fluss 85 m fort, der Chat „am Wasser".
             near_water: ([radius], ctx) => {
-                const r = c(radius, 8, 200) || 60;
-                const p = ctx.state.playerMesh ? ctx.state.playerMesh.position : this._defaultSpawnPos();
+                const r = zahl("near_water", "Radius", radius, 8, 200, 60);
+                const p = spieler("near_water", ctx);
                 const w = this._findNearestWaterPoint(p.x, p.z, r);
                 if (!w) throw this._dslKeinOrt("near_water", `kein Wasser im Umkreis von ${Math.round(r)} m`);
                 const dx = p.x - w.x,
@@ -3077,10 +3102,12 @@ class AnazhRealm {
                 }
                 throw this._dslKeinOrt("near_water", "kein trockenes Ufer zwischen dem Wasser und dir");
             },
+            // Ein Ort in Koordinaten: x, y und z sind verlangt (jeder Erzeuger — Chat, Absender, Spieler-Wille — setzt alle
+            // drei); bis 07.10. wurde eine fehlende oder ungültige zur 0 bzw. 50 (`Number(null) === 0`).
             at: ([x, y, z]) => ({
-                x: Number.isFinite(Number(x)) ? Number(x) : 0,
-                y: Number.isFinite(Number(y)) ? Number(y) : 50,
-                z: Number.isFinite(Number(z)) ? Number(z) : 0,
+                x: zahl("at", "x", x, -Infinity, Infinity),
+                y: zahl("at", "y", y, -Infinity, Infinity),
+                z: zahl("at", "z", z, -Infinity, Infinity),
             }),
         };
         return this._dslPositionsCache;

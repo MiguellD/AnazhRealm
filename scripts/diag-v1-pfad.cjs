@@ -34,6 +34,14 @@
 //       Eintrag), keine wirft, keine ändert die Welt (die Welt-Akte sind Beobachtungs-Punkte), die chain bricht nur die Op
 //       ohne Ort ab; `spawnSettlement({ position: null })` gründet nie beim Spieler. Befund 6b988a07: neun Ops warfen
 //       TypeError, spawn_village rief spawnSettlement ohne Ort (→ Spieler-Ort); cf9a07ba: jede Op am Spieler-Ort.
+//     V-k5-KLASSE, DER REST (Gegenprüfung pruef3) — jeder UNGÜLTIGE Ort scheitert benannt an derselben Engstelle: ein
+//       Text, eine Zahl, ein Objekt oder [] statt Knoten (die KI schreibt "near_water" ohne Klammern), `at` mit fehlendem
+//       oder nicht-numerischem x/y/z (Number(null) === 0), jeder Auflöser mit einem Text statt seiner Zahl (Radius,
+//       Abstand, Spanne), `far_player` ohne Abstände, die Koordinaten von voxel_carve/voxel_fill, jeder spieler-relative
+//       Ort ohne Spieler (auch der Feld-Akt ohne Knoten, die nächste Kreatur, der Mess-Ort einer Regel). Dazu die Defaults:
+//       ein FEHLENDER Radius/Abstand ist der dokumentierte (near_water 60 m, at_player_forward 5 m, at_field_need 50 m),
+//       nie die Untergrenze von `dslClamp`. Befund c52089c7: der Text wird der Ursprung, at(null) die 0, das Dorf ohne
+//       Abstände steht beim Spieler, voxel_carve(null) gräbt bei 0, near_water ohne Radius sucht 8 m.
 //     R2 — DIE WASSER-SUCHE: das Urteil `_isAboveWaterAt` (mit dem Fels-Beweis `_felsUeber`) gegen den vollen Spalten-Scan,
 //       3 600 Urteile um den trockenen Ort, die Plattform und das nächste Wasser — 0 Abweichungen; dann
 //       `_findNearestWaterPoint` für Trinken (40 m), Chat (80 m), KI (200 m), Spalten-Scans gezählt (Scan und Urteil sind
@@ -202,6 +210,65 @@ function ortVerdict(m) {
     return out;
 }
 
+// Der REST der V-k5-KLASSE: jeder UNGÜLTIGE Ort (kein Knoten, at ohne Zahl, ein Text statt der Zahl eines Auflösers, kein
+// Spieler) scheitert benannt an `dslEvalPos` — [Name, Programm, Soll-Grund (RegExp), die Op im Eintrag, ohne Spieler].
+const KNOTEN = [
+    ["Text statt Knoten (die KI ohne Klammern)", ["spawn_studio", "eiche", "near_water", 6], "^„near_water“ ist kein Ort-Knoten", "spawn_studio"],
+    ["leerer Knoten", ["spawn_tree", [], 1, "eiche", 5], "^leerer Ort-Knoten", "spawn_tree"],
+    ["Zahl statt Knoten", ["spawn_creature", 42, 1, "happy"], "^„42“ ist kein Ort-Knoten", "spawn_creature"],
+    ["Objekt statt Knoten", ["spawn_ufo", { x: 3, z: 4 }], "ist kein Ort-Knoten", "spawn_ufo"],
+    ["Text statt Knoten im Feld-Akt", ["deposit_life", "near_water", 0.5], "^„near_water“ ist kein Ort-Knoten", "deposit_life"],
+    ["at ohne x und z", ["spawn_tree", ["at"], 1, "eiche", 5], "^at: x fehlt", "spawn_tree"],
+    ["at mit Text", ["spawn_studio", "eiche", ["at", "abc", 0, "abc"], 1], "^at: x „abc“ ist keine Zahl", "spawn_studio"],
+    ["at mit null (Number(null) === 0)", ["spawn_creature", ["at", null, 3, 5], 1, "happy"], "^at: x fehlt", "spawn_creature"],
+    ["at ohne z", ["spawn_ufo", ["at", 12, 3]], "^at: z fehlt", "spawn_ufo"],
+    ["at mit Text-Höhe", ["spawn_island", ["at", 5, "hoch", 5], 6, 7], "^at: y „hoch“ ist keine Zahl", "spawn_island"],
+    ["near_water mit Text-Radius", ["spawn_tree", ["near_water", "abc"], 1, "eiche", 5], "^near_water: Radius „abc“ ist keine Zahl", "spawn_tree"],
+    ["near_player mit Text-Radius", ["spawn_creature", ["near_player", "weit"], 1, "happy"], "^near_player: Radius „weit“ ist keine Zahl", "spawn_creature"],
+    ["far_player ohne Abstände (das Dorf)", ["spawn_village", ["far_player"], 7], "^far_player: Mindest-Abstand fehlt", "spawn_village"],
+    ["far_player mit Text-Höchstabstand", ["spawn_temple", ["far_player", 180, "weit"], 7], "^far_player: Höchst-Abstand „weit“ ist keine Zahl", "spawn_temple"],
+    ["random_position mit Text-Spanne", ["spawn_ufo", ["random_position", "x"]], "^random_position: Spanne „x“ ist keine Zahl", "spawn_ufo"],
+    ["at_player_forward mit Text-Abstand", ["spawn_tree", ["at_player_forward", "abc"], 1, "eiche", 5], "^at_player_forward: Abstand „abc“ ist keine Zahl", "spawn_tree"],
+    ["at_field_need mit Text-Radius", ["deposit_life", ["at_field_need", "abc"], 0.5], "^at_field_need: Radius „abc“ ist keine Zahl", "deposit_life"],
+    ["voxel_carve mit null-Koordinaten", ["voxel_carve", null, 50, null, 3], "^at: x fehlt", "voxel_carve"],
+    ["voxel_fill mit leerem x", ["voxel_fill", "", 10, 5, 2], "^at: x „“ ist keine Zahl", "voxel_fill"],
+    ["at_player ohne Spieler", ["spawn_tree", ["at_player"], 1, "eiche", 5], "^at_player: kein Spieler in der Welt", "spawn_tree", true],
+    ["near_player ohne Spieler", ["spawn_creature", ["near_player", 10], 1, "happy"], "^near_player: kein Spieler in der Welt", "spawn_creature", true],
+    ["Feld-Akt ohne Knoten und ohne Spieler", ["deposit_life"], "^at_player: kein Spieler in der Welt", "deposit_life", true],
+    ["die nächste Kreatur ohne Spieler", ["creature_task_nearest", "wander"], "^at_player: kein Spieler in der Welt", "creature_task_nearest", true],
+];
+const KNOTEN_DEFAULT = { near_water: 60, at_player_forward: 5, at_field_need: 50 };
+function knotenEintragOk(e, soll, effekt) {
+    return !!e && !e.fehler && !(e.akte && e.akte.length) && !e.ok && new RegExp(soll).test(e.grund || "") && e.effekt === effekt;
+}
+function knotenVerdict(m) {
+    if (!m || m.gestartet !== true) return ["start"];
+    const out = [];
+    for (const [name, , soll, effekt] of KNOTEN) {
+        const e = m.laeufe && m.laeufe[name];
+        if (!e) {
+            out.push(`${name}: nicht gelaufen`);
+            continue;
+        }
+        if (e.fehler) out.push(`${name}: wirft (${e.fehler.slice(0, 80)})`);
+        if (e.akte && e.akte.length)
+            out.push(`${name}: wirkt ohne Ort (${e.akte.map((a) => `${a.nm} ${a.abstand == null ? "ohne Ort" : a.abstand + " m vom Spieler"}`).join(", ")})`);
+        if (!(new RegExp(soll).test(e.grund || "") && e.effekt === effekt))
+            out.push(`${name}: scheitert nicht benannt (${e.grund ? `„${e.grund}“ an ${e.effekt}` : "kein Grund"})`);
+        if (e.ok) out.push(`${name}: meldet Erfolg`);
+    }
+    const d = m.defaults || {};
+    if (d.near_water !== `kein Wasser im Umkreis von ${KNOTEN_DEFAULT.near_water} m`)
+        out.push(`near_water ohne Radius: „${d.near_water}“ (Soll ${KNOTEN_DEFAULT.near_water} m)`);
+    for (const k of ["at_player_forward", "at_field_need"])
+        if (!(Math.abs((d[k] == null ? NaN : d[k]) - KNOTEN_DEFAULT[k]) < 0.05))
+            out.push(`${k} ohne Zahl: ${d[k]} m vom Spieler (Soll ${KNOTEN_DEFAULT[k]} m)`);
+    if (m.messOrtOhneSpieler != null) out.push(`der Mess-Ort einer Regel ohne Spieler ist ${JSON.stringify(m.messOrtOhneSpieler)}`);
+    const g = m.gesund || {};
+    if (!(g.ok === true && g.akte === 1 && !g.grund)) out.push(`ein gültiger at-Knoten wirkt nicht (Vorbedingung: ${JSON.stringify(g)})`);
+    return out;
+}
+
 // R2 — DIE WASSER-SUCHE: das Urteil `_isAboveWaterAt` ist bit-gleich zum vollen Spalten-Scan, und die dichte Ring-Suche
 // scannt am trockenen Ort (kein Wasser im Kreis, der teuerste Fall) nicht mehr Spalten als die 8-Strahlen-Suche von
 // cf9a07ba (8 je 4-m-Ring). Befund 6b988a07: 351/1330/8037 Spalten für 40/80/200 m.
@@ -239,6 +306,18 @@ function wand(src) {
     // Die Genesis-Plattform sucht nur `_genesisPlattform` (Spawn-Idempotenz, Rückkehr-Anker, Genesis-Ort lesen sie).
     const plattSuchen = (nc.match(/\.type === "start_plattform"/g) || []).length;
     const plattQuelle = /\.type === "start_plattform"/.test(fnBody(nc, /\n {4}_genesisPlattform\(\) \{/) || "");
+    // Die Auflöser kennen keinen Ersatz-Ort: kein Spieler-/Ursprungs-Ersatz, keine Zahl ohne den EINEN Leser `_dslOrtZahl`
+    // (dslClamp gab für jedes Ungültige die Untergrenze, Number(null) ist 0); die Feld-Akte und die Voxel-Ops lesen ihren
+    // Ort an der Engstelle.
+    const positionen = fnBody(nc, /\n {4}get dslPositions\(\) \{/) || "";
+    const regelPos = fnBody(nc, /\n {4}_dslRulePos\(posNode, ctx\) \{/) || "";
+    const ersatz = [
+        (positionen.match(/_defaultSpawnPos\(\)/g) || []).length,
+        (positionen.match(/dslClamp\(/g) || []).length,
+        (positionen.match(/\bNumber\(/g) || []).length,
+        (effekte.match(/const c[xyz] = Number\(/g) || []).length,
+        (effekte.match(/playerMesh\.position : \{ x: 0/g) || []).length,
+    ];
     return [
         [
             "W1 die Bühne zeichnet ungemaskt (`_buehneRender`: uLodMaskOn 0 um den Render, im finally zurück)",
@@ -250,14 +329,23 @@ function wand(src) {
             `${direkt} direkt · ${ueber} über die Bühne`,
         ],
         [
-            "W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` wirft `_dslKeinOrt`, liefert nie null/den Default für einen verlangten Ort)",
-            /throw fehler;/.test(evalPos) && /this\._dslKeinOrt\(/.test(evalPos) && !/return null/.test(evalPos) && (evalPos.match(/_defaultSpawnPos\(\)/g) || []).length === 1,
+            "W3 der Orts-Vertrag sitzt an der Engstelle (`dslEvalPos` wirft `_dslKeinOrt`, liefert nie null; den Default-Spawn nur ohne Knoten, `node == null`)",
+            /throw fehler;/.test(evalPos) &&
+                /this\._dslKeinOrt\(/.test(evalPos) &&
+                !/return null/.test(evalPos) &&
+                (evalPos.match(/_defaultSpawnPos\(\)/g) || []).length === 1 &&
+                /if \(node == null\) return this\._defaultSpawnPos\(\);/.test(evalPos),
         ],
         ["W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)", wachen === 0, `${wachen} Wache(n)`],
         [
             "W5 die Genesis-Plattform hat EINE Quelle (`_genesisPlattform` sucht sie; Spawn-Idempotenz und Rückkehr-Anker lesen sie)",
             plattQuelle && plattSuchen === 1,
             `${plattSuchen} Suche(n) nach start_plattform`,
+        ],
+        [
+            "W6 die Auflöser kennen keinen Ersatz-Ort (dslPositions: 0 `_defaultSpawnPos()`, 0 `dslClamp`, 0 `Number(`; Voxel-Ops ohne eigene Koordinaten-Leser, kein Ursprung statt Spieler; `_dslRulePos` setzt at_player nur für `== null`)",
+            ersatz.every((n) => n === 0) && /posNode == null/.test(regelPos) && !/Array\.isArray/.test(regelPos),
+            `Ersatz-Stellen ${ersatz.join("/")}`,
         ],
     ];
 }
@@ -540,8 +628,9 @@ async function probe(arg) {
         const pm = st.playerMesh.position;
         pm.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
         st.yaw = 0;
-        // Beobachtungs-Punkte: jeder Welt-Akt einer Op (er wird aufgezeichnet und läuft weiter); das Dorf wird nur
-        // aufgezeichnet (sein Bau ist ein Worker-Rundlauf — gezählt wird, ob eine Op es ohne Ort gründen will).
+        // Beobachtungs-Punkte: jeder Welt-Akt einer Op (er wird aufgezeichnet und läuft weiter); das Dorf und der Voxel-Edit
+        // werden nur aufgezeichnet (der Dorf-Bau ist ein Worker-Rundlauf, ein Edit gräbt die Mess-Welt um — gezählt wird,
+        // ob eine Op ohne Ort wirken will); die nächste Kreatur wird mit ihrem Bezugs-Ort aufgezeichnet.
         const akte = [];
         const ortVon = {
             spawnCreatureAt: (a) => ({ x: a[0], z: a[2] }),
@@ -551,14 +640,18 @@ async function probe(arg) {
             spawnSettlement: (a) => (a[0] && a[0].position) || null,
             _depositLife: (a) => ({ x: a[0], z: a[1] }),
             _depositEmotion: (a) => ({ x: a[0], z: a[1] }),
+            carveVoxelSphere: (a) => ({ x: a[0], z: a[2] }),
+            fillVoxelSphere: (a) => ({ x: a[0], z: a[2] }),
+            assignTaskToNearestCreature: (a) => a[0] || null,
         };
+        const nurAufzeichnen = { spawnSettlement: () => Promise.resolve(null), carveVoxelSphere: () => {}, fillVoxelSphere: () => {} };
         const alt = {};
         for (const nm of Object.keys(ortVon)) {
             alt[nm] = r[nm];
             r[nm] = function (...a) {
                 const p = ortVon[nm](a);
                 akte.push({ nm, abstand: p && Number.isFinite(p.x) ? +Math.hypot(p.x - pm.x, p.z - pm.z).toFixed(1) : null });
-                return nm === "spawnSettlement" ? Promise.resolve(null) : alt[nm].apply(this, a);
+                return nurAufzeichnen[nm] ? nurAufzeichnen[nm]() : alt[nm].apply(this, a);
             };
         }
         const NW = ["near_water", 60];
@@ -595,6 +688,49 @@ async function probe(arg) {
             for (const prog of OPS) m.ops[prog[0]] = lauf(prog);
             // Die chain bricht genau die Op ohne Ort ab, läuft weiter (der Feld-Akt beim Spieler) und meldet ehrlich.
             m.chain = lauf(["chain", ["spawn_tree", NW, 1, "eiche", 5], ["deposit_life", ["at_player"], 0.1]]);
+            // DER REST DER KLASSE: jeder ungültige Ort (kein Knoten, at ohne Zahl, Text statt Zahl, kein Spieler) — je
+            // Programm durch `dslRun`; „ohne Spieler" nimmt den Spieler-Leib für genau diesen Lauf aus der Welt (synchron,
+            // kein Takt dazwischen).
+            const k = { gestartet: false, laeufe: {} };
+            out.knoten = k;
+            try {
+                const leib = st.playerMesh;
+                const ohneSpieler = (fn) => {
+                    st.playerMesh = null;
+                    try {
+                        return fn();
+                    } finally {
+                        st.playerMesh = leib;
+                    }
+                };
+                for (const [name, prog, ohne] of (arg && arg.knoten) || []) k.laeufe[name] = ohne ? ohneSpieler(() => lauf(prog)) : lauf(prog);
+                // Die Defaults der Auflöser: ein FEHLENDER Radius/Abstand ist der dokumentierte, nie die Untergrenze.
+                const grundVon = (node) => {
+                    try {
+                        r.dslEvalPos(node, r.dslCtx({ source: "test" }));
+                        return null;
+                    } catch (e) {
+                        return e && e.dslKeinOrt ? e.dslKeinOrt.grund : String(e);
+                    }
+                };
+                const abstandVon = (node) => {
+                    const q = r.dslEvalPos(node, r.dslCtx({ source: "test" }));
+                    return +Math.hypot(q.x - pm.x, q.z - pm.z).toFixed(2);
+                };
+                k.defaults = {
+                    near_water: grundVon(["near_water"]),
+                    at_player_forward: abstandVon(["at_player_forward"]),
+                    at_field_need: abstandVon(["at_field_need"]),
+                };
+                // Der Mess-Ort einer Regel ohne Positions-Knoten (Wetter) ohne Spieler: keiner — nie der Ursprung.
+                k.messOrtOhneSpieler = ohneSpieler(() => r._ruleRewardPos(["weather", "sunny"], r.dslCtx({ source: "test" })));
+                // Gegenprobe: ein gültiger at-Knoten wirkt genau einmal.
+                const g = lauf(["deposit_life", ["at", pm.x + 3, pm.y, pm.z + 4], 0.1]);
+                k.gesund = { ok: g.ok, akte: g.akte.length, grund: g.grund };
+                k.gestartet = true;
+            } catch (e) {
+                k.err = (e && e.stack) || String(e);
+            }
         } finally {
             for (const nm of Object.keys(alt)) r[nm] = alt[nm];
         }
@@ -919,6 +1055,13 @@ async function probe(arg) {
             .replace("if (an !== null) lu.uLodMaskOn.value = 0;", "")
             // der Orts-Vertrag beim Vorher (6b988a07): dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
             .replace("            throw fehler;\n", "            return null;\n")
+            // der Rest der Klasse beim Vorher (c52089c7): jeder Nicht-Array-Knoten ist „nicht verlangt", der Feld-Akt nimmt
+            // für jeden Nicht-Array-Knoten den Spieler
+            .replace("if (node == null) return this._defaultSpawnPos();", "if (!Array.isArray(node) || node.length === 0) return this._defaultSpawnPos();")
+            .replace(
+                'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
+                'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);'
+            )
             .replace(
                 "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
                 "const pos = this.dslEvalPos(positionNode, ctx);\n                if (!pos) return; // kein Ort"
@@ -930,8 +1073,8 @@ async function probe(arg) {
             );
         const rot = wand(vorStand);
         check(
-            "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache, Plattform-Zwilling) → W1–W5 feuern",
-            rot.filter((w) => !w[1]).length === 5,
+            "Selbst-Test W: der Vor-Stand (Vorschau direkt, Bühne maskiert, null-Ort, Op-Wache, Plattform-Zwilling, Ersatz-Ort) → W1–W6 feuern",
+            rot.filter((w) => !w[1]).length === 6,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
         // Die V-k5-Klasse: gesund ohne Täter, je Befund-Zustand der Täter beim Namen.
@@ -958,6 +1101,39 @@ async function probe(arg) {
         ]) {
             const v = ortVerdict(bruch);
             check(`Selbst-Test V-k5-Klasse: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+        }
+        // Der Rest der V-k5-Klasse: gesund ohne Täter, je Befund-Zustand (c52089c7) der Täter beim Namen.
+        const kGesund = (name) => {
+            const [, , soll, effekt] = KNOTEN.find((e) => e[0] === name);
+            return { ok: false, grund: soll.replace(/^\^/, ""), effekt, fehler: null, akte: [] };
+        };
+        const gesundK = {
+            gestartet: true,
+            laeufe: Object.fromEntries(KNOTEN.map(([name]) => [name, kGesund(name)])),
+            defaults: { near_water: "kein Wasser im Umkreis von 60 m", at_player_forward: 5, at_field_need: 50 },
+            messOrtOhneSpieler: null,
+            gesund: { ok: true, akte: 1, grund: null },
+        };
+        check("Selbst-Test V-k5-Klasse (Rest): gesund == 0 Täter", knotenVerdict(gesundK).length === 0, knotenVerdict(gesundK).join(" · "));
+        const mitK = (name, e) => Object.assign({}, gesundK, { laeufe: Object.assign({}, gesundK.laeufe, { [name]: Object.assign(kGesund(name), e) }) });
+        const still = (nm, abstand) => ({ ok: true, grund: null, effekt: null, akte: [{ nm, abstand }] });
+        const mitD = (d) => Object.assign({}, gesundK, { defaults: Object.assign({}, gesundK.defaults, d) });
+        for (const [name, bruch, soll] of [
+            ["der Text wird der Ursprung", mitK(KNOTEN[0][0], still("spawnArchitecture", 412.6)), `${KNOTEN[0][0]}: wirkt ohne Ort`],
+            ["at(null) wird die 0 (Lehre 17)", mitK("at mit null (Number(null) === 0)", still("spawnCreatureAt", 300.2)), "at mit null (Number(null) === 0): wirkt ohne Ort"],
+            ["das Dorf ohne Abstände beim Spieler", mitK("far_player ohne Abstände (das Dorf)", still("spawnSettlement", 9.6)), "far_player ohne Abstände (das Dorf): wirkt ohne Ort"],
+            ["voxel_carve gräbt bei 0", mitK("voxel_carve mit null-Koordinaten", still("carveVoxelSphere", 300.2)), "voxel_carve mit null-Koordinaten: wirkt ohne Ort"],
+            ["ohne Spieler am Ursprung", mitK("at_player ohne Spieler", still("spawnArchitecture", 300.2)), "at_player ohne Spieler: wirkt ohne Ort"],
+            ["die nächste Kreatur am Ursprung", mitK("die nächste Kreatur ohne Spieler", still("assignTaskToNearestCreature", 300.2)), "die nächste Kreatur ohne Spieler: wirkt ohne Ort"],
+            ["Absage ohne die Op", mitK("leerer Knoten", { effekt: null }), "leerer Knoten: scheitert nicht benannt"],
+            ["near_water ohne Radius sucht 8 m", mitD({ near_water: "kein Wasser im Umkreis von 8 m" }), "near_water ohne Radius"],
+            ["vorn ohne Abstand 1 m", mitD({ at_player_forward: 1 }), "at_player_forward ohne Zahl"],
+            ["Bedarf ohne Radius 10 m", mitD({ at_field_need: 10 }), "at_field_need ohne Zahl"],
+            ["der Mess-Ort ohne Spieler ist der Ursprung", Object.assign({}, gesundK, { messOrtOhneSpieler: { x: 0, z: 0 } }), "der Mess-Ort"],
+            ["ein gültiger Knoten wirkt nicht (vakuös)", Object.assign({}, gesundK, { gesund: { ok: false, akte: 0, grund: "at: x fehlt" } }), "ein gültiger at-Knoten"],
+        ]) {
+            const v = knotenVerdict(bruch);
+            check(`Selbst-Test V-k5-Klasse (Rest): ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
         // R2: gesund (Urteil exakt, trocken wenige Scans), je Befund-Zustand der Täter beim Namen.
         const gesundW = {
@@ -1005,7 +1181,7 @@ async function probe(arg) {
     page.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // Der KI-Endpunkt der V-D6-Probe: ein Port, auf dem nichts lauscht (der Linsen-Server liegt auf PORT).
-    const out = await page.evaluate(probe, { kiPort: PORT + 3 });
+    const out = await page.evaluate(probe, { kiPort: PORT + 3, knoten: KNOTEN.map(([name, prog, , , ohne]) => [name, prog, !!ohne]) });
     await browser.close();
     server.close();
 
@@ -1067,6 +1243,19 @@ async function probe(arg) {
         `V-k5-Klasse jede Op mit near_water ${om.radius || "?"} m in trockener Welt scheitert benannt (0 Würfe, 0 Welt-Akte, die chain meldet ehrlich, kein Dorf beim Spieler)`,
         vO.length === 0,
         `${om.gestartet ? ORT_OPS.map(opZeile).join(" · ") + ` · chain ${om.chain && om.chain.ok ? "Erfolg" : "abgesagt"} · Dorf-Aufträge ${om.dorfAuftraege}` : "nicht gestartet"}${vO.length ? " — Täter: " + vO.join(", ") : ""}`
+    );
+    console.log("=== V-k5-KLASSE, DER REST — JEDER UNGÜLTIGE ORT SCHEITERT BENANNT ===");
+    const km = out.knoten || {};
+    if (km.err) check("V-k5-Klasse (Rest) Probe ohne Ausnahme", false, km.err.split("\n")[0]);
+    const vK = knotenVerdict(km);
+    const kl = km.laeufe || {};
+    const benannt = KNOTEN.filter(([name, , soll, effekt]) => knotenEintragOk(kl[name], soll, effekt)).length;
+    const kAkte = KNOTEN.reduce((n, [name]) => n + ((kl[name] && kl[name].akte) || []).length, 0);
+    const kd = km.defaults || {};
+    check(
+        `V-k5-Klasse (Rest) jeder ungültige Ort scheitert benannt (${KNOTEN.length} Programme: kein Knoten · at ohne Zahl · Text statt Zahl · kein Spieler · Voxel), die Defaults der Auflöser gelten`,
+        vK.length === 0,
+        `${km.gestartet ? `${benannt}/${KNOTEN.length} benannt · ${kAkte} Welt-Akte ohne Ort · near_water ohne Radius „${kd.near_water}“ · vorn ohne Abstand ${kd.at_player_forward} m · Bedarf ohne Radius ${kd.at_field_need} m · Mess-Ort ohne Spieler ${JSON.stringify(km.messOrtOhneSpieler)}` : "nicht gestartet"}${vK.length ? " — Täter: " + vK.join(", ") : ""}`
     );
     console.log("=== R2 — DIE WASSER-SUCHE SCANNT NUR, WO WASSER SEIN KANN ===");
     const sm = out.suche || {};
