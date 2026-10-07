@@ -130,7 +130,7 @@ function validateDaten(N, spec) {
     return v;
 }
 
-(function main() {
+(async function main() {
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST: die Daten-Vertrags-Linse feuert ===");
         const N = loadCore(CORES[0].file, CORES[0].ns);
@@ -162,7 +162,7 @@ function validateDaten(N, spec) {
         // Nenner der Plattform-Probe — die transzendenten-freie Zeile v7 reißt beim Namen.
         const { plattformProbe } = require("./lib/plattform-probe.cjs");
         const quelle = fs.readFileSync(path.join(root, CORES[0].file), "utf8");
-        const PPt = plattformProbe({
+        const PPt = await plattformProbe({
             laden: () => {
                 const ctx = vm.createContext({ console: { log() {}, warn() {}, error() {} }, Math });
                 ctx.self = ctx;
@@ -219,7 +219,7 @@ function validateDaten(N, spec) {
         "SELBST-TEST: der Kern-Kontext liest das Math des Gates — die Probe erreicht die Daten",
         vm.runInContext("Math", ladeKontext(CORES[0].file)) === Math
     );
-    probeWand(
+    await probeWand(
         "v7",
         {
             laden: () => CORES.map((spec) => [spec.file, loadCore(spec.file, spec.ns)]),

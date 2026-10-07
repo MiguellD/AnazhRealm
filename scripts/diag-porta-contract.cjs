@@ -120,7 +120,7 @@ function compare(golden, actual) {
     return bad;
 }
 
-(function main() {
+(async function main() {
     console.log("=== ASSET-VERTRAG v4 — Tore (porta-core.js buildInstance) ===");
     check("porta-core geladen (__portaCore + buildInstance)", !!PC && typeof PC.buildInstance === "function");
 
@@ -174,7 +174,7 @@ function compare(golden, actual) {
     // 5b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit einer Transzendenten — das Byte-Raster am Ausgang
     //     (porta-core ausRaster) hält die Ratsche auf 0 (je Lauf ein frisch geladener Kern). Die Fälle ohne
     //     Seed-Dopplung (seed-invariant, s. Kopf).
-    probeWand(
+    await probeWand(
         "v4",
         {
             laden: () => {

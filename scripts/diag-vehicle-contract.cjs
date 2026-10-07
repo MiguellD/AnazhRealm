@@ -119,7 +119,7 @@ function compare(golden, actual) {
     return bad;
 }
 
-(function main() {
+(async function main() {
     console.log("=== ASSET-VERTRAG v3 — Fahrzeuge (vehicle-core.js buildInstance) ===");
     check("vehicle-core geladen (__vehicleCore + buildInstance)", !!VC && typeof VC.buildInstance === "function");
 
@@ -187,7 +187,7 @@ function compare(golden, actual) {
     // 4b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
     //     Ratsche (je Lauf ein frisch geladener Kern — die Lack-Stoffe rechnen ihre Farbe beim ersten Bau). Alle Fälle:
     //     der Same wählt den Lack.
-    probeWand(
+    await probeWand(
         "v3",
         {
             laden: () => {

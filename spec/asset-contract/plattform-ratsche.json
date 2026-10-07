@@ -1,6 +1,25 @@
 {
     "zweck": "DIE PLATTFORM-RATSCHE der Golden-Saetze (S1 Waende, 07.10.; Linse scripts/lib/plattform-probe.cjs). Jeder Golden-Fall baut noch einmal, waehrend die Transzendenten von Math um +-1 ULP verschoben rechnen. Math.pow ist die GEMESSENE Klasse (V8 12.4 der CI rundet anders als V8 13.6 lokal: v5 saebel cc26c7d8, v4 alle 16 Tore am Kopf 516e704a) - seine Drift kippt in keinem Satz ein Byte, hart. sin/cos/atan2/hypot/exp rundeten in beiden V8 gleich (213 707 verschiedene Aufrufe der Tore); wo ihre Drift die Bytes erreicht, steht der Kern hier BENANNT: je Funktion die Zahl der kippenden Probe-Faelle (darf nur fallen, heben ist ein begruendeter Akt im Commit) und die erste Taeter-Stelle. Soll je Satz: 0 - EIN Byte-Raster am Ausgang von buildInstance (das Muster porta-core/fachwerk-core ausRaster); es kommt mit dem naechsten Re-Mint des Kerns, nie als eigener Byte-Akt.",
     "saetze": {
+        "v1": {
+            "kern": "foundry-core.js + phyto-core.js (Pflanzen, Chrome-Worker)",
+            "faelle": 43,
+            "probe": "jeder Golden-Fall mit Samen 7 im Sommer (21 Arten, alle Stufen)",
+            "powWirt": "das gepinnte Chrome (puppeteer aus package-lock, 148.0.7778.97) - CI und lokal dieselbe V8; ein Chrome-Wechsel ist der Ausloeser, pow kippt dann 16 Faelle",
+            "kippt": {
+                "pow": 16,
+                "hypot": 26,
+                "sin": 21,
+                "cos": 18
+            },
+            "taeter": {
+                "pow": "phyto-core.js:76 pow (D = pow(2 H / k, 1,5), der Stamm-Durchmesser)",
+                "hypot": "phyto-core.js:39 hypot (vlen, die Vektor-Laenge des Wuchses)",
+                "sin": "phyto-core.js:303 sin (cdir, die Biegung der Kind-Achse)",
+                "cos": "phyto-core.js:48 cos (die Drehung im Wuchs)"
+            },
+            "soll": "0 - EIN Byte-Raster am Ausgang der Bruecke (build-asset); es kommt mit dem naechsten v1-Akt (W3 Pflanzen-L1 oder W5 Farb-Akt), nie als eigener Byte-Akt"
+        },
         "v3": {
             "kern": "vehicle-core.js",
             "faelle": 12,

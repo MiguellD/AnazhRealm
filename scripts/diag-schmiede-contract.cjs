@@ -126,7 +126,7 @@ function compare(golden, actual) {
     return bad;
 }
 
-(function main() {
+(async function main() {
     console.log("=== ASSET-VERTRAG v5 — Klingen & Werkzeuge (schmiede-core.js buildInstance) ===");
     check("schmiede-core geladen (__schmiedeCore + buildInstance)", !!SC && typeof SC.buildInstance === "function");
     check(
@@ -237,7 +237,7 @@ function compare(golden, actual) {
     // 6b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
     //     Ratsche (je Lauf ein frisch geladener Kern — die Stoffe rechnen ihre Farbe beim ersten Bau). Die Fälle ohne
     //     Seed-Dopplung (seed-invariant, s. Kopf).
-    probeWand(
+    await probeWand(
         "v5",
         {
             laden: () => {

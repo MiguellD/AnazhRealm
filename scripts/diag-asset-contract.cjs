@@ -12,6 +12,7 @@
 const fs = require("fs");
 const path = require("path");
 const { runWithWorker, fingerprintMeshes } = require("./lib/asset-worker-harness.cjs");
+const { probeWand } = require("./lib/plattform-probe.cjs");
 const { bildDeckung, kroneAus, kartenSkaliert, schwebe, unterBoden } = require("./lib/kronen-linse.cjs");
 require("../phyto-core.js"); // das Budget-Gesetz (budgetSippen · kerneVereinen) — dieselbe Datei wie Worker und Wirt
 const PC = globalThis.__phytoCore;
@@ -260,7 +261,7 @@ function deckungsUrteil(paare, band, atlas) {
     const schwebeMess = [];
     let schwebeProbe = null;
     const sehProben = [];
-    await runWithWorker(PORT, async ({ build, kostenListe, getData, atlas, atlasAlpha, karte }) => {
+    await runWithWorker(PORT, async ({ build, kostenListe, getData, atlas, atlasAlpha, karte, probeLauf }) => {
         // Daten-Kanäle gegen die eingefrorenen JSONs.
         // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
         // in EINEM Reply; die eingefrorenen JSONs (recipes/world-params/render-config)
@@ -467,6 +468,21 @@ function deckungsUrteil(paare, band, atlas) {
             fails.push(...deckungsUrteil(paare, band, alpha).map((x) => "Deckung: " + x));
             fails.push(...sehUrteil(sehProben).map((x) => "Seh: " + x));
         }
+        // DIE PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Golden-Fall mit Samen 7 im Sommer baut
+        // in einem zweiten Worker noch einmal, während dessen Transzendenten ±1 ULP verschoben rechnen. Die Pflanzen
+        // sind ungerastert: ihre Zeile in spec/asset-contract/plattform-ratsche.json nennt je Funktion die kippenden
+        // Fälle und die Täter-Stelle — auch Math.pow, denn der Wirt ist das gepinnte Chrome (CI und lokal dieselbe V8;
+        // ein Chrome-Wechsel ist der Auslöser, den die Zeile beim Namen nennt).
+        const probeFaelle = files
+            .map(parseName)
+            .filter((c) => c.seed === 7 && c.season === "summer")
+            .map((c) => ({ key: `${c.presetId}-s${c.seed}-L${c.lod}-${c.season}`, msg: c }));
+        const pruefe = (name, okP, detail) => {
+            console.log(`  ${okP ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
+            if (!okP) fails.push(`Plattform: ${name}${detail ? " — " + detail : ""}`);
+        };
+        console.log("Plattform-Probe (Chrome-Worker, alle Transzendenten ±1 ULP):");
+        await probeWand("v1", { lauf: probeLauf(probeFaelle) }, pruefe);
     });
     if (wand && wand.budget && Array.isArray(wand.band)) {
         const B = wand.budget;

@@ -13,6 +13,7 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
+const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 const MIME = {
@@ -219,6 +220,64 @@ function pageHtml() {
       return out;
     }),
   }));
+  // DIE PLATTFORM-PROBE IM WORKER (S1 Wände, scripts/lib/plattform-probe.cjs): ein zweiter Worker, erst beim ersten
+  // Ruf gebootet, trägt VOR dem Boot den Drift-Schalter (installiereDrift — dieselbe Quelle wie in Node) auf seinem Math.
+  // __probeLauf(liste, d, welche, bis, fangen) setzt die Drift, baut jeden Fall und gibt je Fall einen sha256 über die
+  // Bytes (kind · mat · Wurf-Teil · Attribute · Index; der Beipack nicht) samt Nenner und gefangener Kern-Zeile zurück.
+  let probeAsk = null;
+  const probeBoot = () => {
+    const quelle =
+      "var __drift = (" + ${JSON.stringify(installiereDrift.toString())} + ")(Math, " + ${JSON.stringify(JSON.stringify(FUNKTIONEN))} + ");" +
+      "self.addEventListener('message', function (e) { var m = e.data; if (!m) return;" +
+      " if (m.type === '__drift') { __drift.setze(m.d, m.welche, m.bis, m.fangen); self.postMessage({ reqId: m.reqId }); e.stopImmediatePropagation(); }" +
+      " else if (m.type === '__driftStand') { self.postMessage({ reqId: m.reqId, stand: __drift.stand() }); e.stopImmediatePropagation(); } });" +
+      boot;
+    const w = new Worker(URL.createObjectURL(new Blob([quelle], { type: "text/javascript" })));
+    const pend = new Map();
+    let bereit = null;
+    const fertigP = new Promise((r) => (bereit = r));
+    w.onmessage = (ev) => {
+      const m = ev.data;
+      if (m && m.type === "ready" && m.world === "terrain") bereit();
+      const p = m && pend.get(m.reqId);
+      if (p) { pend.delete(m.reqId); p(m); }
+    };
+    const a = (msg) => new Promise((res) => { const reqId = "d" + seq++; pend.set(reqId, res); w.postMessage(Object.assign({ reqId }, msg)); });
+    return fertigP.then(() => a);
+  };
+  const shaReply = async (r) => {
+    const enc = new TextEncoder();
+    const teile = [];
+    for (const m of r.meshes || []) {
+      if (typeof m.kind === "string" && m.kind.startsWith("__") && !(m.position && m.position.array)) continue;
+      teile.push(enc.encode(String(m.kind) + JSON.stringify(m.mat || null) + String(m.wurf)));
+      for (const k of Object.keys(m).sort()) {
+        const a = m[k];
+        if (a && a.array && a.itemSize) {
+          teile.push(enc.encode(k + ":" + a.itemSize));
+          teile.push(new Uint8Array(a.array.buffer, a.array.byteOffset, a.array.byteLength));
+        }
+      }
+      if (m.index) teile.push(new Uint8Array(m.index.buffer, m.index.byteOffset, m.index.byteLength));
+    }
+    let n = 0;
+    for (const t of teile) n += t.length;
+    const alles = new Uint8Array(n);
+    let o = 0;
+    for (const t of teile) { alles.set(t, o); o += t.length; }
+    const h = new Uint8Array(await crypto.subtle.digest("SHA-256", alles));
+    return Array.from(h, (b) => b.toString(16).padStart(2, "0")).join("");
+  };
+  window.__probeLauf = async (liste, d, welche, bis, fangen) => {
+    if (!probeAsk) probeAsk = probeBoot();
+    const a = await probeAsk;
+    await a({ type: "__drift", d, welche, bis, fangen });
+    const r = {};
+    for (const c of liste) r[c.key] = await shaReply(await a(Object.assign({ type: "build-asset" }, c.msg)));
+    const st = (await a({ type: "__driftStand" })).stand;
+    await a({ type: "__drift", d: 0, welche: null });
+    return { r, gerufen: st.gerufen, gefangen: st.gefangen };
+  };
   // DIE KOSTEN VIELER STUFEN (W8, ohne Puffer-Transport): jede Stufe gebaut über die echte Brücke, gezählt mit
   // DERSELBEN Regel wie Budget-Gesetz und Wirt (phyto-core budgetSippen); die Brücken-Antwort trägt ihren Budget-
   // Bericht mit. Die Liste läuft über einen Arbeits-Pool (dieselbe Boot-Kette je Worker; der erste ist der Haupt-Worker).
@@ -298,7 +357,17 @@ async function runWithWorker(port, cb) {
         const atlasAlpha = () => page.evaluate(() => window.__atlasAlpha());
         const atlasBild = () => page.evaluate(() => window.__atlasBild());
         const karte = (presetId, seed, stoer) => page.evaluate((p, sd, st) => window.__karte(p, sd, st), presetId, seed, stoer || null);
-        const out = await cb({ build, kostenListe, getData, atlas, atlasAlpha, atlasBild, karte, pageErrors });
+        // Die Plattform-Probe (S1 Wände): `probeLauf` ist der `lauf` von plattform-probe probeAblauf — liste = [{ key, msg }].
+        const probeLauf = (liste) => (d, welche, bis, fangen) =>
+            page.evaluate(
+                (l, dd, w, b, f) => window.__probeLauf(l, dd, w, b, f),
+                liste,
+                d,
+                welche || null,
+                bis == null ? null : bis,
+                fangen == null ? -1 : fangen
+            );
+        const out = await cb({ build, kostenListe, getData, atlas, atlasAlpha, atlasBild, karte, probeLauf, pageErrors });
         if (pageErrors.length) throw new Error("Seiten-Fehler: " + pageErrors.slice(0, 3).join(" · "));
         return out;
     } finally {
