@@ -49,6 +49,17 @@
 //       geparkte Wagen, Fels, Tor, Bauwerk) ist seine gedrehte Box (`_blockerComputePartAABB` → obb); die Hülle berührt
 //       das Teil (≤ 0,3 m), nie seine Welt-AABB. Die H-Proben räumen die Gasse von fremden Wesen (der Leib hält den Wagen).
 //
+//   K7 (0710-2) die Wand ist ein SPRUNG des Bodens: liegt der Boden unter dem Wagen auf einmal 0,35 m höher, hält die
+//       Wand einen Schritt, dann steigt er auf sein Gesetz (je Schritt ≤ eine Stufe) — vorher fror die Höhe für immer ein.
+//   L (0710-2) — DIE ORTE DER LEBEN-SCHAU (07.10., integ-l 828d5ace, sichtbar gefahren), echter Sim-Schritt, an genau den
+//       Orten mit Tempo und Gier der Schau:
+//       L1 HANGFUSS (−852/−861,2, 9,3 m/s, Gier 92,3°): die flache Box eines Glutbrunnens schob den GT in EINEM Schritt
+//          0,97 m quer auf höheren Grund, die Höhe fror ein, 1,16 m unter den Rädern für immer. Soll: nach JEDER Kontakt-
+//          Antwort steht der Wagen auf dem Gesetz (≤ 0,2 m darunter, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die
+//          eigene Fahrt, er fährt weiter.
+//       L2 SPALTKANTE (−904/−975, 11,4 m/s in +x): eine unsichtbare Wand stoppte den Wagen in EINEM Schritt (11,44 →
+//          0,19 m/s), Gas danach 0,00 m. Soll: er fährt über die Kante und FÄLLT.
+//
 //   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
 const puppeteer = require("puppeteer");
@@ -364,6 +375,31 @@ function kernProbe(VC) {
         k12.luft > 0 && k40.luft === 0 && kl.luft > 0 && kl.sprung <= 0.5 && !kl.z.luft && Math.abs(kl.z.y + 7) <= 0.05,
         `Kuppe R12 Luft ${k12.luft} · R40 Luft ${k40.luft} · Klippe Luft ${kl.luft}, größter Sprung ${kl.sprung.toFixed(2)} m, Ende y ${kl.z.y.toFixed(2)}`,
     ]);
+    // K7 — DIE WAND IST EIN SPRUNG DES BODENS (0710-2, die Hangfuß-Falle): der GT steht auf ebenem Boden, dann liegt der Boden
+    // unter ihm auf einmal 0,35 m höher (der Schub des Wirts quer auf höheren Grund). Die Wand hält EINEN Schritt (der Wirt
+    // schiebt heraus), dann steigt der Wagen auf sein Gesetz, je Schritt höchstens eine Stufe. Vorher fror die Höhe ein:
+    // der Wand-Zweig verglich den Boden mit der Höhe des Wagens, nie mit dem Boden des letzten Schritts.
+    {
+        const P7 = Object.assign({}, VC.DEFAULT_P, VC.presetPatch("gt"));
+        const G7 = VC.fahrGesetz(VC.exportDrive(P7));
+        const z7 = VC.fahrZustand(0, 0, 0);
+        VC.fahrStand(z7, G7, () => 0, 0);
+        const hoch = () => 0.35;
+        const ys = [];
+        for (let i = 0; i < 6; i++) {
+            VC.fahrStand(z7, G7, hoch, DT);
+            ys.push(z7.y);
+        }
+        const stufe7 = VC.FAHR.schritt.stufeRad * G7.radR;
+        const gehalten = Math.abs(ys[0]) <= 1e-9;
+        const steigt = ys.slice(1).every((y, i) => y - (i === 0 ? ys[0] : ys[i]) <= stufe7 + 1e-9);
+        const steht = Math.abs(ys[2] - 0.35) <= 0.01 && Math.abs(ys[5] - 0.35) <= 0.01;
+        out.push([
+            "K7 die Wand ist ein Sprung des Bodens: sie hält EINEN Schritt, dann steigt der Wagen auf sein Gesetz (je Schritt ≤ eine Stufe) — nie für immer darunter",
+            gehalten && steigt && steht,
+            `Boden +0,35 m: Höhe je Schritt ${ys.map((y) => y.toFixed(3)).join(" · ")} (Stufe ${stufe7.toFixed(3)} m)`,
+        ]);
+    }
     // K6 — DIE VERWINDUNG (Gegenprüfung 07.10.: M3 an (102, 60) — auf verwundenem Boden lagen zwei diagonale Räder des
     // Teile-Wagens 0,229 m im Boden): bilinear verwundener Boden, die vier Aufstandspunkte ±tau um die Ebene. Kein Rad
     // liegt tiefer im Boden als sein Federweg (auf.hub — der GT federt ein Rad einzeln, ein starres Werk nie), und wo der
@@ -414,6 +450,13 @@ const STATION = {
     schubM: 0.01,
     sattelRad: 0.01,
     standM: 0.05,
+    // L (0710-2, die Orte der Leben-Schau): eine Rad-Stufe des GT (FAHR.schritt.stufeRad · radR ≈ 0,17 m) ist das Maß
+    unterM: 0.2, // so tief darf der Wagen höchstens unter der Ebene seiner Räder liegen (einen Schritt lang: die Wand)
+    unterN: 3, // so viele Sim-Schritte höchstens mehr als 5 cm darunter (die Wand hält einen, das Steigen zwei)
+    versetztM: 0.2, // so weit versetzt der Kontakt-Löser den Wagen je Schritt höchstens über die eigene Fahrt hinaus
+    wegM: 5, // so weit fährt der GT mit W nach dem Kontakt mindestens (er steht nie für immer)
+    randM: 10, // der Spalt ist ein Spalt: der Rand liegt so hoch über seinem Grund (sonst ist L2 vakuös)
+    fallM: 3, // so tief fällt der Wagen hinter der Kante mindestens
 };
 function stationVerdict(s) {
     const out = [];
@@ -487,6 +530,30 @@ function stationVerdict(s) {
             out.push(`huelle-${name} keine Berührung ${was} (kleinster Abstand ${h.nah.toFixed(2)} m)`);
         else if (!(h.tief <= STATION.huelleM)) out.push(`huelle-${name} Eindringen ${h.tief.toFixed(2)} m`);
     }
+    // L1 DER HANGFUSS (0710-2): nach JEDER Kontakt-Antwort steht der Wagen wieder auf dem Gesetz, der Schub je Schritt ist
+    // begrenzt, er fährt weiter.
+    const hf = s.hangfuss;
+    if (!hf) out.push("hangfuss keine Probe");
+    else if (!hf.ziel || !(hf.kontakte >= 1))
+        out.push(`hangfuss vakuös (Glutbrunnen ${hf.ziel ? "steht" : "fehlt"}, ${hf.kontakte || 0} Kontakte)`);
+    else {
+        if (!(hf.unterMax <= STATION.unterM && hf.unterN <= STATION.unterN))
+            out.push(
+                `hangfuss-unter: der Wagen liegt ${hf.unterMax.toFixed(2)} m unter der Ebene seiner Räder (${hf.unterN} Schritte > 0,05 m) — eine Kontakt-Antwort ohne Erdung`
+            );
+        if (!(hf.schubMax <= STATION.versetztM))
+            out.push(`hangfuss-schub: der Kontakt-Löser versetzt den Wagen in EINEM Schritt ${hf.schubMax.toFixed(2)} m`);
+        if (!(hf.weg >= STATION.wegM)) out.push(`hangfuss-steht: mit W nur ${hf.weg.toFixed(2)} m gefahren`);
+    }
+    // L2 DIE SPALTKANTE (0710-2): der Wagen fährt über die Kante und fällt.
+    const sp = s.spalt;
+    if (!sp) out.push("spalt keine Probe");
+    else if (!(sp.rand - sp.grund >= STATION.randM))
+        out.push(`spalt vakuös (Rand ${(sp.rand || 0).toFixed(1)} m, Grund ${(sp.grund || 0).toFixed(1)} m)`);
+    else if (!(sp.xMax > -899.5 && sp.yMin < sp.rand - STATION.fallM))
+        out.push(
+            `spalt-wand: der Wagen hält an der Kante (bis x ${sp.xMax.toFixed(2)}, tiefste Höhe ${sp.yMin.toFixed(2)} m bei Rand ${sp.rand.toFixed(2)} m) — eine unsichtbare Wand`
+        );
     return out;
 }
 
@@ -1533,13 +1600,125 @@ async function probeLeben(expected) {
                         return out;
                     };
                     const ent = { _fahr: { y: 0, steig: 0, wank: 0 }, _rideYaw: 0 };
-                    const o = w._fahrHuelleKontakt(ent, k, 0, 0, 0, 0, 1 / 60);
+                    // zehn Schritte nacheinander (der Schub je Schritt ist auf eine Rad-Stufe begrenzt, 0710-2): der Kasten
+                    // drückt die Hülle Schritt um Schritt an die Wand, und keiner schiebt sie hinein
+                    let x = 0;
                     let schub = 0;
-                    for (let i = 0; i < k.schub.length; i += 2) schub += Math.hypot(k.schub[i], k.schub[i + 1]);
-                    S.huelleHang = { schub, eindringen: Math.max(0, o.x + k.hw - WX), x: o.x };
+                    let eindringen = 0;
+                    for (let i = 0; i < 10; i++) {
+                        const o = w._fahrHuelleKontakt(ent, k, x, 0, 0, 0, 1 / 60);
+                        if (i === 0)
+                            for (let j = 0; j < k.schub.length; j += 2) schub += Math.hypot(k.schub[j], k.schub[j + 1]);
+                        x = o.x;
+                        eindringen = Math.max(eindringen, o.x + k.hw - WX);
+                    }
+                    S.huelleHang = { schub, eindringen: Math.max(0, eindringen), x, anWand: WX - (x + k.hw) };
                 }
                 weg(gT);
             }
+        }
+
+        // ═══ L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2, Befund 07.10. auf integ-l 828d5ace, sichtbar gefahren) ═══
+        // An GENAU den Orten der Leben-Schau, mit ihrem Tempo und ihrer Gier, durch den echten Sim-Schritt. Je Sim-Schritt:
+        // `unter` — die Ebene der Räder (der Kern selbst: fahrEbene an der Lage und Gier des Stands) über der Höhe des Wagens,
+        // solange er nicht fliegt; `schub` — was der Kontakt-Löser die Lage über die eigene Fahrt hinaus versetzte.
+        const VCl = window.__vehicleCore;
+        const lebenFahrt = async (L, n) => {
+            // die Welt um den Ort steht (die Chunks und ihre Streu — der Glutbrunnen ist Welt-Genese)
+            st.playerMesh.position.set(L.ort[0], hh(L.ort[0], L.ort[1]) + 2, L.ort[1]);
+            for (let i = 0; i < 240; i++) frame(i);
+            const ziel = L.ziel ? L.ziel() : true;
+            const gL = await setzen("fahrzeug_gt", L.start[0], L.start[1], L.gier);
+            if (!gL) return null;
+            for (const cr of (st.creatures || []).slice())
+                if (cr && cr.position && Math.hypot(cr.position.x - L.ort[0], cr.position.z - L.ort[1]) < 30)
+                    r.removeCreature(cr);
+            const m = { ziel: !!ziel, unterMax: 0, unterN: 0, schubMax: 0, kontakte: 0, xMax: -Infinity, yMin: Infinity };
+            m.y0 = gL._fahr ? gL._fahr.y : NaN;
+            const zug = {};
+            const PC = r._stepCharacter;
+            r._stepCharacter = function (delta, ct) {
+                const p = st.playerMesh.position;
+                zug.x0 = p.x;
+                zug.z0 = p.z;
+                zug.vx = st.playerVel.x();
+                zug.vz = st.playerVel.z();
+                zug.dt = Math.min(0.1, Math.max(0.0001, delta));
+                PC.call(this, delta, ct);
+                const s = Math.hypot(p.x - (zug.x0 + zug.vx * zug.dt), p.z - (zug.z0 + zug.vz * zug.dt));
+                // nur eine VERSETZUNG zählt (eine Wand nimmt die eigene Fahrt zurück: die Lage bleibt hinter x0 + v·dt)
+                const zurueck = Math.hypot(p.x - zug.x0, p.z - zug.z0) <= Math.hypot(zug.vx, zug.vz) * zug.dt + 1e-6;
+                zug.schub = zurueck ? 0 : s;
+            };
+            // die Höhe unter dem Gesetz am STAND selbst (Lage und Gier, an denen der Kern die Ebene stellt — die Kräfte
+            // danach rücken die Lage um v·dt vor)
+            const standRoh = VCl.fahrStand;
+            VCl.fahrStand = function (zf, G, boden, dt) {
+                const sx = zf.x;
+                const sz = zf.z;
+                const syaw = zf.yaw;
+                const aus = standRoh.call(this, zf, G, boden, dt);
+                if (zf === gL._fahr && dt > 0 && !zf.luft && Number.isFinite(zf.y)) {
+                    const eb = VCl.fahrEbene(G, boden, sx, sz, syaw);
+                    if (eb) {
+                        const u = eb.y - zf.y;
+                        m.unterMax = Math.max(m.unterMax, u);
+                        if (u > 0.05) m.unterN++;
+                    }
+                }
+                return aus;
+            };
+            const PF = r._stepFixedSim;
+            r._stepFixedSim = function (simTime, dt) {
+                zug.schub = 0;
+                PF.call(this, simTime, dt);
+                const fz = gL._fahr;
+                if (!fz || !Number.isFinite(fz.y)) return;
+                m.schubMax = Math.max(m.schubMax, zug.schub);
+                if (zug.schub > 1e-3) m.kontakte++;
+                m.xMax = Math.max(m.xMax, gL.position.x);
+                m.yMin = Math.min(m.yMin, fz.y);
+            };
+            st.playerVel.setValue(Math.sin(L.gier) * L.v0, st.playerVel.y(), Math.cos(L.gier) * L.v0);
+            if (gL._fahr) gL._fahr.vlong = L.v0;
+            const x0 = gL.position.x;
+            const z0 = gL.position.z;
+            tasten(true, false);
+            for (let i = 0; i < n; i++) frame(i);
+            tasten(false);
+            r._stepCharacter = PC;
+            r._stepFixedSim = PF;
+            VCl.fahrStand = standRoh;
+            m.weg = Math.hypot(gL.position.x - x0, gL.position.z - z0);
+            weg(gL);
+            return m;
+        };
+        // L1 DER HANGFUSS: 9,3 m/s, Gier 92,3°, über den Hangfuß an (−852/−861,2) — die flache Box des Glutbrunnens
+        // (−848,9/−861,8) lag unter dem Band der Hülle, bis der Wagen am Hangfuß absank; dann schob sie ihn in EINEM Schritt
+        // 0,97 m quer auf 0,25 m höheren Grund, der Wand-Zweig des Kerns fror die Höhe ein: 1,16 m unter den Rädern, für immer.
+        S.hangfuss = await lebenFahrt(
+            {
+                ort: [-852, -861.2],
+                start: [-854.5, -861.1],
+                gier: (92.3 * Math.PI) / 180,
+                v0: 9.3,
+                ziel: () =>
+                    st.architectures.find(
+                        (e) =>
+                            e &&
+                            e.position &&
+                            /glutbrunnen/.test(e.blueprintName || e.name || e.type || "") &&
+                            Math.hypot(e.position.x + 848.9, e.position.z + 861.8) < 1
+                    ),
+            },
+            150
+        );
+        // L2 DIE SPALTKANTE: 11,4 m/s in +x auf den Rand des 23-m-Spalts (−904/−975) — der Wagen stand in EINEM Schritt (11,44 →
+        // 0,19 m/s), Gas danach 0,00 m, der Bug über der Kante. Soll: er fährt über die Kante und FÄLLT.
+        S.spalt = await lebenFahrt({ ort: [-904, -975], start: [-912, -975], gier: Math.PI / 2, v0: 11.4 }, 150);
+        if (S.spalt) {
+            S.spalt.rand = hh(-904, -975);
+            S.spalt.grund = Math.min(hh(-898, -975), hh(-897, -975));
         }
     } catch (e) {
         res.err = (e && e.stack) || String(e);
@@ -1610,9 +1789,37 @@ async function probeLeben(expected) {
             huelleHaus: { tief: 0.0, abstand: 0.4, nah: 0.02 },
             huelleTeil: { tief: 0.0, abstand: 0.2, nah: 0.03 },
             pflicht: { satz: "bruch", ebene: "bruch" },
+            hangfuss: { ziel: true, kontakte: 4, unterMax: 0.12, unterN: 2, schubMax: 0.17, weg: 21 },
+            spalt: { rand: 32.4, grund: 15, xMax: -896, yMin: 18 },
         };
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
         for (const [name, bruch, soll] of [
+            [
+                "Hangfuß: 1,19 m unter den Rädern, 66 Schritte (Leben-Schau 07.10.: 1,16 m)",
+                { hangfuss: { ziel: true, kontakte: 1, unterMax: 1.19, unterN: 66, schubMax: 0.1, weg: 21 } },
+                "hangfuss-unter",
+            ],
+            [
+                "Hangfuß: der Glutbrunnen versetzt den Wagen 1,33 m in EINEM Schritt (Leben-Schau: 0,97 m)",
+                { hangfuss: { ziel: true, kontakte: 1, unterMax: 0.0, unterN: 0, schubMax: 1.33, weg: 21 } },
+                "hangfuss-schub",
+            ],
+            [
+                "Hangfuß: W bewegt ihn 0,00 m",
+                { hangfuss: { ziel: true, kontakte: 1, unterMax: 0.0, unterN: 0, schubMax: 0.1, weg: 0 } },
+                "hangfuss-steht",
+            ],
+            [
+                "Hangfuß ohne Glutbrunnen (vakuös)",
+                { hangfuss: { ziel: false, kontakte: 0, unterMax: 0, unterN: 0, schubMax: 0, weg: 21 } },
+                "hangfuss vakuös",
+            ],
+            [
+                "Spaltkante: der Wagen steht bei x −904,09 (11,7 → 0,17 m/s, Leben-Schau: 11,44 → 0,19)",
+                { spalt: { rand: 32.4, grund: 15, xMax: -904.09, yMin: 32.42 } },
+                "spalt-wand",
+            ],
+            ["Spalt ohne Spalt (vakuös)", { spalt: { rand: 32.4, grund: 31, xMax: -896, yMin: 18 } }, "spalt vakuös"],
             ["kein Fahr-Schritt im Kern", { kern: false }, "kern"],
             ["Welt weicht 0,4 m vom Labor ab", { labor: { schritte: 180, maxM: 0.4, bei: 50 } }, "labor≠welt"],
             ["7,95 m Höhen-Sprung in einem Schritt (F-D6)", { klippe: { sprung: 7.95, luft: 40 } }, "klippe-sprung"],
@@ -2049,6 +2256,23 @@ async function probeLeben(expected) {
             : "keine Probe (gedrehte Teil-Box)"
     );
     for (const [name, ok, detail] of huelleWand(quelle)) check(name, ok, detail);
+    console.log("=== L — DIE ORTE DER LEBEN-SCHAU (Auftrag 0710-2), echter Sim-Schritt ===");
+    const L1 = S.hangfuss;
+    check(
+        "L1 Hangfuß (−852/−861,2, 9,3 m/s, Gier 92,3°, die Box des Glutbrunnens): nach JEDER Kontakt-Antwort steht der Wagen auf dem Gesetz (≤ 0,2 m unter der Ebene seiner Räder, ≤ 3 Schritte), der Schub je Schritt ≤ 0,2 m über die eigene Fahrt, er fährt weiter",
+        !hat("kern") && !hat("hangfuss"),
+        L1
+            ? `unter dem Gesetz höchstens ${L1.unterMax.toFixed(3)} m (${L1.unterN} Schritte > 0,05 m) · größter Schub ${L1.schubMax.toFixed(3)} m · ${L1.kontakte} Kontakt-Schritte · ${L1.weg.toFixed(1)} m gefahren`
+            : "keine Probe"
+    );
+    const L2 = S.spalt;
+    check(
+        "L2 Spaltkante (−904/−975, 11,4 m/s in +x): der Wagen fährt über die Kante und FÄLLT (keine unsichtbare Wand)",
+        !hat("kern") && !hat("spalt"),
+        L2
+            ? `Rand ${L2.rand.toFixed(1)} m, Grund ${L2.grund.toFixed(1)} m · bis x ${L2.xMax.toFixed(2)} · tiefste Höhe ${L2.yMin.toFixed(2)} m · größter Schub ${L2.schubMax.toFixed(3)} m · ${L2.weg.toFixed(1)} m gefahren`
+            : "keine Probe"
+    );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

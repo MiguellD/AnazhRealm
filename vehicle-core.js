@@ -2609,6 +2609,7 @@
             slipF: 0,
             slipR: 0,
             y: NaN,
+            yBoden: NaN, // die Ebene der Raeder im letzten Schritt (fahrStand: eine Wand ist ein SPRUNG des Bodens)
             vy: 0,
             luft: false,
             steig: 0,
@@ -2700,6 +2701,13 @@
             // Stufen bis 1,075 m in einem Takt.
             const stufe = S.stufeRad * G.radR + Math.abs(z.vy) * dt; // radR ist Pflicht des Fahr-Satzes (fahrGesetz)
             const warLuft = z.luft === true;
+            // DIE WAND IST EIN SPRUNG DES BODENS, nie die Lage des Wagens (Hangfuss-Falle, Leben-Schau 07.10. an
+            // -852/-861,2: die Box eines Glutbrunnens schob den GT in EINEM Schritt 0,97 m quer auf 0,25 m hoeheren Grund;
+            // der Wand-Zweig verglich den Boden mit der HOEHE des Wagens, fror sie ein, und der Wagen sank am Hangfuss 1,16 m
+            // unter seine Raeder — fuer immer, die Gelaende-Wand des Wirts rechnete ihre Ebene aus dieser Hoehe). Hoch ist
+            // der Boden gegen den Boden des letzten Schritts: eine Wand haelt den Wagen EINEN Schritt (der Wirt schiebt ihn
+            // heraus); liegt er danach noch unter seinem Gesetz, steigt er darauf, je Schritt hoechstens eine Stufe.
+            const yB0 = Number.isFinite(z.yBoden) ? z.yBoden : eb.y;
             if (yBall >= eb.y) {
                 // DER BODEN FAELLT UNTER DIE FALLKURVE (Kuppe mit v²/R > g, Klippe, Spalt): der Wagen fliegt; die Reifen
                 // greifen nur, solange der Spalt unter luftEps bleibt (eine Bodenwelle hebt ihn nicht aus dem Griff).
@@ -2716,9 +2724,16 @@
             } else if (warLuft) {
                 z.vy -= g * dt; // im Flug vor einer Wand: weiter auf der Fallkurve
                 z.y = yBall;
+            } else if (eb.y - yB0 > stufe) {
+                z.vy = 0; // an der Wand (der Boden sprang): der Wagen steigt nicht hinein
             } else {
-                z.vy = 0; // an der Wand: der Wagen steigt nicht hinein
+                // UNTER DEM GESETZ ohne Sprung des Bodens (ein Schub, ein Teleport, die Wand des letzten Schritts): der Wagen
+                // steigt auf die Ebene seiner Raeder, je Schritt hoechstens eine Stufe (kein Satz).
+                z.y = Math.min(eb.y, z.y + stufe);
+                z.vy = vBoden(eb);
+                z.luft = false;
             }
+            z.yBoden = eb.y;
             // Im Flug behaelt der Aufbau seine Lage; am Boden liegt er in der Ebene der Raeder.
             if (!z.luft) {
                 z.steig = eb.steig;

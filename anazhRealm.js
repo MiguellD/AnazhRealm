@@ -89735,8 +89735,11 @@ class AnazhRealm {
         const steilY = Math.cos(AnazhRealm._fahrSchrittGesetz().S.ebeneMax); // die Ebenen-Klammer des Kerns
         const nrmW = this._fahrHuelleN || (this._fahrHuelleN = {});
         // (1) GELÄNDE: die führenden Umriss-Punkte gegen das Feld. Eine WAND ist Feld über Ebene + Stufe, dessen Fläche
-        // steiler steht als die Ebenen-Klammer (ein Hang, den die Räder nehmen, hebt den Wagen — er hält ihn nicht), oder
-        // Feld auf Brust-Höhe.
+        // steiler steht als die Ebenen-Klammer (ein Hang, den die Räder nehmen, hebt den Wagen — er hält ihn nicht) UND dem
+        // Wagen zugewandt ist, oder Feld auf Brust-Höhe. Zeigt die Fläche in die Fahrt, ist sie die Rückseite einer Kuppe
+        // (Leben-Schau 07.10., Spaltkante −904/−975: der Rand fällt zum 23-m-Spalt, seine Fläche zeigt mit n·Fahrt 0,97 nach
+        // vorn — die Gleit-Schleife fand keine Bewegung in die Ebene und stoppte den Wagen aus 11,44 m/s in EINEM Schritt,
+        // Gas danach 0,00 m); die Vertikale des Kerns trägt ihn über die Kante, er fällt.
         const wandAm = (ox, oz, wx, wz) => {
             for (const p of k.umriss) {
                 const nx = p.nl * fX + p.nq * qX;
@@ -89749,7 +89752,8 @@ class AnazhRealm {
                 const yS = e + k.stufe + 0.02;
                 if (this._fieldSolid(px, yS, pz, ctx)) {
                     this._fieldGradient(px, yS, pz, nrmW);
-                    if (!(nrmW.mag > 1e-6) || nrmW.y < steilY) return { x: px, z: pz, y: yS };
+                    if (!(nrmW.mag > 1e-6) || (nrmW.y < steilY && nrmW.x * wx + nrmW.z * wz < 0))
+                        return { x: px, z: pz, y: yS };
                 }
                 if (this._fieldSolid(px, e + brust, pz, ctx)) return { x: px, z: pz, y: e + brust };
             }
@@ -89775,6 +89779,24 @@ class AnazhRealm {
         for (let pass = 0; pass < 2; pass++) {
             this._stepCharacterStructures(pos, 0, 0, 0, k);
             this._stepCharacterIslands(pos, 0, 0, 0, k);
+        }
+        // DER SCHUB JE SCHRITT IST BEGRENZT (Hangfuß-Falle, Leben-Schau 07.10.: die flache Box eines Glutbrunnens lag unter
+        // dem Band der Hülle, bis der Wagen am Hangfuß absank — dann löste der Löser die ganze Überlappung auf einmal und
+        // versetzte ihn in EINEM Schritt 0,97 m quer): eine Box nimmt zurück, was der Wagen in DIESEM Schritt in sie hinein
+        // fuhr, und entdringt darüber hinaus höchstens eine Rad-Stufe je Schritt (die Stufe der Vertikale, `k.stufe`) — eine
+        // tiefe Überlappung löst sich über Schritte, nie als Satz (die Entdringungs-Grenze der Physik-Engines).
+        {
+            const bx = pos.x - nx;
+            const bz = pos.z - nz;
+            const bd = Math.hypot(bx, bz);
+            if (bd > 1e-9) {
+                const hinein = Math.max(0, -((nx - x0) * bx + (nz - z0) * bz) / bd);
+                const kappe = hinein + k.stufe;
+                if (bd > kappe) {
+                    pos.x = nx + (bx * kappe) / bd;
+                    pos.z = nz + (bz * kappe) / bd;
+                }
+            }
         }
         // (3) KREATUREN — das Rechteck gegen den LEIB eines Wesens (D2, Welle L): `_kreaturLeib`, die EINE Größe je Tier, mit
         // der das Tier selbst gegen jede Hülle löst (`_kreaturHuellenKontakt`) — drei Achsen längs seiner Gier (−halb · 0 ·
