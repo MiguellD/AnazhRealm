@@ -18,6 +18,9 @@
 //       die der Stamm heute baut (Studio-Leaf als Schlüssel, Schatten-Zwilling `#S`, ov-Hash, Karte, Streu, Bauplan)
 //   H5  jeder Name, den ein Haushalt-Muster wörtlich nennt, vergibt der Stamm noch (ein umbenannter Erzeuger fiele sonst
 //       still aus jeder Klasse — sichtbar erst auf der echten GPU als LINSE rot `haushalt`)
+//   H6  DIE MESSORTE (S1 W1f, `messorte`): jeder Ort trägt Spieler, Blick, Dorf-Zug, Ort-Takt und seine eigene Ratsche
+//       (H2 je Ort); jede Methode, die ein Ort-Takt nennt, trägt der Stamm (ein umbenannter Ring-Bauer liefe still aus
+//       jedem Werkbank-Takt, der Ort stünde leer)
 //
 // Die Absenz der gefallenen Band-Täter (W2 Voxel-Bricks, V18.528) prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
@@ -29,7 +32,9 @@
 // rot · die Ratsche zieht nur nach unten · ein Zensus über dem Band ist BAND-rot bei sauberer Linse, ein Zensus im
 // Band GRÜN · das Maximum über die Proben · die Täter-Klasse an Szenen-Knoten (Tier, Region, Spieler, Namens-Schwanz) ·
 // eine freie Klasse (Weltzustand, mit Gate der Kosten je Einheit) trägt keine Ratsche · die Hülle einer Serie · ein
-// Geometrie-Puffer ohne Bild (`buf:verwaist` · `buf:ruhend`) ist ein Leck, ein gezeichneter nicht.
+// Geometrie-Puffer ohne Bild (`buf:verwaist` · `buf:ruhend`) ist ein Leck, ein gezeichneter nicht · ein Messort ohne
+// Richtung, mit doppelter id, fremder oder geteilter Ratsche wird rot · dieselbe Klasse ist über der Ratsche ihres Orts rot,
+// über der eines anderen nicht · die Tor-Hülle je Tor (Soll-Zeile des Genesis-Rings) · ein toter Ort-Takt wird rot.
 //
 //   node scripts/diag-profiband.cjs [--selftest]          (npm run gate:profiband)
 "use strict";
@@ -156,6 +161,22 @@ function namenLeben(haushalt, src) {
                 const lebt = ['"', "'", "`"].some((q) => code.includes(q + a + q) || code.includes(q + a + ":"));
                 if (!lebt) errs.push(`Klasse ${k.id}: das Muster ${r.muster} nennt "${a}" — kein Erzeuger im Stamm`);
             }
+        }
+    return { errs, n };
+}
+
+// H6 — DER ORT-TAKT LEBT (S1 W1f): jede Methode, die ein Messort im Ort-Takt nennt (am Genesis-Ring `_genesisPortalRing`,
+// `_portalApproachPrefetch`), trägt der Stamm als Methode — ein umbenannter Bauer liefe in der Werkbank als TypeError still
+// aus jedem Takt (der try der Takt-Schleife schluckt ihn), der Ring stünde nie, die Messung mäße einen leeren Ort.
+function ortTaktLebt(haushalt, src) {
+    const code = PK.stripComments(src);
+    const errs = [];
+    let n = 0;
+    for (const o of haushalt.messorte || [])
+        for (const m of o.ortTakt || []) {
+            n++;
+            const kopf = "\n    " + m + "(";
+            if (!code.includes(kopf)) errs.push(`Messort ${o.id}: der Ort-Takt nennt ${m} — keine Methode im Stamm`);
         }
     return { errs, n };
 }
@@ -589,6 +610,73 @@ function selbsttest() {
             n19.ratsche.gesamt.vramMB === 30
     );
 
+    // S20 — DIE MESSORTE (S1 W1f): ein Ort ohne Blick-Richtung, mit doppelter id, mit fremder Ratschen-Datei, ohne Dorf-
+    // Zug-Wahl, mit einer Ratsche, die schon ein anderer Ort trägt, und eine Soll-Zeile ohne Quelle werden rot; der echte
+    // Haushalt nicht. Ohne Wahl gilt die Mess-Wiese, ein unbekannter Ort bricht laut.
+    const h20 = (f) => {
+        const h = JSON.parse(JSON.stringify(haushalt));
+        f(h.messorte);
+        return BAND.messortePruefen(h);
+    };
+    let unbekannt = false;
+    try {
+        BAND.ortOf(haushalt, "mond");
+    } catch (_e) {
+        unbekannt = true;
+    }
+    t(
+        "Messorte: Blick auf dem Spieler, doppelte id, fremde Ratsche, dorfZug fehlt, geteilte Ratsche, Soll ohne Quelle " +
+            "→ rot; der echte Haushalt nicht; ohne Wahl die Mess-Wiese, ein unbekannter Ort bricht",
+        h20((o) => (o[1].blick = o[1].spieler.slice())).some((x) => /keine Richtung/.test(x)) &&
+            h20((o) => (o[1].id = o[0].id)).some((x) => /doppelter id/.test(x)) &&
+            h20((o) => (o[1].ratsche = "../haushalt.json")).some((x) => /keine Datei ratsche/.test(x)) &&
+            h20((o) => delete o[1].dorfZug).some((x) => /dorfZug/.test(x)) &&
+            h20((o) => (o[1].ratsche = o[0].ratsche)).some((x) => /schon ein anderer Ort/.test(x)) &&
+            h20((o) => delete o[1].soll[0].quelle).some((x) => /Soll-Zeile/.test(x)) &&
+            !BAND.messortePruefen(haushalt).length &&
+            BAND.ortOf(haushalt).id === "wiese" &&
+            unbekannt
+    );
+    // S21 — die Ratsche gehört dem Ort: dieselbe Klasse über der Genesis-Ratsche ist dort rot, gegen die (ungemessene)
+    // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (Wiese +z = 0, Genesis +x = π/2).
+    const gen = BAND.ladeSpec("genesis");
+    const r21 = JSON.parse(JSON.stringify(rt));
+    r21.klassen.bau.haupt.befehle = 20;
+    const bauGenesis = [{ klasse: "f:kathedrale:L0", stufe: 0, art: "gate", je: { haupt: 30 }, jeTris: { haupt: 9000 } }];
+    const u21 = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: r21, ort: gen.ort });
+    const u21b = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: rt, ort: BAND.ortOf(haushalt) });
+    t(
+        "bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese 0, genesis π/2",
+        hatRot(u21, "ratsche") &&
+            u21.ort === "genesis" &&
+            !hatRot(u21b, "ratsche") &&
+            u21b.ort === "wiese" &&
+            BAND.ortGier(BAND.ortOf(haushalt, "wiese")) === 0 &&
+            Math.abs(BAND.ortGier(gen.ort) - Math.PI / 2) < 1e-12 &&
+            !BAND.ratschePruefen(gen.ratsche, haushalt).length
+    );
+    // S22 — die Tor-Hülle des Orts (Soll-Zeile): 2 Tore × 26 Stoff-Züge, 368 000 Dreiecke im Hauptbild → 184 000 je Tor
+    // (3,07× das Band 60 000); eine Klasse anderer Art oder Stufe zählt nicht.
+    const s22 = BAND.ortSoll(gen.ort, {
+        klassen: [
+            { klasse: "f:drachentor:L0", stufe: 0, art: "gate", je: { haupt: 26 }, jeTris: { haupt: 368000 }, inst: 52 },
+            { klasse: "f:drachentor:L1", stufe: 1, art: "gate", je: { haupt: 26 }, jeTris: { haupt: 9e5 }, inst: 26 },
+            { klasse: "f:gt:L0", stufe: 0, art: "vehicle", je: { haupt: 12 }, jeTris: { haupt: 3e4 }, inst: 12 },
+        ],
+    });
+    t(
+        "Tor-Hülle: f:drachentor:L0 368 000 im Hauptbild bei 2 Toren → 184 000 je Tor (3,07×), L1 und Fahrzeug nicht",
+        s22.length === 1 && s22[0].huelle === 184000 && s22[0].exemplare === 2 && s22[0].faktor === 3.07
+    );
+    // S23 — H6: ein Ort-Takt mit einem Namen, den der Stamm nicht trägt, wird rot; der echte nicht.
+    const h23 = JSON.parse(JSON.stringify(haushalt));
+    h23.messorte[1].ortTakt = ["_genesisPortalRing", "_genesisRingAlt"];
+    const o23 = ortTaktLebt(h23, stamm);
+    t(
+        "H6: _genesisRingAlt im Ort-Takt → rot, der echte Ort-Takt lebt",
+        o23.errs.length === 1 && /_genesisRingAlt/.test(o23.errs[0]) && !ortTaktLebt(haushalt, stamm).errs.length
+    );
+
     const rot = tests.filter((x) => !x.ok);
     for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
     if (rot.length) {
@@ -604,7 +692,9 @@ function main() {
     const errs = [];
     const h = BAND.haushaltPruefen(haushalt);
     for (const f of h.fehler) errs.push("H1 " + f);
-    for (const f of BAND.ratschePruefen(ratsche, haushalt)) errs.push("H2 " + f);
+    // H2 je Ort: jede Ratsche trägt das Schema (die Mess-Wiese und jeder weitere Ort).
+    const orte = (haushalt.messorte || []).map((o) => ({ o, r: BAND.ladeSpec(o.id).ratsche }));
+    for (const { o, r } of orte) for (const f of BAND.ratschePruefen(r, haushalt)) errs.push(`H2 [${o.id}] ${f}`);
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     const nw = namensWand(stamm);
     for (const f of nw.errs) errs.push("H3 " + f);
@@ -612,27 +702,40 @@ function main() {
     for (const f of tw.errs) errs.push("H4 " + f);
     const nl = namenLeben(haushalt, stamm);
     for (const f of nl.errs) errs.push("H5 " + f);
+    const ot = ortTaktLebt(haushalt, stamm);
+    for (const f of ot.errs) errs.push("H6 " + f);
     if (errs.length) {
         console.log("⛔ DIE BAND-WAND:");
         for (const e of errs) console.log("   ❌ " + e);
         process.exit(1);
     }
-    const paesse = haushalt.messort.paesse;
-    let gemessen = 0,
-        felder = 0;
-    for (const id of Object.keys(ratsche.klassen))
-        for (const p of paesse)
-            for (const g of ["befehle", "dreiecke"]) {
-                felder++;
-                if (ratsche.klassen[id][p][g] != null) gemessen++;
-            }
+    const paesse = haushalt.paesse;
+    const gemessenAn = (r) => {
+        let g = 0,
+            f = 0;
+        for (const id of Object.keys(r.klassen))
+            for (const p of paesse)
+                for (const x of ["befehle", "dreiecke"]) {
+                    f++;
+                    if (r.klassen[id][p][x] != null) g++;
+                }
+        return { g, f };
+    };
+    const { g: gemessen, f: felder } = gemessenAn(ratsche);
+    const ortZeile = orte
+        .map(({ o, r }) => {
+            const x = gemessenAn(r);
+            return `${o.id} (${o.ratsche}, gemessen ${x.g} von ${x.f})`;
+        })
+        .join(" · ");
     console.log(
         `✅ DIE BAND-WAND steht — H1 Haushalt ${h.summe.befehle}/${haushalt.band.befehle} Befehle · ` +
             `${h.summe.dreiecke}/${haushalt.band.dreiecke} Dreiecke in ${haushalt.klassen.length} Klassen (keine Sammelzeile) · ` +
             `H2 Ratsche ${haushalt.klassen.length} Klassen × ${paesse.length} Pässe (gemessen ${gemessen} von ${felder}` +
             `${ratsche.gemessen ? ", " + ratsche.gemessen.datum.slice(0, 10) : ""}, Toleranz ${ratsche.toleranzPct} % / ` +
             `+${ratsche.toleranzAbs.befehle} Befehle) · H3 ${nw.n} Textur-Erzeuger benannt · ` +
-            `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm.`
+            `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm · ` +
+            `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt-Methoden im Stamm.`
     );
 }
 

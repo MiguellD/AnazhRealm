@@ -8,6 +8,8 @@
 //   node scripts/werkbank.cjs start [--port 4490] [--holz voll|nah|kienspan]
 //                                                           Welt + Steuer-Server (bleibt offen)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
+//   node scripts/werkbank.cjs umstellen --ort <id>         an einen MESSORT (spec/profiband/haushalt.json `messorte`: wiese ·
+//                                                           genesis): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360]
 //                                                           Bühne + echter Frame (Ausgabe-Pfad)
 //   node scripts/werkbank.cjs methode <name> [--terrain]   Methode aus anazhRealm.js (Arbeitsbaum)
@@ -85,15 +87,17 @@
 //                                                           das Rausch-Gesetz auf der CPU; `--selbsttest` (ohne Welt) prüft
 //                                                           die Zählung. Exit 1: ein Fehler, kein Programm im Frame, der
 //                                                           Stoff nicht im Frame, ein Budget gebrochen, die Probe ROT
-//   node scripts/werkbank.cjs band [--datei f.json] [--proben n] [--cap sek]
+//   node scripts/werkbank.cjs band [--ort <id>] [--datei f.json] [--proben n] [--cap sek]
 //                                                           DIE BAND-LINSE (W0): einschwingen (volle Welt, bis der Bau
 //                                                           ruht), n Proben (Maximum je Klasse × Stufe × Pass) + VRAM
 //                                                           je Erzeuger + gpu-bank gegen den Haushalt und die Ratsche
 //                                                           (spec/profiband/, scripts/lib/band-urteil.cjs) → Tabelle
 //                                                           Ist/Soll/Täter, BAND (Befehle · Dreiecke · VRAM · GPU-ms)
-//                                                           und LINSE; Exit 1, solange eins ROT ist
-//   node scripts/werkbank.cjs ratsche <band-*.json …> [--nur vram]  DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4 Läufe der echten
-//                                                           GPU am Messort, eingeschwungen, Erst- und Zweit-Boot — die
+//                                                           und LINSE; Exit 1, solange eins ROT ist. `--ort` urteilt gegen
+//                                                           die Ratsche des Orts (ohne: die Mess-Wiese) und nennt seine
+//                                                           Soll-Zeilen (am Genesis-Ring die Tor-Hülle je Tor)
+//   node scripts/werkbank.cjs ratsche [--ort <id>] <band-*.json …> [--nur vram]  DIE RATSCHE AUS EINER SERIE (nur Node): ≥ 4
+//                                                           Läufe der echten GPU am Messort (jeder Lauf an DIESEM Ort), eingeschwungen, Erst- und Zweit-Boot — die
 //                                                           Hülle zieht nach (setzt, senkt, hebt nie), nur bei sauberer
 //                                                           LINSE
 //   node scripts/werkbank.cjs reload | status | stop
@@ -369,6 +373,7 @@ function lauf(k) {
             const g0 = r._gpuLeine ? r._gpuLeine.gerendert : 0;
             const z = (uhr.frameZ = {});
             try {
+                if (window.__ortSchritt) window.__ortSchritt();
                 r._gameLoopTick(t);
             } finally {
                 uhr.frameZ = null;
@@ -717,6 +722,7 @@ function bandEinschwingen(k) {
         while (performance.now() < dl) {
             try {
                 window.__buehne();
+                if (window.__ortSchritt) window.__ortSchritt();
                 r._gameLoopTick(performance.now());
             } catch (_e) {}
             takte++;
@@ -762,6 +768,7 @@ function bandProben(k) {
                 for (let t = 0; t < (k.zwischen || 20); t++) {
                     try {
                         window.__buehne();
+                        if (window.__ortSchritt) window.__ortSchritt();
                         r._gameLoopTick(performance.now());
                     } catch (_e) {}
                     await sleep(50);
@@ -879,11 +886,28 @@ async function starte() {
     await lade();
     await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null));
 
-    const umstellen = (x, z) =>
+    // DER ORT (spec/profiband/haushalt.json `messorte`): mit `--ort` steht der Spieler am Ort, blickt in seine Richtung
+    // (Gier aus dem Blickpunkt), der Dorf-Zug folgt dem Ort (`false` = `window.__anazhAutoSettlement = false`: was er
+    // sonst baut, hinge an der Bildrate; `true` = der Haken fällt, der Zug läuft wie im Spiel) und der Ort-Takt (Stamm-
+    // Methoden, die der ruhende Zug sonst ruft — am Genesis-Ring Ring und Vorschauen) läuft in JEDEM Takt der Werkbank
+    // (`__ortSchritt`: umstellen, Einschwingen, Proben, Lauf). Ohne `--ort` (x z) bleiben Zug und Blick, wie sie sind,
+    // der Ort-Takt ist leer.
+    const umstellen = (x, z, o) =>
         page.evaluate(
-            async (x, z) => {
+            async (x, z, o) => {
                 const r = window.anazhRealm;
                 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+                window.__ortTakt = (o && o.takt) || [];
+                window.__ortSchritt = () => {
+                    const pm = r.state.playerMesh.position;
+                    for (const m of window.__ortTakt) r[m](pm);
+                };
+                if (o && o.dorfZug === false) window.__anazhAutoSettlement = false;
+                else if (o && o.dorfZug === true) delete window.__anazhAutoSettlement;
+                if (o && Number.isFinite(o.gier)) {
+                    r.state.yaw = o.gier;
+                    r.state.pitch = 0;
+                }
                 r.state.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
                 let stabil = 0,
                     last = -1,
@@ -892,6 +916,7 @@ async function starte() {
                 while (performance.now() < dl) {
                     try {
                         window.__buehne();
+                        window.__ortSchritt();
                         r._gameLoopTick(performance.now());
                     } catch (_e) {}
                     takte++;
@@ -904,10 +929,17 @@ async function starte() {
                     if (takte >= 40 && stabil >= 15) break;
                     await sleep(50);
                 }
-                return { takte, chunks: last };
+                return {
+                    takte,
+                    chunks: last,
+                    gier: +r.state.yaw.toFixed(4),
+                    dorfZug: window.__anazhAutoSettlement !== false,
+                    ortTakt: window.__ortTakt,
+                };
             },
             x,
-            z
+            z,
+            o || null
         );
 
     const bild = (k) =>
@@ -1042,8 +1074,18 @@ async function starte() {
                         })
                     );
                 }
-                if (req.url === "/umstellen")
+                if (req.url === "/umstellen") {
+                    if (b.ort) {
+                        const ort = BAND.ladeSpec(b.ort).ort;
+                        const o = await umstellen(ort.spieler[0], ort.spieler[1], {
+                            gier: BAND.ortGier(ort),
+                            dorfZug: ort.dorfZug,
+                            takt: ort.ortTakt,
+                        });
+                        return send(Object.assign({ ort: ort.id, spieler: ort.spieler }, o, { ms: Date.now() - t0 }));
+                    }
                     return send(Object.assign(await umstellen(+b.x, +b.z), { ms: Date.now() - t0 }));
+                }
                 if (req.url === "/bild") {
                     const o = await bild(Object.assign({ w: 640, h: 360 }, b));
                     const datei = path.resolve(
@@ -1324,7 +1366,7 @@ async function starte() {
                               urteil: w3.ueberlauf === 0 && w3.warnung === 0 ? "GRUEN" : "ROT",
                           }
                         : null;
-                    const { haushalt, ratsche } = BAND.ladeSpec();
+                    const { haushalt, ratsche, ort } = BAND.ladeSpec(b.ort);
                     const zensus = BAND.zensusMax(proben);
                     const u = BAND.bandUrteil({
                         zensus,
@@ -1333,6 +1375,7 @@ async function starte() {
                         gpu: gpu && !gpu.fehler ? gpu : null,
                         haushalt,
                         ratsche,
+                        ort,
                     });
                     // Der Foundry-Kanal dieser Ladung über alle Antwort-Arten (asset · impostor · book …): Platte gegen
                     // Neubau — im Zweit-Boot der Serie die Neubau-Zahl, die der Spieler beim zweiten Start bezahlt.
@@ -1342,7 +1385,7 @@ async function starte() {
                         for (const f of Object.keys(fl)) fl[f] += k[f] || 0;
                     }
                     if (fl) for (const f of ["mb", "platteMb", "neuMb"]) fl[f] = +fl[f].toFixed(1);
-                    const am = haushalt.messort.spieler;
+                    const am = ort.spieler;
                     const amMessort = Math.hypot(roh.spieler[0] - am[0], roh.spieler[1] - am[1]) <= 8;
                     Object.assign(u, {
                         kamera: proben.length ? proben[proben.length - 1].kamera : null,
@@ -1638,7 +1681,7 @@ async function starte() {
     const a = argv.slice(1).filter((x, i, arr) => !x.startsWith("--") && !(i > 0 && arr[i - 1].startsWith("--")));
     let o;
     if (cmd === "status") o = await rufe("/status");
-    else if (cmd === "umstellen") o = await rufe("/umstellen", { x: a[0], z: a[1] });
+    else if (cmd === "umstellen") o = await rufe("/umstellen", { x: a[0], z: a[1], ort: opt("--ort") });
     else if (cmd === "bild")
         o = await rufe("/bild", {
             px: a[0],
@@ -1669,6 +1712,7 @@ async function starte() {
         );
     else if (cmd === "band") {
         o = await rufe("/band", {
+            ort: opt("--ort"),
             datei: opt("--datei"),
             proben: opt("--proben"),
             capMs: opt("--cap") ? Number(opt("--cap")) * 1000 : undefined,
@@ -1684,7 +1728,7 @@ async function starte() {
         // sie nach (setzt ungemessene Felder, senkt gemessene, hebt nie).
         const dateien = a.map((f) => path.resolve(f));
         const laeufe = dateien.map((f) => JSON.parse(fs.readFileSync(f, "utf8")));
-        const { haushalt, ratsche } = BAND.ladeSpec();
+        const { haushalt, ratsche, ort } = BAND.ladeSpec(opt("--ort"));
         const fehler = [];
         if (laeufe.length < 4) fehler.push(`${laeufe.length} Läufe — die Serie braucht mindestens vier`);
         const boots = new Set(laeufe.map((u) => u.boot && u.boot.art));
@@ -1693,7 +1737,9 @@ async function starte() {
             const n = path.basename(dateien[i]);
             if (!u.roh) fehler.push(`${n}: kein Rohes (eine Messung vor der Serien-Ratsche)`);
             if (u.echt !== true) fehler.push(`${n}: nicht die echte GPU (start --echt)`);
-            if (u.amMessort !== true) fehler.push(`${n}: nicht am Messort ${haushalt.messort.spieler.join(" ")}`);
+            // Ein Lauf ohne Ort-Feld stammt von vor den Messorten (S1): er stand an der Mess-Wiese.
+            if ((u.ort || "wiese") !== ort.id) fehler.push(`${n}: gemessen am Ort ${u.ort || "wiese"}, nicht ${ort.id}`);
+            if (u.amMessort !== true) fehler.push(`${n}: nicht am Messort ${ort.id} ${ort.spieler.join(" ")}`);
             if (!u.messung || u.messung.eingeschwungen !== true) fehler.push(`${n}: nicht eingeschwungen`);
         });
         if (fehler.length) {
@@ -1701,7 +1747,7 @@ async function starte() {
             process.exit(1);
         }
         const h = BAND.bandHuelle(laeufe.map((u) => u.roh));
-        const u = BAND.bandUrteil(Object.assign({ haushalt, ratsche }, h));
+        const u = BAND.bandUrteil(Object.assign({ haushalt, ratsche, ort }, h));
         Object.assign(u, { messung: null, boot: null });
         console.log(BAND.bandTabelle(u));
         // `--nur vram` zieht nur den Speicher nach: dann zählen nur die Speicher-Befunde der LINSE.
@@ -1715,19 +1761,18 @@ async function starte() {
             u,
             {
                 datum: new Date().toISOString(),
-                geraet: haushalt.messort.geraet,
+                ort: ort.id,
+                geraet: haushalt.geraet,
                 eingeschwungen: true,
                 laeufe: laeufe.length,
                 boots: laeufe.map((x) => x.boot.art + "/" + x.boot.ladungen),
             },
             opt("--nur")
         );
-        if (r.aenderungen.length)
-            fs.writeFileSync(
-                path.join(root, "spec", "profiband", "ratsche.json"),
-                JSON.stringify(r.ratsche, null, 4) + "\n"
-            );
-        console.log(`\nRatsche nachgezogen (${r.aenderungen.length}): ${r.aenderungen.join(" · ") || "nichts fiel"}`);
+        if (r.aenderungen.length) BAND.schreibeRatsche(ort, r.ratsche);
+        console.log(
+            `\nRatsche ${ort.ratsche} (Ort ${ort.id}) nachgezogen (${r.aenderungen.length}): ${r.aenderungen.join(" · ") || "nichts fiel"}`
+        );
         process.exit(0);
     } else if (cmd === "lauf")
         o = await rufe("/lauf", {

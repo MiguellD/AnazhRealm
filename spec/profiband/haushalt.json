@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "zweck": "DER HAUSHALT DES PROFI-BANDS (W0): das Soll je Klasse an der Mess-Wiese, Hauptbild + Kaskade k0 + k1. Richter: `node scripts/werkbank.cjs band` (echte GPU, Integration); Wand: `npm run gate:profiband` (Summe <= Band, Schema, verankerte Muster). Eine Klasse ordnet die Täter-Klassen des Stamms (`AnazhRealm#_taeterKlasse`: `<familie>:<preset>:L<stufe>`, `tier:<seele>`, sonst der Erzeuger-Name) über ihre Regeln; die erste passende Klasse in Listen-Reihenfolge gewinnt. Es gibt KEINE Sammelzeile: ein Täter, den keine Regel nimmt, ist ROT (`haushalt`) — jede Welle, die eine neue Klasse zeichnet, trägt hier ihre Regel ein.",
+    "zweck": "DER HAUSHALT DES PROFI-BANDS (W0): das Soll je Klasse an JEDEM Messort (`messorte`: die Mess-Wiese, der Genesis-Ring; je Ort Spieler, Blick, Dorf-Zug, Ort-Takt und seine eigene Ratsche), Hauptbild + Kaskade k0 + k1. Richter: `node scripts/werkbank.cjs umstellen --ort <id>` + `band --ort <id>` (echte GPU, Integration); Wand: `npm run gate:profiband` (Summe <= Band, Schema, verankerte Muster). Eine Klasse ordnet die Täter-Klassen des Stamms (`AnazhRealm#_taeterKlasse`: `<familie>:<preset>:L<stufe>`, `tier:<seele>`, sonst der Erzeuger-Name) über ihre Regeln; die erste passende Klasse in Listen-Reihenfolge gewinnt. Es gibt KEINE Sammelzeile: ein Täter, den keine Regel nimmt, ist ROT (`haushalt`) — jede Welle, die eine neue Klasse zeichnet, trägt hier ihre Regel ein.",
     "quelle": "Band: docs/analyse/perf-paritaet-baseline-v18432.md (das Schöpfer-HUD-Referenzspiel 09.07.: 60 fps · DRW 208 · TRI ~680k · VRAM 117,7 MB), docs/roadmap.md §0 (der FPS-Boden). Soll je Klasse: der Wellen-Plan zum Profi-Band (Synthese 04.10., W0).",
     "band": {
         "befehle": 208,
@@ -9,18 +9,57 @@
         "gpuMs": 16.7,
         "fps": 60
     },
-    "messort": {
-        "spieler": [
-            -900,
-            -850
-        ],
-        "geraet": "Radeon 890M (Integration, werkbank --echt, 1920x1080, DPR 1)",
-        "paesse": [
-            "haupt",
-            "k0",
-            "k1"
-        ]
-    },
+    "geraet": "Radeon 890M (Integration, werkbank --echt, 1920x1080, DPR 1)",
+    "paesse": [
+        "haupt",
+        "k0",
+        "k1"
+    ],
+    "messorte": [
+        {
+            "id": "wiese",
+            "titel": "Die Mess-Wiese (W0): Wald, Wiese, Streu und Fels fern vom Ursprung — der Ort der Band-Serie seit 04.10.",
+            "spieler": [
+                -900,
+                -850
+            ],
+            "blick": [
+                -900,
+                -840
+            ],
+            "dorfZug": true,
+            "ortTakt": [],
+            "ratsche": "ratsche.json"
+        },
+        {
+            "id": "genesis",
+            "titel": "Der Genesis-Ring (S1 W1f): die Ankunft jeder Welt — zehn Kern-Portale im Kreis R 11 m um den Ursprung, die vier Vorschauen (Haus, Wagen, Esse, Drachentor) und der Fels der Kuppe; der Spieler in der Ring-Mitte, der Blick zur Plattform (+x, unter vier Blicken der teuerste). Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`: sein Inhalt hinge an der Bildrate), das deterministische Genesis-Gut baut der Ort-Takt mit den Methoden des Stamms.",
+            "spieler": [
+                0,
+                0
+            ],
+            "blick": [
+                10,
+                0
+            ],
+            "dorfZug": false,
+            "ortTakt": [
+                "_genesisPortalRing",
+                "_portalApproachPrefetch"
+            ],
+            "ratsche": "ratsche-genesis.json",
+            "soll": [
+                {
+                    "name": "Tor-Hülle",
+                    "art": "gate",
+                    "stufe": 0,
+                    "pass": "haupt",
+                    "dreieckeJeTor": 60000,
+                    "quelle": "Synthese §4 W3 (Tor-L0 auf das Band 60 000, porta-core LOD-Budget)"
+                }
+            ]
+        }
+    ],
     "klassen": [
         {
             "id": "boden",
