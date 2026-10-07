@@ -11,7 +11,7 @@
 
 | # | Schritt | Kriterium | ✔/Wort |
 |---|---------|-----------|--------|
-| 1 | Frischer Boot, einmal umsehen | Ankunft auf der Genesis-Lichtung: keine Krone über der Plattform, der Ring der Kern-Portale steht um sie (gate:v1-pfad V-D1); Welt hell/lebendig; der Horizont steht bis 40 km (Fern-Ring + Panorama); KEINE Wasser-Spiegelung in ungeladenen Löchern; Konsole 0 Fehler/0 Destroyed-Warns | |
+| 1 | Frischer Boot, einmal umsehen | Ankunft auf der Genesis-Lichtung: keine Krone, keine Streu über der Plattform, der Ring der Kern-Portale steht um sie (gate:v1-pfad V-D1, gate:haus-welt W8 — die Lichtung ist ein Grundriss der EINEN Natur-Wand; ein Hain auf ihr sagt im Chat, dass sie frei bleibt); Welt hell/lebendig; der Horizont steht bis 40 km (Fern-Ring + Panorama); KEINE Wasser-Spiegelung in ungeladenen Löchern; Konsole 0 Fehler/0 Destroyed-Warns | |
 | 2 | Auf die Wiese schauen, nah und fern | nah die Nah-Wiese (Studio-Halme auf dem gerenderten Boden, V18.508), fern die Boden-Funktion (Meadow-Grund) — der Übergang ohne Kante; die Zahl (Tris/dc/weltMarch) liefert der Chat `zahlen` | |
 | 3 | Chat `dorf 7 18`, von fern nähern | ferne Bauten SICHTBAR (jenseits des Cull-Radius als Feld-Gestalt, darin das Studio-Mesh — der Wechsel ohne Loch); Häuser verschieden: Kirche (Kuppel), Gasthaus, Scheunen | |
 | 4 | An ein Haus heran (< 12 m), durch die Tür | das Studio-Mesh (L0) trägt die Interaktion: Fachwerk sichtbar, Tür öffnet physisch, Betreten lebt, Kollision == Optik | |

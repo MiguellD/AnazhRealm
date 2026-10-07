@@ -2112,6 +2112,7 @@ class AnazhRealm {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 const treeKind = kind === "kiefer" ? "baum_kiefer" : "baum_eiche";
                 let spawned = 0;
+                const weicht = {};
                 for (let i = 0; i < n; i++) {
                     if (ctx.budget.spawnsLeft <= 0) {
                         ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
@@ -2137,11 +2138,15 @@ class AnazhRealm {
                     const entry = this._naturSetzen(
                         treeKind,
                         { x: pos.x + jx, y: pos.y, z: pos.z + jz },
-                        { seed: treeSeed }
+                        { seed: treeSeed },
+                        null,
+                        (wo) => (weicht[wo] = (weicht[wo] || 0) + 1)
                     );
                     if (entry) spawned++;
                 }
                 ctx.log.push({ event: "spawned_tree", count: spawned, pos, kind: treeKind });
+                if (weicht.haus || weicht.lichtung)
+                    ctx.log.push({ event: "natur_weicht", op: "spawn_tree", grundriss: weicht, gesetzt: spawned });
             },
             // Co-Schöpfer pflanzt Studio-Assets: ein Wort ("eiche", "birken", "fels", ein Haus-/Tor-Rezept)
             // wird über dieselben Tabellen wie die Werkstatt zum Bauplan (_studioBlueprintForWord) und landet
@@ -2983,6 +2988,8 @@ class AnazhRealm {
         const natur = this._istNatur({ type: name });
         const baseSeed = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
         let spawned = 0;
+        const weicht = {};
+        const absage = (wo) => (weicht[wo] = (weicht[wo] || 0) + 1);
         for (let i = 0; i < n; i++) {
             if (ctx.budget.spawnsLeft <= 0) {
                 ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
@@ -3005,8 +3012,11 @@ class AnazhRealm {
             if (istBaum) opts.scale = 0.8 + ctx.rng() * 0.45;
             if (stamp) opts.studioOv = stamp;
             const ort = { x, y, z };
-            if (natur ? this._naturSetzen(name, ort, opts) : this.spawnArchitecture(name, ort, opts)) spawned++;
+            if (natur ? this._naturSetzen(name, ort, opts, null, absage) : this.spawnArchitecture(name, ort, opts))
+                spawned++;
         }
+        if (weicht.haus || weicht.lichtung)
+            ctx.log.push({ event: "natur_weicht", op: "spawn_studio", grundriss: weicht, gesetzt: spawned });
         return spawned;
     }
 
@@ -4730,7 +4740,10 @@ class AnazhRealm {
             if (result.ok && reply.program[0] === "rule") {
                 appendChatOutput("(Grok stellt ein Gesetz auf — sieh es in den Fähigkeiten unter Gesetze.)");
             } else if (result.ok) {
-                appendChatOutput(`(Welt verändert: ${JSON.stringify(reply.program).slice(0, 140)})`);
+                const weicht = this._naturAbsageSatz(result.log);
+                if (!weicht || !weicht.nichts)
+                    appendChatOutput(`(Welt verändert: ${JSON.stringify(reply.program).slice(0, 140)})`);
+                if (weicht) appendChatOutput(`(${compName}-Vorschlag: ${weicht.satz})`);
                 // Wie ein Chat-Programm: in Pattern-Memory verknüpfen via
                 // recentKeywords (die enthalten den userText bereits).
                 const historyEntry = {
@@ -6701,7 +6714,9 @@ class AnazhRealm {
             try {
                 const result = this.dslRun(msg.program, { source: "remote-voice" });
                 if (cb && result && result.ok) {
-                    cb(`(Welt verändert: ${JSON.stringify(msg.program).slice(0, 140)})`);
+                    const weicht = this._naturAbsageSatz(result.log);
+                    if (!weicht || !weicht.nichts) cb(`(Welt verändert: ${JSON.stringify(msg.program).slice(0, 140)})`);
+                    if (weicht) cb(`(Geteilte Stimme: ${weicht.satz})`);
                 }
             } catch {
                 /* Sandbox-Fehler schweigend — der say-Text steht schon */
@@ -23825,8 +23840,11 @@ class AnazhRealm {
         // Ein Ort, den es nicht gibt, wird laut gesagt, mit seinem Grund (V-k5, `dslEvalPos`): „Kein Wasser im Umkreis von
         // 80 m — am Wasser wächst hier nichts."
         const ohneOrt = result.log.find((e) => e.event === "invalid_position");
+        // Die Natur-Wand sagt, wo nichts wuchs (Grundriss eines Hauses, die Genesis-Lichtung) — nie „gepflanzt" bei 0.
+        const weicht = this._naturAbsageSatz(result.log);
         if (result.ok) {
-            appendChatOutput(parsed.describe);
+            if (!weicht || !weicht.nichts) appendChatOutput(parsed.describe);
+            if (weicht) appendChatOutput(weicht.satz);
         } else if (ohneOrt) {
             const grund = String(ohneOrt.grund || "kein Ort");
             const satz = grund.charAt(0).toUpperCase() + grund.slice(1);
@@ -24683,7 +24701,7 @@ class AnazhRealm {
     // (0,0), der ERSTE Punkt, der (a) kein Kavernenboden ist (surf ≥ macro − 6; `getTerrainHeightAt` ist
     // die echte Voxel-Oberfläche), (b) trocken liegt — über JEDEM Wasser (`_isAboveWaterAt`, Marge 1,5 m: See,
     // Fluss, Tarn; bis 06.10. nur über dem Meeresspiegel), (c) flach ist (±6-m-Proben, Δ ≤ 3.5 m). Die Lichtung um
-    // die Plattform hält der Wald selbst frei (`_genesisLichtung`, Befund V-D1). Nichts gefunden bis 240 m → (0,0).
+    // die Plattform hält die EINE Natur-Wand frei (ihr Bauplan trägt sie, Befund V-D1). Nichts gefunden bis 240 m → (0,0).
     _findOpenSpawnSpot() {
         const candidates = [[0, 0]];
         for (let r = 12; r <= 240; r += 12) {
@@ -24729,7 +24747,13 @@ class AnazhRealm {
         // so hoch dass der Abstieg unangenehm wird).
         const platCenterY = h0 + 5;
         // spawnArchitecture zieht intern 0.5 ab (at_player-Kalibrierung).
-        this.spawnArchitecture("start_plattform", { x: spot.x, y: platCenterY + 0.5, z: spot.z }, { silent: true });
+        const plat = this.spawnArchitecture(
+            "start_plattform",
+            { x: spot.x, y: platCenterY + 0.5, z: spot.z },
+            { silent: true }
+        );
+        // die Lichtung (ihr Bauplan, `_grundrissVon`): was die Natur schon um die Scheibe geworfen hat, fällt wie im Haus
+        if (plat) this._grundrissRaeumen(plat);
         // Spieler oben auf die Plattform setzen. Plattform-Part-Top liegt
         // bei platCenterY + 1 (Cylinder y-Center 0.5, Höhe 1). +1.2 Puffer.
         const spawnY = platCenterY + 2.2;
@@ -42851,11 +42875,13 @@ class AnazhRealm {
             }
         }
         // DER GRUNDRISS RÄUMT AUCH IM SAVE (Welle L): ein älterer Stand trägt Natur, die vor dem Dorf in seine Häuser
-        // wuchs (der Wurf kam vor dem Haus) — jedes Haus räumt nach dem Laden seinen Grundriss, wie beim Gründen.
+        // wuchs (der Wurf kam vor dem Haus), und Bäume über der Genesis-Scheibe — jeder Bau mit Grundriss (Haus, Lichtung)
+        // räumt nach dem Laden, wie beim Gründen.
         let geraeumt = 0;
         for (const e of this.state.architectures.slice())
             if (this._grundrissVon(e)) geraeumt += this._grundrissRaeumen(e);
-        if (geraeumt) this.log(`Grundriss: ${geraeumt} Natur-Stücke aus Häusern geräumt (älterer Stand).`, "INFO");
+        if (geraeumt)
+            this.log(`Grundriss: ${geraeumt} Natur-Stücke aus Häusern und Lichtung geräumt (älterer Stand).`, "INFO");
         this.log(`Architekturen geladen: ${state.architectures.length}`);
     }
 
@@ -53456,8 +53482,9 @@ class AnazhRealm {
                 // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
                 // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
                 // Foundry-gegated; headless (Foundry aus) bleibt Grammatik. Die Zelle setzt durch die EINE Natur-Wand
-                // (`_naturSetzen`): im Grundriss eines Hauses wird sie nie Streu.
-                const rec = this._naturSetzen(null, tf, null, () =>
+                // (`_naturSetzen`, mit Art und Größe — ihre Krone): im Grundriss eines Hauses und über der Genesis-Lichtung
+                // wird sie nie Streu.
+                const rec = this._naturSetzen(species, tf, tf, () =>
                     this._scatterMaterializeCell(
                         region,
                         layer,
@@ -53597,6 +53624,7 @@ class AnazhRealm {
                     feld,
                     x: tf.x,
                     z: tf.z,
+                    scale: tf.scale, // die Größe der Zelle: ihre Krone (`_naturKrone`, die Natur-Wand räumt die Lichtung)
                 };
             }
             let ff = this._foundryFlattenFor({ seed: fseed }, preset, lod);
@@ -53719,6 +53747,7 @@ class AnazhRealm {
             slots,
             x: tf.x,
             z: tf.z,
+            scale: tf.scale, // die Größe der Zelle: ihre Krone (`_naturKrone`, die Natur-Wand räumt die Lichtung)
         };
     }
 
@@ -58194,10 +58223,13 @@ class AnazhRealm {
             },
             // V9.64 (Welle A.1) — Damm-Bauplan, Vision-Pfeiler Wasser↔Wille
             damm: { name: "damm", label: "Damm", builtIn: true, parts: dammParts },
+            // Der Genesis-Ort ist eine LICHTUNG (Befund V-D1): ihre Stein-Scheibe ist ein Grundriss der EINEN Natur-Wand
+            // (`_grundrissVon` → `_naturSetzen`), über dem keine Krone steht — der erste Blick jedes neuen Spielers.
             start_plattform: {
                 name: "start_plattform",
                 label: "Genesis-Plattform",
                 builtIn: true,
+                lichtung: true,
                 parts: startPlattformParts,
             },
             kristall_geode: {
@@ -67392,7 +67424,7 @@ class AnazhRealm {
                 /* nicht-serialisierbar → keine Tür-Zeile (fail-closed) */
             }
         }
-        if (entry.fundament || entry.tuer) this._grundrissGitter = null; // ein Haus mit Grundriss: das Gitter baut neu
+        if (this._grundrissVon(entry)) this._grundrissGitter = null; // ein Bau mit Grundriss (Haus, Lichtung): das Gitter baut neu
         // KAMIN-RAUCH (.105): Spitze haus-lokal → userData.rauchQuelle (Invariant: Rauch ⟺ chimney).
         if (
             opts.chimney &&
@@ -74001,40 +74033,6 @@ class AnazhRealm {
         return true;
     }
 
-    // DIE GENESIS-LICHTUNG (Befund V-D1, 06.10.): um die Start-Plattform wächst kein Baum, dessen Krone in der Welt über
-    // die Scheibe reicht. Bis 06.10. stand eine Tanne 2,0 m vom Plattform-Mittelpunkt: der erste Blick jedes neuen Spielers
-    // eine Nadelwand, der Stamm-Blocker 1,2 m unter der Oberkante (der Spieler lief durch den Stamm). Eine kronenfreie
-    // Stelle sucht die Spawn-Wahl nicht: in der Default-Welt hat keine flache, trockene Stelle bis 240 m eine (gemessen
-    // 06.10.: 161 Kandidaten, 0 frei) — der Genesis-Ort ist die Lichtung, der Wald weicht ihm. Rückgabe {x, z, r} oder null.
-    _genesisLichtung() {
-        const p = this._genesisPlattform();
-        if (!p) return null;
-        const pb = this.state.blueprints && this.state.blueprints.start_plattform;
-        const p0 = pb && Array.isArray(pb.parts) && pb.parts[0] && pb.parts[0].size;
-        const r = p0 && Number.isFinite(p0.x) ? p0.x / 2 : 0; // die Stein-Scheibe (cylinder: size.x = Durchmesser)
-        return { x: p.position.x, z: p.position.z, r };
-    }
-    // Die Krone eines Wald-Wurfs in der Welt: Kronen-Schüchternheit T (Vorlagen-Maß) × die Welt-Skala seiner Art
-    // (`_foundryWorldScaleMatrix`, dieselbe, mit der der Baum gezeichnet wird). Gemessen 06.10. (echte GPU, die weiteste
-    // Ast-Spitze der gezeichneten Instanz): die Studio-Tanne trägt bei T 3,0 m Äste bis 11,7 m, die Fichte bei T 2,6 m
-    // bis 13,2 m, die Birke bei T 3,6 m bis 12,4 m.
-    _forestKroneWelt(d) {
-        // Die Welt-Skala je Art einmal gelesen (der Pflanz-Gang fragt je stehendem Wurf); die LIVE-Quelle der Skala
-        // (`PORTAL_RENDER_CONFIG.placement`) leert den Merker mit ihrer Identität.
-        const rc = AnazhRealm._studioRenderConfig;
-        const quelle = rc && rc.placement ? rc.placement : null;
-        if (!this._kroneWeltK || this._kroneWeltQuelle !== quelle) {
-            this._kroneWeltK = new Map();
-            this._kroneWeltQuelle = quelle;
-        }
-        let k = this._kroneWeltK.get(d.sp);
-        if (k === undefined) {
-            k = this._foundryWorldScaleMatrix(this._foundryPresetFor(d.sp)).elements[0] || 1;
-            this._kroneWeltK.set(d.sp, k);
-        }
-        return d.T * k;
-    }
-
     _forestPlantChunk(cx, cz) {
         if (!this.state.scene || !this.state.blueprints) return 0;
         const F = AnazhRealm.FOREST;
@@ -74063,7 +74061,6 @@ class AnazhRealm {
             return d;
         };
         let planted = 0;
-        const lichtung = this._genesisLichtung(); // der Genesis-Ort ist eine Lichtung (V-D1)
         for (let gz = c0z; gz <= c1z; gz++) {
             for (let gx = c0x; gx <= c1x; gx++) {
                 const own = cellDarts(gx, gz);
@@ -74071,11 +74068,7 @@ class AnazhRealm {
                     // Nur Darts, deren POSITION in DIESEN Chunk fällt (disjunkt → einmal).
                     if (d.x < ox || d.x >= ox + span || d.z < oz || d.z >= oz + span) continue;
                     if (!this._forestDartSteht(d, gx, gz, cellDarts)) continue;
-                    if (
-                        lichtung &&
-                        Math.hypot(d.x - lichtung.x, d.z - lichtung.z) < lichtung.r + this._forestKroneWelt(d)
-                    )
-                        continue;
+                    // die Genesis-Lichtung hält die EINE Natur-Wand frei (`_naturSetzen`, die Plattform ist ein Grundriss)
                     // Dichte = die Vorlage: das Studio dünnt den Wald NIE (volle Dichte, Last über LOD + Sicht-Kappung).
                     // Im Studio-Regime ist fd=1 → dieser Check feuert nie; sonst dünnt der Perf-Regler.
                     if (fd < 1 && d.keep >= fd) continue;
@@ -74590,40 +74583,112 @@ class AnazhRealm {
     // DIE EINE WAND „Natur weicht dem Bau" (Welle L, Q5/Q15, Entscheid D3): JEDE Quelle der Natur setzt durch sie — Wald,
     // Unterholz, Totholz und Fels-Streu (`_enqueueVegetationSpawn`), der Hof-Baum, die Streu-Zelle jeder Schicht
     // (`_scatterPass`), ihre Promotion zum echten Baum (`_promoteScatterCell`), die Nah-Streu (`_nahStreuKachel`) und der
-    // Hain der KI (`spawn_tree`, `spawn_studio`). Liegt der Ort im Grundriss eines Hauses (`_imGrundriss`), fällt der Wurf
-    // (null); sonst baut `setzen` (eine Quelle mit eigenem Bau: Instanz-Slots, Kachel-Pflanze) bzw. der Architektur-Eintrag
-    // `name`. Was vor dem Haus stand, räumt `_grundrissRaeumen`. Vorher wuchsen 7 Bäume in 5 von 8 Häusern des Start-Dorfs,
-    // eine Birke im Türblatt, Wildwald in den Gassen der Stadt (N-D5, S-W4), und die Streu lief an der Wand vorbei.
-    _naturSetzen(name, position, opts, setzen) {
-        if (position && this._imGrundriss(position.x, position.z)) return null;
+    // Hain der KI (`spawn_tree`, `spawn_studio`). Liegt der Ort in einem Grundriss (`_imGrundriss`: ein Haus, die Lichtung
+    // der Genesis-Plattform — dort mit der Krone des Wurfs, `_naturKrone`), fällt der Wurf (null); sonst baut `setzen` (eine
+    // Quelle mit eigenem Bau: Instanz-Slots, Kachel-Pflanze) bzw. der Architektur-Eintrag `name`. Was vor dem Bau stand,
+    // räumt `_grundrissRaeumen`. Vorher wuchsen 7 Bäume in 5 von 8 Häusern des Start-Dorfs, eine Birke im Türblatt, Wildwald
+    // in den Gassen der Stadt (N-D5, S-W4), und die Streu lief an der Wand vorbei; an der Genesis-Scheibe wich nur der Wald
+    // (ein eigener Filter im Pflanz-Gang): 28 promotete Bäume, 23 Streu-Zellen, 4 Kachel-Pflanzen und der Hain der KI standen
+    // über ihr (gate:haus-welt W8). `absage(wo)` hört, wo ein Wurf fiel ("haus" | "lichtung") — der Hain der KI und des
+    // Chats sagt es laut (`_naturAbsageSatz`), nie still „gewachsen".
+    _naturSetzen(name, position, opts, setzen, absage) {
+        const wo = position ? this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts)) : false;
+        if (wo) {
+            if (absage) absage(wo);
+            return null;
+        }
         return setzen ? setzen() : this.spawnArchitecture(name, position, opts);
     }
 
-    // Liegt (x, z) im Grundriss eines Hauses? Die Häuser einer Siedlung tragen ihren Footprint (`fundament` {ex, ez} um
-    // seine Mitte {ox, oz} aus dem Export-obb, sonst die Tür-Zeile W/D) und ihre Gier; der Grundriss ist diese gedrehte Box
-    // plus `rand` (der Stamm, die Traufe). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je Zelle) entsteht faul
-    // aus den Einträgen und fällt bei jedem Haus-Spawn/-Abriss.
-    _imGrundriss(x, z, rand = 0.8) {
+    // Der Satz der Natur-Wand nach einem Programm: lagen Würfe eines Hains (`spawn_tree`, `spawn_studio`) in einem Grundriss,
+    // sagt der Chat, warum dort nichts wuchs — auf der Genesis-Plattform stand sonst „Baum gepflanzt" bei 0 Bäumen
+    // (Integration Welle L, D3). { satz, nichts } (nichts: kein Wurf wuchs) oder null.
+    _naturAbsageSatz(log) {
+        let lichtung = 0;
+        let haus = 0;
+        let gesetzt = 0;
+        for (const e of log || []) {
+            if (!e || e.event !== "natur_weicht") continue;
+            lichtung += e.grundriss.lichtung || 0;
+            haus += e.grundriss.haus || 0;
+            gesetzt += e.gesetzt || 0;
+        }
+        if (!lichtung && !haus) return null;
+        const gruende = [];
+        if (lichtung)
+            gruende.push("die Lichtung der Genesis-Plattform bleibt frei, keine Krone steht über ihrer Scheibe");
+        if (haus) gruende.push("im Grundriss eines Hauses wächst nichts");
+        const g = gruende.join("; ");
+        return gesetzt
+            ? { satz: `${lichtung + haus} davon wuchsen nicht: ${g}.`, nichts: false }
+            : { satz: `Hier wächst nichts: ${g} — geh ein paar Schritte weiter.`, nichts: true };
+    }
+
+    // Die Krone eines Natur-Wurfs in der Welt (m) — wie weit er über seinen Ort reicht: der EINE Kronen-Radius seiner Art
+    // (`_kronenRadiusFuer`: `FOREST.crown[art] × Größe`, die Kronen-Schüchternheit T des Wald-Gesetzes) × die Welt-Skala der
+    // Art (`_foundryWorldScaleMatrix`, dieselbe, mit der der Baum gezeichnet wird); 0 für alles ohne Krone. Die Art:
+    // `_lodSpecies` (Wald, Eintrag), die gewachsene Art des Bauplans (Promotion: `grown_…` → `_grownSpecies`), sonst der
+    // Name; die Größe: `scale` (Wurf-Optionen, Streu-Zelle oder Eintrag). Gemessen 06.10. (echte GPU, die weiteste
+    // Ast-Spitze der gezeichneten Instanz): die Studio-Tanne trägt bei T 3,0 m Äste bis 11,7 m, die Fichte bei T 2,6 m bis
+    // 13,2 m, die Birke bei T 3,6 m bis 12,4 m. Je Art einmal gerechnet (die Streu fragt je Zelle); die LIVE-Quelle der
+    // Welt-Skala (`PORTAL_RENDER_CONFIG.placement`) und das Buch (seine Wald-Arten) leeren den Merker mit ihrer Identität.
+    _naturKrone(name, o) {
+        const bp = name && this.state.blueprints ? this.state.blueprints[name] : null;
+        const art = (o && o._lodSpecies) || (bp && bp._isGrown && bp._grownSpecies) || name;
+        if (!art) return 0;
+        const rc = AnazhRealm._studioRenderConfig;
+        const quelle = rc && rc.placement ? rc.placement : null;
+        const buch = this._foundry ? this._foundry.recipes : null;
+        if (!this._kroneWeltK || this._kroneWeltQuelle !== quelle || this._kroneWeltBuch !== buch) {
+            this._kroneWeltK = new Map();
+            this._kroneWeltQuelle = quelle;
+            this._kroneWeltBuch = buch;
+        }
+        let k = this._kroneWeltK.get(art);
+        if (k === undefined) {
+            // jede Baum-Art trägt eine Krone: die des Wald-Gesetzes (phyto-core planForestCell: `FOREST.crown[art] || 4`) —
+            // `_kronenRadiusFuer` kennt nur die Wald-Arten (die Kronen-Karte malt den Wald), die Streu-Bäume (Buche, Palme,
+            // Zypresse, Karst) tragen die 4 m des Gesetzes
+            const t = /^baum_/.test(art) ? this._kronenRadiusFuer(art, 1) || 4.0 : 0;
+            k = t ? t * (this._foundryWorldScaleMatrix(this._foundryPresetFor(art)).elements[0] || 1) : 0;
+            this._kroneWeltK.set(art, k);
+        }
+        return k > 0 ? k * (o && Number.isFinite(o.scale) && o.scale > 0 ? o.scale : 1) : 0;
+    }
+
+    // Liegt (x, z) in einem Grundriss (`_grundrissVon`)? Zwei Arten tragen einen: die Häuser einer Siedlung (die gedrehte
+    // Box um ihre Mitte plus `rand` — der Stamm, die Traufe; eine Krone darf über das Dach) und die Lichtung eines Baus,
+    // dessen Bauplan sie trägt (die Genesis-Plattform: ihre Scheibe plus die Reichweite des Wurfs, `max(rand, krone)` —
+    // über ihr steht keine Krone). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je Zelle) hält die Häuser, die
+    // Lichtungen stehen daneben (eine je Welt); es entsteht faul aus den Einträgen und fällt bei jedem Spawn/Abriss eines Baus
+    // mit Grundriss. Rückgabe: "lichtung" | "haus" | false.
+    _imGrundriss(x, z, rand = 0.8, krone = 0) {
         const G = 32;
         const schluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
         let gitter = this._grundrissGitter;
         if (!gitter) {
-            gitter = this._grundrissGitter = new Map();
+            gitter = this._grundrissGitter = { zellen: new Map(), lichtungen: [] };
             for (const e of this.state.architectures || []) {
                 const fp = this._grundrissVon(e);
                 if (!fp) continue;
+                if (fp.lichtung) {
+                    gitter.lichtungen.push({ x: e.position.x, z: e.position.z, r: fp.lichtung });
+                    continue;
+                }
                 const r = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
                 for (let gx = Math.floor((e.position.x - r) / G); gx <= Math.floor((e.position.x + r) / G); gx++)
                     for (let gz = Math.floor((e.position.z - r) / G); gz <= Math.floor((e.position.z + r) / G); gz++) {
                         const k = schluessel(gx, gz);
-                        let l = gitter.get(k);
-                        if (!l) gitter.set(k, (l = []));
+                        let l = gitter.zellen.get(k);
+                        if (!l) gitter.zellen.set(k, (l = []));
                         l.push(e);
                     }
             }
         }
-        if (gitter.size === 0) return false;
-        const l = gitter.get(schluessel(Math.floor(x / G), Math.floor(z / G)));
+        const reich = Math.max(rand, krone);
+        for (const L of gitter.lichtungen) if ((x - L.x) ** 2 + (z - L.z) ** 2 < (L.r + reich) ** 2) return "lichtung";
+        if (gitter.zellen.size === 0) return false;
+        const l = gitter.zellen.get(schluessel(Math.floor(x / G), Math.floor(z / G)));
         if (!l) return false;
         for (const e of l) {
             const fp = this._grundrissVon(e);
@@ -74637,7 +74702,7 @@ class AnazhRealm {
                 Math.abs(dx * c - dz * sn - fp.ox) <= fp.ex + rand &&
                 Math.abs(dx * sn + dz * c - fp.oz) <= fp.ez + rand
             )
-                return true;
+                return "haus";
         }
         return false;
     }
@@ -74656,7 +74721,10 @@ class AnazhRealm {
         return !!(pr && Object.prototype.hasOwnProperty.call(tab, pr));
     }
 
-    // Der Footprint eines Hauses (halbe Maße und Mitte, haus-lokal) — null für alles andere.
+    // Der Grundriss eines Baus (halbe Maße und Mitte, bau-lokal): der Footprint eines Hauses — oder die LICHTUNG eines Baus,
+    // dessen Bauplan sie trägt (`lichtung`: die Genesis-Plattform, Befund V-D1): die erste Scheibe des Bauplans (cylinder,
+    // size.x = Durchmesser) × die Größe des Eintrags, `lichtung` = ihr Radius (die Wand fragt dort die Krone). Null für
+    // alles andere.
     _grundrissVon(e) {
         if (!e || !e.position) return null;
         const f = e.fundament;
@@ -74664,14 +74732,23 @@ class AnazhRealm {
             return { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 };
         const t = e.tuer;
         if (t && Number.isFinite(t.W) && Number.isFinite(t.D)) return { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0 };
+        const bp = this.state.blueprints ? this.state.blueprints[e.type] : null;
+        if (bp && bp.lichtung) {
+            const p0 = Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;
+            const g = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+            const r = p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0;
+            if (r > 0) return { ex: r, ez: r, ox: 0, oz: 0, lichtung: r };
+        }
         return null;
     }
 
-    // Ein Haus steht: was die Natur schon in seinen Grundriss geworfen hat, fällt — der Wald und die Streu standen oft vor
-    // dem Dorf (das Auto-Dorf entsteht ab 260 m, die Streu-Region reicht 384 m). Natur-Einträge (`_istNatur`), die lebenden
-    // Streu-Zellen jeder Schicht (`_streuZelleRaeumen`) und die Nah-Streu-Kacheln über dem Grundriss (sie bauen durch die
-    // Wand neu). Der billige Orts-Filter zuerst, die Art-Frage nur für Betroffene (Lehre 25). Leser: `_spawnSettlementSlot`
-    // und das Laden. Gibt die Zahl der geräumten Natur-Stücke.
+    // Ein Bau mit Grundriss steht: was die Natur schon in ihn geworfen hat, fällt — der Wald und die Streu standen oft vor
+    // dem Dorf (das Auto-Dorf entsteht ab 260 m, die Streu-Region reicht 384 m), und ein älterer Stand trägt Bäume über der
+    // Genesis-Scheibe. Natur-Einträge (`_istNatur`), die lebenden Streu-Zellen jeder Schicht (`_streuZelleRaeumen`) und die
+    // Nah-Streu-Kacheln über dem Grundriss (sie bauen durch die Wand neu); an einer Lichtung mit der Krone (`_naturKrone`,
+    // die Suche reicht eine Streu-Region weiter). Der billige Orts-Filter zuerst, die Art-Frage nur für Betroffene
+    // (Lehre 25). Leser: `_spawnSettlementSlot`, `_ensureGenesisPlatform` und das Laden. Gibt die Zahl der geräumten
+    // Natur-Stücke.
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);
         if (!fp) return 0;
@@ -74679,26 +74756,30 @@ class AnazhRealm {
         const hx = haus.position.x;
         const hz = haus.position.z;
         const r = fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3;
+        const RM = AnazhRealm.SCATTER.regionM;
+        const weit = fp.lichtung ? RM : 0; // eine Krone reicht nie über eine Streu-Region
         const weg = [];
         for (const e of this.state.architectures || []) {
             if (e === haus || !e.position) continue;
-            if (Math.abs(e.position.x - hx) > r || Math.abs(e.position.z - hz) > r) continue;
-            if (!this._istNatur(e) || !this._imGrundriss(e.position.x, e.position.z)) continue;
+            if (Math.abs(e.position.x - hx) > r + weit || Math.abs(e.position.z - hz) > r + weit) continue;
+            if (!this._istNatur(e)) continue;
+            const k = fp.lichtung ? this._naturKrone(e.type, e) : 0;
+            if (!this._imGrundriss(e.position.x, e.position.z, 0.8, k)) continue;
             weg.push(e);
         }
         for (const e of weg) this.removeArchitecture(e);
         let n = weg.length;
         const map = this.state.scatterRegions;
         if (map && map.size) {
-            const RM = AnazhRealm.SCATTER.regionM;
-            for (let rx = Math.floor((hx - r) / RM); rx <= Math.floor((hx + r) / RM); rx++)
-                for (let rz = Math.floor((hz - r) / RM); rz <= Math.floor((hz + r) / RM); rz++) {
+            for (let rx = Math.floor((hx - r - weit) / RM); rx <= Math.floor((hx + r + weit) / RM); rx++)
+                for (let rz = Math.floor((hz - r - weit) / RM); rz <= Math.floor((hz + r + weit) / RM); rz++) {
                     const region = map.get(`${rx},${rz}`);
                     if (!region || !Array.isArray(region.cells)) continue;
                     for (const cell of region.cells) {
                         if (!cell.slots && !cell.feld) continue;
-                        if (Math.abs(cell.x - hx) > r || Math.abs(cell.z - hz) > r) continue;
-                        if (!this._imGrundriss(cell.x, cell.z)) continue;
+                        if (Math.abs(cell.x - hx) > r + weit || Math.abs(cell.z - hz) > r + weit) continue;
+                        const k = fp.lichtung ? this._naturKrone(cell.species, cell) : 0;
+                        if (!this._imGrundriss(cell.x, cell.z, 0.8, k)) continue;
                         this._streuZelleRaeumen(cell);
                         n++;
                     }
@@ -76922,7 +77003,7 @@ class AnazhRealm {
         if (!entry) return false;
         const idx = this.state.architectures.indexOf(entry);
         if (idx < 0) return false;
-        if (this._grundrissVon(entry)) this._grundrissGitter = null; // der Grundriss eines Hauses fällt mit ihm
+        if (this._grundrissVon(entry)) this._grundrissGitter = null; // der Grundriss eines Baus fällt mit ihm
         this._archZiegelTod(entry); // die Ziegel-Fernstufe stirbt mit dem Eintrag
         // Blocker-Index beim Remove pflegen (früher Out ohne solide Parts via entry.blockerAABBs); vorher
         // merken, ob es ein Blocker war — danach dirty markieren (das Wasser bekommt den Pfad zurück).

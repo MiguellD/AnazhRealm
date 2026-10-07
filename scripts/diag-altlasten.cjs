@@ -666,6 +666,11 @@ const FORBIDDEN = [
     { token: "o.userData && o.userData.gattung", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
     { token: "creature.userData.gattung", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
     { token: "u.gattung || u.recipe", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
+    // DIE LICHTUNG IST EIN GRUNDRISS (Integration Welle L, Stufe auge-v1, Entscheid D3): der Pflanz-Gang des Walds hielt die
+    // Genesis-Scheibe mit einem eigenen Filter frei — die Streu, die Promotion, die Nah-Streu und der Hain der KI standen über
+    // ihr. Die Plattform trägt ihre Lichtung im Bauplan (`_grundrissVon`), die EINE Natur-Wand fragt die Krone (`_naturKrone`).
+    { token: "_genesisLichtung", fiel: "Integration L D3 — die Lichtung ist ein Grundriss der Natur-Wand (_grundrissVon)" },
+    { token: "_forestKroneWelt", fiel: "Integration L D3 — die Krone eines Wurfs ist _naturKrone (jede Quelle)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

@@ -38181,15 +38181,18 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
                     : [];
             out.treeIds = treeIds.length;
             out.alleBaeumeLoesen = treeIds.every((id) => !!r._studioBlueprintForWord(id));
-            // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen).
+            // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen) — 50 m vor der
+            // Genesis-Mitte: ihre Lichtung ist ein Grundriss der Natur-Wand, dort wächst keine Eiche, deren Krone über die
+            // Scheibe reicht (Integration Welle L, Entscheid D3; die Eiche reicht mit Hain-Streuung bis ~36 m).
             const p = r.state.playerMesh.position;
+            const gM = r._genesisMitte();
             let spot = null;
             for (let i = 0; i < 64 && !spot; i++) {
                 const a = i * 0.618 * Math.PI * 2,
-                    d = 20 + (i % 8) * 6;
+                    d = 20 + (i % 8) * 8;
                 const x = p.x + Math.cos(a) * d,
                     z = p.z + Math.sin(a) * d;
-                if (r._isAboveWaterAt(x, z, 2)) spot = { x, z };
+                if (Math.hypot(x - gM.x, z - gM.z) >= 50 && r._isAboveWaterAt(x, z, 2)) spot = { x, z };
             }
             out.spot = !!spot;
             const vorher = archs.length;
