@@ -131,6 +131,14 @@ function wortVerdict(m) {
     if (!(m.arten > 0)) out.push("keine platzierbare Studio-Art im Buch (Vorbedingung)");
     if (m.artenOhneWort && m.artenOhneWort.length)
         out.push(`Studio-Arten ohne Wort: ${m.artenOhneWort.slice(0, 6).join(", ")}`);
+    for (const [satz, v] of Object.entries(m.vorschlag || {})) {
+        if (/„hier" kennt kein Studio/.test(v.zeile || ""))
+            out.push(`„${satz}": der Ort gilt als Wort („${v.zeile.slice(0, 60)}")`);
+        if (v.sug && !(v.zeile || "").includes(v.sug))
+            out.push(
+                `„${satz}": der Vorschlag „${v.sug}" fällt der Studio-Absage zum Opfer („${(v.zeile || "").slice(0, 60)}")`
+            );
+    }
     if (!(m.hausGebaut > 0)) out.push(`„bau mir ein fachwerkhaus" stellt kein Haus in die Welt („${m.hausZeile}")`);
     if (!/kennt kein Studio/.test(m.absageZeile || "") || !/Fachwerkhaus/.test(m.absageZeile || ""))
         out.push(
@@ -140,7 +148,8 @@ function wortVerdict(m) {
 }
 
 // L-Werkstatt: je Lage × Weg { bauModus, steht, verbraucht: {mat: n}, zeile, gesperrt }; dazu Werke, Suche, Lichtung.
-const WEGE = ["werkstatt", "rezeptbuch", "hotbar"];
+// "hand": ein Werk in der Hand, der Rechtsklick (`tryMousePlace` → `_bauModusFuer`, Gegenprüfung 08.10.).
+const WEGE = ["werkstatt", "rezeptbuch", "hotbar", "hand"];
 const LAGEN = ["schöpfer", "frieden mit Material", "frieden ohne Material"];
 function wegVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
@@ -161,7 +170,7 @@ function wegVerdict(m) {
                 const laut = /fehlt/.test(e.zeile || "") || (e.gesperrt && /fehlt/i.test(e.gesperrt));
                 if (!laut) out.push(`${wo}: stumme Absage („${(e.zeile || "").slice(0, 50)}")`);
                 if (e.bauModus && weg !== "hotbar")
-                    out.push(`${wo}: FERTIGEN führt in einen Bau-Modus, der nur ablehnen kann`);
+                    out.push(`${wo}: der Weg führt in einen Bau-Modus, der nur ablehnen kann`);
                 continue;
             }
             if (!(e.steht === 1))
@@ -177,6 +186,11 @@ function wegVerdict(m) {
         }
     for (const [werk, n] of Object.entries(m.werke || {}))
         if (!(n === 1)) out.push(`Werkstatt ${werk}: ${n} stehen (Soll 1)`);
+    // Ein Gerät aus der Hotbar (frieden, ohne Material): der Griff schmiedet und sagt, was fehlt (Gegenprüfung 08.10.).
+    const ge = m.geraet || {};
+    if (!ge.name) out.push("kein ungeschmiedetes Gerät mit Kosten (Vorbedingung)");
+    else if (!/fehlt/.test(ge.zeile || ""))
+        out.push(`das Gerät aus der Hotbar verweigert stumm („${(ge.zeile || "").slice(0, 50)}")`);
     const ph = m.phantom || {};
     if (!(ph.meshes > 0)) out.push("kein Phantom im Bau-Modus (Vorbedingung)");
     else if (ph.verworfen > 0)
@@ -298,13 +312,16 @@ function wand(src) {
             const setzen = fnBody(nc, /\n {4}confirmBuild\(\) \{/) || "";
             const craft = fnBody(nc, /\n {4}craftFromRecipe\(name\) \{/) || "";
             const fert = fnBody(nc, /\n {4}fertigeBlueprint\(name\) \{/) || "";
+            const modus = fnBody(nc, /\n {4}_bauModusFuer\(name\) \{/) || "";
             const logs = (setzen.match(/this\.log\(/g) || []).length;
             const sagt = (setzen.match(/this\._spielerSagt\(/g) || []).length;
             return [
-                "W4 EIN Weg jedes Bauwerks: das Rezeptbuch ruft `fertigeBlueprint` (kein Inventar), FERTIGEN fragt `_bauVorabTor`, das Setzen setzt durch die Natur-Wand und sagt jede Absage dem Spieler",
+                "W4 EIN Weg jedes Bauwerks: das Rezeptbuch ruft `fertigeBlueprint` (kein Inventar), die Engstelle `_bauModusFuer` fragt `_bauVorabTor` (Werkstatt-Knopf, Rezeptbuch, das Werk in der Hand), das Setzen setzt durch die Natur-Wand und sagt jede Absage dem Spieler",
                 /kind === "place"\) return this\.fertigeBlueprint\(name\)/.test(craft) &&
                     !/addToInventory/.test(craft) &&
-                    /this\._bauVorabTor\(name\)/.test(fert) &&
+                    /this\._bauModusFuer\(name\)/.test(fert) &&
+                    !/this\._bauVorabTor\(/.test(fert) &&
+                    /this\._bauVorabTor\(name\)/.test(modus) &&
                     /this\._naturSetzen\(/.test(setzen) &&
                     logs <= 1 &&
                     sagt >= 4,
@@ -581,8 +598,18 @@ async function probe(argW) {
         const n1 = zeilen().length;
         r.processChatCommand("bau mir eine scheune");
         await tick(1, 30);
-        if (st.llm) st.llm.enabled = llmAlt;
         m.absageZeile = zeilen().slice(n1).join(" | ");
+        // Ein Verb mit einem Wort, das kein Ding ist (Gegenprüfung 08.10.): der Studio-Satz stiehlt dem Vorschlag die Zeile nicht.
+        m.vorschlag = {};
+        for (const satz of ["bau hier", "mach licht"]) {
+            const n2 = zeilen().length;
+            const vorher2 = new Set(st.architectures);
+            r.processChatCommand(satz);
+            await tick(1, 30);
+            for (const a of st.architectures.filter((a) => a && !vorher2.has(a))) r.removeArchitecture(a);
+            m.vorschlag[satz] = { zeile: zeilen().slice(n2).join(" | "), sug: r.chatSuggest(satz) || null };
+        }
+        if (st.llm) st.llm.enabled = llmAlt;
         m.gestartet = true;
     } catch (e) {
         out.wort = Object.assign(out.wort || {}, { err: (e && e.stack) || String(e) });
@@ -675,6 +702,10 @@ async function probe(argW) {
                 if (!knopf) throw new Error("keine Rezept-Zeile");
                 if (knopf.disabled) e.gesperrt = knopf.title || "gesperrt";
                 knopf.click();
+            } else if (weg === "hand") {
+                if (!st.player.equipped) st.player.equipped = { held: null, armor: null };
+                st.player.equipped.held = name;
+                r.tryMousePlace();
             } else {
                 r.setHotbarSlot(4, name);
                 if (!(st.buildMode.active && st.buildMode.blueprintName === name)) r.selectHotbarSlot(4);
@@ -743,7 +774,35 @@ async function probe(argW) {
         try {
             for (const lage of ["schöpfer", "frieden mit Material", "frieden ohne Material"]) {
                 m.wege[lage] = {};
-                for (const weg of ["werkstatt", "rezeptbuch", "hotbar"]) m.wege[lage][weg] = await lauf(lage, weg);
+                for (const weg of ["werkstatt", "rezeptbuch", "hotbar", "hand"])
+                    m.wege[lage][weg] = await lauf(lage, weg);
+            }
+            // Ein Gerät aus der Hotbar in frieden ohne Material: der Griff schmiedet — und sagt, was fehlt.
+            {
+                aufraeumen();
+                r.setGameMode("frieden");
+                leeren();
+                const NICHT = ["armor", "soul", "consumable"];
+                const geraet = ["klinge_spitzhacke", ...Object.keys(st.blueprints)].find((n) => {
+                    const b = st.blueprints[n];
+                    return (
+                        b &&
+                        !r._isPlaceableBlueprint(b) &&
+                        !NICHT.includes(b.role) &&
+                        !Number.isFinite(b.forgedPrecision) &&
+                        Object.keys(r.checkBuildCost(n).cost || {}).length > 0
+                    );
+                });
+                m.geraet = { name: geraet || null };
+                if (geraet) {
+                    const n0 = zeilen().length;
+                    r.setHotbarSlot(5, geraet);
+                    r.selectHotbarSlot(5);
+                    m.geraet.zeile = zeilen().slice(n0).join(" | ");
+                    m.geraet.inHand = !!(st.player.equipped && st.player.equipped.held === geraet);
+                    r.setHotbarSlot(5, null);
+                }
+                aufraeumen();
             }
             // Haus und GT aus der Werkstatt (schöpfer): FERTIGEN → Phantom → Rechtsklick.
             for (const [werk, name] of [
@@ -1252,15 +1311,22 @@ async function probe(argW) {
             gestartet: true,
             kosten: KOST,
             wege: {
-                schöpfer: { werkstatt: steht({}), rezeptbuch: steht({}), hotbar: steht({}) },
-                "frieden mit Material": { werkstatt: steht(KOST), rezeptbuch: steht(KOST), hotbar: steht(KOST) },
+                schöpfer: { werkstatt: steht({}), rezeptbuch: steht({}), hotbar: steht({}), hand: steht({}) },
+                "frieden mit Material": {
+                    werkstatt: steht(KOST),
+                    rezeptbuch: steht(KOST),
+                    hotbar: steht(KOST),
+                    hand: steht(KOST),
+                },
                 "frieden ohne Material": {
                     werkstatt: { bauModus: false, steht: 0, zeile: "Eiche: fehlt 44× holz · 50× laub — sammeln" },
                     rezeptbuch: { bauModus: false, steht: 0, zeile: "", gesperrt: "Es fehlt: 44× holz, 50× laub" },
                     hotbar: { bauModus: true, steht: 0, zeile: "Eiche: fehlt 44× holz · 50× laub — sammeln" },
+                    hand: { bauModus: false, steht: 0, zeile: "Eiche: fehlt 44× holz · 50× laub — sammeln" },
                 },
             },
             werke: { Haus: 1, GT: 1 },
+            geraet: { name: "klinge_spitzhacke", zeile: "Spitzhacke: fehlt 12× eisen — sammeln", inHand: false },
             phantom: { studio: true, meshes: 2, verworfen: 0, farbe: "grün" },
             sucheHaus: 32,
             lichtung: {
@@ -1299,7 +1365,17 @@ async function probe(argW) {
             [
                 "FERTIGEN führt in den Bau-Modus ohne Material",
                 mitG("frieden ohne Material", "werkstatt", { bauModus: true }),
-                "frieden ohne Material · werkstatt: FERTIGEN führt in einen Bau-Modus",
+                "frieden ohne Material · werkstatt: der Weg führt in einen Bau-Modus",
+            ],
+            [
+                "das Werk in der Hand führt ohne Material in den Bau-Modus (Gegenprüfung 08.10.)",
+                mitG("frieden ohne Material", "hand", { bauModus: true }),
+                "frieden ohne Material · hand: der Weg führt in einen Bau-Modus",
+            ],
+            [
+                "das Gerät aus der Hotbar verweigert nur im Log",
+                Object.assign({}, gesundG, { geraet: { name: "klinge_spitzhacke", zeile: "" } }),
+                "das Gerät aus der Hotbar verweigert stumm",
             ],
             [
                 "schöpfer zahlt",
@@ -1588,7 +1664,15 @@ async function probe(argW) {
     check(
         "L-Wortschatz jedes Wort des Befunds löst über die Studio-Arten auf, „bau mir ein fachwerkhaus“ stellt ein Haus, ein unbekanntes Wort hört den Katalog",
         vW.length === 0,
-        `${wm.gestartet ? `${bekannt}/${Object.keys(WORT_SOLL).length} Wörter bekannt (fachwerkhaus → ${wm.woerter.fachwerkhaus && wm.woerter.fachwerkhaus.ziel}, wagen → ${wm.woerter.wagen && wm.woerter.wagen.ziel}) · ${wm.arten - (wm.artenOhneWort || []).length}/${wm.arten} Studio-Arten mit Wort · Haus gebaut ${wm.hausGebaut} · Absage „${(wm.absageZeile || "").slice(0, 70)}…"` : "nicht gestartet"}${vW.length ? " — Täter: " + vW.join(", ") : ""}`
+        `${
+            wm.gestartet
+                ? `${bekannt}/${Object.keys(WORT_SOLL).length} Wörter bekannt (fachwerkhaus → ${wm.woerter.fachwerkhaus && wm.woerter.fachwerkhaus.ziel}, wagen → ${wm.woerter.wagen && wm.woerter.wagen.ziel}) · ${wm.arten - (wm.artenOhneWort || []).length}/${wm.arten} Studio-Arten mit Wort · Haus gebaut ${wm.hausGebaut} · Absage „${(wm.absageZeile || "").slice(0, 70)}…" · ${Object.entries(
+                      wm.vorschlag || {}
+                  )
+                      .map(([k, v]) => `„${k}" → „${(v.zeile || "").replace(/^> [^|]*\| /, "").slice(0, 60)}…"`)
+                      .join(" · ")}`
+                : "nicht gestartet"
+        }${vW.length ? " — Täter: " + vW.join(", ") : ""}`
     );
     console.log("=== L-WERKSTATT · FRIEDEN · L-RÜCKMELDUNG — JEDER WEG FÜHRT ZUM STEHENDEN WERK ===");
     const gm = out.weg || {};
@@ -1608,7 +1692,7 @@ async function probe(argW) {
     check(
         "L-Werkstatt jeder Weg (Werkstatt · Rezeptbuch · Hotbar) führt zum stehenden Werk, frieden zahlt einmal, jede Absage spricht, die Lichtung sagt warum",
         vG.length === 0,
-        `${gm.gestartet ? `${tragen}/6 Wege tragen · ${LAGEN.map((l) => `${l}: ${WEGE.map((w) => zelle(l, w)).join(", ")}`).join(" · ")} · Werkstatt ${JSON.stringify(gm.werke)} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Lichtung ${JSON.stringify({ wand: gm.lichtung && gm.lichtung.wand, steht: gm.lichtung && gm.lichtung.steht, toenung: gm.lichtung && gm.lichtung.toenung })}` : "nicht gestartet"}${vG.length ? " — Täter: " + vG.join(", ") : ""}`
+        `${gm.gestartet ? `${tragen}/${2 * WEGE.length} Wege tragen · ${LAGEN.map((l) => `${l}: ${WEGE.map((w) => zelle(l, w)).join(", ")}`).join(" · ")} · Werkstatt ${JSON.stringify(gm.werke)} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Gerät ${(gm.geraet || {}).name}: „${((gm.geraet || {}).zeile || "").slice(0, 60)}" · Lichtung ${JSON.stringify({ wand: gm.lichtung && gm.lichtung.wand, steht: gm.lichtung && gm.lichtung.steht, toenung: gm.lichtung && gm.lichtung.toenung })}` : "nicht gestartet"}${vG.length ? " — Täter: " + vG.join(", ") : ""}`
     );
     console.log("=== DER SAME DES WERKS — DAS GESETZTE WERK IST DAS PHANTOM, AUCH BEIM MITSPIELER ===");
     const km = out.werk || {};

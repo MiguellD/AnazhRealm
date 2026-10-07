@@ -24288,12 +24288,13 @@ class AnazhRealm {
 
     // Die Absage eines Studio-Satzes mit unbekanntem Wort (ohne KI-Begleiter): der Spieler hört, was die Studios kennen —
     // aus dem EINEN Wort-Katalog (Befund L-Wortschatz: „bau mir eine scheune" hieß „Unbekannter Befehl. Meintest du 'baue
-    // dorf hier'?"). null, wenn der Satz kein Studio-Satz ist oder sein Wort auflöst.
+    // dorf hier'?"). null, wenn der Satz kein Studio-Satz ist oder sein Wort auflöst — und wenn das „Wort" der Ort des
+    // Satzes ist („bau hier": `hier` steht ohne Ding, Gegenprüfung 08.10.).
     _studioSatzAbsage(command) {
         const m = String(command || "")
             .trim()
             .match(AnazhRealm.STUDIO_SATZ);
-        if (!m || !m[2] || this._studioBlueprintForWord(m[2])) return null;
+        if (!m || !m[2] || m[2].toLowerCase() === "hier" || this._studioBlueprintForWord(m[2])) return null;
         const kennt = this._studioWordsForPrompt(true);
         return kennt
             ? `„${m[2]}" kennt kein Studio. Die Studios bauen — ${kennt}.`
@@ -24327,10 +24328,6 @@ class AnazhRealm {
             return;
         }
         const studioAbsage = this._studioSatzAbsage(command);
-        if (studioAbsage) {
-            appendChatOutput(studioAbsage);
-            return;
-        }
         const suggestion = this.chatSuggest(command);
         if (suggestion) {
             const norm = command.trim().toLowerCase();
@@ -24352,7 +24349,15 @@ class AnazhRealm {
                     return;
                 }
             }
-            appendChatOutput(`Unbekannter Befehl. Meintest du: '${suggestion}'?`);
+            // Ein Studio-Satz mit unbekanntem Wort hört den Katalog UND den Vorschlag (Gegenprüfung 08.10.: die Absage nahm
+            // jeder Zeile „Verb + Wort" ohne KI den Vorschlag, „mach licht" hörte nur den Katalog).
+            appendChatOutput(
+                studioAbsage
+                    ? `${studioAbsage} Oder meintest du: '${suggestion}'?`
+                    : `Unbekannter Befehl. Meintest du: '${suggestion}'?`
+            );
+        } else if (studioAbsage) {
+            appendChatOutput(studioAbsage);
         } else {
             // Der System-Teil der Hilfe wird aus der EINEN Tabelle generiert (eine Hardcode-Liste daneben
             // driftet); die DSL-Beispiele bleiben kuratiert (die volle Pattern-Liste wäre eine Textwand).
@@ -45360,17 +45365,16 @@ class AnazhRealm {
         // Ein Bauwerk wird gebaut, nicht gehalten (Welle L, V-k11): der Bau-Modus übernimmt (confirmBuild zahlt beim
         // Setzen); Schublade und Inventar schließen, damit das Phantom in der Welt steht. Der EINE Weg jedes Bauwerks —
         // Werkstatt-FERTIGEN und Rezeptbuch („Bauen") rufen ihn (Welle L Folge: das Rezeptbuch zahlte beim Fertigen UND
-        // beim Setzen und legte das Werk ins Inventar). Kann das Setzen nicht tragen (`_bauVorabTor`: das Gesetz des
-        // Modus), sagt FERTIGEN es, statt in einen Bau-Modus zu führen, der nur abgelehnt werden kann.
+        // beim Setzen und legte das Werk ins Inventar). Kann das Setzen nicht tragen (`_bauVorabTor` in der Engstelle
+        // `_bauModusFuer`: das Gesetz des Modus), sagt FERTIGEN es, statt in einen Bau-Modus zu führen, der nur abgelehnt
+        // werden kann.
         if (bp && this._isPlaceableBlueprint(bp)) {
-            const vorab = this._bauVorabTor(name);
-            if (!vorab.ok) return vorab;
             const res = this._bauModusFuer(name);
             if (res.ok) {
                 this.closeAllDrawers();
                 if (this.state.inventoryOpen) this.toggleInventoryOverlay(false);
             }
-            return res.ok ? { ok: true, bauModus: true, slot: res.slot, free: !!vorab.free } : res;
+            return res.ok ? { ok: true, bauModus: true, slot: res.slot, free: !!res.free } : res;
         }
         return this.forgeBlueprint(name);
     }
@@ -76713,17 +76717,9 @@ class AnazhRealm {
                 // pfad/frieden), ein geschmiedetes frei in die Hand genommen.
                 const result = this.wieldBlueprint(blueprintName);
                 if (!result.ok) {
-                    if (result.reason === "not_enough_material") {
-                        const missingStr = Object.entries(result.missing || {})
-                            .map(([m, n]) => `${n}× ${m}`)
-                            .join(", ");
-                        this.log(
-                            `In die Hand: Schmieden nötig — fehlt ${missingStr || "Material"} (⚒ Werkstatt).`,
-                            "INFO"
-                        );
-                    } else {
-                        this.log(`In die Hand fehlgeschlagen: ${result.reason}`, "INFO");
-                    }
+                    // Die Absage des Griffs spricht der Spieler-Kanal (Gegenprüfung 08.10.: sie stand nur im
+                    // eingeklappten Log) — derselbe Formatter wie Werkstatt-Knopf und Setzen (`_machTorHint`).
+                    this._spielerSagt(`${String(label).split(/\s[·—(]/)[0]}: ${this._machTorHint(result)}`);
                 } else {
                     this.log(`In der Hand: ${label} (Slot ${idx + 1})`, "INFO");
                 }
@@ -76757,8 +76753,14 @@ class AnazhRealm {
     // EIN BAUWERK GEHT IN DEN BAU-MODUS, NIE IN DIE HAND (Welle L, Befund V-k11): sein Hotbar-Platz (vorhanden, sonst
     // der erste freie) wird gewählt — das Phantom steht vor dir, RMB oder F setzt es. Werkstatt-FERTIGEN legte die Eiche
     // (7,8 × 8,8 × 6,4 m) in die Hand, RMB schüttete dann auf, und keine UI leerte die Hand. Ohne freien Platz: laut.
+    // Das Vorab-Tor sitzt HIER, in der Engstelle jedes Wegs in den Bau-Modus (Werkstatt-Knopf, Rezeptbuch, das Werk in
+    // der Hand — Gegenprüfung 08.10.: es saß am Aufrufer, der Rechtsklick mit dem Werk in der Hand führte in frieden ohne
+    // Material in einen Bau-Modus, der nur ablehnen konnte). Die Hotbar-Taste wählt den Platz selbst: dort nennt das
+    // Bau-HUD die fehlenden Zahlen rot, und das Setzen sagt die Absage im Spieler-Kanal.
     _bauModusFuer(name) {
         if (!name || !this.state.blueprints || !this.state.blueprints[name]) return { ok: false, reason: "unknown" };
+        const vorab = this._bauVorabTor(name);
+        if (!vorab.ok) return vorab;
         const hb = this.state.hotbar || [];
         let idx = hb.indexOf(name);
         if (idx < 0) {
@@ -76768,7 +76770,7 @@ class AnazhRealm {
         }
         const bm = this.state.buildMode;
         if (!(bm.active && bm.slotIndex === idx && bm.blueprintName === name)) this.selectHotbarSlot(idx);
-        return { ok: !!(bm.active && bm.blueprintName === name), slot: idx };
+        return { ok: !!(bm.active && bm.blueprintName === name), slot: idx, free: !!vorab.free };
     }
 
     // DAS VORAB-TOR des Bau-Modus (Welle L Folge, L-Werkstatt): FERTIGEN führt nur dann in den Bau-Modus, wenn das Setzen
