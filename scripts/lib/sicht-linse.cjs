@@ -133,6 +133,23 @@ function sichtLinse(cfg) {
     const bytes = () => Object.values(bytesJe()).reduce((a, x) => a + x, 0);
     let b0 = 0,
         bj0 = {};
+    // die Licht-Richtung des Frames (Richtlicht: Ort − Ziel) — dreht sie gegen den Frame davor?
+    let lichtVor = null;
+    // eine Drehung in einem Tick ohne Pass (der Loop rendert nicht jeden Tick) zählt zum nächsten gerenderten Frame
+    let lichtOffen = 0;
+    const lichtDreht = () => {
+        const dl = r.state.directionalLight;
+        if (!dl || !dl.target) return 0;
+        const x = dl.position.x - dl.target.position.x,
+            y = dl.position.y - dl.target.position.y,
+            z = dl.position.z - dl.target.position.z;
+        const l = Math.hypot(x, y, z) || 1;
+        const jetzt = [x / l, y / l, z / l];
+        const vor = lichtVor;
+        lichtVor = jetzt;
+        if (!vor) return 0;
+        return 1 - (vor[0] * jetzt[0] + vor[1] * jetzt[1] + vor[2] * jetzt[2]) > 1e-12 ? 1 : 0;
+    };
     const L = {
         P,
         an() {
@@ -143,6 +160,7 @@ function sichtLinse(cfg) {
             z = neu();
             b0 = bytes();
             bj0 = bytesJe();
+            lichtDreht();
             return { gehuellt: Object.keys(orig) };
         },
         // Die Zähler seit dem letzten frame() — und frisch weiter.
@@ -163,6 +181,23 @@ function sichtLinse(cfg) {
             for (const n of ["_hoehlenSicht", "_hoehlenSichtLicht", "_chunkSatzAbschnitt"]) ruhe += o.aufrufe[n] || 0;
             o.arbeit = ruhe;
             o.trefferSumme = Object.values(o.treffer).reduce((a, x) => a + x, 0);
+            lichtOffen = lichtDreht() || lichtOffen;
+            o.licht = lichtOffen;
+            if (o.paesse > 0) lichtOffen = 0;
+            o.tag = r.state.timeOfDay;
+            o.stufe = r.state._sonne && r.state._sonne.stufe > 0 ? r.state._sonne.stufe : null;
+            // der Licht-Rand der Kaskaden mit Box (`PASS_WAHL.lichtRandTexel`): trägt ihn jede gerade gehaltene Lage?
+            o.mitBox = false;
+            o.lichtRand = 0;
+            if (r._passLagen) {
+                let rand = true;
+                for (const [k, a] of r._passLagen)
+                    if (k[0] === "k" && a.sig[27] === 1) {
+                        o.mitBox = true;
+                        if (!(a.sig[85] > 0)) rand = false;
+                    }
+                if (o.mitBox && rand) o.lichtRand = r.constructor.PASS_WAHL.lichtRandTexel || 0;
+            }
             z = neu();
             return o;
         },
@@ -209,7 +244,22 @@ function sichtPhase(frames, ab) {
     const bytesJe = {};
     for (const f of fs) for (const k in f.bytesJe || {}) bytesJe[k] = (bytesJe[k] || 0) + f.bytesJe[k] / fs.length;
     for (const k in bytesJe) bytesJe[k] = Math.round(bytesJe[k]);
+    // DIE SONNE der Phase: in wie vielen Frames das Licht drehte, um wie viel die Sonne lief (Bogenmaß, aus der Tageszeit —
+    // der Weg über den Tag ist 2π), ihre Stufe (`state._sonne.stufe`, null = keine)
+    let sonneRad = 0;
+    for (let i = 1; i < fs.length; i++) {
+        let d = (fs[i].tag || 0) - (fs[i - 1].tag || 0);
+        if (d < -0.5) d += 1;
+        sonneRad += Math.abs(d) * 2 * Math.PI;
+    }
+    const stufen = fs.map((f) => f.stufe).filter((x) => x > 0);
     return {
+        lichtFrames: fs.filter((f) => f.licht).length,
+        sonneRad: +sonneRad.toFixed(5),
+        stufe: stufen.length ? stufen[Math.floor(stufen.length / 2)] : null,
+        // die Kaskaden mit Box und ihr Licht-Rand in Texeln (0, wenn ein Frame ohne ihn wählte)
+        mitBox: fs.some((f) => f.mitBox),
+        lichtRand: fs.some((f) => f.mitBox) ? Math.min(...fs.filter((f) => f.mitBox).map((f) => f.lichtRand || 0)) : 0,
         jePass,
         bytesJe,
         taeter,
@@ -241,9 +291,52 @@ function sichtPhase(frames, ab) {
 //       Arbeit bzw. Bytes: jedes solche Ereignis ist eine Änderung, die Linse nennt den Täter;
 //   (B) BEWEGUNG: wer dreht oder geht, rechnet neu — eine Phase ohne Arbeit hielte eine Wahl über eine neue Lage (Loch);
 //   (T) TREUE: die gehaltene Wahl ist die frisch gerechnete (`b.treue`: je Satz × Pass die Zellen, je Gruppe die Zahl);
-//   (S) SCHARF: ein eingeschmuggelter Cache-Bruch (`b.bruch`, eine Ruhe-Phase mit gebrochenem Cache) fällt rot.
+//   (S) SCHARF: ein eingeschmuggelter Cache-Bruch (`b.bruch`, eine Ruhe-Phase mit gebrochenem Cache) fällt rot;
+//   (L) RUHE MIT LAUFENDER SONNE (`b.sonne`, die Tageslänge des Spiels — der Tag steht im Spiel nie): das Licht hat eine
+//       Stufe (`state._sonne.stufe`) und dreht nur an ihr (höchstens doppelt so oft wie die Drehung der Sonne durch die
+//       Stufe), und die Kette arbeitet nur, wo eine Stufe fiel (je Stufe höchstens ein Frame je Kaskade); eine Kaskade mit Box
+//       wählt mit dem Licht-Rand (`lichtRand` Texel) und wählt neu erst, wenn die Sonne ihn verbraucht hat (die halbe
+//       Rand-Breite über den Licht-Weg — je Kaskade höchstens 2 × Drehung / (½ Rand × Stufe) + 1 neue Wahlen).
+const KASKADEN = 2;
 function sichtUrteil(b) {
     const v = [];
+    const So = b.sonne;
+    if (So) {
+        if (!(So.frames > 0)) v.push("LEER: keine Phase mit laufender Sonne gemessen");
+        else if (!(So.sonneRad > 0)) v.push("LEER: in der Phase mit laufender Sonne lief die Sonne nicht");
+        else {
+            if (!(So.stufe > 0))
+                v.push(
+                    `SONNE: das Licht hat keine Stufe — es dreht in ${So.lichtFrames} von ${So.frames} Frames, jede Kaskade ` +
+                        "bekommt bei jedem Render eine neue Lage und wählt neu"
+                );
+            else {
+                const erwartet = Math.ceil(So.sonneRad / So.stufe) + 1;
+                if (So.lichtFrames > 2 * erwartet)
+                    v.push(
+                        `SONNE: das Licht dreht in ${So.lichtFrames} von ${So.frames} Frames — die Sonne lief ` +
+                            `${So.sonneRad} rad, die Stufe ${So.stufe} rad erlaubt etwa ${erwartet}`
+                    );
+            }
+            if (So.mitBox && !(So.lichtRand > 0))
+                v.push(
+                    "SONNE: die Kaskaden wählen ohne Licht-Rand — jede Stufe der Sonne legt ihre Lage neu, und jede wählt neu"
+                );
+            const erlaubt = b.streng ? 0 : Math.floor(So.frames * RUHE_EREIGNIS);
+            const halt = So.lichtRand > 0 && So.stufe > 0 ? (So.lichtRand / 2) * So.stufe : 0;
+            const wahlen =
+                halt > 0 ? Math.min(So.lichtFrames, Math.ceil((2 * So.sonneRad) / halt) + 1) : So.lichtFrames;
+            if (So.arbeitFrames > KASKADEN * wahlen + erlaubt)
+                v.push(
+                    `SONNE: die Sicht-Kette arbeitet in ${So.arbeitFrames} von ${So.frames} Frames (Ø ${So.arbeit.mittel} ` +
+                        `Prüfungen), das Licht drehte in ${So.lichtFrames}` +
+                        (halt > 0
+                            ? `, der Licht-Rand (${So.lichtRand} Texel) erlaubt etwa ${wahlen} neue Wahlen je Kaskade`
+                            : "") +
+                        " — Arbeit zwischen den Stufen"
+                );
+        }
+    }
     const R = b.ruhe;
     if (!R || !(R.frames > 0)) v.push("LEER: keine Ruhe-Phase gemessen (die Linse prüfte nichts)");
     else {
@@ -305,7 +398,12 @@ function sichtLauf(k) {
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
         const tagAlt = st.dayLengthMinutes;
-        if (k.tag === "steht") st.dayLengthMinutes = 1e12;
+        // die Tageslänge je Phase: `steht` hält den Tag; die Phase `sonne` und `laeuft` fahren die Tageslänge des Spiels
+        const tagSetzen = (laeuft) => {
+            if (laeuft) delete st.dayLengthMinutes;
+            else st.dayLengthMinutes = 1e12;
+        };
+        tagSetzen(k.tag !== "steht");
         // der Spieler kehrt nach dem Gehen an seinen Ort zurück (die nächste Messung steht wieder am Messort)
         const ort = st.playerMesh.position.clone();
         const yaw0 = st.yaw;
@@ -318,6 +416,7 @@ function sichtLauf(k) {
         const fertig = new Promise((res) => (fertigP = res));
         const plan = [];
         if (k.ruhe > 0) plan.push(["ruhe", k.ruhe]);
+        if (k.sonne > 0) plan.push(["sonne", k.sonne]);
         if (k.drehen > 0) plan.push(["drehen", k.drehen]);
         if (k.gehen > 0) plan.push(["gehen", k.gehen]);
         const naechste = () => {
@@ -327,6 +426,7 @@ function sichtLauf(k) {
             phase = { name: p[0], frames: [] };
             phasen.push(phase);
             rest = p[1];
+            tagSetzen(p[0] === "sonne" || k.tag !== "steht");
             if (p[0] === "gehen") st.keys.w = true;
         };
         let messen = false;
@@ -376,11 +476,13 @@ function sichtLauf(k) {
             rend.setAnimationLoop(null);
             st.keys.w = false;
             st.perfTargetMs = decke;
-            if (k.tag === "steht") st.dayLengthMinutes = tagAlt;
+            if (tagAlt === undefined) delete st.dayLengthMinutes;
+            else st.dayLengthMinutes = tagAlt;
             L.aus();
         }
         const aus = {};
-        for (const p of phasen) aus[p.name] = window.__sichtPhase(p.frames, p.name === "ruhe" ? 1 : 0);
+        for (const p of phasen)
+            aus[p.name] = window.__sichtPhase(p.frames, p.name === "ruhe" || p.name === "sonne" ? 1 : 0);
         const pm = st.playerMesh.position;
         aus.spieler = [pm.x, pm.y, pm.z].map((x) => +x.toFixed(1));
         pm.copy(ort);

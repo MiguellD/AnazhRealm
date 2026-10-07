@@ -64250,6 +64250,9 @@ class AnazhRealm {
         const K = H.kacheln || (H.kacheln = new Map());
         K.clear();
         const P = S.lage;
+        // der Licht-Rand des Passes (`lichtRandTexel`): die Wahl hält über die Stufen der Sonne — ein Werfer, der nach einer
+        // Drehung bis zum Rand wirft, wirft schon jetzt (sein Rechteck und seine Nähe um den Rand geweitet)
+        const m = P.licht;
         // die Kachel-Spanne aller Empfänger (i0, j0, i1, j1) und ihre tiefste Tiefe
         const E = H.empfSpanne || (H.empfSpanne = new Float64Array(5));
         E[0] = E[1] = Infinity;
@@ -64298,21 +64301,21 @@ class AnazhRealm {
             if (!b.hoehle || !b.huelle || b.huelle.isEmpty() || !this._passTrifftBox(P, b.huelle, 0)) continue;
             const L = lage(b, b.huelle);
             if (
-                L[2] > E[4] ||
-                Math.floor(L[3] / T) < E[0] ||
-                Math.floor(L[0] / T) > E[2] ||
-                Math.floor(L[4] / T) < E[1] ||
-                Math.floor(L[1] / T) > E[3]
+                L[2] - m > E[4] ||
+                Math.floor((L[3] + m) / T) < E[0] ||
+                Math.floor((L[0] - m) / T) > E[2] ||
+                Math.floor((L[4] + m) / T) < E[1] ||
+                Math.floor((L[1] - m) / T) > E[3]
             )
                 continue;
             for (const kn of b.hoehle.knoten) {
                 const z = kn.zelle;
                 if (!z || kn.sicht === st || z.huelle.isEmpty() || !this._passTrifftBox(P, z.huelle, 0)) continue;
                 const Z = lage(z, z.huelle);
-                const nah = Z[2];
+                const nah = Z[2] - m;
                 let wirft = false;
-                for (let j = Math.floor(Z[1] / T); j <= Math.floor(Z[4] / T) && !wirft; j++)
-                    for (let i = Math.floor(Z[0] / T); i <= Math.floor(Z[3] / T); i++) {
+                for (let j = Math.floor((Z[1] - m) / T); j <= Math.floor((Z[4] + m) / T) && !wirft; j++)
+                    for (let i = Math.floor((Z[0] - m) / T); i <= Math.floor((Z[3] + m) / T); i++) {
                         const w = K.get((i + 32768) * 65536 + (j + 32768));
                         if (w !== undefined && w >= nah) {
                             wirft = true;
@@ -84508,7 +84511,8 @@ class AnazhRealm {
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         const stop = this._interpolateDayNight(t);
         const tint = this._dayNightComputeTint(stop);
-        const angle = t * Math.PI * 2 - Math.PI / 2;
+        // der Winkel der Sonne in Stufen (`_sonnenWinkel`): Licht, Schatten, Himmelskörper und Luft lesen dieselbe Richtung
+        const angle = this._sonnenWinkel(t);
         const sunDir = this._dayNightSunDirection(angle);
         // Mond-Richtung aus der EINEN Quelle: `_dayNightSunDirection(angle+π)` ist exakt die Formel des
         // sichtbaren Mond-Meshes (`_updateCelestialBodies`); −sunDir hätte eine andere z-Komponente.
@@ -84651,6 +84655,54 @@ class AnazhRealm {
     // Sonnen-Richtung (Einheitsvektor Oberfläche→Sonne) aus dem Tageswinkel.
     // V8.48 — getrennt von der Licht-POSITION (die folgt dem Spieler für das
     // Shadow-Frustum); diese reine Richtung füttert Beleuchtung + Shader.
+    // DIE SONNE IN STUFEN (Welle C, OMEN-Urteil 07.10.: „der Tag steht im Spiel nie"): der Winkel der Sonne, aus dem
+    // jede Richtung des Lichts folgt — die EINE Größe, die Schattierung und Schatten lesen (Lehre 21: das Richtlicht, die
+    // Kaskaden über sein Ziel, die Himmelskörper, die Luft-Keule, die Godrays). Er folgt der Tageszeit nur in STUFEN: das
+    // Licht dreht, wenn die Sonne sich merklich gedreht hat, und steht dazwischen still. Drehte es je Frame mit (8 min je
+    // Tag: 0,75° je s), bekam jede Kaskade bei jedem Render eine neue Box und Lage und wählte neu — gemessen (echte GPU,
+    // Mess-Wiese, Ruhe mit laufender Sonne, dieselbe Welt): das Licht drehte in 199 von 199 Frames, die Kaskaden rechneten je
+    // Frame ~1 400 Licht-Boxen und ihre Wahl neu. Die Stufe (`_sonnenStufe`) verschiebt keine Schatten-Kante um mehr als
+    // einen Texel ihrer Karte; ein großer Sprung der Tageszeit (die Bühne, ein Zeit-Befehl) setzt sofort. Bei 8 min je Tag
+    // und einem Licht-Weg von 100–170 m fällt sie 10- bis 25-mal je Sekunde — die Wahl der Kaskaden hält darum über die
+    // Stufen, bis die Sonne ihren Licht-Rand verbraucht hat (`PASS_WAHL.lichtRandTexel`, `_passLageHaelt`); jede Stufe legt
+    // nur die Box neu (die Karte folgt dem Licht, gate:schatten-werfer K8).
+    _sonnenWinkel(t) {
+        const w = t * Math.PI * 2 - Math.PI / 2;
+        const s = this.state._sonne || (this.state._sonne = { winkel: NaN, stufe: 0, stufen: 0 });
+        s.stufe = this._sonnenStufe();
+        if (Number.isFinite(s.winkel)) {
+            const a = this._dayNightSunDirection(s.winkel);
+            if (a.dot(this._dayNightSunDirection(w)) >= Math.cos(s.stufe)) return s.winkel;
+        }
+        s.winkel = w;
+        s.stufen++;
+        return w;
+    }
+
+    // DIE STUFE der Sonne (Bogenmaß): eine Drehung des Lichts um α verschiebt in der Karte einer Kaskade jede Schatten-Kante
+    // um α × ihren Licht-Weg (vom Werfer zum Empfänger, entlang des Lichts) — die Stufe ist die größte, die in KEINER Kaskade
+    // eine Kante um mehr als einen Texel ihrer Karte verschiebt: min texel / weg über die Kaskaden (`_kaskadeFit`: der
+    // längste Licht-Weg der Box — der Fall vom höchsten Werfer zum tiefsten Empfänger, geteilt durch die Höhe des Lichts,
+    // höchstens die Tiefe der Box; an der Mess-Wiese k0 0,10–0,17 m und k1 0,22–0,47 m je Texel; ohne Kaskaden die EINE
+    // Karte des Richtlichts, ihr Texel über ihre Tiefe). Die Schattierung trägt jede kleinere Stufe: N·L ändert sich um
+    // höchstens α, unter einer 8-bit-Stufe (`SONNEN_STUFE_SCHATTIERUNG` = 1/255) — die Obergrenze ohne Karte.
+    _sonnenStufe() {
+        let stufe = AnazhRealm.SONNEN_STUFE_SCHATTIERUNG;
+        const csm = this.state.csmNode;
+        if (csm) {
+            const fits = csm._anazhFit;
+            if (fits)
+                for (const f of fits) if (f && f.texelMin > 0 && f.weg > 0) stufe = Math.min(stufe, f.texelMin / f.weg);
+            return stufe;
+        }
+        const dl = this.state.directionalLight;
+        const sh = dl && dl.castShadow === true ? dl.shadow : null;
+        const c = sh && sh.camera;
+        if (c && c.isOrthographicCamera === true && c.far > c.near && sh.mapSize.width > 0)
+            stufe = Math.min(stufe, (c.right - c.left) / sh.mapSize.width / (c.far - c.near));
+        return stufe;
+    }
+
     _dayNightSunDirection(angle) {
         const sunDirX = Math.cos(angle);
         const sunDirY = Math.sin(angle);
@@ -84746,7 +84798,7 @@ class AnazhRealm {
     _dayNightApplyStarField(t, skyMul) {
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
-        const sa = t * Math.PI * 2 - Math.PI / 2;
+        const sa = this._sonnenWinkel(t);
         const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
         u.opacity.value = skyMul;
         if (u.grenze) u.grenze.value = this._himmelGrenzgroesse(sunHeight);
@@ -89822,6 +89874,9 @@ class AnazhRealm {
             ecken: Array.from({ length: 8 }, V),
             punkte: Array.from({ length: 32 }, V),
             huellen: [],
+            werferY: -Infinity, // die Welt-Höhe des höchsten Werfers der zuletzt gemessenen Box (`_kaskadenWerferOben`)
+            band0: 0, // das Höhenband der Empfänger der zuletzt gelegten Scheibe (`_kaskadenScheibe`)
+            band1: 0,
             ab: [],
             saum: [0, 1],
             wahlHaupt: [], // die Gruppen, die der Haupt-Pass gewählt hat (sein Nachher-Haken gibt sie zurück)
@@ -89897,12 +89952,15 @@ class AnazhRealm {
             if (h.max.y > y1) y1 = h.max.y;
         }
         let n = 0;
+        S.band0 = S.band1 = 0;
         if (y1 >= y0) {
             const pm = this.state.playerMesh;
             if (pm) {
                 y0 = Math.min(y0, pm.position.y - 2);
                 y1 = Math.max(y1, pm.position.y + 4);
             }
+            S.band0 = y0;
+            S.band1 = y1;
             for (const e of S.ecken) if (e.y >= y0 && e.y <= y1) S.punkte[n++].copy(e);
             const KA = AnazhRealm.KASKADEN_KANTEN;
             for (let k = 0; k < KA.length; k += 2) {
@@ -90003,7 +90061,9 @@ class AnazhRealm {
             bx1 = cx + W / 2,
             by0 = cy - H / 2,
             by1 = cy + H / 2;
-        let zt = Math.max(z1, this._kaskadenWerferOben(huellen, S, bx0, bx1, by0, by1));
+        // die nahe Ebene über jedem Werfer der Box samt Licht-Rand (ein Werfer, den die Wahl über die Stufen der Sonne hält)
+        const lr = AnazhRealm.PASS_WAHL.lichtRandTexel * Math.min(tx, ty);
+        let zt = Math.max(z1, this._kaskadenWerferOben(huellen, S, bx0 - lr, bx1 + lr, by0 - lr, by1 + lr));
         zt += K.luftM;
         const zb = z0 - K.luftM;
         S.v.set(cx, cy, zt).applyMatrix4(S.basis);
@@ -90031,6 +90091,17 @@ class AnazhRealm {
         f.W = W;
         f.H = H;
         f.texel = tx;
+        f.texelMin = Math.min(tx, ty); // der feinere Texel der Karte (die Stufe der Sonne, der Licht-Rand)
+        // DER LÄNGSTE LICHT-WEG der Box (die Stufe der Sonne, `_sonnenStufe`): ein Schatten fällt vom Werfer (höchstens
+        // `S.werferY`, eben von `_kaskadenWerferOben` über dieser Box gemessen) zum Empfänger (wenigstens der tiefste Punkt der
+        // Scheibe) — sein Weg entlang des Lichts ist der Fall geteilt durch die Höhe des Lichts, nie länger als die Box tief.
+        let yTief = Infinity;
+        for (let k = 0; k < n; k++) if (S.punkte[k].y < yTief) yTief = S.punkte[k].y;
+        const hoch = -S.dir.y;
+        const fall = Math.max(0, S.werferY - yTief);
+        f.weg = hoch > 0 ? Math.min(zt - zb, fall / hoch) : zt - zb;
+        f.band0 = S.band0;
+        f.band1 = S.band1;
         f.bild = (f.bild || 0) + 1;
         // DIE WAHL-SCHEIBE (`_passTrifft`): die Scheibe dieses Renders (S.ecken, eben von `_kaskadenScheibe` gelegt) — gegen
         // sie wählt der Kaskaden-Pass jeden Werfer (Zelle, Bündel-Werfer, Instanz) nach der Licht-Kapsel, `_kaskadeDeckt` hält sie.
@@ -90046,6 +90117,7 @@ class AnazhRealm {
     // Inseln, Bauplan-Bauten als eigene Gruppe.
     _kaskadenWerferOben(huellen, S, bx0, bx1, by0, by1) {
         let zt = -Infinity;
+        let yTop = -Infinity; // die Welt-Höhe des höchsten Werfers über der Box (`S.werferY`, der Licht-Weg der Stufe)
         const v = S.v;
         for (const h of huellen) {
             let lx0 = Infinity,
@@ -90064,12 +90136,14 @@ class AnazhRealm {
             }
             if (lx1 < bx0 || lx0 > bx1 || ly1 < by0 || ly0 > by1) continue;
             if (lz1 > zt) zt = lz1;
+            if (h.max.y > yTop) yTop = h.max.y;
         }
         const st = this.state;
         const frei = (x, y, z, r) => {
             v.set(x, y, z).applyMatrix4(S.basisInv);
             if (v.x + r < bx0 || v.x - r > bx1 || v.y + r < by0 || v.y - r > by1) return;
             if (v.z + r > zt) zt = v.z + r;
+            if (y + r > yTop) yTop = y + r;
         };
         for (const cr of st.creatures || [])
             if (cr && cr.visible !== false) frei(cr.position.x, cr.position.y, cr.position.z, 6);
@@ -90089,6 +90163,7 @@ class AnazhRealm {
             const k = this._werferKugel(m);
             if (k) frei(k.center.x, k.center.y, k.center.z, k.radius);
         }
+        S.werferY = yTop;
         return zt;
     }
 
@@ -90319,6 +90394,7 @@ class AnazhRealm {
                 kanten: null,
                 halt: 0,
                 dreh: 0,
+                licht: 0,
                 gen: 0,
                 key: "",
             });
@@ -90339,6 +90415,10 @@ class AnazhRealm {
         const fit = lw && lw.shadow && lw.shadow.camera === kamera && csm._anazhFit ? csm._anazhFit[k] : null;
         L.fit = fit && fit.ebenen ? fit : null;
         L.dir = S.dir;
+        // DER LICHT-RAND (`lichtRandTexel`): eine Kaskade wählt mit einem Saum von so vielen Texeln ihrer Karte — ihre Wahl
+        // hält über die Stufen der Sonne, solange die Drehung des Lichts seit der Wahl jeden Schatten um weniger als die
+        // Hälfte davon verschiebt (`_passLageHaelt`); die gehaltene Lage wählt mit dem Rand ihres Ankers weiter
+        L.licht = L.fit ? PW.lichtRandTexel * L.fit.texelMin : 0;
         // DIE BLENDE: die LIVE-Uniforms, die jede Maske liest (dasselbe Auge, derselbe Perf-Streck), und die Kanten des
         // Fensters aus dem EINEN Blend-Gesetz (`_blendeKanten`, je Band-Satz einmal).
         const lu = this.state.lodUniforms;
@@ -90400,11 +90480,11 @@ class AnazhRealm {
     // und kein Körper, den ein Leser wählt, liegt darüber; Auge und nahe Ebene zählen darum nur quer zur Achse. Solange die Lage
     // steht, urteilt jeder Leser vom Auge des Ankers (`L.ax`…) — der Rand je Meter ist der, mit dem die gehaltene Wahl fiel.
     _passLageGen(L, kamera, k) {
-        const N = 85;
+        const N = 89;
         const key = k >= 0 ? "k" + k : kamera === this.state.camera ? "haupt" : "anders";
         const M = this._passLagen || (this._passLagen = new Map());
         let a = M.get(key);
-        if (!a) M.set(key, (a = { sig: new Float64Array(N), gen: 0, kamera: -1, ax: 0, ay: 0, az: 0 }));
+        if (!a) M.set(key, (a = { sig: new Float64Array(N), gen: 0, kamera: -1, ax: 0, ay: 0, az: 0, wegMax: 0 }));
         const s = this._passLageSig || (this._passLageSig = new Float64Array(N));
         const we = kamera.matrixWorld.elements;
         // die Achse einer orthogonalen Kamera (sie blickt entlang −z ihrer Welt-Matrix)
@@ -90471,12 +90551,19 @@ class AnazhRealm {
         s[72] = K ? K.d1 : 0;
         s[73] = K ? K.fade : 0;
         s[74] = K ? K.fade0 : 0;
-        if (a.gen > 0 && a.kamera === kamera.id && this._passLageHaelt(a.sig, s)) {
+        // die Kaskade unter der laufenden Sonne: ihr Licht-Rand, der längste Licht-Weg ihrer Box, das Höhenband ihrer Empfänger
+        s[85] = L.licht;
+        s[86] = f ? f.weg : 0;
+        s[87] = f ? f.band0 : 0;
+        s[88] = f ? f.band1 : 0;
+        if (a.gen > 0 && a.kamera === kamera.id && this._passLageHaelt(a.sig, s, a)) {
             L.gen = a.gen;
             L.key = key;
             L.ax = a.ax;
             L.ay = a.ay;
             L.az = a.az;
+            L.licht = a.sig[85];
+            if (s[86] > a.wegMax) a.wegMax = s[86];
             return false;
         }
         a.sig.set(s);
@@ -90484,6 +90571,7 @@ class AnazhRealm {
         a.ax = L.ax;
         a.ay = L.ay;
         a.az = L.az;
+        a.wegMax = s[86];
         a.gen = this._passLageZahl = (this._passLageZahl || 0) + 1;
         L.gen = a.gen;
         L.key = key;
@@ -90493,18 +90581,41 @@ class AnazhRealm {
     // Hält die Lage `s` gegen ihren Anker `a` (Aufbau `_passLageGen`)? Orte (das Auge, die Konstanten der Ebenen, der Boden
     // der Kaskaden-Box) um höchstens haltM, Richtungen bis auf die Rundung — eine Perspektive: ihre Projektion gleich, ihre
     // Drehung um höchstens `drehRand` (der Winkel zwischen Anker und Kamera, cos = (Spur(R0ᵀ·R) − 1) / 2) —, alles andere
-    // gleich.
-    _passLageHaelt(a, s) {
+    // gleich; eine Kaskade mit Box über die Stufen der Sonne nach ihrem Licht-Rand (unten).
+    _passLageHaelt(a, s, anker) {
         const PW = AnazhRealm.PASS_WAHL;
         const H = PW.haltM;
+        if (s[84] !== a[84] || s[27] !== a[27]) return false;
+        // DIE KASKADE UNTER DER LAUFENDEN SONNE (orthogonal, mit Box): ihre echten Werfer bestimmen die Empfänger (die
+        // Wahl-Scheibe und ihr Höhenband) und das Licht — Box, Auge und Licht-Basis legt der Fit aus ihnen. Die Lage hält,
+        // solange die Empfänger stehen (die Scheibe um haltM, das Band um haltM, Saum und Blende gleich) und die Drehung des
+        // Lichts seit dem Anker, mal dem längsten Licht-Weg seit dem Anker (`wegMax`), unter dem halben Licht-Rand bleibt:
+        // ein echter Werfer liegt quer zum Licht so nah an seinem Empfänger in der Box wie Drehung × Weg, und jede Wahl unter
+        // dieser Lage (der Anker, ein Satz mit neuem Stand dazwischen) lag selbst höchstens den halben Rand vom Anker —
+        // gegen die jetzige Lage also höchstens den ganzen.
+        if (s[84] === 0 && s[27] === 1) {
+            for (let o = 28; o < 52; o += 4) {
+                if (!(Math.abs(s[o + 3] - a[o + 3]) <= H)) return false;
+                for (let j = 0; j < 3; j++) if (!(Math.abs(s[o + j] - a[o + j]) <= 1e-9)) return false;
+            }
+            if (s[53] !== a[53] || !(Math.abs(s[87] - a[87]) <= H) || !(Math.abs(s[88] - a[88]) <= H)) return false;
+            for (let i = 66; i < 75; i++) if (s[i] !== a[i]) return false;
+            const cx = a[64] * s[65] - a[65] * s[64],
+                cy = a[65] * s[63] - a[63] * s[65],
+                cz = a[63] * s[64] - a[64] * s[63];
+            const dreh = Math.atan2(
+                Math.sqrt(cx * cx + cy * cy + cz * cz),
+                a[63] * s[63] + a[64] * s[64] + a[65] * s[65]
+            );
+            return dreh * Math.max(anker.wegMax, s[86]) <= a[85] / 2;
+        }
         const dx = s[0] - a[0],
             dy = s[1] - a[1],
             dz = s[2] - a[2];
-        if (!(dx * dx + dy * dy + dz * dz <= H * H) || s[84] !== a[84]) return false;
+        if (!(dx * dx + dy * dy + dz * dz <= H * H)) return false;
         const persp = s[84] === 1;
         // perspektivisch die Projektion (3…26), orthogonal die Ebenen des Frustums; dazu die Wahl-Scheibe (28…51) — die
         // Richtung bis auf die Rundung, die Konstante um haltM
-        if (s[27] !== a[27]) return false;
         if (persp) for (let i = 3; i < 27; i++) if (s[i] !== a[i]) return false;
         for (let p = persp ? 6 : 0; p < 12; p++) {
             const o = p < 6 ? 3 + 4 * p : 28 + 4 * (p - 6);
@@ -90529,9 +90640,9 @@ class AnazhRealm {
         const ax = cx - L.ax,
             ay = cy - L.ay,
             az = cz - L.az;
-        // der Saum, der Rand je Meter Abstand zum Auge (die zeitliche Auflösung und die Drehung, über die die Lage hält) und
-        // der Halt der Lage (`_passLageGen`)
-        const rr = r + L.halt + (L.rand + L.dreh) * Math.sqrt(ax * ax + ay * ay + az * az);
+        // der Saum, der Rand je Meter Abstand zum Auge (die zeitliche Auflösung und die Drehung, über die die Lage hält), der
+        // Halt der Lage (`_passLageGen`) und der Licht-Rand einer Kaskade (die Stufen der Sonne, über die ihre Wahl hält)
+        const rr = r + L.halt + L.licht + (L.rand + L.dreh) * Math.sqrt(ax * ax + ay * ay + az * az);
         const E = L.fr.planes;
         for (let p = 0; p < 6; p++) {
             const n = E[p].normal;
@@ -90557,14 +90668,16 @@ class AnazhRealm {
             const nx = n.x,
                 ny = n.y,
                 nz = n.z;
-            // die Scheibe hält um haltM, der Boden der Box (das Ende der Kapsel) ebenso: zweimal der Halt
+            // die Scheibe hält um haltM, der Boden der Box (das Ende der Kapsel) ebenso: zweimal der Halt; dreht das Licht,
+            // wandert das Ende der Kapsel um höchstens den Licht-Rand
             const st =
                 (nx < 0 ? -nx : nx) * hx +
                 (ny < 0 ? -ny : ny) * hy +
                 (nz < 0 ? -nz : nz) * hz +
                 r +
                 f.saum +
-                2 * L.halt;
+                2 * L.halt +
+                L.licht;
             if (nx * cx + ny * cy + nz * cz + P.constant < -st && nx * ex + ny * ey + nz * ez + P.constant < -st)
                 return false;
         }
@@ -91056,7 +91169,7 @@ class AnazhRealm {
             const gu = this.state.godrayUniforms;
             const cam = this.state.camera;
             const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-            const angle = t * Math.PI * 2 - Math.PI / 2;
+            const angle = this._sonnenWinkel(t);
             const sunDir = this._dayNightSunDirection(angle); // dieselbe Richtungs-Quelle wie Licht/Skybox
             // NDC-Projektion des sichtbaren Sonnen-Meshes → Screen-UV (0..1).
             const proj = (this._godrayProjV || (this._godrayProjV = new THREE.Vector3()))
@@ -95453,6 +95566,9 @@ AnazhRealm.GPU_FRAMES_IM_FLUG = 2;
 // DER SCHATTEN-TAKT je Kaskade (_loopShadowUpdate): die nahe Kaskade rendert im Regler-Intervall, höchstens
 // jeden `nahMax`-ten Frame (laufende Tiere werfen nah); die ferne im `fernFaktor`-fachen Takt.
 AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });
+// Die Obergrenze der Sonnen-Stufe (`_sonnenStufe`): N·L ändert sich bei einer Drehung um α höchstens um α — unter einer
+// 8-bit-Stufe ist sie unsichtbar.
+AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;
 // DIE KASKADEN-BOX (_kaskadenPassen): jede Kaskade misst die Frustum-Scheibe im Licht-Raum statt ihrer Diagonale.
 // `texelM` = die Texel-Kante je Kaskade, die die längste Box-Kante bei jeder Blickrichtung hält — die des
 // Addon-Quadrats (k0 339 m / 2048, k1 961 m / 2048): kein Schatten wird gröber als bis V18.529. Die Karten-Größe folgt
@@ -95483,12 +95599,16 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
 // `drehRand` (Welle C, OMEN-Urteil 06.10.: beim Drehen 360 × 1° war die Kette teurer als vorher): eine Perspektive hält ihre
 // Wahl über eine Drehung bis zu diesem Winkel (Bogenmaß, 2°) — das Gesetz trägt den Sinus je Meter Abstand als Rand, die
 // Höhlen-Sicht ihr Sichtfeld je Halbwinkel um das 1,5-Fache geweitet; gewählt wird neu, wenn die Drehung den Rand verlässt.
+// `lichtRandTexel` (Welle C, OMEN-Urteil 07.10.: der Tag steht im Spiel nie): der Licht-Rand eines Kaskaden-Passes in Texeln
+// seiner Karte — die Wahl der Kaskade hält über die Stufen der Sonne (`_sonnenWinkel`), bis die Drehung des Lichts seit der
+// Wahl, mal dem längsten Licht-Weg der Box (`fit.weg`), die Hälfte dieses Rands erreicht (`_passLageHaelt`).
 AnazhRealm.PASS_WAHL = Object.freeze({
     sichtRand: 0.003,
     saumM: Object.freeze([8, 24]),
     pflanzeRandM: 2,
     haltM: 0.02,
     drehRand: (2 * Math.PI) / 180,
+    lichtRandTexel: 32,
 });
 // DIE WASSER-WELLE (der Hub des Hydro-Stoffs, `_ensureHydroSurfaceMaterial` liest sie): die Dünung der offenen See
 // (drei Rausch-Oktaven je ±0,5, Gewichte `duenung`, × aWave ≤ 1) und das Kräuseln von See und Fluss ((Rausch + `oktave` ·

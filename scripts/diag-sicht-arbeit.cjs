@@ -16,6 +16,11 @@
 //   (T) TREUE — die gehaltene Wahl ist die frisch gerechnete: nach der Ruhe vergisst die Kette jede Lage, ein Frame
 //       rechnet alles neu — je Satz × Pass dieselben Zellen in derselben Folge, je Gruppe der Wahl dieselbe Zahl;
 //   (S) SCHARF — ein eingeschmuggelter Cache-Bruch (die Lage-Erinnerung fällt je Pass) arbeitet in Ruhe und fällt rot;
+//   (L) RUHE MIT LAUFENDER SONNE (07.10. — der Tag steht im Spiel nie): die Tageszeit läuft mit der Tageslänge des Spiels
+//       (60 Frames je s), das Licht folgt `_applyDayNightToScene`, die Stellvertreter-Kaskaden stehen entlang des Lichts
+//       (dreht es, drehen sie): das Licht hat eine Stufe und dreht nur an ihr, die Kette arbeitet nur, wo eine Stufe fiel
+//       (die Stellvertreter tragen keine Box — den Licht-Rand der echten Kaskaden, über den ihre Wahl die Stufen hält, prüft
+//       gate:schatten-werfer K8, im echten Loop `werkbank sicht --sonne`);
 //   (C) CODE — EIN Gesetz der Lage: `_passWahlLage` legt die Generation (`_passLageGen`), die Sätze, die Instanz-Wahl
 //       und die Nah-Wiese lesen sie (`_satzAbschnittSteht`, `_instanzWahlSteht`, `L.gen`); die eigene Kamera-Signatur der
 //       Nah-Wiese (`_sichtSteht`) ist gefallen; (P) kein Page-Error.
@@ -31,6 +36,7 @@ const SICHT = require("./lib/sicht-linse.cjs");
 function urteil(b) {
     // die Wand friert die Welt ein: in KEINEM Ruhe-Frame Arbeit oder ein Byte
     const v = SICHT.sichtUrteil(Object.assign({ streng: true }, b));
+    if (!b.sonne) v.push("LEER: keine Phase mit laufender Sonne (kein Richtlicht?) — (L) prüfte nichts");
     const c = b.code || {};
     if (!c.lageGen)
         v.push("CODE: `_passWahlLage` legt keine Lage-Generation (`_passLageGen`) — die Kette weiß nie, ob sie steht");
@@ -62,7 +68,17 @@ function selbsttest() {
         werferTrifft: { mittel: 0, median: 0, max: 0 },
         hinaus: { mittel: 0, median: 0, max: 0 },
     });
+    const sonne = (arbeitFrames, lichtFrames, stufe) =>
+        Object.assign(phase(arbeitFrames > 0 ? 300 : 0, 0, 9), {
+            frames: 120,
+            arbeitFrames,
+            lichtFrames,
+            sonneRad: 0.026,
+            stufe,
+            arbeit: { mittel: arbeitFrames > 0 ? 20 : 0, median: 0, max: arbeitFrames > 0 ? 3000 : 0 },
+        });
     const gruen = {
+        sonne: sonne(12, 6, 1 / 255),
         ruhe: phase(0, 0, 9),
         drehen: phase(4000, 0, 0),
         gehen: phase(5000, 0, 0),
@@ -76,6 +92,13 @@ function selbsttest() {
     const v0 = urteil(klon());
     if (v0.length) fehler.push("der grüne Befund fällt rot: " + v0.join(" · "));
     console.log(`  ${v0.length ? "❌" : "✅"} Selbsttest grün → ${v0.join(" · ") || "grün"}`);
+    // der echte Loop unter langsamem Takt: das Licht dreht in jedem Frame (die Sonne läuft schneller als eine Stufe je Frame),
+    // die Kaskaden mit Box halten ihre Wahl über den Licht-Rand — grün
+    const randSonne = (arbeitFrames, lichtRand) =>
+        Object.assign(sonne(arbeitFrames, 199, 0.0004), { frames: 199, sonneRad: 0.19, mitBox: true, lichtRand });
+    const v1 = urteil(Object.assign(klon(), { sonne: randSonne(40, 32) }));
+    if (v1.length) fehler.push("der grüne Befund mit Licht-Rand fällt rot: " + v1.join(" · "));
+    console.log(`  ${v1.length ? "❌" : "✅"} Selbsttest grün mit Licht-Rand → ${v1.join(" · ") || "grün"}`);
     const faelle = [
         [
             "Arbeit in Ruhe (die Basis)",
@@ -102,6 +125,25 @@ function selbsttest() {
         ],
         ["Treue ohne Vergleich", (b) => (b.treue.geprueft = 0), /LEER: Treue ohne Vergleich/],
         ["stumpfe Linse", (b) => (b.bruch = phase(0, 0, 9)), /LINSE STUMPF/],
+        [
+            "das Licht dreht je Frame (die Basis)",
+            (b) => (b.sonne = sonne(120, 120, null)),
+            /SONNE: das Licht hat keine Stufe — es dreht in 120 von 120 Frames/,
+        ],
+        ["Arbeit zwischen den Stufen", (b) => (b.sonne = sonne(40, 6, 1 / 255)), /Arbeit zwischen den Stufen/],
+        ["Stufe ohne Halt", (b) => (b.sonne = sonne(12, 120, 1 / 255)), /SONNE: das Licht dreht in 120 von 120 Frames/],
+        ["Kaskaden ohne Licht-Rand", (b) => (b.sonne = randSonne(40, 0)), /SONNE: die Kaskaden wählen ohne Licht-Rand/],
+        [
+            "Arbeit über den Licht-Rand hinaus",
+            (b) => (b.sonne = randSonne(199, 32)),
+            /der Licht-Rand \(32 Texel\) erlaubt etwa 61 neue Wahlen/,
+        ],
+        [
+            "Sonne ohne Lauf",
+            (b) => (b.sonne.sonneRad = 0),
+            /LEER: in der Phase mit laufender Sonne lief die Sonne nicht/,
+        ],
+        ["keine Sonne", (b) => delete b.sonne, /LEER: keine Phase mit laufender Sonne/],
         ["keine Ruhe", (b) => delete b.ruhe, /LEER: keine Ruhe-Phase/],
         ["keine Generation", (b) => (b.code.lageGen = false), /CODE: `_passWahlLage` legt keine/],
         ["Satz fragt nicht", (b) => (b.code.satzLiest = false), /CODE: `_chunkSatzPass` fragt/],
@@ -323,6 +365,35 @@ const server = http.createServer((req, res) => {
                 phase(20, (i) => stelle(Math.PI / 5, i + 1)),
                 0
             );
+            // (L) RUHE MIT LAUFENDER SONNE: die Tageslänge des Spiels, 60 Frames je s; das Licht folgt `_applyDayNightToScene`,
+            // die Stellvertreter-Kaskaden stehen entlang des Lichts (ihre Mitte ein halbes Feld vor dem Auge)
+            stelle(0, 0);
+            const dl = st.directionalLight;
+            if (dl && dl.target) {
+                const tagLang = 60 * 60 * (st.dayLengthMinutes || r.constructor.DAY_LENGTH_DEFAULT_MINUTES);
+                st.timeOfDay = 0.42;
+                if (st.world) st.world.timeOfDay = 0.42;
+                const mitte = kaskaden.map((c) => new T.Vector3(cam.position.x, boden, cam.position.z - c.right * 0.5));
+                const lichtStellen = () => {
+                    r._applyDayNightToScene();
+                    const L0 = new T.Vector3().subVectors(dl.position, dl.target.position).normalize();
+                    kaskaden.forEach((c, i) => {
+                        c.position.copy(mitte[i]).addScaledVector(L0, 800);
+                        c.lookAt(mitte[i]);
+                        c.updateMatrixWorld(true);
+                    });
+                };
+                lichtStellen();
+                reif();
+                aus.sonne = window.__sichtPhase(
+                    phase(120, () => {
+                        st.timeOfDay += 1 / tagLang;
+                        if (st.world) st.world.timeOfDay = st.timeOfDay;
+                        lichtStellen();
+                    }),
+                    1
+                );
+            }
             // (S) SCHARF: zurück in die Ruhe, dann der eingeschmuggelte Bruch — die Lage-Erinnerung fällt je Pass
             stelle(0, 0);
             reif();
@@ -384,7 +455,12 @@ const server = http.createServer((req, res) => {
         console.log(
             `  kalt    der erste Ruhe-Frame: Arbeit ${k.arbeit} · Ecken ${k.ecken} · Bytes ${k.bytes} · Treffer ${k.trefferSumme}`
         );
-    for (const n of ["ruhe", "drehen", "gehen", "bruch"]) if (befund[n]) console.log(zeile(n, befund[n]));
+    for (const n of ["ruhe", "sonne", "drehen", "gehen", "bruch"]) if (befund[n]) console.log(zeile(n, befund[n]));
+    if (befund.sonne)
+        console.log(
+            `  Sonne: das Licht drehte in ${befund.sonne.lichtFrames} von ${befund.sonne.frames} Frames (${befund.sonne.sonneRad} rad, ` +
+                `Stufe ${befund.sonne.stufe} rad), die Kette arbeitete in ${befund.sonne.arbeitFrames}`
+        );
     console.log(`  Treue: ${befund.treue.geprueft} Wahlen verglichen, ${befund.treue.abweichung.length} Abweichungen`);
     const v = urteil(befund);
     if (v.length) {

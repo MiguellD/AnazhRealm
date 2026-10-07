@@ -31,10 +31,12 @@
 //                                                           erster Ruf installiert (scripts/lib/fluss-linse.cjs)
 //   node scripts/werkbank.cjs takt [n] [--extra a,b]       DIE TAKT-LINSE: CPU je Loop-Subsystem, n Takte, Render
 //                                                           ruht (scripts/lib/takt-linse.cjs)
-//   node scripts/werkbank.cjs sicht [--ruhe n] [--drehen n] [--gehen n] [--tag laeuft|steht] [--ein s] [--regler voll]
+//   node scripts/werkbank.cjs sicht [--ruhe n] [--sonne n] [--drehen n] [--gehen n] [--tag laeuft|steht] [--ein s]
+//                                                           [--regler voll]
 //                                                           DIE SICHT-LINSE: was die Sicht-Kette je gerendertem Frame
 //                                                           arbeitet (Pässe · Prüfungen · Ecken · Bytes · Treffer) im
-//                                                           echten Loop — Ruhe, Drehen (1°/Frame), Gehen
+//                                                           echten Loop — Ruhe, Ruhe mit laufender Sonne (die Tageslänge
+//                                                           des Spiels), Drehen (1°/Frame), Gehen
 //                                                           (scripts/lib/sicht-linse.cjs, Urteil wie gate:sicht-arbeit)
 //   node scripts/werkbank.cjs lauf [sek] [--ein s] [--regler frei|voll] [--tiere halten|frei] [--ruhe max-s]
 //                                                           DER ECHTE LAUF: der Spiel-Loop läuft (rAF), nach
@@ -1070,6 +1072,7 @@ async function starte() {
                     const o = await page.evaluate((k) => window.__sichtLauf(k), {
                         ein: Number(b.ein) || 5,
                         ruhe: b.ruhe != null ? Number(b.ruhe) : 120,
+                        sonne: b.sonne != null ? Number(b.sonne) : 0,
                         drehen: b.drehen != null ? Number(b.drehen) : 360,
                         gehen: b.gehen != null ? Number(b.gehen) : 120,
                         tag: b.tag || "laeuft",
@@ -1344,6 +1347,7 @@ async function starte() {
     else if (cmd === "sicht")
         o = await rufe("/sicht", {
             ruhe: opt("--ruhe"),
+            sonne: opt("--sonne"),
             drehen: opt("--drehen"),
             gehen: opt("--gehen"),
             tag: opt("--tag", "laeuft"),
