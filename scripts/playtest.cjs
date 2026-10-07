@@ -1173,7 +1173,11 @@ async function checkBandV1728SpawnClearance(ctx) {
         const fpBlock = r._blueprintFootprintRadius("stein_block");
         out.villageBig = fpVillage >= MIN;
         out.blockSmall = fpBlock < MIN;
-        out.villageEffectUsesClear = /_structureSpawnPos/.test(window.__codeOf(r.dslEffects.spawn_village));
+        // Leben-Schau 07.10.: das Dorf misst seinen Plan (`_siedlungsAnker` in spawnSettlement) — spawn_village reicht den Ort
+        // durch, die Schätzung über _structureSpawnPos("haus_basis") fiel (sie umringte den Spieler).
+        out.villageEffectUsesClear =
+            /this\.spawnSettlement\(/.test(window.__codeOf(r.dslEffects.spawn_village)) &&
+            /this\._siedlungsAnker\(plan/.test(window.__codeOf(r.spawnSettlement));
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (pm) {
             const px = pm.x,
@@ -1214,7 +1218,10 @@ async function checkBandV1728SpawnClearance(ctx) {
         res.villageBig
     );
     check("V17.28 Spawn-Clearance: Felsblock-Footprint klein (< MIN, intentional bleibt)", res.blockSmall);
-    check("V17.28 Spawn-Clearance: spawn_village nutzt _structureSpawnPos (Source-Probe)", res.villageEffectUsesClear);
+    check(
+        "V17.28 Spawn-Clearance: spawn_village gründet über spawnSettlement, der Anker misst den Plan (_siedlungsAnker)",
+        res.villageEffectUsesClear
+    );
     check(
         "V17.28 Spawn-Clearance: ein Haus AUF dem Spieler wird klar weggeschoben (kein Fall-durch)",
         res.villagePushed
@@ -26271,9 +26278,9 @@ async function checkBandWelle6Keybindings(ctx) {
         out.listInDom = !!document.getElementById("keybindings-list");
         out.resetInDom = !!document.getElementById("keybindings-reset");
         // 11 keybind-row Zeilen (UI-Putz: drawerWelt entfiel)
-        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 12; // V18.109 E8
+        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 13; // V18.109 E8, L3 chat
         // Pro Aktion ein Rebind-Button mit data-action
-        out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 12; // V18.109 E8
+        out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 13; // V18.109 E8, L3 chat
 
         // Reset für nachfolgende Tests
         r.resetKeybindings();
@@ -26342,8 +26349,8 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
         check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
         check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-        check("Welle 6.C3/V8.17+E8: 12 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
-        check("Welle 6.C3/V8.17: 12 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
+        check("Welle 6.C3/V8.17+E8+L3: 13 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+        check("Welle 6.C3/V8.17+L3: 13 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
     }
 }
 
