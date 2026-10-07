@@ -1903,10 +1903,11 @@ class AnazhRealm {
         if (this._dslEffectsCache) return this._dslEffectsCache;
         const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
         this._dslEffectsCache = {
-            weather: ([name]) => {
+            weather: ([name], ctx) => {
                 // Vokabular = die WEATHER_INTENSITY-Tabelle (sunny · rainy · stormy); der EINE Schreiber
-                // _setWeather trägt Logik-instant + visuellen Cross-Fade (DSL-Op und Auto-Zug teilen ihn).
-                if (name in AnazhRealm.WEATHER_INTENSITY) this._setWeather(name);
+                // _setWeather trägt Logik-instant + visuellen Cross-Fade (DSL-Op und Auto-Zug teilen ihn) und
+                // die Quelle des Programms.
+                if (name in AnazhRealm.WEATHER_INTENSITY) this._setWeather(name, ctx && ctx.source);
             },
             // set_time_of_day(t), t ∈ 0..1 (0 = Mitternacht, 0.5 = Mittag). NON_BROADCASTABLE — jeder
             // Mitspieler darf seine eigene Tageszeit haben.
@@ -85584,9 +85585,18 @@ class AnazhRealm {
 
     // Der EINE Wetter-Schreiber: state.weather wird SOFORT gesetzt (weather_is + DSL reagieren instant),
     // die Transition ist rein visuell (Skybox + Symphonie cross-faden ~45 s). Aufrufer: DSL-Op `weather`
-    // und der Auto-Zug (_loopWeatherAndGrowth) — nie ein roher Flip am Blend-System vorbei.
-    _setWeather(name) {
+    // (Quelle = die DSL-Quelle: emotion:<Achse> · nexus · rule:<Herkunft> · human · remote:<Peer> · llm:grok …)
+    // und der Auto-Zug (_loopWeatherAndGrowth, „auto-zug") — nie ein roher Flip am Blend-System vorbei.
+    // DIE WETTER-WACHE: eine Uhr des Auto-Zugs unter 0 ist der Halt einer Messung (die Bühne der Linsen,
+    // scripts/lib/ausgabe-aufnahme.cjs `__wetterHalten`; im Spiel zählt die Uhr von 0 aufwärts). Halt heißt Halt:
+    // solange sie steht, dreht KEIN Schreiber das Wetter. Bis V18.534 hielt sie nur den Auto-Zug — der OMEN
+    // fand in einem Boot sunny → rainy bei eingefrorener Uhr (ein anderer Schreiber: Nexus, Emotion, Gesetz).
+    _setWeather(name, quelle) {
         if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
+        if (this.state.weatherEffectTime < 0) {
+            this.log(`Wetter gehalten: ${quelle || "?"} wollte ${name}`, "DEBUG");
+            return false;
+        }
         const oldWeather = this.state.weather;
         this.state.weather = name;
         this.state.weatherEffectTime = 0;
@@ -89270,7 +89280,7 @@ class AnazhRealm {
             if (idx < 0) idx = 0;
             if (idx >= words.length) idx = words.length - 1;
             const next = words[idx];
-            this._setWeather(next);
+            this._setWeather(next, "auto-zug");
             this.log(`Das Wetter zieht zu ${next}`, "INFO");
             this.state.weatherEffectTime = 0;
         }
@@ -90798,6 +90808,9 @@ class AnazhRealm {
             L.ax = a.ax;
             L.ay = a.ay;
             L.az = a.az;
+            // das Auge der Blende hält wie das Auge der Kamera: jeder Leser urteilt vom Auge des Ankers
+            L.ex = a.sig[67];
+            L.ez = a.sig[68];
             L.licht = a.sig[85];
             if (s[86] > a.wegMax) a.wegMax = s[86];
             return false;
@@ -90826,7 +90839,7 @@ class AnazhRealm {
     }
 
     // Hält die Lage `s` gegen ihren Anker `a` (Aufbau `_passLageGen`)? Orte (das Auge, die Konstanten der Ebenen, der Boden
-    // der Kaskaden-Box) um höchstens den halben Halt (`_wahlHaelt` gegen haltM), Richtungen bis auf die Rundung — eine Perspektive: ihre Projektion gleich, ihre
+    // der Kaskaden-Box, das Auge der Blende — `_blendeHaelt`) um höchstens den halben Halt (`_wahlHaelt` gegen haltM), Richtungen bis auf die Rundung — eine Perspektive: ihre Projektion gleich, ihre
     // Drehung (der Winkel zwischen Anker und Kamera, cos = (Spur(R0ᵀ·R) − 1) / 2) nach dem Gesetz des Halts gegen den
     // Dreh-Rand (`_wahlHaelt`) —, alles andere gleich; eine Kaskade mit Box über die Stufen der Sonne nach ihrem Licht-Rand
     // (unten), nach demselben Gesetz.
@@ -90849,7 +90862,7 @@ class AnazhRealm {
                 for (let j = 0; j < 3; j++) if (!(Math.abs(s[o + j] - a[o + j]) <= 1e-9)) return false;
             }
             if (s[53] !== a[53] || !steht(Math.abs(s[87] - a[87])) || !steht(Math.abs(s[88] - a[88]))) return false;
-            for (let i = 66; i < 75; i++) if (s[i] !== a[i]) return false;
+            if (!this._blendeHaelt(a, s)) return false;
             const cx = a[64] * s[65] - a[65] * s[64],
                 cy = a[65] * s[63] - a[63] * s[65],
                 cz = a[63] * s[64] - a[64] * s[63];
@@ -90881,8 +90894,20 @@ class AnazhRealm {
             const dreh = Math.acos(Math.max(-1, Math.min(1, (spur - 1) / 2)));
             if (!this._wahlHaelt(dreh, 1, PW.drehRand)) return false;
         } else for (let i = 75; i < 84; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
-        // die Blende (66…74) gleich
-        for (let i = 66; i < 75; i++) if (s[i] !== a[i]) return false;
+        return this._blendeHaelt(a, s);
+    }
+
+    // HÄLT DIE BLENDE (66…74) gegen ihren Anker? Ihr Auge (das Auge jeder Maske, `uLodAuge` in XZ — 67, 68) ist ein Ort der
+    // Lage wie das Auge der Kamera: es hält nach dem Gesetz des Halts, höchstens den halben Halt vom Anker (`_wahlHaelt` gegen
+    // haltM); an, Perf-Streck, Bezug und die Kanten des Blend-Gesetzes gleich. Das Fenster jeder Wahl trägt den Halt als
+    // Rand (`_instanzFenster`), und unter der gehaltenen Lage urteilt jeder Leser vom Auge des Ankers (`_passLageGen`).
+    // Gegenprüfung 07.10.: der Vergleich war exakt — eine zweite Signatur neben dem Halt-Gesetz; atmete das Auge ±1 mm
+    // quer (die Kamera hielt), wählte jeder Pass in jedem Frame jede Wahl neu (gate:sicht-arbeit, atmendes Auge: 14 999
+    // Prüfungen je Frame).
+    _blendeHaelt(a, s) {
+        if (s[66] !== a[66]) return false;
+        if (!this._wahlHaelt(Math.hypot(s[67] - a[67], s[68] - a[68]), 1, AnazhRealm.PASS_WAHL.haltM)) return false;
+        for (let i = 69; i < 75; i++) if (s[i] !== a[i]) return false;
         return true;
     }
 
@@ -91153,7 +91178,9 @@ class AnazhRealm {
     // die Karte: vom Kamera-Ort zum Fragment ihres Quads, Sichthöhe |aKarte.w|, ein negativer Stempel = verdeckt, sie
     // blendet voll). Die Vertices einer Instanz liegen in XZ höchstens `w` um ihre Achse (die Weite der Gestalt × die Norm
     // des XZ-Blocks der Matrix + was eine Schräglage aus der Höhe trägt + der Wind-Saum; die Karte: ihre Halbbreite ×
-    // Skala); das Urteil über das Distanz-Intervall fällt `_blendeBehaelt` an den Kanten des Blend-Gesetzes.
+    // Skala); das Urteil über das Distanz-Intervall fällt `_blendeBehaelt` an den Kanten des Blend-Gesetzes. Das Auge der
+    // Maske hält wie jeder Ort der Lage um den halben Halt (`_blendeHaelt`) — die Distanz trägt den Halt als Rand (`L.halt`,
+    // wie `_passTrifft`): eine gehaltene Wahl verliert nichts, solange das Auge atmet.
     _instanzFenster(g, i, L) {
         const m = g.mesh;
         const geo = m.geometry;
@@ -91163,13 +91190,15 @@ class AnazhRealm {
         const dx = a[o + 12] + mw[12] - L.ex,
             dz = a[o + 14] + mw[14] - L.ez;
         const d = Math.sqrt(dx * dx + dz * dz);
+        const halt = L.halt;
         if (g.wahlStufe === "karte") {
             const ak = geo.attributes.aKarte.array;
             const sicht = ak[i * 4 + 3];
             const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
             const k = Math.min(L.ref / Math.max(Math.abs(sicht), 1e-3), 1);
-            const dS = (d + s * ak[i * 4 + 1]) * L.perf * k;
-            return AnazhRealm._blendeBehaelt(L.kanten, "karte", dS, dS, dS, dS, sicht < 0);
+            const dSmin = (Math.max(0, d - halt) + s * ak[i * 4 + 1]) * L.perf * k,
+                dSmax = (d + halt + s * ak[i * 4 + 1]) * L.perf * k;
+            return AnazhRealm._blendeBehaelt(L.kanten, "karte", dSmin, dSmax, dSmin, dSmax, sicht < 0);
         }
         const weite = this._instanzWeite(geo);
         const p = a[o],
@@ -91183,8 +91212,8 @@ class AnazhRealm {
             weite.r * norm +
             weite.y * Math.sqrt(a[o + 4] * a[o + 4] + a[o + 6] * a[o + 6]) +
             AnazhRealm.PASS_WAHL.pflanzeRandM;
-        const dMin = Math.max(0, d - w) * L.perf,
-            dMax = (d + w) * L.perf;
+        const dMin = Math.max(0, d - w - halt) * L.perf,
+            dMax = (d + w + halt) * L.perf;
         const kS = Math.min(L.ref / Math.max(geo.attributes.aH0.array[i], 1e-3), 1);
         const kL = Math.min(L.ref / Math.max(geo.attributes.aH0L.array[i], 1e-3), 1);
         return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, false);
