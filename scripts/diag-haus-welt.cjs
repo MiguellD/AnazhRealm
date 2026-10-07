@@ -13,12 +13,18 @@
 //   W4b DAS FERNE DORF: ein Dorf entsteht 300 m vom Spieler (das Auto-Dorf ab 260 m) — keine lebende Streu-Zelle (Fern-
 //       Baum, Unterholz, Fels) steht in seinen Häusern, auch nicht, wenn die Region unter ihm neu baut; der Spieler läuft
 //       hin (Promotions-Ring 64 m, der Wald des neuen Rings, die Nah-Streu um die Kamera) — kein Natur-Eintrag, keine
-//       Streu-Zelle, keine Kachel-Pflanze im Grundriss. Alle Quellen setzen durch EINE Wand (`_naturSetzen`).
+//       Streu-Zelle, keine Kachel-Pflanze im Grundriss. Alle Quellen setzen durch EINE Wand (`_naturSetzen`). Gewartet wird
+//       auf den Konsum (Nah-Streu ohne offene Kachel, jede Baum-Zelle des Rings promotet — die Promotion im Zustand ohne
+//       warme Foundry, dem einzigen, in dem sie lebt), nie auf eine feste Takt-Zahl.
 //   W5  KOLLISION == OPTIK: an jedem Punkt eines 0,5-m-Rasters im Kern-Grundriss urteilt die Welt-Kapsel (der echte
 //       Löser `_resolveCapsuleVsAABB` gegen die Boxen des Hauses) wie das Gesetzbuch (dieselbe Wand-Regel gegen die Solids des Hauses): frei
 //       oder Wand — Übereinstimmung ≥ 97 % (vorher füllten gedrehte Riegel den Raum, Innenwände fehlten)
+//   W6  DER FRONTALE ANLAUF: je Kultur (Hof-Haus marokkanisch, viktorianisch, alemannisch) läuft der Körper von 6 m vor
+//       der Front durch die Tür — vor der ersten Studio-Stufe (Kern-Hülle) und während die Fernstufe 2 bzw. 1 steht (die
+//       Solids des Gesetzbuchs, nie eine Stufen-Box); der Weg wird verfolgt (vor der Schwelle höchstens 1,3 m über dem
+//       Boden, nie 1 m darunter — kein Lauf über eine Mauer, kein Sturz), der Korridor ist begehbar (stetig, solide)
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js — GENAU die Probe dieses Defekts wird rot.
-//   node scripts/diag-haus-welt.cjs [--selftest]
+//   node scripts/diag-haus-welt.cjs [--selftest [--nur=promotion,nahstreu]]
 "use strict";
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -28,6 +34,8 @@ const path = require("path");
 const PORT = Number(process.env.HAUS_WELT_PORT || 4486);
 const ROOT = path.resolve(__dirname, "..");
 const SELBST = process.argv.includes("--selftest");
+// --nur=promotion,nahstreu: nur diese Selbsttests (der Hauptlauf fährt immer)
+const NUR = (process.argv.find((a) => a.startsWith("--nur=")) || "--nur=").slice(6).split(",").filter(Boolean);
 const MIME = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -365,13 +373,19 @@ async function proben() {
     }
     stell(mx, (r.getTerrainHeightAt(mx, mz) || start.y) + 3, mz);
     const span = r._voxelChunkConfig(0).span;
-    for (let k = 0; k < 400; k++) {
+    // (1) mit warmer Foundry: der Chunk unter dem Spieler steht, die Wald-Schlange ist leer und die Nah-Streu hat jede
+    // gewollte Kachel gebaut (`nahStreu.offen` 0) — 20 Proben in Folge; gezählt wird der Konsum, nie eine feste Takt-Zahl
+    // (über dem Frame-Budget läuft der Deko-Job nur jeden 4. Frame und nie neben einem Chunk-Bau: die CI zählte vorher leer)
+    let ruhig = 0;
+    for (let k = 0; k < 1500 && ruhig < 20; k++) {
         await pumpe(4);
         const e = s.voxelChunks && s.voxelChunks.get(`${Math.floor(mx / span)},${Math.floor(mz / span)}`);
-        if (k > 60 && e && e.surfMap && !(s.pendingVegSpawns && s.pendingVegSpawns.length)) break;
+        const ns = s.nahStreu;
+        const steht =
+            k > 60 && e && e.surfMap && !(s.pendingVegSpawns && s.pendingVegSpawns.length) && ns && ns.kacheln.size > 0 && ns.offen === 0;
+        ruhig = steht ? ruhig + 1 : 0;
     }
-    await pumpe(120);
-    o.w4b.nah = naturImHaus(FH);
+    o.w4b.ruhe = ruhig >= 20;
     o.w4b.nahStreu = streuImHaus(FH);
     // die Nah-Streu um die Kamera (Farn, Blume, Kiesel der Kachel): keine Pflanze im Grundriss
     {
@@ -384,6 +398,34 @@ async function proben() {
             }
         o.w4b.kachel = { pflanzen: n, imHaus };
     }
+    // (2) DIE PROMOTION lebt nur ohne warme Foundry: sie kennt jede Art der Baum-Schicht, `_buildVariantLODs` liefert dann
+    // nichts, `_promoteScatterCell` endet vor dem Spawn (im Spiel: der Boot-Spalt vor dem Buch). Die Probe stellt diesen
+    // Zustand über den Gate-Schalter her (`__anazhGateNoFoundry`, für die Scatter-Promotion vorgesehen) und wartet, bis
+    // jede Baum-Zelle im Promotions-Ring promotet ist; die Wand der Promotion (`_naturSetzen`) misst so ihren echten Takt.
+    {
+        const PR = A.SCATTER.promoteM;
+        const ring = () => {
+            let rest = 0;
+            let promoviert = 0;
+            for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
+                for (const c of region.cells || []) {
+                    if (!c.promotable || (c.x - pm.position.x) ** 2 + (c.z - pm.position.z) ** 2 > PR * PR) continue;
+                    if (c.promotedId != null) promoviert++;
+                    else if (c.slots && !r._scatterIsCellPromoted(c.x, c.z, c.layer || "tree")) rest++;
+                }
+            return { rest, promoviert };
+        };
+        o.w4b.promoWarm = ring();
+        window.__anazhGateNoFoundry = true;
+        try {
+            for (let k = 0; k < 1500 && ring().rest > 0; k++) await pumpe(4);
+        } finally {
+            window.__anazhGateNoFoundry = false;
+        }
+        o.w4b.promo = ring();
+        await pumpe(10);
+    }
+    o.w4b.nah = naturImHaus(FH);
     // W6 DER FRONTALE ANLAUF AUF DIE TÜR: je Kultur (Hof-Grundriss marokkanisch, viktorianisch mit Veranda, alemannisch)
     // steht ein Haus mit Tür-Zeile und Fundament wie ein Siedlungs-Slot auf dem Hang, die Front bergauf (das Gelände der Welt
     // ist bis 420 m nirgends eben; bergauf liegt das Podest vorn auf Gelände-Höhe — ein höheres Podest ist ohne Sprung nie
@@ -419,6 +461,7 @@ async function proben() {
         const fu = { ex: (x1 - x0) / 2, ez: (z1 - z0) / 2, ox: (x0 + x1) / 2, oz: (z0 + z1) / 2 };
         // der Ort: trocken, der Footprint trägt höchstens 4 m Höhenunterschied; die Gier dreht die Front bergauf
         let ort = null;
+        const verworfen = {};
         for (let d = 70; d <= 520 && !ort; d += 10)
             for (let a = 0; a < 48 && !ort; a++) {
                 const cx = start.x + Math.cos((a / 48) * Math.PI * 2) * d;
@@ -446,11 +489,29 @@ async function proben() {
                 let ecken = -Infinity;
                 for (const [lx, lz] of [[x0, z0], [x1, z0], [x0, z1], [x1, z1], [fu.ox, fu.oz]])
                     ecken = Math.max(ecken, r0(cx + lx * c + lz * sn, cz - lx * sn + lz * c));
-                if (Number.isFinite(hi) && hi - lo <= 5 && hi <= ecken + 0.1 && Number.isFinite(vorn) && vorn >= hi - 0.6)
-                    ort = { x: cx, z: cz, hMax: hi, gier };
+                if (!(Number.isFinite(hi) && hi - lo <= 5 && hi <= ecken + 0.1 && Number.isFinite(vorn) && vorn >= hi - 0.6)) continue;
+                // der Anlauf-Korridor ist begehbar (2 m breit um die Tür-Achse, 7 m vor der Front bis zur Front, 0,5-m-Raster):
+                // die oberste Feld-Fläche (`getTerrainHeightAt`) stetig — höchstens 1 m je Schritt; an einer Überhang-Kante
+                // sprang sie 10,7 m in 1 cm, der Anlauf begann am Fuß der Klippe und lief unter sie — und 1 m darunter solide (die
+                // Fläche interpoliert das 1,2-m-Raster des Felds)
+                let grund = null;
+                for (const lx of [tu.x - 1, tu.x, tu.x + 1]) {
+                    let hVor = null;
+                    for (let lz = z0 - 7; lz <= z0 + 0.01 && !grund; lz += 0.5) {
+                        const px = cx + lx * c + lz * sn;
+                        const pz = cz - lx * sn + lz * c;
+                        const h = r0(px, pz);
+                        if (!Number.isFinite(h) || (hVor !== null && Math.abs(h - hVor) > 1.0)) grund = "stetig";
+                        else if (!r._fieldSolid(px, h - 1.0, pz)) grund = "fels";
+                        hVor = h;
+                    }
+                    if (grund) break;
+                }
+                if (grund) verworfen[grund] = (verworfen[grund] || 0) + 1;
+                else ort = { x: cx, z: cz, hMax: hi, gier };
             }
         if (!ort) {
-            w.fehler = "kein Ort";
+            w.fehler = "kein Ort (Korridor verworfen: " + JSON.stringify(verworfen) + ")";
             continue;
         }
         orte.push(ort);
@@ -468,9 +529,35 @@ async function proben() {
         const anlauf = (e) => {
             const vor = welt(e, tu.x, z0 - 6);
             stell(vor.x, (r0(vor.x, vor.z) || e.position.y) + 1.0, vor.z);
+            // der Weg wird verfolgt: der Körper bleibt über dem Boden unter ihm (dem Gelände-Gesetz, auf Podest und Diele der
+            // Haus-Basis) — höchstens eine Stufe darüber vor der Schwelle (nie über eine Mauer), nie darunter (nie in ein Loch)
+            const base = e.position.y - 0.5;
+            s.keys = s.keys || {};
             for (const [lx, lz] of wegpunkte) {
                 const q = welt(e, lx, lz);
-                geh(500, q.x, q.z);
+                for (let k = 0; k < 500; k++) {
+                    if (Math.hypot(q.x - pm.position.x, q.z - pm.position.z) < 0.2) break;
+                    s.yaw = Math.atan2(q.x - pm.position.x, q.z - pm.position.z);
+                    s.keys.w = true;
+                    r._stepFixedSim((t += DT), DT);
+                    const lq = lokal(e, pm.position.x, pm.position.z);
+                    const gel = r0(pm.position.x, pm.position.z);
+                    const fuss = pm.position.y - FUSS;
+                    const ueber = Math.round((fuss - Math.max(gel, base)) * 100) / 100;
+                    const unter = Math.round((fuss - gel) * 100) / 100;
+                    if (lq.z < tu.z - 0.3 && !(ueber <= w.hochM)) {
+                        w.hochM = ueber;
+                        w.hochOrt = [Math.round(lq.x * 100) / 100, Math.round(lq.z * 100) / 100];
+                    }
+                    if (!(unter >= w.tiefM)) {
+                        w.tiefM = unter;
+                        // der Sturz-Ort: haus-lokal, das Gelände-Gesetz über der Basis, das Feld 0,3 m unter dem Gesetz
+                        w.tiefOrt = [Math.round(lq.x * 100) / 100, Math.round(lq.z * 100) / 100, Math.round((gel - base) * 100) / 100];
+                        w.tiefFeld = r._fieldSolid(pm.position.x, gel - 0.3, pm.position.z) ? "solide" : "Luft";
+                    }
+                }
+                s.keys.w = false;
+                for (let k = 0; k < 10; k++) r._stepFixedSim((t += DT), DT);
             }
             const l = lokal(e, pm.position.x, pm.position.z);
             w.endeLokal = [Math.round(l.x * 100) / 100, Math.round((pm.position.y - A.PLAYER_FOOT_OFFSET - (e.position.y - 0.5)) * 100) / 100];
@@ -543,6 +630,10 @@ function urteil(o) {
     const w6 = (o.w6 || []).filter((w) => !w.fehler);
     if (w6.length < 3) f.push(`W6 Aufbau: ${w6.length} von 3 Häusern (${(o.w6 || []).map((w) => w.kultur + ":" + (w.fehler || "ok")).join(" ")})`);
     if (!w6.some((w) => w.kernHuelle === 0)) f.push("W6 Aufbau: kein Haus vor der ersten Studio-Stufe angelaufen");
+    const ueberMauer = w6.filter((w) => !(w.hochM <= 1.3));
+    if (ueberMauer.length) f.push(`W6 Aufbau: der Anlauf lief vor der Schwelle über dem Boden (${ueberMauer.map((w) => w.kultur + " " + w.hochM + " m @" + w.hochOrt).join(" ")} — über eine Mauer, nicht durch die Tür)`);
+    const imLoch = w6.filter((w) => !(w.tiefM >= -1));
+    if (imLoch.length) f.push(`W6 Aufbau: der Körper fiel unter das Gelände (${imLoch.map((w) => w.kultur + " " + w.tiefM + " m @" + w.tiefOrt + " Feld " + w.tiefFeld).join(" ")} — der Ort trägt nicht, kein Tür-Befund)`);
     const kernZu = w6.filter((w) => w.kernHuelle === 0 && !(w.kernDrinM >= 1));
     if (kernZu.length) f.push(`W6 Kern-Hülle: vor der ersten Stufe ${kernZu.map((w) => w.kultur + " " + w.kernDrinM + " m").join(", ")} vor bzw. hinter der Schwelle (Soll ≥ 1)`);
     const fernAlle = [];
@@ -560,6 +651,9 @@ function urteil(o) {
         if (o.w4b.fern.imHaus) f.push(`W4b Fern-Streu: ${o.w4b.fern.imHaus} Streu-Zellen in den Häusern des fernen Dorfs (${JSON.stringify(o.w4b.fern.je)})`);
         if (!o.w4b.neubau || !(o.w4b.neubau.zellen >= 50)) f.push(`W4b Aufbau: die Region baute ${o.w4b.neubau ? o.w4b.neubau.zellen : "?"} Zellen neu (Soll ≥ 50)`);
         else if (o.w4b.neubau.imHaus) f.push(`W4b Neubau: ${o.w4b.neubau.imHaus} Streu-Zellen der neu gebauten Region in den Häusern (${JSON.stringify(o.w4b.neubau.je)})`);
+        if (!o.w4b.ruhe) f.push(`W4b Aufbau: Chunk, Wald-Schlange und Nah-Streu kamen am Dorf nicht zur Ruhe (${o.w4b.kachel ? o.w4b.kachel.pflanzen : "?"} Kachel-Pflanzen)`);
+        if (!o.w4b.promo || !(o.w4b.promo.promoviert >= 1) || o.w4b.promo.rest > 0)
+            f.push(`W4b Aufbau: die Promotion lief nicht durch (${o.w4b.promo ? o.w4b.promo.promoviert + " promotet, " + o.w4b.promo.rest + " offen" : "?"} im Ring; Soll ≥ 1, 0 offen)`);
         if (o.w4b.kachel && o.w4b.kachel.imHaus) f.push(`W4b Nah-Streu: ${o.w4b.kachel.imHaus} von ${o.w4b.kachel.pflanzen} Kachel-Pflanzen im Grundriss`);
         if (o.w4b.nah.imHaus) f.push(`W4b Promotion: nach dem Hinlaufen ${o.w4b.nah.imHaus} Natur-Einträge im Grundriss (${o.w4b.nah.taeter.join(" ")})`);
         if (o.w4b.nahStreu.imHaus) f.push(`W4b Rest-Streu: nach dem Hinlaufen ${o.w4b.nahStreu.imHaus} Streu-Zellen im Grundriss (${JSON.stringify(o.w4b.nahStreu.je)})`);
@@ -574,7 +668,7 @@ function zeile(o) {
         `${hs.length} Häuser (${hs.map((h) => h.gierGrad + "°").join(" ")}) · W1 Tür ${hs.filter((h) => h.tuerDrinM >= 1).length}/${hs.length}` +
         ` · W2 Diele ${hs.map((h) => h.dieleCm).join("/")} cm · W3 Treppe ${hs.filter((h) => Number.isFinite(h.treppeSollM)).map((h) => h.treppeSteigM + "/" + h.treppeSollM).join(" ")} m` +
         ` · W4 Natur im Grundriss ${o.w4 ? o.w4.imHaus + "/" + o.w4.natur : "?"} · W4c Überstand ${hs.map((h) => h.grundrissUeberM).join("/")} m` +
-        ` · W4b fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
+        ` · W4b fern ${o.w4b && o.w4b.fern ? o.w4b.fern.imHaus + "/" + o.w4b.fern.zellen : "?"} Streu, nah ${o.w4b && o.w4b.nah ? o.w4b.nah.imHaus + "/" + o.w4b.nah.natur : "?"} Natur + ${o.w4b && o.w4b.nahStreu ? o.w4b.nahStreu.imHaus : "?"} Streu, Neubau ${o.w4b && o.w4b.neubau ? o.w4b.neubau.imHaus + "/" + o.w4b.neubau.zellen : "?"}, Nah-Streu ${o.w4b && o.w4b.kachel ? o.w4b.kachel.imHaus + "/" + o.w4b.kachel.pflanzen : "?"}, Promotion ${o.w4b && o.w4b.promo ? o.w4b.promo.promoviert + " (warm " + o.w4b.promoWarm.promoviert + "), offen " + o.w4b.promo.rest : "?"} (${o.w4b ? o.w4b.haeuser : "?"} Häuser)` +
         ` · W5 Optik ${hs.map((h) => h.optikProzent).join("/")} %` +
         ` · W6 Tür frontal ${(o.w6 || []).map((w) => w.kultur + (w.fehler ? ":" + w.fehler : " Kern " + w.kernDrinM + " m (" + w.kernBoxen + " Boxen) / " + (w.fern || []).map((fz) => "L" + fz.stufe + " " + fz.drinM + " m").join(" / "))).join(" · ")}`
     );
@@ -642,7 +736,7 @@ function zeile(o) {
                 fernstufe: ["W6 Fernstufe"],
                 kern: ["W6 Kern-Hülle"],
             };
-            for (const inj of Object.keys(soll)) {
+            for (const inj of Object.keys(soll).filter((k) => !NUR.length || NUR.includes(k))) {
                 const { o, pf } = await lauf(inj);
                 const f = urteil(o);
                 const fehlt = soll[inj].filter((x) => !f.some((y) => y.startsWith(x)));
