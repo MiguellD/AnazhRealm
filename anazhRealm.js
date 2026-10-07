@@ -31930,6 +31930,33 @@ class AnazhRealm {
             if (wy > topY) topY = wy;
             if (wy < botY) botY = wy;
         }
+        // DIE GEDREHTE BOX (D5, Welle L — dieselbe Form wie die Haus-Hülle `_hausObb`): ein Teil, das nur um die Hoch-Achse
+        // dreht, ist in der Ebene ein Rechteck mit der Gier Eintrag + Teil; quer zu den Welt-Achsen trägt es seine `obb`, und
+        // Kapsel, Tier-Leib, Wagen-Hülle und Strahl lösen in ihrem Rahmen (die Welt-AABB bleibt Vorfilter und Zellen-Stempel).
+        // Vorher stand jedes gedrehte Teil als seine Welt-AABB (eine 34° gedrehte Mauer aus einem Teil 12 × 0,8 m: die Hülle
+        // eines Wagens hielt 2,36 m vor ihr; der geparkte Wagen, der gedrehte Fels, das Tor ebenso). Achsparallele Teile
+        // bleiben byte-alt.
+        if (ax === 0 && az === 0) {
+            const gier = ry + ay;
+            if (Math.abs(Math.sin(2 * gier)) > 1e-9) {
+                return {
+                    minX,
+                    maxX,
+                    minZ,
+                    maxZ,
+                    topY,
+                    botY,
+                    obb: {
+                        cx: ox + px * rc + pz * rs,
+                        cz: oz - px * rs + pz * rc,
+                        c: Math.cos(gier),
+                        s: Math.sin(gier),
+                        hx,
+                        hz,
+                    },
+                };
+            }
+        }
         return { minX, maxX, minZ, maxZ, topY, botY };
     }
 
@@ -32006,8 +32033,8 @@ class AnazhRealm {
             solidAABBs.push(aabb);
         }
         // Das FUNDAMENT ist Blocker-Wahrheit: der Sockel vom tiefsten Footprint-Punkt bis zur Haus-Basis
-        // ist SOLID (Kapsel, Cell-Stempel, Wasser urteilen gleich — nicht unters Haus am Hang). Rotation
-        // konservativ als Welt-AABB überdeckt.
+        // ist SOLID (Kapsel, Cell-Stempel, Wasser urteilen gleich — nicht unters Haus am Hang). Gedreht trägt es seine
+        // `obb` (Kapsel und Strahl im Rahmen des Podests), die Welt-AABB bleibt Vorfilter und Zellen-Stempel.
         const fu = this._archFundamentBox(entry);
         if (fu) solidAABBs.push(fu);
         if (solidAABBs.length === 0) return;
@@ -88766,11 +88793,10 @@ class AnazhRealm {
     // ganz im Wagen). Der Körper des Gesetz-Fahrzeugs ist seine Hülle: ein Rechteck längs der Fahrt (Bug bis Heck, ±halbe
     // Karosserie-Breite), das Band von der Rad-Ebene + Stufe (radR/2, vehicle-core FAHR.schritt.stufeRad) bis zum Dach.
     // Studio-Fahrzeug: exportDrive.huelle; Teile-Werk: seine Hülle (die halbe Spanne längs, die halbe Breite quer). null:
-    // kein Fahr-Gesetz (dann trägt die Reiter-Kapsel). ZWEI ROLLEN, BENANNT (Gegenprüfung 07.10.): fahrend kollidiert der
-    // Wagen als DIESES gedrehte Rechteck; als Hindernis für andere (Spieler-Kapsel, Wesen, ein zweiter Wagen) steht er als
-    // seine Teil-Boxen (`_populateBlockerAABBs`: achsparallele AABBs je Teil, im Ritt bis 0,5 m nachgezogen, beim Abstieg
-    // und nach dem Nachlauf exakt). Dieselbe Form in beiden Rollen trägt die gedrehte Box (OBB) — die gehört nach Entscheid
-    // D5 der Familie koerper-haus (`box.obb`); `_resolveHuelleVsAABB` liest sie nach der Integration.
+    // kein Fahr-Gesetz (dann trägt die Reiter-Kapsel). ZWEI ROLLEN, EINE FORM (D5): fahrend kollidiert der Wagen als DIESES
+    // gedrehte Rechteck; als Hindernis für andere (Spieler-Kapsel, Wesen, ein zweiter Wagen) steht er als seine Teil-Boxen
+    // (`_populateBlockerAABBs`, im Ritt bis 0,5 m / 0,1 rad nachgezogen), jede eine gedrehte Box (`obb` aus
+    // `_blockerComputePartAABB`), gegen die jeder Löser im Rahmen der Box rechnet — auch `_resolveHuelleVsAABB`.
     _fahrHuelle(entry) {
         if (!entry || !entry._fahr || !entry._fahrSatz || !Number.isFinite(entry._fahr.y)) return null;
         if (entry._fahrHuelleKette) return entry._fahrHuelleKette;
@@ -88829,24 +88855,33 @@ class AnazhRealm {
         return entry._fahrHuelleKette;
     }
 
-    // DIE HÜLLE GEGEN EINE AABB (der Körper-Fall des EINEN Struktur-Lösers `_stepCharacterStructures`, wie die Kapsel
+    // DIE HÜLLE GEGEN EINE BOX (der Körper-Fall des EINEN Struktur-Lösers `_stepCharacterStructures`, wie die Kapsel
     // `_resolveCapsuleVsAABB`): das Rechteck der Hülle (Mitte an pos + Bug-Achse · mitte) gegen die Box, getrennt auf
-    // den vier Achsen (x, z, Bug, Quer); überlappt die Box das Band der Hülle, schiebt der kürzeste Weg den Wagen heraus
-    // (pos mutiert, der Schub reist in h.schub für die Fahrt).
+    // den vier Achsen (die zwei der Box, Bug, Quer); überlappt die Box das Band der Hülle, schiebt der kürzeste Weg den
+    // Wagen heraus (pos mutiert, der Schub reist in h.schub für die Fahrt). DIE GEDREHTE BOX (D5, Welle L — die Haus-Hülle
+    // und das Podest, `_hausObb`/`_archFundamentBox`): ihre Achsen und Halb-Maße sind die der `obb`, die Welt-AABB bleibt
+    // der Vorfilter der Leser. Vorher löste die Hülle gegen die Welt-AABB (eine 34° gedrehte Wand 12 × 0,8 m: der Wagen
+    // hielt 2,36 m vor der Wand).
     _resolveHuelleVsAABB(box, pos, h) {
         if (!(box.topY > h.unten && box.botY < h.oben)) return;
-        const cx = pos.x + h.fX * h.mitte - (box.minX + box.maxX) * 0.5;
-        const cz = pos.z + h.fZ * h.mitte - (box.minZ + box.maxZ) * 0.5;
-        const ex = (box.maxX - box.minX) * 0.5;
-        const ez = (box.maxZ - box.minZ) * 0.5;
+        const ob = box.obb;
+        // die Achsen der Box in der Welt (lokal x → (c, −s), lokal z → (s, c); `_hausObb`) und ihre Halb-Maße
+        const b1x = ob ? ob.c : 1;
+        const b1z = ob ? -ob.s : 0;
+        const b2x = ob ? ob.s : 0;
+        const b2z = ob ? ob.c : 1;
+        const ex = ob ? ob.hx : (box.maxX - box.minX) * 0.5;
+        const ez = ob ? ob.hz : (box.maxZ - box.minZ) * 0.5;
+        const cx = pos.x + h.fX * h.mitte - (ob ? ob.cx : (box.minX + box.maxX) * 0.5);
+        const cz = pos.z + h.fZ * h.mitte - (ob ? ob.cz : (box.minZ + box.maxZ) * 0.5);
         let best = Infinity;
         let ax = 0;
         let az = 0;
         for (let i = 0; i < 4; i++) {
-            const ux = i === 0 ? 1 : i === 1 ? 0 : i === 2 ? h.fX : h.qX;
-            const uz = i === 0 ? 0 : i === 1 ? 1 : i === 2 ? h.fZ : h.qZ;
+            const ux = i === 0 ? b1x : i === 1 ? b2x : i === 2 ? h.fX : h.qX;
+            const uz = i === 0 ? b1z : i === 1 ? b2z : i === 2 ? h.fZ : h.qZ;
             const rO = h.hl * Math.abs(h.fX * ux + h.fZ * uz) + h.hw * Math.abs(h.qX * ux + h.qZ * uz);
-            const rA = ex * Math.abs(ux) + ez * Math.abs(uz);
+            const rA = ex * Math.abs(b1x * ux + b1z * uz) + ez * Math.abs(b2x * ux + b2z * uz);
             const d = cx * ux + cz * uz;
             const ov = rO + rA - Math.abs(d);
             if (ov <= 0) return; // getrennt

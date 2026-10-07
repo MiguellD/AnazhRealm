@@ -43,6 +43,11 @@
 //       1,97–2,32 m im Stamm, der Bär ganz im Wagen)                                                Soll ≤ 0,05 m
 //       H6 (D2): Wagen gegen Tier liest denselben Leib wie Tier gegen Hülle (`_kreaturLeib`); der Bär steht quer, die
 //       Hülle berührt seine Flanke (≤ 0,3 m) statt vor einem zweiten Kreis (separation × bodySize) zu halten.
+//       H7 (D5): eine 34° gedrehte Haus-Wand (Hülle der Stufe, `_hausObb`) — die Hülle berührt die ECHTE Wand (≤ 0,3 m)
+//       und dringt nicht ein, statt vor ihrer Welt-AABB zu halten.
+//       H8 (D5, die zweite Rolle): eine 34° gedrehte Mauer aus EINEM Teil — jedes gedrehte Teil eines Hindernisses (der
+//       geparkte Wagen, Fels, Tor, Bauwerk) ist seine gedrehte Box (`_blockerComputePartAABB` → obb); die Hülle berührt
+//       das Teil (≤ 0,3 m), nie seine Welt-AABB. Die H-Proben räumen die Gasse von fremden Wesen (der Leib hält den Wagen).
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
@@ -237,6 +242,11 @@ function huelleWand(stamm) {
     const leibW = /this\._kreaturLeib\(/.test(huelle);
     const leibT = /this\._kreaturLeib\(/.test(tierHuelle);
     const kreis = (huelle.match(/\bseparation\b|bodySize/g) || []).length;
+    const loeser = fnBody(st, /\n {4}_resolveHuelleVsAABB\([^)]*\) \{/) || "";
+    const obb = /\bbox\.obb\b/.test(loeser);
+    // die zweite Rolle: jedes um die Hoch-Achse gedrehte Teil trägt seine obb (`_blockerComputePartAABB`)
+    const teilBox = fnBody(st, /\n {4}_blockerComputePartAABB\([^)]*\) \{/) || "";
+    const teilObb = /\bobb:\s*\{/.test(teilBox);
     return [
         [
             "H5 EINE Gleit-Schleife: die Kapsel (5b) und die Hülle rufen `_wandGleiten`, keine Kopie",
@@ -247,6 +257,16 @@ function huelleWand(stamm) {
             "H6 EIN Leib je Tier (D2): Wagen gegen Tier und Tier gegen Hülle lesen `_kreaturLeib`, kein zweiter Kreis im Kontakt",
             leibW && leibT && kreis === 0,
             `Wagen liest den Leib ${leibW} · Tier liest den Leib ${leibT} · separation/bodySize im Wagen-Kontakt ${kreis}×`,
+        ],
+        [
+            "H7 die gedrehte Box (D5): die Hülle löst im Rahmen der Box (`_resolveHuelleVsAABB` liest `box.obb`), nie gegen ihre Welt-AABB",
+            obb,
+            `box.obb im Löser der Hülle ${obb}`,
+        ],
+        [
+            "H8 EINE Form in beiden Rollen (D5): jedes gedrehte Teil eines Hindernisses trägt seine obb (`_blockerComputePartAABB`)",
+            teilObb,
+            `obb der Teil-Box ${teilObb}`,
         ],
     ];
 }
@@ -453,6 +473,18 @@ function stationVerdict(s) {
         if (!h) out.push(`huelle-${name} keine Probe`);
         else if (!(h.abstand <= STATION.beruehrtM))
             out.push(`huelle-${name} keine Berührung (Abstand ${h.abstand.toFixed(2)} m)`);
+        else if (!(h.tief <= STATION.huelleM)) out.push(`huelle-${name} Eindringen ${h.tief.toFixed(2)} m`);
+    }
+    // das gedrehte Haus (D5): die Hülle berührt die ECHTE Wand (kleinster Abstand über die Fahrt), nie die Welt-AABB davor
+    // und die gedrehte Teil-Box (D5, die zweite Rolle — Wagen, Fels, Tor, Bauwerk): die Hülle berührt das Teil, nie seine Welt-AABB
+    for (const [k, name, was] of [
+        ["huelleHaus", "haus", "der echten Wand"],
+        ["huelleTeil", "teil", "des Teils"],
+    ]) {
+        const h = s[k];
+        if (!h) out.push(`huelle-${name} keine Probe`);
+        else if (!(h.nah <= STATION.beruehrtM))
+            out.push(`huelle-${name} keine Berührung ${was} (kleinster Abstand ${h.nah.toFixed(2)} m)`);
         else if (!(h.tief <= STATION.huelleM)) out.push(`huelle-${name} Eindringen ${h.tief.toFixed(2)} m`);
     }
     return out;
@@ -1192,6 +1224,15 @@ async function probeLeben(expected) {
             const sc = Number.isFinite(gH.scale) ? gH.scale : 1;
             const ux = Math.sin(gasse.fahrt);
             const uz = Math.cos(gasse.fahrt);
+            // die Gasse ist frei von fremden Wesen (ein Wolf vor dem Bug hält den Wagen an seinem Leib — die Probe misst ihr
+            // eigenes Hindernis): jedes Wesen im Umkreis 30 m der Strecke geht, bevor das Hindernis steht
+            for (const cr of (st.creatures || []).slice())
+                if (
+                    cr &&
+                    cr.position &&
+                    Math.hypot(cr.position.x - (gasse.x + ux * 8), cr.position.z - (gasse.z + uz * 8)) < 30
+                )
+                    r.removeCreature(cr);
             const ziel = hindernis.setzen(gH.position.x + ux * 9, gH.position.z + uz * 9);
             if (!ziel) {
                 weg(gH);
@@ -1199,6 +1240,7 @@ async function probeLeben(expected) {
             }
             let tief = 0;
             let abstand = Infinity;
+            let nah = Infinity; // der kleinste Abstand über die Fahrt (gleitet die Hülle an der Wand entlang, zählt der Kontakt)
             let schritte = 0;
             const messen = () => {
                 const ry = Number.isFinite(gH._rideYaw) ? gH._rideYaw : 0;
@@ -1221,6 +1263,7 @@ async function probeLeben(expected) {
                 P4.call(this, simTime, dt);
                 hindernis.halten(ziel);
                 messen();
+                nah = Math.min(nah, abstand);
                 schritte++;
             };
             tasten(true, false);
@@ -1230,7 +1273,7 @@ async function probeLeben(expected) {
             const vorn = (gH.position.x - gasse.x) * ux + (gH.position.z - gasse.z) * uz;
             weg(gH);
             hindernis.weg(ziel);
-            return { tief, abstand, schritte, vorn };
+            return { tief, abstand, nah, schritte, vorn };
         };
         const boxTiefe = (boxes, px, pz) => {
             let t = 0;
@@ -1357,6 +1400,91 @@ async function probeLeben(expected) {
                 weg(gS);
             }
         }
+        // H7 — DAS GEDREHTE HAUS (Entscheid D5 der Welle L, Integration): eine Haus-Wand 12 × 0,8 m, 34° gegen die Fahrt
+        // gedreht, als Hülle der Stufe (`_hausHuelleSetzen` → `_hausObb`, derselbe Weg wie der Beipack `__huelle` der
+        // Foundry) steht 9 m voraus; der GT fährt mit W hinein. Gemessen gegen die ECHTE Wand (im Rahmen der gedrehten Box):
+        // das Eindringen und der kleinste Abstand über die Fahrt. Die Welt-AABB der gedrehten Wand ist ein Mehrfaches der
+        // Wand — hält die Hülle an ihr, bleibt sie vor der Wand stehen (keine Berührung).
+        st.blueprints._t_fahr_haus = {
+            name: "_t_fahr_haus",
+            parts: [
+                { shape: "box", material: "stein", position: { x: 0, y: 1.25, z: 0 }, size: { x: 12, y: 2.5, z: 0.8 } },
+            ],
+        };
+        const obbLokal = (ob, px, pz) => {
+            const dx = px - ob.cx;
+            const dz = pz - ob.cz;
+            return [dx * ob.c - dz * ob.s, dx * ob.s + dz * ob.c];
+        };
+        S.huelleHaus = await huelleProbe({
+            setzen: (x, zz) => {
+                const e = r.spawnArchitecture(
+                    "_t_fahr_haus",
+                    { x, y: hh(x, zz) + 0.5, z: zz },
+                    { silent: true, precise: true, rotationY: gasse.fahrt + 0.6 }
+                );
+                if (!e) return null;
+                r._hausHuelleSetzen(e, { stufe: 0, boxen: [-6, -3, -0.4, 6, 2.5, 0.4] });
+                const box = (e.blockerAABBs || []).find((b) => b.obb);
+                if (!box) {
+                    r.removeArchitecture(e);
+                    return null;
+                }
+                return { e, ob: box.obb, aabb: [box.maxX - box.minX, box.maxZ - box.minZ] };
+            },
+            tiefe: (b, px, pz) => {
+                const [lx, lz] = obbLokal(b.ob, px, pz);
+                return Math.max(0, Math.min(b.ob.hx - Math.abs(lx), b.ob.hz - Math.abs(lz)));
+            },
+            abstand: (b, px, pz) => {
+                const [lx, lz] = obbLokal(b.ob, px, pz);
+                return Math.hypot(Math.max(Math.abs(lx) - b.ob.hx, 0), Math.max(Math.abs(lz) - b.ob.hz, 0));
+            },
+            halten: () => {},
+            weg: (b) => r.removeArchitecture(b.e),
+        });
+        delete st.blueprints._t_fahr_haus;
+        // H8 — DIE GEDREHTE TEIL-BOX (D5, die zweite Rolle der Hülle: jedes Hindernis aus Teilen — der geparkte Wagen, der
+        // Fels, das Tor, ein Bauwerk — steht als seine Teil-Boxen aus `_blockerComputePartAABB`): eine Mauer aus EINEM Teil
+        // 12 × 0,8 m, ohne Haus-Hülle, 34° gegen die Fahrt gedreht, steht 9 m voraus; der GT fährt mit W hinein. Gemessen
+        // gegen das ECHTE Teil (in seinem Rahmen): das Eindringen und der kleinste Abstand über die Fahrt. Steht das Teil als
+        // Welt-AABB, hält die Hülle vor dem Rechteck um die Mauer.
+        st.blueprints._t_fahr_mauer = {
+            name: "_t_fahr_mauer",
+            parts: [
+                { shape: "box", material: "stein", position: { x: 0, y: 1.25, z: 0 }, size: { x: 12, y: 2.5, z: 0.8 } },
+            ],
+        };
+        S.huelleTeil = await huelleProbe({
+            setzen: (x, zz) => {
+                const e = r.spawnArchitecture(
+                    "_t_fahr_mauer",
+                    { x, y: hh(x, zz) + 0.5, z: zz },
+                    { silent: true, precise: true, rotationY: gasse.fahrt + 0.6 }
+                );
+                if (!e) return null;
+                r._populateBlockerAABBs(e);
+                if (!e.blockerAABBs || e.blockerAABBs.length !== 1 || e._hausHuelle) {
+                    r.removeArchitecture(e);
+                    return null;
+                }
+                const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+                const c = Math.cos(e.rotationY);
+                const sn = Math.sin(e.rotationY);
+                return { e, ob: { cx: e.position.x, cz: e.position.z, c, s: sn, hx: 6 * sc, hz: 0.4 * sc } };
+            },
+            tiefe: (b, px, pz) => {
+                const [lx, lz] = obbLokal(b.ob, px, pz);
+                return Math.max(0, Math.min(b.ob.hx - Math.abs(lx), b.ob.hz - Math.abs(lz)));
+            },
+            abstand: (b, px, pz) => {
+                const [lx, lz] = obbLokal(b.ob, px, pz);
+                return Math.hypot(Math.max(Math.abs(lx) - b.ob.hx, 0), Math.max(Math.abs(lz) - b.ob.hz, 0));
+            },
+            halten: () => {},
+            weg: (b) => r.removeArchitecture(b.e),
+        });
+        delete st.blueprints._t_fahr_mauer;
         // H4 — KEIN SCHUB INS GELÄNDE (Befund 07.10.: ein beim Remesh auf den Wagen gestreuter Felsbogen schob ihn 3,3 m in
         // den Hang, 2,43 m unter den Boden; die Wand-Regel der Vertikale hielt ihn dort). Die ECHTE Methode
         // `_fahrHuelleKontakt` mit der echten Hülle des GT auf einer synthetischen Welt (ein Objekt mit der Welt als Prototyp):
@@ -1479,6 +1607,8 @@ async function probeLeben(expected) {
             huelleSchub: { weg: 0 },
             huelleHang: { schub: 0.8, eindringen: 0 },
             huelleBaer: { tief: 0.01, abstand: 0.0 },
+            huelleHaus: { tief: 0.0, abstand: 0.4, nah: 0.02 },
+            huelleTeil: { tief: 0.0, abstand: 0.2, nah: 0.03 },
             pflicht: { satz: "bruch", ebene: "bruch" },
         };
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
@@ -1573,6 +1703,26 @@ async function probeLeben(expected) {
                 "raeder ohne Sattel",
             ],
             ["der Bär ganz im Wagen (F-L5)", { huelleBaer: { tief: 1.6, abstand: 0 } }, "huelle-baer Eindringen"],
+            [
+                "der Wagen hält an der Welt-AABB des gedrehten Hauses, 1,5 m vor der Wand (D5)",
+                { huelleHaus: { tief: 0, abstand: 1.5, nah: 1.5 } },
+                "huelle-haus keine Berührung",
+            ],
+            [
+                "der Bug in der gedrehten Wand",
+                { huelleHaus: { tief: 0.4, abstand: 0, nah: 0 } },
+                "huelle-haus Eindringen",
+            ],
+            [
+                "der Wagen hält vor der Welt-AABB einer gedrehten Teil-Box, 2,2 m vor dem Teil (D5)",
+                { huelleTeil: { tief: 0, abstand: 2.2, nah: 2.2 } },
+                "huelle-teil keine Berührung",
+            ],
+            [
+                "der Bug in der gedrehten Teil-Box",
+                { huelleTeil: { tief: 0.5, abstand: 0, nah: 0 } },
+                "huelle-teil Eindringen",
+            ],
             [
                 "der Wagen hält am zweiten Kreis (separation × bodySize), 0,8 m vor dem Leib (D2)",
                 { huelleBaer: { tief: 0, abstand: 0.8 } },
@@ -1676,6 +1826,28 @@ async function probeLeben(expected) {
             "Selbst-Test H6: der Vor-Stand (der zweite Kreis im Wagen-Kontakt, D2) → H6 feuert",
             !h6Rot[1][1],
             h6Rot[1][2]
+        );
+        // der Vor-Stand von D5: der Löser der Hülle liest die Welt-AABB (kein box.obb)
+        const h7Rot = huelleWand(
+            quelle.replace(/\n {4}_resolveHuelleVsAABB\([^)]*\) \{[\s\S]*?\n {4}\}/, (m) =>
+                m.replace(/\bbox\.obb\b/g, "box.aabb")
+            )
+        );
+        check(
+            "Selbst-Test H7: der Vor-Stand (der Löser der Hülle ohne box.obb, D5) → H7 feuert",
+            !h7Rot[2][1],
+            h7Rot[2][2]
+        );
+        // der Vor-Stand der zweiten Rolle: die Teil-Box ohne obb (die Welt-AABB jedes gedrehten Teils)
+        const h8Rot = huelleWand(
+            quelle.replace(/\n {4}_blockerComputePartAABB\([^)]*\) \{[\s\S]*?\n {4}\}/, (m) =>
+                m.replace(/\bobb:\s*\{/g, "aabbAlt: {")
+            )
+        );
+        check(
+            "Selbst-Test H8: der Vor-Stand (gedrehte Teile als Welt-AABB, D5) → H8 feuert",
+            !h8Rot[3][1],
+            h8Rot[3][2]
         );
         const pRot = pflichtWand(
             quelle
@@ -1859,6 +2031,22 @@ async function probeLeben(expected) {
         S.huelleHang
             ? `Schub des Kastens ${S.huelleHang.schub.toFixed(2)} m · Eindringen in die Wand ${S.huelleHang.eindringen.toFixed(3)} m`
             : "keine Probe"
+    );
+    const H7 = S.huelleHaus;
+    check(
+        "H7 der GT fährt mit W gegen eine 34° gedrehte Haus-Wand: die Hülle hält an der ECHTEN Wand (Berührung ≤ 0,3 m, Eindringen ≤ 0,05 m), nicht an ihrer Welt-AABB",
+        !hat("kern") && !hat("huelle-haus"),
+        H7
+            ? `kleinster Abstand zur Wand ${H7.nah.toFixed(3)} m · Eindringen ${H7.tief.toFixed(3)} m · am Ende ${H7.abstand.toFixed(3)} m · ${H7.vorn.toFixed(1)} m gefahren · ${H7.schritte} Schritte`
+            : "keine Probe (Haus-Wand)"
+    );
+    const H8 = S.huelleTeil;
+    check(
+        "H8 der GT fährt mit W gegen eine 34° gedrehte Mauer aus EINEM Teil (die Teil-Box jedes Hindernisses — Wagen, Fels, Tor, Bauwerk): die Hülle hält am ECHTEN Teil (Berührung ≤ 0,3 m, Eindringen ≤ 0,05 m), nicht an seiner Welt-AABB",
+        !hat("kern") && !hat("huelle-teil"),
+        H8
+            ? `kleinster Abstand zum Teil ${H8.nah.toFixed(3)} m · Eindringen ${H8.tief.toFixed(3)} m · am Ende ${H8.abstand.toFixed(3)} m · ${H8.vorn.toFixed(1)} m gefahren · ${H8.schritte} Schritte`
+            : "keine Probe (gedrehte Teil-Box)"
     );
     for (const [name, ok, detail] of huelleWand(quelle)) check(name, ok, detail);
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
