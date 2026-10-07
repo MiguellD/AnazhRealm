@@ -4742,7 +4742,8 @@ class AnazhRealm {
             } else if (result.ok) {
                 const weicht = this._naturAbsageSatz(result.log);
                 if (!weicht || !weicht.nichts)
-                    appendChatOutput(`(Welt verändert: ${JSON.stringify(reply.program).slice(0, 140)})`);
+                    // die Tat in Worten (`describeProgram`), nie das rohe Programm (V-D8: ids und DSL-JSON im Spieler-Chat)
+                    appendChatOutput(`(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)`);
                 if (weicht) appendChatOutput(`(${compName}-Vorschlag: ${weicht.satz})`);
                 // Wie ein Chat-Programm: in Pattern-Memory verknüpfen via
                 // recentKeywords (die enthalten den userText bereits).
@@ -4766,8 +4767,7 @@ class AnazhRealm {
                     historyRef: historyEntry,
                 });
             } else {
-                const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
-                appendChatOutput(`(Grok-Vorschlag abgelehnt: ${reason ? reason.grund || reason.event : "Sandbox"})`);
+                appendChatOutput(`(${compName}-Vorschlag abgelehnt: ${this._dslAbsageSatz(result.log)})`);
             }
         }
         this.llmUpdateStatus();
@@ -23208,13 +23208,20 @@ class AnazhRealm {
             spawn_creature: (a) =>
                 `ruft ${a[1] || 1} ${a[2] ? a[2] + " " : ""}Kreatur${(a[1] || 1) !== 1 ? "en" : ""} herbei ${pos(a[0])}`,
             spawn_tree: (a) => `pflanzt ${a[1] || 1} ${(a[1] || 1) !== 1 ? "Bäume" : "Baum"} ${pos(a[0])}`,
-            spawn_studio: (a) => `lässt ${a[2] || 1}× „${a[0]}" aus dem Studio wachsen ${pos(a[1])}`,
+            spawn_studio: (a) => {
+                const n = typeof a[0] === "string" ? this._studioBlueprintForWord(a[0].toLowerCase()) : null;
+                const bp = n && this.state.blueprints ? this.state.blueprints[n] : null;
+                return `lässt ${a[2] || 1}× „${(bp && bp.label) || a[0]}" aus dem Studio wachsen ${pos(a[1])}`;
+            },
             spawn_island: (a) => `setzt eine schwebende Insel ${pos(a[0])}`,
             spawn_ufo: (a) => `ruft ein UFO ${pos(a[0])}`,
             spawn_village: (a) => `errichtet ein Dorf ${pos(a[0])}`,
             spawn_temple: (a) => `errichtet einen Tempel ${pos(a[0])}`,
             spawn_waterfall: (a) => `formt einen Wasserfall ${pos(a[0])}`,
-            spawn_blueprint: (a) => `baut „${a[0]}" ${pos(a[1])}`,
+            spawn_blueprint: (a) => {
+                const bp = this.state.blueprints && this.state.blueprints[a[0]];
+                return `baut „${(bp && bp.label) || a[0]}" ${pos(a[1])}`; // das Label, nie die id (V-D8)
+            },
             remove_architecture: () => `baut ein Bauwerk ab`,
             spawn_fractal: (a) => `lässt „${a[1]}" fraktal in Tiefe ${a[2]} wachsen ${pos(a[0])}`,
             define_blueprint: (a) => `legt einen neuen Bauplan „${a[0]}" an`,
@@ -23862,11 +23869,24 @@ class AnazhRealm {
                     : `${satz} — nichts geschah.`
             );
         } else {
-            const reason = result.log.find((e) => /budget|unknown|invalid|exception/.test(e.event));
-            appendChatOutput(`Befehl lief, aber mit Auffälligkeit: ${reason ? reason.event : "siehe Log"}`);
+            appendChatOutput(this._dslAbsageSatz(result.log));
         }
         chatInput.value = "";
         return true;
+    }
+
+    // DER SATZ DER ABSAGE (Leben-Schau 07.10., V-D8: Spieler-Text und Log sind getrennte Kanäle): wirkte ein Programm nicht,
+    // hört der Spieler Worte — das Ereignis (`budget_*`, `unknown_op`, `op_exception` …) geht ins Log. Vorher stand der
+    // Ereignis-Name im Chat („Befehl lief, aber mit Auffälligkeit: op_exception").
+    _dslAbsageSatz(log) {
+        const e = (log || []).find((x) => x && /budget|unknown|invalid|exception/.test(x.event));
+        if (e) this.log(`Programm-Absage: ${e.event}${e.grund ? " — " + e.grund : ""}`, "INFO");
+        if (!e) return "Die Welt hat den Satz nicht ganz umgesetzt.";
+        if (/budget/.test(e.event)) return "Die Welt ist für den Moment erschöpft — versuch es gleich noch einmal.";
+        if (/unknown/.test(e.event)) return "Das kennt die Welt (noch) nicht.";
+        if (e.grund) return String(e.grund).charAt(0).toUpperCase() + String(e.grund).slice(1) + ".";
+        if (/invalid/.test(e.event)) return "Etwas an dem Satz passt nicht zur Welt.";
+        return "Dabei ist etwas zerbrochen — das Logbuch nennt es.";
     }
 
     // Das EINE Dispatch-Tor: Legacy-Befehle als DATEN-Tabelle ({example, re, run}, dieselbe Sprache wie
