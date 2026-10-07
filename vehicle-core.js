@@ -2207,6 +2207,11 @@
         //    die EINE Zahl, die jede Anzeige „km/h" liest (Labor-HUD heute, Welt-HUD morgen). Befund: die Probefahrt
         //    rechnete |speed| × 12 unter der Einheit km/h (10,5 m/s zeigte 126 statt 37,8). ──
         kmh: 3.6,
+        // ── 0710-4 (rein additive DATEN-Zeile — Praezedenz: kmh) — DIE MASSE DES WAGENS: carPhys traegt sein Volumen
+        //    (Laenge · Spur · Dach, m³ — darauf ist der Schub geeicht), die Masse ist dieses Volumen mal der mittleren
+        //    Dichte der geschlossenen Huelle (Blech, Motor, Kabine voll Luft): ein GT mit 9,6 m³ wiegt 1,4 t. Der Wirt
+        //    liest sie fuer jeden Stoss (vorher hielt er die Zahl selbst: STOSS.dichteWagen — eine Studio-Groesse im Wirt). ──
+        masseDichte: 150,
         // ── FAHR-GEFUEHL (rein additive DATEN-Zeile — Praezedenz: hostEmergent) —
         // DIE LENK-/DRIFT-GESETZE der Probefahrt fuer den Welt-Ritt: sfK ist die
         // selbstzentrierende Lenkung des Labs (sf = 1/(1 + v·sfK), updateVehicle
