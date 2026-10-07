@@ -168,7 +168,12 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 const z = (new Error().stack || "").split("\n").slice(3).map((x) => x.trim().replace(/^at /, "").replace(/ \(.*/, ""));
                 Error.stackTraceLimit = lim;
                 const stamm = z.filter((x) => /AnazhRealm\.|anazhRealm\.js/.test(x)).slice(0, 4);
-                console.log("[Linse] Compile außerhalb des Schlüssel-Warmups (" + (wdh ? "Wiederholung" : "neu") + ", " + Math.round(fp.length / 1024) + " KB): " + [z[0]].concat(stamm.length ? stamm : z.slice(1, 6)).join(" < "));
+                // und das OBJEKT, dessen Zeichnung kompiliert (der Haken an renderObject unten): Art · Stoff · Pfad
+                const ob = window.__ccObjekt;
+                let lichter = 0;
+                try { window.anazhRealm.state.scene.traverseVisible((o) => { if (o.isLight) lichter++; }); } catch (_e) {}
+                const wer = ob ? ` · Objekt ${window.__ccName ? window.__ccName(ob) : ob.type} · sichtbare Lichter ${lichter}` : "";
+                console.log("[Linse] Compile außerhalb des Schlüssel-Warmups (" + (wdh ? "Wiederholung" : "neu") + ", " + Math.round(fp.length / 1024) + " KB): " + [z[0]].concat(stamm.length ? stamm : z.slice(1, 6)).join(" < ") + wer);
             }
         };
         if (typeof GPUDevice !== "undefined" && GPUDevice.prototype) {
@@ -265,6 +270,25 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             }
             return `${o.type}:${(m && (m.name || m.type)) || "?"}${pfad.length ? " in " + pfad.join(" < ") : ""}`;
         };
+        // DAS OBJEKT JEDES COMPILES beim Namen: der Haken an renderObject trägt das Objekt der laufenden Zeichnung
+        window.__ccName = name;
+        const roRoh = s.renderer.renderObject;
+        s.renderer.renderObject = function (o) {
+            const vor = window.__ccObjekt;
+            window.__ccObjekt = o;
+            try { return roRoh.apply(this, arguments); } finally { window.__ccObjekt = vor; }
+        };
+        // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`) baut je Render-Aufruf höchstens EINEN Stoff (die übrigen
+        // verschiebt sie in den nächsten Aufruf) und zeichnet ein Objekt ab dem Bild, in dem seine Pipeline steht. Ein
+        // Schlüssel, dessen eines Bild noch verschob oder auf eine Pipeline wartete, ist nicht warm: seine verschobenen
+        // Bauten kompilierten sonst im Leerlauf — gemessen am Zweig welle-k-haenger in 3 von 3 CI-Läufen (a20e1444,
+        // 0febe3ef, 7a41911b): „Bild (Idle-Frame 1)" über die Frist von 300 s, ein Erst-Compile außerhalb des Warmups.
+        // Er bleibt kalt und rendert im nächsten Schritt wieder allein (je Aufruf weiter höchstens EIN kompilierender
+        // Schlüssel); ein Schlüssel, der nach WARM_VERSUCHE Bildern noch nicht zeichnet, steht beim Namen im Urteil.
+        const E = r._erstZeichnung || null;
+        const WARM_VERSUCHE = 40;
+        const versuche = new Map();
+        window.__nieWarm = [];
         const warm = new Set();
         window.__schwer = [];
         window.__warmSchritt = () => {
@@ -288,19 +312,32 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 // Programme erst im ersten vollen Frame (gemessen: 70 Compiles in EINEM Render, 122 s)
                 r._schattenAlleNeu();
                 const k0 = cnt(), z0 = performance.now();
+                const v0 = E ? E.verschoben : 0,
+                    w0 = E ? E.wartetN : 0;
                 window.__imWarm = true;
                 try { r._loopRender(performance.now()); } catch (_e) {} finally { window.__imWarm = false; }
+                let lichter = 0;
+                s.scene.traverseVisible((o) => { if (o.isLight) lichter++; });
                 objs.forEach((o, i) => (o.visible = vorher[i]));
-                warm.add(k);
+                const v = (versuche.get(k) || 0) + 1;
+                versuche.set(k, v);
+                const unruhig = !!E && (E.verschoben !== v0 || E.wartetN !== w0);
+                if (!unruhig) warm.add(k);
+                else if (v >= WARM_VERSUCHE) {
+                    warm.add(k);
+                    window.__nieWarm.push(`${name(liste[0])} ×${liste.length} (nach ${v} Bildern: verschoben ${E.verschoben - v0}, wartend ${E.wartetN - w0})`);
+                }
                 n++;
                 if (cnt() > k0) {
-                    label = `${name(liste[0])} ×${liste.length} · ${Math.round((window.__ccLaenge || 0) / 1024)} KB Quelltext`;
+                    label = `${name(liste[0])} ×${liste.length} · ${Math.round((window.__ccLaenge || 0) / 1024)} KB Quelltext · Lichter ${lichter}`;
                     window.__schwer.push({ label, ms: performance.now() - z0, cc: cnt() - k0 });
                     break;
                 }
                 if (performance.now() - t0 > 8000) break;
             }
-            return { rest: kalt.size - n, n, cc: cnt() - c0, label };
+            let rest = 0;
+            for (const k of kalt.keys()) if (!warm.has(k)) rest++;
+            return { rest, n, cc: cnt() - c0, label };
         };
         // DER TAKT RENDERT NICHT: `_gameLoopTick` ist der ganze Spiel-Loop und ruft `_loopRender` selbst (gemessen
         // 03.10.: jeder Takt-Compile kam aus `loop → _loopRender` — die Erst-Compiles hereinstreamender Objekte, VOR
@@ -318,7 +355,14 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             try { r._gameLoopTick(performance.now()); } catch (_e) {} finally { if (eigen) r._loopRender = echt; else delete r._loopRender; }
             return { cc: cnt() - c0 };
         };
-        window.__bild = () => { const c0 = cnt(); try { r._loopRender(performance.now()); } catch (_e) {} return { tot: cnt(), cc: cnt() - c0 }; };
+        // je Bild auch der Stand der Erst-Zeichnung (Bauten · verschoben · wartende Draws · offene Pipelines): die Ruhe vor dem
+        // Leerlauf verlangt, dass sie still steht — nichts baut, nichts verschiebt, kein Draw wartet
+        window.__bild = () => {
+            const c0 = cnt();
+            try { r._loopRender(performance.now()); } catch (_e) {}
+            const E = r._erstZeichnung;
+            return { tot: cnt(), cc: cnt() - c0, erst: E ? `${E.bauN}|${E.verschoben}|${E.wartetN}` : "", offen: E ? E.offen.size : 0 };
+        };
         return { backend };
     });
     // Warmup: erst die kalten Schlüssel (je Aufruf höchstens einer, der kompiliert), dann Frames — JE FRAME ein
@@ -326,19 +370,54 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // Node hält die Frist; CI 36681658740). 10 Pflicht-Frames, dann DER DAUERZUSTAND: weiter, bis 8 Frames in Folge
     // NICHTS kompilieren (höchstens 80, Wand 240 s) — Erst-Compile-Nachzügler landen im Warmup, echter Churn
     // kompiliert JEDEN Frame und fällt im Idle-Fenster rot.
+    // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): eine erste Zeichnung kompiliert ihre Pipeline ASYNCHRON — der
+    // Compile läuft im GPU-Prozess weiter, und der nächste Aufruf, der präsentiert, trüge alle offenen zusammen (CI auf
+    // c307587b: 21 Warmup-Aufrufe in 11 s, dann „Bild (Ruhe-Frame 1)" über 300 s). Nach jedem kompilierenden Aufruf wartet
+    // Node in kurzen Abfragen (reines JS, kein GPU-Ruf), bis keine Pipeline mehr offen ist: jeder Aufruf trägt weiter
+    // höchstens die Compiles seines EINEN Schlüssels.
+    const abwarten = async (wo) => {
+        const t0 = Date.now();
+        laufenderRuf = `Pipelines abwarten (${wo})`;
+        for (;;) {
+            const offen = await page.evaluate(() => {
+                const E = window.anazhRealm._erstZeichnung;
+                return E ? E.offen.size : 0;
+            });
+            if (offen === 0) break;
+            if (Date.now() - t0 > 600000) {
+                log(`nach 600 s noch ${offen} Pipelines offen (${wo})`);
+                break;
+            }
+            await new Promise((res) => setTimeout(res, 500));
+        }
+        const ms = Date.now() - t0;
+        if (ms > LANG_MS) log(`Pipelines abgewartet (${wo}): ${Math.round(ms / 1000)} s`);
+        laufenderRuf = "-";
+    };
     const warmNeu = async (wo) => {
         let schritte = 0;
         for (;;) {
             const w = await ruf(`Schlüssel-Warmup (${wo})`, () => window.__warmSchritt());
             schritte++;
+            if (w.cc > 0) await abwarten(`Schlüssel-Warmup (${wo})`);
             if (w.rest === 0) return schritte;
         }
     };
     const frame = async (wo) => {
         await ruf(`Takt (${wo})`, () => window.__takt());
         await warmNeu(wo);
-        return (await ruf(`Bild (${wo})`, () => window.__bild())).tot;
+        const b = await ruf(`Bild (${wo})`, () => window.__bild());
+        if (b.cc > 0) await abwarten(`Bild (${wo})`);
+        return b;
     };
+    // DAS BAU-BUDGET DER ERST-ZEICHNUNG IM WARMUP: im Spiel baut sie je Render-Aufruf einen Stoff (AnazhRealm.ERST_BAU_MS)
+    // und verschiebt den Rest — ein Bundle mit N ungebauten Bürgern nimmt N-mal neu auf. Im Warmup der Linse tropften so die
+    // Bauten, die der Schlüssel-Warmup nicht deckt (bauSatz, creature, dorf-rauch — auf dem Vendor-Weg ebenso Nachzügler),
+    // über viele Bilder, und jeder späte Compile bezahlte den aufgestauten swiftshader-Rückstand aller Bilder davor (lokal
+    // 37-245 s je Aufruf, CI 37674425050 636 s Lauf und eine Bühnen-Drift; derselbe Code auf dem Vendor-Weg: alle Nachzügler
+    // in Warmup-Frame 0/1, längster Aufruf 9 s). Der Warmup baut darum ohne Budget (alles im ersten vollen Bild, wie der
+    // Vendor); vor der Ruhe gilt wieder das Budget des Spiels — Ruhe und Leerlauf messen das Spiel.
+    if (!setup.err) await ruf("Erst-Budget aus (Warmup)", () => { const C = window.anazhRealm.constructor; window.__erstBudget = C.ERST_BAU_MS; C.ERST_BAU_MS = Infinity; });
     if (!setup.err) {
         setup.scheiben = await warmNeu("Warmup");
         log(`Schlüssel-Warmup: ${setup.scheiben} Aufrufe`);
@@ -347,19 +426,26 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; window.anazhRealm.state.weatherEffectTime = 1e6; });
             await frame(`Warmup-Frame ${i}`);
         }
+        await ruf("Erst-Budget zurück", () => { window.anazhRealm.constructor.ERST_BAU_MS = window.__erstBudget; });
         const nachStart = await ruf("Zähler", () => window.__cnt());
+        // DIE RUHE vor dem Leerlauf: 8 Bilder in Folge ohne Compile UND ohne Arbeit der Erst-Zeichnung (sie baut je Render-
+        // Aufruf einen Stoff und verschiebt den Rest; ein Bild ohne Compile kann ihr noch verschobene Bauten lassen, die erst
+        // im Leerlauf kompilierten). Was danach noch kompiliert, ist echter Leerlauf-Churn und steht beim Namen.
         let ruhig = 0,
             extra = 0,
-            stand = nachStart;
+            stand = nachStart,
+            erstStand = "";
         const t0 = Date.now();
         while (ruhig < 8 && extra < 80 && Date.now() - t0 < 240000) {
-            const v = await frame(`Ruhe-Frame ${extra}`);
+            const b = await frame(`Ruhe-Frame ${extra}`);
             extra++;
-            ruhig = v === stand ? ruhig + 1 : 0;
-            stand = v;
+            ruhig = b.tot === stand && b.erst === erstStand && b.offen === 0 ? ruhig + 1 : 0;
+            stand = b.tot;
+            erstStand = b.erst;
         }
         Object.assign(setup, { warmupCompiles: stand, nachzuegler: stand - nachStart, warmupExtra: extra, ruhe: ruhig >= 8 });
         setup.schwer = await ruf("Schwer-Liste", () => window.__schwer.sort((a, b) => b.ms - a.ms).slice(0, 5).map((z) => `${z.label} ${Math.round(z.ms / 1000)} s/${z.cc}`));
+        setup.nieWarm = await ruf("Nie-warm-Liste", () => window.__nieWarm.slice(0, 8));
     }
     if (setup.err) { await browser.close(); server.close(); console.error("⛔ LINSE NICHT LAUFFÄHIG:", setup.err); process.exit(1); }
     if (setup.warmupCompiles === 0) { await browser.close(); server.close(); console.error("⛔ LINSE UNGÜLTIG: 0 Warmup-Compiles → der Zähler greift nicht (kein Compiler gewrappt) → die Linse wäre blind grün."); process.exit(1); }
@@ -432,6 +518,8 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     }
     console.log(`  Backend: ${setup.backend}  ·  Schlüssel-Warmup: ${setup.scheiben} Aufrufe  ·  längster Aufruf ${Math.round(setup.maxRuf.ms / 1000)} s (Frist 300 s): ${setup.maxRuf.name}  ·  Warmup-Compiles (einmalig): ${setup.warmupCompiles}  ·  davon Nachzügler bis zur Ruhe: ${setup.nachzuegler} in ${setup.warmupExtra} Extra-Frames${setup.ruhe ? "" : " (RUHE NIE ERREICHT)"}`);
     console.log(`  Schwerste Erst-Compiles (Schlüssel · Zeit/Programme): ${(setup.schwer || []).join(" · ") || "—"}\n`);
+    // ein Schlüssel, dessen Objekte im Warmup nie zeichneten (die Erst-Zeichnung verschob oder wartete weiter): beim Namen
+    if (setup.nieWarm && setup.nieWarm.length) { console.error("⛔ ERST-ZEICHNUNG IM WARMUP NIE GEZEICHNET: " + setup.nieWarm.join(" · ")); process.exit(1); }
     const idleOk = idle.wdh <= IDLE_THRESHOLD && idle.gesamt <= KASKADE;
     const regenOk = regen.wdh <= REGEN_THRESHOLD && regen.gesamt <= KASKADE;
     console.log(`  CHECK A — reines Idle (16 Frames):      ${idle.wdh} Wiederholungs-Compiles (Schwelle ≤${IDLE_THRESHOLD}) · ${idle.gesamt - idle.wdh} Erst-Compiles (gesamt ≤${KASKADE})  ${idleOk ? "✅" : "❌ CHURN"}`);

@@ -14847,11 +14847,16 @@ class AnazhRealm {
                       pipelines: {
                           total: Math.round(s.pipesTotal || 0),
                           neuProS: +(+(s.pipesNeuProS || 0)).toFixed(2),
-                          // V18.485 — der Warm-Ofen-Stand (Familien gemünzt/gewärmt/
-                          // wartend): beweist KONSUM der Vorwärm-Maschine im Trace.
-                          ofenFamilien: this._pipeOfenDone ? this._pipeOfenDone.size : 0,
-                          ofenGewaermt: this._pipeOfenGewaermt || 0,
-                          ofenOffen: this._pipeOfenQueue ? this._pipeOfenQueue.length : 0,
+                          // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): Knoten-Bauten im Pass (Zahl ·
+                          // Summe ms), auf den nächsten Aufruf verschobene Erst-Zeichnungen, asynchrone und noch
+                          // offene Pipelines der Welt-Szene — beweist KONSUM des EINEN Orts im Trace.
+                          erstBauN: this._erstZeichnung ? this._erstZeichnung.bauN : 0,
+                          erstBauMs: this._erstZeichnung ? Math.round(this._erstZeichnung.bauMs) : 0,
+                          erstVerschoben: this._erstZeichnung ? this._erstZeichnung.verschoben : 0,
+                          erstPipeAsync: this._erstZeichnung ? this._erstZeichnung.pipeAsync : 0,
+                          erstPipeOffen: this._erstZeichnung ? this._erstZeichnung.offen.size : 0,
+                          erstPipeAbsagen: this._erstZeichnung ? this._erstZeichnung.absagenN : 0,
+                          erstNeubauN: this._erstZeichnung ? this._erstZeichnung.neubauN : 0,
                       },
                       uploadKBProS: +(
                           ((s.uploadBytesEwma || 0) * (s.frameMs > 0 ? 1000 / s.frameMs : 0)) /
@@ -22967,6 +22972,251 @@ class AnazhRealm {
             };
             renderer.__anazhSchattenStoff = true;
         }
+        // DIE ERST-ZEICHNUNG (Welle K — die Hänger-Klasse „ein Frame trägt synchron eine schwere Arbeit"; r184 gelesen):
+        // `_renderObjectDirect` baut beim ERSTEN Zeichnen eines RenderObjects synchron, was ihm fehlt — den Knoten-Graphen
+        // seines Stoffs (`needsRefresh` → `getNodeBuilderState`) und die GPU-Pipeline (`updateForRender` →
+        // `device.createRenderPipeline`: der GPU-Prozess übersetzt den Shader, bevor er das nächste Bild zeigt). Die Hänger-
+        // Linse nannte 07.10. an der Radeon: 1,4–4,2 s Warten nach synchronen Pipelines (haupt/k0/k1 tier:baer · tier:fuchs ·
+        // fimp:atlas:L2 · bauSatz · feld-pass), Knoten-Bauten 50–270 ms je Stoff, bis zu sechs in EINEM Frame (ein Tier:
+        // Leib, Fell, Kopf, Kiefer). Für die WELT-Szene gilt hier: (1) jede Pipeline entsteht asynchron — ihr Deskriptor liest
+        // Stoff und Ziel synchron im Pass (wie das Vendor-Kompilat), das Objekt zeichnet ab dem Frame, in dem sie steht;
+        // (2) der Knoten-Bau bleibt im Pass (er liest MRT, Ziel und contextNode des Renderers, die nur dort gelten — ein
+        // buildAsync liefe daneben), aber je Render-Aufruf baut höchstens EINER (weitere nur, solange der Aufruf unter
+        // ERST_BAU_MS baute); jeder andere zeichnet ab dem nächsten Aufruf. Wer nicht zeichnen kann, meldet sich in der EINEN
+        // Warteschlange an (`_erstWartet`), auf JEDEM Weg — Erstbau, Neubau, fremde Szene: ein Bundle, dessen Bürger so wartet,
+        // nimmt neu auf, sobald die fertige Pipeline in r184s Zustand steht (der Vendor-Record droppt unfertige Draws und
+        // versiegelt das Bundle; das Vendor-Versprechen hängt am Fehler-Scope und zählt nie). Das gilt der ERSTEN
+        // Zeichnung eines Objekts in einem Pass (Render-Kontext · Pass-Kennung): ein Objekt, das dort schon zeichnete, baut
+        // einen Neubau (ein Licht kam dazu — r184 schlüsselt das RenderObject je Lichter-Satz und verwirft den Vorgänger im
+        // selben `_objects.get` —, sein Stoff wechselte die Variante) wie der Vendor im Frame: was schon zu sehen war, blinkt
+        // nicht aus — nur wenn eine Erst-Zeichnung seinen neuen Schlüssel eben asynchron anlegte, wartet er auf dieselbe
+        // Pipeline wie sie; der Neubau zählt mit (`neubauN`). Ein Render einer anderen Szene (die Umgebung, ein Post-Quad)
+        // zeichnet wie bisher — ein Einmal-Render bliebe leer. Das ist der
+        // EINE Ort der Klasse: kein Vorwärmen daneben (das r184-compileAsync baute die Knoten ohnehin synchron —
+        // `_geometries.updateForRender` liest die Attribute vor `getForRenderAsync`).
+        // Nodes und Pipelines legt erst init() an (dieser Eingriff läuft davor): die Nachbildung liest sie je Aufruf am
+        // Renderer; ihre Vendor-Stellen pinnt gate:vendor-anker.
+        if (typeof renderer._renderObjectDirect !== "function")
+            this.log("ERST-ZEICHNUNG: r184-Renderer._renderObjectDirect nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!renderer.__anazhErstZeichnung) {
+            const welt = this;
+            const E = this._erstZeichnungStand();
+            // der Vendor-Körper: auffrischen, Pipeline (asynchron mit Versprechen-Liste, sonst synchron), zeichnen, wenn sie
+            // steht — sonst meldet sich der Bürger an. Auch der synchrone Weg trifft im Cache eine noch offene Pipeline (r184
+            // `getForRender`: Cache-Treffer → `e.pipeline=d`, ob fertig oder nicht), wenn eine Erst-Zeichnung ihren Schlüssel
+            // eben asynchron anlegte: ein Neubau wartet dann wie sie.
+            const zeichne = (rend, ro, aufnahme, asynchron) => {
+                const N = rend._nodes,
+                    P = rend._pipelines;
+                E.bau = null; // das Versprechen gehört dem Bau DIESES Aufrufs (`_erstAbsageWache`)
+                const refresh = N.needsRefresh(ro);
+                if (refresh) {
+                    N.updateBefore(ro);
+                    rend._geometries.updateForRender(ro);
+                    N.updateForRender(ro);
+                    rend._bindings.updateForRender(ro);
+                }
+                if (asynchron) {
+                    // das Vendor-Versprechen einer neuen Pipeline wartet nach dem Bau noch auf popErrorScope — die Welt
+                    // hält es nicht (die Bereitschaft liest `_erstWartet` am Zustand)
+                    P.getForRender(ro, E.neu);
+                    if (E.neu.length > 0) {
+                        E.neu.length = 0;
+                        E.pipeAsync++;
+                    }
+                } else P.updateForRender(ro);
+                if (!P.isReady(ro)) {
+                    welt._erstWartet(rend.backend, P.get(ro).pipeline, aufnahme !== null ? aufnahme.bundleGroup : null);
+                    return false;
+                }
+                if (aufnahme !== null) rend.backend.get(aufnahme).renderObjects.push(ro);
+                rend.backend.draw(ro, rend.info);
+                if (refresh) N.updateAfter(ro);
+                return true;
+            };
+            renderer._renderObjectDirect = function (object, material, scene, camera, lightsNode, group, clip, passId) {
+                const N = this._nodes;
+                const ro = this._objects.get(
+                    object,
+                    material,
+                    scene,
+                    camera,
+                    lightsNode,
+                    this._currentRenderContext,
+                    clip,
+                    passId
+                );
+                ro.drawRange = object.geometry.drawRange;
+                ro.group = group;
+                const aufnahme = this._currentRenderBundle;
+                if (aufnahme !== null) ro.bundle = aufnahme.bundleGroup;
+                if (scene !== welt.state.scene) {
+                    zeichne(this, ro, aufnahme, false);
+                    return;
+                }
+                const ungebaut =
+                    ro._nodeBuilderState === null &&
+                    N.get(ro).nodeBuilderState === undefined &&
+                    N.nodeBuilderCache.get(ro.initialCacheKey) === undefined;
+                const ctx = this._currentRenderContext.id;
+                const k = passId == null ? ctx : ctx + "|" + passId;
+                let pass = E.gezeichnet.get(object);
+                if (pass !== undefined && pass.has(k)) {
+                    // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
+                    if (ungebaut) E.neubauN++;
+                    zeichne(this, ro, aufnahme, false);
+                    return;
+                }
+                let bau = -1;
+                if (ungebaut) {
+                    if (E.aufruf !== this.info.calls) {
+                        E.aufruf = this.info.calls;
+                        E.aufrufMs = 0;
+                    } else if (E.aufrufMs >= AnazhRealm.ERST_BAU_MS) {
+                        E.verschoben++;
+                        if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        return;
+                    }
+                    bau = performance.now();
+                }
+                const gezeichnet = zeichne(this, ro, aufnahme, true);
+                if (bau >= 0) {
+                    const ms = performance.now() - bau;
+                    E.aufrufMs += ms;
+                    E.bauN++;
+                    E.bauMs += ms;
+                }
+                if (gezeichnet) {
+                    if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
+                    pass.add(k);
+                }
+            };
+            renderer.__anazhErstZeichnung = true;
+        }
+    }
+
+    // DER STAND DER ERST-ZEICHNUNG (der EINE Ort in `_configureRenderer`): je Render-Aufruf die Bau-Zeit, die Zähler für
+    // Flugschreiber und Hänger-Linse (Knoten-Bauten · verschobene Erst-Zeichnungen · asynchrone Pipelines · bereit
+    // gewordene) und je offener Pipeline die Bundles, die ohne ihren Bürger versiegelt wurden.
+    _erstZeichnungStand() {
+        if (!this._erstZeichnung)
+            this._erstZeichnung = {
+                aufruf: -1,
+                aufrufMs: 0,
+                bauN: 0,
+                bauMs: 0,
+                verschoben: 0,
+                pipeAsync: 0,
+                bereitN: 0,
+                absagenN: 0,
+                wartetN: 0, // Draws, die nicht zeichnen konnten (ihre Pipeline stand nicht) — der Zähler jedes Backends
+                wartetAuf: null, // die Pipeline des letzten wartenden Draws (die Beweis-Aufnahme nennt sie)
+                neubauN: 0,
+                neu: [],
+                bau: null, // { p, label } — das Geräte-Versprechen des eben angelegten Baus
+                offen: new Map(),
+                namen: new WeakMap(), // Pipeline → ihr Label `renderPipeline_<Stoff>_<id>`
+                abgesagt: new WeakSet(),
+                aufnehmen: new Set(),
+                gezeichnet: new WeakMap(), // Objekt → die Pässe (Render-Kontext|Pass-Kennung), in denen es schon zeichnete
+            };
+        return this._erstZeichnung;
+    }
+
+    // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,
+    // vendor/three.webgpu.min.js 6:590437), und ein Fehler-Scope sieht asynchrone Fehler nach Spezifikation nie — ein Stoff,
+    // dessen Pipeline scheitert, bliebe STILL für immer unsichtbar (der synchrone Bau meldete denselben Fehler laut). Der EINE
+    // Abgriff am Gerät (wie der writeBuffer-Abgriff, nach init): das Original-Versprechen geht unverändert an r184 zurück,
+    // seine Absage meldet sich als ERROR `PIPELINE-ABSAGE <label>: <message>` (das Label nennt den Stoff:
+    // `renderPipeline_<Stoff>_<id>`, 6:589557), und die Erst-Zeichnung trägt die Pipeline aus ihrer Warteschlange aus
+    // (`_erstWartet` hält das Versprechen ihres Baus). Gerufen wird je Aufruf der Prototyp — Linsen hängen sich dort ein.
+    _erstAbsageWache(renderer) {
+        const be = renderer.backend;
+        const dev = be && be.isWebGPUBackend === true ? be.device : null;
+        if (!dev || dev.__anazhAbsage || typeof dev.createRenderPipelineAsync !== "function") return;
+        const E = this._erstZeichnungStand();
+        const welt = this;
+        dev.createRenderPipelineAsync = function (desc) {
+            const p = Object.getPrototypeOf(this).createRenderPipelineAsync.call(this, desc);
+            const label = (desc && desc.label) || "renderPipeline_(ohne Label)";
+            E.bau = { p, label };
+            p.catch((e) => {
+                E.absagenN++;
+                welt.log(`PIPELINE-ABSAGE ${label}: ${(e && e.message) || e}`, "ERROR");
+            });
+            return p;
+        };
+        dev.__anazhAbsage = true;
+    }
+
+    // DIE EINE WARTESCHLANGE der Erst-Zeichnung: ein Bürger, der nicht zeichnen kann, meldet sich hier an — auf jedem Weg
+    // (Erstbau, Neubau, fremde Szene); `bg` ist das Bundle, dessen Aufnahme ohne ihn versiegelt (null: ein direkter Draw,
+    // er versucht es im nächsten Aufruf selbst).
+    // (1) Er wartet auf seine PIPELINE (`pipe`): bereit ist sie, sobald r184 die fertige GPU-Pipeline in seinen Zustand
+    //     schreibt — `h.pipeline=await d.createRenderPipelineAsync(A)` (vendor/three.webgpu.min.js 6:590389), genau das Feld,
+    //     das `isReady` liest (6:221094). Ein Setter an diesem Feld nimmt im SELBEN Moment jedes Bundle neu auf, das ohne
+    //     einen ihrer Bürger versiegelt wurde (die Zuweisung läuft nach einem await, nie mitten in einer Aufnahme). Das
+    //     Vendor-Versprechen wartet danach noch auf `popErrorScope` (6:590447) — auf der Spielseite > 5 s, auf Windows-
+    //     swiftshader nie aufgelöst (gemessen 07.10.: ein Bundle-Bürger mit fertiger Pipeline 120 s ohne Neuaufnahme); an
+    //     ihm hängt nichts.
+    // (2) Er wartet nur auf seinen KNOTEN-BAU (`pipe` null: der Aufruf hat sein Bau-Budget verbraucht): das Bundle nimmt
+    //     nach der laufenden Aufnahme neu auf — r184 versiegelt an ihrem Ende (`u.version=s.version`, 6:413962) und schluckte
+    //     eine Marke von mittendrin.
+    // Eine Pipeline, deren Bau scheitert, meldet sich laut (`_erstAbsageWache`) und fällt aus der Warteschlange; ihr Bürger
+    // zählt weiter als wartender Draw — die Beweis-Aufnahme nennt ihn beim Namen und bricht ab.
+    // Der WebGL2-Rückfall kennt keine Bundles, und sein `_completeCompile` ersetzt das Datenobjekt der Pipeline (vendor
+    // 6:513930 über Backend.set 6:457928) — ein Setter am alten Objekt feuerte nie, die Schlange wüchse die ganze Sitzung:
+    // dort zählt der wartende Draw nur (`wartetN`), er versucht es im nächsten Aufruf selbst.
+    _erstWartet(be, pipe, bg) {
+        const E = this._erstZeichnung;
+        if (!pipe) {
+            if (bg === null) return;
+            if (E.aufnehmen.size === 0)
+                Promise.resolve().then(() => {
+                    for (const b of E.aufnehmen) b.needsUpdate = true;
+                    E.aufnehmen.clear();
+                });
+            E.aufnehmen.add(bg);
+            return;
+        }
+        E.wartetN++;
+        E.wartetAuf = pipe;
+        const bau = E.bau;
+        E.bau = null;
+        if (be.isWebGPUBackend !== true || E.abgesagt.has(pipe)) return;
+        let bundles = E.offen.get(pipe);
+        if (bundles === undefined) {
+            const h = be.get(pipe);
+            let wert = h.pipeline;
+            const warten = (bundles = new Set());
+            E.offen.set(pipe, warten);
+            if (bau !== null) {
+                E.namen.set(pipe, bau.label);
+                bau.p.catch(() => {
+                    E.abgesagt.add(pipe);
+                    E.offen.delete(pipe);
+                });
+            }
+            Object.defineProperty(h, "pipeline", {
+                configurable: true,
+                enumerable: true,
+                get: () => wert,
+                set: (v) => {
+                    wert = v;
+                    if (v === undefined || v === null) return;
+                    Object.defineProperty(h, "pipeline", {
+                        value: v,
+                        writable: true,
+                        configurable: true,
+                        enumerable: true,
+                    });
+                    E.offen.delete(pipe);
+                    E.bereitN++;
+                    for (const b of warten) b.needsUpdate = true;
+                },
+            });
+        }
+        if (bg !== null) bundles.add(bg);
     }
 
     // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer): No-op-Hülle ohne GPU —
@@ -34253,6 +34503,13 @@ class AnazhRealm {
         const gewollt = new Set(wunsch.map((w) => w.key));
         for (const key of [...nw.kacheln.keys()]) if (!gewollt.has(key) && this._nahWieseKachelFaellt(key)) gefallen++;
         wunsch.sort((a, b) => a.d - b.d);
+        // Buch und Render-Config docken in EINER Nachricht (wie `_nahStreuArten`): solange beide fehlen, wartet die Wiese —
+        // ein Budget vor dem Buch ist kein Bruch, sondern noch nicht da. Bis Welle K las sie das Budget im ersten Takt nach
+        // dem Boot und warf KERN-PFLICHT, bis das Buch kam (gate:post-kette sah es, sobald der Boot schneller zeichnete).
+        if (!AnazhRealm._studioRenderConfig || !this._foundry || !this._foundry.recipes) {
+            nw.offen = wunsch.length || 1;
+            return 0;
+        }
         nw.offen = 0;
         // Die zwei Studio-Vorlagen je Stufe (Foundry-Cache; eine Anfrage, falls noch kalt) — einmal je Takt. Der Wurf
         // ist das Studio-Budget (B2c grass[stufe].schatten): die Nah-Wiese legt ihren Satz am AUGE — ein Werfer bräuchte
@@ -45087,10 +45344,8 @@ class AnazhRealm {
             const studio = this._heldFoundryGroup(bpName);
             const isStudio = !!(studio && studio !== "pending");
             const mesh = isStudio ? studio : this._buildFromBlueprint({ name: `held_${bpName}`, parts: bp.parts });
-            // W-A4b — Erst-Zeig-Stall (die V18.367-Klasse): die frisch gebaute Studio-Hand-
-            // Gruppe warm kompilieren (Null-Renderer/headless: No-op; disposeAfter false —
-            // die Geometrie ist GETEILT und bleibt im Spiel).
-            if (isStudio) this._warmCompilePipeline(mesh, false);
+            // Der Erst-Zeig-Stall (die V18.367-Klasse) fällt an der Erst-Zeichnung (`_configureRenderer`): die Hand
+            // zeichnet ab dem Frame, in dem ihr Stoff gebaut und ihre Pipeline steht.
             // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
             // benennt, sonst die Körper-Wurzel (Custom-/Flug-Seelen).
             const anchor =
@@ -50668,9 +50923,8 @@ class AnazhRealm {
                 // Körper — Leser (Band/Tint) fragen die Zahl, nicht ein Material-Objekt
                 // (die Pipe trägt Farben als Vertex-Daten auf geteilten Materialien).
                 group.userData.hautTon = mesh.userData && mesh.userData.hautTon;
-                // Avatar-Pipelines WARM kompilieren: der Kopf ist in 1st-Person unsichtbar, seine Pipeline bliebe
-                // sonst bis zum ersten 3rd-Person-Frame kalt (Lag beim Wechsel); compileAsync wärmt auch Unsichtbares.
-                this._warmCompilePipeline(group, false);
+                // Der Kopf (in 1st-Person unsichtbar) zeichnet beim ersten 3rd-Person-Blick über die Erst-Zeichnung
+                // (`_configureRenderer`): ein Frame Knoten-Bau, die Pipeline asynchron — kein Halt beim Wechsel.
             };
             attachMesh(built.mesh); // der Baum steht sofort (sync — kein async-Pfad mehr)
             // KREATUR-KOSTEN (3) — die Fern-Gestalt-Refs am Gruppen-Level: der
@@ -54292,10 +54546,6 @@ class AnazhRealm {
         const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(groupKey);
         if (!g) return;
         this._archGruppenDisposes = (this._archGruppenDisposes || 0) + 1; // CHURN-LINSE (18.07.)
-        // Ofen-Wiederanker: r184 evictet den Pipeline-Cache-Eintrag, wenn der letzte RenderObject einer
-        // Familie stirbt. Der Dispose entlässt die Familie aus _pipeOfenDone → der nächste Mint reiht sie
-        // NEU in den Ofen (async Wärmung statt Sync-Compile am ersten Draw; lebt sie noch, Cache-Treffer).
-        if (g._ofenKey && this._pipeOfenDone) this._pipeOfenDone.delete(g._ofenKey);
         this.state.archInstanceGroups.delete(groupKey);
         if (g.wahl) this._instanzWahlGruppen().delete(g);
         g._wahlJe = null; // eine entsorgte Gruppe hält keine Wahl (ihre Marken zeigen auf freigegebene Slots)
@@ -61622,9 +61872,9 @@ class AnazhRealm {
             try {
                 // B1: donorOnly — der Prebake wärmt Merge-Cache + Ghost-Mat-Klone des Donor-Pfads;
                 // Studio-Ghost-Assets zieht erst die ECHTE Auswahl (kein Katalog-weiter Bake-Sturm,
-                // und disposeAfter darf hier nie geteilte Studio-Geometrie treffen).
-                const g = this._buildPlacementGhost(bp, { donorOnly: true }); // warm: Merge-Cache + Ghost-Mat-Klone
-                this._warmCompilePipeline(g, true); // warm: die WebGPU-Pipeline des transparenten Klons (s.u.), dann Geometrie frei
+                // und das Freigeben darf hier nie geteilte Studio-Geometrie treffen). Die Pipeline des Geists
+                // entsteht bei seiner ersten Zeichnung (die Erst-Zeichnung, `_configureRenderer`).
+                this._disposeSoulGroup(this._buildPlacementGhost(bp, { donorOnly: true }));
             } catch (_e) {
                 /* defensiv — ein einzelner Bauplan-Fehler darf das Idle-Vorbacken nicht abbrechen */
             }
@@ -61633,108 +61883,6 @@ class AnazhRealm {
         }
     }
 
-    // WebGPU-Pipeline WARM kompilieren (compileAsync, non-blocking), damit der erste Render eines bisher
-    // unsichtbaren Materials nicht SYNCHRON stallt (Bauplan-Ghost, Avatar-Kopf in 1st-Person, deferred
-    // Geometrie). Die echte Szene ist targetScene (Licht/Environment) → der Cache-Key matcht den späteren
-    // Render. disposeAfter gibt die geklonte Geometrie danach frei (Ghost ja, Avatar nein); die Pipeline
-    // ist attribut-layout-gekeyt und überlebt das Dispose.
-    _warmCompilePipeline(obj, disposeAfter) {
-        const st = this.state;
-        const renderer = st.renderer;
-        const scene = st.scene;
-        const cam = st.camera;
-        if (!obj) return;
-        if (renderer && scene && cam && typeof renderer.compileAsync === "function") {
-            const done = disposeAfter ? () => this._disposeSoulGroup(obj) : () => {};
-            this._kompiliere(obj, cam, scene)
-                .catch(() => {})
-                .finally(done);
-        } else if (disposeAfter) {
-            // headless / Null-Renderer → keine Pipeline, nur die Klon-Geometrie freigeben.
-            this._disposeSoulGroup(obj);
-        }
-    }
-
-    // BOOT-WARM-COMPILE: die Pipelines der nahen Welt kompilieren sonst beim ersten Render jedes
-    // Material-Layouts SYNCHRON (Boot-Freeze) → `renderer.compileAsync(scene, cam)` wärmt vor. Per-Frame
-    // gerufen bis `_bootWarmDone`; Instanz-Felder (kein state.X). Headless/Null → No-op.
-    _bootWarmCompileScene() {
-        if (this._bootWarmDone) return;
-        const st = this.state;
-        const r = st.renderer,
-            sc = st.scene,
-            cam = st.camera;
-        if (!r || !sc || !cam || r._isHeadlessNull || typeof r.compileAsync !== "function") return;
-        // ZWEI SCHUSS (die GANZE Szene wiederholt zu kompilieren überlastet die GPU): Schuss 1 ab 3 Chunks
-        // (Terrain/Gras), Schuss 2, sobald der nahe Ring KOMPLETT ist (Wald/Wasser/Strukturen).
-        const chunks = st.voxelChunks ? st.voxelChunks.size : 0;
-        const stage = this._bootWarmStage || 0;
-        if (stage === 0 && chunks >= 3) {
-            this._bootWarmStage = 1;
-            this._kompiliere(sc, cam, null).catch(() => {});
-            return;
-        }
-        const built = typeof this._builtRingRadius === "function" ? this._builtRingRadius() : null;
-        if (stage >= 1 && built !== null && built >= (st._activeRingRadius || 1)) {
-            this._bootWarmDone = true;
-            this._kompiliere(sc, cam, null).catch(() => {});
-        }
-    }
-
-    // DAS KOMPILIER-ZIEL (W7): r184-compileAsync kompiliert gegen das GESETZTE Render-Ziel — ohne eines gegen das
-    // Rahmenpuffer-Ziel der Leinwand (Ton-Abbildung an): rgba16f + Tiefe, dazu die Viewport-Tiefen-Kopie, die Wasser
-    // und Feld-Pass dort anlegen — drei Bildschirm-Ziele (bei 1080p 31,6 MB), die kein Frame je beschreibt (gemessen
-    // 04.10.: jede Reife-Wache und jeder Ofen-Posten rief es). Der Frame zeichnet die Szene ins Ziel des Szenen-Passes
-    // — gegen DAS wird kompiliert (dieselben Formate, derselbe Pipeline-Schlüssel). compileAsync liest das Ziel
-    // synchron vor seinem ersten await; danach gilt wieder das alte. Ohne Post-Kette (gescheitert) bleibt das
-    // Leinwand-Ziel. compileAsync ruft synchron den Vorher-Haken der Szene (nie den Nachher-Haken): `_imKompilat` hält
-    // ihn still — ein Kompilat stellt keine Kaskade und wählt keine Werfer (`_passSicht`).
-    // Vor dem Ende von init() wartet compileAsync ZUERST auf init() und liest das Ziel erst danach — dann trug der
-    // Renderer längst wieder das alte (die Leinwand): das Kompilat legte das Rahmenpuffer-Ziel der Leinwand an (rgba16f +
-    // Tiefe, bei 1080p 23,7 MB, nie beschrieben, für die ganze Sitzung resident; die Band-Linse fand es im Zweit-Boot,
-    // wo die Platte die Welt vor dem Ende von init() füllt: VRAM 217,6 statt 194,4 MB). Erst init, dann das Ziel.
-    _kompiliere(obj, cam, szene) {
-        const r = this.state.renderer;
-        if (r._initialized === false) return r.init().then(() => this._kompiliere(obj, cam, szene));
-        const pp = this._ensurePostProcessing();
-        const sp = pp && !this.state.postProcessingFailed ? this.state.scenePass : null;
-        const ziel = sp && sp.renderTarget ? sp.renderTarget : null;
-        const alt = ziel ? r.getRenderTarget() : null;
-        const altMrt = ziel ? r.getMRT() : null;
-        if (ziel) {
-            r.setRenderTarget(ziel);
-            r.setMRT(sp.getMRT()); // wie PassNode.compileAsync: Ziel UND MRT des Passes tragen den Pipeline-Schlüssel
-        }
-        this._imKompilat = true;
-        try {
-            return Promise.resolve(r.compileAsync(obj, cam, szene || null));
-        } finally {
-            this._imKompilat = false;
-            if (ziel) {
-                r.setRenderTarget(alt);
-                r.setMRT(altMrt);
-            }
-        }
-    }
-
-    // PIPELINE-WARM-OFEN: konsumiert wird ein Material als InstancedMesh (+Fassade+instanceColor) — andere
-    // Pipeline-Keys als die PLAIN-Gruppe, an der gewärmt wurde → Sync-Compile. Darum
-    // merkt der Ofen am GRUPPEN-MÜNZ-CHOKEPOINT jede NEUE Familie (Material × Archetyp, dedupliziert) und
-    // wärmt sie budgetiert mit der LEBENDEN Gruppe als Compile-Wurzel (Key matcht). Headless → No-op;
-    // eine ungewärmte Familie kompiliert beim ersten Draw synchron. Instanz-Felder (kein state.X).
-    _pipeOfenMerke(archetyp, mat, mesh) {
-        if (!mat || !mesh) return;
-        if (!this._pipeOfenDone) {
-            this._pipeOfenDone = new Set();
-            this._pipeOfenQueue = [];
-        }
-        const key = archetyp + "|" + mat.uuid;
-        if (this._pipeOfenDone.has(key)) return;
-        this._pipeOfenDone.add(key);
-        this._pipeOfenQueue.push({ mesh });
-    }
-    // _pipeOfenTick (unten): EIN Posten je Frame, nur unter Frame-Budget; die Familien-Dedup deckelt die
-    // Gesamtzahl. Ein Stau verzögert nur; `force` = Linsen-Seam (gate:hitch-telemetrie).
     // KERN-PFLICHT-WAND: fehlt ein Gesetzbuch (AnazhRealm.GESETZ_KERNE) auf dem Main-Thread, SCHREIT die
     // Welt (rotes Banner + ERROR-Log) statt still auf Fallback zu laufen. Einmal je Boot, im Loop
     // (defer-Scripts sind dann geladen).
@@ -61757,37 +61905,6 @@ class AnazhRealm {
                 "position:fixed;top:0;left:0;right:0;z-index:99999;background:#7a1010;color:#fff;" +
                 "font:14px monospace;padding:8px 12px;text-align:center";
             document.body.appendChild(b);
-        }
-    }
-    _pipeOfenTick(force) {
-        const q = this._pipeOfenQueue;
-        if (!q || !q.length) return;
-        if (!this.state.renderer) return;
-        if (!force && this.state._frameOverBudget) {
-            // ANTI-VERHUNGERN: unter Dauerlast ist JEDER Frame über Budget — genau dann münzt die Welt ihre
-            // Familien. Jeder 4. Frame wärmt trotzdem (compileAsync blockt nie, die Dedup deckelt die Menge).
-            this._pipeOfenHunger = (this._pipeOfenHunger || 0) + 1;
-            if (this._pipeOfenHunger < 4) return;
-        }
-        this._pipeOfenHunger = 0;
-        // OFEN-TAKT: bei Rückstau (> 16) bis zu 4 Posten je Tick — 1/Frame hinkt bei niedriger fps den
-        // Münzen hinterher. compileAsync blockt nie; die Dedup deckelt die Menge.
-        const n = q.length > 16 ? 4 : 1;
-        for (let i = 0; i < n && q.length; i++) {
-            const post = q.shift();
-            const mesh = post && post.mesh;
-            if (!mesh || !mesh.geometry || !mesh.material) continue;
-            // Eine leere Hülle ist unsichtbar (`_archGroupFree`); der Compile projiziert synchron und übersähe sie —
-            // für ihn steht sie kurz sichtbar (die Familie ist dieselbe, ob die Hülle gerade Bewohner trägt oder nicht).
-            const leer = mesh.visible === false;
-            if (leer) mesh.visible = true;
-            this._pipeOfenGewaermt = (this._pipeOfenGewaermt || 0) + 1;
-            try {
-                this._warmCompilePipeline(mesh, false);
-            } catch (_e) {
-            } finally {
-                if (leer) mesh.visible = false;
-            }
         }
     }
 
@@ -63832,9 +63949,6 @@ class AnazhRealm {
         const mesh = this._chunkSatzMesh(s); // unsichtbar, bis der erste Bereich liegt
         st.chunkSaetze.set(art, s);
         st.scene.add(mesh);
-        // Ein Stoff-Satz (Bau, Streu) ist eine neue Konsum-Familie (Mesh × Studio-Stoff): der Pipeline-Ofen wärmt sie
-        // async, bevor ihr erster Bereich sie sichtbar macht.
-        if (spec.userData.bauSatz || spec.userData.streuSatz) this._pipeOfenMerke("satz", spec.mat, mesh);
         return s;
     }
 
@@ -65664,28 +65778,6 @@ class AnazhRealm {
         return { attributes, index: { array: idx }, zellen };
     }
 
-    // ═══ DIE REIFE-WACHE ═══
-    // Der Vendor-Record DROPPT unfertige Draws (nur `_pipelines.isReady`) und friert das Bundle danach ein
-    // → ein Bürger mit noch async kompilierender Pipeline fiel stumm aus dem Replay. Darum kompiliert
-    // jeder Bundle-Beitritt seinen Bürger async FERTIG und touched DANN den aktuellen Bundle-Parent
-    // (Re-Record garantiert nach der Reife). Headless/kein compileAsync: No-op.
-    _bundleReifeWache(mesh) {
-        const st = this.state;
-        const r = st.renderer;
-        if (!mesh || !r || r._isHeadlessNull || typeof r.compileAsync !== "function") return;
-        if (!st.scene || !st.camera) return;
-        // LEER-WACHE: beim Gruppen-Mint kann die Hüllen-Geometrie noch LEER sein (position kommt mit dem
-        // ersten Beitritt) — ein Compile jetzt baute eine FALSCH-Pipeline mit Null-Attributen
-        // (Warn-Fluten + Pipeline-Churn). Leere Bürger warten auf den ersten echten Beitritt.
-        const g = mesh.geometry;
-        if (!g || !g.attributes || !g.attributes.position) return;
-        this._kompiliere(mesh, st.camera, st.scene)
-            .catch(() => {})
-            .finally(() => {
-                const p = mesh.parent;
-                if (p && p.isBundleGroup === true) p.needsUpdate = true;
-            });
-    }
     // DIE WERFER-HÜLLE eines Region-Bundles (W7): die Welt-AABB seiner WERFENDEN Kinder (castShadow), aus dem Inhalt —
     // je Instanz die Geometrie-Kugel (drehungsfest: Billboards, Wind), je Mesh seine Box, plus `randM`. Einmal je
     // Schatten-Takt (`_shadowFrame`, die Kaskaden-Box und jeder Schatten-Pass lesen dieselbe Hülle); je Kind hält ein
@@ -66129,12 +66221,10 @@ class AnazhRealm {
         } else if (bundle) {
             mesh.frustumCulled = false; // der Region-Cull wandert auf die Bundle-Sichtbarkeit
             bundle.add(mesh);
-            bundle.needsUpdate = true;
-            this._bundleReifeWache(mesh); // Record droppt unfertige Pipelines — Touch NACH der Reife
+            bundle.needsUpdate = true; // ein Bürger ohne fertige Pipeline: die Erst-Zeichnung nimmt neu auf, wenn sie steht
         } else if (this.state.scene) this.state.scene.add(mesh);
         // slotRef: Slot-Index → die Slot-Marke {key, slot} (der Rückverweis des Umzugs, `_archGroupAlloc`); slotEntry:
-        // Slot-Index → Architektur-Eintrag (der Crosshair-Raycast). Leer geboren: count 0, unsichtbar, bis der erste Bewohner kommt —
-        // erst NACH dem Reife-Compile (er projiziert synchron und sähe eine unsichtbare Hülle nicht).
+        // Slot-Index → Architektur-Eintrag (der Crosshair-Raycast). Leer geboren: count 0, unsichtbar, bis der erste Bewohner kommt.
         AnazhRealm._instanzZahl(mesh, 0);
         g = {
             key,
@@ -66163,13 +66253,6 @@ class AnazhRealm {
             leaf._srcGroup._liveRefs = (leaf._srcGroup._liveRefs || 0) + 1;
         }
         this.state.archInstanceGroups.set(key, g);
-        // V18.485 — der Pipeline-Warm-Ofen merkt die NEUE Konsum-Familie
-        // (Material × InstancedMesh × Fassade-Layout, dedupliziert je Familie); eine Satz-Gruppe zeichnet nie, ihre
-        // Familie ist der Satz (`_chunkSatz`).
-        if (!satz) {
-            this._pipeOfenMerke(wantsFacade ? "if" : "ip", leaf.mat, mesh);
-            g._ofenKey = (wantsFacade ? "if|" : "ip|") + (leaf.mat ? leaf.mat.uuid : ""); // OFEN-WIEDERANKER
-        }
         this._archGruppenMintMerke(key); // CHURN-LINSE (18.07.) — s. _archGruppenMintMerke
         return g;
     }
@@ -68740,6 +68823,16 @@ class AnazhRealm {
         if (!bp) return 0;
         const world = this.worldFieldAt(x, z);
         const tags = this.computeCompoundTags(bp);
+        // Fünfte Stimme: feuchte resoniert mit lebendig (Bäume folgen Flüssen; brennbar resoniert nicht).
+        // Der Populator reicht feuchte je Sample (kein Hot-Path-Bucket-Walk); fehlt sie, misst der seltene
+        // Direkt-Aufrufer (Diag/UI) selbst. Legacy-Welten: _feuchteAt → 0.
+        return this._affinitaet(tags, world, Number.isFinite(feuchte) ? feuchte : this._feuchteAt(x, z));
+    }
+
+    // DIE AFFINITÄT (die EINE Formel): Bauplan-Tags × Welt-Feld an einer Stelle × Feuchte. Der Populator rechnet das
+    // Feld je Sample EINMAL und die Tags je Chunk EINMAL (`_vegetationSampleSpawn`) — bis Welle K rechnete jeder der
+    // zwölf Kandidaten je Sample beides neu (sechs Rausch-Abfragen, alle Teile des Bauplans).
+    _affinitaet(tags, world, fw) {
         if (!tags) return 0;
         let score = 0;
         // Vier Achsen × Tag-Wert. Wenn eine Welt-Achse hoch und der Bauplan
@@ -68748,10 +68841,6 @@ class AnazhRealm {
         score += world.dichte * (tags.dichte || 0);
         score += world.glut * (tags.brennbar || 0); // glut → brennbar (Material-Achse)
         score += world.magieleitung * (tags.magieleitung || 0);
-        // Fünfte Stimme: feuchte resoniert mit lebendig (Bäume folgen Flüssen; brennbar resoniert nicht).
-        // Der Populator reicht feuchte je Sample (kein Hot-Path-Bucket-Walk); fehlt sie, misst der seltene
-        // Direkt-Aufrufer (Diag/UI) selbst. Legacy-Welten: _feuchteAt → 0.
-        const fw = Number.isFinite(feuchte) ? feuchte : this._feuchteAt(x, z);
         score += fw * (tags.lebendig || 0) * AnazhRealm.FEUCHTE.affinitaetGewicht;
         return Math.max(0, Math.min(1, score / 4));
     }
@@ -73348,8 +73437,8 @@ class AnazhRealm {
             // Stufen-/SSE-Stempel (das Attribut-Vokabular der Studio-Blende): aLodLevel = 1 (L0) · 2 (L1) · 3 (die
             // einzige Nah-Stufe einer Art ohne L0) · 0 (ungemaskt: Nicht-Baum-Kinds, wie das Studio-`vLod>0.5`-Gate);
             // aH0 = Welt-Sichthöhe der Gruppe (_foundryGruppenHoehe); aH0L = Blatt-Sichthöhe (Laub gekappt auf
-            // LOD_DISTANCES.leafVisCap, Rinde aH0L == aH0). VOR dem Warm-Kompilieren stempeln (compileAsync
-            // braucht das Pipeline-Layout).
+            // LOD_DISTANCES.leafVisCap, Rinde aH0L == aH0). VOR der ersten Zeichnung stempeln (der Knoten-Bau liest
+            // das Attribut-Layout).
             try {
                 const _lodS = stage && Number.isFinite(stage.lod) ? stage.lod | 0 : null;
                 const _isTree = !!(
@@ -73389,21 +73478,6 @@ class AnazhRealm {
             } catch (_eS) {}
         }
         if (group && group.children.length) {
-            // Warm-Kompilieren NUR EINMAL JE MATERIAL (per kind geteilt, ~5): ein compileAsync pro Build flutet
-            // beim per-Frame-Drain die WebGPU-Compile-Queue → Device-Crash.
-            if (!this._foundryWarmedMats) this._foundryWarmedMats = new Set();
-            let needsWarm = false;
-            for (const ch of group.children) {
-                if (ch.material && !this._foundryWarmedMats.has(ch.material)) {
-                    this._foundryWarmedMats.add(ch.material);
-                    needsWarm = true;
-                }
-            }
-            if (needsWarm) {
-                try {
-                    this._warmCompilePipeline(group, false);
-                } catch (_e2) {}
-            }
             // V4(B) — die Bilanz-Zahl (gebaute Foundry-Baum-Geometrien) für die Leck-Linse
             // (gegen `_geomDisposedCount`). Lazy-init, kein state.X-Feld.
             const _f = this._foundry;
@@ -74841,7 +74915,7 @@ class AnazhRealm {
         return `fels_var${idx}`;
     }
 
-    _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn) {
+    _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn, tagsJe) {
         // Nichts wächst im Wasser (0.4 m Marge gegen knöcheltiefes Ufer). Eine Quelle: `_isAboveWaterAt` —
         // alle wasser-respektierenden Welt-Schichten lesen denselben Helfer.
         if (!this._isAboveWaterAt(sampleX, sampleZ, 0.4)) return 0;
@@ -74872,16 +74946,28 @@ class AnazhRealm {
         ];
         // Nie Math.random im Worldgen: worldFieldAt() initialisiert state.worldField (inkl. rngNoise, seed-
         // gebunden) lazy — sonst würfelt jeder Peer anders (P2P-Drift).
-        if (!this.state.worldField || !this.state.worldField.rngNoise) this.worldFieldAt(sampleX, sampleZ);
+        // Das Welt-Feld dieser Stelle EINMAL (es initialisiert auch den Rausch-Satz samt rngNoise): jede Affinität und
+        // jeder Wald-/Busch-Wurf dieses Samples liest es.
+        const welt = this.worldFieldAt(sampleX, sampleZ);
         const rng = this.state.worldField && this.state.worldField.rngNoise;
         // Γ1 — die FEUCHTE einmal pro Sample (surfaceY liegt hier schon vor;
         // der Bucket-Walk läuft 1× statt 1× je Kandidat) → alle Affinitäts-
         // Aufrufe dieses Samples lesen denselben Wert.
         const feuchte = this._feuchteAt(sampleX, sampleZ, surfaceY);
+        const fw = Number.isFinite(feuchte) ? feuchte : this._feuchteAt(sampleX, sampleZ);
+        // die Tags je Bauplan aus der Tafel des Chunks (`_populateVoxelChunkVegetation`), sonst einmal hier
+        const tafel = tagsJe || new Map();
+        const affinitaet = (name) => {
+            const bp = this.state.blueprints && this.state.blueprints[name];
+            if (!bp) return 0;
+            let tags = tafel.get(bp);
+            if (tags === undefined) tafel.set(bp, (tags = this.computeCompoundTags(bp)));
+            return this._affinitaet(tags, welt, fw);
+        };
 
         if ((seedForSpawn % 1000) / 1000 < LANDMARK_RATE) {
-            const affBogen = this.spawnAffinityForBlueprint("felsbogen", sampleX, sampleZ, feuchte);
-            const affTurm = this.spawnAffinityForBlueprint("felsturm", sampleX, sampleZ, feuchte);
+            const affBogen = affinitaet("felsbogen");
+            const affTurm = affinitaet("felsturm");
             if (Math.max(affBogen, affTurm) >= AFFINITY_FLOOR) {
                 const lmName = (seedForSpawn >>> 10) & 1 ? "felsturm" : "felsbogen";
                 // Enqueue statt sofort spawnen: der Streaming-Pump öffnet 9+ Chunks mit je bis zu 64 Samples, jeder
@@ -74913,7 +74999,7 @@ class AnazhRealm {
         let bestName = null;
         let bestAffinity = 0;
         for (const name of candidates) {
-            const aff = this.spawnAffinityForBlueprint(name, sampleX, sampleZ, feuchte);
+            const aff = affinitaet(name);
             if (aff > bestAffinity) {
                 bestAffinity = aff;
                 bestName = name;
@@ -74978,8 +75064,7 @@ class AnazhRealm {
             }
         }
         if (isTree) {
-            const f = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
-            const lebendig = f ? f.lebendig : 0;
+            const lebendig = welt.lebendig;
             chance = Math.min(0.4, BASE_RATE * bestAffinity * (0.4 + lebendig * 0.9));
             // Wald-Maske = die volle Platzierungs-Ökologie aus der EINEN Quelle `_placementDensityFactor` (Stand-
             // Klump × Slope-flach × Feuchte × Höhe × Perf): echte Wälder mit Rand + Lichtungen statt glatter
@@ -74994,8 +75079,7 @@ class AnazhRealm {
             if (isTree) {
                 const BUSH_RATE = 0.18; // Erst-Wurf-Wert; browser-justierbar
                 const bushProbe = (rng.noise2D(sampleX * 0.47 - 2.1, sampleZ * 0.47 + 6.3) + 1) / 2;
-                const f2 = typeof this.worldFieldAt === "function" ? this.worldFieldAt(sampleX, sampleZ) : null;
-                const lebendig2 = f2 ? f2.lebendig : 0;
+                const lebendig2 = welt.lebendig;
                 // Der Unterwuchs folgt derselben Platzierungs-Ökologie über den ':meadow'-Stand (λ~40 m Dickicht) →
                 // dicht in feuchten flachen Lücken, licht am Hang.
                 const meadowF = this._placementDensityFactor(sampleX, sampleZ, surfaceY, "meadow");
@@ -76627,6 +76711,8 @@ class AnazhRealm {
         const prevImmediate = this._vegSpawnImmediate || false;
         this._vegSpawnImmediate = !!opts.immediate;
         let spawned = 0;
+        // die Bauplan-Tags je Chunk EINMAL (Pläne und Stoffe ändern sich in diesem synchronen Lauf nicht)
+        const tagsJe = new Map();
         try {
             for (let zi = 0; zi < SAMPLES; zi++) {
                 for (let xi = 0; xi < SAMPLES; xi++) {
@@ -76635,7 +76721,7 @@ class AnazhRealm {
                     const surfaceY = this._voxelSurfaceY(sampleX, sampleZ);
                     if (surfaceY === null || !Number.isFinite(surfaceY)) continue;
                     const seedForSpawn = ((cx * 73856093) ^ (cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
-                    spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn);
+                    spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn, tagsJe);
                 }
             }
             // Die Bäume pflanzt der Wald-Generator (`_forestPlantChunk`, zell-deterministisch: Poisson-Disc +
@@ -88995,6 +89081,8 @@ class AnazhRealm {
                 } catch (_e) {
                     /* fail-soft — ohne Tap bleibt uploadBytes ehrlich 0, nie ein Boot-Wurf */
                 }
+                // die Absage einer asynchronen Pipeline meldet sich laut (r184 verschluckt sie)
+                this._erstAbsageWache(renderer);
                 // JEDES-HOLZ — DER DEVICE-LOSS-WÄCHTER: stirbt das GPU-Device
                 // (Software-Dawn, Treiber-Reset, TDR), wird es LAUT gemeldet +
                 // das Gate gezeigt, statt einer weißen Welt mit 60-fps-Lüge.
@@ -89807,12 +89895,8 @@ class AnazhRealm {
                 // Wasser-Reaktion läuft via Voxel-Chunk-Rebuild.
 
                 // ### Rendering ###
-                // VOR dem Render: entscheiden, ob die Schatten-Map neu muss (im Stand gecacht), und die nahen
-                // WebGPU-Pipelines async vorwärmen, bevor der Render an ihnen stallt (selbst-gedrosselt).
-                this._bootWarmCompileScene();
-                // V18.485 — der Pipeline-Warm-Ofen: neue Konsum-Archetyp-Familien
-                // budgetiert vorwärmen (1 Posten/Frame), bevor ihr erster Draw stallt.
-                this._pipeOfenTick();
+                // VOR dem Render: entscheiden, ob die Schatten-Map neu muss (im Stand gecacht). Eine erste Zeichnung baut
+                // verteilt und kompiliert asynchron (die Erst-Zeichnung, `_configureRenderer`) — kein Vorwärmen.
                 this._kernPflichtWand();
                 // DIE GPU-LEINE: sind schon GPU_FRAMES_IM_FLUG Frames unterwegs, schickt dieser Takt nichts an die GPU
                 // (Simulation, Eingabe und Streaming laufen weiter) — sonst lief die CPU der GPU davon (_gpuLeineFrei).
@@ -93012,10 +93096,9 @@ class AnazhRealm {
     // im Schatten liegt, wirft. Im Schatten-Pass ist ein Region-Bundle eine Gruppe: ein Render unter dem Override-Stoff
     // sammelt keine Bundles (die Bundle-Wahrheit am Chokepoint `_renderScene`), three projiziert seine Kinder frisch — die
     // Wahl hier wirkt je Pass. Jeder Haken beginnt mit der Rückkehr (abgewählte Werfer sichtbar, Haupt-Urteil) — auch nach
-    // einem Abbruch, und VOR der Kaskaden-Box (sie misst den ganzen Bestand). Ein Kompilat (`_kompiliere`: r184-compileAsync
-    // ruft den Vorher-Haken, nie den Nachher-Haken) stellt nichts.
+    // einem Abbruch, und VOR der Kaskaden-Box (sie misst den ganzen Bestand). Der Stamm kompiliert nie neben dem Render (kein
+    // r184-compileAsync, das den Vorher-Haken ohne den Nachher-Haken riefe — die Erst-Zeichnung, `_configureRenderer`).
     _passSicht(kamera, nach) {
-        if (this._imKompilat === true) return;
         const S = this._kaskadenSchmier();
         this._passSichtZurueck(S);
         // Der Haupt-Pass stellt die Kaskaden: sein Haken läuft nach der Kamera-Matrix und VOR jedem Schatten-Pass
@@ -94032,9 +94115,9 @@ class AnazhRealm {
         const pp = this._ensurePostProcessing();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
-        // Das Szene-RT bleibt für immer auf Skala 1 — kein Laufzeit-Realloc: compileAsync/_bundleReifeWache
-        // submitten intern gegen den Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View (Fehler-
-        // Klasse ohne fps-Gewinn). Die statische KLASSEN-PIXEL-KAPPE (Boot-Set) trägt die Auflösungs-
+        // Das Szene-RT bleibt für immer auf Skala 1 — kein Laufzeit-Realloc: die Render-Objekte (auch die mit noch
+        // offener Pipeline, die Erst-Zeichnung) hängen am Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View
+        // (Fehler-Klasse ohne fps-Gewinn). Die statische KLASSEN-PIXEL-KAPPE (Boot-Set) trägt die Auflösungs-
         // Ökonomie; eine Wahrnehmungs-Auflösung nur realloc-frei (Viewport-Scaling).
         // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr die Leinwand-Tiefe (`_leinwandTiefe`, der EINE Tiefen-Weg).
         let direkt = !pp || this.state.postProcessingFailed === true;
@@ -98441,6 +98524,9 @@ AnazhRealm.PERF_TARGET_MS = 17;
 // DIE GPU-LEINE (_gpuLeineFrei): höchstens so viele Frames dürfen zugleich auf der GPU unterwegs sein — mehr ist nur
 // Eingabe-Verzug (gemessen 04.10.: 600 ms bei ≈ 10 Frames in der Schlange), nie mehr Durchsatz.
 AnazhRealm.GPU_FRAMES_IM_FLUG = 2;
+// DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
+// solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass.
+AnazhRealm.ERST_BAU_MS = 4;
 // DER SCHATTEN-TAKT je Kaskade (_loopShadowUpdate): die nahe Kaskade rendert im Regler-Intervall, höchstens
 // jeden `nahMax`-ten Frame (laufende Tiere werfen nah); die ferne im `fernFaktor`-fachen Takt.
 AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });

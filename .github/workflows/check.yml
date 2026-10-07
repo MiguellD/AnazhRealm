@@ -138,6 +138,43 @@ jobs:
               run: |
                   grep -nE "(TODO|FIXME|XXX|HACK|TBD)" anazhRealm.js save-server.js || echo "keine TODOs"
 
+    erst-zeichnung:
+        # DIE ERST-ZEICHNUNGS-WAND (Welle K, die Hänger-Klasse): eine erste Zeichnung baut ihren Stoff im Pass (je Render-
+        # Aufruf einer) und lässt ihre Pipeline asynchron entstehen; ein Objekt, das schon zeichnete, baut einen Neubau im
+        # Frame und blinkt nie aus. Die Hänger-Linse nannte an der Radeon 1,4–4,2 s Warten nach synchronen Pipelines eines
+        # Tier-Erstbaus. Ein eigener Job (der playtest-Job steht mit ~41 min dicht an seiner Frist): ~5 min, echter Renderer
+        # (swiftshader-WebGPU, kienspan) — Konsum im Boot, drei neue Stoffe ohne synchrone Pipeline der Welt, der Gegen-Lauf
+        # auf dem Vendor-Weg MUSS rot sein, der Neubau zeichnet im nächsten Bild (ohne Gedächtnis MUSS er blinken), ein
+        # Bundle-Bürger steht ≤ 2 Frames nach seiner fertigen Pipeline wieder in der Aufnahme (Neubau gegen eine offene
+        # Pipeline, hängender Fehler-Scope; mit stummer Anmeldung MUSS er fehlen).
+        runs-on: ubuntu-latest
+        timeout-minutes: 20
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: "22"
+                  cache: "npm"
+
+            - name: System-Libs für headless Chromium
+              run: |
+                  sudo apt-get update -qq
+                  sudo apt-get install -y --no-install-recommends \
+                    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+                    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+                    libgbm1 libpango-1.0-0 libcairo2 libasound2t64 || \
+                  sudo apt-get install -y --no-install-recommends \
+                    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+                    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+                    libgbm1 libpango-1.0-0 libcairo2 libasound2
+
+            - name: Dependencies installieren (inkl. puppeteer)
+              run: npm ci --no-audit --no-fund
+
+            - name: Erst-Zeichnungs-Wand (echter Renderer — kein Frame trägt eine synchrone Pipeline der Welt)
+              run: npm run gate:hitch-telemetrie
+
     playtest:
         # PER-PUSH-MERGE-GATE — der RELIABLE, schnelle Tier: der Fast-Playtest (Kern-Gesundheit,
         # ~13 Checks: Crash · Welt/Terrain · Avatar-Rig · Kreatur · Bauplan · Resonanz · Stats) +

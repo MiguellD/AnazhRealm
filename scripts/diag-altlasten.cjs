@@ -682,6 +682,24 @@ const FORBIDDEN = [
     // ihr. Die Plattform trägt ihre Lichtung im Bauplan (`_grundrissVon`), die EINE Natur-Wand fragt die Krone (`_naturKrone`).
     { token: "_genesisLichtung", fiel: "Integration L D3 — die Lichtung ist ein Grundriss der Natur-Wand (_grundrissVon)" },
     { token: "_forestKroneWelt", fiel: "Integration L D3 — die Krone eines Wurfs ist _naturKrone (jede Quelle)" },
+    // DIE ERST-ZEICHNUNG (Welle K, Hänger): die erste Zeichnung baut den Stoff im Pass (je Render-Aufruf einer) und lässt die
+    // Pipeline asynchron entstehen — am EINEN Ort (`_configureRenderer`). Die Vorwärmer daneben fallen: das r184-compileAsync
+    // baute die Knoten ohnehin synchron (Attribute vor dem asynchronen Bau), der Boot-Schuss trug 40 Bauten in einem Fenster.
+    { token: "compileAsync", fiel: "Welle K — die Erst-Zeichnung (kein Kompilat neben dem Render)" },
+    { token: "_warmCompilePipeline", fiel: "Welle K — die Erst-Zeichnung" },
+    { token: "_bootWarmCompileScene", fiel: "Welle K — die Erst-Zeichnung" },
+    { token: "_kompiliere", fiel: "Welle K — die Erst-Zeichnung" },
+    { token: "_imKompilat", fiel: "Welle K — kein Kompilat, keine Wache" },
+    { token: "_pipeOfenMerke", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
+    { token: "_pipeOfenTick", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
+    { token: "_pipeOfenDone", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
+    { token: "_bundleReifeWache", fiel: "Welle K — die Erst-Zeichnung nimmt das Bundle neu auf, wenn die Pipeline steht" },
+    { token: "_foundryWarmedMats", fiel: "Welle K — die Erst-Zeichnung" },
+    // DIE BEREITSCHAFT AM ZUSTAND (Welle K, Nachbesserung): die Neuaufnahme hing am Vendor-Versprechen (es wartet auf
+    // popErrorScope: auf der Spielseite > 5 s, auf Windows-swiftshader nie) und der Neubau meldete sich nie an — EINE
+    // Warteschlange `_erstWartet`, bereit ist die Pipeline, sobald r184 sie in seinen Zustand schreibt.
+    { token: "_erstPipeline", fiel: "Welle K — die Bereitschaft liest den Zustand (_erstWartet), nie das Versprechen" },
+    { token: "_erstNeuAufnehmen", fiel: "Welle K — EINE Warteschlange (_erstWartet ohne Pipeline)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
