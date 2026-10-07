@@ -111,10 +111,11 @@ if (V) {
         )
     );
     // ── A4) SCHLUSS-WELLE (17.07.) — die neun heimgekehrten Blöcke reisen:
-    // Stopp-Distanzen (jagd/furcht) · Stimmungs-Schwellen · freude/sprung ·
-    // Größen-Bänder · separation · aufgaben · herde · wasser.
+    // Stopp-Distanzen (jagd/furcht) · Stimmungs-Schwellen · freude (die Huepf-Hoehen
+    // sind das Sprung-Gesetz; sprung.impulsProM fiel, Welle L) · Größen-Bänder ·
+    // separation · aufgaben · herde · wasser.
     check(
-        "VERHALTEN trägt die Schluss-Welle-Blöcke (schwellen/freude/sprung/groessen/separation/aufgaben/herde/wasser + Stopp-Distanzen)",
+        "VERHALTEN trägt die Schluss-Welle-Blöcke (schwellen/freude mit Huepf-Hoehen/groessen/separation/aufgaben/herde/wasser + Stopp-Distanzen)",
         !!(
             Number.isFinite(V.jagd && V.jagd.pirschStoppM) &&
             Number.isFinite(V.furcht && V.furcht.neugierStoppM) &&
@@ -122,8 +123,8 @@ if (V) {
             Number.isFinite(V.stimmung.schwellen.weideDiet) &&
             V.freude &&
             Number.isFinite(V.freude.tempoMul) &&
-            V.sprung &&
-            Number.isFinite(V.sprung.impulsProM) &&
+            Number.isFinite(V.freude.hopHochM) &&
+            Number.isFinite(V.freude.hopBasisM) &&
             Array.isArray(V.groessen) &&
             V.groessen.length >= 2 &&
             V.groessen.every((k) => k && typeof k.name === "string" && k.min > 0 && k.min < k.max) &&
@@ -165,10 +166,17 @@ probe("die Stimmungs-Schwellen sind Gesetz (Tick liest stimmung.schwellen)", /_v
 probe("die Größen-Bänder sind Gesetz (_creatureBodySize liest groessen)", /_verhaltenGesetz\(\)\.groessen/);
 probe("die Separations-Kraft liest das Gesetz (VERHALTEN.separation)", /_verhaltenGesetz\(\)\.separation/);
 probe("die Aufgaben-Tempi/Halt-Distanzen lesen das Gesetz (aufgaben.*)", /aufgaben\.followTempo/);
-probe("die Schwarm-Kohäsion liest das Gesetz (herde.gewicht/maxNachbarn)", /HERDE\.maxNachbarn/);
+probe(
+    "die Schwarm-Kohäsion ist die Herden-Form des Kerns (tetrapoda herdeZug über VERHALTEN.herde, je Gattung)",
+    /\.herdeZug\([\s\S]{0,400}VG\.herde/
+);
 probe("die Ufer-Scheu liest das Gesetz (wasser.tiefenScheuM/uferBias)", /WAS\.tiefenScheuM/);
 probe("Pirsch-/Neugier-Stopp lesen das Gesetz (pirschStoppM/neugierStoppM)", /VG\.jagd\.pirschStoppM/);
-probe("der Hüpf-Impuls liest das Gesetz (sprung.impulsProM)", /VG\.sprung\.impulsProM/);
+probe(
+    "das Sprung-Gesetz: der Abflug ist die Parabel des Gang-Gesetzes aus der Huepf-Hoehe der Freude (v0 = √(2·g·h))",
+    /Math\.sqrt\(2 \* AnazhRealm\._hopSchwere\(\) \* \(froh \? F\.hopHochM : F\.hopBasisM\)\)/
+);
+probe("eine springende Aktion zündet das EINE Sprung-Gesetz (creatureJump)", /def\.hop === true\) this\.creatureJump\(/);
 
 // ── C) SELBST-TEST: injizierte tote Zeile wird erkannt ──
 const fakeTargets = kreaturTargets.concat(["gibtsnicht"]);

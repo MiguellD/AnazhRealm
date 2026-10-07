@@ -222,7 +222,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
     // B2 (14.07.) — der GERITTENE Eintrag haengt am EINEN Bewegungs-Chokepoint: Position
     // folgt dem Reiter, die Instanz-Matrix zieht ueber den EINEN Update-Weg mit, die
     // Blocker folgen. [^.] vor dem Namen = die DEFINITION, nie der this.-Aufruf.
-    const tmm = fnBody(anazhNC, /[^.]_tickMountedMovement\(dt\)\s*\{/);
+    const tmm = fnBody(anazhNC, /[^.]_tickMountedMovement\(_?dt\)\s*\{/);
     out.push([
         "A6/B2: _tickMountedMovement bindet den Eintrag an den Chokepoint (pos folgt pm + _archInstanceUpdate + Blocker)",
         tmm !== null &&
@@ -599,7 +599,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
             res.driveErr = (e && e.message) || String(e);
         }
         // ===== B-e (W5 Gegenstände, 05.10.): DAS FAHR-GEFÜHL IM ECHTEN BEWEGUNGS-PFAD =====
-        // Der GT fährt über `_loopPlayerMovement` (der EINE Bewegungs-Pfad, 60 Hz, dtOverride) + `_tickMountedMovement`:
+        // Der GT fährt durch den echten Sim-Schritt `_stepFixedSim` (Kapsel · Bewegung · Ritt-Sitz, 60 Hz) + den Frame-Tick:
         // 90 Ticks Gas geradeaus, dann 120 Ticks voller Lenk-Einschlag. Gemessen an der GERENDERTEN Matrix
         // (`_archEntryWorldMatrix`) und am Gesetz (exportDrive.huelle):
         //   achse  — der Winkel zwischen der Bug-Achse des Templates (+x) und der Fahrt (Grad, Geradeaus-Ticks v > 3)
@@ -608,7 +608,7 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
         try {
             const pm = r.state.playerMesh.position;
             const keys = r.state.keys;
-            // Die Strecke (die Probe integriert ohne Kollision — ein Fels im Weg wäre kein Boden-Befund, und der GT
+            // Die Strecke (ein Fels im Weg wäre kein Boden-Befund, und der GT
             // schwimmt: über Wasser trägt die Lauf-Fläche): je Kandidat um die Mess-Wiese Proben alle 2 m auf 72 m in
             // Fahrt-Richtung (+x: Template-Gier 0 = Bug +x) und ±3 m daneben — trocken; unter den trockenen die mit
             // der kleinsten Stufe (die Welt ist hügelig: 30 % Steigung findet sich auf jeder 72-m-Geraden).
@@ -666,10 +666,10 @@ function staticLaws(vcSrc, garageSrc, anazhSrc, phytoSrc) {
                 let vEnde = 0;
                 const tick = (lenk) => {
                     t += dt;
-                    r._loopPlayerMovement(t, dt);
+                    // Welle L (Q0 F-L6): der ECHTE Sim-Schritt (Kapsel + Bewegung + Ritt-Sitz), dann der Frame-Tick (Sicht)
+                    // — vorher integrierte die Probe pm += v·dt an Akkumulator, Kollision und Sitz vorbei.
+                    r._stepFixedSim(t, dt);
                     const v = r.state.playerVel;
-                    pm.x += v.x() * dt;
-                    pm.z += v.z() * dt;
                     r._tickMountedMovement(dt);
                     r._archEntryWorldMatrix(e2, M);
                     const sp = Math.hypot(v.x(), v.z());

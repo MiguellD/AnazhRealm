@@ -4079,7 +4079,8 @@ async function checkBandV1757HeldSlot(ctx) {
         r.equipHeld(wName);
         const armed = r.computePlayerStats().stats;
         out.heldRaisesDamage = armed.damage > base.damage + 0.01; // härte → mehr Schaden
-        out.heldRaisesDefense = armed.defense > base.defense; // das Defense-Trio fließt mit
+        // Welle L (K-D15): die Hand ist kein Panzer — das Gerät faltet nur in die Angriffs-Größen
+        out.heldKeinPanzer = armed.defense === base.defense && armed.hpMax === base.hpMax;
 
         // (5) abnehmen → zurück auf die Baseline (kein Rest-Effekt)
         r.equipHeld(null);
@@ -4121,8 +4122,8 @@ async function checkBandV1757HeldSlot(ctx) {
         res.heldRaisesDamage
     );
     check(
-        "V17.57 W2-B: KONSUM — das harte Gerät hebt auch die Verteidigung (das Defense-Trio fließt)",
-        res.heldRaisesDefense
+        "Welle L K-D15: die Hand ist kein Panzer — das harte Gerät lässt Verteidigung und HP unberührt (nur Angriff)",
+        res.heldKeinPanzer
     );
     check("V17.57 W2-B: Gerät abnehmen → zurück auf die Baseline (kein Rest-Effekt)", res.unequipRestores);
     check(
@@ -4137,7 +4138,7 @@ async function checkBandV1757HeldSlot(ctx) {
 }
 
 // Kreatur-Kampf symmetrisch zum Spieler: computeCreatureStats liefert hpMax + defense;
-// `dealt = max(1, amount − defense)`; hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien nur für den
+// die Rüstung dämpft (`dealt = roh² / (roh + defense)`, Welle L K-D5 — die flache Wand max(1, roh − defense) fiel); hp ≤ 0 → Kampf-Tod (Loot aus den Body-Materialien nur für den
 // Spieler-Töter, removeCreature). Konsument ist der damage_creature-DSL-Op.
 async function checkBandV1753CreatureCombat(ctx) {
     const { page, check } = ctx;
@@ -4166,17 +4167,21 @@ async function checkBandV1753CreatureCombat(ctx) {
             Math.abs(c1.userData.hp - stats1.hpMax) < 1e-6 &&
             c1.userData.hp > 0;
 
-        // (2) KONSUM — damageCreature reduziert hp um max(1, amount − defense)
+        // (2) KONSUM — damageCreature dämpft: dealt = roh² / (roh + defense)
         const def1 = Math.max(0, stats1.defense || 0);
         const hpBefore = c1.userData.hp;
-        const dmgR = r.damageCreature(c1, def1 + 10, { source: "world" });
+        const roh1 = def1 + 10;
+        const soll1 = (roh1 * roh1) / (roh1 + def1);
+        const dmgR = r.damageCreature(c1, roh1, { source: "world" });
         out.damageReduces =
             dmgR.ok &&
             !dmgR.killed &&
-            Math.abs(dmgR.dealt - 10) < 1e-6 &&
-            Math.abs(c1.userData.hp - (hpBefore - 10)) < 1e-6;
-        // (3) der Schadens-Floor — ein winziger Treffer macht mind. 1 (keine Unverwundbarkeit, kein 0-Schaden)
-        out.damageFloor = r.damageCreature(c1, 0.1, { source: "world" }).dealt === 1;
+            Math.abs(dmgR.dealt - soll1) < 1e-6 &&
+            dmgR.dealt < roh1 &&
+            Math.abs(c1.userData.hp - (hpBefore - soll1)) < 1e-6;
+        // (3) ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit) — und nie mehr als er bringt
+        const winzig = r.damageCreature(c1, 0.1, { source: "world" }).dealt;
+        out.damageFloor = winzig > 0 && winzig < 0.1;
 
         // (4) ein Nicht-Kreatur-Ziel (der Spieler-Mesh) wird abgelehnt
         out.rejectsNonCreature = !r.damageCreature(r.state.playerMesh, 10, {}).ok;
@@ -4228,11 +4233,8 @@ async function checkBandV1753CreatureCombat(ctx) {
         res.methodsExist
     );
     check("V17.53 Kampf C: eine frische Kreatur hat hp == hpMax (init aus DERSELBEN Stat-Pipeline)", res.hpInit);
-    check("V17.53 Kampf C: KONSUM — damageCreature reduziert hp um max(1, amount − defense)", res.damageReduces);
-    check(
-        "V17.53 Kampf C: der Schadens-Floor — ein winziger Treffer macht mind. 1 Schaden (keine Unverwundbarkeit)",
-        res.damageFloor
-    );
+    check("V17.53 Kampf C: KONSUM — damageCreature dämpft (roh² / (roh + defense), Welle L K-D5)", res.damageReduces);
+    check("V17.53 Kampf C: ein winziger Treffer wirkt winzig, nie 0 (keine Unverwundbarkeit)", res.damageFloor);
     check("V17.53 Kampf C: ein Nicht-Kreatur-Ziel wird abgelehnt (not_creature)", res.rejectsNonCreature);
     check("V17.53 Kampf C: der Loot sind die Body-Materialien der Kreatur (nicht leer)", res.lootNonEmpty);
     check(
@@ -4285,8 +4287,19 @@ async function checkBandV1754PlayerAttack(ctx) {
         // Der Klick LÖST nur den 3-Phasen-Schwung aus, das Treffen macht der Klingen-Sweep der Strike-Phase
         // → Ziel VOR den Spieler (Sweep-Reichweite), Schwung synthetisch über die Anzeige-Uhr treiben.
         const savedYaw = r.state.yaw;
+        const savedPitch = r.state.pitch;
+        const savedCam = r.state.cameraMode;
         r.state.yaw = 0;
         c1.position.set(pm.x, pm.y, pm.z + 1.6);
+        // Die Klinge zielt durchs Fadenkreuz (Welle L, K-D3): die ECHTE Kamera auf die Leibes-Mitte richten.
+        r.setCameraMode("first");
+        r._loopCamera(performance.now() / 1000);
+        {
+            const b = new THREE.Box3().setFromObject(c1);
+            const cp = r.state.camera.position;
+            r.state.pitch = Math.atan2((b.min.y + b.max.y) / 2 - cp.y, Math.max(0.5, c1.position.z - cp.z));
+            r._loopCamera(performance.now() / 1000);
+        }
         p._swing = null;
         p.lastAttackAt = -Infinity;
         setEmo({});
@@ -4309,6 +4322,8 @@ async function checkBandV1754PlayerAttack(ctx) {
         out.cooldownGates = atkA === true && atkB === false && c1.userData.hp === hp1Mid;
         p._swing = null;
         r.state.yaw = savedYaw;
+        r.state.pitch = savedPitch;
+        r.setCameraMode(savedCam);
 
         // (4) die SCHULD ist lebendig-gegated: ein Spieler-Kill eines lebendig-Wesens → sorrow
         // (der W4-Kontext-Appraisal: derselbe lebendig-Tag, im Tötungs-Kontext zu Schmerz)
@@ -5127,7 +5142,7 @@ async function checkBandV1763ForgeArmor(ctx) {
         blu.__geraet = {
             name: "__geraet",
             parts: [
-                { shape: "box", material: "stein", size: { x: 0.6, y: 0.6, z: 0.6 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "stein", size: { x: 0.15, y: 1.2, z: 0.15 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
         const fertHeld = r.fertigeBlueprint("__geraet");
@@ -5430,7 +5445,7 @@ async function checkBandV1766FertigenFlow(ctx) {
         blu.__s7_forge = {
             name: "__s7_forge",
             parts: [
-                { shape: "box", material: "eisen", size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "eisen", size: { x: 0.2, y: 1.6, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
         // V17.88 — die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
@@ -5463,7 +5478,7 @@ async function checkBandV1766FertigenFlow(ctx) {
         blu.__s7_plain = {
             name: "__s7_plain",
             parts: [
-                { shape: "box", material: "stein", size: { x: 0.9, y: 0.9, z: 0.9 }, position: { x: 0, y: 0, z: 0 } },
+                { shape: "box", material: "stein", size: { x: 0.2, y: 1.8, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
         r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
@@ -11242,13 +11257,13 @@ async function checkBandRing11AndW7Mesh(ctx) {
         r.dslRun(["voxel_fill", 0, 50, 0, 3], { source: "playtest" });
         out.voxelFillAddsEdit =
             r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode === "fill";
-        // Invalid pos (NaN) → kein Edit + invalid-Log
+        // Invalid pos (NaN) → kein Edit + der benannte Eintrag der Orts-Engstelle (`dslEvalPos`, Welle L V-k5)
         const before = r.state.worldMeta.voxelEdits.length;
         const invalidResult = r.dslRun(["voxel_carve", NaN, 0, 0, 3], { source: "playtest" });
         out.voxelCarveRejectsInvalidPos =
             r.state.worldMeta.voxelEdits.length === before &&
             invalidResult.log &&
-            invalidResult.log.some((l) => l.event === "voxel_carve_invalid_pos");
+            invalidResult.log.some((l) => l.event === "invalid_position" && l.effekt === "voxel_carve");
         r.setGameMode(oldMode);
         r.state.worldMeta.voxelEdits = [];
 
@@ -19405,9 +19420,16 @@ async function checkBandVoxelTerrainCore(ctx) {
                 r.updateCreatures(0.016);
                 r.updateCreatures(0.016);
                 r.updateCreatures(0.016);
-                // Tier-Bodenkontakt: die Sohlen stehen AUF _voxelSurfaceY (kein Schwebe-Anker, kein Sinus-Bob;
-                // ±0.5 deckt die Hang-Proben-Mitte; Schwimm-Bob nur im Wasser).
-                const expected = voxelY;
+                // Tier-Bodenkontakt: die Sohlen stehen auf dem SICHTBAREN Boden um das Gesetz (Welle L, Q4: die
+                // Boden-Karte des Chunks im STAND_SICHT_BAND um _voxelSurfaceY, sonst das Gesetz) — kein Schwebe-Anker,
+                // kein Sinus-Bob; ±0.5 deckt die Hang-Proben-Mitte; Schwimm-Bob nur im Wasser.
+                const span = r._voxelChunkConfig(0).span;
+                const kcx = Math.floor(testX / span);
+                const kcz = Math.floor(testZ / span);
+                const ke = r.state.voxelChunks ? r.state.voxelChunks.get(`${kcx},${kcz}`) : null;
+                const karte = ke && ke.surfMap ? r._chunkSurfaceAt(ke, kcx, kcz, testX, testZ) : null;
+                const expected =
+                    Number.isFinite(karte) && Math.abs(karte - voxelY) <= r.constructor.STAND_SICHT_BAND ? karte : voxelY;
                 const actual = creature.position.y;
                 out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
                 // Fallback-Wächter nur, wo Boden und Fallback unterscheidbar sind.
@@ -19453,7 +19475,7 @@ async function checkBandVoxelTerrainCore(ctx) {
         );
         check("Voxel V9.28: state.maxHeight ist 0 in einer Voxel-Welt", voxelP5c1Results.voxelMaxHeightZero);
         check(
-            "Voxel V9.28: updateCreatures positioniert Kreaturen auf _voxelSurfaceY (V9.25 Phase 5b ehrlich abgeschlossen)",
+            "Voxel V9.28: updateCreatures stellt Kreaturen auf den sichtbaren Boden um _voxelSurfaceY (Stand-Leser der Sicht, Welle L)",
             voxelP5c1Results.creatureOnVoxelSurface
         );
         check(
@@ -23140,7 +23162,7 @@ async function checkBandPhasenBF(ctx) {
             !document.getElementById("workshop-import-soul-btn");
         out.c7MountSitz =
             /_sitzHeight/.test(window.__codeOf(r.mountArchitecture)) &&
-            /_sitzHeight/.test(window.__codeOf(r._tickMountedMovement));
+            /_sitzHeight/.test(window.__codeOf(r._rittSchritt));
         out.c7Grip = /_attachPointFor/.test(window.__codeOf(r._refreshHeldMesh));
         // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg, das Abwärts-Material lebt als markierte
         // Saat); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
@@ -23409,7 +23431,8 @@ async function checkBandPhasenBF(ctx) {
                 creatures: r.state.creatures,
                 ce: r.state.creatureEmotions,
             };
-            const savedRandom = Math.random;
+            // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5, Welle L) — die Probe setzt den Strom, nie Math.random.
+            const hatteStrom = Object.prototype.hasOwnProperty.call(r, "_faunaRng");
             try {
                 r.state.weatherTransition = null;
                 r.state.weather = "rainy";
@@ -23425,7 +23448,7 @@ async function checkBandPhasenBF(ctx) {
                 };
                 r.state.creatures = [fake];
                 r.state.creatureEmotions = ["happy"];
-                Math.random = () => 0.05;
+                r._faunaRng = (zweck) => (zweck === "gefuehl" ? () => 0.05 : () => 0.99);
                 r.state.weather = "stormy";
                 r.updateCreatureEmotions();
                 const em = fake.userData.emotions;
@@ -23436,7 +23459,7 @@ async function checkBandPhasenBF(ctx) {
                 if (!/requestWeatherTransition/.test(window.__codeOf(r._setWeather))) return "_setWeather fadet nicht";
                 return true;
             } finally {
-                Math.random = savedRandom;
+                if (!hatteStrom) delete r._faunaRng;
                 r.state.weather = saved.w;
                 r.state.weatherTransition = saved.wt;
                 r.state.weatherEffectTime = saved.wet;
@@ -23940,10 +23963,14 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe, psy);
         out.perfMs = performance.now() - t0;
 
-        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` ist der EINZIGE `_voxelSurfaceY`-Leser;
+        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` liest den Boden UNTER dem Körper (`_kreaturBodenUnter`:
+        // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle);
         // der Helper selbst liest `_waterLevelAt` + `_isAboveWaterAt`.
         const helperSrc = window.__codeOf(r._creatureWaterContextAt);
-        out.usesVoxelSurfaceY = /_voxelSurfaceY\(/.test(window.__codeOf(r._creatureGroundY));
+        out.usesVoxelSurfaceY =
+            /_kreaturBodenUnter\(/.test(window.__codeOf(r._creatureGroundY)) &&
+            /_fieldSurfaceBelow\(/.test(window.__codeOf(r._kreaturBodenUnter)) &&
+            /_voxelSurfaceY\(/.test(window.__codeOf(r._kreaturBodenUnter));
         out.usesWaterLevelAt = /_waterLevelAt\(/.test(helperSrc);
         out.usesIsAboveWaterAt = /_isAboveWaterAt\(/.test(helperSrc);
 
@@ -23965,9 +23992,16 @@ async function checkBandWelleV11D1WaterContext(ctx) {
             r._creatureGroundY(m);
             out.gRefreshOnMove = r._creatureGroundBudget === 3;
             r._creatureGroundBudget = 0; // Budget erschöpft
+            m.position.x += 1.0; // eine bekannte Kreatur, > 0.5 m gewandert: ohne Budget trägt ihr Cache
+            const gm = r._creatureGroundY(m);
             const fresh = mk(800, 800);
-            const gf = r._creatureGroundY(fresh); // kein Budget + kein Cache → Makro-Schätzwert, KEIN Scan
-            out.gBudgetBound = r._creatureGroundBudget === 0 && typeof gf === "number" && Number.isFinite(gf);
+            const gf = r._creatureGroundY(fresh); // kein Budget + kein Cache → EIN Scan ohne Budget (Welle L, Höhle)
+            out.gBudgetBound =
+                r._creatureGroundBudget === 0 &&
+                gm === m.userData.cachedGroundY &&
+                typeof gf === "number" &&
+                Number.isFinite(gf) &&
+                fresh.userData.cachedGroundY === gf;
         }
 
         return out;
@@ -24014,7 +24048,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
     );
     check(
-        "Welle V11.0-d.1: Helper liest _voxelSurfaceY (Wahrheits-Quelle V9.25, via _creatureGroundY)",
+        "Welle V11.0-d.1: _creatureGroundY liest den Boden unter dem Körper (_kreaturBodenUnter → _fieldSurfaceBelow, Säule nur ohne Fels)",
         res.usesVoxelSurfaceY === true
     );
     check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
@@ -24025,7 +24059,10 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         check("V17.113: gleiche Position → Cache-Hit (kein Scan)", res.gCacheHit === true);
         check("V17.113: Bewegung < 0.5 m → Cache-Hit (kein Scan)", res.gCacheNear === true);
         check("V17.113: Bewegung > 0.5 m → Refresh (ein Scan)", res.gRefreshOnMove === true);
-        check("V17.113: Budget erschöpft → kein Scan mehr, Makro-Fallback (FPS-Bound)", res.gBudgetBound === true);
+        check(
+            "V17.113: Budget erschöpft → die Gewanderte trägt ihr Cache, nur die Frische scannt einmal (FPS-Bound, Welle L)",
+            res.gBudgetBound === true
+        );
     }
 }
 
@@ -26772,8 +26809,12 @@ async function checkBandWelle6HCreatures(ctx) {
         out.spriteHasResoniert = (tagsWolf.resoniert || 0) > 0;
         out.wesenHasLebendig = (tagsWesen.lebendig || 0) > 0;
         out.geistHasLebendig = (r.computeCreatureCompoundTags(geist).lebendig || 0) > 0;
+        // Welle L (Q12): ein unbekannter Seelen-Wunsch ist eine laute Absage (null, geloggt), nie ein still gewürfelter
+        // Ersatz (`spawnCreatureAt(…, "hirsch")` ergab einen Bären) — und der Schild einer Seele findet sie.
+        const nVorAbsage = r.state.creatures.length;
         const fb = r.spawnCreatureAt(p.x + 4, p.y, p.z + 4, "happy", "fictional-soul");
-        out.unknownSoulFallback = !!fb && r.constructor.CREATURE_SOUL_NAMES.includes(fb.userData.soul);
+        out.unknownSoulAbsage = fb === null && r.state.creatures.length === nVorAbsage;
+        out.soulLabelFindet = r._pickCreatureSoulName(r.constructor.CREATURE_SOULS.wesen.label) === "wesen";
         out.spriteAuraOffset = Math.abs(r._creatureAuraOffsetY(sprite) - 0.75) < 0.01;
         out.wesenAuraOffset = Math.abs(r._creatureAuraOffsetY(wesen) - 0.8) < 0.01;
         out.spawnSpriteWorks = sprite && sprite.userData.soul === "wolf";
@@ -26930,7 +26971,8 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H P2A: wolf-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
         check("Welle 6.H P2A: wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
         check("Welle 6.H P2A: fuchs-Compound trägt lebendig > 0", wave6hP2aResults.geistHasLebendig);
-        check("Welle 6.H P2A: Unknown soulName fällt auf bekannte Seele zurück", wave6hP2aResults.unknownSoulFallback);
+        check("Welle L: ein unbekannter Seelen-Wunsch ist eine laute Absage (kein Ersatz-Tier)", wave6hP2aResults.unknownSoulAbsage);
+        check("Welle L: der Schild einer Seele (Hirsch) findet sie", wave6hP2aResults.soulLabelFindet);
         check("Welle 6.H P2A: _creatureAuraOffsetY(wolf) === 0.75", wave6hP2aResults.spriteAuraOffset);
         check("Welle 6.H P2A: _creatureAuraOffsetY(wesen) === 0.8", wave6hP2aResults.wesenAuraOffset);
         check(
@@ -28572,9 +28614,8 @@ async function checkBandPhaseEThreat(ctx) {
             const lamm = r.spawnCreatureAt(pm.x + 3.5, pm.y, pm.z + 1, "happy", "wesen");
             spawned.push(lamm);
             out.gentleNoHunt = r._creatureHuntDrive(lamm, 0) === false;
-            // (3) der BISS: HP sinkt durchs damagePlayer-Tor, der Cooldown deckelt, die Rüstung dämpft FLACH.
-            // Die Probe isoliert die Abwehr (0 vs 3): mit der Basis-defense klemmt der weiche Biss (max(2,…))
-            // sonst beidseitig auf der max(1,…)-Untergrenze.
+            // (3) der BISS: HP sinkt durchs damagePlayer-Tor, der Cooldown deckelt, die Rüstung dämpft
+            // (_ruestungDaempft, dasselbe Gesetz wie bei den Wesen). Die Probe isoliert die Abwehr (0 vs 3).
             const savedDef = p.stats.defense;
             p.stats.defense = 0;
             p.hp = p.stats.hpMax || 100;
@@ -28711,7 +28752,32 @@ async function checkBandV18150Ride(ctx) {
                 parts: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.parts)),
                 connections: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.connections || [])),
             };
-            entry = r.spawnArchitecture("_t_ride_wagen", { x: pm.x + 60, y: pm.y, z: pm.z + 60 }, { silent: true });
+            // Welle L (Q5): die Hülle ist der Körper des gerittenen Werks — die Probe fährt auf BEFAHRBAREM Boden: die
+            // erste Stelle um Spieler + 60 m, deren Gelände auf 12 m Fahrt × ±2 m Breite eine Ebene ist (Rest ≤ 0,2 m,
+            // Steigung ≤ 20 %). An (96, 60) stand der Wagen in einer Mulde (der Rand 2 m hoch auf 3 m) — ein Hindernis ist
+            // ein anderes Band (gate:fahr-leben H).
+            const pmAlt = { x: pm.x + 60, z: pm.z + 60 }; // wo die Bänder danach den Spieler erwarten (der alte Ort)
+            let ort = { x: pmAlt.x, z: pmAlt.z };
+            for (let i = 0; i < 12 * 16; i++) {
+                const ring = 2 + Math.floor(i / 12);
+                const cx = pm.x + Math.cos(((i % 12) * Math.PI) / 6) * ring * 24;
+                const cz = pm.z + Math.sin(((i % 12) * Math.PI) / 6) * ring * 24;
+                const h0 = r.getTerrainHeightAt(cx, cz);
+                const gx = (r.getTerrainHeightAt(cx + 2, cz) - r.getTerrainHeightAt(cx - 2, cz)) / 4;
+                const gz = (r.getTerrainHeightAt(cx, cz + 6) - r.getTerrainHeightAt(cx, cz - 3)) / 9;
+                if (!Number.isFinite(h0) || !(Math.hypot(gx, gz) <= 0.2)) continue;
+                let eben = true;
+                for (let dz = -3; dz <= 9 && eben; dz += 1.5)
+                    for (let dx = -2; dx <= 2 && eben; dx += 1) {
+                        const h = r.getTerrainHeightAt(cx + dx, cz + dz);
+                        if (!Number.isFinite(h) || Math.abs(h - (h0 + gx * dx + gz * dz)) > 0.2) eben = false;
+                    }
+                if (eben) {
+                    ort = { x: cx, z: cz };
+                    break;
+                }
+            }
+            entry = r.spawnArchitecture("_t_ride_wagen", { x: ort.x, y: pm.y, z: ort.z }, { silent: true });
             out.spawned = !!entry;
             if (!entry) return out;
             // (1) das Profil emergiert aus den Gelenken + der Masse.
@@ -28731,19 +28797,31 @@ async function checkBandV18150Ride(ctx) {
             out.brennglasSafe = /riddenId/.test(window.__codeOf(r._tickFocusingAffordances));
             // P3: der Reiter-Skip lebt jetzt in der Feld-Struktur-Kollision (nicht mehr im Cull-Tick).
             out.lazyPassSkips = /riddenId/.test(window.__codeOf(r._stepCharacterStructures));
-            // (4) das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg).
-            // Feld-nativ: die horizontale Geschwindigkeit lebt in state.playerVel.
-            r.state.playerVel.setValue(5, 0, 0);
-            r._tickMountedMovement(0.05);
-            r._tickMountedMovement(0.05);
-            r._tickMountedMovement(0.05);
-            const yawTarget = Math.atan2(5, 0);
+            // (4) das Gefährt fährt in seine Bug-Richtung + die Räder rollen (Phase ∝ Weg).
+            // Welle L (Q13): ein Werk mit vier Rädern trägt das Fahr-Gesetz (exportDrive aus seiner Hülle) und fährt den
+            // EINEN Fahr-Schritt des Kerns im ECHTEN Sim-Schritt (W gehalten); die Pose zeichnet der Frame.
+            for (const k of ["w", "a", "s", "d", "shift"]) r.state.keys[k] = false;
+            r.state.keys.w = true;
+            let tSim = 1000;
+            for (let i = 0; i < 30; i++) {
+                tSim += 1 / 60;
+                r._stepFixedSim(tSim, 1 / 60);
+                r._tickMountedMovement(1 / 60);
+            }
+            r.state.keys.w = false;
+            const vFahrt = r.state.playerVel;
+            const yawTarget = Math.atan2(vFahrt.x(), vFahrt.z());
             out.orients =
                 Number.isFinite(entry._rideYaw) &&
-                Math.abs(entry._rideYaw - yawTarget) < 1.2 &&
-                entry.mesh &&
-                Math.abs(entry.mesh.rotation.y - entry._rideYaw) < 1e-6;
+                Math.hypot(vFahrt.x(), vFahrt.z()) > 0.5 &&
+                Math.abs(entry._rideYaw - yawTarget) < 0.2 &&
+                // das Bild folgt der Gier: die Gruppe (mesh.rotation) oder die Instanz (rotationY = Template-Gier)
+                Math.abs((entry.mesh ? entry.mesh.rotation.y : entry.rotationY) - entry._rideYaw) < 1e-6;
             out.wheelsRoll = (entry._ridePhase || 0) > 0.3;
+            out.fahrZahlen =
+                `v ${Math.hypot(vFahrt.x(), vFahrt.z()).toFixed(2)} m/s · Bug ${(+entry._rideYaw).toFixed(3)} · Fahrt ` +
+                `${yawTarget.toFixed(3)} · Bild ${entry.mesh ? (+entry.mesh.rotation.y).toFixed(3) : "-"} · Rad-Phase ` +
+                `${(+(entry._ridePhase || 0)).toFixed(2)}`;
             r.state.playerVel.setValue(0, 0, 0);
             r.state._fieldVy = 0;
             // (5) die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle).
@@ -28755,6 +28833,8 @@ async function checkBandV18150Ride(ctx) {
             // (7) Absteigen: die Kollision darf lazy wiederkommen (kein Dauer-Skip).
             r.dismountArchitecture();
             out.dismounts = r.state.player.mountedArch === null;
+            // der Spieler steht danach, wo ihn die folgenden Bänder erwarten (der Aufstieg setzte ihn an den alten Ort)
+            pm.set(pmAlt.x, r.getTerrainHeightAt(pmAlt.x, pmAlt.z) + 1, pmAlt.z);
         } finally {
             if (entry) r.removeArchitecture(entry);
             delete r.state.blueprints._t_ride_wagen;
@@ -28773,7 +28853,8 @@ async function checkBandV18150Ride(ctx) {
     );
     check(
         "V18.150 Fahr-Tiefe: das Gefährt richtet sich aus + die Räder rollen (Phase ∝ Weg)",
-        res.orients && res.wheelsRoll
+        res.orients && res.wheelsRoll,
+        res.orients && res.wheelsRoll ? "" : res.fahrZahlen
     );
     check("V18.150 Fahr-Tiefe: die C5-Kurven konsumieren das Profil (EINE Bewegungs-Quelle)", res.movementConsumes);
     check("V18.150 Fahr-Tiefe: Idle-Animator pausiert im Sattel + Absteigen gibt frei", res.idleSkips && res.dismounts);
@@ -29138,7 +29219,7 @@ async function checkBandM3RittVollendet(ctx) {
             r.mountArchitecture(entry);
             // Feld-nativ: die Vertikale lebt in state._fieldVy (kein Ammo-Body).
             r.state._fieldVy = -8; // simulierter Fall
-            for (let i = 0; i < 40; i++) r._tickMountedMovement(0.05); // settled (exp-Lerp)
+            for (let i = 0; i < 40; i++) r._rittSchritt(0.05); // settled (exp-Lerp) — der Sitz lebt im Sim-Schritt (Welle L)
             const terr = r.getTerrainHeightAt(entry.position.x, entry.position.z);
             // Die GERENDERTE Unterkante: die Basis liegt bei position.y − 0.5 (Instanz-Matrix · Gruppen-Bau) — die alte
             // Formel ohne die −0.5 hielt den versunkenen Wagen (Reifen 0,48 m im Boden) für stehend.
@@ -38100,15 +38181,18 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
                     : [];
             out.treeIds = treeIds.length;
             out.alleBaeumeLoesen = treeIds.every((id) => !!r._studioBlueprintForWord(id));
-            // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen).
+            // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen) — 50 m vor der
+            // Genesis-Mitte: ihre Lichtung ist ein Grundriss der Natur-Wand, dort wächst keine Eiche, deren Krone über die
+            // Scheibe reicht (Integration Welle L, Entscheid D3; die Eiche reicht mit Hain-Streuung bis ~36 m).
             const p = r.state.playerMesh.position;
+            const gM = r._genesisMitte();
             let spot = null;
             for (let i = 0; i < 64 && !spot; i++) {
                 const a = i * 0.618 * Math.PI * 2,
-                    d = 20 + (i % 8) * 6;
+                    d = 20 + (i % 8) * 8;
                 const x = p.x + Math.cos(a) * d,
                     z = p.z + Math.sin(a) * d;
-                if (r._isAboveWaterAt(x, z, 2)) spot = { x, z };
+                if (Math.hypot(x - gM.x, z - gM.z) >= 50 && r._isAboveWaterAt(x, z, 2)) spot = { x, z };
             }
             out.spot = !!spot;
             const vorher = archs.length;
@@ -38131,9 +38215,39 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
                 : null;
             const alt = r.parseChatToDsl("pflanze baum hier");
             out.altGesteBleibt = !!alt && alt.program[0] === "spawn_tree";
-            const nw = r.dslPositions.near_water([160], { state: r.state, rng: Math.random });
-            out.nearWater = !!nw && Number.isFinite(nw.x) && Number.isFinite(nw.z);
-            out.nearWaterTrocken = !!nw && r._isAboveWaterAt(nw.x, nw.z, 0.3);
+            // Welle L (V-k5): near_water liefert einen trockenen Ufer-Ort am Wasser — oder, ohne Wasser im Umkreis, KEINEN
+            // (die Engstelle `dslEvalPos` wirft benannt), nie still den Spieler-Ort. Ob es Wasser gibt, sagt ein EIGENES
+            // 4-m-Raster über den Kreis (nicht die Such-Funktion des Spiels); der Rand-Gürtel 150–166 m gilt beides.
+            const pm0 = r.state.playerMesh.position;
+            let nassNah = false,
+                nassFern = false;
+            const nassPunkte = [];
+            for (let dz = -166; dz <= 166; dz += 4)
+                for (let dx = -166; dx <= 166; dx += 4) {
+                    const d = Math.hypot(dx, dz);
+                    if (d > 166 || r._isAboveWaterAt(pm0.x + dx, pm0.z + dz, 0.2)) continue;
+                    nassFern = true;
+                    if (d <= 150) nassNah = true;
+                    nassPunkte.push([pm0.x + dx, pm0.z + dz]);
+                }
+            let nw = null,
+                nwFehler = null;
+            const nwCtx = r.dslCtx({ source: "test" });
+            try {
+                nw = r.dslEvalPos(["near_water", 160], nwCtx);
+            } catch (e) {
+                nwFehler = e && e.dslKeinOrt ? e.dslKeinOrt.grund : String(e);
+            }
+            const amWasser =
+                !!nw &&
+                Number.isFinite(nw.x) &&
+                Number.isFinite(nw.z) &&
+                Math.hypot(nw.x - pm0.x, nw.z - pm0.z) > 0.5 &&
+                nassPunkte.some(([x, z]) => Math.hypot(x - nw.x, z - nw.z) <= 8);
+            const benannt = nwFehler === "kein Wasser im Umkreis von 160 m";
+            out.nearWater = nassNah ? amWasser : !nassFern ? benannt : amWasser || benannt;
+            out.nearWaterBefund = { nassNah, nassFern, nw, nwFehler };
+            out.nearWaterTrocken = nw ? r._isAboveWaterAt(nw.x, nw.z, 0.3) : benannt;
             const prompt = r.llmBuildSystemPrompt();
             out.promptOp = /spawn_studio/.test(prompt) && /near_water/.test(prompt);
             out.promptWoerter = /Bäume: /.test(prompt);
@@ -38215,7 +38329,11 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
         "V18.493 Co-Schöpfer: die spezifischere alte Geste bleibt („pflanze baum hier“ → spawn_tree)",
         R.altGesteBleibt === true
     );
-    check("V18.493 Co-Schöpfer: near_water liefert einen endlichen Ort", R.nearWater === true);
+    check(
+        "V18.493 Co-Schöpfer: near_water liefert einen Ufer-Ort am Wasser (eigenes 4-m-Raster) — ohne Wasser im Umkreis KEINEN, benannt (nie still den Spieler-Ort)",
+        R.nearWater === true && R.nearWaterTrocken === true,
+        JSON.stringify(R.nearWaterBefund)
+    );
     check(
         "V18.493 Co-Schöpfer: das KI-Prompt lehrt spawn_studio + near_water + die lebenden Wörter; Regeln dürfen es nicht",
         R.promptOp === true && R.promptWoerter === true && R.ruleVerbot === true
@@ -38506,7 +38624,9 @@ async function checkBandHuepfer(ctx) {
         const sprung = () => {
             takt();
             const y0 = c.position.y;
-            r.creatureJump(c, 1);
+            c.userData._hopV = 0;
+            c.userData._hopH = 0;
+            r.creatureJump(c); // das Sprung-Gesetz: Höhe aus der Freude (hopHochM / hopBasisM)
             let scheitel = 0;
             let takte = 0;
             for (; takte < 600; takte++) {
@@ -38727,7 +38847,7 @@ async function checkBandWFFluss(ctx) {
         out.steinFloats = probeFloat("stein");
         out.eisenFloats = probeFloat("eisen");
         // (6) das Profil trägt das floats-Feld (der Konsument im Ritt-Tick liest es).
-        out.tickFloatConsumed = /rideProf\.floats|prof.*floats/.test(window.__codeOf(r._tickMountedMovement));
+        out.tickFloatConsumed = /rideProf\.floats|prof.*floats/.test(window.__codeOf(r._rittSchritt));
         return out;
     });
     check(
@@ -39832,18 +39952,19 @@ async function checkBandWelle6XAudit(ctx) {
         // --- C1: at_player_forward DSL-Resolver
         out.atPlayerForwardExists = !!r.dslPositions.at_player_forward;
         if (r.dslPositions.at_player_forward) {
-            // Spieler bei (10, 50, 20), yaw=0 → forward ist -Z.
-            // at_player_forward(8) sollte (10, 50, 12) liefern.
+            // Spieler bei (10, 50, 20), yaw=0 → der Blick geht nach +Z (die EINE Vorwärts-Richtung _blickVorn,
+            // dieselbe wie Kamera und Phantom — Welle L, Befund V-D4: die alte Probe schrieb „hinter dir" fest).
+            // at_player_forward(8) liefert (10, 50, 28).
             r.state.playerMesh.position.set(10, 50, 20);
             r.state.yaw = 0;
             const ctx = { state: r.state, rng: () => 0.5 };
             const pos = r.dslPositions.at_player_forward([8], ctx);
             out.atPlayerForwardOffset =
-                Math.abs(pos.x - 10) < 0.01 && Math.abs(pos.y - 50) < 0.01 && Math.abs(pos.z - 12) < 0.01;
-            // Mit yaw=π/2 → forward ist -X. at_player_forward(5) → (5, 50, 20)
+                Math.abs(pos.x - 10) < 0.01 && Math.abs(pos.y - 50) < 0.01 && Math.abs(pos.z - 28) < 0.01;
+            // Mit yaw=π/2 → der Blick geht nach +X. at_player_forward(5) → (15, 50, 20)
             r.state.yaw = Math.PI / 2;
             const pos2 = r.dslPositions.at_player_forward([5], ctx);
-            out.atPlayerForwardYawAware = Math.abs(pos2.x - 5) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
+            out.atPlayerForwardYawAware = Math.abs(pos2.x - 15) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
             // Reset
             r.state.yaw = 0;
         }
@@ -39861,9 +39982,9 @@ async function checkBandWelle6XAudit(ctx) {
                 dslOut.program[1][0] === "at" &&
                 typeof dslOut.program[2] === "number";
             // Position ist NICHT bei (0,0,0) — sondern 8m vor dem
-            // Spieler. yaw=0 → forward ist -Z, also z ≈ -8.
+            // Spieler. yaw=0 → der Blick geht nach +Z, also z ≈ +8.
             const z = dslOut.program[1][3];
-            out.chatBuildDorfForwardOffset = Math.abs(z - -8) < 0.5;
+            out.chatBuildDorfForwardOffset = Math.abs(z - 8) < 0.5;
         }
 
         // --- C3: _canSoulJumpFromSlope existiert
@@ -39948,14 +40069,14 @@ async function checkBandWelle6XAudit(ctx) {
             "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
             wave6x3Results.atPlayerForwardOffset
         );
-        check("Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → -X)", wave6x3Results.atPlayerForwardYawAware);
+        check("Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → +X, die EINE Vorwärts-Richtung)", wave6x3Results.atPlayerForwardYawAware);
         check("Welle 6.X.3 C1: Chat 'baue dorf hier' parst zu DSL", wave6x3Results.chatBuildDorfParses);
         check(
             "Welle 6.X.3 C1: Chat 'baue dorf hier' Format [spawn_village, at, seed]",
             wave6x3Results.chatBuildDorfFormat
         );
         check(
-            "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ -8)",
+            "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ +8, vor dem Blick)",
             wave6x3Results.chatBuildDorfForwardOffset
         );
         check("Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert", wave6x3Results.canJumpFromSlopeExists);
@@ -46525,10 +46646,14 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const src = window.__codeOf(r.updateCreatures);
-        // Strukturell: Kohäsion nutzt distanceToSquared (kein sqrt),
-        // der Raycast ist distanz-/sicht-gegated, Scratch gepoolt.
-        out.usesDistanceSquared = /distanceToSquared/.test(src);
-        out.raycastGated = /OBSTACLE_RAYCAST_MAX_DIST_SQ/.test(src) && /inFrustum/.test(src);
+        // Strukturell (Welle L): die Kohäsion ist die Herden-Form des Kerns (tetrapoda herdeZug) über die 9 Gitter-Zellen
+        // um das Tier, und herdeZug misst das Quadrat vor jeder Wurzel (O(N²) entschärft); kein Hindernis-Strahl je Tier
+        // und Frame — der EINE Leib löst gegen die Hüllen (_kreaturHuellenKontakt). Scratch gepoolt.
+        const herde = String(r.constructor._steuerGesetz().herdeZug);
+        out.herdeImGitter =
+            /herdeZug\(/.test(src) && /flockGrid\.get\(/.test(src) && /dsq > H\.minAbstSq && dsq < H\.fensterSq/.test(herde);
+        out.leibStattStrahl =
+            /this\._kreaturHuellenKontakt\(/.test(src) && !/_runRaycast\(|_fieldRaycast\(/.test(src);
         out.scratchPooled = /_creatureScratchDir/.test(src);
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
         // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
@@ -46568,8 +46693,8 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     });
 
     if (v849Results && !v849Results.error) {
-        check("V8.49: Kohäsion nutzt distanceToSquared (kein sqrt, O(N²) entschärft)", v849Results.usesDistanceSquared);
-        check("V8.49: Hindernis-Raycast ist off-screen-/distanz-gegated", v849Results.raycastGated);
+        check("Welle L: die Kohäsion ist herdeZug über das Gitter (Quadrat vor der Wurzel, O(N²) entschärft)", v849Results.herdeImGitter);
+        check("Welle L: kein Hindernis-Strahl je Tier — der Leib löst gegen die Hüllen", v849Results.leibStattStrahl);
         check("V8.49: Scratch-Vektoren gepoolt (keine Pro-Kreatur-Allokation)", v849Results.scratchPooled);
         check("V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
         check("V8.49: Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);

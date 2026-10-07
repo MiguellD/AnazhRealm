@@ -418,6 +418,29 @@ const FORBIDDEN = [
     // nie beim Wurf (der Zweit-Boot pflanzt nicht neu); die Summe nimmt eine Krone exakt heraus, kein Voll-Neumalen.
     { token: "_kronenStreuNeu(`w:", fiel: "Integration 06.10. — spawnArchitecture trägt die Krone ein (a:<id>)" },
     { token: "kronen.neuMalen", fiel: "Integration 06.10. — _kronenStreuWeg nimmt eine Krone exakt aus der Summe" },
+    // WELLE L KREATUR (06.10., Leben-Prüfung Q1/Q2): der Hüpf-Würfel je Frame (R-D3: 21–26 % Luft-Frames, 2,4 % der
+    // Sprünge aus einer Aktion), der feste 0,05-s-Schritt des Hüpfers (bei 144 Hz ein Sechstel der Flugzeit) und das
+    // Wachsen-Relikt V7.66 (×1,01 je 5-%-Würfel, ohne Deckel; R-D2) kehren nicht zurück — der Hüpfer ist EIN Integrator
+    // auf dem Takt (v0 = √(2·g·h)), er startet nur aus einer Aktion, die Größe ist die Achse bodySize.
+    { token: '(emotion === "happy" ? 0.02 : 0.01)', fiel: "Welle L kreatur — der Hüpfer startet nur aus bound/pounce" },
+    { token: "_hopV * 0.05", fiel: "Welle L kreatur — der Hüpfer integriert auf delta (updateCreatures)" },
+    // DAS SPRUNG-GESETZ (Nachbesserung 07.10., Vertrags-Akt): die Huepf-Hoehe der Freude ist die EINE Quelle eines
+    // Sprungs (creatureJump, v0 = √(2·g·h)) — der lineare Faktor Hoehe → m/s und der Abflug in m/s der Aktionen (bound
+    // 3,2, pounce 4,5: der frohe Sprung stieg 0,52 statt 1,2 m) kehren weder im Stamm noch im Gesetzbuch zurueck.
+    { token: "impulsProM", fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (creatureJump)", auch: ["tetrapoda-core.js"] },
+    { token: "_hopV = def.hop", fiel: "Welle L kreatur — eine Aktion springt über creatureJump (das Sprung-Gesetz)" },
+    { token: "updateGrowth", fiel: "Welle L kreatur — die Größe ist bodySize aus der Identität, kein Wachsen-Würfel" },
+    { token: "lastGrowthUpdate", fiel: "Welle L kreatur — das Wachsen-Relikt fiel" },
+    // WELLE L KREATUR (Q3): die Witterungs-Jagd auf vier Himmelsachsen (R-D12) und die Sicht-Kopie, die die Gier des
+    // Senders hart setzt und nicht geht, kehren nicht zurück — der Gradient ist die zentrale Differenz, die Kopie zieht
+    // auf dem kurzen Bogen nach und läuft durch den Baum-Gang.
+    { token: "out.set(bestDx, 0, bestDz)", fiel: "Welle L kreatur — der Geruchs-Gradient (zentrale Differenz)" },
+    { token: "m.rotation.y = rc.tyaw || 0", fiel: "Welle L kreatur — _p2pTickRemoteCreatures zieht die Gier nach" },
+    // WELLE L KREATUR (Q11 + CPU): der Hindernis-Strahl je Tier und Frame (feste Diagonale, nur im Blick, Antwort ein
+    // Math.random-Stoß; 29–37 % der CPU im OMEN-Profil) kehrt nicht zurück — jedes Tier löst seine Achse über den EINEN
+    // Kontakt-Löser gegen die Hüllen (_kreaturHuellenKontakt), die Herde ist die Form des Kerns (herdeZug).
+    { token: "OBSTACLE_RAYCAST_MAX_DIST_SQ", fiel: "Welle L kreatur — _kreaturHuellenKontakt (kein Strahl je Frame)" },
+    { token: "hasHit = this._runRaycast(", fiel: "Welle L kreatur — _kreaturHuellenKontakt" },
     // Nachbesserung 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters — auch die Eintrags-
     // Kronen (a:), die nur beim Entstehen eintragen; der Raum-Index `kronenZellen` bindet die Kosten an den Streifen.
     { token: "this._kronenStreuUmzug(stufe, war, S === fernS)", fiel: "Nachbesserung 06.10. — kein Umzug vergisst eine Krone" },
@@ -609,6 +632,56 @@ const FORBIDDEN = [
     // DIE LAGE STEHT (Welle C): die Nah-Wiese trug eine eigene Kamera-Signatur, jeder andere Leser rechnete je Pass neu. EIN
     // Gesetz der Lage (`_passLageGen`, `L.gen`) gilt allen Lesern der Sicht-Kette.
     { token: "_sichtSteht", fiel: "Welle C — EIN Gesetz der Lage je Pass (_passLageGen, L.gen)" },
+    // WELLE L (koerper-haus, 06.10.) — die gefallenen Namen je Klasse (Q4 Stand der Sicht · Q5 Haus-Hülle · Q15 Siedlung).
+    { token: "_hausTuerBlockerParts", fiel: "Welle L — die Haus-Hülle der Stufe (_hausBlockerBoxen, OBB)" },
+    { token: "_slopeProbeV", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
+    { token: "_slopeProbeH", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
+    { token: "_siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT", fiel: "Welle L — kein Siedlungs-Zwilling (fachwerk SIEDLUNG)" },
+    { token: "_settlementCount", fiel: "Welle L — der Bau-Same je Art (_bauSame)" },
+    // D5 (Integration Welle L, 07.10.): das Tier am gedrehten Haus — der OBB-Zweig des Kapsel-Lösers ließ den Kontakt-
+    // Empfänger des Tiers fallen und drehte die Parkour-Wand des Spielers über eine Zeit-Gleichheit zurück; die Gier-Ordnung
+    // YXZ setzte der Takt je Frame neu. Der Kontakt reist im Empfänger (`_wandKontaktSetzen`), YXZ setzt `spawnCreatureAt`.
+    { token: "kontaktVorher", fiel: "D5 — der Kontakt reist im Empfänger zurück (_wandKontaktSetzen)" },
+    { token: 'creature.rotation.order !== "YXZ"', fiel: "D5 — die Gier-Ordnung YXZ an EINER Stelle (spawnCreatureAt)" },
+    // DER EINE FAHR-SCHRITT (Welle L, Q13, 06.10.): die zweite Kopie des Zweispur-Modells im Stamm fiel (Längs-Antrieb als
+    // exp-Lerp, gemessene Längs-Beschleunigung, eigene Federn je Werk) — der Ritt fährt vehicle-core fahrSchritt, die
+    // Probefahrt auch (`FlatF` lebt nur im Kern: gate:fahr-leben K1).
+    { token: "_fahrVLongPrev", fiel: "Welle L Q13 — die Längs-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLong)" },
+    { token: "_ridePitchV", fiel: "Welle L Q13 — die Nick-Feder lebt im Fahr-Zustand des Kerns (fNickV)" },
+    { token: "_rideKurvenRollV", fiel: "Welle L Q13 — die Wank-Feder lebt im Fahr-Zustand des Kerns (fWankV)" },
+    { token: "_rideHeaveV", fiel: "Welle L Q13 — die Hub-Feder lebt im Fahr-Zustand des Kerns (fHubV)" },
+    { token: "_rideYawPrev", fiel: "Welle L Q13 — die Quer-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLat)" },
+    { token: "Spring.prototype.step", fiel: "Welle L Q13 — die Probefahrt-Feder ist fahrFeder im Kern", auch: ["worlds/garage/garage.js"] },
+    // DAS EINE TREFFER-URTEIL (Welle L, Klasse Q8): fünf Phantom-Leser ohne Definition im Kern (zone = null in 222 von
+    // 222 Treffern), die gattungs- und höhenblinde Säule, die Schadens-Klemme und die Wirts-Eichung des Pfeils sind
+    // gefallen — das Urteil fällt schmiede trefferUrteil, getroffen wird die Gestalt (_kreaturGliedTreffer).
+    { token: "zoneMulAt", fiel: "Welle L Q8 — die Zone trägt das Urteil (ARENA.zonen, tetrapoda trefferZone)" },
+    { token: "zoneKindAt", fiel: "Welle L Q8" },
+    { token: "zoneJuiceAt", fiel: "Welle L Q8 — der Hit-Stop liest die Energie des Urteils" },
+    { token: "handlingMul", fiel: "Welle L Q8 — ein Phantom-Leser (0 Definitionen)" },
+    { token: "handlingWindF", fiel: "Welle L Q8 — die Ausholzeit ist der Anteil der EINEN Dauer ∝ √I" },
+    { token: "_heldSchmiedeFaktor", fiel: "Welle L Q8 — die Wirkung des Urteils (_trefferWirkung) statt der Klemme" },
+    { token: "kapselRK", fiel: "Welle L Q8 — die Säule fiel, getroffen wird die Gestalt (_kreaturGliedTreffer)" },
+    { token: "kapselY0", fiel: "Welle L Q8" },
+    { token: "kapselY1", fiel: "Welle L Q8" },
+    { token: "kapselRMin", fiel: "Welle L Q8" },
+    { token: "mEffDmgMin", fiel: "Welle L Q8 — keine Schadens-Klemme" },
+    { token: "mEffDmgMax", fiel: "Welle L Q8" },
+    { token: "mEffRefKg", fiel: "Welle L Q8 — die Wirkung ist Energie gegen keRefJ" },
+    { token: "zugJouleRef", fiel: "Welle L Q8 — E = ableitenBogen(task).energie (die Studio-Energie)" },
+    // KEIN DRITTER LEIB (Integration Welle L, Stufe kampf-maus, Gesetz #0): Klinge und Pfeil schätzten den Leib des Tiers je
+    // selbst als 2 × Skala; das Grob-Tor liest den EINEN Leib (_kreaturLeib.reichweite, _trefferErreichbar). Die Gattung
+    // eines Tiers liest jeder Leser aus _kreaturGattung (Herden-Zug, Analog-Zensus), nie aus einer eigenen Kette.
+    { token: "Math.max(0.3, c.scale.x", fiel: "Integration L — das Grob-Tor liest den Leib (_trefferErreichbar)" },
+    { token: "Math.max(0.3, cr.scale.x", fiel: "Integration L — das Grob-Tor liest den Leib (_trefferErreichbar)" },
+    { token: "o.userData && o.userData.gattung", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
+    { token: "creature.userData.gattung", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
+    { token: "u.gattung || u.recipe", fiel: "Integration L — EINE Gattungs-Quelle (_kreaturGattung)" },
+    // DIE LICHTUNG IST EIN GRUNDRISS (Integration Welle L, Stufe auge-v1, Entscheid D3): der Pflanz-Gang des Walds hielt die
+    // Genesis-Scheibe mit einem eigenen Filter frei — die Streu, die Promotion, die Nah-Streu und der Hain der KI standen über
+    // ihr. Die Plattform trägt ihre Lichtung im Bauplan (`_grundrissVon`), die EINE Natur-Wand fragt die Krone (`_naturKrone`).
+    { token: "_genesisLichtung", fiel: "Integration L D3 — die Lichtung ist ein Grundriss der Natur-Wand (_grundrissVon)" },
+    { token: "_forestKroneWelt", fiel: "Integration L D3 — die Krone eines Wurfs ist _naturKrone (jede Quelle)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

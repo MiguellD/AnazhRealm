@@ -6,7 +6,7 @@
 // (foundry-ON, Null-Renderer), für JEDE Art mit Gestalt:
 //   F  der Flatten (`_foundryFlattenFor`) — Haus, Fahrzeug, Waffe, Tor und jede foundry-core-Art (Baum, Strauch,
 //      Fels, Kristall, Blume, Gras, Boden-Streu) auf jeder deklarierten Geometrie-Stufe (die Baum-Karte ist ein
-//      Billboard, keine Sippe): Gesetz-Draws == Leaves ohne Schatten-Zwilling, Gesetz-Dreiecke == Leaf-Dreiecke.
+//      Billboard, keine Sippe): Gesetz-Draws == Instanz-Gruppen (leafKey) ohne Schatten-Zwilling, Gesetz-Dreiecke == Leaf-Dreiecke.
 //   O  der Ofen (`_ofenKreaturTemplate` / `_ofenMenschTemplate`) — jede Gattung und der Mensch auf L0 und L1:
 //      Gesetz-Draws == Meshes im gegossenen Körper (nach der Starr-Bindung), Dreiecke ebenso.
 //   A  Abdeckung: jede Art mit Budget-Zeile ist vermessen (Haus, Fahrzeug, Waffe, Tor, Kreatur, Körper mindestens).
@@ -107,7 +107,10 @@ function check(name, ok, detail) {
             if (!Array.isArray(meshes)) return { fehler: "keine Antwort" };
             const g = PC.budgetSippen(meshes);
             const teile = meshes.filter((m) => m && m.position && m.position.array).length;
-            return { gd: g.draws, gt: g.tris, wd: eigen.length, wt, teile, stufe: flat.lod };
+            // Ein Draw je INSTANZ-GRUPPE (leafKey): die vier Rad-Leaves eines Fahrzeugs (Welle L, Q13 F-D8) sind vier
+            // Instanzen EINER Gruppe — ein Draw, vier Mal die Dreiecke. Jede andere Art trägt je Leaf ihren eigenen Schlüssel.
+            const wd = new Set(eigen.map((lf) => lf.leafKey)).size;
+            return { gd: g.draws, gt: g.tris, wd, wt, teile, stufe: flat.lod };
         };
         const rec = f.recipes;
         for (const preset of Object.keys(rec).sort()) {
@@ -199,7 +202,10 @@ function check(name, ok, detail) {
                         ziel.preset,
                         ziel.lod
                     );
-                    res.selbst.s1 = flat && flat.leaves ? flat.leaves.filter((lf) => !lf.shadowTwin).length : -1;
+                    res.selbst.s1 =
+                        flat && flat.leaves
+                            ? new Set(flat.leaves.filter((lf) => !lf.shadowTwin).map((lf) => lf.leafKey)).size
+                            : -1;
                     res.selbst.s1Gesetz = ziel.gd;
                 }
             } finally {

@@ -110,3 +110,11 @@ das Gesetz am dicksten Stamm „Zweig" — Zehneck, Furchentiefe 0,28, keine Nar
 Sehnenfehler ~9 cm). Jetzt trägt der Stamm seine Furchen (Bild: Sequoia-Fasern). Wieder nur Mesh 0
 (`bark`) geändert (49 Fälle), alles andere byte-gleich. Dreiecke: +0,2k (Birke L0) bis +2,4k
 (Mammut L0).
+
+**Re-Mint 07.10.2026 (Welle L kreatur, begründet — das SPRUNG-GESETZ):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1` (die drei Daten-Kanäle; world-params und render-config byte-gleich, jede Mesh-Golden unberührt).
+Im tetrapoda-Buch (`fx.verhalten` der vier Tier-Rezepte) trägt eine springende Aktion nur noch `hop: true` — die Höhe
+ist das Freude-Gesetz (`freude.hopHochM` 1,2 m froh, `hopBasisM` 0,8 m sonst), der Abflug v0 = √(2·g·h) mit dem g des
+Gang-Gesetzes (der Wirt: `creatureJump`). Gefallen: der Abflug in m/s der Aktionen (bound 3,2, pounce 4,5 — der frohe
+Sprung stieg 0,52 statt 1,2 m) und der lineare Faktor `sprung.impulsProM` (2,2, seit dem Integrator ohne Leser). Genau
+12 Felder (3 je Rezept), der Rest des Buchs byte-gleich (gegen die alten Bytes geprüft).

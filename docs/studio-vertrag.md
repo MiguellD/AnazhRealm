@@ -300,7 +300,7 @@ Komponenten-SÄTZE, keine Klassen):
   Quer-Slip, Shift = Handbremse); ohne `lenkung` byte-alt richtungs-folgend.
 - **`ARENA` (V18.483, schmiede-core, Namensraum-Export):** das Arena-Gefühl
   als Daten (`schwung { dauerProSqrtI min max hand } · gefuehl { freezeMin/Max
-  dipMin/Max keRefJ } · bogen { mArrow zugJouleRef auszugSec fovZug fovRuhe
+  dipMin/Max keRefJ } · bogen { mArrow auszugSec fovZug fovRuhe
   minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`, fail-closed
   (Kern-Pflicht 17.07.: `ARENA_FALLBACK` + `SWING_/BOGEN_LAWS` sind
   GEFALLEN; `MAX_PFEILE` blieb ehrlich Wirts-Deckel). Spiegel-Zensus 17.07. (V18.486+,
@@ -310,9 +310,21 @@ Komponenten-SÄTZE, keine Klassen):
   kippDauerSec kippNachklangSec`), `bogen` den Pfeil-Flug (`maxFlugSec
   radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
-  Schadens-Faktor (Leser `_heldGueteFaktor`, beide Angriffs-Pfade). Alle
+  Schadens-Faktor; `gueteAnteil(rezeptId, ov?)` (Welle L, additiv) — derselbe
+  Lehren-Anteil ∈ [0, 1] als die EINE Güte eines Schmiede-Geräts (Leser
+  `computeBlueprintQuality` → Schaden `_heldGueteFaktor`, Werkstoff-Kraft, Equip-Fold). Alle
   Blöcke leben NUR im Gesetzbuch — der Stamm trägt keinen Zahlen-Zwilling
   mehr (ZWILLINGS-ABSENZ-WAND).
+  Welle L (06.10.): `trefferUrteil(m, treffer)` — die Treffer-Physik des Prüfstands
+  (Stich · Schnitt · Schlag, KE, Impuls p = mEff·v, Durchdringung, Zone) aus der
+  Shell (`landMelee`) in den Kern; Shell UND Welt richten damit (Beweis: 8500/8500
+  Prüfstand-Urteile byte-gleich). `kampfMasze` trägt die Messung (`mess`), `zonen`
+  die Trefferzonen-Tafel (Kopf 2,4 · Brust 1,5 · Bauch 1,2 · Bein 0,8 · Fuß 0,6),
+  tetrapoda `TREFFER_ZONE`/`trefferZone` die Zone je Glied. Gefallen: die Säule
+  `schwung.kapselRK/RMin/Y0/Y1` (Treffer gegen die Glieder-Kapseln), die Klemme
+  `guete.mEffDmgMin/Max` samt `guete.mEffRefKg` (die Wirkung eines Treffers ist seine
+  Energie gegen `gefuehl.keRefJ`, für Schaden UND Hit-Stop), die Wirts-Eichung
+  `bogen.zugJouleRef` (E = `ableitenBogen(task).energie`).
 - **`VERHALTEN` (V18.483, tetrapoda-core, Namensraum-Export):** die
   Verhaltens-Seele (`aktionen { <name>: { dauer profil dreh? kopfSweep?
   rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)
@@ -330,7 +342,11 @@ Komponenten-SÄTZE, keine Klassen):
   ZWILLINGS-ABSENZ-WAND im Validator hält sie draußen).
   Schluss-Welle 17.07. (V18.489, rein additiv): die letzten neun
   tetrapoda-Heimat-Literale des Stamms sind heimgekehrt — `freude { tempoMul
-  hopHochM hopBasisM }` · `sprung { impulsProM }` · `groessen[]`
+  hopHochM hopBasisM }` · `sprung { impulsProM }` (VERTRAGS-AKT Welle L
+  07.10.: gefallen — DAS SPRUNG-GESETZ: die Huepf-Hoehe der Freude ist die
+  EINE Quelle eines Sprungs, froh `hopHochM`, sonst `hopBasisM`, der Abflug
+  v0 = √(2·g·h) mit `GANG_GESETZ.g` im Wirt `creatureJump`; eine Aktion
+  trägt nur `hop: true`, der Abflug in m/s fiel mit) · `groessen[]`
   (Körpergrößen-Bänder) · `separation { radiusBaseM strength }` (der
   Stamm-Zwilling `CREATURE_SEPARATION` fiel, Absenz-Wand) · `aufgaben`
   (Gefährten-Tempi/Halt-Distanzen — die Stamm-Getter wurden Leser) ·
@@ -348,6 +364,26 @@ Komponenten-SÄTZE, keine Klassen):
   per Mint-Mechanik neu gemünzt).
   Die Gegenwehr-Reichweite liest `jagd.strikeRange` (die EINE
   Reichweiten-Wahrheit; das nackte Stamm-`4` fiel bewusst auf 2.4).
+- **`STEUER_GESETZ` + `tempoEinheit` · `steuerSchritt` · `ankunftTempo` ·
+  `herdeZug` (Welle L 06.10., tetrapoda-core, Namensraum-Export, rein
+  additiv — PRESETS/PARAMS unberührt, der v7-Fingerabdruck wandert nicht
+  mit):** der EINE Steuer-Schritt je Tier und Takt. `STEUER_GESETZ { tempo
+  wende beschl brems }` (Froude-dimensionslos über die Hüft-Höhe L, mit
+  `GANG_GESETZ.g`) · `tempoEinheit(L)` = tempo·√(g·L) m/s (die Einheit, in
+  der VERHALTEN zählt) · `steuerSchritt(z, wx, wz, dt, L)` schreibt
+  `z = { gier, v }` fort: die Gier dreht mit der Wendegrenze
+  wende·√(g/L) auf den Wunsch (Welt-XZ, m/s) zu, der Leib läuft nur
+  vorwärts längs der Gier mit dem Anteil des Wunschs vor ihm, das Tempo
+  folgt mit Anfahr- (beschl·g) und Brems-Grenze (brems·g) ·
+  `ankunftTempo(rest, vMax)` = min(vMax, √(2·brems·g·rest)) — das
+  Ankunfts-Gesetz (wer `rest` m vor seinem Halt steht, wünscht nur das
+  Tempo, aus dem er dort steht) · `herdeZug(x, z, gattung, nachbarn, H,
+  out?)` → `{ x, z, n }` — die Herden-FORM (Kohäsion nur zu Nachbarn
+  derselben Gattung im Fenster `H = VERHALTEN.herde`, nie am Blick; das
+  Herden-Verhalten ist nach v1.0). Rein, THREE-frei. Leser:
+  `AnazhRealm._steuerGesetz()` (memoisiert, fail-closed) in
+  `updateCreatures` (EIN Schreiber der Gier `rotation.y`), `_kreaturZiel`
+  (Ankunft) und der Herden-Block; Linse `gate:kreatur-takt` (gier · herde).
 
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 

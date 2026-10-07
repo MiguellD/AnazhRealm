@@ -32,7 +32,7 @@ const fs = require("fs");
 const path = require("path");
 
 const root = path.resolve(__dirname, "..");
-const PORT = 4407;
+const PORT = Number(process.env.KOPPLUNG_PORT || 4407);
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -188,7 +188,7 @@ const server = http.createServer((req, res) => {
                 if (!(Math.abs(lp.x) < 0.01 && Math.abs(lp.z) < 0.01))
                     fail(`F1b: Land-Läufer wurde geschoben (x=${lp.x.toFixed(4)}, z=${lp.z.toFixed(4)} — soll exakt stehen)`);
                 // (c) das geritten-SCHWIMMENDE Boot (der Reiter ist nie submerged; das
-                //     `_afloat`-Gate aus `_tickMountedMovement` trägt die Advektion).
+                //     `_afloat`-Gate aus `_rittSchritt` trägt die Advektion).
                 const boat = mkShim(
                     (x, y) => deepFloor(x, y),
                     () => ({ submerged: false, surfaceY: null }),
@@ -268,16 +268,15 @@ const server = http.createServer((req, res) => {
                     );
                 if (!(wRes.x < 8.01)) fail(`F2a: der Klip ließ die Wand durch (x=${wRes.x.toFixed(2)} ≥ 8)`);
                 // Selbst-Test F2a: Klip-Schleife tot (SLIDE_CLIP_PLANES → 0 Ebenen) →
-                // fail-closed Voll-Stopp → der Fortschritt MUSS kollabieren.
-                const noClip = patchFn(
-                    r._stepCharacter,
-                    "_stepCharacter",
-                    "pl < AnazhRealm.SLIDE_CLIP_PLANES",
-                    "pl < 0"
-                );
-                if (!noClip) fail("F2a-Selbsttest: SLIDE_CLIP_PLANES-Marker nicht in `_stepCharacter` (Fix fehlt?)");
+                // fail-closed Voll-Stopp → der Fortschritt MUSS kollabieren. Die Schleife ist DIE des
+                // Kontakt-Lösers (`_wandGleiten`, Welle L: Kapsel 5b und Wagen-Hülle teilen sie) — der Shim
+                // trägt die tote Schleife, der echte `_stepCharacter` ruft sie.
+                const noClip = patchFn(r._wandGleiten, "_wandGleiten", "pl < AnazhRealm.SLIDE_CLIP_PLANES", "pl < 0");
+                if (!noClip) fail("F2a-Selbsttest: SLIDE_CLIP_PLANES-Marker nicht in `_wandGleiten` (Fix fehlt?)");
                 else {
-                    const stopped = runWallWindow(mkWallShim(), noClip);
+                    const totShim = mkWallShim();
+                    totShim._wandGleiten = noClip;
+                    const stopped = runWallWindow(totShim);
                     const deadRatio = fRes.proj > 0 ? stopped.proj / fRes.proj : NaN;
                     o.zahlen.klipTot = { wand: stopped.proj, ratio: deadRatio };
                     if (!(deadRatio < 0.1))
@@ -335,6 +334,7 @@ const server = http.createServer((req, res) => {
                 vec3: (a, b, c) => ({ x: N(val(a)), y: N(val(b)), z: N(val(c)) }),
                 positionWorld: null,
                 positionLocal: null,
+                positionGeometry: null,
             };
             const bendOff = () => ({ x: N(0), y: N(-1e6), z: N(0), w: N(0) });
             const mkWindShim = (dirX, dirZ, bend0) => {
@@ -352,6 +352,8 @@ const server = http.createServer((req, res) => {
             const evalSway = (shim, wx, wz, localY, fn) => {
                 mockTSL.positionWorld = { x: N(wx), y: N(0.5), z: N(wz) };
                 mockTSL.positionLocal = { x: N(0), y: N(localY), z: N(0) };
+                // Das Höhen-Gewicht liest seit W7 die Geometrie-Position (Lehre 22: r184 instanziert positionLocal vorher).
+                mockTSL.positionGeometry = { x: N(0), y: N(localY), z: N(0) };
                 const res = (fn || r._windSwayOffset).call(shim, mockTSL, {});
                 return { x: res.x.v, z: res.z.v };
             };
@@ -444,8 +446,8 @@ const server = http.createServer((req, res) => {
                 const count = (needle) => src.split(needle).length - 1;
                 if (!String(r.updateCreatures).includes("_waterFlowAt"))
                     fail("KONSUM: `updateCreatures` liest `_waterFlowAt` nicht (Kreaturen ohne Strömung)");
-                if (!String(r._tickMountedMovement).includes("_afloat"))
-                    fail("KONSUM: `_tickMountedMovement` stempelt `_afloat` nicht (Boot ohne Strömungs-Gate)");
+                if (!String(r._rittSchritt).includes("_afloat"))
+                    fail("KONSUM: `_rittSchritt` stempelt `_afloat` nicht (Boot ohne Strömungs-Gate)");
                 if (!(count("._ensureWindCoupling(") >= 3))
                     fail(`KONSUM: uWindDir hat < 3 Leser (nur ${count("._ensureWindCoupling(")}× konsumiert — Gras/_windSwayOffset + Baum/_applyVegetationResponse + Impostor sollen DIESELBE Quelle lesen)`);
                 if (!(count("_tickGrasBend()") >= 1) || !src.includes("_windDirAt(currentTime)"))

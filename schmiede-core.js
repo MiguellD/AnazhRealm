@@ -3022,10 +3022,10 @@
     // gefuehl: Hit-Stop/Erschuetterung skalieren mit der TREFFER-ENERGIE
     // (keRefJ — die 114-J-Eichung der Arena); der Wirt mappt freeze auf
     // seine Anzeige-Uhr und shake auf den Kamera-Dip. bogen: die EINE
-    // Schuss-Physik v0 = sqrt(2*E/mArrow) mit E = zugJouleRef*zugkraft*
-    // auszug — byte-identisch zur historischen Wirts-Form 34*sqrt(zug*aus)
-    // (34^2*0.05/2 = 28.9 J); auszugSec/fovZug/fovRuhe = das Arena-Zieh-
-    // Gefuehl (Auszug ueber 0.9 s, Blick verengt 75->54).
+    // Schuss-Physik v0 = sqrt(2*E/mArrow) mit E = ableitenBogen(task).energie
+    // (Welle L 06.10.: die Wirts-Eichung zugJouleRef 28.9 J*zug*aus fiel, sie
+    // trug 25-41 % der Studio-Energie); auszugSec/fovZug/fovRuhe = das Arena-
+    // Zieh-Gefuehl (Auszug ueber 0.9 s, Blick verengt 75->54).
     // SPIEGEL-ZENSUS 17.07. (rein additiv, byte-gleiche Zahlen der bisherigen
     // Stamm-Literale — SWING_/BOGEN_LAWS schrumpfen dort auf reine Fallbacks):
     // schwung traegt jetzt auch die HIEB-GEOMETRIE (Phasen-Anteile, Sweep-
@@ -3039,14 +3039,12 @@
     // ein Archetyp (alles pass) schlaegt mit faktorVoll = byte-alter Wucht.
     var ARENA = {
         schwung: {
-            // KAPSEL-GESETZ (18.07., rein additiv): die Kreatur-Trefferfläche
-            // des Klingen-Sweeps — vertikale Kapsel ∝ Körpergröße L (scale.x):
-            // Radius kapselRK·L (Boden kapselRMin), Segment kapselY0·L..kapselY1·L.
-            // Waren Wirts-Literale (0.55/0.35/0.1/1.4) — jetzt EINE Quelle.
-            kapselRK: 0.55,
-            kapselRMin: 0.35,
-            kapselY0: 0.1,
-            kapselY1: 1.4,
+            // WELLE L (06.10.): die Kreatur-Trefferfläche ist die GESTALT — die
+            // Glieder-Kapseln des Tiers (tetrapoda TREFFER_ZONE benennt je Glied
+            // die Zone, der Wirt passt die Kapsel aus dem Studio-Mesh, dieselbe
+            // Passung wie das Fern-Bild). Die senkrechte Säule kapselRK/RMin/
+            // Y0/Y1 (0.55/0.35/0.1/1.4 · L) ist GEFALLEN: sie war gattungs- und
+            // höhenblind (Hirsch L 0,64 flach 1/10, hangab 2/8).
             dauerProSqrtI: 0.55,
             // EINHEITSBREI-SCHNITT (18.07., rein additiv): die Dauer-Konstante
             // für die GEMESSENE Trägheit (kampfMasze, echte kg·m² — andere
@@ -3079,7 +3077,6 @@
         },
         bogen: {
             mArrow: 0.05,
-            zugJouleRef: 28.9,
             auszugSec: 0.9,
             fovZug: 54,
             fovRuhe: 75,
@@ -3091,13 +3088,22 @@
         guete: {
             faktorVoll: 1.0,
             faktorLeer: 0.55,
-            // EINHEITSBREI-SCHNITT (18.07., rein additiv): der Schadens-Faktor
-            // der EFFEKTIVEN MASSE (kampfMasze.mEff / mEffRefKg, geklemmt) —
-            // Referenz = Langschwert (~0.25 kg): Messer schlägt gedämpft
-            // (dmgMin), Grossschwert ~1.7×, Keule/Hämmer klemmen auf dmgMax.
-            mEffRefKg: 0.25,
-            mEffDmgMin: 0.6,
-            mEffDmgMax: 2.2,
+            // DIE WIRKUNG (Welle L 06.10.): der Schadens-Faktor eines Treffers ist
+            // seine Energie (trefferUrteil.KE) gegen die Arena-Eichung
+            // gefuehl.keRefJ — dieselbe Größe wie der Prüfstand (e = KE × Zone).
+            // GEFALLEN: die Klemme mEffDmgMin/Max (0.6/2.2; 10 von 17 Rezepten
+            // saßen auf 2.2, Schaufel = Kriegshammer) und ihr Referenz-Gewicht
+            // mEffRefKg (0.25).
+        },
+        // DIE TREFFER-ZONEN des Prüfstands (die Fechtpuppe der Shell, aimDummy):
+        // Schadens-Faktor je Zone — EINE Tafel für Puppe UND Welt-Tier (tetrapoda
+        // TREFFER_ZONE ordnet jedem Glied seine Zone zu).
+        zonen: {
+            kopf: { n: "Kopf", mul: 2.4 },
+            brust: { n: "Brust", mul: 1.5 },
+            bauch: { n: "Bauch", mul: 1.2 },
+            bein: { n: "Bein", mul: 0.8 },
+            fuss: { n: "Fuß", mul: 0.6 },
         },
     };
 
@@ -3160,13 +3166,95 @@
             traegheit: I,
             mEff: m.mEffFrac * m.M,
             pob: m.PoB,
+            // die Messung selbst (Welle L, additiv): das Treffer-Urteil liest sie (Schneide, Knoten, Ort)
+            mess: m,
         };
     }
 
-    function gueteFaktor(rezeptId, ov) {
-        var tp = prepP(rezeptId, ov);
-        if (!tp) return ARENA.guete.faktorVoll;
-        if (tp.modus === "bogen") return ARENA.guete.faktorVoll;
+    // ═══ DAS TREFFER-URTEIL (Welle L 06.10., additiv) — die EINE Treffer-Physik ═══
+    // Bis hierher lebte sie nur in der Prüfstand-Shell (landMelee) — die Welt las 3 von 14 Größen und
+    // fünf Phantom-Leser (zoneMulAt/zoneKindAt/zoneJuiceAt/handlingMul/handlingWindF, 0 Definitionen).
+    // m = measure-Ergebnis (Shell: measure(P); Welt: kampfMasze(...).mess); t = der Treffer:
+    //   vLat (quer zur Klinge) · vAx (längs, Stich) [m/s] · edgeQ (|v̂·Schneide|, gemessen; sonst 1) ·
+    //   zone (Schlüssel in ARENA.zonen) · P (die Parameter — nur der Stich mit Ort rechnet die Durchdringung
+    //   gegen die echten Sektionsflächen).
+    // STICH (vAx > 0.9·vLat): KE = ½·mEff·vAx², Durchdringung W(x) = σ·∫A ds · SCHNITT (Schneide < 32°):
+    // KE = ½·mEff·vLat²·Schnitt·Knoten·Schneide · SCHLAG sonst. p = mEff·v ist die WUCHT (Schaden, Stoß).
+    function trefferUrteil(m, t) {
+        t = t || {};
+        var vLat = Math.max(0, +t.vLat || 0);
+        var vAx = Math.max(0, +t.vAx || 0);
+        var clamp = function (v, a, b) {
+            return Math.max(a, Math.min(b, v));
+        };
+        var mEff = Math.max(0.02, (m.mEffFrac || 0.2) * m.M);
+        var thrust = vAx > vLat * 0.9;
+        var sharp = m.edgeWinkel != null && m.edgeWinkel < 32;
+        var KE, art, clean, verdict, v;
+        var pen = null;
+        var edgeQ = null;
+        if (thrust) {
+            v = vAx;
+            KE = 0.5 * mEff * vAx * vAx;
+            var sigEff = 1e6 * (0.3 + ZIELMAT.holz.hart); // Pell ≈ Holz/Stroh: ~1 MPa, mit der Ziel-Härte
+            if (m.betaDeg != null && t.P && m.S) {
+                // Arbeit gegen die ECHTEN Sektionsflächen, von der Spitze rückwärts: W(x) = σ·∫A ds
+                var LB = m.S.xPoint - m.S.xBlade0,
+                    NX = 36,
+                    dx = LB / NX,
+                    W = 0;
+                pen = LB * 100;
+                for (var i = 0; i < NX; i++) {
+                    var x = (i + 0.5) * dx,
+                        A = sectionMoments(sectionAt(1 - x / LB, t.P)).A;
+                    W += sigEff * A * dx;
+                    if (W >= KE) {
+                        pen = x * 100;
+                        break;
+                    }
+                }
+            } else pen = 100 * Math.cbrt((3 * KE) / (Math.PI * sigEff)); // Wuchtkopf: stumpfer 90°-Kegel
+            art = "STICH";
+            clean = m.betaDeg != null && pen >= 6;
+            verdict = clean
+                ? "spitzer Ort — durchdringt"
+                : m.betaDeg != null
+                  ? "zu flach oder zu langsam — bleibt stecken"
+                  : "kein Ort — prallt ab";
+        } else {
+            v = vLat;
+            var cutF = sharp ? 1.0 + ((32 - (m.edgeWinkel || 30)) / 32) * 0.9 : 0.5,
+                nd = Math.abs((m.xcopL != null ? m.xcopL : 0.7) - 0.776),
+                flex = clamp(50 / (m.f1 || 50), 0.4, 3.0),
+                nodeF = clamp(1 - 1.6 * nd * flex, 0.4, 1);
+            edgeQ = sharp ? clamp(t.edgeQ != null ? t.edgeQ : 1, 0.15, 1) : 1;
+            KE = 0.5 * mEff * vLat * vLat * cutF * (0.55 + 0.45 * nodeF) * (sharp ? 0.25 + 0.75 * edgeQ : 1);
+            art = sharp ? "SCHNITT" : "SCHLAG";
+            clean = nodeF > 0.82 && edgeQ > 0.75;
+            verdict = clean
+                ? "am Knoten, Schneide führt — sauber"
+                : sharp && edgeQ <= 0.75
+                  ? "die Schneide liegt quer — flach getroffen"
+                  : "abseits des Knotens — " + (flex > 1.2 ? "die biegsame Klinge schwingt" : "Vibration");
+        }
+        var zk = t.zone && ARENA.zonen[t.zone] ? t.zone : null;
+        return {
+            art: art,
+            KE: KE,
+            v: v,
+            p: mEff * v,
+            mEff: mEff,
+            pen: pen,
+            clean: clean,
+            edgeQ: edgeQ,
+            verdict: verdict,
+            zone: zk,
+            zoneMul: zk ? ARENA.zonen[zk].mul : 1,
+        };
+    }
+
+    // DER LEHREN-ANTEIL einer vorbereiteten Gestalt (pass 1, warn ½, na zählt nicht) ∈ [0, 1].
+    function lehrenAnteil(tp) {
         if (tp.modus === "wucht") tp.schaftR = griffD(intentControl(tp)) * 0.5;
         var res = evalLehren(tp);
         var sum = 0;
@@ -3177,7 +3265,24 @@
             if (res[i].st === "pass") sum += 1;
             else if (res[i].st === "warn") sum += 0.5;
         }
-        var score = n > 0 ? sum / n : 1;
+        return n > 0 ? sum / n : 1;
+    }
+
+    // DIE GÜTE ALS ANTEIL (Welle L 06.10., additiv): der bestandene Lehren-Anteil ∈ [0, 1] einer Gestalt samt Prägung —
+    // die EINE Güte eines Schmiede-Geräts (der Wirt liest sie für Schaden, Werkstoff-Kraft und Equip-Fold; gueteFaktor
+    // bildet sie auf [faktorLeer, faktorVoll] ab). null = kein Rezept; ein Bogen trägt 1.
+    function gueteAnteil(rezeptId, ov) {
+        var tp = prepP(rezeptId, ov);
+        if (!tp) return null;
+        if (tp.modus === "bogen") return 1;
+        return lehrenAnteil(tp);
+    }
+
+    function gueteFaktor(rezeptId, ov) {
+        var tp = prepP(rezeptId, ov);
+        if (!tp) return ARENA.guete.faktorVoll;
+        if (tp.modus === "bogen") return ARENA.guete.faktorVoll;
+        var score = lehrenAnteil(tp);
         var f = ARENA.guete.faktorLeer + (ARENA.guete.faktorVoll - ARENA.guete.faktorLeer) * score;
         return isFinite(f) && f > 0 ? f : ARENA.guete.faktorVoll;
     }
@@ -3190,7 +3295,9 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         ARENA: ARENA,
         gueteFaktor: gueteFaktor,
+        gueteAnteil: gueteAnteil,
         kampfMasze: kampfMasze,
+        trefferUrteil: trefferUrteil,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { weapon: PARAMS },

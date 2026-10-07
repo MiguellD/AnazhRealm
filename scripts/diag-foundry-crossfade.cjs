@@ -33,6 +33,9 @@
 //       gegen das Gesetz, je Stufe (L0 · L1 · einzige Nah-Stufe · Karte) × Laub/Rinde × Metrik-Verhältnis × Band-Satz ×
 //       Distanz-Intervall, Dither-Raster 256 — kein Loch; der Überschuss (das Fenster behält, das Gesetz nicht) steht als
 //       Zahl. --selftest: verschobene Kanten (je Stufe 1 m nach innen) reißen Löcher und werden genannt.
+//   (7) DIE KETTE OHNE PARTNER (06.10., F-D3/V-D3): eine Karten-Art, die nur die L0 deklariert (Wagen, Tor), blendet nie
+//       aus — dieselbe Loch-Probe wie die Stufen-Wahrheit (Teil b), über den Sweep 4–55 m, voll und unter Last. Bis 06.10.
+//       stempelte der Gruppen-Bau ihre L0 als „L0 vor einer L1" (1): ab 8 m × Perf fiel die ganze Gestalt aus.
 // Teil (b) — W5.4, headless (Null-Renderer, foundry-ON wie diag-nervensystem-vehicle): die
 // CPU-DOPPEL-MITGLIEDSCHAFT im lebenden System. Ein Foundry-Baum-Eintrag wird über die
 // thresh01/thresh12-Schwellen geschoben (Spieler-Position + `_tickArchitectureLOD`):
@@ -453,6 +456,39 @@ async function runPartB() {
         // Der Strauch verlässt die Welt vor der Baseline (die Slot-Bilanz zählt nur den Proben-Baum); der Sweep pflanzt
         // ihn mit warmen Stufen neu und räumt ihn wieder.
         if (sEntry) r.removeArchitecture(sEntry);
+        // DIE KETTE OHNE PARTNER (06.10., F-D3/V-D3): Wagen und Tor sind Karten-Arten (KIND_POLICY.impostor), deklarieren
+        // aber nur die L0 (kindStages [0]). Eigene Orte; ihre L0 wärmt hier, der Sweep pflanzt sie neu und räumt sie.
+        res.ohnePartner = [];
+        for (const [typ, dx] of [
+            ["fahrzeug_gt", 800],
+            ["tor_drachentor", 1200],
+        ]) {
+            const ox = px + dx,
+                oz = pz;
+            const oy = r._voxelSurfaceY(ox, oz) || 1;
+            const oE = r.spawnArchitecture(typ, { x: ox, y: oy, z: oz }, { silent: true, seed: 5 });
+            const oPreset = oE ? r._foundryPresetForEntry(oE) : null;
+            let oWarm = false;
+            const dlO = performance.now() + 90000;
+            while (oE && oPreset && performance.now() < dlO && !oWarm) {
+                const fl = r._foundryFlattenFor(oE, oPreset, 0);
+                if (fl && fl.instanceable) oWarm = true;
+                else {
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch (_e) {}
+                    await sleep(120);
+                }
+            }
+            res.ohnePartner.push({
+                typ,
+                preset: oPreset,
+                warm: oWarm,
+                stufen: oPreset ? r._foundryKindStages(oPreset) : null,
+                ort: { x: ox, y: oy, z: oz },
+            });
+            if (oE) r.removeArchitecture(oE);
+        }
         // Quieszenz: keine offenen Worker-Anfragen mehr → keine async-Placements im Sweep.
         const dl3 = performance.now() + 20000;
         while (f.pending && f.pending.size > 0 && performance.now() < dl3) await sleep(100);
@@ -627,6 +663,19 @@ async function runPartB() {
                     const E = { entry: s2, px: sx, py: sy, pz: sz };
                     res.stufenWahrheit.strauch = { voll: lochSweep(1, E), last: lochSweep(fdMin, E) };
                     r.removeArchitecture(s2); // räumt aus der Sweep-Liste (removeArchitecture sucht dort)
+                    st.architectures = [entry];
+                }
+                // Die Kette ohne Partner im selben Gesetz: kein Loch über den Sweep, voll und unter Last.
+                for (const op of res.ohnePartner || []) {
+                    if (!op.warm) continue;
+                    const o2 = r.spawnArchitecture(op.typ, op.ort, { silent: true, seed: 5 });
+                    if (!o2) continue;
+                    if (!o2.instanced) r._rebuildArchitectureMesh(o2);
+                    st.architectures = [o2];
+                    const E = { entry: o2, px: op.ort.x, py: op.ort.y, pz: op.ort.z };
+                    op.voll = lochSweep(1, E);
+                    op.last = lochSweep(fdMin, E);
+                    r.removeArchitecture(o2);
                     st.architectures = [entry];
                 }
                 const echt = r._lodTreeVisHeight;
@@ -872,8 +921,12 @@ function perfWahrheit(srcNC) {
     const stempel = fnBody(srcNC, /\n {4}_lodSlotStamp\(g, slot, scale, occluded, leaf\)\s*\{/) || "";
     if (!/h = leaf\.sicht \* s;/.test(stempel)) v.push("der Slot-Stempel schreibt die Karten-Sichthöhe nicht als Vorlage × Instanz-Skala");
     // Die einzige Nah-Stufe einer Art ohne L0 (bis Welle 6 der Strauch) blendet zum Billboard aus (aLodLevel 3), nie ungemaskt.
-    if (!/_foundryDeclaredStage\(stage\.preset, 0\) === 0\s*\?\s*2\s*:\s*3/.test(srcNC))
+    // Jede Stufe blendet nur zu einem Partner, den die Art trägt (06.10.): die L0 zur L1 (1), sonst nur zur Karte (3).
+    const hatDekl = /const _hat = \(s\) => this\._foundryDeclaredStage\(stage\.preset, s\) === s;/.test(srcNC);
+    if (!hatDekl || !/_lodS === 1\s*\?\s*\(?_hat\(0\)\s*\?\s*2\s*:\s*3\)?/.test(srcNC))
         v.push("die L1 einer Art ohne L0 ist ungemaskt — sie blendet nicht zum Billboard aus");
+    if (!hatDekl || !/_lodS === 0\s*\?\s*\(?_hat\(1\)\s*\?\s*1\s*:\s*3\)?/.test(srcNC))
+        v.push("die L0 einer Art ohne L1 blendet zu einer L1 aus, die es nicht gibt (Wagen und Tor)");
     if (!/_fadeIn\.max\(T\.step\(T\.float\(2\.5\), _aLod\)\)\.mul\(T\.step\(_f1o, _dh\)\)/.test(maske))
         v.push("die Maske kennt die einzige Nah-Stufe nicht (aLodLevel 3: nur die Fern-Ausblendung)");
     const hoehe = fnBody(srcNC, /\n {4}_lodTreeVisHeight\(entry\)\s*\{/) || "";
@@ -988,7 +1041,9 @@ async function main() {
                 ),
             ],
             ["Karten-Stempel ohne Instanz-Skala", nc.replace("h = leaf.sicht * s;", "h = leaf.sicht;")],
-            ["Strauch-L1 ungemaskt", nc.replace(/(_foundryDeclaredStage\(stage\.preset, 0\) === 0\s*\?\s*2\s*:\s*)3/, (_m, a) => a + "0")],
+            ["Strauch-L1 ungemaskt", nc.replace(/(_hat\(0\) \? 2 : )3/, (_m, a) => a + "0")],
+            // 06.10. (F-D3/V-D3): die L0 einer Art ohne L1 zurück auf den alten Stempel 1 — die Linse muss Wagen und Tor nennen.
+            ["Wagen-L0 dithert zu einer L1, die es nicht gibt", nc.replace(/(_lodS === 0 \? \(_hat\(1\) \? 1 : )3/, (_m, a) => a + "1")],
             ["Maske ohne einzige Nah-Stufe", nc.replace("_fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh))", "_fadeIn.mul(T.step(_f1o, _dh))")],
             ["Sichthöhe still 0", nc.replace("if (h0 == null) return null;", "if (h0 == null) return 0;")],
             ["Höhe nur im LRU", nc.replace("if (v && v._hoehe > 0) (f.hoehen || (f.hoehen = new Map())).set(key, v._hoehe);", "")],
@@ -1306,6 +1361,27 @@ async function main() {
             check("STRAUCH: kein Loch, Stempel = CPU-Sichthöhe (volle Leistung)", ST.voll.loecher === 0 && ST.voll.stempelUngleich === 0, z(ST.voll));
             check("STRAUCH: kein Loch unter Last (Perf-Streck)", ST.last.proben >= 8 && ST.last.loecher === 0 && ST.last.stempelUngleich === 0, z(ST.last));
         } else check("STRAUCH-Sweep lief", false, "fehlt");
+        // DIE KETTE OHNE PARTNER: eine Art, die nur die L0 deklariert, blendet nie aus — sonst ein Loch über die ganze
+        // Gestalt ab 8 m × Perf (der eigene Wagen in der Verfolger-Kamera ein Geist, jeder Wagen und jedes Tor jenseits
+        // 12 m fort; 06.10. rot: GT voll 27 von 27 Proben mit Loch).
+        for (const op of out.ohnePartner || []) {
+            const nurL0 = Array.isArray(op.stufen) && op.stufen.length === 1 && op.stufen[0] === 0;
+            check(
+                `KETTE OHNE PARTNER (${op.typ}): Preset, nur die L0 deklariert, L0 warm`,
+                !!op.preset && nurL0 && op.warm === true,
+                JSON.stringify({ preset: op.preset, stufen: op.stufen, warm: op.warm })
+            );
+            if (!op.voll || !op.last) {
+                check(`KETTE OHNE PARTNER (${op.typ}): Sweep lief`, false, "fehlt");
+                continue;
+            }
+            check(
+                `KETTE OHNE PARTNER (${op.typ}): kein Loch über den Sweep, voll und unter Last (die L0 bleibt ganz)`,
+                op.voll.proben >= 8 && op.last.proben >= 8 && op.voll.loecher === 0 && op.last.loecher === 0,
+                `voll ${z(op.voll)} — last ${z(op.last)} — Stempel ${JSON.stringify(op.voll.modi)}`
+            );
+        }
+        if (!(out.ohnePartner || []).length) check("KETTE OHNE PARTNER lief", false, "fehlt");
     } else check("STUFEN-WAHRHEIT lief", false, SW ? SW.err : "fehlt");
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

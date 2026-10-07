@@ -423,9 +423,11 @@ function check(name, ok) {
                 const orig = r.llmCall;
                 llm.enabled = true;
                 llm.provider = "ollama";
+                // Der Spieler steht auf der Genesis-Plattform: ihre Lichtung ist ein Grundriss der Natur-Wand (Entscheid
+                // D3) — keine Birke, deren Krone über die Scheibe reicht (6,5 m + bis 14 m Krone). Die KI pflanzt 30–50 m weit.
                 r.llmCall = async () => ({
                     say: "Birken.",
-                    program: ["spawn_studio", "birke", ["near_player", 25], 3, 5],
+                    program: ["spawn_studio", "birke", ["far_player", 30, 50], 3, 5],
                 });
                 try {
                     await r.maybeAnswerWithLlm("birken bitte", () => {});

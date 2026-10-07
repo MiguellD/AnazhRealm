@@ -1373,7 +1373,7 @@ function updateMovement(dt){const k=arena.keys,B=camBasis();let f=0,r=0;
 // — NAHKAMPF: Schwung (links, Maus führt) ODER Stich (rechts, Arm stößt vor) —
 function aimDummy(){if(!arena.dummy)return null;_RC.setFromCamera({x:0,y:0},cam);const hits=_RC.intersectObject(arena.dummy,true);
   if(!hits.length)return null;const d=hits[0].distance;if(d>1.9)return null;const y=hits[0].point.y;
-  const z=y>1.52?{n:'Kopf',m:2.4}:y>1.16?{n:'Brust',m:1.5}:y>0.82?{n:'Bauch',m:1.2}:y>0.40?{n:'Bein',m:0.8}:{n:'Fuß',m:0.6};
+  const ZN=SC.ARENA.zonen,zk=y>1.52?'kopf':y>1.16?'brust':y>0.82?'bauch':y>0.40?'bein':'fuss',z={n:ZN[zk].n,m:ZN[zk].mul,k:zk};   // die Zonen-Tafel lebt im Kern (Welle L: Puppe UND Welt-Tier)
   const nrm=hits[0].face?hits[0].face.normal.clone().transformDirection(hits[0].object.matrixWorld).normalize():new THREE.Vector3(1,0,0);
   return {zone:z,dist:d,y,point:hits[0].point.clone(),normal:nrm};}
 function startThrust(){arena.thrusting=true;arena.lungeT=0;arena.swP=0;arena.swY=0;arena.swLay=0;arena.prevTip=null;arena.ready=Math.max(arena.ready,0.6);}  // Stich aus dem Klick-Impuls (Arm engagiert)
@@ -1417,19 +1417,8 @@ function meleeSwingUpdate(realDt,dt){const m=measure(P),S=m.S;arena._m=m;
   arena.prevTip=tip.clone();
   if(arena.swinging)pushTrail(tip);else if(arena.trail.pts.length)arena.trail.pts.shift();
   buildTrailGeom();}
-function landMelee(z,vLat,vAx){const m=measure(P),mEff=Math.max(0.02,(m.mEffFrac||0.2)*m.M);
-  const thrust=vAx>vLat*0.9,sharp=(m.edgeWinkel!=null&&m.edgeWinkel<32);let KE,art,clean,verdict;
-  if(thrust){const beta=m.betaDeg!=null?m.betaDeg:90;KE=0.5*mEff*vAx*vAx;                             // kein Spitzenmaß (Wuchtkopf) -> stumpfer Grenzfall β=90°, kein Geschenk-25 mehr
-    const sigEff=1e6*(0.3+ZIELMAT.holz.hart);                                                          // Pell ≈ Holz/Stroh: Fließwiderstand ~1 MPa, skaliert mit Ziel-Härte
-    let pen;
-    if(m.betaDeg!=null){const LB=m.S.xPoint-m.S.xBlade0,NX=36,dx=LB/NX;let W=0;pen=LB*100;             // Arbeit gegen die ECHTEN Sektionsflächen, von der Spitze rückwärts: W(x)=σ·∫A ds
-      for(let i=0;i<NX;i++){const x=(i+0.5)*dx,A=sectionMoments(sectionAt(1-x/LB,P)).A;W+=sigEff*A*dx;if(W>=KE){pen=x*100;break;}}}
-    else pen=100*Math.cbrt(3*KE/(Math.PI*sigEff));                                                     // Wuchtkopf: stumpfer 90°-Kegel-Grenzfall
-    art='STICH';clean=(m.betaDeg!=null)&&pen>=6;verdict=clean?'spitzer Ort — durchdringt':(m.betaDeg!=null?'zu flach oder zu langsam — bleibt stecken':'kein Ort — prallt ab');arena.lastHit={art,KE,v:vAx,pen,clean,zone:z,verdict};}
-  else{const cutF=sharp?(1.0+(32-(m.edgeWinkel||30))/32*0.9):0.5,nd=Math.abs((m.xcopL!=null?m.xcopL:0.7)-0.776),flex=clamp(50/(m.f1||50),0.4,3.0),nodeF=clamp(1-1.6*nd*flex,0.4,1);
-    const edgeQ=sharp?clamp(arena._edgeAlign!=null?arena._edgeAlign:1,0.15,1):1;                        // wahre Schneide (a): am Treffer gemessen — nur wo eine Schneide ist
-    KE=0.5*mEff*vLat*vLat*cutF*(0.55+0.45*nodeF)*(sharp?(0.25+0.75*edgeQ):1);art=sharp?'SCHNITT':'SCHLAG';clean=nodeF>0.82&&edgeQ>0.75;
-    verdict=clean?'am Knoten, Schneide führt — sauber':(sharp&&edgeQ<=0.75?'die Schneide liegt quer — flach getroffen':'abseits des Knotens — '+(flex>1.2?'die biegsame Klinge schwingt':'Vibration'));arena.lastHit={art,KE,v:vLat,clean,zone:z,edgeQ,verdict};}
+function landMelee(z,vLat,vAx){const u=SC.trefferUrteil(measure(P),{vLat,vAx,edgeQ:arena._edgeAlign,zone:z.k,P});   // DAS TREFFER-URTEIL lebt im Kern (schmiede trefferUrteil, Welle L) — die Shell zeigt es, die Welt richtet damit
+  const KE=u.KE,art=u.art,clean=u.clean,verdict=u.verdict;arena.lastHit=art==='STICH'?{art,KE,v:u.v,pen:u.pen,clean,zone:z,verdict}:{art,KE,v:u.v,clean,zone:z,edgeQ:u.edgeQ,verdict};
   const e=KE*z.m;arena.mStats=arena.mStats||{hits:0,dmg:0};arena.mStats.hits++;arena.mStats.dmg+=e;fx.freeze=clamp(e*0.0011+(clean?0.05:0),0.04,0.20)*(art==='SCHLAG'?1.25:1);
   fx.shake=clamp(e*0.004*(art==='SCHLAG'?1.5:0.9),0.02,0.42);const B=camBasis();fx.kickV.copy(B.fwd).multiplyScalar(-e*0.012);fx.kickV.y-=e*0.005;arena.recoil=clamp(e*0.008,0.10,0.7);
   popText((art==='STICH'?'➤ ':art==='SCHNITT'?'✂ ':'✹ ')+KE.toFixed(0)+' J',clean?'#ffe07a':'#d96a4a',0,-0.04);

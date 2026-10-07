@@ -81,8 +81,10 @@
     // Pflanzenfresser) und nacht (Ruhen). Jede Aktion ist ein kurzer Profil-
     // Overlay des Baum-Gangs (profil-Felder ueberlagern das MOTION-Preset)
     // plus Sonder-Kanaele: dreh rad (Ganzkoerper-Drehung ueber die Dauer),
-    // kopfSweep rad (Kopf-Pendel), rollAmp/rollRate (Schuettel-Rolle), hop m/s
-    // (der feld-native Huepf-Impuls des Wirts), tempo (Bewegungs-Faktor
+    // kopfSweep rad (Kopf-Pendel), rollAmp/rollRate (Schuettel-Rolle), hop true
+    // (die Aktion springt: die Hoehe ist das Freude-Gesetz freude.hopHochM/
+    // hopBasisM, der Abflug v0 = sqrt(2*g*h) mit GANG_GESETZ.g — VERTRAGS-AKT
+    // Welle L 07.10.: der Abflug in m/s fiel, er war der Zwilling der Hoehe), tempo (Bewegungs-Faktor
     // waehrend der Aktion; 0 = innehalten). stimmung waehlt je Gemuetslage
     // die Aktions-Liste + den Takt alle=[min,max] Sekunden (der Wirt jittert
     // deterministisch aus der Kreatur-Identitaet — kein Zufall). Der Wirt
@@ -91,11 +93,11 @@
     var VERHALTEN = {
         aktionen: {
             playbow: { dauer: 1.2, profil: { freq: 0.3, stride: 0, bodyX: 0.35, headX: 0.3, tailAmp: 0.5, tailRate: 6 }, tempo: 0 }, // SCHAU-BEFUND 17.07.: Verbeugung senkt die FRONT (bodyX war -0.35 = Heck im Boden)
-            bound: { dauer: 0.9, profil: { freq: 5.5, stride: 0.14, bob: 0.05 }, hop: 3.2, tempo: 1.3 },
+            bound: { dauer: 0.9, profil: { freq: 5.5, stride: 0.14, bob: 0.05 }, hop: true, tempo: 1.3 },
             spin: { dauer: 1.1, profil: { freq: 4.0, stride: 0.06 }, dreh: 6.283, tempo: 0.2 },
             stalk: { dauer: 2.6, profil: { freq: 0.7, stride: 0.014, bodyX: 0.12, headX: -0.14 }, tempo: 0.45 },
             freeze: { dauer: 1.4, profil: { freq: 0.02, stride: 0, tension: 1.8 }, tempo: 0 },
-            pounce: { dauer: 0.7, profil: { freq: 6.0, stride: 0.16, bodyX: 0.2, bob: 0.06 }, hop: 4.5, tempo: 1.6 },
+            pounce: { dauer: 0.7, profil: { freq: 6.0, stride: 0.16, bodyX: 0.2, bob: 0.06 }, hop: true, tempo: 1.6 },
             scan: { dauer: 1.8, profil: { freq: 0.06, stride: 0, headX: -0.08 }, kopfSweep: 0.5, tempo: 0 },
             snap: { dauer: 0.5, profil: { headX: 0.22, freq: 1.5 } },
             shake: { dauer: 0.8, profil: { freq: 0.2, stride: 0 }, rollAmp: 0.35, rollRate: 14, tempo: 0 },
@@ -190,7 +192,7 @@
         // ── DIE SCHLUSS-WELLE (Spiegel-Zensus 17.07., rein additive DATEN-
         // Zeilen): die letzten neun Stamm-Literale mit tetrapoda-Heimat kehren
         // ins Evolutions-Gesetzbuch heim — freude (Joy-Tempo + Huepf-Hoehen) ·
-        // sprung (Hoehe→Impuls) · groessen (die Koerpergroessen-Baender,
+        // groessen (die Koerpergroessen-Baender,
         // Lehre 8: DIE Differenzierungs-Achse) · separation (Herden-Abstand) ·
         // aufgaben (Gefaehrten-Tempi + Halt-Distanzen) · herde (Schwarm-
         // Kohaesion) · wasser (Ufer-Scheu) — plus jagd.pirschStoppM,
@@ -198,13 +200,13 @@
         // fail-closed via AnazhRealm._verhaltenGesetz (Kern-Pflicht); die
         // Werte sind byte-gleich den historischen Stamm-Literalen.
         // must-ignore: fremde Leser ueberlesen die Bloecke. ──
+        // DAS SPRUNG-GESETZ (Welle L 07.10.): die Huepf-Hoehe ist die EINE Quelle eines Sprungs — der Wirt
+        // (creatureJump) springt froh hopHochM, sonst hopBasisM, mit dem Abflug v0 = sqrt(2*g*h). Der lineare
+        // Faktor sprung.impulsProM (Hoehe -> m/s) fiel mit dem Abflug in m/s der Aktionen (VERTRAGS-AKT).
         freude: {
             tempoMul: 2, // ein frohes Wesen bewegt sich doppelt so lebhaft
             hopHochM: 1.2, // m — der frohe Huepfer
-            hopBasisM: 0.8, // m — der Grund-Huepfer (auch der creatureJump-Default)
-        },
-        sprung: {
-            impulsProM: 2.2, // Huepf-Hoehe (m) → Feld-Impuls (m/s) — die EINE Sprungmechanik (_hopV)
+            hopBasisM: 0.8, // m — der Grund-Huepfer (ein Wesen, das nicht froh ist)
         },
         groessen: [
             // Wurf-Baender der Koerpergroesse (roll ∈ [0,1) aus der Identitaet):
@@ -1310,6 +1312,81 @@
             h01 = -2 * t * t * t + 3 * t * t,
             h11 = t * t * t - t * t;
         return { dz: (h00 * -S) / 2 + h10 * m + (h01 * S) / 2 + h11 * m, hub: Math.sin(u) };
+    }
+
+    // ════════════════════════════════════════════════════════════════════
+    // DAS STEUER-GESETZ (Welle L, additiv): EIN Steuer-Schritt je Tier und Takt. Befund der Leben-Prüfung 06.10.: die
+    // Tiere liefen im Krebsgang (Lauf ↔ Blick p50 63–108°, rückwärts 30–59 % der Frames, Stand-Schlupf 1,3–2,6), weil
+    // niemand die Gier schrieb, und Folgen war Gas oder Bremse (4 m/s oder 0, Tempo-Sprünge ~290 m/s²). Der Wunsch
+    // (Welt-XZ, m/s) dreht die Gier mit der Wendegrenze auf sich zu; der Leib läuft nur VORWÄRTS längs seiner Gier, mit
+    // dem Anteil des Wunschs, der vor ihm liegt (dreht er um, bremst er erst); das Tempo folgt mit Anfahr- und Brems-
+    // Grenze. Jede Größe ist Froude-dimensionslos über die Hüft-Höhe L (dieselbe L, an der das Gang-Gesetz die Schritt-
+    // Länge misst): Wende ω = wende·√(g/L), Anfahren beschl·g, Bremsen brems·g, die Tempo-Einheit des Verhaltens
+    // tempo·√(g·L) m/s (VERHALTEN zählt in ihr: Schlendern 0,45, Jagd 1,45, Flucht 1,6) — ein großes Tier läuft schneller
+    // und wendet träger, die Art unterscheidet die Gestalt, nie ein Tag (Lehre 8). Rein, THREE-frei; der Welt-Wirt ruft
+    // ihn je Tier, die Gier reist im Positions-Strom zum Mitspieler.
+    var STEUER_GESETZ = Object.freeze({
+        tempo: 0.34, // v̂ — die Tempo-Einheit des Verhaltens als Froude-Zahl (ein Schritt; Hirsch L 0,9 m ≈ 1 m/s)
+        wende: 1.1, // × √(g/L) rad/s — die Wendegrenze (Hirsch: ~3,6 rad/s)
+        beschl: 0.5, // × g — Anfahren (m/s²)
+        brems: 0.8, // × g — Bremsen (m/s²); der Ankunfts-Weg liest dieselbe Zahl
+    });
+    // Die Tempo-Einheit in m/s für die Hüft-Höhe L (m).
+    function tempoEinheit(L) {
+        return STEUER_GESETZ.tempo * Math.sqrt(GANG_GESETZ.g * Math.max(0.05, L));
+    }
+    // z = {gier (rad, three: Blick längs (sin, cos)), v (m/s, vorwärts)} wird fortgeschrieben; (wx, wz) der Wunsch in m/s.
+    function steuerSchritt(z, wx, wz, dt, L) {
+        var S = STEUER_GESETZ,
+            g = GANG_GESETZ.g,
+            TAU = 2 * Math.PI;
+        var w = Math.sqrt(wx * wx + wz * wz);
+        var rest = 0;
+        if (w > 1e-4) {
+            var d = Math.atan2(wx, wz) - z.gier;
+            d -= TAU * Math.round(d / TAU);
+            var maxD = S.wende * Math.sqrt(g / Math.max(0.05, L)) * dt;
+            var dd = d > maxD ? maxD : d < -maxD ? -maxD : d;
+            z.gier += dd;
+            z.gier -= TAU * Math.round(z.gier / TAU);
+            rest = d - dd;
+        }
+        var ziel = w * Math.max(0, Math.cos(rest));
+        var dv = ziel - z.v,
+            auf = S.beschl * g * dt,
+            ab = S.brems * g * dt;
+        z.v += dv > auf ? auf : dv < -ab ? -ab : dv;
+        if (!(z.v > 0)) z.v = 0;
+        return z;
+    }
+    // DAS ANKUNFTS-GESETZ: wer `rest` Meter vor seinem Halt steht, wünscht nur das Tempo, aus dem er mit der Brems-Grenze
+    // dort steht (√(2·brems·g·rest)), höchstens vMax — kein 4-oder-0.
+    function ankunftTempo(rest, vMax) {
+        return Math.min(vMax, Math.sqrt(2 * STEUER_GESETZ.brems * GANG_GESETZ.g * Math.max(0, rest)));
+    }
+    // DIE HERDEN-FORM (Welle L, additiv): der Zug der Kohaesion auf ein Tier an (x, z) — er zaehlt nur Nachbarn DERSELBEN
+    // Gattung (die Art unterscheidet die Gestalt, nie ein Tag; Lehre 8) und haengt nie am Blick des Spielers (der Wirt
+    // ruft ihn fuer jedes Tier). Die Leben-Pruefung 06.10. sah artfremde Nachbarn (Fuchs zieht Hirsch) und eine Kohaesion
+    // nur im Frustum. Das Herden-VERHALTEN (Verband, Anker, Ausrichtung) ist nach v1.0 — dies ist die Form, die es traegt.
+    // nachbarn: [{x, z, gattung}] (Kandidaten im Gitter des Wirts), H = VERHALTEN.herde. Liefert {x, z, n} (n Mitglieder).
+    function herdeZug(x, z, gattung, nachbarn, H, out) {
+        var o = out || { x: 0, z: 0, n: 0 };
+        o.x = 0;
+        o.z = 0;
+        o.n = 0;
+        for (var i = 0; i < nachbarn.length && o.n < H.maxNachbarn; i++) {
+            var nb = nachbarn[i];
+            if (!nb || nb.gattung !== gattung) continue;
+            var dx = nb.x - x,
+                dz = nb.z - z;
+            var dsq = dx * dx + dz * dz;
+            if (!(dsq > H.minAbstSq && dsq < H.fensterSq)) continue;
+            var d = Math.sqrt(dsq);
+            o.x += (dx / d) * H.gewicht;
+            o.z += (dz / d) * H.gewicht;
+            o.n++;
+        }
+        return o;
     }
 
     function cpgStep(phases, freq, coupling, dt) {
@@ -2616,6 +2693,45 @@
     // W8 — die Gestalten je Rezept (B2c): JEDE Gattung trägt GESTALTEN_JE_REZEPT Individuen (eine neue zählt mit).
     for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
+    // ── DIE TREFFER-ZONE JE GLIED (Welle L 06.10., additiv) ──
+    // Das Treffer-Volumen eines Tiers sind seine Glieder (die Teile aus bauTier, dieselben Anker wie die
+    // Fern-Kapseln); jedes Glied trägt die Zone der Prüfstand-Tafel (schmiede ARENA.zonen). Der Rumpf ("wolf",
+    // die Wurzel des Leibs) teilt sich am Hals: die Hälfte zum Kopf ist Brust, die andere Bauch. Die Rute ist
+    // eine Extremität wie die Pfote. Unbenannte Glieder gehören zum Rumpf.
+    var TREFFER_ZONE = Object.freeze({
+        headGroup: "kopf",
+        jawGroup: "kopf",
+        cranium: "kopf",
+        earL: "kopf",
+        earR: "kopf",
+        lidTL: "kopf",
+        lidTR: "kopf",
+        legFL: "bein",
+        legFR: "bein",
+        legHL: "bein",
+        legHR: "bein",
+        flU: "bein",
+        frU: "bein",
+        flL: "bein",
+        frL: "bein",
+        hlT: "bein",
+        hrT: "bein",
+        hlC: "bein",
+        hrC: "bein",
+        flP: "fuss",
+        frP: "fuss",
+        hlP: "fuss",
+        hrP: "fuss",
+        tailRoot: "fuss",
+        wolf: "rumpf",
+    });
+    function trefferZone(gliedName) {
+        var n = typeof gliedName === "string" ? gliedName : "";
+        if (TREFFER_ZONE[n]) return TREFFER_ZONE[n];
+        if (n.indexOf("tailSeg") === 0) return "fuss";
+        return "rumpf";
+    }
+
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__tetrapodaCore = {
         VERSION: VERSION,
@@ -2633,6 +2749,11 @@
         GANG_GESETZ: GANG_GESETZ,
         gangSchritt: gangSchritt,
         gangFuss: gangFuss,
+        STEUER_GESETZ: STEUER_GESETZ,
+        tempoEinheit: tempoEinheit,
+        steuerSchritt: steuerSchritt,
+        ankunftTempo: ankunftTempo,
+        herdeZug: herdeZug,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         DIAL_MAP: DIAL_MAP,
@@ -2648,5 +2769,7 @@
         STAND_POSE: STAND_POSE,
         VERHALTEN: VERHALTEN,
         fellStreu: fellStreu,
+        TREFFER_ZONE: TREFFER_ZONE,
+        trefferZone: trefferZone,
     };
 })(typeof self !== "undefined" ? self : globalThis);

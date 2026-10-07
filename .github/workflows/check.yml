@@ -560,6 +560,21 @@ jobs:
               # bleibt EIN Pfad (ride.kAcc/kBrake/topSpeedMul nur in _loopPlayerMovement).
               run: npm run gate:vehicle-drive
 
+            - name: Die Fahr-Linse des Lebens (Welle L — der Ritt im echten Spiel-Takt)
+              # DER RITT DURCH DEN ECHTEN FRAME (_gameLoopTick: Akkumulator · Sim-Schritte · Interpolation · Frame-Tick,
+              # wechselnde Frame-Zeiten 8–33 ms, headless foundry-ON): GT geradeaus, GT am Hang ohne Taste, Pferd —
+              # Teleport-Zähler 0, Sim-Weg = Fahr-Weg, der Reiter sitzt (nie „in der Luft"), keine Gier ohne Lenkung.
+              # Befund 06.10.: 114 von 114 Frames Teleport, 25,95 m simuliert gegen 10,27 m gefahren, 84° Gier am Hang.
+              # Statische Wand: der Sitz lebt im Sim-Schritt, der Frame-Tick schreibt nie den Reiter. Inklusive Selbst-Test.
+              run: npm run gate:fahr-leben
+
+            - name: Die Labor-Linse der Garage (Welle L — Maus, HUD, Tacho, Preset, Kultur)
+              # DIE PROBEFAHRT-WERKSTATT WIE DER SCHOEPFER SIE BEDIENT (worlds/garage, r128 WebGL, kopflos): Orbit-Zug und
+              # Umsehen ohne Seitenfehler (vorher ReferenceError dragging je Mausbewegung), der Fahr-HUD als Flex-Band,
+              # der Tacho in km/h aus FAHR.kmh (vorher x12), Preset-Wechsel und erstes Laden ohne Leck (P = DEFAULT_P +
+              # Preset + Kultur), die Kultur abwaehlbar. Inklusive Selbst-Test.
+              run: npm run gate:garage-labor
+
             - name: Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)
               # DER ε-BEWEIS: die Tor-Domäne dockt AUSSCHLIESSLICH über die Checkliste §ε an —
               # Manifest-Zeile (porta-core, __portaCore) + KIND_POLICY-gate-Zeile + tor_basis-
@@ -582,6 +597,20 @@ jobs:
               # Klingen-Asset end-to-end durch den Worker · hand streut nicht [N5.5] ·
               # Fail-Closed-Clamp auf Stufe 0). Inklusive Selbst-Test (injizierte Verletzungen).
               run: npm run gate:nervensystem-schmiede
+
+            - name: Kampf und Maus (Welle L — das EINE Treffer-Urteil, die Maus-Absicht, die Blick-Wahrheit)
+              # Headless (Null-Renderer, Produktions-Boot), gespielt wie ein Mensch: das Fadenkreuz geht über Gier und
+              # Neigung durch die ECHTE Kamera aufs Ziel (1st und 3rd), geklickt wird über den EINEN Dispatcher.
+              # Q8: Zone je Glied, hangab und klein je ≥ 8/10, Hit-Stop-Energie Keule ≠ Grossschwert, keine
+              # Schadens-Kappe, Gegenwehr > 0, die Hand ist kein Panzer, Verschleiß von Klinge UND Bogen (jeder
+              # Waffen-Schadens-Pfad im EINEN _kampfRohSchaden), der Pfeil trägt seine Energie und eine Wand hält ihn,
+              # ohne tetrapoda trefferZone ein lauter Bruch, der erste Hieb je Gattung zerlegt keine Haut (vorgebacken)
+              # · Q9: 3rd-Person-Klick schwingt (0 Krater), Halten gräbt nicht, RMB mit Schwert schüttet nie auf,
+              # offene Werkstatt = tauber Canvas, ein Bauwerk geht in den Bau-Modus · Q10: Ego-Neigung −90° = Blick
+              # −90°, „vor dir" liegt vor dem Blick, der Pfeil fliegt aufs Fadenkreuz, der Sweep liest _blickVorn.
+              # Kein dritter Leib: Klinge und Pfeil fragen das EINE Grob-Tor, es liest den kreatur-Leib und deckt die
+              # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S9.
+              run: npm run gate:kampf-gefuehl
 
             - name: Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)
               # cv:3 (spec/asset-contract/v3): 12 frozen sha256-Goldens (5 Gattungen × 2 Seeds + 2 ov-Kulturen),
@@ -656,6 +685,30 @@ jobs:
               # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
               run: npm run gate:settlement
 
+            - name: Das Studio-Dorf begehen (Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike)
+              # Das Fachwerk-Labor im Browser (WebGL, swiftshader): die Probe ruft die echten Lab-Pfade (buildDorf · promoteB ·
+              # demoteB · walkUpdate → moveAxis/gravity/overlap · Raycaster). B1 die Ganz-Haus-Hülle fällt mit der Promotion und
+              # kehrt mit der Demotion zurück · B2 die offene Haustür ist begehbar · B3 kein Treppen-Schritt endet im Solid, jeder
+              # Lauf (EG→OG, OG→2.OG, Speicher) erreicht seine Höhe, am Austritt steht der Kopf unter dem Dach · B4 die
+              # Keller-Decke ist nie die Wiesen-Platte · B5 von oben zeigt der Fluss Wasser · B6 Antike × 18/40/120 baut.
+              # --selftest: je Defekt serviert der Server die Basis-Zeile (Lab-Shell bzw. fachwerk-core) → genau seine Probe rot.
+              run: npm run gate:studio-begehen
+
+            - name: Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)
+              # Headless (Null-Renderer, die Boden-Karte ist das Mesh des Workers): K1 Becken auf dem Träger und im Sprung ·
+              # K2 die Fuß-Probe in der Höhle liest den Höhlen-Boden · K3 das Tier bleibt auf dem Höhlen-Boden · K4 die
+              # Sohlen stehen am Hang auf der Boden-Karte, keine Cache-Treppe · K5 das tote Tier liegt auf dem Boden (die Rad-
+              # Ebene steht auf dem Gesetz, Entscheid D1). --selftest: je Defekt die Basis-Zeile serviert → genau seine Probe rot.
+              run: npm run gate:koerper-stand
+
+            - name: Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)
+              # Headless: das Drehbuch-Dorf 7/18, die Foundry liefert die Stufen, der Spieler geht über den Sim-Schritt.
+              # W1 Tür · W2 der Fuß auf der Diele des Gesetzbuchs · W3 die Treppe trägt ins OG · W4 kein Gewächs im
+              # Grundriss · W5 Kollision == Optik je Rasterpunkt · W8 die Genesis-Lichtung ist ein Grundriss derselben
+              # Natur-Wand (keine Krone, keine Streu, kein Hain der KI über der Scheibe, Entscheid D3).
+              # --selftest: Basis-Zeilen serviert → genau ihre Probe rot.
+              run: npm run gate:haus-welt
+
             - name: Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)
               # DIE TRIAS BLEIBT GEDECKELT: platzierte Studio-Architektur (haus_ u. a.) lebt
               # in der EINEN LOD-Geschichte (_tickArchitectureLOD via instFoundry) — nah
@@ -681,6 +734,17 @@ jobs:
               # Stand-Fußes / Weg des Leibs, Soll ≤ 0,2. --selftest zuerst: mit gestubbtem Gang-Gesetz (fester Takt,
               # feste Auslenkung) gleitet jede Pfote, die Linse wird rot.
               run: npm run gate:tier-gang
+
+            - name: Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)
+              # Headless (Null-Renderer, Produktions-Boot): jede Probe ruft den echten Chokepoint selbst (updateCreatures,
+              # clearCreatures, _creatureNaturalBirth, _playerDeathRespawn, Snapshot, Peer-Tick), nichts gestubbt
+              # (scripts/lib/kreatur-proben.cjs; dieselben Proben laufen mit --werkbank im sichtbaren Fenster der
+              # echten GPU). Dreizehn Proben: geister · geburt · sattel · reload (Q12) · huepfer (Q1, das Sprung-Gesetz)
+              # · wachsen · zufall (Q2, kein Math.random im Kreatur-Leben über window.__codeOf) · gier (Q3, auch Gas ↔
+              # Bremse) · jagd (Q3/Q11, Beute-Flucht) · herde (Q11, gleichartig, nie am Blick) · hindernis (Q11, kein
+              # Strahl, der EINE Leib) · nacht (Ruhe hält den Leib) · peer (Sicht-Kopie). --selftest zuerst: je Probe
+              # spielt jeder alte Defekt als Täter ein (18), die Linse muss ROT lesen und ihn beim Namen nennen.
+              run: npm run gate:kreatur-takt
 
             - name: Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)
               # cv:7 (spec/asset-contract/v7): sha256 ueber PRESETS+PARAMS je Kern (klang/
@@ -761,6 +825,17 @@ jobs:
               # (b) headless foundry-ON: der Distanz-Sweep über thresh01/thresh12 — IM Band Slots
               # in BEIDEN Stufen-Gruppen, außerhalb exakt einer, nie 0, Slot-Bilanz dicht (kein Leck).
               run: npm run gate:foundry-crossfade
+
+            - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
+              # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
+              # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
+              # bricht jede Stelle einzeln.
+              run: npm run gate:v1-pfad
+
+            - name: Die GPU-Fehler-Linse (Welle L - V-D7, Selbsttest)
+              # Die Werkbank nennt jede WebGPU-Validierung mit Pass und Objekt (scripts/lib/gpu-fehler.cjs); der
+              # Selbsttest zeichnet auf einer nackten WebGPU-Seite einmal ohne Vertex-Slot - die Linse muss ihn nennen.
+              run: npm run gate:gpu-fehler
 
             - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
               # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks
