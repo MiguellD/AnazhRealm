@@ -69,6 +69,8 @@ const state = {
     bankKruemmung: 0.04, // Mirror AnazhRealm.HYDROSPHERE.bankKruemmung
     bankWeite: 24, // Mirror AnazhRealm.HYDROSPHERE.bankWeite
     bankRundung: 0.6, // Mirror AnazhRealm.HYDROSPHERE.bankRundung
+    dammBreite: 2.6, // Mirror AnazhRealm.HYDROSPHERE.dammBreite (die Damm-Krone, Gegenprüfung 07.10., Runde 4)
+    dammFreibord: 0.2, // Mirror AnazhRealm.HYDROSPHERE.dammFreibord
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss): die Genese-
     // Schleuse. Fehlt im Snap (Legacy-Welt) → 1 → feuchteAt = 0 (kein Erde-
     // Boden-Drift); Genese-2 (neue Welt) → 2 → der Boden atmet.
@@ -219,6 +221,8 @@ function applyStateSnapshot(snap) {
     if (typeof snap.bankKruemmung === "number") state.bankKruemmung = snap.bankKruemmung;
     if (typeof snap.bankWeite === "number") state.bankWeite = snap.bankWeite;
     if (typeof snap.bankRundung === "number") state.bankRundung = snap.bankRundung;
+    if (typeof snap.dammBreite === "number") state.dammBreite = snap.dammBreite;
+    if (typeof snap.dammFreibord === "number") state.dammFreibord = snap.dammFreibord;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
     // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
@@ -791,6 +795,7 @@ function hydrosphereCarveAt(x, z) {
     const sN = state.bankNeigung;
     const sK = state.bankKruemmung;
     const fuss = state.bankRundung;
+    const kB = state.dammBreite;
     let P = Infinity;
     let L = -Infinity;
     for (let s = 0; s < list.length; s++) {
@@ -807,16 +812,17 @@ function hydrosphereCarveAt(x, z) {
         const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
         const D = seg.dA + (seg.dB - seg.dA) * t;
         const dK = halfW + D / sN;
-        if (dist >= dK + state.bankWeite) continue;
-        const B = seg.sA + (seg.sB - seg.sA) * t - (1 - state.spiegelFreibord) * D;
+        if (dist >= dK + kB + state.bankWeite) continue;
+        const spiegel = seg.sA + (seg.sB - seg.sA) * t;
+        const B = spiegel - (1 - state.spiegelFreibord) * D;
         const u0 = dist - halfW;
         let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
         const u = dist - dK;
-        let l = B + D;
-        if (u > 0) {
-            p += sK * u * u;
-            l -= sN * u + sK * u * u;
-        }
+        if (u > 0) p += sK * u * u;
+        // der Damm: seine Krone eben bis dammBreite hinter der Krone des Kanals, dahinter die Böschung (Mirror)
+        let l = spiegel + Math.max(state.spiegelFreibord * D, state.dammFreibord);
+        const uL = u - kB;
+        if (uL > 0) l -= sN * uL + sK * uL * uL;
         if (p < P) P = p;
         if (l > L) L = l;
     }

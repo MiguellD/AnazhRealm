@@ -19415,6 +19415,15 @@ class AnazhRealm {
             bankKruemmung: 0.04, // je m hinter der Krone
             bankWeite: 24, // m hinter der Krone
             bankRundung: 0.6, // m
+            // DIE DAMM-KRONE (Gegenprüfung 07.10., Runde 4): hält der Kanal tieferes Gelände mit einem Damm, trägt der Damm
+            // eine Krone, die das 1,8-m-Gitter trägt — dammBreite hinter der Krone des Kanals eben auf Spiegel + max(Freibord ·
+            // Tiefe, dammFreibord), erst dahinter fällt er mit der Neigung der Bank. Die Breite reicht, so weit das Wasser-Sheet
+            // hinter der Krone auf dem Spiegel liegt (die äußere Ecke einer Spalte, die an der Krone flutet: 1,8 m · √2), das
+            // Freibord über den Fehler der gezeichneten Fläche. Bis zur Gegenprüfung war der Damm eine Schneide (Breite 0, beim
+            // Rinnsal 7 cm über dem Spiegel): das Mesh trug ihn nicht (an der Krone des Bachs der Mess-Wiese lag der gezeichnete
+            // Boden in 68 von 152 Profilen unter dem Spiegel, p50 0,28 m), und das Wasser lief über ihn ins tiefere Gelände.
+            dammBreite: 2.6, // m hinter der Krone des Kanals
+            dammFreibord: 0.2, // m über dem Spiegel, mindestens
             // DIE QUELLE (W-F5): jede beginnt als Rinnsal mit quellBett Meter Bett (Wasser höchstens 2,3 m breit und 0,37 m
             // tief) und weitet sich stromab um quellWeitung je Meter Lauf (m/m), bis sie die Breite ihrer Akkumulation trägt
             // (an der Schwelle quellBreite der vollen, ab der doppelten Schwelle die volle) — Breite und Tiefe wachsen aus dem
@@ -21625,6 +21634,8 @@ class AnazhRealm {
             bankKruemmung: AnazhRealm.HYDROSPHERE.bankKruemmung,
             bankWeite: AnazhRealm.HYDROSPHERE.bankWeite,
             bankRundung: AnazhRealm.HYDROSPHERE.bankRundung,
+            dammBreite: AnazhRealm.HYDROSPHERE.dammBreite,
+            dammFreibord: AnazhRealm.HYDROSPHERE.dammFreibord,
             // Die genVersion-Schleuse reist mit: der Worker-Spiegel gated die Feuchte-Mix-Linie identisch
             // (Legacy-Welten gen < 2 → feuchte = 0).
             genVersion: typeof this._genVersion === "function" ? this._genVersion() : 1,
@@ -25503,7 +25514,8 @@ class AnazhRealm {
     // DER FLUSS-KANAL an xz: die Gestalt, die das Gelände im Fluss-Korridor annimmt — `{ P, L, k }` oder null. P ist die
     // Höhe des KANALS (Flachboden auf Spiegel − (1 − Freibord) · Tiefe bis zur halben Breite, die Bank steigt mit
     // bankNeigung bis zur Krone auf Spiegel + Freibord · Tiefe, dahinter die Böschung, die mit dem Abstand steiler wird), L die
-    // Höhe des DAMMS (die Krone bis zu ihrem Abstand, dahinter fällt er wie die Böschung steigt), k die Rundung. Die Dichte
+    // Höhe des DAMMS (seine Krone auf Spiegel + max(Freibord · Tiefe, dammFreibord), eben bis dammBreite hinter der Krone des
+    // Kanals, dahinter fällt er wie die Böschung steigt — die Krone trägt das 1,8-m-Gitter), k die Rundung. Die Dichte
     // nimmt das weiche Maximum aus Gelände und Damm (tieferes Gelände wird zur Krone gefüllt) und davon das weiche Minimum
     // mit dem Kanal (höheres Gelände wird zur Böschung geschnitten): wo das Gelände zwischen beiden liegt, bleibt es, wie es
     // ist — die Bank läuft mit ihrer eigenen Neigung ins Gelände aus, nie als Wand. Mehrere Segmente (Biegung, Mündung):
@@ -25527,6 +25539,7 @@ class AnazhRealm {
         const sN = HC.bankNeigung;
         const sK = HC.bankKruemmung;
         const fuss = HC.bankRundung;
+        const kB = HC.dammBreite;
         let P = Infinity;
         let L = -Infinity;
         for (let s = 0; s < list.length; s++) {
@@ -25543,16 +25556,17 @@ class AnazhRealm {
             const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
             const D = seg.dA + (seg.dB - seg.dA) * t;
             const dK = halfW + D / sN;
-            if (dist >= dK + HC.bankWeite) continue;
-            const B = seg.sA + (seg.sB - seg.sA) * t - (1 - HC.spiegelFreibord) * D;
+            if (dist >= dK + kB + HC.bankWeite) continue;
+            const spiegel = seg.sA + (seg.sB - seg.sA) * t;
+            const B = spiegel - (1 - HC.spiegelFreibord) * D;
             const u0 = dist - halfW;
             let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
             const u = dist - dK;
-            let l = B + D;
-            if (u > 0) {
-                p += sK * u * u;
-                l -= sN * u + sK * u * u;
-            }
+            if (u > 0) p += sK * u * u;
+            // der Damm: seine Krone eben bis dammBreite hinter der Krone des Kanals, dahinter die Böschung
+            let l = spiegel + Math.max(HC.spiegelFreibord * D, HC.dammFreibord);
+            const uL = u - kB;
+            if (uL > 0) l -= sN * uL + sK * uL * uL;
             if (p < P) P = p;
             if (l > L) L = l;
         }
@@ -32548,8 +32562,9 @@ class AnazhRealm {
         const bucketsDim = Math.max(1, Math.ceil(size / bucketSize));
         const riverBuckets = new Array(bucketsDim * bucketsDim);
         const addSeg = (seg) => {
-            // die Reichweite des Kanals: Krone (halbe Breite + Tiefe / Neigung) + die Böschung dahinter
-            const reach = Math.max(seg.hwA, seg.hwB) + Math.max(seg.dA, seg.dB) / HC.bankNeigung + HC.bankWeite;
+            // die Reichweite des Kanals: Krone (halbe Breite + Tiefe / Neigung) + die Krone des Damms + die Böschung dahinter
+            const reach =
+                Math.max(seg.hwA, seg.hwB) + Math.max(seg.dA, seg.dB) / HC.bankNeigung + HC.dammBreite + HC.bankWeite;
             let bi0 = Math.floor((Math.min(seg.ax, seg.bx) - reach - originX) / bucketSize);
             let bi1 = Math.floor((Math.max(seg.ax, seg.bx) + reach - originX) / bucketSize);
             let bj0 = Math.floor((Math.min(seg.az, seg.bz) - reach - originZ) / bucketSize);
@@ -90989,8 +91004,9 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // Ufer-Farbe läuft mit der Kronen-Blende aus (`_waterLevelAt` → `ufer`): ein alter Chunk trüge das Rauten-Schachbrett; seit
 // der Gegenprüfung läuft die Bank mit ihrer Neigung ins Gelände (Kanal und Damm): ein alter Chunk trüge die Gleit-Wand; seit
 // Runde 3 trägt die Deck-Zelle das flache Wasser und das Ufer liest den Boden der Spalte: alte Zellen zeichneten den Bach nicht;
-// und jede Quelle beginnt als Rinnsal: ein alter Chunk trüge den Kanal, der aus dem Nichts bricht.
-AnazhRealm.CHUNK_IDB_FORM = "quell-rinnsal";
+// und jede Quelle beginnt als Rinnsal: ein alter Chunk trüge den Kanal, der aus dem Nichts bricht; seit Runde 4 trägt der
+// Damm eine Krone (`dammBreite`): ein alter Chunk trüge die Schneide, über die das Wasser ins tiefere Gelände lief.
+AnazhRealm.CHUNK_IDB_FORM = "damm-krone";
 // DIE HÖHLEN-SICHT (Welle 7, `_hoehlenSicht`): der Saum jeder Mündungs-, Portal-, Rand- und Luft-Box — `schritte` Gitter-
 // Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
 // Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).
