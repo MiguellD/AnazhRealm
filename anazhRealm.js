@@ -34047,14 +34047,22 @@ class AnazhRealm {
         nw.offen = 0;
         // Die zwei Studio-Vorlagen je Stufe (Foundry-Cache; eine Anfrage, falls noch kalt) — einmal je Takt. Der Wurf
         // ist das Studio-Budget (B2c grass[stufe].schatten): die Nah-Wiese legt ihren Satz am AUGE — ein Werfer bräuchte
-        // den Satz der Kaskade, das Budget nennt für das Gras keinen (laut, falls doch).
+        // den Satz der Kaskade, das Budget nennt für das Gras keinen (laut, falls doch). Gelesen wird es, wenn die
+        // Vorlage steht: eine Vorlage gibt es erst mit dem Buch (Buch kalt → `_foundryFlattenFor` null), das Budget
+        // dockt in derselben Nachricht. Befund 0710-2: die Zusicherung las VOR der Vorlage — kam das Buch nach dem Ring,
+        // brach jeder Deko-Takt bis zum Buch an `phyto:lod.budget (gras)` und riss Nah-Streu und Hydro-Kacheln mit.
         for (const stufe of [1, 2]) {
-            if (this._foundryBudgetZeile("gras", stufe).schatten !== false)
-                throw new Error(`Nah-Wiese: gras[${stufe}] wirft — der Sicht-Satz cullt am Auge, nie für die Kaskade`);
             for (let v = 0; v < 2; v++) {
                 const fl = this._foundryFlattenFor({ seed: v + 1 }, "gras", stufe);
-                if (fl && Array.isArray(fl.leaves) && fl.leaves.length) this._nahWieseSenken(v, stufe, fl);
-                else nw.offen++; // das Studio-Asset kommt noch (die Foundry-Anfrage läuft)
+                if (!(fl && Array.isArray(fl.leaves) && fl.leaves.length)) {
+                    nw.offen++; // das Studio-Asset kommt noch (Buch kalt oder die Foundry-Anfrage läuft)
+                    continue;
+                }
+                if (this._foundryBudgetZeile("gras", stufe).schatten !== false)
+                    throw new Error(
+                        `Nah-Wiese: gras[${stufe}] wirft — der Sicht-Satz cullt am Auge, nie für die Kaskade`
+                    );
+                this._nahWieseSenken(v, stufe, fl);
             }
         }
         const cfg = this._voxelChunkConfig(0);
