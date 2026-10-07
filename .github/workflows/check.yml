@@ -777,6 +777,14 @@ jobs:
               # Abtastungen, Godrays und Kontrast im Zweig hinter ihrer Staerke) und die Godrays mit der Sonne im Bild.
               run: npm run gate:post-kette
 
+            - name: Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)
+              # Faehrt den ECHTEN Frame (swiftshader, kienspan) n Frames lang durch die Haken des Ziel-Zensus: jede GPU-Textur
+              # mit Erzeuger, Schreibern und Lesern je Pass, keine Taeter-Klasse (ohne Leser, teilbar, volle Aufloesung fuer
+              # niederfrequente Effekte, Tiefe ohne Leser oder doppelt, 32 bit mit 16-bit-Inhalt). Dazu eine Schatten-Buehne
+              # durch die Huelle der Kaskaden (Pass ohne Farb-Anhang, Schatten faellt, keine GPU-Validierung) und je Klasse
+              # ein eingeschmuggelter Taeter, der beim Namen rot faellt und danach restlos fort ist. --selftest zuerst.
+              run: npm run gate:ziel-zensus
+
             - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
               # Die LINSE gegen den asymmetrischen-Verifikations-Riss: das Gate misst Mechanik, nicht
               # den Perzept — ABER für die Teile des Looks, die REALITÄT SIND (Albedo · Wetter-Dimmung ·

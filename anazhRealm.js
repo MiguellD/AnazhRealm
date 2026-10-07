@@ -90389,15 +90389,67 @@ class AnazhRealm {
     }
 
     // DIE SCHLANKEN KARTEN-ZIELE: r184 legt jede Schatten-Karte als Render-Ziel mit rgba8-Farbe + depth24plus an
-    // (ShadowNode.setupRenderTarget). Die Farbe liest der Schatten-Filter nur mit `renderer.shadowMap.transmitted`
-    // (aus); fallen kann sie nicht — der r184-Pipeline-Bau liest Format und Farbraum aus `textures[0]`
-    // (getCurrentColorFormat · getCurrentColorSpace), ein Ziel ohne Farbe bräche jede Schatten-Pipeline. Darum r8
-    // (¼ von rgba8); die Tiefe trägt 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). EINE Farbe für
-    // beide Kaskaden trägt r184 nicht: das zweite Ziel legt die geteilte Textur bei seiner ersten Belegung neu an, der Pass
-    // des ersten liest die zerstörte („Destroyed texture used in a submit", die Schatten fallen — gemessen W7, echte GPU).
-    // Der Knoten baut sein Ziel durch diese Hülle — Format und Name stehen, bevor die GPU es je belegt; der VRAM-Zensus
-    // nennt die Kaskade beim Namen.
+    // (ShadowNode.setupRenderTarget). Die Farbe liest der Schatten-Filter nur mit `renderer.shadowMap.transmitted` (aus) —
+    // der Ziel-Zensus (`werkbank ziele`, 07.10., GTX 1060, Mess-Wiese, 12 Frames) nannte sie OHNE LESER: kaskade0:farbe
+    // und kaskade1:farbe, je r8 2048² = 4 MB, geschrieben in k0/k1, gelesen von keinem Pass. Darum trägt die Karte auf
+    // WebGPU KEINE Farbe: das Ziel behält sein Textur-Objekt (r184 liest Größe, Farbraum und Ton-Abbildung des Ziels daraus
+    // — `Textures.updateRenderTarget` misst `textures[0]`, `currentColorSpace` liest `texture`), aber die GPU legt es nie an
+    // (`updateTexture` überspringt es), und die Ziel-Daten tragen eine LEERE Farb-Liste: der Pass-Deskriptor baut keinen
+    // Farb-Anhang, der Pipeline-Bau keine Farb-Ziele (eine reine Tiefen-Pipeline — ein Fragment-Ergebnis ohne Ziel verwirft
+    // WebGPU), und Format und Farbraum des Kontexts sind auf der leeren Liste null (r184 las dort blind `textures[0]`, das
+    // war der Grund für r8). Eine geteilte Farbe beider Kaskaden trug r184 nicht (W7: „Destroyed texture used in a submit")
+    // — jetzt gibt es keine. Der WebGL2-Rückfall bindet `textures[0]` selbst an seinen Framebuffer: dort bleibt r8. Die Tiefe
+    // trägt 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). Der Knoten baut sein Ziel durch diese Hülle —
+    // Format, Name und die Farb-Freiheit stehen, bevor die GPU es je belegt. gate:vendor-anker pinnt jede gelesene r184-
+    // Stelle, gate:ziel-zensus hält die Klasse, gate:schatten-werfer Z1 das Ziel.
     _kaskadenZiele(csm) {
+        const rend = this.state.renderer;
+        if (
+            rend &&
+            !rend._isHeadlessNull &&
+            rend.backend &&
+            rend.backend.isWebGPUBackend === true &&
+            !rend.__anazhOhneFarbe
+        ) {
+            const T = rend._textures;
+            const U = rend.backend.utils;
+            if (
+                !T ||
+                typeof T.updateRenderTarget !== "function" ||
+                typeof T.updateTexture !== "function" ||
+                !U ||
+                typeof U.getCurrentColorFormat !== "function" ||
+                typeof U.getCurrentColorSpace !== "function"
+            )
+                this.log(
+                    "KASKADEN-ZIELE: r184 Textures/Backend-Utils fehlen (Vendor-Drift) — die Karten tragen Farbe",
+                    "ERROR"
+                );
+            else {
+                const KEINE = Object.freeze([]);
+                const zielRoh = T.updateRenderTarget;
+                T.updateRenderTarget = function (ziel, stufe) {
+                    const o = zielRoh.call(this, ziel, stufe);
+                    if (ziel.__anazhOhneFarbe === true) this.get(ziel).textures = KEINE;
+                    return o;
+                };
+                const texRoh = T.updateTexture;
+                T.updateTexture = function (t, o) {
+                    if (t.__anazhOhneGpu === true) return undefined;
+                    return texRoh.call(this, t, o);
+                };
+                const formatRoh = U.getCurrentColorFormat;
+                U.getCurrentColorFormat = function (ctx) {
+                    return ctx.textures !== null && ctx.textures.length === 0 ? null : formatRoh.call(this, ctx);
+                };
+                const raumRoh = U.getCurrentColorSpace;
+                U.getCurrentColorSpace = function (ctx) {
+                    return ctx.textures !== null && ctx.textures.length === 0 ? null : raumRoh.call(this, ctx);
+                };
+                rend.__anazhOhneFarbe = true;
+            }
+        }
+        const ohneFarbe = !!(rend && rend.__anazhOhneFarbe === true);
         const knoten = csm._shadowNodes || [];
         for (let i = 0; i < knoten.length; i++) {
             const sn = knoten[i];
@@ -90412,6 +90464,10 @@ class AnazhRealm {
                 const z = roh.call(sn, shadow, builder);
                 z.shadowMap.texture.format = THREE.RedFormat;
                 z.shadowMap.texture.name = "kaskade" + i + ":farbe";
+                if (ohneFarbe) {
+                    z.shadowMap.__anazhOhneFarbe = true;
+                    z.shadowMap.texture.__anazhOhneGpu = true;
+                }
                 z.depthTexture.type = THREE.UnsignedShortType;
                 z.depthTexture.name = "kaskade" + i + ":tiefe";
                 return z;
