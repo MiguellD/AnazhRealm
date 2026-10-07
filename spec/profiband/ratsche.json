@@ -1,6 +1,6 @@
 {
     "version": 1,
-    "zweck": "DIE RATSCHE DES PROFI-BANDS (W0): je Haushalt-Klasse × Pass (und je VRAM-Erzeuger) die obere Hülle einer Mess-Serie an der Mess-Wiese — eine Klasse darf nur FALLEN. `werkbank band` ist rot, sobald ein Ist über seiner Ratsche liegt (über max(Ratsche × (1 + toleranzPct/100), Ratsche + toleranzAbs)). `null` = noch nicht gemessen. Gesetzt und gesenkt wird sie nur aus einer SERIE der echten GPU: `node scripts/werkbank.cjs start --echt --serie <name>` · `umstellen -900 -850` · `band --datei a.json` (mehrmals, dazu `reload` für den Zweit-Boot) · `ratsche a.json b.json …` (≥ 4 Läufe, Erst- und Zweit-Boot, jeder eingeschwungen: die volle Welt (Regler-Decke offen, loadScale 1) baut nichts mehr — Chunks, Foundry-Schlange, Karten-Bäcker, aufgeschobene Streu, Mesh-Zone, Instanz-Zahl ruhig; LINSE sauber). Die Ratsche setzt null-Felder, senkt gemessene und hebt nie — heben ist ein begründeter Akt von Hand im Commit. Die Toleranz ist ein Rand über der gemessenen Streuung der Serie (jeder Lauf gegen die Hülle der übrigen). Freie Klassen (`frei`) messen den Weltzustand, ihre Kosten je Einheit hält das genannte Gate. Schema: `npm run gate:profiband`.",
+    "zweck": "DIE RATSCHE DES PROFI-BANDS (W0): je Haushalt-Klasse × Pass (und je VRAM-Erzeuger) die obere Hülle einer Mess-Serie an der Mess-Wiese — eine Klasse darf nur FALLEN. `werkbank band` ist rot, sobald ein Ist über seiner Ratsche liegt (über max(Ratsche × (1 + toleranzPct/100), Ratsche + toleranzAbs)). `null` = noch nicht gemessen. Gesetzt und gesenkt wird sie nur aus einer SERIE der echten GPU: `node scripts/werkbank.cjs start --echt --serie <name>` · `umstellen --ort wiese` (Spieler, Blick, Dorf-Zug und Ort-Takt aus spec/profiband/haushalt.json `messorte`; jeder Lauf zeichnet den gestellten Zustand auf, die Ratsche nimmt nur gestellte Läufe) · `band --ort wiese --datei a.json` (mehrmals, dazu `reload` für den Zweit-Boot) · `ratsche --ort wiese a.json b.json …` (≥ 4 Läufe, Erst- und Zweit-Boot, jeder eingeschwungen: die volle Welt (Regler-Decke offen, loadScale 1) baut nichts mehr — Chunks, Foundry-Schlange, Karten-Bäcker, aufgeschobene Streu, Mesh-Zone, Instanz-Zahl ruhig; LINSE sauber). Die Ratsche setzt null-Felder, senkt gemessene und hebt nie — heben ist ein begründeter Akt von Hand im Commit. Die Toleranz ist ein Rand über der gemessenen Streuung der Serie (jeder Lauf gegen die Hülle der übrigen). Freie Klassen (`frei`) messen den Weltzustand, ihre Kosten je Einheit hält das genannte Gate. Schema: `npm run gate:profiband`.",
     "gemessen": {
         "datum": "2026-10-05T23:25:21.505Z",
         "geraet": "Radeon 890M (Integration, werkbank --echt, 1920x1080, DPR 1)",
@@ -249,7 +249,6 @@
         "tex:DFG_LUT": 0,
         "tex:TRAANode.vortiefe": 0,
         "buf:szene": 40.6,
-        "tex:wege-karte": 4,
         "buf:bild": 0,
         "buf:verwaist": 0,
         "buf:ruhend": 0

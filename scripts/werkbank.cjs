@@ -1461,10 +1461,22 @@ async function starte() {
                     if (fl) for (const f of ["mb", "platteMb", "neuMb"]) fl[f] = +fl[f].toFixed(1);
                     const am = ort.spieler;
                     const amMessort = Math.hypot(roh.spieler[0] - am[0], roh.spieler[1] - am[1]) <= 8;
+                    // DER GESTELLTE ORT (die Orts-Wache, `BAND.ortGestellt`): was beim Zählen wirklich stand — der Ort der
+                    // letzten Aufstellung, der Dorf-Zug, der Ort-Takt, die Gier —, nicht nur der Ort, den der Aufruf nennt.
+                    const zustand = Object.assign(
+                        { ort: aktOrt },
+                        await page.evaluate(() => ({
+                            dorfZug: window.__anazhAutoSettlement !== false,
+                            ortTakt: window.__ortTakt || [],
+                            gier: window.anazhRealm.state.yaw,
+                        }))
+                    );
                     Object.assign(u, {
                         kamera: proben.length ? proben[proben.length - 1].kamera : null,
                         spieler: roh.spieler,
                         amMessort,
+                        zustand,
+                        ortGestellt: BAND.ortGestellt(ort, zustand),
                         boot: { art: bootArt(), serie: boot.serie, ladungen: boot.ladungen },
                         messung: Object.assign({ proben: proben.length }, messung),
                         fluss: fl,
@@ -1825,6 +1837,8 @@ async function starte() {
             // Ein Lauf ohne Ort-Feld stammt von vor den Messorten (S1): er stand an der Mess-Wiese.
             if ((u.ort || "wiese") !== ort.id) fehler.push(`${n}: gemessen am Ort ${u.ort || "wiese"}, nicht ${ort.id}`);
             if (u.amMessort !== true) fehler.push(`${n}: nicht am Messort ${ort.id} ${ort.spieler.join(" ")}`);
+            // Die Orts-Wache: der Lauf stand im Zustand des Orts (Aufstellung, Dorf-Zug, Ort-Takt, Blick).
+            for (const f of BAND.ortGestellt(ort, u.zustand)) fehler.push(`${n}: ${f}`);
             if (!u.messung || u.messung.eingeschwungen !== true) fehler.push(`${n}: nicht eingeschwungen`);
         });
         if (fehler.length) {

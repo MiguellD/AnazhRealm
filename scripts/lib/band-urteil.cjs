@@ -64,6 +64,24 @@ function ortGier(ort) {
     return Math.atan2(ort.blick[0] - ort.spieler[0], ort.blick[1] - ort.spieler[1]);
 }
 
+// DER GESTELLTE ORT eines Laufs (`werkbank band` zeichnet ihn auf: der Ort der letzten Aufstellung, der Dorf-Zug, der
+// Ort-Takt und die Gier beim Zählen) gegen den Ort, den der Lauf nennt — jede Abweichung beim Namen. Bis 07.10. nahm die
+// Linse den Ort aus dem Aufruf (`band --ort`) und prüfte nur den Abstand des Spielers: eine Serie mit laufendem Dorf-Zug
+// oder anderem Blick zog die Ratsche eines Orts, dessen Zustand sie nie hatte. Ein Lauf ohne Aufzeichnung (vor dem
+// 07.10.) ist ungestellt.
+function ortGestellt(ort, z) {
+    if (!z) return ["keine Aufzeichnung des gestellten Orts (ein Lauf vor der Orts-Wache)"];
+    const f = [];
+    if (z.ort !== ort.id) f.push(`aufgestellt ${z.ort ? "am Ort " + z.ort : "ohne --ort"}, nicht ${ort.id}`);
+    if (z.dorfZug !== ort.dorfZug) f.push(`Dorf-Zug ${z.dorfZug ? "läuft" : "ruht"}, der Ort will ${ort.dorfZug ? "laufend" : "ruhend"}`);
+    const takt = (ort.ortTakt || []).join(",");
+    if ((z.ortTakt || []).join(",") !== takt) f.push(`Ort-Takt [${(z.ortTakt || []).join(", ")}], der Ort will [${takt}]`);
+    const d = Math.atan2(Math.sin(z.gier - ortGier(ort)), Math.cos(z.gier - ortGier(ort)));
+    if (!Number.isFinite(z.gier) || Math.abs(d) > 0.01)
+        f.push(`Gier ${Number.isFinite(z.gier) ? z.gier.toFixed(3) : "?"}, der Blick des Orts ${ortGier(ort).toFixed(3)}`);
+    return f;
+}
+
 // Das Schema der Messorte: eindeutige ids, Spieler und Blick als [x, z], der Dorf-Zug als Wahrheitswert, der Ort-Takt
 // als Liste von Stamm-Methoden (die Wand H6 in diag-profiband prüft, dass der Stamm sie trägt), die Ratsche als Datei
 // in spec/profiband, die Soll-Zeilen benannt.
@@ -605,7 +623,15 @@ function bandTabelle(u) {
             )
             .join(" · ");
     z.push(kopfBand);
-    if (u.ort) z.push(`ORT ${u.ort}`);
+    if (u.ort)
+        z.push(
+            `ORT ${u.ort}` +
+                (u.ortGestellt
+                    ? u.ortGestellt.length
+                        ? ` — NICHT GESTELLT (die Ratsche nimmt den Lauf nicht): ${u.ortGestellt.join(" · ")}`
+                        : " — gestellt (Ort, Dorf-Zug, Ort-Takt, Blick)"
+                    : "")
+        );
     z.push("");
     z.push(
         pad("Klasse", 15) +
@@ -706,6 +732,7 @@ module.exports = {
     ladeSpec,
     ortOf,
     ortGier,
+    ortGestellt,
     ortSoll,
     messortePruefen,
     schreibeRatsche,

@@ -34,7 +34,8 @@
 // eine freie Klasse (Weltzustand, mit Gate der Kosten je Einheit) trägt keine Ratsche · die Hülle einer Serie · ein
 // Geometrie-Puffer ohne Bild (`buf:verwaist` · `buf:ruhend`) ist ein Leck, ein gezeichneter nicht · ein Messort ohne
 // Richtung, mit doppelter id, fremder oder geteilter Ratsche wird rot · dieselbe Klasse ist über der Ratsche ihres Orts rot,
-// über der eines anderen nicht · die Tor-Hülle je Tor (Soll-Zeile des Genesis-Rings) · ein toter Ort-Takt wird rot.
+// über der eines anderen nicht · die Tor-Hülle je Tor (Soll-Zeile des Genesis-Rings) · ein toter Ort-Takt wird rot ·
+// ein Lauf, der nicht im Zustand seines Orts stand (Dorf-Zug, Aufstellung, Blick, Ort-Takt), wird beim Namen genannt.
 //
 //   node scripts/diag-profiband.cjs [--selftest]          (npm run gate:profiband)
 "use strict";
@@ -677,6 +678,25 @@ function selbsttest() {
     t(
         "H6: _genesisRingAlt im Ort-Takt → rot, der echte Ort-Takt lebt",
         o23.errs.length === 1 && /_genesisRingAlt/.test(o23.errs[0]) && !ortTaktLebt(haushalt, stamm).errs.length
+    );
+
+    // S24 — die Orts-Wache: ein Lauf zählt für die Ratsche eines Orts nur, wenn er in dessen Zustand stand (Aufstellung,
+    // Dorf-Zug, Ort-Takt, Gier). Der gestellte Zustand ist sauber; laufender Dorf-Zug, eine Aufstellung ohne `--ort`, ein
+    // anderer Blick, ein fehlender Ort-Takt und ein Lauf ohne Aufzeichnung werden je einzeln beim Namen genannt.
+    const wiese = BAND.ortOf(haushalt, "wiese");
+    const gestellt = { ort: "wiese", dorfZug: false, ortTakt: [], gier: 0 };
+    const g24 = (o, z) => BAND.ortGestellt(o, Object.assign({}, gestellt, z));
+    t(
+        "Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, ohne Aufzeichnung → je rot",
+        !BAND.ortGestellt(wiese, gestellt).length &&
+            !BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: gen.ort.ortTakt, gier: Math.PI / 2 }).length &&
+            g24(wiese, { dorfZug: true }).length === 1 &&
+            /Dorf-Zug/.test(g24(wiese, { dorfZug: true })[0]) &&
+            g24(wiese, { ort: null }).length === 1 &&
+            g24(wiese, { gier: -0.88 }).length === 1 &&
+            /Gier/.test(g24(wiese, { gier: -0.88 })[0]) &&
+            BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: [], gier: Math.PI / 2 }).length === 1 &&
+            BAND.ortGestellt(wiese, undefined).length === 1
     );
 
     const rot = tests.filter((x) => !x.ok);
