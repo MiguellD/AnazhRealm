@@ -33,15 +33,16 @@
         },
         {
             "id": "genesis",
-            "titel": "Der Genesis-Ring (S1 W1f): die Ankunft jeder Welt — zehn Kern-Portale im Kreis R 11 m um den Ursprung, die vier Vorschauen (Haus, Wagen, Esse, Drachentor) und der Fels der Kuppe; der Spieler in der Ring-Mitte, der Blick zur Plattform (+x, unter vier Blicken der teuerste). Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`: sein Inhalt hinge an der Bildrate), das deterministische Genesis-Gut baut der Ort-Takt mit den Methoden des Stamms.",
+            "titel": "Der Genesis-Ring (S1 W1f): die Ankunft jeder Welt — zehn Kern-Portale im Kreis R 11 m um den Genesis-Ort (die Mitte der Start-Plattform, `_genesisMitte`; in der Standard-Welt 36/0, seit Welle L V-D1 steht der Ring um die Plattform statt um den Ursprung), die vier Vorschauen (Haus, Wagen, Esse, Drachentor) radial dahinter; der Spieler in der Ring-Mitte auf der Plattform, der Blick nach −x (unter vier Blicken der teuerste: am Kopf der Welle L 243 Befehle und 2,30 M Dreiecke, +x 225 / 2,09 M, +z 224 / 2,25 M, −z 234 / 2,03 M). Der Anker (`anker`) nennt die Stamm-Methode des Orts: steht der Genesis-Ort der Welt mehr als 1 m neben `spieler`, bricht `umstellen --ort genesis` laut ab (der Ring zog am 07.10. 36 m um, die Messung stand 36 m daneben). Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`: sein Inhalt hinge an der Bildrate), das deterministische Genesis-Gut baut der Ort-Takt mit den Methoden des Stamms.",
             "spieler": [
-                0,
+                36,
                 0
             ],
             "blick": [
-                10,
+                26,
                 0
             ],
+            "anker": "_genesisMitte",
             "dorfZug": false,
             "ortTakt": [
                 "_genesisPortalRing",

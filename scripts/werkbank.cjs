@@ -943,6 +943,17 @@ async function starte() {
             async (x, z, o) => {
                 const r = window.anazhRealm;
                 const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+                // DER ANKER des Orts (haushalt.json `anker`): die Stamm-Methode nennt, wo der Ort in DIESER Welt steht —
+                // steht er mehr als 1 m neben dem Spieler-Platz der Spec, bricht die Aufstellung laut ab (am 07.10. zog der
+                // Genesis-Ring 36 m um die Plattform, die Messung stand 36 m daneben und urteilte über einen leeren Rand).
+                if (o && o.anker) {
+                    const a = r[o.anker]();
+                    if (!a || !Number.isFinite(a.x) || !Number.isFinite(a.z) || Math.hypot(a.x - x, a.z - z) > 1)
+                        throw new Error(
+                            `Messort ${o.ort}: der Anker ${o.anker} steht bei ${a ? a.x + " " + a.z : "?"}, der Ort bei ${x} ${z} — ` +
+                                "der Ort wandert mit der Welt (spec/profiband/haushalt.json)"
+                        );
+                }
                 window.__ortTakt = (o && o.takt) || [];
                 window.__ortSchritt = () => {
                     const pm = r.state.playerMesh.position;
@@ -1137,6 +1148,8 @@ async function starte() {
                         const ort = BAND.ladeSpec(b.ort).ort;
                         aktOrt = ort.id;
                         const o = await umstellen(ort.spieler[0], ort.spieler[1], {
+                            ort: ort.id,
+                            anker: ort.anker || null,
                             gier: BAND.ortGier(ort),
                             dorfZug: ort.dorfZug,
                             takt: ort.ortTakt,

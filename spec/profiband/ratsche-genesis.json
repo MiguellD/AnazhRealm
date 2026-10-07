@@ -1,18 +1,18 @@
 {
     "version": 1,
-    "zweck": "DIE RATSCHE DES GENESIS-RINGS (S1 W1f, der zweite Messort `genesis` in spec/profiband/haushalt.json): je Haushalt-Klasse × Pass (und je VRAM-Erzeuger) die obere Hülle einer Mess-Serie am Genesis-Ring — dieselbe Form und dieselben Regeln wie die Ratsche der Mess-Wiese (ratsche.json, dort der volle Zweck): eine Klasse darf nur FALLEN, `null` = ungemessen, gesetzt und gesenkt nur aus einer SERIE der echten GPU (`werkbank.cjs start --echt --serie <name>` · `umstellen --ort genesis` · `band --ort genesis --datei a.json` (mehrmals, dazu `reload` für den Zweit-Boot) · `ratsche --ort genesis a.json b.json …`). Der Ort: der Spieler in der Ring-Mitte, der Blick zur Plattform (+x), der Dorf-Zug ruht, Ring und Vorschauen baut der Ort-Takt.",
+    "zweck": "DIE RATSCHE DES GENESIS-RINGS (S1 W1f, der zweite Messort `genesis` in spec/profiband/haushalt.json): je Haushalt-Klasse × Pass (und je VRAM-Erzeuger) die obere Hülle einer Mess-Serie am Genesis-Ring — dieselbe Form und dieselben Regeln wie die Ratsche der Mess-Wiese (ratsche.json, dort der volle Zweck): eine Klasse darf nur FALLEN, `null` = ungemessen, gesetzt und gesenkt nur aus einer SERIE der echten GPU (`werkbank.cjs start --echt --serie <name>` · `umstellen --ort genesis` · `band --ort genesis --datei a.json` (mehrmals, dazu `reload` für den Zweit-Boot) · `ratsche --ort genesis a.json b.json …`). Der Ort: der Spieler in der Ring-Mitte auf der Plattform (der Anker `_genesisMitte`, in der Standard-Welt 36/0), der Blick nach −x, der Dorf-Zug ruht, Ring und Vorschauen baut der Ort-Takt. Neu gesetzt am 07.10. (Integration Welle L): der Ring zog mit V-D1 um die Plattform, die alte Hülle hielt die Ring-Mitte am Ursprung — ein anderer Ort.",
     "gemessen": {
-        "datum": "2026-10-07T01:41:21.586Z",
+        "datum": "2026-10-07T17:33:23.976Z",
         "ort": "genesis",
         "geraet": "Radeon 890M (Integration, werkbank --echt, 1920x1080, DPR 1)",
         "eingeschwungen": true,
         "laeufe": 5,
         "boots": [
             "erst/1",
-            "erst/1",
             "zweit/2",
             "erst/1",
-            "zweit/2"
+            "zweit/2",
+            "erst/1"
         ]
     },
     "toleranzPct": 1,
@@ -25,29 +25,29 @@
         "tier": "Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll."
     },
     "gesamt": {
-        "befehle": 240,
-        "dreiecke": 2444339,
-        "vramMB": 179.8
+        "befehle": 265,
+        "dreiecke": 2500982,
+        "vramMB": 177.9
     },
     "klassen": {
         "boden": {
             "haupt": {
                 "befehle": 6,
-                "dreiecke": 102584
+                "dreiecke": 95817
             },
             "k0": {
                 "befehle": 1,
-                "dreiecke": 72690
+                "dreiecke": 103843
             },
             "k1": {
                 "befehle": 1,
-                "dreiecke": 65395
+                "dreiecke": 64204
             }
         },
         "streu": {
             "haupt": {
                 "befehle": 2,
-                "dreiecke": 2182
+                "dreiecke": 4760
             },
             "k0": {
                 "befehle": 0,
@@ -61,7 +61,7 @@
         "karten": {
             "haupt": {
                 "befehle": 1,
-                "dreiecke": 880
+                "dreiecke": 832
             },
             "k0": {
                 "befehle": 0,
@@ -74,16 +74,16 @@
         },
         "baum": {
             "haupt": {
-                "befehle": 28,
-                "dreiecke": 220780
+                "befehle": 18,
+                "dreiecke": 88544
             },
             "k0": {
-                "befehle": 16,
-                "dreiecke": 124290
+                "befehle": 18,
+                "dreiecke": 126286
             },
             "k1": {
-                "befehle": 2,
-                "dreiecke": 2994
+                "befehle": 4,
+                "dreiecke": 13110
             }
         },
         "busch": {
@@ -102,8 +102,8 @@
         },
         "nahWiese": {
             "haupt": {
-                "befehle": 0,
-                "dreiecke": 0
+                "befehle": 2,
+                "dreiecke": 1416
             },
             "k0": {
                 "befehle": 0,
@@ -130,44 +130,44 @@
         },
         "bau": {
             "haupt": {
-                "befehle": 86,
-                "dreiecke": 1095115
+                "befehle": 97,
+                "dreiecke": 1120063
             },
             "k0": {
-                "befehle": 57,
-                "dreiecke": 566532
+                "befehle": 66,
+                "dreiecke": 665586
             },
             "k1": {
                 "befehle": 17,
-                "dreiecke": 41480
+                "dreiecke": 39280
             }
         },
         "formationen": {
             "haupt": {
-                "befehle": 1,
-                "dreiecke": 5120
+                "befehle": 2,
+                "dreiecke": 8400
             },
             "k0": {
-                "befehle": 1,
-                "dreiecke": 7360
+                "befehle": 2,
+                "dreiecke": 12840
             },
             "k1": {
-                "befehle": 1,
-                "dreiecke": 2240
+                "befehle": 2,
+                "dreiecke": 1720
             }
         },
         "einzelstuecke": {
             "haupt": {
-                "befehle": 19,
-                "dreiecke": 132161
+                "befehle": 21,
+                "dreiecke": 138689
             },
             "k0": {
-                "befehle": 1,
-                "dreiecke": 2536
+                "befehle": 3,
+                "dreiecke": 9064
             },
             "k1": {
-                "befehle": 0,
-                "dreiecke": 0
+                "befehle": 2,
+                "dreiecke": 6528
             }
         },
         "leerHuellen": {
@@ -200,7 +200,7 @@
         }
     },
     "vramMB": {
-        "buf:szene": 71.2,
+        "buf:szene": 68.7,
         "tex:TRAANode.history": 23.7,
         "tex:output": 15.8,
         "tex:TRAANode.resolve": 15.8,

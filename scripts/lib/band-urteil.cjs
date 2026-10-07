@@ -104,6 +104,10 @@ function messortePruefen(h) {
         if (typeof o.dorfZug !== "boolean") f.push(`${o.id}: dorfZug ist kein Wahrheitswert`);
         if (!Array.isArray(o.ortTakt) || o.ortTakt.some((m) => typeof m !== "string" || !/^_?[A-Za-z]\w*$/.test(m)))
             f.push(`${o.id}: ortTakt ist keine Liste von Methoden-Namen`);
+        // Der Anker (optional): die Stamm-Methode, die den Ort in der Welt nennt ({x, z}) — die Werkbank prüft beim
+        // Aufstellen, dass `spieler` auf ihm steht (diag-profiband H6: der Stamm trägt sie).
+        if (o.anker !== undefined && (typeof o.anker !== "string" || !/^_?[A-Za-z]\w*$/.test(o.anker)))
+            f.push(`${o.id}: anker ist kein Methoden-Name`);
         if (typeof o.ratsche !== "string" || !/^ratsche(-[a-z0-9-]+)?\.json$/.test(o.ratsche))
             f.push(`${o.id}: ratsche ist keine Datei ratsche[-<ort>].json`);
         else if (dateien.has(o.ratsche)) f.push(`${o.id}: die Ratsche ${o.ratsche} trägt schon ein anderer Ort`);
