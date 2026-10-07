@@ -61313,6 +61313,10 @@ class AnazhRealm {
     // platzierte Struktur. Transparenz über einen per-Material GECACHTEN Klon (`_ghostMaterialFor`), NIE
     // Mutation des geteilten Materials (sonst leckt „transparent" in platzierte Bauten + Recompile je
     // Auswahl); der Klon kompiliert einmal (Idle-Vorbacken).
+    // Der Alpha-Test des Klons skaliert mit seiner Deckkraft (Welle L Folge, L-Rückmeldung „kein Phantom"): r184 multipliziert
+    // die Alpha mit `opacity` VOR dem Test — jeder Studio-Stoff trägt alphaTest 0,5 (der Dither der LOD-Maske und die
+    // Blatt-Kontur fallen in die Alpha), bei Deckkraft 0,4 fiel JEDES Fragment (0,4 < 0,5): das Phantom eines Baums, Hauses,
+    // Tors war unsichtbar, der Spieler zielte ins Leere. Mit alphaTest × Deckkraft fällt genau, was das Werk selbst verwirft.
     _ghostMaterialFor(mat) {
         if (!mat) return mat;
         if (!this._ghostMatCache) this._ghostMatCache = new WeakMap();
@@ -61321,6 +61325,7 @@ class AnazhRealm {
             g = mat.clone();
             g.transparent = true;
             g.opacity = 0.4;
+            g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;
             g.depthWrite = false;
             this._ghostMatCache.set(mat, g);
         }
@@ -61394,9 +61399,12 @@ class AnazhRealm {
                     // geteiltes Material → GECACHTER transparenter Klon (kein Leck in die platzierte Struktur).
                     node.material = this._ghostMaterialFor(node.material);
                 } else {
-                    // Fallback-Pfad: die Per-Teil-Materialien sind FRISCH (nicht geteilt) → Mutation sicher.
+                    // Fallback-Pfad: die Per-Teil-Materialien sind FRISCH (nicht geteilt) → Mutation sicher; der Alpha-
+                    // Test skaliert mit der Deckkraft wie im Klon (`_ghostMaterialFor`).
                     node.material.transparent = true;
                     node.material.opacity = 0.4;
+                    node.material.alphaTest =
+                        (Number.isFinite(node.material.alphaTest) ? node.material.alphaTest : 0) * 0.4;
                     node.material.depthWrite = false;
                 }
             }
@@ -75009,6 +75017,18 @@ class AnazhRealm {
             weg.push(e);
         }
         for (const e of weg) this.removeArchitecture(e);
+        // Ein Werk des Spielers (string-id: gesetzt im Bau-Modus) weicht nie still — die Räumung nennt es im Spieler-Kanal
+        // (Welle L Folge: jede Zerstörung nennt sich dem Spieler; ein älterer Stand trug die Werkstatt-Eiche auf der Lichtung,
+        // ein Dorf gründet über einem gepflanzten Baum).
+        const eigene = weg.filter((e) => typeof e.id === "string");
+        if (eigene.length) {
+            const nenne = (e) => {
+                const b = this.state.blueprints ? this.state.blueprints[e.type] : null;
+                return `„${String((b && b.label) || e.type).split(/\s[·—(]/)[0]}"`;
+            };
+            const wem = fp.lichtung ? "der Lichtung der Genesis-Plattform" : `dem Grundriss von ${nenne(haus)}`;
+            this._spielerSagt(`${eigene.map(nenne).join(", ")} wich${eigene.length > 1 ? "en" : ""} ${wem}.`);
+        }
         let n = weg.length;
         const map = this.state.scatterRegions;
         if (map && map.size) {

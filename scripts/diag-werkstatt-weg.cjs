@@ -169,6 +169,12 @@ function wegVerdict(m) {
         }
     for (const [werk, n] of Object.entries(m.werke || {}))
         if (!(n === 1)) out.push(`Werkstatt ${werk}: ${n} stehen (Soll 1)`);
+    const ph = m.phantom || {};
+    if (!(ph.meshes > 0)) out.push("kein Phantom im Bau-Modus (Vorbedingung)");
+    else if (ph.verworfen > 0)
+        out.push(
+            `das Phantom ist unsichtbar: ${ph.verworfen}/${ph.meshes} Meshes verwirft der Alpha-Test (Deckkraft < alphaTest)`
+        );
     if (!(m.sucheHaus > 0)) out.push(`die Suche „haus" findet kein Haus (${m.sucheHaus})`);
     const l = m.lichtung || {};
     if (l.wand !== "lichtung") out.push(`das Phantom über der Lichtung färbt sich nicht (Urteil ${l.wand})`);
@@ -202,6 +208,10 @@ function brennVerdict(m) {
     if (!(k.nachFokus > 0)) out.push("keine Wärme im Brennpunkt (Vorbedingung)");
     else if (!(k.nachKuehlen === 0))
         out.push(`außerhalb des Brennpunkts kühlt nichts (${k.nachFokus} → ${k.nachKuehlen})`);
+    const ra = m.raeumung || {};
+    if (!ra.gesetzt || !ra.weg) out.push("die Räumung nahm das Werk des Spielers nicht (Vorbedingung)");
+    else if (!/wich/.test(ra.zeile || ""))
+        out.push(`die Räumung eines Spieler-Werks schweigt („${(ra.zeile || "").slice(0, 40)}")`);
     return out;
 }
 
@@ -268,6 +278,13 @@ function wand(src) {
                     !/this\.log\(/.test(brenn) &&
                     formel === 1,
                 `Sonnen-Winkel ausgeschrieben ${formel}×`,
+            ];
+        })(),
+        (() => {
+            const geist = fnBody(nc, /\n {4}_ghostMaterialFor\(mat\) \{/) || "";
+            return [
+                "W6 das Phantom übersteht den Alpha-Test (`_ghostMaterialFor`: alphaTest × Deckkraft)",
+                geist.includes("g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;"),
             ];
         })(),
     ];
@@ -545,6 +562,24 @@ async function probe(argW) {
                 e.bauModus = !!(st.buildMode.active && st.buildMode.blueprintName === NAME && st.buildMode.phantomMesh);
                 if (e.bauModus) {
                     await zielen(frei, yawWeg);
+                    // Das Phantom im Bild: die Studio-Gestalt (sie heilt den Spender-Geist, sobald das Asset dockt) und je
+                    // Mesh, ob ein volles Fragment den Alpha-Test übersteht (r184: Alpha × Deckkraft < alphaTest → verworfen).
+                    if (lage === "schöpfer" && weg === "werkstatt") {
+                        const bm = st.buildMode;
+                        for (let i = 0; i < 300 && bm.phantomStudioPending; i++) {
+                            await tick(1, 50);
+                            r.tickBuildMode();
+                        }
+                        let meshes = 0;
+                        let verworfen = 0;
+                        bm.phantomMesh.traverse((o) => {
+                            if (!o.isMesh || !o.material) return;
+                            meshes++;
+                            const ma = o.material;
+                            if ((ma.transparent ? ma.opacity : 1) < (ma.alphaTest || 0)) verworfen++;
+                        });
+                        m.phantom = { studio: !!bm.phantomMesh.userData.studioGhost, meshes, verworfen };
+                    }
                     r.tryMousePlace();
                 }
             } catch (err) {
@@ -768,6 +803,33 @@ async function probe(argW) {
             }
             if (linse) r.removeArchitecture(linse);
             delete st.blueprints[LINSE];
+            // (3) Die Räumung eines Grundrisses nimmt ein Werk des Spielers (string-id, wie das Setzen es trägt): sie nennt es.
+            r._spielerSagtLetzte = null;
+            const O = { x: frei.x - 30, y: frei.y, z: frei.z };
+            const werk = r.spawnArchitecture("baum_eiche", O, { id: "lf-werkstatt-raeumung" });
+            const n3 = zeilen().length;
+            if (werk) {
+                // ein Haus-Grundriss über dem Werk (wie ein Dorf, das über einem gepflanzten Baum gegründet wird) — kurz in der
+                // Welt, damit das Grundriss-Gitter ihn kennt
+                const haus = {
+                    type: "haus_alemannisch",
+                    position: { x: O.x, y: O.y, z: O.z },
+                    fundament: { ex: 3, ez: 3 },
+                };
+                st.architectures.push(haus);
+                try {
+                    r._grundrissRaeumen(haus);
+                } finally {
+                    st.architectures.splice(st.architectures.indexOf(haus), 1);
+                    r._grundrissGitter = null;
+                }
+            }
+            m.raeumung = {
+                gesetzt: !!werk,
+                weg: !!werk && !st.architectures.includes(werk),
+                zeile: zeilen().slice(n3).join(" | "),
+            };
+            if (werk && st.architectures.includes(werk)) r.removeArchitecture(werk);
         } finally {
             st.weather = wetterAlt;
             st.timeOfDay = zeitAlt;
@@ -948,6 +1010,7 @@ async function probe(argW) {
                 },
             },
             werke: { Haus: 1, GT: 1 },
+            phantom: { studio: true, meshes: 2, verworfen: 0 },
             sucheHaus: 32,
             lichtung: { wand: "lichtung", steht: 0, zeile: "Eiche: die Lichtung der Genesis-Plattform bleibt frei" },
         };
@@ -993,6 +1056,11 @@ async function probe(argW) {
                 "Werkstatt GT: 0 stehen",
             ],
             [
+                "das Phantom ist unsichtbar (Befund Leben-Schau)",
+                Object.assign({}, gesundG, { phantom: { studio: true, meshes: 2, verworfen: 2 } }),
+                "das Phantom ist unsichtbar: 2/2",
+            ],
+            [
                 "die Suche findet kein Haus (Befund)",
                 Object.assign({}, gesundG, { sucheHaus: 0 }),
                 'die Suche „haus" findet kein Haus',
@@ -1025,6 +1093,7 @@ async function probe(argW) {
             },
             nacht: { waerme: 0, steht: true },
             kuehlung: { nachFokus: 0.5, nachKuehlen: 0 },
+            raeumung: { gesetzt: true, weg: true, zeile: "„Eiche“ wich dem Grundriss von „Alemannisch“." },
         };
         check(
             "Selbst-Test Brennglas: gesund == 0 Täter",
@@ -1051,6 +1120,7 @@ async function probe(argW) {
             ],
             ["nachts brennt es", mitB("nacht", { waerme: 1.5, steht: false }), "nachts erwärmt die Linse"],
             ["nichts kühlt", mitB("kuehlung", { nachKuehlen: 0.5 }), "außerhalb des Brennpunkts kühlt nichts"],
+            ["die Räumung schweigt", mitB("raeumung", { zeile: "" }), "die Räumung eines Spieler-Werks schweigt"],
         ]) {
             const v = brennVerdict(bruch);
             check(
@@ -1077,6 +1147,11 @@ async function probe(argW) {
                 "das Brennglas erhitzt wieder den ganzen 4-m-Kreis",
                 quelle.replace("if (this._traegtPunkt(target, targetBp, p)) {", "if (true) {"),
                 "W5",
+            ],
+            [
+                "das Phantom verwirft wieder jedes Fragment",
+                quelle.replace("g.alphaTest = (Number.isFinite(mat.alphaTest) ? mat.alphaTest : 0) * g.opacity;", ""),
+                "W6",
             ],
             [
                 "der Sonnen-Winkel ein zweites Mal ausgeschrieben",
@@ -1156,7 +1231,7 @@ async function probe(argW) {
     check(
         "L-Werkstatt jeder Weg (Werkstatt · Rezeptbuch · Hotbar) führt zum stehenden Werk, frieden zahlt einmal, jede Absage spricht, die Lichtung sagt warum",
         vG.length === 0,
-        `${gm.gestartet ? `${tragen}/6 Wege tragen · ${LAGEN.map((l) => `${l}: ${WEGE.map((w) => zelle(l, w)).join(", ")}`).join(" · ")} · Werkstatt ${JSON.stringify(gm.werke)} · Suche „haus" ${gm.sucheHaus} · Lichtung ${JSON.stringify({ wand: gm.lichtung && gm.lichtung.wand, steht: gm.lichtung && gm.lichtung.steht })}` : "nicht gestartet"}${vG.length ? " — Täter: " + vG.join(", ") : ""}`
+        `${gm.gestartet ? `${tragen}/6 Wege tragen · ${LAGEN.map((l) => `${l}: ${WEGE.map((w) => zelle(l, w)).join(", ")}`).join(" · ")} · Werkstatt ${JSON.stringify(gm.werke)} · Phantom ${JSON.stringify(gm.phantom)} · Suche „haus" ${gm.sucheHaus} · Lichtung ${JSON.stringify({ wand: gm.lichtung && gm.lichtung.wand, steht: gm.lichtung && gm.lichtung.steht })}` : "nicht gestartet"}${vG.length ? " — Täter: " + vG.join(", ") : ""}`
     );
     console.log("=== BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH ===");
     const bm = out.brenn || {};
@@ -1167,7 +1242,7 @@ async function probe(argW) {
     check(
         "Brennglas die Eiche an der Genesis-Plattform übersteht einen sonnigen Tag, die gebaute Linse brennt zu Mittag und sagt es, nachts nie, außerhalb kühlt es",
         vB.length === 0,
-        `${bm.gestartet ? `Plattform: ${bp_.steht ? `steht nach 480 s (max. Wärme ${bp_.maxWaerme})` : `verbrannt nach ${bp_.verbranntNach} s`} · Linse: glimmt ${bl.glimmtBei} s, brennt ${bl.brenntBei} s („${(bl.zeileBrennt || "").slice(0, 60)}") · Nacht Wärme ${(bm.nacht || {}).waerme} · Kühlung ${(bm.kuehlung || {}).nachFokus} → ${(bm.kuehlung || {}).nachKuehlen} · Zensus ${JSON.stringify(bm.zensus)}` : "nicht gestartet"}${vB.length ? " — Täter: " + vB.join(", ") : ""}`
+        `${bm.gestartet ? `Plattform: ${bp_.steht ? `steht nach 480 s (max. Wärme ${bp_.maxWaerme})` : `verbrannt nach ${bp_.verbranntNach} s`} · Linse: glimmt ${bl.glimmtBei} s, brennt ${bl.brenntBei} s („${(bl.zeileBrennt || "").slice(0, 60)}") · Nacht Wärme ${(bm.nacht || {}).waerme} · Kühlung ${(bm.kuehlung || {}).nachFokus} → ${(bm.kuehlung || {}).nachKuehlen} · Räumung „${((bm.raeumung || {}).zeile || "").slice(0, 60)}" · Zensus ${JSON.stringify(bm.zensus)}` : "nicht gestartet"}${vB.length ? " — Täter: " + vB.join(", ") : ""}`
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
