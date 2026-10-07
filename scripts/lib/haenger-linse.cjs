@@ -978,7 +978,7 @@ function selbsttest() {
     // mit weniger gezeichneten Teilen (verschluckt) nennt das Urteil je beim Namen
     const d = (art, max, sync, gezeichnet) => ({ art, max, ruheMax: 20, p50: 9, sync, async: 18 - sync, gezeichnet, teile: 16, gussMs: 40 });
     const sauber = erstUrteil([d("A", 2900, 17, 11), d("B", 130, 0, 11), d("B", 110, 0, 11), d("A", 2000, 19, 11)]);
-    if (sauber.befunde.length || sauber.medianA !== 2000 || sauber.medianB !== 110)
+    if (sauber.befunde.length || sauber.medianA !== 2450 || sauber.medianB !== 120)
         f.push("Erst-Probe: sauberes ABBA geurteilt als " + JSON.stringify([sauber.befunde, sauber.medianA, sauber.medianB]));
     const kaputt = erstUrteil([d("A", 20, 0, 11), d("B", 900, 3, 9)]).befunde;
     for (const w of ["blind", "kompiliert im Frame", "verschluckt"])
@@ -1132,9 +1132,13 @@ function erstProbe(k) {
 // trug die Probe keine neuen Stoffe (blind), eine synchrone Pipeline in B ist der Bruch des Gesetzes, und B zeichnet in
 // jedem Durchgang mindestens die Teile, die A im Median zeichnet (nichts verschluckt).
 function erstUrteil(aus) {
+    // der Median: bei gerader Zahl das Mittel der beiden mittleren (bis zur Gegenprüfung 07.10. der untere — die ABBA-Zahl
+    // 1 676,6 / 77,9 ms war in Wahrheit 1 709,0 / 79,3 ms)
     const med = (xs) => {
         const s = xs.slice().sort((a, b) => a - b);
-        return s.length ? s[Math.floor((s.length - 1) / 2)] : null;
+        if (!s.length) return null;
+        const m = s.length >> 1;
+        return s.length % 2 ? s[m] : +((s[m - 1] + s[m]) / 2).toFixed(1);
     };
     const A = aus.filter((x) => x.art === "A"),
         B = aus.filter((x) => x.art === "B");
