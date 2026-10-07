@@ -20,6 +20,7 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
+const { probeWand } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v7/golden");
@@ -38,13 +39,17 @@ function check(name, ok, detail) {
 }
 const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
 
-// Frischer vm-Kontext je Ladung (Determinismus-Beweis über zwei unabhängige Läufe).
-function loadCore(file, ns) {
-    const ctx = vm.createContext({ console: { log() {}, warn() {}, error() {} } });
+// Frischer vm-Kontext je Ladung (Determinismus-Beweis über zwei unabhängige Läufe). Der Kontext liest das Math des
+// Gates (dieselben Funktionen) — so erreicht die Plattform-Probe den Kern.
+function ladeKontext(file) {
+    const ctx = vm.createContext({ console: { log() {}, warn() {}, error() {} }, Math });
     ctx.self = ctx;
     ctx.globalThis = ctx;
     vm.runInContext(fs.readFileSync(path.join(root, file), "utf8"), ctx, { timeout: 20000, filename: file });
-    return ctx[ns];
+    return ctx;
+}
+function loadCore(file, ns) {
+    return ladeKontext(file)[ns];
 }
 
 function canonical(N) {
@@ -153,6 +158,24 @@ function validateDaten(N, spec) {
             "Selbst-Test 3: ein String im motion-Profil wird erkannt",
             tv.some((s) => s.includes("motion.presets.idle.freq"))
         );
+        // V4: ein Kern, der beim Laden eine Transzendente ruft (der Täter: Math.sin vor dem Kern-Code), erscheint im
+        // Nenner der Plattform-Probe — die transzendenten-freie Zeile v7 reißt beim Namen.
+        const { plattformProbe } = require("./lib/plattform-probe.cjs");
+        const quelle = fs.readFileSync(path.join(root, CORES[0].file), "utf8");
+        const PPt = plattformProbe({
+            laden: () => {
+                const ctx = vm.createContext({ console: { log() {}, warn() {}, error() {} }, Math });
+                ctx.self = ctx;
+                ctx.globalThis = ctx;
+                vm.runInContext("var __taeter = Math.sin(0.3);\n" + quelle, ctx, { filename: CORES[0].file });
+                return ctx[CORES[0].ns];
+            },
+            bauen: (N) => ({ [CORES[0].file]: sha(canonical(N)) }),
+        });
+        check(
+            "Selbst-Test 4: ein Kern, der beim Laden Math.sin ruft, erscheint im Nenner der Probe (v7 reißt)",
+            PPt.gerufen.sin === 1
+        );
         if (errs.length) {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
@@ -188,6 +211,26 @@ function validateDaten(N, spec) {
             prints[spec.file].slice(0, 12)
         );
     }
+
+    // PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): die Daten der drei Kerne rufen beim Laden keine
+    // Transzendente — der Nenner 0 ist der Befund (Ratsche v7 transzendenten-frei); ruft ein Kern eine, reißt die Zeile.
+    console.log("\n--- Plattform-Probe ---");
+    check(
+        "SELBST-TEST: der Kern-Kontext liest das Math des Gates — die Probe erreicht die Daten",
+        vm.runInContext("Math", ladeKontext(CORES[0].file)) === Math
+    );
+    probeWand(
+        "v7",
+        {
+            laden: () => CORES.map((spec) => [spec.file, loadCore(spec.file, spec.ns)]),
+            bauen: (L) => {
+                const r = {};
+                for (const [f, N] of L) r[f] = sha(canonical(N));
+                return r;
+            },
+        },
+        check
+    );
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

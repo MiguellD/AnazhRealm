@@ -18,6 +18,8 @@
 //   const { plattformProbe } = require("./lib/plattform-probe.cjs");
 //   const r = plattformProbe({ laden: () => frischerKern, bauen: (kern) => ({ fall: sha256, … }), funktionen?, nennen? });
 //   nennen(kipptJe) → true: die Täter-Stellen werden gesucht (Vorgabe immer; eine Ratsche sucht nur, wenn sie reißt)
+//   einzeln — Funktionen, die je für sich driften (die benannten Zeilen einer Ratsche); der Rest driftet gemeinsam und
+//   wird nur dann je Funktion zerlegt, wenn er kippt. Bauten: 2 + 2 × einzeln + 2 (+ 2 je Rest-Funktion, wenn er kippt).
 //   r.kippt   — Fälle, deren Bytes am letzten Bit einer Transzendenten hängen ([] = plattformgleich)
 //   r.kipptJe — je Funktion die Fälle, die ihre Drift allein kippt (nur Funktionen, die der Bau ruft)
 //   r.taeter  — je kippender Funktion die erste Aufrufstelle (Datei:Zeile Funktion), deren Drift die Bytes erreicht
@@ -53,7 +55,7 @@ const FUNKTIONEN = [
 ];
 const VENDOR = /three[\w.-]*\.js$|plattform-probe\.cjs$/;
 
-function plattformProbe({ laden, bauen, drift = [1, -1], funktionen = FUNKTIONEN, nennen = () => true }) {
+function plattformProbe({ laden, bauen, drift = [1, -1], funktionen = FUNKTIONEN, einzeln = [], nennen = () => true }) {
     const f64 = new Float64Array(1);
     const i64 = new BigInt64Array(f64.buffer);
     const orig = {};
@@ -117,18 +119,24 @@ function plattformProbe({ laden, bauen, drift = [1, -1], funktionen = FUNKTIONEN
         const faelle = Object.keys(basis);
         const kipptIn = (r) => faelle.filter((k) => r[k] !== basis[k]);
         const alle = new Set(Object.keys(gerufen));
-        const kippt = new Set();
-        for (const d of drift) for (const k of kipptIn(lauf(d, alle))) kippt.add(k);
         const selbst = kipptIn(lauf(ULP_SELBST, alle)).length > 0;
         const kipptJe = {};
         const taeter = {};
         const stellen = {};
-        if (kippt.size) {
-            for (const n of alle) {
-                const s = new Set();
-                for (const d of drift) for (const k of kipptIn(lauf(d, new Set([n])))) s.add(k);
-                if (s.size) kipptJe[n] = [...s];
-            }
+        const kippt = new Set();
+        const einzelLauf = (n) => {
+            const s = new Set();
+            for (const d of drift) for (const k of kipptIn(lauf(d, new Set([n])))) s.add(k);
+            if (s.size) kipptJe[n] = [...s];
+            for (const k of s) kippt.add(k);
+        };
+        // die benannten Funktionen (einzeln) je für sich, der Rest gemeinsam — kippt der Rest, dann auch er je Funktion
+        for (const n of einzeln) if (alle.has(n)) einzelLauf(n);
+        const rest = new Set([...alle].filter((n) => einzeln.indexOf(n) < 0));
+        if (rest.size) {
+            let restKippt = false;
+            for (const d of drift) if (kipptIn(lauf(d, rest)).length) restKippt = true;
+            if (restKippt) for (const n of rest) einzelLauf(n);
         }
         // je Täter-Funktion: die kleinste Grenze, ab der die Drift der ersten Aufrufe kippt (Halbierung); der Aufruf an
         // der Grenze ist der Täter — sein Stapel nennt die Kern-Zeile. Nur, wenn der Aufrufer es verlangt (eine Ratsche
@@ -201,6 +209,7 @@ function probeMitRatsche(satz, { laden, bauen, funktionen }) {
             return r;
         },
         funktionen,
+        einzeln: Object.keys((R.saetze[satz] && R.saetze[satz].kippt) || {}),
         nennen: (kipptJe) => ratscheUrteil(satz, { faelle, kipptJe }, R).rot.length > 0,
     });
     return { PP, urteil: ratscheUrteil(satz, PP, R), zeile: R.saetze[satz] };
@@ -238,6 +247,16 @@ function probeWand(satz, { laden, bauen, funktionen }, check) {
     const benannt = Object.entries((zeile && zeile.kippt) || {})
         .map(([n, g]) => `${n} ${g}`)
         .join(" · ");
+    // Ein Satz ohne Transzendente (die Daten-Kerne): der Nenner 0 IST der Befund — ruft er eine, reißt die Zeile.
+    if (zeile && zeile.transzendentenFrei) {
+        check(
+            `PLATTFORM-PROBE ${satz}: transzendenten-frei — 0 verschiebbare Aufrufe in ${PP.faelle} Fällen, plattformgleich ohne Raster`,
+            !nenner && urteil.rot.length === 0 && PP.faelle > 0,
+            nenner ? `ruft jetzt ${nenner} — der Satz braucht seine Ratschen-Zeile` : urteil.rot.join(" · ")
+        );
+        check(`SELBST-TEST: die Ratsche ${satz} reißt bei kippendem Math.pow — beim Namen`, ratscheSelbsttest(satz));
+        return PP;
+    }
     check(
         `PLATTFORM-PROBE ${satz}: Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten die Ratsche (${PP.faelle} Fälle; benannt: ${benannt || "keine — plattformgleich"}; Nenner ${nenner || "0"})`,
         urteil.rot.length === 0 && PP.faelle > 0,

@@ -4,7 +4,12 @@
         "v3": {
             "kern": "vehicle-core.js",
             "faelle": 12,
-            "kippt": { "atan2": 12, "sin": 12, "cos": 12, "hypot": 5 },
+            "kippt": {
+                "atan2": 12,
+                "sin": 12,
+                "cos": 12,
+                "hypot": 5
+            },
             "taeter": {
                 "atan2": "vehicle-core.js:754 atan2 (Awin, der Windschutz-Winkel)",
                 "sin": "vehicle-core.js:392 sin (rotation.x = PI/2 -> Quaternion -> Float64-Matrix)",
@@ -22,7 +27,12 @@
         "v5": {
             "kern": "schmiede-core.js",
             "faelle": 23,
-            "kippt": { "cos": 19, "sin": 19, "atan2": 15, "hypot": 7 },
+            "kippt": {
+                "cos": 19,
+                "sin": 19,
+                "atan2": 15,
+                "hypot": 7
+            },
             "taeter": {
                 "cos": "schmiede-core.js:800 cos (ring.rotation.z -> Quaternion -> Float64-Matrix)",
                 "sin": "schmiede-core.js:800 sin (ring.rotation.z -> Quaternion -> Float64-Matrix)",
@@ -30,6 +40,38 @@
                 "hypot": "schmiede-core.js:500 hypot (tl, die Tangenten-Laenge)"
             },
             "soll": "0 - das Raster kommt mit dem v5-Akt der W3 (Klinge L0/L1)"
+        },
+        "v6": {
+            "kern": "fachwerk-core.js",
+            "faelle": 24,
+            "probe": "Samen 7 x Stufen 0/1/2 x jede vierte Kultur (8 von 32)",
+            "kippt": {
+                "cos": 16,
+                "sin": 16,
+                "atan": 11,
+                "tan": 8
+            },
+            "taeter": {
+                "cos": "fachwerk-core.js:181 cos (eindeckenFlaeche, der Ziegel-Schritt auf der Schraege)",
+                "sin": "fachwerk-core.js:226 sin (rotation.set -> Quaternion -> Float64-Matrix)",
+                "atan": "fachwerk-core.js:177 atan (th, die Dach-Neigung der Eindeckung)",
+                "tan": "fachwerk-core.js:164 tan (ridgeY, die First-Hoehe)"
+            },
+            "soll": "0 - das Raster (heute nur die Ausstattung, ausRaster) kommt mit dem v6-Akt der W5 (Haus-Raster vor dem Farb-Akt, Kritik B5)"
+        },
+        "v6a": {
+            "kern": "fachwerk-core.js",
+            "faelle": 15,
+            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen) x Gestalt x Stufe + ov",
+            "kippt": {},
+            "soll": "0 - erreicht: ausRaster am Ausgang der Ausstattung (Architektur-Welle 05.10.)"
+        },
+        "v7": {
+            "kern": "klang-core.js, koerper-core.js, tetrapoda-core.js",
+            "faelle": 3,
+            "transzendentenFrei": true,
+            "kippt": {},
+            "soll": "0 - erreicht: PRESETS und PARAMS rufen beim Laden keine Transzendente"
         }
     }
 }

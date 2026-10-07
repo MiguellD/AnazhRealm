@@ -32,10 +32,13 @@
 // Goldens: spec/asset-contract/v6/golden/haeuser.json — EINGEFROREN
 // (Taille-Disziplin), gemintet NUR wenn die Datei fehlt (oder MINT_FORCE=1).
 // SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden.
+// PLATTFORM-PROBE (S1 Wände): Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten ihre Ratsche
+// (spec/asset-contract/plattform-ratsche.json, Sätze v6 Häuser und v6a Ausstattung).
 //   node scripts/diag-fachwerk-contract.cjs
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const { probeWand } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
@@ -44,7 +47,8 @@ const goldenFile = path.join(goldenDir, "haeuser.json");
 const goldenAusFile = path.join(goldenDir, "ausstattung.json");
 
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-require(path.join(root, "fachwerk-core.js"));
+const KERN = path.join(root, "fachwerk-core.js");
+require(KERN);
 const FC = globalThis.__fachwerkCore;
 
 const errs = [];
@@ -626,6 +630,30 @@ function compare(golden, actual) {
         diffsAus.length === 0 && Object.keys(goldenAus.cases).length === AUS_CASES.length,
         diffsAus[0] || ""
     );
+
+    // 11) PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Probe-Fall baut noch einmal, während die
+    //     Transzendenten von Math um ±1 ULP verschoben rechnen. Math.pow kippt kein Byte (die gemessene Klasse, V8 12.4
+    //     der CI ≠ V8 13.6 lokal); die übrigen halten ihre Ratsche (spec/asset-contract/plattform-ratsche.json). Die
+    //     Häuser (v6): Samen 7 × alle drei Stufen × jede vierte Kultur — ein voller Bau kostet ~34 s, die Probe baut
+    //     ~20-mal; die Ausstattung (v6a, gerastert): jeder Fall.
+    const frisch = () => {
+        delete require.cache[require.resolve(KERN)];
+        require(KERN);
+        return globalThis.__fachwerkCore;
+    };
+    const fingerAlle = (K, faelle) => {
+        const r = {};
+        for (const c of faelle) {
+            const g = K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
+            r[caseKey(c)] = fingerprint(g).sha256;
+            disposeGroup(g);
+        }
+        return r;
+    };
+    const PROBE_HAUS = CASES.filter((c) => !c.ov && c.seed === 7 && KULTUREN.indexOf(c.rezeptId) % 4 === 0);
+    probeWand("v6", { laden: frisch, bauen: (K) => fingerAlle(K, PROBE_HAUS) }, check);
+    probeWand("v6a", { laden: frisch, bauen: (K) => fingerAlle(K, AUS_CASES) }, check);
+    globalThis.__fachwerkCore = FC;
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);
