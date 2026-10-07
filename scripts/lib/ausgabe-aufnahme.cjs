@@ -130,6 +130,23 @@ function ausgabeAufnahme(W, H, warm) {
             // Loop stand der Ring noch um die VORIGE Kamera — die Aufnahme schwingt ihn für diese ein (eine
             // Kachel je Takt, bis keine mehr fehlt).
             if (typeof r._tickNahWiese === "function") for (let i = 0; i < 200 && r._tickNahWiese() > 0; i++);
+            // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): was in diesem Blick zum ersten Mal zeichnet, baut je
+            // Render-Aufruf einen Stoff und lässt seine Pipeline asynchron entstehen — in den 32 Frames am Stück unten
+            // erfüllt sich kein Versprechen (gemessen 07.10., Werkbank, Wiese: ein Bär, der eben ins Bild kam, fehlte im
+            // Beweisbild). Die Aufnahme zeigt, was der Spieler nach dem Ankommen sieht: sie schaltet Frames mit einer Pause
+            // für den GPU-Prozess, bis ein Frame nichts mehr baut oder verschiebt und keine Pipeline offen ist (höchstens 60 s).
+            const E = r._erstZeichnung;
+            if (E) {
+                const tE = performance.now();
+                for (;;) {
+                    const b0 = E.bauN,
+                        v0 = E.verschoben;
+                    frame();
+                    await new Promise((res) => setTimeout(res, 0));
+                    if (E.offen.size === 0 && E.bauN === b0 && E.verschoben === v0) break;
+                    if (performance.now() - tE > 60000) break;
+                }
+            }
             // DIE ZEITLICHE AUFLÖSUNG (TRAA) zeigt ein ruhendes Bild erst nach ihrer Geschichte: die Halton-Folge
             // läuft 31 Versätze, die Dither-Blende rotiert je Frame — die Aufnahme zeigt, was der Spieler nach einer
             // halben Sekunde Stillstand sieht (32 Frames), nie den ersten, ungemittelten Frame nach dem Kamera-Sprung.
