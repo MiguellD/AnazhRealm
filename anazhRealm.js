@@ -88911,8 +88911,8 @@ class AnazhRealm {
     // Brust-Höhe), gleitet der Wagen an der Wand (`_wandGleiten`, dieselbe Schleife wie die Kapsel; sonst steht er); (2) BAUWERKE + INSELN — das Rechteck gegen die Blocker-AABBs im EINEN Struktur-Löser
     // (`_stepCharacterStructures`/`_stepCharacterIslands` mit der Hülle als Körper; ein Stamm dünner als die Rad-Stufe
     // wird überrollt — der Hasel-Trieb hält keinen Wagen, der Kiefern-Stamm schon); (3) KREATUREN — das Rechteck gegen
-    // den Raum eines Wesens (tetrapoda VERHALTEN.separation: halber Paar-Radius × bodySize). Was die Hülle schiebt, nimmt
-    // der Fahrt die Normal-Komponente. Liefert {x, z, vx, vz}.
+    // den Leib eines Wesens (`_kreaturLeib`, D2: derselbe Leib, mit dem das Tier gegen jede Hülle löst). Was die Hülle
+    // schiebt, nimmt der Fahrt die Normal-Komponente. Liefert {x, z, vx, vz}.
     _fahrHuelleKontakt(entry, k, x0, z0, vx, vz, dt) {
         const fz = entry._fahr;
         const ry = Number.isFinite(entry._rideYaw) ? entry._rideYaw : 0;
@@ -88973,52 +88973,57 @@ class AnazhRealm {
             this._stepCharacterStructures(pos, 0, 0, 0, k);
             this._stepCharacterIslands(pos, 0, 0, 0, k);
         }
-        // (3) KREATUREN — das Rechteck gegen den Kreis eines Wesens (nächster Punkt; liegt die Mitte im Rechteck, der
-        // kürzeste Weg hinaus). INTEGRATIONS-NAHT (Entscheid D2 der Welle L): dieser Kreis (VERHALTEN.separation ×
-        // bodySize) ist ein ZWEITER Tier-Leib neben dem EINEN Leib je Tier der Familie kreatur — die Integration lässt diesen
-        // Kontakt den kreatur-Leib lesen (kein dritter Leib hier).
+        // (3) KREATUREN — das Rechteck gegen den LEIB eines Wesens (D2, Welle L): `_kreaturLeib`, die EINE Größe je Tier, mit
+        // der das Tier selbst gegen jede Hülle löst (`_kreaturHuellenKontakt`) — drei Achsen längs seiner Gier (−halb · 0 ·
+        // +halb), je Achse sein Radius, die Höhe vom Fuß bis zum Kopf; das Band der Hülle zählt wie eine Box für das Tier
+        // (über der Stufe seines Fußes, unter seinem Kopf). Je Achse der nächste Punkt des Rechtecks; liegt die Achse im
+        // Rechteck, der kürzeste Weg hinaus. Vorher ein ZWEITER Leib: der Kreis VERHALTEN.separation × bodySize um die
+        // Mitte (beim Bären 0,64 m gegen den Leib-Radius 0,19 m — der Wagen hielt 0,46 m vor der Flanke).
         const wesen = this.state.creatures;
         if (wesen && wesen.length) {
-            const SEP = AnazhRealm._verhaltenGesetz().separation;
+            const leib = this._fahrLeib || (this._fahrLeib = {});
+            const stufeTier = AnazhRealm.PLAYER_STEP_UP;
             for (const cr of wesen) {
                 if (!cr || !cr.position) continue;
                 if (Math.abs(cr.position.x - pos.x) > 12 || Math.abs(cr.position.z - pos.z) > 12) continue;
-                if (cr.position.y > k.oben || cr.position.y < fz.y - 2) continue;
-                const ud = cr.userData || {};
-                const rc = 0.5 * SEP.radiusBaseM * (Number.isFinite(ud.bodySize) ? ud.bodySize : 1);
-                const dx = cr.position.x - (pos.x + fX * k.mitte);
-                const dz = cr.position.z - (pos.z + fZ * k.mitte);
-                const l = dx * fX + dz * fZ;
-                const q = dx * qX + dz * qZ;
-                const cl = Math.max(-k.hl, Math.min(k.hl, l));
-                const cq = Math.max(-k.hw, Math.min(k.hw, q));
-                const d = Math.hypot(l - cl, q - cq);
-                let sl = 0;
-                let sq = 0;
-                if (d > 1e-6) {
-                    if (d >= rc) continue;
-                    sl = (-(l - cl) / d) * (rc - d);
-                    sq = (-(q - cq) / d) * (rc - d);
-                } else if (k.hl - Math.abs(l) < k.hw - Math.abs(q)) {
-                    sl = -(l >= 0 ? 1 : -1) * (k.hl - Math.abs(l) + rc);
-                } else {
-                    sq = -(q >= 0 ? 1 : -1) * (k.hw - Math.abs(q) + rc);
+                this._kreaturLeib(cr, 0, leib);
+                if (k.oben <= cr.position.y + stufeTier || k.unten >= cr.position.y + leib.hoehe) continue;
+                const rc = leib.radius;
+                for (let o = -1; o <= 1; o++) {
+                    const dx = cr.position.x + leib.fx * o * leib.halb - (pos.x + fX * k.mitte);
+                    const dz = cr.position.z + leib.fz * o * leib.halb - (pos.z + fZ * k.mitte);
+                    const l = dx * fX + dz * fZ;
+                    const q = dx * qX + dz * qZ;
+                    const cl = Math.max(-k.hl, Math.min(k.hl, l));
+                    const cq = Math.max(-k.hw, Math.min(k.hw, q));
+                    const d = Math.hypot(l - cl, q - cq);
+                    let sl = 0;
+                    let sq = 0;
+                    if (d > 1e-6) {
+                        if (d >= rc) continue;
+                        sl = (-(l - cl) / d) * (rc - d);
+                        sq = (-(q - cq) / d) * (rc - d);
+                    } else if (k.hl - Math.abs(l) < k.hw - Math.abs(q)) {
+                        sl = -(l >= 0 ? 1 : -1) * (k.hl - Math.abs(l) + rc);
+                    } else {
+                        sq = -(q >= 0 ? 1 : -1) * (k.hw - Math.abs(q) + rc);
+                    }
+                    let sx = sl * fX + sq * qX;
+                    let sz = sl * fZ + sq * qZ;
+                    // Ein Wesen schiebt keinen Wagen: der Schub nimmt höchstens zurück, was der Wagen in DIESEM Schritt auf
+                    // das Wesen zu fuhr (läuft es selbst in den stehenden Wagen, bleibt der Wagen stehen — das Ausweichen
+                    // ist Sache des Wesens).
+                    const sd = Math.hypot(sx, sz);
+                    if (sd > 1e-9) {
+                        const hin = -((pos.x - x0) * sx + (pos.z - z0) * sz) / sd;
+                        const kappe = Math.max(0, Math.min(sd, hin));
+                        sx *= kappe / sd;
+                        sz *= kappe / sd;
+                    }
+                    pos.x += sx;
+                    pos.z += sz;
+                    k.schub.push(sx, sz);
                 }
-                let sx = sl * fX + sq * qX;
-                let sz = sl * fZ + sq * qZ;
-                // Ein Wesen schiebt keinen Wagen: der Schub nimmt höchstens zurück, was der Wagen in DIESEM Schritt auf das
-                // Wesen zu fuhr (läuft es selbst in den stehenden Wagen, bleibt der Wagen stehen — das Ausweichen ist
-                // Sache des Wesens).
-                const sd = Math.hypot(sx, sz);
-                if (sd > 1e-9) {
-                    const hin = -((pos.x - x0) * sx + (pos.z - z0) * sz) / sd;
-                    const kappe = Math.max(0, Math.min(sd, hin));
-                    sx *= kappe / sd;
-                    sz *= kappe / sd;
-                }
-                pos.x += sx;
-                pos.z += sz;
-                k.schub.push(sx, sz);
             }
         }
         // KEIN SCHUB INS GELÄNDE (Befund 07.10., Fahr-Linse S4: ein beim Remesh auf den Wagen gestreuter Felsbogen schob ihn

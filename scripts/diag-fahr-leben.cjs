@@ -39,8 +39,10 @@
 //       beim Bremsen ≤ 0,03 m, Rad-Spalt p75 ≤ 0,03 m). Befund: 12 Blätter mit unveränderter relativer Matrix, beim
 //       Bremsen die Vorderräder 7,4–11,1 cm im Boden.
 //   H (Q5 · F-D4 F-L5) — DIE HÜLLE ALS KÖRPER: der GT fährt mit W gegen einen Felsblock und gegen einen Bären; das
-//       Eindringen der Wagen-Hülle (exportDrive.huelle) in die Blocker-Boxen bzw. den Raum des Wesens (Befund: Bug
+//       Eindringen der Wagen-Hülle (exportDrive.huelle) in die Blocker-Boxen bzw. den LEIB des Wesens (Befund: Bug
 //       1,97–2,32 m im Stamm, der Bär ganz im Wagen)                                                Soll ≤ 0,05 m
+//       H6 (D2): Wagen gegen Tier liest denselben Leib wie Tier gegen Hülle (`_kreaturLeib`); der Bär steht quer, die
+//       Hülle berührt seine Flanke (≤ 0,3 m) statt vor einem zweiten Kreis (separation × bodySize) zu halten.
 //
 //   node scripts/diag-fahr-leben.cjs [--selftest]          Port: FAHR_LEBEN_PORT (Standard 4413)
 "use strict";
@@ -221,18 +223,30 @@ function pflichtWand(stamm) {
 // ── H5 — DIE EINE GLEIT-SCHLEIFE (Node, kommentarfrei; Gegenprüfung 07.10.): die Gelände-Gleitschleife der Hülle war eine
 // Kopie der PM_ClipVelocity-Schleife aus Schritt 5b. Soll: die Schleife lebt EINMAL (`_wandGleiten`), Kapsel und Hülle
 // rufen sie. ──
+// H6 — EIN LEIB JE TIER (Entscheid D2 der Welle L, Integration): der Wagen-Kontakt rechnete das Wesen als zweiten Leib
+// (den Kreis VERHALTEN.separation × bodySize, quer bis 0,8 m breiter als das Tier). Soll: Wagen gegen Tier liest
+// denselben Leib wie Tier gegen Hülle (`_kreaturLeib`, die EINE Größe der Familie kreatur), kein `separation` im Kontakt.
 function huelleWand(stamm) {
     const st = ohneKommentare(stamm);
     const schleifen = (st.match(/pl < AnazhRealm\.SLIDE_CLIP_PLANES/g) || []).length;
     const kapsel = fnBody(st, /\n {4}_stepCharacter\(delta, currentTime\) \{/) || "";
     const huelle = fnBody(st, /\n {4}_fahrHuelleKontakt\([^)]*\) \{/) || "";
+    const tierHuelle = fnBody(st, /\n {4}_kreaturHuellenKontakt\([^)]*\) \{/) || "";
     const ruftK = /this\._wandGleiten\(/.test(kapsel);
     const ruftH = /this\._wandGleiten\(/.test(huelle);
+    const leibW = /this\._kreaturLeib\(/.test(huelle);
+    const leibT = /this\._kreaturLeib\(/.test(tierHuelle);
+    const kreis = (huelle.match(/\bseparation\b|bodySize/g) || []).length;
     return [
         [
             "H5 EINE Gleit-Schleife: die Kapsel (5b) und die Hülle rufen `_wandGleiten`, keine Kopie",
             schleifen === 1 && ruftK && ruftH,
             `Schleifen ${schleifen}× · Kapsel ruft ${ruftK} · Hülle ruft ${ruftH}`,
+        ],
+        [
+            "H6 EIN Leib je Tier (D2): Wagen gegen Tier und Tier gegen Hülle lesen `_kreaturLeib`, kein zweiter Kreis im Kontakt",
+            leibW && leibT && kreis === 0,
+            `Wagen liest den Leib ${leibW} · Tier liest den Leib ${leibT} · separation/bodySize im Wagen-Kontakt ${kreis}×`,
         ],
     ];
 }
@@ -1250,20 +1264,52 @@ async function probeLeben(expected) {
             halten: () => {},
             weg: (b) => r.removeArchitecture(b),
         });
+        // Der Bär steht QUER zur Fahrt (die Flanke zum Bug): gemessen wird gegen SEINEN Leib (`_kreaturLeib`, D2 — dieselbe
+        // Größe, mit der er selbst gegen jede Hülle löst: drei Achsen längs der Gier, je Achse der Radius), nie gegen einen
+        // zweiten Kreis. Der Wagen soll den Leib berühren (Abstand ≤ 0,3 m), nicht vor einem breiteren Kreis halten.
+        const leibAchsen = (b) => {
+            const lb = b.leib;
+            const out = [];
+            for (let o = -1; o <= 1; o++)
+                out.push([b.c.position.x + lb.fx * o * lb.halb, b.c.position.z + lb.fz * o * lb.halb]);
+            return out;
+        };
+        const leibMass = (b, px, pz) => {
+            let d = Infinity;
+            for (const [ax, az] of leibAchsen(b)) d = Math.min(d, Math.hypot(px - ax, pz - az));
+            return d - b.leib.radius; // < 0: im Leib
+        };
+        const quer = Number.isFinite(gasse && gasse.fahrt) ? gasse.fahrt + Math.PI / 2 : 0;
         const SEPW = Object.getPrototypeOf(r).constructor._verhaltenGesetz().separation;
+        let baerLeib = null;
+        const baerHalten = (b) => {
+            b.c.position.set(b.x, b.y, b.z);
+            b.c.rotation.y = b.ry;
+            b.leib = r._kreaturLeib(b.c, 0, b.leib || {});
+        };
         S.huelleBaer = await huelleProbe({
             setzen: (x, zz) => {
                 st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1); // die Probe braucht ihren Bären
                 const c = r.spawnCreatureAt(x, hh(x, zz) + 0.5, zz, "calm", "baer", { precise: true });
                 if (!c) return null;
-                return { c, x, z: zz, y: c.position.y, rc: 0.5 * SEPW.radiusBaseM * (c.userData.bodySize || 1) };
+                // die Füße auf dem Boden (die Lage eines stehenden Tiers; der Leib reicht vom Fuß bis zum Kopf)
+                const b = { c, x, z: zz, y: hh(x, zz), ry: quer };
+                baerHalten(b);
+                // die Maße im Bericht: der Leib und der Kreis, den der Wagen-Kontakt vor D2 las (separation × bodySize)
+                baerLeib = {
+                    radius: b.leib.radius,
+                    halb: b.leib.halb,
+                    kreis: 0.5 * SEPW.radiusBaseM * (c.userData.bodySize || 1),
+                };
+                return b;
             },
-            tiefe: (b, px, pz) => Math.max(0, b.rc - Math.hypot(px - b.c.position.x, pz - b.c.position.z)),
-            abstand: (b, px, pz) => Math.max(0, Math.hypot(px - b.c.position.x, pz - b.c.position.z) - b.rc),
-            // der Bär steht (sein Hirn läuft im Frame-Takt; die Probe hält ihn am Ort)
-            halten: (b) => b.c.position.set(b.x, b.y, b.z),
+            tiefe: (b, px, pz) => Math.max(0, -leibMass(b, px, pz)),
+            abstand: (b, px, pz) => Math.max(0, leibMass(b, px, pz)),
+            // der Bär steht (sein Hirn läuft im Frame-Takt; die Probe hält ihn am Ort und in seiner Gier)
+            halten: baerHalten,
             weg: (b) => r.removeCreature(b.c),
         });
+        if (S.huelleBaer && baerLeib) S.huelleBaer.leib = baerLeib;
         // H3 — EIN WESEN SCHIEBT KEINEN WAGEN: der GT steht (keine Taste), ein Bär steht 0,5 m tief in seinem Bug (er lief
         // hinein); 60 Frames später darf der Wagen sich nicht bewegt haben (das Ausweichen ist Sache des Wesens).
         if (gasse) {
@@ -1274,7 +1320,7 @@ async function probeLeben(expected) {
                 const uz = Math.cos(gasse.fahrt);
                 const x0 = gS.position.x;
                 const z0 = gS.position.z;
-                const ab = h.noseX + 0.5 * SEPW.radiusBaseM * 1.0 - 0.5;
+                const ab = h.noseX;
                 st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1);
                 const c = r.spawnCreatureAt(
                     x0 + ux * ab,
@@ -1287,17 +1333,20 @@ async function probeLeben(expected) {
                     }
                 );
                 if (c) {
-                    // derselbe Abstand mit der echten Größe des Bären (bodySize), 0,5 m im Bug
-                    const rc = 0.5 * SEPW.radiusBaseM * (c.userData.bodySize || 1);
-                    const d = h.noseX + rc - 0.5;
+                    // quer zur Fahrt, seine Flanke 0,5 m tief im Bug — gemessen an SEINEM Leib (`_kreaturLeib`, D2)
+                    c.rotation.y = quer;
+                    const lb = r._kreaturLeib(c, 0, {});
+                    const d = h.noseX + lb.radius - 0.5;
                     const cx = x0 + ux * d;
                     const cz = z0 + uz * d;
-                    const cy = c.position.y;
+                    const cy = hh(cx, cz);
                     const P6 = r._stepFixedSim;
                     r._stepFixedSim = function (simTime, dt) {
                         c.position.set(cx, cy, cz);
+                        c.rotation.y = quer;
                         P6.call(this, simTime, dt);
                         c.position.set(cx, cy, cz);
+                        c.rotation.y = quer;
                     };
                     tasten(false);
                     for (let i = 0; i < 60; i++) frame(i);
@@ -1524,6 +1573,11 @@ async function probeLeben(expected) {
                 "raeder ohne Sattel",
             ],
             ["der Bär ganz im Wagen (F-L5)", { huelleBaer: { tief: 1.6, abstand: 0 } }, "huelle-baer Eindringen"],
+            [
+                "der Wagen hält am zweiten Kreis (separation × bodySize), 0,8 m vor dem Leib (D2)",
+                { huelleBaer: { tief: 0, abstand: 0.8 } },
+                "huelle-baer keine Berührung",
+            ],
             ["nie berührt (vakuös)", { huelleBlock: { tief: 0, abstand: 6.5 } }, "huelle-fels keine Berührung"],
             ["ein Bär schiebt den stehenden Wagen 0,5 m", { huelleSchub: { weg: 0.5 } }, "huelle-schub"],
             [
@@ -1611,6 +1665,18 @@ async function probeLeben(expected) {
             )
         );
         check("Selbst-Test H5: der Vor-Stand (eine zweite Schleife in der Hülle) → H5 feuert", !hRot[0][1], hRot[0][2]);
+        // der Vor-Stand von D2: der Wagen-Kontakt rechnet den Kreis VERHALTEN.separation × bodySize statt des Leibs
+        const h6Rot = huelleWand(
+            quelle.replace(
+                /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
+                "$1\n        const SEP = AnazhRealm._verhaltenGesetz().separation;\n        const rcAlt = 0.5 * SEP.radiusBaseM;"
+            )
+        );
+        check(
+            "Selbst-Test H6: der Vor-Stand (der zweite Kreis im Wagen-Kontakt, D2) → H6 feuert",
+            !h6Rot[1][1],
+            h6Rot[1][2]
+        );
         const pRot = pflichtWand(
             quelle
                 .replace(
@@ -1775,9 +1841,12 @@ async function probeLeben(expected) {
         hz(S.huelleBlock, "stein_block")
     );
     check(
-        "H2 der GT fährt mit W gegen einen Bären: die Hülle hält am Raum des Wesens (Eindringen ≤ 0,05 m)",
+        "H2 der GT fährt mit W gegen die Flanke eines Bären: die Hülle hält an SEINEM Leib (`_kreaturLeib`, D2 — Eindringen ≤ 0,05 m, Berührung ≤ 0,3 m)",
         !hat("kern") && !hat("huelle-baer"),
-        hz(S.huelleBaer, "baer")
+        hz(S.huelleBaer, "baer") +
+            (S.huelleBaer && S.huelleBaer.leib
+                ? ` · Leib: Radius ${S.huelleBaer.leib.radius.toFixed(2)} m, Achsen ±${S.huelleBaer.leib.halb.toFixed(2)} m (der Kreis vor D2: ${S.huelleBaer.leib.kreis.toFixed(2)} m)`
+                : "")
     );
     check(
         "H3 ein Bär steht 0,5 m im Bug des stehenden Wagens: der Wagen bleibt stehen (ein Wesen schiebt keinen Wagen)",
