@@ -18,6 +18,12 @@
 //   node scripts/werkbank.cjs eval '<js>'                  Funktionsrumpf in der Seite (r = Welt, T = THREE)
 //   node scripts/werkbank.cjs albedo [--nur <regex>] [--ordner d]  DIE ALBEDO-SICHT je Mesh-Klasse
 //                                                           (scripts/lib/licht-linsen.cjs; Karte = 0,180)
+//   node scripts/werkbank.cjs albedo --tafel [--datei f.json] [--ordner d]  DIE WELT-SEITE DER ALBEDO-TAFEL (S1 W1e,
+//                                                           spec/farbe/albedo-tafel.json): je Zeile ihr Exemplar (fehlt es,
+//                                                           setzt die Linse es — danach kein Band in derselben Welt), die
+//                                                           Züge ihrer Klasse und ihres Stoffs, Basis-Albedo; Eichung 0,180.
+//                                                           Urteil gegen das Labor-Ist der Tafel; Nachzug mit
+//                                                           diag-albedo-tafel.cjs --nachziehen
 //   node scripts/werkbank.cjs licht                        DIE LICHT-BILANZ (18-%-Karte, je Licht)
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE: der gesetzte Fernwald im Bild (glatte
 //                                                           Fläche, Textur, Vielfalt, Farbe; scripts/lib/fernwald-linse.cjs)
@@ -128,6 +134,7 @@ const { FERNWALD_INSTALL } = require("./lib/fernwald-linse.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 const ZL = require("./lib/zerlege-linse.cjs");
 const SK = require("./lib/shader-kosten.cjs");
+const AT = require("./lib/albedo-tafel.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
@@ -892,6 +899,8 @@ async function starte() {
     // Methoden, die der ruhende Zug sonst ruft — am Genesis-Ring Ring und Vorschauen) läuft in JEDEM Takt der Werkbank
     // (`__ortSchritt`: umstellen, Einschwingen, Proben, Lauf). Ohne `--ort` (x z) bleiben Zug und Blick, wie sie sind,
     // der Ort-Takt ist leer.
+    // Der Ort, an dem die Werkbank zuletzt umstellte (`umstellen --ort`) — die Albedo-Tafel nennt ihn.
+    let aktOrt = null;
     const umstellen = (x, z, o) =>
         page.evaluate(
             async (x, z, o) => {
@@ -1077,6 +1086,7 @@ async function starte() {
                 if (req.url === "/umstellen") {
                     if (b.ort) {
                         const ort = BAND.ladeSpec(b.ort).ort;
+                        aktOrt = ort.id;
                         const o = await umstellen(ort.spieler[0], ort.spieler[1], {
                             gier: BAND.ortGier(ort),
                             dorfZug: ort.dorfZug,
@@ -1084,6 +1094,7 @@ async function starte() {
                         });
                         return send(Object.assign({ ort: ort.id, spieler: ort.spieler }, o, { ms: Date.now() - t0 }));
                     }
+                    aktOrt = null;
                     return send(Object.assign(await umstellen(+b.x, +b.z), { ms: Date.now() - t0 }));
                 }
                 if (req.url === "/bild") {
@@ -1137,6 +1148,51 @@ async function starte() {
                         !!b.terrain
                     );
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
+                }
+                if (req.url === "/albedo" && b.tafel) {
+                    // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
+                    const t = AT.ladeTafel();
+                    const liste = await page.evaluate((o) => window.__albedoSicht(o), { zeilen: t.zeilen, w: 640, h: 400 });
+                    const ordner = path.resolve(b.ordner || path.join(root, "artifacts", "werkbank", "albedo-tafel"));
+                    fs.mkdirSync(ordner, { recursive: true });
+                    const welt = {};
+                    let eichung = null;
+                    for (const e of liste) {
+                        if (e.png) {
+                            fs.writeFileSync(
+                                path.join(ordner, "welt-" + String(e.id || e.name).replace(/[^a-z0-9_-]+/gi, "_") + ".png"),
+                                Buffer.from(e.png.split(",")[1], "base64")
+                            );
+                            delete e.png;
+                        }
+                        if (e.name === "graukarte") eichung = e.gesamt ? e.gesamt.Y : null;
+                        else
+                            welt[e.id] = e.gesamt
+                                ? { Y: e.gesamt.Y, rgb: e.gesamt.rgb, pixel: e.pixel, zuege: e.zuege, stoffe: e.stoffe, gesetzt: e.gesetzt }
+                                : { Y: null, fehler: e.fehler || "kein Pixel" };
+                    }
+                    const geraet = await page.evaluate(async () => {
+                        const a = navigator.gpu ? await navigator.gpu.requestAdapter() : null;
+                        const i = a && a.info ? a.info : null;
+                        return i ? [i.vendor, i.architecture, i.description].filter(Boolean).join(" ") : null;
+                    });
+                    const spieler = await page.evaluate(() => {
+                        const p = window.anazhRealm.state.playerMesh.position;
+                        return [p.x, p.z].map((v) => +v.toFixed(1));
+                    });
+                    const messung = { datum: new Date().toISOString(), echt: ECHT, geraet, ort: aktOrt, spieler, eichung, welt };
+                    const datei = path.resolve(b.datei || path.join(ordner, `welt-${Date.now()}.json`));
+                    fs.mkdirSync(path.dirname(datei), { recursive: true });
+                    fs.writeFileSync(datei, JSON.stringify(messung, null, 1));
+                    // Das Urteil gegen das LABOR-Ist der Tafel (die Labor-Seite misst diag-albedo-tafel.cjs --labor).
+                    const g = { labor: {}, welt, karten: {}, eichung: { welt: eichung, labor: {} } };
+                    for (const z of t.zeilen) if (z.ist) g.labor[z.id] = z.ist.labor;
+                    for (const [sid, k] of Object.entries(t.karten)) {
+                        if (k.ist) g.karten[sid] = k.ist;
+                        g.eichung.labor[sid] = t.karte.albedo;
+                    }
+                    const u = AT.tafelUrteil(t, g);
+                    return send({ urteil: u.urteil, tabelle: AT.tafelTabelle(u), datei, ordner, ms: Date.now() - t0 });
                 }
                 if (req.url === "/albedo") {
                     const liste = await page.evaluate((o) => window.__albedoSicht(o), { nur: b.nur || null });
@@ -1696,7 +1752,18 @@ async function starte() {
         });
     else if (cmd === "methode") o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain") });
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
-    else if (cmd === "albedo") o = await rufe("/albedo", { nur: opt("--nur"), ordner: opt("--ordner") });
+    else if (cmd === "albedo") {
+        o = await rufe("/albedo", { nur: opt("--nur"), ordner: opt("--ordner"), tafel: argv.includes("--tafel"), datei: opt("--datei") });
+        if (o && o.tabelle) {
+            console.log(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner);
+            process.exit(o.urteil === "GRUEN" ? 0 : 1);
+        }
+        // Ein Fehler der Tafel ist nie grün.
+        if (argv.includes("--tafel")) {
+            console.log(JSON.stringify(o, null, 1));
+            process.exit(1);
+        }
+    }
     else if (cmd === "licht") o = await rufe("/licht");
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});

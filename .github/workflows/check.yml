@@ -576,6 +576,17 @@ jobs:
               # toenung, lack-gestalt, transport. Node-direkt (r128), inklusive Selbst-Test.
               run: npm run gate:gegenstand-stoff
 
+            - name: Die Albedo-Tafel Labor gegen Welt (S1 W1e - je Klasse Labor-Albedo, Welt-Albedo und ihr Verhaeltnis als Ratsche)
+              # Die acht Klassen des Studio-Befunds (Rinde, Laub, Fels, Boden, Haus, Metall/Lack, Haut/Fell, Klinge) tragen je
+              # Zeile Labor-Y, Welt-Y und das Verhaeltnis (spec/farbe/albedo-tafel.json, gemessen mit EINER Rechnung, geeicht an
+              # der 18-%-Karte); |ln Verhaeltnis| ist die Ratsche, die nur fallen darf, solange W5 das FARB-GESETZ in jedem Kern
+              # offen haelt; das Soll (Toleranz) und die Studio-Karten (k mal L gegen 0,3147) stehen benannt daneben.
+              # --selftest zuerst: Verhaeltnis ueber der Ratsche, falsche Eichung, stumme Seite, fehlende Klasse werden rot, und
+              # im echten r128 (swiftshader) liest die Labor-Linse die Karte 0,180 und ein roh gelesenes Hex (der alte Defekt
+              # des Labors, als Taeter eingespielt) steht ueber dem Rand. Die Messung selbst: werkbank albedo --tafel (Welt,
+              # echte GPU) und diag-albedo-tafel.cjs --labor (Labor).
+              run: npm run gate:albedo-tafel
+
             - name: Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)
               # DER ε-BEWEIS DER HAUS-DOMÄNE (Katalysator-Bogen): die Haus-Domäne dockt
               # AUSSCHLIESSLICH über die Checkliste §ε an — Manifest-Zeile (fachwerk-core,
