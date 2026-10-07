@@ -10,6 +10,8 @@
 //                 beim ersten Laden wich vom Modell ab (Federrate 95 gegen 100)        Soll P == DEFAULT_P + Preset + Kultur
 //   G5 kultur   — eine gewählte Kultur ließ sich nicht abwählen (Toro → Limousine trug cEdge 0,9 weiter, kein Weg zurück)
 //                                                                                     Soll: zweiter Klick wählt ab
+//   G6 lehren   — (0710-2) die Probefahrt erbte die Werkstatt-Ebenen: RADSTAND, ÜH-H, FREI, RAD-Ø … schwebten als Schilder
+//                 über dem fahrenden Wagen                  Soll 0 Schilder in der Fahrt (die Sicht ERGEBNIS), > 0 in der Werkstatt
 // Die Seite läuft in ihrem echten Renderer (r128, WebGL) im Kopflos-Browser; gezählt wird an der Seite selbst.
 //   node scripts/diag-garage-labor.cjs [--selftest]          Port: GARAGE_LABOR_PORT (Standard 4414)
 "use strict";
@@ -44,6 +46,9 @@ function laborVerdict(m) {
     if (m.presetLeck && m.presetLeck.length) out.push(`preset Leck ${m.presetLeck.join(",")}`);
     if (m.reglerLeck && m.reglerLeck.length) out.push(`regler ${m.reglerLeck.join(",")}`);
     if (m.kulturAb !== true) out.push("kultur nicht abwählbar");
+    if (m.schilderFahrt !== 0)
+        out.push(`lehren ${m.schilderFahrt} Schilder in der Probefahrt (${m.schilderNamen || ""})`);
+    else if (!(m.schilderWerkstatt > 0)) out.push("lehren fehlen in der Werkstatt (nach der Fahrt)");
     return out;
 }
 
@@ -72,6 +77,8 @@ const server = http.createServer((req, res) => {
             presetLeck: [],
             reglerLeck: [],
             kulturAb: true,
+            schilderFahrt: 0,
+            schilderWerkstatt: 6,
         };
         check("Selbst-Test 0: gesundes Labor == 0 Täter", laborVerdict(gesund).length === 0);
         for (const [name, bruch, soll] of [
@@ -81,6 +88,8 @@ const server = http.createServer((req, res) => {
             ["Supersport → GT lässt grip 0,85", { presetLeck: ["grip"] }, "preset"],
             ["Federrate-Regler 95 bei Zustand 100", { reglerLeck: ["springRate"] }, "regler"],
             ["Kultur nicht abwählbar", { kulturAb: false }, "kultur"],
+            ["RADSTAND, ÜH-H … über dem fahrenden Wagen", { schilderFahrt: 6 }, "lehren"],
+            ["die Lehren kommen nach der Fahrt nicht zurück", { schilderWerkstatt: 0 }, "lehren"],
         ]) {
             const v = laborVerdict(Object.assign({}, gesund, bruch));
             check(
@@ -93,7 +102,9 @@ const server = http.createServer((req, res) => {
             console.error("\n❌ SELBST-TEST ROT — die Linse ist vakuös.");
             process.exit(1);
         }
-        console.log("\n✅ SELBST-TEST GRÜN — die Labor-Linse nennt Maus, HUD, Tacho, Preset und Kultur beim Namen.");
+        console.log(
+            "\n✅ SELBST-TEST GRÜN — die Labor-Linse nennt Maus, HUD, Tacho, Preset, Kultur und Lehren beim Namen."
+        );
         process.exit(0);
     }
 
@@ -143,6 +154,19 @@ const server = http.createServer((req, res) => {
             return { hudDisplay: getComputedStyle(hud).display, hudAbstand: k.left - u.right };
         })
     );
+    // G6: die Schilder (Sprites) am Wagen, die der Renderer zeichnet — in der Probefahrt keines.
+    const schilder = () =>
+        page.evaluate(() => {
+            const namen = [];
+            // eslint-disable-next-line no-undef
+            vehicle.traverseVisible((o) => {
+                if (o.isSprite) namen.push(o.name || "Schild");
+            });
+            return namen;
+        });
+    const sf = await schilder();
+    m.schilderFahrt = sf.length;
+    m.schilderNamen = sf.slice(0, 4).join(", ");
     // G3: Gas geben, dann Anzeige gegen das echte Tempo desselben Frames.
     await page.keyboard.down("KeyW");
     // bis der Wagen fährt (> 3 m/s) — nie eine feste Uhr: auf dem CPU-Raster der CI kommen in 1,8 s nur wenige Frames
@@ -169,6 +193,7 @@ const server = http.createServer((req, res) => {
     await page.keyboard.up("KeyW");
     await page.keyboard.press("Escape");
     await new Promise((r) => setTimeout(r, 200));
+    m.schilderWerkstatt = (await schilder()).length;
     // G4/G5: Gattung und Kultur wechseln — P ist DEFAULT_P + Preset (+ die gewählte Kultur), ohne Rest.
     Object.assign(
         m,
@@ -225,11 +250,18 @@ const server = http.createServer((req, res) => {
         [...m.presetLeck, ...m.reglerLeck].slice(0, 4).join(" · ") || "kein Leck"
     );
     check("G5 die Kultur lässt sich abwählen (zweiter Klick)", m.kulturAb === true);
+    check(
+        "G6 die Probefahrt fährt den gebauten Wagen: kein Lehren-Schild über dem Wagen, in der Werkstatt sind sie zurück",
+        m.schilderFahrt === 0 && m.schilderWerkstatt > 0,
+        `Fahrt ${m.schilderFahrt} Schilder · Werkstatt ${m.schilderWerkstatt}`
+    );
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en): ${v.join(" · ")}`);
         process.exit(1);
     }
-    console.log("\n✅ GRÜN — die Garage: Maus ohne Fehler, HUD als Band, Tacho in km/h, Preset und Kultur ohne Leck.");
+    console.log(
+        "\n✅ GRÜN — die Garage: Maus ohne Fehler, HUD als Band, Tacho in km/h, Preset und Kultur ohne Leck, die Probefahrt ohne Lehren."
+    );
     process.exit(0);
 })().catch((e) => {
     console.error("Garage-Labor-Linse-Fehler:", (e && e.stack) || e);
