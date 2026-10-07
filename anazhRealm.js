@@ -2213,9 +2213,9 @@ class AnazhRealm {
             // fachwerk-Dorf (spawnSettlement → exportSettlement über den EINEN Worker); ein Spawn-Akt je Op —
             // die Häuser deckelt nH, den Nexus-Hort der autonomous-Cap.
             spawn_village: ([positionNode, seed], ctx) => {
-                // V17.28 — eine GROSSE Struktur nie AUF den Spieler: die Siedlungs-Klemme
-                // misst über die Substanz-Zeile haus_basis (×3 ≈ Dorf-Kern-Radius).
-                const pos = this._structureSpawnPos("haus_basis", this.dslEvalPos(positionNode, ctx), ctx, 3);
+                // Eine GROSSE Struktur nie AUF den Spieler: das misst der Akt am Plan selbst (`_siedlungsAnker` — die Mitte
+                // und der Radius seiner Häuser); die Schätzung „haus_basis × 3" davor ist gefallen.
+                const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
@@ -69475,6 +69475,20 @@ class AnazhRealm {
             const r = R + (e._blockerReach || 0) + 8;
             if (Math.abs(e.position.x - x) > r || Math.abs(e.position.z - z) > r) continue;
             if (this._istNatur(e)) continue;
+            // Die Lichtung eines Baus (die Genesis-Plattform, `_grundrissVon`) sperrt in jeder Höhe: ihr Stein ist im Feld
+            // gestempelt, ein Haus fand dort „ebenen Boden" auf Höhe der Scheibe und stand auf ihr (der Ersatz-Ort eines
+            // Slots an der Plattform: 6,0 m von ihrer Mitte, die Scheibe trägt 6,5 m).
+            const gL = this._grundrissVon(e);
+            if (gL && gL.lichtung) {
+                b2.cx = e.position.x;
+                b2.cz = e.position.z;
+                b2.hx = gL.ex;
+                b2.hz = gL.ez;
+                b2.c = 1;
+                b2.s = 0;
+                if (trifft()) return false;
+                continue;
+            }
             const boxen = e.blockerAABBs;
             if (boxen && boxen.length) {
                 for (const b of boxen) {
@@ -69537,69 +69551,110 @@ class AnazhRealm {
         return true;
     }
 
+    // DER ERSATZ-ORT (Leben-Schau 07.10.: „dorf 7 18" an der Plattform setzte 13 Häuser, 12 von 25 Slots fielen — Klippe,
+    // Wasser, Bau-Wand): fällt ein Slot an seinem Ort, sucht er in seiner Nachbarschaft weiter, statt zu fallen. Die
+    // Versätze liegen im Rahmen des Hauses (Gier `phi`): entlang der Gasse (±x) und nach hinten (+z, weg von der Haustür
+    // an der Front −z — die Gasse bleibt frei), in drei Ringen zu je einem halben Haus (mindestens 2 m). Deterministisch.
+    static _slotErsatzVersaetze(slot) {
+        const obb = slot && slot.obb;
+        const groesse = obb && Number.isFinite(obb.ex) && Number.isFinite(obb.ez) ? Math.max(obb.ex, obb.ez) : 3;
+        const schritt = Math.max(2, 0.5 * groesse);
+        const D = Math.SQRT1_2;
+        const richtungen = [
+            [1, 0],
+            [-1, 0],
+            [0, 1],
+            [D, D],
+            [-D, D],
+        ];
+        const out = [];
+        for (let k = 1; k <= 3; k++) for (const [x, z] of richtungen) out.push([x * k * schritt, z * k * schritt]);
+        return out;
+    }
+
     _spawnSettlementSlot(slot, origin, f, so) {
         if (!slot || typeof slot.kultur !== "string" || !origin) return false;
         const rec = f && f.recipes ? f.recipes[slot.kultur] : null;
         const pol = rec && AnazhRealm.KIND_POLICY[rec.kind];
         const name = pol && pol.prefix ? pol.prefix + slot.kultur : null;
         if (!name || !this.state.blueprints[name]) return false; // fail-closed
-        const wx = origin.x + slot.x;
-        const wz = origin.z + slot.z;
-        if (!this._isAboveWaterAt(wx, wz, 0.2)) return false; // die Wasser-Wand
-        // Die Höhe urteilt über den FOOTPRINT: das obb-Raster (Export) + Zentrum + Tür-Vorplatz; Basis = MAX (kein Punkt im
-        // Berg), Δh > SIEDLUNG.fundamentMaxDh → Slot fällt GESCHLOSSEN (kein schwebendes Haus). Der Eintrag
-        // trägt `fundament` {ex,ez}; Podest + Blocker leiten die Tiefe LIVE aus dem Feld ab. Ohne obb
-        // (fremder Export): Punkt-Höhe (must-ignore).
-        const hMitte = this.getTerrainHeightAt(wx, wz);
-        let hMax = hMitte;
-        let hMin = hMitte;
-        let fundament = null;
+        const ry = slot.phi || 0;
+        const rc = Math.cos(ry);
+        const rs = Math.sin(ry);
         const obb = slot.obb;
-        if (obb && Number.isFinite(obb.ex) && Number.isFinite(obb.ez) && obb.ex > 0 && obb.ez > 0) {
-            const ry = slot.phi || 0;
-            const rc = Math.cos(ry);
-            const rs = Math.sin(ry);
-            // DIE MITTE DES FOOTPRINTS (Welle L): die obb-Mitte (Siedlungs-Rahmen wie slot.x/z) liegt bis 1,8 m neben dem
-            // Haus-Ursprung (das Hof-Haus 4 m) — haus-lokal als Versatz {ox,oz}; Ecken, Podest und Grundriss liegen um IHN.
-            // Vorher um den Ursprung: das Podest ragte hinter dem Haus hervor, der Hof vorn stand ohne Grundriss.
-            const dxw = Number.isFinite(obb.cx) ? obb.cx - slot.x : 0;
-            const dzw = Number.isFinite(obb.cz) ? obb.cz - slot.z : 0;
-            const ox = dxw * rc - dzw * rs;
-            const oz = dxw * rs + dzw * rc;
-            // DER FOOTPRINT ALS RASTER (Integration Welle L): vier Ecken und die Mitte ließen den Buckel zwischen sich durch —
-            // an einer Kuppe der Front lag die Haustür 2,9 m unter dem Gelände, der Körper trat auf Höhe des Obergeschosses
-            // 0,92 m hinein (gate:haus-welt W1). Die Höhe urteilt über ein Raster (≤ 2 m, Fläche und Kanten) und über den
-            // Vorplatz der Haustür (1 m vor der Front −z; er hebt nur die Basis: die Tür liegt nie im Hang).
-            const nx = Math.min(12, Math.max(1, Math.ceil(obb.ex)));
-            const nz = Math.min(12, Math.max(1, Math.ceil(obb.ez)));
-            const probe = (lx, lz, auchMin) => {
-                const h = this.getTerrainHeightAt(wx + lx * rc + lz * rs, wz - lx * rs + lz * rc);
-                if (!Number.isFinite(h)) return;
-                if (h > hMax) hMax = h;
-                if (auchMin && h < hMin) hMin = h;
-            };
-            for (let i = 0; i <= nx; i++)
-                for (let j = 0; j <= nz; j++)
-                    probe(ox + obb.ex * ((2 * i) / nx - 1), oz + obb.ez * ((2 * j) / nz - 1), true);
-            const tuS = slot.tuer;
-            if (tuS && Number.isFinite(tuS.x) && Number.isFinite(tuS.z) && Number.isFinite(tuS.w))
-                for (let i = -1; i <= 1; i++) {
-                    probe(tuS.x + (i * tuS.w) / 2, tuS.z - 0.25, false);
-                    probe(tuS.x + (i * tuS.w) / 2, tuS.z - 1, false);
-                }
-            // ZENSUS 17.07. — die Klippen-Wand ist fachwerk-Gesetz (SIEDLUNG); kaltes Buch → kein Slot.
-            const S = AnazhRealm._siedlungGesetz();
-            if (!S || hMax - hMin > S.fundamentMaxDh) return false; // die Klippen-Wand (fail-closed)
-            fundament = { ex: obb.ex, ez: obb.ez, ox, oz };
-        }
-        // DIE BAU-WAND: kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand (_bauFrei).
         const tu = slot.tuer;
-        const fp =
-            fundament ||
-            (tu && Number.isFinite(tu.W) && Number.isFinite(tu.D)
-                ? { ex: tu.W / 2, ez: tu.D / 2, ox: 0, oz: 0 }
-                : null);
-        if (!this._bauFrei(wx, wz, slot.phi || 0, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, hMax)) return false;
+        // Trägt der Ort (wx, wz) das Haus? Die Wände je Ort: Wasser, Klippe (Raster), Bau. Gibt { hMax, fundament } oder null.
+        const traegt = (wx, wz) => {
+            if (!this._isAboveWaterAt(wx, wz, 0.2)) return null; // die Wasser-Wand
+            // Die Höhe urteilt über den FOOTPRINT: das obb-Raster (Export) + Zentrum + Tür-Vorplatz; Basis = MAX (kein Punkt
+            // im Berg), Δh > SIEDLUNG.fundamentMaxDh → der Ort fällt GESCHLOSSEN (kein schwebendes Haus). Der Eintrag trägt
+            // `fundament` {ex,ez}; Podest + Blocker leiten die Tiefe LIVE aus dem Feld ab. Ohne obb (fremder Export):
+            // Punkt-Höhe (must-ignore).
+            const hMitte = this.getTerrainHeightAt(wx, wz);
+            let hMax = hMitte;
+            let hMin = hMitte;
+            let fundament = null;
+            if (obb && Number.isFinite(obb.ex) && Number.isFinite(obb.ez) && obb.ex > 0 && obb.ez > 0) {
+                // DIE MITTE DES FOOTPRINTS (Welle L): die obb-Mitte (Siedlungs-Rahmen wie slot.x/z) liegt bis 1,8 m neben
+                // dem Haus-Ursprung (das Hof-Haus 4 m) — haus-lokal als Versatz {ox,oz}; Ecken, Podest und Grundriss liegen
+                // um IHN. Vorher um den Ursprung: das Podest ragte hinter dem Haus hervor, der Hof vorn stand ohne Grundriss.
+                const dxw = Number.isFinite(obb.cx) ? obb.cx - slot.x : 0;
+                const dzw = Number.isFinite(obb.cz) ? obb.cz - slot.z : 0;
+                const ox = dxw * rc - dzw * rs;
+                const oz = dxw * rs + dzw * rc;
+                // DER FOOTPRINT ALS RASTER (Integration Welle L): vier Ecken und die Mitte ließen den Buckel zwischen sich
+                // durch — an einer Kuppe der Front lag die Haustür 2,9 m unter dem Gelände, der Körper trat auf Höhe des
+                // Obergeschosses 0,92 m hinein (gate:haus-welt W1). Die Höhe urteilt über ein Raster (≤ 2 m, Fläche und
+                // Kanten) und über den Vorplatz der Haustür (1 m vor der Front −z; er hebt nur die Basis: die Tür liegt nie
+                // im Hang).
+                const nx = Math.min(12, Math.max(1, Math.ceil(obb.ex)));
+                const nz = Math.min(12, Math.max(1, Math.ceil(obb.ez)));
+                const probe = (lx, lz, auchMin) => {
+                    const h = this.getTerrainHeightAt(wx + lx * rc + lz * rs, wz - lx * rs + lz * rc);
+                    if (!Number.isFinite(h)) return;
+                    if (h > hMax) hMax = h;
+                    if (auchMin && h < hMin) hMin = h;
+                };
+                for (let i = 0; i <= nx; i++)
+                    for (let j = 0; j <= nz; j++)
+                        probe(ox + obb.ex * ((2 * i) / nx - 1), oz + obb.ez * ((2 * j) / nz - 1), true);
+                if (tu && Number.isFinite(tu.x) && Number.isFinite(tu.z) && Number.isFinite(tu.w))
+                    for (let i = -1; i <= 1; i++) {
+                        probe(tu.x + (i * tu.w) / 2, tu.z - 0.25, false);
+                        probe(tu.x + (i * tu.w) / 2, tu.z - 1, false);
+                    }
+                // ZENSUS 17.07. — die Klippen-Wand ist fachwerk-Gesetz (SIEDLUNG); kaltes Buch → kein Ort.
+                const S = AnazhRealm._siedlungGesetz();
+                if (!S || hMax - hMin > S.fundamentMaxDh) return null; // die Klippen-Wand (fail-closed)
+                fundament = { ex: obb.ex, ez: obb.ez, ox, oz };
+            }
+            // DIE BAU-WAND: kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand (_bauFrei).
+            const fp =
+                fundament ||
+                (tu && Number.isFinite(tu.W) && Number.isFinite(tu.D)
+                    ? { ex: tu.W / 2, ez: tu.D / 2, ox: 0, oz: 0 }
+                    : null);
+            if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, hMax)) return null;
+            return { hMax, fundament };
+        };
+        let wx = origin.x + slot.x;
+        let wz = origin.z + slot.z;
+        let ort = traegt(wx, wz);
+        if (!ort) {
+            for (const [lx, lz] of AnazhRealm._slotErsatzVersaetze(slot)) {
+                const ex = origin.x + slot.x + lx * rc + lz * rs;
+                const ez = origin.z + slot.z - lx * rs + lz * rc;
+                ort = traegt(ex, ez);
+                if (ort) {
+                    wx = ex;
+                    wz = ez;
+                    if (so && so.zaehler) so.zaehler.ersatz++;
+                    break;
+                }
+            }
+        }
+        if (!ort) return false;
+        const { hMax, fundament } = ort;
         const wy = hMax + 0.5;
         // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
         // die Häuser zählen in den Nexus-Cap, die V18.297-Hort-Lehre).
@@ -69721,11 +69776,81 @@ class AnazhRealm {
         const f = this._foundry;
         let placed = 0;
         let skipped = 0;
+        const zaehler = { ersatz: 0 };
+        const so2 = Object.assign({}, so, { zaehler });
         for (const slot of plan.slots) {
-            if (this._spawnSettlementSlot(slot, origin, f, so)) placed++;
+            if (this._spawnSettlementSlot(slot, origin, f, so2)) placed++;
             else skipped++;
         }
-        return { placed, skipped, name: plan.name || null, groesse: plan.groesse || null };
+        return { placed, skipped, ersatz: zaehler.ersatz, name: plan.name || null, groesse: plan.groesse || null };
+    }
+
+    // DAS DORF VOR DIR (Leben-Schau 07.10.: „dorf 7 18" umringte den Spieler — die Mitte 16 m bei cos +0,56, die drei
+    // nächsten Häuser HINTER ihm, cos −1,00 / −0,48 / −0,12): der Anker kam aus der Klemme `_structureSpawnPos` mit dem
+    // geschätzten Fußabdruck „haus_basis × 3", der Plan des Studios reichte weiter. Jetzt misst der Akt den Plan selbst
+    // (Slot-Orte + obb-Reichweite) und legt ihn in den BLICKKEGEL: die Achse ist die EINE Vorwärts-Richtung (`_blickVorn`;
+    // mit verlangtem Ort die Richtung zu ihm), die Mitte der Häuser liegt auf ihr, und der Plan rückt genau so weit vor, dass
+    // jedes Haus mit seiner Reichweite `STRUCTURE_PLAYER_CLEAR_MARGIN` vor dem Spieler und im Bildwinkel der Welt-Kamera
+    // steht — so nah wie möglich, nie um ihn. Ein verlangter Ort, dessen Häuser den Spieler nicht
+    // berühren, bleibt, wie er ist. Gibt den Plan-Ursprung (der Bezug der Slot-Orte), die Mitte und den Radius zurück.
+    _siedlungsAnker(plan, wunsch) {
+        const pm = this.state.playerMesh;
+        const haeuser = [];
+        let cx = 0;
+        let cz = 0;
+        for (const s of plan.slots || []) {
+            if (!s || !Number.isFinite(s.x) || !Number.isFinite(s.z)) continue;
+            const o = s.obb;
+            haeuser.push([s.x, s.z, o && Number.isFinite(o.ex) && Number.isFinite(o.ez) ? Math.hypot(o.ex, o.ez) : 6]);
+            cx += s.x;
+            cz += s.z;
+        }
+        if (haeuser.length) {
+            cx /= haeuser.length;
+            cz /= haeuser.length;
+        }
+        let R = 0;
+        for (const [x, z, reich] of haeuser) R = Math.max(R, Math.hypot(x - cx, z - cz) + reich);
+        const ergebnis = (x, z, y) => {
+            const h = this.getTerrainHeightAt(x, z);
+            return { x, y: Number.isFinite(h) ? h : y, z, radius: R, mitte: { x: x + cx, z: z + cz } };
+        };
+        if (!pm) return ergebnis(wunsch.x, wunsch.z, wunsch.y);
+        const p = pm.position;
+        const M = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
+        let vx;
+        let vz;
+        if (wunsch) {
+            const dx = wunsch.x + cx - p.x;
+            const dz = wunsch.z + cz - p.z;
+            const d = Math.hypot(dx, dz);
+            if (d >= R + M) return ergebnis(wunsch.x, wunsch.z, wunsch.y); // der Ort berührt den Spieler nicht
+            if (d > 1e-3) {
+                vx = dx / d;
+                vz = dz / d;
+            }
+        }
+        if (vx === undefined) {
+            const vorn = this._blickVorn(this.state.yaw, 0);
+            const l = Math.hypot(vorn.x, vorn.z) || 1;
+            vx = vorn.x / l;
+            vz = vorn.z / l;
+        }
+        // Der Bildwinkel der Welt-Kamera (horizontal, aus fov und Seitenverhältnis) — vom Spieler aus gemessen; die
+        // 3rd-Kamera steht hinter ihm und sieht weiter.
+        const cam = this.state.camera;
+        const fov = cam && Number.isFinite(cam.fov) ? cam.fov : 75;
+        const asp = cam && Number.isFinite(cam.aspect) && cam.aspect > 0 ? cam.aspect : 16 / 9;
+        const tanH = Math.tan((fov * Math.PI) / 360) * asp;
+        // je Haus: vorn f (längs der Achse) und quer q (um die Mitte); die Mitte rückt um t vor, bis f + t − Reichweite
+        // ≥ max(M, |q| / tanH) für jedes Haus gilt.
+        let t = 0;
+        for (const [x, z, reich] of haeuser) {
+            const f = (x - cx) * vx + (z - cz) * vz;
+            const q = (x - cx) * vz - (z - cz) * vx;
+            t = Math.max(t, Math.max(M, Math.abs(q) / tanH) - f + reich);
+        }
+        return ergebnis(p.x + vx * t - cx, p.z + vz * t - cz, p.y);
     }
     // spawnSettlement (unten) — der deliberate Siedlungs-Akt (Chat „dorf [seed] [n]" / Gate): Samen
     // Γ5-treu aus dem Welt-Seed-Stream (Suffix ":stadt", nie Math.random), Export vom Worker, Platzierung
@@ -69736,8 +69861,16 @@ class AnazhRealm {
     _nachDorfOrientieren(anchor, res) {
         try {
             const list = (this.state && this.state.architectures) || [];
+            // die Häuser DIESES Dorfs (sein Kreis aus `_siedlungsAnker`), nie die Mitte aller Häuser der Welt — ein Auto-Dorf
+            // 300 m weiter drehte den Blick vom neuen Dorf weg
+            const M = anchor && anchor.mitte;
             const houses = list.filter(
-                (e) => e && e.position && typeof e.type === "string" && e.type.startsWith("haus_")
+                (e) =>
+                    e &&
+                    e.position &&
+                    typeof e.type === "string" &&
+                    e.type.startsWith("haus_") &&
+                    (!M || Math.hypot(e.position.x - M.x, e.position.z - M.z) <= (anchor.radius || 0) + 8)
             );
             const pm = this.state && this.state.playerMesh;
             if (pm && houses.length) {
@@ -69797,17 +69930,10 @@ class AnazhRealm {
         // Ein VERLANGTER Ort, den es nicht gibt, wird nie der Spieler-Ort (V-k5-Klasse): ohne `position` gründet der
         // Akt beim Spieler (Chat „dorf"), mit `position` nur dort — eine leere oder unendliche ist eine laute Absage.
         if ("position" in o && !(o.position && Number.isFinite(o.position.x) && Number.isFinite(o.position.z))) {
-            const msg = "Siedlung ohne Ort: der verlangte Ort fehlt — keine Gründung (nie still beim Spieler).";
-            this.log(msg, "ERROR");
-            this._chatEcho?.(msg);
+            this.log("Siedlung ohne Ort: der verlangte Ort fehlt — keine Gründung (nie still beim Spieler).", "ERROR");
+            this._chatEcho?.("Hier kann kein Dorf entstehen: der Ort fehlt.");
             return null;
         }
-        const pm = this.state.playerMesh;
-        const base =
-            o.position || (pm ? { x: pm.position.x, y: pm.position.y, z: pm.position.z } : { x: 0, y: 0, z: 0 });
-        // AUSLÖSCHUNGS-WELLE — die Footprint-Klasse misst über die Substanz-Zeile
-        // haus_basis (×3 ≈ Dorf-Kern; der village-Bauplan ist gefallen).
-        const anchor = o.position ? base : this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);
         // FOUNDRY-WARM — Dorf braucht export-settlement. Kaltes Buch → LAUT blockieren
         // (kein WARN-Nichts). Autonome Worldgen-Zellen warten schon auf Channel-Live.
         // Die Größe aus dem Siedlungs-Gesetz (`nHAusGesetz`, der DSL-Akt `spawn_village`) wartet auf das Buch — auch der
@@ -69817,28 +69943,30 @@ class AnazhRealm {
             if (!warm.ok) {
                 const msg = `FOUNDRY KALT: Siedlung/Dorf-Spawn BLOCKIERT (${warm.reason}; ready=${warm.ready} recipes=${warm.recipes}) — kein stilles Nichts.`;
                 this.log(msg, "ERROR");
-                this._chatEcho?.(msg);
+                this._chatEcho?.(AnazhRealm.SIEDLUNG_KALT_SATZ);
                 return null;
             }
         }
         if (o.nHAusGesetz && nH === undefined) {
             const SG = AnazhRealm._siedlungGesetz();
             if (!SG) {
-                const msg = "SIEDLUNGS-GESETZ FEHLT im Buch: Dorf-Spawn BLOCKIERT (keine Größe ohne Gesetz).";
-                this.log(msg, "ERROR");
-                this._chatEcho?.(msg);
+                this.log("SIEDLUNGS-GESETZ FEHLT im Buch: Dorf-Spawn BLOCKIERT (keine Größe ohne Gesetz).", "ERROR");
+                this._chatEcho?.(AnazhRealm.SIEDLUNG_KALT_SATZ);
                 return null;
             }
             nH = SG.nHMin + ((seed >>> 24) % SG.nHSpan);
         }
         return this._foundryRequestSettlement({ seed, nH, epoche: o.epoche, budget: o.budget }).then((plan) => {
             if (!plan) {
-                const msg =
-                    "FOUNDRY KALT: Siedlung — export-settlement leer/aus — Spawn BLOCKIERT (kein stilles Nichts).";
-                this.log(msg, "ERROR");
-                this._chatEcho?.(msg);
+                this.log(
+                    "FOUNDRY KALT: Siedlung — export-settlement leer/aus — Spawn BLOCKIERT (kein stilles Nichts).",
+                    "ERROR"
+                );
+                this._chatEcho?.(AnazhRealm.SIEDLUNG_KALT_SATZ);
                 return null;
             }
+            // der Ort aus dem Plan selbst: das Dorf liegt vor dem Spieler, nie um ihn (`_siedlungsAnker`)
+            const anchor = this._siedlungsAnker(plan, o.position || null);
             const res = this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
             // DORF-ERLEBNIS — Wege/Platz/Brunnen + das Rebuild-Gedächtnis („d:<seed>"
             // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
@@ -69849,9 +69977,17 @@ class AnazhRealm {
             const dKey = "d:" + seed + "@" + Math.round(anchor.x) + "," + Math.round(anchor.z);
             if (!wmD.settlementCells[dKey]) wmD.settlementCells[dKey] = { seed, nH, x: anchor.x, z: anchor.z };
             this._spawnSettlementErlebnis(plan, anchor, { key: dKey, autonomous: !!o.autonomous });
-            const msg = `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert, ${res.skipped} Slots übersprungen.`;
-            this.log(msg, "INFO");
-            this._chatEcho?.(msg);
+            // Zwei Kanäle (V-D8): das Log trägt Same, Größe, Slots und Ersatz-Orte, der Spieler hört den Satz der Welt.
+            this.log(
+                `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert (${res.ersatz} am Ersatz-Ort), ${res.skipped} Slots übersprungen; Mitte ${Math.round(anchor.radius || 0)} m Radius.`,
+                "INFO"
+            );
+            if (!o.autonomous)
+                this._chatEcho?.(
+                    res.placed > 0
+                        ? `„${res.name || "Das Dorf"}" steht vor dir: ${res.placed} ${res.placed === 1 ? "Haus" : "Häuser"}.`
+                        : "Hier findet kein Haus Grund — zu steil, zu nass oder verbaut. Versuch es an einem anderen Ort."
+                );
             // Konsum: Blick + Locator automatisch (Sonden starren sonst in die Schlucht)
             this._nachDorfOrientieren?.(anchor, res);
             return res;
@@ -98197,6 +98333,9 @@ AnazhRealm.EMOTION_FIELD = Object.freeze({
 // Große Strukturen werden footprint-bewusst aus dem Spieler-Bereich geschoben (sonst Remesh seines
 // Chunks + Überlappung → Fall durch den Boden); kleine, intentional platzierte bleiben unangetastet.
 AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN = 3.5; // m über den Footprint hinaus
+// Der Satz der Welt, wenn ein Dorf nicht entstehen kann, weil das Studio-Buch noch nicht da ist (V-D8: das Log nennt den
+// Grund mit Worker-Zustand, der Spieler hört Worte).
+AnazhRealm.SIEDLUNG_KALT_SATZ = "Die Werkstatt der Welt erwacht noch — versuch es gleich noch einmal.";
 AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional → nicht schieben
 // Der Abstand der 3rd-Kamera zur Kronen-Hülle (`_kameraKronenGrenze`): sie bleibt so weit außerhalb der Tiefe, in der der
 // Spieler selbst in der Krone steht (m).
