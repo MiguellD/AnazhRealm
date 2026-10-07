@@ -670,6 +670,18 @@ jobs:
               # in BEIDEN Regimen (Hook -> Part-Pfad).
               run: npm run gate:portal-gestalt
 
+            - name: Portal-Konformanz (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)
+              # Bootet die echte Heimat (Null-Renderer, ohne Foundry) und betritt alle 13 Welten über den echten Weg
+              # (Bibliothek → obtainPortalForWorld → _buildPortalOverlay; die übersetzte über acceptTranslatedManifest +
+              # buildTranslatedWorld mit gestubbtem LLM). K1 ready · K2 der Handshake endet (höchstens 3 enter; vorher 106 bis
+              # 202 Runden Ping-Pong je Studio) · K3 eine fremde Seite steuert keine Welt · K4 die chain-Form wirkt sichtbar
+              # (Journal der Heimat bzw. Zustand der Welt-UI; dazu die Probefahrt der Garage und das bewegte Bild der
+              # Strom-Welt) · K5 Esc bringt heim · K6 keine
+              # Seiten-Fehler. Ratschen (spec/vertraege/ratsche.json): DSL-Einzelwort stumm 7 → Soll 0 · ready-Echo 7 → 0.
+              # --selftest zuerst: begegnung ohne Quellen-Prüfung, die Heimat beantwortet jede ready, skeleton mit
+              # Element-Adapter → jede Wand rot und beim Namen.
+              run: npm run gate:portal-konformanz
+
             - name: Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)
               # DER CROSSFADE-BEWEIS, dreiteilig: (Selbst-Test) verfälschte phyto-core-Kopien machen
               # die Linse rot (nicht vakuös); (a) Node-pur: __phytoCore.lodCrossfadeMask == die per
