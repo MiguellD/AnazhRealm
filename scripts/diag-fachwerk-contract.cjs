@@ -32,10 +32,13 @@
 // Goldens: spec/asset-contract/v6/golden/haeuser.json — EINGEFROREN
 // (Taille-Disziplin), gemintet NUR wenn die Datei fehlt (oder MINT_FORCE=1).
 // SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden.
+// PLATTFORM-PROBE (S1 Wände): Math.pow ±1 ULP kippt kein Byte, die übrigen Transzendenten halten ihre Ratsche
+// (spec/asset-contract/plattform-ratsche.json, Sätze v6 Häuser und v6a Ausstattung).
 //   node scripts/diag-fachwerk-contract.cjs
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
+const { probeWand } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
@@ -44,7 +47,8 @@ const goldenFile = path.join(goldenDir, "haeuser.json");
 const goldenAusFile = path.join(goldenDir, "ausstattung.json");
 
 global.THREE = require(path.join(root, "worlds/terrain/lib/three-r128.min.js"));
-require(path.join(root, "fachwerk-core.js"));
+const KERN = path.join(root, "fachwerk-core.js");
+require(KERN);
 const FC = globalThis.__fachwerkCore;
 
 const errs = [];
@@ -252,7 +256,7 @@ function compare(golden, actual) {
     return bad;
 }
 
-(function main() {
+(async function main() {
     console.log("=== ASSET-VERTRAG v6 — Häuser (fachwerk-core.js buildInstance) ===");
     check("fachwerk-core geladen (__fachwerkCore + buildInstance)", !!FC && typeof FC.buildInstance === "function");
     check(
@@ -369,7 +373,8 @@ function compare(golden, actual) {
     for (let i = 1; i < diffs.length; i++) console.log(`      ↳ ${diffs[i]}`);
 
     // 9) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
-    const tampered = JSON.parse(JSON.stringify(golden));
+    // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
+    const tampered = JSON.parse(JSON.stringify({ cases: actual }));
     const k0 = Object.keys(tampered.cases)[0];
     tampered.cases[k0].sha256 = tampered.cases[k0].sha256.replace(
         /^./,
@@ -378,7 +383,7 @@ function compare(golden, actual) {
     const t1 = compare(tampered, actual);
     const actual2 = JSON.parse(JSON.stringify(actual));
     actual2[k0].objects += 1;
-    const t2 = compare(golden, actual2);
+    const t2 = compare({ cases: actual }, actual2);
     check(
         "SELBST-TEST: korruptes Golden (sha256) wird erkannt",
         t1.some((s) => s.includes("sha256"))
@@ -625,6 +630,30 @@ function compare(golden, actual) {
         diffsAus.length === 0 && Object.keys(goldenAus.cases).length === AUS_CASES.length,
         diffsAus[0] || ""
     );
+
+    // 11) PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Probe-Fall baut noch einmal, während die
+    //     Transzendenten von Math um ±1 ULP verschoben rechnen. Math.pow kippt kein Byte (die gemessene Klasse, V8 12.4
+    //     der CI ≠ V8 13.6 lokal); die übrigen halten ihre Ratsche (spec/asset-contract/plattform-ratsche.json). Die
+    //     Häuser (v6): Samen 7 × alle drei Stufen × jede vierte Kultur — ein voller Bau kostet ~34 s, die Probe baut
+    //     ~20-mal; die Ausstattung (v6a, gerastert): jeder Fall.
+    const frisch = () => {
+        delete require.cache[require.resolve(KERN)];
+        require(KERN);
+        return globalThis.__fachwerkCore;
+    };
+    const fingerAlle = (K, faelle) => {
+        const r = {};
+        for (const c of faelle) {
+            const g = K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
+            r[caseKey(c)] = fingerprint(g).sha256;
+            disposeGroup(g);
+        }
+        return r;
+    };
+    const PROBE_HAUS = CASES.filter((c) => !c.ov && c.seed === 7 && KULTUREN.indexOf(c.rezeptId) % 4 === 0);
+    await probeWand("v6", { laden: frisch, bauen: (K) => fingerAlle(K, PROBE_HAUS) }, check);
+    await probeWand("v6a", { laden: frisch, bauen: (K) => fingerAlle(K, AUS_CASES) }, check);
+    globalThis.__fachwerkCore = FC;
 
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Vertrags-Verletzung(en).`);

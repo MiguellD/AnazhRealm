@@ -1,0 +1,2022 @@
+{
+ "vertrag": "ofen",
+ "minted": "foundry-core BAKERS_BY_KIND.kreatur/.koerper(kern, art, 1, lod, null) — sha256 je Stoff-Klasse × Gelenk, je Gelenk, je Beipack",
+ "klassen": {
+  "wolf-L0|ballen|flP": {
+   "meshes": 1,
+   "verts": 340,
+   "tris": 440,
+   "sha256": "8db07632fc4e8125c162d25284bb859fc8eefa5823ffa5b6a073f2933908a87a"
+  },
+  "wolf-L0|klaue|flP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "1722dfb099bd603c6fdc4066352480b88aad019af2e4591e4a03b6f729e96f72"
+  },
+  "wolf-L0|ballen|frP": {
+   "meshes": 1,
+   "verts": 340,
+   "tris": 440,
+   "sha256": "8db07632fc4e8125c162d25284bb859fc8eefa5823ffa5b6a073f2933908a87a"
+  },
+  "wolf-L0|klaue|frP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "1722dfb099bd603c6fdc4066352480b88aad019af2e4591e4a03b6f729e96f72"
+  },
+  "wolf-L0|ballen|hlP": {
+   "meshes": 1,
+   "verts": 322,
+   "tris": 410,
+   "sha256": "52b0f341be8102bf0b9045f42f997f7d7882e4567ce58acc8d710761b2c58640"
+  },
+  "wolf-L0|klaue|hlP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "f6c192ee07f39f32b1a2b1e54d19bfd340cc61a52e7aacb3e38174132874e092"
+  },
+  "wolf-L0|ballen|hrP": {
+   "meshes": 1,
+   "verts": 322,
+   "tris": 410,
+   "sha256": "52b0f341be8102bf0b9045f42f997f7d7882e4567ce58acc8d710761b2c58640"
+  },
+  "wolf-L0|klaue|hrP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "f6c192ee07f39f32b1a2b1e54d19bfd340cc61a52e7aacb3e38174132874e092"
+  },
+  "wolf-L0|fell|headGroup": {
+   "meshes": 1,
+   "verts": 2592,
+   "tris": 5092,
+   "sha256": "74812bc4ff21d2d6efdefafd101f8c93cdfde543938645f8ffb2a9bb76436439"
+  },
+  "wolf-L0|zahnfleisch|headGroup": {
+   "meshes": 1,
+   "verts": 108,
+   "tris": 154,
+   "sha256": "f9a2a5ba659aeda01cc88ae6037df0e2426087ca3214bda574082a0a6b509a7f"
+  },
+  "wolf-L0|straehneD|headGroup": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "ba6569da4c18fa1cd290b7d6381bb08687815c0c2871f4c4bbb17c2702b19a9c"
+  },
+  "wolf-L0|nase|headGroup": {
+   "meshes": 1,
+   "verts": 108,
+   "tris": 154,
+   "sha256": "579cc77fd438b3c7a0e42c9514bd00592f223fff360ad4b5a77dffda5f308ab4"
+  },
+  "wolf-L0|dunkel|headGroup": {
+   "meshes": 1,
+   "verts": 302,
+   "tris": 400,
+   "sha256": "8956e352657b4c0f2a3f3c5b1fda5fd51af43b50a741cf3b2e2c832bead13b1e"
+  },
+  "wolf-L0|zahn|headGroup": {
+   "meshes": 1,
+   "verts": 448,
+   "tris": 280,
+   "sha256": "02059d76fe1ba9dc660311d18f703a69469e3c28723c101f5e5d26adb251e991"
+  },
+  "wolf-L0|zahnfleisch|jawGroup": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "c562fc21010d9b63069e636337a5c740c1ef3556f694f07d5670cc1e939467a3"
+  },
+  "wolf-L0|zahn|jawGroup": {
+   "meshes": 1,
+   "verts": 448,
+   "tris": 280,
+   "sha256": "b2f41a53fea87ba9e7411dc0296ef9583fecdef1a2efbfec655411dd188c47e0"
+  },
+  "wolf-L0|fell|jawGroup": {
+   "meshes": 1,
+   "verts": 257,
+   "tris": 512,
+   "sha256": "8f33bb8ca29daa725c68f37957bb49aeecc38138c84ac89347bdd80b92bb57f4"
+  },
+  "wolf-L0|tierauge|headGroup": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "3cb779ac12e777f2e19065104c7312ac0f4be65f1274ca61a738bfe98da006fb"
+  },
+  "wolf-L0|pupille|headGroup": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "628c0b74d3002edd30882437aad91472b16567fd9158b7b2487e763ae773db24"
+  },
+  "wolf-L0|fell|lidTL": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "1a6ad5c68ff63d3c03faab0d84cd26f269ddf5595aa3c201eb5b016260d626cd"
+  },
+  "wolf-L0|fell|lidTR": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "49122c17c72fc0c262c3775a3bc80e989cc825ae579dee121e8b6a7c8a59c7eb"
+  },
+  "wolf-L0|fell|earL": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "6644dc9a7358958dfe597eb2de3bcb95665636e403e7cdb9ff84ae357f467c45"
+  },
+  "wolf-L0|zahnfleisch|earL": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "8bee736662be53ed98b85c8f7f1f8fe13a4b0cb4e9fede57ecf9ef693da970d0"
+  },
+  "wolf-L0|straehneD|earL": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "9534ede3ba11f79a91ba0a88e31896b03bbf8ef95023d2bbda3cf0c03698b6ad"
+  },
+  "wolf-L0|fell|earR": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "d3c8a8f7457406bf1f02e1edf121611aac3f58a2689256f669ff8470a855094c"
+  },
+  "wolf-L0|zahnfleisch|earR": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "8627037ad2b7028076f9ed3bc6310db1d41075ed08c12bc2d41214335f68fbe3"
+  },
+  "wolf-L0|straehneD|earR": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "28e9bc4ab308088df9c23309929a452b29a76d71e8229adea1ea8a4d68d89b22"
+  },
+  "wolf-L0|fell|wolf": {
+   "meshes": 1,
+   "verts": 8934,
+   "tris": 17868,
+   "sha256": "b726b8267e4e370d3a8412321753bdd6085da54f7a947cff0b6e5f5c203ebd68"
+  },
+  "wolf-L0|fellSchale|wolf": {
+   "meshes": 1,
+   "verts": 13356,
+   "tris": 26712,
+   "sha256": "69208dd861c51fc9da581a398cb6ddb6a124b9653f59efe2e63520ec9a4554cf"
+  },
+  "wolf-L0|gelenk|wolf": {
+   "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
+  },
+  "wolf-L0|gelenk|legFL": {
+   "sha256": "f3eec29fdb358d53eb5c5f1d1b483ec1b4d7a35a76d1428242a3dac0da0b8824"
+  },
+  "wolf-L0|gelenk|legFR": {
+   "sha256": "ab65a7fb3af94d08cf0c247176ca59b64a23eeace97b6302b58f943bf62343a5"
+  },
+  "wolf-L0|gelenk|legHL": {
+   "sha256": "356babce6065400677f14fa666fa486ff3618a506d5498349386cb0605a0371d"
+  },
+  "wolf-L0|gelenk|legHR": {
+   "sha256": "0d31c475836c334b819cf830ba28befba133a0b764d5116b4cf5180161fbbb3d"
+  },
+  "wolf-L0|gelenk|flU": {
+   "sha256": "11b8fc6305ffad6e5804c4f00eaa3ea0475ab55eb825d4e54bab56e22a860824"
+  },
+  "wolf-L0|gelenk|flL": {
+   "sha256": "470c1ecc7126d94e6399d2c5be985e2722b92948575d48252f9d236c990cbd38"
+  },
+  "wolf-L0|gelenk|flP": {
+   "sha256": "b3684f4c989ce86decaed005034505232882bbd4c2cf2b492690335e620ab4a9"
+  },
+  "wolf-L0|gelenk|frU": {
+   "sha256": "dce69fb4547d9d4dc001aa5a4099d2882b2850ff7b999a0e2fcc1b86f527499c"
+  },
+  "wolf-L0|gelenk|frL": {
+   "sha256": "ad4d0766a020b8cc92212fad05fffc163c2b0914729f8378e3c3085e14e11089"
+  },
+  "wolf-L0|gelenk|frP": {
+   "sha256": "53521d4dabd5ab13e0086df0e3be02a7ae87092b926936e6f2f6baae136796a6"
+  },
+  "wolf-L0|gelenk|hlT": {
+   "sha256": "cdf2d52c7368af97cac50440ff2e6193ee8f211337363be9951b175b16b6ca99"
+  },
+  "wolf-L0|gelenk|hlC": {
+   "sha256": "b512ffe4501fed5dc6f3b93a5e1862d88b31e132ead45d0d4e6df0c02beaae3a"
+  },
+  "wolf-L0|gelenk|hlP": {
+   "sha256": "80d88e777b6b744fe28db4fb14197c79a2c668e926b69c08d301dcbd53b7fbc4"
+  },
+  "wolf-L0|gelenk|hrT": {
+   "sha256": "3d03a1bd04c92851f80bc235f04703d38c8d855c850bd2a86c2bbc29b28d3bf9"
+  },
+  "wolf-L0|gelenk|hrC": {
+   "sha256": "ad7a1fa3a5491843cd70ff56914407feec11b5475fdb276bf36fd16fa3b18432"
+  },
+  "wolf-L0|gelenk|hrP": {
+   "sha256": "c0389cf972081deac7fc2762767ed61eab2f0411c4f7a5b8844e15d42f93d9c2"
+  },
+  "wolf-L0|gelenk|headGroup": {
+   "sha256": "9b2de34bf3772f072c44523c7b35c99299bdb837646a57af44d9348bc4b9705d"
+  },
+  "wolf-L0|gelenk|jawGroup": {
+   "sha256": "6edece7e97fd19720e65a96a3416b94c03338efa010b4a09000940728faccd3d"
+  },
+  "wolf-L0|gelenk|earL": {
+   "sha256": "491f2a7d298b06efb0eaa0e514e78daba84f3e4c0fac6787e1205a53dc90a339"
+  },
+  "wolf-L0|gelenk|earR": {
+   "sha256": "7570d70a9d334a0bb4e7d294ae8aa74ba26cf1328bfa401f45c44cd328db7cc0"
+  },
+  "wolf-L0|gelenk|lidTL": {
+   "sha256": "3a3183c135d5d8f996dcbeccd2f84dd5e89839dfaaa70fe7e092207aea8ac26c"
+  },
+  "wolf-L0|gelenk|lidTR": {
+   "sha256": "442f57e54ce839fb691fbf5167e6e24bcb40b47bb52ca610ad7f4988a450d622"
+  },
+  "wolf-L0|gelenk|tailRoot": {
+   "sha256": "31e0e7fffc92ece5ff14e1f8bc75a652d67894f11721b0a6439489fe7a81bec9"
+  },
+  "wolf-L0|gelenk|tailSeg0": {
+   "sha256": "92ffbff5c95b7b8e9a4c47dbab708582428f9109be815b329e012162f49694de"
+  },
+  "wolf-L0|gelenk|tailSeg1": {
+   "sha256": "d3a5df8cedd55b40caa879b78a4baf7b7ece5411cf96890b0f41d4436837ae29"
+  },
+  "wolf-L0|gelenk|tailSeg2": {
+   "sha256": "9e780ad7008ae722506b7ac90d2899b40fd535b76b4af550f2fe4c5f45c3a9cf"
+  },
+  "wolf-L0|gelenk|tailSeg3": {
+   "sha256": "26653926f235adf57704137477f331881d312b4dcf6fd6e2cff47d0de272547f"
+  },
+  "wolf-L0|gelenk|tailSeg4": {
+   "sha256": "d96f0bc47592e4a051b1dab3b15aa60914a1ba283cbf27752a093cbb328e5568"
+  },
+  "wolf-L0|gelenk|tailSeg5": {
+   "sha256": "f4919b1b53ba7d80e34499d780dafa943a8397ab1a043a145bcfc20ff141ab92"
+  },
+  "wolf-L0|gelenk|tailSeg6": {
+   "sha256": "b1b42a44056562989fb3dd086136f644dcdac41de4d605dcd1ff2481f364e6cb"
+  },
+  "wolf-L0|gelenk|tailSeg7": {
+   "sha256": "6cd4e10586a5fb3cb8c10e1292dde7b88dd879f144a033fad88d513d811ba477"
+  },
+  "wolf-L0|beipack": {
+   "sha256": "c1efd7d2e2e4ebc7f02f270767c0ad9461f923909675d77c79f40aea9620880e"
+  },
+  "wolf-L1|fell|wolf": {
+   "meshes": 1,
+   "verts": 3439,
+   "tris": 5612,
+   "sha256": "1fa308d94d67cdc574d45efc7e06e96c68bd7dbbb998830ec24f000e87f26cfb"
+  },
+  "wolf-L1|straehneD|wolf": {
+   "meshes": 1,
+   "verts": 120,
+   "tris": 72,
+   "sha256": "dd3ab2f5082f49020b17b37beb41d8380574b7dff0b2ac5117d2cd3b3b33f52e"
+  },
+  "wolf-L1|nase|wolf": {
+   "meshes": 1,
+   "verts": 30,
+   "tris": 30,
+   "sha256": "ae4f83d3ded25ec0452631a7a70aaff6fe7581c6f187e26c642ff72691866d8d"
+  },
+  "wolf-L1|dunkel|wolf": {
+   "meshes": 1,
+   "verts": 120,
+   "tris": 120,
+   "sha256": "88dfc6b72a8a0fb05b6793a117862035695ae7a833323088ceb39449aa042fb6"
+  },
+  "wolf-L1|tierauge|wolf": {
+   "meshes": 1,
+   "verts": 60,
+   "tris": 60,
+   "sha256": "404d72bba4b9b07b118475887114ebceb6b35b1c8d886ddc15ee7704fa8d0881"
+  },
+  "wolf-L1|pupille|wolf": {
+   "meshes": 1,
+   "verts": 60,
+   "tris": 60,
+   "sha256": "cb6e02edc172f481c842f4bc5ad47ca01587ca46299ecaf1f9ba8aea3c7b5da6"
+  },
+  "wolf-L1|gelenk|wolf": {
+   "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
+  },
+  "wolf-L1|gelenk|legFL": {
+   "sha256": "f3eec29fdb358d53eb5c5f1d1b483ec1b4d7a35a76d1428242a3dac0da0b8824"
+  },
+  "wolf-L1|gelenk|legFR": {
+   "sha256": "ab65a7fb3af94d08cf0c247176ca59b64a23eeace97b6302b58f943bf62343a5"
+  },
+  "wolf-L1|gelenk|legHL": {
+   "sha256": "356babce6065400677f14fa666fa486ff3618a506d5498349386cb0605a0371d"
+  },
+  "wolf-L1|gelenk|legHR": {
+   "sha256": "0d31c475836c334b819cf830ba28befba133a0b764d5116b4cf5180161fbbb3d"
+  },
+  "wolf-L1|gelenk|flU": {
+   "sha256": "11b8fc6305ffad6e5804c4f00eaa3ea0475ab55eb825d4e54bab56e22a860824"
+  },
+  "wolf-L1|gelenk|flL": {
+   "sha256": "470c1ecc7126d94e6399d2c5be985e2722b92948575d48252f9d236c990cbd38"
+  },
+  "wolf-L1|gelenk|flP": {
+   "sha256": "b3684f4c989ce86decaed005034505232882bbd4c2cf2b492690335e620ab4a9"
+  },
+  "wolf-L1|gelenk|frU": {
+   "sha256": "dce69fb4547d9d4dc001aa5a4099d2882b2850ff7b999a0e2fcc1b86f527499c"
+  },
+  "wolf-L1|gelenk|frL": {
+   "sha256": "ad4d0766a020b8cc92212fad05fffc163c2b0914729f8378e3c3085e14e11089"
+  },
+  "wolf-L1|gelenk|frP": {
+   "sha256": "53521d4dabd5ab13e0086df0e3be02a7ae87092b926936e6f2f6baae136796a6"
+  },
+  "wolf-L1|gelenk|hlT": {
+   "sha256": "cdf2d52c7368af97cac50440ff2e6193ee8f211337363be9951b175b16b6ca99"
+  },
+  "wolf-L1|gelenk|hlC": {
+   "sha256": "b512ffe4501fed5dc6f3b93a5e1862d88b31e132ead45d0d4e6df0c02beaae3a"
+  },
+  "wolf-L1|gelenk|hlP": {
+   "sha256": "80d88e777b6b744fe28db4fb14197c79a2c668e926b69c08d301dcbd53b7fbc4"
+  },
+  "wolf-L1|gelenk|hrT": {
+   "sha256": "3d03a1bd04c92851f80bc235f04703d38c8d855c850bd2a86c2bbc29b28d3bf9"
+  },
+  "wolf-L1|gelenk|hrC": {
+   "sha256": "ad7a1fa3a5491843cd70ff56914407feec11b5475fdb276bf36fd16fa3b18432"
+  },
+  "wolf-L1|gelenk|hrP": {
+   "sha256": "c0389cf972081deac7fc2762767ed61eab2f0411c4f7a5b8844e15d42f93d9c2"
+  },
+  "wolf-L1|gelenk|headGroup": {
+   "sha256": "9b2de34bf3772f072c44523c7b35c99299bdb837646a57af44d9348bc4b9705d"
+  },
+  "wolf-L1|gelenk|jawGroup": {
+   "sha256": "6edece7e97fd19720e65a96a3416b94c03338efa010b4a09000940728faccd3d"
+  },
+  "wolf-L1|gelenk|earL": {
+   "sha256": "491f2a7d298b06efb0eaa0e514e78daba84f3e4c0fac6787e1205a53dc90a339"
+  },
+  "wolf-L1|gelenk|earR": {
+   "sha256": "7570d70a9d334a0bb4e7d294ae8aa74ba26cf1328bfa401f45c44cd328db7cc0"
+  },
+  "wolf-L1|gelenk|lidTL": {
+   "sha256": "3a3183c135d5d8f996dcbeccd2f84dd5e89839dfaaa70fe7e092207aea8ac26c"
+  },
+  "wolf-L1|gelenk|lidTR": {
+   "sha256": "442f57e54ce839fb691fbf5167e6e24bcb40b47bb52ca610ad7f4988a450d622"
+  },
+  "wolf-L1|gelenk|tailRoot": {
+   "sha256": "31e0e7fffc92ece5ff14e1f8bc75a652d67894f11721b0a6439489fe7a81bec9"
+  },
+  "wolf-L1|gelenk|tailSeg0": {
+   "sha256": "92ffbff5c95b7b8e9a4c47dbab708582428f9109be815b329e012162f49694de"
+  },
+  "wolf-L1|gelenk|tailSeg1": {
+   "sha256": "d3a5df8cedd55b40caa879b78a4baf7b7ece5411cf96890b0f41d4436837ae29"
+  },
+  "wolf-L1|gelenk|tailSeg2": {
+   "sha256": "9e780ad7008ae722506b7ac90d2899b40fd535b76b4af550f2fe4c5f45c3a9cf"
+  },
+  "wolf-L1|gelenk|tailSeg3": {
+   "sha256": "26653926f235adf57704137477f331881d312b4dcf6fd6e2cff47d0de272547f"
+  },
+  "wolf-L1|gelenk|tailSeg4": {
+   "sha256": "d96f0bc47592e4a051b1dab3b15aa60914a1ba283cbf27752a093cbb328e5568"
+  },
+  "wolf-L1|gelenk|tailSeg5": {
+   "sha256": "f4919b1b53ba7d80e34499d780dafa943a8397ab1a043a145bcfc20ff141ab92"
+  },
+  "wolf-L1|gelenk|tailSeg6": {
+   "sha256": "b1b42a44056562989fb3dd086136f644dcdac41de4d605dcd1ff2481f364e6cb"
+  },
+  "wolf-L1|gelenk|tailSeg7": {
+   "sha256": "6cd4e10586a5fb3cb8c10e1292dde7b88dd879f144a033fad88d513d811ba477"
+  },
+  "wolf-L1|beipack": {
+   "sha256": "c4bd2bbb942f8dc588d7c0375b8df8c7198e948752f87b70b495f88665f87f53"
+  },
+  "fox-L0|fell|flL": {
+   "meshes": 1,
+   "verts": 88,
+   "tris": 120,
+   "sha256": "d7daa06ae862719a261bdeee3f304f1e3b0ffa9a51e44d9119f6bc9172f55bb7"
+  },
+  "fox-L0|ballen|flP": {
+   "meshes": 1,
+   "verts": 340,
+   "tris": 440,
+   "sha256": "73fcf3b9a20c5218fb43063f61c00d9fe12e0220b4ea30a593120140e9b4dafd"
+  },
+  "fox-L0|klaue|flP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "3fe44c9ec25b7f7e5921910534ba78b10d101ffebe9697eff3f60f97d0d79625"
+  },
+  "fox-L0|fell|frL": {
+   "meshes": 1,
+   "verts": 88,
+   "tris": 120,
+   "sha256": "d7daa06ae862719a261bdeee3f304f1e3b0ffa9a51e44d9119f6bc9172f55bb7"
+  },
+  "fox-L0|ballen|frP": {
+   "meshes": 1,
+   "verts": 340,
+   "tris": 440,
+   "sha256": "73fcf3b9a20c5218fb43063f61c00d9fe12e0220b4ea30a593120140e9b4dafd"
+  },
+  "fox-L0|klaue|frP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "3fe44c9ec25b7f7e5921910534ba78b10d101ffebe9697eff3f60f97d0d79625"
+  },
+  "fox-L0|ballen|hlP": {
+   "meshes": 1,
+   "verts": 322,
+   "tris": 410,
+   "sha256": "efd3339239b0a74097aad28f4d6a4425a8f82fe26845f1d1d04b0c8f89eccc9e"
+  },
+  "fox-L0|fell|hlP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "29eb2e8a2f3de3dd982412bbd6dab2e2e9b9ec7e6c2c2c5c848b9d693ae664b5"
+  },
+  "fox-L0|klaue|hlP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "f1eff51581c13e3b35a57be9a2b91ae49b901cbf9b7655fef893ebe701dbee3f"
+  },
+  "fox-L0|ballen|hrP": {
+   "meshes": 1,
+   "verts": 322,
+   "tris": 410,
+   "sha256": "efd3339239b0a74097aad28f4d6a4425a8f82fe26845f1d1d04b0c8f89eccc9e"
+  },
+  "fox-L0|fell|hrP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "29eb2e8a2f3de3dd982412bbd6dab2e2e9b9ec7e6c2c2c5c848b9d693ae664b5"
+  },
+  "fox-L0|klaue|hrP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "f1eff51581c13e3b35a57be9a2b91ae49b901cbf9b7655fef893ebe701dbee3f"
+  },
+  "fox-L0|fell|headGroup": {
+   "meshes": 1,
+   "verts": 2406,
+   "tris": 4720,
+   "sha256": "3726731308ca154b51652728983ffd0fbf3d61594db11476e3c94e675c76641b"
+  },
+  "fox-L0|zahnfleisch|headGroup": {
+   "meshes": 1,
+   "verts": 108,
+   "tris": 154,
+   "sha256": "daac67f396067897c3987a22d195ffca6bc3c720a3152a9b5b73aefcbc691e77"
+  },
+  "fox-L0|straehneD|headGroup": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "5738b3887d979f62f2b9fc4a1eda927fecd417ab1a09f8905b4127d55e401c46"
+  },
+  "fox-L0|nase|headGroup": {
+   "meshes": 1,
+   "verts": 108,
+   "tris": 154,
+   "sha256": "e731d07fb430621cee642d5f98fc1f00272578016dc5f36d063380d2c6fa4fcc"
+  },
+  "fox-L0|dunkel|headGroup": {
+   "meshes": 1,
+   "verts": 302,
+   "tris": 400,
+   "sha256": "c807fd6a906fbddd561266d031393a72358b13cf8ce2b6fbc0bbfeccb85e1b0d"
+  },
+  "fox-L0|zahn|headGroup": {
+   "meshes": 1,
+   "verts": 448,
+   "tris": 280,
+   "sha256": "a42af09d27ce60279eedc9a5f40591d59e504c8dd1244a3a3d7ff7ea0a7e55c0"
+  },
+  "fox-L0|zahnfleisch|jawGroup": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "2a6c0b7c1a5a9486fed6631c447c16b2fb5cf4f42830f1a4d65f1ab6bff9893f"
+  },
+  "fox-L0|zahn|jawGroup": {
+   "meshes": 1,
+   "verts": 448,
+   "tris": 280,
+   "sha256": "75bdc893529070dc4132e704b6aec3307b9836ca0e796c9a959b9abca9e93288"
+  },
+  "fox-L0|fell|jawGroup": {
+   "meshes": 1,
+   "verts": 257,
+   "tris": 512,
+   "sha256": "7091f3da6d6834c2524a8a75c62ee034c07b8a794f6f5c6b8abf6f21e8ec2db9"
+  },
+  "fox-L0|tierauge|headGroup": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "ae9bb83f33534c27dae695987cfcd8e40cf80cfe80a7c47d294b71ca96a917c1"
+  },
+  "fox-L0|pupille|headGroup": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "0e472f562fcb82342352c496424534150c446f92c1e28db2b49269e94c60e45c"
+  },
+  "fox-L0|fell|lidTL": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "b35c94627394bcb60764562bced43f6a55fd9cdde992b68fd209f9142db3e57e"
+  },
+  "fox-L0|fell|lidTR": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "fa9001efdfef16868ce20f1ee028f184e1414f980f60fb104720097d51c28ea6"
+  },
+  "fox-L0|fell|earL": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "f40b3081a50817f217503503cf61c794759d65f5b5fb7752ed569aed04167e3c"
+  },
+  "fox-L0|zahnfleisch|earL": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "d08eb519ffd3f103d61d80f2098b7a170f9b43d3f01326be4d77115c6b81e32d"
+  },
+  "fox-L0|straehneD|earL": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "c222e96c910698df672b5d83a530c9a4a7db47c76411420f7d89b81ef7c36f1d"
+  },
+  "fox-L0|fell|earR": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "1be742b87d255aaf7dd5913f19cc7181d3ddcaf0e349fe36bc452a6789845045"
+  },
+  "fox-L0|zahnfleisch|earR": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "3c87480c350af06b2195dd80da6210a4286ae179cd7459116bcf1d46efca8b39"
+  },
+  "fox-L0|straehneD|earR": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "6e8bb67a37fc611462ed5a07c53ec9edb64702436686423d13dba362f39a4597"
+  },
+  "fox-L0|fell|wolf": {
+   "meshes": 1,
+   "verts": 9474,
+   "tris": 18948,
+   "sha256": "10e84c0a833b7b8a05e1b06651b7ed43697533ca93ce0c19e7c2f484e94f0239"
+  },
+  "fox-L0|fellSchale|wolf": {
+   "meshes": 1,
+   "verts": 13932,
+   "tris": 27888,
+   "sha256": "a333ada1ac1a4c3deed0146c0ed4bab05e4565a29b4508af671d8d8cae33fc0f"
+  },
+  "fox-L0|gelenk|wolf": {
+   "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
+  },
+  "fox-L0|gelenk|legFL": {
+   "sha256": "46f9400639d9845a4dadf69c08acc7cb905c6cd184ef627523fb21e139d61f8f"
+  },
+  "fox-L0|gelenk|legFR": {
+   "sha256": "017f4f592fb0386855413cd5a904eafc23673f869f488436f1e2b81562f2b089"
+  },
+  "fox-L0|gelenk|legHL": {
+   "sha256": "a96b5a6d27fc68a88471234c739d526169eb4ed0b845eadf883e8d222644dfd1"
+  },
+  "fox-L0|gelenk|legHR": {
+   "sha256": "a23dc84ad1ab5482587a1b40feb024b3f68ad4a41226fb6c39f15638cd7767b9"
+  },
+  "fox-L0|gelenk|flU": {
+   "sha256": "11b8fc6305ffad6e5804c4f00eaa3ea0475ab55eb825d4e54bab56e22a860824"
+  },
+  "fox-L0|gelenk|flL": {
+   "sha256": "0d16a067135c0764a06246e80c96b278c335aa2114800f022a5e934a22243c6a"
+  },
+  "fox-L0|gelenk|flP": {
+   "sha256": "389f1682d1774257358e98d352679b5da0319191b017198503858cde7c739b8f"
+  },
+  "fox-L0|gelenk|frU": {
+   "sha256": "dce69fb4547d9d4dc001aa5a4099d2882b2850ff7b999a0e2fcc1b86f527499c"
+  },
+  "fox-L0|gelenk|frL": {
+   "sha256": "4ac99405b07c156a835b3d18144375b1d541f84ff83cadf5e9a616bbbaa0ff9a"
+  },
+  "fox-L0|gelenk|frP": {
+   "sha256": "2a0907e682e4a00cb52c4a2a53beb287ce22b0512ba0ae5756910ca2e3d0abc0"
+  },
+  "fox-L0|gelenk|hlT": {
+   "sha256": "cdf2d52c7368af97cac50440ff2e6193ee8f211337363be9951b175b16b6ca99"
+  },
+  "fox-L0|gelenk|hlC": {
+   "sha256": "fed4e0c7114f6b7a731bea60c89a961d4d18758952503b832152b5c4c855b0d9"
+  },
+  "fox-L0|gelenk|hlP": {
+   "sha256": "a5406eafa908fbfe905c315880d13cdbf777c36a4085e936f5fd25b00645360b"
+  },
+  "fox-L0|gelenk|hrT": {
+   "sha256": "3d03a1bd04c92851f80bc235f04703d38c8d855c850bd2a86c2bbc29b28d3bf9"
+  },
+  "fox-L0|gelenk|hrC": {
+   "sha256": "e854e19dc5200f033ae5c4eee12b20db28e1ce1bb2c87ec13198b80abcb00d93"
+  },
+  "fox-L0|gelenk|hrP": {
+   "sha256": "c922568ea63debdb45a5f264fe048bfcd8912959b3f50f62ad4b1ad77d1ac218"
+  },
+  "fox-L0|gelenk|headGroup": {
+   "sha256": "897653b2f5a55f8b17dc5b1a1d4938a1b506d050c3278d4cce6a5f6e3db5c436"
+  },
+  "fox-L0|gelenk|jawGroup": {
+   "sha256": "a44fa09b43b2b9c738d7226753b0a6519445a32ef11b8dcb3e85b1983c298f94"
+  },
+  "fox-L0|gelenk|earL": {
+   "sha256": "b8e6d3a97b390b764cb329e8d9db92847b29295ea5af038305014acb35f8a774"
+  },
+  "fox-L0|gelenk|earR": {
+   "sha256": "27db707a5364deffa2b02695985fea0766b0e0c7091d81f95c12fdd72f8f64e8"
+  },
+  "fox-L0|gelenk|lidTL": {
+   "sha256": "053896025f97214e74b749f683f6ba55c4c4a50d6c778eda9274621c144bfcb6"
+  },
+  "fox-L0|gelenk|lidTR": {
+   "sha256": "5e4d247d239a667b86f0ac26c71b1634e1ecdc76b3d39c8f4135b938582748fa"
+  },
+  "fox-L0|gelenk|tailRoot": {
+   "sha256": "e94d4fefee1dcf022b54c365642bc5a18fe66b3fb1a1abf1fc3e91ce2bd7119f"
+  },
+  "fox-L0|gelenk|tailSeg0": {
+   "sha256": "a47a3a9e4a6843fe9887f2be3660852456b0055ca468dd063d9fa0947abdc1d1"
+  },
+  "fox-L0|gelenk|tailSeg1": {
+   "sha256": "e1ef8b71461d32494222558aefee7ef7f5698519d173c1769c255e1fb9890585"
+  },
+  "fox-L0|gelenk|tailSeg2": {
+   "sha256": "5b37e6c1f8c43130d5b00696258069735af8059949861b1a1876de51487f9f5d"
+  },
+  "fox-L0|gelenk|tailSeg3": {
+   "sha256": "6dff7a3cb926ade39cda0e72daca5b232ef8d0c5dfae4894cbbd1f78dd38b7d1"
+  },
+  "fox-L0|gelenk|tailSeg4": {
+   "sha256": "35cb827644e774c161f7d1bd6dd6cdc117f4850ea882ae2d454f1c6cec1d1ce8"
+  },
+  "fox-L0|gelenk|tailSeg5": {
+   "sha256": "3a0047917fb86ffd24c57a5fa10d998d994adf46696da88c3f8482ab5deb8eaa"
+  },
+  "fox-L0|gelenk|tailSeg6": {
+   "sha256": "4ab0a6f2e7876a630a666e1b79bd4d97853e50d9f3cd89fc0be8f4407632d9af"
+  },
+  "fox-L0|gelenk|tailSeg7": {
+   "sha256": "2b479e9dac31e7ea0b46336d4deb02fdda6d37586b56ad2d54003ebff43ff3ba"
+  },
+  "fox-L0|gelenk|tailSeg8": {
+   "sha256": "292e81bd8da0c1e90fc8fe25bdf95b78e23b4a94afcb5e359919ea908b63b174"
+  },
+  "fox-L0|gelenk|tailSeg9": {
+   "sha256": "2f64a2248b0b94f9d3fc3e5df7775a49bf6e564b8390ba413b4bb5bb9556a5e7"
+  },
+  "fox-L0|beipack": {
+   "sha256": "f465f1a30c729bf8dffbda2acd3e539db7887b4b3e8858ec637db7ccb2dae6ef"
+  },
+  "fox-L1|fell|wolf": {
+   "meshes": 1,
+   "verts": 3613,
+   "tris": 5938,
+   "sha256": "0ce885dd1a6aab2bfc27402a014be0fb43eb747ca99fac51836785ed82afaf1a"
+  },
+  "fox-L1|straehneD|wolf": {
+   "meshes": 1,
+   "verts": 120,
+   "tris": 72,
+   "sha256": "f029a60913ab5bed0796c34f3c8bac8d03344ad929ed7cf836e87d5f690899cd"
+  },
+  "fox-L1|nase|wolf": {
+   "meshes": 1,
+   "verts": 30,
+   "tris": 30,
+   "sha256": "933b3310719ceaaa1569eff42eb4e060698ff06074ebb605f07306595b5895f1"
+  },
+  "fox-L1|dunkel|wolf": {
+   "meshes": 1,
+   "verts": 120,
+   "tris": 120,
+   "sha256": "363b41650b0c111fe6a6816f4109c1a4b723b6135f992f0b712972126084ef70"
+  },
+  "fox-L1|tierauge|wolf": {
+   "meshes": 1,
+   "verts": 60,
+   "tris": 60,
+   "sha256": "9180e5d5eb9200885ce728847156e1fffeb015e815618453b2b0cdaca9b0517c"
+  },
+  "fox-L1|pupille|wolf": {
+   "meshes": 1,
+   "verts": 60,
+   "tris": 60,
+   "sha256": "55b82d7b3ea1751a5a205a08f665140a0f849ba54b0d369a118183c73a55b3c2"
+  },
+  "fox-L1|gelenk|wolf": {
+   "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
+  },
+  "fox-L1|gelenk|legFL": {
+   "sha256": "46f9400639d9845a4dadf69c08acc7cb905c6cd184ef627523fb21e139d61f8f"
+  },
+  "fox-L1|gelenk|legFR": {
+   "sha256": "017f4f592fb0386855413cd5a904eafc23673f869f488436f1e2b81562f2b089"
+  },
+  "fox-L1|gelenk|legHL": {
+   "sha256": "a96b5a6d27fc68a88471234c739d526169eb4ed0b845eadf883e8d222644dfd1"
+  },
+  "fox-L1|gelenk|legHR": {
+   "sha256": "a23dc84ad1ab5482587a1b40feb024b3f68ad4a41226fb6c39f15638cd7767b9"
+  },
+  "fox-L1|gelenk|flU": {
+   "sha256": "11b8fc6305ffad6e5804c4f00eaa3ea0475ab55eb825d4e54bab56e22a860824"
+  },
+  "fox-L1|gelenk|flL": {
+   "sha256": "0d16a067135c0764a06246e80c96b278c335aa2114800f022a5e934a22243c6a"
+  },
+  "fox-L1|gelenk|flP": {
+   "sha256": "389f1682d1774257358e98d352679b5da0319191b017198503858cde7c739b8f"
+  },
+  "fox-L1|gelenk|frU": {
+   "sha256": "dce69fb4547d9d4dc001aa5a4099d2882b2850ff7b999a0e2fcc1b86f527499c"
+  },
+  "fox-L1|gelenk|frL": {
+   "sha256": "4ac99405b07c156a835b3d18144375b1d541f84ff83cadf5e9a616bbbaa0ff9a"
+  },
+  "fox-L1|gelenk|frP": {
+   "sha256": "2a0907e682e4a00cb52c4a2a53beb287ce22b0512ba0ae5756910ca2e3d0abc0"
+  },
+  "fox-L1|gelenk|hlT": {
+   "sha256": "cdf2d52c7368af97cac50440ff2e6193ee8f211337363be9951b175b16b6ca99"
+  },
+  "fox-L1|gelenk|hlC": {
+   "sha256": "fed4e0c7114f6b7a731bea60c89a961d4d18758952503b832152b5c4c855b0d9"
+  },
+  "fox-L1|gelenk|hlP": {
+   "sha256": "a5406eafa908fbfe905c315880d13cdbf777c36a4085e936f5fd25b00645360b"
+  },
+  "fox-L1|gelenk|hrT": {
+   "sha256": "3d03a1bd04c92851f80bc235f04703d38c8d855c850bd2a86c2bbc29b28d3bf9"
+  },
+  "fox-L1|gelenk|hrC": {
+   "sha256": "e854e19dc5200f033ae5c4eee12b20db28e1ce1bb2c87ec13198b80abcb00d93"
+  },
+  "fox-L1|gelenk|hrP": {
+   "sha256": "c922568ea63debdb45a5f264fe048bfcd8912959b3f50f62ad4b1ad77d1ac218"
+  },
+  "fox-L1|gelenk|headGroup": {
+   "sha256": "897653b2f5a55f8b17dc5b1a1d4938a1b506d050c3278d4cce6a5f6e3db5c436"
+  },
+  "fox-L1|gelenk|jawGroup": {
+   "sha256": "a44fa09b43b2b9c738d7226753b0a6519445a32ef11b8dcb3e85b1983c298f94"
+  },
+  "fox-L1|gelenk|earL": {
+   "sha256": "b8e6d3a97b390b764cb329e8d9db92847b29295ea5af038305014acb35f8a774"
+  },
+  "fox-L1|gelenk|earR": {
+   "sha256": "27db707a5364deffa2b02695985fea0766b0e0c7091d81f95c12fdd72f8f64e8"
+  },
+  "fox-L1|gelenk|lidTL": {
+   "sha256": "053896025f97214e74b749f683f6ba55c4c4a50d6c778eda9274621c144bfcb6"
+  },
+  "fox-L1|gelenk|lidTR": {
+   "sha256": "5e4d247d239a667b86f0ac26c71b1634e1ecdc76b3d39c8f4135b938582748fa"
+  },
+  "fox-L1|gelenk|tailRoot": {
+   "sha256": "e94d4fefee1dcf022b54c365642bc5a18fe66b3fb1a1abf1fc3e91ce2bd7119f"
+  },
+  "fox-L1|gelenk|tailSeg0": {
+   "sha256": "a47a3a9e4a6843fe9887f2be3660852456b0055ca468dd063d9fa0947abdc1d1"
+  },
+  "fox-L1|gelenk|tailSeg1": {
+   "sha256": "e1ef8b71461d32494222558aefee7ef7f5698519d173c1769c255e1fb9890585"
+  },
+  "fox-L1|gelenk|tailSeg2": {
+   "sha256": "5b37e6c1f8c43130d5b00696258069735af8059949861b1a1876de51487f9f5d"
+  },
+  "fox-L1|gelenk|tailSeg3": {
+   "sha256": "6dff7a3cb926ade39cda0e72daca5b232ef8d0c5dfae4894cbbd1f78dd38b7d1"
+  },
+  "fox-L1|gelenk|tailSeg4": {
+   "sha256": "35cb827644e774c161f7d1bd6dd6cdc117f4850ea882ae2d454f1c6cec1d1ce8"
+  },
+  "fox-L1|gelenk|tailSeg5": {
+   "sha256": "3a0047917fb86ffd24c57a5fa10d998d994adf46696da88c3f8482ab5deb8eaa"
+  },
+  "fox-L1|gelenk|tailSeg6": {
+   "sha256": "4ab0a6f2e7876a630a666e1b79bd4d97853e50d9f3cd89fc0be8f4407632d9af"
+  },
+  "fox-L1|gelenk|tailSeg7": {
+   "sha256": "2b479e9dac31e7ea0b46336d4deb02fdda6d37586b56ad2d54003ebff43ff3ba"
+  },
+  "fox-L1|gelenk|tailSeg8": {
+   "sha256": "292e81bd8da0c1e90fc8fe25bdf95b78e23b4a94afcb5e359919ea908b63b174"
+  },
+  "fox-L1|gelenk|tailSeg9": {
+   "sha256": "2f64a2248b0b94f9d3fc3e5df7775a49bf6e564b8390ba413b4bb5bb9556a5e7"
+  },
+  "fox-L1|beipack": {
+   "sha256": "61cd464fed230cc42dfd5f482bc0e546631cd3f447d16ef6d70cfe88e9be28e2"
+  },
+  "bear-L0|ballen|flP": {
+   "meshes": 1,
+   "verts": 340,
+   "tris": 440,
+   "sha256": "f0846613b34d470a52be4e646119a786c503351342691e7d4d7974ad7e1508e7"
+  },
+  "bear-L0|klaue|flP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "fd22e3f610d9ea618c60d9f72abb29538904979945d6c67a55a3e096b40bc0e7"
+  },
+  "bear-L0|ballen|frP": {
+   "meshes": 1,
+   "verts": 340,
+   "tris": 440,
+   "sha256": "f0846613b34d470a52be4e646119a786c503351342691e7d4d7974ad7e1508e7"
+  },
+  "bear-L0|klaue|frP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "fd22e3f610d9ea618c60d9f72abb29538904979945d6c67a55a3e096b40bc0e7"
+  },
+  "bear-L0|ballen|hlP": {
+   "meshes": 1,
+   "verts": 322,
+   "tris": 410,
+   "sha256": "433bd8c8e917259a969219261030af729889cafebcb1cb7015f48b256a706b0e"
+  },
+  "bear-L0|klaue|hlP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "777e1460ba0daaf7ef631d99cc014c328a4fee420ac618ed3d72d898f94eecbb"
+  },
+  "bear-L0|ballen|hrP": {
+   "meshes": 1,
+   "verts": 322,
+   "tris": 410,
+   "sha256": "433bd8c8e917259a969219261030af729889cafebcb1cb7015f48b256a706b0e"
+  },
+  "bear-L0|klaue|hrP": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "777e1460ba0daaf7ef631d99cc014c328a4fee420ac618ed3d72d898f94eecbb"
+  },
+  "bear-L0|fell|wolf": {
+   "meshes": 2,
+   "verts": 10002,
+   "tris": 19824,
+   "sha256": "8f95a64bdd473f7036043777ec0ef9d2ac0f5a85c81e03d34045c4cc162f8bad"
+  },
+  "bear-L0|fell|headGroup": {
+   "meshes": 1,
+   "verts": 2969,
+   "tris": 5848,
+   "sha256": "6aa4fa7459b7f996e93e2635170f0b21734905fb62a01062630b79855950df9a"
+  },
+  "bear-L0|zahnfleisch|headGroup": {
+   "meshes": 1,
+   "verts": 108,
+   "tris": 154,
+   "sha256": "75f84aaa76ec5bb181e3bc30674be0c0ab467e2c072f6f2b92745dcf24483589"
+  },
+  "bear-L0|straehneD|headGroup": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "108a7ee2e2ff328b9ba8d3cddfa78acf53b5a278bf39e5ae5ad8cddddc9f0536"
+  },
+  "bear-L0|nase|headGroup": {
+   "meshes": 1,
+   "verts": 88,
+   "tris": 120,
+   "sha256": "3fa8eb4b81056fcf186a6cbc22c2f995709e84ade81defa1ddb93d63214ece64"
+  },
+  "bear-L0|dunkel|headGroup": {
+   "meshes": 1,
+   "verts": 302,
+   "tris": 400,
+   "sha256": "2c3204343506e5b5d242ba614ba951bb7c1c028f2bfe499694db6dc00e23119e"
+  },
+  "bear-L0|zahn|headGroup": {
+   "meshes": 1,
+   "verts": 448,
+   "tris": 280,
+   "sha256": "282d5b99b88666fc22fd4f1e5a9d88d88e01a5e16035fa52893ebeaf539ad034"
+  },
+  "bear-L0|zahnfleisch|jawGroup": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "3a2b847f8631d773a1a3335dc70b15a4a685ed49c6c9903ba5e08c9ce72306cf"
+  },
+  "bear-L0|zahn|jawGroup": {
+   "meshes": 1,
+   "verts": 448,
+   "tris": 280,
+   "sha256": "a32952af81afabfa838af86095d60326ba2a7eb948e4bb2dc57f27834502f3df"
+  },
+  "bear-L0|fell|jawGroup": {
+   "meshes": 1,
+   "verts": 242,
+   "tris": 480,
+   "sha256": "ee63d68d174b12c4ce50ad942b4e5500325ce19369ad4a6d2ec1baff2e578e1f"
+  },
+  "bear-L0|tierauge|headGroup": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "389dbb8abfaf02c92f1b28e177540d6f030cc38f8791fcb687351e6de0307db9"
+  },
+  "bear-L0|pupille|headGroup": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "91748b054e7fecea122675d5545c93892fec9fbe4aa6bbc3d83959d966717726"
+  },
+  "bear-L0|fell|lidTL": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "7bb6954fc52c19ad6ea5ba1f44ef036cbcbb68bd6643e09c87aa8a381fe171ed"
+  },
+  "bear-L0|fell|lidTR": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "1a26fdebce94265e1403c13096375d584320b786f0b0b2a21e181f97ea040097"
+  },
+  "bear-L0|fell|earL": {
+   "meshes": 1,
+   "verts": 140,
+   "tris": 208,
+   "sha256": "d43528f1df104c632dfc4a8cb183e552acd4cd785edd66236009009cc9dd3f34"
+  },
+  "bear-L0|zahnfleisch|earL": {
+   "meshes": 1,
+   "verts": 108,
+   "tris": 154,
+   "sha256": "e9ae1e19773a7b374db2593ea77fcbe7fe65a4a95f639d157e4fc1c1e7f6cc09"
+  },
+  "bear-L0|fell|earR": {
+   "meshes": 1,
+   "verts": 140,
+   "tris": 208,
+   "sha256": "98ee23142b6bf683dd20f793f6128bcb44a30d9564d4861dfc307d3d86458e9a"
+  },
+  "bear-L0|zahnfleisch|earR": {
+   "meshes": 1,
+   "verts": 108,
+   "tris": 154,
+   "sha256": "dafecbee99eb6c61415c8796e06417fd50a2d489b67202db4416460b21e68cba"
+  },
+  "bear-L0|fellSchale|wolf": {
+   "meshes": 1,
+   "verts": 14370,
+   "tris": 28752,
+   "sha256": "20f0de5db3a79943404c9fffa34c25640f23449d526ee15ec14b1e13625a6533"
+  },
+  "bear-L0|gelenk|wolf": {
+   "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
+  },
+  "bear-L0|gelenk|legFL": {
+   "sha256": "98535cd424d79778023f936dafe897e9834a92d3a08ccef1e186f91c32bcd34c"
+  },
+  "bear-L0|gelenk|legFR": {
+   "sha256": "950aeaf556a34fe5d7ec0c4242c6835cf827fa220ab9e8f0838f77d4cf19fe84"
+  },
+  "bear-L0|gelenk|legHL": {
+   "sha256": "a47f722f83c2cb65360a6bf88eb2a66fe510c736ae6e951b8e7db67e170e5f7b"
+  },
+  "bear-L0|gelenk|legHR": {
+   "sha256": "a9a03369f482de577db0db464029ddaf753b6419dfa26e2ca4198957c34d2969"
+  },
+  "bear-L0|gelenk|flU": {
+   "sha256": "11b8fc6305ffad6e5804c4f00eaa3ea0475ab55eb825d4e54bab56e22a860824"
+  },
+  "bear-L0|gelenk|flL": {
+   "sha256": "aeb12b68412fe04ccb0b14f2cf5e40703d91159505717babb411c7d761df8241"
+  },
+  "bear-L0|gelenk|flP": {
+   "sha256": "393025832fc18a5496549a3fd7d08316410019346649407973d7693981942764"
+  },
+  "bear-L0|gelenk|frU": {
+   "sha256": "dce69fb4547d9d4dc001aa5a4099d2882b2850ff7b999a0e2fcc1b86f527499c"
+  },
+  "bear-L0|gelenk|frL": {
+   "sha256": "1624ffde686157405c3504d3a0a069a430f5c017b5cf5d76efa0cb95dee081a2"
+  },
+  "bear-L0|gelenk|frP": {
+   "sha256": "e7eaf1d9c88fe951f07740c957909a330136c5b203374b4f25b2e83f40fd12a4"
+  },
+  "bear-L0|gelenk|hlT": {
+   "sha256": "cdf2d52c7368af97cac50440ff2e6193ee8f211337363be9951b175b16b6ca99"
+  },
+  "bear-L0|gelenk|hlC": {
+   "sha256": "25cec5202359eb2367aa6ae13df6b9297e4358757effd75530da4ed0adf28935"
+  },
+  "bear-L0|gelenk|hlP": {
+   "sha256": "ca6ff0c7f05612fadec7b378e823da4af70233da8ad82fa393614c7c1726ca88"
+  },
+  "bear-L0|gelenk|hrT": {
+   "sha256": "3d03a1bd04c92851f80bc235f04703d38c8d855c850bd2a86c2bbc29b28d3bf9"
+  },
+  "bear-L0|gelenk|hrC": {
+   "sha256": "8c1e17d06fddf649a4d677e4825eb51e8278d1658ed2965a7e01fd6468f88d1e"
+  },
+  "bear-L0|gelenk|hrP": {
+   "sha256": "cd07e6ba1ce7d6e58d67c60d7dcf9cec77edab25e072c2feee2e93d57f072d12"
+  },
+  "bear-L0|gelenk|headGroup": {
+   "sha256": "f169b450f5f86432ac5c93aa102e8e74d2dd57b0b2aa135e22ab639ff8a5957b"
+  },
+  "bear-L0|gelenk|jawGroup": {
+   "sha256": "ebe71e24e4e28d0bc6886271f0787dbd8fc6a1cabe1725eda438e4c17564f8e2"
+  },
+  "bear-L0|gelenk|earL": {
+   "sha256": "acb4b8c553228017d1c7ecdb0e49824bd48d731d276edfec6e2d08bdf6a180dd"
+  },
+  "bear-L0|gelenk|earR": {
+   "sha256": "a7123ddfad67685fd601c1402c263d45b94be339e504b01eac2595505c342005"
+  },
+  "bear-L0|gelenk|lidTL": {
+   "sha256": "af870488116d217c55019697b11bceda7107a3376421aefd4b30f8ecc3f88df8"
+  },
+  "bear-L0|gelenk|lidTR": {
+   "sha256": "ed7ce9d8faf3f609afcd5ee31f8b3a2d188db2b96aedad4493b66f827b24f5dc"
+  },
+  "bear-L0|gelenk|tailRoot": {
+   "sha256": "5b07135ca940b1ac6460f1c0b4ccc39ededdf0fd30d72689c18fcd79816ca617"
+  },
+  "bear-L0|gelenk|tailSeg0": {
+   "sha256": "6f975c619d9eff173667ef7f0ec72015e4b09ba91efa628d13e8d471bd0e29e2"
+  },
+  "bear-L0|gelenk|tailSeg1": {
+   "sha256": "86ece91669214ffdecb3146c40c19c2ce2404cb49d7dc5431e542cee47598d24"
+  },
+  "bear-L0|beipack": {
+   "sha256": "685ca062c5fecf2fdfc169757c9e3910964f89e239395b7cca6bdafc2c1a7c87"
+  },
+  "bear-L1|fell|wolf": {
+   "meshes": 1,
+   "verts": 3558,
+   "tris": 6124,
+   "sha256": "5c557a9b4c3908a49cb4f913f107ae6ff59a56cdd8b06ce6f8520adafa686cf2"
+  },
+  "bear-L1|straehneD|wolf": {
+   "meshes": 1,
+   "verts": 40,
+   "tris": 24,
+   "sha256": "0aabfc84613bb0c9f3e0b7e2464ca003f8ef3feb75b77c4ed7f18c7291a42d23"
+  },
+  "bear-L1|nase|wolf": {
+   "meshes": 1,
+   "verts": 30,
+   "tris": 30,
+   "sha256": "badf3e01806c0e9ac54f900765aa3d497c1c79eb29a3b4d4b4a80bb081f002ef"
+  },
+  "bear-L1|dunkel|wolf": {
+   "meshes": 1,
+   "verts": 120,
+   "tris": 120,
+   "sha256": "7c3cf40e955df0273884a8631a6fb485822c455fcc691a5205e30abb0351bc67"
+  },
+  "bear-L1|tierauge|wolf": {
+   "meshes": 1,
+   "verts": 60,
+   "tris": 60,
+   "sha256": "ba510031847d6ada061c084d8b158960439818ac14ac82892e29304317b95e7e"
+  },
+  "bear-L1|pupille|wolf": {
+   "meshes": 1,
+   "verts": 60,
+   "tris": 60,
+   "sha256": "315c6a5ad7475f6bb3a8f31994efac598e0d84f923e6dad55f4657b75c6dd68c"
+  },
+  "bear-L1|gelenk|wolf": {
+   "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
+  },
+  "bear-L1|gelenk|legFL": {
+   "sha256": "98535cd424d79778023f936dafe897e9834a92d3a08ccef1e186f91c32bcd34c"
+  },
+  "bear-L1|gelenk|legFR": {
+   "sha256": "950aeaf556a34fe5d7ec0c4242c6835cf827fa220ab9e8f0838f77d4cf19fe84"
+  },
+  "bear-L1|gelenk|legHL": {
+   "sha256": "a47f722f83c2cb65360a6bf88eb2a66fe510c736ae6e951b8e7db67e170e5f7b"
+  },
+  "bear-L1|gelenk|legHR": {
+   "sha256": "a9a03369f482de577db0db464029ddaf753b6419dfa26e2ca4198957c34d2969"
+  },
+  "bear-L1|gelenk|flU": {
+   "sha256": "11b8fc6305ffad6e5804c4f00eaa3ea0475ab55eb825d4e54bab56e22a860824"
+  },
+  "bear-L1|gelenk|flL": {
+   "sha256": "aeb12b68412fe04ccb0b14f2cf5e40703d91159505717babb411c7d761df8241"
+  },
+  "bear-L1|gelenk|flP": {
+   "sha256": "393025832fc18a5496549a3fd7d08316410019346649407973d7693981942764"
+  },
+  "bear-L1|gelenk|frU": {
+   "sha256": "dce69fb4547d9d4dc001aa5a4099d2882b2850ff7b999a0e2fcc1b86f527499c"
+  },
+  "bear-L1|gelenk|frL": {
+   "sha256": "1624ffde686157405c3504d3a0a069a430f5c017b5cf5d76efa0cb95dee081a2"
+  },
+  "bear-L1|gelenk|frP": {
+   "sha256": "e7eaf1d9c88fe951f07740c957909a330136c5b203374b4f25b2e83f40fd12a4"
+  },
+  "bear-L1|gelenk|hlT": {
+   "sha256": "cdf2d52c7368af97cac50440ff2e6193ee8f211337363be9951b175b16b6ca99"
+  },
+  "bear-L1|gelenk|hlC": {
+   "sha256": "25cec5202359eb2367aa6ae13df6b9297e4358757effd75530da4ed0adf28935"
+  },
+  "bear-L1|gelenk|hlP": {
+   "sha256": "ca6ff0c7f05612fadec7b378e823da4af70233da8ad82fa393614c7c1726ca88"
+  },
+  "bear-L1|gelenk|hrT": {
+   "sha256": "3d03a1bd04c92851f80bc235f04703d38c8d855c850bd2a86c2bbc29b28d3bf9"
+  },
+  "bear-L1|gelenk|hrC": {
+   "sha256": "8c1e17d06fddf649a4d677e4825eb51e8278d1658ed2965a7e01fd6468f88d1e"
+  },
+  "bear-L1|gelenk|hrP": {
+   "sha256": "cd07e6ba1ce7d6e58d67c60d7dcf9cec77edab25e072c2feee2e93d57f072d12"
+  },
+  "bear-L1|gelenk|headGroup": {
+   "sha256": "f169b450f5f86432ac5c93aa102e8e74d2dd57b0b2aa135e22ab639ff8a5957b"
+  },
+  "bear-L1|gelenk|jawGroup": {
+   "sha256": "ebe71e24e4e28d0bc6886271f0787dbd8fc6a1cabe1725eda438e4c17564f8e2"
+  },
+  "bear-L1|gelenk|earL": {
+   "sha256": "acb4b8c553228017d1c7ecdb0e49824bd48d731d276edfec6e2d08bdf6a180dd"
+  },
+  "bear-L1|gelenk|earR": {
+   "sha256": "a7123ddfad67685fd601c1402c263d45b94be339e504b01eac2595505c342005"
+  },
+  "bear-L1|gelenk|lidTL": {
+   "sha256": "af870488116d217c55019697b11bceda7107a3376421aefd4b30f8ecc3f88df8"
+  },
+  "bear-L1|gelenk|lidTR": {
+   "sha256": "ed7ce9d8faf3f609afcd5ee31f8b3a2d188db2b96aedad4493b66f827b24f5dc"
+  },
+  "bear-L1|gelenk|tailRoot": {
+   "sha256": "5b07135ca940b1ac6460f1c0b4ccc39ededdf0fd30d72689c18fcd79816ca617"
+  },
+  "bear-L1|gelenk|tailSeg0": {
+   "sha256": "6f975c619d9eff173667ef7f0ec72015e4b09ba91efa628d13e8d471bd0e29e2"
+  },
+  "bear-L1|gelenk|tailSeg1": {
+   "sha256": "86ece91669214ffdecb3146c40c19c2ce2404cb49d7dc5431e542cee47598d24"
+  },
+  "bear-L1|beipack": {
+   "sha256": "ac363398c0873be93e7f5eb5df67016879d9f248ac9ea35ca479b330406e7e8a"
+  },
+  "deer-L0|klaue|flP": {
+   "meshes": 1,
+   "verts": 302,
+   "tris": 400,
+   "sha256": "65b54a0cd15df96aba2fc2a193b32922bac295a49aaba303165af88a5f6c4865"
+  },
+  "deer-L0|klaue|frP": {
+   "meshes": 1,
+   "verts": 302,
+   "tris": 400,
+   "sha256": "65b54a0cd15df96aba2fc2a193b32922bac295a49aaba303165af88a5f6c4865"
+  },
+  "deer-L0|klaue|hlP": {
+   "meshes": 1,
+   "verts": 302,
+   "tris": 400,
+   "sha256": "042185fe56541fdaf9d8e2aca215c2aaacbfa9d091f3ffe77e8a6fd583a6e670"
+  },
+  "deer-L0|klaue|hrP": {
+   "meshes": 1,
+   "verts": 302,
+   "tris": 400,
+   "sha256": "042185fe56541fdaf9d8e2aca215c2aaacbfa9d091f3ffe77e8a6fd583a6e670"
+  },
+  "deer-L0|fell|headGroup": {
+   "meshes": 1,
+   "verts": 2676,
+   "tris": 5260,
+   "sha256": "6f406f0f221b31866f2548a477658a9cc5cc851278e56f6a196aca5f3ad5b821"
+  },
+  "deer-L0|zahnfleisch|headGroup": {
+   "meshes": 1,
+   "verts": 108,
+   "tris": 154,
+   "sha256": "f75231969fb688ddd4283d35ce9129ef7bb4e9123a53d5c2c312e33a4651e138"
+  },
+  "deer-L0|straehneD|headGroup": {
+   "meshes": 1,
+   "verts": 64,
+   "tris": 40,
+   "sha256": "a65f361fda4c12da6f65557de0ae6e383f487ce32249ecc21f9cb48ba9f12bd7"
+  },
+  "deer-L0|nase|headGroup": {
+   "meshes": 1,
+   "verts": 117,
+   "tris": 168,
+   "sha256": "48adaa0e8e9a73a8bae4a70f98123fe483fa763c9ea9788cd28d4185af5c5076"
+  },
+  "deer-L0|dunkel|headGroup": {
+   "meshes": 1,
+   "verts": 302,
+   "tris": 400,
+   "sha256": "31e038d2c048de9378f33bb6c3d35b44a396b6613955053ef3282073998aa6c9"
+  },
+  "deer-L0|zahn|headGroup": {
+   "meshes": 1,
+   "verts": 192,
+   "tris": 120,
+   "sha256": "355f16bb985c319af9b0fcb845b42960b29bd3375c2ac958bdb923eef90ed31d"
+  },
+  "deer-L0|zahnfleisch|jawGroup": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "a1cb9b40e223b103809c09863d40ea5d11221209f2cf90acdfcbfc3cc5d01757"
+  },
+  "deer-L0|zahn|jawGroup": {
+   "meshes": 1,
+   "verts": 192,
+   "tris": 120,
+   "sha256": "f2f0359146f8618023a8dd9e44c72ad765b7cd0c9a79639dff08ebfbcfa2d4e4"
+  },
+  "deer-L0|fell|jawGroup": {
+   "meshes": 1,
+   "verts": 265,
+   "tris": 528,
+   "sha256": "ce6d97f378c81a25450e0121939815a12dc86c77a6f9c0809c49ad96e9570410"
+  },
+  "deer-L0|tierauge|headGroup": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "9dfb89683cb9adacd092a64c9fddceb0bb0a86b796bdbce0fb99f87f13d119f3"
+  },
+  "deer-L0|pupille|headGroup": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "b2fdcf6ee997871e5ec3c1b10f2744dc2ac65ea08d2f594c3b0198777249726e"
+  },
+  "deer-L0|fell|lidTL": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "fc767195bb1f17ab820c227a6cbb0780ca176d95d6c385f5d5e2c3d7deab5b2d"
+  },
+  "deer-L0|fell|lidTR": {
+   "meshes": 1,
+   "verts": 70,
+   "tris": 90,
+   "sha256": "6a8920fbd8b5341896ea8225fd30956275259dce1445d301a08969993986d54f"
+  },
+  "deer-L0|fell|earL": {
+   "meshes": 1,
+   "verts": 266,
+   "tris": 432,
+   "sha256": "fc19a369e8465ad4f7bcaf377ecdf9c33c96d16a25adde7c05cf4b22cc881111"
+  },
+  "deer-L0|zahnfleisch|earL": {
+   "meshes": 1,
+   "verts": 204,
+   "tris": 320,
+   "sha256": "b280d2f8f9fea118a0e0da08972b8ad796bb7c8fed6689e84bb36afec4a874da"
+  },
+  "deer-L0|fell|earR": {
+   "meshes": 1,
+   "verts": 266,
+   "tris": 432,
+   "sha256": "eb7732121b045c96d809ed3db5060f656dfe8b6d82281bdb1adca8891cb980bb"
+  },
+  "deer-L0|zahnfleisch|earR": {
+   "meshes": 1,
+   "verts": 204,
+   "tris": 320,
+   "sha256": "c855577604396e61801bb6965926ab4f6cdb775bbe1dbd0cfec1d7b6ef2e50ca"
+  },
+  "deer-L0|fell|wolf": {
+   "meshes": 1,
+   "verts": 8699,
+   "tris": 17396,
+   "sha256": "9ec979d842347d2ecabcfc6e3d30551510d2d48a6bb38031eff427faa2daffe9"
+  },
+  "deer-L0|fellSchale|wolf": {
+   "meshes": 1,
+   "verts": 12744,
+   "tris": 25512,
+   "sha256": "c2f918644304ea67b0e3bb2cf248d9ea0e65ce0e0bc41e308eb1d371051c843c"
+  },
+  "deer-L0|gelenk|wolf": {
+   "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
+  },
+  "deer-L0|gelenk|legFL": {
+   "sha256": "155ba36b752bd480bf8fd8ec51b6cc4689aabcd121404ca4f115425f9b023b98"
+  },
+  "deer-L0|gelenk|legFR": {
+   "sha256": "e331265eeceb37d5e9a036dff1452b114799c063b3f1d7031d37e35bb307276a"
+  },
+  "deer-L0|gelenk|legHL": {
+   "sha256": "7dcf7c3f7e66e6ddab307c34d79d057d95121a7c16447f0d4a6276c42f8f396a"
+  },
+  "deer-L0|gelenk|legHR": {
+   "sha256": "219f8f5f5df5ea0c57ff83149bd2f0a8c1e83912162874bc1443b034346d3f5b"
+  },
+  "deer-L0|gelenk|flU": {
+   "sha256": "11b8fc6305ffad6e5804c4f00eaa3ea0475ab55eb825d4e54bab56e22a860824"
+  },
+  "deer-L0|gelenk|flL": {
+   "sha256": "5ba3db8cc4b795b2da410c821dc90a02c35f6f83d1d2ec98d9722a325b2a427e"
+  },
+  "deer-L0|gelenk|flP": {
+   "sha256": "ae8aa06b85070dedc6261775c3b6aacdf27a0460072e9a86e4916545ff1d0d5c"
+  },
+  "deer-L0|gelenk|frU": {
+   "sha256": "dce69fb4547d9d4dc001aa5a4099d2882b2850ff7b999a0e2fcc1b86f527499c"
+  },
+  "deer-L0|gelenk|frL": {
+   "sha256": "95290ed57e7c481471d30e8753fc72b9b28f4fd7b30089ee974a7bef71eb4ae5"
+  },
+  "deer-L0|gelenk|frP": {
+   "sha256": "64df45f30652b51f384918f5ddc23ffa7561871bd270c1df5daac6b5e0f99804"
+  },
+  "deer-L0|gelenk|hlT": {
+   "sha256": "cdf2d52c7368af97cac50440ff2e6193ee8f211337363be9951b175b16b6ca99"
+  },
+  "deer-L0|gelenk|hlC": {
+   "sha256": "d2b0fd1af8c65ab75f2a62784789c48a5ab55e496a7f94bbc041bdd4112123a4"
+  },
+  "deer-L0|gelenk|hlP": {
+   "sha256": "21b2203de01b63e4130af8971892409a84f80f7decf65a1bbd19ab47e0dbc00f"
+  },
+  "deer-L0|gelenk|hrT": {
+   "sha256": "3d03a1bd04c92851f80bc235f04703d38c8d855c850bd2a86c2bbc29b28d3bf9"
+  },
+  "deer-L0|gelenk|hrC": {
+   "sha256": "c1dcddabbed85fd49f587637969a50b2199f821e3b5afc12a6b9d99b27e2c40d"
+  },
+  "deer-L0|gelenk|hrP": {
+   "sha256": "285a20a4ee21f1a7cf794f62daced7b682ec54e17ef51645f980e9fc985b5bcd"
+  },
+  "deer-L0|gelenk|headGroup": {
+   "sha256": "97629125d728dc2eeece837f4070074561d5af4eb58a82232f1df397b270d10c"
+  },
+  "deer-L0|gelenk|jawGroup": {
+   "sha256": "77112fdae71752b65302616357e4c0b19d628441be1d628dfd492561334cf066"
+  },
+  "deer-L0|gelenk|earL": {
+   "sha256": "db90756a1a277b539f02bb6a6b51fcc87ebd8b33a07ef97867e07ce0c7e3fa8c"
+  },
+  "deer-L0|gelenk|earR": {
+   "sha256": "1b6920d76462b0ecbf14935528900488745a1263dd2f2ef728b8442676bdacb4"
+  },
+  "deer-L0|gelenk|lidTL": {
+   "sha256": "fbbe6fa76b5aeb7b4ec63ac28becfd673aa466f9fe912e6e76632d1512643a8e"
+  },
+  "deer-L0|gelenk|lidTR": {
+   "sha256": "16c3ed46cfcd80ecbe877dd135356a4816e52b32faac4149b9a6d85081528f31"
+  },
+  "deer-L0|gelenk|tailRoot": {
+   "sha256": "76bfb97e762e1897f3603cfa7c228c3838601294669a1644b35a8353a71d8c6b"
+  },
+  "deer-L0|gelenk|tailSeg0": {
+   "sha256": "7cc0b05669a2ff8c883d3c214183a9f32d2db5cc44903bbe1d57008b90cdaabb"
+  },
+  "deer-L0|gelenk|tailSeg1": {
+   "sha256": "7c7638dec271d821d00b0c12808a642e597abc9a892d118a1df9b8df8e46c559"
+  },
+  "deer-L0|gelenk|tailSeg2": {
+   "sha256": "0f0ecebf5d7d50a304104d1dec257e7bdec65fc9b19b37b632d93aba743dca85"
+  },
+  "deer-L0|beipack": {
+   "sha256": "b2c16cb11647044b5a235a2a2da20760f7a170afe6efeae38f93f2e070f3c161"
+  },
+  "deer-L1|fell|wolf": {
+   "meshes": 1,
+   "verts": 2769,
+   "tris": 5146,
+   "sha256": "f298abe427e32972c0957f7e048d8e34d0113984af28cc14f88832d6e0790498"
+  },
+  "deer-L1|straehneD|wolf": {
+   "meshes": 1,
+   "verts": 40,
+   "tris": 24,
+   "sha256": "22b096b28cc7a7856714f0ad93892dfb6a28451d9a35fd359695eaa7d454a8bd"
+  },
+  "deer-L1|nase|wolf": {
+   "meshes": 1,
+   "verts": 30,
+   "tris": 30,
+   "sha256": "02a0ca6fbbb5e1e6de298cbe62a637f3b66f418501f704b451a3a12ef2a5794c"
+  },
+  "deer-L1|dunkel|wolf": {
+   "meshes": 1,
+   "verts": 120,
+   "tris": 120,
+   "sha256": "a57de448b1aa261fb1e2fc202668027b8b94973edd5892f677524f1ab023141f"
+  },
+  "deer-L1|tierauge|wolf": {
+   "meshes": 1,
+   "verts": 60,
+   "tris": 60,
+   "sha256": "a45721af14ba260678b38f84f99cc79673d8ec75c293c7d4043ed07fb113d4d4"
+  },
+  "deer-L1|pupille|wolf": {
+   "meshes": 1,
+   "verts": 60,
+   "tris": 60,
+   "sha256": "af28bbae0f1d951befb58ae8b8720dc4b46fa49422ace1bb6f8389111d7b2b88"
+  },
+  "deer-L1|gelenk|wolf": {
+   "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
+  },
+  "deer-L1|gelenk|legFL": {
+   "sha256": "155ba36b752bd480bf8fd8ec51b6cc4689aabcd121404ca4f115425f9b023b98"
+  },
+  "deer-L1|gelenk|legFR": {
+   "sha256": "e331265eeceb37d5e9a036dff1452b114799c063b3f1d7031d37e35bb307276a"
+  },
+  "deer-L1|gelenk|legHL": {
+   "sha256": "7dcf7c3f7e66e6ddab307c34d79d057d95121a7c16447f0d4a6276c42f8f396a"
+  },
+  "deer-L1|gelenk|legHR": {
+   "sha256": "219f8f5f5df5ea0c57ff83149bd2f0a8c1e83912162874bc1443b034346d3f5b"
+  },
+  "deer-L1|gelenk|flU": {
+   "sha256": "11b8fc6305ffad6e5804c4f00eaa3ea0475ab55eb825d4e54bab56e22a860824"
+  },
+  "deer-L1|gelenk|flL": {
+   "sha256": "5ba3db8cc4b795b2da410c821dc90a02c35f6f83d1d2ec98d9722a325b2a427e"
+  },
+  "deer-L1|gelenk|flP": {
+   "sha256": "ae8aa06b85070dedc6261775c3b6aacdf27a0460072e9a86e4916545ff1d0d5c"
+  },
+  "deer-L1|gelenk|frU": {
+   "sha256": "dce69fb4547d9d4dc001aa5a4099d2882b2850ff7b999a0e2fcc1b86f527499c"
+  },
+  "deer-L1|gelenk|frL": {
+   "sha256": "95290ed57e7c481471d30e8753fc72b9b28f4fd7b30089ee974a7bef71eb4ae5"
+  },
+  "deer-L1|gelenk|frP": {
+   "sha256": "64df45f30652b51f384918f5ddc23ffa7561871bd270c1df5daac6b5e0f99804"
+  },
+  "deer-L1|gelenk|hlT": {
+   "sha256": "cdf2d52c7368af97cac50440ff2e6193ee8f211337363be9951b175b16b6ca99"
+  },
+  "deer-L1|gelenk|hlC": {
+   "sha256": "d2b0fd1af8c65ab75f2a62784789c48a5ab55e496a7f94bbc041bdd4112123a4"
+  },
+  "deer-L1|gelenk|hlP": {
+   "sha256": "21b2203de01b63e4130af8971892409a84f80f7decf65a1bbd19ab47e0dbc00f"
+  },
+  "deer-L1|gelenk|hrT": {
+   "sha256": "3d03a1bd04c92851f80bc235f04703d38c8d855c850bd2a86c2bbc29b28d3bf9"
+  },
+  "deer-L1|gelenk|hrC": {
+   "sha256": "c1dcddabbed85fd49f587637969a50b2199f821e3b5afc12a6b9d99b27e2c40d"
+  },
+  "deer-L1|gelenk|hrP": {
+   "sha256": "285a20a4ee21f1a7cf794f62daced7b682ec54e17ef51645f980e9fc985b5bcd"
+  },
+  "deer-L1|gelenk|headGroup": {
+   "sha256": "97629125d728dc2eeece837f4070074561d5af4eb58a82232f1df397b270d10c"
+  },
+  "deer-L1|gelenk|jawGroup": {
+   "sha256": "77112fdae71752b65302616357e4c0b19d628441be1d628dfd492561334cf066"
+  },
+  "deer-L1|gelenk|earL": {
+   "sha256": "db90756a1a277b539f02bb6a6b51fcc87ebd8b33a07ef97867e07ce0c7e3fa8c"
+  },
+  "deer-L1|gelenk|earR": {
+   "sha256": "1b6920d76462b0ecbf14935528900488745a1263dd2f2ef728b8442676bdacb4"
+  },
+  "deer-L1|gelenk|lidTL": {
+   "sha256": "fbbe6fa76b5aeb7b4ec63ac28becfd673aa466f9fe912e6e76632d1512643a8e"
+  },
+  "deer-L1|gelenk|lidTR": {
+   "sha256": "16c3ed46cfcd80ecbe877dd135356a4816e52b32faac4149b9a6d85081528f31"
+  },
+  "deer-L1|gelenk|tailRoot": {
+   "sha256": "76bfb97e762e1897f3603cfa7c228c3838601294669a1644b35a8353a71d8c6b"
+  },
+  "deer-L1|gelenk|tailSeg0": {
+   "sha256": "7cc0b05669a2ff8c883d3c214183a9f32d2db5cc44903bbe1d57008b90cdaabb"
+  },
+  "deer-L1|gelenk|tailSeg1": {
+   "sha256": "7c7638dec271d821d00b0c12808a642e597abc9a892d118a1df9b8df8e46c559"
+  },
+  "deer-L1|gelenk|tailSeg2": {
+   "sha256": "0f0ecebf5d7d50a304104d1dec257e7bdec65fc9b19b37b632d93aba743dca85"
+  },
+  "deer-L1|beipack": {
+   "sha256": "bd9ac6e464d902e021b3c185af5b3f7dfd0cdc2cf923d6190855d7ee3c5219fa"
+  },
+  "mensch-L0|skin|torso": {
+   "meshes": 1,
+   "verts": 11641,
+   "tris": 18592,
+   "sha256": "0a92226af219b6d2fe62f955875fe0b3e86ab8209191912ad07cc94a92a8cb8f"
+  },
+  "mensch-L0|dark|torso": {
+   "meshes": 1,
+   "verts": 2835,
+   "tris": 4680,
+   "sha256": "46fa72f9c36ba03eedfc169d14d82beb948e2b97a0329c32a7678aa1321a2db7"
+  },
+  "mensch-L0|skin|arm-1": {
+   "meshes": 1,
+   "verts": 1260,
+   "tris": 2080,
+   "sha256": "30825adbc5674aec6074a53f1bd4dd98fb5862016bdb65f772f8485b8f102502"
+  },
+  "mensch-L0|joint|arm-1": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "9d1071cadc99dcb8d7ab04bdad3ffe639d6254756f4e9c82c38a3e3bd6931dd6"
+  },
+  "mensch-L0|skin|elbow-1": {
+   "meshes": 1,
+   "verts": 630,
+   "tris": 1040,
+   "sha256": "c49a2711f0ab61ab4c0a1343bfeba6f85d97eb49467302f7a8fc05933319b948"
+  },
+  "mensch-L0|haut|hand-1": {
+   "meshes": 1,
+   "verts": 4990,
+   "tris": 9984,
+   "sha256": "b53ec26d06abd963eab4edf1093752a3874de2f773daad050627b960a938ae7c"
+  },
+  "mensch-L0|skin|arm1": {
+   "meshes": 1,
+   "verts": 1260,
+   "tris": 2080,
+   "sha256": "73486761ac90bd0f8366992ca27c5c24eefe1f26463ac2cec02c5d7996341391"
+  },
+  "mensch-L0|joint|arm1": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "455223770babfe6ef55891bcc461b58ffe3043dbe2f290d1358934a1cad093d5"
+  },
+  "mensch-L0|skin|elbow1": {
+   "meshes": 1,
+   "verts": 630,
+   "tris": 1040,
+   "sha256": "472e9d26ece49bbf04f957967c404e14f43e48e8f2b6dbb9cbaa093c275c729d"
+  },
+  "mensch-L0|haut|hand1": {
+   "meshes": 1,
+   "verts": 4930,
+   "tris": 9860,
+   "sha256": "daced74d5ee465282de0c8eb79f083e7b5fc703eae5f8e500d7d5cd73e4e1b58"
+  },
+  "mensch-L0|socket|head": {
+   "meshes": 1,
+   "verts": 1260,
+   "tris": 2080,
+   "sha256": "be0326c42cbfd1a36424b52765857bcf958ab3778f2e771dfd532cc7839a9b32"
+  },
+  "mensch-L0|eye|eyeL": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "a91a1e7f8a6632004a02d41571e1592ad24ede5ac44197ff0562b134e9e8e1b2"
+  },
+  "mensch-L0|iris|irisL": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "93ed6c260ac9043df8ce6da62c769d9f0c90aeba2adc03578ec9f2fe3cd203f6"
+  },
+  "mensch-L0|pupil|eyeL": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "af8157d0d220cf601be5f63d2b83a604b22da02df694f4a3ca2d7de19db3b466"
+  },
+  "mensch-L0|skin|lidTL": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "918b888155ede0778ed0ac0f4c70ee0225959f20aae2194ba7ab31baeae882f2"
+  },
+  "mensch-L0|skin|lidBL": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "4997194193c1a2a7a6f6f3c0d14217467908f324351a83da56f07b20f198e455"
+  },
+  "mensch-L0|eye|eyeR": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "80bda6aeb511a36a790b52092dc0923030815fb1cf7372276bf67f3c0ac36cb0"
+  },
+  "mensch-L0|iris|irisR": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "e6729b06791da2dbad9fbe619237384dc402e1bcdb107312410de0d274a73ec8"
+  },
+  "mensch-L0|pupil|eyeR": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "6360c3bf040826e02ca8d0a431ccae166b06e6983188631ec2de1457ab772ff8"
+  },
+  "mensch-L0|skin|lidTR": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "918b888155ede0778ed0ac0f4c70ee0225959f20aae2194ba7ab31baeae882f2"
+  },
+  "mensch-L0|skin|lidBR": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "3b5aa4498ac1ea908cf4a5e6185bfd56dfc8ad1518fce57ed5e1a6c373739cfa"
+  },
+  "mensch-L0|hair|head": {
+   "meshes": 1,
+   "verts": 9016,
+   "tris": 4628,
+   "sha256": "7a46f2b7f3d0525e2a8490bd1166e90acf991b5fb14ec7fe7c15089aecaf8750"
+  },
+  "mensch-L0|haut|head": {
+   "meshes": 1,
+   "verts": 6446,
+   "tris": 12888,
+   "sha256": "de33a990c7748e98f4c83bb055a9a51f659d09dfa7637d1f71fe5a6a984cd853"
+  },
+  "mensch-L0|shorts|mensch": {
+   "meshes": 1,
+   "verts": 945,
+   "tris": 1560,
+   "sha256": "1ec64564d8acd3b992512237ef4a89d563b13515748e4fe089898c942aa9a91a"
+  },
+  "mensch-L0|skin|hip-1": {
+   "meshes": 1,
+   "verts": 1260,
+   "tris": 2080,
+   "sha256": "a1d77a1851130e584a0df7f74f31ae44058991a6ad7c659120afa35ee9cb9db7"
+  },
+  "mensch-L0|joint|hip-1": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "19ffd4af5c131262a2527538582154e01f1f4a6a729a85f6c215d1a2ca401ea6"
+  },
+  "mensch-L0|skin|knee-1": {
+   "meshes": 1,
+   "verts": 630,
+   "tris": 1040,
+   "sha256": "bcca0198f0beeb317156f7506d22314b22a5e64f2d272fd6151b02ff1604be5e"
+  },
+  "mensch-L0|joint|ankle-1": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "089fb1a4a06020f257b3c8fb248babef2f1ad47f4043996e82ac2d783dd00e54"
+  },
+  "mensch-L0|skin|ankle-1": {
+   "meshes": 1,
+   "verts": 3780,
+   "tris": 6240,
+   "sha256": "0115148eba5cfb5ced25689d30a58af01ceab743a8826e9393f71517dff4efee"
+  },
+  "mensch-L0|skin|hip1": {
+   "meshes": 1,
+   "verts": 1260,
+   "tris": 2080,
+   "sha256": "5c54888b1ded8b6239bbd342c68a6e80e5bf20148fff7c95612b46714363e0a8"
+  },
+  "mensch-L0|joint|hip1": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "c5840935b40c60d237d9a7dee816c446e3a7129030a18d02825f8909070f3903"
+  },
+  "mensch-L0|skin|knee1": {
+   "meshes": 1,
+   "verts": 630,
+   "tris": 1040,
+   "sha256": "c8d72e307f54bf7c4cbfef540596ca7673cdb3c27d0d9e7358a021e02e37834a"
+  },
+  "mensch-L0|joint|ankle1": {
+   "meshes": 1,
+   "verts": 315,
+   "tris": 520,
+   "sha256": "089fb1a4a06020f257b3c8fb248babef2f1ad47f4043996e82ac2d783dd00e54"
+  },
+  "mensch-L0|skin|ankle1": {
+   "meshes": 1,
+   "verts": 3780,
+   "tris": 6240,
+   "sha256": "5c10e1aef71442b46e0334b4020b4b178a5f3fd334b70ed8581908509c75187a"
+  },
+  "mensch-L0|haut|mensch": {
+   "meshes": 1,
+   "verts": 16746,
+   "tris": 33500,
+   "sha256": "d2ba3c6dbf042af696ef6ac593902ce578c8ae0929ef713683fd85fb488daba1"
+  },
+  "mensch-L0|stoff_233047|mensch": {
+   "meshes": 1,
+   "verts": 7435,
+   "tris": 14864,
+   "sha256": "24ff56b1972090e6fd6a65297613e50d0df2dfa67e57e53c1ca8070a8d302434"
+  },
+  "mensch-L0|stoff_2a2c30|mensch": {
+   "meshes": 1,
+   "verts": 6644,
+   "tris": 13308,
+   "sha256": "40967bfc85be137d3f859d08856d827c80a5b14257af5301628a78e6dfa3ee0b"
+  },
+  "mensch-L0|stoff_e8e6e0|mensch": {
+   "meshes": 1,
+   "verts": 1598,
+   "tris": 3188,
+   "sha256": "d670ecba077041fab98e514b3416be4b1d1a1e5c1e478ca1a2a6b4e17ade5c76"
+  },
+  "mensch-L0|gelenk|mensch": {
+   "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
+  },
+  "mensch-L0|gelenk|torso": {
+   "sha256": "6353e6ecb609476ec06763353994fd8ccf326b0457e377fa6c28464fde6004eb"
+  },
+  "mensch-L0|gelenk|head": {
+   "sha256": "413eccc0927190fd3bf13c255e30e6b92b6925c9598bccaf1c94a2154028173e"
+  },
+  "mensch-L0|gelenk|arm1": {
+   "sha256": "3a97d53222fac5523bb16c50dba4c93fef5817df6ce04aec55830f9d5cd54aca"
+  },
+  "mensch-L0|gelenk|arm-1": {
+   "sha256": "d5de4a541b5de055e144d25c11602da4c78ace10451ca5457bc2dc63b7829327"
+  },
+  "mensch-L0|gelenk|elbow1": {
+   "sha256": "132822937182e36421665cf1feecac66ae702b23f0bac654268b236c319febb9"
+  },
+  "mensch-L0|gelenk|elbow-1": {
+   "sha256": "a7551ed557e6ffa20e88ca73144502be515291abe02a828537f33049f039e03e"
+  },
+  "mensch-L0|gelenk|hand1": {
+   "sha256": "24d0bbd01d57f801802a4e65970a2729938329d6539d5faca72576b8d0e7733d"
+  },
+  "mensch-L0|gelenk|hand-1": {
+   "sha256": "7f1e1df835e5b3a67b86857305b595eadce7bbbbcdecac992838bc09bd2e9605"
+  },
+  "mensch-L0|gelenk|hip1": {
+   "sha256": "a0245517292793e77e4979224f11f53bb615931837fe02c4d98909eed4e485ac"
+  },
+  "mensch-L0|gelenk|hip-1": {
+   "sha256": "18a415323f88f99371689e2cb5891efa3da24cdbb39be706bbec74079f94e4f9"
+  },
+  "mensch-L0|gelenk|knee1": {
+   "sha256": "88c68fe0d508157c1eef3877c9ce43c1651527d94ce654e78dfa7887dfbd3d44"
+  },
+  "mensch-L0|gelenk|knee-1": {
+   "sha256": "bc98da0f14de8c82aca171798645e94567a675faf55ae07a277bc65904380f95"
+  },
+  "mensch-L0|gelenk|ankle1": {
+   "sha256": "5fc8dbda3b0a6e3ddef518e9630cd0ec58fb6b7f3e3be31ab08ed242290d34e8"
+  },
+  "mensch-L0|gelenk|ankle-1": {
+   "sha256": "5886d892229569ba53bdd4ddacfd2efb2d944a9e9878258faa3d60e13634fbba"
+  },
+  "mensch-L0|gelenk|irisL": {
+   "sha256": "a4aa178494c006715545c6b4d32192419ebff0065979c97c67c6be556a9cf001"
+  },
+  "mensch-L0|gelenk|irisR": {
+   "sha256": "28808b44aa6be8f06a3bf610b6486534b3ba03b11b5290a1328d4c40db77090c"
+  },
+  "mensch-L0|gelenk|lidTL": {
+   "sha256": "8a098de8d533e34e858182db15dda7b88c362eb1bea5bd8f5f1a941c0b585726"
+  },
+  "mensch-L0|gelenk|lidTR": {
+   "sha256": "5c0bbed07ded252132b23de992581c38a57d640860cd2c79adadd44a4a542d5d"
+  },
+  "mensch-L0|gelenk|lidBL": {
+   "sha256": "f7baa2f572cc4738e0025613150b8cc68e95732260a85ca8e484b19bc0e6df03"
+  },
+  "mensch-L0|gelenk|lidBR": {
+   "sha256": "9e8c8ab288fd3d7fa20f04a3c115638410408c05234597e4ac94f20616f847f7"
+  },
+  "mensch-L0|gelenk|eyeL": {
+   "sha256": "2d9c34372f1a50d9741e04c5ae89e4c0fd1bd4398c827c88993ded980aa76e59"
+  },
+  "mensch-L0|gelenk|eyeR": {
+   "sha256": "f268454160e8cccdc67d4f18c619c40835a8ae17a70f0cef983dfd5a6772bccd"
+  },
+  "mensch-L0|beipack": {
+   "sha256": "c2591871b8e7dce248e709569484f4228912372e04d55f42eb1bdb33dd3430d1"
+  },
+  "mensch-L1|skin|mensch": {
+   "meshes": 1,
+   "verts": 10718,
+   "tris": 12592,
+   "sha256": "8e68c960ca0f8f0979f39ce4b2a46681ef5825cee54150432be3f04d0a8a3f58"
+  },
+  "mensch-L1|dark|mensch": {
+   "meshes": 1,
+   "verts": 567,
+   "tris": 720,
+   "sha256": "0af401a8d85bf2f415d0dbc77f25c35cb86fc41b0613bdd1b63a8405be084e81"
+  },
+  "mensch-L1|joint|mensch": {
+   "meshes": 1,
+   "verts": 378,
+   "tris": 480,
+   "sha256": "83aeb22d32750165560b93c965c6422df119090a219a1756954a535f1148c478"
+  },
+  "mensch-L1|socket|mensch": {
+   "meshes": 1,
+   "verts": 252,
+   "tris": 320,
+   "sha256": "7f16d6b6ee19c094bfc1665b5419499ac7ce8587db12eb6d9b9af2d01da7b21a"
+  },
+  "mensch-L1|eye|mensch": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "f00c342e0c41b0045dde2c23e5b6d57cdcc4879f9a5976e329bc820fed8eb722"
+  },
+  "mensch-L1|iris|mensch": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "83ac66079dbe95ccdeb93a4c11b7fed966ec6d838258e5175155fa21fc487941"
+  },
+  "mensch-L1|pupil|mensch": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "1307ea741d109e9b79011696db6f70d0081c631dd1077eef035736455a7852c3"
+  },
+  "mensch-L1|shadow|mensch": {
+   "meshes": 1,
+   "verts": 143,
+   "tris": 128,
+   "sha256": "15be52105520ab7b23bf8c2abab50c8ab0e73a4016a7e97d67e0be85231c0064"
+  },
+  "mensch-L1|lips|mensch": {
+   "meshes": 1,
+   "verts": 126,
+   "tris": 160,
+   "sha256": "d15f0af3a4f5716f2de202997ca03f015ce6fb7ffe70c2c2f331ce6b85fc48d4"
+  },
+  "mensch-L1|hair|mensch": {
+   "meshes": 1,
+   "verts": 400,
+   "tris": 240,
+   "sha256": "ff5e6d6f4cef8b7a87db24216af0c6923160c9b582ee244a4278f88c8ec7f16e"
+  },
+  "mensch-L1|shorts|mensch": {
+   "meshes": 1,
+   "verts": 189,
+   "tris": 240,
+   "sha256": "256a4d9f39eae15418c55be75e7f84fb85596b058e93c5d8629a80de23b199e1"
+  },
+  "mensch-L1|haut|mensch": {
+   "meshes": 1,
+   "verts": 5988,
+   "tris": 11972,
+   "sha256": "0f867f11adb5b70866a3773654523c6e63ddb0f42690f189d4bf2295023a4c37"
+  },
+  "mensch-L1|stoff_233047|mensch": {
+   "meshes": 1,
+   "verts": 2706,
+   "tris": 5408,
+   "sha256": "4d8be1df535f31961555e9ffede8176914cac22b0cd6e1f7289c94e3e719f930"
+  },
+  "mensch-L1|stoff_2a2c30|mensch": {
+   "meshes": 1,
+   "verts": 2172,
+   "tris": 4340,
+   "sha256": "3c3436009c0c4ba21b79fd4e6192c24cd5d930197337c3d46bd4ce7a33087164"
+  },
+  "mensch-L1|stoff_e8e6e0|mensch": {
+   "meshes": 1,
+   "verts": 686,
+   "tris": 1364,
+   "sha256": "9f49aa3df6618ee5297b88f1b4e99cd0b47a70ca48df3e8452c66a92fb91e62a"
+  },
+  "mensch-L1|gelenk|mensch": {
+   "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
+  },
+  "mensch-L1|gelenk|torso": {
+   "sha256": "6353e6ecb609476ec06763353994fd8ccf326b0457e377fa6c28464fde6004eb"
+  },
+  "mensch-L1|gelenk|head": {
+   "sha256": "413eccc0927190fd3bf13c255e30e6b92b6925c9598bccaf1c94a2154028173e"
+  },
+  "mensch-L1|gelenk|arm1": {
+   "sha256": "3a97d53222fac5523bb16c50dba4c93fef5817df6ce04aec55830f9d5cd54aca"
+  },
+  "mensch-L1|gelenk|arm-1": {
+   "sha256": "d5de4a541b5de055e144d25c11602da4c78ace10451ca5457bc2dc63b7829327"
+  },
+  "mensch-L1|gelenk|elbow1": {
+   "sha256": "132822937182e36421665cf1feecac66ae702b23f0bac654268b236c319febb9"
+  },
+  "mensch-L1|gelenk|elbow-1": {
+   "sha256": "a7551ed557e6ffa20e88ca73144502be515291abe02a828537f33049f039e03e"
+  },
+  "mensch-L1|gelenk|hand1": {
+   "sha256": "24d0bbd01d57f801802a4e65970a2729938329d6539d5faca72576b8d0e7733d"
+  },
+  "mensch-L1|gelenk|hand-1": {
+   "sha256": "7f1e1df835e5b3a67b86857305b595eadce7bbbbcdecac992838bc09bd2e9605"
+  },
+  "mensch-L1|gelenk|hip1": {
+   "sha256": "a0245517292793e77e4979224f11f53bb615931837fe02c4d98909eed4e485ac"
+  },
+  "mensch-L1|gelenk|hip-1": {
+   "sha256": "18a415323f88f99371689e2cb5891efa3da24cdbb39be706bbec74079f94e4f9"
+  },
+  "mensch-L1|gelenk|knee1": {
+   "sha256": "88c68fe0d508157c1eef3877c9ce43c1651527d94ce654e78dfa7887dfbd3d44"
+  },
+  "mensch-L1|gelenk|knee-1": {
+   "sha256": "bc98da0f14de8c82aca171798645e94567a675faf55ae07a277bc65904380f95"
+  },
+  "mensch-L1|gelenk|ankle1": {
+   "sha256": "5fc8dbda3b0a6e3ddef518e9630cd0ec58fb6b7f3e3be31ab08ed242290d34e8"
+  },
+  "mensch-L1|gelenk|ankle-1": {
+   "sha256": "5886d892229569ba53bdd4ddacfd2efb2d944a9e9878258faa3d60e13634fbba"
+  },
+  "mensch-L1|gelenk|irisL": {
+   "sha256": "a4aa178494c006715545c6b4d32192419ebff0065979c97c67c6be556a9cf001"
+  },
+  "mensch-L1|gelenk|irisR": {
+   "sha256": "28808b44aa6be8f06a3bf610b6486534b3ba03b11b5290a1328d4c40db77090c"
+  },
+  "mensch-L1|gelenk|lidTL": {
+   "sha256": "8a098de8d533e34e858182db15dda7b88c362eb1bea5bd8f5f1a941c0b585726"
+  },
+  "mensch-L1|gelenk|lidTR": {
+   "sha256": "5c0bbed07ded252132b23de992581c38a57d640860cd2c79adadd44a4a542d5d"
+  },
+  "mensch-L1|gelenk|lidBL": {
+   "sha256": "f7baa2f572cc4738e0025613150b8cc68e95732260a85ca8e484b19bc0e6df03"
+  },
+  "mensch-L1|gelenk|lidBR": {
+   "sha256": "9e8c8ab288fd3d7fa20f04a3c115638410408c05234597e4ac94f20616f847f7"
+  },
+  "mensch-L1|gelenk|eyeL": {
+   "sha256": "2d9c34372f1a50d9741e04c5ae89e4c0fd1bd4398c827c88993ded980aa76e59"
+  },
+  "mensch-L1|gelenk|eyeR": {
+   "sha256": "f268454160e8cccdc67d4f18c619c40835a8ae17a70f0cef983dfd5a6772bccd"
+  },
+  "mensch-L1|beipack": {
+   "sha256": "5cb5a0efcc630062fc1112720242f420d7095748d61ef55396add1962dabb98e"
+  }
+ }
+}

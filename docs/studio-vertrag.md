@@ -624,3 +624,6 @@ Dials · fx.motion + **VERHALTEN** [12 Aktionen · 6 Stimmungen, B6]).
 Alle drei: keine KIND_POLICY-Zeile (keine Katalog-Blueprints — die Rezepte
 erscheinen als Studio-Rezepte in der Werkstatt, W-A1-Straße), `fx.place
 {mode:"none"}`, Daten-Goldens `spec/asset-contract/v7/` (`gate:daten-contract`).
+Der GUSS ihres Ofens (§8.4, `BAKERS_BY_KIND.kreatur/.koerper`) trägt seit S1 Wände das Bake-Golden
+`spec/asset-contract/ofen/` (`gate:ofen-contract`): sha256 je Stoff-Klasse × Gelenk, je Gelenk und je
+Beipack, jede Art × jede Stufe der Ofen-Stufen-Zeile (§8.5).

@@ -1,0 +1,110 @@
+{
+    "zweck": "DIE PLATTFORM-RATSCHE der Golden-Saetze (S1 Waende, 07.10.; Linse scripts/lib/plattform-probe.cjs). Jeder Golden-Fall baut noch einmal, waehrend die Transzendenten von Math um +-1 ULP verschoben rechnen. Math.pow ist die GEMESSENE Klasse (V8 12.4 der CI rundet anders als V8 13.6 lokal: v5 saebel cc26c7d8, v4 alle 16 Tore am Kopf 516e704a) - seine Drift kippt in keinem Satz ein Byte, hart. sin/cos/atan2/hypot/exp rundeten in beiden V8 gleich (213 707 verschiedene Aufrufe der Tore); wo ihre Drift die Bytes erreicht, steht der Kern hier BENANNT: je Funktion die Zahl der kippenden Probe-Faelle (darf nur fallen, heben ist ein begruendeter Akt im Commit) und die erste Taeter-Stelle. Soll je Satz: 0 - EIN Byte-Raster am Ausgang von buildInstance (das Muster porta-core/fachwerk-core ausRaster); es kommt mit dem naechsten Re-Mint des Kerns, nie als eigener Byte-Akt.",
+    "saetze": {
+        "v1": {
+            "kern": "foundry-core.js + phyto-core.js (Pflanzen, Chrome-Worker)",
+            "faelle": 43,
+            "probe": "jeder Golden-Fall mit Samen 7 im Sommer (21 Arten, alle Stufen)",
+            "powWirt": "das gepinnte Chrome (puppeteer aus package-lock, 148.0.7778.97) - CI und lokal dieselbe V8; ein Chrome-Wechsel ist der Ausloeser, pow kippt dann 16 Faelle",
+            "kippt": {
+                "pow": 16,
+                "hypot": 26,
+                "sin": 21,
+                "cos": 18
+            },
+            "taeter": {
+                "pow": "phyto-core.js:76 pow (D = pow(2 H / k, 1,5), der Stamm-Durchmesser)",
+                "hypot": "phyto-core.js:39 hypot (vlen, die Vektor-Laenge des Wuchses)",
+                "sin": "phyto-core.js:303 sin (cdir, die Biegung der Kind-Achse)",
+                "cos": "phyto-core.js:48 cos (die Drehung im Wuchs)"
+            },
+            "soll": "0 - EIN Byte-Raster am Ausgang der Bruecke (build-asset); es kommt mit dem naechsten v1-Akt (W3 Pflanzen-L1 oder W5 Farb-Akt), nie als eigener Byte-Akt"
+        },
+        "v3": {
+            "kern": "vehicle-core.js",
+            "faelle": 12,
+            "kippt": {
+                "atan2": 12,
+                "sin": 12,
+                "cos": 12,
+                "hypot": 5
+            },
+            "taeter": {
+                "atan2": "vehicle-core.js:754 atan2 (Awin, der Windschutz-Winkel)",
+                "sin": "vehicle-core.js:392 sin (rotation.x = PI/2 -> Quaternion -> Float64-Matrix)",
+                "cos": "vehicle-core.js:392 cos (rotation.x = PI/2 -> Quaternion -> Float64-Matrix)",
+                "hypot": "vehicle-core.js:1769 hypot (lenA, die A-Saeule)"
+            },
+            "soll": "0 - das Raster kommt mit dem v3-Akt der W3 (Fahrzeug-L1)"
+        },
+        "v4": {
+            "kern": "porta-core.js",
+            "faelle": 9,
+            "kippt": {},
+            "soll": "0 - erreicht: porta-core ausRaster am Ausgang (S1, Re-Mint mit Grund: Node 22 rot 16/16)"
+        },
+        "v5": {
+            "kern": "schmiede-core.js",
+            "faelle": 23,
+            "kippt": {
+                "cos": 19,
+                "sin": 19,
+                "atan2": 15,
+                "hypot": 7
+            },
+            "taeter": {
+                "cos": "schmiede-core.js:800 cos (ring.rotation.z -> Quaternion -> Float64-Matrix)",
+                "sin": "schmiede-core.js:800 sin (ring.rotation.z -> Quaternion -> Float64-Matrix)",
+                "atan2": "schmiede-core.js:844 atan2 (ang, der Umfangs-Winkel)",
+                "hypot": "schmiede-core.js:500 hypot (tl, die Tangenten-Laenge)"
+            },
+            "soll": "0 - das Raster kommt mit dem v5-Akt der W3 (Klinge L0/L1)"
+        },
+        "v6": {
+            "kern": "fachwerk-core.js",
+            "faelle": 24,
+            "probe": "Samen 7 x Stufen 0/1/2 x jede vierte Kultur (8 von 32)",
+            "kippt": {
+                "cos": 16,
+                "sin": 16,
+                "atan": 11,
+                "tan": 8
+            },
+            "taeter": {
+                "cos": "fachwerk-core.js:181 cos (eindeckenFlaeche, der Ziegel-Schritt auf der Schraege)",
+                "sin": "fachwerk-core.js:226 sin (rotation.set -> Quaternion -> Float64-Matrix)",
+                "atan": "fachwerk-core.js:177 atan (th, die Dach-Neigung der Eindeckung)",
+                "tan": "fachwerk-core.js:164 tan (ridgeY, die First-Hoehe)"
+            },
+            "soll": "0 - das Raster (heute nur die Ausstattung, ausRaster) kommt mit dem v6-Akt der W5 (Haus-Raster vor dem Farb-Akt, Kritik B5)"
+        },
+        "v6a": {
+            "kern": "fachwerk-core.js",
+            "faelle": 15,
+            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen) x Gestalt x Stufe + ov",
+            "kippt": {},
+            "soll": "0 - erreicht: ausRaster am Ausgang der Ausstattung (Architektur-Welle 05.10.)"
+        },
+        "v7": {
+            "kern": "klang-core.js, koerper-core.js, tetrapoda-core.js",
+            "faelle": 3,
+            "transzendentenFrei": true,
+            "kippt": {},
+            "soll": "0 - erreicht: PRESETS und PARAMS rufen beim Laden keine Transzendente"
+        },
+        "ofen": {
+            "kern": "foundry-core.js (Ofen, BAKERS_BY_KIND.kreatur/.koerper) + tetrapoda-core.js + koerper-core.js",
+            "faelle": 483,
+            "probe": "jede Klasse des Ofen-Goldens (189 Stoff-Klassen x Gelenk, 284 Gelenke, 10 Beipacks)",
+            "kippt": {
+                "cos": 269,
+                "sin": 220
+            },
+            "taeter": {
+                "cos": "tetrapoda-core.js:1722 cos (frontYReach, die Reichweite des Vorderlaufs)",
+                "sin": "tetrapoda-core.js:2018 sin (femVec, der Oberschenkel-Winkel)"
+            },
+            "soll": "0 - EIN Byte-Raster am Ofen-Ausgang; es kommt mit dem W3c-Akt (Kreatur-Grobstufe geskinnt), pow ist seit S1 an skullR und legMuscle gerastert"
+        }
+    }
+}

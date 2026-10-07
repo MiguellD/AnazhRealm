@@ -309,6 +309,8 @@ jobs:
               # baut die kuratierten Goldens (spec/asset-contract/v1) neu und vergleicht Byte fuer Byte
               # + Schema (cv:1, Pflichtfelder). Ab hier kann KEIN Refactor der Pipeline mehr still
               # driften — der Vertrag richtet (P0 bewies Worker==iframe 720/720 byte-identisch).
+              # Plattform-Probe (S1 Waende): 43 Faelle bauen in einem zweiten Worker mit ±1 ULP auf jeder
+              # Transzendenten — die Pflanzen sind ungerastert und stehen benannt (plattform-ratsche.json, Zeile v1).
               run: npm run gate:asset-contract
 
             - name: Pflanzen-Nahbild (Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite · Weide · Fracht)
@@ -559,14 +561,23 @@ jobs:
             - name: Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)
               # cv:3 (spec/asset-contract/v3): 12 frozen sha256-Goldens (5 Gattungen × 2 Seeds + 2 ov-Kulturen),
               # Node-direkt (r128) — Determinismus · Geometrie seed-invariant, der Same waehlt den Lack · ov-Kanal ·
-              # Plattform-Probe (Math.pow ±1 ULP kippt kein Byte) · Selbst-Test. Bis zur Integration W5 lief er nur lokal.
+              # Plattform-Probe (Math.pow ±1 ULP kippt kein Byte; sin/cos/atan2/hypot halten ihre Ratsche,
+              # spec/asset-contract/plattform-ratsche.json) · Selbst-Test. Bis zur Integration W5 lief er nur lokal.
               run: npm run gate:vehicle-contract
+
+            - name: Tor-Asset-Vertrag v4 (porta-core buildInstance byte-eingefroren, Byte-Raster am Ausgang)
+              # cv:4 (spec/asset-contract/v4): 16 frozen sha256-Goldens (7 Ordnungen × 2 Seeds + 2 ov-Faelle), Node-direkt
+              # (r128) — Determinismus · Seed-Invarianz · ov-Kanal · lod-Klemme · Plattform-Probe (jede Transzendente
+              # ±1 ULP kippt kein Byte: das Raster am Ausgang, Ratsche 0) · Selbst-Test. Bis S1 Waende lief er nur lokal —
+              # und war unter Node 22 rot (16/16, three r128 CatmullRom 'centripetal' + convertSRGBToLinear rufen pow).
+              run: npm run gate:porta-contract
 
             - name: Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)
               # cv:5 (spec/asset-contract/v5): 44 frozen sha256-Goldens (21 Gattungen × 2 Seeds +
               # 2 ov-Fälle), Node-direkt (r128, kein Browser) — Determinismus · Seed-Invarianz ·
               # ov-Kanal · lod-Klemme · Split-Parität buildInstance==buildWeaponModel je Gattung ·
-              # Plattform-Probe (Math.pow ±1 ULP kippt kein Byte, Täter Datei:Zeile) · Selbst-Test.
+              # Plattform-Probe (Math.pow ±1 ULP kippt kein Byte, Täter Datei:Zeile; sin/cos/atan2/hypot halten ihre
+              # Ratsche, spec/asset-contract/plattform-ratsche.json) · Selbst-Test.
               run: npm run gate:schmiede-contract
 
             - name: Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)
@@ -596,7 +607,8 @@ jobs:
               # SEED-GETRIEBEN (der Haus-Bau würfelt aus P.seed — anders als Fahrzeug/Tor/
               # Klinge) · Stufen-Wahrheit (L0 Voll != L1 Hülle != L2 Destillat) · ov-Kanal ·
               # lod-Klemme · Split-Parität buildInstance == Shell-Komposition der Kern-
-              # Primitive je Rezept×Stufe · Selbst-Test (korruptes Golden wird rot).
+              # Primitive je Rezept×Stufe · Selbst-Test (korruptes Golden wird rot) · Plattform-Probe (S1 Waende:
+              # Haeuser benannt in der Ratsche, die gerasterte Ausstattung 0 von 15).
               run: npm run gate:fachwerk-contract
 
             - name: Der Settlement-Kanal N5.7 (W-A5b — exportSettlement + spawnSettlement)
@@ -638,8 +650,17 @@ jobs:
               # cv:7 (spec/asset-contract/v7): sha256 ueber PRESETS+PARAMS je Kern (klang/
               # koerper/tetrapoda), Node-direkt (THREE-frei) — Schema (klang: bpm/Skala==
               # scaleFor(darkness)/dna-Baender · motion: endliche Profile) · Determinismus
-              # (zwei frische vm-Kontexte byte-gleich) · Selbst-Test (korruptes Golden rot).
+              # (zwei frische vm-Kontexte byte-gleich) · Selbst-Test (korruptes Golden rot) · Plattform-Probe
+              # (S1 Waende: die Daten rufen beim Laden keine Transzendente, Ratschen-Zeile v7).
               run: npm run gate:daten-contract
+
+            - name: Ofen-Vertrag (S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren)
+              # spec/asset-contract/ofen: der Guss von foundry-core BAKERS_BY_KIND.kreatur/.koerper (wolf, fox, bear,
+              # deer, mensch x Stufe 0/1) als sha256 je Stoff-Klasse x Gelenk (189), je Gelenk (284) und je Beipack —
+              # bis S1 nur von Hand bewiesen (3a0248e8, 8e6f628c). Node-direkt im vm wie der Foundry-Worker;
+              # Determinismus, Samen-Invarianz, Plattform-Probe (pow 0, sin/cos benannt), Selbst-Test: ein
+              # verschobenes Gelenk und eine falsche Stoff-Zuordnung werden rot beim Namen.
+              run: npm run gate:ofen-contract
 
             - name: Die Klang-Linse (Welle 5 Klang — jede klingende Quelle traegt ein Gesetz)
               # An den vier Mess-Orten (Mess-Wiese · Seeufer · Waldinneres · Dorf, aus dem Gesetz gefunden):

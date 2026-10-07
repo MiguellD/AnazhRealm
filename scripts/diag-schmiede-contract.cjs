@@ -27,12 +27,13 @@
 // PLATTFORM-PROBE (Integration W5, 06.10., scripts/lib/plattform-probe.cjs): die Goldens tragen auf jedem V8
 // dieselben Bytes — jeder Fall baut noch einmal mit Math.pow um ±1 ULP verschoben (gebrochene Exponenten) und muss
 // byte-gleich bleiben; kippt einer, nennt die Probe die Aufrufstelle. Befund: unter Node 24 geprägt, unter Node 22
-// (CI) rot — die Säbel-Klinge hing an pow(e, 0,7) im Querschnitt.
+// (CI) rot — die Säbel-Klinge hing an pow(e, 0,7) im Querschnitt. Seit S1 Wände driften alle Transzendenten: pow
+// bleibt hart 0, sin/cos/atan2/hypot stehen benannt in spec/asset-contract/plattform-ratsche.json (nur fallend).
 //   node scripts/diag-schmiede-contract.cjs
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const { plattformProbe } = require("./lib/plattform-probe.cjs");
+const { probeWand } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v5/golden");
@@ -125,7 +126,7 @@ function compare(golden, actual) {
     return bad;
 }
 
-(function main() {
+(async function main() {
     console.log("=== ASSET-VERTRAG v5 — Klingen & Werkzeuge (schmiede-core.js buildInstance) ===");
     check("schmiede-core geladen (__schmiedeCore + buildInstance)", !!SC && typeof SC.buildInstance === "function");
     check(
@@ -233,31 +234,31 @@ function compare(golden, actual) {
     check(`Goldens byte-exakt (${Object.keys(golden.cases).length} Fälle)`, diffs.length === 0, diffs[0] || "");
     for (let i = 1; i < diffs.length; i++) console.log(`      ↳ ${diffs[i]}`);
 
-    // 6b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow (je Lauf ein frisch geladener Kern —
-    //     die Stoffe rechnen ihre Farbe beim ersten Bau). Die Fälle ohne Seed-Dopplung (seed-invariant, s. Kopf).
-    const PP = plattformProbe({
-        laden: () => {
-            delete require.cache[require.resolve(KERN)];
-            require(KERN);
-            return globalThis.__schmiedeCore;
+    // 6b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
+    //     Ratsche (je Lauf ein frisch geladener Kern — die Stoffe rechnen ihre Farbe beim ersten Bau). Die Fälle ohne
+    //     Seed-Dopplung (seed-invariant, s. Kopf).
+    await probeWand(
+        "v5",
+        {
+            laden: () => {
+                delete require.cache[require.resolve(KERN)];
+                require(KERN);
+                return globalThis.__schmiedeCore;
+            },
+            bauen: (K) => {
+                const r = {};
+                for (const c of CASES)
+                    if (c.seed === 7) r[caseKey(c)] = fingerprint(K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov)).sha256;
+                return r;
+            },
         },
-        bauen: (K) => {
-            const r = {};
-            for (const c of CASES)
-                if (c.seed === 7) r[caseKey(c)] = fingerprint(K.buildInstance(c.rezeptId, c.seed, c.lod, c.ov)).sha256;
-            return r;
-        },
-    });
-    globalThis.__schmiedeCore = SC;
-    check(
-        `PLATTFORM-PROBE: Math.pow ±1 ULP kippt kein Byte (${PP.faelle} Fälle) — jedes V8 prägt dieselben Goldens`,
-        PP.kippt.length === 0,
-        PP.kippt.map((k) => k + " ← " + (PP.stellen[k] || ["?"]).join(", ")).join(" · ")
+        check
     );
-    check("SELBST-TEST: eine grobe Drift (2^30 ULP) kippt die Bytes — die Plattform-Probe erreicht den Bau", PP.selbst);
+    globalThis.__schmiedeCore = SC;
 
     // 7) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
-    const tampered = JSON.parse(JSON.stringify(golden));
+    // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
+    const tampered = JSON.parse(JSON.stringify({ cases: actual }));
     const k0 = Object.keys(tampered.cases)[0];
     tampered.cases[k0].sha256 = tampered.cases[k0].sha256.replace(
         /^./,
@@ -266,7 +267,7 @@ function compare(golden, actual) {
     const t1 = compare(tampered, actual);
     const actual2 = JSON.parse(JSON.stringify(actual));
     actual2[k0].objects += 1;
-    const t2 = compare(golden, actual2);
+    const t2 = compare({ cases: actual }, actual2);
     check(
         "SELBST-TEST: korruptes Golden (sha256) wird erkannt",
         t1.some((s) => s.includes("sha256"))

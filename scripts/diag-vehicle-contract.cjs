@@ -18,13 +18,14 @@
 // Goldens: spec/asset-contract/v3/golden/vehicles.json — EINGEFROREN
 // (Taille-Disziplin), gemintet NUR wenn die Datei fehlt (oder MINT_FORCE=1).
 // SELBST-TEST: ein in-memory korrumpiertes Golden MUSS rot erkannt werden.
-// PLATTFORM-PROBE (Integration W5, scripts/lib/plattform-probe.cjs): Math.pow ±1 ULP kippt kein Byte — die Goldens
-// tragen unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; kippt ein Fall, nennt die Probe die Aufrufstelle.
+// PLATTFORM-PROBE (Integration W5; S1 Wände: alle Transzendenten, scripts/lib/plattform-probe.cjs): Math.pow ±1 ULP
+// kippt kein Byte — die Goldens tragen unter Node 22 (CI) und Node 24 (lokal) dieselben Bytes; sin/cos/atan2/hypot
+// erreichen die Bytes (Float64-Matrizen, ungerastert) und stehen benannt in spec/asset-contract/plattform-ratsche.json.
 //   node scripts/diag-vehicle-contract.cjs
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
-const { plattformProbe } = require("./lib/plattform-probe.cjs");
+const { probeWand } = require("./lib/plattform-probe.cjs");
 
 const root = path.resolve(__dirname, "..");
 const goldenDir = path.join(root, "spec/asset-contract/v3/golden");
@@ -118,7 +119,7 @@ function compare(golden, actual) {
     return bad;
 }
 
-(function main() {
+(async function main() {
     console.log("=== ASSET-VERTRAG v3 — Fahrzeuge (vehicle-core.js buildInstance) ===");
     check("vehicle-core geladen (__vehicleCore + buildInstance)", !!VC && typeof VC.buildInstance === "function");
 
@@ -183,33 +184,33 @@ function compare(golden, actual) {
     check(`Goldens byte-exakt (${Object.keys(golden.cases).length} Fälle)`, diffs.length === 0, diffs[0] || "");
     for (let i = 1; i < diffs.length; i++) console.log(`      ↳ ${diffs[i]}`);
 
-    // 4b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow (je Lauf ein frisch geladener Kern —
-    //     die Lack-Stoffe rechnen ihre Farbe beim ersten Bau). Alle Fälle: der Same wählt den Lack.
-    const PP = plattformProbe({
-        laden: () => {
-            delete require.cache[require.resolve(KERN)];
-            require(KERN);
-            return globalThis.__vehicleCore;
+    // 4b) PLATTFORM-PROBE: die Bytes hängen an keinem letzten Bit von Math.pow, die übrigen Transzendenten halten ihre
+    //     Ratsche (je Lauf ein frisch geladener Kern — die Lack-Stoffe rechnen ihre Farbe beim ersten Bau). Alle Fälle:
+    //     der Same wählt den Lack.
+    await probeWand(
+        "v3",
+        {
+            laden: () => {
+                delete require.cache[require.resolve(KERN)];
+                require(KERN);
+                return globalThis.__vehicleCore;
+            },
+            bauen: (K) => {
+                const r = {};
+                for (const c of CASES)
+                    r[caseKey(c)] = fingerprint(
+                        K.buildInstance(c.rezeptId, c.seed, c.lod, c.ovKultur ? K.CULTURES[c.ovKultur].fx : undefined)
+                    ).sha256;
+                return r;
+            },
         },
-        bauen: (K) => {
-            const r = {};
-            for (const c of CASES)
-                r[caseKey(c)] = fingerprint(
-                    K.buildInstance(c.rezeptId, c.seed, c.lod, c.ovKultur ? K.CULTURES[c.ovKultur].fx : undefined)
-                ).sha256;
-            return r;
-        },
-    });
-    globalThis.__vehicleCore = VC;
-    check(
-        `PLATTFORM-PROBE: Math.pow ±1 ULP kippt kein Byte (${PP.faelle} Fälle) — jedes V8 prägt dieselben Goldens`,
-        PP.kippt.length === 0,
-        PP.kippt.map((k) => k + " ← " + (PP.stellen[k] || ["?"]).join(", ")).join(" · ")
+        check
     );
-    check("SELBST-TEST: eine grobe Drift (2^30 ULP) kippt die Bytes — die Plattform-Probe erreicht den Bau", PP.selbst);
+    globalThis.__vehicleCore = VC;
 
     // 5) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
-    const tampered = JSON.parse(JSON.stringify(golden));
+    // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
+    const tampered = JSON.parse(JSON.stringify({ cases: actual }));
     const k0 = Object.keys(tampered.cases)[0];
     tampered.cases[k0].sha256 = tampered.cases[k0].sha256.replace(
         /^./,
@@ -221,7 +222,7 @@ function compare(golden, actual) {
     // objects-Abweichung zählt nur bei gleichem Hash — simuliere via Ist-Kopie
     const actual2 = JSON.parse(JSON.stringify(actual));
     actual2[k0].objects += 1;
-    const t2 = compare(golden, actual2);
+    const t2 = compare({ cases: actual }, actual2);
     check(
         "SELBST-TEST: korruptes Golden (sha256) wird erkannt",
         t1.some((s) => s.includes("sha256"))

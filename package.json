@@ -119,6 +119,7 @@
         "gate:schmiede-contract": "node scripts/diag-schmiede-contract.cjs",
         "gate:gegenstand-stoff": "node scripts/diag-gegenstand-stoff.cjs --selftest && node scripts/diag-gegenstand-stoff.cjs",
         "gate:fachwerk-contract": "node scripts/diag-fachwerk-contract.cjs",
+        "gate:ofen-contract": "node scripts/diag-ofen-contract.cjs --selftest && node scripts/diag-ofen-contract.cjs",
         "gate:constitution": "node scripts/diag-pipeline-constitution.cjs",
         "gate:foundry-warm": "node scripts/diag-foundry-warm.cjs",
         "gate:portal-boot": "node scripts/diag-portal-boot.cjs",

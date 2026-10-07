@@ -796,7 +796,9 @@
             legLen = fin(d.legLen, fin(d.leg, 0.22)),
             diet = fin(d.diet, 1),
             build = fin(d.build, 0.42);
-        var legMuscle = 0.42 * Math.pow(size / 2.4, 0.67) + (build - 0.5) * 0.3;
+        // die Potenz auf 1e-9 gerastert (S1 Wände, das Muster cc26c7d8 — wie skullR unten): die Bein-Muskel-Zahl trägt
+        // das letzte Bit von pow sonst bis in die Gelenke des Ofens (Plattform-Probe: 2 Klassen kippten).
+        var legMuscle = 0.42 * (Math.round(Math.pow(size / 2.4, 0.67) * 1e9) / 1e9) + (build - 0.5) * 0.3;
         legMuscle = Math.max(0.1, Math.min(0.9, legMuscle));
         // Der Hals-Winkel (Welle 5, Natur-Haltung im Stand): Wolf 35° (Kopf am Widerrist), Fuchs 43°, Hirsch 55°
         // (aufrecht), Bär 10° (tief) — vorher 8° + 55·Δ: der Hals lag waagrecht, der Kopf saß vorn AN der Brust.
@@ -807,7 +809,10 @@
             noseW = 2.0 - diet * 0.4;
         var bWF = 0.35 + build * 0.2,
             bellyD = 0.04 + build * 0.18,
-            skullR = 0.064 * Math.pow(size / 2.4, 0.25);
+            // die Potenz auf 1e-9 gerastert (S1 Wände, das Muster cc26c7d8): pow mit gebrochenem Exponenten rundet je V8
+            // im letzten Bit anders (Node 22 der CI ≠ Node 24), und der Schädel-Radius trägt es bis in die Ohren des
+            // Ofens (Plattform-Probe: fell/zahnfleisch an earL/earR von Fuchs und Hirsch kippten).
+            skullR = 0.064 * (Math.round(Math.pow(size / 2.4, 0.25) * 1e9) / 1e9);
         // DIE FELL-TÖNE DER ART (Welle 5): Grund = basis, dunkel = Rücken-Sattel, hell = Bauch des Art-Musters
         // (vorher je Ernährung: Wolf und Fuchs trugen dasselbe Braun, der Hirsch das Braun eines Bären).
         var mu = artGestalt({ size: size, neckLen: neckLen, legLen: legLen, diet: diet, build: build }).muster;
