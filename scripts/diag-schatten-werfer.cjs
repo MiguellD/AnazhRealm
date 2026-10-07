@@ -24,7 +24,9 @@
 //   K8  die Wahl hält über die Stufen der Sonne (Welle C, OMEN-Urteil 07.10.: der Tag steht im Spiel nie): dreht das Licht
 //       um weniger, als der halbe Licht-Rand (`PASS_WAHL.lichtRandTexel` Texel) über den längsten Licht-Weg erlaubt, legt
 //       jede Kaskade ihre Box neu, ihre Lage hält, und die gehaltene Wahl trägt jeden echten Werfer (Zellen der werfenden
-//       Sätze, Instanzen der Schatten-Gruppen — das Gesetz ohne Rand frisch gerechnet); über dem Rand wählt jede neu
+//       Sätze, Instanzen der Schatten-Gruppen — das Gesetz ohne Rand frisch gerechnet), auch wenn jeder Leser mitten in der
+//       gehaltenen Drehung neu wählt (die Folge des Gesetzes `_wahlHaelt`: −0,9 des Halts, Neu-Wahl, +0,9); über dem Rand
+//       wählt jede neu
 //   K4  außerhalb des Takts: dieselbe Kamera → keine Kaskade rendert; 40° gedreht → beide rendern (die Scheibe lief
 //       aus der Box)
 //   K5  die Karte trägt die LÄNGSTE Kante der Referenz-Scheibe bei texelM (kleinste Zweierpotenz)
@@ -76,7 +78,7 @@
 //   S9  Selbsttest: die alte Regel (eine globale Gruppe zeichnet jede Instanz in jedem Pass) macht W8 rot, beim Namen
 //   S10 Selbsttest: urteilt EIN Leser nach der alten Box (das Frustum allein, ohne Licht-Kapsel) — die Zellen, die Werfer
 //       der Bündel oder die Instanzen —, wird W9 rot und nennt ihn
-//   S11 Selbsttest: hält die Lage einer Kaskade jede Drehung des Lichts (die Rand-Prüfung fällt), fehlen 3° später echte
+//   S11 Selbsttest: hält die Lage einer Kaskade jede Drehung des Lichts (die Rand-Prüfung fällt), fehlen 60° später echte
 //       Werfer in der gehaltenen Wahl — K8 wird rot
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
@@ -366,7 +368,7 @@ function probe(selbsttest) {
     // Karte folgt dem Licht), ihre Lage aber hält — und die gehaltene Wahl trägt jeden echten Werfer der neuen Lage: die
     // Zellen der werfenden Sätze und die Instanzen der Schatten-Gruppen, nach dem Gesetz OHNE Licht-Rand frisch gerechnet.
     // Dreht es über den Rand, wählt jede Kaskade neu. `untreu` (Selbsttest S11): die alte Regel ohne Rand-Prüfung — die Lage
-    // hält jede Drehung des Lichts; 3° später fehlen Werfer.
+    // hält jede Drehung des Lichts; 60° später fehlen Werfer.
     const k8 = (untreu) => {
         const res = { gehalten: [], neuGelegt: [], neu: [], loecher: 0, namen: [], geprueft: 0, dreh: 0, budget: [] };
         tag(0.5);
@@ -390,10 +392,10 @@ function probe(selbsttest) {
         // die Sonne um α weiter: die Tageszeit so gewählt, dass das Licht genau α dreht
         const richtung = (t) => r._dayNightSunDirection(t * Math.PI * 2 - Math.PI / 2);
         const d0 = richtung(0.5);
-        const drehe = (alpha) => {
+        const drehe = (alpha, vor = 1) => {
             let dt = alpha / (2 * Math.PI);
-            for (let k = 0; k < 4; k++) dt *= alpha / d0.angleTo(richtung(0.5 + dt));
-            tag(0.5 + dt);
+            for (let k = 0; k < 4; k++) dt *= alpha / d0.angleTo(richtung(0.5 + vor * dt));
+            tag(0.5 + vor * dt);
             const dl = st.directionalLight;
             return d0.angleTo(dl.position.clone().sub(dl.target.position).normalize());
         };
@@ -403,10 +405,26 @@ function probe(selbsttest) {
                 return Object.getPrototypeOf(this)._passLageHaelt.call(this, a, s, an);
             };
         try {
-            res.dreh = drehe(untreu ? (3 * Math.PI) / 180 : 0.8 * Math.min(...res.budget));
+            // die Folge des Gesetzes (`_wahlHaelt`): Drehung auf −0,9 des Halts, dort wählt jeder werfende Satz und jede
+            // Schatten-Gruppe neu (ein neuer Stand, neue Slots), Weiterdrehen auf +0,9 des Halts; die alte Regel (`untreu`)
+            // dreht vom Anker 60° weiter (an der Mess-Wiese des Null-Renderers trägt der Saum der Wahl-Scheibe kleine
+            // Drehungen; in der echten Welt fehlten nach ±3° schon 14 Werfer)
+            const halt = untreu ? (60 * Math.PI) / 180 : 0.9 * Math.min(...res.budget);
+            if (!untreu) {
+                drehe(halt, -1);
+                csm.lights.forEach((l) => (l.shadow.needsUpdate = true));
+                laufe();
+                for (const x of st.chunkSaetze.values()) if (x.spec.schatten === true) x.stand++;
+                for (const g of r._instanzWahlGruppen())
+                    if (g.wahl === "schatten" && g.mesh) g.mesh.instanceMatrix.needsUpdate = true;
+                csm.lights.forEach((l) => (l.shadow.needsUpdate = true));
+                laufe();
+            }
+            res.gehaltenMitte = csm.lights.map((_l, i) => r._passLagen.get("k" + i).gen === gen0[i]);
+            res.dreh = drehe(halt, 1);
             csm.lights.forEach((l) => (l.shadow.needsUpdate = true));
             laufe();
-            res.gehalten = csm.lights.map((_l, i) => r._passLagen.get("k" + i).gen === gen0[i]);
+            res.gehalten = csm.lights.map((_l, i) => res.gehaltenMitte[i] && r._passLagen.get("k" + i).gen === gen0[i]);
             res.neuGelegt = csm._anazhFit.map((f, i) => f.bild !== bild0[i]);
             // die Wahrheit: das Gesetz ohne Licht-Rand in der neuen Lage — fehlt ein echter Werfer in der gehaltenen Wahl?
             const loch = (x) => {
@@ -1423,7 +1441,7 @@ function probe(selbsttest) {
             );
         if (a.k8)
             check(
-                "K8 die Wahl hält über die Stufen der Sonne: unter dem Licht-Rand legt die Box neu, die Lage hält und trägt jeden echten Werfer; über dem Rand wählt jede Kaskade neu",
+                "K8 die Wahl hält über die Stufen der Sonne: unter dem Licht-Rand legt die Box neu, die Lage hält und trägt jeden echten Werfer, auch nach einer Neu-Wahl mitten in der Drehung; über dem Rand wählt jede Kaskade neu",
                 a.k8.gehalten.every(Boolean) &&
                     a.k8.neuGelegt.every(Boolean) &&
                     a.k8.loecher === 0 &&
@@ -1568,7 +1586,7 @@ function probe(selbsttest) {
             }
             check("S10 Selbsttest lief für alle drei Leser", (a.s10 || []).length === 3);
             check(
-                "S11 Selbsttest: hält die Lage jede Drehung des Lichts (ohne Rand-Prüfung), fehlen 3° später Werfer — K8 rot",
+                "S11 Selbsttest: hält die Lage jede Drehung des Lichts (ohne Rand-Prüfung), fehlen 60° später Werfer — K8 rot",
                 !!a.s11 && a.s11.gehalten.every(Boolean) && a.s11.loecher > 0,
                 a.s11 ? JSON.stringify(a.s11) : "kein Boden-Satz"
             );

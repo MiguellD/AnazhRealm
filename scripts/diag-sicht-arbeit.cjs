@@ -37,6 +37,18 @@ function urteil(b) {
     // die Wand friert die Welt ein: in KEINEM Ruhe-Frame Arbeit oder ein Byte
     const v = SICHT.sichtUrteil(Object.assign({ streng: true }, b));
     if (!b.sonne) v.push("LEER: keine Phase mit laufender Sonne (kein Richtlicht?) — (L) prüfte nichts");
+    const D = b.drehTreue;
+    if (!D) v.push("LEER: keine Dreh-Treue gemessen — (D) prüfte nichts");
+    else if (!D.gehalten)
+        v.push(
+            `DREH-TREUE VAKUÖS: die Lage hielt die Drehfolge nicht (Grenze ${D.grenze} rad) — der Fall trat nie ein`
+        );
+    else if (!(D.geprueft > 0)) v.push("LEER: Dreh-Treue ohne Zelle oder Instanz im Frustum");
+    else if (D.loecher > 0)
+        v.push(
+            `DREH-TREUE: ${D.loecher} Löcher — nach einer Neu-Wahl mitten in der gehaltenen Drehung (Grenze ${D.grenze} rad) ` +
+                `zeichnet die gehaltene Wahl nicht, was das echte Frustum trifft: ${D.namen.join(", ")}`
+        );
     const c = b.code || {};
     if (!c.lageGen)
         v.push("CODE: `_passWahlLage` legt keine Lage-Generation (`_passLageGen`) — die Kette weiß nie, ob sie steht");
@@ -84,6 +96,7 @@ function selbsttest() {
         gehen: phase(5000, 0, 0),
         bruch: phase(4000, 0, 0),
         treue: { geprueft: 12, abweichung: [] },
+        drehTreue: { grenze: 0.0348, gehalten: true, loecher: 0, namen: [], geprueft: 500 },
         code: { lageGen: true, satzLiest: true, instanzLiest: true, wieseLiest: true, zweiteSignatur: false },
         pageErrors: [],
     };
@@ -145,6 +158,13 @@ function selbsttest() {
         ],
         ["keine Sonne", (b) => delete b.sonne, /LEER: keine Phase mit laufender Sonne/],
         ["keine Ruhe", (b) => delete b.ruhe, /LEER: keine Ruhe-Phase/],
+        [
+            "Loch nach der Neu-Wahl in der Drehung",
+            (b) => Object.assign(b.drehTreue, { loecher: 7, namen: ["boden Zelle"] }),
+            /DREH-TREUE: 7 Löcher/,
+        ],
+        ["Drehfolge ohne Halt", (b) => (b.drehTreue.gehalten = false), /DREH-TREUE VAKUÖS/],
+        ["keine Dreh-Treue", (b) => delete b.drehTreue, /LEER: keine Dreh-Treue/],
         ["keine Generation", (b) => (b.code.lageGen = false), /CODE: `_passWahlLage` legt keine/],
         ["Satz fragt nicht", (b) => (b.code.satzLiest = false), /CODE: `_chunkSatzPass` fragt/],
         ["Instanz fragt nicht", (b) => (b.code.instanzLiest = false), /CODE: `_instanzWahlPass` fragt/],
@@ -365,6 +385,85 @@ const server = http.createServer((req, res) => {
                 phase(20, (i) => stelle(Math.PI / 5, i + 1)),
                 0
             );
+            // (D) DIE DREH-TREUE: die Lage des Hauptbilds hält über eine kleine Drehung. Wählt ein Leser mitten in ihr neu (ein
+            // Satz mit neuem Stand, eine Gruppe mit neuen Slots), urteilt er vom Blick DIESES Frames — dreht die Kamera danach
+            // weiter, darf ihr echtes Frustum nichts tragen, was die gehaltene Wahl nicht zeichnet. Die Folge erzwingt den Fall:
+            // die Grenze des Halts aus dem Lauf gemessen (H), Anker bei 0, Drehung auf −0,95 H, jeder Satz und jede Gruppe des
+            // Hauptbilds wählt dort neu, Weiterdrehen auf +0,95 H. Gezählt: Zellen (ohne Höhlen-Zellen, ihre Wahrheit prüft
+            // gate:hoehlen-sicht) und Instanzen, die das Gesetz ohne jeden Rand im Frustum dieses Blicks trifft und die
+            // gehaltene Wahl nicht zeichnet.
+            {
+                const gen = () => (r._passLagen && r._passLagen.get("haupt") ? r._passLagen.get("haupt").gen : -1);
+                const neuAnker = () => {
+                    stelle(0, 0);
+                    if (r._passLagen) r._passLagen.clear();
+                    frame();
+                    return gen();
+                };
+                let g0 = neuAnker();
+                let grenze = 0;
+                for (let k = 1; k <= 400; k++) {
+                    stelle(k * 0.0002, 0);
+                    frame();
+                    if (gen() !== g0) break;
+                    grenze = k * 0.0002;
+                }
+                const D = { grenze: +grenze.toFixed(4), gehalten: false, loecher: 0, namen: [], geprueft: 0 };
+                g0 = neuAnker();
+                stelle(-0.95 * grenze, 0);
+                frame();
+                const gX = gen();
+                for (const x of st.chunkSaetze.values()) x.stand++;
+                for (const g of r._instanzWahlGruppen())
+                    if (g.wahl === "haupt" && g.mesh) g.mesh.instanceMatrix.needsUpdate = true;
+                frame();
+                const gX2 = gen();
+                stelle(0.95 * grenze, 0);
+                frame();
+                D.gehalten = grenze > 0 && gX === g0 && gX2 === g0 && gen() === g0;
+                // die Wahrheit: das Gesetz ohne Rand im Frustum dieses Blicks
+                S.m.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse);
+                S.frustum.setFromProjectionMatrix(S.m, cam.coordinateSystem);
+                const Lw = r._passWahlLage(S, cam, -1);
+                const rand = [Lw.rand, Lw.dreh, Lw.halt, Lw.licht];
+                Lw.rand = Lw.dreh = Lw.halt = Lw.licht = 0;
+                Lw.ax = cam.position.x;
+                Lw.ay = cam.position.y;
+                Lw.az = cam.position.z;
+                const loch = (x) => {
+                    D.loecher++;
+                    if (D.namen.length < 6) D.namen.push(x);
+                };
+                try {
+                    for (const x of st.chunkSaetze.values()) {
+                        const ab = x.abschnitte.get("haupt");
+                        const gezeichnet = new Set(ab ? ab.liste : []);
+                        for (const b of x.ordnung) {
+                            if (!b.huelle || b.huelle.isEmpty() || !r._passTrifftBox(Lw, b.huelle, 0)) continue;
+                            for (const z of b.zellen) {
+                                if (z.knoten !== undefined || z.huelle.isEmpty() || !r._passTrifftBox(Lw, z.huelle, 0))
+                                    continue;
+                                D.geprueft++;
+                                if (!gezeichnet.has(z)) loch(String(x.art).split("|")[0] + " Zelle");
+                            }
+                        }
+                    }
+                    for (const g of r._instanzWahlGruppen()) {
+                        const w = g.wahl === "haupt" && g._wahlJe ? g._wahlJe.get("haupt") : null;
+                        if (!w || !g.mesh) continue;
+                        const gezeichnet = new Set(w.refs);
+                        const fenster = Lw.an && r._instanzFensterGilt(g);
+                        for (let j = 0; j < (g.liveCount | 0); j++) {
+                            if (!r._instanzBehalten(g, j, Lw, fenster)) continue;
+                            D.geprueft++;
+                            if (!gezeichnet.has(g.slotRef[j])) loch((g.mesh.name || g.key) + " Instanz");
+                        }
+                    }
+                } finally {
+                    [Lw.rand, Lw.dreh, Lw.halt, Lw.licht] = rand;
+                }
+                aus.drehTreue = D;
+            }
             // (L) RUHE MIT LAUFENDER SONNE: die Tageslänge des Spiels, 60 Frames je s; das Licht folgt `_applyDayNightToScene`,
             // die Stellvertreter-Kaskaden stehen entlang des Lichts (ihre Mitte ein halbes Feld vor dem Auge)
             stelle(0, 0);
@@ -462,6 +561,11 @@ const server = http.createServer((req, res) => {
                 `Stufe ${befund.sonne.stufe} rad), die Kette arbeitete in ${befund.sonne.arbeitFrames}`
         );
     console.log(`  Treue: ${befund.treue.geprueft} Wahlen verglichen, ${befund.treue.abweichung.length} Abweichungen`);
+    if (befund.drehTreue)
+        console.log(
+            `  Dreh-Treue: Grenze ${befund.drehTreue.grenze} rad, gehalten ${befund.drehTreue.gehalten}, ` +
+                `${befund.drehTreue.geprueft} geprüft, ${befund.drehTreue.loecher} Löcher ${befund.drehTreue.namen.join(", ")}`
+        );
     const v = urteil(befund);
     if (v.length) {
         console.log("\n❌ SICHT-ARBEIT ROT:\n  " + v.join("\n  "));

@@ -90407,7 +90407,7 @@ class AnazhRealm {
         L.rand = PW.sichtRand;
         // der Halt (`_passLageGen`): die Ebenen und das Auge wandern um höchstens haltM, der Rand je Meter mit dem Auge
         L.halt = PW.haltM * (1 + PW.sichtRand);
-        // der Dreh-Rand: eine Perspektive hält ihre Wahl über eine Drehung bis `drehRand` (je Meter Abstand der Sinus)
+        // der Dreh-Rand: eine Perspektive wählt mit `drehRand` (je Meter Abstand der Sinus) und hält bis zur Hälfte (`_wahlHaelt`)
         L.dreh = kamera.isPerspectiveCamera === true ? Math.sin(PW.drehRand) : 0;
         // Die Scheibe gilt nur dem Pass ihrer Kaskaden-Kamera (die Box beim letzten Rendern dieser Kaskade, `_kaskadeFit`).
         const csm = this.state.csmNode;
@@ -90578,10 +90578,22 @@ class AnazhRealm {
         return true;
     }
 
+    // DAS GESETZ DES HALTS (Welle C): eine Wahl, die mit einem Rand fiel, hält, solange ihre Drehung seit dem Anker — mal dem
+    // Hebel, mit dem sie am Rand wirkt — die HÄLFTE dieses Rands nicht überschreitet. Jede Wahl unter der gehaltenen Lage (der
+    // Anker und jeder Leser, der mitten in ihr neu wählt: ein Satz mit neuem Stand, eine Gruppe mit neuen Slots) urteilt vom
+    // Blick ihres Frames und liegt höchstens den halben Rand vom Anker, gegen die jetzige Lage also höchstens den ganzen —
+    // den ihr Rand trägt. Die Kamera dreht mit dem Hebel 1 gegen ihren Dreh-Rand (`drehRand`, Bogenmaß), das Licht mit dem
+    // längsten Licht-Weg gegen seinen Licht-Rand (Meter). Gemessen 07.10. (gate:sicht-arbeit (D), Mess-Wiese): hielt die
+    // Kamera bis zum ganzen Rand, fielen nach einer Neu-Wahl mitten in der Drehung 12 Zellen und Instanzen am Bildrand weg.
+    _wahlHaelt(dreh, hebel, rand) {
+        return dreh * hebel <= rand / 2;
+    }
+
     // Hält die Lage `s` gegen ihren Anker `a` (Aufbau `_passLageGen`)? Orte (das Auge, die Konstanten der Ebenen, der Boden
     // der Kaskaden-Box) um höchstens haltM, Richtungen bis auf die Rundung — eine Perspektive: ihre Projektion gleich, ihre
-    // Drehung um höchstens `drehRand` (der Winkel zwischen Anker und Kamera, cos = (Spur(R0ᵀ·R) − 1) / 2) —, alles andere
-    // gleich; eine Kaskade mit Box über die Stufen der Sonne nach ihrem Licht-Rand (unten).
+    // Drehung (der Winkel zwischen Anker und Kamera, cos = (Spur(R0ᵀ·R) − 1) / 2) nach dem Gesetz des Halts gegen den
+    // Dreh-Rand (`_wahlHaelt`) —, alles andere gleich; eine Kaskade mit Box über die Stufen der Sonne nach ihrem Licht-Rand
+    // (unten), nach demselben Gesetz.
     _passLageHaelt(a, s, anker) {
         const PW = AnazhRealm.PASS_WAHL;
         const H = PW.haltM;
@@ -90607,7 +90619,7 @@ class AnazhRealm {
                 Math.sqrt(cx * cx + cy * cy + cz * cz),
                 a[63] * s[63] + a[64] * s[64] + a[65] * s[65]
             );
-            return dreh * Math.max(anker.wegMax, s[86]) <= a[85] / 2;
+            return this._wahlHaelt(dreh, Math.max(anker.wegMax, s[86]), a[85]);
         }
         const dx = s[0] - a[0],
             dy = s[1] - a[1],
@@ -90628,7 +90640,8 @@ class AnazhRealm {
         if (persp) {
             let spur = 0;
             for (let i = 75; i < 84; i++) spur += s[i] * a[i];
-            if (!((spur - 1) / 2 >= Math.cos(PW.drehRand))) return false;
+            const dreh = Math.acos(Math.max(-1, Math.min(1, (spur - 1) / 2)));
+            if (!this._wahlHaelt(dreh, 1, PW.drehRand)) return false;
         } else for (let i = 75; i < 84; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
         // die Blende (66…74) gleich
         for (let i = 66; i < 75; i++) if (s[i] !== a[i]) return false;
@@ -95596,12 +95609,12 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
 // (`_passLageGen`) — das Auge der Spiel-Kamera atmet im Stand um Millimeter (gemessen 06.10., echte GPU, Mess-Wiese:
 // ±4 mm in y je Frame, keine Drehung), und jede neue Wahl darum rechnete jeden Frame dasselbe neu. Das Gesetz trägt den
 // Halt in jedem Urteil als Rand (`L.halt`), die gehaltene Wahl verliert darum nichts.
-// `drehRand` (Welle C, OMEN-Urteil 06.10.: beim Drehen 360 × 1° war die Kette teurer als vorher): eine Perspektive hält ihre
-// Wahl über eine Drehung bis zu diesem Winkel (Bogenmaß, 2°) — das Gesetz trägt den Sinus je Meter Abstand als Rand, die
-// Höhlen-Sicht ihr Sichtfeld je Halbwinkel um das 1,5-Fache geweitet; gewählt wird neu, wenn die Drehung den Rand verlässt.
+// `drehRand` (Welle C, OMEN-Urteil 06.10.: beim Drehen 360 × 1° war die Kette teurer als vorher): der Rand einer Perspektive
+// (Bogenmaß) — das Gesetz trägt den Sinus je Meter Abstand als Rand, die Höhlen-Sicht ihr Sichtfeld je Halbwinkel um das
+// 1,5-Fache geweitet; die Wahl hält über eine Drehung bis zur Hälfte (`_wahlHaelt`), dann wählt sie neu.
 // `lichtRandTexel` (Welle C, OMEN-Urteil 07.10.: der Tag steht im Spiel nie): der Licht-Rand eines Kaskaden-Passes in Texeln
 // seiner Karte — die Wahl der Kaskade hält über die Stufen der Sonne (`_sonnenWinkel`), bis die Drehung des Lichts seit der
-// Wahl, mal dem längsten Licht-Weg der Box (`fit.weg`), die Hälfte dieses Rands erreicht (`_passLageHaelt`).
+// Wahl, mal dem längsten Licht-Weg der Box (`fit.weg`), die Hälfte dieses Rands erreicht (`_wahlHaelt`).
 AnazhRealm.PASS_WAHL = Object.freeze({
     sichtRand: 0.003,
     saumM: Object.freeze([8, 24]),
