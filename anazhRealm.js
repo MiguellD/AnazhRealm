@@ -4558,7 +4558,10 @@ class AnazhRealm {
         if (!def) return { error: `Unbekannter Provider: ${llm.provider}` };
         if (!llm.enabled) return { error: "LLM nicht aktiv" };
         const cfg = llm.providerConfig[llm.provider];
-        if (def.requiresKey && (!cfg || !cfg.apiKey)) return { error: "API-Key fehlt" };
+        if (def.requiresKey && (!cfg || !cfg.apiKey))
+            return {
+                error: `für ${def.label} fehlt der Schlüssel — trage ihn unter Einstellungen → Begleiter-Stimme ein`,
+            };
         if (llm.inFlight) return { error: "Anfrage läuft bereits" };
         const nowSec = performance.now() / 1000;
         if (nowSec - llm.lastResponseAt < llm.minGapSeconds) {
@@ -4588,7 +4591,7 @@ class AnazhRealm {
             zielUrl = url;
             zielLokal = isLocalUrl;
             ueberProxy = useProxy;
-            const fetchUrl = useProxy ? "http://localhost:4312/api/proxy/llm" : url;
+            const fetchUrl = useProxy ? this._llmProxyUrl() : url;
             const fetchBody = useProxy ? JSON.stringify({ url, headers, body }) : JSON.stringify(body);
             const fetchHeaders = useProxy ? { "content-type": "application/json" } : headers;
             const res = await fetch(fetchUrl, {
@@ -4601,7 +4604,11 @@ class AnazhRealm {
                 // Eigene 404-Erkennung für "model not found" — häufigster Ollama-Stolperstein (Modell-Name passt
                 // nicht zur lokalen Installation): klarer Hinweis statt rohem Server-Output.
                 const isModelMissing = res.status === 404 && /model.*not found|"model"/i.test(text);
-                if (isModelMissing && this.state.llm.provider === "ollama") {
+                if (useProxy && (res.status === 404 || res.status === 405) && !isModelMissing) {
+                    // Der Proxy ist der save-server, der die Seite liefert: antwortet der Ursprung 404/405, läuft die
+                    // Seite über einen anderen Server (die echte Ursache, nie „HTTP 404" ohne Wort).
+                    llm.lastError = `der Proxy fehlt: ${fetchUrl} antwortet ${res.status} — die Seite läuft nicht über den save-server (npm start)`;
+                } else if (isModelMissing && this.state.llm.provider === "ollama") {
                     const m = (cfg && cfg.model) || "?";
                     llm.lastError = `Modell „${m}" nicht gefunden. Prüfe mit \`ollama list\` (lokal) oder im Provider-Dashboard (Cloud) welche Modelle verfügbar sind, und trage den exakten Namen ins Modell-Feld ein.`;
                 } else {
@@ -4634,16 +4641,19 @@ class AnazhRealm {
                 llm.lastError =
                     `Keine Antwort von ${zielHost || "localhost"} — der lokale Dienst läuft nicht` +
                     (pv === "ollama" ? " (starte ihn: `ollama serve`)." : ".");
+            } else if (isCorsLikely && ueberProxy) {
+                // Der Proxy ist der Ursprung der Seite (`_llmProxyUrl`): ohne Antwort läuft der save-server nicht.
+                llm.lastError = `Proxy nicht erreichbar: ${this._llmProxyUrl()} — läuft der save-server (npm start)?`;
+            } else if (isCorsLikely && typeof navigator !== "undefined" && navigator.onLine === false) {
+                llm.lastError = "kein Netz — der Browser ist offline.";
             } else if (isCorsLikely && this.state.llm.provider === "ollama") {
-                if (ueberProxy) {
-                    llm.lastError = "Proxy nicht erreichbar (läuft 'npm run dev' / save-server auf Port 4312?).";
-                } else {
-                    llm.lastError =
-                        `${zielHost || "Die Cloud"} blockt den Browser-Direct-Call (CORS). Optionen: ` +
-                        "(a) lokales Ollama auf localhost:11434, " +
-                        "(b) aktiviere 'Proxy über save-server' im Einstellungen-Drawer (braucht `npm run dev`), " +
-                        "(c) Provider mit CORS-Header (Groq, Gemini, OpenRouter).";
-                }
+                llm.lastError =
+                    `${zielHost || "Die Cloud"} blockt den Browser-Direct-Call (CORS). Optionen: ` +
+                    "(a) lokales Ollama auf localhost:11434, " +
+                    "(b) aktiviere 'Proxy über save-server' im Einstellungen-Drawer (braucht `npm start`), " +
+                    "(c) Provider mit CORS-Header (Groq, Gemini, OpenRouter).";
+            } else if (isCorsLikely) {
+                llm.lastError = `${zielHost || "der Dienst"} ist nicht erreichbar oder blockt den Browser-Aufruf (CORS).`;
             } else {
                 llm.lastError = rawMsg;
             }
@@ -4711,8 +4721,7 @@ class AnazhRealm {
         const defs = this.llmProviderDefs();
         const def = defs[llm.provider];
         if (!def) return false;
-        const cfg = llm.providerConfig[llm.provider];
-        if (def.requiresKey && (!cfg || !cfg.apiKey)) return false;
+        // Ohne Schlüssel schwieg der Chat ganz (die Stimme war an, der Satz verschwand): der Fehler von `llmCall` nennt ihn.
         // Welle 6.X.4 F1 V8.13 — Begleiter-Name in Chat-Output statt hardcoded.
         const compName = (this.state.grok && this.state.grok.companionName) || "Grok";
         appendChatOutput(`${compName} denkt nach…`);
@@ -4738,7 +4747,7 @@ class AnazhRealm {
             // per Default, whitelist-gesichert); ihre Fitness läuft über das Lebens-Fenster, NICHT über den
             // 5-s-Gesten-Finalizer (der nur die Registrierung mäße).
             if (result.ok && reply.program[0] === "rule") {
-                appendChatOutput("(Grok stellt ein Gesetz auf — sieh es in den Fähigkeiten unter Gesetze.)");
+                appendChatOutput(`(${compName} stellt ein Gesetz auf — sieh es in den Fähigkeiten unter Gesetze.)`);
             } else if (result.ok) {
                 const weicht = this._naturAbsageSatz(result.log);
                 if (!weicht || !weicht.nichts)
@@ -5046,6 +5055,59 @@ class AnazhRealm {
         return true;
     }
 
+    // Der Proxy der Stimme ist der save-server, der die Seite liefert (sein `/api/proxy/llm`): der Ursprung der Seite —
+    // bis 07.10. stand hier fest localhost:4312, auf jedem anderen Port fragte die Stimme einen fremden Server.
+    _llmProxyUrl() {
+        const o =
+            typeof location !== "undefined" && /^https?:$/.test(location.protocol)
+                ? location.origin
+                : "http://localhost:4312";
+        return o + "/api/proxy/llm";
+    }
+
+    // DIE ERREICHBARKEIT beim Aktivieren (Leben-Schau 07.10., V-D6): der Status sagte „Aktiv: Ollama (llama3.2)", obwohl der
+    // Dienst nicht lief und das Modell nicht installiert war — erst der erste Satz scheiterte. Ein lokaler Ollama-Endpunkt
+    // wird beim Aktivieren gefragt (`/api/tags`, 3 s): keine Antwort → der Dienst läuft nicht; das Modell fehlt → welche da
+    // sind. Cloud-Endpunkte urteilt die erste Antwort (ein Schlüssel-Aufruf kostet). Setzt `lastError`, gibt ihn zurück.
+    async _llmErreichbarkeit() {
+        const llm = this.state.llm;
+        if (!llm || llm.provider !== "ollama" || !llm.enabled) return null;
+        const cfg = llm.providerConfig.ollama || {};
+        const ep = String(cfg.endpoint || AnazhRealm.OLLAMA_DEFAULT_ENDPOINT).replace(/\/+$/, "");
+        if (cfg.useProxy || !/^https?:\/\/(localhost|127\.0\.0\.1)([:/]|$)/i.test(ep)) return null;
+        let host = ep;
+        try {
+            host = new URL(ep).host;
+        } catch (_e) {}
+        let fehler = null;
+        try {
+            const ctl = typeof globalThis.AbortController === "function" ? new globalThis.AbortController() : null;
+            const uhr = ctl ? setTimeout(() => ctl.abort(), 3000) : null;
+            const res = await fetch(ep + "/api/tags", { signal: ctl ? ctl.signal : undefined });
+            if (uhr) clearTimeout(uhr);
+            if (!res.ok) {
+                fehler = `${host} antwortet ${res.status} auf /api/tags — ist das ein Ollama-Dienst?`;
+            } else {
+                const j = await res.json().catch(() => null);
+                const namen =
+                    j && Array.isArray(j.models) ? j.models.map((m) => m && (m.name || m.model)).filter(Boolean) : [];
+                const m = String(cfg.model || "");
+                if (m && !namen.some((n) => n === m || n === m + ":latest"))
+                    fehler =
+                        `Modell „${m}" ist auf ${host} nicht installiert — ` +
+                        (namen.length ? `vorhanden: ${namen.slice(0, 4).join(", ")} ` : "keines vorhanden ") +
+                        `(ollama pull ${m}).`;
+            }
+        } catch (_e) {
+            fehler = `Keine Antwort von ${host} — der lokale Dienst läuft nicht (starte ihn: \`ollama serve\`).`;
+        }
+        if (llm.enabled && llm.provider === "ollama") {
+            llm.lastError = fehler;
+            this.llmUpdateStatus();
+        }
+        return fehler;
+    }
+
     llmUpdateStatus() {
         const el = document.getElementById("llm-status");
         if (!el) return;
@@ -5263,6 +5325,8 @@ class AnazhRealm {
             toggleBtn.textContent = this.state.llm.enabled ? "Deaktivieren" : "Aktivieren";
             this.llmPersist();
             this.llmUpdateStatus();
+            // „Aktiv" erst nach der Frage an den Dienst (V-D6): ein lokaler Endpunkt ohne Dienst steht sofort im Status.
+            if (this.state.llm.enabled) this._llmErreichbarkeit();
         });
     }
 
@@ -24317,7 +24381,9 @@ class AnazhRealm {
             // Schicht 2 — LLM-Fallback. Statt „Unbekannter Befehl" geht der Text
             // an Claude; Antwort kommt narrativ + optional als DSL-Programm.
             this.maybeAnswerWithLlm(command, appendChatOutput).catch((err) => {
-                appendChatOutput(`(Grok-Fehler: ${err.message || err})`);
+                appendChatOutput(
+                    `(${(this.state.grok && this.state.grok.companionName) || "Grok"}-Fehler: ${err.message || err})`
+                );
             });
             return;
         }
