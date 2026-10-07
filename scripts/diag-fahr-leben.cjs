@@ -571,6 +571,12 @@ function stationVerdict(s) {
             out.push(`${name} vakuös (kein Stoß aus ≥ 3 m/s: Kontakt ${m.kontakt}, ${(m.vVor || 0).toFixed(2)} m/s)`);
             continue;
         }
+        // der Stoß gilt der Annäherung: gleitet der Gegner schon schneller fort, als der Wagen nachkommt, stößt nichts —
+        // die Ursache vor ihrem Symptom (der Wagen verliert dann Fahrt an einen Gegner, der schon fort ist)
+        if (m.ohneAnnaeherung > 0)
+            out.push(
+                `${name}: Stoß ohne Annäherung (${m.ohneAnnaeherung}×, der Gegner glitt schon schneller fort) — die Fahrt statt der Relativ-Geschwindigkeit`
+            );
         const was = `${m.vVor.toFixed(2)} → ${m.vNach.toFixed(2)} m/s`;
         if (k === "stossFels" && !(m.vMinNach <= STATION.rueckprallMs))
             out.push(
@@ -1445,6 +1451,7 @@ async function probeLeben(expected) {
         const baerHalten = (b) => {
             b.c.position.set(b.x, b.y, b.z);
             b.c.rotation.y = b.ry;
+            b.c.userData._stossV = null; // die Hand der Probe hält auch die Geschwindigkeit (der Bär steht)
             b.leib = r._kreaturLeib(b.c, 0, b.leib || {});
         };
         S.huelleBaer = await huelleProbe({
@@ -1794,7 +1801,60 @@ async function probeLeben(expected) {
                 return null;
             }
             const p0 = h.lage(ziel);
-            const m = { kontakt: -1, vVor: 0, vNach: 0, vMinNach: Infinity, schritte: 0, ereignisse: 0, ruck: 0 };
+            const m = {
+                kontakt: -1,
+                vVor: 0,
+                vNach: 0,
+                vMinNach: Infinity,
+                schritte: 0,
+                ereignisse: 0,
+                ruck: 0,
+                ohneAnnaeherung: 0,
+            };
+            // DIE ANNÄHERUNG je Stoß des eigenen Wagens: die Fahrt in die Berührung (vor dem Löser) gegen die Geschwindigkeit
+            // des Gegners längs derselben Normalen (Leib: Steuer-Schritt + getragener Stoß; Wagen: sein Fahr-Zustand).
+            let vEin = null;
+            const HKroh = r._fahrHuelleKontakt;
+            r._fahrHuelleKontakt = function (entry, k, x0, z0, vx, vz, ...rest) {
+                const alt = vEin;
+                vEin = entry === gS ? { x: vx, z: vz } : null;
+                try {
+                    return HKroh.call(this, entry, k, x0, z0, vx, vz, ...rest);
+                } finally {
+                    vEin = alt;
+                }
+            };
+            const annaeherung = (gx, gz, nx, nz) => {
+                if (vEin && !(vEin.x * nx + vEin.z * nz > gx * nx + gz * nz + 1e-6)) m.ohneAnnaeherung++;
+            };
+            const KSroh = r._kreaturStoss;
+            r._kreaturStoss = function (c, nx, nz, dv) {
+                const ud = c.userData;
+                const sw = ud._steuer;
+                const sv = ud._stossV;
+                const v = sw && Number.isFinite(sw.v) ? sw.v : 0;
+                annaeherung(
+                    (v ? Math.sin(sw.gier) * v : 0) + (sv ? sv.x : 0),
+                    (v ? Math.cos(sw.gier) * v : 0) + (sv ? sv.z : 0),
+                    nx,
+                    nz
+                );
+                return KSroh.call(this, c, nx, nz, dv);
+            };
+            const WSroh = r._fahrWagenStoss;
+            r._fahrWagenStoss = function (e, G, dvx, dvz) {
+                const d = Math.hypot(dvx, dvz);
+                const f = e._fahr;
+                const fahrt = f && Number.isFinite(f.vlong) && Number.isFinite(f.yaw);
+                if (d > 0)
+                    annaeherung(
+                        fahrt ? f.vlong * Math.cos(f.yaw) - f.vlat * Math.sin(f.yaw) : 0,
+                        fahrt ? -f.vlong * Math.sin(f.yaw) - f.vlat * Math.cos(f.yaw) : 0,
+                        dvx / d,
+                        dvz / d
+                    );
+                return WSroh.call(this, e, G, dvx, dvz);
+            };
             const evRoh = r._stossEreignis;
             if (typeof evRoh === "function")
                 r._stossEreignis = function (...a) {
@@ -1822,6 +1882,9 @@ async function probeLeben(expected) {
             tasten(false);
             r._stepFixedSim = PF;
             if (typeof evRoh === "function") delete r._stossEreignis;
+            delete r._fahrHuelleKontakt;
+            delete r._kreaturStoss;
+            delete r._fahrWagenStoss;
             if (!Number.isFinite(m.vMinNach)) m.vMinNach = m.vNach;
             const p1 = h.lage(ziel);
             m.zielWeg = (p1.x - p0.x) * ux + (p1.z - p0.z) * uz;
@@ -1868,10 +1931,28 @@ async function probeLeben(expected) {
                 c.position.set(x, hh(x, zz), zz);
                 c.rotation.y = gasse.fahrt + Math.PI / 2; // quer zur Fahrt, die Flanke zum Bug
                 if (typeof r.assignCreatureTask === "function") r.assignCreatureTask(c, "wait");
+                // Der Bär steht still (sein Hirn wählte Flucht oder Wandern mit Math.random — 07.10. kippte L5 so von
+                // 7,99 → 6,07 auf 7,92 → 3,70 m/s): ein Steuer-Gesetz, dessen Schritt das Tempo nullt; nur der Stoß bewegt ihn.
+                const A = Object.getPrototypeOf(r).constructor;
+                if (!A.__steuerRoh) {
+                    A.__steuerRoh = A._steuerGesetz;
+                    const steht = Object.create(A.__steuerRoh.call(A));
+                    steht.steuerSchritt = (sw) => {
+                        sw.v = 0;
+                    };
+                    A._steuerGesetz = () => steht;
+                }
                 return c;
             },
             lage: (c) => ({ x: c.position.x, z: c.position.z }),
-            weg: (c) => r.removeCreature(c),
+            weg: (c) => {
+                const A = Object.getPrototypeOf(r).constructor;
+                if (A.__steuerRoh) {
+                    A._steuerGesetz = A.__steuerRoh;
+                    delete A.__steuerRoh;
+                }
+                r.removeCreature(c);
+            },
         });
     } catch (e) {
         res.err = (e && e.stack) || String(e);
@@ -2027,6 +2108,22 @@ async function probeLeben(expected) {
                     },
                 },
                 "stoss-fels: kein Stoß-Ereignis",
+            ],
+            [
+                "der Bär gleitet fort und wird je Schritt neu gestoßen (gate:fahr-leben 07.10.: 7,92 → 1,71 m/s)",
+                {
+                    stossBaer: {
+                        kontakt: 40,
+                        vVor: 7.92,
+                        vNach: 3.7,
+                        vMinNach: 1.71,
+                        ereignisse: 5,
+                        ruck: 4,
+                        zielWeg: 5.6,
+                        ohneAnnaeherung: 6,
+                    },
+                },
+                "stoss-baer: Stoß ohne Annäherung",
             ],
             [
                 "Stoß aus dem Stand (vakuös)",
@@ -2489,7 +2586,7 @@ async function probeLeben(expected) {
     const z2 = (v) => (Number.isFinite(v) ? v.toFixed(2) : "–");
     const sz = (m) =>
         m
-            ? `Fahrt ${z2(m.vVor)} → ${z2(m.vNach)} m/s (kleinste danach ${z2(m.vMinNach)}) · Gegner ${z2(m.zielWeg)} m · ${m.ereignisse} Stoß-Ereignisse · Kamera-Ruck ${z2(m.ruck)}`
+            ? `Fahrt ${z2(m.vVor)} → ${z2(m.vNach)} m/s (kleinste danach ${z2(m.vMinNach)}) · Gegner ${z2(m.zielWeg)} m · ${m.ereignisse} Stoß-Ereignisse · Kamera-Ruck ${z2(m.ruck)} · ohne Annäherung ${m.ohneAnnaeherung}`
             : "keine Probe";
     check(
         "L3 Stoß am Fels (der Baum der Schau: 10,41 → 0,16 m/s): der Wagen prallt zurück (≤ −0,3 m/s), Kamera und Klang hören den Stoß",

@@ -20344,6 +20344,19 @@ class AnazhRealm {
         return AnazhRealm.STOSS.dichteLeib * Math.PI * r * r * (2 * lb.halb + (4 / 3) * r);
     }
 
+    // DIE GESCHWINDIGKEIT EINES LEIBS (m/s, Welt-XZ): sein Steuer-Schritt (Gier × Tempo) und der Stoß, den er trägt — der
+    // Partner der Relativ-Geschwindigkeit im Impuls-Gesetz (ein fortgleitender Leib wird nicht noch einmal gestoßen).
+    _kreaturGeschw(creature) {
+        const ud = creature && creature.userData;
+        const st = ud && ud._steuer;
+        const sv = ud && ud._stossV;
+        const v = st && Number.isFinite(st.v) && Number.isFinite(st.gier) ? st.v : 0;
+        return {
+            x: (v ? Math.sin(st.gier) * v : 0) + (sv ? sv.x : 0),
+            z: (v ? Math.cos(st.gier) * v : 0) + (sv ? sv.z : 0),
+        };
+    }
+
     // DER STOSS AUF EINEN LEIB: dv (m/s) längs (nx, nz) — er trägt den Leib, bis die Reibung ihn aufzehrt.
     _kreaturStoss(creature, nx, nz, dv) {
         if (!creature || !creature.userData || !(dv > 0)) return;
@@ -21753,7 +21766,23 @@ class AnazhRealm {
                     stossV.z *= k;
                 }
             }
+            const kx0 = creature.position.x;
+            const kz0 = creature.position.z;
             this._kreaturHuellenKontakt(creature, hueftL, px0, pz0);
+            // Hält ein Hindernis den Leib, stirbt sein Stoß in das Hindernis (unelastisch, wie die Fahrt der Hülle an der
+            // Wand): sonst trüge ein eingeklemmter Leib eine Geschwindigkeit, die er nie ausführt, und der Wagen hinter ihm
+            // sähe ihn fortgleiten (Relativ-Geschwindigkeit ≤ 0, kein Stoß) und drückte je Schritt eine Stufe in ihn hinein.
+            const stossH = udS._stossV;
+            if (stossH) {
+                const hx = creature.position.x - kx0;
+                const hz = creature.position.z - kz0;
+                const hd = Math.hypot(hx, hz);
+                const vn = hd > 1e-6 ? (stossH.x * hx + stossH.z * hz) / hd : 0;
+                if (vn < 0) {
+                    stossH.x -= (vn * hx) / hd;
+                    stossH.z -= (vn * hz) / hd;
+                }
+            }
 
             // Sanfter Decay des Innenlebens (~17 s Halbwert); ruhige Wesen werden sparse (null = kein Tick-Rest),
             // beim Ausklingen projiziert die Valenz auf "happy" zurück — getroffene Wesen erholen sich.
@@ -89967,10 +89996,14 @@ class AnazhRealm {
             if (!(d > 1e-9)) continue;
             const nx = g.x / d; // vom Gegner zum Wagen
             const nz = g.z / d;
-            const hinein = -(vx * nx + vz * nz);
-            if (!(hinein > 0)) continue;
             const leib = !!(q && q.userData && q.userData.kind === "creature");
             const wagenG = !leib && q && q !== entry ? this._fahrStossSatz(q) : null;
+            // die RELATIVE Geschwindigkeit längs der Normalen: gleitet der Gegner schon schneller fort, als der Wagen
+            // nachkommt, stößt nichts (Befund gate:fahr-leben L5: der Bär rutschte nach dem ersten Stoß fort, die Hülle
+            // berührte ihn weiter, und jeder Schritt stieß ihn erneut mit der vollen Fahrt — 7,92 → 1,71 m/s)
+            const vG = leib ? this._kreaturGeschw(q) : wagenG ? this._fahrWagenGeschw(q) : null;
+            const hinein = -((vx - (vG ? vG.x : 0)) * nx + (vz - (vG ? vG.z : 0)) * nz);
+            if (!(hinein > 0)) continue;
             const mG = leib ? this._kreaturMasse(q) : wagenG ? wagenG.m * ST.dichteWagen : Infinity;
             const e = leib ? ST.stossZahl.leib : wagenG ? ST.stossZahl.wagen : ST.stossZahl.starr;
             // ohne Masse des eigenen Wagens (ein Werk ohne Fahr-Satz) nimmt die Berührung nur die Komponente
@@ -90005,6 +90038,15 @@ class AnazhRealm {
 
     // DER GESTOSSENE WAGEN (das EINE Impuls-Gesetz): ein geparkter Wagen bekommt seinen Impuls als Fahrt im eigenen Rahmen
     // (vlong/vlat des Kerns) und rutscht im Nachlauf mit der Handbremse (`_fahrNachlauf`), bis er steht.
+    // DIE GESCHWINDIGKEIT EINES ANDEREN WAGENS (m/s, Welt-XZ) aus seinem Fahr-Zustand (die Umkehr von _fahrWagenStoss);
+    // ein Wagen ohne Fahr-Zustand steht.
+    _fahrWagenGeschw(entry) {
+        const fz = entry && entry._fahr;
+        if (!fz || !Number.isFinite(fz.yaw) || !Number.isFinite(fz.vlong) || !Number.isFinite(fz.vlat)) return null;
+        const cy = Math.cos(fz.yaw);
+        const sy = Math.sin(fz.yaw);
+        return { x: fz.vlong * cy - fz.vlat * sy, z: -fz.vlong * sy - fz.vlat * cy };
+    }
     _fahrWagenStoss(entry, G, dvx, dvz) {
         const pl = this.state.player;
         if (pl && pl.mountedArch === entry.id) return;
