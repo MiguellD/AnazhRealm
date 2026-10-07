@@ -68942,6 +68942,8 @@ class AnazhRealm {
                 hb[i] = null;
             }
         }
+        // ein Studio-Name, der vor dem Buch ohne Bauplan stand, bekommt sein Phantom-Vorbacken zurück
+        if (this._prebakedBlueprints) for (const n of hb) if (n) this._prebakedBlueprints.delete(n);
         if (hb.some(Boolean)) return this._renderHotbarDOM();
         const gurt = this._startGurt() || [];
         for (let i = 0; i < gurt.length && i < hb.length; i++) hb[i] = gurt[i];
