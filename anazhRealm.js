@@ -32794,7 +32794,12 @@ class AnazhRealm {
         abbild.minFilter = THREE.NearestFilter;
         abbild.magFilter = THREE.NearestFilter;
         abbild.generateMipmaps = false;
-        const knoten = T.texture(abbild, T.screenUV);
+        // JEDES PIXEL LIEST DEN BLOCK, DER ES ENTHÄLT (Gegenprüfung 0710-3): ganzzahlig, Pixel / 2. Vorher las `screenUV` mit
+        // Nearest bei uv = (x + 0,5)/W eine Textur der Breite ceil(W/2) — bei UNGERADER Leinwand traf jedes ungerade x der
+        // rechten Hälfte (ungerade Höhe: der unteren) den Nachbar-Block (x+1, x+2): neben einem Gegenstand vor dem Wasser las
+        // das Wasser den Gegenstand, ein heller Saum von 1 px (Radeon, TRAA, 1921×1081: 57–85 von ~290 Kanten-Pixeln +8 Luma;
+        // gate:post-kette (f), 321×241: 11 von 31 bis 45,5), der March verlor 1 px eines fernen Körpers.
+        const knoten = T.texture(abbild).load(T.ivec2(T.screenCoordinate.xy).div(T.ivec2(2, 2)));
         // je Render EINMAL, ausgelöst vom ersten Leser, der zeichnet (wie r184s Viewport-Tiefe)
         knoten.updateBeforeType = "render";
         knoten.updateBefore = (frame) => this._tiefenAbbild(frame, abbild);
@@ -32874,25 +32879,35 @@ class AnazhRealm {
         }
         A.attrappe.type = quelle.format === "depth32float" ? THREE.FloatType : THREE.UnsignedIntType;
         rend._textures.updateTexture(A.attrappe);
-        const attrappe = be.get(A.attrappe).texture;
-        const E = GPUCommandEncoder.prototype;
-        const kopieRoh = E.copyTextureToTexture;
-        E.copyTextureToTexture = function (von, nach, groesse) {
-            if (!nach || nach.texture !== attrappe) return kopieRoh.call(this, von, nach, groesse);
-            const pass = this.beginRenderPass({
-                label: "szene:tiefenabbild",
-                colorAttachments: [{ view: A.ansicht, loadOp: "clear", storeOp: "store", clearValue: [1, 0, 0, 1] }],
-            });
-            pass.setPipeline(A.pipe);
-            pass.setBindGroup(0, A.gruppe);
-            pass.draw(3);
-            pass.end();
-            return undefined;
-        };
+        A.attrappeGpu = be.get(A.attrappe).texture;
+        // DER HAKEN AN DER ENCODER-KOPIE liegt EINMAL (Gegenprüfung 0710-3: vorher je Frame ein- und ausgehängt — jede
+        // Zuweisung an `GPUCommandEncoder.prototype` verwirft, was der Motor über die Methode aller Aufrufer annahm); scharf
+        // ist er nur für die Dauer des EINEN Bruchs (`A.scharf`, try/finally), jede andere Kopie fährt r184 unverändert.
+        if (!A.haken) {
+            const E = GPUCommandEncoder.prototype;
+            const kopieRoh = E.copyTextureToTexture;
+            E.copyTextureToTexture = function (von, nach, groesse) {
+                if (!A.scharf || !nach || nach.texture !== A.attrappeGpu)
+                    return kopieRoh.call(this, von, nach, groesse);
+                const pass = this.beginRenderPass({
+                    label: "szene:tiefenabbild",
+                    colorAttachments: [
+                        { view: A.ansicht, loadOp: "clear", storeOp: "store", clearValue: [1, 0, 0, 1] },
+                    ],
+                });
+                pass.setPipeline(A.pipe);
+                pass.setBindGroup(0, A.gruppe);
+                pass.draw(3);
+                pass.end();
+                return undefined;
+            };
+            A.haken = true;
+        }
+        A.scharf = true;
         try {
             be.copyFramebufferToTexture(A.attrappe, ctx, A.rechteck);
         } finally {
-            E.copyTextureToTexture = kopieRoh;
+            A.scharf = false;
         }
     }
 
@@ -89770,18 +89785,14 @@ class AnazhRealm {
     // eine Stufe von depth16unorm (1/65535 ≈ 1,5·10⁻⁵) liegt 33-fach darunter. r184 kopierte die Szenen-Tiefe
     // (depth24plus, 4 Byte) Byte für Byte in die Tiefe des Geschichts-Ziels, und eine Kopie verlangt dasselbe Format: 7,9 MB
     // bei 1080p. Jetzt trägt die Vortiefe 16 bit (3,95 MB), und an der EINEN Stelle, an der der Knoten kopiert
-    // (`renderer.copyTextureToTexture(currentDepth, _historyRenderTarget.depthTexture)`), zeichnet ein Vollbild-Quad die
-    // Szenen-Tiefe als Fragment-Tiefe in das Geschichts-Ziel — Farbe ungeschrieben (die Geschichte bleibt, wie sie ist),
-    // Tiefe ohne Test (jedes Pixel), geladen Texel für Texel (`load`, kein Filter). Jeder andere Kopier-Ruf fährt r184.
-    // Das Geschichts-Ziel trägt seine Tiefe als Anhang (`depthBuffer`, sonst baut r184 keinen Tiefen-Anhang) — dauerhaft:
-    // r184 hält den Pass-Deskriptor je Ziel ohne den Schalter im Schlüssel, ein Zug mit umgeschaltetem Anhang fände einen
-    // Deskriptor ohne Tiefe (gate:ziel-zensus, Probe mit vorher geleertem Ziel: "setting depthLoadOp" auf undefined). Die
-    // Geschichte zeichnet sonst niemand. gate:vendor-anker pinnt die Kopier-Stelle des Knotens, gate:ziel-zensus (d) den Weg.
+    // (`renderer.copyTextureToTexture(currentDepth, _historyRenderTarget.depthTexture)`), zeichnet ein Vollbild-Zug die
+    // Szenen-Tiefe als Fragment-Tiefe in die Tiefe des Geschichts-Ziels (`_traaVortiefeZug`) — Farbe ungeschrieben (die
+    // Geschichte bleibt, wie sie ist), Tiefe ohne Test (jedes Pixel), geladen Texel für Texel (kein Filter). Jeder andere
+    // Kopier-Ruf fährt r184. gate:vendor-anker pinnt die Kopier-Stelle des Knotens, gate:ziel-zensus (d) den Weg.
     _traaVortiefe(traa) {
         const rend = this.state.renderer;
         const ziel = traa && traa._historyRenderTarget;
-        const T = THREE.TSL;
-        if (!ziel || !ziel.depthTexture || !rend || typeof rend.copyTextureToTexture !== "function" || !T) {
+        if (!ziel || !ziel.depthTexture || !rend || typeof rend.copyTextureToTexture !== "function" || !rend.backend) {
             this.log(
                 "TRAA-VORTIEFE: Geschichts-Ziel oder Kopier-Weg fehlt (Vendor-Drift) — die Vortiefe bleibt 32 bit",
                 "ERROR"
@@ -89790,43 +89801,76 @@ class AnazhRealm {
         }
         const tiefe = ziel.depthTexture;
         tiefe.type = THREE.UnsignedShortType;
-        ziel.depthBuffer = true;
-        // der Platzhalter der Quelle (1×1, bis der erste Zug die Szenen-Tiefe einsetzt) trägt seinen Namen wie jede Textur
-        const platzhalter = new THREE.DepthTexture(1, 1);
-        platzhalter.name = "TRAA-Vortiefe:quelle";
-        const quelle = T.texture(platzhalter);
-        const stoff = new THREE.MeshBasicNodeMaterial();
-        stoff.name = "TRAA-Vortiefe";
-        stoff.colorWrite = false;
-        stoff.depthWrite = true;
-        stoff.depthTest = true;
-        stoff.depthFunc = THREE.AlwaysDepth;
-        stoff.depthNode = quelle.load(T.ivec2(T.screenCoordinate.xy)).r;
-        // Der Vollbild-Zug: eine eigene Szene (ihr Name nennt den Pass an der Pass-Uhr) mit einer 2×2-Fläche vor einer
-        // Orthogonal-Kamera — r184s QuadMesh lebt nur im three/webgpu-Bündel, nicht im THREE der Seite (three-bootstrap.js).
-        const szene = new THREE.Scene();
-        szene.name = "TRAA-Vortiefe";
-        const kamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        const flaeche = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), stoff);
-        flaeche.frustumCulled = false;
-        flaeche.position.z = -0.5;
-        szene.add(flaeche);
+        const realm = this;
         const roh = rend.copyTextureToTexture;
         rend.copyTextureToTexture = function (von, nach, ...rest) {
             if (nach !== tiefe || !von || von.isDepthTexture !== true) return roh.call(this, von, nach, ...rest);
-            quelle.value = von;
-            const vorZiel = this.getRenderTarget();
-            const vorLeeren = this.autoClear;
-            this.autoClear = false;
-            try {
-                this.setRenderTarget(ziel);
-                this.render(szene, kamera);
-            } finally {
-                this.setRenderTarget(vorZiel);
-                this.autoClear = vorLeeren;
-            }
+            realm._traaVortiefeZug(this, von, tiefe);
             return undefined;
         };
+    }
+
+    // DER ZUG DER VORTIEFE (Gegenprüfung 0710-3, gelb: gpu-bank CPU je Frame 2,73 → 3,04 ms — der Zug war ein eigenes
+    // `renderer.render` einer Szene mit Orthogonal-Kamera, Render-Liste, Material-Weg und Pass-Deskriptor für EIN
+    // Vollbild-Dreieck): ein roher Pass auf eigenem Encoder, so wie r184s eigene Kopie (`copyTextureToTexture` erzeugt
+    // einen Encoder und reicht ihn sofort ein) — dieselbe Stelle in der Folge der Queue. Ein Vollbild-Dreieck lädt die
+    // Szenen-Tiefe Texel für Texel und schreibt sie als Fragment-Tiefe (Test immer, kein Farb-Anhang); die Ziele legt r184
+    // an wie für seine Kopie (`_textures.updateTexture`, auch nach jedem Resize).
+    _traaVortiefeZug(rend, von, nach) {
+        const be = rend.backend;
+        rend._textures.updateTexture(von);
+        rend._textures.updateTexture(nach);
+        const q = be.get(von).texture;
+        const z = be.get(nach).texture;
+        if (!q || !z) return;
+        let V = this._traaVortiefeGpu;
+        if (!V || V.format !== z.format) {
+            const modul = be.device.createShaderModule({
+                label: "TRAA-Vortiefe",
+                code:
+                    "@group(0) @binding(0) var tiefe: texture_depth_2d;\n" +
+                    "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
+                    "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
+                    "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
+                    "}\n" +
+                    "@fragment fn fs(@builtin(position) p: vec4f) -> @builtin(frag_depth) f32 {\n" +
+                    "    return textureLoad(tiefe, vec2i(p.xy), 0);\n" +
+                    "}\n",
+            });
+            V = this._traaVortiefeGpu = {
+                format: z.format,
+                pipe: be.device.createRenderPipeline({
+                    label: "TRAA-Vortiefe",
+                    layout: "auto",
+                    vertex: { module: modul, entryPoint: "vs" },
+                    fragment: { module: modul, entryPoint: "fs", targets: [] },
+                    depthStencil: { format: z.format, depthWriteEnabled: true, depthCompare: "always" },
+                    primitive: { topology: "triangle-list" },
+                }),
+                quelle: null,
+                ziel: null,
+            };
+        }
+        if (V.quelle !== q || V.ziel !== z) {
+            V.gruppe = be.device.createBindGroup({
+                layout: V.pipe.getBindGroupLayout(0),
+                entries: [{ binding: 0, resource: q.createView({ aspect: "depth-only" }) }],
+            });
+            V.ansicht = z.createView();
+            V.quelle = q;
+            V.ziel = z;
+        }
+        const enc = be.device.createCommandEncoder({ label: "TRAA-Vortiefe" });
+        const pass = enc.beginRenderPass({
+            label: "TRAA-Vortiefe",
+            colorAttachments: [],
+            depthStencilAttachment: { view: V.ansicht, depthLoadOp: "load", depthStoreOp: "store" },
+        });
+        pass.setPipeline(V.pipe);
+        pass.setBindGroup(0, V.gruppe);
+        pass.draw(3);
+        pass.end();
+        be.device.queue.submit([enc.finish()]);
     }
 
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
