@@ -66,6 +66,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // Mitspieler); bis zur Welle K hielt die Linse eine eigene Uhr (je Takt auf 0), an der jeder andere Schreiber vorbeikam.
     // Ihr Spion nennt den Schreiber einer Drift beim Namen.
     const SELBSTTEST_BUEHNE = process.argv.includes("--selbsttest-buehne");
+    const SELBSTTEST_RUHE = process.argv.includes("--selbsttest-ruhe");
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(AUSGABE_INSTALL);
 
@@ -361,7 +362,12 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             const c0 = cnt();
             try { r._loopRender(performance.now()); } catch (_e) {}
             const E = r._erstZeichnung;
-            return { tot: cnt(), cc: cnt() - c0, erst: E ? `${E.bauN}|${E.verschoben}|${E.wartetN}` : "", offen: E ? E.offen.size : 0 };
+            // der wartende Draw beim Namen: das Label seiner Pipeline (WebGPU, `_erstWartet`) oder der Stoff ihres Programms
+            const p = E ? E.wartetAuf : null;
+            const wartet = p ? (E.namen && E.namen.get(p)) || `${(p.fragmentProgram && p.fragmentProgram.name) || "(Stoff ohne Namen)"}#${p.fragmentProgram ? p.fragmentProgram.id : "?"}` : null;
+            // SELBSTTEST (--selbsttest-ruhe): eine Erst-Zeichnung, die je Bild einen Bau verschiebt — die Ruhe kommt nie
+            const stoer = window.__selbsttestRuhe ? `|verschoben+${(window.__ruheStoer = (window.__ruheStoer || 0) + 1)}` : "";
+            return { tot: cnt(), cc: cnt() - c0, erst: E ? `${E.bauN}|${E.verschoben}|${E.wartetN}${stoer}` : stoer, offen: E ? E.offen.size : 0, wartet };
         };
         return { backend };
     });
@@ -434,16 +440,28 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         let ruhig = 0,
             extra = 0,
             stand = nachStart,
-            erstStand = "";
+            erstStand = "",
+            letztes = null;
+        if (SELBSTTEST_RUHE) await ruf("Selbsttest-Ruhe", () => (window.__selbsttestRuhe = true));
         const t0 = Date.now();
         while (ruhig < 8 && extra < 80 && Date.now() - t0 < 240000) {
             const b = await frame(`Ruhe-Frame ${extra}`);
             extra++;
             ruhig = b.tot === stand && b.erst === erstStand && b.offen === 0 ? ruhig + 1 : 0;
+            if (ruhig === 0) letztes = { b, vorTot: stand, vorErst: erstStand };
             stand = b.tot;
             erstStand = b.erst;
         }
         Object.assign(setup, { warmupCompiles: stand, nachzuegler: stand - nachStart, warmupExtra: extra, ruhe: ruhig >= 8 });
+        // DIE VERFEHLTE RUHE beim Namen (Gegenprüfung K haenger): was das letzte unruhige Bild bewegte — Compiles, der Stand
+        // der Erst-Zeichnung (gebaut|verschoben|wartend, offene Pipelines) und der wartende Draw
+        if (!setup.ruhe && letztes) {
+            const { b, vorTot, vorErst } = letztes;
+            setup.ruheBefund =
+                `nach ${extra} Bildern in ${Math.round((Date.now() - t0) / 1000)} s: im letzten unruhigen Bild ${b.tot - vorTot} Compiles, ` +
+                `Erst-Zeichnung gebaut|verschoben|wartend ${vorErst || "-"} → ${b.erst || "-"}, offene Pipelines ${b.offen}, ` +
+                `wartender Draw ${b.wartet || "keiner"}`;
+        }
         setup.schwer = await ruf("Schwer-Liste", () => window.__schwer.sort((a, b) => b.ms - a.ms).slice(0, 5).map((z) => `${z.label} ${Math.round(z.ms / 1000)} s/${z.cc}`));
         setup.nieWarm = await ruf("Nie-warm-Liste", () => window.__nieWarm.slice(0, 8));
     }
@@ -520,6 +538,8 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     console.log(`  Schwerste Erst-Compiles (Schlüssel · Zeit/Programme): ${(setup.schwer || []).join(" · ") || "—"}\n`);
     // ein Schlüssel, dessen Objekte im Warmup nie zeichneten (die Erst-Zeichnung verschob oder wartete weiter): beim Namen
     if (setup.nieWarm && setup.nieWarm.length) { console.error("⛔ ERST-ZEICHNUNG IM WARMUP NIE GEZEICHNET: " + setup.nieWarm.join(" · ")); process.exit(1); }
+    // ohne Ruhe misst der Leerlauf den Warmup, nicht den Leerlauf: rot, mit dem, was nicht zur Ruhe kam
+    if (!setup.ruhe) { console.error("⛔ RUHE NIE ERREICHT (8 Bilder ohne Compile und ohne Arbeit der Erst-Zeichnung): " + (setup.ruheBefund || "kein unruhiges Bild gelesen")); process.exit(1); }
     const idleOk = idle.wdh <= IDLE_THRESHOLD && idle.gesamt <= KASKADE;
     const regenOk = regen.wdh <= REGEN_THRESHOLD && regen.gesamt <= KASKADE;
     console.log(`  CHECK A — reines Idle (16 Frames):      ${idle.wdh} Wiederholungs-Compiles (Schwelle ≤${IDLE_THRESHOLD}) · ${idle.gesamt - idle.wdh} Erst-Compiles (gesamt ≤${KASKADE})  ${idleOk ? "✅" : "❌ CHURN"}`);
