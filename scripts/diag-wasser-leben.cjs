@@ -25,8 +25,13 @@
 //                   Hülle des Gesetzes — das Rinnsal plus quellWeitung je Meter, 5040e8f7: 43 von 43, die Quelle −456/872
 //                   11,75 m / 1,62 m), ist sie trocken, liest der Körper auf ihrem Lauf Wasser, das die Welt nicht zeichnet
 //                   (5040e8f7: 487 von 1322 Querschnitten), oder zeichnet die Welt Wasser, in dem der Körper trocken steht.
-//   F8              der Bach der Mess-Wiese (Gegenprüfung 07.10., Runde 3): gezeichnet gegen den Körper je Querschnitt
-//                   (5040e8f7: gezeichnet 54 von 104, unsichtbar 39).
+//   F8              der Bach der Mess-Wiese (Gegenprüfung 07.10., Runde 3/4): gezeichnet gegen den Körper je PUNKT (0,25 m),
+//                   Breite gegen Breite (5040e8f7: 177,5 m unsichtbar; d9f39b4f: 64,25 m Phantom in 41 von 104 Querschnitten —
+//                   das Urteil je Querschnitt mit Nachbar-Toleranz meldete 0).
+//   F9              die Pflanzen im gezeichneten Wasser (Runde 4): Nah-Streu ohne Ufer-Band und Nah-Wiese am Bach und im
+//                   See-Fenster (d9f39b4f: 11 Pflanzen und 21 Büschel am Bach, bis 1,32 m Wasser über dem Fuß).
+//   F10             das See-Fenster der Mess-Wiese (±40 m um −890/−650, je 0,5 m): Körper gegen Bild je Punkt (d9f39b4f: 80,25 m²
+//                   Phantom, 7,25 m² unsichtbar).
 //   F7              die Bank des Kanals ist eine Steilwand (8f09227d: 18 von 42 Profilen steiler als der Fels, p90 68,9°).
 //   FP              die Kanal-Parität Main ↔ Worker (NaN = Probe kaputt, nie Befund).
 //   K12             die Leser der EINEN Wahrheit: Klang-Nässe (`_nassAt`) und Tier-Scheu (`_creatureWaterContextAt`) lasen das
@@ -63,6 +68,25 @@ const SCHWELLE = {
 function urteil(b) {
     const v = [];
     const S = SCHWELLE;
+    // F9 — die Pflanzen im gezeichneten Wasser (Nah-Streu ohne Ufer-Band, Nah-Wiese): je Gebiet ihre Zahl und das Wasser
+    // über dem Fuß; LEER, wenn das Gebiet weniger Pflanzen trägt, als dort stehen (die Probe prüfte nichts)
+    const florUrteil = (wo, fl, minStreu, minWiese) => {
+        if (!fl || fl.fehler) return v.push(`F9: ${wo} ${fl ? fl.fehler : "die Pflanzen-Probe lief nicht"}`);
+        const st = fl.streu || {},
+            wi = fl.wiese || {};
+        if (!(st.pflanzen >= minStreu && wi.bueschel >= minWiese))
+            v.push(`F9 LEER: ${wo} nur ${st.pflanzen} Pflanzen der Nah-Streu und ${wi.bueschel} Büschel der Nah-Wiese`);
+        if (st.imWasser > 0)
+            v.push(
+                `F9 STREU: ${wo} stehen ${st.imWasser} von ${st.pflanzen} Pflanzen der Nah-Streu ohne Ufer-Band im ` +
+                    `gezeichneten Wasser (bis ${st.maxM} m über dem Fuß; ${JSON.stringify(st.jeArt)})`
+            );
+        if (wi.imWasser > 0)
+            v.push(
+                `F9 WIESE: ${wo} stehen ${wi.imWasser} von ${wi.bueschel} Büscheln der Nah-Wiese im gezeichneten Wasser ` +
+                    `(bis ${wi.maxM} m über dem Fuß)`
+            );
+    };
     if (b.fluss) {
         const f = b.fluss;
         if (f.fehler) v.push(`F: ${f.fehler}`);
@@ -111,15 +135,15 @@ function urteil(b) {
                 );
             if (q.trocken > 0)
                 v.push(`F5 TROCKEN: ${q.trocken} von ${q.quellen} Quellen tragen auf ihren ersten 16 m kein Wasser`);
-            if (q.unsichtbar > 0)
+            if (!(q.unsichtbarBreite <= 0))
                 v.push(
-                    `F5 UNSICHTBAR: in ${q.unsichtbar} von ${q.querschnitte} Querschnitten der Quell-Läufe liest der Körper ` +
-                        "Wasser, das die Welt nicht zeichnet"
+                    `F5 UNSICHTBAR: auf den Quell-Läufen liest der Körper auf ${q.unsichtbarBreite} m Breite (Summe je Punkt, in ` +
+                        `${q.unsichtbar} von ${q.querschnitte} Querschnitten) Wasser, das die Welt nicht zeichnet`
                 );
-            if (q.phantom > 0)
+            if (!(q.phantomBreite <= 0))
                 v.push(
-                    `F5 PHANTOM: in ${q.phantom} von ${q.querschnitte} Querschnitten der Quell-Läufe zeichnet die Welt Wasser, ` +
-                        "in dem der Körper trocken steht"
+                    `F5 PHANTOM: auf den Quell-Läufen zeichnet die Welt auf ${q.phantomBreite} m Breite (Summe je Punkt, in ` +
+                        `${q.phantom} von ${q.querschnitte} Querschnitten) Wasser, in dem der Körper trocken steht`
                 );
         }
     }
@@ -130,17 +154,38 @@ function urteil(b) {
         else if (!(k.querschnitte >= 80 && k.koerperNass >= 80))
             v.push(`F8 LEER: nur ${k.querschnitte} Querschnitte, ${k.koerperNass} mit Körper-Wasser`);
         else {
-            if (k.unsichtbar > 0)
+            if (!(k.unsichtbarBreite <= 0))
                 v.push(
-                    `F8 UNSICHTBAR: der Bach der Mess-Wiese — in ${k.unsichtbar} von ${k.querschnitte} Querschnitten liest der ` +
-                        `Körper Wasser, das die Welt nicht zeichnet (gezeichnet ${k.gezeichnet}, Körper nass ${k.koerperNass})`
+                    `F8 UNSICHTBAR: der Bach der Mess-Wiese — der Körper liest auf ${k.unsichtbarBreite} m Breite (Summe je ` +
+                        `Punkt, in ${k.mitUnsichtbar} von ${k.querschnitte} Querschnitten) Wasser, das die Welt nicht zeichnet ` +
+                        `(Breiten-Summe Körper ${k.breiteKoerper} m, Bild ${k.breiteBild} m)`
                 );
-            if (k.phantom > 0)
+            if (!(k.phantomBreite <= 0))
                 v.push(
-                    `F8 PHANTOM: der Bach der Mess-Wiese — in ${k.phantom} von ${k.querschnitte} Querschnitten zeichnet die ` +
-                        "Welt Wasser, in dem der Körper trocken steht"
+                    `F8 PHANTOM: der Bach der Mess-Wiese — die Welt zeichnet auf ${k.phantomBreite} m Breite (Summe je Punkt, ` +
+                        `in ${k.mitPhantom} von ${k.querschnitte} Querschnitten) Wasser, in dem der Körper trocken steht ` +
+                        `(Breiten-Summe Körper ${k.breiteKoerper} m, Bild ${k.breiteBild} m)`
                 );
         }
+        florUrteil("am Bach", k.flora, 100, 30);
+    }
+    if (b.see) {
+        const k = b.see;
+        if (k.fehler) v.push(`F10: ${k.fehler}`);
+        else if (!(k.koerperM2 >= 1000)) v.push(`F10 LEER: nur ${k.koerperM2} m² Körper-Wasser im See-Fenster`);
+        else {
+            if (!(k.phantomM2 <= 0))
+                v.push(
+                    `F10 PHANTOM: im See-Fenster zeichnet die Welt auf ${k.phantomM2} m² Wasser, in dem der Körper trocken ` +
+                        `steht (Körper ${k.koerperM2} m², Bild ${k.bildM2} m²; z. B. ${JSON.stringify(k.bspP[0] || null)})`
+                );
+            if (!(k.unsichtbarM2 <= 0))
+                v.push(
+                    `F10 UNSICHTBAR: im See-Fenster liest der Körper auf ${k.unsichtbarM2} m² Wasser, das die Welt nicht ` +
+                        `zeichnet (z. B. ${JSON.stringify(k.bspU[0] || null)})`
+                );
+        }
+        florUrteil("im See-Fenster", k.flora, 300, 500);
     }
     if (b.bank) {
         const k = b.bank;
@@ -436,12 +481,41 @@ function selbsttest() {
             querschnitte: 1322,
             unsichtbar: 0,
             phantom: 0,
+            unsichtbarBreite: 0,
+            phantomBreite: 0,
             breiteP50: 2,
             breiteMax: 2.75,
             tiefeP50: 0.31,
             tiefeMax: 0.33,
         },
-        bach: { querschnitte: 104, koerperNass: 104, gezeichnet: 103, unsichtbar: 0, phantom: 0 },
+        bach: {
+            querschnitte: 104,
+            koerperNass: 104,
+            gezeichnet: 104,
+            breiteKoerper: 506,
+            breiteBild: 506,
+            phantomBreite: 0,
+            unsichtbarBreite: 0,
+            mitPhantom: 0,
+            mitUnsichtbar: 0,
+            flora: {
+                streu: { pflanzen: 150, ufer: 50, imWasser: 0, maxM: 0, jeArt: {} },
+                wiese: { bueschel: 60, imWasser: 0, maxM: 0 },
+            },
+        },
+        see: {
+            punkte: 25700,
+            koerperM2: 3330,
+            bildM2: 3330,
+            phantomM2: 0,
+            unsichtbarM2: 0,
+            bspP: [],
+            bspU: [],
+            flora: {
+                streu: { pflanzen: 2400, ufer: 300, imWasser: 0, maxM: 0, jeArt: {} },
+                wiese: { bueschel: 1500, imWasser: 0, maxM: 0 },
+            },
+        },
         bank: { profile: 60, felsGrad: 54.5, winkelP50: 30, winkelP90: 45, winkelMax: 60, fels: 2, felsAnteil: 0.033 },
         hoehle: {
             proben: 3500,
@@ -528,12 +602,21 @@ function selbsttest() {
         ["FP LEER", (b) => (b.kanal.zellen = 0)],
         ["F5 SPRUNG", (b) => Object.assign(b.quelle, { spruenge: 43, breiteMax: 12.75, tiefeMax: 1.73 })],
         ["F5 TROCKEN", (b) => (b.quelle.trocken = 1)],
-        ["F5 UNSICHTBAR", (b) => (b.quelle.unsichtbar = 487)],
-        ["F5 PHANTOM", (b) => (b.quelle.phantom = 2)],
+        ["F5 UNSICHTBAR", (b) => Object.assign(b.quelle, { unsichtbar: 487, unsichtbarBreite: 1200.5 })],
+        ["F5 PHANTOM", (b) => Object.assign(b.quelle, { phantom: 2, phantomBreite: 0.5 })],
         ["F5 LEER", (b) => (b.quelle.quellen = 16)],
-        ["F8 UNSICHTBAR", (b) => Object.assign(b.bach, { gezeichnet: 54, unsichtbar: 39 })],
-        ["F8 PHANTOM", (b) => (b.bach.phantom = 3)],
+        ["F8 UNSICHTBAR", (b) => Object.assign(b.bach, { gezeichnet: 54, unsichtbarBreite: 177.5, mitUnsichtbar: 39 })],
+        // d9f39b4f: 257 Punkte in 41 Querschnitten — das alte Urteil je Querschnitt (mit Nachbar-Toleranz) meldete 0
+        ["F8 PHANTOM", (b) => Object.assign(b.bach, { phantomBreite: 64.25, mitPhantom: 41, breiteBild: 576.25 })],
+        ["F8 PHANTOM: der Bach", (b) => Object.assign(b.bach, { phantomBreite: 0.25, mitPhantom: 1 })],
         ["F8 LEER", (b) => (b.bach.querschnitte = 0)],
+        ["F9 STREU", (b) => Object.assign(b.bach.flora.streu, { imWasser: 11, maxM: 0.99, jeArt: { farn: 8 } })],
+        ["F9 WIESE", (b) => Object.assign(b.bach.flora.wiese, { imWasser: 21, maxM: 1.32 })],
+        ["F9 LEER", (b) => (b.see.flora.wiese.bueschel = 0)],
+        ["F9: am Bach", (b) => (b.bach.flora = { fehler: "die Nah-Streu hat keine Arten (das Buch fehlt)" })],
+        ["F10 PHANTOM", (b) => Object.assign(b.see, { phantomM2: 80.25, bspP: [[-876.5, -690, 0.4]] })],
+        ["F10 UNSICHTBAR", (b) => Object.assign(b.see, { unsichtbarM2: 7.25, bspU: [[-874.5, -624, 0.47]] })],
+        ["F10 LEER", (b) => (b.see.koerperM2 = 0)],
         ["F7 STEILWAND", (b) => Object.assign(b.bank, { fels: 18, felsAnteil: 0.429, winkelP90: 68.9 })],
         ["F7 LEER", (b) => (b.bank.profile = 0)],
         ["K10 HÖHLE", (b) => Object.assign(b.hoehle, { nass: 3511, nassUnter: 766, nassNeben: 2745, maxM: 54.3 })],
@@ -743,6 +826,7 @@ async function lauf() {
             // zuletzt (sie bauen die Chunks an jeder Quelle und am Bach selbst): das gezeichnete Wasser gegen den Körper
             if (soll("quelle")) befund.quelle = await page.evaluate(() => window.__wasserQuelle({ alle: true }));
             if (soll("bach")) befund.bach = await page.evaluate(() => window.__wasserBach({}));
+            if (soll("see")) befund.see = await page.evaluate(() => window.__wasserSee({}));
         }
         const v = urteil(befund);
         console.log(JSON.stringify(Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) }), null, 1));
