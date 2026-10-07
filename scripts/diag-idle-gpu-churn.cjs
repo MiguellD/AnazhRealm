@@ -45,6 +45,10 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     await page.setViewport({ width: 320, height: 240 }); // klein → schnelle Rasterung; Compile ist res-unabhängig
     let pageErr = null;
     page.on("pageerror", (e) => { pageErr = (e.stack || e.message).split("\n")[0]; console.log("[PAGE-ERROR]", pageErr); });
+    // DER TÄTER BEIM NAMEN (CI 37588394666: „Takt (Idle-Frame 13)" riss die Frist von 300 s und nannte nur den Aufruf):
+    // jeder Compile außerhalb des Schlüssel-Warmups meldet sich mit Programm-Größe und Aufrufer, BEVOR er kompiliert — die
+    // Konsole erreicht Node auch, wenn der Aufruf danach die Frist reißt. Der Schlüssel-Warmup nennt seine Schlüssel selbst.
+    page.on("console", (m) => { const t = m.text(); if (t.startsWith("[Linse]")) console.log(`  ${t.slice(0, 600)} — im Aufruf „${laufenderRuf}"`); });
     // DAS HOLZ DER LINSE (gemessen 03.10.): sie rastert auf der CPU (swiftshader) — für Software-Holz sieht die Welt
     // selbst „kienspan" vor (Ring 2, keine Schatten, kein Fern-Wasser; die Auto-Wahl erkennt es nur unter WebGPU, der
     // WebGL2-Rückfall fuhr „voll"). Auf „voll" kostete ein Szenen-Render 7–110 s und jeder schwere Erst-Compile 50–70 s:
@@ -152,6 +156,15 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
             const wdh = gesehen.has(fp);
             if (wdh) window.__cc.wdh++; else gesehen.add(fp);
             if (window.__ccSpur) window.__ccSpur.push((wdh ? "[WDH] " : "[neu] ") + (new Error().stack || "").split("\n").slice(3, 10).join(" | "));
+            if (!window.__imWarm) {
+                // der Aufrufer im Stamm (die Vendor-Rahmen sind minifiziert): der erste Vendor-Rahmen und die ersten Stamm-Rahmen
+                const lim = Error.stackTraceLimit;
+                Error.stackTraceLimit = 40;
+                const z = (new Error().stack || "").split("\n").slice(3).map((x) => x.trim().replace(/^at /, "").replace(/ \(.*/, ""));
+                Error.stackTraceLimit = lim;
+                const stamm = z.filter((x) => /AnazhRealm\.|anazhRealm\.js/.test(x)).slice(0, 4);
+                console.log("[Linse] Compile außerhalb des Schlüssel-Warmups (" + (wdh ? "Wiederholung" : "neu") + ", " + Math.round(fp.length / 1024) + " KB): " + [z[0]].concat(stamm.length ? stamm : z.slice(1, 6)).join(" < "));
+            }
         };
         if (typeof GPUDevice !== "undefined" && GPUDevice.prototype) {
             const code = new WeakMap();
@@ -243,7 +256,8 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 // Programme erst im ersten vollen Frame (gemessen: 70 Compiles in EINEM Render, 122 s)
                 r._schattenAlleNeu();
                 const k0 = cnt(), z0 = performance.now();
-                try { r._loopRender(performance.now()); } catch (_e) {}
+                window.__imWarm = true;
+                try { r._loopRender(performance.now()); } catch (_e) {} finally { window.__imWarm = false; }
                 objs.forEach((o, i) => (o.visible = vorher[i]));
                 warm.add(k);
                 n++;
