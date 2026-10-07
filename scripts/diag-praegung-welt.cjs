@@ -124,9 +124,12 @@ function check(name, ok, detail) {
         const fpFlat = (flat) => {
             let h = 0x811c9dc5;
             let n = 0;
+            // je GEOMETRIE einmal: die vier Rad-Leaves eines Fahrzeugs (Welle L, Q13 F-D8) sind dieselbe Gestalt je Ecke
+            const gesehen = new Set();
             for (const lf of flat.leaves || []) {
                 const a = lf.geom && lf.geom.attributes && lf.geom.attributes.position;
-                if (!a || !a.array) continue;
+                if (!a || !a.array || gesehen.has(lf.geom)) continue;
+                gesehen.add(lf.geom);
                 n++;
                 h = fnv(h, a.array);
             }

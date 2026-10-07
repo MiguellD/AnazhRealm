@@ -42,7 +42,7 @@ const rim=new THREE.DirectionalLight(0x6fd0e8,0.6);rim.position.set(-2,3,6);scen
 const VC=window.__vehicleCore;
 const M=VC.materials();            // dieselben geteilten Materialien (nie disposen); der Lack-Wechsel wählt VC.lackStoff (W5)
 let bodyMat=M.clay; // umschaltbar Clay/Lack
-const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,bowEnds,cgHeightOf,carPhys,A_PITCH_MAX,A_LAT_MAX,CULTURES,PRESETS}=VC;
+const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,bowEnds,CULTURES,PRESETS}=VC;
 const PARAMS=VC.PARAMS_BY_KIND.vehicle; // SYNERGIE-WELLE (Vertrag v1.2): die EINE B4-Form ist die Map — die Shell liest ihren kind-Eintrag
 
 // ── Geometrie-Helfer (wie s/c/b in der Körperbasis) ──
@@ -166,17 +166,24 @@ function renderTafel(res){
 // ════════════════════════════════════════════════════════════════════
 // UI
 // ════════════════════════════════════════════════════════════════════
-// Presets
+// Presets — Welle L: Gattung und Kultur setzen P in der Merge-Ordnung von buildInstance (DEFAULT_P + Preset + Kultur als
+// ov); vorher mergte der Klick nur den Preset-Patch: Supersport → GT ließ grip 0,85 stehen, eine Kultur blieb für immer.
+let presetId='gt',kulturId=null;
+function presetSetzen(pid){presetId=pid;for(const k in P)delete P[k];
+  Object.assign(P,VC.DEFAULT_P,VC.presetPatch(pid),kulturId?CULTURES[kulturId].fx:{});syncSliders();rebuild();}
+function kulturSetzen(kid){const alt=kulturId?CULTURES[kulturId].fx:{};const basis=Object.assign({},VC.DEFAULT_P,VC.presetPatch(presetId));
+  for(const k in alt){if(k in basis)P[k]=basis[k];else delete P[k];}   // die alte Kultur fällt ganz, die Regler bleiben
+  kulturId=kid;if(kid)Object.assign(P,CULTURES[kid].fx);rebuild();}
 const pdiv=document.getElementById('presets');
 for(const pid in PRESETS){const b=document.createElement('button');b.className='btn';b.textContent=PRESETS[pid].lab;
   if(pid==='gt')b.classList.add('on');
-  b.onclick=()=>{Object.assign(P,VC.presetPatch(pid));[...pdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');
-    syncSliders();rebuild();};pdiv.appendChild(b);}
+  b.onclick=()=>{[...pdiv.children].forEach(c=>c.classList.remove('on'));b.classList.add('on');presetSetzen(pid);};pdiv.appendChild(b);}
 // Kultur-Selektor (orthogonal zum Typ)
 const cdiv=document.createElement('div');cdiv.style.cssText='margin-top:8px';pdiv.parentNode.insertBefore(cdiv,pdiv.nextSibling);
 {const cl=document.createElement('div');cl.textContent='KULTUR';cl.style.cssText='font-size:10px;letter-spacing:1px;opacity:.55;margin:4px 0 2px';cdiv.appendChild(cl);}
 for(const cid in CULTURES){const b=document.createElement('button');b.className='btn';b.textContent=CULTURES[cid].lab;
-  b.onclick=()=>{Object.assign(P,CULTURES[cid].fx);[...cdiv.querySelectorAll('button')].forEach(c=>c.classList.remove('on'));b.classList.add('on');rebuild();};cdiv.appendChild(b);}
+  b.onclick=()=>{const ab=kulturId===cid;[...cdiv.querySelectorAll('button')].forEach(c=>c.classList.remove('on'));if(!ab)b.classList.add('on');
+    kulturSetzen(ab?null:cid);};cdiv.appendChild(b);}   // zweiter Klick auf die gewählte Kultur wählt sie ab
 // Ebenen-Toggles
 const ldiv=document.getElementById('layers');
 const LY=[['frame','Rahmen','gFrame'],['joints','Gelenke','gJoints'],['cal','Lehren','gCal'],['pkg','Baukörper','gPackage'],['wheels','Räder','gWheels'],['body','Haut','gBody'],['neg','Negativ','gNeg']];
@@ -228,9 +235,6 @@ function syncSliders(){PARAMS.forEach(pp=>{sliderEls[pp.id].value=P[pp.id];docum
 // ════════════════════════════════════════════════════════════════════
 // Forciertes Feder-Dämpfer-Modell je Freiheitsgrad:  x'' = (Moment − k·x − c·x')  →  Steady-State x = Moment/k.
 // Steifigkeit k aus der Federrate, Dämpfung c aus dem Regler — beide wirken jetzt ECHT auf den Winkel, nicht nur aufs Tempo.
-function Spring(){this.x=0;this.v=0;}
-Spring.prototype.step=function(drive,k,c,dt){const a=drive-k*this.x-c*this.v;this.v+=a*dt;this.x+=this.v*dt;return this.x;};
-const spPitch=new Spring(),spRoll=new Spring(),spHeave=new Spring();
 
 // Boden + Raster (nur im Fahrmodus sichtbar)
 const ground=new THREE.Group();ground.visible=false;scene.add(ground);scene.add(key.target);
@@ -308,96 +312,39 @@ function updateTrack(dt){const cy=Math.cos(car.yaw),sy=Math.sin(car.yaw);
       c.g.position.set(c.x,c.y,c.z);c.g.quaternion.copy(c.q);}}}
 
 
-// Fahrzustand auf der Ebene — Körperframe-Geschwindigkeit (vlong/vlat) für echten Schlupf — + Eingaben
-const car={x:0,z:0,yaw:0,vlong:0,vlat:0,yawRate:0,steer:0,wheelAng:0,speed:0,aLong:0};
+// Fahrzustand — Welle L: der Zustand des EINEN Fahr-Schritts im Kern (VC.fahrSchritt: Schlupf, Reibkreis, Hang längs UND
+// quer, ballistische Vertikale, Aufbau-Federn). Die Probefahrt integriert nichts mehr selbst — der Welt-Ritt ruft denselben
+// Schritt (vorher zwei Kopien, die auseinanderliefen: Stillstand GT Labor 54,7° gegen Welt 66,6°).
+const car=VC.fahrZustand(0,0,0);
 const input={throttle:0,brake:0,steer:0,hand:0};
-const FAHR=VC.FAHR;  // N6.1 — die Fahr-Konstanten leben im KERN (byte-gleich umgezogen): EINE Quelle fuer Probefahrt UND exportDrive
+const FAHR=VC.FAHR;  // N6.1 — die Fahr-Konstanten leben im KERN: EINE Quelle fuer Probefahrt UND exportDrive
+function fahrGesetzLab(){return VC.fahrGesetz(VC.exportDrive(P));}   // die Regler wirken live (P je Frame)
 function updateVehicle(dt,t){
-  const ph=carPhys(P),m=ph.mass,L=P.radstand,W=P.spur,b=L*0.5,c=L*0.5;   // CG mittig → b=c=radstand/2
-  const Izz=m*(L*L+W*W)/12*FAHR.izzK, cgH=cgHeightOf(P), grip=P.grip;     // Gier-Trägheit aus Masse·Abmessungen
-  // Lenkung: geschwindigkeitsabhängig (oben weniger), zentriert sich ohne Eingabe
-  const sf=1/(1+car.speed*0.05), steerTgt=input.steer*FAHR.maxSteer*sf;
-  car.steer+=(steerTgt-car.steer)*(input.steer!==0?FAHR.zweispur.steerK:FAHR.zweispur.steerZentrK);  // N7 — Lenksaeulen-Lerps aus dem KERN (byte-gleich umgezogen)
-  // ── Schlupfwinkel je Achse (Tiefpass im Nenner → bei Schritttempo stabil) ──
-  const vL=car.vlong, eps=FAHR.zweispur.slipEps, dn=Math.abs(vL)+eps, sgn=vL>=0?1:-1;  // N7 — Kern-Satz
-  const slipF=Math.atan2(car.vlat+car.yawRate*b, dn) - car.steer*sgn;
-  const slipR=Math.atan2(car.vlat-car.yawRate*c, dn); car.slipF=slipF;car.slipR=slipR;
-  // ── Achslasten mit LÄNGS-Lastverlagerung (Beschl→hinten, Brems→vorn) — koppelt Last an Grip ──
-  // V18.491.150 G_VIS.fahr=g-9.8 — do NOT change math
-  const Wt=m*FAHR.G, dW=car.aLong*cgH/L*m;
-  const Wf=Math.max(0,Wt*(c/L)-dW), Wr=Math.max(0,Wt*(b/L)+dW);
-  // ── Reifen-SEITENKRÄFTE: Schlupf×Steifigkeit, gesättigt durch Reibkreis×Achslast (Grip-Grenze entsteht hier) ──
-  const cap=FAHR.maxGrip*grip;
-  let FlatF=-Math.max(-cap,Math.min(cap,FAHR.CA_F*slipF))*Wf;    // Seitenkraft wirkt dem Schlupf ENTGEGEN (Rückstellung)
-  let FlatR=-Math.max(-cap,Math.min(cap,FAHR.CA_R*slipR))*Wr;
-  if(input.hand)FlatR*=FAHR.zweispur.handLatMul;                                    // HANDBREMSE: Heck-Seitenführung bricht weg → Übersteuern/Drift
-  // ── Längskraft: Antrieb (massenabh.) − Bremse/Handbremse − Widerstände − Längsanteil der Lenk-Seitenkraft ──
-  let aDrive=0;
-  if(input.throttle>0)aDrive+=ph.aEngine*input.throttle;
-  if(input.brake>0)aDrive-=(car.vlong>0.3?FAHR.brakeDecel:ph.aEngine*0.4);
-  let Fx=aDrive*m;
-  Fx-=ph.dragK*m*car.vlong*Math.abs(car.vlong);                 // Luftwiderstand (quadratisch) ∝ Stirnfläche/Masse
-  if(Math.abs(car.vlong)>0.02)Fx-=FAHR.rollDecel*m*sgn;          // Rollwiderstand
-  if(input.hand)Fx-=FAHR.handDecel*m*sgn;                        // Handbremse längs
-  Fx-=FlatF*Math.sin(car.steer);
-  const Fy=FlatF*Math.cos(car.steer)+FlatR;
-  // ── Newton-Euler im Körperframe (mit Rotationskopplung vlat·ω / vlong·ω) ──
-  const aLongB=Fx/m, aLatB=Fy/m; car.aLong=aLongB;
-  car.vlong+=(aLongB+car.vlat*car.yawRate)*dt;
-  car.vlat +=(aLatB -car.vlong*car.yawRate)*dt;
-  // ── Gier aus Reifenmoment; bei Schritttempo auf kinematisch blenden (sonst instabil am Stand) ──
-  const torque=b*FlatF*Math.cos(car.steer)-c*FlatR;
-  car.yawRate+=(torque/Izz)*dt;
-  const spd=Math.hypot(car.vlong,car.vlat), low=Math.max(0,Math.min(1,1-spd/FAHR.zweispur.lowBlendV));  // N7 — Kern-Satz
-  car.yawRate=car.yawRate*(1-low)+(car.vlong*Math.tan(car.steer)/L)*low;
-  car.vlat*=(1-low*FAHR.zweispur.lowLatK);
-  if(input.throttle===0&&input.brake===0&&spd<0.08){car.vlong=0;car.vlat=0;car.yawRate*=0.5;}
-  car.yaw+=car.yawRate*dt;
-  // ── STEIGUNG (17.07.): Hangabtrieb −G·sin(α) längs der Fahrt (α aus Bug/Heck-Proben
-  // derselben bodenY-Quelle wie der Hügel; auf der Ebene exakt 0 = byte-alt) ──
-  {const cyS=Math.cos(car.yaw),syS=Math.sin(car.yaw);
-   const gB=bodenY(car.x+cyS*b,car.z-syS*b),gH=bodenY(car.x-cyS*c,car.z+syS*c);
-   const grade=Math.atan2(gB-gH,L);car.grade=grade;
-   if(grade!==0)car.vlong-=FAHR.G*Math.sin(grade)*dt;}
-  if(car.vlong>ph.vmax)car.vlong=ph.vmax; if(car.vlong<-ph.vmax*0.32)car.vlong=-ph.vmax*0.32;
-  // ── Weltposition aus Körpergeschwindigkeit (vorwärts=(cos,−sin), links=(−sin,−cos)) ──
-  const cy=Math.cos(car.yaw),sy=Math.sin(car.yaw);
-  car.x+=(car.vlong*cy-car.vlat*sy)*dt; car.z+=(-car.vlong*sy-car.vlat*cy)*dt;
-  car.speed=spd;
-  // ── Aufbau-Lastverlagerung: ECHTE Beschleunigung aus dem Reifenmodell → Feder-Dämpfer ──
-  const aL=Math.max(-A_PITCH_MAX,Math.min(A_PITCH_MAX,aLongB)), aQ=Math.max(-A_LAT_MAX,Math.min(A_LAT_MAX,aLatB));
-  const k=P.springRate, cd=P.damping;
-  const FG=VC.FAHR; const mPitch=aL*(cgH/L)*FG.pitchGain, mRoll=aQ*(cgH/W)*FG.rollGain, mHeave=-Math.abs(aL)*FG.heaveA-Math.abs(car.vlong)*FG.heaveV; // physikalische Amplitude (~2–3°), nicht übertrieben
-  spPitch.step(mPitch,k,cd,dt); spRoll.step(mRoll,k,cd,dt); spHeave.step(mHeave,k*FG.heaveKMul,cd*FG.heaveCMul,dt);
+  VC.fahrSchritt(car,input,fahrGesetzLab(),bodenY,dt);
   const idle=(car.speed<0.05)?(Math.sin(t*42)*0.0014+Math.sin(t*26)*0.0009):0;
-  // ── STEIGUNG: Gelände-Nick/-Wank aus bodenY-Quer-/Längs-Proben (Ebene = 0 = byte-alt);
-  // addiert auf die Feder-Pose — die Karosserie legt sich in den Hang wie in der Welt ──
-  const cyP=Math.cos(car.yaw),syP=Math.sin(car.yaw);
-  const tPitch=Number.isFinite(car.grade)?car.grade:0;
-  const gRe=bodenY(car.x-syP*(W*0.5),car.z-cyP*(W*0.5)),gLi=bodenY(car.x+syP*(W*0.5),car.z+cyP*(W*0.5));
-  const tRoll=Math.atan2(gLi-gRe,W);
-  gSprung.rotation.z=spPitch.x+tPitch;
-  gSprung.rotation.x=spRoll.x+tRoll+((car.speed<0.05)?Math.sin(t*40)*0.0006:0);
-  gSprung.position.y=spHeave.x+idle;
-  // Auto platzieren — die Höhe kommt aus derselben bodenY-Quelle (Ebene: exakt 0)
-  vehicle.position.x=car.x; vehicle.position.z=car.z; vehicle.position.y=bodenY(car.x,car.z); vehicle.rotation.y=car.yaw;
-  // Räder: Abrollen ω=v/r + Vorderrad-Lenkung
-  car.wheelAng+=car.vlong/Math.max(0.1,P.radR)*dt;
-  // STEER_VIS.compound = "hub-yaw" — Feel .124 Lab-parity (front hub yaw).
+  // Die Federn drehen den AUFBAU (gSprung); die Ebene der Räder trägt Aufbau UND Räder (vorher kippte nur der Aufbau in
+  // den Hang, die Räder standen waagrecht, und der Gelände-Wank drehte gegen den Hang).
+  gSprung.rotation.z=car.fNick;
+  gSprung.rotation.x=car.fWank+((car.speed<0.05)?Math.sin(t*40)*0.0006:0);
+  gSprung.position.y=car.fHub+idle;
+  vehicle.position.set(car.x,car.y,car.z);vehicle.rotation.set(car.wank,car.yaw,car.steig,'YZX');
+  // STEER_VIS.compound = "hub-yaw" — Feel .124 Lab-parity (front hub yaw). Räder: Abrollen ω=v/r (der Kern zählt wheelAng).
   corners.forEach(cc=>{cc.wheelSpin.rotation.z=-car.wheelAng;if(cc.front)cc.grp.rotation.y=car.steer;cc.grp.position.y=cc.baseY;});
-  key.position.set(car.x+5,9,car.z+4);key.target.position.set(car.x,0,car.z);key.target.updateMatrixWorld(); // Schatten folgt
+  key.position.set(car.x+5,car.y+9,car.z+4);key.target.position.set(car.x,car.y,car.z);key.target.updateMatrixWorld(); // Schatten folgt
 }
 
 // Verfolgerkamera — schwingt sanft hinter das Auto, blickt voraus
 // Verfolgerkamera als Kugel-Orbit ums Auto: folgt hinterher, lässt sich aber greifen (frei umsehen), schwingt beim Loslassen zurück
 const _cf=new THREE.Vector3();
-const camOrb={az:Math.PI,el:FAHR.kamera.el,dist:FAHR.kamera.dist,follow:true};  // N8 — Kamera-Gesetz aus dem KERN (byte-gleich umgezogen)let dragging=false,_lpx=0,_lpy=0;
+const camOrb={az:Math.PI,el:FAHR.kamera.el,dist:FAHR.kamera.dist,follow:true};  // N8 — Kamera-Gesetz aus dem KERN (byte-gleich umgezogen)
+// Welle L: der Zug-Zustand der Maus steht im CODE (er stand im Kommentar hinter camOrb — jede Mausbewegung warf ReferenceError)
+let dragging=false,_lpx=0,_lpy=0;
 function lerpAngle(a,b,t){let d=b-a;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;return a+d*t;}
 function updateChaseCam(dt,snap){
   if(camOrb.follow){const azT=Math.atan2(Math.sin(car.yaw),-Math.cos(car.yaw));   // Soll-Azimut: hinter dem Auto
     camOrb.az=lerpAngle(camOrb.az,azT,snap?1:1-Math.pow(FAHR.kamera.azEase,dt));
     camOrb.el+=(FAHR.kamera.el-camOrb.el)*(snap?1:1-Math.pow(FAHR.kamera.elEase,dt));}
-  const ce=Math.cos(camOrb.el),se=Math.sin(camOrb.el),d=camOrb.dist,lx=car.x,ly=FAHR.kamera.blickHoehe+bodenY(car.x,car.z),lz=car.z;
+  const ce=Math.cos(camOrb.el),se=Math.sin(camOrb.el),d=camOrb.dist,lx=car.x,ly=FAHR.kamera.blickHoehe+(Number.isFinite(car.y)?car.y:bodenY(car.x,car.z)),lz=car.z;
   _cf.set(lx+Math.cos(camOrb.az)*ce*d, ly+se*d, lz+Math.sin(camOrb.az)*ce*d);
   if(snap)cam.position.copy(_cf); else cam.position.lerp(_cf,1-Math.pow(FAHR.kamera.posEase,dt));
   cam.lookAt(lx,ly,lz);
@@ -407,16 +354,16 @@ function updateChaseCam(dt,snap){
 let mode='werkstatt';const OVL='#brand,#lehren,#ctl,#leg,#hint';const hud=document.getElementById('hud');
 const _savP=new THREE.Vector3(),_savT=new THREE.Vector3();
 function enterDrive(){mode='fahren';
-  document.querySelectorAll(OVL).forEach(el=>el.style.display='none');if(hud)hud.style.display='block';
+  document.querySelectorAll(OVL).forEach(el=>el.style.display='none');if(hud)hud.style.display='flex';  // Welle L: der HUD ist ein Flex-Band (block klebte die Einheit an die Tastenhilfe)
   ground.visible=true;_savP.copy(cam.position);_savT.copy(oc.target);oc.enabled=false;
-  car.x=0;car.z=0;car.yaw=0;car.vlong=0;car.vlat=0;car.yawRate=0;car.speed=0;car.steer=0;car.wheelAng=0;car.aLong=0;
+  Object.assign(car,VC.fahrZustand(0,0,0));VC.fahrStand(car,fahrGesetzLab(),bodenY,0);   // frischer Fahrzustand auf dem Boden
   input.throttle=input.brake=input.steer=input.hand=0;
-  vehicle.position.set(0,0,0);vehicle.rotation.y=0;camOrb.follow=true;dragging=false;resetTrack();updateChaseCam(0,true);}
+  vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);camOrb.follow=true;dragging=false;resetTrack();updateChaseCam(0,true);}
 function exitDrive(){mode='werkstatt';
   document.querySelectorAll(OVL).forEach(el=>el.style.display='');if(hud)hud.style.display='none';
   ground.visible=false;
-  vehicle.position.set(0,0,0);vehicle.rotation.y=0;gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
-  corners.forEach(c=>{if(c.front)c.grp.rotation.y=0;});car.vlong=car.vlat=car.yawRate=car.speed=0;car.steer=0;dragging=false;camOrb.follow=true;
+  vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);
+  corners.forEach(c=>{if(c.front)c.grp.rotation.y=0;});Object.assign(car,VC.fahrZustand(0,0,0));dragging=false;camOrb.follow=true;
   key.position.set(5,9,4);key.target.position.set(0,0,0);key.target.updateMatrixWorld();
   cam.position.copy(_savP);oc.target.copy(_savT);oc.enabled=true;oc.update();}
 
@@ -452,12 +399,12 @@ const oc=new THREE.OrbitControls(cam,R.domElement);oc.enableDamping=true;oc.targ
 const clock=new THREE.Clock();let simT=0;
 function animate(){requestAnimationFrame(animate);const dt=Math.min(1/30,clock.getDelta());simT+=dt;const t=simT;
   if(mode==='fahren'){readKeys();updateVehicle(dt,t);updateTrack(dt);updateSmoke(dt);updateChaseCam(dt,false);
-    if(hud){const sp=hud.querySelector('#spd');if(sp)sp.textContent=Math.round(Math.abs(car.speed)*12);}
+    if(hud){const sp=hud.querySelector('#spd');if(sp)sp.textContent=Math.round(Math.abs(car.speed)*FAHR.kmh);}  // Welle L: km/h aus der EINEN Kern-Zeile (×12 zeigte 3,33-fach)
   }else{oc.update();}
   const open=kin?0.62:0;                                            // Türen — in beiden Modi animiert
   doors.forEach(d=>{const tgt=(d.sd<0?-open:open);d.pv.rotation.y+=(tgt-d.pv.rotation.y)*0.08;});
   R.render(scene,cam);}
-Object.assign(P,VC.presetPatch('gt'));rebuild();animate();
+presetSetzen('gt');animate();   // Welle L: das erste Laden geht denselben Weg (der Federraten-Regler zeigte 95 bei Zustand 100)
 addEventListener('resize',()=>{cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix();R.setSize(innerWidth,innerHeight);});
 
 /* ==================== W12-PORTAL-BRÜCKE (AnazhRealm-Heimat) ==================== */

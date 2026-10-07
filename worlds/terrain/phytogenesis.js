@@ -5198,7 +5198,7 @@ init();
         if (typeof stemMat !== "undefined" && mat === stemMat) return "stem";
         return "unknown";
     }
-    function __extractAssetMesh(mesh, zweitKern) {
+    function __extractAssetMesh(mesh, zweitKern, basisInv) {
         const geo = mesh.geometry;
         if (!geo || !geo.attributes || !geo.attributes.position) return null;
         const out = { kind: __assetMaterialKind(mesh.material) };
@@ -5307,8 +5307,10 @@ init();
         if (geo.index) out.index = new Uint32Array(Array.from(geo.index.array));
         // Welt-Transform der Instanz (buildInstance setzt g.position.y; Meshes koennen lokal
         // versetzt sein) in die Vertices backen, damit AnazhRealm den Baum am Ursprung erhaelt.
+        // WELLE L (Q13 F-D8, additiv): ein RAD bäckt relativ zu seiner Nabe (`basisInv` = Nabe⁻¹) — die Welt setzt
+        // es je Ecke als Instanz (Rolle, Lenk-Einschlag, ungefedert). Ohne `basisInv` byte-alt.
         mesh.updateWorldMatrix(true, false);
-        const e = mesh.matrixWorld.elements,
+        const e = basisInv ? new THREE.Matrix4().multiplyMatrices(basisInv, mesh.matrixWorld).elements : mesh.matrixWorld.elements,
             pos = out.position.array;
         for (let i = 0; i < pos.length; i += 3) {
             const x = pos[i],
@@ -5377,8 +5379,47 @@ init();
                     : zweit.kern.buildInstance(msg.presetId, Number(msg.seed) || 0, msg.lod | 0, msg.ov || null)
                 : buildInstance(msg.presetId || "eiche", Number(msg.seed) || 0, msg.lod | 0, msg.ov || null);
             g.updateMatrixWorld(true);
+            // WELLE L (Q13 F-D8, additiv, must-ignore): DAS RAD REIST EINMAL. Ein Fahrzeug trägt seine Naben als Daten
+            // (vehicle-core buildWheels: userData.rad {ecke, front, os}, userData.radDreht am drehenden Teil). Die Teile
+            // der Ecke 0 reisen nabenrelativ gebacken mit `rad` = {dreht, raeder}: raeder nennt jede Ecke (Naben-Lage
+            // im Vorlagen-Raum, lenkt, Drehung π für die Gegenseite — die Felge der Gegenseite ist die gespiegelte
+            // Ecke 0 um π gedreht). Die übrigen Ecken reisen nicht: die Welt setzt das eine Rad viermal als Instanz.
+            // Ein Kern ohne Naben bleibt byte-alt.
+            const __naben = [];
+            g.traverse((o) => {
+                if (o.userData && o.userData.rad && typeof o.userData.rad.ecke === "number") __naben.push(o);
+            });
+            const __nabe0 = __naben.find((h) => h.userData.rad.ecke === 0) || null;
+            let __nabeInv = null;
+            let __raeder = null;
+            if (__nabe0) {
+                __nabeInv = new THREE.Matrix4().copy(__nabe0.matrixWorld).invert();
+                const os0 = __nabe0.userData.rad.os;
+                __raeder = __naben.map((h) => {
+                    const p = new THREE.Vector3().setFromMatrixPosition(h.matrixWorld);
+                    return { hx: p.x, hy: p.y, hz: p.z, front: !!h.userData.rad.front, dreh: h.userData.rad.os === os0 ? 0 : Math.PI };
+                });
+            }
             g.traverse((o) => {
                 if (o.isMesh) {
+                    let nabe = null;
+                    let dreht = false;
+                    for (let a = o.parent; a && __nabe0; a = a.parent) {
+                        if (a.userData && a.userData.radDreht) dreht = true;
+                        if (a.userData && a.userData.rad) {
+                            nabe = a;
+                            break;
+                        }
+                    }
+                    if (nabe) {
+                        if (nabe !== __nabe0) return; // dieselbe Gestalt — die Welt setzt sie als Instanz
+                        const mr = __extractAssetMesh(o, isZweitKern, __nabeInv);
+                        if (mr) {
+                            mr.rad = { dreht: dreht, raeder: __raeder };
+                            meshes.push(mr);
+                        }
+                        return;
+                    }
                     const m = __extractAssetMesh(o, isZweitKern);
                     if (m) meshes.push(m);
                 }

@@ -8060,6 +8060,7 @@ class AnazhRealm {
         // --- der EINE Sim-Schritt (exakt die _stepFixedSim-Ordnung, ohne Captures) ---
         this._stepCharacter(FIXED_DT, ls.simT);
         this._loopPlayerMovement(ls.simT, FIXED_DT);
+        this._rittSchritt(FIXED_DT); // der Ghost reitet nie (mountedArch null) — die Ordnung bleibt exakt
         ls.simT += FIXED_DT;
         // --- Ghost sichern ---
         ls.x = mesh.position.x;
@@ -31993,10 +31994,16 @@ class AnazhRealm {
         const bp = this.state.blueprints && this.state.blueprints[entry.type];
         if (!bp || !Array.isArray(bp.parts) || bp.parts.length === 0) return;
         const solidAABBs = [];
+        const scD = Number.isFinite(entry.scale) ? entry.scale : 1;
         for (const part of bp.parts) {
             if (!this._isPartSolid(part)) continue;
             const aabb = this._blockerComputePartAABB(entry, part);
-            if (aabb) solidAABBs.push(aabb);
+            if (!aabb) continue;
+            // Welle L (Q5): ein STAMM (Zylinder-Teil) trägt seine Dicke — was dünner ist als die Stufe eines Rades (der
+            // Hasel-Trieb, der Ast), überrollt die Hülle des Wagens (`_fahrHuelleKontakt`); die Kapsel liest das Feld nie.
+            if (part.shape === "cylinder" && part.size)
+                aabb.dick = Math.min(Math.abs(part.size.x) || 0, Math.abs(part.size.z) || 0) * scD;
+            solidAABBs.push(aabb);
         }
         // Das FUNDAMENT ist Blocker-Wahrheit: der Sockel vom tiefsten Footprint-Punkt bis zur Haus-Basis
         // ist SOLID (Kapsel, Cell-Stempel, Wasser urteilen gleich — nicht unters Haus am Hang). Rotation
@@ -50825,9 +50832,10 @@ class AnazhRealm {
                 ) {
                     prof.lenkung = _lk;
                 }
-                // Das volle Zweispur-Gesetz reist ins Profil: der Ritt fährt DASSELBE Schlupfwinkel-Modell wie die
-                // Probefahrt (Reibkreis, Lastverlagerung, Gier aus Reifenmoment). NaN-Wand: nur mit den tragenden
-                // Größen, sonst gripK-Pfad. Dazu die Probefahrt-Kamera (Chase-Cam, Kern-Elevation/-Distanz/-Eases).
+                // Das volle Zweispur-Gesetz reist ins Profil: der Ritt fährt DENSELBEN Fahr-Schritt wie die Probefahrt
+                // (vehicle-core fahrSchritt, `_fahrSatz`). NaN-Wand: nur mit den tragenden Größen — ohne sie trägt das
+                // Werk kein Fahr-Gesetz und reitet richtungs-folgend. Dazu die Probefahrt-Kamera (Chase-Cam, Kern-
+                // Elevation/-Distanz/-Eases).
                 const _km = _fp.kamera;
                 if (_km && Number.isFinite(_km.el) && Number.isFinite(_km.dist) && _km.dist > 0) prof.kamera = _km;
                 const _zs = _fp.zweispur;
@@ -50944,14 +50952,15 @@ class AnazhRealm {
             return { ok: false, reason: "not_moveable" };
         }
         this.state.player.mountedArch = entry.id;
-        // N7 — frischer Aufstieg = frischer Fahrzustand (Lenksäule zentriert,
-        // Gier-Rate null, Feder ruhig — kein Geister-Drift vom letzten Ritt).
+        this._mountedEntry = entry; // der Sim-Schritt (Lenk-Pfad, `_rittSchritt`) kennt das Werk ab dem ersten Schritt
+        // Frischer Aufstieg = frischer Fahr-Zustand des Kerns (Lenksäule zentriert, Gier-Rate null, Federn ruhig, die
+        // Vertikale auf dem Boden) und ein frisch gelesener Fahr-Satz (das Buch kann sich geändert haben).
         entry._fahr = null;
-        entry._fahrVLongPrev = null;
-        entry._ridePitchV = 0;
-        entry._rideKurvenRollV = 0;
-        entry._rideHeave = 0; // N7-Rest — frischer Squat-Zustand je Aufstieg
-        entry._rideHeaveV = 0;
+        entry._fahrSatz = null;
+        entry._fahrSatzKey = null;
+        entry._fahrBodenFn = null;
+        entry._fahrHuelleKette = null; // die Hülle als Körper (Q5) — je Aufstieg frisch aus dem Gesetz
+        entry._rideHeave = 0; // frischer Squat-Zustand je Aufstieg
         entry._kamYaw = null; // N8 — die Chase-Cam snappt beim Aufstieg hinter den Wagen
         entry._kamT = 0;
         // Der SITZ-Punkt des Bauplans (expliziter sitz-Punkt oder oberste flache Fläche) bestimmt, wo der
@@ -50996,9 +51005,9 @@ class AnazhRealm {
             pm.z = entry.position.z;
             pm.y = entry.position.y - 0.5 + entry._sitzHeight; // der Sitz misst von der Basis (position.y − 0.5)
         }
-        // Kollision ruht im Sattel (Reiter + Gefährt = EIN Körper, die Spieler-Kapsel kollidiert): der
-        // statische Wagen-Körper blockierte sonst die Fahrt wie ein Bordstein. Beim Aufsteigen fällt er, der
-        // Lazy-Builder überspringt das gerittene Gefährt, Absteigen baut lazy neu. Profil wird dabei lesbar.
+        // Reiter + Gefährt = EIN Körper: die eigenen Blocker des gerittenen Werks blocken es nie (der Struktur-Löser
+        // überspringt riddenId); was kollidiert, ist die HÜLLE des Gesetz-Wagens (`_fahrHuelle`, Welle L Q5) bzw. ohne
+        // Fahr-Gesetz die Reiter-Kapsel. Absteigen baut die Blocker lazy neu. Profil wird dabei lesbar.
         const prof = this._vehicleProfile(entry);
         // Aufstieg in ein gesetz-gelenktes Werk schaltet in die Studio-Sicht (die Kern-Chase-Cam lebt im
         // third-Ast von _loopCamera); der vorige Modus kehrt beim Abstieg zurück.
@@ -51042,11 +51051,25 @@ class AnazhRealm {
             entry._ridePitch = 0;
             entry._rideVy = 0;
             entry._rideHeave = 0; // N7-Rest — das stehende Gefaehrt steht auf Feder-Null
-            entry._rideHeaveV = 0;
             entry._rideKurvenRoll = 0;
-            entry._rideKurvenRollV = 0;
             if (entry.mesh) this._rittMeshPose(entry);
             else if (entry.instanced) this._archInstanceUpdate.call(this, entry);
+        }
+        // DER WAGEN BLEIBT NIE IN DER LUFT (Gegenprüfung 07.10.): die Fahrt endet mit dem Abstieg wie am Boden (der Wagen
+        // bleibt, wo der Reiter ihn verließ — Längs-, Quer- und Gier-Fahrt fallen), die VERTIKALE bleibt dem Fahr-Gesetz:
+        // fliegt er, trägt ihn `_fahrNachlauf` je Sim-Schritt auf der ballistischen Vertikale des Kerns, bis er steht.
+        const fzAb = entry && entry._fahrSatz ? entry._fahr : null;
+        if (fzAb) {
+            // der Fahr-Zustand steht, wo der Wagen steht (die Kräfte hatten ihn einen Schritt vorausgelegt)
+            fzAb.x = entry.position.x;
+            fzAb.z = entry.position.z;
+            fzAb.vlong = 0;
+            fzAb.vlat = 0;
+            fzAb.yawRate = 0;
+            fzAb.speed = 0;
+            fzAb.aLong = 0;
+            fzAb.aLat = 0;
+            if (fzAb.luft) (this._fahrLos || (this._fahrLos = new Set())).add(entry);
         }
         this.state.player.mountedArch = null;
         // FAHR-ABSCHLUSS (19.07.) — die gemerkte Vor-Fahrt-Sicht kehrt zurück.
@@ -51073,63 +51096,116 @@ class AnazhRealm {
     }
 
     // DIE AUFSTANDSPUNKTE eines gerittenen Werks (m, Fahrt-Rahmen: vorn/hinten längs, quer zur Seite): ein
-    // Studio-Fahrzeug trägt sie im Gesetz (vehicle-core exportDrive.huelle — die Achsen fAx/rAx, die halbe Spur),
-    // ein Teile-Werk an Bug/Heck und den Flanken seiner Hülle (die halbe Spanne, gedeckelt 0.8..3 m).
+    // Studio-Fahrzeug trägt sie im Gesetz (vehicle-core fahrAufstand aus exportDrive.huelle — die Achsen fAx/rAx, die
+    // halbe Spur, der Bauch und der Federweg je Rad, dieselbe Quelle wie die Probefahrt), ein Teile-Werk an Bug/Heck und
+    // den Flanken seiner Hülle (die halbe Spanne, gedeckelt 0.8..3 m) — starr: seine Räder federn nicht einzeln (hub 0).
     _rittAufstand(entry) {
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
         const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
         const h = fzg && fzg.drive ? fzg.drive.huelle : null;
-        if (h && Number.isFinite(h.fAx) && Number.isFinite(h.rAx) && Number.isFinite(h.spur) && h.fAx > h.rAx)
-            return {
-                vorn: h.fAx * sc,
-                hinten: h.rAx * sc,
-                quer: (h.spur / 2) * sc,
-                bauch: Number.isFinite(h.yFloor) ? h.yFloor * sc : 0,
-            };
+        const auf = h ? AnazhRealm._fahrSchrittGesetz().vc.fahrAufstand(h, sc) : null;
+        if (auf) return auf;
         const half = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
-        return { vorn: half, hinten: -half, quer: Math.max(0.6, half * 0.6), bauch: 0 };
+        return { vorn: half, hinten: -half, quer: Math.max(0.6, half * 0.6), bauch: 0, hub: 0 };
     }
 
     // DIE EBENE DER RÄDER bei (x, z) in Fahrt-Richtung `fahrtYaw` (sin, cos): die vier Aufstandspunkte
     // (`_rittAufstand`) auf dem Boden-Gesetz → Höhe der Ebene unter dem Ursprung, Nick (Bug ab = +) und Wank (die
     // Flanke (cos, −sin) oben = +), alle aus DENSELBEN Proben. Das alte max() über Bug/Heck hob den Ursprung auf den
     // höchsten Punkt, und der Gelände-Nick kippte ihn dann noch einmal: am Hang schwebte der Wagen um halbe Länge ×
-    // Steigung. null, wenn eine Probe fehlt. Leser: der Ritt (`_tickMountedMovement`) und der Stand (`_fahrzeugStand`).
+    // Steigung. null, wenn eine Probe fehlt. Leser: der Ritt ohne Fahr-Gesetz (`_rittSchritt`) und der Stand
+    // (`_fahrzeugStand`); das Gesetz-Fahrzeug liest dieselbe Ebene im Kern (`fahrStand`).
     _rittEbene(entry, x, z, fahrtYaw) {
-        const st = this._rittAufstand(entry);
-        const fX = Math.sin(fahrtYaw);
-        const fZ = Math.cos(fahrtYaw);
-        const qX = Math.cos(fahrtYaw);
-        const qZ = -Math.sin(fahrtYaw);
-        const h = (l, q) => this.getTerrainHeightAt(x + fX * l + qX * q, z + fZ * l + qZ * q);
-        const vRe = h(st.vorn, st.quer);
-        const vLi = h(st.vorn, -st.quer);
-        const hRe = h(st.hinten, st.quer);
-        const hLi = h(st.hinten, -st.quer);
-        if (!Number.isFinite(vRe) || !Number.isFinite(vLi) || !Number.isFinite(hRe) || !Number.isFinite(hLi))
-            return null;
-        const hV = (vRe + vLi) / 2;
-        const hH = (hRe + hLi) / 2;
-        const lang = Math.max(0.5, st.vorn - st.hinten);
-        const y0 = hH + ((hV - hH) * -st.hinten) / lang;
-        // KEIN BAUCH IM BODEN: liegt der Boden unter dem Ursprung über dem Bauch (Studio-Fahrzeug: die Boden-Freiheit
-        // huelle.yFloor über der Rad-Ebene; Teile-Werk: seine Unterkante), steigt die Ebene, bis der Bauch aufliegt —
-        // über einer Kuppe trägt der Bauch, am gleichmäßigen Hang und über einer Mulde tragen die Räder (W5). Die
-        // Verwindung (zwei Räder je ±v) bleibt der Ebene: sie zu heben öffnete am Hang Rad-Spalten bis 0,195 m (B-f).
-        // Befund voller Playtest (M3 Ritt, Integration W5): am Kamm (66, 60) lag der Bauch 1,05 m im Boden.
-        const mitte = this.getTerrainHeightAt(x, z);
-        const heben = Number.isFinite(mitte) ? Math.max(0, mitte - (st.bauch || 0) - y0) : 0;
-        return {
-            y: y0 + heben,
-            nick: Math.atan2(hH - hV, lang),
-            wank: Math.atan2((vRe + hRe) / 2 - (vLi + hLi) / 2, Math.max(0.5, 2 * st.quer)),
+        // Welle L (Q13): die Ebene ist die des Kerns (vehicle-core fahrEbene — dieselbe, die der Fahr-Schritt fährt und
+        // die Probefahrt liest): kein Bauch im Boden (über einer Kuppe trägt der Bauch, W5 — am Kamm (66, 60) lag er
+        // 1,05 m im Boden), und an einer KANTE (Spalt, Klippe) trägt keine Ebene mehr (sie mittelte Rand und Grund).
+        // Rahmen des Kerns: Bug-Gier = Fahrt − π/2; Nick hier Bug ab = +, Wank die Flanke (cos, −sin) oben = +. Ein Kern
+        // ohne fahrEbene bricht laut (`_fahrSchrittGesetz`), nie still null.
+        const { vc } = AnazhRealm._fahrSchrittGesetz();
+        const eb = vc.fahrEbene(
+            { auf: this._rittAufstand(entry) },
+            this._fahrTerrainBoden || (this._fahrTerrainBoden = (a, b) => this.getTerrainHeightAt(a, b)),
+            x,
+            z,
+            fahrtYaw - Math.PI / 2
+        );
+        return eb ? { y: eb.y, nick: -eb.steig, wank: eb.wank } : null;
+    }
+
+    // DER FAHR-SATZ eines gerittenen Werks (Welle L, Q13): der EINE Fahr-Schritt des Kerns (vehicle-core fahrGesetz) aus
+    // seinem Profil — Studio-Rezept (das fahrprofil des Buchs) oder Teile-Werk (exportDrive aus der Hülle, das Tempo
+    // emergent: vmax = Geh-Tempo × topSpeedMul, kAcc aus der Masse) — und den Aufstandspunkten des Werks. null NUR ohne
+    // Lenk- und Zweispur-Gesetz: dann reitet der richtungs-folgende Ritt (Kreatur, Bein-Werk). Ein Gesetz-Werk ohne
+    // Fahr-Schritt im Kern (alter Kern) oder ohne Fahr-Satz (fahrGesetz verwirft das Profil) bricht LAUT — vorher ritt es
+    // still richtungs-folgend (Gegenprüfung 07.10.).
+    _fahrSatz(entry, prof) {
+        if (!entry || !prof || !prof.lenkung || !prof.zweispur) return null;
+        const { vc } = AnazhRealm._fahrSchrittGesetz();
+        const vmax =
+            Number.isFinite(prof.vmax) && prof.vmax > 0
+                ? prof.vmax
+                : this.state.speed * (Number.isFinite(prof.topSpeedMul) ? prof.topSpeedMul : 1);
+        const k = entry._fahrSatzKey;
+        if (entry._fahrSatz && k && k.prof === prof && k.vmax === vmax) return entry._fahrSatz;
+        entry._fahrSatz = vc.fahrGesetz(
+            {
+                zweispur: prof.zweispur,
+                lenkung: prof.lenkung,
+                vmax,
+                kAcc: prof.kAcc,
+                spur: prof.spur,
+                cgH: prof.cgH,
+                radR: prof.radR,
+                spring: prof.spring,
+            },
+            this._rittAufstand(entry)
+        );
+        if (!entry._fahrSatz) return AnazhRealm._kernPflichtBruch("vehicle:fahrGesetz (" + entry.type + ")");
+        entry._fahrSatzKey = { prof, vmax };
+        return entry._fahrSatz;
+    }
+
+    // DER BODEN unter den Rädern des Fahr-Schritts: das Boden-Gesetz; ein schwimmendes Werk (floats) reitet die Lauf-
+    // Fläche, wo sie über dem Terrain liegt (Wasserlinie = Lauf-Fläche − Tauchtiefe, `_rittTauchTiefe`). Je Werk EINE
+    // Funktion (kein Abschluss je Schritt). INTEGRATIONS-NAHT (Entscheide D4/D10 der Welle L): die Wasser-Wahrheit gehört
+    // der Familie wasser — `_waterRunSurfaceAt` fällt dort; nach dem Merge liest diese Stelle (wie die zwei in
+    // `_rittSchritt`) `_koerperWasser(x, z, grund, gestalt)`, kein zweiter Wasser-Leser.
+    _fahrBoden(entry) {
+        if (entry._fahrBodenFn) return entry._fahrBodenFn;
+        const prof = this._vehicleProfile(entry);
+        const floats = !!(prof && prof.floats);
+        entry._fahrBodenFn = (x, z) => {
+            const t = this.getTerrainHeightAt(x, z);
+            if (!floats || !Number.isFinite(t)) return t;
+            const w = this._waterRunSurfaceAt(x, z);
+            const tief = this._rittTauchTiefe(entry, prof);
+            return w > -Infinity && w - tief > t ? w - tief : t;
         };
+        return entry._fahrBodenFn;
+    }
+
+    // Die Tauchtiefe eines schwimmenden Werks nach Archimedes: eingetauchter Rumpf-Anteil = prof.dichte / 0.55 (dieselbe
+    // Schwelle wie das floats-Gate) × Rumpf-Höhe aus der Bauplan-BBox (am Eintrag gecacht; Klemmen halten den Rumpf
+    // sichtbar).
+    _rittTauchTiefe(entry, prof) {
+        if (!Number.isFinite(entry._tauchTiefe)) {
+            const bpT = this.state.blueprints && this.state.blueprints[entry.type];
+            const bbT = bpT ? this._compoundBBox(bpT) : null;
+            const sclT = Number.isFinite(entry.scale) ? entry.scale : 1;
+            const rumpfH = bbT ? Math.max(0.3, (bbT.max.y - bbT.min.y) * sclT) : 1;
+            const anteil = Math.max(
+                0.1,
+                Math.min(0.95, (prof && Number.isFinite(prof.dichte) ? prof.dichte : 0.45) / 0.55)
+            );
+            entry._tauchTiefe = Math.max(0.08, Math.min(rumpfH - 0.05, anteil * rumpfH));
+        }
+        return entry._tauchTiefe;
     }
 
     // DER STAND eines Studio-Fahrzeugs (W5): es parkt, wie es fährt — auf der Ebene seiner vier Räder (Höhe, Nick,
     // Wank aus `_rittEbene`); ohne ihn stand der Wagen waagrecht, am Hang hob ein Rad 0,3 m ab. Der Rahmen (längs x)
     // und die Fahrt-Richtung (Template-Gier + π/2) stehen ab hier am Eintrag. Leser: der Spawn (jeder Pfad: Hotbar,
-    // DSL, Wiederherstellen) und der Abstieg trägt die letzte Ritt-Pose ohnehin.
+    // DSL, Wiederherstellen); der Abstieg trägt die letzte Ritt-Pose (im Flug: `_fahrNachlauf` bis auf den Boden).
     _fahrzeugStand(entry) {
         const fzg = this._fahrzeugGesetzFor(entry);
         if (!fzg || !fzg.drive || !fzg.drive.huelle) return;
@@ -51137,11 +51213,12 @@ class AnazhRealm {
         entry._rideYaw = (Number.isFinite(entry.rotationY) ? entry.rotationY : 0) + Math.PI / 2;
         const eb = this._rittEbene(entry, entry.position.x, entry.position.z, entry._rideYaw);
         if (!eb) return;
+        const kl = AnazhRealm._fahrSchrittGesetz().S.ebeneMax; // die Ebenen-Klammer des Kerns (NaN-/Sprung-Wand)
         entry.position.y = eb.y + 0.5;
         entry._terrainPitchZiel = eb.nick;
         entry._terrainRollZiel = eb.wank;
-        entry._rideTerrainPitch = Math.max(-0.7, Math.min(0.7, eb.nick));
-        entry._rideRoll = Math.max(-0.7, Math.min(0.7, eb.wank));
+        entry._rideTerrainPitch = Math.max(-kl, Math.min(kl, eb.nick));
+        entry._rideRoll = Math.max(-kl, Math.min(kl, eb.wank));
     }
 
     // Die Template-Gier zu einer Fahrt-Richtung (sin, cos): ein Studio-Fahrzeug liegt längs x (Bug +x) — R_y(φ)
@@ -51173,12 +51250,195 @@ class AnazhRealm {
         else m.rotation.set(rp, ry, rr, "YXZ");
     }
 
-    // Pro Frame, wenn mounted: die Architektur an die Spieler-Position ziehen (minus Sitz-Offset);
-    // tickArchitectureCulling zieht das Welt-Mesh nach. Das Gefährt richtet sich per exp-Lerp übers
-    // kürzeste Winkel-Delta in die Fahrt, seine Gelenke fahren mit (Phase ∝ echtem Weg, dieselbe
-    // _animateCompoundMotion wie Kreatur + Avatar). Ausrichtung ist VISUAL — die Kollisions-AABB bleibt
-    // achsen-orientiert.
-    _tickMountedMovement(dt) {
+    // DER RITT IM SIM-SCHRITT (Welle L, Q1 — Befund 06.10.: der Ritt schrieb den Sitz NACH der Interpolation auf das
+    // interpolierte Spieler-Mesh; der Akkumulator hielt das für einen Teleport und übernahm die nachhinkende Lage als
+    // Sim-Wahrheit — 114 von 114 Frames, 25,95 m simuliert gegen 10,27 m gefahren). Alles, was den Ritt BEWEGT, läuft
+    // in `_stepFixedSim` (nach der Bewegung, auf der Sim-Lage): der Eintrag folgt dem Reiter in x/z, der Reiter sitzt
+    // (pm.y = Sitz, VOR der Interpolation). Ein GESETZ-FAHRZEUG (Welle L, Q13) steht, wie der EINE Fahr-Schritt des Kerns
+    // es eben an dieser Lage stellte (`_loopPlayerMovement`: Ebene der Räder, ballistische Vertikale, Gier, Federn,
+    // Rad-Winkel) — der Stamm integriert davon nichts mehr. Ein Werk ohne Fahr-Gesetz (Kreatur-Ritt, Bein-Werk) steht
+    // auf der Ebene seiner Aufstandspunkte (oder schwimmt) und folgt mit der Gier der Fahrt.
+    _rittSchritt(dt) {
+        const pl = this.state.player;
+        const archId = pl ? pl.mountedArch : null;
+        if (archId === null || archId === undefined) return;
+        const entry =
+            this._mountedEntry && this._mountedEntry.id === archId
+                ? this._mountedEntry
+                : (this.state.architectures || []).find((e) => e.id === archId);
+        if (!entry) return; // der Frame-Tick steigt ab (das Werk ist verschwunden)
+        this._mountedEntry = entry;
+        const pm = this.state.playerMesh && this.state.playerMesh.position;
+        if (!pm) return;
+        const tick = Number.isFinite(dt) && dt > 0 ? Math.min(0.1, dt) : AnazhRealm.FIXED_DT;
+        // HORIZONTAL führt der REITER (der Kontakt-Löser setzte seine Lage); die Architektur folgt in x/z.
+        entry.position.x = pm.x;
+        entry.position.z = pm.z;
+        const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        const rideProf = this._vehicleProfile(entry);
+        // `_afloat` = reitet das Gefährt in DIESEM Schritt auf der Lauf-Fläche (am Ursprung, dieselbe Wasserlinie wie der
+        // Boden des Fahr-Schritts): _stepCharacter (4b) liest es als Boots-Gate der Strömungs-Advektion. Die zwei Lauf-
+        // Flächen-Lesungen dieses Schritts sind INTEGRATIONS-NAHT (D4/D10, Familie wasser: `_koerperWasser`, s. `_fahrBoden`).
+        // BENANNT GEFALLEN (Welle L, Q13): die Schwimm-Feder — exportDrive.spring {k, c} federte vorher die Aufsitz-Höhe
+        // eines schwimmenden Werks gegen die Wasserlinie (ein zweiter Vertikal-Integrator neben dem Kern). Jetzt reitet ein
+        // Gesetz-Werk die Wasserlinie auf der ballistischen Vertikale des Fahr-Schritts (`_fahrBoden`), seine Feder federt
+        // den Aufbau (Nick · Wank · Hub); ein Werk ohne Fahr-Gesetz folgt ihr mit exp-k 8.
+        entry._afloat = false;
+        const t0 = this.getTerrainHeightAt(pm.x, pm.z);
+        if (rideProf && rideProf.floats && Number.isFinite(t0)) {
+            const runSurf = this._waterRunSurfaceAt(pm.x, pm.z);
+            if (runSurf > -Infinity && runSurf - this._rittTauchTiefe(entry, rideProf) > t0) entry._afloat = true;
+        }
+        // Die Höhe des Eintrags trägt die Platzierungs-Konvention (die Basis liegt bei position.y − 0.5:
+        // `_archEntryWorldMatrix`, `_rebuildArchitectureMesh`, die Blocker). Ein Studio-Fahrzeug steht mit seiner Ebene
+        // y = 0 auf dem Boden, ein Teile-Werk mit seiner Unterkante (−_compoundBottomY · Skala).
+        const clear = entry._fahrAchseX ? 0 : Number.isFinite(entry._groundClear) ? entry._groundClear : 0;
+        const fahrG = this._fahrSatz(entry, rideProf);
+        if (fahrG) {
+            // DAS GESETZ-FAHRZEUG: Höhe, Lage (Nick Bug ab = +, Wank die Flanke (cos, −sin) oben = +), Federn und Rad-
+            // Winkel sind der Zustand des Fahr-Schritts. Die Kurven-Feder neigt den Aufbau nach außen wie die Probefahrt.
+            // Ohne Bewegungs-Schritt (frisch aufgesessen) stellt der Kern den Wagen an der Lage auf (Stand ohne Zeit).
+            let fz = entry._fahr;
+            if (!fz) {
+                const { vc } = AnazhRealm._fahrSchrittGesetz();
+                fz = entry._fahr = vc.fahrZustand(
+                    pm.x,
+                    pm.z,
+                    (Number.isFinite(entry._rideYaw) ? entry._rideYaw : 0) - Math.PI / 2
+                );
+                vc.fahrStand(fz, fahrG, this._fahrBoden(entry), 0);
+            }
+            if (!Number.isFinite(fz.y)) {
+                // Ungebauter Chunk: der Reiter führt, das Werk hängt am Sitz.
+                entry.position.y = pm.y - sitz + 0.5;
+                entry._rideY = null;
+                return;
+            }
+            entry.position.y = fz.y + 0.5 + clear;
+            entry._rideY = entry.position.y;
+            entry._rideVy = fz.vy;
+            entry._terrainPitchZiel = -fz.steig;
+            entry._terrainRollZiel = fz.wank;
+            entry._rideTerrainPitch = -fz.steig;
+            entry._rideRoll = fz.wank;
+            entry._ridePitch = -fz.fNick;
+            entry._rideKurvenRoll = fz.fWank;
+            entry._rideHeave = fz.fHub;
+            entry._rideSp = fz.speed;
+            if (Number.isFinite(entry._rideYaw)) entry.rotationY = this._rittGier(entry, entry._rideYaw);
+            // Die Fahr-Phase ist der Rad-Winkel des Kerns (Weg/radR, rückwärts rückwärts); applyJoint multipliziert den
+            // rad-Kanal ×1.6.
+            entry._ridePhase = fz.wheelAng / 1.6;
+            pm.y = entry.position.y - 0.5 + sitz + fz.fHub;
+            // Feld-nativ: das Gefährt führt die Vertikale → den Feld-Fall-Zustand nullen.
+            this.state._fieldVy = 0;
+            return;
+        }
+        // DER RITT OHNE FAHR-GESETZ: die Räder (Hufe) stehen auf der Ebene durch die Aufstandspunkte (`_rittEbene`, die
+        // Ebene des Kerns); ein schwimmendes Werk reitet die Wasserlinie, wo sie über dem Terrain liegt.
+        let groundY = t0;
+        if (Number.isFinite(groundY) && Number.isFinite(entry._rideYaw)) {
+            const eb = this._rittEbene(entry, pm.x, pm.z, entry._rideYaw);
+            if (eb) {
+                groundY = eb.y;
+                entry._terrainPitchZiel = eb.nick;
+                entry._terrainRollZiel = eb.wank;
+            }
+        }
+        if (entry._afloat) groundY = this._waterRunSurfaceAt(pm.x, pm.z) - this._rittTauchTiefe(entry, rideProf);
+        if (Number.isFinite(groundY)) {
+            const targetY = groundY + 0.5 + clear;
+            // An Land führt der Boden die Hufe EXAKT; schwimmend folgt die Aufsitz-Höhe der Wasserlinie mit exp-k 8.
+            if (!entry._afloat || !Number.isFinite(entry._rideY)) entry.position.y = targetY;
+            else entry.position.y = entry._rideY + (targetY - entry._rideY) * (1 - Math.exp(-8 * tick));
+            entry._rideVy = 0;
+            entry._rideY = entry.position.y;
+            pm.y = entry.position.y - 0.5 + sitz;
+            this.state._fieldVy = 0;
+        } else {
+            // Ungebauter Chunk: der Reiter führt, das Werk hängt am Sitz.
+            entry.position.y = pm.y - sitz + 0.5;
+            entry._rideY = null;
+        }
+        // Die Gier folgt der Fahrt (exp-k + Fahrt-Gate aus dem EINEN fail-closed Leser _fahrGesetz); entry.rotationY ist
+        // die EINE Gier-Wahrheit des TEMPLATES (Persistenz, Instanz-Matrix, Blocker).
+        const v = this.state.playerVel;
+        const vx = v ? v.x() : 0;
+        const vz = v ? v.z() : 0;
+        const sp = Math.hypot(vx, vz);
+        const _fahrG = AnazhRealm._fahrGesetz();
+        if (sp > _fahrG.he.fahrtGate) {
+            const targetYaw = Math.atan2(vx, vz);
+            let cur = Number.isFinite(entry._rideYaw) ? entry._rideYaw : targetYaw;
+            let d = targetYaw - cur;
+            while (d > Math.PI) d -= 2 * Math.PI;
+            while (d < -Math.PI) d += 2 * Math.PI;
+            cur += d * (1 - Math.exp(-_fahrG.he.yawFolgeK * tick));
+            entry._rideYaw = cur;
+            entry.rotationY = this._rittGier(entry, cur);
+        }
+        // Die Fahr-Phase wächst mit dem WEG (Hufe ohne Rad-Radius: Konstante 2.2).
+        entry._ridePhase = (entry._ridePhase || 0) + sp * tick * 2.2;
+        entry._rideSp = sp;
+        // Ohne Fahr-Gesetz keine Aufbau-Feder; die Lage liegt in der Ebene der Aufstandspunkte (die Klammer ist die NaN-/
+        // Sprung-Wand: die Ebenen-Klammer des Kerns, FAHR.schritt.ebeneMax).
+        const kl = AnazhRealm._fahrSchrittGesetz().S.ebeneMax;
+        entry._ridePitch = 0;
+        entry._rideKurvenRoll = 0;
+        entry._rideHeave = 0;
+        entry._rideTerrainPitch = Number.isFinite(entry._terrainPitchZiel)
+            ? Math.max(-kl, Math.min(kl, entry._terrainPitchZiel))
+            : 0;
+        entry._rideRoll = Number.isFinite(entry._terrainRollZiel)
+            ? Math.max(-kl, Math.min(kl, entry._terrainRollZiel))
+            : 0;
+    }
+
+    // DER NACHLAUF EINES ABGESTIEGENEN GESETZ-WAGENS (Welle L, Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen
+    // nicht ab — wer im Flug ausstieg, ließ ihn bis zum Reload in der Luft hängen, an der Klippe 4,80 m über seinem Boden).
+    // Je Sim-Schritt trägt ihn die ballistische Vertikale des Kerns (vehicle-core fahrStand — dieselbe wie im Ritt), bis er
+    // auf der Ebene seiner Räder steht; dann ruht er (Federn null, Lage der Ebene, Blocker an der Ruhe-Lage) und verlässt den
+    // Nachlauf. Ein ungebauter Boden hält ihn, bis der Chunk steht; sitzt der Reiter wieder auf, führt der Ritt.
+    _fahrNachlauf(dt) {
+        const { vc } = AnazhRealm._fahrSchrittGesetz();
+        const pl = this.state.player;
+        for (const entry of this._fahrLos) {
+            const fz = entry._fahr;
+            if ((pl && pl.mountedArch === entry.id) || !fz || !entry._fahrSatz || !Number.isFinite(fz.y)) {
+                this._fahrLos.delete(entry);
+                continue;
+            }
+            vc.fahrStand(fz, entry._fahrSatz, this._fahrBoden(entry), dt);
+            const clear = entry._fahrAchseX ? 0 : Number.isFinite(entry._groundClear) ? entry._groundClear : 0;
+            entry.position.y = fz.y + 0.5 + clear;
+            entry._rideY = entry.position.y;
+            entry._rideVy = fz.vy;
+            if (!fz.luft) {
+                // gelandet: er steht in der Ebene seiner Räder, die Federn ruhen
+                fz.vy = 0;
+                fz.fNick = fz.fNickV = fz.fWank = fz.fWankV = fz.fHub = fz.fHubV = 0;
+                entry._rideVy = 0;
+                entry._terrainPitchZiel = entry._rideTerrainPitch = -fz.steig;
+                entry._terrainRollZiel = entry._rideRoll = fz.wank;
+                if (entry.blockerAABBs) {
+                    this._populateBlockerAABBs(entry);
+                    entry._blockerStampAt = null;
+                }
+                this._fahrLos.delete(entry);
+            }
+            // der EINE Visual-Weg (call-Form wie im Abstieg: die A6-Wand des vehicle-drive-Gates liest die erste direkte
+            // Instanz-Update-Bindung als die Tick-Zeile in _tickMountedMovement)
+            if (entry.mesh) this._rittMeshPose(entry);
+            else if (entry.instanced) this._archInstanceUpdate.call(this, entry);
+        }
+    }
+
+    // DER RITT IM FRAME (Welle L, Q1): nur SICHT. Der Wagen steht, wo der Reiter gezeichnet wird — an der interpolierten
+    // Lage (`_applyFixedInterpolation` lief davor): x/z vom Spieler-Mesh, die Höhe aus dem Sitz zurück (Basis = Sitz −
+    // Sitz-Höhe − Heave + 0.5, die Umkehrung des Sim-Schritts). Der Frame-Tick schreibt NIE das Spieler-Mesh — sonst
+    // hält der Akkumulator die Lage für einen Teleport. Dazu: Abstieg, wenn das Werk verschwand; der EINE Visual-Weg
+    // (Gruppen-Pose + Gelenke ODER die Instanz-Matrix); die Blocker ziehen mit. Die Frame-Zeit trägt nichts mehr bei.
+    _tickMountedMovement(_dt) {
         const archId = this.state.player.mountedArch;
         if (archId === null || archId === undefined) {
             this._mountedEntry = null;
@@ -51199,270 +51459,15 @@ class AnazhRealm {
         this._mountedEntry = entry;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
-        const tick = Number.isFinite(dt) && dt > 0 ? Math.min(0.1, dt) : 0.016;
-        // HORIZONTAL führt der REITER (die WASD-Physik = die EINE Bewegungs-
-        // Quelle, V18.150); die Architektur folgt in x/z.
+        // HORIZONTAL führt der REITER (die WASD-Physik = die EINE Bewegungs-Quelle, V18.150); die Architektur folgt in
+        // x/z, die Höhe kommt aus dem Sitz (der Sim-Schritt setzte ihn aus der Ebene der Räder).
         entry.position.x = pm.x;
         entry.position.z = pm.z;
-        // VERTIKAL führt das GEFÄHRT: es steht auf dem Terrain (getTerrainHeightAt + Boden-Klärung); der
-        // Reiter folgt IHM (Body kinematisch auf Sitz-Höhe, vy genullt). Umgekehrt fiele der Spieler-Body
-        // auf den Boden und das Gefährt versänke.
         const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
-        let groundY = this.getTerrainHeightAt(pm.x, pm.z);
-        // DER KONTAKT: die Räder stehen auf der Ebene durch ihre vier Aufstandspunkte (`_rittEbene`). Der HANGABTRIEB
-        // im Bewegungs-Tick liest dasselbe Nick-Ziel.
-        if (Number.isFinite(groundY) && Number.isFinite(entry._rideYaw)) {
-            const eb = this._rittEbene(entry, pm.x, pm.z, entry._rideYaw);
-            if (eb) {
-                groundY = eb.y;
-                entry._terrainPitchZiel = eb.nick;
-                entry._terrainRollZiel = eb.wank;
-            }
-        }
-        // Boot-Schwimmen: ein floats-Gefährt reitet die geglättete Lauf-Fläche, wo sie über dem Terrain
-        // liegt; ragt das Terrain über die Wasserlinie, führt es (Auflaufen per max(), kein Sonder-Pfad).
-        const rideProf = this._vehicleProfile(entry);
-        // `_afloat` = reitet das Gefährt in DIESEM Tick auf der Lauf-Fläche. _stepCharacter (4b) liest es
-        // als Boots-Gate für die Strömungs-Advektion — der Reiter ist nie `submerged`, das Boot folgt ihm.
-        entry._afloat = false;
-        if (rideProf && rideProf.floats && Number.isFinite(groundY)) {
-            const runSurf = this._waterRunSurfaceAt(pm.x, pm.z);
-            // Wasserlinie nach Archimedes: eingetauchter Rumpf-Anteil = prof.dichte / 0.55 (dieselbe Schwelle
-            // wie das floats-Gate) × Rumpf-Höhe aus der Bauplan-BBox (am Entry gecacht; Klemmen halten den
-            // Rumpf sichtbar).
-            if (!Number.isFinite(entry._tauchTiefe)) {
-                const bpT = this.state.blueprints && this.state.blueprints[entry.type];
-                const bbT = bpT ? this._compoundBBox(bpT) : null;
-                const sclT = Number.isFinite(entry.scale) ? entry.scale : 1;
-                const rumpfH = bbT ? Math.max(0.3, (bbT.max.y - bbT.min.y) * sclT) : 1;
-                const anteil = Math.max(
-                    0.1,
-                    Math.min(0.95, (Number.isFinite(rideProf.dichte) ? rideProf.dichte : 0.45) / 0.55)
-                );
-                entry._tauchTiefe = Math.max(0.08, Math.min(rumpfH - 0.05, anteil * rumpfH));
-            }
-            if (runSurf > -Infinity && runSurf - entry._tauchTiefe > groundY) {
-                groundY = runSurf - entry._tauchTiefe;
-                entry._afloat = true;
-            }
-        }
-        if (Number.isFinite(groundY)) {
-            // Die Höhe des Eintrags trägt die Platzierungs-Konvention (die Basis liegt bei position.y − 0.5:
-            // `_archEntryWorldMatrix`, `_rebuildArchitectureMesh`, die Blocker) — ohne die +0.5 versank jedes
-            // gerittene Werk einen halben Meter (der GT: Reifen 0,48 m unter dem Boden). Ein Studio-Fahrzeug
-            // steht mit seiner Ebene y = 0 auf dem Boden (die 4 cm Laufflächen-Wölbung sind die Reifen-Last wie
-            // im Labor), ein Teile-Werk mit seiner Unterkante (−_compoundBottomY · Skala).
-            const clear = entry._fahrAchseX ? 0 : Number.isFinite(entry._groundClear) ? entry._groundClear : 0;
-            const targetY = groundY + 0.5 + clear;
-            // An Land führt der Boden die Räder EXAKT (das Gesetz ist glatt; eine Feder auf der Boden-Folge hing
-            // c/k · Steig-Tempo nach: bergauf 0,28 m im Boden bei 15 m/s und 15 %). Der Aufbau federt über Nick,
-            // Wank und Heave unten. Schwimmend federt die Aufsitz-Höhe mit exportDrive.spring {k,c} (gedämpft,
-            // semi-implizit; nicht-finit oder > 4 m Auslenkung → hart targetY), ohne spring der exp-Lerp.
-            const spr = rideProf && rideProf.spring;
-            if (!entry._afloat) {
-                entry.position.y = targetY;
-                entry._rideVy = 0;
-            } else if (spr && Number.isFinite(entry._rideY)) {
-                let svy = Number.isFinite(entry._rideVy) ? entry._rideVy : 0;
-                svy += (spr.k * (targetY - entry._rideY) - spr.c * svy) * tick;
-                const sy = entry._rideY + svy * tick;
-                if (!Number.isFinite(sy) || !Number.isFinite(svy) || Math.abs(sy - targetY) > 4) {
-                    entry.position.y = targetY;
-                    entry._rideVy = 0;
-                } else {
-                    entry.position.y = sy;
-                    entry._rideVy = svy;
-                }
-            } else {
-                const k = 1 - Math.exp(-8 * tick);
-                entry.position.y = Number.isFinite(entry._rideY)
-                    ? entry._rideY + (targetY - entry._rideY) * k
-                    : targetY;
-                entry._rideVy = 0;
-            }
-            entry._rideY = entry.position.y;
-            // HEAVE (N7-Rest) — der Squat senkt den SITZ mit (der benannte
-            // Sitz-Höhen-Konsument; render-/Gefühls-seitig, Blocker byte-alt). Der Sitz misst von der Basis.
-            const riderY = entry.position.y - 0.5 + sitz + (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
-            pm.y = riderY;
-            // Feld-nativ: das Gefährt führt die Vertikale → den Feld-Fall-Zustand nullen
-            // (kein Ammo-Body, der synchronisiert werden müsste).
-            this.state._fieldVy = 0;
-        } else {
-            // Fallback (ungebauter Chunk): der alte Reiter-führt-Pfad.
-            entry.position.y = pm.y - sitz + 0.5;
-            entry._rideY = null;
-        }
-        // Die Gier folgt der Fahrt-Richtung für BEIDE Visual-Pfade (instanzierte Fahrzeuge haben
-        // entry.mesh = null). entry.rotationY ist die EINE Gier-Wahrheit des TEMPLATES (Persistenz +
-        // _archEntryWorldMatrix + _blockerComputePartAABB lesen sie); _rideYaw ist die Fahrt-Richtung
-        // (sin, cos). Ein Studio-Fahrzeug liegt längs x (Bug +x): sein Template steht um −π/2 zur Fahrt —
-        // sonst fuhr es quer zur eigenen Längsachse (`_rittGier`).
+        entry.position.y = pm.y + 0.5 - sitz - (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
         const v = this.state.playerVel;
-        const vx = v ? v.x() : 0;
-        const vz = v ? v.z() : 0;
-        const sp = Math.hypot(vx, vz);
-        // Lenkt das Studio-Fahrzeug selbst (_rideSteer), führt SEINE Gier direkt (die Lenkung ist die
-        // Wahrheit); sonst Gier-Folge (exp-k + Fahrt-Gate) aus dem EINEN fail-closed Leser _fahrGesetz.
-        const _fahrG = AnazhRealm._fahrGesetz();
-        const fahrtGate = _fahrG.he.fahrtGate;
-        if (entry._rideSteer) {
-            if (Number.isFinite(entry._rideYaw)) entry.rotationY = this._rittGier(entry, entry._rideYaw);
-            entry._rideSteer = false;
-        } else if (sp > fahrtGate) {
-            const targetYaw = Math.atan2(vx, vz);
-            let cur = Number.isFinite(entry._rideYaw) ? entry._rideYaw : targetYaw;
-            let d = targetYaw - cur;
-            while (d > Math.PI) d -= 2 * Math.PI;
-            while (d < -Math.PI) d += 2 * Math.PI;
-            cur += d * (1 - Math.exp(-_fahrG.he.yawFolgeK * tick));
-            entry._rideYaw = cur;
-            entry.rotationY = this._rittGier(entry, cur);
-        }
-        // Die Fahr-Phase wächst mit dem WEG: Rad-Winkel = Weg/radR (exportDrive.radR). applyJoint
-        // multipliziert den rad-Kanal ×1.6, darum teilt die Phase durch radR·1.6. Ohne radR Konstante 2.2.
-        const _radR = rideProf && Number.isFinite(rideProf.radR) && rideProf.radR > 0 ? rideProf.radR : null;
-        entry._ridePhase = (entry._ridePhase || 0) + sp * tick * (_radR !== null ? 1 / (_radR * 1.6) : 2.2);
-        // Nick aus dem Studio-Gesetz (wheelClearance: pitch = a·(cgH/L)·pitchGain/k): Längs-Beschleunigung
-        // aus der Fahrt (Bremsen → Bug taucht, Anfahren → Squat); cgH/L und pitchGain aus dem Kern, k =
-        // Rezept-Federrate. Geglättet mit √k, Klemme ±0.12 rad. NUR mit Feder-Rezept, sonst _ridePitch 0.
-        // Render-only: die Kollision liest weiter nur rotationY.
-        {
-            const sprN = rideProf && rideProf.spring;
-            if (sprN) {
-                // N7 — die Feder liest die ECHTE Beschleunigung des Zweispur-
-                // Modells (Reifenkräfte + Bremse + Hang), wenn es fährt; sonst
-                // die alte Tempo-Delta-Näherung (fail-soft, Kreatur-Ritt etc.).
-                const fahrM = entry._fahr && Number.isFinite(entry._fahr.aLong) ? entry._fahr : null;
-                const prevSp = Number.isFinite(entry._rideSp) ? entry._rideSp : sp;
-                let aLong = fahrM ? fahrM.aLong : (sp - prevSp) / tick;
-                if (!Number.isFinite(aLong)) aLong = 0;
-                // ZENSUS 17.07. / ZWILLINGS-ABSCHIED (18.07.) — die Längs-
-                // Beschl.-Klemme liest die EINZIGE Kern-Quelle A_PITCH_MAX
-                // über den fail-closed _fahrGesetz-Leser (der 13er-Zwilling fiel).
-                const aMax = _fahrG.aPitchMax;
-                aLong = Math.max(-aMax, Math.min(aMax, aLong));
-                // cgH/L aus der Kern-Geometrie (exportDrive.cgH + lenkung.radstand), sonst die Host-Näherung
-                // (Sitz-Hälfte / Halbspannen-Doppel); die Klemmen bleiben die Robustheits-Wand.
-                const pCgH = rideProf && Number.isFinite(rideProf.cgH) && rideProf.cgH > 0 ? rideProf.cgH : null;
-                const cgH = Math.max(
-                    0.3,
-                    pCgH !== null ? pCgH : (Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : 1) * 0.5
-                );
-                const radst = rideProf && rideProf.lenkung ? rideProf.lenkung.radstand : null;
-                const L = Math.max(
-                    1.6,
-                    Number.isFinite(radst) && radst > 1
-                        ? radst
-                        : 2 * (Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1)
-                );
-                const cgHL = Math.max(0.08, Math.min(0.5, cgH / L));
-                const pGain = _fahrG.pitchGain;
-                // Zweite Ordnung wie die Probefahrt-Feder spX.step (x'' = m − k·x − c·x'): der Aufbau schwingt über
-                // das Gleichgewicht m/k hinaus aus. Stabilität: Feder-dt ≤ 33 ms (expliziter Euler, k ≤ ~120).
-                const th = Math.min(0.033, tick);
-                const mP = -aLong * cgHL * pGain;
-                const cur = Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0;
-                let pv = Number.isFinite(entry._ridePitchV) ? entry._ridePitchV : 0;
-                pv += (mP - sprN.k * cur - sprN.c * pv) * th;
-                let np = cur + pv * th;
-                if (!Number.isFinite(np) || !Number.isFinite(pv)) {
-                    np = 0;
-                    pv = 0;
-                }
-                if (np > 0.12) {
-                    np = 0.12;
-                    pv = Math.min(0, pv);
-                } else if (np < -0.12) {
-                    np = -0.12;
-                    pv = Math.max(0, pv);
-                }
-                entry._ridePitchV = pv;
-                entry._ridePitch = np;
-                // Quer-Wank aus der Kurvenfahrt (wheelClearance: roll = aLat·(cgH/W)·rollGain/k): aLat = v·GierRate,
-                // geklemmt an der EINEN Kern-Klammer A_LAT_MAX; spur aus exportDrive (sonst L·0.55), rollGain aus
-                // FAHR (sonst 1.8). Render-only, exp-geglättet wie der Nick.
-                const yawNow = Number.isFinite(entry._rideYaw) ? entry._rideYaw : 0;
-                let dYw = yawNow - (Number.isFinite(entry._rideYawPrev) ? entry._rideYawPrev : yawNow);
-                while (dYw > Math.PI) dYw -= 2 * Math.PI;
-                while (dYw < -Math.PI) dYw += 2 * Math.PI;
-                entry._rideYawPrev = yawNow;
-                // N7 — die Quer-Beschleunigung kommt aus dem REIFENMODELL, wenn
-                // das Zweispur-Gesetz fährt (fail-soft die Gier-Näherung v·ω):
-                let aLat = fahrM && Number.isFinite(fahrM.aLat) ? fahrM.aLat : tick > 1e-5 ? sp * (dYw / tick) : 0;
-                if (!Number.isFinite(aLat)) aLat = 0;
-                const aLatMax = _fahrG.aLatMax;
-                aLat = Math.max(-aLatMax, Math.min(aLatMax, aLat));
-                const spurW =
-                    rideProf && Number.isFinite(rideProf.spur) && rideProf.spur > 0 ? rideProf.spur : L * 0.55;
-                const rGain = _fahrG.rollGain;
-                // N7 — zweite Ordnung wie der Nick (Kurven-Wank lehnt ÜBER und
-                // schwingt mit k/c aus; Gleichgewicht == altes rollT).
-                const mR = -aLat * Math.max(0.08, Math.min(0.9, cgH / spurW)) * rGain;
-                const curKR = Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0;
-                let rv = Number.isFinite(entry._rideKurvenRollV) ? entry._rideKurvenRollV : 0;
-                rv += (mR - sprN.k * curKR - sprN.c * rv) * th;
-                let nKR = curKR + rv * th;
-                if (!Number.isFinite(nKR) || !Number.isFinite(rv)) {
-                    nKR = 0;
-                    rv = 0;
-                }
-                if (nKR > 0.12) {
-                    nKR = 0.12;
-                    rv = Math.min(0, rv);
-                } else if (nKR < -0.12) {
-                    nKR = -0.12;
-                    rv = Math.max(0, rv);
-                }
-                entry._rideKurvenRollV = rv;
-                entry._rideKurvenRoll = nKR;
-                // Heave (garage spHeave: m = −|aLong|·heaveA − |v|·heaveV, Feder k·heaveKMul / c·heaveCMul) drückt
-                // den Aufbau in die Federn [m]; Konsument = Sitz-Höhe + Visual. Nur mit Zweispur-Kanal; render-only.
-                const zsH = rideProf && rideProf.zweispur;
-                if (zsH && Number.isFinite(zsH.heaveA) && Number.isFinite(zsH.heaveKMul)) {
-                    const mH = -Math.abs(aLong) * zsH.heaveA - sp * (Number.isFinite(zsH.heaveV) ? zsH.heaveV : 0);
-                    const curH = Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0;
-                    let hv = Number.isFinite(entry._rideHeaveV) ? entry._rideHeaveV : 0;
-                    hv += (mH - sprN.k * zsH.heaveKMul * curH - sprN.c * (zsH.heaveCMul || 1) * hv) * th;
-                    let nH = curH + hv * th;
-                    if (!Number.isFinite(nH) || !Number.isFinite(hv)) {
-                        nH = 0;
-                        hv = 0;
-                    }
-                    if (nH > 0.08) {
-                        nH = 0.08;
-                        hv = Math.min(0, hv);
-                    } else if (nH < -0.08) {
-                        nH = -0.08;
-                        hv = Math.max(0, hv);
-                    }
-                    entry._rideHeaveV = hv;
-                    entry._rideHeave = nH;
-                } else if (entry._rideHeave) {
-                    entry._rideHeave = 0;
-                    entry._rideHeaveV = 0;
-                }
-            } else {
-                if (entry._ridePitch) entry._ridePitch = 0;
-                if (entry._rideKurvenRoll) entry._rideKurvenRoll = 0;
-                if (entry._rideHeave) entry._rideHeave = 0;
-                entry._ridePitchV = 0;
-                entry._rideKurvenRollV = 0;
-                entry._rideHeaveV = 0;
-            }
-            entry._rideSp = sp;
-            // Gelände-Nick/-Wank für JEDES gerittene Gefährt (der Beschleunigungs-Nick bleibt Feder-exklusiv):
-            // die Karosserie liegt in der Ebene ihrer Aufstandspunkte; render-only. Ungeglättet — die Glättung
-            // (k = 6/s) hing bei Fahrt hinter dem Boden her und hob die Räder aus jeder Mulde. Die Klammer ist die
-            // NaN-/Sprung-Wand (±0.7 rad = 40°, steiler steht kein Wagen); die alte ±0.35 hob am 25°-Hang Bug und
-            // Heck 0,8 m aus dem Boden.
-            entry._rideTerrainPitch = Number.isFinite(entry._terrainPitchZiel)
-                ? Math.max(-0.7, Math.min(0.7, entry._terrainPitchZiel))
-                : 0;
-            entry._rideRoll = Number.isFinite(entry._terrainRollZiel)
-                ? Math.max(-0.7, Math.min(0.7, entry._terrainRollZiel))
-                : 0;
-        }
+        const sp = v ? Math.hypot(v.x(), v.z()) : 0;
+        const fahrtGate = AnazhRealm._fahrGesetz().he.fahrtGate;
         // Visual sofort updaten (sonst lagt es einen Frame). Klassischer Group-Pfad
         // (Donor-/User-Bauplan) ODER — B2 — der EINE Instanz-Matrix-Update-Weg
         // (`_archInstanceUpdate`, foundry-bewusst) fürs Studio-Fahrzeug.
@@ -60567,14 +60572,16 @@ class AnazhRealm {
     // Matrix): T(pos.x, pos.y-0.5, pos.z) × S(scale). Spiegelt exakt, was
     // `_rebuildArchitectureMesh` der klassischen Group gibt (group.position
     // = baseY = pos.y-0.5, group.scale = scalar(scale), keine Rotation).
-    _archEntryWorldMatrix(entry, out) {
+    // `ungefedert` (Welle L, Q13 F-D8): die Lage der RÄDER — Gelände-Nick und -Wank ja, die Aufbau-Federn (Nick, Kurven-
+    // Wank, Hub) nein: beim Bremsen taucht der Aufbau, die Räder bleiben am Boden.
+    _archEntryWorldMatrix(entry, out, ungefedert) {
         const m = out || new THREE.Matrix4();
         // HEAVE (N7-Rest, 19.07.) — der Squat des gerittenen Studio-Gefaehrts
         // reist in die Instanz-Matrix (0/undefined fuer alles Nicht-Gerittene =
         // byte-alte Matrix; dasselbe Muster wie rp/rr unten).
         const baseY =
             (Number.isFinite(entry.position.y) ? entry.position.y - 0.5 : 0) +
-            (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
+            (!ungefedert && Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
         const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
         // PRO-INSTANZ-ROTATION: `entry.rotationY` (seed-gesetzt für Bäume/Felsen, default 0 = Bauwerke
         // unberührt) dreht die Instanz um die Hoch-Achse — sonst liest sich ein Wald als Klon-Feld. Reine
@@ -60584,13 +60591,13 @@ class AnazhRealm {
         // entry._ridePitch setzt nur _tickMountedMovement (Feder-Rezept), sonst unveränderte Matrix. Gelände-
         // Nick addiert, Wank als R_z danach. NUR Optik — Kollisions-AABB/Blocker lesen rotationY allein.
         const rp =
-            (Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
+            (!ungefedert && Number.isFinite(entry._ridePitch) ? entry._ridePitch : 0) +
             (Number.isFinite(entry._rideTerrainPitch) ? entry._rideTerrainPitch : 0);
         // ZENSUS-REST V18.488 — der Kurven-Wank addiert auf den Gelände-Wank
         // (derselbe R_z wie der Group-Pfad; 0 für Nicht-Gerittenes).
         const rr =
             (Number.isFinite(entry._rideRoll) ? entry._rideRoll : 0) +
-            (Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0);
+            (!ungefedert && Number.isFinite(entry._rideKurvenRoll) ? entry._rideKurvenRoll : 0);
         if (ry !== 0) {
             const c = Math.cos(ry);
             const sn = Math.sin(ry);
@@ -66587,11 +66594,21 @@ class AnazhRealm {
             this._archTmpEntryM || (this._archTmpEntryM = new THREE.Matrix4())
         );
         const m = this._archTmpLeafM || (this._archTmpLeafM = new THREE.Matrix4());
+        let ewU = null; // die ungefederte Lage der Räder (erst beim ersten Rad-Leaf)
         for (let i = 0; i < entry.instSlots.length && i < flat.leaves.length; i++) {
             const { key, slot } = entry.instSlots[i];
             const g = this.state.archInstanceGroups && this.state.archInstanceGroups.get(key);
             if (!g) continue;
-            m.multiplyMatrices(ew, flat.leaves[i].localMatrix);
+            const lf = flat.leaves[i];
+            if (lf.rad && entry._fahr) {
+                if (!ewU)
+                    ewU = this._archEntryWorldMatrix(
+                        entry,
+                        this._archTmpRadU || (this._archTmpRadU = new THREE.Matrix4()),
+                        true
+                    );
+                this._archRadMatrix(entry, lf, ewU, m);
+            } else m.multiplyMatrices(ew, lf.localMatrix);
             g.mesh.setMatrixAt(slot, m);
             g.mesh.instanceMatrix.needsUpdate = true;
             // SUBMIT-WAL — Matrix-Mutation einer ggf. gebündelten Gruppe (Fahrzeug-
@@ -66601,6 +66618,39 @@ class AnazhRealm {
             // THREE cacht sie sonst stale).
             g.mesh.boundingSphere = null;
         }
+    }
+
+    // DAS RAD IM RITT (Welle L, Q13 F-D8 — Befund 06.10.: die Studio-Instanz war starr, 12 Blätter mit unveränderter
+    // relativer Matrix — kein Rad rollte oder lenkte, beim Bremsen tauchten die Vorderräder 7,4–11,1 cm in den Boden).
+    // Die Matrix eines Rad-Leafs je Schritt: ungefedert (`ewU`: Gelände-Lage ohne Aufbau-Federn) · Welt-Skala · Nabe ·
+    // Lenk-Einschlag (vorn, `_rideSteerYaw` = Lenksäule des Kerns) · Drehung π der Gegenseite · Rolle um die Achse
+    // (`_fahr.wheelAng` = Weg/radR des Kerns, die Gegenseite dreht im Rad-Raum gegenläufig, rollt also gleich), und das Rad
+    // federt einzeln auf seinen Boden (der Aufstandspunkt der Ruhe-Lage gegen `_fahrBoden`, gedeckelt bei ±Rad-Hub
+    // vehicle-core FAHR.schritt.radHub × radR) — die Ebene der vier Räder ist eine Ebene, der Boden nicht. Nur das DREHENDE
+    // Teil rollt (`rd.dreht`, im Studio der Knoten radDreht); der Bremssattel (R:s) hängt an der Nabe wie im Labor (garage
+    // corners: grp lenkt, wheelSpin rollt) — er lenkt und federt mit, rollt aber nie (Gegenprüfung 07.10.: er kreiste mit).
+    _archRadMatrix(entry, lf, ewU, out) {
+        const rd = lf.rad;
+        const fz = entry._fahr;
+        const R = this._archTmpRadR || (this._archTmpRadR = new THREE.Matrix4());
+        const Q = this._archTmpRadQ || (this._archTmpRadQ = new THREE.Matrix4());
+        const lenk = rd.front && Number.isFinite(entry._rideSteerYaw) ? entry._rideSteerYaw : 0;
+        const ang = Number.isFinite(fz.wheelAng) ? fz.wheelAng : 0;
+        R.makeRotationY(lenk + rd.dreh);
+        if (rd.dreht) R.multiply(Q.makeRotationZ(rd.dreh ? ang : -ang));
+        R.setPosition(rd.hx, rd.hy, rd.hz);
+        out.multiplyMatrices(ewU, rd.welt).multiply(R);
+        // das Rad federt einzeln auf seinen Boden: der Aufstandspunkt (unter der Nabe, y 0 im Vorlagen-Raum) gegen den Boden
+        const P = this._archTmpRadP || (this._archTmpRadP = new THREE.Vector3());
+        P.set(rd.hx, 0, rd.hz).applyMatrix4(rd.welt).applyMatrix4(ewU);
+        const boden = this._fahrBoden(entry)(P.x, P.z);
+        if (Number.isFinite(boden)) {
+            // der Federweg je Rad aus dem Fahr-Satz (vehicle-core fahrAufstand: radHub × radR × Skala — derselbe, mit dem die
+            // Ebene des Kerns rechnet: was er nicht trägt, hob sie schon; `_fahr` lebt nur mit dem Satz)
+            const hub = entry._fahrSatz.auf.hub;
+            out.elements[13] += Math.max(-hub, Math.min(hub, boden - P.y));
+        }
+        return out;
     }
 
     // Eintrag aus der Registry entfernen (Slots freigeben). Default räumt IMMER BEIDE Slot-Sätze (Primär +
@@ -72107,6 +72157,9 @@ class AnazhRealm {
         // der Flatten hebt es aufs Leaf, die Instanz-Gruppe trägt es, der
         // Membran-Tick dreht die Flügel um die Hinge-Achse.
         if (m.tuer && typeof m.tuer.seite === "number") mesh.userData.__tuer = m.tuer;
+        // WELLE L (Q13 F-D8) — das RAD reist ans Mesh (Umschlag out.rad, additiv): die Gestalt der Ecke 0 nabenrelativ,
+        // `raeder` nennt jede Ecke — der Flatten setzt es je Ecke als Instanz, der Ritt dreht und lenkt sie.
+        if (m.rad && Array.isArray(m.rad.raeder) && m.rad.raeder.length) mesh.userData.__rad = m.rad;
         // DER WURF-TEIL (W6, Umschlag out.wurf, additiv): die Baum-L1 nennt je Teil die Zahl ihrer werfenden Dreiecke
         // (der Vorsatz des Index) — der Schatten-Zwilling wirft nur ihn (`_foundrySchattenGeom`).
         if (Number.isInteger(m.wurf)) mesh.userData.__wurf = m.wurf;
@@ -72802,6 +72855,8 @@ class AnazhRealm {
                     localMatrix: I,
                     // V18.465 — Tür-Flügel-Meshes tragen ihr Scharnier (Template-Raum).
                     tuer: child.userData && child.userData.__tuer ? child.userData.__tuer : undefined,
+                    // Welle L (Q13 F-D8) — das Rad der Ecke 0 (nabenrelativ); unten je Ecke als Instanz gesetzt
+                    rad: child.userData && child.userData.__rad ? child.userData.__rad : undefined,
                     sippe: child.userData ? child.userData.__sippe || null : null, // die Verschmelz-Regel des Gesetzes
                     // der Wurf-Teil des Teils (Dreiecke des Index-Vorsatzes, die werfen), wo das Studio ihn nennt
                     wurf: child.userData && Number.isInteger(child.userData.__wurf) ? child.userData.__wurf : undefined,
@@ -72817,6 +72872,33 @@ class AnazhRealm {
                 });
             }
             this._foundryFlatVerschmelzen(group, leaves);
+            // DIE RÄDER (Welle L, Q13 F-D8): ein Rad-Leaf (die Teile der Ecke 0, nabenrelativ, je Dreh-Klasse
+            // verschmolzen) steht je Ecke als EIGENE Instanz derselben Gruppe (derselbe leafKey): Ruhe-Lage =
+            // Welt-Skala · Nabe(Ecke) · Drehung π für die Gegenseite. Der Ritt schreibt ihre Matrix je Schritt neu
+            // (`_archInstanceUpdate`: Rolle, Lenk-Einschlag, ungefedert) — die geteilte Geometrie bleibt unberührt.
+            for (let i = leaves.length - 1; i >= 0; i--) {
+                const lf = leaves[i];
+                if (!lf.rad) continue;
+                const ecken = lf.rad.raeder.map((rd, ecke) => {
+                    const m4 = new THREE.Matrix4().makeRotationY(rd.dreh || 0);
+                    m4.setPosition(rd.hx, rd.hy, rd.hz);
+                    return Object.assign({}, lf, {
+                        localMatrix: new THREE.Matrix4().multiplyMatrices(I, m4),
+                        rad: {
+                            ecke,
+                            dreht: !!lf.rad.dreht,
+                            front: !!rd.front,
+                            hx: rd.hx,
+                            hy: rd.hy,
+                            hz: rd.hz,
+                            dreh: rd.dreh || 0,
+                            welt: I, // die Welt-Skala der Vorlage (geteilt)
+                        },
+                        _eigen: ecke === 0 ? lf._eigen : false, // die verschmolzene Geometrie gehört EINER Ecke
+                    });
+                });
+                leaves.splice(i, 1, ...ecken);
+            }
             if (zwillingsQuelle) {
                 // Die Teile (schon verschmolzen) werfen als Zwilling (`_foundrySchattenGeom`, Stempel 3); die Gestalt
                 // gehört dem Teil dieses Flats und fällt mit ihm. Nennt die Stufe einen WURF-TEIL (B2c `wurf`, Baum-L1),
@@ -76272,6 +76354,7 @@ class AnazhRealm {
         this._cullArchitectureMesh(entry);
         this._trittFlaecheLoesen(entry);
         this.state.architectures.splice(idx, 1);
+        if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
         if (typeof this.journalAppend === "function") {
             this.journalAppend("loss", `Eine ${entry.type}-Struktur wurde abgebaut.`, {
@@ -88606,6 +88689,10 @@ class AnazhRealm {
     _stepFixedSim(simTime, dt) {
         this._loopPhysicsSync(dt, simTime);
         this._loopPlayerMovement(simTime, dt);
+        // Welle L (Q1): der Ritt schreibt Sitz, Ebene, Gier und Federn IM Sim-Schritt (vor der Interpolation).
+        this._rittSchritt(dt);
+        // ein im Flug verlassener Gesetz-Wagen fällt auf der Vertikale des Kerns, bis er steht (Gegenprüfung 07.10.)
+        if (this._fahrLos && this._fahrLos.size) this._fahrNachlauf(dt);
         if (this.state._replayRec) this._replayCaptureFrame(dt);
         // Lockstep-MP: der Input dieses Fixed-Steps geht gebatcht übers P2P-Mesh; Peers simulieren den
         // Charakter durch DENSELBEN Schritt-Pfad. simTime reist im 1-Hz-Anker mit — der Ghost läuft auf
@@ -88672,6 +88759,291 @@ class AnazhRealm {
         // „unangetastet" (Sim wiederherstellen) von „extern teleportiert" (übernehmen).
         if (!st._fixedRenderPos) st._fixedRenderPos = mesh.position.clone();
         else st._fixedRenderPos.copy(mesh.position);
+    }
+
+    // ===== DIE HÜLLE DES GERITTENEN WAGENS (Welle L, Q5 — Befund 06.10.: im Sattel kollidierte die Reiter-Kapsel r 0,35
+    // am Ursprung — der Bug stak 1,97–2,32 m im Fichtenstamm, 2,17 m in der Hauswand, 1,83 m in der Plattform, ein Bär
+    // ganz im Wagen). Der Körper des Gesetz-Fahrzeugs ist seine Hülle: ein Rechteck längs der Fahrt (Bug bis Heck, ±halbe
+    // Karosserie-Breite), das Band von der Rad-Ebene + Stufe (radR/2, vehicle-core FAHR.schritt.stufeRad) bis zum Dach.
+    // Studio-Fahrzeug: exportDrive.huelle; Teile-Werk: seine Hülle (die halbe Spanne längs, die halbe Breite quer). null:
+    // kein Fahr-Gesetz (dann trägt die Reiter-Kapsel). ZWEI ROLLEN, BENANNT (Gegenprüfung 07.10.): fahrend kollidiert der
+    // Wagen als DIESES gedrehte Rechteck; als Hindernis für andere (Spieler-Kapsel, Wesen, ein zweiter Wagen) steht er als
+    // seine Teil-Boxen (`_populateBlockerAABBs`: achsparallele AABBs je Teil, im Ritt bis 0,5 m nachgezogen, beim Abstieg
+    // und nach dem Nachlauf exakt). Dieselbe Form in beiden Rollen trägt die gedrehte Box (OBB) — die gehört nach Entscheid
+    // D5 der Familie koerper-haus (`box.obb`); `_resolveHuelleVsAABB` liest sie nach der Integration.
+    _fahrHuelle(entry) {
+        if (!entry || !entry._fahr || !entry._fahrSatz || !Number.isFinite(entry._fahr.y)) return null;
+        if (entry._fahrHuelleKette) return entry._fahrHuelleKette;
+        const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+        const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
+        const h = fzg && fzg.drive ? fzg.drive.huelle : null;
+        let bug, heck, hw, dach;
+        if (h && Number.isFinite(h.noseX) && Number.isFinite(h.tailX) && Number.isFinite(h.bw) && h.noseX > h.tailX) {
+            bug = h.noseX * sc;
+            heck = h.tailX * sc;
+            hw = h.bw * sc;
+            dach = (Number.isFinite(h.yRoof) ? h.yRoof : 1.3) * sc;
+        } else {
+            const bp = this.state.blueprints && this.state.blueprints[entry.type];
+            const ext = bp ? this._compoundVisualExtent(bp) : null;
+            const halb = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
+            bug = halb;
+            heck = -halb;
+            hw = ext ? Math.max(0.3, (Math.min(ext.dx, ext.dz) * sc) / 2) : 0.6;
+            dach = ext && Number.isFinite(ext.dy) ? Math.max(0.6, ext.dy * sc) : 1.5;
+        }
+        // die Stufe aus dem Kern (FAHR.schritt.stufeRad × radR des Fahr-Satzes; radR ist Pflicht des Satzes)
+        const stufe = AnazhRealm._fahrSchrittGesetz().S.stufeRad * entry._fahrSatz.radR;
+        // Der UMRISS (Fahrt-Rahmen: längs l, quer q, Außen-Normale nl/nq): die vier Ecken, Bug- und Heck-Mitte und je
+        // Flanke drei Punkte — wo das Gelände dort steil über die Ebene + Stufe ragt, steht eine Wand.
+        const umriss = [];
+        const s2 = Math.SQRT1_2;
+        for (const [l, nl] of [
+            [bug, 1],
+            [heck, -1],
+        ]) {
+            umriss.push({ l, q: 0, nl, nq: 0 });
+            umriss.push({ l, q: hw, nl: nl * s2, nq: s2 });
+            umriss.push({ l, q: -hw, nl: nl * s2, nq: -s2 });
+        }
+        for (const t of [0.25, 0.5, 0.75])
+            for (const sq of [-1, 1]) umriss.push({ l: heck + (bug - heck) * t, q: sq * hw, nl: 0, nq: sq });
+        entry._fahrHuelleKette = {
+            bug,
+            heck,
+            mitte: (bug + heck) / 2,
+            hl: (bug - heck) / 2,
+            hw,
+            dach,
+            stufe,
+            umriss,
+            // der Rahmen dieses Schritts (`_fahrHuelleKontakt` setzt ihn): Bug-Achse, Quer-Achse, Band, Schübe
+            fX: 0,
+            fZ: 1,
+            qX: 1,
+            qZ: 0,
+            unten: 0,
+            oben: 0,
+            schub: [],
+        };
+        return entry._fahrHuelleKette;
+    }
+
+    // DIE HÜLLE GEGEN EINE AABB (der Körper-Fall des EINEN Struktur-Lösers `_stepCharacterStructures`, wie die Kapsel
+    // `_resolveCapsuleVsAABB`): das Rechteck der Hülle (Mitte an pos + Bug-Achse · mitte) gegen die Box, getrennt auf
+    // den vier Achsen (x, z, Bug, Quer); überlappt die Box das Band der Hülle, schiebt der kürzeste Weg den Wagen heraus
+    // (pos mutiert, der Schub reist in h.schub für die Fahrt).
+    _resolveHuelleVsAABB(box, pos, h) {
+        if (!(box.topY > h.unten && box.botY < h.oben)) return;
+        const cx = pos.x + h.fX * h.mitte - (box.minX + box.maxX) * 0.5;
+        const cz = pos.z + h.fZ * h.mitte - (box.minZ + box.maxZ) * 0.5;
+        const ex = (box.maxX - box.minX) * 0.5;
+        const ez = (box.maxZ - box.minZ) * 0.5;
+        let best = Infinity;
+        let ax = 0;
+        let az = 0;
+        for (let i = 0; i < 4; i++) {
+            const ux = i === 0 ? 1 : i === 1 ? 0 : i === 2 ? h.fX : h.qX;
+            const uz = i === 0 ? 0 : i === 1 ? 1 : i === 2 ? h.fZ : h.qZ;
+            const rO = h.hl * Math.abs(h.fX * ux + h.fZ * uz) + h.hw * Math.abs(h.qX * ux + h.qZ * uz);
+            const rA = ex * Math.abs(ux) + ez * Math.abs(uz);
+            const d = cx * ux + cz * uz;
+            const ov = rO + rA - Math.abs(d);
+            if (ov <= 0) return; // getrennt
+            if (ov < best) {
+                best = ov;
+                ax = d >= 0 ? ux : -ux;
+                az = d >= 0 ? uz : -uz;
+            }
+        }
+        pos.x += ax * best;
+        pos.z += az * best;
+        h.schub.push(ax * best, az * best);
+    }
+
+    // DAS GLEITEN AN DER WAND (PM_ClipVelocity, Quake/Source) — DIE Schleife des EINEN Kontakt-Lösers für beide Körper: die
+    // Kapsel (`_stepCharacter` 5b) und die Hülle des Wagens (`_fahrHuelleKontakt`; vorher eine Kopie, Gegenprüfung 07.10.).
+    // `wand(nx, nz, vx, vz)` meldet am Kandidaten den Kontakt-Punkt {x, y, z} oder null; je Kontaktebene fällt die
+    // Normal-Komponente der Geschwindigkeit (n = horizontale Spur der `_fieldGradient`-Außennormale am Kontakt-Punkt), bis
+    // SLIDE_CLIP_PLANES Ebenen, jede Iteration am NEUEN Kandidaten; |∇| ≈ 0 oder rein vertikale Normale → fail-closed
+    // Voll-Stopp (nie eindringen). Schreibt {x, z, vx, vz} in `aus`.
+    _wandGleiten(x0, z0, vx, vz, dt, wand, aus) {
+        let nx = x0 + vx * dt;
+        let nz = z0 + vz * dt;
+        let w = vx !== 0 || vz !== 0 ? wand(nx, nz, vx, vz) : null;
+        if (w) {
+            const nrm = this._kopplungClipN || (this._kopplungClipN = {});
+            let frei = false;
+            for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) {
+                this._fieldGradient(w.x, w.y, w.z, nrm);
+                const nh = Math.hypot(nrm.x, nrm.z);
+                if (!(nrm.mag > 1e-6) || !(nh > 1e-4) || !Number.isFinite(nh)) break; // NaN-Wand
+                const nhx = nrm.x / nh;
+                const nhz = nrm.z / nh;
+                const into = vx * nhx + vz * nhz;
+                if (into >= -1e-9) break; // keine Bewegung mehr IN die Ebene → festgefahren
+                vx -= nhx * into; // PM_ClipVelocity: die Ebenen-Normal-Komponente fällt
+                vz -= nhz * into;
+                nx = x0 + vx * dt;
+                nz = z0 + vz * dt;
+                w = wand(nx, nz, vx, vz);
+                if (!w) {
+                    frei = true;
+                    break;
+                }
+            }
+            if (!frei) {
+                nx = x0; // fail-closed: der Voll-Stopp vor der Wand (nie eindringen)
+                nz = z0;
+                vx = 0;
+                vz = 0;
+            }
+        }
+        aus.x = nx;
+        aus.z = nz;
+        aus.vx = vx;
+        aus.vz = vz;
+        return aus;
+    }
+
+    // DER KONTAKT DER HÜLLE im EINEN Kontakt-Löser (`_stepCharacter` ruft ihn für den gerittenen Gesetz-Wagen statt der
+    // Kapsel-Schritte 5b · 6 · 7): (1) GELÄNDE — ragt das Feld an einem Umriss-Punkt steil über Ebene + Stufe (oder auf
+    // Brust-Höhe), gleitet der Wagen an der Wand (`_wandGleiten`, dieselbe Schleife wie die Kapsel; sonst steht er); (2) BAUWERKE + INSELN — das Rechteck gegen die Blocker-AABBs im EINEN Struktur-Löser
+    // (`_stepCharacterStructures`/`_stepCharacterIslands` mit der Hülle als Körper; ein Stamm dünner als die Rad-Stufe
+    // wird überrollt — der Hasel-Trieb hält keinen Wagen, der Kiefern-Stamm schon); (3) KREATUREN — das Rechteck gegen
+    // den Raum eines Wesens (tetrapoda VERHALTEN.separation: halber Paar-Radius × bodySize). Was die Hülle schiebt, nimmt
+    // der Fahrt die Normal-Komponente. Liefert {x, z, vx, vz}.
+    _fahrHuelleKontakt(entry, k, x0, z0, vx, vz, dt) {
+        const fz = entry._fahr;
+        const ry = Number.isFinite(entry._rideYaw) ? entry._rideYaw : 0;
+        const fX = Math.sin(ry);
+        const fZ = Math.cos(ry);
+        const qX = Math.cos(ry);
+        const qZ = -Math.sin(ry);
+        const tS = Math.tan(fz.steig || 0);
+        const tW = Math.tan(fz.wank || 0);
+        // die Ebene der Räder um die Lage, an der der Fahr-Schritt sie stellte (die Lage vor diesem Schritt: x0/z0)
+        const ebene = (px, pz) => {
+            const dx = px - x0;
+            const dz = pz - z0;
+            return fz.y + tS * (dx * fX + dz * fZ) + tW * (dx * qX + dz * qZ);
+        };
+        const brust = Math.min(k.dach, 1.2);
+        const steilY = Math.cos(AnazhRealm._fahrSchrittGesetz().S.ebeneMax); // die Ebenen-Klammer des Kerns
+        const nrmW = this._fahrHuelleN || (this._fahrHuelleN = {});
+        // (1) GELÄNDE: die führenden Umriss-Punkte gegen das Feld. Eine WAND ist Feld über Ebene + Stufe, dessen Fläche
+        // steiler steht als die Ebenen-Klammer (ein Hang, den die Räder nehmen, hebt den Wagen — er hält ihn nicht), oder
+        // Feld auf Brust-Höhe.
+        const wandAm = (ox, oz, wx, wz) => {
+            for (const p of k.umriss) {
+                const nx = p.nl * fX + p.nq * qX;
+                const nz = p.nl * fZ + p.nq * qZ;
+                if (nx * wx + nz * wz <= 0) continue; // nur, wohin die Hülle fährt
+                const px = ox + p.l * fX + p.q * qX;
+                const pz = oz + p.l * fZ + p.q * qZ;
+                const e = ebene(px, pz);
+                const ctx = this._terrainColumnContext(px, pz);
+                const yS = e + k.stufe + 0.02;
+                if (this._fieldSolid(px, yS, pz, ctx)) {
+                    this._fieldGradient(px, yS, pz, nrmW);
+                    if (!(nrmW.mag > 1e-6) || nrmW.y < steilY) return { x: px, z: pz, y: yS };
+                }
+                if (this._fieldSolid(px, e + brust, pz, ctx)) return { x: px, z: pz, y: e + brust };
+            }
+            return null;
+        };
+        // das Gleiten an der Wand ist DIE Schleife des Kontakt-Lösers (`_wandGleiten`, wie die Kapsel in Schritt 5b)
+        const gl = this._wandGleiten(x0, z0, vx, vz, dt, wandAm, this._fahrHuelleGl || (this._fahrHuelleGl = {}));
+        const nx = gl.x;
+        const nz = gl.z;
+        vx = gl.vx;
+        vz = gl.vz;
+        // (2) BAUWERKE + INSELN — der Rahmen dieses Schritts an die Hülle; zwei Durchgänge (eine Ecke zwischen zwei Boxen).
+        k.fX = fX;
+        k.fZ = fZ;
+        k.qX = qX;
+        k.qZ = qZ;
+        k.unten = fz.y + k.stufe;
+        k.oben = fz.y + k.dach;
+        k.schub.length = 0;
+        const pos = this._fahrHuellePos || (this._fahrHuellePos = { x: 0, z: 0 });
+        pos.x = nx;
+        pos.z = nz;
+        for (let pass = 0; pass < 2; pass++) {
+            this._stepCharacterStructures(pos, 0, 0, 0, k);
+            this._stepCharacterIslands(pos, 0, 0, 0, k);
+        }
+        // (3) KREATUREN — das Rechteck gegen den Kreis eines Wesens (nächster Punkt; liegt die Mitte im Rechteck, der
+        // kürzeste Weg hinaus). INTEGRATIONS-NAHT (Entscheid D2 der Welle L): dieser Kreis (VERHALTEN.separation ×
+        // bodySize) ist ein ZWEITER Tier-Leib neben dem EINEN Leib je Tier der Familie kreatur — die Integration lässt diesen
+        // Kontakt den kreatur-Leib lesen (kein dritter Leib hier).
+        const wesen = this.state.creatures;
+        if (wesen && wesen.length) {
+            const SEP = AnazhRealm._verhaltenGesetz().separation;
+            for (const cr of wesen) {
+                if (!cr || !cr.position) continue;
+                if (Math.abs(cr.position.x - pos.x) > 12 || Math.abs(cr.position.z - pos.z) > 12) continue;
+                if (cr.position.y > k.oben || cr.position.y < fz.y - 2) continue;
+                const ud = cr.userData || {};
+                const rc = 0.5 * SEP.radiusBaseM * (Number.isFinite(ud.bodySize) ? ud.bodySize : 1);
+                const dx = cr.position.x - (pos.x + fX * k.mitte);
+                const dz = cr.position.z - (pos.z + fZ * k.mitte);
+                const l = dx * fX + dz * fZ;
+                const q = dx * qX + dz * qZ;
+                const cl = Math.max(-k.hl, Math.min(k.hl, l));
+                const cq = Math.max(-k.hw, Math.min(k.hw, q));
+                const d = Math.hypot(l - cl, q - cq);
+                let sl = 0;
+                let sq = 0;
+                if (d > 1e-6) {
+                    if (d >= rc) continue;
+                    sl = (-(l - cl) / d) * (rc - d);
+                    sq = (-(q - cq) / d) * (rc - d);
+                } else if (k.hl - Math.abs(l) < k.hw - Math.abs(q)) {
+                    sl = -(l >= 0 ? 1 : -1) * (k.hl - Math.abs(l) + rc);
+                } else {
+                    sq = -(q >= 0 ? 1 : -1) * (k.hw - Math.abs(q) + rc);
+                }
+                let sx = sl * fX + sq * qX;
+                let sz = sl * fZ + sq * qZ;
+                // Ein Wesen schiebt keinen Wagen: der Schub nimmt höchstens zurück, was der Wagen in DIESEM Schritt auf das
+                // Wesen zu fuhr (läuft es selbst in den stehenden Wagen, bleibt der Wagen stehen — das Ausweichen ist
+                // Sache des Wesens).
+                const sd = Math.hypot(sx, sz);
+                if (sd > 1e-9) {
+                    const hin = -((pos.x - x0) * sx + (pos.z - z0) * sz) / sd;
+                    const kappe = Math.max(0, Math.min(sd, hin));
+                    sx *= kappe / sd;
+                    sz *= kappe / sd;
+                }
+                pos.x += sx;
+                pos.z += sz;
+                k.schub.push(sx, sz);
+            }
+        }
+        // KEIN SCHUB INS GELÄNDE (Befund 07.10., Fahr-Linse S4: ein beim Remesh auf den Wagen gestreuter Felsbogen schob ihn
+        // 3,3 m in den Hang — 2,43 m unter dem Boden, und die Wand-Regel der Vertikale hielt ihn dort für immer): trifft die
+        // geschobene Lage eine Wand in Schub-Richtung, bleibt die Hülle am Kandidaten (fail-closed, nie eindringen); der
+        // Schub nimmt der Fahrt trotzdem die Komponente in die Berührung.
+        const schubX = pos.x - nx;
+        const schubZ = pos.z - nz;
+        if ((schubX !== 0 || schubZ !== 0) && wandAm(pos.x, pos.z, schubX, schubZ)) {
+            pos.x = nx;
+            pos.z = nz;
+        }
+        // Was die Hülle schob, nimmt der Fahrt die Komponente in die Berührung.
+        for (let i = 0; i < k.schub.length; i += 2) {
+            const sx = k.schub[i];
+            const sz = k.schub[i + 1];
+            const d = Math.hypot(sx, sz);
+            if (!(d > 1e-9)) continue;
+            const into = (vx * sx + vz * sz) / d;
+            if (into < 0) {
+                vx -= (sx / d) * into;
+                vz -= (sz / d) * into;
+            }
+        }
+        return { x: pos.x, z: pos.z, vx, vz };
     }
 
     // ===== DER FELD-NATIVE KAPSEL-CHARACTER-CONTROLLER =====
@@ -88748,6 +89120,11 @@ class AnazhRealm {
             vy += (s.gravity || -9.81) * dt;
             if (vy < -25) vy = -25;
         }
+        // IM SATTEL führt das Gefährt die Vertikale (Welle L, Q1 F-D10): der Reiter sitzt — kein Fall, kein Boden-Snap
+        // (Schritt 8); den Sitz setzt `_rittSchritt` im selben Sim-Schritt aus der Ebene der Räder. Vorher fiel die
+        // Kapsel je Schritt frei und galt in 421 von 421 Frames als „in der Luft" (0,425 m über dem Haft-Band).
+        const geritten = !!(s.player && s.player.mountedArch !== null && s.player.mountedArch !== undefined);
+        if (geritten) vy = 0;
 
         // 4b. STRÖMUNG: der Fluss-Flow (`_waterFlowAt`, EINE Quelle) advektiert SCHWIMMENDE Körper am EINEN
         // Bewegungs-Chokepoint — Gate `submerged` oder das gerittene schwimmende Gefährt (`_afloat`, von
@@ -88779,53 +89156,60 @@ class AnazhRealm {
         const feetY = ny - footDrop;
         const headY = ny + footDrop;
 
+        // 5a. IM SATTEL EINES GESETZ-WAGENS ist seine HÜLLE der Körper (Welle L, Q5): ihr Kontakt (Gelände · Bauwerke ·
+        // Inseln · Kreaturen) ersetzt die Kapsel-Schritte 5b · 6 · 7 — vorher hielt die Reiter-Kapsel r 0,35 am Ursprung,
+        // und der Bug fuhr 1,97–2,32 m in den Stamm.
+        const fahrE =
+            geritten && this._mountedEntry && this._mountedEntry.id === s.player.mountedArch
+                ? this._mountedEntry
+                : null;
+        const fahrHuelle = fahrE ? this._fahrHuelle(fahrE) : null;
+        if (fahrHuelle) {
+            const hk = this._fahrHuelleKontakt(fahrE, fahrHuelle, mesh.position.x, mesh.position.z, vx, vz, dt);
+            nx = hk.x;
+            nz = hk.z;
+            vx = hk.vx;
+            vz = hk.vz;
+        }
+
         // 5b. GLEITEN STATT VOLLSTOPP (PM_ClipVelocity, Quake/Source): vor einer nicht erklimmbaren Wand
         // (Terrain im Körperband feetY+STEP_UP..feetY+1.5, unter Augenhöhe → Tunnel-Decken zählen nicht)
         // wird v je Kontaktebene geclippt, v −= n·(v·n), bis SLIDE_CLIP_PLANES Ebenen (jede Iteration am NEUEN
         // Kandidaten); n = horizontale Spur der `_fieldGradient`-Außennormale. |∇| ≈ 0 oder rein vertikale
-        // Normale → fail-closed Voll-Stopp (nie Eindringen). Läuft VOR der Struktur-/Kugel-Auflösung.
-        if (vx !== 0 || vz !== 0) {
+        // Normale → fail-closed Voll-Stopp (nie Eindringen). Läuft VOR der Struktur-/Kugel-Auflösung. Die Schleife ist
+        // DIE des Kontakt-Lösers (`_wandGleiten`, dieselbe für die Hülle des Wagens).
+        if (!fahrHuelle && (vx !== 0 || vz !== 0)) {
             const wallLine = feetY + AnazhRealm.PLAYER_STEP_UP + 0.05;
             // Wand-Probe am Kandidaten: (a) Band-Probe feetY+STEP_UP..feetY+1.5 (findet
             // Ledges/Wand-Köpfe im Körperband), (b) Solid-Probe auf Rumpf-Höhe feetY+1.1
             // (fängt die HOHE Wand, deren Kopf über dem Band liegt — dort startet die
             // Band-Probe im Soliden und sieht innerhalb des Bandes keine Kante). Liefert
-            // die Probe-Höhe für den Gradienten oder null (frei).
+            // den Kontakt-Punkt (Probe-Höhe für den Gradienten) oder null (frei).
+            const pt = this._kopplungWandP || (this._kopplungWandP = { x: 0, y: 0, z: 0 });
             const wallAt = (px, pz) => {
+                let y = null;
                 const sB = this._fieldSurfaceBelow(px, feetY + 1.5, pz, 1.5 - AnazhRealm.PLAYER_STEP_UP);
-                if (sB !== null && sB > wallLine) return Math.min(sB, feetY + 1.1);
-                if (this._fieldSolid(px, feetY + 1.1, pz)) return feetY + 1.1;
-                return null;
+                if (sB !== null && sB > wallLine) y = Math.min(sB, feetY + 1.1);
+                else if (this._fieldSolid(px, feetY + 1.1, pz)) y = feetY + 1.1;
+                if (y === null) return null;
+                pt.x = px;
+                pt.y = y;
+                pt.z = pz;
+                return pt;
             };
-            let wallY = wallAt(nx, nz);
-            if (wallY !== null) {
-                const nrm = this._kopplungClipN || (this._kopplungClipN = {});
-                let cleared = false;
-                for (let pl = 0; pl < AnazhRealm.SLIDE_CLIP_PLANES; pl++) {
-                    this._fieldGradient(nx, wallY, nz, nrm);
-                    const nh = Math.hypot(nrm.x, nrm.z);
-                    if (!(nrm.mag > 1e-6) || !(nh > 1e-4) || !Number.isFinite(nh)) break; // NaN-Wand
-                    const nhx = nrm.x / nh;
-                    const nhz = nrm.z / nh;
-                    const into = vx * nhx + vz * nhz;
-                    if (into >= -1e-9) break; // keine Bewegung mehr IN die Ebene → festgefahren
-                    vx -= nhx * into; // PM_ClipVelocity: die Ebenen-Normal-Komponente fällt
-                    vz -= nhz * into;
-                    nx = mesh.position.x + vx * dt;
-                    nz = mesh.position.z + vz * dt;
-                    wallY = wallAt(nx, nz);
-                    if (wallY === null) {
-                        cleared = true;
-                        break;
-                    }
-                }
-                if (!cleared) {
-                    nx = mesh.position.x; // fail-closed: der alte Voll-Stopp (nie eindringen)
-                    nz = mesh.position.z;
-                    vx = 0;
-                    vz = 0;
-                }
-            }
+            const gl = this._wandGleiten(
+                mesh.position.x,
+                mesh.position.z,
+                vx,
+                vz,
+                dt,
+                wallAt,
+                this._kopplungGl || (this._kopplungGl = {})
+            );
+            nx = gl.x;
+            nz = gl.z;
+            vx = gl.vx;
+            vz = gl.vz;
         }
 
         // 6. STRUKTUR-KOLLISION (feld-native, kein Ammo): die Kapsel gegen die soliden
@@ -88834,10 +89218,14 @@ class AnazhRealm {
         //    Plattformen (die Start-Plattform!) TRAGEN → der Spieler steht drauf statt durch
         //    sie zu fallen. Liefert die höchste begehbare Auflage-Oberkante im Snap-Band.
         const structPos = { x: nx, z: nz };
-        const structTop = this._stepCharacterStructures(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
+        const structTop = fahrHuelle
+            ? -Infinity
+            : this._stepCharacterStructures(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
         // Fliegende Inseln teilen die EINE Kapsel-vs-AABB-Quelle (Entscheid #2 — die AABB-Hülle):
         // der Spieler steht auf der Insel-Oberkante + wird an ihren Flanken geschoben.
-        const islandTop = this._stepCharacterIslands(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
+        const islandTop = fahrHuelle
+            ? -Infinity
+            : this._stepCharacterIslands(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
         nx = structPos.x;
         nz = structPos.z;
         // Die höhere der beiden begehbaren Auflagen (Bauwerk ODER Insel) trägt den Spieler.
@@ -88851,7 +89239,7 @@ class AnazhRealm {
         const wR = AnazhRealm.PLAYER_WALL_RADIUS;
         const baseWallY = feetY + AnazhRealm.PLAYER_STEP_UP + wR;
         const p = { x: 0, y: 0, z: 0 };
-        const wallYs = [baseWallY, baseWallY + 0.6]; // Rumpf · Schulter/Kopf
+        const wallYs = fahrHuelle ? [] : [baseWallY, baseWallY + 0.6]; // Rumpf · Schulter/Kopf (die Hülle trug 5a)
         for (let k = 0; k < wallYs.length; k++) {
             p.x = nx;
             p.y = wallYs[k];
@@ -88869,8 +89257,12 @@ class AnazhRealm {
         let groundNormalY = 1.0;
         let traegerStruktur = false; // trägt ein Bauwerk/eine Insel (supTop) statt des Geländes?
         const probeStart = feetY + AnazhRealm.PLAYER_STEP_UP;
-        const buriedDeep = this._fieldSolid(nx, probeStart, nz); // Füße > STEP_UP tief im Soliden?
-        if (buriedDeep) {
+        const buriedDeep = !geritten && this._fieldSolid(nx, probeStart, nz); // Füße > STEP_UP tief im Soliden?
+        if (geritten) {
+            // der Reiter sitzt auf dem Gefährt (auch im Flug des Wagens: er fliegt mit ihm, nie für sich — die Vertikale
+            // trägt der Fahr-Schritt; gate:fahr-leben T misst die Lage selbst: Sitz und Aufstand, nie dieses Flag)
+            grounded = true;
+        } else if (buriedDeep) {
             // 8a. ANTI-CLIP: stecken die Füße TIEF im Terrain, scannt die Probe AUFWÄRTS zur Oberkante (30 m,
             // nur im seltenen Penetrations-Fall) und setzt den Spieler BEDINGUNGSLOS hoch — er darf NIE im
             // Soliden stecken (sonst Clip durch den Boden auf eine Höhlen-Schicht).
@@ -88987,7 +89379,10 @@ class AnazhRealm {
     // soliden Part-AABBs naher Bauwerke (`entry.blockerAABBs`, dichte ≥ 0.3 — DIESELBE Quelle wie der
     // Wasser-Blocker, Tür-Lücke/Glas begehbar). AUFLAGE trägt (liefert die höchste), WAND schiebt
     // horizontal heraus. Mutiert pos.x/z; O(nahe Bauwerke × Parts).
-    _stepCharacterStructures(pos, feetY, headY, radius) {
+    // `huelle` (Welle L, Q5): der Körper ist die Hülle eines gerittenen Gesetz-Wagens (`_fahrHuelle`) statt der Kapsel —
+    // dieselbe Bauwerks-Schleife, die Box gegen das Rechteck (`_resolveHuelleVsAABB`); ein Stamm dünner als die Rad-Stufe
+    // (`box.dick`) wird überrollt. Die Hülle trägt keine Auflage (−Infinity).
+    _stepCharacterStructures(pos, feetY, headY, radius, huelle) {
         const arches = this.state.architectures;
         if (!arches || !arches.length) return -Infinity;
         let supportTop = -Infinity;
@@ -89005,7 +89400,9 @@ class AnazhRealm {
             if (Math.abs(e.position.x - pos.x) > cullR || Math.abs(e.position.z - pos.z) > cullR) continue;
             const boxes = e.blockerAABBs;
             for (let b = 0; b < boxes.length; b++) {
-                supportTop = this._resolveCapsuleVsAABB(boxes[b], pos, feetY, headY, radius, supportTop);
+                if (huelle) {
+                    if (!(boxes[b].dick < huelle.stufe)) this._resolveHuelleVsAABB(boxes[b], pos, huelle);
+                } else supportTop = this._resolveCapsuleVsAABB(boxes[b], pos, feetY, headY, radius, supportTop);
             }
         }
         return supportTop;
@@ -89014,7 +89411,7 @@ class AnazhRealm {
     // Feld-native Insel-Kollision: eine AABB-Hülle pro Insel (`island.userData.fieldAABB`, aus der
     // Geometrie) — Stehen auf der Oberkante + Blocken an den Flanken, dieselbe Quelle wie Bauwerke
     // (`_resolveCapsuleVsAABB`).
-    _stepCharacterIslands(pos, feetY, headY, radius) {
+    _stepCharacterIslands(pos, feetY, headY, radius, huelle) {
         const isls = this.state.floatingIslands;
         if (!isls || !isls.length) return -Infinity;
         let supportTop = -Infinity;
@@ -89024,7 +89421,8 @@ class AnazhRealm {
             const mx = (box.minX + box.maxX) * 0.5,
                 mz = (box.minZ + box.maxZ) * 0.5;
             if (Math.abs(mx - pos.x) > 80 || Math.abs(mz - pos.z) > 80) continue; // grobes XZ-Cull
-            supportTop = this._resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop);
+            if (huelle) this._resolveHuelleVsAABB(box, pos, huelle);
+            else supportTop = this._resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop);
         }
         return supportTop;
     }
@@ -89218,12 +89616,10 @@ class AnazhRealm {
             const rideVmax = ride && Number.isFinite(ride.vmax) && ride.vmax > 0 ? ride.vmax : null;
             if (rideVmax !== null) currentSpeed = rideVmax;
             else currentSpeed *= rideTop;
-            // Trägt das gerittene Studio-Fahrzeug Lenk-Gesetze (fahrprofil.lenkung, vehicle-core FAHR), fährt
-            // der Ritt fahrzeug-eigen: W/S = Gas/Bremse entlang der Gier, A/D = Lenkung (selbstzentrierend
-            // sf = 1/(1+v·sfK); Gier-Rate = v·tan(δ)/Radstand — erst Fahrt dreht), Quer-Geschwindigkeit stirbt
-            // am Grip, Shift = Handbremse (Grip → driftGripMul). Dieselbe playerVel + Step-Integration; ohne
-            // lenkung der richtungs-folgende Ritt.
-            const lenk = ride && ride.lenkung && this._mountedEntry ? ride.lenkung : null;
+            // Trägt das gerittene Werk ein Fahr-Gesetz (fahrprofil.lenkung + zweispur, vehicle-core), fährt es den EINEN
+            // Fahr-Schritt des Kerns (`_fahrSatz`, Welle L Q13): W/S = Gas/Bremse, A/D = Lenkung, Shift = Handbremse — dasselbe
+            // Gesetz wie die Probefahrt. Ohne Fahr-Gesetz der richtungs-folgende Ritt (Kreatur, Bein-Werk).
+            const fahrG = ride && this._mountedEntry ? this._fahrSatz(this._mountedEntry, ride) : null;
             // ═══ PARKOUR — RUTSCH + KLETTERN ═══
             // Nur mit dem koerperstudio-Gesetz (_parkourGesetz null → nichts) und nie im Sattel/Wasser.
             // RUTSCH: Taste C am Boden über Mindest-Fahrt → slideDauerSec Gleiten in Start-Richtung
@@ -89256,140 +89652,49 @@ class AnazhRealm {
             } else if (this.state._cWasDown) {
                 this.state._cWasDown = false;
             }
-            if (lenk) {
+            if (fahrG) {
+                // DER EINE FAHR-SCHRITT (Welle L, Q13 — Befund 06.10.: der Stamm integrierte eine zweite Kopie des
+                // Zweispur-Modells, Längs-Antrieb als exp-Lerp, ohne Vertikale, ohne Quer-Hangabtrieb, ohne Reibkreis
+                // längs). Die Lage setzte der EINE Kontakt-Löser (`_stepCharacter`) zu Beginn des Sim-Schritts; was er der
+                // Fahrt nahm (eine Wand, das Wasser), kehrt in den Körperrahmen zurück. Dann: Stand (Ebene der Räder,
+                // ballistische Vertikale, Federn) an DIESER Lage, Kräfte → die Geschwindigkeit, die der Kontakt-Löser im
+                // nächsten Schritt fährt — dieselbe Folge wie die Probefahrt (Kräfte, Lage, Stand).
+                const { vc } = AnazhRealm._fahrSchrittGesetz();
                 const ent = this._mountedEntry;
+                const pmF = this.state.playerMesh.position;
                 const v = this.state.playerVel;
-                let yaw = Number.isFinite(ent._rideYaw) ? ent._rideYaw : this.state.yaw;
-                const fX = Math.sin(yaw);
-                const fZ = Math.cos(yaw);
-                let vLong = v.x() * fX + v.z() * fZ;
-                let vLat = v.x() * fZ - v.z() * fX; // Komponente entlang state.right
-                const steerIn = (this.state.keys["a"] ? 1 : 0) - (this.state.keys["d"] ? 1 : 0);
-                const sf = 1 / (1 + Math.abs(vLong) * lenk.sfK);
-                const L = Number.isFinite(lenk.radstand) && lenk.radstand > 1 ? lenk.radstand : 2.6;
-                const zs = ride.zweispur || null;
-                const fahr = zs ? ent._fahr || (ent._fahr = { steer: 0, yawRate: 0, aLong: 0, aLat: 0 }) : null;
-                let delta;
-                if (zs) {
-                    // N7 — DIE LENKSÄULE des Kerns: Ziel-Einschlag mit Selbst-
-                    // Zentrierung, Lerp framerate-ehrlich (Kern-Lerps sind
-                    // 60-fps-basiert: 1-(1-k)^(dt·60)).
-                    const sTgt = steerIn * lenk.maxSteer * sf;
-                    const kS = steerIn !== 0 ? zs.steerK : zs.steerZentrK;
-                    fahr.steer += (sTgt - fahr.steer) * (1 - Math.pow(1 - kS, nowDt * 60));
-                    delta = fahr.steer;
-                } else {
-                    delta = steerIn * lenk.maxSteer * sf;
-                    yaw += ((vLong * Math.tan(delta)) / L) * nowDt;
-                }
-                const hand = !!this.state.keys["shift"];
-                // nie Sprint im Sattel; der VMAX-ANKER trägt auch den Lenk-Pfad.
-                const zielSpeed = (rideVmax !== null ? rideVmax : this.state.speed * rideTop) * slopePenalty;
-                // Echte Bremse: S bei Vorwärts-Fahrt bremst mit der Kern-Verzögerung (lenkung.brakeDecel, dieselbe
-                // Zahl wie die Probefahrt); erst unter dem Fahrt-Gate wird S der Rückwärts-Zweig (kehrV).
-                const sBremse =
-                    !!this.state.keys["s"] && vLong > 0.4 && Number.isFinite(lenk.brakeDecel) && lenk.brakeDecel > 0;
-                if (sBremse) {
-                    vLong = Math.max(0, vLong - lenk.brakeDecel * nowDt);
-                } else {
-                    const ziel = this.state.keys["w"]
-                        ? zielSpeed
-                        : this.state.keys["s"]
-                          ? -zielSpeed * (Number.isFinite(lenk.kehrV) ? lenk.kehrV : 0.45)
-                          : 0;
-                    const kL = this.state.keys["w"] || this.state.keys["s"] ? rideKAcc : rideKBrake;
-                    vLong += (ziel - vLong) * (1 - Math.exp(-kL * nowDt));
-                }
-                // Hangabtrieb: die Steigung längs der Fahrt wirkt als −g·sin(α) auf vLong (bergauf bremst, bergab
-                // schiebt). α aus den Bug/Heck-Proben des Mount-Ticks (entry._terrainPitchZiel; uphill-negativ).
-                const mEnt = this._mountedEntry;
-                if (mEnt && Number.isFinite(mEnt._terrainPitchZiel)) {
-                    const gAbs = Math.abs(this.state.gravity || -9.81);
-                    vLong -= gAbs * Math.sin(-mEnt._terrainPitchZiel) * nowDt;
-                }
-                if (hand && Number.isFinite(lenk.handDecel)) {
-                    vLong -= Math.sign(vLong) * Math.min(Math.abs(vLong), lenk.handDecel * nowDt);
-                }
-                if (zs) {
-                    // ═══ DAS VOLLE ZWEISPUR-MODELL (Newton-Euler wie die Probefahrt, exportDrive.zweispur) ═══
-                    // Schlupfwinkel je Achse → Seitenkräfte gegen den Schlupf, gesättigt am Reibkreis × Achslast
-                    // (Lastverlagerung über cgH/L: Bremsen belädt vorn, Gas hinten) → Gier aus dem Reifenmoment; unter
-                    // Schritttempo kinematische Blende (stabil am Stand). Handbremse bricht die Heck-Seitenführung
-                    // (handLatMul) → Drift entsteht. Der gripK-Pfad ist der fail-closed-Zweig.
-                    const dtF = Math.min(0.05, Math.max(0.001, nowDt)); // Stabilitäts-Klemme (expl. Euler)
-                    const dn = Math.abs(vLong) + zs.slipEps;
-                    const sgn = vLong >= 0 ? 1 : -1;
-                    const slipF = Math.atan2(vLat + fahr.yawRate * zs.b, dn) - fahr.steer * sgn;
-                    const slipR = Math.atan2(vLat - fahr.yawRate * zs.c, dn);
-                    const cgH = Number.isFinite(ride.cgH) && ride.cgH > 0 ? ride.cgH : 0.9;
-                    const Wt = zs.mass * zs.G;
-                    const dW = ((fahr.aLong * cgH) / L) * zs.mass;
-                    const Wf = Math.max(0, Wt * (zs.c / L) - dW);
-                    const Wr = Math.max(0, Wt * (zs.b / L) + dW);
-                    const cap = zs.maxGrip * (Number.isFinite(zs.grip) && zs.grip > 0 ? zs.grip : 1);
-                    let FlatF = -Math.max(-cap, Math.min(cap, zs.CA_F * slipF)) * Wf;
-                    let FlatR = -Math.max(-cap, Math.min(cap, zs.CA_R * slipR)) * Wr;
-                    if (hand) FlatR *= zs.handLatMul;
-                    const cosD = Math.cos(fahr.steer);
-                    const aLatB = (FlatF * cosD + FlatR) / zs.mass;
-                    // Rotationskopplung + Längsanteil der Lenk-Seitenkraft (Newton-
-                    // Euler im Körperframe — wie updateVehicle). Die Kopplung vLat·ω ist
-                    // KINEMATIK (der Körperframe dreht), keine Kraft: sie bewegt vLong, aber
-                    // der Schwerpunkt erfährt sie nicht — die Lastverlagerung unten zieht sie ab.
-                    const kopplung = vLat * fahr.yawRate * dtF;
-                    vLong += ((-FlatF * Math.sin(fahr.steer)) / zs.mass) * dtF + kopplung;
-                    vLat += (aLatB - vLong * fahr.yawRate) * dtF;
-                    const torque = zs.b * FlatF * cosD - zs.c * FlatR;
-                    fahr.yawRate += (torque / zs.Izz) * dtF;
-                    const spd = Math.hypot(vLong, vLat);
-                    const low = Math.max(0, Math.min(1, 1 - spd / zs.lowBlendV));
-                    fahr.yawRate = fahr.yawRate * (1 - low) + ((vLong * Math.tan(fahr.steer)) / L) * low;
-                    vLat *= 1 - low * zs.lowLatK;
-                    yaw += fahr.yawRate * dtF;
-                    fahr.aLat = aLatB; // die Feder-Antwort liest die ECHTE Querbeschleunigung
-                    // Die TRÄGHE Längsbeschleunigung des Schwerpunkts GEMESSEN (Antrieb + Bremse + Hangabtrieb +
-                    // Reifen — alles, was vLong diesen Tick als KRAFT bewegte; die Lab-Wahrheit car.aLong = Fx/m):
-                    // speist die Lastverlagerung des NÄCHSTEN Schritts und den Brems-Nick der Feder (der Bug
-                    // taucht, der Squat drückt). Die Kopplung vLat·ω fällt heraus — mit ihr las die Last-
-                    // verlagerung die eigene Drehung als Bremsen: das Heck verlor Last, der Wagen drehte sich
-                    // auf (Lenk-Sprung bei 52 km/h: Gier-Rate 2,4 rad/s, Tempo 14 → 4 m/s — die Lab-Probefahrt
-                    // fängt sich bei 0,78 rad/s).
-                    const vPrev = Number.isFinite(ent._fahrVLongPrev) ? ent._fahrVLongPrev : vLong - kopplung;
-                    fahr.aLong = Math.max(-zs.aPitchMax, Math.min(zs.aPitchMax, (vLong - kopplung - vPrev) / dtF));
-                    ent._fahrVLongPrev = vLong;
-                } else {
-                    // V18.491.121 — recipe grip now in exportDrive.lenkung.gripK (× P.grip; default 1 → 6).
-                    const grip =
-                        lenk.gripK * (hand ? (Number.isFinite(lenk.driftGripMul) ? lenk.driftGripMul : 0.35) : 1);
-                    vLat *= Math.max(0, 1 - grip * nowDt);
-                }
-                // NaN-Wand vor dem Gedächtnis (Lehre 13), dann zurück in Weltachsen;
-                // die Gier ans Gefährt (die EINE Gier-Wahrheit entry.rotationY).
-                if (!Number.isFinite(yaw) || !Number.isFinite(vLong) || !Number.isFinite(vLat)) {
-                    yaw = this.state.yaw;
-                    vLong = 0;
-                    vLat = 0;
-                    if (fahr) {
-                        fahr.steer = 0;
-                        fahr.yawRate = 0;
-                        fahr.aLong = 0;
-                        fahr.aLat = 0;
-                    }
-                }
-                if (fahr && (!Number.isFinite(fahr.yawRate) || !Number.isFinite(fahr.steer))) {
-                    fahr.steer = 0;
-                    fahr.yawRate = 0;
-                    fahr.aLong = 0;
-                    fahr.aLat = 0;
-                }
-                if (fahr) delta = fahr.steer;
-                const fX2 = Math.sin(yaw);
-                const fZ2 = Math.cos(yaw);
-                this.state.playerVel.setValue(fX2 * vLong + fZ2 * vLat, v.y(), fZ2 * vLong - fX2 * vLat);
-                ent._rideYaw = yaw;
-                ent._rideSteer = true; // der Yaw-Folge-Block im Mount-Tick ruht
-                // V18.491.120 — one visual steer field (zs: fahr.steer; non-zs: delta)
-                ent._rideSteerYaw = Number.isFinite(delta) ? delta : 0;
+                const z =
+                    ent._fahr ||
+                    (ent._fahr = vc.fahrZustand(
+                        pmF.x,
+                        pmF.z,
+                        (Number.isFinite(ent._rideYaw) ? ent._rideYaw : this.state.yaw) - Math.PI / 2
+                    ));
+                z.x = pmF.x;
+                z.z = pmF.z;
+                const cyF = Math.cos(z.yaw);
+                const syF = Math.sin(z.yaw);
+                z.vlong = v.x() * cyF - v.z() * syF;
+                z.vlat = -v.x() * syF - v.z() * cyF;
+                vc.fahrStand(z, fahrG, this._fahrBoden(ent), nowDt);
+                const keys = this.state.keys;
+                vc.fahrKraefte(
+                    z,
+                    {
+                        throttle: keys["w"] ? 1 : 0,
+                        brake: keys["s"] ? 1 : 0,
+                        steer: (keys["a"] ? 1 : 0) - (keys["d"] ? 1 : 0),
+                        hand: !!keys["shift"],
+                    },
+                    fahrG,
+                    nowDt
+                );
+                const cy2 = Math.cos(z.yaw);
+                const sy2 = Math.sin(z.yaw);
+                this.state.playerVel.setValue(z.vlong * cy2 - z.vlat * sy2, v.y(), -z.vlong * sy2 - z.vlat * cy2);
+                // Die Gier ans Gefährt (Fahrt-Richtung (sin, cos) = Bug); der Lenk-Einschlag fürs Bild.
+                ent._rideYaw = z.yaw + Math.PI / 2;
+                ent._rideSteerYaw = z.steer;
             } else if (slide) {
                 // PARKOUR — der RUTSCH führt: Richtung eingefroren, Tempo klingt
                 // linear vom Boost auf das Geh-Tempo aus (WASD ruht — wer rutscht,
@@ -89556,6 +89861,7 @@ class AnazhRealm {
             // Vorframes + Kollision), dann die Bewegung (setzt die neue Intent-Velocity).
             this._stepCharacter(f.dt, t);
             this._loopPlayerMovement(t);
+            this._rittSchritt(f.dt);
         }
         const end = this._replaySnapshotState();
         s.keys = savedKeys;
@@ -92653,6 +92959,29 @@ AnazhRealm._fahrGesetz = function () {
         return AnazhRealm._fahrGesetzMemo;
     }
     return AnazhRealm._kernPflichtBruch("vehicle:FAHR.hostEmergent");
+};
+// DER EINE FAHR-SCHRITT-LESER (Welle L, Nachbesserung 07.10.), fail-closed: die Funktionen des Fahr-Schritts
+// (vehicle-core fahrGesetz · fahrZustand · fahrEbene · fahrStand · fahrKraefte · fahrAufstand) und die Wände des
+// Welt-Ritts (FAHR.schritt: Stufe, Rad-Hub, Ebenen-Klammer, Luft-Abstand) in EINER Gültigkeits-Wand. Ein alter Kern
+// bricht LAUT — vorher prüften `_fahrSatz` und `_rittEbene` typeof und gaben still null (der Gesetz-Wagen ritt
+// richtungs-folgend), und Hülle, Kontakt und Rad trugen Literal-Zwillinge der Kern-Zeilen (0,34/0,5 · 0,7 · 0,34/0,6).
+// Memo je Kern-Objekt.
+AnazhRealm._fahrSchrittGesetz = function () {
+    const vc = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
+    const memo = AnazhRealm._fahrSchrittMemo;
+    if (memo && memo.vc === vc) return memo;
+    const S = vc && vc.FAHR && vc.FAHR.schritt;
+    if (
+        S &&
+        ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte", "fahrAufstand"].every(
+            (f) => typeof vc[f] === "function"
+        ) &&
+        ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps"].every((k) => Number.isFinite(S[k]))
+    ) {
+        AnazhRealm._fahrSchrittMemo = { vc, S };
+        return AnazhRealm._fahrSchrittMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("vehicle:FAHR.schritt/fahrSchritt");
 };
 // Der EINE Kampf-Koeffizienten-Leser: hpMax/damage/knockback/defense aus PRESETS.mensch.fx.kampf,
 // Formel base + dichte-Tag·dichte + härte-Tag·haerte. Fail-closed.
