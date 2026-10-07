@@ -252,18 +252,45 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // Node hält die Frist; CI 36681658740). 10 Pflicht-Frames, dann DER DAUERZUSTAND: weiter, bis 8 Frames in Folge
     // NICHTS kompilieren (höchstens 80, Wand 240 s) — Erst-Compile-Nachzügler landen im Warmup, echter Churn
     // kompiliert JEDEN Frame und fällt im Idle-Fenster rot.
+    // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): eine erste Zeichnung kompiliert ihre Pipeline ASYNCHRON — der
+    // Compile läuft im GPU-Prozess weiter, und der nächste Aufruf, der präsentiert, trüge alle offenen zusammen (CI auf
+    // c307587b: 21 Warmup-Aufrufe in 11 s, dann „Bild (Ruhe-Frame 1)" über 300 s). Nach jedem kompilierenden Aufruf wartet
+    // Node in kurzen Abfragen (reines JS, kein GPU-Ruf), bis keine Pipeline mehr offen ist: jeder Aufruf trägt weiter
+    // höchstens die Compiles seines EINEN Schlüssels.
+    const abwarten = async (wo) => {
+        const t0 = Date.now();
+        laufenderRuf = `Pipelines abwarten (${wo})`;
+        for (;;) {
+            const offen = await page.evaluate(() => {
+                const E = window.anazhRealm._erstZeichnung;
+                return E ? E.offen.size : 0;
+            });
+            if (offen === 0) break;
+            if (Date.now() - t0 > 600000) {
+                log(`nach 600 s noch ${offen} Pipelines offen (${wo})`);
+                break;
+            }
+            await new Promise((res) => setTimeout(res, 500));
+        }
+        const ms = Date.now() - t0;
+        if (ms > LANG_MS) log(`Pipelines abgewartet (${wo}): ${Math.round(ms / 1000)} s`);
+        laufenderRuf = "-";
+    };
     const warmNeu = async (wo) => {
         let schritte = 0;
         for (;;) {
             const w = await ruf(`Schlüssel-Warmup (${wo})`, () => window.__warmSchritt());
             schritte++;
+            if (w.cc > 0) await abwarten(`Schlüssel-Warmup (${wo})`);
             if (w.rest === 0) return schritte;
         }
     };
     const frame = async (wo) => {
         await ruf(`Takt (${wo})`, () => window.__takt());
         await warmNeu(wo);
-        return (await ruf(`Bild (${wo})`, () => window.__bild())).tot;
+        const b = await ruf(`Bild (${wo})`, () => window.__bild());
+        if (b.cc > 0) await abwarten(`Bild (${wo})`);
+        return b.tot;
     };
     if (!setup.err) {
         setup.scheiben = await warmNeu("Warmup");
