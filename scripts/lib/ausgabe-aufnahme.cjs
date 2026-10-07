@@ -197,6 +197,58 @@ function tiereHalten() {
     };
 }
 
+// DIE RUHE DER ERST-ZEICHNUNG (Welle K, `_configureRenderer`) — die EINE Regel jeder Linse, die ein angekommenes Bild
+// misst (die Ausgabe-Aufnahme, der Ziel-Zensus): was zum ersten Mal zeichnet, baut je Render-Aufruf einen Stoff und lässt
+// seine Pipeline asynchron entstehen; in Frames am Stück erfüllt sich kein Versprechen. `frame` schaltet Frames mit einer
+// Pause für den GPU-Prozess, bis ein Frame nichts mehr baut oder verschiebt, kein Draw auf seine Pipeline wartet und keine
+// Pipeline offen ist. Steht die Erst-Zeichnung `opt.erstFristMs` (120 s) ohne Fortschritt oder fünfmal so lange insgesamt,
+// bricht `wer` LAUT ab und nennt jede offene Pipeline beim Namen. Ohne Erst-Zeichnung (Null-Renderer) null.
+function erstRuhe(frame, opt, wer) {
+    return (async () => {
+        const E = window.anazhRealm._erstZeichnung;
+        if (!E) return null;
+        const tE = performance.now();
+        let tFort = tE,
+            stand = "";
+        // der Name einer Pipeline: ihr Label (`renderPipeline_<Stoff>_<id>`), sonst Programm-Name und Schlüssel
+        const name = (p) =>
+            (E.namen && E.namen.get(p)) ||
+            `${(p.vertexProgram && p.vertexProgram.name) || "(ohne Stoff-Namen)"} [${p.cacheKey}]`;
+        for (;;) {
+            const b0 = E.bauN,
+                v0 = E.verschoben,
+                w0 = E.wartetN;
+            frame();
+            await new Promise((res) => setTimeout(res, 0));
+            // der Blick steht, wenn ein Frame nichts baut, nichts verschiebt, kein Draw auf seine Pipeline wartet
+            // und kein Bundle ohne einen Bürger versiegelt ist (der wartende Draw zählt auf jedem Backend)
+            if (E.offen.size === 0 && E.bauN === b0 && E.verschoben === v0 && E.wartetN === w0) break;
+            const jetzt = performance.now();
+            const s = `${E.bauN}|${E.verschoben}|${E.offen.size}|${E.bereitN}`;
+            if (s !== stand) {
+                stand = s;
+                tFort = jetzt;
+            }
+            const frist = opt && opt.erstFristMs > 0 ? opt.erstFristMs : 120000;
+            if (jetzt - tFort > frist || jetzt - tE > 5 * frist) {
+                const namen = [];
+                for (const p of E.offen.keys()) namen.push(name(p));
+                const wartet =
+                    E.wartetN !== w0 && E.wartetAuf
+                        ? `; ein Draw wartet auf ${name(E.wartetAuf)}${E.abgesagt && E.abgesagt.has(E.wartetAuf) ? " (ABGESAGT)" : ""}`
+                        : "";
+                throw new Error(
+                    `ERST-ZEICHNUNG OFFEN — ${wer || "die Aufnahme"} bricht ab: offen ${E.offen.size} nach ${Math.round(
+                        (jetzt - tE) / 1000
+                    )} s (davon ${Math.round((jetzt - tFort) / 1000)} s ohne Fortschritt), Bauten ${E.bauN - b0} und ` +
+                        `verschoben ${E.verschoben - v0} im letzten Frame; offene Pipelines: ${namen.slice(0, 12).join(" · ") || "-"}${wartet}`
+                );
+            }
+        }
+        return { offen: E.offen.size, warteMs: Math.round(performance.now() - tE) };
+    })();
+}
+
 // DAS GANZE BILD (04.10., echte GPU): ein Ausgabe-Ziel kleiner als der Canvas lieferte die linke obere Ecke
 // des Frames in Originalgröße, nie das verkleinerte Bild — 1280×720 aus 1920×1080 waren ein 2/3-Ausschnitt,
 // 640×360 ein Drittel (gemessen: dieselbe Kamera, 640 = die linke obere 640×360-Ecke des 1920er Bildes). Die
@@ -240,49 +292,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // einer kurzen Frist) oder fünfmal so lange insgesamt, bricht die Aufnahme LAUT ab und nennt jede offene
             // Pipeline beim Namen — ein Bild mit einem unsichtbaren Bürger ist kein Beweis (bis 07.10. brach sie nach 60 s
             // still ab und lieferte das Bild ohne Marke).
-            const E = r._erstZeichnung;
-            let erst = null;
-            if (E) {
-                const tE = performance.now();
-                let tFort = tE,
-                    stand = "";
-                // der Name einer Pipeline: ihr Label (`renderPipeline_<Stoff>_<id>`), sonst Programm-Name und Schlüssel
-                const name = (p) =>
-                    (E.namen && E.namen.get(p)) ||
-                    `${(p.vertexProgram && p.vertexProgram.name) || "(ohne Stoff-Namen)"} [${p.cacheKey}]`;
-                for (;;) {
-                    const b0 = E.bauN,
-                        v0 = E.verschoben,
-                        w0 = E.wartetN;
-                    frame();
-                    await new Promise((res) => setTimeout(res, 0));
-                    // der Blick steht, wenn ein Frame nichts baut, nichts verschiebt, kein Draw auf seine Pipeline wartet
-                    // und kein Bundle ohne einen Bürger versiegelt ist (der wartende Draw zählt auf jedem Backend)
-                    if (E.offen.size === 0 && E.bauN === b0 && E.verschoben === v0 && E.wartetN === w0) break;
-                    const jetzt = performance.now();
-                    const s = `${E.bauN}|${E.verschoben}|${E.offen.size}|${E.bereitN}`;
-                    if (s !== stand) {
-                        stand = s;
-                        tFort = jetzt;
-                    }
-                    const frist = opt && opt.erstFristMs > 0 ? opt.erstFristMs : 120000;
-                    if (jetzt - tFort > frist || jetzt - tE > 5 * frist) {
-                        const namen = [];
-                        for (const p of E.offen.keys()) namen.push(name(p));
-                        const wartet =
-                            E.wartetN !== w0 && E.wartetAuf
-                                ? `; ein Draw wartet auf ${name(E.wartetAuf)}${E.abgesagt && E.abgesagt.has(E.wartetAuf) ? " (ABGESAGT)" : ""}`
-                                : "";
-                        throw new Error(
-                            `ERST-ZEICHNUNG OFFEN — die Aufnahme bricht ab: offen ${E.offen.size} nach ${Math.round(
-                                (jetzt - tE) / 1000
-                            )} s (davon ${Math.round((jetzt - tFort) / 1000)} s ohne Fortschritt), Bauten ${E.bauN - b0} und ` +
-                                `verschoben ${E.verschoben - v0} im letzten Frame; offene Pipelines: ${namen.slice(0, 12).join(" · ") || "-"}${wartet}`
-                        );
-                    }
-                }
-                erst = { offen: E.offen.size, warteMs: Math.round(performance.now() - tE) };
-            }
+            const erst = await window.__erstRuhe(frame, opt, "die Aufnahme");
             // DIE ZEITLICHE AUFLÖSUNG (TRAA) zeigt ein ruhendes Bild erst nach ihrer Geschichte: die Halton-Folge
             // läuft 31 Versätze, die Dither-Blende rotiert je Frame — die Aufnahme zeigt, was der Spieler nach einer
             // halben Sekunde Stillstand sieht (32 Frames), nie den ersten, ungemittelten Frame nach dem Kamera-Sprung.
@@ -445,6 +455,7 @@ module.exports = {
     wetterUrteil,
     wetterSelbsttest,
     AUSGABE_INSTALL:
+        `window.__erstRuhe = ${erstRuhe.toString()};` +
         `window.__ausgabeAufnahme = ${ausgabeAufnahme.toString()};` +
         `window.__wetterSpion = ${wetterSpion.toString()};` +
         `window.__wetterBuch = ${wetterBuch.toString()};` +

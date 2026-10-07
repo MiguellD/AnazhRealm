@@ -56,6 +56,25 @@ function zielZensus(k) {
         if (!be || be.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Backend — der Zensus liest GPU-Befehle" };
         if (!window.__gruppeTex || !window.__viewTex || !window.__pipeTiefe || !window.__buendelInhalt)
             return { fehler: "der VRAM-Abgriff mit Zensus-Grund fehlt (scripts/lib/vram-abgriff.cjs vor dem Seiten-Skript)" };
+        // DIE RUHE DER ERST-ZEICHNUNG zuerst (Integration K haenger × host-vram, 07.10.): eine erste Zeichnung lässt ihre
+        // Pipeline asynchron entstehen — ein Leser, dessen Pipeline noch offen ist, zeichnet in den n Frames nicht, und sein
+        // Ziel stand „OHNE LESER" (portal-membran, geschrieben beim Hochladen, gelesen erst nach der Pipeline). Gezählt wird
+        // das angekommene Bild: dieselbe Regel wie die Ausgabe-Aufnahme (`__erstRuhe`, scripts/lib/ausgabe-aufnahme.cjs).
+        if (typeof window.__erstRuhe !== "function")
+            return { fehler: "die Ruhe der Erst-Zeichnung fehlt (AUSGABE_INSTALL aus scripts/lib/ausgabe-aufnahme.cjs)" };
+        let erst;
+        try {
+            erst = await window.__erstRuhe(
+                () => {
+                    if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+                    r._loopRender(performance.now());
+                },
+                k,
+                "der Zensus"
+            );
+        } catch (e) {
+            return { fehler: String((e && e.message) || e) };
+        }
         const n = Math.max(3, Number(k && k.n) || 12);
         const uhr = window.__passUhr();
         const ab = [];
@@ -296,7 +315,7 @@ function zielZensus(k) {
                 ),
             };
         });
-        return { frames: frame, n, leinwand: [Math.round(db.x), Math.round(db.y)], blind, pipeBlind, ziele };
+        return { frames: frame, n, leinwand: [Math.round(db.x), Math.round(db.y)], blind, pipeBlind, ziele, erst };
     })();
 }
 

@@ -120,6 +120,7 @@ const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 const { vramAbgriff } = require("./lib/vram-abgriff.cjs");
 const { FALTE_INSTALL, ZAEHLER_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { ZERLEGE_INSTALL } = require("./lib/zerlege-linse.cjs");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const root = path.resolve(__dirname, "..");
 const PORT = Number(process.env.ZIEL_ZENSUS_PORT) || 4597;
@@ -339,6 +340,7 @@ function vortiefeProbe() {
         log(`Renderer und Post-Kette bereit nach ${Math.round(bereit.ms / 1000)} s`);
         await page.evaluate(ZAEHLER_INSTALL);
         await page.evaluate(ZERLEGE_INSTALL);
+        await page.evaluate(AUSGABE_INSTALL); // die Ruhe der Erst-Zeichnung (`__erstRuhe`), vor jedem Zensus
         await page.evaluate(ZZ.ZIEL_INSTALL);
         await page.evaluate(() => {
             const r = window.anazhRealm;
@@ -379,7 +381,10 @@ function vortiefeProbe() {
         const { z, u } = await zensus();
         out.zensusRot = u.rot;
         out.rest = u.zeilen.filter((x) => /zensus-selbsttest/.test(x.name)).map((x) => x.name);
-        log(`Zensus: ${u.zeilen.length} Texturen, ${z.frames} Frames, ${u.rot.length} rot, ${u.hinweis.length} Hinweise`);
+        log(
+            `Zensus: ${u.zeilen.length} Texturen, ${z.frames} Frames, ${u.rot.length} rot, ${u.hinweis.length} Hinweise; ` +
+                `Ruhe der Erst-Zeichnung ${z.erst ? z.erst.warteMs + " ms, offen " + z.erst.offen : "-"}`
+        );
         if (process.env.ZIEL_ZENSUS_TABELLE) console.log(ZZ.zielTabelle(u, z));
         // (b) die Karte ohne Farbe
         out.karte = await page.evaluate(karteOhneFarbe);
