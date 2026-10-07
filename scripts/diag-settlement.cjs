@@ -372,72 +372,42 @@ const FIXTURES = [
         //    byte-dieselben Eintraege [type/x/z/rot/seed]).
         const before = r.state.architectures.length;
         const o1 = { x: 400, z: 400 };
+        // Der zweite Akt steht auf dem geräumten Ort: die Bau-Wand (_bauFrei) setzt kein Haus in ein Haus — neben dem ersten
+        // Dorf entstünde am selben Anker keines (Integration Welle L, gate:haus-welt W7). Die folgenden Proben lesen die
+        // lebenden Einträge des zweiten Akts.
         const r1 = r._spawnSettlementFromExport(plan, o1);
         const mid = r.state.architectures.length;
+        const schnitt = (list) => list.map((e) => [e.type, e.position.x, e.position.z, e.rotationY, e.seed]);
+        const akt1 = r.state.architectures.slice(before, mid);
+        const e1Schnitt = schnitt(akt1);
+        for (const e of akt1) r.removeArchitecture(e);
+        const mid2 = r.state.architectures.length;
         const r2 = r._spawnSettlementFromExport(plan, o1);
         const after = r.state.architectures.length;
         res.placed1 = r1.placed;
         res.skipped1 = r1.skipped;
         res.placed2 = r2.placed;
-        res.entriesMatch = mid - before === r1.placed && after - mid === r2.placed;
-        const e1 = r.state.architectures.slice(before, mid);
-        const e2 = r.state.architectures.slice(mid, after);
+        res.entriesMatch = mid - before === r1.placed && mid2 === before && after - mid2 === r2.placed;
+        const e1 = r.state.architectures.slice(mid2, after);
         res.allHaus = e1.every((e) => typeof e.type === "string" && e.type.indexOf("haus_") === 0);
         // Offsets relativ zum Anker byte-vergleichen (x/z; y ist Terrain-Wahrheit je Ort).
-        const off = (list, o) => list.map((e) => [e.type, e.position.x - o.x, e.position.z - o.z, e.rotationY, e.seed]);
+        const off = (list, o) => list.map((e) => [e[0], e[1] - o.x, e[2] - o.z, e[3], e[4]]);
         res.offsetsDeterministic =
-            r1.placed === r2.placed && JSON.stringify(off(e1, o1)) === JSON.stringify(off(e2, o1));
-        // Slot-Anker == Export-Slot (der erste platzierte Eintrag traegt exakt slot.x/z + phi + seed).
-        // DORF-IN-TERRAIN (die Probe wandert mit dem Gesetz): das Prädikat spiegelt
-        // zusätzlich die Klippen-Wand der EINEN Slot-Quelle (Footprint-Δh über die
-        // vier obb-Ecken <= SIEDLUNG.fundamentMaxDh, das fachwerk-Gesetz).
-        const dhOf = (s) => {
-            const wx = o1.x + s.x;
-            const wz = o1.z + s.z;
-            const hM = r.getTerrainHeightAt(wx, wz);
-            let hMin = hM;
-            let hMax = hM;
-            const obb = s.obb || {};
-            if (Number.isFinite(obb.ex) && Number.isFinite(obb.ez)) {
-                const ry = s.phi || 0;
-                const rc = Math.cos(ry);
-                const rs = Math.sin(ry);
-                // die Ecken um die obb-MITTE (Welle L: sie liegt bis 1,8 m neben dem Haus-Ursprung, das Hof-Haus 4 m)
-                const dxw = Number.isFinite(obb.cx) ? obb.cx - s.x : 0;
-                const dzw = Number.isFinite(obb.cz) ? obb.cz - s.z : 0;
-                const ox = dxw * rc - dzw * rs;
-                const oz = dxw * rs + dzw * rc;
-                for (let k = 0; k < 4; k++) {
-                    const lx = ox + (k & 1 ? obb.ex : -obb.ex);
-                    const lz = oz + (k & 2 ? obb.ez : -obb.ez);
-                    const h = r.getTerrainHeightAt(wx + lx * rc + lz * rs, wz - lx * rs + lz * rc);
-                    if (Number.isFinite(h)) {
-                        hMin = Math.min(hMin, h);
-                        hMax = Math.max(hMax, h);
-                    }
-                }
-            }
-            return hMax - hMin;
-        };
-        const s0 = plan.slots.find((s) => {
-            const rec = f.recipes[s.kultur];
-            const pol = rec && r.constructor.KIND_POLICY[rec.kind];
-            return (
-                pol &&
-                pol.prefix &&
-                r.state.blueprints[pol.prefix + s.kultur] &&
-                r._isAboveWaterAt(o1.x + s.x, o1.z + s.z, 0.2) &&
-                dhOf(s) <= r.constructor._siedlungGesetz().fundamentMaxDh
-            );
-        });
-        const m0 = s0
-            ? e1.find((e) => e.seed === s0.seed >>> 0 && Math.abs(e.position.x - (o1.x + s0.x)) < 1e-9)
-            : null;
-        res.slotAnchorExact = !!(
-            m0 &&
-            Math.abs(m0.position.z - (o1.z + s0.z)) < 1e-9 &&
-            m0.rotationY === (s0.phi || 0)
-        );
+            r1.placed === r2.placed && JSON.stringify(off(e1Schnitt, o1)) === JSON.stringify(off(schnitt(e1), o1));
+        // Slot-Anker == Export-Slot: JEDER platzierte Eintrag trägt exakt slot.x/z + phi seines Slots (per seed zugeordnet). Die
+        // Wände der Slot-Quelle (Wasser, Klippe über dem Footprint-Raster, Bau) rechnet die Probe nicht nach — sie liest, was
+        // stand (die gespiegelte Vier-Ecken-Klippe fiel mit dem Raster, Integration Welle L).
+        res.slotAnchorExact =
+            e1.length > 0 &&
+            e1.every((e) => {
+                const sl = plan.slots.find((x) => x.seed >>> 0 === e.seed);
+                return (
+                    !!sl &&
+                    Math.abs(e.position.x - (o1.x + sl.x)) < 1e-9 &&
+                    Math.abs(e.position.z - (o1.z + sl.z)) < 1e-9 &&
+                    e.rotationY === (sl.phi || 0)
+                );
+            });
         // HAUS-DOPPELBAU-SCHNITT (P0-Inventur 18.07.) — der KONSUM-Beweis lebt:
         // (a) jeder platzierte Eintrag trägt den Slot-ov als studioOv (rolle
         //     byte-gleich, per seed dem Export-Slot zugeordnet),
