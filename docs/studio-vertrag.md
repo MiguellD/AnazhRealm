@@ -246,6 +246,9 @@ Die Regler-Definitionen als DATEN (die HDA-Lehre) — **als MAP je kind**:
 - Der Host (Werkstatt) baut die Regler-UI GENERISCH daraus — kein
   hartkodiertes Slider-Panel pro Domäne.
 - `law` ist der Ein-Satz-Lehrsatz am Regler (Anzeige, nicht Logik).
+- **Jede Zeile wirkt** (Studio-Welle S1, `gate:regler-wirkt`): der Werkstatt-Wert reist als `ov {id: wert}`
+  über build-asset; eine Zeile, die den Bau an keinem Rezept ihrer Art bewegt (Bau-Hash bei min und max),
+  ist tot und steht beim Namen in `spec/vertraege/ratsche.json` (`reglerTot`, die Liste schrumpft nur, Soll 0).
 
 ### B5 — LEHREN (SOLL)
 
@@ -263,7 +266,13 @@ Die Verben + Daten-Komponenten der Domäne (die ECS-Lehre: `kind` wählt
 Komponenten-SÄTZE, keine Klassen):
 
 - `dsl`: die Wörter, die die begehbare Welt versteht (W12-ready-Handshake —
-  gebaut für alle fünf Portale).
+  gebaut für alle fünf Portale). Das Protokoll richtet die Heimat (`gate:portal-konformanz`, alle 13
+  Welten über den echten Weg): die Welt meldet `ready` (ihr Wörterbuch gewinnt, Stufe „nativ"); die
+  Heimat schickt `enter` beim load und auf die ERSTE ready (ein Echo je enter bleibt endlich); die Welt
+  nimmt nur Nachrichten ihres Eltern-Fensters an (`event.source`); ein Wort kommt flach
+  `["w", …args]` oder als `["chain", …]` und wirkt sichtbar (Ereignis ins Journal der Heimat oder
+  Zustand der Welt-UI); Esc meldet `exit`. Stumme Einzelwörter und Echo-Welten stehen als Ratsche in
+  `spec/vertraege/ratsche.json`.
 - Daten-Komponenten je kind, von EXISTIERENDEN Systemen gelesen (kein
   Parallel-System): `vehicle.fahrprofil` — GEBAUT N6 (09.07.): NICHT die rohen
   Regler, sondern die ABGELEITETEN drive-Skalare des Wörterbuchs v1
