@@ -19415,7 +19415,12 @@ class AnazhRealm {
             bankKruemmung: 0.04, // je m hinter der Krone
             bankWeite: 24, // m hinter der Krone
             bankRundung: 0.6, // m
-            // DIE QUELLE (W-F5): Anteil der vollen Breite UND Tiefe an der Quelle (beide wachsen bis zur doppelten Schwelle)
+            // DIE QUELLE (W-F5): jede beginnt als Rinnsal mit quellBett Meter Bett (Wasser höchstens 2,3 m breit und 0,37 m
+            // tief) und weitet sich stromab um quellWeitung je Meter Lauf (m/m), bis sie die Breite ihrer Akkumulation trägt
+            // (an der Schwelle quellBreite der vollen, ab der doppelten Schwelle die volle) — Breite und Tiefe wachsen aus dem
+            // Gesetz, nichts bricht aus dem Nichts.
+            quellBett: 1.2,
+            quellWeitung: 0.25,
             quellBreite: 0.25,
             carveLakeBedDepth: 8, // m — der See-Boden liegt ~so weit unter dem Spiegel
             carveBucketSize: 32, // m — Kantenlänge einer Fluss-Index-Bucket-Zelle
@@ -32246,6 +32251,46 @@ class AnazhRealm {
         }
         const wx = (idx) => originX + ((idx % dim) + 0.5) * cell;
         const wz = (idx) => originZ + (((idx / dim) | 0) + 0.5) * cell;
+        // DER LAUF (W-F5, Gegenprüfung 07.10., Runde 3): je Zelle die Länge ihres längsten Laufs stromauf bis zu einer Quelle
+        // — die Quelle wächst mit ihm. Fließt ein See in die Quelle (ein Abfluss) oder der Lauf durch einen See, trägt er das
+        // Wasser des Sees mit: dort ist der Lauf unendlich (ein Abfluss beginnt in der Breite seines Durchflusses).
+        const lauf = new Float64Array(n).fill(-1);
+        for (let src = 0; src < n; src++) {
+            if (!isLandConduit(src) || hasUpstream[src]) continue;
+            let s = 0;
+            for (const [di, dj] of [
+                [-1, -1],
+                [0, -1],
+                [1, -1],
+                [-1, 0],
+                [1, 0],
+                [-1, 1],
+                [0, 1],
+                [1, 1],
+            ]) {
+                const ni = (src % dim) + di;
+                const nj = ((src / dim) | 0) + dj;
+                if (
+                    ni >= 0 &&
+                    nj >= 0 &&
+                    ni < dim &&
+                    nj < dim &&
+                    flowTo[ni + nj * dim] === src &&
+                    lakeOf[ni + nj * dim] >= 0
+                )
+                    s = Infinity;
+            }
+            let cur = src;
+            for (let guard = 0; guard < HC.maxRiverPoints && cur >= 0; guard++) {
+                if (lakeOf[cur] >= 0) s = Infinity;
+                if (lauf[cur] >= s) break; // ein früherer Lauf trug hier (und stromab) schon mehr
+                lauf[cur] = s;
+                const t = flowTo[cur];
+                if (t < 0 || isSea(t)) break;
+                s += Math.hypot(wx(t) - wx(cur), wz(t) - wz(cur));
+                cur = t;
+            }
+        }
         const rivers = [];
         for (let src = 0; src < n; src++) {
             if (!isLandConduit(src) || hasUpstream[src]) continue;
@@ -32263,18 +32308,25 @@ class AnazhRealm {
                     fx /= L;
                     fz /= L;
                 }
-                // DIE QUELLE wächst (W-F5): an der Schwelle trägt der Lauf ein Viertel seiner Breite und seiner Tiefe
-                // (`quelle`, `AnazhRealm._flussTiefe`), ab der doppelten Schwelle die volle — je Zelle aus ihrer
-                // Akkumulation (geteilte Unterläufe sind breiten-gleich). Bis V18.531 sprang jede Quelle in voller Breite aus
-                // dem Boden (8,2–11,9 m, 2,36 m tief); bis 8f09227d mit einem Viertel der Breite, aber dem 1,4-m-Bett.
-                const quelle = Math.min(1, Math.max(HC.quellBreite, (accum[cur] - threshold) / threshold));
+                // DIE QUELLE wächst aus dem Gesetz (W-F5): jede beginnt als das Rinnsal (quellBett) und weitet sich stromab um
+                // quellWeitung je Meter Lauf, bis sie die Breite ihrer Akkumulation trägt (an der Schwelle quellBreite, ab der
+                // doppelten Schwelle die volle); die Tiefe folgt dem Anteil (`AnazhRealm._flussTiefe`). Je Zelle aus Lauf und
+                // Akkumulation: geteilte Unterläufe sind breiten-gleich. Bis V18.531 sprang jede Quelle in voller Breite aus dem
+                // Boden (8,2–11,9 m, 2,36 m tief); bis 5040e8f7 wer an seiner ersten Zelle schon mehr als die Schwelle sammelte
+                // (die Quelle −456/872: 11,75 m breit, 1,62 m tief).
+                const voll = HC.widthMin + HC.widthK * Math.sqrt(accum[cur]);
+                const quelle = Math.min(
+                    1,
+                    Math.max(HC.quellBreite, (accum[cur] - threshold) / threshold),
+                    (HC.quellBett + HC.quellWeitung * lauf[cur]) / voll
+                );
                 points.push({
                     x: wx(cur),
                     z: wz(cur),
                     // y = hydrologische Füllhöhe: fällt entlang flowTo STRIKT monoton, auch durch einen See (ε≈0.01 →
                     // die See-Strecke ist nahezu flach).
                     y: filled[cur],
-                    width: (HC.widthMin + HC.widthK * Math.sqrt(accum[cur])) * quelle,
+                    width: voll * quelle,
                     quelle,
                     flowX: fx,
                     flowZ: fz,
@@ -90936,8 +90988,9 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // Welle L liegt das Fluss-Bett auf dem Spiegel (`_hydrosphereCarveAt`): ein alter Chunk trüge den alten Kanal; und die
 // Ufer-Farbe läuft mit der Kronen-Blende aus (`_waterLevelAt` → `ufer`): ein alter Chunk trüge das Rauten-Schachbrett; seit
 // der Gegenprüfung läuft die Bank mit ihrer Neigung ins Gelände (Kanal und Damm): ein alter Chunk trüge die Gleit-Wand; seit
-// Runde 3 trägt die Deck-Zelle das flache Wasser und das Ufer liest den Boden der Spalte: alte Zellen zeichneten den Bach nicht.
-AnazhRealm.CHUNK_IDB_FORM = "deck-zelle";
+// Runde 3 trägt die Deck-Zelle das flache Wasser und das Ufer liest den Boden der Spalte: alte Zellen zeichneten den Bach nicht;
+// und jede Quelle beginnt als Rinnsal: ein alter Chunk trüge den Kanal, der aus dem Nichts bricht.
+AnazhRealm.CHUNK_IDB_FORM = "quell-rinnsal";
 // DIE HÖHLEN-SICHT (Welle 7, `_hoehlenSicht`): der Saum jeder Mündungs-, Portal-, Rand- und Luft-Box — `schritte` Gitter-
 // Schritte (die Fläche zwischen zwei Luft-Punkten liegt bis 1,5 Schritte neben ihnen: Surface-Nets-Vertex in der Zelle,
 // Glättung λ 0,5) plus `m` Meter (der Geomorph zieht Rand-Vertices auf den gröberen Nachbarn, wie der Hüllen-Saum `randM`).
@@ -91772,8 +91825,9 @@ AnazhRealm.Gesetz = function (pfad, fallback) {
 // `_hydroBuildCarveIndex` (seg.dA/dB → der Kanal, `_hydroRiverAt`, der Worker).
 AnazhRealm._flussTiefe = function (p) {
     const HC = AnazhRealm.HYDROSPHERE;
-    const q = Number.isFinite(p.quelle) && p.quelle > 0 ? p.quelle : 1;
-    return (HC.carveBedMin + (HC.carveBedK * (p.width || HC.widthMin)) / q) * q;
+    const q = p.quelle;
+    if (!(q > 0 && q <= 1)) throw new Error(`_flussTiefe: Fluss-Punkt ohne Quell-Anteil (quelle = ${q})`);
+    return (HC.carveBedMin + (HC.carveBedK * p.width) / q) * q;
 };
 
 // Die Dichte des Wassers auf der Tag-Skala der Materialien (holz 0,4 schwimmt, stein/eisen sinken): die Schwelle des
