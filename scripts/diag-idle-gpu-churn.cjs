@@ -213,6 +213,33 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         window.__buehneStand = () => ({ wetter: s.weather, uebergang: !!s.weatherTransition, saison: s.season, zeit: s.timeOfDay, bauten: (s.architectures || []).length });
         window.__buehne0 = window.__buehneStand();
         window.__wetterSeq0 = window.__wetterBuch(0).seq;
+        // DAS BAU-BUCH (CI 37643706020: „Bauten 147 → 146" ohne Täter): die beiden Schreiber der Bau-Menge (`spawnArchitecture`
+        // legt an, `removeArchitecture` nimmt weg; `state.architectures` schreibt sonst nur das Laden) buchen ab der Bühne
+        // je Wirkung Art, Typ und die Spiel-Rahmen des Stapels — eine Drift der Bauten trägt ihren Täter beim Namen.
+        window.__bauBuch = [];
+        const werBau = () => {
+            const zeilen = String(new Error().stack || "").split("\n");
+            const namen = [];
+            for (const l of zeilen) {
+                if (!/anazhRealm\.js/.test(l)) continue;
+                const m = /at (?:async )?(?:new )?([^\s(]+) \(/.exec(l);
+                namen.push(m ? m[1].replace(/^(AnazhRealm|Object)\./, "") : "(anonym)");
+            }
+            return namen.slice(0, 6).join(" ← ") || "Sonde (kein Spiel-Rahmen)";
+        };
+        for (const [weg, art] of [["spawnArchitecture", "an"], ["removeArchitecture", "weg"]]) {
+            const roh = r[weg];
+            r[weg] = function (...a) {
+                const n0 = (s.architectures || []).length;
+                const v = roh.apply(this, a);
+                const n1 = (s.architectures || []).length;
+                if (n1 !== n0 && window.__bauBuch.length < 20) {
+                    const e = art === "an" ? v : a[0];
+                    window.__bauBuch.push(`${art} ${(e && e.type) || "?"} durch ${werBau()}`);
+                }
+                return v;
+            };
+        }
         try { r._ensureSkyEnvironment(true); } catch (_e) {}
         const cnt = () => window.__cc.gpuPipeline + window.__cc.glLink;
         window.__cnt = cnt;
@@ -374,7 +401,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     }
     setup.maxRuf = maxRuf;
     // DIE BÜHNEN-WAND: hielt die Welt still? Jede Drift (Wetter, Übergang, Saison, Tageszeit, Bauten) beim Namen.
-    const buehne = await ruf("Bühne", () => ({ vor: window.__buehne0, nach: window.__buehneStand(), wetter: window.__wetterBuch(window.__wetterSeq0) }));
+    const buehne = await ruf("Bühne", () => ({ vor: window.__buehne0, nach: window.__buehneStand(), wetter: window.__wetterBuch(window.__wetterSeq0), bau: window.__bauBuch }));
     const kipp = [];
     // das Buch der Wache seit der Bühne: wer das Wetter drehte (Schreiber oder roh, mit Quelle und Spiel-Rahmen) und wen sie
     // verweigerte (die Wache hielt — keine Drift, aber beim Namen)
@@ -388,7 +415,8 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         if (n.uebergang) kipp.push("Wetter-Übergang läuft");
         if (n.saison !== v.saison) kipp.push(`Saison ${v.saison} → ${n.saison}`);
         if (Math.abs(n.zeit - v.zeit) > 0.02) kipp.push(`Tageszeit ${v.zeit} → ${Math.round(n.zeit * 1000) / 1000}`);
-        if (n.bauten !== v.bauten) kipp.push(`Bauten ${v.bauten} → ${n.bauten}`);
+        const bau = buehne.bau || [];
+        if (n.bauten !== v.bauten || bau.length) kipp.push(`Bauten ${v.bauten} → ${n.bauten}${bau.length ? " [" + bau.join(" · ") + "]" : ""}`);
     } else kipp.push("kein Bühnen-Stand gelesen");
 
     await browser.close();
