@@ -777,6 +777,16 @@ jobs:
               # Abtastungen, Godrays und Kontrast im Zweig hinter ihrer Staerke) und die Godrays mit der Sonne im Bild.
               run: npm run gate:post-kette
 
+            - name: Kamera-Treue und Stand-Wand (echter Renderer — der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)
+              # Faehrt den ECHTEN Renderer (swiftshader, kienspan, Schatten an) an einer eigenen Buehne: die Aufnahme verfolgt
+              # jeden Draw trotz Schatten-Render, kein Bundle unter dem Override-Stoff, der Replay zeichnet Blick Y wie der
+              # direkte Pfad. Dazu die STAND-WAND (Welle K): Programme mit denselben Quellen teilen EINE geteilte Gruppe, im
+              # Stand je Render kein Voll-Refresh, kein Upload, kein zweiter Gang ueber einen Knoten oder eine Gruppe; eine
+              # Aenderung im Stand zeichnet wie der volle Refresh; VERSCHACHTELT: ein Schatten-Render, dessen Werfer ohne
+              # Diaet die Kamera-Knoten ueber die Vendor-Bahn stellt, laesst keinen Stempel ueberleben (181d3c9e: 0,11).
+              # --selftest zuerst: injizierte Taeter fallen rot.
+              run: npm run gate:kamera-treue
+
             - name: Look-Physik-Linse (der Look gegen die gemessene Realität)
               # Die LINSE gegen den asymmetrischen-Verifikations-Riss: das Gate misst Mechanik, nicht
               # den Perzept — ABER für die Teile des Looks, die REALITÄT SIND (Albedo · Wetter-Dimmung ·

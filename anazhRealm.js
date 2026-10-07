@@ -22282,6 +22282,59 @@ class AnazhRealm {
             };
             NM.__anazhSchattenDiaet = true;
         }
+        // DER EINE KNOTEN JE QUELLE (r184 gelesen, vendor/three.webgpu.min.js + vendor/CSMShadowNode.js): eine geteilte
+        // Uniform-Gruppe (renderGroup: Kamera · Lichter · Welt-Sätze) teilt r184 über Programme hinweg nur bei GLEICHEN
+        // Knoten — `_getBindGroup` schlüsselt sie nach den sortierten Knoten-ids, je Render-Kontext EIN Puffer. Zwei
+        // Erzeuger bauten ihre Knoten je Programm neu: `reference(…)` legt seinen Uniform-Knoten je ReferenceNode an
+        // (setNodeType), und der Schatten-Filter ruft es je Bau (ShadowNode: radius · mapSize je Kaskade); die CSM baut in
+        // `setup` je Programm camera.near · cascades · shadowFar. Jedes beleuchtete Programm trug so seine EIGENE Render-
+        // Gruppe, und jede Änderung von Kamera, TRAA-Zittern, Sonne oder Wind schrieb sie je Programm. Gemessen 07.10. an
+        // der Mess-Wiese (echte GPU, Stand, ein Frame): 192 Programme, 153 geteilte Gruppen, 121 Gruppen-Uploads und 1 042
+        // writeBuffer — dieselbe Kamera 80-mal hochgeladen. Ein Verweis einer geteilten Gruppe auf dasselbe Objekt und
+        // dieselbe Eigenschaft trägt jetzt EINEN Uniform-Knoten, die CSM baut ihren Knoten einmal je Instanz (TSL baut einen
+        // Knoten in jedem Programm für sich); Verweise ohne festes Objekt (je Zeichen-Objekt) bleiben je Knoten.
+        // gate:vendor-anker pinnt beide Stellen und den Schlüssel, gate:kamera-treue zählt die Gruppen am echten Bild.
+        const REF = THREE.TSL && typeof THREE.TSL.reference === "function" ? THREE.TSL.reference : null;
+        let refProto = REF ? Object.getPrototypeOf(REF("x", "float", { x: 0 })) : null;
+        while (refProto && !Object.prototype.hasOwnProperty.call(refProto, "setNodeType"))
+            refProto = Object.getPrototypeOf(refProto);
+        if (!refProto) this.log("EIN KNOTEN: r184-ReferenceNode.setNodeType nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!refProto.__anazhEinKnoten) {
+            const typRoh = refProto.setNodeType;
+            const jeQuelle = new WeakMap();
+            refProto.setNodeType = function (typ) {
+                const g = this.group;
+                const o = this.object;
+                if (!g || g.shared !== true || o === null || typeof o !== "object") return typRoh.call(this, typ);
+                let m = jeQuelle.get(o);
+                if (!m) jeQuelle.set(o, (m = new Map()));
+                const k = `${this.property}|${typ}|${this.count}|${g.name}|${this.name}`;
+                const n = m.get(k);
+                if (n) {
+                    this.node = n;
+                    return;
+                }
+                typRoh.call(this, typ);
+                m.set(k, this.node);
+            };
+            refProto.__anazhEinKnoten = true;
+        }
+        const CSM = THREE.CSMShadowNode;
+        if (typeof CSM !== "function" || typeof CSM.prototype.setup !== "function")
+            this.log("EIN KNOTEN: CSMShadowNode.setup nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!CSM.__anazhEinAufbau) {
+            const aufbauRoh = CSM.prototype.setup;
+            const aufbau = new WeakMap();
+            CSM.prototype.setup = function (builder) {
+                let n = aufbau.get(this);
+                if (n === undefined) {
+                    n = aufbauRoh.call(this, builder);
+                    aufbau.set(this, n);
+                }
+                return n;
+            };
+            CSM.__anazhEinAufbau = true;
+        }
         // Ab hier hängen die Eingriffe am Renderer-EXEMPLAR; der Null-Renderer (headless) zeichnet nie. Fehlt einem
         // echten Renderer eine der r184-Stellen, meldet sich der Eingriff laut (gate:vendor-anker pinnt jede).
         if (renderer._isHeadlessNull) return;
@@ -22383,6 +22436,32 @@ class AnazhRealm {
                     return aus;
                 };
                 renderer.__anazhBundleReihenfolge = true;
+            }
+            // EIN SCHREIBEN JE PUFFER: r184 lädt eine Uniform-Gruppe Bereich für Bereich hoch — je geänderter Uniform ein
+            // eigenes writeBuffer (bindingUtils.updateBinding). Kamera-Matrizen, Licht-Richtung und Zeit ändern sich
+            // zusammen: gemessen 07.10. (Mess-Wiese, Stand) 18 Gruppen-Uploads in 170 writeBuffer je Frame. Eine Gruppe
+            // mit mehreren geänderten Bereichen lädt jetzt EINEN Bereich vom ersten bis zum letzten (dazwischen liegen
+            // die gültigen Werte der Gruppe); r184 leert die Bereiche nach dem Upload (`_update`).
+            const be = renderer.backend;
+            if (typeof be.updateBinding !== "function")
+                this.log("EIN SCHREIBEN: r184-Backend.updateBinding nicht gefunden (Vendor-Drift)", "ERROR");
+            else if (!be.__anazhEinSchreiben) {
+                const bindungRoh = be.updateBinding;
+                be.updateBinding = function (b) {
+                    const rs = b && b.isNodeUniformsGroup === true ? b.updateRanges : null;
+                    if (rs && rs.length > 1) {
+                        let a = rs[0].start,
+                            z = a + rs[0].count;
+                        for (let i = 1; i < rs.length; i++) {
+                            if (rs[i].start < a) a = rs[i].start;
+                            if (rs[i].start + rs[i].count > z) z = rs[i].start + rs[i].count;
+                        }
+                        rs.length = 0;
+                        rs.push({ start: a, count: z - a });
+                    }
+                    return bindungRoh.call(this, b);
+                };
+                be.__anazhEinSchreiben = true;
             }
         }
         // DER SCHATTEN-STOFF JE OBJEKT: r184 setzt in `renderObject` je Objekt `alphaTest` (und Seite, Knoten) des
@@ -95896,38 +95975,95 @@ AnazhRealm._tuerOffenRad = function () {
 //      (Pflicht-Paar _uniformHeimatTeilen), ihre Objekt-Gruppe ändert sich nur mit dem Objekt. Kopf wie der Vendor:
 //      Erst-Init, Animation, Velocity und Programme mit updateAfter fahren die Vendor-Bahn. gate:vendor-anker pinnt
 //      jede benutzte r184-Stelle und fährt die Treue am Schein-Programm, gate:kamera-treue am echten Bild.
-AnazhRealm._diaetGeteiltSchreiben = function (rend, ro) {
+//  (4) EIN GANG JE KNOTEN UND GRUPPE UND RENDER (Welle K, 07.10.): seit der EINE Knoten je Quelle die Render-Gruppen
+//      über Programme teilt (_configureRenderer), tragen die Programme DIESELBEN Vorher-Knoten, render-/frame-Knoten und
+//      geteilten Gruppen. Der Gang je Programm wiederholte sie: gemessen an der Mess-Wiese (echte GPU, Stand, ein Frame)
+//      69–89 Gänge über 9–12 geteilte Gruppen, 930–1 150 Knoten-Besuche, 190–225 Vorher-Besuche — jeder Knoten im Schnitt
+//      in 60 Programmen. Jetzt stellt die Diät jeden Knoten und lädt jede geteilte Gruppe EINMAL je RENDER-ABSCHNITT
+//      (Stempel am Knoten und an der Gruppe; die Uniform-Knoten einer geteilten Gruppe sind Knoten jedes Programms, das sie
+//      trägt — der erste Gang hat sie gestellt). Nur Knoten mit eigener Arbeit je Programm bleiben je Programm: die Instanz-
+//      Knoten (je InstancedMesh, 61 von 101 Programmen) haben ohnehin ihren eigenen Stempel. Ein Knoten, der je Zeichen-
+//      Objekt arbeitet (Takt object, oder ein Verweis ohne festes Objekt — er liest frame.object), geht je Programm wie bisher.
+//  (5) DER RENDER-ABSCHNITT (Gegenprüfung K, 07.10.): der Stempel ist das Paar (Render-Id, `info.calls`) und wechselt beim
+//      Betreten UND Verlassen jedes Renders. r184 stapelt die Render-Id (`_renderScene` setzt sie auf `info.calls` und gibt
+//      dem äußeren Render danach seine zurück), `info.calls` zählt jeden betretenen Render und fällt nie (`info.reset` lässt
+//      ihn stehen). Ein verschachtelter Render, der die geteilten Kamera-Knoten über die VENDOR-Bahn auf seine Kamera stellt
+//      (ein Werfer ohne Diät, oder jeder Diät-Werfer der Kaskade an einem Wächter), lässt die Render-Id unverändert zurück:
+//      ein Stempel nur aus ihr überlebte ihn, die nächste erstmals geladene Gruppe trug die Schatten-Kamera (gemessen am
+//      echten Renderer: das Bild 0,11 gleich mit dem vollen Refresh statt 1,0 — gate:kamera-treue VERSCHACHTELT).
+AnazhRealm._diaetGang = function (ro, nbs) {
+    const jeZeichen = (n, typ) => typ === "object" || (typeof n.property === "string" && n.object === null);
+    const vor = [],
+        knoten = [],
+        eigenVor = [],
+        eigenKnoten = [];
+    for (const n of nbs.updateBeforeNodes) (jeZeichen(n, n.getUpdateBeforeType()) ? eigenVor : vor).push(n);
+    for (const n of nbs.updateNodes) {
+        const typ = n.getUpdateType();
+        if (typ !== "object") (jeZeichen(n, typ) ? eigenKnoten : knoten).push(n);
+    }
+    const gruppen = [];
+    for (const g of ro.getBindings()) {
+        const b0 = g.bindings && g.bindings[0];
+        if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
+    }
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen };
+};
+AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     const nbs = ro.getNodeBuilderState();
-    let k = nbs._anazhGeteilt;
-    if (!k) {
-        const knoten = [];
-        for (const n of nbs.updateNodes) if (n.getUpdateType() !== "object") knoten.push(n);
-        const gruppen = [];
-        for (const g of ro.getBindings()) {
-            const b0 = g.bindings && g.bindings[0];
-            if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
-        }
-        k = nbs._anazhGeteilt = { knoten, gruppen };
+    const k = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
+    // Die Reihenfolge des Vendors (updateBefore → updateForRender): erst alle Vorher-Knoten, dann die Knoten. Ein
+    // Vorher-Knoten kann einen Render verschachteln (der Schatten am ersten Licht-Empfänger), und der stellt den EINEN
+    // Node-Frame auf SEINE Kamera und SEIN Objekt — der Frame wird darum wie im Vendor je Vorher-Knoten und nach allen
+    // Vorher-Knoten neu gestellt (ein vorher gemerkter Frame zeichnete das Hauptbild mit der Schatten-Kamera:
+    // gate:kamera-treue ÄNDERUNG 0,10 statt 1). Der Stempel ist der RENDER-ABSCHNITT (rid, `rend.info.calls`, s. (5)):
+    // ein Vorher-Knoten trägt den Abschnitt NACH seinem Ruf (der Render, den er verschachtelt, ist dann vorbei), Knoten
+    // und Gruppen den Abschnitt nach allen Vorher-Knoten.
+    let nf = null;
+    for (const n of k.vor) {
+        if (n._anazhVorRid === rid && n._anazhVorRuf === rend.info.calls) continue;
+        rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
+        n._anazhVorRid = rid;
+        n._anazhVorRuf = rend.info.calls;
     }
-    rend._nodes.updateBefore(ro);
-    if (k.knoten.length) {
-        const nf = rend._nodes.getNodeFrameForRender(ro);
-        for (const n of k.knoten) nf.updateNode(n);
+    for (const n of k.eigenVor) rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
+    const ruf = rend.info.calls;
+    for (const n of k.knoten) {
+        if (n._anazhRid === rid && n._anazhRuf === ruf) continue;
+        n._anazhRid = rid;
+        n._anazhRuf = ruf;
+        (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
     }
-    if (k.gruppen.length) {
-        const alle = ro.getBindings();
-        for (const g of k.gruppen) rend._bindings._update(g, alle);
+    if (k.eigenKnoten.length) {
+        nf = nf || rend._nodes.getNodeFrameForRender(ro);
+        for (const n of k.eigenKnoten) nf.updateNode(n);
+    }
+    let alle = null;
+    for (const g of k.gruppen) {
+        if (g._anazhRid === rid && g._anazhRuf === ruf) continue;
+        g._anazhRid = rid;
+        g._anazhRuf = ruf;
+        rend._bindings._update(g, alle || (alle = ro.getBindings()));
     }
 };
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const obj = ro && ro.object;
+    // Die Wächter vergleichen Zahlen am EINEN Daten-Satz des Render-Objekts — eine Prüfung ohne Änderung legt nichts an
+    // (vorher je Prüfung zwei Versions-Zeichenketten: Instanz und Atlas).
+    let d = null;
     if (obj && obj.isInstancedMesh === true) {
         const im = obj.instanceMatrix,
             ic = obj.instanceColor;
-        const v = (im ? im.version : -1) + "|" + (ic ? ic.version : -1);
-        const d = obs.getRenderObjectData(ro);
-        if (d._anazhInstV !== v) {
-            d._anazhInstV = v;
+        const iId = im ? im.id : -1,
+            iV = im ? im.version : -1,
+            cId = ic ? ic.id : -1,
+            cV = ic ? ic.version : -1;
+        d = obs.getRenderObjectData(ro);
+        if (d._anazhIId !== iId || d._anazhIV !== iV || d._anazhICId !== cId || d._anazhICV !== cV) {
+            d._anazhIId = iId;
+            d._anazhIV = iV;
+            d._anazhICId = cId;
+            d._anazhICV = cV;
             return true;
         }
     }
@@ -95944,7 +96080,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     // („Vertex buffer slot 5 … was not set"). Geometrie-Id, Index und jedes Attribut (Id · Version) je Render-Objekt.
     const geo = ro && ro.geometry;
     if (geo && geo.attributes) {
-        const d = obs.getRenderObjectData(ro);
+        if (d === null) d = obs.getRenderObjectData(ro);
         const g = d._anazhGeoV || (d._anazhGeoV = []);
         const ix = geo.index;
         let anders = g[0] !== geo.id || g[1] !== (ix ? ix.id : -1) || g[2] !== (ix ? ix.version : -1);
@@ -95969,13 +96105,18 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     const texe = mat ? mat._anazhAtlasTexe : null;
     if (texe) {
-        let va = "";
-        for (let i = 0; i < texe.length; i++) va += (texe[i] ? texe[i].version : -1) + "|";
-        const d = obs.getRenderObjectData(ro);
-        if (d._anazhAtlasV !== va) {
-            d._anazhAtlasV = va;
-            return true;
+        if (d === null) d = obs.getRenderObjectData(ro);
+        const va = d._anazhAtlasVs || (d._anazhAtlasVs = []);
+        let anders = va.length !== texe.length;
+        va.length = texe.length;
+        for (let i = 0; i < texe.length; i++) {
+            const v = texe[i] ? texe[i].version : -1;
+            if (va[i] !== v) {
+                va[i] = v;
+                anders = true;
+            }
         }
+        if (anders) return true;
     }
     const rend = frame && frame.renderer;
     if (
@@ -95989,7 +96130,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const rid = frame.renderId;
     if (obs.renderId !== rid) {
         obs.renderId = rid;
-        AnazhRealm._diaetGeteiltSchreiben(rend, ro);
+        AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);
     }
     return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
 };
