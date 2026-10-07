@@ -132,7 +132,7 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
+const { AUSGABE_INSTALL, wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 const { LINSEN_INSTALL } = require("./lib/licht-linsen.cjs");
 const { ZAEHLER_INSTALL, FALTE_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { FLUSS_INSTALL } = require("./lib/fluss-linse.cjs");
@@ -363,10 +363,11 @@ function lauf(k) {
         const st = r.state;
         const rend = st.renderer;
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
-        // DIE WETTER-WACHE: der Zustand vor dem Lauf (Wort und Uhr des Auto-Zugs) — eine Uhr unter 0 ist eingefroren (der
-        // Zug wartet auf 120 s). Hält der Lauf einen eingefrorenen Zustand nicht (Wort anders oder die Uhr läuft wieder),
-        // ist der Lauf ROT: das Wetter danach ist nicht mehr das der Sequenz.
-        const wetterVor = { wetter: st.weather, uhr: st.weatherEffectTime };
+        // DIE WETTER-WACHE: der Zustand vor dem Lauf (Wort und Uhr des Auto-Zugs — eine Uhr unter 0 ist eingefroren, der Halt)
+        // und die Marke im Buch des Wetter-Spions. Dreht im Lauf ein Schreiber das Wetter (nicht die Bühne), schreibt einer am
+        // `_setWeather` vorbei, taut die Uhr oder ist ein eingefrorenes Wort danach ein anderes, ist der Lauf ROT und nennt den
+        // Täter (`wetterUrteil`, scripts/lib/ausgabe-aufnahme.cjs).
+        const wetterVor = { wetter: st.weather, uhr: st.weatherEffectTime, seq: window.__wetterBuch().seq };
         window.__buehne();
         // Die Tiere halten still (Vergleichbarkeit) — außer `--tiere frei`: der Halte-Griff setzt x/z je Takt zurück,
         // die Tier-KI sucht dann jeden Takt neu (Feld-Raycasts), das kostet CPU, die das Spiel so nie zahlt.
@@ -613,20 +614,14 @@ function lauf(k) {
                 chunks: st.voxelChunks ? st.voxelChunks.size : 0,
                 ruhe,
                 wetter: st.weather,
-                wetterHalt: (() => {
-                    const fest = (u) => Number.isFinite(u) && u < 0;
-                    const w = {
-                        vorher: wetterVor.wetter,
-                        nachher: st.weather,
-                        uhrVorher: Number.isFinite(wetterVor.uhr) ? +wetterVor.uhr.toFixed(1) : null,
-                        uhrNachher: Number.isFinite(st.weatherEffectTime) ? +st.weatherEffectTime.toFixed(1) : null,
-                        festVorher: fest(wetterVor.uhr),
-                        festNachher: fest(st.weatherEffectTime),
-                    };
-                    w.urteil =
-                        !w.festVorher || (w.festNachher && w.nachher === w.vorher) ? "GRUEN" : "ROT";
-                    return w;
-                })(),
+                // das Rohe der Wetter-Wache — das Urteil spricht die Werkbank (`wetterUrteil`)
+                wetterHalt: {
+                    vorher: wetterVor.wetter,
+                    nachher: st.weather,
+                    uhrVorher: Number.isFinite(wetterVor.uhr) ? +wetterVor.uhr.toFixed(1) : null,
+                    uhrNachher: Number.isFinite(st.weatherEffectTime) ? +st.weatherEffectTime.toFixed(1) : null,
+                    buch: window.__wetterBuch(wetterVor.seq).buch,
+                },
                 saison: st.season,
             };
         } finally {
@@ -1714,6 +1709,7 @@ async function starte() {
                         tiere: b.tiere || "halten",
                     });
                     if (o.stempel) o.stempel.warnung = stempelWarnung.n;
+                    if (o.wetterHalt) o.wetterHalt = wetterUrteil(o.wetterHalt);
                     return send(Object.assign(o, { fehler: fehler.slice(-5), ms: Date.now() - t0 }));
                 }
                 if (req.url === "/profil") {
@@ -1914,10 +1910,10 @@ async function starte() {
             tiere: opt("--tiere", "halten"),
             ruhe: opt("--ruhe", 0),
         });
-        // Die Wetter-Wache: ein Lauf, der ein eingefrorenes Wetter nicht hält, endet mit Exit 1.
+        // Die Wetter-Wache: ein Lauf, der das Wetter nicht hält, endet mit Exit 1 und nennt den Täter.
         if (o && o.wetterHalt && o.wetterHalt.urteil === "ROT") {
             console.log(JSON.stringify(o, null, 1));
-            console.log(`WETTER-WACHE ROT: ${JSON.stringify(o.wetterHalt)}`);
+            console.log(`WETTER-WACHE ROT: ${o.wetterHalt.taeter.join(" · ")}`);
             process.exit(1);
         }
     } else if (cmd === "profil")

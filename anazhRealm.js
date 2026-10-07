@@ -1903,10 +1903,11 @@ class AnazhRealm {
         if (this._dslEffectsCache) return this._dslEffectsCache;
         const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
         this._dslEffectsCache = {
-            weather: ([name]) => {
+            weather: ([name], ctx) => {
                 // Vokabular = die WEATHER_INTENSITY-Tabelle (sunny · rainy · stormy); der EINE Schreiber
-                // _setWeather trägt Logik-instant + visuellen Cross-Fade (DSL-Op und Auto-Zug teilen ihn).
-                if (name in AnazhRealm.WEATHER_INTENSITY) this._setWeather(name);
+                // _setWeather trägt Logik-instant + visuellen Cross-Fade (DSL-Op und Auto-Zug teilen ihn) und
+                // die Quelle des Programms.
+                if (name in AnazhRealm.WEATHER_INTENSITY) this._setWeather(name, ctx && ctx.source);
             },
             // set_time_of_day(t), t ∈ 0..1 (0 = Mitternacht, 0.5 = Mittag). NON_BROADCASTABLE — jeder
             // Mitspieler darf seine eigene Tageszeit haben.
@@ -85505,9 +85506,18 @@ class AnazhRealm {
 
     // Der EINE Wetter-Schreiber: state.weather wird SOFORT gesetzt (weather_is + DSL reagieren instant),
     // die Transition ist rein visuell (Skybox + Symphonie cross-faden ~45 s). Aufrufer: DSL-Op `weather`
-    // und der Auto-Zug (_loopWeatherAndGrowth) — nie ein roher Flip am Blend-System vorbei.
-    _setWeather(name) {
+    // (Quelle = die DSL-Quelle: emotion:<Achse> · nexus · rule:<Herkunft> · human · remote:<Peer> · llm:grok …)
+    // und der Auto-Zug (_loopWeatherAndGrowth, „auto-zug") — nie ein roher Flip am Blend-System vorbei.
+    // DIE WETTER-WACHE: eine Uhr des Auto-Zugs unter 0 ist der Halt einer Messung (die Bühne der Linsen,
+    // scripts/lib/ausgabe-aufnahme.cjs `__wetterHalten`; im Spiel zählt die Uhr von 0 aufwärts). Halt heißt Halt:
+    // solange sie steht, dreht KEIN Schreiber das Wetter. Bis V18.534 hielt sie nur den Auto-Zug — der OMEN
+    // fand in einem Boot sunny → rainy bei eingefrorener Uhr (ein anderer Schreiber: Nexus, Emotion, Gesetz).
+    _setWeather(name, quelle) {
         if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
+        if (this.state.weatherEffectTime < 0) {
+            this.log(`Wetter gehalten: ${quelle || "?"} wollte ${name}`, "DEBUG");
+            return false;
+        }
         const oldWeather = this.state.weather;
         this.state.weather = name;
         this.state.weatherEffectTime = 0;
@@ -89191,7 +89201,7 @@ class AnazhRealm {
             if (idx < 0) idx = 0;
             if (idx >= words.length) idx = words.length - 1;
             const next = words[idx];
-            this._setWeather(next);
+            this._setWeather(next, "auto-zug");
             this.log(`Das Wetter zieht zu ${next}`, "INFO");
             this.state.weatherEffectTime = 0;
         }
