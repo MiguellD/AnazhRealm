@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.533.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.534.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -80,31 +80,33 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
 LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.533 — DIE GPU-KETTE, AUF DEM OMEN NETTO SCHNELLER:** die Zerleg-Linse (`werkbank zerlegen`: Schalter am echten Weg,
-Frame-Anatomie, Selbsttest) · EINE Schirm-Quelle (`_schirm`, `gate:schirm-monotonie`, der Regler-Startwert ohne Pixel-
-Abzug) · der Stempel-Pool läuft nie voll, die Bühne hält Himmel und Wetter · das RAUSCH-GESETZ des Bodens (EIN Gradienten-
-Rauschen aus dem Rausch-Atlas statt 26 MaterialX-Rauschen, 15 722 → 2 381 Ops je Fragment) · die schlanke Post-Kette
-(Nachbild-Stufen im Zweig, der Direktpfad zeichnet) · der Feld-Pass ohne Tiefe-Schreiben (Stellvertreter-March, die Seiten-
-Ebene fiel) · EINE Shader-Kosten-Linse (`werkbank shader`). OMEN (GTX 1060, ABAB gegen V18.531, 4 Boots je Seite, Dorf aus):
-gpu-bank 24,85 → 14,70 ms (−41 %), Frame p50/p95 frei 25,0/33,4 → 16,8/25,1 ms (fps 36,9 → 46,7), Band 182 → 121 Befehle,
-2,2 → 0,96 M Dreiecke, 157 → 151 MB. Offen: der volle Regler ist CPU-gebunden (render-EWMA 5,6 → 10,5 ms, die Sicht-Kette
-fehlt noch); Dreiecke ~960k > 680k, VRAM ~150 > 118 MB — E bleibt offen.
+**V18.534 — DIE STUDIO-WÄNDE (S1) UND DIE SICHT-KETTE:** sechs von sechs Golden-Sätzen in der CI samt Plattform-Probe
+(jede Transzendente ±1 ULP, v4 mit Byte-Raster), das Ofen-Golden (Tier und Mensch, 483 Klassen), die Albedo-Tafel Labor
+gegen Welt, der Genesis-Ring als zweiter Messort (die Orts-Wache: die Ratsche nimmt nur gestellte Läufe),
+`gate:portal-konformanz` (13 Welten K1–K7), `gate:regler-wirkt` (95 von 113 Reglern wirken, 18 tot in der Ratsche). Die
+Sicht-Kette hält je Pass ihre Wahl (Cache, Dreh-Rand, EIN Halt-Gesetz `_wahlHaelt`, `_kaskadeHaelt`, die gestufte Sonne
+`_sonnenStufe` aus `_schirm`, Slot-Stand je Pass): echte GPU, dieselbe Welt, Regler voll — Ruhe 12 254 → 0 Prüfungen je
+Frame, Ruhe mit Sonne 13 393 → 255, Drehen 1° 15 006 → 11 063 (Ecken 33 102 → 15 774), Gehen 14 256 → 12 912. Preis der
+Halte-Ränder an der Wiese (ohne Tiere, je ein Boot): 90 → 90 / 76 → 81 Befehle, 768k → 816k / 641k → 693k Dreiecke (yaw
+0 / −0,88). Die Zeit misst der OMEN (folgt).
 
-**V18.496–532 — AAA NAH UND DIE KOSTEN-MECHANIK:** nah/mittel das Studio-Mesh mit LOD-Kette, der Tier-Leib EINE geskinnte
-Haut; das FARB-GESETZ; EIN Himmel; die NAH-WIESE; `_foundrySchale`; Bundle-Wahrheit am Chokepoint `_renderScene`; TRAA;
-Band-Linse und Ratsche; EIN Karten-Atlas; Koschmieder-Luft; Welle 5 (Pflanzen nah, Fernwald-Karte, Waldboden, Ausstattung,
-Stoffe, Fell, Klang-Gesetz); V18.532 EIN Gesetz der Pass-Wahl (`_passTrifft`), Satz-Abschnitte je Pass, Höhlen-Sicht,
-Instanz-Wahl, verdichtende Pool-Sätze. Linsen: Werkbank (`albedo` · `licht` · `zaehlen` · `fluss` · `takt` · `lauf` ·
-`band` · `gpu-bank` · `zerlegen` · `shader`).
+**V18.533 — DIE GPU-KETTE:** Zerleg-Linse · EINE Schirm-Quelle · Stempel-Pool · Rausch-Gesetz des Bodens (15 722 → 2 381
+Ops je Fragment) · schlanke Post-Kette · Feld-Pass ohne Tiefe-Schreiben · EINE Shader-Kosten-Linse. OMEN (GTX 1060, ABAB
+gegen V18.531): gpu-bank 24,85 → 14,70 ms (−41 %), Frame p50 frei 25,0 → 16,8 ms; der volle Regler CPU-gebunden.
 
-**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Pass, EINE
-Payload, je Satz ein Stellvertreter (Panorama ohne Fragment-Tiefe) · NAH/MITTEL (< 64 m) = Studio-Mesh + LOD-Kette, jede
-Karte eine Schicht des EINEN Atlas · FERN = Glieder-Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m) · BODEN-
-STOFF = das Rausch-Gesetz (Rausch-Atlas) · WALD-ORT = die Kronen-Karte · GRAS = nah Nah-Wiese, fern Boden-Funktion · STREU
-= nah die Studio-Arten, fern die Boden-Farbe · KLANG = das Klang-Gesetz · LUFT = EINE Koschmieder-Luft · POST = TRAA, die
-Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, EIN Werfer je Gestalt · PASS-WAHL = EIN Gesetz (`_passTrifft`) · SÄTZE =
-EIN Pool je Stoff, je Pass ein Abschnitt · SCHIRM = EINE Quelle (`_schirm`) · INSTANZ-SENKEN dicht (`_instanzZahl`) ·
-LINSEN-START = `software-gpu.cjs`, die GPU-Zeit nennt `werkbank zerlegen`, die Fragment-Kosten `werkbank shader`.
+**V18.496–532 — AAA NAH UND DIE KOSTEN-MECHANIK:** Studio-Mesh mit LOD-Kette, EINE geskinnte Haut, FARB-GESETZ, EIN Himmel,
+NAH-WIESE, `_foundrySchale`, TRAA, Band-Linse und Ratsche, EIN Karten-Atlas, Koschmieder-Luft; Welle 5 (Pflanzen nah,
+Fernwald, Waldboden, Ausstattung, Stoffe, Fell, Klang); EIN Gesetz der Pass-Wahl (`_passTrifft`), Satz-Abschnitte je Pass,
+Höhlen-Sicht, Instanz-Wahl. Werkbank: `albedo` · `licht` · `zaehlen` · `band` · `lauf` · `zerlegen` · `shader` · `sicht`.
+
+**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Pass, je Satz ein
+Stellvertreter · NAH/MITTEL (< 64 m) = Studio-Mesh + LOD-Kette, jede Karte eine Schicht des EINEN Atlas · FERN = Glieder-
+Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m) · BODEN-STOFF = das Rausch-Gesetz · WALD-ORT = die Kronen-Karte
+· GRAS = nah Nah-Wiese, fern Boden-Funktion · KLANG = das Klang-Gesetz · LUFT = EINE Koschmieder-Luft · POST = TRAA, die
+Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, EIN Werfer je Gestalt, die Box hält ihren Takt · PASS-WAHL = EIN Gesetz
+(`_passTrifft`), jede Wahl hält nach `_wahlHaelt` · SÄTZE = EIN Pool je Stoff, je Pass ein Abschnitt · SONNE = gestuft
+(höchstens ein Bildpunkt in der Bildecke) · SCHIRM = EINE Quelle (`_schirm`) · STUDIOS = 6 Golden-Sätze + Ofen in der CI ·
+MESSORTE = Wiese und Genesis-Ring · LINSEN-START = `software-gpu.cjs`.
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
