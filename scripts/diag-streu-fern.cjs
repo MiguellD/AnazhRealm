@@ -27,10 +27,19 @@
 //   G BAHNWECHSEL  der Spieler tritt an einen fernen Gesetz-Fels: der EINE Bahnwechsel des LOD-Ticks tauscht jede
 //              Fernform-Zelle diesseits der Grenze auf ihr Studio-Mesh (mit Instanzen); zurück an der Mess-Wiese zieht
 //              sie jenseits des Totbands wieder ins Gesetz.
+//   H VOR DEM BUCH  (0710-2) kommt das Buch nach dem Ring (im Browser steht der Ring nach ~1 s, das Buch nach 5–8 s), liest
+//              kein Deko-Takt das Budget, bevor es dockt: eine zweite Seite hält die Buch-Nachricht zurück, der echte
+//              Spiel-Takt (`_gameLoopTick` → Deko-Job) läuft, bis die Nah-Wiese 8× kalt getaktet hat — die Loop-Grenze
+//              fängt 0 Fehler; nach dem Buch legt die Nah-Wiese ihre 4 Studio-Vorlagen, wieder ohne Fehler. Jeder
+//              gefangene Fehler trägt seine Täter (die ersten Stamm-Methoden des Stacks). Befund: die Zusicherung
+//              `_tickNahWiese` → `_foundryBudgetZeile("gras")` las vor der Vorlage — 200 Brüche bis zum Buch, je Takt
+//              riss der Wurf Nah-Streu und Hydro-Kacheln mit.
 //   SELBSTTEST (sonst wäre das Grün vakuös): (1) eine injizierte `fscatter:geroell:3:0`-Instanz bei 200 m macht B rot
 //   mit Namen; (2) die ECHTE Erschöpfung (Bump-Cursor an der Kapazität, keine freien Segmente — der echte Spawn läuft)
 //   lässt die Zellen `wartet` stehen — 0 L0-Instanzen, die Warn-Flagge fällt im Allokator, kein Fit läuft im Tick —
-//   und D wird rot; (3) ohne `budget.flower.fernform` bricht der Host-Leser fail-closed (KERN-PFLICHT).
+//   und D wird rot; (3) ohne `budget.flower.fernform` bricht der Host-Leser fail-closed (KERN-PFLICHT); (4) die alte
+//   Lese-Reihenfolge (ein Deko-Leser fragt das Budget vor dem Buch) macht H rot und nennt `_foundryBudgetZeile <
+//   _tickNahStreu`.
 //
 //   node scripts/diag-streu-fern.cjs        (Port: STREU_FERN_PORT)
 "use strict";
@@ -637,6 +646,135 @@ function check(name, ok, detail) {
         out.bNachher ? `${out.bNachher.n}` : "—"
     );
     check("keine Page-Errors während der Probe", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
+
+    // ── H — VOR DEM BUCH: eine eigene Seite, deren Buch-Nachricht zurückgehalten wird (die Welt oben bleibt unberührt) ──
+    const hPage = await browser.newPage();
+    await hPage.evaluateOnNewDocument(() => {
+        window.__anazhHeadlessNullRenderer = true;
+        window.__anazhForceFoundry = true;
+        // Der Halt sitzt, sobald die Instanz steht — lange vor dem Buch (der Worker rechnet es Sekunden). Kam es doch
+        // davor, meldet die Linse `zuSpaet` statt still grün.
+        const H = (window.__buchHalt = { nachrichten: [], frei: false, zuSpaet: false, los: null });
+        const iv = setInterval(() => {
+            const r = window.anazhRealm;
+            if (!r || typeof r._foundryIngestBook !== "function") return;
+            clearInterval(iv);
+            if (r._foundry && r._foundry.recipes) {
+                H.zuSpaet = true;
+                return;
+            }
+            const roh = r._foundryIngestBook;
+            r._foundryIngestBook = function (m) {
+                if (H.frei) return roh.call(this, m);
+                H.nachrichten.push(m);
+            };
+            H.los = () => {
+                H.frei = true;
+                delete r._foundryIngestBook;
+                for (const m of H.nachrichten.splice(0)) roh.call(r, m);
+            };
+        }, 5);
+    });
+    const hErrors = [];
+    hPage.on("pageerror", (e) => hErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+    await hPage.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+    const h = await hPage.evaluate(async (KALT) => {
+        const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+        const H = window.__buchHalt;
+        const dl0 = performance.now() + 120000;
+        while (
+            !H.zuSpaet &&
+            !(H.los && window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function") &&
+            performance.now() < dl0
+        )
+            await sleep(50);
+        const r = window.anazhRealm;
+        const res = { zuSpaet: H.zuSpaet, halt: !!H.los };
+        if (!H.los) return res;
+        const st = r.state;
+        r._ensureAssetFoundry();
+        // Die Linse: jeder Fehler, den die Loop-Grenze fängt, mit seinen Tätern (die ersten Stamm-Methoden des Stacks).
+        const fehler = [];
+        r._loopErrorBoundary = function (e) {
+            const zeilen = String((e && e.stack) || e).split("\n");
+            const taeter = zeilen
+                .map((z) => (z.match(/^\s*at (?:[\w$]+\.)?(_\w+) /) || [])[1])
+                .filter((n) => n && n !== "_kernPflichtBruch")
+                .slice(0, 2);
+            fehler.push({ msg: zeilen[0].slice(0, 110), taeter: taeter.join(" < ") });
+            return Object.getPrototypeOf(r)._loopErrorBoundary.call(this, e);
+        };
+        // Die Deko-Takte zählen: die Nah-Wiese ist der erste Buch-Leser des Deko-Jobs.
+        let kalt = 0,
+            warm = 0;
+        r._tickNahWiese = function (dl) {
+            if (r._foundry && r._foundry.recipes) warm++;
+            else kalt++;
+            return Object.getPrototypeOf(r)._tickNahWiese.call(this, dl);
+        };
+        let tMs = performance.now();
+        const takt = async () => {
+            for (let i = 0; i < 4; i++) r._gameLoopTick((tMs += 1000 / 60));
+            await sleep(10);
+        };
+        const dl1 = performance.now() + 120000;
+        while (kalt < KALT && performance.now() < dl1) await takt();
+        res.kalt = kalt;
+        res.buchKalt = !(r._foundry && r._foundry.recipes);
+        res.fehlerKalt = fehler.splice(0);
+        // SELBSTTEST 4: die alte Lese-Reihenfolge — ein Deko-Leser fragt das Budget vor dem Buch; H muss ihn nennen.
+        r._tickNahStreu = function (dl) {
+            this._foundryBudgetZeile("gras", 1);
+            return Object.getPrototypeOf(r)._tickNahStreu.call(this, dl);
+        };
+        const k0 = kalt;
+        const dlS = performance.now() + 60000;
+        while (kalt < k0 + 3 && performance.now() < dlS) await takt();
+        delete r._tickNahStreu;
+        res.selbst = fehler.splice(0);
+        // Das Buch dockt: die Nah-Wiese liest jetzt ihr Budget und legt die vier Studio-Vorlagen (2 Gestalten × L1/L2).
+        H.los();
+        const dl2 = performance.now() + 120000;
+        while (performance.now() < dl2) {
+            await takt();
+            if (warm > 0 && st.nahWiese && st.nahWiese.vorlagen.size >= 4) break;
+        }
+        res.warm = warm;
+        res.vorlagen = st.nahWiese ? st.nahWiese.vorlagen.size : -1;
+        res.fehlerWarm = fehler.splice(0);
+        delete r._tickNahWiese;
+        delete r._loopErrorBoundary;
+        return res;
+    }, 8);
+    await hPage.close();
+    const hTaeter = (liste) => {
+        const namen = (liste || []).map((x) => `${x.taeter} (${x.msg.replace(/^Error: /, "").slice(0, 60)})`);
+        return [...new Set(namen)].join(" · ");
+    };
+    check(
+        "H VOR DEM BUCH: der Deko-Takt liest kein Budget, bevor das Buch dockt (Buch zurückgehalten, echter Spiel-Takt)",
+        h.halt && !h.zuSpaet && h.buchKalt && h.kalt >= 8 && h.fehlerKalt.length === 0,
+        h.halt
+            ? `${h.kalt} kalte Deko-Takte · Loop-Fehler ${h.fehlerKalt.length}${h.fehlerKalt.length ? " — Täter: " + hTaeter(h.fehlerKalt) : ""}`
+            : h.zuSpaet
+              ? "das Buch kam vor dem Halt"
+              : "kein Halt (die Instanz stand nicht)"
+    );
+    check(
+        "H NACH DEM BUCH: die Nah-Wiese legt ihre 4 Studio-Vorlagen (das Budget gelesen, gras wirft nicht), ohne Loop-Fehler",
+        h.warm > 0 && h.vorlagen >= 4 && (h.fehlerWarm || []).length === 0,
+        `${h.warm} warme Takte · Vorlagen ${h.vorlagen} · Loop-Fehler ${(h.fehlerWarm || []).length}${(h.fehlerWarm || []).length ? " — Täter: " + hTaeter(h.fehlerWarm) : ""}`
+    );
+    const hs = h.selbst || [];
+    check(
+        "SELBSTTEST 4: die alte Lese-Reihenfolge (ein Deko-Leser fragt das Budget vor dem Buch) macht H rot und nennt den Täter",
+        hs.length > 0 &&
+            hs.every(
+                (x) => x.taeter === "_foundryBudgetZeile < _tickNahStreu" && /phyto:lod\.budget \(gras\)/.test(x.msg)
+            ),
+        `${hs.length} Loop-Fehler — ${hTaeter(hs)}`
+    );
+    check("H: keine Page-Errors", hErrors.length === 0, hErrors.slice(0, 2).join(" | "));
 
     await browser.close();
     server.close();

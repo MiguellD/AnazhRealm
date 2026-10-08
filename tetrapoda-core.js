@@ -1462,7 +1462,14 @@
     // trägt seinen Widerrist bei ~1,0 H = 0,8 m, der Fuchs (1,5) bei ~0,47 m, der Bär (3,2) bei ~1,1 m, der Hirsch
     // (2,8) bei ~1,07 m. Der Wirt skaliert die Gestalt mit DIESER Zahl (vorher: die Seelen-Teile-Höhe, deren Skala
     // die Allometrie-Schleife überschrieb — die Welt zeigte Lab-Einheiten als Meter, den Wolf 2,7 m hoch).
-    var MASSSTAB = Object.freeze({ meterJeEinheit: 1 / 3 });
+    // ── 0710-4 (rein additiv): die DICHTE DES GEWEBES (kg/m³) — die Masse eines Tiers ist das Volumen seiner Gestalt
+    //    (die geschlossene Haut, die dieser Kern formt) mal dieser Zahl: Fuchs 15 · Wolf 64 · Hirsch 94 · Bär 335 kg bei
+    //    Größe 1. Der Wirt las bis 0710-4 eine Kapsel aus der Hüft-Höhe mal 1000 (der Hirsch wog 436 kg, der Bär 255). ──
+    var MASSSTAB = Object.freeze({ meterJeEinheit: 1 / 3, dichteKgM3: 1000 });
+    // ── 0710-4 (rein additiv) — DER BISS ALS STOSS: der Jäger trifft mit seiner Vorhand (Kopf, Hals, Brust) — dieser
+    //    Anteil seiner Masse — im Tempo des Ansprungs (VERHALTEN.aktionen.pounce.tempo × tempoEinheit(L)). Sein Impuls
+    //    geht durch das EINE Impuls-Gesetz des Wirts wie Klinge, Pfeil und Wagen (vorher: Schaden ohne Rückstoß). ──
+    var BISS = Object.freeze({ masseAnteil: 0.3 });
 
     // ════════════════════════════════════════════════════════════════════
     // DIE ART-GESTALT (Welle 5, Tour 09: „der Rumpf ist ein Sack auf dünnen Beinen"): die Anatomie je Art als
@@ -2741,6 +2748,7 @@
         cpgStep: cpgStep,
         bauTier: bauTier,
         MASSSTAB: MASSSTAB,
+        BISS: BISS,
         ART_GESTALT: ART_GESTALT,
         artGestalt: artGestalt,
         tierAuge: tierAuge,

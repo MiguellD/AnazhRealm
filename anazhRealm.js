@@ -16934,6 +16934,7 @@ class AnazhRealm {
         rig.lidTR = P2("lidTR");
         rig.lidBL = P2("lidBL");
         rig.lidBR = P2("lidBR");
+        wrap.userData._leibNah = klon; // die Nah-Gestalt (die Masse misst ihre Haut, nie die Fern-Gestalt)
         return { mesh: wrap, rig, kh, bones: [] };
     }
 
@@ -18279,6 +18280,8 @@ class AnazhRealm {
                 bein: AnazhRealm._tierBeinMass(t0, f2),
                 wrap: wrap2,
                 fern: wrap3,
+                // das Volumen der Gestalt bei Größe 1 (m³, die Nah-Gestalt im Rahmen des Tiers) — die Masse liest es
+                leibV: AnazhRealm._leibVolumen(wrap2, group2),
             };
             return group2;
         }
@@ -19046,8 +19049,8 @@ class AnazhRealm {
     }
 
     // Schaden (symmetrisch zum Spieler, DIESELBE computeCreatureStats-Pipeline für hpMax + defense): die Rüstung dämpft
-    // (_ruestungDaempft); hp ≤ 0 → Kampf-Tod (Loot + removeCreature). Knockback nur, wenn der Angreifer Ort + Wucht
-    // liefert (opts.fromPos/knockback).
+    // (_ruestungDaempft); hp ≤ 0 → Kampf-Tod (Loot + removeCreature). Der Rückstoß nur, wenn der Angreifer Ort und Stoß
+    // liefert (opts.fromPos + opts.stoss {p, m} — das EINE Impuls-Gesetz, AnazhRealm.STOSS; ein Feld knockback liest niemand).
     damageCreature(creature, amount, opts = {}) {
         if (!creature || !creature.userData || creature.userData.kind !== "creature") {
             return { ok: false, reason: "not_creature" };
@@ -19093,24 +19096,25 @@ class AnazhRealm {
                 this._faunaRng()() < strikeChance // der Wurf aus dem Fauna-Strom (Γ5), nie Math.random
             ) {
                 const counter = Math.max(2, (stats.damage || 4) * tProf.counterMul);
-                this.damagePlayer(counter, "gegenwehr");
+                if (this.damagePlayer(counter, "gegenwehr")) this._bissStoss(creature, null);
                 this.log(`${creature.userData.name || "Ein Wesen"} wehrt sich!`, "INFO");
             }
         }
-        // Knockback nur, wenn der Angreifer Ort + Wucht liefert (LMB-Angriff; der DSL-Op gibt keinen),
-        // ∝ dessen knockback-Stat — NACH der Gegenwehr (Welle L, Befund K-D16): der Stoß kam vorher und schob jedes
-        // Ziel aus der Biss-Reichweite (Ziel in 1,6 m → 3,76 m), 0 Konter bei 96 Treffern.
-        if (opts.fromPos && (opts.knockback || 0) > 0) {
-            // Feld-nativer Knockback: direkter Positions-Stoß weg vom Angreifer; `_creatureGroundY` erdet im
-            // nächsten updateCreatures-Frame. Klemme + Skalen aus dem schmiede-Gesetzbuch
-            // (ARENA.gefuehl: push = min(stossCap, kb·stossProKb)·stossSkala).
+        // DER RÜCKSTOSS (das EINE Impuls-Gesetz, AnazhRealm.STOSS — 0710-2, K-D9), nur wenn der Angreifer Ort und Stoß
+        // liefert (LMB-Angriff, Pfeil; der DSL-Op gibt keinen) und NACH der Gegenwehr (Welle L, K-D16): der Schlag ist ein
+        // Körper — die wirksame Masse m und sein Impuls p aus dem Treffer-Urteil des Schmiede-Kerns, verstärkt um die Wucht
+        // der Arena (`gefuehl.wucht`) —, das Ziel ruht mit der Masse seines Leibs; was der Leib bekommt, trägt ihn im
+        // festen Sim-Schritt (`_kreaturStossSchritt`), bis die Reibung es aufzehrt. Vorher ein Positions-Satz min(stossCap, kb·stossProKb)·stossSkala:
+        // 2,16 m für jede Waffe und jedes Ziel, in EINEM Frame.
+        if (opts.fromPos && opts.stoss && opts.stoss.p > 0 && opts.stoss.m > 0) {
             const G = AnazhRealm._arenaGesetz().gefuehl;
             const dx = creature.position.x - opts.fromPos.x;
             const dz = creature.position.z - opts.fromPos.z;
             const len = Math.hypot(dx, dz) || 1;
-            const push = Math.min(G.stossCap, opts.knockback * G.stossProKb);
-            creature.position.x += (dx / len) * push * G.stossSkala;
-            creature.position.z += (dz / len) * push * G.stossSkala;
+            const mT = this._leibMasse(creature);
+            const mS = opts.stoss.m;
+            const J = AnazhRealm._stossImpuls(mS, mT, (G.wucht * opts.stoss.p) / mS, AnazhRealm.STOSS.stossZahl.leib);
+            this._kreaturStoss(creature, dx / len, dz / len, J / mT);
         }
         this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
         return { ok: true, dealt, killed: false };
@@ -20357,6 +20361,343 @@ class AnazhRealm {
         return o;
     }
 
+    // DIE MASSE EINES LEIBS (kg, das EINE Impuls-Gesetz AnazhRealm.STOSS): das Volumen seiner Gestalt (die geschlossene
+    // Haut, `_leibVolumen`, bei Größe 1 gemessen) × Skala³ × die Dichte seines Kerns — ein Tier (`_tierBaum.leibV`,
+    // tetrapoda) oder ein Mensch (`userData._leibV` am Avatar oder an einem Kind, koerper). Fail-closed: ein Leib ohne
+    // gemessene Gestalt bricht laut. Vorher: eine Kapsel aus der Hüft-Höhe × 1000 im Wirt (Bär 255 kg, Hirsch 436 kg).
+    _leibMasse(koerper) {
+        const LG = AnazhRealm._leibGesetz();
+        const tb = koerper && koerper.userData ? koerper.userData._tierBaum : null;
+        // die Skala als Kette der LOKALEN Skalen bis zur Szene — nie über die Welt-Matrix (getWorldScale): die trägt die
+        // Hang-Neigung, die der Frame-Takt glättet, und die Masse wich je Bildrate im 1e-9-Bereich ab (0710-5, L8: der
+        // Stoß eines Bären unterschied sich ab Schritt 90, nach 200 Schritten stand der Wagen 0,07 m anders)
+        const kette = (o) => {
+            let v = 1;
+            for (let n = o; n && !n.isScene; n = n.parent) v *= n.scale.x * n.scale.y * n.scale.z;
+            return v;
+        };
+        if (tb && tb.leibV > 0) return tb.leibV * kette(koerper) * LG.tier;
+        let avatar = null;
+        if (koerper && typeof koerper.traverse === "function")
+            koerper.traverse((o) => {
+                if (!avatar && o.userData && o.userData._leibV > 0) avatar = o;
+            });
+        if (avatar) return avatar.userData._leibV * kette(avatar) * LG.mensch;
+        return AnazhRealm._kernPflichtBruch("leib:Gestalt ohne Volumen (" + ((koerper && koerper.name) || "?") + ")");
+    }
+
+    // DIE MASSE EINES WAGENS (kg): das Volumen seines Fahr-Satzes (carPhys des Kerns, G.m in m³) × FAHR.masseDichte.
+    _fahrMasse(G) {
+        return G && G.m > 0 ? G.m * AnazhRealm._fahrGesetz().masseDichte : 0;
+    }
+
+    // DIE GESCHWINDIGKEIT EINES LEIBS (m/s, Welt-XZ): sein Steuer-Schritt (Gier × Tempo) und der Stoß, den er trägt — der
+    // Partner der Relativ-Geschwindigkeit im Impuls-Gesetz (ein fortgleitender Leib wird nicht noch einmal gestoßen).
+    _kreaturGeschw(creature) {
+        const ud = creature && creature.userData;
+        const st = ud && ud._steuer;
+        const sv = ud && ud._stossV;
+        const v = st && Number.isFinite(st.v) && Number.isFinite(st.gier) ? st.v : 0;
+        return {
+            x: (v ? Math.sin(st.gier) * v : 0) + (sv ? sv.x : 0),
+            z: (v ? Math.cos(st.gier) * v : 0) + (sv ? sv.z : 0),
+        };
+    }
+
+    // DER BISS (das EINE Impuls-Gesetz, 0710-4): die Vorhand des Jägers (BISS.masseAnteil seiner Leib-Masse) trifft im
+    // Tempo des Ansprungs (pounce.tempo × tempoEinheit seiner Hüft-Höhe) das Ziel längs der Linie Jäger → Ziel — ein Tier
+    // (`_kreaturStoss`) oder den Spieler (`ziel` = null: `_spielerStoss`). Der Bär beißt schwerer als der Fuchs, der
+    // Fuchs fliegt weiter als der Bär. Vorher: Schaden ohne Rückstoß (alle drei Biss-Wege: Jagd auf Beute, Jagd auf den
+    // Spieler, Gegenwehr). Rückgabe {J, dv} oder null.
+    _bissStoss(beisser, ziel) {
+        if (!beisser || !beisser.position) return null;
+        const BG = AnazhRealm._bissGesetz();
+        const spieler = !ziel;
+        const zk = spieler ? this.state.playerMesh : ziel;
+        if (!zk || !zk.position) return null;
+        const dx = zk.position.x - beisser.position.x;
+        const dz = zk.position.z - beisser.position.z;
+        const d = Math.hypot(dx, dz);
+        if (!(d > 1e-6)) return null;
+        const mB = this._leibMasse(beisser) * BG.masseAnteil;
+        const mZ = this._leibMasse(zk);
+        const v = BG.tempo * AnazhRealm._steuerGesetz().tempoEinheit(this._kreaturHueftL(beisser));
+        const J = AnazhRealm._stossImpuls(mB, mZ, v, AnazhRealm.STOSS.stossZahl.leib);
+        if (!(J > 0)) return null;
+        if (spieler) this._spielerStoss(dx / d, dz / d, J / mZ);
+        else this._kreaturStoss(ziel, dx / d, dz / d, J / mZ);
+        return { J, dv: J / mZ };
+    }
+
+    // DIE TEILNEHMER DES IMPULS-GESETZES (0710-4): ein Tier (sein Leib), der Spieler (`state.playerMesh`) oder ein Wagen
+    // (ein Eintrag mit Fahr-Satz) — je Masse (`_leibMasse` / `_fahrMasse`), Geschwindigkeit (Steuer + getragener Stoß /
+    // `playerVel` / Fahr-Zustand) und der Kanal, der einen Stoß trägt (`_kreaturStoss` / `_spielerStoss` /
+    // `_fahrWagenStoss`). `out` wird überschrieben; null = kein Teilnehmer.
+    _stossKoerper(q, out) {
+        const o = out || {};
+        const st = this.state;
+        if (q && q === st.playerMesh) {
+            o.art = "spieler";
+            o.m = this._leibMasse(q);
+            o.vx = st.playerVel ? st.playerVel.x() : 0;
+            o.vz = st.playerVel ? st.playerVel.z() : 0;
+        } else if (q && q.userData && q.userData.kind === "creature") {
+            const v = this._kreaturGeschw(q);
+            o.art = "tier";
+            o.m = this._leibMasse(q);
+            o.vx = v.x;
+            o.vz = v.z;
+        } else {
+            const G = q ? this._fahrStossSatz(q) : null;
+            if (!G) return null;
+            const v = this._fahrWagenGeschw(q);
+            o.art = "wagen";
+            o.G = G;
+            o.m = this._fahrMasse(G);
+            o.vx = v ? v.x : 0;
+            o.vz = v ? v.z : 0;
+        }
+        o.q = q;
+        return o.m > 0 ? o : null;
+    }
+    _stossAuf(K, nx, nz, dv) {
+        if (!(dv > 0)) return;
+        if (K.art === "spieler") this._spielerStoss(nx, nz, dv);
+        else if (K.art === "tier") this._kreaturStoss(K.q, nx, nz, dv);
+        else this._fahrWagenStoss(K.q, K.G, nx * dv, nz * dv);
+    }
+    // DAS PAAR: n (Einheit) zeigt von A nach B. Nähern sie sich längs n (v_rel = (vA − vB) · n > 0), tauschen sie Impuls
+    // nach dem EINEN Gesetz: A bekommt −n · J/mA, B +n · J/mB (Leib an Leib e 0,1, Wagen an Wagen e 0,3). Rückgabe J.
+    _stossPaar(qa, qb, nx, nz) {
+        const A = this._stossKoerper(qa, this._stossPaarA || (this._stossPaarA = {}));
+        const B = A ? this._stossKoerper(qb, this._stossPaarB || (this._stossPaarB = {})) : null;
+        if (!A || !B) return 0;
+        const vRel = (A.vx - B.vx) * nx + (A.vz - B.vz) * nz;
+        if (!(vRel > 0)) return 0;
+        const ST = AnazhRealm.STOSS.stossZahl;
+        const e = A.art === "wagen" && B.art === "wagen" ? ST.wagen : ST.leib;
+        const J = AnazhRealm._stossImpuls(A.m, B.m, vRel, e);
+        this._stossAuf(A, -nx, -nz, J / A.m);
+        this._stossAuf(B, nx, nz, J / B.m);
+        return J;
+    }
+
+    // LEIB AN LEIB (das EINE Impuls-Gesetz, 0710-4): je Paar naher Leiber — Tier an Tier, Tier am Spieler zu Fuß — ihre
+    // Achsen (das Tier: die Strecke −halb … +halb längs seiner Gier mit seinem Radius, `_kreaturLeib`; der Spieler: seine
+    // Kapsel r PLAYER_WALL_RADIUS) als Strecke gegen Strecke. Durchdringen sie sich, trennt der Kontakt sie nach ihren Massen
+    // (der leichte weicht; die Lage des Spielers setzt allein sein Sim-Schritt — gegen ihn weicht das Tier ganz), und nähern
+    // sie sich längs der Normalen, tauschen sie Impuls (`_stossPaar`): der Fuchs prallt am Bären ab, der Bär wankt kaum.
+    // Vorher trennte nur der Herden-Abstand als Steuer-Wunsch (`_applyCreatureSeparation`) — Leiber gingen durcheinander,
+    // ohne Impuls. Paare in Index-Folge, ohne Frame-Delta, ohne Zufall, im festen Sim-Schritt (`_stepFixedSim`, 0710-5).
+    _leibKontakte() {
+        const st = this.state;
+        const cr = st.creatures || [];
+        const T = this._leibKontaktTeile || (this._leibKontaktTeile = []);
+        let n = 0;
+        const teil = (k) => T[k] || (T[k] = { leib: {} });
+        for (let i = 0; i < cr.length; i++) {
+            const c = cr[i];
+            if (!c || !c.position || !c.userData || c.userData.dying) continue;
+            const t = teil(n++);
+            const lb = this._kreaturLeib(c, 0, t.leib);
+            t.q = c;
+            t.x = c.position.x;
+            t.z = c.position.z;
+            t.hx = lb.fx * lb.halb;
+            t.hz = lb.fz * lb.halb;
+            t.r = lb.radius;
+            t.y0 = c.position.y;
+            t.y1 = c.position.y + lb.hoehe;
+            t.reich = lb.halb + lb.radius;
+        }
+        const pm = st.playerMesh;
+        const zuFuss = pm && pm.position && !(st.player && st.player.mountedArch != null);
+        if (zuFuss) {
+            const t = teil(n++);
+            const fd = AnazhRealm.PLAYER_FOOT_OFFSET;
+            t.q = pm;
+            t.x = pm.position.x;
+            t.z = pm.position.z;
+            t.hx = 0;
+            t.hz = 0;
+            t.r = AnazhRealm.PLAYER_WALL_RADIUS;
+            t.y0 = pm.position.y - fd;
+            t.y1 = pm.position.y + fd + AnazhRealm.PLAYER_STEP_UP;
+            t.reich = t.r;
+        }
+        if (n < 2) return;
+        const nah = this._leibKontaktNah || (this._leibKontaktNah = {});
+        for (let i = 0; i < n; i++) {
+            const a = T[i];
+            for (let j = i + 1; j < n; j++) {
+                const b = T[j];
+                const grob = a.reich + b.reich;
+                if (Math.abs(a.x - b.x) > grob || Math.abs(a.z - b.z) > grob) continue;
+                if (a.y1 <= b.y0 || b.y1 <= a.y0) continue;
+                AnazhRealm._streckenNah2D(
+                    a.x - a.hx,
+                    a.z - a.hz,
+                    a.x + a.hx,
+                    a.z + a.hz,
+                    b.x - b.hx,
+                    b.z - b.hz,
+                    b.x + b.hx,
+                    b.z + b.hz,
+                    nah
+                );
+                const tief = a.r + b.r - nah.d;
+                if (!(tief > 0)) continue;
+                let nx;
+                let nz;
+                if (nah.d > 1e-6) {
+                    nx = (nah.qx - nah.px) / nah.d;
+                    nz = (nah.qz - nah.pz) / nah.d;
+                } else {
+                    // genaue Deckung: der Goldwinkel des Paares (deterministisch)
+                    nx = Math.cos((i + j) * 2.39996);
+                    nz = Math.sin((i + j) * 2.39996);
+                }
+                // die Lage: der leichte weicht nach dem Verhältnis der Massen (der Spieler weicht nie — sein Sim-Schritt)
+                const KA = this._stossKoerper(a.q, this._leibKontaktKA || (this._leibKontaktKA = {}));
+                const KB = this._stossKoerper(b.q, this._leibKontaktKB || (this._leibKontaktKB = {}));
+                if (!KA || !KB) continue;
+                const fest = (K) => K.art === "spieler";
+                const wa = fest(KA) ? 0 : fest(KB) ? 1 : KB.m / (KA.m + KB.m);
+                const wb = fest(KB) ? 0 : fest(KA) ? 1 : KA.m / (KA.m + KB.m);
+                if (wa > 0) {
+                    const x0 = a.q.position.x;
+                    const z0 = a.q.position.z;
+                    a.q.position.x -= nx * tief * wa;
+                    a.q.position.z -= nz * tief * wa;
+                    this._kreaturHuellenKontakt(a.q, 0, x0, z0); // die Trennung schiebt nie in eine Wand
+                    a.x = a.q.position.x;
+                    a.z = a.q.position.z;
+                }
+                if (wb > 0) {
+                    const x0 = b.q.position.x;
+                    const z0 = b.q.position.z;
+                    b.q.position.x += nx * tief * wb;
+                    b.q.position.z += nz * tief * wb;
+                    this._kreaturHuellenKontakt(b.q, 0, x0, z0);
+                    b.x = b.q.position.x;
+                    b.z = b.q.position.z;
+                }
+                this._stossPaar(a.q, b.q, nx, nz);
+            }
+        }
+    }
+
+    // DER STOSS AUF DEN SPIELER: dv (m/s) längs (nx, nz) in seine Geschwindigkeit — die Beschleunigungs- und Brems-Kurven
+    // des Gehens (`_loopPlayerMovement`) zehren ihn auf wie jede Fahrt. Im Sattel trägt ihn das Gefährt (kein Stoß).
+    _spielerStoss(nx, nz, dv) {
+        const st = this.state;
+        if (!(dv > 0) || !st.playerVel || (st.player && st.player.mountedArch != null)) return;
+        const v = st.playerVel;
+        v.setValue(v.x() + nx * dv, v.y(), v.z() + nz * dv);
+    }
+
+    // DER GESTOSSENE LEIB IM SIM-SCHRITT (0710-5, Lehre 13: was einen Körper bewegt, läuft im festen Schritt): je Tier mit
+    // getragenem Stoß der Weg dieses Schritts — in Teil-Schritten von höchstens dem halben Leib-Radius, je Teil-Schritt die
+    // EINE Hülle (`_kreaturHuellenKontakt`): die Achse erreicht in einem Teil-Schritt nie die Mitte einer Wand, gleich wie
+    // dünn sie ist (dieselbe Regel wie der Deckel des Wagens: nie mehr als eine Stufe in eine Box je Schritt). Hält ein
+    // Hindernis den Leib, stirbt sein Stoß in das Hindernis (unelastisch); danach zehrt die Reibung μ·g·dt. Vorher bewegte
+    // updateCreatures ihn je Frame um _stossV·delta ohne Weg-Prüfung (30 fps und gemischte Frames: 9 von 10 Bären durch eine
+    // 0,35-m-Mauer; nach 200 Sim-Schritten stand der Bär 1,39 m, der Wagen 0,06 m anders, je nach Bildrate).
+    _kreaturStossSchritt(dt) {
+        const wesen = this.state.creatures;
+        if (!wesen || !wesen.length || !(dt > 0)) return;
+        const ST = AnazhRealm.STOSS;
+        const ab = ST.reibungLeib * Math.abs(this.state.gravity) * dt;
+        const leib = this._kreaturStossLeib || (this._kreaturStossLeib = {});
+        for (const c of wesen) {
+            const ud = c && c.userData;
+            const sv = ud && ud._stossV;
+            if (!sv) continue;
+            const sp = Math.hypot(sv.x, sv.z);
+            if (!(sp > Math.max(ab, ST.ruheMs))) {
+                ud._stossV = null;
+                continue;
+            }
+            const L = this._kreaturHueftL(c);
+            this._kreaturLeib(c, L, leib);
+            const teile = Math.max(1, Math.ceil((sp * dt) / Math.max(0.02, 0.5 * leib.radius)));
+            const h = dt / teile;
+            for (let k = 0; k < teile; k++) {
+                const x0 = c.position.x;
+                const z0 = c.position.z;
+                c.position.x += sv.x * h;
+                c.position.z += sv.z * h;
+                const kx = c.position.x;
+                const kz = c.position.z;
+                this._kreaturHuellenKontakt(c, L, x0, z0);
+                const hx = c.position.x - kx;
+                const hz = c.position.z - kz;
+                const hd = Math.hypot(hx, hz);
+                const vn = hd > 1e-6 ? (sv.x * hx + sv.z * hz) / hd : 0;
+                if (vn < 0) {
+                    sv.x -= (vn * hx) / hd;
+                    sv.z -= (vn * hz) / hd;
+                }
+            }
+            // die HÖHE des gleitenden Leibs gehört demselben Schritt (Q4: die Sim steht auf dem Gesetz, die Sicht liest es um
+            // den Stand-Leser): erdete erst der Frame-Takt (Budget, 0,5-m-Cache), lag die Höhe je Bildrate verschieden, und
+            // das Höhen-Band der Wagen-Hülle las sie (L8: Schritt 91, Bär y −0,016 m, nach 200 Schritten 0,07 m). Der
+            // Boden-Cache des Frames bekommt denselben Wert; der Frame-Takt lässt die Höhe stehen, solange der Stoß trägt.
+            // Schwimmt er (die EINE Wasser-Regel, `_kreaturSchwimmt`: die Wahrheit am Körper über dem Grund des Gesetzes, die
+            // Wasserlinie seiner Gestalt), steht er an seiner Schwimm-Linie (`_kreaturSchwimmLinie`, dieselbe wie im
+            // Frame-Takt) — vorher setzte dieser Schritt auch im Wasser den Boden (gate:fahr-leben L10: ein Fuchs in 3,2 m Wasser
+            // sank beim Gleiten 2,77 m tief), danach setzte der Frame-Takt die Höhe mit seiner Welle (L8: 0,127 m je Bildrate).
+            const gesetz = this.getTerrainHeightAt(c.position.x, c.position.z);
+            const spiegelS = this._kreaturSchwimmt(c, gesetz);
+            if (spiegelS !== null) c.position.y = this._kreaturSchwimmLinie(c, spiegelS);
+            else {
+                const sicht = this._standSicht(c.position.x, c.position.z, gesetz, false);
+                c.position.y = Number.isFinite(sicht) ? sicht : gesetz;
+            }
+            ud.cachedGroundY = gesetz;
+            ud.cachedGroundX = c.position.x;
+            ud.cachedGroundZ = c.position.z;
+            const sp2 = Math.hypot(sv.x, sv.z);
+            if (!(sp2 > Math.max(ab, ST.ruheMs))) ud._stossV = null;
+            else {
+                sv.x *= (sp2 - ab) / sp2;
+                sv.z *= (sp2 - ab) / sp2;
+            }
+        }
+    }
+
+    // DIE EINE WASSER-REGEL DER TIERE (Welle L Q6 + welle-m-impuls, vereint V18.536): die EINE Wasser-Wahrheit am Körper
+    // (`_koerperWasser` über dem Grund des Leibs) und seine GESTALT — die Wasserlinie liegt am Schultergelenk (die Gelenk-
+    // Höhe des Vorderlaufs × Körpergröße, `_tierBaum.bein`; ohne Gestalt-Baum die Schwimm-Tiefe des Gesetzes). Der Leib
+    // schwimmt, sobald die Säule über dem Grund tiefer ist als diese Linie (mindestens VERHALTEN.wasser.schwimmTiefeM) —
+    // JEDES Tier, nie nur im 50-m-Kreis um den Spieler. Rückgabe: der Spiegel, der ihn trägt, oder null (er watet/steht).
+    // Leser: der Frame-Takt (updateCreatures) und der Sim-Schritt des Stoßes (`_kreaturStossSchritt`) — vorher las der
+    // Stoß-Schritt einen zweiten Wasser-Kontext (`_creatureWaterContextAt`, nur nahe dem Spieler, der 3×3-gedehnte
+    // `_waterLevelAt`) und stellte die Sohle 0,3 m unter ihn: in Wasser zwischen 0,5 m und Schulterhöhe hielt niemand die
+    // Höhe eines gleitenden Tiers.
+    _kreaturSchwimmt(creature, grund) {
+        const ud = creature.userData;
+        const W = AnazhRealm._verhaltenGesetz().wasser;
+        const tb = ud._tierBaum;
+        ud._wasserlinie = tb && tb.bein ? tb.bein[0].h * (creature.scale.x || 1) : W.schwimmTiefeM;
+        if (!Number.isFinite(grund)) return null;
+        const spiegel = this._koerperWasser(creature.position.x, creature.position.z, grund);
+        return spiegel - grund > Math.max(W.schwimmTiefeM, ud._wasserlinie) ? spiegel : null;
+    }
+    // DIE SCHWIMM-LINIE: die Sohle eines schwimmenden Leibs hängt um seine Wasserlinie unter dem Spiegel (das Paddeln trägt
+    // der Gang, MOTION.schwimmen) — Leser: der Frame-Takt und der Stoß-Schritt (beide ohne Welle).
+    _kreaturSchwimmLinie(creature, spiegel) {
+        return spiegel - creature.userData._wasserlinie;
+    }
+
+    // DER STOSS AUF EINEN LEIB: dv (m/s) längs (nx, nz) — er trägt den Leib, bis die Reibung ihn aufzehrt.
+    _kreaturStoss(creature, nx, nz, dv) {
+        if (!creature || !creature.userData || !(dv > 0)) return;
+        const sv = creature.userData._stossV || (creature.userData._stossV = { x: 0, z: 0 });
+        sv.x += nx * dv;
+        sv.z += nz * dv;
+    }
+
     // DER KÖRPER DES TIERS GEGEN DIE HÜLLEN (Q11 + Lehre 25): jedes Tier — im Blick oder nicht — löst seine Achse gegen die
     // soliden Part-Boxen naher Bauwerke über den EINEN Kontakt-Löser des Spielers (_resolveCapsuleVsAABB; die Hülle selbst
     // ist das Gesetz von _populateBlockerAABBs). Die Nähe-Liste je Tier ist gecacht — neu nach 4 m Weg oder einer Sekunde
@@ -20493,7 +20834,8 @@ class AnazhRealm {
         ud.lastHuntAt = now;
         const dmg = Math.max(2, (stats.damage || 4) * HUNT.damageMul);
         if (typeof this.damageCreature === "function") {
-            this.damageCreature(nearest, dmg, { source: "jagd" });
+            const res = this.damageCreature(nearest, dmg, { source: "jagd" });
+            if (res && res.ok && !res.killed) this._bissStoss(creature, nearest);
         }
         this._feelCreatureAction(creature, "attack", 1);
         return true;
@@ -20518,7 +20860,7 @@ class AnazhRealm {
             now + HUNT.strikeCooldownSec / Math.max(0.25, Number.isFinite(stats.attackSpeed) ? stats.attackSpeed : 1);
         ud.lastHuntAt = now;
         const dmg = Math.max(2, (stats.damage || 4) * HUNT.damageMul);
-        this.damagePlayer(dmg, "jagd");
+        if (this.damagePlayer(dmg, "jagd")) this._bissStoss(creature, null);
         this._feelCreatureAction(creature, "attack", 1);
         const name = ud.name || "Ein wildes Wesen";
         this.log(`${name} jagt dich!`, "WARN");
@@ -21680,19 +22022,9 @@ class AnazhRealm {
             // Säule über dem Grund tiefer ist als diese Linie (mindestens wasser.schwimmTiefeM); flacher watet sie.
             // Bis V18.531: jenseits 50 m stand jedes Tier am Seegrund (8 m tief, 4,27-m-Sprung beim Näherkommen), und
             // die Sohle lag bei jeder Größe 0,3 ± 0,2 m unter dem rohen Spiegel (der Hirsch stand AUF dem See).
-            let waterSurface = null;
+            // Die EINE Wasser-Regel der Tiere (`_kreaturSchwimmt`, auch der Leser des Stoß-Schritts).
             const udW = creature.userData;
-            {
-                const grundW = this._creatureGroundY(creature);
-                const tbW = udW._tierBaum;
-                // Ohne Gestalt-Baum (ein Wesen, das noch keinen trägt) liegt die Linie auf der Schwimm-Tiefe des Gesetzes —
-                // bis zur Gegenprüfung 0: das Wesen stand still AUF dem Spiegel.
-                udW._wasserlinie = tbW && tbW.bein ? tbW.bein[0].h * (creature.scale.x || 1) : VGL.wasser.schwimmTiefeM;
-                const spiegelW = Number.isFinite(grundW)
-                    ? this._koerperWasser(creature.position.x, creature.position.z, grundW)
-                    : -Infinity;
-                if (spiegelW - grundW > Math.max(VGL.wasser.schwimmTiefeM, udW._wasserlinie)) waterSurface = spiegelW;
-            }
+            const waterSurface = this._kreaturSchwimmt(creature, this._creatureGroundY(creature));
             // Körper-Zustand für die EINE Motion-Brücke: schwimmt die Kreatur (dieselbe Wahrheit wie ihre Lage), paddelt
             // der Baum-Gang (MOTION.schwimmen); an Land fällt NUR der Schwimm-Stempel.
             if (waterSurface !== null) udW._motionZustand = "schwimmen";
@@ -21753,6 +22085,9 @@ class AnazhRealm {
                     creature.position.z += _fl.z * delta;
                 }
             }
+            // Der STOSS, den ein Leib trägt, bewegt ihn im festen Sim-Schritt (`_kreaturStossSchritt`, 0710-5), nie hier im
+            // Frame-Takt: hier trug `_stossV · delta` ihn je Frame ohne Weg-Prüfung — bei 30 fps (0,46 m je Frame aus 13,7 m/s)
+            // sprang ein Bär 9 von 10 Mal durch eine 0,35-m-Wand, und der Wagen las das Frame-Gedächtnis im Sim-Schritt.
             this._kreaturHuellenKontakt(creature, hueftL, px0, pz0);
 
             // Sanfter Decay des Innenlebens (~17 s Halbwert); ruhige Wesen werden sparse (null = kein Tick-Rest),
@@ -21829,8 +22164,9 @@ class AnazhRealm {
             let rollZiel = 0;
             if (waterSurface !== null) {
                 // Die Wasserlinie am Schultergelenk: die Sohle hängt so tief unter dem Spiegel (das Paddeln trägt der
-                // Gang selbst, MOTION.schwimmen; das Literal −0,3 ± 0,2 m fiel).
-                baseY = waterSurface - udW._wasserlinie;
+                // Gang selbst, MOTION.schwimmen; das Literal −0,3 ± 0,2 m fiel) — `_kreaturSchwimmLinie`, dieselbe wie im
+                // Stoß-Schritt.
+                baseY = this._kreaturSchwimmLinie(creature, waterSurface);
             } else {
                 // DIE SICHT STEHT AUF DEM MESH (Q4): jedes Tier steht auf dem Stand-Leser um sein Gesetz — nahe Wesen auf
                 // ihren vier Proben, ferne auf der Mitte (je Frame bilinear, kein Cache-Sprung).
@@ -21877,7 +22213,9 @@ class AnazhRealm {
                 } else udH._hopH = h;
                 hopOffset = udH._hopH;
             }
-            creature.position.y = baseY + hopOffset;
+            // ein gleitender Leib (er trägt einen Stoß) steht auf der Höhe seines Sim-Schritts (`_kreaturStossSchritt`) — an
+            // Land wie im Wasser (L8: die Höhe des gestoßenen Schwimmers lebt im Sim-Schritt, gleich bei jeder Bildrate)
+            if (!creature.userData._stossV) creature.position.y = baseY + hopOffset;
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
             // sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
             if (inFrustum) {
@@ -34860,14 +35198,22 @@ class AnazhRealm {
         nw.offen = 0;
         // Die zwei Studio-Vorlagen je Stufe (Foundry-Cache; eine Anfrage, falls noch kalt) — einmal je Takt. Der Wurf
         // ist das Studio-Budget (B2c grass[stufe].schatten): die Nah-Wiese legt ihren Satz am AUGE — ein Werfer bräuchte
-        // den Satz der Kaskade, das Budget nennt für das Gras keinen (laut, falls doch).
+        // den Satz der Kaskade, das Budget nennt für das Gras keinen (laut, falls doch). Gelesen wird es, wenn die
+        // Vorlage steht: eine Vorlage gibt es erst mit dem Buch (Buch kalt → `_foundryFlattenFor` null), das Budget
+        // dockt in derselben Nachricht. Befund 0710-2: die Zusicherung las VOR der Vorlage — kam das Buch nach dem Ring,
+        // brach jeder Deko-Takt bis zum Buch an `phyto:lod.budget (gras)` und riss Nah-Streu und Hydro-Kacheln mit.
         for (const stufe of [1, 2]) {
-            if (this._foundryBudgetZeile("gras", stufe).schatten !== false)
-                throw new Error(`Nah-Wiese: gras[${stufe}] wirft — der Sicht-Satz cullt am Auge, nie für die Kaskade`);
             for (let v = 0; v < 2; v++) {
                 const fl = this._foundryFlattenFor({ seed: v + 1 }, "gras", stufe);
-                if (fl && Array.isArray(fl.leaves) && fl.leaves.length) this._nahWieseSenken(v, stufe, fl);
-                else nw.offen++; // das Studio-Asset kommt noch (die Foundry-Anfrage läuft)
+                if (!(fl && Array.isArray(fl.leaves) && fl.leaves.length)) {
+                    nw.offen++; // das Studio-Asset kommt noch (Buch kalt oder die Foundry-Anfrage läuft)
+                    continue;
+                }
+                if (this._foundryBudgetZeile("gras", stufe).schatten !== false)
+                    throw new Error(
+                        `Nah-Wiese: gras[${stufe}] wirft — der Sicht-Satz cullt am Auge, nie für die Kaskade`
+                    );
+                this._nahWieseSenken(v, stufe, fl);
             }
         }
         const cfg = this._voxelChunkConfig(0);
@@ -51143,6 +51489,11 @@ class AnazhRealm {
                 // (`_configureRenderer`): ein Frame Knoten-Bau, die Pipeline asynchron — kein Halt beim Wechsel.
             };
             attachMesh(built.mesh); // der Baum steht sofort (sync — kein async-Pfad mehr)
+            // das Volumen der Gestalt (m³ im Rahmen des Avatars) — die Masse des Menschen liest es (_leibMasse)
+            group.userData._leibV = AnazhRealm._leibVolumen(
+                (built.mesh.userData && built.mesh.userData._leibNah) || built.mesh,
+                group
+            );
             // KREATUR-KOSTEN (3) — die Fern-Gestalt-Refs am Gruppen-Level: der
             // Peer-Tick liest entry.mesh.userData._menschFern (EIN Chokepoint,
             // _menschFernToggle). null = kein lod1-Guss → Toggle no-op.
@@ -51200,28 +51551,293 @@ class AnazhRealm {
         }
     }
 
-    // Sitz-Pose des Avatars: Beine ≈75° nach vorn, Arme vorgehalten (Zügel), Torso atmet. Absolute Werte
-    // pro Frame (kein Drift); beim Absteigen räumt _animateHuman (setzt alle Rotationen absolut).
+    // Sitz-Pose des Avatars: die Oberschenkel liegen waagerecht auf dem Sitz, die Unterschenkel hängen, die Arme vorgehalten
+    // (Zügel); Lage, Blick und Rumpf-Neigung setzt der Sitz des Gefährts (`_sitzLage`). Absolute Werte pro Frame (kein
+    // Drift); beim Absteigen räumt _animateHuman die Rotationen, `_sitzLageLoesen` den Wurzel-Knochen.
     _applySeatPose(group, _t) {
         // GUSS 2b — der Rig-Avatar SITZT über die Bein-/Arm-Bones (Beine angewinkelt nach
         // vorn, Arme vorgehalten); absolute Werte (kein Drift — _animateHumanoidRig räumt sie).
         const rig = group.userData && group.userData.rig;
         if (rig) {
+            // die Gruppe sitzt aufrecht: Schwimmen und Rutschen kippen sie (_animateHuman), im Sattel läuft das nie — wer aus
+            // dem Wasser aufsitzt, behielt die Schwimm-Lage (gate:fahr-leben L9 nach L10: Kopf und Schenkel verschoben)
+            group.rotation.x = 0;
+            group.rotation.z = 0;
             for (const b of [rig.hips, rig.spine, rig.chest, rig.neck, rig.head]) if (b) b.rotation.set(0, 0, 0);
             for (const side of [rig.armL, rig.armR, rig.legL, rig.legR])
                 for (const k in side) if (side[k] && side[k].rotation) side[k].rotation.set(0, 0, 0);
-            rig.legL.hip.rotation.x = -1.3; // Oberschenkel waagerecht nach vorn (Sitz)
-            rig.legR.hip.rotation.x = -1.3;
+            // die Oberschenkel liegen auf der Sitzfläche (waagerecht nach vorn; vorher −1,3: 15° hinab, das Knie im Polster)
+            rig.legL.hip.rotation.x = -Math.PI / 2;
+            rig.legR.hip.rotation.x = -Math.PI / 2;
+            // die Knie zur Mitte, die Füße zu den Pedalen (je 0,1 rad: ~9 cm nach innen) — gestreckt im Fußraum stand der
+            // äußere Fuß sonst in der eingezogenen Front eines schmalen Wagens (Kompakt: 1,8 % der Haut durch die Haut)
+            rig.legL.hip.rotation.z = -0.1;
+            rig.legR.hip.rotation.z = 0.1;
             rig.legL.knee.rotation.x = 1.05; // Unterschenkel hängt
             rig.legR.knee.rotation.x = 1.05;
             rig.armL.shoulder.rotation.x = -0.4; // Arme vorgehalten (Zügel-Geste)
             rig.armR.shoulder.rotation.x = -0.4;
             rig.armL.elbow.rotation.x = -0.5;
             rig.armR.elbow.rotation.x = -0.5;
+            this._sitzLage(group, rig);
         }
         // ABSCHIEDS-WELLE (Konvergenz C) — der Nicht-Rig-Sitz-Zweig (Box-Avatar-parts)
         // ist GESCHNITTEN: die Sitz-Pose gilt nur dem menschlichen Rig-Avatar (der
         // einzige Aufrufer gated auf soulName === "human", und der baut immer das Rig).
+    }
+
+    // DER REITER IM GEFÄHRT (0710-4 Klasse 4): die Sitz-Pose setzt den Leib dorthin, wo die Gestalt des Gefährts ihn trägt —
+    // die Oberschenkel auf die Sitzfläche, das Hüftgelenk über den Sitz-Anker, der Blick längs der Fahrt (nie mit der Maus);
+    // unter einem Dach neigt sich der Rumpf ab der Lehne des Kerns, bis der Scheitel den Kopf-Freiraum unter der Dachlinie
+    // hält (höchstens FAHR.sitzLehneMaxRad), der Kopf bleibt aufrecht. Die Maße des Leibs misst die HAUT einmal je Rig
+    // (`_sitzLeib`), die Neigung je Gefährt die Knochen (`_sitzNeigung`); je Frame nur Gier und Lage des Wurzel-Knochens.
+    // Vorher drehte die Pose nur die Beine: das Hüftgelenk stand 0,85 m über der Sitzfläche, der Scheitel 0,99 m über dem
+    // GT-Dach, der Leib saß in der Wagenmitte statt auf dem Fahrersitz und drehte mit der Maus (gate:fahr-leben L9).
+    _sitzLage(group, rig) {
+        const entry = this._mountedEntry;
+        const hips = rig.hips;
+        if (!entry || !hips || !hips.parent || !rig.legL || !rig.legR || !rig.legL.hip || !rig.legR.hip) return;
+        if (!rig._sitzBasis) {
+            rig._sitzBasis = hips.position.clone();
+            if (Number.isFinite(rig._baseHipY)) rig._sitzBasis.y = rig._baseHipY;
+        }
+        const key = entry.id + "|" + entry.type + "|" + entry.scale;
+        let L = rig._sitzLage;
+        if (!L || L.key !== key) {
+            const ort = this._sitzOrt(entry);
+            L = rig._sitzLage = { key, ort, phi: 0 };
+            if (ort) {
+                hips.position.copy(rig._sitzBasis);
+                hips.rotation.y = 0;
+                L.leib = rig._sitzLeibMass || (rig._sitzLeibMass = this._sitzLeib(group, rig));
+                L.phi = this._sitzNeigung(group, rig, ort, L.leib);
+                L.knie = this._sitzKnie(ort, L.leib);
+            }
+        }
+        const ort = L.ort;
+        if (!ort || !L.leib) return;
+        // der Rumpf neigt sich, der Kopf bleibt aufrecht; das Knie hält die Sohle über dem Bauch
+        if (rig.spine) rig.spine.rotation.x = -L.phi;
+        if (Number.isFinite(L.knie)) {
+            if (rig.legL.knee) rig.legL.knee.rotation.x = L.knie;
+            if (rig.legR.knee) rig.legR.knee.rotation.x = L.knie;
+        }
+        if (L.leib.kopfMit) rig.head.rotation.x = L.phi;
+        // der Blick längs der Fahrt: die Gier des Gefährts im Rahmen des Spielers (das Modell schaut längs +z)
+        const th = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+        const fx = ort.achseX ? Math.cos(th) : Math.sin(th);
+        const fz = ort.achseX ? -Math.sin(th) : Math.cos(th);
+        hips.rotation.y = Math.atan2(fx, fz) - group.rotation.y;
+        hips.position.copy(rig._sitzBasis);
+        group.updateMatrixWorld(true);
+        // das Hüftgelenk (Mitte beider) auf den Anker: waagerecht der Anker im Rahmen des Gefährts, senkrecht die
+        // Sitzfläche + das Gesäß, gemessen am Ursprung des Reiters (er trägt Sitz-Höhe und Hub der Feder)
+        const v =
+            this._sitzV || (this._sitzV = { a: new THREE.Vector3(), b: new THREE.Vector3(), z: new THREE.Vector3() });
+        rig.legL.hip.getWorldPosition(v.a);
+        rig.legR.hip.getWorldPosition(v.b);
+        v.a.add(v.b).multiplyScalar(0.5); // das Hüftgelenk jetzt (Welt)
+        const sitzH = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        v.z.set(
+            entry.position.x + Math.cos(th) * ort.x + Math.sin(th) * ort.z,
+            group.position.y + ort.y - sitzH + L.leib.gesaess,
+            entry.position.z - Math.sin(th) * ort.x + Math.cos(th) * ort.z
+        ); // das Ziel (Welt)
+        hips.parent.worldToLocal(v.a);
+        hips.parent.worldToLocal(v.z);
+        hips.position.add(v.z.sub(v.a));
+    }
+
+    // Der Abstieg gibt den Wurzel-Knochen frei (Lage und Gier zurück auf die Basis; die Rotationen setzt der Gang).
+    _sitzLageLoesen(rig) {
+        if (rig._sitzBasis) rig.hips.position.copy(rig._sitzBasis);
+        rig.hips.rotation.y = 0;
+        rig._sitzLage = null;
+    }
+
+    // DER SITZ EINES GEFÄHRTS (0710-4 Klasse 4) im Rahmen seines Ursprungs (m, Gestalt × Skala; y über der Rad-Ebene
+    // position.y − 0,5 — dieselbe Basis wie `_sitzHeight`): ein Gesetz-Wagen trägt den Anker des Kerns (exportDrive.sitz,
+    // der vordere seatRow auf der Fahrerseite), seine Dachlinie (huelle.yRoof) und die Sitz-Zeilen des Fahr-Satzes; ein
+    // Teile-Werk den sitz-Punkt seines Bauplans (`_attachPointFor`) — offen, aufrecht. achseX: ein Studio-Wagen liegt
+    // längs x (Bug +x), ein Teile-Werk fährt in +z.
+    _sitzOrt(entry) {
+        if (!entry) return null;
+        const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
+        const achseX = !!entry._fahrAchseX;
+        const fzg = this._fahrzeugGesetzFor(entry);
+        const d = fzg && fzg.drive;
+        if (d && d.sitz && Number.isFinite(d.sitz.y)) {
+            const F = AnazhRealm._fahrGesetz();
+            return {
+                x: d.sitz.x * sc,
+                y: d.sitz.y * sc,
+                z: d.sitz.z * sc,
+                dach: d.huelle && Number.isFinite(d.huelle.yRoof) ? d.huelle.yRoof * sc : null,
+                bauch: d.huelle && Number.isFinite(d.huelle.ySill) ? d.huelle.ySill * sc : null,
+                lehne: F.sitzLehneRad,
+                lehneMax: F.sitzLehneMaxRad,
+                kopfFrei: F.kopfFreiraumM,
+                achseX,
+            };
+        }
+        const bp = this.state.blueprints && this.state.blueprints[entry.type];
+        const sp = bp ? this._attachPointFor(bp, "sitz").point : null;
+        if (!sp || !Number.isFinite(sp.y)) return null;
+        const x = Number.isFinite(sp.x) ? sp.x : 0;
+        const z = Number.isFinite(sp.z) ? sp.z : 0;
+        return {
+            x: x * sc,
+            y: sp.y * sc,
+            z: z * sc,
+            dach: null,
+            bauch: null,
+            lehne: 0,
+            lehneMax: 0,
+            kopfFrei: 0,
+            achseX,
+        };
+    }
+
+    // DER SITZENDE LEIB, an der HAUT gemessen (0710-4 Klasse 4; einmal je Rig — die Pose ist für jedes Gefährt dieselbe):
+    // aufrecht, die Oberschenkel waagerecht — gesaess = wie hoch das Hüftgelenk über der Unterseite der Oberschenkel liegt
+    // (jede Ecke, deren stärkster Knochen ein Oberschenkel ist), kopfOben = wie hoch der Scheitel über dem Kopf-Gelenk liegt
+    // (die Ecken des Kopf-Knochens und die Meshes unter ihm: Haar, Augen). kopfMit: der Kopf hängt am Rumpf (dann gleicht
+    // er dessen Neigung aus und bleibt aufrecht). Rahmen: der Spieler (seine Gier ändert keine Höhe).
+    _sitzLeib(group, rig) {
+        const nah = (group.userData._menschFern && group.userData._menschFern.nah) || group;
+        if (rig.spine) rig.spine.rotation.x = 0;
+        if (rig.head) rig.head.rotation.x = 0;
+        group.updateMatrixWorld(true);
+        const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
+        const v = new THREE.Vector3();
+        const schenkel = new Set([rig.legL.hip, rig.legR.hip]);
+        // Schienbein und Fuß (die Ecken der Knie- und Knöchel-Knochen): je Bein relativ zu seinem Knie-Gelenk (y, z im
+        // Rahmen des Spielers; die Oberschenkel liegen längs z, das Knie dreht um x)
+        const unten2 = new Map();
+        for (const leg of [rig.legL, rig.legR]) {
+            if (!leg.knee) continue;
+            const kp = leg.knee.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv);
+            const eintrag = { ky: kp.y, kz: kp.z, proben: [] };
+            unten2.set(leg.knee, eintrag);
+            if (leg.ankle) unten2.set(leg.ankle, eintrag);
+        }
+        const unterKopf = (o) => {
+            for (let n = o; n && n !== group; n = n.parent) if (n === rig.head) return true;
+            return false;
+        };
+        let unten = Infinity;
+        let oben = -Infinity;
+        nah.traverse((o) => {
+            if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
+            for (let n = o; n && n !== group; n = n.parent) if (!n.visible) return;
+            const pos = o.geometry.attributes.position;
+            const sw = o.isSkinnedMesh ? o.geometry.attributes.skinWeight : null;
+            const si = sw ? o.geometry.attributes.skinIndex : null;
+            const starr = !sw && unterKopf(o);
+            for (let i = 0; i < pos.count; i++) {
+                let kn = null;
+                if (sw) {
+                    let bw = -1;
+                    for (let k = 0; k < 4; k++) {
+                        const w = sw.getComponent(i, k);
+                        if (w > bw) {
+                            bw = w;
+                            kn = o.skeleton.bones[si.getComponent(i, k)];
+                        }
+                    }
+                }
+                const bein = kn !== null && schenkel.has(kn);
+                const kopf = starr || (kn !== null && kn === rig.head);
+                const fuss = kn !== null ? unten2.get(kn) : null;
+                if (!bein && !kopf && !fuss) continue;
+                o.getVertexPosition(i, v).applyMatrix4(o.matrixWorld).applyMatrix4(inv);
+                if (bein && v.y < unten) unten = v.y;
+                if (kopf && v.y > oben) oben = v.y;
+                if (fuss) fuss.proben.push(v.y - fuss.ky, v.z - fuss.kz);
+            }
+        });
+        const hL = rig.legL.hip.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv);
+        const hR = rig.legR.hip.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv);
+        const kp = rig.head ? rig.head.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv) : null;
+        let kopfMit = false;
+        for (let n = rig.head; n && rig.spine && rig.head !== rig.spine; n = n.parent)
+            if (n === rig.spine) kopfMit = true;
+        if (!(unten < Infinity) || !(oben > -Infinity) || !kp) return null;
+        // die Beine: das Knie relativ zum Hüftgelenk und die Ecken unter ihm (ein Bein genügt, die Pose ist symmetrisch)
+        const hy = (hL.y + hR.y) / 2;
+        const beinL = rig.legL.knee ? unten2.get(rig.legL.knee) : null;
+        const bein =
+            beinL && beinL.proben.length
+                ? { knieRel: beinL.ky - hy, proben: beinL.proben, knie0: rig.legL.knee.rotation.x }
+                : null;
+        return { gesaess: hy - unten, kopfOben: oben - kp.y, kopfMit, bein };
+    }
+
+    // DAS KNIE IN EINEM GEFÄHRT (rad): so weit gebeugt wie die Sitz-Pose (knie0), höchstens so weit, dass die Sohle über dem
+    // Bauch des Gefährts bleibt (exportDrive.huelle.ySill + 3 cm) — Schienbein und Fuß drehen starr um das Knie; gestreckter
+    // stehen die Füße weiter vorn im Fußraum. Vorher hingen sie mit 60° Beugung bis 0,17 m unter dem Wagen.
+    _sitzKnie(ort, leib) {
+        const b = leib && leib.bein;
+        if (!b || ort.bauch === null) return b ? b.knie0 : null;
+        const frei = ort.y + leib.gesaess + b.knieRel - (ort.bauch + 0.03); // so tief darf die Sohle unter dem Knie liegen
+        const tiefste = (k) => {
+            const d = k - b.knie0; // die Drehung gegen die gemessene Pose
+            const c = Math.cos(d);
+            const s = Math.sin(d);
+            let m = Infinity;
+            for (let i = 0; i < b.proben.length; i += 2) {
+                const y = b.proben[i] * c - b.proben[i + 1] * s;
+                if (y < m) m = y;
+            }
+            return -m; // wie tief die Sohle unter dem Knie liegt
+        };
+        if (tiefste(b.knie0) <= frei) return b.knie0;
+        let lo = 0;
+        let hi = b.knie0;
+        if (tiefste(lo) > frei) return lo;
+        for (let i = 0; i < 20; i++) {
+            const m = (lo + hi) / 2;
+            if (tiefste(m) <= frei) lo = m;
+            else hi = m;
+        }
+        return lo;
+    }
+
+    // DIE NEIGUNG DES RUMPFS in einem Gefährt (rad): die Lehne des Kerns, und reicht der Raum unter dem Dach nicht, so weit
+    // mehr, bis der Scheitel (das Kopf-Gelenk der geneigten Knochen + kopfOben) den Kopf-Freiraum unter der Dachlinie hält
+    // — Halbierung zwischen Lehne und sitzLehneMaxRad; mehr gibt der Sitz nicht her (dann ragt der Kopf, die Linse nennt ihn).
+    _sitzNeigung(group, rig, ort, leib) {
+        if (!leib || ort.dach === null || !rig.spine || !rig.head || !leib.kopfMit) return ort.lehne;
+        const budget = ort.dach - ort.kopfFrei - ort.y - leib.gesaess; // der Scheitel über dem Hüftgelenk, höchstens
+        const a = new THREE.Vector3();
+        const b = new THREE.Vector3();
+        const k = new THREE.Vector3();
+        const scheitel = (phi) => {
+            rig.spine.rotation.x = -phi;
+            rig.head.rotation.x = phi;
+            group.updateMatrixWorld(true);
+            rig.legL.hip.getWorldPosition(a);
+            rig.legR.hip.getWorldPosition(b);
+            rig.head.getWorldPosition(k);
+            return k.y + leib.kopfOben - (a.y + b.y) / 2;
+        };
+        let phi = ort.lehne;
+        if (scheitel(phi) > budget) {
+            let lo = ort.lehne;
+            let hi = ort.lehneMax;
+            if (scheitel(hi) > budget) phi = hi;
+            else {
+                for (let i = 0; i < 20; i++) {
+                    const m = (lo + hi) / 2;
+                    if (scheitel(m) > budget) lo = m;
+                    else hi = m;
+                }
+                phi = hi;
+            }
+        }
+        rig.spine.rotation.x = 0;
+        rig.head.rotation.x = 0;
+        return phi;
     }
 
     // Tiefes Disposal eines alten Soul-Group: Geometrien + Materialien
@@ -52445,12 +53061,41 @@ class AnazhRealm {
                 this._fahrLos.delete(entry);
                 continue;
             }
+            // DER GESTOSSENE WAGEN RUTSCHT (das EINE Impuls-Gesetz): die Handbremse hält ihn, sein Hüllen-Kontakt trägt den
+            // Stoß weiter (Bauwerke, Wagen, Leiber), seine Blocker ziehen mit.
+            const rutscht = Math.hypot(fz.vlong || 0, fz.vlat || 0) > AnazhRealm.STOSS.ruheMs;
+            if (rutscht) {
+                const x0 = fz.x;
+                const z0 = fz.z;
+                vc.fahrKraefte(fz, { brake: 1, hand: true }, entry._fahrSatz, dt);
+                entry._rideYaw = fz.yaw + Math.PI / 2;
+                const k = this._fahrHuelle(entry);
+                if (k) {
+                    const cyW = Math.cos(fz.yaw);
+                    const syW = Math.sin(fz.yaw);
+                    const vxW = fz.vlong * cyW - fz.vlat * syW;
+                    const vzW = -fz.vlong * syW - fz.vlat * cyW;
+                    const hk = this._fahrHuelleKontakt(entry, k, x0, z0, vxW, vzW, dt, false);
+                    fz.x = hk.x;
+                    fz.z = hk.z;
+                    fz.vlong = hk.vx * cyW - hk.vz * syW;
+                    fz.vlat = -hk.vx * syW - hk.vz * cyW;
+                }
+                entry.position.x = fz.x;
+                entry.position.z = fz.z;
+                entry.rotationY = this._rittGier(entry, entry._rideYaw);
+                if (entry.blockerAABBs) {
+                    this._populateBlockerAABBs(entry);
+                    entry._blockerStampAt = null;
+                }
+            }
             vc.fahrStand(fz, entry._fahrSatz, this._fahrBoden(entry), dt);
             const clear = entry._fahrAchseX ? 0 : Number.isFinite(entry._groundClear) ? entry._groundClear : 0;
             entry.position.y = fz.y + 0.5 + clear;
             entry._rideY = entry.position.y;
             entry._rideVy = fz.vy;
-            if (!fz.luft) {
+            if (!fz.luft && !(Math.hypot(fz.vlong || 0, fz.vlat || 0) > AnazhRealm.STOSS.ruheMs)) {
+                fz.vlong = fz.vlat = fz.yawRate = 0;
                 // gelandet: er steht in der Ebene seiner Räder, die Federn ruhen
                 fz.vy = 0;
                 fz.fNick = fz.fNickV = fz.fWank = fz.fWankV = fz.fHub = fz.fHubV = 0;
@@ -56226,6 +56871,7 @@ class AnazhRealm {
             }
             return;
         }
+        if (mesh.userData.rig && mesh.userData.rig._sitzLage) this._sitzLageLoesen(mesh.userData.rig);
         // isMoving aus horizontaler Geschwindigkeit. Schwelle 0.4 m/s
         // verhindert Mikro-Walk wenn der Spieler steht aber leicht rutscht.
         let speedNow = 0;
@@ -78382,7 +79028,7 @@ class AnazhRealm {
             const res = this.damageCreature(c, roh, {
                 source: "player",
                 fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
-                knockback: this._kampfStats().knockback || 0,
+                stoss: urteil ? { p: urteil.p, m: urteil.mEff } : this._kampfStossOhneMessung(omega * hebel),
             });
             if (res && res.ok) this._kampfHitJuice(c, nowSec, urteil, urteil ? null : this._eigenwerkSchwungKE(bp));
         }
@@ -78416,6 +79062,15 @@ class AnazhRealm {
             }
         }
         return { yaw: Math.atan2(tx, tz), pitch: Math.atan2(ty, Math.hypot(tx, tz)) };
+    }
+
+    // DER UNGEMESSENE SCHLAG (das EINE Impuls-Gesetz): Faust und Eigenwerke ohne Schmiede-Rezept tragen keine Messung —
+    // ihr Impuls ist der emergente Rückschlag des Gehaltenen (`knockback` ∝ dichte + härte, je Punkt `gefuehl.pProKb`),
+    // ihre wirksame Masse folgt aus der Schlag-Geschwindigkeit an der Klinge (m = p / v). Wie der Schaden: gemessen
+    // richtet das Urteil, ungemessen die emergente Größe.
+    _kampfStossOhneMessung(v) {
+        const p = (this._kampfStats().knockback || 0) * AnazhRealm._arenaGesetz().gefuehl.pProKb;
+        return p > 0 && v > 0 ? { p, m: p / v } : null;
     }
 
     // DAS TREFFER-URTEIL der Welt (Welle L, K-D2): das gehaltene Studio-Gerät richtet der Kern (schmiede
@@ -78818,7 +79473,6 @@ class AnazhRealm {
             // die Kraft der Führung beim Lösen (Körper × Güte × Verschleiß, _kampfKraft) — die Wirkung urteilt der
             // Treffer aus der Energie des Pfeils (trefferUrteil, Stich), der Schaden ist _kampfRohSchaden.
             kraft: this._kampfKraft(),
-            kb: this._kampfStats().knockback || 0,
             mesh: null,
         };
         this._kampfVerschleiss(bp); // der Schuss zehrt den Bogen — NACH dem Lesen der Kraft, wie der Klingen-Treffer
@@ -78887,7 +79541,7 @@ class AnazhRealm {
                 const res = this.damageCreature(hit, this._kampfRohSchaden(urteil, hitTr.zone, pf.kraft), {
                     source: "player",
                     fromPos: { x: ox, y: oy, z: oz },
-                    knockback: pf.kb,
+                    stoss: { p: urteil.p, m: urteil.mEff },
                 });
                 if (res && res.ok) this._kampfHitJuice(hit, nowSec, urteil, null);
                 this._pfeilDespawn(pf);
@@ -90633,6 +91287,9 @@ class AnazhRealm {
         this._rittSchritt(dt);
         // ein im Flug verlassener Gesetz-Wagen fällt auf der Vertikale des Kerns, bis er steht (Gegenprüfung 07.10.)
         if (this._fahrLos && this._fahrLos.size) this._fahrNachlauf(dt);
+        // DER GESTOSSENE LEIB und LEIB AN LEIB im Sim-Schritt (0710-5): was einen Körper bewegt, läuft im festen Schritt.
+        this._kreaturStossSchritt(dt);
+        this._leibKontakte();
         if (this.state._replayRec) this._replayCaptureFrame(dt);
         // Lockstep-MP: der Input dieses Fixed-Steps geht gebatcht übers P2P-Mesh; Peers simulieren den
         // Charakter durch DENSELBEN Schritt-Pfad. simTime reist im 1-Hz-Anker mit — der Ghost läuft auf
@@ -90764,6 +91421,9 @@ class AnazhRealm {
             unten: 0,
             oben: 0,
             schub: [],
+            schubQuelle: [], // der Gegner je Schub (Bauwerk, Wagen, Leib; null = starr)
+            quelle: null,
+            eigen: entry.id, // die eigenen Boxen löst die Hülle nie
         };
         return entry._fahrHuelleKette;
     }
@@ -90807,6 +91467,7 @@ class AnazhRealm {
         pos.x += ax * best;
         pos.z += az * best;
         h.schub.push(ax * best, az * best);
+        if (h.schubQuelle) h.schubQuelle.push(h.quelle || null);
     }
 
     // DAS GLEITEN AN DER WAND (PM_ClipVelocity, Quake/Source) — DIE Schleife des EINEN Kontakt-Lösers für beide Körper: die
@@ -90861,7 +91522,7 @@ class AnazhRealm {
     // wird überrollt — der Hasel-Trieb hält keinen Wagen, der Kiefern-Stamm schon); (3) KREATUREN — das Rechteck gegen
     // den Leib eines Wesens (`_kreaturLeib`, D2: derselbe Leib, mit dem das Tier gegen jede Hülle löst). Was die Hülle
     // schiebt, nimmt der Fahrt die Normal-Komponente. Liefert {x, z, vx, vz}.
-    _fahrHuelleKontakt(entry, k, x0, z0, vx, vz, dt) {
+    _fahrHuelleKontakt(entry, k, x0, z0, vx, vz, dt, meldet = true) {
         const fz = entry._fahr;
         const ry = Number.isFinite(entry._rideYaw) ? entry._rideYaw : 0;
         const fX = Math.sin(ry);
@@ -90880,8 +91541,11 @@ class AnazhRealm {
         const steilY = Math.cos(AnazhRealm._fahrSchrittGesetz().S.ebeneMax); // die Ebenen-Klammer des Kerns
         const nrmW = this._fahrHuelleN || (this._fahrHuelleN = {});
         // (1) GELÄNDE: die führenden Umriss-Punkte gegen das Feld. Eine WAND ist Feld über Ebene + Stufe, dessen Fläche
-        // steiler steht als die Ebenen-Klammer (ein Hang, den die Räder nehmen, hebt den Wagen — er hält ihn nicht), oder
-        // Feld auf Brust-Höhe.
+        // steiler steht als die Ebenen-Klammer (ein Hang, den die Räder nehmen, hebt den Wagen — er hält ihn nicht) UND dem
+        // Wagen zugewandt ist, oder Feld auf Brust-Höhe. Zeigt die Fläche in die Fahrt, ist sie die Rückseite einer Kuppe
+        // (Leben-Schau 07.10., Spaltkante −904/−975: der Rand fällt zum 23-m-Spalt, seine Fläche zeigt mit n·Fahrt 0,97 nach
+        // vorn — die Gleit-Schleife fand keine Bewegung in die Ebene und stoppte den Wagen aus 11,44 m/s in EINEM Schritt,
+        // Gas danach 0,00 m); die Vertikale des Kerns trägt ihn über die Kante, er fällt.
         const wandAm = (ox, oz, wx, wz) => {
             for (const p of k.umriss) {
                 const nx = p.nl * fX + p.nq * qX;
@@ -90894,7 +91558,8 @@ class AnazhRealm {
                 const yS = e + k.stufe + 0.02;
                 if (this._fieldSolid(px, yS, pz, ctx)) {
                     this._fieldGradient(px, yS, pz, nrmW);
-                    if (!(nrmW.mag > 1e-6) || nrmW.y < steilY) return { x: px, z: pz, y: yS };
+                    if (!(nrmW.mag > 1e-6) || (nrmW.y < steilY && nrmW.x * wx + nrmW.z * wz < 0))
+                        return { x: px, z: pz, y: yS };
                 }
                 if (this._fieldSolid(px, e + brust, pz, ctx)) return { x: px, z: pz, y: e + brust };
             }
@@ -90914,6 +91579,7 @@ class AnazhRealm {
         k.unten = fz.y + k.stufe;
         k.oben = fz.y + k.dach;
         k.schub.length = 0;
+        k.schubQuelle.length = 0;
         const pos = this._fahrHuellePos || (this._fahrHuellePos = { x: 0, z: 0 });
         pos.x = nx;
         pos.z = nz;
@@ -90921,23 +91587,65 @@ class AnazhRealm {
             this._stepCharacterStructures(pos, 0, 0, 0, k);
             this._stepCharacterIslands(pos, 0, 0, 0, k);
         }
+        // DER SCHUB JE SCHRITT IST BEGRENZT (Hangfuß-Falle, Leben-Schau 07.10.: die flache Box eines Glutbrunnens lag unter
+        // dem Band der Hülle, bis der Wagen am Hangfuß absank — dann löste der Löser die ganze Überlappung auf einmal und
+        // versetzte ihn in EINEM Schritt 0,97 m quer): eine Box nimmt zurück, was der Wagen in DIESEM Schritt in sie hinein
+        // fuhr, und entdringt darüber hinaus höchstens eine Rad-Stufe je Schritt (die Stufe der Vertikale, `k.stufe`) — eine
+        // tiefe Überlappung löst sich über Schritte, nie als Satz (die Entdringungs-Grenze der Physik-Engines).
+        {
+            const bx = pos.x - nx;
+            const bz = pos.z - nz;
+            const bd = Math.hypot(bx, bz);
+            if (bd > 1e-9) {
+                const hinein = Math.max(0, -((nx - x0) * bx + (nz - z0) * bz) / bd);
+                const kappe = hinein + k.stufe;
+                if (bd > kappe) {
+                    pos.x = nx + (bx * kappe) / bd;
+                    pos.z = nz + (bz * kappe) / bd;
+                }
+            }
+        }
         // (3) KREATUREN — das Rechteck gegen den LEIB eines Wesens (D2, Welle L): `_kreaturLeib`, die EINE Größe je Tier, mit
         // der das Tier selbst gegen jede Hülle löst (`_kreaturHuellenKontakt`) — drei Achsen längs seiner Gier (−halb · 0 ·
         // +halb), je Achse sein Radius, die Höhe vom Fuß bis zum Kopf; das Band der Hülle zählt wie eine Box für das Tier
         // (über der Stufe seines Fußes, unter seinem Kopf). Je Achse der nächste Punkt des Rechtecks; liegt die Achse im
         // Rechteck, der kürzeste Weg hinaus. Vorher ein ZWEITER Leib: der Kreis VERHALTEN.separation × bodySize um die
         // Mitte (beim Bären 0,64 m gegen den Leib-Radius 0,19 m — der Wagen hielt 0,46 m vor der Flanke).
+        // Der Spieler zu Fuß ist ein Leib wie ein Tier (0710-4): eine Achse, seine Kapsel r PLAYER_WALL_RADIUS, vom Fuß bis
+        // über den Kopf — ein rutschender Wagen schiebt ihn nicht durch, er stößt ihn (der eigene, gerittene Wagen nie).
         const wesen = this.state.creatures;
-        if (wesen && wesen.length) {
+        const pmK = this.state.playerMesh;
+        const spielerLeib =
+            pmK &&
+            pmK.position &&
+            !(this.state.player && this.state.player.mountedArch != null) &&
+            Math.abs(pmK.position.x - pos.x) <= 12 &&
+            Math.abs(pmK.position.z - pos.z) <= 12;
+        if ((wesen && wesen.length) || spielerLeib) {
             const leib = this._fahrLeib || (this._fahrLeib = {});
             const stufeTier = AnazhRealm.PLAYER_STEP_UP;
-            for (const cr of wesen) {
+            const koerper = this._fahrLeibKoerper || (this._fahrLeibKoerper = []);
+            koerper.length = 0;
+            if (wesen) for (const cr of wesen) koerper.push(cr);
+            if (spielerLeib) koerper.push(pmK);
+            for (const cr of koerper) {
                 if (!cr || !cr.position) continue;
                 if (Math.abs(cr.position.x - pos.x) > 12 || Math.abs(cr.position.z - pos.z) > 12) continue;
-                this._kreaturLeib(cr, 0, leib);
-                if (k.oben <= cr.position.y + stufeTier || k.unten >= cr.position.y + leib.hoehe) continue;
+                if (cr === pmK) {
+                    const fd = AnazhRealm.PLAYER_FOOT_OFFSET;
+                    leib.radius = AnazhRealm.PLAYER_WALL_RADIUS;
+                    leib.halb = 0;
+                    leib.hoehe = 2 * fd + stufeTier;
+                    leib.fx = 0;
+                    leib.fz = 1;
+                    leib.fuss = cr.position.y - fd;
+                } else {
+                    this._kreaturLeib(cr, 0, leib);
+                    leib.fuss = cr.position.y;
+                }
+                if (k.oben <= leib.fuss + stufeTier || k.unten >= leib.fuss + leib.hoehe) continue;
                 const rc = leib.radius;
-                for (let o = -1; o <= 1; o++) {
+                for (let o = leib.halb > 0 ? -1 : 0; o <= (leib.halb > 0 ? 1 : 0); o++) {
                     const dx = cr.position.x + leib.fx * o * leib.halb - (pos.x + fX * k.mitte);
                     const dz = cr.position.z + leib.fz * o * leib.halb - (pos.z + fZ * k.mitte);
                     const l = dx * fX + dz * fZ;
@@ -90971,6 +91679,7 @@ class AnazhRealm {
                     pos.x += sx;
                     pos.z += sz;
                     k.schub.push(sx, sz);
+                    k.schubQuelle.push(cr);
                 }
             }
         }
@@ -90984,19 +91693,124 @@ class AnazhRealm {
             pos.x = nx;
             pos.z = nz;
         }
-        // Was die Hülle schob, nimmt der Fahrt die Komponente in die Berührung.
+        // DER STOSS (das EINE Impuls-Gesetz, AnazhRealm.STOSS — 0710-2): je Gegner EIN Stoß längs der Summe seiner Schübe
+        // (ein Baum trägt 44 Boxen, er stößt einmal). Ein starrer Gegner (Bauwerk, Fels, Baum, Insel) wirft den Wagen mit
+        // seiner Stoß-Zahl zurück; ein Wagen und ein Leib bekommen ihren Impuls nach Masse (Kern und Leib), der Wagen behält,
+        // was ihm bleibt. Vorher nahm die Hülle der Fahrt nur die Komponente in die Berührung — ein Stopp ohne Folge.
+        const ST = AnazhRealm.STOSS;
+        const mW = this._fahrMasse(entry._fahrSatz);
+        const gegner = this._fahrStossGegner || (this._fahrStossGegner = new Map());
+        gegner.clear();
         for (let i = 0; i < k.schub.length; i += 2) {
-            const sx = k.schub[i];
-            const sz = k.schub[i + 1];
-            const d = Math.hypot(sx, sz);
+            const q = k.schubQuelle[i >> 1] || null;
+            let g = gegner.get(q);
+            if (!g) gegner.set(q, (g = { x: 0, z: 0 }));
+            g.x += k.schub[i];
+            g.z += k.schub[i + 1];
+        }
+        let dvEigen = 0;
+        let aufprall = 0;
+        let stossTags = null;
+        for (const [q, g] of gegner) {
+            const d = Math.hypot(g.x, g.z);
             if (!(d > 1e-9)) continue;
-            const into = (vx * sx + vz * sz) / d;
-            if (into < 0) {
-                vx -= (sx / d) * into;
-                vz -= (sz / d) * into;
+            const nx = g.x / d; // vom Gegner zum Wagen
+            const nz = g.z / d;
+            // der Gegner in der Sprache des Gesetzes (`_stossKoerper`: Tier · Spieler zu Fuß · Wagen); keiner davon = starr
+            const G =
+                q && q !== entry
+                    ? this._stossKoerper(q, this._fahrStossGegnerK || (this._fahrStossGegnerK = {}))
+                    : null;
+            const leib = !!(G && G.art !== "wagen");
+            // die RELATIVE Geschwindigkeit längs der Normalen: gleitet der Gegner schon schneller fort, als der Wagen
+            // nachkommt, stößt nichts (Befund gate:fahr-leben L5: der Bär rutschte nach dem ersten Stoß fort, die Hülle
+            // berührte ihn weiter, und jeder Schritt stieß ihn erneut mit der vollen Fahrt — 7,92 → 1,71 m/s)
+            const hinein = -((vx - (G ? G.vx : 0)) * nx + (vz - (G ? G.vz : 0)) * nz);
+            if (!(hinein > 0)) continue;
+            const mG = G ? G.m : Infinity;
+            const e = leib ? ST.stossZahl.leib : G ? ST.stossZahl.wagen : ST.stossZahl.starr;
+            // ohne Masse des eigenen Wagens (ein Werk ohne Fahr-Satz) nimmt die Berührung nur die Komponente
+            const J = mW > 0 ? AnazhRealm._stossImpuls(mW, mG, hinein, e) : 0;
+            const dv = mW > 0 ? J / mW : hinein;
+            vx += nx * dv;
+            vz += nz * dv;
+            if (G) this._stossAuf(G, -nx, -nz, J / mG);
+            dvEigen = Math.max(dvEigen, dv);
+            if (hinein > aufprall) {
+                aufprall = hinein;
+                stossTags =
+                    leib && G.art === "tier"
+                        ? this.computeCreatureCompoundTags(q)
+                        : q && q.type && this.state.blueprints && this.state.blueprints[q.type]
+                          ? this.computeCompoundTags(this.state.blueprints[q.type])
+                          : null;
             }
         }
+        if (meldet && aufprall >= ST.ereignisMs) this._stossEreignis(stossTags, dvEigen);
         return { x: pos.x, z: pos.z, vx, vz };
+    }
+
+    // DER FAHR-SATZ EINES GESTOSSENEN (das EINE Impuls-Gesetz): ein Werk mit Fahr-Gesetz (Studio-Wagen, Kern-Profil) trägt
+    // seine Masse im Fahr-Satz; alles andere ist starr.
+    _fahrStossSatz(entry) {
+        if (!entry || !entry.position) return null;
+        const prof = this._vehicleProfile(entry);
+        const G = prof ? this._fahrSatz(entry, prof) : null;
+        return G && G.m > 0 ? G : null;
+    }
+
+    // DER GESTOSSENE WAGEN (das EINE Impuls-Gesetz): ein geparkter Wagen bekommt seinen Impuls als Fahrt im eigenen Rahmen
+    // (vlong/vlat des Kerns) und rutscht im Nachlauf mit der Handbremse (`_fahrNachlauf`), bis er steht.
+    // DIE GESCHWINDIGKEIT EINES ANDEREN WAGENS (m/s, Welt-XZ) aus seinem Fahr-Zustand (die Umkehr von _fahrWagenStoss);
+    // ein Wagen ohne Fahr-Zustand steht.
+    _fahrWagenGeschw(entry) {
+        const fz = entry && entry._fahr;
+        if (!fz || !Number.isFinite(fz.yaw) || !Number.isFinite(fz.vlong) || !Number.isFinite(fz.vlat)) return null;
+        const cy = Math.cos(fz.yaw);
+        const sy = Math.sin(fz.yaw);
+        return { x: fz.vlong * cy - fz.vlat * sy, z: -fz.vlong * sy - fz.vlat * cy };
+    }
+    _fahrWagenStoss(entry, G, dvx, dvz) {
+        const pl = this.state.player;
+        if (pl && pl.mountedArch === entry.id) return;
+        const { vc } = AnazhRealm._fahrSchrittGesetz();
+        let fz = entry._fahr;
+        if (!fz || !Number.isFinite(fz.y)) {
+            const ry = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
+            const fahrt = entry._fahrAchseX ? ry + Math.PI / 2 : ry; // die Umkehr von _rittGier
+            fz = entry._fahr = vc.fahrZustand(entry.position.x, entry.position.z, fahrt - Math.PI / 2);
+            vc.fahrStand(fz, G, this._fahrBoden(entry), 0);
+            if (!Number.isFinite(fz.y)) return;
+        }
+        // DIE HAFTUNG DER BREMSE (0710-4): ein abgestellter Wagen steht mit Handbremse — sie nimmt je Sim-Schritt bis zu
+        // handDecel · dt eines Stoßes auf (der Kern: G.handDecel), erst der Rest bewegt ihn. Vorher fuhr der Wagen jeden
+        // Stoß im selben Schritt, bevor die Bremse griff: ein Spieler, der mit W gegen einen geparkten GT drückte, schob ihn
+        // 0,27 m in 4 s (gate:fahr-leben L6).
+        const dv = Math.hypot(dvx, dvz);
+        const haft = (Number.isFinite(G.handDecel) ? G.handDecel : 0) * AnazhRealm.FIXED_DT;
+        if (!(dv > haft)) return;
+        const rest = (dv - haft) / dv;
+        dvx *= rest;
+        dvz *= rest;
+        const cy = Math.cos(fz.yaw);
+        const sy = Math.sin(fz.yaw);
+        fz.vlong += dvx * cy - dvz * sy;
+        fz.vlat += -dvx * sy - dvz * cy;
+        entry._fahrSatz = G;
+        (this._fahrLos || (this._fahrLos = new Set())).add(entry);
+    }
+
+    // DAS STOSS-EREIGNIS (das EINE Impuls-Gesetz): ein Aufprall erreicht Kamera und Klang — der Kamera-Ruck über den EINEN
+    // Landungs-Dip (_landImpactPending, wie der Treffer) mit dem Sprung der eigenen Fahrt (am leichten Tier klein, am Fels
+    // voll), der Klang über das Gesetz klang:SUBSTANZ.treffer (die Substanz des Gegners färbt ihn; stumm ohne Symphonie).
+    _stossEreignis(tags, dv) {
+        const G = AnazhRealm._arenaGesetz().gefuehl;
+        const e = Math.max(0, Math.min(1, dv / AnazhRealm.STOSS.ruckRefMs));
+        this.state._landImpactPending = Math.max(
+            this.state._landImpactPending || 0,
+            G.dipMin + (G.dipMax - G.dipMin) * e
+        );
+        this._substanzKlang("treffer", tags || {});
     }
 
     // ===== DER FELD-NATIVE KAPSEL-CHARACTER-CONTROLLER =====
@@ -91175,9 +91989,23 @@ class AnazhRealm {
         //    Plattformen (die Start-Plattform!) TRAGEN → der Spieler steht drauf statt durch
         //    sie zu fallen. Liefert die höchste begehbare Auflage-Oberkante im Snap-Band.
         const structPos = { x: nx, z: nz };
+        const schubWagen = this._spielerSchubQuellen || (this._spielerSchubQuellen = []);
+        schubWagen.length = 0;
         const structTop = fahrHuelle
             ? -Infinity
-            : this._stepCharacterStructures(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS);
+            : this._stepCharacterStructures(structPos, feetY, headY, AnazhRealm.PLAYER_WALL_RADIUS, null, schubWagen);
+        // DER SPIELER AN EINEM WAGEN (0710-4): schob ein Wagen den Spieler aus seiner Hülle, stoßen sie längs der
+        // Schub-Richtung (vom Wagen zum Spieler) — der Wagen bekommt seinen Impuls (er rutscht im Nachlauf), der Spieler
+        // seinen (er prallt ab). Vorher hielt die Box den Spieler ohne Folge für den Wagen.
+        // Die Geschwindigkeit dieses Schritts ist die lokale (vx, vz): das Paar liest und schreibt sie über playerVel.
+        for (let w = 0; w < schubWagen.length; w += 3) {
+            const sd = Math.hypot(schubWagen[w + 1], schubWagen[w + 2]);
+            if (!(sd > 1e-9) || !this._fahrStossSatz(schubWagen[w])) continue;
+            vBody.setValue(vx, vBody.y(), vz);
+            this._stossPaar(schubWagen[w], mesh, schubWagen[w + 1] / sd, schubWagen[w + 2] / sd);
+            vx = vBody.x();
+            vz = vBody.z();
+        }
         // Fliegende Inseln teilen die EINE Kapsel-vs-AABB-Quelle (Entscheid #2 — die AABB-Hülle):
         // der Spieler steht auf der Insel-Oberkante + wird an ihren Flanken geschoben.
         const islandTop = fahrHuelle
@@ -91345,7 +92173,7 @@ class AnazhRealm {
     // `huelle` (Welle L, Q5): der Körper ist die Hülle eines gerittenen Gesetz-Wagens (`_fahrHuelle`) statt der Kapsel —
     // dieselbe Bauwerks-Schleife, die Box gegen das Rechteck (`_resolveHuelleVsAABB`); ein Stamm dünner als die Rad-Stufe
     // (`box.dick`) wird überrollt. Die Hülle trägt keine Auflage (−Infinity).
-    _stepCharacterStructures(pos, feetY, headY, radius, huelle) {
+    _stepCharacterStructures(pos, feetY, headY, radius, huelle, quellen) {
         const arches = this.state.architectures;
         if (!arches || !arches.length) return -Infinity;
         let supportTop = -Infinity;
@@ -91361,12 +92189,18 @@ class AnazhRealm {
             // Zentrums-Cull verlor bei großen/skalierten Bauwerken die Rand-Parts.
             const cullR = 60 + (e._blockerReach || 0);
             if (Math.abs(e.position.x - pos.x) > cullR || Math.abs(e.position.z - pos.z) > cullR) continue;
+            if (huelle && huelle.eigen === e.id) continue; // ein rutschender Wagen löst nie gegen sich selbst
             const boxes = e.blockerAABBs;
+            if (huelle) huelle.quelle = e; // der Gegner jedes Schubs (das EINE Impuls-Gesetz)
+            const vorX = pos.x;
+            const vorZ = pos.z;
             for (let b = 0; b < boxes.length; b++) {
                 if (huelle) {
                     if (!(boxes[b].dick < huelle.stufe)) this._resolveHuelleVsAABB(boxes[b], pos, huelle);
                 } else supportTop = this._resolveCapsuleVsAABB(boxes[b], pos, feetY, headY, radius, supportTop);
             }
+            // der Schub dieses Bauwerks (der Spieler-Pfad sammelt ihn: ein Wagen bekommt seinen Impuls, 0710-4)
+            if (quellen && (pos.x !== vorX || pos.z !== vorZ)) quellen.push(e, pos.x - vorX, pos.z - vorZ);
         }
         return supportTop;
     }
@@ -91384,8 +92218,10 @@ class AnazhRealm {
             const mx = (box.minX + box.maxX) * 0.5,
                 mz = (box.minZ + box.maxZ) * 0.5;
             if (Math.abs(mx - pos.x) > 80 || Math.abs(mz - pos.z) > 80) continue; // grobes XZ-Cull
-            if (huelle) this._resolveHuelleVsAABB(box, pos, huelle);
-            else supportTop = this._resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop);
+            if (huelle) {
+                huelle.quelle = null; // eine Insel ist starr
+                this._resolveHuelleVsAABB(box, pos, huelle);
+            } else supportTop = this._resolveCapsuleVsAABB(box, pos, feetY, headY, radius, supportTop);
         }
         return supportTop;
     }
@@ -95710,7 +96546,11 @@ AnazhRealm._fahrGesetz = function () {
         Number.isFinite(F.pitchGain) &&
         Number.isFinite(F.rollGain) &&
         Number.isFinite(vc.A_PITCH_MAX) &&
-        Number.isFinite(vc.A_LAT_MAX)
+        Number.isFinite(vc.A_LAT_MAX) &&
+        F.masseDichte > 0 &&
+        F.sitzLehneRad >= 0 &&
+        F.kopfFreiraumM >= 0 &&
+        F.sitzLehneMaxRad >= F.sitzLehneRad
     ) {
         AnazhRealm._fahrGesetzMemo = {
             he,
@@ -95718,10 +96558,17 @@ AnazhRealm._fahrGesetz = function () {
             rollGain: F.rollGain,
             aPitchMax: vc.A_PITCH_MAX,
             aLatMax: vc.A_LAT_MAX,
+            // die Masse des Wagens: das Volumen des Kerns (carPhys, im Fahr-Satz G.m) mal dieser Dichte (0710-4)
+            masseDichte: F.masseDichte,
+            // der Reiter im Wagen (0710-4 Klasse 4): die Lehne des Sitzes, der Kopf-Freiraum unter der Dachlinie, die
+            // steilste Lehne
+            sitzLehneRad: F.sitzLehneRad,
+            kopfFreiraumM: F.kopfFreiraumM,
+            sitzLehneMaxRad: F.sitzLehneMaxRad,
         };
         return AnazhRealm._fahrGesetzMemo;
     }
-    return AnazhRealm._kernPflichtBruch("vehicle:FAHR.hostEmergent");
+    return AnazhRealm._kernPflichtBruch("vehicle:FAHR.hostEmergent / FAHR.masseDichte / FAHR.sitzLehneRad");
 };
 // DER EINE FAHR-SCHRITT-LESER (Welle L, Nachbesserung 07.10.), fail-closed: die Funktionen des Fahr-Schritts
 // (vehicle-core fahrGesetz · fahrZustand · fahrEbene · fahrStand · fahrKraefte · fahrAufstand) und die Wände des
@@ -96101,13 +96948,176 @@ AnazhRealm._arenaGesetz = function () {
         a.bogen &&
         Number.isFinite(a.schwung.dauerProSqrtI) &&
         Number.isFinite(a.schwung.windupFrac) &&
-        Number.isFinite(a.gefuehl.stossCap) &&
+        Number.isFinite(a.gefuehl.wucht) &&
+        Number.isFinite(a.gefuehl.pProKb) &&
         Number.isFinite(a.bogen.muendungM)
     ) {
         AnazhRealm._arenaGesetzMemo = a;
         return a;
     }
     return AnazhRealm._kernPflichtBruch("schmiede:ARENA");
+};
+
+// DAS EINE IMPULS-GESETZ (0710-2: der Stoß der Fahrt und der Rückstoß des Kampfs, K-D9): jeder Stoß zweier Körper —
+// Wagen an Fels, Wagen an Wagen, Wagen an Tier, Klinge und Pfeil am Tier — tauscht Impuls längs der Stoß-Normalen,
+// J = (1 + e) · v_rel / (1/mA + 1/mB) (ein starrer Gegner: 1/mB = 0), mit der Stoß-Zahl e des Paars. Die Masse kommt
+// aus dem Leib (Tier und Mensch: das Volumen der geschlossenen Haut mal der Dichte des Kerns, `_leibMasse`) und aus dem
+// Kern (der Wagen: carPhys-Volumen mal FAHR.masseDichte, `_fahrMasse`; der Schlag: die wirksame Masse des
+// Schmiede-Urteils). Was ein Leib an Geschwindigkeit bekommt, trägt ihn im festen Sim-Schritt, bis die Reibung am Boden
+// sie aufzehrt (`_kreaturStossSchritt`, der Weg gegen die EINE Hülle) — der Bär rutscht wenig, der Fuchs fliegt; ein
+// gestoßener Wagen rutscht mit der Handbremse (`_fahrNachlauf`). Vorher stand der Wagen in EINEM Frame
+// (Leben-Schau 07.10.: Baum 10,41 → 0,16, GT 11,28 → 0,00, Bär 9,27 → 0,17 m/s), und jeder Treffer versetzte jedes
+// Ziel 2,16 m (eine Kappe, kein Gesetz).
+AnazhRealm.STOSS = Object.freeze({
+    stossZahl: Object.freeze({ starr: 0.2, wagen: 0.3, leib: 0.1 }), // Fels/Bauwerk/Baum · Wagen an Wagen · Leib
+    reibungLeib: 0.6, // μ des gleitenden Leibs am Boden: er verzögert mit μ·g
+    ruheMs: 0.05, // m/s: darunter ruht der Stoß
+    ereignisMs: 1, // m/s Aufprall-Geschwindigkeit, ab der ein Stoß Kamera und Klang erreicht
+    ruckRefMs: 8, // m/s Sprung der eigenen Fahrt, bei dem der Kamera-Ruck (der Landungs-Dip) voll ist
+});
+// DIE MASSE KOMMT AUS DEM KERN (0710-4): der Wirt hält keine Dichte. Tier · Mensch · Wagen tragen ihre Dichte in ihrem
+// Gesetzbuch (tetrapoda MASSSTAB.dichteKgM3 · koerper LEIB.dichteKgM3 · vehicle FAHR.masseDichte), das Volumen ist ihre
+// Gestalt (`_leibVolumen` der geschlossenen Haut, carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
+// (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
+AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
+AnazhRealm._leibGesetz = function () {
+    if (AnazhRealm._leibGesetzMemo) return AnazhRealm._leibGesetzMemo;
+    const T = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const K = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
+    const tier = T && T.MASSSTAB ? T.MASSSTAB.dichteKgM3 : NaN;
+    const mensch = K && K.LEIB ? K.LEIB.dichteKgM3 : NaN;
+    if (!(tier > 0)) return AnazhRealm._kernPflichtBruch("tetrapoda:MASSSTAB.dichteKgM3");
+    if (!(mensch > 0)) return AnazhRealm._kernPflichtBruch("koerper:LEIB.dichteKgM3");
+    AnazhRealm._leibGesetzMemo = Object.freeze({ tier, mensch });
+    return AnazhRealm._leibGesetzMemo;
+};
+// DER BISS ALS STOSS (0710-4): der Anteil der Jäger-Masse hinter dem Biss (tetrapoda BISS.masseAnteil) und das Tempo
+// des Ansprungs (VERHALTEN.aktionen.pounce.tempo, in der Tempo-Einheit des Steuer-Gesetzes). Fail-closed.
+AnazhRealm._bissGesetz = function () {
+    if (AnazhRealm._bissGesetzMemo) return AnazhRealm._bissGesetzMemo;
+    const T = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const anteil = T && T.BISS ? T.BISS.masseAnteil : NaN;
+    const VG = AnazhRealm._verhaltenGesetz();
+    const pounce = VG && VG.aktionen && VG.aktionen.pounce;
+    if (!(anteil > 0 && anteil <= 1)) return AnazhRealm._kernPflichtBruch("tetrapoda:BISS.masseAnteil");
+    if (!pounce || !(pounce.tempo > 0))
+        return AnazhRealm._kernPflichtBruch("tetrapoda:VERHALTEN.aktionen.pounce.tempo");
+    AnazhRealm._bissGesetzMemo = Object.freeze({ masseAnteil: anteil, tempo: pounce.tempo });
+    return AnazhRealm._bissGesetzMemo;
+};
+// Das Volumen einer GESCHLOSSENEN Fläche (m³ im Rahmen ihrer Geometrie) über den Divergenz-Satz, Σ a · (b × c) / 6 je
+// Dreieck — und ob sie geschlossen ist (jede Kante gerade oft: die glatte Vereinigung der Haut teilt manche Kante mit vier
+// Dreiecken, dicht ist sie trotzdem). Eine offene Fläche (Mähne, Strähnen) hat kein Volumen.
+AnazhRealm._geschlossenesVolumen = function (geo) {
+    const pos = geo && geo.attributes && geo.attributes.position;
+    if (!pos) return { v: 0, geschlossen: false };
+    const p = pos.array;
+    const ix = geo.index ? geo.index.array : null;
+    const n = ix ? ix.length : pos.count;
+    const N = pos.count;
+    const kanten = new Map();
+    let v = 0;
+    for (let t = 0; t + 2 < n; t += 3) {
+        const a = ix ? ix[t] : t;
+        const b = ix ? ix[t + 1] : t + 1;
+        const c = ix ? ix[t + 2] : t + 2;
+        const ax = p[3 * a];
+        const ay = p[3 * a + 1];
+        const az = p[3 * a + 2];
+        const bx = p[3 * b];
+        const by = p[3 * b + 1];
+        const bz = p[3 * b + 2];
+        const cx = p[3 * c];
+        const cy = p[3 * c + 1];
+        const cz = p[3 * c + 2];
+        v += (ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)) / 6;
+        for (let k = 0; k < 3; k++) {
+            const u = k === 0 ? a : k === 1 ? b : c;
+            const w = k === 0 ? b : k === 1 ? c : a;
+            const key = u < w ? u * N + w : w * N + u;
+            kanten.set(key, (kanten.get(key) || 0) + 1);
+        }
+    }
+    let geschlossen = kanten.size > 0;
+    for (const z of kanten.values())
+        if (z % 2) {
+            geschlossen = false;
+            break;
+        }
+    return { v: Math.abs(v), geschlossen };
+};
+// DAS VOLUMEN EINER GESTALT (m³ im Rahmen `rahmen`): die geschlossene Haut (LEIB_KLASSEN) unter `teil` — die Nah-Gestalt,
+// nie die Fern-Gestalt daneben. Offene Teile und der Schalen-Stapel des Fells (`fellSchale`: N Kopien der Haut) tragen
+// keine Masse. Je Geometrie gemerkt (jede Kreatur teilt die Geometrien ihrer Vorlage). Gemessen bei Größe 1: Fuchs 0,015 ·
+// Wolf 0,064 · Hirsch 0,094 · Bär 0,335 · Mensch 0,100 m³.
+AnazhRealm._leibVolumen = function (teil, rahmen) {
+    if (!teil || typeof THREE === "undefined") return 0;
+    const memo = AnazhRealm._leibVolumenMemo || (AnazhRealm._leibVolumenMemo = new WeakMap());
+    const r = rahmen || teil;
+    r.updateMatrixWorld(true);
+    const inv = new THREE.Matrix4().copy(r.matrixWorld).invert();
+    const m = new THREE.Matrix4();
+    let v = 0;
+    teil.traverse((o) => {
+        if (!o.isMesh || !o.geometry) return;
+        const kl = o.material && o.material.userData ? o.material.userData.foundryKind : null;
+        if (!AnazhRealm.LEIB_KLASSEN.includes(kl)) return;
+        let g = memo.get(o.geometry);
+        if (!g) {
+            g = AnazhRealm._geschlossenesVolumen(o.geometry);
+            memo.set(o.geometry, g);
+        }
+        if (!g.geschlossen) return;
+        m.multiplyMatrices(inv, o.matrixWorld);
+        v += g.v * Math.abs(m.determinant());
+    });
+    return v;
+};
+// Die nächsten Punkte zweier Strecken AB und CD in der Ebene (x, z): P auf AB, Q auf CD und ihr Abstand d (`out`).
+AnazhRealm._streckenNah2D = function (ax, az, bx, bz, cx, cz, dx, dz, out) {
+    const ux = bx - ax;
+    const uz = bz - az;
+    const vx = dx - cx;
+    const vz = dz - cz;
+    const wx = ax - cx;
+    const wz = az - cz;
+    const a = ux * ux + uz * uz;
+    const b = ux * vx + uz * vz;
+    const c = vx * vx + vz * vz;
+    const d = ux * wx + uz * wz;
+    const e = vx * wx + vz * wz;
+    const nenner = a * c - b * b;
+    let s = 0;
+    let t = 0;
+    if (a <= 1e-12 && c <= 1e-12) {
+        s = 0;
+        t = 0;
+    } else if (a <= 1e-12) {
+        t = Math.max(0, Math.min(1, e / c));
+    } else if (c <= 1e-12) {
+        s = Math.max(0, Math.min(1, -d / a));
+    } else {
+        s = nenner > 1e-12 ? Math.max(0, Math.min(1, (b * e - c * d) / nenner)) : 0;
+        t = (b * s + e) / c;
+        if (t < 0) {
+            t = 0;
+            s = Math.max(0, Math.min(1, -d / a));
+        } else if (t > 1) {
+            t = 1;
+            s = Math.max(0, Math.min(1, (b - d) / a));
+        }
+    }
+    out.px = ax + ux * s;
+    out.pz = az + uz * s;
+    out.qx = cx + vx * t;
+    out.qz = cz + vz * t;
+    out.d = Math.hypot(out.qx - out.px, out.qz - out.pz);
+    return out;
+};
+// J längs der Normalen (A → B) bei schließender Geschwindigkeit vRel > 0; mB = Infinity für einen starren Gegner.
+AnazhRealm._stossImpuls = function (mA, mB, vRel, e) {
+    if (!(vRel > 0) || !(mA > 0) || !(mB > 0)) return 0;
+    return ((1 + e) * vRel) / (1 / mA + (Number.isFinite(mB) ? 1 / mB : 0));
 };
 
 // Werkzeug-Anwendung kostet Stamina: ohne Kosten ließe sich Präzision durch unbegrenzte

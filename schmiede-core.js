@@ -3031,8 +3031,16 @@
     // schwung traegt jetzt auch die HIEB-GEOMETRIE (Phasen-Anteile, Sweep-
     // Bogen +-arcHalfRad um den Blick, Klingen-Kapselradius, Arm-Anteil +
     // Deckel der Reichweite, Sweep-Ursprung ueber der Koerper-Position);
-    // gefuehl den STOSS (push = min(stossCap, kb*stossProKb)*stossSkala als
-    // direkter Positions-Stoss) + das TOD-KIPPEN (Kipp-Dauer + Nachklang);
+    // gefuehl den STOSS + das TOD-KIPPEN (Kipp-Dauer + Nachklang). Der Stoss
+    // (0710-2, das EINE Impuls-Gesetz des Wirts, AnazhRealm.STOSS): der Schlag
+    // ist ein Koerper mit der wirksamen Masse und dem Impuls p des
+    // trefferUrteil, verstaerkt um wucht (das Gefuehl der Arena); die Masse des
+    // Ziel-Leibs teilt ihn. Ein ungemessener Schlag (Faust, Eigenwerk) traegt
+    // p = knockback * pProKb. Vorher ein Positions-Satz min(stossCap,
+    // kb*stossProKb)*stossSkala: 2,16 m fuer jede Waffe und jedes Ziel.
+    // wucht 2,7 (0710-4): geeicht an der Masse der Gestalt (der Fuchs wiegt
+    // 15 kg statt der 35 kg der alten Kapsel — mit 6 trug ihn die Keule 9,7 m,
+    // jetzt wieder ~2 m; der Baer der Groesse 1 wiegt 335 kg und rutscht kaum);
     // bogen den PFEIL-FLUG (Lebenszeit, Kapselradius, Muendungs-Abstand vor
     // der Schulter). guete: die GEMESSENE Waffen-Guete (gueteFaktor unten)
     // mappt den bestandenen Lehren-Anteil linear [faktorLeer..faktorVoll] —
@@ -3069,9 +3077,8 @@
             dipMin: 2.0,
             dipMax: 6.5,
             keRefJ: 114,
-            stossCap: 18,
-            stossProKb: 1.4,
-            stossSkala: 0.12,
+            wucht: 2.7,
+            pProKb: 0.5,
             kippDauerSec: 1.0,
             kippNachklangSec: 0.35,
         },
