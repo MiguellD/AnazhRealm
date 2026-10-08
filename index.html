@@ -264,6 +264,11 @@
                 opacity: 0;
                 pointer-events: none;
             }
+            /* gewichen ist er weg (0710-11): `display: flex` oben schlägt das `[hidden]` des Browsers — ohne diese Regel lag er
+               nach der Ankunft unsichtbar und bildschirmfüllend mit der endlosen Glut-Animation über der Leinwand */
+            #ladeschirm[hidden] {
+                display: none;
+            }
             #ladeschirm .ladeschirm-titel {
                 font-family: "Cinzel", Georgia, serif;
                 font-size: 44px;

@@ -119,6 +119,13 @@ function ladeschirmVerdict(m) {
     if (!f.lueckeFlackert) out.push("eine flackernde Lücke: kein Fall (Vorbedingung)");
     else if (!f.lueckeFlackert.weg) out.push("eine flackernde Lücke hält den Ladeschirm ohne Grenze (kein Deckel)");
     else if (!f.lueckeFlackert.warn) out.push("eine flackernde Lücke weicht ohne Wort im Log");
+    const g = m.weichtGanz;
+    if (!g) out.push("das Weichen des Ladeschirms: kein Fall (Vorbedingung)");
+    else if (!g.hidden || g.display !== "none" || g.animationen)
+        out.push(
+            `der Ladeschirm weicht nicht aus dem Layout (hidden ${g.hidden}, display ${g.display}, ${g.animationen} laufende ` +
+                "Animationen) — er liegt unsichtbar über der Leinwand"
+        );
     const th = m.tastenHinter;
     if (!th) out.push("Tasten hinter dem Ladeschirm: keine Probe (Vorbedingung)");
     else {
@@ -478,6 +485,21 @@ async function probe(arg) {
                 const omniAuf = omni ? !omni.hidden : null;
                 if (omni) omni.hidden = omniVor;
                 m.tastenHinter = { w: wLief, enter: ae ? ae.id || ae.tagName : null, omnibox: omniAuf };
+            }
+            // (9) DER LADESCHIRM WEICHT GANZ (0710-11, OMEN Werkbank): nach `_ladeschirmWeg` (Klasse `weg`, nach 750 ms
+            // `hidden`) fällt er aus dem Layout — `display: none`, keine laufende Animation. Befund: `#ladeschirm` setzt
+            // `display: flex`, ohne `[hidden]`-Regel lag er nach der Ankunft unsichtbar und bildschirmfüllend mit der endlosen
+            // Glut-Animation über der Leinwand (an der Mess-Wiese die render-Phase 3,00/3,10 → 2,85/2,85 ms ohne ihn).
+            {
+                ls.hidden = false;
+                ls.classList.remove("weg");
+                r._ladeschirmWeg();
+                await sleep(1000);
+                const cs = getComputedStyle(ls);
+                const laufen = ls.getAnimations
+                    ? ls.getAnimations({ subtree: true }).filter((a) => a.playState === "running").length
+                    : null;
+                m.weichtGanz = { hidden: ls.hidden, display: cs.display, animationen: laufen };
             }
             await sleep(800);
             if (!st._weltbildDa) st._weltbildDa = performance.now();
@@ -1281,6 +1303,7 @@ async function probe(arg) {
                     zIndex: 2147483000,
                     nachBootWeg: true,
                     tastenHinter: { w: false, enter: "BODY", omnibox: false },
+                    weichtGanz: { hidden: true, display: "none", animationen: 0 },
                     faelle: {
                         ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0 },
                         baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0 },
@@ -1313,6 +1336,7 @@ async function probe(arg) {
                     ["W hinter dem Ladeschirm (Gegenprüfung Runde 2)", { tastenHinter: { w: true, enter: "BODY", omnibox: false } }, "hinter dem Ladeschirm läuft W"],
                     ["Enter hinter dem Ladeschirm (Gegenprüfung Runde 2)", { tastenHinter: { w: false, enter: "chat-input", omnibox: false } }, "hinter dem Ladeschirm öffnet Enter"],
                     ["Strg+K hinter dem Ladeschirm (Gelb 2 der dritten Gegenprüfung)", { tastenHinter: { w: false, enter: "BODY", omnibox: true } }, "hinter dem Ladeschirm öffnet Strg+K die Omnibox"],
+                    ["weicht nicht aus dem Layout (0710-11)", { weichtGanz: { hidden: true, display: "flex", animationen: 1 } }, "der Ladeschirm weicht nicht aus dem Layout"],
                 ],
             ],
             [
