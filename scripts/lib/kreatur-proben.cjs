@@ -27,6 +27,8 @@
 //   zufall    (Q2) kein Math.random im Kreatur-Leben (window.__codeOf über jede Tier-Methode + die benannten Wurf-Stellen)
 //   querhang  (Welle LF) am Hang von 20–30°: das Bein-Lot ≤ 10° bei rollendem Leib, der Stand-Schlupf im Lauf ≤ 0,2
 //             (eine Sohle höchstens 3 cm über dem Boden unter ihr steht; ihr Weg je Weg des Leibs)
+//   ferngang  (Welle LF) laufende Hirsche in der Standbild-Zone (45–60 m) und der Kapsel-Zone (70–90 m) bewegen die Beine
+//             in ≥ 95 % der laufenden Takte (nie das Standbild, nie eingefrorene Knochen)
 "use strict";
 
 // ═══ DIE SEITEN-FUNKTION (läuft im Browser: r = die Welt, T = THREE) ═══
@@ -2231,6 +2233,138 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── ferngang (Leben-Schau 07.10., D-Fern): ferne Tiere gehen, sie gleiten nie — 5 Hirsche in 65 m glitten erstarrt
+    // (jenseits der Standbild-Schwelle 35·L fror der Baum in der Stand-Pose ein, das gemergte Standbild trug ihn, die
+    // Glieder-Kapseln jenseits 64 m lasen eingefrorene Knochen). Gemessen am echten Takt: 4 Hirsche in der Standbild-Zone
+    // (45–60 m), 4 in der Kapsel-Zone (70–90 m) folgen dem Spieler (er steht, der Blick liegt auf ihnen); je laufendem Takt
+    // (Leib-Weg > 0,3 m/s) GLEITET ein Tier, wenn sein SICHTBARER Leib die Beine nicht bewegt: trägt das Fern-Bild, zählen
+    // die Gelenke, an die seine Haut gebunden ist (ein Fern-Bild ohne Haut-Gelenke ist ein Standbild — es gleitet immer),
+    // sonst die des Baums; gleiten heißt, die Hüft-Winkel der vier Beine liegen über 12 Takte in 0,02 rad ──
+    await buehne("ferngang", async (restore) => {
+        r.setGameMode("frieden");
+        const altUhr = s.creatureAnimationTime;
+        restore.push(() => {
+            s.creatureAnimationTime = altUhr;
+        });
+        s.creatureAnimationTime = 100;
+        if (taeter === "ferngang")
+            decke(
+                restore,
+                "_kreaturLaeuft",
+                () =>
+                    function () {
+                        return false; // der Täter: der Standbild-Freeze gilt auch dem, der läuft
+                    }
+            );
+        if (taeter === "ferngang-spiegel")
+            decke(
+                restore,
+                "_tierFernFolgt",
+                () =>
+                    function () {
+                        // der Täter: das Fern-Bild trägt nicht die Pose des Baums (das ungeskinnte Standbild)
+                    }
+            );
+        // die Richtung mit Land in 45–90 m
+        let richtung = null;
+        for (let q = 0; q < 16 && !richtung; q++) {
+            const a = (q / 16) * Math.PI * 2;
+            let ok = true;
+            for (const d of [45, 55, 65, 75, 85, 95]) {
+                const x = P0.x + Math.cos(a) * d,
+                    z = P0.z + Math.sin(a) * d;
+                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) ok = false;
+            }
+            if (ok) richtung = a;
+        }
+        if (richtung === null) return { fehler: "kein Land in 45–95 m um den Spieler" };
+        const ux = Math.cos(richtung),
+            uz = Math.sin(richtung);
+        kamera(ux, uz);
+        const zonen = { standbild: [45, 50, 55, 60], kapsel: [70, 77, 84, 90] };
+        const tiere = [];
+        for (const [zone, ds] of Object.entries(zonen))
+            ds.forEach((d, k) => {
+                const o = (k % 2 ? 1 : -1) * 3;
+                const x = P0.x + ux * d - uz * o,
+                    z = P0.z + uz * d + ux * o;
+                const c = tier({ x, y: r.getTerrainHeightAt(x, z) + 0.3, z }, "wesen", 1);
+                ruhig(c);
+                r.assignCreatureTask(c, "follow_player", {}, { silent: true });
+                tiere.push({ c, zone, spur: [], lage: null });
+            });
+        const BEINE = ["legFL", "legFR", "legHL", "legHR"];
+        // der sichtbare Leib: das Fern-Bild (die Gelenke seiner Haut) oder der Baum
+        const sichtbar = (c) => {
+            const tb = c.userData._tierBaum;
+            if (!tb) return { fern: false, beine: null };
+            if (tb.fern && tb.fern.visible && !(tb.wrap && tb.wrap.visible)) {
+                let haut = null;
+                tb.fern.traverse((o) => {
+                    if (!haut && o.isSkinnedMesh && o.skeleton && o.userData && o.userData.__skinJoints) haut = o;
+                });
+                if (!haut) return { fern: true, beine: null };
+                const B = {};
+                for (const b of haut.skeleton.bones) B[b.name] = b;
+                return { fern: true, beine: BEINE.map((n) => (B[n] ? B[n].rotation.x : 0)) };
+            }
+            const Tt = tb.teile;
+            return { fern: false, beine: Tt ? BEINE.map((n) => (Tt[n] ? Tt[n].rotation.x : 0)) : null };
+        };
+        const z = {
+            standbild: { lauf: 0, gleit: 0, fernBild: 0 },
+            kapsel: { lauf: 0, gleit: 0, fernBild: 0 },
+        };
+        const dt = 1 / 60;
+        for (let k = 0; k < 420; k++) {
+            pm.copy(P0);
+            takt(dt);
+            for (const t of tiere) {
+                const c = t.c;
+                const p = { x: c.position.x, z: c.position.z };
+                const sb = sichtbar(c);
+                const b = sb.beine;
+                if (t.warFern !== sb.fern) t.spur.length = 0; // der Wechsel Baum ↔ Fern-Bild beginnt eine neue Spur
+                t.warFern = sb.fern;
+                t.spur.push(b);
+                if (t.spur.length > 12) t.spur.shift();
+                const v = t.lage ? Math.hypot(p.x - t.lage.x, p.z - t.lage.z) / dt : 0;
+                t.lage = p;
+                if (k < 60 || v < 0.3) continue;
+                const Z = z[t.zone];
+                Z.lauf++;
+                if (sb.fern) Z.fernBild++;
+                if (!b) {
+                    Z.gleit++; // ein Standbild ohne Gelenke
+                    continue;
+                }
+                if (t.spur.length < 12) continue;
+                let spanne = 0;
+                for (let j = 0; j < 4; j++) {
+                    let mn = Infinity,
+                        mx = -Infinity;
+                    for (const w of t.spur) {
+                        if (!w) continue;
+                        mn = Math.min(mn, w[j]);
+                        mx = Math.max(mx, w[j]);
+                    }
+                    spanne = Math.max(spanne, mx - mn);
+                }
+                if (spanne < 0.02) Z.gleit++;
+            }
+        }
+        const aus2 = {};
+        for (const [zone, Z] of Object.entries(z))
+            aus2[zone] = {
+                laufTakte: Z.lauf,
+                gleitTakte: Z.gleit,
+                gleitAnteil: Z.lauf ? +(Z.gleit / Z.lauf).toFixed(3) : null,
+                fernBild: Z.fernBild,
+            };
+        aus2.abstandM = tiere.map((t) => +Math.hypot(t.c.position.x - P0.x, t.c.position.z - P0.z).toFixed(1));
+        return aus2;
+    });
+
     return aus;
 }
 
@@ -2257,6 +2391,7 @@ const PROBEN = [
     "rudel",
     "sockel",
     "querhang",
+    "ferngang",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -2503,6 +2638,18 @@ function urteil(name, z) {
             `das Tier steht im Sockel: ${z.imSockelTakte} von ${z.ueberTakte} Takten über ihm, bis ${z.tiefMaxM} m tief (Oberkante ${z.oberkanteUeberBodenM} m über dem Boden)`
         );
     }
+    if (name === "ferngang") {
+        for (const [zone, Z] of [
+            ["Standbild-Zone 45–60 m", z.standbild],
+            ["Kapsel-Zone 70–90 m", z.kapsel],
+        ]) {
+            soll(Z.laufTakte >= 200, `${zone}: nur ${Z.laufTakte} laufende Takte (die Probe braucht ≥ 200)`);
+            soll(
+                Z.gleitAnteil !== null && Z.gleitAnteil <= 0.05,
+                `ferner Gang gleitet: ${zone} ${Z.gleitTakte} von ${Z.laufTakte} laufenden Takten ohne Beinschlag (Soll ≤ 5 %; das Fern-Bild trug ${Z.fernBild})`
+            );
+        }
+    }
     if (name === "querhang") {
         for (const [wer, a] of [
             ["Wolf", z.stand.wolf],
@@ -2573,6 +2720,10 @@ const TAETER = {
     querhang: [
         ["querhang", /Bein-Lot am Querhang/],
         ["querhang-gleiten", /Stand-Schlupf am Querhang/],
+    ],
+    ferngang: [
+        ["ferngang", /ferner Gang gleitet/],
+        ["ferngang-spiegel", /ferner Gang gleitet: Standbild-Zone/],
     ],
 };
 

@@ -281,6 +281,18 @@ const server = http.createServer((req, res) => {
                 return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
             };
             const saveRandom = Math.random;
+            // der Ort des Laufs: Land in 1,4·Schwelle (ein Wolf im Wasser triebe mit der Strömung — ein Leib, der sich
+            // bewegt, behält seinen Gelenk-Baum, Welle LF)
+            let landWinkel = 0;
+            for (let q = 0; q < 24; q++) {
+                const a = (q / 24) * Math.PI * 2;
+                const lx = pm.x + Math.cos(a) * 1.4 * fern,
+                    lz = pm.z + Math.sin(a) * 1.4 * fern;
+                if (!r._isAboveWaterAt || r._isAboveWaterAt(lx, lz)) {
+                    landWinkel = a;
+                    break;
+                }
+            }
             const lauf = (ohneFern) => {
                 Math.random = mulberry32(424242); // DIESELBE Folge je Lauf
                 r._creatureAiFrame = 1000;
@@ -297,6 +309,11 @@ const server = http.createServer((req, res) => {
                 // Ticks driften max. ~4 m — das Regime bleibt jenseits (1−h).
                 const cw = spawnWolf(1.4 * fern);
                 if (!cw) return null;
+                cw.position.x = pm.x + Math.cos(landWinkel) * 1.4 * fern;
+                cw.position.z = pm.z + Math.sin(landWinkel) * 1.4 * fern;
+                // Das Standbild trägt nur ein Tier, das STEHT (Welle LF, der ferne Gang: wer läuft, behält den
+                // Gelenk-Baum) — der Wolf wartet, sonst wanderte er aus dem Fern-Regime in den Baum.
+                r.assignCreatureTask(cw, "wait", {}, { silent: true });
                 if (cw.userData.task) cw.userData.task.since = 0;
                 cw.userData.bornAt = 0;
                 if (ohneFern && cw.userData._tierBaum) {

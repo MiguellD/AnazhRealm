@@ -723,7 +723,8 @@ jobs:
               # Durchdringung, die Neugier stellt sich an) · jagdkreis (Welle LF: der Witterungs-Jäger läuft zur Beute, das
               # Rudel und der Wolf am Kitz beißen, der Sprinter wird eingeholt) · rudel (das Rudel umstellt) · sockel (Welle LF:
               # das Tier steht auf der Auflage der Bauten) · querhang (Welle LF: die Beine stehen im Lot, der stehende Fuß
-              # gleitet nicht). --selftest zuerst: je Probe spielt
+              # gleitet nicht) · ferngang (Welle LF: ferne Tiere gehen — das Fern-Bild ist geskinnt, wer läuft, wird
+              # ausgewertet). --selftest zuerst: je Probe spielt
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.
               run: npm run gate:kreatur-takt
 

@@ -18344,6 +18344,24 @@ class AnazhRealm {
         const rate = Math.max(0.4, Number(P.tailRate) || 0.5);
         const ts = tb.tailSegs || [];
         for (let i = 0; i < ts.length; i++) ts[i].rotation.y = Math.sin(t * rate - i * 0.5) * amp;
+        this._tierFernFolgt(tb);
+    }
+
+    // DAS FERN-BILD GEHT MIT (Welle LF, der ferne Gang): jenseits der Standbild-Schwelle trug ein ungeskinntes Standbild
+    // das Tier — es glitt erstarrt über den Boden (5 Hirsche in 65 m). Seine Haut ist jetzt an seine Gelenke gebunden
+    // (foundry-core, Stufe 1 geskinnt); dieser Spiegel legt die Pose des EINEN animierten Baums auf sie (Lage, Drehung,
+    // Größe je Gelenk — 27 Kopien je Auswertung). Die Glieder-Kapseln jenseits 64 m lesen den Baum selbst.
+    _tierFernFolgt(tb) {
+        const F = tb && tb.fernTeile;
+        if (!F || !tb.teile) return;
+        for (const name in F) {
+            const q = tb.teile[name],
+                z = F[name];
+            if (!q || !z) continue;
+            z.position.copy(q.position);
+            z.quaternion.copy(q.quaternion);
+            z.scale.copy(q.scale);
+        }
     }
 
     // DER BODEN UNTER EINER PFOTE (Welle LF, die Pfoten-IK _animateTierBaum): der Stand-Leser der Sicht um den Träger des
@@ -18436,7 +18454,8 @@ class AnazhRealm {
             group2.add(wrap2);
             // DER FERN-GUSS aus DERSELBEN Pipe: lod1 = das gemergte Standbild
             // (~8 Meshes). updateCreatures toggelt wrap↔fern (TIER_FERN_DIST).
-            let wrap3 = null;
+            let wrap3 = null,
+                fernTeile = null;
             const t1 = this._ofenKreaturTemplate(recId, opts && opts.dialsOv, 1);
             if (t1 && t1.root) {
                 wrap3 = new THREE.Group();
@@ -18451,6 +18470,7 @@ class AnazhRealm {
                     if (n.isMesh) n.castShadow = false;
                 });
                 AnazhRealm._ofenKlonRebind(fernKlon, teileF); // die starr gebundenen Teile hängen an SEINEN Gelenken
+                fernTeile = teileF;
                 wrap3.add(fernKlon);
                 wrap3.visible = false;
                 wrap3.userData._creatureSkin = true;
@@ -18466,6 +18486,8 @@ class AnazhRealm {
                 bein: AnazhRealm._tierBeinMass(t0, f2),
                 wrap: wrap2,
                 fern: wrap3,
+                // die Gelenke des Fern-Bilds (Welle LF: seine Haut ist geskinnt — _tierFernFolgt spiegelt den Baum hinein)
+                fernTeile,
             };
             return group2;
         }
@@ -21708,9 +21730,11 @@ class AnazhRealm {
     // EINE Rate je Distanz relativ zur Standbild-Schwelle (dieselbe wie der wrap↔fern-Toggle): 1 = jeden
     // Frame · 2 · 4 · 0 = hinterm Standbild (eingefroren in Stand-Pose). walkPhase + Anim-Uhr akkumulieren
     // JEDEN Frame → der Gang bleibt gleich schnell, nur seltener ausgewertet. Linse: gate:kreatur-kosten.
-    _creatureAnimDiv(dist, fernDist, omega, frameDt) {
+    // Jenseits der Schwelle friert nur ein Tier, das STEHT (Welle LF, der ferne Gang): wer läuft (laeuft), wird auf der
+    // untersten Stufe weiter ausgewertet — seine Knochen tragen das Standbild-freie Fern-Bild und die Glieder-Kapseln.
+    _creatureAnimDiv(dist, fernDist, omega, frameDt, laeuft) {
         if (!(fernDist > 0) || !(dist >= 0)) return 1;
-        if (dist >= fernDist) return 0;
+        if (dist >= fernDist && laeuft !== true) return 0;
         const div = dist >= fernDist * 0.75 ? 4 : dist >= fernDist * 0.5 ? 2 : 1;
         // Der Gang wird nie gröber als ein Viertel seines Takts abgetastet (ω des Gang-Gesetzes aus der letzten
         // Auswertung): ein Fuchs im schnellen Trab (Takt 0,24 s) traf bei 30 fps und Stufe 1/4 (0,133 s je Auswertung)
@@ -21718,6 +21742,30 @@ class AnazhRealm {
         if (div > 1 && omega > 0 && frameDt > 0)
             return Math.max(1, Math.min(div, Math.floor((2 * Math.PI) / omega / (4 * frameDt))));
         return div;
+    }
+    // DER LAUF DES LEIBS (Welle LF, der ferne Gang): je Takt die Lage-Änderung des Leibs, geglättet (ein Sprung über das
+    // vMax des Gang-Gesetzes — Spawn, Teleport, Peer-Schnapp — ist kein Lauf); „läuft" mit Hysterese (ein ab 0,2 m/s, aus
+    // unter 0,1 m/s). Leser: _kreaturLaeuft — die Raten-Leiter und das Standbild (beide am EINEN Ort in updateCreatures).
+    _kreaturLaufTakt(creature, delta) {
+        const tc = globalThis.__tetrapodaCore;
+        if (!tc || !tc.GANG_GESETZ) AnazhRealm._kernPflichtBruch("tetrapoda:GANG_GESETZ");
+        const ud = creature.userData;
+        const p = creature.position;
+        const alt = ud._laufLage;
+        if (!alt) ud._laufLage = { x: p.x, z: p.z };
+        else if (delta > 0) {
+            let v = Math.hypot(p.x - alt.x, p.z - alt.z) / delta;
+            if (!(v <= tc.GANG_GESETZ.vMax)) v = 0;
+            const lv = ud._laufV || 0;
+            ud._laufV = lv + (v - lv) * (1 - Math.exp(-6 * Math.min(0.1, delta)));
+            alt.x = p.x;
+            alt.z = p.z;
+        }
+        const lv = ud._laufV || 0;
+        ud._laeuft = ud._laeuft === true ? lv > 0.1 : lv > 0.2;
+    }
+    _kreaturLaeuft(creature) {
+        return !!(creature && creature.userData && creature.userData._laeuft === true);
     }
     // AUSKLINGE-SAUM (letzte 15 % vor der Standbild-Schwelle): 1 → 0 linear; _animateTierBaum
     // multipliziert Schritt/Schwanz/Sway/Kopf damit → der Toggle trifft die Stand-Pose. Jenseits 0.
@@ -21768,6 +21816,7 @@ class AnazhRealm {
         const ts = tb.tailSegs || [];
         for (let i = 0; i < ts.length; i++) ts[i].rotation.y = 0;
         tb._gang = null;
+        this._tierFernFolgt(tb);
     }
 
     // DIE KÖRPERLÄNGE (m) einer Kreatur: die z-Ausdehnung ihrer Seelen-Teile (`_soulParts`, die Körper-Achse) ×
@@ -22398,6 +22447,8 @@ class AnazhRealm {
             // DER TRÄGER der Pfoten (Welle LF): die Höhe, auf der der Leib steht, und ob ein Bau ihn trägt (_kreaturFussBoden)
             udH._traegerY = baseY;
             udH._traegerStruktur = traegtBau;
+            // DER LAUF DES LEIBS (Welle LF, der ferne Gang): wer läuft, dem laufen die Beine in jeder Ferne
+            this._kreaturLaufTakt(creature, delta);
 
             // Emergente Bewegung aus den Soul-Parts (Beine schwingen, Flügel schlagen, Schwänze wellen) — NACH der Lage des
             // Takts (Welle LF): die Beine stellen sich auf den Boden unter jeder Pfote (_animateTierBaum liest Höhe, Nick und
@@ -22416,7 +22467,8 @@ class AnazhRealm {
                     const fernDist = tierFernDist * fLA;
                     const tBA = creature.userData._tierBaum;
                     const omegaGang = tBA && tBA._gang ? tBA._gang.omega : 0;
-                    let animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, delta);
+                    const laeuft = this._kreaturLaeuft(creature);
+                    let animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, delta, laeuft);
                     if (animDiv === 0 && !(tBA && tBA.fern)) animDiv = 4;
                     if (animDiv === 0) {
                         if (!creature.userData._animEingefroren) {
@@ -22428,7 +22480,8 @@ class AnazhRealm {
                         // der Ausklinge-Saum: vor der Schwelle blendet der Schritt in
                         // die Stand-Pose — der Standbild-Toggle trifft eine STEHENDE
                         // Gestalt (_animateTierBaum konsumiert _animFade).
-                        creature.userData._animFade = this._creatureAnimFade(distToPlayer, fernDist);
+                        // (wer läuft, behält seinen Schritt: das Standbild trägt nur, wer steht)
+                        creature.userData._animFade = laeuft ? 1 : this._creatureAnimFade(distToPlayer, fernDist);
                         // ABSCHIEDS-WELLE (Motion-Vollendung) — das Kreatur-Innenleben reist in
                         // die EINE Emotions→Profil-Brücke (chaos→flee · joy→joy · null→Default).
                         this._animateCompoundMotion(
@@ -96037,8 +96090,8 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
 });
 AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
 
-// Fern-Guss-Distanz (m, Körpergröße L=1): jenseits tauscht der animierte Baum (~235 Draws) gegen das
-// gemergte lod1-Standbild (~8 Draws). Als Quadrat (der Loop führt distSqToPlayer ohne sqrt).
+// Fern-Guss-Distanz (m, Körpergröße L=1): jenseits tauscht der animierte Baum gegen das gemergte lod1-Standbild —
+// für ein Tier, das STEHT (Welle LF: wer läuft, behält den Baum und seinen Schritt). Als Quadrat (der Loop führt distSqToPlayer ohne sqrt).
 // 35 m: der Beinschwung ist dort ~2.7 px (Sichtbarkeits-Kante); skaliert mit der Körpergröße (fL).
 AnazhRealm.TIER_FERN_DIST_SQ = 35 * 35;
 // Hysterese des wrap↔fern-Toggles: ±10-%-Band — fern erst jenseits (1+h)·Grenze, zurück erst

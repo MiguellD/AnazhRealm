@@ -394,6 +394,16 @@ Komponenten-SÄTZE, keine Klassen):
   Welt, Halt des stehenden Fußes, Senke auf die Reichweite, Abspreizen +
   ebene Zwei-Knochen-IK); Linsen `gate:tier-gang` · `gate:kreatur-takt`
   (gier · querhang).
+- **Das Fern-Bild ist geskinnt (Welle LF 08.10., foundry-core
+  `bakeTierInstance` Stufe 1, Vertrags-Akt am Ofen-Golden — 28 Klassen, die
+  Geometrie byte-gleich ohne die Gewichte):** die L1-Haut trägt Gelenk-Gewichte
+  wie L0, die starren Teile hängen starr an ihren Gelenken, `skinJoints` reist
+  im Beipack (die 27 Gelenke von L0 und L1 sind byte-gleich). Der Wirt spiegelt
+  die Pose des EINEN animierten Baums auf die Gelenke des Fern-Bilds
+  (`_tierFernFolgt`) und wertet jenseits der Standbild-Schwelle jedes Tier aus,
+  das LÄUFT (`_kreaturLaufTakt` · `_kreaturLaeuft`, die Raten-Leiter auf ihrer
+  untersten Stufe); wer steht, friert ein. Linse `gate:kreatur-takt`
+  (ferngang).
 
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 

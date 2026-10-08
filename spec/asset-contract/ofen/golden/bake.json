@@ -279,37 +279,37 @@
    "meshes": 1,
    "verts": 3439,
    "tris": 5612,
-   "sha256": "1fa308d94d67cdc574d45efc7e06e96c68bd7dbbb998830ec24f000e87f26cfb"
+   "sha256": "60a701b3f460ad356928ae0fd7301dc7b80334c46de504add5eaf6fb0ee8a47d"
   },
   "wolf-L1|straehneD|wolf": {
    "meshes": 1,
    "verts": 120,
    "tris": 72,
-   "sha256": "dd3ab2f5082f49020b17b37beb41d8380574b7dff0b2ac5117d2cd3b3b33f52e"
+   "sha256": "e79a497374853196fe39ffb626ce1b194e0d0aa1edb6f916fead5e704a6b3f77"
   },
   "wolf-L1|nase|wolf": {
    "meshes": 1,
    "verts": 30,
    "tris": 30,
-   "sha256": "ae4f83d3ded25ec0452631a7a70aaff6fe7581c6f187e26c642ff72691866d8d"
+   "sha256": "e732e74fd2b7ee45240566b5ecd8f6d05204ceb957fb1c6f8ce9084aafb34593"
   },
   "wolf-L1|dunkel|wolf": {
    "meshes": 1,
    "verts": 120,
    "tris": 120,
-   "sha256": "88dfc6b72a8a0fb05b6793a117862035695ae7a833323088ceb39449aa042fb6"
+   "sha256": "a1a8de886e27542627768b1a030354b85a6a33f23cdaa619659e48124fef8d20"
   },
   "wolf-L1|tierauge|wolf": {
    "meshes": 1,
    "verts": 60,
    "tris": 60,
-   "sha256": "404d72bba4b9b07b118475887114ebceb6b35b1c8d886ddc15ee7704fa8d0881"
+   "sha256": "6b5ad313ec6dcf372a4188d6dee08e803a490f54748be0ac7e39484490d35912"
   },
   "wolf-L1|pupille|wolf": {
    "meshes": 1,
    "verts": 60,
    "tris": 60,
-   "sha256": "cb6e02edc172f481c842f4bc5ad47ca01587ca46299ecaf1f9ba8aea3c7b5da6"
+   "sha256": "7a090d7518a733c19f64c93476444e0359b404f150427f627a64adc56fde2147"
   },
   "wolf-L1|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -408,7 +408,7 @@
    "sha256": "6cd4e10586a5fb3cb8c10e1292dde7b88dd879f144a033fad88d513d811ba477"
   },
   "wolf-L1|beipack": {
-   "sha256": "c4bd2bbb942f8dc588d7c0375b8df8c7198e948752f87b70b495f88665f87f53"
+   "sha256": "9bb51b6bc5fcd3f37357000bbb327fdea615c41963c859da0ff15c73aad4ac30"
   },
   "fox-L0|fell|flL": {
    "meshes": 1,
@@ -717,37 +717,37 @@
    "meshes": 1,
    "verts": 3613,
    "tris": 5938,
-   "sha256": "0ce885dd1a6aab2bfc27402a014be0fb43eb747ca99fac51836785ed82afaf1a"
+   "sha256": "84dc74f187947956408c94a8c6bca8e08451dcb1e1c7e1862398c102c89d1029"
   },
   "fox-L1|straehneD|wolf": {
    "meshes": 1,
    "verts": 120,
    "tris": 72,
-   "sha256": "f029a60913ab5bed0796c34f3c8bac8d03344ad929ed7cf836e87d5f690899cd"
+   "sha256": "4e7d7dc97afa2fdbc056171aae233ac8ad63521420ca940b58832a02a4f3139c"
   },
   "fox-L1|nase|wolf": {
    "meshes": 1,
    "verts": 30,
    "tris": 30,
-   "sha256": "933b3310719ceaaa1569eff42eb4e060698ff06074ebb605f07306595b5895f1"
+   "sha256": "6acc8989ef96cc172317ce4337b263f8ef419762446b19f539b0247ed173c03f"
   },
   "fox-L1|dunkel|wolf": {
    "meshes": 1,
    "verts": 120,
    "tris": 120,
-   "sha256": "363b41650b0c111fe6a6816f4109c1a4b723b6135f992f0b712972126084ef70"
+   "sha256": "2e6294ea83d91da2ff27fe71b0a52ecf4f3c11c6ce37fc6515613eab1284ae63"
   },
   "fox-L1|tierauge|wolf": {
    "meshes": 1,
    "verts": 60,
    "tris": 60,
-   "sha256": "9180e5d5eb9200885ce728847156e1fffeb015e815618453b2b0cdaca9b0517c"
+   "sha256": "e3c1cb7d9b470ad17288a27a475210d7886f2bd8986beb6b660a36a0b03c40ad"
   },
   "fox-L1|pupille|wolf": {
    "meshes": 1,
    "verts": 60,
    "tris": 60,
-   "sha256": "55b82d7b3ea1751a5a205a08f665140a0f849ba54b0d369a118183c73a55b3c2"
+   "sha256": "83f51fadde08cf239ae735126167c4301334cae90eef8fdb1037c52505b82076"
   },
   "fox-L1|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -852,7 +852,7 @@
    "sha256": "2f64a2248b0b94f9d3fc3e5df7775a49bf6e564b8390ba413b4bb5bb9556a5e7"
   },
   "fox-L1|beipack": {
-   "sha256": "61cd464fed230cc42dfd5f482bc0e546631cd3f447d16ef6d70cfe88e9be28e2"
+   "sha256": "0ce4ab66be3f022b02a8a47924508d5e4649ca88a6d61b935d02b4b70c9d713a"
   },
   "bear-L0|ballen|flP": {
    "meshes": 1,
@@ -1101,37 +1101,37 @@
    "meshes": 1,
    "verts": 3558,
    "tris": 6124,
-   "sha256": "5c557a9b4c3908a49cb4f913f107ae6ff59a56cdd8b06ce6f8520adafa686cf2"
+   "sha256": "10d518fc149885615bb7f7f3f3075654416023e84dc9fca3cf1f1f4a42a716c0"
   },
   "bear-L1|straehneD|wolf": {
    "meshes": 1,
    "verts": 40,
    "tris": 24,
-   "sha256": "0aabfc84613bb0c9f3e0b7e2464ca003f8ef3feb75b77c4ed7f18c7291a42d23"
+   "sha256": "f999651ee514d5b37ee8dc28a2c2a8ef817208df4ff7de9f48f807a8e028fb22"
   },
   "bear-L1|nase|wolf": {
    "meshes": 1,
    "verts": 30,
    "tris": 30,
-   "sha256": "badf3e01806c0e9ac54f900765aa3d497c1c79eb29a3b4d4b4a80bb081f002ef"
+   "sha256": "c52e2e0c195ddccee627b3d6270ae427622cf334e4c139a80525ca87d691ed22"
   },
   "bear-L1|dunkel|wolf": {
    "meshes": 1,
    "verts": 120,
    "tris": 120,
-   "sha256": "7c3cf40e955df0273884a8631a6fb485822c455fcc691a5205e30abb0351bc67"
+   "sha256": "8492914fa65504a9416b38298231c99ca796e6f558f8eb87da315c138ed4f999"
   },
   "bear-L1|tierauge|wolf": {
    "meshes": 1,
    "verts": 60,
    "tris": 60,
-   "sha256": "ba510031847d6ada061c084d8b158960439818ac14ac82892e29304317b95e7e"
+   "sha256": "30f84e6169a928acfaa4f8e94a5fda0afe0e38bd5aab24414df092490ed32338"
   },
   "bear-L1|pupille|wolf": {
    "meshes": 1,
    "verts": 60,
    "tris": 60,
-   "sha256": "315c6a5ad7475f6bb3a8f31994efac598e0d84f923e6dad55f4657b75c6dd68c"
+   "sha256": "5320541ec906576d2337c980f55155ff8f59e39ef37604e548343399f87852cc"
   },
   "bear-L1|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -1212,7 +1212,7 @@
    "sha256": "86ece91669214ffdecb3146c40c19c2ce2404cb49d7dc5431e542cee47598d24"
   },
   "bear-L1|beipack": {
-   "sha256": "ac363398c0873be93e7f5eb5df67016879d9f248ac9ea35ca479b330406e7e8a"
+   "sha256": "05309f666b1616af96e5374d7ae9d1a4509edbcac09d8fce2c819b54d4206ecc"
   },
   "deer-L0|klaue|flP": {
    "meshes": 1,
@@ -1440,37 +1440,37 @@
    "meshes": 1,
    "verts": 2769,
    "tris": 5146,
-   "sha256": "f298abe427e32972c0957f7e048d8e34d0113984af28cc14f88832d6e0790498"
+   "sha256": "8656332de341cf2416a3a1ef7ab5a5ddbcd1494f43d11938babd0387a31ca44c"
   },
   "deer-L1|straehneD|wolf": {
    "meshes": 1,
    "verts": 40,
    "tris": 24,
-   "sha256": "22b096b28cc7a7856714f0ad93892dfb6a28451d9a35fd359695eaa7d454a8bd"
+   "sha256": "d1323c017f6c0d2cc6c758ee1510f66494b6db6ee62cdb3d8d3096e19499f55a"
   },
   "deer-L1|nase|wolf": {
    "meshes": 1,
    "verts": 30,
    "tris": 30,
-   "sha256": "02a0ca6fbbb5e1e6de298cbe62a637f3b66f418501f704b451a3a12ef2a5794c"
+   "sha256": "94d901c1ef7b0c3eb2b6414f60926e5c1207e7e7db410914b5df09cd4ab464dc"
   },
   "deer-L1|dunkel|wolf": {
    "meshes": 1,
    "verts": 120,
    "tris": 120,
-   "sha256": "a57de448b1aa261fb1e2fc202668027b8b94973edd5892f677524f1ab023141f"
+   "sha256": "77cc97b8339af80e7e625219f73f9d3054b9e9e7c31a77222656657ded109055"
   },
   "deer-L1|tierauge|wolf": {
    "meshes": 1,
    "verts": 60,
    "tris": 60,
-   "sha256": "a45721af14ba260678b38f84f99cc79673d8ec75c293c7d4043ed07fb113d4d4"
+   "sha256": "de66f8a5ad3076eeb0a7a40e3b721f2e3ed098f5f23082944f32d8216811fa07"
   },
   "deer-L1|pupille|wolf": {
    "meshes": 1,
    "verts": 60,
    "tris": 60,
-   "sha256": "af28bbae0f1d951befb58ae8b8720dc4b46fa49422ace1bb6f8389111d7b2b88"
+   "sha256": "d6ba24c156107423291bd0a5ec56d6cb96620b71724532c468c918637be162e4"
   },
   "deer-L1|gelenk|wolf": {
    "sha256": "4f97437e09ba060e40d214ffd368dd234c96d6a6c141b2843f23bb26df97ef6c"
@@ -1554,7 +1554,7 @@
    "sha256": "0f0ecebf5d7d50a304104d1dec257e7bdec65fc9b19b37b632d93aba743dca85"
   },
   "deer-L1|beipack": {
-   "sha256": "bd9ac6e464d902e021b3c185af5b3f7dfd0cdc2cf923d6190855d7ee3c5219fa"
+   "sha256": "1be2f636f006c36286b27b35d7905fcc41d36ea2eac5641b54f039fb4e012372"
   },
   "mensch-L0|skin|torso": {
    "meshes": 1,
