@@ -376,10 +376,25 @@ function check(name, ok, detail) {
         await einschwingen(120000);
         const D1 = r.constructor.prototype._archKartenPreset;
         const kandS1 = await uebergang(); // der Kandidat unter dem echten Weg (der Baum steht am Rand)
+        // Der Tausch ändert, was Cull und Stufen-Wahl urteilen: er ist ein Schreiber und trägt seinen Weckruf (die Stand-Wache,
+        // `_standRuht` — ohne ihn ging der Cull in einer eingeschwungenen Welt nie, A blieb unter dem alten Weg grün: CI
+        // 91c44f0f, A 1558/1558). A zählt erst, wenn der Cull nach dem Tausch gegangen ist — nie nach einer festen Taktzahl.
+        const PS = Object.getPrototypeOf(r);
+        let cullGaenge = 0;
+        r.tickArchitectureCulling = function () {
+            const t = this._standWache && this._standWache.takte.get("archCull");
+            const vor = t ? t.ruht : 0;
+            const o = PS.tickArchitectureCulling.call(this);
+            if (!t || t.ruht === vor) cullGaenge++;
+            return o;
+        };
         r._archKartenPreset = () => null;
-        await tick(30);
-        res.S1 = { A: formZensus(), D: await uebergang(), vorher: !kandS1.fehlt };
+        r._weltRegt();
+        for (let i = 0; i < 120 && cullGaenge < 1; i++) await tick(1);
+        delete r.tickArchitectureCulling;
+        res.S1 = { A: formZensus(), cullGaenge, D: await uebergang(), vorher: !kandS1.fehlt };
         delete r._archKartenPreset; // die Prototyp-Methode trägt wieder
+        r._weltRegt();
         res.S1.zurueck = r._archKartenPreset === D1;
         // ── SELBSTTEST (2): ein injizierter Satz an einem Baum ──
         const opfer = karten()[0];
@@ -465,11 +480,18 @@ function check(name, ok, detail) {
         s3 ? `alt: ${zs(s3)} · wieder: ${zs(s3.zurueck)}` : "kein Riese"
     );
     const s1 = out.S1;
-    const s1Rot = s1.vorher && s1.zurueck && !(s1.A.n >= 100 && s1.A.ok === s1.A.n) && !s1.D.fehlt && !dOk(s1.D);
+    const s1Rot =
+        s1.vorher &&
+        s1.zurueck &&
+        s1.cullGaenge >= 1 &&
+        !(s1.A.n >= 100 && s1.A.ok === s1.A.n) &&
+        !s1.D.fehlt &&
+        !dOk(s1.D);
     check(
         "SELBSTTEST 1 (der alte Weg macht A und D rot)",
         s1Rot,
-        `A ${s1.A.ok}/${s1.A.n}` +
+        (s1.cullGaenge >= 1 ? "" : "der Cull ging nach dem Tausch nie (der Weckruf fehlt) · ") +
+            `A ${s1.A.ok}/${s1.A.n}` +
             (s1.A.taeter[0] ? ` (${s1.A.taeter[0]})` : "") +
             ` · D ${s1.D.fehlt ? "kein Kandidat" : `Takte ohne Gestalt ${s1.D.luecke}, Slots gleich ${s1.D.draussen.gleich}`}`
     );
