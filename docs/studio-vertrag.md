@@ -112,9 +112,10 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   segmente ganz ≥ 1, breite > 0}: die Rispe des Grases je gelieferter Stufe — Grannen × Segmente und die Breite der
   Granne in Einheiten der vollen; emitGrass liest sie, jede Granne des Individuums zieht ihre Würfe weiter).
 - **Die Gras-Zeile (S3, 08.10.) ist aus dem Haushalt abgeleitet:** die Nah-Wiese der Welt zeichnet an der Mess-Wiese
-  höchstens 57 066 Dreiecke (Ratsche des Profi-Bands, je Blick ≤ 80 000) — `grass[1]` 1 000 (L1 0–5 m, Rispe 3 × 2)
-  und `grass[2]` 130 (L2 5–14 m, EINE Granne) statt der gemessenen Hülle 1 700/320; die Halme bleiben byte-gleich, die
-  Breite der Granne ist an der Bild-Deckung geeicht (Ährchen-Anteil der Pixel, 8 Blicke).
+  höchstens 57 066 Dreiecke (Ratsche des Profi-Bands, je Blick ≤ 80 000) — `grass[1]` 1 040 (L1 0–5 m, Rispe 4 × 2:
+  an Armlänge ein Kreuz-Stern, der Drei-Strahl las als V-Flocke) und `grass[2]` 130 (L2 5–14 m, EINE Granne) statt der
+  gemessenen Hülle 1 700/320; die Halme bleiben byte-gleich, die Breite der Granne ist an der Bild-Deckung geeicht
+  (Ährchen-Anteil der Pixel, 8 Blicke).
 - `band` (DARF, ganze Zahl > 0 und < `tris`): das Profi-Band-Ziel der Stufe (Haushalt), solange die
   gebaute Hülle `tris` darüber liegt — offen und benannt, die Wand druckt den Faktor; erreicht die Stufe
   das Band, fällt das Feld und `tris` IST das Band. `tris` bleibt die Ratsche (darf nur fallen).

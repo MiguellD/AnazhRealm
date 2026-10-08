@@ -378,16 +378,20 @@ const PORTAL_RENDER_CONFIG = {
             // DAS GRAS (S3 08.10., aus dem Haushalt abgeleitet): die Nah-Wiese der Welt darf an der Mess-Wiese höchstens
             // 57 066 Dreiecke zeichnen (die Ratsche des Profi-Bands, Haushalt 80 000 je Blick; Ist V18.536: 84 336 =
             // L1 37 800 + L2 46 536 aus 1 188/1 560 und 162/228 je Büschel) — die Zeilen sind gegen dieses Band gebaut,
-            // nicht an der Gestalt abgelesen (bis dahin die gemessene Hülle 1 700/320). L1 (0–5 m) ≤ 1 000: Halme 5
-            // Segmente wie zuvor, die Rispe 3 Grannen × 2 Segmente (768/960, der Federbusch); L2 (5–14 m) ≤ 130: die Rispe
-            // EINE Granne (96/118, der helle Saum). Die Halme bleiben byte-gleich (Halm-Fläche 2,702 / 3,770 m²).
+            // nicht an der Gestalt abgelesen (bis dahin die gemessene Hülle 1 700/320). L1 (0–5 m) ≤ 1 040: Halme 5
+            // Segmente wie zuvor, die Rispe 4 Grannen × 2 Segmente (824/1 040, der Federbusch als Kreuz-Stern); L2
+            // (5–14 m) ≤ 130: die Rispe EINE Granne (96/118, der helle Saum). Die Halme bleiben byte-gleich (Halm-Fläche
+            // 2,702 / 3,770 m²). Die L1-Zeile stand im Plan bei 1 000 (Rispe 3 × 2): an Armlänge las der Drei-Strahl als
+            // V-Flocke statt als Stern, der Halm-Kontrast der Wiesen-Linse fiel 7,65 → 6,21 (4 × 2: 6,60; 6 × 1, gleich
+            // teuer wie 3 × 2: 5,60 — dünne Striche tragen weniger) — die vierte Granne kostet 40 Dreiecke je Büschel,
+            // an der Mess-Wiese 49 592 → 51 432 (Ratsche 57 066).
             // `rispe` ist der Kosten-Regler der Stufe (emitGrass liest ihn): grannen × segmente je Rispe und die Breite der
             // Granne in Einheiten der alten. Die Breite ist an der BILD-Deckung geeicht (echte GPU, Mess-Wiese, 8 Blicke,
-            // Ährchen-Anteil der Pixel 3 m und 4,5–5,5 m voraus): die flächen-treue Breite (2,17 / 3,07 — 7 × 3 Segmente
-            // auf 3 × 2 bzw. 4 × 3 auf 1 × 1) zeigte 25 % / 16 % MEHR Ährchen-Pixel, weil der 7-Grannen-Stern sich an
-            // der Spitze selbst verdeckte.
+            // Ährchen-Anteil der Pixel 3 m und 4,5–5,5 m voraus): die flächen-treue Breite (1,63 / 3,07 — 7 × 3 Segmente
+            // auf 4 × 2 bzw. 4 × 3 auf 1 × 1) zeigte mehr Ährchen-Pixel (3 × 2: +25 %, L2: +16 %), weil der
+            // 7-Grannen-Stern sich an der Spitze selbst verdeckte.
             grass: {
-                1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 3, segmente: 2, breite: 1.75 } },
+                1: { tris: 1040, draws: 1, schatten: false, rispe: { grannen: 4, segmente: 2, breite: 1.45 } },
                 2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
                 fernform: "boden",
             },
