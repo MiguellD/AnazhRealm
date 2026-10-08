@@ -34848,30 +34848,35 @@ async function checkBandV18210Verdrahtung(ctx) {
             const sm0 = r.getGameMode ? r.getGameMode() : "frieden";
             try {
                 if (r.setGameMode) r.setGameMode("pfad");
-                const Pred = {
-                    position: new (window.THREE || A.THREE || {}).Vector3(0, 0, 0),
-                    userData: {
-                        soul: "wolf", // das Temperament der Gattung (Welle LF): der Wolf jagt
-                        kind: "creature",
-                        boosts: [],
-                    },
-                };
-                const Prey = {
-                    position: new (window.THREE || A.THREE || {}).Vector3(10, 0, 0),
-                    userData: {
-                        soul: "fuchs", // das Temperament der Gattung (Welle LF): der Fuchs ist scheu
-                        kind: "creature",
-                        boosts: [],
-                    },
-                };
+                // ECHTE Leiber (Welle LF): die Beute ist, wer höchstens jagd.beuteMasse × die Masse des Jägers trägt — die
+                // EINE Masse des Leibs (`_leibMasse`) liest die Gestalt; ein körperloser Stub hat keine, das Urteil bräche
+                // fail-closed. Der Wolf jagt (wild), der Fuchs (15 kg) ist seine Beute.
                 const savedC = r.state.creatures;
-                r.state.creatures = [Pred, Prey];
-                r._creatureScentHuntDir(Pred, 0.0);
-                const after1 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
-                r._creatureScentHuntDir(Pred, 0.0);
-                const after2 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
-                out.a3SizeCacheReuse = after1 === 1 && after2 === 1;
+                const pmA = r.state.playerMesh.position;
+                const capA = r.state.maxCreatures;
+                r.state.maxCreatures = Math.max(capA || 0, savedC.length + 2);
+                const Pred = r.spawnCreatureAt(pmA.x + 360, pmA.y, pmA.z - 360, "calm", "wolf", {
+                    precise: true,
+                    bodySize: 1,
+                });
+                const Prey =
+                    Pred &&
+                    r.spawnCreatureAt(pmA.x + 370, pmA.y, pmA.z - 360, "calm", "fuchs", {
+                        precise: true,
+                        bodySize: 1,
+                    });
+                r.state.maxCreatures = capA;
+                if (Pred && Prey) {
+                    r.state.creatures = [Pred, Prey];
+                    r._creatureScentHuntDir(Pred, 0.0);
+                    const after1 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
+                    r._creatureScentHuntDir(Pred, 0.0);
+                    const after2 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
+                    out.a3SizeCacheReuse = after1 === 1 && after2 === 1;
+                }
                 r.state.creatures = savedC;
+                if (Pred) r.removeCreature(Pred);
+                if (Prey) r.removeCreature(Prey);
             } finally {
                 if (r.setGameMode) r.setGameMode(sm0);
             }
@@ -35031,31 +35036,28 @@ async function checkBandV18210Verdrahtung(ctx) {
         const savedCreatures = r.state.creatures;
         try {
             if (r.setGameMode) r.setGameMode("pfad");
-            // Fake-wildes Wesen (cached temperament=wild)
-            const predator = {
-                position: new (window.THREE || A.THREE || {}).Vector3(0, 0, 0),
-                userData: {
-                    soul: "wolf", // das Temperament der Gattung (Welle LF): der Wolf jagt
-                    kind: "creature",
-                    boosts: [],
-                },
-            };
-            // Fake-Beute (sanft, in 20m östlich)
-            const prey = {
-                position: new (window.THREE || A.THREE || {}).Vector3(20, 0, 0),
-                userData: {
-                    soul: "fuchs", // das Temperament der Gattung (Welle LF): der Fuchs ist scheu
-                    kind: "creature",
-                    boosts: [],
-                },
-            };
-            r.state.creatures = [predator, prey];
-            const dirWithPrey = r._creatureScentHuntDir(predator, 0.0);
-            out.a3PredatorHasDir = !!(dirWithPrey && (dirWithPrey.x !== 0 || dirWithPrey.z !== 0));
-            // Ohne Beute → null
-            r.state.creatures = [predator];
-            const dirNoPrey = r._creatureScentHuntDir(predator, 0.0);
-            out.a3NoPreyNoDir = dirNoPrey === null;
+            // ein wildes Wesen und seine Beute 20 m östlich — ECHTE Leiber (Welle LF: das Beute-Urteil liest die EINE Masse
+            // des Leibs aus der Gestalt; der Wolf jagt, der Fuchs ist scheu und seine Beute)
+            const pmH = r.state.playerMesh.position;
+            const capH = r.state.maxCreatures;
+            r.state.maxCreatures = Math.max(capH || 0, savedCreatures.length + 2);
+            const optH = { precise: true, bodySize: 1 };
+            const predator = r.spawnCreatureAt(pmH.x + 380, pmH.y, pmH.z - 380, "calm", "wolf", optH);
+            const prey = predator && r.spawnCreatureAt(pmH.x + 400, pmH.y, pmH.z - 380, "calm", "fuchs", optH);
+            r.state.maxCreatures = capH;
+            if (predator && prey) {
+                prey.position.set(predator.position.x + 20, predator.position.y, predator.position.z);
+                r.state.creatures = [predator, prey];
+                const dirWithPrey = r._creatureScentHuntDir(predator, 0.0);
+                out.a3PredatorHasDir = !!(dirWithPrey && (dirWithPrey.x !== 0 || dirWithPrey.z !== 0));
+                // Ohne Beute → null
+                r.state.creatures = [predator];
+                const dirNoPrey = r._creatureScentHuntDir(predator, 0.0);
+                out.a3NoPreyNoDir = dirNoPrey === null;
+            }
+            r.state.creatures = savedCreatures;
+            if (predator) r.removeCreature(predator);
+            if (prey) r.removeCreature(prey);
             // Strike-Range-Test mit ECHTEN Leibern (0710-4: der Biss stößt durch das EINE Impuls-Gesetz und liest die
             // Masse aus der Gestalt — ein körperloser Stub hat keine, der Biss bräche fail-closed): ein Wolf, ein Fuchs
             // in 1,5 m → der Biss trifft UND stößt die Beute vom Jäger weg.
