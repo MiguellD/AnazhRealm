@@ -46,16 +46,29 @@ jobs:
                   done
 
             - name: Duplikate Methodendefinitionen
+              # Die Methoden der Klasse stehen eingerueckt (4 Leerzeichen) - das Muster `^[a-zA-Z_]+(` sah keine einzige
+              # (vakuos seit dem Umzug in die Klasse; Integration V18.536: `_sonnenWinkel` stand zweimal, die spaetere
+              # Formel ohne Stufen haette die Sonnen-Stufen der Welle C still ueberschrieben). Gezaehlt werden die
+              # Methoden im Koerper von `class AnazhRealm` (static/get/set gehoeren zum Namen) und die statischen
+              # Zuweisungen `AnazhRealm.x = ` ausserhalb; ohne Methoden ist die Probe blind (rot).
               run: |
-                  dups=$(grep -nE "^[a-zA-Z_]+\s*\([^)]*\)\s*\{" anazhRealm.js \
-                    | sed -E 's/^[0-9]+://; s/\(.*//' \
+                  klasse=$(awk '/^class AnazhRealm \{/{f=1;next} f&&/^\}$/{f=0} f' anazhRealm.js \
+                    | grep -E '^    (static |async |get |set )*[A-Za-z_$][A-Za-z0-9_$]*\s*\([^)]*\)\s*\{\s*$' \
+                    | grep -vE '^    (if|for|while|switch|catch|function|return)\b' \
+                    | sed -E 's/\(.*//; s/^ +//; s/^async //')
+                  n=$(printf '%s\n' "$klasse" | grep -c . || true)
+                  if [ "$n" -lt 500 ]; then
+                    echo "❌ Die Probe ist blind: nur $n Methoden in class AnazhRealm gefunden"
+                    exit 1
+                  fi
+                  dups=$( { printf '%s\n' "$klasse"; grep -oE '^AnazhRealm\.[A-Za-z_$][A-Za-z0-9_$]* = ' anazhRealm.js; } \
                     | sort | uniq -d || true)
                   if [ -n "$dups" ]; then
                     echo "❌ Doppelte Methodendefinitionen gefunden:"
                     echo "$dups"
                     exit 1
                   fi
-                  echo "✅ Keine Duplikate"
+                  echo "✅ Keine Duplikate ($n Methoden in class AnazhRealm)"
 
             - name: Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben — die c1c1271-Klasse)
               run: npm run gate:source-probes
@@ -208,6 +221,8 @@ jobs:
         runs-on: ubuntu-latest
         # 45 je Gruppe (GEMESSEN 30.09.: die Echt-Renderer-Linsen sind legitim lang; Lauf 2137 lief alle 53 Schritte
         # GRUEN und wurde 4 s nach dem letzten vom 30-min-Limit „cancelled"); die Gruppe braucht ~18 min, Marge > 50 %.
+        # Der 90-min-Deckel der Werkstatt-Familie (8e9e89df, ein Job mit 88 Schritten riss 45:13) fiel in der
+        # Integration V18.536: die drei Gruppen tragen die Last, der Werkstatt-Weg ist ein Schritt einer Gruppe.
         timeout-minutes: 45
         steps:
             - uses: actions/checkout@v4
@@ -970,6 +985,13 @@ jobs:
               # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
               # bricht jede Stelle einzeln.
               run: npm run gate:v1-pfad
+
+            - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
+              if: matrix.gruppe == 3
+              # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen:
+              # jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest bricht Verdikte
+              # und Wand je einzeln.
+              run: npm run gate:werkstatt-weg
 
             - name: Die GPU-Fehler-Linse (Welle L - V-D7, Selbsttest)
               if: matrix.gruppe == 1
