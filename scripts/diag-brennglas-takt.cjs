@@ -37,9 +37,17 @@ const http = require("http");
 const PORT = Number(process.env.BRENNGLAS_TAKT_PORT || 4605);
 const root = path.resolve(__dirname, "..");
 
-// DIE QUELL-WAND (AST): die Takte der Klasse laufen nicht über den Bestand; jeder Schreiber von `.affordances`, `.chimney`,
-// `.rauchQuelle` steht in `spawnArchitecture` (vor dem Eintritt) oder stempelt (`_blockerNetzSetzen`); `.heatBuildup` schreibt
-// nur der Brennglas-Takt (er führt die warme Menge) oder ein Stempel.
+// DIE QUELL-WAND (AST, wie die Box-Wand in diag-blocker-netz): je Methode die Namen, die am BESTAND hängen (`this.state.architectures`,
+// ein Name für `this.state`, eine Destrukturierung, `|| []`, eine Kopie, `_blockerNetz().liste`), und die Namen, die an einem ZIEL
+// hängen (`.affordances`, `.chimney`, `.rauchQuelle` — auch verschachtelt und über einen Namen). Rot:
+//   (a) ein Takt der Klasse läuft über den Bestand: for-of/for-in, eine for-Schleife bis `.length`, eine Iterations-Methode
+//       (filter, forEach, map, some, find, every, reduce, slice, indexOf, …), ein Spread, `Array.from`/`Object.values`;
+//   (b) ein Schreiber eines Ziels ohne Stempel: Zuweisung, ++/--, delete, eine mutierende Methode, `Object.assign`/
+//       `defineProperty` — erlaubt nur in `spawnArchitecture` (vor dem Eintritt) und in Methoden, die `_blockerNetzSetzen` rufen;
+//       ebenso ein Ersatz von `.userData` durch etwas anderes als ein Literal ohne `rauchQuelle`/Spread oder `x.userData || {}`
+//       (ein Kamin kann darin reisen), und `Object.assign` in ein `.userData` mit einer solchen Quelle;
+//   (c) ein Schreiber von `.heatBuildup` außerhalb des Brennglas-Takts (er führt die warme Menge) und ohne Stempel.
+// Grenze: ein Name, der als Parameter ein Ziel oder den Bestand empfängt, hängt für die Wand an nichts (kein Datenfluss über Rufe).
 const TAKTE = [
     "_tickFocusingAffordances",
     "_tickRadiatingAffordances",
@@ -50,6 +58,54 @@ const TAKTE = [
     "tickPlayerBoosts",
     "_lofiNearResonantArchitecture",
 ];
+const ZIELE = new Set(["affordances", "chimney", "rauchQuelle"]);
+const ITER = new Set([
+    "filter",
+    "forEach",
+    "map",
+    "some",
+    "find",
+    "every",
+    "reduce",
+    "reduceRight",
+    "findIndex",
+    "findLast",
+    "findLastIndex",
+    "flatMap",
+    "includes",
+    "indexOf",
+    "lastIndexOf",
+    "slice",
+    "concat",
+    "entries",
+    "values",
+    "keys",
+    "join",
+    "sort",
+    "reverse",
+    "toSorted",
+    "toReversed",
+]);
+const KOPIE = new Set(["slice", "concat", "toSorted", "toReversed"]);
+const MUT = new Set([
+    "push",
+    "pop",
+    "shift",
+    "unshift",
+    "splice",
+    "sort",
+    "reverse",
+    "fill",
+    "copyWithin",
+    "set",
+    "add",
+    "delete",
+    "clear",
+]);
+// Benannte Ausnahmen (je mit Grund); eine Ausnahme ohne Befund in ihrer Methode ist tot und fällt rot.
+const FREI = {
+    _chunkSatzMesh: "Object.assign in das userData des Meshes eines Chunk-Satzes — nie ein Eintrag des Bestands",
+};
 function quellWand(quelle) {
     const acorn = require("acorn");
     const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
@@ -68,53 +124,215 @@ function quellWand(quelle) {
         f(n);
         for (const k of kinder(n)) lauf(k, f);
     };
+    const feld = (m) =>
+        m.computed ? (m.property.type === "Literal" ? String(m.property.value) : null) : m.property.name;
     const text = (n) => quelle.slice(n.start, n.end).replace(/\s+/g, "");
     const befunde = [];
     const gesehen = new Set();
     lauf(ast, (m) => {
         if (m.type !== "MethodDefinition" || !m.value || !m.value.body) return;
         const name = m.key.name || String(m.key.value);
+        const body = m.value.body;
+        const zustand = new Set(),
+            netz = new Set(),
+            bestand = new Set(),
+            ziel = new Map();
+        const istThis = (n) => n && n.type === "ThisExpression";
+        const istZustand = (n) => {
+            if (!n) return false;
+            if (n.type === "Identifier") return zustand.has(n.name);
+            if (n.type === "MemberExpression") return istThis(n.object) && feld(n) === "state";
+            if (n.type === "LogicalExpression") return istZustand(n.left) || istZustand(n.right);
+            return false;
+        };
+        const istNetz = (n) => {
+            if (!n) return false;
+            if (n.type === "Identifier") return netz.has(n.name);
+            if (n.type === "CallExpression" && n.callee.type === "MemberExpression")
+                return istThis(n.callee.object) && feld(n.callee) === "_blockerNetz";
+            if (n.type === "MemberExpression") return istThis(n.object) && feld(n) === "_blockerNetzStand";
+            if (n.type === "LogicalExpression") return istNetz(n.left) || istNetz(n.right);
+            return false;
+        };
+        const istBestand = (n) => {
+            if (!n) return false;
+            if (n.type === "Identifier") return bestand.has(n.name);
+            if (n.type === "ChainExpression") return istBestand(n.expression);
+            if (n.type === "LogicalExpression") return istBestand(n.left) || istBestand(n.right);
+            if (n.type === "ConditionalExpression") return istBestand(n.consequent) || istBestand(n.alternate);
+            if (n.type === "MemberExpression") {
+                const f = feld(n);
+                if (f === "architectures") return istZustand(n.object);
+                if (f === "liste") return istNetz(n.object);
+                return false;
+            }
+            if (n.type === "CallExpression" && n.callee.type === "MemberExpression")
+                return KOPIE.has(feld(n.callee)) && istBestand(n.callee.object);
+            if (n.type === "ArrayExpression")
+                return n.elements.some((e) => e && e.type === "SpreadElement" && istBestand(e.argument));
+            return false;
+        };
+        // das Ziel eines Ausdrucks (der Feld-Name, an dem er hängt) oder null
+        const zielVon = (n) => {
+            if (!n) return null;
+            if (n.type === "Identifier") return ziel.get(n.name) || null;
+            if (n.type === "ChainExpression") return zielVon(n.expression);
+            if (n.type === "LogicalExpression") return zielVon(n.left) || zielVon(n.right);
+            if (n.type === "ConditionalExpression") return zielVon(n.consequent) || zielVon(n.alternate);
+            if (n.type === "MemberExpression") {
+                const f = feld(n);
+                if (ZIELE.has(f)) return f;
+                return zielVon(n.object);
+            }
+            return null;
+        };
+        const binde = (id, init) => {
+            if (!id || !init) return;
+            if (id.type === "Identifier") {
+                if (istZustand(init)) zustand.add(id.name);
+                if (istNetz(init)) netz.add(id.name);
+                if (istBestand(init)) bestand.add(id.name);
+                const z = zielVon(init);
+                if (z) ziel.set(id.name, z);
+            } else if (id.type === "ObjectPattern") {
+                for (const p of id.properties) {
+                    if (p.type !== "Property") continue;
+                    const k = p.key.type === "Identifier" ? p.key.name : String(p.key.value);
+                    const wert = p.value.type === "AssignmentPattern" ? p.value.left : p.value;
+                    if (wert.type !== "Identifier") continue;
+                    if (k === "architectures" && istZustand(init)) bestand.add(wert.name);
+                    if (k === "state" && istThis(init)) zustand.add(wert.name);
+                    if (k === "liste" && istNetz(init)) bestand.add(wert.name);
+                    if (ZIELE.has(k)) ziel.set(wert.name, k);
+                    else if (zielVon(init)) ziel.set(wert.name, zielVon(init));
+                }
+            }
+        };
         let stempelt = false;
-        lauf(m.value.body, (n) => {
-            if (
-                n.type === "CallExpression" &&
-                n.callee.type === "MemberExpression" &&
-                n.callee.property.name === "_blockerNetzSetzen"
-            )
-                stempelt = true;
-        });
+        for (let d = 0; d < 3; d++)
+            lauf(body, (n) => {
+                if (n.type === "VariableDeclarator") binde(n.id, n.init);
+                if (n.type === "AssignmentExpression" && n.operator === "=" && n.left.type === "Identifier")
+                    binde(n.left, n.right);
+                if (
+                    (n.type === "ForOfStatement" || n.type === "ForInStatement") &&
+                    n.left.type === "VariableDeclaration"
+                ) {
+                    const z = zielVon(n.right);
+                    const id = n.left.declarations[0].id;
+                    if (z && id.type === "Identifier") ziel.set(id.name, z);
+                }
+                if (
+                    n.type === "CallExpression" &&
+                    n.callee.type === "MemberExpression" &&
+                    feld(n.callee) === "_blockerNetzSetzen"
+                )
+                    stempelt = true;
+            });
+        const meld = (n, art) => befunde.push(`${name} Zeile ${n.loc.start.line}: ${art} — ${text(n).slice(0, 70)}`);
         if (TAKTE.includes(name)) {
             gesehen.add(name);
-            lauf(m.value.body, (n) => {
-                const schleife =
-                    (n.type === "ForOfStatement" && /state\.architectures|^archs$|^arches$/.test(text(n.right))) ||
-                    (n.type === "ForStatement" &&
-                        n.test &&
-                        /architectures\.length|archs\.length|arches\.length/.test(text(n.test)) &&
-                        !/_blockerMit/.test(quelle.slice(m.value.body.start, n.start))) ||
-                    (n.type === "CallExpression" &&
-                        n.callee.type === "MemberExpression" &&
-                        /^(filter|forEach|map|some|find|every|reduce)$/.test(n.callee.property.name || "") &&
-                        /state\.architectures/.test(text(n.callee.object)));
-                if (schleife)
-                    befunde.push(`${name} Zeile ${n.loc.start.line}: läuft über den Bestand — ${text(n).slice(0, 70)}`);
+            lauf(body, (n) => {
+                if ((n.type === "ForOfStatement" || n.type === "ForInStatement") && istBestand(n.right))
+                    meld(n, "läuft über den Bestand (for-of)");
+                if (n.type === "ForStatement" && n.test) {
+                    let hit = false;
+                    lauf(n.test, (x) => {
+                        if (x.type === "MemberExpression" && feld(x) === "length" && istBestand(x.object)) hit = true;
+                    });
+                    if (hit) meld(n, "läuft über den Bestand (bis .length)");
+                }
+                if (n.type === "CallExpression" && n.callee.type === "MemberExpression") {
+                    const f = feld(n.callee);
+                    if (ITER.has(f) && istBestand(n.callee.object)) meld(n, `läuft über den Bestand (.${f})`);
+                    const o = n.callee.object;
+                    if (
+                        o.type === "Identifier" &&
+                        ((o.name === "Array" && f === "from") ||
+                            (o.name === "Object" && /^(keys|values|entries)$/.test(f || ""))) &&
+                        istBestand(n.arguments[0])
+                    )
+                        meld(n, `läuft über den Bestand (${o.name}.${f})`);
+                }
+                if (n.type === "SpreadElement" && istBestand(n.argument)) meld(n, "läuft über den Bestand (Spread)");
             });
         }
-        lauf(m.value.body, (n) => {
-            if (n.type !== "AssignmentExpression" || n.left.type !== "MemberExpression") return;
-            const feld = n.left.computed ? null : n.left.property.name;
-            if (feld === "heatBuildup") {
-                if (name === "_tickFocusingAffordances" || stempelt) return;
-                befunde.push(`${name} Zeile ${n.loc.start.line}: schreibt .heatBuildup außerhalb des Brennglas-Takts`);
-                return;
+        const darfZiel = name === "spawnArchitecture" || stempelt;
+        const darfHitze = name === "_tickFocusingAffordances" || stempelt;
+        const harmlosUserData = (links, rechts) => {
+            if (rechts.type === "ObjectExpression")
+                return !rechts.properties.some(
+                    (p) =>
+                        p.type === "SpreadElement" ||
+                        (p.key && (p.key.name === "rauchQuelle" || p.key.value === "rauchQuelle"))
+                );
+            return (
+                rechts.type === "LogicalExpression" &&
+                rechts.operator === "||" &&
+                text(rechts.left) === text(links) &&
+                rechts.right.type === "ObjectExpression" &&
+                rechts.right.properties.length === 0
+            );
+        };
+        lauf(body, (n) => {
+            let zielFeld = null,
+                hitze = false,
+                wie = "";
+            if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression") {
+                const f = feld(n.left);
+                if (f === "heatBuildup") hitze = true;
+                else if (ZIELE.has(f)) zielFeld = f;
+                else if (f === "userData") {
+                    if (!harmlosUserData(n.left, n.right)) zielFeld = "userData (ein Kamin kann darin reisen)";
+                } else zielFeld = zielVon(n.left.object);
+                wie = "schreibt";
+            } else if (
+                (n.type === "UpdateExpression" || (n.type === "UnaryExpression" && n.operator === "delete")) &&
+                n.argument.type === "MemberExpression"
+            ) {
+                const f = feld(n.argument);
+                if (f === "heatBuildup") hitze = true;
+                else zielFeld = ZIELE.has(f) ? f : zielVon(n.argument.object);
+                wie = n.type === "UpdateExpression" ? "zählt" : "löscht";
+            } else if (n.type === "CallExpression" && n.callee.type === "MemberExpression") {
+                const f = feld(n.callee);
+                if (MUT.has(f) && zielVon(n.callee.object)) {
+                    zielFeld = zielVon(n.callee.object);
+                    wie = `ruft .${f} auf`;
+                }
+                const o = n.callee.object;
+                if (
+                    o.type === "Identifier" &&
+                    o.name === "Object" &&
+                    /^(assign|defineProperty|defineProperties)$/.test(f || "")
+                ) {
+                    const a0 = n.arguments[0];
+                    if (a0) {
+                        const z = zielVon(a0);
+                        if (z) {
+                            zielFeld = z;
+                            wie = `Object.${f} in`;
+                        } else if (
+                            a0.type === "MemberExpression" &&
+                            feld(a0) === "userData" &&
+                            n.arguments.slice(1).some((q) => !harmlosUserData(a0, q))
+                        ) {
+                            zielFeld = "userData (ein Kamin kann darin reisen)";
+                            wie = `Object.${f} in`;
+                        }
+                    }
+                }
             }
-            if (feld !== "affordances" && feld !== "chimney" && feld !== "rauchQuelle") return;
-            if (name === "spawnArchitecture" || stempelt) return;
-            befunde.push(`${name} Zeile ${n.loc.start.line}: schreibt .${feld} ohne Stempel (\`_blockerNetzSetzen\`)`);
+            if (hitze && !darfHitze) meld(n, "schreibt .heatBuildup außerhalb des Brennglas-Takts");
+            if (zielFeld && !darfZiel) meld(n, `${wie} .${zielFeld} ohne Stempel (\`_blockerNetzSetzen\`)`);
         });
     });
     for (const t of TAKTE) if (!gesehen.has(t)) befunde.push(`STUMPF: die Wand sieht den Takt ${t} nicht`);
-    return befunde;
+    const frei = (b) => Object.keys(FREI).find((m) => b.startsWith(m + " Zeile "));
+    for (const m of Object.keys(FREI))
+        if (!befunde.some((b) => frei(b) === m))
+            befunde.push(`TOTE AUSNAHME: ${m} trägt keinen Befund mehr (${FREI[m]})`);
+    return befunde.filter((b) => !frei(b));
 }
 
 if (process.argv.includes("--selftest")) {
@@ -122,39 +340,108 @@ if (process.argv.includes("--selftest")) {
     const v = [];
     const stamm = quellWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
     for (const b of stamm) v.push("STAMM: " + b);
-    const ohne = (t) =>
-        TAKTE.filter((x) => x !== t)
+    // eine Klasse mit allen Takten (leer, bis auf den geprüften) und der benannten Ausnahme
+    const AUSNAHME = "_chunkSatzMesh(mesh, spec) { Object.assign(mesh.userData, spec.userData); }";
+    const takt = (name, rumpf) =>
+        `class X { ${TAKTE.filter((x) => x !== name)
             .map((x) => `${x}() {}`)
-            .join(" ");
-    const klasse = (rumpf) => `class X { ${ohne(null)} ${rumpf} }`;
+            .join(" ")} ${AUSNAHME} ${name}() { ${rumpf} } }`;
+    const klasse = (rumpf) => `class X { ${TAKTE.map((x) => `${x}() {}`).join(" ")} ${AUSNAHME} ${rumpf} }`;
+    const BESTAND = "läuft über den Bestand";
+    const STEMPEL = "ohne Stempel";
     const proben = [
+        ["Filter", takt("_tickFocusingAffordances", "this.state.architectures.filter((e) => e.affordances);"), BESTAND],
+        ["for-of", takt("_updateDorfRauch", "for (const e of this.state.architectures) e.x = 1;"), BESTAND],
         [
-            "eine Schleife über den Bestand (Filter)",
-            `class X { ${ohne("_tickFocusingAffordances")} _tickFocusingAffordances() { const f = this.state.architectures.filter((e) => e.affordances); } }`,
-            "läuft über den Bestand",
+            "Alias",
+            takt(
+                "_tickFocusingAffordances",
+                "const bestand = this.state.architectures; for (const e of bestand) e.x = 1;"
+            ),
+            BESTAND,
         ],
         [
-            "eine Schleife über den Bestand (for-of)",
-            `class X { ${ohne("_updateDorfRauch")} _updateDorfRauch() { for (const e of this.state.architectures) e.x = 1; } }`,
-            "läuft über den Bestand",
+            "forEach über Alias",
+            takt("_updateDorfRauch", "const st = this.state; const b = st.architectures || []; b.forEach((e) => e);"),
+            BESTAND,
         ],
-        ["ein Schreiber ohne Stempel", klasse("tor(e) { e.affordances = {}; }"), "ohne Stempel"],
-        ["ein Kamin ohne Stempel", klasse("kamin(e) { e.userData.rauchQuelle = {}; }"), "ohne Stempel"],
-        ["ein fremder Hitze-Schreiber", klasse("feuer(e) { e.heatBuildup = 0.4; }"), "außerhalb des Brennglas-Takts"],
+        [
+            "Index bis .length",
+            takt(
+                "_tickLiftingAffordances",
+                "const a = this.state.architectures; for (let i = 0; i < a.length; i++) a[i];"
+            ),
+            BESTAND,
+        ],
+        [
+            "Destrukturierung",
+            takt("tickPlayerBoosts", "const { architectures } = this.state; architectures.some((e) => e);"),
+            BESTAND,
+        ],
+        ["Spread", takt("_tickRadiatingAffordances", "const k = [...this.state.architectures];"), BESTAND],
+        [
+            "Kopie",
+            takt("_tickBalancingAffordances", "const k = this.state.architectures.slice(); for (const e of k) e;"),
+            BESTAND,
+        ],
+        [
+            "die Liste des Netzes",
+            takt("_findNearestAffordanceEntry", "for (const e of this._blockerNetz().liste) e;"),
+            BESTAND,
+        ],
+        ["Affordanz ersetzt", klasse("tor(e) { e.affordances = {}; }"), STEMPEL],
+        ["Affordanz verschachtelt", klasse("tor(e) { e.affordances.focusing = true; }"), STEMPEL],
+        ["Affordanz über Alias", klasse("tor(e) { const a = e.affordances; a.focusing = true; }"), STEMPEL],
+        [
+            "Affordanz per Object.assign",
+            klasse("tor(e) { Object.assign(e.affordances, { focusing: true }); }"),
+            STEMPEL,
+        ],
+        ["Affordanz gelöscht", klasse("tor(e) { delete e.affordances.focusing; }"), STEMPEL],
+        ["Kamin verschachtelt", klasse("kamin(e) { e.userData.rauchQuelle = {}; }"), STEMPEL],
+        ["userData-Ersatz mit Kamin", klasse("kamin(e, t) { e.userData = { rauchQuelle: t }; }"), STEMPEL],
+        ["userData-Ersatz über Namen", klasse("kamin(e, u) { e.userData = u; }"), STEMPEL],
+        [
+            "userData per Object.assign",
+            klasse("kamin(e, t) { Object.assign(e.userData, { rauchQuelle: t }); }"),
+            STEMPEL,
+        ],
+        ["fremde Hitze", klasse("feuer(e) { e.heatBuildup = 0.4; }"), "außerhalb des Brennglas-Takts"],
+        ["fremde Hitze +=", klasse("feuer(e) { e.heatBuildup += 0.1; }"), "außerhalb des Brennglas-Takts"],
+        ["fremde Hitze ++", klasse("feuer(e) { e.heatBuildup++; }"), "außerhalb des Brennglas-Takts"],
+        ["tote Ausnahme", `class X { ${TAKTE.map((x) => `${x}() {}`).join(" ")} }`, "TOTE AUSNAHME"],
     ];
     for (const [was, src, satz] of proben) {
         const b = quellWand(src);
         if (!b.some((x) => x.includes(satz))) v.push(`${was} fällt nicht rot (${JSON.stringify(b)})`);
     }
-    const ok = quellWand(klasse("tor(e) { e.affordances = {}; this._blockerNetzSetzen(e); }"));
-    if (ok.length) v.push(`ein gestempelter Schreiber fällt rot (${JSON.stringify(ok)})`);
+    const gruen = [
+        [
+            "gestempelter Schreiber",
+            klasse("tor(e) { e.affordances = {}; e.affordances.focusing = true; this._blockerNetzSetzen(e); }"),
+        ],
+        ["harmloses userData", klasse("m(mesh) { mesh.userData = { a: 1 }; mesh.userData = mesh.userData || {}; }")],
+        [
+            "Verzeichnis bis .length",
+            takt(
+                "_updateDorfRauch",
+                "const archs = Array.isArray(this.state.architectures) ? this._blockerMit('rauch') : null; for (let i = 0; i < archs.length; i++) archs[i];"
+            ),
+        ],
+    ];
+    for (const [was, src] of gruen) {
+        const b = quellWand(src);
+        if (b.length) v.push(`${was} fällt rot (${JSON.stringify(b)})`);
+    }
     for (const x of v) console.log("  ❌ " + x);
     if (v.length) {
         console.log("\n❌ SELBSTTEST ROT");
         process.exit(1);
     }
     console.log(
-        "✅ SELBSTTEST GRÜN — kein Takt der Klasse läuft über den Bestand, jeder Schreiber stempelt; Schleife, Schreiber ohne Stempel und fremde Hitze fallen rot."
+        `✅ SELBSTTEST GRÜN — kein Takt der Klasse läuft über den Bestand, jeder Schreiber stempelt; ${proben.length} eingeschleuste ` +
+            `Brüche fallen rot (Alias, forEach, Index, Destrukturierung, Spread, Kopie, Netz-Liste, verschachtelte und userData-Schreiber, ` +
+            `fremde Hitze, tote Ausnahme), ${gruen.length} harmlose Formen bleiben grün.`
     );
     process.exit(0);
 }
@@ -354,6 +641,120 @@ async function probe() {
         return n;
     };
     aus.imPunkt = indiePunkte(0.5, 3);
+    // DAS FERNZIEL (Gegenprüfung 0710-10: ein halber Radius blieb grün): ein fünftes Glas 5,9 m hinter einer Zellgrenze, ein
+    // gestrecktes Brennbares, dessen Position 3,9 m daneben in der NACHBAR-Zelle steht — sein Körper trägt den Brennpunkt, sein
+    // Platz (Position ± Blocker-Reichweite) liegt außerhalb der halben Frage: nur die volle Reichweite findet ihn. Die Art sucht
+    // die Wand unter den brennbaren (Probe-Spawn, die Blocker-Reichweite unter 1,6 m — eine Eiche trägt 10 m Krone als Blocker)
+    const ZELLE = AR.BLOCKER_ZELLE;
+    const RW = AR.FOCUSING_HEAT_RANGE_M;
+    aus.fern = { gesetzt: false, versucht: 0 };
+    const fx = Math.floor((ox + 60) / ZELLE) * ZELLE + 5.9,
+        fz = oz + 4;
+    const fernGlas = glasArten.length ? setze(glasArten[0], fx, fz) : null;
+    let fernZiel = null;
+    const fp = fernGlas ? r._brennpunkte(fernGlas, r._sonnenRichtung())[0] : null;
+    if (fp) {
+        const px = fx + 3.9,
+            pz = fz;
+        for (const art of brennArten) {
+            if (aus.fern.versucht >= 40) break;
+            const bb = r._compoundBoundingBox(bps[art]);
+            if (!bb) continue;
+            const mx = (bb.min.x + bb.max.x) / 2,
+                mz = (bb.min.z + bb.max.z) / 2,
+                halb = Math.max(bb.extent.x, bb.extent.z) / 2;
+            if (!(halb > 0.05)) continue;
+            // die kleinste Streckung, mit der der Körper den Punkt trägt (die Mitte wandert mit der Streckung)
+            let g = 0;
+            for (let s = 0.5; s <= 12; s += 0.05)
+                if (Math.hypot(px + mx * s - fp.x, pz + mz * s - fp.z) <= halb * s - 0.1) {
+                    g = s;
+                    break;
+                }
+            if (!g) continue;
+            aus.fern.versucht++;
+            const e = r.spawnArchitecture(art, { x: px, y: 0, z: pz }, { silent: true, rotationY: 0, scale: g });
+            if (!e) continue;
+            e.position.y = fp.y - ((bb.min.y + bb.max.y) / 2) * g;
+            // wie ein Studio-Baum im Spiel: Blocker nur am Stamm (die Krone trägt den Punkt, sie blockt nicht) — über den
+            // Stempel des Spiels (`_blockerStampReach`); headless trägt die Probe sonst Blocker über den ganzen Körper
+            e.blockerAABBs = [
+                {
+                    minX: px - 0.4,
+                    maxX: px + 0.4,
+                    minZ: pz - 0.4,
+                    maxZ: pz + 0.4,
+                    botY: e.position.y - 2,
+                    topY: e.position.y + 2,
+                },
+            ];
+            r._blockerStampReach(e);
+            const traegt = r._traegtPunkt(e, bps[art], fp);
+            const voll = r._blockerUmPlatz(fx, fz, RW + 1e-6, []).includes(e);
+            const halbF = r._blockerUmPlatz(fx, fz, RW / 2 + 1e-6, []).includes(e);
+            if ((aus.fern.proben = aus.fern.proben || []).length < 10)
+                aus.fern.proben.push({
+                    art,
+                    g: +g.toFixed(2),
+                    reichweite: +(e._blockerReach || 0).toFixed(2),
+                    traegt,
+                    voll,
+                    halb: halbF,
+                });
+            if (traegt && voll && !halbF) {
+                fernZiel = e;
+                aus.fern = {
+                    gesetzt: true,
+                    versucht: aus.fern.versucht,
+                    art,
+                    skala: +g.toFixed(2),
+                    abstand: +Math.hypot(e.position.x - fx, e.position.z - fz).toFixed(2),
+                    reichweite: +(e._blockerReach || 0).toFixed(2),
+                    traegt,
+                    voll,
+                    halb: halbF,
+                    heiz: 0,
+                    halbRadius: RW / 2,
+                };
+                break;
+            }
+            r.removeArchitecture(e);
+        }
+    }
+    // DER BEWEGER (Gegenprüfung 0710-10: ohne die Beweger blieb die Wand grün): ein Brennbares, weit weg gestempelt, dann in
+    // einen Brennpunkt getragen (`_blockerBewegt`, wie das gerittene Werk) — sein Platz steht noch am alten Ort
+    aus.beweger = { gesetzt: false };
+    let bewegt = null;
+    if (glaeser.length) {
+        const licht = r._sonnenRichtung();
+        const p = r._brennpunkte(glaeser[0], licht)[0];
+        const typ = brennArten[11 % brennArten.length];
+        const bb = r._compoundBoundingBox(bps[typ]);
+        if (p && bb) {
+            bewegt = setze(typ, ox - 120, oz + 90);
+            if (bewegt) {
+                bewegt.position.x = p.x - (bb.min.x + bb.max.x) / 2;
+                bewegt.position.z = p.z - (bb.min.z + bb.max.z) / 2;
+                bewegt.position.y = p.y - (bb.min.y + bb.max.y) / 2;
+                r._blockerBewegt(bewegt);
+                const N0 = r._blockerNetz();
+                const ohne = [];
+                // die Frage ohne die Beweger: nur die Platz-Zellen um das Glas
+                const voll = r._blockerUmPlatz(glaeser[0].position.x, glaeser[0].position.z, RW + 1e-6, []);
+                N0.beweger.delete(bewegt);
+                r._blockerUmPlatz(glaeser[0].position.x, glaeser[0].position.z, RW + 1e-6, ohne);
+                r._blockerBewegt(bewegt);
+                aus.beweger = {
+                    gesetzt: true,
+                    traegt: r._traegtPunkt(bewegt, bps[typ], p),
+                    istBeweger: N0.beweger.has(bewegt),
+                    mitBewegern: voll.includes(bewegt),
+                    ohneBeweger: ohne.includes(bewegt),
+                    heiz: 0,
+                };
+            }
+        }
+    }
     for (let k = 0; k < 40; k++)
         setze(brennArten[(k * 3) % brennArten.length], ox - 30 + (k % 8) * 9, oz - 24 + Math.floor(k / 8) * 9);
     // der Nachmittag: die Zeit mit hoher Sonne, an der neue Ziele eintreten
@@ -477,6 +878,8 @@ async function probe() {
                 b = e.heatBuildup || 0;
             if (b > a) heiz++;
             else if (b < a) kuehl++;
+            if (b > a && e === fernZiel) aus.fern.heiz++;
+            if (b > a && e === bewegt) aus.beweger.heiz++;
         }
         const glimm = ist.saetze.filter((t) => t.includes("glimmt")).length;
         T.heiz += heiz;
@@ -641,6 +1044,18 @@ function urteil(S, stamm, pageErrors) {
             `(T) der Tag ist vakuös: Wolken kühlen ${W.kuehl || 0}, Nacht kühlt ${Na.kuehl || 0}, Nachmittag erwärmt ${Nm.heiz || 0}`
         );
     if (T.warmFehlt) rot.push(`(T) ${T.warmFehlt}× stand ein warmer Eintrag nicht in der warmen Menge`);
+    const F = S.fern;
+    if (!(F.gesetzt && F.traegt && F.voll && !F.halb && F.heiz > 0 && F.abstand > F.halbRadius))
+        rot.push(
+            `(T) das FERNZIEL prüft die Reichweite nicht (es muss den Punkt tragen, von der vollen Frage gefunden, von der halben ` +
+                `verfehlt und erwärmt werden): ${JSON.stringify(F)}`
+        );
+    const B = S.beweger;
+    if (!(B.gesetzt && B.traegt && B.istBeweger && B.mitBewegern && !B.ohneBeweger && B.heiz > 0))
+        rot.push(
+            `(T) der BEWEGER prüft die Beweger nicht (er muss den Punkt tragen, nur über die Beweger gefunden und erwärmt ` +
+                `werden): ${JSON.stringify(B)}`
+        );
     if (T.zuViel)
         rot.push(
             `(A) ARBEIT: in ${T.zuViel} von ${T.schritte} Takten fasste der Brennglas-Takt mehr an als die Betroffenen — ` +
@@ -722,6 +1137,12 @@ function urteil(S, stamm, pageErrors) {
             `Abweichungen ${S.resonanz.abweichungen}`
     );
     console.log(`  Dorf-Rauch: ${S.rauch.quellen} Quellen, gleich ${S.rauch.gleich}`);
+    const F = S.fern,
+        B = S.beweger;
+    console.log(
+        `  Fernziel: ${F.art} ×${F.skala}, ${F.abstand} m vom Glas, Platz ±${F.reichweite} m · volle Frage ${F.voll}, ` +
+            `halbe ${F.halb} · erwärmt ${F.heiz}× · Beweger: nur über die Beweger ${B.mitBewegern && !B.ohneBeweger} · erwärmt ${B.heiz}×`
+    );
     const rot = urteil(S, stamm, pageErrors);
     if (rot.length) {
         console.error("\nROT:");

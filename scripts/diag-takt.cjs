@@ -7,7 +7,8 @@
 //
 // Das Gesetz ist eine ZÄHLUNG, keine Zeit (CI-fest): in einer Welt mit 300 brennbaren Bauten und EINEM Brennglas
 //   T1  steht kein Bau in seiner Reichweite → der Brennglas-Takt ruft computeCompoundTags 0-mal
-//   T2  stehen 3 Bauten in Reichweite → je Takt höchstens 3 Rufe (genau die Betroffenen)
+//   T2  stehen 3 Bauten in Reichweite → je Takt mindestens 1, höchstens 3 Rufe (genau die Betroffenen); das Brennglas ist ein
+//       Bauplan, der bündelt (am Mittag ≥ 1 Brennpunkt, sonst bricht die Linse ab — bis 0710-11 war sie mit einer Eiche vakuös)
 //   T3  der Feld-Bake-Takt (`_weltBakeErlaubt`) geht NAH zuerst über alle Verbraucher: wer im Vor-Fenster nah
 //       abgewiesen wurde, bekommt im nächsten zuerst (Befund: das Streu-Gesetz fragte im Frame vor den Bauten —
 //       eine gesetzte Eiche in 170 m blieb 200 Takte ohne Feld)
@@ -53,16 +54,33 @@ const SELBST = process.argv.includes("--selftest");
             const tags = r.computeCompoundTags(st.blueprints[typ]);
             if (!((tags.brennbar || 0) >= r.constructor.BRENNBAR_TAG_MIN))
                 return { fehler: typ + " ist nicht brennbar" };
-            // 300 brennbare Bauten weit vom Brennglas, das Brennglas selbst bei (2000, 2000).
+            // 300 brennbare Bauten weit vom Brennglas, das Brennglas selbst bei (2000, 2000) — alle `silent` (die Lage exakt,
+            // keine Spieler-Klemme). Das Brennglas ist ein Bauplan, der wirklich bündelt (durchsichtige Teile → Brennpunkte):
+            // bis 0710-11 war es eine Eiche mit nachgeschriebenem `focusing` — seit 773ed3a2 („EIN Brennpunkt") trägt sie keinen
+            // Brennpunkt, und ohne Stempel kennt das Verzeichnis sie nicht: der Takt rechnete nie, T1/T2 waren vakuös grün.
             const bauten = [];
             for (let i = 0; i < 300; i++) {
                 const x = 400 + (i % 20) * 9,
                     z = 400 + Math.floor(i / 20) * 9;
-                bauten.push(r.spawnArchitecture(typ, { x, y: 0, z }, { rotationY: 0 }));
+                bauten.push(r.spawnArchitecture(typ, { x, y: 0, z }, { rotationY: 0, silent: true }));
             }
-            const glas = r.spawnArchitecture(typ, { x: 2000, y: 0, z: 2000 }, { rotationY: 0 });
+            const glasTyp = Object.keys(st.blueprints).find((n) => {
+                try {
+                    const a = r.computeBlueprintAffordances(st.blueprints[n]);
+                    return !!(a && a.focusing);
+                } catch (_e) {
+                    return false;
+                }
+            });
+            if (!glasTyp) return { fehler: "kein Bauplan bündelt (focusing)" };
+            const glas = r.spawnArchitecture(glasTyp, { x: 2000, y: 0, z: 2000 }, { rotationY: 0, silent: true });
             if (!glas) return { fehler: "Brennglas nicht gesetzt" };
-            glas.affordances = Object.assign({}, glas.affordances || {}, { focusing: true });
+            st.timeOfDay = 0.5;
+            if (st.world) st.world.timeOfDay = 0.5;
+            const sonne = r._sonnenRichtung();
+            const brennpunkte = sonne && sonne.y > 0 ? r._brennpunkte(glas, sonne).length : 0;
+            if (!brennpunkte)
+                return { fehler: `das Brennglas (${glasTyp}) hat am Mittag keinen Brennpunkt — T1/T2 wären vakuös` };
             // Zählung: computeCompoundTags-Rufe, die AUS dem Brennglas-Takt kommen.
             let imTakt = false,
                 rufe = 0;
@@ -98,7 +116,7 @@ const SELBST = process.argv.includes("--selftest");
             // T2: drei brennbare Bauten neben das Brennglas.
             const nah = [];
             for (let i = 0; i < 3; i++)
-                nah.push(r.spawnArchitecture(typ, { x: 2000 + 1 + i, y: 0, z: 2000 }, { rotationY: 0 }));
+                nah.push(r.spawnArchitecture(typ, { x: 2000 + 1 + i, y: 0, z: 2000 }, { rotationY: 0, silent: true }));
             const t2 = lauf(10);
             r.computeCompoundTags = roh;
             for (const e of bauten.concat(nah, [glas])) if (e) r.removeArchitecture(e);
@@ -318,7 +336,19 @@ const SELBST = process.argv.includes("--selftest");
                     else delete r._foundryFrist;
                 }
             })();
-            return { t1, t2, t3, t5, t6, t7, t8, n: bauten.length, reichweite: r.constructor.FOCUSING_HEAT_RANGE_M };
+            return {
+                t1,
+                t2,
+                t3,
+                t5,
+                t6,
+                t7,
+                t8,
+                n: bauten.length,
+                reichweite: r.constructor.FOCUSING_HEAT_RANGE_M,
+                glasTyp,
+                brennpunkte,
+            };
         }, SELBST);
     } finally {
         await realm.close();
@@ -328,7 +358,7 @@ const SELBST = process.argv.includes("--selftest");
         process.exit(1);
     }
     const T1 = aus.t1 === 0;
-    const T2 = aus.t2 <= 3 * 10;
+    const T2 = aus.t2 >= 10 && aus.t2 <= 3 * 10; // die Betroffenen werden gerechnet (nicht vakuös), nie mehr
     const t3 = aus.t3;
     const T3 = t3.fernJa === 4 && t3.nah1 === false && t3.nah2 === true && t3.fern2 === false;
     const T4 = t3.fern3 === true;
@@ -364,7 +394,7 @@ const SELBST = process.argv.includes("--selftest");
         `  ${T1 ? "✅" : "❌"} T1 ${aus.n} Bauten, keiner in Reichweite: ${aus.t1} Tag-Rufe in 10 Takten (Soll 0)`
     );
     console.log(
-        `  ${T2 ? "✅" : "❌"} T2 3 Bauten in Reichweite (${aus.reichweite} m): ${aus.t2} Tag-Rufe in 10 Takten (≤ 30)`
+        `  ${T2 ? "✅" : "❌"} T2 3 Bauten in Reichweite (${aus.reichweite} m) von ${aus.glasTyp} (${aus.brennpunkte} Brennpunkte): ${aus.t2} Tag-Rufe in 10 Takten (10–30)`
     );
     console.log(
         `  ${T3 ? "✅" : "❌"} T3 Feld-Bake-Takt nah zuerst: Fenster 1 fern ${t3.fernJa}/4 · nah ${t3.nah1} → Fenster 2 nah ${t3.nah2} · fern ${t3.fern2}`
