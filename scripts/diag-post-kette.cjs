@@ -46,7 +46,8 @@ const GODRAY_MIN_PCT = 2;
 // Viewport-Tiefe entfernt; zweimal das Abbild höchstens WASSER_RAUSCHEN; ohne Grund mindestens WASSER_TIEFE_MIN anders.
 // Gemessen 07.10. (kienspan, Leinwand 320×240): Abbild gegen r184 2,5 (das 2×2-Maximum — die Hälfte der Pixel liest den
 // Grund eine Leinwand-Zeile weiter; bei 1080p ist die Zeile 4,5× feiner), Rausch-Boden 0, ohne Grund 37, der vec4-Weg
-// (der Leser bekommt den Textur-Knoten statt `.x`) ~130.
+// (der Leser bekommt den Textur-Knoten statt `.x`) ~130. Mit dem Wasser der Welle L (08.10.) las das 2×2-Maximum 6,0
+// daneben; das waagrechte Paar (die Zeile ganz) 0.
 const WASSER_TOL = 4;
 const WASSER_RAUSCHEN = 1;
 const WASSER_TIEFE_MIN = 15;
@@ -76,10 +77,12 @@ function urteil(z) {
         const ab = s.abbild || { fehlt: true };
         if (ab.fehlt) v.push(`ABBILD: ${s.name} — kein Tiefen-Abbild (die Leser der Szenen-Tiefe lesen nichts)`);
         else {
-            const halb = (ab.leinwand || [0, 0]).map((x) => Math.ceil(x / 2));
+            // halbe Breite, ganze Höhe: je Texel das waagrechte Pixel-Paar (die Zeile bleibt ganz — das Wasser liest den Grund
+            // seiner Zeile, gemessen am 2×2-Maximum (e) 6 Stufen und (f) 7 Kanten-Pixel bis 14 Luma daneben)
+            const halb = [Math.ceil((ab.leinwand || [0, 0])[0] / 2), (ab.leinwand || [0, 0])[1]];
             if (ab.format !== "r32float" || !ab.groesse || ab.groesse[0] !== halb[0] || ab.groesse[1] !== halb[1])
                 v.push(
-                    `ABBILD: ${s.name} — ${ab.format} ${(ab.groesse || []).join("×")} statt r32float ${halb.join("×")} (halbe Leinwand)`
+                    `ABBILD: ${s.name} — ${ab.format} ${(ab.groesse || []).join("×")} statt r32float ${halb.join("×")} (halbe Breite, ganze Höhe)`
                 );
             if (!(Math.abs(ab.mitte - ab.soll) < 1e-4))
                 v.push(
@@ -167,7 +170,7 @@ function selbsttest() {
         tiefe: direkt,
         leinwandTiefeGpu: false,
         mitte: [190, 40, 40],
-        abbild: { format: "r32float", groesse: [16, 12], leinwand: [32, 24], mitte: 0.98, soll: 0.98 },
+        abbild: { format: "r32float", groesse: [16, 24], leinwand: [32, 24], mitte: 0.98, soll: 0.98 },
     });
     const gruen = {
         schritte: [
@@ -220,7 +223,12 @@ function selbsttest() {
         {
             name: "Abbild in voller Auflösung",
             z: mit((z) => (z.schritte[1].abbild.groesse = [32, 24])),
-            muss: /statt r32float 16×12/,
+            muss: /statt r32float 16×24/,
+        },
+        {
+            name: "Abbild als 2×2-Block (die Zeile halbiert)",
+            z: mit((z) => (z.schritte[1].abbild.groesse = [16, 12])),
+            muss: /statt r32float 16×24/,
         },
         { name: "Abbild leer", z: mit((z) => (z.schritte[2].abbild.mitte = 1)), muss: /trägt die Szene nicht/ },
         {

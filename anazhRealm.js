@@ -34119,11 +34119,15 @@ class AnazhRealm {
     // schreiben selbst Tiefe (Wasser `depthWrite`, der March seine Fragment-Tiefe), also braucht ihr Lesen eine Kopie im
     // Pass-Bruch — r184 kennt keinen nur-lesend angehängten Tiefen-Anhang. Aber keiner braucht sie Pixel für Pixel: das
     // Wasser rechnet den optischen Weg zum Grund (weiche Ufer), der March bricht an der Szenen-Tiefe ab (dahinter verwürfe
-    // ihn der Tiefentest). Die volle Kopie (depth24plus, 7,9 MB bei 1080p) wird ein Abbild in halber Auflösung, je Texel die
-    // FERNSTE Tiefe seiner 2×2 Pixel (r32float, 2,1 MB): der March läuft am Rand höchstens einen Pixel weiter (der Test
-    // verwirft), das Wasser liest an der Kante eines Gegenstands im Wasser den Grund dahinter, nie den Gegenstand. Gezeichnet
-    // im Pass-Bruch des Hauptbilds (`_tiefenAbbild`); der WebGL2-Rückfall und der Null-Renderer behalten r184s
-    // Viewport-Tiefe.
+    // ihn der Tiefentest). Die volle Kopie (depth24plus, 7,9 MB bei 1080p) wird ein Abbild in halber BREITE, je Texel die
+    // FERNSTE Tiefe seines waagrechten Pixel-Paars (r32float, 4,0 MB): der March läuft am Rand höchstens einen Pixel weiter
+    // (der Test verwirft), das Wasser liest an der Kante eines Gegenstands im Wasser den Grund dahinter, nie den Gegenstand.
+    // DIE ZEILE BLEIBT GANZ (Integration Welle L wasser × K host-vram, 08.10.): das Paar liegt in EINER Zeile — der Grund
+    // entfernt sich mit der Bild-Zeile, nie innerhalb einer; das 2×2-Maximum las die Hälfte der Pixel eine Zeile weiter, und
+    // das Wasser der Welle L (der Durchlass und das Ufer-Band aus dem optischen Weg) zeigte das: über hellem Grund 6 Stufen
+    // dunkler als mit r184s Tiefe, am Pfahl 7 von 38 Kanten-Pixeln bis 14 Luma (gate:post-kette (e)/(f)); mit dem Paar 0
+    // und 0. Gezeichnet im Pass-Bruch des Hauptbilds (`_tiefenAbbild`); der WebGL2-Rückfall und der Null-Renderer behalten
+    // r184s Viewport-Tiefe.
     // DER WERT IST EIN SKALAR: r184s Viewport-Tiefe ist ein Knoten auf einer Tiefen-Textur (Typ float); das Abbild ist eine
     // r32float-Farbtextur, ihr Knoten liefert vec4 (d, 0, 0, 1). Roh weitergereicht, rechnete das Wasser seinen optischen Weg
     // als vec4 — der Durchlass (Beer-Lambert) weitete `vec3(wK)` und die Luma-Gewichte auf vec4 mit 1,0 und zählte die vierte
@@ -34146,12 +34150,12 @@ class AnazhRealm {
         abbild.minFilter = THREE.NearestFilter;
         abbild.magFilter = THREE.NearestFilter;
         abbild.generateMipmaps = false;
-        // JEDES PIXEL LIEST DEN BLOCK, DER ES ENTHÄLT (Gegenprüfung 0710-3): ganzzahlig, Pixel / 2. Vorher las `screenUV` mit
+        // JEDES PIXEL LIEST DAS PAAR, DAS ES ENTHÄLT (Gegenprüfung 0710-3): ganzzahlig, x / 2, y ganz. Vorher las `screenUV` mit
         // Nearest bei uv = (x + 0,5)/W eine Textur der Breite ceil(W/2) — bei UNGERADER Leinwand traf jedes ungerade x der
         // rechten Hälfte (ungerade Höhe: der unteren) den Nachbar-Block (x+1, x+2): neben einem Gegenstand vor dem Wasser las
         // das Wasser den Gegenstand, ein heller Saum von 1 px (Radeon, TRAA, 1921×1081: 57–85 von ~290 Kanten-Pixeln +8 Luma;
         // gate:post-kette (f), 321×241: 11 von 31 bis 45,5), der March verlor 1 px eines fernen Körpers.
-        const knoten = T.texture(abbild).load(T.ivec2(T.screenCoordinate.xy).div(T.ivec2(2, 2)));
+        const knoten = T.texture(abbild).load(T.ivec2(T.screenCoordinate.xy).div(T.ivec2(2, 1)));
         // je Render EINMAL, ausgelöst vom ersten Leser, der zeichnet (wie r184s Viewport-Tiefe)
         knoten.updateBeforeType = "render";
         knoten.updateBefore = (frame) => this._tiefenAbbild(frame, abbild);
@@ -34163,7 +34167,8 @@ class AnazhRealm {
     // DER ZUG DES TIEFEN-ABBILDS: im Hauptbild (Post-Kette oder Direktpfad — die Szene mit der Spiel-Kamera) bricht r184s
     // eigener Weg den Pass (`backend.copyFramebufferToTexture`: Pass beenden, auf demselben Encoder kopieren, mit `load` neu
     // beginnen); kopiert wird in eine 1×1-Attrappe der Szenen-Tiefe, und genau diese eine Encoder-Kopie wird zum Abbild-Pass
-    // (ein Vollbild-Dreieck lädt je Pixel des Abbilds die 2×2 Szenen-Tiefen und schreibt ihr Maximum). So bleibt der Bruch
+    // (ein Vollbild-Dreieck lädt je Pixel des Abbilds das waagrechte Paar der Szenen-Tiefe und schreibt sein Maximum). So
+    // bleibt der Bruch
     // r184s Choreographie (gate:vendor-anker pinnt sie), und die Tiefe des Hauptbilds steht im Abbild, bevor der erste
     // Leser zeichnet.
     _tiefenAbbild(frame, abbild) {
@@ -34176,7 +34181,7 @@ class AnazhRealm {
         const quelle = be.get(ctx.depthTexture).texture;
         if (!quelle) return;
         const w = Math.max(1, Math.ceil(quelle.width / 2)),
-            h = Math.max(1, Math.ceil(quelle.height / 2));
+            h = Math.max(1, quelle.height);
         if (abbild.image.width !== w || abbild.image.height !== h) {
             abbild.image = { data: null, width: w, height: h };
             abbild.needsUpdate = true;
@@ -34195,11 +34200,9 @@ class AnazhRealm {
                     "}\n" +
                     "@fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f {\n" +
                     "    let q = vec2i(textureDimensions(tiefe)) - vec2i(1, 1);\n" +
-                    "    let b = vec2i(p.xy) * 2;\n" +
+                    "    let b = vec2i(i32(p.x) * 2, i32(p.y));\n" +
                     "    var d = 0.0;\n" +
-                    "    for (var j = 0; j < 2; j++) {\n" +
-                    "        for (var i = 0; i < 2; i++) { d = max(d, textureLoad(tiefe, min(b + vec2i(i, j), q), 0)); }\n" +
-                    "    }\n" +
+                    "    for (var i = 0; i < 2; i++) { d = max(d, textureLoad(tiefe, min(b + vec2i(i, 0), q), 0)); }\n" +
                     "    return vec4f(d, 0.0, 0.0, 1.0);\n" +
                     "}\n",
             });
@@ -37108,7 +37111,7 @@ class AnazhRealm {
             envMitte: U.envMitte,
             envOben: U.envOben,
             // Die Szenen-Tiefe VOR dem Feld-Pass (das Tiefen-Abbild `_szeneTiefe`, gezeichnet im Pass-Bruch wie beim
-            // Wasser, je Texel die fernste Tiefe seiner 2×2 Pixel): die Grenze des Marchs — am Rand läuft er höchstens
+            // Wasser, je Texel die fernste Tiefe seines waagrechten Pixel-Paars): die Grenze des Marchs — am Rand läuft er höchstens
             // einen Pixel weiter, der Tiefentest verwirft. Ein Leser bindet nach jedem Resize neu (_tiefenLeserNeuBinden).
             szeneTiefe: this._szeneTiefe().x,
             // Die Schwund-Blende liest Pixel und Rotation der Stufen-Blende (`uDitherT`, dieselbe Uniform).
