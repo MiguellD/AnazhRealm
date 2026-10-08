@@ -89,7 +89,11 @@ function geraeteHoerer() {
     // Täter-Probe nennt beide, wenn das Wort einer Validierung ausbleibt.
     const P = GPUDevice.prototype;
     // Was jedes Device kompiliert (am Device-Objekt gezählt): die Seelen-Probe misst so, ob die Welt-GPU neu kompiliert.
-    const zaehle = (dev, art) => (dev.__frostBau || (dev.__frostBau = { module: 0, pipelines: 0 }))[art]++;
+    const zaehle = (dev, art, d) => {
+        (dev.__frostBau || (dev.__frostBau = { module: 0, pipelines: 0 }))[art]++;
+        // die Namen der Pipelines (r184: `renderPipeline_<Stoff>_<id>`) — die Seelen-Probe nennt, WAS neu baut
+        if (art === "pipelines") (dev.__frostNamen || (dev.__frostNamen = [])).push((d && d.label) || "?");
+    };
     const modul = P.createShaderModule;
     P.createShaderModule = function (d) {
         zaehle(this, "module");
@@ -97,13 +101,13 @@ function geraeteHoerer() {
     };
     const pipe = P.createRenderPipeline;
     P.createRenderPipeline = function (d) {
-        zaehle(this, "pipelines");
+        zaehle(this, "pipelines", d);
         return pipe.call(this, d);
     };
     const bau = P.createRenderPipelineAsync;
     if (bau)
         P.createRenderPipelineAsync = function (d) {
-            zaehle(this, "pipelines");
+            zaehle(this, "pipelines", d);
             H.bauOffen++;
             const p = bau.call(this, d);
             p.then(
@@ -552,6 +556,19 @@ function pruefRaum(echt) {
         sammle(r.state.scene);
         if (F.wurzel !== r.state.scene) sammle(F.wurzel);
         const E = (window.__frostEntsorgung = { phase: null, je: {}, welt: welt.size });
+        // echt ruht der Spiel-Takt für die Entsorgungs-Proben (Lehre 17: sonst baut die laufende Welt nebenher neu — ein
+        // Lauf am 08.10. zählte +4 Module / +5 Pipelines, die kein Wechsel verursachte); die Welt-GPU zeichnet über
+        // `_loopRender` (Bild + Kehraus + die Entsorgungs-Schlange), die Bühnen zeichnen in ihrem eigenen Takt weiter.
+        if (echt) {
+            r.state.renderer.setAnimationLoop(null);
+            F.zeichneTakt = F.zeichne;
+            F.zeichne = async (n) => {
+                for (let i = 0; i < n; i++) {
+                    r._loopRender(performance.now());
+                    await dev.queue.onSubmittedWorkDone();
+                }
+            };
+        }
         const roh = r._queueDispose;
         r._queueDispose = function (obj) {
             const p = E.phase && (E.je[E.phase] || (E.je[E.phase] = { alle: 0, namen: [], objekte: new Set() }));
@@ -656,6 +673,7 @@ function pruefRaum(echt) {
         const vor = bau();
         await F.zeichne(echt ? 8 : 2);
         const ruhe = bau();
+        const n0 = (dev.__frostNamen || []).length;
         await durchgang();
         const nach = bau();
         return {
@@ -664,6 +682,7 @@ function pruefRaum(echt) {
             vorgelegt,
             ruhe: { module: ruhe.module - vor.module, pipelines: ruhe.pipelines - vor.pipelines },
             wechsel: { module: nach.module - ruhe.module, pipelines: nach.pipelines - ruhe.pipelines },
+            neu: (dev.__frostNamen || []).slice(n0, n0 + 8),
         };
     }, ECHT);
     console.log(`\n[seelenwechsel] ${zeit()} · ${JSON.stringify(seelen).slice(0, 400)}`);
@@ -677,7 +696,7 @@ function pruefRaum(echt) {
     check(
         "S2 die Welt-GPU kompiliert beim Seelenwechsel nichts nach (gegen die geschlossene Bühne)",
         seelen.wechsel.module - seelen.ruhe.module <= 0 && seelen.wechsel.pipelines - seelen.ruhe.pipelines <= 0,
-        `Wechsel +${seelen.wechsel.module} Module / +${seelen.wechsel.pipelines} Pipelines, geschlossen +${seelen.ruhe.module} / +${seelen.ruhe.pipelines}`
+        `Wechsel +${seelen.wechsel.module} Module / +${seelen.wechsel.pipelines} Pipelines, geschlossen +${seelen.ruhe.module} / +${seelen.ruhe.pipelines}${seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : ""}`
     );
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
@@ -804,7 +823,15 @@ function pruefRaum(echt) {
             `Geometrien ${ofen.vor.geometrien} → ${ofen.nach.geometrien}, Geometrie-Speicher ${ofen.vor.MB} → ${ofen.nach.MB} MB über 18 Werte`
         );
     }
-    await page.evaluate(() => delete window.anazhRealm._queueDispose);
+    await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const F = window.__frostWand;
+        delete r._queueDispose;
+        if (F.zeichneTakt) {
+            F.zeichne = F.zeichneTakt;
+            r.state.renderer.setAnimationLoop(r._gameLoopTick);
+        }
+    });
 
     // DER NACHLAUF: eine Validierung, die r184 in einem offenen Pipeline-Fehler-Bereich fängt, meldet sich erst, wenn der
     // async Pipeline-Bau endet (CI 07.10., Linux: später als der Schritt) — 3 s Zeichnen, dann darf kein Wort nachkommen.
