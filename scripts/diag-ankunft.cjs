@@ -187,6 +187,7 @@ function kameraVerdict(m) {
     if (m.stoffeOhne > 0) out.push(`${m.stoffeOhne} von ${m.stoffe} Pflanzen-Stoffen ohne Durchsicht (${(m.stoffeOhneArten || []).join(", ")})`);
     if (m.schattenGeschnitten > 0) out.push(`${m.schattenGeschnitten} Pflanzen-Stoff(e) schneiden die Durchsicht auch in den Schatten`);
     if (m.zielFolgt === false) out.push(`das Ziel der Durchsicht folgt der Brust nicht (${m.zielAbstand} m daneben)`);
+    if (!(m.kreuzAbstand >= 0.35)) out.push(`das Fadenkreuz steht in 3rd auf der Figur (${m.kreuzAbstand} m vom Strahl der Bildmitte)`);
     return out;
 }
 const ID_RE = /\b(?:baum|haus|fahrzeug|tor|klinge|welt|ruestung|trank|koerper|reittier)_[a-z0-9_]+/;
@@ -329,12 +330,14 @@ async function probe(arg) {
                 ls.classList.remove("weg");
                 st._weltbildDa = 0;
                 st._weltbildLuecke = null;
-                const n0 = st.logBuffer.length;
+                // der Puffer rollt (maxLogEntries): gesucht wird in seinem Ende, vorher und nachher
+                const warnt = () => st.logBuffer.slice(-30).filter((z) => /erste Weltbild steht ohne/.test(z)).length;
+                const w0 = warnt();
                 schaffe();
                 if (vorbereiten) vorbereiten();
                 r._ankunftsBild();
                 const weg = ls.classList.contains("weg");
-                m.faelle[name] = { weg, stand: stand(), warn: st.logBuffer.slice(n0).filter((z) => /erste Weltbild steht ohne/.test(z)).length };
+                m.faelle[name] = { weg, stand: stand(), warn: Math.max(0, warnt() - w0) };
                 heile();
             };
             const nichts = () => {};
@@ -730,6 +733,17 @@ async function probe(arg) {
                 m.zielAbstand = +Math.hypot(v.x - p.x, v.y - (p.y + 1.0), v.z - p.z).toFixed(2);
                 m.zielFolgt = m.zielAbstand < 0.05;
             }
+            // DAS FADENKREUZ IN 3RD (Gegenprüfung Runde 1: es stand auf dem Kopf der Figur): der Abstand der Brust vom Strahl
+            // durch die Bildmitte
+            {
+                st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
+                st.pitch = 0;
+                ruhig();
+                const c = st.camera.position;
+                const f = st.camera.getWorldDirection(new THREE.Vector3());
+                const b = new THREE.Vector3(st.playerMesh.position.x - c.x, st.playerMesh.position.y + 1.0 - c.y, st.playerMesh.position.z - c.z);
+                m.kreuzAbstand = +b.cross(f).length().toFixed(2);
+            }
             r.setCameraMode("first");
             st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
         }
@@ -1059,6 +1073,7 @@ async function probe(arg) {
                     stoffeOhneArten: [],
                     schattenGeschnitten: 0,
                     zielFolgt: true,
+                    kreuzAbstand: 0.6,
                     zielAbstand: 0,
                 },
                 [
@@ -1077,6 +1092,7 @@ async function probe(arg) {
                     ["Nadelwand ohne Durchsicht (Befund)", { stoffeOhne: 6, stoffeOhneArten: ["foliageTex", "bark"] }, "6 von 6 Pflanzen-Stoffen ohne Durchsicht"],
                     ["Durchsicht im Schatten", { schattenGeschnitten: 2 }, "2 Pflanzen-Stoff(e) schneiden die Durchsicht auch in den Schatten"],
                     ["Ziel ohne Brust", { zielFolgt: false, zielAbstand: 3.2 }, "das Ziel der Durchsicht folgt der Brust nicht"],
+                    ["Fadenkreuz auf dem Kopf (Gegenprüfung)", { kreuzAbstand: 0.02 }, "das Fadenkreuz steht in 3rd auf der Figur"],
                 ],
             ],
             [
@@ -1208,12 +1224,12 @@ async function probe(arg) {
                     return `${k}: ${z.proben} Proben, Pflanze hält ${z.pflanzeHaelt}, Arm ${z.armIst}/${z.armSoll} m (Ist/Soll), < 3 m ${z.unter3}, Sprünge ${z.spruenge} (Soll ${z.spruengeSoll}, hinaus ${z.hinausSprung})`;
                 })
                 .join(" · ") +
-            ` · Pflanzen-Stoffe ${m.stoffe}, ohne Durchsicht ${m.stoffeOhne}, Ziel ${m.zielAbstand} m`
+            ` · Pflanzen-Stoffe ${m.stoffe}, ohne Durchsicht ${m.stoffeOhne}, Ziel ${m.zielAbstand} m, Fadenkreuz ${m.kreuzAbstand} m neben der Brust`
     );
     console.log("=== D8 · D6 · D9 — DIE STIMME UND DAS DORF ===");
     zeige("D8", "der Spieler-Chat trägt Worte, das Log die Zahlen", out.kanal, kanalVerdict, (m) => `${(m.zeilen || []).filter((z) => !/^> /.test(z)).length} Zeilen · Log ${m.siedlungImLog}`);
     zeige("D6", "die KI nennt die Ursache (Dienst · Schlüssel · Proxy)", out.ki, kiVerdict, (m) => `Status „${(m.status || "").slice(0, 60)}" · ohne Schlüssel „${(m.ohneSchluessel || "—").slice(0, 60)}" · Proxy ${m.proxyUrl}`);
-    zeige("D9", "das Dorf steht vor dir, ein gesperrter Slot findet einen Ersatz-Ort", out.dorf, dorfVerdict, (m) => `${m.haeuser} Häuser (Log: ${m.platziert} platziert, ${m.ersatzOrte} am Ersatz-Ort, ${m.uebersprungen} übersprungen) · hinten ${m.hinten} · außer Bild ${m.ausserBild} · Ersatz ${m.ersatz} (${m.ersatzAbstand} m) · „${m.dorfZeile}"`);
+    zeige("D9", "das Dorf steht vor dir, ein gesperrter Slot findet einen Ersatz-Ort", out.dorf, dorfVerdict, (m) => `${m.haeuser} Häuser (Log: ${m.platziert} platziert, ${m.ersatzOrte} am Ersatz-Ort, ${m.uebersprungen} übersprungen) · hinten ${m.hinten} · außer Bild ${m.ausserBild} · Ersatz ${m.ersatz} (${m.ersatzAbstand} m) · „${m.dorfZeile}" · baue dorf hier: ${m.hierNaechstes}–${m.hierWeitestes} m, beim Mitspieler ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);
