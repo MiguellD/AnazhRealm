@@ -30428,9 +30428,11 @@ class AnazhRealm {
                     // DER PERF-STRECK der Wahrnehmungs-Distanz (_lodPerfMul, je Frame gespiegelt): jede Maske misst
                     // die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
                     uLodPerf: _T.uniform(1),
-                    // DAS ZIEL DER DURCHSICHT (xyz) und ihr Radius (w): `_kamZielSetzen` aus `_loopCamera`, gelesen von
-                    // `_kameraDurchsichtNode` (der Sicht-Strahl vom Auge `uLodAuge` zum Ziel).
+                    // DAS ZIEL DER DURCHSICHT (xyz) und ihr Radius (w), dazu das Auge, für das es gilt (`uKamAuge`: die
+                    // Stellung der Spieler-Kamera, nie die Kamera einer Sonde): `_kamZielSetzen` aus `_loopCamera`,
+                    // gelesen von `_kameraDurchsichtNode` (der Sicht-Strahl vom Auge zum Ziel).
                     uKamZiel: _T.uniform(new THREE.Vector4(0, 0, 0, 0)),
+                    uKamAuge: _T.uniform(new THREE.Vector3()),
                 };
             }
         } catch (_e) {
@@ -30541,18 +30543,19 @@ class AnazhRealm {
 
     // DIE DURCHSICHT DER KAMERA (Leben-Schau 07.10. L-Kamera, Gegenprüfung Runde 1): eine Pflanze zwischen Auge und Spieler
     // ist durchsichtig, statt die Kamera zu halten — der Profi-Weg für Laub (kein Wald ist für eine Kamera mit 9,6 m Arm frei:
-    // die Kronen-Hülle hielt die Verfolger-Kamera am Wagendach). Ein Fragment, das näher als der Radius `uKamZiel.w` am
-    // Sicht-Strahl Auge (`uLodAuge`) → Ziel (`uKamZiel.xyz`, `_kamZielSetzen`) liegt, fällt; über den Saum KAMERA_DURCHSICHT
-    // .saumM dithert es aus — dasselbe Interleaved-Gradient-Rauschen wie die Stufen-Blende (`__phytoCore.lodDitherIGN`,
-    // rotiert mit uDitherT: das zeitliche Mittel der Auflösung ist die weiche Kante). Im 1st ist das Ziel das Auge selbst
-    // (eine Kugel um das Gesicht). Rückgabe: der bool-Knoten für `maskNode` (true = behalten) — der Schatten-Pass liest ihn
-    // nie (der Aufrufer setzt `maskShadowNode`): der Baum wirft seinen ganzen Schatten.
+    // die Kronen-Hülle hielt die Verfolger-Kamera am Wagendach). Was zwischen Auge (`uKamAuge`) und Ziel (`uKamZiel.xyz`,
+    // `_kamZielSetzen`) näher als der Radius `uKamZiel.w` am Sicht-Strahl liegt, fällt — die EINE Formel
+    // `_durchsichtGewicht`; über den Saum KAMERA_DURCHSICHT.saumM dithert es aus — dasselbe Interleaved-Gradient-Rauschen
+    // wie die Stufen-Blende (`__phytoCore.lodDitherIGN`, rotiert mit uDitherT: das zeitliche Mittel der Auflösung ist die
+    // weiche Kante). Im 1st ist das Ziel das Auge selbst: nichts fällt. Rückgabe: der bool-Knoten für `maskNode` (true =
+    // behalten) — der Schatten-Pass liest ihn nie (der Aufrufer setzt `maskShadowNode`): der Baum wirft seinen ganzen
+    // Schatten.
     _kameraDurchsichtNode(T) {
         const lu = this._ensureLodUniforms();
         if (
             !T ||
             !lu ||
-            !lu.uLodAuge ||
+            !lu.uKamAuge ||
             !lu.uKamZiel ||
             !lu.uDitherT ||
             !T.positionWorld ||
@@ -30563,15 +30566,17 @@ class AnazhRealm {
             !T.float
         )
             return null;
-        const E = lu.uLodAuge;
-        const Z = lu.uKamZiel;
-        const p = T.positionWorld;
-        const ez = Z.xyz.sub(E);
-        const t = T.dot(p.sub(E), ez)
-            .div(T.dot(ez, ez).max(T.float(1e-4)))
-            .clamp(0.0, 1.0);
-        const d = T.length(p.sub(E.add(ez.mul(t))));
-        const w = d.sub(Z.w).div(T.float(AnazhRealm.KAMERA_DURCHSICHT.saumM)).clamp(0.0, 1.0);
+        const A = {
+            k: (n) => T.float(n),
+            sub: (a, b) => a.sub(b),
+            mul: (a, b) => a.mul(b),
+            div: (a, b) => a.div(b),
+            dot: (a, b) => T.dot(a, b),
+            len: (a) => T.length(a),
+            max: (a, b) => a.max(b),
+            clamp01: (a) => a.clamp(0.0, 1.0),
+        };
+        const w = AnazhRealm._durchsichtGewicht(A, T.positionWorld, lu.uKamAuge, lu.uKamZiel.xyz, lu.uKamZiel.w);
         const fc = T.screenCoordinate;
         const dh = T.fract(
             T.float(52.9829189)
@@ -30579,6 +30584,28 @@ class AnazhRealm {
                 .add(lu.uDitherT)
         );
         return w.greaterThan(dh);
+    }
+
+    // DIE EINE FORMEL DER DURCHSICHT (Gegenprüfung Runde 2): das Gewicht w ∈ [0, 1], mit dem ein Punkt p steht (0 fällt
+    // ganz, 1 steht; der Stoff vergleicht es mit dem Rauschen) — Auge E, Ziel Z, Radius r. DURCHSICHTIG IST NUR, WAS ZWISCHEN
+    // AUGE UND ZIEL LIEGT: näher als r am Sicht-Strahl (QUER, über den Saum KAMERA_DURCHSICHT.saumM ausgeblendet) UND vor
+    // der Ebene des Ziels (VOR, über denselben Saum vor ihr ausgeblendet) — der Strahl des Fadenkreuzes beginnt auf dieser
+    // Ebene (`_fadenkreuzStrahl`), was er trifft, steht. Die Kugel um das Ziel fiel: sie schnitt im 1st (das Ziel ist das
+    // Auge) die Rinde bis 1,1 m vom Auge (7 von 8 Anläufen an einen Stamm, das Auge 0,01–1,24 m von ihm: ein Loch im Baum,
+    // an dem man steht) und in 3rd den Stamm VOR dem Spieler um die Brust. Im 1st ist die Strecke leer: nichts fällt.
+    // Sie rechnet über einer Algebra A: TSL-Knoten im Stoff (`_kameraDurchsichtNode`), Zahlen in der Linse
+    // (`DURCHSICHT_ZAHLEN`, gate:ankunft LK) — EINE Formel.
+    static _durchsichtGewicht(A, p, E, Z, r) {
+        const S = A.k(AnazhRealm.KAMERA_DURCHSICHT.saumM);
+        const ez = A.sub(Z, E);
+        const pe = A.sub(p, E);
+        const L = A.len(ez);
+        const Lm = A.max(L, A.k(1e-4));
+        const s = A.div(A.dot(pe, ez), Lm); // Meter längs des Sicht-Strahls ab dem Auge
+        const t = A.clamp01(A.div(s, Lm));
+        const quer = A.clamp01(A.div(A.sub(A.len(A.sub(pe, A.mul(ez, t))), r), S));
+        const vor = A.clamp01(A.sub(A.k(1), A.div(A.sub(L, s), S)));
+        return A.max(quer, vor);
     }
 
     _applyVegetationResponse(mat, opts, responseProfile) {
@@ -35280,13 +35307,12 @@ class AnazhRealm {
     // nach FORAGE.regrowMs nachwachsen (die Kachel baut neu).
     _pickScatterAtCrosshair() {
         const ns = this.state.nahStreu;
-        const cam = this.state.camera;
-        if (!ns || ns.senken.size === 0 || !cam) return null;
-        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
-        cam.getWorldDirection(this._tmpCamDir);
+        if (!ns || ns.senken.size === 0) return null;
+        const F = this._fadenkreuzStrahl();
+        if (!F) return null;
         if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
         const rc = this._tmpRaycaster;
-        rc.set(cam.position, this._tmpCamDir);
+        rc.set(F.o, F.d);
         rc.far = AnazhRealm.FORAGE.reach;
         const P =
             this._streuPick || (this._streuPick = { mesh: new THREE.Mesh(), kugel: new THREE.Sphere(), hits: [] });
@@ -52289,11 +52315,12 @@ class AnazhRealm {
         return false;
     }
 
-    // Raycast in Blick-Richtung: trifft der Strahl ein Sub-Mesh einer
-    // magnifying-Architektur in Reichweite?
+    // Der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`): trifft er ein Sub-Mesh einer magnifying-Architektur in
+    // Reichweite?
     _hasMagnifyingInSight() {
-        const cam = this.state.camera;
-        if (!cam || typeof THREE === "undefined") return false;
+        if (typeof THREE === "undefined") return false;
+        const F = this._fadenkreuzStrahl();
+        if (!F) return false;
         const meshes = [];
         for (const entry of this.state.architectures || []) {
             if (!entry.affordances || !entry.affordances.magnifying) continue;
@@ -52304,13 +52331,7 @@ class AnazhRealm {
         }
         if (meshes.length === 0) return false;
         if (!this._magRaycaster) this._magRaycaster = new THREE.Raycaster();
-        this._magRaycaster.set(cam.position, this._tmpCamDir || new THREE.Vector3(0, 0, -1));
-        if (this._tmpCamDir) cam.getWorldDirection(this._tmpCamDir);
-        else {
-            const dir = new THREE.Vector3();
-            cam.getWorldDirection(dir);
-            this._magRaycaster.set(cam.position, dir);
-        }
+        this._magRaycaster.set(F.o, F.d);
         this._magRaycaster.far = AnazhRealm.MAGNIFYING_RAY_RANGE_M;
         const hits = this._magRaycaster.intersectObjects(meshes, false);
         return hits.length > 0;
@@ -77823,8 +77844,8 @@ class AnazhRealm {
         this._applyPhantomTint(bm.phantomMesh, target.isStable);
     }
 
-    // Raycast aus der Kamera gegen die Physik-Welt: erster Treffer in 30 m = Phantom-Position (der Pitch
-    // steuert die Distanz). Ohne Treffer yaw×distance-Fallback, Phantom „instabil“ (schwebt frei).
+    // Der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) gegen die Physik-Welt: erster Treffer in 30 m = Phantom-Position
+    // (der Pitch steuert die Distanz). Ohne Treffer yaw×distance-Fallback, Phantom „instabil“ (schwebt frei).
     // Stabil = Hit-Normal-Y > 0.5 (begehbar, wie hang.maxSlopeY); nur ein Flag (Verbot beim Aufrufer).
     _resolvePhantomTarget() {
         const bm = this.state.buildMode;
@@ -77837,20 +77858,17 @@ class AnazhRealm {
         const fallbackZ = p.z + vorn.z * bm.phantomDistance;
         const fallback = { x: fallbackX, y: fallbackY, z: fallbackZ, isStable: false, hit: false };
         // P3 — der Raycast ist feld-nativ (`_runRaycast` → `_fieldRaycast`); nur die Kamera nötig.
-        if (!this.state.camera) {
-            return fallback;
-        }
-        const cam = this.state.camera;
-        const cp = cam.position;
-        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
-        cam.getWorldDirection(this._tmpCamDir);
+        const F = this._fadenkreuzStrahl();
+        if (!F) return fallback;
+        const o = F.o;
+        const d = F.d;
         const maxDist = 30;
-        const rayStart = this.setVec(this.state.tmpVec1, cp.x / sf, cp.y / sf, cp.z / sf);
+        const rayStart = this.setVec(this.state.tmpVec1, o.x / sf, o.y / sf, o.z / sf);
         const rayEnd = this.setVec(
             this.state.tmpVec2,
-            (cp.x + this._tmpCamDir.x * maxDist) / sf,
-            (cp.y + this._tmpCamDir.y * maxDist) / sf,
-            (cp.z + this._tmpCamDir.z * maxDist) / sf
+            (o.x + d.x * maxDist) / sf,
+            (o.y + d.y * maxDist) / sf,
+            (o.z + d.z * maxDist) / sf
         );
         const result = this._runRaycast(rayStart, rayEnd, (cb, hit) => {
             if (!hit) return fallback;
@@ -77895,11 +77913,9 @@ class AnazhRealm {
     // pfad zieht Stamina (_aktionAusdauer), zu wenig → verweigert; frieden/schöpfer frei. Rebindbar.
     // Pick nur gegen sichtbare (in-range gecullte) Meshes — das ist die natürliche Reichweite.
     _pickArchitectureAtCrosshair() {
-        if (!this.state.scene || !this.state.camera || !Array.isArray(this.state.architectures)) {
-            return null;
-        }
-        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
-        this.state.camera.getWorldDirection(this._tmpCamDir);
+        if (!this.state.scene || !Array.isArray(this.state.architectures)) return null;
+        const F = this._fadenkreuzStrahl();
+        if (!F) return null;
         const meshes = [];
         const entryByMesh = new Map();
         for (const e of this.state.architectures) {
@@ -77919,8 +77935,7 @@ class AnazhRealm {
         }
         if (!meshes.length) return null;
         if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
-        const cp = this.state.camera.position;
-        this._tmpRaycaster.set(cp, this._tmpCamDir);
+        this._tmpRaycaster.set(F.o, F.d);
         this._tmpRaycaster.far = 30;
         const intersects = this._tmpRaycaster.intersectObjects(meshes, false);
         if (!intersects.length) return null;
@@ -78112,26 +78127,23 @@ class AnazhRealm {
         this._substanzKlang("abschied", tags);
     }
 
-    // Pfad analog _resolvePhantomTarget, aber ohne Phantom-Logik. Liefert
-    // den ersten Ammo-Raycast-Hit in Kamera-Blickrichtung — für tryMouseBreak
-    // wenn keine Architektur getroffen wurde (Terrain-Loch-Pfad).
+    // Pfad analog _resolvePhantomTarget, aber ohne Phantom-Logik. Liefert den ersten Treffer auf dem Strahl des
+    // Fadenkreuzes (`_fadenkreuzStrahl`) — für tryMouseBreak, wenn keine Architektur getroffen wurde (Terrain-Loch-Pfad),
+    // Graben, Aufschütten und das Blick-Ziel des Pfeils.
     _raycastWorldHit(maxDist = 30) {
         const sf = this.state.scaleFactor || 1;
         const fallback = { hit: false, x: 0, y: 0, z: 0 };
         // P3 — feld-nativer Raycast (`_runRaycast` → `_fieldRaycast`); nur die Kamera nötig.
-        if (!this.state.camera) {
-            return fallback;
-        }
-        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
-        const cam = this.state.camera;
-        cam.getWorldDirection(this._tmpCamDir);
-        const cp = cam.position;
-        const rayStart = this.setVec(this.state.tmpVec1, cp.x / sf, cp.y / sf, cp.z / sf);
+        const F = this._fadenkreuzStrahl();
+        if (!F) return fallback;
+        const o = F.o;
+        const d = F.d;
+        const rayStart = this.setVec(this.state.tmpVec1, o.x / sf, o.y / sf, o.z / sf);
         const rayEnd = this.setVec(
             this.state.tmpVec2,
-            (cp.x + this._tmpCamDir.x * maxDist) / sf,
-            (cp.y + this._tmpCamDir.y * maxDist) / sf,
-            (cp.z + this._tmpCamDir.z * maxDist) / sf
+            (o.x + d.x * maxDist) / sf,
+            (o.y + d.y * maxDist) / sf,
+            (o.z + d.z * maxDist) / sf
         );
         return this._runRaycast(rayStart, rayEnd, (cb, hit) => {
             if (!hit) return fallback;
@@ -78335,18 +78347,18 @@ class AnazhRealm {
     }
 
     // DIE KLINGE FOLGT DEM BLICK (Welle L, K-D3): die Klingen-Achse zielt vom Schultergelenk O auf den Punkt, an dem
-    // der Strahl des Fadenkreuzes (die Kamera — in der 1st-Person das Auge, in der 3rd die Verfolger-Kamera) die
-    // Reichweiten-Kugel um O verlässt. Ein Fuchs 1 m tiefer in 1,8 m liegt so auf der Klinge, wenn das Fadenkreuz auf
-    // ihm liegt — die alte Klinge fegte waagrecht in Schulterhöhe. Ohne Kamera der Blick selbst.
+    // der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) die Reichweiten-Kugel um O verlässt. Ein Fuchs 1 m tiefer in
+    // 1,8 m liegt so auf der Klinge, wenn das Fadenkreuz auf ihm liegt — die alte Klinge fegte waagrecht in Schulterhöhe.
+    // Ohne Kamera der Blick selbst.
     _kampfKlingenAchse(ox, oy, oz, reach) {
-        const cam = this.state.camera;
         const yaw0 = Number.isFinite(this.state.yaw) ? this.state.yaw : 0;
         const pitch0 = Number.isFinite(this.state.pitch) ? this.state.pitch : 0;
-        if (!cam || typeof cam.getWorldDirection !== "function") return { yaw: yaw0, pitch: pitch0 };
-        const d = cam.getWorldDirection(this._klingeBlick || (this._klingeBlick = new THREE.Vector3()));
-        const wx = cam.position.x - ox,
-            wy = cam.position.y - oy,
-            wz = cam.position.z - oz;
+        const F = this._fadenkreuzStrahl();
+        if (!F) return { yaw: yaw0, pitch: pitch0 };
+        const d = F.d;
+        const wx = F.o.x - ox,
+            wy = F.o.y - oy,
+            wz = F.o.z - oz;
         // |w + d·s| = reach → s² + 2·s·(d·w) + |w|² − reach² = 0; die ferne Wurzel ist der Austritt.
         const b = d.x * wx + d.y * wy + d.z * wz;
         const disc = b * b - (wx * wx + wy * wy + wz * wz - reach * reach);
@@ -79358,11 +79370,9 @@ class AnazhRealm {
     // _pickArchitectureAtCrosshair). Iteriert state.creatures, traverse
     // pro Group → Mesh-Liste. Reverse-Map über Map<Mesh, Creature>.
     _pickCreatureAtCrosshair() {
-        if (!this.state.scene || !this.state.camera || !Array.isArray(this.state.creatures)) {
-            return null;
-        }
-        if (!this._tmpCamDir) this._tmpCamDir = new THREE.Vector3();
-        this.state.camera.getWorldDirection(this._tmpCamDir);
+        if (!this.state.scene || !Array.isArray(this.state.creatures)) return null;
+        const F = this._fadenkreuzStrahl();
+        if (!F) return null;
         const meshes = [];
         const creatureByMesh = new Map();
         for (const c of this.state.creatures) {
@@ -79376,8 +79386,7 @@ class AnazhRealm {
         }
         if (!meshes.length) return null;
         if (!this._tmpRaycaster) this._tmpRaycaster = new THREE.Raycaster();
-        const cp = this.state.camera.position;
-        this._tmpRaycaster.set(cp, this._tmpCamDir);
+        this._tmpRaycaster.set(F.o, F.d);
         this._tmpRaycaster.far = 30;
         const intersects = this._tmpRaycaster.intersectObjects(meshes, false);
         if (!intersects.length) return null;
@@ -92292,12 +92301,42 @@ class AnazhRealm {
         return Math.atan2(dx, dz);
     }
 
-    // DER FADENKREUZ-PUNKT: wo der Strahl der Kamera (1st das Auge, 3rd die Verfolger-Kamera — beide durch das
-    // Fadenkreuz) die Welt trifft (Gelände und Bauten, _raycastWorldHit), sonst der Punkt in maxDist auf dem Strahl.
-    // Der Pfeil zielt darauf: aus der Mündung an der Schulter kreuzt er das Fadenkreuz am Ziel.
-    _blickZiel(maxDist) {
+    // DER STRAHL DES FADENKREUZES (Gegenprüfung Runde 2): jede Probe durch die Bildmitte — Bau-Pick, Welt-Treffer (Pfeil ·
+    // Graben · Aufschütten), Bau-Phantom, Kreatur-Pick, Streu-Pick, Brennglas, Blick-Ziel, Klingen-Achse — nimmt DIESEN
+    // Strahl: die Richtung der Kamera, der Anfang dort, wo er die Ebene des Ziels (`_kamZielSetzen`: 3rd die Brust) kreuzt.
+    // Was davor liegt, zwischen Auge und Spieler, ist durchsichtig (`_durchsichtGewicht`) und wird nie getroffen — ab der
+    // Kamera trafen die Strahlen in 3rd die durchsichtige Pflanze HINTER dem Spieler (12 Bäume × 8 Richtungen: Bau-Pick 76,
+    // Welt-Treffer 67 von 96): der Pfeil flog nach hinten, Graben und Phantom landeten hinter ihm, ein Klick fällte den
+    // unsichtbaren Baum. Im 1st ist das Ziel das Auge, der Strahl beginnt an der Kamera. Rückgabe { o, d } (wiederverwendet;
+    // o der Anfang, d die Einheits-Richtung) oder null ohne Kamera.
+    _fadenkreuzStrahl() {
         const cam = this.state.camera;
-        if (!cam || typeof cam.getWorldDirection !== "function") {
+        if (!cam || typeof cam.getWorldDirection !== "function") return null;
+        const F = this._fkStrahl || (this._fkStrahl = { o: new THREE.Vector3(), d: new THREE.Vector3() });
+        cam.getWorldDirection(F.d);
+        const c = cam.position;
+        F.o.copy(c);
+        const z = this.state._kamZiel;
+        // das Ziel gilt nur der Kamera-Stellung, für die `_kamZielSetzen` es schrieb (eine Sonde, die die Kamera selbst
+        // stellt, hat keines)
+        if (z && Math.abs(z.ex - c.x) + Math.abs(z.ey - c.y) + Math.abs(z.ez - c.z) < 1e-6) {
+            // die Ebene durch das Ziel, senkrecht zum Sicht-Strahl Auge → Ziel: s = |Z − C|² / ((Z − C) · d)
+            const zx = z.x - c.x;
+            const zy = z.y - c.y;
+            const zz = z.z - c.z;
+            const L2 = zx * zx + zy * zy + zz * zz;
+            const k = zx * F.d.x + zy * F.d.y + zz * F.d.z;
+            if (L2 > 1e-8 && k > 1e-6) F.o.addScaledVector(F.d, L2 / k);
+        }
+        return F;
+    }
+
+    // DER FADENKREUZ-PUNKT: wo der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) die Welt trifft (Gelände und Bauten,
+    // _raycastWorldHit), sonst der Punkt in maxDist auf dem Strahl. Der Pfeil zielt darauf: aus der Mündung an der Schulter
+    // kreuzt er das Fadenkreuz am Ziel.
+    _blickZiel(maxDist) {
+        const F = this._fadenkreuzStrahl();
+        if (!F) {
             const pm = this.state.playerMesh;
             const v = this._blickVorn(this.state.yaw, this.state.pitch);
             const o = pm ? pm.position : { x: 0, y: 0, z: 0 };
@@ -92305,21 +92344,29 @@ class AnazhRealm {
         }
         const hit = this._raycastWorldHit(maxDist);
         if (hit && hit.hit) return { x: hit.x, y: hit.y, z: hit.z };
-        const d = cam.getWorldDirection(this._blickZielDir || (this._blickZielDir = new THREE.Vector3()));
-        return {
-            x: cam.position.x + d.x * maxDist,
-            y: cam.position.y + d.y * maxDist,
-            z: cam.position.z + d.z * maxDist,
-        };
+        return { x: F.o.x + F.d.x * maxDist, y: F.o.y + F.d.y * maxDist, z: F.o.z + F.d.z * maxDist };
     }
 
-    // DAS ZIEL DER DURCHSICHT (`uKamZiel`, Leben-Schau 07.10. L-Kamera, Gegenprüfung Runde 1): wohin das Auge blickt und wie
-    // weit um den Sicht-Strahl eine Pflanze durchsichtig wird (`_kameraDurchsichtNode`) — 3rd die Brust (zu Fuß
-    // KAMERA_DURCHSICHT.fussM, im Ritt rittM: der Wagen ist breiter als der Leib), 1st das Auge selbst (egoM: was das
-    // Gesicht streift). Der EINE Schreiber ist `_loopCamera`, je Bild nach dem Setzen der Kamera.
+    // DAS ZIEL DER KAMERA (`uKamZiel` und `state._kamZiel`, Leben-Schau 07.10. L-Kamera): wohin das Auge blickt — 3rd die
+    // Brust, mit dem Radius, bis zu dem eine Pflanze um den Sicht-Strahl durchsichtig wird (zu Fuß KAMERA_DURCHSICHT.fussM,
+    // im Ritt rittM: der Wagen ist breiter als der Leib); 1st das Auge selbst (die Strecke ist leer, nichts wird
+    // durchsichtig). Die Durchsicht (`_durchsichtGewicht`) und der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) lesen
+    // dasselbe Ziel. Der EINE Schreiber ist `_loopCamera`, je Bild nach dem Setzen der Kamera.
     _kamZielSetzen(x, y, z, r) {
+        const k = this.state._kamZiel || (this.state._kamZiel = { ex: 0, ey: 0, ez: 0, x: 0, y: 0, z: 0, r: 0 });
+        // das Auge, für das das Ziel gilt: die eben gesetzte Spieler-Kamera — eine Sonde, die die Kamera selbst stellt, hat
+        // kein Ziel (ihr Strahl beginnt an ihr, ihr Bild schneidet nur die Strecke des Spielers)
+        const c = this.state.camera.position;
+        k.ex = c.x;
+        k.ey = c.y;
+        k.ez = c.z;
+        k.x = x;
+        k.y = y;
+        k.z = z;
+        k.r = r;
         const lu = this.state.lodUniforms;
         if (lu && lu.uKamZiel) lu.uKamZiel.value.set(x, y, z, r);
+        if (lu && lu.uKamAuge) lu.uKamAuge.value.set(c.x, c.y, c.z);
     }
 
     _loopCamera(currentTime) {
@@ -92506,7 +92553,9 @@ class AnazhRealm {
                 );
                 camera.lookAt(player.position.x + blick.x, eyeY + blick.y, player.position.z + blick.z);
                 this.state._kamArm = undefined; // der Arm der 3rd-Kamera beginnt beim Wechsel frei
-                this._kamZielSetzen(player.position.x, eyeY, player.position.z, AnazhRealm.KAMERA_DURCHSICHT.egoM);
+                // das Ziel ist das Auge: zwischen Auge und Ziel liegt nichts, keine Pflanze wird durchsichtig, der Strahl des
+                // Fadenkreuzes beginnt am Auge
+                this._kamZielSetzen(player.position.x, eyeY, player.position.z, 0);
             }
             if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                 this.log(
@@ -99955,10 +100004,22 @@ AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN = 3.5; // m über den Footprint hinaus
 // Grund mit Worker-Zustand, der Spieler hört Worte).
 AnazhRealm.SIEDLUNG_KALT_SATZ = "Die Werkstatt der Welt erwacht noch — versuch es gleich noch einmal.";
 AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional → nicht schieben
-// DIE DURCHSICHT DER KAMERA (`_kameraDurchsichtNode`): um den Sicht-Strahl Auge → Ziel (`_kamZielSetzen`) wird eine
-// Pflanze bis zum Radius durchsichtig und über den Saum ausgedithert (m) — zu Fuß der Leib (Schultern ± 0,25 m, der Kopf
-// 0,7 m über der Brust), im Ritt der Wagen (4,5 × 1,9 m um die Kabine), im 1st was das Gesicht streift.
-AnazhRealm.KAMERA_DURCHSICHT = Object.freeze({ fussM: 0.9, rittM: 2.0, egoM: 0.5, saumM: 0.6 });
+// DIE DURCHSICHT DER KAMERA (`_durchsichtGewicht`): zwischen Auge und Ziel (`_kamZielSetzen`) wird eine Pflanze um den
+// Sicht-Strahl bis zum Radius durchsichtig und über den Saum ausgedithert, quer zum Strahl wie vor der Ebene des Ziels (m)
+// — zu Fuß der Leib (Schultern ± 0,25 m, der Kopf 0,7 m über der Brust), im Ritt der Wagen (4,5 × 1,9 m um die Kabine).
+AnazhRealm.KAMERA_DURCHSICHT = Object.freeze({ fussM: 0.9, rittM: 2.0, saumM: 0.6 });
+// Die Zahlen-Algebra der EINEN Durchsichts-Formel (`_durchsichtGewicht`): Skalare oder {x, y, z} — die Linse rechnet damit,
+// was der Stoff rechnet.
+AnazhRealm.DURCHSICHT_ZAHLEN = Object.freeze({
+    k: (n) => n,
+    sub: (a, b) => (typeof a === "number" ? a - b : { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }),
+    mul: (a, b) => (typeof a === "number" ? a * b : { x: a.x * b, y: a.y * b, z: a.z * b }),
+    div: (a, b) => a / b,
+    dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
+    len: (a) => Math.hypot(a.x, a.y, a.z),
+    max: (a, b) => Math.max(a, b),
+    clamp01: (a) => Math.min(1, Math.max(0, a)),
+});
 // Die Schulter der 3rd-Kamera zu Fuß (m): Auge und Blickziel stehen so weit rechts, die Figur links der Bildmitte.
 AnazhRealm.KAMERA_SCHULTER_M = 0.6;
 // Der gleitende Arm der 3rd-Kamera zu Fuß: der Rest je Sekunde, den er nach einem Hindernis noch vor sich hat (wie die

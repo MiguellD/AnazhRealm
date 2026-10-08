@@ -15409,8 +15409,9 @@ async function checkBandWelle6APolish(ctx) {
     }
 
     // ### Raycast-Place + Stabilitäts-Visual ###
-    // tickBuildMode → _resolvePhantomTarget castet aus der Kamera ({x, y, z, isStable, hit}): das
-    // Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
+    // tickBuildMode → _resolvePhantomTarget castet den Strahl des Fadenkreuzes (`_fadenkreuzStrahl`: die Richtung der
+    // Kamera ab der Ebene des Ziels — Gegenprüfung Runde 2, nie was zwischen Kamera und Spieler liegt) ({x, y, z,
+    // isStable, hit}): das Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
     const wave6a45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -15426,8 +15427,8 @@ async function checkBandWelle6APolish(ctx) {
         out.tickSetsOnGround = /phantomOnGround\s*=/.test(tickSrc);
 
         const resolveSrc = window.__codeOf(r._resolvePhantomTarget);
-        out.resolveUsesCamera = /this\.state\.camera/.test(resolveSrc);
-        out.resolveUsesGetWorldDirection = /getWorldDirection/.test(resolveSrc);
+        out.resolveUsesCamera = /this\._fadenkreuzStrahl\(\)/.test(resolveSrc);
+        out.resolveUsesGetWorldDirection = /getWorldDirection/.test(window.__codeOf(r._fadenkreuzStrahl));
         // DETERMINISMUS-BOGEN P3 — _resolvePhantomTarget ruft den feld-nativen
         // _runRaycast (kein physicsWorld.rayTest mehr; der Raycast geht durch
         // das Dichtefeld + Struktur-Box-Ray).
@@ -15526,9 +15527,12 @@ async function checkBandWelle6APolish(ctx) {
         check("Welle 6.A4: tickBuildMode delegiert an _resolvePhantomTarget", wave6a45Results.tickUsesResolve);
         check("Welle 6.A5: tickBuildMode ruft _applyPhantomTint", wave6a45Results.tickUsesTint);
         check("Welle 6.A5: tickBuildMode setzt phantomOnGround", wave6a45Results.tickSetsOnGround);
-        check("Welle 6.A4: _resolvePhantomTarget liest camera", wave6a45Results.resolveUsesCamera);
         check(
-            "Welle 6.A4: _resolvePhantomTarget nutzt getWorldDirection",
+            "Welle 6.A4: _resolvePhantomTarget liest den Strahl des Fadenkreuzes (_fadenkreuzStrahl)",
+            wave6a45Results.resolveUsesCamera
+        );
+        check(
+            "Welle 6.A4: der Strahl des Fadenkreuzes nutzt getWorldDirection der Kamera",
             wave6a45Results.resolveUsesGetWorldDirection
         );
         check(

@@ -27,7 +27,13 @@
 //       Stamm) und 2,86 m von der Achse einer Tanne, in der der Spieler bei 7,3 m stand — eine Nadelwand; Gegenprüfung
 //       Runde 1 (Kronen-Hülle 5167fd85): beim Ritt 641 von 2400 Proben unter 3 m Arm (die Kamera am Wagendach), 137 Sprünge
 //       > 2 m, zu Fuß 43 % der Proben in Baumnähe auf dem 2-m-Minimum, 5 Sprünge > 1 m auf 80 m; das Fadenkreuz stand in
-//       3rd auf dem Kopf der Figur (die Brust ≥ 0,35 m neben dem Strahl der Bildmitte).
+//       3rd auf dem Kopf der Figur (die Brust ≥ 0,35 m neben dem Strahl der Bildmitte). Gegenprüfung Runde 2: (1) jede Probe
+//       durch die Bildmitte (Bau-Pick, Welt-Treffer, Blick-Ziel, Bau-Phantom, Kreatur-Pick) trifft nie, was zwischen Kamera
+//       und Spieler liegt — 12 Bäume × 8 Richtungen, der Spieler 2,5 m vor dem Baum mit dem Rücken zu ihm: die Strahlen ab
+//       der Kamera trafen die durchsichtige Pflanze HINTER ihm (Bau-Pick 76, Welt-Treffer 67 von 96); (2) die Durchsicht
+//       nimmt nur, was zwischen Auge und Spieler liegt — die EINE Formel (`_durchsichtGewicht`) an der Rinde: im 1st am
+//       Stamm (die Ankunfts-Sicht) schnitt die Kugel um das Auge die Rinde bis 1,1 m (8 von 8 Anläufen), in 3rd die Kugel um
+//       die Brust den Stamm VOR dem Spieler; der Stamm zwischen Kamera und Spieler fällt weiter.
 //   D8  ZWEI KANÄLE — der Spieler-Chat trägt Worte, das Log die Telemetrie: die Siedlungs-Zeile ohne Same und Slots, das
 //       KI-Programm als Tat (`describeProgram`), nie als JSON, eine Programm-Absage ohne Ereignis-Namen.
 //   D6  DIE KI NENNT DIE URSACHE — „Aktivieren" fragt einen lokalen Dienst (der Status sagt, dass er nicht läuft, nie
@@ -188,6 +194,28 @@ function kameraVerdict(m) {
     if (m.schattenGeschnitten > 0) out.push(`${m.schattenGeschnitten} Pflanzen-Stoff(e) schneiden die Durchsicht auch in den Schatten`);
     if (m.zielFolgt === false) out.push(`das Ziel der Durchsicht folgt der Brust nicht (${m.zielAbstand} m daneben)`);
     if (!(m.kreuzAbstand >= 0.35)) out.push(`das Fadenkreuz steht in 3rd auf der Figur (${m.kreuzAbstand} m vom Strahl der Bildmitte)`);
+    const fk = m.fadenkreuz || {};
+    if (!(fk.stellungen > 0)) out.push("Fadenkreuz-Strahl: keine Stellung (Vorbedingung)");
+    for (const [fn, n] of Object.entries(fk.hinten || {}))
+        if (n > 0) out.push(`Fadenkreuz-Strahl: \`${fn}\` trifft in ${n} von ${fk.stellungen} Stellungen HINTER dem Spieler (was zwischen Kamera und Spieler liegt)`);
+    if (fk.kreatur && fk.kreaturVornProben > 0 && fk.kreaturVorn < fk.kreaturVornProben)
+        out.push(`Fadenkreuz-Strahl: eine Kreatur VOR dem Spieler trifft er nur in ${fk.kreaturVorn} von ${fk.kreaturVornProben} Stellungen`);
+    const ds = m.durchsicht || {};
+    if (!ds.formel) out.push("Durchsicht: keine EINE Formel (`_durchsichtGewicht` + `DURCHSICHT_ZAHLEN`), die Linse und Stoff teilen");
+    else {
+        for (const [k, name] of [
+            ["first", "1st am Stamm"],
+            ["third", "3rd, der Stamm VOR dem Spieler"],
+        ]) {
+            const z = ds[k];
+            if (!z || !(z.anlaeufe > 0)) out.push(`Durchsicht ${name}: kein Anlauf (Vorbedingung)`);
+            else if (z.faellt > 0)
+                out.push(`Durchsicht ${name}: die Rinde fällt in ${z.faellt} von ${z.anlaeufe} Anläufen (Auge ${Math.min(...z.abstand)}–${Math.max(...z.abstand)} m vom Stamm, Gewicht ab ${z.wMin})`);
+        }
+        const zw = ds.zwischen;
+        if (!zw || !(zw.stellungen > 0)) out.push("Durchsicht 3rd, der Stamm zwischen Kamera und Spieler: keine Stellung (Vorbedingung)");
+        else if (zw.wirkt < zw.stellungen) out.push(`Durchsicht 3rd: der Stamm zwischen Kamera und Spieler steht in ${zw.stellungen - zw.wirkt} von ${zw.stellungen} Stellungen (Gewicht bis ${zw.wMax})`);
+    }
     return out;
 }
 const ID_RE = /\b(?:baum|haus|fahrzeug|tor|klinge|welt|ruestung|trank|koerper|reittier)_[a-z0-9_]+/;
@@ -240,6 +268,21 @@ function wand(src, html) {
     const stoff = fnBody(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen\) \{/) || "";
     const ladeIdx = html.indexOf('id="ladeschirm"');
     const ladeTag = ladeIdx >= 0 ? html.slice(html.lastIndexOf("<", ladeIdx), html.indexOf(">", ladeIdx) + 1) : "";
+    // die Proben durch die Bildmitte (Gegenprüfung Runde 2): jede nimmt den EINEN Strahl
+    const kreuzOhne = [
+        "_pickArchitectureAtCrosshair()",
+        "_raycastWorldHit(maxDist = 30)",
+        "_resolvePhantomTarget()",
+        "_pickCreatureAtCrosshair()",
+        "_pickScatterAtCrosshair()",
+        "_hasMagnifyingInSight()",
+        "_blickZiel(maxDist)",
+        "_kampfKlingenAchse(ox, oy, oz, reach)",
+    ].filter((sig) => {
+        const b = fnBody(nc, new RegExp("\\n {4}" + sig.replace(/[()=]/g, (c) => "\\" + c) + " \\{")) || "";
+        return !/this\._fadenkreuzStrahl\(\)/.test(b) || /getWorldDirection\(/.test(b);
+    });
+    const durchNode = fnBody(nc, /\n {4}_kameraDurchsichtNode\(T\) \{/) || "";
     return [
         [
             "W1 die Hilfe liest die EINEN Tafeln (`_hilfeZeilen`: chatDslPatterns · chatSystemPatterns · KEYBINDING_LABELS), der Satz für Unbekanntes trägt keine Liste von Hand",
@@ -275,6 +318,14 @@ function wand(src, html) {
         [
             "W6 kein rohes Programm und keine Siedlungs-Zahl im Spieler-Chat (kein `JSON.stringify(reply.program)`, kein `Seed ${` an `_chatEcho`)",
             !/JSON\.stringify\(reply\.program\)/.test(nc) && !/_chatEcho\?*\.?\(msg\)/.test(siedlung),
+        ],
+        [
+            `W7 der Strahl des Fadenkreuzes ist EINER (\`_fadenkreuzStrahl\`): jede Probe durch die Bildmitte nimmt ihn und rechnet keine eigene Richtung ab der Kamera (\`getWorldDirection\`)${kreuzOhne.length ? " — ohne: " + kreuzOhne.join(", ") : ""}`,
+            kreuzOhne.length === 0,
+        ],
+        [
+            "W8 die Durchsicht rechnet die EINE Formel (`_durchsichtGewicht` in `_kameraDurchsichtNode`, die Linse rechnet sie über `DURCHSICHT_ZAHLEN`), das Ziel im 1st ist das Auge ohne Radius (kein `egoM`)",
+            /AnazhRealm\._durchsichtGewicht\(/.test(durchNode) && /AnazhRealm\.DURCHSICHT_ZAHLEN = /.test(nc) && !/egoM/.test(nc),
         ],
     ];
 }
@@ -744,6 +795,211 @@ async function probe(arg) {
                 const b = new THREE.Vector3(st.playerMesh.position.x - c.x, st.playerMesh.position.y + 1.0 - c.y, st.playerMesh.position.z - c.z);
                 m.kreuzAbstand = +b.cross(f).length().toFixed(2);
             }
+            // DER STRAHL DES FADENKREUZES (Gegenprüfung Runde 2, ROT 1): der Spieler 2,5 m vor einem Baum, der Blick von ihm weg
+            // — der Baum steht zwischen Kamera und Spieler und ist durchsichtig. Kein Treffer-Strahl durch die Bildmitte trifft
+            // HINTER dem Spieler: Bau-Pick, Welt-Treffer (Pfeil · Graben · Aufschütten), Blick-Ziel, Bau-Phantom, Kreatur-Pick
+            // (eine Kreatur zwischen Kamera und Spieler) — und eine Kreatur VOR ihm trifft er.
+            {
+                const fk = (m.fadenkreuz = { stellungen: 0, hinten: {}, kreaturVorn: 0, kreaturVornProben: 0 });
+                const zaehl = (k) => (fk.hinten[k] = (fk.hinten[k] || 0) + 1);
+                const kreatur = (st.creatures || []).find((c) => c && c.position && typeof c.traverse === "function");
+                fk.kreatur = !!kreatur;
+                const kMerk = kreatur ? kreatur.position.clone() : null;
+                const kBox = new THREE.Box3();
+                // die Kreatur so stellen, dass die Mitte ihres Leibs auf dem Strahl der Bildmitte liegt, s Meter vor der Kamera
+                const kreaturAuf = (s) => {
+                    const c = st.camera.position;
+                    const d = st.camera.getWorldDirection(new THREE.Vector3());
+                    kreatur.updateMatrixWorld(true);
+                    kBox.setFromObject(kreatur);
+                    const mitte = kBox.getCenter(new THREE.Vector3());
+                    kreatur.position.add(new THREE.Vector3(c.x + d.x * s, c.y + d.y * s, c.z + d.z * s).sub(mitte));
+                    kreatur.updateMatrixWorld(true);
+                };
+                for (const b of baeume.slice(0, 12))
+                    for (let k = 0; k < 8; k++) {
+                        const g = (k / 8) * Math.PI * 2;
+                        const x = b.position.x + Math.sin(g) * 2.5;
+                        const zz = b.position.z + Math.cos(g) * 2.5;
+                        if (!Number.isFinite(hh(x, zz))) continue;
+                        st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                        st.yaw = g;
+                        st.pitch = 0;
+                        ruhig();
+                        fk.stellungen++;
+                        const p = st.playerMesh.position;
+                        const fx = Math.sin(g);
+                        const fz = Math.cos(g);
+                        const hinter = (q) => !!q && (q.x - p.x) * fx + (q.z - p.z) * fz < -0.2;
+                        const pick = r._pickArchitectureAtCrosshair();
+                        if (pick && hinter(pick.point)) zaehl("_pickArchitectureAtCrosshair");
+                        const wh = r._raycastWorldHit(30);
+                        if (wh && wh.hit && hinter(wh)) zaehl("_raycastWorldHit");
+                        if (hinter(r._blickZiel(r.constructor.BLICK_ZIEL_M))) zaehl("_blickZiel");
+                        const ph = r._resolvePhantomTarget();
+                        if (ph && ph.hit && hinter(ph)) zaehl("_resolvePhantomTarget");
+                        if (kreatur) {
+                            const c = st.camera.position;
+                            const arm2 = Math.hypot(c.x - p.x, c.y - (p.y + 1.0), c.z - p.z);
+                            kreaturAuf(0.5 * arm2);
+                            const kp = r._pickCreatureAtCrosshair();
+                            if (kp && kp.creature === kreatur) zaehl("_pickCreatureAtCrosshair");
+                            kreaturAuf(arm2 + 4);
+                            const kv = r._pickCreatureAtCrosshair();
+                            fk.kreaturVornProben++;
+                            if (kv && kv.creature === kreatur) fk.kreaturVorn++;
+                            kreatur.position.copy(kMerk);
+                            kreatur.updateMatrixWorld(true);
+                        }
+                    }
+            }
+            // DIE DURCHSICHT NUR ZWISCHEN AUGE UND ZIEL (Gegenprüfung Runde 2, ROT 2): die EINE Formel des Stoffs
+            // (`_durchsichtGewicht`, hier über den Zahlen `DURCHSICHT_ZAHLEN`) an der Rinde, je Punkt der Stamm-Hülle bis 3 m vom
+            // Ziel — (a) 1st, der Spieler läuft an den Stamm (die Ankunfts-Sicht): keine Rinde fällt; (b) 3rd, derselbe Anlauf (der
+            // Stamm VOR dem Spieler, jenseits der Ebene des Ziels): keine Rinde fällt; (c) 3rd, der Spieler 2,5 m vor dem Baum mit dem Rücken zu ihm (der Stamm
+            // zwischen Kamera und Brust): die Rinde am Sicht-Strahl fällt ganz — die Durchsicht wirkt.
+            {
+                const K = r.constructor;
+                const ds = (m.durchsicht = { formel: typeof K._durchsichtGewicht === "function" && !!K.DURCHSICHT_ZAHLEN });
+                // das Ziel und sein Auge, wie `_kamZielSetzen` sie schreibt (dieselben Werte wie uKamZiel · uKamAuge)
+                const ziel = () => {
+                    const k = st._kamZiel;
+                    return k ? { x: k.x, y: k.y, z: k.z, w: k.r, auge: { x: k.ex, y: k.ey, z: k.ez } } : null;
+                };
+                const gewicht = (q) => {
+                    const z = ziel();
+                    return K._durchsichtGewicht(K.DURCHSICHT_ZAHLEN, q, z.auge, { x: z.x, y: z.y, z: z.z }, z.w);
+                };
+                // die Punkte der Stamm-Hülle (die Seiten jeder Blocker-Box, 0,1 m Raster) bis 3 m vom Ziel (1st das Auge, 3rd
+                // die Brust)
+                const rinde = (baum) => {
+                    const c = ziel();
+                    const pts = [];
+                    for (const bb of baum.blockerAABBs || []) {
+                        const n = (a, b2) => Math.max(1, Math.ceil((b2 - a) / 0.1));
+                        const nx = n(bb.minX, bb.maxX);
+                        const nz = n(bb.minZ, bb.maxZ);
+                        const y0 = Math.max(bb.botY, c.y - 3);
+                        const y1 = Math.min(bb.topY, c.y + 3);
+                        for (let y = y0; y <= y1; y += 0.1)
+                            for (let i = 0; i <= nx; i++)
+                                for (let j = 0; j <= nz; j++) {
+                                    if (i > 0 && i < nx && j > 0 && j < nz) continue; // nur die Seiten
+                                    const q = { x: bb.minX + ((bb.maxX - bb.minX) * i) / nx, y, z: bb.minZ + ((bb.maxZ - bb.minZ) * j) / nz };
+                                    if (Math.hypot(q.x - c.x, q.y - c.y, q.z - c.z) <= 3) pts.push(q);
+                                }
+                    }
+                    return pts;
+                };
+                const augeZuStamm = (baum) => {
+                    const c = st.camera.position;
+                    let d = Infinity;
+                    for (const bb of baum.blockerAABBs || []) {
+                        const qx = Math.max(bb.minX, Math.min(c.x, bb.maxX));
+                        const qy = Math.max(bb.botY, Math.min(c.y, bb.topY));
+                        const qz = Math.max(bb.minZ, Math.min(c.z, bb.maxZ));
+                        d = Math.min(d, Math.hypot(qx - c.x, qy - c.y, qz - c.z));
+                    }
+                    return d;
+                };
+                // ein Anlauf: 3 m vor dem Stamm, der Blick zum Stamm, W bis der Körper hält
+                const anlauf = async (baum, modus) => {
+                    const box = baum.blockerAABBs[0];
+                    const cx = (box.minX + box.maxX) / 2;
+                    const cz = (box.minZ + box.maxZ) / 2;
+                    let ux = P.x - cx;
+                    let uz = P.z - cz;
+                    const L = Math.hypot(ux, uz) || 1;
+                    ux /= L;
+                    uz /= L;
+                    r.setCameraMode(modus);
+                    const x = cx + ux * 3;
+                    const zz = cz + uz * 3;
+                    st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                    if (st.playerVel && st.playerVel.setValue) st.playerVel.setValue(0, 0, 0);
+                    const gier = Math.atan2(-ux, -uz);
+                    st.yaw = gier;
+                    st.pitch = 0;
+                    st.keys.w = true;
+                    for (let i = 0; i < 120; i++) {
+                        st.yaw = gier;
+                        try {
+                            r._gameLoopTick(performance.now());
+                        } catch (_e) {}
+                        await sleep(16);
+                    }
+                    st.keys.w = false;
+                    st.pitch = 0;
+                    ruhig();
+                };
+                // im 1st jeder Punkt; in 3rd nur, was jenseits der Ebene des Ziels liegt (vor dem Spieler — was zwischen Kamera
+                // und Spieler liegt, ein Wurzel-Ast hinter seinem Rücken, darf fallen)
+                const jenseits = (q) => {
+                    const z = ziel();
+                    const ex = z.x - z.auge.x;
+                    const ey = z.y - z.auge.y;
+                    const ez = z.z - z.auge.z;
+                    const L = Math.hypot(ex, ey, ez);
+                    if (L < 1e-6) return true;
+                    return ((q.x - z.auge.x) * ex + (q.y - z.auge.y) * ey + (q.z - z.auge.z) * ez) / L >= L;
+                };
+                const urteil = (baum) => {
+                    const pts = rinde(baum).filter(jenseits);
+                    let wMin = 1;
+                    let fallen = 0;
+                    for (const q of pts) {
+                        const w = gewicht(q);
+                        if (w < wMin) wMin = w;
+                        if (w < 0.999) fallen++;
+                    }
+                    return { punkte: pts.length, fallen, wMin };
+                };
+                if (ds.formel && ziel()) {
+                    for (const [modus, n] of [
+                        ["first", 8],
+                        ["third", 4],
+                    ]) {
+                        const z = (ds[modus] = { anlaeufe: 0, faellt: 0, abstand: [], wMin: 1, punkte: 0 });
+                        for (const baum of baeume.slice(0, n)) {
+                            await anlauf(baum, modus);
+                            const u = urteil(baum);
+                            if (!u.punkte) continue;
+                            z.anlaeufe++;
+                            z.punkte += u.punkte;
+                            z.abstand.push(+augeZuStamm(baum).toFixed(2));
+                            if (u.fallen) z.faellt++;
+                            z.wMin = Math.min(z.wMin, +u.wMin.toFixed(3));
+                        }
+                    }
+                    // (c) der Stamm zwischen Kamera und Brust: wo der Sicht-Strahl Auge → Ziel durch die Stamm-Hülle geht
+                    const zw = (ds.zwischen = { stellungen: 0, wirkt: 0, wMax: 0 });
+                    r.setCameraMode("third");
+                    for (const b of baeume.slice(0, 12))
+                        for (let k = 0; k < 8; k++) {
+                            const g = (k / 8) * Math.PI * 2;
+                            const x = b.position.x + Math.sin(g) * 2.5;
+                            const zz = b.position.z + Math.cos(g) * 2.5;
+                            if (!Number.isFinite(hh(x, zz))) continue;
+                            st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                            st.yaw = g;
+                            st.pitch = 0;
+                            ruhig();
+                            const c = st.camera.position;
+                            const z = ziel();
+                            const innen = [];
+                            for (let i = 1; i < 100; i++) {
+                                const t = i / 100;
+                                const q = { x: c.x + (z.x - c.x) * t, y: c.y + (z.y - c.y) * t, z: c.z + (z.z - c.z) * t };
+                                if (b.blockerAABBs.some((bb) => q.x >= bb.minX && q.x <= bb.maxX && q.y >= bb.botY && q.y <= bb.topY && q.z >= bb.minZ && q.z <= bb.maxZ)) innen.push(q);
+                            }
+                            if (!innen.length) continue;
+                            zw.stellungen++;
+                            const wMax = Math.max(...innen.map(gewicht));
+                            zw.wMax = Math.max(zw.wMax, +wMax.toFixed(3));
+                            if (wMax < 0.001) zw.wirkt++;
+                        }
+                }
+            }
             r.setCameraMode("first");
             st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
         }
@@ -1075,6 +1331,13 @@ async function probe(arg) {
                     zielFolgt: true,
                     kreuzAbstand: 0.6,
                     zielAbstand: 0,
+                    fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, kreaturVorn: 96, kreaturVornProben: 96 },
+                    durchsicht: {
+                        formel: true,
+                        first: { anlaeufe: 8, faellt: 0, abstand: [0.3, 0.8], wMin: 1, punkte: 900 },
+                        third: { anlaeufe: 4, faellt: 0, abstand: [3.8, 5.6], wMin: 1, punkte: 400 },
+                        zwischen: { stellungen: 40, wirkt: 40, wMax: 0 },
+                    },
                 },
                 [
                     ["Vorlagen-Maß (Befund)", { stammSkala: 1 }, "Stamm-Hülle im Vorlagen-Maß"],
@@ -1093,6 +1356,28 @@ async function probe(arg) {
                     ["Durchsicht im Schatten", { schattenGeschnitten: 2 }, "2 Pflanzen-Stoff(e) schneiden die Durchsicht auch in den Schatten"],
                     ["Ziel ohne Brust", { zielFolgt: false, zielAbstand: 3.2 }, "das Ziel der Durchsicht folgt der Brust nicht"],
                     ["Fadenkreuz auf dem Kopf (Gegenprüfung)", { kreuzAbstand: 0.02 }, "das Fadenkreuz steht in 3rd auf der Figur"],
+                    [
+                        "Fadenkreuz trifft hinten (Gegenprüfung Runde 2)",
+                        { fadenkreuz: { stellungen: 96, hinten: { _pickArchitectureAtCrosshair: 76, _raycastWorldHit: 67 }, kreatur: true, kreaturVorn: 96, kreaturVornProben: 96 } },
+                        "Fadenkreuz-Strahl: `_pickArchitectureAtCrosshair` trifft in 76 von 96 Stellungen HINTER dem Spieler",
+                    ],
+                    ["Kreatur vorn verfehlt", { fadenkreuz: { stellungen: 96, hinten: {}, kreatur: true, kreaturVorn: 0, kreaturVornProben: 96 } }, "Fadenkreuz-Strahl: eine Kreatur VOR dem Spieler"],
+                    [
+                        "Loch im Stamm im 1st (Gegenprüfung Runde 2)",
+                        { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 8, abstand: [0.12, 0.82], wMin: 0 }, third: { anlaeufe: 4, faellt: 0, abstand: [4], wMin: 1 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } },
+                        "Durchsicht 1st am Stamm: die Rinde fällt in 8 von 8 Anläufen",
+                    ],
+                    [
+                        "Loch im Stamm vor dem Spieler",
+                        { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 0, abstand: [0.3], wMin: 1 }, third: { anlaeufe: 4, faellt: 4, abstand: [3.8], wMin: 0 }, zwischen: { stellungen: 40, wirkt: 40, wMax: 0 } } },
+                        "Durchsicht 3rd, der Stamm VOR dem Spieler: die Rinde fällt",
+                    ],
+                    [
+                        "Durchsicht wirkt nicht",
+                        { durchsicht: { formel: true, first: { anlaeufe: 8, faellt: 0, abstand: [0.3], wMin: 1 }, third: { anlaeufe: 4, faellt: 0, abstand: [3.8], wMin: 1 }, zwischen: { stellungen: 40, wirkt: 0, wMax: 1 } } },
+                        "Durchsicht 3rd: der Stamm zwischen Kamera und Spieler steht in 40 von 40",
+                    ],
+                    ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
             [
@@ -1144,14 +1429,16 @@ async function probe(arg) {
             .replace("const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);')
             .replace("{ durchPflanzen: true }", "{}")
             .replace("const _durch = this._kameraDurchsichtNode(TSL);", "const _durch = null;")
+            .replace(/(\n {4}_raycastWorldHit\(maxDist = 30\) \{[\s\S]*?)this\._fadenkreuzStrahl\(\)/, "$1this._alterStrahl()")
+            .replace("AnazhRealm._durchsichtGewicht(A,", "AnazhRealm._alteDurchsicht(A,")
             .replace("(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})")
             .replace("for (const z of this._hilfeZeilen()) append(z);", "append(\"'Setze Wetter rainy'\");")
             .replace(/_hilfeZeilen\(\) \{[\s\S]*?\n {4}\}\n/, "_hilfeZeilen() {\n        return [];\n    }\n");
         const vorHtml = html.replace('<div id="ladeschirm" role="status" aria-live="polite">', '<div id="ladeschirm" role="status" aria-live="polite" hidden>');
         const rot = wand(vorStand, vorHtml);
         check(
-            "Selbst-Test W: der Vor-Stand (kein Ankunfts-Bild, Alt-Gurt, geschätzter Dorf-Anker, Kamera ohne Durchsicht, Hilfe von Hand, Ladeschirm versteckt, rohes Programm) → W1–W6 feuern",
-            rot.filter((w) => !w[1]).length === 6,
+            "Selbst-Test W: der Vor-Stand (kein Ankunfts-Bild, Alt-Gurt, geschätzter Dorf-Anker, Kamera ohne Durchsicht, Hilfe von Hand, Ladeschirm versteckt, rohes Programm, ein Strahl ab der Kamera, eine zweite Formel) → W1–W8 feuern",
+            rot.filter((w) => !w[1]).length === 8,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
         if (errs.length) {
@@ -1224,7 +1511,12 @@ async function probe(arg) {
                     return `${k}: ${z.proben} Proben, Pflanze hält ${z.pflanzeHaelt}, Arm ${z.armIst}/${z.armSoll} m (Ist/Soll), < 3 m ${z.unter3}, Sprünge ${z.spruenge} (Soll ${z.spruengeSoll}, hinaus ${z.hinausSprung})`;
                 })
                 .join(" · ") +
-            ` · Pflanzen-Stoffe ${m.stoffe}, ohne Durchsicht ${m.stoffeOhne}, Ziel ${m.zielAbstand} m, Fadenkreuz ${m.kreuzAbstand} m neben der Brust`
+            ` · Pflanzen-Stoffe ${m.stoffe}, ohne Durchsicht ${m.stoffeOhne}, Ziel ${m.zielAbstand} m, Fadenkreuz ${m.kreuzAbstand} m neben der Brust` +
+            ((fk) => ` · Fadenkreuz-Strahl: ${fk.stellungen} Stellungen, hinter dem Spieler ${JSON.stringify(fk.hinten || {})}, Kreatur vorn ${fk.kreaturVorn}/${fk.kreaturVornProben}`)(m.fadenkreuz || {}) +
+            ((ds) =>
+                ds.formel
+                    ? ` · Durchsicht: 1st ${(ds.first || {}).faellt}/${(ds.first || {}).anlaeufe} Anläufe mit fallender Rinde (Auge ${((ds.first || {}).abstand || []).join("/")} m), 3rd vor dem Spieler ${(ds.third || {}).faellt}/${(ds.third || {}).anlaeufe}, zwischen Kamera und Spieler fällt ${(ds.zwischen || {}).wirkt}/${(ds.zwischen || {}).stellungen}`
+                    : " · Durchsicht: keine EINE Formel")(m.durchsicht || {})
     );
     console.log("=== D8 · D6 · D9 — DIE STIMME UND DAS DORF ===");
     zeige("D8", "der Spieler-Chat trägt Worte, das Log die Zahlen", out.kanal, kanalVerdict, (m) => `${(m.zeilen || []).filter((z) => !/^> /.test(z)).length} Zeilen · Log ${m.siedlungImLog}`);
