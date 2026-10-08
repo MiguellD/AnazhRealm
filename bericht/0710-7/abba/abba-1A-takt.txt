@@ -1,0 +1,86 @@
+{
+ "takte": 600,
+ "p50": 4,
+ "p95": 6.5,
+ "max": 26.3,
+ "restMittel": 0.19,
+ "buehneMittel": 0.19,
+ "top": [
+  {
+   "name": "_loopCamera",
+   "mittel": 1.46,
+   "max": 5.2
+  },
+  {
+   "name": "_ceilingHeadroom",
+   "mittel": 1.44,
+   "max": 5.2
+  },
+  {
+   "name": "_fieldRaycast",
+   "mittel": 1.43,
+   "max": 5.2
+  },
+  {
+   "name": "_loopFixedStep",
+   "mittel": 1.23,
+   "max": 4
+  },
+  {
+   "name": "tickAffordances",
+   "mittel": 0.54,
+   "max": 2.3
+  },
+  {
+   "name": "_loopWeatherAndGrowth",
+   "mittel": 0.32,
+   "max": 3.4
+  },
+  {
+   "name": "tickPlayerBoosts",
+   "mittel": 0.21,
+   "max": 13.4
+  },
+  {
+   "name": "_loopVoxelStreaming",
+   "mittel": 0.19,
+   "max": 3.9
+  },
+  {
+   "name": "_updateDorfRauch",
+   "mittel": 0.15,
+   "max": 0.8
+  },
+  {
+   "name": "_loopAutoSave",
+   "mittel": 0.04,
+   "max": 11.2
+  },
+  {
+   "name": "tickArchitectures",
+   "mittel": 0.04,
+   "max": 0.3
+  },
+  {
+   "name": "tickDayNight",
+   "mittel": 0.03,
+   "max": 0.2
+  },
+  {
+   "name": "tickArchitectureCulling",
+   "mittel": 0.03,
+   "max": 1.8
+  },
+  {
+   "name": "updatePlayerEmotions",
+   "mittel": 0.02,
+   "max": 0.2
+  },
+  {
+   "name": "updateStatusPanel",
+   "mittel": 0.02,
+   "max": 0.5
+  }
+ ],
+ "ms": 12944
+}

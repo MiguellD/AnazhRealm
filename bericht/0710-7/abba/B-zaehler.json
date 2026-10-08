@@ -1,0 +1,39 @@
+{
+ "ergebnis": {
+  "frames": 2792,
+  "strahlenJeFrame": 1,
+  "rufeJeFrame": {
+   "_ceilingHeadroom": 1
+  },
+  "bautenJeStrahl": 1406.4,
+  "bautenNahJeStrahl": 419.8,
+  "boxenJeStrahl": 0,
+  "boxenJeFrame": 0,
+  "obbAnteil": 0,
+  "kandidatJeStrahl": 0,
+  "trefferJeStrahl": 0,
+  "maxBoxenEinStrahl": 0,
+  "laengeJeStrahl": 4.5,
+  "welt": {
+   "bauten": 1581,
+   "mitBoxen": 1581,
+   "boxen": 86770
+  },
+  "typNahJeStrahl": {
+   "grown_busch_hazel_v2": 15600.7,
+   "baum_tanne": 2961.8,
+   "baum_kiefer": 1758.4,
+   "baum_eiche": 1154.7,
+   "baum_birke": 1082.5,
+   "baum_erle": 128.4,
+   "glutbrunnen": 42.8,
+   "felsbogen": 38.2,
+   "felsturm": 35.4
+  },
+  "spieler": [
+   -900,
+   -850
+  ]
+ },
+ "ms": 2
+}

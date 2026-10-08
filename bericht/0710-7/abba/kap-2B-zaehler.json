@@ -1,0 +1,10 @@
+{
+ "ergebnis": {
+  "frames": 1432,
+  "schritteJeFrame": 0.51,
+  "loesungenJeSchritt": 26,
+  "loesungenJeFrame": 13,
+  "reste": []
+ },
+ "ms": 2
+}
