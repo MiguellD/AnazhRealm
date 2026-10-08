@@ -18012,7 +18012,12 @@ class AnazhRealm {
             const nT = Math.ceil(dtTakt / 0.1);
             for (let k = 0; k < nT; k++) core.cpgStep(g.ph, freq, core.CPG_COUPLING, dtTakt / nT);
         }
-        let roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0) * fadeMul;
+        // DER LEIB WIEGT SICH IM SCHRITT, NIE IM STAND (Welle LF, die Pfoten-IK): Wiegen (sway) und Federn (bob) sind die
+        // Gewichts-Verlagerung von Tritt zu Tritt — ihr Anteil folgt dem Schritt des Gang-Gesetzes (eingeblendet in ~0,25 s).
+        // Ein Leib, der laufen WILL und steht (der Wunsch ohne Weg), wiegte sonst im Lauf-Takt, und die stehenden Pfoten
+        // knickten die Knie nach (gemessen am stehenden Wolf: Knie-Falte 0,16 rad statt < 0,05).
+        g.schritt = (g.schritt || 0) + ((st > 0.002 ? 1 : 0) - (g.schritt || 0)) * (dt > 0 ? 1 - Math.exp(-4 * dt) : 1);
+        let roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0) * fadeMul * g.schritt;
         // V18.491.80 — ZIP/LAB→HOST: bodyZ reist im MOTION-Preset (Lab-Roll-
         // additiv neben sway·sin); ohne Feld 0 = byte-alt.
         roll += (Number(P.bodyZ) || 0) * fadeMul;
@@ -18037,7 +18042,7 @@ class AnazhRealm {
             // getrennt am Kreatur-ROOT (creature.rotation.x). bob (Galopp-Federn, Lab: spineX·bob·sin(ph·2))
             // wird auf wolf.rotation.x verdichtet.
             const bob = (Number(P.bob) || 0) * fadeMul;
-            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul + Math.sin(g.ph[0] * 2) * bob;
+            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul + Math.sin(g.ph[0] * 2) * bob * g.schritt;
             T.wolf.rotation.y = drehY;
         }
         // PD-Kanäle aus dem MOTION-Preset: tension → Stand-Unruhe + Rumpf-Plant-Pitch; kpMul → einpolige
