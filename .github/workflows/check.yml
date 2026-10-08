@@ -1015,6 +1015,16 @@ jobs:
               # erzwungener Kapsel-Satz in 20 m wird rot und genannt.
               run: npm run gate:analog-nah
 
+            - name: Frost-Wand (echter Renderer — das Weltbild folgt der Kamera durch Werkstatt, Ich- und Hof-Buehne)
+              if: matrix.gruppe == 1
+              # Befund 07.10. (Leben-Schau v1-Pfad, echte GPU): nach Tab stand das Weltbild - das Backend der Ich-Buehne weitete
+              # die geteilten Mensch-Indizes (r184 schreibt die geweitete Form in das Attribut zurueck), die Welt band uint32 auf
+              # 16-bit-Puffern, Dawn verwarf jeden Render-Kontext. Faehrt den Spielpfad am ECHTEN Renderer (swiftshader, kienspan):
+              # je Schritt folgt das Bild der gedrehten Kamera, jeder Index-Puffer der Welt traegt sein Format, kein Device meldet,
+              # die Wachen des Spiels schweigen; danach die Taeter (Index ueber der Vertex-Zahl, ein fremd geweiteter Mensch-Index):
+              # die Index-Wache nennt beide beim Namen, die GPU-Wache zaehlt, das stehende Bild wird erkannt.
+              run: npm run gate:weltbild-frost
+
             - name: Post-Kette (echter Renderer — der Direktpfad zeichnet mit Tiefe, jede Nachbild-Stufe kostet nur, wenn sie zeigt)
               if: matrix.gruppe == 1
               # Faehrt den ECHTEN Frame (swiftshader, kienspan) durch die Weiche: Post-Kette, Direktpfad (wie die

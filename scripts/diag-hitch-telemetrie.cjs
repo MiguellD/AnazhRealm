@@ -523,6 +523,9 @@ function erstWandInstall() {
         const D = probeMesh(M, 0, 3.5);
         welt.add(D);
         const a0 = ESt.absagenN || 0;
+        // DER EINE MELDER (Integration V18.535): die Absage geht über die GPU-Wache des Spiels (`_gpuWacheMeldung`) — sie
+        // zählt dort, und dieselbe Absage steht genau EINMAL im Log
+        const g0 = r._gpuWache ? r._gpuWache.n : 0;
         let wurf = null;
         let offenDanach = -1,
             frames = 0;
@@ -557,7 +560,8 @@ function erstWandInstall() {
             webgl = { offenZuwachs: ESt.offen.size - n0, wartetZuwachs: ESt.wartetN - w0 };
             ESt.offen.delete(attrappe);
         }
-        return { ruheMs, ruheOffen, zeilen, absagen: (ESt.absagenN || 0) - a0, frames, offenDanach, wurf, webgl };
+        const gpuWache = (r._gpuWache ? r._gpuWache.n : 0) - g0;
+        return { ruheMs, ruheOffen, zeilen, absagen: (ESt.absagenN || 0) - a0, gpuWache, frames, offenDanach, wurf, webgl };
     };
     window.__erstWand = {
         stand: () => res.erst,
@@ -913,12 +917,15 @@ function erstWandInstall() {
     band(
         /PIPELINE-ABSAGE renderPipeline_wand-absage-stoff_\d+: der Stummel der Wand sagt ab/.test(abZeile) &&
             ab.absagen >= 1 &&
+            ab.gpuWache === ab.absagen &&
+            (ab.zeilen || []).length === 1 &&
             ab.offenDanach === 0 &&
             ab.ruheOffen === 0 &&
             typeof ab.wurf === "string" &&
             /renderPipeline_wand-absage-stoff_\d+ \(ABGESAGT\)/.test(ab.wurf),
         "ERST-ZEICHNUNG Absage einer Pipeline (ERROR mit dem Stoff-Namen, aus der Schlange, die Beweis-Aufnahme bricht beim Namen ab)",
         `ERROR: ${abZeile ? abZeile.replace(/^.*\[ERROR\] /, "") : "KEINE (still)"} · Absagen ${ab.absagen} nach ${ab.frames} Frames · ` +
+            `GPU-Wache +${ab.gpuWache} (Soll = Absagen, EIN Melder) · Log-Zeilen ${(ab.zeilen || []).length} (Soll 1) · ` +
             `offen danach ${ab.offenDanach} · Aufnahme: ${ab.wurf ? ab.wurf.replace(/^.*offene Pipelines: /, "") : "KEIN Wurf (still)"}`
     );
     const wg = ab.webgl || {};

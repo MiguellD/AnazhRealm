@@ -312,11 +312,18 @@ const ANKER = [
     // als `rawInputs` (der Ketten-Graph der Zerleg-Linse liest sie), ein Fn ohne Layout baut seinen Rumpf inline.
     { file: "vendor/three.webgpu.min.js", sub: "constructor(e,t){super(),this.shaderNode=e,this.rawInputs=t,this.isShaderCallNodeInternal=!0}", organ: "_ensurePostProcessing (nurBeiStaerke — die Stufe bleibt im Ketten-Graph sichtbar)" },
     // DER SCHMALE INDEX (W7): r184 weitet beim Anlegen jedes nicht-normierte 8-/16-bit-Attribut auf 32 bit — auch den Index;
-    // `_index16` setzt `normalized` nur für das Anlegen eines Uint16-Index (der EINE Weg jedes Index), der Draw bindet ihn
+    // `_backendGesetz` setzt `normalized` nur für das Anlegen eines Uint16-Index (der EINE Weg jedes Index), der Draw bindet ihn
     // nach dem Array-Typ als uint16. Das Haut-Gewicht reist als normiertes Uint16 (unorm16x4, nie geweitet).
-    { file: "vendor/three.webgpu.min.js", sub: "if(!1===e.normalized)if(o.constructor===Int16Array||o.constructor===Int8Array)o=new Int32Array(o);else if((o.constructor===Uint16Array||o.constructor===Uint8Array)&&(o=new Uint32Array(o),t&GPUBufferUsage.INDEX))", organ: "_index16 (das Weiten fragt normalized — die Hülle setzt es nur für das Anlegen)" },
-    { file: "vendor/three.webgpu.min.js", sub: "createIndexAttribute(e){let t=GPUBufferUsage.INDEX|GPUBufferUsage.COPY_SRC|GPUBufferUsage.COPY_DST;", organ: "_index16 (der EINE Weg jedes Index auf die GPU)" },
-    { file: "vendor/three.webgpu.min.js", sub: "t=h.array instanceof Uint16Array?uA:lA;o.setIndexBuffer(e,t)", organ: "_index16 (der Draw bindet das Index-Format nach dem Array-Typ)" },
+    // DER FROST (07.10.): das Weiten schreibt die geweitete Form in das GETEILTE Attribut zurück (`r.array=o`) — darum sitzt
+    // die Hülle an der KLASSE (jedes Backend der Seite: Welt + Bühnen), und Index-Wache und GPU-Wache hängen an Draw und init.
+    { file: "vendor/three.webgpu.min.js", sub: "if(!1===e.normalized)if(o.constructor===Int16Array||o.constructor===Int8Array)o=new Int32Array(o);else if((o.constructor===Uint16Array||o.constructor===Uint8Array)&&(o=new Uint32Array(o),t&GPUBufferUsage.INDEX))", organ: "_backendGesetz (das Weiten fragt normalized — die Hülle setzt es nur für das Anlegen)" },
+    { file: "vendor/three.webgpu.min.js", sub: "for(let e=0;e<o.length;e++)65535===o[e]&&(o[e]=4294967295);if(r.array=o,", organ: "_backendGesetz (das Weiten schreibt in das geteilte Attribut zurück — die Hülle gilt jedem Backend)" },
+    { file: "vendor/three.webgpu.min.js", sub: "createIndexAttribute(e){let t=GPUBufferUsage.INDEX|GPUBufferUsage.COPY_SRC|GPUBufferUsage.COPY_DST;", organ: "_backendGesetz (der EINE Weg jedes Index auf die GPU)" },
+    { file: "vendor/three.webgpu.min.js", sub: "t=h.array instanceof Uint16Array?uA:lA;o.setIndexBuffer(e,t)", organ: "_backendGesetz (der Draw bindet das Index-Format nach dem Array-Typ)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateAttribute(e){this.attributeUtils.updateAttribute(e)}", organ: "_backendGesetz (das Nachschreiben bucht das Index-Maximum der geschriebenen Bereiche)" },
+    { file: "vendor/three.webgpu.min.js", sub: "draw(e,t){const{object:r,context:s,pipeline:i}=e,n=this.get(s),a=this.get(i),o=a.pipeline;", organ: "_indexWacheDraw (die Index-Wache am Draw jedes Backends)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getIndex(){return this._geometries.getIndex(this)}", organ: "_indexWacheDraw (der Index, den der Draw bindet)" },
+    { file: "vendor/three.webgpu.min.js", sub: "async init(e){await super.init(e);const t=this.parameters;", organ: "_gpuWacheAn (das Device jedes Backends nach seinem init)" },
     { file: "vendor/three.webgpu.min.js", sub: '[Uint16Array,["uint16","unorm16"]]', organ: "_hautGewicht (normiertes Uint16 → unorm16x4)" },
 ];
 

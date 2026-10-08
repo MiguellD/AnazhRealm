@@ -447,7 +447,7 @@ function wasserKoerper(opts) {
                 for (let k = 0; k < 4; k++) r._p2pUpdatePeer(peer, 10 + k * 0.05, 0.05);
                 aus.peer = { lehne: R(peer.mesh.rotation.x, 3), meshKind: peer.meshKind };
                 st.scene.remove(peer.mesh);
-                r._p2pDisposeMesh(peer.mesh);
+                r._disposeSoulGroup(peer.mesh); // die EINE Entsorgungs-Regel (Frost 08.10.: `_p2pDisposeMesh` fiel)
             }
             // (8) DAS LICHT AM WASSER (W-L-a, W-L-b): die Farbe der Luft (das Medium, das die Unterwasser-Sicht trägt) zur
             // Mitternacht und zu Mittag, über und unter dem Spiegel; und die Himmels-Umgebung (die IBL jedes Stoffs und

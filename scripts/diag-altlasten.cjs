@@ -106,7 +106,10 @@ const FORBIDDEN = [
     // Winkels: das Steilhang-Gesetz wohnt im koerperstudio-Gesetzbuch
     // (fx.bewegung.hang.maxSlopeY), die Leser lesen den fail-closed
     // _bewegungsBlock direkt (kein Boot-Seed, kein State-Feld).
-    { token: "maxWalkableSlopeY", fiel: "ZWILLINGS-ABSCHIED 19.07. — hang.maxSlopeY via _bewegungsBlock (fail-closed)" },
+    {
+        token: "maxWalkableSlopeY",
+        fiel: "ZWILLINGS-ABSCHIED 19.07. — hang.maxSlopeY via _bewegungsBlock (fail-closed)",
+    },
     // FLÄCHEN-STUFE (V18.500): der Host-Umweg um ein L1, das nicht reduzierte, ist gefallen —
     // das Studio liefert die Stufe selbst (Kosten gehören ins Asset, nie in den Host).
     { token: "lodServe", fiel: "V18.500 — fachwerk-core L1 = Flächen-Stufe, kindStages [0,1,2] alle serviert" },
@@ -132,7 +135,10 @@ const FORBIDDEN = [
     { token: "atlasDaten", fiel: "V18.528 — der 512×512×128-RGBA8-Atlas (128 MB) fiel" },
     { token: "feldTriAbtast", fiel: "V18.528 — der trilineare Brick-March im WGSL fiel" },
     { token: "feldTriGrad", fiel: "V18.528 — der trilineare Brick-Gradient im WGSL fiel" },
-    { token: "_bundleZiegelTick", fiel: "V18.528 — der Region-Ziegel (Fern-Cache) fiel, das Ferne trägt der Welt-March" },
+    {
+        token: "_bundleZiegelTick",
+        fiel: "V18.528 — der Region-Ziegel (Fern-Cache) fiel, das Ferne trägt der Welt-March",
+    },
     { token: "_bundleZiegelTod", fiel: "V18.528" },
     { token: "_ziegelBackenAusGruppe", fiel: "V18.528 — der Gruppen-Bäcker fiel mit dem Region-Ziegel" },
     { token: "_waldZiegelBacken", fiel: "V18.528 — der Einzel-Baum-Brick war fail-closed, nun physisch fort" },
@@ -215,8 +221,14 @@ const FORBIDDEN = [
     // einander je Frame neu, 06.10. Mess-Wiese beim Drehen 2,2 MB je Frame) fiel ins Wachsen.
     { token: ".iStart", fiel: "Welle 6 Boden-Schatten — je Pass ein Abschnitt (_chunkSatzPass), kein Ring-Index" },
     { token: ".iVoll", fiel: "Welle 6 — der ganze Satz zeichnet nie; je Pass ein Abschnitt (_chunkSatzAbschnitt)" },
-    { token: "_satzWerferWahl", fiel: "Welle 6 — die Werfer-Wahl der Bau-Sätze ist der Abschnitt je Pass (_chunkSatzPass)" },
-    { token: "_chunkSatzVerdraeng", fiel: "Welle 6 — kein Abschnitt verdrängt einen anderen; der Index wächst (_chunkSatzUmlegen)" },
+    {
+        token: "_satzWerferWahl",
+        fiel: "Welle 6 — die Werfer-Wahl der Bau-Sätze ist der Abschnitt je Pass (_chunkSatzPass)",
+    },
+    {
+        token: "_chunkSatzVerdraeng",
+        fiel: "Welle 6 — kein Abschnitt verdrängt einen anderen; der Index wächst (_chunkSatzUmlegen)",
+    },
     { token: "_chunkBundleRegionKey", fiel: "Welle B" },
     { token: "_bundleKugelWeite", fiel: "Welle B — kein Chunk-Bürger wächst eine Region-Kugel mehr" },
     { token: "_acquireScatterMesh", fiel: "Welle B — der Streu-Satz je Art (_streuNahArt)" },
@@ -226,7 +238,10 @@ const FORBIDDEN = [
     { token: '"deck-streu"', fiel: "Welle B — die Deck-Streu ist der zweite Block der Fern-Mesh je Art" },
     // Der platzierte Bau keyt nicht mehr regional: die 256-m-Region (`p:x,z`) brachte keinen Cull (ihre Kugel
     // schneidet das Frustum praktisch immer), sie vervielfachte nur die Gruppen je Leaf.
-    { token: "_archPlacedRegionKey", fiel: "Welle B — der platzierte Bau ist global, ein Studio-Leaf keyt nach Geometrie" },
+    {
+        token: "_archPlacedRegionKey",
+        fiel: "Welle B — der platzierte Bau ist global, ein Studio-Leaf keyt nach Geometrie",
+    },
     { token: "useRegionArchCull", fiel: "Welle B" },
     { token: "ARCH_REGION_CULL_MAX_SPAN", fiel: "Welle B" },
     { token: "p:s:", fiel: "Welle B — die platzierte Fern-Superregion" },
@@ -238,7 +253,10 @@ const FORBIDDEN = [
     // Gruppe), ihr Nachziehen aus welle-bild-wahrheit (8cf8cb5, nie integriert) und der Kill-Switch (ein Flag = ein
     // zweiter Weg).
     { token: "_anazhDiaetRid", fiel: "Bundle-Wahrheit — die Diät schreibt je Programm und Render, kein Stempel" },
-    { token: "_diaetGeteilteOffen", fiel: "Bundle-Wahrheit — das Nachziehen der Abkürzung (8cf8cb5) wird nie integriert" },
+    {
+        token: "_diaetGeteilteOffen",
+        fiel: "Bundle-Wahrheit — das Nachziehen der Abkürzung (8cf8cb5) wird nie integriert",
+    },
     { token: "useRegionRenderBundles", fiel: "Bundle-Wahrheit — kein Kill-Switch, die Bundles sind der EINE Weg" },
     // DIE ZEITLICHE AUFLÖSUNG (04.10.) — FXAA am Ende der Post-Kette fiel ganz: die Kantenglättung ist TRAA (vendor/
     // TRAANode.js) als erste Stufe, die Dither-Blende rotiert hinter dem Knoten (state.traaNode), nie hinter einem Flag.
@@ -246,7 +264,10 @@ const FORBIDDEN = [
     { token: "taaLite", fiel: "04.10. — das nie gesetzte TAA-Flag; uDitherT rotiert, wo state.traaNode steht" },
     // DIE INTEGRATION der Bild-Wahrheit (04.10.): der Gruppen-Schlüssel mit Saison war ein Zwilling des saisonfreien
     // Körper-Schlüssels (V18.527) und traf im Cache nie; die Höhe eines Baum-Körpers lebt im Höhen-Buch.
-    { token: "_foundryGruppenKey", fiel: "Integration bild-wahrheit — _foundryKoerperKey ist der EINE Körper-Schlüssel" },
+    {
+        token: "_foundryGruppenKey",
+        fiel: "Integration bild-wahrheit — _foundryKoerperKey ist der EINE Körper-Schlüssel",
+    },
     // DIE BILDZIELE JE LESER (W7, integriert 04.10.): der Modul-Knoten der linearen Szenen-Tiefe hielt seinen EIGENEN
     // Tiefen-Klon und kopierte je Frame neben dem Feld-Pass ein zweites Mal — die Szenen-Tiefe ist der EINE Knoten
     // `_szeneTiefe` (gate:schatten-werfer Z2 zählt die Leser).
@@ -258,7 +279,10 @@ const FORBIDDEN = [
     { token: '"litter"', fiel: "W1 — die Streu-Schicht litter fiel final (kein Totholz-Körper im Studio)" },
     // Integration mittel-klumpen + W1 (05.10.): die Gesetz-Bahn-Wand der Streu war eine Kopie der Backend-Wand des
     // Feld-Passes.
-    { token: "_streuGesetzBahnOffen", fiel: "Integration 05.10. — _weltMarchGezeichnet, dieselbe Wand wie der Feld-Pass" },
+    {
+        token: "_streuGesetzBahnOffen",
+        fiel: "Integration 05.10. — _weltMarchGezeichnet, dieselbe Wand wie der Feld-Pass",
+    },
     // Integration 05.10.: die Fallback-Karte der Stufen ohne Config war tot (ohne Config bricht der Wurf-Leser, Buch und
     // Config docken in EINER Nachricht).
     { token: "FOUNDRY_KIND_LOD", fiel: "Integration 05.10. — _foundryServierStufe, ohne Config KERN-PFLICHT" },
@@ -294,11 +318,17 @@ const FORBIDDEN = [
     { token: "LOD_TRI_BUDGET_MUL", fiel: "W5 — die Kosten wohnen im Asset (lod.budget.tree[0]), Lehre 19" },
     // W8 (Integration): jede Art mit Gestalt trägt ihr Budget — die Wirt-Stufen-Tafel für Arten ohne Zeile hat keinen
     // Leser mehr; `_foundryBudgetZeile` bricht fail-closed, wo eine Art keine Zeile trägt.
-    { token: "_WIRT_WURF", fiel: "Integration W8 — das Budget aller Kerne trägt den Wurf (lod.budget[kind][stufe].schatten)" },
+    {
+        token: "_WIRT_WURF",
+        fiel: "Integration W8 — das Budget aller Kerne trägt den Wurf (lod.budget[kind][stufe].schatten)",
+    },
     // Integration W8 (Seh-Klasse): die Zwillinge des Budget-Gesetzes im Wirt fallen — die Look-Liste, die Verschmelz-
     // Zahl, die Material-Defaults und die Füll-Farbe liest der Wirt aus phyto-core (LOOK_KLASSEN · BUDGET_GESETZ ·
     // budgetRegler · budgetFuellFarbe).
-    { token: "AnazhRealm.LOOK_KLASSEN", fiel: "Integration W8 — phyto-core LOOK_KLASSEN / budgetLook ist die EINE Liste" },
+    {
+        token: "AnazhRealm.LOOK_KLASSEN",
+        fiel: "Integration W8 — phyto-core LOOK_KLASSEN / budgetLook ist die EINE Liste",
+    },
     { token: "FOUNDRY_VERSCHMELZ_VERTS", fiel: "Integration W8 — phyto-core BUDGET_GESETZ.verschmelzVerts" },
     // Integration W8 (Prüfer W8 (c)): die Verschmelz-Signaturen des Wirts (Flatten: Material · Schatten · Index · alle
     // Attribute; Ofen: Material · Schatten · Look-Klasse · Attribute) waren Zwillinge der Sippe des Gesetzes — beide
@@ -389,10 +419,16 @@ const FORBIDDEN = [
     // Integration 05.10.: EIN Fenster sicherte nur ~120 m — die Wege-Karte ist eine Clipmap aus zwei Stufen, die
     // Formen leben je Siedlung mit Hülle (der Umzug verwirft ferne Siedlungen in O(1)).
     { token: "wk.formen", fiel: "Integration 05.10. — wk.siedlungen (Formen je Siedlung, Hülle)" },
-    { token: "Math.max(f.ex, f.ez)", fiel: "Integration 05.10. — _wegeFormRadius: die Diagonale des gedrehten Kastens" },
+    {
+        token: "Math.max(f.ex, f.ez)",
+        fiel: "Integration 05.10. — _wegeFormRadius: die Diagonale des gedrehten Kastens",
+    },
     // Integration 05.10.: das Kronendach der Ferne ist die Studio-Laubfarbe der Arten am Ort (phyto-core forestNische)
     // × die Selbstbeschattung, die Saison legt uSeasonMul auf — die feste Sommer-Konstante kehrt nicht zurück.
-    { token: "kronendach: Object.freeze", fiel: "Integration 05.10. — _fernFarbeTeile (Art × kronenSchatten), uSeasonMul" },
+    {
+        token: "kronendach: Object.freeze",
+        fiel: "Integration 05.10. — _fernFarbeTeile (Art × kronenSchatten), uSeasonMul",
+    },
     { token: "farbeJeTakt", fiel: "Integration 05.10. — das Fern-Farb-Budget (FERN_FARBE.msJeTakt, _fernFarbTakt)" },
     // V18.331 fiel Ammo.js (die Physik ist feld-nativ); V18.530 fiel mit ihr der CI-Schritt „Ammo-Memory-Leak-Indikator",
     // der btVector3 gegen destroy zählte und seit dem Abschied an „0\n0" rechnete (rot hinter continue-on-error).
@@ -403,7 +439,10 @@ const FORBIDDEN = [
     { token: "_b1.klinge", fiel: "Welle 5 — die Trauer-L1 trägt Strähnen (tree[1].straehne), keine Klinge" },
     // Präzise Tokens (Integration 05.10.): `_klinge` als Teilstring hätte jeden künftigen Klingen-Bezeichner der
     // Schmiede getroffen — gefallen sind die Budget-Wand des Felds und der Kontur-Parameter von pushLeaf.
-    { token: '".klinge fehlt"', fiel: "Welle 5 — die Budget-Wand von tree[1].klinge ist mit der Trauer-Klinge gefallen" },
+    {
+        token: '".klinge fehlt"',
+        fiel: "Welle 5 — die Budget-Wand von tree[1].klinge ist mit der Trauer-Klinge gefallen",
+    },
     { token: "cup, seg)", fiel: "Welle 5 — die Segment-Zahl der Trauer-Klinge (pushLeaf seg) ist mit ihr gefallen" },
     // Der Grammatik-Pfad malte bei einem Atlas-Fehler still eine Ellipsen-Maske (fail-soft) — er bricht laut wie der
     // Laub-Stoff der Welt (KERN-PFLICHT).
@@ -423,9 +462,15 @@ const FORBIDDEN = [
     // Integration 05.10.: der Horizont-Schwund der Karten-Maske (jede Karte, die im Band STAND, blieb ein Geist — am Grat
     // die ganze Streu) und die Zonen-Klemme am Radius (ein Riese sprang dort ohne Band; jenseits des Bands wählt die EINE
     // Stufen-Wahl die Karte selbst) fielen: der Rand des gesetzten Waldes ist je Eintrag ein CPU-Rand im Saum.
-    { token: "opts.fernNode", fiel: "Integration 05.10. — kein Distanz-Schwund in der Karten-Maske (_archKartenHorizont)" },
+    {
+        token: "opts.fernNode",
+        fiel: "Integration 05.10. — kein Distanz-Schwund in der Karten-Maske (_archKartenHorizont)",
+    },
     { token: "KARTEN_HORIZONT_SCHWUND_M", fiel: "Integration 05.10. — KARTEN_HORIZONT_SAUM_M (Rand je Eintrag)" },
-    { token: "_archInKartenZone", fiel: "Integration 05.10. — die EINE Stufen-Wahl (_chooseLODForDistance) trägt fern" },
+    {
+        token: "_archInKartenZone",
+        fiel: "Integration 05.10. — die EINE Stufen-Wahl (_chooseLODForDistance) trägt fern",
+    },
     { token: "entry._fernKarte", fiel: "Integration 05.10. — kein Zonen-Voll-Stempel (_lodSlotVoll)" },
     // WELLE 5 BODEN + WASSER (05.10.): das Wasser deckt nach dem Durchlass-Gesetz (Beer-Lambert über den optischen Weg in
     // Metern, R∞ aus Absorption und Rückstreuung) — die Viewport-Regler des Ufers und der Tiefen-Farbe sind gefallen,
@@ -493,14 +538,24 @@ const FORBIDDEN = [
     { token: "hasHit = this._runRaycast(", fiel: "Welle L kreatur — _kreaturHuellenKontakt" },
     // Nachbesserung 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters — auch die Eintrags-
     // Kronen (a:), die nur beim Entstehen eintragen; der Raum-Index `kronenZellen` bindet die Kosten an den Streifen.
-    { token: "this._kronenStreuUmzug(stufe, war, S === fernS)", fiel: "Nachbesserung 06.10. — kein Umzug vergisst eine Krone" },
+    {
+        token: "this._kronenStreuUmzug(stufe, war, S === fernS)",
+        fiel: "Nachbesserung 06.10. — kein Umzug vergisst eine Krone",
+    },
     // Integration 06.10.: kein Kronendach in der Boden-Albedo (Lehre 21: nie doppelt) — weder das Platzierungs-Feld im
     // Vertex (Main + Worker-Spiegel samt seinem Kronenlicht-Zwilling) noch die Labor-Abdunklung der Streu.
     { token: "const _cShade =", fiel: "Integration 06.10. — der Schatten der echten Krone dunkelt, nie das Feld" },
     { token: "function canopyLightAt(", fiel: "Integration 06.10. — der Worker färbt ohne Kronenlicht-Feld" },
     { token: "function placementStandForest(", fiel: "Integration 06.10. — der Worker-Spiegel des Wald-Stands fiel" },
+    {
+        token: "_p2pDisposeMesh",
+        fiel: "Frost-Nachbesserung 08.10. — der Mitspieler-Leib entsorgt über die EINE Regel _disposeSoulGroup",
+    },
     { token: "UNDERGROWTH_CANOPY_K", fiel: "Integration 06.10. — der Worker-Spiegel des Kronenlicht-Felds fiel" },
-    { token: "_k.mul(_T.float(0.42))", fiel: "Integration 06.10. — die Streu trägt ihre Albedo, die Krone ihren Schatten" },
+    {
+        token: "_k.mul(_T.float(0.42))",
+        fiel: "Integration 06.10. — die Streu trägt ihre Albedo, die Krone ihren Schatten",
+    },
     // Integration 06.10. — was die Welle 5 im Wasser-Stoff des Hosts ohne Namen strich (Prüfer-Urteil): die empirische
     // Schattierung l0 + l1·diff + l2·Welle (WASSER_GESETZ.licht), die Zenit-Dimmung des Spiegels (spiegel.dim) und die
     // Noise-Tönung zwischen Tief und Flach (baseN/mixT). Der Host trägt dafür das physikalische Modell (R∞-Körper,
@@ -518,15 +573,34 @@ const FORBIDDEN = [
     // Integration 06.10. (W5-Körper) — DIE DECKUNG FOLGT DER HAUT: der Ofen deckte den Rumpf über Ellipsoide mit festen
     // Radien um sechs Stationen (die Wirte-Liste des Deck-Mantels) und den Hals über EINE Zeile an der Hals-Mitte; nach
     // der Anatomie-Welle lagen Bär-Rumpf, Läufe und Hirsch-Hals kahl. Die Zeilen sitzen auf bauTier.fellOrt.
-    { token: "row.wirte", fiel: "Integration W5-Körper — der Deck-Mantel liegt auf der Haut der Wurzel (Strähnen je Fläche)" },
+    {
+        token: "row.wirte",
+        fiel: "Integration W5-Körper — der Deck-Mantel liegt auf der Haut der Wurzel (Strähnen je Fläche)",
+    },
     { token: "Math.sqrt(anteil * 3)", fiel: "Integration W5-Körper — kein fester Mantel-Radius je Wirt" },
-    { token: "T.neckMid", fiel: "Integration W5-Körper — der Hals-Mantel ist eine Röhre entlang des Halses", auch: ["tetrapoda-core.js", "worlds/tetrapoda/tetrapoda.js"] },
+    {
+        token: "T.neckMid",
+        fiel: "Integration W5-Körper — der Hals-Mantel ist eine Röhre entlang des Halses",
+        auch: ["tetrapoda-core.js", "worlds/tetrapoda/tetrapoda.js"],
+    },
     // Integration 06.10. (W5-Körper) — DIE AUGEN-FARBE HAT EINE QUELLE (tetrapoda tierAuge): das Lab las das feste
     // Bernstein der Material-Tabelle, der Ofen rechnete die Art-Farbe selbst um.
     { token: "art.kopf.auge", fiel: "Integration W5-Körper — der Ofen liest kern.tierAuge" },
-    { token: "__TK.tierauge.c,", fiel: "Integration W5-Körper — das Lab liest tierAuge", auch: ["worlds/tetrapoda/tetrapoda.js"] },
-    { token: "__TK.tierauge.emissiv", fiel: "Integration W5-Körper — die Glut ist ein Anteil der Iris (tierAuge)", auch: ["worlds/tetrapoda/tetrapoda.js"] },
-    { token: "emissiv: 0x442200", fiel: "Integration W5-Körper — tierauge trägt glut, keine eigene Farbe", auch: ["tetrapoda-core.js"] },
+    {
+        token: "__TK.tierauge.c,",
+        fiel: "Integration W5-Körper — das Lab liest tierAuge",
+        auch: ["worlds/tetrapoda/tetrapoda.js"],
+    },
+    {
+        token: "__TK.tierauge.emissiv",
+        fiel: "Integration W5-Körper — die Glut ist ein Anteil der Iris (tierAuge)",
+        auch: ["worlds/tetrapoda/tetrapoda.js"],
+    },
+    {
+        token: "emissiv: 0x442200",
+        fiel: "Integration W5-Körper — tierauge trägt glut, keine eigene Farbe",
+        auch: ["tetrapoda-core.js"],
+    },
     // Integration 06.10. (W5-Körper) — DIE HAND-MITTE TRÄGT DIE HAND: die Welt-Konstante der Faust (die Hand vor Welle 5)
     // ließ den Griff 0,072 m neben der neuen Hand; der Ofen gibt den Schwerpunkt der Hand-Haut im Beipack mit.
     { token: "faustOffset", fiel: "Integration W5-Körper — der Griff sitzt auf rig.handMitte (Ofen-Beipack)" },
@@ -547,7 +621,10 @@ const FORBIDDEN = [
     { token: "hydroAudio", fiel: "Welle 5 Klang — Ufer/Fluss/Fall aus dem Hör-Ring (_umweltRingProbe)" },
     { token: "_buildHydroAudioLayer", fiel: "Welle 5 Klang — _umweltKlangBauen" },
     { token: "_tickHydrosphereAudio", fiel: "Welle 5 Klang — _umweltKlangTick (Kosten je Frame konstant)" },
-    { token: "_pointSegDist2D(px, pz, pts[k]", fiel: "Welle 5 Klang — der Fluss-Segment-Scan je Takt (Kosten ∝ Weltgröße)" },
+    {
+        token: "_pointSegDist2D(px, pz, pts[k]",
+        fiel: "Welle 5 Klang — der Fluss-Segment-Scan je Takt (Kosten ∝ Weltgröße)",
+    },
     { token: "playCreaturePing", fiel: "Welle 5 Klang — _tierRuf (die Stimme folgt dem Körper)" },
     { token: "creaturePingCount", fiel: "Welle 5 Klang — symphony.tierRufe" },
     { token: "_tagToFrequency", fiel: "Welle 5 Klang — UMWELT.tier (Grundton ∝ Körperlänge^−0,9)" },
@@ -569,7 +646,10 @@ const FORBIDDEN = [
         auch: ["klang-core.js", "worlds/klang/klang.js"],
     },
     // Das Ohr liest die Kronen-Karte der STEHENDEN Bäume (`_kronenStreuAt`), nie das Kronenlicht-Feld der Platzierung.
-    { token: "1 - this._canopyLightAt(px, pz, fussY)", fiel: "Integration W5-Klang — die Laub-Deckung ist _kronenStreuAt" },
+    {
+        token: "1 - this._canopyLightAt(px, pz, fussY)",
+        fiel: "Integration W5-Klang — die Laub-Deckung ist _kronenStreuAt",
+    },
     // Der Wasser-Hauch klingt nur, wo Wasser ist: jeder Bau und Abbau reicht seine Fußabdrücke (`_nassAt`) — der Aufruf
     // ohne Fußabdruck hauchte bis 06.10. auch fern jedes Ufers (der Stein-Abbau war nie stumm).
     { token: "this._playWaterReactionPing()", fiel: "Integration W5-Klang — _playWaterReactionPing(fussabdruecke)" },
@@ -614,7 +694,10 @@ const FORBIDDEN = [
     // ein belegter Satz hielt sein Hochwasser (Boden 24,9 statt 16,4 MB, Bau 12,0 statt 1,3 MB nach dem Wandern).
     // `_chunkSatzVerdichten` schrumpft jeden Satz auf seinen Inhalt; der Leer-Takt und sein Feld kehren nie zurück.
     { token: "_chunkSatzLeert", fiel: "W7 — _chunkSatzVerdichten (der leere Satz ist der Fall Inhalt 0)" },
-    { token: "s.leerSeit", fiel: "W7 — s.ueberSeit (die Frist zählt ab dem Überschreiten der Schwelle, für jeden Satz)" },
+    {
+        token: "s.leerSeit",
+        fiel: "W7 — s.ueberSeit (die Frist zählt ab dem Überschreiten der Schwelle, für jeden Satz)",
+    },
     // W7 (06.10.) — DIE NAH-STREU ZEICHNET JE STOFF: je Art × Gestalt × Stufe × Teil zeichnete eine InstancedMesh den ganzen
     // Ring (echte GPU, Mess-Wiese: 15 Befehle, 46k Dreiecke, auch hinter dem Blick); der wiegende Stoff war je Studio-Skala
     // ein eigener und las die Höhe aus der Vorlage (r184 rechnet den positionNode VOR der Instanzierung). Die Senke ist
@@ -663,7 +746,10 @@ const FORBIDDEN = [
     // die Seiten-Schleife (OMEN: 2,40 ms für 1,3 % des Bildes). Der March rasterisiert je Satz einen Stellvertreter, das
     // Panorama zeichnet ohne Fragment-Tiefe; die SEITEN-EBENE (Hüllen je 32 Einträge, Hilbert-Ordnung, Folge nah→fern)
     // fiel ganz (gate:feld-stellvertreter).
-    { token: "feldPassBlick", fiel: "Welle G — feldMarch (EIN Satz je Stellvertreter) und feldPanorama (früher Tiefentest)" },
+    {
+        token: "feldPassBlick",
+        fiel: "Welle G — feldMarch (EIN Satz je Stellvertreter) und feldPanorama (früher Tiefentest)",
+    },
     { token: "_weltSeitenOrdnen", fiel: "Welle G — die Stellvertreter brauchen keine räumliche Ordnung" },
     { token: "_weltSeitenPflegen", fiel: "Welle G — die Hülle trägt jeder Eintrag selbst (Texel 0/1)" },
     { token: "_weltSeitenFolge", fiel: "Welle G — der Tiefentest der Hardware wählt den nächsten Treffer" },
@@ -762,7 +848,9 @@ function checkAliasArten(core) {
     if (pc.forestLabToHost("mammut") !== "baum_mammut")
         e.push(`FOREST_SPECIES: mammut → ${pc.forestLabToHost("mammut")} (Soll baum_mammut)`);
     if (pc.forestHostToLab("baum_buche") !== "baum_buche")
-        e.push(`FOREST_SPECIES: baum_buche → ${pc.forestHostToLab("baum_buche")} (die Buche ist keine Lab-Wald-Nische)`);
+        e.push(
+            `FOREST_SPECIES: baum_buche → ${pc.forestHostToLab("baum_buche")} (die Buche ist keine Lab-Wald-Nische)`
+        );
     return e;
 }
 
@@ -1041,7 +1129,9 @@ function scanLabBuster() {
     const vm = stammSrc.match(/AnazhRealm\.VERSION = "([0-9.]+)"/);
     if (!vm) errs.push("AnazhRealm.VERSION nicht gefunden (die Versions-Wand braucht den Anker)");
     else if (vm[1] !== version)
-        errs.push(`AnazhRealm.VERSION trägt stale "${vm[1]}" (package.json ${version}) — Trace/Panel lügen über die Version`);
+        errs.push(
+            `AnazhRealm.VERSION trägt stale "${vm[1]}" (package.json ${version}) — Trace/Panel lügen über die Version`
+        );
     // DOKU=VERSION (19.07., Schöpfer-Karte §5.6 „Doku = Version"): der Stand-Kopf
     // von CLAUDE.md ist die Chronik-Spitze — trägt er eine andere Version als
     // package.json, LÜGT die Doku relativ zum Code (die 18.490/18.491-Drift-
@@ -1050,7 +1140,9 @@ function scanLabBuster() {
     const cm = claude.match(/## Stand \(V([0-9.]+)/);
     if (!cm) errs.push("CLAUDE.md Stand-Kopf nicht gefunden (## Stand (V… — die Doku-Wand braucht den Anker)");
     else if (cm[1] !== version)
-        errs.push(`CLAUDE.md Stand-Kopf trägt stale V${cm[1]} (package.json ${version}) — die Chronik lügt relativ zum Code`);
+        errs.push(
+            `CLAUDE.md Stand-Kopf trägt stale V${cm[1]} (package.json ${version}) — die Chronik lügt relativ zum Code`
+        );
     return errs;
 }
 
@@ -1076,6 +1168,32 @@ function scanInstanzWand(srcRoh) {
         errs.push("Instanz-Wand: der Chokepoint `static _instanzMesh(geom, mat, cap)` trägt den Bau nicht");
     if (!/StorageInstancedBufferAttribute\(m\.instanceMatrix\.array, 16\)/.test(code))
         errs.push("Instanz-Wand: _instanzMesh legt die Matrix nicht als StorageInstancedBufferAttribute an");
+    return errs;
+}
+
+// DIE ENTSORGUNGS-WAND (Frost-Nachbesserung 08.10.): eine Gruppe, die Welt-Vorlagen teilen kann (Bühnen, Mitspieler,
+// Ofen-Güsse), entsorgt nur über DIE EINE Regel `_disposeSoulGroup` (geteilte Geometrie nie, Stoffe nie). Befund: vier
+// Bühnen und der Mitspieler-Leib trugen je eine eigene Schleife, die die Geteilt-Markierung überging — 3 Seelenwechsel
+// legten den Kopf des Spieler-Leibs und die Haut in die Entsorgung, die Welt kompilierte neu. Rot ist jede Methode, die in
+// einer `.traverse(`-Wanderung Geometrie oder Stoff entsorgt, außer der Regel selbst und der Bauplan-Vorschau
+// (`_workshopRebuildPreviewMesh`: nur ihre eigenen Teile, die geteilten stehen, die Gestalt des Ofens rührt sie nie an).
+const ENTSORGUNG_ERLAUBT = ["_disposeSoulGroup", "_workshopRebuildPreviewMesh"];
+const ENTSORGUNG =
+    /(?:_queueDispose|_queueGeometryDispose)\(\s*[\w$]+\.(?:geometry|material)\b|\.(?:geometry|material)\.dispose\(\)/;
+function scanEntsorgungsWand(srcRoh) {
+    const code = stripComments(srcRoh);
+    const errs = [];
+    const kopfRe = /\n {4}(?:static |async )?([_a-zA-Z$][\w$]*)\([^)\n]*\)\s*\{\n/g;
+    const koepfe = [...code.matchAll(kopfRe)];
+    for (let i = 0; i < koepfe.length; i++) {
+        const name = koepfe[i][1];
+        const rumpf = code.slice(koepfe[i].index, i + 1 < koepfe.length ? koepfe[i + 1].index : code.length);
+        if (rumpf.indexOf(".traverse(") < 0 || !ENTSORGUNG.test(rumpf) || ENTSORGUNG_ERLAUBT.includes(name)) continue;
+        errs.push(
+            `Entsorgungs-Wand: anazhRealm.js:${code.slice(0, koepfe[i].index).split("\n").length + 1} \`${name}\` entsorgt ` +
+                `in einer eigenen Wanderung (traverse) — Gruppen mit Welt-Vorlagen entsorgen über \`_disposeSoulGroup\``
+        );
+    }
     return errs;
 }
 
@@ -1251,6 +1369,40 @@ function main() {
             console.log("❌ SELBST-TEST: die Instanz-Wand feuert nicht (oder steht heute rot)");
             process.exit(1);
         }
+        // Die Entsorgungs-Wand muss feuern: die alte Schleife der Ich-Bühne kehrt zurück (Stoff und Geometrie in eigener
+        // Wanderung) — rot beim Namen; ein Kommentar darf sie erzählen.
+        const alteSchleife =
+            "            stage.pivot.traverse((obj) => {\n" +
+            "                if (obj.geometry) this._queueDispose(obj.geometry);\n" +
+            "                if (obj.material) this._queueDispose(obj.material);\n" +
+            "            });\n";
+        const ichNeu = "            this._disposeSoulGroup(stage.pivot);\n            stage.pivot = null;";
+        const ichAlt = stamm.replace(
+            "    _ichStageShow(soul) {",
+            "    _ichStageShow(soul) {\n        // früher: obj.geometry.dispose() in jeder Bühne"
+        );
+        const iIch = ichAlt.indexOf("    _ichStageShow(soul) {");
+        const jIch = iIch < 0 ? -1 : ichAlt.indexOf(ichNeu, iIch);
+        const entsorgungAlt =
+            jIch < 0
+                ? []
+                : scanEntsorgungsWand(
+                      ichAlt.slice(0, jIch) +
+                          alteSchleife +
+                          "            stage.pivot = null;" +
+                          ichAlt.slice(jIch + ichNeu.length)
+                  );
+        const entsorgungFeuert =
+            scanEntsorgungsWand(stamm).length === 0 &&
+            scanEntsorgungsWand(ichAlt).length === 0 &&
+            stamm.includes(ichNeu) &&
+            entsorgungAlt.length === 1 &&
+            /`_ichStageShow`/.test(entsorgungAlt[0]);
+        if (!entsorgungFeuert) {
+            console.log("❌ SELBST-TEST: die Entsorgungs-Wand feuert nicht (oder steht heute rot)", entsorgungAlt);
+            process.exit(1);
+        }
+        console.log(`✅ SELBST-TEST: die Entsorgungs-Wand feuert (${entsorgungAlt[0]})`);
         // Die Karten-Wand muss feuern: ein Canvas im Schicht-Schreiber.
         const kartenFeuert =
             scanKartenWand(stamm).length === 0 &&
@@ -1323,14 +1475,22 @@ function main() {
         if (fernwald) {
             const quelle = fs.readFileSync(fernwald, "utf8");
             const anker = "                    delete h.__fw;\n                }\n";
-            fs.writeFileSync(tmpLinse, quelle.replace(anker, anker + "                r._weltSeiteDirty(wm, h.feld);\n"));
+            fs.writeFileSync(
+                tmpLinse,
+                quelle.replace(anker, anker + "                r._weltSeiteDirty(wm, h.feld);\n")
+            );
             const t = scan([tmpLinse]);
             fs.unlinkSync(tmpLinse);
             linsenFeuert =
-                quelle.includes(anker) && scan([fernwald]).length === 0 && t.length === 1 && /_weltSeiteDirty/.test(t[0]);
+                quelle.includes(anker) &&
+                scan([fernwald]).length === 0 &&
+                t.length === 1 &&
+                /_weltSeiteDirty/.test(t[0]);
         }
         if (!linsenFeuert) {
-            console.log("❌ SELBST-TEST: die Linsen (scripts/lib) stehen nicht in der Wand, oder sie feuert dort nicht");
+            console.log(
+                "❌ SELBST-TEST: die Linsen (scripts/lib) stehen nicht in der Wand, oder sie feuert dort nicht"
+            );
             process.exit(1);
         }
         console.log(
@@ -1366,6 +1526,7 @@ function main() {
         .concat(scanZwillinge())
         .concat(scanLabBuster())
         .concat(scanInstanzWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
+        .concat(scanEntsorgungsWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanKartenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanNormalWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
@@ -1377,7 +1538,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable.`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
     );
 }
 
