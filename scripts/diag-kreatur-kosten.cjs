@@ -36,6 +36,10 @@
 //      Ofen-Ausgang), Tier ≤ 6 200 / 1, Mensch ≤ 38 000 / 5, mittel wirft, nah wirft kein L0-Mesh; dazu die Absenz der
 //      castShadow-Literale am Gelenk-Guss und der Wirts-Distanzen. (S5) Zwilling gestubbt → die L0 wirft wieder, rot.
 //      (R) prüft dazu: die Grobstufe ist geskinnt und trägt die Knochen der L0 (EIN Skelett), im Gang in ihrer Kugel.
+//  (F) DIE RUHE JENSEITS DER GRENZE (S3): beide Stufen tragen DIESELBEN Knochen — wo der Gang jenseits der Grenze ruht
+//      (der Peer-Tick des Menschen, die Sicht-Kopie eines fremden Tiers), stehen sie in der Ruhe-Pose: der Mensch in der
+//      seiner Vorlage (≤ 0,01 rad je Gelenk), das Tier in der Kern-STAND_POSE (≤ 0,02 rad), nie mitten im Schritt.
+//      (S6) die Ruhe gestubbt → der ferne Mensch bleibt mitten im Schritt, rot.
 //  (T) SCHMAL (W7): jeder Index über ≤ 65 535 Vertices trägt 16 bit (r184 weitete ihn auf 32, der Stamm hält ihn
 //      schmal — `_backendGesetz`), jedes Haut-Gewicht unorm16 (Wolf · Mensch). (S4) die alten Formen gestubbt → die Linse
 //      nennt die breiten Puffer.
@@ -706,6 +710,108 @@ const server = http.createServer((req, res) => {
             o.wDistKonst = ["TIER_FERN_DIST_SQ", "TIER_FERN_HYST", "MENSCH_FERN_DIST_SQ"].filter((k) => k in A);
             o.checks.wAbsenz = o.wLiterale === 0 && distLeser.length === 0 && o.wDistKonst.length === 0;
 
+            // ── (F) DIE RUHE JENSEITS DER GRENZE (S3): beide Stufen tragen DIESELBEN Knochen — wo der Gang jenseits der Grenze
+            // ruht (der Peer-Tick des Menschen, die Sicht-Kopie eines fremden Tiers), stehen sie in der Ruhe-Pose, nie mitten
+            // im Schritt (das Standbild der Basis stand in der Ruhe-Pose). Gemessen nach dem ECHTEN Tick: erst nah gehen
+            // (Prämisse: mitten im Schritt), dann jenseits der Grenze ein Tick. Mensch gegen die Ruhe-Pose seiner Vorlage
+            // (Winkel je Gelenk), Tier gegen die Kern-STAND_POSE (dieselbe Ketten-Wahrheit wie (B)). ──
+            const ruheAbw = (nah, vorlage) => {
+                const a = { rad: 0, gelenk: null };
+                if (!nah || !vorlage || !vorlage.teile) return a;
+                nah.traverse((n) => {
+                    const q = n.name && vorlage.teile[n.name];
+                    if (!q || !(n.isGroup || n.isBone)) return;
+                    const w = n.quaternion.angleTo(q.quaternion);
+                    if (w > a.rad) {
+                        a.rad = w;
+                        a.gelenk = n.name;
+                    }
+                });
+                return a;
+            };
+            const peerF = (gF, eF, d, gehen) => {
+                eF.x = pm.x + d;
+                for (let k = 0; k < (gehen ? 30 : 1); k++) {
+                    if (gehen) {
+                        eF.x += 0.1; // 3 m/s im Takt 1/30 s — der Gang folgt dem Weg
+                        eF.lastMovedAt = performance.now() / 1000;
+                    }
+                    r._p2pUpdatePeer(eF, performance.now() / 1000, 1 / 30);
+                }
+                gF.updateMatrixWorld(true);
+            };
+            const menschRuhe = () => {
+                const gF = r._buildHumanGroup();
+                const mfF = gF && gF.userData && gF.userData._gelenk;
+                const vF = gF ? vorlagenVon(gF)["0"] : null;
+                if (!mfF || !vF) return null;
+                const eF = {
+                    mesh: gF,
+                    x: pm.x + 8,
+                    y: pm.y + 1,
+                    z: pm.z,
+                    yaw: 0,
+                    meshKind: "soul",
+                    soulName: "human",
+                    walkPhase: 0,
+                    lastMovedAt: 0,
+                };
+                peerF(gF, eF, 8, true);
+                const mitte = ruheAbw(mfF.nah, vF);
+                peerF(gF, eF, 2.5 * mfF.abM, false);
+                const fern = ruheAbw(mfF.nah, vF);
+                return { mitte, fern, istFern: mfF.istFern === true };
+            };
+            o.fMensch = menschRuhe();
+            // die Sicht-Kopie eines fremden Wolfs (der Peer-Strom, `_p2pTickRemoteCreatures`)
+            const seeleF = Object.keys(SM).find((k) => SM[k] === "wolf");
+            const kopieRuhe = () => {
+                const mK = seeleF ? r._buildCreatureGroup(seeleF) : null;
+                const glK = mK && mK.userData && mK.userData._gelenk;
+                if (!glK) return null;
+                const remote = s.p2p.remoteCreatures;
+                const rcK = { mesh: mK, peerId: "__linseF" };
+                remote.set("__linseF|1", rcK);
+                const zuK = (d, gehen) => {
+                    const t0K = performance.now() / 1000;
+                    if (!gehen) {
+                        mK.position.set(pm.x + d, pm.y, pm.z);
+                        rcK.tx = pm.x + d;
+                        rcK.tz = pm.z;
+                        rcK.ty = pm.y;
+                        r._p2pTickRemoteCreatures(t0K, 1 / 30);
+                        return;
+                    }
+                    mK.position.set(pm.x + d, pm.y, pm.z);
+                    for (let k = 0; k < 30; k++) {
+                        rcK.tx = mK.position.x + 0.2; // der Sender läuft voraus — die Kopie zieht nach und geht
+                        rcK.tz = pm.z;
+                        rcK.ty = pm.y;
+                        r._p2pTickRemoteCreatures(t0K + k / 30, 1 / 30);
+                    }
+                };
+                zuK(6, true);
+                const mitte = maxDev(mK);
+                zuK(2.5 * glK.abM, false);
+                const fern = maxDev(mK);
+                const istFern = glK.istFern === true;
+                remote.delete("__linseF|1");
+                if (typeof r._disposeSoulGroup === "function") r._disposeSoulGroup(mK);
+                return { mitte, fern, istFern };
+            };
+            o.fKopie = kopieRuhe();
+            o.checks.fMenschPraemisse = !!o.fMensch && o.fMensch.mitte.rad > 0.05;
+            o.checks.fMenschRuhe = !!o.fMensch && o.fMensch.istFern && o.fMensch.fern.rad <= 0.01;
+            o.checks.fKopiePraemisse = !!o.fKopie && o.fKopie.mitte > 0.05;
+            o.checks.fKopieRuhe = !!o.fKopie && o.fKopie.istFern && o.fKopie.fern <= 0.02;
+            // (S6) SELBST-TEST: die Ruhe gestubbt — der ferne Mensch friert wieder mitten im Schritt
+            const saveRuhe = r._gelenkRuhe;
+            r._gelenkRuhe = function () {};
+            o.s6 = menschRuhe();
+            if (saveRuhe) r._gelenkRuhe = saveRuhe;
+            else delete r._gelenkRuhe; // restaurieren (Gate-Hook-Lehre)
+            o.checks.s6LensFires = !!o.s6 && o.s6.fern.rad > 0.05;
+
             o.creaturesAfter = s.creatures.length;
             return o;
         });
@@ -828,10 +934,33 @@ const server = http.createServer((req, res) => {
         check(c.cToggle, "(C) der EINE Stufen-Schalter (_gelenkStufe) schaltet nah↔fern an der Grenze der Kern-Zeile");
         check(c.cPeerFern, "(C) KONSUM: der echte Peer-Tick schaltet den fernen Menschen auf die Grobstufe (Layer 0)");
         check(c.cPeerNah, "(C) und zurück auf nah, wenn er herankommt (die Grobstufe nur in den Kaskaden)");
+        const fR = (a) => (a ? `${a.rad.toFixed(3)} rad${a.gelenk ? " (" + a.gelenk + ")" : ""}` : "?");
+        const fM = out.fMensch,
+            fK = out.fKopie;
+        check(
+            c.fMenschPraemisse,
+            `(F) PRÄMISSE: der gehende Mensch-Peer ist nah mitten im Schritt (${fM ? fR(fM.mitte) : "kein Peer"} > 0,05)`
+        );
+        check(
+            c.fMenschRuhe,
+            `(F) RUHE: der ferne Mensch-Peer (Grobstufe im Bild${fM && fM.istFern ? "" : " — FEHLT"}) steht in der Ruhe-Pose — ${fM ? fR(fM.fern) : "?"} ≤ 0,01`
+        );
+        check(
+            c.fKopiePraemisse,
+            `(F) PRÄMISSE: die gehende Sicht-Kopie eines Wolfs ist nah mitten im Schritt (${fK ? fK.mitte.toFixed(3) : "?"} rad > 0,05)`
+        );
+        check(
+            c.fKopieRuhe,
+            `(F) RUHE: die ferne Sicht-Kopie (Grobstufe${fK && fK.istFern ? "" : " — FEHLT"}) steht in der Kern-STAND_POSE — ${fK ? fK.fern.toFixed(3) : "?"} rad ≤ 0,02`
+        );
+        check(
+            c.s6LensFires,
+            `SELBST-TEST (S6): die Ruhe gestubbt → der ferne Mensch bleibt mitten im Schritt (${out.s6 ? fR(out.s6.fern) : "?"})`
+        );
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
     console.log(
-        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Grobstufe KONSUMIERT · Starr-Bindung · Körper-Kugel · Werfer aus der Kern-Zeile)" : "❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
+        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Grobstufe KONSUMIERT · Starr-Bindung · Körper-Kugel · Werfer aus der Kern-Zeile · Ruhe jenseits der Grenze)" : "❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
     );
     process.exit(ok ? 0 : 1);
 })();
