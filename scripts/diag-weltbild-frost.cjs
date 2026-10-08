@@ -14,16 +14,22 @@
 //   G  kein WebGPU-Validierungsfehler auf irgendeinem Device (eigener Hörer, unabhängig vom Spiel: `uncapturederror` jedes
 //      Device UND die THREE-Konsolenzeile, mit der r184 eine Validierung aus seinem offenen Pipeline-Fehler-Bereich meldet)
 //   W  die Wachen des Spiels stehen und schweigen (`_indexWache` · `_gpuWache`)
-//   B  DAS BILD FOLGT: zwei Bilder bei gedrehter Kamera unterscheiden sich in ≥ 2 % der 16×16-Blöcke (echt: der präsentierte
+//   B  DAS BILD FOLGT: zwei Bilder bei gedrehter Kamera unterscheiden sich in ≥ 5 % der 16×16-Blöcke (echt: der präsentierte
 //      Canvas; headless: das Rücklese-Bild der Welt-GPU)
 // Dann DIE ENTSORGUNG DER BÜHNEN (dieselbe Klasse: geteilte Geometrie und Stoffe über Renderer-Grenzen; `_disposeSoulGroup`
 // ist die EINE Regel jeder Gruppe, die Welt-Vorlagen teilt, `_ofenVorlage` sagt, was eine Gruppe besitzt):
-//   S1 Ich-Bühne wolf↔human ×3, Hof-Bühne 4 Seelen ×2 (zwei Durchgänge) entsorgen keine Welt-Geometrie, keinen Welt-Stoff
-//   S2 die Welt-GPU kompiliert dabei nichts nach — Shader-Module und Pipelines gegen die geschlossene Bühne
-//   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) · S4 der Mitspieler-Leib (zweiter Peer-Guss human, Abschied)
+//   S1 Ich-Bühne und Welt-Leib wolf↔human ×3 (der Leib je ein Bild gezeichnet), Hof-Bühne 4 Seelen ×2 (zwei Durchgänge)
 //      entsorgen keine Welt-Geometrie, keinen Welt-Stoff
+//   S2 keine GPU kompiliert dabei nach (Welt, Ich-, Hof-Bühne je ≤ 2 Module/Pipelines gegen die geschlossene Bühne): der
+//      Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte
+//   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) · S4 der Mitspieler-Leib (zweiter Peer-Guss, Seelenwechsel
+//      human↔wolf je ein Bild, Abschied) entsorgen keine Welt-Geometrie, keinen Welt-Stoff. S4 prüft die Entsorgung;
+//      Neubauten deckt S2 — der Peer teilt seine Schlüssel mit stehenden Figuren, ein Neubau-Check hätte hier keinen Biss
+//      (an b19ac994 +0, während S2 Welt +45 / Ich +18 / Hof +13 zeigt)
 //   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
-//      Werkstatt bleiben beschränkt
+//      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher bleiben beschränkt
+//   S6 10 Mitspieler-Erscheinungen und ihr Abschied: das Ofen-Memo hält danach höchstens OFEN_MEMO_RUHEND Vorlagen ohne
+//      Leib, der JS-Speicher fällt zurück
 // Danach DIE TÄTER (jeder Lauf — die Wand beweist sich selbst):
 //   T1 ein Probe-Mesh zeichnet einen Index ≥ seiner Vertex-Zahl → die Index-Wache nennt es („bereich")
 //   T2 ein Mensch-Index wird geweitet wie von einem fremden Backend → die Index-Wache nennt ihn („format") beim Pfad, die
@@ -52,7 +58,9 @@ const BILDER = (() => {
     const i = process.argv.indexOf("--bilder");
     return i >= 0 ? path.resolve(process.argv[i + 1]) : null;
 })();
-const FOLGT_MIN = 0.02; // Anteil bewegter 16×16-Blöcke der Bildmitte, ab dem das Bild der Kamera folgt
+// Anteil bewegter 16×16-Blöcke der Bildmitte, ab dem das Bild der Kamera folgt: eine Drehung bewegt 40–100 %, ein stehendes
+// Bild unter der zeitlichen Kantenglättung zittert bis 1,4 % (Radeon, 08.10.) — die Schwelle liegt dazwischen mit Abstand.
+const FOLGT_MIN = 0.05;
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -214,12 +222,16 @@ function pruefRaum(echt) {
     F.wurzel = scene;
     F.leib = leib;
     F.zeichne = async (n) => {
-        for (let i = 0; i < n; i++) {
-            scene.updateMatrixWorld(true);
-            rend.render(scene, cam);
-        }
+        for (let i = 0; i < n; i++) F.bildSofort();
         await rend.backend.device.queue.onSubmittedWorkDone();
         await new Promise((res) => setTimeout(res, 50));
+    };
+    // ein Bild ohne auf die GPU zu warten: der Knoten-Bau, die Pipeline und das Render-Objekt entstehen synchron im render()
+    // (swiftshader kompiliert synchron); das Warten teilt sich bei offener Bühne den CPU-Raster mit ihr (lokal ~1 s je Bild,
+    // der CI-Runner riss damit das 45-min-Limit)
+    F.bildSofort = () => {
+        scene.updateMatrixWorld(true);
+        rend.render(scene, cam);
     };
     // DAS BILD der Probe-Bühne: die Welt-GPU zeichnet in ein Ziel, das Ziel wird zurückgelesen (256 × 144, RGBA8 — eine Zeile
     // 1 024 B, kein Zeilen-Rand). Der Linux-Runner setzt die WebGPU-Leinwand headless nicht in den Bildschirm-Schuss (CI
@@ -600,8 +612,15 @@ function pruefRaum(echt) {
                 namen: [...new Set(p.namen)].slice(0, 4),
             };
         };
+        // Das Ende eines Frames wie `_loopRender`: der Kehraus (was kein Objekt des Graphen und kein Bild dieses Frames
+        // zeichnet, verlässt die GPU — und mit ihr r184s Speicher-Buchung je Attribut) und die Entsorgungs-Schlange. Echt
+        // zeichnet `_loopRender` selbst; die Kehraus-Uhr wird zurückgesetzt, damit er in diesem Frame läuft.
         E.leeren = async () => {
+            r.state._gpuKehrausT = 0;
             if (echt) return F.zeichne(8);
+            const marke = r._gpuKehrausMarke();
+            await F.zeichne(1);
+            r._gpuKehraus(marke, performance.now());
             const s = Array.from(r.state.pendingDisposals);
             r.state.pendingDisposals.clear();
             await dev.queue.onSubmittedWorkDone();
@@ -611,6 +630,29 @@ function pruefRaum(echt) {
                 } catch (_e) {
                     /* wie `_loopRender` */
                 }
+        };
+        E.bau = (d) => Object.assign({ module: 0, pipelines: 0 }, d && d.__frostBau);
+        // der Welt-Leib wechselt die Seele: echt der Spieler (applyPlayerSoul), headless der Mensch der Probe-Bühne (die alte
+        // Gestalt fällt über `_disposeSoulGroup`, die neue kommt aus demselben Bauer wie der Spieler)
+        F.leibWechsel = async (s) => {
+            if (echt) {
+                E.im("seelen", () => r.applyPlayerSoul(s));
+                return F.zeichne(2);
+            }
+            const alt = F.leib;
+            const vater = alt.parent;
+            vater.remove(alt);
+            E.im("seelen", () => r._disposeSoulGroup(alt));
+            const neu = s === "human" ? r._buildHumanGroup() : r._buildCreatureGroup(s);
+            neu.traverse((o) => {
+                if (o.isMesh) {
+                    o.visible = true;
+                    o.frustumCulled = false;
+                }
+            });
+            vater.add(neu);
+            F.leib = neu;
+            F.bildSofort();
         };
         E.warte = async (holen) => {
             const s0 = holen();
@@ -630,16 +672,23 @@ function pruefRaum(echt) {
             `${b.welt} von ${b.alle} Entsorgungen trafen die Welt (${b.geometrien} Geometrien + ${b.stoffe} Stoffe einzeln): ${b.namen.join(" | ")}`
         );
 
-    // S1/S2 — der Seelenwechsel in Ich- und Hof-Bühne: zwei Durchgänge (Ich: wolf↔human ×3, Hof: 4 Seelen ×2), der erste
-    // wärmt (eine Seele, die die Welt nie zeigte, kompiliert einmal), der zweite misst gegen die geschlossene Bühne.
+    // S1/S2 — der Seelenwechsel: Ich-Bühne UND Welt-Leib wolf↔human ×3 (der Leib wird zwischen den Wechseln gezeichnet —
+    // die Zwischen-Seele lebt ein Bild lang in der Welt), Hof-Bühne 4 Seelen ×2. Zwei Durchgänge: der erste wärmt (jede Seele
+    // kompiliert einmal), der zweite misst die Neubauten JE DEVICE (Welt, Ich-, Hof-Bühne) gegen die geschlossene Bühne.
+    // Befund (fünfte Nachbesserung, Radeon, Spiel-Takt läuft): die Lösung eines Leibs warf den Knoten-Bau, den die nächste
+    // Seele teilte — 10 Wechsel kosteten die Welt +178 Pipelines, die Ich-Bühne +18, den Hof +53; die Probe der vierten
+    // Nachbesserung sah es nicht, ihr Welt-Leib wechselte nie.
     const seelen = await page.evaluate(async (echt) => {
         const r = window.anazhRealm;
         const F = window.__frostWand;
         const E = window.__frostEntsorgung;
-        const dev = r.state.renderer.backend.device;
         let tausch = 0,
             vorgelegt = 0;
+        // die Zeit je Teil (Bühne zeigen und auf ihr Bild warten · Welt-Leib) steht im Bericht: der CI-Runner rastert auf
+        // wenigen Kernen, der Lauf nennt, wo seine Zeit liegt
+        const ms = { buehne: 0, leib: 0 };
         const wechsle = async (holen, zeige) => {
+            const t = performance.now();
             const alt = holen() && holen().pivot;
             E.im("seelen", zeige);
             if (alt && holen().pivot !== alt) {
@@ -647,15 +696,20 @@ function pruefRaum(echt) {
                 alt.traverse((o) => o.geometry && vorgelegt++);
             }
             await E.warte(holen);
+            ms.buehne += performance.now() - t;
         };
         const durchgang = async () => {
             r.toggleInventoryOverlay(true);
             for (let k = 0; k < 3; k++)
-                for (const s of ["wolf", "human"])
+                for (const s of ["wolf", "human"]) {
                     await wechsle(
                         () => r.state.ichStage,
                         () => r._ichStageShow(s)
                     );
+                    const t = performance.now();
+                    await F.leibWechsel(s);
+                    ms.leib += performance.now() - t;
+                }
             r.toggleInventoryOverlay(false);
             r.toggleDrawer("kreaturen");
             for (let k = 0; k < 2; k++)
@@ -668,36 +722,50 @@ function pruefRaum(echt) {
             await E.leeren();
             await F.zeichne(echt ? 8 : 2);
         };
-        const bau = () => Object.assign({ module: 0, pipelines: 0 }, dev.__frostBau);
         await durchgang();
-        const vor = bau();
+        const devs = {
+            welt: r.state.renderer.backend.device,
+            ich: r.state.ichStage && r.state.ichStage.renderer.backend.device,
+            hof: r.state.hofStage && r.state.hofStage.renderer.backend.device,
+        };
+        const alle = () => Object.fromEntries(Object.entries(devs).map(([k, d]) => [k, E.bau(d)]));
+        const vor = alle();
         await F.zeichne(echt ? 8 : 2);
-        const ruhe = bau();
-        const n0 = (dev.__frostNamen || []).length;
+        const ruhe = alle();
+        const n0 = (devs.welt.__frostNamen || []).length;
         await durchgang();
-        const nach = bau();
+        const nach = alle();
+        const neubau = {};
+        for (const k of Object.keys(devs))
+            neubau[k] = {
+                module: nach[k].module - ruhe[k].module - (ruhe[k].module - vor[k].module),
+                pipelines: nach[k].pipelines - ruhe[k].pipelines - (ruhe[k].pipelines - vor[k].pipelines),
+            };
         return {
             ...E.bericht("seelen"),
             tausch,
             vorgelegt,
-            ruhe: { module: ruhe.module - vor.module, pipelines: ruhe.pipelines - vor.pipelines },
-            wechsel: { module: nach.module - ruhe.module, pipelines: nach.pipelines - ruhe.pipelines },
-            neu: (dev.__frostNamen || []).slice(n0, n0 + 8),
+            ms: { buehne: Math.round(ms.buehne), leib: Math.round(ms.leib) },
+            neubau,
+            neu: (devs.welt.__frostNamen || []).slice(n0, n0 + 6),
         };
     }, ECHT);
-    console.log(`\n[seelenwechsel] ${zeit()} · ${JSON.stringify(seelen).slice(0, 400)}`);
-    entsorgtKeineWelt("S1 Seelenwechsel (Ich wolf↔human ×3, Hof 4 Seelen ×2, zwei Durchgänge)", seelen);
-    // nie vakuös: die Bühnen tauschten wirklich ihre Gestalt und legten der Entsorgung Geometrien vor
+    console.log(`\n[seelenwechsel] ${zeit()} · ${JSON.stringify(seelen).slice(0, 500)}`);
+    entsorgtKeineWelt("S1 Seelenwechsel (Ich und Welt-Leib wolf↔human ×3, Hof 4 Seelen ×2, zwei Durchgänge)", seelen);
+    // nie vakuös: die Bühnen und der Leib tauschten wirklich ihre Gestalt und legten der Entsorgung Geometrien vor
     check(
         "S1 die Probe wechselt wirklich (Ich ×6 + Hof ×8 je Durchgang, mit Geometrie)",
         seelen.tausch >= 20 && seelen.vorgelegt > 0,
         `${seelen.tausch} Wechsel, ${seelen.vorgelegt} Geometrien vorgelegt`
     );
-    check(
-        "S2 die Welt-GPU kompiliert beim Seelenwechsel nichts nach (gegen die geschlossene Bühne)",
-        seelen.wechsel.module - seelen.ruhe.module <= 0 && seelen.wechsel.pipelines - seelen.ruhe.pipelines <= 0,
-        `Wechsel +${seelen.wechsel.module} Module / +${seelen.wechsel.pipelines} Pipelines, geschlossen +${seelen.ruhe.module} / +${seelen.ruhe.pipelines}${seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : ""}`
-    );
+    // je Device und gemessenem Durchgang: der Schnitt misst 0/0 (headless und Radeon), der Bruch headless Welt +4, Hof +13
+    const NEUBAU_MAX = 2;
+    for (const [k, n] of Object.entries(seelen.neubau))
+        check(
+            `S2 ${k === "welt" ? "die Welt-GPU" : k === "ich" ? "die Ich-Bühne" : "die Hof-Bühne"} kompiliert beim Seelenwechsel nicht nach (der Knoten-Bau der Zwischen-Seele bleibt)`,
+            n.module <= NEUBAU_MAX && n.pipelines <= NEUBAU_MAX,
+            `+${n.module} Module / +${n.pipelines} Pipelines gegen die geschlossene Bühne (Soll ≤ ${NEUBAU_MAX})${k === "welt" && seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : ""}`
+        );
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
     const feed = await page.evaluate(async () => {
@@ -738,39 +806,82 @@ function pruefRaum(echt) {
         feed.fehlt || `${feed.tausch} Wechsel, ${feed.vorgelegt} Geometrien vorgelegt`
     );
 
-    // S4 — der Mitspieler-Leib: zwei Peer-Güsse „human" nacheinander (der erste geht), dann der Abschied des Peers.
+    // S4 — der Mitspieler-Leib: zwei Peer-Güsse „human" nacheinander (der erste geht), dann ein Peer, der seine Seele
+    // wechselt (human↔wolf ×3, je ein Welt-Bild dazwischen), dann sein Abschied. S4 prüft die ENTSORGUNG (Biss: 0c91ceb7
+    // legte 14 Welt-Objekte hinein). Neubauten deckt S2: der Peer teilt seine Schlüssel mit stehenden Figuren — ein
+    // Neubau-Check maß hier an b19ac994 +0, während S2 rot stand; er fiel (sechste Nachbesserung).
     const peer = await page.evaluate(async (echt) => {
         const r = window.anazhRealm;
         const F = window.__frostWand;
         const E = window.__frostEntsorgung;
+        // headless zeichnet die Welt-GPU nur die Probe-Bühne: der Peer-Leib zieht dorthin um
+        const zeigen = (m) => {
+            if (!m) return;
+            if (!echt) {
+                r.state.scene.remove(m);
+                F.wurzel.add(m);
+            }
+            m.traverse((o) => {
+                if (o.isMesh) o.frustumCulled = false;
+            });
+        };
         const e = { peerId: "frost-peer", soulName: "human" };
         E.im("peer", () => r._p2pApplyPeerSoul(e));
         const erster = e.mesh;
         let vorgelegt = 0;
         if (erster) erster.traverse((o) => o.geometry && vorgelegt++);
+        zeigen(erster);
         await F.zeichne(echt ? 4 : 1);
-        E.im("peer", () => r._p2pApplyPeerSoul(e));
+        const wechsel = async (s) => {
+            const alt = e.mesh;
+            e.soulName = s;
+            E.im("peer", () => r._p2pApplyPeerSoul(e));
+            if (alt && alt.parent) alt.parent.remove(alt);
+            zeigen(e.mesh);
+            await F.zeichne(echt ? 2 : 1);
+        };
+        await wechsel("human");
         const zweiter = e.mesh !== erster && !!erster;
-        await F.zeichne(echt ? 4 : 1);
+        for (let k = 0; k < 3; k++) {
+            await wechsel("wolf");
+            await wechsel("human");
+        }
         if (e.mesh) {
-            r.state.scene.remove(e.mesh);
+            if (e.mesh.parent) e.mesh.parent.remove(e.mesh);
             E.im("peer", () => r._disposeSoulGroup(e.mesh));
         }
         await E.leeren();
         return { ...E.bericht("peer"), zweiter, vorgelegt };
     }, ECHT);
     console.log(`\n[mitspieler] ${zeit()} · ${JSON.stringify(peer).slice(0, 300)}`);
-    entsorgtKeineWelt("S4 Mitspieler-Leib (zweiter Peer-Guss human, Abschied)", peer);
+    entsorgtKeineWelt("S4 Mitspieler-Leib (zweiter Peer-Guss, Seelenwechsel human↔wolf, Abschied)", peer);
     check(
         "S4 die Probe gießt den Peer wirklich zweimal (mit Geometrie)",
         peer.zweiter === true && peer.vorgelegt > 0,
         `zweiter Guss: ${peer.zweiter}, ${peer.vorgelegt} Geometrien vorgelegt`
     );
 
+    // Der JS-Speicher nach erzwungener Sammlung (CDP: HeapProfiler.collectGarbage, Runtime.getHeapUsage) — genau, ohne die
+    // Rundung von performance.memory.
+    const cdp = await page.target().createCDPSession();
+    const heapMB = async () => {
+        for (let i = 0; i < 3; i++) {
+            await cdp.send("HeapProfiler.collectGarbage");
+            await new Promise((res) => setTimeout(res, 150));
+        }
+        const h = await cdp.send("Runtime.getHeapUsage");
+        // der JS-Heap UND die Puffer dahinter (Vertex- und Index-Arrays liegen als ArrayBuffer außerhalb des Heaps)
+        return +(((h.usedSize || 0) + (h.backingStorageSize || 0) + (h.embedderHeapUsedSize || 0)) / 1048576).toFixed(
+            1
+        );
+    };
+
     // S5 — der Werkstatt-Ofen, der Regler-Zug: 20 Werte eines Reglers am Wolf. Jeder Wert ist ein Einzelstück (es gehört dem
-    // Ofen, nie dem Memo); der Ofen entsorgt das vorige beim Wechsel. Grafikspeicher und Geometrie-Zahl der Werkstatt und
-    // das Ofen-Memo bleiben beschränkt — vorher +2 Memo-Einträge und +2,4 MB je Wert.
-    const ofen = await page.evaluate(async () => {
+    // Ofen, nie dem Memo); der Ofen entsorgt das vorige beim Wechsel, mit den Render-Objekten des Werkstatt-Renderers (ihre
+    // Hörer an den geteilten Foundry-Stoffen). Grafikspeicher, Geometrie-Zahl, Ofen-Memo, Stoff-Hörer und JS-Speicher bleiben
+    // beschränkt — vorher +2 Memo-Einträge und +2,4 MB Grafikspeicher je Wert (dritte Nachbesserung), danach +8 Stoff-Hörer
+    // und +3,2–4,7 MB JS je Wert (vierte).
+    const ofenStart = await page.evaluate(async () => {
         const r = window.anazhRealm;
         const E = window.__frostEntsorgung;
         r.toggleDrawer("werkstatt");
@@ -786,29 +897,51 @@ function pruefRaum(echt) {
         const recId = (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[id]) || id;
         const basis = G[recId] || G.wolf;
         const dial = Object.keys(basis).find((k) => typeof basis[k] === "number" && basis[k] > 0.2);
-        const mess = () => {
+        const stoffe = new Set();
+        const O = (window.__frostOfen = { id, dial, basis: basis[dial], stoffe });
+        O.mess = () => {
             const m = ws.preview && ws.preview.renderer ? ws.preview.renderer.info.memory : {};
+            let hoerer = 0;
+            for (const s of stoffe) hoerer += s._listeners && s._listeners.dispose ? s._listeners.dispose.length : 0;
             return {
                 memo: AnazhRealm._tierOfenMemo ? AnazhRealm._tierOfenMemo.size : 0,
                 geometrien: m.geometries || 0,
                 MB: +(((m.attributesSize || 0) + (m.indexAttributesSize || 0)) / 1048576).toFixed(2),
+                stoffe: stoffe.size,
+                hoerer,
             };
         };
-        const zug = async (i) => {
+        O.zug = async (i) => {
             ws.studioOv = ws.studioOv || {};
-            ws.studioOv[id] = { [dial]: +(basis[dial] * (1 + 0.01 * i)).toFixed(4) };
+            ws.studioOv[id] = { [dial]: +(O.basis * (1 + 0.01 * i)).toFixed(4) };
             E.im("ofen", () => r._workshopRebuildPreviewMesh());
             await E.warte(holen);
+            if (ws.preview && ws.preview.currentMesh)
+                ws.preview.currentMesh.traverse((o) => {
+                    if (o.material) [].concat(o.material).forEach((s) => stoffe.add(s));
+                });
             await E.leeren();
         };
-        for (let i = 0; i <= 2; i++) await zug(i);
-        const vor = mess();
-        for (let i = 3; i <= 20; i++) await zug(i);
-        const nach = mess();
-        r.closeAllDrawers();
-        return { ...E.bericht("ofen"), id, dial, vor, nach };
+        for (let i = 0; i <= 2; i++) await O.zug(i);
+        return { id, dial, vor: O.mess() };
     });
-    console.log(`\n[werkstatt-ofen] ${zeit()} · ${JSON.stringify(ofen).slice(0, 400)}`);
+    let ofen = ofenStart;
+    if (!ofen.fehlt) {
+        const heapVor = await heapMB();
+        const nach = await page.evaluate(async () => {
+            const O = window.__frostOfen;
+            for (let i = 3; i <= 20; i++) await O.zug(i);
+            await window.__frostEntsorgung.leeren();
+            return O.mess();
+        });
+        const heapNach = await heapMB();
+        const bericht = await page.evaluate(() => {
+            window.anazhRealm.closeAllDrawers();
+            return window.__frostEntsorgung.bericht("ofen");
+        });
+        ofen = { ...bericht, ...ofenStart, nach, heapVor, heapNach };
+    }
+    console.log(`\n[werkstatt-ofen] ${zeit()} · ${JSON.stringify(ofen).slice(0, 500)}`);
     if (ofen.fehlt) check("S5 Werkstatt-Ofen: ein Kreatur-Rezept trägt den Regler-Zug", false, ofen.fehlt);
     else {
         entsorgtKeineWelt(`S5 Werkstatt-Ofen (Regler-Zug ${ofen.id}.${ofen.dial}, 20 Werte)`, ofen);
@@ -822,7 +955,71 @@ function pruefRaum(echt) {
             ofen.nach.geometrien <= ofen.vor.geometrien && ofen.nach.MB <= ofen.vor.MB + 0.5,
             `Geometrien ${ofen.vor.geometrien} → ${ofen.nach.geometrien}, Geometrie-Speicher ${ofen.vor.MB} → ${ofen.nach.MB} MB über 18 Werte`
         );
+        check(
+            "S5 die geteilten Stoffe sammeln keine Hörer (die Render-Objekte des Einzelstücks lösen sich)",
+            ofen.nach.hoerer <= ofen.vor.hoerer,
+            `${ofen.nach.stoffe} Stoffe, dispose-Hörer ${ofen.vor.hoerer} → ${ofen.nach.hoerer} über 18 Werte`
+        );
+        check(
+            "S5 der JS-Speicher bleibt beschränkt",
+            ofen.heapNach - ofen.heapVor <= 10,
+            `${ofen.heapVor} → ${ofen.heapNach} MB über 18 Werte (Soll ≤ +10 MB)`
+        );
     }
+
+    // S6 — die Mitspieler-Erscheinungen: 10 Peers „human" mit je eigener Übergabe (height), jeder ein eigener Ofen-Guss (zwei
+    // Vorlagen), dann ihr Abschied. Eine Vorlage ohne lebenden Leib fällt (die Grenze des Ofen-Memos, `_ofenVorlage`) — vorher
+    // +2 Einträge und ~9,6 MB JS je Erscheinung, nie freigegeben.
+    const peersVor = await page.evaluate(async () => ({
+        memo: AnazhRealm._tierOfenMemo ? AnazhRealm._tierOfenMemo.size : 0,
+        ruhend: AnazhRealm.OFEN_MEMO_RUHEND || 0,
+    }));
+    const heapPeersVor = await heapMB();
+    const peers = await page.evaluate(async (echt) => {
+        const r = window.anazhRealm;
+        const F = window.__frostWand;
+        const E = window.__frostEntsorgung;
+        const leiber = [];
+        let spitze = 0;
+        for (let i = 1; i <= 10; i++) {
+            const e = {
+                peerId: "frost-erscheinung-" + i,
+                soulName: "human",
+                uebergabe: { s: { height: +(1 + 0.04 * i).toFixed(3) } },
+            };
+            E.im("peers", () => r._p2pApplyPeerSoul(e));
+            if (e.mesh) leiber.push(e.mesh);
+            await F.zeichne(echt ? 2 : 1);
+            spitze = Math.max(spitze, AnazhRealm._tierOfenMemo.size);
+        }
+        for (const m of leiber) {
+            r.state.scene.remove(m);
+            E.im("peers", () => r._disposeSoulGroup(m));
+        }
+        await E.leeren();
+        return { ...E.bericht("peers"), leiber: leiber.length, spitze, memo: AnazhRealm._tierOfenMemo.size };
+    }, ECHT);
+    const heapPeersNach = await heapMB();
+    console.log(
+        `\n[mitspieler-erscheinungen] ${zeit()} · ${JSON.stringify({ ...peers, memoVor: peersVor.memo, heapPeersVor, heapPeersNach }).slice(0, 400)}`
+    );
+    entsorgtKeineWelt("S6 Mitspieler-Erscheinungen (10 Peers human, Abschied)", peers);
+    check(
+        "S6 die Probe gießt zehn Erscheinungen (jede ihre Vorlagen)",
+        peers.leiber === 10 && peers.spitze >= peersVor.memo + 10,
+        `${peers.leiber} Leiber, Memo-Spitze ${peers.spitze} (vor ${peersVor.memo})`
+    );
+    check(
+        "S6 das Ofen-Memo ist begrenzt: nach dem Abschied bleiben höchstens OFEN_MEMO_RUHEND Vorlagen ohne Leib",
+        peers.memo <= peersVor.memo + peersVor.ruhend,
+        `Memo ${peersVor.memo} → Spitze ${peers.spitze} → ${peers.memo} (Grenze +${peersVor.ruhend})`
+    );
+    check(
+        "S6 der JS-Speicher fällt mit dem Abschied zurück",
+        heapPeersNach - heapPeersVor <= 20,
+        `${heapPeersVor} → ${heapPeersNach} MB nach 10 Erscheinungen und Abschied (Soll ≤ +20 MB)`
+    );
+
     await page.evaluate(() => {
         const r = window.anazhRealm;
         const F = window.__frostWand;

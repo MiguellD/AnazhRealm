@@ -1174,29 +1174,185 @@ function scanInstanzWand(srcRoh) {
     return errs;
 }
 
-// DIE ENTSORGUNGS-WAND (Frost-Nachbesserung 08.10.): eine Gruppe, die Welt-Vorlagen teilen kann (Bühnen, Mitspieler,
-// Ofen-Güsse), entsorgt nur über DIE EINE Regel `_disposeSoulGroup` (geteilte Geometrie nie, Stoffe nie). Befund: vier
-// Bühnen und der Mitspieler-Leib trugen je eine eigene Schleife, die die Geteilt-Markierung überging — 3 Seelenwechsel
-// legten den Kopf des Spieler-Leibs und die Haut in die Entsorgung, die Welt kompilierte neu. Rot ist jede Methode, die in
-// einer `.traverse(`-Wanderung Geometrie oder Stoff entsorgt, außer der Regel selbst und der Bauplan-Vorschau
-// (`_workshopRebuildPreviewMesh`: nur ihre eigenen Teile, die geteilten stehen, die Gestalt des Ofens rührt sie nie an).
-const ENTSORGUNG_ERLAUBT = ["_disposeSoulGroup", "_workshopRebuildPreviewMesh"];
-const ENTSORGUNG =
-    /(?:_queueDispose|_queueGeometryDispose)\(\s*[\w$]+\.(?:geometry|material)\b|\.(?:geometry|material)\.dispose\(\)/;
-function scanEntsorgungsWand(srcRoh) {
-    const code = stripComments(srcRoh);
+// DIE ENTSORGUNGS-WAND (Frost-Nachbesserung 08.10., AST seit der vierten Nachbesserung): wer Geometrie oder Stoff eines
+// Objekts entsorgt, muss ihr BESITZER sein. Befund: vier Bühnen und der Mitspieler-Leib trugen je eine eigene Schleife, die
+// die Geteilt-Markierung überging — 3 Seelenwechsel legten den Kopf des Spieler-Leibs und die Haut in die Entsorgung; die
+// Text-Wand der dritten Nachbesserung sah nur `.traverse(` + direktes `x.geometry` und verfehlte Kind-Schleifen
+// (`for…of`, `children.forEach`), Zwischen-Variablen (`const g = o.geometry; g.dispose()`) und reine Stoff-Schleifen
+// (`o.material.forEach((m) => m.dispose())`). Jetzt liest acorn den Stamm: jede Entsorgung (`.dispose()` oder
+// `_queueDispose`/`_queueGeometryDispose`), deren Ziel aus `.geometry` oder `.material` eines Objekts stammt (direkt, über
+// eine Variable, ein Schleifen- oder Rückruf-Element), steht in ihrer Methode — und die Methode in der Besitzer-Liste mit
+// genau dieser Art. Rot ist jede Entsorgung außerhalb der Liste und jede tote Zeile der Liste (der Besitzer entsorgt die
+// Art nicht mehr). Gruppen mit Welt-Vorlagen entsorgen über `_disposeSoulGroup`; die übrigen Zeilen sind die Besitzer
+// eigener frischer Objekte.
+const ENTSORGUNG_BESITZER = {
+    _disposeSoulGroup: {
+        arten: ["geometry"],
+        grund: "die EINE Regel jeder Gruppe mit Welt-Vorlagen (geteilte Geometrie nie, Stoffe nie)",
+    },
+    _workshopRebuildPreviewMesh: {
+        arten: ["geometry", "material"],
+        grund: "die Bauplan-Vorschau: nur ihre eigenen Teile (geteilte stehen, die Gestalt des Ofens rührt sie nie an)",
+    },
+    _ofenMemoRaeumen: {
+        arten: ["geometry"],
+        grund: "das Ofen-Memo: eine Vorlage ohne lebenden Leib fällt (das Memo ist ihr Eigentümer)",
+    },
+    _disposeFoundryGroupGeom: {
+        arten: ["geometry"],
+        grund: "der Foundry-Cache: eine geräumte Quell-Gruppe ohne lebende Referenz",
+    },
+    _p2pRefreshPeerNameLabel: { arten: ["material"], grund: "das Namensschild des Peers (Sprite-Stoff je Schild)" },
+    _p2pRemovePeer: { arten: ["material"], grund: "das Namensschild des Peers beim Abschied" },
+    createGalaxySkybox: { arten: ["geometry", "material"], grund: "die Himmels-Kugel (je Bau frisch)" },
+    _canopyDisposeChunkByKey: { arten: ["geometry", "material"], grund: "die Kronen-Kachel (je Kachel frisch)" },
+    removeCreature: { arten: ["material"], grund: "Aufgaben-Aura und Trage-Sprite der Kreatur (je Kreatur frisch)" },
+    _refreshCreatureTaskAura: { arten: ["material"], grund: "die Aufgaben-Aura (je Aufgabe frisch)" },
+    _refreshCreatureCarryingVisual: { arten: ["material"], grund: "das Trage-Sprite (je Last frisch)" },
+    _spawnVoxelTestChunk: { arten: ["geometry", "material"], grund: "der Test-Chunk" },
+    _disposeVoxelChunkWaterIso: { arten: ["geometry"], grund: "das Wasser-Iso-Mesh des Chunks" },
+    _rebuildLodStitchBand: { arten: ["geometry"], grund: "das LOD-Naht-Band des Chunks" },
+    _disposeVoxelChunk: {
+        arten: ["geometry"],
+        grund: "Chunk-Mesh und Naht-Band (der Stoff ist das geteilte Singleton und bleibt)",
+    },
+    _disposeHydrosphereMeshes: { arten: ["geometry"], grund: "die Hydrosphären-Meshes" },
+    _ensureFarWaterSheet: { arten: ["geometry"], grund: "das Fern-Wasser-Blatt beim Neubau" },
+    _disposeFarWaterSheet: { arten: ["geometry"], grund: "das Fern-Wasser-Blatt" },
+    _feldPassDispose: { arten: ["geometry", "material"], grund: "der Feld-Pass (Quad und Stoff)" },
+    _fernRingDispose: { arten: ["geometry", "material"], grund: "der Fern-Ring" },
+    verifyComputeContribution: { arten: ["geometry", "material"], grund: "das Prüf-Mesh der Compute-Probe" },
+    _tickPortalMembranes: {
+        arten: ["material"],
+        grund: "Membran- und Nebel-Stoff je Tor (die Geometrie gehört dem Memo je Gestalt)",
+    },
+};
+// Die Entsorgungen des Stamms beim Namen: [{ methode, art: "geometry" | "material", zeile, text }].
+function entsorgungen(srcRoh) {
+    const acorn = require("acorn");
+    const ast = acorn.parse(srcRoh, { ecmaVersion: "latest", sourceType: "script", locations: true });
+    const kinder = (n, f) => {
+        for (const k in n) {
+            if (k === "loc") continue;
+            const v = n[k];
+            if (Array.isArray(v)) {
+                for (const c of v) if (c && typeof c.type === "string") f(c);
+            } else if (v && typeof v.type === "string") f(v);
+        }
+    };
+    const ueberall = (n, f) => {
+        f(n);
+        kinder(n, (c) => ueberall(c, f));
+    };
+    const traeger = (n) =>
+        n &&
+        n.type === "MemberExpression" &&
+        !n.computed &&
+        n.property &&
+        (n.property.name === "geometry" || n.property.name === "material")
+            ? n.property.name
+            : null;
+    const artVon = (e, bind) => {
+        if (!e) return null;
+        if (e.type === "Identifier") return bind.get(e.name) || (/Memo$/.test(e.name) ? "memo" : null);
+        // ein Memo-Eintrag (`this._xMemo.get(k)`, ein Element von `memo.values()`): er gehört dem Memo, nie dem Leser
+        if (e.type === "MemberExpression")
+            return (
+                traeger(e) ||
+                artVon(e.object, bind) ||
+                (!e.computed && e.property && /Memo$/.test(e.property.name) ? "memo" : null)
+            );
+        if (e.type === "ConditionalExpression") return artVon(e.consequent, bind) || artVon(e.alternate, bind);
+        if (e.type === "LogicalExpression") return artVon(e.left, bind) || artVon(e.right, bind);
+        if (e.type === "ArrayExpression") {
+            for (const el of e.elements) {
+                const a = artVon(el && el.type === "SpreadElement" ? el.argument : el, bind);
+                if (a) return a;
+            }
+            return null;
+        }
+        if (e.type === "CallExpression" && e.callee.type === "MemberExpression") {
+            const a = artVon(e.callee.object, bind);
+            if (a) return a;
+            for (const x of e.arguments) {
+                const b = artVon(x, bind);
+                if (b) return b;
+            }
+        }
+        return null;
+    };
+    const funde = [];
+    const pruefe = (methode, fn) => {
+        const bind = new Map();
+        for (let runde = 0; runde < 3; runde++)
+            ueberall(fn.body, (n) => {
+                const setze = (id, a) => {
+                    if (id && id.type === "Identifier" && a) bind.set(id.name, a);
+                };
+                if (n.type === "VariableDeclarator") setze(n.id, artVon(n.init, bind));
+                if (n.type === "AssignmentExpression") setze(n.left, artVon(n.right, bind));
+                if (n.type === "ForOfStatement" || n.type === "ForInStatement")
+                    setze(
+                        n.left.type === "VariableDeclaration" ? n.left.declarations[0].id : n.left,
+                        artVon(n.right, bind)
+                    );
+                if (
+                    n.type === "CallExpression" &&
+                    n.callee.type === "MemberExpression" &&
+                    ["forEach", "map", "filter", "some", "every"].includes(n.callee.property.name) &&
+                    n.arguments[0] &&
+                    /Function/.test(n.arguments[0].type)
+                )
+                    setze(n.arguments[0].params[0], artVon(n.callee.object, bind));
+            });
+        ueberall(fn.body, (n) => {
+            if (n.type !== "CallExpression" || n.callee.type !== "MemberExpression") return;
+            const p = n.callee.property && n.callee.property.name;
+            let art = null;
+            if (p === "dispose" && n.arguments.length === 0) art = artVon(n.callee.object, bind);
+            else if ((p === "_queueDispose" || p === "_queueGeometryDispose") && n.arguments[0])
+                art = artVon(n.arguments[0], bind);
+            if (art)
+                funde.push({ methode, art, zeile: n.loc.start.line, text: srcRoh.slice(n.start, n.end).slice(0, 90) });
+        });
+    };
+    const besuche = (n) => {
+        if (n.type === "MethodDefinition") return pruefe(n.key.name || n.key.value, n.value);
+        if (n.type === "FunctionDeclaration" && n.id) return pruefe(n.id.name, n);
+        // Feld- und Objekt-Methoden (`build: () => …`, `x = () => …`) tragen den Namen ihres Schlüssels
+        if ((n.type === "Property" || n.type === "PropertyDefinition") && n.value && /Function/.test(n.value.type))
+            return pruefe(n.key.name || n.key.value || "?", n.value);
+        if (
+            n.type === "AssignmentExpression" &&
+            n.left.type === "MemberExpression" &&
+            n.right &&
+            /Function/.test(n.right.type)
+        )
+            return pruefe(n.left.property.name, n.right);
+        kinder(n, besuche);
+    };
+    besuche(ast);
+    return funde;
+}
+function scanEntsorgungsWand(srcRoh, besitzer = ENTSORGUNG_BESITZER) {
     const errs = [];
-    const kopfRe = /\n {4}(?:static |async )?([_a-zA-Z$][\w$]*)\([^)\n]*\)\s*\{\n/g;
-    const koepfe = [...code.matchAll(kopfRe)];
-    for (let i = 0; i < koepfe.length; i++) {
-        const name = koepfe[i][1];
-        const rumpf = code.slice(koepfe[i].index, i + 1 < koepfe.length ? koepfe[i + 1].index : code.length);
-        if (rumpf.indexOf(".traverse(") < 0 || !ENTSORGUNG.test(rumpf) || ENTSORGUNG_ERLAUBT.includes(name)) continue;
+    const funde = entsorgungen(srcRoh);
+    const deutsch = { geometry: "Geometrie", material: "Stoff", memo: "Memo-Eintrag" };
+    for (const f of funde) {
+        const b = besitzer[f.methode];
+        if (b && b.arten.includes(f.art)) continue;
         errs.push(
-            `Entsorgungs-Wand: anazhRealm.js:${code.slice(0, koepfe[i].index).split("\n").length + 1} \`${name}\` entsorgt ` +
-                `in einer eigenen Wanderung (traverse) — Gruppen mit Welt-Vorlagen entsorgen über \`_disposeSoulGroup\``
+            `Entsorgungs-Wand: anazhRealm.js:${f.zeile} \`${f.methode}\` entsorgt ${deutsch[f.art]} (\`${f.text}\`) — nicht ihr Besitz: ` +
+                `Gruppen mit Welt-Vorlagen entsorgen über \`_disposeSoulGroup\`, eigene frische Objekte ` +
+                `nur ihr Besitzer (ENTSORGUNG_BESITZER)`
         );
     }
+    for (const [m, b] of Object.entries(besitzer))
+        for (const a of b.arten)
+            if (!funde.some((f) => f.methode === m && f.art === a))
+                errs.push(
+                    `Entsorgungs-Wand: tote Zeile der Besitzer-Liste — \`${m}\` entsorgt keine ${deutsch[a]} mehr`
+                );
     return errs;
 }
 
@@ -1372,40 +1528,98 @@ function main() {
             console.log("❌ SELBST-TEST: die Instanz-Wand feuert nicht (oder steht heute rot)");
             process.exit(1);
         }
-        // Die Entsorgungs-Wand muss feuern: die alte Schleife der Ich-Bühne kehrt zurück (Stoff und Geometrie in eigener
-        // Wanderung) — rot beim Namen; ein Kommentar darf sie erzählen.
-        const alteSchleife =
-            "            stage.pivot.traverse((obj) => {\n" +
-            "                if (obj.geometry) this._queueDispose(obj.geometry);\n" +
-            "                if (obj.material) this._queueDispose(obj.material);\n" +
-            "            });\n";
+        // Die Entsorgungs-Wand muss feuern — je Form ein Täter, jeder beim Namen (und ein Kommentar darf sie erzählen):
+        //   A die alte Ich-Schleife (traverse) · B Kind-Schleife for…of mit direktem geometry.dispose() · C children.forEach ·
+        //   D Zwischen-Variable · E reine Stoff-Schleife material.forEach · F for…of über die Stoff-Liste · G der Regel-
+        //   Besitzer entsorgt einen Stoff (Stoffe nie) · H eine tote Zeile der Besitzer-Liste
         const ichNeu = "            this._disposeSoulGroup(stage.pivot);\n            stage.pivot = null;";
-        const ichAlt = stamm.replace(
-            "    _ichStageShow(soul) {",
-            "    _ichStageShow(soul) {\n        // früher: obj.geometry.dispose() in jeder Bühne"
-        );
-        const iIch = ichAlt.indexOf("    _ichStageShow(soul) {");
-        const jIch = iIch < 0 ? -1 : ichAlt.indexOf(ichNeu, iIch);
-        const entsorgungAlt =
+        const iIch = stamm.indexOf("    _ichStageShow(soul) {");
+        const jIch = iIch < 0 ? -1 : stamm.indexOf(ichNeu, iIch);
+        const formA =
             jIch < 0
-                ? []
-                : scanEntsorgungsWand(
-                      ichAlt.slice(0, jIch) +
-                          alteSchleife +
-                          "            stage.pivot = null;" +
-                          ichAlt.slice(jIch + ichNeu.length)
-                  );
-        const entsorgungFeuert =
-            scanEntsorgungsWand(stamm).length === 0 &&
-            scanEntsorgungsWand(ichAlt).length === 0 &&
-            stamm.includes(ichNeu) &&
-            entsorgungAlt.length === 1 &&
-            /`_ichStageShow`/.test(entsorgungAlt[0]);
-        if (!entsorgungFeuert) {
-            console.log("❌ SELBST-TEST: die Entsorgungs-Wand feuert nicht (oder steht heute rot)", entsorgungAlt);
+                ? null
+                : stamm.slice(0, jIch) +
+                  "            stage.pivot.traverse((obj) => {\n" +
+                  "                if (obj.geometry) this._queueDispose(obj.geometry);\n" +
+                  "                if (obj.material) this._queueDispose(obj.material);\n" +
+                  "            });\n            stage.pivot = null;" +
+                  stamm.slice(jIch + ichNeu.length);
+        const taeter = (name, rumpf) =>
+            stamm.replace(
+                "class AnazhRealm {\n",
+                `class AnazhRealm {\n    // früher: o.geometry.dispose() in jeder Bühne\n    ${name}(o) {\n${rumpf}\n    }\n`
+            );
+        const regelAnker =
+            "            if (node.geometry && !(node.userData && node.userData.sharedGeom)) this._queueDispose(node.geometry);";
+        const formen = [
+            ["A", formA, /`_ichStageShow` entsorgt/],
+            [
+                "B",
+                taeter("_frostFormB", "        for (const c of o.children) c.geometry.dispose();"),
+                /`_frostFormB` entsorgt Geometrie/,
+            ],
+            [
+                "C",
+                taeter("_frostFormC", "        o.children.forEach((c) => this._queueDispose(c.geometry));"),
+                /`_frostFormC` entsorgt Geometrie/,
+            ],
+            [
+                "D",
+                taeter("_frostFormD", "        const g = o.geometry;\n        g.dispose();"),
+                /`_frostFormD` entsorgt Geometrie/,
+            ],
+            [
+                "E",
+                taeter("_frostFormE", "        o.material.forEach((m) => m.dispose());"),
+                /`_frostFormE` entsorgt Stoff/,
+            ],
+            [
+                "F",
+                taeter(
+                    "_frostFormF",
+                    "        const ms = Array.isArray(o.material) ? o.material : [o.material];\n        for (const m of ms) m.dispose();"
+                ),
+                /`_frostFormF` entsorgt Stoff/,
+            ],
+            [
+                "G",
+                stamm.includes(regelAnker)
+                    ? stamm.replace(
+                          regelAnker,
+                          regelAnker + "\n            if (node.material) this._queueDispose(node.material);"
+                      )
+                    : null,
+                /`_disposeSoulGroup` entsorgt Stoff/,
+            ],
+            // I ein Memo-Eintrag, direkt entsorgt (die Membran-Geometrie gehört allen Toren ihrer Gestalt)
+            [
+                "I",
+                taeter("_frostFormI", "        this._membranGeoMemo.get(o).dispose();"),
+                /`_frostFormI` entsorgt Memo-Eintrag/,
+            ],
+        ];
+        const entsorgungHeil = scanEntsorgungsWand(stamm);
+        const formFeuert = formen.map(([id, src, muster]) => {
+            const e = src ? scanEntsorgungsWand(src) : [];
+            // jede Meldung nennt den Täter (A entsorgt Geometrie UND Stoff: zwei Meldungen, beide beim Namen)
+            return { id, ok: e.length >= 1 && e.every((x) => muster.test(x)), e };
+        });
+        const tot = scanEntsorgungsWand(
+            stamm,
+            Object.assign({}, ENTSORGUNG_BESITZER, { _gibtEsNicht: { arten: ["geometry"], grund: "Selbsttest" } })
+        );
+        const totFeuert = tot.length === 1 && /tote Zeile .*`_gibtEsNicht`/.test(tot[0]);
+        if (entsorgungHeil.length || formFeuert.some((f) => !f.ok) || !totFeuert) {
+            console.log("❌ SELBST-TEST: die Entsorgungs-Wand feuert nicht je Form (oder steht heute rot)", {
+                heute: entsorgungHeil,
+                formen: formFeuert.filter((f) => !f.ok),
+                tot,
+            });
             process.exit(1);
         }
-        console.log(`✅ SELBST-TEST: die Entsorgungs-Wand feuert (${entsorgungAlt[0]})`);
+        console.log(
+            `✅ SELBST-TEST: die Entsorgungs-Wand feuert je Form (A traverse · B for…of · C children.forEach · D Zwischen-Variable · E Stoff-forEach · F Stoff-for…of · G Stoff in der Regel · H tote Zeile · I Memo-Eintrag), heute 0 — ${formFeuert[1].e[0]}`
+        );
         // Die Karten-Wand muss feuern: ein Canvas im Schicht-Schreiber.
         const kartenFeuert =
             scanKartenWand(stamm).length === 0 &&

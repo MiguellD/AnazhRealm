@@ -17009,6 +17009,8 @@ class AnazhRealm {
             wrap.add(fernKlon);
             wrap.userData._menschFern = { nah: klon, fern: fernKlon };
         }
+        // der Leib meldet sich bei seinen Vorlagen an (die Grenze des Ofen-Memos, `_ofenVorlage`)
+        this._ofenVorlagenBinden(wrap, [t0, t1]);
         const P2 = (n2) => teile[n2] || null;
         const rig = {
             hips: teile.mensch,
@@ -17769,17 +17771,64 @@ class AnazhRealm {
     // 20 Regler-Werte): jeder Wert legte zwei Einzelstücke für immer ins Memo, als geteilt markiert — der Grafikspeicher
     // der Werkstatt wuchs 2,4 → 50,1 MB, ihre Geometrien 11 → 171. Trifft ein eigener Guss eine Vorlage im Memo (dieselben
     // Dials), zeigt er die Vorlage — geteilt, wie sie ist.
-    _ofenVorlage(key, eigen, giessen) {
+    // DIE GRENZE (Frost-Nachbesserung 4): das Memo wuchs mit jeder neuen Mitspieler-Erscheinung um zwei Vorlagen (~9,6 MB
+    // JS) und gab nie frei. Jede Vorlage zählt ihre lebenden Leiber (`_ofenVorlagenBinden` beim Klonen, die Rückgabe in
+    // `_disposeSoulGroup`); `fest` hält die Gattungs- und Spieler-Vorlagen des Prefetch (Off-Thread gebacken — ein Neuguss
+    // wäre ein Haupt-Thread-Guss); von den übrigen hält das Memo höchstens OFEN_MEMO_RUHEND ohne Leib, die älteste fällt.
+    _ofenVorlage(key, eigen, giessen, fest) {
         const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
-        if (memo.has(key)) return memo.get(key);
+        const takt = (AnazhRealm._ofenTakt = (AnazhRealm._ofenTakt || 0) + 1);
+        const da = memo.get(key);
+        if (da) {
+            if (da.__ofen) {
+                da.__ofen.zuletzt = takt;
+                if (fest === true) da.__ofen.fest = true;
+            }
+            return da;
+        }
         const asm = giessen();
         if (!asm) return null;
         if (eigen === true)
             asm.root.traverse((n) => {
                 if (n.userData && n.userData.sharedGeom) delete n.userData.sharedGeom;
             });
-        else memo.set(key, asm);
+        else {
+            asm.__ofen = { key, nutzer: 0, fest: fest === true, zuletzt: takt };
+            memo.set(key, asm);
+            this._ofenMemoRaeumen();
+        }
         return asm;
+    }
+    static get OFEN_MEMO_RUHEND() {
+        return 2;
+    }
+    // Ein Leib aus Ofen-Vorlagen (Kreatur, Mensch) meldet sich bei jeder an; `_disposeSoulGroup` gibt sie zurück. Ein
+    // eigener Guss (`eigen`) steht nicht im Memo und zählt nicht.
+    _ofenVorlagenBinden(leib, vorlagen) {
+        const liste = vorlagen.filter((v) => v && v.__ofen);
+        for (const v of liste) v.__ofen.nutzer++;
+        if (liste.length) leib.__ofenVorlagen = (leib.__ofenVorlagen || []).concat(liste);
+    }
+    _ofenVorlageLoesen(v) {
+        if (!v || !v.__ofen) return;
+        v.__ofen.nutzer = Math.max(0, v.__ofen.nutzer - 1);
+        if (v.__ofen.nutzer === 0) this._ofenMemoRaeumen();
+    }
+    // Die Räumung: Vorlagen ohne lebenden Leib und ohne `fest`, über OFEN_MEMO_RUHEND hinaus, fallen — die älteste zuerst —
+    // und ihre Geometrie wird entsorgt (das Memo ist ihr Eigentümer; Stoffe gehören den Klassen-Caches und bleiben).
+    _ofenMemoRaeumen() {
+        const memo = AnazhRealm._tierOfenMemo;
+        if (!memo) return;
+        const ruhend = [];
+        for (const v of memo.values()) if (v.__ofen && !v.__ofen.fest && v.__ofen.nutzer === 0) ruhend.push(v);
+        if (ruhend.length <= AnazhRealm.OFEN_MEMO_RUHEND) return;
+        ruhend.sort((a, b) => a.__ofen.zuletzt - b.__ofen.zuletzt);
+        for (const v of ruhend.slice(0, ruhend.length - AnazhRealm.OFEN_MEMO_RUHEND)) {
+            memo.delete(v.__ofen.key);
+            v.root.traverse((n) => {
+                if (n.geometry) this._queueDispose(n.geometry);
+            });
+        }
     }
     // DAS BUDGET-GESETZ im Sync-Guss (W8): der Haupt-Thread-Guss verlässt das Studio an DERSELBEN Stelle wie die
     // Worker-Antwort (`__replyBuildAsset`) — phyto-core `budgetErzwingen` auf der Zeile des Kerns (seine
@@ -17946,7 +17995,11 @@ class AnazhRealm {
             for (const lodM of [0, 1]) {
                 if (fM.skin === null || fM.hair === null) break; // Kern kalt → der Guss schreit ohnehin
                 const keyM = this._ofenMenschKey(dM, fM.skin, fM.hair, lodM);
-                if (memo.has(keyM)) continue;
+                // die Spieler-Vorlage ist fest (`_ofenVorlage`) — auch wenn ein Sync-Guss sie schon legte
+                if (memo.has(keyM)) {
+                    this._ofenVorlage(keyM, false, () => null, true);
+                    continue;
+                }
                 this._foundryRequest("mensch", 0, lodM, {
                     dials: dM,
                     skinColor: fM.skin,
@@ -17959,9 +18012,7 @@ class AnazhRealm {
                             this.log(`OFEN-PREFETCH LEER: mensch lod${lodM} (Buch kalt/Timeout)`, "WARN");
                         return;
                     }
-                    if (memo.has(keyM)) return;
-                    const asm = this._ofenAssembleAsset(meshes);
-                    if (asm) memo.set(keyM, asm);
+                    this._ofenVorlage(keyM, false, () => this._ofenAssembleAsset(meshes), true);
                 });
             }
         }
@@ -17973,16 +18024,17 @@ class AnazhRealm {
             if (!d) continue;
             for (const lod of [0, 1]) {
                 const key = this._ofenKreaturKey(recId, d.dials, lod);
-                if (memo.has(key)) continue;
+                if (memo.has(key)) {
+                    this._ofenVorlage(key, false, () => null, true);
+                    continue;
+                }
                 this._foundryRequest(recId, 0, lod, d.istDefault ? null : d.dials).then((meshes) => {
                     if (!meshes || !meshes.length) {
                         if (!memo.has(key))
                             this.log(`OFEN-PREFETCH LEER: ${recId} lod${lod} (Buch kalt/Timeout)`, "WARN");
                         return;
                     }
-                    if (memo.has(key)) return;
-                    const asm = this._ofenAssembleAsset(meshes);
-                    if (asm) memo.set(key, asm);
+                    this._ofenVorlage(key, false, () => this._ofenAssembleAsset(meshes), true);
                 });
             }
         }
@@ -18374,6 +18426,8 @@ class AnazhRealm {
                 wrap3.userData._creatureSkin = true;
                 group2.add(wrap3);
             }
+            // der Leib meldet sich bei seinen Vorlagen an (die Grenze des Ofen-Memos, `_ofenVorlage`)
+            this._ofenVorlagenBinden(group2, [t0, t1]);
             group2.userData._soulParts = parts2;
             group2.userData._tierBaum = {
                 teile,
@@ -51178,19 +51232,18 @@ class AnazhRealm {
             }
             for (const [id, rec] of reg) {
                 if (!seen.has(id)) {
-                    // Nur ein WIRKLICH gefallener Eintrag räumt — mit GANZER Hülle
-                    // (das Material trägt den topTex-dispose-Listener; die Geometrie
-                    // gehört ebenso dazu).
+                    // Nur ein WIRKLICH gefallener Eintrag räumt — mit seinem Stoff (er trägt den topTex-dispose-
+                    // Listener und gehört dem Tor). Die Geometrie gehört dem Memo je Gestalt (`_membranGeometryFor`,
+                    // `_nebelGeometryFor`) und allen Toren dieser Gestalt — sie bleibt (Frost-Nachbesserung 4: die
+                    // Entsorgungs-Wand nannte sie, ein Tor außer Sicht entsorgte die Geometrie seiner Geschwister).
                     if (rec.mesh) {
                         st.scene.remove(rec.mesh);
                         if (rec.mesh.material) rec.mesh.material.dispose();
-                        if (rec.mesh.geometry) rec.mesh.geometry.dispose();
                     }
-                    // PORTA-NEBEL — der Kasten fällt mit seinem Tor (dieselbe Hülle).
+                    // PORTA-NEBEL — der Kasten fällt mit seinem Tor (derselbe Schnitt).
                     if (rec.nebel) {
                         st.scene.remove(rec.nebel);
                         if (rec.nebel.material) rec.nebel.material.dispose();
-                        if (rec.nebel.geometry) rec.nebel.geometry.dispose();
                     }
                     reg.delete(id);
                 }
@@ -52159,6 +52212,14 @@ class AnazhRealm {
                 node.userData.foundrySrcGroup = null;
                 src._liveRefs = Math.max(0, (src._liveRefs || 0) - 1);
                 if (src._evicted && !(src._liveRefs > 0)) this._disposeFoundryGroupGeom(src);
+            }
+            // Die Render-Objekte des Leibs lösen sich in jedem Renderer, der ihn zeichnete (die Hörer an geteilten
+            // Stoffen) — nach dem nächsten Submit, mit der Geometrie (`_renderObjekteLoesen`).
+            if (node.__renderObjekte) this._queueDispose({ dispose: () => AnazhRealm._renderObjekteLoesen(node) });
+            // Der Leib gibt seine Ofen-Vorlagen zurück (`_ofenVorlagenBinden`): die letzte Rückgabe macht sie räumbar.
+            if (node.__ofenVorlagen) {
+                for (const v of node.__ofenVorlagen) this._ofenVorlageLoesen(v);
+                node.__ofenVorlagen = null;
             }
         });
     }
@@ -75858,32 +75919,53 @@ class AnazhRealm {
         // ihre eigenen Bindegruppen aus der Layout-Zählung. Dann nimmt der Collector sie samt Uniform-Puffern. Die Pipeline
         // bleibt im Cache, wie bisher (r184s eigenes `dispose` gäbe mit dem letzten Render-Objekt einer Familie auch sie frei —
         // die nächste Senke derselben Familie kompilierte neu); geteilte Gruppen gehören allen.
-        const ros = mesh.__renderObjekte;
-        const rend = this.state.renderer;
-        if (ros) {
-            mesh.__renderObjekte = null;
-            for (const ro of ros) {
-                if (ro.material) ro.material.removeEventListener("dispose", ro.onMaterialDispose);
-                if (ro.geometry) ro.geometry.removeEventListener("dispose", ro.onGeometryDispose);
-                if (rend && rend._nodes) rend._nodes.delete(ro);
-                if (rend && rend._bindings && ro._bindings)
-                    for (const bg of ro._bindings) {
-                        const b0 = bg.bindings && bg.bindings[0];
-                        if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
-                        rend.backend.deleteBindGroupData(bg);
-                        rend._bindings.delete(bg);
-                        // r184 merkt jede Bindegruppe an jeder Textur, die sie liest (`bindGroups`, für den Neubau bei
-                        // einem Textur-Wechsel) und vergisst sie nie: eine geteilte Textur (Karten-Atlas, Schatten-Karte)
-                        // hielt so die Bindegruppe — und mit ihr die Uniform-Puffer — jeder je gezeichneten Senke.
-                        for (const b of bg.bindings || [])
-                            if (b.isSampledTexture && b.texture && rend._textures.has(b.texture)) {
-                                const td = rend._textures.get(b.texture);
-                                if (td.bindGroups) td.bindGroups.delete(bg);
-                            }
-                    }
-            }
-        }
+        AnazhRealm._renderObjekteLoesen(mesh);
         mesh.dispose();
+    }
+    // DIE LÖSUNG DER RENDER-OBJEKTE eines Objekts, das den Graphen für immer verlässt (`_instanzAbschied`, `_disposeSoulGroup`)
+    // — in JEDEM Renderer, der es zeichnete (das Register ist eine Hülle der Klasse; `ro.renderer`). r184 hängt jedes Render-
+    // Objekt an das dispose-Ereignis seines STOFFS (vendor/three.webgpu.min.js `this.material.addEventListener("dispose",
+    // this.onMaterialDispose)`) und löst es selbst nur, wenn der Stoff fällt — ein geteilter Stoff fällt nie. Befund
+    // (Frost-Nachbesserung 4, Radeon): jeder Regler-Wert der Werkstatt hängte 8 Hörer an die 8 geteilten Foundry-Stoffe,
+    // +3,2–4,7 MB JS je Wert. Die Lösung nimmt die Hörer ab (Stoff und Geometrie) und die eigenen Bindegruppen; die Pipeline
+    // bleibt im Cache, geteilte Gruppen gehören allen.
+    // DER KNOTEN-BAU gehört seinem SCHLÜSSEL, nicht dem Objekt (Frost-Nachbesserung 5): r184 cacht ihn je
+    // `initialCacheKey` (6:378979) und wirft ihn aus dem Cache, wenn sein letzter Nutzer geht (`Nodes.delete`, 6:380856).
+    // Ein Leib aus geteilten Stoffen teilt den Schlüssel mit der Seele, die nach ihm kommt — die Lösung des Wolfs warf
+    // den Knoten-Bau, den der Mensch eben noch hatte, und jede Rückkehr kompilierte neu (Radeon, 10 Seelenwechsel bei
+    // offenem Tab: Welt +178 Pipelines / +175 Shader-Module, Ich-Bühne +18, Hof +53). Er fällt nur, wo der Schlüssel das
+    // Objekt selbst trägt — r184 schreibt die uuid hinein bei Instanz-Senke, count > 1 oder Morph (6:209550): dort hält der
+    // Zustand das Objekt und kann keinem anderen dienen.
+    static _renderObjekteLoesen(obj) {
+        const ros = obj && obj.__renderObjekte;
+        if (!ros) return;
+        obj.__renderObjekte = null;
+        for (const ro of ros) {
+            const rend = ro.renderer;
+            const o = ro.object;
+            if (ro.material) ro.material.removeEventListener("dispose", ro.onMaterialDispose);
+            if (ro.geometry) ro.geometry.removeEventListener("dispose", ro.onGeometryDispose);
+            // Auch ein BatchedMesh trägt Objekteigenes im Schlüssel (die uuid seiner Matrizen- und Farb-Textur, 6:209537) —
+            // kommt je eins in den Stamm (heute 0), gehört `o.isBatchedMesh === true` in diese Bedingung.
+            const eigenerSchluessel =
+                !!o && (o.isInstancedMesh === true || o.count > 1 || Array.isArray(o.morphTargetInfluences));
+            if (eigenerSchluessel && rend && rend._nodes) rend._nodes.delete(ro);
+            if (rend && rend._bindings && ro._bindings)
+                for (const bg of ro._bindings) {
+                    const b0 = bg.bindings && bg.bindings[0];
+                    if (b0 && b0.groupNode && b0.groupNode.shared === true) continue;
+                    rend.backend.deleteBindGroupData(bg);
+                    rend._bindings.delete(bg);
+                    // r184 merkt jede Bindegruppe an jeder Textur, die sie liest (`bindGroups`, für den Neubau bei
+                    // einem Textur-Wechsel) und vergisst sie nie: eine geteilte Textur (Karten-Atlas, Schatten-Karte)
+                    // hielt so die Bindegruppe — und mit ihr die Uniform-Puffer — jeder je gezeichneten Senke.
+                    for (const b of bg.bindings || [])
+                        if (b.isSampledTexture && b.texture && rend._textures.has(b.texture)) {
+                            const td = rend._textures.get(b.texture);
+                            if (td.bindGroups) td.bindGroups.delete(bg);
+                        }
+                }
+        }
     }
     // DAS RENDER-OBJEKT-REGISTER: r184 baut je (Objekt × Stoff × Pass-Kontext) ein Render-Objekt mit eigenen Uniform-Puffern
     // (`bindingBuffer…_object` · `_render`) und hängt es an das `dispose`-Ereignis seines STOFFS und seiner GEOMETRIE — ein
@@ -75892,8 +75974,12 @@ class AnazhRealm {
     // Render-Objekte: der Abschied einer Senke (`_instanzAbschied`) löst sie, der Kehraus liest aus ihnen, was das Objekt
     // WIRKLICH zeichnet — auch Attribute, die kein `geometry.attributes` trägt (r184s InstanceNode zeichnet die Instanz-
     // Farbe aus einem EIGENEN Attribut über `instanceColor.array`).
+    // Das Register sitzt an der KLASSE der Render-Objekt-Verwaltung (Frost-Nachbesserung 4): jeder Renderer der Seite (Welt,
+    // Werkstatt, Ich-, Hof-, Feed-Bühne) meldet seine Render-Objekte am Objekt an — die Bühnen zeichnen Gestalten aus Welt-
+    // Vorlagen mit geteilten Stoffen, ihre Render-Objekte hingen sonst für immer an diesen Stoffen.
     _renderObjektRegister(renderer) {
-        const objs = renderer && renderer._objects;
+        const inst = renderer && renderer._objects;
+        const objs = inst && Object.getPrototypeOf(inst);
         if (!objs || objs.__anazhRegister || typeof objs.createRenderObject !== "function") return;
         objs.__anazhRegister = true;
         const roh = objs.createRenderObject;
