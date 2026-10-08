@@ -721,7 +721,8 @@ jobs:
               # schreibt ein Körper-Gesetz, Ops nur im Gesetz-Band, Nexus-Geburt fern) · temperament (Welle LF: Gattung × Größe,
               # Fluchttier flieht, der Kampf liest dasselbe) · abstand (Welle LF: der persönliche Raum je Leib, nie
               # Durchdringung, die Neugier stellt sich an) · jagdkreis (Welle LF: der Witterungs-Jäger läuft zur Beute, das
-              # Rudel und der Wolf am Kitz beißen, der Sprinter wird eingeholt) · rudel (das Rudel umstellt). --selftest zuerst: je Probe spielt
+              # Rudel und der Wolf am Kitz beißen, der Sprinter wird eingeholt) · rudel (das Rudel umstellt) · sockel (Welle LF:
+              # das Tier steht auf der Auflage der Bauten). --selftest zuerst: je Probe spielt
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.
               run: npm run gate:kreatur-takt
 

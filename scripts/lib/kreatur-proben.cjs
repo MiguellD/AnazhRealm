@@ -1664,6 +1664,14 @@ async function kreaturProben(r, T, opts) {
     // startet 6 m hinter ihm: der Abstand schrumpft, ein Biss trifft ──
     await buehne("jagdkreis", async (restore) => {
         r.setGameMode("pfad");
+        const altUhr = s.creatureAnimationTime,
+            altAi = r._creatureAiFrame;
+        restore.push(() => {
+            s.creatureAnimationTime = altUhr;
+            r._creatureAiFrame = altAi;
+        });
+        s.creatureAnimationTime = 100;
+        r._creatureAiFrame = 0;
         // ein ruhiger Spieler, je Takt (ein zorniger verschreckt den Wolf — seine Wariness schlägt die Jagd; die Ansteckung
         // der Gefühle im Kreatur-Takt trägt die Furcht der Beute zu ihm)
         const ruhigSpieler = () => {
@@ -1771,6 +1779,9 @@ async function kreaturProben(r, T, opts) {
         // im Sprint — so soll es sein), und ein einzelner Wolf wittert ein Kitz (bodySize 0,6, langsamer als er): beide
         // Jagden beißen in 60 s.
         const kreis = (woelfeN, hirschGroesse, ox, oz) => {
+            // die Kreatur-Uhr und der KI-Takt fest: jede Jagd beginnt im selben Takt, gleich welche Probe vorher lief
+            s.creatureAnimationTime = 100;
+            r._creatureAiFrame = 0;
             const o3 = frei(ox, oz, 25) || land(ox, oz);
             pm.set(o3.x + 45, pm.y, o3.z + 20);
             const beute = tier({ x: o3.x, y: o3.y, z: o3.z }, "wesen", hirschGroesse);
@@ -1857,6 +1868,14 @@ async function kreaturProben(r, T, opts) {
     // Biss ──
     await buehne("rudel", async (restore) => {
         r.setGameMode("pfad");
+        const altUhr = s.creatureAnimationTime,
+            altAi = r._creatureAiFrame;
+        restore.push(() => {
+            s.creatureAnimationTime = altUhr;
+            r._creatureAiFrame = altAi;
+        });
+        s.creatureAnimationTime = 100;
+        r._creatureAiFrame = 0;
         const ruhigSpieler = () => {
             if (s.player.emotions)
                 Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
@@ -1924,6 +1943,82 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── sockel (Leben-Schau 07.10., D7/Neu 4): das Tier steht auf der Auflage der Bauten wie der Spieler. 5 Hirsche folgten
+    // durchs Dorf, 7,6 % ihrer Takte lagen in einer Hüllen-Box, p50 73 cm tief; ein Hirsch stand 0,35 m tief im Sockel, auf
+    // dem der Spieler stand (Bild ls-09) — das Tier las nur den Boden (_standSicht ohne Struktur). Gemessen am echten Takt:
+    // ein Sockel aus Stein, seine Oberkante 0,35 m über dem Boden seiner Mitte (wie der Sockel des Hauses), ein Hirsch steht
+    // auf ihm und folgt dem Spieler, der auf dem Sockel hin und her geht; je Takt, wie tief die Sohle unter der Oberkante
+    // liegt ──
+    await buehne("sockel", async (restore) => {
+        r.setGameMode("frieden");
+        if (taeter === "sockel") decke(restore, "_kreaturAuflage", () => () => -Infinity);
+        // der Sockel 4 × 4 m an einem Ort ohne Bau im Umkreis, seine Oberkante 0,35 m über dem Boden seiner Mitte, nach unten
+        // tief genug für jede Mulde. Gezählt wird nur, wo er eine STUFE ist (Oberkante 5 cm bis PLAYER_STEP_UP über dem
+        // Boden unter dem Hirsch): dort trägt er den Spieler — und das Tier.
+        const wo = frei(-40, -60, 6) || land(-40, -60);
+        wo.y = r.getTerrainHeightAt(wo.x, wo.z);
+        const hs = [-2, 0, 2].flatMap((dx) => [-2, 0, 2].map((dz) => r.getTerrainHeightAt(wo.x + dx, wo.z + dz)));
+        const unten = Math.min(...hs) - 0.3 - wo.y;
+        const oben = 0.35;
+        // Der Sockel ist die HÜLLE eines Hauses (wie im Dorf: die gedrehte Box der Studio-Stufe, _hausHuelleSetzen) — ein
+        // Bauplan-Teil würde den Boden unter sich einebnen (der Fußabdruck des Baus), die Haus-Hülle tut es nicht. Der Bau
+        // selbst ist ein Kiesel in der Mitte. spawnArchitecture legt die Basis 0,5 m unter den Ort (die at_player-Eichung).
+        s.blueprints._t_linse_sockel = {
+            name: "_t_linse_sockel",
+            parts: [
+                { shape: "box", material: "stein", position: { x: 0, y: 0.05, z: 0 }, size: { x: 0.1, y: 0.1, z: 0.1 } },
+            ],
+        };
+        const e = r.spawnArchitecture("_t_linse_sockel", { x: wo.x, y: wo.y + 0.5, z: wo.z }, { silent: true });
+        restore.push(() => {
+            if (e) r.removeArchitecture(e);
+            delete s.blueprints._t_linse_sockel;
+        });
+        if (!e) return { fehler: "Sockel nicht gesetzt" };
+        r._hausHuelleSetzen(e, { stufe: 0, boxen: [-2, unten, -2, 2, oben, 2] });
+        if (!Array.isArray(e.blockerAABBs) || !e.blockerAABBs.length) return { fehler: "Sockel ohne Hülle" };
+        const box = e.blockerAABBs[0];
+        const mx = (box.minX + box.maxX) / 2,
+            mz = (box.minZ + box.maxZ) / 2;
+        // die Kreatur-Uhr fest (die Aktions-Wahl hasht sie): jeder Lauf sieht dieselben Schritte, gleich welche Probe vorher lief
+        const altUhr = s.creatureAnimationTime;
+        restore.push(() => {
+            s.creatureAnimationTime = altUhr;
+        });
+        s.creatureAnimationTime = 100;
+        pm.set(mx, box.topY + 0.5, mz + 1.6);
+        // der Hirsch auf der Mitte des Sockels: erst wartet er dort (die Mitte ist eine Stufe von 0,35 m), dann folgt er dem
+        // Spieler, der auf dem Sockel hin und her geht
+        const c = tier({ x: mx, y: wo.y, z: mz }, "wesen", 1);
+        ruhig(c);
+        r.assignCreatureTask(c, "wait", {}, { silent: true });
+        let ueber = 0,
+            imSockel = 0,
+            tiefMax = 0;
+        const dt = 1 / 60;
+        for (let k = 0; k < 900; k++) {
+            if (k === 300) r.assignCreatureTask(c, "follow_player", {}, { silent: true });
+            if (k >= 300) pm.z = mz + 1.6 * Math.cos((k - 300) / 120);
+            takt(dt);
+            if (k < 30) continue;
+            const stufe = box.topY - r.getTerrainHeightAt(c.position.x, c.position.z);
+            if (r._boxAbstand2(box, c.position.x, c.position.z) === 0 && stufe > 0.05 && stufe < A.PLAYER_STEP_UP) {
+                ueber++;
+                const tief = box.topY - c.position.y;
+                if (tief > 0.05) {
+                    imSockel++;
+                    tiefMax = Math.max(tiefMax, tief);
+                }
+            }
+        }
+        return {
+            ueberTakte: ueber,
+            imSockelTakte: imSockel,
+            tiefMaxM: +tiefMax.toFixed(3),
+            oberkanteUeberBodenM: +(box.topY - wo.y).toFixed(2),
+        };
+    });
+
     return aus;
 }
 
@@ -1948,6 +2043,7 @@ const PROBEN = [
     "abstand",
     "jagdkreis",
     "rudel",
+    "sockel",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -2178,6 +2274,13 @@ function urteil(name, z) {
             `das Rudel umstellt nicht: beim ersten Biss ${z.lueckeBeimBiss}° Lücke`
         );
     }
+    if (name === "sockel") {
+        soll(z.ueberTakte >= 30, `der Hirsch kommt nicht über den Sockel (${z.ueberTakte} Takte, vakuös)`);
+        soll(
+            z.imSockelTakte === 0,
+            `das Tier steht im Sockel: ${z.imSockelTakte} von ${z.ueberTakte} Takten über ihm, bis ${z.tiefMaxM} m tief (Oberkante ${z.oberkanteUeberBodenM} m über dem Boden)`
+        );
+    }
     return { ok: f.length === 0, grund: f.join(" · ") };
 }
 
@@ -2229,6 +2332,7 @@ const TAETER = {
         ["jagd-schritt", /Sprinter entkommt/],
     ],
     rudel: [["rudel", /umstellt nicht/]],
+    sockel: [["sockel", /steht im Sockel/]],
 };
 
 // Der Kommentar-Stripper der Absenz-Proben — dieselbe Quelle wie window.__codeOf im Playtest-Harness (Kommentare

@@ -20724,6 +20724,37 @@ class AnazhRealm {
         }
     }
 
+    // DIE AUFLAGE eines Tiers auf den Hüllen der Bauten (Welle LF): dieselbe Haft-Regel wie die Kapsel des Spielers
+    // (_resolveCapsuleVsAABB: eine Oberkante im Band [Fuß − PLAYER_GROUND_SNAP, Fuß + PLAYER_STEP_UP] über dem Fußabdruck
+    // trägt), gemessen an den drei Achsen des EINEN Leibs (_kreaturLeib); die höchste trägt. Die Nähe-Liste ist die des
+    // Hüllen-Kontakts (ud._huellenNah). Keine Auflage → −Infinity.
+    _kreaturAuflage(creature, L) {
+        const nah = creature.userData && creature.userData._huellenNah;
+        if (!nah || !nah.liste.length) return -Infinity;
+        const p = creature.position;
+        const leib = this._kreaturLeib(creature, L, this._kreaturLeibAuflage || (this._kreaturLeibAuflage = {}));
+        const lo = p.y - AnazhRealm.PLAYER_GROUND_SNAP,
+            hi = p.y + AnazhRealm.PLAYER_STEP_UP;
+        const r2 = leib.radius * leib.radius;
+        let top = -Infinity;
+        for (const e of nah.liste) {
+            const boxes = e.blockerAABBs;
+            if (!boxes) continue;
+            for (let b = 0; b < boxes.length; b++) {
+                const box = boxes[b];
+                if (!(box.topY >= lo && box.topY <= hi) || box.topY <= top) continue;
+                for (let o = -1; o <= 1; o++) {
+                    const off = o * leib.halb;
+                    if (this._boxAbstand2(box, p.x + leib.fx * off, p.z + leib.fz * off) <= r2) {
+                        top = box.topY;
+                        break;
+                    }
+                }
+            }
+        }
+        return top;
+    }
+
     // CHARAKTER-WANDERN, die EINE Wander-Quelle (Flucht-Fallback + NEUTRAL): ein ZUG je Zeit-Slot
     // (strideSec), Heading deterministisch aus netId × Slot (sin-Hash; ein Goldwinkel-INKREMENT wäre
     // falsch — rotierende Einheitsvektoren summieren sich zum Kreisel). Emotionen modulieren Amplitude
@@ -22175,6 +22206,15 @@ class AnazhRealm {
                         pitchZiel = sp.pitch;
                         rollZiel = sp.roll;
                     }
+                }
+                // DIE AUFLAGE DER BAUTEN (Welle LF, Neu 4/D7): trägt eine Box der Hüllen den Leib (ihre Oberkante in der
+                // Stufe über dem Fuß — Sockel, Podest, Stufe), steht das Tier auf ihr, wie der Spieler; vorher las es nur
+                // den Boden und ging 0,35 m tief im Haus-Sockel, auf dem der Spieler stand.
+                const auflage = this._kreaturAuflage(creature, hueftL);
+                if (auflage > baseY) {
+                    baseY = auflage;
+                    pitchZiel = 0;
+                    rollZiel = 0;
                 }
             }
             {
