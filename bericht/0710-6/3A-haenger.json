@@ -1,0 +1,425 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "ladungen": 1
+ },
+ "befunde": [],
+ "schwelle": 100,
+ "sekunden": 30,
+ "takte": 1649,
+ "pipelines": {
+  "sync": 1,
+  "framesMitSync": 1,
+  "async": 0,
+  "shader": 2,
+  "jeAuftrag": {
+   "haupt himmel-sterne": 1
+  },
+  "zeiten": [
+   0.9
+  ]
+ },
+ "knotenBau": {
+  "sync": 22,
+  "ms": 468.4,
+  "maxMs": 33.8,
+  "ueber16": 17,
+  "jeAuftragMs": {
+   "ausserhalb MeshStandardNodeMaterial": 235.5,
+   "haupt fscatter:fichte:L1": 107.3,
+   "haupt f:eiche:L0": 53.4,
+   "haupt fimp:atlas:L2": 33.8,
+   "haupt streuSatz": 22.6,
+   "k0 fscatter:fichte:L1": 11.3,
+   "haupt himmel-sterne": 4.5
+  }
+ },
+ "bildTaktMs": 13.5,
+ "frames": 1187,
+ "frameMs": {
+  "p50": 24.9,
+  "p95": 50,
+  "p99": 75,
+  "max": 283.3
+ },
+ "haengerN": 5,
+ "jeKlasse": {
+  "TAKT": 5,
+  "NEBEN": 0,
+  "GC": 0,
+  "GPU": 0
+ },
+ "jeUrsache": [
+  {
+   "ursache": "TAKT: verteilt",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 283,
+   "maxMs": 283
+  },
+  {
+   "ursache": "TAKT: _loopVoxelStreaming › _runFrameScheduler",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 200,
+   "maxMs": 200
+  },
+  {
+   "ursache": "TAKT: _dispatchFrameJobs › run",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 167,
+   "maxMs": 167
+  },
+  {
+   "ursache": "TAKT: _kompiliere › build [three.webgpu.min.js]",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 108,
+   "maxMs": 108
+  },
+  {
+   "ursache": "TAKT: _sampleBakedField › _bakeRegionFields",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 108,
+   "maxMs": 108
+  }
+ ],
+ "haenger": [
+  {
+   "t": 1,
+   "dt": 108.3,
+   "klasse": "TAKT",
+   "name": "_kompiliere › build [three.webgpu.min.js]",
+   "ursache": "TAKT: _kompiliere › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 92,
+    "NEBEN": 4,
+    "GC": 0,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "updateAttributes [three.webgpu.min.js]",
+     "pct": 56
+    },
+    {
+     "name": "getAttributes [three.webgpu.min.js]",
+     "pct": 56
+    },
+    {
+     "name": "getNodeBuilderState [three.webgpu.min.js]",
+     "pct": 56
+    },
+    {
+     "name": "N.getForRender [werkbank]",
+     "pct": 56
+    },
+    {
+     "name": "getForRender [three.webgpu.min.js]",
+     "pct": 56
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 56
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 18
+    },
+    {
+     "name": "computeCompoundTags",
+     "pct": 5
+    },
+    {
+     "name": "getDataFromNode [three.webgpu.min.js]",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 52.2
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ],
+   "loaf": [
+    "FrameRequestCallback → e 93 ms",
+    "FrameRequestCallback → e 58 ms"
+   ]
+  },
+  {
+   "t": 857,
+   "dt": 166.7,
+   "klasse": "TAKT",
+   "name": "_dispatchFrameJobs › run",
+   "ursache": "TAKT: _dispatchFrameJobs › run",
+   "zeiten": {
+    "TAKT": 124,
+    "NEBEN": 24,
+    "GC": 2,
+    "GPU": 16
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 70
+    },
+    {
+     "name": "_runFrameScheduler",
+     "pct": 70
+    },
+    {
+     "name": "_dispatchFrameJobs",
+     "pct": 54
+    },
+    {
+     "name": "run",
+     "pct": 54
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_terrainMacroSurfaceY",
+     "pct": 8
+    },
+    {
+     "name": "noise2D [simplex-noise.js]",
+     "pct": 8
+    },
+    {
+     "name": "_hydroRiverAt",
+     "pct": 5
+    }
+   ],
+   "geraet": {
+    "texKB": 512
+   },
+   "geraetVorher": null,
+   "pipelines": [],
+   "loaf": [
+    "FrameRequestCallback → e 75 ms",
+    "FrameRequestCallback → e 70 ms",
+    "FrameRequestCallback → e 69 ms"
+   ]
+  },
+  {
+   "t": 1099,
+   "dt": 108.2,
+   "klasse": "TAKT",
+   "name": "_sampleBakedField › _bakeRegionFields",
+   "ursache": "TAKT: _sampleBakedField › _bakeRegionFields",
+   "zeiten": {
+    "TAKT": 103,
+    "NEBEN": 2,
+    "GC": 3,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_tickScatterStreaming",
+     "pct": 68
+    },
+    {
+     "name": "_scatterRegion",
+     "pct": 64
+    },
+    {
+     "name": "_scatterRegionWork",
+     "pct": 64
+    },
+    {
+     "name": "_scatterPass",
+     "pct": 62
+    },
+    {
+     "name": "_sampleBakedField",
+     "pct": 59
+    },
+    {
+     "name": "_bakeRegionFields",
+     "pct": 58
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "_voxelSurfaceY",
+     "pct": 14
+    },
+    {
+     "name": "_terrainMacroSurfaceY",
+     "pct": 10
+    },
+    {
+     "name": "noise2D [simplex-noise.js]",
+     "pct": 10
+    }
+   ],
+   "geraet": {
+    "texKB": 1280
+   },
+   "geraetVorher": null,
+   "pipelines": [],
+   "loaf": [
+    "FrameRequestCallback → e 198 ms",
+    "FrameRequestCallback → e 106 ms"
+   ]
+  },
+  {
+   "t": 1207,
+   "dt": 200,
+   "klasse": "TAKT",
+   "name": "_loopVoxelStreaming › _runFrameScheduler",
+   "ursache": "TAKT: _loopVoxelStreaming › _runFrameScheduler",
+   "zeiten": {
+    "TAKT": 197,
+    "NEBEN": 2,
+    "GC": 0,
+    "GPU": 2
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 52
+    },
+    {
+     "name": "_runFrameScheduler",
+     "pct": 52
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 18
+    },
+    {
+     "name": "computeSpatialTags",
+     "pct": 5
+    },
+    {
+     "name": "getDataFromNode [three.webgpu.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 768,
+    "bauN": 4,
+    "bauMs": 107.4
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ],
+   "loaf": [
+    "FrameRequestCallback → e 198 ms",
+    "FrameRequestCallback → e 66 ms"
+   ]
+  },
+  {
+   "t": 3650,
+   "dt": 283.3,
+   "klasse": "TAKT",
+   "name": "verteilt",
+   "ursache": "TAKT: verteilt",
+   "zeiten": {
+    "TAKT": 272,
+    "NEBEN": 3,
+    "GC": 5,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [],
+   "zweige": [
+    {
+     "name": "_loopRender",
+     "pct": 49
+    },
+    {
+     "name": "_loopVoxelStreaming",
+     "pct": 48
+    },
+    {
+     "name": "_loopFixedStep",
+     "pct": 1
+    }
+   ],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 36
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 6
+    },
+    {
+     "name": "analyze [three.webgpu.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "texKB": 1024,
+    "bauN": 12,
+    "bauMs": 224.6
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial",
+    "bau:MeshStandardNodeMaterial"
+   ],
+   "loaf": [
+    "FrameRequestCallback → e 278 ms"
+   ]
+  }
+ ],
+ "eichung": {
+  "driftMs": 0.23,
+  "treffer": 14
+ },
+ "profil": true,
+ "loafDa": true,
+ "probe": [],
+ "lauf": {
+  "regler": "voll",
+  "tiere": "frei",
+  "wandern": "aus",
+  "kreaturen": 11,
+  "chunks": 81,
+  "loadScale": 1,
+  "wetter": "sunny"
+ },
+ "erst": null
+}

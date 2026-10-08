@@ -1,0 +1,40 @@
+HÄNGER-LINSE: 5 Frames > 100 ms in 30 s (1187 Frames, 1649 Takte; Frame p50/p95/p99/max 24.9/50/75/283.3 ms) — TAKT 5 · NEBEN 0 · GC 0 · GPU 0
+Lauf: Regler voll · Tiere frei (11) · Wandern aus · loadScale 1 · Chunks 81 · Wetter sunny · Profil ja (Eich-Drift 0.23 ms) · LoAF ja
+Pipelines im Lauf: 1 synchron in 1 Takten · 0 async · 2 Shader-Module — je Auftrag: haupt himmel-sterne ×1 — bei s 0.9
+Knoten-Bau synchron: 22 Bauten · Σ 468.4 ms · max 33.8 ms · 17 über 16,7 ms — je Auftrag: ausserhalb MeshStandardNodeMaterial 235.5 ms · haupt fscatter:fichte:L1 107.3 ms · haupt f:eiche:L0 53.4 ms · haupt fimp:atlas:L2 33.8 ms · haupt streuSatz 22.6 ms · k0 fscatter:fichte:L1 11.3 ms
+
+   n    Σ ms   max ms  Ursache
+   1     283      283  TAKT: verteilt
+   1     200      200  TAKT: _loopVoxelStreaming › _runFrameScheduler
+   1     167      167  TAKT: _dispatchFrameJobs › run
+   1     108      108  TAKT: _kompiliere › build [three.webgpu.min.js]
+   1     108      108  TAKT: _sampleBakedField › _bakeRegionFields
+
+Je Hänger (t = ms seit Mess-Beginn):
+  t=1 dt=108.3 ms (1 Takte, 0 ohne Bild) [TAKT 92 · NEBEN 4] TAKT: _kompiliere › build [three.webgpu.min.js]
+      Pfad: updateAttributes [three.webgpu.min.js] 56% › getAttributes [three.webgpu.min.js] 56% › getNodeBuilderState [three.webgpu.min.js] 56% › N.getForRender [werkbank] 56% › getForRender [three.webgpu.min.js] 56% › build [three.webgpu.min.js] 56%
+      Selbst: build [three.webgpu.min.js] 18% · computeCompoundTags 5% · getDataFromNode [three.webgpu.min.js] 5%
+      Gerät: texKB 512 · bauN 2 · bauMs 52.2 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial
+      LoAF: FrameRequestCallback → e 93 ms · FrameRequestCallback → e 58 ms
+  t=857 dt=166.7 ms (2 Takte, 1 ohne Bild) [TAKT 124 · NEBEN 24 · GC 2 · GPU 16] TAKT: _dispatchFrameJobs › run
+      Pfad: _loopVoxelStreaming 70% › _runFrameScheduler 70% › _dispatchFrameJobs 54% › run 54%
+      Selbst: _terrainMacroSurfaceY 8% · noise2D [simplex-noise.js] 8% · _hydroRiverAt 5%
+      Gerät: texKB 512
+      LoAF: FrameRequestCallback → e 75 ms · FrameRequestCallback → e 70 ms · FrameRequestCallback → e 69 ms
+  t=1099 dt=108.2 ms (1 Takte, 0 ohne Bild) [TAKT 103 · NEBEN 2 · GC 3] TAKT: _sampleBakedField › _bakeRegionFields
+      Pfad: _tickScatterStreaming 68% › _scatterRegion 64% › _scatterRegionWork 64% › _scatterPass 62% › _sampleBakedField 59% › _bakeRegionFields 58%
+      Selbst: _voxelSurfaceY 14% · _terrainMacroSurfaceY 10% · noise2D [simplex-noise.js] 10%
+      Gerät: texKB 1280
+      LoAF: FrameRequestCallback → e 198 ms · FrameRequestCallback → e 106 ms
+  t=1207 dt=200 ms (1 Takte, 0 ohne Bild) [TAKT 197 · NEBEN 2 · GPU 2] TAKT: _loopVoxelStreaming › _runFrameScheduler
+      Pfad: _loopVoxelStreaming 52% › _runFrameScheduler 52%
+      Selbst: build [three.webgpu.min.js] 18% · computeSpatialTags 5% · getDataFromNode [three.webgpu.min.js] 4%
+      Gerät: texKB 768 · bauN 4 · bauMs 107.4 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial
+      LoAF: FrameRequestCallback → e 198 ms · FrameRequestCallback → e 66 ms
+  t=3650 dt=283.3 ms (1 Takte, 0 ohne Bild) [TAKT 272 · NEBEN 3 · GC 5] TAKT: verteilt
+      Zweige: _loopRender 49% · _loopVoxelStreaming 48% · _loopFixedStep 1%
+      Selbst: build [three.webgpu.min.js] 36% · generate [three.webgpu.min.js] 6% · analyze [three.webgpu.min.js] 4%
+      Gerät: texKB 1024 · bauN 12 · bauMs 224.6 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial, bau:ShadowMaterial
+      LoAF: FrameRequestCallback → e 278 ms
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\abab535\3A-haenger.json

@@ -1,0 +1,38 @@
+HÄNGER-LINSE: 5 Frames > 100 ms in 30 s (1318 Frames, 2241 Takte; Frame p50/p95/p99/max 16.7/41.7/66.4/391.6 ms) — TAKT 3 · NEBEN 2 · GC 0 · GPU 0
+Lauf: Regler voll · Tiere frei (10) · Wandern aus · loadScale 1 · Chunks 81 · Wetter sunny · Profil ja (Eich-Drift 0.84 ms) · LoAF ja
+Pipelines im Lauf: 1 synchron in 1 Takten · 4 async · 7 Shader-Module — je Auftrag: haupt streuSatz ×1 — bei s 2.9
+Knoten-Bau synchron: 32 Bauten · Σ 1023.6 ms · max 46.5 ms · 28 über 16,7 ms — je Auftrag: ausserhalb MeshStandardNodeMaterial 867.9 ms · haupt fscatter:fichte:L1 114.5 ms · haupt streuSatz 28.7 ms · k0 fscatter:fichte:L1 12.5 ms
+
+   n    Σ ms   max ms  Ursache
+   2     775      392  NEBEN: build [three.webgpu.min.js]
+   2     417      292  TAKT: verteilt
+   1     125      125  TAKT: _loopVoxelStreaming › _runFrameScheduler
+
+Je Hänger (t = ms seit Mess-Beginn):
+  t=660 dt=291.6 ms (1 Takte, 0 ohne Bild) [TAKT 288 · NEBEN 3 · GC 6] TAKT: verteilt
+      Zweige: _loopVoxelStreaming 49% · _loopRender 49% · _loopFixedStep 1%
+      Selbst: build [three.webgpu.min.js] 32% · getDataFromNode [three.webgpu.min.js] 5% · generate [three.webgpu.min.js] 4%
+      Gerät: texKB 512 · bauN 12 · bauMs 227.3 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:ShadowMaterial, bau:ShadowMaterial
+      LoAF: FrameRequestCallback → e 295 ms · FrameRequestCallback → e 55 ms
+  t=1810 dt=391.6 ms (3 Takte, 2 ohne Bild) [TAKT 83 · NEBEN 345 · GPU 50] NEBEN: build [three.webgpu.min.js]
+      Pfad: N.getForRender [werkbank] 89% › getForRender [three.webgpu.min.js] 89% › build [three.webgpu.min.js] 89% › build [three.webgpu.min.js] 58% › build [three.webgpu.min.js] 57% › build [three.webgpu.min.js] 57%
+      Selbst: build [three.webgpu.min.js] 35% · _getChildren [three.webgpu.min.js] 9% · analyze [three.webgpu.min.js] 5%
+      Gerät: texKB 1024 · bauN 8 · bauMs 334.8 · pipeAsync 1 · shader 1 · shaderKB 61.44 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial
+      LoAF: Scheduler.yield.then 50 ms · Scheduler.yield.then 49 ms · Scheduler.yield.then 46 ms
+  t=2288 dt=125 ms (1 Takte, 0 ohne Bild) [TAKT 29 · NEBEN 1 · GC 5] TAKT: verteilt
+      Zweige: _loopVoxelStreaming 44% · _loopRender 22% · _loopFixedStep 11%
+      Selbst: _resolveCapsuleVsAABB 11% · computeCompoundTags 11% · _isMagnifying 11%
+      Gerät: texKB 1024
+      LoAF: Scheduler.yield.then 43 ms · Scheduler.yield.then 42 ms · FrameRequestCallback → e 33 ms
+  t=2886 dt=383.4 ms (3 Takte, 2 ohne Bild) [TAKT 94 · NEBEN 325 · GC 5 · GPU 50] NEBEN: build [three.webgpu.min.js]
+      Pfad: N.getForRender [werkbank] 90% › getForRender [three.webgpu.min.js] 90% › build [three.webgpu.min.js] 89% › build [three.webgpu.min.js] 58% › build [three.webgpu.min.js] 58% › build [three.webgpu.min.js] 58%
+      Selbst: build [three.webgpu.min.js] 35% · _getChildren [three.webgpu.min.js] 11% · getCacheKey [three.webgpu.min.js] 5%
+      Gerät: texKB 512 · bauN 8 · bauMs 321.7 · pipeAsync 1 · shader 2 · shaderKB 54.82 — bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial, bau:MeshStandardNodeMaterial
+      LoAF: Scheduler.yield.then 50 ms · Scheduler.yield.then 49 ms · Scheduler.yield.then 48 ms
+  t=3359 dt=125 ms (1 Takte, 0 ohne Bild) [TAKT 41 · NEBEN 1] TAKT: _loopVoxelStreaming › _runFrameScheduler
+      Pfad: _loopVoxelStreaming 58% › _runFrameScheduler 58%
+      Selbst: noise2D [simplex-noise.js] 8% · _stepCharacterStructures 8% · _hydroRiverAt 8%
+      Gerät: texKB 1024
+      LoAF: FrameRequestCallback → e 64 ms · Scheduler.yield.then 48 ms · FrameRequestCallback → e 40 ms
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\abab535\1A-haenger.json

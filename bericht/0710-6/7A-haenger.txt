@@ -1,0 +1,20 @@
+HÄNGER-LINSE: 2 Frames > 100 ms in 30 s (1324 Frames, 1949 Takte; Frame p50/p95/p99/max 16.8/41.6/50/1875 ms) — TAKT 1 · NEBEN 0 · GC 0 · GPU 1
+Lauf: Regler voll · Tiere frei (11) · Wandern aus · loadScale 1 · Chunks 81 · Wetter sunny · Profil ja (Eich-Drift -0.29 ms) · LoAF ja
+Pipelines im Lauf: 11 synchron in 1 Takten · 0 async · 17 Shader-Module — je Auftrag: haupt tier:fuchs ×6 · k0 tier:fuchs ×5 — bei s 10.9
+Knoten-Bau synchron: 15 Bauten · Σ 246.4 ms · max 33.4 ms · 8 über 16,7 ms — je Auftrag: haupt tier:fuchs 230.4 ms · k0 tier:fuchs 16 ms
+
+   n    Σ ms   max ms  Ursache
+   1    1875     1875  GPU: Pipeline synchron (k0 tier:fuchs, haupt tier:fuchs)
+   1     333      333  TAKT: renderer.renderObject › build [three.webgpu.min.js]
+
+Je Hänger (t = ms seit Mess-Beginn):
+  t=10846 dt=333.3 ms (1 Takte, 0 ohne Bild) [TAKT 325 · NEBEN 5 · GC 5] TAKT: renderer.renderObject › build [three.webgpu.min.js]
+      Pfad: needsRefresh [three.webgpu.min.js] 62% › getMonitor [three.webgpu.min.js] 62% › getNodeBuilderState [three.webgpu.min.js] 62% › N.getForRender [werkbank] 62% › getForRender [three.webgpu.min.js] 62% › build [three.webgpu.min.js] 61%
+      Selbst: build [three.webgpu.min.js] 26% · getDataFromNode [three.webgpu.min.js] 5% · _getChildren [three.webgpu.min.js] 4%
+      Gerät: pipeSync 11 · pipeSyncMs 0.3 · shader 17 · shaderKB 173.77 · texKB 512 · bauN 15 · bauMs 246.4 — bau:ShadowMaterial, sync:renderPipeline_ShadowMaterial_78, bau:ShadowMaterial, bau:ShadowMaterial, bau:ShadowMaterial, sync:renderPipeline_ShadowMaterial_78
+      LoAF: FrameRequestCallback → e 333 ms · FrameRequestCallback → e 49 ms
+  t=11182 dt=1875 ms (2 Takte, 1 ohne Bild) [TAKT 66 · NEBEN 5 · GC 4 · GPU 1800] GPU: Pipeline synchron (k0 tier:fuchs, haupt tier:fuchs)
+      Gerät (mit 3 Frames davor): texKB 2080 · pipeSync 11 · pipeSyncMs 0.3 · shader 17 · shaderKB 173.77 · bauN 15 · bauMs 246.4 — bau:ShadowMaterial, sync:renderPipeline_ShadowMaterial_78, bau:ShadowMaterial, bau:ShadowMaterial, bau:ShadowMaterial, sync:renderPipeline_ShadowMaterial_78
+      LoAF: FrameRequestCallback → e 49 ms · FrameRequestCallback → e 32 ms
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\abab535\7A-haenger.json

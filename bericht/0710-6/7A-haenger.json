@@ -1,0 +1,216 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "ladungen": 1
+ },
+ "befunde": [],
+ "schwelle": 100,
+ "sekunden": 30,
+ "takte": 1949,
+ "pipelines": {
+  "sync": 11,
+  "framesMitSync": 1,
+  "async": 0,
+  "shader": 17,
+  "jeAuftrag": {
+   "haupt tier:fuchs": 6,
+   "k0 tier:fuchs": 5
+  },
+  "zeiten": [
+   10.9
+  ]
+ },
+ "knotenBau": {
+  "sync": 15,
+  "ms": 246.4,
+  "maxMs": 33.4,
+  "ueber16": 8,
+  "jeAuftragMs": {
+   "haupt tier:fuchs": 230.4,
+   "k0 tier:fuchs": 16
+  }
+ },
+ "bildTaktMs": 12.7,
+ "frames": 1324,
+ "frameMs": {
+  "p50": 16.8,
+  "p95": 41.6,
+  "p99": 50,
+  "max": 1875
+ },
+ "haengerN": 2,
+ "jeKlasse": {
+  "TAKT": 1,
+  "NEBEN": 0,
+  "GC": 0,
+  "GPU": 1
+ },
+ "jeUrsache": [
+  {
+   "ursache": "GPU: Pipeline synchron (k0 tier:fuchs, haupt tier:fuchs)",
+   "klasse": "GPU",
+   "n": 1,
+   "summeMs": 1875,
+   "maxMs": 1875
+  },
+  {
+   "ursache": "TAKT: renderer.renderObject › build [three.webgpu.min.js]",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 333,
+   "maxMs": 333
+  }
+ ],
+ "haenger": [
+  {
+   "t": 10846,
+   "dt": 333.3,
+   "klasse": "TAKT",
+   "name": "renderer.renderObject › build [three.webgpu.min.js]",
+   "ursache": "TAKT: renderer.renderObject › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 325,
+    "NEBEN": 5,
+    "GC": 5,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "needsRefresh [three.webgpu.min.js]",
+     "pct": 62
+    },
+    {
+     "name": "getMonitor [three.webgpu.min.js]",
+     "pct": 62
+    },
+    {
+     "name": "getNodeBuilderState [three.webgpu.min.js]",
+     "pct": 62
+    },
+    {
+     "name": "N.getForRender [werkbank]",
+     "pct": 62
+    },
+    {
+     "name": "getForRender [three.webgpu.min.js]",
+     "pct": 62
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 61
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 26
+    },
+    {
+     "name": "getDataFromNode [three.webgpu.min.js]",
+     "pct": 5
+    },
+    {
+     "name": "_getChildren [three.webgpu.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "pipeSync": 11,
+    "pipeSyncMs": 0.3,
+    "shader": 17,
+    "shaderKB": 173.77,
+    "texKB": 512,
+    "bauN": 15,
+    "bauMs": 246.4
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "sync:renderPipeline_ShadowMaterial_78",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "sync:renderPipeline_ShadowMaterial_78",
+    "bau:ShadowMaterial",
+    "sync:renderPipeline_ShadowMaterial_78",
+    "bau:ShadowMaterial",
+    "sync:renderPipeline_ShadowMaterial_78",
+    "bau:ShadowMaterial",
+    "sync:renderPipeline_ShadowMaterial_78"
+   ],
+   "loaf": [
+    "FrameRequestCallback → e 333 ms",
+    "FrameRequestCallback → e 49 ms"
+   ]
+  },
+  {
+   "t": 11182,
+   "dt": 1875,
+   "klasse": "GPU",
+   "name": "Pipeline synchron (k0 tier:fuchs, haupt tier:fuchs)",
+   "ursache": "GPU: Pipeline synchron (k0 tier:fuchs, haupt tier:fuchs)",
+   "zeiten": {
+    "TAKT": 66,
+    "NEBEN": 5,
+    "GC": 4,
+    "GPU": 1800
+   },
+   "takte": 2,
+   "ohneRender": 1,
+   "pfad": [],
+   "zweige": [],
+   "selbst": [],
+   "geraet": {
+    "texKB": 544
+   },
+   "geraetVorher": {
+    "texKB": 2080,
+    "pipeSync": 11,
+    "pipeSyncMs": 0.3,
+    "shader": 17,
+    "shaderKB": 173.77,
+    "bauN": 15,
+    "bauMs": 246.4
+   },
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "sync:renderPipeline_ShadowMaterial_78",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "bau:ShadowMaterial",
+    "sync:renderPipeline_ShadowMaterial_78",
+    "bau:ShadowMaterial",
+    "sync:renderPipeline_ShadowMaterial_78",
+    "bau:ShadowMaterial",
+    "sync:renderPipeline_ShadowMaterial_78",
+    "bau:ShadowMaterial",
+    "sync:renderPipeline_ShadowMaterial_78"
+   ],
+   "loaf": [
+    "FrameRequestCallback → e 49 ms",
+    "FrameRequestCallback → e 32 ms"
+   ]
+  }
+ ],
+ "eichung": {
+  "driftMs": -0.29,
+  "treffer": 14
+ },
+ "profil": true,
+ "loafDa": true,
+ "probe": [],
+ "lauf": {
+  "regler": "voll",
+  "tiere": "frei",
+  "wandern": "aus",
+  "kreaturen": 11,
+  "chunks": 81,
+  "loadScale": 1,
+  "wetter": "sunny"
+ },
+ "erst": null
+}
