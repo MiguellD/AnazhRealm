@@ -278,6 +278,14 @@ function validateManifest(m) {
                 }
                 if ("boden" in z && !(typeof z.boden === "number" && z.boden >= 0 && z.boden < 1))
                     v.push(`B2c: lod.budget.${k}[${st}].boden muss in [0, 1) liegen`);
+                // S3 (08.10.): die Rispe des Grases — Grannen und Segmente je Rispe (ganz >= 1), die Breite der Granne in
+                // Einheiten der vollen (> 0); emitGrass liest sie je gelieferter Stufe.
+                if ("rispe" in z) {
+                    const r = z.rispe;
+                    const ganz = (x) => Number.isInteger(x) && x >= 1;
+                    if (!r || !ganz(r.grannen) || !ganz(r.segmente) || !(r.breite > 0 && isFinite(r.breite)))
+                        v.push(`B2c: lod.budget.${k}[${st}].rispe muss grannen, segmente (ganz >= 1) und breite (> 0) tragen`);
+                }
                 // W6 (05.10.): die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so viele
                 // Baumhoehen von der Strecke seiner Nachbarn abweichen (foundry-core __ringBahn): 0 < ringToleranz < 0,01.
                 if ("ringToleranz" in z && !(typeof z.ringToleranz === "number" && z.ringToleranz > 0 && z.ringToleranz < 0.01))
@@ -957,6 +965,7 @@ function validateManifest(m) {
                             dichte: { laub: 1.5 },
                             rinde: { ast: 0.1, reisig: 0.3 },
                             straehne: { teile: 0, breite: 1 },
+                            rispe: { grannen: 0, segmente: 2, breite: 1 },
                             schnitt: 0.2,
                             rute: 0.1,
                             boden: 1.5,
@@ -1031,6 +1040,7 @@ function validateManifest(m) {
             bvB.some((s) => s.includes("dichte.laub muss")) &&
             bvB.some((s) => s.includes("rinde muss")) &&
             bvB.some((s) => s.includes("straehne muss")) &&
+            bvB.some((s) => s.includes("rispe muss")) &&
             bvB.some((s) => s.includes("schnitt < rute")) &&
             bvB.some((s) => s.includes("boden muss")) &&
             bvB.some((s) => s.includes("draws steigt")) &&

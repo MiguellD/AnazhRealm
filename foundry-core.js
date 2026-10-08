@@ -294,7 +294,7 @@ const PORTAL_RENDER_CONFIG = {
         // Nahbild bis d0): aus dem Haushalt Baum L0/L1+Werfer 150k (W5 rechnete 14 L0-Baeume bei 20 m: 10 714 je
         // Baum); das Soll-Bild (Cluster-Karten an ihrem Traeger, Weiden-Straehnen entlang der Peitsche, Stamm und
         // Starkaeste ganz) braucht hoechstens 17,6k (Tanne s2) — die Zeile steht offen bei 18 000, der Haushalt
-        // verschiebt sich um das L0-Band (docs/studio-vertrag.md B2c). grass, flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr Band-Schnitt ist offen
+        // verschiebt sich um das L0-Band (docs/studio-vertrag.md B2c). flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr Band-Schnitt ist offen
         // (docs/PFLICHT-OFFEN.md E). Konsum: gate:asset-contract (die Wand baut jede Stufe — Goldens, Samen 7 und jede
         // Gestalt der Welt — und nennt den Taeter), gate:studio-vertrag B2c (Vollstaendigkeit, Monotonie: tris faellt
         // je Stufe streng, draws steigt nie). Die Kosten-Regler der Kronen wohnen in ihrer Zeile: blattKarte (Kante der
@@ -375,9 +375,20 @@ const PORTAL_RENDER_CONFIG = {
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
                 fernform: "karte",
             },
+            // DAS GRAS (S3 08.10., aus dem Haushalt abgeleitet): die Nah-Wiese der Welt darf an der Mess-Wiese höchstens
+            // 57 066 Dreiecke zeichnen (die Ratsche des Profi-Bands, Haushalt 80 000 je Blick; Ist V18.536: 84 336 =
+            // L1 37 800 + L2 46 536 aus 1 188/1 560 und 162/228 je Büschel) — die Zeilen sind gegen dieses Band gebaut,
+            // nicht an der Gestalt abgelesen (bis dahin die gemessene Hülle 1 700/320). L1 (0–5 m) ≤ 1 000: Halme 5
+            // Segmente wie zuvor, die Rispe 3 Grannen × 2 Segmente (768/960, der Federbusch); L2 (5–14 m) ≤ 130: die Rispe
+            // EINE Granne (96/118, der helle Saum). Die Halme bleiben byte-gleich (Halm-Fläche 2,702 / 3,770 m²).
+            // `rispe` ist der Kosten-Regler der Stufe (emitGrass liest ihn): grannen × segmente je Rispe und die Breite der
+            // Granne in Einheiten der alten. Die Breite ist an der BILD-Deckung geeicht (echte GPU, Mess-Wiese, 8 Blicke,
+            // Ährchen-Anteil der Pixel 3 m und 4,5–5,5 m voraus): die flächen-treue Breite (2,17 / 3,07 — 7 × 3 Segmente
+            // auf 3 × 2 bzw. 4 × 3 auf 1 × 1) zeigte 25 % / 16 % MEHR Ährchen-Pixel, weil der 7-Grannen-Stern sich an
+            // der Spitze selbst verdeckte.
             grass: {
-                1: { tris: 1700, draws: 1, schatten: false },
-                2: { tris: 320, draws: 1, schatten: false },
+                1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 3, segmente: 2, breite: 1.75 } },
+                2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
                 fernform: "boden",
             },
             flower: {
@@ -2239,8 +2250,20 @@ function emitGrass(P) {
         g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
         geos.push(g);
         if (isCulm) {
-            // Rispe: feine nickende Grannen an der Spitze
-            const Naw = __lod === 0 ? 11 : __lod === 1 ? 7 : 4,
+            // Rispe: feine nickende Grannen an der Spitze. DIE RISPE IST GESTUFT (S3 08.10., Lehre 19): bis dahin war sie in
+            // jeder Stufe gleich fein (L1 7 Grannen × 3 Segmente = 42 Dreiecke je Rispe, 49/54 % der L1 an den zwei
+            // Nah-Wiesen-Vorlagen) — die Stufe war an der Gestalt abgelesen, nicht aus dem Band. Jetzt liest jede gelieferte
+            // Stufe ihre Rispe aus ihrer Budget-Zeile (`lod.budget.grass[stufe].rispe`: Grannen, Segmente, Breite); die
+            // Labor-Stufe L0 (keine gelieferte Stufe) bleibt 11 × 3 in voller Breite. STROM-ERHALT: jede Granne der vollen
+            // Zahl `NawVoll` (das Individuum: 11/7/4) zieht ihre Würfe (Winkel, Länge), auch die nicht gezeichnete — das
+            // Individuum, seine Halme und jede folgende Rispe bleiben byte-gleich, nur die Rispe fällt.
+            const NawVoll = __lod === 0 ? 11 : __lod === 1 ? 7 : 4,
+                _rz = __lod === 0 ? { grannen: 11, segmente: 3, breite: 1 } : PORTAL_RENDER_CONFIG.lod.budget.grass[__lod].rispe;
+            if (!(_rz && Number.isInteger(_rz.grannen) && _rz.grannen >= 1 && _rz.grannen <= NawVoll && Number.isInteger(_rz.segmente) && _rz.segmente >= 1 && _rz.breite > 0))
+                throw new Error("[phyto] lod.budget.grass[" + __lod + "].rispe fehlt (grannen 1.." + NawVoll + ", segmente >= 1, breite > 0)");
+            const Naw = _rz.grannen,
+                AK = _rz.segmente,
+                breit = _rz.breite,
                 pg = [],
                 pi = [],
                 pc = [],
@@ -2250,17 +2273,17 @@ function emitGrass(P) {
                 pu = [];
             let vb = 0;
             const swT = P.windGain * 1.15;
-            for (let k = 0; k < Naw; k++) {
+            for (let k = 0; k < NawVoll; k++) {
                 const aa = (k / Naw) * 6.2831 + rnd() * 0.5,
                     awl = L * rrange(0.14, 0.28);
+                if (k >= Naw) continue; // Strom-Erhalt: die Würfe sind gezogen, die Granne zeichnet nicht
                 let ad = vnorm([Math.cos(aa) * 0.3, 0.96, Math.sin(aa) * 0.3]),
                     ap = tip.slice();
-                const AK = 3;
                 for (let s2 = 0; s2 < AK; s2++) {
                     const f2 = s2 / AK;
                     ad = vnorm(vadd(ad, [0, -0.3 - f2 * 0.85, 0]));
                     const np = vadd(ap, vscl(ad, awl / AK)),
-                        hw = 0.016 * (1 - f2 * 0.7),
+                        hw = 0.016 * breit * (1 - f2 * 0.7),
                         rt2 = vnorm(vcross(ad, [0, 1, 0]));
                     const c0 = vadd(ap, vscl(rt2, -hw)),
                         c1 = vadd(ap, vscl(rt2, hw)),
