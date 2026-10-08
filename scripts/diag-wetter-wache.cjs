@@ -131,10 +131,14 @@ function probe() {
     aus.frei.autoZug = fenster(() => r._loopWeatherAndGrowth(0, t()));
     window.__buehne();
     aus.ende = { wetter: st.weather, uhr: st.weatherEffectTime };
-    // (Q) der Halt in der Engstelle
-    aus.engstelleLiest = /this\.state\.weatherEffectTime\s*<\s*0/.test(
-        window.__codeOf(Object.getPrototypeOf(r)._setWeather)
-    );
+    // (Q) der Halt in der Engstelle — direkt oder über den EINEN Leser des Halts (`_messHalt`, 0710-7: ihn liest auch die
+    // Engstelle der Welt-Akte)
+    const proto = Object.getPrototypeOf(r);
+    const sw = window.__codeOf(proto._setWeather);
+    const mh = typeof proto._messHalt === "function" ? window.__codeOf(proto._messHalt) : "";
+    aus.engstelleLiest =
+        /this\.state\.weatherEffectTime\s*<\s*0/.test(sw) ||
+        (/this\._messHalt\(\)/.test(sw) && /this\.state\.weatherEffectTime\s*<\s*0/.test(mh));
     return aus;
 }
 

@@ -43,6 +43,26 @@ function wetterHalten() {
     if (!(Number.isFinite(u) && u < 0)) st.weatherEffectTime = -1e9;
 }
 
+// DER STAPEL DER SPIONE: die Spiel-Rahmen des Stapels (anazhRealm.js), der jüngste zuerst — die Rahmen der Linse zählen nicht.
+// Ein DSL-Programm trägt beliebig tief verschachtelte Interpreter-Rahmen (dslEval ← random ← dslEval ← repeat …): der Name ist
+// dann der Effekt und wer `dslRun` rief (der Täter: Emotion, Nexus, Gesetz …).
+function spielStapel() {
+    const lim = Error.stackTraceLimit;
+    Error.stackTraceLimit = 60;
+    const zeilen = String(new Error().stack || "").split("\n");
+    Error.stackTraceLimit = lim;
+    const namen = [];
+    for (const l of zeilen) {
+        if (!/anazhRealm\.js/.test(l)) continue;
+        const m = /at (?:async )?(?:new )?([^\s(]+) \(/.exec(l);
+        namen.push(m ? m[1].replace(/^(AnazhRealm|Object)\./, "") : "(anonym)");
+    }
+    if (!namen.length) return "Sonde (kein Spiel-Rahmen)";
+    const lauf = namen.indexOf("dslRun");
+    if (lauf > 1) return [namen[0], "…", ...namen.slice(lauf, lauf + 4)].join(" ← ");
+    return namen.slice(0, 6).join(" ← ");
+}
+
 // DER WETTER-SPION (die Linse der Wache): JEDER Schreiber des Wetters beim Namen. Der EINE Wetter-Schreiber des Spiels
 // (`_setWeather`) bucht je Aufruf seine Quelle (die DSL-Quelle — `emotion:sorrow` · `nexus` · `rule:…` · `human` · `remote:…`
 // —, „auto-zug", „buehne") und die Spiel-Rahmen seines Stapels; ein verweigerter Zug (die Wache hält) steht als
@@ -57,25 +77,7 @@ function wetterSpion() {
         (window.__wetterSpionBuch = { seq: 0, buch: [], staende: new WeakSet(), quelle: null, stapel: null });
     if (S.staende.has(st)) return S;
     S.staende.add(st);
-    // die Spiel-Rahmen des Stapels (anazhRealm.js), der jüngste zuerst — die Rahmen der Linse zählen nicht. Ein DSL-Programm
-    // trägt beliebig tief verschachtelte Interpreter-Rahmen (dslEval ← random ← dslEval ← repeat …): der Name ist dann der
-    // Effekt und wer `dslRun` rief (der Täter: Emotion, Nexus, Gesetz …).
-    const wer = () => {
-        const lim = Error.stackTraceLimit;
-        Error.stackTraceLimit = 60;
-        const zeilen = String(new Error().stack || "").split("\n");
-        Error.stackTraceLimit = lim;
-        const namen = [];
-        for (const l of zeilen) {
-            if (!/anazhRealm\.js/.test(l)) continue;
-            const m = /at (?:async )?(?:new )?([^\s(]+) \(/.exec(l);
-            namen.push(m ? m[1].replace(/^(AnazhRealm|Object)\./, "") : "(anonym)");
-        }
-        if (!namen.length) return "Sonde (kein Spiel-Rahmen)";
-        const lauf = namen.indexOf("dslRun");
-        if (lauf > 1) return [namen[0], "…", ...namen.slice(lauf, lauf + 4)].join(" ← ");
-        return namen.slice(0, 6).join(" ← ");
-    };
+    const wer = () => window.__spielStapel();
     const buche = (e) => {
         e.seq = ++S.seq;
         e.t = Math.round(performance.now());
@@ -149,9 +151,66 @@ function wetterSetzen(wort) {
     return st.weather;
 }
 
+// DER WELT-AKT-SPION (die Linse der Welt-Wache, 0710-7): jeder Welt-Akt der DSL beim Namen. Unter dem Halt einer Messung (die
+// Uhr des Wetter-Zugs unter 0, `__wetterHalten`) verweigert die EINE Engstelle des Spiels (`dslEval`) jeden Welt-Akt
+// (`AnazhRealm.DSL_WELTAKTE`) und bucht ihn (`_weltaktGehalten`) — der Spion hört dort mit: „verweigert" mit Op und Quelle.
+// Und er hüllt jeden Welt-Akt der Effekt-Tafel (`dslEffects`): läuft einer unter dem Halt trotzdem, steht er als „durch" mit
+// Quelle und Stapel im Buch — der Täter. Nennt das Spiel keine Welt-Akte, ist der Spion blind (das Urteil ROT); er hüllt dann
+// die Akte, die sein Aufrufer nennt (`ersatz`), damit der Täter trotzdem beim Namen steht. Das Buch liest `__weltaktBuch(seit)`,
+// das Urteil `weltaktUrteil` (rein, unten).
+function weltaktSpion(ersatz) {
+    const r = window.anazhRealm;
+    const S =
+        window.__weltaktSpionBuch ||
+        (window.__weltaktSpionBuch = { seq: 0, buch: [], blind: false, huellen: new WeakMap() });
+    const liste = r.constructor.DSL_WELTAKTE;
+    S.blind = !Array.isArray(liste);
+    const halt = () => {
+        const u = window.anazhRealm.state.weatherEffectTime;
+        return Number.isFinite(u) && u < 0;
+    };
+    const buche = (e) => {
+        e.seq = ++S.seq;
+        e.t = Math.round(performance.now());
+        S.buch.push(e);
+        if (S.buch.length > 500) S.buch.splice(0, S.buch.length - 500);
+    };
+    const tafel = r.dslEffects;
+    let gehuellt = S.huellen.get(tafel);
+    if (!gehuellt) S.huellen.set(tafel, (gehuellt = new Set()));
+    for (const op of S.blind ? ersatz || [] : liste) {
+        const fn = tafel[op];
+        if (gehuellt.has(op) || typeof fn !== "function") continue;
+        gehuellt.add(op);
+        tafel[op] = function (args, ctx) {
+            if (halt()) buche({ art: "durch", op, quelle: (ctx && ctx.source) || "?", stapel: window.__spielStapel() });
+            return fn.call(this, args, ctx);
+        };
+    }
+    if (!S.blind && !Object.prototype.hasOwnProperty.call(r, "_weltaktGehalten"))
+        r._weltaktGehalten = function (op, ctx) {
+            buche({ art: "verweigert", op, quelle: (ctx && ctx.source) || "?" });
+            return Object.getPrototypeOf(this)._weltaktGehalten.call(this, op, ctx);
+        };
+    return S;
+}
+
+// Das Buch des Welt-Akt-Spions seit `seit` (seq) und der Halt jetzt.
+function weltaktBuch(seit) {
+    const S = window.__weltaktSpion();
+    const u = window.anazhRealm.state.weatherEffectTime;
+    return {
+        seq: S.seq,
+        gehalten: Number.isFinite(u) && u < 0,
+        blind: S.blind,
+        buch: S.buch.filter((e) => e.seq > (seit || 0)),
+    };
+}
+
 function buehne() {
     const r = window.anazhRealm;
     const st = r.state;
+    window.__weltaktSpion();
     st.autoSeason = false;
     if (typeof r.setSeason === "function") r.setSeason("sommer");
     if (st.world) st.world.timeOfDay = 0.5;
@@ -451,12 +510,77 @@ function wetterSelbsttest() {
     return v;
 }
 
+// DAS URTEIL DER WELT-WACHE (rein, Node): `b` = das Buch des Welt-Akt-Spions im Fenster einer Messung (`__weltaktBuch(seit)`).
+// ROT: kein Spion (die Werkbank kennt das Buch nicht), ein blinder Spion (das Spiel nennt keine Welt-Akte), ein Welt-Akt lief
+// unter dem Halt durch — beim Op, bei der Quelle und beim Stapel. Verweigerte Akte (die Engstelle hielt) sind grün und stehen
+// je Quelle und Op beim Namen.
+function weltaktUrteil(b) {
+    const taeter = [];
+    const verweigert = {};
+    if (!b) taeter.push("kein Welt-Akt-Spion (die Wache kennt `__weltaktBuch` nicht)");
+    else {
+        if (b.blind)
+            taeter.push("das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt) — der Halt ist blind");
+        for (const e of b.buch || []) {
+            if (e.art === "verweigert") {
+                const k = `${e.quelle} → ${e.op}`;
+                verweigert[k] = (verweigert[k] || 0) + 1;
+                continue;
+            }
+            taeter.push(`${e.op} durch ${e.quelle} unter dem Halt (${e.stapel})`);
+        }
+    }
+    return Object.assign({}, b, { urteil: taeter.length ? "ROT" : "GRUEN", taeter, verweigert });
+}
+
+// DER SELBSTTEST DES URTEILS (rein): jeder durchgelaufene Akt fällt rot beim Namen, Blindheit und fehlender Spion fallen rot,
+// Verweigerung bleibt grün und steht beim Namen.
+function weltaktSelbsttest() {
+    const v = [];
+    const dorf = {
+        art: "durch",
+        op: "spawn_village",
+        quelle: "nexus",
+        stapel: "dslEval ← … ← dslRun ← _loopNexusUpdate",
+    };
+    const halt = { art: "verweigert", op: "creatures_size_mul", quelle: "nexus" };
+    const buch = (eintraege, o) =>
+        Object.assign({ seq: eintraege.length, gehalten: true, blind: false, buch: eintraege }, o);
+    const faelle = [
+        ["ruhig", buch([]), "GRUEN", null],
+        ["nexus-dorf", buch([dorf]), "ROT", "spawn_village durch nexus"],
+        [
+            "gehalten und durch",
+            buch([halt, Object.assign({}, dorf, { op: "spawn_creature" })]),
+            "ROT",
+            "spawn_creature",
+        ],
+        ["blind", buch([], { blind: true }), "ROT", "DSL_WELTAKTE fehlt"],
+        ["kein spion", null, "ROT", "kein Welt-Akt-Spion"],
+        ["verweigert", buch([halt, halt]), "GRUEN", null],
+    ];
+    for (const [name, b, soll, taeter] of faelle) {
+        const u = weltaktUrteil(b);
+        if (u.urteil !== soll) v.push(`${name}: ${u.urteil} statt ${soll}`);
+        if (taeter && !u.taeter.some((t) => t.includes(taeter)))
+            v.push(`${name}: der Täter „${taeter}" steht nicht im Urteil`);
+    }
+    if (weltaktUrteil(faelle[5][1]).verweigert["nexus → creatures_size_mul"] !== 2)
+        v.push("verweigert: die verweigerte Quelle steht nicht beim Namen");
+    return v;
+}
+
 module.exports = {
     wetterUrteil,
     wetterSelbsttest,
+    weltaktUrteil,
+    weltaktSelbsttest,
     AUSGABE_INSTALL:
         `window.__erstRuhe = ${erstRuhe.toString()};` +
         `window.__ausgabeAufnahme = ${ausgabeAufnahme.toString()};` +
+        `window.__spielStapel = ${spielStapel.toString()};` +
+        `window.__weltaktSpion = ${weltaktSpion.toString()};` +
+        `window.__weltaktBuch = ${weltaktBuch.toString()};` +
         `window.__wetterSpion = ${wetterSpion.toString()};` +
         `window.__wetterBuch = ${wetterBuch.toString()};` +
         `window.__wetterSetzen = ${wetterSetzen.toString()};` +

@@ -1075,28 +1075,36 @@ async function starte() {
                         })
                     );
                 // DIE WACHEN der Mess-Folge (scripts/omen-messfolge.cjs, nach jedem Schritt): der Stempel-Pool, das Buch des
-                // Wetter-Spions seit `seit`, der gestellte Ort (Aufstellung, Dorf-Zug, Ort-Takt, Gier, Spieler), das Fenster
-                // (Viewport und Zeichen-Puffer), die Seiten-Fehler — das Urteil spricht die Folge (`wachenUrteil`); dazu die
-                // Tiere (`tierZahl`: ein Weltzustand neben jeder Messung, kein Urteil).
+                // Wetter-Spions seit `seit` und das des Welt-Akt-Spions seit `seitWelt`, der gestellte Ort (Aufstellung,
+                // Dorf-Zug, Ort-Takt, Gier, Spieler), das Fenster (Viewport und Zeichen-Puffer), die Seiten-Fehler — das Urteil
+                // spricht die Folge (`wachenUrteil`); dazu die Tiere (`tierZahl`: ein Weltzustand neben jeder Messung, kein
+                // Urteil).
                 if (req.url === "/wache") {
-                    const w = await page.evaluate((seit) => {
-                        const r = window.anazhRealm;
-                        const st = r.state;
-                        const pm = st.playerMesh.position;
-                        const db = st.renderer.getDrawingBufferSize(new window.THREE.Vector2());
-                        return {
-                            wetter: window.__wetterBuch(seit),
-                            ort: {
-                                dorfZug: window.__anazhAutoSettlement !== false,
-                                ortTakt: window.__ortTakt || [],
-                                gier: st.yaw,
-                                spieler: [pm.x, pm.z].map((x) => +x.toFixed(1)),
-                            },
-                            fenster: { innen: [window.innerWidth, window.innerHeight], puffer: [db.x, db.y] },
-                            tiere: typeof window.__tierZahl === "function" ? window.__tierZahl() : null,
-                            version: r.constructor.VERSION,
-                        };
-                    }, Number(b.seit) || 0);
+                    const w = await page.evaluate(
+                        (a) => {
+                            const r = window.anazhRealm;
+                            const st = r.state;
+                            const pm = st.playerMesh.position;
+                            const db = st.renderer.getDrawingBufferSize(new window.THREE.Vector2());
+                            return {
+                                wetter: window.__wetterBuch(a.seit),
+                                weltakt:
+                                    typeof window.__weltaktBuch === "function"
+                                        ? window.__weltaktBuch(a.seitWelt)
+                                        : null,
+                                ort: {
+                                    dorfZug: window.__anazhAutoSettlement !== false,
+                                    ortTakt: window.__ortTakt || [],
+                                    gier: st.yaw,
+                                    spieler: [pm.x, pm.z].map((x) => +x.toFixed(1)),
+                                },
+                                fenster: { innen: [window.innerWidth, window.innerHeight], puffer: [db.x, db.y] },
+                                tiere: typeof window.__tierZahl === "function" ? window.__tierZahl() : null,
+                                version: r.constructor.VERSION,
+                            };
+                        },
+                        { seit: Number(b.seit) || 0, seitWelt: Number(b.seitWelt) || 0 }
+                    );
                     w.ort.ort = aktOrt;
                     return send(
                         Object.assign(w, {
