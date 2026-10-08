@@ -11375,7 +11375,11 @@ class AnazhRealm {
         const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
         const strong = (T && T.resonance_strong) || 1.5;
         const RADIUS2 = 24 * 24;
-        for (const e of archs) {
+        // die Plätze um den Spieler (`_blockerUmPlatz`, in der Ordnung des Bestands) — vorher jeder Eintrag je Akkord
+        const nahe = this._lofiNahe || (this._lofiNahe = []);
+        nahe.length = 0;
+        this._blockerUmPlatz(pm.position.x, pm.position.z, 24 + 1e-6, nahe);
+        for (const e of nahe) {
             if (!e || !e.position) continue;
             const dx = e.position.x - pm.position.x;
             const dz = e.position.z - pm.position.z;
@@ -33671,7 +33675,13 @@ class AnazhRealm {
     // (`_stepCharacterStructures` über `_blockerNahe`). DER ZWEITE SCHLÜSSEL, der PLATZ: jeder Eintrag des Bestands (auch
     // ohne Boxen) steht in den Zellen von Position ± Reichweite (`plaetze`); wandert seine Position nach dem Eintritt (das
     // gerittene Werk, `_blockerBewegt`), fragt man ihn direkt (`beweger`). Leser: der Tier-Leib (`_kreaturHuellenKontakt`
-    // über `_blockerUmPlatz`). Das alte Bucket-Grid (`state.blockerIndex`, V9.65) trug die Hydrosphäre und fiel mit ihr (V9.75).
+    // über `_blockerUmPlatz`), ebenso der Brennglas-Takt, die Resonanz der Boosts und das Lofi-Pad. DAS VERZEICHNIS
+    // (0710-10): je Name die Einträge, die ihn tragen — jeder Schlüssel ihrer Affordanzen (`entry.affordances`, beim Spawn
+    // eingefroren, nachgezogen von `setBlueprintAsPortal`) und „rauch" (ein Kamin: `userData.rauchQuelle` oder `chimney`),
+    // gestempelt mit den Zellen; `_blockerMit(name)` gibt sie in der Ordnung des Bestands. Leser: die Affordanz-Takte und der
+    // Dorf-Rauch. Die WARMEN Einträge (`warm`, Hitze > 0) führt der Brennglas-Takt — erwärmt wird nur dort; jeder Stempel
+    // trägt einen warmen Eintrag ein (ein Wiedereintritt). Das alte Bucket-Grid (`state.blockerIndex`, V9.65) trug die
+    // Hydrosphäre und fiel mit ihr.
     _blockerNetz() {
         const liste = this.state.architectures;
         const alt = this._blockerNetzStand;
@@ -33681,6 +33691,9 @@ class AnazhRealm {
             zellen: new Map(),
             plaetze: new Map(),
             beweger: new Set(),
+            verzeichnis: new Map(),
+            verzeichnisListe: new Map(),
+            warm: alt ? alt.warm : new Set(),
             seq: alt ? alt.seq : 0,
             gen: alt ? alt.gen + 1 : 1,
             // der Zähler der Fragen läuft über jeden Neubau weiter (wie die Ordnung): die Einträge tragen die Marken der alten
@@ -33725,6 +33738,7 @@ class AnazhRealm {
         this._blockerNetzLoesen(entry);
         if (entry._blockerGen !== N.gen) return;
         entry._blockerZellenGen = N.gen;
+        if (entry.heatBuildup > 0) N.warm.add(entry); // ein warmer Eintrag tritt (wieder) ein: der Brennglas-Takt kühlt ihn
         const pos = entry.position;
         if (pos) {
             const rr = entry._blockerReach || 0;
@@ -33736,6 +33750,16 @@ class AnazhRealm {
                 pos.z - rr,
                 pos.z + rr
             );
+        }
+        const namen = this._blockerNamen(entry);
+        if (namen.length) {
+            for (const n of namen) {
+                let menge = N.verzeichnis.get(n);
+                if (!menge) N.verzeichnis.set(n, (menge = new Set()));
+                menge.add(entry);
+                N.verzeichnisListe.delete(n);
+            }
+            entry._blockerNamenListe = namen;
         }
         const boxes = entry.blockerAABBs;
         if (!boxes || !boxes.length) return;
@@ -33874,6 +33898,38 @@ class AnazhRealm {
             if (gilt) this._blockerZellenAus(N.plaetze, entry, entry._blockerPlatz);
             entry._blockerPlatz = null;
         }
+        if (entry._blockerNamenListe) {
+            if (gilt)
+                for (const n of entry._blockerNamenListe) {
+                    const menge = N.verzeichnis.get(n);
+                    if (menge && menge.delete(entry)) N.verzeichnisListe.delete(n);
+                }
+            entry._blockerNamenListe = null;
+        }
+    }
+
+    // Die Namen eines Eintrags im Verzeichnis: jeder wahre Schlüssel seiner Affordanzen und „rauch", wenn er einen Kamin trägt.
+    _blockerNamen(entry) {
+        const out = [];
+        const a = entry.affordances;
+        if (a && typeof a === "object") for (const k in a) if (a[k]) out.push(k);
+        if ((entry.userData && entry.userData.rauchQuelle) || entry.chimney) out.push("rauch");
+        return out;
+    }
+
+    // Die Einträge des Bestands, die `name` tragen, in seiner Ordnung — dieselbe Liste wie
+    // `state.architectures.filter((e) => e.affordances && e.affordances[name])` (für „rauch": jeder Kamin). Die Liste lebt, bis
+    // sich der Name regt; der Leser ändert sie nie.
+    _blockerMit(name) {
+        const N = this._blockerNetz();
+        let liste = N.verzeichnisListe.get(name);
+        if (!liste) {
+            const menge = N.verzeichnis.get(name);
+            liste = menge ? Array.from(menge) : [];
+            if (liste.length > 1) liste.sort(AnazhRealm._nachBestand);
+            N.verzeichnisListe.set(name, liste);
+        }
+        return liste;
     }
 
     // Das Tor-Gesetz eines Eintrags: reine porta-Zahlen (Dial-Satz p · membranUniforms mu ·
@@ -46006,7 +46062,11 @@ class AnazhRealm {
         if (playerPos && Array.isArray(this.state.architectures)) {
             const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
             const radiusSq = AnazhRealm.BOOST_RESONANCE_RADIUS * AnazhRealm.BOOST_RESONANCE_RADIUS;
-            for (const entry of this.state.architectures) {
+            // die Plätze um den Spieler (`_blockerUmPlatz`, in der Ordnung des Bestands) — vorher jeder Eintrag je Sekunde
+            const nahe = this._boostNahe || (this._boostNahe = []);
+            nahe.length = 0;
+            this._blockerUmPlatz(playerPos.x, playerPos.z, AnazhRealm.BOOST_RESONANCE_RADIUS + 1e-6, nahe);
+            for (const entry of nahe) {
                 if (!entry || !entry.position) continue;
                 const dx = entry.position.x - playerPos.x;
                 const dz = entry.position.z - playerPos.z;
@@ -47154,6 +47214,7 @@ class AnazhRealm {
             for (const entry of arches) {
                 if (entry && entry.type === name) {
                     entry.affordances = this.computeBlueprintAffordances(bp);
+                    this._blockerNetzSetzen(entry); // das Verzeichnis der Affordanzen
                 }
             }
         }
@@ -51815,8 +51876,9 @@ class AnazhRealm {
         if (!Array.isArray(dr.teilchen)) dr.teilchen = [];
         // Quellen neu aus Architectures mit rauchQuelle (world tip = origin + φ-rotate).
         const quellen = [];
-        const archs = st.architectures;
-        if (Array.isArray(archs)) {
+        // die Kamine aus dem Verzeichnis (`_blockerMit("rauch")`, in der Ordnung des Bestands) — vorher je Frame jeder Eintrag
+        const archs = Array.isArray(st.architectures) ? this._blockerMit("rauch") : null;
+        if (archs) {
             for (let i = 0; i < archs.length; i++) {
                 const e = archs[i];
                 if (!e || !e.position) continue;
@@ -52970,8 +53032,7 @@ class AnazhRealm {
         const r2 = radiusM * radiusM;
         let best = null;
         let bestD2 = r2;
-        for (const entry of this.state.architectures || []) {
-            if (!entry.affordances || !entry.affordances[affordanceKey]) continue;
+        for (const entry of this._blockerMit(affordanceKey)) {
             const dx = entry.position.x - pm.x;
             const dy = entry.position.y - pm.y;
             const dz = entry.position.z - pm.z;
@@ -53913,8 +53974,7 @@ class AnazhRealm {
         // Zündet erst auf stehender Bühne — sonst verbrennt Welt-Substanz im unspielbaren Boot. Headless steht
         // die Bühne sofort (direkte Tick-Aufrufe laufen unverändert).
         if (!this._buehneSteht()) return;
-        const archs = this.state.architectures || [];
-        const focusing = archs.filter((e) => e.affordances && e.affordances.focusing);
+        const focusing = this._blockerMit("focusing");
         const sonne = this.state.weather === "sunny" ? this._sonnenRichtung() : null;
         const licht = sonne && sonne.y > 0 ? sonne : null;
         const punkte = [];
@@ -53930,7 +53990,28 @@ class AnazhRealm {
         // Das GERITTENE Gefährt brennt nie unter dem Reiter weg (sonst Auto-Dismount aus dem Nichts) —
         // Reiter + Gefährt sind EINS.
         const riddenId = this.state.player ? this.state.player.mountedArch : null;
-        for (const target of archs) {
+        // DIE BETROFFENEN (0710-10, Lehre 25): erwärmen kann sich nur, wer in Reichweite eines Brennglases steht — die Plätze um
+        // jedes (`_blockerUmPlatz`) —, kühlen nur, wer warm ist (`warm`, die Menge dieses Takts); jeder andere Eintrag ginge
+        // ohne Wirkung durch. In der Ordnung des Bestands (die Sätze und das Feuer in derselben Folge) — dieselben Urteile wie
+        // die Schleife über ihn (gate:brennglas-takt, der alte Takt als Orakel). Vorher: jeder Eintrag je Takt (Wiese 1 578).
+        const N = this._blockerNetz();
+        const ziele = this._brennZiele || (this._brennZiele = []);
+        ziele.length = 0;
+        if (punkte.length)
+            for (const fa of focusing)
+                if (fa.position)
+                    this._blockerUmPlatz(fa.position.x, fa.position.z, AnazhRealm.FOCUSING_HEAT_RANGE_M + 1e-6, ziele);
+        for (const e of N.warm) {
+            if (e._blockerGen !== N.gen) N.warm.delete(e);
+            else ziele.push(e);
+        }
+        if (ziele.length > 1) {
+            ziele.sort(AnazhRealm._nachBestand);
+            let w = 1;
+            for (let i = 1; i < ziele.length; i++) if (ziele[i] !== ziele[w - 1]) ziele[w++] = ziele[i];
+            ziele.length = w;
+        }
+        for (const target of ziele) {
             const warm = target.heatBuildup > 0;
             if (!warm && !punkte.length) continue; // kein Licht, nichts zu kühlen: der billigste Weg (Lehre 25)
             if (target.affordances && target.affordances.focusing) continue; // selbst nicht
@@ -53958,11 +54039,15 @@ class AnazhRealm {
                         }
             }
             if (!quelle) {
-                if (warm) target.heatBuildup = Math.max(0, target.heatBuildup - ratePerSec * dt);
+                if (warm) {
+                    target.heatBuildup = Math.max(0, target.heatBuildup - ratePerSec * dt);
+                    if (!(target.heatBuildup > 0)) N.warm.delete(target);
+                }
                 continue;
             }
             const vorher = target.heatBuildup || 0;
             target.heatBuildup = vorher + ratePerSec * dt;
+            if (target.heatBuildup > 0) N.warm.add(target);
             if (vorher < ignite / 2 && target.heatBuildup >= ignite / 2 && target.heatBuildup < ignite)
                 this._spielerSagt(
                     `„${name(target)}" glimmt im Brennpunkt von „${name(quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
@@ -54037,7 +54122,7 @@ class AnazhRealm {
     // spürbar); der erste Kontakt je Strahler schreibt eine Erinnerung (journalAppendOnce).
     // Spiegelt den focusing-Tick (filtern, Range-Check, akkumulieren).
     _tickRadiatingAffordances(dt) {
-        const radiating = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.radiating);
+        const radiating = this._blockerMit("radiating");
         if (radiating.length === 0) return;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
@@ -54047,9 +54132,7 @@ class AnazhRealm {
         const baseStep = AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC * dt;
         // W10 ext. — broadcasting-Relais: ein leitfähiger Mast in Reichweite
         // eines Strahlers verstärkt dessen Reichweite (Affordances komponieren).
-        const broadcasting = (this.state.architectures || []).filter(
-            (e) => e.affordances && e.affordances.broadcasting && e.position
-        );
+        const broadcasting = this._blockerMit("broadcasting").filter((e) => e.position);
         const relayRange2 = AnazhRealm.BROADCAST_RELAY_RANGE_M * AnazhRealm.BROADCAST_RELAY_RANGE_M;
         const maxMult = AnazhRealm.BROADCAST_RANGE_MULT;
         const strengthOf = (e, key) => {
@@ -54094,7 +54177,7 @@ class AnazhRealm {
     // mit der Compound-Stärke, erster Kontakt schreibt eine Erinnerung. Weniger chaos verlangsamt
     // zugleich die Kreaturen (chaos → Tempo).
     _tickBalancingAffordances(dt) {
-        const balancing = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.balancing);
+        const balancing = this._blockerMit("balancing");
         if (balancing.length === 0) return;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
@@ -54126,7 +54209,7 @@ class AnazhRealm {
     _tickLiftingAffordances() {
         const pl = this.state.player;
         if (!pl) return;
-        const lifting = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.lifting);
+        const lifting = this._blockerMit("lifting");
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm || lifting.length === 0) {
             pl.liftingField = { active: false, strength: 0 };
