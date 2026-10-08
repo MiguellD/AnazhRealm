@@ -257,13 +257,18 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         const archId = await pageA.evaluate(() => {
             const r = window.anazhRealm;
             r.setGameMode && r.setGameMode("schöpfer"); // Bau-Gates frei
+            // das Phantom ist ein Object3D wie im Spiel: das Setzen zieht das nächste (`_bauPhantomNeu`) und entsorgt
+            // das alte über `_disposeSoulGroup` (Integration V18.536)
+            const phantom = new window.THREE.Group();
+            phantom.position.set(44, 6, -44);
             r.state.buildMode = {
                 active: true,
                 blueprintName: "stein_block",
-                phantomMesh: { position: { x: 44, y: 6, z: -44 } },
+                phantomMesh: phantom,
                 phantomOnGround: true,
             };
             r.confirmBuild();
+            r._clearBuildMode();
             const arches = r.state.architectures;
             return arches.length ? arches[arches.length - 1].id : null;
         });

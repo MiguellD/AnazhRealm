@@ -14066,10 +14066,18 @@ async function checkBandLateMultiUser(ctx) {
         r.p2pBroadcastDsl = (prog) => sent.push(prog);
         r.state.p2p.enabled = true;
         r.setGameMode && r.setGameMode("schöpfer"); // Gates frei
+        // Das Phantom ist ein Object3D wie im Spiel (Integration V18.536): das Setzen zieht das nächste Phantom
+        // (`_bauPhantomNeu`), und `_disposeSoulGroup` entsorgt das alte — ein Stub `{ position }` warf dort
+        // („group.traverse is not a function") und riss 21 Folgetests mit.
+        const phantomBei = (x, y, z) => {
+            const g = new window.THREE.Group();
+            g.position.set(x, y, z);
+            return g;
+        };
         r.state.buildMode = {
             active: true,
             blueprintName: "stein_block",
-            phantomMesh: { position: { x: 30, y: 4, z: 30 } },
+            phantomMesh: phantomBei(30, 4, 30),
             phantomOnGround: true,
         };
         const builtOk = r.confirmBuild();
@@ -14092,7 +14100,7 @@ async function checkBandLateMultiUser(ctx) {
             r.state.buildMode = {
                 active: true,
                 blueprintName: cloneName,
-                phantomMesh: { position: { x: 33, y: 4, z: 33 } },
+                phantomMesh: phantomBei(33, 4, 33),
                 phantomOnGround: true,
             };
             r.confirmBuild();
@@ -14107,6 +14115,8 @@ async function checkBandLateMultiUser(ctx) {
 
         r.p2pBroadcastDsl = origBroadcast;
         r.state.p2p.enabled = false;
+        // das Phantom, das das Setzen gezogen hat, verlässt die Szene (kein Geist bleibt für die Tests danach)
+        r._clearBuildMode();
         // buildMode-Original wiederherstellen (Tests danach lesen
         // sein phantomOnGround-Feld); aktiv aus.
         r.state.buildMode = origBuildMode;
