@@ -30,6 +30,13 @@ Golden)` — rot, bis der Akt sie prägt.
 Stand der Prägung: 136 Stoff-Klassen × Gelenk Tier + 53 Mensch = 189 (= der Handbeweis), 284 Gelenke,
 10 Beipacks.
 
+Vertrags-Akt S3 kreatur (08.10.2026, Lehre 19 — die Grobstufe ist gelenkig): Stufe 1 bindet ihre Haut an die
+Gelenke wie Stufe 0 (Gewichte aus derselben Vorauswahl, das Fell-Muster über die Bone-Gewichte), jedes starre Teil
+hängt mit Gewicht 1 an seinem Gelenk (skinIndex/skinWeight im Wurzel-Raum der Ruhe-Pose), die Bone-Ordnung reist im
+Beipack (`skinJoints` wolf 31 · fox 33 · bear 25 · deer 26 · mensch 23; bis dahin trug Stufe 1 des Tiers keine).
+Neu geprägt NUR die 40 Schlüssel `*-L1|*` (35 Stoff-Klassen + 5 Beipacks); L0 297/297 byte-gleich, die Klassen-Menge,
+die Gelenke und die Dreiecke je Klasse unverändert.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.
