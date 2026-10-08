@@ -72751,6 +72751,8 @@ class AnazhRealm {
             const o = ro.object;
             if (ro.material) ro.material.removeEventListener("dispose", ro.onMaterialDispose);
             if (ro.geometry) ro.geometry.removeEventListener("dispose", ro.onGeometryDispose);
+            // Auch ein BatchedMesh trägt Objekteigenes im Schlüssel (die uuid seiner Matrizen- und Farb-Textur, 6:209537) —
+            // kommt je eins in den Stamm (heute 0), gehört `o.isBatchedMesh === true` in diese Bedingung.
             const eigenerSchluessel =
                 !!o && (o.isInstancedMesh === true || o.count > 1 || Array.isArray(o.morphTargetInfluences));
             if (eigenerSchluessel && rend && rend._nodes) rend._nodes.delete(ro);

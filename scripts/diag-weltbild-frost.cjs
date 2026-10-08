@@ -20,10 +20,12 @@
 // ist die EINE Regel jeder Gruppe, die Welt-Vorlagen teilt, `_ofenVorlage` sagt, was eine Gruppe besitzt):
 //   S1 Ich-Bühne und Welt-Leib wolf↔human ×3 (der Leib je ein Bild gezeichnet), Hof-Bühne 4 Seelen ×2 (zwei Durchgänge)
 //      entsorgen keine Welt-Geometrie, keinen Welt-Stoff
-//   S2 keine GPU kompiliert dabei nach (Welt, Ich-, Hof-Bühne je ≤ 4 Module/Pipelines gegen die geschlossene Bühne): der
+//   S2 keine GPU kompiliert dabei nach (Welt, Ich-, Hof-Bühne je ≤ 2 Module/Pipelines gegen die geschlossene Bühne): der
 //      Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte
 //   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) · S4 der Mitspieler-Leib (zweiter Peer-Guss, Seelenwechsel
-//      human↔wolf je ein Bild, Abschied) entsorgen keine Welt-Geometrie, keinen Welt-Stoff; S4 kompiliert nicht nach
+//      human↔wolf je ein Bild, Abschied) entsorgen keine Welt-Geometrie, keinen Welt-Stoff. S4 prüft die Entsorgung;
+//      Neubauten deckt S2 — der Peer teilt seine Schlüssel mit stehenden Figuren, ein Neubau-Check hätte hier keinen Biss
+//      (an b19ac994 +0, während S2 Welt +45 / Ich +18 / Hof +13 zeigt)
 //   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
 //      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher bleiben beschränkt
 //   S6 10 Mitspieler-Erscheinungen und ihr Abschied: das Ofen-Memo hält danach höchstens OFEN_MEMO_RUHEND Vorlagen ohne
@@ -805,7 +807,9 @@ function pruefRaum(echt) {
     );
 
     // S4 — der Mitspieler-Leib: zwei Peer-Güsse „human" nacheinander (der erste geht), dann ein Peer, der seine Seele
-    // wechselt (human↔wolf, je ein Welt-Bild dazwischen — der Knoten-Bau der Zwischen-Seele bleibt), dann sein Abschied.
+    // wechselt (human↔wolf ×3, je ein Welt-Bild dazwischen), dann sein Abschied. S4 prüft die ENTSORGUNG (Biss: 0c91ceb7
+    // legte 14 Welt-Objekte hinein). Neubauten deckt S2: der Peer teilt seine Schlüssel mit stehenden Figuren — ein
+    // Neubau-Check maß hier an b19ac994 +0, während S2 rot stand; er fiel (sechste Nachbesserung).
     const peer = await page.evaluate(async (echt) => {
         const r = window.anazhRealm;
         const F = window.__frostWand;
@@ -838,28 +842,16 @@ function pruefRaum(echt) {
         };
         await wechsel("human");
         const zweiter = e.mesh !== erster && !!erster;
-        await wechsel("wolf");
-        await wechsel("human");
-        await E.leeren();
-        const dev = r.state.renderer.backend.device;
-        const vor = E.bau(dev);
         for (let k = 0; k < 3; k++) {
             await wechsel("wolf");
             await wechsel("human");
         }
-        await E.leeren();
-        const nach = E.bau(dev);
         if (e.mesh) {
             if (e.mesh.parent) e.mesh.parent.remove(e.mesh);
             E.im("peer", () => r._disposeSoulGroup(e.mesh));
         }
         await E.leeren();
-        return {
-            ...E.bericht("peer"),
-            zweiter,
-            vorgelegt,
-            neubau: { module: nach.module - vor.module, pipelines: nach.pipelines - vor.pipelines },
-        };
+        return { ...E.bericht("peer"), zweiter, vorgelegt };
     }, ECHT);
     console.log(`\n[mitspieler] ${zeit()} · ${JSON.stringify(peer).slice(0, 300)}`);
     entsorgtKeineWelt("S4 Mitspieler-Leib (zweiter Peer-Guss, Seelenwechsel human↔wolf, Abschied)", peer);
@@ -867,11 +859,6 @@ function pruefRaum(echt) {
         "S4 die Probe gießt den Peer wirklich zweimal (mit Geometrie)",
         peer.zweiter === true && peer.vorgelegt > 0,
         `zweiter Guss: ${peer.zweiter}, ${peer.vorgelegt} Geometrien vorgelegt`
-    );
-    check(
-        "S4 die Welt-GPU kompiliert beim Seelenwechsel des Peers nicht nach",
-        peer.neubau.module <= NEUBAU_MAX && peer.neubau.pipelines <= NEUBAU_MAX,
-        `+${peer.neubau.module} Module / +${peer.neubau.pipelines} Pipelines über 3 × human↔wolf (Soll ≤ ${NEUBAU_MAX})`
     );
 
     // Der JS-Speicher nach erzwungener Sammlung (CDP: HeapProfiler.collectGarbage, Runtime.getHeapUsage) — genau, ohne die
