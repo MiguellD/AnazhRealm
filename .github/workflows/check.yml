@@ -148,7 +148,10 @@ jobs:
         # GPU-Linse selbst 11–16 min — Lauf 2136 kam mit 2 s Luft durch (30:02), Lauf 2137 lief
         # alle 53 Schritte GRÜN und wurde 4 s nach dem letzten vom 30-min-Limit „cancelled".
         # Die Laufzeit ist legitim (Echt-Renderer-Linsen); 45 hält eine Marge von ~50 %.
-        timeout-minutes: 45
+        # 60 (GEMESSEN 08.10., Zweig welle-lf-rudel auf V18.533): die Kette ist auf ~95 Schritte gewachsen — zwei Läufe
+        # kamen GRÜN bis Schritt 74/75 und wurden bei 45:15 / 45:08 „cancelled" (dieselben Schritte liefen 1,4× länger als
+        # am 07.10., auch die kreatur-freien: Fernwald 81 → 132–145 s). main teilt die Kette seit V18.535 in drei Gruppen.
+        timeout-minutes: 60
         steps:
             - uses: actions/checkout@v4
 
