@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.535.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.536.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -80,19 +80,19 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
 LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.535 — WELLE K, WELLE L, WASSER, FROST:** Welle K: die Erst-Zeichnung (je Render-Aufruf ein Stoff, die Pipeline
-asynchron, EINE Warteschlange `_erstWartet`) — Hänger beim Tier-Erstbau 1 862 → 64 ms; die Stand-Wache (`_standRuht`, jeder
-Schreiber trägt seinen Weckruf) — Blatt-Rufe im Stand 6 058 → 0 je Frame; die Diät mit EINEM Knoten je Quelle und EINEM
-Schreiben je Puffer — geteilte Uploads 110 → 27–33, writeBuffer 981 → 105–160 je Frame; Halt heißt Halt am EINEN Wetter-
-Schreiber, die Mess-Folge des OMEN als EINE Datei; host-vram (Ziel-Zensus, Schatten-Karte ohne Farbe, Vortiefe 16 bit,
-Tiefen-Abbild in halber Breite) — Host-Ziele 108,8 → ~93 MB. Welle L ganz (kreatur · koerper-haus · fahren · kampf-maus ·
-auge-v1) und wasser (der Körper liest das gezeichnete Wasser, Bach-Phantom 69,5 → 0 m). Weltbild-Frost: das Backend-Gesetz
-an der Klasse jedes WebGPU-Backends, EIN GPU-Melder `_gpuWacheMeldung`, EINE Entsorgungs-Regel `_disposeSoulGroup`. Die CI
-läuft in drei Gruppen (playtest 53 min → 3 × 12–16 min, `gate:ci-deckung`). Die Zeit misst der OMEN (ABAB gegen main).
+**V18.536 — IMPULS, WERKSTATT, ANKUNFT, FROST, NEXUS:** EIN Impuls-Gesetz für Fahrzeug, Leib und Biss (der gestoßene Leib
+im Sim-Schritt, EINE Wasser-Regel der Tiere); der Weg Werkstatt → stehendes Werk (je Setzen ein Same, `_setzUrteil` färbt
+das Phantom, die Klemme misst die Studio-Gestalt); die Ankunft (Ladeschirm, bis das Weltbild steht, EIN Tasten-Fänger, der
+Fadenkreuz-Strahl ab dem Blickpunkt, die 3rd-Kamera weicht Stamm und Krone); der Frost (die Render-Objekte eines Leibs lösen
+sich, das Ofen-Memo kennt seine Leiber, die AST-Entsorgungs-Wand); nexus (der Blick gehört dem, der das Dorf verlangt, der
+Mess-Halt für jeden Welt-Akt, die Blocker-Nachbarschaft: Box-Lösungen 12 041 → 26 je Schritt). OMEN gegen V18.535: CPU p95
+9,3 → 6,7 ms, Frame p95 25,0 → 16,9 ms.
 
-**V18.533–534 — GPU-KETTE, STUDIO-WÄNDE, SICHT-KETTE:** Zerleg-Linse, EINE Schirm-Quelle, Rausch-Gesetz des Bodens, EINE
-Shader-Kosten-Linse (OMEN: gpu-bank 24,85 → 14,70 ms); sechs Golden-Sätze + Ofen-Golden in der CI, Genesis-Ring als zweiter
-Messort, `gate:portal-konformanz`; die Sicht-Kette hält je Pass ihre Wahl (`_wahlHaelt`) — Ruhe 12 254 → 0 Prüfungen je Frame.
+**V18.533–535 — GPU-KETTE, WELLE K, WELLE L, WASSER:** Zerleg- und Shader-Kosten-Linse (gpu-bank 24,85 → 14,70 ms), Golden-
+Sätze in der CI, die Sicht-Kette hält ihre Wahl (`_wahlHaelt`); Welle K: die Erst-Zeichnung (EINE Warteschlange
+`_erstWartet`, Hänger beim Tier-Erstbau 1 862 → 64 ms), die Stand-Wache, die Diät, host-vram (Host-Ziele 108,8 → ~93 MB);
+Welle L ganz und wasser (der Körper liest das gezeichnete Wasser); das Backend-Gesetz, EIN GPU-Melder `_gpuWacheMeldung`,
+EINE Entsorgungs-Regel `_disposeSoulGroup`; die CI in drei Gruppen (`gate:ci-deckung`), die Zeit misst der OMEN (ABAB).
 
 **V18.496–532 — AAA NAH UND DIE KOSTEN-MECHANIK:** Studio-Mesh mit LOD-Kette, EINE geskinnte Haut, FARB-GESETZ, EIN Himmel,
 NAH-WIESE, `_foundrySchale`, TRAA, Band-Linse und Ratsche, EIN Karten-Atlas, Koschmieder-Luft; Welle 5 (Pflanzen nah,
@@ -179,6 +179,8 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
     Und nach jedem Push die CI lesen; Läufe mit ZEITFRISTEN (Einschwingen, Stufen-Takte) nie
     parallel (CPU-Konkurrenz fälscht sie). Ein Warter matcht nie die eigene Befehlszeile
     (`pgrep -f "[x]yz"`, und kein zweites `xyz` im selben Befehl) — heute 5× selbst getroffen.
+    Der VOLLE Playtest (2–5 min) läuft je Merge, die volle Batterie einmal je Version: zwei gesunde Eltern brechen im
+    Zusammenspiel (V18.536: das Setzen zog ein neues Phantom, ein Proben-Stub `{ position }` riss 22 Invarianten).
 20. **Eine Frage, kein Neustart:** Look-Fragen gehen an die Werkbank (`scripts/werkbank.cjs`: EINE
     Welt bleibt offen, Methode aus dem Arbeitsbaum live tauschen, Bild ~45 s statt Neustart ~5 min);
     die Beweis-Sonden bleiben der Richter je Commit. Vergleiche nur bei eingefrorener Welt (Tiere
