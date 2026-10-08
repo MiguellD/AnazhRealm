@@ -23,8 +23,13 @@
 //       Zelle seines Platzes, keine Zelle trägt einen Eintrag außerhalb, die Ordnung des Bestands steigt mit dem Array;
 //   (Q) QUELLE: `_fieldRaycast` liest das Netz und keine Schleife über den Bestand; jeder Eintritt (push), Austritt (splice)
 //       und jedes Schreiben der Boxen (`_blockerStampReach`) stempelt; kein anderer Schreiber des Bestands im Stamm;
+//   (W) DIE BOX-WAND (AST, acorn): jeder Schreiber der Blocker-Boxen stempelt — eine Zuweisung an `.blockerAABBs` nur mit
+//       Stempel (`_blockerStampReach`) oder als Abriss (null mit `_blockerAustritt`), kein Schreiben IN die Boxen (Feld, Index,
+//       ++/--, delete, push · pop · shift · unshift · splice · sort · reverse · fill · copyWithin, Object.assign);
 //   (P) kein Page-Error.
-//   node scripts/diag-blocker-netz.cjs   (npm run gate:blocker-netz; Port BLOCKER_NETZ_PORT)
+// SELBSTTEST (--selftest, ohne Browser, in `npm run check`): der Stamm ist sauber, fünf eingeschleuste Schreiber fallen rot
+// beim Namen, ein gestempelter bleibt grün.
+//   node scripts/diag-blocker-netz.cjs [--selftest]   (npm run gate:blocker-netz; Port BLOCKER_NETZ_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const puppeteer = require("puppeteer");
@@ -34,6 +39,155 @@ const path = require("path");
 
 const PORT = Number(process.env.BLOCKER_NETZ_PORT || 4604);
 const root = path.resolve(__dirname, "..");
+
+// DIE BOX-WAND (AST, acorn — Kommentare und Zeichenketten fallen mit dem Parser): jeder Schreiber der Blocker-Boxen beim Namen.
+//   (a) eine Zuweisung an `….blockerAABBs` — erlaubt mit einem Wert in einer Methode, die `_blockerStampReach` ruft (der Stempel
+//       der Nachbarschaft), mit null in einer Methode, die `_blockerAustritt` ruft (der Abriss);
+//   (b) ein Schreiben IN die Boxen: Feld- oder Index-Zuweisung, ++/--, delete, eine mutierende Array-Methode oder Object.assign an
+//       `….blockerAABBs`, an einem Element davon oder an einem Namen, der daran hängt (`const boxes = e.blockerAABBs`,
+//       `for (const b of boxes)`, `boxes[i]`, `boxes.find(…)`) — nie erlaubt: die Boxen schreibt `_populateBlockerAABBs` neu.
+// Grenze: ein Name, der als Parameter eine Box empfängt, hängt für die Wand an nichts (kein Datenfluss über Rufe).
+const BOX_MUT = new Set(["push", "pop", "shift", "unshift", "splice", "sort", "reverse", "fill", "copyWithin"]);
+const BOX_ELEMENT = new Set(["find", "filter", "slice", "at", "concat", "findLast"]);
+function boxWand(quelle) {
+    const acorn = require("acorn");
+    const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
+    const kinder = (n) => {
+        const out = [];
+        for (const k in n) {
+            if (k === "type" || k === "start" || k === "end" || k === "loc") continue;
+            const v = n[k];
+            if (Array.isArray(v)) {
+                for (const x of v) if (x && typeof x.type === "string") out.push(x);
+            } else if (v && typeof v.type === "string") out.push(v);
+        }
+        return out;
+    };
+    const lauf = (n, f) => {
+        f(n);
+        for (const k of kinder(n)) lauf(k, f);
+    };
+    const name = (m) =>
+        m.computed ? (m.property.type === "Literal" ? String(m.property.value) : null) : m.property.name;
+    const befunde = [];
+    let zuweisungen = 0;
+    const pruefe = (methode, body) => {
+        // die Namen, die an den Boxen hängen (zwei Durchläufe: eine Bindung kann eine spätere tragen)
+        const gebunden = new Set();
+        const istBox = (n) => {
+            if (!n) return false;
+            if (n.type === "Identifier") return gebunden.has(n.name);
+            if (n.type === "ChainExpression") return istBox(n.expression);
+            if (n.type === "LogicalExpression") return istBox(n.left) || istBox(n.right);
+            if (n.type === "ConditionalExpression") return istBox(n.consequent) || istBox(n.alternate);
+            if (n.type === "MemberExpression") {
+                if (name(n) === "blockerAABBs") return true;
+                return n.computed && istBox(n.object);
+            }
+            if (n.type === "CallExpression" && n.callee.type === "MemberExpression")
+                return BOX_ELEMENT.has(name(n.callee)) && istBox(n.callee.object);
+            return false;
+        };
+        let ruftStempel = false,
+            ruftAustritt = false;
+        for (let d = 0; d < 2; d++)
+            lauf(body, (n) => {
+                if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && istBox(n.init))
+                    gebunden.add(n.id.name);
+                if (n.type === "ForOfStatement" && istBox(n.right) && n.left.type === "VariableDeclaration") {
+                    const id = n.left.declarations[0].id;
+                    if (id.type === "Identifier") gebunden.add(id.name);
+                }
+                if (n.type === "CallExpression" && n.callee.type === "MemberExpression") {
+                    if (name(n.callee) === "_blockerStampReach") ruftStempel = true;
+                    if (name(n.callee) === "_blockerAustritt") ruftAustritt = true;
+                }
+            });
+        const meld = (n, art) =>
+            befunde.push({
+                methode,
+                zeile: n.loc.start.line,
+                art,
+                text: quelle.slice(n.start, Math.min(n.end, n.start + 80)).replace(/\s+/g, " "),
+            });
+        lauf(body, (n) => {
+            if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression") {
+                if (name(n.left) === "blockerAABBs") {
+                    zuweisungen++;
+                    const nul = n.right.type === "Literal" && n.right.value === null;
+                    if (nul ? !ruftAustritt : !ruftStempel)
+                        meld(
+                            n,
+                            nul ? "Abriss der Boxen ohne `_blockerAustritt`" : "Boxen gesetzt ohne `_blockerStampReach`"
+                        );
+                } else if (istBox(n.left.object)) meld(n, "Schreiben in die Boxen");
+            }
+            if (n.type === "UpdateExpression" && n.argument.type === "MemberExpression" && istBox(n.argument.object))
+                meld(n, "Schreiben in die Boxen (++/--)");
+            if (
+                n.type === "UnaryExpression" &&
+                n.operator === "delete" &&
+                n.argument.type === "MemberExpression" &&
+                istBox(n.argument.object)
+            )
+                meld(n, "Schreiben in die Boxen (delete)");
+            if (n.type === "CallExpression" && n.callee.type === "MemberExpression") {
+                const p = name(n.callee);
+                if (BOX_MUT.has(p) && istBox(n.callee.object)) meld(n, `Schreiben in die Boxen (${p})`);
+                if (
+                    p === "assign" &&
+                    n.callee.object.type === "Identifier" &&
+                    n.callee.object.name === "Object" &&
+                    n.arguments[0] &&
+                    istBox(n.arguments[0])
+                )
+                    meld(n, "Schreiben in die Boxen (Object.assign)");
+            }
+        });
+    };
+    // je Methode einer Klasse und je Funktion außerhalb: ihr Körper; was außerhalb jeder Funktion steht, ist das Modul
+    lauf(ast, (n) => {
+        if (n.type === "MethodDefinition" && n.value && n.value.body)
+            pruefe(n.key.name || String(n.key.value), n.value.body);
+    });
+    return { befunde, zuweisungen };
+}
+
+if (process.argv.includes("--selftest")) {
+    console.log("=== BLOCKER-NETZ — Selbsttest der Box-Wand (ohne Browser) ===");
+    const v = [];
+    const stamm = boxWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    for (const b of stamm.befunde) v.push(`STAMM: ${b.methode} Zeile ${b.zeile}: ${b.art} — ${b.text}`);
+    if (stamm.zuweisungen < 6) v.push(`STUMPF: die Wand sieht nur ${stamm.zuweisungen} Zuweisungen an .blockerAABBs`);
+    const klasse = (rumpf) => `class X { ${rumpf} }`;
+    const faelle = [
+        ["gesetzt ohne Stempel", "a(e) { e.blockerAABBs = []; }", "ohne `_blockerStampReach`"],
+        ["Abriss ohne Austritt", "a(e) { e.blockerAABBs = null; }", "ohne `_blockerAustritt`"],
+        ["sortiert", "a(e) { const boxes = e.blockerAABBs; boxes.sort((p, q) => p.minX - q.minX); }", "(sort)"],
+        ["Feld einer Box", "a(e) { for (const b of e.blockerAABBs) b.minX = 0; }", "Schreiben in die Boxen"],
+        ["Index", "a(e) { const bx = e.blockerAABBs || []; bx[0] = null; }", "Schreiben in die Boxen"],
+    ];
+    for (const [n, rumpf, soll] of faelle) {
+        const w = boxWand(klasse(rumpf));
+        if (!w.befunde.some((b) => b.art.includes(soll)))
+            v.push(`${n}: der Schreiber fällt nicht rot (${JSON.stringify(w.befunde)})`);
+    }
+    const ok = boxWand(
+        klasse(
+            "a(e) { e.blockerAABBs = []; this._blockerStampReach(e); } b(e) { e.blockerAABBs = null; this._blockerAustritt(e); }"
+        )
+    );
+    if (ok.befunde.length) v.push(`gestempelt: die Wand meldet ${JSON.stringify(ok.befunde)}`);
+    for (const x of v) console.log("  ❌ " + x);
+    if (v.length) {
+        console.log("\n❌ SELBSTTEST ROT — die Box-Wand ist blind oder der Stamm trägt einen Schreiber ohne Stempel.");
+        process.exit(1);
+    }
+    console.log(
+        `✅ SELBSTTEST GRÜN — der Stamm sauber (${stamm.zuweisungen} Zuweisungen an .blockerAABBs, jede gestempelt), fünf eingeschleuste Schreiber rot, ein gestempelter grün.`
+    );
+    process.exit(0);
+}
 
 const mime = {
     ".html": "text/html",
@@ -824,6 +978,9 @@ function stammSchreiber() {
         );
     console.log(`  Quelle: ${JSON.stringify(S.quelle)}`);
     const rot = urteil(S, stamm, pageErrors);
+    const wand = boxWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    console.log(`  Box-Wand: ${wand.zuweisungen} Zuweisungen an .blockerAABBs, ${wand.befunde.length} Schreiber ohne Stempel`);
+    for (const b of wand.befunde) rot.push(`(W) BOX-WAND: ${b.methode} Zeile ${b.zeile}: ${b.art} — ${b.text}`);
     if (rot.length) {
         console.error("\nROT:");
         for (const e of rot) console.error("  • " + e);
