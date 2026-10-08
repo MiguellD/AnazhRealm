@@ -525,9 +525,27 @@ async function probeLeben(expected) {
     // Frame-Zeiten (ms): Frames ohne (8,3), mit einem (16,7 · 20 · 11,1) und mit zwei Sim-Schritten (25 · 33,3).
     const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
     let tMs = performance.now();
+    // DIE BAHN-WACHE (Fixture der Fahr-Stationen S2 · S3 · S4): solange eine Station fährt, hält sie ihre Bahn frei — was
+    // dort mit einer Hülle steht oder WÄHREND der Fahrt hineinwächst (die Promotion um den Spieler macht Streu-Zellen zu
+    // Bäumen, deren Stamm im Weltmaß den Wagen hält), fällt nach jedem Bild. Gemessen wird die Fahr-Physik am Gelände,
+    // nie der Wald: in der CI hing es am Takt, ob ein Baum vor oder nach der Bahn-Wahl kam (S3 bei (-1027, -801) nach
+    // 3,2 m gehalten, Lauf 37713513122; S4 hob nach „Bahn geräumt 8" nicht ab, Lauf 37710018372).
+    let bahnWache = null;
     const frame = (i) => {
         tMs += MUSTER[i % MUSTER.length];
         r._gameLoopTick(tMs);
+        const w = bahnWache;
+        if (!w) return;
+        for (const e of st.architectures.slice()) {
+            if (!e || !e.blockerAABBs || !e.position || /^fahrzeug_/.test(e.type || "")) continue;
+            const dx = e.position.x - w.sx;
+            const dz = e.position.z - w.sz;
+            const l = dx * w.ux + dz * w.uz;
+            if (l > -6 && l < w.len && Math.abs(dx * w.uz - dz * w.ux) < w.quer) {
+                r.removeArchitecture(e);
+                w.n++;
+            }
+        }
     };
     // DIE ZÄHLER am echten Takt: der Teleport-Zweig des Akkumulators (exakt seine Bedingung), der Weg je Sim-Schritt,
     // und die Spur je Sim-Schritt (Eingabe + Fahr-Zustand) für den Labor-Vergleich.
@@ -1065,7 +1083,9 @@ async function probeLeben(expected) {
             }
             geraeumt = n;
         };
+        const klippenBahn = (k) => ({ sx: k.sx, sz: k.sz, ux: Math.sin(k.fahrt), uz: Math.cos(k.fahrt), len: 32, quer: 6, n: 0 });
         if (kl) {
+            bahnWache = klippenBahn(kl);
             const g2 = await setzen("fahrzeug_gt", kl.sx, kl.sz, kl.fahrt, bahnFrei(kl));
             if (g2) {
                 tasten(true, false);
@@ -1086,9 +1106,10 @@ async function probeLeben(expected) {
                 for (let i = 0; i < 60; i++) frame(i);
                 r._stepFixedSim = P2;
                 const unterGrund = g2.position.y - 0.5 - hh(g2.position.x, g2.position.z);
-                S.klippe = { sprung, luft, schritte, ueberGrund: unterGrund, fall: kl.fall, geraeumt };
+                S.klippe = { sprung, luft, schritte, ueberGrund: unterGrund, fall: kl.fall, geraeumt, wache: bahnWache.n };
                 weg(g2);
             }
+            bahnWache = klippenBahn(kl);
             // S4 ABSTEIGEN IM FLUG (Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen nicht ab — wer im Flug
             // ausstieg, ließ ihn bis zum Reload in der Luft hängen): dieselbe Klippe, W bis der Wagen 1 m über dem Boden
             // fliegt, dann absteigen; 240 Frames später steht er auf der Ebene seiner Räder (≤ 0,05 m), gefallen ohne Höhen-
@@ -1117,9 +1138,10 @@ async function probeLeben(expected) {
                 r._stepFixedSim = P7;
                 const eb = r._rittEbene(g4, g4.position.x, g4.position.z, g4._rideYaw);
                 const bodenY = eb ? eb.y : hh(g4.position.x, g4.position.z);
-                S.absteigen = { imFlug, hoehe, ueberBoden: g4.position.y - 0.5 - bodenY, sprung: sprungAb, geraeumt };
+                S.absteigen = { imFlug, hoehe, ueberBoden: g4.position.y - 0.5 - bodenY, sprung: sprungAb, geraeumt, wache: bahnWache.n };
                 r.removeArchitecture(g4);
             }
+            bahnWache = null;
         }
         // S3 QUERHANG: 25–40° quer, die Höhenlinie 16 m gerade (Richtung ±20°), trocken; Fahrt längs der Linie, W.
         let qh = null;
@@ -1170,6 +1192,7 @@ async function probeLeben(expected) {
             }
         S.querOrt = qh;
         if (qh) {
+            bahnWache = { sx: qh.x, sz: qh.z, ux: Math.sin(qh.fahrt), uz: Math.cos(qh.fahrt), len: 24, quer: 4, n: 0 };
             const g3 = await setzen("fahrzeug_gt", qh.x, qh.z, qh.fahrt);
             if (g3) {
                 // Die QUER-ABDRIFT talwärts: je Sim-Schritt die Geschwindigkeit quer zum Bug, auf die tiefe Seite gezählt
@@ -1191,9 +1214,10 @@ async function probeLeben(expected) {
                 for (let i = 0; i < 100; i++) frame(i);
                 tasten(false);
                 r._stepFixedSim = P3;
-                S.quer = { drift, weg: Math.hypot(g3.position.x - qh.x, g3.position.z - qh.z) };
+                S.quer = { drift, weg: Math.hypot(g3.position.x - qh.x, g3.position.z - qh.z), wache: bahnWache.n };
                 weg(g3);
             }
+            bahnWache = null;
         }
 
         // ═══ H — DIE HÜLLE ALS KÖRPER (Q5 · F-D4 F-L5) ═══
@@ -1974,21 +1998,21 @@ async function probeLeben(expected) {
         "S2 Klippe: kein Höhen-Sprung > 0,5 m je Sim-Schritt, der Wagen fliegt",
         !hat("kern") && !hat("klippe"),
         S.klippe
-            ? `Bahn geräumt ${S.klippe.geraeumt} · Fall ${S.klippe.fall.toFixed(1)} m bei (${S.klippeOrt.x}, ${S.klippeOrt.z}) · größter Sprung ${S.klippe.sprung.toFixed(2)} m · Luft ${S.klippe.luft}/${S.klippe.schritte} · danach ${S.klippe.ueberGrund.toFixed(2)} m über dem Grund`
+            ? `Bahn geräumt ${S.klippe.geraeumt} (+${S.klippe.wache} durch die Bahn-Wache) · Fall ${S.klippe.fall.toFixed(1)} m bei (${S.klippeOrt.x}, ${S.klippeOrt.z}) · größter Sprung ${S.klippe.sprung.toFixed(2)} m · Luft ${S.klippe.luft}/${S.klippe.schritte} · danach ${S.klippe.ueberGrund.toFixed(2)} m über dem Grund`
             : vS.join(" · ")
     );
     check(
         "S4 Absteigen im Flug: der Wagen fällt ballistisch auf seinen Boden und steht dort (nie in der Luft, kein Sprung)",
         !hat("kern") && !hat("absteigen"),
         S.absteigen
-            ? `Bahn geräumt ${S.absteigen.geraeumt} · abgestiegen ${S.absteigen.hoehe.toFixed(2)} m über dem Boden (im Flug ${S.absteigen.imFlug}) · nach 240 Frames ${S.absteigen.ueberBoden.toFixed(3)} m über der Ebene seiner Räder · größter Sprung ${S.absteigen.sprung.toFixed(2)} m`
+            ? `Bahn geräumt ${S.absteigen.geraeumt} (+${S.absteigen.wache} durch die Bahn-Wache) · abgestiegen ${S.absteigen.hoehe.toFixed(2)} m über dem Boden (im Flug ${S.absteigen.imFlug}) · nach 240 Frames ${S.absteigen.ueberBoden.toFixed(3)} m über der Ebene seiner Räder · größter Sprung ${S.absteigen.sprung.toFixed(2)} m`
             : vS.join(" · ")
     );
     check(
         "S3 Querhang: Fahrt längs der Höhenlinie ohne Lenkung driftet quer talwärts (der Quer-Hangabtrieb wirkt)",
         !hat("kern") && !hat("querhang"),
         S.quer
-            ? `${S.querOrt.grad.toFixed(1)}° bei (${S.querOrt.x.toFixed(0)}, ${S.querOrt.z.toFixed(0)}) · ${S.quer.weg.toFixed(1)} m gefahren · Quer-Abdrift talwärts ${S.quer.drift.toFixed(2)} m`
+            ? `${S.querOrt.grad.toFixed(1)}° bei (${S.querOrt.x.toFixed(0)}, ${S.querOrt.z.toFixed(0)}) · ${S.quer.weg.toFixed(1)} m gefahren · Quer-Abdrift talwärts ${S.quer.drift.toFixed(2)} m · Bahn-Wache ${S.quer.wache}`
             : vS.join(" · ")
     );
     console.log("=== R — DIE RÄDER IN DER INSTANZ (Q13 · F-D8), echter Sim-Schritt ===");
