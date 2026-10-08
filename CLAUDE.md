@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.534.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.535.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -80,19 +80,19 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
 LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.534 — DIE STUDIO-WÄNDE (S1) UND DIE SICHT-KETTE:** sechs von sechs Golden-Sätzen in der CI samt Plattform-Probe
-(jede Transzendente ±1 ULP, v4 mit Byte-Raster), das Ofen-Golden (Tier und Mensch, 483 Klassen), die Albedo-Tafel Labor
-gegen Welt, der Genesis-Ring als zweiter Messort (die Orts-Wache: die Ratsche nimmt nur gestellte Läufe),
-`gate:portal-konformanz` (13 Welten K1–K7), `gate:regler-wirkt` (95 von 113 Reglern wirken, 18 tot in der Ratsche). Die
-Sicht-Kette hält je Pass ihre Wahl (Cache, Dreh-Rand, EIN Halt-Gesetz `_wahlHaelt`, `_kaskadeHaelt`, die gestufte Sonne
-`_sonnenStufe` aus `_schirm`, Slot-Stand je Pass): echte GPU, dieselbe Welt, Regler voll — Ruhe 12 254 → 0 Prüfungen je
-Frame, Ruhe mit Sonne 13 393 → 255, Drehen 1° 15 006 → 11 063 (Ecken 33 102 → 15 774), Gehen 14 256 → 12 912. Preis der
-Halte-Ränder an der Wiese (ohne Tiere, je ein Boot): 90 → 90 / 76 → 81 Befehle, 768k → 816k / 641k → 693k Dreiecke (yaw
-0 / −0,88). Die Zeit misst der OMEN (folgt).
+**V18.535 — WELLE K, WELLE L, WASSER, FROST:** Welle K: die Erst-Zeichnung (je Render-Aufruf ein Stoff, die Pipeline
+asynchron, EINE Warteschlange `_erstWartet`) — Hänger beim Tier-Erstbau 1 862 → 64 ms; die Stand-Wache (`_standRuht`, jeder
+Schreiber trägt seinen Weckruf) — Blatt-Rufe im Stand 6 058 → 0 je Frame; die Diät mit EINEM Knoten je Quelle und EINEM
+Schreiben je Puffer — geteilte Uploads 110 → 27–33, writeBuffer 981 → 105–160 je Frame; Halt heißt Halt am EINEN Wetter-
+Schreiber, die Mess-Folge des OMEN als EINE Datei; host-vram (Ziel-Zensus, Schatten-Karte ohne Farbe, Vortiefe 16 bit,
+Tiefen-Abbild in halber Breite) — Host-Ziele 108,8 → ~93 MB. Welle L ganz (kreatur · koerper-haus · fahren · kampf-maus ·
+auge-v1) und wasser (der Körper liest das gezeichnete Wasser, Bach-Phantom 69,5 → 0 m). Weltbild-Frost: das Backend-Gesetz
+an der Klasse jedes WebGPU-Backends, EIN GPU-Melder `_gpuWacheMeldung`, EINE Entsorgungs-Regel `_disposeSoulGroup`. Die CI
+läuft in drei Gruppen (playtest 53 min → 3 × 12–16 min, `gate:ci-deckung`). Die Zeit misst der OMEN (ABAB gegen main).
 
-**V18.533 — DIE GPU-KETTE:** Zerleg-Linse · EINE Schirm-Quelle · Stempel-Pool · Rausch-Gesetz des Bodens (15 722 → 2 381
-Ops je Fragment) · schlanke Post-Kette · Feld-Pass ohne Tiefe-Schreiben · EINE Shader-Kosten-Linse. OMEN (GTX 1060, ABAB
-gegen V18.531): gpu-bank 24,85 → 14,70 ms (−41 %), Frame p50 frei 25,0 → 16,8 ms; der volle Regler CPU-gebunden.
+**V18.533–534 — GPU-KETTE, STUDIO-WÄNDE, SICHT-KETTE:** Zerleg-Linse, EINE Schirm-Quelle, Rausch-Gesetz des Bodens, EINE
+Shader-Kosten-Linse (OMEN: gpu-bank 24,85 → 14,70 ms); sechs Golden-Sätze + Ofen-Golden in der CI, Genesis-Ring als zweiter
+Messort, `gate:portal-konformanz`; die Sicht-Kette hält je Pass ihre Wahl (`_wahlHaelt`) — Ruhe 12 254 → 0 Prüfungen je Frame.
 
 **V18.496–532 — AAA NAH UND DIE KOSTEN-MECHANIK:** Studio-Mesh mit LOD-Kette, EINE geskinnte Haut, FARB-GESETZ, EIN Himmel,
 NAH-WIESE, `_foundrySchale`, TRAA, Band-Linse und Ratsche, EIN Karten-Atlas, Koschmieder-Luft; Welle 5 (Pflanzen nah,
@@ -199,7 +199,10 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
     trägt nur, was sein Replay refresht: r184 hält `_currentRenderBundle` ohne Stapel (der Schatten-Render mitten in
     der Aufnahme nullt ihn) und refresht Replay-Bürger außerhalb von renderObject (unter einem Override-Stoff gegen
     dessen geteilten Zustand) — `_renderScene` stapelt den Zeiger und nimmt unter overrideMaterial nie auf, die Diät
-    schreibt je PROGRAMM die geteilten Gruppen (`gate:kamera-treue`, Bühne am echten WebGPU mit Schatten).
+    geht jeden Knoten und jede geteilte Gruppe EINMAL je Render-Abschnitt: der Stempel ist das Paar (Render-Id,
+    `info.calls`) und wechselt beim Betreten UND Verlassen jedes Renders (ein Stempel nur aus der Render-Id überlebte
+    einen verschachtelten Schatten-Render: das Bild 0,11 statt 1,0) — `gate:kamera-treue` (VERSCHACHTELT, Stand-Wand),
+    Bühne am echten WebGPU mit Schatten.
 24. **Der Haupt-Thread trägt keine Bytes:** jede Worker-Antwort reist per Transfer (ein Klon kostet den Empfänger
     je MB), die Platte lebt im Worker (ein IDB-Put serialisiert SYNCHRON im Aufrufer), über den Kanal reist nur,
     was ein Leser liest (`FOUNDRY_LESEN`) — die Transport-Schale `_foundrySchale` trägt alles, `werkbank fluss` misst.
