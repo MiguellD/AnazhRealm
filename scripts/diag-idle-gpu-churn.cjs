@@ -66,6 +66,9 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // Mitspieler); bis zur Welle K hielt die Linse eine eigene Uhr (je Takt auf 0), an der jeder andere Schreiber vorbeikam.
     // Ihr Spion nennt den Schreiber einer Drift beim Namen.
     const SELBSTTEST_BUEHNE = process.argv.includes("--selbsttest-buehne");
+    // SELBSTTEST der Programm-Wache: mitten im Warmup läuft ein Programm, das ein Dorf baut — die Wache MUSS es anhalten
+    // (die Bühne hält, die Wache nennt es), sonst ist sie vakuös.
+    const SELBSTTEST_PROGRAMM = process.argv.includes("--selbsttest-programm");
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(AUSGABE_INSTALL);
 
@@ -240,6 +243,17 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 return v;
             };
         }
+        // DIE PROGRAMM-WACHE (CI 37705797642: „Bauten 149 → 156 an haus_griechisch durch visit ← spawn_fractal ← dslEval ←
+        // random ← dslEval ← chain"): die Welt schreibt sich selbst — Nexus, stehende Regeln, Emotionen, Fähigkeiten — und
+        // jeder Weg geht durch die EINE Auswertung `dslEval`. Ab der Bühne wertet sie nichts aus und bucht Quelle und Op; die
+        // Bühnen-Wand nennt, was sie anhielt (die Wache hielt — keine Drift).
+        window.__dslGehalten = [];
+        {
+            r.dslEval = function (programm, ctx) {
+                if (window.__dslGehalten.length < 20)
+                    window.__dslGehalten.push(`${(ctx && ctx.source) || "?"}: ${Array.isArray(programm) ? programm[0] : typeof programm}`);
+            };
+        }
         try { r._ensureSkyEnvironment(true); } catch (_e) {}
         const cnt = () => window.__cc.gpuPipeline + window.__cc.glLink;
         window.__cnt = cnt;
@@ -345,6 +359,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         for (let i = 0; i < 10; i++) {
             // SELBSTTEST: die Uhr der Welt läuft frei und der Wetter-Zug wird fällig — die Bühnen-Wand MUSS rot werden
             if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; window.anazhRealm.state.weatherEffectTime = 1e6; });
+            if (SELBSTTEST_PROGRAMM && i === 5) await ruf("Selbsttest-Programm", () => { window.anazhRealm.dslRun(["spawn_village", ["near_player"]], { source: "selbsttest" }); });
             await frame(`Warmup-Frame ${i}`);
         }
         const nachStart = await ruf("Zähler", () => window.__cnt());
@@ -401,7 +416,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     }
     setup.maxRuf = maxRuf;
     // DIE BÜHNEN-WAND: hielt die Welt still? Jede Drift (Wetter, Übergang, Saison, Tageszeit, Bauten) beim Namen.
-    const buehne = await ruf("Bühne", () => ({ vor: window.__buehne0, nach: window.__buehneStand(), wetter: window.__wetterBuch(window.__wetterSeq0), bau: window.__bauBuch }));
+    const buehne = await ruf("Bühne", () => ({ vor: window.__buehne0, nach: window.__buehneStand(), wetter: window.__wetterBuch(window.__wetterSeq0), bau: window.__bauBuch, dsl: window.__dslGehalten || [] }));
     const kipp = [];
     // das Buch der Wache seit der Bühne: wer das Wetter drehte (Schreiber oder roh, mit Quelle und Spiel-Rahmen) und wen sie
     // verweigerte (die Wache hielt — keine Drift, aber beim Namen)
@@ -423,7 +438,12 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     server.close();
     console.log("===== STEHENDE LINSE — Idle/Env-GPU-Pipeline-Churn (echter Renderer) =====\n");
     if (pageErr) { console.error("⛔ Page-Error während des Laufs:", pageErr); process.exit(1); }
-    console.log(`  Bühne: ${kipp.length ? "GEKIPPT — " + kipp.join(" · ") : "hielt (Wetter, Saison, Tageszeit, Bauten unverändert)"}${verweigert.length ? ` · die Wetter-Wache verweigerte ${verweigert.length} Zug/Züge: ${verweigert.slice(0, 6).join(" · ")}` : ""}`);
+    console.log(`  Bühne: ${kipp.length ? "GEKIPPT — " + kipp.join(" · ") : "hielt (Wetter, Saison, Tageszeit, Bauten unverändert)"}${verweigert.length ? ` · die Wetter-Wache verweigerte ${verweigert.length} Zug/Züge: ${verweigert.slice(0, 6).join(" · ")}` : ""}${(buehne.dsl || []).length ? ` · die Programm-Wache hielt ${buehne.dsl.length} Programm(e) an: ${buehne.dsl.slice(0, 6).join(" · ")}` : ""}`);
+    if (SELBSTTEST_PROGRAMM) {
+        const gehalten = (buehne.dsl || []).some((z) => z.startsWith("selbsttest:"));
+        console.log(gehalten && !kipp.length ? "✅ SELBSTTEST GRÜN — die Programm-Wache hielt das Dorf an, die Bühne hielt." : "⛔ SELBSTTEST ROT — die Programm-Wache ist vakuös.");
+        process.exit(gehalten && !kipp.length ? 0 : 1);
+    }
     if (kipp.length) { console.error("⛔ BÜHNE GEKIPPT: die Welt der Messung driftete — " + kipp.join(" · ")); process.exit(1); }
     if (regen.err) { console.error("⛔ LINSE NICHT LAUFFÄHIG:", regen.err); process.exit(1); }
     if (regen.spur && regen.spur.length) {
