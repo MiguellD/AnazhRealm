@@ -439,6 +439,15 @@ const FORBIDDEN = [
     // WELLE L KREATUR (Q11 + CPU): der Hindernis-Strahl je Tier und Frame (feste Diagonale, nur im Blick, Antwort ein
     // Math.random-Stoß; 29–37 % der CPU im OMEN-Profil) kehrt nicht zurück — jedes Tier löst seine Achse über den EINEN
     // Kontakt-Löser gegen die Hüllen (_kreaturHuellenKontakt), die Herde ist die Form des Kerns (herdeZug).
+    // WELLE LF RUDEL (Leben-Schau 07.10., Neu 1): der Nexus würfelt kein Körper-Gesetz — der absolute Gang- und Sprung-
+    // Würfel (Gehen 4–12, Sprungkraft 8–20), die Tier-Skala ohne bodySize-Achse und die Spieler-Skala ohne Gesetz-Achse
+    // (player_size_mul) kehren nicht zurück; ein Op wiegt nur im Gesetz-Band (_koerperHauch, _kreaturGroesseSetzen).
+    { token: '"player_jump_power", Number((8', fiel: "Welle LF rudel — kein Würfel schreibt die Sprungkraft" },
+    { token: '"player_speed", Number((4', fiel: "Welle LF rudel — kein Würfel schreibt das Lauf-Tempo" },
+    { token: '"creatures_size_mul", Number(', fiel: "Welle LF rudel — kein Würfel schreibt die Tier-Größe" },
+    { token: "cr.scale.multiplyScalar(f)", fiel: "Welle LF rudel — die Tier-Größe ist die bodySize-Achse" },
+    { token: "player_size_mul", fiel: "Welle LF rudel — die Spieler-Skala ohne Gesetz-Achse fiel" },
+    { token: "cr.userData.speedMul =", fiel: "Welle LF rudel — der Tempo-Hauch wird gelesen (tempoHauch)" },
     { token: "OBSTACLE_RAYCAST_MAX_DIST_SQ", fiel: "Welle L kreatur — _kreaturHuellenKontakt (kein Strahl je Frame)" },
     { token: "hasHit = this._runRaycast(", fiel: "Welle L kreatur — _kreaturHuellenKontakt" },
     // Nachbesserung 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters — auch die Eintrags-

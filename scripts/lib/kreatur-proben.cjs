@@ -1235,6 +1235,157 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── nexus (Leben-Schau 07.10. Neu 1): kein Würfel schreibt ein Körper-Gesetz. Der Nexus würfelte dem Spieler Gehen
+    // 4–12 und Sprungkraft 8–20 zu (gemessen 11,1 m/s, Sprint 45 m/s, Sprung 18,6 statt 2,6), blähte jedes Tier um ×1,11
+    // ohne die bodySize-Achse auf, und `spawn_creature at_player` setzte Geburten in den Blick. Gemessen werden der Würfel
+    // (ein fester Strom über den Kompositions-Pool), die Ops selbst (die Werte des Würfels, Quelle nexus: das Ergebnis liegt
+    // im Gesetz-Band des Körpers, koerper fx.bewegung), die Größe (nur die bodySize-Achse in den Bändern VERHALTEN.groessen),
+    // der Tempo-Hauch der Tiere (gelesen und im Band wandern.speedMulMin..Max) und die Nexus-Geburt (fern, nie im Blick) ──
+    await buehne("nexus", async (restore) => {
+        const KOERPER = ["player_speed", "player_jump_power", "creatures_speed_mul", "creatures_size_mul"];
+        const eff = r.dslEffects;
+        const ops0 = {};
+        for (const k of KOERPER) ops0[k] = eff[k];
+        restore.push(() => {
+            for (const k of KOERPER) {
+                if (ops0[k]) eff[k] = ops0[k];
+                else delete eff[k];
+            }
+        });
+        // Die alten Ops als Täter (der Stand vor dem Schnitt, wörtlich): ein absoluter Wert, eine Skala ohne Achse, ein
+        // Tempo ohne Leser, die Geburt im Ring um den Ziel-Punkt.
+        if (taeter === "nexus-gesetz") {
+            eff.player_jump_power = ([v]) => {
+                s.jumpPower = r.dslClamp(v, 5, 40);
+            };
+            eff.player_speed = ([v]) => r._applyPlayerSpeed(r.dslClamp(v, 1, 30));
+        }
+        if (taeter === "nexus-groesse")
+            eff.creatures_size_mul = ([f]) => {
+                for (const cr of s.creatures) if (cr.scale) cr.scale.multiplyScalar(r.dslClamp(f, 0.5, 3));
+            };
+        if (taeter === "nexus-wuerfel")
+            decke(
+                restore,
+                "dslComposeAtomic",
+                (alt) =>
+                    function (g) {
+                        return g() < 0.1 ? ["player_jump_power", 18.56] : alt.call(this, g);
+                    }
+            );
+        if (taeter === "nexus-geburt")
+            decke(
+                restore,
+                "_kreaturGeburtsOrt",
+                () =>
+                    function () {
+                        return { x: pm.x + 3, z: pm.z + 1 };
+                    }
+            );
+        // (a) DER WÜRFEL: ein fester Strom (mulberry32) über den Kompositions-Pool des Nexus.
+        let sd = 0x9e3779b9;
+        const rng = () => {
+            sd = (sd + 0x6d2b79f5) | 0;
+            let t = Math.imul(sd ^ (sd >>> 15), 1 | sd);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const flach = (n, out) => {
+            if (Array.isArray(n)) {
+                if (typeof n[0] === "string") out.push(n[0]);
+                for (const x of n) flach(x, out);
+            }
+            return out;
+        };
+        let wuerfe = 0,
+            koerperWuerfe = 0;
+        for (let k = 0; k < 4000; k++) {
+            wuerfe++;
+            if (flach(r.dslComposeAtomic(rng), []).some((o) => KOERPER.includes(o))) koerperWuerfe++;
+        }
+        // (b) DAS GESETZ-BAND des Körpers (koerper fx.bewegung: base + leicht + mag, die Tags in [0, 1]) × die Größe des
+        // Leibs — dieselbe Pipeline, die die Stats rechnet (computePlayerStats): g = Stat / Rohwert der Tags.
+        const altSp = s.speed,
+            altSprint = s.sprintSpeed,
+            altJ = s.jumpPower;
+        restore.push(() => {
+            s.speed = altSp;
+            s.sprintSpeed = altSprint;
+            s.jumpPower = altJ;
+        });
+        const cps = r.computePlayerStats();
+        const band = (stat) => {
+            const K = A._bewegungsKoeff(stat);
+            const roh = A.STAT_FROM_TAGS[stat](cps.tags);
+            const g = roh > 0 ? cps.stats[stat] / roh : 1;
+            return { min: K.base * g, max: (K.base + K.leicht + K.mag) * g };
+        };
+        const bS = band("speed"),
+            bJ = band("jumpPower");
+        r.dslRun(["player_speed", 10.01], { source: "nexus" });
+        r.dslRun(["player_jump_power", 18.56], { source: "nexus" });
+        const speedNach = s.speed,
+            sprintNach = s.sprintSpeed,
+            sprungNach = s.jumpPower;
+        // (c) DIE GRÖSSE nur über die bodySize-Achse, in den Bändern des Gesetzes.
+        const GB = A._verhaltenGesetz().groessen;
+        const bsMin = Math.min(...GB.map((z) => z.min)),
+            bsMax = Math.max(...GB.map((z) => z.max));
+        const o = land(40, -30);
+        const tiere = [1, 0.7, 2.5, 1.2].map((bs, i) => tier({ x: o.x + i * 4, y: o.y, z: o.z }, "wesen", bs));
+        r.dslRun(["creatures_size_mul", 1.11], { source: "nexus" });
+        r.dslRun(["creatures_size_mul", 3], { source: "nexus" });
+        let ohneAchse = 0,
+            ausserBand = 0;
+        for (const c of tiere) {
+            const bs = c.userData.bodySize;
+            if (Math.abs(c.scale.x - bs) > 1e-6) ohneAchse++;
+            if (!(bs >= bsMin - 1e-9 && bs <= bsMax + 1e-9)) ausserBand++;
+        }
+        // (d) DER TEMPO-HAUCH der Tiere: gelesen (der Charakter ändert sich) und im Band des Wander-Gesetzes.
+        const W = A._verhaltenGesetz().wandern;
+        const c0 = tiere[0];
+        const vor = r._creatureMoveCharacter(c0).speedMul;
+        r.dslRun(["creatures_speed_mul", 0.7], { source: "emotion:peace" });
+        const nach = r._creatureMoveCharacter(c0).speedMul;
+        r.dslRun(["creatures_speed_mul", 5], { source: "nexus" });
+        r.dslRun(["creatures_speed_mul", 5], { source: "nexus" });
+        const hoch = r._creatureMoveCharacter(c0).speedMul;
+        // (e) DIE NEXUS-GEBURT: fern und nie im Blick (dasselbe Gesetz wie die natürliche Geburt).
+        for (const c of tiere) r.removeCreature(c);
+        kamera(1, 0);
+        const vorN = s.creatures.length;
+        r.dslRun(["spawn_creature", ["at_player"], 4, "happy"], { source: "nexus" });
+        const geboren = s.creatures.slice(vorN);
+        let imBlickN = 0,
+            minD = Infinity;
+        for (const c of geboren) {
+            if (imBlick(c.position.x, c.position.y + 0.5, c.position.z)) imBlickN++;
+            minD = Math.min(minD, Math.hypot(c.position.x - pm.x, c.position.z - pm.z));
+        }
+        return {
+            wuerfe,
+            koerperWuerfe,
+            speedBand: [+bS.min.toFixed(3), +bS.max.toFixed(3)],
+            speedNach: +speedNach.toFixed(3),
+            sprintNach: +sprintNach.toFixed(3),
+            sprintSoll: +(speedNach * A._sprintMulGesetz()).toFixed(3),
+            sprungBand: [+bJ.min.toFixed(3), +bJ.max.toFixed(3)],
+            sprungNach: +sprungNach.toFixed(3),
+            groessen: tiere.length,
+            ohneAchse,
+            ausserBand,
+            tempoVor: +vor.toFixed(3),
+            tempoNach: +nach.toFixed(3),
+            tempoHoch: +hoch.toFixed(3),
+            tempoBand: [W.speedMulMin, W.speedMulMax],
+            geburten: geboren.length,
+            geburtImBlick: imBlickN,
+            geburtMinM: geboren.length ? +minD.toFixed(1) : null,
+            fernMin: A.CREATURE_SPAWN_FAR_MIN,
+        };
+    });
+
     return aus;
 }
 
@@ -1254,6 +1405,7 @@ const PROBEN = [
     "nacht",
     "peer",
     "zufall",
+    "nexus",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -1373,6 +1525,39 @@ function urteil(name, z) {
         soll(z.methoden > z.benannt, `nur ${z.methoden} Methoden gelesen (die Tier-Klasse fehlt — Probe vakuös)`);
         soll(z.treffer.length === 0, `Math.random im Kreatur-Leben: ${z.treffer.join(", ")}`);
     }
+    if (name === "nexus") {
+        soll(
+            z.koerperWuerfe === 0,
+            `der Würfel schreibt ein Körper-Gesetz: ${z.koerperWuerfe} von ${z.wuerfe} Würfen (Gang/Sprung/Größe)`
+        );
+        const eps = 1e-6;
+        soll(
+            z.speedNach >= z.speedBand[0] - eps && z.speedNach <= z.speedBand[1] + eps,
+            `Lauf-Tempo ${z.speedNach} m/s jenseits des Gesetz-Bands ${z.speedBand.join("–")} (Sprint ${z.sprintNach})`
+        );
+        soll(Math.abs(z.sprintNach - z.sprintSoll) < 1e-3, `Sprint ${z.sprintNach} ≠ Tempo × sprintMul ${z.sprintSoll}`);
+        soll(
+            z.sprungNach >= z.sprungBand[0] - eps && z.sprungNach <= z.sprungBand[1] + eps,
+            `Sprungkraft ${z.sprungNach} jenseits des Gesetz-Bands ${z.sprungBand.join("–")}`
+        );
+        soll(z.groessen > 0, "keine Tiere für die Größen-Probe (vakuös)");
+        soll(z.ohneAchse === 0, `${z.ohneAchse} von ${z.groessen} Tieren: Skala ohne bodySize-Achse`);
+        soll(z.ausserBand === 0, `${z.ausserBand} von ${z.groessen} Tieren: bodySize außerhalb der Größen-Bänder`);
+        soll(
+            z.tempoNach < z.tempoVor - 1e-6,
+            `creatures_speed_mul ohne Leser: der Charakter ${z.tempoVor} → ${z.tempoNach} (der Tempo-Hauch wirkt nicht)`
+        );
+        soll(
+            z.tempoNach >= z.tempoBand[0] - eps && z.tempoHoch <= z.tempoBand[1] + eps,
+            `Tempo-Hauch ${z.tempoNach}/${z.tempoHoch} jenseits des Wander-Bands ${z.tempoBand.join("–")}`
+        );
+        soll(z.geburten > 0, "keine Nexus-Geburt (vakuös)");
+        soll(z.geburtImBlick === 0, `${z.geburtImBlick} von ${z.geburten} Nexus-Geburten im Blick`);
+        soll(
+            z.geburtMinM !== null && z.geburtMinM >= 0.99 * z.fernMin,
+            `Nexus-Geburt ${z.geburtMinM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`
+        );
+    }
     return { ok: f.length === 0, grund: f.join(" · ") };
 }
 
@@ -1411,6 +1596,12 @@ const TAETER = {
     nacht: [["nacht", /bewegt während ruhen/]],
     peer: [["peer", /Sicht-Kopie/]],
     zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],
+    nexus: [
+        ["nexus-wuerfel", /der Würfel schreibt ein Körper-Gesetz/],
+        ["nexus-gesetz", /jenseits des Gesetz-Bands/],
+        ["nexus-groesse", /Skala ohne bodySize-Achse/],
+        ["nexus-geburt", /Nexus-Geburten im Blick|Nexus-Geburt .* vor dem Spieler/],
+    ],
 };
 
 // Der Kommentar-Stripper der Absenz-Proben — dieselbe Quelle wie window.__codeOf im Playtest-Harness (Kommentare

@@ -224,8 +224,13 @@ async function checkRing2Dsl(ctx) {
         const res1 = r.dslRun(["weather", "rainy"]);
         out.weatherEffect = res1.ok && r.state.weather === "rainy";
 
-        const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", 17]]);
-        out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === 17;
+        // DIE KÖRPER-GESETZE SIND GESETZ (Leben-Schau 07.10.): player_jump_power wiegt nur im Gesetz-Band des Leibs — der
+        // Test wählt zwei Werte IM Band (17 und 22 lagen jenseits davon und landen an seinem Rand).
+        const jBand = r._koerperGesetzBand("jumpPower");
+        const jA = +(jBand.min + 0.3 * (jBand.max - jBand.min)).toFixed(3);
+        const jB = +(jBand.min + 0.7 * (jBand.max - jBand.min)).toFixed(3);
+        const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", jA]]);
+        out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === jA;
 
         const creBefore = r.state.creatures.length;
         // V18.296 — maxCreatures 120→20 (Schöpfer-Anordnung): Raum für die 2 sichern,
@@ -240,8 +245,8 @@ async function checkRing2Dsl(ctx) {
             r.state.creatures.length === creBefore + 2;
         r.state.maxCreatures = _saveMaxPos;
 
-        const res4 = r.dslRun(["when", ["weather_is", "sunny"], ["player_jump_power", 22]]);
-        out.conditionEffect = res4.ok && r.state.jumpPower === 22;
+        const res4 = r.dslRun(["when", ["weather_is", "sunny"], ["player_jump_power", jB]]);
+        out.conditionEffect = res4.ok && r.state.jumpPower === jB;
 
         const res5 = r.dslRun(["unbekannte_op_xyz", 1, 2]);
         out.unknownOpRejected = !res5.ok && res5.log.some((e) => e.event === "unknown_op");
@@ -53238,18 +53243,28 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const happyCount = r.state.creatureEmotions.filter((e) => e === "happy").length;
         out.hopeTriggersSunnyHappy = r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
 
-        // (c) peace > 0.7 → creatures_speed_mul = 0.7 (also speedMul wird kleiner)
+        // (c) peace > 0.7 → creatures_speed_mul = 0.7: der Tempo-Hauch der Tiere (Leben-Schau 07.10.: der alte Op schrieb
+        // userData.speedMul, das niemand las) — jedes Tier trägt den Hauch, und sein Charakter-Tempo LIEST ihn (im Band).
         for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
         p.emotions.peace = 0.9;
-        // speedMul zurücksetzen, damit der Vergleich verlässlich ist
-        for (const cr of r.state.creatures) {
-            if (cr.userData) cr.userData.speedMul = 1;
-        }
+        // den Hauch zurücksetzen, damit der Vergleich verlässlich ist
+        const tempoVor = r.state.creatures.map((cr) => {
+            if (cr.userData) cr.userData.tempoHauch = 1;
+            return r._creatureMoveCharacter(cr).speedMul;
+        });
         p.emotionLastTick = 499;
         r.updatePlayerEmotions(500);
+        const W = r.constructor._verhaltenGesetz().wandern;
         const allSlowed =
             r.state.creatures.length > 0 &&
-            r.state.creatures.every((cr) => cr.userData && Math.abs(cr.userData.speedMul - 0.7) < 1e-6);
+            r.state.creatures.every((cr, i) => {
+                const sm = r._creatureMoveCharacter(cr).speedMul;
+                return (
+                    cr.userData &&
+                    Math.abs(cr.userData.tempoHauch - 0.7) < 1e-6 &&
+                    (sm < tempoVor[i] - 1e-9 || Math.abs(sm - W.speedMulMin) < 1e-9)
+                );
+            });
         out.peaceTriggersSlowdown = allSlowed;
 
         // (d) Generator-Modulation: hoher joy → mehr "sunny" als "rainy"
@@ -53297,7 +53312,7 @@ async function checkBandEarlyRingsAndUi(ctx) {
     } else {
         check("Ring 3 V2: awe > 0.7 triggert Skybox-Farbe", ring3v2Results.aweTriggersSkybox);
         check("Ring 3 V2: hope > 0.7 triggert chain(sunny, happy)", ring3v2Results.hopeTriggersSunnyHappy);
-        check("Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (speedMul=0.7)", ring3v2Results.peaceTriggersSlowdown);
+        check("Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (Tempo-Hauch 0,7, gelesen im Wander-Band)", ring3v2Results.peaceTriggersSlowdown);
         check(
             "Ring 3 V2: Generator-Bias — joy=1.0 → sunny dominiert (>2× rainy)",
             ring3v2Results.joyBiasWorks,

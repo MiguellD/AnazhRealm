@@ -1336,7 +1336,6 @@ class AnazhRealm {
         return new Set([
             "player_jump_power",
             "player_speed",
-            "player_size_mul",
             "player_soul",
             "set_visible",
             // Welle 6.D Etappe 3a — Schaden + Konsum sind Spieler-private Aktionen
@@ -2071,6 +2070,12 @@ class AnazhRealm {
                 // deterministisch + broadcast-konsistent.
                 const ppos = ctx.state.playerMesh && ctx.state.playerMesh.position;
                 const onPlayer = !!(ppos && Math.hypot(pos.x - ppos.x, pos.z - ppos.z) < 2.0);
+                // DIE NEXUS-GEBURT folgt dem Geburts-Gesetz (D13 auch für den Nexus-Weg, Leben-Schau 07.10. Neu 1): der
+                // autonome Nexus setzt ein Wesen nur dorthin, wo es fern und außerhalb des Blicks zur Welt kommt
+                // (`_kreaturGeburtsOrt` — der gewünschte Ort, wenn er es ist; sonst ein Ort nach dem Gesetz). Vorher setzte
+                // `spawn_creature at_player` es 4–7 m vor den Spieler. Der Mensch (und wer in seinem Namen spricht) ruft
+                // Leben vor sich — das ist sein Akt.
+                const autonom = ctx.source === "nexus" || ctx.source === "rule:nexus";
                 let spawned = 0;
                 let lastBorn = null;
                 for (let i = 0; i < n; i++) {
@@ -2081,9 +2086,19 @@ class AnazhRealm {
                     ctx.budget.spawnsLeft--;
                     const ang = ctx.rng() * Math.PI * 2;
                     const rad = (onPlayer ? 2.5 : 0) + 1.5 + ctx.rng() * 2.5; // 1.5..4 m, +2.5 wenn auf dem Spieler
-                    const sx = pos.x + Math.cos(ang) * rad;
-                    const sz = pos.z + Math.sin(ang) * rad;
-                    const born = this.spawnCreatureAt(sx, pos.y, sz, e);
+                    let sx = pos.x + Math.cos(ang) * rad;
+                    let sz = pos.z + Math.sin(ang) * rad;
+                    let sy = pos.y;
+                    if (autonom) {
+                        const ort = this._kreaturGeburtsOrt(ctx.rng, 80, { x: sx, z: sz });
+                        if (ort.x !== sx || ort.z !== sz) {
+                            sx = ort.x;
+                            sz = ort.z;
+                            const gY = this.getTerrainHeightAt(sx, sz);
+                            sy = (Number.isFinite(gY) ? gY : pos.y) + 1;
+                        }
+                    }
+                    const born = this.spawnCreatureAt(sx, sy, sz, e);
                     // Intentional getragene Kreatur (Nexus/Chat/DSL) TENDET das Feld (träufelt Leben, wo sie wohnt;
                     // _tickCreatureLifeTrickle). Ambiente Fauna bekommt das Flag NIE — sie ist die Folge des Feldes
                     // (kein Runaway).
@@ -2835,38 +2850,21 @@ class AnazhRealm {
                     this._projectCreatureEmotion(c);
                 }
             },
-            creatures_speed_mul: ([factor]) => {
-                const f = c(factor, 0.1, 5);
-                for (const cr of this.state.creatures) {
-                    if (cr.userData) cr.userData.speedMul = (cr.userData.speedMul || 1) * f;
-                }
-            },
-            creatures_size_mul: ([factor]) => {
-                const f = c(factor, 0.5, 3);
-                for (const cr of this.state.creatures) {
-                    if (cr.scale) cr.scale.multiplyScalar(f);
-                }
-            },
-            player_jump_power: ([value]) => {
-                this.state.jumpPower = c(value, 5, 40);
-            },
-            player_speed: ([value]) => {
-                // Nur der DSL-Eingabe-Clamp; _applyPlayerSpeed koppelt speed + sprintSpeed (sonst wäre Sprint
-                // langsamer als Gehen).
-                this._applyPlayerSpeed(c(value, 1, 30));
-            },
+            // DIE KÖRPER-GESETZE SIND GESETZ (Leben-Schau 07.10., Neu 1): ein Op moduliert Gang, Sprung und Größe nur
+            // INNERHALB der Bänder des Gesetzes, benannt im Protokoll — der Spieler-Leib im Band seines Körper-Gesetzes
+            // (koerper fx.bewegung), das Tier-Tempo im Wander-Band, die Tier-Größe nur über die bodySize-Achse. Vorher
+            // schrieben die Ops absolute Werte (Gehen 11,1 m/s, Sprint 45 m/s, Sprungkraft 18,6 statt 2,6), skalierten
+            // jedes Tier ohne Achse (16 von 16 ×1,11) und schrieben ein Tempo, das niemand las.
+            creatures_speed_mul: ([factor], ctx) => this._kreaturTempoHauch(factor, ctx),
+            creatures_size_mul: ([factor], ctx) => this._kreaturGroesseHauch(factor, ctx),
+            player_jump_power: ([value], ctx) => this._koerperHauch("jumpPower", value, ctx),
+            player_speed: ([value], ctx) => this._koerperHauch("speed", value, ctx),
             // Welle 6.D Etappe 3a — Schaden zufügen (DSL-getrieben). Schöpfer-
             // Werkzeug + Test-Hook. Welt-Hazards (6.G) + Kreaturen (6.H) hängen
             // sich später an damagePlayer. Bewusst NICHT im atomic-Pool.
             damage: ([amount, source], ctx) => {
                 const dealt = this.damagePlayer(c(amount, 0, 1000), source || "dsl");
                 if (ctx && ctx.log) ctx.log.push({ event: dealt ? "player_damaged" : "damage_ignored", amount });
-            },
-            player_size_mul: ([factor]) => {
-                const f = c(factor, 0.5, 2);
-                if (this.state.playerMesh && this.state.playerMesh.scale) {
-                    this.state.playerMesh.scale.multiplyScalar(f);
-                }
             },
             player_soul: ([name]) => {
                 // Seele wechseln — NICHT im dslComposeAtomic-Pool (der Nexus schreibt dem Menschen nie die
@@ -3393,11 +3391,9 @@ class AnazhRealm {
             { w: 10, build: () => ["creatures_emotion", rng() < happyBias ? "happy" : "sad"] },
             { w: 8, build: () => ["creatures_color", this.dslComposeFieldColor(rng, aura)] },
             { w: 8, build: () => ["skybox_color", this.dslComposeFieldColor(rng, aura)] },
-            { w: 7, build: () => ["player_jump_power", Number((8 + rng() * 12).toFixed(2))] },
-            { w: 7, build: () => ["player_speed", Number((4 + rng() * 8).toFixed(2))] },
+            // KEIN WÜRFEL SCHREIBT EIN KÖRPER-GESETZ (Leben-Schau 07.10., Neu 1): Gang, Sprung und Größe stehen nicht im
+            // Pool — der Würfel setzte dem Spieler Gehen 4–12 und Sprungkraft 8–20 zu und blähte die Tiere ohne Achse auf.
             { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
-            { w: 4, build: () => ["creatures_speed_mul", Number((0.5 + rng() * 1.5).toFixed(2))] },
-            { w: 4, build: () => ["creatures_size_mul", Number((0.7 + rng()).toFixed(2))] },
             // Der Nexus baut via far_player in eine FERNE Schale (180–380 m, JENSEITS des 150-m-Cull-Radius):
             // nah am Spieler stapelten sich Bauten und wurden nie gecullt (sceneChildren-Leck). Dazu der Cap
             // _capNexusStructures (MAX_NEXUS_STRUCTURES, Fernstes verblasst) und niedrige Gewichte (2/2/2/1)
@@ -20273,13 +20269,15 @@ class AnazhRealm {
     // 8 m) × bodySize (Differenzierung über Größe, nie Tags): Kitz ~16.8 m, GIGANT ~75.6 m.
     _creatureMoveCharacter(creature) {
         const ud = creature.userData || {};
-        const key = (ud.soul || "") + "|" + (Number.isFinite(ud.bodySize) ? ud.bodySize : 1);
+        const hauch = Number.isFinite(ud.tempoHauch) ? ud.tempoHauch : 1;
+        const key = (ud.soul || "") + "|" + (Number.isFinite(ud.bodySize) ? ud.bodySize : 1) + "|" + hauch;
         if (ud._moveChar && ud._moveCharKey === key) return ud._moveChar;
         // SPIEGEL-ZENSUS — Leine + Profile wohnen im tetrapoda-Gesetzbuch
         // (VERHALTEN.wandern/temperament via _verhaltenGesetz, fail-soft byte-gleich).
         const VG = AnazhRealm._verhaltenGesetz();
         const K = VG.wandern;
-        const raw = this._creatureBodySpeedMultiplier(creature);
+        // Der TEMPO-HAUCH (creatures_speed_mul, `_kreaturTempoHauch`) wiegt den Charakter INNERHALB des Wander-Bands.
+        const raw = this._creatureBodySpeedMultiplier(creature) * hauch;
         const speedMul = Math.min(K.speedMulMax, Math.max(K.speedMulMin, Number.isFinite(raw) ? raw : 1));
         const prof = VG.temperament.profile[this._creatureTemperament(creature)] || VG.temperament.profile.scheu;
         // Mut ∈ [0,1] aus fleeMul ∈ [0.5 (wehrhaft) … 1.7 (scheu)]
@@ -20289,6 +20287,74 @@ class AnazhRealm {
         ud._moveChar = Object.freeze({ speedMul, leashM });
         ud._moveCharKey = key;
         return ud._moveChar;
+    }
+
+    // DER TEMPO-HAUCH der Tiere (creatures_speed_mul; Leben-Schau 07.10., Neu 1): ein Op wiegt das Charakter-Tempo jedes Tiers
+    // mit dem Faktor (der jüngste Hauch gilt — Ruhe 0,7, Zorn 1,5, kein Aufschaukeln über Rufe), der Hauch und das Ergebnis
+    // bleiben im Wander-Band (VERHALTEN.wandern.speedMulMin..Max, `_creatureMoveCharacter` liest ihn). Vorher schrieb der Op
+    // `userData.speedMul`, das niemand las.
+    _kreaturTempoHauch(faktor, ctx) {
+        const f = Number(faktor);
+        if (!(f > 0)) {
+            if (ctx && ctx.log) ctx.log.push({ event: "invalid_tempo_hauch", faktor });
+            return;
+        }
+        const K = AnazhRealm._verhaltenGesetz().wandern;
+        const h = Math.min(K.speedMulMax, Math.max(K.speedMulMin, f));
+        let n = 0;
+        for (const cr of this.state.creatures) {
+            const ud = cr && cr.userData;
+            if (!ud) continue;
+            ud.tempoHauch = h;
+            n++;
+        }
+        if (ctx && ctx.log) ctx.log.push({ event: "tempo_hauch", faktor: f, tiere: n });
+        this.log(`Tempo-Hauch (${(ctx && ctx.source) || "dsl"}): ${n} Tiere ×${f} im Wander-Band`, "INFO");
+    }
+
+    // DIE GRÖSSE EINES TIERS nur über seine bodySize-Achse (Leben-Schau 07.10., Neu 1 — die Klasse von D2): der EINE
+    // Schreiber nach der Geburt, in den Bändern des Gesetzes (VERHALTEN.groessen); die Skala IST die Achse, die
+    // Größen-Gedächtnisse (Körperlänge, Hang-Spanne, Stats) fallen mit. Vorher skalierte creatures_size_mul die Skala ohne
+    // Achse (16 von 16 Tieren ×1,11, bodySize blieb 1).
+    _kreaturGroesseSetzen(cr, bs) {
+        const ud = cr && cr.userData;
+        if (!ud || !Number.isFinite(bs)) return false;
+        const GB = AnazhRealm._verhaltenGesetz().groessen;
+        let lo = Infinity,
+            hi = -Infinity;
+        for (const z of GB) {
+            if (z.min < lo) lo = z.min;
+            if (z.max > hi) hi = z.max;
+        }
+        const neu = Math.min(hi, Math.max(lo, bs));
+        const hpAnteil = Number.isFinite(ud.hp) && ud.hpMax > 0 ? ud.hp / ud.hpMax : null;
+        ud.bodySize = neu;
+        cr.scale.setScalar(neu);
+        ud._koerperLaengeM = undefined;
+        ud._slopeHalbLen = undefined;
+        this._refreshCreatureStatsCache(cr);
+        const hpMax = ud.stats && ud.stats.hpMax;
+        if (Number.isFinite(hpMax)) {
+            ud.hpMax = hpMax;
+            if (hpAnteil !== null) ud.hp = hpAnteil * hpMax;
+        }
+        return true;
+    }
+
+    _kreaturGroesseHauch(faktor, ctx) {
+        const f = Number(faktor);
+        if (!(f > 0)) {
+            if (ctx && ctx.log) ctx.log.push({ event: "invalid_groesse_hauch", faktor });
+            return;
+        }
+        let n = 0;
+        for (const cr of this.state.creatures) {
+            const ud = cr && cr.userData;
+            if (!ud || ud.dying) continue;
+            if (this._kreaturGroesseSetzen(cr, (Number.isFinite(ud.bodySize) ? ud.bodySize : 1) * f)) n++;
+        }
+        if (ctx && ctx.log) ctx.log.push({ event: "groesse_hauch", faktor: f, tiere: n });
+        this.log(`Größen-Hauch (${(ctx && ctx.source) || "dsl"}): ${n} Tiere ×${f} auf der bodySize-Achse`, "INFO");
     }
 
     // Die Hüft-Höhe L eines Tiers (m) — dieselbe L, an der das Gang-Gesetz die Schritt-Länge misst (tb.beinL × Körper-
@@ -23240,11 +23306,10 @@ class AnazhRealm {
             creature_apply_boost: (a) => `gibt Kreatur #${a[0]} den Trank „${a[1]}"`,
             creatures_color: () => `färbt alle Kreaturen`,
             creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
-            creatures_speed_mul: (a) => `skaliert die Kreaturen-Geschwindigkeit um ${a[0]}`,
-            creatures_size_mul: (a) => `skaliert die Kreaturen-Größe um ${a[0]}`,
-            player_jump_power: (a) => `setzt die Sprungkraft auf ${a[0]}`,
-            player_speed: (a) => `setzt die Lauf-Geschwindigkeit auf ${a[0]}`,
-            player_size_mul: (a) => `skaliert deine Größe um ${a[0]}`,
+            creatures_speed_mul: (a) => `wiegt das Kreaturen-Tempo um ${a[0]} (im Wander-Band)`,
+            creatures_size_mul: (a) => `wiegt die Kreaturen-Größe um ${a[0]} (die bodySize-Achse, im Größen-Band)`,
+            player_jump_power: (a) => `wiegt die Sprungkraft auf ${a[0]} (im Gesetz-Band deines Körpers)`,
+            player_speed: (a) => `wiegt die Lauf-Geschwindigkeit auf ${a[0]} (im Gesetz-Band deines Körpers)`,
             player_soul: (a) => `wandelt dich zur Seele „${a[0]}"`,
             set_visible: (a) => `macht „${a[0]}" ${a[1] ? "sichtbar" : "unsichtbar"}`,
         };
@@ -52301,6 +52366,41 @@ class AnazhRealm {
         // Sprint-Faktor ist fail-closed Kern-Pflicht (koerper:bewegung.sprintMul); ein alter Kern bricht
         // laut, wie speed/jumpPower (_bewegungsKoeff).
         this.state.sprintSpeed = v * AnazhRealm._sprintMulGesetz();
+    }
+
+    // DAS GESETZ-BAND eines Bewegungs-Stats für DIESEN Leib: das Körper-Gesetz (koerper fx.bewegung: base + leicht·(1 −
+    // dichte) + mag·magieleitung, die Tags in [0, 1]) spannt [base, base + leicht + mag]; die Größe des Leibs (dieselbe
+    // Pipeline, computePlayerStats) skaliert es mit g = Stat / Rohwert der Tags. Liefert {min, max, wert}.
+    _koerperGesetzBand(stat) {
+        const { tags, stats } = this.computePlayerStats();
+        const K = AnazhRealm._bewegungsKoeff(stat);
+        const roh = AnazhRealm.STAT_FROM_TAGS[stat](tags);
+        const g = roh > 0 && Number.isFinite(stats[stat]) ? stats[stat] / roh : 1;
+        return { min: K.base * g, max: (K.base + K.leicht + K.mag) * g, wert: stats[stat] };
+    }
+
+    // DER KÖRPER-HAUCH (Leben-Schau 07.10., Neu 1): ein DSL-Op wiegt Lauf-Tempo oder Sprungkraft nur INNERHALB des
+    // Gesetz-Bands des Leibs (`_koerperGesetzBand`) — der Wunsch jenseits des Bands landet an seinem Rand, benannt im
+    // Protokoll (Wunsch, gesetzt, Band, Quelle). Vorher setzte der Op den Wunsch absolut: der Nexus würfelte Gehen 11,1 m/s
+    // (Sprint 45 m/s) und Sprungkraft bis 18,6 statt 2,6, der Hang-Gang und der Sprung hingen am Würfel.
+    _koerperHauch(stat, wunsch, ctx) {
+        const w = Number(wunsch);
+        if (!Number.isFinite(w)) {
+            if (ctx && ctx.log) ctx.log.push({ event: "invalid_koerper_hauch", stat, wunsch });
+            return;
+        }
+        const b = this._koerperGesetzBand(stat);
+        const v = Math.min(b.max, Math.max(b.min, w));
+        if (stat === "speed") this._applyPlayerSpeed(v);
+        else if (stat === "jumpPower") this.state.jumpPower = v;
+        else return;
+        const quelle = (ctx && ctx.source) || "dsl";
+        if (ctx && ctx.log) ctx.log.push({ event: "koerper_hauch", stat, wunsch: w, gesetzt: v, band: [b.min, b.max] });
+        this.log(
+            `Körper-Hauch (${quelle}): ${stat === "speed" ? "Lauf-Tempo" : "Sprungkraft"} ${v.toFixed(2)} ` +
+                `(Wunsch ${w.toFixed(2)}, Gesetz-Band ${b.min.toFixed(2)}–${b.max.toFixed(2)})`,
+            "INFO"
+        );
     }
 
     // Mana-Helper für Konsumenten (Magie-Akte, Boost, DSL-Kosten): strukturell, KEIN DSL-Op — ein Skript
@@ -86922,13 +87022,18 @@ class AnazhRealm {
     // DER GEBURTS-ORT — die Boot-Regel als EIN Gesetz für den Boot-Spawn UND die natürliche Geburt: fern
     // (CREATURE_SPAWN_FAR_MIN + Streu-Spanne um den Spieler) und außerhalb des Blicks; das Wesen taucht aus der Distanz
     // auf, sein Satz blendet ein (`einblenden`). Die Leben-Prüfung (R-D13) sah die Geburt 12–25 m vor dem Spieler, einen
-    // Hirsch 2 m neben ihm. Bis zu acht Würfe suchen einen Ort außerhalb des Blicks; fern ist jeder.
-    _kreaturGeburtsOrt(rng, spanne = 80) {
+    // Hirsch 2 m neben ihm. Bis zu acht Würfe suchen einen Ort außerhalb des Blicks; fern ist jeder. Ein WUNSCH-Ort (die
+    // Nexus-Geburt am Ort des Bedarfs) gilt, wenn er selbst fern und außerhalb des Blicks liegt.
+    _kreaturGeburtsOrt(rng, spanne = 80, wunsch = null) {
         const pm = this.state.playerMesh;
         const cx = pm ? pm.position.x : 0;
         const cz = pm ? pm.position.z : 0;
         const fr = this._frustumCache;
         const v = this._geburtsOrtV || (this._geburtsOrtV = new THREE.Vector3());
+        if (wunsch && Math.hypot(wunsch.x - cx, wunsch.z - cz) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN) {
+            v.set(wunsch.x, this.getTerrainHeightAt(wunsch.x, wunsch.z) + 1, wunsch.z);
+            if (!fr || !fr.containsPoint(v)) return { x: wunsch.x, z: wunsch.z };
+        }
         let x = cx;
         let z = cz;
         for (let k = 0; k < 8; k++) {
