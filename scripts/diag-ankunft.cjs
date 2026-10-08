@@ -116,6 +116,15 @@ function ladeschirmVerdict(m) {
     if (!f.lueckeRuht) out.push("eine ruhende Lücke: kein Fall (Vorbedingung)");
     else if (!f.lueckeRuht.weg) out.push("eine ruhende Lücke hält den Spieler vor der Welt fest");
     else if (!f.lueckeRuht.warn) out.push("eine ruhende Lücke weicht ohne Wort im Log");
+    if (!f.lueckeFlackert) out.push("eine flackernde Lücke: kein Fall (Vorbedingung)");
+    else if (!f.lueckeFlackert.weg) out.push("eine flackernde Lücke hält den Ladeschirm ohne Grenze (kein Deckel)");
+    else if (!f.lueckeFlackert.warn) out.push("eine flackernde Lücke weicht ohne Wort im Log");
+    const th = m.tastenHinter;
+    if (!th) out.push("Tasten hinter dem Ladeschirm: keine Probe (Vorbedingung)");
+    else {
+        if (th.w) out.push("hinter dem Ladeschirm läuft W den Spieler");
+        if (th.enter === "chat-input") out.push("hinter dem Ladeschirm öffnet Enter das Gespräch");
+    }
     if (!m.nachBootWeg) out.push("nach dem Boot (Null-Renderer) steht der Ladeschirm über der UI");
     return out;
 }
@@ -381,6 +390,7 @@ async function probe(arg) {
                 ls.classList.remove("weg");
                 st._weltbildDa = 0;
                 st._weltbildLuecke = null;
+                st._weltbildErsteFrage = null;
                 // der Puffer rollt (maxLogEntries): gesucht wird in seinem Ende, vorher und nachher
                 const warnt = () => st.logBuffer.slice(-30).filter((z) => /erste Weltbild steht ohne/.test(z)).length;
                 const w0 = warnt();
@@ -433,6 +443,28 @@ async function probe(arg) {
                     st._weltbildLuecke = sig;
                     st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
                 });
+            // (7) eine Lücke flackert (Gegenprüfung Runde 2: ihre Zahl wechselt je Frage, die Ruhe-Uhr beginnt je Wechsel neu)
+            // seit über einer Minute: der Ladeschirm weicht LAUT
+            if (baum)
+                fall("lueckeFlackert", baumWeg, baumHer, () => {
+                    st._weltbildLuecke = "eine andere Zahl";
+                    st._weltbildErsteFrage = performance.now() - (r.constructor.WELTBILD_DECKEL_MS || 60000) - 1;
+                });
+            // (8) Tasten hinter dem Ladeschirm (Gegenprüfung Runde 2: W lief den Spieler vom Ankunfts-Ort, Enter öffnete das
+            // Gespräch dahinter): solange er steht, gehört keine Taste der Welt
+            {
+                ls.hidden = false;
+                ls.classList.remove("weg");
+                if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+                st.keys.w = false;
+                document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "w", code: "KeyW", bubbles: true }));
+                const wLief = st.keys.w === true;
+                document.body.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW", bubbles: true }));
+                document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true }));
+                const ae = document.activeElement;
+                m.tastenHinter = { w: wLief, enter: ae ? ae.id || ae.tagName : null };
+                if (ae && ae.id === "chat-input") ae.blur();
+            }
             await sleep(800);
             if (!st._weltbildDa) st._weltbildDa = performance.now();
             ls.classList.add("weg");
@@ -1221,6 +1253,7 @@ async function probe(arg) {
                     htmlVersteckt: false,
                     zIndex: 2147483000,
                     nachBootWeg: true,
+                    tastenHinter: { w: false, enter: "BODY" },
                     faelle: {
                         ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0 },
                         baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0 },
@@ -1228,6 +1261,7 @@ async function probe(arg) {
                         karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0 },
                         allesSteht: { weg: true, stand: "", warn: 0 },
                         lueckeRuht: { weg: true, stand: "", warn: 1 },
+                        lueckeFlackert: { weg: true, stand: "", warn: 1 },
                     },
                 },
                 [
@@ -1244,6 +1278,13 @@ async function probe(arg) {
                     ["ruhende Lücke hält fest", { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: false, warn: 0 } } }, "eine ruhende Lücke hält den Spieler"],
                     ["ruhende Lücke still", { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 0 } } }, "eine ruhende Lücke weicht ohne Wort"],
                     ["blockt die Linsen", { nachBootWeg: false }, "nach dem Boot"],
+                    [
+                        "flackernde Lücke ohne Deckel (Gegenprüfung Runde 2)",
+                        { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 1 }, lueckeFlackert: { weg: false, warn: 0 } } },
+                        "eine flackernde Lücke hält den Ladeschirm ohne Grenze",
+                    ],
+                    ["W hinter dem Ladeschirm (Gegenprüfung Runde 2)", { tastenHinter: { w: true, enter: "BODY" } }, "hinter dem Ladeschirm läuft W"],
+                    ["Enter hinter dem Ladeschirm (Gegenprüfung Runde 2)", { tastenHinter: { w: false, enter: "chat-input" } }, "hinter dem Ladeschirm öffnet Enter"],
                 ],
             ],
             [
@@ -1491,7 +1532,8 @@ async function probe(arg) {
             Object.entries(m.faelle || {})
                 .map(([k, z]) => `${k}: ${z.weg ? "weicht" : "bleibt"}${z.stand ? ` („${z.stand}")` : ""}${z.warn ? " + WARN" : ""}`)
                 .join(" · ") +
-            (m.baumD != null ? ` · Baum ${m.baumD} m` : "")
+            (m.baumD != null ? ` · Baum ${m.baumD} m` : "") +
+            (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}` : "")
     );
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));

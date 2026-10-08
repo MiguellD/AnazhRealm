@@ -89688,6 +89688,9 @@ class AnazhRealm {
                 }
                 return;
             }
+            // Solange der Ladeschirm steht, gehört keine Taste der Welt (Gegenprüfung Runde 2: W lief den Spieler hinter dem
+            // Ladeschirm vom Ankunfts-Ort, Enter öffnete das Gespräch dahinter).
+            if (this._ladeschirmSteht()) return;
             // Wenn der Fokus in einem Eingabe-Feld liegt (Chat), keine
             // Spiel-Aktionen aus den Tasten lösen — sonst tippt der User
             // "1" und es geht in den Bau-Modus statt in den Chat.
@@ -94687,16 +94690,22 @@ class AnazhRealm {
         if (fehlt.length) {
             const jetzt = performance.now();
             const sig = fehlt.join(" · ");
+            if (st._weltbildErsteFrage == null) st._weltbildErsteFrage = jetzt;
             if (st._weltbildLuecke !== sig) {
                 st._weltbildLuecke = sig;
                 st._weltbildLueckeSeit = jetzt;
             }
-            if (!st.playerMesh || jetzt - st._weltbildLueckeSeit < AnazhRealm.WELTBILD_STILL_MS) {
+            // DER DECKEL (Gegenprüfung Runde 2): eine Lücke, deren Zahl ständig flackert, setzte die Ruhe-Uhr je Wechsel neu
+            // und hielt den Ladeschirm ohne Grenze — nach WELTBILD_DECKEL_MS ab der ersten Frage weicht er laut wie bei Ruhe.
+            const gedeckelt = jetzt - st._weltbildErsteFrage >= AnazhRealm.WELTBILD_DECKEL_MS;
+            if (!st.playerMesh || (!gedeckelt && jetzt - st._weltbildLueckeSeit < AnazhRealm.WELTBILD_STILL_MS)) {
                 this._ladeschirmStand(sig);
                 return false;
             }
             this.log(
-                `Das erste Weltbild steht ohne: ${sig} — die Arbeit ruhte ${AnazhRealm.WELTBILD_STILL_MS} ms.`,
+                gedeckelt
+                    ? `Das erste Weltbild steht ohne: ${sig} — der Deckel von ${AnazhRealm.WELTBILD_DECKEL_MS} ms ist erreicht.`
+                    : `Das erste Weltbild steht ohne: ${sig} — die Arbeit ruhte ${AnazhRealm.WELTBILD_STILL_MS} ms.`,
                 "WARN"
             );
         }
@@ -94775,6 +94784,13 @@ class AnazhRealm {
         setTimeout(() => {
             el.hidden = true;
         }, 750);
+    }
+
+    // Steht der Ladeschirm (die DOM-Wahrheit: da, nicht versteckt, nicht im Weichen)? Solange gehört keine Taste der Welt.
+    _ladeschirmSteht() {
+        if (typeof document === "undefined") return false;
+        const el = document.getElementById("ladeschirm");
+        return !!el && !el.hidden && !el.classList.contains("weg");
     }
 
     // Ist eine Schublade offen? Die DOM-Wahrheit (ein sichtbarer .drawer), nicht ein Merker — der Werkstatt-, Hof- oder
@@ -98837,6 +98853,9 @@ AnazhRealm.RING_EXIST_FLOOR = 2;
 // DAS ERSTE WELTBILD (`_ankunftsBild`): steht dieselbe Lücke so lange (ms), ohne dass etwas wächst, weicht der Ladeschirm
 // laut — das Log nennt, was fehlt (ein Bau, den das Studio nie liefert, hält den Spieler nie vor der Welt fest).
 AnazhRealm.WELTBILD_STILL_MS = 15000;
+// Der Deckel des ersten Weltbilds (ms ab der ersten Frage): danach weicht der Ladeschirm laut, auch wenn die Lücke nie ruht
+// (ihre Zahl flackert). Auf der Radeon stand das ganze Weltbild nach 31,8 s.
+AnazhRealm.WELTBILD_DECKEL_MS = 60000;
 // Start-Ring 0 = EIN Chunk (der Spieler-Chunk): der Fern-Ring (Loch-Deckel) trägt den Rest, der Void-Boden
 // `_softFloorWhileChunkLoading` trägt den Rand, dann wächst der Ramp bei gesundem Frame Ring für
 // Ring — ein großer Start-Ring (25 Chunks) fror den Boot ein.
