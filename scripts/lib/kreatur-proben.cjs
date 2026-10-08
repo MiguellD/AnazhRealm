@@ -15,7 +15,7 @@
 //   gier      (Q3) Lauf ↔ Blick p90 ≤ 20°, 0 Rückwärts-Frames, Stand-Schlupf quer ≤ 0,2, Beschleunigung im Gesetz,
 //             Folgen ohne Gas ↔ Bremse (≤ 30 Wechsel je Minute, R-D17)
 //   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf), die Beute läuft vom Jäger fort (> 80 %)
-//   herde     (Q11) Kohäsion je Gattung (herdeZug zählt gleichartige Nachbarn, n > 0; der Fuchs zieht den Hirsch nicht),
+//   herde     (Q11) Kohäsion je Gattung (herdeZug zählt gleichartige Nachbarn, n > 0; der Fuchs zieht den Bären nicht),
 //             Bewegung gleich mit und ohne Blick (Frustum + Zufall)
 //   hindernis (Q11) kein Feld-Strahl je Tier und Takt, kein Tier in der Wand; der Kontakt liest den EINEN Leib des Tiers
 //             (_kreaturLeib, D2), seine vordere Achse bleibt vor dem Stein
@@ -750,7 +750,7 @@ async function kreaturProben(r, T, opts) {
         let gleichartigN = 0,
             zugRufe = 0;
         K.herdeZug = function (x, z, gattung, nachbarn, H, out) {
-            // R-D5 artfremd: die Herde zählt jeden Nachbarn, gleich welcher Gattung (der Fuchs zieht den Hirsch)
+            // R-D5 artfremd: die Herde zählt jeden Nachbarn, gleich welcher Gattung (der Fuchs zieht den Bären)
             if (taeter === "herde-artfremd") for (const e of nachbarn) e.gattung = gattung;
             const o = zugAlt.call(this, x, z, gattung, nachbarn, H, out);
             zugRufe++;
@@ -774,12 +774,14 @@ async function kreaturProben(r, T, opts) {
             r._creatureAiFrame = 0;
             pm.copy(P0);
             kamera(blickX, blickZ);
+            // Die neugierige Schar: das Temperament der Gattung (Welle LF) macht den Hirsch scheu (er kommt nie heran),
+            // der wehrhafte Bär tritt neugierig zum ruhigen Spieler — an ihm lebt die Kohäsion des Neugier-Zweigs.
             const o = fern ? land(58, 6) : land(0, -12);
-            const a = tier(o, "wesen");
-            const b = tier({ x: o.x + 4, y: o.y, z: o.z }, "wesen");
+            const a = tier(o, "baer", 1);
+            const b = tier({ x: o.x + 4, y: o.y, z: o.z }, "baer", 1);
             const f = mitFuchs ? tier({ x: o.x - 4, y: o.y, z: o.z }, "fuchs") : null;
             const extra = fern
-                ? [tier({ x: o.x, y: o.y, z: o.z + 5 }, "baer"), tier({ x: o.x + 3, y: o.y, z: o.z - 6 }, "fuchs")]
+                ? [tier({ x: o.x, y: o.y, z: o.z + 5 }, "wesen"), tier({ x: o.x + 3, y: o.y, z: o.z - 6 }, "fuchs")]
                 : [];
             for (const c of [a, b, f, ...extra])
                 if (c) c.userData.emotions = { joy: 0.2, awe: 0, sorrow: 0, hope: 0.1, peace: 0.15, chaos: 0 };
@@ -1386,6 +1388,88 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── temperament (D16 / K-D12, Leben-Schau 07.10.): das Temperament aus der Gattungs- und Größen-Achse (Lehre 8: die
+    // Tiere sind tag-gleich) — Hirsch und Fuchs blieben „wehrhaft" (aus den Tags), alle Hirsche Wariness −1,0 (neugierig),
+    // die Herde drängte auf 0,6 m heran. Gemessen: das Temperament je Seele und Größe, die Wariness vor einem ruhigen
+    // Spieler in frieden, was der Leib daraus macht (Fluchttier fort, Wehrhafter heran), und dass der Kampf dasselbe
+    // Temperament liest (die Furcht-Dauer nach einem Treffer = furcht.fearSec × fleeMul des Temperaments) ──
+    await buehne("temperament", async (restore) => {
+        if (taeter === "temperament")
+            decke(
+                restore,
+                "_creatureTemperament",
+                () =>
+                    function (c) {
+                        return (c && c.userData && c.userData.soul) === "wolf" ? "wild" : "wehrhaft";
+                    }
+            );
+        r.setGameMode("frieden");
+        if (s.player.emotions)
+            Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0.9, chaos: 0 });
+        const art = {};
+        const o = land(30, 30);
+        const probe = (seele, bs) => {
+            const c = tier({ x: o.x, y: o.y, z: o.z }, seele, bs);
+            const t = r._creatureTemperament(c);
+            r.removeCreature(c);
+            return t;
+        };
+        for (const [seele, bs] of [
+            ["wesen", 1],
+            ["wolf", 1],
+            ["baer", 1],
+            ["fuchs", 1],
+            ["wesen", 2.5],
+            ["wolf", 0.7],
+            ["baer", 0.7],
+        ])
+            art[seele + "@" + bs] = probe(seele, bs);
+        // Die Wariness 6 m vor dem ruhigen Spieler und was der Leib daraus macht (600 Takte, frei).
+        const start = land(0, 0);
+        pm.set(start.x, start.y, start.z);
+        const ring = (seele) =>
+            [0, 1, 2, 3].map((k) => {
+                const a = (k / 4) * Math.PI * 2 + 0.4;
+                const c = tier({ x: pm.x + Math.cos(a) * 6, y: pm.y, z: pm.z + Math.sin(a) * 6 }, seele, 1);
+                ruhig(c);
+                return c;
+            });
+        const dMit = (cs) => cs.reduce((acc, c) => acc + Math.hypot(c.position.x - pm.x, c.position.z - pm.z), 0) / cs.length;
+        const hirsche = ring("wesen");
+        const wHirsch = r._creatureWariness(hirsche[0]);
+        for (let k = 0; k < 600; k++) takt(1 / 60);
+        const hirschM = dMit(hirsche);
+        for (const c of hirsche) r.removeCreature(c);
+        const baeren = ring("baer");
+        const wBaer = r._creatureWariness(baeren[0]);
+        for (let k = 0; k < 600; k++) takt(1 / 60);
+        const baerM = dMit(baeren);
+        for (const c of baeren) r.removeCreature(c);
+        // Der Kampf liest dasselbe Temperament: die Furcht-Dauer eines getroffenen Wesens.
+        const VG = A._verhaltenGesetz();
+        const furcht = (seele) => {
+            const c = tier(land(20, -20), seele, 1);
+            c.userData.hp = 9999;
+            const t0 = performance.now() / 1000;
+            r.damageCreature(c, 1, { source: "linse" });
+            const dauer = c.userData.fearUntil - t0;
+            const soll = VG.furcht.fearSec * VG.temperament.profile[r._creatureTemperament(c)].fleeMul;
+            r.removeCreature(c);
+            return { dauer: +dauer.toFixed(2), soll: +soll.toFixed(2) };
+        };
+        return {
+            art,
+            wHirsch: +wHirsch.toFixed(3),
+            wBaer: +wBaer.toFixed(3),
+            hirschAbstandM: +hirschM.toFixed(1),
+            baerAbstandM: +baerM.toFixed(1),
+            fleeThreshold: VG.furcht.fleeThreshold,
+            curiousThreshold: VG.furcht.curiousThreshold,
+            kampfHirsch: furcht("wesen"),
+            kampfBaer: furcht("baer"),
+        };
+    });
+
     return aus;
 }
 
@@ -1406,6 +1490,7 @@ const PROBEN = [
     "peer",
     "zufall",
     "nexus",
+    "temperament",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -1477,7 +1562,7 @@ function urteil(name, z) {
         soll(z.fortAnteil !== null && z.fortAnteil > 0.8, `Beute fort vom Jäger ${z.fortAnteil} (Soll > 0,8)`);
     }
     if (name === "herde") {
-        soll(z.artFremdZugM < 0.01, `der Fuchs zieht den Hirsch ${z.artFremdZugM} m (Kohäsion artfremd)`);
+        soll(z.artFremdZugM < 0.01, `der Fuchs zieht den Bären ${z.artFremdZugM} m (Kohäsion artfremd)`);
         soll(
             z.gleichartigN > 0,
             `herdeZug zählt keinen gleichartigen Nachbarn (n = ${z.gleichartigN} in ${z.zugRufe} Rufen — Probe vakuös)`
@@ -1558,6 +1643,37 @@ function urteil(name, z) {
             `Nexus-Geburt ${z.geburtMinM} m vor dem Spieler (Soll ≥ ${z.fernMin} m)`
         );
     }
+    if (name === "temperament") {
+        const SOLL = {
+            "wesen@1": "scheu",
+            "wolf@1": "wild",
+            "baer@1": "wehrhaft",
+            "fuchs@1": "scheu",
+            "wesen@2.5": "wehrhaft",
+            "wolf@0.7": "scheu",
+            "baer@0.7": "sanft",
+        };
+        const falsch = Object.keys(SOLL).filter((k) => z.art[k] !== SOLL[k]);
+        soll(
+            falsch.length === 0,
+            `Temperament nicht aus Gattung und Größe: ${falsch.map((k) => `${k} ${z.art[k]} (Soll ${SOLL[k]})`).join(", ")}`
+        );
+        soll(
+            z.wHirsch >= z.fleeThreshold,
+            `Hirsch 6 m vor dem ruhigen Spieler: Wariness ${z.wHirsch} (Soll ≥ ${z.fleeThreshold}, ein Fluchttier)`
+        );
+        soll(z.wBaer <= z.curiousThreshold, `Bär 6 m vor dem ruhigen Spieler: Wariness ${z.wBaer} (Soll neugierig)`);
+        soll(z.hirschAbstandM >= 10, `die Hirsche stehen nach 10 s ${z.hirschAbstandM} m am Spieler (Soll ≥ 10 m, Flucht)`);
+        soll(z.baerAbstandM <= 6, `die Bären stehen nach 10 s ${z.baerAbstandM} m am Spieler (Soll ≤ 6 m, Neugier)`);
+        for (const [wer, k] of [
+            ["Hirsch", z.kampfHirsch],
+            ["Bär", z.kampfBaer],
+        ])
+            soll(
+                Math.abs(k.dauer - k.soll) < 0.05,
+                `der Kampf liest ein anderes Temperament: ${wer} fürchtet ${k.dauer} s (Soll ${k.soll} s)`
+            );
+    }
     return { ok: f.length === 0, grund: f.join(" · ") };
 }
 
@@ -1602,6 +1718,7 @@ const TAETER = {
         ["nexus-groesse", /Skala ohne bodySize-Achse/],
         ["nexus-geburt", /Nexus-Geburten im Blick|Nexus-Geburt .* vor dem Spieler/],
     ],
+    temperament: [["temperament", /Temperament nicht aus Gattung und Größe/]],
 };
 
 // Der Kommentar-Stripper der Absenz-Proben — dieselbe Quelle wie window.__codeOf im Playtest-Harness (Kommentare

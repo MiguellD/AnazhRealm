@@ -318,8 +318,14 @@ Komponenten-SÄTZE, keine Klassen):
   Spiegel-Zensus 17.07. (V18.486+, rein additiv): die KREATUR-SEELE reist —
   `jagd { radius speedBoost strikeRange strikeCooldownSec damageMul
   fearHpFrac triumphWindowSec scentRangeM scentProbeM }` · `furcht`
-  (Wariness-Gewichte + Flucht-Radien/-Dauern) · `temperament { signaturen
-  floor profile }` (Resonanz-Signaturen + Gegenwehr-Profile) · `wandern`
+  (Wariness-Gewichte + Flucht-Radien/-Dauern) · `temperament { gattung
+  profile }` (VERTRAGS-AKT Welle LF 08.10.: DAS TEMPERAMENT DER GATTUNG —
+  `gattung { fleischDiet pflanzDiet jagdMasse wehrMasse kolossMasse }`, die
+  Funktion `temperamentDerGattung(dials, bodySize, gattung)` liest Ernährung
+  und Masse; die Substanz-`signaturen` und ihr `floor` fielen, ebenso die
+  Substanz-Gewichte der Furcht `boldFromDichte/boldFromHärte/shyFromLebendig` —
+  die Natur der Wariness ist `furcht.mutGewicht` × Mut des Temperaments; die
+  Tiere sind tag-gleich, Lehre 8) · Gegenwehr-Profile · `wandern`
   (Leine/Schlendern/Emotions-Modulation). Leser
   `AnazhRealm._verhaltenGesetz()` (memoisiert, fail-closed — Kern-Pflicht
   17.07.: die Stamm-Zwillinge `CREATURE_HUNT/CREATURE_NATURE/

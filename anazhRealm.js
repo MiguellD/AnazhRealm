@@ -18923,35 +18923,44 @@ class AnazhRealm {
     // Konsumenten: damageCreature (Gegenwehr/Furcht-Dauer) + _creatureProfile.
     _creatureTemperament(creature) {
         if (!creature || !creature.userData) return "scheu";
-        const soulKey = creature.userData.soul || "";
-        if (creature.userData._temperament && creature.userData._temperamentSoul === soulKey)
-            return creature.userData._temperament;
-        // Die GATTUNG trägt das Raubtier-Temperament: die Tiere sind bewusst tag-identisch, also IST der
-        // predator-Flag (Carnivor-diet) die Wahrheit. Customs + Nicht-Raubtiere bleiben substanz-gerichtet.
-        const soulDef = AnazhRealm.CREATURE_SOULS[soulKey];
-        if (soulDef && soulDef.predator === true) {
-            creature.userData._temperament = "wild";
-            creature.userData._temperamentSoul = soulKey;
-            return "wild";
+        const ud = creature.userData;
+        const bs = Number.isFinite(ud.bodySize) ? ud.bodySize : 1;
+        const gattung = this._kreaturGattung(creature);
+        const key = gattung + "|" + bs;
+        if (ud._temperament && ud._temperamentKey === key) return ud._temperament;
+        // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., D16/K-D12): tetrapoda temperamentDerGattung liest die Dials der
+        // Gattung, wie das Tier gegossen ist (diet · size, die Guss-Dials des Tiers über der Basis), und seine
+        // Körpergröße — ein Fleischfresser mit Masse jagt, ein Pflanzenfresser flieht, wer Masse hat, wehrt sich. Die Tiere
+        // sind tag-gleich (Lehre 8): vorher entschied die Resonanz der Substanz-Tags, Hirsch, Fuchs und Bär waren
+        // „wehrhaft", nur der predator-Stempel machte den Wolf wild. Ohne Gattungs-Dials (kalter Kern) bricht es laut.
+        const d = this._ofenKreaturDials(gattung, ud.gussDials || null);
+        if (!d || !d.dials) return AnazhRealm._kernPflichtBruch("tetrapoda:GATTUNGEN." + gattung);
+        const t = AnazhRealm._steuerGesetz().temperamentDerGattung(
+            d.dials,
+            bs,
+            AnazhRealm._verhaltenGesetz().temperament.gattung
+        );
+        ud._temperament = t;
+        ud._temperamentKey = key;
+        return t;
+    }
+
+    // DER MUT DER ART ∈ [0, 1] aus dem Temperament (Gattung × Größe): die Flucht-Neigung fleeMul seines Profils, gespannt
+    // zwischen dem scheuesten und dem kühnsten Profil des Gesetzbuchs (scheu 1,7 → 0 · wehrhaft 0,5 → 1). EINE Quelle für
+    // die Leine (_creatureMoveCharacter) und die Natur der Wariness (_creatureWarinessSpieler).
+    _kreaturMut(creature) {
+        const P = AnazhRealm._verhaltenGesetz().temperament.profile;
+        let lo = Infinity,
+            hi = -Infinity;
+        for (const k in P) {
+            const f = P[k] && P[k].fleeMul;
+            if (!Number.isFinite(f)) continue;
+            if (f < lo) lo = f;
+            if (f > hi) hi = f;
         }
-        const raw = this.computeCreatureCompoundTags(creature) || {};
-        const tags = {};
-        // ÷3-Norm (PRODUCT_VECTOR_TAG_NORM) statt Clamp — die MAX-Aktivierung
-        // sättigt sonst (GEMESSEN: clamp → fast alles dichte=1, sprite würde
-        // „wehrhaft"); die ÷3-Skala ist die EINE Resonanz-Skala (V17.90).
-        const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM || 3;
-        for (const k of AnazhRealm.MATERIAL_TAG_KEYS) tags[k] = Math.max(0, Number(raw[k]) || 0) / norm;
-        // Ψ1 — das EINE argmax-Organ liest; unter dem Floor bleibt „scheu".
-        // SPIEGEL-ZENSUS — Signaturen + Floor wohnen im tetrapoda-Gesetzbuch
-        // (VERHALTEN.temperament via _verhaltenGesetz, fail-soft byte-gleich).
-        const TG = AnazhRealm._verhaltenGesetz().temperament;
-        const best =
-            this._resonateArgmax(tags, TG.signaturen, {
-                floor: TG.floor,
-            }).key || "scheu";
-        creature.userData._temperament = best;
-        creature.userData._temperamentSoul = soulKey;
-        return best;
+        const prof = P[this._creatureTemperament(creature)] || P.scheu;
+        const f = Number.isFinite(prof.fleeMul) ? prof.fleeMul : hi;
+        return hi > lo ? Math.max(0, Math.min(1, (hi - f) / (hi - lo))) : 0.5;
     }
 
     // === Kreatur-Stats wie Spieler ===
@@ -20119,12 +20128,10 @@ class AnazhRealm {
             (e.sorrow || 0) * NAT.menaceFromSorrow -
             (e.peace || 0) * NAT.calmFromPeace -
             (e.joy || 0) * NAT.calmFromJoy;
-        const t = this.computeCreatureCompoundTags(creature) || {};
-        const boldness =
-            (t.dichte || 0) * NAT.boldFromDichte +
-            (t.härte || 0) * NAT.boldFromHärte -
-            (t.lebendig || 0) * NAT.shyFromLebendig +
-            (ud.bond || 0) * NAT.boldFromBond;
+        // DIE NATUR des Wesens ist das Temperament seiner Gattung (Welle LF 08.10.): der Mut der Art (_kreaturMut) macht
+        // kühn oder scheu, Bindung macht mutig. Vorher lasen hier die Substanz-Tags (dichte · härte · lebendig), die für
+        // alle Tiere gleich sind (Lehre 8) — jeder Hirsch stand mit Wariness −1,0 neugierig am Spieler.
+        const boldness = (this._kreaturMut(creature) * 2 - 1) * NAT.mutGewicht + (ud.bond || 0) * NAT.boldFromBond;
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         const modeMul = mode === "pfad" ? 1 : mode === "frieden" ? NAT.friedenMenace : NAT.schoepferMenace;
         const proximity = Math.max(0, 1 - dist / NAT.noticeRadius);
@@ -20263,10 +20270,10 @@ class AnazhRealm {
         direction.z += pushZ * speed * SEP.strength;
     }
 
-    // CHARAKTER-BEWEGUNG liest vorhandene Achsen, gecacht pro Soul×bodySize:
-    // speedMul = _creatureBodySpeedMultiplier (computeCreatureStats.speed / 7), geklemmt auf [0.6, 1.6];
-    // leashM = Mut-Achse aus VERHALTEN.temperament.profile.fleeMul (invertiert: wehrhaft ~28 m … scheu
-    // 8 m) × bodySize (Differenzierung über Größe, nie Tags): Kitz ~16.8 m, GIGANT ~75.6 m.
+    // CHARAKTER-BEWEGUNG liest vorhandene Achsen, gecacht pro Soul×bodySize×Tempo-Hauch:
+    // speedMul = _creatureBodySpeedMultiplier (computeCreatureStats.speed / 7) × Tempo-Hauch, geklemmt auf [0.6, 1.6];
+    // leashM = Mut-Achse aus dem Temperament der Gattung (_kreaturMut: wehrhaft ~28 m … scheu 8 m) × bodySize
+    // (Differenzierung über Gattung und Größe, nie Tags): das scheue Kitz ~4,8 m, der wehrhafte Koloss-Hirsch ~67 m.
     _creatureMoveCharacter(creature) {
         const ud = creature.userData || {};
         const hauch = Number.isFinite(ud.tempoHauch) ? ud.tempoHauch : 1;
@@ -20279,9 +20286,8 @@ class AnazhRealm {
         // Der TEMPO-HAUCH (creatures_speed_mul, `_kreaturTempoHauch`) wiegt den Charakter INNERHALB des Wander-Bands.
         const raw = this._creatureBodySpeedMultiplier(creature) * hauch;
         const speedMul = Math.min(K.speedMulMax, Math.max(K.speedMulMin, Number.isFinite(raw) ? raw : 1));
-        const prof = VG.temperament.profile[this._creatureTemperament(creature)] || VG.temperament.profile.scheu;
-        // Mut ∈ [0,1] aus fleeMul ∈ [0.5 (wehrhaft) … 1.7 (scheu)]
-        const mut = Math.max(0, Math.min(1, (1.7 - (Number.isFinite(prof.fleeMul) ? prof.fleeMul : 1)) / 1.2));
+        // Mut ∈ [0,1] aus dem Temperament der Gattung (_kreaturMut: fleeMul zwischen scheu und wehrhaft)
+        const mut = this._kreaturMut(creature);
         const bs = Number.isFinite(ud.bodySize) ? ud.bodySize : 1;
         const leashM = (K.leashBaseM + K.leashSpanM * (mut * 2 - 1)) * bs;
         ud._moveChar = Object.freeze({ speedMul, leashM });
@@ -94120,9 +94126,12 @@ AnazhRealm._verhaltenGesetz = function () {
             v.furcht &&
             Number.isFinite(v.furcht.fleeThreshold) &&
             v.temperament &&
-            v.temperament.signaturen &&
             v.temperament.profile &&
-            Number.isFinite(v.temperament.floor) &&
+            // DAS TEMPERAMENT DER GATTUNG (Welle LF, Vertrags-Akt 08.10.): die Gattungs-Zeile und der Mut der Natur
+            // (die Substanz-Signaturen und ihr Floor fielen).
+            v.temperament.gattung &&
+            Number.isFinite(v.temperament.gattung.jagdMasse) &&
+            Number.isFinite(v.furcht.mutGewicht) &&
             v.wandern &&
             Number.isFinite(v.wandern.leashBaseM) &&
             // SCHLUSS-WELLE (17.07.) — die neun heimgekehrten Blöcke sind
@@ -94161,7 +94170,8 @@ AnazhRealm._hopSchwere = function () {
     return Number.isFinite(g) && g > 0 ? g : AnazhRealm._kernPflichtBruch("tetrapoda:GANG_GESETZ.g");
 };
 // DAS STEUER-GESETZ (tetrapoda STEUER_GESETZ + steuerSchritt · tempoEinheit · ankunftTempo · herdeZug, Welle L): der EINE
-// Steuer-Schritt je Tier und Takt, das Ankunfts-Gesetz, die Tempo-Einheit √(g·L) und die Herden-Form. Fail-closed.
+// Steuer-Schritt je Tier und Takt, das Ankunfts-Gesetz, die Tempo-Einheit √(g·L) und die Herden-Form; dazu das Temperament
+// der Gattung (temperamentDerGattung, Welle LF). Fail-closed.
 AnazhRealm._steuerGesetz = function () {
     if (AnazhRealm._steuerGesetzMemo) return AnazhRealm._steuerGesetzMemo;
     const S = AnazhRealm.Gesetz("tetrapoda:STEUER_GESETZ", null);
@@ -94174,7 +94184,8 @@ AnazhRealm._steuerGesetz = function () {
         typeof k.steuerSchritt === "function" &&
         typeof k.tempoEinheit === "function" &&
         typeof k.ankunftTempo === "function" &&
-        typeof k.herdeZug === "function"
+        typeof k.herdeZug === "function" &&
+        typeof k.temperamentDerGattung === "function"
     ) {
         AnazhRealm._steuerGesetzMemo = k;
         return k;

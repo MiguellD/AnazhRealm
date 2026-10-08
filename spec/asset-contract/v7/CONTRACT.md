@@ -32,3 +32,11 @@ Ohne diese drei Felder ist das kanonische JSON byte-gleich (geprüft). Die Höhe
 `freude.hopHochM`/`hopBasisM`, der Abflug v0 = √(2·g·h) (Wirt `creatureJump`); der m/s-Abflug der Aktionen war ihr
 Zwilling (der frohe Sprung stieg 0,52 statt 1,2 m). Wächter: gate:studio-vertrag (hop nur `true`, kein `sprung`),
 gate:altlasten (`impulsProM` auch im Gesetzbuch), gate:kreatur-takt huepfer (Scheitel = Freude-Gesetz).
+
+**Vertrags-Akt 08.10.2026 (Welle LF rudel — DAS TEMPERAMENT DER GATTUNG):** `tetrapoda-core.js` neu gemintet
+(`508ac6c14735…` → `052f6bddb264…`, klang- und koerper-core byte-gleich). Geändert sind genau 28 Felder in
+`PRESETS.<tier>.fx.verhalten` (wolf · fox · bear · deer): `temperament.signaturen` und `temperament.floor` fielen,
+`temperament.gattung` kam; `furcht.boldFromDichte/boldFromHärte/shyFromLebendig` fielen, `furcht.mutGewicht` kam. Ohne
+diese Felder ist das kanonische JSON byte-gleich (geprüft). Das Gemüt eines Tiers ist `temperamentDerGattung(dials,
+bodySize, gattung)` (Ernährung × Masse; Lehre 8: die Tiere sind tag-gleich). Wächter: gate:studio-vertrag (Gattungs-Zeile
+Pflicht, Signaturen und Substanz-Gewichte kehren nicht zurück, Selbsttest), gate:kreatur-takt temperament.

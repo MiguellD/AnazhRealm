@@ -118,3 +118,13 @@ ist das Freude-Gesetz (`freude.hopHochM` 1,2 m froh, `hopBasisM` 0,8 m sonst), d
 Gang-Gesetzes (der Wirt: `creatureJump`). Gefallen: der Abflug in m/s der Aktionen (bound 3,2, pounce 4,5 — der frohe
 Sprung stieg 0,52 statt 1,2 m) und der lineare Faktor `sprung.impulsProM` (2,2, seit dem Integrator ohne Leser). Genau
 12 Felder (3 je Rezept), der Rest des Buchs byte-gleich (gegen die alten Bytes geprüft).
+
+**Re-Mint 08.10.2026 (Welle LF rudel, begründet — DAS TEMPERAMENT DER GATTUNG):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1` (world-params und render-config byte-gleich, jede Mesh-Golden unberührt, gate:asset-contract 124 von
+124 byte-gleich). Im tetrapoda-Buch (`fx.verhalten` der vier Tier-Rezepte) kommt das Temperament aus Ernährung und Masse
+der Gattung (`temperament.gattung { fleischDiet pflanzDiet jagdMasse wehrMasse kolossMasse }`, Funktion
+`temperamentDerGattung`), die Natur der Wariness aus dem Mut des Temperaments (`furcht.mutGewicht`). Gefallen: die
+Substanz-`signaturen` und ihr `floor`, die Substanz-Gewichte `furcht.boldFromDichte/boldFromHärte/shyFromLebendig` — die
+Tiere sind tag-gleich (Lehre 8), Hirsch und Fuchs waren „wehrhaft", jeder Hirsch stand neugierig am Spieler (Leben-Schau
+07.10., D16/K-D12). Genau 28 Felder (7 je Rezept), der Rest des Buchs byte-gleich (gegen die alten Bytes geprüft);
+recipes.json `7a35306b727b…` → `622864e73bb6…`.

@@ -23012,35 +23012,22 @@ async function checkBandPhasenBF(ctx) {
         out.d3Age = /FAUNA_MAX_AGE_MS/.test(window.__codeOf(r.tickFaunaLifecycle));
         out.d3Feed = /_depositLife/.test(window.__codeOf(r._creatureNaturalDeath));
         out.d4Src = /gegenwehr/.test(window.__codeOf(r.damageCreature));
-        // D4 — das Temperament emergiert aus der Seelen-Substanz (wesen [stein+holz] → wehrhaft · geist
-        // [laub+leder] → sanft · sprite [quarz] → scheu). KONSUM: die Gegenwehr liest das Profil
-        // (strikeCap/fleeMul im Treffer-Pfad); sanft/scheu haben strike 0.
+        // D4 — DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10.): die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus
+        // Ernährung und Masse der Gattung (tetrapoda temperamentDerGattung) — Hirsch scheu, Wolf wild, Bär wehrhaft, Fuchs
+        // scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär ist sanft). Die Substanz-Signaturen
+        // fielen (vorher: Hirsch, Fuchs und Bär „wehrhaft").
         out.d4Temperament = (() => {
-            const t = (soul) => r._creatureTemperament({ userData: { soul } });
-            // ALTLASTEN-NULL: sprite/geist sind gefallen — die Substanz-
-            // Diskrimination der Signaturen prüfen LITERAL-Parts (dieselbe
-            // ÷3-Norm + argmax wie _creatureTemperament).
-            const argT = (parts) => {
-                const raw = r.computeCompoundTags({ parts }) || {};
-                const tags = {};
-                const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM || 3;
-                for (const k of AnazhRealm.MATERIAL_TAG_KEYS) tags[k] = Math.max(0, Number(raw[k]) || 0) / norm;
-                return (
-                    r._resonateArgmax(tags, AnazhRealm._verhaltenGesetz().temperament.signaturen, {
-                        floor: AnazhRealm._verhaltenGesetz().temperament.floor,
-                    }).key || "scheu"
-                );
-            };
-            const laubWeich = [
-                { shape: "torus", material: "laub", size: { x: 0.3, y: 0.09, z: 0.3 } },
-                { shape: "sphere", material: "leder", size: { x: 0.18, y: 0.18, z: 0.18 } },
-            ];
-            const quarzAether = [
-                { shape: "octahedron", material: "quarz", size: { x: 0.22, y: 0.22, z: 0.22 } },
-                { shape: "sphere", material: "quarz", size: { x: 0.34, y: 0.34, z: 0.34 } },
-            ];
-            return t("wesen") === "wehrhaft" && argT(laubWeich) === "sanft" && argT(quarzAether) === "scheu";
+            const t = (soul, bodySize) => r._creatureTemperament({ userData: { soul, bodySize } });
+            return (
+                t("wesen", 1) === "scheu" &&
+                t("wolf", 1) === "wild" &&
+                t("baer", 1) === "wehrhaft" &&
+                t("fuchs", 1) === "scheu" &&
+                t("wesen", 2.5) === "wehrhaft" &&
+                t("baer", 0.7) === "sanft"
+            );
         })();
+        // KONSUM: die Gegenwehr liest das Profil (strikeCap/fleeMul im Treffer-Pfad); sanft/scheu haben strike 0.
         out.d4Konsum =
             /_creatureTemperament/.test(window.__codeOf(r.damageCreature)) &&
             /fleeMul/.test(window.__codeOf(r.damageCreature)) &&
@@ -23578,7 +23565,7 @@ async function checkBandPhasenBF(ctx) {
     check("D3: der Tod nährt das Feld (_depositLife im NaturalDeath, Source)", res.d3Feed);
     check("D4: die Gegenwehr lebt im Treffer-Pfad (Source, pfad-gated)", res.d4Src);
     check(
-        "D4-VOLL: Temperament emergiert aus der Seele (wesen wehrhaft · geist sanft · sprite scheu)",
+        "D4-VOLL: Temperament aus Gattung und Größe (Hirsch scheu · Wolf wild · Bär wehrhaft · Fuchs scheu · Koloss-Hirsch wehrhaft · kleiner Bär sanft)",
         res.d4Temperament
     );
     check("D4-VOLL: die Gegenwehr KONSUMIERT das Temperament-Profil (strike/fleeMul)", res.d4Konsum);
@@ -29989,12 +29976,12 @@ async function checkBandPsi0Winkel(ctx) {
             motion: maxCos(A.MOTION_ROLE_SIGNATURES),
             workshop: maxCos(A.WORKSHOP_DOMAIN_SIGNATURES),
             op: maxCos(A.OP_CLASS_SIGNATURES),
-            temperament: maxCos(A._verhaltenGesetz().temperament.signaturen),
         };
     });
     // FROZEN-Baseline (12.06.2026): ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
     // dichte-harte Familie brecher·armor·architecture·workshop-station + held·tool);
-    // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 · TEMPERAMENT 0.116.
+    // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 (das TEMPERAMENT-Register fiel mit den Substanz-Signaturen,
+    // Welle LF 08.10.: das Gemüt kommt aus Gattung und Größe, tetrapoda temperamentDerGattung).
     check(
         `Ψ0 Spektrum-Register: kein Signatur-Paar enger als die kalibrierte Baseline (max ${res.role.max} [${res.role.top}] ≤ 0.94 · >0.85-Paare ${res.role.warn} ≤ 7)`,
         res.role.max <= 0.94 && res.role.warn <= 7
@@ -30004,8 +29991,8 @@ async function checkBandPsi0Winkel(ctx) {
         res.form.max <= 0.35
     );
     check(
-        `Ψ0 die übrigen Register unter Baseline: MOTION ${res.motion.max} ≤ 0.65 · WORKSHOP ${res.workshop.max} ≤ 0.07 · OP ${res.op.max} ≤ 0.04 · TEMPERAMENT ${res.temperament.max} ≤ 0.13`,
-        res.motion.max <= 0.65 && res.workshop.max <= 0.07 && res.op.max <= 0.04 && res.temperament.max <= 0.13
+        `Ψ0 die übrigen Register unter Baseline: MOTION ${res.motion.max} ≤ 0.65 · WORKSHOP ${res.workshop.max} ≤ 0.07 · OP ${res.op.max} ≤ 0.04`,
+        res.motion.max <= 0.65 && res.workshop.max <= 0.07 && res.op.max <= 0.04
     );
 
     // Ψ1 (V18.167, meister-plan §8.8a) — das EINE argmax-Organ: die ~7 Inline-
@@ -34817,9 +34804,7 @@ async function checkBandV18210Verdrahtung(ctx) {
                 const Pred = {
                     position: new (window.THREE || A.THREE || {}).Vector3(0, 0, 0),
                     userData: {
-                        soul: "wesen",
-                        _temperament: "wild",
-                        _temperamentSoul: "wesen",
+                        soul: "wolf", // das Temperament der Gattung (Welle LF): der Wolf jagt
                         kind: "creature",
                         boosts: [],
                     },
@@ -34827,9 +34812,7 @@ async function checkBandV18210Verdrahtung(ctx) {
                 const Prey = {
                     position: new (window.THREE || A.THREE || {}).Vector3(10, 0, 0),
                     userData: {
-                        soul: "fuchs",
-                        _temperament: "scheu",
-                        _temperamentSoul: "fuchs",
+                        soul: "fuchs", // das Temperament der Gattung (Welle LF): der Fuchs ist scheu
                         kind: "creature",
                         boosts: [],
                     },
@@ -35001,9 +34984,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             const predator = {
                 position: new (window.THREE || A.THREE || {}).Vector3(0, 0, 0),
                 userData: {
-                    soul: "wesen",
-                    _temperament: "wild",
-                    _temperamentSoul: "wesen",
+                    soul: "wolf", // das Temperament der Gattung (Welle LF): der Wolf jagt
                     kind: "creature",
                     boosts: [],
                 },
@@ -35012,9 +34993,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             const prey = {
                 position: new (window.THREE || A.THREE || {}).Vector3(20, 0, 0),
                 userData: {
-                    soul: "fuchs",
-                    _temperament: "scheu",
-                    _temperamentSoul: "fuchs",
+                    soul: "fuchs", // das Temperament der Gattung (Welle LF): der Fuchs ist scheu
                     kind: "creature",
                     boosts: [],
                 },

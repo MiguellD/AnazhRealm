@@ -19,7 +19,7 @@
 //           nicht erfunden) → messbar verschiedene Weg-Länge über N Ticks.
 //      (B2) die Radius-Achsen (Leine = fleeMul-Mut × bodySize-Größe; die Tiere
 //           sind bewusst tag-identisch, Lehre 8 → die behaviorale Differenz
-//           läuft über die GRÖSSEN-Achse): das Kitz (wesen 0.6, Leine ~16.8 m),
+//           läuft über die GRÖSSEN-Achse): das Kitz (wesen 0.6, scheu, Leine ~4,8 m),
 //           45 m vom Anker ausgesetzt, kehrt in die Leine ZURÜCK; der Gigant
 //           (wesen 2.4, Leine ~67 m) bleibt frei draußen — verschiedene
 //           Bewegungs-Radien um den Anker. Die Mut-Achse wird als Konsum-Wert
@@ -223,7 +223,7 @@ const server = http.createServer((req, res) => {
             const spotShy = findSpot(90, 2.9);
             const spotBold = findSpot(90, -2.9);
             if (!spotShy || !spotBold) return { error: "kein Land-Spot (B2)" };
-            const shy = spawn(spotShy, "wesen", 0.6); // Kitz → Leine ~16.8 m
+            const shy = spawn(spotShy, "wesen", 0.6); // Kitz (scheu) → Leine ~4,8 m
             const bold = spawn(spotBold, "wesen", 2.4); // Gigant → Leine ~67.2 m
             if (!shy || !bold) return { error: "Spawn (B2) fehlgeschlagen" };
             o.b2TempShy = r._creatureTemperament(shy);
@@ -231,20 +231,20 @@ const server = http.createServer((req, res) => {
             o.b2LeashShy = r._creatureMoveCharacter(shy).leashM;
             o.b2LeashBold = r._creatureMoveCharacter(bold).leashM;
             o.checks.b2LeashDiff = o.b2LeashBold - o.b2LeashShy >= 25;
-            // Mut-Achsen-KONSUM: der Wolf (wild, fleeMul 0.7) hält eine kürzere
-            // Basis-Leine als der wehrhafte Hirsch — fleeMul wird gelesen.
+            // Mut-Achsen-KONSUM: das Temperament der Gattung (Welle LF 08.10.) — der scheue Hirsch (fleeMul 1,7, Mut 0)
+            // hält eine kürzere Basis-Leine als der wilde Wolf (0,7) — fleeMul wird gelesen.
             const wolfProbe = spawn(spotShy, "wolf", 1);
             const deerProbe = spawn(spotBold, "wesen", 1);
             o.b2LeashWolf = wolfProbe ? r._creatureMoveCharacter(wolfProbe).leashM : null;
             o.b2LeashDeer = deerProbe ? r._creatureMoveCharacter(deerProbe).leashM : null;
             o.checks.b2MutConsumed =
-                Number.isFinite(o.b2LeashWolf) && Number.isFinite(o.b2LeashDeer) && o.b2LeashDeer - o.b2LeashWolf >= 2;
+                Number.isFinite(o.b2LeashWolf) && Number.isFinite(o.b2LeashDeer) && o.b2LeashWolf - o.b2LeashDeer >= 2;
             cleanup([wolfProbe, deerProbe]);
             tick(1, 0.05); // ein Tick → der Anker (Geburtsort) initialisiert lazy
             const anchShy = shy.userData.wanderAnchor;
             const anchBold = bold.userData.wanderAnchor;
             if (!anchShy || !anchBold) return { error: "Anker nicht initialisiert" };
-            // beide 45 m vom Anker aussetzen (jenseits der Kitz-Leine 16.8, klar
+            // beide 45 m vom Anker aussetzen (jenseits der Kitz-Leine 4,8, klar
             // innerhalb der Gigant-Leine 67.2) — RADIAL vom Spieler weg, damit die
             // Distanz nie unter das 70-m-Raycast-Fenster fällt (Kopf-Disziplin).
             const outDir = (anch) => {
@@ -317,7 +317,7 @@ const server = http.createServer((req, res) => {
         );
         check(
             c.b2MutConsumed,
-            `(B2) MUT-ACHSE KONSUMIERT: Wolf-Basis-Leine < Hirsch (${out.b2LeashWolf && out.b2LeashWolf.toFixed(1)} < ${out.b2LeashDeer && out.b2LeashDeer.toFixed(1)}, fleeMul gelesen)`
+            `(B2) MUT-ACHSE KONSUMIERT: die Leine des scheuen Hirschs < Wolf (${out.b2LeashDeer && out.b2LeashDeer.toFixed(1)} < ${out.b2LeashWolf && out.b2LeashWolf.toFixed(1)}, fleeMul des Gattungs-Temperaments gelesen)`
         );
         check(c.b2ShyReturns, `(B2) das KITZ kehrt an seine kurze Leine zurück (${out.b2DistShy.toFixed(1)} m < 26 m)`);
         check(

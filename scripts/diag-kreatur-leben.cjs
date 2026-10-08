@@ -104,7 +104,7 @@ if (V) {
             V.furcht &&
             Number.isFinite(V.furcht.fleeThreshold) &&
             V.temperament &&
-            V.temperament.signaturen &&
+            V.temperament.gattung &&
             V.temperament.profile &&
             V.wandern &&
             Number.isFinite(V.wandern.leashBaseM)

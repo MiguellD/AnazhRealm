@@ -499,9 +499,21 @@ function validateManifest(m) {
             V.furcht &&
             Number.isFinite(V.furcht.fleeThreshold) &&
             V.temperament &&
-            V.temperament.signaturen &&
             V.temperament.profile &&
-            Number.isFinite(V.temperament.floor) &&
+            // DAS TEMPERAMENT DER GATTUNG (Welle LF, Vertrags-Akt 08.10.): die Gattungs-Zeile (diet × Masse) und der Mut
+            // der Natur sind Vertrag; die Substanz-Signaturen, ihr Floor und die Substanz-Gewichte der Furcht kehren nicht
+            // zurueck (die Tiere sind tag-gleich, Lehre 8).
+            V.temperament.gattung &&
+            Number.isFinite(V.temperament.gattung.fleischDiet) &&
+            Number.isFinite(V.temperament.gattung.pflanzDiet) &&
+            Number.isFinite(V.temperament.gattung.jagdMasse) &&
+            Number.isFinite(V.temperament.gattung.wehrMasse) &&
+            Number.isFinite(V.temperament.gattung.kolossMasse) &&
+            V.temperament.signaturen === undefined &&
+            V.temperament.floor === undefined &&
+            Number.isFinite(V.furcht.mutGewicht) &&
+            V.furcht.boldFromDichte === undefined &&
+            V.furcht.shyFromLebendig === undefined &&
             V.wandern &&
             Number.isFinite(V.wandern.leashBaseM) &&
             // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke sind Vertrag
@@ -531,7 +543,7 @@ function validateManifest(m) {
             Number.isFinite(V.wasser.uferBias);
         if (!seeleOk)
             v.push(
-                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeRange/pirschStoppM · furcht.fleeThreshold/neugierStoppM · temperament{signaturen,profile,floor} · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation/aufgaben/herde/wasser)"
+                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeRange/pirschStoppM · furcht.fleeThreshold/neugierStoppM · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation/aufgaben/herde/wasser)"
             );
     }
     return v;
@@ -1070,6 +1082,15 @@ function validateManifest(m) {
                 hopMs.some((s) => s.includes("ohne sprung-Zwilling")) &&
                 faktor.some((s) => s.includes("ohne sprung-Zwilling")),
             `echt ${echt.length} · m/s ${hopMs.length} · Faktor ${faktor.length}`
+        );
+        // DAS TEMPERAMENT DER GATTUNG (Welle LF, Vertrags-Akt 08.10.): die Substanz-Signaturen kehren zurueck, oder die
+        // Gattungs-Zeile fehlt — beide feuern die VERHALTEN-Wand.
+        const sig = tm ? mitZwilling((V) => (V.temperament.signaturen = { wehrhaft: { dichte: 1 } })) : [];
+        const ohneG = tm ? mitZwilling((V) => delete V.temperament.gattung) : [];
+        check(
+            "SELBST-TEST: der Substanz-Zwilling des Temperaments (Signaturen · fehlende Gattungs-Zeile) feuert die VERHALTEN-Wand",
+            sig.some((s) => s.includes("ohne Substanz-Signaturen")) && ohneG.some((s) => s.includes("ohne Substanz-Signaturen")),
+            `Signaturen ${sig.length} · ohne Gattung ${ohneG.length}`
         );
     }
 

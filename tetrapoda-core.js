@@ -148,9 +148,10 @@
             menaceFromSorrow: 0.5, // Trauer verunsichert etwas
             calmFromPeace: 0.9, // Ruhe laedt ein
             calmFromJoy: 0.5, // Freude lockt
-            boldFromDichte: 0.8, // ein dichtes/massives Wesen ist robust → kuehner
-            ["boldFromHärte"]: 0.6, // ein hartes Wesen steht fester
-            shyFromLebendig: 1.1, // ein lebendiges/zartes Wesen ist scheuer
+            // DIE NATUR ist das Temperament der Gattung (Welle LF 08.10., VERTRAGS-AKT): der Mut der Art (0 scheu … 1
+            // wehrhaft, aus profile.fleeMul) wiegt die Wariness — die Substanz-Gewichte (dichte/haerte/lebendig) fielen,
+            // die Tiere sind tag-gleich (Lehre 8: jeder Hirsch stand neugierig bei Wariness −1,0).
+            mutGewicht: 0.9, // Natur-Term (2·mut − 1)·mutGewicht: scheu −0,9 … wehrhaft +0,9
             boldFromBond: 0.9, // Bindung macht mutig in Spieler-Naehe
             friedenMenace: 0.3, // frieden daempft die Bedrohung stark
             schoepferMenace: 0.1, // schoepfer: die Welt ist ruhig
@@ -163,13 +164,18 @@
             neugierStoppM: 2, // m — SCHLUSS-WELLE: naeher tritt ein neugieriges Wesen nicht heran
         },
         temperament: {
-            signaturen: {
-                wehrhaft: { dichte: 1.0, ["härte"]: 0.6, transparent: -0.5, lebendig: -0.3 },
-                wild: { brennbar: 0.5, ["wärmeleitung"]: 0.7, ["härte"]: -0.2 },
-                sanft: { lebendig: 1.4, ["zähigkeit"]: 0.5, dichte: -0.5, ["härte"]: -0.3 },
-                scheu: { transparent: 0.8, magieleitung: 0.6, dichte: -0.4 },
+            // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., VERTRAGS-AKT): aus der Ernaehrung (Dial diet) und der Masse
+            // (Dial size × Koerpergroesse) — temperamentDerGattung. Ein Fleischfresser mit Masse jagt (wild), ohne sie
+            // ist er scheu; ein Pflanzenfresser ist ein Fluchttier (scheu), erst als Koloss wehrhaft; dazwischen wehrt
+            // sich, wer Masse hat (wehrhaft), sonst sanft. Die Substanz-Signaturen und ihr Floor fielen: die Tiere
+            // sind tag-gleich, Hirsch und Fuchs blieben „wehrhaft" (Leben-Schau 07.10., D16/K-D12).
+            gattung: {
+                fleischDiet: 0.75, // diet ab hier: Fleischfresser
+                pflanzDiet: 0.25, // diet bis hier: Pflanzenfresser (Fluchttier)
+                jagdMasse: 2.0, // size × bodySize ab hier jagt ein Fleischfresser
+                wehrMasse: 3.0, // ab hier wehrt sich ein Allesfresser
+                kolossMasse: 5.0, // ab hier wehrt sich auch ein Fluchttier
             },
-            floor: 0.35, // beste Resonanz darunter → scheu (zarte Natur)
             profile: {
                 wehrhaft: { strike: 0.45, strikeChaos: 0.3, strikeCap: 0.8, counterMul: 0.7, fleeMul: 0.5 },
                 wild: { strike: 0.3, strikeChaos: 0.5, strikeCap: 0.85, counterMul: 0.85, fleeMul: 0.7 },
@@ -1387,6 +1393,16 @@
             o.n++;
         }
         return o;
+    }
+
+    // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., additiv): g = die Dials der Gattung (GATTUNGEN, diet · size), bs = die
+    // Koerpergroesse des Tiers, T = VERHALTEN.temperament.gattung. Liefert "wild" · "wehrhaft" · "sanft" · "scheu" — die
+    // Art und die Groesse unterscheiden das Gemuet, nie ein Tag (Lehre 8).
+    function temperamentDerGattung(g, bs, T) {
+        var masse = g.size * (bs > 0 ? bs : 1);
+        if (g.diet >= T.fleischDiet) return masse >= T.jagdMasse ? "wild" : "scheu";
+        if (g.diet <= T.pflanzDiet) return masse >= T.kolossMasse ? "wehrhaft" : "scheu";
+        return masse >= T.wehrMasse ? "wehrhaft" : "sanft";
     }
 
     function cpgStep(phases, freq, coupling, dt) {
@@ -2754,6 +2770,7 @@
         steuerSchritt: steuerSchritt,
         ankunftTempo: ankunftTempo,
         herdeZug: herdeZug,
+        temperamentDerGattung: temperamentDerGattung,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         DIAL_MAP: DIAL_MAP,

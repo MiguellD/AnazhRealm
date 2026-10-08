@@ -45,7 +45,7 @@
 // das Urteil des Dispatchers, nicht des Schnitzers).
 //  (Q8 TREFFER) Zone wirkt (Kopf ÷ Hinterlauf, jeder Treffer trägt eine Zone) · hangab (Hirsch 1,6 m/−0,62 m, Fuchs
 //      1,3 m/−0,6 m) und klein flach (Hirsch L 0,64) je ≥ 8/10 · Hit-Stop-Energie Keule ≠ Grossschwert (≥ 10 %) · keine Schadens-Kappe (höchstens
-//      2 von 17 Rezepten auf dem Maximal-Faktor) · Gegenwehr > 0 bei 20 Treffern in 1,6 m (pfad) · die Hand ist
+//      2 von 17 Rezepten auf dem Maximal-Faktor) · Gegenwehr nach dem Temperament der Gattung (Bär > 0, Hirsch 0 bei 20 Treffern in 1,6 m, pfad) · die Hand ist
 //      kein Panzer (defense/hpMax gleich) · Kampf verschleißt, ein verbrauchtes Gerät schlägt nicht · der Pfeil:
 //      Schaden ∝ Energie (25 %-Auszug ≤ 0,5 × voll) und eine Wand hält ihn (0 Treffer dahinter) · die fünf
 //      Phantom-Leser sind aus dem Stamm verschwunden · EINE Güte je Gerät (Schaden, Werkstoff-Kraft, Fold) · der Bogen
@@ -353,23 +353,40 @@ async function WELLE_L() {
         w.z.aufDerKappe = fs.filter((f) => f >= fMax * 0.99).length;
         w.z.nahkampfRezepte = faktoren.length;
         w.c.keineKappe = fs.length >= 15 && w.z.aufDerKappe <= 2;
-        // (T5) die Gegenwehr: 20 Treffer mit Rückstoß aus 1,6 m im Modus pfad
+        // (T5) die Gegenwehr folgt dem TEMPERAMENT DER GATTUNG (Welle LF 08.10., K-D12): 20 Treffer mit Rückstoß aus 1,6 m
+        // im Modus pfad — der Bär (wehrhaft) schlägt zurück, der Hirsch derselben Größe (scheu, ein Fluchttier) nie.
+        // Vorher lief die Probe am Hirsch, den die Substanz-Tags „wehrhaft" nannten.
         r.setGameMode("pfad");
         p.hp = 1e9;
         p.respawnGraceUntil = -Infinity;
-        const g0 = zaehl.gegenwehr;
-        for (let i = 0; i < 20; i++) {
-            stelle(hirsch, 1.6);
-            r.damageCreature(hirsch, 5, {
-                source: "player",
-                fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
-                knockback: 16,
-            });
-        }
-        w.z.gegenwehr = zaehl.gegenwehr - g0;
+        const gegenwehrAn = (c) => {
+            const g0 = zaehl.gegenwehr;
+            for (let i = 0; i < 20; i++) {
+                stelle(c, 1.6);
+                r.damageCreature(c, 5, {
+                    source: "player",
+                    fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
+                    knockback: 16,
+                });
+            }
+            parke(c);
+            return zaehl.gegenwehr - g0;
+        };
+        const baerG = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 300, "happy", "baer", { bodySize: 1 });
+        const hirschG = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 304, "happy", "wesen", { bodySize: 1 });
+        if (baerG) tiere.push(baerG);
+        if (hirschG) tiere.push(hirschG);
+        w.z.gegenwehr = baerG ? gegenwehrAn(baerG) : 0;
+        w.z.gegenwehrHirsch = hirschG ? gegenwehrAn(hirschG) : -1;
+        w.z.temperamentBaer = baerG ? r._creatureTemperament(baerG) : null;
+        w.z.temperamentHirsch = hirschG ? r._creatureTemperament(hirschG) : null;
         r.setGameMode(saved.mode);
         p.hp = saved.hp;
-        w.c.gegenwehr = w.z.gegenwehr > 0;
+        w.c.gegenwehr =
+            w.z.temperamentBaer === "wehrhaft" &&
+            w.z.gegenwehr > 0 &&
+            w.z.temperamentHirsch === "scheu" &&
+            w.z.gegenwehrHirsch === 0;
         // (T6) die Hand ist kein Panzer
         ausruesten(null);
         const st0 = r.computePlayerStats().stats;
@@ -1671,7 +1688,7 @@ async function WELLE_L() {
             `  (Q8) Zone Kopf÷Bein ${f1(z.zoneKopfBein)} (Ziel-Rest ${f1(z.zielKopf)}°/${f1(z.zielBein)}°, Zonen ${JSON.stringify(z.zonen)}) · hangab Hirsch ${z.hangabHirsch}/10, Fuchs ${z.hangabFuchs}/10 · klein flach ${z.kleinFlach}/10`
         );
         console.log(
-            `       Hit-Stop-Energie Grossschwert ${f1(z.stopGross)} J · Keule ${f1(z.stopKeule)} J · Kappe ${z.aufDerKappe} von ${z.nahkampfRezepte} · Gegenwehr ${z.gegenwehr}/20`
+            `       Hit-Stop-Energie Grossschwert ${f1(z.stopGross)} J · Keule ${f1(z.stopKeule)} J · Kappe ${z.aufDerKappe} von ${z.nahkampfRezepte} · Gegenwehr Bär ${z.gegenwehr}/20 · Hirsch ${z.gegenwehrHirsch}/20`
         );
         console.log(`       Faktoren ${z.faktoren}`);
         console.log(
@@ -1721,7 +1738,7 @@ async function WELLE_L() {
         check(c.grobLiestLeib, "Gesetz #0: Klinge und Pfeil fragen das EINE Grob-Tor (_trefferErreichbar), es liest den kreatur-Leib — kein drittes Körpermaß");
         check(c.grobDeckt, "Gesetz #0: das Grob-Tor deckt die Gestalt — kein Ende einer Treffer-Glied-Kapsel liegt außerhalb (vier Gattungen × Größen-Grenzen, 90 Takte)");
         check(c.keinPanzer, "Q8 K-D15: die Hand ist kein Panzer (defense und hpMax unberührt, der Angriff steigt)");
-        check(c.gegenwehr, "Q8 K-D16: Gegenwehr > 0 bei 20 Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)");
+        check(c.gegenwehr, "Q8 K-D16/K-D12: Gegenwehr nach dem Temperament der Gattung — der wehrhafte Bär > 0, der scheue Hirsch 0 bei 20 Treffern aus 1,6 m (der Stoß kommt NACH dem Biss-Test)");
         check(c.dritteSchwingt, "Q9 K-D1: 3rd-Person — jeder freie Klick auf das Tier im Fadenkreuz schwingt (≥ 8 von 10 frei), 0 Krater");
         check(c.haltenOhneKrater, "Q9 K-D1: 1st-Person — das Halten nach dem Stoß gräbt nicht (0 Krater)");
         check(c.rmbSchwert, "Q9 K-D17: RMB mit dem Schwert schüttet nie auf (Spaten und leere Hand schon)");
