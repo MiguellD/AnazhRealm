@@ -20760,16 +20760,19 @@ class AnazhRealm {
         const SEP = AnazhRealm._verhaltenGesetz().separation;
         const creatures = this.state.creatures || [];
         const raumI = this._kreaturRaum(creature);
+        // der grobe Filter: kein Paar-Raum dieses Takts reicht weiter als der eigene Raum + der weiteste (updateCreatures)
+        const grob = Number.isFinite(this._raumMaxTakt) ? raumI + this._raumMaxTakt : Infinity;
         let pushX = 0;
         let pushZ = 0;
         for (let j = 0; j < creatures.length; j++) {
             if (j === index) continue;
             const other = creatures[j];
             if (!other || !other.position || other === creature) continue;
-            const radius = raumI + this._kreaturRaum(other);
             const dx = creature.position.x - other.position.x;
             const dz = creature.position.z - other.position.z;
             const dSq = dx * dx + dz * dz;
+            if (dSq >= grob * grob) continue;
+            const radius = raumI + this._kreaturRaum(other);
             if (dSq >= radius * radius) continue;
             const d = Math.sqrt(dSq);
             const w = 1 - d / radius; // 1 bei voller Deckung → 0 am Rand
@@ -20931,14 +20934,17 @@ class AnazhRealm {
         const ux = dx / d0,
             uz = dz / d0;
         const p = creature.position;
+        // der grobe Filter (updateCreatures, der weiteste Raum des Takts): wer weder nah steht noch nah am Weg liegt, zählt nie
+        const grob = Number.isFinite(this._raumMaxTakt) ? raumEigen + this._raumMaxTakt : Infinity;
         let frei = Infinity;
         for (const o of this.state.creatures) {
             if (!o || o === creature || !o.userData || o.userData.dying) continue;
             const ox = o.position.x - p.x,
                 oz = o.position.z - p.z;
             const vor = ox * ux + oz * uz;
-            const R = raumEigen + this._kreaturRaum(o);
             const d2 = ox * ox + oz * oz;
+            if (d2 >= grob * grob && (!(vor > 0) || d2 - vor * vor >= grob * grob)) continue;
+            const R = raumEigen + this._kreaturRaum(o);
             if (d2 < R * R) {
                 if (vor > 0) frei = Math.min(frei, 0);
                 continue;
@@ -21432,13 +21438,23 @@ class AnazhRealm {
         const lo = p.y - AnazhRealm.PLAYER_GROUND_SNAP,
             hi = p.y + AnazhRealm.PLAYER_STEP_UP;
         const r2 = leib.radius * leib.radius;
+        const reich = leib.halb + leib.radius; // der grobe Filter: ein Bau, dessen Reichweite den Leib nicht erreicht
         let top = -Infinity;
         for (const e of nah.liste) {
             const boxes = e.blockerAABBs;
-            if (!boxes) continue;
+            if (!boxes || !e.position) continue;
+            const er = (e._blockerReach || 0) + reich;
+            if (Math.abs(e.position.x - p.x) > er || Math.abs(e.position.z - p.z) > er) continue;
             for (let b = 0; b < boxes.length; b++) {
                 const box = boxes[b];
                 if (!(box.topY >= lo && box.topY <= hi) || box.topY <= top) continue;
+                if (
+                    p.x < box.minX - reich ||
+                    p.x > box.maxX + reich ||
+                    p.z < box.minZ - reich ||
+                    p.z > box.maxZ + reich
+                )
+                    continue;
                 for (let o = -1; o <= 1; o++) {
                     const off = o * leib.halb;
                     if (this._boxAbstand2(box, p.x + leib.fx * off, p.z + leib.fz * off) <= r2) {
@@ -22498,10 +22514,16 @@ class AnazhRealm {
         // Witterung — _creatureWariness liest die Liste (die Beute floh vorher nur vor dem Spieler, R-D4/K-D11).
         const jaeger = this._kreaturJaeger || (this._kreaturJaeger = []);
         jaeger.length = 0;
+        // DER WEITESTE RAUM dieses Takts (Lehre 25: billige Filter zuerst): die Separation und der freie Weg prüfen ein
+        // Paar erst genau (`_kreaturRaum` des anderen), wenn es näher steht als der eigene Raum + dieser — vorher fragte
+        // jedes Tier den Raum JEDES anderen (40 Tiere: 1 600 Rufe je Takt).
+        let raumMax = 0;
         for (const c of this.state.creatures) {
             const zj = c && c.userData && c.userData._motionZustand;
             if ((zj === "jagd" || zj === "hetzen") && !c.userData.dying) jaeger.push(c);
+            if (c && c.userData) raumMax = Math.max(raumMax, this._kreaturRaum(c));
         }
+        this._raumMaxTakt = raumMax;
         // DER LAUF DES SPIELERS in diesem Takt (die Lage-Änderung, gleich welcher Weg ihn bewegt): ein Jäger hetzt, wenn
         // sein Ziel davonläuft (_kreaturJagdZug).
         {
