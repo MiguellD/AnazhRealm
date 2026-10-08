@@ -1,0 +1,113 @@
+13:17:40 SERIE START  A=c966b9c3 (main V18.535)  B=76c9624d (integ-probe V18.536)  Instrument=76c9624d
+13:17:40 anazhRealm.js  A=2f53ef3b3933426d  B=ed9547d9079aa0fd
+13:17:45 1A boot (Versuch 1)  GPU[59, 139 MHz, 20 %, P8] eigene-reste=0
+13:17:46 1A Seite geliefert (2f53ef3b3933426d)
+13:20:28 1A exit=1  GRUEN(A blind) |  | 
+      [folge] gpu-bank …
+        ROT WELTAKT gpu-bank: das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt) — der Halt ist blind
+        ROT WELTAKT band: das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt) — der Halt ist blind
+        laufVoll: 61.2 fps · Frame p50/p95/max 16.7/25/33.4 ms · CPU p50/p95 6.3/9.5 · render-EWMA 2.46 · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        laufFrei: 65.3 fps · Frame p50/p95/max 16.6/24.9/291.4 ms · CPU p50/p95 6.5/9.9 · render-EWMA 2.52 · Tiere 20 (Sicht 11, nah 0, Schatten k0 0 / k1 0; bear 12, fox 7, deer 1)
+        gpu-bank Gier 0: 14.78 ms je Frame (CPU 2.27) · Tiere 20 (Sicht 11, nah 0, Schatten k0 0 / k1 0; bear 12, fox 7, deer 1)
+        gpu-bank Gier -0.88: 13.52 ms je Frame (CPU 1.72) · Tiere 20 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 12, fox 7, deer 1)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 20 (Sicht 11, nah 0, Schatten k0 0 / k1 0; bear 12, fox 7, deer 1)
+13:20:36 1A haenger-Sitzung  GPU[79, 1797 MHz, 3 %, P0] eigene-reste=1
+13:21:44 1A haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab536\1A-haenger.json 
+13:21:56 1A Pause 60 s  GPU[77, 316 MHz, 11 %, P8] eigene-reste=0
+13:23:01 2B boot (Versuch 1)  GPU[65, 139 MHz, 16 %, P8] eigene-reste=0
+13:23:02 2B Seite geliefert (ed9547d9079aa0fd)
+13:25:38 2B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 58.7 fps · Frame p50/p95/max 16.7/25/33.3 ms · CPU p50/p95 5.2/7.3 · render-EWMA 2.95 · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        laufFrei: 63.4 fps · Frame p50/p95/max 16.7/16.9/258.1 ms · CPU p50/p95 4.8/8 · render-EWMA 2.21 · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        gpu-bank Gier 0: 15.29 ms je Frame (CPU 1.68) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        gpu-bank Gier -0.88: 13.83 ms je Frame (CPU 2.08) · Tiere 11 (Sicht 3, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+13:25:45 2B haenger-Sitzung  GPU[78, 1771 MHz, 2 %, P0] eigene-reste=1
+13:26:57 2B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab536\2B-haenger.json 
+13:27:09 2B Pause 60 s  GPU[77, 822 MHz, 3 %, P5] eigene-reste=0
+13:28:14 3A boot (Versuch 1)  GPU[66, 139 MHz, 16 %, P8] eigene-reste=0
+13:28:15 3A Seite geliefert (2f53ef3b3933426d)
+13:30:49 3A exit=1  GRUEN(A blind) |  | 
+      [folge] gpu-bank …
+        ROT WELTAKT gpu-bank: das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt) — der Halt ist blind
+        ROT WELTAKT band: das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt) — der Halt ist blind
+        laufVoll: 61 fps · Frame p50/p95/max 16.7/24.9/33.7 ms · CPU p50/p95 6.2/8.9 · render-EWMA 2.56 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 65.8 fps · Frame p50/p95/max 16.6/17/249.8 ms · CPU p50/p95 6/8.6 · render-EWMA 5.69 · Tiere 12 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 5)
+        gpu-bank Gier 0: 14.86 ms je Frame (CPU 1.93) · Tiere 12 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 5)
+        gpu-bank Gier -0.88: 13.38 ms je Frame (CPU 1.84) · Tiere 12 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 5)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 12 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 5)
+13:30:57 3A haenger-Sitzung  GPU[80, 1708 MHz, 2 %, P0] eigene-reste=1
+13:32:05 3A haenger exit=0  Je Hänger (t = ms seit Mess-Beginn): C:\Users\micha\Desktop\AnazhRealm-OMEN\abab536\3A-haenger.json 
+13:32:17 3A Pause 60 s  GPU[77, 316 MHz, 11 %, P8] eigene-reste=0
+13:33:22 4B boot (Versuch 1)  GPU[67, 139 MHz, 17 %, P8] eigene-reste=0
+13:33:23 4B Seite geliefert (ed9547d9079aa0fd)
+13:35:57 4B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 58.8 fps · Frame p50/p95/max 16.7/24.9/33.2 ms · CPU p50/p95 4.7/6.8 · render-EWMA 2.76 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 64.1 fps · Frame p50/p95/max 16.7/16.9/249.6 ms · CPU p50/p95 4.3/6.7 · render-EWMA 5.3 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 15.35 ms je Frame (CPU 1.92) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 13.88 ms je Frame (CPU 1.79) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+13:36:04 4B haenger-Sitzung  GPU[79, 1771 MHz, 2 %, P0] eigene-reste=1
+13:37:17 4B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab536\4B-haenger.json 
+13:37:29 4B Pause 60 s  GPU[77, 291 MHz, 13 %, P8] eigene-reste=0
+13:38:34 5A boot (Versuch 1)  GPU[67, 139 MHz, 17 %, P8] eigene-reste=0
+13:38:35 5A Seite geliefert (2f53ef3b3933426d)
+13:41:10 5A exit=1  GRUEN(A blind) |  | 
+      [folge] gpu-bank …
+        ROT WELTAKT gpu-bank: das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt) — der Halt ist blind
+        ROT WELTAKT band: das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt) — der Halt ist blind
+        laufVoll: 58.3 fps · Frame p50/p95/max 16.7/25/58.4 ms · CPU p50/p95 8.7/13.3 · render-EWMA 3.99 · Tiere 18 (Sicht 3, nah 2, Schatten k0 7 / k1 0; bear 10, fox 6, deer 2)
+        laufFrei: 63.8 fps · Frame p50/p95/max 16.6/25/258.3 ms · CPU p50/p95 7.9/12 · render-EWMA 7.49 · Tiere 18 (Sicht 3, nah 2, Schatten k0 7 / k1 0; bear 10, fox 6, deer 2)
+        gpu-bank Gier 0: 15.32 ms je Frame (CPU 3.08) · Tiere 18 (Sicht 3, nah 2, Schatten k0 7 / k1 0; bear 10, fox 6, deer 2)
+        gpu-bank Gier -0.88: 13.55 ms je Frame (CPU 2.51) · Tiere 18 (Sicht 3, nah 1, Schatten k0 7 / k1 7; bear 10, fox 6, deer 2)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 18 (Sicht 3, nah 2, Schatten k0 6 / k1 0; bear 10, fox 6, deer 2)
+13:41:17 5A haenger-Sitzung  GPU[80, 1695 MHz, 2 %, P0] eigene-reste=1
+13:42:29 5A haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab536\5A-haenger.json 
+13:42:41 5A Pause 60 s  GPU[77, 291 MHz, 12 %, P8] eigene-reste=0
+13:43:46 6B boot (Versuch 1)  GPU[67, 139 MHz, 16 %, P8] eigene-reste=0
+13:43:47 6B Seite geliefert (ed9547d9079aa0fd)
+13:46:20 6B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 61.6 fps · Frame p50/p95/max 16.7/16.9/25.3 ms · CPU p50/p95 4.5/7 · render-EWMA 2.82 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 70.1 fps · Frame p50/p95/max 16.6/16.8/275.1 ms · CPU p50/p95 4.2/6.5 · render-EWMA 5.34 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 13.21 ms je Frame (CPU 1.79) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 12.43 ms je Frame (CPU 1.8) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+13:46:28 6B haenger-Sitzung  GPU[78, 1683 MHz, 2 %, P0] eigene-reste=1
+13:47:40 6B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab536\6B-haenger.json 
+13:47:52 6B Pause 60 s  GPU[77, 822 MHz, 6 %, P5] eigene-reste=0
+13:48:57 7A boot (Versuch 1)  GPU[67, 139 MHz, 15 %, P8] eigene-reste=0
+13:48:58 7A Seite geliefert (2f53ef3b3933426d)
+13:51:33 7A exit=1  GRUEN(A blind) |  | 
+      [folge] gpu-bank …
+        ROT WELTAKT gpu-bank: das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt) — der Halt ist blind
+        ROT WELTAKT band: das Spiel nennt keine Welt-Akte (AnazhRealm.DSL_WELTAKTE fehlt) — der Halt ist blind
+        laufVoll: 60.8 fps · Frame p50/p95/max 16.7/25/33.3 ms · CPU p50/p95 6.2/9.1 · render-EWMA 2.58 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 66.4 fps · Frame p50/p95/max 16.7/17/33.4 ms · CPU p50/p95 5.9/9.2 · render-EWMA 2.55 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 14.85 ms je Frame (CPU 1.73) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 13.33 ms je Frame (CPU 1.67) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 16 (Sicht 6, nah 5, Schatten k0 1 / k1 0; bear 11, fox 5)
+13:51:41 7A haenger-Sitzung  GPU[80, 1708 MHz, 2 %, P0] eigene-reste=1
+13:52:49 7A haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab536\7A-haenger.json 
+13:52:57 A zerlegen + band genesis  GPU[79, 835 MHz, 5 %, P3] eigene-reste=1
+13:55:42 A zerlegen exit=0
+13:56:25 A band genesis exit=1  BAND ROT: Befehle 155/208 (0.75×) · Dreiecke 941k/680k (1.38×) · VRAM MB 144.4/118 (1.22×) · GPU ms/Frame 15.75/16.7 (0.94×) Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle) SUMME                 
+13:56:37 7A Pause 60 s  GPU[75, 923 MHz, 3 %, P2] eigene-reste=0
+13:57:42 8B boot (Versuch 1)  GPU[66, 139 MHz, 15 %, P8] eigene-reste=0
+13:57:43 8B Seite geliefert (ed9547d9079aa0fd)
+14:00:17 8B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 61.6 fps · Frame p50/p95/max 16.7/16.9/33.3 ms · CPU p50/p95 4.6/7 · render-EWMA 2.97 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 70.1 fps · Frame p50/p95/max 16.6/16.8/258.3 ms · CPU p50/p95 4.2/6.1 · render-EWMA 7.38 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 13.18 ms je Frame (CPU 1.64) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 12.24 ms je Frame (CPU 1.72) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+14:00:24 8B haenger-Sitzung  GPU[80, 1683 MHz, 3 %, P0] eigene-reste=1
+14:01:35 8B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab536\8B-haenger.json 
+14:01:43 B zerlegen + band genesis  GPU[79, 822 MHz, 3 %, P3] eigene-reste=1
+14:04:25 B zerlegen exit=0
+14:05:04 B band genesis exit=1  BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 786k/680k (1.16×) · VRAM MB 141.1/118 (1.2×) · GPU ms/Frame 16.23/16.7 (0.97×) Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle) SUMME                   
+14:05:16 8B Pause 60 s  GPU[78, 1809 MHz, 2 %, P0] eigene-reste=0
+14:06:21 ALLES ENDE

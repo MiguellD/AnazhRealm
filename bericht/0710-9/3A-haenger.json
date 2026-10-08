@@ -1,0 +1,236 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "ladungen": 1
+ },
+ "befunde": [],
+ "schwelle": 100,
+ "sekunden": 30,
+ "takte": 3408,
+ "pipelines": {
+  "sync": 0,
+  "framesMitSync": 0,
+  "async": 18,
+  "shader": 26,
+  "jeAuftrag": {},
+  "zeiten": []
+ },
+ "knotenBau": {
+  "sync": 27,
+  "ms": 771.6,
+  "maxMs": 70.7,
+  "ueber16": 14,
+  "jeAuftragMs": {
+   "haupt tier:fuchs": 436,
+   "haupt tier:baer": 196.1,
+   "haupt tier:wesen": 79.9,
+   "k0 tier:wesen": 34.6,
+   "k0 tier:fuchs": 25
+  }
+ },
+ "bildTaktMs": 8.3,
+ "frames": 1713,
+ "frameMs": {
+  "p50": 16.7,
+  "p95": 25,
+  "p99": 33.5,
+  "max": 150
+ },
+ "haengerN": 2,
+ "jeKlasse": {
+  "TAKT": 2,
+  "NEBEN": 0,
+  "GC": 0,
+  "GPU": 0
+ },
+ "jeUrsache": [
+  {
+   "ursache": "TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js]",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 150,
+   "maxMs": 150
+  },
+  {
+   "ursache": "TAKT: zeichne › build [three.webgpu.min.js]",
+   "klasse": "TAKT",
+   "n": 1,
+   "summeMs": 117,
+   "maxMs": 117
+  }
+ ],
+ "haenger": [
+  {
+   "t": 13200,
+   "dt": 116.7,
+   "klasse": "TAKT",
+   "name": "zeichne › build [three.webgpu.min.js]",
+   "ursache": "TAKT: zeichne › build [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 112,
+    "NEBEN": 0,
+    "GC": 0,
+    "GPU": 1
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "needsRefresh [three.webgpu.min.js]",
+     "pct": 64
+    },
+    {
+     "name": "getMonitor [three.webgpu.min.js]",
+     "pct": 64
+    },
+    {
+     "name": "getNodeBuilderState [three.webgpu.min.js]",
+     "pct": 64
+    },
+    {
+     "name": "N.getForRender [werkbank]",
+     "pct": 64
+    },
+    {
+     "name": "getForRender [three.webgpu.min.js]",
+     "pct": 64
+    },
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 64
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 32
+    },
+    {
+     "name": "generate [three.webgpu.min.js]",
+     "pct": 6
+    },
+    {
+     "name": "getNodeType [three.webgpu.min.js]",
+     "pct": 4
+    }
+   ],
+   "geraet": {
+    "pipeAsync": 1,
+    "shader": 1,
+    "shaderKB": 3.18,
+    "texKB": 512,
+    "bauN": 2,
+    "bauMs": 79.4
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:ShadowMaterial",
+    "async:renderPipeline_ShadowMaterial_77",
+    "bau:MeshStandardNodeMaterial"
+   ],
+   "loaf": [
+    "FrameRequestCallback → e 111 ms",
+    "FrameRequestCallback → e 85 ms"
+   ]
+  },
+  {
+   "t": 13568,
+   "dt": 150,
+   "klasse": "TAKT",
+   "name": "renderer._renderScene › _renderScene [three.webgpu.min.js]",
+   "ursache": "TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js]",
+   "zeiten": {
+    "TAKT": 139,
+    "NEBEN": 9,
+    "GC": 7,
+    "GPU": 0
+   },
+   "takte": 1,
+   "ohneRender": 0,
+   "pfad": [
+    {
+     "name": "updateBefore [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "updateBeforeNode [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "updateBefore [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "render [three.webgpu.min.js]",
+     "pct": 51
+    },
+    {
+     "name": "renderer._renderScene",
+     "pct": 51
+    },
+    {
+     "name": "_renderScene [three.webgpu.min.js]",
+     "pct": 51
+    }
+   ],
+   "zweige": [],
+   "selbst": [
+    {
+     "name": "build [three.webgpu.min.js]",
+     "pct": 28
+    },
+    {
+     "name": "saveState",
+     "pct": 7
+    },
+    {
+     "name": "setItem",
+     "pct": 7
+    }
+   ],
+   "geraet": {
+    "pipeAsync": 1,
+    "shader": 1,
+    "shaderKB": 4.44,
+    "texKB": 512,
+    "bauN": 1,
+    "bauMs": 64.9
+   },
+   "geraetVorher": null,
+   "pipelines": [
+    "bau:MeshStandardNodeMaterial",
+    "async:renderPipeline_MeshStandardNodeMaterial_38"
+   ],
+   "loaf": [
+    "FrameRequestCallback → e 149 ms",
+    "FrameRequestCallback → e 92 ms"
+   ]
+  }
+ ],
+ "eichung": {
+  "driftMs": -0.18,
+  "treffer": 14
+ },
+ "profil": true,
+ "loafDa": true,
+ "probe": [],
+ "lauf": {
+  "regler": "voll",
+  "tiere": "frei",
+  "wandern": "aus",
+  "kreaturen": 14,
+  "chunks": 81,
+  "loadScale": 1,
+  "wetter": "sunny"
+ },
+ "erst": {
+  "bauN": 27,
+  "bauMs": 804.3,
+  "verschoben": 346,
+  "pipeAsync": 18,
+  "neubauN": 0,
+  "offen": 0
+ }
+}

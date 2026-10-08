@@ -1,0 +1,23 @@
+HÄNGER-LINSE: 2 Frames > 100 ms in 30 s (1713 Frames, 3408 Takte; Frame p50/p95/p99/max 16.7/25/33.5/150 ms) — TAKT 2 · NEBEN 0 · GC 0 · GPU 0
+Lauf: Regler voll · Tiere frei (14) · Wandern aus · loadScale 1 · Chunks 81 · Wetter sunny · Profil ja (Eich-Drift -0.18 ms) · LoAF ja
+Pipelines im Lauf: 0 synchron in 0 Takten · 18 async · 26 Shader-Module
+Erst-Zeichnung: 27 Knoten-Bauten im Pass (Σ 804.3 ms) · 346 auf den nächsten Aufruf verschoben · 18 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)
+Knoten-Bau synchron: 27 Bauten · Σ 771.6 ms · max 70.7 ms · 14 über 16,7 ms — je Auftrag: haupt tier:fuchs 436 ms · haupt tier:baer 196.1 ms · haupt tier:wesen 79.9 ms · k0 tier:wesen 34.6 ms · k0 tier:fuchs 25 ms
+
+   n    Σ ms   max ms  Ursache
+   1     150      150  TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js]
+   1     117      117  TAKT: zeichne › build [three.webgpu.min.js]
+
+Je Hänger (t = ms seit Mess-Beginn):
+  t=13200 dt=116.7 ms (1 Takte, 0 ohne Bild) [TAKT 112 · GPU 1] TAKT: zeichne › build [three.webgpu.min.js]
+      Pfad: needsRefresh [three.webgpu.min.js] 64% › getMonitor [three.webgpu.min.js] 64% › getNodeBuilderState [three.webgpu.min.js] 64% › N.getForRender [werkbank] 64% › getForRender [three.webgpu.min.js] 64% › build [three.webgpu.min.js] 64%
+      Selbst: build [three.webgpu.min.js] 32% · generate [three.webgpu.min.js] 6% · getNodeType [three.webgpu.min.js] 4%
+      Gerät: pipeAsync 1 · shader 1 · shaderKB 3.18 · texKB 512 · bauN 2 · bauMs 79.4 — bau:ShadowMaterial, async:renderPipeline_ShadowMaterial_77, bau:MeshStandardNodeMaterial
+      LoAF: FrameRequestCallback → e 111 ms · FrameRequestCallback → e 85 ms
+  t=13568 dt=150 ms (1 Takte, 0 ohne Bild) [TAKT 139 · NEBEN 9 · GC 7] TAKT: renderer._renderScene › _renderScene [three.webgpu.min.js]
+      Pfad: updateBefore [three.webgpu.min.js] 51% › updateBeforeNode [three.webgpu.min.js] 51% › updateBefore [three.webgpu.min.js] 51% › render [three.webgpu.min.js] 51% › renderer._renderScene 51% › _renderScene [three.webgpu.min.js] 51%
+      Selbst: build [three.webgpu.min.js] 28% · saveState 7% · setItem 7%
+      Gerät: pipeAsync 1 · shader 1 · shaderKB 4.44 · texKB 512 · bauN 1 · bauMs 64.9 — bau:MeshStandardNodeMaterial, async:renderPipeline_MeshStandardNodeMaterial_38
+      LoAF: FrameRequestCallback → e 149 ms · FrameRequestCallback → e 92 ms
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\abab536\3A-haenger.json
