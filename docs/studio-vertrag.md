@@ -81,7 +81,7 @@ Ein Top-Level-Objekt `PRESETS`: `{ <rezeptId>: Rezept }`.
 
 #### B2c — DAS BUDGET je Art × Stufe (SOLL; trägt ein Kern es, dann VOLLSTÄNDIG)
 
-`PORTAL_RENDER_CONFIG.lod.budget = { <kind>: { <stufe>: { tris, draws, schatten, karte?, …Regler }, fernform } }` —
+`PORTAL_RENDER_CONFIG.lod.budget = { <kind>: { <stufe>: { tris, draws, schatten, karte?, ab?, wurf?, …Regler }, fernform, hyst? } }` —
 was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 
 - **Vollständig:** jede Art aus den eigenen `kindStages` × jede deklarierte Stufe trägt eine Zeile;
@@ -90,9 +90,12 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   der Sippen je Instanz (die EINE Verschmelz-Regel phyto-core `budgetSippe`: Stoff × Attribut-Form × Index —
   der Flatten und die Starr-Bindung des Ofens gruppieren nach ihr, das Gesetz zählt mit ihr = Draws je
   Instanz-Gruppe und Pass) · `schatten` = die Stufe, deren Gestalt wirft (der L0-Baum wirft seine L1), oder `false`.
+  Bei einer GELENK-GESTALT (Tier, Mensch — §8.4) darf `schatten` auf die gelenkige Grobstufe zeigen: sie bindet an das
+  Skelett der feinen (EIN Skelett je Gestalt) und wirft für beide Stufen mit ihren eigenen Stoffen (S3, Lehre 19).
 - **Wurf am Konsum:** der EINE Host-Leser `_foundryBudgetZeile(preset, stufe)` liest `schatten` für jeden
   Foundry-Flat (die eigene Stufe wirft selbst, eine andere reist als Schatten-Zwilling im selben Zug,
-  `false` wirft nicht) und für die Nah-Wiese — kein Stufen-Literal im Host; fail-closed (KERN-PFLICHT) bei
+  `false` wirft nicht) und für die Nah-Wiese, die Gelenk-Gestalt liest sie über `_ofenZeile` (den Leser von
+  `_ofenBudget`; `_gelenkGestalt` → der EINE Stufen-Schalter `_gelenkStufe`) — kein Stufen-Literal im Host; fail-closed (KERN-PFLICHT) bei
   fehlender Zeile — auch bei einer Art ohne Budget: seit W8 trägt jede Art mit Gestalt ihre Zeilen (die
   Wirt-Stufen-Tafel `_WIRT_WURF` ist gefallen, `gate:altlasten`). Ein Zwilling wirft selbst (der Validator hält
   es: kein Zwillings-Kreis).
@@ -109,6 +112,13 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   trunkR, 0 < schnitt < rute < 1: dünnere Stränge als `schnitt` fallen, unter `rute` trägt der Strang die
   Vierkant-Röhre auf jedem 3. Ring) · `boden` (tiefstes Laub in Baumhöhen, [0, 1)) ·
   `deckung` (Band [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt).
+- DARF-Felder der Gelenk-Gestalt (S3, Form geprüft): `ab` (an einer Stufe außer der ersten, endlich > 0, streng
+  steigend über die Stufen) = ab `ab` m × Körpergröße trägt die Stufe das Bild — die Gestalt liest es beim Bau, jeder
+  Leser fragt die Gestalt (die Wirts-Distanzen TIER_FERN_DIST_SQ · MENSCH_FERN_DIST_SQ fielen) · `hyst` (Art-Ebene,
+  0 < hyst < 0,5) = die Hysterese dieser Grenze (fern erst jenseits (1+h)·ab, zurück erst innerhalb (1−h)·ab) ·
+  `wurf.seh` (nur an einer selbst werfenden Stufe; eine nicht-leere Teilmenge von phyto-core `BUDGET_GESETZ.seh`) =
+  der werfende Teil der Stufe nach Seh-Klasse (Tier `["haar"]`, Mensch `["haut", "stoff", "haar"]`); der Rest
+  der Stufe wirft nie. (Die Baum-Form `wurf.durchmesserM` bleibt; beide Formen trägt derselbe Validator.)
 - `band` (DARF, ganze Zahl > 0 und < `tris`): das Profi-Band-Ziel der Stufe (Haushalt), solange die
   gebaute Hülle `tris` darüber liegt — offen und benannt, die Wand druckt den Faktor; erreicht die Stufe
   das Band, fällt das Feld und `tris` IST das Band. `tris` bleibt die Ratsche (darf nur fallen).
@@ -598,7 +608,10 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   KONSUMIERT der Bäcker sie (Streu/Hüllen deterministisch, Verlauf als
   Vertex-Farben) — das Gesetz sagt WAS (Teile · Farben · Verteilung), die
   Deck-TECHNIK ist Leser-Sache (das Lab behält seine Builder, Benchmark
-  unbewegt). Fehlt die Tabelle, bäckt der Bäcker kahl (DARF, fail-soft).
+  unbewegt). Fehlt die Tabelle, schreit der Bäcker (fail-closed, LAUT — `FELL: kern.fellStreu fehlt`);
+  kahl ist nur die Grobstufe (lod ≥ 1: ohne Fell-Schalen und Strähnen). Die Grobstufe ist GELENKIG
+  (S3): die Haut bindet an die Gelenke wie die feine, jedes starre Teil hängt mit Gewicht 1 an
+  seinem Gelenk; der Wirt bindet sie an das Skelett der feinen (EIN Skelett je Gestalt).
   WELT-LOOK-GESETZE (V18.462, dasselbe Muster eine Ebene höher): der Himmel
   (`HIMMEL_GESETZ`) und die Wasser-Oberfläche (`WASSER_GESETZ`) wohnen als
   Zahlen-Tabellen in foundry-core — das Studio-GLSL INJIZIERT sie in seinen
@@ -663,8 +676,8 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   EHRLICH verschieden backen, sonst TEIL) + die Fern-Linsen (`gate:tier-fern`
   · `gate:kreatur-kosten`). Ohne die Zeile gilt fail-closed `[0]` (N7.5,
   unverändert). Spender heute: `tetrapoda-core.js` (`kreatur:[0,1]` — bauTier
-  Gelenk-Baum/Fern-Standbild) · `koerper-core.js` (`koerper:[0,1]` —
-  bakeMenschInstance fein/Fern-Guss).
+  Gelenk-Baum/gelenkige Grobstufe) · `koerper-core.js` (`koerper:[0,1]` —
+  bakeMenschInstance fein/gelenkige Grobstufe).
 
 **Stand der MESHFREI-Kerne:** `klang-core.js` (`__klangCore` — B1 22 Genres ·
 B4 bpm+6 DNA-Dials · fx.klang) · `koerper-core.js` (`__koerperCore` — B1
