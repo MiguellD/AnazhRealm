@@ -20111,10 +20111,11 @@ async function checkBandHydrosphere(ctx) {
             out.seaMouthChecked = true;
             if (Math.abs(lastY - r.state.waterLevel) > 0.3) out.mouthReachesSea = false;
         }
-        // Die Schwimm-/Wasser-Physik speist den effektiven Wasserspiegel aus _waterLevelAt; sie lebt im
-        // feld-nativen Controller `_stepCharacter` (`_loopPhysicsSync` dispatcht nur).
+        // Die Schwimm-/Wasser-Physik speist den effektiven Wasserspiegel aus der EINEN Wasser-Wahrheit am Körper
+        // (`_koerperWasser`, Welle L wasser — vorher `_waterLevelAt`); sie lebt im feld-nativen Controller `_stepCharacter`
+        // (`_loopPhysicsSync` dispatcht nur).
         out.physicsUsesEffWater =
-            typeof r._stepCharacter === "function" && /_waterLevelAt/.test(window.__codeOf(r._stepCharacter));
+            typeof r._stepCharacter === "function" && /_koerperWasser\(/.test(window.__codeOf(r._stepCharacter));
         return out;
     });
 
@@ -24060,9 +24061,12 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         r.updateCreatures(0.016);
         out.yAfterTick = creature.position.y;
         out.yExpectedFloor = waterSpot.sy + 0.5; // alte Welt: am Boden
-        out.yExpectedSurface = waterSpot.wy - 0.3; // D.2: an der Surface
-        // Die Kreatur sollte JETZT an der Surface schwimmen (±0.4m für
-        // floatOffset-Bobbing-Animation). Sie war vorher am Boden.
+        // D.2: an der Surface — die Sohle hängt um die Wasserlinie des Tiers (am Schultergelenk, Welle L wasser D6: das
+        // Literal −0,3 ± 0,2 m fiel) unter dem Spiegel der EINEN Wahrheit am Körper (`_koerperWasser` über seinem Grund).
+        const linieW = creature.userData ? creature.userData._wasserlinie : NaN; // fehlt sie, ist die Probe rot
+        out.wasserlinie = linieW;
+        out.yExpectedSurface = r._koerperWasser(waterSpot.x, waterSpot.z, waterSpot.sy) - linieW;
+        // Die Kreatur sollte JETZT an der Surface schwimmen (±0.4m). Sie war vorher am Boden.
         out.swimsAtSurface = Math.abs(creature.position.y - out.yExpectedSurface) < 0.4;
         out.notAtFloor = Math.abs(creature.position.y - out.yExpectedFloor) > 0.5;
 
@@ -24106,7 +24110,7 @@ async function checkBandWelleV11D2WaterBias(ctx) {
     check(
         "Welle V11.0-d.2: Kreatur schwimmt an Surface nach einem Tick (Y-Override aktiv)",
         res.swimsAtSurface === true,
-        `yAfterTick=${res.yAfterTick?.toFixed(2)}, expected=${res.yExpectedSurface?.toFixed(2)}`
+        `yAfterTick=${res.yAfterTick?.toFixed(2)}, expected=${res.yExpectedSurface?.toFixed(2)} (Wasserlinie ${res.wasserlinie})`
     );
     check(
         "Welle V11.0-d.2: Kreatur NICHT mehr am See-Boden (alte Welt-Position überschrieben)",
@@ -38771,17 +38775,36 @@ async function checkBandWFFluss(ctx) {
         const r = window.anazhRealm;
         const out = {};
         // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
-        // (kein Wasser erfunden).
+        // (kein Wasser erfunden). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
+        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (V17.117, global) — dort gab der
+        // Leser -3, die Probe bei 99999/99999 war seit der Welle L wasser rot (Integration 08.10.).
         out.runExists = typeof r._atlasWaterLevelAt === "function" && typeof r._waterRunSurfaceAt === "undefined";
-        const dryX = 99999,
-            dryZ = 99999;
-        out.dryPassthrough = r._atlasWaterLevelAt(dryX, dryZ, -Infinity) === -Infinity;
+        const hW = r._hydroFor(0, 0);
+        let dryW = null;
+        if (hW && hW.ready && hW.water && hW.water.waterKind) {
+            const dimW = hW.dim,
+                wKW = hW.water.waterKind;
+            for (let j = 1; j < dimW - 1 && !dryW; j += 7)
+                for (let i = 1; i < dimW - 1 && !dryW; i += 7) {
+                    let land = true;
+                    for (let dj = -1; dj <= 1 && land; dj++)
+                        for (let di = -1; di <= 1 && land; di++) if (wKW[i + di + (j + dj) * dimW] !== 0) land = false;
+                    if (!land) continue;
+                    const x = hW.originX + (i + 0.5) * hW.cell,
+                        z = hW.originZ + (j + 0.5) * hW.cell;
+                    if (!r._hydroRiverAt(x, z)) dryW = { x, z };
+                }
+        }
+        out.dryPassthrough = !!dryW && r._atlasWaterLevelAt(dryW.x, dryW.z, -Infinity) === -Infinity;
         // (2) die Konsumenten lesen den Spiegel (Source-Probe): die Sheet-Mathe in `_computeWaterSheetData` (Main +
         // Worker geteilt) und der Körper über die EINE Wasser-Wahrheit am Körper (`_stepCharacter` → `_koerperWasser`).
         out.sheetReadsRun = /_atlasWaterLevelAt/.test(window.__codeOf(r._computeWaterSheetData));
+        // Der Körper: `_koerperWasser` liest seinen Spiegel über `_koerperWasserSpiegel` (das gezeichnete Wasser, ohne Chunk
+        // das Gesetz `_atlasWaterLevelAt`).
         out.diveReadsRun =
-            /_koerperWasser/.test(window.__codeOf(r._stepCharacter)) &&
-            /_atlasWaterLevelAt/.test(window.__codeOf(r._koerperWasser));
+            /_koerperWasser\(/.test(window.__codeOf(r._stepCharacter)) &&
+            /_koerperWasserSpiegel\(/.test(window.__codeOf(r._koerperWasser)) &&
+            /_atlasWaterLevelAt\(/.test(window.__codeOf(r._koerperWasserSpiegel));
         // (3) DER SPIEGEL IST DAS SEGMENT: `_hydroRiverAt` liest den Spiegel seiner Enden (sA/sB), nie die Makro-Höhe des
         // Orts (bis V18.531: Makro − 0,25·D + Buckel — der Fluss stieg bergauf und wölbte sich).
         const rvSrc = window.__codeOf(r._hydroRiverAt);
