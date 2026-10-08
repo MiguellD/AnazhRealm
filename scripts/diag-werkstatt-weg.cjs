@@ -267,6 +267,10 @@ function werkVerdict(m) {
         out.push(
             `das Phantom steht ${m.abstand} m vor dem Spieler, das Werk reicht ${m.reicht} m (Soll ≥ ${m.mindest} m)`
         );
+    // Die Hülle des gesetzten Werks liegt in der Reichweite, die die Klemme misst (Integration V18.536: die Stamm-Hülle trägt
+    // seit v1-ankunft die Welt-Skala des Studio-Baums).
+    if (Number.isFinite(m.huelleReicht) && m.reicht > 0 && m.huelleReicht > m.reicht + 0.01)
+        out.push(`die Hülle des Werks reicht ${m.huelleReicht} m, die Klemme misst ${m.reicht} m — der Spieler steht im Werk`);
     if (m.gesendetSame !== m.werkSame)
         out.push(`der Mitspieler bekommt den Samen ${m.gesendetSame}, das Werk trägt ${m.werkSame}`);
     // Jedes Setzen ein neues Werk (Integration V18.536, Auflage 1): nach dem Setzen zeigt das Phantom den nächsten Samen.
@@ -992,6 +996,14 @@ async function probe(argW) {
                 m.werkKey = werkKey(e);
                 m.werkDreh = dreh(e);
                 m.werkTint = tint(e);
+                // Die Hülle des Werks (seine Blocker, seit v1-ankunft in der Welt-Skala des Studio-Baums, `_baumWeltSkala`):
+                // wie weit sie waagrecht über seinen Ort reicht — die Klemme muss sie tragen, sonst steht der Spieler im Werk.
+                let hq = 0;
+                for (const b of e.blockerAABBs || [])
+                    for (const x of [b.minX, b.maxX])
+                        for (const z of [b.minZ, b.maxZ])
+                            hq = Math.max(hq, Math.hypot(x - e.position.x, z - e.position.z));
+                m.huelleReicht = +hq.toFixed(2);
             }
             const op = finde(gesendet[0]);
             m.gesendetSame = op ? op[3] : null;
@@ -1527,6 +1539,7 @@ async function probe(argW) {
             reicht: 3.9,
             mindest: 7.4,
             naechsterSame: 2034871155,
+            huelleReicht: 1.1,
         };
         check(
             "Selbst-Test Werk-Same: gesund == 0 Täter",
@@ -1576,6 +1589,11 @@ async function probe(argW) {
                 "jedes Setzen derselbe Wurf (Auflage 1 der zweiten Gegenprüfung)",
                 mitK({ naechsterSame: 1785671328 }),
                 "das nächste Setzen zeigt dasselbe Werk",
+            ],
+            [
+                "die Hülle reicht über die Klemme (Integration V18.536)",
+                mitK({ huelleReicht: 10.3 }),
+                "die Hülle des Werks reicht 10.3 m, die Klemme misst 3.9 m",
             ],
         ]) {
             const v = werkVerdict(bruch);
@@ -1807,7 +1825,7 @@ async function probe(argW) {
     check(
         "Werk-Same das Setzen stellt Gestalt und Drehung des Phantoms ohne Math.random, der Mitspieler baut dasselbe Werk, der Welt-Strom übersteht den Reload",
         vK.length === 0,
-        `${km.gestartet ? `Math.random ${km.zuege} · Phantom ${km.abstand} m vor dem Spieler (Soll ≥ ${km.mindest} m; die Studio-Gestalt reicht ${km.reicht} m, die Spender-Teile ${km.reichtSpender} m) · Phantom ${km.phantomKey} @ ${km.phantomDreh} rad → Werk ${km.werkKey} @ ${km.werkDreh} rad (Same ${km.werkSame}, das nächste Phantom ${km.naechsterSame}) · gesendet Same ${km.gesendetSame} → Mitspieler ${ke.steht ? `${ke.key} @ ${ke.dreh} rad, Tönung ${ke.tint === km.werkTint ? "gleich" : "anders"}` : "nichts"} · Strom ${kr.erst} → ${kr.weiter}, nach Reload ${kr.nachReload}` : "nicht gestartet"}${vK.length ? " — Täter: " + vK.join(", ") : ""}`
+        `${km.gestartet ? `Math.random ${km.zuege} · Phantom ${km.abstand} m vor dem Spieler (Soll ≥ ${km.mindest} m; die Studio-Gestalt reicht ${km.reicht} m, die Spender-Teile ${km.reichtSpender} m, die Hülle des Werks ${km.huelleReicht} m) · Phantom ${km.phantomKey} @ ${km.phantomDreh} rad → Werk ${km.werkKey} @ ${km.werkDreh} rad (Same ${km.werkSame}, das nächste Phantom ${km.naechsterSame}) · gesendet Same ${km.gesendetSame} → Mitspieler ${ke.steht ? `${ke.key} @ ${ke.dreh} rad, Tönung ${ke.tint === km.werkTint ? "gleich" : "anders"}` : "nichts"} · Strom ${kr.erst} → ${kr.weiter}, nach Reload ${kr.nachReload}` : "nicht gestartet"}${vK.length ? " — Täter: " + vK.join(", ") : ""}`
     );
     console.log("=== BRENNGLAS — DAS LICHT BRENNT, WO ES SICH BÜNDELT, UND DIE ZERSTÖRUNG NENNT SICH ===");
     const bm = out.brenn || {};
