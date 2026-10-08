@@ -397,17 +397,26 @@ const FIXTURES = [
         // Slot-Anker == Export-Slot: JEDER platzierte Eintrag trägt exakt slot.x/z + phi seines Slots (per seed zugeordnet). Die
         // Wände der Slot-Quelle (Wasser, Klippe über dem Footprint-Raster, Bau) rechnet die Probe nicht nach — sie liest, was
         // stand (die gespiegelte Vier-Ecken-Klippe fiel mit dem Raster, Integration Welle L).
+        // Fällt der Slot-Ort, steht das Haus an einem SEINER Ersatz-Orte (`_slotErsatzVersaetze`, im Rahmen des Hauses, Gier
+        // phi — Leben-Schau 07.10.: die Slot-Quelle sucht je Slot einen Ersatz-Ort statt zu überspringen); nie anderswo.
+        let ersatzOrte = 0;
         res.slotAnchorExact =
             e1.length > 0 &&
             e1.every((e) => {
                 const sl = plan.slots.find((x) => x.seed >>> 0 === e.seed);
-                return (
-                    !!sl &&
-                    Math.abs(e.position.x - (o1.x + sl.x)) < 1e-9 &&
-                    Math.abs(e.position.z - (o1.z + sl.z)) < 1e-9 &&
-                    e.rotationY === (sl.phi || 0)
+                if (!sl || e.rotationY !== (sl.phi || 0)) return false;
+                const c = Math.cos(sl.phi || 0);
+                const s = Math.sin(sl.phi || 0);
+                const orte = [[0, 0]].concat(r.constructor._slotErsatzVersaetze(sl));
+                const k = orte.findIndex(
+                    ([lx, lz]) =>
+                        Math.abs(e.position.x - (o1.x + sl.x + lx * c + lz * s)) < 1e-9 &&
+                        Math.abs(e.position.z - (o1.z + sl.z - lx * s + lz * c)) < 1e-9
                 );
+                if (k > 0) ersatzOrte++;
+                return k >= 0;
             });
+        res.ersatzOrte = ersatzOrte;
         // HAUS-DOPPELBAU-SCHNITT (P0-Inventur 18.07.) — der KONSUM-Beweis lebt:
         // (a) jeder platzierte Eintrag trägt den Slot-ov als studioOv (rolle
         //     byte-gleich, per seed dem Export-Slot zugeordnet),
@@ -466,7 +475,9 @@ const FIXTURES = [
         res.waterWall = /_isAboveWaterAt/.test(
             window.__codeOf ? window.__codeOf(r._spawnSettlementSlot) : r._spawnSettlementSlot.toString()
         );
-        res.anchorChokepoint = /_structureSpawnPos/.test(src);
+        // Der Anker misst den Plan selbst (`_siedlungsAnker`: das Dorf vor dem Spieler, im Bildwinkel); die Schätzung über
+        // `_structureSpawnPos("haus_basis")` fiel (Leben-Schau 07.10.: „dorf 7 18" umringte den Spieler).
+        res.anchorChokepoint = /this\._siedlungsAnker\(plan/.test(src) && !/_structureSpawnPos/.test(src);
         // 6) DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft (Welle L): das Dorf
         //    des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan (vorher bei kaltem Buch still der
         //    Kern-Default). Gemessen am Rebuild-Gedächtnis des Dorfs (settlementCells: Same, nH, Ort).
@@ -782,7 +793,11 @@ const FIXTURES = [
         out.offsetsDeterministic === true,
         `placed1=${out.placed1} placed2=${out.placed2}`
     );
-    check("B: der Slot-Anker sitzt EXAKT (entry == anker + slot.x/z, phi, seed)", out.slotAnchorExact === true);
+    check(
+        "B: der Slot-Anker sitzt EXAKT (entry == anker + slot.x/z oder einer seiner Ersatz-Orte, phi, seed)",
+        out.slotAnchorExact === true,
+        `${out.ersatzOrte} am Ersatz-Ort`
+    );
     check(
         "B: DORF-IN-TERRAIN — der Slot-Footprint reist als entry.fundament {ex,ez}",
         out.fundamentTravels === true
@@ -812,7 +827,7 @@ const FIXTURES = [
         "B: die Wasser-Wand steht in der EINEN Slot-Quelle (_spawnSettlementSlot, _isAboveWaterAt je Slot)",
         out.waterWall === true
     );
-    check("B: der Anker laeuft durch den EINEN Spawn-Chokepoint (_structureSpawnPos)", out.anchorChokepoint === true);
+    check("B: der Anker misst den Plan (_siedlungsAnker, keine haus_basis-Schaetzung)", out.anchorChokepoint === true);
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
     for (const [name, ok] of autoStaticLaws(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))) check(name, ok);
     const c = out.c || {};

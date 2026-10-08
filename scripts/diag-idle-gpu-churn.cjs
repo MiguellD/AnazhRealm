@@ -67,6 +67,9 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     // Ihr Spion nennt den Schreiber einer Drift beim Namen.
     const SELBSTTEST_BUEHNE = process.argv.includes("--selbsttest-buehne");
     const SELBSTTEST_RUHE = process.argv.includes("--selbsttest-ruhe");
+    // SELBSTTEST der Programm-Wache: mitten im Warmup läuft ein Programm, das ein Dorf baut — die Wache MUSS es anhalten
+    // (die Bühne hält, die Wache nennt es), sonst ist sie vakuös.
+    const SELBSTTEST_PROGRAMM = process.argv.includes("--selbsttest-programm");
     await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 30000 });
     await page.evaluate(AUSGABE_INSTALL);
 
@@ -246,6 +249,14 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
                 return v;
             };
         }
+        // DIE PROGRAMM-WACHE (CI 37705797642: „Bauten 149 → 156 an haus_griechisch durch visit ← spawn_fractal ← dslEval ←
+        // random ← dslEval ← chain"): die Welt schreibt sich selbst — Nexus, stehende Regeln, Emotionen, Fähigkeiten — und
+        // jeder Weg geht durch die EINE Auswertung `dslEval`. Unter der Bühne (die eingefrorene Uhr des Wetter-Zugs,
+        // `__wetterSetzen`) hält das Spiel dort jeden Welt-Akt selbst (`_messHalt`, 0710-7) — der Welt-Akt-Spion bucht Quelle und
+        // Op jedes gehaltenen und jedes, der trotzdem durchging; die Bühnen-Wand nennt beide. Bis 08.10. überschrieb die Linse
+        // `dslEval` selbst (ein Zwilling des Halts, der jedes Programm schluckte).
+        window.__weltaktSpion();
+        window.__weltaktSeq0 = window.__weltaktBuch(0).seq;
         try { r._ensureSkyEnvironment(true); } catch (_e) {}
         const cnt = () => window.__cc.gpuPipeline + window.__cc.glLink;
         window.__cnt = cnt;
@@ -430,6 +441,7 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
         for (let i = 0; i < 10; i++) {
             // SELBSTTEST: die Uhr der Welt läuft frei und der Wetter-Zug wird fällig — die Bühnen-Wand MUSS rot werden
             if (SELBSTTEST_BUEHNE && i === 5) await ruf("Selbsttest-Bühne", () => { window.__buehneLos = true; window.anazhRealm.state.weatherEffectTime = 1e6; });
+            if (SELBSTTEST_PROGRAMM && i === 5) await ruf("Selbsttest-Programm", () => { window.anazhRealm.dslRun(["spawn_village", ["near_player"]], { source: "selbsttest" }); });
             await frame(`Warmup-Frame ${i}`);
         }
         await ruf("Erst-Budget zurück", () => { window.anazhRealm.constructor.ERST_BAU_MS = window.__erstBudget; });
@@ -505,13 +517,19 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     }
     setup.maxRuf = maxRuf;
     // DIE BÜHNEN-WAND: hielt die Welt still? Jede Drift (Wetter, Übergang, Saison, Tageszeit, Bauten) beim Namen.
-    const buehne = await ruf("Bühne", () => ({ vor: window.__buehne0, nach: window.__buehneStand(), wetter: window.__wetterBuch(window.__wetterSeq0), bau: window.__bauBuch }));
+    const buehne = await ruf("Bühne", () => ({ vor: window.__buehne0, nach: window.__buehneStand(), wetter: window.__wetterBuch(window.__wetterSeq0), bau: window.__bauBuch, welt: window.__weltaktBuch(window.__weltaktSeq0) }));
     const kipp = [];
     // das Buch der Wache seit der Bühne: wer das Wetter drehte (Schreiber oder roh, mit Quelle und Spiel-Rahmen) und wen sie
     // verweigerte (die Wache hielt — keine Drift, aber beim Namen)
     const wb = (buehne.wetter && buehne.wetter.buch) || [];
     const dreher = wb.filter((e) => e.art !== "verweigert").map((e) => `${e.von} → ${e.zu} durch ${e.quelle || e.art} (${e.stapel})`);
     const verweigert = wb.filter((e) => e.art === "verweigert").map((e) => `${e.quelle} → ${e.zu}`);
+    // das Buch des Welt-Halts seit der Bühne: gehaltene Welt-Akte (keine Drift, beim Namen) und durchgelaufene (die Täter)
+    const wa = (buehne.welt && buehne.welt.buch) || [];
+    const weltGehalten = wa.filter((e) => e.art === "verweigert").map((e) => `${e.quelle}: ${e.op}`);
+    const weltDurch = wa.filter((e) => e.art === "durch").map((e) => `${e.op} durch ${e.quelle} (${e.stapel})`);
+    if (!buehne.welt || buehne.welt.blind) kipp.push("der Welt-Akt-Spion ist blind (das Spiel nennt keine Welt-Akte)");
+    if (weltDurch.length) kipp.push(`Welt-Akt unter der Bühne: ${weltDurch.slice(0, 4).join(" · ")}`);
     if (buehne.vor && buehne.nach) {
         const v = buehne.vor, n = buehne.nach;
         if (n.wetter !== v.wetter) kipp.push(`Wetter ${v.wetter} → ${n.wetter}${dreher.length ? " [" + dreher.join(" · ") + "]" : ""}`);
@@ -527,7 +545,12 @@ let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Fris
     server.close();
     console.log("===== STEHENDE LINSE — Idle/Env-GPU-Pipeline-Churn (echter Renderer) =====\n");
     if (pageErr) { console.error("⛔ Page-Error während des Laufs:", pageErr); process.exit(1); }
-    console.log(`  Bühne: ${kipp.length ? "GEKIPPT — " + kipp.join(" · ") : "hielt (Wetter, Saison, Tageszeit, Bauten unverändert)"}${verweigert.length ? ` · die Wetter-Wache verweigerte ${verweigert.length} Zug/Züge: ${verweigert.slice(0, 6).join(" · ")}` : ""}`);
+    console.log(`  Bühne: ${kipp.length ? "GEKIPPT — " + kipp.join(" · ") : "hielt (Wetter, Saison, Tageszeit, Bauten unverändert)"}${verweigert.length ? ` · die Wetter-Wache verweigerte ${verweigert.length} Zug/Züge: ${verweigert.slice(0, 6).join(" · ")}` : ""}${weltGehalten.length ? ` · der Welt-Halt hielt ${weltGehalten.length} Welt-Akt(e) an: ${weltGehalten.slice(0, 6).join(" · ")}` : ""}`);
+    if (SELBSTTEST_PROGRAMM) {
+        const gehalten = weltGehalten.some((z) => z.startsWith("selbsttest:"));
+        console.log(gehalten && !kipp.length ? "✅ SELBSTTEST GRÜN — der Welt-Halt hielt das Dorf an, die Bühne hielt." : "⛔ SELBSTTEST ROT — der Welt-Halt ist vakuös.");
+        process.exit(gehalten && !kipp.length ? 0 : 1);
+    }
     if (kipp.length) { console.error("⛔ BÜHNE GEKIPPT: die Welt der Messung driftete — " + kipp.join(" · ")); process.exit(1); }
     if (regen.err) { console.error("⛔ LINSE NICHT LAUFFÄHIG:", regen.err); process.exit(1); }
     if (regen.spur && regen.spur.length) {

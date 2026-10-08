@@ -2121,7 +2121,7 @@
         function seatRow(cx) {
             for (const z of [-0.4, 0.4]) {
                 g.add(B(cx, ySill + 0.11, z, 0.27, 0.055, 0.24, M.seat)); // Sitzfläche
-                g.add(B(cx - 0.28, ySill + 0.37, z, 0.055, 0.26, 0.23, M.seat, 0.13)); // Lehne (lehnt nach hinten)
+                g.add(B(cx - 0.28, ySill + 0.37, z, 0.055, 0.26, 0.23, M.seat, FAHR.sitzLehneRad)); // Lehne (lehnt nach hinten)
                 g.add(B(cx - 0.35, ySill + 0.62, z, 0.07, 0.075, 0.11, M.seat));
             }
         } // Kopfstütze
@@ -2214,6 +2214,21 @@
         //    die EINE Zahl, die jede Anzeige „km/h" liest (Labor-HUD heute, Welt-HUD morgen). Befund: die Probefahrt
         //    rechnete |speed| × 12 unter der Einheit km/h (10,5 m/s zeigte 126 statt 37,8). ──
         kmh: 3.6,
+        // ── 0710-4 (rein additive DATEN-Zeile — Praezedenz: kmh) — DIE MASSE DES WAGENS: carPhys traegt sein Volumen
+        //    (Laenge · Spur · Dach, m³ — darauf ist der Schub geeicht), die Masse ist dieses Volumen mal der mittleren
+        //    Dichte der geschlossenen Huelle (Blech, Motor, Kabine voll Luft): ein GT mit 9,6 m³ wiegt 1,4 t. Der Wirt
+        //    liest sie fuer jeden Stoss (vorher hielt er die Zahl selbst: STOSS.dichteWagen — eine Studio-Groesse im Wirt). ──
+        masseDichte: 150,
+        // ── 0710-4 Klasse 4 (rein additive DATEN-Zeilen — Praezedenz: masseDichte) — DER REITER IM WAGEN: die Lehne des
+        //    Fahrersitzes (rad nach hinten; der Bau der Sitzreihe liest sie, der Wirt neigt den Rumpf des Reiters mindestens
+        //    so weit), der Kopf-Freiraum unter der Dachlinie (m: Dachhaut + Luft ueber dem Scheitel) und die steilste
+        //    Lehne (rad), bis zu der der Wirt den Rumpf neigt, damit der Scheitel unter der Dachlinie bleibt. 1,15 traegt
+        //    den Menschen des Koerper-Kerns in jede Gestalt dieses Buchs: die flachen Wagen fordern sie (GT 61°, Supersport
+        //    64° — ihre Tiefe Bauch→Dachlinie ist 0,89 / 0,855 m, der sitzende Mensch braucht ~1,1 m; die Wagen-Tiefe ist
+        //    ein Posten der Studio-Welle S3). ──
+        sitzLehneRad: 0.13,
+        kopfFreiraumM: 0.05,
+        sitzLehneMaxRad: 1.15,
         // ── FAHR-GEFUEHL (rein additive DATEN-Zeile — Praezedenz: hostEmergent) —
         // DIE LENK-/DRIFT-GESETZE der Probefahrt fuer den Welt-Ritt: sfK ist die
         // selbstzentrierende Lenkung des Labs (sf = 1/(1 + v·sfK), updateVehicle
@@ -2619,6 +2634,7 @@
             slipF: 0,
             slipR: 0,
             y: NaN,
+            yBoden: NaN, // die Ebene der Raeder im letzten Schritt (fahrStand: eine Wand ist ein SPRUNG des Bodens)
             vy: 0,
             luft: false,
             steig: 0,
@@ -2710,6 +2726,13 @@
             // Stufen bis 1,075 m in einem Takt.
             const stufe = S.stufeRad * G.radR + Math.abs(z.vy) * dt; // radR ist Pflicht des Fahr-Satzes (fahrGesetz)
             const warLuft = z.luft === true;
+            // DIE WAND IST EIN SPRUNG DES BODENS, nie die Lage des Wagens (Hangfuss-Falle, Leben-Schau 07.10. an
+            // -852/-861,2: die Box eines Glutbrunnens schob den GT in EINEM Schritt 0,97 m quer auf 0,25 m hoeheren Grund;
+            // der Wand-Zweig verglich den Boden mit der HOEHE des Wagens, fror sie ein, und der Wagen sank am Hangfuss 1,16 m
+            // unter seine Raeder — fuer immer, die Gelaende-Wand des Wirts rechnete ihre Ebene aus dieser Hoehe). Hoch ist
+            // der Boden gegen den Boden des letzten Schritts: eine Wand haelt den Wagen EINEN Schritt (der Wirt schiebt ihn
+            // heraus); liegt er danach noch unter seinem Gesetz, steigt er darauf, je Schritt hoechstens eine Stufe.
+            const yB0 = Number.isFinite(z.yBoden) ? z.yBoden : eb.y;
             if (yBall >= eb.y) {
                 // DER BODEN FAELLT UNTER DIE FALLKURVE (Kuppe mit v²/R > g, Klippe, Spalt): der Wagen fliegt; die Reifen
                 // greifen nur, solange der Spalt unter luftEps bleibt (eine Bodenwelle hebt ihn nicht aus dem Griff).
@@ -2726,9 +2749,16 @@
             } else if (warLuft) {
                 z.vy -= g * dt; // im Flug vor einer Wand: weiter auf der Fallkurve
                 z.y = yBall;
+            } else if (eb.y - yB0 > stufe) {
+                z.vy = 0; // an der Wand (der Boden sprang): der Wagen steigt nicht hinein
             } else {
-                z.vy = 0; // an der Wand: der Wagen steigt nicht hinein
+                // UNTER DEM GESETZ ohne Sprung des Bodens (ein Schub, ein Teleport, die Wand des letzten Schritts): der Wagen
+                // steigt auf die Ebene seiner Raeder, je Schritt hoechstens eine Stufe (kein Satz).
+                z.y = Math.min(eb.y, z.y + stufe);
+                z.vy = vBoden(eb);
+                z.luft = false;
             }
+            z.yBoden = eb.y;
             // Im Flug behaelt der Aufbau seine Lage; am Boden liegt er in der Ebene der Raeder.
             if (!z.luft) {
                 z.steig = eb.steig;

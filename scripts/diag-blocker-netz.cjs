@@ -216,7 +216,8 @@ async function probe() {
     const st = r.state;
     // DAS ORAKEL: der Struktur-Strahl als Schleife über den ganzen Bestand (die Definition, V18.535) — der Gelände-Teil ist
     // derselbe Weg wie im Spiel (`_fieldSolid` · `_fieldGradient`), die Boxen gehen alle durch `_segmentAABB`.
-    const orakel = (sx, sy, sz, ex, ey, ez) => {
+    const orakel = (sx, sy, sz, ex, ey, ez, o) => {
+        const durchPflanzen = !!(o && o.durchPflanzen);
         const dx = ex - sx,
             dy = ey - sy,
             dz = ez - sz;
@@ -258,6 +259,7 @@ async function probe() {
                 if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;
                 const boxes = e.blockerAABBs;
                 for (let bi = 0; bi < boxes.length; bi++) {
+                    if (durchPflanzen && boxes[bi].pflanze === true) continue;
                     const hitInfo = r._segmentAABB(sx, sy, sz, dx, dy, dz, boxes[bi]);
                     if (hitInfo && hitInfo.t < structHitT) {
                         structHitT = hitInfo.t;
@@ -371,6 +373,7 @@ async function probe() {
             slabs: 0,
             beruehrt: 0,
             ueberzaehlig: 0,
+            durchPflanzen: 0,
         };
         const LAENGEN = [0.5, 2.5, 4.5, 10, 30, 95];
         for (let i = 0; i < n; i++) {
@@ -408,10 +411,13 @@ async function probe() {
             const ex = sx + dx * L,
                 ey = sy + dy * L,
                 ez = sz + dz * L;
-            const soll = orakel(sx, sy, sz, ex, ey, ez);
+            // ein Drittel der Strahlen geht durch die Pflanzen (der Strahl der 3rd-Kamera, `o.durchPflanzen`)
+            const o = rng() < 0.33 ? { durchPflanzen: true } : undefined;
+            if (o) R.durchPflanzen++;
+            const soll = orakel(sx, sy, sz, ex, ey, ez, o);
             const b0 = beruehrt(sx, sy, sz, ex, ey, ez);
             slabs = 0;
-            const ist = r._fieldRaycast(sx, sy, sz, ex, ey, ez);
+            const ist = r._fieldRaycast(sx, sy, sz, ex, ey, ez, o);
             R.strahlen++;
             R.slabs += slabs;
             R.beruehrt += b0;
@@ -434,7 +440,9 @@ async function probe() {
         return R;
     };
     // DAS ORAKEL DES LÖSERS: die Schleife über den ganzen Bestand (V18.535), dieselben Löser je Box
-    const alterLoeser = (pos, feetY, headY, radius, huelle) => {
+    // (mit dem Sprung des rutschenden Wagens `huelle.eigen`, dem Gegner je Schub `huelle.quelle` und der Sammlung der Schübe
+    // `quellen` aus integ-probe)
+    const alterLoeser = (pos, feetY, headY, radius, huelle, quellen) => {
         const arches = st.architectures;
         if (!arches || !arches.length) return -Infinity;
         let supportTop = -Infinity;
@@ -445,12 +453,17 @@ async function probe() {
             if (riddenId !== null && riddenId !== undefined && e.id === riddenId) continue;
             const cullR = 60 + (e._blockerReach || 0);
             if (Math.abs(e.position.x - pos.x) > cullR || Math.abs(e.position.z - pos.z) > cullR) continue;
+            if (huelle && huelle.eigen === e.id) continue;
             const boxes = e.blockerAABBs;
+            if (huelle) huelle.quelle = e;
+            const vorX = pos.x;
+            const vorZ = pos.z;
             for (let b = 0; b < boxes.length; b++) {
                 if (huelle) {
                     if (!(boxes[b].dick < huelle.stufe)) r._resolveHuelleVsAABB(boxes[b], pos, huelle);
                 } else supportTop = r._resolveCapsuleVsAABB(boxes[b], pos, feetY, headY, radius, supportTop);
             }
+            if (quellen && (pos.x !== vorX || pos.z !== vorZ)) quellen.push(e, pos.x - vorX, pos.z - vorZ);
         }
         return supportTop;
     };
@@ -526,26 +539,40 @@ async function probe() {
                     unten: feetY + 0.2,
                     oben: feetY + 1.6,
                     schub: [],
+                    schubQuelle: [],
+                    // ein rutschender Wagen löst nie gegen sich selbst: jeder zweite Wagen trägt den Eintrag der Box als eigen
+                    eigen: rng() < 0.5 && boxEintrag.get(b) ? boxEintrag.get(b).id : undefined,
                 };
             }
             const lauf = (fn) => {
                 st._wandKontaktNx = 0.123;
                 st._wandKontaktNz = 0.456;
                 const pos = { x, y: feetY, z };
-                const h = huelle ? Object.assign({}, huelle, { schub: [] }) : null;
+                const h = huelle ? Object.assign({}, huelle, { schub: [], schubQuelle: [] }) : null;
+                const quellen = h ? null : [];
                 rufe = 0;
                 fern = 0;
                 letzter = null;
                 reichJetzt = (h ? Math.abs(h.mitte) + h.hl + h.hw : 0.35) + 1e-6;
-                const top = fn(pos, feetY, headY, 0.35, h);
+                const top = fn(pos, feetY, headY, 0.35, h, quellen);
+                const id = (e) => (e ? e.type + "#" + e.id : "–");
                 return {
-                    werte: [pos.x, pos.z, top, st._wandKontaktNx, st._wandKontaktNz, h ? h.schub.join(",") : ""],
+                    werte: [
+                        pos.x,
+                        pos.z,
+                        top,
+                        st._wandKontaktNx,
+                        st._wandKontaktNz,
+                        h ? h.schub.join(",") : "",
+                        h ? h.schubQuelle.map(id).join(",") : "",
+                        quellen ? quellen.map((v) => (typeof v === "object" ? id(v) : v)).join(",") : "",
+                    ],
                     rufe,
                     fern,
                 };
             };
             const soll = lauf(alterLoeser);
-            const ist = lauf((pos, f, hd, rad, h) => r._stepCharacterStructures(pos, f, hd, rad, h));
+            const ist = lauf((pos, f, hd, rad, h, q) => r._stepCharacterStructures(pos, f, hd, rad, h, q));
             R.koerper++;
             R.rufeAlt += soll.rufe;
             R.rufeNeu += ist.rufe;
@@ -979,7 +1006,9 @@ function stammSchreiber() {
     console.log(`  Quelle: ${JSON.stringify(S.quelle)}`);
     const rot = urteil(S, stamm, pageErrors);
     const wand = boxWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
-    console.log(`  Box-Wand: ${wand.zuweisungen} Zuweisungen an .blockerAABBs, ${wand.befunde.length} Schreiber ohne Stempel`);
+    console.log(
+        `  Box-Wand: ${wand.zuweisungen} Zuweisungen an .blockerAABBs, ${wand.befunde.length} Schreiber ohne Stempel`
+    );
     for (const b of wand.befunde) rot.push(`(W) BOX-WAND: ${b.methode} Zeile ${b.zeile}: ${b.art} — ${b.text}`);
     if (rot.length) {
         console.error("\nROT:");

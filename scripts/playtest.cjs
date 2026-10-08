@@ -1173,7 +1173,11 @@ async function checkBandV1728SpawnClearance(ctx) {
         const fpBlock = r._blueprintFootprintRadius("stein_block");
         out.villageBig = fpVillage >= MIN;
         out.blockSmall = fpBlock < MIN;
-        out.villageEffectUsesClear = /_structureSpawnPos/.test(window.__codeOf(r.dslEffects.spawn_village));
+        // Leben-Schau 07.10.: das Dorf misst seinen Plan (`_siedlungsAnker` in spawnSettlement) — spawn_village reicht den Ort
+        // durch, die Schätzung über _structureSpawnPos("haus_basis") fiel (sie umringte den Spieler).
+        out.villageEffectUsesClear =
+            /this\.spawnSettlement\(/.test(window.__codeOf(r.dslEffects.spawn_village)) &&
+            /this\._siedlungsAnker\(plan/.test(window.__codeOf(r.spawnSettlement));
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (pm) {
             const px = pm.x,
@@ -1214,7 +1218,10 @@ async function checkBandV1728SpawnClearance(ctx) {
         res.villageBig
     );
     check("V17.28 Spawn-Clearance: Felsblock-Footprint klein (< MIN, intentional bleibt)", res.blockSmall);
-    check("V17.28 Spawn-Clearance: spawn_village nutzt _structureSpawnPos (Source-Probe)", res.villageEffectUsesClear);
+    check(
+        "V17.28 Spawn-Clearance: spawn_village gründet über spawnSettlement, der Anker misst den Plan (_siedlungsAnker)",
+        res.villageEffectUsesClear
+    );
     check(
         "V17.28 Spawn-Clearance: ein Haus AUF dem Spieler wird klar weggeschoben (kein Fall-durch)",
         res.villagePushed
@@ -4344,15 +4351,25 @@ async function checkBandV1754PlayerAttack(ctx) {
         // prueft (4) über die lebendig-Schwelle weiter.
         out.noGuiltForMaterial = true;
 
-        // (6) der Knockback-Pfad (fromPos + knockback) läuft ohne Fehler + schädigt
+        // (6) der Rückstoß-Pfad (fromPos + stoss {p, m}, das EINE Impuls-Gesetz) läuft, schädigt UND stößt das Ziel vom
+        // Angreifer weg — der Schlag ein Keulen-Hieb des Schmiede-Urteils (p 26,85 · m 1,71, gate:kampf-gefuehl T13). Die
+        // Gegenprobe: das tote Feld knockback (es liest niemand) stößt nicht — der Check übergab bis 0710-5 nur dieses Feld
+        // und prüfte allein den Schaden, er war leer.
         const c4 = r.spawnCreatureAt(pm.x + 380, pm.y, pm.z + 380, "happy", "wesen");
+        const von = { x: c4.position.x - 2, y: c4.position.y, z: c4.position.z };
         let kbOk = true;
+        let totFeld = null;
         try {
-            r.damageCreature(c4, 5, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z }, knockback: 8 });
+            c4.userData._stossV = null;
+            r.damageCreature(c4, 1, { source: "player", fromPos: von, knockback: 8 });
+            totFeld = c4.userData._stossV;
+            r.damageCreature(c4, 5, { source: "player", fromPos: von, stoss: { p: 26.85, m: 1.71 } });
         } catch {
             kbOk = false;
         }
-        out.knockbackRuns = kbOk && c4.userData.hp < c4.userData.hpMax;
+        const sv4 = c4.userData._stossV;
+        out.knockbackRuns = kbOk && c4.userData.hp < c4.userData.hpMax && !!sv4 && sv4.x > 0.01;
+        out.knockbackTotFeld = kbOk && !totFeld;
         if (r.state.creatures.indexOf(c4) !== -1) r.removeCreature(c4);
 
         // (7) der Dispatch + die Schuld sind wired (Source-Probe)
@@ -4392,7 +4409,14 @@ async function checkBandV1754PlayerAttack(ctx) {
         "V17.54 Kampf D (NULL): das Schuld-Gate lebt über die lebendig-Schwelle (Material-Wesen gefallen)",
         res.noGuiltForMaterial
     );
-    check("V17.54 Kampf D: der Knockback-Pfad (fromPos + knockback) läuft + schädigt", res.knockbackRuns);
+    check(
+        "V17.54 Kampf D: der Rückstoß-Pfad (fromPos + stoss) läuft, schädigt und stößt das Ziel vom Angreifer weg",
+        res.knockbackRuns
+    );
+    check(
+        "V17.54 Kampf D (Gegenprobe 0710-5): das tote Feld knockback stößt nicht — ein Check damit allein wäre leer",
+        res.knockbackTotFeld
+    );
     check(
         "V17.54 Kampf D: tryMouseBreak dispatcht zur Kreatur + die Schuld ist in _creatureCombatDeath wired",
         res.dispatchWired && res.guiltWired
@@ -15402,8 +15426,9 @@ async function checkBandWelle6APolish(ctx) {
     }
 
     // ### Raycast-Place + Stabilitäts-Visual ###
-    // tickBuildMode → _resolvePhantomTarget castet aus der Kamera ({x, y, z, isStable, hit}): das
-    // Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
+    // tickBuildMode → _resolvePhantomTarget castet den Strahl des Fadenkreuzes (`_fadenkreuzStrahl`: die Richtung der
+    // Kamera ab der Ebene des Ziels — Gegenprüfung Runde 2, nie was zwischen Kamera und Spieler liegt) ({x, y, z,
+    // isStable, hit}): das Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
     const wave6a45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -15419,8 +15444,8 @@ async function checkBandWelle6APolish(ctx) {
         out.tickSetsOnGround = /phantomOnGround\s*=/.test(tickSrc);
 
         const resolveSrc = window.__codeOf(r._resolvePhantomTarget);
-        out.resolveUsesCamera = /this\.state\.camera/.test(resolveSrc);
-        out.resolveUsesGetWorldDirection = /getWorldDirection/.test(resolveSrc);
+        out.resolveUsesCamera = /this\._fadenkreuzStrahl\(\)/.test(resolveSrc);
+        out.resolveUsesGetWorldDirection = /getWorldDirection/.test(window.__codeOf(r._fadenkreuzStrahl));
         // DETERMINISMUS-BOGEN P3 — _resolvePhantomTarget ruft den feld-nativen
         // _runRaycast (kein physicsWorld.rayTest mehr; der Raycast geht durch
         // das Dichtefeld + Struktur-Box-Ray).
@@ -15478,7 +15503,8 @@ async function checkBandWelle6APolish(ctx) {
         // Kamera 8m über Bauwerks-Top, blickt steil nach unten auf die Mitte
         r.state.camera.position.set(_spawnArchX, _archTopY + 8, _spawnArchZ);
         r.state.camera.lookAt(_spawnArchX, _archTopY, _spawnArchZ);
-        // Build-Modus auf Slot 0 (stein_block in Default-Hotbar)
+        // Build-Modus auf Slot 0 (stein_block, gesetzt — der Start-Gurt liest den Katalog)
+        r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         out.buildModeActive = r.state.buildMode.active;
         out.phantomExists = !!r.state.buildMode.phantomMesh;
@@ -15518,9 +15544,12 @@ async function checkBandWelle6APolish(ctx) {
         check("Welle 6.A4: tickBuildMode delegiert an _resolvePhantomTarget", wave6a45Results.tickUsesResolve);
         check("Welle 6.A5: tickBuildMode ruft _applyPhantomTint", wave6a45Results.tickUsesTint);
         check("Welle 6.A5: tickBuildMode setzt phantomOnGround", wave6a45Results.tickSetsOnGround);
-        check("Welle 6.A4: _resolvePhantomTarget liest camera", wave6a45Results.resolveUsesCamera);
         check(
-            "Welle 6.A4: _resolvePhantomTarget nutzt getWorldDirection",
+            "Welle 6.A4: _resolvePhantomTarget liest den Strahl des Fadenkreuzes (_fadenkreuzStrahl)",
+            wave6a45Results.resolveUsesCamera
+        );
+        check(
+            "Welle 6.A4: der Strahl des Fadenkreuzes nutzt getWorldDirection der Kamera",
             wave6a45Results.resolveUsesGetWorldDirection
         );
         check(
@@ -26109,7 +26138,7 @@ async function checkBandWelle6Keybindings(ctx) {
             Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
         // V8.17: 11 Aktionen (6 Original + 5 Drawer/Camera-Shortcuts; UI-Putz: drawerWelt entfiel).
         out.hasActions =
-            Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 12; // V18.109 E8: + swapHands
+            Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 13; // V18.109 E8: + swapHands, L3: + chat
         out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
         const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
         out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
@@ -26200,9 +26229,9 @@ async function checkBandWelle6Keybindings(ctx) {
         out.listInDom = !!document.getElementById("keybindings-list");
         out.resetInDom = !!document.getElementById("keybindings-reset");
         // 11 keybind-row Zeilen (UI-Putz: drawerWelt entfiel)
-        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 12; // V18.109 E8
+        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 13; // V18.109 E8, L3 chat
         // Pro Aktion ein Rebind-Button mit data-action
-        out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 12; // V18.109 E8
+        out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 13; // V18.109 E8, L3 chat
 
         // Reset für nachfolgende Tests
         r.resetKeybindings();
@@ -26214,7 +26243,7 @@ async function checkBandWelle6Keybindings(ctx) {
     if (wave6c3Results && !wave6c3Results.error) {
         check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
         check(
-            "Welle 6.C3/V8.17+E8: KEYBINDING_ACTIONS hat 12 Einträge (6 + 5 Drawer/Camera + swapHands)",
+            "Welle 6.C3/V8.17+E8+L3: KEYBINDING_ACTIONS hat 13 Einträge (6 + 5 Drawer/Camera + swapHands + chat)",
             wave6c3Results.hasActions
         );
         check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
@@ -26271,8 +26300,8 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
         check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
         check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-        check("Welle 6.C3/V8.17+E8: 12 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
-        check("Welle 6.C3/V8.17: 12 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
+        check("Welle 6.C3/V8.17+E8+L3: 13 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+        check("Welle 6.C3/V8.17+L3: 13 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
     }
 }
 
@@ -29210,7 +29239,9 @@ async function checkBandM3RittVollendet(ctx) {
             r.state.player.animationLastTick = -Infinity;
             r.animatePlayerSoul(10.0);
             const parts = r.state.playerMesh.userData.parts;
-            out.seatPose = !!parts && Math.abs(parts.leftLeg.rotation.x - -1.3) < 1e-6;
+            // angewinkelt = der Oberschenkel mindestens 69° nach vorn (0710-4 Klasse 4: er liegt waagerecht auf der Sitzfläche,
+            // −π/2; vorher pinnte der Check das Literal −1,3 der alten Pose)
+            out.seatPose = !!parts && parts.leftLeg.rotation.x <= -1.2;
             r.dismountArchitecture();
             r.animatePlayerSoul(10.1);
             out.poseCleared = !!parts && Math.abs(parts.leftLeg.rotation.x) < 0.6; // Idle ≈ 0
@@ -34956,6 +34987,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         // (A3e) BEHAVIORAL: ein wild-Wesen mit Beute in 50m kriegt einen Dir
         // zurück (nicht null). Wir setzen ein Test-Setup synthetisch.
         const savedMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const savedCreatures = r.state.creatures;
         try {
             if (r.setGameMode) r.setGameMode("pfad");
             // Fake-wildes Wesen (cached temperament=wild)
@@ -34980,7 +35012,6 @@ async function checkBandV18210Verdrahtung(ctx) {
                     boosts: [],
                 },
             };
-            const savedCreatures = r.state.creatures;
             r.state.creatures = [predator, prey];
             const dirWithPrey = r._creatureScentHuntDir(predator, 0.0);
             out.a3PredatorHasDir = !!(dirWithPrey && (dirWithPrey.x !== 0 || dirWithPrey.z !== 0));
@@ -34988,16 +35019,34 @@ async function checkBandV18210Verdrahtung(ctx) {
             r.state.creatures = [predator];
             const dirNoPrey = r._creatureScentHuntDir(predator, 0.0);
             out.a3NoPreyNoDir = dirNoPrey === null;
-            // Strike-Range-Test: Beute in 1m → strike returns true
-            prey.position.set(1.5, 0, 0);
-            r.state.creatures = [predator, prey];
-            predator.userData.nextHuntStrikeAt = -Infinity;
-            const struck = r._tickCreatureScentStrike(predator);
-            out.a3StrikeHits = struck === true;
+            // Strike-Range-Test mit ECHTEN Leibern (0710-4: der Biss stößt durch das EINE Impuls-Gesetz und liest die
+            // Masse aus der Gestalt — ein körperloser Stub hat keine, der Biss bräche fail-closed): ein Wolf, ein Fuchs
+            // in 1,5 m → der Biss trifft UND stößt die Beute vom Jäger weg.
             r.state.creatures = savedCreatures;
+            const pmS = r.state.playerMesh.position;
+            const capS = r.state.maxCreatures;
+            r.state.maxCreatures = Math.max(capS || 0, savedCreatures.length + 2);
+            const opt = { precise: true, bodySize: 1 };
+            const jaeger = r.spawnCreatureAt(pmS.x + 340, pmS.y, pmS.z - 340, "calm", "wolf", opt);
+            const beute = jaeger && r.spawnCreatureAt(pmS.x + 342, pmS.y, pmS.z - 340, "calm", "fuchs", opt);
+            r.state.maxCreatures = capS;
+            if (jaeger && beute) {
+                beute.position.set(jaeger.position.x + 1.5, jaeger.position.y, jaeger.position.z);
+                beute.userData.hp = 1e6; // der Biss soll stoßen, nicht töten
+                beute.userData._stossV = null;
+                r.state.creatures = [jaeger, beute];
+                jaeger.userData.nextHuntStrikeAt = -Infinity;
+                const struck = r._tickCreatureScentStrike(jaeger);
+                const sv = beute.userData._stossV;
+                out.a3StrikeHits = struck === true && !!sv && sv.x > 0;
+                r.state.creatures = savedCreatures;
+            }
+            if (jaeger) r.removeCreature(jaeger);
+            if (beute) r.removeCreature(beute);
         } catch (e) {
             out.a3Error = String((e && e.message) || e);
         } finally {
+            r.state.creatures = savedCreatures;
             if (r.setGameMode) r.setGameMode(savedMode);
         }
 
@@ -35130,7 +35179,11 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A3d SOURCE: updateCreatures verdrahtet den Helper im wander-Pfad", res.a3WanderWired === true);
     check("V18.210-A3e BEHAVIORAL: wild + Beute → direction != null", res.a3PredatorHasDir === true);
     check("V18.210-A3e2 BEHAVIORAL: wild ohne Beute → null", res.a3NoPreyNoDir === true);
-    check("V18.210-A3e3 BEHAVIORAL: Beute in 1.5m → strike trifft", res.a3StrikeHits === true);
+    check(
+        "V18.210-A3e3 BEHAVIORAL: Beute in 1.5m → der Biss trifft und stößt sie weg (echte Leiber, 0710-4)",
+        res.a3StrikeHits === true,
+        res.a3Error || ""
+    );
 
     // A1 — Audit-Heilungen (Persistenz + Eviction + Spezies-Diversität)
     check(
@@ -39806,9 +39859,9 @@ async function checkBandWelle6XAudit(ctx) {
             /* ignore */
         }
         if (r.state.hotbar && r.state.hotbar.length === 9) {
-            const builtIns = ["stein_block", "waterfall", "damm"];
+            const gurt = r._startGurt() || [];
             for (let i = 0; i < 9; i++) {
-                r.state.hotbar[i] = i < 3 ? builtIns[i] : null;
+                r.state.hotbar[i] = i < gurt.length ? gurt[i] : null;
             }
         }
         r._clearBuildMode && r._clearBuildMode();
@@ -39976,16 +40029,24 @@ async function checkBandWelle6XAudit(ctx) {
         const dslOut = r.parseChatToDsl("baue dorf hier");
         out.chatBuildDorfParses = !!(dslOut && dslOut.program);
         if (dslOut && dslOut.program) {
-            // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed]
+            // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed, gier, tanH]
             out.chatBuildDorfFormat =
                 dslOut.program[0] === "spawn_village" &&
                 Array.isArray(dslOut.program[1]) &&
                 dslOut.program[1][0] === "at" &&
                 typeof dslOut.program[2] === "number";
-            // Position ist NICHT bei (0,0,0) — sondern 8m vor dem
-            // Spieler. yaw=0 → der Blick geht nach +Z, also z ≈ +8.
+            // Das Dorf trägt Ort UND Blick des Sprechers (Gegenprüfung Runde 1: der Anker hing am Blick jedes Peers):
+            // der Ort ist der Sprecher (z ≈ 0), dazu seine Gier (0) und sein Bildwinkel (> 0) — „vor dem Blick" legt
+            // `_siedlungsAnker` das Dorf aus dem Plan (gate:ankunft D9 misst die Häuser vor dem Spieler).
             const z = dslOut.program[1][3];
-            out.chatBuildDorfForwardOffset = Math.abs(z - 8) < 0.5;
+            r.state.yaw = Math.PI / 2;
+            const dslOut2 = r.parseChatToDsl("baue dorf hier");
+            r.state.yaw = 0;
+            out.chatBuildDorfForwardOffset =
+                Math.abs(z) < 0.5 &&
+                dslOut.program[3] === 0 &&
+                dslOut.program[4] > 0 &&
+                !!(dslOut2 && Math.abs(dslOut2.program[3] - Math.PI / 2) < 1e-9);
         }
 
         // --- C3: _canSoulJumpFromSlope existiert
@@ -40077,7 +40138,7 @@ async function checkBandWelle6XAudit(ctx) {
             wave6x3Results.chatBuildDorfFormat
         );
         check(
-            "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ +8, vor dem Blick)",
+            "Welle 6.X.3 C1: Chat 'baue dorf hier' trägt Ort und Blick des Sprechers (z ≈ 0, Gier 0 bzw. π/2, Bildwinkel > 0)",
             wave6x3Results.chatBuildDorfForwardOffset
         );
         check("Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert", wave6x3Results.canJumpFromSlopeExists);
@@ -51807,6 +51868,10 @@ async function checkBandWave10b(ctx) {
             const targetEntry = r.spawnArchitecture("baum_eiche", { x: 1, y: 0, z: 0 }, { silent: true });
             const beforeWeather = r.state.weather;
             r.state.weather = "sunny";
+            // Das Brennglas-Gesetz (Welle L Folge) bündelt die SONNE: Mittag, damit der Brennpunkt unter der Linse in der
+            // Eiche liegt (nachts brennt nichts).
+            const beforeTod = r.state.timeOfDay;
+            r.state.timeOfDay = 0.5;
             const beforeArchCount = r.state.architectures.length;
             r._tickFocusingAffordances(25);
             const afterArchCount = r.state.architectures.length;
@@ -51821,6 +51886,7 @@ async function checkBandWave10b(ctx) {
             out.rainyNoIgnite = !!r.state.architectures.find((e) => e.id === target2.id);
 
             r.state.weather = beforeWeather;
+            r.state.timeOfDay = beforeTod;
             r.state.architectures = r.state.architectures.filter(
                 (e) =>
                     e.type !== "test_10b3_car" &&
@@ -54791,17 +54857,19 @@ async function checkBandRing6Workshop(ctx) {
             bar &&
             bar.querySelectorAll(".hotbar-slot").length === 10 &&
             bar.querySelectorAll('.hotbar-slot[data-slot="offhand"]').length === 1;
-        // AUSLÖSCHUNGS-WELLE — die Default-Hotbar ist [stein_block, waterfall, damm, null×6].
+        // Leben-Schau 07.10. (L7) — die Default-Hotbar ist der Start-Gurt aus dem Katalog (`_startGurt`: je Studio-Art
+        // ein Werk; bei kaltem Buch leer), nie mehr [stein_block, waterfall, damm].
+        const hb0 = r.state.hotbar;
+        const gurt = r._startGurt() || [];
         out.defaultHotbar =
-            Array.isArray(r.state.hotbar) &&
-            r.state.hotbar.length === 9 &&
-            r.state.hotbar[0] === "stein_block" &&
-            r.state.hotbar[1] === "waterfall" &&
-            r.state.hotbar[2] === "damm" &&
-            r.state.hotbar.slice(3).every((s) => s === null);
+            Array.isArray(hb0) &&
+            hb0.length === 9 &&
+            gurt.every((n, i) => hb0[i] === n) &&
+            hb0.slice(gurt.length).every((s) => s === null);
         // Slot-Label folgt aus blueprints.label
         const firstSlotLabel = bar.querySelector('.hotbar-slot[data-slot="0"] .label');
-        out.firstSlotShowsLabel = firstSlotLabel && firstSlotLabel.textContent === "Felsblock";
+        out.firstSlotShowsLabel =
+            !!firstSlotLabel && (!hb0[0] || firstSlotLabel.textContent === (r.state.blueprints[hb0[0]].label || hb0[0]));
 
         // setHotbarSlot setzt slot 5 auf eigenen Bauplan
         r.state.blueprints["test_hotbar_bp"] = {
@@ -54901,7 +54969,7 @@ async function checkBandRing6Workshop(ctx) {
     } else {
         check("Ring 6.5: #hotbar im DOM", ring65Results.hotbarInDom);
         check("Ring 6.5: Hotbar hat 9 Slots", ring65Results.hotbarHasNineSlots);
-        check("Ring 6.5: Default-Hotbar [stein_block, waterfall, damm, ..., null]", ring65Results.defaultHotbar);
+        check("Ring 6.5: Default-Hotbar = der Start-Gurt aus dem Katalog (_startGurt)", ring65Results.defaultHotbar);
         check("Ring 6.5: Slot-Label folgt Bauplan-Label", ring65Results.firstSlotShowsLabel);
         check("Ring 6.5: setHotbarSlot setzt Eintrag", ring65Results.setHotbarOk);
         check("Ring 6.5: Hotbar-DOM aktualisiert sich nach setHotbarSlot", ring65Results.hotbarDomReflectsSet);
@@ -55187,7 +55255,8 @@ async function checkBandRing6Workshop(ctx) {
         r._clearBuildMode();
         out.hudInDom = !!document.getElementById("build-mode-hud");
         out.hudInitiallyHidden = document.getElementById("build-mode-hud").hidden === true;
-        // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = stein_block.
+        // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = stein_block (gesetzt: der Start-Gurt liest den Katalog).
+        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r.selectHotbarSlot(0);
         out.modeActiveAfterSet = r.state.buildMode.active === true && r.state.buildMode.blueprintName === "stein_block";
         out.phantomInScene =
