@@ -1,0 +1,56 @@
+{
+ "ergebnis": {
+  "rufe": 220,
+  "ms": 180.4,
+  "maxRuf": 1.7,
+  "boostTakte": 22,
+  "boostMsJeTakt": 8.31,
+  "boostMax": 10.3,
+  "rufeJeBoostTakt": 10,
+  "radius": 18,
+  "naheEintraege": 10,
+  "top": [
+   {
+    "bauplan": "grown_busch_hazel_v2",
+    "rufe": 88,
+    "boost": 88,
+    "teile": 112,
+    "ms": 97.5,
+    "msJeRuf": 1.108
+   },
+   {
+    "bauplan": "baum_birke",
+    "rufe": 44,
+    "boost": 44,
+    "teile": 80,
+    "ms": 27.3,
+    "msJeRuf": 0.62
+   },
+   {
+    "bauplan": "baum_tanne",
+    "rufe": 44,
+    "boost": 44,
+    "teile": 80,
+    "ms": 27,
+    "msJeRuf": 0.614
+   },
+   {
+    "bauplan": "baum_erle",
+    "rufe": 22,
+    "boost": 22,
+    "teile": 80,
+    "ms": 14.4,
+    "msJeRuf": 0.655
+   },
+   {
+    "bauplan": "baum_eiche",
+    "rufe": 22,
+    "boost": 22,
+    "teile": 80,
+    "ms": 14.2,
+    "msJeRuf": 0.645
+   }
+  ]
+ },
+ "ms": 3
+}

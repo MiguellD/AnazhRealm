@@ -1,0 +1,25 @@
+=== DER BRENNGLAS-TAKT UND SEINE KLASSE — der Takt kostet, was ihn betrifft (Null-Renderer, eine echte Welt) ===
+  Bühne: 4 Brenngläser (start_plattform, brunnen_dorf, brennkolben, reittier_holzross), 12 Körper im Brennpunkt des Mittags, 84 brennbare Arten · Bestand 122
+  Tag: 110 Schritte · erwärmt 323, geglimmt 18, gezündet 12, gekühlt 70 · Abweichungen 52 · Abriss eines warmen Eintrags (marktstand_dorf#56) · neues Array (1 warm) · 4 neue Ziele im Brennpunkt des Nachmittags
+    Morgen      erwärmt 144, gekühlt 0, geglimmt 10, gezündet 0 · angefasst je Takt 18.9 (betroffen 25.1)
+    Mittag      erwärmt 106, gekühlt 0, geglimmt 3, gezündet 11 · angefasst je Takt 24.8 (betroffen 33.8)
+    Wolken      erwärmt 0, gekühlt 10, geglimmt 0, gezündet 0 · angefasst je Takt 1.0 (betroffen 1.0)
+    Mittag II   erwärmt 17, gekühlt 0, geglimmt 1, gezündet 1 · angefasst je Takt 16.7 (betroffen 25.7)
+    Nachmittag  erwärmt 48, gekühlt 0, geglimmt 4, gezündet 0 · angefasst je Takt 20.0 (betroffen 29.0)
+    Abend       erwärmt 8, gekühlt 32, geglimmt 0, gezündet 0 · angefasst je Takt 7.2 (betroffen 9.0)
+    Nacht       erwärmt 0, gekühlt 28, geglimmt 0, gezündet 0 · angefasst je Takt 1.4 (betroffen 1.4)
+  Arbeit je Brennglas-Takt: angefasst 13.3 · betroffen 18.6 · Bestand 101.1
+  Verzeichnis nach dem Tag     9 Namen, 102 Mitglieder · Fehler 0
+  Verzeichnis Spawn (Dorf)     9 Namen, 126 Mitglieder · Fehler 0
+  Verzeichnis Abriss           9 Namen, 120 Mitglieder · Fehler 0
+  Verzeichnis Tor gesetzt      9 Namen, 124 Mitglieder · Fehler 0
+  Verzeichnis Tor nachgezogen  9 Namen, 122 Mitglieder · Fehler 0
+  Verzeichnis neues Array      9 Namen, 122 Mitglieder · Fehler 0
+  Tor: {"klon":true,"eintraege":2,"vorher":2,"nachher":2}
+  Resonanz: 300 Proben, je Probe 3.9 Kandidaten (1.8 in Reichweite, Bestand 122) · Abweichungen 0
+  Dorf-Rauch: 38 Quellen, gleich true
+  Fernziel: baum_eiche ×1.5, 3.9 m vom Glas, Platz ±0.4 m · volle Frage true, halbe false · erwärmt 0× · Beweger: nur über die Beweger true · erwärmt 20×
+
+ROT:
+  • (T) DER TAG: 52 von 110 Schritten urteilen anders als der alte Takt — [{"phase":"Mittag","zeit":0.495,"wetter":"sunny","eintrag":"baum_eiche#68 0.05 ≠ undefined","saetze":[0,0],"feuer":[0,0]},{"phase":"Mittag","zeit":0.495,"wetter":"sunny","eintrag":"baum_eiche#68 0.05 ≠ undefined","saetze":[0,0],"feuer":[0,0]},{"phase":"Mittag","zeit":0.496,"wetter":"sunny","eintrag":"baum_eiche#68 0.05 ≠ undefined","saetze":[1,1],"feuer":[0,0]}]
+  • (T) das FERNZIEL prüft die Reichweite nicht (es muss den Punkt tragen, von der vollen Frage gefunden, von der halben verfehlt und erwärmt werden): {"gesetzt":true,"versucht":1,"art":"baum_eiche","skala":1.5,"abstand":3.9,"reichweite":0.4,"traegt":true,"voll":true,"halb":false,"heiz":0,"halbRadius":2}

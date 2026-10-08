@@ -1,0 +1,56 @@
+{
+ "ergebnis": {
+  "frames": 1456,
+  "render": 3.307,
+  "api": 0.665,
+  "rest": 2.642,
+  "rufeJeFrame": 542.8,
+  "laengsterRuf": {
+   "ms": 2.4,
+   "wo": "GPURenderPassEncoder.setBindGroup"
+  },
+  "top": [
+   {
+    "k": "GPURenderPassEncoder.setVertexBuffer",
+    "msJeFrame": 0.161,
+    "rufeJeFrame": 273.6
+   },
+   {
+    "k": "GPUQueue.submit",
+    "msJeFrame": 0.08,
+    "rufeJeFrame": 6.3
+   },
+   {
+    "k": "GPUCommandEncoder.beginRenderPass",
+    "msJeFrame": 0.074,
+    "rufeJeFrame": 7.3
+   },
+   {
+    "k": "GPUQueue.writeTexture",
+    "msJeFrame": 0.064,
+    "rufeJeFrame": 1
+   },
+   {
+    "k": "GPURenderPassEncoder.setBindGroup",
+    "msJeFrame": 0.063,
+    "rufeJeFrame": 87.5
+   },
+   {
+    "k": "GPURenderPassEncoder.setIndexBuffer",
+    "msJeFrame": 0.042,
+    "rufeJeFrame": 47.8
+   },
+   {
+    "k": "GPUCanvasContext.getCurrentTexture",
+    "msJeFrame": 0.035,
+    "rufeJeFrame": 1
+   },
+   {
+    "k": "GPUDevice.createCommandEncoder",
+    "msJeFrame": 0.033,
+    "rufeJeFrame": 6.3
+   }
+  ]
+ },
+ "ms": 3
+}

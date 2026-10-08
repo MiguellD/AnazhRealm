@@ -1,0 +1,33 @@
+
+> anazhrealm@18.536.0 gate:raum-tags
+> node scripts/diag-raum-tags.cjs --selftest && node scripts/diag-raum-tags.cjs
+
+=== RAUM-TAGS — Selbsttest der Quell-Wand (ohne Browser) ===
+✅ SELBSTTEST GRÜN — Aufrufbaum 10 Methoden, 10 Tabellen (SPATIAL_POINTED_SHAPES, SPATIAL_HOLLOW_BONUS, SPATIAL_TRANSFERABLE_TAGS, SPATIAL_AXIS_BONUS, SPATIAL_ARRAY_BONUS, SPATIAL_HOLLOW_SHAPES, FORM_TAG_ACTIVATION, MATERIAL_TAG_CEIL, MATERIAL_TAG_KEYS, SPECIES_TAG_VARIATION); Zustands-Leser, Instanz-Feld, Tabellen-Schreiber und Leser vorbei am Gedächtnis fallen rot.
+=== DAS GEDÄCHTNIS DER RAUM-TAGS — der Schlüssel sieht jeden Schreiber (Null-Renderer, eine echte Welt) ===
+  Quelle: Aufrufbaum 10 Methoden, Tabellen SPATIAL_POINTED_SHAPES, SPATIAL_HOLLOW_BONUS, SPATIAL_TRANSFERABLE_TAGS, SPATIAL_AXIS_BONUS, SPATIAL_ARRAY_BONUS, SPATIAL_HOLLOW_SHAPES, FORM_TAG_ACTIVATION, MATERIAL_TAG_CEIL, MATERIAL_TAG_KEYS, SPECIES_TAG_VARIATION · Befunde 0
+  Linse: 64 Baupläne · die Rechnung liest 25 Pfade, der Schlüssel 25 · fehlend 0
+  Sitzung am Klon von baum_birke:
+    erste Frage                     80 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    zweite Frage                    80 Teile · gleich true · gerechnet 0 (soll 0) · zweite Frage 0
+    Teil verschieben (API)          80 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    Stoff ändern (API)              80 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    Form ändern (API)               80 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    Farbe ändern (kein Eingang)     80 Teile · gleich true · gerechnet 0 (soll 0) · zweite Frage 0
+    Teil hinzufügen (API)           81 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    Teil löschen (API)              80 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    Undo                            81 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    Undo                            80 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    Redo                            81 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    Position direkt (ohne API)      81 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    Größe direkt (ohne API)         81 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    defineMaterial (Stoff neu)      81 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    Stoff-Tag direkt (ohne API)     81 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    Spielstand geladen              81 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    neues Teile-Array               81 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+    neues Bauplan-Objekt            81 Teile · gleich true · gerechnet 1 (soll 1) · zweite Frage 0
+  Welt: 65 Baupläne · Abweichungen 0 · zweite Frage gerechnet 0
+  Zähne: {"wirkt":true,"faellt":true,"echtGleich":true,"soll":3}
+  Zahl: baum_mammut (125 Teile) · Rechnung 3.515 ms je Ruf · Gedächtnis 0.0575 ms je Ruf
+
+GRÜN — das Gedächtnis urteilt über jede Werkstatt-Änderung byte-gleich wie die Rechnung; sein Schlüssel liest jeden ihrer Eingänge.

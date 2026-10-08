@@ -1,0 +1,86 @@
+{
+ "takte": 1200,
+ "p50": 0.9,
+ "p95": 2.1,
+ "max": 12.1,
+ "restMittel": 0.16,
+ "buehneMittel": 0.19,
+ "top": [
+  {
+   "name": "_loopWeatherAndGrowth",
+   "mittel": 0.29,
+   "max": 0.8
+  },
+  {
+   "name": "_loopVoxelStreaming",
+   "mittel": 0.13,
+   "max": 4.9
+  },
+  {
+   "name": "_loopFixedStep",
+   "mittel": 0.11,
+   "max": 0.7
+  },
+  {
+   "name": "tickArchitectures",
+   "mittel": 0.08,
+   "max": 0.3
+  },
+  {
+   "name": "_loopCamera",
+   "mittel": 0.07,
+   "max": 0.3
+  },
+  {
+   "name": "updateStatusPanel",
+   "mittel": 0.04,
+   "max": 1.6
+  },
+  {
+   "name": "tickAffordances",
+   "mittel": 0.03,
+   "max": 0.2
+  },
+  {
+   "name": "updatePlayerEmotions",
+   "mittel": 0.02,
+   "max": 0.2
+  },
+  {
+   "name": "tickDayNight",
+   "mittel": 0.02,
+   "max": 0.2
+  },
+  {
+   "name": "_loopAutoSave",
+   "mittel": 0.02,
+   "max": 12.3
+  },
+  {
+   "name": "tickArchitectureCulling",
+   "mittel": 0.02,
+   "max": 1.3
+  },
+  {
+   "name": "grokTick",
+   "mittel": 0.01,
+   "max": 0.7
+  },
+  {
+   "name": "tickCreatureBoosts",
+   "mittel": 0.01,
+   "max": 0.1
+  },
+  {
+   "name": "tickStatsHud",
+   "mittel": 0.01,
+   "max": 0.3
+  },
+  {
+   "name": "_loopFrustumCulling",
+   "mittel": 0.01,
+   "max": 0.1
+  }
+ ],
+ "ms": 21848
+}

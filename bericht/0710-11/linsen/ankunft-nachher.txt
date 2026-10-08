@@ -1,0 +1,23 @@
+=== W — DIE STATISCHE WAND (Node, kommentarfrei) ===
+  ✅ W1 die Hilfe liest die EINEN Tafeln (`_hilfeZeilen`: chatDslPatterns · chatSystemPatterns · KEYBINDING_LABELS), der Satz für Unbekanntes trägt keine Liste von Hand
+  ✅ W2 der Ladeschirm steht im HTML vor allem anderen sichtbar (kein `hidden`), das Spiel nimmt ihn nur über `_ankunftsBild`/`_ladeschirmWeg`, und `_ankunftsBild` fragt, was dem Weltbild fehlt (`_weltbildFehlt`)
+  ✅ W3 die Hotbar trägt im Konstruktor keinen Bauplan-Namen (der Start-Gurt liest den Katalog: `_startGurt`)
+  ✅ W4 das Dorf misst seinen Plan (`_siedlungsAnker`), keine Schätzung `_structureSpawnPos("haus_basis")` in spawnSettlement, spawn_village und dem Welt-Dorf (`_autoSettlementSpawnCell`); spawn_village trägt den Blick des Sprechers
+  ✅ W5 die 3rd-Kamera rückt nur vor Boden und Bau ein (der Strahl in `_loopCamera` geht `durchPflanzen`, keine Kronen-Grenze), jeder Pflanzen-Stoff trägt die Durchsicht (`_kameraDurchsichtNode` in `_foundryTreeMaterial`)
+  ✅ W6 kein rohes Programm und keine Siedlungs-Zahl im Spieler-Chat (kein `JSON.stringify(reply.program)`, kein `Seed ${` an `_chatEcho`)
+  ✅ W7 der Strahl des Fadenkreuzes ist EINER (`_fadenkreuzStrahl`): jede Probe durch die Bildmitte nimmt ihn und rechnet keine eigene Richtung ab der Kamera (`getWorldDirection`)
+  ✅ W8 die Durchsicht rechnet die EINE Formel (`_durchsichtGewicht` in `_kameraDurchsichtNode`, die Linse rechnet sie über `DURCHSICHT_ZAHLEN`), das Ziel im 1st ist das Auge ohne Radius (kein `egoM`)
+=== L2a · L1 · L2b · L3 · L7 — ANKOMMEN ===
+  ✅ L2a das erste Bild ist der Ladeschirm, er weicht dem FERTIGEN Weltbild (Boden, Bäume und Bauten der Mesh-Zone, Streu, ferne Karten) — im HTML true · z 2147483000 · ohneBoden: bleibt („der Boden wächst (Ring 0 von 3)") · baumUngebaut: bleibt („1 Bäume und Bauten wachsen") · streuWartet: bleibt („1 Wald-Stücke warten auf ihre Gestalt") · karteOffen: bleibt („1 ferne Bäume werden gemalt") · allesSteht: weicht („1 ferne Bäume werden gemalt") · lueckeRuht: weicht („1 ferne Bäume werden gemalt") + WARN · lueckeFlackert: weicht („1 ferne Bäume werden gemalt") + WARN · Baum 17 m · hinter dem Ladeschirm: W ruht, Enter → BODY, Strg+K → Omnibox zu
+  ✅ L1 das Fadenkreuz steht in der Bildmitte und weicht der Schublade — da true · Mitte 0/0 px · mit Werkstatt false · danach true
+  ✅ L2b „hilfe" nennt die EINEN Tafeln und die Tasten — „hilfe": 0 fehlen · „help": 0 fehlen · „?": 0 fehlen
+  ✅ L3 Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf — Enter → chat-input · gesendet true · danach BODY · W true · Esc → BODY · Enter auf dem Knopf → knopf
+  ✅ L7 der Start-Gurt liest den Katalog (je Studio-Art ein Werk) — baum_eiche · fahrzeug_gt · tor_drachentor · haus_alemannisch (Arten im Katalog: tree, vehicle, gate, haus)
+=== LK — DIE KAMERA UND DER BAUM ===
+  ✅ LK die 3rd-Kamera rückt nur vor Boden und Bau ein, gleitet hinaus, jeder Pflanzen-Stoff trägt die Durchsicht — baum_kiefer · Stamm × 3.977 (Welt × 3.977) · fuss: 496 Proben, Pflanze hält 0, Arm 6.11/6.11 m (Ist/Soll), < 3 m 80, Sprünge 9 (Soll 9, hinaus 0) · ritt: 496 Proben, Pflanze hält 0, Arm 9.38/9.38 m (Ist/Soll), < 3 m 56, Sprünge 10 (Soll 10, hinaus 0) · Pflanzen-Stoffe 5, ohne Durchsicht 0, Ziel 0.6 m neben der Brust, Fadenkreuz 0.6 m neben der Brust · Fadenkreuz-Strahl: 96 Stellungen, hinter dem Spieler {}, Kreatur vorn 96/96, Ziel neben dem Blick 0 m · Durchsicht: 1st 0/8 Anläufe mit fallender Rinde (Auge 0.67/0.38/0.56/0.27/0.39/0.25/1.63/0.01 m), 3rd vor dem Spieler 0/4, zwischen Kamera und Spieler fällt 69/69
+=== D8 · D6 · D9 — DIE STIMME UND DAS DORF ===
+  ✅ D8 der Spieler-Chat trägt Worte, das Log die Zahlen — 6 Zeilen · Log true
+  ✅ D6 die KI nennt die Ursache (Dienst · Schlüssel · Proxy) — Status „Fehler (Ollama (lokal oder gehostet)): Keine Antwort von 127" · ohne Schlüssel „(Grok schweigt: für Claude (Anthropic, kostet) fehlt der Sch" · Proxy http://127.0.0.1:7905/api/proxy/llm
+  ✅ D9 das Dorf steht vor dir, ein gesperrter Slot findet einen Ersatz-Ort — 23 Häuser (Log: 23 platziert, 12 am Ersatz-Ort, 2 übersprungen) · hinten 0 · außer Bild 0 · Ersatz true (9.5 m) · „„Villaalto" steht vor dir: 23 Häuser." · baue dorf hier: 18–115.5 m, beim Mitspieler 0 m daneben (Häuser 14 / 14)
+
+✅ GRÜN — die Ankunft trägt ihre benannten Schnitte.

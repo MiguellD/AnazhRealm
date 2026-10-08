@@ -1,0 +1,67 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "ladungen": 1
+ },
+ "befunde": [],
+ "schwelle": 100,
+ "sekunden": 30,
+ "takte": 3587,
+ "pipelines": {
+  "sync": 0,
+  "framesMitSync": 0,
+  "async": 0,
+  "shader": 0,
+  "jeAuftrag": {},
+  "zeiten": []
+ },
+ "knotenBau": {
+  "sync": 0,
+  "ms": 0,
+  "maxMs": 0,
+  "ueber16": 0,
+  "jeAuftragMs": {}
+ },
+ "bildTaktMs": 8.3,
+ "frames": 1750,
+ "frameMs": {
+  "p50": 16.7,
+  "p95": 25,
+  "p99": 25.1,
+  "max": 25.4
+ },
+ "haengerN": 0,
+ "jeKlasse": {
+  "TAKT": 0,
+  "NEBEN": 0,
+  "GC": 0,
+  "GPU": 0
+ },
+ "jeUrsache": [],
+ "haenger": [],
+ "eichung": {
+  "driftMs": -1.05,
+  "treffer": 14
+ },
+ "profil": true,
+ "loafDa": true,
+ "probe": [],
+ "lauf": {
+  "regler": "voll",
+  "tiere": "frei",
+  "wandern": "aus",
+  "kreaturen": 11,
+  "chunks": 81,
+  "loadScale": 1,
+  "wetter": "sunny"
+ },
+ "erst": {
+  "bauN": 0,
+  "bauMs": 0,
+  "verschoben": 0,
+  "pipeAsync": 0,
+  "neubauN": 0,
+  "offen": 0
+ }
+}

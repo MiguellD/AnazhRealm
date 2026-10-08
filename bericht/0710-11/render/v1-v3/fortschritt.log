@@ -1,0 +1,25 @@
+16:33:40 B Seite 077f80c67558cb59
+16:34:03 an der Wiese, Bühne steht; Ladeschirm {"ergebnis":[false,"flex","1",""],"ms":2}
+16:34:35 V1-1A Takte {"ergebnis":"AAAAAAA","ms":2}
+16:35:00 V1-1A {"ergebnis":{"frames":1493,"render":{"mittel":2.634,"p50":2.5,"p95":3.7},"schatten":{"mittel":0.003,"p50":0,"p95":0},"rendererRender":{"mittel":7.8,"p50":7.2,"p95":11.4},"getCurrentTexture":{"mittel":0.034,"p50":0,"p95":0.1},"submit":{"mittel":0.084,"p50":0.1,
+16:35:02 V1-2B Takte {"ergebnis":"BBBBBBB","ms":2}
+16:36:01 B Seite 077f80c67558cb59
+16:36:18 an der Wiese, Bühne steht; Ladeschirm {"ergebnis":[false,"flex","1",""],"ms":2}
+16:36:50 V1-1A Takte {"ergebnis":"AAAAAAA","ms":2}
+16:37:16 V1-1A {"ergebnis":{"frames":1486,"inPhase":{"render":{"mittel":2.617,"p50":2.5,"p95":3.6},"schatten":{"mittel":0.005,"p50":0,"p95":0.1},"loopRender":{"mittel":2.609,"p50":2.5,"p95":3.5},"rendererRender":{"mittel":7.747,"p50":7.2,"p95":10.8},"getCurrentTexture":{"mit
+16:37:17 V1-2B Takte {"ergebnis":"BBBBBBB","ms":2}
+16:37:43 V1-2B {"ergebnis":{"frames":1465,"inPhase":{"render":{"mittel":2.991,"p50":2.8,"p95":4.3},"schatten":{"mittel":0.004,"p50":0,"p95":0},"loopRender":{"mittel":2.983,"p50":2.8,"p95":4.3},"rendererRender":{"mittel":8.834,"p50":8.1,"p95":12.6},"getCurrentTexture":{"mitte
+16:37:45 V1-3B Takte {"ergebnis":"BBBBBBB","ms":2}
+16:38:10 V1-3B {"ergebnis":{"frames":1448,"inPhase":{"render":{"mittel":2.935,"p50":2.8,"p95":4.1},"schatten":{"mittel":0.003,"p50":0,"p95":0},"loopRender":{"mittel":2.929,"p50":2.7,"p95":4.1},"rendererRender":{"mittel":8.699,"p50":8.1,"p95":12.4},"getCurrentTexture":{"mitte
+16:38:12 V1-4A Takte {"ergebnis":"AAAAAAA","ms":2}
+16:38:38 V1-4A {"ergebnis":{"frames":1464,"inPhase":{"render":{"mittel":2.786,"p50":2.6,"p95":4.1},"schatten":{"mittel":0.003,"p50":0,"p95":0},"loopRender":{"mittel":2.778,"p50":2.6,"p95":4.1},"rendererRender":{"mittel":8.268,"p50":7.5,"p95":12.5},"getCurrentTexture":{"mitte
+16:39:05 V2-1-spin0 {"ergebnis":{"frames":1474,"inPhase":{"render":{"mittel":2.865,"p50":2.7,"p95":4},"schatten":{"mittel":0.004,"p50":0,"p95":0},"loopRender":{"mittel":2.857,"p50":2.7,"p95":4},"rendererRender":{"mittel":8.486,"p50":7.8,"p95":12.1},"getCurrentTexture":{"mittel":0
+16:39:31 V2-2-spin0.8 {"ergebnis":{"frames":1477,"inPhase":{"render":{"mittel":2.765,"p50":2.6,"p95":3.9},"schatten":{"mittel":0.002,"p50":0,"p95":0},"loopRender":{"mittel":2.759,"p50":2.6,"p95":3.9},"rendererRender":{"mittel":8.23,"p50":7.7,"p95":11.8},"getCurrentTexture":{"mittel
+16:39:57 V2-3-spin1.6 {"ergebnis":{"frames":1474,"inPhase":{"render":{"mittel":2.697,"p50":2.5,"p95":3.6},"schatten":{"mittel":0.002,"p50":0,"p95":0},"loopRender":{"mittel":2.691,"p50":2.5,"p95":3.6},"rendererRender":{"mittel":8.033,"p50":7.5,"p95":10.9},"getCurrentTexture":{"mitte
+16:40:23 V2-4-spin0.8 {"ergebnis":{"frames":1470,"inPhase":{"render":{"mittel":2.785,"p50":2.6,"p95":3.9},"schatten":{"mittel":0.002,"p50":0,"p95":0},"loopRender":{"mittel":2.78,"p50":2.6,"p95":3.8},"rendererRender":{"mittel":8.313,"p50":7.8,"p95":11.6},"getCurrentTexture":{"mittel
+16:40:49 V2-5-spin0 {"ergebnis":{"frames":1470,"inPhase":{"render":{"mittel":2.945,"p50":2.8,"p95":4},"schatten":{"mittel":0.004,"p50":0,"p95":0},"loopRender":{"mittel":2.935,"p50":2.8,"p95":4},"rendererRender":{"mittel":8.713,"p50":8.2,"p95":12.1},"getCurrentTexture":{"mittel":0
+16:41:15 V3-1A {"ergebnis":{"frames":1467,"inPhase":{"render":{"mittel":3.002,"p50":2.8,"p95":4.3},"schatten":{"mittel":0.004,"p50":0,"p95":0},"loopRender":{"mittel":2.994,"p50":2.8,"p95":4.3},"rendererRender":{"mittel":8.88,"p50":8.3,"p95":12.7},"getCurrentTexture":{"mittel
+16:41:41 V3-2B {"ergebnis":{"frames":1472,"inPhase":{"render":{"mittel":2.854,"p50":2.7,"p95":4},"schatten":{"mittel":0.003,"p50":0,"p95":0},"loopRender":{"mittel":2.846,"p50":2.7,"p95":4},"rendererRender":{"mittel":8.439,"p50":7.9,"p95":12},"getCurrentTexture":{"mittel":0.0
+16:42:07 V3-3B {"ergebnis":{"frames":1470,"inPhase":{"render":{"mittel":2.85,"p50":2.7,"p95":3.9},"schatten":{"mittel":0.003,"p50":0,"p95":0},"loopRender":{"mittel":2.843,"p50":2.7,"p95":3.9},"rendererRender":{"mittel":8.433,"p50":7.9,"p95":11.6},"getCurrentTexture":{"mittel
+16:42:33 V3-4A {"ergebnis":{"frames":1470,"inPhase":{"render":{"mittel":3.097,"p50":2.9,"p95":4.4},"schatten":{"mittel":0.004,"p50":0,"p95":0},"loopRender":{"mittel":3.088,"p50":2.9,"p95":4.4},"rendererRender":{"mittel":9.174,"p50":8.5,"p95":13.2},"getCurrentTexture":{"mitte
+16:42:39 ENDE

@@ -1,0 +1,11 @@
+=== DIE TAKT-WAND — der Brennglas-Takt rechnet nur die Betroffenen ===
+  ✅ T1 300 Bauten, keiner in Reichweite: 0 Tag-Rufe in 10 Takten (Soll 0)
+  ✅ T2 3 Bauten in Reichweite (4 m): 0 Tag-Rufe in 10 Takten (≤ 30)
+  ✅ T3 Feld-Bake-Takt nah zuerst: Fenster 1 fern 4/4 · nah false → Fenster 2 nah true · fern false
+  ✅ T4 nie verhungert: zweite Fenster-Hälfte, übriges Budget → fern true
+  ✅ T5 Worker-Schlange nah zuerst: nach 12 im Worker + 10 Vorrat gesendet eiche · nah10 (der nachpriorisierte Schlüssel in 5 m, dann der Bau in 10 m) · Nummer beim Senden true · im Flug 12
+  ✅ T6 Worker-Schlange nie verhungert: der Älteste unter 6 Nahen → alt · nah0
+  ✅ T7 der Bäcker hat seinen Faden: Bäcker bake-impostor:birke · Karten im Werk 0 · die Eiche in 10 m hinter 11 fernen Körpern im Werk true · Werk 12/12
+  ✅ T8 der Abgelaufene bleibt im Faden: erster abgelaufen · zweiter offen (seine Uhr wartet auf den Geist) · Geist des ersten im Faden true
+
+✅ GRÜN — der Takt kostet, was ihn betrifft, nicht die Weltgröße.

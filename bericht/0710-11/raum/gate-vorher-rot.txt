@@ -1,0 +1,30 @@
+=== DAS GEDÄCHTNIS DER RAUM-TAGS — der Schlüssel sieht jeden Schreiber (Null-Renderer, eine echte Welt) ===
+  Quelle: Aufrufbaum 0 Methoden, Tabellen  · Befunde 2
+  Linse: 0 Baupläne · die Rechnung liest 0 Pfade, der Schlüssel 0 · fehlend 0
+  Sitzung am Klon von baum_birke:
+    erste Frage                     80 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    zweite Frage                    80 Teile · gleich true · gerechnet 0 (soll 0) · zweite Frage 0
+    Teil verschieben (API)          80 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    Stoff ändern (API)              80 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    Form ändern (API)               80 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    Farbe ändern (kein Eingang)     80 Teile · gleich true · gerechnet 0 (soll 0) · zweite Frage 0
+    Teil hinzufügen (API)           81 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    Teil löschen (API)              80 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    Undo                            81 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    Undo                            80 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    Redo                            81 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    Position direkt (ohne API)      81 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    Größe direkt (ohne API)         81 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    defineMaterial (Stoff neu)      81 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    Stoff-Tag direkt (ohne API)     81 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    Spielstand geladen              81 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    neues Teile-Array               81 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+    neues Bauplan-Objekt            81 Teile · gleich true · gerechnet 0 (soll 1) · zweite Frage 0
+  Welt: 65 Baupläne · Abweichungen 0 · zweite Frage gerechnet 0
+  Zähne: null
+  Zahl: baum_mammut (125 Teile) · Rechnung 1.57 ms je Ruf · Gedächtnis 1.6125 ms je Ruf
+
+ROT:
+  • (Q) QUELLE: STUMPF: die Rechnung ruft _raumTagsRechnen, die Wand findet die Methode nicht
+  • (Q) QUELLE: computeSpatialTags ist nicht das Gedächtnis (Schlüssel, Vergleich, Rechnung)
+  • (O) das Spiel kennt kein Gedächtnis der Raum-Tags (`_raumTagsRechnen`, `_raumTagSchluessel`)

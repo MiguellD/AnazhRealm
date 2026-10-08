@@ -1,0 +1,15 @@
+16:44:16 B Seite 077f80c67558cb59
+16:44:36 an der Wiese, Bühne steht; Ladeschirm {"ergebnis":[false,"flex","1",""],"ms":2}
+16:45:08 V4a-1A Takte {"ergebnis":"AAAAAAA","ms":2}
+16:45:34 V4a-1A {"ergebnis":{"frames":1468,"render":3.176,"api":0.659,"rest":2.517,"rufeJeFrame":542.2,"laengsterRuf":{"ms":1.4,"wo":"GPURenderPassEncoder.setBindGroup"},"top":[{"k":"GPURenderPassEncoder.setVertexBuffer","msJeFrame":0.148,"rufeJeFrame":273.2},{"k":"GPUQueue.s
+16:45:35 V4a-2B Takte {"ergebnis":"BBBBBBB","ms":2}
+16:46:01 V4a-2B {"ergebnis":{"frames":1464,"render":3.393,"api":0.682,"rest":2.711,"rufeJeFrame":543.5,"laengsterRuf":{"ms":0.8,"wo":"GPUQueue.submit"},"top":[{"k":"GPURenderPassEncoder.setVertexBuffer","msJeFrame":0.152,"rufeJeFrame":273.3},{"k":"GPUQueue.submit","msJeFrame"
+16:46:03 V4a-3B Takte {"ergebnis":"BBBBBBB","ms":2}
+16:46:29 V4a-3B {"ergebnis":{"frames":1451,"render":3.237,"api":0.657,"rest":2.58,"rufeJeFrame":542.9,"laengsterRuf":{"ms":3.7,"wo":"GPUQueue.submit"},"top":[{"k":"GPURenderPassEncoder.setVertexBuffer","msJeFrame":0.16,"rufeJeFrame":273.3},{"k":"GPUQueue.submit","msJeFrame":0
+16:46:30 V4a-4A Takte {"ergebnis":"AAAAAAA","ms":1}
+16:46:56 V4a-4A {"ergebnis":{"frames":1457,"render":3.412,"api":0.689,"rest":2.723,"rufeJeFrame":542.1,"laengsterRuf":{"ms":1.7,"wo":"GPUQueue.writeTexture"},"top":[{"k":"GPURenderPassEncoder.setVertexBuffer","msJeFrame":0.158,"rufeJeFrame":273.2},{"k":"GPUQueue.submit","msJe
+16:47:25 V4b-1-spin0 {"ergebnis":{"frames":1360,"render":5.799,"api":1.175,"rest":4.624,"rufeJeFrame":546,"laengsterRuf":{"ms":7.9,"wo":"GPUCommandEncoder.beginRenderPass"},"top":[{"k":"GPURenderPassEncoder.setVertexBuffer","msJeFrame":0.237,"rufeJeFrame":274.4},{"k":"GPUQueue.sub
+16:47:51 V4b-2-spin1.6 {"ergebnis":{"frames":1456,"render":3.307,"api":0.665,"rest":2.642,"rufeJeFrame":542.8,"laengsterRuf":{"ms":2.4,"wo":"GPURenderPassEncoder.setBindGroup"},"top":[{"k":"GPURenderPassEncoder.setVertexBuffer","msJeFrame":0.161,"rufeJeFrame":273.6},{"k":"GPUQueue.s
+16:48:17 V4b-3-spin1.6 {"ergebnis":{"frames":1467,"render":3.108,"api":0.633,"rest":2.475,"rufeJeFrame":543,"laengsterRuf":{"ms":0.7,"wo":"GPURenderPassEncoder.setBindGroup"},"top":[{"k":"GPURenderPassEncoder.setVertexBuffer","msJeFrame":0.152,"rufeJeFrame":273.8},{"k":"GPUQueue.sub
+16:48:43 V4b-4-spin0 {"ergebnis":{"frames":1466,"render":3.531,"api":0.721,"rest":2.81,"rufeJeFrame":542.8,"laengsterRuf":{"ms":0.5,"wo":"GPUCanvasContext.getCurrentTexture"},"top":[{"k":"GPURenderPassEncoder.setVertexBuffer","msJeFrame":0.174,"rufeJeFrame":273.6},{"k":"GPUQueue.s
+16:48:49 ENDE

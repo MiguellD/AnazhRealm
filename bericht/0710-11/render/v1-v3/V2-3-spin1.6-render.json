@@ -1,0 +1,58 @@
+{
+ "ergebnis": {
+  "frames": 1474,
+  "inPhase": {
+   "render": {
+    "mittel": 2.697,
+    "p50": 2.5,
+    "p95": 3.6
+   },
+   "schatten": {
+    "mittel": 0.002,
+    "p50": 0,
+    "p95": 0
+   },
+   "loopRender": {
+    "mittel": 2.691,
+    "p50": 2.5,
+    "p95": 3.6
+   },
+   "rendererRender": {
+    "mittel": 8.033,
+    "p50": 7.5,
+    "p95": 10.9
+   },
+   "getCurrentTexture": {
+    "mittel": 0.033,
+    "p50": 0,
+    "p95": 0.1
+   },
+   "submit": {
+    "mittel": 0.071,
+    "p50": 0.1,
+    "p95": 0.2
+   },
+   "writeBuffer": {
+    "mittel": 0,
+    "p50": 0,
+    "p95": 0
+   }
+  },
+  "ausserPhaseJeSek": {
+   "rendererRenderMs": 0.19,
+   "rendererRenderN": 1.8,
+   "getCurrentTextureMs": 0,
+   "submitMs": 0.23,
+   "writeBufferMs": 0
+  },
+  "ewma": 2.997,
+  "ladeschirm": {
+   "hidden": true,
+   "display": "flex",
+   "opacity": "0",
+   "klasse": "weg"
+  },
+  "weltbildDa": 25425.90000000596
+ },
+ "ms": 6
+}

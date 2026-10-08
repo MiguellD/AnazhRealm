@@ -1,0 +1,23 @@
+{
+ "ergebnis": {
+  "bestand": 1584,
+  "portale": 0,
+  "nah40": 69,
+  "membranScan": {
+   "mittel": 0.082,
+   "p50": 0.1,
+   "max": 0.3
+  },
+  "tuerenScan": {
+   "mittel": 0.04,
+   "p50": 0,
+   "max": 0.2
+  },
+  "lupe": {
+   "mittel": 0.1,
+   "p50": 0.1,
+   "max": 0.5
+  }
+ },
+ "ms": 14
+}

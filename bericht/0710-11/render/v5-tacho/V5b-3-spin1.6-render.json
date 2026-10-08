@@ -1,0 +1,12 @@
+{
+ "ergebnis": {
+  "frames": 1470,
+  "renderMittel": 2.7484,
+  "renderOhneRef": 2.6343,
+  "refMittel": 0.1141,
+  "refP50": 0.1,
+  "refP10": 0.1,
+  "refP90": 0.2
+ },
+ "ms": 4
+}

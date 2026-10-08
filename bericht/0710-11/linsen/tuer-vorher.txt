@@ -1,0 +1,27 @@
+=== DER BRENNGLAS-TAKT UND SEINE KLASSE — der Takt kostet, was ihn betrifft (Null-Renderer, eine echte Welt) ===
+  Bühne: 4 Brenngläser (start_plattform, brunnen_dorf, brennkolben, reittier_holzross), 12 Körper im Brennpunkt des Mittags, 84 brennbare Arten · Bestand 121
+  Tag: 110 Schritte · erwärmt 353, geglimmt 20, gezündet 13, gekühlt 80 · Abweichungen 0 · Abriss eines warmen Eintrags (marktstand_dorf#56) · neues Array (2 warm) · 4 neue Ziele im Brennpunkt des Nachmittags
+    Morgen      erwärmt 144, gekühlt 0, geglimmt 10, gezündet 0 · angefasst je Takt 19.5 (betroffen 25.1)
+    Mittag      erwärmt 118, gekühlt 0, geglimmt 4, gezündet 11 · angefasst je Takt 25.8 (betroffen 33.8)
+    Wolken      erwärmt 0, gekühlt 20, geglimmt 0, gezündet 0 · angefasst je Takt 2.0 (betroffen 2.0)
+    Mittag II   erwärmt 35, gekühlt 0, geglimmt 2, gezündet 2 · angefasst je Takt 17.3 (betroffen 25.3)
+    Nachmittag  erwärmt 48, gekühlt 0, geglimmt 4, gezündet 0 · angefasst je Takt 20.0 (betroffen 28.0)
+    Abend       erwärmt 8, gekühlt 32, geglimmt 0, gezündet 0 · angefasst je Takt 7.2 (betroffen 8.8)
+    Nacht       erwärmt 0, gekühlt 28, geglimmt 0, gezündet 0 · angefasst je Takt 1.4 (betroffen 1.4)
+  Arbeit je Brennglas-Takt: angefasst 13.7 · betroffen 18.5 · Bestand 100.6
+  Verzeichnis nach dem Tag     9 Namen, 102 Mitglieder · Fehler 0
+  Verzeichnis Spawn (Dorf)     9 Namen, 126 Mitglieder · Fehler 0
+  Verzeichnis Abriss           9 Namen, 120 Mitglieder · Fehler 0
+  Verzeichnis Tor gesetzt      9 Namen, 124 Mitglieder · Fehler 0
+  Verzeichnis Tor nachgezogen  9 Namen, 122 Mitglieder · Fehler 0
+  Verzeichnis neues Array      9 Namen, 122 Mitglieder · Fehler 0
+  Tor: {"klon":true,"eintraege":2,"vorher":2,"nachher":2}
+  Resonanz: 300 Proben, je Probe 4.0 Kandidaten (1.8 in Reichweite, Bestand 121) · Abweichungen 0
+  Dorf-Rauch: 38 Quellen, gleich true
+  Haus-Tür: 29 Häuser mit Tür (1 mit Instanz) · fern 0 in der Liste · 2 s nach der Annäherung drin false, Tür-Gedächtnis false · Liste = Filter false (0/1)
+  Fernziel: baum_eiche ×1.5, 3.9 m vom Glas, Platz ±0.4 m · volle Frage true, halbe false · erwärmt 30× · Beweger: nur über die Beweger true · erwärmt 20×
+
+ROT:
+  • (H) DIE HAUS-TÜR bleibt zu: 2 s nach der Annäherung fehlt das Haus in der Nähe-Liste des Tür-Takts (_tickHausTueren) — {"haeuser":29,"mitInstanz":1,"fernListe":0,"drin":false,"rec":false,"liste":0,"soll":1,"gleich":false}
+  • (H) die Nähe-Liste der Türen ist nicht der Filter über den Bestand (0 ≠ 1)
+  • (Q) QUELLE: _tickHausTueren Zeile 52022: läuft über den Bestand (for-of) — for(consteofst.architectures){if(!e||!e.tuer||!e.position||!e.instSlot

@@ -1,0 +1,7 @@
+HÄNGER-LINSE: 0 Frames > 100 ms in 30 s (1737 Frames, 3562 Takte; Frame p50/p95/p99/max 16.7/25/25.1/33.4 ms) — TAKT 0 · NEBEN 0 · GC 0 · GPU 0
+Lauf: Regler voll · Tiere frei (11) · Wandern aus · loadScale 1 · Chunks 81 · Wetter sunny · Profil ja (Eich-Drift 1.21 ms) · LoAF ja
+Pipelines im Lauf: 0 synchron in 0 Takten · 0 async · 0 Shader-Module
+Erst-Zeichnung: 0 Knoten-Bauten im Pass (Σ 0 ms) · 0 auf den nächsten Aufruf verschoben · 0 Pipelines asynchron · 0 offen · 0 Neubauten gezeichneter Objekte (im Frame)
+Knoten-Bau synchron: 0 Bauten · Σ 0 ms · max 0 ms · 0 über 16,7 ms
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\abab0710-11\7A-haenger.json

@@ -1,0 +1,23 @@
+16:49:04 B Seite 077f80c67558cb59
+16:49:22 an der Wiese, Bühne steht; Ladeschirm {"ergebnis":[false,"flex","1",""],"ms":3}
+16:49:54 V5a-1A Takte {"ergebnis":"AAAAAAA","ms":1}
+16:49:54 V5a-1A START
+16:50:20 V5a-1A ENDE {"ergebnis":{"frames":1455,"renderMittel":3.0331,"renderOhneRef":2.9033,"refMittel":0.1298,"refP50":0.1,"refP10":0.1,"refP90":0.2},"ms":4}
+16:50:22 V5a-2B Takte {"ergebnis":"BBBBBBB","ms":2}
+16:50:22 V5a-2B START
+16:50:48 V5a-2B ENDE {"ergebnis":{"frames":1458,"renderMittel":2.9298,"renderOhneRef":2.8028,"refMittel":0.127,"refP50":0.1,"refP10":0.1,"refP90":0.2},"ms":5}
+16:50:49 V5a-3B Takte {"ergebnis":"BBBBBBB","ms":3}
+16:50:49 V5a-3B START
+16:51:15 V5a-3B ENDE {"ergebnis":{"frames":1459,"renderMittel":2.845,"renderOhneRef":2.7194,"refMittel":0.1256,"refP50":0.1,"refP10":0.1,"refP90":0.2},"ms":4}
+16:51:17 V5a-4A Takte {"ergebnis":"AAAAAAA","ms":2}
+16:51:17 V5a-4A START
+16:51:43 V5a-4A ENDE {"ergebnis":{"frames":1476,"renderMittel":2.7219,"renderOhneRef":2.5997,"refMittel":0.1222,"refP50":0.1,"refP10":0.1,"refP90":0.2},"ms":3}
+16:51:44 V5b-1-spin0 START
+16:52:10 V5b-1-spin0 ENDE {"ergebnis":{"frames":1473,"renderMittel":2.8597,"renderOhneRef":2.7311,"refMittel":0.1286,"refP50":0.1,"refP10":0.1,"refP90":0.2},"ms":3}
+16:52:10 V5b-2-spin1.6 START
+16:52:36 V5b-2-spin1.6 ENDE {"ergebnis":{"frames":1478,"renderMittel":2.7142,"renderOhneRef":2.604,"refMittel":0.1102,"refP50":0.1,"refP10":0,"refP90":0.2},"ms":5}
+16:52:36 V5b-3-spin1.6 START
+16:53:02 V5b-3-spin1.6 ENDE {"ergebnis":{"frames":1470,"renderMittel":2.7484,"renderOhneRef":2.6343,"refMittel":0.1141,"refP50":0.1,"refP10":0.1,"refP90":0.2},"ms":4}
+16:53:02 V5b-4-spin0 START
+16:53:28 V5b-4-spin0 ENDE {"ergebnis":{"frames":1478,"renderMittel":2.7924,"renderOhneRef":2.6641,"refMittel":0.1283,"refP50":0.1,"refP10":0.1,"refP90":0.2},"ms":3}
+16:53:34 ENDE
