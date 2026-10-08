@@ -20621,9 +20621,16 @@ class AnazhRealm {
             // den Stand-Leser): erdete erst der Frame-Takt (Budget, 0,5-m-Cache), lag die Höhe je Bildrate verschieden, und
             // das Höhen-Band der Wagen-Hülle las sie (L8: Schritt 91, Bär y −0,016 m, nach 200 Schritten 0,07 m). Der
             // Boden-Cache des Frames bekommt denselben Wert; der Frame-Takt lässt die Höhe stehen, solange der Stoß trägt.
+            // Schwimmt er (die EINE Wasser-Regel, `_kreaturSchwimmt`: nahe dem Spieler, nasse Spalte tiefer als
+            // VERHALTEN.wasser.schwimmTiefeM), trägt ihn der Frame-Takt an seiner Schwimm-Linie — vorher setzte dieser Schritt
+            // auch im Wasser den Boden (gate:fahr-leben L10: ein Fuchs in 3,2 m Wasser sank beim Gleiten 2,77 m tief).
             const gesetz = this.getTerrainHeightAt(c.position.x, c.position.z);
-            const sicht = this._standSicht(c.position.x, c.position.z, gesetz, false);
-            c.position.y = Number.isFinite(sicht) ? sicht : gesetz;
+            const pmW = this.state.playerMesh && this.state.playerMesh.position;
+            const nahW = pmW && (c.position.x - pmW.x) ** 2 + (c.position.z - pmW.z) ** 2 < 2500;
+            if (!(nahW && this._kreaturSchwimmt(this._creatureWaterContextAt(c, gesetz)))) {
+                const sicht = this._standSicht(c.position.x, c.position.z, gesetz, false);
+                c.position.y = Number.isFinite(sicht) ? sicht : gesetz;
+            }
             ud.cachedGroundY = gesetz;
             ud.cachedGroundX = c.position.x;
             ud.cachedGroundZ = c.position.z;
@@ -20634,6 +20641,13 @@ class AnazhRealm {
                 sv.z *= (sp2 - ab) / sp2;
             }
         }
+    }
+
+    // DIE EINE WASSER-REGEL DER TIERE: ein Leib schwimmt, wenn er in einer nassen Spalte steht, die tiefer ist als
+    // VERHALTEN.wasser.schwimmTiefeM (der Wasser-Kontext `_creatureWaterContextAt`); dann trägt ihn der Spiegel (updateCreatures),
+    // sonst steht er auf dem Boden. Leser: der Frame-Takt (updateCreatures) und der Sim-Schritt des Stoßes.
+    _kreaturSchwimmt(wctx) {
+        return !!(wctx && wctx.inWater && wctx.depthBelow > AnazhRealm._verhaltenGesetz().wasser.schwimmTiefeM);
     }
 
     // DER STOSS AUF EINEN LEIB: dv (m/s) längs (nx, nz) — er trägt den Leib, bis die Reibung ihn aufzehrt.
@@ -21984,7 +21998,7 @@ class AnazhRealm {
                         direction.x += wctx.shoreDir.x * speed * WAS.uferBias;
                         direction.z += wctx.shoreDir.z * speed * WAS.uferBias;
                     }
-                    if (wctx.depthBelow > WAS.schwimmTiefeM) {
+                    if (this._kreaturSchwimmt(wctx)) {
                         waterSurface = this._waterLevelAt(creature.position.x, creature.position.z);
                     }
                 }
@@ -22158,8 +22172,10 @@ class AnazhRealm {
                 } else udH._hopH = h;
                 hopOffset = udH._hopH;
             }
-            // ein gleitender Leib (er trägt einen Stoß) steht auf der Höhe seines Sim-Schritts (`_kreaturStossSchritt`)
-            if (!creature.userData._stossV) creature.position.y = baseY + floatOffset + hopOffset;
+            // ein gleitender Leib (er trägt einen Stoß) steht an Land auf der Höhe seines Sim-Schritts (`_kreaturStossSchritt`);
+            // schwimmt er, hält ihn dieser Takt an seiner Schwimm-Linie
+            if (!creature.userData._stossV || waterSurface !== null)
+                creature.position.y = baseY + floatOffset + hopOffset;
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
             // sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
             if (inFrustum) {
@@ -50790,6 +50806,10 @@ class AnazhRealm {
         // vorn, Arme vorgehalten); absolute Werte (kein Drift — _animateHumanoidRig räumt sie).
         const rig = group.userData && group.userData.rig;
         if (rig) {
+            // die Gruppe sitzt aufrecht: Schwimmen und Rutschen kippen sie (_animateHuman), im Sattel läuft das nie — wer aus
+            // dem Wasser aufsitzt, behielt die Schwimm-Lage (gate:fahr-leben L9 nach L10: Kopf und Schenkel verschoben)
+            group.rotation.x = 0;
+            group.rotation.z = 0;
             for (const b of [rig.hips, rig.spine, rig.chest, rig.neck, rig.head]) if (b) b.rotation.set(0, 0, 0);
             for (const side of [rig.armL, rig.armR, rig.legL, rig.legR])
                 for (const k in side) if (side[k] && side[k].rotation) side[k].rotation.set(0, 0, 0);
