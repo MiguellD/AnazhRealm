@@ -495,6 +495,23 @@ jobs:
               # das Spiel wie immer; im Stamm schreibt nur _setWeather und das Laden. --selftest zuerst.
               run: npm run gate:wetter-wache
 
+            - name: Welt-Wache (0710-7 — die Buehne haelt die Welt, jeder Welt-Akt beim Namen)
+              if: matrix.gruppe == 2
+              # Null-Renderer, eine echte Welt: unter der Buehne versucht jeder Weg des Spiels die Welt zu aendern (Nexus:
+              # Dorf, Tiere at_player, Groessen- und Tempo-Wuerfel, Tageszeit; Emotion, Gesetz, Mensch, Mitspieler, ein
+              # verzoegertes Programm) - die Welt bleibt, jeder Zug steht als verweigert beim Namen seiner Quelle; ein Akt an
+              # dslEval vorbei faellt rot; ohne Halt wirkt das Spiel wie immer; jeder Op der DSL hat ein Urteil, der Nexus
+              # komponiert nur beurteilte Ops. --selftest zuerst.
+              run: npm run gate:weltakt-wache
+
+            - name: Blocker-Netz (0710-7 — der Strahl fragt seine Nachbarschaft, byte-gleiche Treffer)
+              if: matrix.gruppe == 1
+              # Null-Renderer, eine echte Welt (zwei Doerfer, Baeume, ein Tempel): jeder Strahl trifft byte-gleich wie die
+              # Schleife ueber den ganzen Bestand (kurz, lang ueber den 80-m-Cull, senkrecht, achsparallel, aus einer Box) in
+              # fuenf Runden mit Abriss, Kappe, neu gestempelter Huelle, neuem Array und neuen Baeumen; ein Strahl prueft nur
+              # die Boxen, die sein Segment beruehren; das Netz ist der Bestand; jeder Schreiber des Bestands stempelt.
+              run: npm run gate:blocker-netz
+
             - name: Stand-Takt (Welle K — im Stand kostet die Welt nichts, Gehen kostet die Änderung)
               if: matrix.gruppe == 2
               # An der Mess-Wiese, Null-Renderer, Fern-Ring über seinen Haken, Foundry an, der Regler hält: die Stand-Linse

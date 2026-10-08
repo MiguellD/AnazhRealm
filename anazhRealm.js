@@ -1481,6 +1481,14 @@ class AnazhRealm {
             ctx.log.push({ event: "unknown_op", op: String(op), program_id: ctx.programId });
             return;
         }
+        // DIE MESS-BÜHNE HÄLT DIE WELT (0710-7, Halt heißt Halt): unter dem Halt einer Messung (`_messHalt`) verweigert jeder
+        // Welt-Akt (AnazhRealm.DSL_WELTAKTE) seinen Zug — gleich wer ihn schickt (Nexus, Welt-Regel, Emotion, Mensch,
+        // Mitspieler) — und steht beim Namen seiner Quelle im Log (`_weltaktGehalten`). Bis 07.10. hielt die Bühne nur das
+        // Wetter: ein Nexus-Dorf drehte im OMEN-Boot 4B (0710-6) mitten im Lauf den Blick. Das Spiel kennt den Halt nie.
+        if (AnazhRealm.DSL_WELTAKTE.includes(op) && this._messHalt()) {
+            this._weltaktGehalten(String(op), ctx);
+            return;
+        }
         ctx.budget.depthLeft--;
         try {
             fn.call(this, args, ctx);
@@ -1491,6 +1499,20 @@ class AnazhRealm {
             else ctx.log.push({ event: "op_exception", op: String(op), message: err.message });
         }
         ctx.budget.depthLeft++;
+    }
+
+    // DER HALT EINER MESSUNG: die Uhr des Wetter-Zugs unter 0 (die Bühne der Linsen, scripts/lib/ausgabe-aufnahme.cjs
+    // `__wetterHalten`; im Spiel zählt sie von 0 aufwärts). Leser: der EINE Wetter-Schreiber (`_setWeather`) und die EINE
+    // Engstelle der Welt-Akte (`dslEval`).
+    _messHalt() {
+        return this.state.weatherEffectTime < 0;
+    }
+
+    // Ein gehaltener Welt-Akt (`dslEval` unter dem Halt): benannt im Programm-Log und im Spiel-Log — die Mess-Wache bucht
+    // ihn über ihren Spion (`__weltaktSpion`) als „verweigert" beim Namen seiner Quelle.
+    _weltaktGehalten(op, ctx) {
+        ctx.log.push({ event: "weltakt_gehalten", op, source: ctx.source, program_id: ctx.programId });
+        this.log(`Welt-Akt gehalten: ${ctx.source || "?"} wollte ${op}`, "DEBUG");
     }
 
     // Default-Spawn: Y=50, damit der Spieler sauber aufs Terrain fällt (tiefer clippt er je nach Seed
@@ -2225,8 +2247,8 @@ class AnazhRealm {
                     seed: s,
                     nHAusGesetz: true,
                     autonomous: ctx.source === "nexus",
+                    verlangt: ctx.source,
                     blick,
-                    orientieren: !/^remote/.test(ctx.source || ""),
                 });
                 ctx.log.push({ event: "spawned_village", id: null, pos, seed: s });
             },
@@ -20872,8 +20894,14 @@ class AnazhRealm {
         if (!nah || Math.abs(p.x - nah.x) > 4 || Math.abs(p.z - nah.z) > 4 || !(t - nah.t < 1)) {
             const liste = nah ? nah.liste : [];
             liste.length = 0;
-            for (let a = 0; a < arches.length; a++) {
-                const e = arches[a];
+            // DIE NACHBARSCHAFT (0710-7): die Plätze um das Tier (`_blockerUmPlatz`, Obermenge in der Ordnung des Bestands),
+            // dieselbe Probe je Eintrag — die Liste ist dieselbe wie die Schleife über den Bestand (gate:blocker-netz N).
+            // Vorher durchlief jeder Neubau den ganzen Bestand (Mess-Wiese: 1 156 Einträge, 133 je Frame).
+            const kand = this._blockerPlatzKand || (this._blockerPlatzKand = []);
+            kand.length = 0;
+            this._blockerUmPlatz(p.x, p.z, 8 + 1e-6, kand);
+            for (let a = 0; a < kand.length; a++) {
+                const e = kand[a];
                 if (!e || !e.position) continue;
                 const r = 8 + (e._blockerReach || 0);
                 if (Math.abs(e.position.x - p.x) > r || Math.abs(e.position.z - p.z) > r) continue;
@@ -24813,7 +24841,7 @@ class AnazhRealm {
                 example: "dorf [seed] [häuser]",
                 re: /^dorf(?:\s+(\d+))?(?:\s+(\d+))?$/i,
                 run: (m, append) => {
-                    const opts = {};
+                    const opts = { verlangt: "human" };
                     if (m[1] !== undefined) opts.seed = Number(m[1]);
                     if (m[2] !== undefined) opts.nH = Number(m[2]);
                     this.spawnSettlement(opts);
@@ -32618,25 +32646,71 @@ class AnazhRealm {
         } else {
             bestT = 0; // Start schon im Soliden
         }
-        // (2) STRUKTUREN — Segment vs solide Part-AABBs (Slab-Methode), nähester Treffer.
+        // (2) STRUKTUREN — Segment vs solide Part-AABBs (Slab-Methode), nähester Treffer. Gefragt wird die Nachbarschaft der
+        // Blocker (`_blockerNetz`): nur die Einträge der Zellen, die die Hülle des Segments überdeckt (dazu die Riesen-Zelle),
+        // je Eintrag der Nah-Cull wie immer, je Box ihre Hülle vor dem Slab — eine Box, deren Hülle die des Segments nicht
+        // berührt, schneidet es nie (die Marge 1e-6 m trägt die Rundung des Slabs und seinen Kehrwert 1e9). Den Gleichstand
+        // zweier Treffer entscheidet die Ordnung des Bestands und der Box wie die Schleife über das Array: die Treffer sind
+        // byte-gleich (gate:blocker-netz). Vorher prüfte jeder Strahl jede Box im 80-m-Umkreis — an der Mess-Wiese 22 758
+        // Slabs je Strahl der Decken-Probe (ein Strahl je Frame), keine Box berührte das 4,5-m-Segment.
         let structHitT = Infinity,
-            sFace = null;
+            sFace = null,
+            sSeq = Infinity,
+            sBox = 0;
         const arches = this.state.architectures;
         if (arches && arches.length) {
-            for (let a = 0; a < arches.length; a++) {
-                const e = arches[a];
-                if (!e || !e.blockerAABBs || !e.position) continue;
-                // V18.464: + _blockerReach (Rand-Parts großer Bauwerke, s. _stepCharacterStructures)
-                const rcCull = 80 + (e._blockerReach || 0);
-                if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;
-                const boxes = e.blockerAABBs;
-                for (let bi = 0; bi < boxes.length; bi++) {
-                    const bx = boxes[bi];
-                    if (durchPflanzen && bx.pflanze === true) continue;
-                    const hitInfo = this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
-                    if (hitInfo && hitInfo.t < structHitT) {
-                        structHitT = hitInfo.t;
-                        sFace = hitInfo;
+            const N = this._blockerNetz();
+            const frage = ++N.frage;
+            const M = 1e-6;
+            const qx0 = Math.min(sx, ex) - M,
+                qx1 = Math.max(sx, ex) + M,
+                qy0 = Math.min(sy, ey) - M,
+                qy1 = Math.max(sy, ey) + M,
+                qz0 = Math.min(sz, ez) - M,
+                qz1 = Math.max(sz, ez) + M;
+            const Z = AnazhRealm.BLOCKER_ZELLE;
+            const ix0 = Math.floor(qx0 / Z),
+                iz0 = Math.floor(qz0 / Z);
+            const nx = Math.floor(qx1 / Z) - ix0 + 1;
+            const nZellen = nx * (Math.floor(qz1 / Z) - iz0 + 1);
+            for (let c = -1; c < nZellen; c++) {
+                const zelle = N.zellen.get(
+                    c < 0 ? AnazhRealm.BLOCKER_RIESE : (ix0 + (c % nx)) * 2097152 + iz0 + Math.floor(c / nx)
+                );
+                if (!zelle) continue;
+                for (let i = 0; i < zelle.length; i++) {
+                    const e = zelle[i];
+                    if (e._blockerFrage === frage) continue;
+                    e._blockerFrage = frage;
+                    if (!e.blockerAABBs || !e.position) continue;
+                    // V18.464: + _blockerReach (Rand-Parts großer Bauwerke, s. _stepCharacterStructures)
+                    const rcCull = 80 + (e._blockerReach || 0);
+                    if (Math.abs(e.position.x - sx) > rcCull || Math.abs(e.position.z - sz) > rcCull) continue;
+                    const boxes = e.blockerAABBs;
+                    const seq = e._blockerSeq;
+                    for (let bi = 0; bi < boxes.length; bi++) {
+                        const bx = boxes[bi];
+                        if (durchPflanzen && bx.pflanze === true) continue;
+                        if (
+                            bx.maxX < qx0 ||
+                            bx.minX > qx1 ||
+                            bx.topY < qy0 ||
+                            bx.botY > qy1 ||
+                            bx.maxZ < qz0 ||
+                            bx.minZ > qz1
+                        )
+                            continue;
+                        const hitInfo = this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
+                        if (
+                            hitInfo &&
+                            (hitInfo.t < structHitT ||
+                                (hitInfo.t === structHitT && (seq < sSeq || (seq === sSeq && bi < sBox))))
+                        ) {
+                            structHitT = hitInfo.t;
+                            sFace = hitInfo;
+                            sSeq = seq;
+                            sBox = bi;
+                        }
                     }
                 }
             }
@@ -33299,9 +33373,6 @@ class AnazhRealm {
         return { minX, maxX, minZ, maxZ, topY, botY };
     }
 
-    // Schreibt `entry.blockerAABBs` (nur solide Parts, `_isPartSolid`) — Spawn, Restore und Dismount-
-    // Refresh laufen hier durch. Leser: Cell-Stempel (`_stampArchitectureSolidCellsInto`), Kapsel,
-    // Raycast.
     // Die Welt-Skala eines Studio-Baums: dieselbe, mit der er gezeichnet wird (`_foundryWorldScaleMatrix` seines Presets)
     // — 1 für alles, was kein Studio-Baum ist (Haus, Tor, Wagen und Fels tragen ihre eigene Studio-Hülle).
     _baumWeltSkala(entry) {
@@ -33312,6 +33383,9 @@ class AnazhRealm {
         return Number.isFinite(k) && k > 0 ? k : 1;
     }
 
+    // Schreibt `entry.blockerAABBs` (nur solide Parts, `_isPartSolid`) — Spawn, Restore und Dismount-
+    // Refresh laufen hier durch. Leser: Cell-Stempel (`_stampArchitectureSolidCellsInto`), Kapsel,
+    // Raycast (über die Nachbarschaft `_blockerNetz`, gestempelt in `_blockerStampReach`).
     _populateBlockerAABBs(entry) {
         // Tor-Gestalt (studioGestalt-Zeile ODER Katalog-Typ tor_*): die Kollision deckt die SICHTBARE
         // Studio-Form (Pfosten + Bogen aus deriveGate/deriveFrame, Öffnung FREI), nicht die Substanz-Parts.
@@ -33583,6 +33657,223 @@ class AnazhRealm {
             );
         }
         entry._blockerReach = r;
+        this._blockerNetzSetzen(entry);
+    }
+
+    // DIE NACHBARSCHAFT DER BLOCKER (0710-7): ein Gitter aus Zellen (AnazhRealm.BLOCKER_ZELLE m) über die Hülle jedes Eintrags
+    // im Bestand (`state.architectures`) — je Zelle die Einträge, deren Blocker-Boxen sie überdecken; wer mehr als
+    // BLOCKER_ZELLEN_MAX Zellen überdeckte oder keine endliche Hülle trägt, steht in der Riesen-Zelle (jede Frage liest sie).
+    // Gestempelt, wo sich der Bestand ändert: beim Eintritt (`spawnArchitecture` → `_blockerEintritt`), bei jedem Schreiben
+    // der Boxen (`_blockerStampReach`), beim Austritt (`removeArchitecture`, `_evictArchitecture` → `_blockerAustritt`); ein
+    // neues Array (eine neue Welt, der geleerte Bestand) baut das Netz in seiner Ordnung neu — nie je Leser. `_blockerSeq`
+    // ist die Ordnung des Bestands (Eintritt aufsteigend = die Ordnung des Arrays): ein Leser entscheidet Gleichstände wie die
+    // Schleife über das Array. Leser: der Struktur-Strahl (`_fieldRaycast`) und der Struktur-Löser von Kapsel und Wagen-Hülle
+    // (`_stepCharacterStructures` über `_blockerNahe`). DER ZWEITE SCHLÜSSEL, der PLATZ: jeder Eintrag des Bestands (auch
+    // ohne Boxen) steht in den Zellen von Position ± Reichweite (`plaetze`); wandert seine Position nach dem Eintritt (das
+    // gerittene Werk, `_blockerBewegt`), fragt man ihn direkt (`beweger`). Leser: der Tier-Leib (`_kreaturHuellenKontakt`
+    // über `_blockerUmPlatz`). Das alte Bucket-Grid (`state.blockerIndex`, V9.65) trug die Hydrosphäre und fiel mit ihr (V9.75).
+    _blockerNetz() {
+        const liste = this.state.architectures;
+        const alt = this._blockerNetzStand;
+        if (alt && alt.liste === liste) return alt;
+        const N = (this._blockerNetzStand = {
+            liste,
+            zellen: new Map(),
+            plaetze: new Map(),
+            beweger: new Set(),
+            seq: alt ? alt.seq : 0,
+            gen: alt ? alt.gen + 1 : 1,
+            // der Zähler der Fragen läuft über jeden Neubau weiter (wie die Ordnung): die Einträge tragen die Marken der alten
+            // Fragen (`_blockerFrage`) — ein Zähler ab 0 träfe eine alte Marke, die Frage überginge den Eintrag
+            frage: alt ? alt.frage : 0,
+        });
+        if (Array.isArray(liste))
+            for (const e of liste) {
+                if (!e) continue;
+                e._blockerGen = N.gen;
+                e._blockerSeq = ++N.seq;
+                this._blockerNetzSetzen(e);
+            }
+        return N;
+    }
+
+    // Eintritt in den Bestand (nach dem push): die Ordnung und die Zellen.
+    _blockerEintritt(entry) {
+        const N = this._blockerNetz();
+        entry._blockerGen = N.gen;
+        entry._blockerSeq = ++N.seq;
+        this._blockerNetzSetzen(entry);
+    }
+
+    // Austritt aus dem Bestand (nach dem splice): die Zellen geben ihn frei.
+    _blockerAustritt(entry) {
+        this._blockerNetzLoesen(entry);
+        if (this._blockerNetzStand) this._blockerNetzStand.beweger.delete(entry);
+        entry._blockerGen = 0;
+    }
+
+    // Ein Eintrag, dessen Position nach dem Eintritt wandert (das gerittene Werk folgt seinem Reiter in x/z, `_rittSchritt`):
+    // sein Platz steht nicht mehr, wo er gestempelt wurde — die Frage nach Plätzen prüft ihn direkt, bis er den Bestand verlässt.
+    _blockerBewegt(entry) {
+        const N = this._blockerNetz();
+        if (entry._blockerGen === N.gen) N.beweger.add(entry);
+    }
+
+    // Die Zellen eines Eintrags aus der Hülle seiner Boxen (die alten vorher gelöst; außerhalb des Bestands keine).
+    _blockerNetzSetzen(entry) {
+        const N = this._blockerNetz();
+        this._blockerNetzLoesen(entry);
+        if (entry._blockerGen !== N.gen) return;
+        entry._blockerZellenGen = N.gen;
+        const pos = entry.position;
+        if (pos) {
+            const rr = entry._blockerReach || 0;
+            entry._blockerPlatz = this._blockerZellenEin(
+                N.plaetze,
+                entry,
+                pos.x - rr,
+                pos.x + rr,
+                pos.z - rr,
+                pos.z + rr
+            );
+        }
+        const boxes = entry.blockerAABBs;
+        if (!boxes || !boxes.length) return;
+        let x0 = Infinity,
+            x1 = -Infinity,
+            z0 = Infinity,
+            z1 = -Infinity;
+        for (let i = 0; i < boxes.length; i++) {
+            const b = boxes[i];
+            if (b.minX < x0) x0 = b.minX;
+            if (b.maxX > x1) x1 = b.maxX;
+            if (b.minZ < z0) z0 = b.minZ;
+            if (b.maxZ > z1) z1 = b.maxZ;
+        }
+        entry._blockerHuelle =
+            Number.isFinite(x0) && Number.isFinite(x1) && Number.isFinite(z0) && Number.isFinite(z1)
+                ? [x0, x1, z0, z1]
+                : null;
+        entry._blockerZellen = this._blockerZellenEin(N.zellen, entry, x0, x1, z0, z1);
+    }
+
+    // Trägt einen Eintrag in die Zellen von `karte` über das Rechteck x0..x1 · z0..z1 ein — zu groß (mehr als
+    // BLOCKER_ZELLEN_MAX Zellen) oder nicht endlich: die Riesen-Zelle — und gibt die Schlüssel.
+    _blockerZellenEin(karte, entry, x0, x1, z0, z1) {
+        const Z = AnazhRealm.BLOCKER_ZELLE;
+        const keys = [];
+        if (Number.isFinite(x0) && Number.isFinite(x1) && Number.isFinite(z0) && Number.isFinite(z1)) {
+            const ix0 = Math.floor(x0 / Z),
+                ix1 = Math.floor(x1 / Z),
+                iz0 = Math.floor(z0 / Z),
+                iz1 = Math.floor(z1 / Z);
+            if ((ix1 - ix0 + 1) * (iz1 - iz0 + 1) <= AnazhRealm.BLOCKER_ZELLEN_MAX)
+                for (let ix = ix0; ix <= ix1; ix++) for (let iz = iz0; iz <= iz1; iz++) keys.push(ix * 2097152 + iz);
+        }
+        if (!keys.length) keys.push(AnazhRealm.BLOCKER_RIESE);
+        for (let i = 0; i < keys.length; i++) {
+            let zelle = karte.get(keys[i]);
+            if (!zelle) karte.set(keys[i], (zelle = []));
+            zelle.push(entry);
+        }
+        return keys;
+    }
+
+    _blockerZellenAus(karte, entry, keys) {
+        for (let i = 0; i < keys.length; i++) {
+            const zelle = karte.get(keys[i]);
+            if (!zelle) continue;
+            const j = zelle.indexOf(entry);
+            if (j < 0) continue;
+            zelle[j] = zelle[zelle.length - 1];
+            zelle.pop();
+            if (!zelle.length) karte.delete(keys[i]);
+        }
+    }
+
+    // DIE FRAGE NACH PLÄTZEN (Leser: der Tier-Leib): die Einträge des Bestands, deren Platz (Position ± Reichweite) das Quadrat
+    // x/z ± `weite` berührt — aus den Platz-Zellen und der Riesen-Zelle —, dazu jeder Beweger, in der Ordnung des Bestands nach
+    // `out`. Ein Obermenge: die Probe je Eintrag stellt der Leser. Eine nicht endliche Frage erreicht jeden Eintrag.
+    _blockerUmPlatz(x, z, weite, out) {
+        const N = this._blockerNetz();
+        const frage = ++N.frage;
+        const n0 = out.length;
+        if (!(Number.isFinite(weite) && Number.isFinite(x) && Number.isFinite(z))) {
+            for (const e of N.liste) if (e) out.push(e);
+            return out;
+        }
+        const Z = AnazhRealm.BLOCKER_ZELLE;
+        const ix0 = Math.floor((x - weite) / Z),
+            iz0 = Math.floor((z - weite) / Z);
+        const nx = Math.floor((x + weite) / Z) - ix0 + 1;
+        const nZellen = nx * (Math.floor((z + weite) / Z) - iz0 + 1);
+        for (let c = -1; c < nZellen; c++) {
+            const zelle = N.plaetze.get(
+                c < 0 ? AnazhRealm.BLOCKER_RIESE : (ix0 + (c % nx)) * 2097152 + iz0 + Math.floor(c / nx)
+            );
+            if (!zelle) continue;
+            for (let i = 0; i < zelle.length; i++) {
+                const e = zelle[i];
+                if (e._blockerFrage === frage) continue;
+                e._blockerFrage = frage;
+                out.push(e);
+            }
+        }
+        for (const e of N.beweger)
+            if (e._blockerFrage !== frage) {
+                e._blockerFrage = frage;
+                out.push(e);
+            }
+        if (out.length - n0 > 1) out.sort(AnazhRealm._nachBestand);
+        return out;
+    }
+
+    // DIE FRAGE DER NÄHE (Leser: der Struktur-Löser `_stepCharacterStructures`): die Einträge des Bestands hinter `nachSeq`,
+    // deren Hülle (`_blockerHuelle`) den Punkt x/z auf `reich` erreicht — aus den Zellen um ihn und der Riesen-Zelle, in der
+    // Ordnung des Bestands nach `out`. Eine nicht endliche Frage (Reichweite oder Punkt) erreicht jeden Eintrag.
+    _blockerNahe(x, z, reich, nachSeq, out) {
+        const N = this._blockerNetz();
+        const frage = ++N.frage;
+        if (!(Number.isFinite(reich) && Number.isFinite(x) && Number.isFinite(z))) {
+            for (const e of N.liste) if (e && e._blockerSeq > nachSeq) out.push(e);
+            return out;
+        }
+        const Z = AnazhRealm.BLOCKER_ZELLE;
+        const ix0 = Math.floor((x - reich) / Z),
+            iz0 = Math.floor((z - reich) / Z);
+        const nx = Math.floor((x + reich) / Z) - ix0 + 1;
+        const nZellen = nx * (Math.floor((z + reich) / Z) - iz0 + 1);
+        const n0 = out.length;
+        for (let c = -1; c < nZellen; c++) {
+            const zelle = N.zellen.get(
+                c < 0 ? AnazhRealm.BLOCKER_RIESE : (ix0 + (c % nx)) * 2097152 + iz0 + Math.floor(c / nx)
+            );
+            if (!zelle) continue;
+            for (let i = 0; i < zelle.length; i++) {
+                const e = zelle[i];
+                if (e._blockerFrage === frage) continue;
+                e._blockerFrage = frage;
+                if (!(e._blockerSeq > nachSeq)) continue;
+                const h = e._blockerHuelle;
+                if (h && (x < h[0] - reich || x > h[1] + reich || z < h[2] - reich || z > h[3] + reich)) continue;
+                out.push(e);
+            }
+        }
+        if (out.length - n0 > 1) out.sort(AnazhRealm._nachBestand);
+        return out;
+    }
+
+    _blockerNetzLoesen(entry) {
+        const N = this._blockerNetzStand;
+        const gilt = !!N && entry._blockerZellenGen === N.gen;
+        if (entry._blockerZellen) {
+            if (gilt) this._blockerZellenAus(N.zellen, entry, entry._blockerZellen);
+            entry._blockerZellen = null;
+        }
+        if (entry._blockerPlatz) {
+            if (gilt) this._blockerZellenAus(N.plaetze, entry, entry._blockerPlatz);
+            entry._blockerPlatz = null;
+        }
     }
 
     // Das Tor-Gesetz eines Eintrags: reine porta-Zahlen (Dial-Satz p · membranUniforms mu ·
@@ -44264,9 +44555,8 @@ class AnazhRealm {
         this._archDisposeAllInstanceGroups();
         this.state.architectures = [];
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
-        // V9.75 (Welle C.4+5) — kein `state.blockerIndex`-Reset mehr; das
-        // Bucket-Grid ist gestrichen. `spawnArchitecture` setzt
-        // `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
+        // Das neue Array ist ein neuer Bestand: die Nachbarschaft der Blocker (`_blockerNetz`) baut sich bei der nächsten Frage
+        // aus ihm. `spawnArchitecture` setzt `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
         for (const a of state.architectures) {
             if (!a || typeof a.type !== "string" || !a.position) continue;
             // DER BAUPLAN-UMZUG: ein gefallener Bauplan steht als sein Erbe wieder auf (glut_var* → glutbrunnen).
@@ -53271,6 +53561,7 @@ class AnazhRealm {
         // HORIZONTAL führt der REITER (der Kontakt-Löser setzte seine Lage); die Architektur folgt in x/z.
         entry.position.x = pm.x;
         entry.position.z = pm.z;
+        this._blockerBewegt(entry);
         const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
         const rideProf = this._vehicleProfile(entry);
         // `_afloat` = schwimmt das Gefährt in DIESEM Schritt (am Ursprung, dieselbe Wahrheit wie der Boden des Fahr-
@@ -53438,6 +53729,7 @@ class AnazhRealm {
                 }
                 entry.position.x = fz.x;
                 entry.position.z = fz.z;
+                this._blockerBewegt(entry); // sein Platz wandert (die Nachbarschaft fragt ihn direkt)
                 entry.rotationY = this._rittGier(entry, entry._rideYaw);
                 if (entry.blockerAABBs) {
                     this._populateBlockerAABBs(entry);
@@ -53500,6 +53792,7 @@ class AnazhRealm {
         // x/z, die Höhe kommt aus dem Sitz (der Sim-Schritt setzte ihn aus der Ebene der Räder).
         entry.position.x = pm.x;
         entry.position.z = pm.z;
+        this._blockerBewegt(entry);
         const sitz = Number.isFinite(entry._sitzHeight) ? entry._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
         entry.position.y = pm.y + 0.5 - sitz - (Number.isFinite(entry._rideHeave) ? entry._rideHeave : 0);
         const v = this.state.playerVel;
@@ -69529,6 +69822,7 @@ class AnazhRealm {
         // DER STAND (W5): ein Studio-Fahrzeug parkt auf der Ebene seiner vier Räder (Höhe · Nick · Wank).
         this._fahrzeugStand(entry);
         this.state.architectures.push(entry);
+        this._blockerEintritt(entry);
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
@@ -71514,7 +71808,7 @@ class AnazhRealm {
             }
         );
         if (entry) this._grundrissRaeumen(entry);
-        return !!entry;
+        return entry || false; // das gesetzte Haus (die Dorf-Mitte summiert, wo es steht)
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══
     // Wege/Feldwege/Platz → Wege-Pool (`_stlWegeBuild`, dieselbe Höhen-Quelle wie die Häuser); Brunnen
@@ -71608,17 +71902,36 @@ class AnazhRealm {
         }
     }
     _spawnSettlementFromExport(plan, origin, so) {
-        if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0 };
+        if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0, mitte: null };
         const f = this._foundry;
         let placed = 0;
         let skipped = 0;
+        let mx = 0;
+        let mz = 0;
+        const haeuser = [];
         const zaehler = { ersatz: 0 };
         const so2 = Object.assign({}, so, { zaehler });
         for (const slot of plan.slots) {
-            if (this._spawnSettlementSlot(slot, origin, f, so2)) placed++;
-            else skipped++;
+            // das gesetzte Haus (`_spawnSettlementSlot`): am Anker + seinem Slot oder an seinem Ersatz-Ort daneben
+            const haus = this._spawnSettlementSlot(slot, origin, f, so2);
+            if (haus) {
+                placed++;
+                haeuser.push(haus);
+                mx += haus.position.x;
+                mz += haus.position.z;
+            } else skipped++;
         }
-        return { placed, skipped, ersatz: zaehler.ersatz, name: plan.name || null, groesse: plan.groesse || null };
+        // die Mitte der gesetzten Häuser — dorthin schaut, wer das Dorf verlangt hat (`_nachDorfOrientieren`)
+        const mitte = placed ? { x: mx / placed, z: mz / placed } : null;
+        return {
+            placed,
+            skipped,
+            ersatz: zaehler.ersatz,
+            name: plan.name || null,
+            groesse: plan.groesse || null,
+            mitte,
+            haeuser,
+        };
     }
 
     // DAS DORF VOR DIR (Leben-Schau 07.10.: „dorf 7 18" umringte den Spieler — die Mitte 16 m bei cos +0,56, die drei
@@ -71693,40 +72006,40 @@ class AnazhRealm {
         }
         return ergebnis(p.x + vx * t - cx, p.z + vz * t - cz, p.y);
     }
-    // spawnSettlement (unten) — der deliberate Siedlungs-Akt (Chat „dorf [seed] [n]" / Gate): Samen
+    // spawnSettlement (unten) — der Siedlungs-Akt (Chat „dorf [seed] [n]", DSL `spawn_village` je Quelle, Gate): Samen
     // Γ5-treu aus dem Welt-Seed-Stream (Suffix ":stadt", nie Math.random), Export vom Worker, Platzierung
     // am ANKER, den der Plan selbst misst (`_siedlungsAnker`): vor dem Spieler, nie um ihn. Async — der Rückweg
     // meldet ins Chat-Log.
 
-    // Nach deliberate Dorf-Spawn: Spieler Richtung Häuser drehen + Bauten-Zeile.
-    _nachDorfOrientieren(anchor, res) {
+    // WER VERLANGT? Die DSL-Quelle eines Akts (`ctx.source`): der Spieler selbst — „human" (sein Chat, der Befehl „dorf"),
+    // seine Werkzeuge (`AnazhRealm.SPIELER_QUELLEN`: die Fähigkeit per Taste „ability:<name>", das Wirken „capability:<key>",
+    // der Verzehr „consume:<bauplan>") — und der Begleiter, der seinen Satz ausführt („llm:<name>"); Nexus, Welt-Regeln,
+    // Resonanz und Mitspieler („remote-…") handeln für die Welt, nicht für ihn.
+    _spielerVerlangt(quelle) {
+        if (quelle === "human") return true;
+        if (typeof quelle !== "string") return false;
+        for (const vor of AnazhRealm.SPIELER_QUELLEN) if (quelle.startsWith(vor)) return true;
+        return false;
+    }
+
+    // Nach einem Dorf-Spawn: hat der SPIELER das Dorf verlangt (`verlangt`, die Quelle des Akts), schaut er auf die Mitte
+    // DIESES Dorfs (`res.mitte`, die gesetzten Häuser; ohne sie der Anker) — ein Nexus- oder Welt-Dorf lässt seinen Blick
+    // stehen (OMEN 0710-6, Boot 4B: ein Nexus-Dorf drehte die Gier mitten im Lauf auf −2,745; und der Blick zielte auf den
+    // Schwerpunkt ALLER Häuser der Welt, gate:settlement C7). Dazu die Bauten-Zeile und das nächste Haus sofort gemesht.
+    _nachDorfOrientieren(res, verlangt) {
         try {
             const list = (this.state && this.state.architectures) || [];
-            // die Häuser DIESES Dorfs (sein Kreis aus `_siedlungsAnker`), nie die Mitte aller Häuser der Welt — ein Auto-Dorf
-            // 300 m weiter drehte den Blick vom neuen Dorf weg
-            const M = anchor && anchor.mitte;
-            const houses = list.filter(
-                (e) =>
-                    e &&
-                    e.position &&
-                    typeof e.type === "string" &&
-                    e.type.startsWith("haus_") &&
-                    (!M || Math.hypot(e.position.x - M.x, e.position.z - M.z) <= (anchor.radius || 0) + 8)
-            );
+            // die Häuser DIESES Dorfs: die eben gesetzten (`res.haeuser`, ihre Mitte `res.mitte`) — nie die Mitte aller Häuser
+            // der Welt (ein Auto-Dorf 300 m weiter drehte den Blick vom neuen Dorf weg), nie ein Kreis um den Anker (er fing die
+            // Häuser eines Nachbar-Dorfs mit); ohne gesetztes Haus kein Blick
+            const houses = (res && res.haeuser) || [];
             const pm = this.state && this.state.playerMesh;
-            if (pm && houses.length) {
-                let cx = 0,
-                    cz = 0;
-                for (const h of houses) {
-                    cx += h.position.x;
-                    cz += h.position.z;
-                }
-                cx /= houses.length;
-                cz /= houses.length;
-                const dx = cx - pm.position.x;
-                const dz = cz - pm.position.z;
+            const ziel = res && res.mitte;
+            if (pm && ziel && this._spielerVerlangt(verlangt)) {
+                const dx = ziel.x - pm.position.x;
+                const dz = ziel.z - pm.position.z;
                 if (Math.hypot(dx, dz) > 0.5) {
-                    // der Blick zu den Häusern (die Umkehrung der EINEN Vorwärts-Richtung)
+                    // der Blick zum Dorf (die Umkehrung der EINEN Vorwärts-Richtung)
                     this.state.yaw = this._blickGierZu(dx, dz);
                 }
             }
@@ -71808,9 +72121,6 @@ class AnazhRealm {
             }
             // der Ort aus dem Plan selbst: das Dorf liegt vor dem Spieler, nie um ihn (`_siedlungsAnker`)
             const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);
-            // Ein Programm eines Mitspielers (`orientieren: false`) baut sein Dorf, wie es dort steht — es spricht den
-            // Empfänger nie mit „vor dir" an und dreht nie seinen Blick.
-            const eigen = o.orientieren !== false;
             const res = this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
             // DORF-ERLEBNIS — Wege/Platz/Brunnen + das Rebuild-Gedächtnis („d:<seed>"
             // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
@@ -71821,19 +72131,21 @@ class AnazhRealm {
             const dKey = "d:" + seed + "@" + Math.round(anchor.x) + "," + Math.round(anchor.z);
             if (!wmD.settlementCells[dKey]) wmD.settlementCells[dKey] = { seed, nH, x: anchor.x, z: anchor.z };
             this._spawnSettlementErlebnis(plan, anchor, { key: dKey, autonomous: !!o.autonomous });
-            // Zwei Kanäle (V-D8): das Log trägt Same, Größe, Slots und Ersatz-Orte, der Spieler hört den Satz der Welt.
+            // Zwei Kanäle (V-D8): das Log trägt Same, Größe, Slots und Ersatz-Orte; wer das Dorf verlangt hat (`_spielerVerlangt`,
+            // die Quelle des Akts), hört den Satz der Welt und schaut auf SEIN Dorf — Nexus, Welt-Regeln und Mitspieler handeln
+            // für die Welt: kein Satz an den Empfänger, kein Blick.
             this.log(
                 `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert (${res.ersatz} am Ersatz-Ort), ${res.skipped} Slots übersprungen; Mitte ${Math.round(anchor.radius || 0)} m Radius.`,
                 "INFO"
             );
-            if (!o.autonomous && eigen)
+            if (this._spielerVerlangt(o.verlangt))
                 this._chatEcho?.(
                     res.placed > 0
                         ? `„${res.name || "Das Dorf"}" steht vor dir: ${res.placed} ${res.placed === 1 ? "Haus" : "Häuser"}.`
                         : "Hier findet kein Haus Grund — zu steil, zu nass oder verbaut. Versuch es an einem anderen Ort."
                 );
-            // Konsum: Blick + Locator automatisch (Sonden starren sonst in die Schlucht)
-            if (eigen) this._nachDorfOrientieren?.(anchor, res);
+            // Konsum: Blick (nur für den, der das Dorf verlangt hat) + Locator automatisch
+            this._nachDorfOrientieren(res, o.verlangt);
             return res;
         });
     }
@@ -78963,7 +79275,10 @@ class AnazhRealm {
         if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
         const arches = this.state.architectures;
         const idx = arches ? arches.indexOf(entry) : -1;
-        if (idx >= 0) arches.splice(idx, 1);
+        if (idx >= 0) {
+            arches.splice(idx, 1);
+            this._blockerAustritt(entry);
+        }
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
     }
 
@@ -79759,6 +80074,7 @@ class AnazhRealm {
         this._cullArchitectureMesh(entry);
         this._trittFlaecheLoesen(entry);
         this.state.architectures.splice(idx, 1);
+        this._blockerAustritt(entry);
         this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
@@ -89515,7 +89831,7 @@ class AnazhRealm {
     // fand in einem Boot sunny → rainy bei eingefrorener Uhr (ein anderer Schreiber: Nexus, Emotion, Gesetz).
     _setWeather(name, quelle) {
         if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
-        if (this.state.weatherEffectTime < 0) {
+        if (this._messHalt()) {
             this.log(`Wetter gehalten: ${quelle || "?"} wollte ${name}`, "DEBUG");
             return false;
         }
@@ -93222,9 +93538,20 @@ class AnazhRealm {
         // Das GERITTENE Gefährt blockt seinen Reiter nicht — er sitzt per Definition in dessen
         // blockerAABBs und würde sonst beim Aufsteigen herausgedrückt.
         const riddenId = this.state.player ? this.state.player.mountedArch : null;
-        for (let a = 0; a < arches.length; a++) {
-            const e = arches[a];
-            if (!e || !e.blockerAABBs || !e.position) continue;
+        // DIE NACHBARSCHAFT (0710-7): eine Box wirkt nur, wenn der Körper ihre Hülle erreicht — die Kapsel ihren Radius weit
+        // (Auflage und Wand verlangen die Position in der Hülle ± radius), die Hülle des Wagens |mitte| + hl + hw weit (sonst
+        // trennt eine Achse ihr Rechteck von der Box). Gelöst werden nur die Einträge der Nachbarschaft (`_blockerNahe`),
+        // deren Hülle diese Reichweite um die Position berührt, in der Ordnung des Bestands; schiebt ein Eintrag den Körper,
+        // fragt der Löser die Nachbarschaft der neuen Stelle hinter ihm nach. So sieht jede Box die Position, die sie in der
+        // Schleife über das Array sah, und ein ausgelassener Eintrag hätte mit ihr nichts bewirkt: der Löser ist byte-gleich
+        // (gate:blocker-netz, Kapsel und Hülle). Vorher löste jeder Schritt jede Box im 60-m-Umkreis (Wiese: 12 034).
+        const reich = (huelle ? Math.abs(huelle.mitte) + huelle.hl + huelle.hw : radius) + 1e-6;
+        const nah = this._blockerNahListe || (this._blockerNahListe = []);
+        nah.length = 0;
+        this._blockerNahe(pos.x, pos.z, reich, -Infinity, nah);
+        for (let a = 0; a < nah.length; a++) {
+            const e = nah[a];
+            if (!e.blockerAABBs || !e.position) continue;
             if (riddenId !== null && riddenId !== undefined && e.id === riddenId) continue;
             // grobe XZ-Distanz — nur nahe Bauwerke berühren den Spieler.
             // V18.464: + gestempelte Blocker-Reichweite (_blockerReach) — der
@@ -93241,8 +93568,14 @@ class AnazhRealm {
                     if (!(boxes[b].dick < huelle.stufe)) this._resolveHuelleVsAABB(boxes[b], pos, huelle);
                 } else supportTop = this._resolveCapsuleVsAABB(boxes[b], pos, feetY, headY, radius, supportTop);
             }
-            // der Schub dieses Bauwerks (der Spieler-Pfad sammelt ihn: ein Wagen bekommt seinen Impuls, 0710-4)
-            if (quellen && (pos.x !== vorX || pos.z !== vorZ)) quellen.push(e, pos.x - vorX, pos.z - vorZ);
+            if (pos.x !== vorX || pos.z !== vorZ) {
+                // der Schub dieses Bauwerks (der Spieler-Pfad sammelt ihn: ein Wagen bekommt seinen Impuls, 0710-4)
+                if (quellen) quellen.push(e, pos.x - vorX, pos.z - vorZ);
+                // der Schub trug den Körper an eine neue Stelle: deren Nachbarschaft, hinter diesem Eintrag
+                nah.length = 0;
+                this._blockerNahe(pos.x, pos.z, reich, e._blockerSeq, nah);
+                a = -1;
+            }
         }
         return supportTop;
     }
@@ -101629,6 +101962,67 @@ AnazhRealm.SOVEREIGN_ACTIONS = Object.freeze([
     "change_identity",
     "grant_capability",
 ]);
+// DIE WELT-AKTE DER DSL (0710-7): jeder Op, der die Welt, ihre Wesen oder den Spieler verändert — Bauten und Spawns, der
+// Boden und seine Sichtbarkeit, Zeit und Himmel, die Würfel auf Größe/Tempo/Farbe/Stimmung der Tiere, die Werte und die
+// Ausrüstung des Spielers, das Feld. Unter dem Halt einer Messung (`_messHalt`) verweigert `dslEval` jeden von ihnen; das Wetter hält sein eigener
+// Schreiber (`_setWeather`). Nicht hier: Definitionen (define_* · set_*_role · register_tool …), Erzählung (say ·
+// record_narrative) und Kontrollfluss — sie verändern keine gemessene Welt. gate:weltakt-wache hält den Pool des Nexus
+// (`dslComposeAtomic`) in dieser Liste.
+// DIE QUELLEN DES SPIELERS (`_spielerVerlangt`, neben „human"): der Begleiter, der seinen Satz ausführt, und seine Werkzeuge —
+// die Fähigkeit per Taste, das Wirken, der Verzehr (gate:settlement C7).
+AnazhRealm.SPIELER_QUELLEN = Object.freeze(["llm:", "ability:", "capability:", "consume:"]);
+AnazhRealm.DSL_WELTAKTE = Object.freeze([
+    "spawn_creature",
+    "spawn_tree",
+    "spawn_studio",
+    "spawn_island",
+    "spawn_ufo",
+    "spawn_village",
+    "spawn_temple",
+    "spawn_waterfall",
+    "spawn_blueprint",
+    "spawn_fractal",
+    "remove_architecture",
+    "apply_op",
+    "apply_connection",
+    "set_portal",
+    "set_visible",
+    "voxel_carve",
+    "voxel_fill",
+    "terrain_steepness",
+    "terrain_base_height",
+    "gravity",
+    "set_time_of_day",
+    "time_of_day",
+    "set_season",
+    "skybox_color",
+    "creatures_color",
+    "creatures_emotion",
+    "creatures_speed_mul",
+    "creatures_size_mul",
+    "creature_task",
+    "creature_task_nearest",
+    "creature_task_all",
+    "damage_creature",
+    "creature_equip_tool",
+    "creature_equip_armor",
+    "creature_unequip",
+    "creature_apply_boost",
+    "player_jump_power",
+    "player_speed",
+    "player_size_mul",
+    "player_soul",
+    "damage",
+    "apply_boost",
+    "equip_tool",
+    "equip_armor",
+    "equip_weapon",
+    "unequip",
+    "add_to_inventory",
+    "set_mode",
+    "deposit_life",
+    "deposit_emotion",
+]);
 // Sichtbarkeits-Stufen der Welten (eingefroren, jeder Wert exakt eines der Wörter).
 // _normalizeWorldVisibility heilt die Legacy-Form "private" → "privat" beim Lesen; geschrieben wird
 // nur die kanonische Form.
@@ -102202,6 +102596,13 @@ AnazhRealm.PLAYER_GROUND_SNAP = 0.25;
 // STEP_UP (sonst blockt die Wand-Kollision den Aufstieg, bevor der Boden-Snap heben kann —
 // der gemessene Stufe-hoch-Konflikt). Nur echte Wände (höher als STEP_UP) blocken.
 AnazhRealm.PLAYER_WALL_RADIUS = 0.35;
+// DIE NACHBARSCHAFT DER BLOCKER (`_blockerNetz`): die Kante einer Zelle (Meter, eine Zweier-Potenz — die Zelle eines Punkts ist
+// exakt `Math.floor(x / 8)`), die Zahl der Zellen, über der ein Eintrag in der Riesen-Zelle steht, und deren Schlüssel (keine
+// ganze Zahl, nie der Schlüssel einer Zelle).
+AnazhRealm.BLOCKER_ZELLE = 8;
+AnazhRealm.BLOCKER_ZELLEN_MAX = 1024;
+AnazhRealm.BLOCKER_RIESE = -0.5;
+AnazhRealm._nachBestand = (a, b) => a._blockerSeq - b._blockerSeq;
 // ═══ KOPPLUNG — Strömung · Gleiten · Wind · Gras (gate:kopplung) ═══
 // Die Strömung ist das Gesetz (`_waterFlowAt` liest WASSER_GESETZ.wellen.adv), die Kopplung additiv (`_stepCharacter` 4b).
 // SLIDE_CLIP_PLANES: max. Kontaktebenen im PM_ClipVelocity-Wand-Klip (Quake

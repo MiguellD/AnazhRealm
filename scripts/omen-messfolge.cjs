@@ -13,6 +13,8 @@
 //   DIE WACHEN nach jedem Schritt (`/wache` der Werkbank):
 //     WETTER   ab der Bühne: kein Schreiber dreht das Wetter (das Buch des Wetter-Spions, `wetterUrteil`), die Uhr des
 //              Auto-Zugs steht eingefroren, das Wort bleibt „sunny";
+//     WELTAKT  ab der Bühne: kein Welt-Akt der DSL (Dorf, Spawn, Tier-Spawn, Größen-/Tempo-Würfel, Tageszeit …) läuft unter dem
+//              Halt durch — die Engstelle `dslEval` verweigert jeden, das Buch des Welt-Akt-Spions nennt ihn (`weltaktUrteil`);
 //     STEMPEL  der Zeitstempel-Pool läuft in KEINEM Schritt über (sonst ist jeder Pass-Stempel danach blind);
 //     ORT      vor und nach jedem messenden Schritt: aufgestellt am Ort, Dorf-Zug und Ort-Takt wie der Ort sie will, die Gier
 //              des Orts, der Spieler am Messort (≤ 8 m) — `BAND.ortGestellt`;
@@ -42,7 +44,7 @@ const os = require("os");
 const path = require("path");
 const { spawn, execSync } = require("child_process");
 const BAND = require("./lib/band-urteil.cjs");
-const { wetterUrteil } = require("./lib/ausgabe-aufnahme.cjs");
+const { wetterUrteil, weltaktUrteil } = require("./lib/ausgabe-aufnahme.cjs");
 
 const root = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
@@ -145,6 +147,7 @@ function wachenUrteil(name, vor, nach, ort, gehalten) {
         for (const t of w.taeter) v.push(`WETTER ${name}: ${t}`);
         if (nach.wetter.wetter !== "sunny")
             v.push(`WETTER ${name}: das Wetter ist „${nach.wetter.wetter}", die Bühne hält „sunny"`);
+        for (const t of weltaktUrteil(nach.weltakt).taeter) v.push(`WELTAKT ${name}: ${t}`);
     }
     const s0 = vor && vor.stempel,
         s1 = nach.stempel;
@@ -344,7 +347,10 @@ async function folge() {
         e.ms = Date.now() - t0;
         gefahren.push(name);
         if (name === "buehne") gehalten = true;
-        const nach = await R("/wache", { seit: vor && vor.wetter ? vor.wetter.seq : 0 });
+        const nach = await R("/wache", {
+            seit: vor && vor.wetter ? vor.wetter.seq : 0,
+            seitWelt: vor && vor.weltakt ? vor.weltakt.seq : 0,
+        });
         e.wache = nach;
         if (MESSEN.has(name)) e.tiere = tierKurz(nach && nach.tiere);
         e.befunde = wachenUrteil(name, vor, nach, ort, gehalten && name !== "buehne");
@@ -503,6 +509,7 @@ async function selbsttest() {
         Object.assign(
             {
                 wetter: { seq: 0, wetter: "sunny", uhr: -1e9, fest: true, buch: [] },
+                weltakt: { seq: 0, gehalten: true, blind: false, buch: [] },
                 stempel: { ueberlauf: 0, spitze: 40, pool: { stand: 0, max: 2048 }, taeter: {} },
                 ort: {
                     ort: "wiese",
@@ -641,6 +648,62 @@ async function selbsttest() {
         /FENSTER lauf-voll \(nach\): 1280 × 720/
     );
     pruefe("vor der Bühne zählt das Wetter nicht", wachenUrteil("umstellen", wache(), regen, ort, false), null);
+    // DIE WELT-WACHE (0710-7, OMEN 0710-6 Boot 4B: ein Nexus-Dorf drehte den Blick mitten im Lauf)
+    const dorf = wache({
+        weltakt: {
+            seq: 1,
+            gehalten: true,
+            blind: false,
+            buch: [
+                {
+                    art: "durch",
+                    op: "spawn_village",
+                    quelle: "nexus",
+                    stapel: "dslEval ← … ← dslRun ← _loopNexusUpdate",
+                },
+            ],
+        },
+    });
+    pruefe(
+        "Nexus-Dorf unter dem Halt",
+        wachenUrteil("lauf-voll", wache(), dorf, ort, true),
+        /WELTAKT lauf-voll: spawn_village durch nexus/
+    );
+    pruefe(
+        "verweigerte Welt-Akte sind grün",
+        wachenUrteil(
+            "lauf-voll",
+            wache(),
+            wache({
+                weltakt: {
+                    seq: 2,
+                    gehalten: true,
+                    blind: false,
+                    buch: [{ art: "verweigert", op: "spawn_creature", quelle: "nexus" }],
+                },
+            }),
+            ort,
+            true
+        ),
+        null
+    );
+    pruefe(
+        "Welt-Akt-Spion blind",
+        wachenUrteil(
+            "lauf-voll",
+            wache(),
+            wache({ weltakt: { seq: 0, gehalten: true, blind: true, buch: [] } }),
+            ort,
+            true
+        ),
+        /WELTAKT lauf-voll: das Spiel nennt keine Welt-Akte/
+    );
+    pruefe(
+        "Wache ohne Welt-Akt-Spion",
+        wachenUrteil("lauf-voll", wache(), wache({ weltakt: null }), ort, true),
+        /WELTAKT lauf-voll: kein Welt-Akt-Spion/
+    );
+    pruefe("vor der Bühne zählen Welt-Akte nicht", wachenUrteil("umstellen", wache(), dorf, ort, false), null);
     // DAS ENDE DER WERKBANK: eine Werkbank, deren `/stop` hängt (sie lebt weiter) und die ein Kind trägt (Chrome) — nach
     // `beendeBaum` lebt keiner der beiden mehr (vorher: der Abbau stand in einem unref-Timer, die Werkbank blieb als Waise)
     {

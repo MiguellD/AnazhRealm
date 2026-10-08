@@ -612,7 +612,8 @@ async function probe(arg) {
         setze(sx, sz);
         // V-D8: die Dorf-Zählung bleibt im Log.
         const z0 = ausgabe ? ausgabe.childElementCount : 0;
-        r._nachDorfOrientieren({ x: sx, z: sz }, { placed: 1 });
+        // die Signatur des Akts (welle-m-nexus): das Ergebnis des Dorfs und die Quelle, die es verlangt (der Spieler)
+        r._nachDorfOrientieren({ placed: 1, haeuser: [], mitte: { x: sx, z: sz } }, "human");
         const neuZeilen = ausgabe ? Array.from(ausgabe.children).slice(z0).map((c) => c.textContent) : [];
         m.telemetrieImChat = neuZeilen.some((t) => /Bauten n=/.test(t));
         m.gestartet = true;
