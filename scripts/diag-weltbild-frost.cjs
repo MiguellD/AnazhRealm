@@ -220,12 +220,16 @@ function pruefRaum(echt) {
     F.wurzel = scene;
     F.leib = leib;
     F.zeichne = async (n) => {
-        for (let i = 0; i < n; i++) {
-            scene.updateMatrixWorld(true);
-            rend.render(scene, cam);
-        }
+        for (let i = 0; i < n; i++) F.bildSofort();
         await rend.backend.device.queue.onSubmittedWorkDone();
         await new Promise((res) => setTimeout(res, 50));
+    };
+    // ein Bild ohne auf die GPU zu warten: der Knoten-Bau, die Pipeline und das Render-Objekt entstehen synchron im render()
+    // (swiftshader kompiliert synchron); das Warten teilt sich bei offener Bühne den CPU-Raster mit ihr (lokal ~1 s je Bild,
+    // der CI-Runner riss damit das 45-min-Limit)
+    F.bildSofort = () => {
+        scene.updateMatrixWorld(true);
+        rend.render(scene, cam);
     };
     // DAS BILD der Probe-Bühne: die Welt-GPU zeichnet in ein Ziel, das Ziel wird zurückgelesen (256 × 144, RGBA8 — eine Zeile
     // 1 024 B, kein Zeilen-Rand). Der Linux-Runner setzt die WebGPU-Leinwand headless nicht in den Bildschirm-Schuss (CI
@@ -646,7 +650,7 @@ function pruefRaum(echt) {
             });
             vater.add(neu);
             F.leib = neu;
-            return F.zeichne(1);
+            F.bildSofort();
         };
         E.warte = async (holen) => {
             const s0 = holen();
@@ -678,7 +682,11 @@ function pruefRaum(echt) {
         const E = window.__frostEntsorgung;
         let tausch = 0,
             vorgelegt = 0;
+        // die Zeit je Teil (Bühne zeigen und auf ihr Bild warten · Welt-Leib) steht im Bericht: der CI-Runner rastert auf
+        // wenigen Kernen, der Lauf nennt, wo seine Zeit liegt
+        const ms = { buehne: 0, leib: 0 };
         const wechsle = async (holen, zeige) => {
+            const t = performance.now();
             const alt = holen() && holen().pivot;
             E.im("seelen", zeige);
             if (alt && holen().pivot !== alt) {
@@ -686,6 +694,7 @@ function pruefRaum(echt) {
                 alt.traverse((o) => o.geometry && vorgelegt++);
             }
             await E.warte(holen);
+            ms.buehne += performance.now() - t;
         };
         const durchgang = async () => {
             r.toggleInventoryOverlay(true);
@@ -695,7 +704,9 @@ function pruefRaum(echt) {
                         () => r.state.ichStage,
                         () => r._ichStageShow(s)
                     );
+                    const t = performance.now();
                     await F.leibWechsel(s);
+                    ms.leib += performance.now() - t;
                 }
             r.toggleInventoryOverlay(false);
             r.toggleDrawer("kreaturen");
@@ -732,6 +743,7 @@ function pruefRaum(echt) {
             ...E.bericht("seelen"),
             tausch,
             vorgelegt,
+            ms: { buehne: Math.round(ms.buehne), leib: Math.round(ms.leib) },
             neubau,
             neu: (devs.welt.__frostNamen || []).slice(n0, n0 + 6),
         };
