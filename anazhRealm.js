@@ -33006,7 +33006,9 @@ class AnazhRealm {
             beweger: new Set(),
             seq: alt ? alt.seq : 0,
             gen: alt ? alt.gen + 1 : 1,
-            frage: 0,
+            // der Zähler der Fragen läuft über jeden Neubau weiter (wie die Ordnung): die Einträge tragen die Marken der alten
+            // Fragen (`_blockerFrage`) — ein Zähler ab 0 träfe eine alte Marke, die Frage überginge den Eintrag
+            frage: alt ? alt.frage : 0,
         });
         if (Array.isArray(liste))
             for (const e of liste) {

@@ -545,8 +545,58 @@ async function probe() {
     aus.loeser.push(loeserRunde("Neu gestempelt", 800));
     aus.tier.push(tierRunde("Neu gestempelt", 600));
     aus.konsistenz.push(["Neu gestempelt", konsistenz()]);
-    // (4) ein neues Array (ein geladener Bestand)
+    // (4) ein neues Array (ein geladener Bestand) mit DENSELBEN Einträgen — sie tragen die Marken der alten Fragen
+    // (`_blockerFrage`). DIE MARKEN-PROBE (0710-8 ROT 1): je Eintrag am Ort zählt sie den Zähler des neuen Netzes bis vor seine
+    // alte Marke vor (Fragen an einem leeren fernen Ort) und zielt dann durch die Mitte seiner Box — die Frage darf ihn nicht
+    // für schon besucht halten.
+    const marken = st.architectures
+        .filter(
+            (e) =>
+                e &&
+                e.blockerAABBs &&
+                e.blockerAABBs.length &&
+                e.position &&
+                Number.isFinite(e._blockerFrage) &&
+                Math.hypot(e.position.x - ox, e.position.z - oz) < 90
+        )
+        .map((e) => ({ e, m: e._blockerFrage }))
+        .sort((a, b) => a.m - b.m)
+        // je alte Marke EIN Eintrag (Nachbarn tragen oft dieselbe — die Probe zählt jede Marke nur einmal vor)
+        .filter((x, i, a) => i === 0 || a[i - 1].m !== x.m)
+        .slice(-24);
     st.architectures = st.architectures.slice();
+    {
+        const M = { proben: 0, vorgezaehlt: 0, abweichungen: 0, abweichung: [] };
+        const NN = typeof r._blockerNetz === "function" ? r._blockerNetz() : null;
+        for (const { e, m } of marken) {
+            // die oberste Box des Eintrags, senkrecht von oben getroffen (kein Gelände davor)
+            let b = null;
+            for (const bb of e.blockerAABBs)
+                if (bb.topY > bb.botY && bb.maxX > bb.minX && (!b || bb.topY > b.topY)) b = bb;
+            if (!b || !NN) continue;
+            const cx = (b.minX + b.maxX) / 2,
+                cz = (b.minZ + b.maxZ) / 2;
+            let n = 0;
+            while (NN.frage < m - 1 && n++ < 200000)
+                r._fieldRaycast(cx + 9000, b.topY + 500, cz + 9000, cx + 9000, b.topY + 500.1, cz + 9000);
+            if (NN.frage === m - 1) M.vorgezaehlt++;
+            const sx = cx,
+                sy = b.topY + 3,
+                ex = cx,
+                ey = b.botY;
+            const cy = sy;
+            const soll = orakel(sx, sy, cz, ex, ey, cz);
+            const ist = r._fieldRaycast(sx, cy, cz, ex, ey, cz);
+            M.proben++;
+            const felder = ["hit", "t", "x", "y", "z", "nx", "ny", "nz"];
+            if (!felder.every((f) => Object.is(soll[f], ist[f]))) {
+                M.abweichungen++;
+                if (M.abweichung.length < 3)
+                    M.abweichung.push({ eintrag: `${e.type}#${e.id}`, marke: m, soll: soll.t, ist: ist.t });
+            }
+        }
+        aus.marken = M;
+    }
     aus.runden.push(runde("Neues Array", N));
     aus.loeser.push(loeserRunde("Neues Array", 800));
     aus.tier.push(tierRunde("Neues Array", 600));
@@ -626,6 +676,12 @@ function urteil(S, stamm, pageErrors) {
         if (L.geschoben < 50 || L.getragen < 50)
             rot.push(`(L) ${L.name}: zu wenig Schübe oder Auflagen (${L.geschoben} geschoben, ${L.getragen} getragen)`);
     }
+    const Mk = S.marken || { proben: 0 };
+    if (Mk.abweichungen)
+        rot.push(
+            `(T) MARKEN Neues Array: ${Mk.abweichungen} von ${Mk.proben} Strahlen verfehlen einen Eintrag, dessen alte Marke die Frage traf (${Mk.vorgezaehlt} vorgezählt) — ${JSON.stringify(Mk.abweichung)}`
+        );
+    if (Mk.proben < 8) rot.push(`(T) MARKEN: zu wenig Proben (${Mk.proben})`);
     for (const T of S.tier) {
         if (T.fehlt) {
             rot.push(`(N) ${T.name}: kein Tier in der Welt`);
@@ -762,6 +818,10 @@ function stammSchreiber() {
     console.log(
         `  Decken-Probe am Ort: ${S.decke.slabsJeStrahl} Slabs je Strahl, ihr Segment berührt ${S.decke.beruehrt} Boxen`
     );
+    if (S.marken)
+        console.log(
+            `  Marken-Probe (Neues Array): ${S.marken.proben} Strahlen, ${S.marken.vorgezaehlt} bis vor die alte Marke vorgezählt, Abweichungen ${S.marken.abweichungen}`
+        );
     console.log(`  Quelle: ${JSON.stringify(S.quelle)}`);
     const rot = urteil(S, stamm, pageErrors);
     if (rot.length) {
