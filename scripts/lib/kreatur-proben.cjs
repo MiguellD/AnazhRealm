@@ -25,8 +25,6 @@
 //   reload    (Q12) ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück (Kritik §2.5: hp heilte)
 //   peer      (Q3) die Sicht-Kopie beim Mitspieler dreht in die Laufrichtung und geht
 //   zufall    (Q2) kein Math.random im Kreatur-Leben (window.__codeOf über jede Tier-Methode + die benannten Wurf-Stellen)
-//   fundament (Welle LF) ein Leib, der schon in einer Wand steht (Fundament, Hüllen-Box über der Stufe), geht frei heraus,
-//             nie tiefer hinein
 //   querhang  (Welle LF) am Hang von 20–30°: das Bein-Lot ≤ 10° bei rollendem Leib, der Stand-Schlupf im Lauf ≤ 0,2
 //             (eine Sohle höchstens 3 cm über dem Boden unter ihr steht; ihr Weg je Weg des Leibs)
 //   ferngang  (Welle LF) laufende Hirsche in der Standbild-Zone (45–60 m) und der Kapsel-Zone (70–90 m) bewegen die Beine
@@ -1016,17 +1014,14 @@ async function kreaturProben(r, T, opts) {
             );
         // Täter 2: Innen-Test und Reichweite lesen die Welt-AABB der gedrehten Box (größer als die Box).
         if (taeter === "gedreht-rahmen")
-            // der alte Rahmen: jede Frage an die Box (Abstand, Tiefe, nie tiefer — die Leser des Rahmens) liest die Welt-AABB
-            for (const name of ["_boxAbstand2", "_boxTiefe", "_kastenNieTiefer"])
-                decke(
-                    restore,
-                    name,
-                    (alt) =>
-                        function (box, ...rest) {
-                            const aabb = { minX: box.minX, maxX: box.maxX, minZ: box.minZ, maxZ: box.maxZ };
-                            return alt.call(this, aabb, ...rest);
-                        }
-                );
+            decke(
+                restore,
+                "_boxAbstand2",
+                (alt) =>
+                    function (box, x, z) {
+                        return alt.call(this, { minX: box.minX, maxX: box.maxX, minZ: box.minZ, maxZ: box.maxZ }, x, z);
+                    }
+            );
         // Das Haus: eine Wand 8 × 0,8 m, 34° gedreht, als Hülle der Stufe (haus-lokal [x0,y0,z0,x1,y1,z1], in den Boden
         // gesenkt, damit der Hang unter ihr nie eine Lücke lässt).
         const PHI = 0.6;
@@ -1067,7 +1062,6 @@ async function kreaturProben(r, T, opts) {
             kontaktFrames = 0,
             spielerWand = 0,
             vornMin = null,
-            radius = null,
             seiteVorher = null,
             querDurch = 0;
         // Die Parkour-Wand des Spielers trägt je Takt eine Marke (NaN): jeder Schreiber im Tier-Takt überschreibt sie — auch
@@ -1093,7 +1087,6 @@ async function kreaturProben(r, T, opts) {
             if (seite !== 0) seiteVorher = seite;
             if (leibVon) {
                 const lb = leibVon.call(r, c);
-                radius = lb.radius;
                 const v = lokal(p.x + lb.fx * lb.halb, p.z + lb.fz * lb.halb);
                 const ax = Math.max(Math.abs(v.x) - ob.hx, 0),
                     az = Math.max(Math.abs(v.z) - ob.hz, 0);
@@ -1109,7 +1102,6 @@ async function kreaturProben(r, T, opts) {
             querDurch,
             spielerWand,
             vornMinM: vornMin === null ? null : +vornMin.toFixed(3),
-            radiusM: radius === null ? null : +radius.toFixed(3),
         };
     });
 
@@ -2126,85 +2118,6 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── fundament (Leben-Schau 07.10., D7/Posten 7 — der Dorf-Gang an der echten GPU): ein Leib, der schon in einer Wand
-    // steht, geht frei heraus, nie tiefer hinein. Im Dorf-Gang standen 5 Hirsche in 25 % ihrer Frames mit der Mitte in einer
-    // Fundament- oder Wand-Box (Oberkante 0,6–0,9 m über dem Fuß, p90 0,36 m, bis 3,9 m tief): die Regel „wer im Kasten
-    // stand, wird nicht gestoßen" ließ den Leib auch HINEIN gehen. Die Bühne: eine Hülle 3 × 3 m, 0,9 m über dem Boden
-    // (keine Stufe), der Hirsch mit der Mitte 0,12 m in ihr, der Spieler 6 m jenseits — der Hirsch folgt ihm ──
-    await buehne("fundament", async (restore) => {
-        r.setGameMode("frieden");
-        if (taeter === "fundament") decke(restore, "_boxTiefe", () => () => 0);
-        const wo = frei(-60, 40, 8) || land(-60, 40);
-        wo.y = r.getTerrainHeightAt(wo.x, wo.z);
-        s.blueprints._t_linse_fundament = {
-            name: "_t_linse_fundament",
-            parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0.05, z: 0 },
-                    size: { x: 0.1, y: 0.1, z: 0.1 },
-                },
-            ],
-        };
-        const e = r.spawnArchitecture("_t_linse_fundament", { x: wo.x, y: wo.y + 0.5, z: wo.z }, { silent: true });
-        restore.push(() => {
-            if (e) r.removeArchitecture(e);
-            delete s.blueprints._t_linse_fundament;
-        });
-        if (!e) return { fehler: "Fundament nicht gesetzt" };
-        r._hausHuelleSetzen(e, { stufe: 0, boxen: [-1.5, -3, -1.5, 1.5, 0.9, 1.5] });
-        if (!Array.isArray(e.blockerAABBs) || !e.blockerAABBs.length) return { fehler: "Fundament ohne Hülle" };
-        const box = e.blockerAABBs[0];
-        const mx = (box.minX + box.maxX) / 2,
-            mz = (box.minZ + box.maxZ) / 2;
-        const altUhr = s.creatureAnimationTime;
-        restore.push(() => {
-            s.creatureAnimationTime = altUhr;
-        });
-        s.creatureAnimationTime = 100;
-        pm.set(mx, wo.y + 1.2, box.maxZ + 6);
-        const z0 = box.minZ + 0.12;
-        const c = tier({ x: mx, y: wo.y, z: z0 }, "wesen", 1);
-        c.position.set(mx, r.getTerrainHeightAt(mx, z0), z0);
-        c.rotation.y = 0;
-        if (c.userData._steuer) c.userData._steuer.gier = 0;
-        ruhig(c);
-        r.assignCreatureTask(c, "follow_player", {}, { silent: true });
-        // die Tiefe der Mitte in der Hülle — die Linse misst selbst (im Rahmen der gedrehten Box), nie mit dem Prüfling
-        const tiefeIn = (x, z) => {
-            const o = box.obb;
-            const dx = x - o.cx,
-                dz = z - o.cz;
-            const lx = Math.abs(dx * o.c - dz * o.s),
-                lz = Math.abs(dx * o.s + dz * o.c);
-            return lx <= o.hx && lz <= o.hz
-                ? Math.min(o.hx - lx, o.hz - lz)
-                : -Math.hypot(Math.max(0, lx - o.hx), Math.max(0, lz - o.hz));
-        };
-        if (!box.obb) return { fehler: "Fundament ohne gedrehte Box" };
-        const tiefe0 = tiefeIn(c.position.x, c.position.z);
-        let tiefMax = tiefe0,
-            drin = 0;
-        for (let k = 0; k < 600; k++) {
-            pm.set(mx, wo.y + 1.2, box.maxZ + 6);
-            takt(1 / 60);
-            const t = tiefeIn(c.position.x, c.position.z);
-            if (c.position.y + 0.3 < box.topY && t > 0) {
-                drin++;
-                tiefMax = Math.max(tiefMax, t);
-            }
-        }
-        return {
-            tiefeStartM: +tiefe0.toFixed(3),
-            tiefeMaxM: +tiefMax.toFixed(3),
-            drinTakte: drin,
-            tiefeEndeM: +tiefeIn(c.position.x, c.position.z).toFixed(3),
-            oberkanteUeberBodenM: +(box.topY - wo.y).toFixed(2),
-            stufeM: A.PLAYER_STEP_UP,
-        };
-    });
-
     // ── querhang (Leben-Schau 07.10., D11/D1-Rest): die Beine stehen lotrecht, der Leib rollt — am Querhang standen die
     // Beine 20–31° aus dem Lot (sie kippten mit dem Leib, Bild ls-10), der Stand-Schlupf im Lauf lag bei 0,56–1,27 (Soll
     // ≤ 0,2). Gemessen am echten Takt wie in der Leben-Schau: ein Hang von 20–30° nahe dem Spieler; Wolf und Hirsch stehen
@@ -2562,7 +2475,6 @@ const PROBEN = [
     "jagdkreis",
     "rudel",
     "sockel",
-    "fundament",
     "querhang",
     "ferngang",
 ];
@@ -2661,13 +2573,6 @@ function urteil(name, z) {
         soll(
             z.vornMinM !== null && z.vornMinM > 0,
             `die vordere Leib-Achse ${z.vornMinM === null ? "ohne Leib" : -z.vornMinM + " m in der gedrehten Wand"}`
-        );
-        // ... und die Kapsel der vorderen Achse sinkt höchstens ein Fünftel ihres Radius in die Wand (Welle LF: liest der
-        // Rahmen die Welt-AABB, hält „nie tiefer" den Leib an der falschen Grenze — die Achse stand 0,125 m vor der Wand, die
-        // Kapsel mit Radius 0,276 m 15 cm in ihr; im Box-Rahmen 0,275 m)
-        soll(
-            z.vornMinM === null || z.radiusM === null || z.vornMinM >= 0.8 * z.radiusM,
-            `die Kapsel der vorderen Achse taucht ${(z.radiusM - z.vornMinM).toFixed(3)} m in der gedrehten Wand ein (Achse ${z.vornMinM} m vor ihr, Radius ${z.radiusM} m — der Rahmen liest die Welt-AABB)`
         );
         soll(
             z.spielerWand === 0,
@@ -2821,14 +2726,6 @@ function urteil(name, z) {
             `das Rudel umstellt nicht: beim ersten Biss ${z.lueckeBeimBiss}° Lücke`
         );
     }
-    if (name === "fundament") {
-        soll(z.oberkanteUeberBodenM > z.stufeM, `das Fundament ist eine Stufe (${z.oberkanteUeberBodenM} m, vakuös)`);
-        soll(z.tiefeStartM > 0, `der Hirsch steht nicht in der Wand (Start ${z.tiefeStartM} m, vakuös)`);
-        soll(
-            z.tiefeMaxM <= z.tiefeStartM + 0.01,
-            `der Leib geht tiefer in die Wand: Mitte ${z.tiefeStartM} → bis ${z.tiefeMaxM} m tief (${z.drinTakte} Takte drin)`
-        );
-    }
     if (name === "sockel") {
         soll(z.ueberTakte >= 30, `der Hirsch kommt nicht über den Sockel (${z.ueberTakte} Takte, vakuös)`);
         soll(
@@ -2921,7 +2818,6 @@ const TAETER = {
     ],
     rudel: [["rudel", /umstellt nicht/]],
     sockel: [["sockel", /steht im Sockel/]],
-    fundament: [["fundament", /tiefer in die Wand/]],
     querhang: [
         ["querhang", /Bein-Lot am Querhang/],
         ["querhang-gleiten", /Stand-Schlupf am Querhang/],

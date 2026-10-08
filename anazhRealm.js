@@ -21413,19 +21413,7 @@ class AnazhRealm {
                 if (this._boxAbstand2(box, p.x, p.z) > reich2) continue;
                 for (let o = -1; o <= 1; o++) {
                     const off = o * halb;
-                    if (this._boxAbstand2(box, px0 + fx * off, pz0 + fz * off) < rInnen2) {
-                        // ... aber nie TIEFER hinein (Welle LF, Posten 7): eine Achse, die schon im Kasten stand, geht frei
-                        // heraus; führt der Schritt sie tiefer, verliert er seinen Anteil gegen die nächste Wand des Kastens
-                        // (längs der Wand gleitet der Leib weiter). Vorher ging sie frei hinein — 5 Hirsche im Dorf-Gang
-                        // (echte GPU) standen in 25 % ihrer Frames mit der Mitte in einer Fundament- oder Wand-Box (p90
-                        // 0,36 m, bis 3,9 m tief).
-                        if (
-                            this._boxTiefe(box, p.x + fx * off, p.z + fz * off) >
-                            this._boxTiefe(box, px0 + fx * off, pz0 + fz * off) + 1e-4
-                        )
-                            this._kastenNieTiefer(box, p, px0, pz0, fx * off, fz * off);
-                        continue;
-                    }
+                    if (this._boxAbstand2(box, px0 + fx * off, pz0 + fz * off) < rInnen2) continue;
                     q.x = p.x + fx * off;
                     q.z = p.z + fz * off;
                     const ax = q.x,
@@ -94396,57 +94384,6 @@ class AnazhRealm {
             iz = z - Math.max(box.minZ, Math.min(z, box.maxZ));
         }
         return ix * ix + iz * iz;
-    }
-    // Die TIEFE eines Punkts (x, z) in einer Box (im Rahmen der gedrehten Box wie `_boxAbstand2`): innen der kürzere Weg zur
-    // Wand (> 0), außen der negative Abstand — dieselbe Größe auf beiden Seiten der Wand (der Hüllen-Kontakt der Tiere).
-    _boxTiefe(box, x, z) {
-        const ob = box.obb;
-        let lx;
-        let lz;
-        let hx;
-        let hz;
-        if (ob) {
-            const dx = x - ob.cx;
-            const dz = z - ob.cz;
-            lx = dx * ob.c - dz * ob.s;
-            lz = dx * ob.s + dz * ob.c;
-            hx = ob.hx;
-            hz = ob.hz;
-        } else {
-            lx = x - (box.minX + box.maxX) / 2;
-            lz = z - (box.minZ + box.maxZ) / 2;
-            hx = (box.maxX - box.minX) / 2;
-            hz = (box.maxZ - box.minZ) / 2;
-        }
-        const ax = Math.abs(lx);
-        const az = Math.abs(lz);
-        if (ax <= hx && az <= hz) return Math.min(hx - ax, hz - az);
-        return -Math.sqrt(this._boxAbstand2(box, x, z));
-    }
-    // NIE TIEFER IN DEN KASTEN (der Hüllen-Kontakt der Tiere): der Schritt von (px0, pz0) nach p — gemessen an der Achse
-    // (ox, oz) vom Leib-Ursprung — verliert seinen Anteil gegen die Wand, die der Achse vor dem Schritt am nächsten lag
-    // (im Rahmen der gedrehten Box); der Anteil längs der Wand bleibt. p wird überschrieben.
-    _kastenNieTiefer(box, p, px0, pz0, ox, oz) {
-        const ob = box.obb;
-        const c = ob ? ob.c : 1;
-        const s = ob ? ob.s : 0;
-        const cx = ob ? ob.cx : (box.minX + box.maxX) / 2;
-        const cz = ob ? ob.cz : (box.minZ + box.maxZ) / 2;
-        const hx = ob ? ob.hx : (box.maxX - box.minX) / 2;
-        const hz = ob ? ob.hz : (box.maxZ - box.minZ) / 2;
-        const qx = px0 + ox - cx;
-        const qz = pz0 + oz - cz;
-        const lx0 = qx * c - qz * s;
-        const lz0 = qx * s + qz * c;
-        const ddx = p.x - px0;
-        const ddz = p.z - pz0;
-        let dlx = ddx * c - ddz * s;
-        let dlz = ddx * s + ddz * c;
-        if (hx - Math.abs(lx0) < hz - Math.abs(lz0)) {
-            if (dlx * Math.sign(lx0) < 0) dlx = 0;
-        } else if (dlz * Math.sign(lz0) < 0) dlz = 0;
-        p.x = px0 + dlx * c + dlz * s;
-        p.z = pz0 - dlx * s + dlz * c;
     }
 
     _loopPlayerMovement(currentTime, dtOverride) {
