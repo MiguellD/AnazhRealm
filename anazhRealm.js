@@ -14787,7 +14787,7 @@ class AnazhRealm {
     }
 
     // Der Name eines Knotens: `name` || Inventar-Stempel || Wasser-Art; ein Schlüssel-Schwanz hinter einem Trenner
-    // fällt (`voxelChunk:3,-4:lod0` → `voxelChunk`, `nahWiese:-2,7` → `nahWiese`), Ziffern IM Namen bleiben
+    // fällt (`voxelChunk:3,-4:lod0` → `voxelChunk`, `nahWiese:L1:0:2` → `nahWiese:L1`), Ziffern IM Namen bleiben
     // (`p2p-spieler`, `r184-ausgabe`).
     static _taeterName(x) {
         const u = x.userData || {};
@@ -35786,12 +35786,10 @@ class AnazhRealm {
         const st = this.state;
         if (!st.scene || !st.camera || typeof THREE === "undefined") return 0;
         const NW = AnazhRealm.NAH_WIESE;
-        if (!st.nahWiese) {
-            const gruppe = new THREE.Group();
-            gruppe.name = "nahWiese";
-            st.scene.add(gruppe);
-            st.nahWiese = { gruppe, kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
-        }
+        // Die Senken hängen direkt in der Szene (`_nahWieseSenken`): jede ist ihr eigener oberster Knoten, die Täter-Klasse
+        // (`_taeterKlasse`) liest ihren Namen `nahWiese:L<stufe>:…` — die Band-Linse trennt die Stufen.
+        if (!st.nahWiese)
+            st.nahWiese = { kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
         const nw = st.nahWiese;
         // DIE STAND-WACHE: stehen Auge, Chunks und Studio-Vorlagen, steht jede Kachel — kein Gang.
         if (this._standRuht("nahWiese", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M })) return 0;
@@ -35933,8 +35931,9 @@ class AnazhRealm {
         };
     }
 
-    // Die Senken einer Vorlage × Stufe: je Studio-Teil EINE InstancedMesh für den ganzen Ring (`nahWiese:<v>:L<stufe>:<p>`).
-    // Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt; ein neues Studio-Asset
+    // Die Senken einer Vorlage × Stufe: je Studio-Teil EINE InstancedMesh für den ganzen Ring (`nahWiese:L<stufe>:<v>:<p>`,
+    // ein oberster Knoten der Szene — die Täter-Klasse faltet den Namen auf `nahWiese:L<stufe>`, die Band-Linse nennt jede
+    // Stufe beim Namen). Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt; ein neues Studio-Asset
     // (Saison) ersetzt die Senken der Vorlage. Die Sicht-Kugel der Vorlage: Höhe der Mitte und Radius in Büschel-Skala 1
     // (die waagrechte Lage der Mitte geht in den Radius — der Büschel dreht um die Hochachse).
     _nahWieseSenken(v, stufe, fl) {
@@ -35955,7 +35954,7 @@ class AnazhRealm {
                 );
             const a = {
                 key: `${kopf}:${p}`,
-                name: `nahWiese:${v}:L${stufe}:${p}`,
+                name: `nahWiese:L${stufe}:${v}:${p}`,
                 geo: lf.geom,
                 mat: lf.mat,
                 lokal: lf.localMatrix,
@@ -35967,7 +35966,7 @@ class AnazhRealm {
                 wachse: 0,
             };
             if (a.quelle) a.quelle._liveRefs = (a.quelle._liveRefs || 0) + 1;
-            this._senkeMesh(a, 256, nw.gruppe);
+            this._senkeMesh(a, 256, this.state.scene);
             nw.senken.set(a.key, a);
             senken.push(a);
             if (!lf.geom.boundingSphere) lf.geom.computeBoundingSphere();
@@ -36043,7 +36042,7 @@ class AnazhRealm {
                 if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s)) continue;
                 m4.fromArray(k.basis, i * 16);
                 for (const a of vl.senken) {
-                    if (a.anzahl >= a.kap) this._senkeMesh(a, Math.ceil(a.kap * 1.5), nw.gruppe);
+                    if (a.anzahl >= a.kap) this._senkeMesh(a, Math.ceil(a.kap * 1.5), this.state.scene);
                     mw.multiplyMatrices(m4, a.lokal).toArray(a.mesh.instanceMatrix.array, a.anzahl * 16);
                     a.anzahl++;
                 }
