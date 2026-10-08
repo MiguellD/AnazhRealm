@@ -243,6 +243,9 @@ const server = http.createServer((req, res) => {
             "boden-satz": { b: "substanz", why: "boden-satz (Terrain-Ring + Stitch als EIN Satz)" },
             "wetter-regen": { b: "substanz", why: "wetter-regen (Niederschlags-Punkte)" },
             "dorf-rauch": { b: "substanz", why: "dorf-rauch (Rauch der Siedlungs-Kamine, ein Satz)" },
+            // die Bau-Pools (`AnazhRealm._poolKennung`, gestempelt bei jeder Erzeugung, auch beim Verdoppeln)
+            "siedlung-zaun": { b: "substanz", why: "siedlung-zaun (Zaun-Streifen der Siedlungen, ein Pool)" },
+            "bau-fundament": { b: "substanz", why: "bau-fundament (Fundamente der Häuser, ein Pool)" },
         };
         const chainOf = (node) => {
             const c = [];
@@ -487,6 +490,22 @@ const server = http.createServer((req, res) => {
                 st.scene.add(fake4);
                 grassSet.add(fake4); // wie ein Eintrag in st.voxelChunkGrass (der Zensus-Schnappschuss)
                 injected.push(fake4);
+                // DER SIEDLUNGS-POOL (CI 37709343976): ein Zaun-Pool, der nur seinen Namen trägt, ist ein UNBEKANNTER
+                // Emitter (rot) — derselbe Pool aus der Kennung des Stamms (`_poolKennung`) ist Bau-Substanz.
+                const fake5 = new THREE.InstancedMesh(geo, mat, 3);
+                fake5.count = 3;
+                fake5.name = "siedlung-zaun";
+                st.scene.add(fake5);
+                injected.push(fake5);
+                const mitKennung =
+                    typeof r.constructor._poolKennung === "function"
+                        ? r.constructor._poolKennung(new THREE.InstancedMesh(geo, mat, 3), "siedlung-zaun")
+                        : null;
+                if (mitKennung) {
+                    mitKennung.count = 3;
+                    st.scene.add(mitKennung);
+                    injected.push(mitKennung);
+                }
                 // meshKeys ist ein Schnappschuss von VOR der Injektion → fake1 fällt (wie
                 // fake2) in den Fail-Closed-Fallback: fake1–fake3 + der Tuft-Fake MÜSSEN als
                 // +4 Verletzungen zählen. Der Namens-Regel-Pfad (Grammatik-Baum-Key →
@@ -502,10 +521,15 @@ const server = http.createServer((req, res) => {
                     studioGestaltWirt: c4.b === "verletzung",
                 };
                 const z2 = census();
+                const zaunWhy = INVENTAR["siedlung-zaun"].why;
                 o.selftest = {
                     before: o.zensus.buckets.verletzung,
                     after: z2.buckets.verletzung,
-                    fired: z2.buckets.verletzung === o.zensus.buckets.verletzung + 4,
+                    fired: z2.buckets.verletzung === o.zensus.buckets.verletzung + 5,
+                    // der Siedlungs-Pool: ohne Stempel rot beim Namen, mit der Kennung des Stamms Substanz
+                    poolOhne: z2.violations.some((v) => v.name === "siedlung-zaun" && /UNBEKANNTER/.test(v.label)),
+                    poolMit:
+                        !!mitKennung && (z2.detail.substanz[zaunWhy] || 0) === (o.zensus.detail.substanz[zaunWhy] || 0) + 1,
                     // N4.3 — die Tuft-Wand feuert NAMENTLICH (nicht nur der Zähler):
                     tuftWallFired: z2.violations.some((v) => /foundryGras/.test(v.label)),
                 };
@@ -590,6 +614,23 @@ const server = http.createServer((req, res) => {
 
     const fails = [];
     for (const x of out.wieseFehl || []) fails.push("Nah-Wiese: " + x);
+    // DIE KENNUNG AN DER QUELLE (Stamm, kommentarfrei): jeder Instanz-Pool der Bau-Methoden entsteht über `_poolKennung`
+    // (auch der Verdopplungs-Pool) — ein Pool, der erst später ins Bild kommt (das Auto-Dorf während der Inventur), trägt
+    // seinen Stempel von Geburt an.
+    {
+        const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
+        for (const m of ["_stlZaunEnsurePool", "_stlZaunAddStrip", "_archFundamentEnsure"]) {
+            const a = stamm.indexOf(`\n    ${m}(`);
+            const e = a < 0 ? -1 : stamm.indexOf("\n    }\n", a);
+            const body = a < 0 || e < 0 ? "" : stamm.slice(a, e).replace(/\/\/.*$/gm, "");
+            const pools = (body.match(/_instanzMesh\(/g) || []).length;
+            const kennung = (body.match(/_poolKennung\(/g) || []).length;
+            console.log(`  Kennung an der Quelle: ${m} — ${pools} Pool-Erzeugung(en), ${kennung} mit _poolKennung`);
+            if (!body) fails.push(`Kennung: ${m} nicht im Stamm gefunden`);
+            else if (!(pools >= 1) || kennung !== pools)
+                fails.push(`Kennung: ${m} erzeugt ${pools} Pool(s), ${kennung} davon mit _poolKennung — ein Pool ohne Identität`);
+        }
+    }
     if (!out.foundryReady) fails.push("Foundry nicht ready (Linse misst die falsche Welt)");
     if (!(out.studioScatterGroups > 0)) fails.push("keine bestückte fscatter:-Gruppe (Linse misst nichts)");
     if (!(out.stampedClasses > 0)) fails.push("keine gestempelte inventar-Klasse in der Szene (Wörterbuch vakuös)");
@@ -607,6 +648,11 @@ const server = http.createServer((req, res) => {
         console.log(
             `  Selbst-Test Tuft-Wand (N4.3): Gras ohne foundryGras-Stempel → ${out.selftest.tuftWallFired ? "feuert ✅" : "feuert NICHT ❌"}`
         );
+        console.log(
+            `  Selbst-Test Siedlungs-Pool: ohne Identität → ${out.selftest.poolOhne ? "rot ✅" : "NICHT rot ❌"} · mit der Kennung des Stamms → ${out.selftest.poolMit ? "Substanz ✅" : "NICHT Substanz ❌"}`
+        );
+        if (!out.selftest.poolOhne) fails.push("Selbst-Test: ein Siedlungs-Pool ohne Identität blieb ungesehen");
+        if (!out.selftest.poolMit) fails.push("Selbst-Test: der Siedlungs-Pool mit der Kennung des Stamms ist keine Substanz");
         if (!out.selftest.fired) fails.push("Selbst-Test: injizierte Fremd-Emitter nicht gefangen");
         if (!out.selftest.tuftWallFired)
             fails.push("Selbst-Test: die Tuft-Wand (Gras ohne foundryGras-Stempel) feuert nicht");

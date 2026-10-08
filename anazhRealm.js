@@ -66791,8 +66791,7 @@ class AnazhRealm {
                     roughness: 1,
                     metalness: 0,
                 })); // Bruchstein-Grau — Standard liest den EINEN Himmel (Lambert war im Schatten schwarz)
-            const mesh = AnazhRealm._instanzMesh(geo, mat, 128);
-            mesh.name = "bau-fundament";
+            const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 128), "bau-fundament");
             AnazhRealm._instanzZahl(mesh, 0);
             mesh.frustumCulled = false; // Welt-weiter Pool, 1 DC — Cull lohnt nicht
             mesh.receiveShadow = true;
@@ -66803,8 +66802,10 @@ class AnazhRealm {
         const slot = P.mesh.count;
         if (slot >= P.cap) {
             // Verdopplungs-Wachstum: Matrizen in einen frischen Pool kopieren.
-            const bigger = AnazhRealm._instanzMesh(this._archFundGeo, this._archFundMat, P.cap * 2);
-            bigger.name = "bau-fundament";
+            const bigger = AnazhRealm._poolKennung(
+                AnazhRealm._instanzMesh(this._archFundGeo, this._archFundMat, P.cap * 2),
+                "bau-fundament"
+            );
             bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
             AnazhRealm._instanzZahl(bigger, P.mesh.count);
             bigger.frustumCulled = false;
@@ -67443,6 +67444,16 @@ class AnazhRealm {
         return n;
     }
 
+    // DIE KENNUNG EINES BAU-POOLS (gate:asset-inventory): Name UND Inventar-Stempel eines Instanz-Pools der Bau-Substanz
+    // (der Zaun der Siedlungen, das Fundament der Häuser), bei jeder Erzeugung — auch beim Verdoppeln. Die Inventur liest den
+    // Stempel (`userData.inventar`), nie den Namen: bis 08.10. trugen beide Pools nur ihren Namen, und kam das Auto-Dorf
+    // während der Inventur, stand der Zaun als „UNBEKANNTER Emitter“ rot (CI 37709343976, siedlung-zaun inst×3).
+    static _poolKennung(mesh, name) {
+        mesh.name = name;
+        mesh.userData.inventar = name;
+        return mesh;
+    }
+
     // ═══ DER ZAUN-POOL ═══
     // Das _archFundament-Muster: EIN InstancedMesh für die hüfthohen Zaun-Streifen der Siedlungen (1 Draw-Call,
     // per-Instanz-Farbe); Höhe aus `getTerrainHeightAt`, Pitch aus den Endpunkt-Höhen. Kein Snapshot-Feld: die
@@ -67458,8 +67469,7 @@ class AnazhRealm {
         const mat =
             this._stlWegeMat ||
             (this._stlWegeMat = new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 }));
-        const mesh = AnazhRealm._instanzMesh(geo, mat, 256);
-        mesh.name = "siedlung-zaun";
+        const mesh = AnazhRealm._poolKennung(AnazhRealm._instanzMesh(geo, mat, 256), "siedlung-zaun");
         // instanceColor-Buffer anlegen SOLANGE count == cap (r128: setColorAt
         // alloziert count*3 — nach count=0 wäre der Buffer leer, GEMESSEN).
         mesh.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color(1, 1, 1)));
@@ -67475,8 +67485,10 @@ class AnazhRealm {
         if (!P) return;
         if (P.top >= P.cap) {
             // Verdopplungs-Wachstum (Matrizen + Farben in einen frischen Pool).
-            const bigger = AnazhRealm._instanzMesh(this._stlWegeGeo, this._stlWegeMat, P.cap * 2);
-            bigger.name = "siedlung-zaun";
+            const bigger = AnazhRealm._poolKennung(
+                AnazhRealm._instanzMesh(this._stlWegeGeo, this._stlWegeMat, P.cap * 2),
+                "siedlung-zaun"
+            );
             bigger.instanceMatrix.array.set(P.mesh.instanceMatrix.array);
             // Buffer anlegen SOLANGE count == neuer cap (r128-setColorAt-Semantik).
             bigger.setColorAt(0, this._stlWegeTmpC || (this._stlWegeTmpC = new THREE.Color()));
