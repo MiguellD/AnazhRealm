@@ -54591,6 +54591,18 @@ class AnazhRealm {
 
     // Scatter-Streaming: 3×3-Region-Ring um den Spieler generieren, ferne disposen, nahe Cells
     // promovieren. Gated auf `state.atmosphere.gpuScatter`; bounded durch maxRegionsPerFrame.
+    // Eine Streu-Region streamt nur, wenn ihre NÄCHSTE Kante im `foliageRadius` liegt (gekappt auf die gebaute Ring-Kante) —
+    // kein Fern-Billboard vor dem Boden. Die Spieler-Region streamt immer; ferne holt der nächste Tick selbst-heilend nach.
+    // Headless: foliageRadius = MAX. Die EINE Regel für den Streamer und das erste Weltbild (`_weltbildFehlt`).
+    _streuRegionInReichweite(rx, rz, p) {
+        const SC = AnazhRealm.SCATTER;
+        const st = this.state;
+        const R = st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
+        const nx = Math.max(rx * SC.regionM, Math.min(p.x, (rx + 1) * SC.regionM));
+        const nz = Math.max(rz * SC.regionM, Math.min(p.z, (rz + 1) * SC.regionM));
+        return Math.hypot(nx - p.x, nz - p.z) <= R;
+    }
+
     _tickScatterStreaming(playerPos, deadlineMs) {
         const atmo = this.state.atmosphere;
         if (atmo && atmo.gpuScatter === false) return 0;
@@ -54613,22 +54625,12 @@ class AnazhRealm {
                 break;
             }
         }
-        // Eine Region streamt nur, wenn ihre NÄCHSTE Kante im `foliageRadius` liegt (gekappt auf die gebaute
-        // Ring-Kante) — kein Fern-Billboard vor dem Boden. Die Spieler-Region streamt immer; ferne holt der
-        // nächste Tick selbst-heilend nach. Headless: foliageRadius = MAX.
-        const _folR = (st) => (st.foliageRadius != null ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX);
-        const _foliageR = _folR(this.state);
-        const _regionInReach = (rx, rz) => {
-            const nx = Math.max(rx * SC.regionM, Math.min(playerPos.x, (rx + 1) * SC.regionM));
-            const nz = Math.max(rz * SC.regionM, Math.min(playerPos.z, (rz + 1) * SC.regionM));
-            return Math.hypot(nx - playerPos.x, nz - playerPos.z) <= _foliageR;
-        };
-        // (1) fehlende Ring-Regionen generieren (bounded) — nur, wenn im Radius (der Boden ist da);
-        // W3.3c: mit Deadline (Scheiben-Modus) + nie, wenn eine Fortsetzung den Frame schon füllte.
+        // (1) fehlende Ring-Regionen generieren (bounded) — nur, wenn im Radius (der Boden ist da,
+        // `_streuRegionInReichweite`); W3.3c: mit Deadline (Scheiben-Modus) + nie, wenn eine Fortsetzung den Frame schon füllte.
         for (let dz = -SC.ringRegions; dz <= SC.ringRegions && work < SC.maxRegionsPerFrame && !_sliceFull; dz++) {
             for (let dx = -SC.ringRegions; dx <= SC.ringRegions && work < SC.maxRegionsPerFrame; dx++) {
                 const rk = `${pRegX + dx},${pRegZ + dz}`;
-                if (!map.has(rk) && _regionInReach(pRegX + dx, pRegZ + dz)) {
+                if (!map.has(rk) && this._streuRegionInReichweite(pRegX + dx, pRegZ + dz, playerPos)) {
                     this._scatterRegion(pRegX + dx, pRegZ + dz, playerPos, deadlineMs);
                     work++;
                     if (Number.isFinite(deadlineMs) && performance.now() > deadlineMs) {
@@ -94588,20 +94590,87 @@ class AnazhRealm {
     // DAS ERSTE WELTBILD (Leben-Schau 07.10., L2): ein neuer Spieler sah als erstes Bild die schwarze Leinwand unter fertiger
     // UI — gemessen auf der Radeon 3,7 s bis 25,5 s nach dem Laden (der Weltbau hält den Haupt-Thread), dann sprang die Welt
     // herein. Der Ladeschirm (index.html, `#ladeschirm`) steht ab dem ersten Bild der Seite (sein Glimmen läuft im
-    // Compositor weiter, auch wenn der Weltbau den Haupt-Thread hält) und weicht nach dem ersten Frame, in dem der Boden
-    // unter dem Spieler steht (`_builtRingRadius` ≥ 0: sein Chunk ist gemesht; Himmel, Panorama, Genesis-Plattform und Ring
-    // stehen da schon). Bis dahin sagt die Stand-Zeile, worauf die Welt wartet.
+    // Compositor weiter, auch wenn der Weltbau den Haupt-Thread hält) und weicht nach dem ersten Frame, in dem das Weltbild
+    // FERTIG ist (`_weltbildFehlt` leer): Gegenprüfung Runde 1 — er wich, sobald der eigene Chunk stand, das erste Weltbild
+    // (Radeon, 15,9 s) zeigte die Welt ohne einen Baum und die Portale als Platzhalter. Bis dahin sagt die Stand-Zeile, worauf
+    // die Welt wartet. Ruht die Arbeit (dieselbe Lücke WELTBILD_STILL_MS lang, nichts wächst), weicht er LAUT: das Log nennt,
+    // was fehlt — ein Bau, den das Studio nie liefert, hält den Spieler nie vor der Welt fest.
     _ankunftsBild() {
         const st = this.state;
         if (st._weltbildDa) return true;
-        const gebaut = this._builtRingRadius();
-        if (!(gebaut != null && gebaut >= 0 && st.playerMesh)) {
-            this._ladeschirmStand(st.playerMesh ? "der Boden unter dir wächst" : "die Welt entsteht");
-            return false;
+        const fehlt = this._weltbildFehlt();
+        if (fehlt.length) {
+            const jetzt = performance.now();
+            const sig = fehlt.join(" · ");
+            if (st._weltbildLuecke !== sig) {
+                st._weltbildLuecke = sig;
+                st._weltbildLueckeSeit = jetzt;
+            }
+            if (!st.playerMesh || jetzt - st._weltbildLueckeSeit < AnazhRealm.WELTBILD_STILL_MS) {
+                this._ladeschirmStand(sig);
+                return false;
+            }
+            this.log(
+                `Das erste Weltbild steht ohne: ${sig} — die Arbeit ruhte ${AnazhRealm.WELTBILD_STILL_MS} ms.`,
+                "WARN"
+            );
         }
         st._weltbildDa = performance.now();
         this._ladeschirmWeg();
         return true;
+    }
+
+    // Was dem ersten Weltbild fehlt — leer heißt: es steht. Je Lücke ein Satz für die Stand-Zeile (mit ihrer Zahl, die sinkt,
+    // solange die Welt wächst): der Boden bis zum Existenz-Boden des Rings (RING_EXIST_FLOOR, die Ringe ohne fps-Tor), das
+    // Buch der Studios und sein Vor-Backen, jeder Bau und Baum der Mesh-Zone (`architectureCullingRadius`) gezeichnet, jede
+    // Streu-Region, die der Streamer holt (`_streuRegionInReichweite`), gebaut (keine wartet auf ihr Asset), keine Karte eines
+    // fernen Baums offen.
+    _weltbildFehlt() {
+        const st = this.state;
+        const pm = st.playerMesh;
+        if (!pm) return ["die Welt entsteht"];
+        const out = [];
+        const ring = this._builtRingRadius();
+        const ringSoll = AnazhRealm.RING_EXIST_FLOOR;
+        if (!(ring != null && ring >= ringSoll))
+            out.push(`der Boden wächst (Ring ${ring != null && ring >= 0 ? ring + 1 : 0} von ${ringSoll + 1})`);
+        if (!this._foundryEnabled()) return out;
+        const f = this._foundry;
+        if (!f || !f.ready || !f.recipes) {
+            out.push("das Buch der Studios öffnet sich");
+            return out;
+        }
+        if (f._prefetching) out.push("die Werkstatt backt vor");
+        const p = pm.position;
+        const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
+        let ungebaut = 0;
+        for (const e of st.architectures || []) {
+            if (!e || !e.position) continue;
+            const dx = e.position.x - p.x;
+            const dz = e.position.z - p.z;
+            if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e)) ungebaut++;
+        }
+        if (ungebaut) out.push(`${ungebaut} Bäume und Bauten wachsen`);
+        const SC = AnazhRealm.SCATTER;
+        const regionen = st.scatterRegions;
+        if (SC && regionen && !(st.atmosphere && st.atmosphere.gpuScatter === false)) {
+            const rx0 = Math.floor(p.x / SC.regionM);
+            const rz0 = Math.floor(p.z / SC.regionM);
+            let warten = 0;
+            for (let dz = -SC.ringRegions; dz <= SC.ringRegions; dz++)
+                for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
+                    const rx = rx0 + dx;
+                    const rz = rz0 + dz;
+                    if (!this._streuRegionInReichweite(rx, rz, p)) continue;
+                    const reg = regionen.get(`${rx},${rz}`);
+                    if (!reg || reg._deferredFoundry || reg._cont) warten++;
+                }
+            if (warten) out.push(`${warten} Wald-Stücke warten auf ihre Gestalt`);
+        }
+        const karten =
+            (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) + (this._impostorBakePending ? 1 : 0);
+        if (karten) out.push(`${karten} ferne Bäume werden gemalt`);
+        return out;
     }
 
     // Die Stand-Zeile des Ladeschirms (nur solange er steht).
@@ -98670,6 +98739,9 @@ AnazhRealm.RING_RAMP_START = 0; // V18.397 — Start-Ring beim Boot = EIN EINZIG
 // Kopfraum-Gate und der Schrumpf-Pfad endet hier (2 = 5×5 Chunks um den Spieler,
 // auf kienspan zugleich der Deckel → dort ist die Welt FIX). Existenz vor Framerate.
 AnazhRealm.RING_EXIST_FLOOR = 2;
+// DAS ERSTE WELTBILD (`_ankunftsBild`): steht dieselbe Lücke so lange (ms), ohne dass etwas wächst, weicht der Ladeschirm
+// laut — das Log nennt, was fehlt (ein Bau, den das Studio nie liefert, hält den Spieler nie vor der Welt fest).
+AnazhRealm.WELTBILD_STILL_MS = 15000;
 // Start-Ring 0 = EIN Chunk (der Spieler-Chunk): der Fern-Ring (Loch-Deckel) trägt den Rest, der Void-Boden
 // `_softFloorWhileChunkLoading` trägt den Rand, dann wächst der Ramp bei gesundem Frame Ring für
 // Ring — ein großer Start-Ring (25 Chunks) fror den Boot ein.

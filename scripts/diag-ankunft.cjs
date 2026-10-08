@@ -4,9 +4,11 @@
 // das Bild der Ankunft beweist die echte GPU (Bild-Paare vorher/nachher), diese Linse die Mechanik.
 //
 //   L2a DAS ERSTE WELTBILD — `#ladeschirm` steht im HTML ab dem ersten Bild der Seite (kein `hidden`, über allem) und
-//       weicht im Spiel nur über `_ankunftsBild`: solange der Boden unter dem Spieler nicht steht (`_builtRingRadius` < 0),
-//       bleibt er und sagt es in seiner Stand-Zeile; steht er, weicht er. Befund: das erste Bild war die schwarze Leinwand
-//       (Radeon: 1,6 s bis 14,5 s nach dem Laden), kein Ladeschirm.
+//       weicht im Spiel nur über `_ankunftsBild`: solange dem Weltbild etwas fehlt — der Boden bis zum Existenz-Boden des
+//       Rings, ein Baum oder Bau der Mesh-Zone ohne Gestalt, eine Streu-Region ohne ihr Asset, die Karte eines fernen
+//       Baums —, bleibt er und nennt die Lücke in seiner Stand-Zeile; steht alles, weicht er; ruht eine Lücke, weicht er
+//       laut (WARN). Befund: das erste Bild war die schwarze Leinwand (Radeon: 1,6 s bis 14,5 s nach dem Laden);
+//       Gegenprüfung Runde 1: der Ladeschirm wich beim eigenen Chunk, das erste Weltbild zeigte keinen Baum.
 //   L1  DAS FADENKREUZ — `#fadenkreuz` steht in der Bildmitte (dort trifft `_blickZiel`), weicht einer offenen Schublade.
 //       Befund: 0 Fadenkreuz-Elemente.
 //   L2b DIE HILFE — „hilfe" / „help" / „?" nennt jedes Beispiel der EINEN Tafeln (`chatDslPatterns`, `chatSystemPatterns`,
@@ -87,9 +89,24 @@ function ladeschirmVerdict(m) {
         if (m.htmlVersteckt) out.push("der Ladeschirm steht im HTML versteckt");
         if (!(m.zIndex >= 1000000)) out.push(`der Ladeschirm liegt unter der UI (z-index ${m.zIndex})`);
     }
-    if (m.ohneBoden !== "bleibt") out.push(`ohne Boden unter dem Spieler weicht der Ladeschirm (${m.ohneBoden})`);
-    if (!m.standZeile) out.push("ohne Boden schweigt die Stand-Zeile");
-    if (m.mitBoden !== "weicht") out.push(`mit Boden bleibt der Ladeschirm (${m.mitBoden})`);
+    const f = m.faelle || {};
+    if (f.fehler) return out.concat([f.fehler]);
+    // eine Lücke hält den Ladeschirm und die Stand-Zeile nennt sie
+    for (const [k, name, wort] of [
+        ["ohneBoden", "ohne Boden unter dem Spieler", /Boden/],
+        ["baumUngebaut", "mit einem Baum der Mesh-Zone ohne Gestalt", /Bäume und Bauten/],
+        ["streuWartet", "mit einer Streu-Region, die auf ihr Asset wartet", /Wald-Stück/],
+        ["karteOffen", "mit der offenen Karte eines fernen Baums", /ferne Bäume/],
+    ]) {
+        const z = f[k];
+        if (!z) out.push(`${name}: kein Fall (Vorbedingung)`);
+        else if (z.weg) out.push(`${name} weicht der Ladeschirm (das halbe Weltbild)`);
+        else if (!wort.test(z.stand || "")) out.push(`${name} nennt die Stand-Zeile die Lücke nicht („${z.stand}")`);
+    }
+    if (!f.allesSteht || !f.allesSteht.weg) out.push(`steht alles, bleibt der Ladeschirm („${(f.allesSteht && f.allesSteht.stand) || ""}"${m.fehltNachBoot && m.fehltNachBoot.length ? `, nach dem Boot fehlt ${m.fehltNachBoot.join(" · ")}` : ""})`);
+    if (!f.lueckeRuht) out.push("eine ruhende Lücke: kein Fall (Vorbedingung)");
+    else if (!f.lueckeRuht.weg) out.push("eine ruhende Lücke hält den Spieler vor der Welt fest");
+    else if (!f.lueckeRuht.warn) out.push("eine ruhende Lücke weicht ohne Wort im Log");
     if (!m.nachBootWeg) out.push("nach dem Boot (Null-Renderer) steht der Ladeschirm über der UI");
     return out;
 }
@@ -223,8 +240,11 @@ function wand(src, html) {
                 !/'Setze Wetter rainy'/.test(fallback),
         ],
         [
-            "W2 der Ladeschirm steht im HTML vor allem anderen sichtbar (kein `hidden`), das Spiel nimmt ihn nur über `_ankunftsBild`/`_ladeschirmWeg`",
-            ladeIdx >= 0 && !/\bhidden\b/.test(ladeTag) && /this\._ankunftsBild\(\)/.test(fnBody(nc, /\n {4}_loopRender\(currentTime\) \{/) || ""),
+            "W2 der Ladeschirm steht im HTML vor allem anderen sichtbar (kein `hidden`), das Spiel nimmt ihn nur über `_ankunftsBild`/`_ladeschirmWeg`, und `_ankunftsBild` fragt, was dem Weltbild fehlt (`_weltbildFehlt`)",
+            ladeIdx >= 0 &&
+                !/\bhidden\b/.test(ladeTag) &&
+                /this\._ankunftsBild\(\)/.test(fnBody(nc, /\n {4}_loopRender\(currentTime\) \{/) || "") &&
+                /this\._weltbildFehlt\(\)/.test(fnBody(nc, /\n {4}_ankunftsBild\(\) \{/) || ""),
         ],
         [
             "W3 die Hotbar trägt im Konstruktor keinen Bauplan-Namen (der Start-Gurt liest den Katalog: `_startGurt`)",
@@ -278,26 +298,78 @@ async function probe(arg) {
     await tick(30, 30);
     // ── L2a: das erste Weltbild ──
     try {
-        const m = { gestartet: false };
+        const m = { gestartet: false, faelle: {} };
         out.lade = m;
         const ls = document.getElementById("ladeschirm");
         m.nachBootWeg = !ls || ls.hidden || ls.classList.contains("weg");
         if (ls && typeof r._ankunftsBild === "function") {
-            // den Ladeschirm wieder stellen, den Spieler in einen Chunk ohne Boden, `_ankunftsBild` fragen
-            ls.hidden = false;
-            ls.classList.remove("weg");
-            const merk = st.lastPlayerVoxelChunk;
-            st._weltbildDa = 0;
-            st.lastPlayerVoxelChunk = { cx: 9000, cz: 9000 };
-            const a = r._ankunftsBild();
-            m.ohneBoden = a ? "weicht" : !ls.classList.contains("weg") ? "bleibt" : "weicht";
-            m.standZeile = (document.getElementById("ladeschirm-stand") || {}).textContent || "";
-            st.lastPlayerVoxelChunk = merk;
-            const b = r._ankunftsBild();
-            m.mitBoden = b && ls.classList.contains("weg") ? "weicht" : "bleibt";
+            // Die Welt wächst, bis sie steht (das Weltbild ist fertig: `_weltbildFehlt` leer) — höchstens 90 s.
+            if (typeof r._weltbildFehlt === "function") {
+                const dlW = performance.now() + 90000;
+                while (r._weltbildFehlt().length && performance.now() < dlW) await tick(5, 60);
+                m.fehltNachBoot = r._weltbildFehlt();
+            }
+            const stand = () => (document.getElementById("ladeschirm-stand") || {}).textContent || "";
+            // ein Fall: den Ladeschirm wieder stellen, die Lücke schaffen, `_ankunftsBild` fragen, die Lücke schließen
+            const fall = (name, schaffe, heile, vorbereiten) => {
+                ls.hidden = false;
+                ls.classList.remove("weg");
+                st._weltbildDa = 0;
+                st._weltbildLuecke = null;
+                const n0 = st.logBuffer.length;
+                schaffe();
+                if (vorbereiten) vorbereiten();
+                r._ankunftsBild();
+                const weg = ls.classList.contains("weg");
+                m.faelle[name] = { weg, stand: stand(), warn: st.logBuffer.slice(n0).filter((z) => /erste Weltbild steht ohne/.test(z)).length };
+                heile();
+            };
+            const nichts = () => {};
+            // (1) ohne Boden: der Spieler in einem Chunk ohne Mesh
+            const merkChunk = st.lastPlayerVoxelChunk;
+            fall("ohneBoden", () => (st.lastPlayerVoxelChunk = { cx: 9000, cz: 9000 }), () => (st.lastPlayerVoxelChunk = merkChunk));
+            // (2) ein Baum der Mesh-Zone ohne Gestalt (sein Mesh, seine Instanz beiseite)
+            const pm = st.playerMesh.position;
+            const baum = st.architectures
+                .filter((a) => a && /^baum_/.test(a.type || "") && r._archIsRendered(a))
+                .sort((a, b) => Math.hypot(a.position.x - pm.x, a.position.z - pm.z) - Math.hypot(b.position.x - pm.x, b.position.z - pm.z))[0];
+            let merkBaum = null;
+            const baumWeg = () => {
+                merkBaum = { mesh: baum.mesh, instanced: baum.instanced };
+                baum.mesh = null;
+                baum.instanced = null;
+            };
+            const baumHer = () => {
+                baum.mesh = merkBaum.mesh;
+                baum.instanced = merkBaum.instanced;
+            };
+            if (baum) {
+                m.baumD = +Math.hypot(baum.position.x - pm.x, baum.position.z - pm.z).toFixed(1);
+                fall("baumUngebaut", baumWeg, baumHer);
+            }
+            // (3) die Streu-Region des Spielers wartet auf ihr Asset
+            const SC = r.constructor.SCATTER;
+            const reg = st.scatterRegions ? st.scatterRegions.get(`${Math.floor(pm.x / SC.regionM)},${Math.floor(pm.z / SC.regionM)}`) : null;
+            if (reg) fall("streuWartet", () => (reg._deferredFoundry = true), () => delete reg._deferredFoundry);
+            // (4) die Karte eines fernen Baums ist offen
+            fall(
+                "karteOffen",
+                () => (r._impostorBakeQueue = (r._impostorBakeQueue || []).concat(["linse:karte"])),
+                () => (r._impostorBakeQueue = (r._impostorBakeQueue || []).filter((k) => k !== "linse:karte"))
+            );
+            // (5) alles steht
+            fall("allesSteht", nichts, nichts);
+            // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
+            if (baum)
+                fall("lueckeRuht", baumWeg, baumHer, () => {
+                    const sig = typeof r._weltbildFehlt === "function" ? r._weltbildFehlt().join(" · ") : "";
+                    st._weltbildLuecke = sig;
+                    st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
+                });
             await sleep(800);
             if (!st._weltbildDa) st._weltbildDa = performance.now();
-        } else m.ohneBoden = ls ? "kein _ankunftsBild" : "kein Ladeschirm";
+            ls.classList.add("weg");
+        } else m.faelle = { fehler: ls ? "kein _ankunftsBild" : "kein Ladeschirm" };
         m.gestartet = true;
     } catch (e) {
         out.lade = Object.assign(out.lade || {}, { err: (e && e.stack) || String(e) });
@@ -807,12 +879,34 @@ async function probe(arg) {
             [
                 "L2a",
                 ladeschirmVerdict,
-                { gestartet: true, imHtml: true, htmlVersteckt: false, zIndex: 2147483000, ohneBoden: "bleibt", standZeile: "der Boden unter dir wächst", mitBoden: "weicht", nachBootWeg: true },
+                {
+                    gestartet: true,
+                    imHtml: true,
+                    htmlVersteckt: false,
+                    zIndex: 2147483000,
+                    nachBootWeg: true,
+                    faelle: {
+                        ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0 },
+                        baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0 },
+                        streuWartet: { weg: false, stand: "1 Wald-Stücke warten auf ihre Gestalt", warn: 0 },
+                        karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0 },
+                        allesSteht: { weg: true, stand: "", warn: 0 },
+                        lueckeRuht: { weg: true, stand: "", warn: 1 },
+                    },
+                },
                 [
-                    ["kein Ladeschirm (Befund)", { imHtml: false, ohneBoden: "kein Ladeschirm", standZeile: "" }, "kein Ladeschirm im HTML"],
+                    ["kein Ladeschirm (Befund)", { imHtml: false }, "kein Ladeschirm im HTML"],
                     ["unter der UI", { zIndex: 5 }, "der Ladeschirm liegt unter der UI"],
-                    ["weicht ohne Boden", { ohneBoden: "weicht" }, "ohne Boden unter dem Spieler weicht"],
-                    ["bleibt mit Boden", { mitBoden: "bleibt" }, "mit Boden bleibt"],
+                    [
+                        "halbes Weltbild (Gegenprüfung: der eigene Chunk reicht)",
+                        { faelle: { ohneBoden: { weg: false, stand: "der Boden unter dir wächst" }, baumUngebaut: { weg: true, stand: "" }, streuWartet: { weg: true, stand: "" }, karteOffen: { weg: true, stand: "" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 0 } } },
+                        "mit einem Baum der Mesh-Zone ohne Gestalt weicht der Ladeschirm",
+                    ],
+                    ["weicht ohne Boden", { faelle: { ohneBoden: { weg: true, stand: "" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 1 } } }, "ohne Boden unter dem Spieler weicht"],
+                    ["stumme Stand-Zeile", { faelle: { ohneBoden: { weg: false, stand: "" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 1 } } }, "ohne Boden unter dem Spieler nennt die Stand-Zeile"],
+                    ["bleibt, wenn alles steht", { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: false, stand: "?" }, lueckeRuht: { weg: true, warn: 1 } } }, "steht alles, bleibt der Ladeschirm"],
+                    ["ruhende Lücke hält fest", { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: false, warn: 0 } } }, "eine ruhende Lücke hält den Spieler"],
+                    ["ruhende Lücke still", { faelle: { ohneBoden: { weg: false, stand: "Boden" }, baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen" }, streuWartet: { weg: false, stand: "1 Wald-Stücke" }, karteOffen: { weg: false, stand: "1 ferne Bäume" }, allesSteht: { weg: true }, lueckeRuht: { weg: true, warn: 0 } } }, "eine ruhende Lücke weicht ohne Wort"],
                     ["blockt die Linsen", { nachBootWeg: false }, "nach dem Boot"],
                 ],
             ],
@@ -961,6 +1055,7 @@ async function probe(arg) {
         check("Selbst-Test W: der Arbeitsbaum ist grün", gruen.every((w) => w[1]), gruen.filter((w) => !w[1]).map((w) => w[0]).join(" | "));
         const vorStand = quelle
             .replace("if (!this.state._weltbildDa) this._ankunftsBild();", "")
+            .replace("const fehlt = this._weltbildFehlt();", 'const fehlt = this._builtRingRadius() >= 0 ? [] : ["Boden"];')
             .replace("hotbar: [null, null, null, null, null, null, null, null, null],", 'hotbar: ["stein_block", "waterfall", "damm", null, null, null, null, null, null],')
             .replace("const anchor = this._siedlungsAnker(plan, o.position || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);')
             .replace("{ durchPflanzen: true }", "{}")
