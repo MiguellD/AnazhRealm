@@ -17,8 +17,11 @@ const { spawn } = require("child_process");
 const path = require("path");
 const puppeteer = require("puppeteer");
 
-const ROOT = "/home/user/AnazhRealm";
-const PAGE_URL = "http://127.0.0.1:4312/worlds/translated/index.html";
+// Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
+// je Linse (TRANSLATED_PORT; der Save-Server liest PORT).
+const ROOT = path.resolve(__dirname, "..");
+const PORT = Number(process.env.TRANSLATED_PORT || 4312);
+const PAGE_URL = `http://127.0.0.1:${PORT}/worlds/translated/index.html`;
 
 // Eine repräsentative Szene — Lava-Welt: Objekte (Oktaeder + Zylinder als
 // InstancedMesh), Hügel-Boden, Glut-Partikel, ein DSL-Effekt.
@@ -41,7 +44,10 @@ function sleep(ms) {
 
 function startProc(script, readyRe) {
     return new Promise((resolve, reject) => {
-        const proc = spawn("node", [path.join(ROOT, script)], { stdio: ["ignore", "pipe", "pipe"] });
+        const proc = spawn("node", [path.join(ROOT, script)], {
+            stdio: ["ignore", "pipe", "pipe"],
+            env: Object.assign({}, process.env, { PORT: String(PORT) }),
+        });
         let ready = false;
         const timeout = setTimeout(() => {
             if (!ready) reject(new Error(`${script} startete nicht innerhalb 6 s`));

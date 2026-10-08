@@ -246,6 +246,15 @@ Die Regler-Definitionen als DATEN (die HDA-Lehre) — **als MAP je kind**:
 - Der Host (Werkstatt) baut die Regler-UI GENERISCH daraus — kein
   hartkodiertes Slider-Panel pro Domäne.
 - `law` ist der Ein-Satz-Lehrsatz am Regler (Anzeige, nicht Logik).
+- **Jede Zeile wirkt** (Studio-Welle S1, `gate:regler-wirkt`): der Werkstatt-Wert liegt in `ws.studioOv[preset]`
+  als `{id: wert}` und reist über die EINE Vorschau-Quelle (`_workshopStudioPreviewFrom`). Die Mesh-Arten baut
+  die Foundry (`ov {id: wert}` über build-asset); die MESHFREI-Arten (§8: koerper · kreatur · klang) gießt der
+  Host-Ofen der Werkstatt (`_workshopOvenPreview`) — koerper reicht den Wert als `dials` in den Mensch-Bäcker,
+  kreatur in die Gattungs-Dials, klang hat keinen Gestalt-Bäcker (kein Guss, der Leser wäre die Musik). Die Linse
+  misst je Art an dem Kanal, den die Vorschau nimmt; eine Zeile, die den Bau bzw. Guss an keinem Rezept ihrer Art
+  bewegt (Hash bei min und max), ist tot und steht beim Namen in `spec/vertraege/ratsche.json` (`reglerTot`, die
+  Liste schrumpft nur, Soll 0). Ein Bau, der mit dem Wert bricht (wirft, leer, NaN, Not-Körper), ist rot; ein
+  Rand-Wert über der Budget-Zeile (B2c) steht in `reglerBudget` (Soll 0).
 
 ### B5 — LEHREN (SOLL)
 
@@ -263,7 +272,13 @@ Die Verben + Daten-Komponenten der Domäne (die ECS-Lehre: `kind` wählt
 Komponenten-SÄTZE, keine Klassen):
 
 - `dsl`: die Wörter, die die begehbare Welt versteht (W12-ready-Handshake —
-  gebaut für alle fünf Portale).
+  gebaut für alle fünf Portale). Das Protokoll richtet die Heimat (`gate:portal-konformanz`, alle 13
+  Welten über den echten Weg): die Welt meldet `ready` (ihr Wörterbuch gewinnt, Stufe „nativ"); die
+  Heimat schickt `enter` beim load und auf die ERSTE ready (ein Echo je enter bleibt endlich); die Welt
+  nimmt nur Nachrichten ihres Eltern-Fensters an (`event.source`); ein Wort kommt flach
+  `["w", …args]` oder als `["chain", …]` und wirkt sichtbar (Ereignis ins Journal der Heimat oder
+  Zustand der Welt-UI); Esc meldet `exit`. Stumme Einzelwörter und Echo-Welten stehen als Ratsche in
+  `spec/vertraege/ratsche.json`.
 - Daten-Komponenten je kind, von EXISTIERENDEN Systemen gelesen (kein
   Parallel-System): `vehicle.fahrprofil` — GEBAUT N6 (09.07.): NICHT die rohen
   Regler, sondern die ABGELEITETEN drive-Skalare des Wörterbuchs v1

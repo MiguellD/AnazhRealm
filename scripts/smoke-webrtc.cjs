@@ -16,9 +16,13 @@ const path = require("path");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
 
-const ROOT = "/home/user/AnazhRealm";
-const PAGE_URL = "http://127.0.0.1:4312/index.html";
-const SIGNALING_URL = "ws://127.0.0.1:4313";
+// Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
+// je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT).
+const ROOT = path.resolve(__dirname, "..");
+const PORT = Number(process.env.WEBRTC_PORT || 4312);
+const SIGNAL_PORT = Number(process.env.WEBRTC_SIGNAL_PORT || 4313);
+const PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
+const SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
 const ROOM = "smoke-webrtc-room";
 // W16 — die Test-Welt, die A vendort + B über das Mesh holt.
 const W16_ID = "smoke-mesh-w16";
@@ -106,6 +110,7 @@ function startProc(script, readyRe) {
     return new Promise((resolve, reject) => {
         const proc = spawn("node", [path.join(ROOT, script)], {
             stdio: ["ignore", "pipe", "pipe"],
+            env: Object.assign({}, process.env, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) }),
         });
         let ready = false;
         const timeout = setTimeout(() => {

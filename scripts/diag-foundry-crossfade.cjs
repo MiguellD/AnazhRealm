@@ -952,7 +952,10 @@ function perfWahrheit(srcNC) {
         ["_tickScatterLod", /\n {4}_tickScatterLod\([^)]*\)\s*\{/],
     ]) {
         const b = fnBody(srcNC, re) || "";
-        if (!/if \(visH === null\) continue;/.test(b)) v.push(name + " urteilt ohne bekannte Höhe (visH null)");
+        // die Höhen-Stufe lädt: der Eintrag hält Stufe und Band (seit Welle K zählt der Takt ihn als wartend — die
+        // Stand-Wache schläft nicht, solange eine Höhe fehlt)
+        if (!/if \(visH === null\) (?:continue;|\{\s*offen\+\+;\s*continue;\s*\})/.test(b))
+            v.push(name + " urteilt ohne bekannte Höhe (visH null)");
     }
     return v;
 }
@@ -1045,7 +1048,7 @@ async function main() {
             ["Maske ohne einzige Nah-Stufe", nc.replace("_fadeIn.max(T.step(T.float(2.5), _aLod)).mul(T.step(_f1o, _dh))", "_fadeIn.mul(T.step(_f1o, _dh))")],
             ["Sichthöhe still 0", nc.replace("if (h0 == null) return null;", "if (h0 == null) return 0;")],
             ["Höhe nur im LRU", nc.replace("if (v && v._hoehe > 0) (f.hoehen || (f.hoehen = new Map())).set(key, v._hoehe);", "")],
-            ["LOD-Takt urteilt ohne Höhe", nc.replace("if (visH === null) continue;", "")],
+            ["LOD-Takt urteilt ohne Höhe", nc.replace(/if \(visH === null\) \{\s*offen\+\+;\s*continue;\s*\}/, "")],
             ["CPU-Blatt-Kappe auf der skalierten Höhe", nc.replace("Math.min(visH / sS, capL) * sS", "Math.min(visH, capL)")],
             ["Streu-Partner ohne Skala", nc.replace("this._lodBandPartnerFor(dist, visH, _curLod, tf.scale)", "this._lodBandPartnerFor(dist, visH, _curLod)")],
             [

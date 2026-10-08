@@ -2001,10 +2001,11 @@ class AnazhRealm {
         if (this._dslEffectsCache) return this._dslEffectsCache;
         const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
         this._dslEffectsCache = {
-            weather: ([name]) => {
+            weather: ([name], ctx) => {
                 // Vokabular = die WEATHER_INTENSITY-Tabelle (sunny · rainy · stormy); der EINE Schreiber
-                // _setWeather trägt Logik-instant + visuellen Cross-Fade (DSL-Op und Auto-Zug teilen ihn).
-                if (name in AnazhRealm.WEATHER_INTENSITY) this._setWeather(name);
+                // _setWeather trägt Logik-instant + visuellen Cross-Fade (DSL-Op und Auto-Zug teilen ihn) und
+                // die Quelle des Programms.
+                if (name in AnazhRealm.WEATHER_INTENSITY) this._setWeather(name, ctx && ctx.source);
             },
             // set_time_of_day(t), t ∈ 0..1 (0 = Mitternacht, 0.5 = Mittag). NON_BROADCASTABLE — jeder
             // Mitspieler darf seine eigene Tageszeit haben.
@@ -22800,6 +22801,59 @@ class AnazhRealm {
             };
             NM.__anazhSchattenDiaet = true;
         }
+        // DER EINE KNOTEN JE QUELLE (r184 gelesen, vendor/three.webgpu.min.js + vendor/CSMShadowNode.js): eine geteilte
+        // Uniform-Gruppe (renderGroup: Kamera · Lichter · Welt-Sätze) teilt r184 über Programme hinweg nur bei GLEICHEN
+        // Knoten — `_getBindGroup` schlüsselt sie nach den sortierten Knoten-ids, je Render-Kontext EIN Puffer. Zwei
+        // Erzeuger bauten ihre Knoten je Programm neu: `reference(…)` legt seinen Uniform-Knoten je ReferenceNode an
+        // (setNodeType), und der Schatten-Filter ruft es je Bau (ShadowNode: radius · mapSize je Kaskade); die CSM baut in
+        // `setup` je Programm camera.near · cascades · shadowFar. Jedes beleuchtete Programm trug so seine EIGENE Render-
+        // Gruppe, und jede Änderung von Kamera, TRAA-Zittern, Sonne oder Wind schrieb sie je Programm. Gemessen 07.10. an
+        // der Mess-Wiese (echte GPU, Stand, ein Frame): 192 Programme, 153 geteilte Gruppen, 121 Gruppen-Uploads und 1 042
+        // writeBuffer — dieselbe Kamera 80-mal hochgeladen. Ein Verweis einer geteilten Gruppe auf dasselbe Objekt und
+        // dieselbe Eigenschaft trägt jetzt EINEN Uniform-Knoten, die CSM baut ihren Knoten einmal je Instanz (TSL baut einen
+        // Knoten in jedem Programm für sich); Verweise ohne festes Objekt (je Zeichen-Objekt) bleiben je Knoten.
+        // gate:vendor-anker pinnt beide Stellen und den Schlüssel, gate:kamera-treue zählt die Gruppen am echten Bild.
+        const REF = THREE.TSL && typeof THREE.TSL.reference === "function" ? THREE.TSL.reference : null;
+        let refProto = REF ? Object.getPrototypeOf(REF("x", "float", { x: 0 })) : null;
+        while (refProto && !Object.prototype.hasOwnProperty.call(refProto, "setNodeType"))
+            refProto = Object.getPrototypeOf(refProto);
+        if (!refProto) this.log("EIN KNOTEN: r184-ReferenceNode.setNodeType nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!refProto.__anazhEinKnoten) {
+            const typRoh = refProto.setNodeType;
+            const jeQuelle = new WeakMap();
+            refProto.setNodeType = function (typ) {
+                const g = this.group;
+                const o = this.object;
+                if (!g || g.shared !== true || o === null || typeof o !== "object") return typRoh.call(this, typ);
+                let m = jeQuelle.get(o);
+                if (!m) jeQuelle.set(o, (m = new Map()));
+                const k = `${this.property}|${typ}|${this.count}|${g.name}|${this.name}`;
+                const n = m.get(k);
+                if (n) {
+                    this.node = n;
+                    return;
+                }
+                typRoh.call(this, typ);
+                m.set(k, this.node);
+            };
+            refProto.__anazhEinKnoten = true;
+        }
+        const CSM = THREE.CSMShadowNode;
+        if (typeof CSM !== "function" || typeof CSM.prototype.setup !== "function")
+            this.log("EIN KNOTEN: CSMShadowNode.setup nicht gefunden (Vendor-Drift)", "ERROR");
+        else if (!CSM.__anazhEinAufbau) {
+            const aufbauRoh = CSM.prototype.setup;
+            const aufbau = new WeakMap();
+            CSM.prototype.setup = function (builder) {
+                let n = aufbau.get(this);
+                if (n === undefined) {
+                    n = aufbauRoh.call(this, builder);
+                    aufbau.set(this, n);
+                }
+                return n;
+            };
+            CSM.__anazhEinAufbau = true;
+        }
         // Ab hier hängen die Eingriffe am Renderer-EXEMPLAR; der Null-Renderer (headless) zeichnet nie. Fehlt einem
         // echten Renderer eine der r184-Stellen, meldet sich der Eingriff laut (gate:vendor-anker pinnt jede).
         if (renderer._isHeadlessNull) return;
@@ -22848,16 +22902,29 @@ class AnazhRealm {
         else if (!renderer.__anazhBundleWahrheit) {
             const szeneRoh = renderer._renderScene;
             const be = renderer.backend;
+            // (3) DIE WELT-MATRIZEN EINMAL JE BILD (Welle K): r184 rechnet in JEDEM `_renderScene` den ganzen Szenen-
+            //     Graphen neu (`scene.updateMatrixWorld()` bei matrixWorldAutoUpdate) — auch in jeder Kaskade, die mitten im
+            //     Hauptbild derselben Szene startet. Gemessen 07.10. (Radeon, Mess-Wiese, echter Loop): 2,1 Graph-Gänge je
+            //     gerendertem Bild (Hauptbild + Kaskaden), ~1000 Knoten je Gang. Zwischen dem Hauptbild und seinen
+            //     verschachtelten Pässen bewegt sich nichts (kein Spiel-Takt läuft, kein Haken schreibt Matrizen): ein
+            //     verschachtelter Render DERSELBEN Szene liest die Matrizen, die ihr äußerer Render eben rechnete.
+            const offen = new Set();
             renderer._renderScene = function (scene, camera, useFrameBufferTarget) {
                 const aufnahme = this._currentRenderBundle;
                 const override = !!(scene && scene.overrideMaterial);
                 const eigen = Object.prototype.hasOwnProperty.call(be, "beginBundle");
                 const beginRoh = be.beginBundle;
+                const innen = !!scene && offen.has(scene) && scene.matrixWorldAutoUpdate === true;
                 this._currentRenderBundle = null;
                 if (override) be.beginBundle = undefined;
+                if (innen) scene.matrixWorldAutoUpdate = false;
+                const aussen = !!scene && !offen.has(scene);
+                if (aussen) offen.add(scene);
                 try {
                     return szeneRoh.call(this, scene, camera, useFrameBufferTarget);
                 } finally {
+                    if (aussen) offen.delete(scene);
+                    if (innen) scene.matrixWorldAutoUpdate = true;
                     this._currentRenderBundle = aufnahme;
                     if (override) {
                         if (eigen) be.beginBundle = beginRoh;
@@ -22901,6 +22968,32 @@ class AnazhRealm {
                     return aus;
                 };
                 renderer.__anazhBundleReihenfolge = true;
+            }
+            // EIN SCHREIBEN JE PUFFER: r184 lädt eine Uniform-Gruppe Bereich für Bereich hoch — je geänderter Uniform ein
+            // eigenes writeBuffer (bindingUtils.updateBinding). Kamera-Matrizen, Licht-Richtung und Zeit ändern sich
+            // zusammen: gemessen 07.10. (Mess-Wiese, Stand) 18 Gruppen-Uploads in 170 writeBuffer je Frame. Eine Gruppe
+            // mit mehreren geänderten Bereichen lädt jetzt EINEN Bereich vom ersten bis zum letzten (dazwischen liegen
+            // die gültigen Werte der Gruppe); r184 leert die Bereiche nach dem Upload (`_update`).
+            const be = renderer.backend;
+            if (typeof be.updateBinding !== "function")
+                this.log("EIN SCHREIBEN: r184-Backend.updateBinding nicht gefunden (Vendor-Drift)", "ERROR");
+            else if (!be.__anazhEinSchreiben) {
+                const bindungRoh = be.updateBinding;
+                be.updateBinding = function (b) {
+                    const rs = b && b.isNodeUniformsGroup === true ? b.updateRanges : null;
+                    if (rs && rs.length > 1) {
+                        let a = rs[0].start,
+                            z = a + rs[0].count;
+                        for (let i = 1; i < rs.length; i++) {
+                            if (rs[i].start < a) a = rs[i].start;
+                            if (rs[i].start + rs[i].count > z) z = rs[i].start + rs[i].count;
+                        }
+                        rs.length = 0;
+                        rs.push({ start: a, count: z - a });
+                    }
+                    return bindungRoh.call(this, b);
+                };
+                be.__anazhEinSchreiben = true;
             }
         }
         // DER SCHATTEN-STOFF JE OBJEKT: r184 setzt in `renderObject` je Objekt `alphaTest` (und Seite, Knoten) des
@@ -30819,6 +30912,7 @@ class AnazhRealm {
         const key = `${cx},${cz}`;
         if (fresh.kind === "empty") {
             this.state.voxelChunks.set(key, { empty: true });
+            this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
             return null;
         }
         // DER SATZ (Welle B): der Boden ist ein BEREICH im Boden-Satz (ein Befehl je Pass für den ganzen Ring);
@@ -30842,6 +30936,7 @@ class AnazhRealm {
             hasBVH: typeof fresh.hasBVH === "boolean" ? fresh.hasBVH : true,
         };
         this.state.voxelChunks.set(key, entry);
+        this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
         // Gras nur im Nah-Ring (Distanz-Gate unten); Iso-Wasser ist der EINZIGE Wasser-Render-Pfad,
         // Streu-Strukturen idempotent je Chunk einmal. span ist über alle LODs gleich (43.2 m) → derselbe
         // Gras-Build trägt LOD 0 und LOD 1.
@@ -31264,6 +31359,7 @@ class AnazhRealm {
             this.state.voxelRebuildAttempts.set(key, attempts);
             if (attempts >= 3) {
                 this.state.voxelChunks.set(key, { empty: true });
+                this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
                 this.state.voxelRebuildAttempts.delete(key);
                 this.log(`Voxel-Chunk ${key}: 3× OOM, als empty markiert`, "INFO");
                 return false;
@@ -31340,6 +31436,7 @@ class AnazhRealm {
             this.state.voxelRebuildAttempts.set(key, attempts);
             if (attempts >= 3) {
                 this.state.voxelChunks.set(key, { empty: true });
+                this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
                 this.state.voxelRebuildAttempts.delete(key);
                 this.log(`Voxel-Chunk ${key}: 3× OOM beim Stream-Build, als empty markiert`, "INFO");
             }
@@ -31394,6 +31491,7 @@ class AnazhRealm {
         // Welle A — ausstehenden Gras-Build für diesen Chunk verwerfen.
         if (this.state.pendingGrass) this.state.pendingGrass.delete(key);
         this.state.voxelChunks.delete(key);
+        this._weltRegt(true); // die Chunk-Menge regt sich: die Stand-Wache weckt die Fege-Takte (Boden-Stempel)
         // V9.40-c — dirty-Marker mit-entfernen, sonst zeigt er auf einen
         // gleich-keyed Chunk, den der Streaming-Ring später frisch baut, und
         // triggert einen unnötigen Rebuild im nächsten Tick.
@@ -33475,6 +33573,8 @@ class AnazhRealm {
                 }
             }
             for (const [cx, cz] of neu) this._buildVoxelChunkWaterIsoSurface(cx, cz);
+            // die Wasser-Zellen der Chunks sind neu: der Ring weckt ihren Automaten (`_tickWaterCANearWake`), auch im Stand
+            this._weltRegt(true);
         }
         this.log(
             `V9.75: Hydrosphäre gerendert — Iso-Wasser (${hydro.waterfalls.length} Fall-Läufe im CA-Wildwasser)`,
@@ -33563,22 +33663,160 @@ class AnazhRealm {
         return { submerged: true, surfaceY };
     }
 
-    // DIE EINE SZENEN-TIEFE: jeder r184-ViewportDepthTextureNode hält seinen EIGENEN Klon je Render-Ziel und kopiert
-    // die Tiefe in jedem Pass, der ihn liest (updateBefore). Wasser (bis V18.529 der Modul-Knoten der linearen Tiefe)
-    // und Feld-Pass (ein zweiter `viewportDepthTexture()`) zogen zwei Kopien derselben Szenen-Tiefe — je Frame zwei
-    // Vollbild-Kopien, bei 1080p 2 × 7,9 MB (gemessen 04.10.: zwei „szene:tiefenkopie" am Szene-Ziel). Beide Leser
-    // lesen diesen EINEN Knoten; der Name reist mit dem Klon in den VRAM-Zensus.
+    // DIE EINE SZENEN-TIEFE: Wasser (bis V18.529 der Modul-Knoten der linearen Tiefe) und Feld-Pass (ein zweiter
+    // `viewportDepthTexture()`) zogen zwei Kopien derselben Szenen-Tiefe (gemessen 04.10.: zwei „szene:tiefenkopie" am
+    // Szene-Ziel) — beide Leser lesen diesen EINEN Knoten. DAS TIEFEN-ABBILD (0710-1 P2, Runde 2, Frage 1): beide Leser
+    // schreiben selbst Tiefe (Wasser `depthWrite`, der March seine Fragment-Tiefe), also braucht ihr Lesen eine Kopie im
+    // Pass-Bruch — r184 kennt keinen nur-lesend angehängten Tiefen-Anhang. Aber keiner braucht sie Pixel für Pixel: das
+    // Wasser rechnet den optischen Weg zum Grund (weiche Ufer), der March bricht an der Szenen-Tiefe ab (dahinter verwürfe
+    // ihn der Tiefentest). Die volle Kopie (depth24plus, 7,9 MB bei 1080p) wird ein Abbild in halber Auflösung, je Texel die
+    // FERNSTE Tiefe seiner 2×2 Pixel (r32float, 2,1 MB): der March läuft am Rand höchstens einen Pixel weiter (der Test
+    // verwirft), das Wasser liest an der Kante eines Gegenstands im Wasser den Grund dahinter, nie den Gegenstand. Gezeichnet
+    // im Pass-Bruch des Hauptbilds (`_tiefenAbbild`); der WebGL2-Rückfall und der Null-Renderer behalten r184s
+    // Viewport-Tiefe.
+    // DER WERT IST EIN SKALAR: r184s Viewport-Tiefe ist ein Knoten auf einer Tiefen-Textur (Typ float); das Abbild ist eine
+    // r32float-Farbtextur, ihr Knoten liefert vec4 (d, 0, 0, 1). Roh weitergereicht, rechnete das Wasser seinen optischen Weg
+    // als vec4 — der Durchlass (Beer-Lambert) weitete `vec3(wK)` und die Luma-Gewichte auf vec4 mit 1,0 und zählte die vierte
+    // Komponente mit (gemessen 07.10., GTX 1060, Nord-Ufer: das Becken türkis statt grau, 99/131/116 → 114/166/147). Die
+    // Leser bekommen `.x`; `_szeneTiefeKnoten` bleibt der Textur-Knoten (Zug, Zerleg-Linse, gate:post-kette).
     _szeneTiefe() {
-        if (!this._szeneTiefeKnoten) {
-            this._szeneTiefeKnoten = THREE.TSL.viewportDepthTexture();
+        if (this._szeneTiefeWert) return this._szeneTiefeWert;
+        const rend = this.state.renderer;
+        const T = THREE.TSL;
+        if (!rend || rend._isHeadlessNull || !rend.backend || rend.backend.isWebGPUBackend !== true) {
+            this._szeneTiefeKnoten = T.viewportDepthTexture();
             this._szeneTiefeKnoten.defaultFramebuffer.name = "szene:tiefenkopie";
+            this._szeneTiefeWert = this._szeneTiefeKnoten;
+            return this._szeneTiefeWert;
         }
-        return this._szeneTiefeKnoten;
+        const abbild = new THREE.DataTexture(new Float32Array(1), 1, 1, THREE.RedFormat, THREE.FloatType);
+        abbild.name = "szene:tiefenabbild";
+        // ein Ziel ohne hochgeladene Daten: r184 legt es an, gezeichnet wird es im Pass-Bruch
+        abbild.isRenderTargetTexture = true;
+        abbild.minFilter = THREE.NearestFilter;
+        abbild.magFilter = THREE.NearestFilter;
+        abbild.generateMipmaps = false;
+        // JEDES PIXEL LIEST DEN BLOCK, DER ES ENTHÄLT (Gegenprüfung 0710-3): ganzzahlig, Pixel / 2. Vorher las `screenUV` mit
+        // Nearest bei uv = (x + 0,5)/W eine Textur der Breite ceil(W/2) — bei UNGERADER Leinwand traf jedes ungerade x der
+        // rechten Hälfte (ungerade Höhe: der unteren) den Nachbar-Block (x+1, x+2): neben einem Gegenstand vor dem Wasser las
+        // das Wasser den Gegenstand, ein heller Saum von 1 px (Radeon, TRAA, 1921×1081: 57–85 von ~290 Kanten-Pixeln +8 Luma;
+        // gate:post-kette (f), 321×241: 11 von 31 bis 45,5), der March verlor 1 px eines fernen Körpers.
+        const knoten = T.texture(abbild).load(T.ivec2(T.screenCoordinate.xy).div(T.ivec2(2, 2)));
+        // je Render EINMAL, ausgelöst vom ersten Leser, der zeichnet (wie r184s Viewport-Tiefe)
+        knoten.updateBeforeType = "render";
+        knoten.updateBefore = (frame) => this._tiefenAbbild(frame, abbild);
+        this._szeneTiefeKnoten = knoten;
+        this._szeneTiefeWert = knoten.x;
+        return this._szeneTiefeWert;
     }
 
-    // DIE TIEFE NACH DEM REALLOC: die Leser der Viewport-Tiefe (r184 ViewportDepthTextureNode, ein MSAA-Klon je
-    // Render-Ziel, kopiert im Pass-Bruch; der EINE Knoten `_szeneTiefe`) sind das Wasser (weiche Ufer) und der
-    // Feld-Pass (die Tiefen-Grenze des Marchs). Ein Resize (`setSize`) legt Szene-Tiefe und Klon neu an, die
+    // DER ZUG DES TIEFEN-ABBILDS: im Hauptbild (Post-Kette oder Direktpfad — die Szene mit der Spiel-Kamera) bricht r184s
+    // eigener Weg den Pass (`backend.copyFramebufferToTexture`: Pass beenden, auf demselben Encoder kopieren, mit `load` neu
+    // beginnen); kopiert wird in eine 1×1-Attrappe der Szenen-Tiefe, und genau diese eine Encoder-Kopie wird zum Abbild-Pass
+    // (ein Vollbild-Dreieck lädt je Pixel des Abbilds die 2×2 Szenen-Tiefen und schreibt ihr Maximum). So bleibt der Bruch
+    // r184s Choreographie (gate:vendor-anker pinnt sie), und die Tiefe des Hauptbilds steht im Abbild, bevor der erste
+    // Leser zeichnet.
+    _tiefenAbbild(frame, abbild) {
+        const st = this.state;
+        const rend = frame.renderer;
+        if (frame.scene !== st.scene || frame.camera !== st.camera) return;
+        const ctx = rend._currentRenderContext;
+        if (!ctx || !ctx.depthTexture) return;
+        const be = rend.backend;
+        const quelle = be.get(ctx.depthTexture).texture;
+        if (!quelle) return;
+        const w = Math.max(1, Math.ceil(quelle.width / 2)),
+            h = Math.max(1, Math.ceil(quelle.height / 2));
+        if (abbild.image.width !== w || abbild.image.height !== h) {
+            abbild.image = { data: null, width: w, height: h };
+            abbild.needsUpdate = true;
+        }
+        rend._textures.updateTexture(abbild);
+        const ziel = be.get(abbild).texture;
+        let A = this._tiefenAbbildGpu;
+        if (!A) {
+            const modul = be.device.createShaderModule({
+                label: "szene:tiefenabbild",
+                code:
+                    "@group(0) @binding(0) var tiefe: texture_depth_2d;\n" +
+                    "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
+                    "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
+                    "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
+                    "}\n" +
+                    "@fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f {\n" +
+                    "    let q = vec2i(textureDimensions(tiefe)) - vec2i(1, 1);\n" +
+                    "    let b = vec2i(p.xy) * 2;\n" +
+                    "    var d = 0.0;\n" +
+                    "    for (var j = 0; j < 2; j++) {\n" +
+                    "        for (var i = 0; i < 2; i++) { d = max(d, textureLoad(tiefe, min(b + vec2i(i, j), q), 0)); }\n" +
+                    "    }\n" +
+                    "    return vec4f(d, 0.0, 0.0, 1.0);\n" +
+                    "}\n",
+            });
+            // die 1×1-Attrappe der Szenen-Tiefe: r184 kopiert im Pass-Bruch in sie, die Kopie wird zum Abbild-Pass
+            const bruch = new THREE.DepthTexture(1, 1);
+            bruch.name = "szene:tiefenabbild:bruch";
+            A = this._tiefenAbbildGpu = {
+                pipe: be.device.createRenderPipeline({
+                    label: "szene:tiefenabbild",
+                    layout: "auto",
+                    vertex: { module: modul, entryPoint: "vs" },
+                    fragment: { module: modul, entryPoint: "fs", targets: [{ format: "r32float" }] },
+                    primitive: { topology: "triangle-list" },
+                }),
+                attrappe: bruch,
+                rechteck: new THREE.Vector4(0, 0, 1, 1),
+                quelle: null,
+                ziel: null,
+            };
+        }
+        if (A.quelle !== quelle || A.ziel !== ziel) {
+            A.gruppe = be.device.createBindGroup({
+                layout: A.pipe.getBindGroupLayout(0),
+                entries: [{ binding: 0, resource: quelle.createView({ aspect: "depth-only" }) }],
+            });
+            A.ansicht = ziel.createView();
+            A.quelle = quelle;
+            A.ziel = ziel;
+        }
+        A.attrappe.type = quelle.format === "depth32float" ? THREE.FloatType : THREE.UnsignedIntType;
+        rend._textures.updateTexture(A.attrappe);
+        A.attrappeGpu = be.get(A.attrappe).texture;
+        // DER HAKEN AN DER ENCODER-KOPIE liegt EINMAL (Gegenprüfung 0710-3: vorher je Frame ein- und ausgehängt — jede
+        // Zuweisung an `GPUCommandEncoder.prototype` verwirft, was der Motor über die Methode aller Aufrufer annahm); scharf
+        // ist er nur für die Dauer des EINEN Bruchs (`A.scharf`, try/finally), jede andere Kopie fährt r184 unverändert.
+        if (!A.haken) {
+            const E = GPUCommandEncoder.prototype;
+            const kopieRoh = E.copyTextureToTexture;
+            E.copyTextureToTexture = function (von, nach, groesse) {
+                if (!A.scharf || !nach || nach.texture !== A.attrappeGpu)
+                    return kopieRoh.call(this, von, nach, groesse);
+                const pass = this.beginRenderPass({
+                    label: "szene:tiefenabbild",
+                    colorAttachments: [
+                        { view: A.ansicht, loadOp: "clear", storeOp: "store", clearValue: [1, 0, 0, 1] },
+                    ],
+                });
+                pass.setPipeline(A.pipe);
+                pass.setBindGroup(0, A.gruppe);
+                pass.draw(3);
+                pass.end();
+                return undefined;
+            };
+            A.haken = true;
+        }
+        A.scharf = true;
+        try {
+            be.copyFramebufferToTexture(A.attrappe, ctx, A.rechteck);
+        } finally {
+            A.scharf = false;
+        }
+    }
+
+    // DIE TIEFE NACH DEM REALLOC: die Leser der Szenen-Tiefe (der EINE Knoten `_szeneTiefe` — auf WebGPU das
+    // Tiefen-Abbild, im Rückfall r184s ViewportDepthTextureNode mit einem Klon je Render-Ziel, beide gezogen im
+    // Pass-Bruch) sind das Wasser (weiche Ufer) und der Feld-Pass (die Tiefen-Grenze des Marchs). Ein Resize
+    // (`setSize`) legt Szene-Tiefe und Abbild (Klon) neu an, die
     // Textur-Bindung eines Lesers zieht nicht nach: jeder Submit des Hauptpasses fällt („Destroyed texture … used in a
     // submit", renderContext des Szene-Passes), die Welt bleibt SCHWARZ — gemessen 03.10. (echte GPU, Fenster
     // 1920→1600→1920). Das Wasser-Material wird frisch gebaut (gleicher WGSL → Programm aus dem Cache), alle
@@ -34126,6 +34364,9 @@ class AnazhRealm {
             st.nahWiese = { gruppe, kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
         }
         const nw = st.nahWiese;
+        // DIE STAND-WACHE: stehen Auge, Chunks und Studio-Vorlagen, steht jede Kachel — kein Gang.
+        if (this._standRuht("nahWiese", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M })) return 0;
+        let gefallen = 0;
         const cam = st.camera.position;
         const tcx = Math.floor(cam.x / NW.kachel);
         const tcz = Math.floor(cam.z / NW.kachel);
@@ -34135,7 +34376,7 @@ class AnazhRealm {
             for (const ck of k.chunks) {
                 const e = st.voxelChunks && st.voxelChunks.get(ck);
                 if (!e || e.surfMap !== k.chunkKarten.get(ck)) {
-                    this._nahWieseKachelFaellt(key);
+                    if (this._nahWieseKachelFaellt(key)) gefallen++;
                     break;
                 }
             }
@@ -34151,7 +34392,7 @@ class AnazhRealm {
             }
         }
         const gewollt = new Set(wunsch.map((w) => w.key));
-        for (const key of [...nw.kacheln.keys()]) if (!gewollt.has(key)) this._nahWieseKachelFaellt(key);
+        for (const key of [...nw.kacheln.keys()]) if (!gewollt.has(key) && this._nahWieseKachelFaellt(key)) gefallen++;
         wunsch.sort((a, b) => a.d - b.d);
         nw.offen = 0;
         // Die zwei Studio-Vorlagen je Stufe (Foundry-Cache; eine Anfrage, falls noch kalt) — einmal je Takt. Der Wurf
@@ -34202,6 +34443,7 @@ class AnazhRealm {
             nw.neu = true;
             gebaut++;
         }
+        this._standMeldet("nahWiese", 1, gebaut + gefallen > 0, nw.offen > 0);
         return gebaut;
     }
 
@@ -34310,15 +34552,17 @@ class AnazhRealm {
     // seiner EIGENEN Distanz — ein Präfix der zufälligen Ordnung ist eine gleichmäßige Ausdünnung) und die Sicht (die Kachel
     // als Box, das Büschel als Kugel nach dem EINEN Gesetz der Pass-Wahl `_passTrifft` in der Lage dieses Passes `L`); jede
     // Senke trägt dicht genau ihre sichtbaren Büschel. Die Büschel sind Daten der Kacheln, keine Instanzen einer Gruppe: der
-    // Satz schreibt ihre Matrizen, und er rechnet nur, wenn sich Ring oder Blick ändern (`_sichtSteht`), nie wegen des
-    // Versatzes der zeitlichen Auflösung — den Rand dafür trägt das Gesetz (`sichtRand`).
+    // Satz schreibt ihre Matrizen, und er rechnet nur, wenn sich der Ring (`neu`) oder die Lage des Passes ändert — ihre
+    // Generation `L.gen` (`_passLageGen`, das EINE Gesetz der Lage: nie wegen des Versatzes der zeitlichen Auflösung, nie
+    // wegen des atmenden Auges; den Rand dafür trägt das Gesetz).
     _nahWieseSicht(kamera, L) {
         const nw = this.state.nahWiese;
         if (!nw || !kamera || !nw.senken.size) return;
         if (!L || !L.fr || !L.fr.planes)
             throw new Error("_nahWieseSicht: ohne die Lage der Pass-Wahl (`_passWahlLage` in `_passSicht`)");
-        if (this._sichtSteht(nw.sig || (nw.sig = new Float64Array(33)), kamera, nw.neu)) return;
+        if (!nw.neu && nw.gen === L.gen) return;
         nw.neu = false;
+        nw.gen = L.gen;
         const NW = AnazhRealm.NAH_WIESE;
         const we = kamera.matrixWorld.elements;
         // Je Stufe × Vorlage die Senken samt Sicht-Kugel (fehlt eine, kommt ihr Studio-Asset noch).
@@ -34363,30 +34607,6 @@ class AnazhRealm {
             im.needsUpdate = true;
             AnazhRealm._instanzZahl(a.mesh, a.anzahl);
         }
-    }
-
-    // DIE SIGNATUR DES SICHT-SATZES (die Nah-Wiese, W7): der Satz legt seine Senken neu, wenn seine Daten (`neu`) oder die
-    // Kamera seines Passes sich ändern. Die Signatur ist die Welt-Matrix der Kamera und ihre Projektion OHNE den Versatz
-    // der zeitlichen Auflösung: TRAA verschiebt die Projektion je Frame um einen Bruchteil eines Pixels (die Elemente 8 und
-    // 9 einer Perspektive) — bis W7 rechnete und lud die Nah-Wiese darum jeden Frame. Den Rand dafür trägt das Gesetz der
-    // Pass-Wahl (`sichtRand`). Rückgabe true: die Sicht steht, der Satz bleibt, wie er ist.
-    _sichtSteht(sig, kamera, neu) {
-        const we = kamera.matrixWorld.elements;
-        const pe = kamera.projectionMatrix.elements;
-        let gleich = !neu && sig[32] === kamera.id;
-        for (let i = 0; i < 16; i++) {
-            if (sig[i] !== we[i]) {
-                sig[i] = we[i];
-                gleich = false;
-            }
-            if (i === 8 || i === 9) continue;
-            if (sig[16 + i] !== pe[i]) {
-                sig[16 + i] = pe[i];
-                gleich = false;
-            }
-        }
-        sig[32] = kamera.id;
-        return gleich;
     }
 
     // ═══ DIE NAH-STREU (Waldboden 04.10.) ═══
@@ -34726,6 +34946,9 @@ class AnazhRealm {
         const NS = AnazhRealm.NAH_STREU;
         if (!st.nahStreu) st.nahStreu = { kacheln: new Map(), senken: new Map(), offen: 0 };
         const ns = st.nahStreu;
+        // DIE STAND-WACHE: stehen Auge, Chunks, Ernte und Buch, steht jede Kachel in ihrem Zustand — kein Gang.
+        if (this._standRuht("nahStreu", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M })) return 0;
+        let gefallen = 0;
         const cam = st.camera.position;
         const tcx = Math.floor(cam.x / NS.kachel);
         const tcz = Math.floor(cam.z / NS.kachel);
@@ -34738,6 +34961,7 @@ class AnazhRealm {
                 if (!e || e.surfMap !== karte) {
                     this._nahStreuKachelEntsorgen(k);
                     ns.kacheln.delete(key);
+                    gefallen++;
                     break;
                 }
             }
@@ -34760,6 +34984,7 @@ class AnazhRealm {
             if (gewollt.has(key)) continue;
             this._nahStreuKachelEntsorgen(k);
             ns.kacheln.delete(key);
+            gefallen++;
         }
         wunsch.sort((a, b) => a.d - b.d);
         const geerntet = st.scatterHarvested;
@@ -34837,6 +35062,7 @@ class AnazhRealm {
             k.zustand = zustand;
             gebaut++;
         }
+        this._standMeldet("nahStreu", 1, gebaut + gefallen > 0, ns.offen > 0);
         return gebaut;
     }
 
@@ -35022,11 +35248,12 @@ class AnazhRealm {
         // persistiert (Flora wächst nach).
         if (!this.state.scatterHarvested) this.state.scatterHarvested = new Map();
         let jeKachel = this.state.scatterHarvested.get(pick.key);
+        if (jeKachel && jeKachel.has(pick.id)) return false; // schon gepflückt (Doppel-Klick-Race)
+        this._weltRegt(); // die Ernte ändert die Kachel: die Nah-Streu baut sie neu (der Weckruf vor jedem Schreiben)
         if (!jeKachel) {
             jeKachel = new Map();
             this.state.scatterHarvested.set(pick.key, jeKachel);
         }
-        if (jeKachel.has(pick.id)) return false; // schon gepflückt (Doppel-Klick-Race)
         jeKachel.set(pick.id, performance.now());
         // Die Pflanze verschwindet SOFORT in jedem ihrer Teile (Stiel + Blüte, Rute + Laub): sie tritt aus dem Block
         // ihrer Kachel in jeder Senke aus, der Bereich im Satz legt sich neu (`_streuNahLuecke`).
@@ -35058,15 +35285,13 @@ class AnazhRealm {
         const ttl = AnazhRealm.FORAGE.regrowMs;
         const ns = this.state.nahStreu;
         for (const [key, jeKachel] of sh) {
-            let nach = false;
-            for (const [id, t] of jeKachel) {
-                if (now - t > ttl) {
-                    jeKachel.delete(id);
-                    nach = true;
-                }
-            }
+            const alt = [];
+            for (const [id, t] of jeKachel) if (now - t > ttl) alt.push(id);
+            if (!alt.length) continue;
+            this._weltRegt(); // die Flora wächst nach: die Nah-Streu baut die Kachel neu (der Weckruf vor jedem Schreiben)
+            for (const id of alt) jeKachel.delete(id);
             if (jeKachel.size === 0) sh.delete(key);
-            const k = nach && ns ? ns.kacheln.get(key) : null;
+            const k = ns ? ns.kacheln.get(key) : null;
             if (k) k.zustand = null;
         }
     }
@@ -35622,13 +35847,9 @@ class AnazhRealm {
     // Wasser-Klemme (waterLevel − wasserDrop) + Saum-Tauchkante (Reihe 0) +
     // Weich-Wand unter Gebautem + Farbrampe. Kein Parallelpfad.
     _fernRingSetzVertex(fr, p, law, wl) {
-        const F = AnazhRealm.FERN_RING;
         const wet = law < wl;
-        let y = wet ? wl - F.wasserDrop : law;
-        if (p.row === 0) y -= F.saumDrop; // die Saum-Tauchkante
-        if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z)) y -= 60; // der Ring weicht
         const geo = fr.meshes[p.s].geometry;
-        geo.attributes.position.setXYZ(p.li, p.x, y, p.z);
+        geo.attributes.position.setXYZ(p.li, p.x, this._fernRingY(fr, p, law, wl), p.z);
         // DIE FARBE: ein gemerkter Schnapp-Punkt färbt sofort; ein neuer wartet im Fern-Farb-Budget (`_fernFarbTakt`,
         // nah zuerst) — ein Anker-Sprung rechnete die Farbe von ~8 000 neuen Punkten in EINEM Frame (gemessen 05.10.,
         // echte GPU: 10–18 ms Rückruf, auf 8× langsamerem Holz > 100 ms). Vor dem ersten Bild (!ready) rechnet die
@@ -35647,6 +35868,16 @@ class AnazhRealm {
             fr.farbN++;
             if (g < fr.farbMin) fr.farbMin = g;
         }
+    }
+
+    // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach auf waterLevel − wasserDrop, die innerste Reihe jeder
+    // Schale taucht −saumDrop (die Saum-Tauchkante), und wo ein gebauter Chunk die Säule trägt, weicht der Ring (−60 m).
+    _fernRingY(fr, p, law, wl) {
+        const F = AnazhRealm.FERN_RING;
+        let y = law < wl ? wl - F.wasserDrop : law;
+        if (p.row === 0) y -= F.saumDrop;
+        if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z)) y -= 60;
+        return y;
     }
 
     // Die Farb-TEILE EINES Ring-Punkts (Boden · Kronendach · Deckung, `_fernFarbeTeile`): Wasser flach (der Spiegel,
@@ -35778,7 +36009,9 @@ class AnazhRealm {
 
     // Deck-Wache: Chunks bauen/fallen NACH dem Ring-Anstrich → die Deck-Zone folgt dem Chunk-Strom
     // rollierend (128 Vertices/Tick durch dieselbe Setz-Naht). Zählt nie als Refresh
-    // (fr.refreshed/cursor unverändert — die Gate-Bänder lesen sie).
+    // (fr.refreshed/cursor unverändert — die Gate-Bänder lesen sie). Hoch lädt sie und die Normalen rechnet sie nur, wenn
+    // ein Punkt seine Höhe ändert (Welle C, Lehre 25 — gemessen 06.10., echte GPU, Mess-Wiese in Ruhe: computeVertexNormals
+    // über 3 072 Vertices und drei volle Attribut-Uploads JEDEN Frame, ohne dass ein Chunk kam oder ging).
     _fernRingDeckWache(fr) {
         const F = AnazhRealm.FERN_RING;
         if (fr.zoneVerts === undefined) {
@@ -35792,17 +36025,40 @@ class AnazhRealm {
             fr.zoneVerts = rows * F.winkel;
         }
         if (!fr.zoneVerts) return;
+        // DIE STAND-WACHE (Welle K): die Höhe eines Saum-Punkts hängt nur an der Chunk-Menge (`_chunkDecktRing`), dem
+        // Wasserspiegel und dem Anker — steht das alles, ging eine volle Runde ohne neuen Punkt, schläft die Wache.
+        if (this._standRuht("deckWache", fr.zoneVerts, fr.gen | 0, "boden")) return;
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         fr.deckCursor = fr.deckCursor || 0;
-        for (let n = 0; n < 128; n++) {
-            const p = this._fernRingPunkt(fr, fr.deckCursor % fr.zoneVerts);
-            let law = this._terrainMacroSurfaceY(p.x, p.z, false);
-            const voll = this._terrainMacroSurfaceY(p.x, p.z, true);
-            law = this._fernRingDeckMisch(fr, p.rad, law, voll);
-            this._fernRingSetzVertex(fr, p, law, wl);
-            fr.deckCursor++;
+        // DAS GESETZ DES SAUMS, EINMAL JE ANKER: die gemischte Deck-Höhe (Makro + volles Gesetz, `_fernRingDeckMisch`)
+        // eines Punkts ist eine reine Funktion seines Orts — vorher rechnete die Wache sie je Takt für 128 Punkte neu (256
+        // Gesetz-Höhen, ~6 000 noise2D je Frame im Stand, gemessen 07.10.); jetzt einmal je Anker-Generation (`fr.gen`)
+        // und Wasserspiegel (das Gesetz misst Tarn und Senke an ihm).
+        if (!fr.deckLaw || fr.deckLawGen !== (fr.gen | 0) || fr.deckLawWl !== wl) {
+            fr.deckLaw = new Float64Array(fr.zoneVerts).fill(NaN);
+            fr.deckLawGen = fr.gen | 0;
+            fr.deckLawWl = wl;
         }
         const geo = fr.meshes[0].geometry;
+        const pos = geo.attributes.position;
+        let neu = false;
+        for (let n = 0; n < 128; n++) {
+            const i = fr.deckCursor % fr.zoneVerts;
+            const p = this._fernRingPunkt(fr, i);
+            let law = fr.deckLaw[i];
+            if (law !== law) {
+                const makro = this._terrainMacroSurfaceY(p.x, p.z, false);
+                const voll = this._terrainMacroSurfaceY(p.x, p.z, true);
+                law = fr.deckLaw[i] = this._fernRingDeckMisch(fr, p.rad, makro, voll);
+            }
+            if (Math.fround(this._fernRingY(fr, p, law, wl)) !== pos.getY(p.li)) {
+                this._fernRingSetzVertex(fr, p, law, wl);
+                neu = true;
+            }
+            fr.deckCursor++;
+        }
+        this._standMeldet("deckWache", 128, neu, false);
+        if (!neu) return;
         geo.attributes.position.needsUpdate = true;
         AnazhRealm._fernRingAttributeHoch(geo);
         geo.computeVertexNormals();
@@ -36507,8 +36763,9 @@ class AnazhRealm {
             envUnten: U.envUnten,
             envMitte: U.envMitte,
             envOben: U.envOben,
-            // Die Szenen-Tiefe VOR dem Feld-Pass (r184-Viewport-Tiefe, Kopie im Pass-Bruch wie beim Wasser): die
-            // Grenze des Marchs. Ein Leser der Viewport-Tiefe bindet nach jedem Resize neu (_tiefenLeserNeuBinden).
+            // Die Szenen-Tiefe VOR dem Feld-Pass (das Tiefen-Abbild `_szeneTiefe`, gezeichnet im Pass-Bruch wie beim
+            // Wasser, je Texel die fernste Tiefe seiner 2×2 Pixel): die Grenze des Marchs — am Rand läuft er höchstens
+            // einen Pixel weiter, der Tiefentest verwirft. Ein Leser bindet nach jedem Resize neu (_tiefenLeserNeuBinden).
             szeneTiefe: this._szeneTiefe().x,
             // Die Schwund-Blende liest Pixel und Rotation der Stufen-Blende (`uDitherT`, dieselbe Uniform).
             schirm: TSL.screenCoordinate.xy,
@@ -37982,6 +38239,12 @@ class AnazhRealm {
         const MAX_PER_FRAME = Number.isFinite(this.state._voxelStreamMaxPerFrame)
             ? this.state._voxelStreamMaxPerFrame
             : 6;
+        // DIE STAND-WACHE: steht der Ring (jede Zelle in ihrer Stufe, keiner wartet) und regt sich nichts, geht der Gang
+        // nicht — Ring, Prune und Wasser-Weckruf lesen nur Spieler-Zelle und Chunk-Menge. Nachwuchs läuft weiter.
+        if (this._standRuht("strom", 1, pcx + "," + pcz, "boden")) {
+            this._tickFoliageGrowth();
+            return 0;
+        }
         const tStart = performance.now();
         outer: for (let r = 0; r <= ringRadius; r++) {
             for (let dz = -r; dz <= r; dz++) {
@@ -38019,6 +38282,8 @@ class AnazhRealm {
         // B1 (V18.373) — die ferne (off-thread, CA-frei gestreamte) See zum Leben wecken, sobald
         // der Spieler sie in den Nah-Ring zieht (einmal je Chunk, churn-frei via `entry._caWoken`).
         this._tickWaterCANearWake(pcx, pcz);
+        // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach; die Chunk-Menge regt die Welt selbst.
+        this._standMeldet("strom", 1, false, built > 0);
         // DETERMINISMUS-BOGEN P3 — kein BVH-Pump/Watchdog mehr: die Spieler-Kollision
         // liest das Dichtefeld (`_stepCharacter`), das überall definiert ist (auch unter
         // ungebauten Chunks) → der Spieler kann nicht durchfallen, kein Sync-BVH-Anker nötig.
@@ -42973,6 +43238,7 @@ class AnazhRealm {
         // Respawn-Schleife baut sie lazy neu.
         this._archDisposeAllInstanceGroups();
         this.state.architectures = [];
+        this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         // V9.75 (Welle C.4+5) — kein `state.blockerIndex`-Reset mehr; das
         // Bucket-Grid ist gestrichen. `spawnArchitecture` setzt
         // `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
@@ -47858,7 +48124,14 @@ class AnazhRealm {
                 // ready {inputActions:[...]} deklariert die Input-Brücke: AnazhRealms Tasten erreichen die Welt
                 // als semantische Aktionen.
                 if (Array.isArray(msg.inputActions)) this._portalEnableInputBridge(msg.inputActions);
-                this._portalSendEnter();
+                // DER HANDSHAKE IST ENDLICH: nur die ERSTE ready je Overlay bekommt ein enter (der load-Hörer schickt
+                // seins ohnehin, auch nach einem Reload der Welt). Sieben Studios beantworten jedes enter mit einer neuen
+                // ready — die Antwort auf jede ready war ein Ping-Pong von 106–202 Runden je Betreten, bis der
+                // Kanal-Deckel eine Meldung verwarf (gate:portal-konformanz K2).
+                if (!po.enterAufReady) {
+                    po.enterAufReady = true;
+                    this._portalSendEnter();
+                }
             }
             // Die Sub-Welt meldet Esc (Fokus liegt im iframe) → Heimkehr.
             else if (msg.type === "exit") this.exitPortal();
@@ -47907,6 +48180,8 @@ class AnazhRealm {
             // KI-Übersetzer Phase 2 — gesetzt für eine übersetzte Welt: sagt
             // _portalSendEnter, welche deklarative Szene es mitschicken muss.
             translatedWorldId: meta.translatedWorldId || null,
+            // Der Handshake beantwortet nur die erste ready mit einem enter (onMessage oben).
+            enterAufReady: false,
             // W12 Phase 3 — Drei-Stufen-Klarheit: kein Manifest → ausgestellt;
             // portalMeta-Manifest → übersetzt; meldet die Welt ihr eigenes
             // (ready-Handshake) → nativ. _portalReceiveManifest hebt auf nativ.
@@ -52621,6 +52896,7 @@ class AnazhRealm {
         this._occlFrameCounter = (this._occlFrameCounter || 0) + 1;
         if (!this._occlGrid || this._occlFrameCounter >= O.rebuildInterval) {
             this._occlFrameCounter = 0;
+            this._occlGridRegung = this._weltRegung | 0; // der Bau-Stand, den das Gitter trägt (die Stand-Wache liest ihn)
             this._rebuildOcclusionGrid();
         }
     }
@@ -52659,6 +52935,11 @@ class AnazhRealm {
         if (!pm) return 0;
         const archs = this.state.architectures;
         if (!Array.isArray(archs) || archs.length === 0) return 0;
+        // DIE STAND-WACHE: ging die Stufen-Wahl eine volle Runde über alle Einträge, ohne zu wechseln und ohne dass einer
+        // wartete, und regt sich nichts (Ort, Bau-Menge, Ankunft, Regler), wählt sie dieselben Stufen — kein Gang.
+        if (this._standRuht("archLod", archs.length, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return 0;
+        let regung = 0;
+        let offen = 0;
         // Rolling cursor: jeder Tick walkt nur einen Slice des Arrays. Bei
         // grossen Welten (10k+ Architekturen) bleibt der Tick bounded. Den
         // Cursor speichern wir an state — er reist nicht im Snapshot.
@@ -52691,7 +52972,10 @@ class AnazhRealm {
             // V18.387 — Baum-Einträge reichen ihre Sichthöhe durch → Wahrnehmungs-
             // Distanz-LOD (größere Bäume schalten später, unter Last alle früher).
             const visH = this._lodTreeVisHeight(entry);
-            if (visH === null) continue; // die Höhen-Stufe lädt: der Baum hält Stufe und Band
+            if (visH === null) {
+                offen++;
+                continue; // die Höhen-Stufe lädt: der Baum hält Stufe und Band
+            }
             // Die BRÜCKE trägt keinen Hysterese-Zustand: ihre Stufe 2 ist die gedockte Karte, nicht die Wahl. Mit ihr als
             // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
             // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
@@ -52713,6 +52997,7 @@ class AnazhRealm {
                 if (entry._occluded !== occ) {
                     entry._occluded = occ;
                     this._lodSlotOcclusionRefresh(entry);
+                    regung++;
                 } else {
                     entry._occluded = occ;
                 }
@@ -52720,12 +53005,14 @@ class AnazhRealm {
             } else if (entry._occluded) {
                 entry._occluded = false;
                 this._lodSlotOcclusionRefresh(entry);
+                regung++;
             }
             if (newLOD === entry._lodLevel) {
                 // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
                 if (entry._bruecke) {
                     entry._bruecke = false;
                     this._lodSlotOcclusionRefresh(entry);
+                    regung++;
                 }
                 // Band-Pflege ohne Primär-Wechsel: der Eintrag wandert durchs Dither-Crossfade-Band, die
                 // Doppel-Mitgliedschaft folgt der Partner-Wahl. Band-Add/-Remove zählt aufs selbe Spike-Budget.
@@ -52734,10 +53021,18 @@ class AnazhRealm {
                 continue;
             }
             // LOD-Switch — re-allocate
+            const vorher = entry._lodLevel;
             const success = this._switchArchitectureLOD(entry, newLOD);
             if (success) switches++;
+            else if (entry._lodLevel !== vorher)
+                regung++; // nur die Distanz-Autorität gestempelt (Stufen-Klammer)
+            else if (entry._lodLevel !== newLOD) offen++; // die Stufe lädt (oder bäckt): der Eintrag wartet
         }
         this._archLODCursor = (this._archLODCursor + besucht) % archs.length;
+        // Mit Verdeckung schläft die Wahl nur auf einem Gitter, das den jetzigen Bau-Stand trägt (sonst hielte sie ein
+        // Urteil über eine Krone, die es nicht mehr gibt) — bis zum nächsten gedrosselten Neubau bleibt sie wach.
+        const gitterAlt = occlOn && this._occlGridRegung !== (this._weltRegung | 0);
+        this._standMeldet("archLod", besucht, switches + regung > 0, offen > 0 || gitterAlt);
         return switches;
     }
 
@@ -53420,6 +53715,7 @@ class AnazhRealm {
                 _deferredFoundry: true,
             };
             map.set(key, empty);
+            this._weltRegt(); // die Streu-Menge regt sich
             return empty;
         }
         // V18.280 — die Dichte, bei der diese Region gebaut wurde (für das Nach-Dünnen:
@@ -53464,6 +53760,7 @@ class AnazhRealm {
     // (finish-first im Streaming-Tick) setzt exakt fort.
     _scatterRegionWork(region, regX, regZ, key, deadlineMs, playerPos) {
         const SC = AnazhRealm.SCATTER;
+        this._weltRegt(); // jede Scheibe setzt Streu-Zellen: die Stand-Wache weckt die Fege-Takte
         const cont = region._cont || null;
         if (cont && cont.phase === "bake") {
             const bcfg = this._bakeRegionConfig();
@@ -53943,6 +54240,13 @@ class AnazhRealm {
             this._scatterLodKeysN = map.size;
         }
         if (!this._scatterLodCursor) this._scatterLodCursor = { k: 0, c: 0 };
+        // DIE STAND-WACHE: ging die Stufen-Wahl eine volle Runde über alle Zellen ohne Zug und ohne Wartende, und regt sich
+        // nichts (Ort, Streu-Menge, Ankunft, Regler), wählt sie dieselben Stufen — kein Gang.
+        let zellen = 0;
+        for (const reg of map.values()) if (reg && Array.isArray(reg.cells)) zellen += reg.cells.length;
+        if (this._standRuht("streuLod", zellen, { pos: playerPos, rand: AnazhRealm.STAND_RAND_M })) return 0;
+        let regung = 0;
+        let offen = 0;
         const cur = this._scatterLodCursor;
         let scanned = 0;
         let realloc = 0;
@@ -53990,7 +54294,10 @@ class AnazhRealm {
                 cell.variantIndex,
                 tf.scale
             );
-            if (visH === null) continue; // die Höhen-Stufe lädt: die Zelle hält ihre Stufe
+            if (visH === null) {
+                offen++;
+                continue; // die Höhen-Stufe lädt: die Zelle hält ihre Stufe
+            }
             const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
             // DIE NAH-GRENZE wechselt die Bahn auch ohne Stufen-Wechsel — dieselbe Grenze wie der Zellen-Chokepoint
             // (`_streuFernBahn`, ANALOG_NAH_M): eine Fernform-Zelle (Gesetz-Platz oder Boden), die näher kommt, tauscht
@@ -54012,6 +54319,7 @@ class AnazhRealm {
             // Materialisieren, kein Duplikat-Slot.
             if (!warten && !bahnWechsel && this._scatterGleicheGestalt(cell, newLod, dist)) {
                 cell.lod = newLod;
+                regung++;
                 continue;
             }
             // Private Boden-Zellen wandern NUR in die Fern-Stufe zurück (newLod 2), erst mit Fade-Marge (auch
@@ -54050,8 +54358,11 @@ class AnazhRealm {
                 regZ,
                 true
             );
-            if (!rec) continue;
-            if (warten && rec.wartet) continue; // der Satz steht weiter nicht — die Zelle wartet, kein Zug
+            if (!rec || (warten && rec.wartet)) {
+                offen++; // das Asset lädt — oder der Satz steht weiter nicht: die Zelle wartet, kein Zug
+                continue;
+            }
+            regung++;
             const hatteSlots = cell.slots.length > 0;
             this._scatterFreeSlots(cell.slots);
             if (cell.feld) {
@@ -54067,6 +54378,7 @@ class AnazhRealm {
             // Das Realloc-Budget deckelt Mesh-Züge; ein slot-freier Fernform-Wechsel (Gesetz-Platz) zählt nicht.
             if (hatteSlots || rec.slots.length) realloc++;
         }
+        this._standMeldet("streuLod", scanned, regung > 0, offen > 0);
         return realloc;
     }
 
@@ -54075,6 +54387,7 @@ class AnazhRealm {
         if (!map) return false;
         const region = map.get(key);
         if (!region) return false;
+        this._weltRegt(); // die Streu-Menge regt sich
         // W3.3c — DISPOSE-STORNO: eine offene Fortsetzung stirbt MIT der Region (sonst
         // schriebe die nächste Scheibe Slots in entsorgte HISM-Gruppen — der zweite
         // Fehlermodus neben emitted<cap; `gate:scatter-slice` prüft ihn mit Absturz-Probe).
@@ -54137,6 +54450,7 @@ class AnazhRealm {
         if (g._ofenKey && this._pipeOfenDone) this._pipeOfenDone.delete(g._ofenKey);
         this.state.archInstanceGroups.delete(groupKey);
         if (g.wahl) this._instanzWahlGruppen().delete(g);
+        g._wahlJe = null; // eine entsorgte Gruppe hält keine Wahl (ihre Marken zeigen auf freigegebene Slots)
         if (g.satz) this._bauSatzMarke(groupKey, g.satz); // Welle 6 — der Bereich verlässt den Satz im nächsten Takt
         if (g.mesh) {
             // SUBMIT-WAL — parent-bewusst (die scene.remove-Falle): eine regionale Gruppe hängt in ihrer
@@ -63662,6 +63976,9 @@ class AnazhRealm {
             verborgen: false,
             grundAlt: false,
             wachse: 0,
+            // DER STAND (Welle C): jede neue Hülle und jede neue Ordnung zählt — ein Abschnitt, gewählt in einem älteren Stand,
+            // wählt neu (`_satzAbschnittSteht`)
+            stand: 0,
             // DIE NEUSCHREIB-LINSE: Index-Bytes je „Verursacher>Abschnitt" (ein Pass, der den Abschnitt eines anderen
             // schreibt, steht beim Namen) — kumulativ, die Linsen lesen die Differenz je Frame
             schreiben: {},
@@ -64010,6 +64327,7 @@ class AnazhRealm {
     // zählt nur, wo sein Gewicht greift (ungewichtete Ziele tragen keine Lage). Ein Satz, dessen Stoff die Fläche senkrecht
     // hebt (das Wasser, `spec.hub` = `_wasserHubM`), trägt den Hub oben und unten.
     _chunkSatzHuelle(s, b) {
+        s.stand++;
         const h = b.huelle || (b.huelle = new THREE.Box3());
         h.makeEmpty();
         const A = b.geom.attributes;
@@ -64133,6 +64451,7 @@ class AnazhRealm {
         for (const b of neu) b._d = lpc ? Math.max(Math.abs(b.cx - pcx), Math.abs(b.cz - pcz)) : 0;
         neu.sort((a, b) => (a._d - b._d) * r || (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
         s.ordnung = neu;
+        s.stand++;
         // die Grund-Sicht schreibt der Satz nur, wenn sie kippt (erster Bereich, letzter fort) — ein Werkzeug, das ihn
         // verbirgt, bleibt Herr seiner Sicht
         const grund = this._chunkSatzGrund(s);
@@ -64150,7 +64469,9 @@ class AnazhRealm {
     // Werfer-Raum zum Licht: ein Hang hinter dem Blick, der in die nahe Scheibe wirft, wirft) UND der Licht-Kapsel gegen ihre
     // Scheibe (eine Zelle, deren Schatten keinen Empfänger der Scheibe trifft, wirft dort nicht), jede andere Kamera mit ihrem
     // Frustum; ein Satz, der nicht wirft, ruht im Schatten-Pass (three zieht ihn dort nie). Nach jedem Pass zeigt der Satz
-    // wieder den Abschnitt des Hauptbilds — ein Schatten-Pass läuft mitten im Haupt-Pass.
+    // wieder den Abschnitt des Hauptbilds — ein Schatten-Pass läuft mitten im Haupt-Pass. STEHT die Lage des Passes und der
+    // Stand des Satzes (`_satzAbschnittSteht`, Welle C), zeichnet der Abschnitt, wie er liegt: keine Höhlen-Sicht, keine
+    // Prüfung, kein Byte — nach jedem Pass, auch dem Nachher-Haken, rechnet nichts neu.
     _chunkSatzPass(kamera, nach, k, S) {
         const saetze = this.state.chunkSaetze;
         if (!saetze || saetze.size === 0) return;
@@ -64163,8 +64484,6 @@ class AnazhRealm {
             }
             if (k >= 0 && s.spec.schatten !== true) continue;
             this._chunkSatzBereit(s);
-            // Die Höhlen-Schicht (Welle 7): welche Höhlen-Zelle die Pass-Kamera durch Luft erreicht
-            if (s.hoehle) this._hoehlenSicht(s, kamera, S, haupt);
             // Das Hauptbild läuft vor jedem Zeichnen des Frames: hier legt der Satz seine Abschnitte dicht neu, sobald der
             // Verschnitt (die verlassenen Läufe umgezogener Abschnitte) wächst.
             if (haupt) {
@@ -64173,8 +64492,54 @@ class AnazhRealm {
                 if (s.iEnde - belegt > s.iKap * AnazhRealm.CHUNK_SATZ_ABSCHNITT.verschnitt)
                     this._chunkSatzUmlegen(s, null, 0, key);
             }
-            this._chunkSatzZeige(s, this._chunkSatzAbschnitt(s, key, S.lage, haupt), S.ab);
+            let a = s.abschnitte.get(key);
+            if (this._satzAbschnittSteht(s, a, S.lage, kamera)) {
+                this._chunkSatzRuht(s, a, key);
+                // die Höhlen-Sicht dieses Passes prüfte keine Mündung frisch
+                if (s.hoehle && s.hoehle.offen && kamera.isPerspectiveCamera === true) s.hoehle.offen.length = 0;
+            } else {
+                // Die Höhlen-Schicht (Welle 7): welche Höhlen-Zelle die Pass-Kamera durch Luft erreicht
+                if (s.hoehle) this._hoehlenSicht(s, kamera, S, haupt);
+                a = this._chunkSatzAbschnitt(s, key, S.lage, haupt);
+                this._satzAbschnittMerke(s, a, S.lage, kamera);
+            }
+            this._chunkSatzZeige(s, a, S.ab);
         }
+    }
+
+    // STEHT der Abschnitt eines Passes (Welle C)? Er wurde in derselben Lage gewählt (`L.gen`, `_passLageGen`), der Satz hat
+    // seither keinen Bereich, keine Hülle und keine Ordnung geändert (`s.stand`), und seine Höhlen-Sicht gilt noch: derselbe
+    // Boden (`H.boden`); perspektivisch trug sie jede Mündung im Bild mit ihrer Horizont-Sperre (`voll` — eine Mündung ohne
+    // frische Probe galt als offen, die nächste Wahl schneidet weiter), die Kaskade las dieselben Empfänger des Hauptbilds
+    // (`H.sichtGen`). Und der Abschnitt trägt noch die Zellen seiner Wahl (dieselbe Liste — wer ihn leert oder neu legt,
+    // legt eine neue).
+    _satzAbschnittSteht(s, a, L, kamera) {
+        const w = a && a.wahl;
+        if (!w || w.gen !== L.gen || w.stand !== s.stand || w.liste !== a.liste) return false;
+        const H = s.hoehle;
+        if (!H) return true;
+        if (w.boden !== H.boden) return false;
+        return kamera.isPerspectiveCamera === true ? w.voll === true : w.empfang === H.sichtGen;
+    }
+
+    _satzAbschnittMerke(s, a, L, kamera) {
+        const w = a.wahl || (a.wahl = { gen: 0, stand: 0, boden: 0, voll: false, empfang: 0, liste: null });
+        const H = s.hoehle;
+        w.gen = L.gen;
+        w.liste = a.liste;
+        w.stand = s.stand;
+        w.boden = H ? H.boden : 0;
+        w.voll = H ? kamera.isPerspectiveCamera === true && H.voll === true : true;
+        w.empfang = H ? H.sichtGen : 0;
+    }
+
+    // Ein Abschnitt, dessen Wahl ruht: er lebt (`takt`), und nach `dichtNach` ruhigen Pässen legt sich ein Lauf mit Lücken
+    // oder fremder Folge einmal dicht in Satz-Ordnung (ein Pass, der beim Drehen nur einen Frame stillsteht, verdichtet nicht).
+    _chunkSatzRuht(s, a, key) {
+        a.takt = s.takt;
+        if (!a.dicht && ++a.ruhe >= AnazhRealm.CHUNK_SATZ_ABSCHNITT.dichtNach)
+            this._chunkSatzDicht(s, a, a.liste, a.n, key, false);
+        return a;
     }
 
     // Der Abschnitt wird der Zeichen-Bereich [start, start + ende) — seine Zellen und die entarteten Lücken zwischen ihnen;
@@ -64222,13 +64587,8 @@ class AnazhRealm {
         let a = s.abschnitte.get(key);
         if (a) {
             a.takt = s.takt;
-            if (this._satzListeGleich(a.liste, liste)) {
-                // die Wahl ruht: nach `dichtNach` ruhigen Pässen legt sich ein Lauf mit Lücken oder fremder Folge einmal
-                // dicht in Satz-Ordnung (ein Pass, der beim Drehen nur einen Frame stillsteht, verdichtet nicht)
-                if (!a.dicht && ++a.ruhe >= AnazhRealm.CHUNK_SATZ_ABSCHNITT.dichtNach)
-                    this._chunkSatzDicht(s, a, liste, n, key, false);
-                return a;
-            }
+            // die Wahl ruht (dieselben Zellen in derselben Folge)
+            if (this._satzListeGleich(a.liste, liste)) return this._chunkSatzRuht(s, a, key);
             a.ruhe = 0;
             if (n > a.hoch) a.hoch = n;
         } else {
@@ -64311,20 +64671,21 @@ class AnazhRealm {
     // DER TAUSCH: nur die Änderung der Wahl — jede Zelle, die geht, wird eine entartete Lücke (ihr erster Index für jede
     // Ecke: ein Dreieck ohne Fläche zeichnet nichts) oder fällt am Hochwasser ab; jede, die kommt, nimmt First-Fit eine
     // Lücke (dieselbe Freiliste wie die Vertex-Bereiche) oder hängt an. Findet sie keinen Platz oder übersteigen die Lücken
-    // `verschnitt` des Laufs, legt der Pass dicht neu.
+    // `verschnitt` des Laufs, rafft der Pass (`_chunkSatzRaffen`). Die Plätze, die gehen, werden erst NACH dem Einzug entartet,
+    // und nur, wo keine kommende Zelle sie belegt (Welle C — beim Drehen geht auf der einen Seite, was auf der anderen kommt:
+    // vorher schrieb der Pass jeden frei gewordenen Platz zweimal, entartet und neu belegt).
     _chunkSatzTausch(s, a, liste, n, wer) {
         const index = s.geom.index.array;
         const neu = new Set(liste);
+        const offen = []; // die frei gewordenen Plätze: Anfang, Länge, der Index ihrer Entartung
         for (const [z, off] of a.platz)
             if (!neu.has(z)) {
                 const len = z.idx.length;
                 a.platz.delete(z);
                 a.ende = this._satzFreiGib(a.frei, off, len, a.ende);
-                if (off < a.ende) {
-                    index.fill(z.idx[0], a.start + off, a.start + off + len);
-                    this._chunkSatzSchreib(s, wer, a.key, a.start + off, len);
-                }
+                offen.push(off, len, z.idx[0]);
             }
+        const belegt = []; // die Plätze der kommenden Zellen: Anfang, Ende
         for (const z of liste)
             if (!a.platz.has(z)) {
                 const len = z.idx.length;
@@ -64337,12 +64698,78 @@ class AnazhRealm {
                 index.set(z.idx, a.start + off);
                 this._chunkSatzSchreib(s, wer, a.key, a.start + off, len);
                 a.platz.set(z, off);
+                belegt.push([off, off + len]);
             }
+        // die frei gewordenen Plätze unter dem Hochwasser, die keine kommende Zelle belegt: entartet
+        belegt.sort((x, y) => x[0] - y[0]);
+        for (let k = 0; k < offen.length; k += 3) {
+            const o = offen[k],
+                e = Math.min(offen[k] + offen[k + 1], a.ende),
+                w = offen[k + 2];
+            let lo = 0,
+                hi = belegt.length;
+            while (lo < hi) {
+                const m = (lo + hi) >> 1;
+                if (belegt[m][1] <= o) lo = m + 1;
+                else hi = m;
+            }
+            let cur = o;
+            for (let i = lo; i < belegt.length && belegt[i][0] < e && cur < e; i++) {
+                if (belegt[i][0] > cur) {
+                    index.fill(w, a.start + cur, a.start + belegt[i][0]);
+                    this._chunkSatzSchreib(s, wer, a.key, a.start + cur, belegt[i][0] - cur);
+                }
+                if (belegt[i][1] > cur) cur = belegt[i][1];
+            }
+            if (cur < e) {
+                index.fill(w, a.start + cur, a.start + e);
+                this._chunkSatzSchreib(s, wer, a.key, a.start + cur, e - cur);
+            }
+        }
         a.n = n;
         a.liste = liste;
         a.dicht = false;
         if (a.ende - n > a.ende * AnazhRealm.CHUNK_SATZ_ABSCHNITT.verschnitt)
-            this._chunkSatzDicht(s, a, liste, n, wer, false);
+            this._chunkSatzRaffen(s, a, liste, n, wer);
+    }
+
+    // DAS RAFFEN (Welle C): übersteigen die Lücken eines getauschten Abschnitts `verschnitt` seines Laufs, rücken seine
+    // HINTERSTEN Zellen in die vordersten Lücken, die sie fassen (First-Fit vor ihrem Platz), bis die Lücken unter die halbe
+    // Schwelle fallen — geschrieben wird nur, was umzieht; eine Zelle am Hochwasser senkt es. Bis hier legte der Pass den
+    // ganzen Abschnitt dicht neu (beim Drehen 360 × 1° an der Mess-Wiese: die Kaskaden je Neulegung 0,5–0,9 MB, gut ein
+    // Drittel aller Index-Bytes). Fasst keine Lücke eine Zelle und bleibt der Verschnitt, legt der Pass dicht neu.
+    _chunkSatzRaffen(s, a, liste, n, wer) {
+        const V = AnazhRealm.CHUNK_SATZ_ABSCHNITT.verschnitt;
+        const index = s.geom.index.array;
+        const hinten = Array.from(a.platz).sort((x, y) => y[1] - x[1]);
+        for (let k = 0; k < hinten.length && a.ende - n > a.ende * V * 0.5; k++) {
+            const [z, off] = hinten[k];
+            const len = z.idx.length;
+            // die vorderste Lücke, die die Zelle ganz vor ihrem Platz fasst
+            const frei = a.frei;
+            let neu = -1;
+            for (let i = 0; i < frei.length && frei[i][0] + len <= off; i++) {
+                const f = frei[i];
+                if (f[1] < len) continue;
+                neu = f[0];
+                if (f[1] === len) frei.splice(i, 1);
+                else {
+                    f[0] += len;
+                    f[1] -= len;
+                }
+                break;
+            }
+            if (neu < 0) continue;
+            index.set(z.idx, a.start + neu);
+            this._chunkSatzSchreib(s, wer, a.key, a.start + neu, len);
+            a.platz.set(z, neu);
+            a.ende = this._satzFreiGib(a.frei, off, len, a.ende);
+            if (off < a.ende) {
+                index.fill(z.idx[0], a.start + off, a.start + off + len);
+                this._chunkSatzSchreib(s, wer, a.key, a.start + off, len);
+            }
+        }
+        if (a.ende - n > a.ende * V) this._chunkSatzDicht(s, a, liste, n, wer, false);
     }
 
     // Die Kapazität eines Abschnitts: das Hochwasser seiner Länge (`hoch`, die größte Wahl seines Passes) mit Luft — er
@@ -64420,6 +64847,8 @@ class AnazhRealm {
                 besucht: null,
                 kacheln: null, // die Licht-Kacheln der Kaskade (`_hoehlenSichtLicht`)
                 sichtHaupt: null, // die Zellen, die das letzte Hauptbild erreichte (die Empfänger der Kaskaden)
+                sichtGen: 0, // zählt jede neue Menge `sichtHaupt` — eine Kaskade, die andere Empfänger las, wählt neu
+                voll: false, // trug die letzte perspektivische Sicht jede Mündung im Bild mit ihrer Sperre?
                 // die Generation des Bodens: jeder Ein- und Austritt eines Boden-Bereichs und jeder Geomorph-Schreiber legt den
                 // Horizont neu — eine gemerkte Sperre gilt nur dem Boden, den sie gemessen hat (`_hoehlenSperre`)
                 boden: 0,
@@ -64450,6 +64879,9 @@ class AnazhRealm {
                 sicht: 0,
                 rect: new Float64Array(4),
                 z: 0,
+                // der letzte Lauf aus der Zelle in diesem Pass (Stempel, Rechteck, Tiefe) — derselbe läuft nie zweimal
+                lauf: 0,
+                gelaufen: new Float64Array(5),
             });
         for (let o = 0; o < H.muend.length; o += 7)
             knoten[H.muend[o]].tore.push({
@@ -64465,7 +64897,8 @@ class AnazhRealm {
             a.nb.push({ zu: c, p });
             c.nb.push({ zu: a, p });
         }
-        b.hoehle = { knoten, step: H.step, rand: H.rand, horizont: null };
+        // `starts`/`startHuelle`: die Knoten mit Mündung oder offenem Rand und die Hülle ihrer Boxen (`_hoehlenRand`)
+        b.hoehle = { knoten, step: H.step, rand: H.rand, horizont: null, starts: [], startHuelle: null };
     }
 
     _hoehlenPortal(box) {
@@ -64634,21 +65067,34 @@ class AnazhRealm {
     // DER OFFENE RAND: fehlt der Nachbar-Chunk einer Seite (der Ring endet dort), liegt die Höhlen-Luft im Rand-Band offen —
     // der Ring schneidet die Höhle auf, und ein Strahl von draußen (das Licht, eine Kamera jenseits des Rings) tritt dort ein.
     // Die Rand-Box (um den Saum geweitet) wirkt wie eine Mündung; ein Knoten mit Mündung oder offenem Rand ist ein Start.
+    // Je Bereich die Starts und die Hülle aller ihrer Boxen (Mündungen und Ränder): ein Pass, dessen Gesetz die Hülle nicht
+    // trifft, prüft keinen dieser Starts (Welle C — vorher prüfte jeder Pass jede Mündung des Rings).
     _hoehlenRand(s, b) {
         if (!b || !b.hoehle) return;
         const R = AnazhRealm.HOEHLEN_SAUM;
         const saum = R.schritte * b.hoehle.step + R.m;
         const fehlt = [0, 1, 2, 3].map((seite) => !this._hoehlenNachbar(s, b, seite));
+        const starts = [];
+        const huelle = new THREE.Box3();
         for (const kn of b.hoehle.knoten) {
             let offen = kn.tore.length > 0;
+            for (const tor of kn.tore) huelle.union(tor.box);
             for (let seite = 0; seite < 4; seite++) {
                 const sb = fehlt[seite] ? kn.seiten[seite] : null;
                 kn.raender[seite] = sb ? sb.clone().expandByScalar(saum) : null;
-                if (sb) offen = true;
+                if (sb) {
+                    offen = true;
+                    huelle.union(kn.raender[seite]);
+                }
             }
-            if (offen) s.hoehle.muendungen.add(kn);
-            else s.hoehle.muendungen.delete(kn);
+            if (offen) {
+                s.hoehle.muendungen.add(kn);
+                starts.push(kn);
+            } else s.hoehle.muendungen.delete(kn);
         }
+        b.hoehle.starts = starts;
+        b.hoehle.startHuelle = starts.length > 0 ? huelle : null;
+        s.stand++; // ein Rand öffnet oder schließt sich: jede Wahl liest neu
     }
 
     // Der Austritt eines Boden-Bereichs: seine Starts fallen, die Nachbar-Zellen vergessen ihre Rand-Portale zu ihm, und seine
@@ -64807,6 +65253,15 @@ class AnazhRealm {
                 for (const kn of b.hoehle.knoten)
                     if (kn.luft && kn.luft.containsPoint(v)) this._hoehlenBesuch(H, kn, -1, -1, 1, 1, -Infinity);
             }
+        // Die Bereiche mit Starts im Bild: das EINE Gesetz der Pass-Wahl gegen die Hülle ihrer Mündungen und Ränder — ein
+        // Bereich daneben (hinter dem Auge, jenseits der fernen Ebene) prüft keinen seiner Starts (Welle C: vorher jeder Pass
+        // jede Mündung des Rings, je acht Ecken).
+        const imBild = H.imBild || (H.imBild = []);
+        imBild.length = 0;
+        for (const b of s.ordnung) {
+            const bh = b.hoehle;
+            if (bh && bh.startHuelle && this._passTrifftBox(S.lage, bh.startHuelle, 0)) imBild.push(bh);
+        }
         // (2) die Mündungen im Bild: eine frische Horizont-Probe kostet — je Pass höchstens `HOEHLEN_HORIZONT_PROBEN`, die
         // nächsten zuerst; eine Mündung ohne frische Probe gilt als offen (mehr zeichnen, nie ein Loch). Eine gesperrte
         // wartet auf einen Ausgang (`hinter`, (5)).
@@ -64814,27 +65269,28 @@ class AnazhRealm {
         const hinter = H.hinter || (H.hinter = []);
         offen.length = 0;
         hinter.length = 0;
-        for (const kn of H.muendungen)
-            for (const tor of kn.tore) {
-                if (!this._hoehlenRect(tor.box, m, rc)) continue;
-                tor.st = st;
-                tor.r0 = rc[0];
-                tor.r1 = rc[1];
-                tor.r2 = rc[2];
-                tor.r3 = rc[3];
-                tor.r4 = rc[4];
-                tor.r5 = rc[5];
-                tor.kn = kn;
-                tor.weit = this._hoehlenWeit(tor.box, ex, ez);
-                if (this._hoehlenAugeGleich(H, tor, ex, ey, ez)) {
-                    if (tor.sperre === -Infinity) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
-                    else hinter.push(tor);
-                    continue;
+        for (const bh of imBild)
+            for (const kn of bh.starts)
+                for (const tor of kn.tore) {
+                    if (!this._hoehlenRect(tor.box, m, rc)) continue;
+                    tor.st = st;
+                    tor.r0 = rc[0];
+                    tor.r1 = rc[1];
+                    tor.r2 = rc[2];
+                    tor.r3 = rc[3];
+                    tor.r4 = rc[4];
+                    tor.r5 = rc[5];
+                    tor.kn = kn;
+                    tor.weit = this._hoehlenWeit(tor.box, ex, ez);
+                    if (this._hoehlenAugeGleich(H, tor, ex, ey, ez)) {
+                        if (tor.sperre === -Infinity) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
+                        else hinter.push(tor);
+                        continue;
+                    }
+                    const bx = tor.box;
+                    tor.d = Math.hypot((bx.min.x + bx.max.x) / 2 - ex, (bx.min.z + bx.max.z) / 2 - ez);
+                    offen.push(tor);
                 }
-                const bx = tor.box;
-                tor.d = Math.hypot((bx.min.x + bx.max.x) / 2 - ex, (bx.min.z + bx.max.z) / 2 - ez);
-                offen.push(tor);
-            }
         offen.sort((p, q) => p.d - q.d);
         for (let i = 0; i < offen.length; i++) {
             const tor = offen[i];
@@ -64842,29 +65298,45 @@ class AnazhRealm {
                 hinter.push(tor);
             else this._hoehlenBesuch(H, tor.kn, tor.r0, tor.r1, tor.r2, tor.r3, tor.r4);
         }
-        for (const kn of H.muendungen) {
-            // (3) der offene Rand: von draußen durch die Portale, von drinnen nur seine Zelle
-            const b = kn.bereich;
-            for (let seite = 0; seite < 4; seite++) {
-                const rb = kn.raender[seite];
-                if (!rb || !this._hoehlenRect(rb, m, rc)) continue;
-                const draussen =
-                    seite === 0
-                        ? ex < b.cx * span
-                        : seite === 1
-                          ? ex > (b.cx + 1) * span
-                          : seite === 2
-                            ? ez < b.cz * span
-                            : ez > (b.cz + 1) * span;
-                if (draussen) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
-                else this._hoehlenMarke(H, kn);
+        // jede Mündung im Bild trägt ihre Sperre (keine wartet auf eine Probe): die Sicht steht, bis die Lage sich ändert
+        H.voll = offen.length <= AnazhRealm.HOEHLEN_HORIZONT_PROBEN;
+        // die gesperrten nach ihrer Sperre: ein Ausgang liest nur die, deren Sperre vor ihm liegt (`_hoehlenAusgang`)
+        hinter.sort((p, q) => p.sperre - q.sperre);
+        for (const bh of imBild)
+            for (const kn of bh.starts) {
+                // (3) der offene Rand: von draußen durch die Portale, von drinnen nur seine Zelle
+                const b = kn.bereich;
+                for (let seite = 0; seite < 4; seite++) {
+                    const rb = kn.raender[seite];
+                    if (!rb || !this._hoehlenRect(rb, m, rc)) continue;
+                    const draussen =
+                        seite === 0
+                            ? ex < b.cx * span
+                            : seite === 1
+                              ? ex > (b.cx + 1) * span
+                              : seite === 2
+                                ? ez < b.cz * span
+                                : ez > (b.cz + 1) * span;
+                    if (draussen) this._hoehlenBesuch(H, kn, rc[0], rc[1], rc[2], rc[3], rc[4]);
+                    else this._hoehlenMarke(H, kn);
+                }
             }
-        }
         // (4) durch die Portale: das Rechteck schrumpft je Portal, die Tiefe wächst; (5) hinaus durch die Ausgänge der Zelle
         while (H.stapel.length > 0) {
             const kn = H.stapel.pop();
             const r = kn.rect;
             const z = kn.z;
+            // eine Zelle liegt oft mehrfach im Stapel (jeder Besuch, der ihr Rechteck weitet, legt sie neu): ein Lauf mit
+            // demselben Rechteck und derselben Tiefe wie ihr letzter in diesem Pass bringt nichts Neues
+            const g = kn.gelaufen;
+            if (kn.lauf === st && g[0] === r[0] && g[1] === r[1] && g[2] === r[2] && g[3] === r[3] && g[4] === z)
+                continue;
+            kn.lauf = st;
+            g[0] = r[0];
+            g[1] = r[1];
+            g[2] = r[2];
+            g[3] = r[3];
+            g[4] = z;
             for (const ed of kn.nb) {
                 const p = ed.p;
                 if (p.st !== st) {
@@ -64883,11 +65355,16 @@ class AnazhRealm {
             if (hinter.length > 0) this._hoehlenHinaus(H, kn, m, st, ex, ez);
         }
         // die Empfänger der Kaskaden: die erreichten Zellen, deren Dreiecke das Hauptbild zeichnet (das EINE Gesetz der
-        // Pass-Wahl in der Lage dieses Passes, wie `_chunkSatzAbschnitt` sie wählt)
-        if (besucht)
-            H.sichtHaupt = besucht.filter(
+        // Pass-Wahl in der Lage dieses Passes, wie `_chunkSatzAbschnitt` sie wählt); eine neue Menge zählt `sichtGen`
+        if (besucht) {
+            const neu = besucht.filter(
                 (kn) => kn.zelle && !kn.zelle.huelle.isEmpty() && this._passTrifftBox(S.lage, kn.zelle.huelle, 0)
             );
+            if (!H.sichtHaupt || !this._satzListeGleich(H.sichtHaupt, neu)) {
+                H.sichtHaupt = neu;
+                H.sichtGen++;
+            }
+        }
     }
 
     // HINAUS (5): ein Strahl, der eine erreichte Zelle durch ihre Luft quert, tritt durch eine ihrer Mündungen (oder einen
@@ -64915,8 +65392,12 @@ class AnazhRealm {
         if (x0 > x1 || y0 > y1) return;
         if (kn.z > z0) z0 = kn.z;
         const bis = weit + 2 * AnazhRealm.HOEHLEN_AUGE_M;
-        for (const tor of H.hinter) {
-            if (tor.sperre > bis || tor.r5 < z0) continue;
+        // `hinter` liegt nach der Sperre geordnet (`_hoehlenSicht`): ab der ersten jenseits des Ausgangs keine mehr
+        const h = H.hinter;
+        for (let i = 0; i < h.length; i++) {
+            const tor = h[i];
+            if (tor.sperre > bis) break;
+            if (tor.r5 < z0) continue;
             const a0 = x0 > tor.r0 ? x0 : tor.r0,
                 b0 = y0 > tor.r1 ? y0 : tor.r1,
                 a1 = x1 < tor.r2 ? x1 : tor.r2,
@@ -64972,7 +65453,17 @@ class AnazhRealm {
     // die Empfänger in Himmels-Luft, deren Weg zum Licht Höhlen-Luft nur durch eine Mündung betritt (darüber liegt nur
     // Himmels-Luft oder Fels unter einer Himmels-Fläche, die immer zeichnet) — jede Mündung. Ortsfeste Kacheln von
     // `HOEHLEN_LICHT_KACHEL_M` quer zum Licht tragen je Kachel die tiefste Empfänger-Tiefe; eine Zelle liest die Kacheln
-    // unter ihrer Box.
+    // unter ihrer Box. Die Kosten folgen der Karte (Welle C — vorher je Kaskaden-Pass jede Mündung des Rings und jede
+    // Höhlen-Zelle der Box, acht Ecken je Box, auch an der Oberfläche ohne jede Höhle im Bild): ein Empfänger zählt nur, wenn
+    // das EINE Gesetz der Pass-Wahl seinen BEREICH in diesem Pass trifft (Box der Kaskade und Licht-Kapsel gegen ihre
+    // Scheibe — die Empfänger einer Mündung liegen auf ihrem Weg vom Licht fort, ein Empfänger des Hauptbilds liest die Karte
+    // nur in seiner Scheibe): die Zellen des Hauptbilds über die Hülle ihres Bereichs, die Mündungen über die Hülle der
+    // Mündungs-Boxen ihres Bereichs — je Bereich EINE Prüfung, nie je Empfänger; OHNE Empfänger
+    // wirft keine Höhlen-Zelle (Frühausstieg), und ein Bereich, dessen Licht-Rechteck keine Kachel eines Empfängers schneidet
+    // oder der dem Licht nicht so nah kommt wie der tiefste, prüft keine seiner Zellen. Die Lage einer Box im Licht-Raum
+    // hängt nur an der DREHUNG des Lichts: jede Box (Mündung, Zelle, Bereich) trägt ihr Licht-Rechteck, bis das Licht sich
+    // dreht (`H.lichtGen`) oder der Satz einen neuen Stand hat (Hülle, Ordnung, Rand) — dreht die Kamera, wandert die Kaskade
+    // nur quer zum Licht, und keine Ecke wird neu gerechnet (OMEN-Urteil 06.10., Drehen: ~1 800 Boxen je Frame).
     _hoehlenSichtLicht(s, S, kamera) {
         const H = s.hoehle;
         const st = ++H.stempel;
@@ -64981,56 +65472,97 @@ class AnazhRealm {
             throw new Error("_hoehlenSichtLicht: eine Kaskade ohne Kamera — die Licht-Kacheln brauchen ihre Drehung");
         // die Lage einer Box im Licht-Raum: nur die DREHUNG der Licht-Kamera (u, v quer zum Licht, d entlang) — die Kacheln
         // stehen ortsfest, während die Kaskaden-Box mit dem atmenden Auge wandert (sonst kippte die Wahl am Rand je Frame)
-        const e = kamera.matrixWorldInverse.elements;
-        const L = H.lichtBox || (H.lichtBox = new Float64Array(6));
-        const lage = (box) => {
-            L[0] = L[1] = L[2] = Infinity;
-            L[3] = L[4] = L[5] = -Infinity;
-            for (let c = 0; c < 8; c++) {
-                const x = c & 1 ? box.max.x : box.min.x,
-                    y = c & 2 ? box.max.y : box.min.y,
-                    z = c & 4 ? box.max.z : box.min.z;
-                const u = e[0] * x + e[4] * y + e[8] * z,
-                    v = e[1] * x + e[5] * y + e[9] * z,
-                    d = -(e[2] * x + e[6] * y + e[10] * z);
-                if (u < L[0]) L[0] = u;
-                if (u > L[3]) L[3] = u;
-                if (v < L[1]) L[1] = v;
-                if (v > L[4]) L[4] = v;
-                if (d < L[2]) L[2] = d;
-                if (d > L[5]) L[5] = d;
-            }
+        // die Drehung des Lichts, gegen die gemerkte bis auf die Rundung (eine neu gelegte Kaskaden-Box legt ihre Kamera aus
+        // Ort + Richtung neu an — dieselbe Richtung trägt dann Rundungs-Reste); gerechnet wird mit der gemerkten
+        const ek = kamera.matrixWorldInverse.elements;
+        const e = H.lichtE || (H.lichtE = new Float64Array(16));
+        let gedreht = !H.lichtGen;
+        for (let i = 0; i < 11; i++) if (i % 4 !== 3 && !(Math.abs(e[i] - ek[i]) <= 1e-7)) gedreht = true;
+        if (gedreht) {
+            e.set(ek);
+            H.lichtGen = (H.lichtGen || 0) + 1;
+        }
+        const lg = H.lichtGen,
+            stand = s.stand;
+        // das Licht-Rechteck einer Box, gemerkt an ihrem Halter (Mündung, Zelle, Bereich)
+        const lage = (h, box) => {
+            if (h.lrGen === lg && h.lrStand === stand) return h.lr;
+            const L = h.lr || (h.lr = new Float64Array(6));
+            this._hoehlenLichtLage(box, e, L);
+            h.lrGen = lg;
+            h.lrStand = stand;
+            return L;
         };
         const T = AnazhRealm.HOEHLEN_LICHT_KACHEL_M;
         const K = H.kacheln || (H.kacheln = new Map());
         K.clear();
-        const empfang = (kn, box) => {
+        const P = S.lage;
+        // der Licht-Rand des Passes (`lichtRandTexel`): die Wahl hält über die Stufen der Sonne — ein Werfer, der nach einer
+        // Drehung bis zum Rand wirft, wirft schon jetzt (sein Rechteck und seine Nähe um den Rand geweitet)
+        const m = P.licht;
+        // die Kachel-Spanne aller Empfänger (i0, j0, i1, j1) und ihre tiefste Tiefe
+        const E = H.empfSpanne || (H.empfSpanne = new Float64Array(5));
+        E[0] = E[1] = Infinity;
+        E[2] = E[3] = E[4] = -Infinity;
+        const empfang = (kn, h, box) => {
             if (!box) return;
             kn.sicht = st;
-            lage(box);
+            const L = lage(h, box);
             const tief = L[5];
-            for (let j = Math.floor(L[1] / T); j <= Math.floor(L[4] / T); j++)
-                for (let i = Math.floor(L[0] / T); i <= Math.floor(L[3] / T); i++) {
+            const i0 = Math.floor(L[0] / T),
+                i1 = Math.floor(L[3] / T),
+                j0 = Math.floor(L[1] / T),
+                j1 = Math.floor(L[4] / T);
+            for (let j = j0; j <= j1; j++)
+                for (let i = i0; i <= i1; i++) {
                     const key = (i + 32768) * 65536 + (j + 32768);
                     const w = K.get(key);
                     if (w === undefined || tief > w) K.set(key, tief);
                 }
+            if (i0 < E[0]) E[0] = i0;
+            if (j0 < E[1]) E[1] = j0;
+            if (i1 > E[2]) E[2] = i1;
+            if (j1 > E[3]) E[3] = j1;
+            if (tief > E[4]) E[4] = tief;
         };
-        if (H.sichtHaupt) for (const kn of H.sichtHaupt) if (kn.bereich.hoehle) empfang(kn, kn.zelle.huelle);
-        for (const kn of H.muendungen) for (const tor of kn.tore) empfang(kn, tor.box);
+        // die Zellen des Hauptbilds: je Bereich EINE Prüfung seiner Hülle (gemerkt an diesem Stempel)
+        if (H.sichtHaupt)
+            for (const kn of H.sichtHaupt) {
+                const b = kn.bereich;
+                if (!b.hoehle || !b.huelle) continue;
+                if (b._empfSt !== st) {
+                    b._empfSt = st;
+                    b._empfJa = this._passTrifftBox(P, b.huelle, 0);
+                }
+                if (b._empfJa) empfang(kn, kn.zelle, kn.zelle.huelle);
+            }
+        for (const b of s.ordnung) {
+            const bh = b.hoehle;
+            if (!bh || !bh.startHuelle || !this._passTrifftBox(P, bh.startHuelle, 0)) continue;
+            for (const kn of bh.starts) for (const tor of kn.tore) empfang(kn, tor, tor.box);
+        }
+        if (K.size === 0) return;
         // die Werfer-Kandidaten: die Zellen, die das EINE Gesetz der Pass-Wahl in diesem Pass trifft (Box der Kaskade und
         // Licht-Kapsel gegen ihre Scheibe — `_chunkSatzAbschnitt` wählt dieselben)
-        const P = S.lage;
         for (const b of s.ordnung) {
             if (!b.hoehle || !b.huelle || b.huelle.isEmpty() || !this._passTrifftBox(P, b.huelle, 0)) continue;
+            const L = lage(b, b.huelle);
+            if (
+                L[2] - m > E[4] ||
+                Math.floor((L[3] + m) / T) < E[0] ||
+                Math.floor((L[0] - m) / T) > E[2] ||
+                Math.floor((L[4] + m) / T) < E[1] ||
+                Math.floor((L[1] - m) / T) > E[3]
+            )
+                continue;
             for (const kn of b.hoehle.knoten) {
                 const z = kn.zelle;
                 if (!z || kn.sicht === st || z.huelle.isEmpty() || !this._passTrifftBox(P, z.huelle, 0)) continue;
-                lage(z.huelle);
-                const nah = L[2];
+                const Z = lage(z, z.huelle);
+                const nah = Z[2] - m;
                 let wirft = false;
-                for (let j = Math.floor(L[1] / T); j <= Math.floor(L[4] / T) && !wirft; j++)
-                    for (let i = Math.floor(L[0] / T); i <= Math.floor(L[3] / T); i++) {
+                for (let j = Math.floor((Z[1] - m) / T); j <= Math.floor((Z[4] + m) / T) && !wirft; j++)
+                    for (let i = Math.floor((Z[0] - m) / T); i <= Math.floor((Z[3] + m) / T); i++) {
                         const w = K.get((i + 32768) * 65536 + (j + 32768));
                         if (w !== undefined && w >= nah) {
                             wirft = true;
@@ -65040,6 +65572,29 @@ class AnazhRealm {
                 if (wirft) kn.sicht = st;
             }
         }
+    }
+
+    // Die Lage einer Box im Licht-Raum (`e` = die Elemente der matrixWorldInverse der Kaskade, nur ihre DREHUNG): u, v quer
+    // zum Licht in out[0], out[1] (Minimum) und out[3], out[4] (Maximum), die Tiefe d entlang des Lichts in out[2] (nah)
+    // und out[5] (fern) — acht Ecken.
+    _hoehlenLichtLage(box, e, L) {
+        L[0] = L[1] = L[2] = Infinity;
+        L[3] = L[4] = L[5] = -Infinity;
+        for (let c = 0; c < 8; c++) {
+            const x = c & 1 ? box.max.x : box.min.x,
+                y = c & 2 ? box.max.y : box.min.y,
+                z = c & 4 ? box.max.z : box.min.z;
+            const u = e[0] * x + e[4] * y + e[8] * z,
+                v = e[1] * x + e[5] * y + e[9] * z,
+                d = -(e[2] * x + e[6] * y + e[10] * z);
+            if (u < L[0]) L[0] = u;
+            if (u > L[3]) L[3] = u;
+            if (v < L[1]) L[1] = v;
+            if (v > L[4]) L[4] = v;
+            if (d < L[2]) L[2] = d;
+            if (d > L[5]) L[5] = d;
+        }
+        return L;
     }
 
     // Das Schirm-Rechteck einer Box unter der Pass-Matrix `m` (NDC, auf [−1, 1] geklemmt) in `out[0…3]`, ihre nahe und ferne
@@ -65616,6 +66171,7 @@ class AnazhRealm {
     _lodSlotStamp(g, slot, scale, occluded, leaf) {
         const geom = g && g.mesh && g.mesh.geometry;
         if (!geom || !geom.userData || !geom.userData._lodFacade) return;
+        g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`): Sichthöhe und Karte der Wahl
         const s = Number.isFinite(scale) && scale > 0 ? scale : 1;
         const a0 = geom.attributes.aH0;
         if (a0 && a0.isInstancedBufferAttribute && slot < a0.array.length) {
@@ -65876,6 +66432,7 @@ class AnazhRealm {
         g.slotRef[slot] = ref;
         g.slotEntry[slot] = entry || null;
         g.liveCount = slot + 1;
+        g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`): jede Wahl eines Passes wählt neu
         AnazhRealm._instanzZahl(g.mesh, g.liveCount);
         // SUBMIT-WAL — der Aufrufer schreibt gleich Matrix/Farbe in diesen Slot
         // (synchron, vor dem nächsten Render): das Region-Bundle re-recorden.
@@ -65903,6 +66460,7 @@ class AnazhRealm {
         g.slotEntry[letzt] = null;
         ref.slot = -1;
         g.liveCount = letzt;
+        g.slotStand = (g.slotStand | 0) + 1; // der Slot-Stand (`_instanzSlotStand`)
         AnazhRealm._instanzZahl(g.mesh, letzt);
         this._archMeshBundleTouch(g.mesh); // SUBMIT-WAL — count-/Matrix-Mutation → Region-Bundle re-recorden
         // V12.0-perf.e-fix — boundingSphere invalidieren: InstancedMesh.raycast
@@ -65914,7 +66472,14 @@ class AnazhRealm {
 
     // Zwei lebende Slots tauschen ihre Bewohner — Instanz-Größen, Marken (die Halter lesen `slot` frisch) und Einträge.
     _archGroupTausch(g, a, b) {
+        // der Tausch der Wahl zählt, um wie viel er die Versionen hebt (der Slot-Stand zieht es ab, `_instanzSlotStand`)
+        const im = g.mesh.instanceMatrix;
+        const ak = g.mesh.geometry.attributes.aKarte;
+        const v = im.version,
+            vk = ak ? ak.version : 0;
         AnazhRealm._instanzTausch(g.mesh, a, b);
+        g._tauschMat = (g._tauschMat | 0) + (im.version - v);
+        if (ak) g._tauschKarte = (g._tauschKarte | 0) + (ak.version - vk);
         const ra = g.slotRef[a],
             rb = g.slotRef[b];
         ra.slot = b;
@@ -66680,28 +67245,25 @@ class AnazhRealm {
     // fällt, der nächste Takt baut sie auf dem Pfad-Feld neu (beide lesen `_pfadFeldAt` — bis 05.10. fiel nur die Wiese,
     // die Blume des Waldbodens blieb auf dem neuen Weg stehen).
     _nahWieseNeuIn(x0, z0, x1, z1) {
+        this._weltRegt(); // die Kacheln fallen: die Stand-Wache weckt Wiese und Streu
         let n = 0;
-        // Die Wiese-Kachel trägt nur Daten (der Sicht-Satz legt sich neu), die Streu-Kachel tritt aus ihren Senken aus.
+        const imRechteck = (key, K) => {
+            const [tx, tz] = key.split(",").map(Number);
+            return !((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1);
+        };
+        // Die Wiese-Kachel trägt nur Daten (der Sicht-Satz legt sich neu), die Streu-Kachel tritt aus ihren Senken aus. Die
+        // Kacheln fallen HIER, unter dem Weckruf oben (kein Rückruf: die Schreiber-Wand deckt nur den eigenen Pfad).
+        const nw = this.state.nahWiese;
+        if (nw)
+            for (const key of [...nw.kacheln.keys()])
+                if (imRechteck(key, AnazhRealm.NAH_WIESE.kachel) && this._nahWieseKachelFaellt(key)) n++;
         const ns = this.state.nahStreu;
-        const ringe = [
-            [this.state.nahWiese, AnazhRealm.NAH_WIESE.kachel, (key) => this._nahWieseKachelFaellt(key)],
-            [
-                ns,
-                AnazhRealm.NAH_STREU.kachel,
-                (key, k) => {
-                    this._nahStreuKachelEntsorgen(k);
-                    return ns.kacheln.delete(key);
-                },
-            ],
-        ];
-        for (const [ring, K, weg] of ringe) {
-            if (!ring) continue;
-            for (const [key, k] of [...ring.kacheln]) {
-                const [tx, tz] = key.split(",").map(Number);
-                if ((tx + 1) * K < x0 || tx * K > x1 || (tz + 1) * K < z0 || tz * K > z1) continue;
-                if (weg(key, k)) n++;
+        if (ns)
+            for (const [key, k] of [...ns.kacheln]) {
+                if (!imRechteck(key, AnazhRealm.NAH_STREU.kachel)) continue;
+                this._nahStreuKachelEntsorgen(k);
+                if (ns.kacheln.delete(key)) n++;
             }
-        }
         return n;
     }
 
@@ -67670,6 +68232,7 @@ class AnazhRealm {
         // DER STAND (W5): ein Studio-Fahrzeug parkt auf der Ebene seiner vier Räder (Höhe · Nick · Wank).
         this._fahrzeugStand(entry);
         this.state.architectures.push(entry);
+        this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
         const _krone = this._kronenRadiusFuer(type, entry.scale);
@@ -68792,7 +69355,7 @@ class AnazhRealm {
                         const m = ev.data;
                         if (!m || typeof m !== "object") return;
                         if (m.type === "ready" && m.world === "terrain") {
-                            f.ready = true;
+                            f.ready = true; // der Stand-Stempel liest die Antwort selbst (`_standStempel`)
                             // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung) in
                             // EINEM Roundtrip ziehen, DANN die Assets vorwärmen.
                             try {
@@ -69091,7 +69654,7 @@ class AnazhRealm {
     _foundryIngestRenderConfig(config) {
         if (!config || typeof config !== "object") return;
         this.state.studioRenderConfig = config;
-        AnazhRealm._studioRenderConfig = config;
+        AnazhRealm._studioRenderConfig = config; // der Stand-Stempel liest die Wahrnehmung selbst (`_standStempel`)
         // LOD-Distanzen/Fades in die EINE LOD-Quelle (LOD_DISTANCES ist jetzt mutable — die Defaults
         // matchen die Vorlage schon; hier folgt AnazhRealm einem LIVE-Edit des Config-Blocks).
         const L = config.lod;
@@ -73457,14 +74020,17 @@ class AnazhRealm {
     _foundryRewarmColdTrees() {
         // Regime-Quelle = `_foundryEnabled`: Foundry aus → Rewarm ist No-op (sonst läuft er im Gate-Hook-
         // Fenster mit, Burst über dem Cull-Budget). `!f || !f.ready` unten deckt jeden foundry-losen Zustand.
-        if (!this._foundryEnabled()) return;
+        // Rückgabe: die Zahl der Kandidaten (kalt oder vor dem Studio platziert) — die Stand-Wache des Culling-Takts hält
+        // sich wach, solange einer wartet; ein Platzieren regt die Welt.
+        if (!this._foundryEnabled()) return 0;
         // Die Foundry wartet aufs Terrain: baute in DIESEM Frame ein Terrain-Chunk, konvergiert sie nicht
         // (terrain-first wie der scatterDeco-Job) — der Boot-/Streaming-Fill bleibt leicht.
-        if (this.state._frameChunksBuilt) return;
+        // Ohne Urteil (der Bau wartet) bleibt der Cull-Gang wach: 1 Wartender, bis ein Frame ohne Chunk-Bau den Scan trägt.
+        if (this.state._frameChunksBuilt) return 1;
         const f = this._foundry;
-        if (!f || !f.ready) return; // erst wenn das Studio antwortet (sonst wuerde jeder Eintrag verhungern)
+        if (!f || !f.ready) return 0; // erst wenn das Studio antwortet (sonst wuerde jeder Eintrag verhungern)
         const archs = this.state.architectures;
-        if (!Array.isArray(archs)) return;
+        if (!Array.isArray(archs)) return 0;
         const pm = this.state.playerMesh ? this.state.playerMesh.position : null;
         const rad = this.state.architectureCullingRadius || 200;
         const radiusSq = rad * rad;
@@ -73517,6 +74083,7 @@ class AnazhRealm {
                     else if (entry.mesh) this._cullArchitectureMesh(entry);
                 }
                 this._rebuildArchitectureMesh(entry);
+                this._bauRegt(); // die Gestalt dockte an: Stufen-Wahl und Cull gehen
                 placeBudget--;
             } else if (cold) {
                 // NICHT gedockt → EINE Studio-Bake-Anfrage anstoßen (der Eintrag bleibt kalt, bis das
@@ -73527,6 +74094,7 @@ class AnazhRealm {
             }
             // classic + nicht ready: der klassische Look bleibt sichtbar, bis das Asset andockt (kein Pop).
         }
+        return kand.length;
     }
     // `_foundryFlattenFor` (unten): Eintrag → Instancing-Leaves aus der echten Vorlagen-Geometrie, je
     // Art:Gestalt:LOD:Teil ein leafKey im BESTEHENDEN HISM; null solange das Asset lädt (Tick baut nach).
@@ -75126,6 +75694,9 @@ class AnazhRealm {
     _grundrissRaeumen(haus) {
         const fp = this._grundrissVon(haus);
         if (!fp) return 0;
+        // die Welt regt sich, bevor geräumt wird: der Gang schreibt die Nah-Streu-Kacheln (`nahStreu.kacheln`, über
+        // `_nahStreuKachelEntsorgen` ihren `zustand`) — die Stand-Wache weckt die Fege-Takte (gate:stand-takt, Schreiber-Wand)
+        this._weltRegt();
         this._grundrissGitter = null;
         const hx = haus.position.x;
         const hz = haus.position.z;
@@ -76564,6 +77135,11 @@ class AnazhRealm {
         // alles auf einmal). Cull (fern) ist billig → ungedeckelt.
         const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!playerPos) return;
+        // DIE STAND-WACHE: ging der Gang über alle Einträge ohne Bau, Räumung und Wartende, und regt sich nichts (Ort,
+        // Bau-Menge, Ankunft, Cull-Radius), träfe er dieselben Urteile — kein Gang (gemessen 07.10., Mess-Wiese, Stand:
+        // 1540 Einträge je Takt, 0 Bauten, 0 Räumungen).
+        if (this._standRuht("archCull", 1, { pos: playerPos, rand: AnazhRealm.STAND_RAND_FERN_M }, "bau")) return;
+        let regung = 0;
         const radius = this.state.architectureCullingRadius;
         const radiusSq = radius * radius;
         // Kollision ist feld-nativ (`entry.blockerAABBs` ab Spawn) → der Cull-Tick steuert NUR das Rendern,
@@ -76592,7 +77168,10 @@ class AnazhRealm {
             // Radius sprang die Karte in den Satz. Eine Brücke braucht die Karten-Art nicht: steht ihre Wunsch-Stufe noch
             // nicht, trägt die gedockte Karte (`_rebuildArchitectureMesh`).
             if (this._archKartenPreset(entry)) {
-                if (entry._ziegelSlot) this._archZiegelTod(entry);
+                if (entry._ziegelSlot) {
+                    this._archZiegelTod(entry);
+                    regung++;
+                }
                 // diesseits des Saums trägt jedes; im Saum und dahinter fragt der Eintrag SEINEN Rand
                 const h = distSq <= saumSq ? Infinity : this._archKartenHorizont(entry);
                 if (distSq <= h * h) {
@@ -76600,8 +77179,10 @@ class AnazhRealm {
                         entry._nahD2 = distSq;
                         nahOffen.push(entry);
                     }
-                } else if (distSq > (h + totband) ** 2 && this._archIsRendered(entry))
+                } else if (distSq > (h + totband) ** 2 && this._archIsRendered(entry)) {
                     this._cullArchitectureMesh(entry);
+                    regung++;
+                }
                 continue;
             }
             // DIE MESH-ZONE (der geregelte Cull-Radius, 100–150 m): hier IST das Studio-Mesh die Gestalt, der
@@ -76616,8 +77197,9 @@ class AnazhRealm {
                 // ohne Feld UND ohne Mesh, unsichtbar).
                 entry._ziegelNah = true;
                 const echt = this._archIsRendered(entry);
-                if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) this._archZiegelFern(entry);
-                else {
+                if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {
+                    if (this._archZiegelFern(entry)) regung++;
+                } else {
                     // Steht das Mesh schon, braucht der Bau keine Brücke: sein Satz bäckt NACH allen Bedürftigen
                     // vor (für den Rand der Mesh-Zone) und stiehlt ihnen nie den Takt.
                     entry._ziegelD2 = echt ? distSq + AnazhRealm.ZIEGEL_VORBACK_D2 : distSq;
@@ -76628,19 +77210,28 @@ class AnazhRealm {
                     nahOffen.push(entry);
                 }
                 if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, !echt);
-                if (entry.mesh) entry.mesh.visible = echt;
+                if (entry.mesh && entry.mesh.visible !== echt) {
+                    entry.mesh.visible = echt;
+                    regung++;
+                }
             } else {
                 entry._ziegelNah = false;
-                if (this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
+                if (this._archIsRendered(entry)) {
+                    this._cullArchitectureMesh(entry);
+                    regung++;
+                }
                 // NAH ZUERST: lebende Slots aktivieren sofort (billig); ungebackene ferne Bauten warten auf den Gang
                 // NACH der Liste, dort nach Distanz sortiert — sonst verhungert ein frisch gesetzter Bau hinter alten.
-                if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) this._archZiegelFern(entry);
-                else {
+                if (entry._ziegelSlot || entry._ziegelGebacken || ohneFeld) {
+                    if (this._archZiegelFern(entry)) regung++;
+                } else {
                     entry._ziegelD2 = distSq;
                     ziegelOffen.push(entry);
                 }
             }
         }
+        // Wartende (ein Bau, ein Satz) halten den Gang wach; was hier entsteht oder fällt, regt die Welt.
+        const offen = nahOffen.length + ziegelOffen.length;
         // Mesh-Bauten NAH ZUERST (die Mesh-Zone, dahinter die Karten-Zone der Karten-Dinge): budgetiert; über Budget
         // mit Takt-Garantie (ein Bau je 250 ms, wie die Bake-Garantie des Felds) — sonst bliebe auf langsamem Holz die
         // Mesh-Zone für immer Feld.
@@ -76677,6 +77268,7 @@ class AnazhRealm {
                     if (this._archIsRendered(entry)) {
                         entry._nahWartet = null;
                         if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
+                        regung++;
                         continue;
                     }
                 }
@@ -76700,6 +77292,7 @@ class AnazhRealm {
                     if (built++ >= budget) hand = false;
                     if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
                     if (entry.mesh) entry.mesh.visible = true;
+                    regung++;
                 } else entry._nahWartet = { a: fA, t: jetztN };
             }
             nahOffen.length = 0;
@@ -76709,7 +77302,7 @@ class AnazhRealm {
         if (ziegelOffen.length) {
             ziegelOffen.sort((a, b) => a._ziegelD2 - b._ziegelD2);
             for (const entry of ziegelOffen) {
-                this._archZiegelFern(entry); // selbst-getaktet (Bake-Garantie)
+                if (this._archZiegelFern(entry)) regung++; // selbst-getaktet (Bake-Garantie)
                 if (entry._ziegelNah && entry._ziegelSlot)
                     this._weltFeldAktiv(entry._ziegelSlot, !this._archIsRendered(entry));
             }
@@ -76718,10 +77311,11 @@ class AnazhRealm {
         // Foundry-Drain: baut kalte Foundry-Einträge + hebt vor Studio-ready gespawnte auf das Studio-Asset.
         // Budget-gedeckelt (pausiert über Budget) → die Erst-Welt konvergiert ohne Spike. Headless/Studio
         // nicht ready → früher No-op.
-        this._foundryRewarmColdTrees();
+        const kalt = this._foundryRewarmColdTrees();
         // V18.297 — die Welt ATMET: autonome (Nexus-)Bauten sind gedeckelt; ist das
         // Limit erreicht, verblasst das FERNSTE (am Horizont, am wenigsten vermisst).
         this._capNexusStructures(playerPos);
+        this._standMeldet("archCull", 1, regung > 0, offen + kalt > 0);
     }
 
     // Autonome Bauten bounded: sie spawnen fern (far_player, jenseits des Cull-Radius), der Bestand ist
@@ -76755,6 +77349,7 @@ class AnazhRealm {
         const arches = this.state.architectures;
         const idx = arches ? arches.indexOf(entry) : -1;
         if (idx >= 0) arches.splice(idx, 1);
+        this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
     }
 
     // ### Bau-Modus (Phantom-Cursor) ###
@@ -77412,6 +78007,7 @@ class AnazhRealm {
         this._cullArchitectureMesh(entry);
         this._trittFlaecheLoesen(entry);
         this.state.architectures.splice(idx, 1);
+        this._weltRegt(); // die Bau-Menge regt sich: die Stand-Wache weckt die Fege-Takte
         if (this._fahrLos) this._fahrLos.delete(entry); // ein abgebauter Wagen fällt nicht weiter (`_fahrNachlauf`)
         this._kronenStreuWeg("a:" + entry.id); // ein gefällter Baum nimmt seine Krone aus der Karte
         if (typeof this.journalAppend === "function") {
@@ -86217,7 +86813,8 @@ class AnazhRealm {
         const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
         const stop = this._interpolateDayNight(t);
         const tint = this._dayNightComputeTint(stop);
-        const angle = t * Math.PI * 2 - Math.PI / 2;
+        // der Winkel der Sonne in Stufen (`_sonnenWinkel`): Licht, Schatten, Himmelskörper und Luft lesen dieselbe Richtung
+        const angle = this._sonnenWinkel(t);
         const sunDir = this._dayNightSunDirection(angle);
         // Mond-Richtung aus der EINEN Quelle: `_dayNightSunDirection(angle+π)` ist exakt die Formel des
         // sichtbaren Mond-Meshes (`_updateCelestialBodies`); −sunDir hätte eine andere z-Komponente.
@@ -86360,6 +86957,65 @@ class AnazhRealm {
     // Sonnen-Richtung (Einheitsvektor Oberfläche→Sonne) aus dem Tageswinkel.
     // V8.48 — getrennt von der Licht-POSITION (die folgt dem Spieler für das
     // Shadow-Frustum); diese reine Richtung füttert Beleuchtung + Shader.
+    // DIE SONNE IN STUFEN (Welle C, OMEN-Urteil 07.10.: „der Tag steht im Spiel nie"): der Winkel der Sonne, aus dem
+    // jede Richtung des Lichts folgt — die EINE Größe, die Schattierung und Schatten lesen (Lehre 21: das Richtlicht, die
+    // Kaskaden über sein Ziel, die Himmelskörper, die Luft-Keule, die Godrays). Er folgt der Tageszeit nur in STUFEN: das
+    // Licht dreht, wenn die Sonne sich merklich gedreht hat, und steht dazwischen still. Drehte es je Frame mit (8 min je
+    // Tag: 0,75° je s), bekam jede Kaskade bei jedem Render eine neue Box und Lage und wählte neu — gemessen (echte GPU,
+    // Mess-Wiese, Ruhe mit laufender Sonne, dieselbe Welt): das Licht drehte in 199 von 199 Frames, die Kaskaden rechneten je
+    // Frame ~1 400 Licht-Boxen und ihre Wahl neu. Die Stufe (`_sonnenStufe`) verschiebt keine Schatten-Kante um mehr als
+    // einen Texel ihrer Karte; ein großer Sprung der Tageszeit (die Bühne, ein Zeit-Befehl) setzt sofort. Bei 8 min je Tag
+    // und einem Licht-Weg von 100–170 m fällt sie 10- bis 25-mal je Sekunde — die Wahl der Kaskaden hält darum über die
+    // Stufen, bis die Sonne ihren Licht-Rand verbraucht hat (`PASS_WAHL.lichtRandTexel`, `_passLageHaelt`); jede Stufe legt
+    // nur die Box neu (die Karte folgt dem Licht, gate:schatten-werfer K8).
+    _sonnenWinkel(t) {
+        const w = t * Math.PI * 2 - Math.PI / 2;
+        const s = this.state._sonne || (this.state._sonne = { winkel: NaN, stufe: 0, stufen: 0 });
+        s.stufe = this._sonnenStufe();
+        if (Number.isFinite(s.winkel)) {
+            const a = this._dayNightSunDirection(s.winkel);
+            if (a.dot(this._dayNightSunDirection(w)) >= Math.cos(s.stufe)) return s.winkel;
+        }
+        s.winkel = w;
+        s.stufen++;
+        return w;
+    }
+
+    // DIE STUFE der Sonne (Bogenmaß): eine Drehung des Lichts um α verschiebt in der Karte einer Kaskade jede Schatten-Kante
+    // um α × ihren Licht-Weg (vom Werfer zum Empfänger, entlang des Lichts) — die Stufe ist die größte, die in KEINER Kaskade
+    // eine Kante um mehr als einen Texel ihrer Karte verschiebt: min texel / weg über die Kaskaden (`_kaskadeFit`: der
+    // längste Licht-Weg der Box — der Fall vom höchsten Werfer zum tiefsten Empfänger, geteilt durch die Höhe des Lichts,
+    // höchstens die Tiefe der Box; an der Mess-Wiese k0 0,10–0,17 m und k1 0,22–0,47 m je Texel; ohne Kaskaden die EINE
+    // Karte des Richtlichts, ihr Texel über ihre Tiefe). Die Schattierung trägt jede kleinere Stufe: N·L ändert sich um
+    // höchstens α, unter einer 8-bit-Stufe (`SONNEN_STUFE_SCHATTIERUNG` = 1/255), und die Sonnenscheibe am Himmel springt um
+    // höchstens einen Bildpunkt, wo sie auch steht (Gegenprüfung 07.10.: 1/255 rad waren bei 1080p und 75° drei Pixel, 42 %
+    // der Scheibe) — die Obergrenze ohne Karte. DER PIXEL-WINKEL aus dem EINEN Schirm (`_schirm`: Zeichenpuffer B × H, die
+    // Brennweite f = pxJeM in Bildpunkten): ein Punkt im Winkel θ zur Blickachse liegt bei r = f·tan θ, eine Drehung um α
+    // schiebt ihn um α·(f² + r²)/f Bildpunkte — am weitesten in der Bildecke, r² = (B/2)² + (H/2)². Das Sichtfeld je Bildzeile
+    // (fov/H) ist nur der Mittelwert über die Höhe: bei 1080p und 75° schiebt es in der Mitte 0,85, am oberen Rand 1,36 und in
+    // der Ecke 2,94 Bildpunkte. Die Stufe nimmt die Ecke: f/(f² + r²) — höchstens ein Bildpunkt überall im Bild.
+    _sonnenStufe() {
+        let stufe = AnazhRealm.SONNEN_STUFE_SCHATTIERUNG;
+        const s = this._schirm();
+        if (s.pxJeM != null && s.breite > 0 && s.hoehe > 0) {
+            const f = s.pxJeM;
+            stufe = Math.min(stufe, f / (f * f + (s.breite / 2) ** 2 + (s.hoehe / 2) ** 2));
+        }
+        const csm = this.state.csmNode;
+        if (csm) {
+            const fits = csm._anazhFit;
+            if (fits)
+                for (const f of fits) if (f && f.texelMin > 0 && f.weg > 0) stufe = Math.min(stufe, f.texelMin / f.weg);
+            return stufe;
+        }
+        const dl = this.state.directionalLight;
+        const sh = dl && dl.castShadow === true ? dl.shadow : null;
+        const c = sh && sh.camera;
+        if (c && c.isOrthographicCamera === true && c.far > c.near && sh.mapSize.width > 0)
+            stufe = Math.min(stufe, (c.right - c.left) / sh.mapSize.width / (c.far - c.near));
+        return stufe;
+    }
+
     _dayNightSunDirection(angle) {
         const sunDirX = Math.cos(angle);
         const sunDirY = Math.sin(angle);
@@ -86455,7 +87111,7 @@ class AnazhRealm {
     _dayNightApplyStarField(t, skyMul) {
         const u = this.state.starFieldUniforms;
         if (!u || !u.opacity) return;
-        const sa = t * Math.PI * 2 - Math.PI / 2;
+        const sa = this._sonnenWinkel(t);
         const sunHeight = Math.max(-1, Math.min(1, Math.sin(sa)));
         u.opacity.value = skyMul;
         if (u.grenze) u.grenze.value = this._himmelGrenzgroesse(sunHeight);
@@ -87084,9 +87740,18 @@ class AnazhRealm {
 
     // Der EINE Wetter-Schreiber: state.weather wird SOFORT gesetzt (weather_is + DSL reagieren instant),
     // die Transition ist rein visuell (Skybox + Symphonie cross-faden ~45 s). Aufrufer: DSL-Op `weather`
-    // und der Auto-Zug (_loopWeatherAndGrowth) — nie ein roher Flip am Blend-System vorbei.
-    _setWeather(name) {
+    // (Quelle = die DSL-Quelle: emotion:<Achse> · nexus · rule:<Herkunft> · human · remote:<Peer> · llm:grok …)
+    // und der Auto-Zug (_loopWeatherAndGrowth, „auto-zug") — nie ein roher Flip am Blend-System vorbei.
+    // DIE WETTER-WACHE: eine Uhr des Auto-Zugs unter 0 ist der Halt einer Messung (die Bühne der Linsen,
+    // scripts/lib/ausgabe-aufnahme.cjs `__wetterHalten`; im Spiel zählt die Uhr von 0 aufwärts). Halt heißt Halt:
+    // solange sie steht, dreht KEIN Schreiber das Wetter. Bis V18.534 hielt sie nur den Auto-Zug — der OMEN
+    // fand in einem Boot sunny → rainy bei eingefrorener Uhr (ein anderer Schreiber: Nexus, Emotion, Gesetz).
+    _setWeather(name, quelle) {
         if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
+        if (this.state.weatherEffectTime < 0) {
+            this.log(`Wetter gehalten: ${quelle || "?"} wollte ${name}`, "DEBUG");
+            return false;
+        }
         const oldWeather = this.state.weather;
         this.state.weather = name;
         this.state.weatherEffectTime = 0;
@@ -91158,7 +91823,7 @@ class AnazhRealm {
             if (idx < 0) idx = 0;
             if (idx >= words.length) idx = words.length - 1;
             const next = words[idx];
-            this._setWeather(next);
+            this._setWeather(next, "auto-zug");
             this.log(`Das Wetter zieht zu ${next}`, "INFO");
             this.state.weatherEffectTime = 0;
         }
@@ -91295,6 +91960,166 @@ class AnazhRealm {
                 },
             },
         ];
+    }
+
+    // ═══ DIE STAND-WACHE (Welle K, Lehre 25, Gebot 7) ═══
+    // Befund 07.10. (OMEN, GTX 1060, Mess-Wiese, Regler voll, der Spieler STEHT): `_loopVoxelStreaming` kostete 3,27 ms je
+    // Frame, `tickArchitectureCulling` · `_tickArchitectureLOD` · `_lodTreeVisHeight` · noise2D standen im Selbstzeit-Top.
+    // Gezählt an der Mess-Wiese (Radeon, eingeschwungen, Stand): je Frame gingen die Fege-Takte ~6 000 Blatt-Rufe — Ring 83,
+    // Stufen-Wahl 1 710, Cull 3 512, Streu 480, Nah-Streu 138, Nah-Wiese 6, Saum 384 (~6 000 noise2D) — und änderten nichts.
+    // DAS GESETZ: ein Fege-Takt (ein Gang über die Nachbarschaft — Ring, Einträge, Zellen, Kacheln, Saum-Punkte) fragt vor
+    // dem Gang `_standRuht(name, runde, ort, art)` und meldet danach `_standMeldet(name, besucht, gewirkt, offen)`. Er
+    // schläft, sobald er unter seinem Stempel und an SEINEM Ort einen vollen Gang (`runde` Einheiten) ohne Wirkung und ohne
+    // Offenes ging. Was ihn weckt, ist genau, was seine Urteile lesen:
+    //   · der Stempel (`_standStempel`) — die Welt-Regung (`_weltRegt`: jede Mengen-Änderung — Chunk, Bau, Streu-Region und
+    //     ihre Zellen, Ernte, Kacheln; gate:stand-takt SCHREIBER verlangt den Weckruf auf jedem Pfad jedes Schreibers), die
+    //     Foundry-Ankunft, die Antwort und das Buch des Studios, die Wahrnehmung und die LOD-Distanzen, die Regler
+    //     (Wahrnehmungs-Faktor, lodRef, Ring, Cull-Radius), der
+    //     Wasserspiegel; die BODEN-Takte (Ring, Saum) lesen nur ihren Boden-Stempel (`_standStempelBoden`: die Chunk-Menge,
+    //     die Ring-Regler, der Wasserspiegel);
+    //   · die BAU-Takte (Stufen-Wahl, Cull) lesen einander: wirkt einer (eine Stufe, ein Mesh), gehen beide (`_bauRegt`);
+    //     die Wirkung der Streu, der Kacheln, des Saums weckt niemanden sonst — sie geht nur selbst noch einmal;
+    //   · der Ort: der Ring die Spieler-Zelle, der Saum die Anker-Generation des Fern-Rings, Stufen-Wahlen und Kacheln Spieler
+    //     oder Auge auf STAND_RAND_M, der Cull (Urteile ab 100 m) auf STAND_RAND_FERN_M — so kostet Gehen nur, was es ändert.
+    // Offenes (ein Asset lädt, ein Budget ist leer) hält nur den eigenen Takt wach. Die Zeit weckt nie: Takte mit eigener Uhr
+    // (Nachwuchs, Jahreszeit, Regen, Wasser-Automat, Karten-Bäcker, Dirty-Chunks) stehen nicht unter der Wache.
+    // Die Wand: gate:stand-takt (Ruhe 0, Treue, Wecken, Gehen, Strom; der Bruch fällt rot).
+    // `boden`: die Chunk-Menge regt sich — das weckt auch die Boden-Takte.
+    _weltRegt(boden) {
+        this._weltRegung = (this._weltRegung | 0) + 1;
+        if (boden) this._bodenRegung = (this._bodenRegung | 0) + 1;
+    }
+
+    // Der EINE Stempel der Wache: wächst, sobald eine ortsfreie Eingabe der Fege-Takte sich ändert.
+    _standStempel() {
+        const st = this.state;
+        const W = this._standWache || (this._standWache = { stempel: 0, v: [], takte: new Map() });
+        const v = W.v;
+        let i = 0,
+            neu = false;
+        const setze = (x) => {
+            if (!Object.is(v[i], x)) {
+                v[i] = x;
+                neu = true;
+            }
+            i++;
+        };
+        setze(this._weltRegung | 0);
+        setze(st._foliageDensityScale); // der EINE Regler: Wahrnehmungs-Faktor der Stufen-Wahl und Verdeckungs-Schwelle
+        setze(st.lodRef);
+        setze(st.chunkRingRadius);
+        setze(st._activeRingRadius); // der Boot-Ring wächst bis zum Ziel (`_voxelChunkConfig`)
+        setze(st.architectureCullingRadius);
+        const f = this._foundry;
+        setze(f ? f.ankunft | 0 : -1);
+        // was die Takte ortsfrei vom Studio lesen, liest der Stempel selbst (kein Schreiber kann den Weckruf vergessen): die
+        // Antwort des Studios, das Buch (Rezepte, Vorlagen), die Wahrnehmung (Stufen-Klammer, Budget, Sichtweite) und die
+        // LOD-Distanzen, die `_foundryIngestRenderConfig` (oder wer auch immer) in die EINE LOD-Quelle schreibt
+        setze(!!(f && f.ready));
+        setze(f ? f.recipes : null);
+        setze(AnazhRealm._studioRenderConfig);
+        const D = AnazhRealm.LOD_DISTANCES;
+        setze(D.thresh01);
+        setze(D.thresh12);
+        setze(D.hysteresis);
+        setze(D.fade);
+        setze(D.fade0);
+        setze(st.waterLevel);
+        setze(st.foundryCrossfade === true);
+        setze(!!(st.atmosphere && st.atmosphere.treeLOD === false));
+        setze(st.useOcclusionDemotion !== false);
+        setze(st.voxelTerrainActive === true);
+        if (neu) W.stempel++;
+        return W.stempel;
+    }
+
+    // Der Stempel der BODEN-Takte: der Ring liest Chunk-Menge, Ring-Regler und Spieler-Zelle, der Saum Chunk-Menge,
+    // Wasserspiegel und Anker — die Wirkung der anderen Fege-Takte (eine Stufe, ein Bau, eine Kachel) weckt sie nicht. Beim
+    // Gehen gehen sie nur, wo die Zelle oder der Anker wechselt oder ein Chunk kommt und geht.
+    _standStempelBoden() {
+        const st = this.state;
+        const W = this._standWache || (this._standWache = { stempel: 0, v: [], takte: new Map() });
+        const b = W.boden || (W.boden = { stempel: 0, v: [] });
+        const jetzt = [
+            this._bodenRegung | 0,
+            st.chunkRingRadius,
+            st._activeRingRadius,
+            st.waterLevel,
+            st.voxelTerrainActive === true,
+        ];
+        if (jetzt.some((x, i) => !Object.is(b.v[i], x))) {
+            b.v = jetzt;
+            b.stempel++;
+        }
+        return b.stempel;
+    }
+
+    // Schläft der Fege-Takt `name`? Ja, wenn er unter dem jetzigen Stempel (`boden`: dem der Boden-Takte) und an seinem Ort
+    // `runde` Einheiten ohne Wirkung ging. `ort`: ein Wert, den der Takt liest (die Spieler-Zelle, die Anker-Generation —
+    // neu, sobald er anders ist), oder `{ pos, rand }`: ein Anker, neu, sobald `pos` mehr als `rand` Meter von ihm weg ist
+    // (ein Zittern der Physik um Millimeter weckt nichts).
+    _standRuht(name, runde, ort, art) {
+        const s = art === "boden" ? this._standStempelBoden() : this._standStempel();
+        const W = this._standWache;
+        let t = W.takte.get(name);
+        if (!t) {
+            t = {
+                stempel: s,
+                ort: undefined,
+                anker: null,
+                bau: art === "bau",
+                bauRegung: -1,
+                leer: 0,
+                ruht: 0,
+                arbeit: 0,
+            };
+            W.takte.set(name, t);
+        }
+        let neu = t.stempel !== s;
+        // DIE BAU-TAKTE (Stufen-Wahl und Cull) lesen einander: eine neue Stufe, ein gebautes oder geräumtes Mesh weckt beide —
+        // nie die Streu, die Kacheln oder den Boden, die ihre Urteile nicht lesen.
+        if (t.bau && t.bauRegung !== (this._bauRegung | 0)) {
+            t.bauRegung = this._bauRegung | 0;
+            neu = true;
+        }
+        if (ort !== null && typeof ort === "object") {
+            const p = ort.pos;
+            const a = t.anker;
+            if (p && (!a || (p.x - a.x) ** 2 + (p.y - a.y) ** 2 + (p.z - a.z) ** 2 > ort.rand * ort.rand)) {
+                t.anker = { x: p.x, y: p.y, z: p.z };
+                neu = true;
+            }
+        } else if (!Object.is(t.ort, ort)) {
+            t.ort = ort;
+            neu = true;
+        }
+        if (neu) {
+            t.stempel = s;
+            t.leer = 0;
+        }
+        if (t.leer >= Math.max(1, runde | 0)) {
+            t.ruht++;
+            return true;
+        }
+        return false;
+    }
+
+    // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (er geht noch einmal; ein Bau-Takt weckt
+    // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach).
+    _standMeldet(name, besucht, gewirkt, offen) {
+        const t = this._standWache ? this._standWache.takte.get(name) : null;
+        if (!t) return;
+        t.arbeit += besucht;
+        if (gewirkt) {
+            t.leer = 0;
+            if (t.bau) this._bauRegt();
+        } else if (offen) t.leer = 0;
+        else t.leer += besucht;
+    }
+
+    // Ein Bau-Eintrag änderte Stufe oder Gestalt (ein Bau-Takt wirkte, ein Studio-Asset dockte an): die Bau-Takte gehen.
+    _bauRegt() {
+        this._bauRegung = (this._bauRegung | 0) + 1;
     }
 
     // Dispatcher-Lauf (Verteil-Schicht, KEIN zweiter Regler): die fixen günstigen Ticks (vegSpawns/
@@ -91700,6 +92525,99 @@ class AnazhRealm {
         }
     }
 
+    // DIE VORTIEFE IN 16 BIT (0710-1 P2, Runde 2): der Resolve der zeitlichen Auflösung liest die Vortiefe nur gegen die
+    // Schwelle der Disokklusion (vendor/TRAANode.js: `depthThreshold = 0.0005`, `samplePreviousDepth` → `isDisocclusion`) —
+    // eine Stufe von depth16unorm (1/65535 ≈ 1,5·10⁻⁵) liegt 33-fach darunter. r184 kopierte die Szenen-Tiefe
+    // (depth24plus, 4 Byte) Byte für Byte in die Tiefe des Geschichts-Ziels, und eine Kopie verlangt dasselbe Format: 7,9 MB
+    // bei 1080p. Jetzt trägt die Vortiefe 16 bit (3,95 MB), und an der EINEN Stelle, an der der Knoten kopiert
+    // (`renderer.copyTextureToTexture(currentDepth, _historyRenderTarget.depthTexture)`), zeichnet ein Vollbild-Zug die
+    // Szenen-Tiefe als Fragment-Tiefe in die Tiefe des Geschichts-Ziels (`_traaVortiefeZug`) — Farbe ungeschrieben (die
+    // Geschichte bleibt, wie sie ist), Tiefe ohne Test (jedes Pixel), geladen Texel für Texel (kein Filter). Jeder andere
+    // Kopier-Ruf fährt r184. gate:vendor-anker pinnt die Kopier-Stelle des Knotens, gate:ziel-zensus (d) den Weg.
+    _traaVortiefe(traa) {
+        const rend = this.state.renderer;
+        const ziel = traa && traa._historyRenderTarget;
+        if (!ziel || !ziel.depthTexture || !rend || typeof rend.copyTextureToTexture !== "function" || !rend.backend) {
+            this.log(
+                "TRAA-VORTIEFE: Geschichts-Ziel oder Kopier-Weg fehlt (Vendor-Drift) — die Vortiefe bleibt 32 bit",
+                "ERROR"
+            );
+            return;
+        }
+        const tiefe = ziel.depthTexture;
+        tiefe.type = THREE.UnsignedShortType;
+        const realm = this;
+        const roh = rend.copyTextureToTexture;
+        rend.copyTextureToTexture = function (von, nach, ...rest) {
+            if (nach !== tiefe || !von || von.isDepthTexture !== true) return roh.call(this, von, nach, ...rest);
+            realm._traaVortiefeZug(this, von, tiefe);
+            return undefined;
+        };
+    }
+
+    // DER ZUG DER VORTIEFE (Gegenprüfung 0710-3, gelb: gpu-bank CPU je Frame 2,73 → 3,04 ms — der Zug war ein eigenes
+    // `renderer.render` einer Szene mit Orthogonal-Kamera, Render-Liste, Material-Weg und Pass-Deskriptor für EIN
+    // Vollbild-Dreieck): ein roher Pass auf eigenem Encoder, so wie r184s eigene Kopie (`copyTextureToTexture` erzeugt
+    // einen Encoder und reicht ihn sofort ein) — dieselbe Stelle in der Folge der Queue. Ein Vollbild-Dreieck lädt die
+    // Szenen-Tiefe Texel für Texel und schreibt sie als Fragment-Tiefe (Test immer, kein Farb-Anhang); die Ziele legt r184
+    // an wie für seine Kopie (`_textures.updateTexture`, auch nach jedem Resize).
+    _traaVortiefeZug(rend, von, nach) {
+        const be = rend.backend;
+        rend._textures.updateTexture(von);
+        rend._textures.updateTexture(nach);
+        const q = be.get(von).texture;
+        const z = be.get(nach).texture;
+        if (!q || !z) return;
+        let V = this._traaVortiefeGpu;
+        if (!V || V.format !== z.format) {
+            const modul = be.device.createShaderModule({
+                label: "TRAA-Vortiefe",
+                code:
+                    "@group(0) @binding(0) var tiefe: texture_depth_2d;\n" +
+                    "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
+                    "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
+                    "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
+                    "}\n" +
+                    "@fragment fn fs(@builtin(position) p: vec4f) -> @builtin(frag_depth) f32 {\n" +
+                    "    return textureLoad(tiefe, vec2i(p.xy), 0);\n" +
+                    "}\n",
+            });
+            V = this._traaVortiefeGpu = {
+                format: z.format,
+                pipe: be.device.createRenderPipeline({
+                    label: "TRAA-Vortiefe",
+                    layout: "auto",
+                    vertex: { module: modul, entryPoint: "vs" },
+                    fragment: { module: modul, entryPoint: "fs", targets: [] },
+                    depthStencil: { format: z.format, depthWriteEnabled: true, depthCompare: "always" },
+                    primitive: { topology: "triangle-list" },
+                }),
+                quelle: null,
+                ziel: null,
+            };
+        }
+        if (V.quelle !== q || V.ziel !== z) {
+            V.gruppe = be.device.createBindGroup({
+                layout: V.pipe.getBindGroupLayout(0),
+                entries: [{ binding: 0, resource: q.createView({ aspect: "depth-only" }) }],
+            });
+            V.ansicht = z.createView();
+            V.quelle = q;
+            V.ziel = z;
+        }
+        const enc = be.device.createCommandEncoder({ label: "TRAA-Vortiefe" });
+        const pass = enc.beginRenderPass({
+            label: "TRAA-Vortiefe",
+            colorAttachments: [],
+            depthStencilAttachment: { view: V.ansicht, depthLoadOp: "load", depthStoreOp: "store" },
+        });
+        pass.setPipeline(V.pipe);
+        pass.setBindGroup(0, V.gruppe);
+        pass.draw(3);
+        pass.end();
+        be.device.queue.submit([enc.finish()]);
+    }
+
     // Post-Processing-Pipeline: EIN THREE.PostProcessing mit Bloom + Color-Grading (Sättigung + Kontrast),
     // aus TSL-Primitiven selbst gebaut (kein Vendor-Addon). Lazy nach rendererReady; bei jedem Fehler
     // postProcessingFailed=true → der Loop rendert direkt renderer.render() (nie schwarzer Schirm).
@@ -91771,13 +92689,12 @@ class AnazhRealm {
             // Die Platzhalter-Tiefe des Knotens (1×1, bis die Geschichte ihre Tiefe trägt) hat weder Namen noch Ziel —
             // die Band-Linse nennt jedes Textur-Objekt beim Erzeuger (gate:vendor-anker pinnt die Vendor-Zeile).
             if (traa) traa._previousDepthNode.value.name = "TRAANode.vortiefe";
-            // DIE VORTIEFE DER GESCHICHTE: je Frame kopiert der Knoten die Szenen-Tiefe in die Tiefe seines Geschichts-Ziels
-            // (r184 `copyTextureToTexture(currentDepth, _historyRenderTarget.depthTexture)`, 7,9 MB bei 1080p), der Resolve
-            // des nächsten Frames liest sie als Vortiefe (`samplePreviousDepth` → Disokklusion: wo die reprojizierte Vortiefe
-            // vor der jetzigen liegt, fällt die Geschichte — sonst zieht jede freigelegte Kante einen Geist). Die Kopie bleibt;
-            // die Frame-Anatomie sah sie namenlos („post: depth → ?"), der Name ist der, den die Band-Linse ihr über das Ziel
-            // gibt (`<ziel>:tiefe`) — der VRAM-Schlüssel bleibt derselbe.
+            // DIE VORTIEFE DER GESCHICHTE: je Frame bringt der Knoten die Szenen-Tiefe in die Tiefe seines Geschichts-Ziels, der
+            // Resolve des nächsten Frames liest sie als Vortiefe (`samplePreviousDepth` → Disokklusion: wo die reprojizierte
+            // Vortiefe vor der jetzigen liegt, fällt die Geschichte — sonst zieht jede freigelegte Kante einen Geist). Sie trägt
+            // 16 bit (`_traaVortiefe`); der Name ist der, den die Band-Linse ihr über das Ziel gibt (`<ziel>:tiefe`).
             if (traa) traa._historyRenderTarget.depthTexture.name = "TRAANode.history:tiefe";
+            if (traa) this._traaVortiefe(traa);
             if (traa) sceneColor = traa.getTextureNode();
 
             const u = {
@@ -92038,11 +92955,14 @@ class AnazhRealm {
             const n = this._kaskadenScheibe(csm, i, huellen, S);
             const alt = csm._anazhFit[i];
             let rendert = sh.needsUpdate === true || sh.autoUpdate === true;
-            if (!rendert && !(alt && this._kaskadeDeckt(alt, S, n))) {
+            const deckt = !!alt && this._kaskadeDeckt(alt, S, n);
+            if (!rendert && !deckt) {
                 sh.needsUpdate = true; // die Scheibe lief aus der Box — diese Kaskade rendert jetzt
                 rendert = true;
             }
-            if (rendert) csm._anazhFit[i] = this._kaskadeFit(csm, i, huellen, S, n, alt);
+            // auf ihrem Takt rendert die Kaskade mit derselben Box, solange sie hält (`_kaskadeHaelt`)
+            if (rendert && !(deckt && this._kaskadeHaelt(csm, i, alt, S, huellen, n)))
+                csm._anazhFit[i] = this._kaskadeFit(csm, i, huellen, S, n, alt);
         }
     }
 
@@ -92060,6 +92980,9 @@ class AnazhRealm {
             ecken: Array.from({ length: 8 }, V),
             punkte: Array.from({ length: 32 }, V),
             huellen: [],
+            werferY: -Infinity, // die Welt-Höhe des höchsten Werfers der zuletzt gemessenen Box (`_kaskadenWerferOben`)
+            band0: 0, // das Höhenband der Empfänger der zuletzt gelegten Scheibe (`_kaskadenScheibe`)
+            band1: 0,
             ab: [],
             saum: [0, 1],
             wahlHaupt: [], // die Gruppen, die der Haupt-Pass gewählt hat (sein Nachher-Haken gibt sie zurück)
@@ -92135,12 +93058,15 @@ class AnazhRealm {
             if (h.max.y > y1) y1 = h.max.y;
         }
         let n = 0;
+        S.band0 = S.band1 = 0;
         if (y1 >= y0) {
             const pm = this.state.playerMesh;
             if (pm) {
                 y0 = Math.min(y0, pm.position.y - 2);
                 y1 = Math.max(y1, pm.position.y + 4);
             }
+            S.band0 = y0;
+            S.band1 = y1;
             for (const e of S.ecken) if (e.y >= y0 && e.y <= y1) S.punkte[n++].copy(e);
             const KA = AnazhRealm.KASKADEN_KANTEN;
             for (let k = 0; k < KA.length; k += 2) {
@@ -92156,6 +93082,57 @@ class AnazhRealm {
         }
         if (n === 0) for (const e of S.ecken) S.punkte[n++].copy(e);
         return n;
+    }
+
+    // HÄLT DIE BOX IHREN TAKT (Welle C)? Sie deckt die Scheibe samt Wahl-Scheibe (`_kaskadeDeckt`), das Licht steht (dieselbe
+    // Basis bis auf die Rundung) und kein Werfer der Box steigt über ihre nahe Ebene (`_kaskadenWerferOben` ≤ zt) — dann
+    // rendert die Kaskade auf ihrem Takt mit DERSELBEN Kamera: die Karte fängt die bewegten Werfer, die Lage des Passes steht
+    // (`_passLageGen`) und keine Wahl rechnet neu. Bis hier legte jeder Takt-Render die Box neu an die Scheibe — beim Drehen
+    // trug jeder Render eine neue Lage (OMEN-Urteil 06.10.: Drehen 360 × 1° teurer als vorher). Die Box bleibt so groß wie
+    // gerastet; dreht die Scheibe aus ihr heraus oder hebt sich ein Werfer, legt sie sich neu (`_kaskadeFit`). Und sie hat die
+    // Größe, die der Fit der jetzigen Scheibe legte (`_kaskadeMass` samt Hysterese — Gegenprüfung 07.10.: nach dem Hineinzoomen
+    // hielt die größere Box ihre gröberen Texel bis zur nächsten Stufe der Sonne).
+    _kaskadeHaelt(csm, i, alt, S, huellen, n) {
+        const a = alt.basisInv.elements,
+            b = S.basisInv.elements;
+        for (let j = 0; j < 16; j++) if (!(Math.abs(a[j] - b[j]) <= 1e-9)) return false;
+        let x0 = Infinity,
+            x1 = -Infinity,
+            y0 = Infinity,
+            y1 = -Infinity;
+        for (let k = 0; k < n; k++) {
+            const p = S.v.copy(S.punkte[k]).applyMatrix4(S.basisInv);
+            if (p.x < x0) x0 = p.x;
+            if (p.x > x1) x1 = p.x;
+            if (p.y < y0) y0 = p.y;
+            if (p.y > y1) y1 = p.y;
+        }
+        const sh = csm.lights[i].shadow;
+        const schritt = this._kaskadeSchritt(csm, i, S);
+        if (
+            this._kaskadeMass(x1 - x0, sh.mapSize.width, alt.W, schritt) !== alt.W ||
+            this._kaskadeMass(y1 - y0, sh.mapSize.height, alt.H, schritt) !== alt.H
+        )
+            return false;
+        return this._kaskadenWerferOben(huellen, S, alt.x0, alt.x1, alt.y0, alt.y1) <= alt.zt;
+    }
+
+    // DER RAST der Box der Kaskade i: Scheiben-Tiefe (mit dem Fade-Saum) / rasterTeiler.
+    _kaskadeSchritt(csm, i, S) {
+        const cam = csm.camera;
+        const far = Math.min(cam.far, csm.maxFar);
+        const ab = this._kaskadenSaum(csm.breaks, i, csm.fade === true, S.saum);
+        return Math.max(1, ((ab[1] - ab[0]) * (far - cam.near)) / AnazhRealm.SCHATTEN_KASKADE.rasterTeiler);
+    }
+
+    // DIE GRÖSSE der Box über eine Ausdehnung `w` (Karte `n` Texel): sie rastet und trägt mindestens einen Texel Luft je Seite
+    // (der Raster-Versatz des Zentrums); eine alte Größe `altM` hält, solange sie die Scheibe so deckt und höchstens einen
+    // Schritt zu groß ist (Hysterese gegen das Pendeln an einer Raster-Kante).
+    _kaskadeMass(w, n, altM, schritt) {
+        let m = schritt * Math.ceil(w / schritt);
+        if (m - w < (2 * m) / n) m += schritt;
+        if (altM && altM - w >= (2 * altM) / n && altM <= m + schritt) return altM;
+        return m;
     }
 
     // Deckt die gerenderte Box (in IHRER Licht-Basis) die Empfänger-Punkte noch — und liegen sie in der Wahl-Scheibe, gegen
@@ -92205,21 +93182,10 @@ class AnazhRealm {
             if (p.z < z0) z0 = p.z;
             if (p.z > z1) z1 = p.z;
         }
-        const cam = csm.camera;
-        const far = Math.min(cam.far, csm.maxFar);
-        const ab = this._kaskadenSaum(csm.breaks, i, csm.fade === true, S.saum);
-        const schritt = Math.max(1, ((ab[1] - ab[0]) * (far - cam.near)) / K.rasterTeiler);
-        // Die Größe rastet und trägt mindestens einen Texel Luft je Seite (der Raster-Versatz des Zentrums); eine Größe
-        // hält, solange sie die Scheibe so deckt und höchstens einen Schritt zu groß ist (Hysterese gegen das Pendeln
-        // an einer Raster-Kante).
-        const mass = (w, n, altM) => {
-            let m = schritt * Math.ceil(w / schritt);
-            if (m - w < (2 * m) / n) m += schritt;
-            if (altM && altM - w >= (2 * altM) / n && altM <= m + schritt) return altM;
-            return m;
-        };
-        const W = mass(x1 - x0, sh.mapSize.width, alt && alt.W);
-        const H = mass(y1 - y0, sh.mapSize.height, alt && alt.H);
+        // Die Größe rastet (`_kaskadeMass`, Schritt `_kaskadeSchritt`)
+        const schritt = this._kaskadeSchritt(csm, i, S);
+        const W = this._kaskadeMass(x1 - x0, sh.mapSize.width, alt && alt.W, schritt);
+        const H = this._kaskadeMass(y1 - y0, sh.mapSize.height, alt && alt.H, schritt);
         const tx = W / sh.mapSize.width,
             ty = H / sh.mapSize.height;
         const cx = Math.round((x0 + x1) / 2 / tx) * tx;
@@ -92228,7 +93194,9 @@ class AnazhRealm {
             bx1 = cx + W / 2,
             by0 = cy - H / 2,
             by1 = cy + H / 2;
-        let zt = Math.max(z1, this._kaskadenWerferOben(huellen, S, bx0, bx1, by0, by1));
+        // die nahe Ebene über jedem Werfer der Box samt Licht-Rand (ein Werfer, den die Wahl über die Stufen der Sonne hält)
+        const lr = AnazhRealm.PASS_WAHL.lichtRandTexel * Math.min(tx, ty);
+        let zt = Math.max(z1, this._kaskadenWerferOben(huellen, S, bx0 - lr, bx1 + lr, by0 - lr, by1 + lr));
         zt += K.luftM;
         const zb = z0 - K.luftM;
         S.v.set(cx, cy, zt).applyMatrix4(S.basis);
@@ -92256,6 +93224,17 @@ class AnazhRealm {
         f.W = W;
         f.H = H;
         f.texel = tx;
+        f.texelMin = Math.min(tx, ty); // der feinere Texel der Karte (die Stufe der Sonne, der Licht-Rand)
+        // DER LÄNGSTE LICHT-WEG der Box (die Stufe der Sonne, `_sonnenStufe`): ein Schatten fällt vom Werfer (höchstens
+        // `S.werferY`, eben von `_kaskadenWerferOben` über dieser Box gemessen) zum Empfänger (wenigstens der tiefste Punkt der
+        // Scheibe) — sein Weg entlang des Lichts ist der Fall geteilt durch die Höhe des Lichts, nie länger als die Box tief.
+        let yTief = Infinity;
+        for (let k = 0; k < n; k++) if (S.punkte[k].y < yTief) yTief = S.punkte[k].y;
+        const hoch = -S.dir.y;
+        const fall = Math.max(0, S.werferY - yTief);
+        f.weg = hoch > 0 ? Math.min(zt - zb, fall / hoch) : zt - zb;
+        f.band0 = S.band0;
+        f.band1 = S.band1;
         f.bild = (f.bild || 0) + 1;
         // DIE WAHL-SCHEIBE (`_passTrifft`): die Scheibe dieses Renders (S.ecken, eben von `_kaskadenScheibe` gelegt) — gegen
         // sie wählt der Kaskaden-Pass jeden Werfer (Zelle, Bündel-Werfer, Instanz) nach der Licht-Kapsel, `_kaskadeDeckt` hält sie.
@@ -92271,6 +93250,7 @@ class AnazhRealm {
     // Inseln, Bauplan-Bauten als eigene Gruppe.
     _kaskadenWerferOben(huellen, S, bx0, bx1, by0, by1) {
         let zt = -Infinity;
+        let yTop = -Infinity; // die Welt-Höhe des höchsten Werfers über der Box (`S.werferY`, der Licht-Weg der Stufe)
         const v = S.v;
         for (const h of huellen) {
             let lx0 = Infinity,
@@ -92289,12 +93269,14 @@ class AnazhRealm {
             }
             if (lx1 < bx0 || lx0 > bx1 || ly1 < by0 || ly0 > by1) continue;
             if (lz1 > zt) zt = lz1;
+            if (h.max.y > yTop) yTop = h.max.y;
         }
         const st = this.state;
         const frei = (x, y, z, r) => {
             v.set(x, y, z).applyMatrix4(S.basisInv);
             if (v.x + r < bx0 || v.x - r > bx1 || v.y + r < by0 || v.y - r > by1) return;
             if (v.z + r > zt) zt = v.z + r;
+            if (y + r > yTop) yTop = y + r;
         };
         for (const cr of st.creatures || [])
             if (cr && cr.visible !== false) frei(cr.position.x, cr.position.y, cr.position.z, 6);
@@ -92314,6 +93296,7 @@ class AnazhRealm {
             const k = this._werferKugel(m);
             if (k) frei(k.center.x, k.center.y, k.center.z, k.radius);
         }
+        S.werferY = yTop;
         return zt;
     }
 
@@ -92382,15 +93365,67 @@ class AnazhRealm {
     }
 
     // DIE SCHLANKEN KARTEN-ZIELE: r184 legt jede Schatten-Karte als Render-Ziel mit rgba8-Farbe + depth24plus an
-    // (ShadowNode.setupRenderTarget). Die Farbe liest der Schatten-Filter nur mit `renderer.shadowMap.transmitted`
-    // (aus); fallen kann sie nicht — der r184-Pipeline-Bau liest Format und Farbraum aus `textures[0]`
-    // (getCurrentColorFormat · getCurrentColorSpace), ein Ziel ohne Farbe bräche jede Schatten-Pipeline. Darum r8
-    // (¼ von rgba8); die Tiefe trägt 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). EINE Farbe für
-    // beide Kaskaden trägt r184 nicht: das zweite Ziel legt die geteilte Textur bei seiner ersten Belegung neu an, der Pass
-    // des ersten liest die zerstörte („Destroyed texture used in a submit", die Schatten fallen — gemessen W7, echte GPU).
-    // Der Knoten baut sein Ziel durch diese Hülle — Format und Name stehen, bevor die GPU es je belegt; der VRAM-Zensus
-    // nennt die Kaskade beim Namen.
+    // (ShadowNode.setupRenderTarget). Die Farbe liest der Schatten-Filter nur mit `renderer.shadowMap.transmitted` (aus) —
+    // der Ziel-Zensus (`werkbank ziele`, 07.10., GTX 1060, Mess-Wiese, 12 Frames) nannte sie OHNE LESER: kaskade0:farbe
+    // und kaskade1:farbe, je r8 2048² = 4 MB, geschrieben in k0/k1, gelesen von keinem Pass. Darum trägt die Karte auf
+    // WebGPU KEINE Farbe: das Ziel behält sein Textur-Objekt (r184 liest Größe, Farbraum und Ton-Abbildung des Ziels daraus
+    // — `Textures.updateRenderTarget` misst `textures[0]`, `currentColorSpace` liest `texture`), aber die GPU legt es nie an
+    // (`updateTexture` überspringt es), und die Ziel-Daten tragen eine LEERE Farb-Liste: der Pass-Deskriptor baut keinen
+    // Farb-Anhang, der Pipeline-Bau keine Farb-Ziele (eine reine Tiefen-Pipeline — ein Fragment-Ergebnis ohne Ziel verwirft
+    // WebGPU), und Format und Farbraum des Kontexts sind auf der leeren Liste null (r184 las dort blind `textures[0]`, das
+    // war der Grund für r8). Eine geteilte Farbe beider Kaskaden trug r184 nicht (W7: „Destroyed texture used in a submit")
+    // — jetzt gibt es keine. Der WebGL2-Rückfall bindet `textures[0]` selbst an seinen Framebuffer: dort bleibt r8. Die Tiefe
+    // trägt 16 bit (die enge Box spannt ≤ 650 m Licht-Tiefe: ≤ 1 cm je Stufe). Der Knoten baut sein Ziel durch diese Hülle —
+    // Format, Name und die Farb-Freiheit stehen, bevor die GPU es je belegt. gate:vendor-anker pinnt jede gelesene r184-
+    // Stelle, gate:ziel-zensus hält die Klasse, gate:schatten-werfer Z1 das Ziel.
     _kaskadenZiele(csm) {
+        const rend = this.state.renderer;
+        if (
+            rend &&
+            !rend._isHeadlessNull &&
+            rend.backend &&
+            rend.backend.isWebGPUBackend === true &&
+            !rend.__anazhOhneFarbe
+        ) {
+            const T = rend._textures;
+            const U = rend.backend.utils;
+            if (
+                !T ||
+                typeof T.updateRenderTarget !== "function" ||
+                typeof T.updateTexture !== "function" ||
+                !U ||
+                typeof U.getCurrentColorFormat !== "function" ||
+                typeof U.getCurrentColorSpace !== "function"
+            )
+                this.log(
+                    "KASKADEN-ZIELE: r184 Textures/Backend-Utils fehlen (Vendor-Drift) — die Karten tragen Farbe",
+                    "ERROR"
+                );
+            else {
+                const KEINE = Object.freeze([]);
+                const zielRoh = T.updateRenderTarget;
+                T.updateRenderTarget = function (ziel, stufe) {
+                    const o = zielRoh.call(this, ziel, stufe);
+                    if (ziel.__anazhOhneFarbe === true) this.get(ziel).textures = KEINE;
+                    return o;
+                };
+                const texRoh = T.updateTexture;
+                T.updateTexture = function (t, o) {
+                    if (t.__anazhOhneGpu === true) return undefined;
+                    return texRoh.call(this, t, o);
+                };
+                const formatRoh = U.getCurrentColorFormat;
+                U.getCurrentColorFormat = function (ctx) {
+                    return ctx.textures !== null && ctx.textures.length === 0 ? null : formatRoh.call(this, ctx);
+                };
+                const raumRoh = U.getCurrentColorSpace;
+                U.getCurrentColorSpace = function (ctx) {
+                    return ctx.textures !== null && ctx.textures.length === 0 ? null : raumRoh.call(this, ctx);
+                };
+                rend.__anazhOhneFarbe = true;
+            }
+        }
+        const ohneFarbe = !!(rend && rend.__anazhOhneFarbe === true);
         const knoten = csm._shadowNodes || [];
         for (let i = 0; i < knoten.length; i++) {
             const sn = knoten[i];
@@ -92405,6 +93440,10 @@ class AnazhRealm {
                 const z = roh.call(sn, shadow, builder);
                 z.shadowMap.texture.format = THREE.RedFormat;
                 z.shadowMap.texture.name = "kaskade" + i + ":farbe";
+                if (ohneFarbe) {
+                    z.shadowMap.__anazhOhneFarbe = true;
+                    z.shadowMap.texture.__anazhOhneGpu = true;
+                }
                 z.depthTexture.type = THREE.UnsignedShortType;
                 z.depthTexture.name = "kaskade" + i + ":tiefe";
                 return z;
@@ -92433,10 +93472,17 @@ class AnazhRealm {
         if (!nach && csm && csm.camera && kamera === csm.camera) this._kaskadenPassen(csm);
         const k = nach ? -1 : this._schattenKameraIndex(kamera);
         // Die Lage des Passes: EINE Rechnung je Pass (Frustum der Pass-Kamera, Auge, Kaskaden-Scheibe, Blende), jeder Leser
-        // urteilt mit ihr nach dem EINEN Gesetz.
+        // urteilt mit ihr nach dem EINEN Gesetz. Die Matrix der Wahl trägt den Versatz der zeitlichen Auflösung NICHT (TRAA
+        // verschiebt die Projektion je Frame um einen halben Pixel, die Elemente 8 und 9 einer Perspektive — den Rand dafür
+        // trägt `sichtRand`): dieselbe Lage wählt in jedem Frame dasselbe, die gehaltene Wahl ist die frische (Welle C).
+        // Die Höhlen-Sicht liest ihre Schirm-Rechtecke aus S.m: perspektivisch um den Dreh-Rand geweitet (`_passMatrixWeit`),
+        // damit ihre Wahl über eine kleine Drehung hält wie das Gesetz (`drehRand`).
         if (!nach) {
-            S.m.multiplyMatrices(kamera.projectionMatrix, kamera.matrixWorldInverse);
+            S.m.copy(kamera.projectionMatrix);
+            if (kamera.isPerspectiveCamera === true) S.m.elements[8] = S.m.elements[9] = 0;
+            S.m.multiply(kamera.matrixWorldInverse);
             S.frustum.setFromProjectionMatrix(S.m, kamera.coordinateSystem);
+            if (kamera.isPerspectiveCamera === true) this._passMatrixWeit(S.m, kamera, AnazhRealm.PASS_WAHL.drehRand);
             this._passWahlLage(S, kamera, k);
         }
         const L = S.lage;
@@ -92535,19 +93581,33 @@ class AnazhRealm {
                 perf: 1,
                 ref: 1,
                 kanten: null,
+                halt: 0,
+                dreh: 0,
+                licht: 0,
+                gen: 0,
+                key: "",
             });
         const we = kamera.matrixWorld.elements;
+        const PW = AnazhRealm.PASS_WAHL;
         L.fr = S.frustum;
         L.ax = we[12];
         L.ay = we[13];
         L.az = we[14];
-        L.rand = AnazhRealm.PASS_WAHL.sichtRand;
+        L.rand = PW.sichtRand;
+        // der Halt (`_passLageGen`): die Ebenen und das Auge wandern um höchstens haltM, der Rand je Meter mit dem Auge
+        L.halt = PW.haltM * (1 + PW.sichtRand);
+        // der Dreh-Rand: eine Perspektive wählt mit `drehRand` (je Meter Abstand der Sinus) und hält bis zur Hälfte (`_wahlHaelt`)
+        L.dreh = kamera.isPerspectiveCamera === true ? Math.sin(PW.drehRand) : 0;
         // Die Scheibe gilt nur dem Pass ihrer Kaskaden-Kamera (die Box beim letzten Rendern dieser Kaskade, `_kaskadeFit`).
         const csm = this.state.csmNode;
         const lw = k >= 0 && csm && csm.lights ? csm.lights[k] : null;
         const fit = lw && lw.shadow && lw.shadow.camera === kamera && csm._anazhFit ? csm._anazhFit[k] : null;
         L.fit = fit && fit.ebenen ? fit : null;
         L.dir = S.dir;
+        // DER LICHT-RAND (`lichtRandTexel`): eine Kaskade wählt mit einem Saum von so vielen Texeln ihrer Karte — ihre Wahl
+        // hält über die Stufen der Sonne, solange die Drehung des Lichts seit der Wahl jeden Schatten um weniger als die
+        // Hälfte davon verschiebt (`_passLageHaelt`); die gehaltene Lage wählt mit dem Rand ihres Ankers weiter
+        L.licht = L.fit ? PW.lichtRandTexel * L.fit.texelMin : 0;
         // DIE BLENDE: die LIVE-Uniforms, die jede Maske liest (dasselbe Auge, derselbe Perf-Streck), und die Kanten des
         // Fensters aus dem EINEN Blend-Gesetz (`_blendeKanten`, je Band-Satz einmal).
         const lu = this.state.lodUniforms;
@@ -92572,7 +93632,226 @@ class AnazhRealm {
             }
             L.kanten = K;
         }
+        this._passLageGen(L, kamera, k);
         return L;
+    }
+
+    // Die Matrix einer Perspektive ohne den Versatz der zeitlichen Auflösung, ihr Sichtfeld je Halbwinkel um 1,5 × `dreh`
+    // geweitet: jeder Strahl, den eine um höchstens `dreh` gedrehte Kamera sieht, liegt darin (der Abstand eines Strahls zur
+    // Seiten-Ebene wächst um höchstens `dreh`, sein Winkel in der Bild-Achse um höchstens dreh / cos(Höhe) — an den Ecken
+    // eines 75°-Bilds 16:9 das 1,1-Fache).
+    _passMatrixWeit(aus, kamera, dreh) {
+        aus.copy(kamera.projectionMatrix);
+        const e = aus.elements;
+        e[8] = e[9] = 0;
+        const zu = 1.5 * dreh;
+        e[0] = 1 / Math.tan(Math.atan(1 / e[0]) + zu);
+        e[5] = 1 / Math.tan(Math.atan(1 / e[5]) + zu);
+        return aus.multiply(kamera.matrixWorldInverse);
+    }
+
+    // DIE LAGE STEHT (Welle C, Lehre 25 — der Takt kostet, was ihn betrifft). Befund 06.10. (OMEN, GTX 1060 + i7-8750H, CPU-
+    // Profil, Regler voll, Blick gepinnt, Mess-Wiese): die Sicht je Pass kostete ~6 ms CPU je Frame — jeder Pass rechnete
+    // jeden Frame jede Wahl neu (Abschnitte, Höhlen-Sicht, Instanzen), auch wenn nichts sich bewegte; an der echten GPU
+    // (Mess-Wiese, Ruhe) 11 231 Körper-Prüfungen, 22 174 Ecken und 70 kB Index je Frame. Jeder Pass trägt darum die
+    // GENERATION seiner Lage (`L.gen`): sie bleibt, solange die Lage steht — und jeder Leser (die Sätze `_satzAbschnittSteht`,
+    // die Instanz-Wahl `_instanzWahlSteht`, die Nah-Wiese) behält seine Wahl, solange ihre Generation und sein eigener Stand
+    // gleich sind. Die Lage ist, was jedes Urteil liest: die sechs Ebenen des Frustums OHNE den Versatz der zeitlichen
+    // Auflösung (TRAA verschiebt die Projektion je Frame um einen halben Pixel, die Elemente 8 und 9 einer Perspektive — den
+    // Rand dafür trägt `sichtRand`), das Auge, die Drehung der Kamera (die Licht-Kacheln der Höhlen-Sicht lesen sie), im
+    // Kaskaden-Pass die Wahl-Scheibe (`fit.ebenen`, `zb`, `saum`, die Licht-Basis) und das Licht, dazu die Blende (Auge der
+    // Maske, Perf-Streck, Bezug, die Kanten des Blend-Gesetzes). Sie STEHT gegen den Anker der letzten Wahl dieses Passes
+    // (haupt · k<i> · anders), solange jede Richtung gleich ist (bis auf die Rundung, 1e-9) und jeder Ort — das Auge, jede
+    // Ebene, der Boden der Kaskaden-Box — um höchstens `haltM` gewandert ist: das Auge der Spiel-Kamera atmet im Stand um
+    // Millimeter, die Kaskaden-Box steigt mit ihm. Den Halt trägt das Gesetz als Rand (`L.halt` in `_passTrifft`). Eine
+    // ORTHOGONALE Kamera (die Kaskade) wandert dazu frei entlang ihrer Achse: ihre nahe Ebene steht über dem höchsten Werfer
+    // der Box (`_kaskadenWerferOben` — ein laufendes Tier hebt und senkt sie je Render um Meter, gemessen 06.10., k1 bis 30 m),
+    // und kein Körper, den ein Leser wählt, liegt darüber; Auge und nahe Ebene zählen darum nur quer zur Achse. Solange die Lage
+    // steht, urteilt jeder Leser vom Auge des Ankers (`L.ax`…) — der Rand je Meter ist der, mit dem die gehaltene Wahl fiel.
+    _passLageGen(L, kamera, k) {
+        const N = 89;
+        const key = k >= 0 ? "k" + k : kamera === this.state.camera ? "haupt" : "anders";
+        const M = this._passLagen || (this._passLagen = new Map());
+        let a = M.get(key);
+        if (!a) M.set(key, (a = { sig: new Float64Array(N), gen: 0, kamera: -1, ax: 0, ay: 0, az: 0, wegMax: 0 }));
+        const s = this._passLageSig || (this._passLageSig = new Float64Array(N));
+        const we = kamera.matrixWorld.elements;
+        // die Achse einer orthogonalen Kamera (sie blickt entlang −z ihrer Welt-Matrix)
+        const ortho = kamera.isOrthographicCamera === true;
+        let fx = 0,
+            fy = 0,
+            fz = 0;
+        if (ortho) {
+            const l = Math.hypot(we[8], we[9], we[10]) || 1;
+            fx = -we[8] / l;
+            fy = -we[9] / l;
+            fz = -we[10] / l;
+        }
+        const t = we[12] * fx + we[13] * fy + we[14] * fz;
+        s[0] = we[12] - t * fx;
+        s[1] = we[13] - t * fy;
+        s[2] = we[14] - t * fz;
+        // das Frustum des Passes (`_passSicht` legt es ohne den Versatz der zeitlichen Auflösung)
+        const F = L.fr;
+        const ebene = (P, o) => {
+            s[o] = P.normal.x;
+            s[o + 1] = P.normal.y;
+            s[o + 2] = P.normal.z;
+            s[o + 3] = P.constant;
+        };
+        // perspektivisch: die Projektion ohne Versatz (ihre Ebenen drehen mit der Kamera — die Drehung zählt als Winkel,
+        // s[84] = 1); orthogonal: die Ebenen, ohne die nahe
+        s[84] = ortho ? 0 : 1;
+        if (!ortho) {
+            const pe = kamera.projectionMatrix.elements;
+            for (let i = 0; i < 24; i++) s[3 + i] = i < 16 && i !== 8 && i !== 9 ? pe[i] : 0;
+        } else
+            for (let p = 0; p < 6; p++) {
+                const P = F.planes[p];
+                ebene(P, 3 + 4 * p);
+                // die nahe Ebene der orthogonalen Kamera (ihre Normale zeigt entlang der Achse) zählt nicht
+                if (P.normal.x * fx + P.normal.y * fy + P.normal.z * fz > 0.99) s[6 + 4 * p] = 0;
+            }
+        const f = L.fit;
+        s[27] = f ? 1 : 0;
+        for (let p = 0; p < 6; p++)
+            if (f) ebene(f.ebenen[p], 28 + 4 * p);
+            else s[28 + 4 * p] = s[29 + 4 * p] = s[30 + 4 * p] = s[31 + 4 * p] = 0;
+        const R = [0, 1, 2, 4, 5, 6, 8, 9, 10];
+        const bi = f ? f.basisInv.elements : null;
+        s[52] = f ? f.zb : 0;
+        s[53] = f ? f.saum : 0;
+        for (let i = 0; i < 9; i++) {
+            s[54 + i] = bi ? bi[R[i]] : 0;
+            s[75 + i] = we[R[i]];
+        }
+        // das Licht liest nur die Licht-Kapsel des Kaskaden-Passes (das Hauptbild wählt ohne Scheibe)
+        const d = f ? L.dir : null;
+        s[63] = d ? d.x : 0;
+        s[64] = d ? d.y : 0;
+        s[65] = d ? d.z : 0;
+        const K = L.an ? L.kanten : null;
+        s[66] = L.an ? 1 : 0;
+        s[67] = L.an ? L.ex : 0;
+        s[68] = L.an ? L.ez : 0;
+        s[69] = L.an ? L.perf : 0;
+        s[70] = L.an ? L.ref : 0;
+        s[71] = K ? K.d0 : 0;
+        s[72] = K ? K.d1 : 0;
+        s[73] = K ? K.fade : 0;
+        s[74] = K ? K.fade0 : 0;
+        // die Kaskade unter der laufenden Sonne: ihr Licht-Rand, der längste Licht-Weg ihrer Box, das Höhenband ihrer Empfänger
+        s[85] = L.licht;
+        s[86] = f ? f.weg : 0;
+        s[87] = f ? f.band0 : 0;
+        s[88] = f ? f.band1 : 0;
+        if (a.gen > 0 && a.kamera === kamera.id && this._passLageHaelt(a.sig, s, a)) {
+            L.gen = a.gen;
+            L.key = key;
+            L.ax = a.ax;
+            L.ay = a.ay;
+            L.az = a.az;
+            // das Auge der Blende hält wie das Auge der Kamera: jeder Leser urteilt vom Auge des Ankers
+            L.ex = a.sig[67];
+            L.ez = a.sig[68];
+            L.licht = a.sig[85];
+            if (s[86] > a.wegMax) a.wegMax = s[86];
+            return false;
+        }
+        a.sig.set(s);
+        a.kamera = kamera.id;
+        a.ax = L.ax;
+        a.ay = L.ay;
+        a.az = L.az;
+        a.wegMax = s[86];
+        a.gen = this._passLageZahl = (this._passLageZahl || 0) + 1;
+        L.gen = a.gen;
+        L.key = key;
+        return true;
+    }
+
+    // DAS GESETZ DES HALTS (Welle C): eine Wahl, die mit einem Rand fiel, hält, solange ihre Drehung seit dem Anker — mal dem
+    // Hebel, mit dem sie am Rand wirkt — die HÄLFTE dieses Rands nicht überschreitet. Jede Wahl unter der gehaltenen Lage (der
+    // Anker und jeder Leser, der mitten in ihr neu wählt: ein Satz mit neuem Stand, eine Gruppe mit neuen Slots) urteilt vom
+    // Blick ihres Frames und liegt höchstens den halben Rand vom Anker, gegen die jetzige Lage also höchstens den ganzen —
+    // den ihr Rand trägt. Die Kamera dreht mit dem Hebel 1 gegen ihren Dreh-Rand (`drehRand`, Bogenmaß), das Licht mit dem
+    // längsten Licht-Weg gegen seinen Licht-Rand (Meter), jeder Ort der Lage (Auge, Ebenen, Band) gegen den Halt `haltM`. Gemessen 07.10. (gate:sicht-arbeit (D), Mess-Wiese): hielt die
+    // Kamera bis zum ganzen Rand, fielen nach einer Neu-Wahl mitten in der Drehung 12 Zellen und Instanzen am Bildrand weg.
+    _wahlHaelt(dreh, hebel, rand) {
+        return dreh * hebel <= rand / 2;
+    }
+
+    // Hält die Lage `s` gegen ihren Anker `a` (Aufbau `_passLageGen`)? Orte (das Auge, die Konstanten der Ebenen, der Boden
+    // der Kaskaden-Box, das Auge der Blende — `_blendeHaelt`) um höchstens den halben Halt (`_wahlHaelt` gegen haltM), Richtungen bis auf die Rundung — eine Perspektive: ihre Projektion gleich, ihre
+    // Drehung (der Winkel zwischen Anker und Kamera, cos = (Spur(R0ᵀ·R) − 1) / 2) nach dem Gesetz des Halts gegen den
+    // Dreh-Rand (`_wahlHaelt`) —, alles andere gleich; eine Kaskade mit Box über die Stufen der Sonne nach ihrem Licht-Rand
+    // (unten), nach demselben Gesetz.
+    _passLageHaelt(a, s, anker) {
+        const PW = AnazhRealm.PASS_WAHL;
+        const H = PW.haltM;
+        // jeder Ort hält nach dem Gesetz des Halts: höchstens den halben Halt vom Anker (`_wahlHaelt`)
+        const steht = (d) => this._wahlHaelt(d, 1, H);
+        if (s[84] !== a[84] || s[27] !== a[27]) return false;
+        // DIE KASKADE UNTER DER LAUFENDEN SONNE (orthogonal, mit Box): ihre echten Werfer bestimmen die Empfänger (die
+        // Wahl-Scheibe und ihr Höhenband) und das Licht — Box, Auge und Licht-Basis legt der Fit aus ihnen. Die Lage hält,
+        // solange die Empfänger stehen (die Scheibe um haltM, das Band um haltM, Saum und Blende gleich) und die Drehung des
+        // Lichts seit dem Anker, mal dem längsten Licht-Weg seit dem Anker (`wegMax`), unter dem halben Licht-Rand bleibt:
+        // ein echter Werfer liegt quer zum Licht so nah an seinem Empfänger in der Box wie Drehung × Weg, und jede Wahl unter
+        // dieser Lage (der Anker, ein Satz mit neuem Stand dazwischen) lag selbst höchstens den halben Rand vom Anker —
+        // gegen die jetzige Lage also höchstens den ganzen.
+        if (s[84] === 0 && s[27] === 1) {
+            for (let o = 28; o < 52; o += 4) {
+                if (!steht(Math.abs(s[o + 3] - a[o + 3]))) return false;
+                for (let j = 0; j < 3; j++) if (!(Math.abs(s[o + j] - a[o + j]) <= 1e-9)) return false;
+            }
+            if (s[53] !== a[53] || !steht(Math.abs(s[87] - a[87])) || !steht(Math.abs(s[88] - a[88]))) return false;
+            if (!this._blendeHaelt(a, s)) return false;
+            const cx = a[64] * s[65] - a[65] * s[64],
+                cy = a[65] * s[63] - a[63] * s[65],
+                cz = a[63] * s[64] - a[64] * s[63];
+            const dreh = Math.atan2(
+                Math.sqrt(cx * cx + cy * cy + cz * cz),
+                a[63] * s[63] + a[64] * s[64] + a[65] * s[65]
+            );
+            return this._wahlHaelt(dreh, Math.max(anker.wegMax, s[86]), a[85]);
+        }
+        const dx = s[0] - a[0],
+            dy = s[1] - a[1],
+            dz = s[2] - a[2];
+        if (!steht(Math.sqrt(dx * dx + dy * dy + dz * dz))) return false;
+        const persp = s[84] === 1;
+        // perspektivisch die Projektion (3…26), orthogonal die Ebenen des Frustums; dazu die Wahl-Scheibe (28…51) — die
+        // Richtung bis auf die Rundung, die Konstante um haltM
+        if (persp) for (let i = 3; i < 27; i++) if (s[i] !== a[i]) return false;
+        for (let p = persp ? 6 : 0; p < 12; p++) {
+            const o = p < 6 ? 3 + 4 * p : 28 + 4 * (p - 6);
+            if (!steht(Math.abs(s[o + 3] - a[o + 3]))) return false;
+            for (let j = 0; j < 3; j++) if (!(Math.abs(s[o + j] - a[o + j]) <= 1e-9)) return false;
+        }
+        if (!steht(Math.abs(s[52] - a[52])) || s[53] !== a[53]) return false;
+        // die Richtungen: die Licht-Basis (54…62), das Licht (63…65), die Drehung der Kamera (75…83)
+        for (let i = 54; i < 66; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
+        if (persp) {
+            let spur = 0;
+            for (let i = 75; i < 84; i++) spur += s[i] * a[i];
+            const dreh = Math.acos(Math.max(-1, Math.min(1, (spur - 1) / 2)));
+            if (!this._wahlHaelt(dreh, 1, PW.drehRand)) return false;
+        } else for (let i = 75; i < 84; i++) if (!(Math.abs(s[i] - a[i]) <= 1e-9)) return false;
+        return this._blendeHaelt(a, s);
+    }
+
+    // HÄLT DIE BLENDE (66…74) gegen ihren Anker? Ihr Auge (das Auge jeder Maske, `uLodAuge` in XZ — 67, 68) ist ein Ort der
+    // Lage wie das Auge der Kamera: es hält nach dem Gesetz des Halts, höchstens den halben Halt vom Anker (`_wahlHaelt` gegen
+    // haltM); an, Perf-Streck, Bezug und die Kanten des Blend-Gesetzes gleich. Das Fenster jeder Wahl trägt den Halt als
+    // Rand (`_instanzFenster`), und unter der gehaltenen Lage urteilt jeder Leser vom Auge des Ankers (`_passLageGen`).
+    // Gegenprüfung 07.10.: der Vergleich war exakt — eine zweite Signatur neben dem Halt-Gesetz; atmete das Auge ±1 mm
+    // quer (die Kamera hielt), wählte jeder Pass in jedem Frame jede Wahl neu (gate:sicht-arbeit, atmendes Auge: 14 999
+    // Prüfungen je Frame).
+    _blendeHaelt(a, s) {
+        if (s[66] !== a[66]) return false;
+        if (!this._wahlHaelt(Math.hypot(s[67] - a[67], s[68] - a[68]), 1, AnazhRealm.PASS_WAHL.haltM)) return false;
+        for (let i = 69; i < 75; i++) if (s[i] !== a[i]) return false;
+        return true;
     }
 
     // Das Urteil über einen Körper (Box mit Saum: Mitte cx/cy/cz, Halb-Ausdehnung hx/hy/hz, Saum-Radius r) in der Lage L.
@@ -92580,7 +93859,9 @@ class AnazhRealm {
         const ax = cx - L.ax,
             ay = cy - L.ay,
             az = cz - L.az;
-        const rr = r + L.rand * Math.sqrt(ax * ax + ay * ay + az * az);
+        // der Saum, der Rand je Meter Abstand zum Auge (die zeitliche Auflösung und die Drehung, über die die Lage hält), der
+        // Halt der Lage (`_passLageGen`) und der Licht-Rand einer Kaskade (die Stufen der Sonne, über die ihre Wahl hält)
+        const rr = r + L.halt + L.licht + (L.rand + L.dreh) * Math.sqrt(ax * ax + ay * ay + az * az);
         const E = L.fr.planes;
         for (let p = 0; p < 6; p++) {
             const n = E[p].normal;
@@ -92606,7 +93887,16 @@ class AnazhRealm {
             const nx = n.x,
                 ny = n.y,
                 nz = n.z;
-            const st = (nx < 0 ? -nx : nx) * hx + (ny < 0 ? -ny : ny) * hy + (nz < 0 ? -nz : nz) * hz + r + f.saum;
+            // die Scheibe hält um haltM, der Boden der Box (das Ende der Kapsel) ebenso: zweimal der Halt; dreht das Licht,
+            // wandert das Ende der Kapsel um höchstens den Licht-Rand
+            const st =
+                (nx < 0 ? -nx : nx) * hx +
+                (ny < 0 ? -ny : ny) * hy +
+                (nz < 0 ? -nz : nz) * hz +
+                r +
+                f.saum +
+                2 * L.halt +
+                L.licht;
             if (nx * cx + ny * cy + nz * cz + P.constant < -st && nx * ex + ny * ey + nz * ez + P.constant < -st)
                 return false;
         }
@@ -92654,7 +93944,20 @@ class AnazhRealm {
             if (g.wahl !== art) continue;
             const m = g.mesh;
             const n = g.liveCount | 0;
-            if (!m || n === 0 || m.visible === false) continue;
+            if (!m || n === 0 || m.visible === false) {
+                // Eine leere oder verborgene Gruppe zeichnet in diesem Pass nichts: ihre gehaltene Wahl fällt mit (die
+                // nächste sichtbare Belegung wählt neu). Sonst hielt sie die Marke eines freigegebenen Slots — CI 07.10.,
+                // gate:sicht-arbeit (I): der Stufen-Wechsel einer einzelnen Erle 1→0 leerte f:weide|1|1:0#S, k0 und k1
+                // hielten Slot −1.
+                if (g._wahlJe && L) g._wahlJe.delete(L.key);
+                continue;
+            }
+            // die Wahl steht (Welle C): die Gruppe liegt (wieder), wie dieser Pass sie zuletzt ordnete
+            if (this._instanzWahlSteht(g, L)) {
+                AnazhRealm._instanzZahl(m, g._wahlJe.get(L.key).refs.length);
+                liste.push(g);
+                continue;
+            }
             const fenster = L.an && this._instanzFensterGilt(g);
             let kk = 0,
                 tausch = 0;
@@ -92670,7 +93973,75 @@ class AnazhRealm {
             liste.push(g);
             if (art === "haupt" && (tausch > 0 || g._wahlZahl !== kk)) this._archMeshBundleTouch(m);
             if (art === "haupt") g._wahlZahl = kk;
+            this._instanzWahlMerke(g, L, kk);
         }
+    }
+
+    // STEHT die Wahl einer Gruppe (Welle C)? Dieser Pass (`L.key`: haupt · k<i>) wählte sie zuletzt in derselben Lage
+    // (`L.gen`), ihr SLOT-STAND ist der, den er dabei merkte (`_instanzSlotStand`), und Geometrie, Stoff und Zahl sind dieselben.
+    // Eine Schatten-Gruppe ordnen BEIDE Kaskaden eines Frames (ein Puffer, zwei Präfixe): hat die andere sie umgeordnet, rücken
+    // die gemerkten Instanzen dieses Passes (ihre Slot-Marken, `slotRef`) wieder nach vorn — ein Tausch je verschobene, keine
+    // Prüfung. Gegenprüfung 07.10.: bis hier merkte die GRUPPE die Version ihrer Slots nach der letzten Wahl (`_wahlVer`) —
+    // ordnete k0 nach einem fremden Schreiber neu (der Stufen-Wechsel eines Baums: Freigeben + Belegen, die Zahl bleibt), fand
+    // k1 alles gleich und hielt ihre alten Marken, darunter eine freigegebene (Slot −1): der Tausch schrieb NaN in einen
+    // lebenden Slot und warf in jedem Frame dieser Kaskade (gate:sicht-arbeit (I): 2 Würfe, 2 NaN-Slots, 1 fehlender Werfer).
+    _instanzWahlSteht(g, L) {
+        const w = g._wahlJe ? g._wahlJe.get(L.key) : null;
+        if (!w || w.gen !== L.gen) return false;
+        const m = g.mesh;
+        const jetzt = this._instanzSlotStand(g, this._slotStandJetzt || (this._slotStandJetzt = {}));
+        if (
+            jetzt.belegt !== w.belegt ||
+            jetzt.im !== w.im ||
+            jetzt.vMat !== w.vMat ||
+            jetzt.vKarte !== w.vKarte ||
+            w.geo !== m.geometry ||
+            w.mat !== g.mat ||
+            w.live !== (g.liveCount | 0)
+        )
+            return false;
+        const refs = w.refs;
+        let tausch = 0;
+        for (let j = 0; j < refs.length; j++) {
+            const i = refs[j].slot;
+            if (i === j) continue;
+            this._archGroupTausch(g, i, j);
+            tausch++;
+        }
+        if (tausch > 0 && g.wahl === "haupt") this._archMeshBundleTouch(m);
+        return true;
+    }
+
+    _instanzWahlMerke(g, L, kk) {
+        const je = g._wahlJe || (g._wahlJe = new Map());
+        let w = je.get(L.key);
+        if (!w)
+            je.set(
+                L.key,
+                (w = { gen: 0, geo: null, mat: null, live: 0, refs: null, belegt: 0, im: null, vMat: 0, vKarte: 0 })
+            );
+        const m = g.mesh;
+        w.gen = L.gen;
+        w.geo = m.geometry;
+        w.mat = g.mat;
+        w.live = g.liveCount | 0;
+        w.refs = g.slotRef.slice(0, kk);
+        this._instanzSlotStand(g, w);
+    }
+
+    // DER SLOT-STAND einer Instanz-Gruppe (Welle C) — was ihre Slots trägt, ohne die Ordnung der Wahl: Belegen, Freigeben und
+    // Stempel (`g.slotStand`), der Puffer ihrer Instanz-Matrizen und die Versionen der Matrizen und des Karten-Stempels, von
+    // denen die Tausche der Wahl abgezogen sind (`_archGroupTausch` zählt, was sie selbst hebt). Ihn hebt jeder fremde
+    // Schreiber — auch eine Tür, die schwingt —, nie die Wahl eines Passes; jeder Pass merkt ihn in seiner Wahl. Schreibt den
+    // Stand in `aus`.
+    _instanzSlotStand(g, aus) {
+        const m = g.mesh;
+        const ak = m.geometry.attributes.aKarte;
+        aus.belegt = g.slotStand | 0;
+        aus.im = m.instanceMatrix;
+        aus.vMat = m.instanceMatrix.version - (g._tauschMat | 0);
+        aus.vKarte = ak ? ak.version - (g._tauschKarte | 0) : -1;
+        return aus;
     }
 
     _instanzWahlZurueck(liste) {
@@ -92757,7 +94128,9 @@ class AnazhRealm {
     // die Karte: vom Kamera-Ort zum Fragment ihres Quads, Sichthöhe |aKarte.w|, ein negativer Stempel = verdeckt, sie
     // blendet voll). Die Vertices einer Instanz liegen in XZ höchstens `w` um ihre Achse (die Weite der Gestalt × die Norm
     // des XZ-Blocks der Matrix + was eine Schräglage aus der Höhe trägt + der Wind-Saum; die Karte: ihre Halbbreite ×
-    // Skala); das Urteil über das Distanz-Intervall fällt `_blendeBehaelt` an den Kanten des Blend-Gesetzes.
+    // Skala); das Urteil über das Distanz-Intervall fällt `_blendeBehaelt` an den Kanten des Blend-Gesetzes. Das Auge der
+    // Maske hält wie jeder Ort der Lage um den halben Halt (`_blendeHaelt`) — die Distanz trägt den Halt als Rand (`L.halt`,
+    // wie `_passTrifft`): eine gehaltene Wahl verliert nichts, solange das Auge atmet.
     _instanzFenster(g, i, L) {
         const m = g.mesh;
         const geo = m.geometry;
@@ -92767,13 +94140,15 @@ class AnazhRealm {
         const dx = a[o + 12] + mw[12] - L.ex,
             dz = a[o + 14] + mw[14] - L.ez;
         const d = Math.sqrt(dx * dx + dz * dz);
+        const halt = L.halt;
         if (g.wahlStufe === "karte") {
             const ak = geo.attributes.aKarte.array;
             const sicht = ak[i * 4 + 3];
             const s = Math.sqrt(a[o] * a[o] + a[o + 1] * a[o + 1] + a[o + 2] * a[o + 2]);
             const k = Math.min(L.ref / Math.max(Math.abs(sicht), 1e-3), 1);
-            const dS = (d + s * ak[i * 4 + 1]) * L.perf * k;
-            return AnazhRealm._blendeBehaelt(L.kanten, "karte", dS, dS, dS, dS, sicht < 0);
+            const dSmin = (Math.max(0, d - halt) + s * ak[i * 4 + 1]) * L.perf * k,
+                dSmax = (d + halt + s * ak[i * 4 + 1]) * L.perf * k;
+            return AnazhRealm._blendeBehaelt(L.kanten, "karte", dSmin, dSmax, dSmin, dSmax, sicht < 0);
         }
         const weite = this._instanzWeite(geo);
         const p = a[o],
@@ -92787,8 +94162,8 @@ class AnazhRealm {
             weite.r * norm +
             weite.y * Math.sqrt(a[o + 4] * a[o + 4] + a[o + 6] * a[o + 6]) +
             AnazhRealm.PASS_WAHL.pflanzeRandM;
-        const dMin = Math.max(0, d - w) * L.perf,
-            dMax = (d + w) * L.perf;
+        const dMin = Math.max(0, d - w - halt) * L.perf,
+            dMax = (d + w + halt) * L.perf;
         const kS = Math.min(L.ref / Math.max(geo.attributes.aH0.array[i], 1e-3), 1);
         const kL = Math.min(L.ref / Math.max(geo.attributes.aH0L.array[i], 1e-3), 1);
         return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, false);
@@ -93062,7 +94437,7 @@ class AnazhRealm {
             const gu = this.state.godrayUniforms;
             const cam = this.state.camera;
             const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-            const angle = t * Math.PI * 2 - Math.PI / 2;
+            const angle = this._sonnenWinkel(t);
             const sunDir = this._dayNightSunDirection(angle); // dieselbe Richtungs-Quelle wie Licht/Skybox
             // NDC-Projektion des sichtbaren Sonnen-Meshes → Screen-UV (0..1).
             const proj = (this._godrayProjV || (this._godrayProjV = new THREE.Vector3()))
@@ -93443,7 +94818,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.533.0";
+AnazhRealm.VERSION = "18.534.0";
 // Foundry-Cache-LRU-Deckel: max distinkte Körper (`_foundryKoerperKey`: Art|Gestalt|LOD[|ov]) im Speicher. Ein BOOT
 // räumt nie (V18.527): bei 256 räumte die LRU im Boot 162 Einträge (headless, 16 Gestalten je Art) — die Räumung löschte
 // `requested`, die Neu-Anfrage traf die eben geschriebene Platte. Mit den Budget-Gestalten hält ein Boot ~230 Körper;
@@ -97490,6 +98865,13 @@ AnazhRealm.ARCH_PLATZ_MS = 4;
 // Rand (`_archKartenHorizont`) und räumt sie erst so weit dahinter — ein Spieler, der am Horizont-Rand pendelt, lässt
 // keine Karte flattern.
 AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
+// Der Rand der Stand-Wache (m, `_standRuht`): erst wenn Spieler oder Auge so weit vom Anker eines Fege-Takts weg sind,
+// gilt sein Ort als neu und er geht wieder. Das Zittern der Physik im Stand (gemessen 07.10., Mess-Wiese: bis 5 mm je
+// Takt, nur in der Höhe) weckt nichts; die Stufen-Wahlen tragen eine Hysterese von Metern, die Nah-Streu ihre Armlänge
+// mit 0,75 m Austritts-Rand. Der Cull urteilt erst ab der Mesh-Zone (Cull-Radius 100–150 m) und am Karten-Horizont
+// (Totband 16 m): ihm genügt ein Meter (`STAND_RAND_FERN_M`) — beim Gehen geht er viermal seltener.
+AnazhRealm.STAND_RAND_M = 0.25;
+AnazhRealm.STAND_RAND_FERN_M = 1;
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
 // seinem Samen (Salz: der Hash-Kanal des Saums, `_pcg2d`) — der Wald dünnt aus, jeder Baum steht ganz oder gar nicht.
 AnazhRealm.KARTEN_HORIZONT_SAUM_M = 32;
@@ -97586,6 +98968,9 @@ AnazhRealm.GPU_FRAMES_IM_FLUG = 2;
 // DER SCHATTEN-TAKT je Kaskade (_loopShadowUpdate): die nahe Kaskade rendert im Regler-Intervall, höchstens
 // jeden `nahMax`-ten Frame (laufende Tiere werfen nah); die ferne im `fernFaktor`-fachen Takt.
 AnazhRealm.SCHATTEN_TAKT = Object.freeze({ nahMax: 2, fernFaktor: 3 });
+// Die Obergrenze der Sonnen-Stufe (`_sonnenStufe`): N·L ändert sich bei einer Drehung um α höchstens um α — unter einer
+// 8-bit-Stufe ist sie unsichtbar.
+AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;
 // DIE KASKADEN-BOX (_kaskadenPassen): jede Kaskade misst die Frustum-Scheibe im Licht-Raum statt ihrer Diagonale.
 // `texelM` = die Texel-Kante je Kaskade, die die längste Box-Kante bei jeder Blickrichtung hält — die des
 // Addon-Quadrats (k0 339 m / 2048, k1 961 m / 2048): kein Schatten wird gröber als bis V18.529. Die Karten-Größe folgt
@@ -97609,7 +98994,24 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
 // ~2 Pixel — ein Satz, der seine Wahl über Frames hält, verliert am Bildrand nichts. `saumM` je Kaskade: so weit liegt die
 // Wahl-Scheibe außerhalb der Scheibe beim Rendern; läuft die Scheibe zwischen zwei Karten darüber hinaus, rendert die
 // Kaskade neu (`_kaskadeDeckt`). `pflanzeRandM`: der Wind-Saum um die Kugel einer Pflanzen-Instanz (Krone und Halm wiegen).
-AnazhRealm.PASS_WAHL = Object.freeze({ sichtRand: 0.003, saumM: Object.freeze([8, 24]), pflanzeRandM: 2 });
+// `haltM` (Welle C): DIE LAGE STEHT, solange jede Ebene des Passes ihre Richtung hält und um höchstens so viel wandert
+// (`_passLageGen`) — das Auge der Spiel-Kamera atmet im Stand um Millimeter (gemessen 06.10., echte GPU, Mess-Wiese:
+// ±4 mm in y je Frame, keine Drehung), und jede neue Wahl darum rechnete jeden Frame dasselbe neu. Das Gesetz trägt den
+// Halt in jedem Urteil als Rand (`L.halt`), die gehaltene Wahl verliert darum nichts.
+// `drehRand` (Welle C, OMEN-Urteil 06.10.: beim Drehen 360 × 1° war die Kette teurer als vorher): der Rand einer Perspektive
+// (Bogenmaß) — das Gesetz trägt den Sinus je Meter Abstand als Rand, die Höhlen-Sicht ihr Sichtfeld je Halbwinkel um das
+// 1,5-Fache geweitet; die Wahl hält über eine Drehung bis zur Hälfte (`_wahlHaelt`), dann wählt sie neu.
+// `lichtRandTexel` (Welle C, OMEN-Urteil 07.10.: der Tag steht im Spiel nie): der Licht-Rand eines Kaskaden-Passes in Texeln
+// seiner Karte — die Wahl der Kaskade hält über die Stufen der Sonne (`_sonnenWinkel`), bis die Drehung des Lichts seit der
+// Wahl, mal dem längsten Licht-Weg der Box (`fit.weg`), die Hälfte dieses Rands erreicht (`_wahlHaelt`).
+AnazhRealm.PASS_WAHL = Object.freeze({
+    sichtRand: 0.003,
+    saumM: Object.freeze([8, 24]),
+    pflanzeRandM: 2,
+    haltM: 0.02,
+    drehRand: (2 * Math.PI) / 180,
+    lichtRandTexel: 32,
+});
 // DIE WASSER-WELLE (der Hub des Hydro-Stoffs, `_ensureHydroSurfaceMaterial` liest sie): die Dünung der offenen See
 // (drei Rausch-Oktaven je ±0,5, Gewichte `duenung`, × aWave ≤ 1) und das Kräuseln von See und Fluss ((Rausch + `oktave` ·
 // Rausch − `mitte`) · `kraeusel` · Kräusel-Stärke ≤ `kraeuselDecke` — die Decke des Reglers `setLakeRipple`). Der Hub
@@ -97692,38 +99094,95 @@ AnazhRealm._tuerOffenRad = function () {
 //      (Pflicht-Paar _uniformHeimatTeilen), ihre Objekt-Gruppe ändert sich nur mit dem Objekt. Kopf wie der Vendor:
 //      Erst-Init, Animation, Velocity und Programme mit updateAfter fahren die Vendor-Bahn. gate:vendor-anker pinnt
 //      jede benutzte r184-Stelle und fährt die Treue am Schein-Programm, gate:kamera-treue am echten Bild.
-AnazhRealm._diaetGeteiltSchreiben = function (rend, ro) {
+//  (4) EIN GANG JE KNOTEN UND GRUPPE UND RENDER (Welle K, 07.10.): seit der EINE Knoten je Quelle die Render-Gruppen
+//      über Programme teilt (_configureRenderer), tragen die Programme DIESELBEN Vorher-Knoten, render-/frame-Knoten und
+//      geteilten Gruppen. Der Gang je Programm wiederholte sie: gemessen an der Mess-Wiese (echte GPU, Stand, ein Frame)
+//      69–89 Gänge über 9–12 geteilte Gruppen, 930–1 150 Knoten-Besuche, 190–225 Vorher-Besuche — jeder Knoten im Schnitt
+//      in 60 Programmen. Jetzt stellt die Diät jeden Knoten und lädt jede geteilte Gruppe EINMAL je RENDER-ABSCHNITT
+//      (Stempel am Knoten und an der Gruppe; die Uniform-Knoten einer geteilten Gruppe sind Knoten jedes Programms, das sie
+//      trägt — der erste Gang hat sie gestellt). Nur Knoten mit eigener Arbeit je Programm bleiben je Programm: die Instanz-
+//      Knoten (je InstancedMesh, 61 von 101 Programmen) haben ohnehin ihren eigenen Stempel. Ein Knoten, der je Zeichen-
+//      Objekt arbeitet (Takt object, oder ein Verweis ohne festes Objekt — er liest frame.object), geht je Programm wie bisher.
+//  (5) DER RENDER-ABSCHNITT (Gegenprüfung K, 07.10.): der Stempel ist das Paar (Render-Id, `info.calls`) und wechselt beim
+//      Betreten UND Verlassen jedes Renders. r184 stapelt die Render-Id (`_renderScene` setzt sie auf `info.calls` und gibt
+//      dem äußeren Render danach seine zurück), `info.calls` zählt jeden betretenen Render und fällt nie (`info.reset` lässt
+//      ihn stehen). Ein verschachtelter Render, der die geteilten Kamera-Knoten über die VENDOR-Bahn auf seine Kamera stellt
+//      (ein Werfer ohne Diät, oder jeder Diät-Werfer der Kaskade an einem Wächter), lässt die Render-Id unverändert zurück:
+//      ein Stempel nur aus ihr überlebte ihn, die nächste erstmals geladene Gruppe trug die Schatten-Kamera (gemessen am
+//      echten Renderer: das Bild 0,11 gleich mit dem vollen Refresh statt 1,0 — gate:kamera-treue VERSCHACHTELT).
+AnazhRealm._diaetGang = function (ro, nbs) {
+    const jeZeichen = (n, typ) => typ === "object" || (typeof n.property === "string" && n.object === null);
+    const vor = [],
+        knoten = [],
+        eigenVor = [],
+        eigenKnoten = [];
+    for (const n of nbs.updateBeforeNodes) (jeZeichen(n, n.getUpdateBeforeType()) ? eigenVor : vor).push(n);
+    for (const n of nbs.updateNodes) {
+        const typ = n.getUpdateType();
+        if (typ !== "object") (jeZeichen(n, typ) ? eigenKnoten : knoten).push(n);
+    }
+    const gruppen = [];
+    for (const g of ro.getBindings()) {
+        const b0 = g.bindings && g.bindings[0];
+        if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
+    }
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen };
+};
+AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     const nbs = ro.getNodeBuilderState();
-    let k = nbs._anazhGeteilt;
-    if (!k) {
-        const knoten = [];
-        for (const n of nbs.updateNodes) if (n.getUpdateType() !== "object") knoten.push(n);
-        const gruppen = [];
-        for (const g of ro.getBindings()) {
-            const b0 = g.bindings && g.bindings[0];
-            if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
-        }
-        k = nbs._anazhGeteilt = { knoten, gruppen };
+    const k = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
+    // Die Reihenfolge des Vendors (updateBefore → updateForRender): erst alle Vorher-Knoten, dann die Knoten. Ein
+    // Vorher-Knoten kann einen Render verschachteln (der Schatten am ersten Licht-Empfänger), und der stellt den EINEN
+    // Node-Frame auf SEINE Kamera und SEIN Objekt — der Frame wird darum wie im Vendor je Vorher-Knoten und nach allen
+    // Vorher-Knoten neu gestellt (ein vorher gemerkter Frame zeichnete das Hauptbild mit der Schatten-Kamera:
+    // gate:kamera-treue ÄNDERUNG 0,10 statt 1). Der Stempel ist der RENDER-ABSCHNITT (rid, `rend.info.calls`, s. (5)):
+    // ein Vorher-Knoten trägt den Abschnitt NACH seinem Ruf (der Render, den er verschachtelt, ist dann vorbei), Knoten
+    // und Gruppen den Abschnitt nach allen Vorher-Knoten.
+    let nf = null;
+    for (const n of k.vor) {
+        if (n._anazhVorRid === rid && n._anazhVorRuf === rend.info.calls) continue;
+        rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
+        n._anazhVorRid = rid;
+        n._anazhVorRuf = rend.info.calls;
     }
-    rend._nodes.updateBefore(ro);
-    if (k.knoten.length) {
-        const nf = rend._nodes.getNodeFrameForRender(ro);
-        for (const n of k.knoten) nf.updateNode(n);
+    for (const n of k.eigenVor) rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);
+    const ruf = rend.info.calls;
+    for (const n of k.knoten) {
+        if (n._anazhRid === rid && n._anazhRuf === ruf) continue;
+        n._anazhRid = rid;
+        n._anazhRuf = ruf;
+        (nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateNode(n);
     }
-    if (k.gruppen.length) {
-        const alle = ro.getBindings();
-        for (const g of k.gruppen) rend._bindings._update(g, alle);
+    if (k.eigenKnoten.length) {
+        nf = nf || rend._nodes.getNodeFrameForRender(ro);
+        for (const n of k.eigenKnoten) nf.updateNode(n);
+    }
+    let alle = null;
+    for (const g of k.gruppen) {
+        if (g._anazhRid === rid && g._anazhRuf === ruf) continue;
+        g._anazhRid = rid;
+        g._anazhRuf = ruf;
+        rend._bindings._update(g, alle || (alle = ro.getBindings()));
     }
 };
 AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const obj = ro && ro.object;
+    // Die Wächter vergleichen Zahlen am EINEN Daten-Satz des Render-Objekts — eine Prüfung ohne Änderung legt nichts an
+    // (vorher je Prüfung zwei Versions-Zeichenketten: Instanz und Atlas).
+    let d = null;
     if (obj && obj.isInstancedMesh === true) {
         const im = obj.instanceMatrix,
             ic = obj.instanceColor;
-        const v = (im ? im.version : -1) + "|" + (ic ? ic.version : -1);
-        const d = obs.getRenderObjectData(ro);
-        if (d._anazhInstV !== v) {
-            d._anazhInstV = v;
+        const iId = im ? im.id : -1,
+            iV = im ? im.version : -1,
+            cId = ic ? ic.id : -1,
+            cV = ic ? ic.version : -1;
+        d = obs.getRenderObjectData(ro);
+        if (d._anazhIId !== iId || d._anazhIV !== iV || d._anazhICId !== cId || d._anazhICV !== cV) {
+            d._anazhIId = iId;
+            d._anazhIV = iV;
+            d._anazhICId = cId;
+            d._anazhICV = cV;
             return true;
         }
     }
@@ -97740,7 +99199,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     // („Vertex buffer slot 5 … was not set"). Geometrie-Id, Index und jedes Attribut (Id · Version) je Render-Objekt.
     const geo = ro && ro.geometry;
     if (geo && geo.attributes) {
-        const d = obs.getRenderObjectData(ro);
+        if (d === null) d = obs.getRenderObjectData(ro);
         const g = d._anazhGeoV || (d._anazhGeoV = []);
         const ix = geo.index;
         let anders = g[0] !== geo.id || g[1] !== (ix ? ix.id : -1) || g[2] !== (ix ? ix.version : -1);
@@ -97765,13 +99224,18 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     }
     const texe = mat ? mat._anazhAtlasTexe : null;
     if (texe) {
-        let va = "";
-        for (let i = 0; i < texe.length; i++) va += (texe[i] ? texe[i].version : -1) + "|";
-        const d = obs.getRenderObjectData(ro);
-        if (d._anazhAtlasV !== va) {
-            d._anazhAtlasV = va;
-            return true;
+        if (d === null) d = obs.getRenderObjectData(ro);
+        const va = d._anazhAtlasVs || (d._anazhAtlasVs = []);
+        let anders = va.length !== texe.length;
+        va.length = texe.length;
+        for (let i = 0; i < texe.length; i++) {
+            const v = texe[i] ? texe[i].version : -1;
+            if (va[i] !== v) {
+                va[i] = v;
+                anders = true;
+            }
         }
+        if (anders) return true;
     }
     const rend = frame && frame.renderer;
     if (
@@ -97785,7 +99249,7 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
     const rid = frame.renderId;
     if (obs.renderId !== rid) {
         obs.renderId = rid;
-        AnazhRealm._diaetGeteiltSchreiben(rend, ro);
+        AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);
     }
     return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
 };

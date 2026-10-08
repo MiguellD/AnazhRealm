@@ -38,7 +38,7 @@
 // nur den Teil nach dem Bruch — „Stempel-Bruch"), Pässe ohne Zeitstempel, Compute-Pässe und Dispatches, jede Kopie
 // (Quelle → Ziel, Bytes), jedes Hochladen (writeBuffer/writeTexture je Ziel, Bytes), Submits, Bundle-Ausführungen,
 // direkte Draws, Anlagen je Frame — Zähl-Haken an den WebGPU-Prototypen, nur für die Anatomie-Frames, danach exakt zurück.
-// Namen: der Schlüssel des VRAM-Abgriffs (`__vramK`), die Ansicht → Textur über `__viewTex` (werkbank vramAbgriff).
+// Namen: der Schlüssel des VRAM-Abgriffs (`__vramK`), die Ansicht → Textur über `__viewTex` (scripts/lib/vram-abgriff.cjs).
 //
 // DER ZUSTAND: jede Stellgröße, die die Linse anfasst (Sichtbarkeit je Objekt, Weiche, Knoten-Haken, Ausgabe-Knoten,
 // Pipeline-Kontext und Fragment-Knoten, Ketten-Graph, Pass-Uhr, Prototyp-Haken, Schatten-Flaggen), steht nach dem Lauf
@@ -1575,6 +1575,8 @@ function zerlegeTabelle(a, inv, sch) {
 }
 
 module.exports = {
+    // der exakt zurückstellende Haken — der Ziel-Zensus (scripts/lib/ziel-zensus.cjs) hakt mit demselben
+    haken,
     SPEZIAL,
     KETTE,
     zerlegeSchalter,

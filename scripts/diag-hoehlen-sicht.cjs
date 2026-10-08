@@ -589,6 +589,8 @@ const server = http.createServer((req, res) => {
             const xh = miss(hin);
             xh.augeInHoehle = !fest(ha[0], ha[1], ha[2]) && ueber;
             r._hoehlenHinaus = () => {};
+            // dieselbe Lage: die Kette hielte die eben gerechnete Wahl (`_passLageGen`, Welle C) — die alte Probe rechnet neu
+            if (r._passLagen) r._passLagen.clear();
             const alt = window.__hoehlenStrahl(r, cam, hauptbild(hin), { nx: 160, ny: 90 });
             delete r._hoehlenHinaus;
             xh.altFehlend = alt.fehlend.length;

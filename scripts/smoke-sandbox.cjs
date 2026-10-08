@@ -20,8 +20,11 @@ const { spawn } = require("child_process");
 const path = require("path");
 const puppeteer = require("puppeteer");
 
-const ROOT = "/home/user/AnazhRealm";
-const HOST_URL = "http://127.0.0.1:4312/index.html";
+// Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
+// je Linse (SANDBOX_PORT; der Save-Server liest PORT).
+const ROOT = path.resolve(__dirname, "..");
+const PORT = Number(process.env.SANDBOX_PORT || 4312);
+const HOST_URL = `http://127.0.0.1:${PORT}/index.html`;
 const WORLD_PATH = "worlds/schwarm/index.html";
 
 function sleep(ms) {
@@ -30,7 +33,10 @@ function sleep(ms) {
 
 function startProc(script, readyRe) {
     return new Promise((resolve, reject) => {
-        const proc = spawn("node", [path.join(ROOT, script)], { stdio: ["ignore", "pipe", "pipe"] });
+        const proc = spawn("node", [path.join(ROOT, script)], {
+            stdio: ["ignore", "pipe", "pipe"],
+            env: Object.assign({}, process.env, { PORT: String(PORT) }),
+        });
         let ready = false;
         const timeout = setTimeout(() => {
             if (!ready) reject(new Error(`${script} startete nicht innerhalb 6 s`));
