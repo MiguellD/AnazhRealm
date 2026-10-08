@@ -61990,11 +61990,82 @@ class AnazhRealm {
         return dx < gap && dy < gap && dz < gap;
     }
 
-    // Räumliche Tags = computeCompoundTags-Basis + Bonus-Regeln, VOR der MAX-Aggregation je Part:
+    // DAS GEDÄCHTNIS DER RAUM-TAGS (0710-11): die Rechnung (`_raumTagsRechnen`) prüft je Teil-Paar Kontakt und Hohlraum —
+    // O(Teile²), an der Mess-Wiese 0,6–1,1 ms je Bauplan (Haselbusch 112 Teile); die Resonanz der Boosts fragte je Sekunde
+    // dieselben Baupläne für jeden nahen Eintrag neu (10 Rufe, 8,3 ms, Spitze 10,3 ms). Je Bauplan-Objekt merkt sich das
+    // Gedächtnis die Tags und den SCHLÜSSEL: einen Schnappschuss JEDES Eingangs der Rechnung (`_raumTagSchluessel`: je Teil
+    // Form, Stoff, Position, Größe; je benutzter Stoff seine Tags) — gebaut bei jedem Ruf, Wert für Wert verglichen. So sieht
+    // das Gedächtnis jeden Schreiber (die Werkstatt-API, Undo/Redo, das Laden, `defineMaterial`, eine direkte Änderung am
+    // Teil ohne API), ohne ihn zu kennen; die Tags rechnen nur bei geändertem Schlüssel neu. Der Leser bekommt je Ruf ein
+    // eigenes Objekt (wie die Rechnung). Die Wand (gate:raum-tags): der Schlüssel liest jeden Eingang der Rechnung (Proxy-
+    // Linse), die Rechnung liest keinen Zustand außer `state.materials`, ihre Tabellen schreibt niemand (AST), und über eine
+    // Werkstatt-Sitzung mit Edits urteilt das Gedächtnis byte-gleich wie die Rechnung.
+    computeSpatialTags(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts) || blueprint.parts.length === 0) {
+            return this._raumTagsRechnen(blueprint);
+        }
+        const gedaechtnis = this._raumTagGedaechtnis || (this._raumTagGedaechtnis = new WeakMap());
+        const neu = this._raumTagSchluessel(blueprint, this._raumTagKratz || (this._raumTagKratz = []));
+        let m = gedaechtnis.get(blueprint);
+        if (m && this._raumTagGleich(m.schluessel, neu)) return Object.assign({}, m.tags);
+        const tags = this._raumTagsRechnen(blueprint);
+        if (!m) gedaechtnis.set(blueprint, (m = { schluessel: [], tags: null }));
+        // der neue Schlüssel wird das Gedächtnis, das alte Array der nächste Kratzplatz
+        this._raumTagKratz = m.schluessel;
+        m.schluessel = neu;
+        m.tags = tags;
+        return Object.assign({}, tags);
+    }
+
+    // Der Schlüssel der Raum-Tags: jeder Eingang der Rechnung in fester Folge (Flaggen vor den Teil-Stücken, so ist die Folge
+    // eindeutig) — die Teile (Form, Stoff, Position, Größe) und je benutztem Stoff (`material || "stein"`) seine Tags.
+    _raumTagSchluessel(blueprint, out) {
+        out.length = 0;
+        const parts = blueprint.parts;
+        const n = parts.length;
+        out.push(n);
+        const stoffe = this._raumTagStoffe || (this._raumTagStoffe = []);
+        stoffe.length = 0;
+        for (let i = 0; i < n; i++) {
+            const p = parts[i];
+            if (!p || typeof p !== "object") {
+                out.push(0, p);
+                continue;
+            }
+            const pos = p.position;
+            const size = p.size;
+            out.push(1, p.shape, p.material);
+            if (pos) out.push(1, pos.x, pos.y, pos.z);
+            else out.push(0);
+            if (size) out.push(1, size.x, size.y, size.z);
+            else out.push(0);
+            const stoff = p.material || "stein";
+            if (stoffe.indexOf(stoff) < 0) stoffe.push(stoff);
+        }
+        const mats = this.state.materials;
+        out.push(mats ? 1 : 0);
+        if (mats)
+            for (const name of stoffe) {
+                const mat = mats[name];
+                const t = mat ? mat.tags : undefined;
+                out.push(name, mat ? 1 : 0, t ? 1 : 0);
+                if (t) for (const k of AnazhRealm.MATERIAL_TAG_KEYS) out.push(t[k]);
+            }
+        return out;
+    }
+
+    _raumTagGleich(a, b) {
+        if (a.length !== b.length) return false;
+        for (let i = 0; i < a.length; i++) if (!Object.is(a[i], b[i])) return false;
+        return true;
+    }
+
+    // Räumliche Tags = computeCompoundTags-Basis + Bonus-Regeln, VOR der MAX-Aggregation je Part (die gedächtnislose
+    // Rechnung; Leser fragen `computeSpatialTags`):
     // Prinzip 1: pointed-shape (cone/pyramid/octahedron/helix) at_top/at_outside → Bonus auf härte +
     // magieleitung, skaliert mit der intrinsischen Aktivierung (computePartTags).
     // Prinzip 4: je Tag max(Original, Kontakt × CONTACT_TRANSFER) zwischen berührenden Parts.
-    computeSpatialTags(blueprint) {
+    _raumTagsRechnen(blueprint) {
         if (!blueprint || !Array.isArray(blueprint.parts) || blueprint.parts.length === 0) {
             return this.computeCompoundTags(blueprint);
         }

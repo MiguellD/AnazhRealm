@@ -521,6 +521,14 @@ jobs:
               # Filter ueber den Bestand (auch nach einem nachgezogenen Tor); Resonanz und Dorf-Rauch wie die Schleife.
               run: npm run gate:brennglas-takt
 
+            - name: Raum-Tags (0710-11 — das Gedaechtnis der Raum-Tags sieht jeden Schreiber)
+              if: matrix.gruppe == 1
+              # Null-Renderer, eine echte Welt: der Schluessel liest jeden Eingang der Rechnung (Proxy-Linse ueber jeden Bauplan);
+              # ueber eine Werkstatt-Sitzung (verschieben, Stoff, Form, Farbe, hinzufuegen, loeschen, Undo/Redo, direkte Aenderungen
+              # ohne API, defineMaterial, ein geladener Spielstand, neues Teile-Array, neues Bauplan-Objekt) urteilt das Gedaechtnis
+              # byte-gleich wie die Rechnung und rechnet nur nach einer Aenderung; ein Schluessel ohne Stoffe faellt rot.
+              run: npm run gate:raum-tags
+
             - name: Stand-Takt (Welle K — im Stand kostet die Welt nichts, Gehen kostet die Änderung)
               if: matrix.gruppe == 2
               # An der Mess-Wiese, Null-Renderer, Fern-Ring über seinen Haken, Foundry an, der Regler hält: die Stand-Linse
