@@ -2239,7 +2239,8 @@ async function kreaturProben(r, T, opts) {
     // (45–60 m), 4 in der Kapsel-Zone (70–90 m) folgen dem Spieler (er steht, der Blick liegt auf ihnen); je laufendem Takt
     // (Leib-Weg > 0,3 m/s) GLEITET ein Tier, wenn sein SICHTBARER Leib die Beine nicht bewegt: trägt das Fern-Bild, zählen
     // die Gelenke, an die seine Haut gebunden ist (ein Fern-Bild ohne Haut-Gelenke ist ein Standbild — es gleitet immer),
-    // sonst die des Baums; gleiten heißt, die Hüft-Winkel der vier Beine liegen über 12 Takte in 0,02 rad ──
+    // sonst die des Baums; gleiten heißt, die Hüft-Winkel der vier Beine liegen über 24 Takte (0,4 s, die Stufe 1/8 wertet
+    // dreimal aus) in 0,02 rad ──
     await buehne("ferngang", async (restore) => {
         r.setGameMode("frieden");
         const altUhr = s.creatureAnimationTime;
@@ -2327,7 +2328,7 @@ async function kreaturProben(r, T, opts) {
                 if (t.warFern !== sb.fern) t.spur.length = 0; // der Wechsel Baum ↔ Fern-Bild beginnt eine neue Spur
                 t.warFern = sb.fern;
                 t.spur.push(b);
-                if (t.spur.length > 12) t.spur.shift();
+                if (t.spur.length > 24) t.spur.shift();
                 const v = t.lage ? Math.hypot(p.x - t.lage.x, p.z - t.lage.z) / dt : 0;
                 t.lage = p;
                 if (k < 60 || v < 0.3) continue;
@@ -2338,7 +2339,7 @@ async function kreaturProben(r, T, opts) {
                     Z.gleit++; // ein Standbild ohne Gelenke
                     continue;
                 }
-                if (t.spur.length < 12) continue;
+                if (t.spur.length < 24) continue;
                 let spanne = 0;
                 for (let j = 0; j < 4; j++) {
                     let mn = Infinity,

@@ -21736,11 +21736,12 @@ class AnazhRealm {
     // Frame · 2 · 4 · 0 = hinterm Standbild (eingefroren in Stand-Pose). walkPhase + Anim-Uhr akkumulieren
     // JEDEN Frame → der Gang bleibt gleich schnell, nur seltener ausgewertet. Linse: gate:kreatur-kosten.
     // Jenseits der Schwelle friert nur ein Tier, das STEHT (Welle LF, der ferne Gang): wer läuft (laeuft), wird auf der
-    // untersten Stufe weiter ausgewertet — seine Knochen tragen das Standbild-freie Fern-Bild und die Glieder-Kapseln.
+    // Stufe 1/8 weiter ausgewertet (nie gröber als ein Viertel seines Takts) — seine Knochen tragen das geskinnte Fern-Bild
+    // und die Glieder-Kapseln.
     _creatureAnimDiv(dist, fernDist, omega, frameDt, laeuft) {
         if (!(fernDist > 0) || !(dist >= 0)) return 1;
         if (dist >= fernDist && laeuft !== true) return 0;
-        const div = dist >= fernDist * 0.75 ? 4 : dist >= fernDist * 0.5 ? 2 : 1;
+        const div = dist >= fernDist ? 8 : dist >= fernDist * 0.75 ? 4 : dist >= fernDist * 0.5 ? 2 : 1;
         // Der Gang wird nie gröber als ein Viertel seines Takts abgetastet (ω des Gang-Gesetzes aus der letzten
         // Auswertung): ein Fuchs im schnellen Trab (Takt 0,24 s) traf bei 30 fps und Stufe 1/4 (0,133 s je Auswertung)
         // seine Stand-Phase nie zweimal — die Beine sprangen (gate:tier-gang unter Last, Schlupf 1,33).
@@ -22472,7 +22473,10 @@ class AnazhRealm {
                     const fernDist = tierFernDist * fLA;
                     const tBA = creature.userData._tierBaum;
                     const omegaGang = tBA && tBA._gang ? tBA._gang.omega : 0;
-                    const laeuft = this._kreaturLaeuft(creature);
+                    // KOSTEN AN DEN SCHIRM (Gebot 7): jenseits der Standbild-Schwelle läuft der Gang nur, wo der Blick ihn
+                    // sieht — ein ferner Läufer hinter der Kamera steht still, bis er ins Bild kommt (39 Tiere, 32 fern:
+                    // der Kreatur-Takt kostete mit jedem fernen Läufer 0,78 ms statt 0,41)
+                    const laeuft = this._kreaturLaeuft(creature) && (inFrustum || distToPlayer < fernDist);
                     let animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, delta, laeuft);
                     if (animDiv === 0 && !(tBA && tBA.fern)) animDiv = 4;
                     if (animDiv === 0) {
