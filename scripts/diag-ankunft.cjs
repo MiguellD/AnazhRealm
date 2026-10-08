@@ -26,14 +26,16 @@
 //       Schatten-Pass liest sie nie (maskShadowNode). Befund 07.10.: die Kamera stand 0,53 m von der Achse einer Kiefer (im
 //       Stamm) und 2,86 m von der Achse einer Tanne, in der der Spieler bei 7,3 m stand — eine Nadelwand; Gegenprüfung
 //       Runde 1 (Kronen-Hülle 5167fd85): beim Ritt 641 von 2400 Proben unter 3 m Arm (die Kamera am Wagendach), 137 Sprünge
-//       > 2 m, zu Fuß 43 % der Proben in Baumnähe auf dem 2-m-Minimum, 5 Sprünge > 1 m auf 80 m.
+//       > 2 m, zu Fuß 43 % der Proben in Baumnähe auf dem 2-m-Minimum, 5 Sprünge > 1 m auf 80 m; das Fadenkreuz stand in
+//       3rd auf dem Kopf der Figur (die Brust ≥ 0,35 m neben dem Strahl der Bildmitte).
 //   D8  ZWEI KANÄLE — der Spieler-Chat trägt Worte, das Log die Telemetrie: die Siedlungs-Zeile ohne Same und Slots, das
 //       KI-Programm als Tat (`describeProgram`), nie als JSON, eine Programm-Absage ohne Ereignis-Namen.
 //   D6  DIE KI NENNT DIE URSACHE — „Aktivieren" fragt einen lokalen Dienst (der Status sagt, dass er nicht läuft, nie
 //       „Aktiv"), ohne Schlüssel sagt der Chat es, der Proxy ist der Ursprung der Seite (404 dort = „der Proxy fehlt").
 //   D9  DAS DORF VOR DIR — „dorf 7 18" an der Plattform: jedes Haus vor dem Spieler und im Bildwinkel der Welt-Kamera; ein
-//       Slot, dessen Ort ein Bau sperrt, findet einen Ersatz-Ort. Befund: 13 Häuser, 12 von 25 Slots übersprungen, die drei
-//       nächsten HINTER dem Spieler (cos −1,00 / −0,48 / −0,12).
+//       Slot, dessen Ort ein Bau sperrt, findet einen Ersatz-Ort; „baue dorf hier" baut bei einem Mitspieler (anderer Ort,
+//       andere Gier, Quelle remote) dasselbe Dorf an derselben Stelle. Befund: 13 Häuser, 12 von 25 Slots übersprungen, die
+//       drei nächsten HINTER dem Spieler (cos −1,00 / −0,48 / −0,12); Gegenprüfung Runde 1: beim Mitspieler ~60 m daneben.
 //
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
@@ -220,6 +222,8 @@ function dorfVerdict(m) {
     if (m.ausserBild > 0) out.push(`${m.ausserBild} Häuser außerhalb des Bildwinkels`);
     if (!m.ersatz) out.push(`ein gesperrter Slot fällt (kein Ersatz-Ort: ${m.ersatzGrund})`);
     else if (m.ersatzImBau) out.push("der Ersatz-Ort liegt im Bau");
+    if (m.mpAbweichung == null) out.push(`der Mitspieler: kein Vergleich (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
+    else if (m.mpAbweichung > 1) out.push(`beim Mitspieler steht das Dorf ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
     return out;
 }
 
@@ -229,7 +233,8 @@ function wand(src, html) {
     const fallback = fnBody(nc, /\n {4}_chatHandleConversationalFallback\(command, appendChatOutput\) \{/) || "";
     const hilfe = fnBody(nc, /\n {4}_hilfeZeilen\(\) \{/) || "";
     const siedlung = fnBody(nc, /\n {4}async spawnSettlement\(opts\) \{/) || "";
-    const dorfOp = (nc.match(/spawn_village: \(\[positionNode, seed\], ctx\) => \{[\s\S]*?\n {12}\},/) || [""])[0];
+    const dorfOp = (nc.match(/spawn_village: \(\[positionNode, seed[^\]]*\], ctx\) => \{[\s\S]*?\n {12}\},/) || [""])[0];
+    const autoDorf = fnBody(nc, /\n {4}_autoSettlementSpawnCell\(cx, cz, info\) \{/) || "";
     const kamera = fnBody(nc, /\n {4}_loopCamera\(currentTime\) \{/) || "";
     const stoff = fnBody(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen\) \{/) || "";
     const ladeIdx = html.indexOf('id="ladeschirm"');
@@ -254,8 +259,13 @@ function wand(src, html) {
             /hotbar: \[null, null, null, null, null, null, null, null, null\]/.test(nc) && /_katalogSichtbar/.test(fnBody(nc, /\n {4}_startGurt\(\) \{/) || ""),
         ],
         [
-            "W4 das Dorf misst seinen Plan (`_siedlungsAnker`), keine Schätzung `_structureSpawnPos(\"haus_basis\")` in spawnSettlement und spawn_village",
-            /this\._siedlungsAnker\(plan/.test(siedlung) && !/_structureSpawnPos/.test(siedlung) && !/_structureSpawnPos/.test(dorfOp),
+            "W4 das Dorf misst seinen Plan (`_siedlungsAnker`), keine Schätzung `_structureSpawnPos(\"haus_basis\")` in spawnSettlement, spawn_village und dem Welt-Dorf (`_autoSettlementSpawnCell`); spawn_village trägt den Blick des Sprechers",
+            /this\._siedlungsAnker\(plan/.test(siedlung) &&
+                !/_structureSpawnPos/.test(siedlung) &&
+                !/_structureSpawnPos/.test(dorfOp) &&
+                /blick/.test(dorfOp) &&
+                /this\._siedlungsAnker\(plan/.test(autoDorf) &&
+                !/_structureSpawnPos/.test(autoDorf),
         ],
         [
             "W5 die 3rd-Kamera rückt nur vor Boden und Bau ein (der Strahl in `_loopCamera` geht `durchPflanzen`, keine Kronen-Grenze), jeder Pflanzen-Stoff trägt die Durchsicht (`_kameraDurchsichtNode` in `_foundryTreeMaterial`)",
@@ -838,6 +848,49 @@ async function probe(arg) {
             m.uebersprungen = +mz[3];
         }
         for (const a of st.architectures.filter((a) => !vor.has(a)).reverse()) r.removeArchitecture(a);
+        // DER MITSPIELER (Gegenprüfung Runde 1: der Anker hing am EIGENEN Spieler, Blick und Fenster jedes Peers — etwa
+        // 60 m Versatz): „baue dorf hier", gesprochen an der Plattform, läuft beim Sprecher (Quelle human) und bei einem
+        // Mitspieler 200 m weiter mit anderer Gier (Quelle remote) — dasselbe Dorf an derselben Stelle.
+        {
+            const satz = r.parseChatToDsl("baue dorf hier");
+            const haeuserVon = async (quelle, wo, gier) => {
+                st.playerMesh.position.set(wo.x, wo.y, wo.z);
+                st.yaw = gier;
+                const vorM = new Set(st.architectures);
+                r.dslRun(satz.program, { source: quelle });
+                const dlM = performance.now() + 60000;
+                let n = -1;
+                let ruhig = 0;
+                while (performance.now() < dlM && ruhig < 6) {
+                    await sleep(250);
+                    const k = st.architectures.filter((a) => !vorM.has(a) && /^haus_/.test(a.type || "")).length;
+                    ruhig = k > 0 && k === n ? ruhig + 1 : 0;
+                    n = k;
+                }
+                const neuM = st.architectures.filter((a) => !vorM.has(a) && /^haus_/.test(a.type || ""));
+                const orte = neuM.map((a) => ({ x: a.position.x, z: a.position.z }));
+                for (const a of st.architectures.filter((a) => !vorM.has(a)).reverse()) r.removeArchitecture(a);
+                return orte;
+            };
+            st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
+            st.yaw = best.yaw;
+            const sprecher = await haeuserVon("human", { x: P.x, y: P.y + 2.2, z: P.z }, best.yaw);
+            const mx = P.x + 200;
+            const mz = P.z + 140;
+            const mitspieler = await haeuserVon("remote:linse", { x: mx, y: r.getTerrainHeightAt(mx, mz) + 1.2, z: mz }, best.yaw + 2.1);
+            m.mpHaeuser = [sprecher.length, mitspieler.length];
+            let maxD = 0;
+            for (const a of sprecher) {
+                let dmin = Infinity;
+                for (const b of mitspieler) dmin = Math.min(dmin, Math.hypot(a.x - b.x, a.z - b.z));
+                maxD = Math.max(maxD, dmin);
+            }
+            m.mpAbweichung = sprecher.length && mitspieler.length ? +maxD.toFixed(2) : null;
+            m.hierNaechstes = sprecher.length ? +Math.min(...sprecher.map((a) => Math.hypot(a.x - P.x, a.z - P.z))).toFixed(1) : null;
+            m.hierWeitestes = sprecher.length ? +Math.max(...sprecher.map((a) => Math.hypot(a.x - P.x, a.z - P.z))).toFixed(1) : null;
+            st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
+            st.yaw = best.yaw;
+        }
         // DER ERSATZ-ORT: ein Slot am Rand der Genesis-Plattform (sein Grundriss reicht 2 m in ihre Scheibe; die Rückseite
         // des Hauses, lokal +z, zeigt von ihr weg) — sein Ort fällt, ein Ersatz-Ort draußen trägt ihn.
         const f = r._foundry;
@@ -1050,11 +1103,12 @@ async function probe(arg) {
             [
                 "D9",
                 dorfVerdict,
-                { gestartet: true, buch: true, haeuser: 20, hinten: 0, cosHinten: [], ausserBild: 0, ersatz: true, ersatzImBau: false },
+                { gestartet: true, buch: true, haeuser: 20, hinten: 0, cosHinten: [], ausserBild: 0, ersatz: true, ersatzImBau: false, mpAbweichung: 0, mpHaeuser: [20, 20] },
                 [
                     ["umringt (Befund)", { haeuser: 13, hinten: 7, cosHinten: ["-0.61", "-0.86", "-0.70"] }, "7 Häuser hinter dem Spieler"],
                     ["Slot fällt (Befund)", { ersatz: false, ersatzGrund: "der Slot fiel" }, "ein gesperrter Slot fällt"],
                     ["am Bildrand vorbei", { ausserBild: 3 }, "3 Häuser außerhalb des Bildwinkels"],
+                    ["Mitspieler 60 m daneben (Gegenprüfung)", { mpAbweichung: 61.4, mpHaeuser: [20, 20] }, "beim Mitspieler steht das Dorf 61.4 m daneben"],
                 ],
             ],
         ];
@@ -1071,7 +1125,7 @@ async function probe(arg) {
             .replace("if (!this.state._weltbildDa) this._ankunftsBild();", "")
             .replace("const fehlt = this._weltbildFehlt();", 'const fehlt = this._builtRingRadius() >= 0 ? [] : ["Boden"];')
             .replace("hotbar: [null, null, null, null, null, null, null, null, null],", 'hotbar: ["stein_block", "waterfall", "damm", null, null, null, null, null, null],')
-            .replace("const anchor = this._siedlungsAnker(plan, o.position || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);')
+            .replace("const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);')
             .replace("{ durchPflanzen: true }", "{}")
             .replace("const _durch = this._kameraDurchsichtNode(TSL);", "const _durch = null;")
             .replace("(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})")

@@ -2213,10 +2213,19 @@ class AnazhRealm {
             // das verwendete Seed ein, damit alle Peers DIESELBEN Häuser sehen. spawn_village hebt das
             // fachwerk-Dorf (spawnSettlement → exportSettlement über den EINEN Worker); ein Spawn-Akt je Op —
             // die Häuser deckelt nH, den Nexus-Hort der autonomous-Cap.
-            spawn_village: ([positionNode, seed], ctx) => {
+            spawn_village: ([positionNode, seed, gier, tanH], ctx) => {
                 // Eine GROSSE Struktur nie AUF den Spieler: das misst der Akt am Plan selbst (`_siedlungsAnker` — die Mitte
-                // und der Radius seiner Häuser); die Schätzung „haus_basis × 3" davor ist gefallen.
+                // und der Radius seiner Häuser); die Schätzung „haus_basis × 3" davor ist gefallen. Trägt das Programm den
+                // BLICK des Sprechers (Gier und Bildwinkel, „baue dorf hier"), steht das Dorf vor IHM — bei jedem Peer an
+                // derselben Stelle (Gegenprüfung Runde 1: der Anker hing am eigenen Spieler, Blick und Fenster jedes Peers,
+                // ~60 m Versatz); ein fremdes Programm dreht nie den Blick des Empfängers.
                 const pos = this.dslEvalPos(positionNode, ctx);
+                const g = Number(gier);
+                const tH = Number(tanH);
+                const blick =
+                    gier != null && Number.isFinite(g)
+                        ? { gier: g, tanH: Number.isFinite(tH) && tH > 0 ? tH : null }
+                        : null;
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
@@ -2226,7 +2235,14 @@ class AnazhRealm {
                 // die Größe aus dem Siedlungs-Gesetz (fachwerk SIEDLUNG) — das Stamm-Literal 9 fiel (Karte Dorf/Stadt
                 // DEFEKT 4: zwei Chat-Wege mit zwei Größen-Wahrheiten); `spawnSettlement` liest das Gesetz NACH der
                 // Buch-Ankunft (bei kaltem Buch fiel die Größe sonst still auf den Kern-Default)
-                this.spawnSettlement({ position: pos, seed: s, nHAusGesetz: true, autonomous: ctx.source === "nexus" });
+                this.spawnSettlement({
+                    position: pos,
+                    seed: s,
+                    nHAusGesetz: true,
+                    autonomous: ctx.source === "nexus",
+                    blick,
+                    orientieren: !/^remote/.test(ctx.source || ""),
+                });
                 ctx.log.push({ event: "spawned_village", id: null, pos, seed: s });
             },
             // AUSLÖSCHUNGS-WELLE — der TEMPEL ist die klassische PORTIKUS-Kultur des
@@ -8804,9 +8820,17 @@ class AnazhRealm {
                     // (Lehre 7: Peers und Reloads würfelten verschiedene Dörfer)
                     const seed = this._bauSame(kind === "dorf" ? "stadt" : kind);
                     const op = map[kind];
-                    const program = op
-                        ? [op, ["at", fx, p.y, fz], seed]
-                        : ["spawn_blueprint", kind, ["at", fx, p.y, fz], seed];
+                    // Das Dorf misst seinen Plan vor dem SPRECHER (`_siedlungsAnker`): es reist mit seinem Ort, seiner Gier
+                    // und seinem Bildwinkel — jeder Peer baut dasselbe Dorf an derselben Stelle.
+                    const cam = this.state.camera;
+                    const fov = cam && Number.isFinite(cam.fov) ? cam.fov : 75;
+                    const tanH = Math.tan((fov * Math.PI) / 360) * (cam && cam.aspect > 0 ? cam.aspect : 16 / 9);
+                    const program =
+                        op === "spawn_village"
+                            ? [op, ["at", p.x, p.y, p.z], seed, this.state.yaw, tanH]
+                            : op
+                              ? [op, ["at", fx, p.y, fz], seed]
+                              : ["spawn_blueprint", kind, ["at", fx, p.y, fz], seed];
                     return {
                         program,
                         describe: `${kind} vor dir gebaut`,
@@ -70380,7 +70404,10 @@ class AnazhRealm {
     // jedes Haus mit seiner Reichweite `STRUCTURE_PLAYER_CLEAR_MARGIN` vor dem Spieler und im Bildwinkel der Welt-Kamera
     // steht — so nah wie möglich, nie um ihn. Ein verlangter Ort, dessen Häuser den Spieler nicht
     // berühren, bleibt, wie er ist. Gibt den Plan-Ursprung (der Bezug der Slot-Orte), die Mitte und den Radius zurück.
-    _siedlungsAnker(plan, wunsch) {
+    // `blick` {gier, tanH} (das Programm eines Sprechers, „baue dorf hier"): der Sprecher steht am verlangten Ort und blickt
+    // mit SEINER Gier durch SEINEN Bildwinkel — der Anker hängt dann an keinem Zustand des ausführenden Peers (Spieler,
+    // Blick, Fenster), jeder baut dasselbe Dorf an derselben Stelle (Gegenprüfung Runde 1: ~60 m Versatz).
+    _siedlungsAnker(plan, wunsch, blick) {
         const pm = this.state.playerMesh;
         const haeuser = [];
         let cx = 0;
@@ -70402,12 +70429,14 @@ class AnazhRealm {
             const h = this.getTerrainHeightAt(x, z);
             return { x, y: Number.isFinite(h) ? h : y, z, radius: R, mitte: { x: x + cx, z: z + cz } };
         };
-        if (!pm) return ergebnis(wunsch.x, wunsch.z, wunsch.y);
-        const p = pm.position;
+        const sprecher = blick && wunsch && Number.isFinite(blick.gier);
+        if (!pm && !sprecher) return ergebnis(wunsch.x, wunsch.z, wunsch.y);
+        // der Blickende: der Sprecher am verlangten Ort (sein Programm trägt den Blick) oder der eigene Spieler
+        const p = sprecher ? wunsch : pm.position;
         const M = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
         let vx;
         let vz;
-        if (wunsch) {
+        if (wunsch && !sprecher) {
             const dx = wunsch.x + cx - p.x;
             const dz = wunsch.z + cz - p.z;
             const d = Math.hypot(dx, dz);
@@ -70418,17 +70447,17 @@ class AnazhRealm {
             }
         }
         if (vx === undefined) {
-            const vorn = this._blickVorn(this.state.yaw, 0);
+            const vorn = this._blickVorn(sprecher ? blick.gier : this.state.yaw, 0);
             const l = Math.hypot(vorn.x, vorn.z) || 1;
             vx = vorn.x / l;
             vz = vorn.z / l;
         }
-        // Der Bildwinkel der Welt-Kamera (horizontal, aus fov und Seitenverhältnis) — vom Spieler aus gemessen; die
-        // 3rd-Kamera steht hinter ihm und sieht weiter.
+        // Der Bildwinkel (horizontal, aus fov und Seitenverhältnis) — der des Sprechers, sonst der Welt-Kamera; vom
+        // Blickenden aus gemessen (die 3rd-Kamera steht hinter ihm und sieht weiter).
         const cam = this.state.camera;
         const fov = cam && Number.isFinite(cam.fov) ? cam.fov : 75;
         const asp = cam && Number.isFinite(cam.aspect) && cam.aspect > 0 ? cam.aspect : 16 / 9;
-        const tanH = Math.tan((fov * Math.PI) / 360) * asp;
+        const tanH = sprecher && blick.tanH > 0 ? blick.tanH : Math.tan((fov * Math.PI) / 360) * asp;
         // je Haus: vorn f (längs der Achse) und quer q (um die Mitte); die Mitte rückt um t vor, bis f + t − Reichweite
         // ≥ max(M, |q| / tanH) für jedes Haus gilt.
         let t = 0;
@@ -70441,8 +70470,8 @@ class AnazhRealm {
     }
     // spawnSettlement (unten) — der deliberate Siedlungs-Akt (Chat „dorf [seed] [n]" / Gate): Samen
     // Γ5-treu aus dem Welt-Seed-Stream (Suffix ":stadt", nie Math.random), Export vom Worker, Platzierung
-    // am ANKER über `_structureSpawnPos` (Footprint "haus_basis" aus KIND_SUBSTANCE): nie auf dem
-    // Spieler. Async — der Rückweg meldet ins Chat-Log.
+    // am ANKER, den der Plan selbst misst (`_siedlungsAnker`): vor dem Spieler, nie um ihn. Async — der Rückweg
+    // meldet ins Chat-Log.
 
     // Nach deliberate Dorf-Spawn: Spieler Richtung Häuser drehen + Bauten-Zeile.
     _nachDorfOrientieren(anchor, res) {
@@ -70553,7 +70582,10 @@ class AnazhRealm {
                 return null;
             }
             // der Ort aus dem Plan selbst: das Dorf liegt vor dem Spieler, nie um ihn (`_siedlungsAnker`)
-            const anchor = this._siedlungsAnker(plan, o.position || null);
+            const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);
+            // Ein Programm eines Mitspielers (`orientieren: false`) baut sein Dorf, wie es dort steht — es spricht den
+            // Empfänger nie mit „vor dir" an und dreht nie seinen Blick.
+            const eigen = o.orientieren !== false;
             const res = this._spawnSettlementFromExport(plan, anchor, { autonomous: !!o.autonomous });
             // DORF-ERLEBNIS — Wege/Platz/Brunnen + das Rebuild-Gedächtnis („d:<seed>"
             // im selben settlementCells-Pfad: die Wege-Streifen überleben den Reload).
@@ -70569,14 +70601,14 @@ class AnazhRealm {
                 `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert (${res.ersatz} am Ersatz-Ort), ${res.skipped} Slots übersprungen; Mitte ${Math.round(anchor.radius || 0)} m Radius.`,
                 "INFO"
             );
-            if (!o.autonomous)
+            if (!o.autonomous && eigen)
                 this._chatEcho?.(
                     res.placed > 0
                         ? `„${res.name || "Das Dorf"}" steht vor dir: ${res.placed} ${res.placed === 1 ? "Haus" : "Häuser"}.`
                         : "Hier findet kein Haus Grund — zu steil, zu nass oder verbaut. Versuch es an einem anderen Ort."
                 );
             // Konsum: Blick + Locator automatisch (Sonden starren sonst in die Schlucht)
-            this._nachDorfOrientieren?.(anchor, res);
+            if (eigen) this._nachDorfOrientieren?.(anchor, res);
             return res;
         });
     }
@@ -70921,9 +70953,6 @@ class AnazhRealm {
         if (!wm.settlementCells || typeof wm.settlementCells !== "object") wm.settlementCells = {};
         const key = i2.key || cx + "," + cz; // Zell-Infos tragen cx,cz — das Start-Dorf trägt "start"
         if (wm.settlementCells[key] || this._autoSettlementPendingKey) return Promise.resolve(null);
-        // Der Anker läuft durch den EINEN Spawn-Chokepoint (nie auf dem Spieler —
-        // relevant nur im Restore-nahe-einer-unbesiedelten-Zelle-Fall; fern = no-op).
-        const anchor = this._structureSpawnPos("haus_basis", { x: i2.x, y: 0, z: i2.z }, { state: st });
         this._autoSettlementPendingKey = key;
         return this._foundryRequestSettlement({
             seed: i2.seed,
@@ -70932,6 +70961,10 @@ class AnazhRealm {
         }).then((plan) => {
             this._autoSettlementPendingKey = null;
             if (!plan || !Array.isArray(plan.slots)) return null; // fail-closed (Foundry kalt)
+            // Der Anker misst den Plan selbst (`_siedlungsAnker`, die EINE Regel jedes Dorfs): nie um den Spieler —
+            // relevant nur im Restore-nahe-einer-unbesiedelten-Zelle-Fall, fern bleibt die Zelle, wie sie ist. Die
+            // Schätzung `_structureSpawnPos("haus_basis")` vor dem Plan ist gefallen (Gegenprüfung Runde 1).
+            const anchor = this._siedlungsAnker(plan, { x: i2.x, y: 0, z: i2.z });
             // Die Reservierung trägt das Rebuild-Gedächtnis {seed,nH,x,z}: Häuser/Brunnen persistieren als
             // architectures, die Wege (kein Save-Byte) baut `_tickAutoSettlement` nach Reload am Anker neu.
             // Alle Leser fragen nur Existenz (truthy).
