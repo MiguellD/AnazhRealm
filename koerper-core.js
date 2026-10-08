@@ -42,7 +42,9 @@
                     1: { tris: 40000, band: 8000, draws: 6, schatten: 1, ab: 40, wurf: { seh: ["haut", "stoff", "haar"] } },
                     // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m das Bild und wirft für beide Stufen (die
                     // feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil (Haut, Kleid,
-                    // Haar — nie die Augen). `hyst` = die Hysterese der Stufen-Grenze (±10 %).
+                    // Haar — nie die Augen). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 40 m ist eine KOSTEN-Grenze,
+                    // keine Pixel-Grenze: die Beine spreizen in 38 m noch ~10 px bei 720 p (Leben-Prüfung N-D7, 06.10.; bis S3
+                    // die Wirts-Konstante MENSCH_FERN_DIST_SQ).
                     hyst: 0.1,
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze tragen die Glieder-Kapseln im Welt-March
                     fernform: "gesetz",

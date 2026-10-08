@@ -44,7 +44,8 @@
                     1: { tris: 7000, band: 3000, draws: 5, schatten: 1, ab: 35, wurf: { seh: ["haar"] } },
                     // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m × Körpergröße das Bild und wirft für beide
                     // Stufen (die feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil
-                    // (das Fell: Leib, Ohren, Lider, Pfoten). `hyst` = die Hysterese der Stufen-Grenze (±10 %).
+                    // (das Fell: Leib, Ohren, Lider, Pfoten). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 35 m: der
+                    // Beinschwung ist dort ~2,7 px (die Grenze war bis S3 die Wirts-Konstante TIER_FERN_DIST_SQ).
                     hyst: 0.1,
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze tragen die Glieder-Kapseln im Welt-March
                     fernform: "gesetz",

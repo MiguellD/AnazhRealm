@@ -6946,11 +6946,11 @@ class AnazhRealm {
                 m.rotation.y += dg * k;
             }
             const sp = dt > 0 ? Math.hypot(m.position.x - x0, m.position.z - z0) / dt : 0;
-            // Kosten am Schirm: jenseits der Standbild-Schwelle der Welt-Tiere (TIER_FERN_DIST × Größe) ruht der Gang.
-            const fs = (m.scale && m.scale.x) || 1;
+            // Kosten am Schirm: die Kopie schaltet ihre Stufe am EINEN Schalter der Gelenk-Gestalt (`_gelenkStufe`, Grenze
+            // `ab` × Größe aus der Kern-Zeile) — jenseits trägt die Grobstufe das Bild und der Gang ruht.
             const ddx = pm ? m.position.x - pm.x : 0,
                 ddz = pm ? m.position.z - pm.z : 0;
-            if (m.userData && m.userData._tierBaum && ddx * ddx + ddz * ddz < AnazhRealm.TIER_FERN_DIST_SQ * fs * fs) {
+            if (m.userData && m.userData._tierBaum && !this._gelenkStufe(m, ddx * ddx + ddz * ddz)) {
                 const ud = m.userData;
                 ud.walkPhase = (ud.walkPhase || 0) + (sp > 0.1 ? (dt || 0) * 5.0 : 0);
                 this._animateCompoundMotion(m, null, t, ud.walkPhase, sp > 0.1, null);
@@ -22054,9 +22054,6 @@ class AnazhRealm {
         // Ferne Kreaturen rechnen die teure KI-Richtung seltener (Band-`aiDiv`), bewegen sich aber jeden
         // Frame glatt weiter; der Frame-Zähler staffelt die Neuberechnung (kein Sammel-Spike).
         const aiFrame = (this._creatureAiFrame = (this._creatureAiFrame || 0) + 1);
-        // Standbild-Schwelle als DISTANZ: EINE Wurzel pro Frame (die Anim-Raten-Leiter skaliert sie je
-        // Kreatur mit L; der wrap↔fern-Toggle liest das Quadrat — dieselbe Schwelle).
-        const tierFernDist = Math.sqrt(AnazhRealm.TIER_FERN_DIST_SQ);
         // SCHLUSS-WELLE — das EINE Verhaltens-Gesetz für den ganzen Tick
         // (memoisiert, fail-closed): Freude-Tempo/Hüpf-Höhen · Herde · Wasser.
         const VGL = AnazhRealm._verhaltenGesetz();
@@ -22349,8 +22346,9 @@ class AnazhRealm {
                     // ANIM-RATEN-LOD: walkPhase + creatureAnimationTime akkumulieren JEDEN Frame (Gang gleich schnell),
                     // ferne Wesen werten nur 1/2 · 1/4 aus ((aiFrame+i)-Stagger, kein Spike). Jenseits der Stufen-Grenze
                     // tickt nichts — die Gestalt friert EINMAL in der Stand-Pose ein (die Grobstufe trägt dieselben Knochen).
+                    // die Stufen-Grenze der Gestalt (`ab` aus der Kern-Zeile, `_gelenkGestalt`) × Größe — dieselbe wie der Schalter
                     const fLA = creature.scale.x || 1;
-                    const fernDist = tierFernDist * fLA;
+                    const fernDist = creature.userData._gelenk.abM * fLA;
                     const tBA = creature.userData._tierBaum;
                     const omegaGang = tBA && tBA._gang ? tBA._gang.omega : 0;
                     const animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, delta);
@@ -22403,7 +22401,7 @@ class AnazhRealm {
                 baseY = this._standSicht(creature.position.x, creature.position.z, terrainHeight, false);
                 if (!Number.isFinite(baseY)) baseY = terrainHeight;
                 const fLB = creature.scale.x || 1;
-                if (distToPlayer < tierFernDist * fLB * 0.5) {
+                if (distToPlayer < creature.userData._gelenk.abM * fLB * 0.5) {
                     const sp = this._creatureSlopeProben(creature, terrainHeight);
                     if (sp) {
                         baseY = sp.mitte;
@@ -99912,22 +99910,6 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
     }),
 });
 AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
-
-// Fern-Guss-Distanz (m, Körpergröße L=1): jenseits tauscht der animierte Baum (~235 Draws) gegen das
-// gemergte lod1-Standbild (~8 Draws). Als Quadrat (der Loop führt distSqToPlayer ohne sqrt).
-// 35 m: der Beinschwung ist dort ~2.7 px (Sichtbarkeits-Kante); skaliert mit der Körpergröße (fL).
-AnazhRealm.TIER_FERN_DIST_SQ = 35 * 35;
-// Hysterese des wrap↔fern-Toggles: ±10-%-Band — fern erst jenseits (1+h)·Grenze, zurück erst
-// innerhalb (1−h)·Grenze → kein Flackern; der Toggle schreibt NUR `visible`. EIN Leser: der
-// wrap↔fern-Chokepoint in updateCreatures (gate:tier-fern).
-AnazhRealm.TIER_FERN_HYST = 0.1;
-// Mensch-Fern-Guss (Peers): jenseits trägt die Menschen-Gestalt den gemergten lod1-Guss (wenige
-// Draws, kein Rig-Tick). 40 m ist eine KOSTEN-Grenze, keine Pixel-Grenze: gemessen 06.10. (Leben-Prüfung N-D7, echte
-// GPU) spreizen die Beine in 38 m noch 10,4–10,6 px bei 720 p (15,6 px bei 1080 p) — die „< 2,6 px" dieser Zeile
-// stimmten nie, unter 2,6 px fällt der Schwung erst jenseits ~150 m (720 p). Jenseits 44 m (Hysterese) gleitet ein
-// Peer als Standbild, bis die Grobstufe die Gang-Phase trägt (Mensch-L1, synthese W3c/W3g). Als Quadrat (distSq XZ);
-// EIN Leser: _menschFernToggle.
-AnazhRealm.MENSCH_FERN_DIST_SQ = 40 * 40;
 
 // HARVEST_VOLUME_TO_UNITS — Volumen→Material-Einheiten für harvestArchitecture: k=4 →
 // 1×1×1-Box = 4 Einheiten, 0.5³ → 1 (min 1).

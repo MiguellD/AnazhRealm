@@ -844,6 +844,11 @@ const FORBIDDEN = [
     // Schreiber (updateCreatures, der Mensch-Toggle, die Werkstatt Tier + Mensch); die Fern-Wraps und ihr Leser fallen.
     { token: "_menschFern", fiel: "S3 kreatur — die Gelenk-Gestalt (_gelenk) und der EINE Schalter _gelenkStufe" },
     { token: "wrap3", fiel: "S3 kreatur — beide Stufen unter EINEM Wrap (_gelenkGestalt)" },
+    // S3 kreatur: die Stufen-Grenze lebt im Kern (lod.budget.kreatur/koerper[1].ab, hyst der Art) — die Gestalt liest sie
+    // beim Bau (`_gelenkGestalt` → `_gelenk.abM`), jeder Leser fragt die Gestalt; die Wirts-Distanzen fallen.
+    { token: "TIER_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.kreatur[1].ab (_gelenk.abM)" },
+    { token: "TIER_FERN_HYST", fiel: "S3 kreatur — die Hysterese ist lod.budget.kreatur.hyst (_gelenk.hyst)" },
+    { token: "MENSCH_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.koerper[1].ab (_gelenk.abM)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

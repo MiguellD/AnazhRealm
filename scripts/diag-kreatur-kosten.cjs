@@ -191,7 +191,8 @@ const server = http.createServer((req, res) => {
             const p0 = spawnAt(30, 0); // Platzhalter-Position; das Pinnen setzt die Wahrheit
             if (!p0) return { error: "Spawn fehlgeschlagen" };
             const fL = p0.scale.x || 1;
-            const fern = Math.sqrt(A.TIER_FERN_DIST_SQ) * fL;
+            // die Stufen-Grenze aus der Kern-Zeile (`ab` × Größe, S3) — dieselbe, die der Schalter liest
+            const fern = window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur[1].ab * fL;
             o.fernDist = fern;
             const dists = { voll: 0.4 * fern, halb: 0.6 * fern, viertel: 0.83 * fern, hinter: 1.25 * fern };
             const winkel = { voll: 0, halb: Math.PI / 2, viertel: Math.PI, hinter: -Math.PI / 2 };

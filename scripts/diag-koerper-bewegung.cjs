@@ -345,7 +345,7 @@ const server = http.createServer((req, res) => {
                 const steig = Math.tan(Math.PI / 6); // 30°
                 // 200 m über jeder Boden-Karte: der Stand-Leser der Sicht (_standSicht) trägt dort das Gesetz der Ebene
                 const ebene = (x, z) => 210 + (z - pm.z) * steig;
-                const dist = Math.sqrt(A.TIER_FERN_DIST_SQ) * 0.3; // sicher in der Voll-Zone
+                const dist = window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur[1].ab * 0.3; // sicher in der Voll-Zone
                 const cx = pm.x + dist,
                     cz = pm.z;
                 const c = r.spawnCreatureAt(cx, 30, cz, "happy", "wesen", { precise: true, bodySize: 1 });
