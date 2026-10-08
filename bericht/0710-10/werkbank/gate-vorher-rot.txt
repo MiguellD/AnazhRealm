@@ -1,0 +1,38 @@
+=== DER BRENNGLAS-TAKT UND SEINE KLASSE — der Takt kostet, was ihn betrifft (Null-Renderer, eine echte Welt) ===
+  Bühne: 4 Brenngläser (start_plattform, brunnen_dorf, brennkolben, reittier_holzross), 12 Körper im Brennpunkt des Mittags, 84 brennbare Arten · Bestand 120
+  Tag: 110 Schritte · erwärmt 303, geglimmt 17, gezündet 11, gekühlt 70 · Abweichungen 0 · Abriss eines warmen Eintrags (marktstand_dorf#56) · neues Array (1 warm) · 4 neue Ziele im Brennpunkt des Nachmittags
+    Morgen      erwärmt 136, gekühlt 0, geglimmt 10, gezündet 0 · angefasst je Takt 106.0 (betroffen 22.8)
+    Mittag      erwärmt 94, gekühlt 0, geglimmt 2, gezündet 10 · angefasst je Takt 101.8 (betroffen 30.8)
+    Wolken      erwärmt 0, gekühlt 10, geglimmt 0, gezündet 0 · angefasst je Takt 95.0 (betroffen 1.0)
+    Mittag II   erwärmt 17, gekühlt 0, geglimmt 1, gezündet 1 · angefasst je Takt 94.7 (betroffen 23.7)
+    Nachmittag  erwärmt 48, gekühlt 0, geglimmt 4, gezündet 0 · angefasst je Takt 98.0 (betroffen 27.0)
+    Abend       erwärmt 8, gekühlt 32, geglimmt 0, gezündet 0 · angefasst je Takt 98.0 (betroffen 8.6)
+    Nacht       erwärmt 0, gekühlt 28, geglimmt 0, gezündet 0 · angefasst je Takt 98.0 (betroffen 1.4)
+  Arbeit je Brennglas-Takt: angefasst 98.8 · betroffen 17.2 · Bestand 98.8
+  Verzeichnis nach dem Tag     0 Namen, 0 Mitglieder · Fehler 1
+  Verzeichnis Spawn (Dorf)     0 Namen, 0 Mitglieder · Fehler 1
+  Verzeichnis Abriss           0 Namen, 0 Mitglieder · Fehler 1
+  Verzeichnis Tor gesetzt      0 Namen, 0 Mitglieder · Fehler 1
+  Verzeichnis Tor nachgezogen  0 Namen, 0 Mitglieder · Fehler 1
+  Verzeichnis neues Array      0 Namen, 0 Mitglieder · Fehler 1
+  Tor: {"klon":true,"eintraege":2,"vorher":2,"nachher":2}
+  Resonanz: 300 Proben, je Probe 3.2 Kandidaten (1.3 in Reichweite, Bestand 120) · Abweichungen 0
+  Dorf-Rauch: 38 Quellen, gleich true
+
+ROT:
+  • (A) ARBEIT: in 110 von 110 Takten fasste der Brennglas-Takt mehr an als die Betroffenen — Morgen sunny: angefasst 106, betroffen 0 (Bestand 99) — Rufer _tickFocusingAffordances
+  • (V) VERZEICHNIS nach dem Tag: das Spiel kennt kein Verzeichnis (`_blockerMit`)
+  • (V) VERZEICHNIS Spawn (Dorf): das Spiel kennt kein Verzeichnis (`_blockerMit`)
+  • (V) VERZEICHNIS Abriss: das Spiel kennt kein Verzeichnis (`_blockerMit`)
+  • (V) VERZEICHNIS Tor gesetzt: das Spiel kennt kein Verzeichnis (`_blockerMit`)
+  • (V) VERZEICHNIS Tor nachgezogen: das Spiel kennt kein Verzeichnis (`_blockerMit`)
+  • (V) VERZEICHNIS neues Array: das Spiel kennt kein Verzeichnis (`_blockerMit`)
+  • (Q) QUELLE: tickPlayerBoosts Zeile 46009: läuft über den Bestand — for(constentryofthis.state.architectures){if(!entry||!entry.position)c
+  • (Q) QUELLE: setBlueprintAsPortal Zeile 47156: schreibt .affordances ohne Stempel (`_blockerNetzSetzen`)
+  • (Q) QUELLE: _updateDorfRauch Zeile 51820: läuft über den Bestand — for(leti=0;i<archs.length;i++){conste=archs[i];if(!e||!e.position)cont
+  • (Q) QUELLE: _findNearestAffordanceEntry Zeile 52973: läuft über den Bestand — for(constentryofthis.state.architectures||[]){if(!entry.affordances||!
+  • (Q) QUELLE: _tickFocusingAffordances Zeile 53933: läuft über den Bestand — for(consttargetofarchs){constwarm=target.heatBuildup>0;if(!warm&&!punk
+  • (Q) QUELLE: _tickRadiatingAffordances Zeile 54040: läuft über den Bestand — (this.state.architectures||[]).filter((e)=>e.affordances&&e.affordance
+  • (Q) QUELLE: _tickRadiatingAffordances Zeile 54050: läuft über den Bestand — (this.state.architectures||[]).filter((e)=>e.affordances&&e.affordance
+  • (Q) QUELLE: _tickBalancingAffordances Zeile 54097: läuft über den Bestand — (this.state.architectures||[]).filter((e)=>e.affordances&&e.affordance
+  • (Q) QUELLE: _tickLiftingAffordances Zeile 54129: läuft über den Bestand — (this.state.architectures||[]).filter((e)=>e.affordances&&e.affordance

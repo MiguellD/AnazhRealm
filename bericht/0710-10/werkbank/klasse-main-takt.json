@@ -1,0 +1,86 @@
+{
+ "takte": 600,
+ "p50": 1.6,
+ "p95": 3.5,
+ "max": 16.1,
+ "restMittel": 0.18,
+ "buehneMittel": 0.2,
+ "top": [
+  {
+   "name": "tickAffordances",
+   "mittel": 0.65,
+   "max": 1.8
+  },
+  {
+   "name": "_tickFocusingAffordances",
+   "mittel": 0.34,
+   "max": 1.2
+  },
+  {
+   "name": "_loopWeatherAndGrowth",
+   "mittel": 0.29,
+   "max": 1
+  },
+  {
+   "name": "_updateDorfRauch",
+   "mittel": 0.19,
+   "max": 2.5
+  },
+  {
+   "name": "_loopVoxelStreaming",
+   "mittel": 0.17,
+   "max": 4.9
+  },
+  {
+   "name": "tickPlayerBoosts",
+   "mittel": 0.16,
+   "max": 9.2
+  },
+  {
+   "name": "_loopFixedStep",
+   "mittel": 0.1,
+   "max": 0.4
+  },
+  {
+   "name": "_tickRadiatingAffordances",
+   "mittel": 0.08,
+   "max": 0.4
+  },
+  {
+   "name": "_tickBalancingAffordances",
+   "mittel": 0.08,
+   "max": 0.3
+  },
+  {
+   "name": "_tickLiftingAffordances",
+   "mittel": 0.08,
+   "max": 0.8
+  },
+  {
+   "name": "_loopCamera",
+   "mittel": 0.07,
+   "max": 0.2
+  },
+  {
+   "name": "_tickPortalAffordance",
+   "mittel": 0.07,
+   "max": 0.2
+  },
+  {
+   "name": "_findNearestAffordanceEntry",
+   "mittel": 0.06,
+   "max": 0.2
+  },
+  {
+   "name": "updateStatusPanel",
+   "mittel": 0.04,
+   "max": 1.6
+  },
+  {
+   "name": "tickArchitectures",
+   "mittel": 0.04,
+   "max": 0.2
+  }
+ ],
+ "ms": 11410
+}

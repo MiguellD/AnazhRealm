@@ -1,0 +1,17 @@
+{
+ "ergebnis": {
+  "takte": 600,
+  "bestandJeTakt": 1578,
+  "glaeserJeTakt": 1,
+  "punkteJeTakt": 1,
+  "tagsJeTakt": 0,
+  "traegtJeTakt": 0,
+  "wetter": "sunny",
+  "sonne": {
+   "x": 5.892084659582815e-17,
+   "y": 0.9622504486493761,
+   "z": 0.2721655269759086
+  }
+ },
+ "ms": 2
+}
