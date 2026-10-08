@@ -70710,11 +70710,15 @@ class AnazhRealm {
     // am ANKER über `_structureSpawnPos` (Footprint "haus_basis" aus KIND_SUBSTANCE): nie auf dem
     // Spieler. Async — der Rückweg meldet ins Chat-Log.
 
-    // WER VERLANGT? Die DSL-Quelle eines Akts (`ctx.source`): der Spieler selbst ist „human" (sein Chat, seine Werkzeuge,
-    // der Befehl „dorf") und der Begleiter, der seinen Satz ausführt („llm:<name>"); Nexus, Welt-Regeln, Resonanz und
-    // Mitspieler („remote-…") handeln für die Welt, nicht für ihn.
+    // WER VERLANGT? Die DSL-Quelle eines Akts (`ctx.source`): der Spieler selbst — „human" (sein Chat, der Befehl „dorf"),
+    // seine Werkzeuge (`AnazhRealm.SPIELER_QUELLEN`: die Fähigkeit per Taste „ability:<name>", das Wirken „capability:<key>",
+    // der Verzehr „consume:<bauplan>") — und der Begleiter, der seinen Satz ausführt („llm:<name>"); Nexus, Welt-Regeln,
+    // Resonanz und Mitspieler („remote-…") handeln für die Welt, nicht für ihn.
     _spielerVerlangt(quelle) {
-        return quelle === "human" || (typeof quelle === "string" && quelle.startsWith("llm:"));
+        if (quelle === "human") return true;
+        if (typeof quelle !== "string") return false;
+        for (const vor of AnazhRealm.SPIELER_QUELLEN) if (quelle.startsWith(vor)) return true;
+        return false;
     }
 
     // Nach einem Dorf-Spawn: hat der SPIELER das Dorf verlangt (`verlangt`, die Quelle des Akts), schaut er auf die Mitte
@@ -99635,6 +99639,9 @@ AnazhRealm.SOVEREIGN_ACTIONS = Object.freeze([
 // Schreiber (`_setWeather`). Nicht hier: Definitionen (define_* · set_*_role · register_tool …), Erzählung (say ·
 // record_narrative) und Kontrollfluss — sie verändern keine gemessene Welt. gate:weltakt-wache hält den Pool des Nexus
 // (`dslComposeAtomic`) in dieser Liste.
+// DIE QUELLEN DES SPIELERS (`_spielerVerlangt`, neben „human"): der Begleiter, der seinen Satz ausführt, und seine Werkzeuge —
+// die Fähigkeit per Taste, das Wirken, der Verzehr (gate:settlement C7).
+AnazhRealm.SPIELER_QUELLEN = Object.freeze(["llm:", "ability:", "capability:", "consume:"]);
 AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "spawn_creature",
     "spawn_tree",

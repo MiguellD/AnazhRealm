@@ -734,6 +734,19 @@ const FIXTURES = [
                         const muster = r.chatSystemPatterns.find((q) => q.re.test("dorf 4714 8"));
                         muster.run("dorf 4714 8".match(muster.re), () => {});
                     }),
+                    // die Werkzeuge des Spielers (0710-8): Fähigkeit per Taste, Wirken, Verzehr — und ein Mitspieler (für die Welt)
+                    faehigkeit: await probe(-1800, 600, () =>
+                        r.dslRun(["spawn_village", ["at_player"], 4715], { source: "ability:dorfruf" })
+                    ),
+                    wirken: await probe(1800, -600, () =>
+                        r.dslRun(["spawn_village", ["at_player"], 4716], { source: "capability:dorf" })
+                    ),
+                    verzehr: await probe(-1800, -600, () =>
+                        r.dslRun(["spawn_village", ["at_player"], 4717], { source: "consume:dorfsamen" })
+                    ),
+                    mitspieler: await probe(600, 1800, () =>
+                        r.dslRun(["spawn_village", ["at_player"], 4718], { source: "remote-peer" })
+                    ),
                 };
                 r.spawnSettlement = orig;
             } catch (e7) {
@@ -846,6 +859,17 @@ const FIXTURES = [
             bl.spieler.nebenDorf < 0.05 &&
             bl.chat.nebenDorf < 0.05,
         `Chat-Programm: ${blZ(bl.spieler)} · dorf: ${blZ(bl.chat)}`
+    );
+    const werkzeug = ["faehigkeit", "wirken", "verzehr"];
+    check(
+        "C7: ein Dorf aus einem Werkzeug des Spielers (Fähigkeit ability:, Wirken capability:, Verzehr consume:) schaut auf SEIN Dorf (0710-8)",
+        werkzeug.every((k) => !!bl[k] && bl[k].haeuser > 0 && bl[k].nebenDorf < 0.05),
+        werkzeug.map((k) => `${k}: ${blZ(bl[k])}`).join(" · ")
+    );
+    check(
+        "C7: ein Dorf eines Mitspielers (remote-…) lässt den Blick stehen — er handelt für die Welt",
+        !!bl.mitspieler && bl.mitspieler.haeuser > 0 && bl.mitspieler.gedreht < 1e-6,
+        `Mitspieler: ${blZ(bl.mitspieler)}`
     );
     const ring = c.ring || {};
     check(
