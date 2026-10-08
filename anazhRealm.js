@@ -2217,7 +2217,13 @@ class AnazhRealm {
                 // die Größe aus dem Siedlungs-Gesetz (fachwerk SIEDLUNG) — das Stamm-Literal 9 fiel (Karte Dorf/Stadt
                 // DEFEKT 4: zwei Chat-Wege mit zwei Größen-Wahrheiten); `spawnSettlement` liest das Gesetz NACH der
                 // Buch-Ankunft (bei kaltem Buch fiel die Größe sonst still auf den Kern-Default)
-                this.spawnSettlement({ position: pos, seed: s, nHAusGesetz: true, autonomous: ctx.source === "nexus" });
+                this.spawnSettlement({
+                    position: pos,
+                    seed: s,
+                    nHAusGesetz: true,
+                    autonomous: ctx.source === "nexus",
+                    verlangt: ctx.source,
+                });
                 ctx.log.push({ event: "spawned_village", id: null, pos, seed: s });
             },
             // AUSLÖSCHUNGS-WELLE — der TEMPEL ist die klassische PORTIKUS-Kultur des
@@ -24271,7 +24277,7 @@ class AnazhRealm {
                 example: "dorf [seed] [häuser]",
                 re: /^dorf(?:\s+(\d+))?(?:\s+(\d+))?$/i,
                 run: (m, append) => {
-                    const opts = {};
+                    const opts = { verlangt: "human" };
                     if (m[1] !== undefined) opts.seed = Number(m[1]);
                     if (m[2] !== undefined) opts.nH = Number(m[2]);
                     this.spawnSettlement(opts);
@@ -70391,42 +70397,52 @@ class AnazhRealm {
         }
     }
     _spawnSettlementFromExport(plan, origin, so) {
-        if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0 };
+        if (!plan || !Array.isArray(plan.slots) || !origin) return { placed: 0, skipped: 0, mitte: null };
         const f = this._foundry;
         let placed = 0;
         let skipped = 0;
+        let mx = 0;
+        let mz = 0;
         for (const slot of plan.slots) {
-            if (this._spawnSettlementSlot(slot, origin, f, so)) placed++;
-            else skipped++;
+            if (this._spawnSettlementSlot(slot, origin, f, so)) {
+                placed++;
+                mx += origin.x + slot.x; // das Haus steht am Anker + seinem Slot (`_spawnSettlementSlot`)
+                mz += origin.z + slot.z;
+            } else skipped++;
         }
-        return { placed, skipped, name: plan.name || null, groesse: plan.groesse || null };
+        // die Mitte der gesetzten Häuser — dorthin schaut, wer das Dorf verlangt hat (`_nachDorfOrientieren`)
+        const mitte = placed ? { x: mx / placed, z: mz / placed } : null;
+        return { placed, skipped, name: plan.name || null, groesse: plan.groesse || null, mitte };
     }
-    // spawnSettlement (unten) — der deliberate Siedlungs-Akt (Chat „dorf [seed] [n]" / Gate): Samen
+    // spawnSettlement (unten) — der Siedlungs-Akt (Chat „dorf [seed] [n]", DSL `spawn_village` je Quelle, Gate): Samen
     // Γ5-treu aus dem Welt-Seed-Stream (Suffix ":stadt", nie Math.random), Export vom Worker, Platzierung
     // am ANKER über `_structureSpawnPos` (Footprint "haus_basis" aus KIND_SUBSTANCE): nie auf dem
     // Spieler. Async — der Rückweg meldet ins Chat-Log.
 
-    // Nach deliberate Dorf-Spawn: Spieler Richtung Häuser drehen + Bauten-Zeile.
-    _nachDorfOrientieren(anchor, res) {
+    // WER VERLANGT? Die DSL-Quelle eines Akts (`ctx.source`): der Spieler selbst ist „human" (sein Chat, seine Werkzeuge,
+    // der Befehl „dorf") und der Begleiter, der seinen Satz ausführt („llm:<name>"); Nexus, Welt-Regeln, Resonanz und
+    // Mitspieler („remote-…") handeln für die Welt, nicht für ihn.
+    _spielerVerlangt(quelle) {
+        return quelle === "human" || (typeof quelle === "string" && quelle.startsWith("llm:"));
+    }
+
+    // Nach einem Dorf-Spawn: hat der SPIELER das Dorf verlangt (`verlangt`, die Quelle des Akts), schaut er auf die Mitte
+    // DIESES Dorfs (`res.mitte`, die gesetzten Häuser; ohne sie der Anker) — ein Nexus- oder Welt-Dorf lässt seinen Blick
+    // stehen (OMEN 0710-6, Boot 4B: ein Nexus-Dorf drehte die Gier mitten im Lauf auf −2,745; und der Blick zielte auf den
+    // Schwerpunkt ALLER Häuser der Welt, gate:settlement C7). Dazu die Bauten-Zeile und das nächste Haus sofort gemesht.
+    _nachDorfOrientieren(anchor, res, verlangt) {
         try {
             const list = (this.state && this.state.architectures) || [];
             const houses = list.filter(
                 (e) => e && e.position && typeof e.type === "string" && e.type.startsWith("haus_")
             );
             const pm = this.state && this.state.playerMesh;
-            if (pm && houses.length) {
-                let cx = 0,
-                    cz = 0;
-                for (const h of houses) {
-                    cx += h.position.x;
-                    cz += h.position.z;
-                }
-                cx /= houses.length;
-                cz /= houses.length;
-                const dx = cx - pm.position.x;
-                const dz = cz - pm.position.z;
+            const ziel = res && res.mitte ? res.mitte : anchor;
+            if (pm && ziel && this._spielerVerlangt(verlangt)) {
+                const dx = ziel.x - pm.position.x;
+                const dz = ziel.z - pm.position.z;
                 if (Math.hypot(dx, dz) > 0.5) {
-                    // der Blick zu den Häusern (die Umkehrung der EINEN Vorwärts-Richtung)
+                    // der Blick zum Dorf (die Umkehrung der EINEN Vorwärts-Richtung)
                     this.state.yaw = this._blickGierZu(dx, dz);
                 }
             }
@@ -70526,8 +70542,8 @@ class AnazhRealm {
             const msg = `Siedlung „${res.name || "?"}" (${res.groesse || "?"}, Seed ${seed}): ${res.placed} Häuser platziert, ${res.skipped} Slots übersprungen.`;
             this.log(msg, "INFO");
             this._chatEcho?.(msg);
-            // Konsum: Blick + Locator automatisch (Sonden starren sonst in die Schlucht)
-            this._nachDorfOrientieren?.(anchor, res);
+            // Konsum: Blick (nur für den, der das Dorf verlangt hat) + Locator automatisch
+            this._nachDorfOrientieren(anchor, res, o.verlangt);
             return res;
         });
     }
