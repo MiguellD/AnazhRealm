@@ -223,6 +223,27 @@ function steckbriefUrteil(atlas, breit, nadel, gross, weide) {
     }
     return v;
 }
+// DIE GESTALTEN-WAND (S3 08.10., Studio-Vertrag B2c `gestalten`): V Gestalten je Art sind V verschiedene Individuen —
+// die Welt zieht je Gestalt einen eigenen Körper (`_foundryVariantFor`, je Gestalt × Stufe × Teil ein Leaf und ein Befehl).
+// Ein Rezept, dessen Bau den Samen nicht liest, trägt mit V ≥ 2 byte-gleiche Zwillinge als eigene Leaves (Genesis: zwei
+// Drachentore = zwei Leaves, 43 Befehle, 8,67 MB). Die Wand baut je Art und Rezept mit V ≥ 2 die Samen 1 und 2 über die
+// echte Brücke (die erste gelieferte Gitter-Stufe, der EINE Bau-Fingerabdruck `bauAbdruck`) — gleicher Abdruck ist ROT
+// beim Namen. Eine Seed-Achse zu schaffen ist ein Re-Mint-Akt des Kerns, nie eine Zahl in der Zeile.
+const SELBST_GESTALT = "drachentor"; // der Selbsttest: porta-Rezept, seed-invariant, mit V 2 MUSS es rot werden
+function gestaltenV(gestalten, preset) {
+    const V = Number.isInteger(gestalten[preset]) && gestalten[preset] >= 1 ? gestalten[preset] : gestalten["*"];
+    return Number.isInteger(V) && V >= 1 ? V : 0;
+}
+function gestaltenUrteil(abdruecke, gestalten, kernVon) {
+    const v = [];
+    for (const [preset, a] of Object.entries(abdruecke)) {
+        if (gestaltenV(gestalten, preset) < 2) continue;
+        if (!a.h1 || !a.h2) v.push(`Gestalten: ${kernVon(preset)}-Rezept ${preset} ohne Abdruck für Same 1/2`);
+        else if (a.h1 === a.h2) v.push(`Gestalten-Lüge: ${kernVon(preset)}-Rezept ${preset}`);
+    }
+    return v;
+}
+
 // Die Bild-Deckung eines Paars: L1 gegen L0 auf demselben Raster (Pixel-Kante = L0-Höhe / 300).
 function deckungsWert(p, atlas) {
     const px = p.H / 300;
@@ -261,7 +282,8 @@ function deckungsUrteil(paare, band, atlas) {
     const schwebeMess = [];
     let schwebeProbe = null;
     const sehProben = [];
-    await runWithWorker(PORT, async ({ build, kostenListe, getData, atlas, atlasAlpha, karte, probeLauf }) => {
+    let gestaltWand = null;
+    await runWithWorker(PORT, async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, karte, probeLauf }) => {
         // Daten-Kanäle gegen die eingefrorenen JSONs.
         // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
         // in EINEM Reply; die eingefrorenen JSONs (recipes/world-params/render-config)
@@ -414,6 +436,25 @@ function deckungsUrteil(paare, band, atlas) {
         }
         const weltK = welt.length ? await kostenListe(welt) : [];
         welt.forEach((c, i) => miss(c, weltK[i], `${c.presetId}-s${c.seed}-L${c.lod}`));
+        // DIE GESTALTEN-WAND: je Art und Rezept mit V ≥ 2 (und das Selbsttest-Rezept) die Samen 1 und 2 an der ersten
+        // gelieferten Gitter-Stufe — der Bau-Fingerabdruck über die echte Brücke.
+        const gPaare = [];
+        for (const preset of alle) {
+            const kind = artVon(preset);
+            if (gestaltenV(gestalten, preset) < 2 && preset !== SELBST_GESTALT) continue;
+            const lod = stufen[kind].find((l) => !(budget[kind][l] && budget[kind][l].karte));
+            if (lod === undefined) continue;
+            for (const seed of [1, 2]) gPaare.push({ presetId: preset, seed, lod, season: "summer" });
+        }
+        const gH = gPaare.length ? await bauHashListe(gPaare) : [];
+        const abdruecke = {};
+        gPaare.forEach((c, i) => {
+            const a = abdruecke[c.presetId] || (abdruecke[c.presetId] = { lod: c.lod, h1: null, h2: null });
+            a["h" + c.seed] = gH[i] && gH[i].teile > 0 ? gH[i].hash : null;
+        });
+        const kernVon = (preset) => kernVonArt[artVon(preset)] || "phyto";
+        gestaltWand = { abdruecke, gestalten, kernVon, zweitBauten: welt.length };
+        fails.push(...gestaltenUrteil(abdruecke, gestalten, kernVon));
         // JEDE GESTALT DER WELT (W5): der Host baut je Art die Samen 1..V (budget.gestalten, '*' ohne eigene Zeile,
         // _foundryVariantFor) — die Wand misst, was die Welt liefert, nicht nur die eingefrorenen Samen. Die Zweit-Kerne
         // zählt der Zug oben (ihre Gestalten aus IHREM Gesetzbuch, in der Seite gezählt).
@@ -633,6 +674,36 @@ function deckungsUrteil(paare, band, atlas) {
         if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6 || !s7 || !s8 || !s9 || !s10 || !s11 || !s12 || !s13)
             fails.push("Selbsttest der Budget-Wand feuert nicht");
     }
+
+    // DIE GESTALTEN-WAND — die Zeile und ihr Selbsttest: (14) das Selbsttest-Rezept mit V 2 MUSS als Lüge rot werden;
+    // (15) wenigstens eine geprüfte Art zeigt zwei Abdrücke (die Wand ist nicht blind rot).
+    if (gestaltWand) {
+        const G = gestaltWand;
+        const luegen = gestaltenUrteil(G.abdruecke, G.gestalten, G.kernVon);
+        const geprueft = Object.keys(G.abdruecke).filter((p) => gestaltenV(G.gestalten, p) >= 2);
+        const jeKern = {};
+        for (const p of geprueft) jeKern[G.kernVon(p)] = (jeKern[G.kernVon(p)] || 0) + 1;
+        console.log(
+            `Gestalten-Wand: ${geprueft.length} Arten/Rezepte mit V ≥ 2 (Same 1 ≠ 2; ` +
+                Object.entries(jeKern)
+                    .map(([k, n]) => `${k} ${n}`)
+                    .join(" · ") +
+                `) · Lügen ${luegen.length}` +
+                (luegen.length ? ` (${luegen.map((x) => x.replace(/^Gestalten-Lüge: /, "")).join(", ")})` : "") +
+                ` · Zweit-Kern-Zug ${G.zweitBauten} Bauten`
+        );
+        const zwei = Object.assign({}, G.gestalten, { [SELBST_GESTALT]: 2 });
+        const s14 =
+            !!G.abdruecke[SELBST_GESTALT] &&
+            gestaltenUrteil(G.abdruecke, zwei, G.kernVon).includes(
+                `Gestalten-Lüge: ${G.kernVon(SELBST_GESTALT)}-Rezept ${SELBST_GESTALT}`
+            );
+        const s15 = geprueft.some((p) => G.abdruecke[p].h1 && G.abdruecke[p].h2 && G.abdruecke[p].h1 !== G.abdruecke[p].h2);
+        console.log(
+            `Selbsttest Gestalten-Wand: ${SELBST_GESTALT} mit V 2 wird rot ${s14 ? "✅" : "❌"} · zwei Abdrücke gesehen ${s15 ? "✅" : "❌"}`
+        );
+        if (!s14 || !s15) fails.push("Selbsttest der Gestalten-Wand feuert nicht");
+    } else fails.push("Gestalten-Wand lief nicht");
 
     // DER KARTEN-RUNDLAUF (W6) — das Urteil je Fall, dann der Selbsttest (die gestörte Schicht MUSS rot werden, die
     // Box-Mip der GPU MUSS die Deckungs-Wand sprengen — sonst misst die Linse nichts).

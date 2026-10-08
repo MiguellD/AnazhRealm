@@ -121,7 +121,13 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 - `gestalten` (je Rezept, ganze Zahl ≥ 1): wie viele Individuen (Samen 1..V) die Welt von einem Rezept
   trägt (`_foundryVariantFor`). Der Haupt-Kern trägt dazu die `'*'`-Zeile (jede Pflanzen-/Fels-Art ohne
   eigene Zeile); ein Zweit-Kern zählt JEDES eigene Rezept selbst, kein fremdes, keine `'*'`-Zeile (W8:
-  das Wirts-16 gehört dem Gesetzbuch).
+  das Wirts-16 gehört dem Gesetzbuch). **V Gestalten sind V verschiedene Individuen (S3, 08.10.):** ein Rezept, dessen
+  Bau den Samen nicht liest (seed-invariant), zählt EINE Gestalt — mehr nur mit bewiesener Seed-Achse; eine Achse zu
+  schaffen ist ein Re-Mint-Akt des Kerns, nie eine Zahl in der Zeile. Die Wand: `gate:asset-contract` baut je Art und
+  Rezept mit V ≥ 2 die Samen 1 und 2 über die echte Brücke und nennt gleiche Bau-Abdrücke beim Namen
+  („Gestalten-Lüge: porta-Rezept drachentor“; Selbsttest: drachentor mit V 2 MUSS rot werden). Gemessen 08.10.: porta
+  7 · schmiede 21 · tetrapoda 4 · koerper 1 waren seed-invariant und zählen 1; fachwerk (Haus 16, Ausstattung 2/3/2)
+  und vehicle 16 tragen eine echte Achse (vehicle: der Lack je Same, Same 1 Lack 031107 ↔ Same 2 777d84 metallisch).
 - **Das Budget-Gesetz (W8, phyto-core `budgetErzwingen`):** der EINE Ausgang jeder Zweit-Kern-Gestalt —
   die Brücke (`__replyBuildAsset`) UND der Sync-Guss des Wirts-Ofens (`_ofenBudget`, Tier + Mensch)
   falten eine Stufe über `draws` auf ihre Zeile: Stoffe (der Wirts-Material-Schlüssel `budgetStoff`; die

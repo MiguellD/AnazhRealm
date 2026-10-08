@@ -33,8 +33,10 @@
     // starren Stoffe je Bindungs-Klasse (Haut und Fell-Schale bleiben) und Seh-Klasse (TIER_MATERIAL_KLASSEN.seh:
     // das glimmende Auge · Hornhaut/Pupille · Nase/Ballen · Fell · Klaue/Zahn bleiben getrennt — L1 5 ist das
     // gemessene Minimum); schatten = die werfende Stufe.
-    // gestalten = Individuen je Gattung (das bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
-    var GESTALTEN_JE_REZEPT = 16;
+    // gestalten = Individuen je Gattung (gefüllt je Rezept unten bei PRESETS): EINE — der Guss ist seed-invariant
+    // (Same 1 ≡ 2 byte-gleich, 4/4, L0 und L1), 16 Gestalten waren 16 byte-gleiche Zwillinge. Eine Seed-Achse ist ein
+    // Re-Mint-Akt, nie eine Zahl hier (S3 08.10., gate:asset-contract Gestalten-Wand).
+    var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
             kindStages: { kreatur: [0, 1] },
