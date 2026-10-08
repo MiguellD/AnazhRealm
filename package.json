@@ -85,6 +85,7 @@
         "gate:sicht-arbeit": "node scripts/diag-sicht-arbeit.cjs --selftest && node scripts/diag-sicht-arbeit.cjs",
         "gate:wetter-wache": "node scripts/diag-wetter-wache.cjs --selftest && node scripts/diag-wetter-wache.cjs",
         "gate:weltakt-wache": "node scripts/diag-weltakt-wache.cjs --selftest && node scripts/diag-weltakt-wache.cjs",
+        "gate:blocker-netz": "node scripts/diag-blocker-netz.cjs",
         "gate:messfolge": "node scripts/omen-messfolge.cjs --selbsttest",
         "gate:stand-takt": "node scripts/diag-stand-takt.cjs --selftest && node scripts/diag-stand-takt.cjs",
         "gate:start-rezept": "node scripts/diag-start-rezept.cjs --selftest && node scripts/diag-start-rezept.cjs",
