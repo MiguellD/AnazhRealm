@@ -1,6 +1,6 @@
 # Bericht 0710-4 + 0710-5 — die Impuls-Klasse ganz, der Stoß im Sim-Schritt, der Reiter im Wagen
 
-**Kopf:** `welle-m-impuls` **f3240335** (auf `welle-m-fahren` 7f97d339) · OMEN · headless (Null-Renderer) + Bilder am echten Renderer
+**Kopf:** `welle-m-impuls` **35ba704c** (auf `welle-m-fahren` 7f97d339) · OMEN · headless (Null-Renderer) + Bilder am echten Renderer
 (GTX 1060, Ausgabe-Pfad der Werkbank)
 
 | Commit | Inhalt |
@@ -11,6 +11,7 @@
 | f8a539c6 | Klasse 4: der Reiter IM Wagen (Wirt + additive FAHR-Zeilen), Linse L9 |
 | b7573745 | Klasse 4, Nachschnitt nach dem Auge: Füße über dem Bauch, Knie zur Mitte; L9 misst die Haut gegen Hülle und gezeichnete Haut |
 | f3240335 | 0710-5, Nachschnitt nach dem Abgleich mit integ-probe: der gestoßene Schwimmer bleibt an seiner Linie; Sitzen aus dem Wasser |
+| 35ba704c | Klasse ganz (dein Auftrag): auch die Höhe des gestoßenen Schwimmers lebt im Sim-Schritt — L8 + Schwimmer: Höhe 0,127 → 0 m zwischen 60 fps und gemischten Frames |
 
 ## Geschnitten
 
@@ -62,7 +63,8 @@
 | L9 Lehne | 0° | 60,6° · 63,9° · 36,3° · 32,5° · 7,4° |
 | L9 Schenkel über dem Polster / Hüfte neben dem Anker / Blick | +0,63 m / 0,41–0,61 m / 90° | 0,00 m / 0,00 m / 0° |
 | L9 Haut außerhalb der Hülle / durch die gezeichnete Haut | — (nach dem Wirt-Schnitt: 5,4 % unter dem Bauch, bis 0,174 m; Kompakt 1,8 % seitlich) | 0 / 0,0 % je Art |
-| L10 gestoßener Fuchs in 3,2 m Wasser, gegen seine Schwimm-Linie | gleitend bis −2,77 m (auf dem Grund) | tiefstens +0,12 m |
+| L10 gestoßener Fuchs in 3,2 m Wasser, gegen seine Schwimm-Linie | gleitend bis −2,77 m (auf dem Grund) | tiefstens −0,15 m (die Welle vor dem Stoß −0,16) |
+| L8 + Schwimmer: Lage 20 Sim-Schritte nach dem Stoß, 60 fps gegen gemischt (x/z · Höhe) | 0 · 0,127 m | 0 · 0 m |
 | Reiter-Oberkante am echten Renderer, über der Rad-Ebene (GT / Supersport / Limousine / SUV) | 2,175 / 2,13 / 2,185 / 2,265 m | 1,15 / 1,07 / 1,37 / 1,573 m (Dachlinie 1,2 / 1,12 / 1,42 / 1,66) |
 
 **Bild-Paare** (`bericht/0710-4/reiter-{vorher,nachher}-{gt,supersport,limousine,suv}-{seite,schraeg}.jpg`):
@@ -85,7 +87,7 @@ playtest „Alle Invarianten OK".
   Partner ohne Annäherung und die Tiere in der Gasse.
 - 37702556246 (f8a539c6): check grün, playtest bis Schritt 74 grün (fahr-leben eingeschlossen), Schritt 75 an der 45-min-Kappe
   abgebrochen.
-- 37709343976 (f3240335): läuft beim Bericht (playtest-Job bei Schritt 11); das Ergebnis folgt als Nachricht.
+- 37709343976 (f3240335): check grün; playtest rot in Schritt 43 `gate:asset-inventory` (Zensus + requested ⊆ visible|cached). Lokal am Kopf grün (147 Emitter erklärt, 0 Fremd-Silhouetten, H3 44/44); bei 54480d58, 20b0a5ef und f8a539c6 lief dieser Schritt in der CI grün. Ohne Log nicht benannt.
 
 ## Offen
 
@@ -94,8 +96,6 @@ playtest „Alle Invarianten OK".
   - Der Bauch ist die Schwellerlinie (ySill = fahrhoehe + 0,18). Akku und Bodenplatte liegen darauf, das Polster auf der Platte.
   - Peers sähen den liegenden Fahrer durchs Glas. Die Lehne des Baus (0,13 rad) folgt seiner Neigung nicht.
   - Die Kabine des Kompakt ist am Fußraum eng (die Füße stehen zur Mitte).
-- **Lockstep im Wasser:** Im Wasser setzt der Frame-Takt die Höhe eines gleitenden Leibs, der Sim-Schritt liest sie. An Land ist
-  der Stoß bildratenfrei (L8).
 - **GELB (benannt, nicht geschnitten):** etwa 0,5 s Phantom-Fahrt nach einem Klemm-Stoß; der gestoßene Bär gleitet aufrecht statt
   zu stolpern; die Wucht des Schlags stößt nie auf den Angreifer zurück.
 - **Karren:** In der Welt gibt es keinen Karren-Bauplan (`fahrzeug_wagen` ist nur die Substanz-Spende). Ein Teile-Werk sitzt über
@@ -111,6 +111,7 @@ playtest „Alle Invarianten OK".
   - **Stelle 1** (die Schwimm-Bedingung im 50-m-Block): Die integ-probe-Fassung nehmen. Die Regel lebt dort für jede Kreatur über
     `_koerperWasser` und `_wasserlinie`.
   - **Stelle 2** (die Höhe): `if (!creature.userData._stossV || waterSurface !== null) creature.position.y = baseY + hopOffset;`
+  - **`_kreaturSchwimmLinie(spiegel)`** wird `spiegel - ud._wasserlinie` (seit 35ba704c lesen Frame-Takt und Stoß-Schritt die Linie dort).
   - **`_kreaturSchwimmt` danach auf die integ-probe-Regel umstellen:** schwimmt, wenn `_koerperWasser` über dem Grund
     > max(`schwimmTiefeM`, `_wasserlinie`). Leser sind der Frame-Takt (statt der Inline-Bedingung) und `_kreaturStossSchritt`, dort
     ohne die 50-m-Wand (`nahW`). Dann trägt der Spiegel einen gleitenden Schwimmer in der ganzen Welt.
