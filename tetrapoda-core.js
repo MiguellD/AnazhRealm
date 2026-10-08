@@ -147,7 +147,10 @@
             // im Schritt-Tempo: 0 Bisse in 3600 Takten, der Sprinter entkam immer (Leben-Schau 07.10.).
             hetzM: 6, // m — von hier hetzt der Jaeger (der Ring, auf dem das Rudel seine Plaetze bezieht)
             pirschSichtM: 5, // m — einen pirschenden Jaeger bemerkt die Beute erst hier (einen hetzenden ab noticeRadius)
-            beuteMasse: 1.25, // × eigene Masse (Dial size × bodySize) — schwerer ist keine Beute
+            // DIE EINE MASSE (V18.536): das Volumen der Gestalt × MASSSTAB.dichteKgM3 (Fuchs 15 · Wolf 64 · Hirsch 94 · Baer
+            // 335 kg bei Groesse 1) — ein grosser Fleischfresser schlaegt Beute um seine eigene Masse und darueber (Carbone
+            // et al. 2007): der Wolf (64 kg) den Hirsch (94 kg), nie den Baeren (335 kg).
+            beuteMasse: 2.0, // × die eigene Masse (kg) — schwerer ist keine Beute
         },
         furcht: {
             noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler
@@ -169,17 +172,18 @@
             fearSec: 5, // s — wie lange die Kampf-Furcht (fearUntil) anhaelt
         },
         temperament: {
-            // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., VERTRAGS-AKT): aus der Ernaehrung (Dial diet) und der Masse
-            // (Dial size × Koerpergroesse) — temperamentDerGattung. Ein Fleischfresser mit Masse jagt (wild), ohne sie
-            // ist er scheu; ein Pflanzenfresser ist ein Fluchttier (scheu), erst als Koloss wehrhaft; dazwischen wehrt
-            // sich, wer Masse hat (wehrhaft), sonst sanft. Die Substanz-Signaturen und ihr Floor fielen: die Tiere
-            // sind tag-gleich, Hirsch und Fuchs blieben „wehrhaft" (Leben-Schau 07.10., D16/K-D12).
+            // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., VERTRAGS-AKT): aus der Ernaehrung (Dial diet) und der EINEN
+            // Masse des Leibs (kg: das Volumen der Gestalt × MASSSTAB.dichteKgM3, beim Wirt _leibMasse) —
+            // temperamentDerGattung. Ein Fleischfresser mit Masse jagt (wild), ohne sie ist er scheu; ein Pflanzenfresser
+            // ist ein Fluchttier (scheu), erst als Koloss wehrhaft; dazwischen wehrt sich, wer Masse hat (wehrhaft), sonst
+            // sanft. Die Substanz-Signaturen und ihr Floor fielen: die Tiere sind tag-gleich, Hirsch und Fuchs blieben
+            // „wehrhaft" (Leben-Schau 07.10., D16/K-D12).
             gattung: {
                 fleischDiet: 0.75, // diet ab hier: Fleischfresser
                 pflanzDiet: 0.25, // diet bis hier: Pflanzenfresser (Fluchttier)
-                jagdMasse: 2.0, // size × bodySize ab hier jagt ein Fleischfresser
-                wehrMasse: 3.0, // ab hier wehrt sich ein Allesfresser
-                kolossMasse: 5.0, // ab hier wehrt sich auch ein Fluchttier
+                jagdKg: 21.5, // kg — ab hier schlaegt ein Fleischfresser grosse Beute (Carbone et al. 2007; Wolf ab Groesse 0,7)
+                wehrKg: 200, // kg — ab hier wehrt sich ein Allesfresser (der Baer ab Groesse 0,84, das Jungtier nicht)
+                kolossKg: 600, // kg — ab hier wehrt sich auch ein Fluchttier (der Hirsch erst als Gigant, ab Groesse 1,86)
             },
             profile: {
                 wehrhaft: { strike: 0.45, strikeChaos: 0.3, strikeCap: 0.8, counterMul: 0.7, fleeMul: 0.5 },
@@ -1429,14 +1433,14 @@
         return o;
     }
 
-    // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., additiv): g = die Dials der Gattung (GATTUNGEN, diet · size), bs = die
-    // Koerpergroesse des Tiers, T = VERHALTEN.temperament.gattung. Liefert "wild" · "wehrhaft" · "sanft" · "scheu" — die
-    // Art und die Groesse unterscheiden das Gemuet, nie ein Tag (Lehre 8).
-    function temperamentDerGattung(g, bs, T) {
-        var masse = g.size * (bs > 0 ? bs : 1);
-        if (g.diet >= T.fleischDiet) return masse >= T.jagdMasse ? "wild" : "scheu";
-        if (g.diet <= T.pflanzDiet) return masse >= T.kolossMasse ? "wehrhaft" : "scheu";
-        return masse >= T.wehrMasse ? "wehrhaft" : "sanft";
+    // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., additiv): g = die Dials der Gattung (GATTUNGEN, diet), kg = die Masse
+    // des Leibs (das Volumen seiner Gestalt × MASSSTAB.dichteKgM3 — die EINE Masse, die auch das Impuls-Gesetz des Wirts
+    // liest), T = VERHALTEN.temperament.gattung. Liefert "wild" · "wehrhaft" · "sanft" · "scheu" — die Art und die Groesse
+    // unterscheiden das Gemuet, nie ein Tag (Lehre 8).
+    function temperamentDerGattung(g, kg, T) {
+        if (g.diet >= T.fleischDiet) return kg >= T.jagdKg ? "wild" : "scheu";
+        if (g.diet <= T.pflanzDiet) return kg >= T.kolossKg ? "wehrhaft" : "scheu";
+        return kg >= T.wehrKg ? "wehrhaft" : "sanft";
     }
 
     function cpgStep(phases, freq, coupling, dt) {
@@ -1512,7 +1516,14 @@
     // trägt seinen Widerrist bei ~1,0 H = 0,8 m, der Fuchs (1,5) bei ~0,47 m, der Bär (3,2) bei ~1,1 m, der Hirsch
     // (2,8) bei ~1,07 m. Der Wirt skaliert die Gestalt mit DIESER Zahl (vorher: die Seelen-Teile-Höhe, deren Skala
     // die Allometrie-Schleife überschrieb — die Welt zeigte Lab-Einheiten als Meter, den Wolf 2,7 m hoch).
-    var MASSSTAB = Object.freeze({ meterJeEinheit: 1 / 3 });
+    // ── 0710-4 (rein additiv): die DICHTE DES GEWEBES (kg/m³) — die Masse eines Tiers ist das Volumen seiner Gestalt
+    //    (die geschlossene Haut, die dieser Kern formt) mal dieser Zahl: Fuchs 15 · Wolf 64 · Hirsch 94 · Bär 335 kg bei
+    //    Größe 1. Der Wirt las bis 0710-4 eine Kapsel aus der Hüft-Höhe mal 1000 (der Hirsch wog 436 kg, der Bär 255). ──
+    var MASSSTAB = Object.freeze({ meterJeEinheit: 1 / 3, dichteKgM3: 1000 });
+    // ── 0710-4 (rein additiv) — DER BISS ALS STOSS: der Jäger trifft mit seiner Vorhand (Kopf, Hals, Brust) — dieser
+    //    Anteil seiner Masse — im Tempo des Ansprungs (VERHALTEN.aktionen.pounce.tempo × tempoEinheit(L)). Sein Impuls
+    //    geht durch das EINE Impuls-Gesetz des Wirts wie Klinge, Pfeil und Wagen (vorher: Schaden ohne Rückstoß). ──
+    var BISS = Object.freeze({ masseAnteil: 0.3 });
 
     // ════════════════════════════════════════════════════════════════════
     // DIE ART-GESTALT (Welle 5, Tour 09: „der Rumpf ist ein Sack auf dünnen Beinen"): die Anatomie je Art als
@@ -2791,6 +2802,7 @@
         cpgStep: cpgStep,
         bauTier: bauTier,
         MASSSTAB: MASSSTAB,
+        BISS: BISS,
         ART_GESTALT: ART_GESTALT,
         artGestalt: artGestalt,
         tierAuge: tierAuge,

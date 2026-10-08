@@ -59,7 +59,7 @@ function label(text,hex,scale){scale=scale||0.42;
   cx.fillStyle=hex;cx.textBaseline='middle';cx.fillText(text,pad,cv.height/2+2);
   const t=new THREE.CanvasTexture(cv);t.minFilter=THREE.LinearFilter;
   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:t,depthTest:false,transparent:true}));
-  sp.scale.set(cv.width/cv.height*scale,scale,1);sp.renderOrder=999;return sp;}
+  sp.scale.set(cv.width/cv.height*scale,scale,1);sp.renderOrder=999;sp.name=text;return sp;}
 
 // ════════════════════════════════════════════════════════════════════
 // 3 · DIE GELENKE — Hardpoints mit Freiheitsgraden
@@ -125,6 +125,12 @@ function buildNeg(H,P){const g=new THREE.Group();const hz=P.spur/2;const bw=hz+0
 // ════════════════════════════════════════════════════════════════════
 const P=Object.assign({},VC.DEFAULT_P);   // Regler-Zustand — Grundwerte aus der EINEN Kern-Quelle
 const show={frame:false,joints:false,cal:true,pkg:false,wheels:true,body:true,neg:false};
+// Die EINE Sicht des gebauten Wagens (Haut + Räder + Zelle/Sitze, ohne Hilfsgeometrie und Notizen): der Ergebnis-Knopf zeigt
+// sie, die Probefahrt fährt in ihr — Lehren, Gelenke und Negativraum gehören der Werkstatt (Befund 0710-2: RADSTAND, ÜH-H …
+// lagen in der Fahrt über dem Wagen, die Probefahrt erbte die Werkstatt-Ebenen).
+const ERGEBNIS={frame:false,joints:false,cal:false,pkg:true,wheels:true,body:true,neg:false};
+let fahrSicht=false;
+function sicht(){return fahrSicht?ERGEBNIS:show;}
 let gFrame,gJoints,gBody,gCal,gNeg,gPackage,gWheels;const doors=[];
 const vehicle=new THREE.Group();scene.add(vehicle);
 const gSprung=new THREE.Group();vehicle.add(gSprung);   // gefederte Masse (Aufbau) — nickt/wankt/hebt auf den Federn
@@ -135,13 +141,14 @@ function rebuild(){
   clear(gFrame);clear(gJoints);clear(gBody);clear(gCal);clear(gNeg);clear(gPackage);clear(gWheels);doors.length=0;
   const H=hardpoints(P);const res=evalLehren(P);
   const ctx={M:M,bodyMat:bodyMat,doors:doors,corners:corners};   // der Kern baut MIT den Shell-Objekten (Tür-/Rad-Animation bleibt verdrahtet)
-  gPackage=VC.buildPackage(H,P,ctx);gPackage.visible=show.pkg; gSprung.add(gPackage);
-  gBody=VC.buildSkin(H,P,ctx);   gBody.visible=show.body;     gSprung.add(gBody);
-  gFrame=VC.buildFrame(H,P,ctx); gFrame.visible=show.frame;   gSprung.add(gFrame);
-  gJoints=buildJoints(H,P);gJoints.visible=show.joints;gSprung.add(gJoints);
-  gCal=buildCalipers(H,P,res);gCal.visible=show.cal;   gSprung.add(gCal);
-  gNeg=buildNeg(H,P);     gNeg.visible=show.neg;        gSprung.add(gNeg);
-  gWheels=VC.buildWheels(H,P,ctx);gWheels.visible=show.wheels;vehicle.add(gWheels);  // ungefedert → bleibt am Boden geerdet
+  const V=sicht();
+  gPackage=VC.buildPackage(H,P,ctx);gPackage.visible=V.pkg; gSprung.add(gPackage);
+  gBody=VC.buildSkin(H,P,ctx);   gBody.visible=V.body;     gSprung.add(gBody);
+  gFrame=VC.buildFrame(H,P,ctx); gFrame.visible=V.frame;   gSprung.add(gFrame);
+  gJoints=buildJoints(H,P);gJoints.visible=V.joints;gSprung.add(gJoints);
+  gCal=buildCalipers(H,P,res);gCal.visible=V.cal;   gSprung.add(gCal);
+  gNeg=buildNeg(H,P);     gNeg.visible=V.neg;        gSprung.add(gNeg);
+  gWheels=VC.buildWheels(H,P,ctx);gWheels.visible=V.wheels;vehicle.add(gWheels);  // ungefedert → bleibt am Boden geerdet
   const S=scal(H,P);                                                          // Querschnitt-Verjüngung auf ALLE Aufbau-Gruppen:
   taperBody(gBody,S,P); taperBody(gPackage,S,P); taperBody(gFrame,S,P);
   bowEnds(gBody,S); bowEnds(gPackage,S);   // Plan-Konvexität Front/Heck       //   Karosserie + Bauraum + Frame folgen derselben Sektion
@@ -189,8 +196,8 @@ const ldiv=document.getElementById('layers');
 const LY=[['frame','Rahmen','gFrame'],['joints','Gelenke','gJoints'],['cal','Lehren','gCal'],['pkg','Baukörper','gPackage'],['wheels','Räder','gWheels'],['body','Haut','gBody'],['neg','Negativ','gNeg']];
 LY.forEach(([key,lab])=>{const b=document.createElement('button');b.className='btn'+(show[key]?' on':'');b.textContent=lab;
   b.onclick=()=>{show[key]=!show[key];b.classList.toggle('on');applyVis();};ldiv.appendChild(b);});
-function applyVis(){if(gFrame)gFrame.visible=show.frame;if(gJoints)gJoints.visible=show.joints;
-  if(gCal)gCal.visible=show.cal;if(gPackage)gPackage.visible=show.pkg;if(gWheels)gWheels.visible=show.wheels;if(gBody)gBody.visible=show.body;if(gNeg)gNeg.visible=show.neg;}
+function applyVis(){const V=sicht();if(gFrame)gFrame.visible=V.frame;if(gJoints)gJoints.visible=V.joints;
+  if(gCal)gCal.visible=V.cal;if(gPackage)gPackage.visible=V.pkg;if(gWheels)gWheels.visible=V.wheels;if(gBody)gBody.visible=V.body;if(gNeg)gNeg.visible=V.neg;}
 function syncLayerButtons(){LY.forEach(([key],i)=>ldiv.children[i].classList.toggle('on',!!show[key]));}
 // Kinematik + Clay/Lack
 let kin=false;const kinB=document.getElementById('kin');
@@ -209,7 +216,7 @@ PAINTS.forEach((pt,li)=>{const sw=document.createElement('button');sw.className=
 // Ergebnis: nur das fertige Fahrzeug (Haut + Räder + Zelle/Sitze), ohne Hilfsgeometrie & Notizen
 const ergB=document.getElementById('ergebnis');let ergOn=false;
 ergB.onclick=()=>{ergOn=!ergOn;ergB.classList.toggle('on',ergOn);
-  if(ergOn)Object.assign(show,{frame:false,joints:false,cal:false,pkg:true,wheels:true,body:true,neg:false});
+  if(ergOn)Object.assign(show,ERGEBNIS);
   else     Object.assign(show,{frame:false,joints:false,cal:true, pkg:false,wheels:true,body:true,neg:false});
   applyVis();syncLayerButtons();};
 // Slider
@@ -353,13 +360,13 @@ function updateChaseCam(dt,snap){
 // Modus-Wechsel: Werkstatt ⇄ Fahren
 let mode='werkstatt';const OVL='#brand,#lehren,#ctl,#leg,#hint';const hud=document.getElementById('hud');
 const _savP=new THREE.Vector3(),_savT=new THREE.Vector3();
-function enterDrive(){mode='fahren';
+function enterDrive(){mode='fahren';fahrSicht=true;applyVis();   // die Probefahrt fährt den gebauten Wagen (ERGEBNIS), nie die Lehren
   document.querySelectorAll(OVL).forEach(el=>el.style.display='none');if(hud)hud.style.display='flex';  // Welle L: der HUD ist ein Flex-Band (block klebte die Einheit an die Tastenhilfe)
   ground.visible=true;_savP.copy(cam.position);_savT.copy(oc.target);oc.enabled=false;
   Object.assign(car,VC.fahrZustand(0,0,0));VC.fahrStand(car,fahrGesetzLab(),bodenY,0);   // frischer Fahrzustand auf dem Boden
   input.throttle=input.brake=input.steer=input.hand=0;
   vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);camOrb.follow=true;dragging=false;resetTrack();updateChaseCam(0,true);}
-function exitDrive(){mode='werkstatt';
+function exitDrive(){mode='werkstatt';fahrSicht=false;applyVis();
   document.querySelectorAll(OVL).forEach(el=>el.style.display='');if(hud)hud.style.display='none';
   ground.visible=false;
   vehicle.position.set(0,0,0);vehicle.rotation.set(0,0,0);gSprung.position.set(0,0,0);gSprung.rotation.set(0,0,0);

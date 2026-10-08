@@ -78,7 +78,8 @@ function check(name, ok, detail) {
     check(
         "Q: confirmBuild stempelt Entry + place-DSL (spawn_blueprint Slot 6)",
         /studioOv: bmStamp \|\| undefined/.test(stamm) &&
-            /spawn_blueprint: \(\[name, positionNode, seed, archId, studioOv\], ctx\)/.test(stamm)
+            // die Probe wandert mit dem Code: Slot 7 trägt seit der Gegenprüfung 08.10. die Drehung des Werks
+            /spawn_blueprint: \(\[name, positionNode, seed, archId, studioOv, drehung\], ctx\)/.test(stamm)
     );
     check("Q: studioOv ist deklariertes BLUEPRINT_KNOWN_KEYS-Feld (Taille)", /"studioOv",\n\]\);/.test(stamm));
 

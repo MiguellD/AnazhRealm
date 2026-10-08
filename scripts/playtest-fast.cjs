@@ -416,8 +416,10 @@ function check(name, ok) {
             try {
                 const parsed = r.parseChatToDsl("pflanz mir einen eichenhain am wasser");
                 o.satz = !!parsed && parsed.program[0] === "spawn_studio" && parsed.program[1] === "eichen";
-                const archs = r.state.architectures;
-                const vorher = archs.length;
+                // Die Welt wächst während der Antwort weiter (die Promotion um den Spieler macht Streu-Zellen zu Bäumen, das
+                // Welt-Dorf setzt seine Häuser über die Takte): gezählt wird nach Identität, nicht nach Listen-Index — die
+                // CI (Lauf 37717894108) fand neben den Birken einen anderen neuen Eintrag und meldete die Birken als falsch.
+                const vorher = new Set(r.state.architectures);
                 const llm = r.state.llm;
                 const alt = { enabled: llm.enabled, provider: llm.provider };
                 const orig = r.llmCall;
@@ -436,9 +438,13 @@ function check(name, ok) {
                     llm.enabled = alt.enabled;
                     llm.provider = alt.provider;
                 }
-                const neu = archs.slice(vorher);
-                o.ki = neu.length > 0 && neu.every((e) => e.type === r._studioBlueprintForWord("birke"));
-                for (const e of neu.reverse()) r.removeArchitecture(e);
+                const neu = r.state.architectures.filter((e) => !vorher.has(e));
+                const birke = r._studioBlueprintForWord("birke");
+                const birken = neu.filter((e) => e.type === birke);
+                // die KI pflanzt Studio-Birken — und nichts, was kein Baum ist (ein Baum der Promotion darf mitwachsen)
+                o.ki = birken.length > 0 && neu.every((e) => e.type === birke || /^(baum_|grown_)/.test(e.type || ""));
+                o.neu = neu.map((e) => e.type).slice(0, 8);
+                for (const e of birken.reverse()) r.removeArchitecture(e);
             } catch (e) {
                 o.err = (e && e.message) || String(e);
             }
@@ -447,6 +453,7 @@ function check(name, ok) {
         check("CO-SCHÖPFER: der Satz wird spawn_studio (ohne KI-Schlüssel)", K.satz === true);
         check("CO-SCHÖPFER: KI-Antwort → Studio-Birken in der Welt (END-ZU-END, gestubbt)", K.ki === true);
         if (K.err) console.log("     ⟶ " + K.err);
+        if (K.ki !== true) console.log("     ⟶ neu: " + JSON.stringify(K.neu || []));
 
         console.log(`\nLaufzeit: ${((Date.now() - T0) / 1000).toFixed(0)}s · ${pass} ✅ · ${fails.length} ❌`);
         if (fails.length) {

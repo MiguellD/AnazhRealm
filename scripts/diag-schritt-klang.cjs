@@ -124,7 +124,7 @@ const server = http.createServer((req, res) => {
                 "_playSchrittOneShot",
                 "_gaitPhaseRate",
                 "_terrainMaterialAt",
-                "_waterLevelAt",
+                "_koerperWasser",
                 "animatePlayerSoul",
             ]) {
                 if (typeof r[fn] !== "function") return { error: fn + " fehlt" };
@@ -143,7 +143,7 @@ const server = http.createServer((req, res) => {
                 /walkPhase/.test(tickSrc) && !/performance\.now/.test(tickSrc) && !/Date\.now/.test(tickSrc);
             o.checks.eineSchwelle = /LAND_DIP_MIN_SPEED/.test(tickSrc); // kein Schwellen-Zwilling
             const matSrc = codeOf(r._schrittMaterialAt);
-            o.checks.materialQuellen = /_terrainMaterialAt/.test(matSrc) && /_waterLevelAt/.test(matSrc);
+            o.checks.materialQuellen = /_terrainMaterialAt/.test(matSrc) && /_koerperWasser/.test(matSrc);
             const shotSrc = codeOf(r._playSchrittOneShot);
             o.checks.klangEineMaschine =
                 /masterGain/.test(shotSrc) && /enabled/.test(shotSrc) && !/new\s+AudioContext/.test(shotSrc);
@@ -233,8 +233,8 @@ const server = http.createServer((req, res) => {
 
             // ── (C) MATERIAL WÄHLT TIMBRE — zwei Böden durch die ECHTE Pipe ──
             const savedTerr = r._terrainMaterialAt;
-            const savedWl = r._waterLevelAt;
-            r._waterLevelAt = () => -Infinity; // trocken (der Boden entscheidet)
+            const savedWl = r._koerperWasser;
+            r._koerperWasser = () => -Infinity; // trocken (der Boden entscheidet)
             r._terrainMaterialAt = () => "erde";
             frisch();
             fahre(6, 1.5, 700);
@@ -251,12 +251,12 @@ const server = http.createServer((req, res) => {
                 pStein.material === "stein" &&
                 (pErde.freq !== pStein.freq || pErde.filter !== pStein.filter);
             // (S2) SELBST-TEST: Nass schlägt fest — Wasser über dem Fuß gewinnt
-            r._waterLevelAt = () => pmesh.position.y + 5;
+            r._koerperWasser = () => pmesh.position.y + 5;
             frisch();
             fahre(6, 1.0, 900);
             const pNass = z().letzter;
             r._terrainMaterialAt = savedTerr; // restaurieren (Gate-Hook-Lehre)
-            r._waterLevelAt = savedWl;
+            r._koerperWasser = savedWl;
             o.checks.s2NassSchlaegtFest = !!pNass && pNass.material === "wasser";
             // Tabelle pur: Fallback + Deckel
             o.checks.cFallback = r._schrittKlangParams("nebelkuchen", false, 0).material === T.fallback;
@@ -373,7 +373,7 @@ const server = http.createServer((req, res) => {
         check(c.konsumTick, "KONSUM: animatePlayerSoul ruft den EINEN Schritt-Tick (_schrittKlangTick)");
         check(c.keineEigeneUhr, "KONSUM: der Tick liest die Gang-Phase (walkPhase) — keine eigene Uhr");
         check(c.eineSchwelle, "KONSUM: die Lande-Schwelle IST LAND_DIP_MIN_SPEED (kein Zwilling)");
-        check(c.materialQuellen, "KONSUM: das Fuß-Material liest _terrainMaterialAt + _waterLevelAt (die EINEN Quellen)");
+        check(c.materialQuellen, "KONSUM: das Fuß-Material liest _terrainMaterialAt + _koerperWasser (die EINEN Quellen)");
         check(c.klangEineMaschine, "KONSUM: die Stimme läuft über masterGain + enabled-Wand (kein zweiter AudioContext)");
         check(c.simUnberuehrt, "WAND: die fixe Sim (_stepFixedSim/_loopFixedStep/_stepCharacter) kennt den Schritt-Klang NICHT");
         check(c.stimmeFailClosed, "WAND: die Stimme selbst ist fail-closed (Symphonie aus ⇒ false, kein Throw)");

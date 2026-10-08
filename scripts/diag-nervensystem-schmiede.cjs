@@ -180,10 +180,10 @@ function staticLaws(anazhSrc, scSrc, manifestSrc) {
     const heldSrcBody = fnBody(anazhNC, /\n    _heldFoundryGroup\(bpName\)\s*\{/);
     const disposeBody = fnBody(anazhNC, /\n    _disposeSoulGroup\(group\)\s*\{/);
     out.push([
-        "S8: der Hand-Konsument ist verdrahtet — buildHand liest _heldFoundryGroup + waermt (_warmCompilePipeline), die Quelle nutzt die EINE Wrapper-Quelle (_workshopWrapFoundryGroup) + den Welt-Cache (_foundryCacheGet), der Dispose-Chokepoint traegt die sharedGeom-Wand + Ref-Rueckgabe",
+        "S8: der Hand-Konsument ist verdrahtet — buildHand liest _heldFoundryGroup (die erste Zeichnung traegt die Erst-Zeichnung des Renderers, kein Vorwaermen), die Quelle nutzt die EINE Wrapper-Quelle (_workshopWrapFoundryGroup) + den Welt-Cache (_foundryCacheGet), der Dispose-Chokepoint traegt die sharedGeom-Wand + Ref-Rueckgabe",
         refreshBody !== null &&
             /_heldFoundryGroup\(/.test(refreshBody) &&
-            /_warmCompilePipeline\(/.test(refreshBody) &&
+            !/compileAsync|_warmCompilePipeline/.test(refreshBody) &&
             heldSrcBody !== null &&
             /_workshopWrapFoundryGroup\(/.test(heldSrcBody) &&
             /_foundryCacheGet\(/.test(heldSrcBody) &&

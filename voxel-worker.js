@@ -64,7 +64,13 @@ const state = {
     tarns: null, // Array of { x, z, d, reach2, twoSig2 }
     voxelEdits: [], // Array of { x, y, z, r, strength, mode }
     hydroComputing: false,
-    carveBankSlope: 1.4, // Mirror AnazhRealm.HYDROSPHERE.carveBankSlope
+    spiegelFreibord: 0.25, // Mirror AnazhRealm.HYDROSPHERE.spiegelFreibord (Welle L, der Fluss-Spiegel)
+    bankNeigung: 0.7, // Mirror AnazhRealm.HYDROSPHERE.bankNeigung (die Bank, Gegenprüfung 07.10.)
+    bankKruemmung: 0.04, // Mirror AnazhRealm.HYDROSPHERE.bankKruemmung
+    bankWeite: 24, // Mirror AnazhRealm.HYDROSPHERE.bankWeite
+    bankRundung: 0.6, // Mirror AnazhRealm.HYDROSPHERE.bankRundung
+    dammBreite: 2.6, // Mirror AnazhRealm.HYDROSPHERE.dammBreite (die Damm-Krone, Gegenprüfung 07.10., Runde 4)
+    dammFreibord: 0.2, // Mirror AnazhRealm.HYDROSPHERE.dammFreibord
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178, clever-gauss): die Genese-
     // Schleuse. Fehlt im Snap (Legacy-Welt) → 1 → feuchteAt = 0 (kein Erde-
     // Boden-Drift); Genese-2 (neue Welt) → 2 → der Boden atmet.
@@ -210,7 +216,13 @@ function applyStateSnapshot(snap) {
     if (snap.tarns !== undefined) state.tarns = snap.tarns;
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
     if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
-    if (typeof snap.carveBankSlope === "number") state.carveBankSlope = snap.carveBankSlope;
+    if (typeof snap.spiegelFreibord === "number") state.spiegelFreibord = snap.spiegelFreibord;
+    if (typeof snap.bankNeigung === "number") state.bankNeigung = snap.bankNeigung;
+    if (typeof snap.bankKruemmung === "number") state.bankKruemmung = snap.bankKruemmung;
+    if (typeof snap.bankWeite === "number") state.bankWeite = snap.bankWeite;
+    if (typeof snap.bankRundung === "number") state.bankRundung = snap.bankRundung;
+    if (typeof snap.dammBreite === "number") state.dammBreite = snap.dammBreite;
+    if (typeof snap.dammFreibord === "number") state.dammFreibord = snap.dammFreibord;
     // V18.181-merge-Λ Sub 3h — Γ1-Lesart-4 (V18.178): genVersion-Schleuse mit-laden.
     if (typeof snap.genVersion === "number") state.genVersion = snap.genVersion;
     // Die Boden-Palette des Mains (Studio PORTAL_GROUND nach dem Farb-Gesetz, linear) — dieselben Zahlen.
@@ -306,7 +318,7 @@ function terrainColumnContext(x, z) {
     const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
     const hydro = state.hydrosphere;
     const hydroActive = !!(hydro && hydro.ready && !state.hydroComputing);
-    let hydroCarve = 0;
+    let hydroCarve = null; // der Fluss-Kanal { P, L, k } (Mirror `_hydrosphereCarveAt`) oder null
     let lake = null;
     if (hydroActive) {
         hydroCarve = hydrosphereCarveAt(x, z);
@@ -337,7 +349,17 @@ function terrainBaseDensityCol(x, y, z, ctx) {
         d -= hallCarve * caveEnv * 72;
     }
     if (ctx.hydroActive) {
-        d -= ctx.hydroCarve;
+        // Der Fluss-Kanal (Mirror): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit dem Kanal; das
+        // See-Becken danach.
+        const kn = ctx.hydroCarve;
+        if (kn) {
+            const dL = kn.L - y;
+            let hk = Math.max(kn.k - Math.abs(d - dL), 0) / kn.k;
+            const damm = Math.max(d, dL) + hk * hk * kn.k * 0.25;
+            const dP = kn.P - y;
+            hk = Math.max(kn.k - Math.abs(damm - dP), 0) / kn.k;
+            d = Math.min(damm, dP) - hk * hk * kn.k * 0.25;
+        }
         const lk = ctx.lake;
         if (lk) {
             const flatD = lk.bedY - y;
@@ -755,47 +777,56 @@ function tarnDeltaAt(x, z) {
     return delta;
 }
 
+// Mirror von `_hydrosphereCarveAt` (Gegenprüfung 07.10.): der Fluss-Kanal { P, L, k } — P der Kanal (Flachboden, Bank mit
+// bankNeigung bis zur Krone, dahinter die steiler werdende Böschung), L der Damm (die Krone, dahinter fallend), k die
+// Rundung; mehrere Segmente: der tiefste Kanal, der höchste Damm. MUSS bit-identisch zum Main sein.
 function hydrosphereCarveAt(x, z) {
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-    if (!h || !h.ready) return 0;
-    let cut = 0;
+    if (!h || !h.ready) return null;
     const rb = h.riverBuckets;
-    if (rb) {
-        const bs = h.bucketSize;
-        const bd = h.bucketsDim;
-        const bi = Math.floor((x - h.originX) / bs);
-        const bj = Math.floor((z - h.originZ) / bs);
-        if (bi >= 0 && bj >= 0 && bi < bd && bj < bd) {
-            const list = rb[bj * bd + bi];
-            if (list) {
-                const bankSlope = state.carveBankSlope;
-                for (let s = 0; s < list.length; s++) {
-                    const seg = list[s];
-                    const ex = seg.bx - seg.ax;
-                    const ez = seg.bz - seg.az;
-                    const len2 = ex * ex + ez * ez || 1;
-                    let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
-                    if (t < 0) t = 0;
-                    else if (t > 1) t = 1;
-                    const px = seg.ax + ex * t;
-                    const pz = seg.az + ez * t;
-                    const dist = Math.hypot(x - px, z - pz);
-                    const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
-                    const D = seg.dA + (seg.dB - seg.dA) * t;
-                    const bankW = Math.max(2, D * bankSlope);
-                    let rc = 0;
-                    if (dist <= halfW) {
-                        rc = D;
-                    } else if (dist < halfW + bankW) {
-                        const u = (dist - halfW) / bankW;
-                        rc = D * (1 - u * u * (3 - 2 * u));
-                    }
-                    if (rc > cut) cut = rc;
-                }
-            }
-        }
+    if (!rb) return null;
+    const bs = h.bucketSize;
+    const bd = h.bucketsDim;
+    const bi = Math.floor((x - h.originX) / bs);
+    const bj = Math.floor((z - h.originZ) / bs);
+    if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
+    const list = rb[bj * bd + bi];
+    if (!list) return null;
+    const sN = state.bankNeigung;
+    const sK = state.bankKruemmung;
+    const fuss = state.bankRundung;
+    const kB = state.dammBreite;
+    let P = Infinity;
+    let L = -Infinity;
+    for (let s = 0; s < list.length; s++) {
+        const seg = list[s];
+        const ex = seg.bx - seg.ax;
+        const ez = seg.bz - seg.az;
+        const len2 = ex * ex + ez * ez || 1;
+        let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+        if (t < 0) t = 0;
+        else if (t > 1) t = 1;
+        const px = seg.ax + ex * t;
+        const pz = seg.az + ez * t;
+        const dist = Math.hypot(x - px, z - pz);
+        const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
+        const D = seg.dA + (seg.dB - seg.dA) * t;
+        const dK = halfW + D / sN;
+        if (dist >= dK + kB + state.bankWeite) continue;
+        const spiegel = seg.sA + (seg.sB - seg.sA) * t;
+        const B = spiegel - (1 - state.spiegelFreibord) * D;
+        const u0 = dist - halfW;
+        let p = u0 <= -fuss ? B : u0 < fuss ? B + (sN * (u0 + fuss) * (u0 + fuss)) / (4 * fuss) : B + sN * u0;
+        const u = dist - dK;
+        if (u > 0) p += sK * u * u;
+        // der Damm: seine Krone eben bis dammBreite hinter der Krone des Kanals, dahinter die Böschung (Mirror)
+        let l = spiegel + Math.max(state.spiegelFreibord * D, state.dammFreibord);
+        const uL = u - kB;
+        if (uL > 0) l -= sN * uL + sK * uL * uL;
+        if (p < P) P = p;
+        if (l > L) L = l;
     }
-    return cut;
+    return P < Infinity ? { P, L, k: fuss } : null;
 }
 
 function hydrosphereLakeAt(x, z) {
@@ -918,6 +949,36 @@ function worldFieldAt(x, z) {
     };
 }
 
+// Mirror von `_hydroSpiegelQuer` (bit-identisch): der Spiegel des nächsten Fluss-Segments, auch jenseits der Krone.
+function hydroSpiegelQuer(x, z) {
+    const h = hydroFor(x, z);
+    if (!h || !h.ready || !h.riverBuckets) return -Infinity;
+    const bs = h.bucketSize;
+    const bd = h.bucketsDim;
+    const bi = Math.floor((x - h.originX) / bs);
+    const bj = Math.floor((z - h.originZ) / bs);
+    if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return -Infinity;
+    const list = h.riverBuckets[bj * bd + bi];
+    if (!list) return -Infinity;
+    let bestD = Infinity;
+    let spiegel = -Infinity;
+    for (let s = 0; s < list.length; s++) {
+        const seg = list[s];
+        const ex = seg.bx - seg.ax;
+        const ez = seg.bz - seg.az;
+        const len2 = ex * ex + ez * ez || 1;
+        let t = ((x - seg.ax) * ex + (z - seg.az) * ez) / len2;
+        if (t < 0) t = 0;
+        else if (t > 1) t = 1;
+        const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
+        if (dist < bestD) {
+            bestD = dist;
+            spiegel = seg.sA + (seg.sB - seg.sA) * t;
+        }
+    }
+    return spiegel;
+}
+
 function hydroRiverAt(x, z) {
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (!h || !h.ready || !h.riverBuckets) return null;
@@ -928,12 +989,14 @@ function hydroRiverAt(x, z) {
     if (bi < 0 || bj < 0 || bi >= bd || bj >= bd) return null;
     const list = h.riverBuckets[bj * bd + bi];
     if (!list) return null;
-    const bankSlope = state.carveBankSlope;
     let bestD = Infinity;
     let dirX = 0;
     let dirZ = 0;
     let depth = 0;
     let bestHalfW = 1;
+    let gSumme = 0;
+    let sSumme = 0;
+    let ufer = 0;
     for (let s = 0; s < list.length; s++) {
         const seg = list[s];
         const ex = seg.bx - seg.ax;
@@ -947,8 +1010,16 @@ function hydroRiverAt(x, z) {
         const dist = Math.hypot(x - px, z - pz);
         const halfW = seg.hwA + (seg.hwB - seg.hwA) * t;
         const D = seg.dA + (seg.dB - seg.dA) * t;
-        const bankW = Math.max(2, D * bankSlope);
-        if (dist <= halfW + bankW && dist < bestD) {
+        const krone = halfW + D / state.bankNeigung;
+        if (dist > krone) continue;
+        const g = (1 - dist / krone) * (1 - dist / krone) + 1e-6;
+        gSumme += g;
+        sSumme += g * (seg.sA + (seg.sB - seg.sA) * t);
+        // die Kronen-Blende (Mirror): 1 bis zur Kanal-Kante, smoothstep auf 0 an der Krone
+        const u = dist <= halfW ? 0 : (dist - halfW) / (krone - halfW);
+        const uS = 1 - u * u * (3 - 2 * u);
+        if (uS > ufer) ufer = uS;
+        if (dist < bestD) {
             bestD = dist;
             const len = Math.sqrt(len2);
             dirX = ex / len;
@@ -958,18 +1029,16 @@ function hydroRiverAt(x, z) {
         }
     }
     if (bestD === Infinity) return null;
-    // V18.27 — laterale Makro (Leben) + KONVEXE Mitten-Aufwölbung (0.45·D·(1−(dist/halfW)²)) →
-    // konvexer Querschnitt (Mitte höher, fällt zu den Ufern). MUSS bit-identisch zum Main sein.
-    // B1 (V18.345) — flowX/flowZ/centerness ergänzt (Mirror von Main `_hydroRiverAt`): der
-    // Wasser-Sheet-Worker-Mirror liest sie (aFlow + centerness via `waterRunSurfaceAt`). Bestehende
-    // Leser (waterLevelAt/atlasWaterLevelAt/feuchte) lesen nur depth/surfaceY → unverändert.
-    const convexBulge = 0.45 * depth * Math.max(0, 1 - (bestD / Math.max(bestHalfW, 1)) ** 2);
+    // Welle L (Mirror): der Spiegel der Segmente (linear zwischen ihren Enden — stromab nie steigend, quer waagrecht),
+    // gemittelt zur Krone stetig auslaufend; flowX/flowZ/centerness des nächsten Segments liest der Wasser-Sheet-Worker-
+    // Mirror (aFlow). MUSS bit-identisch zum Main sein.
     return {
         flowX: dirX,
         flowZ: dirZ,
         depth,
-        surfaceY: terrainMacroSurfaceY(x, z, true) - depth * 0.25 + convexBulge,
+        surfaceY: sSumme / gSumme,
         centerness: Math.max(0, 1 - bestD / Math.max(bestHalfW, 1)),
+        ufer,
     };
 }
 
@@ -1018,7 +1087,9 @@ function hydroDistAt(x, z) {
                 const dist = Math.hypot(x - (seg.ax + ex * t), z - (seg.az + ez * t));
                 if (dist < best) {
                     best = dist;
-                    bestHw = seg.halfW || 0;
+                    // die Halbbreite am Fußpunkt wie im Main (bis Welle L las der Spiegel `seg.halfW`, das kein
+                    // Segment trägt: 0 — die Feuchte fiel im Worker anders aus, 2016 von 6507 Ufer-Vertices)
+                    bestHw = seg.hwA + (seg.hwB - seg.hwA) * t;
                 }
             }
         }
@@ -1038,10 +1109,14 @@ function feuchteAt(x, z, surfY) {
     }
     let hoehe = 0;
     if (Number.isFinite(surfY)) {
-        const wl = waterLevelAt(x, z);
-        const above = surfY - wl;
-        const t = Math.max(0, Math.min(1, (FEUCHTE_HOEHE_FERN - above) / (FEUCHTE_HOEHE_FERN - FEUCHTE_HOEHE_NAH)));
-        hoehe = t * t * (3 - 2 * t) * FEUCHTE_HOEHE_GEWICHT;
+        const uf = { see: 0, fluss: null, ufer: 0 };
+        waterLevelAt(x, z, uf);
+        const band = (above) => {
+            const t = Math.max(0, Math.min(1, (FEUCHTE_HOEHE_FERN - above) / (FEUCHTE_HOEHE_FERN - FEUCHTE_HOEHE_NAH)));
+            return t * t * (3 - 2 * t) * FEUCHTE_HOEHE_GEWICHT;
+        };
+        hoehe = band(surfY - uf.see);
+        if (uf.fluss !== null) hoehe = Math.max(hoehe, uf.ufer * band(surfY - uf.fluss));
     }
     return Math.max(0, Math.min(1, Math.max(fluss, hoehe)));
 }
@@ -1056,15 +1131,17 @@ function pathFieldAt(x, z, surfY) {
     const bankW = 4.5;
     const d = r.dist - inner;
     if (d < 0 || d > bankW) return 0;
-    if (Number.isFinite(surfY)) {
-        const above = surfY - waterLevelAt(x, z);
-        if (above < 0 || above > 5) return 0;
-    }
     const band = 1 - d / bankW;
-    return band * band;
+    if (!Number.isFinite(surfY)) return band * band;
+    const uf = { see: 0, fluss: null, ufer: 0 };
+    waterLevelAt(x, z, uf);
+    const niedrig = (above) => (above < 0 || above > 5 ? 0 : 1);
+    let w = niedrig(surfY - uf.see);
+    if (uf.fluss !== null) w = Math.max(w, uf.ufer * niedrig(surfY - uf.fluss));
+    return band * band * w;
 }
 
-function waterLevelAt(x, z) {
+function waterLevelAt(x, z, aus) {
     let level = typeof state.waterLevel === "number" ? state.waterLevel : 0;
     const h = hydroFor(x, z); // A3 (V18.132): Heimat ODER Kachel
     if (h && h.ready && h.water && h.water.waterKind) {
@@ -1085,6 +1162,12 @@ function waterLevelAt(x, z) {
         }
     }
     const river = hydroRiverAt(x, z);
+    // die beiden Bezüge der Ufer-Bänder getrennt (Mirror `_waterLevelAt`): See/Meer, Fluss-Spiegel, Kronen-Blende
+    if (aus) {
+        aus.see = level;
+        aus.fluss = river ? river.surfaceY : null;
+        aus.ufer = river ? river.ufer : 0;
+    }
     if (river && river.surfaceY > level) level = river.surfaceY;
     return level;
 }
@@ -1151,41 +1234,6 @@ function atlasWaterLevelAt(x, z, terrainTopY) {
     return level;
 }
 
-// B1 (V18.345) — Mirror von `_waterRunSurfaceAt`: die GEGLÄTTETE Fluss-Lauf-Fläche
-// (Along-Flow-Tiefpass NUR auf den Kanal-KERN via centerness; NARBEN-WAND am Ufer bleibt
-// roh). Deps `atlasWaterLevelAt` + `hydroRiverAt` (mit flowX/flowZ/centerness) sind
-// gespiegelt. MUSS bit-identisch zum Main bleiben (diag-worker-watersheet).
-// V18.475 (F2, Mirror) — `terrainTopY` reist zur Zentrums-Frage durch (der Sheet-Bau
-// reicht sein Bett); die Along-Flow-Samples bleiben ehrlich −Infinity (Doku im Main).
-function waterRunSurfaceAt(x, z, terrainTopY = -Infinity) {
-    const L = atlasWaterLevelAt(x, z, terrainTopY);
-    if (!(L > -Infinity)) return L;
-    const river = hydroRiverAt(x, z);
-    if (!river) return L;
-    const center = Number.isFinite(river.centerness) ? river.centerness : 1;
-    if (center <= 0.001) return L;
-    const fx = river.flowX;
-    const fz = river.flowZ;
-    let acc = L * 4;
-    let wsum = 4;
-    for (let k = 1; k <= 3; k++) {
-        const w = 4 - k;
-        const d = 6 * k;
-        const la = atlasWaterLevelAt(x + fx * d, z + fz * d, -Infinity);
-        const lb = atlasWaterLevelAt(x - fx * d, z - fz * d, -Infinity);
-        if (la > -Infinity) {
-            acc += la * w;
-            wsum += w;
-        }
-        if (lb > -Infinity) {
-            acc += lb * w;
-            wsum += w;
-        }
-    }
-    const smoothed = acc / wsum;
-    return L + (smoothed - L) * center;
-}
-
 // B1 (V18.345) — Mirror von `_caColumnScan`: scannt eine Zell-Spalte top-down nach
 // Flood-/Live-/Solid-Dach. `level` ist im Worker-Streaming-Pfad immer null (CA-frei =
 // nur Flood + Solid) — der wantLive-Zweig läuft nie, bleibt aber 1:1 für die bit-Parität.
@@ -1218,7 +1266,7 @@ function caColumnScan(cells, level, colBase, dimSq, dimY) {
 // plain Arrays {positions, indices, aFlow, aWave, aDepth, aSlope} oder null. MUSS Zeile
 // für Zeile mit dem Main wandern (diag-worker-watersheet, maxDiff 0). Substitutionen vs
 // Main: this._voxelChunkConfig→voxelChunkConfig, this.state.terrainBaseHeight→state.baseHeight,
-// this._caColumnScan→caColumnScan, this._waterRunSurfaceAt→waterRunSurfaceAt,
+// this._caColumnScan→caColumnScan, this._atlasWaterLevelAt→atlasWaterLevelAt,
 // this._hydroRiverAt→hydroRiverAt, this._hydrosphereLakeAt→hydrosphereLakeAt,
 // AnazhRealm.CELL_STATE→CELL_STATE. Die Mathe ist character-identisch.
 function buildWaterSheetGeometry(cx, cz, ctx) {
@@ -1238,6 +1286,8 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
     const topG = new Float64Array(GW * GW).fill(NaN);
     const solidG = new Float64Array(GW * GW);
     const depthG = new Float64Array(GW * GW);
+    // RUHENDES Wasser je Spalte (Mirror): das Dach IST der Spiegel des Gesetzes — die Vertices tragen ihn an ihrem Ort.
+    const ruhG = new Uint8Array(GW * GW);
     for (let ck = -PAD; ck < dim + PAD; ck++) {
         for (let ci = -PAD; ci < dim + PAD; ci++) {
             const gi = ci + PAD + (ck + PAD) * GW;
@@ -1294,17 +1344,25 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             const faceY = oy + (sc.floodTopJ + 1) * step;
             const wx = ox + (ci + 0.5) * step;
             const wz = oz + (ck + 0.5) * step;
-            // V18.475 (F2, Mirror) — das Bett reist mit (solidG + step, Doku im Main).
-            const L = waterRunSurfaceAt(wx, wz, solidG[gi] + step);
-            let top = L > -Infinity ? Math.max(faceY - step, Math.min(faceY + step, L)) : faceY;
+            // Mirror: das Ufer-Urteil liest die Unterkante der obersten festen Zelle, gefragt an Mitte und vier Ecken (Doku im Main)
+            let L = atlasWaterLevelAt(wx, wz, solidG[gi]);
+            for (let e = 0; e < 4; e++) {
+                const le = atlasWaterLevelAt(ox + (ci + (e & 1)) * step, oz + (ck + (e >> 1)) * step, solidG[gi]);
+                if (le > L) L = le;
+            }
+            // die Deck-Zelle (4b): bis zur Unterkante der Zelle unter dem Dach (Doku im Main)
+            let top = L > -Infinity ? Math.max(faceY - 2 * step, Math.min(faceY + step, L)) : faceY;
+            let ruht = L > -Infinity && top === L;
             if (dach) {
                 const floodRel = (sc.floodTopJ + 1) * step;
                 const liveRel = live < 0 ? 0 : live * step;
                 let d = liveRel - floodRel;
                 if (d > -0.05 && d < 0.05) d = 0;
+                if (d !== 0) ruht = false;
                 top += Math.max(-14, Math.min(4, d));
             }
             topG[gi] = top;
+            ruhG[gi] = ruht ? 1 : 0;
             // depthG (aDepth) wird GLOBAL als kontinuierliche Tiefe gesetzt (V18.377, s.u.).
         }
     }
@@ -1528,6 +1586,9 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
         const wz = oz + k * step;
         let sum = 0;
         let n = 0;
+        let rohMin = Infinity;
+        let rohMax = -Infinity;
+        let ruht = true;
         let dsum = 0;
         let sfx = 0;
         let sfz = 0;
@@ -1544,6 +1605,9 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             if (!Number.isNaN(v)) {
                 sum += v;
                 n++;
+                if (topRawG[gi2] < rohMin) rohMin = topRawG[gi2];
+                if (topRawG[gi2] > rohMax) rohMax = topRawG[gi2];
+                if (!ruhG[gi2]) ruht = false;
                 dsum += depthG[gi2];
                 sfx += flowXG[gi2];
                 sfz += flowZG[gi2];
@@ -1552,16 +1616,22 @@ function buildWaterSheetGeometry(cx, cz, ctx) {
             const sv = solidG[gi2];
             if (sv < anchor) anchor = sv;
         }
-        const surfY = n > 0 ? sum / n : anchor - 0.5;
-        const depthM = n > 0 ? dsum / n : 0;
-        const id = positions.length / 3;
-        vertIsAnchor[id] = n === 0;
         // V18.375 — UNIFORMER Jitter (keine Steigungs-Skala, Mirror zu _computeWaterSheetData): die
         // per-Chunk-`slopeMax`-Skala wich am Rand minimal ab → horizontaler Riss = der vertikale
         // Streifen. Uniform → Rand-Vertices fallen exakt zusammen; horizontaler Jitter auf flachem
         // Wasser unsichtbar, nur steiles Wasser wird ent-gittert.
         const _jdir = _jhash(cx * dim + i, cz * dim + k) * _jitAmp;
         const _jdir2 = _jhash(cz * dim + k + 8191, cx * dim + i + 131071) * _jitAmp;
+        // Mirror: ruhendes Wasser trägt den Spiegel des Gesetzes am Ort des Vertex, gehalten zwischen die rohen Dächer
+        let surfY = anchor - 0.5;
+        if (n > 0 && ruht) {
+            const Lv = atlasWaterLevelAt(wx + _jdir, wz + _jdir2, Infinity);
+            const Lq = Lv > -Infinity ? Lv : hydroSpiegelQuer(wx + _jdir, wz + _jdir2);
+            surfY = Lq > -Infinity ? Math.max(rohMin, Math.min(rohMax, Lq)) : rohMax;
+        } else if (n > 0) surfY = sum / n;
+        const depthM = n > 0 ? dsum / n : 0;
+        const id = positions.length / 3;
+        vertIsAnchor[id] = n === 0;
         positions.push(wx + _jdir, surfY, wz + _jdir2);
         // aFlow (V18.379) — Mittel der 4 geglätteten Nachbar-Spalten (sfx/sfz im wet-Loop).
         const flowN = n > 0 ? n : 1;
@@ -2354,16 +2424,24 @@ function attachFieldColors(positions) {
         const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
         mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
         // Der Seegrund unter JEDEM Wasser (Main-Spiegel): Schlick, voll ab 4 m Tiefe.
-        const waterY = waterLevelAt(x, z);
-        const aboveWater = y - waterY;
-        mix(sed, ss(-0.5, -4, aboveWater));
-        if (aboveWater > -1.5 && aboveWater < 2.0 && sandNoise) {
+        // Schlick und Strand über beiden Bezügen (Mirror `_bodenFarbeAt`): See/Meer voll, der Fluss mit seiner Kronen-Blende.
+        const uf = { see: 0, fluss: null, ufer: 0 };
+        waterLevelAt(x, z, uf);
+        const aboveWater = y - uf.see;
+        const aboveFluss = uf.fluss !== null ? y - uf.fluss : null;
+        let schlick = ss(-0.5, -4, aboveWater);
+        if (aboveFluss !== null) schlick = Math.max(schlick, uf.ufer * ss(-0.5, -4, aboveFluss));
+        mix(sed, schlick);
+        const imStrand = (a) => a !== null && a > -1.3 && a < 2.5;
+        if ((imStrand(aboveWater) || (uf.ufer > 0 && imStrand(aboveFluss))) && sandNoise) {
             const widthNoise = (sandNoise.noise2D(x * 0.0018, z * 0.0018) + 1) * 0.5;
             const intenseNoise = (sandNoise.noise2D(x * 0.0034 + 17, z * 0.0034 - 9) + 1) * 0.5;
             if (widthNoise > 0.18) {
                 const width = 0.5 + 1.4 * widthNoise;
                 const intensity = 0.25 + 0.55 * intenseNoise;
-                const shoreBlend = Math.max(0, 1 - Math.abs(aboveWater - 0.6) / width);
+                const glocke = (a) => Math.max(0, 1 - Math.abs(a - 0.6) / width);
+                let shoreBlend = glocke(aboveWater);
+                if (aboveFluss !== null) shoreBlend = Math.max(shoreBlend, uf.ufer * glocke(aboveFluss));
                 mix(sand, shoreBlend * intensity);
             }
         }
@@ -2433,26 +2511,63 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     const AIR = CELL_STATE.AIR;
     // Welle H (mirror): AQUIFER — tiefe Höhlen-Zellen über dem Wassertisch trocken.
     const aquiferY = typeof state.waterLevel === "number" ? state.waterLevel : 0;
-    const AQ_DEPTH = 18;
     const colSurf = new Float64Array(dim * dim);
     for (let k = 0; k < dim; k++) {
         const cz = oz + (k + 0.5) * step;
         for (let i = 0; i < dim; i++) colSurf[i + k * dim] = terrainMacroSurfaceY(ox + (i + 0.5) * step, cz, true);
     }
-    const caveDry = (i, k, cy) => cy < colSurf[i + k * dim] - AQ_DEPTH && cy > aquiferY;
+    // Fels über der Zelle (Mirror, ohne Bau-Stempel): unter offenem Himmel ist eine Zelle nie Höhle (`aquiferTrocken`).
+    const colFels = new Float64Array(dimSq).fill(-Infinity);
+    for (let idx0 = 0; idx0 < dimSq; idx0++) {
+        for (let j = jMax; j >= 0; j--) {
+            if (cells[idx0 + j * dimSq] !== CELL_STATE.SOLID) continue;
+            colFels[idx0] = oy + j * step;
+            break;
+        }
+    }
+    const caveDry = (i, k, cy) => aquiferTrocken(cy, colSurf[i + k * dim], aquiferY, cy < colFels[i + k * dim]);
+    // DER BODEN JE SPALTE (Mirror): der tiefste Null-Durchgang der Dichte an den vier Ecken der Spalte.
+    const colBoden = new Float64Array(dimSq);
+    {
+        const jTop = Math.min(dimY, jMax + 1);
+        for (let k = 0; k < dim; k++) {
+            for (let i = 0; i < dim; i++) {
+                let b = Infinity;
+                let gelaende = false;
+                for (let e = 0; e < 4; e++) {
+                    const g = i + 1 + (e & 1) + (k + 1 + (e >> 1)) * NxNy;
+                    for (let j = jTop; j >= 0; j--) {
+                        const dS = density[g + j * Nx];
+                        if (!(dS > 0)) continue;
+                        gelaende = true;
+                        const dD = j + 1 <= dimY ? density[g + (j + 1) * Nx] : 1;
+                        if (dD <= 0) b = Math.min(b, oy + j * step + (step * dS) / (dS - dD));
+                        break;
+                    }
+                }
+                colBoden[i + k * dim] = gelaende ? b : colSurf[i + k * dim];
+            }
+        }
+    }
     // U-W1/U-W3 (mirror von _buildVoxelChunkWaterCells; MUSS bit-identisch):
-    // die EINE kanonische Wasserspiegel-Höhe colL PRO SPALTE (terrain-gated) +
-    // jede Zelle füllt nur bis colL[ihre Spalte] — kein propagierter Quell-Spiegel,
+    // die EINE kanonische Wasserspiegel-Höhe colL PRO SPALTE (terrain-gated mit dem Boden der Spalte, gefragt an der
+    // Mitte und den vier Ecken) + jede Zelle füllt nur bis colL[ihre Spalte] — kein propagierter Quell-Spiegel,
     // keine Über-Füllung; BFS-Konnektivität bleibt.
     const colL = new Float64Array(dimSq);
     const colSrc = new Uint8Array(dimSq);
+    const spalteL = (i, k, boden) => {
+        let l = atlasWaterLevelAt(ox + (i + 0.5) * step, oz + (k + 0.5) * step, boden);
+        for (let e = 0; e < 4; e++) {
+            const le = atlasWaterLevelAt(ox + (i + (e & 1)) * step, oz + (k + (e >> 1)) * step, boden);
+            if (le > l) l = le;
+        }
+        return l;
+    };
     for (let k = 0; k < dim; k++) {
-        const cz = oz + (k + 0.5) * step;
         for (let i = 0; i < dim; i++) {
-            const cxw = ox + (i + 0.5) * step;
             const idx0 = i + k * dim;
-            colL[idx0] = atlasWaterLevelAt(cxw, cz, colSurf[idx0]);
-            colSrc[idx0] = atlasWaterLevelAt(cxw, cz, Infinity) > -Infinity ? 1 : 0;
+            colL[idx0] = spalteL(i, k, colBoden[idx0]);
+            colSrc[idx0] = spalteL(i, k, Infinity) > -Infinity ? 1 : 0;
         }
     }
     for (let k = 0; k < dim; k++) {
@@ -2489,12 +2604,6 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
             if (topCy < aquiferY - SHELF_MIN_DEPTH) {
                 colL[idx0] = lvl0 > -Infinity ? lvl0 : aquiferY;
                 colSrc[idx0] = 1;
-                const lvl = colL[idx0];
-                const deckCy = topCy + step;
-                if (deckCy > lvl && topJ + 1 <= jMax) {
-                    const deckIdx = idx0 + (topJ + 1) * dimSq;
-                    if (cells[deckIdx] === AIR) cells[deckIdx] = WATER;
-                }
             }
         }
     }
@@ -2539,6 +2648,67 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
         pushN(i, k, j + 1);
         pushN(i, k, j - 1);
     }
+    // 4b) DIE DECK-ZELLE (Mirror von `_buildVoxelChunkWaterCells` 4b, MUSS bit-identisch): eine Spalte, deren Spiegel über
+    //    ihrem Boden und unter der Mitte ihrer ersten freien Zelle liegt, trägt ihr Wasser in dieser Zelle — eine Quell-Spalte
+    //    immer, eine Ufer-Spalte, wenn sie an Wasser grenzt.
+    const deckZelle = (i, k) => {
+        const idx0 = i + k * dim;
+        const lvl = colL[idx0];
+        if (!(lvl > -Infinity)) return -1;
+        let topJ = -1;
+        for (let j = jMax; j >= 0; j--) {
+            const c = cells[idx0 + j * dimSq];
+            if (c === AIR) continue;
+            if (c === CELL_STATE.SOLID) topJ = j;
+            break;
+        }
+        if (topJ < 0 || topJ + 1 > jMax) return -1;
+        const deckIdx = idx0 + (topJ + 1) * dimSq;
+        const topCy = oy + (topJ + 0.5) * step;
+        if (cells[deckIdx] !== AIR || topCy + step <= lvl || !(lvl > topCy - 0.5 * step)) return -1;
+        if (!(cellD(i, topJ, k) > 0) || !(lvl > colBoden[idx0])) return -1;
+        return deckIdx;
+    };
+    const nassOben = new Uint8Array(dimSq);
+    const offen = [];
+    for (let idx0 = 0; idx0 < dimSq; idx0++) {
+        for (let j = jMax; j >= 0; j--) {
+            const c = cells[idx0 + j * dimSq];
+            if (c === AIR) continue;
+            if (c === WATER) {
+                nassOben[idx0] = 1;
+                offen.push(idx0);
+            }
+            break;
+        }
+    }
+    for (let idx0 = 0; idx0 < dimSq; idx0++) {
+        if (!colSrc[idx0] || nassOben[idx0]) continue;
+        const d = deckZelle(idx0 % dim, (idx0 / dim) | 0);
+        if (d < 0) continue;
+        cells[d] = WATER;
+        nassOben[idx0] = 1;
+        offen.push(idx0);
+    }
+    for (let h = 0; h < offen.length; h++) {
+        const i = offen[h] % dim;
+        const k = (offen[h] / dim) | 0;
+        for (const [ni, nk] of [
+            [i + 1, k],
+            [i - 1, k],
+            [i, k + 1],
+            [i, k - 1],
+        ]) {
+            if (ni < 0 || nk < 0 || ni >= dim || nk >= dim) continue;
+            const n0 = ni + nk * dim;
+            if (nassOben[n0]) continue;
+            const d = deckZelle(ni, nk);
+            if (d < 0) continue;
+            cells[d] = WATER;
+            nassOben[n0] = 1;
+            offen.push(n0);
+        }
+    }
     // 5) ROBUSTE 3D-KONNEKTIVITÄT (V13.14, Mirror von `_skyOpenWaterFilter`):
     //    Wasser existiert nur, wo es durch Wasser mit der offenen Atmosphäre
     //    verbunden ist. Ersetzt den per-Spalten-Trocken-Pass (V13.12), der
@@ -2548,6 +2718,12 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     // ARCHITEKTUR-STEMPEL läuft NICHT im Worker — bleibt Main-only
     // (Architektur-State ist nicht im Worker-Snapshot, soll auch nicht sein).
     return cells;
+}
+
+// Mirror von `AnazhRealm._aquiferTrocken` (bit-identisch): trockene Höhle nur unter Fels, tiefer als 18 m
+// (AnazhRealm.AQUIFER_TIEFE_M) unter der Makro-Fläche und über dem Wassertisch.
+function aquiferTrocken(cy, makroY, tischY, unterFels) {
+    return unterFels && cy < makroY - 18 && cy > tischY;
 }
 
 // V13.14 — Worker-Mirror von `_skyOpenWaterFilter` (bit-identisch). Siehe den

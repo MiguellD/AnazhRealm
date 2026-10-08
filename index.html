@@ -240,6 +240,106 @@
                 top: 0;
                 left: 0;
             }
+            /* DER LADESCHIRM (Leben-Schau 07.10., L2): das erste Bild war die leere, schwarze Leinwand unter fertiger UI.
+               Er steht ab dem ersten Bild der Seite über allem und weicht erst dem ersten fertigen Weltbild
+               (`_ankunftsBild`). */
+            #ladeschirm {
+                position: fixed;
+                inset: 0;
+                z-index: 2147483000;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 14px;
+                background:
+                    radial-gradient(ellipse 70% 55% at 50% 42%, rgba(138, 92, 255, 0.16), transparent 70%),
+                    radial-gradient(ellipse 90% 70% at 50% 110%, rgba(192, 138, 58, 0.18), transparent 70%),
+                    linear-gradient(180deg, var(--iron-1) 0%, var(--iron-2) 60%, var(--iron-3) 100%);
+                color: var(--parch-1, #f3e6c4);
+                transition: opacity 0.7s ease;
+                pointer-events: auto;
+            }
+            #ladeschirm.weg {
+                opacity: 0;
+                pointer-events: none;
+            }
+            #ladeschirm .ladeschirm-titel {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 44px;
+                letter-spacing: 0.14em;
+                color: #f3e6c4;
+                text-shadow: 0 2px 18px rgba(190, 120, 255, 0.45);
+            }
+            #ladeschirm .ladeschirm-satz {
+                font-family: "IM Fell English", Georgia, serif;
+                font-size: 20px;
+                font-style: italic;
+                color: rgba(243, 230, 196, 0.85);
+            }
+            #ladeschirm .ladeschirm-stand {
+                font-family: "JetBrains Mono", monospace;
+                font-size: 12px;
+                letter-spacing: 0.06em;
+                color: rgba(243, 230, 196, 0.55);
+                min-height: 1.4em;
+            }
+            #ladeschirm .ladeschirm-glut {
+                width: 180px;
+                height: 2px;
+                background: linear-gradient(90deg, transparent, var(--honey), transparent);
+                animation: ladeschirm-glut 2.4s ease-in-out infinite;
+            }
+            @keyframes ladeschirm-glut {
+                0%,
+                100% {
+                    opacity: 0.25;
+                    transform: scaleX(0.4);
+                }
+                50% {
+                    opacity: 0.9;
+                    transform: scaleX(1);
+                }
+            }
+            /* DAS FADENKREUZ (Leben-Schau 07.10., L1): die Mitte des Bilds ist der Strahl der Kamera (1st das Auge, 3rd die
+               Verfolger-Kamera — `_blickZiel`), dort trifft jeder Klick. Es weicht, wo der Zeiger der UI gehört: eine offene
+               Schublade, das Inventar. */
+            #fadenkreuz {
+                position: fixed;
+                left: 50%;
+                top: 50%;
+                width: 22px;
+                height: 22px;
+                margin: -11px 0 0 -11px;
+                pointer-events: none;
+                z-index: 5;
+            }
+            #fadenkreuz::before {
+                content: "";
+                position: absolute;
+                inset: 4px;
+                border-radius: 50%;
+                border: 1.5px solid rgba(255, 248, 230, 0.85);
+                box-shadow:
+                    0 0 0 1px rgba(0, 0, 0, 0.45),
+                    inset 0 0 0 1px rgba(0, 0, 0, 0.35);
+            }
+            #fadenkreuz::after {
+                content: "";
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 3px;
+                height: 3px;
+                margin: -1.5px 0 0 -1.5px;
+                border-radius: 50%;
+                background: rgba(255, 248, 230, 0.95);
+                box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5);
+            }
+            body:has(.drawer[data-drawer]:not([hidden])) #fadenkreuz,
+            body:has(#inventory-overlay:not([hidden])) #fadenkreuz {
+                display: none;
+            }
             /* Konsole — fusioniertes Chat + Log + Input, einklappbar.
            Links unten, sitzt unter der Status-Bar; bottom: 16px. */
             /* Alte FPS-Div bleibt versteckt — der Wert lebt jetzt in der Status-Bar.
@@ -7782,7 +7882,14 @@
         </style>
     </head>
     <body>
+        <div id="ladeschirm" role="status" aria-live="polite">
+            <div class="ladeschirm-titel">Anazh Realm</div>
+            <div class="ladeschirm-satz">Die Welt erwacht …</div>
+            <div class="ladeschirm-glut" aria-hidden="true"></div>
+            <div class="ladeschirm-stand" id="ladeschirm-stand"></div>
+        </div>
         <canvas id="world-canvas"></canvas>
+        <div id="fadenkreuz" aria-hidden="true"></div>
         <div id="fps"></div>
         <div id="dialogue-box" aria-live="polite"></div>
         <div id="build-mode-hud" aria-live="polite" hidden></div>
@@ -9236,8 +9343,7 @@
                                 <span class="help-dot" tabindex="0" aria-label="Hilfe"
                                     >?<span class="help-pop"
                                         ><b>Wasser-Cull</b> blendet dünnes Ufer-/Wandwasser pro Pixel aus (tiefes
-                                        bleibt). <b>Wasser-Render</b> ist „Fläche" (die finale Form auf dem Spiegel)
-                                        oder „Zell-Iso" (alt, zum Vergleich). <b>Ufer-Schärfe</b> = wie schmal die
+                                        bleibt). <b>Ufer-Schärfe</b> = wie schmal die
                                         Uferlinie einblendet, <b>Wasser-Tiefe</b> = wie schnell es ins Dunkle kippt.
                                         See-Wellen, Fluss-Schaum, Wasserfall-Steilheit und Auslauf-Übergang feilen
                                         die Form.</span
@@ -9248,14 +9354,6 @@
                                 <label for="slider-watercull">Wasser-Cull</label>
                                 <input type="range" id="slider-watercull" min="0" max="200" value="25" />
                                 <span class="slider-value" id="slider-watercull-val">0.0025</span>
-                            </div>
-                            <div class="slider-row">
-                                <label for="select-waterrender">Wasser-Render</label>
-                                <select id="select-waterrender">
-                                    <option value="cells">Zell-Sheet (lebendig)</option>
-                                    <option value="iso">Zell-Iso (Debug)</option>
-                                </select>
-                                <span class="slider-value" id="select-waterrender-val"></span>
                             </div>
                             <!-- (Ufer-Schärfe und Wasser-Tiefe gefallen: das Wasser deckt nach dem Durchlass-Gesetz, optischer Weg in Metern) -->
                             <div class="slider-row">
@@ -9545,7 +9643,7 @@
         <!-- V18.267: ?v= Cache-Buster — der Bootstrap trägt die RenderPipeline-Heilung
              (Post-FX-Konsolen-Warnungen); ohne Buster serviert der Browser den stale
              Bootstrap weiter (die „Fix verifiziert, Schöpfer sieht nichts"-Falle). -->
-        <script type="module" src="vendor/three-bootstrap.js?v=18.533.0"></script>
+        <script type="module" src="vendor/three-bootstrap.js?v=18.536.0"></script>
         <!-- DETERMINISMUS-BOGEN P3 — Ammo.js ist ENTFERNT. Die Kollision/Physik ist
              feld-nativ (das Dichtefeld + `_stepCharacter`/`_fieldRaycast`/blockerAABBs).
              Kein WASM-Heap, kein btDiscreteDynamicsWorld, kein per-Chunk-BVH-Build. -->
@@ -9559,40 +9657,40 @@
         <!-- DAS NEUE KLEID Welle 0: der gesetz-wahre Phyto-Wuchs-Kern. MUSS vor anazhRealm.js
              laden (defer bewahrt die Reihenfolge) — der Baum-Bau liest das globale
              __phytoCore.growSkeleton. Derselbe Code läuft im voxel-worker + im Terrain-Portal. -->
-        <script src="phyto-core.js?v=18.533.0" defer></script>
+        <script src="phyto-core.js?v=18.536.0" defer></script>
         <!-- DIE EINE PIPE (V18.458): das Bake-Gesetzbuch der Pipe (Gattungs-Bäcker-
              Tisch BAKERS_BY_KIND) lädt auch auf dem Stamm — der Kalt-/Headless-Pfad
              bäckt Kreaturen main-thread durch DENSELBEN Bäcker wie der Worker
              (ein Gesetz, zwei Scheduler). THREE steht (Module vor defer). -->
-        <script src="foundry-core.js?v=18.533.0" defer></script>
+        <script src="foundry-core.js?v=18.536.0" defer></script>
         <!-- ALTLASTEN-NULL HERZ: die Anatomie-Gesetzbücher (MESHFREI, reine
              Daten+Mathe) laden VOR dem Stamm — er delegiert Skelett/Landmarken
              an die EINE Quelle (dieselben Kerne trägt der Foundry-Worker). -->
-        <script src="koerper-core.js?v=18.533.0" defer></script>
+        <script src="koerper-core.js?v=18.536.0" defer></script>
         <!-- KERN-PFLICHT 17.07. — fachwerk+klang fehlten als Main-Thread-Tags:
              ihre Gesetze (SIEDLUNG · fx.klang) existierten im echten Spiel NUR
              als Fallback-Fiktion. Jetzt laden ALLE Gesetzbuecher, die Boot-Wand
              (_kernPflichtWand) schreit sichtbar, wenn eines fehlt. -->
-        <script src="fachwerk-core.js?v=18.533.0" defer></script>
-        <script src="klang-core.js?v=18.533.0" defer></script>
-        <script src="tetrapoda-core.js?v=18.533.0" defer></script>
+        <script src="fachwerk-core.js?v=18.536.0" defer></script>
+        <script src="klang-core.js?v=18.536.0" defer></script>
+        <script src="tetrapoda-core.js?v=18.536.0" defer></script>
         <!-- V18.484 — DER DRITTE SPIEGEL (das-feld-zeichnet.md §3): das Terrain-
              Makro-Gesetz als WGSL-Text (SEH-Spiegel f32, nie Physik-Wahrheit) +
              der Packer der lebenden Quellen; Namensraum __feldWgsl, meshfrei.
              Die Linse gate:dritter-spiegel beweist die Seh-Parität. -->
-        <script src="feld-wgsl.js?v=18.533.0" defer></script>
+        <script src="feld-wgsl.js?v=18.536.0" defer></script>
         <!-- V18.464 — porta-core main-seitig: der Stamm liest das Tor-GESETZ synchron
              (Kollisions-Hülle deterministisch am Spawn [Lockstep] + Membran-Zahlen);
              namespaced IIFE (__portaCore), THREE-frei auf Top-Level. -->
-        <script src="porta-core.js?v=18.533.0" defer></script>
+        <script src="porta-core.js?v=18.536.0" defer></script>
         <!-- V18.466 — vehicle-core main-seitig: das präge-Verb liest die KULTUREN-
              Tabelle (Charakter-Achse der Garage) synchron; namespaced IIFE
              (__vehicleCore), dasselbe porta-Muster. -->
-        <script src="vehicle-core.js?v=18.533.0" defer></script>
+        <script src="vehicle-core.js?v=18.536.0" defer></script>
         <!-- ULTRAGUSS U6d: das Klingen-Gesetzbuch (Top-Level THREE-frei, reine
              Daten+Mathe) lädt VOR dem Stamm — der bladeProfile-Bau (Werkstatt/DSL)
              liest klingenProfil, OAKESHOTT_TYPES ist ein Getter-Delegat auf den Kern. -->
-        <script src="schmiede-core.js?v=18.533.0" defer></script>
-        <script src="anazhRealm.js?v=18.533.0" defer></script>
+        <script src="schmiede-core.js?v=18.536.0" defer></script>
+        <script src="anazhRealm.js?v=18.536.0" defer></script>
     </body>
 </html>

@@ -145,3 +145,13 @@ Gestalt (STEUER_GESETZ.sprint, kein Rezept-Feld), Beute trägt höchstens `jagd.
 `jagd.scentProbeM` (der Gradienten-Schritt der Witterung — nah an der Quelle zeigte der Gradient vom Ziel fort) und
 `furcht.fleeSpeedBoost` (die Flucht ist der Sprint, kein Trab). Genau 20 Felder (5 je Rezept), der Rest byte-gleich
 (gegen die alten Bytes geprüft); recipes.json `0d8f4316502b…` → `bdd842174cdd…`.
+
+**Re-Mint 08.10.2026 (Welle LF rudel auf V18.536, begründet — DIE EINE MASSE):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1` gegen die vereinten Kerne (world-params, render-config und jede Mesh-Golden byte-gleich). Die
+Vereinigung mit V18.536 trug zwei Massen: die Dial-Masse des Zweigs (size × Größe) und die Masse des Leibs aus main
+(Volumen der Gestalt × `MASSSTAB.dichteKgM3`, das Impuls-Gesetz). Es bleibt die Masse des Leibs: im tetrapoda-Buch liest
+das Temperament kg (`temperament.gattung { jagdKg 21,5 · wehrKg 200 · kolossKg 600 }` statt `jagdMasse · wehrMasse ·
+kolossMasse`), `jagd.beuteMasse` 1,25 → 2,0 (× die Masse des Jägers in kg: der Wolf, 64 kg, schlägt den Hirsch, 94 kg, nie
+den Bären, 335 kg). Gegen den Zweig genau 28 Felder (7 je Rezept) plus die 5 Fahrzeug-Felder `fahrprofil.huelle.dichte`
+aus main; gegen main genau die 72 Felder der Welle-LF-Vertrags-Akte (18 je Rezept), der Rest byte-gleich (gegen beide
+alten Bytes geprüft).

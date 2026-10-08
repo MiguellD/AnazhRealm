@@ -19,8 +19,8 @@
 //   H5  jeder Name, den ein Haushalt-Muster wörtlich nennt, vergibt der Stamm noch (ein umbenannter Erzeuger fiele sonst
 //       still aus jeder Klasse — sichtbar erst auf der echten GPU als LINSE rot `haushalt`)
 //   H6  DIE MESSORTE (S1 W1f, `messorte`): jeder Ort trägt Spieler, Blick, Dorf-Zug, Ort-Takt und seine eigene Ratsche
-//       (H2 je Ort); jede Methode, die ein Ort-Takt nennt, trägt der Stamm (ein umbenannter Ring-Bauer liefe still aus
-//       jedem Werkbank-Takt, der Ort stünde leer)
+//       (H2 je Ort); jede Methode, die ein Ort-Takt oder ein Anker nennt, trägt der Stamm (ein umbenannter Ring-Bauer
+//       liefe still aus jedem Werkbank-Takt, der Ort stünde leer; ein umbenannter Anker ließe den Ort ungeprüft wandern)
 //
 // Die Absenz der gefallenen Band-Täter (W2 Voxel-Bricks, V18.528) prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
@@ -168,17 +168,21 @@ function namenLeben(haushalt, src) {
 
 // H6 — DER ORT-TAKT LEBT (S1 W1f): jede Methode, die ein Messort im Ort-Takt nennt (am Genesis-Ring `_genesisPortalRing`,
 // `_portalApproachPrefetch`), trägt der Stamm als Methode — ein umbenannter Bauer liefe in der Werkbank als TypeError still
-// aus jedem Takt (der try der Takt-Schleife schluckt ihn), der Ring stünde nie, die Messung mäße einen leeren Ort.
+// aus jedem Takt (der try der Takt-Schleife schluckt ihn), der Ring stünde nie, die Messung mäße einen leeren Ort. Ebenso
+// der Anker (`anker`, am Genesis-Ring `_genesisMitte`): die Werkbank fragt ihn beim Aufstellen, ob der Ort noch dort steht.
 function ortTaktLebt(haushalt, src) {
     const code = PK.stripComments(src);
     const errs = [];
     let n = 0;
-    for (const o of haushalt.messorte || [])
-        for (const m of o.ortTakt || []) {
+    for (const o of haushalt.messorte || []) {
+        const namen = (o.ortTakt || []).map((m) => [m, "der Ort-Takt"]);
+        if (o.anker) namen.push([o.anker, "der Anker"]);
+        for (const [m, rolle] of namen) {
             n++;
             const kopf = "\n    " + m + "(";
-            if (!code.includes(kopf)) errs.push(`Messort ${o.id}: der Ort-Takt nennt ${m} — keine Methode im Stamm`);
+            if (!code.includes(kopf)) errs.push(`Messort ${o.id}: ${rolle} nennt ${m} — keine Methode im Stamm`);
         }
+    }
     return { errs, n };
 }
 
@@ -639,7 +643,7 @@ function selbsttest() {
             unbekannt
     );
     // S21 — die Ratsche gehört dem Ort: dieselbe Klasse über der Genesis-Ratsche ist dort rot, gegen die (ungemessene)
-    // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (Wiese +z = 0, Genesis +x = π/2).
+    // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (Wiese +z = 0, Genesis −x = −π/2).
     const gen = BAND.ladeSpec("genesis");
     const r21 = JSON.parse(JSON.stringify(rt));
     r21.klassen.bau.haupt.befehle = 20;
@@ -647,13 +651,13 @@ function selbsttest() {
     const u21 = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: r21, ort: gen.ort });
     const u21b = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: rt, ort: BAND.ortOf(haushalt) });
     t(
-        "bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese 0, genesis π/2",
+        "bau 30 Befehle über der Genesis-Ratsche 20 → rot (Ort genesis im Urteil), gegen die ungemessene nicht; Gier wiese 0, genesis −π/2",
         hatRot(u21, "ratsche") &&
             u21.ort === "genesis" &&
             !hatRot(u21b, "ratsche") &&
             u21b.ort === "wiese" &&
             BAND.ortGier(BAND.ortOf(haushalt, "wiese")) === 0 &&
-            Math.abs(BAND.ortGier(gen.ort) - Math.PI / 2) < 1e-12 &&
+            Math.abs(BAND.ortGier(gen.ort) + Math.PI / 2) < 1e-12 &&
             !BAND.ratschePruefen(gen.ratsche, haushalt).length
     );
     // S22 — die Tor-Hülle des Orts (Soll-Zeile): 2 Tore an zwei Orten (zwei Gestalten: 2 × 26 Stoff-Züge), 368 000 Dreiecke
@@ -671,13 +675,26 @@ function selbsttest() {
         "Tor-Hülle: f:drachentor:L0 368 000 im Hauptbild bei 2 Toren → 184 000 je Tor (3,07×), L1 und Fahrzeug nicht",
         s22.length === 1 && s22[0].huelle === 184000 && s22[0].exemplare === 2 && s22[0].faktor === 3.07
     );
-    // S23 — H6: ein Ort-Takt mit einem Namen, den der Stamm nicht trägt, wird rot; der echte nicht.
+    // S23 — H6: ein Ort-Takt oder ein Anker mit einem Namen, den der Stamm nicht trägt, wird rot; der echte nicht. Ein Anker
+    // ohne Methoden-Namen bricht das Schema.
     const h23 = JSON.parse(JSON.stringify(haushalt));
     h23.messorte[1].ortTakt = ["_genesisPortalRing", "_genesisRingAlt"];
     const o23 = ortTaktLebt(h23, stamm);
+    const h23b = JSON.parse(JSON.stringify(haushalt));
+    h23b.messorte[1].anker = "_genesisMitteAlt";
+    const o23b = ortTaktLebt(h23b, stamm);
+    const h23c = JSON.parse(JSON.stringify(haushalt));
+    h23c.messorte[1].anker = "36 0";
     t(
-        "H6: _genesisRingAlt im Ort-Takt → rot, der echte Ort-Takt lebt",
-        o23.errs.length === 1 && /_genesisRingAlt/.test(o23.errs[0]) && !ortTaktLebt(haushalt, stamm).errs.length
+        "H6: _genesisRingAlt im Ort-Takt und _genesisMitteAlt als Anker → je rot, ein Anker ohne Methoden-Namen bricht das " +
+            "Schema; der echte Ort-Takt und Anker leben",
+        o23.errs.length === 1 &&
+            /_genesisRingAlt/.test(o23.errs[0]) &&
+            o23b.errs.length === 1 &&
+            /der Anker nennt _genesisMitteAlt/.test(o23b.errs[0]) &&
+            BAND.messortePruefen(h23c).some((x) => /anker ist kein Methoden-Name/.test(x)) &&
+            haushalt.messorte[1].anker === "_genesisMitte" &&
+            !ortTaktLebt(haushalt, stamm).errs.length
     );
 
     // S24 — die Orts-Wache: ein Lauf zählt für die Ratsche eines Orts nur, wenn er in dessen Zustand stand (Aufstellung,
@@ -689,13 +706,13 @@ function selbsttest() {
     t(
         "Orts-Wache: gestellt sauber; Dorf-Zug läuft, ohne --ort, Gier −0,88, Genesis ohne Ort-Takt, ohne Aufzeichnung → je rot",
         !BAND.ortGestellt(wiese, gestellt).length &&
-            !BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: gen.ort.ortTakt, gier: Math.PI / 2 }).length &&
+            !BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: gen.ort.ortTakt, gier: -Math.PI / 2 }).length &&
             g24(wiese, { dorfZug: true }).length === 1 &&
             /Dorf-Zug/.test(g24(wiese, { dorfZug: true })[0]) &&
             g24(wiese, { ort: null }).length === 1 &&
             g24(wiese, { gier: -0.88 }).length === 1 &&
             /Gier/.test(g24(wiese, { gier: -0.88 })[0]) &&
-            BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: [], gier: Math.PI / 2 }).length === 1 &&
+            BAND.ortGestellt(gen.ort, { ort: "genesis", dorfZug: false, ortTakt: [], gier: -Math.PI / 2 }).length === 1 &&
             BAND.ortGestellt(wiese, undefined).length === 1
     );
 
@@ -757,7 +774,7 @@ function main() {
             `${ratsche.gemessen ? ", " + ratsche.gemessen.datum.slice(0, 10) : ""}, Toleranz ${ratsche.toleranzPct} % / ` +
             `+${ratsche.toleranzAbs.befehle} Befehle) · H3 ${nw.n} Textur-Erzeuger benannt · ` +
             `H4 Täter-Klasse des Stamms: ${tw.n} Schlüssel-Formen · H5 ${nl.n} Haushalt-Namen mit Erzeuger im Stamm · ` +
-            `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt-Methoden im Stamm.`
+            `Messorte ${ortZeile} · H6 ${ot.n} Ort-Takt- und Anker-Methoden im Stamm.`
     );
 }
 

@@ -1178,7 +1178,11 @@ async function checkBandV1728SpawnClearance(ctx) {
         const fpBlock = r._blueprintFootprintRadius("stein_block");
         out.villageBig = fpVillage >= MIN;
         out.blockSmall = fpBlock < MIN;
-        out.villageEffectUsesClear = /_structureSpawnPos/.test(window.__codeOf(r.dslEffects.spawn_village));
+        // Leben-Schau 07.10.: das Dorf misst seinen Plan (`_siedlungsAnker` in spawnSettlement) — spawn_village reicht den Ort
+        // durch, die Schätzung über _structureSpawnPos("haus_basis") fiel (sie umringte den Spieler).
+        out.villageEffectUsesClear =
+            /this\.spawnSettlement\(/.test(window.__codeOf(r.dslEffects.spawn_village)) &&
+            /this\._siedlungsAnker\(plan/.test(window.__codeOf(r.spawnSettlement));
         const pm = r.state.playerMesh && r.state.playerMesh.position;
         if (pm) {
             const px = pm.x,
@@ -1219,7 +1223,10 @@ async function checkBandV1728SpawnClearance(ctx) {
         res.villageBig
     );
     check("V17.28 Spawn-Clearance: Felsblock-Footprint klein (< MIN, intentional bleibt)", res.blockSmall);
-    check("V17.28 Spawn-Clearance: spawn_village nutzt _structureSpawnPos (Source-Probe)", res.villageEffectUsesClear);
+    check(
+        "V17.28 Spawn-Clearance: spawn_village gründet über spawnSettlement, der Anker misst den Plan (_siedlungsAnker)",
+        res.villageEffectUsesClear
+    );
     check(
         "V17.28 Spawn-Clearance: ein Haus AUF dem Spieler wird klar weggeschoben (kein Fall-durch)",
         res.villagePushed
@@ -4349,15 +4356,25 @@ async function checkBandV1754PlayerAttack(ctx) {
         // prueft (4) über die lebendig-Schwelle weiter.
         out.noGuiltForMaterial = true;
 
-        // (6) der Knockback-Pfad (fromPos + knockback) läuft ohne Fehler + schädigt
+        // (6) der Rückstoß-Pfad (fromPos + stoss {p, m}, das EINE Impuls-Gesetz) läuft, schädigt UND stößt das Ziel vom
+        // Angreifer weg — der Schlag ein Keulen-Hieb des Schmiede-Urteils (p 26,85 · m 1,71, gate:kampf-gefuehl T13). Die
+        // Gegenprobe: das tote Feld knockback (es liest niemand) stößt nicht — der Check übergab bis 0710-5 nur dieses Feld
+        // und prüfte allein den Schaden, er war leer.
         const c4 = r.spawnCreatureAt(pm.x + 380, pm.y, pm.z + 380, "happy", "wesen");
+        const von = { x: c4.position.x - 2, y: c4.position.y, z: c4.position.z };
         let kbOk = true;
+        let totFeld = null;
         try {
-            r.damageCreature(c4, 5, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z }, knockback: 8 });
+            c4.userData._stossV = null;
+            r.damageCreature(c4, 1, { source: "player", fromPos: von, knockback: 8 });
+            totFeld = c4.userData._stossV;
+            r.damageCreature(c4, 5, { source: "player", fromPos: von, stoss: { p: 26.85, m: 1.71 } });
         } catch {
             kbOk = false;
         }
-        out.knockbackRuns = kbOk && c4.userData.hp < c4.userData.hpMax;
+        const sv4 = c4.userData._stossV;
+        out.knockbackRuns = kbOk && c4.userData.hp < c4.userData.hpMax && !!sv4 && sv4.x > 0.01;
+        out.knockbackTotFeld = kbOk && !totFeld;
         if (r.state.creatures.indexOf(c4) !== -1) r.removeCreature(c4);
 
         // (7) der Dispatch + die Schuld sind wired (Source-Probe)
@@ -4397,7 +4414,14 @@ async function checkBandV1754PlayerAttack(ctx) {
         "V17.54 Kampf D (NULL): das Schuld-Gate lebt über die lebendig-Schwelle (Material-Wesen gefallen)",
         res.noGuiltForMaterial
     );
-    check("V17.54 Kampf D: der Knockback-Pfad (fromPos + knockback) läuft + schädigt", res.knockbackRuns);
+    check(
+        "V17.54 Kampf D: der Rückstoß-Pfad (fromPos + stoss) läuft, schädigt und stößt das Ziel vom Angreifer weg",
+        res.knockbackRuns
+    );
+    check(
+        "V17.54 Kampf D (Gegenprobe 0710-5): das tote Feld knockback stößt nicht — ein Check damit allein wäre leer",
+        res.knockbackTotFeld
+    );
     check(
         "V17.54 Kampf D: tryMouseBreak dispatcht zur Kreatur + die Schuld ist in _creatureCombatDeath wired",
         res.dispatchWired && res.guiltWired
@@ -14047,10 +14071,18 @@ async function checkBandLateMultiUser(ctx) {
         r.p2pBroadcastDsl = (prog) => sent.push(prog);
         r.state.p2p.enabled = true;
         r.setGameMode && r.setGameMode("schöpfer"); // Gates frei
+        // Das Phantom ist ein Object3D wie im Spiel (Integration V18.536): das Setzen zieht das nächste Phantom
+        // (`_bauPhantomNeu`), und `_disposeSoulGroup` entsorgt das alte — ein Stub `{ position }` warf dort
+        // („group.traverse is not a function") und riss 21 Folgetests mit.
+        const phantomBei = (x, y, z) => {
+            const g = new window.THREE.Group();
+            g.position.set(x, y, z);
+            return g;
+        };
         r.state.buildMode = {
             active: true,
             blueprintName: "stein_block",
-            phantomMesh: { position: { x: 30, y: 4, z: 30 } },
+            phantomMesh: phantomBei(30, 4, 30),
             phantomOnGround: true,
         };
         const builtOk = r.confirmBuild();
@@ -14073,7 +14105,7 @@ async function checkBandLateMultiUser(ctx) {
             r.state.buildMode = {
                 active: true,
                 blueprintName: cloneName,
-                phantomMesh: { position: { x: 33, y: 4, z: 33 } },
+                phantomMesh: phantomBei(33, 4, 33),
                 phantomOnGround: true,
             };
             r.confirmBuild();
@@ -14088,6 +14120,8 @@ async function checkBandLateMultiUser(ctx) {
 
         r.p2pBroadcastDsl = origBroadcast;
         r.state.p2p.enabled = false;
+        // das Phantom, das das Setzen gezogen hat, verlässt die Szene (kein Geist bleibt für die Tests danach)
+        r._clearBuildMode();
         // buildMode-Original wiederherstellen (Tests danach lesen
         // sein phantomOnGround-Feld); aktiv aus.
         r.state.buildMode = origBuildMode;
@@ -15407,8 +15441,9 @@ async function checkBandWelle6APolish(ctx) {
     }
 
     // ### Raycast-Place + Stabilitäts-Visual ###
-    // tickBuildMode → _resolvePhantomTarget castet aus der Kamera ({x, y, z, isStable, hit}): das
-    // Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
+    // tickBuildMode → _resolvePhantomTarget castet den Strahl des Fadenkreuzes (`_fadenkreuzStrahl`: die Richtung der
+    // Kamera ab der Ebene des Ziels — Gegenprüfung Runde 2, nie was zwischen Kamera und Spieler liegt) ({x, y, z,
+    // isStable, hit}): das Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
     const wave6a45Results = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r) return null;
@@ -15424,8 +15459,8 @@ async function checkBandWelle6APolish(ctx) {
         out.tickSetsOnGround = /phantomOnGround\s*=/.test(tickSrc);
 
         const resolveSrc = window.__codeOf(r._resolvePhantomTarget);
-        out.resolveUsesCamera = /this\.state\.camera/.test(resolveSrc);
-        out.resolveUsesGetWorldDirection = /getWorldDirection/.test(resolveSrc);
+        out.resolveUsesCamera = /this\._fadenkreuzStrahl\(\)/.test(resolveSrc);
+        out.resolveUsesGetWorldDirection = /getWorldDirection/.test(window.__codeOf(r._fadenkreuzStrahl));
         // DETERMINISMUS-BOGEN P3 — _resolvePhantomTarget ruft den feld-nativen
         // _runRaycast (kein physicsWorld.rayTest mehr; der Raycast geht durch
         // das Dichtefeld + Struktur-Box-Ray).
@@ -15483,7 +15518,8 @@ async function checkBandWelle6APolish(ctx) {
         // Kamera 8m über Bauwerks-Top, blickt steil nach unten auf die Mitte
         r.state.camera.position.set(_spawnArchX, _archTopY + 8, _spawnArchZ);
         r.state.camera.lookAt(_spawnArchX, _archTopY, _spawnArchZ);
-        // Build-Modus auf Slot 0 (stein_block in Default-Hotbar)
+        // Build-Modus auf Slot 0 (stein_block, gesetzt — der Start-Gurt liest den Katalog)
+        r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         out.buildModeActive = r.state.buildMode.active;
         out.phantomExists = !!r.state.buildMode.phantomMesh;
@@ -15523,9 +15559,12 @@ async function checkBandWelle6APolish(ctx) {
         check("Welle 6.A4: tickBuildMode delegiert an _resolvePhantomTarget", wave6a45Results.tickUsesResolve);
         check("Welle 6.A5: tickBuildMode ruft _applyPhantomTint", wave6a45Results.tickUsesTint);
         check("Welle 6.A5: tickBuildMode setzt phantomOnGround", wave6a45Results.tickSetsOnGround);
-        check("Welle 6.A4: _resolvePhantomTarget liest camera", wave6a45Results.resolveUsesCamera);
         check(
-            "Welle 6.A4: _resolvePhantomTarget nutzt getWorldDirection",
+            "Welle 6.A4: _resolvePhantomTarget liest den Strahl des Fadenkreuzes (_fadenkreuzStrahl)",
+            wave6a45Results.resolveUsesCamera
+        );
+        check(
+            "Welle 6.A4: der Strahl des Fadenkreuzes nutzt getWorldDirection der Kamera",
             wave6a45Results.resolveUsesGetWorldDirection
         );
         check(
@@ -19434,7 +19473,9 @@ async function checkBandVoxelTerrainCore(ctx) {
                 const ke = r.state.voxelChunks ? r.state.voxelChunks.get(`${kcx},${kcz}`) : null;
                 const karte = ke && ke.surfMap ? r._chunkSurfaceAt(ke, kcx, kcz, testX, testZ) : null;
                 const expected =
-                    Number.isFinite(karte) && Math.abs(karte - voxelY) <= r.constructor.STAND_SICHT_BAND ? karte : voxelY;
+                    Number.isFinite(karte) && Math.abs(karte - voxelY) <= r.constructor.STAND_SICHT_BAND
+                        ? karte
+                        : voxelY;
                 const actual = creature.position.y;
                 out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
                 // Fallback-Wächter nur, wo Boden und Fallback unterscheidbar sind.
@@ -19703,8 +19744,8 @@ async function checkBandHydrosphere(ctx) {
     // ### Wasserfälle aus dem Hydrosphären-Netz ###
     // Wasserfälle entstehen, wo ein Fluss eine echte Voxel-Klippe kreuzt (`_hydroExtractWaterfalls`);
     // der per-Chunk-Zufalls-Spawner `_buildVoxelChunkWaterfalls` + seine State-Map sind gelöscht und
-    // nicht mehr in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` gehookt. `_ensureWaterfallMaterial` +
-    // die vertikale Plane-Geometrie bleiben (`_buildHydroWaterfall` nutzt sie).
+    // nicht mehr in `_ensureVoxelChunkAt`/`_disposeVoxelChunk` gehookt. Das Wasserfall-Material ohne Leser
+    // (`_ensureWaterfallMaterial`, nur Tests riefen es) ist mit der Welle L gefallen (W-kD11).
     const voxelV943cAblation = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         if (!r || !r.state) return null;
@@ -19716,7 +19757,7 @@ async function checkBandHydrosphere(ctx) {
             ensureNoHook: !/_buildVoxelChunkWaterfalls/.test(ensureSrc),
             disposeNoHook: !/_disposeVoxelChunkWaterfalls/.test(disposeSrc),
             stateMapGone: !("voxelChunkWaterfalls" in r.state),
-            materialKept: typeof r._ensureWaterfallMaterial === "function",
+            materialKept: typeof r._ensureWaterfallMaterial === "undefined" && !("waterfallUniforms" in r.state),
         };
     });
 
@@ -19736,71 +19777,8 @@ async function checkBandHydrosphere(ctx) {
         );
         check("Voxel V9.43-c: state.voxelChunkWaterfalls-Map ist entfernt", voxelV943cAblation.stateMapGone);
         check(
-            "Voxel V9.43-c: _ensureWaterfallMaterial lebt weiter (von _buildHydroWaterfall reuset)",
+            "Voxel V9.43-c → Welle L: das Wasserfall-Material ohne Leser ist gefallen (kein _ensureWaterfallMaterial, keine waterfallUniforms)",
             voxelV943cAblation.materialKept
-        );
-    }
-
-    // ### Das Wasserfall-Material ###
-    // Ein geteiltes Material mit Abwärts-Flow (`_ensureWaterfallMaterial`) teilt die Wasser-Substanz-Uniforms
-    // (Farbe/Sonne/Licht) mit dem Meer; `_buildHydroWaterfall` nutzt es für die netz-verankerten Planes. Die Luft
-    // trägt es nicht selbst: der EINE Luft-Knoten (`scene.fogNode`, V18.530) dunstet es wie jedes Mesh.
-    const voxelV943Results = await safeEvaluate(page, () => {
-        const r = window.anazhRealm;
-        if (!r) return null;
-        const out = {};
-        out.hasEnsureMat = typeof r._ensureWaterfallMaterial === "function";
-        let mat = null;
-        if (out.hasEnsureMat) mat = r._ensureWaterfallMaterial();
-        // V10.0-f-3 Doku-Sync: Wasserfall ist jetzt MeshBasicNodeMaterial
-        // (TSL). Die alte ShaderMaterial-Identitäts-Probe (mat.type ===
-        // "ShaderMaterial") wandert auf isMeshBasicNodeMaterial=true.
-        out.matIsShader = !!mat && mat.isMeshBasicNodeMaterial === true;
-        // V10.0-f-3 Doku-Sync: Uniforms leben in state.waterfallUniforms
-        // (uniform-Knoten mit .value, kein material.uniforms mehr).
-        const u = r.state.waterfallUniforms || {};
-        out.hasFlowUniforms =
-            !!u.flowDir &&
-            !!u.flowDir.value &&
-            u.flowDir.value.y < 0 &&
-            typeof (u.flowSpeed && u.flowSpeed.value) === "number" &&
-            !!u.time;
-        // Kein eigener Wasser-Nebel: fogColor/fogNear/fogFar sind fort, die Luft legt scene.fogNode auf.
-        out.sharesWaterUniforms =
-            !!u.deep && !!u.shallow && !!u.sunDir && !!u.light && !u.fogColor && !u.fogNear && !u.fogFar;
-        // Day-Night synct das Wasserfall-Material: das Licht (uLight) folgt dem Richtlicht, und die EINE Luft
-        // (state.luft = scene.fogNode) liegt auf dem Material (mat.fog an).
-        out.dayNightSyncsWaterfall = false;
-        if (mat && typeof r._applyDayNightToScene === "function") {
-            try {
-                u.light.value = -1;
-                r._applyDayNightToScene();
-                const sc = r.state.scene;
-                out.dayNightSyncsWaterfall =
-                    u.light.value > 0 && mat.fog !== false && !!r.state.luft && !!sc && sc.fogNode != null;
-            } catch {
-                out.dayNightSyncsWaterfall = false;
-            }
-        }
-        return out;
-    });
-
-    if (voxelV943Results && !voxelV943Results.error) {
-        check(
-            "Voxel V9.43-a: _ensureWaterfallMaterial liefert ein MeshBasicNodeMaterial (V10.0-f-3 TSL)",
-            voxelV943Results.hasEnsureMat && voxelV943Results.matIsShader
-        );
-        check(
-            "Voxel V9.43-a: state.waterfallUniforms trägt flowDir (abwärts) + flowSpeed + time",
-            voxelV943Results.hasFlowUniforms
-        );
-        check(
-            "Voxel V9.43-a: state.waterfallUniforms teilt die Wasser-Substanz-Uniforms mit dem Meer (kein eigener Nebel)",
-            voxelV943Results.sharesWaterUniforms
-        );
-        check(
-            "Voxel V9.43-a: _applyDayNightToScene synct das Wasserfall-Material (Licht gesetzt, die EINE Luft liegt auf)",
-            voxelV943Results.dayNightSyncsWaterfall
         );
     }
 
@@ -20179,10 +20157,11 @@ async function checkBandHydrosphere(ctx) {
             out.seaMouthChecked = true;
             if (Math.abs(lastY - r.state.waterLevel) > 0.3) out.mouthReachesSea = false;
         }
-        // Die Schwimm-/Wasser-Physik speist den effektiven Wasserspiegel aus _waterLevelAt; sie lebt im
-        // feld-nativen Controller `_stepCharacter` (`_loopPhysicsSync` dispatcht nur).
+        // Die Schwimm-/Wasser-Physik speist den effektiven Wasserspiegel aus der EINEN Wasser-Wahrheit am Körper
+        // (`_koerperWasser`, Welle L wasser — vorher `_waterLevelAt`); sie lebt im feld-nativen Controller `_stepCharacter`
+        // (`_loopPhysicsSync` dispatcht nur).
         out.physicsUsesEffWater =
-            typeof r._stepCharacter === "function" && /_waterLevelAt/.test(window.__codeOf(r._stepCharacter));
+            typeof r._stepCharacter === "function" && /_koerperWasser\(/.test(window.__codeOf(r._stepCharacter));
         return out;
     });
 
@@ -20254,58 +20233,45 @@ async function checkBandHydrosphere(ctx) {
             // benachbarter See-Blend die Mess-Punkte verfälscht; am Blockende wiederhergestellt.
             const savedLN = hydro.lakeNear;
             hydro.lakeNear = new Uint8Array(savedLN.length);
-            // (3) der Fluss-Mittelpunkt wird gecarvt
-            const carveCenter = r._hydrosphereCarveAt(rx, rz);
-            out.riverCenterCarved = carveCenter > 0.5;
-            // (4) das Bett liegt unter den Ufern: das Carve-Profil
-            // fällt von der Fluss-Mitte zur Bank-Rampe hin ab.
-            const D = HC.carveBedMin + HC.carveBedK * (rp.width || HC.widthMin);
-            const bankW = Math.max(2, D * HC.carveBankSlope);
-            const halfW = Math.max(1, (rp.width || HC.widthMin) * 0.5);
+            // (3) der Kanal formt den Fluss-Mittelpunkt (`_hydrosphereCarveAt` liefert { P, L, k } — P der Kanal: Flachboden
+            // unter dem Spiegel), und das Bett liegt unter der Wasser-Fläche.
+            const kanal = r._hydrosphereCarveAt(rx, rz);
+            const rvM = r._hydroRiverAt(rx, rz);
+            out.riverCenterCarved = !!(kanal && rvM && kanal.P < rvM.surfaceY - 0.5 && kanal.L >= kanal.P);
+            // (4) das Bett liegt unter den Ufern: die Bank steigt von der Fluss-Mitte mit ihrer Neigung zur Krone (halbe
+            // Breite + Tiefe / bankNeigung, die Tiefe aus `_flussTiefe`).
+            const D = r.constructor._flussTiefe(rp);
+            const halfW = (rp.width || HC.widthMin) * 0.5;
             const pX = -rp.flowZ;
             const pZ = rp.flowX;
-            const rcCenter = r._hydrosphereCarveAt(rx, rz);
-            const midOff = halfW + bankW * 0.45;
-            const rcMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
-            out.bedBelowBanks = rcCenter > rcMid && rcMid > 0;
-            // (5) Der Carve senkt die Voxel-Surface am Fluss. Flache Rinnen (<1.2 m = unter der
-            // `_voxelSurfaceY`-Scan-Granularität) sind nicht messbar → den TIEFSTEN Carve-Punkt über alle
-            // Flüsse suchen; kein tiefer Carve = unmessbar = bestanden (carveIsSubtractive beweist exakt).
-            let bestCarve = 0;
-            let bcx = rx;
-            let bcz = rz;
-            for (let ri = 0; ri < hydro.rivers.length; ri++) {
-                const pts = hydro.rivers[ri].points;
-                for (let k = 0; k < pts.length; k++) {
-                    if (pts[k].inLake) continue;
-                    const c = r._hydrosphereCarveAt(pts[k].x, pts[k].z);
-                    if (c > bestCarve) {
-                        bestCarve = c;
-                        bcx = pts[k].x;
-                        bcz = pts[k].z;
-                    }
-                }
-            }
-            const sCarve = r._voxelSurfaceY(bcx, bcz);
-            r._hydroComputing = true;
-            const sNoCarve = r._voxelSurfaceY(bcx, bcz);
-            r._hydroComputing = false;
-            out.surfaceLowered =
-                bestCarve < 1.5
-                    ? true
-                    : Number.isFinite(sCarve) && Number.isFinite(sNoCarve) && sCarve < sNoCarve - 0.3;
-            // (8) der Carve ist rein subtraktiv: die _terrainDensityAt-
-            // Differenz (Carve aktiv vs. suppressed) === der Carve-Betrag
+            const midOff = halfW + (D / HC.bankNeigung) * 0.75;
+            const kMid = r._hydrosphereCarveAt(rx + pX * midOff, rz + pZ * midOff);
+            out.bedBelowBanks = !!(kanal && kMid && kanal.P < kMid.P);
+            // (5) die Voxel-Fläche liegt AUF der Gestalt: die Fluss-Mitte trägt den Flachboden (auf die Scan-Körnung
+            // von `_voxelSurfaceY`, 1,2 m).
+            const sKanal = r._voxelSurfaceY(rx, rz);
+            out.surfaceLowered = !!kanal && Number.isFinite(sKanal) && Math.abs(sKanal - kanal.P) < 1.3;
+            // (8) der Kanal formt das Gelände: die _terrainDensityAt-Dichte mit Kanal === das weiche Minimum aus Kanal und
+            // dem weichen Maximum aus Gelände (die Dichte ohne Kanal, das Suppress-Flag) und Damm.
             const y = (r.state.terrainBaseHeight || 0) + 10;
             const dCarve = r._terrainDensityAt(rx, y, rz);
             r._hydroComputing = true;
             const dSuppressed = r._terrainDensityAt(rx, y, rz);
             r._hydroComputing = false;
-            out.carveIsSubtractive = Math.abs(dSuppressed - dCarve - carveCenter) < 0.001;
-            // (9) ohne Hydrosphäre bit-identisch — _hydrosphereCarveAt → 0
+            let carveSoll = null;
+            if (kanal) {
+                const dL = kanal.L - y;
+                let hk = Math.max(kanal.k - Math.abs(dSuppressed - dL), 0) / kanal.k;
+                const damm = Math.max(dSuppressed, dL) + hk * hk * kanal.k * 0.25;
+                const dP = kanal.P - y;
+                hk = Math.max(kanal.k - Math.abs(damm - dP), 0) / kanal.k;
+                carveSoll = Math.min(damm, dP) - hk * hk * kanal.k * 0.25;
+            }
+            out.carveIsSubtractive = carveSoll !== null && Math.abs(carveSoll - dCarve) < 0.001;
+            // (9) ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)
             const savedHydro = r.state.hydrosphere;
             r.state.hydrosphere = null;
-            out.carveZeroWithoutHydro = r._hydrosphereCarveAt(rx, rz) === 0;
+            out.carveZeroWithoutHydro = r._hydrosphereCarveAt(rx, rz) === null;
             r.state.hydrosphere = savedHydro;
             // (10) der Chunk-Boden bleibt fest auf der Fluss-Mitte
             const base = r.state.terrainBaseHeight || 0;
@@ -20370,15 +20336,18 @@ async function checkBandHydrosphere(ctx) {
             "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeBedCell/lakeW/lakeNear)",
             d.indexWired
         );
-        check("Voxel V9.43-d: der Carve senkt einen Fluss-Mittelpunkt", d.riverCenterCarved);
-        check("Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (Carve-Profil fällt zur Bank ab)", d.bedBelowBanks);
-        check("Voxel V9.43-d: der Carve senkt die Voxel-Surface am Fluss", d.surfaceLowered);
         check(
-            "Voxel V9.43-d: der Carve ist rein subtraktiv (_terrainDensityAt-Differenz === Carve-Betrag)",
+            "Voxel V9.43-d → Welle L: der Kanal formt einen Fluss-Mittelpunkt (Flachboden unter dem Spiegel)",
+            d.riverCenterCarved
+        );
+        check("Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (die Gestalt steigt zur Bank an)", d.bedBelowBanks);
+        check("Voxel V9.43-d → Welle L: die Voxel-Fläche liegt auf dem Flachboden des Kanals", d.surfaceLowered);
+        check(
+            "Voxel V9.43-d → Welle L: der Kanal formt das Gelände (weiches Minimum aus Kanal und dem weichen Maximum aus Gelände und Damm — die Bank läuft ins Gelände aus)",
             d.carveIsSubtractive
         );
         check(
-            "Voxel V9.43-d: ohne Hydrosphäre ist der Carve 0 (bit-identisch zu vor V9.43-d)",
+            "Voxel V9.43-d: ohne Hydrosphäre kein Kanal (bit-identisch zum Feld ohne Carve)",
             d.carveZeroWithoutHydro
         );
         check("Voxel V9.43-d: der Chunk-Boden bleibt fest auf einer Fluss-Mitte (V9.12-Garantie)", d.floorSolid);
@@ -20479,7 +20448,9 @@ async function checkBandHydrosphere(ctx) {
         check(
             "Welle 5 Klang: der Wasserfall donnert nah, schweigt fern",
             e.hasWaterfall === true && e.fallNah >= e.schwelle && e.fallFern < e.schwelle,
-            e.hasWaterfall ? `nah=${zahl(e.fallNah)} dB fern=${zahl(e.fallFern)} dB` : "kein Wasserfall in der Hydrosphäre"
+            e.hasWaterfall
+                ? `nah=${zahl(e.fallNah)} dB fern=${zahl(e.fallFern)} dB`
+                : "kein Wasserfall in der Hydrosphäre"
         );
     }
 }
@@ -20773,30 +20744,25 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
             }
             const sampleMesh = r.state.voxelChunkWaterIso.get(sampleMeshKey);
             out.sampleMeshUsesHydroMat = sampleMesh.material === r.state.hydroSurfaceMaterial;
-            // V18.6 U-W4 — der Default-Render ist die Höhenfeld-FLÄCHE ("chunk-
-            // water-surface"); der A/B-Schalter "iso" baut die alte Zell-Iso
-            // ("chunk-water-iso"). Beide Kind-Stempel sind gültig.
-            out.sampleMeshUserData =
-                sampleMesh.userData &&
-                (sampleMesh.userData.hydroKind === "chunk-water-cellsheet" ||
-                    sampleMesh.userData.hydroKind === "chunk-water-iso");
+            // Der EINE Render-Pfad ist das Zell-Oberkanten-Sheet ("chunk-water-cellsheet"); der Debug-Zwilling
+            // „Zell-Iso" ist gefallen (Welle L, W-kD7).
+            out.sampleMeshUserData = !!sampleMesh.userData && sampleMesh.userData.hydroKind === "chunk-water-cellsheet";
             // Wasser ist eine FLÄCHE, kein Volumen: Material BackSide (von oben sichtbar, von unten
             // front-gecullt) + keine Unterseiten-Dreiecke (ny>0.2 am Build verworfen) — sonst „Wasser auf
             // der falschen Seite des Bodens“. Über ALLE Iso-Meshes gezählt.
             const BACK = window.THREE && window.THREE.BackSide !== undefined ? window.THREE.BackSide : 1;
-            // Der Tauch-Pass macht das GETEILTE Material DoubleSide, solange playerEyesUnderwater — korrekt,
-            // aber nicht der Oberflächen-Vertrag. Darum deterministisch den OBERFLÄCHEN-Zustand prüfen
-            // (ruhende Fläche = BackSide), zustands-neutral mit Restore — sonst kippt es mit der
-            // Spieler-Position.
+            // Der Tauch-Pass macht das GETEILTE Material DoubleSide, solange die KAMERA unter Wasser liegt
+            // (`_applyDayNightToScene` fragt `_koerperWasser` an der Kamera) — korrekt, aber nicht der
+            // Oberflächen-Vertrag. Darum deterministisch den OBERFLÄCHEN-Zustand prüfen (überall trocken = BackSide),
+            // zustands-neutral mit Restore — sonst kippt es mit der Kamera-Position.
             out.waterMatBackSide = (() => {
                 if (!r.state.hydroSurfaceMaterial) return false;
-                const savedDive = r.state.playerEyesUnderwater;
                 try {
-                    r.state.playerEyesUnderwater = false;
+                    r._koerperWasser = () => -Infinity;
                     if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
                     return r.state.hydroSurfaceMaterial.side === BACK;
                 } finally {
-                    r.state.playerEyesUnderwater = savedDive;
+                    delete r._koerperWasser;
                     if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
                 }
             })();
@@ -20911,7 +20877,7 @@ async function checkBandWelleC2WaterIsoSurface(ctx) {
         );
         check("Welle C.2 V9.72: Iso-Mesh nutzt das geteilte hydroSurfaceMaterial", res.sampleMeshUsesHydroMat === true);
         check(
-            "V18.92: Wasser-Mesh trägt userData.hydroKind='chunk-water-cellsheet' (Default) ODER 'chunk-water-iso' (Debug)",
+            "V18.92 → Welle L: Wasser-Mesh trägt userData.hydroKind='chunk-water-cellsheet' (der EINE Render-Pfad)",
             res.sampleMeshUserData === true
         );
         check(
@@ -22340,7 +22306,9 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
             const [kx, kz] = k.split(",").map(Number);
             return Math.max(Math.abs(kx - pcx), Math.abs(kz - pcz));
         };
-        const alleW = [...r.state.voxelChunks.keys()].filter((k) => distW(k) <= ringW).sort((a, b) => distW(a) - distW(b));
+        const alleW = [...r.state.voxelChunks.keys()]
+            .filter((k) => distW(k) <= ringW)
+            .sort((a, b) => distW(a) - distW(b));
         const ka = alleW.find((k) => wi.has(k));
         const kb = ka ? alleW.reverse().find((k) => k !== ka && distW(k) > distW(ka) && !wi.get(k)) : null;
         if (ka && kb) {
@@ -23013,11 +22981,21 @@ async function checkBandPhasenBF(ctx) {
         out.d3Feed = /_depositLife/.test(window.__codeOf(r._creatureNaturalDeath));
         out.d4Src = /gegenwehr/.test(window.__codeOf(r.damageCreature));
         // D4 — DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10.): die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus
-        // Ernährung und Masse der Gattung (tetrapoda temperamentDerGattung) — Hirsch scheu, Wolf wild, Bär wehrhaft, Fuchs
-        // scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär ist sanft). Die Substanz-Signaturen
-        // fielen (vorher: Hirsch, Fuchs und Bär „wehrhaft").
+        // Ernährung der Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch
+        // scheu, Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
+        // ist sanft). Die Substanz-Signaturen fielen (vorher: Hirsch, Fuchs und Bär „wehrhaft"). Gefragt wird ein
+        // gegossener Leib (die Masse ist das Volumen seiner Gestalt), fern des Spielers, danach entfernt.
         out.d4Temperament = (() => {
-            const t = (soul, bodySize) => r._creatureTemperament({ userData: { soul, bodySize } });
+            const pp = r.state.playerMesh.position;
+            const t = (soul, bodySize) => {
+                const c = r.spawnCreatureAt(pp.x + 200, pp.y, pp.z + 200, "happy", soul, { precise: true, bodySize });
+                if (!c) return null;
+                try {
+                    return r._creatureTemperament(c);
+                } finally {
+                    r.removeCreature(c);
+                }
+            };
             return (
                 t("wesen", 1) === "scheu" &&
                 t("wolf", 1) === "wild" &&
@@ -23156,13 +23134,13 @@ async function checkBandPhasenBF(ctx) {
             /_sitzHeight/.test(window.__codeOf(r.mountArchitecture)) &&
             /_sitzHeight/.test(window.__codeOf(r._rittSchritt));
         out.c7Grip = /_attachPointFor/.test(window.__codeOf(r._refreshHeldMesh));
-        // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg, das Abwärts-Material lebt als markierte
-        // Saat); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
+        // A4 — die Wasserfall-PLANE ist geschnitten (Builder weg; die Abwärts-Material-Saat ohne Leser fiel mit der
+        // Welle L); der STEIL-SPLIT formt vertikales Wasser im Zell-Sheet (Lippe + Vorhang).
         out.a4PlaneCut =
             typeof r._buildHydroWaterfall === "undefined" &&
             typeof r._buildHydroWaterfallPool === "undefined" &&
             typeof r._waterfallIsRealWall === "undefined" &&
-            typeof r._ensureWaterfallMaterial === "function" &&
+            typeof r._ensureWaterfallMaterial === "undefined" &&
             typeof r.setWaterfallSteep === "undefined";
         // B1 (V18.345) — die Sheet-Mathe lebt jetzt in `_computeWaterSheetData` (geteilt mit
         // dem Worker-Mirror); der `_buildVoxelChunkWaterCellSheet`-Wrapper ist nur noch Gate+ctx.
@@ -23255,24 +23233,24 @@ async function checkBandPhasenBF(ctx) {
             const src = r._specRenderBody ? window.__codeOf(r._specRenderBody) : "";
             return hasRad && /computeMotionRoles\(bp\.parts, bp\.connections\)/.test(src) && /Rad an Achse/.test(src);
         })();
-        // B5-UNTERWASSER-PASS: dritter Konsument des playerEyesUnderwater-Flags (neben Tauch-Fog + Tint) —
-        // getaucht ist das geteilte Wasser-Material DoubleSide (Decke von unten sichtbar), aufgetaucht
-        // BackSide. Behavioral mit Restore (zustands-neutral).
+        // B5-UNTERWASSER-PASS: Konsument des Kamera-Mediums (neben der Unterwasser-Luft) — liegt die KAMERA unter
+        // dem Spiegel (`_koerperWasser` an der Kamera, Welle L Q6), ist das geteilte Wasser-Material DoubleSide (Decke von
+        // unten sichtbar), darüber BackSide. Behavioral mit Restore (zustands-neutral): der Spiegel wird einmal über,
+        // einmal unter die Kamera gelegt.
         out.b5Underwater = (() => {
             if (typeof r._ensureHydroSurfaceMaterial !== "function") return false;
             const mat = r._ensureHydroSurfaceMaterial();
             if (!mat) return false;
-            const savedFlag = r.state.playerEyesUnderwater;
             try {
-                r.state.playerEyesUnderwater = true;
+                r._koerperWasser = () => Infinity;
                 r._applyDayNightToScene();
                 const diveSide = mat.side;
-                r.state.playerEyesUnderwater = false;
+                r._koerperWasser = () => -Infinity;
                 r._applyDayNightToScene();
                 const surfSide = mat.side;
                 return diveSide === THREE.DoubleSide && surfSide === THREE.BackSide;
             } finally {
-                r.state.playerEyesUnderwater = savedFlag;
+                delete r._koerperWasser;
                 r._applyDayNightToScene();
             }
         })();
@@ -23589,7 +23567,7 @@ async function checkBandPhasenBF(ctx) {
     check("C7: Built-in-Körper liegen automatisch als Blueprints (Button gefallen)", res.c7Bodies);
     check("C7: der Mount liest die Sitz-Höhe des Bauplans (Source, beide Leser)", res.c7MountSitz);
     check("C7: die Hand greift am GRIFF-Punkt (Source im Hand-Mesh-Pfad)", res.c7Grip);
-    check("A4: die Wasserfall-Plane ist geschnitten, das Abwärts-Material lebt als Saat", res.a4PlaneCut);
+    check("A4 → Welle L: die Wasserfall-Plane und die Saat ohne Leser sind gefallen", res.a4PlaneCut);
     check("A4: der Steil-Split formt vertikales Wasser (Lippe + Vorhang im Zell-Sheet)", res.a4Curtain);
     check("A4: aWave ist ART-gedämpft (Fluss-riverness + See still — die Mündungs-Synergie)", res.a4MouthWave);
     check(
@@ -23802,7 +23780,10 @@ async function checkBandPhaseAFundament(ctx) {
         res.a5 && res.a5.knoten === true && res.a5.sichtKlar >= 5000 && res.a5.kanteKlar === true,
         res.a5 ? `sicht=${Math.round(res.a5.sichtKlar)} m kante=${res.a5.ringEdge.toFixed(1)} m` : ""
     );
-    check("A5: _dayNightApplyHemiUndLuft liest die Extinktion aus dem Wetter (_luftBeta)", res.a5 && res.a5.src === true);
+    check(
+        "A5: _dayNightApplyHemiUndLuft liest die Extinktion aus dem Wetter (_luftBeta)",
+        res.a5 && res.a5.src === true
+    );
     check("B2/N7.4: Mantel-Methoden geschnitten (ensure + dispose weg)", res.b2 && res.b2.methodsGone === true);
     check("B2/N7.4: HORIZON_MANTLE-Konstante geschnitten", res.b2 && res.b2.constGone === true);
     check(
@@ -23858,8 +23839,8 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         out.lod1WithCells = lod1WithCells;
         out.allCellsAreLod0 = allCellsAreLod0;
         out.firstMismatchLen = firstMismatchLen;
-        // Source-Probe: _buildVoxelChunkWaterIsoSurface nutzt LOD 0 fest
-        const isoSrc = window.__codeOf(r._buildVoxelChunkWaterIsoSurface);
+        // Source-Probe: die Sheet-Mathe (der EINE Wasser-Render-Pfad) nutzt LOD 0 fest
+        const isoSrc = window.__codeOf(r._computeWaterSheetData);
         out.isoUsesLod0 = /_voxelChunkConfig\(0\)/.test(isoSrc);
         // Source-Probe: _buildVoxelChunkData baut waterCells mit lod=0
         const buildSrc = window.__codeOf(r._buildVoxelChunkData);
@@ -23880,7 +23861,10 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         res.totalWithCells >= 1,
         `total=${res.totalWithCells}, lod0=${res.lod0WithCells}, lod1=${res.lod1WithCells}`
     );
-    check("Welle V9.93: _buildVoxelChunkWaterIsoSurface nutzt LOD 0 fest (Source-Probe)", res.isoUsesLod0);
+    check(
+        "Welle V9.93: die Wasser-Sheet-Mathe (_computeWaterSheetData) nutzt LOD 0 fest (Source-Probe)",
+        res.isoUsesLod0
+    );
     check("Welle V9.93: _buildVoxelChunkData baut waterCells mit lod=0 (Source-Probe)", res.buildPassesLod0);
 }
 
@@ -23956,15 +23940,16 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         out.perfMs = performance.now() - t0;
 
         // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` liest den Boden UNTER dem Körper (`_kreaturBodenUnter`:
-        // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle);
-        // der Helper selbst liest `_waterLevelAt` + `_isAboveWaterAt`.
+        // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle); der Helper liest die
+        // EINE Wasser-Wahrheit am Körper (`_koerperWasser`, Welle L wasser) — Tiefe UND Ufer-Suche —, nie mehr das 3×3-gedehnte
+        // `_waterLevelAt` / `_isAboveWaterAt` (die zweite Wahrheit der Ufer-Scheu).
         const helperSrc = window.__codeOf(r._creatureWaterContextAt);
         out.usesVoxelSurfaceY =
             /_kreaturBodenUnter\(/.test(window.__codeOf(r._creatureGroundY)) &&
             /_fieldSurfaceBelow\(/.test(window.__codeOf(r._kreaturBodenUnter)) &&
             /_voxelSurfaceY\(/.test(window.__codeOf(r._kreaturBodenUnter));
-        out.usesWaterLevelAt = /_waterLevelAt\(/.test(helperSrc);
-        out.usesIsAboveWaterAt = /_isAboveWaterAt\(/.test(helperSrc);
+        out.usesKoerperWasser = (helperSrc.match(/_koerperWasser\(/g) || []).length >= 2;
+        out.ohneZweiteWahrheit = !/_waterLevelAt\(|_isAboveWaterAt\(/.test(helperSrc);
 
         // BODEN-CACHE: die teuren `_voxelSurfaceY`-Scans sind pro Frame per Budget gedeckelt, nicht 1–2×
         // pro Kreatur. Das Budget dekrementiert je echtem Scan → hier als Scan-Zähler gelesen.
@@ -24043,8 +24028,14 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         "Welle V11.0-d.1: _creatureGroundY liest den Boden unter dem Körper (_kreaturBodenUnter → _fieldSurfaceBelow, Säule nur ohne Fels)",
         res.usesVoxelSurfaceY === true
     );
-    check("Welle V11.0-d.1: Helper liest _waterLevelAt (Wahrheits-Quelle V9.50)", res.usesWaterLevelAt === true);
-    check("Welle V11.0-d.1: Helper liest _isAboveWaterAt (Wahrheits-Quelle V9.59)", res.usesIsAboveWaterAt === true);
+    check(
+        "Welle L: Helper liest die EINE Wasser-Wahrheit am Körper (_koerperWasser: Tiefe und Ufer-Suche)",
+        res.usesKoerperWasser === true
+    );
+    check(
+        "Welle L: Helper liest keine zweite Wahrheit (_waterLevelAt / _isAboveWaterAt)",
+        res.ohneZweiteWahrheit === true
+    );
     check("V17.113 Kreatur-FPS-Dirigent: _creatureGroundY (Boden-Cache) existiert", res.groundCacheFn === true);
     if (res.groundCacheFn) {
         check("V17.113: erster Boden-Zugriff scannt (Budget dekrementiert)", res.gFirstScan === true);
@@ -24126,9 +24117,12 @@ async function checkBandWelleV11D2WaterBias(ctx) {
         r.updateCreatures(0.016);
         out.yAfterTick = creature.position.y;
         out.yExpectedFloor = waterSpot.sy + 0.5; // alte Welt: am Boden
-        out.yExpectedSurface = waterSpot.wy - 0.3; // D.2: an der Surface
-        // Die Kreatur sollte JETZT an der Surface schwimmen (±0.4m für
-        // floatOffset-Bobbing-Animation). Sie war vorher am Boden.
+        // D.2: an der Surface — die Sohle hängt um die Wasserlinie des Tiers (am Schultergelenk, Welle L wasser D6: das
+        // Literal −0,3 ± 0,2 m fiel) unter dem Spiegel der EINEN Wahrheit am Körper (`_koerperWasser` über seinem Grund).
+        const linieW = creature.userData ? creature.userData._wasserlinie : NaN; // fehlt sie, ist die Probe rot
+        out.wasserlinie = linieW;
+        out.yExpectedSurface = r._koerperWasser(waterSpot.x, waterSpot.z, waterSpot.sy) - linieW;
+        // Die Kreatur sollte JETZT an der Surface schwimmen (±0.4m). Sie war vorher am Boden.
         out.swimsAtSurface = Math.abs(creature.position.y - out.yExpectedSurface) < 0.4;
         out.notAtFloor = Math.abs(creature.position.y - out.yExpectedFloor) > 0.5;
 
@@ -24172,7 +24166,7 @@ async function checkBandWelleV11D2WaterBias(ctx) {
     check(
         "Welle V11.0-d.2: Kreatur schwimmt an Surface nach einem Tick (Y-Override aktiv)",
         res.swimsAtSurface === true,
-        `yAfterTick=${res.yAfterTick?.toFixed(2)}, expected=${res.yExpectedSurface?.toFixed(2)}`
+        `yAfterTick=${res.yAfterTick?.toFixed(2)}, expected=${res.yExpectedSurface?.toFixed(2)} (Wasserlinie ${res.wasserlinie})`
     );
     check(
         "Welle V11.0-d.2: Kreatur NICHT mehr am See-Boden (alte Welt-Position überschrieben)",
@@ -24230,9 +24224,8 @@ async function checkBandWelleV11D3DrinkTask(ctx) {
         const STEP = 6;
         for (let dx = -SCAN; dx <= SCAN && !waterSpot; dx += STEP) {
             for (let dz = -SCAN; dz <= SCAN && !waterSpot; dz += STEP) {
-                const sy = r._voxelSurfaceY(dx, dz);
-                if (sy === null || !Number.isFinite(sy)) continue;
-                if (!r._isAboveWaterAt(dx, dz, 0.1)) waterSpot = { x: dx, z: dz };
+                // das Wasser, wie der Körper es trägt (Welle L: das Trink-Ziel liest `_nassAt` über `_koerperWasser`)
+                if (r._nassAt(dx, dz, 0.1)) waterSpot = { x: dx, z: dz };
             }
         }
         out.waterFound = waterSpot !== null;
@@ -24340,8 +24333,9 @@ async function checkBandNahStreu(ctx) {
             /bodenGewicht/.test(kSrc) &&
             /_canopyLightAt/.test(kSrc) &&
             /_feuchteAt/.test(kSrc) &&
-            /_nahStreuSpiegel/.test(kSrc) &&
-            /_hydroRiverAt/.test(window.__codeOf(r._nahStreuSpiegel)) &&
+            /_nahStreuBodenGewicht\(/.test(kSrc) &&
+            /_koerperWasser\(/.test(kSrc) &&
+            /uf\.fluss/.test(window.__codeOf(r._nahStreuBodenGewicht)) &&
             /_foundryFlattenFor/.test(tSrc) &&
             /_foundryDeclaredStage/.test(tSrc) &&
             /_foundryVariantFor/.test(tSrc) &&
@@ -24522,7 +24516,10 @@ async function checkBandNahStreu(ctx) {
         "Nah-Streu: die Blöcke sind treu (Σ n = Anzahl, Identitäten und Matrizen je Block, je Block ein Bereich im Streu-Satz)",
         res.tabelleDicht === true
     );
-    check("Nah-Streu: eine gebaute Kachel trägt Blöcke (Voraussetzung der Satz-Disziplin)", res.kachelMitBloecken === true);
+    check(
+        "Nah-Streu: eine gebaute Kachel trägt Blöcke (Voraussetzung der Satz-Disziplin)",
+        res.kachelMitBloecken === true
+    );
     if (!res.kachelMitBloecken) return;
     check("Nah-Streu: Entsorgen nimmt die Kachel-Blöcke aus den Senken", res.entsorgt === true);
     check("Nah-Streu: der Neubau stellt dieselben Zahlen her", res.neuGleich === true);
@@ -26171,7 +26168,7 @@ async function checkBandWelle6Keybindings(ctx) {
             Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
         // V8.17: 11 Aktionen (6 Original + 5 Drawer/Camera-Shortcuts; UI-Putz: drawerWelt entfiel).
         out.hasActions =
-            Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 12; // V18.109 E8: + swapHands
+            Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 13; // V18.109 E8: + swapHands, L3: + chat
         out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
         const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
         out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
@@ -26262,9 +26259,9 @@ async function checkBandWelle6Keybindings(ctx) {
         out.listInDom = !!document.getElementById("keybindings-list");
         out.resetInDom = !!document.getElementById("keybindings-reset");
         // 11 keybind-row Zeilen (UI-Putz: drawerWelt entfiel)
-        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 12; // V18.109 E8
+        out.sixRowsRendered = document.querySelectorAll("#keybindings-list .keybind-row").length === 13; // V18.109 E8, L3 chat
         // Pro Aktion ein Rebind-Button mit data-action
-        out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 12; // V18.109 E8
+        out.rebindButtonsPresent = document.querySelectorAll(".keybind-rebind[data-action]").length === 13; // V18.109 E8, L3 chat
 
         // Reset für nachfolgende Tests
         r.resetKeybindings();
@@ -26276,7 +26273,7 @@ async function checkBandWelle6Keybindings(ctx) {
     if (wave6c3Results && !wave6c3Results.error) {
         check("Welle 6.C3: DEFAULT_KEYBINDINGS frozen", wave6c3Results.hasDefaults);
         check(
-            "Welle 6.C3/V8.17+E8: KEYBINDING_ACTIONS hat 12 Einträge (6 + 5 Drawer/Camera + swapHands)",
+            "Welle 6.C3/V8.17+E8+L3: KEYBINDING_ACTIONS hat 13 Einträge (6 + 5 Drawer/Camera + swapHands + chat)",
             wave6c3Results.hasActions
         );
         check("Welle 6.C3: KEYBINDING_LABELS frozen", wave6c3Results.hasLabels);
@@ -26333,8 +26330,8 @@ async function checkBandWelle6Keybindings(ctx) {
         check("Welle 6.C3: #keybindings-section im DOM", wave6c3Results.sectionInDom);
         check("Welle 6.C3: #keybindings-list im DOM", wave6c3Results.listInDom);
         check("Welle 6.C3: #keybindings-reset im DOM", wave6c3Results.resetInDom);
-        check("Welle 6.C3/V8.17+E8: 12 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
-        check("Welle 6.C3/V8.17: 12 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
+        check("Welle 6.C3/V8.17+E8+L3: 13 keybind-row Zeilen gerendert", wave6c3Results.sixRowsRendered);
+        check("Welle 6.C3/V8.17+L3: 13 Rebind-Buttons im DOM", wave6c3Results.rebindButtonsPresent);
     }
 }
 
@@ -26963,7 +26960,10 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H P2A: wolf-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
         check("Welle 6.H P2A: wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
         check("Welle 6.H P2A: fuchs-Compound trägt lebendig > 0", wave6hP2aResults.geistHasLebendig);
-        check("Welle L: ein unbekannter Seelen-Wunsch ist eine laute Absage (kein Ersatz-Tier)", wave6hP2aResults.unknownSoulAbsage);
+        check(
+            "Welle L: ein unbekannter Seelen-Wunsch ist eine laute Absage (kein Ersatz-Tier)",
+            wave6hP2aResults.unknownSoulAbsage
+        );
         check("Welle L: der Schild einer Seele (Hirsch) findet sie", wave6hP2aResults.soulLabelFindet);
         check("Welle 6.H P2A: _creatureAuraOffsetY(wolf) === 0.75", wave6hP2aResults.spriteAuraOffset);
         check("Welle 6.H P2A: _creatureAuraOffsetY(wesen) === 0.8", wave6hP2aResults.wesenAuraOffset);
@@ -29216,9 +29216,9 @@ async function checkBandM3RittVollendet(ctx) {
             // Die GERENDERTE Unterkante: die Basis liegt bei position.y − 0.5 (Instanz-Matrix · Gruppen-Bau) — die alte
             // Formel ohne die −0.5 hielt den versunkenen Wagen (Reifen 0,48 m im Boden) für stehend.
             const bottom = entry.position.y - 0.5 + r._compoundBottomY(bp) * (entry.scale || 1);
-            // Der fahrzeug_wagen ist HOLZ → er SCHWIMMT: über Wasser ruht die Unterkante an der geglätteten
-            // Lauf-Fläche − 25 cm Tiefgang, trocken auf dem Terrain. Intent: „kein Versinken“.
-            const runSurf = r._waterRunSurfaceAt(entry.position.x, entry.position.z);
+            // Der fahrzeug_wagen ist HOLZ → er SCHWIMMT: über Wasser ruht die Unterkante am Spiegel (die EINE
+            // Wasser-Wahrheit am Körper über seinem Grund) − 25 cm Tiefgang, trocken auf dem Terrain. Intent: „kein Versinken“.
+            const runSurf = r._koerperWasser(entry.position.x, entry.position.z, terr);
             const expectFloat = Number.isFinite(runSurf) && runSurf > -1e8 && runSurf - 0.25 > terr;
             // An Land steht das Gefährt auf seinen Rädern und versinkt nirgends (W5 + Integration): die Probe liest das
             // Boden-Gesetz selbst an den vier Aufstandspunkten (`_rittAufstand`) und unter dem Ursprung (der Bauch), legt
@@ -29272,7 +29272,9 @@ async function checkBandM3RittVollendet(ctx) {
             r.state.player.animationLastTick = -Infinity;
             r.animatePlayerSoul(10.0);
             const parts = r.state.playerMesh.userData.parts;
-            out.seatPose = !!parts && Math.abs(parts.leftLeg.rotation.x - -1.3) < 1e-6;
+            // angewinkelt = der Oberschenkel mindestens 69° nach vorn (0710-4 Klasse 4: er liegt waagerecht auf der Sitzfläche,
+            // −π/2; vorher pinnte der Check das Literal −1,3 der alten Pose)
+            out.seatPose = !!parts && parts.leftLeg.rotation.x <= -1.2;
             r.dismountArchitecture();
             r.animatePlayerSoul(10.1);
             out.poseCleared = !!parts && Math.abs(parts.leftLeg.rotation.x) < 0.6; // Idle ≈ 0
@@ -30778,7 +30780,8 @@ async function checkBandGammaGenese(ctx) {
             // (4) Γ2 — DAS BODEN-GESETZ (Waldboden 04.10., die Host-Kronen-Lesart fiel): die Studio-Zeilen, die die
             // Nah-Streu liest, differenzieren an kontrollierten Umwelten — Farn im Schatten (die Feuchte hebt seine
             // Licht-Grenze), Schilf nur am gemessenen Ufer (Pflicht-Band), Blume im Licht.
-            const boden = A._studioRenderConfig && A._studioRenderConfig.placement && A._studioRenderConfig.placement.boden;
+            const boden =
+                A._studioRenderConfig && A._studioRenderConfig.placement && A._studioRenderConfig.placement.boden;
             const wG = window.__phytoCore && window.__phytoCore.bodenGewicht;
             if (boden && typeof wG === "function" && boden.farn && boden.schilf && boden.blume) {
                 out.gesetz = {
@@ -30800,13 +30803,18 @@ async function checkBandGammaGenese(ctx) {
                 /bodenGewicht/.test(kSrc) &&
                 /_feuchteAt/.test(kSrc) &&
                 /_canopyLightAt/.test(kSrc) &&
-                /_nahStreuSpiegel/.test(kSrc);
-            out.schilfData = !!(boden && boden.schilf && Array.isArray(boden.schilf.ufer) && boden.schilf.ring === "nah");
+                /_nahStreuBodenGewicht\(/.test(kSrc);
+            out.schilfData = !!(
+                boden &&
+                boden.schilf &&
+                Array.isArray(boden.schilf.ufer) &&
+                boden.schilf.ring === "nah"
+            );
             out.farnDual = !!(boden && boden.farn && Array.isArray(boden.farn.licht) && boden.farn.feuchtLicht > 0);
             out.bodenLiest = /_feuchteAt/.test(window.__codeOf(r._terrainMaterialAt));
-            out.spawnReicht = /spawnAffinityForBlueprint\([^)]*feuchte\)/.test(
-                window.__codeOf(r._vegetationSampleSpawn)
-            );
+            out.spawnReicht =
+                /const fw = Number\.isFinite\(feuchte\) \? feuchte/.test(window.__codeOf(r._vegetationSampleSpawn)) &&
+                /_affinitaet\([^)]*fw\)/.test(window.__codeOf(r._vegetationSampleSpawn));
             // (6) Γ5 — Math.random-Zensus (Kommentare gestrippt; der CODE darf
             // im Worldgen nie würfeln — P2P-Drift-Klasse).
             const fns = [
@@ -30819,6 +30827,7 @@ async function checkBandGammaGenese(ctx) {
                 "worldFieldAt",
                 "_clumpAt",
                 "spawnAffinityForBlueprint",
+                "_affinitaet",
             ];
             out.randHits = fns.filter((fn) => {
                 const f = r[fn];
@@ -32946,7 +32955,7 @@ async function checkBandV18193MakroErbgut(ctx) {
 }
 
 // Γ6 — vier stehende Wände gegen geheilte visuelle Narben: (G1) Schneeband auf PROMINENZ ·
-// (G2) chunk-seam per Pad+Crop (Source-Wand) · (G3) false-swim via `_waterCellAt` (3D-Wahrheit) ·
+// (G2) chunk-seam per Pad+Crop (Source-Wand) · (G3) false-swim via `_koerperWasser` (die EINE Wahrheit am Körper) ·
 // (G4) arch-water-solid via blockerAABBs. KEINE mutativen Spawns — Source-Proben + Welt nach Warmup.
 async function checkBandV18194Gamma6Befoerderung(ctx) {
     const { page, check } = ctx;
@@ -33019,32 +33028,60 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         const buildSrc = r._voxelChunkGeometry ? window.__codeOf(r._voxelChunkGeometry) : "";
         out.seamPadCropMechanism = /cropMargin/.test(buildSrc);
 
-        // (G3) FALSE-SWIM: `_waterCellAt` liest die 3D-Wahrheit (V13.11/V18.0).
-        // Eine HOHE Luft-Position (y=200) ist sicher AIR-Cell (0), nie WATER.
+        // (G3) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (`_koerperWasser`, Welle L Q6) — der Zell-Leser
+        // `_waterCellAt` (eine zweite Wahrheit, nur noch von dieser Probe gerufen) ist gefallen — und sie kennt die DECKE
+        // (D11): die Zellen halten Höhlen unter und neben Seen trocken (caveDry, `_skyOpenWaterFilter`). Die Probe sucht
+        // in den geladenen Wasser-Chunks jede erste LUFT-Zelle über FEST, deren Mitte unter dem Spiegel des Gesetzes liegt
+        // und über der eine FEST-Zelle steht (eine trockene Höhle), und stellt einen Körper auf ihren Boden: er liest dort
+        // nie Wasser. Bis 8f09227d las er den Spiegel ohne Decke (3511 von 3511 Höhlen-Proben am See der Mess-Wiese nass).
         // Plus: Worker-Mirror baut waterCells via Flood (V13.12 Vertikal-Open).
         let waterCellAtWorks = false;
-        let highIsNotWater = false;
-        let playerPosNoPhantom = false;
-        if (typeof r._waterCellAt === "function") {
+        const hoehle = { unter: 0, neben: 0, nassUnter: 0, nassNeben: 0 };
+        if (typeof r._koerperWasser === "function" && typeof r._waterCellAt === "undefined") {
             waterCellAtWorks = true;
-            // Hohe Luft-Position (y=200) ist NIE Wasser (1) — entweder AIR (0),
-            // SOLID (2) oder null (Chunk außerhalb). V13.12-Heilung: kein
-            // Phantom-Wasser in der Höhe.
-            const highCell = r._waterCellAt(0, 200, 0);
-            highIsNotWater = highCell !== 1;
-            // Direkt über Spielerposition (≈ 20 m über Spieler) — sicher Luft,
-            // niemals Wasser.
-            const pm = r.state.playerMesh;
-            if (pm) {
-                const above = r._waterCellAt(pm.position.x, pm.position.y + 20, pm.position.z);
-                playerPosNoPhantom = above !== 1;
-            } else {
-                playerPosNoPhantom = true; // ohne Spieler keine Probe → skip-pass
+            const cfg = r._voxelChunkConfig(0);
+            const oy = (s.terrainBaseHeight || 0) - cfg.floorDrop;
+            const ZS = r.constructor.CELL_STATE;
+            const dq = cfg.dim * cfg.dim;
+            for (const [key, e] of s.voxelChunks || []) {
+                if (!e || !e.waterCells) continue;
+                const c = e.waterCells;
+                const [kx, kz] = key.split(",").map(Number);
+                for (let k = 0; k < cfg.dim; k++)
+                    for (let i = 0; i < cfg.dim; i++) {
+                        const b = i + k * cfg.dim;
+                        const x = kx * cfg.span + (i + 0.5) * cfg.step;
+                        const z = kz * cfg.span + (k + 0.5) * cfg.step;
+                        const L = r._atlasWaterLevelAt(x, z, -1e9);
+                        if (!(L > -Infinity)) continue;
+                        for (let j = 1; j < cfg.dimY; j++) {
+                            const cy = oy + (j + 0.5) * cfg.step;
+                            if (cy > L) break;
+                            if (c[b + j * dq] !== ZS.AIR || c[b + (j - 1) * dq] !== ZS.SOLID) continue;
+                            let decke = false,
+                                wasser = false;
+                            for (let jj = j + 1; jj < cfg.dimY && oy + jj * cfg.step < L; jj++) {
+                                if (c[b + jj * dq] === ZS.SOLID) decke = true;
+                                else if (decke && c[b + jj * dq] === ZS.WATER) wasser = true;
+                            }
+                            if (!decke) continue;
+                            const boden = r._fieldSurfaceBelow(x, cy, z, 3);
+                            if (!Number.isFinite(boden) || !(boden < L - 0.2)) break;
+                            const nass = r._koerperWasser(x, z, boden) > boden + 0.1;
+                            if (wasser) {
+                                hoehle.unter++;
+                                if (nass) hoehle.nassUnter++;
+                            } else {
+                                hoehle.neben++;
+                                if (nass) hoehle.nassNeben++;
+                            }
+                            break;
+                        }
+                    }
             }
         }
         out.waterCellAtExists = waterCellAtWorks;
-        out.waterCellHighNotWater = highIsNotWater;
-        out.waterCellAbovePlayerNotWater = playerPosNoPhantom;
+        out.hoehle = hoehle;
         // Source-Probe für die V13.12-Heilung in der Cell-Build-Funktion
         const cellsSrc = r._buildVoxelChunkWaterCells ? window.__codeOf(r._buildVoxelChunkWaterCells) : "";
         out.cellsBuildHasFlood = cellsSrc.length > 200;
@@ -33104,11 +33141,18 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
         res.seamPadCropMechanism === true
     );
     // (G3) FALSE-SWIM
-    check("Γ6 (G3a) FALSE-SWIM: _waterCellAt liest 3D-Cell-Wahrheit (V13.11/V18.0)", res.waterCellAtExists === true);
-    check("Γ6 (G3b) hohe Luft-Position (y=200) ist NIE Wasser-Cell (kein Phantom)", res.waterCellHighNotWater === true);
     check(
-        "Γ6 (G3c) über Spielerposition (+20 m) ist NIE Wasser-Cell (kein Sub-Terrain-Blasen-Riss)",
-        res.waterCellAbovePlayerNotWater === true
+        "Γ6 (G3a) FALSE-SWIM: der Körper liest EINE Wasser-Wahrheit (_koerperWasser; der Zell-Leser _waterCellAt fiel)",
+        res.waterCellAtExists === true
+    );
+    const hh = res.hoehle || {};
+    check(
+        `Γ6 (G3b) FALSE-SWIM: die trockene Höhle UNTER dem See bleibt für den Körper trocken (Decke, D11: ${hh.nassUnter} von ${hh.unter} nass)`,
+        hh.unter + hh.neben > 0 && hh.nassUnter === 0
+    );
+    check(
+        `Γ6 (G3c) FALSE-SWIM: die trockene Höhle NEBEN dem See bleibt für den Körper trocken (Rand-Spiegel, D11: ${hh.nassNeben} von ${hh.neben} nass)`,
+        hh.unter + hh.neben > 0 && hh.nassNeben === 0
     );
     check("Γ6 (G3d) Cell-Build-Funktion vorhanden (V13.12 Vertikal-Open-Foundation)", res.cellsBuildHasFlood === true);
     check("Γ6 (G3e) Worker-Snapshot trägt hydroBand (Cell-Klassifikations-Skip)", res.hydroBandPresent === true);
@@ -33663,7 +33707,10 @@ async function checkBandV18199GammaMLichen(ctx) {
 
     check("V18.199 (L1a) AnazhRealm.LICHEN existiert + frozen", res.lichenExists === true && res.lichenFrozen === true);
     check("V18.199 (L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
-    check("V18.199 (L2a) Source: lichenMix + lichenCluster in der Boden-Farbe (_bodenFarbeAt)", res.mainHasLichen === true);
+    check(
+        "V18.199 (L2a) Source: lichenMix + lichenCluster in der Boden-Farbe (_bodenFarbeAt)",
+        res.mainHasLichen === true
+    );
     check("V18.199 (L2b) Mix-Stack-Order: dampEarth → lichen → lava", res.mainOrderCorrect === true);
     check(
         `V18.199 (L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
@@ -34677,8 +34724,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
         out.gamma4Anker = typeof r._macroAnker === "function";
         out.gamma6Snowband =
-            typeof r._attachVoxelFieldColors === "function" &&
-            /SNOW_PROM_START/.test(window.__codeOf(r._bodenFarbeAt));
+            typeof r._attachVoxelFieldColors === "function" && /SNOW_PROM_START/.test(window.__codeOf(r._bodenFarbeAt));
         out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
         out.gammaMLichen = !!A.LICHEN;
         out.gammaMIronBands = !!A.IRON_BANDS;
@@ -34982,6 +35028,7 @@ async function checkBandV18210Verdrahtung(ctx) {
         // (A3e) BEHAVIORAL: ein wild-Wesen mit Beute in 50m kriegt einen Dir
         // zurück (nicht null). Wir setzen ein Test-Setup synthetisch.
         const savedMode = r.getGameMode ? r.getGameMode() : "frieden";
+        const savedCreatures = r.state.creatures;
         try {
             if (r.setGameMode) r.setGameMode("pfad");
             // Fake-wildes Wesen (cached temperament=wild)
@@ -35002,7 +35049,6 @@ async function checkBandV18210Verdrahtung(ctx) {
                     boosts: [],
                 },
             };
-            const savedCreatures = r.state.creatures;
             r.state.creatures = [predator, prey];
             const dirWithPrey = r._creatureScentHuntDir(predator, 0.0);
             out.a3PredatorHasDir = !!(dirWithPrey && (dirWithPrey.x !== 0 || dirWithPrey.z !== 0));
@@ -35010,16 +35056,34 @@ async function checkBandV18210Verdrahtung(ctx) {
             r.state.creatures = [predator];
             const dirNoPrey = r._creatureScentHuntDir(predator, 0.0);
             out.a3NoPreyNoDir = dirNoPrey === null;
-            // Strike-Range-Test: Beute in 1m → strike returns true
-            prey.position.set(1.5, 0, 0);
-            r.state.creatures = [predator, prey];
-            predator.userData.nextHuntStrikeAt = -Infinity;
-            const struck = r._tickCreatureScentStrike(predator);
-            out.a3StrikeHits = struck === true;
+            // Strike-Range-Test mit ECHTEN Leibern (0710-4: der Biss stößt durch das EINE Impuls-Gesetz und liest die
+            // Masse aus der Gestalt — ein körperloser Stub hat keine, der Biss bräche fail-closed): ein Wolf, ein Fuchs
+            // in 1,5 m → der Biss trifft UND stößt die Beute vom Jäger weg.
             r.state.creatures = savedCreatures;
+            const pmS = r.state.playerMesh.position;
+            const capS = r.state.maxCreatures;
+            r.state.maxCreatures = Math.max(capS || 0, savedCreatures.length + 2);
+            const opt = { precise: true, bodySize: 1 };
+            const jaeger = r.spawnCreatureAt(pmS.x + 340, pmS.y, pmS.z - 340, "calm", "wolf", opt);
+            const beute = jaeger && r.spawnCreatureAt(pmS.x + 342, pmS.y, pmS.z - 340, "calm", "fuchs", opt);
+            r.state.maxCreatures = capS;
+            if (jaeger && beute) {
+                beute.position.set(jaeger.position.x + 1.5, jaeger.position.y, jaeger.position.z);
+                beute.userData.hp = 1e6; // der Biss soll stoßen, nicht töten
+                beute.userData._stossV = null;
+                r.state.creatures = [jaeger, beute];
+                jaeger.userData.nextHuntStrikeAt = -Infinity;
+                const struck = r._tickCreatureScentStrike(jaeger);
+                const sv = beute.userData._stossV;
+                out.a3StrikeHits = struck === true && !!sv && sv.x > 0;
+                r.state.creatures = savedCreatures;
+            }
+            if (jaeger) r.removeCreature(jaeger);
+            if (beute) r.removeCreature(beute);
         } catch (e) {
             out.a3Error = String((e && e.message) || e);
         } finally {
+            r.state.creatures = savedCreatures;
             if (r.setGameMode) r.setGameMode(savedMode);
         }
 
@@ -35152,7 +35216,11 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A3d SOURCE: updateCreatures verdrahtet den Helper im wander-Pfad", res.a3WanderWired === true);
     check("V18.210-A3e BEHAVIORAL: wild + Beute → direction != null", res.a3PredatorHasDir === true);
     check("V18.210-A3e2 BEHAVIORAL: wild ohne Beute → null", res.a3NoPreyNoDir === true);
-    check("V18.210-A3e3 BEHAVIORAL: Beute in 1.5m → strike trifft", res.a3StrikeHits === true);
+    check(
+        "V18.210-A3e3 BEHAVIORAL: Beute in 1.5m → der Biss trifft und stößt sie weg (echte Leiber, 0710-4)",
+        res.a3StrikeHits === true,
+        res.a3Error || ""
+    );
 
     // A1 — Audit-Heilungen (Persistenz + Eviction + Spezies-Diversität)
     check(
@@ -36477,8 +36545,7 @@ async function checkBandV18218LODStufen(ctx) {
             if (B && B.rock && pm && r._foundryEnabled()) {
                 const felsFern = (reg) =>
                     (reg && Array.isArray(reg.cells) ? reg.cells : []).filter(
-                        (c) =>
-                            c.layer === "rock" && c.lod >= 2 && Math.hypot(c.x - pm.x, c.z - pm.z) >= A.ANALOG_NAH_M
+                        (c) => c.layer === "rock" && c.lod >= 2 && Math.hypot(c.x - pm.x, c.z - pm.z) >= A.ANALOG_NAH_M
                     );
                 const bau = (k) => {
                     const [x, z] = k.split(",").map(Number);
@@ -36504,7 +36571,8 @@ async function checkBandV18218LODStufen(ctx) {
                     try {
                         B.rock.fernform = "boden";
                         const fz = felsFern(bau(key));
-                        out.fernBoden = fz.length > 0 && fz.every((c) => c.form === "boden" && !c.slots.length && !c.feld);
+                        out.fernBoden =
+                            fz.length > 0 && fz.every((c) => c.form === "boden" && !c.slots.length && !c.feld);
                     } finally {
                         B.rock.fernform = alt;
                     }
@@ -36613,7 +36681,10 @@ async function checkBandV18218LODStufen(ctx) {
     check("V18.218 (B6) Hysterese cur=0 + dist=t01+2h → wechselt 1", res.hyst0to1Above === true);
     check("V18.218 (B7) Hysterese cur=1 + dist=t01−2h → kehrt zu 0", res.hyst1to0Below === true);
     check("V18.218 (B8) Hysterese cur=1 + dist=t01−h/2 → bleibt 1", res.hyst1to0Above === true);
-    check("V18.526 Mehrstufen-Sprung: cur=0 jenseits t12+h → 2, cur=2 unter t01−h → 0", res.sprung0to2 === true && res.sprung2to0 === true);
+    check(
+        "V18.526 Mehrstufen-Sprung: cur=0 jenseits t12+h → 2, cur=2 unter t01−h → 0",
+        res.sprung0to2 === true && res.sprung2to0 === true
+    );
     check(
         `W1 KONSUM: rock.fernform="boden" → die neu gebaute Region trägt jenseits der Nah-Grenze form boden ohne Geometrie, zurück → gesetz (Region ${res.fernRegion}, ${res.fernZellen} Fern-Felsen)`,
         res.fernBoden === true && res.fernGesetz === true
@@ -37778,7 +37849,9 @@ async function checkBandRauschGesetz(ctx) {
     );
     const g = res.graph || {};
     const atlas = (g.texturen && g.texturen["rausch-atlas"]) || 0;
-    const namen = Object.entries(g.rauschNamen || {}).map(([f, c]) => f + " ×" + c).join(", ");
+    const namen = Object.entries(g.rauschNamen || {})
+        .map(([f, c]) => f + " ×" + c)
+        .join(", ");
     check(
         `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 78), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
         !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 78
@@ -37984,8 +38057,14 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         `Ω-OPSIS S4 (IV4) ein gewachsener Busch ist reich (≥8 Teile, gemessen ${res.buschParts})`,
         res.buschIsRich === true
     );
-    check("Ω-OPSIS S5 (V1) → V18.530: die Luft koppelt ans Wetter (Extinktion aus dem fog-Kanal)", res.hazeWeather === true);
-    check("Ω-OPSIS S5 (V2) CONSUM: Regen trübt die Sicht, Sturm mehr (β sonnig < Regen < Sturm)", res.hazeNearWeather === true);
+    check(
+        "Ω-OPSIS S5 (V1) → V18.530: die Luft koppelt ans Wetter (Extinktion aus dem fog-Kanal)",
+        res.hazeWeather === true
+    );
+    check(
+        "Ω-OPSIS S5 (V2) CONSUM: Regen trübt die Sicht, Sturm mehr (β sonnig < Regen < Sturm)",
+        res.hazeNearWeather === true
+    );
     check("Ω-OPSIS S5 (V3) die Luft-Uniforms existieren (β, Skalenhöhe)", res.hazeNearUniform === true);
     check(`Ω-OPSIS S4/S5 (VER) VERSION floor ≥ 18.231.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
@@ -38005,7 +38084,8 @@ async function checkBandV18264ShadowCache(ctx) {
         // CONSUM: der Aktuator fährt _shadowMinInterval (source-probe).
         out.actuatorDrives = /_shadowMinInterval/.test(window.__codeOf(r._nexusPerfActuate));
         const csm = st.csmNode;
-        const lichter = csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
+        const lichter =
+            csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
         out.lichter = lichter.length;
         if (!out.hasMethod || !lichter.length || !A.SCHATTEN_TAKT) return out;
         const zaehle = (n) => {
@@ -38785,9 +38865,10 @@ async function checkBandW3UiPuls(ctx) {
     );
 }
 
-// W-F Fluss: die EINE geglättete Lauf-Fläche (_waterRunSurfaceAt) mit drei Konsumenten (Zell-Sheet ·
-// Tauch-Trigger · Boot-Schwimmen), Narben-Wand (Zentrums-Blende lässt die Querschnitt-Kante roh),
-// Flow-Kräuselung im Shader, Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
+// W-F Fluss (Welle L, Q7-Gestalt): der EINE Spiegel des Gesetzes (_atlasWaterLevelAt — der Fluss-Spiegel stromab nie
+// steigend, quer waagrecht, `_hydroRiverSpiegel`) mit seinen Konsumenten (Zell-Sheet · Körper · Boot-Schwimmen); die
+// geglättete Lauf-Fläche (_waterRunSurfaceAt) fiel mit dem monotonen Spiegel. Flow-Kräuselung im Shader,
+// Substanz-emergentes Schwimmen. Headless: Verdrahtung + Boot-Schwimmen.
 // (checkBandWEFrequenzband unten: EIN Empfänger _applySubstanceResponse, Profile aus der Substanz
 // via _substanceResponseProfile, FÜLL-LICHT statt max()-Clamp, Band-Regler, Gras angedockt.)
 async function checkBandWFFluss(ctx) {
@@ -38795,23 +38876,42 @@ async function checkBandWFFluss(ctx) {
     const res = await safeEvaluate(page, () => {
         const r = window.anazhRealm;
         const out = {};
-        // (1) der EINE Leser existiert + Seen/Ozean kommen unverändert durch
-        // (kein Fluss → _waterRunSurfaceAt === _atlasWaterLevelAt; pure-Funktion).
-        out.runExists = typeof r._waterRunSurfaceAt === "function";
-        // ein trockener Punkt gibt -Infinity durch (kein Wasser erfunden).
-        const dryX = 99999,
-            dryZ = 99999;
-        out.dryPassthrough = r._waterRunSurfaceAt(dryX, dryZ) === r._atlasWaterLevelAt(dryX, dryZ, -Infinity);
-        // (2) die DREI Konsumenten lesen die geglättete Fläche (Source-Probe): die Sheet-Mathe in
-        // `_computeWaterSheetData` (Main + Worker geteilt), der Tauch-Trigger in `_stepCharacter`.
-        out.sheetReadsRun = /_waterRunSurfaceAt/.test(window.__codeOf(r._computeWaterSheetData));
-        out.diveReadsRun = /_waterRunSurfaceAt/.test(window.__codeOf(r._stepCharacter));
-        // (3) NARBEN-WAND: die Zentrums-Blende (centerness) lebt — _hydroRiverAt
-        // gibt sie, _waterRunSurfaceAt blendet roh↔glatt damit (Kante bleibt roh).
-        out.centernessField = /centerness/.test(window.__codeOf(r._hydroRiverAt));
-        out.centernessBlend =
-            /centerness/.test(window.__codeOf(r._waterRunSurfaceAt)) &&
-            /\* center/.test(window.__codeOf(r._waterRunSurfaceAt));
+        // (1) der EINE Leser lebt, die geglättete Lauf-Fläche ist gefallen; ein trockener Punkt gibt -Infinity durch
+        // (kein Wasser erfunden). Der trockene Punkt liegt IN der Region — eine Atlas-Land-Zelle, deren 3×3 Land ist, ohne
+        // Fluss: jenseits der Atlas-Domäne ist der Meeresspiegel der Default-Wasserkörper (V17.117, global) — dort gab der
+        // Leser -3, die Probe bei 99999/99999 war seit der Welle L wasser rot (Integration 08.10.).
+        out.runExists = typeof r._atlasWaterLevelAt === "function" && typeof r._waterRunSurfaceAt === "undefined";
+        const hW = r._hydroFor(0, 0);
+        let dryW = null;
+        if (hW && hW.ready && hW.water && hW.water.waterKind) {
+            const dimW = hW.dim,
+                wKW = hW.water.waterKind;
+            for (let j = 1; j < dimW - 1 && !dryW; j += 7)
+                for (let i = 1; i < dimW - 1 && !dryW; i += 7) {
+                    let land = true;
+                    for (let dj = -1; dj <= 1 && land; dj++)
+                        for (let di = -1; di <= 1 && land; di++) if (wKW[i + di + (j + dj) * dimW] !== 0) land = false;
+                    if (!land) continue;
+                    const x = hW.originX + (i + 0.5) * hW.cell,
+                        z = hW.originZ + (j + 0.5) * hW.cell;
+                    if (!r._hydroRiverAt(x, z)) dryW = { x, z };
+                }
+        }
+        out.dryPassthrough = !!dryW && r._atlasWaterLevelAt(dryW.x, dryW.z, -Infinity) === -Infinity;
+        // (2) die Konsumenten lesen den Spiegel (Source-Probe): die Sheet-Mathe in `_computeWaterSheetData` (Main +
+        // Worker geteilt) und der Körper über die EINE Wasser-Wahrheit am Körper (`_stepCharacter` → `_koerperWasser`).
+        out.sheetReadsRun = /_atlasWaterLevelAt/.test(window.__codeOf(r._computeWaterSheetData));
+        // Der Körper: `_koerperWasser` liest seinen Spiegel über `_koerperWasserSpiegel` (das gezeichnete Wasser, ohne Chunk
+        // das Gesetz `_atlasWaterLevelAt`).
+        out.diveReadsRun =
+            /_koerperWasser\(/.test(window.__codeOf(r._stepCharacter)) &&
+            /_koerperWasserSpiegel\(/.test(window.__codeOf(r._koerperWasser)) &&
+            /_atlasWaterLevelAt\(/.test(window.__codeOf(r._koerperWasserSpiegel));
+        // (3) DER SPIEGEL IST DAS SEGMENT: `_hydroRiverAt` liest den Spiegel seiner Enden (sA/sB), nie die Makro-Höhe des
+        // Orts (bis V18.531: Makro − 0,25·D + Buckel — der Fluss stieg bergauf und wölbte sich).
+        const rvSrc = window.__codeOf(r._hydroRiverAt);
+        out.centernessField = /centerness/.test(rvSrc);
+        out.centernessBlend = /seg\.sA/.test(rvSrc) && /seg\.sB/.test(rvSrc) && !/_terrainMacroSurfaceY/.test(rvSrc);
         // (4) die Flow-Kräuselung im Shader (fragment-seitig, narben-sicher).
         out.flowRipple = /flowRipple/.test(window.__codeOf(r._ensureHydroSurfaceMaterial));
         // (5) das BOOT-SCHWIMMEN ist Substanz-emergent: holz schwimmt, stein/
@@ -38834,20 +38934,31 @@ async function checkBandWFFluss(ctx) {
         out.holzFloats = probeFloat("holz");
         out.steinFloats = probeFloat("stein");
         out.eisenFloats = probeFloat("eisen");
-        // (6) das Profil trägt das floats-Feld (der Konsument im Ritt-Tick liest es).
-        out.tickFloatConsumed = /rideProf\.floats|prof.*floats/.test(window.__codeOf(r._rittSchritt));
+        // (6) der Studio-Wagen liegt nach der Hülle des Fahrzeug-Kerns im Wasser (D10: exportDrive.huelle.dichte), nie nach
+        // dem Holzkarren-Spender, den sein Bauplan klont (bis 8f09227d schwamm der GT wie ein Holz-Boot).
+        const pGt = r._vehicleProfile({ type: "fahrzeug_gt", scale: 1, position: { x: 0, y: 0, z: 0 } });
+        out.gtFloats = pGt ? pGt.floats : null;
+        // (7) der Ritt im Sim-Schritt und der Boden des Fahr-Schritts legen das Gefährt über die EINE Wahrheit am Körper mit
+        // seiner Gestalt ins Wasser (D4/D10 — der Frame-Tick ist nur Sicht).
+        const ritt = window.__codeOf(r._rittSchritt);
+        const boden = window.__codeOf(r._fahrBoden);
+        out.tickFloatConsumed =
+            /_fahrzeugGestalt\(/.test(ritt) &&
+            /_koerperWasser\([^)]*gestalt\)/.test(ritt) &&
+            /_fahrzeugGestalt\(/.test(boden) &&
+            /_koerperWasser\([^)]*gestalt\)/.test(boden);
         return out;
     });
     check(
-        "W-F Fluss: der EINE Lauf-Leser _waterRunSurfaceAt existiert + reicht Nicht-Fluss-Wasser unverändert durch",
+        "W-F Fluss: der EINE Spiegel-Leser _atlasWaterLevelAt lebt (die geglättete Lauf-Fläche fiel) + erfindet kein Wasser",
         res.runExists && res.dryPassthrough
     );
     check(
-        "W-F Fluss: die DREI Konsumenten lesen die geglättete Fläche (Zell-Sheet + Tauch-Trigger; Source-Probe)",
+        "W-F Fluss: die Konsumenten lesen den Spiegel des Gesetzes (Zell-Sheet + Körper über _koerperWasser; Source-Probe)",
         res.sheetReadsRun && res.diveReadsRun
     );
     check(
-        "W-F Fluss NARBEN-WAND: die Zentrums-Blende lebt (_hydroRiverAt gibt centerness, _waterRunSurfaceAt blendet roh↔glatt — die Querschnitt-Kante bleibt roh)",
+        "W-F Fluss SPIEGEL: _hydroRiverAt liest den Segment-Spiegel (sA/sB — stromab nie steigend, quer waagrecht), nie die Makro-Höhe des Orts",
         res.centernessField && res.centernessBlend
     );
     check(
@@ -38855,8 +38966,12 @@ async function checkBandWFFluss(ctx) {
         res.flowRipple
     );
     check(
-        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken — volumen-gewichtete Mittel-Dichte) + im Ritt-Tick konsumiert",
-        res.holzFloats === true && res.steinFloats === false && res.eisenFloats === false && res.tickFloatConsumed
+        "W-F Fluss BOOT: Schwimmen ist Substanz-emergent (holz schwimmt, stein/eisen sinken), der Studio-Wagen liest die Hülle des Kerns (GT sinkt) + im Ritt-Tick über _koerperWasser mit der Gestalt",
+        res.holzFloats === true &&
+            res.steinFloats === false &&
+            res.eisenFloats === false &&
+            res.gtFloats === false &&
+            res.tickFloatConsumed
     );
 }
 
@@ -39793,9 +39908,9 @@ async function checkBandWelle6XAudit(ctx) {
             /* ignore */
         }
         if (r.state.hotbar && r.state.hotbar.length === 9) {
-            const builtIns = ["stein_block", "waterfall", "damm"];
+            const gurt = r._startGurt() || [];
             for (let i = 0; i < 9; i++) {
-                r.state.hotbar[i] = i < 3 ? builtIns[i] : null;
+                r.state.hotbar[i] = i < gurt.length ? gurt[i] : null;
             }
         }
         r._clearBuildMode && r._clearBuildMode();
@@ -39963,16 +40078,24 @@ async function checkBandWelle6XAudit(ctx) {
         const dslOut = r.parseChatToDsl("baue dorf hier");
         out.chatBuildDorfParses = !!(dslOut && dslOut.program);
         if (dslOut && dslOut.program) {
-            // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed]
+            // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed, gier, tanH]
             out.chatBuildDorfFormat =
                 dslOut.program[0] === "spawn_village" &&
                 Array.isArray(dslOut.program[1]) &&
                 dslOut.program[1][0] === "at" &&
                 typeof dslOut.program[2] === "number";
-            // Position ist NICHT bei (0,0,0) — sondern 8m vor dem
-            // Spieler. yaw=0 → der Blick geht nach +Z, also z ≈ +8.
+            // Das Dorf trägt Ort UND Blick des Sprechers (Gegenprüfung Runde 1: der Anker hing am Blick jedes Peers):
+            // der Ort ist der Sprecher (z ≈ 0), dazu seine Gier (0) und sein Bildwinkel (> 0) — „vor dem Blick" legt
+            // `_siedlungsAnker` das Dorf aus dem Plan (gate:ankunft D9 misst die Häuser vor dem Spieler).
             const z = dslOut.program[1][3];
-            out.chatBuildDorfForwardOffset = Math.abs(z - 8) < 0.5;
+            r.state.yaw = Math.PI / 2;
+            const dslOut2 = r.parseChatToDsl("baue dorf hier");
+            r.state.yaw = 0;
+            out.chatBuildDorfForwardOffset =
+                Math.abs(z) < 0.5 &&
+                dslOut.program[3] === 0 &&
+                dslOut.program[4] > 0 &&
+                !!(dslOut2 && Math.abs(dslOut2.program[3] - Math.PI / 2) < 1e-9);
         }
 
         // --- C3: _canSoulJumpFromSlope existiert
@@ -40057,14 +40180,17 @@ async function checkBandWelle6XAudit(ctx) {
             "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
             wave6x3Results.atPlayerForwardOffset
         );
-        check("Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → +X, die EINE Vorwärts-Richtung)", wave6x3Results.atPlayerForwardYawAware);
+        check(
+            "Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → +X, die EINE Vorwärts-Richtung)",
+            wave6x3Results.atPlayerForwardYawAware
+        );
         check("Welle 6.X.3 C1: Chat 'baue dorf hier' parst zu DSL", wave6x3Results.chatBuildDorfParses);
         check(
             "Welle 6.X.3 C1: Chat 'baue dorf hier' Format [spawn_village, at, seed]",
             wave6x3Results.chatBuildDorfFormat
         );
         check(
-            "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ +8, vor dem Blick)",
+            "Welle 6.X.3 C1: Chat 'baue dorf hier' trägt Ort und Blick des Sprechers (z ≈ 0, Gier 0 bzw. π/2, Bildwinkel > 0)",
             wave6x3Results.chatBuildDorfForwardOffset
         );
         check("Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert", wave6x3Results.canJumpFromSlopeExists);
@@ -40682,7 +40808,8 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             r._applyDayNightToScene();
             const grenzeNacht = starU.value;
             const hellster = Math.min(...r.constructor.HIMMEL.wandelsterne.map((w) => w.mag));
-            out.starsBrighterAtNight = grenzeMittag < hellster - 0.5 && grenzeNacht >= r.constructor.HIMMEL.sternMagSchwach;
+            out.starsBrighterAtNight =
+                grenzeMittag < hellster - 0.5 && grenzeNacht >= r.constructor.HIMMEL.sternMagSchwach;
         }
 
         // --- Vision 9: Sonne + Mond Meshes existieren + folgen Tageszeit
@@ -40776,7 +40903,10 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             "Welle 6.G3 V2 Vision: Stern-Feld-Opacity existiert (V8.28 THREE.Points)",
             wave6g3v2Results.starIntensityExists
         );
-        check("Welle 6.G3 V2 Vision → V18.530: mittags ist kein Punkt sichtbar (Grenzgröße unter dem hellsten Wandelstern), nachts alle bis +6", wave6g3v2Results.starsBrighterAtNight);
+        check(
+            "Welle 6.G3 V2 Vision → V18.530: mittags ist kein Punkt sichtbar (Grenzgröße unter dem hellsten Wandelstern), nachts alle bis +6",
+            wave6g3v2Results.starsBrighterAtNight
+        );
         check("Welle 6.G3 V2 Vision: state.sunMesh ist THREE.Mesh", wave6g3v2Results.sunMeshExists);
         check("Welle 6.G3 V2 Vision: state.moonMesh ist THREE.Mesh", wave6g3v2Results.moonMeshExists);
         check("Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)", wave6g3v2Results.sunHighAtNoon);
@@ -41723,17 +41853,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // persistiert in state.atmosphere.waterCull.
         out.waterCullSetter = typeof r.setWaterCull === "function";
         out.waterMinDepthCull = waterMinDepthCull;
-        // V13.6: Wasser-Oberfläche ist wieder die Surface-Nets-Iso (Synergie mit dem
-        // Terrain — derselbe Mesher), band-limitiert aufs globale hydroBand. Source-
-        // Probe: der Iso-Builder nutzt sampleWater + _voxelChunkGeometry + bandDimY.
-        {
-            const isoSrc =
-                typeof r._buildVoxelChunkWaterIsoSurface === "function"
-                    ? window.__codeOf(r._buildVoxelChunkWaterIsoSurface)
-                    : "";
-            out.waterIsoSynergy =
-                /sampleWater/.test(isoSrc) && /_voxelChunkGeometry\(/.test(isoSrc) && /bandDimY/.test(isoSrc);
-        }
 
         // Wasser-Physik: state.playerUnderwater existiert als Flag
         out.underwaterFlagExists = typeof r.state.playerUnderwater === "boolean";
@@ -41747,10 +41866,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
                     const src = window.__codeOf(fn);
-                    if (/playerUnderwater\s*=\s*submerged/.test(src)) buoy = true;
-                    // Die Bremse liest das Schwimm-Gesetz (schwimmen.speedMul, Fallback 0.55) statt eines Literals:
-                    // if-Block `playerUnderwater) { … currentSpeed *= … speedMul … }`.
-                    if (/playerUnderwater\)\s*\{[\s\S]{0,240}?currentSpeed\s*\*=[\s\S]{0,160}?speedMul/.test(src))
+                    // Welle L Q6: der Schwimm-Zustand heißt `schwimmt` (die Säule über dem Grund übersteigt die Brustkorb-Linie).
+                    if (/playerUnderwater\s*=\s*(?:submerged|schwimmt)/.test(src)) buoy = true;
+                    // Die Bremse liest das Schwimm-Gesetz (schwimmen.speedMul, fail-closed, kein Literal-Rückfall):
+                    // `playerUnderwater) … currentSpeed *= … speedMul`.
+                    if (/playerUnderwater\)\s*\{?[\s\S]{0,240}?currentSpeed\s*\*=[\s\S]{0,160}?speedMul/.test(src))
                         speedCut = true;
                 } catch {
                     /* skip */
@@ -41774,7 +41894,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
         check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
         check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
-        check("V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (die EINE Szenen-Tiefe)", v830Results.waterDepthShoreline);
+        check(
+            "V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (die EINE Szenen-Tiefe)",
+            v830Results.waterDepthShoreline
+        );
         check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
         check("V13.9: Wasser-Shader hat Min-Depth-Cull-Uniform (justierbar)", v830Results.waterMinDepthUniform);
         check("V13.9.2: Min-Depth-Cull-Uniform trägt endlichen, ≥0-Wert", v830Results.waterMinDepthValueOk);
@@ -41782,10 +41905,6 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check(
             "V13.9: Wasser-Shader cullt dünnes Bluten (optischer Weg < uMinDepth via alphaTest)",
             v830Results.waterMinDepthCull
-        );
-        check(
-            "V13.6: Wasser-Oberfläche ist die Surface-Nets-Iso (Synergie mit Terrain, band-limitiert)",
-            v830Results.waterIsoSynergy
         );
     } else {
         check("V8.30: Schnittstellen-Politur Tests laufen", false, v830Results ? v830Results.error : "no result");
@@ -41834,7 +41953,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v831Results && !v831Results.error) {
-        check("V8.31 → V18.530: das Wasser dunstet durch die EINE Luft (scene.fogNode, keine Fog-Uniforms)", v831Results.waterFogUniforms);
+        check(
+            "V8.31 → V18.530: das Wasser dunstet durch die EINE Luft (scene.fogNode, keine Fog-Uniforms)",
+            v831Results.waterFogUniforms
+        );
         check("V8.31 → V18.530: kein Wasser-eigener Nebel-Mix im Builder", v831Results.waterFogInShader);
         check("V8.31: Wasser-Wellen heterogen (Mehr-Skalen organische Dünung, V18.368)", v831Results.waterHeteroSwell);
     } else {
@@ -41859,7 +41981,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
                     const fn = proto[name];
                     if (typeof fn !== "function") continue;
                     if (
-                        /playerEyesUnderwater\s*=\s*(?:submerged\s*&&\s*)?(?:scaledY|mesh\.position\.y) \+ 1\.6/.test(
+                        /playerEyesUnderwater\s*=\s*(?:(?:submerged|schwimmt)\s*&&\s*)?(?:scaledY|mesh\.position\.y) \+ 1\.6/.test(
                             window.__codeOf(fn)
                         )
                     )
@@ -41870,12 +41992,15 @@ async function checkBandWelle6G4Atmosphere(ctx) {
             }
             out.eyesFlagComputed = found;
         }
-        // Der Unterwasser-Tint nutzt playerEyesUnderwater, NICHT
-        // mehr playerUnderwater. V9.56-i: die Hemi+Luft-Phase lebt jetzt
-        // im _dayNightApplyHemiUndLuft-Helfer (Source-Pattern wandert mit).
+        // Die Unterwasser-Luft folgt dem Medium der KAMERA (Welle L Q6, W-L-d): `_koerperWasser` an der Kamera, nie
+        // die Augen des Körpers. V9.56-i: die Hemi+Luft-Phase lebt im _dayNightApplyHemiUndLuft-Helfer.
         {
             const src = window.__codeOf(r._dayNightApplyHemiUndLuft);
-            out.tintUsesEyesFlag = /playerEyesUnderwater/.test(src) && /unterwasserM/.test(src);
+            out.tintUsesEyesFlag =
+                /kameraUnterWasser/.test(src) &&
+                /_koerperWasser\(cam\.position\.x/.test(src) &&
+                /unterwasserM/.test(src) &&
+                !/playerEyesUnderwater/.test(src);
         }
 
         // V10.0-f-4 Doku-Sync: Fresnel-Opazität jetzt im TSL-Tree. Source-Probe.
@@ -41903,8 +42028,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     if (v832Results && !v832Results.error) {
         check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
         check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
-        check("V8.32: Unterwasser-Tint nutzt playerEyesUnderwater (nicht beim Waten)", v832Results.tintUsesEyesFlag);
-        check("W10: EIN Schlick-Fresnel (WASSER_GESETZ) spiegelt die Himmels-Umgebung und treibt die Deckung", v832Results.waterFresnel);
+        check(
+            "V8.32 → Welle L: die Unterwasser-Luft folgt dem Kamera-Medium (nie den Augen des Körpers)",
+            v832Results.tintUsesEyesFlag
+        );
+        check(
+            "W10: EIN Schlick-Fresnel (WASSER_GESETZ) spiegelt die Himmels-Umgebung und treibt die Deckung",
+            v832Results.waterFresnel
+        );
         check("V8.32 → V18.530: kein Fog-Slider mehr (die Luft ist Physik)", v832Results.fogSliderTo300);
         check("V8.32 → V18.530: kein setFogDistance mehr", v832Results.fogDistanceTo3);
     } else {
@@ -42455,7 +42586,7 @@ async function checkBandV8SoulRoleAndWorkshop(ctx) {
         //    Terrain) und die KILLPLANE fängt einen echten Durchfall — beide Stücke müssen da sein.
         {
             const src = srcOf("_stepCharacter");
-            out.waterGate = /submerged/.test(src) && /killPlaneY/.test(src);
+            out.waterGate = /(?:submerged|schwimmt)/.test(src) && /killPlaneY/.test(src);
         }
 
         // 5. Logbuch — CSS-Regel teilt die Konsole 50/50.
@@ -43050,26 +43181,8 @@ async function checkBandW12WorldPortal(ctx) {
         const csp = cspMeta ? cspMeta.getAttribute("content") || "" : "";
         out.cspFrameSrc = /frame-src\s+'self'/.test(csp);
 
-        // Skelett-Welt-Seite + Skript werden ausgeliefert.
-        try {
-            const htmlRes = await fetch("worlds/skeleton/index.html");
-            const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
-            out.skeletonHtmlServed =
-                htmlRes.ok &&
-                /SKELETT-WELT/.test(htmlBody) &&
-                /id="avatar-name"/.test(htmlBody) &&
-                /skeleton\.js/.test(htmlBody);
-            const jsRes = await fetch("worlds/skeleton/skeleton.js");
-            const jsBody = jsRes.ok ? await jsRes.text() : "";
-            out.skeletonJsServed =
-                jsRes.ok &&
-                /addEventListener\("message"/.test(jsBody) &&
-                /"ready"/.test(jsBody) &&
-                /"enter"/.test(jsBody);
-        } catch (e) {
-            out.skeletonHtmlServed = false;
-            out.skeletonJsServed = false;
-        }
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         // Overlay-Methoden.
         out.buildMethod = typeof r._buildPortalOverlay === "function";
@@ -43102,8 +43215,6 @@ async function checkBandW12WorldPortal(ctx) {
 
     if (w12c2Results && !w12c2Results.error) {
         check("W12 P1 C2: CSP enthält frame-src 'self'", w12c2Results.cspFrameSrc);
-        check("W12 P1 C2: Skelett-Welt-Seite wird ausgeliefert", w12c2Results.skeletonHtmlServed);
-        check("W12 P1 C2: skeleton.js mit Handshake wird ausgeliefert", w12c2Results.skeletonJsServed);
         check("W12 P1 C2: _buildPortalOverlay-Methode existiert", w12c2Results.buildMethod);
         check("W12 P1 C2: _disposePortalOverlay-Methode existiert", w12c2Results.disposeMethod);
         check("W12 P1 C2: _portalSendEnter-Methode existiert", w12c2Results.sendEnterMethod);
@@ -43197,16 +43308,8 @@ async function checkBandW12WorldPortal(ctx) {
         out.promptHiddenWhenNone = !!promptEl && promptEl.hidden === true;
         out.tryEnterFailsWhenNone = r._tryEnterPortalAtPlayer() === false;
 
-        // skeleton.js meldet Esc als {type:"exit"} an die Heimat-Welt.
-        try {
-            const jsRes = await fetch("worlds/skeleton/skeleton.js");
-            const jsBody = jsRes.ok ? await jsRes.text() : "";
-            out.skeletonForwardsEsc = /Escape/.test(jsBody) && /"exit"/.test(jsBody);
-        } catch (e) {
-            out.skeletonForwardsEsc = false;
-        }
-        // _buildPortalOverlay behandelt die exit-Nachricht der Sub-Welt.
-        out.overlayHandlesExit = /"exit"/.test(window.__codeOf(r._buildPortalOverlay));
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         return out;
     });
@@ -43233,8 +43336,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P1 C3: _tryEnterPortalAtPlayer betritt ein nahes Portal", w12c3Results.tryEnterWorks);
         check("W12 P1 C3: Prompt verschwindet ohne Portal in Reichweite", w12c3Results.promptHiddenWhenNone);
         check("W12 P1 C3: _tryEnterPortalAtPlayer scheitert ohne Portal", w12c3Results.tryEnterFailsWhenNone);
-        check("W12 P1 C3: skeleton.js meldet Esc als exit an die Heimat-Welt", w12c3Results.skeletonForwardsEsc);
-        check("W12 P1 C3: _buildPortalOverlay behandelt die exit-Nachricht", w12c3Results.overlayHandlesExit);
     } else {
         check(
             "W12 P1 C3: Betreten/Pause/Rückkehr Tests laufen",
@@ -43248,38 +43349,8 @@ async function checkBandW12WorldPortal(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // Fluid-Welt-Seite + Skript + vendored Engine werden ausgeliefert.
-        try {
-            const htmlRes = await fetch("worlds/fluid/index.html");
-            const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
-            out.fluidHtmlServed =
-                htmlRes.ok &&
-                /Strom-Welt/.test(htmlBody) &&
-                /id="avatar-name"/.test(htmlBody) &&
-                /type="module"/.test(htmlBody) &&
-                /fluid\.js/.test(htmlBody);
-            const jsRes = await fetch("worlds/fluid/fluid.js");
-            const jsBody = jsRes.ok ? await jsRes.text() : "";
-            out.fluidJsServed =
-                jsRes.ok &&
-                /FluidSimulation/.test(jsBody) &&
-                /"ready"/.test(jsBody) &&
-                /"enter"/.test(jsBody) &&
-                /"exit"/.test(jsBody) &&
-                jsBody.includes("./lib/");
-            const coreRes = await fetch("worlds/fluid/lib/three.core.min.js");
-            const modRes = await fetch("worlds/fluid/lib/three.module.min.js");
-            const fxRes = await fetch("worlds/fluid/lib/three-fluid-fx.es.js");
-            out.engineVendored = coreRes.ok && modRes.ok && fxRes.ok;
-            const fxBody = fxRes.ok ? await fxRes.text() : "";
-            // three-fluid-fx ist gepatcht: kein bare "three"-Import mehr.
-            out.fxPatched = fxBody.includes('from "./three.module.min.js"') && !fxBody.includes('from "three"');
-        } catch (e) {
-            out.fluidHtmlServed = false;
-            out.fluidJsServed = false;
-            out.engineVendored = false;
-            out.fxPatched = false;
-        }
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         // Built-in welt_strom-Portal.
         const ws = r.state.blueprints && r.state.blueprints.welt_strom;
@@ -43310,10 +43381,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12p2Results && !w12p2Results.error) {
-        check("W12 P2 C1: Fluid-Welt-Seite wird ausgeliefert", w12p2Results.fluidHtmlServed);
-        check("W12 P2 C1: fluid.js (FluidSimulation + Handshake) wird ausgeliefert", w12p2Results.fluidJsServed);
-        check("W12 P2 C1: Engine vendored (three.core/module + three-fluid-fx)", w12p2Results.engineVendored);
-        check("W12 P2 C1: three-fluid-fx three-Import auf lib gepatcht", w12p2Results.fxPatched);
         check("W12 P2 C1: Built-in welt_strom-Portal existiert", w12p2Results.stromExists);
         check("W12 P2 C1: welt_strom hat role:'portal'", w12p2Results.stromIsPortal);
         check("W12 P2 C1: welt_strom portalMeta zeigt auf die Fluid-Welt", w12p2Results.stromMeta);
@@ -43391,20 +43458,8 @@ async function checkBandW12WorldPortal(ctx) {
         out.bodyClassCleared = !document.body.classList.contains("in-portal");
         if (entry) r.removeArchitecture(entry);
 
-        // Sub-Welt-Adapter werden ausgeliefert.
-        try {
-            const fxBody = await (await fetch("worlds/fluid/fluid.js")).text();
-            out.fluidAdapter =
-                /function applyDsl/.test(fxBody) && /"dsl"/.test(fxBody) && /function setEnergy/.test(fxBody);
-            // Render-Fix: das Dichtefeld (densityTexture) + Auto-Splats.
-            out.fluidRenders = /densityTexture/.test(fxBody) && /addSplat/.test(fxBody) && /uBackdrop/.test(fxBody);
-            const skBody = await (await fetch("worlds/skeleton/skeleton.js")).text();
-            out.skeletonAdapter = /function applyDsl/.test(skBody) && /"dsl"/.test(skBody);
-        } catch (e) {
-            out.fluidAdapter = false;
-            out.fluidRenders = false;
-            out.skeletonAdapter = false;
-        }
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         return out;
     });
@@ -43425,9 +43480,6 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P2 C2: _portalRouteDsl — Stufe 0 (ausgestellt, stumm)", w12bridgeResults.routeExhibited);
         check("W12 P2 C2: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt", w12bridgeResults.homeWeatherUntouched);
         check("W12 P2 C2: exitPortal räumt body.in-portal", w12bridgeResults.bodyClassCleared);
-        check("W12 P2 C2: Fluid-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.fluidAdapter);
-        check("W12 P2 C2: Strom-Welt rendert Dichtefeld + Auto-Splats", w12bridgeResults.fluidRenders);
-        check("W12 P2 C2: Skelett-Welt-Adapter (applyDsl + dsl-Handler)", w12bridgeResults.skeletonAdapter);
     } else {
         check("W12 P2 C2: DSL-Brücke Tests laufen", false, w12bridgeResults ? w12bridgeResults.error : "no result");
     }
@@ -43437,34 +43489,8 @@ async function checkBandW12WorldPortal(ctx) {
         const r = window.anazhRealm;
         const out = {};
 
-        // Phytogenesis-Welt-Dateien + vendored Engine werden ausgeliefert.
-        try {
-            const htmlRes = await fetch("worlds/terrain/index.html");
-            const htmlBody = htmlRes.ok ? await htmlRes.text() : "";
-            out.terrainHtmlServed =
-                htmlRes.ok &&
-                /Phytogenesis/.test(htmlBody) &&
-                /id="avatar-name"/.test(htmlBody) &&
-                /three-r128\.min\.js/.test(htmlBody) &&
-                /phytogenesis\.js/.test(htmlBody);
-            const jsRes = await fetch("worlds/terrain/phytogenesis.js");
-            const jsBody = jsRes.ok ? await jsRes.text() : "";
-            out.terrainJsServed =
-                jsRes.ok &&
-                /PRESETS/.test(jsBody) &&
-                /function applyDsl/.test(jsBody) &&
-                /"ready"/.test(jsBody) &&
-                /"enter"/.test(jsBody) &&
-                /"exit"/.test(jsBody) &&
-                /pointerlockerror/.test(jsBody);
-            const threeRes = await fetch("worlds/terrain/lib/three-r128.min.js");
-            const terrRes = await fetch("worlds/terrain/lib/UnrealBloomPass.js");
-            out.terrainEngineVendored = threeRes.ok && terrRes.ok;
-        } catch (e) {
-            out.terrainHtmlServed = false;
-            out.terrainJsServed = false;
-            out.terrainEngineVendored = false;
-        }
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
 
         // Built-in welt_terrain-Portal + Manifest.
         const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
@@ -43498,9 +43524,6 @@ async function checkBandW12WorldPortal(ctx) {
     });
 
     if (w12terrainResults && !w12terrainResults.error) {
-        check("W12 P2: Phytogenesis-Welt-Seite wird ausgeliefert", w12terrainResults.terrainHtmlServed);
-        check("W12 P2: phytogenesis.js (PRESETS + Handshake) wird ausgeliefert", w12terrainResults.terrainJsServed);
-        check("W12 P2: Phytogenesis-Engine vendored (three r128 + Bloom)", w12terrainResults.terrainEngineVendored);
         check("W12 P2: Built-in welt_terrain-Portal existiert", w12terrainResults.terrainExists);
         check("W12 P2: welt_terrain hat role:'portal'", w12terrainResults.terrainIsPortal);
         check("W12 P2: welt_terrain portalMeta zeigt auf die Phytogenesis-Welt", w12terrainResults.terrainMeta);
@@ -43818,22 +43841,9 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P3a: Teil-A-Tests laufen", false, w12p3aResults ? w12p3aResults.error : "no result");
     }
 
-    // W12 P3a — die drei Welt-Adapter melden Ereignisse zurück (Quell-Check).
-    try {
-        for (const [w, file] of [
-            ["Skelett", "skeleton/skeleton.js"],
-            ["Strom", "fluid/fluid.js"],
-            ["Phytogenesis", "terrain/phytogenesis.js"],
-        ]) {
-            const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
-            check(
-                `W12 P3a: ${w}-Welt-Adapter meldet Ereignisse zurück`,
-                /function sendEvent/.test(src) && /type:\s*"event"/.test(src) && /sendEvent\("/.test(src)
-            );
-        }
-    } catch (err) {
-        check("W12 P3a: Welt-Adapter-Quell-Check läuft", false, err && err.message);
-    }
+    // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+    // echte Heimat (K1 ready + das Manifest der Welt in der Heimat · K4 das Ereignis im Journal · K7 das Mitgebrachte in
+    // der Welt-UI); die Nebenwelt-Quell-Wand in gate:source-probes hält diese Datei frei von Welt-Lesungen.
 
     // ### W12 Phase 3 — Teil B: die native Manifest-Stufe ###
     const w12p3bResults = await safeEvaluate(page, () => {
@@ -43919,44 +43929,9 @@ async function checkBandW12WorldPortal(ctx) {
         check("W12 P3b: Teil-B-Tests laufen", false, w12p3bResults ? w12p3bResults.error : "no result");
     }
 
-    // W12 P3b — die manifest.json-Dateien + die Adapter-Verdrahtung (Quell-Check).
-    try {
-        let fluidManifestHasFlut = false;
-        for (const [w, id, file] of [
-            ["Skelett", "skeleton", "skeleton/manifest.json"],
-            ["Strom", "fluid", "fluid/manifest.json"],
-            ["Terrain", "terrain", "terrain/manifest.json"],
-        ]) {
-            const m = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8"));
-            check(
-                `W12 P3b: ${w}-Welt hat ein valides manifest.json`,
-                m &&
-                    m.schemaVersion === "1.0" &&
-                    m.id === id &&
-                    typeof m.label === "string" &&
-                    Array.isArray(m.dsl) &&
-                    m.dsl.length > 0 &&
-                    m.dsl.every((op) => typeof op === "string")
-            );
-            if (id === "fluid") fluidManifestHasFlut = m.dsl.includes("flut");
-        }
-        check("W12 P3b: das fluid-Manifest deklariert 'flut' (jenseits des Registry-Literals)", fluidManifestHasFlut);
-        for (const [w, file] of [
-            ["Skelett", "skeleton/skeleton.js"],
-            ["Strom", "fluid/fluid.js"],
-            ["Phytogenesis", "terrain/phytogenesis.js"],
-        ]) {
-            const src = fs.readFileSync(path.join(__dirname, "..", "worlds", file), "utf8");
-            check(
-                `W12 P3b: ${w}-Welt-Adapter lädt manifest.json + meldet es im ready`,
-                /fetch\(\s*["']\.\/manifest\.json["']\s*\)/.test(src) && /announceReady/.test(src)
-            );
-        }
-        const fluidSrc = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid/fluid.js"), "utf8");
-        check('W12 P3b: der fluid-Adapter behandelt das native Wort "flut"', /op === "flut"/.test(fluidSrc));
-    } catch (err) {
-        check("W12 P3b: manifest.json-/Adapter-Quell-Check läuft", false, err && err.message);
-    }
+    // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+    // echte Heimat (K1 ready + das Manifest der Welt in der Heimat · K4 das Ereignis im Journal · K7 das Mitgebrachte in
+    // der Welt-UI); die Nebenwelt-Quell-Wand in gate:source-probes hält diese Datei frei von Welt-Lesungen.
 }
 
 // V9.52-d Sub-Welle d — Band-Funktion (W13 Phase 1+2+3 (Vibe-Pass + Bauplan-Signaturen + Multi-User-Identität) + W14 Phase 1+2A+2B+3 (Bibliothek + Welt-Manifest + Schaffen reist mit + Empfang)).
@@ -44853,34 +44828,9 @@ async function checkBandW13W14VibePassLibrary(ctx) {
     } else {
         check("W13 V2: enter-Payload-Tests laufen", false, w13v2Results ? w13v2Results.error : "no result");
     }
-    // W13 V2 — die Sub-Welten empfangen + zeigen das Schaffen (Quell-Check).
-    try {
-        const skJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "skeleton", "skeleton.js"), "utf8");
-        check(
-            "W13 V2: skeleton.js hat renderBrought + liest soul/materials/tools",
-            /function renderBrought/.test(skJs) &&
-                /avatar\.soul/.test(skJs) &&
-                /avatar\.materials/.test(skJs) &&
-                /avatar\.tools/.test(skJs)
-        );
-        check(
-            "W13 V2: skeleton.js rendert den Payload als Text + säubert Material-Farben",
-            /textContent/.test(skJs) && /0xffffff/.test(skJs) && !/innerHTML/.test(skJs)
-        );
-        const skHtml = fs.readFileSync(path.join(__dirname, "..", "worlds", "skeleton", "index.html"), "utf8");
-        check(
-            "W13 V2: skeleton/index.html trägt das Mitgebracht-Panel",
-            /id="brought"/.test(skHtml) && /brought-mats/.test(skHtml) && /brought-tools/.test(skHtml)
-        );
-        const flJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "fluid", "fluid.js"), "utf8");
-        const teJs = fs.readFileSync(path.join(__dirname, "..", "worlds", "terrain", "phytogenesis.js"), "utf8");
-        check(
-            "W13 V2: fluid + phytogenesis zeigen den Vibe-Pass-Fingerprint des Reisenden",
-            /avatar\.fingerprint/.test(flJs) && /avatar\.fingerprint/.test(teJs)
-        );
-    } catch (err) {
-        check("W13 V2: Sub-Welt-Quell-Checks laufen", false, err && err.message);
-    }
+    // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+    // echte Heimat (K1 ready + das Manifest der Welt in der Heimat · K4 das Ereignis im Journal · K7 das Mitgebrachte in
+    // der Welt-UI); die Nebenwelt-Quell-Wand in gate:source-probes hält diese Datei frei von Welt-Lesungen.
 
     // ### W14 Phase 3 — fremde Welten empfangen ###
     const w14p3Results = await safeEvaluate(page, async () => {
@@ -45615,10 +45565,8 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         out.uiSchwarmCard = Array.from(document.querySelectorAll("#library-list .library-card")).some((c) =>
             /Schwarm-Welt/.test(c.textContent)
         );
-        // worlds/schwarm/index.html ist erreichbar (echte Datei).
-        out.worldReachable = await fetch("worlds/schwarm/index.html")
-            .then((res) => res.ok)
-            .catch(() => false);
+        // Die Welt-Dateien beweist ihr KONSUM, nie ein Quelltext-Zitat: gate:portal-konformanz betritt jede Welt über die
+        // echte Heimat (ready · enter · DSL-Ereignis im Journal · Esc heim · Quellen-Wand · Seiten-Fehler).
         // Aufräumen.
         delete r.state.blueprints["portal_schwarm"];
         for (let i = 0; i < r.state.player.inventory.length; i++) {
@@ -45675,7 +45623,6 @@ async function checkBandTranslatorAndUntrusted(ctx) {
         );
         check("Untrusted-Tor: trust überlebt den buildStateSnapshot/loadState-Rundlauf", sandboxResults.trustRoundtrip);
         check("Untrusted-Tor: renderLibraryUI rendert eine Schwarm-Welt-Karte", sandboxResults.uiSchwarmCard);
-        check("Untrusted-Tor: worlds/schwarm/index.html ist erreichbar", sandboxResults.worldReachable);
     } else {
         check("Untrusted-Tor: V8.70-Tests laufen", false, sandboxResults ? sandboxResults.error : "no result");
     }
@@ -46823,9 +46770,10 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         // Hindernis-Strahl je Tier und Frame — der EINE Leib löst gegen die Hüllen (_kreaturHuellenKontakt). Scratch gepoolt.
         const herde = String(r.constructor._steuerGesetz().herdeZug);
         out.herdeImGitter =
-            /herdeZug\(/.test(src) && /flockGrid\.get\(/.test(src) && /d > paar && d < paar \* H\.fensterRaum/.test(herde);
-        out.leibStattStrahl =
-            /this\._kreaturHuellenKontakt\(/.test(src) && !/_runRaycast\(|_fieldRaycast\(/.test(src);
+            /herdeZug\(/.test(src) &&
+            /flockGrid\.get\(/.test(src) &&
+            /d > paar && d < paar \* H\.fensterRaum/.test(herde);
+        out.leibStattStrahl = /this\._kreaturHuellenKontakt\(/.test(src) && !/_runRaycast\(|_fieldRaycast\(/.test(src);
         out.scratchPooled = /_creatureScratchDir/.test(src);
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
         // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
@@ -46865,7 +46813,10 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     });
 
     if (v849Results && !v849Results.error) {
-        check("Welle L: die Kohäsion ist herdeZug über das Gitter (Quadrat vor der Wurzel, O(N²) entschärft)", v849Results.herdeImGitter);
+        check(
+            "Welle L: die Kohäsion ist herdeZug über das Gitter (Quadrat vor der Wurzel, O(N²) entschärft)",
+            v849Results.herdeImGitter
+        );
         check("Welle L: kein Hindernis-Strahl je Tier — der Leib löst gegen die Hüllen", v849Results.leibStattStrahl);
         check("V8.49: Scratch-Vektoren gepoolt (keine Pro-Kreatur-Allokation)", v849Results.scratchPooled);
         check("V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
@@ -47646,7 +47597,10 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
                 wave6hP2dResults.hasSkillKey
         );
         check("Welle 6.H P2D: skillKeyForMemory mappt gathered → gather:material", wave6hP2dResults.skillKeyGather);
-        check("Welle 5 Klang: der Aufstieg klingt mit der Stimme des Tiers (genau ein Ruf)", wave6hP2dResults.levelUpRuft);
+        check(
+            "Welle 5 Klang: der Aufstieg klingt mit der Stimme des Tiers (genau ein Ruf)",
+            wave6hP2dResults.levelUpRuft
+        );
         check("Welle 6.H P2D: skillKeyForMemory mappt built → build:blueprint", wave6hP2dResults.skillKeyBuild);
         check(
             "Welle 6.H P2D: skillKeyForMemory failures (no_material, delivered) → null",
@@ -51989,6 +51943,10 @@ async function checkBandWave10b(ctx) {
             const targetEntry = r.spawnArchitecture("baum_eiche", { x: 1, y: 0, z: 0 }, { silent: true });
             const beforeWeather = r.state.weather;
             r.state.weather = "sunny";
+            // Das Brennglas-Gesetz (Welle L Folge) bündelt die SONNE: Mittag, damit der Brennpunkt unter der Linse in der
+            // Eiche liegt (nachts brennt nichts).
+            const beforeTod = r.state.timeOfDay;
+            r.state.timeOfDay = 0.5;
             const beforeArchCount = r.state.architectures.length;
             r._tickFocusingAffordances(25);
             const afterArchCount = r.state.architectures.length;
@@ -52003,6 +51961,7 @@ async function checkBandWave10b(ctx) {
             out.rainyNoIgnite = !!r.state.architectures.find((e) => e.id === target2.id);
 
             r.state.weather = beforeWeather;
+            r.state.timeOfDay = beforeTod;
             r.state.architectures = r.state.architectures.filter(
                 (e) =>
                     e.type !== "test_10b3_car" &&
@@ -53295,7 +53254,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
     } else {
         check("Ring 3 V2: awe > 0.7 triggert Skybox-Farbe", ring3v2Results.aweTriggersSkybox);
         check("Ring 3 V2: hope > 0.7 triggert chain(sunny, happy)", ring3v2Results.hopeTriggersSunnyHappy);
-        check("Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (Tempo-Hauch 0,7, gelesen im Wander-Band)", ring3v2Results.peaceTriggersSlowdown);
+        check(
+            "Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (Tempo-Hauch 0,7, gelesen im Wander-Band)",
+            ring3v2Results.peaceTriggersSlowdown
+        );
         check(
             "Ring 3 V2: Generator-Bias — joy=1.0 → sunny dominiert (>2× rainy)",
             ring3v2Results.joyBiasWorks,
@@ -53324,7 +53286,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.keinDrohn = !("ambient" in s) && !("weather" in s) && !("hydroAudio" in s);
         out.masterAusGesetz =
             Math.abs(s.masterGain.gain.value - UM.masterBasis * (s.masterVolume == null ? 1 : s.masterVolume)) < 1e-6;
-        out.busAmRegler = Math.abs(s.umwelt.bus.gain.value - (s.creaturePingVolume == null ? 1 : s.creaturePingVolume)) < 1e-6;
+        out.busAmRegler =
+            Math.abs(s.umwelt.bus.gain.value - (s.creaturePingVolume == null ? 1 : s.creaturePingVolume)) < 1e-6;
 
         // (b) Der Regen ist der rain-Kanal des Wetter-Felds (transition-aware) — die Lage am Ohr liest ihn, die
         //     Mischung des Gesetzes macht ihn hörbar (rainy) oder stumm (sunny).
@@ -53378,7 +53341,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("Welle 5 Klang: kein Drohn, keine Wetter-/Hydro-Schicht neben dem Gesetz", ring4Results.keinDrohn);
         check("Welle 5 Klang: Master = UMWELT.masterBasis × Regler (EIN Mischpult)", ring4Results.masterAusGesetz);
         check("Welle 5 Klang: der Bus der Klang-Welt hängt am Umgebungs-Regler", ring4Results.busAmRegler);
-        check("Welle 5 Klang: Regen = rain-Kanal des Wetter-Felds (rainy hörbar, sunny stumm)", ring4Results.regenAusFeld);
+        check(
+            "Welle 5 Klang: Regen = rain-Kanal des Wetter-Felds (rainy hörbar, sunny stumm)",
+            ring4Results.regenAusFeld
+        );
         check("Welle 5 Klang: symphonyTick mischt die Lage am Ohr", ring4Results.taktMischt);
         check("Welle 5 Klang: _tierRuf zählt jeden Ruf", ring4Results.rufZaehlt);
         check("Ring 4: masterGain im plausiblen Bereich (0..1)", ring4Results.masterGainSane);
@@ -54983,17 +54949,20 @@ async function checkBandRing6Workshop(ctx) {
             bar &&
             bar.querySelectorAll(".hotbar-slot").length === 10 &&
             bar.querySelectorAll('.hotbar-slot[data-slot="offhand"]').length === 1;
-        // AUSLÖSCHUNGS-WELLE — die Default-Hotbar ist [stein_block, waterfall, damm, null×6].
+        // Leben-Schau 07.10. (L7) — die Default-Hotbar ist der Start-Gurt aus dem Katalog (`_startGurt`: je Studio-Art
+        // ein Werk; bei kaltem Buch leer), nie mehr [stein_block, waterfall, damm].
+        const hb0 = r.state.hotbar;
+        const gurt = r._startGurt() || [];
         out.defaultHotbar =
-            Array.isArray(r.state.hotbar) &&
-            r.state.hotbar.length === 9 &&
-            r.state.hotbar[0] === "stein_block" &&
-            r.state.hotbar[1] === "waterfall" &&
-            r.state.hotbar[2] === "damm" &&
-            r.state.hotbar.slice(3).every((s) => s === null);
+            Array.isArray(hb0) &&
+            hb0.length === 9 &&
+            gurt.every((n, i) => hb0[i] === n) &&
+            hb0.slice(gurt.length).every((s) => s === null);
         // Slot-Label folgt aus blueprints.label
         const firstSlotLabel = bar.querySelector('.hotbar-slot[data-slot="0"] .label');
-        out.firstSlotShowsLabel = firstSlotLabel && firstSlotLabel.textContent === "Felsblock";
+        out.firstSlotShowsLabel =
+            !!firstSlotLabel &&
+            (!hb0[0] || firstSlotLabel.textContent === (r.state.blueprints[hb0[0]].label || hb0[0]));
 
         // setHotbarSlot setzt slot 5 auf eigenen Bauplan
         r.state.blueprints["test_hotbar_bp"] = {
@@ -55093,7 +55062,7 @@ async function checkBandRing6Workshop(ctx) {
     } else {
         check("Ring 6.5: #hotbar im DOM", ring65Results.hotbarInDom);
         check("Ring 6.5: Hotbar hat 9 Slots", ring65Results.hotbarHasNineSlots);
-        check("Ring 6.5: Default-Hotbar [stein_block, waterfall, damm, ..., null]", ring65Results.defaultHotbar);
+        check("Ring 6.5: Default-Hotbar = der Start-Gurt aus dem Katalog (_startGurt)", ring65Results.defaultHotbar);
         check("Ring 6.5: Slot-Label folgt Bauplan-Label", ring65Results.firstSlotShowsLabel);
         check("Ring 6.5: setHotbarSlot setzt Eintrag", ring65Results.setHotbarOk);
         check("Ring 6.5: Hotbar-DOM aktualisiert sich nach setHotbarSlot", ring65Results.hotbarDomReflectsSet);
@@ -55379,7 +55348,8 @@ async function checkBandRing6Workshop(ctx) {
         r._clearBuildMode();
         out.hudInDom = !!document.getElementById("build-mode-hud");
         out.hudInitiallyHidden = document.getElementById("build-mode-hud").hidden === true;
-        // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = stein_block.
+        // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = stein_block (gesetzt: der Start-Gurt liest den Katalog).
+        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r.selectHotbarSlot(0);
         out.modeActiveAfterSet = r.state.buildMode.active === true && r.state.buildMode.blueprintName === "stein_block";
         out.phantomInScene =

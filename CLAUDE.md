@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.533.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.536.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -80,31 +80,33 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
 LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.533 — DIE GPU-KETTE, AUF DEM OMEN NETTO SCHNELLER:** die Zerleg-Linse (`werkbank zerlegen`: Schalter am echten Weg,
-Frame-Anatomie, Selbsttest) · EINE Schirm-Quelle (`_schirm`, `gate:schirm-monotonie`, der Regler-Startwert ohne Pixel-
-Abzug) · der Stempel-Pool läuft nie voll, die Bühne hält Himmel und Wetter · das RAUSCH-GESETZ des Bodens (EIN Gradienten-
-Rauschen aus dem Rausch-Atlas statt 26 MaterialX-Rauschen, 15 722 → 2 381 Ops je Fragment) · die schlanke Post-Kette
-(Nachbild-Stufen im Zweig, der Direktpfad zeichnet) · der Feld-Pass ohne Tiefe-Schreiben (Stellvertreter-March, die Seiten-
-Ebene fiel) · EINE Shader-Kosten-Linse (`werkbank shader`). OMEN (GTX 1060, ABAB gegen V18.531, 4 Boots je Seite, Dorf aus):
-gpu-bank 24,85 → 14,70 ms (−41 %), Frame p50/p95 frei 25,0/33,4 → 16,8/25,1 ms (fps 36,9 → 46,7), Band 182 → 121 Befehle,
-2,2 → 0,96 M Dreiecke, 157 → 151 MB. Offen: der volle Regler ist CPU-gebunden (render-EWMA 5,6 → 10,5 ms, die Sicht-Kette
-fehlt noch); Dreiecke ~960k > 680k, VRAM ~150 > 118 MB — E bleibt offen.
+**V18.536 — IMPULS, WERKSTATT, ANKUNFT, FROST, NEXUS:** EIN Impuls-Gesetz für Fahrzeug, Leib und Biss (der gestoßene Leib
+im Sim-Schritt, EINE Wasser-Regel der Tiere); der Weg Werkstatt → stehendes Werk (je Setzen ein Same, `_setzUrteil` färbt
+das Phantom, die Klemme misst die Studio-Gestalt); die Ankunft (Ladeschirm, bis das Weltbild steht, EIN Tasten-Fänger, der
+Fadenkreuz-Strahl ab dem Blickpunkt, die 3rd-Kamera weicht Stamm und Krone); der Frost (die Render-Objekte eines Leibs lösen
+sich, das Ofen-Memo kennt seine Leiber, die AST-Entsorgungs-Wand); nexus (der Blick gehört dem, der das Dorf verlangt, der
+Mess-Halt für jeden Welt-Akt, die Blocker-Nachbarschaft: Box-Lösungen 12 041 → 26 je Schritt). OMEN gegen V18.535: CPU p95
+9,3 → 6,7 ms, Frame p95 25,0 → 16,9 ms.
 
-**V18.496–532 — AAA NAH UND DIE KOSTEN-MECHANIK:** nah/mittel das Studio-Mesh mit LOD-Kette, der Tier-Leib EINE geskinnte
-Haut; das FARB-GESETZ; EIN Himmel; die NAH-WIESE; `_foundrySchale`; Bundle-Wahrheit am Chokepoint `_renderScene`; TRAA;
-Band-Linse und Ratsche; EIN Karten-Atlas; Koschmieder-Luft; Welle 5 (Pflanzen nah, Fernwald-Karte, Waldboden, Ausstattung,
-Stoffe, Fell, Klang-Gesetz); V18.532 EIN Gesetz der Pass-Wahl (`_passTrifft`), Satz-Abschnitte je Pass, Höhlen-Sicht,
-Instanz-Wahl, verdichtende Pool-Sätze. Linsen: Werkbank (`albedo` · `licht` · `zaehlen` · `fluss` · `takt` · `lauf` ·
-`band` · `gpu-bank` · `zerlegen` · `shader`).
+**V18.533–535 — GPU-KETTE, WELLE K, WELLE L, WASSER:** Zerleg- und Shader-Kosten-Linse (gpu-bank 24,85 → 14,70 ms), Golden-
+Sätze in der CI, die Sicht-Kette hält ihre Wahl (`_wahlHaelt`); Welle K: die Erst-Zeichnung (EINE Warteschlange
+`_erstWartet`, Hänger beim Tier-Erstbau 1 862 → 64 ms), die Stand-Wache, die Diät, host-vram (Host-Ziele 108,8 → ~93 MB);
+Welle L ganz und wasser (der Körper liest das gezeichnete Wasser); das Backend-Gesetz, EIN GPU-Melder `_gpuWacheMeldung`,
+EINE Entsorgungs-Regel `_disposeSoulGroup`; die CI in drei Gruppen (`gate:ci-deckung`), die Zeit misst der OMEN (ABAB).
 
-**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Pass, EINE
-Payload, je Satz ein Stellvertreter (Panorama ohne Fragment-Tiefe) · NAH/MITTEL (< 64 m) = Studio-Mesh + LOD-Kette, jede
-Karte eine Schicht des EINEN Atlas · FERN = Glieder-Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m) · BODEN-
-STOFF = das Rausch-Gesetz (Rausch-Atlas) · WALD-ORT = die Kronen-Karte · GRAS = nah Nah-Wiese, fern Boden-Funktion · STREU
-= nah die Studio-Arten, fern die Boden-Farbe · KLANG = das Klang-Gesetz · LUFT = EINE Koschmieder-Luft · POST = TRAA, die
-Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, EIN Werfer je Gestalt · PASS-WAHL = EIN Gesetz (`_passTrifft`) · SÄTZE =
-EIN Pool je Stoff, je Pass ein Abschnitt · SCHIRM = EINE Quelle (`_schirm`) · INSTANZ-SENKEN dicht (`_instanzZahl`) ·
-LINSEN-START = `software-gpu.cjs`, die GPU-Zeit nennt `werkbank zerlegen`, die Fragment-Kosten `werkbank shader`.
+**V18.496–532 — AAA NAH UND DIE KOSTEN-MECHANIK:** Studio-Mesh mit LOD-Kette, EINE geskinnte Haut, FARB-GESETZ, EIN Himmel,
+NAH-WIESE, `_foundrySchale`, TRAA, Band-Linse und Ratsche, EIN Karten-Atlas, Koschmieder-Luft; Welle 5 (Pflanzen nah,
+Fernwald, Waldboden, Ausstattung, Stoffe, Fell, Klang); EIN Gesetz der Pass-Wahl (`_passTrifft`), Satz-Abschnitte je Pass,
+Höhlen-Sicht, Instanz-Wahl. Werkbank: `albedo` · `licht` · `zaehlen` · `band` · `lauf` · `zerlegen` · `shader` · `sicht`.
+
+**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Pass, je Satz ein
+Stellvertreter · NAH/MITTEL (< 64 m) = Studio-Mesh + LOD-Kette, jede Karte eine Schicht des EINEN Atlas · FERN = Glieder-
+Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m) · BODEN-STOFF = das Rausch-Gesetz · WALD-ORT = die Kronen-Karte
+· GRAS = nah Nah-Wiese, fern Boden-Funktion · KLANG = das Klang-Gesetz · LUFT = EINE Koschmieder-Luft · POST = TRAA, die
+Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, EIN Werfer je Gestalt, die Box hält ihren Takt · PASS-WAHL = EIN Gesetz
+(`_passTrifft`), jede Wahl hält nach `_wahlHaelt` · SÄTZE = EIN Pool je Stoff, je Pass ein Abschnitt · SONNE = gestuft
+(höchstens ein Bildpunkt in der Bildecke) · SCHIRM = EINE Quelle (`_schirm`) · STUDIOS = 6 Golden-Sätze + Ofen in der CI ·
+MESSORTE = Wiese und Genesis-Ring · LINSEN-START = `software-gpu.cjs`.
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
@@ -177,6 +179,8 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
     Und nach jedem Push die CI lesen; Läufe mit ZEITFRISTEN (Einschwingen, Stufen-Takte) nie
     parallel (CPU-Konkurrenz fälscht sie). Ein Warter matcht nie die eigene Befehlszeile
     (`pgrep -f "[x]yz"`, und kein zweites `xyz` im selben Befehl) — heute 5× selbst getroffen.
+    Der VOLLE Playtest (2–5 min) läuft je Merge, die volle Batterie einmal je Version: zwei gesunde Eltern brechen im
+    Zusammenspiel (V18.536: das Setzen zog ein neues Phantom, ein Proben-Stub `{ position }` riss 22 Invarianten).
 20. **Eine Frage, kein Neustart:** Look-Fragen gehen an die Werkbank (`scripts/werkbank.cjs`: EINE
     Welt bleibt offen, Methode aus dem Arbeitsbaum live tauschen, Bild ~45 s statt Neustart ~5 min);
     die Beweis-Sonden bleiben der Richter je Commit. Vergleiche nur bei eingefrorener Welt (Tiere
@@ -197,7 +201,10 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
     trägt nur, was sein Replay refresht: r184 hält `_currentRenderBundle` ohne Stapel (der Schatten-Render mitten in
     der Aufnahme nullt ihn) und refresht Replay-Bürger außerhalb von renderObject (unter einem Override-Stoff gegen
     dessen geteilten Zustand) — `_renderScene` stapelt den Zeiger und nimmt unter overrideMaterial nie auf, die Diät
-    schreibt je PROGRAMM die geteilten Gruppen (`gate:kamera-treue`, Bühne am echten WebGPU mit Schatten).
+    geht jeden Knoten und jede geteilte Gruppe EINMAL je Render-Abschnitt: der Stempel ist das Paar (Render-Id,
+    `info.calls`) und wechselt beim Betreten UND Verlassen jedes Renders (ein Stempel nur aus der Render-Id überlebte
+    einen verschachtelten Schatten-Render: das Bild 0,11 statt 1,0) — `gate:kamera-treue` (VERSCHACHTELT, Stand-Wand),
+    Bühne am echten WebGPU mit Schatten.
 24. **Der Haupt-Thread trägt keine Bytes:** jede Worker-Antwort reist per Transfer (ein Klon kostet den Empfänger
     je MB), die Platte lebt im Worker (ein IDB-Put serialisiert SYNCHRON im Aufrufer), über den Kanal reist nur,
     was ein Leser liest (`FOUNDRY_LESEN`) — die Transport-Schale `_foundrySchale` trägt alles, `werkbank fluss` misst.

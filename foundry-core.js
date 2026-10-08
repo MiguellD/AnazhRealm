@@ -150,6 +150,24 @@ var WASSER_GESETZ = {
     koerperStreu: 0.1,                  // Rueckstreuung b_b (1/m) des Wasser-Koerpers (Binnensee 0,01-0,2): R = 0,33*b_b/(wK+b_b) (Welt-Leser; das Studio-GLSL liest sie nicht)
 };
 
+// DAS REGEN-GESETZ (Welle L, rein additiv): EIN Regen fuer Labor und Welt — fallende Schlieren in einem Kasten um das
+// Auge, vom Wind getrieben, die Deckung aus der Regen-Staerke des Wetters. Die Zahlen sind die des Terrain-Labors
+// (phytogenesis.js REGEN liest sie seit Welle L von hier); die Welt liest sie ueber den Gesetz-Strom (terrain:).
+// `breite` braucht nur die Welt: sie zeichnet Flaechen (WebGPU kennt keine breiten Linien, ein Punkt ist 1 Pixel),
+// das Labor eine 1-px-Linie.
+// prettier-ignore
+var REGEN_GESETZ = {
+    anzahl: 1600,              // Schlieren im Kasten
+    raum: [54, 30, 54],        // m — Breite x Hoehe x Tiefe des Kastens; das Auge in seiner Mitte
+    laenge: [0.5, 0.6],        // m — Schlieren-Laenge: laenge[0] + Zufall * laenge[1]
+    fall: 42,                  // m/s
+    drift: 7,                  // m/s je Wind-Einheit (der Wind mindestens 0,1)
+    farbe: 0xbcd2e2,           // sRGB
+    deckung: 0.72,             // hoechste Deckung = Regen-Staerke * deckung
+    breite: 0.012,             // m — Breite einer Schliere (Welt)
+    minPixel: 1.25,            // px — schmaler zeichnet die Welt keine Schliere; sie deckt dann anteilig (breite / Pixel-Breite)
+};
+
 // ZWILLINGS-ABSCHIED (18.07., rein additiv) — DER TERRAIN-GESETZ-NAMENSRAUM:
 // die Welt-Look-Gesetze des Terrain-Studios als EIN Namensraum-Block, damit
 // der EINE Gesetz-Strom (AnazhRealm.Gesetz("terrain:…") via GESETZ_KERNE)
@@ -207,7 +225,7 @@ var SAISON_GESETZ = {
     kartenGewicht: 0.8,  // die Karte folgt der Saison zu 80 % (Impostor-Shader mix(1, uSeasonMul, 0.8))
 };
 
-var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS, SAISON_GESETZ: SAISON_GESETZ };
+var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, REGEN_GESETZ: REGEN_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS, SAISON_GESETZ: SAISON_GESETZ };
 
 // DER STUDIO-VERTRAG (docs/studio-vertrag.md §4 G4.3) — die EINE Versions-
 // Semantik des Manifests: erhöht NUR bei einem Bruch der MUSS-Blöcke

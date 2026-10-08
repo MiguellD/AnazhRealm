@@ -18,6 +18,15 @@
 //       Fade-Saum aus CSMShadowNode._setupFade abgeschrieben) — mittags und am Abend
 //   K2  die Box ist eng: Fläche ≤ 60 % des Addon-Quadrats (Diagonale + Fade-Saum) je Kaskade, waagrechter Blick
 //   K3  das Zentrum liegt auf dem Texel-Raster der Licht-Basis; 0,37 m Gehen hält Größe und Raster
+//   K7  der Takt hält die Box (Welle C, `_kaskadeHaelt`): rendert eine Kaskade auf ihrem Takt und nichts änderte sich,
+//       behält sie ihre Box (dieselbe Lage — die Wahl ihres Passes steht); steigt ein Werfer über ihre nahe Ebene, legt
+//       sie neu (und wirft ihn). Die Box-Messungen (K1–K6, W5, die Selbsttests) legen die Box frisch (`alleNeu`).
+//   K8  die Wahl hält über die Stufen der Sonne (Welle C, OMEN-Urteil 07.10.: der Tag steht im Spiel nie): dreht das Licht
+//       um weniger, als der halbe Licht-Rand (`PASS_WAHL.lichtRandTexel` Texel) über den längsten Licht-Weg erlaubt, legt
+//       jede Kaskade ihre Box neu, ihre Lage hält, und die gehaltene Wahl trägt jeden echten Werfer (Zellen der werfenden
+//       Sätze, Instanzen der Schatten-Gruppen — das Gesetz ohne Rand frisch gerechnet), auch wenn jeder Leser mitten in der
+//       gehaltenen Drehung neu wählt (die Folge des Gesetzes `_wahlHaelt`: −0,9 der gemessenen Grenze, Neu-Wahl, +0,9);
+//       Wahl und Wahrheit ohne den Saum der Wahl-Scheibe (er trug Drehungen bis 20°); über dem Rand wählt jede neu
 //   K4  außerhalb des Takts: dieselbe Kamera → keine Kaskade rendert; 40° gedreht → beide rendern (die Scheibe lief
 //       aus der Box)
 //   K5  die Karte trägt die LÄNGSTE Kante der Referenz-Scheibe bei texelM (kleinste Zweierpotenz)
@@ -52,23 +61,27 @@
 //       ein Punkt P in der Box einer Kaskade, dessen Licht-Kapsel ihre Scheibe verfehlt (aus der Welt gesucht) — dort wirft
 //       weder ein Werfer eines Bündels noch eine Instanz der Wahl in diese Kaskade, und der Boden-Satz zeichnet dort genau
 //       die Zellen des Gesetzes (es schneidet Zellen, die das Frustum allein zöge: nicht vakuös)
-//   Z1  die Karten-Ziele: Farbe r8 (der Filter liest sie nur mit shadowMap.transmitted), Tiefe 16 bit, benannt —
+//   Z1  die Karten-Ziele: Farbe r8 ohne GPU-Textur auf WebGPU (kein Pass liest sie — der Filter nur mit transmitted), Tiefe 16 bit, benannt —
 //       gesetzt beim Bau des Ziels (die Hülle um setupRenderTarget), nie umgebaut
-//   Z2  die Bildziele je Leser: EIN Weg zu compileAsync (`_kompiliere`, gegen das Ziel des Szenen-Passes), EINE
+//   Z2  die Bildziele je Leser: KEIN Weg zu compileAsync (die Erst-Zeichnung baut im Pass, `_configureRenderer`), EINE
 //       Szenen-Tiefe (`_szeneTiefe`), kein Modul-Knoten der linearen Tiefe, kein namenloses Bildziel (convertToTexture)
 //   A1  Absenz: kein Frustum-Schreiber nimmt Inseln/Mesh-Tieren den Schatten; das Addon schreibt keine Box (updateBefore
-//       und _updateShadowBounds stumm), der Haken des Haupt-Passes stellt die Kaskaden (Konsum), Schatten-Pässe und
-//       Kompilate stellen nichts; die Sicht je Pass schaltet keine Bundle-Eigenschaft
+//       und _updateShadowBounds stumm), der Haken des Haupt-Passes stellt die Kaskaden (Konsum), Schatten-Pässe stellen
+//       nichts; die Sicht je Pass schaltet keine Bundle-Eigenschaft
 //   S1  Selbsttest: die alte Regel (jeder Pass liest das Haupt-Urteil) muss W1/W2/W3/W4 rot machen
 //   S3  Selbsttest: die alte Hüllen-Regel (nur Bundles) muss W5 rot machen
 //   S4  Selbsttest: die beiden alten Frustum-Schreiber der Tiere fängt die Absenz-Regel
 //   S5  Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera (der Zweit-Schreiber ist echt)
-//   S6  Selbsttest: ein Kompilat ohne Wache stellt die Kaskaden
-//   S7  Selbsttest: ein zweiter compileAsync-Ruf, eine zweite Szenen-Tiefe machen Z2 rot
+//   S7  Selbsttest: ein compileAsync-Ruf, eine zweite Szenen-Tiefe machen Z2 rot
 //   S8  Selbsttest: die alte Regel (der Satz zeichnet den ganzen Ring in jedem Pass) macht W7 rot
 //   S9  Selbsttest: die alte Regel (eine globale Gruppe zeichnet jede Instanz in jedem Pass) macht W8 rot, beim Namen
 //   S10 Selbsttest: urteilt EIN Leser nach der alten Box (das Frustum allein, ohne Licht-Kapsel) — die Zellen, die Werfer
 //       der Bündel oder die Instanzen —, wird W9 rot und nennt ihn
+//   S11 Selbsttest: hält die Lage einer Kaskade jede Drehung des Lichts (die Rand-Prüfung fällt), wählt keine Kaskade über
+//       dem Rand neu, und in der Folge fehlen echte Werfer — K8 wird rot
+//   S12 Selbsttest: fällt der Licht-Rand aus `_passTrifft`, fehlen in der Folge echte Werfer — K8 wird rot
+//   S13 Selbsttest: fällt die Halb-Regel des Lichts (Halt bis zum ganzen Rand), steht die Grenze beim ganzen Budget — K8
+//       wird rot
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
 const puppeteer = require("puppeteer");
@@ -160,7 +173,7 @@ function bildZiele(src) {
         namenlos: n(/convertToTexture\(/g),
     };
 }
-const bildZieleGut = (z) => z.kompilat === 1 && z.tiefe === 1 && z.linear === 0 && z.namenlos === 0;
+const bildZieleGut = (z) => z.kompilat === 0 && z.tiefe === 1 && z.linear === 0 && z.namenlos === 0;
 
 function probe(selbsttest) {
     const r = window.anazhRealm;
@@ -192,7 +205,11 @@ function probe(selbsttest) {
         st.directionalLight.updateMatrixWorld(true);
         st.directionalLight.target.updateMatrixWorld(true);
     };
-    const alleNeu = () => csm.lights.forEach((l) => ((l.shadow.autoUpdate = false), (l.shadow.needsUpdate = true)));
+    // jede Kaskade rendert UND legt ihre Box frisch (die Box-Messungen messen den Fit, nicht den Halt des Takts)
+    const alleNeu = () => {
+        csm._anazhFit = [];
+        csm.lights.forEach((l) => ((l.shadow.autoUpdate = false), (l.shadow.needsUpdate = true)));
+    };
     const S = r._kaskadenSchmier();
     // Kamera der Kaskade so, wie `renderShadow` sie stellt (updateMatrices), dann ihr Frustum.
     const frustumVon = (i) => {
@@ -319,6 +336,271 @@ function probe(selbsttest) {
         const q = (f.x0 + f.W / 2) / f.texel;
         return f.W === vorher[i].W && Math.abs(q - Math.round(q)) < 1e-6;
     });
+    // K7 — der Takt hält die Box: ein Takt-Render ohne Änderung behält sie, ein Werfer über der nahen Ebene legt sie neu
+    if (boden) {
+        tag(0.5);
+        blick(0);
+        alleNeu();
+        r._kaskadenPassen(csm);
+        // ein Fit zählt seine Neulegungen (`bild`; er legt dasselbe Objekt neu)
+        const vor = csm._anazhFit.map((f) => f.bild);
+        csm.lights.forEach((l) => (l.shadow.needsUpdate = true));
+        r._kaskadenPassen(csm);
+        const gehalten = csm._anazhFit.every((f, i) => f.bild === vor[i]);
+        const f0 = csm._anazhFit[0];
+        const bild0 = f0.bild;
+        const ph = new T.Vector3(f0.x0 + f0.W / 2, f0.y0 + f0.H / 2, f0.zt + 20).applyMatrix4(f0.basisInv.clone().invert());
+        const hoch = { huelle: new T.Box3().setFromCenterAndSize(ph, new T.Vector3(6, 6, 6)) };
+        boden.bloecke.set("__wc:hoch", hoch);
+        let neuGelegt = false,
+            wirft = false;
+        try {
+            csm.lights.forEach((l) => (l.shadow.needsUpdate = true));
+            r._kaskadenPassen(csm);
+            const f1 = csm._anazhFit[0];
+            neuGelegt = f1.bild !== bild0;
+            wirft = ph.clone().applyMatrix4(f1.basisInv).z <= f1.zt;
+        } finally {
+            boden.bloecke.delete("__wc:hoch");
+        }
+        aus.k7 = { gehalten, neuGelegt, wirft };
+    }
+    // K8 — DIE WAHL HÄLT ÜBER DIE STUFEN DER SONNE (Welle C, der Licht-Rand `PASS_WAHL.lichtRandTexel`): dreht das Licht seit
+    // der Wahl um weniger, als das Gesetz des Halts erlaubt (`_wahlHaelt`: der halbe Licht-Rand über den längsten Licht-Weg),
+    // legt jede Kaskade ihre Box neu (die Karte folgt dem Licht), ihre Lage aber hält — und die gehaltene Wahl trägt jeden
+    // echten Werfer der neuen Lage: die Zellen der werfenden Sätze und die Instanzen der Schatten-Gruppen, nach dem Gesetz
+    // OHNE Licht-Rand frisch gerechnet, auch wenn jeder Leser mitten in der Drehung neu wählt. Geschärft (Gegenprüfung 07.10.):
+    // Wahl UND Wahrheit fahren ohne den Saum der Wahl-Scheibe (`saumM` 0 — er trug Drehungen bis 20° und machte K8 blind für
+    // den Licht-Rand); die Grenze des Halts misst der Lauf je Kaskade, die Folge fährt jede bis knapp unter IHRE Grenze
+    // (−0,9 · Grenze, Neu-Wahl jedes Werfers, +0,9 · Grenze). `art`: "gesetz" (K8) · "untreu" (S11: die Lage hält jede
+    // Drehung) · "ohneRand" (S12: `_passTrifft` ohne Licht-Rand) · "ganzerRand" (S13: die Halb-Regel fällt, der Halt reicht
+    // bis zum ganzen Rand).
+    const k8 = (art) => {
+        const res = { art, grenze: [], budget: [], faelle: [], loecher: 0, namen: [], geprueft: 0, neu: [] };
+        const C = r.constructor;
+        const PW0 = C.PASS_WAHL;
+        const P = Object.getPrototypeOf(r);
+        C.PASS_WAHL = Object.freeze(Object.assign({}, PW0, { saumM: Object.freeze([0, 0]) }));
+        if (art === "untreu")
+            r._passLageHaelt = function (a, s, an) {
+                if (s[84] === 0 && s[27] === 1) return true;
+                return P._passLageHaelt.call(this, a, s, an);
+            };
+        if (art === "ganzerRand") r._wahlHaelt = (dreh, hebel, rand) => dreh * hebel <= rand;
+        if (art === "ohneRand")
+            r._passTrifft = function (L, ...a) {
+                const l = L.licht;
+                L.licht = 0;
+                try {
+                    return P._passTrifft.call(this, L, ...a);
+                } finally {
+                    L.licht = l;
+                }
+            };
+        // ein Frame mit neuem Schatten-Takt (die Werfer-Hüllen der Bündel rechnen je Takt einmal — der Loop zählt ihn); K8
+        // zählt in eigenen, negativen Takten (kein späterer Takt der Wand trifft eine hier gemerkte Hülle)
+        const takt0 = r._shadowFrame;
+        let kTakt = -1e6 * (1 + ["gesetz", "untreu", "ohneRand", "ganzerRand"].indexOf(art));
+        const laufe = () => {
+            r._shadowFrame = --kTakt;
+            r._passSicht(cam, false);
+            r._passSicht(cam, true);
+            for (const l of csm.lights) {
+                l.shadow.updateMatrices(l);
+                r._passSicht(l.shadow.camera, false);
+                r._passSicht(l.shadow.camera, true);
+            }
+        };
+        const gen = (k) => r._passLagen.get("k" + k).gen;
+        const anker = () => {
+            tag(0.5);
+            blick(0);
+            alleNeu();
+            if (r._passLagen) r._passLagen.clear();
+            laufe();
+            return csm.lights.map((_l, k) => gen(k));
+        };
+        const nachTakt = () => {
+            csm.lights.forEach((l) => (l.shadow.needsUpdate = true));
+            laufe();
+        };
+        // die Sonne um α vor (vor = 1) oder zurück (vor = −1): die Tageszeit so gewählt, dass das Licht genau α dreht
+        const richtung = (t) => r._dayNightSunDirection(t * Math.PI * 2 - Math.PI / 2);
+        const d0 = richtung(0.5);
+        const drehe = (alpha, vor) => {
+            let dt = alpha / (2 * Math.PI);
+            for (let k = 0; k < 4; k++) dt *= alpha / d0.angleTo(richtung(0.5 + vor * dt));
+            tag(0.5 + vor * dt);
+        };
+        // DER ECHTE WERFER der Kaskade k in ihrer jetzigen Lage: er steht in der Box der Karte, und sein Licht-Strahl (Körper samt
+        // Ausdehnung, entlang des Lichts bis unter die Box) trifft die Empfänger — die Wahl-Scheibe im Höhenband der Box —,
+        // geschnitten je Ebene als Intervall des Strahls (kein Saum, kein Rand). Das Gesetz der Wahl prüft die Ebenen je Ende der Kapsel (eine
+        // Obermenge): was nur sie wählt, wirft keinen Schatten auf einen Empfänger.
+        const echt = (L, cx, cy, cz, hx, hy, hz, rr) => {
+            const fit = L.fit,
+                d = L.dir;
+            // in der Box der Karte (ohne Rand): ein Werfer außerhalb steht in keiner Karte
+            for (const P of L.fr.planes) {
+                const n = P.normal;
+                const st = Math.abs(n.x) * hx + Math.abs(n.y) * hy + Math.abs(n.z) * hz + rr;
+                if (n.x * cx + n.y * cy + n.z * cz + P.constant < -st) return false;
+            }
+            const v = new T.Vector3(cx, cy, cz).applyMatrix4(fit.basisInv);
+            const sl = Math.abs(d.x) * hx + Math.abs(d.y) * hy + Math.abs(d.z) * hz + rr;
+            let s0 = 0,
+                s1 = Math.max(0, v.z - fit.zb + sl);
+            const ebene = (nx, ny, nz, c0) => {
+                const ext = Math.abs(nx) * hx + Math.abs(ny) * hy + Math.abs(nz) * hz + rr;
+                const a = nx * cx + ny * cy + nz * cz + c0 + ext;
+                const b = nx * d.x + ny * d.y + nz * d.z;
+                if (Math.abs(b) < 1e-12) {
+                    if (a < 0) s1 = -1;
+                } else if (b > 0) s0 = Math.max(s0, -a / b);
+                else s1 = Math.min(s1, -a / b);
+            };
+            for (const P of fit.ebenen) ebene(P.normal.x, P.normal.y, P.normal.z, P.constant);
+            ebene(0, 1, 0, -fit.band0);
+            ebene(0, -1, 0, fit.band1);
+            return s0 <= s1;
+        };
+        // fehlt ein echter Werfer der Kaskade k in ihrer gehaltenen Wahl? (die Leser rechnen ihre Körper wie im Pass, das Urteil
+        // ist der echte Werfer)
+        const saetze = [...st.chunkSaetze.values()].filter((s) => s.spec.schatten === true);
+        const loecher = (k) => {
+            const L = lageVon(k);
+            const loch = (x) => {
+                res.loecher++;
+                if (res.namen.length < 6) res.namen.push(x);
+            };
+            const PT = Object.prototype.hasOwnProperty.call(r, "_passTrifft") ? r._passTrifft : undefined;
+            r._passTrifft = (LL, cx, cy, cz, hx, hy, hz, rr) => echt(LL, cx, cy, cz, hx, hy, hz, rr);
+            try {
+                for (const s of saetze) {
+                    const ab = s.abschnitte.get(L.key);
+                    const gehalten = new Set(ab ? ab.liste : []);
+                    for (const b of s.ordnung) {
+                        if (!b.huelle || b.huelle.isEmpty() || !P._passTrifftBox.call(r, L, b.huelle, 0)) continue;
+                        for (const z of b.zellen) {
+                            if (z.knoten !== undefined || z.huelle.isEmpty() || !P._passTrifftBox.call(r, L, z.huelle, 0))
+                                continue;
+                            res.geprueft++;
+                            if (!gehalten.has(z)) loch(`k${k}: ${s.spec.name}`);
+                        }
+                    }
+                }
+                for (const g of r._instanzWahlGruppen()) {
+                    const w = g._wahlJe ? g._wahlJe.get(L.key) : null;
+                    if (!w || !g.mesh) continue;
+                    const gehalten = new Set(w.refs);
+                    const fenster = L.an && r._instanzFensterGilt(g);
+                    for (let j = 0; j < (g.liveCount | 0); j++) {
+                        if (!P._instanzBehalten.call(r, g, j, L, fenster)) continue;
+                        res.geprueft++;
+                        if (!gehalten.has(g.slotRef[j])) loch(`k${k}: ${g.mesh.name || g.key}`);
+                    }
+                }
+            } finally {
+                if (PT === undefined) delete r._passTrifft;
+                else r._passTrifft = PT;
+            }
+        };
+        try {
+            let g0 = anker();
+            res.budget = csm.lights.map((_l, k) => {
+                const a = r._passLagen.get("k" + k);
+                return a.sig[85] / 2 / Math.max(a.wegMax, a.sig[86]);
+            });
+            for (let k = 0; k < csm.lights.length; k++) {
+                    // die Grenze des Halts dieser Kaskade, aus dem Lauf (je 1/25 ihres Budgets vom Anker fort)
+                    g0 = anker();
+                    const schritt = res.budget[k] / 25;
+                    let grenze = 0;
+                    for (let n = 1; n <= 150; n++) {
+                        drehe(n * schritt, 1);
+                        nachTakt();
+                        if (gen(k) !== g0[k]) break;
+                        grenze = n * schritt;
+                    }
+                    res.grenze[k] = grenze;
+                    // die Folge: −0,9 · Grenze, jeder werfende Satz und jede Schatten-Gruppe wählt dort neu, +0,9 · Grenze
+                    g0 = anker();
+                    drehe(0.9 * grenze, -1);
+                    nachTakt();
+                    for (const x of st.chunkSaetze.values()) if (x.spec.schatten === true) x.stand++;
+                    for (const g of r._instanzWahlGruppen())
+                        if (g.wahl === "schatten" && g.mesh) g.mesh.instanceMatrix.needsUpdate = true;
+                    nachTakt();
+                    const mitte = gen(k) === g0[k];
+                    drehe(0.9 * grenze, 1);
+                    nachTakt();
+                    res.faelle.push({ k, gehalten: grenze > 0 && mitte && gen(k) === g0[k] });
+                    loecher(k);
+                }
+            // über den Rand (dreimal das Budget): jede Kaskade wählt neu
+            const gH = anker();
+            drehe(3 * Math.max(...res.budget), 1);
+            nachTakt();
+            res.neu = csm.lights.map((_l, k) => gen(k) !== gH[k]);
+        } finally {
+            C.PASS_WAHL = PW0;
+            delete r._passLageHaelt;
+            delete r._wahlHaelt;
+            delete r._passTrifft;
+            r._shadowFrame = takt0;
+            // die Lagen der Folge fallen: jede spätere Messung wählt frisch
+            if (r._passLagen) r._passLagen.clear();
+        }
+        res.grenze = res.grenze.map((x) => +x.toFixed(5));
+        res.budget = res.budget.map((x) => +x.toFixed(5));
+        tag(0.5);
+        alleNeu();
+        r._kaskadenPassen(csm);
+        return res;
+    };
+    if (boden) {
+        // DER WERFER-SCHWARM (die Wand sieht, was die echte Welt hat): 2 500 kleine Werfer (2 m), 120 m über dem Boden, alle 8 m,
+        // ±200 m um den Spieler, in einer Schatten-Gruppe der Wahl — am Null-Renderer stehen sonst zu wenige Werfer am Rand der
+        // Scheiben (erst 40° Drehung ließ ohne Rand-Prüfung ein Loch; in der echten Welt fehlten nach ±3° schon 14 Werfer), und
+        // ihr Licht-Weg ist der längste der Box: der Licht-Rand trägt an ihnen seine ganze Breite
+        const pfahl = new T.BoxGeometry(2, 2, 2);
+        const np = pfahl.attributes.position.count;
+        pfahl.setAttribute("aLodLevel", new T.BufferAttribute(new Float32Array(np).fill(3), 1));
+        pfahl.setAttribute("aH0", new T.BufferAttribute(new Float32Array(np).fill(2), 1));
+        pfahl.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(np).fill(2), 1));
+        const wald = r._archInstanceGroupFor(
+            "__k8:wald",
+            0,
+            { geom: pfahl, mat: new T.MeshBasicMaterial(), castShadow: true, shadowTwin: true },
+            null
+        );
+        const pfaehle = [];
+        const Mw = new T.Matrix4();
+        for (let i = -25; i < 25; i++)
+            for (let j = -25; j < 25; j++) {
+                const x = pm.x + i * 8 + 4,
+                    z = pm.z + j * 8 + 4;
+                const y = r._voxelSurfaceY(x, z);
+                const ref = r._archGroupAlloc(wald, null);
+                Mw.makeTranslation(x, (Number.isFinite(y) ? y : pm.y) + 120, z);
+                wald.mesh.setMatrixAt(ref.slot, Mw);
+                r._lodSlotStamp(wald, ref.slot, 1, false, null);
+                pfaehle.push(ref);
+            }
+        wald.mesh.instanceMatrix.needsUpdate = true;
+        aus.k8wald = { gruppe: wald.wahl, pfaehle: wald.liveCount };
+        try {
+            aus.k8 = k8("gesetz");
+            if (selbsttest) {
+                aus.s11 = k8("untreu");
+                aus.s12 = k8("ohneRand");
+                aus.s13 = k8("ganzerRand");
+            }
+        } finally {
+            for (const ref of pfaehle) r._archGroupFree(wald, ref);
+            // die Werfer-Hüllen der Bündel merkten den Wald in diesem Takt: sie rechnen beim nächsten Ruf neu
+            for (const bg of st._regionBundles ? st._regionBundles.values() : []) delete bg.userData._werferTakt;
+        }
+    }
     // K4 — außerhalb des Takts
     csm.lights.forEach((l) => ((l.shadow.autoUpdate = false), (l.shadow.needsUpdate = false)));
     r._kaskadenPassen(csm);
@@ -561,6 +843,9 @@ function probe(selbsttest) {
         tag(t);
         blick(yaw);
         alleNeu();
+        // W7 prüft die FRISCHE Wahl je Pass gegen das Gesetz in der Box dieses Renders: jede Lage fällt (eine gehaltene Wahl
+        // stammt aus einer früheren Box derselben Empfänger und desselben Lichts — ihre Treue prüfen K8 und gate:sicht-arbeit)
+        if (r._passLagen) r._passLagen.clear();
         const saetze = [...(st.chunkSaetze ? st.chunkSaetze.values() : [])];
         const res = {
             paesse: [],
@@ -1041,15 +1326,32 @@ function probe(selbsttest) {
             farbe: z.shadowMap.texture.format === T.RedFormat,
             tiefe: z.depthTexture.type === T.UnsignedShortType,
             namen: rt.texture.name === "kaskade0:farbe" && dt.name === "kaskade0:tiefe",
+            // die Karte ohne Farbe (0710-1, Ziel-Zensus: die Farbe hatte keinen Leser): auf WebGPU legt die GPU die Farbe nie
+            // an, der Kontext des Ziels trägt keinen Farb-Anhang; die echte Karte trägt keine GPU-Textur ihrer Farbe
+            ohneFarbe: (() => {
+                const be = st.renderer && st.renderer.backend;
+                if (!be || be.isWebGPUBackend !== true) return true;
+                return (
+                    rt.__anazhOhneFarbe === true &&
+                    rt.texture.__anazhOhneGpu === true &&
+                    csm.lights.every((l) => {
+                        const m = l.shadow && l.shadow.map;
+                        return !m || !m.texture || !be.has(m.texture) || !be.get(m.texture).texture;
+                    })
+                );
+            })(),
             // die echte CSM: jeder Kaskaden-Knoten trägt die Hülle seit der Geburt
             echt:
                 csm._shadowNodes.length > 0 &&
                 csm._shadowNodes.every((sn) => Object.prototype.hasOwnProperty.call(sn, "setupRenderTarget")),
         };
     }
-    // ── Z2 (Seite): der EINE Kompilier-Weg und die EINE Szenen-Tiefe leben in ihren Methoden ──
+    // ── Z2 (Seite): die EINE Szenen-Tiefe lebt in ihrer Methode, die Erst-Zeichnung am Renderer (kein Kompilat daneben) ──
     aus.z2 = {
-        kompiliere: /\.compileAsync\(/.test(window.__codeOf(r._kompiliere)),
+        // der Null-Renderer trägt die Renderer-Eingriffe nie: die Erst-Zeichnung steht im Quelltext von _configureRenderer
+        erstZeichnung:
+            /renderer\._renderObjectDirect = function/.test(window.__codeOf(r._configureRenderer)) &&
+            typeof r._erstZeichnungStand === "function",
         szeneTiefe: /viewportDepthTexture\(/.test(window.__codeOf(r._szeneTiefe)),
     };
 
@@ -1106,22 +1408,7 @@ function probe(selbsttest) {
         const lp = csm.lights[0].position.clone();
         let nAddon = -1,
             nSchatten = -1,
-            nHaupt = -1,
-            nKompilat = -1,
-            nOhneWache = -1;
-        // ein Kompilat wie r184-compileAsync: der Vorher-Haken der Szene läuft synchron, der Nachher-Haken nie
-        const schein = {
-            compileAsync(obj, kamera, sc) {
-                (sc || obj).onBeforeRender(this, obj, kamera, null);
-                return Promise.resolve();
-            },
-            getRenderTarget: () => null,
-            setRenderTarget() {},
-            getMRT: () => null,
-            setMRT() {},
-        };
-        const rRoh = st.renderer,
-            ppRoh = st.postProcessingFailed;
+            nHaupt = -1;
         try {
             // das Addon-updateBefore ist stumm (es lief NACH den Karten), der Haken des Haupt-Passes stellt die Kaskaden
             csm.updateBefore({});
@@ -1132,24 +1419,13 @@ function probe(selbsttest) {
             st.scene.onBeforeRender(st.renderer, st.scene, cam, null);
             st.scene.onAfterRender(st.renderer, st.scene, cam, null);
             nHaupt = n;
-            st.renderer = schein;
-            st.postProcessingFailed = true; // das Leinwand-Ziel: _kompiliere stellt kein Szenen-Ziel um
-            r._kompiliere(st.scene, cam, null);
-            nKompilat = n;
-            if (selbsttest) {
-                Promise.resolve(schein.compileAsync(st.scene, cam, null)); // ohne die Wache
-                nOhneWache = n;
-            }
         } finally {
-            st.renderer = rRoh;
-            st.postProcessingFailed = ppRoh;
             delete r._kaskadenPassen;
             st.scene.onAfterRender(st.renderer, st.scene, cam, null);
         }
-        aus.a1.konsum = nAddon === 0 && nSchatten === 0 && nHaupt === 1 && nKompilat === 1;
+        aus.a1.konsum = nAddon === 0 && nSchatten === 0 && nHaupt === 1;
         aus.a1.addonStumm = nAddon === 0 && lp.equals(csm.lights[0].position);
-        aus.a1.zaehl = { addon: nAddon, schatten: nSchatten, haupt: nHaupt, kompilat: nKompilat };
-        if (selbsttest) aus.s6 = nOhneWache === nKompilat + 1;
+        aus.a1.zaehl = { addon: nAddon, schatten: nSchatten, haupt: nHaupt };
     }
     return aus;
 }
@@ -1265,6 +1541,29 @@ function probe(selbsttest) {
             a.k4still.every((x) => !x) && a.k4dreh.every(Boolean),
             `still ${a.k4still} · gedreht ${a.k4dreh}`
         );
+        if (a.k7)
+            check(
+                "K7 der Takt hält die Box: ein Takt-Render ohne Änderung behält sie, ein Werfer über der nahen Ebene legt sie neu und wirft",
+                a.k7.gehalten && a.k7.neuGelegt && a.k7.wirft,
+                JSON.stringify(a.k7)
+            );
+        // DAS URTEIL VON K8 (auch für die Selbsttest-Täter S11–S13): die Grenze des Halts ist höchstens das halbe Budget, die Lage
+        // hält die Folge, kein echter Werfer fehlt, über dem Rand wählt jede Kaskade neu
+        const k8gut = (x) =>
+            !!x &&
+            x.faelle.length === 2 &&
+            x.faelle.every((y) => y.gehalten) &&
+            x.grenze.every((g, k) => g > 0 && g <= 1.1 * x.budget[k]) &&
+            x.loecher === 0 &&
+            x.geprueft > 100 &&
+            x.neu.length === 2 &&
+            x.neu.every(Boolean);
+        if (a.k8)
+            check(
+                "K8 die Wahl hält über die Stufen der Sonne (ohne Saum): die Grenze des Halts ist das halbe Budget, die Lage hält über eine Neu-Wahl mitten in der Drehung und trägt jeden echten Werfer; über dem Rand wählt jede Kaskade neu",
+                k8gut(a.k8),
+                JSON.stringify(a.k8)
+            );
         check(
             "K5 die Karte trägt die längste Kante bei texelM (kleinste Zweierpotenz)",
             a.k5.every((k) => k.kleinste),
@@ -1337,13 +1636,13 @@ function probe(selbsttest) {
             a.w9 ? w9t(a.w9) : "keine W9-Messung"
         );
         check(
-            "Z1 Karten-Ziele: Farbe r8 · Tiefe 16 bit · benannt",
-            a.z1.farbe && a.z1.tiefe && a.z1.namen && a.z1.echt,
+            "Z1 Karten-Ziele: Farbe r8 ohne GPU-Textur (WebGPU) · Tiefe 16 bit · benannt",
+            a.z1.farbe && a.z1.tiefe && a.z1.namen && a.z1.echt && a.z1.ohneFarbe,
             JSON.stringify(a.z1)
         );
         check(
-            "Z2 Bildziele je Leser: EIN compileAsync (_kompiliere), EINE Szenen-Tiefe (_szeneTiefe), kein namenloses Ziel",
-            bildZieleGut(z2) && a.z2.kompiliere && a.z2.szeneTiefe,
+            "Z2 Bildziele je Leser: kein compileAsync (die Erst-Zeichnung), EINE Szenen-Tiefe (_szeneTiefe), kein namenloses Ziel",
+            bildZieleGut(z2) && a.z2.erstZeichnung && a.z2.szeneTiefe,
             `${JSON.stringify(z2)} · ${JSON.stringify(a.z2)}`
         );
         check("A1 kein Frustum-Schreiber für Inseln", a.a1.inselnFrei);
@@ -1400,11 +1699,27 @@ function probe(selbsttest) {
                 );
             }
             check("S10 Selbsttest lief für alle drei Leser", (a.s10 || []).length === 3);
+            const s1x = (x) =>
+                x ? JSON.stringify({ g: x.grenze, b: x.budget, l: x.loecher, neu: x.neu, n: x.namen.slice(0, 3) }) : "kein Boden-Satz";
+            check(
+                "S11 Selbsttest: hält die Lage jede Drehung des Lichts (ohne Rand-Prüfung), wählt keine Kaskade über dem Rand neu, und es fehlen Werfer — K8 rot",
+                !k8gut(a.s11) && !!a.s11 && !a.s11.neu.every(Boolean) && a.s11.loecher > 0,
+                s1x(a.s11)
+            );
+            check(
+                "S12 Selbsttest: fällt der Licht-Rand aus `_passTrifft`, fehlen in der Folge Werfer — K8 rot",
+                !k8gut(a.s12) && !!a.s12 && a.s12.loecher > 0,
+                s1x(a.s12)
+            );
+            check(
+                "S13 Selbsttest: fällt die Halb-Regel des Lichts (Halt bis zum ganzen Rand), steht die Grenze beim ganzen Budget — K8 rot",
+                !k8gut(a.s13) && !!a.s13 && a.s13.grenze.some((g, k) => g > 1.1 * a.s13.budget[k]),
+                s1x(a.s13)
+            );
             check("S4 Selbsttest: die Absenz-Regel fängt beide alten Frustum-Schreiber der Tiere", a.s4 === true);
             check("S5 Selbsttest: das Addon-_updateShadowBounds schreibt die Kaskaden-Kamera", a.s5 === true);
-            check("S6 Selbsttest: ein Kompilat ohne Wache stellt die Kaskaden", a.s6 === true);
             const zs = bildZiele(stamm + "\nr.compileAsync(o, k);\nconst t = TSL.viewportDepthTexture();\n");
-            check("S7 Selbsttest: ein zweiter Kompilier-Weg, eine zweite Szenen-Tiefe machen Z2 rot", !bildZieleGut(zs));
+            check("S7 Selbsttest: ein Kompilier-Weg, eine zweite Szenen-Tiefe machen Z2 rot", !bildZieleGut(zs));
         }
         check("keine Page-Errors", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
     } catch (e) {

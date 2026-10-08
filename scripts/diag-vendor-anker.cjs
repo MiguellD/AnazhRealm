@@ -4,7 +4,7 @@
 //
 // Der Stamm patcht/liest den minifizierten three-r184-Vendor zur Laufzeit an
 // seinen Organen (Observer-Diät + Kamera-Treue · Schatten-Diät · Schatten-Stoff ·
-// Bundle-Wahrheit · Bundle-Reihenfolge · Replay-Buchung · Reife-Wache · Uniform-
+// Bundle-Wahrheit · Bundle-Reihenfolge · Replay-Buchung · Erst-Zeichnung · Uniform-
 // Heimat · Schatten-Takt · Instanz-Puffer-Name · Satz-Teil-Upload). Jeder dieser
 // Eingriffe hängt an EXAKTEN Vendor-Wahrheiten (Methoden-/Feld-Namen, Verhaltens-
 // Signaturen) — auch an PRIVATEN (_renderScene, _currentRenderBundle, _bindings.
@@ -79,6 +79,27 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getLights(e,t){if(", organ: "AnazhRealm._diaetRefresh (obs.getLights)" },
     { file: "vendor/three.webgpu.min.js", sub: 'needsVelocity(e){const t=e.getMRT();return null!==t&&t.has("velocity")}', organ: "AnazhRealm._diaetRefresh (obs.needsVelocity)" },
     { file: "vendor/three.webgpu.min.js", sub: "firstInitialization(e){return!1===this.renderObjects.has(e)&&(this.getRenderObjectData(e),!0)}", organ: "AnazhRealm._diaetRefresh (obs.renderObjects = Erst-Init)" },
+    // DER EINE KNOTEN JE QUELLE (_configureRenderer, Welle K): r184 teilt eine geteilte Gruppe über Programme nur bei
+    // GLEICHEN Knoten-Ids (je Render-Kontext EIN Puffer); ReferenceNode legt seinen Uniform-Knoten in setNodeType an (der
+    // Eingriff gibt jedem Verweis auf dasselbe Objekt und dieselbe Eigenschaft einer geteilten Gruppe DENSELBEN), die CSM
+    // baut ihre Render-Knoten in setup (einmal je Instanz).
+    { file: "vendor/three.webgpu.min.js", sub: 'setNodeType(e){let t=null;t=null!==this.count?Zl(null,e,this.count):Array.isArray(this.getValueFromReference())?td(null,e):"texture"===e?Kl(null):"cubeTexture"===e?$c(null):Sa(null,e),null!==this.group&&t.setGroup(this.group),null!==this.name&&t.setName(this.name),this.node=t}', organ: "EIN KNOTEN JE QUELLE (ReferenceNode.setNodeType legt den Uniform-Knoten an)" },
+    { file: "vendor/three.webgpu.min.js", sub: "e.uniforms.sort((e,t)=>e.nodeUniform.node.id-t.nodeUniform.node.id);for(const t of e.uniforms)r+=t.nodeUniform.node.id}else r+=e.nodeUniform.id;const i=this.renderer._currentRenderContext||this.renderer;let n=qN.get(i);", organ: "EIN KNOTEN JE QUELLE (_getBindGroup teilt die Gruppe nach Knoten-Ids je Render-Kontext)" },
+    { file: "vendor/CSMShadowNode.js", sub: "setup( builder ) {\n\n\t\tif ( this.camera === null ) this._init( builder );\n\n\t\treturn this.fade === true ? this._setupFade() : this._setupStandard();", organ: "EIN KNOTEN JE QUELLE (CSMShadowNode.setup baut die Render-Knoten je Aufruf — einmal je Instanz)" },
+    { file: "vendor/CSMShadowNode.js", sub: "this.setupShadowPosition( builder );", organ: "EIN KNOTEN JE QUELLE (die Schatten-Lage baut der Fn-Rumpf je Programm, nie setup)" },
+    // EIN SCHREIBEN JE PUFFER: das Backend lädt eine Uniform-Gruppe Bereich für Bereich (je Bereich ein writeBuffer).
+    { file: "vendor/three.webgpu.min.js", sub: "updateBinding(e){const t=this.backend,r=t.device,s=e.buffer,i=t.get(e).buffer,n=e.updateRanges;if(0===n.length)r.queue.writeBuffer(i,0,s,0);else{", organ: "EIN SCHREIBEN JE PUFFER (backend.updateBinding: ein writeBuffer je Bereich)" },
+    { file: "vendor/three.webgpu.min.js", sub: "t.isBuffer&&t.updateRanges.length>0&&t.clearUpdateRanges()", organ: "EIN SCHREIBEN JE PUFFER (r184 leert die Bereiche nach dem Upload)" },
+    // EIN GANG JE GRUPPE UND RENDER (_diaetGang): Bindegruppen und Knoten tragen Ids, Vorher-Knoten ihren Takt.
+    { file: "vendor/three.webgpu.min.js", sub: 'class bN{constructor(e="",t=[]){this.name=e,this.bindings=t,this.id=yN++}}', organ: "AnazhRealm._diaetGang (die Bindegruppe trägt eine Id)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getUpdateBeforeType(){return this.updateBeforeType}", organ: "AnazhRealm._diaetGang (Vorher-Takt: object geht je Programm)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateBeforeNode(e){const t=e.getUpdateBeforeType(),r=e.updateReference(this);if(t===ri.FRAME){", organ: "AnazhRealm._diaetGeteiltSchreiben (NodeFrame.updateBeforeNode je Vorher-Knoten, wie Nodes.updateBefore)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateReference(e){return this.reference=null!==this.object?this.object:e.object,this.reference}", organ: "AnazhRealm._diaetGang (ein Verweis ohne festes Objekt liest frame.object — sein Programm geht seinen eigenen Gang)" },
+    // DER RENDER-ABSCHNITT (Gegenprüfung 07.10.): der Stempel des Gangs ist (Render-Id, info.calls) — jeder betretene
+    // Render zählt info.calls hoch und nimmt ihn als Render-Id, das Verlassen gibt die äußere Id zurück (Anker der
+    // Bundle-Wahrheit), info.reset lässt info.calls stehen. So wechselt das Paar beim Betreten UND Verlassen.
+    { file: "vendor/three.webgpu.min.js", sub: "this.info.calls++,this.info.render.calls++,this.info.render.frameCalls++,i.renderId=this.info.calls", organ: "AnazhRealm._diaetGeteiltSchreiben (Render-Abschnitt: jeder betretene Render zählt info.calls, die Render-Id folgt)" },
+    { file: "vendor/three.webgpu.min.js", sub: "reset(){this.render.drawCalls=0,this.render.frameCalls=0,this.compute.frameCalls=0,this.render.triangles=0,this.render.points=0,this.render.lines=0}", organ: "AnazhRealm._diaetGeteiltSchreiben (Render-Abschnitt: info.reset lässt info.calls stehen)" },
     // DIE BUNDLE-WAHRHEIT (_configureRenderer, Chokepoint _renderScene): r184 hält den Aufnahme-Zeiger ohne Stapel,
     // verfolgt nur bei stehendem Zeiger, refresht im Replay ausserhalb von renderObject; der Override-Stoff wird je
     // Objekt eingerichtet und zurückgesetzt; eine BundleGroup ohne backend.beginBundle ist eine Gruppe.
@@ -97,9 +118,30 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "S.length>0&&this._renderBundles(S,l,R),!0===this.opaque&&w.length>0&&this._renderObjects(w,t,l,R)", organ: "Bundle-Reihenfolge (Bundles vor den opaken Direkt-Draws)" },
     { file: "vendor/three.webgpu.min.js", sub: "addBundle(e,t){this.get(e).renderBundles.push(this.get(t).bundleGPU)}", organ: "Bundle-Reihenfolge (die gesammelte Liste)" },
     { file: "vendor/three.webgpu.min.js", sub: "t.currentSets={attributes:{},bindingGroups:[],pipeline:null,index:null},t.renderBundles=[]", organ: "Bundle-Reihenfolge (Pass-Zustand nach executeBundles)" },
-    // Reife-Wache (Record droppt unfertige Pipelines + versiegelt danach)
+    // DIE ERST-ZEICHNUNG (Welle K, `_configureRenderer`): der Stamm bildet `_renderObjectDirect` nach (ändert r184 den Körper,
+    // zieht die Nachbildung nach), baut den Stoff im Pass je Render-Aufruf (`info.calls`) höchstens einmal und lässt die
+    // Pipeline asynchron entstehen (`getForRender(ro, promises)`); der Record droppt unfertige Draws und versiegelt danach.
     { file: "vendor/three.webgpu.min.js", sub: "isReady(u)&&", organ: null, weich: true },
-    { file: "vendor/three.webgpu.min.js", sub: "u.version=s.version", organ: "_bundleReifeWache (Record-Versiegelung)" },
+    { file: "vendor/three.webgpu.min.js", sub: "u.version=s.version", organ: "_erstWartet (2): die Marke des Knoten-Baus fällt nach der Versiegelung" },
+    {
+        file: "vendor/three.webgpu.min.js",
+        sub: "_renderObjectDirect(e,t,r,s,i,n,a,o){const u=this._objects.get(e,t,r,s,i,this._currentRenderContext,a,o);if(u.drawRange=e.geometry.drawRange,u.group=n,null!==this._currentRenderBundle){this.backend.get(this._currentRenderBundle).renderObjects.push(u),u.bundle=this._currentRenderBundle.bundleGroup}const l=this._nodes.needsRefresh(u);l&&(this._nodes.updateBefore(u),this._geometries.updateForRender(u),this._nodes.updateForRender(u),this._bindings.updateForRender(u)),this._pipelines.updateForRender(u),this._pipelines.isReady(u)&&(this.backend.draw(u,this.info),l&&this._nodes.updateAfter(u))}",
+        organ: "Erst-Zeichnung (die Nachbildung von _renderObjectDirect)",
+    },
+    { file: "vendor/three.webgpu.min.js", sub: "this._handleObjectFunction=this._renderObjectDirect,this.info.calls++,this.info.render.calls++", organ: "Erst-Zeichnung (jeder Render liest die Methode am Exemplar; info.calls zählt je Render-Aufruf)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateForRender(e){this.getForRender(e)}", organ: "Erst-Zeichnung (der Vendor-Draw baut die Pipeline ohne Versprechen = synchron)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getForRender(e,t=null){const{backend:r}=this,s=this.get(e);if(this._needsRenderUpdate(e))", organ: "Erst-Zeichnung (die Pipeline mit Versprechen-Liste)" },
+    { file: "vendor/three.webgpu.min.js", sub: "null===t)h.pipeline=d.createRenderPipeline(A)", organ: "Erst-Zeichnung (ohne Liste synchron)" },
+    { file: "vendor/three.webgpu.min.js", sub: "h.pipeline=await d.createRenderPipelineAsync(A)", organ: "_erstWartet (1): die Zuweisung der fertigen Pipeline ist die Bereitschaft (der Setter am Zustand)" },
+    { file: "vendor/three.webgpu.min.js", sub: "h.pipeline=await d.createRenderPipelineAsync(A)}catch(e){}const t=await d.popErrorScope()", organ: "_erstWartet (1): das Vendor-Versprechen wartet danach auf den Fehler-Scope — an ihm hängt nichts; _erstAbsageWache: r184 verschluckt die Absage (catch(e){})" },
+    { file: "vendor/three.webgpu.min.js", sub: "label:`renderPipeline_${s.name||s.type}_${s.id}`", organ: "_erstAbsageWache (das Label der Absage nennt den Stoff)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this._setupBindings(u,n),this.set(t,{programGPU:n,pipeline:n})", organ: "_erstWartet (WebGL2-Weiche: _completeCompile ersetzt das Datenobjekt, ein Setter feuerte nie)" },
+    { file: "vendor/three.webgpu.min.js", sub: "isReady(e){const t=this.get(e).pipeline;if(void 0===t)return!1;const r=this.backend.get(t);return void 0!==r.pipeline&&null!==r.pipeline}", organ: "Erst-Zeichnung (gezeichnet wird ab der fertigen Pipeline)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getForRenderCacheKey(e){return e.initialCacheKey}", organ: "Erst-Zeichnung (ein Bau-Cache-Treffer ist kein Bau)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this._nodeBuilderState=null", organ: "Erst-Zeichnung (der gebaute Stoff am RenderObject)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getNodeBuilderState(){return this._nodeBuilderState||(this._nodeBuilderState=this._nodes.getForRender(this))}", organ: "Erst-Zeichnung (needsRefresh baut den Stoff synchron)" },
+    // Warum kein Vorwärmen: r184-compileAsync liest die Attribute (→ synchroner Knoten-Bau) VOR seinem asynchronen Bau
+    { file: "vendor/three.webgpu.min.js", sub: "this._geometries.updateForRender(t),await this._nodes.getForRenderAsync(t)", organ: "Erst-Zeichnung (das Vendor-Kompilat baut synchron — kein Vorwärmen daneben)" },
     // Bundle-Pass-Physik (Wasser bleibt draußen, solange der Copy den Pass bricht)
     { file: "vendor/three.webgpu.min.js", sub: "currentPass.end()", organ: "Wasser-Bundle-Wand (copyFramebufferToTexture-Pass-Bruch)" },
     // Bundle-Replay-Buchung: die Draw-Wahrheit im Info (der Replay zieht aufgenommene RenderObjects)
@@ -108,7 +150,16 @@ const ANKER = [
     // Der Fenster-Wechsel: die Viewport-Tiefe ist ein Klon je Render-Ziel (der EINE Leser bindet nach setSize neu)
     { file: "vendor/three.webgpu.min.js", sub: "getTextureForReference(e=null){", organ: "_tiefenLeserNeuBinden (Viewport-Tiefen-Klon je Ziel)" },
     // Der Name der Viewport-Tiefe: EIN geteiltes Original je Seite, jeder Klon je Ziel erbt seinen Namen
-    { file: "vendor/three.webgpu.min.js", sub: '"ViewportDepthTextureNode"}constructor(e=ud,t=null,r=null){null===r&&(null===Kp&&(Kp=new Z),r=Kp)', organ: "_szeneTiefe (szene:tiefenkopie am geteilten Original)" },
+    { file: "vendor/three.webgpu.min.js", sub: '"ViewportDepthTextureNode"}constructor(e=ud,t=null,r=null){null===r&&(null===Kp&&(Kp=new Z),r=Kp)', organ: "_szeneTiefe (WebGL2-Rückfall und Null-Renderer: r184s Viewport-Tiefe, szene:tiefenkopie)" },
+    // DAS TIEFEN-ABBILD (0710-1 P2, Runde 2): r184s Bruch-Weg (Pass beenden, auf demselben Encoder kopieren, mit load neu
+    // beginnen) trägt den Abbild-Pass — seine Quelle ist die Tiefe des Kontexts, seine Kopie die EINE Encoder-Stelle, die
+    // `_tiefenAbbild` für die Attrappe durch den Abbild-Pass ersetzt; der Knoten zieht je Render einmal; r32float bindet
+    // r184 als (unfilterable-)float.
+    { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture", organ: "_tiefenAbbild (Quelle des Bruchs = die Tiefe des Kontexts)" },
+    { file: "vendor/three.webgpu.min.js", sub: 's.currentPass?(s.currentPass.end(),a=s.encoder):a=this.device.createCommandEncoder({label:"copyFramebufferToTexture_"+e.id}),a.copyTextureToTexture({texture:i,origin:[r.x,r.y,0]},{texture:n},[r.z,r.w])', organ: "_tiefenAbbild (Pass-Ende und die EINE Encoder-Kopie)" },
+    { file: "vendor/three.webgpu.min.js", sub: "s.currentPass=a.beginRenderPass(e),s.currentSets={attributes:{},bindingGroups:[],pipeline:null,index:null}", organ: "_tiefenAbbild (der Neubeginn mit load)" },
+    { file: "vendor/three.webgpu.min.js", sub: "else if(t===ri.RENDER){const t=this._getMaps(this.updateBeforeMap,r);if(t.renderId!==this.renderId)", organ: "_szeneTiefe (der Abbild-Knoten zieht je Render einmal)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'e===K&&(this.backend.hasFeature("float32-filterable")?t.sampleType=Gw:t.sampleType=zw)', organ: "_szeneTiefe (das r32float-Abbild als float-Textur gebunden)" },
     { file: "vendor/three.webgpu.min.js", sub: "if(!1===r.has(e)){const s=t.clone();r.set(e,s)}return r.get(e)}", organ: "_szeneTiefe (der Klon je Ziel trägt den Namen)" },
     // Der Schatten-Takt (_loopShadowUpdate): der EINE Leser je Licht, die Matrix nur im Schatten-Render, die
     // Matrix-Uniform rechnet nur bei abgeschalteter Map selbst nach — sonst bliebe eine übersprungene Kaskade
@@ -129,8 +180,8 @@ const ANKER = [
     { file: "vendor/TRAANode.js", sub: "const offsetUV = this.velocityNode.load( closestPositionTexel ).xy.mul( vec2( 0.5, - 0.5 ) );", organ: "_traaKameraBewegung (velocityNode.load → NDC-Bewegung)" },
     { file: "vendor/TRAANode.js", sub: "renderPipeline.context.onBeforeRenderPipeline = () => {", organ: "_traaReprojektion (der Versatz lebt nur im Post-Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "null!==this._context.onBeforeRenderPipeline&&this._context.onBeforeRenderPipeline()", organ: "_traaReprojektion (RenderPipeline ruft den Vorher-Haken)" },
-    { file: "vendor/TRAANode.js", sub: "this._historyRenderTarget = new RenderTarget( 1, 1, { depthBuffer: false, type: HalfFloatType, depthTexture: new DepthTexture() } );", organ: "TRAA-Tiefen-Kopie (Geschichte depth24plus wie die Szenen-Tiefe)" },
-    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( currentDepth, this._historyRenderTarget.depthTexture );", organ: "TRAA-Tiefen-Kopie (Textur zu Textur, gleiches Format; _ensurePostProcessing nennt das Ziel TRAANode.history:tiefe)" },
+    { file: "vendor/TRAANode.js", sub: "this._historyRenderTarget = new RenderTarget( 1, 1, { depthBuffer: false, type: HalfFloatType, depthTexture: new DepthTexture() } );", organ: "_traaVortiefe (die Vortiefe der Geschichte — ihr Typ wird 16 bit, bevor die GPU sie anlegt)" },
+    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( currentDepth, this._historyRenderTarget.depthTexture );", organ: "_traaVortiefe (der EINE Kopier-Ruf des Knotens — am Renderer gehakt, gezeichnet in 16 bit; Name TRAANode.history:tiefe)" },
     { file: "vendor/TRAANode.js", sub: "let depth = this._previousDepthNode.sample( uv ).r;", organ: "TRAA-Tiefen-Kopie (der Leser: die Vortiefe der Disokklusion — die Kopie bleibt)" },
     // Die Platzhalter-Tiefe (1×1, namenlos, ohne Ziel): der Stamm nennt sie über den Knoten (Band-Linse, Textur-Zensus)
     { file: "vendor/TRAANode.js", sub: "this._previousDepthNode = texture( new DepthTexture( 1, 1 ) );", organ: "_ensurePostProcessing (TRAANode.vortiefe — die Band-Linse nennt jede Textur)" },
@@ -148,11 +199,19 @@ const ANKER = [
     { file: "vendor/CSMShadowNode.js", sub: "const cascades = reference( '_cascades', 'vec2', this )", organ: "gate:schatten-werfer K1 (die Kaskaden-Uniform, die der Shader liest)" },
     { file: "vendor/three.webgpu.min.js", sub: 'r.name="ShadowDepthTexture",r.compareFunction=', organ: "_kaskadenZiele (ShadowNode.setupRenderTarget baut Tiefe …)" },
     { file: "vendor/three.webgpu.min.js", sub: 'return s.texture.name="ShadowMap",s.texture.type=e.mapType,s.depthTexture=r,{shadowMap:s,depthTexture:r}}', organ: "_kaskadenZiele (… und Farbe, die Hülle setzt r8 + 16 bit)" },
+    // DIE KARTE OHNE FARBE (0710-1 P2, Ziel-Zensus: kaskade0/1:farbe OHNE LESER): die Ziel-Daten tragen eine leere Farb-
+    // Liste, die Farb-Textur legt die GPU nie an — der Ziel-Bau misst textures[0] und reicht die Liste an den Kontext,
+    // updateTexture ist der EINE Anlage-Weg, der Pass-Deskriptor und der Pipeline-Bau laufen über die Liste, Format und
+    // Farbraum lasen blind textures[0].
+    { file: "vendor/three.webgpu.min.js", sub: "updateRenderTarget(e,t=0){const r=this.get(e),s=0===e.samples?1:e.samples,i=r.depthTextureMips||(r.depthTextureMips={}),n=e.textures,a=this.getSize(n[0])", organ: "_kaskadenZiele (der Ziel-Bau misst textures[0] — das Textur-Objekt bleibt)" },
+    { file: "vendor/three.webgpu.min.js", sub: "r.width=a.width,r.height=a.height,r.textures=n,r.depthTexture=l||null", organ: "_kaskadenZiele (die Ziel-Daten tragen die Farb-Liste — die Hülle leert sie)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateTexture(e,t={}){const r=this.get(e);if(!0===r.initialized&&r.version===e.version)return;", organ: "_kaskadenZiele (der EINE Anlage-Weg einer Textur — die Karten-Farbe überspringt ihn)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getCurrentColorFormat(e){let t;return t=null!==e.textures?this.getTextureFormatGPU(e.textures[0]):this.getPreferredCanvasFormat(),t}", organ: "_kaskadenZiele (Format auf leerer Liste: null)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getCurrentColorSpace(e){return null!==e.textures?e.textures[0].colorSpace:this.backend.renderer.outputColorSpace}", organ: "_kaskadenZiele (Farbraum auf leerer Liste: null)" },
+    { file: "vendor/three.webgpu.min.js", sub: "if(null!==e.context.textures){const t=e.context.textures,r=e.context.mrt;for(let e=0;e<t.length;e++)", organ: "_kaskadenZiele (der Pipeline-Bau: je Farbe ein Ziel — leere Liste, reine Tiefen-Pipeline)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const t=e.textures,o=[];let u;const l=this._isRenderCameraDepthArray(e);for(let s=0;s<t.length;s++)", organ: "_kaskadenZiele (der Pass-Deskriptor: je Farbe ein Anhang — leere Liste, nur die Tiefe)" },
     { file: "vendor/three.webgpu.min.js", sub: "g.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,p);const v=t.isArrayCamera", organ: "_passSicht (der Vorher-Haken je Render, vor der Projektion — auch im Schatten-Render)" },
     { file: "vendor/three.webgpu.min.js", sub: "l.onAfterRender(this,e,t,p),this.inspector.finishRender", organ: "_passSicht (der Nachher-Haken je Render)" },
-    { file: "vendor/three.webgpu.min.js", sub: "c.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,d);const g=this._renderLists.get(l,t)", organ: "_kompiliere (compileAsync ruft den Vorher-Haken synchron — die Wache _imKompilat)" },
-    // compileAsync wartet vor dem Lesen des Ziels auf init() — ein Kompilat davor läse die Leinwand (23,7 MB Rahmenpuffer)
-    { file: "vendor/three.webgpu.min.js", sub: "!1===this._initialized&&await this.init();const s=this._nodes.nodeFrame,i=s.renderId,n=this._currentRenderContext", organ: "_kompiliere (erst init, dann das Ziel)" },
     // instanceMatrix-Versions-Wächter (Kern-Setter)
     { file: "vendor/three.core.min.js", sub: "set needsUpdate(", organ: "Diät-Versions-Wächter (Attribut-Versionen)" },
     // Der Satz (Welle B): ein Chunk ist ein Bereich im Pool-Puffer — sein Upload ist ein Teil-Schreiben ab dem
@@ -253,11 +312,30 @@ const ANKER = [
     // als `rawInputs` (der Ketten-Graph der Zerleg-Linse liest sie), ein Fn ohne Layout baut seinen Rumpf inline.
     { file: "vendor/three.webgpu.min.js", sub: "constructor(e,t){super(),this.shaderNode=e,this.rawInputs=t,this.isShaderCallNodeInternal=!0}", organ: "_ensurePostProcessing (nurBeiStaerke — die Stufe bleibt im Ketten-Graph sichtbar)" },
     // DER SCHMALE INDEX (W7): r184 weitet beim Anlegen jedes nicht-normierte 8-/16-bit-Attribut auf 32 bit — auch den Index;
-    // `_index16` setzt `normalized` nur für das Anlegen eines Uint16-Index (der EINE Weg jedes Index), der Draw bindet ihn
+    // `_backendGesetz` setzt `normalized` nur für das Anlegen eines Uint16-Index (der EINE Weg jedes Index), der Draw bindet ihn
     // nach dem Array-Typ als uint16. Das Haut-Gewicht reist als normiertes Uint16 (unorm16x4, nie geweitet).
-    { file: "vendor/three.webgpu.min.js", sub: "if(!1===e.normalized)if(o.constructor===Int16Array||o.constructor===Int8Array)o=new Int32Array(o);else if((o.constructor===Uint16Array||o.constructor===Uint8Array)&&(o=new Uint32Array(o),t&GPUBufferUsage.INDEX))", organ: "_index16 (das Weiten fragt normalized — die Hülle setzt es nur für das Anlegen)" },
-    { file: "vendor/three.webgpu.min.js", sub: "createIndexAttribute(e){let t=GPUBufferUsage.INDEX|GPUBufferUsage.COPY_SRC|GPUBufferUsage.COPY_DST;", organ: "_index16 (der EINE Weg jedes Index auf die GPU)" },
-    { file: "vendor/three.webgpu.min.js", sub: "t=h.array instanceof Uint16Array?uA:lA;o.setIndexBuffer(e,t)", organ: "_index16 (der Draw bindet das Index-Format nach dem Array-Typ)" },
+    // DER FROST (07.10.): das Weiten schreibt die geweitete Form in das GETEILTE Attribut zurück (`r.array=o`) — darum sitzt
+    // die Hülle an der KLASSE (jedes Backend der Seite: Welt + Bühnen), und Index-Wache und GPU-Wache hängen an Draw und init.
+    { file: "vendor/three.webgpu.min.js", sub: "if(!1===e.normalized)if(o.constructor===Int16Array||o.constructor===Int8Array)o=new Int32Array(o);else if((o.constructor===Uint16Array||o.constructor===Uint8Array)&&(o=new Uint32Array(o),t&GPUBufferUsage.INDEX))", organ: "_backendGesetz (das Weiten fragt normalized — die Hülle setzt es nur für das Anlegen)" },
+    { file: "vendor/three.webgpu.min.js", sub: "for(let e=0;e<o.length;e++)65535===o[e]&&(o[e]=4294967295);if(r.array=o,", organ: "_backendGesetz (das Weiten schreibt in das geteilte Attribut zurück — die Hülle gilt jedem Backend)" },
+    { file: "vendor/three.webgpu.min.js", sub: "createIndexAttribute(e){let t=GPUBufferUsage.INDEX|GPUBufferUsage.COPY_SRC|GPUBufferUsage.COPY_DST;", organ: "_backendGesetz (der EINE Weg jedes Index auf die GPU)" },
+    { file: "vendor/three.webgpu.min.js", sub: "t=h.array instanceof Uint16Array?uA:lA;o.setIndexBuffer(e,t)", organ: "_backendGesetz (der Draw bindet das Index-Format nach dem Array-Typ)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateAttribute(e){this.attributeUtils.updateAttribute(e)}", organ: "_backendGesetz (das Nachschreiben bucht das Index-Maximum der geschriebenen Bereiche)" },
+    // DIE LÖSUNG DER RENDER-OBJEKTE (Frost-Nachbesserung 4): r184 hängt jedes Render-Objekt an das dispose-Ereignis seines
+    // Stoffs (6:205594) und löst es selbst nur dort (6:210413) — ein geteilter Stoff fällt nie; das Register sitzt an der
+    // Klasse (createRenderObject, 6:211320), die Lösung nimmt die Hörer in ihrem eigenen Renderer ab (ro.renderer, 6:205002).
+    { file: "vendor/three.webgpu.min.js", sub: 'this.onMaterialDispose=()=>{this.dispose()},this.onGeometryDispose=()=>{this.attributes=null,this.attributesId=null},this.material.addEventListener("dispose",this.onMaterialDispose),this.geometry.addEventListener("dispose",this.onGeometryDispose)', organ: "_renderObjekteLoesen (die Hörer, die ein Render-Objekt an Stoff und Geometrie hängt)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'dispose(){this.material.removeEventListener("dispose",this.onMaterialDispose),this.geometry.removeEventListener("dispose",this.onGeometryDispose),this.onDispose()}', organ: "_renderObjekteLoesen (r184 löst ein Render-Objekt nur beim Stoff-dispose)" },
+    { file: "vendor/three.webgpu.min.js", sub: "createRenderObject(e,t,r,s,i,n,a,o,u,l,d){const c=this.getChainMap(d),h=new vy(e,t,r,s,i,n,a,o,u,l);return h.onDispose=", organ: "_renderObjektRegister (die Hülle an der Klasse der Render-Objekt-Verwaltung)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.id=_y++,this._nodes=e,this._geometries=t,this.renderer=r,this.object=s", organ: "_renderObjekteLoesen (jedes Render-Objekt kennt seinen Renderer)" },
+    // DER KNOTEN-BAU gehört seinem Schlüssel (Frost-Nachbesserung 5): Cache je initialCacheKey (6:378979), Auswurf beim letzten
+    // Nutzer (6:380856), die uuid im Schlüssel nur bei Instanz-Senke · count > 1 · Morph (6:209550) — nur dort löst die Lösung ihn.
+    { file: "vendor/three.webgpu.min.js", sub: "getForRenderCacheKey(e){return e.initialCacheKey}", organ: "_renderObjekteLoesen (der Knoten-Bau ist je Schlüssel gecacht)" },
+    { file: "vendor/three.webgpu.min.js", sub: "delete(e){if(e.isRenderObject){const t=this.get(e).nodeBuilderState;void 0!==t&&(t.usedTimes--,0===t.usedTimes&&this.nodeBuilderCache.delete(this.getForRenderCacheKey(e)))}return super.delete(e)}", organ: "_renderObjekteLoesen (Nodes.delete wirft den Knoten-Bau beim letzten Nutzer aus dem Cache)" },
+    { file: "vendor/three.webgpu.min.js", sub: '(e.isInstancedMesh||e.count>1||Array.isArray(e.morphTargetInfluences))&&(s+=e.uuid+",")', organ: "_renderObjekteLoesen (nur ein Schlüssel mit uuid gehört dem Objekt)" },
+    { file: "vendor/three.webgpu.min.js", sub: "draw(e,t){const{object:r,context:s,pipeline:i}=e,n=this.get(s),a=this.get(i),o=a.pipeline;", organ: "_indexWacheDraw (die Index-Wache am Draw jedes Backends)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getIndex(){return this._geometries.getIndex(this)}", organ: "_indexWacheDraw (der Index, den der Draw bindet)" },
+    { file: "vendor/three.webgpu.min.js", sub: "async init(e){await super.init(e);const t=this.parameters;", organ: "_gpuWacheAn (das Device jedes Backends nach seinem init)" },
     { file: "vendor/three.webgpu.min.js", sub: '[Uint16Array,["uint16","unorm16"]]', organ: "_hautGewicht (normiertes Uint16 → unorm16x4)" },
 ];
 
@@ -267,20 +345,51 @@ const ANKER = [
 // (Kopf → renderId-Wand → equals()). Manipulationen für den Selbsttest: "abkuerzung" kürzt jedes bekannte Objekt
 // ohne Schreiben ab (die Klasse der Bundle-Abkürzung V18.518 mit Render-Stempel), "schreiben" nimmt der Diät ihr Schreiben der
 // geteilten Gruppe (falls sie eins hat).
+// Weitere Manipulationen (Welle K, EIN GANG JE KNOTEN UND GRUPPE): "gangWiederholung" nimmt den Knoten ihren Render-Stempel
+// (jedes Programm stellt sie wieder), "gruppenWiederholung" nimmt der geteilten Gruppe ihren
+// (jedes Programm lädt sie wieder), "eigen" nimmt ihm die Weiche für Knoten je Zeichen-Objekt (ein Verweis ohne festes
+// Objekt teilte dann den Gang eines Geschwisters und arbeitete nie für sein eigenes Objekt), "stempelOhneVerlassen" nimmt
+// dem Stempel den Render-Abschnitt (nur die Render-Id: er überlebt einen verschachtelten Render, der die geteilten Knoten
+// über die Vendor-Bahn auf seine Kamera stellt — Gegenprüfung 07.10.).
 function diaetLaden(manipuliert) {
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     const b = stamm.indexOf("AnazhRealm._diaetRefresh = function");
     if (b < 0) return null;
-    const s0 = stamm.indexOf("AnazhRealm._diaetGeteiltSchreiben = function");
-    const a = s0 >= 0 && s0 < b ? s0 : b;
+    let a = b;
+    for (const kopf of ["AnazhRealm._diaetGang = function", "AnazhRealm._diaetGeteiltSchreiben = function"]) {
+        const s0 = stamm.indexOf(kopf);
+        if (s0 >= 0 && s0 < a) a = s0;
+    }
     const e = stamm.indexOf("\n};\n", b);
     if (e < 0) return null;
     let src = stamm.slice(a, e + 3);
-    if (manipuliert === "schreiben") {
+    const ersetze = (alt, neu) => {
         const vor = src;
-        src = src.split("AnazhRealm._diaetGeteiltSchreiben(rend, ro);").join("");
-        if (src === vor) return null;
-    }
+        src = src.split(alt).join(neu);
+        return src !== vor;
+    };
+    if (manipuliert === "schreiben" && !ersetze("AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);", "")) return null;
+    if (
+        manipuliert === "gangWiederholung" &&
+        !(
+            ersetze("if (n._anazhRid === rid && n._anazhRuf === ruf) continue;", "") &&
+            ersetze("if (n._anazhVorRid === rid && n._anazhVorRuf === rend.info.calls) continue;", "")
+        )
+    )
+        return null;
+    if (manipuliert === "gruppenWiederholung" && !ersetze("if (g._anazhRid === rid && g._anazhRuf === ruf) continue;", ""))
+        return null;
+    if (manipuliert === "stempelOhneVerlassen" && !ersetze("rend.info.calls", "rid")) return null;
+    if (
+        manipuliert === "frameAlt" &&
+        !ersetze(
+            "rend._nodes.getNodeFrameForRender(ro).updateBeforeNode(n);",
+            "(nf || (nf = rend._nodes.getNodeFrameForRender(ro))).updateBeforeNode(n);"
+        )
+    )
+        return null;
+    if (manipuliert === "eigen" && !ersetze('typ === "object" || (typeof n.property === "string" && n.object === null)', "false"))
+        return null;
     const AnazhRealm = {};
     new Function("AnazhRealm", src)(AnazhRealm);
     const echt = AnazhRealm._diaetRefresh;
@@ -333,31 +442,114 @@ function diaetLauf(fn) {
         }
         return this.equals(ro, [], frame.renderId) !== true;
     };
-    // Der Schein-Renderer: was die Diät selbst schreibt (Knoten der Gruppe + Upload), zählt je Programm.
+    // Der Schein-Renderer: was die Diät selbst schreibt (Knoten der Gruppe + Upload), zählt je GRUPPE (die Diät) und die
+    // Gänge des Knotens je Zeichen-Objekt je Programm. Die Wiederholung zählt je RENDER-ABSCHNITT (r184: jeder betretene
+    // Render zählt `info.calls` hoch, die Render-Id kehrt nach einem verschachtelten Render zurück).
+    let dieDiaet = null,
+        zeichenGaenge = null,
+        knotenGaenge = null,
+        fremdeKamera = 0,
+        fremdeGruppe = 0,
+        aktRid = 0;
+    // Der Wert jedes render-Knotens: welche Kamera er gerade hält. Der Vorher-Knoten des Schattens verschachtelt EINMAL je
+    // Render-Id (r184 updateBeforeMap) einen Render, dessen Werfer ohne Diät jeden geteilten Knoten über die Vendor-Bahn
+    // auf SEINE Kamera stellen — eine danach geladene Gruppe muss die Knoten vorher neu gestellt bekommen.
+    const wert = new Map();
+    const vorGemacht = new Map();
+    const abschnitt = () => aktRid + ":" + rend.info.calls + ":";
+    const frame = {
+        camera: null,
+        ro: null,
+        updateBeforeNode(n) {
+            const k = abschnitt() + "v" + n.id;
+            knotenGaenge.set(k, (knotenGaenge.get(k) || 0) + 1);
+            if (n.verschachtelt && vorGemacht.get(n.id) !== aktRid) {
+                rend.info.calls++;
+                for (const id of wert.keys()) wert.set(id, "schatten");
+                this.camera = "schatten";
+                vorGemacht.set(n.id, aktRid);
+            }
+        },
+        updateNode(n) {
+            if (this.camera !== "haupt") fremdeKamera++;
+            if (n.object === null) zeichenGaenge.add(this.ro.progId);
+            else {
+                const k = abschnitt() + n.id;
+                knotenGaenge.set(k, (knotenGaenge.get(k) || 0) + 1);
+                wert.set(n.id, this.camera);
+            }
+        },
+    };
     const rend = {
+        info: { calls: 0 },
         _nodes: {
             updateBefore() {},
-            getNodeFrameForRender: () => ({ updateNode() {} }),
+            // r184: EIN Node-Frame, getNodeFrameForRender stellt Kamera und Objekt des Render-Objekts. Der Vorher-Knoten
+            // des Schattens verschachtelt einen Render, der den Frame auf SEINE Kamera stellt.
+            getNodeFrameForRender: (ro) => {
+                frame.camera = "haupt";
+                frame.ro = ro;
+                return frame;
+            },
         },
         _bindings: {
             _update(g) {
-                if (g.bindings[0].groupNode.shared === true) geschrieben.set(g.prog, (geschrieben.get(g.prog) || 0) + 1);
-                else objektDurchDiaet++;
+                if (g.bindings[0].groupNode.shared === true) {
+                    geschrieben.set(g.id, (geschrieben.get(g.id) || 0) + 1);
+                    const k = abschnitt() + g.id;
+                    dieDiaet.set(k, (dieDiaet.get(k) || 0) + 1);
+                    if (g.knoten.some((id) => wert.get(id) !== "haupt")) fremdeGruppe++;
+                } else objektDurchDiaet++;
             },
         },
     };
+    // r184-Ids (Knoten · Bindegruppen): Programme 0–9 tragen je ihre EIGENE geteilte Gruppe und ihren eigenen Render-
+    // Knoten (wie vor dem EINEN Knoten je Quelle), 10–17 teilen EINE Gruppe und EINEN Knoten (dieselbe Arbeit), 18–19
+    // teilen sie auch, tragen aber denselben Verweis ohne festes Objekt (er liest frame.object — je Programm ein Gang).
+    // Jede Gruppe kennt die render-Knoten, deren Werte sie lädt.
+    const geteilteGruppe = { id: 500, knoten: [600], bindings: [{ groupNode: { shared: true } }] };
+    const geteilterKnoten = { id: 600, getUpdateType: () => "render" };
+    const zeichenKnoten = { id: 700, property: "x", object: null, getUpdateType: () => "render" };
+    const objektKnoten = { id: 800, getUpdateType: () => "object" };
+    // Ein Vorher-Knoten aller Programme (wie der Schatten des Lichts): EINMAL je Render.
+    const vorKnoten = { id: 900, verschachtelt: true, getUpdateBeforeType: () => "render" };
+    // DER STEIN (Gegenprüfung 07.10.): ein Diät-Stoff ohne Schatten-Empfang zeichnet ZUERST — er stellt und stempelt den
+    // geteilten Knoten, bevor der Schatten des ersten Empfängers verschachtelt; seine eigene Gruppe lädt nur ihn.
+    const steinProg = {
+        id: 20,
+        obs: beobachter(),
+        geteilt: { id: 502, knoten: [600], bindings: [{ groupNode: { shared: true } }] },
+        nbs: { updateNodes: [geteilterKnoten], updateBeforeNodes: [], updateAfterNodes: [] },
+    };
+    const stein = {
+        prog: steinProg,
+        ro: {
+            progId: 20,
+            object: { material: { _anazhDiaet: true }, welt: 0 },
+            material: { _anazhDiaet: true },
+            lightsNode: {},
+            getBindings: () => [steinProg.geteilt],
+            getNodeBuilderState: () => steinProg.nbs,
+        },
+    };
     const programme = [];
-    for (let p = 0; p < N_PROG; p++)
+    for (let p = 0; p < N_PROG; p++) {
+        const eigen = p < 10;
         programme.push({
             id: p,
             obs: beobachter(),
-            geteilt: { prog: p, bindings: [{ groupNode: { shared: true } }] },
+            geteilt: eigen ? { id: 100 + p, knoten: [200 + p], bindings: [{ groupNode: { shared: true } }] } : geteilteGruppe,
             nbs: {
-                updateNodes: [{ getUpdateType: () => "render" }, { getUpdateType: () => "object" }],
-                updateBeforeNodes: [],
+                updateNodes: [
+                    eigen ? { id: 200 + p, getUpdateType: () => "render" } : geteilterKnoten,
+                    objektKnoten,
+                    ...(p >= 18 ? [zeichenKnoten] : []),
+                ],
+                updateBeforeNodes: [vorKnoten],
                 updateAfterNodes: [],
             },
         });
+    }
     const objekte = [];
     for (let i = 0; i < N_OBJ; i++) {
         const prog = programme[i % N_PROG];
@@ -372,6 +564,7 @@ function diaetLauf(fn) {
         objekte.push({
             prog,
             ro: {
+                progId: prog.id,
                 object: obj,
                 material: obj.material,
                 lightsNode: {},
@@ -380,25 +573,40 @@ function diaetLauf(fn) {
             },
         });
     }
-    let rid = 0;
     const render = (vorher) => {
-        rid++;
-        const frame = { renderer: rend, renderId: rid };
+        // r184: der Render zählt `info.calls` hoch, seine Render-Id ist der Zählerstand.
+        aktRid = ++rend.info.calls;
+        const frame = { renderer: rend, renderId: aktRid };
         if (vorher) vorher();
         geschrieben = new Map();
+        dieDiaet = new Map();
+        zeichenGaenge = new Set();
+        knotenGaenge = new Map();
+        fremdeKamera = 0;
+        fremdeGruppe = 0;
         objektDurchDiaet = 0;
         const voll = new Set();
+        const steinVoll = fn(stein.prog.obs, stein.ro, frame, altNR);
+        if (steinVoll) wert.set(600, "haupt");
         for (let i = 0; i < objekte.length; i++) {
             const x = objekte[i];
             // Ein Voll-Refresh schreibt alle Gruppen des Objekts (die Vendor-Bahn), die geteilte eingeschlossen.
             if (fn(x.prog.obs, x.ro, frame, altNR)) {
                 voll.add(i);
-                geschrieben.set(x.prog.id, (geschrieben.get(x.prog.id) || 0) + 1);
+                // Der Voll-Refresh fährt jeden Knoten für SEIN Objekt (die Vendor-Bahn) mit der Kamera dieses Renders.
+                zeichenGaenge.add(x.prog.id);
+                for (const n of x.prog.nbs.updateNodes) if (n.getUpdateType() !== "object" && n.object !== null) wert.set(n.id, "haupt");
+                geschrieben.set(x.prog.geteilt.id, (geschrieben.get(x.prog.geteilt.id) || 0) + 1);
             }
         }
         let fehlt = 0;
-        for (const p of programme) if (!geschrieben.get(p.id)) fehlt++;
-        return { voll, fehlt, objektDurchDiaet };
+        for (const p of programme) if (!geschrieben.get(p.geteilt.id)) fehlt++;
+        // Die Wiederholung: dieselbe geteilte Gruppe oder derselbe render-Knoten mehr als EINMAL je Render durch die Diät.
+        let wiederholt = 0;
+        for (const n of dieDiaet.values()) if (n > 1) wiederholt += n - 1;
+        for (const n of knotenGaenge.values()) if (n > 1) wiederholt += n - 1;
+        const zeichenFehlt = [18, 19].filter((p) => !zeichenGaenge.has(p)).length;
+        return { voll, steinVoll, fehlt, objektDurchDiaet, wiederholt, zeichenFehlt, fremdeKamera, fremdeGruppe };
     };
     const r1 = render();
     const r2 = render();
@@ -421,6 +629,22 @@ function diaetProbe(selftest) {
                     `Kamera-Treue ${k}: ${r.fehlt} von 20 Programmen ohne geschriebene geteilte Gruppe — sie zeigen die Kamera ihres letzten Refreshs`
                 );
             if (r.objektDurchDiaet) f.push(`${k}: die Diät schrieb ${r.objektDurchDiaet} Objekt-Gruppen (nur die geteilte ist ihre)`);
+            if (r.wiederholt)
+                f.push(
+                    `Wiederholung ${k}: ${r.wiederholt} Gänge über eine schon geschriebene geteilte Gruppe oder einen schon gestellten Knoten — gleiche Arbeit läuft EINMAL je Render`
+                );
+            if (r.fremdeKamera)
+                f.push(
+                    `Node-Frame ${k}: ${r.fremdeKamera} Knoten mit der Kamera eines verschachtelten Renders gestellt — der Frame wurde vor dem Vorher-Knoten gemerkt`
+                );
+            if (r.fremdeGruppe)
+                f.push(
+                    `Verschachtelt ${k}: ${r.fremdeGruppe} geteilte Gruppe(n) mit der Kamera eines verschachtelten Renders geladen — ein Stempel überlebte ihn (er muss beim Betreten UND Verlassen jedes Renders wechseln)`
+                );
+            if (r.zeichenFehlt)
+                f.push(
+                    `Zeichen-Objekt ${k}: ${r.zeichenFehlt} von 2 Programmen mit einem Verweis ohne festes Objekt gingen keinen eigenen Gang — er arbeitete nie für ihr Objekt`
+                );
         }
         if (!z.r4.voll.has(7)) f.push("Objekt-Wahrheit: ein bewegtes Objekt refresht voll (equals)");
         if (!z.r5.voll.has(11)) f.push("Instanz-Wächter: eine Instanz-Mutation refresht voll");
@@ -428,7 +652,7 @@ function diaetProbe(selftest) {
     };
     const z = diaetLauf(fn);
     fehler.push(...pruefe(z));
-    const stand = [z.r2.voll.size, z.r3.voll.size, z.r6.voll.size];
+    const stand = [z.r2, z.r3, z.r6].map((r) => r.voll.size + (r.steinVoll ? 1 : 0));
     // Die Kamera-Treue kostet im Stand keinen Voll-Refresh: je Programm schreibt die Diät nur die geteilte Gruppe.
     if (stand.some((n) => n !== 0))
         fehler.push(`Stand: ${stand.join("/")} Voll-Refreshs je Render (Soll 0 — die renderId-Wand refresht jedes Programm voll)`);
@@ -438,10 +662,33 @@ function diaetProbe(selftest) {
         // Die Diät MUSS ihr Schreiben tragen: fehlt der Ruf `_diaetGeteiltSchreiben(rend, ro)`, ist die Manipulation
         // nicht anwendbar und der Selbsttest rot (nie still übersprungen).
         const schreibFn = diaetLaden("schreiben");
-        if (!schreibFn) fehler.push("Selbsttest: die Diät trägt keinen Ruf `AnazhRealm._diaetGeteiltSchreiben(rend, ro);`");
+        if (!schreibFn) fehler.push("Selbsttest: die Diät trägt keinen Ruf `AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);`");
         const ohneSchreiben = schreibFn ? pruefe(diaetLauf(schreibFn)) : [];
+        // Der Gang je Signatur MUSS seinen Render-Stempel und seine Weiche je Zeichen-Objekt tragen (sonst rot, nie still).
+        const gangFn = diaetLaden("gangWiederholung");
+        if (!gangFn) fehler.push("Selbsttest: der Knoten-Gang trägt keinen Render-Stempel je Knoten (`n._anazhRid` · `n._anazhVorRid`)");
+        const gruppeFn = diaetLaden("gruppenWiederholung");
+        if (!gruppeFn) fehler.push("Selbsttest: die geteilte Gruppe trägt keinen Render-Stempel `if (g._anazhRid === rid) continue;`");
+        const wieder = [
+            ...(gangFn ? pruefe(diaetLauf(gangFn)).filter((e) => e.startsWith("Wiederholung")).slice(0, 1) : []),
+            ...(gruppeFn ? pruefe(diaetLauf(gruppeFn)).filter((e) => e.startsWith("Wiederholung")).slice(0, 1) : []),
+        ];
+        const frameFn = diaetLaden("frameAlt");
+        if (!frameFn) fehler.push("Selbsttest: der Gang stellt den Node-Frame nicht je Vorher-Knoten neu");
+        const frameAlt = frameFn ? pruefe(diaetLauf(frameFn)) : [];
+        const eigenFn = diaetLaden("eigen");
+        if (!eigenFn) fehler.push("Selbsttest: der Gang trägt keine Weiche für Knoten je Zeichen-Objekt");
+        const ohneEigen = eigenFn ? pruefe(diaetLauf(eigenFn)) : [];
+        const verlassenFn = diaetLaden("stempelOhneVerlassen");
+        if (!verlassenFn) fehler.push("Selbsttest: der Gang liest seinen Render-Abschnitt nicht aus `rend.info.calls`");
+        const ohneVerlassen = verlassenFn ? pruefe(diaetLauf(verlassenFn)) : [];
         selbstFeuert =
-            abk.some((e) => e.startsWith("Kamera-Treue")) && ohneSchreiben.some((e) => e.startsWith("Kamera-Treue"));
+            abk.some((e) => e.startsWith("Kamera-Treue")) &&
+            ohneSchreiben.some((e) => e.startsWith("Kamera-Treue")) &&
+            wieder.length === 2 &&
+            ohneEigen.some((e) => e.startsWith("Zeichen-Objekt")) &&
+            frameAlt.some((e) => e.startsWith("Node-Frame")) &&
+            ohneVerlassen.some((e) => e.startsWith("Verschachtelt"));
     }
     return { fehler, selbstFeuert, stand };
 }
@@ -620,7 +867,7 @@ function main() {
         console.log(feuert ? "✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)" : "❌ SELBST-TEST: die Wand ist vakuös");
         console.log(
             diaetFeuert
-                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung ohne Schreiben lässt Programme an der alten Kamera kleben)"
+                ? "✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung ohne Schreiben lässt Programme an der alten Kamera kleben; ein Gang ohne Render-Stempel wiederholt Knoten und Gruppen; ein Verweis ohne festes Objekt ohne eigenen Gang; ein gemerkter Node-Frame trägt die Schatten-Kamera; ein Stempel nur aus der Render-Id überlebt den verschachtelten Render)"
                 : "❌ SELBST-TEST: die Diät-Probe ist vakuös"
         );
         const stoffFeuert = schattenStoffProbe(true).fehler.length > 0;
@@ -646,7 +893,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Programm und Render geschrieben; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50), der Schatten-Stoff prüft im Stand ${stoff.stand} von 40 Bürgern, ein eigener Wechsel ${stoff.eigener}; die Haupt-Aufnahme verfolgt ${wahr.z.verfolgtHaupt} von ${wahr.z.gezeichnetHaupt} Draws trotz Schatten-Render, ${wahr.z.unterOverride} Bundles unter dem Override-Stoff.`
+        `✅ DIE VENDOR-ANKER-WAND steht — ${PINS.length} Fingerabdrücke gepinnt, ${geprueft} Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Render geschrieben, keine Gruppe und kein Knoten zweimal; Voll-Refreshs im Stand ${diaet.stand.join("/")} von 50), der Schatten-Stoff prüft im Stand ${stoff.stand} von 40 Bürgern, ein eigener Wechsel ${stoff.eigener}; die Haupt-Aufnahme verfolgt ${wahr.z.verfolgtHaupt} von ${wahr.z.gezeichnetHaupt} Draws trotz Schatten-Render, ${wahr.z.unterOverride} Bundles unter dem Override-Stoff.`
     );
 }
 main();

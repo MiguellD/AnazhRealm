@@ -158,7 +158,14 @@ async function kreaturProben(r, T, opts) {
             else delete r[name];
         });
     };
-    const takt = (dt) => r.updateCreatures(dt);
+    // DER TAKT WIE IM SPIEL: erst der feste Sim-Schritt der Leiber (`_stepFixedSim`: der gestoßene Leib
+    // `_kreaturStossSchritt` und LEIB AN LEIB `_leibKontakte`), dann der Frame-Takt der Tiere (`updateCreatures`) — die
+    // Folge von `_gameLoopTick` (`_loopFixedStep` vor `_loopWeatherAndGrowth`). Gemessen wird, was der Frame zeigt.
+    const takt = (dt) => {
+        r._kreaturStossSchritt(dt);
+        r._leibKontakte();
+        r.updateCreatures(dt);
+    };
     // Der Wand-Kontakt je Takt — instrumentiert, nicht gestubbt: der Hüllen-Kontakt des Tiers läuft unverändert, die Linse
     // merkt nur, wessen Lage er schob. Freier Lauf und Anprall werden getrennt gezählt (an einer Box-Kante gleitet ein Leib
     // achsparallel, der Anprall an der Wand ist kein Gas-oder-Bremse). Die Basis kennt den Kontakt nicht: dort bleibt die
@@ -178,12 +185,12 @@ async function kreaturProben(r, T, opts) {
                     return o;
                 }
         );
-        // DER LEIB-LÖSER nach dem Takt (Welle LF, _kreaturLeibKontakte): ein Leib, den er aus einem anderen oder aus dem
-        // Spieler schiebt, prallt — derselbe Anprall wie an der Wand.
-        if (typeof r._kreaturLeibKontakte === "function")
+        // DER EINE LEIB-LÖSER im Sim-Schritt (`_leibKontakte`): ein Leib, den er aus einem anderen oder aus dem Spieler
+        // schiebt, prallt — derselbe Anprall wie an der Wand.
+        if (typeof r._leibKontakte === "function")
             decke(
                 restore,
-                "_kreaturLeibKontakte",
+                "_leibKontakte",
                 (alt) =>
                     function (...a) {
                         const vor = this.state.creatures.map((c) => [c.position, c.position.x, c.position.z]);
@@ -1445,14 +1452,31 @@ async function kreaturProben(r, T, opts) {
                         return (c && c.userData && c.userData.soul) === "wolf" ? "wild" : "wehrhaft";
                     }
             );
+        if (taeter === "temperament-masse")
+            // der Zwilling der Vereinigung (Welle LF auf V18.533): das Gemüt aus der Dial-Masse size × Größe
+            decke(
+                restore,
+                "_creatureTemperament",
+                () =>
+                    function (c) {
+                        const ud = c.userData;
+                        const d = this._ofenKreaturDials(this._kreaturGattung(c), ud.gussDials || null).dials;
+                        const masse = d.size * (ud.bodySize || 1);
+                        if (d.diet >= 0.75) return masse >= 2 ? "wild" : "scheu";
+                        if (d.diet <= 0.25) return masse >= 5 ? "wehrhaft" : "scheu";
+                        return masse >= 3 ? "wehrhaft" : "sanft";
+                    }
+            );
         r.setGameMode("frieden");
         if (s.player.emotions)
             Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0.9, chaos: 0 });
         const art = {};
+        const kg = {}; // die EINE Masse des Leibs (`_leibMasse`), aus der das Temperament liest
         const o = land(30, 30);
         const probe = (seele, bs) => {
             const c = tier({ x: o.x, y: o.y, z: o.z }, seele, bs);
             const t = r._creatureTemperament(c);
+            kg[seele + "@" + bs] = +r._leibMasse(c).toFixed(1);
             r.removeCreature(c);
             return t;
         };
@@ -1462,10 +1486,25 @@ async function kreaturProben(r, T, opts) {
             ["baer", 1],
             ["fuchs", 1],
             ["wesen", 2.5],
-            ["wolf", 0.7],
+            ["wolf", 0.6],
             ["baer", 0.7],
         ])
             art[seele + "@" + bs] = probe(seele, bs);
+        // DIE EINE MASSE (V18.536): Temperament und Beute lesen die Masse des Leibs, die auch der Stoß liest (`_leibMasse`,
+        // Volumen der Gestalt × Dichte des Kerns) — nie eine zweite (die Dial-Masse size × Größe fiel mit der Vereinigung).
+        const code = window.__codeOf;
+        const masseQuelle =
+            typeof code === "function" &&
+            /_leibMasse\(/.test(code(r._creatureTemperament)) &&
+            /_leibMasse\(/.test(code(r._kreaturIstBeute)) &&
+            typeof r._kreaturMasse !== "function";
+        const wolfB = tier(land(36, 30), "wolf", 1);
+        const beute = {
+            hirsch: r._kreaturIstBeute(wolfB, tier(land(36, 34), "wesen", 1)),
+            kitz: r._kreaturIstBeute(wolfB, tier(land(36, 38), "wesen", 0.6)),
+            baer: r._kreaturIstBeute(wolfB, tier(land(40, 30), "baer", 1)),
+        };
+        for (const c of s.creatures.slice()) r.removeCreature(c);
         // Die Wariness 6 m vor dem ruhigen Spieler und was der Leib daraus macht (600 Takte, frei).
         const start = land(0, 0);
         pm.set(start.x, start.y, start.z);
@@ -1502,6 +1541,9 @@ async function kreaturProben(r, T, opts) {
         };
         return {
             art,
+            kg,
+            masseQuelle,
+            beute,
             wHirsch: +wHirsch.toFixed(3),
             wBaer: +wBaer.toFixed(3),
             hirschAbstandM: +hirschM.toFixed(1),
@@ -1547,9 +1589,24 @@ async function kreaturProben(r, T, opts) {
             restore.push(() => {
                 K.herdeZug = alt;
             });
-            if (typeof r._kreaturLeibKontakte === "function")
-                decke(restore, "_kreaturLeibKontakte", () => function () {});
+            decke(restore, "_leibKontakte", () => function () {});
         }
+        if (taeter === "abstand-spieler")
+            // die Separation ohne den Spieler (V18.536): nur die Schar stößt, ein Nachbar drückt das vordere Tier in ihn
+            decke(
+                restore,
+                "_applyCreatureSeparation",
+                (alt) =>
+                    function (...a) {
+                        const p = this.state.playerMesh;
+                        this.state.playerMesh = null;
+                        try {
+                            return alt.apply(this, a);
+                        } finally {
+                            this.state.playerMesh = p;
+                        }
+                    }
+            );
         // im Freien (keine Hülle im Umkreis): die Wand eines Baus hat das letzte Wort und schöbe einen Leib in den nächsten
         const start = frei(40, -40, 20) || land(40, -40);
         pm.set(start.x, start.y, start.z);
@@ -1574,6 +1631,7 @@ async function kreaturProben(r, T, opts) {
                 bx: c.position.x + lb.fx * lb.halb,
                 bz: c.position.z + lb.fz * lb.halb,
                 r: lb.radius,
+                halb: lb.halb,
                 kugel: lb.halb + lb.radius,
             };
         };
@@ -1596,16 +1654,34 @@ async function kreaturProben(r, T, opts) {
             return Math.min(pS(a.ax, a.az, b), pS(a.bx, a.bz, b), pS(b.ax, b.az, a), pS(b.bx, b.bz, a));
         };
         const RP = A.PLAYER_WALL_RADIUS;
+        // DER LÖSER LEBT IM SIM-SCHRITT (`_leibKontakte`), der Frame zeigt den Steuer-Schritt danach: eine Lücke zweier Leiber
+        // unter null darf nur so tief sein, wie beide in DIESEM Frame liefen und wendeten (der Weg der Mitte + die Wende an
+        // der Achsen-Spitze, |Δgier| · halb) — tiefer ERBTE sie eine Durchdringung, die der Sim-Schritt nicht löste. Den
+        // Spieler meidet schon der Schritt (die Separation hält seinen Raum): dort zählt jede Lücke unter −2 cm.
+        const vorher = tiere.map(() => ({ x: 0, z: 0, g: 0 }));
+        const schritt = tiere.map(() => 0);
         let minLeib = Infinity,
             minSpieler = Infinity,
+            erbeMax = 0,
+            ueberFrames = 0,
             durchFrames = 0,
             spielerFrames = 0;
         const nnRaum = []; // je Tier und Takt (die zweite Hälfte): der nächste Nachbar in Körper-Kugeln
         const N = 900;
         for (let k = 0; k < N; k++) {
+            tiere.forEach((c, i) => {
+                vorher[i].x = c.position.x;
+                vorher[i].z = c.position.z;
+                vorher[i].g = c.rotation.y;
+            });
             takt(1 / 60);
             if (k < 30) continue;
             const S = tiere.map(seg);
+            tiere.forEach((c, i) => {
+                schritt[i] =
+                    Math.hypot(c.position.x - vorher[i].x, c.position.z - vorher[i].z) +
+                    Math.abs(wrap(c.rotation.y - vorher[i].g)) * S[i].halb;
+            });
             if (k >= N / 2)
                 for (let i = 0; i < tiere.length; i++) {
                     let m = Infinity;
@@ -1622,7 +1698,8 @@ async function kreaturProben(r, T, opts) {
                     nnRaum.push(m);
                 }
             let durch = false,
-                imSp = false;
+                imSp = false,
+                ueber = false;
             for (let i = 0; i < S.length; i++) {
                 const gs = pS(pm.x, pm.z, S[i]) - S[i].r - RP;
                 if (gs < minSpieler) minSpieler = gs;
@@ -1630,11 +1707,15 @@ async function kreaturProben(r, T, opts) {
                 for (let j = i + 1; j < S.length; j++) {
                     const g = sS(S[i], S[j]) - S[i].r - S[j].r;
                     if (g < minLeib) minLeib = g;
-                    if (g < -0.02) durch = true;
+                    if (g < -0.02) ueber = true;
+                    const erbe = -g - schritt[i] - schritt[j];
+                    if (g < -0.02 && erbe > 0.002) durch = true;
+                    if (g < 0) erbeMax = Math.max(erbeMax, erbe);
                 }
             }
             if (durch) durchFrames++;
             if (imSp) spielerFrames++;
+            if (ueber) ueberFrames++;
         }
         // Am Ende: der Abstand der Mitten gegen die Körper-Kugeln (persönlicher Raum), die Schar um den Spieler.
         const S = tiere.map(seg);
@@ -1656,6 +1737,9 @@ async function kreaturProben(r, T, opts) {
             durchFrames,
             minSpielerLueckeM: +minSpieler.toFixed(3),
             spielerFrames,
+            // die Tiefe zweier Leiber über ihrem Frame-Schritt (geerbt) und die Takte mit einer Lücke unter −2 cm (auch frisch)
+            erbeMaxM: +erbeMax.toFixed(3),
+            ueberFrames,
             paarMinM: +paarMin.toFixed(2),
             raumMin: +raumMin.toFixed(3),
             spielerMinM: +Math.min(...dSp).toFixed(2),
@@ -2558,13 +2642,21 @@ function urteil(name, z) {
             "baer@1": "wehrhaft",
             "fuchs@1": "scheu",
             "wesen@2.5": "wehrhaft",
-            "wolf@0.7": "scheu",
+            "wolf@0.6": "scheu", // das Jungtier (13,8 kg) unter der Jagd-Grenze 21,5 kg
             "baer@0.7": "sanft",
         };
         const falsch = Object.keys(SOLL).filter((k) => z.art[k] !== SOLL[k]);
         soll(
             falsch.length === 0,
             `Temperament nicht aus Gattung und Größe: ${falsch.map((k) => `${k} ${z.art[k]} (Soll ${SOLL[k]})`).join(", ")}`
+        );
+        soll(
+            z.masseQuelle === true,
+            "eine zweite Masse: Temperament oder Beute lesen nicht die EINE Masse des Leibs (_leibMasse)"
+        );
+        soll(
+            z.beute && z.beute.hirsch === true && z.beute.kitz === true && z.beute.baer === false,
+            `das Beute-Urteil des Wolfs: Hirsch ${z.beute && z.beute.hirsch}, Kitz ${z.beute && z.beute.kitz}, Bär ${z.beute && z.beute.baer} (Soll true · true · false)`
         );
         soll(
             z.wHirsch >= z.fleeThreshold,
@@ -2587,9 +2679,11 @@ function urteil(name, z) {
     }
     if (name === "abstand") {
         soll(z.tiere >= 6, "keine neugierige Schar (vakuös)");
+        // Der EINE Leib-Löser im Sim-Schritt (`_leibKontakte`): keine Durchdringung überlebt ihn — im Frame steht höchstens,
+        // was die beiden Leiber in diesem Frame liefen und wendeten (erbeMaxM: die Tiefe darüber).
         soll(
             z.durchFrames === 0,
-            `Durchdringung: in ${z.durchFrames} Takten durchdringen sich zwei Leiber (tiefste ${-z.minLeibLueckeM} m)`
+            `Durchdringung: in ${z.durchFrames} Takten durchdringen sich zwei Leiber über ihren Frame-Schritt hinaus (tiefste ${-z.minLeibLueckeM} m, geerbt ${z.erbeMaxM} m)`
         );
         soll(
             z.spielerFrames === 0,
@@ -2710,8 +2804,14 @@ const TAETER = {
         ["nexus-groesse", /Skala ohne bodySize-Achse/],
         ["nexus-geburt", /Nexus-Geburten im Blick|Nexus-Geburt .* vor dem Spieler/],
     ],
-    temperament: [["temperament", /Temperament nicht aus Gattung und Größe/]],
-    abstand: [["abstand", /Durchdringung|kein persönlicher Raum/]],
+    temperament: [
+        ["temperament", /Temperament nicht aus Gattung und Größe/],
+        ["temperament-masse", /eine zweite Masse/],
+    ],
+    abstand: [
+        ["abstand", /Durchdringung|kein persönlicher Raum/],
+        ["abstand-spieler", /Leib im Spieler/],
+    ],
     jagdkreis: [
         ["jagd-gradient", /läuft nicht zur Beute|steht still|Kreislauf schließt sich nicht/],
         ["jagd-schritt", /Sprinter entkommt/],

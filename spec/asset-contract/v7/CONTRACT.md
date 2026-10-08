@@ -53,3 +53,11 @@ Pflicht, Signaturen und Substanz-Gewichte kehren nicht zurück, Selbsttest), gat
 `jagd.hetzM`, `jagd.pirschSichtM`, `jagd.beuteMasse` kamen, `jagd.scentProbeM` und `furcht.fleeSpeedBoost` fielen. Ohne
 diese Felder byte-gleich (geprüft). Additiv außerhalb der Rezepte: `STEUER_GESETZ.sprint` und `sprintTempo(L)` (der Galopp
 der Gestalt). Wächter: gate:studio-vertrag, gate:kreatur-takt jagdkreis und rudel.
+
+**Vertrags-Akt 08.10.2026 (Welle LF rudel auf V18.536 — DIE EINE MASSE):** `tetrapoda-core.js` neu gemintet
+(`195c1576f10a…` → `ff117e3da9fe…`, klang- und koerper-core byte-gleich). Geändert sind genau 28 Felder in
+`PRESETS.<tier>.fx.verhalten`: `temperament.gattung.jagdMasse/wehrMasse/kolossMasse` (die Dial-Masse size × Größe) →
+`jagdKg 21,5 · wehrKg 200 · kolossKg 600`, `jagd.beuteMasse` 1,25 → 2,0. Ohne diese Felder byte-gleich (geprüft). Das
+Gemüt und die Beute lesen die EINE Masse des Leibs (Volumen der Gestalt × `MASSSTAB.dichteKgM3`, Wirt `_leibMasse`), die
+auch das Impuls-Gesetz liest; `temperamentDerGattung(dials, kg, gattung)`. Wächter: gate:studio-vertrag (die Dial-Masse
+kehrt nicht zurück), gate:kreatur-takt temperament (Täter `temperament-masse`), gate:kampf-gefuehl (kein `_kreaturMasse`).

@@ -12,7 +12,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = 4402;
+const PORT = Number(process.env.FERNE_SEEN_PORT || 4402);
 const root = path.resolve(__dirname, "..");
 const mime = {
     ".html": "text/html",

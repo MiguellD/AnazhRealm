@@ -22,6 +22,13 @@
 //       (Bloom samt Mitte), mindestens 24 in Zweigen (Godrays 20 + lokaler Kontrast 4 hinter ihrer Stärke).
 //   (d) GODRAYS — mit der Sonne im Bild trägt der Zweig: das Bild mit Godrays weicht von dem ohne ab (über dem Rausch-Boden
 //       zweier gleicher Aufnahmen).
+//   (f) SAUM (0710-3) — auf UNGERADER Leinwand (321×241) liest jedes Pixel den Block des Abbilds, der es enthält: ein schräger
+//       schwarzer Pfahl steht im Wasser, je Zeile das Wasser-Pixel links an seiner Kante mit Abbild und mit r184s Tiefe —
+//       vorher las jedes ungerade x der rechten Hälfte (screenUV, Nearest) den Nachbar-Block: ein heller Saum von 1 px.
+//   (e) WASSER — das Wasser über einem hellen Grund (0,3 m) liest das Tiefen-Abbild wie r184s Viewport-Tiefe: bei festen
+//       Uhren dieselbe Farbe mit dem Abbild und mit dem vollen Klon, und ohne Grund eine andere (die Probe hängt an der
+//       Tiefe). Die Bühnen-Ebene trägt die Wicklung des Iso-Wassers (Vorderseite unten, der Stoff zeichnet BackSide) —
+//       bis 07.10. lag sie umgekehrt, das Wasser der Wand wurde gezeichnet und gecullt, kein Pixel.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette; Port POST_KETTE_PORT, Standard 4583)
@@ -35,6 +42,19 @@ const BUDGET_AUSGABE = { unbedingtMax: 9, zweigMin: 24 };
 // Die Godrays ändern mit der Sonne im Bild mindestens so viele Pixel (% des Bildes, je Pixel ≥ 4/255 in einem Kanal) —
 // gemessen 06.10. (kienspan, 64×48): 0,14 % mittlere Änderung über das ganze Bild, sie sitzt um die Sonne.
 const GODRAY_MIN_PCT = 2;
+// Das Wasser über dem Grund (unten im Bild, Mittel je Kanal in 8 bit): mit dem Tiefen-Abbild höchstens WASSER_TOL von r184s
+// Viewport-Tiefe entfernt; zweimal das Abbild höchstens WASSER_RAUSCHEN; ohne Grund mindestens WASSER_TIEFE_MIN anders.
+// Gemessen 07.10. (kienspan, Leinwand 320×240): Abbild gegen r184 2,5 (das 2×2-Maximum — die Hälfte der Pixel liest den
+// Grund eine Leinwand-Zeile weiter; bei 1080p ist die Zeile 4,5× feiner), Rausch-Boden 0, ohne Grund 37, der vec4-Weg
+// (der Leser bekommt den Textur-Knoten statt `.x`) ~130. Mit dem Wasser der Welle L (08.10.) las das 2×2-Maximum 6,0
+// daneben; das waagrechte Paar (die Zeile ganz) 0.
+const WASSER_TOL = 4;
+const WASSER_RAUSCHEN = 1;
+const WASSER_TIEFE_MIN = 15;
+// (f) Der Saum auf ungerader Leinwand (0710-3): so viele Kanten-Pixel links am Pfahl dürfen zwischen Abbild und r184s Tiefe
+// höchstens um mehr als 8 Luma abweichen (Rauschen), und so viele Kanten-Pixel braucht die Probe mindestens (sonst blind).
+const SAUM_MAX = 2;
+const SAUM_KANTEN_MIN = 10;
 
 function urteil(z) {
     const v = [];
@@ -54,11 +74,65 @@ function urteil(z) {
             if (s.leinwandTiefeGpu)
                 v.push(`TIEFE: ${s.name} — die GPU-Textur der Leinwand-Tiefe lebt in der Post-Kette weiter`);
         }
+        const ab = s.abbild || { fehlt: true };
+        if (ab.fehlt) v.push(`ABBILD: ${s.name} — kein Tiefen-Abbild (die Leser der Szenen-Tiefe lesen nichts)`);
+        else {
+            // halbe Breite, ganze Höhe: je Texel das waagrechte Pixel-Paar (die Zeile bleibt ganz — das Wasser liest den Grund
+            // seiner Zeile, gemessen am 2×2-Maximum (e) 6 Stufen und (f) 7 Kanten-Pixel bis 14 Luma daneben)
+            const halb = [Math.ceil((ab.leinwand || [0, 0])[0] / 2), (ab.leinwand || [0, 0])[1]];
+            if (ab.format !== "r32float" || !ab.groesse || ab.groesse[0] !== halb[0] || ab.groesse[1] !== halb[1])
+                v.push(
+                    `ABBILD: ${s.name} — ${ab.format} ${(ab.groesse || []).join("×")} statt r32float ${halb.join("×")} (halbe Breite, ganze Höhe)`
+                );
+            if (!(Math.abs(ab.mitte - ab.soll) < 1e-4))
+                v.push(
+                    `ABBILD: ${s.name} — an der Bild-Mitte ${ab.mitte} statt der Kisten-Tiefe ${ab.soll} (das Abbild trägt die Szene nicht)`
+                );
+        }
         const m = s.mitte;
         if (!m || !(m[0] > 1.5 * m[1] && m[0] > 40))
             v.push(
                 `TIEFE: ${s.name} — die Bild-Mitte ist ${JSON.stringify(m)}, nicht die nahe rote Kiste (Tiefentest fehlt)`
             );
+    }
+    const w = z.wasser;
+    const abst = (a, b) => (a && b ? Math.max(...[0, 1, 2].map((c) => Math.abs(a[c] - b[c]))) : NaN);
+    if (!w) v.push("WASSER: die Probe Abbild gegen r184s Viewport-Tiefe lief nicht");
+    else {
+        if (!((w.umgehaengt || [])[0] > 0 && w.umgehaengt[1] > 0))
+            v.push(
+                `WASSER: das Bühnen-Wasser wurde nicht umgehängt (${JSON.stringify(w.umgehaengt)}) — die Probe vergleicht nichts`
+            );
+        if (!(abst(w.abbild, w.zurueck) <= WASSER_RAUSCHEN))
+            v.push(
+                `WASSER: zweimal das Abbild bei festen Uhren ${JSON.stringify(w.abbild)} / ${JSON.stringify(w.zurueck)} — der Rausch-Boden trägt keinen Vergleich`
+            );
+        if (!(abst(w.abbild, w.ohneGrund) >= WASSER_TIEFE_MIN))
+            v.push(
+                `WASSER: mit und ohne Grund ${JSON.stringify(w.abbild)} / ${JSON.stringify(w.ohneGrund)} — die Farbe hängt nicht an der Tiefe (die Probe ist blind)`
+            );
+        if (!(abst(w.abbild, w.r184) <= WASSER_TOL))
+            v.push(
+                `WASSER: mit dem Abbild ${JSON.stringify(w.abbild)}, mit r184s Viewport-Tiefe ${JSON.stringify(w.r184)} (Soll ≤ ${WASSER_TOL} je Kanal) — das Wasser liest eine andere Tiefe`
+            );
+    }
+    const sm = z.saum;
+    if (!sm) v.push("SAUM: die Probe auf ungerader Leinwand lief nicht");
+    else if (sm.abbruch) v.push(`SAUM: ABBRUCH — ${sm.abbruch}`);
+    else {
+        const lw = sm.leinwand || [0, 0];
+        if (!(lw[0] % 2 === 1 && lw[1] % 2 === 1))
+            v.push(`SAUM: die Leinwand ${lw.join("×")} ist nicht ungerade (die Probe ist blind)`);
+        if (!(sm.kanten >= SAUM_KANTEN_MIN && sm.paritaeten === 2))
+            v.push(
+                `SAUM: ${sm.kanten} Kanten-Pixel in ${sm.paritaeten} Paritäten — kein Gegenstand vor dem Wasser (die Probe ist blind)`
+            );
+        else if (!(sm.abweichend <= SAUM_MAX))
+            v.push(
+                `SAUM: ${sm.abweichend} von ${sm.kanten} Kanten-Pixeln links am Gegenstand weichen bis ${sm.dMax} Luma ab — das Abbild liest auf ungerader Leinwand den Nachbar-Block (ein heller Saum)`
+            );
+        if (sm.gpuFehler && sm.gpuFehler.length)
+            v.push(`SAUM: ${sm.gpuFehler.length} GPU-Validierungs-Fehler: ${sm.gpuFehler[0]}`);
     }
     const fang = schritte.find((s) => s.name === "Render-Fehler");
     if (fang && !fang.direkt) v.push("WEICHE: nach dem Render-Fehler der Kette fährt der Loop nicht den Direktpfad");
@@ -96,6 +170,7 @@ function selbsttest() {
         tiefe: direkt,
         leinwandTiefeGpu: false,
         mitte: [190, 40, 40],
+        abbild: { format: "r32float", groesse: [16, 24], leinwand: [32, 24], mitte: 0.98, soll: 0.98 },
     });
     const gruen = {
         schritte: [
@@ -108,6 +183,14 @@ function selbsttest() {
         gpuFehler: [],
         ausgabe,
         godray: { staerke: 0.6, aenderungPct: 14, rauschenPct: 0 },
+        wasser: {
+            umgehaengt: [1, 1],
+            abbild: [60, 90, 80],
+            r184: [60, 91, 80],
+            zurueck: [60, 90, 80],
+            ohneGrund: [20, 40, 50],
+        },
+        saum: { leinwand: [321, 241], kanten: 30, abweichend: 0, dMax: 3, paritaeten: 2, gpuFehler: [] },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const mit = (f) => {
@@ -135,6 +218,41 @@ function selbsttest() {
             name: "GPU-Textur bleibt",
             z: mit((z) => (z.schritte[2].leinwandTiefeGpu = true)),
             muss: /GPU-Textur der Leinwand-Tiefe lebt/,
+        },
+        { name: "Abbild fehlt", z: mit((z) => (z.schritte[0].abbild = { fehlt: true })), muss: /kein Tiefen-Abbild/ },
+        {
+            name: "Abbild in voller Auflösung",
+            z: mit((z) => (z.schritte[1].abbild.groesse = [32, 24])),
+            muss: /statt r32float 16×24/,
+        },
+        {
+            name: "Abbild als 2×2-Block (die Zeile halbiert)",
+            z: mit((z) => (z.schritte[1].abbild.groesse = [16, 12])),
+            muss: /statt r32float 16×24/,
+        },
+        { name: "Abbild leer", z: mit((z) => (z.schritte[2].abbild.mitte = 1)), muss: /trägt die Szene nicht/ },
+        {
+            name: "Wasser liest eine andere Tiefe (vec4-Weg)",
+            z: mit((z) => (z.wasser.r184 = [75, 118, 105])),
+            muss: /das Wasser liest eine andere Tiefe/,
+        },
+        { name: "Wasser-Probe blind", z: mit((z) => (z.wasser.ohneGrund = z.wasser.abbild)), muss: /Probe ist blind/ },
+        { name: "Wasser nicht umgehängt", z: mit((z) => (z.wasser.umgehaengt = [0, 1])), muss: /nicht umgehängt/ },
+        { name: "Wasser-Probe fehlt", z: mit((z) => delete z.wasser), muss: /lief nicht/ },
+        {
+            name: "Saum auf ungerader Leinwand (Gegenprüfung 0710-3: 37 von 561 Kanten-Pixeln bis +25 Luma)",
+            z: mit((z) => Object.assign(z.saum, { abweichend: 14, dMax: 25 })),
+            muss: /Nachbar-Block/,
+        },
+        {
+            name: "Saum-Probe auf gerader Leinwand (blind)",
+            z: mit((z) => (z.saum.leinwand = [320, 240])),
+            muss: /nicht ungerade/,
+        },
+        {
+            name: "kein Gegenstand vor dem Wasser (blind)",
+            z: mit((z) => Object.assign(z.saum, { kanten: 0, paritaeten: 0 })),
+            muss: /kein Gegenstand vor dem Wasser/,
         },
         { name: "ferne Kiste vorn", z: mit((z) => (z.schritte[1].mitte = [40, 190, 40])), muss: /Tiefentest fehlt/ },
         { name: "Tiefen-Leser blind", z: mit((z) => (z.schritte[0].tiefenKopien = 0)), muss: /kopierte nie/ },
@@ -204,6 +322,132 @@ const server = http.createServer((req, res) => {
     });
 });
 
+// (f) DER SAUM AUF UNGERADER LEINWAND (Seiten-Kontext, nach `buehne`; die Seite steht auf einer ungeraden Größe): das Wasser
+// über dem hellen Grund, darin ein schwarzer, schräg stehender Pfahl in der rechten Bildhälfte (seine Kante wechselt von
+// Zeile zu Zeile die Spalte, also beide Paritäten). Je Wasser-Zeile das Pixel links an der Kante des Pfahls, mit dem
+// Tiefen-Abbild und mit r184s Viewport-Tiefe bei festen Uhren, in voller Auflösung: liest das Wasser den Block, der sein
+// Pixel enthält, ist es dasselbe Wasser; liest es den Nachbar-Block (der Pfahl, nah), ist es durchsichtig — ein heller Saum.
+function saumProbe() {
+    return (async () => {
+        const r = window.anazhRealm,
+            st = r.state,
+            T = window.THREE;
+        const rend = st.renderer;
+        rend.setAnimationLoop(null);
+        window.__buehne();
+        const dev = rend.backend.device;
+        const gpuFehler = [];
+        const gpuHoer = (e) => gpuFehler.push(String((e.error && e.error.message) || e.message || e).slice(0, 240));
+        dev.addEventListener("uncapturederror", gpuHoer);
+        const cam = st.camera;
+        const x0 = cam.position.x,
+            z0 = cam.position.z;
+        const y0 = (typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x0, z0) : 0) + 160;
+        const setzeKamera = () => {
+            cam.position.set(x0, y0, z0);
+            cam.up.set(0, 1, 0);
+            cam.lookAt(x0, y0, z0 - 10);
+            cam.updateMatrixWorld(true);
+        };
+        const gruppe = new T.Group();
+        gruppe.name = "post-kette:SAUM";
+        const wg = new T.PlaneGeometry(24, 24, 4, 4);
+        wg.rotateX(Math.PI / 2);
+        const nV = wg.attributes.position.count;
+        wg.setAttribute("aFlow", new T.BufferAttribute(new Float32Array(nV * 2), 2));
+        wg.setAttribute("aShore", new T.BufferAttribute(new Float32Array(nV).fill(1), 1));
+        wg.setAttribute("aWave", new T.BufferAttribute(new Float32Array(nV), 1));
+        const wasser = new T.Mesh(wg, r._ensureHydroSurfaceMaterial());
+        wasser.position.set(x0, y0 - 3, z0 - 14);
+        const grund = new T.Mesh(new T.PlaneGeometry(24, 24), new T.MeshBasicNodeMaterial({ color: 0xffffff }));
+        grund.rotation.x = -Math.PI / 2;
+        grund.position.set(x0, y0 - 3.3, z0 - 14);
+        const pfahl = new T.Mesh(new T.BoxGeometry(0.5, 4, 0.5), new T.MeshBasicNodeMaterial({ color: 0x000000 }));
+        pfahl.position.set(x0 + 2.5, y0 - 3, z0 - 9);
+        pfahl.rotation.z = 0.35;
+        for (const m of [wasser, grund, pfahl]) {
+            m.frustumCulled = false;
+            gruppe.add(m);
+        }
+        st.scene.add(gruppe);
+        const P = Object.getPrototypeOf(r);
+        const nf = rend._nodes.nodeFrame;
+        const nfRoh = nf.update;
+        const db = rend.getDrawingBufferSize(new T.Vector2());
+        const W = Math.round(db.x),
+            H = Math.round(db.y);
+        const aufnahme = async () => {
+            for (let i = 0; i < 3; i++) {
+                setzeKamera();
+                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+                r._loopRender(1000);
+            }
+            setzeKamera();
+            const { u8 } = await window.__ausgabeAufnahme(W, H);
+            return u8;
+        };
+        r._loopRender = function () {
+            return P._loopRender.call(this, 1000);
+        };
+        nf.update = function () {
+            this.frameId++;
+            this.deltaTime = 0;
+            this.time = 1000;
+        };
+        const aus = { leinwand: [W, H], gpuFehler };
+        try {
+            const a = await aufnahme();
+            const knoten = r._szeneTiefeKnoten,
+                wert = r._szeneTiefeWert;
+            r._szeneTiefeKnoten = T.TSL.viewportDepthTexture();
+            r._szeneTiefeWert = r._szeneTiefeKnoten;
+            let b;
+            try {
+                r._tiefenLeserNeuBinden();
+                b = await aufnahme();
+            } finally {
+                r._szeneTiefeKnoten = knoten;
+                r._szeneTiefeWert = wert;
+                r._tiefenLeserNeuBinden();
+            }
+            const L = (u, x, y) => {
+                const i = (y * W + x) * 4;
+                return 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+            };
+            // je Zeile der rechten Hälfte die linke Kante des Pfahls (das erste schwarze Pixel nach Wasser), das Wasser-Pixel
+            // links davon: beide Aufnahmen
+            let kanten = 0,
+                abweichend = 0,
+                dMax = 0;
+            const paritaet = new Set();
+            for (let y = 0; y < H; y++) {
+                for (let x = Math.ceil(W / 2); x < W - 1; x++) {
+                    if (L(b, x + 1, y) < 12 && L(b, x, y) > 60 && L(a, x + 1, y) < 12) {
+                        kanten++;
+                        paritaet.add(x & 1);
+                        const d = L(a, x, y) - L(b, x, y);
+                        dMax = Math.max(dMax, Math.abs(d));
+                        if (Math.abs(d) > 8) abweichend++;
+                        break;
+                    }
+                }
+            }
+            Object.assign(aus, { kanten, abweichend, dMax: +dMax.toFixed(1), paritaeten: paritaet.size });
+        } catch (e) {
+            aus.abbruch = String((e && (e.stack || e.message)) || e)
+                .split("\n")
+                .slice(0, 4)
+                .join(" ← ");
+        } finally {
+            delete r._loopRender;
+            nf.update = nfRoh;
+            dev.removeEventListener("uncapturederror", gpuHoer);
+            st.scene.remove(gruppe);
+        }
+        return aus;
+    })();
+}
+
 // DIE BÜHNE (Seiten-Kontext): die echte Welt-Szene, der echte Frame, eigene Gegenstände vor der Kamera.
 function buehne(nFrames) {
     return (async () => {
@@ -237,23 +481,31 @@ function buehne(nFrames) {
         const fern = new T.Mesh(new T.BoxGeometry(12, 12, 1), stoff(0x20ff20));
         fern.position.set(x0, y0, z0 - 16);
         // Das Wasser: der echte Stoff (er liest die EINE Szenen-Tiefe), mit den Attributen, die er trägt.
+        // Die Wicklung wie das Iso-Wasser: die Vorderseite nach UNTEN — der Stoff zeichnet BackSide (die Oberseite von oben).
         const wg = new T.PlaneGeometry(24, 24, 4, 4);
-        wg.rotateX(-Math.PI / 2);
+        wg.rotateX(Math.PI / 2);
         const nV = wg.attributes.position.count;
         wg.setAttribute("aFlow", new T.BufferAttribute(new Float32Array(nV * 2), 2));
         wg.setAttribute("aShore", new T.BufferAttribute(new Float32Array(nV).fill(1), 1));
         wg.setAttribute("aWave", new T.BufferAttribute(new Float32Array(nV), 1));
         const wasser = new T.Mesh(wg, r._ensureHydroSurfaceMaterial());
         wasser.position.set(x0, y0 - 3, z0 - 14);
-        for (const m of [nah, fern, wasser]) {
+        // Der Grund 0,3 m unter dem Spiegel, weiß: der optische Weg ist endlich und kurz, der Grund scheint durch, die Farbe
+        // des Wassers hängt an der Szenen-Tiefe (ohne Grund läge dahinter die Welt 160 m tiefer — der Durchlass 0, jede
+        // Tiefe gäbe dieselbe Farbe).
+        const grund = new T.Mesh(new T.PlaneGeometry(24, 24), stoff(0xffffff));
+        grund.rotation.x = -Math.PI / 2;
+        grund.position.set(x0, y0 - 3.3, z0 - 14);
+        for (const m of [nah, fern, wasser, grund]) {
             m.frustumCulled = false;
             gruppe.add(m);
         }
         st.scene.add(gruppe);
-        // Die Kopien der Szenen-Tiefe zählen (der Tiefen-Leser muss je Schritt kopieren, sonst ist die Wand blind).
+        // Die Pass-Brüche für die Szenen-Tiefe zählen (der Tiefen-Leser muss je Schritt seine Tiefe holen, sonst ist die
+        // Wand blind): am Backend, dem EINEN Bruch-Weg — r184s Viewport-Tiefe (Rückfall) und das Tiefen-Abbild nehmen ihn.
         let kopien = 0;
-        const kopieRoh = rend.copyFramebufferToTexture;
-        rend.copyFramebufferToTexture = function (...a) {
+        const kopieRoh = rend.backend.copyFramebufferToTexture;
+        rend.backend.copyFramebufferToTexture = function (...a) {
             kopien++;
             return kopieRoh.apply(this, a);
         };
@@ -299,6 +551,35 @@ function buehne(nFrames) {
             }
             await dev.queue.onSubmittedWorkDone();
             s.tiefenKopien = kopien;
+            // DAS TIEFEN-ABBILD (WebGPU): halbe Auflösung, je Texel die fernste Tiefe seiner 2×2 Pixel — an der Bild-Mitte
+            // die Vorderseite der nahen Kiste, 5,2 m vor der Kamera (perspektivische Tiefe aus near/far der Kamera)
+            const ab = r._szeneTiefeKnoten && r._szeneTiefeKnoten.value;
+            if (ab && ab.isDataTexture === true && rend.backend.has(ab) && rend.backend.get(ab).texture) {
+                const g = rend.backend.get(ab).texture;
+                const db = rend.getDrawingBufferSize(new T.Vector2());
+                const bpr = Math.ceil((g.width * 4) / 256) * 256;
+                const buf = dev.createBuffer({
+                    size: bpr * g.height,
+                    usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+                });
+                const enc = dev.createCommandEncoder();
+                enc.copyTextureToBuffer({ texture: g }, { buffer: buf, bytesPerRow: bpr }, [g.width, g.height]);
+                dev.queue.submit([enc.finish()]);
+                await buf.mapAsync(GPUMapMode.READ);
+                const f32 = new Float32Array(buf.getMappedRange().slice(0));
+                buf.unmap();
+                buf.destroy();
+                const mitte = f32[Math.floor(g.height / 2) * (bpr / 4) + Math.floor(g.width / 2)];
+                const z = 5.2;
+                const soll = (cam.far * (z - cam.near)) / (z * (cam.far - cam.near));
+                s.abbild = {
+                    format: g.format,
+                    groesse: [g.width, g.height],
+                    leinwand: [Math.round(db.x), Math.round(db.y)],
+                    mitte: +mitte.toFixed(6),
+                    soll: +soll.toFixed(6),
+                };
+            } else s.abbild = { fehlt: true };
             schritte.push(s);
         };
         const aus = { schritte, gpuFehler };
@@ -322,6 +603,59 @@ function buehne(nFrames) {
             };
             await schritt("Render-Fehler");
             st.postProcessingFailed = false;
+            // (e) DAS WASSER LIEST DAS ABBILD WIE r184s TIEFE: die unteren sieben Zeilen des Bildes (32×24) sind Wasser über
+            // dem Grund. Bei festen Uhren (Wasser, Schaum, Knoten-Zeit) einmal mit dem Abbild, einmal mit r184s
+            // Viewport-Tiefe (der volle Klon im Pass-Bruch), wieder mit dem Abbild (der Rausch-Boden) und ohne Grund (die
+            // Probe ist nicht blind: die Farbe hängt an der Tiefe). Die Leser hängt `_tiefenLeserNeuBinden` um, der Weg
+            // des Resize.
+            const P = Object.getPrototypeOf(r);
+            const nf = rend._nodes.nodeFrame;
+            const nfRoh = nf.update;
+            const wasserFarbe = async () => {
+                for (let i = 0; i < 3; i++) {
+                    setzeKamera();
+                    frame();
+                }
+                setzeKamera();
+                const { u8 } = await window.__ausgabeAufnahme(32, 24);
+                const s = [0, 0, 0];
+                let n = 0;
+                for (let y = 17; y < 24; y++)
+                    for (let x = 0; x < 32; x++, n++) for (let c = 0; c < 3; c++) s[c] += u8[(y * 32 + x) * 4 + c];
+                return s.map((v) => +(v / n).toFixed(1));
+            };
+            r._loopRender = function () {
+                return P._loopRender.call(this, 1000);
+            };
+            nf.update = function () {
+                this.frameId++;
+                this.deltaTime = 0;
+                this.time = 1000;
+            };
+            try {
+                const w = { umgehaengt: [] };
+                w.abbild = await wasserFarbe();
+                const knoten = r._szeneTiefeKnoten,
+                    wert = r._szeneTiefeWert;
+                r._szeneTiefeKnoten = T.TSL.viewportDepthTexture();
+                r._szeneTiefeWert = r._szeneTiefeKnoten;
+                try {
+                    w.umgehaengt.push(r._tiefenLeserNeuBinden());
+                    w.r184 = await wasserFarbe();
+                } finally {
+                    r._szeneTiefeKnoten = knoten;
+                    r._szeneTiefeWert = wert;
+                    w.umgehaengt.push(r._tiefenLeserNeuBinden());
+                }
+                w.zurueck = await wasserFarbe();
+                grund.visible = false;
+                w.ohneGrund = await wasserFarbe();
+                grund.visible = true;
+                aus.wasser = w;
+            } finally {
+                delete r._loopRender;
+                nf.update = nfRoh;
+            }
             // (d) die Godrays mit der Sonne im Bild: tiefe Sonne, Blick in die Sonne; mit und ohne Godrays (der Regler).
             gruppe.visible = false;
             st.timeOfDay = 0.3;
@@ -366,7 +700,7 @@ function buehne(nFrames) {
                 .slice(0, 4)
                 .join(" ← ");
         } finally {
-            rend.copyFramebufferToTexture = kopieRoh;
+            rend.backend.copyFramebufferToTexture = kopieRoh;
             dev.removeEventListener("uncapturederror", gpuHoer);
             st.scene.remove(gruppe);
         }
@@ -417,10 +751,26 @@ function buehne(nFrames) {
         await page.evaluate(SK.SHADER_INSTALL);
         out = await page.evaluate(buehne, N_FRAMES);
         if (out.abbruch) log(`ABBRUCH: ${out.abbruch}`);
+        // (f) die ungerade Leinwand: die Seite wächst um ein Pixel je Achse, die Welt zieht nach (Resize, Leser neu gebunden)
+        await page.setViewport({ width: 321, height: 241 });
+        await page.evaluate(async () => {
+            const r = window.anazhRealm;
+            for (let i = 0; i < 6; i++) {
+                if (r.state.renderer._nodes && r.state.renderer._nodes.nodeFrame)
+                    r.state.renderer._nodes.nodeFrame.update();
+                r._loopRender(performance.now());
+                await new Promise((q) => setTimeout(q, 50));
+            }
+        });
+        out.saum = await page.evaluate(saumProbe);
+        if (out.saum)
+            log(
+                `Saum (ungerade Leinwand ${out.saum.leinwand.join("×")}): ${out.saum.abweichend} von ${out.saum.kanten} Kanten-Pixeln links am Pfahl weichen > 8 Luma ab (größte ${out.saum.dMax}, Paritäten ${out.saum.paritaeten})${out.saum.abbruch ? " · ABBRUCH " + out.saum.abbruch : ""}`
+            );
         for (const s of out.schritte)
             log(
                 `${s.name}: ${s.direkt ? "Direktpfad" : "Post-Kette"} · Tiefe ${s.tiefe} · Leinwand-Tiefe auf der GPU ${s.leinwandTiefeGpu} · ` +
-                    `Tiefen-Kopien ${s.tiefenKopien} · Mitte ${JSON.stringify(s.mitte)}${s.fehler.length ? " · FEHLER " + s.fehler[0] : ""}`
+                    `Tiefen-Kopien ${s.tiefenKopien} · Mitte ${JSON.stringify(s.mitte)} · Abbild ${s.abbild && !s.abbild.fehlt ? `${s.abbild.format} ${s.abbild.groesse.join("×")} Mitte ${s.abbild.mitte}/${s.abbild.soll}` : "fehlt"}${s.fehler.length ? " · FEHLER " + s.fehler[0] : ""}`
             );
         out.ausgabe = out.ausgabeWgsl ? SK.wgslKosten(out.ausgabeWgsl) : null;
         if (out.ausgabe)
@@ -431,6 +781,11 @@ function buehne(nFrames) {
             );
         if (process.env.POST_KETTE_WGSL && out.ausgabeWgsl)
             fs.writeFileSync(process.env.POST_KETTE_WGSL, out.ausgabeWgsl);
+        if (out.wasser)
+            log(
+                `Wasser über dem Grund: Abbild ${JSON.stringify(out.wasser.abbild)} · r184-Tiefe ${JSON.stringify(out.wasser.r184)} · ` +
+                    `Abbild wieder ${JSON.stringify(out.wasser.zurueck)} · ohne Grund ${JSON.stringify(out.wasser.ohneGrund)} · umgehängt ${JSON.stringify(out.wasser.umgehaengt)}`
+            );
         if (out.godray)
             log(
                 `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %)`
@@ -455,6 +810,7 @@ function buehne(nFrames) {
     console.log(
         `\n✅ GRÜN — vier Wege durch die Weiche ohne Fehler, der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe; ` +
             `die Ausgabe tastet unbedingt ${a.unbedingt}×, ${a.zweig}× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild ` +
-            `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen).`
+            `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
+            `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}).`
     );
 })();

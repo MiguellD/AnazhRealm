@@ -245,35 +245,51 @@ function pageHtml() {
     const a = (msg) => new Promise((res) => { const reqId = "d" + seq++; pend.set(reqId, res); w.postMessage(Object.assign({ reqId }, msg)); });
     return fertigP.then(() => a);
   };
-  const shaReply = async (r) => {
+  // DER BAU-FINGERABDRUCK — die EINE Quelle im Seiten-Kontext für jeden Bau über die echte Brücke: die Plattform-Probe
+  // (\`__probeLauf\`, kippt ein Byte unter ±1 ULP?) und gate:regler-wirkt (\`__bauHashListe\`, bewegt ein Regler den Bau?).
+  // SHA-256 über jedes gelieferte Byte jedes Teils, die Felder in Schlüssel-Ordnung — Vertex-Attribute (Name, itemSize,
+  // Bytes), Index (Bytes), alles andere als JSON (Teil-Art, Stoff, Wurf, Tür-Scharnier, Gelenk, Seh-Klasse …); der Beipack
+  // (kind "__…" ohne Positions-Puffer) zählt nicht. Dazu \`teile\`, \`bytes\` und \`nichtEndlich\` (NaN/Inf in den
+  // Fließkomma-Puffern: ein Bau, der rechnet, aber nicht rechnen kann, ist gebrochen). Bis zur Kette V18.534 trugen zwei
+  // Zweige je einen Hasher (SHA-256 über Art · Stoff · Wurf · Puffer, FNV-1a über alle Felder) — zwei Wahrheiten über
+  // „derselbe Bau".
+  const bauAbdruck = async (meshes) => {
     const enc = new TextEncoder();
-    const teile = [];
-    for (const m of r.meshes || []) {
-      if (typeof m.kind === "string" && m.kind.startsWith("__") && !(m.position && m.position.array)) continue;
-      teile.push(enc.encode(String(m.kind) + JSON.stringify(m.mat || null) + String(m.wurf)));
+    const stuecke = [];
+    let teile = 0, bytes = 0, nichtEndlich = 0;
+    const text = (x) => stuecke.push(enc.encode(String(x) + String.fromCharCode(0)));
+    const puffer = (arr) => {
+      const u = new Uint8Array(arr.buffer, arr.byteOffset, arr.byteLength);
+      stuecke.push(u);
+      bytes += u.length;
+      if (arr instanceof Float32Array || arr instanceof Float64Array)
+        for (let i = 0; i < arr.length; i++) if (!Number.isFinite(arr[i])) nichtEndlich++;
+    };
+    for (const m of meshes || []) {
+      if (!m || (typeof m.kind === "string" && m.kind.startsWith("__") && !(m.position && m.position.array))) continue;
+      teile++;
       for (const k of Object.keys(m).sort()) {
-        const a = m[k];
-        if (a && a.array && a.itemSize) {
-          teile.push(enc.encode(k + ":" + a.itemSize));
-          teile.push(new Uint8Array(a.array.buffer, a.array.byteOffset, a.array.byteLength));
-        }
+        const v = m[k];
+        text(k);
+        if (v && v.array && v.itemSize) { text(v.itemSize); puffer(v.array); }
+        else if (k === "index" && v && v.buffer) puffer(v);
+        else text(JSON.stringify(v === undefined ? null : v));
       }
-      if (m.index) teile.push(new Uint8Array(m.index.buffer, m.index.byteOffset, m.index.byteLength));
     }
     let n = 0;
-    for (const t of teile) n += t.length;
+    for (const t of stuecke) n += t.length;
     const alles = new Uint8Array(n);
     let o = 0;
-    for (const t of teile) { alles.set(t, o); o += t.length; }
+    for (const t of stuecke) { alles.set(t, o); o += t.length; }
     const h = new Uint8Array(await crypto.subtle.digest("SHA-256", alles));
-    return Array.from(h, (b) => b.toString(16).padStart(2, "0")).join("");
+    return { hash: Array.from(h, (b) => b.toString(16).padStart(2, "0")).join(""), teile, bytes, nichtEndlich };
   };
   window.__probeLauf = async (liste, d, welche, bis, fangen) => {
     if (!probeAsk) probeAsk = probeBoot();
     const a = await probeAsk;
     await a({ type: "__drift", d, welche, bis, fangen });
     const r = {};
-    for (const c of liste) r[c.key] = await shaReply(await a(Object.assign({ type: "build-asset" }, c.msg)));
+    for (const c of liste) r[c.key] = (await bauAbdruck((await a(Object.assign({ type: "build-asset" }, c.msg))).meshes)).hash;
     const st = (await a({ type: "__driftStand" })).stand;
     await a({ type: "__drift", d: 0, welche: null });
     return { r, gerufen: st.gerufen, gefangen: st.gefangen };
@@ -300,6 +316,23 @@ function pageHtml() {
         const r = await frag(Object.assign({ type: "build-asset" }, liste[i]));
         const k = window.__phytoCore.budgetSippen(r.meshes || []);
         out[i] = { tris: k.tris, draws: k.draws, budget: r.budget || null, budgetBruch: r.budgetBruch || null };
+      }
+    }));
+    return out;
+  };
+  // DER BAU-HASH VIELER STUFEN (W1 d, gate:regler-wirkt): jede Stufe über die echte Brücke gebaut (mit ov, dem
+  // Regler-Kanal der Werkstatt), je Stufe der EINE Bau-Fingerabdruck (\`bauAbdruck\`) — kein Puffer-Transport.
+  window.__bauHashListe = async (liste) => {
+    poolMehr(Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) >> 1)));
+    const out = new Array(liste.length);
+    let next = 0;
+    await Promise.all(pool.map(async (frag) => {
+      while (next < liste.length) {
+        const i = next++;
+        const r = await frag(Object.assign({ type: "build-asset" }, liste[i]));
+        out[i] = await bauAbdruck(r.meshes || []);
+        // Der Budget-Bruch der Antwort (Studio-Vertrag B2c) reist mit: ein Regler-Wert, der die Stufe über ihre Zeile treibt.
+        out[i].budgetBruch = r.budgetBruch ? JSON.stringify(r.budgetBruch).slice(0, 200) : null;
       }
     }));
     return out;
@@ -352,6 +385,13 @@ async function runWithWorker(port, cb) {
                 out.push(...(await page.evaluate((l) => window.__kostenListe(l), liste.slice(i, i + 120))));
             return out;
         };
+        // Der Bau-Hash vieler Stufen (gate:regler-wirkt), in Scheiben wie die Kosten-Liste.
+        const bauHashListe = async (liste) => {
+            const out = [];
+            for (let i = 0; i < liste.length; i += 120)
+                out.push(...(await page.evaluate((l) => window.__bauHashListe(l), liste.slice(i, i + 120))));
+            return out;
+        };
         const getData = (type) => page.evaluate((t) => window.__aget(t), type);
         const atlas = () => page.evaluate(() => window.__atlas());
         const atlasAlpha = () => page.evaluate(() => window.__atlasAlpha());
@@ -367,7 +407,7 @@ async function runWithWorker(port, cb) {
                 bis == null ? null : bis,
                 fangen == null ? -1 : fangen
             );
-        const out = await cb({ build, kostenListe, getData, atlas, atlasAlpha, atlasBild, karte, probeLauf, pageErrors });
+        const out = await cb({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, atlasBild, karte, probeLauf, pageErrors });
         if (pageErrors.length) throw new Error("Seiten-Fehler: " + pageErrors.slice(0, 3).join(" · "));
         return out;
     } finally {

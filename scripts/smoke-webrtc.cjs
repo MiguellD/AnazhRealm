@@ -16,9 +16,13 @@ const path = require("path");
 const fs = require("fs");
 const puppeteer = require("puppeteer");
 
-const ROOT = "/home/user/AnazhRealm";
-const PAGE_URL = "http://127.0.0.1:4312/index.html";
-const SIGNALING_URL = "ws://127.0.0.1:4313";
+// Der Klon, in dem die Linse liegt (vorher ein fester Linux-Pfad, unter dem sie auf keinem Rechner lief), und der Port
+// je Linse (WEBRTC_PORT; der Save-Server liest PORT, der Signal-Server ANAZH_SIGNALING_PORT aus WEBRTC_SIGNAL_PORT).
+const ROOT = path.resolve(__dirname, "..");
+const PORT = Number(process.env.WEBRTC_PORT || 4312);
+const SIGNAL_PORT = Number(process.env.WEBRTC_SIGNAL_PORT || 4313);
+const PAGE_URL = `http://127.0.0.1:${PORT}/index.html`;
+const SIGNALING_URL = `ws://127.0.0.1:${SIGNAL_PORT}`;
 const ROOM = "smoke-webrtc-room";
 // W16 — die Test-Welt, die A vendort + B über das Mesh holt.
 const W16_ID = "smoke-mesh-w16";
@@ -106,6 +110,7 @@ function startProc(script, readyRe) {
     return new Promise((resolve, reject) => {
         const proc = spawn("node", [path.join(ROOT, script)], {
             stdio: ["ignore", "pipe", "pipe"],
+            env: Object.assign({}, process.env, { PORT: String(PORT), ANAZH_SIGNALING_PORT: String(SIGNAL_PORT) }),
         });
         let ready = false;
         const timeout = setTimeout(() => {
@@ -252,13 +257,18 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         const archId = await pageA.evaluate(() => {
             const r = window.anazhRealm;
             r.setGameMode && r.setGameMode("schöpfer"); // Bau-Gates frei
+            // das Phantom ist ein Object3D wie im Spiel: das Setzen zieht das nächste (`_bauPhantomNeu`) und entsorgt
+            // das alte über `_disposeSoulGroup` (Integration V18.536)
+            const phantom = new window.THREE.Group();
+            phantom.position.set(44, 6, -44);
             r.state.buildMode = {
                 active: true,
                 blueprintName: "stein_block",
-                phantomMesh: { position: { x: 44, y: 6, z: -44 } },
+                phantomMesh: phantom,
                 phantomOnGround: true,
             };
             r.confirmBuild();
+            r._clearBuildMode();
             const arches = r.state.architectures;
             return arches.length ? arches[arches.length - 1].id : null;
         });

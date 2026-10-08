@@ -14,7 +14,7 @@ const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
-const PORT = 4404;
+const PORT = Number(process.env.FERN_WASSER_PORT || 4404);
 const root = path.resolve(__dirname, "..");
 const mime = {
     ".html": "text/html",
@@ -84,7 +84,7 @@ async function runOnce(browser, noFoundry) {
         if (!m || !m.mesh) return o;
         const g = m.mesh.geometry;
         // (2) der VOLLE Material-Vertrag
-        const want = { position: 3, aFlow: 2, aShore: 1, aWave: 1, aDepth: 1, aSlope: 1 };
+        const want = { position: 3, aFlow: 2, aWave: 1, aDepth: 1, aSlope: 1 };
         o.attrs = {};
         let attrsOk = true;
         for (const [name, size] of Object.entries(want)) {

@@ -397,17 +397,26 @@ const FIXTURES = [
         // Slot-Anker == Export-Slot: JEDER platzierte Eintrag trägt exakt slot.x/z + phi seines Slots (per seed zugeordnet). Die
         // Wände der Slot-Quelle (Wasser, Klippe über dem Footprint-Raster, Bau) rechnet die Probe nicht nach — sie liest, was
         // stand (die gespiegelte Vier-Ecken-Klippe fiel mit dem Raster, Integration Welle L).
+        // Fällt der Slot-Ort, steht das Haus an einem SEINER Ersatz-Orte (`_slotErsatzVersaetze`, im Rahmen des Hauses, Gier
+        // phi — Leben-Schau 07.10.: die Slot-Quelle sucht je Slot einen Ersatz-Ort statt zu überspringen); nie anderswo.
+        let ersatzOrte = 0;
         res.slotAnchorExact =
             e1.length > 0 &&
             e1.every((e) => {
                 const sl = plan.slots.find((x) => x.seed >>> 0 === e.seed);
-                return (
-                    !!sl &&
-                    Math.abs(e.position.x - (o1.x + sl.x)) < 1e-9 &&
-                    Math.abs(e.position.z - (o1.z + sl.z)) < 1e-9 &&
-                    e.rotationY === (sl.phi || 0)
+                if (!sl || e.rotationY !== (sl.phi || 0)) return false;
+                const c = Math.cos(sl.phi || 0);
+                const s = Math.sin(sl.phi || 0);
+                const orte = [[0, 0]].concat(r.constructor._slotErsatzVersaetze(sl));
+                const k = orte.findIndex(
+                    ([lx, lz]) =>
+                        Math.abs(e.position.x - (o1.x + sl.x + lx * c + lz * s)) < 1e-9 &&
+                        Math.abs(e.position.z - (o1.z + sl.z - lx * s + lz * c)) < 1e-9
                 );
+                if (k > 0) ersatzOrte++;
+                return k >= 0;
             });
+        res.ersatzOrte = ersatzOrte;
         // HAUS-DOPPELBAU-SCHNITT (P0-Inventur 18.07.) — der KONSUM-Beweis lebt:
         // (a) jeder platzierte Eintrag trägt den Slot-ov als studioOv (rolle
         //     byte-gleich, per seed dem Export-Slot zugeordnet),
@@ -466,7 +475,9 @@ const FIXTURES = [
         res.waterWall = /_isAboveWaterAt/.test(
             window.__codeOf ? window.__codeOf(r._spawnSettlementSlot) : r._spawnSettlementSlot.toString()
         );
-        res.anchorChokepoint = /_structureSpawnPos/.test(src);
+        // Der Anker misst den Plan selbst (`_siedlungsAnker`: das Dorf vor dem Spieler, im Bildwinkel); die Schätzung über
+        // `_structureSpawnPos("haus_basis")` fiel (Leben-Schau 07.10.: „dorf 7 18" umringte den Spieler).
+        res.anchorChokepoint = /this\._siedlungsAnker\(plan/.test(src) && !/_structureSpawnPos/.test(src);
         // 6) DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft (Welle L): das Dorf
         //    des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan (vorher bei kaltem Buch still der
         //    Kern-Default). Gemessen am Rebuild-Gedächtnis des Dorfs (settlementCells: Same, nH, Ort).
@@ -686,6 +697,72 @@ const FIXTURES = [
             } catch (e6) {
                 res.c.wegeErr = (e6 && e6.message) || String(e6);
             }
+            // C7 — DER BLICK GEHÖRT DEM, DER DAS DORF VERLANGT (0710-7; OMEN 0710-6 Boot 4B: ein Nexus-Dorf drehte die Gier
+            // mitten im Lauf auf −2,745): ein Dorf aus einem Nexus-Programm (DSL-Quelle „nexus") lässt den Blick des Spielers
+            // stehen; eines aus dem Chat-Programm des Spielers (DSL-Quelle „human") und der Befehl „dorf" richten ihn auf IHR
+            // neues Dorf (den Schwerpunkt der eben gesetzten Häuser) — nie auf alle Häuser der Welt.
+            try {
+                const pm = r.state.playerMesh;
+                const orig = r.spawnSettlement;
+                let laeuft = null;
+                r.spawnSettlement = function (o) {
+                    laeuft = orig.call(this, o);
+                    return laeuft;
+                };
+                const probe = async (px, pz, setzen) => {
+                    pm.position.set(px, r.getTerrainHeightAt(px, pz) + 1.2, pz);
+                    r.state.yaw = 1;
+                    const vorher = new Set(r.state.architectures);
+                    laeuft = null;
+                    setzen();
+                    if (laeuft) await laeuft;
+                    const neu = r.state.architectures.filter(
+                        (e) => e && !vorher.has(e) && typeof e.type === "string" && e.type.startsWith("haus_")
+                    );
+                    let cx = 0,
+                        cz = 0;
+                    for (const e of neu) {
+                        cx += e.position.x;
+                        cz += e.position.z;
+                    }
+                    const soll = neu.length ? r._blickGierZu(cx / neu.length - px, cz / neu.length - pz) : null;
+                    const d = (a, b) => Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+                    return {
+                        haeuser: neu.length,
+                        gier: +r.state.yaw.toFixed(4),
+                        gedreht: +d(r.state.yaw, 1).toFixed(4),
+                        nebenDorf: soll === null ? null : +d(r.state.yaw, soll).toFixed(4),
+                    };
+                };
+                res.c.blick = {
+                    nexus: await probe(1500, -1500, () =>
+                        r.dslRun(["spawn_village", ["at_player"], 4712], { source: "nexus" })
+                    ),
+                    spieler: await probe(-1500, -1500, () =>
+                        r.dslRun(["spawn_village", ["at_player"], 4713], { source: "human" })
+                    ),
+                    chat: await probe(1800, 600, () => {
+                        const muster = r.chatSystemPatterns.find((q) => q.re.test("dorf 4714 8"));
+                        muster.run("dorf 4714 8".match(muster.re), () => {});
+                    }),
+                    // die Werkzeuge des Spielers (0710-8): Fähigkeit per Taste, Wirken, Verzehr — und ein Mitspieler (für die Welt)
+                    faehigkeit: await probe(-1800, 600, () =>
+                        r.dslRun(["spawn_village", ["at_player"], 4715], { source: "ability:dorfruf" })
+                    ),
+                    wirken: await probe(1800, -600, () =>
+                        r.dslRun(["spawn_village", ["at_player"], 4716], { source: "capability:dorf" })
+                    ),
+                    verzehr: await probe(-1800, -600, () =>
+                        r.dslRun(["spawn_village", ["at_player"], 4717], { source: "consume:dorfsamen" })
+                    ),
+                    mitspieler: await probe(600, 1800, () =>
+                        r.dslRun(["spawn_village", ["at_player"], 4718], { source: "remote-peer" })
+                    ),
+                };
+                r.spawnSettlement = orig;
+            } catch (e7) {
+                res.c.blickErr = (e7 && e7.message) || String(e7);
+            }
             // Hook wiederherstellen (sichern + wiederherstellen, nie loeschen — die Disziplin):
             if (prevHook === undefined) delete window.__anazhAutoSettlement;
             else window.__anazhAutoSettlement = prevHook;
@@ -716,7 +793,11 @@ const FIXTURES = [
         out.offsetsDeterministic === true,
         `placed1=${out.placed1} placed2=${out.placed2}`
     );
-    check("B: der Slot-Anker sitzt EXAKT (entry == anker + slot.x/z, phi, seed)", out.slotAnchorExact === true);
+    check(
+        "B: der Slot-Anker sitzt EXAKT (entry == anker + slot.x/z oder einer seiner Ersatz-Orte, phi, seed)",
+        out.slotAnchorExact === true,
+        `${out.ersatzOrte} am Ersatz-Ort`
+    );
     check(
         "B: DORF-IN-TERRAIN — der Slot-Footprint reist als entry.fundament {ex,ez}",
         out.fundamentTravels === true
@@ -746,7 +827,7 @@ const FIXTURES = [
         "B: die Wasser-Wand steht in der EINEN Slot-Quelle (_spawnSettlementSlot, _isAboveWaterAt je Slot)",
         out.waterWall === true
     );
-    check("B: der Anker laeuft durch den EINEN Spawn-Chokepoint (_structureSpawnPos)", out.anchorChokepoint === true);
+    check("B: der Anker misst den Plan (_siedlungsAnker, keine haus_basis-Schaetzung)", out.anchorChokepoint === true);
     console.log("\n=== TEIL C: WORLDGEN-AUTO-DÖRFER (Nachlese-Welle) ===");
     for (const [name, ok] of autoStaticLaws(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"))) check(name, ok);
     const c = out.c || {};
@@ -775,6 +856,35 @@ const FIXTURES = [
         "C6: der Wege-Schlüssel trägt den Ort — zwei Siedlungen mit demselben Samen bauen je ihre Wege",
         Array.isArray(c.wegeJeOrt) && c.wegeJeOrt.length === 2 && c.wegeJeOrt.every((n6) => n6 > 0),
         `Wege-Formen je Ort: ${(c.wegeJeOrt || []).join(" / ")}${c.wegeErr ? " err=" + c.wegeErr : ""}`
+    );
+    const bl = c.blick || {};
+    const blZ = (q) =>
+        q ? `${q.haeuser} Häuser, Gier ${q.gier} (gedreht ${q.gedreht}, neben dem Dorf ${q.nebenDorf})` : "–";
+    check(
+        "C7: ein Nexus-Dorf lässt den Blick des Spielers stehen (0710-7; 4B: −2,745 mitten im Lauf)",
+        !!bl.nexus && bl.nexus.haeuser > 0 && bl.nexus.gedreht < 1e-6,
+        `Nexus: ${blZ(bl.nexus)}${c.blickErr ? " err=" + c.blickErr : ""}`
+    );
+    check(
+        "C7: ein Dorf, das der Spieler verlangt (Chat-Programm, Befehl „dorf“), richtet den Blick auf SEIN neues Dorf",
+        !!bl.spieler &&
+            !!bl.chat &&
+            bl.spieler.haeuser > 0 &&
+            bl.chat.haeuser > 0 &&
+            bl.spieler.nebenDorf < 0.05 &&
+            bl.chat.nebenDorf < 0.05,
+        `Chat-Programm: ${blZ(bl.spieler)} · dorf: ${blZ(bl.chat)}`
+    );
+    const werkzeug = ["faehigkeit", "wirken", "verzehr"];
+    check(
+        "C7: ein Dorf aus einem Werkzeug des Spielers (Fähigkeit ability:, Wirken capability:, Verzehr consume:) schaut auf SEIN Dorf (0710-8)",
+        werkzeug.every((k) => !!bl[k] && bl[k].haeuser > 0 && bl[k].nebenDorf < 0.05),
+        werkzeug.map((k) => `${k}: ${blZ(bl[k])}`).join(" · ")
+    );
+    check(
+        "C7: ein Dorf eines Mitspielers (remote-…) lässt den Blick stehen — er handelt für die Welt",
+        !!bl.mitspieler && bl.mitspieler.haeuser > 0 && bl.mitspieler.gedreht < 1e-6,
+        `Mitspieler: ${blZ(bl.mitspieler)}`
     );
     const ring = c.ring || {};
     check(

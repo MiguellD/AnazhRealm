@@ -171,28 +171,28 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   (4 Eichen, 2 Birken, 5 Tannen, 2 Fichten, 1 Weide) → **10 714 Dreiecke je L0-Baum, trüge die L0 den Haushalt
   allein**. Das Soll-Bild je Art (SpeedTree/UE-Praxis: Laub-Cluster-Karten mit Alpha, Rinde mit wenigen Ringen
   und Vertex-Farbe/AO, Silhouette vor Einzelblatt):
-  - **Laub (Eiche, Birke):** Cluster-Karten aus den Breitblatt-Zellen des EINEN Atlas auf 45 % der
-    gewachsenen Blattstellen, Kante 2,52 Blattgrößen (L1: 21 % mit 3,69) — Deckung 0,99 der Klingen;
-  - **Nadel (Fichte, Tanne, Mammut):** Nadel-Karten aus der Nadel-Zelle auf 12 % der Nadeln, Kante 1,65
-    Nadellängen (L1: 2,65 % mit 3,5) — Deckung 1,01 der Nadel-Röhren;
-  - **Trauer (Weide):** Strähnen — so W5; der Prüfer sah sie ohne Peitsche in der Luft hängen und unter den
-    Boden-Rand reichen (R1), S7 baut sie neu (unten);
-  - **Rinde:** so W5 — die Stränge unter 0,03–0,05·trunkR fielen samt den Zweigen, die Karten trugen (R2: Fichte
-    656 von 1406, Mammut 541 von 905 Karten ohne Zweig); S7 (unten);
-  - **Strauch:** seit Welle 6 (05.10.) eine Kette wie der Baum (`kindStages.shrub` [0, 1, 2]): die Nahstufe
-    `shrub[0]` (bis d0 12 m) ist die alte Stufe Byte für Byte (Samen 1 8 612, Samen 7 7 096 Dreiecke — der Golden
-    `strauch-s7-L0` trägt die Fingerabdrücke des alten `strauch-s7-L1`) und trägt die Kronen-Zeile beider Stufen;
-    die Mittelstufe `shrub[1]` (12–26 m) dieselben Karten, das Holz ab 0,35·trunkR als Vierkant auf jedem 3. Ring
-    (1 020 / 1 040 ≤ 1 100); beide werfen die Mittelstufe. Mess-Wiese (Band-Klasse busch): 121k → 34k Dreiecke.
-    Die Stufe hat EINE Bedeutung: `stufenRezept` (foundry-core, gelesen von deriveParamsPlant und emitTree) bildet
-    Stufe 0 und 1 auf das Rezept 1 ab, die Holz-Zeile ist die Stufe — der Labor-Knopf L0 baut byte-gleich die
-    Welt-L0 (vorher die Klingen-Krone, 175 016 Dreiecke); die Stufen-Wand in `gate:altlasten` hält es.
-  Gebogene Normalen (Kronen-Normale, Vorderseite nach außen) wurden im Lab gemessen und verworfen: der
-  Doppelseiten-Stoff ohne Durchlicht färbte die Unteransicht dunkel (8-m-Blick unter der Eiche L* 23,2 → 14,0)
-  und setzte Glanzspitzen. Das Soll-Bild braucht höchstens 17,3k (Tanne s2, Eiche s2 17,2k): **`tree[0]` =
-  18 000 Dreiecke, 3 Sippen, wirft seine L1** — die Zeile liegt offen 1,68× über dem Haushalts-Anteil, das
-  L0-Band der Mess-Wiese verschiebt sich auf ~209k (vorher bei 20 m 2,16 M, bei den alten 12 m 647k); der
-  L1-Überhang (46 Bäume × ≤ 10k + Werfer) ist nicht diese Zeile.
+    - **Laub (Eiche, Birke):** Cluster-Karten aus den Breitblatt-Zellen des EINEN Atlas auf 45 % der
+      gewachsenen Blattstellen, Kante 2,52 Blattgrößen (L1: 21 % mit 3,69) — Deckung 0,99 der Klingen;
+    - **Nadel (Fichte, Tanne, Mammut):** Nadel-Karten aus der Nadel-Zelle auf 12 % der Nadeln, Kante 1,65
+      Nadellängen (L1: 2,65 % mit 3,5) — Deckung 1,01 der Nadel-Röhren;
+    - **Trauer (Weide):** Strähnen — so W5; der Prüfer sah sie ohne Peitsche in der Luft hängen und unter den
+      Boden-Rand reichen (R1), S7 baut sie neu (unten);
+    - **Rinde:** so W5 — die Stränge unter 0,03–0,05·trunkR fielen samt den Zweigen, die Karten trugen (R2: Fichte
+      656 von 1406, Mammut 541 von 905 Karten ohne Zweig); S7 (unten);
+    - **Strauch:** seit Welle 6 (05.10.) eine Kette wie der Baum (`kindStages.shrub` [0, 1, 2]): die Nahstufe
+      `shrub[0]` (bis d0 12 m) ist die alte Stufe Byte für Byte (Samen 1 8 612, Samen 7 7 096 Dreiecke — der Golden
+      `strauch-s7-L0` trägt die Fingerabdrücke des alten `strauch-s7-L1`) und trägt die Kronen-Zeile beider Stufen;
+      die Mittelstufe `shrub[1]` (12–26 m) dieselben Karten, das Holz ab 0,35·trunkR als Vierkant auf jedem 3. Ring
+      (1 020 / 1 040 ≤ 1 100); beide werfen die Mittelstufe. Mess-Wiese (Band-Klasse busch): 121k → 34k Dreiecke.
+      Die Stufe hat EINE Bedeutung: `stufenRezept` (foundry-core, gelesen von deriveParamsPlant und emitTree) bildet
+      Stufe 0 und 1 auf das Rezept 1 ab, die Holz-Zeile ist die Stufe — der Labor-Knopf L0 baut byte-gleich die
+      Welt-L0 (vorher die Klingen-Krone, 175 016 Dreiecke); die Stufen-Wand in `gate:altlasten` hält es.
+      Gebogene Normalen (Kronen-Normale, Vorderseite nach außen) wurden im Lab gemessen und verworfen: der
+      Doppelseiten-Stoff ohne Durchlicht färbte die Unteransicht dunkel (8-m-Blick unter der Eiche L* 23,2 → 14,0)
+      und setzte Glanzspitzen. Das Soll-Bild braucht höchstens 17,3k (Tanne s2, Eiche s2 17,2k): **`tree[0]` =
+      18 000 Dreiecke, 3 Sippen, wirft seine L1** — die Zeile liegt offen 1,68× über dem Haushalts-Anteil, das
+      L0-Band der Mess-Wiese verschiebt sich auf ~209k (vorher bei 20 m 2,16 M, bei den alten 12 m 647k); der
+      L1-Überhang (46 Bäume × ≤ 10k + Werfer) ist nicht diese Zeile.
 - **Die Nahkrone hängt an ihrem Träger (S7, 05.10.).** Jedes gewachsene Blatt kennt seinen Lauf (`run`,
   growSkeleton); jede gehaltene Karte und Strähne macht ihren Lauf und jeden Vorfahr zum TRÄGER — er wird gebaut,
   ein Strang unter `rinde.ast`·trunkR ohne Träger fällt ganz (kein kahler Stock, keine schwebende Karte). Die Rinde
@@ -246,6 +246,15 @@ Die Regler-Definitionen als DATEN (die HDA-Lehre) — **als MAP je kind**:
 - Der Host (Werkstatt) baut die Regler-UI GENERISCH daraus — kein
   hartkodiertes Slider-Panel pro Domäne.
 - `law` ist der Ein-Satz-Lehrsatz am Regler (Anzeige, nicht Logik).
+- **Jede Zeile wirkt** (Studio-Welle S1, `gate:regler-wirkt`): der Werkstatt-Wert liegt in `ws.studioOv[preset]`
+  als `{id: wert}` und reist über die EINE Vorschau-Quelle (`_workshopStudioPreviewFrom`). Die Mesh-Arten baut
+  die Foundry (`ov {id: wert}` über build-asset); die MESHFREI-Arten (§8: koerper · kreatur · klang) gießt der
+  Host-Ofen der Werkstatt (`_workshopOvenPreview`) — koerper reicht den Wert als `dials` in den Mensch-Bäcker,
+  kreatur in die Gattungs-Dials, klang hat keinen Gestalt-Bäcker (kein Guss, der Leser wäre die Musik). Die Linse
+  misst je Art an dem Kanal, den die Vorschau nimmt; eine Zeile, die den Bau bzw. Guss an keinem Rezept ihrer Art
+  bewegt (Hash bei min und max), ist tot und steht beim Namen in `spec/vertraege/ratsche.json` (`reglerTot`, die
+  Liste schrumpft nur, Soll 0). Ein Bau, der mit dem Wert bricht (wirft, leer, NaN, Not-Körper), ist rot; ein
+  Rand-Wert über der Budget-Zeile (B2c) steht in `reglerBudget` (Soll 0).
 
 ### B5 — LEHREN (SOLL)
 
@@ -263,7 +272,13 @@ Die Verben + Daten-Komponenten der Domäne (die ECS-Lehre: `kind` wählt
 Komponenten-SÄTZE, keine Klassen):
 
 - `dsl`: die Wörter, die die begehbare Welt versteht (W12-ready-Handshake —
-  gebaut für alle fünf Portale).
+  gebaut für alle fünf Portale). Das Protokoll richtet die Heimat (`gate:portal-konformanz`, alle 13
+  Welten über den echten Weg): die Welt meldet `ready` (ihr Wörterbuch gewinnt, Stufe „nativ"); die
+  Heimat schickt `enter` beim load und auf die ERSTE ready (ein Echo je enter bleibt endlich); die Welt
+  nimmt nur Nachrichten ihres Eltern-Fensters an (`event.source`); ein Wort kommt flach
+  `["w", …args]` oder als `["chain", …]` und wirkt sichtbar (Ereignis ins Journal der Heimat oder
+  Zustand der Welt-UI); Esc meldet `exit`. Stumme Einzelwörter und Echo-Welten stehen als Ratsche in
+  `spec/vertraege/ratsche.json`.
 - Daten-Komponenten je kind, von EXISTIERENDEN Systemen gelesen (kein
   Parallel-System): `vehicle.fahrprofil` — GEBAUT N6 (09.07.): NICHT die rohen
   Regler, sondern die ABGELEITETEN drive-Skalare des Wörterbuchs v1
@@ -285,15 +300,15 @@ Komponenten-SÄTZE, keine Klassen):
   Quer-Slip, Shift = Handbremse); ohne `lenkung` byte-alt richtungs-folgend.
 - **`ARENA` (V18.483, schmiede-core, Namensraum-Export):** das Arena-Gefühl
   als Daten (`schwung { dauerProSqrtI min max hand } · gefuehl { freezeMin/Max
-  dipMin/Max keRefJ } · bogen { mArrow auszugSec fovZug fovRuhe
-  minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`, fail-closed
+dipMin/Max keRefJ } · bogen { mArrow auszugSec fovZug fovRuhe
+minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`, fail-closed
   (Kern-Pflicht 17.07.: `ARENA_FALLBACK` + `SWING_/BOGEN_LAWS` sind
   GEFALLEN; `MAX_PFEILE` blieb ehrlich Wirts-Deckel). Spiegel-Zensus 17.07. (V18.486+,
   rein additiv): `schwung` trägt auch die Hieb-GEOMETRIE (`windupFrac
-  strikeFrac arcHalfRad bladeRadiusM reachBaseM reachMaxM shoulderH`),
-  `gefuehl` den Stoß + das Tod-Kippen (`stossCap stossProKb stossSkala
-  kippDauerSec kippNachklangSec`), `bogen` den Pfeil-Flug (`maxFlugSec
-  radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
+strikeFrac arcHalfRad bladeRadiusM reachBaseM reachMaxM shoulderH`),
+  `gefuehl` den Stoß + das Tod-Kippen (`wucht pProKb` — der Stoß ist seit 0710-2 das EINE
+  Impuls-Gesetz des Wirts, AnazhRealm.STOSS; `kippDauerSec kippNachklangSec`), `bogen` den Pfeil-Flug (`maxFlugSec
+radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
   Schadens-Faktor; `gueteAnteil(rezeptId, ov?)` (Welle L, additiv) — derselbe
   Lehren-Anteil ∈ [0, 1] als die EINE Güte eines Schmiede-Geräts (Leser
@@ -312,34 +327,36 @@ Komponenten-SÄTZE, keine Klassen):
   `bogen.zugJouleRef` (E = `ableitenBogen(task).energie`).
 - **`VERHALTEN` (V18.483, tetrapoda-core, Namensraum-Export):** die
   Verhaltens-Seele (`aktionen { <name>: { dauer profil dreh? kopfSweep?
-  rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)
+rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)
   — der Wirt wählt/stempelt FNV-deterministisch, der Baum-Gang trägt den
   Overlay. Jede Stimmungs-Aktion MUSS in `aktionen` existieren (Validator).
   Spiegel-Zensus 17.07. (V18.486+, rein additiv): die KREATUR-SEELE reist —
   `jagd { radius speedBoost strikeRange strikeCooldownSec damageMul
-  fearHpFrac triumphWindowSec scentRangeM hetzM pirschSichtM beuteMasse }`
+fearHpFrac triumphWindowSec scentRangeM hetzM pirschSichtM beuteMasse }`
   (VERTRAGS-AKT Welle LF 08.10.: DIE JAGD SCHLIESST SICH — die Witterung wählt
   die Beute an der Nase, der Gradienten-Schritt `scentProbeM` fiel; das Rudel
   bezieht den Ring `hetzM`, eine Pirsch bleibt bis `pirschSichtM` unbemerkt,
-  Beute trägt höchstens `beuteMasse` × die Masse des Jägers; Hetze und Flucht
+  Beute trägt höchstens `beuteMasse` × die Masse des Jägers — die EINE Masse
+  des Leibs in kg, Volumen der Gestalt × `MASSSTAB.dichteKgM3`; Hetze und Flucht
   laufen den Sprint der Gestalt `STEUER_GESETZ.sprint`, `furcht.fleeSpeedBoost`
   fiel) · `furcht`
   (Wariness-Gewichte + Flucht-Radien/-Dauern) · `temperament { gattung
-  profile }` (VERTRAGS-AKT Welle LF 08.10.: DAS TEMPERAMENT DER GATTUNG —
-  `gattung { fleischDiet pflanzDiet jagdMasse wehrMasse kolossMasse }`, die
-  Funktion `temperamentDerGattung(dials, bodySize, gattung)` liest Ernährung
-  und Masse; die Substanz-`signaturen` und ihr `floor` fielen, ebenso die
+profile }` (VERTRAGS-AKT Welle LF 08.10.: DAS TEMPERAMENT DER GATTUNG —
+  `gattung { fleischDiet pflanzDiet jagdKg wehrKg kolossKg }`, die
+  Funktion `temperamentDerGattung(dials, kg, gattung)` liest Ernährung
+  und die EINE Masse des Leibs (kg, beim Wirt `_leibMasse`; die Dial-Masse
+  size × Größe fiel mit der Vereinigung V18.536); die Substanz-`signaturen` und ihr `floor` fielen, ebenso die
   Substanz-Gewichte der Furcht `boldFromDichte/boldFromHärte/shyFromLebendig` —
   die Natur der Wariness ist `furcht.mutGewicht` × Mut des Temperaments; die
   Tiere sind tag-gleich, Lehre 8) · Gegenwehr-Profile · `wandern`
   (Leine/Schlendern/Emotions-Modulation). Leser
   `AnazhRealm._verhaltenGesetz()` (memoisiert, fail-closed — Kern-Pflicht
   17.07.: die Stamm-Zwillinge `CREATURE_HUNT/CREATURE_NATURE/
-  TEMPERAMENT_*/CREATURE_CHARAKTER` sind GEFALLEN; die
+TEMPERAMENT_*/CREATURE_CHARAKTER` sind GEFALLEN; die
   ZWILLINGS-ABSENZ-WAND im Validator hält sie draußen).
   Schluss-Welle 17.07. (V18.489, rein additiv): die letzten neun
   tetrapoda-Heimat-Literale des Stamms sind heimgekehrt — `freude { tempoMul
-  hopHochM hopBasisM }` · `sprung { impulsProM }` (VERTRAGS-AKT Welle L
+hopHochM hopBasisM }` · `sprung { impulsProM }` (VERTRAGS-AKT Welle L
   07.10.: gefallen — DAS SPRUNG-GESETZ: die Huepf-Hoehe der Freude ist die
   EINE Quelle eines Sprungs, froh `hopHochM`, sonst `hopBasisM`, der Abflug
   v0 = √(2·g·h) mit `GANG_GESETZ.g` im Wirt `creatureJump`; eine Aktion
@@ -358,7 +375,7 @@ Komponenten-SÄTZE, keine Klassen):
   (Wand je Block ein Feld; alter Kern → Bruch, nie Misch-Gesetz).
   VERTRAGS-AKT V18.489 (schmiede-core, dokumentiert im Export-Block):
   die zehn toten Mess-Exporte (`LEHREN_LAB · MATof · hrc · matHaerte ·
-  matResilienz · greifkraft · pobZiel · ableitenPick/Graben/Klinge`)
+matResilienz · greifkraft · pobZiel · ableitenPick/Graben/Klinge`)
   sind aus dem Namensraum gekürzt — 0 Konsumenten repo-weit, die
   Maschinen leben intern weiter, `buildInstance` byte-unberührt
   (52/52 Goldens; nur die recipes/render-config-Datenkanäle wurden
@@ -369,7 +386,7 @@ Komponenten-SÄTZE, keine Klassen):
   `herdeZug` (Welle L 06.10., tetrapoda-core, Namensraum-Export, rein
   additiv — PRESETS/PARAMS unberührt, der v7-Fingerabdruck wandert nicht
   mit):** der EINE Steuer-Schritt je Tier und Takt. `STEUER_GESETZ { tempo
-  wende beschl brems }` (Froude-dimensionslos über die Hüft-Höhe L, mit
+wende beschl brems }` (Froude-dimensionslos über die Hüft-Höhe L, mit
   `GANG_GESETZ.g`) · `tempoEinheit(L)` = tempo·√(g·L) m/s (die Einheit, in
   der VERHALTEN zählt) · `steuerSchritt(z, wx, wz, dt, L)` schreibt
   `z = { gier, v }` fort: die Gier dreht mit der Wendegrenze
@@ -379,14 +396,16 @@ Komponenten-SÄTZE, keine Klassen):
   `ankunftTempo(rest, vMax)` = min(vMax, √(2·brems·g·rest)) — das
   Ankunfts-Gesetz (wer `rest` m vor seinem Halt steht, wünscht nur das
   Tempo, aus dem er dort steht) · `herdeZug(x, z, gattung, nachbarn, H,
-  out?)` → `{ x, z, n }` — die Herden-FORM (Kohäsion nur zu Nachbarn
+out?)` → `{ x, z, n }` — die Herden-FORM (Kohäsion nur zu Nachbarn
   derselben Gattung im Fenster `H = VERHALTEN.herde`, nie am Blick; das
   Herden-Verhalten ist nach v1.0). Rein, THREE-frei. Leser:
   `AnazhRealm._steuerGesetz()` (memoisiert, fail-closed) in
   `updateCreatures` (EIN Schreiber der Gier `rotation.y`), `_kreaturZiel`
   (Ankunft) und der Herden-Block; Linse `gate:kreatur-takt` (gier · herde).
-- **`GANG_GESETZ.hubForm` (Welle LF 08.10., tetrapoda-core, rein additiv —
-  PRESETS/PARAMS byte-gleich, der v7-Fingerabdruck wandert nicht mit):**
+- **`GANG_GESETZ.hubForm` (Welle LF 08.10., tetrapoda-core, VERTRAGS-AKT an
+  `gangFuss` — die Ausgabe `hub` ändert sich für jede Phase im Schwung außer
+  dem Scheitel; PRESETS/PARAMS byte-gleich, der v7-Fingerabdruck wandert
+  nicht mit, `gangFuss` trägt kein Golden, der EINE Leser ist der Wirt):**
   `gangFuss(ph, S).hub` = sin(Phase)^hubForm (0,5) statt sin(Phase): der Fuß
   hebt steil ab und setzt steil auf. Mit sin hing er ein Drittel des
   Schwungs in den untersten 3 cm und strich dort mit 0,8–1,1 × Leib-Tempo
@@ -468,21 +487,21 @@ Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":
 5. **Wächter:** ein `gate:nervensystem-<domäne>` (synthetisches Rezept
    injizieren → Auto-Blueprint → platziert/angeschlossen, ohne eine Zeile
    AnazhRealm-Edit) + eingefrorene Vertrags-Fixtures (`spec/asset-contract/
-   v<n>/`) + dieser Validator (`gate:studio-vertrag` prüft den neuen Kern
+v<n>/`) + dieser Validator (`gate:studio-vertrag` prüft den neuen Kern
    automatisch mit).
 
 ## §6 Konformanz-Matrix (Stand 08.07.2026)
 
-| Block | Pflanzen (foundry-core) | Fahrzeuge (Phase 1) | Tore (Phase 2, ✅ 09.07.) |
-| ----- | ----------------------- | ------------------- | -------------- |
-| B1 REZEPTE | ✅ 15 Rezepte, 5 kinds | vehicle-core: PRESETS+CULTURES | ✅ porta-core: 7 Ordnungen `kind:"gate"` |
-| B2 BUILD | ✅ buildInstance, LOD 0/1/2, Goldens v1 | buildVehicle → v3-Goldens | ✅ buildInstance → v4-Goldens (`gate:porta-contract`) |
-| B2c BUDGET | ✅ tree · shrub · grass · flower · rock + gestalten | ✅ vehicle[0] (12 Draws, Seh-Klassen) | ✅ gate[0] (13 Draws, Flügel × Stoff × Seh-Klasse) |
-| B3 PLACEMENT | ✅ scale/rarity/treeScaleMul | deliberate (Katalog), später settlement | ✅ als Rezept-Daten: `fx.place {mode:"site", siteTag:"tor"}` (N5.6 — streut heute nicht) |
-| B4 PARAMS | ⏳ Dials leben in der Shell (benannte Schuld) | MUSS (SLIDERS existiert als Daten) | ✅ PARAMS aus SLIDERS abgeleitet (eine Quelle) |
-| B5 LEHREN | ⏳ in der Shell | SOLL (Lehren-Tafel existiert als Daten) | ⏳ `messen` (Stich→Schub→Dicke) ✅, pass/warn-Bänder trägt das Lab nicht |
-| B6 VERHALTEN | ✅ dsl (W12) | dsl ✅ + fahrprofil ✅ (N6, 09.07.: Brücke rechnet `exportDrive` beim Buch-Bau, `gate:vehicle-drive`) | dsl ✅ + tueren (Shell E/R; Host-`portal` = benannter Folge-Anschluss) |
-| STUDIO_VERTRAG | wird mit diesem Vertrag gesetzt | ab Split | ✅ = 1 (`__portaCore`) |
+| Block          | Pflanzen (foundry-core)                             | Fahrzeuge (Phase 1)                                                                                   | Tore (Phase 2, ✅ 09.07.)                                                                |
+| -------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| B1 REZEPTE     | ✅ 15 Rezepte, 5 kinds                              | vehicle-core: PRESETS+CULTURES                                                                        | ✅ porta-core: 7 Ordnungen `kind:"gate"`                                                 |
+| B2 BUILD       | ✅ buildInstance, LOD 0/1/2, Goldens v1             | buildVehicle → v3-Goldens                                                                             | ✅ buildInstance → v4-Goldens (`gate:porta-contract`)                                    |
+| B2c BUDGET     | ✅ tree · shrub · grass · flower · rock + gestalten | ✅ vehicle[0] (12 Draws, Seh-Klassen)                                                                 | ✅ gate[0] (13 Draws, Flügel × Stoff × Seh-Klasse)                                       |
+| B3 PLACEMENT   | ✅ scale/rarity/treeScaleMul                        | deliberate (Katalog), später settlement                                                               | ✅ als Rezept-Daten: `fx.place {mode:"site", siteTag:"tor"}` (N5.6 — streut heute nicht) |
+| B4 PARAMS      | ⏳ Dials leben in der Shell (benannte Schuld)       | MUSS (SLIDERS existiert als Daten)                                                                    | ✅ PARAMS aus SLIDERS abgeleitet (eine Quelle)                                           |
+| B5 LEHREN      | ⏳ in der Shell                                     | SOLL (Lehren-Tafel existiert als Daten)                                                               | ⏳ `messen` (Stich→Schub→Dicke) ✅, pass/warn-Bänder trägt das Lab nicht                 |
+| B6 VERHALTEN   | ✅ dsl (W12)                                        | dsl ✅ + fahrprofil ✅ (N6, 09.07.: Brücke rechnet `exportDrive` beim Buch-Bau, `gate:vehicle-drive`) | dsl ✅ + tueren (Shell E/R; Host-`portal` = benannter Folge-Anschluss)                   |
+| STUDIO_VERTRAG | wird mit diesem Vertrag gesetzt                     | ab Split                                                                                              | ✅ = 1 (`__portaCore`)                                                                   |
 
 **Benannte Schulden (kein Verstecken):** die Pflanzen-Dials/Lehren leben noch
 in der phytogenesis-Shell statt als B4/B5-Datenblöcke — sie wandern bei der
@@ -627,7 +646,7 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
 - **§8.2 `fx.motion` (Bewegungs-Daten, W-A6):** Gang-/Emotions-Profile als
   reine Daten. Schema (alle Felder DARF, must-ignore):
   `motion { presets: { <name>: { <achse>: zahl … } }, cpgCoupling?: zahl[][],
-  standPose?: zahl[][] }` — die Achsen sind Lab-eigene Regler (freq · stride ·
+standPose?: zahl[][] }` — die Achsen sind Lab-eigene Regler (freq · stride ·
   tension · kpMul · Gelenk-Ziele …); der Host interpretiert sie NIE als
   zweites Animations-System (M4): der EINE Konsument ist der bestehende
   `_animateCompoundMotion`-/Rig-Bogen (wahrerguss Säule II — der Andock-Punkt
@@ -638,14 +657,14 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   Verben des Ninja-Parks + das Wasser als reine Daten, Leser sind die EINEN
   Gesetz-Funktionen des Wirts (memoisiert, fail-closed — Kern-Pflicht):
   `bewegung { speed { base leicht mag } · jumpPower { base leicht mag } ·
-  stamina { base traeger mag } · schwimmen { tauchV aufV lerp hubK tiefeK
-  hubCap tiefeCap drag taktZug taktTreten lean { zug treten } pose { kopf
-  armZug armTreten armAb armSpreiz beinZug beinTreten beinTakt }
-  ausdauerProS } · parkour { doppelspruenge doppelsprungMul wandsprungMul
-  wandAbstoss kletterV kletterAusdauerProS slideTempoMul slideDauerSec
-  slideMinTempo kontaktFrischeSec slidePose { lehne beinVor knieKnick
-  armStuetz armFrei kopf } } · luft { kAcc kAccLuft kBrake kBrakeLuft } ·
-  sprung { coyoteSec bufferSec } · schritt { kalib } · aktionAusdauer }`.
+stamina { base traeger mag } · schwimmen { tauchV aufV lerp hubK tiefeK
+hubCap tiefeCap drag taktZug taktTreten lean { zug treten } pose { kopf
+armZug armTreten armAb armSpreiz beinZug beinTreten beinTakt }
+ausdauerProS } · parkour { doppelspruenge doppelsprungMul wandsprungMul
+wandAbstoss kletterV kletterAusdauerProS slideTempoMul slideDauerSec
+slideMinTempo kontaktFrischeSec slidePose { lehne beinVor knieKnick
+armStuetz armFrei kopf } } · luft { kAcc kAccLuft kBrake kBrakeLuft } ·
+sprung { coyoteSec bufferSec } · schritt { kalib } · aktionAusdauer }`.
   Spiegel-Zensus 17.07. (V18.486+, rein additiv): `luft` = die vier
   C5-Boden-/Luft-Hebel der Beschleunigungs-/Brems-Kurven, `sprung` =
   Coyote-/Jump-Buffer-Fenster, `schritt.kalib` = der Gang-Kalibrierfaktor,
@@ -654,14 +673,14 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   divergente Stamm-Zwilling 0.18/0.15). Leser `AnazhRealm._bewegungsBlock`
   (block-weise, ganz-oder-gar-nicht) + `_aktionAusdauer` — fail-closed
   (Kern-Pflicht 17.07.): die Stamm-Zahlen-Zwillinge (`SCHWIMM/LUFT/SPRUNG/
-  SCHRITT_FALLBACK`, `MOUSE_ACTION_STAMINA_COST`) sind GEFALLEN, ein
+SCHRITT_FALLBACK`, `MOUSE_ACTION_STAMINA_COST`) sind GEFALLEN, ein
   unlesbares Gesetz ist ein `_kernPflichtBruch` (die Wand schreit); die
   ZWILLINGS-ABSENZ-WAND im Validator hält die Zwillinge draußen.
   `parkour` bleibt Gesetz-Freiheit (kein parkour-Block → keine Verben).
 - **§8.3 `fx.klang` (Musik-Daten, W-A7):** ein Genre als reine Daten. Schema
   (bpm MUSS im Feld, Rest DARF): `klang { bpm, scaleName?, scale?: halbton[],
-  dna?: { swing darkness color flow tension space }, form? harmony? rhythm?
-  bass? melody?, inst?, tilt? }`. Die Skala ist VOR-ABGELEITET aus der EINEN
+dna?: { swing darkness color flow tension space }, form? harmony? rhythm?
+bass? melody?, inst?, tilt? }`. Die Skala ist VOR-ABGELEITET aus der EINEN
   Lab-Formel (`scaleFor(darkness)`, das exportDrive-Muster N6.2/M3 — Export
   der SELBEN Formel, keine zweite Wahrheit). Der EINE Host-Konsument ist das
   BESTEHENDE Lofi-System (kein Parallel-Audio, M4): `_klangStudioPreset()`
@@ -673,7 +692,7 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   G4.1). Spender heute: `klang-core.js` (22 Genesis-Genres, `kind:"klang"`).
 - **§8.5 v1.2 — DIE OFEN-STUFEN-ZEILE (V18.478, NORMATIV, rein additiv):** ein
   MESHFREI-Kern mit Pipe-Bäcker (§8.4) DARF `PORTAL_RENDER_CONFIG.lod.
-  kindStages` auf seinem Namensraum tragen. Die Zeile deklariert die
+kindStages` auf seinem Namensraum tragen. Die Zeile deklariert die
   LOD-STUFEN, die der GATTUNGS-BÄCKER seiner Gestalt bäckt (dieselbe Form wie
   B2-kindStages: nicht-leer, strikt aufsteigend, 0..2 — derselbe Validator);
   B2 bleibt N/A (kein buildInstance). Die Brücke sammelt sie GENERISCH wie

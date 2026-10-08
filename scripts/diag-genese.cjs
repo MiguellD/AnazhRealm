@@ -283,6 +283,7 @@ function startSaveServer() {
                 "_computeHydrosphere",
                 "_computeErosion",
                 "spawnAffinityForBlueprint",
+                "_affinitaet",
             ];
             const hits = [];
             for (const fn of fns) {

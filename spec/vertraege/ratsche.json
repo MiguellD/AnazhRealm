@@ -1,0 +1,57 @@
+{
+    "version": 1,
+    "zweck": "DIE RATSCHEN DER VERTRAGS-WÄNDE (Studio-Welle S1, Synthese W1 c/d/e): je Klasse die benannte Ist-Liste, die nur SCHRUMPFEN darf, und das Soll der Synthese daneben. Ein neuer Eintrag ist rot (beim Namen); ein geheilter ebenfalls, bis seine Zeile im selben Commit fällt — die Zahl sinkt und wächst nie still zurück. Heben ist ein begründeter Akt von Hand im Commit. Leser: gate:portal-konformanz (dslEinzelwort, readyEcho) und gate:regler-wirkt (reglerTot, reglerBudget).",
+    "dslEinzelwort": {
+        "zweck": "Der Spieler tippt im Portal EIN Wort in die Konsole; die Heimat schickt es flach als [\"w\", …args] (_portalParseWorldCommand → _portalForwardDsl). Stumm = die Welt-UI zeigt keine Wirkung, obwohl dieselbe Welt die chain-Form umsetzt (Kontrolle K4). Ursache je Studio: die Brücke liest op[0] je ELEMENT des Programms — aus \"gt\" wird \"g\" (Synthese §0.1).",
+        "soll": 0,
+        "sollQuelle": "Synthese §4 W4 (Hülle): DSL-Einzelwort 0/7 → 7/7 — EIN Adapter applyDsl mit chain-Rekursion (skeleton-Norm)",
+        "welten": ["fachwerk", "garage", "klang", "koerperstudio", "portale", "schmiede", "tetrapoda"]
+    },
+    "readyEcho": {
+        "zweck": "Die Welt beantwortet jedes enter der Heimat mit einer neuen ready (die Norm skeleton/fluid/terrain meldet ready einmal, unaufgefordert). Seit die Heimat nur die erste ready beantwortet, ist das Echo endlich (K2); der Dialekt bleibt, bis die Brücke EINE ist.",
+        "soll": 0,
+        "sollQuelle": "Synthese §4 W4 (Hülle): Brücken 13 → 1",
+        "welten": ["fachwerk", "garage", "klang", "koerperstudio", "portale", "schmiede", "tetrapoda"]
+    },
+    "reglerTot": {
+        "zweck": "Ein Regler aus PARAMS_BY_KIND, den die Werkstatt rendert, dessen Wert den Bau an KEINEM Rezept seiner Art bewegt (erste Stufe der Art, min und max) — gemessen am Kanal, den die Werkstatt-Vorschau nimmt: die Mesh-Arten über build-asset (ov {id: wert}, Seed 1), die MESHFREI-Arten (Vertrag §8) über den Host-Ofen (_workshopStudioPreviewFrom → _workshopOvenPreview, der Wert aus ws.studioOv). Schlüssel kern:art:id, Wert = der Befund.",
+        "soll": 0,
+        "sollQuelle": "Synthese §4 W1 „tote Regler beim Namen“, W4 „Regler-wirkt-Probe grün“ (Regler-Generator mit fest/festText, N2)",
+        "tot": {
+            "klang:klang:bpm": "kein Guss: die Werkstatt fragt den Host-Ofen, klang hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — die Musik der Welt liest das Rezept, nie ws.studioOv; die Bau-Hash-Linse heilt diese Zeile nie, sie fällt erst mit einer Linse am Musik-Leser (Synthese W4 f)",
+            "klang:klang:color": "kein Guss (wie bpm)",
+            "klang:klang:darkness": "kein Guss (wie bpm)",
+            "klang:klang:flow": "kein Guss (wie bpm)",
+            "klang:klang:space": "kein Guss (wie bpm)",
+            "klang:klang:swing": "kein Guss (wie bpm)",
+            "klang:klang:tension": "kein Guss (wie bpm)",
+            "porta:gate:energy": "Membran-/Innenwelt-Regler: bewegt den Bau an keinem der 7 Tore (der Leser ist der Labor-Shader)",
+            "porta:gate:fog": "wie energy",
+            "porta:gate:fractal": "wie energy",
+            "porta:gate:reflect": "wie energy",
+            "porta:gate:swirl": "wie energy",
+            "porta:gate:temp": "wie energy",
+            "porta:gate:tunnel": "wie energy",
+            "porta:gate:twist": "wie energy",
+            "porta:gate:wave": "wie energy",
+            "schmiede:weapon:schaftR": "bewegt den Bau an keinem der 21 Rezepte",
+            "vehicle:vehicle:grip": "Fahr-Regler: der Bau trägt ihn nicht, das Fahr-Gesetz der Welt (_fahrzeugGesetzFor) liest Rezept s+fx, nie ov — die Bau-Hash-Linse heilt diese Zeile nie, sie fällt erst mit einer Linse am Fahr-Gesetz (Synthese W6 b)"
+        }
+    },
+    "reglerBudget": {
+        "zweck": "Ein Regler, dessen Rand-Wert (min oder max) die Stufe über ihre Budget-Zeile treibt (Studio-Vertrag B2c: PORTAL_RENDER_CONFIG.lod.budget[kind][stufe]): der Bau steht, das Gesetz bricht — die Brücke meldet budgetBruch, der Host-Ofen BUDGET-BRUCH. gate:asset-contract baut nur die Rezepte ohne ov; diese Ratsche hält, was der Regler-Rand zeigt (gesehen an den Rezepten, die gate:regler-wirkt baut, bis die Zeile wirkt). Schlüssel kern:art:id, Wert = der Befund.",
+        "soll": 0,
+        "sollQuelle": "Studio-Vertrag B2c: jede Gestalt verlässt das Studio auf ihrer Budget-Zeile — auch am Rand jedes Reglers (Heilung am Studio, Lehre 19)",
+        "bruch": {
+            "fachwerk:haus:bend": "bend=1 an alemannisch L0: tris 159946 > 132000",
+            "fachwerk:haus:doppel": "doppel=1 an alemannisch L0: tris 155208 > 132000",
+            "fachwerk:haus:storeys": "storeys=12 an alemannisch L0: tris 150162 > 132000",
+            "koerper:koerper:hairVol": "hairVol=2 an mensch L0 (Host-Ofen): tris 166520 > 166000",
+            "koerper:koerper:tone": "tone=1 an mensch L0 (Host-Ofen): tris 166840 > 166000",
+            "porta:gate:ruin": "ruin=1 an drachentor L0: draws 14 > 13",
+            "porta:gate:wMason": "wMason=1 an drachentor L0: draws 14 > 13",
+            "porta:gate:wMono": "wMono=1 an drachentor L0: draws 14 > 13",
+            "schmiede:weapon:griff": "griff=0.46 an degen L0: tris 22344 > 22000"
+        }
+    }
+}
