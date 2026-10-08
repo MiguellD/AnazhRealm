@@ -269,6 +269,11 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: 'dispose(){this.material.removeEventListener("dispose",this.onMaterialDispose),this.geometry.removeEventListener("dispose",this.onGeometryDispose),this.onDispose()}', organ: "_renderObjekteLoesen (r184 löst ein Render-Objekt nur beim Stoff-dispose)" },
     { file: "vendor/three.webgpu.min.js", sub: "createRenderObject(e,t,r,s,i,n,a,o,u,l,d){const c=this.getChainMap(d),h=new vy(e,t,r,s,i,n,a,o,u,l);return h.onDispose=", organ: "_renderObjektRegister (die Hülle an der Klasse der Render-Objekt-Verwaltung)" },
     { file: "vendor/three.webgpu.min.js", sub: "this.id=_y++,this._nodes=e,this._geometries=t,this.renderer=r,this.object=s", organ: "_renderObjekteLoesen (jedes Render-Objekt kennt seinen Renderer)" },
+    // DER KNOTEN-BAU gehört seinem Schlüssel (Frost-Nachbesserung 5): Cache je initialCacheKey (6:378979), Auswurf beim letzten
+    // Nutzer (6:380856), die uuid im Schlüssel nur bei Instanz-Senke · count > 1 · Morph (6:209550) — nur dort löst die Lösung ihn.
+    { file: "vendor/three.webgpu.min.js", sub: "getForRenderCacheKey(e){return e.initialCacheKey}", organ: "_renderObjekteLoesen (der Knoten-Bau ist je Schlüssel gecacht)" },
+    { file: "vendor/three.webgpu.min.js", sub: "delete(e){if(e.isRenderObject){const t=this.get(e).nodeBuilderState;void 0!==t&&(t.usedTimes--,0===t.usedTimes&&this.nodeBuilderCache.delete(this.getForRenderCacheKey(e)))}return super.delete(e)}", organ: "_renderObjekteLoesen (Nodes.delete wirft den Knoten-Bau beim letzten Nutzer aus dem Cache)" },
+    { file: "vendor/three.webgpu.min.js", sub: '(e.isInstancedMesh||e.count>1||Array.isArray(e.morphTargetInfluences))&&(s+=e.uuid+",")', organ: "_renderObjekteLoesen (nur ein Schlüssel mit uuid gehört dem Objekt)" },
     { file: "vendor/three.webgpu.min.js", sub: "draw(e,t){const{object:r,context:s,pipeline:i}=e,n=this.get(s),a=this.get(i),o=a.pipeline;", organ: "_indexWacheDraw (die Index-Wache am Draw jedes Backends)" },
     { file: "vendor/three.webgpu.min.js", sub: "getIndex(){return this._geometries.getIndex(this)}", organ: "_indexWacheDraw (der Index, den der Draw bindet)" },
     { file: "vendor/three.webgpu.min.js", sub: "async init(e){await super.init(e);const t=this.parameters;", organ: "_gpuWacheAn (das Device jedes Backends nach seinem init)" },

@@ -1110,8 +1110,14 @@ function entsorgungen(srcRoh) {
             : null;
     const artVon = (e, bind) => {
         if (!e) return null;
-        if (e.type === "Identifier") return bind.get(e.name) || null;
-        if (e.type === "MemberExpression") return traeger(e) || artVon(e.object, bind);
+        if (e.type === "Identifier") return bind.get(e.name) || (/Memo$/.test(e.name) ? "memo" : null);
+        // ein Memo-Eintrag (`this._xMemo.get(k)`, ein Element von `memo.values()`): er gehört dem Memo, nie dem Leser
+        if (e.type === "MemberExpression")
+            return (
+                traeger(e) ||
+                artVon(e.object, bind) ||
+                (!e.computed && e.property && /Memo$/.test(e.property.name) ? "memo" : null)
+            );
         if (e.type === "ConditionalExpression") return artVon(e.consequent, bind) || artVon(e.alternate, bind);
         if (e.type === "LogicalExpression") return artVon(e.left, bind) || artVon(e.right, bind);
         if (e.type === "ArrayExpression") {
@@ -1187,13 +1193,13 @@ function entsorgungen(srcRoh) {
 function scanEntsorgungsWand(srcRoh, besitzer = ENTSORGUNG_BESITZER) {
     const errs = [];
     const funde = entsorgungen(srcRoh);
-    const deutsch = { geometry: "Geometrie", material: "Stoff" };
+    const deutsch = { geometry: "Geometrie", material: "Stoff", memo: "Memo-Eintrag" };
     for (const f of funde) {
         const b = besitzer[f.methode];
         if (b && b.arten.includes(f.art)) continue;
         errs.push(
-            `Entsorgungs-Wand: anazhRealm.js:${f.zeile} \`${f.methode}\` entsorgt ${deutsch[f.art]} (\`${f.text}\`), die ihr ` +
-                `nicht gehört — Gruppen mit Welt-Vorlagen entsorgen über \`_disposeSoulGroup\`, eigene frische Objekte ` +
+            `Entsorgungs-Wand: anazhRealm.js:${f.zeile} \`${f.methode}\` entsorgt ${deutsch[f.art]} (\`${f.text}\`) — nicht ihr Besitz: ` +
+                `Gruppen mit Welt-Vorlagen entsorgen über \`_disposeSoulGroup\`, eigene frische Objekte ` +
                 `nur ihr Besitzer (ENTSORGUNG_BESITZER)`
         );
     }
@@ -1441,6 +1447,12 @@ function main() {
                     : null,
                 /`_disposeSoulGroup` entsorgt Stoff/,
             ],
+            // I ein Memo-Eintrag, direkt entsorgt (die Membran-Geometrie gehört allen Toren ihrer Gestalt)
+            [
+                "I",
+                taeter("_frostFormI", "        this._membranGeoMemo.get(o).dispose();"),
+                /`_frostFormI` entsorgt Memo-Eintrag/,
+            ],
         ];
         const entsorgungHeil = scanEntsorgungsWand(stamm);
         const formFeuert = formen.map(([id, src, muster]) => {
@@ -1462,7 +1474,7 @@ function main() {
             process.exit(1);
         }
         console.log(
-            `✅ SELBST-TEST: die Entsorgungs-Wand feuert je Form (A traverse · B for…of · C children.forEach · D Zwischen-Variable · E Stoff-forEach · F Stoff-for…of · G Stoff in der Regel · H tote Zeile), heute 0 — ${formFeuert[1].e[0]}`
+            `✅ SELBST-TEST: die Entsorgungs-Wand feuert je Form (A traverse · B for…of · C children.forEach · D Zwischen-Variable · E Stoff-forEach · F Stoff-for…of · G Stoff in der Regel · H tote Zeile · I Memo-Eintrag), heute 0 — ${formFeuert[1].e[0]}`
         );
         // Die Karten-Wand muss feuern: ein Canvas im Schicht-Schreiber.
         const kartenFeuert =

@@ -72733,17 +72733,27 @@ class AnazhRealm {
     // Objekt an das dispose-Ereignis seines STOFFS (vendor/three.webgpu.min.js `this.material.addEventListener("dispose",
     // this.onMaterialDispose)`) und löst es selbst nur, wenn der Stoff fällt — ein geteilter Stoff fällt nie. Befund
     // (Frost-Nachbesserung 4, Radeon): jeder Regler-Wert der Werkstatt hängte 8 Hörer an die 8 geteilten Foundry-Stoffe,
-    // +3,2–4,7 MB JS je Wert. Die Lösung nimmt die Hörer ab (Stoff und Geometrie), den Knoten-Zustand und die eigenen
-    // Bindegruppen; die Pipeline bleibt im Cache, geteilte Gruppen gehören allen.
+    // +3,2–4,7 MB JS je Wert. Die Lösung nimmt die Hörer ab (Stoff und Geometrie) und die eigenen Bindegruppen; die Pipeline
+    // bleibt im Cache, geteilte Gruppen gehören allen.
+    // DER KNOTEN-BAU gehört seinem SCHLÜSSEL, nicht dem Objekt (Frost-Nachbesserung 5): r184 cacht ihn je
+    // `initialCacheKey` (6:378979) und wirft ihn aus dem Cache, wenn sein letzter Nutzer geht (`Nodes.delete`, 6:380856).
+    // Ein Leib aus geteilten Stoffen teilt den Schlüssel mit der Seele, die nach ihm kommt — die Lösung des Wolfs warf
+    // den Knoten-Bau, den der Mensch eben noch hatte, und jede Rückkehr kompilierte neu (Radeon, 10 Seelenwechsel bei
+    // offenem Tab: Welt +178 Pipelines / +175 Shader-Module, Ich-Bühne +18, Hof +53). Er fällt nur, wo der Schlüssel das
+    // Objekt selbst trägt — r184 schreibt die uuid hinein bei Instanz-Senke, count > 1 oder Morph (6:209550): dort hält der
+    // Zustand das Objekt und kann keinem anderen dienen.
     static _renderObjekteLoesen(obj) {
         const ros = obj && obj.__renderObjekte;
         if (!ros) return;
         obj.__renderObjekte = null;
         for (const ro of ros) {
             const rend = ro.renderer;
+            const o = ro.object;
             if (ro.material) ro.material.removeEventListener("dispose", ro.onMaterialDispose);
             if (ro.geometry) ro.geometry.removeEventListener("dispose", ro.onGeometryDispose);
-            if (rend && rend._nodes) rend._nodes.delete(ro);
+            const eigenerSchluessel =
+                !!o && (o.isInstancedMesh === true || o.count > 1 || Array.isArray(o.morphTargetInfluences));
+            if (eigenerSchluessel && rend && rend._nodes) rend._nodes.delete(ro);
             if (rend && rend._bindings && ro._bindings)
                 for (const bg of ro._bindings) {
                     const b0 = bg.bindings && bg.bindings[0];
