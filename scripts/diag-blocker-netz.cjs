@@ -15,8 +15,12 @@
 //   (L) DER LÖSER (`_stepCharacterStructures`, Kapsel des Spielers und Hülle des Wagens): je Runde Körper an, in und zwischen
 //       den Boxen lösen byte-gleich wie die Schleife über den Bestand (Position, Auflage, Wand-Kontakt, Schübe der Hülle), und
 //       er löst keinen Eintrag, dessen Hülle der Körper an seiner Stelle nicht erreicht (vorher jede Box im 60-m-Umkreis);
-//   (K) KONSISTENZ: das Netz ist der Bestand — jeder Eintrag mit Boxen steht in den Zellen seiner Hülle, keine Zelle trägt
-//       einen Eintrag außerhalb, die Ordnung des Bestands steigt mit dem Array;
+//   (N) DIE NÄHE DES TIER-LEIBS (`_kreaturHuellenKontakt`): je Runde baut ein echtes Tier an, zwischen und fern der Boxen seine
+//       Nähe-Liste — dieselbe Menge in derselben Ordnung wie die Schleife über den Bestand, auch für einen Beweger (ein
+//       Eintrag, dessen Position nach dem Eintritt wandert, wie das gerittene Werk), und die Frage fasst nur die Plätze um das
+//       Tier an (vorher den ganzen Bestand je Neubau);
+//   (K) KONSISTENZ: das Netz ist der Bestand — jeder Eintrag mit Boxen steht in den Zellen seiner Hülle, jeder Eintrag in der
+//       Zelle seines Platzes, keine Zelle trägt einen Eintrag außerhalb, die Ordnung des Bestands steigt mit dem Array;
 //   (Q) QUELLE: `_fieldRaycast` liest das Netz und keine Schleife über den Bestand; jeder Eintritt (push), Austritt (splice)
 //       und jedes Schreiben der Boxen (`_blockerStampReach`) stempelt; kein anderer Schreiber des Bestands im Stamm;
 //   (P) kein Page-Error.
@@ -404,6 +408,66 @@ async function probe() {
         return R;
     };
 
+    // DIE NÄHE DES TIER-LEIBS: die Liste, die `_kreaturHuellenKontakt` baut, gegen das Orakel (die Schleife über den Bestand,
+    // V18.535); ein Beweger (Position nach dem Eintritt verschoben, gemeldet wie vom Reiter-Schritt) gehört dazu
+    const tier = (st.creatures || []).find((c) => c && c.userData && c.position);
+    let beweger = null;
+    const tierRunde = (name, n) => {
+        const R = { name, proben: 0, abweichung: [], liste: 0, kandidaten: 0, bestand: 0, bewegerDrin: 0 };
+        if (!tier) return Object.assign(R, { fehlt: true });
+        const ud = tier.userData;
+        const p = tier.position;
+        const alt = { x: p.x, y: p.y, z: p.z, nah: ud._huellenNah };
+        const L = r._kreaturHueftL(tier);
+        const boxen = ortsBoxen();
+        for (let i = 0; i < n; i++) {
+            let x, z;
+            const w = rng();
+            if (beweger && w < 0.2) {
+                x = beweger.position.x - 10 + rng() * 20;
+                z = beweger.position.z - 10 + rng() * 20;
+            } else if (w < 0.8 && boxen.length) {
+                const b = boxen[Math.floor(rng() * boxen.length)];
+                x = b.minX - 6 + rng() * (b.maxX - b.minX + 12);
+                z = b.minZ - 6 + rng() * (b.maxZ - b.minZ + 12);
+            } else {
+                x = ox - 140 + rng() * 280;
+                z = oz - 140 + rng() * 280;
+            }
+            const h0 = r.getTerrainHeightAt(x, z);
+            p.set(x, Number.isFinite(h0) ? h0 : 0, z);
+            const soll = [];
+            for (const e of st.architectures) {
+                if (!e || !e.position) continue;
+                const rr = 8 + (e._blockerReach || 0);
+                if (Math.abs(e.position.x - x) > rr || Math.abs(e.position.z - z) > rr) continue;
+                soll.push(e);
+            }
+            ud._huellenNah = null;
+            r._kreaturHuellenKontakt(tier, L, x, z);
+            const ist = ud._huellenNah ? ud._huellenNah.liste : [];
+            R.proben++;
+            R.liste += soll.length;
+            R.bestand += st.architectures.length;
+            if (typeof r._blockerUmPlatz === "function") R.kandidaten += r._blockerUmPlatz(x, z, 8 + 1e-6, []).length;
+            else R.kandidaten += st.architectures.length;
+            if (beweger && soll.includes(beweger)) R.bewegerDrin++;
+            const gleich = soll.length === ist.length && soll.every((e, k) => e === ist[k]);
+            if (!gleich) {
+                R.abweichungen = (R.abweichungen || 0) + 1;
+                if (R.abweichung.length < 3)
+                    R.abweichung.push({
+                        ort: [x, z].map((v) => +v.toFixed(2)),
+                        soll: soll.map((e) => e.type + "#" + e.id).slice(0, 6),
+                        ist: ist.map((e) => e.type + "#" + e.id).slice(0, 6),
+                    });
+            }
+        }
+        p.set(alt.x, alt.y, alt.z);
+        ud._huellenNah = alt.nah;
+        return R;
+    };
+
     // DIE KONSISTENZ des Netzes gegen den Bestand
     const konsistenz = () => {
         const f = [];
@@ -419,6 +483,17 @@ async function probe() {
                 f.push(`${e.type}#${e.id}: nicht im Netz (gen ${e._blockerGen} statt ${N.gen})`);
             if (!(e._blockerSeq > seq)) f.push(`${e.type}#${e.id}: die Ordnung steigt nicht mit dem Array`);
             seq = e._blockerSeq;
+            if (e.position && !(N.beweger && N.beweger.has(e))) {
+                const pk = e._blockerPlatz;
+                const Zp = r.constructor.BLOCKER_ZELLE;
+                const k = Math.floor(e.position.x / Zp) * 2097152 + Math.floor(e.position.z / Zp);
+                if (!pk || !pk.length) f.push(`${e.type}#${e.id}: steht auf keinem Platz`);
+                else if (pk[0] !== r.constructor.BLOCKER_RIESE && !pk.includes(k))
+                    f.push(`${e.type}#${e.id}: seine Position liegt in Zelle ${k} außerhalb seines Platzes`);
+                else
+                    for (const kk of pk)
+                        if (!(N.plaetze.get(kk) || []).includes(e)) f.push(`${e.type}#${e.id}: fehlt auf Platz ${kk}`);
+            }
             if (e.blockerAABBs && e.blockerAABBs.length) {
                 const keys = e._blockerZellen;
                 if (!keys || !keys.length) f.push(`${e.type}#${e.id}: trägt Boxen, steht in keiner Zelle`);
@@ -440,12 +515,15 @@ async function probe() {
         }
         for (const [k, zelle] of N.zellen)
             for (const e of zelle) if (!im.has(e)) f.push(`Zelle ${k} trägt ${e.type}#${e.id} außerhalb des Bestands`);
+        for (const [k, zelle] of N.plaetze || [])
+            for (const e of zelle) if (!im.has(e)) f.push(`Platz ${k} trägt ${e.type}#${e.id} außerhalb des Bestands`);
         return f.slice(0, 8);
     };
-    const aus = { runden: [], konsistenz: [], loeser: [] };
+    const aus = { runden: [], konsistenz: [], loeser: [], tier: [] };
     const N = 1200;
     aus.runden.push(runde("Ort", N));
     aus.loeser.push(loeserRunde("Ort", 800));
+    aus.tier.push(tierRunde("Ort", 600));
     aus.konsistenz.push(["Ort", konsistenz()]);
     // (1) Abriss: drei Häuser
     const haeuser = st.architectures.filter((e) => e && typeof e.type === "string" && e.type.startsWith("haus_"));
@@ -455,6 +533,7 @@ async function probe() {
     if (bau && typeof r._evictArchitecture === "function") r._evictArchitecture(bau);
     aus.runden.push(runde("Abriss", N));
     aus.loeser.push(loeserRunde("Abriss", 800));
+    aus.tier.push(tierRunde("Abriss", 600));
     aus.konsistenz.push(["Abriss", konsistenz()]);
     // (3) ein Haus dreht sich und stempelt neu
     const h2 = st.architectures.find((e) => e && typeof e.type === "string" && e.type.startsWith("haus_"));
@@ -464,19 +543,34 @@ async function probe() {
     }
     aus.runden.push(runde("Neu gestempelt", N));
     aus.loeser.push(loeserRunde("Neu gestempelt", 800));
+    aus.tier.push(tierRunde("Neu gestempelt", 600));
     aus.konsistenz.push(["Neu gestempelt", konsistenz()]);
     // (4) ein neues Array (ein geladener Bestand)
     st.architectures = st.architectures.slice();
     aus.runden.push(runde("Neues Array", N));
     aus.loeser.push(loeserRunde("Neues Array", 800));
+    aus.tier.push(tierRunde("Neues Array", 600));
     aus.konsistenz.push(["Neues Array", konsistenz()]);
     // (5) neue Bäume
     for (let k = 0; k < 3; k++)
         r.dslRun(["spawn_tree", ["near_player", 20 + k * 9], 5, "eiche", 990 + k], { source: "human" });
     aus.runden.push(runde("Neue Bäume", N));
     aus.loeser.push(loeserRunde("Neue Bäume", 800));
+    aus.tier.push(tierRunde("Neue Bäume", 600));
     aus.konsistenz.push(["Neue Bäume", konsistenz()]);
-    // (6) die Decken-Probe am Ort: Slabs je Strahl
+    // (6) ein Beweger: ein Bau am Ort wandert 25 m (wie das gerittene Werk mit seinem Reiter) und meldet es wie der Reiter-Schritt
+    beweger = st.architectures.find(
+        (e) => e && e.blockerAABBs && e.position && Math.hypot(e.position.x - ox, e.position.z - oz) < 60
+    );
+    if (beweger) {
+        beweger.position.x += 25;
+        if (typeof r._blockerBewegt === "function") r._blockerBewegt(beweger);
+    }
+    aus.runden.push(runde("Beweger", N));
+    aus.loeser.push(loeserRunde("Beweger", 800));
+    aus.tier.push(tierRunde("Beweger", 600));
+    aus.konsistenz.push(["Beweger", konsistenz()]);
+    // (7) die Decken-Probe am Ort: Slabs je Strahl
     slabs = 0;
     for (let i = 0; i < 50; i++) r._ceilingHeadroom();
     aus.decke = { slabsJeStrahl: slabs / 50, beruehrt: 0 };
@@ -498,6 +592,8 @@ async function probe() {
             code("removeArchitecture")
         ),
         kappe: /arches\.splice\(idx, 1\);\s*this\._blockerAustritt\(entry\);/.test(code("_evictArchitecture")),
+        tierFragtPlatz: /this\._blockerUmPlatz\(/.test(code("_kreaturHuellenKontakt")),
+        tierSchleife: /for \(let a = 0; a < arches\.length; a\+\+\)/.test(code("_kreaturHuellenKontakt")),
     };
     return aus;
 }
@@ -530,6 +626,23 @@ function urteil(S, stamm, pageErrors) {
         if (L.geschoben < 50 || L.getragen < 50)
             rot.push(`(L) ${L.name}: zu wenig Schübe oder Auflagen (${L.geschoben} geschoben, ${L.getragen} getragen)`);
     }
+    for (const T of S.tier) {
+        if (T.fehlt) {
+            rot.push(`(N) ${T.name}: kein Tier in der Welt`);
+            continue;
+        }
+        if (T.abweichungen)
+            rot.push(
+                `(N) TIER-LEIB ${T.name}: ${T.abweichungen} von ${T.proben} Nähe-Listen anders als die Schleife über den Bestand — ${JSON.stringify(T.abweichung.slice(0, 2))}`
+            );
+        if (T.kandidaten >= T.bestand)
+            rot.push(
+                `(N) TIER-LEIB ${T.name}: die Frage fasst den ganzen Bestand an (${(T.kandidaten / T.proben).toFixed(0)} Einträge je Neubau, Bestand ${(T.bestand / T.proben).toFixed(0)}) — Rufer _kreaturHuellenKontakt`
+            );
+        if (T.liste < T.proben)
+            rot.push(`(N) ${T.name}: zu wenig Einträge in den Listen (${T.liste} in ${T.proben} Proben)`);
+        if (T.name === "Beweger" && !T.bewegerDrin) rot.push("(N) Beweger: keine Probe traf den Beweger");
+    }
     for (const [name, f] of S.konsistenz) for (const x of f) rot.push(`(K) KONSISTENZ ${name}: ${x}`);
     if (S.decke.slabsJeStrahl > S.decke.beruehrt)
         rot.push(
@@ -548,6 +661,9 @@ function urteil(S, stamm, pageErrors) {
         rot.push("(Q) QUELLE: der Eintritt (`spawnArchitecture`, push) stempelt nicht (`_blockerEintritt`)");
     if (!q.abriss) rot.push("(Q) QUELLE: der Abriss (`removeArchitecture`, splice) löst nicht (`_blockerAustritt`)");
     if (!q.kappe) rot.push("(Q) QUELLE: die Kappe (`_evictArchitecture`, splice) löst nicht (`_blockerAustritt`)");
+    if (!q.tierFragtPlatz)
+        rot.push("(Q) QUELLE: der Tier-Leib (`_kreaturHuellenKontakt`) fragt die Plätze nicht (`_blockerUmPlatz`)");
+    if (q.tierSchleife) rot.push("(Q) QUELLE: der Tier-Leib baut seine Nähe-Liste aus einer Schleife über den Bestand");
     if (stamm.length) rot.push(`(Q) QUELLE: Schreiber des Bestands ohne Stempel: ${stamm.join(" · ")}`);
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
@@ -574,6 +690,12 @@ function stammSchreiber() {
             if (!new RegExp(`\\b${n}\\.(push|splice|pop|shift|unshift)\\(`).test(code)) continue;
             const nach = z.slice(i + 1, i + 3).join("\n");
             if (!/this\._blocker(Eintritt|Austritt)\(entry\)/.test(nach)) fremd.push(`Zeile ${i + 1}: ${code.trim()}`);
+        }
+        // ein Schreiber der Lage eines Eintrags in x/z (das gerittene Werk folgt seinem Reiter) meldet ihn als Beweger
+        if (/\bentry\.position\.[xz]\s*=[^=]/.test(code)) {
+            const nach = z.slice(i + 1, i + 4).join("\n");
+            if (!/this\._blockerBewegt\(entry\)/.test(nach))
+                fremd.push(`Zeile ${i + 1}: ${code.trim()} (Beweger ohne Meldung)`);
         }
     });
     return fremd;
@@ -628,6 +750,15 @@ function stammSchreiber() {
                 `Löser-Rufe je Körper ${(L.rufeNeu / L.koerper).toFixed(1)} (vorher ${(L.rufeAlt / L.koerper).toFixed(1)}), fern ${L.fern} · ` +
                 `Abweichungen ${L.abweichungen || 0}`
         );
+    for (const T of S.tier)
+        console.log(
+            T.fehlt
+                ? `  Tier ${T.name.padEnd(16)} kein Tier`
+                : `  Tier ${T.name.padEnd(16)} ${T.proben} Nähe-Listen, ${(T.liste / T.proben).toFixed(1)} Einträge je Liste · ` +
+                      `Frage ${(T.kandidaten / T.proben).toFixed(1)} Einträge je Neubau (Bestand ${(T.bestand / T.proben).toFixed(0)})` +
+                      (T.name === "Beweger" ? ` · Beweger in ${T.bewegerDrin} Listen` : "") +
+                      ` · Abweichungen ${T.abweichungen || 0}`
+        );
     console.log(
         `  Decken-Probe am Ort: ${S.decke.slabsJeStrahl} Slabs je Strahl, ihr Segment berührt ${S.decke.beruehrt} Boxen`
     );
@@ -639,7 +770,7 @@ function stammSchreiber() {
         process.exit(1);
     }
     console.log(
-        "\nGRÜN — jeder Strahl trifft byte-gleich wie die Schleife über den Bestand und prüft nur die Boxen, die sein Segment berühren; das Netz ist der Bestand."
+        "\nGRÜN — Strahl, Löser und Tier-Leib urteilen byte-gleich wie die Schleife über den Bestand und fassen nur ihre Nachbarschaft an; das Netz ist der Bestand."
     );
     process.exit(0);
 })().catch((e) => {
