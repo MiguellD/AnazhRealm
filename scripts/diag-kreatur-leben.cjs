@@ -171,7 +171,10 @@ probe(
     /\.herdeZug\([\s\S]{0,400}VG\.herde/
 );
 probe("die Ufer-Scheu liest das Gesetz (wasser.tiefenScheuM/uferBias)", /WAS\.tiefenScheuM/);
-probe("der Pirsch-Stopp liest das Gesetz (pirschStoppM; die Neugier hält am persönlichen Raum)", /VG\.jagd\.pirschStoppM/);
+probe(
+    "der Pirsch-Stopp liest das Gesetz (pirschStoppM im Jagd-Weg _kreaturJagdZug; die Neugier hält am persönlichen Raum)",
+    /J\.pirschStoppM/
+);
 probe(
     "das Sprung-Gesetz: der Abflug ist die Parabel des Gang-Gesetzes aus der Huepf-Hoehe der Freude (v0 = √(2·g·h))",
     /Math\.sqrt\(2 \* AnazhRealm\._hopSchwere\(\) \* \(froh \? F\.hopHochM : F\.hopBasisM\)\)/

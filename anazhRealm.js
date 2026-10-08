@@ -18609,7 +18609,8 @@ class AnazhRealm {
         const ud = creature.userData;
         if (!ud) return;
         if (zustand) ud._motionZustand = zustand;
-        else if (ud._motionZustand === "jagd" || ud._motionZustand === "flucht") ud._motionZustand = null;
+        else if (ud._motionZustand === "jagd" || ud._motionZustand === "hetzen" || ud._motionZustand === "flucht")
+            ud._motionZustand = null;
     }
     // KREATUR-LEBEN — der deterministische Verhaltens-Hash (FNV-1a über zwei
     // Zahlen; kein Math.random — dieselbe Kreatur würfelt reproduzierbar).
@@ -18629,7 +18630,7 @@ class AnazhRealm {
         const ud = creature.userData;
         if (!ud) return;
         const z = ud._motionZustand;
-        if (z === "flucht" || z === "schwimmen") {
+        if (z === "flucht" || z === "schwimmen" || z === "hetzen") {
             ud._verhaltenAktion = null;
             return;
         }
@@ -19086,7 +19087,9 @@ class AnazhRealm {
         const VG = AnazhRealm._verhaltenGesetz();
         const temperament = this._creatureTemperament(creature);
         const tProf = VG.temperament.profile[temperament] || VG.temperament.profile.scheu;
-        creature.userData.fearUntil = performance.now() / 1000 + VG.furcht.fearSec * tProf.fleeMul;
+        // die Kampf-Furcht läuft auf der Kreatur-Uhr (Welle LF, Q1: was den Körper bewegt, läuft im Takt — auf der Wand-Uhr
+        // floh ein Tier je nach Bildrate verschieden lang)
+        creature.userData.fearUntil = this.state.creatureAnimationTime + VG.furcht.fearSec * tProf.fleeMul;
         // V18.100 (G4-1) — der Treffer fühlt sich über DASSELBE Substrat wie
         // beim Spieler (ACTION_TO_EMOTION.damage → sorrow+chaos); die binäre
         // "sad"-Projektion fällt aus der Valenz, statt direkt gestempelt zu werden.
@@ -19171,7 +19174,7 @@ class AnazhRealm {
             const lastHunt = creature.userData && creature.userData.lastHuntAt;
             if (
                 Number.isFinite(lastHunt) &&
-                performance.now() / 1000 - lastHunt < AnazhRealm._verhaltenGesetz().jagd.triumphWindowSec
+                this.state.creatureAnimationTime - lastHunt < AnazhRealm._verhaltenGesetz().jagd.triumphWindowSec
             ) {
                 this._feelAction("triumph", { magnitude: 1 });
                 this.journalAppend("relationship", `Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`);
@@ -20090,12 +20093,16 @@ class AnazhRealm {
         const wSpieler = this._creatureWarinessSpieler(creature, NAT, von);
         const jaeger = this._kreaturJaeger;
         if (!jaeger || !jaeger.length || this._creatureTemperament(creature) === "wild") return wSpieler;
-        let best = NAT.noticeRadius;
+        // Ein PIRSCHENDER Jäger bleibt unbemerkt bis jagd.pirschSichtM, ein HETZENDER fällt ab noticeRadius auf (Welle LF:
+        // die Jagd gelingt aus der Pirsch — vorher sah die Beute jeden Jäger auf 22 m und floh, ehe er nahe war).
+        const sichtPirsch = AnazhRealm._verhaltenGesetz().jagd.pirschSichtM;
+        let best = Infinity;
         let J = null;
         for (const j of jaeger) {
             if (j === creature || !j.position) continue;
+            const sicht = j.userData && j.userData._motionZustand === "hetzen" ? NAT.noticeRadius : sichtPirsch;
             const d = Math.hypot(j.position.x - creature.position.x, j.position.z - creature.position.z);
-            if (d < best) {
+            if (d < sicht && d < best) {
                 best = d;
                 J = j;
             }
@@ -20112,7 +20119,7 @@ class AnazhRealm {
     // Die Wariness vor dem SPIELER (Aura-Menace × Natur × Bindung × Modus + frische Kampf-Furcht); merkt seinen Ort und
     // den Flucht-Radius in `von`.
     _creatureWarinessSpieler(creature, NAT, von) {
-        const now = performance.now() / 1000;
+        const now = this.state.creatureAnimationTime; // die Kampf-Furcht auf der Kreatur-Uhr (damageCreature)
         const ud = creature.userData || {};
         const fearActive = Number.isFinite(ud.fearUntil) && now < ud.fearUntil;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
@@ -20154,38 +20161,39 @@ class AnazhRealm {
         return dist < VG.jagd.radius;
     }
 
-    // ZWEITER JAGD-SINN: das WILDE Wesen wittert Beute über das Geruch-Feld (`_scentAt`; Quelle =
-    // Beute-Position, strength = sizeFactor, der Wind trägt). Vier Proben (N/S/O/W) im Abstand
-    // VERHALTEN.jagd.scentProbeM → stärkste Richtung; kein Gradient → null (Caller wandert neutral).
+    // ZWEITER JAGD-SINN: das WILDE Wesen wittert Beute über das Geruch-Feld (`_scentAt` an seiner Nase; Quelle = die
+    // Beute, strength = sizeFactor, der Wind trägt). DIE WITTERUNG FÜHRT ZUR BEUTE (Welle LF 08.10.): von allen Tieren, die
+    // Beute sind (_kreaturIstBeute — nicht wild, höchstens jagd.beuteMasse × die eigene Masse) und in scentRangeM liegen,
+    // wählt es das, dessen Geruch am stärksten herüberweht, merkt es als `userData._beute` und liefert die Richtung zu ihm
+    // (der Jagd-Weg _kreaturJagdZug führt dorthin). Vorher folgte es dem Gradienten des Felds über vier Proben: nah an der
+    // Quelle wog der Wind-Winkel bis zwölfmal mehr als der Abstand, der Gradient zeigte vom Ziel fort (Leben-Schau 07.10.:
+    // ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten). Kein Ziel → null (der Aufrufer wandert neutral).
     // Gates wie _creatureHuntDrive: nur pfad; verängstigt (wariness ≥ fleeThreshold) jagt nicht.
     _creatureScentHuntDir(creature, wariness) {
+        const ud = creature.userData || {};
+        ud._beute = null;
         if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return null;
         if (this._creatureTemperament(creature) !== "wild") return null;
         const VG = AnazhRealm._verhaltenGesetz();
         if (wariness >= VG.furcht.fleeThreshold) return null;
-        const HUNT = VG.jagd;
-        const scentRange = HUNT.scentRangeM || 50;
-        const probeStep = HUNT.scentProbeM || 4;
+        const scentRange = VG.jagd.scentRangeM;
         const cx = creature.position.x;
         const cz = creature.position.z;
-        // Beute = scheu + sanft + wehrhaft (wild jagt nicht wild). Strength = sizeFactor — große Beute
-        // riecht stärker.
-        const sources = this._creatureScentSourcesScratch || (this._creatureScentSourcesScratch = []);
-        sources.length = 0;
+        const quelle =
+            this._creatureScentSourcesScratch || (this._creatureScentSourcesScratch = [{ x: 0, z: 0, strength: 1 }]);
         const creatures = this.state.creatures || [];
         // sizeFactor PRO SEELE memoizen (hängt nur an den frozen Body-Parts der Soul): lazy
         // `this._scentSizeBySoul: Map<soulName, sizeFactor>` statt je Tick × Quelle neu rechnen.
         const sizeBySoul = this._scentSizeBySoul || (this._scentSizeBySoul = new Map());
+        const t = (performance.now() || 0) / 1000;
+        let best = null,
+            bestS = 0;
         for (let i = 0; i < creatures.length; i++) {
             const other = creatures[i];
-            if (!other || other === creature) continue;
-            const otherTemp = this._creatureTemperament(other);
-            if (otherTemp === "wild") continue; // wild jagt nicht wild
+            if (!this._kreaturIstBeute(creature, other)) continue;
             const dx = other.position.x - cx;
             const dz = other.position.z - cz;
             if (dx * dx + dz * dz > scentRange * scentRange) continue;
-            // sizeFactor als strength (eine grosse Beute zieht stärker an) —
-            // PRO SOUL gecacht.
             const soulName = other.userData && other.userData.soul;
             let sizeFactor;
             if (soulName && sizeBySoul.has(soulName)) {
@@ -20197,28 +20205,143 @@ class AnazhRealm {
             } else {
                 sizeFactor = 1.0;
             }
-            sources.push({ x: other.position.x, z: other.position.z, strength: sizeFactor });
-            // Cap, damit ein dichter Schwarm den Scent-Pfad nicht O(N²) macht.
-            if (sources.length >= 12) break;
+            quelle[0].x = other.position.x;
+            quelle[0].z = other.position.z;
+            quelle[0].strength = sizeFactor;
+            const witterung = this._scentAt(cx, cz, quelle, { time: t });
+            if (witterung > bestS) {
+                bestS = witterung;
+                best = other;
+            }
         }
-        if (sources.length === 0) return null;
-        // DER GRADIENT des Geruchs (Q3): vier Proben im Abstand probeStep (±x, ±z) als zentrale Differenz — die Richtung
-        // ist die des Gefälles, nicht die beste von vier Himmelsachsen (R-D12: die Witterungs-Jagd lief zu 91–98,9 % auf
-        // einer Achse). Die Stärke des Gefälles über die Proben-Spanne ist der Gewinn eines Schritts bergauf im Geruch.
-        const t = (performance.now() || 0) / 1000;
-        const ex = this._scentAt(cx + probeStep, cz, sources, { time: t });
-        const wx = this._scentAt(cx - probeStep, cz, sources, { time: t });
-        const nz = this._scentAt(cx, cz + probeStep, sources, { time: t });
-        const sz = this._scentAt(cx, cz - probeStep, sources, { time: t });
-        const gx = (ex - wx) / 2;
-        const gz = (nz - sz) / 2;
-        // Gradient < 0.02 je Proben-Schritt ist Rauschen → kein Tunnel-Drift; ein klarer downwind-Gradient (Beute in
-        // 20–30 m) liegt typisch bei 0.1–0.5 und geht immer durch.
-        const gain = Math.hypot(gx, gz);
-        if (gain < 0.02) return null;
+        if (!best) return null;
+        ud._beute = best;
+        const dx = best.position.x - cx,
+            dz = best.position.z - cz;
+        const d = Math.hypot(dx, dz) || 1;
         const out = this._creatureScentDirScratch || (this._creatureScentDirScratch = new THREE.Vector3());
-        out.set(gx / gain, 0, gz / gain);
+        out.set(dx / d, 0, dz / d);
         return out;
+    }
+
+    // DIE MASSE eines Tiers (Welle LF): die Größe seiner Gattung (Dial size, wie gegossen) × seine Körpergröße — dieselbe
+    // Masse, aus der das Temperament der Gattung das Gemüt liest; gecacht je Gattung × Größe.
+    _kreaturMasse(creature) {
+        const ud = creature.userData || {};
+        const bs = Number.isFinite(ud.bodySize) ? ud.bodySize : 1;
+        const gattung = this._kreaturGattung(creature);
+        const key = gattung + "|" + bs;
+        if (ud._masseKey === key) return ud._masse;
+        const d = this._ofenKreaturDials(gattung, ud.gussDials || null);
+        if (!d || !d.dials) return AnazhRealm._kernPflichtBruch("tetrapoda:GATTUNGEN." + gattung);
+        ud._masse = d.dials.size * bs;
+        ud._masseKey = key;
+        return ud._masse;
+    }
+
+    // IST DAS BEUTE für diesen Jäger? Nicht wild (wild jagt nicht wild), nicht im Sterben, und höchstens jagd.beuteMasse ×
+    // die Masse des Jägers (Welle LF: der Wolf jagt Hirsch und Fuchs, nie den Bären).
+    _kreaturIstBeute(jaeger, o) {
+        if (!o || o === jaeger || !o.position || !o.userData || o.userData.dying) return false;
+        if (this._creatureTemperament(o) === "wild") return false;
+        return this._kreaturMasse(o) <= AnazhRealm._verhaltenGesetz().jagd.beuteMasse * this._kreaturMasse(jaeger);
+    }
+
+    // DIE JAGD (Welle LF 08.10.): der EINE Weg eines Jägers zu seinem Ziel (der Spieler oder seine Beute, zielKey benennt
+    // es). DAS RUDEL — die Jäger desselben Ziels (der Vor-Takt) — verteilt sich auf dem Ring jagd.hetzM um das Ziel: die
+    // Plätze liegen im Winkel-Abstand 2π/n, in der Reihenfolge, in der die Jäger um das Ziel stehen, um ihre mittlere
+    // Richtung. Wer seinen Platz nicht hat, pirscht (Pirsch-Tempo) zum Platz — nah am Ring kreist er außen herum, statt
+    // durch das Ziel zu laufen; wer in seinem Sektor auf dem Ring steht, HETZT im Sprint der Gestalt (STEUER sprintTempo)
+    // auf das Ziel und hält erst ein, wenn es weiter als drei Ringe davonläuft. LÄUFT DAS ZIEL DAVON (sein Lauf vx, vz zeigt
+    // vom Jäger fort, schneller als ein Schritt), hetzt der Jäger schon aus drei Ringen. Vorher pirschte jeder Jäger einzeln
+    // im Schritt-Tempo geradewegs auf das Ziel (Leben-Schau 07.10.: drei Wölfe von einer Seite, größte Lücke 239–288°; der
+    // Sprinter entkam immer).
+    _kreaturJagdZug(creature, tx, tz, zielKey, direction, speed, hueftL, vx = 0, vz = 0) {
+        const J = AnazhRealm._verhaltenGesetz().jagd;
+        const ud = creature.userData;
+        const p = creature.position;
+        ud._jagdZiel = zielKey;
+        const dx = tx - p.x,
+            dz = tz - p.z;
+        const d = Math.hypot(dx, dz);
+        const TAU = Math.PI * 2;
+        const eigen = Math.atan2(p.x - tx, p.z - tz);
+        let sx = Math.sin(eigen),
+            sz = Math.cos(eigen),
+            n = 1;
+        const rudel = this._rudelWinkel || (this._rudelWinkel = []);
+        rudel.length = 0;
+        for (const j of this._kreaturJaeger || []) {
+            if (j === creature || !j.userData || j.userData._jagdZiel !== zielKey || j.userData.dying) continue;
+            const w = Math.atan2(j.position.x - tx, j.position.z - tz);
+            rudel.push(w);
+            sx += Math.sin(w);
+            sz += Math.cos(w);
+            n++;
+        }
+        let platz = eigen;
+        if (n > 1) {
+            const mittel = Math.atan2(sx, sz);
+            const rel = (w) => {
+                const r = w - mittel;
+                return r - TAU * Math.round(r / TAU);
+            };
+            const re = rel(eigen);
+            let rang = 0;
+            for (const w of rudel) if (rel(w) < re) rang++;
+            platz = mittel + (rang - (n - 1) / 2) * (TAU / n);
+        }
+        let abw = eigen - platz;
+        abw -= TAU * Math.round(abw / TAU);
+        // UMSTELLT: das Rudel hetzt erst, wenn es das Ziel umringt — die größte Winkel-Lücke zwischen den Jägern ist höchstens
+        // anderthalb Plätze breit (allein ist man immer „umstellt"); vorher hetzte, wer zuerst auf dem Ring stand.
+        let umstellt = true;
+        if (n > 1) {
+            rudel.push(eigen);
+            rudel.sort((a, b) => a - b);
+            let luecke = 0;
+            for (let k = 0; k < rudel.length; k++) {
+                const nx = k + 1 < rudel.length ? rudel[k + 1] : rudel[0] + TAU;
+                if (nx - rudel[k] > luecke) luecke = nx - rudel[k];
+            }
+            umstellt = luecke <= 1.5 * (TAU / n);
+        }
+        const hetzt = ud._motionZustand === "hetzen";
+        const davon = d > 1e-6 && (vx * dx + vz * dz) / d > AnazhRealm._steuerGesetz().tempoEinheit(hueftL);
+        if (((hetzt || davon) && d <= 3 * J.hetzM) || (d <= J.hetzM && Math.abs(abw) <= Math.PI / n && umstellt)) {
+            this._kreaturZustandStempel(creature, "hetzen");
+            // die Ankunft gegen ein LAUFENDES Ziel: das Brems-Tempo vor dem Biss plus der Lauf des Ziels von ihm fort — sonst
+            // bremste der Hetzer vor einem Sprinter dort, wo sein Brems-Tempo dessen Lauf glich (3,8 m, nie in Biss-Weite)
+            const K = AnazhRealm._steuerGesetz();
+            const fort = d > 1e-6 ? Math.max(0, (vx * dx + vz * dz) / d) : 0;
+            const sprint = K.sprintTempo(hueftL);
+            const vh = d > J.pirschStoppM ? Math.min(sprint, K.ankunftTempo(d - J.pirschStoppM, sprint) + fort) : 0;
+            if (d > 1e-6) direction.set((dx / d) * vh, 0, (dz / d) * vh);
+            else direction.set(0, 0, 0);
+            return;
+        }
+        this._kreaturZustandStempel(creature, "jagd");
+        const v = speed * J.speedBoost;
+        if (d < 1.5 * J.hetzM && Math.abs(abw) > Math.PI / (4 * n)) {
+            // außen herum: tangential zum Platz (die Drehung um das Ziel, die die Abweichung schließt), radial auf den Ring
+            const dreh = abw > 0 ? -1 : 1;
+            const ux = Math.cos(eigen) * dreh,
+                uz = -Math.sin(eigen) * dreh;
+            const rad = Math.max(-1, Math.min(1, (d - J.hetzM) / J.hetzM));
+            const wx = ux + (d > 1e-6 ? (dx / d) * rad : 0),
+                wz = uz + (d > 1e-6 ? (dz / d) * rad : 0);
+            const wl = Math.hypot(wx, wz) || 1;
+            direction.set((wx / wl) * v, 0, (wz / wl) * v);
+            return;
+        }
+        if (d <= J.hetzM) {
+            // auf dem Platz: warten, bis das Rudel umstellt (die Pirsch hält)
+            direction.set(0, 0, 0);
+            return;
+        }
+        const qx = tx + Math.sin(platz) * J.hetzM - p.x,
+            qz = tz + Math.cos(platz) * J.hetzM - p.z;
+        this._kreaturZiel(direction, qx, qz, Math.hypot(qx, qz), v);
     }
 
     // SEPARATIONS-KRAFT am EINEN Bewegungs-Chokepoint: updateCreatures ruft sie JEDEN Frame auf die
@@ -20641,7 +20764,8 @@ class AnazhRealm {
     // identisch (pfad-only); Cooldown identisch.
     _tickCreatureScentStrike(creature) {
         const HUNT = AnazhRealm._verhaltenGesetz().jagd;
-        const now = performance.now() / 1000;
+        // der Biss-Takt läuft auf der Kreatur-Uhr (Welle LF, Q1: was den Körper bewegt, läuft im Takt)
+        const now = this.state.creatureAnimationTime;
         const ud = creature.userData || {};
         if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
         // Beute in Strike-Range finden (Bestes Ziel = nächstes nicht-wildes Wesen).
@@ -20650,8 +20774,7 @@ class AnazhRealm {
         const creatures = this.state.creatures || [];
         for (let i = 0; i < creatures.length; i++) {
             const other = creatures[i];
-            if (!other || other === creature) continue;
-            if (this._creatureTemperament(other) === "wild") continue;
+            if (!this._kreaturIstBeute(creature, other)) continue;
             const dx = other.position.x - creature.position.x;
             const dz = other.position.z - creature.position.z;
             const dist = Math.hypot(dx, dz);
@@ -20685,7 +20808,7 @@ class AnazhRealm {
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
         if (dist > HUNT.strikeRange) return false;
         const ud = creature.userData || {};
-        const now = performance.now() / 1000;
+        const now = this.state.creatureAnimationTime; // der Biss-Takt auf der Kreatur-Uhr (Welle LF)
         if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
         const stats = this.computeCreatureStats(creature).stats || {};
         // ZENSUS-REST V18.488 — derselbe attackSpeed-Biss-Takt wie die
@@ -21618,8 +21741,22 @@ class AnazhRealm {
         // Witterung — _creatureWariness liest die Liste (die Beute floh vorher nur vor dem Spieler, R-D4/K-D11).
         const jaeger = this._kreaturJaeger || (this._kreaturJaeger = []);
         jaeger.length = 0;
-        for (const c of this.state.creatures)
-            if (c && c.userData && c.userData._motionZustand === "jagd" && !c.userData.dying) jaeger.push(c);
+        for (const c of this.state.creatures) {
+            const zj = c && c.userData && c.userData._motionZustand;
+            if ((zj === "jagd" || zj === "hetzen") && !c.userData.dying) jaeger.push(c);
+        }
+        // DER LAUF DES SPIELERS in diesem Takt (die Lage-Änderung, gleich welcher Weg ihn bewegt): ein Jäger hetzt, wenn
+        // sein Ziel davonläuft (_kreaturJagdZug).
+        {
+            const sa =
+                this._spielerLageAlt || (this._spielerLageAlt = { x: playerPos.x, z: playerPos.z, vx: 0, vz: 0 });
+            const dtS = delta > 1e-6 ? delta : 1 / 60;
+            sa.vx = (playerPos.x - sa.x) / dtS;
+            sa.vz = (playerPos.z - sa.z) / dtS;
+            if (!(Math.hypot(sa.vx, sa.vz) < 50)) sa.vx = sa.vz = 0; // ein Sprung der Lage (Teleport) ist kein Lauf
+            sa.x = playerPos.x;
+            sa.z = playerPos.z;
+        }
         // Spatial-Hash fürs Flocking: 5-m-Buckets (= Flocking-Range `dsq < 25`), je Kreatur nur die 3×3-
         // Nachbar-Cells statt O(N²). Map + Buckets als Pool recycelt — keine Allokation pro Frame.
         const FLOCK_CELL = 5;
@@ -21751,15 +21888,18 @@ class AnazhRealm {
                         // KREATUR-LEBEN — der ECHTE Jagd-Zustand stempelt die Motion-
                         // Brücke (das tetrapoda-hunt-Preset war TOTE Daten: kein Pfad
                         // wählte es je — jetzt pirscht der Jäger sichtbar).
-                        this._kreaturZustandStempel(creature, "jagd");
-                        // Der Pirsch-Stopp ist Jagd-Gesetz (pirschStoppM), davor bremst das Ankunfts-Gesetz.
-                        this._kreaturZiel(
+                        // DIE JAGD (Welle LF): der EINE Weg des Jägers — Pirsch, der Platz im Rudel, die Hetze im Sprint.
+                        const sv = this._spielerLageAlt;
+                        this._kreaturJagdZug(
+                            creature,
+                            playerPos.x,
+                            playerPos.z,
+                            "spieler",
                             direction,
-                            playerPos.x - creature.position.x,
-                            playerPos.z - creature.position.z,
-                            Math.hypot(playerPos.x - creature.position.x, playerPos.z - creature.position.z) -
-                                VG.jagd.pirschStoppM,
-                            speed * VG.jagd.speedBoost
+                            speed,
+                            hueftL,
+                            sv.vx,
+                            sv.vz
                         );
                         this._tickCreatureHuntStrike(creature);
                     } else if (wariness >= NAT.fleeThreshold) {
@@ -21771,7 +21911,9 @@ class AnazhRealm {
                         const fd = Math.hypot(fx, fz);
                         if (fd < B.r) {
                             this._kreaturZustandStempel(creature, "flucht");
-                            const fv = fd > 1e-6 ? (speed * NAT.fleeSpeedBoost) / fd : 0;
+                            // DIE FLUCHT IST DER SPRINT DER GESTALT (Welle LF, STEUER sprintTempo): ein Fluchttier galoppiert
+                            // davon (vorher ein Trab, 1,6 × Schlendern — jede Hetze holte es ein, jeder Mensch auch)
+                            const fv = fd > 1e-6 ? AnazhRealm._steuerGesetz().sprintTempo(hueftL) / fd : 0;
                             direction.set(fx * fv, 0, fz * fv);
                         } else {
                             this._kreaturZustandStempel(creature, null);
@@ -21832,10 +21974,22 @@ class AnazhRealm {
                         // Raubtier ("wild") wittert Beute in 50 m → folgt dem Geruch-Gradienten (`_scentAt`, Beute-Kreaturen
                         // als Quellen); sonst neutrales Wandern. Der Beute-Strike läuft separat.
                         const scentDir = this._creatureScentHuntDir(creature, wariness);
-                        if (scentDir) {
-                            // KREATUR-LEBEN — auch die Witterungs-Jagd IST Jagd (ein Stempel).
-                            this._kreaturZustandStempel(creature, "jagd");
-                            direction.copy(scentDir.normalize().multiplyScalar(speed * VG.jagd.speedBoost));
+                        const beute = scentDir && creature.userData._beute;
+                        if (beute) {
+                            // DIE JAGD (Welle LF): die gewitterte Beute ist das Ziel desselben EINEN Wegs wie der Spieler.
+                            const bs = beute.userData._steuer;
+                            const bv = bs && beute.userData._motionZustand === "flucht" ? bs.v : 0;
+                            this._kreaturJagdZug(
+                                creature,
+                                beute.position.x,
+                                beute.position.z,
+                                beute.userData.netId || beute.uuid,
+                                direction,
+                                speed,
+                                hueftL,
+                                Math.sin(beute.rotation.y) * bv,
+                                Math.cos(beute.rotation.y) * bv
+                            );
                             this._tickCreatureScentStrike(creature);
                         } else {
                             this._kreaturZustandStempel(creature, null);
@@ -94277,6 +94431,9 @@ AnazhRealm._verhaltenGesetz = function () {
             // Kern-Pflicht: je Block deckt EIN Feld (alter Kern → Bruch,
             // nie ein Misch-Gesetz aus neuem Leser + fehlender Zeile).
             Number.isFinite(v.jagd.pirschStoppM) &&
+            Number.isFinite(v.jagd.hetzM) &&
+            Number.isFinite(v.jagd.pirschSichtM) &&
+            Number.isFinite(v.jagd.beuteMasse) &&
             v.stimmung &&
             v.stimmung.schwellen &&
             Number.isFinite(v.stimmung.schwellen.weideDiet) &&
@@ -94358,7 +94515,9 @@ AnazhRealm._steuerGesetz = function () {
         typeof k.tempoEinheit === "function" &&
         typeof k.ankunftTempo === "function" &&
         typeof k.herdeZug === "function" &&
-        typeof k.temperamentDerGattung === "function"
+        typeof k.temperamentDerGattung === "function" &&
+        Number.isFinite(S.sprint) &&
+        typeof k.sprintTempo === "function"
     ) {
         AnazhRealm._steuerGesetzMemo = k;
         return k;
@@ -97774,6 +97933,8 @@ AnazhRealm.MOTION_PROFILE_MAP = Object.freeze({
 AnazhRealm.MOTION_ZUSTAND_PROFILES = Object.freeze({
     schwimmen: Object.freeze({ kreatur: "schwimmen" }),
     jagd: Object.freeze({ kreatur: "hunt" }),
+    // die HETZE galoppiert wie die Flucht (Welle LF: der Sprint der Gestalt)
+    hetzen: Object.freeze({ kreatur: "flee" }),
     flucht: Object.freeze({ kreatur: "flee" }),
     // koerper-Zustand kampf: frischer Schwung/Schuss (_koerperKampfZustand) wählt das Lab-Profil "fight"
     // (Garde-Haltung); "angry" lebt über MOTION_EMOTION_PROFILES. Lab-only bleiben "showcase" (kein

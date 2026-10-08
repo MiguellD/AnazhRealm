@@ -4744,7 +4744,7 @@ async function checkBandV1758CreatureNature(ctx) {
         const idx = r.state.creatures.indexOf(timid);
         r.damageCreature(timid, 5, { source: "player" });
         out.hitSetsFear =
-            Number.isFinite(timid.userData.fearUntil) && timid.userData.fearUntil > performance.now() / 1000;
+            Number.isFinite(timid.userData.fearUntil) && timid.userData.fearUntil > r.state.creatureAnimationTime;
         out.hitSetsSad = idx >= 0 && r.state.creatureEmotions[idx] === "sad";
         out.hitFlees = r._creatureWariness(timid) >= NAT.fleeThreshold;
         timid.userData.fearUntil = 0;
@@ -34963,13 +34963,16 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a3HuntDirExists = typeof r._creatureScentHuntDir === "function";
         out.a3StrikeExists = typeof r._tickCreatureScentStrike === "function";
         // (A3b) Konstanten gesetzt
+        // (Welle LF: die Witterung wählt die Beute an der Nase — der Proben-Schritt des Gradienten scentProbeM fiel;
+        // der Ring der Hetze hetzM und die Pirsch-Sicht sind Jagd-Gesetz)
         out.a3ScentRangeM = A._verhaltenGesetz().jagd.scentRangeM;
-        out.a3ScentProbeM = A._verhaltenGesetz().jagd.scentProbeM;
+        out.a3ScentProbeM = A._verhaltenGesetz().jagd.hetzM;
         out.a3ConstsOk =
             typeof out.a3ScentRangeM === "number" &&
             out.a3ScentRangeM >= 30 &&
             typeof out.a3ScentProbeM === "number" &&
-            out.a3ScentProbeM > 0;
+            out.a3ScentProbeM > 0 &&
+            A._verhaltenGesetz().jagd.scentProbeM === undefined;
         // (A3c) SOURCE-PROBE: der Helper ruft _scentAt
         out.a3HelperUsesScent = /_scentAt/.test(window.__codeOf(r._creatureScentHuntDir));
         // (A3d) SOURCE-PROBE: der wander-Pfad in updateCreatures ruft den Helper
@@ -35141,7 +35144,7 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A3a _creatureScentHuntDir Helper existiert", res.a3HuntDirExists === true);
     check("V18.210-A3a2 _tickCreatureScentStrike Helper existiert", res.a3StrikeExists === true);
     check(
-        `V18.210-A3b VERHALTEN.jagd.scentRangeM/scentProbeM Gesetz (range=${res.a3ScentRangeM}, probe=${res.a3ScentProbeM})`,
+        `V18.210-A3b VERHALTEN.jagd.scentRangeM/hetzM Gesetz, kein Gradienten-Schritt (range=${res.a3ScentRangeM}, hetzM=${res.a3ScentProbeM})`,
         res.a3ConstsOk === true
     );
     check("V18.210-A3c SOURCE: Helper ruft _scentAt", res.a3HelperUsesScent === true);

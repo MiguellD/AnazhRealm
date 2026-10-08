@@ -137,3 +137,11 @@ Gefallen: der feste Paar-Radius `separation.radiusBaseM` (1,6 m × bodySize für
 und `furcht.neugierStoppM` — die neugierige Schar kroch auf 0,7 m zusammen und durchdrang sich und den Spieler (Leben-Schau
 07.10.). Genau 24 Felder (6 je Rezept), der Rest byte-gleich (gegen die alten Bytes geprüft); recipes.json
 `622864e73bb6…` → `0d8f4316502b…`.
+
+**Re-Mint 08.10.2026 (Welle LF rudel, begründet — DIE JAGD SCHLIESST SICH):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1` (world-params, render-config und jede Mesh-Golden byte-gleich). Im tetrapoda-Buch pirscht der Jäger
+unbemerkt bis `jagd.pirschSichtM`, das Rudel bezieht den Ring `jagd.hetzM` um das Ziel (die Flanke) und hetzt im Sprint der
+Gestalt (STEUER_GESETZ.sprint, kein Rezept-Feld), Beute trägt höchstens `jagd.beuteMasse` × die Masse des Jägers. Gefallen:
+`jagd.scentProbeM` (der Gradienten-Schritt der Witterung — nah an der Quelle zeigte der Gradient vom Ziel fort) und
+`furcht.fleeSpeedBoost` (die Flucht ist der Sprint, kein Trab). Genau 20 Felder (5 je Rezept), der Rest byte-gleich
+(gegen die alten Bytes geprüft); recipes.json `0d8f4316502b…` → `bdd842174cdd…`.

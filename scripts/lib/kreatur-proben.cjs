@@ -660,18 +660,20 @@ async function kreaturProben(r, T, opts) {
             c.userData.hp = 9999;
             return c;
         });
+        // R-D12: die Richtung der Jagd auf eine Himmelsachse gerastet (der Jagd-Weg ist seit Welle LF _kreaturJagdZug)
         if (taeter === "jagd")
             decke(
                 restore,
-                "_creatureScentHuntDir",
+                "_kreaturJagdZug",
                 (alt) =>
-                    function (c, w) {
-                        const d = alt.call(this, c, w);
-                        if (d) {
-                            if (Math.abs(d.x) > Math.abs(d.z)) d.set(Math.sign(d.x), 0, 0);
-                            else d.set(0, 0, Math.sign(d.z));
+                    function (c, tx, tz, key, d, ...rest) {
+                        const o = alt.call(this, c, tx, tz, key, d, ...rest);
+                        const m = Math.hypot(d.x, d.z);
+                        if (m > 0) {
+                            if (Math.abs(d.x) > Math.abs(d.z)) d.set(Math.sign(d.x) * m, 0, 0);
+                            else d.set(0, 0, Math.sign(d.z) * m);
                         }
-                        return d;
+                        return o;
                     }
             );
         // R-D4/K-D11: die Beute wittert nur den Spieler — der jagende Jäger ist keine Bedrohung.
@@ -701,7 +703,7 @@ async function kreaturProben(r, T, opts) {
             takt(dt);
             const dx = wolf.position.x - wv.x,
                 dz = wolf.position.z - wv.z;
-            const jagt = wolf.userData._motionZustand === "jagd";
+            const jagt = wolf.userData._motionZustand === "jagd" || wolf.userData._motionZustand === "hetzen";
             const anprall = geschoben.has(wolf.position);
             geschoben.clear();
             if (jagt && anprall) kontakt++;
@@ -717,13 +719,20 @@ async function kreaturProben(r, T, opts) {
                 if (grad(m) < 0.25) achs++;
                 if (grad(m) < 5) achs5++;
             }
+            // Die Beute, die den Jäger bemerkt (Zustand flucht — ein pirschender Jäger bleibt bis jagd.pirschSichtM
+            // unbemerkt, Welle LF), läuft von ihm fort.
             beute.forEach((c, i) => {
                 const vx = c.position.x - bv[i].x,
                     vz = c.position.z - bv[i].z;
                 const rx = bv[i].x - wv.x,
                     rz = bv[i].z - wv.z;
                 const d = Math.hypot(rx, rz);
-                if (jagt && d < NAT.noticeRadius && Math.hypot(vx, vz) / dt > 0.3) {
+                if (
+                    jagt &&
+                    c.userData._motionZustand === "flucht" &&
+                    d < NAT.noticeRadius &&
+                    Math.hypot(vx, vz) / dt > 0.3
+                ) {
                     bedroht++;
                     if (vx * rx + vz * rz > 0) fort++;
                 }
@@ -894,7 +903,9 @@ async function kreaturProben(r, T, opts) {
         // DER LEIB DES TIERS (D2): EINE benannte Größe (_kreaturLeib), die der Hüllen-Kontakt liest — gezählt, durchgereicht.
         // Die Probe selbst liest den Leib am Prototyp (zählt nicht mit) und misst, wie weit die vordere Leib-Achse (die
         // Schnauze) vor dem Stein bleibt.
-        let leibRufe = 0;
+        // gezählt werden nur die Rufe AUS dem Hüllen-Kontakt (der Leib-Löser der Welle LF liest den Leib auch)
+        let leibRufe = 0,
+            imKontakt = 0;
         const leibVon = typeof A.prototype._kreaturLeib === "function" ? A.prototype._kreaturLeib : null;
         if (typeof r._kreaturLeib === "function")
             decke(
@@ -902,10 +913,23 @@ async function kreaturProben(r, T, opts) {
                 "_kreaturLeib",
                 (alt) =>
                     function (...a) {
-                        leibRufe++;
+                        if (imKontakt > 0) leibRufe++;
                         return alt.apply(this, a);
                     }
             );
+        decke(
+            restore,
+            "_kreaturHuellenKontakt",
+            (alt) =>
+                function (...a) {
+                    imKontakt++;
+                    try {
+                        return alt.apply(this, a);
+                    } finally {
+                        imKontakt--;
+                    }
+                }
+        );
         // Der Zwilling: der Kontakt rechnet einen eigenen Leib (dieselben Zahlen, aber nicht die benannte Größe).
         if (taeter === "hindernis-leib")
             decke(
@@ -1464,7 +1488,7 @@ async function kreaturProben(r, T, opts) {
         const furcht = (seele) => {
             const c = tier(land(20, -20), seele, 1);
             c.userData.hp = 9999;
-            const t0 = performance.now() / 1000;
+            const t0 = s.creatureAnimationTime; // die Kampf-Furcht auf der Kreatur-Uhr
             r.damageCreature(c, 1, { source: "linse" });
             const dauer = c.userData.fearUntil - t0;
             const soll = VG.furcht.fearSec * VG.temperament.profile[r._creatureTemperament(c)].fleeMul;
@@ -1632,6 +1656,274 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── jagdkreis (Leben-Schau 07.10., Kampf Neu 3 / D6): der Kreislauf Jäger–Beute schließt sich. Der Witterungs-Jäger
+    // stand still (ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten) und holte keinen Sprinter ein (der
+    // Abstand wuchs von 3,9 auf 34,6 m). Zwei Bühnen am ECHTEN Takt: (A) die Kampf-Schau — Wolf 4 m neben einem Hirsch, der
+    // Spieler 40 m fern, 3600 Takte: der Wolf läuft (Tempo in seinen Jagd-Takten), zur Beute hin (Anteil der Takte, deren
+    // Weg auf die Beute zeigt), und beißt; (B) der Sprinter — der Spieler sprintet (state.sprintSpeed) geradeaus, der Wolf
+    // startet 6 m hinter ihm: der Abstand schrumpft, ein Biss trifft ──
+    await buehne("jagdkreis", async (restore) => {
+        r.setGameMode("pfad");
+        // ein ruhiger Spieler, je Takt (ein zorniger verschreckt den Wolf — seine Wariness schlägt die Jagd; die Ansteckung
+        // der Gefühle im Kreatur-Takt trägt die Furcht der Beute zu ihm)
+        const ruhigSpieler = () => {
+            if (s.player.emotions)
+                Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
+        };
+        ruhigSpieler();
+        // Die alten Wege als Täter: der Gradient des Geruchs-Felds (vier Proben, die vor dem Schnitt die Richtung gaben)
+        // und der Jagd-Weg im Schritt-Tempo geradewegs auf das Ziel (kein Platz im Rudel, keine Hetze).
+        if (taeter === "jagd-gradient")
+            decke(
+                restore,
+                "_creatureScentHuntDir",
+                (alt) =>
+                    function (c, w) {
+                        const d0 = alt.call(this, c, w);
+                        if (!d0) return null;
+                        const beute = c.userData._beute;
+                        const S = A.SCENT;
+                        const q = [{ x: beute.position.x, z: beute.position.z, strength: 1 }];
+                        const cx = c.position.x,
+                            cz = c.position.z;
+                        const gx = (this._scentAt(cx + 4, cz, q, {}) - this._scentAt(cx - 4, cz, q, {})) / 2;
+                        const gz = (this._scentAt(cx, cz + 4, q, {}) - this._scentAt(cx, cz - 4, q, {})) / 2;
+                        const g = Math.hypot(gx, gz);
+                        if (!(g > 0.02 * (S ? 1 : 1))) return null;
+                        d0.set(gx / g, 0, gz / g);
+                        // der Gradient führt — das Ziel ist der Punkt, auf den er zeigt
+                        c.userData._beute = {
+                            position: { x: cx + (gx / g) * 10, z: cz + (gz / g) * 10 },
+                            rotation: { y: 0 },
+                            userData: { netId: "gradient", _motionZustand: null },
+                        };
+                        return d0;
+                    }
+            );
+        const schrittJagd = () =>
+            decke(
+                restore,
+                "_kreaturJagdZug",
+                () =>
+                    function (c, tx, tz, key, direction, speed) {
+                        c.userData._jagdZiel = key;
+                        this._kreaturZustandStempel(c, "jagd");
+                        const dx = tx - c.position.x,
+                            dz = tz - c.position.z;
+                        const J = A._verhaltenGesetz().jagd;
+                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - J.pirschStoppM, speed * J.speedBoost);
+                    }
+            );
+        if (taeter === "jagd-schritt") schrittJagd();
+        // (A) die Kampf-Schau
+        const o = frei(50, 50, 25) || land(50, 50);
+        pm.set(o.x + 40, pm.y, o.z);
+        const hirsch = tier({ x: o.x, y: o.y, z: o.z }, "wesen", 1);
+        const wolf = tier({ x: o.x - 4, y: o.y, z: o.z + 1 }, "wolf", 1);
+        ruhig(hirsch);
+        ruhig(wolf);
+        hirsch.userData.hp = 1e6;
+        let bisse = 0;
+        decke(
+            restore,
+            "damageCreature",
+            (alt) =>
+                function (c, amount, opt) {
+                    if (c === hirsch && opt && opt.source === "jagd") bisse++;
+                    return alt.call(this, c, amount, opt);
+                }
+        );
+        let jagdT = 0,
+            jagdWeg = 0,
+            bewegt = 0,
+            hin = 0;
+        let wx = wolf.position.x,
+            wz = wolf.position.z;
+        const dt = 1 / 60;
+        for (let k = 0; k < 3600; k++) {
+            const hx = hirsch.position.x,
+                hz = hirsch.position.z;
+            ruhigSpieler();
+            takt(dt);
+            const z = wolf.userData._motionZustand;
+            const vx = wolf.position.x - wx,
+                vz = wolf.position.z - wz;
+            const v = Math.hypot(vx, vz);
+            if (z === "jagd" || z === "hetzen") {
+                jagdT += dt;
+                jagdWeg += v;
+                if (v / dt > 0.3) {
+                    bewegt++;
+                    if (vx * (hx - wx) + vz * (hz - wz) > 0) hin++;
+                }
+            }
+            wx = wolf.position.x;
+            wz = wolf.position.z;
+        }
+        const A1 = {
+            jagdS: +jagdT.toFixed(1),
+            tempoMs: jagdT > 0 ? +(jagdWeg / jagdT).toFixed(2) : 0,
+            hinAnteil: bewegt ? +(hin / bewegt).toFixed(3) : null,
+            bisse,
+        };
+        for (const c of s.creatures.slice()) r.removeCreature(c);
+        // (C) DER KREISLAUF: ein Rudel aus drei Wölfen wittert einen erwachsenen Hirsch (er entkommt einem einzelnen Wolf
+        // im Sprint — so soll es sein), und ein einzelner Wolf wittert ein Kitz (bodySize 0,6, langsamer als er): beide
+        // Jagden beißen in 60 s.
+        const kreis = (woelfeN, hirschGroesse, ox, oz) => {
+            const o3 = frei(ox, oz, 25) || land(ox, oz);
+            pm.set(o3.x + 45, pm.y, o3.z + 20);
+            const beute = tier({ x: o3.x, y: o3.y, z: o3.z }, "wesen", hirschGroesse);
+            ruhig(beute);
+            beute.userData.hp = 1e6;
+            const ws = [];
+            for (let i = 0; i < woelfeN; i++) {
+                const a = -0.6 + i * 0.6;
+                const w = tier({ x: o3.x - Math.cos(a) * 20, y: o3.y, z: o3.z + Math.sin(a) * 20 }, "wolf", 1);
+                ruhig(w);
+                ws.push(w);
+            }
+            let zaehle = 0;
+            decke(
+                restore,
+                "damageCreature",
+                (alt) =>
+                    function (c, amount, opt) {
+                        if (c === beute && opt && opt.source === "jagd") zaehle++;
+                        return alt.call(this, c, amount, opt);
+                    }
+            );
+            for (let k = 0; k < 3600; k++) {
+                ruhigSpieler();
+                takt(dt);
+            }
+            for (const c of s.creatures.slice()) r.removeCreature(c);
+            return zaehle;
+        };
+        const rudelBisse = kreis(3, 1, -60, -40);
+        const kitzBisse = kreis(1, 0.6, 80, -20);
+        // (B) der Sprinter: der Spieler läuft im Sprint geradeaus, der Wolf jagt ihn
+        const o2 = frei(-50, 60, 30) || land(-50, 60);
+        pm.set(o2.x, o2.y, o2.z);
+        const wolf2 = tier({ x: o2.x - 6, y: o2.y, z: o2.z }, "wolf", 1);
+        ruhig(wolf2);
+        const altHp = s.player.hp,
+            altGnade = s.player.respawnGraceUntil;
+        restore.push(() => {
+            s.player.hp = altHp;
+            s.player.respawnGraceUntil = altGnade;
+        });
+        s.player.hp = 1e9;
+        let spielerBisse = 0;
+        decke(
+            restore,
+            "_tickCreatureHuntStrike",
+            (alt) =>
+                function (...a) {
+                    const o = alt.apply(this, a);
+                    if (o) spielerBisse++;
+                    return o;
+                }
+        );
+        const sprint = s.sprintSpeed;
+        const abst0 = Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z);
+        let abstMin = abst0;
+        for (let k = 0; k < 600; k++) {
+            pm.x += sprint * dt;
+            ruhigSpieler();
+            takt(dt);
+            abstMin = Math.min(abstMin, Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z));
+        }
+
+        const abst1 = Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z);
+        return {
+            kampfSchau: A1,
+            kreislauf: { rudelGegenHirsch: rudelBisse, wolfGegenKitz: kitzBisse },
+            sprinter: {
+                sprintMs: +sprint.toFixed(2),
+                abstand0: +abst0.toFixed(1),
+                abstandEnde: +abst1.toFixed(1),
+                abstandMin: +abstMin.toFixed(1),
+                bisse: spielerBisse,
+                wolfSprintMs: +A._steuerGesetz().sprintTempo(r._kreaturHueftL(wolf2)).toFixed(2),
+            },
+        };
+    });
+
+    // ── rudel (Leben-Schau 07.10., Kampf: „Rudel gegen Spieler"): ein Rudel umstellt. Drei Wölfe, die von einer Seite
+    // kamen, standen alle in einem Sektor von 72° (größte Lücke im Median 288°, Kampf-Schau; 239° am 06.10.). Gemessen am
+    // echten Takt: drei Wölfe in 15 m auf einer Seite des stehenden Spielers (Modus pfad); in jedem Takt, in dem alle drei
+    // näher als 2 × jagd.hetzM stehen, die größte Winkel-Lücke ihrer Richtungen um den Spieler, dazu die Lücke beim ersten
+    // Biss ──
+    await buehne("rudel", async (restore) => {
+        r.setGameMode("pfad");
+        const ruhigSpieler = () => {
+            if (s.player.emotions)
+                Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 });
+        };
+        if (taeter === "rudel")
+            decke(
+                restore,
+                "_kreaturJagdZug",
+                () =>
+                    function (c, tx, tz, key, direction, speed) {
+                        c.userData._jagdZiel = key;
+                        this._kreaturZustandStempel(c, "jagd");
+                        const dx = tx - c.position.x,
+                            dz = tz - c.position.z;
+                        const J = A._verhaltenGesetz().jagd;
+                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - J.pirschStoppM, speed * J.speedBoost);
+                    }
+            );
+        const o = frei(60, -60, 25) || land(60, -60);
+        pm.set(o.x, o.y, o.z);
+        const altHp = s.player.hp,
+            altGnade = s.player.respawnGraceUntil;
+        restore.push(() => {
+            s.player.hp = altHp;
+            s.player.respawnGraceUntil = altGnade;
+        });
+        s.player.hp = 1e9;
+        const woelfe = [-0.25, 0, 0.25].map((a) => {
+            const c = tier({ x: pm.x + Math.sin(a) * 11, y: pm.y, z: pm.z + Math.cos(a) * 11 }, "wolf", 1);
+            ruhig(c);
+            return c;
+        });
+        let ersterBiss = null;
+        decke(
+            restore,
+            "_tickCreatureHuntStrike",
+            (alt) =>
+                function (...a) {
+                    const out = alt.apply(this, a);
+                    if (out && ersterBiss === null) ersterBiss = luecke();
+                    return out;
+                }
+        );
+        const luecke = () => {
+            const w = woelfe.map((c) => Math.atan2(c.position.x - pm.x, c.position.z - pm.z)).sort((a, b) => a - b);
+            let g = 0;
+            for (let i = 0; i < w.length; i++) {
+                const n = i + 1 < w.length ? w[i + 1] : w[0] + Math.PI * 2;
+                g = Math.max(g, n - w[i]);
+            }
+            return grad(g);
+        };
+        const J = A._verhaltenGesetz().jagd;
+        const luecken = [];
+        for (let k = 0; k < 1500; k++) {
+            ruhigSpieler();
+            takt(1 / 60);
+            if (woelfe.every((c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < 2 * J.hetzM))
+                luecken.push(luecke());
+        }
+        return {
+            nahTakte: luecken.length,
+            lueckeP50: luecken.length ? +quantil(luecken, 0.5).toFixed(0) : null,
+            lueckeBeimBiss: ersterBiss === null ? null : +ersterBiss.toFixed(0),
+        };
+    });
+
     return aus;
 }
 
@@ -1654,6 +1946,8 @@ const PROBEN = [
     "nexus",
     "temperament",
     "abstand",
+    "jagdkreis",
+    "rudel",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -1854,6 +2148,36 @@ function urteil(name, z) {
             `kein persönlicher Raum: der nächste Nachbar p50 ${z.nachbarRaumP50} / p10 ${z.nachbarRaumP10} der Körper-Kugeln (Soll ≥ 1 / 0,85; zuletzt zwei Mitten ${z.paarMinM} m)`
         );
     }
+    if (name === "jagdkreis") {
+        const a = z.kampfSchau,
+            b = z.sprinter;
+        soll(a.jagdS >= 10, `der Wolf jagt nur ${a.jagdS} s von 60 (vakuös)`);
+        soll(a.tempoMs >= 0.5, `der Witterungs-Jäger steht still: ${a.tempoMs} m/s in seinen Jagd-Takten (Soll ≥ 0,5)`);
+        soll(
+            a.hinAnteil !== null && a.hinAnteil >= 0.8,
+            `der Witterungs-Jäger läuft nicht zur Beute: ${a.hinAnteil} seiner Schritte zeigen auf sie (Soll ≥ 0,8)`
+        );
+        const k = z.kreislauf;
+        soll(
+            k.rudelGegenHirsch >= 1 && k.wolfGegenKitz >= 1,
+            `der Kreislauf schließt sich nicht: das Rudel beißt den Hirsch ${k.rudelGegenHirsch}×, der Wolf das Kitz ${k.wolfGegenKitz}× in 3600 Takten (der einzelne Wolf am erwachsenen Hirsch: ${a.bisse})`
+        );
+        soll(
+            b.abstandEnde < b.abstand0 && b.bisse >= 1,
+            `der Sprinter entkommt: Abstand ${b.abstand0} → ${b.abstandEnde} m, ${b.bisse} Bisse (Sprint ${b.sprintMs} m/s, Wolf ${b.wolfSprintMs} m/s)`
+        );
+    }
+    if (name === "rudel") {
+        soll(z.nahTakte >= 60, `das Rudel kommt nicht heran (${z.nahTakte} Takte nah, vakuös)`);
+        soll(
+            z.lueckeP50 !== null && z.lueckeP50 <= 180,
+            `das Rudel umstellt nicht: größte Lücke p50 ${z.lueckeP50}° (Soll ≤ 180°)`
+        );
+        soll(
+            z.lueckeBeimBiss !== null && z.lueckeBeimBiss <= 180,
+            `das Rudel umstellt nicht: beim ersten Biss ${z.lueckeBeimBiss}° Lücke`
+        );
+    }
     return { ok: f.length === 0, grund: f.join(" · ") };
 }
 
@@ -1900,6 +2224,11 @@ const TAETER = {
     ],
     temperament: [["temperament", /Temperament nicht aus Gattung und Größe/]],
     abstand: [["abstand", /Durchdringung|kein persönlicher Raum/]],
+    jagdkreis: [
+        ["jagd-gradient", /läuft nicht zur Beute|steht still|Kreislauf schließt sich nicht/],
+        ["jagd-schritt", /Sprinter entkommt/],
+    ],
+    rudel: [["rudel", /umstellt nicht/]],
 };
 
 // Der Kommentar-Stripper der Absenz-Proben — dieselbe Quelle wie window.__codeOf im Playtest-Harness (Kommentare

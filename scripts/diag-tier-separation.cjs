@@ -171,10 +171,14 @@ const server = http.createServer((req, res) => {
             delete a2.userData._wanderSlot;
             a1.userData.wanderAnchor = null;
             a2.userData.wanderAnchor = null;
+            // genullt: die Separation UND der Leib-Löser (Welle LF: nie Durchdringung — er allein trennte das Paar schon)
             const savedSep = r._applyCreatureSeparation;
+            const savedLoeser = r._kreaturLeibKontakte;
             r._applyCreatureSeparation = function () {};
+            r._kreaturLeibKontakte = function () {};
             tick(200, 0.05);
             r._applyCreatureSeparation = savedSep; // restaurieren (Gate-Hook-Lehre)
+            r._kreaturLeibKontakte = savedLoeser;
             o.cGap = gap(a1, a2);
             o.checks.cLensFires = o.cGap < 0.2; // gestapelt → die (A)-Bedingung WÜRDE rot lesen
             cleanup([a1, a2]);

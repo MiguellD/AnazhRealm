@@ -519,6 +519,14 @@ function validateManifest(m) {
             // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke sind Vertrag
             // (dieselben Felder, die die _verhaltenGesetz-Wand des Wirts prüft):
             Number.isFinite(V.jagd.pirschStoppM) &&
+            // DIE JAGD SCHLIESST SICH (Welle LF, Vertrags-Akt 08.10.): der Ring der Hetze, die Pirsch-Sicht und die
+            // Beute-Masse sind Vertrag; der Gradienten-Schritt der Witterung und der Trab der Flucht kehren nicht zurueck
+            // (die Flucht ist der Sprint der Gestalt, STEUER_GESETZ.sprint).
+            Number.isFinite(V.jagd.hetzM) &&
+            Number.isFinite(V.jagd.pirschSichtM) &&
+            Number.isFinite(V.jagd.beuteMasse) &&
+            V.jagd.scentProbeM === undefined &&
+            V.furcht.fleeSpeedBoost === undefined &&
             V.stimmung &&
             V.stimmung.schwellen &&
             Number.isFinite(V.stimmung.schwellen.weideDiet) &&
@@ -549,7 +557,7 @@ function validateManifest(m) {
             Number.isFinite(V.wasser.uferBias);
         if (!seeleOk)
             v.push(
-                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeRange/pirschStoppM · furcht.fleeThreshold · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
+                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeRange/pirschStoppM/hetzM/pirschSichtM/beuteMasse ohne Gradienten-Schritt · furcht.fleeThreshold ohne Trab-Flucht · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
             );
     }
     return v;

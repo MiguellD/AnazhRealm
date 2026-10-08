@@ -461,6 +461,11 @@ const FORBIDDEN = [
     { token: "minAbstSq", fiel: "Welle LF rudel — die Herde zieht jenseits des Paar-Raums", auch: ["tetrapoda-core.js"] },
     { token: "fensterSq", fiel: "Welle LF rudel — das Herden-Fenster misst im Paar-Raum", auch: ["tetrapoda-core.js"] },
     { token: "neugierStoppM", fiel: "Welle LF rudel — die Neugier hält am Paar-Raum", auch: ["tetrapoda-core.js"] },
+    // WELLE LF RUDEL (Vertrags-Akt 08.10., die Jagd schließt sich): der Gradient der Witterung über vier Proben (nah an
+    // der Quelle zeigte er vom Ziel fort), der Trab der Flucht und der Biss-Takt auf der Wand-Uhr kehren nicht zurück.
+    { token: "scentProbeM", fiel: "Welle LF rudel — die Witterung wählt die Beute an der Nase", auch: ["tetrapoda-core.js"] },
+    { token: "this._scentAt(cx + probeStep", fiel: "Welle LF rudel — kein Gradient der Witterung" },
+    { token: "fleeSpeedBoost", fiel: "Welle LF rudel — die Flucht ist der Sprint der Gestalt", auch: ["tetrapoda-core.js"] },
     { token: "OBSTACLE_RAYCAST_MAX_DIST_SQ", fiel: "Welle L kreatur — _kreaturHuellenKontakt (kein Strahl je Frame)" },
     { token: "hasHit = this._runRaycast(", fiel: "Welle L kreatur — _kreaturHuellenKontakt" },
     // Nachbesserung 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters — auch die Eintrags-

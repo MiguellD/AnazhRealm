@@ -139,8 +139,15 @@
             fearHpFrac: 0.5, // unter dieser HP-Fraktion wird Schaden zur FURCHT (threatened)
             triumphWindowSec: 20, // s — ein Jaeger, so frisch er biss, gebiert beim Fall TRIUMPH
             scentRangeM: 50, // m — Beute-Wittern ueber das Geruch-Feld (weiter als Sehen)
-            scentProbeM: 4, // m — Probe-Schritt der 4-Richtungs-Gradient-Suche
             pirschStoppM: 1.6, // m — SCHLUSS-WELLE: naeher pirscht der Jaeger nicht heran (Stopp vor dem Biss)
+            // DIE JAGD SCHLIESST SICH (Welle LF 08.10., VERTRAGS-AKT): der Jaeger pirscht (unbemerkt bis pirschSichtM),
+            // bezieht im Rudel seinen Platz auf dem Ring hetzM um das Ziel (die Flanke) und hetzt von dort im Sprint der
+            // Gestalt (STEUER_GESETZ.sprint); Beute ist, wer nicht wild ist und hoechstens beuteMasse × die eigene Masse
+            // traegt (der Baer ist keine Beute des Wolfs). Vorher folgte er einem Gradienten, der vom Ziel fortzeigte,
+            // im Schritt-Tempo: 0 Bisse in 3600 Takten, der Sprinter entkam immer (Leben-Schau 07.10.).
+            hetzM: 6, // m — von hier hetzt der Jaeger (der Ring, auf dem das Rudel seine Plaetze bezieht)
+            pirschSichtM: 5, // m — einen pirschenden Jaeger bemerkt die Beute erst hier (einen hetzenden ab noticeRadius)
+            beuteMasse: 1.25, // × eigene Masse (Dial size × bodySize) — schwerer ist keine Beute
         },
         furcht: {
             noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler
@@ -158,7 +165,6 @@
             curiousThreshold: -0.2, // Wariness darunter → neugierig (naeher)
             fleeThreshold: 0.3, // Wariness darueber → scheu (fort)
             fleeRadius: 14, // m — innerhalb davon flieht ein verschrecktes Wesen aktiv
-            fleeSpeedBoost: 1.6, // Flucht ist schneller als das Schlendern
             combatFearWariness: 1.5, // ein getroffenes Wesen ist garantiert ueber der Flucht-Schwelle
             fearSec: 5, // s — wie lange die Kampf-Furcht (fearUntil) anhaelt
         },
@@ -1338,6 +1344,10 @@
     // ihn je Tier, die Gier reist im Positions-Strom zum Mitspieler.
     var STEUER_GESETZ = Object.freeze({
         tempo: 0.34, // v̂ — die Tempo-Einheit des Verhaltens als Froude-Zahl (ein Schritt; Hirsch L 0,9 m ≈ 1 m/s)
+        // DER SPRINT DER GESTALT (Welle LF 08.10., additiv): der Galopp als Froude-Tempo — Hetze und Flucht laufen
+        // sprint·√(g·L) (Wolf L 0,63 m ≈ 7,5 m/s, Hirsch L 0,92 m ≈ 9,0 m/s): der Wolf holt den sprintenden Menschen
+        // (5,2–6,0 m/s) ein, der gesunde Hirsch entkommt ihm auf freier Strecke — die Jagd gelingt im Rudel und am Kitz.
+        sprint: 3.0,
         wende: 1.1, // × √(g/L) rad/s — die Wendegrenze (Hirsch: ~3,6 rad/s)
         beschl: 0.5, // × g — Anfahren (m/s²)
         brems: 0.8, // × g — Bremsen (m/s²); der Ankunfts-Weg liest dieselbe Zahl
@@ -1345,6 +1355,10 @@
     // Die Tempo-Einheit in m/s für die Hüft-Höhe L (m).
     function tempoEinheit(L) {
         return STEUER_GESETZ.tempo * Math.sqrt(GANG_GESETZ.g * Math.max(0.05, L));
+    }
+    // Der Sprint (Galopp) in m/s für die Hüft-Höhe L (m) — Hetze und Flucht (Welle LF).
+    function sprintTempo(L) {
+        return STEUER_GESETZ.sprint * Math.sqrt(GANG_GESETZ.g * Math.max(0.05, L));
     }
     // z = {gier (rad, three: Blick längs (sin, cos)), v (m/s, vorwärts)} wird fortgeschrieben; (wx, wz) der Wunsch in m/s.
     function steuerSchritt(z, wx, wz, dt, L) {
@@ -2780,6 +2794,7 @@
         gangFuss: gangFuss,
         STEUER_GESETZ: STEUER_GESETZ,
         tempoEinheit: tempoEinheit,
+        sprintTempo: sprintTempo,
         steuerSchritt: steuerSchritt,
         ankunftTempo: ankunftTempo,
         herdeZug: herdeZug,

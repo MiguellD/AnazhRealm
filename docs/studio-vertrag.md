@@ -317,7 +317,13 @@ Komponenten-SÄTZE, keine Klassen):
   Overlay. Jede Stimmungs-Aktion MUSS in `aktionen` existieren (Validator).
   Spiegel-Zensus 17.07. (V18.486+, rein additiv): die KREATUR-SEELE reist —
   `jagd { radius speedBoost strikeRange strikeCooldownSec damageMul
-  fearHpFrac triumphWindowSec scentRangeM scentProbeM }` · `furcht`
+  fearHpFrac triumphWindowSec scentRangeM hetzM pirschSichtM beuteMasse }`
+  (VERTRAGS-AKT Welle LF 08.10.: DIE JAGD SCHLIESST SICH — die Witterung wählt
+  die Beute an der Nase, der Gradienten-Schritt `scentProbeM` fiel; das Rudel
+  bezieht den Ring `hetzM`, eine Pirsch bleibt bis `pirschSichtM` unbemerkt,
+  Beute trägt höchstens `beuteMasse` × die Masse des Jägers; Hetze und Flucht
+  laufen den Sprint der Gestalt `STEUER_GESETZ.sprint`, `furcht.fleeSpeedBoost`
+  fiel) · `furcht`
   (Wariness-Gewichte + Flucht-Radien/-Dauern) · `temperament { gattung
   profile }` (VERTRAGS-AKT Welle LF 08.10.: DAS TEMPERAMENT DER GATTUNG —
   `gattung { fleischDiet pflanzDiet jagdMasse wehrMasse kolossMasse }`, die

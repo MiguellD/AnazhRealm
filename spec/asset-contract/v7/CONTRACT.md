@@ -47,3 +47,9 @@ Pflicht, Signaturen und Substanz-Gewichte kehren nicht zurück, Selbsttest), gat
 `furcht.neugierStoppM` fiel. Ohne diese Felder byte-gleich (geprüft). Der Raum eines Tiers ist seine Körper-Kugel ×
 `raumKugel` (Art und Größe), herdeZug zieht nur jenseits des Paar-Raums und liefert das Mittel. Wächter: gate:studio-vertrag
 (die alten Felder kehren nicht zurück), gate:kreatur-takt abstand.
+
+**Vertrags-Akt 08.10.2026 (Welle LF rudel — DIE JAGD SCHLIESST SICH):** `tetrapoda-core.js` neu gemintet (`42238c7bdb5e…` →
+`195c1576f10a…`, klang- und koerper-core byte-gleich). Geändert sind genau 20 Felder in `PRESETS.<tier>.fx.verhalten`:
+`jagd.hetzM`, `jagd.pirschSichtM`, `jagd.beuteMasse` kamen, `jagd.scentProbeM` und `furcht.fleeSpeedBoost` fielen. Ohne
+diese Felder byte-gleich (geprüft). Additiv außerhalb der Rezepte: `STEUER_GESETZ.sprint` und `sprintTempo(L)` (der Galopp
+der Gestalt). Wächter: gate:studio-vertrag, gate:kreatur-takt jagdkreis und rudel.
