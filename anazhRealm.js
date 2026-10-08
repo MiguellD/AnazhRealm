@@ -16588,6 +16588,9 @@ class AnazhRealm {
         const _cStats = this.computeCreatureStats(group).stats;
         group.userData.hpMax = _cStats.hpMax;
         group.userData.hp = _cStats.hpMax;
+        // DAS GEMÜT WIRD MIT DEM LEIB GEGOSSEN (Welle LF): Gattung × die EINE Masse des eben gegossenen Leibs
+        // (`_creatureTemperament` → `_leibMasse`), gecacht je Gattung × Größe — der Takt liest es, statt es zu rechnen.
+        this._creatureTemperament(group);
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
@@ -102649,7 +102652,6 @@ AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "creature_apply_boost",
     "player_jump_power",
     "player_speed",
-    "player_size_mul",
     "player_soul",
     "damage",
     "apply_boost",
