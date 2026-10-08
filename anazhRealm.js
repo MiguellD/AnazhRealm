@@ -20622,12 +20622,15 @@ class AnazhRealm {
             // das Höhen-Band der Wagen-Hülle las sie (L8: Schritt 91, Bär y −0,016 m, nach 200 Schritten 0,07 m). Der
             // Boden-Cache des Frames bekommt denselben Wert; der Frame-Takt lässt die Höhe stehen, solange der Stoß trägt.
             // Schwimmt er (die EINE Wasser-Regel, `_kreaturSchwimmt`: nahe dem Spieler, nasse Spalte tiefer als
-            // VERHALTEN.wasser.schwimmTiefeM), trägt ihn der Frame-Takt an seiner Schwimm-Linie — vorher setzte dieser Schritt
-            // auch im Wasser den Boden (gate:fahr-leben L10: ein Fuchs in 3,2 m Wasser sank beim Gleiten 2,77 m tief).
+            // VERHALTEN.wasser.schwimmTiefeM), steht er an seiner Schwimm-Linie (`_kreaturSchwimmLinie`, dieselbe wie im
+            // Frame-Takt) — vorher setzte dieser Schritt auch im Wasser den Boden (gate:fahr-leben L10: ein Fuchs in 3,2 m Wasser
+            // sank beim Gleiten 2,77 m tief), danach setzte der Frame-Takt die Höhe mit seiner Welle (L8: 0,127 m je Bildrate).
             const gesetz = this.getTerrainHeightAt(c.position.x, c.position.z);
             const pmW = this.state.playerMesh && this.state.playerMesh.position;
             const nahW = pmW && (c.position.x - pmW.x) ** 2 + (c.position.z - pmW.z) ** 2 < 2500;
-            if (!(nahW && this._kreaturSchwimmt(this._creatureWaterContextAt(c, gesetz)))) {
+            if (nahW && this._kreaturSchwimmt(this._creatureWaterContextAt(c, gesetz)))
+                c.position.y = this._kreaturSchwimmLinie(this._waterLevelAt(c.position.x, c.position.z));
+            else {
                 const sicht = this._standSicht(c.position.x, c.position.z, gesetz, false);
                 c.position.y = Number.isFinite(sicht) ? sicht : gesetz;
             }
@@ -20648,6 +20651,11 @@ class AnazhRealm {
     // sonst steht er auf dem Boden. Leser: der Frame-Takt (updateCreatures) und der Sim-Schritt des Stoßes.
     _kreaturSchwimmt(wctx) {
         return !!(wctx && wctx.inWater && wctx.depthBelow > AnazhRealm._verhaltenGesetz().wasser.schwimmTiefeM);
+    }
+    // DIE SCHWIMM-LINIE: so tief liegt die Sohle eines schwimmenden Leibs unter dem Spiegel (0,3 m) — Leser: der Frame-Takt
+    // (updateCreatures, dazu seine Welle) und der Stoß-Schritt (ohne Welle, der Sim-Schritt kennt keine Frame-Uhr).
+    _kreaturSchwimmLinie(spiegel) {
+        return spiegel - 0.3;
     }
 
     // DER STOSS AUF EINEN LEIB: dv (m/s) längs (nx, nz) — er trägt den Leib, bis die Reibung ihn aufzehrt.
@@ -22124,7 +22132,7 @@ class AnazhRealm {
             let rollZiel = 0;
             let floatOffset = 0;
             if (waterSurface !== null) {
-                baseY = waterSurface - 0.3;
+                baseY = this._kreaturSchwimmLinie(waterSurface);
                 floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
             } else {
                 // DIE SICHT STEHT AUF DEM MESH (Q4): jedes Tier steht auf dem Stand-Leser um sein Gesetz — nahe Wesen auf
@@ -22172,10 +22180,9 @@ class AnazhRealm {
                 } else udH._hopH = h;
                 hopOffset = udH._hopH;
             }
-            // ein gleitender Leib (er trägt einen Stoß) steht an Land auf der Höhe seines Sim-Schritts (`_kreaturStossSchritt`);
-            // schwimmt er, hält ihn dieser Takt an seiner Schwimm-Linie
-            if (!creature.userData._stossV || waterSurface !== null)
-                creature.position.y = baseY + floatOffset + hopOffset;
+            // ein gleitender Leib (er trägt einen Stoß) steht auf der Höhe seines Sim-Schritts (`_kreaturStossSchritt`) — an
+            // Land wie im Wasser; die Welle des Schwimmers ruht, solange er gleitet
+            if (!creature.userData._stossV) creature.position.y = baseY + floatOffset + hopOffset;
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
             // sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
             if (inFrustum) {

@@ -642,6 +642,15 @@ function stationVerdict(s) {
         if (!(sw.b.minAbstand >= -STATION.spielerTiefM))
             out.push(`wagen-spieler: der GT schiebt sich ${(-sw.b.minAbstand).toFixed(2)} m in den Spieler`);
     }
+    // L8 + Schwimmer: der gestoßene Fuchs im Wasser steht bei jeder Bildrate gleich (x, z und y)
+    if (s.schwimmer && !s.schwimmer.fehler) {
+        const ls = s.lockSchwimmer;
+        if (!ls) out.push("lockstep schwimmer: keine Probe");
+        else if (!(ls.abw <= STATION.lockstepM) || !(ls.abwY <= STATION.lockstepM))
+            out.push(
+                `lockstep schwimmer: 20 Sim-Schritte nach dem Stoß steht der Fuchs bei gemischten Frames ${ls.abw} m daneben und ${ls.abwY} m höher/tiefer als bei 60 fps`
+            );
+    }
     // L10 DER GESTOSSENE SCHWIMMER
     const sch = s.schwimmer;
     if (!sch || sch.fehler) out.push(`schwimmer keine Probe${sch && sch.fehler ? " (" + sch.fehler + ")" : ""}`);
@@ -2494,6 +2503,53 @@ async function probeLeben(expected) {
                         m.tiefe = +(ort.spiegel - hh(ort.x, ort.z)).toFixed(2);
                         S.schwimmer = m;
                         r.removeCreature(f);
+                        // DER SCHWIMMER IM LOCKSTEP (L8, 0710-5-Nachschnitt): derselbe Stoß bei 60 fps und bei gemischten Frames,
+                        // die Lage 20 Sim-Schritte danach — x, z UND y (im Wasser setzte der Frame-Takt die Höhe, mit seinen Wellen)
+                        const schwimmLauf = (muster) => {
+                            const g = r.spawnCreatureAt(ort.x, ort.spiegel, ort.z, "calm", "fuchs", {
+                                precise: true,
+                                bodySize: 1,
+                            });
+                            if (!g) return null;
+                            g.userData._steuer = { gier: 0, v: 0 };
+                            g.userData._stossV = null;
+                            let k = 0;
+                            for (let i = 0; i < 30; i++) {
+                                tMs += muster[i % muster.length];
+                                r._gameLoopTick(tMs);
+                            }
+                            g.position.x = ort.x; // dieselbe Start-Lage in beiden Läufen
+                            g.position.z = ort.z;
+                            st._fixedAccumulator = 0;
+                            g.userData._stossV = { x: 4, z: 0 };
+                            const PFs = r._stepFixedSim;
+                            let lage = null;
+                            r._stepFixedSim = function (simTime, dt) {
+                                PFs.call(this, simTime, dt);
+                                k++;
+                                if (k === 20) lage = { x: g.position.x, z: g.position.z, y: g.position.y };
+                            };
+                            try {
+                                for (let i = 0; i < 400 && lage === null; i++) {
+                                    tMs += muster[i % muster.length];
+                                    r._gameLoopTick(tMs);
+                                }
+                            } finally {
+                                r._stepFixedSim = PFs;
+                            }
+                            r.removeCreature(g);
+                            return lage;
+                        };
+                        st.maxCreatures = st.creatures.length + 1;
+                        const s60 = schwimmLauf([1000 / 60]);
+                        const sMix = schwimmLauf([8, 33, 16, 25, 12, 30, 20, 9, 33, 14]);
+                        S.lockSchwimmer =
+                            s60 && sMix
+                                ? {
+                                      abw: +Math.hypot(s60.x - sMix.x, s60.z - sMix.z).toFixed(6),
+                                      abwY: +Math.abs(s60.y - sMix.y).toFixed(6),
+                                  }
+                                : null;
                     } else S.schwimmer = { fehler: "kein Fuchs" };
                 } finally {
                     A._steuerGesetz = steuerRoh;
@@ -2796,6 +2852,7 @@ async function probeLeben(expected) {
             ],
             reiterStand: { abw: 0 },
             schwimmer: { vorher: -0.1, tiefste: -0.15, gleitet: 20, tiefe: 2 },
+            lockSchwimmer: { abw: 0, abwY: 0 },
         };
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
         for (const [name, bruch, soll] of [
@@ -2959,6 +3016,11 @@ async function probeLeben(expected) {
                     ],
                 },
                 "reiter fahrzeug_gt",
+            ],
+            [
+                "die Höhe des gestoßenen Schwimmers hängt an der Bildrate (Gegenprüfung 0710-5-Nachschnitt)",
+                { lockSchwimmer: { abw: 0, abwY: 0.31 } },
+                "lockstep schwimmer",
             ],
             [
                 "der gestoßene Schwimmer sinkt auf den Grund (Gegenprüfung 0710-5-Nachschnitt)",
@@ -3474,11 +3536,12 @@ async function probeLeben(expected) {
         ["60", "30", "gemischt"].map(lwT).join(" · ")
     );
     check(
-        "L8 Lockstep (0710-5): der Wagen steht nach 200 Sim-Schritten gegen einen Bären bei 60 fps und gemischten Frames an derselben Stelle",
+        "L8 Lockstep (0710-5): der Wagen steht nach 200 Sim-Schritten gegen einen Bären bei 60 fps und gemischten Frames an derselben Stelle, ein gestoßener Schwimmer nach 20 (auch in der Höhe)",
         !hat("kern") && !hat("lockstep"),
-        S.lockstep
-            ? `Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
-            : "keine Probe"
+        (S.lockSchwimmer ? `Schwimmer ${S.lockSchwimmer.abw} m / Höhe ${S.lockSchwimmer.abwY} m · ` : "") +
+            (S.lockstep
+                ? `Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
+                : "keine Probe")
     );
     const reiterZeile = (q) =>
         q.fehler || q.sitz === null
