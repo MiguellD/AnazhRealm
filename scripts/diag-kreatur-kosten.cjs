@@ -91,6 +91,11 @@ const server = http.createServer((req, res) => {
     });
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true; // GPU-frei, Produktions-Boot
+        // der Kommentar-Stripper der Absenz-Proben (Kommentare zitieren die gefallenen Namen)
+        window.__codeOf = (fnOrSrc) =>
+            String(fnOrSrc)
+                .replace(/\/\/.*$/gm, "")
+                .replace(/\/\*[\s\S]*?\*\//g, "");
     });
     let out = null;
     try {
@@ -384,15 +389,40 @@ const server = http.createServer((req, res) => {
             let raus = 0,
                 geprueft = 0,
                 maxUeber = 0;
+            // DER ZWILLING TRÄGT DAS SKELETT DER NAHEN (S3): jedes Mesh der Grobstufe ist geskinnt, und seine Knochen SIND die
+            // Knochen der L0 (Identität je Name) — EIN Skelett je Gestalt; im Gang bleibt auch er in seiner Kugel.
+            const zw = { meshes: 0, geskinnt: 0, knochen: 0, fremd: 0, geprueft: 0 };
             const wp = spawnAt(6, 0);
             if (wp && wp.userData && wp.userData._tierBaum) {
                 const v = new T3.Vector3();
+                let l1Geo = null;
+                wp.traverse((n) => {
+                    for (const vl of n.__ofenVorlagen || [])
+                        if (vl && vl.__ofen && String(vl.__ofen.key).split("|")[1] === "1") {
+                            l1Geo = new Set();
+                            vl.root.traverse((q) => {
+                                if (q.isMesh && q.geometry) l1Geo.add(q.geometry);
+                            });
+                        }
+                });
+                const teileL0 = wp.userData._tierBaum.teile || {};
+                wp.traverse((n) => {
+                    if (!n.isMesh || !l1Geo || !l1Geo.has(n.geometry)) return;
+                    zw.meshes++;
+                    if (!n.isSkinnedMesh || !n.skeleton) return;
+                    zw.geskinnt++;
+                    for (const b of n.skeleton.bones) {
+                        zw.knochen++;
+                        if (teileL0[b.name] !== b) zw.fremd++;
+                    }
+                });
                 for (let k = 0; k < 24; k++) {
                     wp.position.x += 1.6 * 0.07; // der Gang folgt dem Weg (1,6 m/s)
                     r._animateTierBaum(wp, k * 0.07, k * 0.35, true, null);
                     wp.updateMatrixWorld(true);
-                    wp.userData._tierBaum.wrap.traverse((n) => {
+                    wp.traverse((n) => {
                         if (!n.isSkinnedMesh || !n.boundingSphere) return;
+                        if (l1Geo && l1Geo.has(n.geometry)) zw.geprueft++;
                         const kugel = n.boundingSphere.clone().applyMatrix4(n.matrixWorld);
                         const pos = n.geometry.attributes.position;
                         for (let i = 0; i < pos.count; i += 3) {
@@ -411,6 +441,9 @@ const server = http.createServer((req, res) => {
             }
             o.rPose = { geprueft, raus, maxUeber };
             o.checks.rPoseInKugel = geprueft > 1000 && raus === 0;
+            o.rZwilling = zw;
+            o.checks.rZwillingKnochen =
+                zw.meshes > 0 && zw.geskinnt === zw.meshes && zw.knochen > 0 && zw.fremd === 0 && zw.geprueft > 0;
             // (S3) SELBST-TEST: ohne Starr-Bindung zählt die Linse die unverschmolzenen Teile
             const saveStarr = A._ofenStarrBinden;
             const saveMemo = A._tierOfenMemo;
@@ -437,6 +470,227 @@ const server = http.createServer((req, res) => {
             A._hautGewicht = saveGewicht;
             A._tierOfenMemo = saveMemo;
             o.checks.s4LensFires = !!o.s4Breit && o.s4Breit.length > 0;
+
+            // ── (W) DER WERFER JE GESTALT (S3, Lehre 19): die Kern-Zeile sagt, welche Stufe wirft (`schatten`) und welcher
+            // Teil von ihr (`wurf.seh`). Gezählt wird, was die Kaskaden zeichnen: jedes Mesh der Gestalt mit castShadow, dessen
+            // Kette sichtbar ist und dessen Ebenen die Kaskaden-Maske treffen (Layer 0 oder SHADOW_TWIN_LAYER) — nah (10 m ×
+            // Größe) und mittel (45 m × Größe) nach dem ECHTEN Tick (updateCreatures, _p2pUpdatePeer). Das Soll des Wurf-Teils
+            // rechnet phyto-core `budgetSippen` aus dem Ausgang des Ofens (`_ofenBudget`, Stufe 1, gefiltert nach `wurf.seh`).
+            const T3W = T3;
+            const PCW = window.__phytoCore;
+            const maskeK = new T3W.Layers();
+            maskeK.enable(A.SHADOW_TWIN_LAYER);
+            const ketteSichtbar = (o, bis) => {
+                for (let p = o; p; p = p.parent) {
+                    if (p.visible === false) return false;
+                    if (p === bis) return true;
+                }
+                return true;
+            };
+            const dreieckeVon = (geo) => (geo.index ? geo.index.count / 3 : geo.attributes.position.count / 3);
+            const geoMenge = (root) => {
+                const m = new Set();
+                root.traverse((n) => {
+                    if (n.isMesh && n.geometry) m.add(n.geometry);
+                });
+                return m;
+            };
+            // die Vorlagen eines Leibs (das Memo meldet sie am Leib an: `_ofenVorlagenBinden`) je Stufe
+            const vorlagenVon = (gruppe) => {
+                const je = {};
+                gruppe.traverse((n) => {
+                    for (const v of n.__ofenVorlagen || [])
+                        if (v && v.__ofen && v.root) je[String(v.__ofen.key).split("|")[1]] = v;
+                });
+                return je;
+            };
+            const werferVon = (gruppe, l0, l1) => {
+                const w = { tris: 0, draws: 0, l0: 0, l0Tris: 0, l1: 0, fremd: 0 };
+                gruppe.traverse((n) => {
+                    if (!n.isMesh || !n.geometry || n.castShadow !== true || !n.layers.test(maskeK)) return;
+                    if (!ketteSichtbar(n, gruppe)) return;
+                    const t = dreieckeVon(n.geometry);
+                    w.tris += t;
+                    w.draws++;
+                    if (l0.has(n.geometry)) {
+                        w.l0++;
+                        w.l0Tris += t;
+                    } else if (l1.has(n.geometry)) w.l1++;
+                    else w.fremd++;
+                });
+                return w;
+            };
+            // Das Budget je Gestalt und Pass (Plan §3.5, Soll-Bild): der Zwilling ist der Wurf-Teil der Grobstufe.
+            const WURF_SOLL = { kreatur: { draws: 1, tris: 6200 }, koerper: { draws: 5, tris: 38000 } };
+            const budgetFang = new Map();
+            const saveBudget = r._ofenBudget;
+            const saveMemoW = A._tierOfenMemo;
+            const saveFrustumW = r.isInFrustum;
+            r._ofenBudget = function (core, kind, lod) {
+                const aus = saveBudget.apply(this, arguments);
+                budgetFang.set(kind + "|" + (lod | 0), aus);
+                return aus;
+            };
+            r.isInFrustum = function () {
+                return true; // der Stufen-Schalter läuft nur im Bild — für die Messung immer „im Bild"
+            };
+            A._tierOfenMemo = new Map(); // ein frischer Guss je Gestalt: der Ausgang des Ofens wird gefangen
+            const wurfTeil = (core, kind) => {
+                const B = core && core.PORTAL_RENDER_CONFIG && core.PORTAL_RENDER_CONFIG.lod.budget[kind];
+                const z1 = B && B[1];
+                const seh = z1 && z1.wurf && Array.isArray(z1.wurf.seh) ? z1.wurf.seh : null;
+                const aus = budgetFang.get(kind + "|1");
+                if (!seh || !aus) return { fehlt: !seh ? "wurf.seh fehlt an der Stufe 1" : "kein Ausgang der Stufe 1" };
+                const teil = aus.filter((m) => m && m.position && m.mat && seh.indexOf(m.mat.seh) >= 0);
+                return Object.assign({ seh }, PCW.budgetSippen(teil));
+            };
+            const urteil = (kind, B, stufe, w, soll) => {
+                const st = B[stufe] && Number.isInteger(B[stufe].schatten) ? B[stufe].schatten : stufe;
+                const zt = B[st] ? B[st].tris : 0;
+                return (
+                    w.draws > 0 &&
+                    w.l0 === 0 &&
+                    w.fremd === 0 &&
+                    w.draws <= WURF_SOLL[kind].draws &&
+                    w.tris <= WURF_SOLL[kind].tris &&
+                    w.tris <= zt &&
+                    !soll.fehlt &&
+                    w.tris === soll.tris &&
+                    w.draws <= soll.draws
+                );
+            };
+            o.w = [];
+            const tcW = window.__tetrapodaCore;
+            const kcW = window.__koerperCore;
+            const BT = tcW.PORTAL_RENDER_CONFIG.lod.budget.kreatur;
+            const BM = kcW.PORTAL_RENDER_CONFIG.lod.budget.koerper;
+            const SM = A.TETRAPODA_SOUL_MAP || {};
+            for (const art of ["wolf", "fox", "bear", "deer"]) {
+                const seele = Object.keys(SM).find((k) => SM[k] === art);
+                budgetFang.clear();
+                const x0 = pm.x + 10,
+                    hW = r.getTerrainHeightAt(x0, pm.z);
+                const cw = seele
+                    ? r.spawnCreatureAt(x0, (Number.isFinite(hW) ? hW : 0) + 1, pm.z, "happy", seele, {
+                          precise: true,
+                          bodySize: 1,
+                      })
+                    : null;
+                if (!cw) {
+                    o.w.push({ name: "tier:" + art, fehler: "Spawn fehlgeschlagen" });
+                    continue;
+                }
+                const fLw = cw.scale.x || 1;
+                const vl = vorlagenVon(cw);
+                const l0 = vl["0"] ? geoMenge(vl["0"].root) : new Set();
+                const l1 = vl["1"] ? geoMenge(vl["1"].root) : new Set();
+                const tick = (d) => {
+                    for (let k = 0; k < 3; k++) {
+                        cw.position.x = pm.x + d;
+                        cw.position.z = pm.z;
+                        r.updateCreatures(0.02);
+                    }
+                    cw.position.x = pm.x + d;
+                    cw.position.z = pm.z;
+                    cw.updateMatrixWorld(true);
+                };
+                tick(10 * fLw);
+                const nah = werferVon(cw, l0, l1);
+                // (S5) SELBST-TEST: der Zwilling gestubbt — die nahe Stufe wirft wieder selbst (der alte Zustand)
+                let s5 = null;
+                if (art === "wolf") {
+                    const gesichert = [];
+                    cw.traverse((n) => {
+                        if (n.isMesh && l0.has(n.geometry)) {
+                            gesichert.push([n, n.castShadow]);
+                            n.castShadow = n.userData.__klasse !== "fellSchale";
+                        }
+                    });
+                    s5 = werferVon(cw, l0, l1);
+                    for (const [n, c] of gesichert) n.castShadow = c; // restaurieren (Gate-Hook-Lehre)
+                }
+                tick(45 * fLw);
+                const mittel = werferVon(cw, l0, l1);
+                const soll = wurfTeil(tcW, "kreatur");
+                o.w.push({
+                    name: "tier:" + art,
+                    nah,
+                    mittel,
+                    soll,
+                    schatten1: BT[1] ? BT[1].schatten : null,
+                    gruen: urteil("kreatur", BT, 0, nah, soll) && urteil("kreatur", BT, 1, mittel, soll),
+                    nahGruen: urteil("kreatur", BT, 0, nah, soll),
+                    s5Rot: s5 ? !urteil("kreatur", BT, 0, s5, soll) && s5.l0 > 0 : null,
+                    s5,
+                });
+                r.removeCreature(cw);
+            }
+            {
+                budgetFang.clear();
+                const gW = r._buildHumanGroup();
+                const vl = gW ? vorlagenVon(gW) : {};
+                const l0 = vl["0"] ? geoMenge(vl["0"].root) : new Set();
+                const l1 = vl["1"] ? geoMenge(vl["1"].root) : new Set();
+                const peer = (d) => {
+                    const e = {
+                        mesh: gW,
+                        x: pm.x + d,
+                        y: pm.y + 1,
+                        z: pm.z,
+                        yaw: 0,
+                        meshKind: "soul",
+                        soulName: "human",
+                        walkPhase: 0,
+                        lastMovedAt: 0,
+                    };
+                    r._p2pUpdatePeer(e, performance.now() / 1000, 0.016);
+                    gW.updateMatrixWorld(true);
+                };
+                if (gW) {
+                    peer(10);
+                    const nah = werferVon(gW, l0, l1);
+                    peer(45);
+                    const mittel = werferVon(gW, l0, l1);
+                    const soll = wurfTeil(kcW, "koerper");
+                    o.w.push({
+                        name: "mensch",
+                        nah,
+                        mittel,
+                        soll,
+                        schatten1: BM[1] ? BM[1].schatten : null,
+                        gruen: urteil("koerper", BM, 0, nah, soll) && urteil("koerper", BM, 1, mittel, soll),
+                    });
+                } else o.w.push({ name: "mensch", fehler: "kein Mensch-Guss" });
+            }
+            r._ofenBudget = saveBudget; // restaurieren (Gate-Hook-Lehre)
+            r.isInFrustum = saveFrustumW;
+            A._tierOfenMemo = saveMemoW;
+            o.checks.wWerfer = o.w.length === 5 && o.w.every((x) => x.gruen === true);
+            o.checks.s5LensFires = o.w.some((x) => x.s5Rot === true);
+            // Absenz (window.__codeOf, Kommentare gestrippt): kein castShadow-Literal am Gelenk-Guss, kein Leser der Wirts-
+            // Distanzen (die Gestalt liest `ab`/`hyst` aus ihrer Kern-Zeile).
+            const codeW = window.__codeOf;
+            const LIT = /castShadow\s*=\s*false/g;
+            o.wLiterale = ["_buildCreatureGroup", "_buildHumanoidRig"].reduce(
+                (n, k) => n + ((typeof r[k] === "function" ? codeW(r[k]) : "").match(LIT) || []).length,
+                0
+            );
+            const DIST = /\b(?:TIER_FERN_DIST_SQ|TIER_FERN_HYST|MENSCH_FERN_DIST_SQ)\b/g;
+            const distLeser = [];
+            for (const ziel of [A.prototype, A]) {
+                for (const k of Object.getOwnPropertyNames(ziel)) {
+                    if (k === "constructor") continue; // die Klasse selbst ist kein Leser (ihr Text trüge jeden)
+                    const d = Object.getOwnPropertyDescriptor(ziel, k);
+                    for (const fn of [d && d.value, d && d.get]) {
+                        if (typeof fn !== "function") continue;
+                        const n = (codeW(fn).match(DIST) || []).length;
+                        if (n) distLeser.push(k + "×" + n);
+                    }
+                }
+            }
+            o.wDistLeser = distLeser;
+            o.wDistKonst = ["TIER_FERN_DIST_SQ", "TIER_FERN_HYST", "MENSCH_FERN_DIST_SQ"].filter((k) => k in A);
+            o.checks.wAbsenz = o.wLiterale === 0 && distLeser.length === 0 && o.wDistKonst.length === 0;
 
             o.creaturesAfter = s.creatures.length;
             return o;
@@ -527,6 +781,32 @@ const server = http.createServer((req, res) => {
             )
                 .slice(0, 2)
                 .join(" · ")})`
+        );
+        check(
+            c.rZwillingKnochen,
+            `(R) ZWILLING: die Grobstufe ist geskinnt und trägt die Knochen der nahen (${out.rZwilling && out.rZwilling.geskinnt}/${out.rZwilling && out.rZwilling.meshes} geskinnt, ${out.rZwilling && out.rZwilling.fremd} fremde von ${out.rZwilling && out.rZwilling.knochen} Knochen) und bleibt im Gang in ihrer Kugel`
+        );
+        const fW = (w) => (w ? `${Math.round(w.tris).toLocaleString("de-DE")}/${w.draws}` : "?");
+        for (const g of out.w || []) {
+            if (g.fehler) {
+                check(false, `(W) ${g.name}: ${g.fehler}`);
+                continue;
+            }
+            const sollT =
+                g.soll && !g.soll.fehlt ? `${fW(g.soll)} (seh ${g.soll.seh.join("+")})` : g.soll && g.soll.fehlt;
+            const taeter =
+                `${g.name} nah wirft ${fW(g.nah)}${g.nah.l0 ? ` (L0 ${fW({ tris: g.nah.l0Tris, draws: g.nah.l0 })})` : ""}` +
+                `, mittel ${fW(g.mittel)}${g.mittel.draws === 0 && g.schatten1 === 1 ? " trotz schatten 1" : ""}`;
+            check(g.gruen, `(W) ${taeter} — Soll Wurf-Teil der Grobstufe ${sollT}`);
+        }
+        if (out.w && out.w[0] && out.w[0].s5)
+            check(
+                c.s5LensFires,
+                `SELBST-TEST (S5): Zwilling gestubbt → die nahe Stufe wirft wieder ${fW(out.w[0].s5)} (L0 ${out.w[0].s5.l0}) — rot an genau dieser Zeile`
+            );
+        check(
+            c.wAbsenz,
+            `(W) ABSENZ: castShadow-Literale am Gelenk-Guss ${out.wLiterale} · Leser der Wirts-Distanzen ${out.wDistLeser.length}${out.wDistLeser.length ? " (" + out.wDistLeser.join(", ") + ")" : ""} · Konstanten ${out.wDistKonst.length ? out.wDistKonst.join(", ") : "0"}`
         );
         check(c.cFernGebaut, "(C) der Mensch trägt den lod1-Fern-Guss (_menschFern nah+fern)");
         check(c.cVertexDiff, "(C) messbare Vertex-Differenz (fern < 80 % von nah)");
