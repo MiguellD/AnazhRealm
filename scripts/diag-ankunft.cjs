@@ -15,7 +15,8 @@
 //       ihre `hilfe`-Sätze) und jede Taste (`KEYBINDING_LABELS`); der Satz für Unbekanntes trägt keine zweite Liste.
 //       Befund: „hilfe" → „Unbekannter Befehl. Meintest du: 'warte'?", „help" eine Liste von Hand ohne v1-Satz.
 //   L3  DAS GESPRÄCH — die Chat-Taste (Enter) öffnet das Feld, Enter im Feld sendet und gibt die Welt zurück (W läuft
-//       wieder), Esc gibt sie ohne Senden zurück. Befund: Enter, T und „/" öffneten nichts, nach dem Senden tippte W „w".
+//       wieder), Esc gibt sie ohne Senden zurück; Enter auf einem fokussierten Knopf gehört dem Knopf. Befund: Enter, T und
+//       „/" öffneten nichts, nach dem Senden tippte W „w"; Gegenprüfung Runde 1: Enter auf einem Knopf öffnete den Chat.
 //   L7  DER START-GURT — die Hotbar eines neuen Spielers liest den Katalog (`_katalogSichtbar`): je Studio-Art EIN
 //       platzierbares Werk, kein Alt-Doppel. Befund: Felsblock · Wasserfall · Damm.
 //   LK  DIE KAMERA UND DIE PFLANZEN — die Stamm-Blocker eines Studio-Baums tragen seine Welt-Skala (der Körper stößt an den
@@ -142,6 +143,8 @@ function gespraechVerdict(m) {
     if (m.nachSenden === "chat-input") out.push("nach dem Senden bleibt der Fokus im Feld (W tippt „w\")");
     if (!m.wNachSenden) out.push("nach dem Senden läuft W nicht");
     if (m.nachEsc === "chat-input") out.push("Esc gibt die Welt nicht zurück");
+    if (m.enterAufKnopf == null) out.push("kein Knopf für die Probe (Vorbedingung)");
+    else if (m.enterAufKnopf !== "knopf") out.push(`Enter auf einem fokussierten Knopf öffnet das Gespräch und nimmt ihm den Fokus (${m.enterAufKnopf})`);
     return out;
 }
 function gurtVerdict(m) {
@@ -457,6 +460,16 @@ async function probe(arg) {
         ci.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape", bubbles: true }));
         m.nachEsc = document.activeElement ? document.activeElement.id || document.activeElement.tagName : null;
         if (document.activeElement === ci) ci.blur();
+        // Enter auf einem fokussierten Knopf gehört dem Knopf (Gegenprüfung Runde 1: er öffnete zusätzlich den Chat und
+        // nahm ihm den Fokus — die Tastatur-Bedienung brach)
+        const knopf = document.getElementById("camera-mode-toggle") || document.querySelector("button");
+        if (knopf) {
+            knopf.focus();
+            knopf.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", code: "Enter", bubbles: true }));
+            const a = document.activeElement;
+            m.enterAufKnopf = a === knopf ? "knopf" : a ? a.id || a.tagName : null;
+            if (a && a.blur) a.blur();
+        }
         m.gestartet = true;
     } catch (e) {
         out.gespraech = Object.assign(out.gespraech || {}, { err: (e && e.stack) || String(e) });
@@ -937,11 +950,12 @@ async function probe(arg) {
             [
                 "L3",
                 gespraechVerdict,
-                { gestartet: true, enterFokus: "chat-input", wImFeld: false, gesendet: true, nachSenden: "BODY", wNachSenden: true, nachEsc: "BODY" },
+                { gestartet: true, enterFokus: "chat-input", wImFeld: false, gesendet: true, nachSenden: "BODY", wNachSenden: true, nachEsc: "BODY", enterAufKnopf: "knopf" },
                 [
                     ["Enter öffnet nichts (Befund)", { enterFokus: "BODY" }, "Enter öffnet das Gespräch nicht"],
                     ["Fokus bleibt im Feld (Befund)", { nachSenden: "chat-input", wNachSenden: false }, "nach dem Senden bleibt der Fokus im Feld"],
                     ["Esc hält das Feld", { nachEsc: "chat-input" }, "Esc gibt die Welt nicht zurück"],
+                    ["Enter stiehlt dem Knopf den Fokus (Gegenprüfung)", { enterAufKnopf: "chat-input" }, "Enter auf einem fokussierten Knopf öffnet das Gespräch"],
                 ],
             ],
             [
@@ -1110,10 +1124,21 @@ async function probe(arg) {
         check(`${kurz} ${name}`, v.length === 0, `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`);
     };
     console.log("=== L2a · L1 · L2b · L3 · L7 — ANKOMMEN ===");
-    zeige("L2a", "das erste Bild ist der Ladeschirm, er weicht dem ersten Weltbild (Boden unter dem Spieler)", out.lade, ladeschirmVerdict, (m) => `im HTML ${m.imHtml} · z ${m.zIndex} · ohne Boden ${m.ohneBoden} („${m.standZeile}") · mit Boden ${m.mitBoden}`);
+    zeige(
+        "L2a",
+        "das erste Bild ist der Ladeschirm, er weicht dem FERTIGEN Weltbild (Boden, Bäume und Bauten der Mesh-Zone, Streu, ferne Karten)",
+        out.lade,
+        ladeschirmVerdict,
+        (m) =>
+            `im HTML ${m.imHtml} · z ${m.zIndex} · ` +
+            Object.entries(m.faelle || {})
+                .map(([k, z]) => `${k}: ${z.weg ? "weicht" : "bleibt"}${z.stand ? ` („${z.stand}")` : ""}${z.warn ? " + WARN" : ""}`)
+                .join(" · ") +
+            (m.baumD != null ? ` · Baum ${m.baumD} m` : "")
+    );
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
-    zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc}`);
+    zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);
     zeige("L7", "der Start-Gurt liest den Katalog (je Studio-Art ein Werk)", out.gurt, gurtVerdict, (m) => `${(m.hotbar || []).filter(Boolean).join(" · ")} (Arten im Katalog: ${(m.katalogArten || []).join(", ")})`);
     console.log("=== LK — DIE KAMERA UND DER BAUM ===");
     zeige(

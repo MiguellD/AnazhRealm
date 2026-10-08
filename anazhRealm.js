@@ -89672,8 +89672,11 @@ class AnazhRealm {
             // keys-Setzung erst NACH dem inInput-Check — sonst läuft der Avatar beim Tippen im Chat.
             if (inInput) return;
             // DAS GESPRÄCH (Leben-Schau 07.10., L3): die Chat-Taste (Enter) öffnet das Feld — vorher öffneten Enter, T und
-            // „/" nichts, der Spieler musste Esc drücken und ins Feld klicken. Keine Spiel-Taste fällt dabei an.
+            // „/" nichts, der Spieler musste Esc drücken und ins Feld klicken. Keine Spiel-Taste fällt dabei an. Liegt der
+            // Fokus auf einem bedienbaren Element (`_uiBedienFokus`) oder hat ein Element die Taste schon verbraucht, gehört
+            // sie ihm (Gegenprüfung Runde 1: Enter auf einem Knopf öffnete zusätzlich den Chat und nahm ihm den Fokus).
             if (this._actionForBindingCode(event.code) === "chat") {
+                if (event.defaultPrevented || this._uiBedienFokus(target)) return;
                 if (this._chatOeffnen()) event.preventDefault();
                 return;
             }
@@ -94709,6 +94712,16 @@ class AnazhRealm {
                 /* Policy: kein Lock, nichts zu lösen */
             }
         }
+    }
+
+    // Liegt der Fokus auf einem bedienbaren Element der UI — Knopf, Verweis, Auswahl, Faltkopf, eine Rolle „button" oder
+    // ein Element mit Tab-Platz? Dann gehört ihm Enter. Die Welt (body, die Leinwand) ist es nie.
+    _uiBedienFokus(el) {
+        if (!el || typeof el.closest !== "function" || typeof document === "undefined") return false;
+        if (el === document.body || el === document.documentElement) return false;
+        const lw = this.state.renderer && this.state.renderer.domElement;
+        if (lw && el === lw) return false;
+        return !!el.closest('button, a[href], select, summary, [role="button"], [tabindex]:not([tabindex="-1"])');
     }
 
     // DAS GESPRÄCH ÖFFNEN (die Chat-Taste, L3): der Zeiger wird frei, jede gehaltene Taste fällt (W lief sonst weiter,
