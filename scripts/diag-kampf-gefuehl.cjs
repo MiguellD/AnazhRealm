@@ -551,16 +551,17 @@ async function WELLE_L() {
                 const tb = c.userData._tierBaum;
                 const sk = new THREE.Vector3();
                 c.getWorldScale(sk);
-                const vol = tb && tb.wrap ? hautVolumen(tb.wrap, c, ["fell"]) * sk.x * sk.y * sk.z : 0;
+                // die feine Stufe allein (die Grobstufe unter demselben Wrap trägt die Haut noch einmal)
+                const gl = c.userData._gelenk;
+                const vol = tb && gl ? hautVolumen(gl.nah, c, ["fell"]) * sk.x * sk.y * sk.z : 0;
                 leiber[name] = { wirtKg: wirtLeib(c), gestaltKg: dichteTier > 0 ? vol * dichteTier : null, vM3: vol };
                 r.removeCreature(c);
             }
             {
-                // der Spieler: seine Nah-Gestalt (der Fern-Klon daneben trägt dieselbe Haut noch einmal)
+                // der Spieler: seine Nah-Gestalt (die Grobstufe daneben trägt dieselbe Haut noch einmal)
                 let nah = null;
                 pm.traverse((o) => {
-                    if (!nah && o.userData && o.userData._menschFern && o.userData._menschFern.nah)
-                        nah = o.userData._menschFern.nah;
+                    if (!nah && o.userData && o.userData._gelenk && o.userData._gelenk.nah) nah = o.userData._gelenk.nah;
                 });
                 const vol = hautVolumen(nah || pm, pm, ["haut"]);
                 leiber.mensch = {

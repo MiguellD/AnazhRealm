@@ -1,40 +1,37 @@
 #!/usr/bin/env node
 // ─────────────────────────────────────────────────────────────────────────
-// diag-tier-fern.cjs — DER TIER-FERN-GUSS TRÄGT (npm run gate:tier-fern;
+// diag-tier-fern.cjs — DIE GELENKIGE GROBSTUFE TRÄGT (npm run gate:tier-fern;
 // Matrix-Zelle tier.lods — die Geometrie-Fernstufe der Kreaturen).
 //
-// Die Linse hält vier Wahrheiten am ECHTEN Chokepoint (der wrap↔fern-Toggle
-// in updateCreatures, TIER_FERN_DIST_SQ ± TIER_FERN_HYST), headless/Null-
-// Renderer, Produktions-Boot:
+// Die Linse hält vier Wahrheiten am ECHTEN Chokepoint (der EINE Stufen-Schalter
+// `_gelenkStufe` in updateCreatures, Grenze `ab` × Größe ± `hyst` aus der
+// Kern-Zeile tetrapoda lod.budget.kreatur), headless/Null-Renderer,
+// Produktions-Boot:
 //
-//  (N) NAH/FERN-GEOMETRIE: der nahe Wolf trägt den vollen Gelenk-Baum, der
-//      ferne Wolf das gemergte lod1-Standbild (bakeTierInstance lod≥1 —
-//      grobe Segmente, alles in den Root gebacken). Gezählt wird die
-//      SICHTBARE Kette (visible): nah trägt die Haut an ≥ 20 Bones (V18.497:
-//      der Leib ist EINE geskinnte Haut — Gelenkigkeit statt Mesh-Zahl), fern
-//      < 20 Meshes und < ¼ der nahen Dreiecke. Alle Zahlen stehen im Bericht.
-//  (H) HYSTERESE: ein Distanz-Pendeln INNERHALB des ±10-%-Bandes um die
+//  (N) NAH/FERN-GEOMETRIE: der nahe Wolf zeigt die feine Stufe (die Haut an
+//      ≥ 20 Bones), der ferne die gelenkige Grobstufe (bakeTierInstance lod≥1,
+//      an DIESELBEN Knochen gebunden). Gezählt wird, was die Haupt-Kamera
+//      zeichnet: die sichtbare Kette auf Layer 0 (nah liegt die Grobstufe als
+//      Schatten-Zwilling auf SHADOW_TWIN_LAYER — die Haupt-Kamera sieht sie nie);
+//      fern < 20 Meshes und < ¼ der nahen Dreiecke. Die Grenze des Wirts ist die
+//      der Kern-Zeile (`_gelenk.abM` = `ab`, `hyst` gleich).
+//  (H) HYSTERESE: ein Distanz-Pendeln INNERHALB des ±hyst-Bandes um die
 //      Schwelle schaltet NIE (kein Sichtbarkeits-Flackern) und gießt NIE
-//      (kein _ofenKreaturTemplate-Aufruf, das Memo wächst nicht — die
-//      Geometrie bleibt das memoisierte Template). Gegenprobe (nicht
-//      vakuös): ein WEITES Pendeln über beide Kanten hinaus schaltet
-//      jeden Tick — der Toggle lebt.
+//      (kein _ofenKreaturTemplate-Aufruf, das Memo wächst nicht). Gegenprobe
+//      (nicht vakuös): ein WEITES Pendeln über beide Kanten schaltet jeden Tick.
 //  (D) DETERMINISMUS (render-rein): zwei Läufe über N Ticks — einmal MIT
-//      Fern-Zweig, einmal OHNE (der alte Zustand) — liefern BYTE-GLEICHE
-//      Sim-Werte (Position/Yaw/Emotion). Math.random ist in beiden Läufen
-//      mit DERSELBEN Seed-Folge gestubbt (der Sprung-Wurf ist Alt-Random),
-//      aiFrame/Anim-Uhr auf denselben Start gepinnt — die EINZIGE Differenz
-//      ist der Fern-Zweig. Divergenz = die Darstellung sickerte in die Sim.
-//  (S) SELBST-TEST (die Linse feuert): mit deaktiviertem Fern-Zweig
-//      (tb.fern = null — der Zustand vor dem Fern-Guss: ~80 Meshes auf
-//      jede Distanz) MUSS die (N)-Messung den alten Fehler erkennen
-//      (sichtbare Fern-Mesh-Zahl ≥ 20). Stub wird restauriert.
+//      Stufen-Schalter, einmal OHNE (der Schalter gestubbt: immer nah) — liefern
+//      BYTE-GLEICHE Sim-Werte (Position/Yaw/Emotion). Math.random ist in beiden
+//      Läufen mit DERSELBEN Seed-Folge gestubbt, aiFrame/Anim-Uhr gepinnt — die
+//      EINZIGE Differenz ist die Stufe. Divergenz = die Darstellung sickerte in die Sim.
+//  (S) SELBST-TEST (die Linse feuert): mit gestubbtem Schalter (immer nah — der
+//      volle Baum auf jede Distanz) MUSS die (N)-Messung den Fehler erkennen.
+//      Stub wird restauriert.
 //
-// Frustum-Disziplin: der Toggle läuft nur `inFrustum` — die Linse stubbt
+// Frustum-Disziplin: der Schalter läuft nur `inFrustum` — die Linse stubbt
 // isInFrustum ≡ true (in ALLEN Läufen identisch, auch in beiden D-Läufen)
 // und restauriert (Gate-Hook-Lehre). Proben werden vor jedem Tick auf ihre
-// Distanz re-gepinnt (Wander/Separation driftet nicht hinaus); Distanzen
-// skalieren mit der echten Körpergröße (creature.scale.x).
+// Distanz re-gepinnt; Distanzen skalieren mit der echten Körpergröße (creature.scale.x).
 //   node scripts/diag-tier-fern.cjs
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
@@ -119,8 +116,12 @@ const server = http.createServer((req, res) => {
             const o = { checks: {} };
             const pm = s.playerMesh && s.playerMesh.position;
             if (!pm) return { error: "kein Spieler" };
-            if (!Number.isFinite(A.TIER_FERN_DIST_SQ) || !Number.isFinite(A.TIER_FERN_HYST))
-                return { error: "TIER_FERN-Konstanten fehlen" };
+            // DIE KERN-ZEILE: die Grenze und die Hysterese der Grobstufe (tetrapoda lod.budget.kreatur)
+            const BK = window.__tetrapodaCore && window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur;
+            const abKern = BK && BK[1] ? BK[1].ab : null;
+            const hyst = BK ? BK.hyst : null;
+            if (!(abKern > 0) || !(hyst > 0)) return { error: "Kern-Zeile kreatur trägt kein ab/hyst" };
+            if (typeof r._gelenkStufe !== "function") return { error: "_gelenkStufe fehlt" };
 
             // ── Harness-Disziplin: leere Bühne (keine Ambient-Separation), Frustum an ──
             for (const c of s.creatures.slice()) r.removeCreature(c);
@@ -128,12 +129,11 @@ const server = http.createServer((req, res) => {
             s.maxCreatures = 8;
             const saveFrustum = r.isInFrustum;
             r.isInFrustum = function () {
-                return true; // der Toggle läuft nur inFrustum — für die Messung immer „im Bild"
+                return true; // der Schalter läuft nur inFrustum — für die Messung immer „im Bild"
             };
 
-            // SICHTBARE Meshes + Dreiecke (visible-Kette ab der Gruppe — was der Renderer zöge) und die
-            // größte Bone-Zahl einer sichtbaren geskinnten Haut (V18.497: der Leib ist EINE Haut über
-            // den Gelenk-Baum — die Mesh-Zahl misst seitdem Buckets, nicht die Gelenkigkeit).
+            // Was die HAUPT-Kamera zeichnet (sichtbare Kette, Layer 0) + Dreiecke und die größte Bone-Zahl einer
+            // sichtbaren geskinnten Haut (V18.497: der Leib ist EINE Haut über den Gelenk-Baum).
             let zTris = 0,
                 zBones = 0;
             const sichtbar = (node) => {
@@ -142,7 +142,7 @@ const server = http.createServer((req, res) => {
                 zBones = 0;
                 const walk = (n) => {
                     if (n.visible === false) return;
-                    if (n.isMesh && n.geometry) {
+                    if (n.isMesh && n.geometry && n.layers.isEnabled(0)) {
                         m++;
                         const g = n.geometry;
                         zTris += g.index ? g.index.count / 3 : g.attributes.position.count / 3;
@@ -164,12 +164,19 @@ const server = http.createServer((req, res) => {
             };
             const c = spawnWolf();
             if (!c) return { error: "Wolf-Spawn fehlgeschlagen (Ofen kalt?)" };
-            const tb = c.userData && c.userData._tierBaum;
-            if (!tb || !tb.wrap) return { error: "_tierBaum fehlt am Wolf" };
-            o.checks.fernGebaut = !!tb.fern; // der lod1-Zweig hängt am Körper
+            const gl = c.userData && c.userData._gelenk;
+            if (!gl || !gl.nah || !gl.fern) return { error: "_gelenk fehlt am Wolf" };
+            o.checks.fernGebaut = gl.meshes.length > 0 && gl.meshes.every((m) => m.isSkinnedMesh);
+            o.checks.zeileGelesen = gl.abM === abKern && gl.hyst === hyst; // die Grenze des Wirts IST die Kern-Zeile
+            o.abKern = abKern;
+            o.hyst = hyst;
             const fL = c.scale.x || 1;
-            const fern = Math.sqrt(A.TIER_FERN_DIST_SQ) * fL;
+            const fern = abKern * fL;
             o.fernDist = fern;
+            const nahZustand = () =>
+                gl.istFern === false && gl.nah.visible === true && gl.meshes.every((m) => !m.layers.isEnabled(0));
+            const fernZustand = () =>
+                gl.istFern === true && gl.nah.visible === false && gl.meshes.every((m) => m.layers.isEnabled(0));
             // Pin: exakte Distanz auf der +x-Achse (XZ — dieselbe Ebene wie distSq im Loop).
             const pin = (dist) => {
                 c.position.x = pm.x + dist;
@@ -181,39 +188,34 @@ const server = http.createServer((req, res) => {
                 pin(dist);
             };
 
-            // ── (N) NAH voll · FERN grob — die sichtbare Mesh-Zahl ──
+            // ── (N) NAH voll · FERN grob — was die Haupt-Kamera zeichnet ──
             tick(0.4 * fern);
             o.nahMeshes = sichtbar(c);
             o.nahTris = zTris;
             o.nahBones = zBones;
-            o.checks.nToggleNah = tb.wrap.visible === true && (!tb.fern || tb.fern.visible === false);
-            tick(1.4 * fern); // jenseits der (1+h)-Kante — der Fern-Zweig muss tragen
+            o.checks.nToggleNah = nahZustand();
+            tick(1.4 * fern); // jenseits der (1+h)-Kante — die Grobstufe muss tragen
             o.fernMeshes = sichtbar(c);
             o.fernTris = zTris;
-            o.checks.nToggleFern = !!tb.fern && tb.fern.visible === true && tb.wrap.visible === false;
-            // Fern zieht weniger Draws als nah (seit der Starr-Bindung trägt nah ~11 statt ~40 Meshes — die
-            // absolute 20 stammte aus der 80-Meshes-Welt; die Kosten-Wahrheit sind Dreiecke, unten).
+            o.fernBones = zBones;
+            o.checks.nToggleFern = fernZustand();
             o.checks.nFernGrob = o.fernMeshes < 20 && o.fernMeshes < o.nahMeshes;
             o.checks.nFernKleiner = o.fernTris < o.nahTris / 4; // und << nah (Dreiecke — die Kosten)
             o.checks.nNahVoll = o.nahBones >= 20; // nah bleibt der volle Gelenk-Baum (die Haut trägt ≥ 20 Bones)
+            o.checks.nFernGelenkig = o.fernBones >= 20; // fern ist die Grobstufe gelenkig (dieselben Knochen)
 
-            // ── (S) SELBST-TEST: der ALTE Zustand (kein Fern-Zweig) wird ERKANNT ──
-            // tb.fern = null ⇒ der Toggle no-opt, der volle Baum bleibt auf jede
-            // Distanz sichtbar — exakt die 80-Meshes-Welt vor dem Fern-Guss. Die
-            // (N)-Messung MUSS dann rot schlagen (sonst ist die Linse vakuös).
-            const saveFern = tb.fern;
-            tb.fern = null;
-            tb.wrap.visible = true;
-            if (saveFern) saveFern.visible = false;
+            // ── (S) SELBST-TEST: der Schalter gestubbt (immer nah — der volle Baum auf jede Distanz) wird ERKANNT ──
+            const saveStufe = r._gelenkStufe;
+            r._gelenkStufe = function (gruppe) {
+                return saveStufe.call(this, gruppe, 0); // die nahe Stufe auf jede Distanz
+            };
             tick(1.4 * fern);
             o.sAltMeshes = sichtbar(c);
             o.sAltTris = zTris;
-            // dasselbe (N)-Urteil wie oben MUSS den alten Fehler erkennen (Draws ODER Dreiecke fallen nicht)
             o.checks.sLensFires = !(o.sAltMeshes < 20 && o.sAltMeshes < o.nahMeshes && o.sAltTris < o.nahTris / 4);
-            tb.fern = saveFern; // restaurieren (Gate-Hook-Lehre)
+            r._gelenkStufe = saveStufe; // restaurieren (Gate-Hook-Lehre)
 
             // ── (H) HYSTERESE: Pendeln an der Kante schaltet nicht, gießt nicht ──
-            // Guss-Zähler auf den EINEN Ofen-Chokepoint (kein Guss im Frame-Takt).
             const memo = A._tierOfenMemo;
             const memoVor = memo ? memo.size : -1;
             const saveOfen = r._ofenKreaturTemplate;
@@ -222,44 +224,38 @@ const server = http.createServer((req, res) => {
                 gussCalls++;
                 return saveOfen.apply(this, arguments);
             };
-            // Pendelbreite aus der WAHRHEIT abgeleitet (Verify-Ernte: hart kodierte
-            // ±2 % urteilten über die Konstantenwahl statt über die Mechanik):
-            // ±h/5 liegt für jedes legitime TIER_FERN_HYST tief im Band.
-            const hyst = A.TIER_FERN_HYST;
+            // Pendelbreite aus der WAHRHEIT abgeleitet: ±h/5 liegt für jedes legitime hyst tief im Band.
             const bandTief = hyst / 5;
             tick(0.5 * fern); // definierter Start: nah
-            const startNah = tb.wrap.visible === true;
+            const startNah = nahZustand();
             let flipsEng = 0;
-            let prev = tb.wrap.visible;
+            let prev = gl.istFern;
             for (let k = 0; k < 40; k++) {
                 tick((k % 2 ? 1 + bandTief : 1 - bandTief) * fern);
-                if (tb.wrap.visible !== prev) flipsEng++;
-                prev = tb.wrap.visible;
+                if (gl.istFern !== prev) flipsEng++;
+                prev = gl.istFern;
             }
             o.flipsEng = flipsEng;
             o.checks.hKeinFlackern = startNah && flipsEng === 0;
-            // (H2, Verify-Ernte): dieselbe Eng-Pendelprobe aus dem FERN-Start —
-            // echte Hysterese hält den letzten Zustand AUCH von fern kommend; eine
-            // Regression auf EINE (verschobene) Kante bei (1+h) hielte die Nah-
-            // Probe oben aus, flippte hier aber sofort zurück.
+            // (H2): dieselbe Eng-Pendelprobe aus dem FERN-Start — echte Hysterese hält den letzten Zustand auch von fern.
             tick(1.4 * fern);
-            const startFern = !!tb.fern && tb.fern.visible === true;
+            const startFern = fernZustand();
             let flipsEngFern = 0;
-            prev = tb.wrap.visible;
+            prev = gl.istFern;
             for (let k = 0; k < 40; k++) {
                 tick((k % 2 ? 1 + bandTief : 1 - bandTief) * fern);
-                if (tb.wrap.visible !== prev) flipsEngFern++;
-                prev = tb.wrap.visible;
+                if (gl.istFern !== prev) flipsEngFern++;
+                prev = gl.istFern;
             }
             o.flipsEngFern = flipsEngFern;
-            o.checks.hKeinFlackernFern = startFern && flipsEngFern === 0 && !!tb.fern && tb.fern.visible === true;
+            o.checks.hKeinFlackernFern = startFern && flipsEngFern === 0 && fernZustand();
             // Gegenprobe (nicht vakuös): WEIT über beide Kanten pendeln MUSS schalten.
             let flipsWeit = 0;
-            prev = tb.wrap.visible;
+            prev = gl.istFern;
             for (let k = 0; k < 10; k++) {
                 tick((k % 2 ? 0.6 : 1.6) * fern);
-                if (tb.wrap.visible !== prev) flipsWeit++;
-                prev = tb.wrap.visible;
+                if (gl.istFern !== prev) flipsWeit++;
+                prev = gl.istFern;
             }
             o.flipsWeit = flipsWeit;
             o.checks.hToggleLebt = flipsWeit >= 8;
@@ -269,10 +265,7 @@ const server = http.createServer((req, res) => {
             o.checks.hKeinGuss = gussCalls === 0 && o.memoDelta === 0;
             r.removeCreature(c);
 
-            // ── (D) DETERMINISMUS: Sim-Werte identisch mit/ohne Fern-Zweig ──
-            // Ein Lauf = frischer Wolf + N freie Ticks (KEIN Pinnen — die Sim
-            // läuft, wohin sie will). Gleiche Random-Seed-Folge, gleicher
-            // aiFrame-/Uhr-Start; die einzige Differenz ist der Fern-Zweig.
+            // ── (D) DETERMINISMUS: Sim-Werte identisch mit/ohne Stufen-Schalter ──
             const mulberry32 = (a) => () => {
                 a |= 0;
                 a = (a + 0x6d2b79f5) | 0;
@@ -285,30 +278,23 @@ const server = http.createServer((req, res) => {
                 Math.random = mulberry32(424242); // DIESELBE Folge je Lauf
                 r._creatureAiFrame = 1000;
                 s.creatureAnimationTime = 100;
-                // IDENTITÄTS-PIN: das Charakter-Wandern hasht die netId — beide
-                // Läufe müssen DENSELBEN Wolf spawnen (c7001), sonst misst die
-                // Linse Identitäts- statt Fern-Differenzen. Ebenso die Echtzeit-
-                // Stempel (task.since/bornAt) — die Sim soll uhr-frei vergleichen.
+                // IDENTITÄTS-PIN: beide Läufe spawnen DENSELBEN Wolf (c7001); Echtzeit-Stempel uhr-frei.
                 s._creatureNetSeq = 7000;
-                // Verify-Ernte: der Lauf spawnt im FERN-REGIME (1.4·Schwelle) —
-                // bei 0.5·Schwelle wäre der Fern-Zweig in BEIDEN Läufen inert
-                // (animDiv/Freeze/Toggle greifen erst jenseits der Kanten) und
-                // die Spur trivial byte-gleich (teil-vakuöse Probe). 60 freie
-                // Ticks driften max. ~4 m — das Regime bleibt jenseits (1−h).
+                // der Lauf spawnt im FERN-Regime (1.4·Schwelle) — sonst wäre die Stufe in beiden Läufen inert
                 const cw = spawnWolf(1.4 * fern);
                 if (!cw) return null;
                 if (cw.userData.task) cw.userData.task.since = 0;
                 cw.userData.bornAt = 0;
-                if (ohneFern && cw.userData._tierBaum) {
-                    cw.userData._tierBaum.fern = null; // der alte Zustand
-                    cw.userData._tierBaum.wrap.visible = true;
-                }
                 const spur = [];
                 let fernAktivTicks = 0;
+                if (ohneFern)
+                    r._gelenkStufe = function (gruppe) {
+                        return saveStufe.call(this, gruppe, 0); // der alte Zustand: immer die nahe Stufe
+                    };
                 for (let k = 0; k < 60; k++) {
                     r.updateCreatures(0.02);
-                    const tbw = cw.userData._tierBaum;
-                    if (tbw && tbw.fern && tbw.fern.visible === true) fernAktivTicks++;
+                    const glw = cw.userData._gelenk;
+                    if (glw && glw.istFern === true) fernAktivTicks++;
                     spur.push(
                         cw.position.x,
                         cw.position.y,
@@ -317,6 +303,7 @@ const server = http.createServer((req, res) => {
                         s.creatureEmotions[s.creatures.indexOf(cw)] === "happy" ? 1 : 0
                     );
                 }
+                r._gelenkStufe = saveStufe; // restaurieren
                 r.removeCreature(cw);
                 return { spur, fernAktivTicks };
             };
@@ -324,8 +311,6 @@ const server = http.createServer((req, res) => {
             const laufOhne = lauf(true);
             const spurMit = laufMit && laufMit.spur;
             const spurOhne = laufOhne && laufOhne.spur;
-            // Regime-Beweis: im MIT-Lauf war der Fern-Zweig wirklich AKTIV (sonst
-            // verglich die Probe zwei identisch-nahe Welten — nicht vakuös).
             o.dFernAktivTicks = laufMit ? laufMit.fernAktivTicks : -1;
             o.checks.dFernAktiv = !!laufMit && laufMit.fernAktivTicks > 30;
             Math.random = saveRandom; // restaurieren (Gate-Hook-Lehre)
@@ -355,7 +340,7 @@ const server = http.createServer((req, res) => {
     await browser.close();
     server.close();
 
-    console.log("\n===== TIER-FERN — Geometrie-Fernstufe der Kreaturen (gate:tier-fern) =====\n");
+    console.log("\n===== TIER-FERN — die gelenkige Grobstufe der Kreaturen (gate:tier-fern) =====\n");
     let ok = true;
     const check = (cond, msg) => {
         console.log(`  ${cond ? "✅" : "❌"} ${msg}`);
@@ -367,17 +352,19 @@ const server = http.createServer((req, res) => {
     } else {
         const c = out.checks;
         console.log(
-            `  Schwelle ${out.fernDist.toFixed(1)} m · Wolf SICHTBAR: nah ${out.nahMeshes} Meshes / ${Math.round(out.nahTris)} Dreiecke / Haut ${out.nahBones} Bones → fern ${out.fernMeshes} Meshes / ${Math.round(out.fernTris)} Dreiecke (alt-Zustand: ${out.sAltMeshes})\n`
+            `  Schwelle ${out.fernDist.toFixed(1)} m (Kern ab ${out.abKern} · hyst ${out.hyst}) · Wolf im Bild: nah ${out.nahMeshes} Meshes / ${Math.round(out.nahTris)} Dreiecke / Haut ${out.nahBones} Bones → fern ${out.fernMeshes} Meshes / ${Math.round(out.fernTris)} Dreiecke / ${out.fernBones} Bones (Schalter gestubbt: ${out.sAltMeshes})\n`
         );
-        check(c.fernGebaut, "(N) der Wolf trägt den lod1-Fern-Zweig (_tierBaum.fern)");
-        check(c.nToggleNah, "(N) nah: der volle Gelenk-Baum sichtbar, das Standbild verdeckt");
-        check(c.nToggleFern, "(N) fern: das Standbild sichtbar, der Gelenk-Baum verdeckt");
+        check(c.fernGebaut, "(N) der Wolf trägt die gelenkige Grobstufe (_gelenk, jedes Teil geskinnt)");
+        check(c.zeileGelesen, `(N) die Grenze des Schalters IST die Kern-Zeile (ab ${out.abKern} m, hyst ${out.hyst})`);
+        check(c.nToggleNah, "(N) nah: die feine Stufe im Bild, die Grobstufe nur in den Kaskaden (SHADOW_TWIN_LAYER)");
+        check(c.nToggleFern, "(N) fern: die Grobstufe im Bild (Layer 0), die feine verdeckt");
+        check(c.nFernGelenkig, `(N) fern ist die Grobstufe gelenkig (Haut an ${out.fernBones} Bones ≥ 20)`);
         check(c.nNahVoll, `(N) nah ist der volle Gelenk-Baum (Haut an ${out.nahBones} Bones ≥ 20)`);
         check(c.nFernGrob, `(N) fern ist GROB (${out.fernMeshes} Meshes < 20 und < ${out.nahMeshes} nah)`);
         check(c.nFernKleiner, `(N) und << nah (${Math.round(out.fernTris)} < ${Math.round(out.nahTris)}/4 Dreiecke)`);
         check(
             c.sLensFires,
-            `SELBST-TEST (S): ohne Fern-Zweig erkennt die Linse den alten Zustand (fern ${out.sAltMeshes} Meshes / ${Math.round(out.sAltTris)} Dreiecke = nah)`
+            `SELBST-TEST (S): mit gestubbtem Schalter erkennt die Linse den alten Zustand (fern ${out.sAltMeshes} Meshes / ${Math.round(out.sAltTris)} Dreiecke = nah)`
         );
         check(
             c.hKeinFlackern,
@@ -393,12 +380,12 @@ const server = http.createServer((req, res) => {
         check(c.dFernAktiv, `(D) das FERN-Regime war im MIT-Lauf real aktiv (${out.dFernAktivTicks}/60 Ticks)`);
         check(
             c.dIdentisch,
-            `(D) Sim-Spur BYTE-GLEICH mit/ohne Fern-Zweig (${out.dLen || 0} Werte${out.dDiffAt >= 0 ? `, erste Differenz @${out.dDiffAt}` : ""})`
+            `(D) Sim-Spur BYTE-GLEICH mit/ohne Stufen-Schalter (${out.dLen || 0} Werte${out.dDiffAt >= 0 ? `, erste Differenz @${out.dDiffAt}` : ""})`
         );
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
     console.log(
-        `\n  ${ok ? "✅ GRÜN — der Tier-Fern-Guss trägt (grob · hysterese-still · render-rein)" : "❌ ROT — die Tier-Fernstufe trägt nicht"}\n`
+        `\n  ${ok ? "✅ GRÜN — die gelenkige Grobstufe trägt (grob · Kern-Zeile · hysterese-still · render-rein)" : "❌ ROT — die Tier-Fernstufe trägt nicht"}\n`
     );
     process.exit(ok ? 0 : 1);
 })();

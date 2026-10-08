@@ -116,10 +116,10 @@ const P = {
         dynamik: ["_tickAutoSettlement"],
     },
     mensch: {
-        // KREATUR-KOSTEN (Orakel Tier-1 #2): der lod1-Fern-Guss (bakeMenschInstance
-        // fein) wird KONSUMIERT — der EINE Toggle-Chokepoint + die EINE Distanz-
-        // Konstante (Peer-Tick liest sie; gate:kreatur-kosten misst den Konsum live).
-        lods: ["_menschFernToggle", "MENSCH_FERN_DIST_SQ"],
+        // KREATUR-KOSTEN (Orakel Tier-1 #2; S3): die gelenkige Grobstufe (bakeMenschInstance
+        // fein) wird KONSUMIERT — die EINE Gelenk-Gestalt + der EINE Stufen-Schalter
+        // (Grenze aus der Kern-Zeile; Peer-Tick liest ihn; gate:kreatur-kosten misst den Konsum live).
+        lods: ["_gelenkStufe", "_gelenkGestalt"],
         rahmen: ["bauMensch"],
         bewegung: ["_animateCompoundMotion"],
         material: ["_koerperDials"],

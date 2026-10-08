@@ -18,11 +18,11 @@
 //      vorher fror er mitten im Schritt (harter Pop beim Wieder-Annähern).
 //      Prämisse mitgemessen: VOR dem Freeze ist der Schritt messbar
 //      mid-step (> Schwelle), sonst wäre die Linse trivial grün.
-//  (C) MENSCH-FERN-GUSS: der lod≥1-Pfad des koerper-Gusses (bakeMenschInstance
-//      fein — gemergte Fern-Gestalt) wird KONSUMIERT: _buildHumanGroup trägt
-//      nah+fern, der EINE Toggle-Chokepoint (_menschFernToggle) schaltet am
-//      Distanz-Band (MENSCH_FERN_DIST_SQ), und der ECHTE Peer-Tick
-//      (_p2pUpdatePeer) konsumiert ihn. Mesh-/Vertex-Differenz gemessen.
+//  (C) DIE GROBSTUFE DES MENSCHEN: der lod≥1-Pfad des koerper-Gusses (bakeMenschInstance
+//      fein — die gelenkige Grobstufe, S3) wird KONSUMIERT: _buildHumanGroup trägt
+//      nah+fern (_gelenk), der EINE Stufen-Schalter (_gelenkStufe) schaltet an der
+//      Grenze der Kern-Zeile (ab, hyst), und der ECHTE Peer-Tick (_p2pUpdatePeer)
+//      konsumiert ihn. Mesh-/Vertex-Differenz gemessen.
 //  (R) STARR-BINDUNG + KÖRPER-KUGEL (02.10.): der Ofen-Guss zieht je Material
 //      EINEN Draw — kein starres Teil teilt Material/Schatten/Attribut-Satz mit
 //      einem zweiten ungebundenen (vorher 35 Draws je Wolf); jede geskinnte
@@ -30,6 +30,12 @@
 //      (ein Wolf im Gang, 24 Takte, jede Hülle Vertex für Vertex in der Pose)
 //      bleibt in der Kugel — kein Pop am Bildrand. (S3) Starr-Bindung gestubbt →
 //      die Linse zählt die unverschmolzenen Teile.
+//  (W) DER WERFER JE GESTALT (S3, Lehre 19): je Art und Mensch nah (10 m × Größe) und mittel (45 m × Größe) nach
+//      dem echten Tick — Werfer = jedes Mesh mit castShadow, sichtbarer Kette und Ebenen in der Kaskaden-Maske. Soll
+//      aus der Kern-Zeile: der Wurf-Teil der Grobstufe (`wurf.seh`, gezählt mit phyto-core budgetSippen über den
+//      Ofen-Ausgang), Tier ≤ 6 200 / 1, Mensch ≤ 38 000 / 5, mittel wirft, nah wirft kein L0-Mesh; dazu die Absenz der
+//      castShadow-Literale am Gelenk-Guss und der Wirts-Distanzen. (S5) Zwilling gestubbt → die L0 wirft wieder, rot.
+//      (R) prüft dazu: die Grobstufe ist geskinnt und trägt die Knochen der L0 (EIN Skelett), im Gang in ihrer Kugel.
 //  (T) SCHMAL (W7): jeder Index über ≤ 65 535 Vertices trägt 16 bit (r184 weitete ihn auf 32, der Stamm hält ihn
 //      schmal — `_backendGesetz`), jedes Haut-Gewicht unorm16 (Wolf · Mensch). (S4) die alten Formen gestubbt → die Linse
 //      nennt die breiten Puffer.
@@ -136,7 +142,7 @@ const server = http.createServer((req, res) => {
                 "_creatureAnimDiv",
                 "_creatureAnimFade",
                 "_tierBaumNeutralStance",
-                "_menschFernToggle",
+                "_gelenkStufe",
                 "_animateCompoundMotion",
                 "_buildHumanGroup",
                 "_p2pUpdatePeer",
@@ -294,10 +300,17 @@ const server = http.createServer((req, res) => {
             cleanup([probes.voll, probes.halb, probes.viertel, probes.hinter]);
             s.maxCreatures = saveMax;
 
-            // ── (C) MENSCH-FERN-GUSS: lod1 gebaut + am ECHTEN Peer-Tick konsumiert ──
+            // ── (C) DIE GELENK-GESTALT DES MENSCHEN: die Grobstufe gebaut + am ECHTEN Peer-Tick über den EINEN Schalter ──
             const g = r._buildHumanGroup();
-            const mf = g && g.userData && g.userData._menschFern;
+            const mf = g && g.userData && g.userData._gelenk;
             o.checks.cFernGebaut = !!(mf && mf.nah && mf.fern);
+            // die Stufen eines Zustands: nah = die feine sichtbar, die Grobstufe nur in den Kaskaden; fern = umgekehrt
+            const istNah = () =>
+                mf.istFern === false &&
+                mf.nah.visible === true &&
+                mf.meshes.every((m) => !m.layers.isEnabled(0) && m.layers.isEnabled(A.SHADOW_TWIN_LAYER));
+            const istFern = () =>
+                mf.istFern === true && mf.nah.visible === false && mf.meshes.every((m) => m.layers.isEnabled(0));
             if (mf && mf.nah && mf.fern) {
                 const stat = (node) => {
                     let m = 0,
@@ -315,11 +328,11 @@ const server = http.createServer((req, res) => {
                 o.fernStat = stat(mf.fern);
                 o.checks.cVertexDiff = o.fernStat.v > 0 && o.fernStat.v < o.nahStat.v * 0.8; // messbar leichter
                 o.checks.cMeshDiff = o.fernStat.m < o.nahStat.m; // weniger Draws
-                // der EINE Toggle-Chokepoint
-                r._menschFernToggle(g, A.MENSCH_FERN_DIST_SQ * 4);
-                const t1 = mf.fern.visible === true && mf.nah.visible === false;
-                r._menschFernToggle(g, 4);
-                const t2 = mf.nah.visible === true && mf.fern.visible === false;
+                // der EINE Stufen-Schalter (Grenze `ab` aus der Kern-Zeile)
+                r._gelenkStufe(g, mf.abM * mf.abM * 4);
+                const t1 = istFern();
+                r._gelenkStufe(g, 4);
+                const t2 = istNah();
                 o.checks.cToggle = t1 && t2;
                 // der ECHTE Konsument: _p2pUpdatePeer schaltet am Distanz-Band
                 const entry = {
@@ -334,10 +347,10 @@ const server = http.createServer((req, res) => {
                     lastMovedAt: 0,
                 };
                 r._p2pUpdatePeer(entry, performance.now() / 1000, 0.016);
-                o.checks.cPeerFern = mf.fern.visible === true && mf.nah.visible === false;
+                o.checks.cPeerFern = istFern();
                 entry.x = pm.x + 5;
                 r._p2pUpdatePeer(entry, performance.now() / 1000, 0.016);
-                o.checks.cPeerNah = mf.nah.visible === true && mf.fern.visible === false;
+                o.checks.cPeerNah = istNah();
             }
 
             // ── (R) STARR-BINDUNG + KÖRPER-KUGEL ──
@@ -377,7 +390,7 @@ const server = http.createServer((req, res) => {
             const wolfT = recW ? r._ofenKreaturTemplate(recW, null, 0) : null;
             o.rWolf = wolfT ? starrZensus(wolfT.root) : null;
             const gM = r._buildHumanGroup();
-            const mfM = gM && gM.userData && gM.userData._menschFern;
+            const mfM = gM && gM.userData && gM.userData._gelenk;
             o.rMensch = mfM && mfM.nah ? starrZensus(mfM.nah) : null;
             o.checks.rWolfStarr = !!o.rWolf && o.rWolf.unverschmolzen === 0 && o.rWolf.skins >= 2;
             o.checks.rMenschStarr = !!o.rMensch && o.rMensch.unverschmolzen === 0;
@@ -702,7 +715,7 @@ const server = http.createServer((req, res) => {
     server.close();
 
     console.log(
-        "\n===== KREATUR-KOSTEN — Anim-Raten-LOD · neutrale Stance · Mensch-Fern-Guss (gate:kreatur-kosten) =====\n"
+        "\n===== KREATUR-KOSTEN — Anim-Raten-LOD · neutrale Stance · Grobstufe · Werfer je Gestalt (gate:kreatur-kosten) =====\n"
     );
     let ok = true;
     const check = (cond, msg) => {
@@ -808,16 +821,16 @@ const server = http.createServer((req, res) => {
             c.wAbsenz,
             `(W) ABSENZ: castShadow-Literale am Gelenk-Guss ${out.wLiterale} · Leser der Wirts-Distanzen ${out.wDistLeser.length}${out.wDistLeser.length ? " (" + out.wDistLeser.join(", ") + ")" : ""} · Konstanten ${out.wDistKonst.length ? out.wDistKonst.join(", ") : "0"}`
         );
-        check(c.cFernGebaut, "(C) der Mensch trägt den lod1-Fern-Guss (_menschFern nah+fern)");
+        check(c.cFernGebaut, "(C) der Mensch trägt die gelenkige Grobstufe (_gelenk nah+fern)");
         check(c.cVertexDiff, "(C) messbare Vertex-Differenz (fern < 80 % von nah)");
         check(c.cMeshDiff, "(C) weniger Meshes im Fern-Guss");
-        check(c.cToggle, "(C) der EINE Toggle-Chokepoint schaltet nah↔fern am Distanz-Band");
-        check(c.cPeerFern, "(C) KONSUM: der echte Peer-Tick schaltet den fernen Menschen auf den Fern-Guss");
-        check(c.cPeerNah, "(C) und zurück auf nah, wenn er herankommt");
+        check(c.cToggle, "(C) der EINE Stufen-Schalter (_gelenkStufe) schaltet nah↔fern an der Grenze der Kern-Zeile");
+        check(c.cPeerFern, "(C) KONSUM: der echte Peer-Tick schaltet den fernen Menschen auf die Grobstufe (Layer 0)");
+        check(c.cPeerNah, "(C) und zurück auf nah, wenn er herankommt (die Grobstufe nur in den Kaskaden)");
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
     console.log(
-        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Mensch-Fern-Guss KONSUMIERT · Starr-Bindung · Körper-Kugel)" : "❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
+        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Grobstufe KONSUMIERT · Starr-Bindung · Körper-Kugel · Werfer aus der Kern-Zeile)" : "❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
     );
     process.exit(ok ? 0 : 1);
 })();
