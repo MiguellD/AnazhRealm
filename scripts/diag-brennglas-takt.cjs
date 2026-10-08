@@ -20,6 +20,9 @@
 //   (R) DIE RESONANZ: die Plätze um den Spieler tragen jeden Eintrag in Reichweite (Boosts, Lofi-Pad 24 m), in der Ordnung
 //       des Bestands;
 //   (D) DER DORF-RAUCH: dieselben Quellen wie die Schleife über den Bestand;
+//   (H) DIE HAUS-TÜR (0710-11): ein Haus mit Tür, das nach dem letzten Scan in die Nähe kommt, steht 2 s später in der Nähe-Liste
+//       des Tür-Takts (`_tickHausTueren`) und trägt sein Tür-Gedächtnis; die Liste ist der Filter über den Bestand, in seiner
+//       Ordnung (bis 0710-11 baute sie sich nur alle 1 000 s neu: Sekunden gegen `> 1000`);
 //   (A) ARBEIT: der Brennglas-Takt fasst je Takt höchstens die Betroffenen an — die warmen Einträge und, wenn die Sonne durch ein
 //       Glas scheint, die Plätze in Reichweite der Gläser (vorher: jeden Eintrag des Bestands);
 //   (Q) QUELLE: keiner der Takte läuft über `state.architectures`; jeder Schreiber von Affordanzen und Kaminen steht im Spawn
@@ -57,6 +60,7 @@ const TAKTE = [
     "_updateDorfRauch",
     "tickPlayerBoosts",
     "_lofiNearResonantArchitecture",
+    "_tickHausTueren",
 ];
 const ZIELE = new Set(["affordances", "chimney", "rauchQuelle"]);
 const ITER = new Set([
@@ -567,8 +571,9 @@ async function probe() {
         x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
         return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
     };
-    const pm = st.playerMesh;
-    const stelle = (x, z) => pm.position.set(x, r.getTerrainHeightAt(x, z) + 1.2, z);
+    // der Spieler je Ruf frisch (`st.playerMesh` wird während der Probe ersetzt — der Avatar baut neu; ein gemerktes Mesh
+    // bewegte eine Leiche, die Tür-Probe stand am alten Ort)
+    const stelle = (x, z) => st.playerMesh.position.set(x, r.getTerrainHeightAt(x, z) + 1.2, z);
     st.weatherEffectTime = 0;
     // DIE WELT: zwei Dörfer abseits der Gläser (der Bestand wächst, die Kamine rauchen)
     let laeuft = null;
@@ -1019,6 +1024,49 @@ async function probe() {
     const qa = JSON.stringify(rauchAlt()),
         qn = JSON.stringify((st.dorfRauch && st.dorfRauch.quellen) || []);
     aus.rauch = { quellen: JSON.parse(qa).length, gleich: qa === qn };
+    // (H) DIE HAUS-TÜR: fern von jedem Haus scannt der Tür-Takt (nichts), dann 5 m vor ein Haus mit Tür — 2 s Frames später
+    // steht es in der Nähe-Liste und trägt sein Tür-Gedächtnis (`_tuerRec`); die Liste ist der Filter über den Bestand
+    const haeuser = st.architectures.filter((e) => e && e.tuer && e.position);
+    const echt = { x: st.playerMesh.position.x, y: st.playerMesh.position.y, z: st.playerMesh.position.z };
+    // wie ein Spieler: zum Haus gehen, bis die Mesh-Zone es zeichnet (`tickArchitectureCulling` → seine Instanz, asynchron
+    // über die Werkstatt) — höchstens 6 s
+    let haus = haeuser.find((e) => e.instSlots) || null;
+    if (!haus && haeuser.length) {
+        const ziel = haeuser[0];
+        stelle(ziel.position.x + 5, ziel.position.z);
+        for (let i = 0; i < 60 && !ziel.instSlots; i++) {
+            r.tickArchitectureCulling();
+            await new Promise((res) => setTimeout(res, 100));
+        }
+        if (ziel.instSlots) haus = ziel;
+    }
+    aus.tuer = { haeuser: haeuser.length, mitInstanz: haeuser.filter((e) => e.instSlots).length };
+    if (haus) {
+        stelle(ox + 900, oz + 900);
+        r._hausTuerScanT = 0;
+        r._hausTuerNah = null;
+        const t0 = 5000; // Sekunden wie der Loop
+        P._tickHausTueren.call(r, t0);
+        const fernListe = (r._hausTuerNah || []).length;
+        stelle(haus.position.x + 5, haus.position.z);
+        delete haus._tuerRec;
+        for (let i = 1; i <= 120; i++) P._tickHausTueren.call(r, t0 + i / 60);
+        const nah = r._hausTuerNah || [];
+        const q = st.playerMesh.position;
+        const soll = st.architectures.filter(
+            (e) =>
+                e && e.tuer && e.position && e.instSlots && (e.position.x - q.x) ** 2 + (e.position.z - q.z) ** 2 < 1600
+        );
+        Object.assign(aus.tuer, {
+            fernListe,
+            drin: nah.includes(haus),
+            rec: !!haus._tuerRec,
+            liste: nah.length,
+            soll: soll.length,
+            gleich: nah.length === soll.length && nah.every((e, k) => e === soll[k]),
+        });
+        st.playerMesh.position.set(echt.x, echt.y, echt.z);
+    }
     aus.bestand = st.architectures.length;
     return aus;
 }
@@ -1070,6 +1118,20 @@ function urteil(S, stamm, pageErrors) {
         );
     if (!(S.resonanz.inReichweite > 0)) rot.push(`(R) RESONANZ: kein Eintrag in Reichweite einer Probe (vakuös)`);
     if (!S.rauch.gleich) rot.push(`(D) DORF-RAUCH: die Quellen weichen von der Schleife über den Bestand ab`);
+    const H = S.tuer || {};
+    if (!(H.haeuser > 0 && H.mitInstanz > 0))
+        rot.push(`(H) DIE HAUS-TÜR: kein Haus mit Tür und Instanz in der Welt (vakuös) — ${JSON.stringify(H)}`);
+    else {
+        if (H.fernListe !== 0)
+            rot.push(`(H) DIE HAUS-TÜR: die Probe stand nicht fern (${H.fernListe} Häuser in der Liste)`);
+        if (!H.drin || !H.rec)
+            rot.push(
+                `(H) DIE HAUS-TÜR bleibt zu: 2 s nach der Annäherung fehlt das Haus in der Nähe-Liste des Tür-Takts ` +
+                    `(_tickHausTueren) — ${JSON.stringify(H)}`
+            );
+        if (!H.gleich)
+            rot.push(`(H) die Nähe-Liste der Türen ist nicht der Filter über den Bestand (${H.liste} ≠ ${H.soll})`);
+    }
     if (!(S.rauch.quellen > 0)) rot.push(`(D) DORF-RAUCH: kein Kamin in der Welt (vakuös)`);
     for (const b of stamm) rot.push(`(Q) QUELLE: ${b}`);
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
@@ -1137,6 +1199,11 @@ function urteil(S, stamm, pageErrors) {
             `Abweichungen ${S.resonanz.abweichungen}`
     );
     console.log(`  Dorf-Rauch: ${S.rauch.quellen} Quellen, gleich ${S.rauch.gleich}`);
+    const Ht = S.tuer || {};
+    console.log(
+        `  Haus-Tür: ${Ht.haeuser} Häuser mit Tür (${Ht.mitInstanz} mit Instanz) · fern ${Ht.fernListe} in der Liste · 2 s nach der ` +
+            `Annäherung drin ${Ht.drin}, Tür-Gedächtnis ${Ht.rec} · Liste = Filter ${Ht.gleich} (${Ht.liste}/${Ht.soll})`
+    );
     const F = S.fern,
         B = S.beweger;
     console.log(

@@ -52015,11 +52015,18 @@ class AnazhRealm {
         const st = this.state;
         const pm = st.playerMesh;
         if (!pm || !Array.isArray(st.architectures)) return;
-        if (!this._hausTuerScanT || currentTime - this._hausTuerScanT > 1000) {
+        // `currentTime` sind SEKUNDEN (der Loop: `t / 1000`) — der Scan jede Sekunde. Bis 0710-11 stand hier `> 1000`: die
+        // Liste baute sich nur alle 1 000 s neu, ein Haus, das danach in die Nähe kam oder beim Scan noch kein Mesh trug, öffnete
+        // seine Tür bis zu ~17 min nicht (gate:brennglas-takt (H)).
+        if (!this._hausTuerScanT || currentTime - this._hausTuerScanT > 1) {
             this._hausTuerScanT = currentTime; // Instanz-Felder (die _editSaveTimer-Klasse: nicht serialisiert)
             const nah = [];
             const p = pm.position;
-            for (const e of st.architectures) {
+            // die Plätze um den Spieler (`_blockerUmPlatz`, in der Ordnung des Bestands) — vorher jeder Eintrag je Scan
+            const kand = this._hausTuerKand || (this._hausTuerKand = []);
+            kand.length = 0;
+            this._blockerUmPlatz(p.x, p.z, 40 + 1e-6, kand);
+            for (const e of kand) {
                 if (!e || !e.tuer || !e.position || !e.instSlots) continue;
                 const dx = e.position.x - p.x;
                 const dz = e.position.z - p.z;
