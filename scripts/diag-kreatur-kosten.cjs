@@ -36,6 +36,10 @@
 //      Ofen-Ausgang), Tier ≤ 6 200 / 1, Mensch ≤ 38 000 / 5, mittel wirft, nah wirft kein L0-Mesh; dazu die Absenz der
 //      castShadow-Literale am Gelenk-Guss und der Wirts-Distanzen. (S5) Zwilling gestubbt → die L0 wirft wieder, rot.
 //      (R) prüft dazu: die Grobstufe ist geskinnt und trägt die Knochen der L0 (EIN Skelett), im Gang in ihrer Kugel.
+//      DECKUNG: der Zwilling wirft den Umriss der feinen Stufe — je Gestalt Stand-Pose + drei Gang-Posen × vier Sonnen,
+//      die Werfer-Ecken (getVertexPosition) entlang der Sonne auf 1 cm gerastert gegen den Umriss der feinen Stufe nach
+//      dem Wurf-Gesetz des Ofens (alles ausser den Fell-Schalen); IoU ≥ 0,94 in jeder Lage, Täter = das Gelenk mit der
+//      größten ungedeckten Fläche. (S7) der Zwilling 6 % zur Mitte gezogen → rot.
 //  (F) DIE RUHE JENSEITS DER GRENZE (S3): beide Stufen tragen DIESELBEN Knochen — wo der Gang jenseits der Grenze ruht
 //      (der Peer-Tick des Menschen, die Sicht-Kopie eines fremden Tiers), stehen sie in der Ruhe-Pose: der Mensch in der
 //      seiner Vorlage (≤ 0,01 rad je Gelenk), das Tier in der Kern-STAND_POSE (≤ 0,02 rad), nie mitten im Schritt.
@@ -577,6 +581,203 @@ const server = http.createServer((req, res) => {
                     w.draws <= soll.draws
                 );
             };
+            // (W) DECKUNG — der Zwilling wirft den Umriss der feinen Stufe (das Spike-Soll, Lehre 18; Gegenprüfung S3: der
+            // Wurf-Umriss der Grobstufe lag am Wolf 7 % unter dem der feinen, Lauf und Pfote fehlten). Je Gestalt in der
+            // Stand-Pose und drei Gang-Posen (der echte Gang-Chokepoint), je Sonne (seitlich 25° und 45°, schräg 35°, hoch
+            // 75°): der Umriss der Werfer, entlang der Sonne auf den Boden projiziert und auf 1 cm gerastert, gegen den
+            // Umriss der feinen Stufe, wie sie vor S3 warf (ihre Teile nach dem Wurf-Gesetz des Ofens: alles ausser den
+            // Fell-Schalen) — dieselben Knochen, dieselbe Pose (getVertexPosition: die Haut, wie der Renderer sie stellt).
+            // Täter = das Gelenk, dessen Fläche der Zwilling nicht deckt.
+            const DECKUNG_MIN = 0.94;
+            const ZELLE_W = 0.01;
+            const vW = new T3W.Vector3();
+            const punkte = (meshes) =>
+                meshes.map((m) => {
+                    const g = m.geometry,
+                        pos = g.attributes.position,
+                        n = pos.count;
+                    const P = new Float64Array(n * 3);
+                    for (let i = 0; i < n; i++) {
+                        m.getVertexPosition(i, vW);
+                        vW.applyMatrix4(m.matrixWorld);
+                        P[i * 3] = vW.x;
+                        P[i * 3 + 1] = vW.y;
+                        P[i * 3 + 2] = vW.z;
+                    }
+                    const si = g.attributes.skinIndex,
+                        sw = g.attributes.skinWeight;
+                    const knochen = (i) => {
+                        if (!si || !m.skeleton) return m.name || "starr";
+                        let b = 0,
+                            bw = -1;
+                        for (let k = 0; k < 4; k++) {
+                            const w = sw.getComponent(i, k);
+                            if (w > bw) {
+                                bw = w;
+                                b = si.getComponent(i, k);
+                            }
+                        }
+                        const bn = m.skeleton.bones[b];
+                        return bn ? bn.name : "?";
+                    };
+                    return { P, idx: g.index ? g.index.array : null, n, knochen };
+                });
+            const umriss = (sets, L, y0, box, mitTaeter) => {
+                const nx = Math.ceil((box[2] - box[0]) / ZELLE_W),
+                    nz = Math.ceil((box[3] - box[1]) / ZELLE_W);
+                const M = new Uint8Array(nx * nz);
+                const G = mitTaeter ? new Array(nx * nz) : null;
+                const pr = (P, i) => {
+                    const t = (P[i * 3 + 1] - y0) / L.y;
+                    return [(P[i * 3] - L.x * t - box[0]) / ZELLE_W, (P[i * 3 + 2] - L.z * t - box[1]) / ZELLE_W];
+                };
+                for (const m of sets) {
+                    const nT = m.idx ? m.idx.length / 3 : m.n / 3;
+                    for (let t = 0; t < nT; t++) {
+                        const i0 = m.idx ? m.idx[t * 3] : t * 3,
+                            i1 = m.idx ? m.idx[t * 3 + 1] : t * 3 + 1,
+                            i2 = m.idx ? m.idx[t * 3 + 2] : t * 3 + 2;
+                        const a = pr(m.P, i0),
+                            b = pr(m.P, i1),
+                            c = pr(m.P, i2);
+                        const d = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+                        if (Math.abs(d) < 1e-12) continue;
+                        const x0 = Math.max(0, Math.floor(Math.min(a[0], b[0], c[0]))),
+                            x1 = Math.min(nx - 1, Math.ceil(Math.max(a[0], b[0], c[0]))),
+                            z0 = Math.max(0, Math.floor(Math.min(a[1], b[1], c[1]))),
+                            z1 = Math.min(nz - 1, Math.ceil(Math.max(a[1], b[1], c[1])));
+                        let wer = null;
+                        for (let z = z0; z <= z1; z++)
+                            for (let x = x0; x <= x1; x++) {
+                                const px = x + 0.5,
+                                    pz = z + 0.5;
+                                const w0 = ((b[0] - px) * (c[1] - pz) - (b[1] - pz) * (c[0] - px)) / d,
+                                    w1 = ((c[0] - px) * (a[1] - pz) - (c[1] - pz) * (a[0] - px)) / d;
+                                if (w0 < 0 || w1 < 0 || 1 - w0 - w1 < 0) continue;
+                                const id = x + nx * z;
+                                M[id] = 1;
+                                if (G && !G[id]) G[id] = wer || (wer = m.knochen(i0));
+                            }
+                    }
+                }
+                return { M, G };
+            };
+            // je Pose die Punkte beider Sätze, je Sonne der Vergleich; schrumpf: der Selbst-Test zieht den Zwilling zur Mitte
+            const deckungJe = (soll, ist, yaw, y0, schrumpf) => {
+                const S = punkte(soll),
+                    I = punkte(ist);
+                if (schrumpf) {
+                    let cx = 0,
+                        cy = 0,
+                        cz = 0,
+                        n = 0;
+                    for (const m of I)
+                        for (let i = 0; i < m.n; i++) {
+                            cx += m.P[i * 3];
+                            cy += m.P[i * 3 + 1];
+                            cz += m.P[i * 3 + 2];
+                            n++;
+                        }
+                    for (const m of I)
+                        for (let i = 0; i < m.n; i++) {
+                            m.P[i * 3] = cx / n + (m.P[i * 3] - cx / n) * schrumpf;
+                            m.P[i * 3 + 1] = cy / n + (m.P[i * 3 + 1] - cy / n) * schrumpf;
+                            m.P[i * 3 + 2] = cz / n + (m.P[i * 3 + 2] - cz / n) * schrumpf;
+                        }
+                }
+                const fx = Math.sin(yaw),
+                    fz = Math.cos(yaw),
+                    sx = Math.cos(yaw),
+                    sz = -Math.sin(yaw);
+                const sonne = (ax, az, grad) => {
+                    const e = (grad * Math.PI) / 180,
+                        l = Math.hypot(ax, az) || 1;
+                    return new T3W.Vector3((ax / l) * Math.cos(e), Math.sin(e), (az / l) * Math.cos(e));
+                };
+                const SONNEN = {
+                    seite25: sonne(sx, sz, 25),
+                    seite45: sonne(sx, sz, 45),
+                    schraeg35: sonne(sx + fx, sz + fz, 35),
+                    hoch75: sonne(sx, sz, 75),
+                };
+                const out = [];
+                for (const [name, L] of Object.entries(SONNEN)) {
+                    const box = [1e9, 1e9, -1e9, -1e9];
+                    for (const m of S.concat(I))
+                        for (let i = 0; i < m.n; i++) {
+                            const t = (m.P[i * 3 + 1] - y0) / L.y;
+                            const gx = m.P[i * 3] - L.x * t,
+                                gz = m.P[i * 3 + 2] - L.z * t;
+                            if (gx < box[0]) box[0] = gx;
+                            if (gz < box[1]) box[1] = gz;
+                            if (gx > box[2]) box[2] = gx;
+                            if (gz > box[3]) box[3] = gz;
+                        }
+                    box[0] -= 0.05;
+                    box[1] -= 0.05;
+                    box[2] += 0.05;
+                    box[3] += 0.05;
+                    const A = umriss(S, L, y0, box, true),
+                        B = umriss(I, L, y0, box, false);
+                    let ab = 0,
+                        ao = 0,
+                        bo = 0,
+                        nA = 0,
+                        nB = 0;
+                    const taeter = {};
+                    for (let i = 0; i < A.M.length; i++) {
+                        if (A.M[i]) nA++;
+                        if (B.M[i]) nB++;
+                        if (A.M[i] && B.M[i]) ab++;
+                        else if (A.M[i]) {
+                            ao++;
+                            taeter[A.G[i]] = (taeter[A.G[i]] || 0) + 1;
+                        } else if (B.M[i]) bo++;
+                    }
+                    const top = Object.entries(taeter).sort((x, y) => y[1] - x[1])[0] || null;
+                    out.push({
+                        sonne: name,
+                        iou: ab / Math.max(1, ab + ao + bo),
+                        flaeche: nB / Math.max(1, nA) - 1,
+                        top,
+                    });
+                }
+                return out;
+            };
+            // die Werfer einer Gestalt (wie werferVon) und die Teile ihrer feinen Stufe nach dem Wurf-Gesetz des Ofens
+            const werferMeshes = (gruppe) => {
+                const w = [];
+                gruppe.traverse((n) => {
+                    if (
+                        n.isMesh &&
+                        n.geometry &&
+                        n.castShadow === true &&
+                        n.layers.test(maskeK) &&
+                        ketteSichtbar(n, gruppe)
+                    )
+                        w.push(n);
+                });
+                return w;
+            };
+            const feineWerfer = (gruppe, l0) => {
+                const w = [];
+                gruppe.traverse((n) => {
+                    const mt = n.material || {};
+                    if (!n.isMesh || !l0.has(n.geometry) || n.userData.__klasse === "fellSchale") return;
+                    if (mt.transparent && mt.opacity < 1) return;
+                    w.push(n);
+                });
+                return w;
+            };
+            const deckungUrteil = (je) => {
+                let schlecht = null;
+                let summe = 0;
+                for (const x of je) {
+                    summe += x.iou;
+                    if (!schlecht || x.iou < schlecht.iou) schlecht = x;
+                }
+                return { min: schlecht, mittel: summe / Math.max(1, je.length), n: je.length };
+            };
             o.w = [];
             const tcW = window.__tetrapodaCore;
             const kcW = window.__koerperCore;
@@ -614,6 +815,23 @@ const server = http.createServer((req, res) => {
                 };
                 tick(10 * fLw);
                 const nah = werferVon(cw, l0, l1);
+                // (W) DECKUNG: die Stand-Pose und drei Gang-Posen (der echte Gang-Chokepoint), dieselben Knochen
+                const dk = [];
+                const messW = (pose, schrumpf) => {
+                    cw.updateMatrixWorld(true);
+                    const je = deckungJe(feineWerfer(cw, l0), werferMeshes(cw), cw.rotation.y, 0, schrumpf);
+                    if (!schrumpf) for (const x of je) dk.push(Object.assign({ pose }, x));
+                    return je;
+                };
+                r._tierBaumNeutralStance(cw);
+                messW("stand");
+                for (let k = 0; k < 16; k++) {
+                    cw.position.x += 0.112; // der Gang folgt dem Weg (1,6 m/s im Takt 0,07 s)
+                    r._animateTierBaum(cw, k * 0.07, k * 0.35, true, null);
+                    if (k === 7 || k === 11 || k === 15) messW("gang" + k);
+                }
+                // (S7) SELBST-TEST: der Zwilling 6 % zur Mitte gezogen — die Deckung fällt unter die Schwelle
+                const s7 = art === "wolf" ? deckungUrteil(messW("s7", 0.94)) : null;
                 // (S5) SELBST-TEST: der Zwilling gestubbt — die nahe Stufe wirft wieder selbst (der alte Zustand)
                 let s5 = null;
                 if (art === "wolf") {
@@ -640,6 +858,8 @@ const server = http.createServer((req, res) => {
                     nahGruen: urteil("kreatur", BT, 0, nah, soll),
                     s5Rot: s5 ? !urteil("kreatur", BT, 0, s5, soll) && s5.l0 > 0 : null,
                     s5,
+                    deckung: deckungUrteil(dk),
+                    s7,
                 });
                 r.removeCreature(cw);
             }
@@ -667,6 +887,31 @@ const server = http.createServer((req, res) => {
                 if (gW) {
                     peer(10);
                     const nah = werferVon(gW, l0, l1);
+                    // (W) DECKUNG: die Ruhe des Nah-Peers und drei Gang-Posen am echten Peer-Tick (dieselben Knochen)
+                    const dkM = [];
+                    const messM = (pose) => {
+                        gW.updateMatrixWorld(true);
+                        for (const x of deckungJe(feineWerfer(gW, l0), werferMeshes(gW), gW.rotation.y, 0))
+                            dkM.push(Object.assign({ pose }, x));
+                    };
+                    messM("stand");
+                    const eM = {
+                        mesh: gW,
+                        x: pm.x + 10,
+                        y: pm.y + 1,
+                        z: pm.z,
+                        yaw: 0,
+                        meshKind: "soul",
+                        soulName: "human",
+                        walkPhase: 0,
+                        lastMovedAt: 0,
+                    };
+                    for (let k = 0; k < 30; k++) {
+                        eM.x += 0.1; // 3 m/s im Takt 1/30 s
+                        eM.lastMovedAt = performance.now() / 1000;
+                        r._p2pUpdatePeer(eM, performance.now() / 1000, 1 / 30);
+                        if (k === 9 || k === 19 || k === 29) messM("gang" + k);
+                    }
                     peer(45);
                     const mittel = werferVon(gW, l0, l1);
                     const soll = wurfTeil(kcW, "koerper");
@@ -677,6 +922,7 @@ const server = http.createServer((req, res) => {
                         soll,
                         schatten1: BM[1] ? BM[1].schatten : null,
                         gruen: urteil("koerper", BM, 0, nah, soll) && urteil("koerper", BM, 1, mittel, soll),
+                        deckung: deckungUrteil(dkM),
                     });
                 } else o.w.push({ name: "mensch", fehler: "kein Mensch-Guss" });
             }
@@ -685,6 +931,13 @@ const server = http.createServer((req, res) => {
             A._tierOfenMemo = saveMemoW;
             o.checks.wWerfer = o.w.length === 5 && o.w.every((x) => x.gruen === true);
             o.checks.s5LensFires = o.w.some((x) => x.s5Rot === true);
+            o.deckungMin = DECKUNG_MIN;
+            o.checks.wDeckung =
+                o.w.length === 5 &&
+                o.w.every((x) => x.deckung && x.deckung.n >= 16 && x.deckung.min.iou >= DECKUNG_MIN);
+            const s7W = o.w.find((x) => x.s7);
+            o.s7 = s7W ? s7W.s7 : null;
+            o.checks.s7LensFires = !!o.s7 && o.s7.min.iou < DECKUNG_MIN;
             // Absenz (window.__codeOf, Kommentare gestrippt): kein castShadow-Literal am Gelenk-Guss, kein Leser der Wirts-
             // Distanzen (die Gestalt liest `ab`/`hyst` aus ihrer Kern-Zeile).
             const codeW = window.__codeOf;
@@ -923,6 +1176,23 @@ const server = http.createServer((req, res) => {
             check(
                 c.s5LensFires,
                 `SELBST-TEST (S5): Zwilling gestubbt → die nahe Stufe wirft wieder ${fW(out.w[0].s5)} (L0 ${out.w[0].s5.l0}) — rot an genau dieser Zeile`
+            );
+        const fD = (d) =>
+            d && d.min
+                ? `IoU min ${d.min.iou.toFixed(3)} (${d.min.pose || "gang"}/${d.min.sonne}, Fläche ${(d.min.flaeche * 100).toFixed(1)} %${
+                      d.min.top ? `, Täter ${d.min.top[0]} ${d.min.top[1]} cm²` : ""
+                  }) · Mittel ${d.mittel.toFixed(3)} über ${d.n} Posen × Sonnen`
+                : "?";
+        for (const g of out.w || [])
+            if (g.deckung)
+                check(
+                    !!g.deckung.min && g.deckung.n >= 16 && g.deckung.min.iou >= out.deckungMin,
+                    `(W) DECKUNG ${g.name}: der Zwilling wirft den Umriss der feinen Stufe — ${fD(g.deckung)} ≥ ${out.deckungMin}`
+                );
+        if (out.s7)
+            check(
+                c.s7LensFires,
+                `SELBST-TEST (S7): der Zwilling 6 % zur Mitte gezogen → ${fD(out.s7)} < ${out.deckungMin} — die Deckung ist nicht blind`
             );
         check(
             c.wAbsenz,
