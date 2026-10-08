@@ -7324,23 +7324,12 @@ class AnazhRealm {
         entry._motionRoles = undefined;
         if (entry.mesh) {
             this.state.scene.remove(entry.mesh);
-            this._p2pDisposeMesh(entry.mesh);
+            this._disposeSoulGroup(entry.mesh);
         }
         group.name = "p2p-spieler";
         this.state.scene.add(group);
         entry.mesh = group;
         entry.meshKind = kind;
-    }
-
-    _p2pDisposeMesh(obj) {
-        if (!obj || typeof obj.traverse !== "function") return;
-        // Compound-Dispose räumt NUR Geometries, NIE Materials: material.dispose() invalidiert Bindings/
-        // Pipelines/Nodes race-anfällig zum pending Submit — bei geteiltem Material (Drache: body/head/
-        // wing/tail) → Pool-Reorganisation mid-submit → WriteBuffer-Crash auf den disposed Uniform-Slot.
-        // Materials akkumulieren vernachlässigbar; die Geometries tragen den großen Heap-Anteil.
-        obj.traverse((node) => {
-            if (node.geometry) this._queueDispose(node.geometry);
-        });
     }
 
     // Name-Schild über dem Peer: CanvasTexture, depthTest aus (immer lesbar). Bei verifizierter
@@ -7731,7 +7720,7 @@ class AnazhRealm {
         if (!entry) return;
         if (entry.mesh) {
             if (this.state.scene) this.state.scene.remove(entry.mesh);
-            this._p2pDisposeMesh(entry.mesh);
+            this._disposeSoulGroup(entry.mesh);
         }
         if (entry.nameLabel) {
             if (this.state.scene) this.state.scene.remove(entry.nameLabel);
@@ -16693,7 +16682,7 @@ class AnazhRealm {
         }
         const skinCol = typeof g.skinColor === "number" ? g.skinColor : anker.skin;
         const hairCol = typeof g.hairColor === "number" ? g.hairColor : anker.hair;
-        const t0 = this._ofenMenschTemplate(dials, skinCol, hairCol, 0);
+        const t0 = this._ofenMenschTemplate(dials, skinCol, hairCol, 0, g.eigen === true);
         if (!t0 || !t0.teile || !t0.teile.mensch) {
             this.log("Mensch-Ofen fiel aus (kalter Kern?) — fail-closed, kein Ersatz-Körper.", "ERROR");
             return null;
@@ -16714,7 +16703,7 @@ class AnazhRealm {
         // Ferner Mensch aus derselben Pipe: lod1 = gemergte Fern-Gestalt (grobe Segmente, kahl, wenige
         // Meshes), verdeckt gebaut; `_menschFernToggle` schaltet nah↔fern. Kalter lod1-Guss → kein
         // Fern-Zweig, es bleibt lod 0.
-        const t1 = this._ofenMenschTemplate(dials, skinCol, hairCol, 1);
+        const t1 = this._ofenMenschTemplate(dials, skinCol, hairCol, 1, g.eigen === true);
         if (t1 && t1.root) {
             const fernKlon = t1.root.clone(true);
             const teileF = {};
@@ -17439,17 +17428,14 @@ class AnazhRealm {
     // Das Art-Template (memo): warm aus dem Prefetch/IDB, kalt über den EINEN
     // Bäcker synchron (foundry-core auf der Stamm-Seite — ein Gesetz, zwei
     // Scheduler). null = LAUT beim Aufrufer (fail-closed, kein Ersatz-Körper).
-    _ofenKreaturTemplate(recId, ovOpt, lod) {
+    _ofenKreaturTemplate(recId, ovOpt, lod, eigen) {
         const core = typeof window !== "undefined" && window.__tetrapodaCore;
         const d = this._ofenKreaturDials(recId, ovOpt);
         if (!core || !d) return null;
-        const key = this._ofenKreaturKey(recId, d.dials, lod);
-        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
-        if (memo.has(key)) return memo.get(key);
-        let asm = null;
-        try {
-            const BAKER = typeof globalThis !== "undefined" ? globalThis.BAKERS_BY_KIND : null;
-            if (BAKER && typeof BAKER.kreatur === "function") {
+        return this._ofenVorlage(this._ofenKreaturKey(recId, d.dials, lod), eigen, () => {
+            try {
+                const BAKER = typeof globalThis !== "undefined" ? globalThis.BAKERS_BY_KIND : null;
+                if (!BAKER || typeof BAKER.kreatur !== "function") return null;
                 const g = BAKER.kreatur(core, recId, 0, lod | 0, d.dials);
                 const eintraege = [];
                 g.traverse((o) => {
@@ -17457,13 +17443,31 @@ class AnazhRealm {
                 });
                 if (g.userData && g.userData.__skelett)
                     eintraege.push({ kind: "__skelett", skelett: g.userData.__skelett });
-                asm = this._ofenAssembleAsset(this._ofenBudget(core, "kreatur", lod, eintraege, recId));
+                return this._ofenAssembleAsset(this._ofenBudget(core, "kreatur", lod, eintraege, recId));
+            } catch (e) {
+                this.log("Kreatur-Ofen kalt-Guss scheiterte (" + (e && e.message) + ")", "ERROR");
+                return null;
             }
-        } catch (e) {
-            this.log("Kreatur-Ofen kalt-Guss scheiterte (" + (e && e.message) + ")", "ERROR");
-            asm = null;
-        }
-        if (asm) memo.set(key, asm);
+        });
+    }
+    // DIE EIGENTÜMERSCHAFT DER OFEN-GÜSSE (Frost-Nachbesserung 08.10.) — der EINE Weg in das Memo `_tierOfenMemo`
+    // (Kreatur- und Mensch-Ofen). Das Memo hält die Vorlagen, die ÜBERLEBEN (Welt-Spawns, Restore, Peers, Prefetch): ihre
+    // Meshes tragen `sharedGeom` (`_ofenAssembleAsset`), jeder Klon teilt sie, keine Gruppe entsorgt sie. Ein Guss `eigen`
+    // (das Regler-Einzelstück der Werkstatt) ist keine Vorlage: er betritt das Memo nie, seine Meshes verlieren die
+    // Geteilt-Markierung, er gehört dem, der ihn zeigt — der entsorgt ihn über `_disposeSoulGroup`. Befund (Radeon, Wolf,
+    // 20 Regler-Werte): jeder Wert legte zwei Einzelstücke für immer ins Memo, als geteilt markiert — der Grafikspeicher
+    // der Werkstatt wuchs 2,4 → 50,1 MB, ihre Geometrien 11 → 171. Trifft ein eigener Guss eine Vorlage im Memo (dieselben
+    // Dials), zeigt er die Vorlage — geteilt, wie sie ist.
+    _ofenVorlage(key, eigen, giessen) {
+        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
+        if (memo.has(key)) return memo.get(key);
+        const asm = giessen();
+        if (!asm) return null;
+        if (eigen === true)
+            asm.root.traverse((n) => {
+                if (n.userData && n.userData.sharedGeom) delete n.userData.sharedGeom;
+            });
+        else memo.set(key, asm);
         return asm;
     }
     // DAS BUDGET-GESETZ im Sync-Guss (W8): der Haupt-Thread-Guss verlässt das Studio an DERSELBEN Stelle wie die
@@ -17591,16 +17595,13 @@ class AnazhRealm {
     // DER MENSCH-OFEN (PIPE-VOLLENDUNG V18.459): derselbe Tisch, Zeile "koerper" —
     // bauMensch+morphAuf backen im Bäcker, der Stamm assembliert + memoisiert je
     // Dials+Farben. Der Spieler/Peer ist ein Template-Clone wie jede Kreatur.
-    _ofenMenschTemplate(dials, skinColor, hairColor, lod) {
+    _ofenMenschTemplate(dials, skinColor, hairColor, lod, eigen) {
         const core = typeof window !== "undefined" && window.__koerperCore;
         if (!core || typeof core.bauMensch !== "function") return null;
-        const key = this._ofenMenschKey(dials, skinColor, hairColor, lod);
-        const memo = AnazhRealm._tierOfenMemo || (AnazhRealm._tierOfenMemo = new Map());
-        if (memo.has(key)) return memo.get(key);
-        let asm = null;
-        try {
-            const BAKER = typeof globalThis !== "undefined" ? globalThis.BAKERS_BY_KIND : null;
-            if (BAKER && typeof BAKER.koerper === "function") {
+        return this._ofenVorlage(this._ofenMenschKey(dials, skinColor, hairColor, lod), eigen, () => {
+            try {
+                const BAKER = typeof globalThis !== "undefined" ? globalThis.BAKERS_BY_KIND : null;
+                if (!BAKER || typeof BAKER.koerper !== "function") return null;
                 const g = BAKER.koerper(core, "mensch", 0, lod | 0, { dials, skinColor, hairColor });
                 const eintraege = [];
                 g.traverse((o) => {
@@ -17608,14 +17609,12 @@ class AnazhRealm {
                 });
                 if (g.userData && g.userData.__skelett)
                     eintraege.push({ kind: "__skelett", skelett: g.userData.__skelett });
-                asm = this._ofenAssembleAsset(this._ofenBudget(core, "koerper", lod, eintraege, "mensch"));
+                return this._ofenAssembleAsset(this._ofenBudget(core, "koerper", lod, eintraege, "mensch"));
+            } catch (e) {
+                this.log("Mensch-Ofen kalt-Guss scheiterte (" + (e && e.message) + ")", "ERROR");
+                return null;
             }
-        } catch (e) {
-            this.log("Mensch-Ofen kalt-Guss scheiterte (" + (e && e.message) + ")", "ERROR");
-            asm = null;
-        }
-        if (asm) memo.set(key, asm);
-        return asm;
+        });
     }
     // Boot-Prefetch (nach Book-Ingest): die Gattungen off-thread backen — die
     // Welt-Spawns treffen dann NUR noch das Memo (Clone ~1 ms, kein Freeze).
@@ -18020,7 +18019,7 @@ class AnazhRealm {
         // Kreatur ein CLONE (Geometrien + Materialien geteilt, ~1 ms — kein Spawn-Freeze). Custom-Namen
         // kanonisieren oben auf wesen. Kalter Kern → LAUT null, nie ein Ersatz-Körper.
         const recId = AnazhRealm.TETRAPODA_SOUL_MAP[soulKey];
-        const t0 = recId ? this._ofenKreaturTemplate(recId, opts && opts.dialsOv, 0) : null;
+        const t0 = recId ? this._ofenKreaturTemplate(recId, opts && opts.dialsOv, 0, !!(opts && opts.eigen)) : null;
         if (t0 && t0.teile && t0.teile.wolf) {
             const parts2 = this._tetrapodaSoulParts(soulKey, opts && opts.dialsOv) || soul.bodyParts;
             const group2 = new THREE.Group();
@@ -18045,7 +18044,7 @@ class AnazhRealm {
             // DER FERN-GUSS aus DERSELBEN Pipe: lod1 = das gemergte Standbild
             // (~8 Meshes). updateCreatures toggelt wrap↔fern (TIER_FERN_DIST).
             let wrap3 = null;
-            const t1 = this._ofenKreaturTemplate(recId, opts && opts.dialsOv, 1);
+            const t1 = this._ofenKreaturTemplate(recId, opts && opts.dialsOv, 1, !!(opts && opts.eigen));
             if (t1 && t1.root) {
                 wrap3 = new THREE.Group();
                 wrap3.scale.setScalar(f2);
@@ -49636,7 +49635,7 @@ class AnazhRealm {
     // (ABSCHIEDS-WELLE: der Marker sass am geschnittenen `_buildLimb` — der Zonen-Anker
     // wandert an den lebenden Zonen-Anfang; Phönix/Drache sind Compound-Seelen, die
     // Hand-Skelette fielen per cut-method.)
-    _buildHumanGroup(dialsOv) {
+    _buildHumanGroup(dialsOv, opts) {
         const group = new THREE.Group();
         // V8.33 — YXZ-Rotation: rotation.y (Yaw) ist außen, rotation.x wirkt
         // im gedrehten Frame = lokaler Vorwärts-Lehnen für die Schwimm-Pose.
@@ -49664,6 +49663,8 @@ class AnazhRealm {
         // Die echten Dials reisen ROH zum bauMensch-Pfad (labMorph); die Genom-Achsen oben dienen Stats.
         // Größe reist im charScale von morphAuf — g.kh bleibt Welt-Einheit (kein Doppel-Wachsen).
         g.bmDials = dials || null;
+        // opts.eigen: der Aufrufer besitzt den Guss (das Regler-Einzelstück der Werkstatt, `_ofenVorlage`)
+        g.eigen = !!(opts && opts.eigen);
         // STUDIO-ÜBERGABE (Auftrag D) — die FARB-Gestalt: der EINE Farb-Münzer
         // (_menschGussFarben) löst Anker-Palette + Übergabe-Wahlen auf —
         // Prefetch und Guss münzen DIESELBEN Zahlen (warmes Memo).
@@ -49790,10 +49791,12 @@ class AnazhRealm {
     // Tiefes Disposal eines alten Soul-Group: Geometrien + Materialien
     // freigeben, damit GPU-Speicher nicht volläuft bei häufigem Wechsel.
     // DIE EINE ENTSORGUNGS-REGEL jeder Gruppe, die Welt-Vorlagen teilen kann (Frost-Nachbesserung 08.10.): Seelen-Avatar,
-    // Ich-, Hof- und Feed-Bühne, Werkstatt-Ofen. Die Bühnen bauen mit denselben Bauern wie die Welt (Mensch-Vorlage, Tier-
-    // Vorlagen, Klassen-Stoffe) und entsorgten beim Wechsel ALLES — Gegenprüfung (Radeon): 3 Wechsel wolf↔human legten
-    // 12 Geometrien und 8 Stoffe der Welt in die Entsorgung (den Kopf des Spieler-Leibs, die Haut), die Welt kompilierte
-    // neu (68 statt 19 Shader-Module). gate:weltbild-frost (S1/S2) hält es.
+    // Mitspieler-Leib, Ich-, Hof- und Feed-Bühne, Werkstatt-Ofen. Sie bauen mit denselben Bauern wie die Welt (Mensch-
+    // Vorlage, Tier-Vorlagen, Klassen-Stoffe) und entsorgten beim Wechsel ALLES — Gegenprüfung (Radeon): 3 Wechsel
+    // wolf↔human legten 12 Geometrien und 8 Stoffe der Welt in die Entsorgung (den Kopf des Spieler-Leibs, die Haut), die
+    // Welt kompilierte neu (68 statt 19 Shader-Module); ein zweiter Peer-Guss „human" dieselben 12 Geometrien. Was eine
+    // Gruppe besitzt, sagt die Geteilt-Markierung: Vorlagen tragen sie, ein eigener Guss nicht (`_ofenVorlage`).
+    // gate:weltbild-frost (S1–S4) und die Entsorgungs-Wand in gate:altlasten halten es.
     _disposeSoulGroup(group) {
         if (!group) return;
         // NUR Geometries disposen, nie Materials: Compound-Groups teilen oft EIN Material, und
@@ -80832,8 +80835,8 @@ class AnazhRealm {
     // → klassischer Pfad). ov-Vorschau cache-FREI — sie vergiftet NIE den Welt-Cache.
     // Der Host-OFEN für MESHFREI-Domänen (koerper · kreatur · klang exportieren kein Mesh): Guss via
     // bauTier/bauMensch, sonst endlose request→null-Schleife. Rückgabe Group · false (klang: kein 3D)
-    // · undefined (keine Ofen-Domäne → Foundry-Pfad). Memo je Schlüssel = EIN lebender Guss; der
-    // Wechsel disposed ihn (Meshes shared-markiert, der generische Dispose lässt sie stehen).
+    // · undefined (keine Ofen-Domäne → Foundry-Pfad). Memo je Schlüssel = EIN lebender Guss, der dem Ofen gehört; der
+    // Wechsel entsorgt ihn über `_disposeSoulGroup` (das Einzelstück fällt, geteilte Vorlagen bleiben).
     _workshopOvenPreview(rec, preset, ov, lod) {
         const kind = rec && rec.kind;
         if (kind !== "kreatur" && kind !== "koerper" && kind !== "klang") return undefined;
@@ -80861,7 +80864,7 @@ class AnazhRealm {
                 }
             }
             if (soulKey) {
-                group = this._buildCreatureGroup(soulKey, { dialsOv: ov || null });
+                group = this._buildCreatureGroup(soulKey, { dialsOv: ov || null, eigen: true });
                 // Die LOD-Wahl toggelt nah↔fern am Guss (userData._tierBaum, der Welt-
                 // Chokepoint-Struktur folgend): L0 = der Gelenk-Baum, L1 = das gemergte
                 // Standbild aus DERSELBEN Pipe. Fail-soft: kein fern-Guss → nah bleibt.
@@ -80876,7 +80879,7 @@ class AnazhRealm {
                 }
             }
         } else {
-            group = this._buildHumanGroup(ov || undefined);
+            group = this._buildHumanGroup(ov || undefined, { eigen: true });
             // Dieselbe Stufen-Wahl am Mensch-Guss (userData._menschFern = {nah, fern},
             // der _menschFernToggle-Chokepoint-Struktur folgend). Fail-soft: kein
             // lod1-Guss → alles bleibt byte-alt L0.
@@ -80888,13 +80891,9 @@ class AnazhRealm {
             }
         }
         if (!group || !group.children) return false;
-        group.traverse((o) => {
-            if (o.isMesh || o.isSkinnedMesh) {
-                o.userData.sharedGeom = true;
-                o.userData.sharedMat = true;
-                o.userData.foundryPreview = true;
-            }
-        });
+        // Der Guss gehört dem Ofen (`eigen`): ein Regler-Einzelstück trägt keine Geteilt-Markierung, eine Vorlage aus dem
+        // Memo ihre eigene — `_disposeSoulGroup` entsorgt beim Wechsel genau das Einzelstück. Die Bauplan-Vorschau rührt
+        // die Gestalt des Ofens nie an (`_workshopRebuildPreviewMesh`).
         this._wsOvenMemo = { key, group };
         return group;
     }
@@ -80997,25 +80996,29 @@ class AnazhRealm {
         const ws = this._ensureWorkshopState();
         if (!ws.preview) return;
         const p = ws.preview;
-        // Alten Mesh disposen (geometrien + materialien tief)
+        // Alten Mesh disposen (geometrien + materialien tief) — nur die EIGENEN Teile der Bauplan-Vorschau: die Gestalt des
+        // Ofens gehört dem Ofen (`_wsOvenMemo`, er entsorgt sie beim Wechsel über `_disposeSoulGroup`).
+        const ofenGuss = !!this._wsOvenMemo && this._wsOvenMemo.group === p.currentMesh;
         if (p.currentMesh) {
             p.scene.remove(p.currentMesh);
-            p.currentMesh.traverse((obj) => {
-                // V8.38 — auch isLine disposen (Verbindungs-Linien), sonst
-                // leaken ihre Geometrie + Material bei jedem Bauplan-Edit.
-                if (obj.isMesh || obj.isLine) {
-                    // Dispose deferred (WebGPU Submit-Race). Geteilte Studio-Geometrie (sharedGeom) NIE disposen —
-                    // sonst zerstört ein Bauplan-Wechsel das Asset für die ganze Welt.
-                    if (obj.geometry && !(obj.userData && obj.userData.sharedGeom)) this._queueDispose(obj.geometry);
-                    // DAS NEUE KLEID — die Skelett-Vorschau nutzt die GETEILTEN Welt-Materialien
-                    // (_sharedFoliageMaterial); die dürfen NIE disposed werden (sonst bricht die
-                    // Welt-Krone). Nur eigene Part-Materialien freigeben.
-                    if (obj.material && !(obj.userData && obj.userData.sharedMat)) {
-                        if (Array.isArray(obj.material)) obj.material.forEach((m) => this._queueDispose(m));
-                        else this._queueDispose(obj.material);
+            if (!ofenGuss)
+                p.currentMesh.traverse((obj) => {
+                    // V8.38 — auch isLine disposen (Verbindungs-Linien), sonst
+                    // leaken ihre Geometrie + Material bei jedem Bauplan-Edit.
+                    if (obj.isMesh || obj.isLine) {
+                        // Dispose deferred (WebGPU Submit-Race). Geteilte Studio-Geometrie (sharedGeom) NIE disposen —
+                        // sonst zerstört ein Bauplan-Wechsel das Asset für die ganze Welt.
+                        if (obj.geometry && !(obj.userData && obj.userData.sharedGeom))
+                            this._queueDispose(obj.geometry);
+                        // DAS NEUE KLEID — die Skelett-Vorschau nutzt die GETEILTEN Welt-Materialien
+                        // (_sharedFoliageMaterial); die dürfen NIE disposed werden (sonst bricht die
+                        // Welt-Krone). Nur eigene Part-Materialien freigeben.
+                        if (obj.material && !(obj.userData && obj.userData.sharedMat)) {
+                            if (Array.isArray(obj.material)) obj.material.forEach((m) => this._queueDispose(m));
+                            else this._queueDispose(obj.material);
+                        }
                     }
-                }
-            });
+                });
             p.currentMesh = null;
         }
         p.partMeshes.clear();

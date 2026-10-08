@@ -16,10 +16,14 @@
 //   W  die Wachen des Spiels stehen und schweigen (`_indexWache` · `_gpuWache`)
 //   B  DAS BILD FOLGT: zwei Bilder bei gedrehter Kamera unterscheiden sich in ≥ 2 % der 16×16-Blöcke (echt: der präsentierte
 //      Canvas; headless: das Rücklese-Bild der Welt-GPU)
-// Dann DER SEELENWECHSEL (dieselbe Klasse: geteilte Geometrie und Stoffe über Renderer-Grenzen):
-//   S1 Ich-Bühne wolf↔human ×3, Hof-Bühne 4 Seelen ×2 (zwei Runden) legen keine Welt-Geometrie und keinen Welt-Stoff in
-//      die Entsorgung (`_disposeSoulGroup` ist die EINE Regel jeder Gruppe, die Welt-Vorlagen teilt)
+// Dann DIE ENTSORGUNG DER BÜHNEN (dieselbe Klasse: geteilte Geometrie und Stoffe über Renderer-Grenzen; `_disposeSoulGroup`
+// ist die EINE Regel jeder Gruppe, die Welt-Vorlagen teilt, `_ofenVorlage` sagt, was eine Gruppe besitzt):
+//   S1 Ich-Bühne wolf↔human ×3, Hof-Bühne 4 Seelen ×2 (zwei Durchgänge) entsorgen keine Welt-Geometrie, keinen Welt-Stoff
 //   S2 die Welt-GPU kompiliert dabei nichts nach — Shader-Module und Pipelines gegen die geschlossene Bühne
+//   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) · S4 der Mitspieler-Leib (zweiter Peer-Guss human, Abschied)
+//      entsorgen keine Welt-Geometrie, keinen Welt-Stoff
+//   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
+//      Werkstatt bleiben beschränkt
 // Danach DIE TÄTER (jeder Lauf — die Wand beweist sich selbst):
 //   T1 ein Probe-Mesh zeichnet einen Index ≥ seiner Vertex-Zahl → die Index-Wache nennt es („bereich")
 //   T2 ein Mensch-Index wird geweitet wie von einem fremden Backend → die Index-Wache nennt ihn („format") beim Pfad, die
@@ -522,17 +526,17 @@ function pruefRaum(echt) {
         true
     );
 
-    // S — DER SEELENWECHSEL (Nachbesserung 08.10., dieselbe Klasse „geteilte Geometrie und Stoffe über Renderer-Grenzen"):
-    // Ich- und Hof-Bühne bauen ihre Gestalt aus denselben Vorlagen wie die Welt und entsorgten beim Wechsel ALLES, was sie
-    // trugen — Gegenprüfung: 3 Wechsel wolf↔human legten 12 Geometrien und 8 Stoffe der Welt in die Entsorgung (den Kopf des
-    // Spieler-Leibs, die Haut), die Welt kompilierte neu. Die Probe: zwei Runden (Ich: wolf↔human ×3, Hof: 4 Seelen ×2), die
-    // erste wärmt (eine Seele, die die Welt nie zeigte, kompiliert einmal), die zweite misst gegen die geschlossene Bühne;
-    // gezählt wird jede Welt-Geometrie und jeder Welt-Stoff, den ein Wechsel in die Entsorgungs-Schlange legt.
-    const seelen = await page.evaluate(async (echt) => {
+    // S — DIE ENTSORGUNG DER BÜHNEN (Nachbesserung 08.10., dieselbe Klasse „geteilte Geometrie und Stoffe über Renderer-
+    // Grenzen"): Ich-, Hof-, Feed-Bühne, Werkstatt-Ofen und Mitspieler-Leib bauen aus denselben Vorlagen wie die Welt und
+    // entsorgten beim Wechsel ALLES, was sie trugen — Gegenprüfung: 3 Wechsel wolf↔human legten 12 Geometrien und 8 Stoffe
+    // der Welt in die Entsorgung (den Kopf des Spieler-Leibs, die Haut), die Welt kompilierte neu; ein zweiter Peer-Guss
+    // „human" dieselben 12 Geometrien; der Ofen hielt jedes Regler-Einzelstück für immer (Werkstatt 2,4 → 50,1 MB nach 20
+    // Werten). Die Probe zählt je Phase jede Welt-Geometrie und jeden Welt-Stoff, den ein Wechsel SELBST in die Entsorgungs-
+    // Schlange legt (echt streamt die Welt nebenher), und leert die Schlange wie `_loopRender`.
+    await page.evaluate((echt) => {
         const r = window.anazhRealm;
         const F = window.__frostWand;
         const dev = r.state.renderer.backend.device;
-        const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const welt = new Map();
         const pfad = (o) => {
             const t = [];
@@ -547,22 +551,39 @@ function pruefRaum(echt) {
             });
         sammle(r.state.scene);
         if (F.wurzel !== r.state.scene) sammle(F.wurzel);
-        const entsorgt = [],
-            einzeln = new Set();
-        let alle = 0,
-            imWechsel = false; // gezählt wird nur, was ein Bühnen-Wechsel selbst entsorgt (echt streamt die Welt nebenher)
+        const E = (window.__frostEntsorgung = { phase: null, je: {}, welt: welt.size });
         const roh = r._queueDispose;
         r._queueDispose = function (obj) {
-            if (!imWechsel) return roh.call(this, obj);
-            alle++;
-            if (welt.has(obj)) {
-                entsorgt.push(welt.get(obj));
-                einzeln.add(obj);
+            const p = E.phase && (E.je[E.phase] || (E.je[E.phase] = { alle: 0, namen: [], objekte: new Set() }));
+            if (p) {
+                p.alle++;
+                if (welt.has(obj)) {
+                    p.namen.push(welt.get(obj));
+                    p.objekte.add(obj);
+                }
             }
             return roh.call(this, obj);
         };
-        // die Schlange leeren wie `_loopRender` (headless ruht der Takt; echt leert ihn der Takt selbst)
-        const leeren = async () => {
+        E.im = (phase, tu) => {
+            E.phase = phase;
+            try {
+                return tu();
+            } finally {
+                E.phase = null;
+            }
+        };
+        E.bericht = (phase) => {
+            const p = E.je[phase] || { alle: 0, namen: [], objekte: new Set() };
+            const geo = [...p.objekte].filter((o) => o.isBufferGeometry).length;
+            return {
+                alle: p.alle,
+                welt: p.namen.length,
+                geometrien: geo,
+                stoffe: p.objekte.size - geo,
+                namen: [...new Set(p.namen)].slice(0, 4),
+            };
+        };
+        E.leeren = async () => {
             if (echt) return F.zeichne(8);
             const s = Array.from(r.state.pendingDisposals);
             r.state.pendingDisposals.clear();
@@ -574,34 +595,43 @@ function pruefRaum(echt) {
                     /* wie `_loopRender` */
                 }
         };
-        const warte = async (holen) => {
+        E.warte = async (holen) => {
             const s0 = holen();
             const c0 = s0 && s0.renderer ? s0.renderer.info.render.calls : 0;
             const t = performance.now();
             while (performance.now() - t < 20000) {
                 const s = holen();
                 if (s && s.renderer && s.renderer.info.render.calls > c0) return;
-                await sleep(50);
+                await new Promise((res) => setTimeout(res, 50));
             }
         };
-        // ein Wechsel zählt, wenn die Bühne ihre Gestalt tauscht — mit den Geometrien, die er der Entsorgung vorlegt
+    }, ECHT);
+    const entsorgtKeineWelt = (tag, b) =>
+        check(
+            `${tag}: keine Welt-Geometrie, kein Welt-Stoff entsorgt`,
+            b.welt === 0,
+            `${b.welt} von ${b.alle} Entsorgungen trafen die Welt (${b.geometrien} Geometrien + ${b.stoffe} Stoffe einzeln): ${b.namen.join(" | ")}`
+        );
+
+    // S1/S2 — der Seelenwechsel in Ich- und Hof-Bühne: zwei Durchgänge (Ich: wolf↔human ×3, Hof: 4 Seelen ×2), der erste
+    // wärmt (eine Seele, die die Welt nie zeigte, kompiliert einmal), der zweite misst gegen die geschlossene Bühne.
+    const seelen = await page.evaluate(async (echt) => {
+        const r = window.anazhRealm;
+        const F = window.__frostWand;
+        const E = window.__frostEntsorgung;
+        const dev = r.state.renderer.backend.device;
         let tausch = 0,
             vorgelegt = 0;
         const wechsle = async (holen, zeige) => {
             const alt = holen() && holen().pivot;
-            imWechsel = true;
-            try {
-                zeige();
-            } finally {
-                imWechsel = false;
-            }
+            E.im("seelen", zeige);
             if (alt && holen().pivot !== alt) {
                 tausch++;
                 alt.traverse((o) => o.geometry && vorgelegt++);
             }
-            await warte(holen);
+            await E.warte(holen);
         };
-        const runde = async () => {
+        const durchgang = async () => {
             r.toggleInventoryOverlay(true);
             for (let k = 0; k < 3; k++)
                 for (const s of ["wolf", "human"])
@@ -618,39 +648,29 @@ function pruefRaum(echt) {
                         () => r._hofStageShow(s)
                     );
             r.closeAllDrawers();
-            await leeren();
+            await E.leeren();
             await F.zeichne(echt ? 8 : 2);
         };
         const bau = () => Object.assign({ module: 0, pipelines: 0 }, dev.__frostBau);
-        await runde();
+        await durchgang();
         const vor = bau();
         await F.zeichne(echt ? 8 : 2);
         const ruhe = bau();
-        await runde();
+        await durchgang();
         const nach = bau();
-        delete r._queueDispose;
         return {
-            welt: welt.size,
+            ...E.bericht("seelen"),
             tausch,
             vorgelegt,
-            alle,
-            entsorgt: entsorgt.length,
-            einzeln: einzeln.size,
-            geometrien: [...einzeln].filter((o) => o.isBufferGeometry).length,
-            namen: [...new Set(entsorgt)].slice(0, 6),
             ruhe: { module: ruhe.module - vor.module, pipelines: ruhe.pipelines - vor.pipelines },
             wechsel: { module: nach.module - ruhe.module, pipelines: nach.pipelines - ruhe.pipelines },
         };
     }, ECHT);
     console.log(`\n[seelenwechsel] ${zeit()} · ${JSON.stringify(seelen).slice(0, 400)}`);
-    check(
-        "S1 Seelenwechsel (Ich wolf↔human ×3, Hof 4 Seelen ×2, zwei Runden): keine Welt-Geometrie, kein Welt-Stoff entsorgt",
-        seelen.entsorgt === 0,
-        `${seelen.entsorgt} von ${seelen.alle} Entsorgungen trafen die Welt (${seelen.geometrien} Geometrien + ${seelen.einzeln - seelen.geometrien} Stoffe einzeln): ${seelen.namen.join(" | ")}`
-    );
+    entsorgtKeineWelt("S1 Seelenwechsel (Ich wolf↔human ×3, Hof 4 Seelen ×2, zwei Durchgänge)", seelen);
     // nie vakuös: die Bühnen tauschten wirklich ihre Gestalt und legten der Entsorgung Geometrien vor
     check(
-        "S1 die Probe wechselt wirklich (Ich ×6 + Hof ×8 je Runde, mit Geometrie)",
+        "S1 die Probe wechselt wirklich (Ich ×6 + Hof ×8 je Durchgang, mit Geometrie)",
         seelen.tausch >= 20 && seelen.vorgelegt > 0,
         `${seelen.tausch} Wechsel, ${seelen.vorgelegt} Geometrien vorgelegt`
     );
@@ -659,6 +679,132 @@ function pruefRaum(echt) {
         seelen.wechsel.module - seelen.ruhe.module <= 0 && seelen.wechsel.pipelines - seelen.ruhe.pipelines <= 0,
         `Wechsel +${seelen.wechsel.module} Module / +${seelen.wechsel.pipelines} Pipelines, geschlossen +${seelen.ruhe.module} / +${seelen.ruhe.pipelines}`
     );
+
+    // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
+    const feed = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        const E = window.__frostEntsorgung;
+        const st = r._feedEnsurePreview();
+        if (!st) return { fehlt: "keine Feed-Bühne" };
+        st.active = true;
+        r._feedPreviewStartRAF();
+        const bp = r.state.blueprints && r.state.blueprints.baum_eiche;
+        const karten = ["wolf", "fuchs", "baer", "wesen"].map((s) => ({
+            id: "w:" + s,
+            kind: "creature",
+            prof: { soul: s },
+        }));
+        if (bp) karten.push({ id: "r:eiche", kind: "recipe", prof: { bp } });
+        let tausch = 0,
+            vorgelegt = 0;
+        for (let k = 0; k < 2; k++)
+            for (const karte of karten) {
+                const alt = st.pivot;
+                E.im("feed", () => r._feedPreviewShow(karte));
+                if (alt && st.pivot !== alt) {
+                    tausch++;
+                    alt.traverse((o) => o.geometry && vorgelegt++);
+                }
+                await E.warte(() => r.state.feedPreview);
+            }
+        st.active = false;
+        await E.leeren();
+        return { ...E.bericht("feed"), tausch, vorgelegt, karten: karten.length };
+    });
+    console.log(`\n[feed-vorschau] ${zeit()} · ${JSON.stringify(feed).slice(0, 300)}`);
+    entsorgtKeineWelt("S3 Feed-Vorschau (4 Wesen + Rezept, zwei Durchgänge)", feed);
+    check(
+        "S3 die Probe wechselt wirklich (Feed, mit Geometrie)",
+        !feed.fehlt && feed.tausch >= 8 && feed.vorgelegt > 0,
+        feed.fehlt || `${feed.tausch} Wechsel, ${feed.vorgelegt} Geometrien vorgelegt`
+    );
+
+    // S4 — der Mitspieler-Leib: zwei Peer-Güsse „human" nacheinander (der erste geht), dann der Abschied des Peers.
+    const peer = await page.evaluate(async (echt) => {
+        const r = window.anazhRealm;
+        const F = window.__frostWand;
+        const E = window.__frostEntsorgung;
+        const e = { peerId: "frost-peer", soulName: "human" };
+        E.im("peer", () => r._p2pApplyPeerSoul(e));
+        const erster = e.mesh;
+        let vorgelegt = 0;
+        if (erster) erster.traverse((o) => o.geometry && vorgelegt++);
+        await F.zeichne(echt ? 4 : 1);
+        E.im("peer", () => r._p2pApplyPeerSoul(e));
+        const zweiter = e.mesh !== erster && !!erster;
+        await F.zeichne(echt ? 4 : 1);
+        if (e.mesh) {
+            r.state.scene.remove(e.mesh);
+            E.im("peer", () => r._disposeSoulGroup(e.mesh));
+        }
+        await E.leeren();
+        return { ...E.bericht("peer"), zweiter, vorgelegt };
+    }, ECHT);
+    console.log(`\n[mitspieler] ${zeit()} · ${JSON.stringify(peer).slice(0, 300)}`);
+    entsorgtKeineWelt("S4 Mitspieler-Leib (zweiter Peer-Guss human, Abschied)", peer);
+    check(
+        "S4 die Probe gießt den Peer wirklich zweimal (mit Geometrie)",
+        peer.zweiter === true && peer.vorgelegt > 0,
+        `zweiter Guss: ${peer.zweiter}, ${peer.vorgelegt} Geometrien vorgelegt`
+    );
+
+    // S5 — der Werkstatt-Ofen, der Regler-Zug: 20 Werte eines Reglers am Wolf. Jeder Wert ist ein Einzelstück (es gehört dem
+    // Ofen, nie dem Memo); der Ofen entsorgt das vorige beim Wechsel. Grafikspeicher und Geometrie-Zahl der Werkstatt und
+    // das Ofen-Memo bleiben beschränkt — vorher +2 Memo-Einträge und +2,4 MB je Wert.
+    const ofen = await page.evaluate(async () => {
+        const r = window.anazhRealm;
+        const E = window.__frostEntsorgung;
+        r.toggleDrawer("werkstatt");
+        const f = r._foundry;
+        const ids = f && f.recipes ? Object.keys(f.recipes).filter((k) => f.recipes[k].kind === "kreatur") : [];
+        const id = ids.includes("wolf") ? "wolf" : ids[0];
+        if (!id) return { fehlt: "kein Kreatur-Rezept" };
+        r.selectStudioRecipeForView(id);
+        const ws = r._ensureWorkshopState();
+        const holen = () => ws.preview;
+        await E.warte(holen);
+        const G = window.__tetrapodaCore.GATTUNGEN;
+        const recId = (AnazhRealm.TETRAPODA_SOUL_MAP && AnazhRealm.TETRAPODA_SOUL_MAP[id]) || id;
+        const basis = G[recId] || G.wolf;
+        const dial = Object.keys(basis).find((k) => typeof basis[k] === "number" && basis[k] > 0.2);
+        const mess = () => {
+            const m = ws.preview && ws.preview.renderer ? ws.preview.renderer.info.memory : {};
+            return {
+                memo: AnazhRealm._tierOfenMemo ? AnazhRealm._tierOfenMemo.size : 0,
+                geometrien: m.geometries || 0,
+                MB: +(((m.attributesSize || 0) + (m.indexAttributesSize || 0)) / 1048576).toFixed(2),
+            };
+        };
+        const zug = async (i) => {
+            ws.studioOv = ws.studioOv || {};
+            ws.studioOv[id] = { [dial]: +(basis[dial] * (1 + 0.01 * i)).toFixed(4) };
+            E.im("ofen", () => r._workshopRebuildPreviewMesh());
+            await E.warte(holen);
+            await E.leeren();
+        };
+        for (let i = 0; i <= 2; i++) await zug(i);
+        const vor = mess();
+        for (let i = 3; i <= 20; i++) await zug(i);
+        const nach = mess();
+        r.closeAllDrawers();
+        return { ...E.bericht("ofen"), id, dial, vor, nach };
+    });
+    console.log(`\n[werkstatt-ofen] ${zeit()} · ${JSON.stringify(ofen).slice(0, 400)}`);
+    if (ofen.fehlt) check("S5 Werkstatt-Ofen: ein Kreatur-Rezept trägt den Regler-Zug", false, ofen.fehlt);
+    else {
+        entsorgtKeineWelt(`S5 Werkstatt-Ofen (Regler-Zug ${ofen.id}.${ofen.dial}, 20 Werte)`, ofen);
+        check(
+            "S5 das Ofen-Memo hält kein Regler-Einzelstück",
+            ofen.nach.memo === ofen.vor.memo,
+            `Memo ${ofen.vor.memo} → ${ofen.nach.memo} über 18 Werte`
+        );
+        check(
+            "S5 Grafikspeicher und Geometrie-Zahl der Werkstatt bleiben beschränkt",
+            ofen.nach.geometrien <= ofen.vor.geometrien && ofen.nach.MB <= ofen.vor.MB + 0.5,
+            `Geometrien ${ofen.vor.geometrien} → ${ofen.nach.geometrien}, Geometrie-Speicher ${ofen.vor.MB} → ${ofen.nach.MB} MB über 18 Werte`
+        );
+    }
+    await page.evaluate(() => delete window.anazhRealm._queueDispose);
 
     // DER NACHLAUF: eine Validierung, die r184 in einem offenen Pipeline-Fehler-Bereich fängt, meldet sich erst, wenn der
     // async Pipeline-Bau endet (CI 07.10., Linux: später als der Schritt) — 3 s Zeichnen, dann darf kein Wort nachkommen.
