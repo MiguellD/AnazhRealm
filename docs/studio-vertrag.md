@@ -385,6 +385,15 @@ Komponenten-SÄTZE, keine Klassen):
   `AnazhRealm._steuerGesetz()` (memoisiert, fail-closed) in
   `updateCreatures` (EIN Schreiber der Gier `rotation.y`), `_kreaturZiel`
   (Ankunft) und der Herden-Block; Linse `gate:kreatur-takt` (gier · herde).
+- **`GANG_GESETZ.hubForm` (Welle LF 08.10., tetrapoda-core, rein additiv —
+  PRESETS/PARAMS byte-gleich, der v7-Fingerabdruck wandert nicht mit):**
+  `gangFuss(ph, S).hub` = sin(Phase)^hubForm (0,5) statt sin(Phase): der Fuß
+  hebt steil ab und setzt steil auf. Mit sin hing er ein Drittel des
+  Schwungs in den untersten 3 cm und strich dort mit 0,8–1,1 × Leib-Tempo
+  über den Boden. Leser: die Pfoten-IK `_animateTierBaum` (Fuß-Ziel in der
+  Welt, Halt des stehenden Fußes, Senke auf die Reichweite, Abspreizen +
+  ebene Zwei-Knochen-IK); Linsen `gate:tier-gang` · `gate:kreatur-takt`
+  (gier · querhang).
 
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 

@@ -25,6 +25,8 @@
 //   reload    (Q12) ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück (Kritik §2.5: hp heilte)
 //   peer      (Q3) die Sicht-Kopie beim Mitspieler dreht in die Laufrichtung und geht
 //   zufall    (Q2) kein Math.random im Kreatur-Leben (window.__codeOf über jede Tier-Methode + die benannten Wurf-Stellen)
+//   querhang  (Welle LF) am Hang von 20–30°: das Bein-Lot ≤ 10° bei rollendem Leib, der Stand-Schlupf im Lauf ≤ 0,2
+//             (eine Sohle höchstens 3 cm über dem Boden unter ihr steht; ihr Weg je Weg des Leibs)
 "use strict";
 
 // ═══ DIE SEITEN-FUNKTION (läuft im Browser: r = die Welt, T = THREE) ═══
@@ -1472,7 +1474,8 @@ async function kreaturProben(r, T, opts) {
                 ruhig(c);
                 return c;
             });
-        const dMit = (cs) => cs.reduce((acc, c) => acc + Math.hypot(c.position.x - pm.x, c.position.z - pm.z), 0) / cs.length;
+        const dMit = (cs) =>
+            cs.reduce((acc, c) => acc + Math.hypot(c.position.x - pm.x, c.position.z - pm.z), 0) / cs.length;
         const hirsche = ring("wesen");
         const wHirsch = r._creatureWariness(hirsche[0]);
         for (let k = 0; k < 600; k++) takt(1 / 60);
@@ -1542,7 +1545,8 @@ async function kreaturProben(r, T, opts) {
             restore.push(() => {
                 K.herdeZug = alt;
             });
-            if (typeof r._kreaturLeibKontakte === "function") decke(restore, "_kreaturLeibKontakte", () => function () {});
+            if (typeof r._kreaturLeibKontakte === "function")
+                decke(restore, "_kreaturLeibKontakte", () => function () {});
         }
         // im Freien (keine Hülle im Umkreis): die Wand eines Baus hat das letzte Wort und schöbe einen Leib in den nächsten
         const start = frei(40, -40, 20) || land(40, -40);
@@ -1551,7 +1555,11 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 8; k++) {
             const a = (k / 8) * Math.PI * 2 + 0.2;
             const d = k < 6 ? 7 : 9;
-            const c = tier({ x: pm.x + Math.cos(a) * d, y: pm.y, z: pm.z + Math.sin(a) * d }, k < 6 ? "baer" : "wolf", 1);
+            const c = tier(
+                { x: pm.x + Math.cos(a) * d, y: pm.y, z: pm.z + Math.sin(a) * d },
+                k < 6 ? "baer" : "wolf",
+                1
+            );
             ruhig(c);
             tiere.push(c);
         }
@@ -1966,7 +1974,12 @@ async function kreaturProben(r, T, opts) {
         s.blueprints._t_linse_sockel = {
             name: "_t_linse_sockel",
             parts: [
-                { shape: "box", material: "stein", position: { x: 0, y: 0.05, z: 0 }, size: { x: 0.1, y: 0.1, z: 0.1 } },
+                {
+                    shape: "box",
+                    material: "stein",
+                    position: { x: 0, y: 0.05, z: 0 },
+                    size: { x: 0.1, y: 0.1, z: 0.1 },
+                },
             ],
         };
         const e = r.spawnArchitecture("_t_linse_sockel", { x: wo.x, y: wo.y + 0.5, z: wo.z }, { silent: true });
@@ -2019,6 +2032,205 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── querhang (Leben-Schau 07.10., D11/D1-Rest): die Beine stehen lotrecht, der Leib rollt — am Querhang standen die
+    // Beine 20–31° aus dem Lot (sie kippten mit dem Leib, Bild ls-10), der Stand-Schlupf im Lauf lag bei 0,56–1,27 (Soll
+    // ≤ 0,2). Gemessen am echten Takt wie in der Leben-Schau: ein Hang von 20–30° nahe dem Spieler; Wolf und Hirsch stehen
+    // QUER zur Fall-Linie (warten, 120 Takte): je Bein der Winkel Hüfte → Pfote gegen das Lot und die Sohle über dem Boden
+    // unter ihr; dann folgen beide dem Spieler, der längs der Höhenlinie geht (600 Takte): der Stand-Schlupf — eine Pfote,
+    // deren Sohle höchstens 3 cm über dem Boden unter ihr liegt, steht; ihr Weg in solchen Takten je Weg des Leibs ──
+    await buehne("querhang", async (restore) => {
+        r.setGameMode("frieden");
+        const altUhr = s.creatureAnimationTime;
+        restore.push(() => {
+            s.creatureAnimationTime = altUhr;
+        });
+        s.creatureAnimationTime = 100;
+        if (taeter === "querhang")
+            decke(
+                restore,
+                "_animateTierBaum",
+                (alt) =>
+                    function (group, ...a) {
+                        const o = alt.call(this, group, ...a);
+                        const Tt =
+                            group && group.userData && group.userData._tierBaum && group.userData._tierBaum.teile;
+                        if (Tt) for (const k of [Tt.legFL, Tt.legFR, Tt.legHL, Tt.legHR]) if (k) k.rotation.z = 0;
+                        return o;
+                    }
+            );
+        if (taeter === "querhang-gleiten") {
+            // der Täter: der Fuß im Stand hat keinen Halt am Aufsetz-Punkt — die Pfoten-Haltung wird je Takt vergessen,
+            // jeder Takt greift die Pfote dort, wohin der Leib sie mitnahm (der Fuß wandert mit dem Leib)
+            decke(
+                restore,
+                "_animateTierBaum",
+                (alt) =>
+                    function (group, ...a) {
+                        const gg =
+                            group && group.userData && group.userData._tierBaum && group.userData._tierBaum._gang;
+                        if (gg && gg.fuss)
+                            gg.fuss.forEach((L, j) => {
+                                if (((gg.ph[j] % TAU) + TAU) % TAU >= Math.PI) L.an = false;
+                            });
+                        return alt.call(this, group, ...a);
+                    }
+            );
+        }
+        const h = (x, z) => r.getTerrainHeightAt(x, z);
+        // der Hang: 20–30° über 6 m eben (die Fall-Linie trägt die Neigung, quer kaum Krümmung), kein Bau und kein Wasser
+        let hang = null;
+        for (let ring = 1; ring < 70 && !hang; ring++) {
+            const n = ring * 8;
+            for (let q = 0; q < n && !hang; q++) {
+                const a = (q / n) * Math.PI * 2;
+                const x = P0.x + Math.cos(a) * ring * 5,
+                    z = P0.z + Math.sin(a) * ring * 5;
+                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) continue;
+                const gx = (h(x + 1.5, z) - h(x - 1.5, z)) / 3,
+                    gz = (h(x, z + 1.5) - h(x, z - 1.5)) / 3;
+                const g = Math.hypot(gx, gz);
+                const grad0 = (Math.atan(g) * 180) / Math.PI;
+                if (grad0 < 20 || grad0 > 30) continue;
+                const ux = gx / g,
+                    uz = gz / g; // bergauf
+                let eben = true;
+                for (const t of [-3, -1.5, 1.5, 3])
+                    for (const o of [-3, 3]) {
+                        const px = x + ux * t - uz * o,
+                            pz = z + uz * t + ux * o;
+                        if (Math.abs(h(px, pz) - (h(x, z) + g * t)) > 0.5) eben = false;
+                    }
+                if (!eben) continue;
+                if (
+                    (s.architectures || []).some(
+                        (e) =>
+                            e &&
+                            e.blockerAABBs &&
+                            e.position &&
+                            Math.abs(e.position.x - x) < 4 &&
+                            Math.abs(e.position.z - z) < 4
+                    )
+                )
+                    continue;
+                hang = { x, z, ux, uz, grad: grad0 };
+            }
+        }
+        if (!hang) return { fehler: "kein Hang von 20–30° ohne Bau nahe dem Spieler" };
+        // quer: die Gier längs der Höhenlinie (senkrecht zur Fall-Linie)
+        const gierQuer = Math.atan2(-hang.uz, hang.ux);
+        const stelle = (seele, o) => {
+            const x = hang.x - hang.uz * o,
+                z = hang.z + hang.ux * o;
+            const c = tier({ x, y: h(x, z) + 0.3, z }, seele, 1);
+            ruhig(c);
+            c.rotation.y = gierQuer;
+            if (c.userData._steuer) c.userData._steuer.gier = gierQuer;
+            else c.userData._steuer = { gier: gierQuer, v: 0 };
+            r.assignCreatureTask(c, "wait", {}, { silent: true });
+            return c;
+        };
+        pm.set(hang.x + hang.ux * 5, h(hang.x + hang.ux * 5, hang.z + hang.uz * 5) + 0.5, hang.z + hang.uz * 5);
+        const tiere = [stelle("wolf", -1.6), stelle("wesen", 1.6)];
+        // die Pfoten: der Aufsetz-Punkt jeder Pfote im Pfoten-Raum (die Kalibrierung der Leben-Schau in der Stand-Pose)
+        const kalib = tiere.map((cr) => {
+            const tb = cr.userData._tierBaum;
+            if (!tb || !tb.teile) return null;
+            const Tt = tb.teile;
+            const ps = [Tt.flP, Tt.frP, Tt.hlP, Tt.hrP];
+            const hf = [Tt.legFL, Tt.legFR, Tt.legHL, Tt.legHR];
+            if (ps.some((p) => !p) || hf.some((p) => !p)) return null;
+            const altPos = cr.position.clone(),
+                altRot = cr.rotation.clone();
+            cr.rotation.set(0, 0, 0);
+            r._tierBaumNeutralStance(cr);
+            cr.updateMatrixWorld(true);
+            const boden = cr.position.y;
+            const lokal = ps.map((p) => {
+                const w = new T.Vector3().setFromMatrixPosition(p.matrixWorld);
+                w.y = boden;
+                return p.worldToLocal(w.clone());
+            });
+            cr.position.copy(altPos);
+            cr.rotation.copy(altRot);
+            cr.updateMatrixWorld(true);
+            return { ps, hf, lokal };
+        });
+        if (kalib.some((k) => !k)) return { fehler: "keine Nah-Gestalt (Pfoten)" };
+        const sohlen = (i) => {
+            const cr = tiere[i],
+                K = kalib[i];
+            cr.updateMatrixWorld(true);
+            return K.ps.map((p, j) => ({
+                w: p.localToWorld(K.lokal[j].clone()),
+                hip: new T.Vector3().setFromMatrixPosition(K.hf[j].matrixWorld),
+            }));
+        };
+        const boden = (x, z, ref) => r._standSicht(x, z, ref, false);
+        for (let k = 0; k < 120; k++) takt(1 / 60);
+        const stand = tiere.map((cr, i) => {
+            const S = sohlen(i);
+            const lot = S.map((p) => {
+                const bx = p.w.x - p.hip.x,
+                    by = p.w.y - p.hip.y,
+                    bz = p.w.z - p.hip.z;
+                return grad(Math.acos(Math.max(-1, Math.min(1, -by / Math.max(1e-6, Math.hypot(bx, by, bz))))));
+            });
+            const spalt = S.map((p) => p.w.y - boden(p.w.x, p.w.z, cr.position.y));
+            return {
+                rollGrad: +grad(cr.rotation.z || 0).toFixed(1),
+                lotMaxGrad: +Math.max(...lot).toFixed(1),
+                sohleMinCm: +(Math.min(...spalt) * 100).toFixed(1),
+                sohleMaxCm: +(Math.max(...spalt) * 100).toFixed(1),
+            };
+        });
+        // der Lauf längs der Höhenlinie: der Spieler geht 1,4 m/s quer, Wolf und Hirsch folgen
+        for (const c of tiere) r.assignCreatureTask(c, "follow_player", {}, { silent: true });
+        const qx = Math.cos(gierQuer) * 0 + Math.sin(gierQuer),
+            qz = Math.cos(gierQuer);
+        const dt = 1 / 60;
+        const spur = tiere.map(() => [[], [], [], []]);
+        const leib = tiere.map(() => []);
+        let w = 0;
+        for (let k = 0; k < 600; k++) {
+            w += 1.4 * dt * (k < 300 ? 1 : -1);
+            const x = hang.x + qx * w + hang.ux * 4,
+                z = hang.z + qz * w + hang.uz * 4;
+            pm.set(x, h(x, z) + 0.5, z);
+            takt(dt);
+            tiere.forEach((cr, i) => {
+                const S = sohlen(i);
+                leib[i].push({ x: cr.position.x, z: cr.position.z, hop: (cr.userData._hopH || 0) > 0 });
+                S.forEach((p, j) =>
+                    spur[i][j].push({ x: p.w.x, z: p.w.z, y: p.w.y - boden(p.w.x, p.w.z, cr.position.y) })
+                );
+            });
+        }
+        const schlupf = tiere.map((cr, i) => {
+            let fuss = 0,
+                weg = 0;
+            for (let j = 0; j < 4; j++)
+                for (let n = 31; n < spur[i][j].length; n++) {
+                    const a = spur[i][j][n - 1],
+                        b = spur[i][j][n];
+                    const la = leib[i][n - 1],
+                        lb = leib[i][n];
+                    if (la.hop || lb.hop) continue;
+                    const lw = Math.hypot(lb.x - la.x, lb.z - la.z);
+                    if (lw < 0.004) continue;
+                    if (a.y < 0.03 && b.y < 0.03) {
+                        fuss += Math.hypot(b.x - a.x, b.z - a.z);
+                        weg += lw;
+                    }
+                }
+            return weg > 0.05 ? +(fuss / weg).toFixed(3) : null;
+        });
+        return {
+            hangGrad: +hang.grad.toFixed(1),
+            stand: { wolf: stand[0], hirsch: stand[1] },
+            schlupf: { wolf: schlupf[0], hirsch: schlupf[1] },
+        };
+    });
+
     return aus;
 }
 
@@ -2044,6 +2256,7 @@ const PROBEN = [
     "jagdkreis",
     "rudel",
     "sockel",
+    "querhang",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -2148,7 +2361,10 @@ function urteil(name, z) {
     }
     if (name === "nacht") {
         soll(z.ruhFrames >= 300, `nur ${z.ruhFrames} Ruhe-Frames (Probe vakuös)`);
-        soll(z.bewegtAnteil !== null && z.bewegtAnteil < 0.03, `${(z.bewegtAnteil * 100).toFixed(1)} % bewegt während ruhen`);
+        soll(
+            z.bewegtAnteil !== null && z.bewegtAnteil < 0.03,
+            `${(z.bewegtAnteil * 100).toFixed(1)} % bewegt während ruhen`
+        );
     }
     if (name === "reload") {
         soll(Math.abs(z.hpNach - z.hpVor) < 0.01, `hp vor dem Reload ${z.hpVor}, danach ${z.hpNach} (geheilt)`);
@@ -2173,7 +2389,10 @@ function urteil(name, z) {
             z.speedNach >= z.speedBand[0] - eps && z.speedNach <= z.speedBand[1] + eps,
             `Lauf-Tempo ${z.speedNach} m/s jenseits des Gesetz-Bands ${z.speedBand.join("–")} (Sprint ${z.sprintNach})`
         );
-        soll(Math.abs(z.sprintNach - z.sprintSoll) < 1e-3, `Sprint ${z.sprintNach} ≠ Tempo × sprintMul ${z.sprintSoll}`);
+        soll(
+            Math.abs(z.sprintNach - z.sprintSoll) < 1e-3,
+            `Sprint ${z.sprintNach} ≠ Tempo × sprintMul ${z.sprintSoll}`
+        );
         soll(
             z.sprungNach >= z.sprungBand[0] - eps && z.sprungNach <= z.sprungBand[1] + eps,
             `Sprungkraft ${z.sprungNach} jenseits des Gesetz-Bands ${z.sprungBand.join("–")}`
@@ -2216,7 +2435,10 @@ function urteil(name, z) {
             `Hirsch 6 m vor dem ruhigen Spieler: Wariness ${z.wHirsch} (Soll ≥ ${z.fleeThreshold}, ein Fluchttier)`
         );
         soll(z.wBaer <= z.curiousThreshold, `Bär 6 m vor dem ruhigen Spieler: Wariness ${z.wBaer} (Soll neugierig)`);
-        soll(z.hirschAbstandM >= 10, `die Hirsche stehen nach 10 s ${z.hirschAbstandM} m am Spieler (Soll ≥ 10 m, Flucht)`);
+        soll(
+            z.hirschAbstandM >= 10,
+            `die Hirsche stehen nach 10 s ${z.hirschAbstandM} m am Spieler (Soll ≥ 10 m, Flucht)`
+        );
         soll(z.baerAbstandM <= 6, `die Bären stehen nach 10 s ${z.baerAbstandM} m am Spieler (Soll ≤ 6 m, Neugier)`);
         for (const [wer, k] of [
             ["Hirsch", z.kampfHirsch],
@@ -2281,6 +2503,21 @@ function urteil(name, z) {
             `das Tier steht im Sockel: ${z.imSockelTakte} von ${z.ueberTakte} Takten über ihm, bis ${z.tiefMaxM} m tief (Oberkante ${z.oberkanteUeberBodenM} m über dem Boden)`
         );
     }
+    if (name === "querhang") {
+        for (const [wer, a] of [
+            ["Wolf", z.stand.wolf],
+            ["Hirsch", z.stand.hirsch],
+        ])
+            soll(
+                a.lotMaxGrad <= 10,
+                `Bein-Lot am Querhang (${z.hangGrad}°): ${wer} ${a.lotMaxGrad}° (Soll ≤ 10°; der Leib rollt ${a.rollGrad}°)`
+            );
+        for (const [wer, sl] of [
+            ["Wolf", z.schlupf.wolf],
+            ["Hirsch", z.schlupf.hirsch],
+        ])
+            soll(sl !== null && sl <= 0.2, `Stand-Schlupf am Querhang: ${wer} ${sl} (Soll ≤ 0,2)`);
+    }
     return { ok: f.length === 0, grund: f.join(" · ") };
 }
 
@@ -2333,6 +2570,10 @@ const TAETER = {
     ],
     rudel: [["rudel", /umstellt nicht/]],
     sockel: [["sockel", /steht im Sockel/]],
+    querhang: [
+        ["querhang", /Bein-Lot am Querhang/],
+        ["querhang-gleiten", /Stand-Schlupf am Querhang/],
+    ],
 };
 
 // Der Kommentar-Stripper der Absenz-Proben — dieselbe Quelle wie window.__codeOf im Playtest-Harness (Kommentare

@@ -466,6 +466,9 @@ const FORBIDDEN = [
     { token: "scentProbeM", fiel: "Welle LF rudel — die Witterung wählt die Beute an der Nase", auch: ["tetrapoda-core.js"] },
     { token: "this._scentAt(cx + probeStep", fiel: "Welle LF rudel — kein Gradient der Witterung" },
     { token: "fleeSpeedBoost", fiel: "Welle LF rudel — die Flucht ist der Sprint der Gestalt", auch: ["tetrapoda-core.js"] },
+    // WELLE LF RUDEL (Leben-Schau 07.10., D11/D1-Rest): das Fuß-Ziel in der Ebene des Leibs (das Ziel im Gruppen-Raum,
+    // per Rumpf-Quaternion zurückgedreht — am Querhang kippten die Beine mit dem Leib) kehrt nicht zurück.
+    { token: "_gangQ", fiel: "Welle LF rudel — das Fuß-Ziel liegt in der Welt (Pfoten-IK _animateTierBaum)" },
     { token: "OBSTACLE_RAYCAST_MAX_DIST_SQ", fiel: "Welle L kreatur — _kreaturHuellenKontakt (kein Strahl je Frame)" },
     { token: "hasHit = this._runRaycast(", fiel: "Welle L kreatur — _kreaturHuellenKontakt" },
     // Nachbesserung 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters — auch die Eintrags-

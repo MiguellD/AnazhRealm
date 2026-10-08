@@ -18012,12 +18012,6 @@ class AnazhRealm {
             const nT = Math.ceil(dtTakt / 0.1);
             for (let k = 0; k < nT; k++) core.cpgStep(g.ph, freq, core.CPG_COUPLING, dtTakt / nT);
         }
-        const SP = (core && core.STAND_POSE) || [
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-        ];
         let roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0) * fadeMul;
         // V18.491.80 — ZIP/LAB→HOST: bodyZ reist im MOTION-Preset (Lab-Roll-
         // additiv neben sway·sin); ohne Feld 0 = byte-alt.
@@ -18079,49 +18073,210 @@ class AnazhRealm {
         // (höher → knackiger). State an tb._gang; NeutralStance nullt den Gang.
         if (!g.legCur)
             g.legCur = [
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
             ];
-        const legA = dt > 0 ? 1 - Math.exp(-Math.max(18, 55 * kpMul) * (st > 0 ? 2.5 : 1) * dt) : 1;
-        // Das Fuß-Ziel liegt am BODEN (Gruppen-Raum); der Rumpf neigt und rollt (Federn, Wiegen) — die IK rechnet im
-        // Rumpf-Raum, das Ziel wird zurückgedreht.
-        const qRumpf = T.wolf
-            ? (this._gangQ || (this._gangQ = new THREE.Quaternion())).setFromEuler(T.wolf.rotation).invert()
-            : null;
+        // die Glieder folgen ihrem Ziel im Gang ohne Nachlauf (die Ziele sind stetig: der Schwung kam mit dem alten Faktor
+        // 2,5 um bis zu 5 cm hinter seinem Ziel auf und strich dabei über den Boden)
+        const legA = dt > 0 ? 1 - Math.exp(-Math.max(18, 55 * kpMul) * (st > 0 ? 6 : 1) * dt) : 1;
+        // DIE PFOTE STEHT AUF DEM BODEN UNTER IHR, DAS BEIN IM LOT (Welle LF, Leben-Schau 07.10.: am Querhang standen die
+        // Beine 20–31° aus dem Lot — sie kippten mit dem Leib, die Pfoten zielten auf die Ebene des Leibs; der Stand-Schlupf
+        // lag bei 0,56–1,27). Drei Schritte je Takt: das Fuß-Ziel in der WELT (Schritt 1, mit dem Halt des stehenden
+        // Fußes), die Senke des Rumpfs auf die Reichweite der Beine (Schritt 2), die Pfote auf ihr Ziel per Abspreizen und
+        // ebener Zwei-Knochen-IK im Rumpf-Raum (Schritt 3). Der Boden unter der Pfote ist _kreaturFussBoden (der
+        // Stand-Leser der Sicht um den Träger des Leibs; wer schwimmt oder springt, hält die Pfote an seiner Ebene).
+        const GG = core.GANG_GESETZ;
+        const fLab = tb.f || 1;
         const vZiel = this._gangV || (this._gangV = new THREE.Vector3());
+        const vHuefte = this._gangH || (this._gangH = new THREE.Vector3());
+        // der Rumpf in seiner Ruhe-Lage (die Senke dieses Takts folgt aus den Zielen, Schritt 2)
+        const ruhe = T.wolf ? tb._rumpfRuhe || (tb._rumpfRuhe = T.wolf.position.clone()) : null;
+        if (T.wolf) {
+            T.wolf.position.copy(ruhe);
+            T.wolf.updateWorldMatrix(true, false);
+        }
+        // die Hüften im Leib (Gruppen-Raum) in der RUHE des Rumpfs, einmal je Tier: das Federn und Wiegen des Rumpfs dreht
+        // die Hüfte um seinen Drehpunkt — folgte das Fuß-Ziel ihm, glitte der Fuß im Stand mit
+        if (!tb._huefteLeib && T.wolf && T.wolf.parent) {
+            const M = new THREE.Matrix4().copy(group.matrixWorld).invert();
+            M.multiply(T.wolf.parent.matrixWorld).multiply(
+                new THREE.Matrix4().compose(T.wolf.position, new THREE.Quaternion(), T.wolf.scale)
+            );
+            tb._huefteLeib = tb.bein.map((B) =>
+                new THREE.Vector3(B.p0[0] / fLab, B.p0[1] / fLab, B.p0[2] / fLab).applyMatrix4(M)
+            );
+        }
+        const gier = group.rotation.y || 0;
+        const vorX = Math.sin(gier),
+            vorZ = Math.cos(gier);
+        const stand = st < 0.002;
+        const fl = g.fuss || (g.fuss = [{ an: false }, { an: false }, { an: false }, { an: false }]);
+        const ziele =
+            g.ziele ||
+            (g.ziele = [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ]);
+        const glied = (B) => (Math.hypot(B.a[0], B.a[1]) + Math.hypot(B.b[0], B.b[1])) * skala;
+        // wo die Pfote JETZT steht: ihre Sohle (das Ende des Pfoten-Glieds c — der Punkt, den die IK auf den Boden stellt;
+        // das Gelenk darüber liegt am geneigten Leib um |c|·sin(Neigung) versetzt)
+        const pfoteHier = (K, L, fx, fz, BM) => {
+            if (K[3] && g.legInit) {
+                K[3].updateWorldMatrix(true, false);
+                vZiel.set(0, BM.c[0] / fLab, BM.c[1] / fLab).applyMatrix4(K[3].matrixWorld);
+                L.x = vZiel.x;
+                L.z = vZiel.z;
+            } else {
+                L.x = fx;
+                L.z = fz;
+            }
+            L.an = true;
+        };
+        // SCHRITT 1 — DAS FUSS-ZIEL IN DER WELT je Bein: unter der Hüfte in der Ruhe des Rumpfs (die Lage des Leibs mit
+        // Gier, Nick und Wank — ohne sein Federn und Wiegen), längs der Blickrichtung um die Ruhe-Lage und den Schritt des
+        // Gang-Gesetzes versetzt, auf dem Boden dort. Ein Fuß, der steht, GLEITET NIE: im Stand des Beins beim Gehen (Phase
+        // π … 2π) bleibt er, wo er aufsetzte (das Ziel des Gesetzes wandert mit dem Leib zurück — Wank, Nick-Regeln und
+        // Schub verschöben ihn sonst); er hebt erst im frühen Schwung ab (beginnt der Gang spät im Schwung, bleibt er stehen
+        // bis zum nächsten) und führt vom Abhebe-Punkt auf das Ziel des Gesetzes. Ein STEHENDES Tier lässt die Pfoten, wo
+        // sie stehen. Wo eine stehende Pfote fern ihrer Lage ist — im Stand fern dem Lot, im Gehen von der Hüfte nicht
+        // mehr erreichbar —, TRITT sie dorthin: gehoben, in einer Viertel-Sekunde, eine nach der anderen.
+        let tritt = false;
+        for (let i = 0; i < 4; i++) if (fl[i].tritt >= 0) tritt = true;
         for (let i = 0; i < 4; i++) {
             const ph = g.ph[i];
             const K = ketten[i];
-            const swing = Math.max(0, Math.sin(ph));
-            let z0, z1, z2, z3;
-            if (st < 0.002) {
-                // Stand: STAND_POSE + Gewichts-Unruhe + Roll-Shift (Lab-Mathe, t-Sinus).
-                // V18.491.81 — tension skaliert Unruhe (Lab ribcage/support-Verwandte).
-                const wn = (Math.sin(t * 2.5 + i * 1.7) * 0.004 + Math.sin(t * 1.3 + i * 2.3) * 0.003) * tension;
-                const wShift = roll * seiten[i] * 0.025;
-                z0 = SP[i][0] + wn + wShift;
-                z1 = SP[i][1] + wn * 0.5 + wShift * 0.3;
-                z2 = SP[i][2] + wn * 0.3 - wShift * 0.2;
-                z3 = SP[i][3] + wn * 0.2;
+            const BM = tb.bein[i];
+            const L = fl[i];
+            // der Fußweg dieses Beins folgt SEINER Phasen-Rate (die Kopplung beschleunigt/bremst einzelne Beine): im Stand
+            // wandert der Fuß mit genau der Geschwindigkeit des Leibs zurück
+            const rate = dtTakt > 0 ? (g.ph[i] - phAlt[i]) / dtTakt : freq;
+            const F = stand ? null : core.gangFuss(ph, st * (freq / Math.max(0.25 * freq, rate)));
+            let hub = F ? F.hub : 0;
+            if (tb._huefteLeib) vHuefte.copy(tb._huefteLeib[i]).applyMatrix4(group.matrixWorld);
+            else vHuefte.copy(group.position);
+            const vor = BM.zr * skala + (F ? F.dz : 0);
+            let fx = vHuefte.x + vorX * vor,
+                fz = vHuefte.z + vorZ * vor;
+            const u = ((ph % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+            const imStand = stand || u >= Math.PI;
+            if (imStand && !L.an && !(L.tritt >= 0)) pfoteHier(K, L, fx, fz, BM);
+            if (imStand && L.an && !(L.tritt >= 0) && !tritt) {
+                const fern = stand
+                    ? Math.hypot(fx - L.x, fz - L.z) > 0.15 * BM.h * skala
+                    : Math.hypot(vHuefte.x - L.x, vHuefte.z - L.z) > glied(BM) - BM.c[0] * skala;
+                if (fern) {
+                    L.tritt = 0;
+                    L.ax = L.x;
+                    L.az = L.z;
+                    tritt = true;
+                }
+            }
+            if (L.tritt >= 0) {
+                L.tritt = Math.min(1, L.tritt + dt / 0.25);
+                const w = L.tritt * L.tritt * (3 - 2 * L.tritt);
+                fx = L.ax + (fx - L.ax) * w;
+                fz = L.az + (fz - L.az) * w;
+                hub = Math.pow(Math.sin(Math.PI * L.tritt), GG.hubForm);
+                L.x = fx;
+                L.z = fz;
+                L.an = true;
+                if (L.tritt >= 1) L.tritt = -1;
+            } else if (imStand) {
+                fx = L.x;
+                fz = L.z;
             } else {
-                // DAS BEIN im Gang-Gesetz (tetrapoda gangFuss): das Fuß-Ziel (am Boden im Stand, gehoben im Schwung)
-                // stellt eine ebene Zwei-Knochen-IK — Hüfte (Kette[0]) und Unterglied (Kette[2]) nach dem Kosinussatz,
-                // der Knick in der Ruhe-Richtung; die Pfote bleibt waagrecht und faltet im Schwung.
-                const BM = tb.bein[i];
-                const GG = core.GANG_GESETZ;
-                // der Fußweg dieses Beins folgt SEINER Phasen-Rate (die Kopplung beschleunigt/bremst einzelne Beine):
-                // im Stand wandert der Fuß mit genau der Geschwindigkeit des Leibs zurück
-                const rate = dtTakt > 0 ? (g.ph[i] - phAlt[i]) / dtTakt : freq;
-                const Si = st * (freq / Math.max(0.25 * freq, rate));
-                const F = core.gangFuss(ph, Si);
-                const p0y = BM.p0[1] * skala,
-                    p0z = BM.p0[2] * skala;
-                vZiel.set(BM.p0[0] * skala, p0y + (-BM.h + F.hub * GG.hub * BM.h) * skala, p0z + BM.zr * skala + F.dz);
-                if (qRumpf) vZiel.applyQuaternion(qRumpf);
-                const ty = vZiel.y - p0y - BM.c[0] * skala,
-                    tz = vZiel.z - p0z;
+                if (L.an && u < 0.7 * Math.PI) {
+                    L.ax = L.x;
+                    L.az = L.z;
+                    L.au = u;
+                    L.an = false;
+                }
+                if (L.an) {
+                    // der Gang beginnt spät im Schwung: der Fuß bleibt stehen bis zum nächsten
+                    fx = L.x;
+                    fz = L.z;
+                    hub = 0;
+                } else if (Number.isFinite(L.ax)) {
+                    const w0 = Math.max(0, Math.min(1, (u - L.au) / Math.max(0.2 * Math.PI, 0.8 * Math.PI - L.au)));
+                    const w = w0 * w0 * (3 - 2 * w0);
+                    fx = L.ax + (fx - L.ax) * w;
+                    fz = L.az + (fz - L.az) * w;
+                }
+            }
+            const Z = ziele[i];
+            Z[0] = fx;
+            Z[1] = this._kreaturFussBoden(group, fx, fz);
+            Z[2] = fz;
+            Z[3] = hub;
+        }
+        // SCHRITT 2 — DIE SENKE (die Reichweite der Beine): die Beine stehen in der Ruhe fast gestreckt. Das Ende des
+        // Schritts (Ruhe-Lage ± halber Fußweg) und am Hang der Boden unter der talseitigen Hüfte (der Leib neigt und rollt,
+        // die Hüfte wandert talwärts, das Lot darunter trifft den Boden tiefer) lagen jenseits ihrer Länge — die IK klemmte,
+        // die Pfote schwebte und glitt dem Ziel nach. Der Rumpf senkt sich LOTRECHT (die Hüften sinken auf ihr Lot, die
+        // Fuß-Ziele bleiben), bis jede Pfote ihren Boden erreicht: je Bein das Gelenk über der Pfote höchstens
+        // √(Glied² − seitlich² − Schritt-Ende²) unter der Hüfte; gedeckelt auf ein Drittel der Hüft-Höhe (ein Rumpf kriecht
+        // nicht).
+        let senke = 0;
+        const vHw = this._gangHW || (this._gangHW = new THREE.Vector3());
+        if (T.wolf) {
+            for (let i = 0; i < 4; i++) {
+                const B = tb.bein[i],
+                    Z = ziele[i];
+                vHw.set(B.p0[0] / fLab, B.p0[1] / fLab, B.p0[2] / fLab);
+                vHw.applyMatrix4(T.wolf.matrixWorld);
+                const dx = Z[0] - vHw.x,
+                    dz = Z[2] - vHw.z;
+                const quer = dx * vorZ - dz * vorX;
+                const weit = Math.max(Math.abs(dx * vorX + dz * vorZ), Math.abs(B.zr) * skala + st / 2);
+                const lg = glied(B) * 0.98;
+                const ueber = vHw.y - (Z[1] - B.c[0] * skala); // die Hüfte über dem Pfoten-Gelenk auf dem Boden
+                const noetig = ueber - Math.sqrt(Math.max(0, lg * lg - quer * quer - weit * weit));
+                if (noetig > senke) senke = Math.min(noetig, (B.h * skala) / 3);
+            }
+        }
+        g.senke = (g.senke || 0) + (senke - (g.senke || 0)) * (dt > 0 ? 1 - Math.exp(-6 * dt) : 1);
+        if (T.wolf && T.wolf.parent) {
+            // das Lot im Raum des Rumpf-Halters: die Senke wirkt längs der Welt-Senkrechten, nie längs des geneigten Leibs
+            const Pinv = (this._gangM || (this._gangM = new THREE.Matrix4())).copy(T.wolf.parent.matrixWorld).invert();
+            const vA = vHw.copy(group.position).applyMatrix4(Pinv);
+            const ax = vA.x,
+                ay = vA.y,
+                az = vA.z;
+            vHw.copy(group.position);
+            vHw.y -= g.senke;
+            vHw.applyMatrix4(Pinv);
+            T.wolf.position.set(ruhe.x + vHw.x - ax, ruhe.y + vHw.y - ay, ruhe.z + vHw.z - az);
+            T.wolf.updateMatrix();
+            T.wolf.matrixWorld.multiplyMatrices(T.wolf.parent.matrixWorld, T.wolf.matrix);
+        }
+        const Rinv = T.wolf
+            ? (this._gangR || (this._gangR = new THREE.Matrix4())).copy(T.wolf.matrixWorld).invert()
+            : null;
+        // SCHRITT 3 — DIE PFOTE AUF DEM ZIEL: in den Rumpf-Raum gerechnet (er neigt, rollt, federt) stellt die Hüfte das Bein
+        // erst seitlich in die Ebene des Ziels (Abspreizen um die Längs-Achse: der Leib rollt, das Bein bleibt im Lot), dann
+        // die ebene Zwei-Knochen-IK. Dieselbe IK trägt den Stand mit seiner Gewichts-Unruhe.
+        for (let i = 0; i < 4; i++) {
+            const K = ketten[i];
+            const BM = tb.bein[i];
+            const Z = ziele[i];
+            const hub = Z[3];
+            const p0x = BM.p0[0] * skala,
+                p0y = BM.p0[1] * skala,
+                p0z = BM.p0[2] * skala;
+            vZiel.set(Z[0], Z[1] + hub * GG.hub * BM.h * skala, Z[2]);
+            if (Rinv) vZiel.applyMatrix4(Rinv).multiplyScalar(fLab * skala);
+            // das Abspreizen: die Hüfte dreht die Bein-Ebene um die Längs-Achse durch das Ziel
+            const lx = vZiel.x - p0x,
+                ly = vZiel.y - p0y;
+            const ab = Math.atan2(lx, -ly);
+            const ty = -Math.hypot(lx, ly) - BM.c[0] * skala,
+                tz = vZiel.z - p0z;
+            let z0, z1, z2, z3;
+            {
                 const ay = BM.a[0] * skala,
                     az = BM.a[1] * skala,
                     by = BM.b[0] * skala,
@@ -18141,7 +18296,18 @@ class AnazhRealm {
                 z0 = thH;
                 z1 = 0;
                 z2 = thK;
-                z3 = -(thH + thK) + F.hub * GG.falte;
+                // die Pfote faltet im Schwung und streckt sich, bevor sie den Boden erreicht (hub²: beim steilen Hub
+                // stünde die gefaltete Sohle sonst noch in den untersten Zentimetern schräg und striche über den Boden)
+                z3 = -(thH + thK) + hub * hub * GG.falte;
+                if (stand) {
+                    // die Gewichts-Unruhe des Stands (Lab-Mathe, t-Sinus; tension skaliert sie) auf der IK
+                    const wn = (Math.sin(t * 2.5 + i * 1.7) * 0.004 + Math.sin(t * 1.3 + i * 2.3) * 0.003) * tension;
+                    const wShift = roll * seiten[i] * 0.025;
+                    z0 += wn + wShift;
+                    z1 += wn * 0.5 + wShift * 0.3;
+                    z2 += wn * 0.3 - wShift * 0.2;
+                    z3 += wn * 0.2;
+                }
             }
             const cur = g.legCur[i];
             if (!g.legInit) {
@@ -18149,13 +18315,20 @@ class AnazhRealm {
                 cur[1] = z1;
                 cur[2] = z2;
                 cur[3] = z3;
+                cur[4] = ab;
             } else {
                 cur[0] += (z0 - cur[0]) * legA;
                 cur[1] += (z1 - cur[1]) * legA;
                 cur[2] += (z2 - cur[2]) * legA;
                 cur[3] += (z3 - cur[3]) * legA;
+                cur[4] += (ab - cur[4]) * legA;
             }
-            if (K[0]) K[0].rotation.x = cur[0];
+            if (K[0]) {
+                // erst abspreizen (um die Längs-Achse des Rumpfs), dann schwingen: Rz · Rx
+                K[0].rotation.order = "ZXY";
+                K[0].rotation.z = cur[4];
+                K[0].rotation.x = cur[0];
+            }
             if (K[1]) K[1].rotation.x = cur[1];
             if (K[2]) K[2].rotation.x = cur[2];
             if (K[3]) K[3].rotation.x = cur[3];
@@ -18171,6 +18344,17 @@ class AnazhRealm {
         const rate = Math.max(0.4, Number(P.tailRate) || 0.5);
         const ts = tb.tailSegs || [];
         for (let i = 0; i < ts.length; i++) ts[i].rotation.y = Math.sin(t * rate - i * 0.5) * amp;
+    }
+
+    // DER BODEN UNTER EINER PFOTE (Welle LF, die Pfoten-IK _animateTierBaum): der Stand-Leser der Sicht um den Träger des
+    // Leibs (updateCreatures stempelt ihn je Takt: _traegerY, _traegerStruktur — die Höhe, auf der der Leib steht, und ob
+    // ein Bau ihn trägt). Wer keinen Boden unter den Pfoten hat — schwimmend, im Sprung, oder ein Halter außerhalb der Welt
+    // (Werkstatt, Sicht-Kopie ohne Träger) —, hält die Pfote an der Ebene seines Leibs (seine Lage).
+    _kreaturFussBoden(group, x, z) {
+        const ud = group.userData || {};
+        const ebene = group.position.y;
+        if (!Number.isFinite(ud._traegerY) || ud._motionZustand === "schwimmen" || ud._hopH > 0) return ebene;
+        return this._standSicht(x, z, ud._traegerY, ud._traegerStruktur === true);
     }
 
     _tetrapodaSoulParts(soulKey, ovOpt) {
@@ -21561,6 +21745,7 @@ class AnazhRealm {
         if (T.wolf) {
             T.wolf.rotation.z = 0;
             T.wolf.rotation.x = 0;
+            if (tb._rumpfRuhe) T.wolf.position.copy(tb._rumpfRuhe); // die Senke des Schritts (Welle LF) fällt mit
         }
         if (T.headGroup) {
             T.headGroup.rotation.x = 0;
@@ -21578,6 +21763,7 @@ class AnazhRealm {
         for (let i = 0; i < 4; i++) {
             const K = ketten[i];
             for (let k = 0; k < 4; k++) if (K[k]) K[k].rotation.x = SP[i][k];
+            if (K[0]) K[0].rotation.z = 0; // das Abspreizen der Pfoten-IK (Welle LF) fällt mit
         }
         const ts = tb.tailSegs || [];
         for (let i = 0; i < ts.length; i++) ts[i].rotation.y = 0;
@@ -22134,7 +22320,88 @@ class AnazhRealm {
                 }
             }
 
-            // Emergente Bewegung aus den Soul-Parts (Beine schwingen, Flügel schlagen, Schwänze wellen).
+            // Boden über den gecachten `_creatureGroundY` (Budget) statt vollem `_voxelSurfaceY`-Scan je Frame;
+            // Semantik wie `getTerrainHeightAt` (null → terrainBaseHeight). Nie state.groundHeightField direkt
+            // lesen — in Voxel-Welten schwebten die Kreaturen sonst.
+            const _gY = this._creatureGroundY(creature);
+            const terrainHeight =
+                typeof _gY === "number" && Number.isFinite(_gY) ? _gY : this.state.terrainBaseHeight || 0;
+            // Nasse + tiefe Spalte → 0.3 m unter dem Wasser-Spiegel (Schwimm-Surface + Bob). An Land stehen die
+            // Sohlen des bauTier-Baums AUF dem Boden (wrap normalisiert minY→0). Nahe Wesen proben vorn/hinten →
+            // Root-Pitch folgt dem Hang, Basis = Proben-Mitte; ferne stehen auf der Center-Probe (Pitch klingt
+            // aus). Render-only — kein Sim-/Task-Pfad liest rotation.x.
+            let baseY;
+            let pitchZiel = 0;
+            let rollZiel = 0;
+            let floatOffset = 0;
+            let traegtBau = false;
+            if (waterSurface !== null) {
+                baseY = waterSurface - 0.3;
+                floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
+            } else {
+                // DIE SICHT STEHT AUF DEM MESH (Q4): jedes Tier steht auf dem Stand-Leser um sein Gesetz — nahe Wesen auf
+                // ihren vier Proben, ferne auf der Mitte (je Frame bilinear, kein Cache-Sprung).
+                baseY = this._standSicht(creature.position.x, creature.position.z, terrainHeight, false);
+                if (!Number.isFinite(baseY)) baseY = terrainHeight;
+                const fLB = creature.scale.x || 1;
+                if (distToPlayer < tierFernDist * fLB * 0.5) {
+                    const sp = this._creatureSlopeProben(creature, terrainHeight);
+                    if (sp) {
+                        baseY = sp.mitte;
+                        pitchZiel = sp.pitch;
+                        rollZiel = sp.roll;
+                    }
+                }
+                // DIE AUFLAGE DER BAUTEN (Welle LF, Neu 4/D7): trägt eine Box der Hüllen den Leib (ihre Oberkante in der
+                // Stufe über dem Fuß — Sockel, Podest, Stufe), steht das Tier auf ihr, wie der Spieler; vorher las es nur
+                // den Boden und ging 0,35 m tief im Haus-Sockel, auf dem der Spieler stand.
+                const auflage = this._kreaturAuflage(creature, hueftL);
+                if (auflage > baseY) {
+                    baseY = auflage;
+                    pitchZiel = 0;
+                    rollZiel = 0;
+                    traegtBau = true;
+                }
+            }
+            {
+                // Root-Lage exp-geglättet (NaN-Wand vor dem Gedächtnis, Lehre 13): Nick längs der Gier, Wank quer —
+                // Euler YXZ, erst die Gier, dann Nick und Wank im Leib-Rahmen (in XYZ kippte der Nick um die Welt-x).
+                const udP = creature.userData;
+                const pk = 1 - Math.exp(-8 * Math.min(0.1, delta || 0.016));
+                let hp = (udP._hangPitch || 0) + (pitchZiel - (udP._hangPitch || 0)) * pk;
+                if (!Number.isFinite(hp)) hp = 0;
+                let hr = (udP._hangRoll || 0) + (rollZiel - (udP._hangRoll || 0)) * pk;
+                if (!Number.isFinite(hr)) hr = 0;
+                udP._hangPitch = hp;
+                udP._hangRoll = hr;
+                creature.rotation.x = hp;
+                creature.rotation.z = hr;
+            }
+            // DER HÜPFER (Q1): ein Versatz ON TOP der geerdeten baseY (die Erdung bleibt Wahrheit), EIN Integrator auf
+            // dem Takt `delta` — die Parabel des Gesetzes (g des Gang-Gesetzes), je Schritt exakt (h += v·dt − g·dt²/2),
+            // darum dieselbe Flugzeit bei jeder Bildrate; er startet nur aus einer Aktion (bound/pounce) über das EINE
+            // Sprung-Gesetz creatureJump (Höhe aus der Freude). Vorher rechnete er je Frame feste 0,05 s (bei 144 Hz
+            // ein Sechstel der Flugzeit) und ein Würfel je Frame zündete ihn (Leben-Prüfung R-D3: 21–26 % Luft-Frames).
+            let hopOffset = 0;
+            const udH = creature.userData;
+            if (udH._hopV > 0 || udH._hopH > 0) {
+                const g = AnazhRealm._hopSchwere();
+                const h = (udH._hopH || 0) + (udH._hopV || 0) * delta - 0.5 * g * delta * delta;
+                udH._hopV = (udH._hopV || 0) - g * delta;
+                if (!(h > 0)) {
+                    udH._hopH = 0;
+                    udH._hopV = 0;
+                } else udH._hopH = h;
+                hopOffset = udH._hopH;
+            }
+            creature.position.y = baseY + floatOffset + hopOffset;
+            // DER TRÄGER der Pfoten (Welle LF): die Höhe, auf der der Leib steht, und ob ein Bau ihn trägt (_kreaturFussBoden)
+            udH._traegerY = baseY;
+            udH._traegerStruktur = traegtBau;
+
+            // Emergente Bewegung aus den Soul-Parts (Beine schwingen, Flügel schlagen, Schwänze wellen) — NACH der Lage des
+            // Takts (Welle LF): die Beine stellen sich auf den Boden unter jeder Pfote (_animateTierBaum liest Höhe, Nick und
+            // Wank dieses Takts, nicht die des vorigen).
             // walkPhase läuft nur in Bewegung (kein Glieder-Sprung beim Stopp). Kosten: wenige sin() je Wesen.
             {
                 const mroles = this._motionRolesForSoul(creature.userData.soul);
@@ -22176,79 +22443,6 @@ class AnazhRealm {
                 }
             }
 
-            // Boden über den gecachten `_creatureGroundY` (Budget) statt vollem `_voxelSurfaceY`-Scan je Frame;
-            // Semantik wie `getTerrainHeightAt` (null → terrainBaseHeight). Nie state.groundHeightField direkt
-            // lesen — in Voxel-Welten schwebten die Kreaturen sonst.
-            const _gY = this._creatureGroundY(creature);
-            const terrainHeight =
-                typeof _gY === "number" && Number.isFinite(_gY) ? _gY : this.state.terrainBaseHeight || 0;
-            // Nasse + tiefe Spalte → 0.3 m unter dem Wasser-Spiegel (Schwimm-Surface + Bob). An Land stehen die
-            // Sohlen des bauTier-Baums AUF dem Boden (wrap normalisiert minY→0). Nahe Wesen proben vorn/hinten →
-            // Root-Pitch folgt dem Hang, Basis = Proben-Mitte; ferne stehen auf der Center-Probe (Pitch klingt
-            // aus). Render-only — kein Sim-/Task-Pfad liest rotation.x.
-            let baseY;
-            let pitchZiel = 0;
-            let rollZiel = 0;
-            let floatOffset = 0;
-            if (waterSurface !== null) {
-                baseY = waterSurface - 0.3;
-                floatOffset = Math.sin(this.state.creatureAnimationTime * 2 + i) * 0.2;
-            } else {
-                // DIE SICHT STEHT AUF DEM MESH (Q4): jedes Tier steht auf dem Stand-Leser um sein Gesetz — nahe Wesen auf
-                // ihren vier Proben, ferne auf der Mitte (je Frame bilinear, kein Cache-Sprung).
-                baseY = this._standSicht(creature.position.x, creature.position.z, terrainHeight, false);
-                if (!Number.isFinite(baseY)) baseY = terrainHeight;
-                const fLB = creature.scale.x || 1;
-                if (distToPlayer < tierFernDist * fLB * 0.5) {
-                    const sp = this._creatureSlopeProben(creature, terrainHeight);
-                    if (sp) {
-                        baseY = sp.mitte;
-                        pitchZiel = sp.pitch;
-                        rollZiel = sp.roll;
-                    }
-                }
-                // DIE AUFLAGE DER BAUTEN (Welle LF, Neu 4/D7): trägt eine Box der Hüllen den Leib (ihre Oberkante in der
-                // Stufe über dem Fuß — Sockel, Podest, Stufe), steht das Tier auf ihr, wie der Spieler; vorher las es nur
-                // den Boden und ging 0,35 m tief im Haus-Sockel, auf dem der Spieler stand.
-                const auflage = this._kreaturAuflage(creature, hueftL);
-                if (auflage > baseY) {
-                    baseY = auflage;
-                    pitchZiel = 0;
-                    rollZiel = 0;
-                }
-            }
-            {
-                // Root-Lage exp-geglättet (NaN-Wand vor dem Gedächtnis, Lehre 13): Nick längs der Gier, Wank quer —
-                // Euler YXZ, erst die Gier, dann Nick und Wank im Leib-Rahmen (in XYZ kippte der Nick um die Welt-x).
-                const udP = creature.userData;
-                const pk = 1 - Math.exp(-8 * Math.min(0.1, delta || 0.016));
-                let hp = (udP._hangPitch || 0) + (pitchZiel - (udP._hangPitch || 0)) * pk;
-                if (!Number.isFinite(hp)) hp = 0;
-                let hr = (udP._hangRoll || 0) + (rollZiel - (udP._hangRoll || 0)) * pk;
-                if (!Number.isFinite(hr)) hr = 0;
-                udP._hangPitch = hp;
-                udP._hangRoll = hr;
-                creature.rotation.x = hp;
-                creature.rotation.z = hr;
-            }
-            // DER HÜPFER (Q1): ein Versatz ON TOP der geerdeten baseY (die Erdung bleibt Wahrheit), EIN Integrator auf
-            // dem Takt `delta` — die Parabel des Gesetzes (g des Gang-Gesetzes), je Schritt exakt (h += v·dt − g·dt²/2),
-            // darum dieselbe Flugzeit bei jeder Bildrate; er startet nur aus einer Aktion (bound/pounce) über das EINE
-            // Sprung-Gesetz creatureJump (Höhe aus der Freude). Vorher rechnete er je Frame feste 0,05 s (bei 144 Hz
-            // ein Sechstel der Flugzeit) und ein Würfel je Frame zündete ihn (Leben-Prüfung R-D3: 21–26 % Luft-Frames).
-            let hopOffset = 0;
-            const udH = creature.userData;
-            if (udH._hopV > 0 || udH._hopH > 0) {
-                const g = AnazhRealm._hopSchwere();
-                const h = (udH._hopH || 0) + (udH._hopV || 0) * delta - 0.5 * g * delta * delta;
-                udH._hopV = (udH._hopV || 0) - g * delta;
-                if (!(h > 0)) {
-                    udH._hopH = 0;
-                    udH._hopV = 0;
-                } else udH._hopH = h;
-                hopOffset = udH._hopH;
-            }
-            creature.position.y = baseY + floatOffset + hopOffset;
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
             // sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
             if (inFrustum) {

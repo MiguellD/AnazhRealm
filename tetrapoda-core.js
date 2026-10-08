@@ -1294,7 +1294,7 @@
     // Geschwindigkeit: die Pfoten glitten mit dem Leib (Schlupf 1,0, gate:tier-gang). gangFuss liest je Bein das ZIEL
     // des Fußes zur Phase: im STAND (π…2π) wandert er am Boden gleichförmig von vorn (+S/2) nach hinten (−S/2), im
     // SCHWUNG (0…π) kehrt er auf einer Hermite-Kurve nach vorn, die an beiden Enden mit der Stand-Rate rückwärts läuft
-    // (kein Vorwärts-Rutschen beim Aufsetzen), gehoben um hub·h·sin(Phase). Hüfte und Unterglied stellt der Wirt per
+    // (kein Vorwärts-Rutschen beim Aufsetzen), gehoben um hub·h·sin(Phase)^hubForm. Hüfte und Unterglied stellt der Wirt per
     // ebener Zwei-Knochen-IK auf dieses Ziel (die Pfote bleibt waagrecht) — der Fuß steht, wo das Gesetz ihn hinstellt.
     var GANG_GESETZ = Object.freeze({
         g: 9.81,
@@ -1303,6 +1303,10 @@
         tastgrad: 0.5,
         maxWinkel: 0.42, // rad — die größte Bein-Auslenkung (deckelt die Schritt-Länge)
         hub: 0.12, // × h — die Schwung-Höhe des Fußes
+        // die Form des Hubs (Welle LF, Stand-Schlupf): sin(Phase)^hubForm — der Fuß hebt steil ab und setzt steil auf. Mit
+        // sin(Phase) hing er ein Drittel des Schwungs in den untersten 3 cm und strich dort mit 0,8–1,1 × Leib-Tempo über
+        // den Boden (die Hälfte des Stand-Schlupfs am Querhang, gate:tier-gang mit erreichtem Boden 0,16–0,49)
+        hubForm: 0.5,
         falte: 0.6, // rad — die Pfote faltet im Schwung
         stand: 0.05, // m/s — darunter steht das Tier
         vMax: 15, // m/s — Sprünge der Lage (Spawn, Peer-Schnapp) sind kein Lauf
@@ -1328,7 +1332,10 @@
             h10 = t * t * t - 2 * t * t + t,
             h01 = -2 * t * t * t + 3 * t * t,
             h11 = t * t * t - t * t;
-        return { dz: (h00 * -S) / 2 + h10 * m + (h01 * S) / 2 + h11 * m, hub: Math.sin(u) };
+        return {
+            dz: (h00 * -S) / 2 + h10 * m + (h01 * S) / 2 + h11 * m,
+            hub: Math.pow(Math.sin(u), GANG_GESETZ.hubForm),
+        };
     }
 
     // ════════════════════════════════════════════════════════════════════
