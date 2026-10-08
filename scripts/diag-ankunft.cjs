@@ -16,11 +16,14 @@
 //       wieder), Esc gibt sie ohne Senden zurück. Befund: Enter, T und „/" öffneten nichts, nach dem Senden tippte W „w".
 //   L7  DER START-GURT — die Hotbar eines neuen Spielers liest den Katalog (`_katalogSichtbar`): je Studio-Art EIN
 //       platzierbares Werk, kein Alt-Doppel. Befund: Felsblock · Wasserfall · Damm.
-//   LK  DIE KRONEN- UND STAMM-HÜLLE DER 3RD-KAMERA — die Stamm-Blocker eines Studio-Baums tragen seine Welt-Skala (der
-//       Stamm, wie er gezeichnet wird), und `_loopCamera` hält die Kamera aus jedem Stamm, aus jeder Krone, unter der der
-//       Spieler nicht steht, und nie tiefer in einer Krone als er (aber ≥ KAMERA_KRONEN_MIN_M an seiner Brust). Befund: die
-//       Kamera 0,53 m von der Achse einer Kiefer (im Stamm), 2,86 m von der Achse einer Tanne, in der der Spieler bei 7,3 m
-//       stand — eine Nadelwand.
+//   LK  DIE KAMERA UND DIE PFLANZEN — die Stamm-Blocker eines Studio-Baums tragen seine Welt-Skala (der Körper stößt an den
+//       Stamm, wie er gezeichnet wird); die 3rd-Kamera (zu Fuß und die Verfolger-Kamera des Ritts) rückt nur vor Boden und
+//       Bau ein, nie vor einer Pflanze (Stamm, Krone), und fährt nach einem Hindernis gleitend hinaus, nie im Sprung; jeder
+//       Pflanzen-Stoff in der Szene trägt die DURCHSICHT (maskNode: was zwischen Auge und Spieler liegt, dithert aus), der
+//       Schatten-Pass liest sie nie (maskShadowNode). Befund 07.10.: die Kamera stand 0,53 m von der Achse einer Kiefer (im
+//       Stamm) und 2,86 m von der Achse einer Tanne, in der der Spieler bei 7,3 m stand — eine Nadelwand; Gegenprüfung
+//       Runde 1 (Kronen-Hülle 5167fd85): beim Ritt 641 von 2400 Proben unter 3 m Arm (die Kamera am Wagendach), 137 Sprünge
+//       > 2 m, zu Fuß 43 % der Proben in Baumnähe auf dem 2-m-Minimum, 5 Sprünge > 1 m auf 80 m.
 //   D8  ZWEI KANÄLE — der Spieler-Chat trägt Worte, das Log die Telemetrie: die Siedlungs-Zeile ohne Same und Slots, das
 //       KI-Programm als Tat (`describeProgram`), nie als JSON, eine Programm-Absage ohne Ereignis-Namen.
 //   D6  DIE KI NENNT DIE URSACHE — „Aktivieren" fragt einen lokalen Dienst (der Status sagt, dass er nicht läuft, nie
@@ -147,12 +150,21 @@ function kameraVerdict(m) {
     const out = [];
     if (!m.baum) return ["kein Studio-Baum als Eintrag (Vorbedingung)"];
     if (!(m.stammSkala >= 0.95 * m.weltSkala)) out.push(`Stamm-Hülle im Vorlagen-Maß (× ${m.stammSkala} statt × ${m.weltSkala})`);
-    for (const s of m.szenen || []) {
-        if (s.imStamm) out.push(`${s.name}: Kamera im Stamm (${s.kameraAchse} m von der Achse)`);
-        if (s.inFremderKrone) out.push(`${s.name}: Kamera in einer Krone, unter der der Spieler nicht steht (${s.kameraAchse} m, Krone ${s.krone} m)`);
-        if (s.tieferAlsSpieler && !(s.kameraBrust <= s.minM + 0.05)) out.push(`${s.name}: Kamera ${s.kameraAchse} m von der Achse, der Spieler bei ${s.spielerAchse} m (Krone ${s.krone} m) — eine Nadelwand`);
-        if (!(s.kameraBrust >= s.minM - 0.05) && !s.stammDavor) out.push(`${s.name}: Kamera ${s.kameraBrust} m an der Brust (Soll ≥ ${s.minM} m)`);
+    for (const k of ["fuss", "ritt"]) {
+        const z = (m.wege || {})[k];
+        if (!z || !(z.proben > 0)) {
+            out.push(`${k}: keine Probe (Vorbedingung${z && z.grund ? ": " + z.grund : ""})`);
+            continue;
+        }
+        if (z.pflanzeHaelt > 0)
+            out.push(`${k}: eine Pflanze hält die Kamera in ${z.pflanzeHaelt} von ${z.proben} Proben (Arm ${z.armIst} statt ${z.armSoll} m im Median, Täter ${(z.taeter || []).join(", ")})`);
+        if (z.spruengePflanze > 0) out.push(`${k}: ${z.spruengePflanze} Sprünge > ${z.sprungM} m je Bild, die keine Bau- oder Boden-Kante erzwingt (${z.spruenge} gegen ${z.spruengeSoll})`);
+        if (z.hinausSprung > 0) out.push(`${k}: die Kamera springt ${z.hinausSprung}× hinaus (> ${z.sprungM} m je Bild)`);
     }
+    if (!(m.stoffe > 0)) out.push("kein Pflanzen-Stoff in der Szene (Vorbedingung)");
+    if (m.stoffeOhne > 0) out.push(`${m.stoffeOhne} von ${m.stoffe} Pflanzen-Stoffen ohne Durchsicht (${(m.stoffeOhneArten || []).join(", ")})`);
+    if (m.schattenGeschnitten > 0) out.push(`${m.schattenGeschnitten} Pflanzen-Stoff(e) schneiden die Durchsicht auch in den Schatten`);
+    if (m.zielFolgt === false) out.push(`das Ziel der Durchsicht folgt der Brust nicht (${m.zielAbstand} m daneben)`);
     return out;
 }
 const ID_RE = /\b(?:baum|haus|fahrzeug|tor|klinge|welt|ruestung|trank|koerper|reittier)_[a-z0-9_]+/;
@@ -199,6 +211,7 @@ function wand(src, html) {
     const siedlung = fnBody(nc, /\n {4}async spawnSettlement\(opts\) \{/) || "";
     const dorfOp = (nc.match(/spawn_village: \(\[positionNode, seed\], ctx\) => \{[\s\S]*?\n {12}\},/) || [""])[0];
     const kamera = fnBody(nc, /\n {4}_loopCamera\(currentTime\) \{/) || "";
+    const stoff = fnBody(nc, /\n {4}_foundryTreeMaterial\(kind, mp, wiegen\) \{/) || "";
     const ladeIdx = html.indexOf('id="ladeschirm"');
     const ladeTag = ladeIdx >= 0 ? html.slice(html.lastIndexOf("<", ladeIdx), html.indexOf(">", ladeIdx) + 1) : "";
     return [
@@ -222,8 +235,8 @@ function wand(src, html) {
             /this\._siedlungsAnker\(plan/.test(siedlung) && !/_structureSpawnPos/.test(siedlung) && !/_structureSpawnPos/.test(dorfOp),
         ],
         [
-            "W5 die 3rd-Kamera fragt die Kronen-Hülle (`_kameraKronenGrenze` in `_loopCamera`)",
-            /this\._kameraKronenGrenze\(/.test(kamera),
+            "W5 die 3rd-Kamera rückt nur vor Boden und Bau ein (der Strahl in `_loopCamera` geht `durchPflanzen`, keine Kronen-Grenze), jeder Pflanzen-Stoff trägt die Durchsicht (`_kameraDurchsichtNode` in `_foundryTreeMaterial`)",
+            /durchPflanzen: true/.test(kamera) && !/_kameraKronenGrenze/.test(kamera) && /this\._kameraDurchsichtNode\(/.test(stoff),
         ],
         [
             "W6 kein rohes Programm und keine Siedlungs-Zahl im Spieler-Chat (kein `JSON.stringify(reply.program)`, kein `Seed ${` an `_chatEcho`)",
@@ -410,22 +423,24 @@ async function probe(arg) {
     } catch (e) {
         out.gurt = Object.assign(out.gurt || {}, { err: (e && e.stack) || String(e) });
     }
-    // ── LK: die Kronen- und Stamm-Hülle der 3rd-Kamera ──
+    // ── LK: die Kamera und die Pflanzen ──
     try {
-        const m = { gestartet: false, szenen: [] };
+        const m = { gestartet: false, wege: {} };
         out.kamera = m;
         const pl = st.architectures.find((a) => a && a.type === "start_plattform");
         const P = pl ? pl.position : st.playerMesh.position;
-        // ein Studio-Baum als Eintrag, nah an der Plattform, mit Stamm-Teil und bekannter Krone
-        let baum = null;
-        const dl = performance.now() + 60000;
-        while (!baum && performance.now() < dl) {
-            const kand = st.architectures
-                .filter((a) => a && /^baum_(tanne|fichte|kiefer|eiche|birke)$/.test(a.type) && a.blockerAABBs && a.blockerAABBs.length)
+        const natur = (a) => (typeof r._istNatur === "function" ? r._istNatur(a) : /^(baum_|busch_|grown_)/.test((a && a.type) || ""));
+        const naheBaeume = () =>
+            st.architectures
+                .filter((a) => a && /^baum_/.test(a.type) && a.blockerAABBs && a.blockerAABBs.length)
                 .sort((a, b) => Math.hypot(a.position.x - P.x, a.position.z - P.z) - Math.hypot(b.position.x - P.x, b.position.z - P.z));
-            baum = kand[0] || null;
-            if (!baum) await tick(5, 40);
+        let baeume = naheBaeume();
+        const dlB = performance.now() + 60000;
+        while (!baeume.length && performance.now() < dlB) {
+            await tick(5, 40);
+            baeume = naheBaeume();
         }
+        const baum = baeume[0] || null;
         if (baum) {
             m.baum = baum.type;
             m.weltSkala = +r._foundryWorldScaleMatrix(r._foundryPresetForEntry(baum)).elements[0].toFixed(3);
@@ -438,52 +453,187 @@ async function probe(arg) {
                 .filter(Boolean);
             const breite = (bs) => bs.reduce((s2, b) => s2 + (b.maxX - b.minX), 0);
             m.stammSkala = +(breite(baum.blockerAABBs.slice(0, vorlage.length)) / Math.max(1e-6, breite(vorlage))).toFixed(3);
-            const krone = r._naturKrone(baum.type, baum);
-            const min = r.constructor.KAMERA_KRONEN_MIN_M || 2;
-            const bx = baum.position.x;
-            const bz = baum.position.z;
-            let ux = P.x - bx;
-            let uz = P.z - bz;
-            const L = Math.hypot(ux, uz) || 1;
-            ux /= L;
-            uz /= L;
-            const kreis = r._kronenStreuAt ? null : null;
-            void kreis;
+            // DIE WEGE: deterministische Linien durch den Wald der Ankunft (je an einem Baum vorbei, Richtung aus einer festen
+            // Folge), 30 m lang.
+            let same = 20251007;
+            const zufall = () => ((same = (Math.imul(same, 1103515245) + 12345) >>> 0) / 4294967296);
+            const linien = [];
+            for (let i = 0; i < 16 && baeume.length; i++) {
+                const b = baeume[Math.floor(zufall() * Math.min(baeume.length, 40))];
+                const gier = zufall() * Math.PI * 2;
+                linien.push({ x0: b.position.x - Math.sin(gier) * 15 + 2.5, z0: b.position.z - Math.cos(gier) * 15, gier });
+            }
+            const hh = (x, z) => r.getTerrainHeightAt(x, z);
+            // Die Pflanzen beiseite (die Blocker der Natur-Einträge) und die Kronen-Grenze eines Vor-Stands neutral: das Soll,
+            // das nur Boden und Bau erzwingen. Der Täter beim Namen: Stamm (Blocker) oder Krone (die Kronen-Grenze).
+            const pflanzen = st.architectures.filter((a) => a && natur(a) && a.blockerAABBs);
+            const hatKronen = typeof r._kameraKronenGrenze === "function";
+            const ohneStaemme = (an) => {
+                for (const a of pflanzen) {
+                    if (an) {
+                        a.__lkBlocker = a.blockerAABBs;
+                        a.blockerAABBs = null;
+                    } else if (a.__lkBlocker) {
+                        a.blockerAABBs = a.__lkBlocker;
+                        delete a.__lkBlocker;
+                    }
+                }
+            };
+            const ohneKronen = (an) => {
+                if (!hatKronen) return;
+                if (an) r._kameraKronenGrenze = () => 1;
+                else delete r._kameraKronenGrenze; // die Methode der Klasse gilt wieder
+            };
+            let T = 1000;
+            const arm = () => {
+                const c = st.camera.position;
+                const p = st.playerMesh.position;
+                return Math.hypot(c.x - p.x, c.y - (p.y + 1.0), c.z - p.z);
+            };
+            // eine Kamera-Stellung bis zur Ruhe (ein gleitender Arm hat Zeit, hinauszufahren)
+            const ruhig = () => {
+                for (let i = 0; i < 10; i++) r._loopCamera((T += 0.1));
+                return arm();
+            };
+            const med = (a) => (a.length ? +a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)].toFixed(2) : null);
+            // EIN WEG zu Fuß (3rd, Neigung 0) oder im Ritt (die Verfolger-Kamera des GT): `stelle(x, z, gier)` setzt Spieler/Wagen.
+            const weg = (name, stelle, schritt, sprungM, bildM) => {
+                const z = { proben: 0, pflanzeHaelt: 0, taeter: [], sprungM };
+                const ist = [];
+                const soll = [];
+                const taeter = new Set();
+                for (const L of linien) {
+                    for (let s = 0; s <= 30; s += schritt) {
+                        const x = L.x0 + Math.sin(L.gier) * s;
+                        const zz = L.z0 + Math.cos(L.gier) * s;
+                        if (!Number.isFinite(hh(x, zz))) continue;
+                        stelle(x, zz, L.gier);
+                        ohneStaemme(true);
+                        ohneKronen(true);
+                        const aSoll = ruhig();
+                        ohneKronen(false);
+                        const aOhneStamm = ruhig();
+                        ohneStaemme(false);
+                        const aIst = ruhig();
+                        z.proben++;
+                        ist.push(aIst);
+                        soll.push(aSoll);
+                        if (aIst < aSoll - 0.3) {
+                            z.pflanzeHaelt++;
+                            if (aOhneStamm < aSoll - 0.3) taeter.add("Krone (`_kameraKronenGrenze`)");
+                            if (aIst < aOhneStamm - 0.3) taeter.add("Stamm (Natur-Blocker am Kamera-Strahl)");
+                        }
+                    }
+                }
+                z.armIst = med(ist);
+                z.armSoll = med(soll);
+                z.unter3 = ist.filter((a) => a < 3).length;
+                z.taeter = Array.from(taeter);
+                // DIE SPRÜNGE: dieselben Linien im Takt eines Bilds (1/60 s), einmal ohne die Pflanzen (Soll), einmal mit (Ist):
+                // ein Sprung > sprungM je Bild, den Boden und Bau nicht erzwingen, ist ein Pflanzen-Sprung; ein Sprung HINAUS
+                // ist nie erlaubt (der Arm gleitet).
+                const fahre = (mitPflanzen) => {
+                    let n = 0;
+                    let hinaus = 0;
+                    if (!mitPflanzen) {
+                        ohneStaemme(true);
+                        ohneKronen(true);
+                    }
+                    for (const L of linien.slice(0, 8)) {
+                        let vor = null;
+                        for (let s = 0; s <= 30; s += bildM) {
+                            const x = L.x0 + Math.sin(L.gier) * s;
+                            const zz = L.z0 + Math.cos(L.gier) * s;
+                            if (!Number.isFinite(hh(x, zz))) continue;
+                            stelle(x, zz, L.gier);
+                            r._loopCamera((T += 1 / 60));
+                            const a = arm();
+                            if (vor != null && Math.abs(a - vor) > sprungM) {
+                                n++;
+                                if (a > vor) hinaus++;
+                            }
+                            vor = a;
+                        }
+                        ruhig();
+                    }
+                    if (!mitPflanzen) {
+                        ohneKronen(false);
+                        ohneStaemme(false);
+                    }
+                    return { n, hinaus };
+                };
+                const jSoll = fahre(false);
+                const jIst = fahre(true);
+                z.spruenge = jIst.n;
+                z.spruengeSoll = jSoll.n;
+                z.spruengePflanze = Math.max(0, jIst.n - jSoll.n);
+                z.hinausSprung = Math.max(0, jIst.hinaus - jSoll.hinaus);
+                m.wege[name] = z;
+            };
             r.setCameraMode("third");
-            const stamm = (x, y, z) =>
-                baum.blockerAABBs.some((b) => x >= b.minX && x <= b.maxX && z >= b.minZ && z <= b.maxZ && y >= (b.minY != null ? b.minY : -1e9) && y <= (b.topY != null ? b.topY : b.maxY));
-            for (const [name, d, seit, pitch] of [
-                ["Rücken zum Stamm 0,8 × Krone", Math.min(0.8 * krone, krone - 0.5), 0, -0.4],
-                ["seitlich in der Krone", Math.min(0.7 * krone, krone - 0.5), 2, -0.6],
-                ["vor der Krone", krone + 2.5, 0, -0.3],
-            ]) {
-                const px = bx + ux * d + uz * seit;
-                const pz = bz + uz * d - ux * seit;
-                const gy = r.getTerrainHeightAt(px, pz);
-                st.playerMesh.position.set(px, gy + 1.0, pz);
-                st.yaw = Math.atan2(ux, uz); // Blick vom Baum weg: die Kamera steht hinter dem Spieler, zum Baum hin
-                st.pitch = pitch;
-                for (let i = 0; i < 3; i++) r._loopCamera(performance.now() / 1000 + i * 0.016);
-                const cam = st.camera.position;
-                const spAchse = Math.hypot(px - bx, pz - bz);
-                const camAchse = Math.hypot(cam.x - bx, cam.z - bz);
-                const h = r._lodTreeVisHeight(baum);
-                const unterTop = !(h > 0) || cam.y < baum.position.y + h;
-                const brust = Math.hypot(cam.x - px, cam.y - (st.playerMesh.position.y + 1.0), cam.z - pz);
-                // stand der Stamm zwischen Brust und Wunsch-Position? (dann hält die Struktur die Kamera davor)
-                const stammDavor = camAchse <= spAchse && brust < min;
-                m.szenen.push({
-                    name,
-                    krone: +krone.toFixed(2),
-                    spielerAchse: +spAchse.toFixed(2),
-                    kameraAchse: +camAchse.toFixed(2),
-                    kameraBrust: +brust.toFixed(2),
-                    minM: min,
-                    imStamm: stamm(cam.x, cam.y, cam.z),
-                    inFremderKrone: spAchse >= krone && camAchse < krone - 0.31 && unterTop,
-                    tieferAlsSpieler: spAchse < krone && camAchse < spAchse - 0.31 && unterTop,
-                    stammDavor,
-                });
+            st.pitch = 0;
+            weg(
+                "fuss",
+                (x, zz, gier) => {
+                    st.playerMesh.position.set(x, hh(x, zz) + 1.0, zz);
+                    st.yaw = gier;
+                },
+                1.0,
+                1.0,
+                0.1
+            );
+            // DER RITT: ein GT, aufgesessen; der Wagen fährt die Linien (die Verfolger-Kamera hinter ihm, Kern-Gesetz kamera)
+            const gt = r.spawnArchitecture("fahrzeug_gt", { x: P.x + 30, y: hh(P.x + 30, P.z) + 0.5, z: P.z }, { silent: true, precise: true });
+            if (gt) {
+                const dlG = performance.now() + 45000;
+                while (!gt.instanced && !gt.mesh && performance.now() < dlG) {
+                    r._rebuildArchitectureMesh(gt);
+                    if (gt.instanced || gt.mesh) break;
+                    await sleep(200);
+                }
+                const mr = r.mountArchitecture(gt);
+                if (mr && mr.ok) {
+                    weg(
+                        "ritt",
+                        (x, zz, gier) => {
+                            const y = hh(x, zz) + 0.5;
+                            gt.position.x = x;
+                            gt.position.y = y;
+                            gt.position.z = zz;
+                            gt._rideYaw = gier;
+                            st.yaw = gier;
+                            st.playerMesh.position.set(x, y + 0.5, zz);
+                        },
+                        1.0,
+                        2.0,
+                        0.25
+                    );
+                    r.dismountArchitecture();
+                } else m.wege.ritt = { proben: 0, grund: "Aufsitzen scheiterte" };
+                r.removeArchitecture(gt);
+            } else m.wege.ritt = { proben: 0, grund: "kein GT" };
+            // DIE DURCHSICHT: jeder Pflanzen-Stoff in der Szene (Foundry-Art Laub · Blatt-Karte · Rinde · Stiel) trägt sie im
+            // maskNode, der Schatten-Pass liest seinen eigenen maskShadowNode (die Durchsicht schneidet nie den Schatten).
+            const PFLANZE = new Set(["foliage", "foliageTex", "bark", "stem"]);
+            const stoffe = new Set();
+            st.scene.traverse((o) => {
+                const mats = o && o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : [];
+                for (const mt of mats) if (mt && mt.userData && PFLANZE.has(mt.userData.foundryKind)) stoffe.add(mt);
+            });
+            m.stoffe = stoffe.size;
+            const ohne = Array.from(stoffe).filter((mt) => !(mt.maskNode && mt.maskNode.isNode));
+            m.stoffeOhne = ohne.length;
+            m.stoffeOhneArten = Array.from(new Set(ohne.map((mt) => mt.userData.foundryKind)));
+            m.schattenGeschnitten = Array.from(stoffe).filter((mt) => mt.maskNode && mt.maskNode.isNode && !(mt.maskShadowNode && mt.maskShadowNode.isNode)).length;
+            // das Ziel der Durchsicht ist die Brust (3rd) — gelesen, wo die Uniform es trägt
+            const lu = st.lodUniforms;
+            if (lu && lu.uKamZiel) {
+                st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
+                r._loopCamera((T += 0.1));
+                const v = lu.uKamZiel.value;
+                const p = st.playerMesh.position;
+                m.zielAbstand = +Math.hypot(v.x - p.x, v.y - (p.y + 1.0), v.z - p.z).toFixed(2);
+                m.zielFolgt = m.zielAbstand < 0.05;
             }
             r.setCameraMode("first");
             st.playerMesh.position.set(P.x, P.y + 2.2, P.z);
@@ -739,14 +889,33 @@ async function probe(arg) {
                     baum: "baum_tanne",
                     weltSkala: 3.6,
                     stammSkala: 3.6,
-                    szenen: [{ name: "a", krone: 10.8, spielerAchse: 7.3, kameraAchse: 7.0, kameraBrust: 2.0, minM: 2, imStamm: false, inFremderKrone: false, tieferAlsSpieler: true, stammDavor: false }],
+                    wege: {
+                        fuss: { proben: 300, pflanzeHaelt: 0, armIst: 4.1, armSoll: 4.1, taeter: [], spruenge: 0, spruengeSoll: 0, spruengePflanze: 0, hinausSprung: 0, sprungM: 1 },
+                        ritt: { proben: 300, pflanzeHaelt: 0, armIst: 9.6, armSoll: 9.6, taeter: [], spruenge: 1, spruengeSoll: 1, spruengePflanze: 0, hinausSprung: 0, sprungM: 2 },
+                    },
+                    stoffe: 6,
+                    stoffeOhne: 0,
+                    stoffeOhneArten: [],
+                    schattenGeschnitten: 0,
+                    zielFolgt: true,
+                    zielAbstand: 0,
                 },
                 [
                     ["Vorlagen-Maß (Befund)", { stammSkala: 1 }, "Stamm-Hülle im Vorlagen-Maß"],
-                    ["im Stamm (Befund)", { szenen: [{ name: "Kiefer", krone: 6.2, spielerAchse: 5, kameraAchse: 0.53, kameraBrust: 6.46, minM: 2, imStamm: true, inFremderKrone: false, tieferAlsSpieler: true, stammDavor: false }] }, "Kiefer: Kamera im Stamm"],
-                    ["Nadelwand (Befund)", { szenen: [{ name: "Tanne", krone: 10.8, spielerAchse: 7.28, kameraAchse: 2.86, kameraBrust: 6.62, minM: 2, imStamm: false, inFremderKrone: false, tieferAlsSpieler: true, stammDavor: false }] }, "Tanne: Kamera 2.86 m von der Achse"],
-                    ["Kopf füllt das Bild", { szenen: [{ name: "Kopf", krone: 10.8, spielerAchse: 7.28, kameraAchse: 6.98, kameraBrust: 0.42, minM: 2, imStamm: false, inFremderKrone: false, tieferAlsSpieler: false, stammDavor: false }] }, "Kopf: Kamera 0.42 m an der Brust"],
-                    ["fremde Krone", { szenen: [{ name: "vor", krone: 6, spielerAchse: 8.5, kameraAchse: 4, kameraBrust: 6, minM: 2, imStamm: false, inFremderKrone: true, tieferAlsSpieler: false, stammDavor: false }] }, "vor: Kamera in einer Krone"],
+                    [
+                        "Wagendach (Gegenprüfung)",
+                        { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 }, ritt: { proben: 2400, pflanzeHaelt: 641, armIst: 2.0, armSoll: 9.6, taeter: ["Krone (`_kameraKronenGrenze`)"], spruenge: 137, spruengeSoll: 0, spruengePflanze: 137, hinausSprung: 60, sprungM: 2 } } },
+                        "ritt: eine Pflanze hält die Kamera in 641 von 2400",
+                    ],
+                    [
+                        "2-m-Minimum zu Fuß (Gegenprüfung)",
+                        { wege: { fuss: { proben: 400, pflanzeHaelt: 172, armIst: 2.0, armSoll: 4.1, taeter: ["Krone (`_kameraKronenGrenze`)"], spruenge: 5, spruengeSoll: 0, spruengePflanze: 5, hinausSprung: 2, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } },
+                        "fuss: eine Pflanze hält die Kamera",
+                    ],
+                    ["Sprung hinaus", { wege: { fuss: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 3, sprungM: 1 }, ritt: { proben: 300, pflanzeHaelt: 0, spruengePflanze: 0, hinausSprung: 0 } } }, "fuss: die Kamera springt 3× hinaus"],
+                    ["Nadelwand ohne Durchsicht (Befund)", { stoffeOhne: 6, stoffeOhneArten: ["foliageTex", "bark"] }, "6 von 6 Pflanzen-Stoffen ohne Durchsicht"],
+                    ["Durchsicht im Schatten", { schattenGeschnitten: 2 }, "2 Pflanzen-Stoff(e) schneiden die Durchsicht auch in den Schatten"],
+                    ["Ziel ohne Brust", { zielFolgt: false, zielAbstand: 3.2 }, "das Ziel der Durchsicht folgt der Brust nicht"],
                 ],
             ],
             [
@@ -794,14 +963,15 @@ async function probe(arg) {
             .replace("if (!this.state._weltbildDa) this._ankunftsBild();", "")
             .replace("hotbar: [null, null, null, null, null, null, null, null, null],", 'hotbar: ["stein_block", "waterfall", "damm", null, null, null, null, null, null],')
             .replace("const anchor = this._siedlungsAnker(plan, o.position || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);')
-            .replace("t = Math.min(t, this._kameraKronenGrenze(tx, ty, tz, camX, camY, camZ));", "")
+            .replace("{ durchPflanzen: true }", "{}")
+            .replace("const _durch = this._kameraDurchsichtNode(TSL);", "const _durch = null;")
             .replace("(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})")
             .replace("for (const z of this._hilfeZeilen()) append(z);", "append(\"'Setze Wetter rainy'\");")
             .replace(/_hilfeZeilen\(\) \{[\s\S]*?\n {4}\}\n/, "_hilfeZeilen() {\n        return [];\n    }\n");
         const vorHtml = html.replace('<div id="ladeschirm" role="status" aria-live="polite">', '<div id="ladeschirm" role="status" aria-live="polite" hidden>');
         const rot = wand(vorStand, vorHtml);
         check(
-            "Selbst-Test W: der Vor-Stand (kein Ankunfts-Bild, Alt-Gurt, geschätzter Dorf-Anker, Kamera ohne Krone, Hilfe von Hand, Ladeschirm versteckt, rohes Programm) → W1–W6 feuern",
+            "Selbst-Test W: der Vor-Stand (kein Ankunfts-Bild, Alt-Gurt, geschätzter Dorf-Anker, Kamera ohne Durchsicht, Hilfe von Hand, Ladeschirm versteckt, rohes Programm) → W1–W6 feuern",
             rot.filter((w) => !w[1]).length === 6,
             rot.map((w) => `${w[1] ? "✓" : "✗"} ${w[0].slice(0, 2)}`).join(" ")
         );
@@ -851,7 +1021,21 @@ async function probe(arg) {
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc}`);
     zeige("L7", "der Start-Gurt liest den Katalog (je Studio-Art ein Werk)", out.gurt, gurtVerdict, (m) => `${(m.hotbar || []).filter(Boolean).join(" · ")} (Arten im Katalog: ${(m.katalogArten || []).join(", ")})`);
     console.log("=== LK — DIE KAMERA UND DER BAUM ===");
-    zeige("LK", "die 3rd-Kamera steht nie im Stamm, nie in einer fremden Krone, nie tiefer als der Spieler", out.kamera, kameraVerdict, (m) => `${m.baum} · Stamm × ${m.stammSkala} (Welt × ${m.weltSkala}) · ${(m.szenen || []).map((s) => `${s.name}: Achse ${s.kameraAchse} m (Spieler ${s.spielerAchse}, Krone ${s.krone}), Brust ${s.kameraBrust} m`).join(" · ")}`);
+    zeige(
+        "LK",
+        "die 3rd-Kamera rückt nur vor Boden und Bau ein, gleitet hinaus, jeder Pflanzen-Stoff trägt die Durchsicht",
+        out.kamera,
+        kameraVerdict,
+        (m) =>
+            `${m.baum} · Stamm × ${m.stammSkala} (Welt × ${m.weltSkala}) · ` +
+            ["fuss", "ritt"]
+                .map((k) => {
+                    const z = (m.wege || {})[k] || {};
+                    return `${k}: ${z.proben} Proben, Pflanze hält ${z.pflanzeHaelt}, Arm ${z.armIst}/${z.armSoll} m (Ist/Soll), < 3 m ${z.unter3}, Sprünge ${z.spruenge} (Soll ${z.spruengeSoll}, hinaus ${z.hinausSprung})`;
+                })
+                .join(" · ") +
+            ` · Pflanzen-Stoffe ${m.stoffe}, ohne Durchsicht ${m.stoffeOhne}, Ziel ${m.zielAbstand} m`
+    );
     console.log("=== D8 · D6 · D9 — DIE STIMME UND DAS DORF ===");
     zeige("D8", "der Spieler-Chat trägt Worte, das Log die Zahlen", out.kanal, kanalVerdict, (m) => `${(m.zeilen || []).filter((z) => !/^> /.test(z)).length} Zeilen · Log ${m.siedlungImLog}`);
     zeige("D6", "die KI nennt die Ursache (Dienst · Schlüssel · Proxy)", out.ki, kiVerdict, (m) => `Status „${(m.status || "").slice(0, 60)}" · ohne Schlüssel „${(m.ohneSchluessel || "—").slice(0, 60)}" · Proxy ${m.proxyUrl}`);

@@ -929,14 +929,13 @@ function perfWahrheit(srcNC) {
         v.push("die L0 einer Art ohne L1 blendet zu einer L1 aus, die es nicht gibt (Wagen und Tor)");
     if (!/_fadeIn\.max\(T\.step\(T\.float\(2\.5\), _aLod\)\)\.mul\(T\.step\(_f1o, _dh\)\)/.test(maske))
         v.push("die Maske kennt die einzige Nah-Stufe nicht (aLodLevel 3: nur die Fern-Ausblendung)");
-    // `nurLesen` (Welle L Folge): die Kronen-Hülle der Kamera liest die Höhe, ohne die Höhen-Stufe zu bestellen.
-    const hoehe = fnBody(srcNC, /\n {4}_lodTreeVisHeight\(entry(?:, nurLesen)?\)\s*\{/) || "";
+    const hoehe = fnBody(srcNC, /\n {4}_lodTreeVisHeight\(entry\)\s*\{/) || "";
     if (!/_foundrySichtHoehe\(/.test(hoehe)) v.push("_lodTreeVisHeight liest den Foundry-Stempel nicht (_foundrySichtHoehe)");
     // Ohne bekannte Höhe KEIN Stufen-Urteil (null), nie still 0 (roh, ohne Perf — der alte Geist); die Höhe lebt im
     // Höhen-Buch, nicht im LRU der Geometrie.
-    const sicht = fnBody(srcNC, /\n {4}_foundrySichtHoehe\(preset, entry, scale(?:, nurLesen)?\)\s*\{/) || "";
+    const sicht = fnBody(srcNC, /\n {4}_foundrySichtHoehe\(preset, entry, scale\)\s*\{/) || "";
     if (!/if \(h0 == null\) return null;/.test(sicht)) v.push("_foundrySichtHoehe fällt ohne Höhe still auf 0 (roh) zurück");
-    const buch = fnBody(srcNC, /\n {4}_foundryBaumHoehe\(preset, entry(?:, nurLesen)?\)\s*\{/) || "";
+    const buch = fnBody(srcNC, /\n {4}_foundryBaumHoehe\(preset, entry\)\s*\{/) || "";
     if (!/f\.hoehen/.test(buch)) v.push("_foundryBaumHoehe liest nicht das Höhen-Buch");
     const satz = fnBody(srcNC, /\n {4}_foundryCacheSet\(key, v\)\s*\{/) || "";
     if (!/f\.hoehen = new Map\(\)\)\)\.set\(key, v\._hoehe\)/.test(satz)) v.push("der Cache-Chokepoint schreibt das Höhen-Buch nicht");
@@ -1053,7 +1052,7 @@ async function main() {
             ["Streu-Partner ohne Skala", nc.replace("this._lodBandPartnerFor(dist, visH, _curLod, tf.scale)", "this._lodBandPartnerFor(dist, visH, _curLod)")],
             [
                 "Sichthöhe aus dem Grammatik-Bauplan",
-                nc.replace("return this._foundrySichtHoehe(preset, entry, s, nurLesen);", "return 0;"),
+                nc.replace("return this._foundrySichtHoehe(preset, entry, s);", "return 0;"),
             ],
         ]) {
             const v = perfWahrheit(src);

@@ -30404,6 +30404,9 @@ class AnazhRealm {
                     // DER PERF-STRECK der Wahrnehmungs-Distanz (_lodPerfMul, je Frame gespiegelt): jede Maske misst
                     // die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
                     uLodPerf: _T.uniform(1),
+                    // DAS ZIEL DER DURCHSICHT (xyz) und ihr Radius (w): `_kamZielSetzen` aus `_loopCamera`, gelesen von
+                    // `_kameraDurchsichtNode` (der Sicht-Strahl vom Auge `uLodAuge` zum Ziel).
+                    uKamZiel: _T.uniform(new THREE.Vector4(0, 0, 0, 0)),
                 };
             }
         } catch (_e) {
@@ -30510,6 +30513,48 @@ class AnazhRealm {
             if (typeof window !== "undefined") window.__foundryCrossfadeError = String((_e && _e.message) || _e);
             return null;
         }
+    }
+
+    // DIE DURCHSICHT DER KAMERA (Leben-Schau 07.10. L-Kamera, Gegenprüfung Runde 1): eine Pflanze zwischen Auge und Spieler
+    // ist durchsichtig, statt die Kamera zu halten — der Profi-Weg für Laub (kein Wald ist für eine Kamera mit 9,6 m Arm frei:
+    // die Kronen-Hülle hielt die Verfolger-Kamera am Wagendach). Ein Fragment, das näher als der Radius `uKamZiel.w` am
+    // Sicht-Strahl Auge (`uLodAuge`) → Ziel (`uKamZiel.xyz`, `_kamZielSetzen`) liegt, fällt; über den Saum KAMERA_DURCHSICHT
+    // .saumM dithert es aus — dasselbe Interleaved-Gradient-Rauschen wie die Stufen-Blende (`__phytoCore.lodDitherIGN`,
+    // rotiert mit uDitherT: das zeitliche Mittel der Auflösung ist die weiche Kante). Im 1st ist das Ziel das Auge selbst
+    // (eine Kugel um das Gesicht). Rückgabe: der bool-Knoten für `maskNode` (true = behalten) — der Schatten-Pass liest ihn
+    // nie (der Aufrufer setzt `maskShadowNode`): der Baum wirft seinen ganzen Schatten.
+    _kameraDurchsichtNode(T) {
+        const lu = this._ensureLodUniforms();
+        if (
+            !T ||
+            !lu ||
+            !lu.uLodAuge ||
+            !lu.uKamZiel ||
+            !lu.uDitherT ||
+            !T.positionWorld ||
+            !T.screenCoordinate ||
+            !T.dot ||
+            !T.length ||
+            !T.fract ||
+            !T.float
+        )
+            return null;
+        const E = lu.uLodAuge;
+        const Z = lu.uKamZiel;
+        const p = T.positionWorld;
+        const ez = Z.xyz.sub(E);
+        const t = T.dot(p.sub(E), ez)
+            .div(T.dot(ez, ez).max(T.float(1e-4)))
+            .clamp(0.0, 1.0);
+        const d = T.length(p.sub(E.add(ez.mul(t))));
+        const w = d.sub(Z.w).div(T.float(AnazhRealm.KAMERA_DURCHSICHT.saumM)).clamp(0.0, 1.0);
+        const fc = T.screenCoordinate;
+        const dh = T.fract(
+            T.float(52.9829189)
+                .mul(T.fract(fc.x.mul(0.06711056).add(fc.y.mul(0.00583715))))
+                .add(lu.uDitherT)
+        );
+        return w.greaterThan(dh);
     }
 
     _applyVegetationResponse(mat, opts, responseProfile) {
@@ -31662,8 +31707,11 @@ class AnazhRealm {
 
     // Feld-nativer Raycast: DDA-Marsch (fester Schritt 0.2 m = Bau-Präzision) durchs Dichtefeld +
     // Segment-AABB-Test gegen `entry.blockerAABBs`; liefert den NÄCHSTEN Treffer { hit, x, y, z, nx, ny,
-    // nz } (Welt-Koords + Außen-Normale). Für Grab/Graben/Platzieren/Decke/Kamera.
-    _fieldRaycast(sx, sy, sz, ex, ey, ez) {
+    // nz } (Welt-Koords + Außen-Normale). Für Grab/Graben/Platzieren/Decke/Kamera. `o.durchPflanzen`: der Strahl geht durch
+    // die Hülle einer Pflanze (Box mit `pflanze`, `_populateBlockerAABBs`) — der Strahl der 3rd-Kamera: eine Pflanze hält sie
+    // nie, sie wird durchsichtig (`_kameraDurchsichtNode`).
+    _fieldRaycast(sx, sy, sz, ex, ey, ez, o) {
+        const durchPflanzen = !!(o && o.durchPflanzen);
         const dx = ex - sx,
             dy = ey - sy,
             dz = ez - sz;
@@ -31712,6 +31760,7 @@ class AnazhRealm {
                 const boxes = e.blockerAABBs;
                 for (let bi = 0; bi < boxes.length; bi++) {
                     const bx = boxes[bi];
+                    if (durchPflanzen && bx.pflanze === true) continue;
                     const hitInfo = this._segmentAABB(sx, sy, sz, dx, dy, dz, bx);
                     if (hitInfo && hitInfo.t < structHitT) {
                         structHitT = hitInfo.t;
@@ -32471,10 +32520,14 @@ class AnazhRealm {
         // stand in ihm (0,53 m von der Achse). Kollision == Optik: die Teile tragen dieselbe Skala wie die Gestalt.
         const kWelt = this._baumWeltSkala(entry);
         const scD = (Number.isFinite(entry.scale) ? entry.scale : 1) * kWelt;
+        // Die Hülle einer PFLANZE (Natur, die nicht Fels ist — der Fels hat seinen Zweig oben): der Körper stößt an sie, der
+        // Strahl der 3rd-Kamera geht durch sie (`_fieldRaycast` `durchPflanzen`), die Pflanze wird durchsichtig.
+        const pflanze = this._istNatur(entry);
         for (const part of bp.parts) {
             if (!this._isPartSolid(part)) continue;
             const aabb = this._blockerComputePartAABB(entry, part, kWelt);
             if (!aabb) continue;
+            if (pflanze) aabb.pflanze = true;
             // Welle L (Q5): ein STAMM (Zylinder-Teil) trägt seine Dicke — was dünner ist als die Stufe eines Rades (der
             // Hasel-Trieb, der Ast), überrollt die Hülle des Wagens (`_fahrHuelleKontakt`); die Kapsel liest das Feld nie.
             if (part.shape === "cylinder" && part.size)
@@ -53961,11 +54014,7 @@ class AnazhRealm {
                         : Number.isFinite(visH)
                           ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe
                           : 0;
-                    this._kronenStreuNeu(`s:${layer.name}:${cellX},${cellZ}`, tf.x, tf.z, kr, {
-                        krone: this._naturKrone(species, tf),
-                        y0: surfY,
-                        y1: Number.isFinite(visH) && visH > 0 ? surfY + visH : null,
-                    });
+                    this._kronenStreuNeu(`s:${layer.name}:${cellX},${cellZ}`, tf.x, tf.z, kr);
                 }
                 emitted++;
             }
@@ -54776,13 +54825,11 @@ class AnazhRealm {
 
     // V18.387 — die Sichthöhe eines bereits gespawnten Architektur-Eintrags
     // (Baum-HISM). Nicht-Baum-Einträge → 0 (der Chooser läuft dann roh).
-    // `nurLesen`: eine unbekannte Höhe ist null, ohne die Höhen-Stufe zu bestellen (die Kronen-Hülle der Kamera fragt beim
-    // Entstehen jedes Baums — das Bestellen bleibt beim LOD-Takt, der die Höhe braucht).
-    _lodTreeVisHeight(entry, nurLesen) {
+    _lodTreeVisHeight(entry) {
         if (!entry) return 0;
         const s = Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1;
         const preset = this._foundryEnabled() ? this._foundryPresetForEntry(entry) : null;
-        if (preset && this._foundryPresetIsTree(preset)) return this._foundrySichtHoehe(preset, entry, s, nurLesen);
+        if (preset && this._foundryPresetIsTree(preset)) return this._foundrySichtHoehe(preset, entry, s);
         if (!entry._lodSpecies || !Number.isFinite(entry._lodVariantIndex)) return 0;
         return this._lodTreeVisHeightFor(entry._lodSpecies, entry._lodVariantIndex, s);
     }
@@ -54794,8 +54841,8 @@ class AnazhRealm {
     // standen mit Sichthöhe 0, die Stufenwahl lief roh, die Masken mit 17–60 m Sichthöhe: zwischen ~12 und ~25 m stand
     // ein Baum als L1 ALLEIN, deren Maske ihn erst halb einblendet (Birke 15,7 m: Rinde zu 66 % gezeichnet, die L0
     // fehlte) — die gerasterten Geister. null = die Höhe ist (noch) nicht bekannt: KEIN Stufen-Urteil, nie roh.
-    _foundrySichtHoehe(preset, entry, scale, nurLesen) {
-        const h0 = this._foundryBaumHoehe(preset, entry, nurLesen);
+    _foundrySichtHoehe(preset, entry, scale) {
+        const h0 = this._foundryBaumHoehe(preset, entry);
         if (h0 == null) return null;
         return h0 * (Number.isFinite(scale) && scale > 0 ? scale : 1);
     }
@@ -54804,7 +54851,7 @@ class AnazhRealm {
     // der Höhen-Stufe → _foundryGruppenHoehe). Unbekannt: die Höhen-Stufe wird bestellt (der EINE Bestell-Weg
     // _foundryFlattenFor, nah zuerst über die Eintrags-Position) und null kommt zurück — der Aufrufer wartet wie auf
     // ein ladendes Asset. Kann das Studio die Höhen-Stufe nicht bauen, meldet sich das einmal je Körper LAUT.
-    _foundryBaumHoehe(preset, entry, nurLesen) {
+    _foundryBaumHoehe(preset, entry) {
         const f = this._foundry;
         const gestalt = f ? this._foundryVariantFor(entry.seed, preset) : null;
         if (gestalt == null) return null; // Buch kalt
@@ -54812,7 +54859,6 @@ class AnazhRealm {
         const key = this._foundryKoerperKey(preset, gestalt, stufe, this._artifactStudioOv(entry));
         const h0 = f.hoehen ? f.hoehen.get(key) : undefined;
         if (h0 > 0) return h0;
-        if (nurLesen) return null;
         if (this._foundryFlattenFor(entry, preset, stufe) === false) {
             if (!f.hoeheFehlt) f.hoeheFehlt = new Set();
             if (!f.hoeheFehlt.has(key)) {
@@ -66743,27 +66789,14 @@ class AnazhRealm {
     // vergaß der Umzug der fernen Stufe alles jenseits ihres Fensters, auch die Eintrags-Kronen, die nur beim Entstehen
     // eintragen; wer > 1 km lief und zurückkam, fand unter jedem Eintrags-Baum (Mess-Wiese: 722 von 789 Kronen) bis zum
     // Reload keine Streu. Der Raum-Index (`kronenZellen`) bindet die Kosten des Umzugs an den Streifen, nie an den Bestand.
-    // `huelle` {krone, y0, y1}: die Krone des Baums IN DER WELT (`_naturKrone`: Radius der Art × Größe × Welt-Skala) und
-    // seine Höhe (Fuß bis Sichthöhe; y1 null = noch unbekannt) — die Kronen-Hülle, an der die 3rd-Kamera weicht
-    // (`_kameraKronenGrenze`); das Register trägt sie neben dem Streu-Radius (c[3..5]).
-    _kronenStreuNeu(schluessel, x, z, radius, huelle) {
+    _kronenStreuNeu(schluessel, x, z, radius) {
         const wk = this._wegeKarteEnsure();
         if (!wk || !(radius > 0)) return;
-        const hk = huelle && huelle.krone > 0 ? huelle.krone : 0;
-        const h0 = huelle && Number.isFinite(huelle.y0) ? huelle.y0 : null;
-        const h1 = huelle && Number.isFinite(huelle.y1) ? huelle.y1 : null;
         // Dieselbe Krone zweimal (eine Region baut neu) malt nicht doppelt; eine GEÄNDERTE fällt erst heraus.
         const alt = wk.kronen.get(schluessel);
-        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) {
-            alt[3] = hk;
-            alt[4] = h0;
-            alt[5] = h1;
-            if (hk > (wk.kronenWeltMax || 0)) wk.kronenWeltMax = hk;
-            return;
-        }
+        if (alt && alt[0] === x && alt[1] === z && alt[2] === radius) return;
         if (alt) this._kronenStreuWeg(schluessel);
-        const c = [x, z, radius, hk, h0, h1];
-        if (hk > (wk.kronenWeltMax || 0)) wk.kronenWeltMax = hk;
+        const c = [x, z, radius];
         wk.kronen.set(schluessel, c);
         const zk = AnazhRealm._kronenZelle(x, z);
         let zelle = wk.kronenZellen.get(zk);
@@ -67471,7 +67504,6 @@ class AnazhRealm {
             wk.kronen.clear();
             wk.kronenZellen.clear();
             wk.kronenRandMax = 0;
-            wk.kronenWeltMax = 0;
             for (const stufe of wk.stufen) {
                 stufe.daten.fill(0);
                 stufe.zentriert = false;
@@ -68236,14 +68268,7 @@ class AnazhRealm {
         // DER BESTAND DER KRONEN-KARTE: ein Wald-Baum trägt seine Krone ein, wo er als Eintrag entsteht — Pflanzung,
         // Promotion und der Reload des Zweit-Boots gehen alle hier durch (`removeArchitecture` nimmt sie heraus).
         const _krone = this._kronenRadiusFuer(type, entry.scale);
-        if (_krone) {
-            const _h = this._lodTreeVisHeight(entry, true);
-            this._kronenStreuNeu("a:" + entry.id, entry.position.x, entry.position.z, _krone, {
-                krone: this._naturKrone(type, entry),
-                y0: entry.position.y,
-                y1: _h > 0 ? entry.position.y + _h : null,
-            });
-        }
+        if (_krone) this._kronenStreuNeu("a:" + entry.id, entry.position.x, entry.position.z, _krone);
         // Blocker-AABBs je Architektur cachen: solide Parts (dichte ≥ 0.3) ergeben `entry.blockerAABBs` für
         // den Cell-Stempel. Kein Type-Whitelist — die Substanz entscheidet (Stamm stempelt, Laub nicht).
         this._populateBlockerAABBs(entry);
@@ -69451,25 +69476,17 @@ class AnazhRealm {
             this._blattAtlasBild = m.blattAtlas;
         // Der Katalog steht: die Hotbar urteilt über ihre Namen und legt, wenn sie leer ist, den Start-Gurt.
         this._hotbarNachBuch();
-        // Die Welt-Skala der Bäume steht (`PORTAL_RENDER_CONFIG.placement`): Stamm- und Kronen-Hülle der Bäume, die vor
-        // dem Buch entstanden (Reload mit kaltem Buch), messen jetzt im Weltmaß.
+        // Die Welt-Skala der Bäume steht (`PORTAL_RENDER_CONFIG.placement`): die Stamm-Hülle der Bäume, die vor dem Buch
+        // entstanden (Reload mit kaltem Buch), misst jetzt im Weltmaß.
         this._baumHuellenNachBuch();
     }
 
-    // Stamm-Blocker (`_populateBlockerAABBs` × `_baumWeltSkala`) und Kronen-Hülle (`_kronenStreuNeu` c[3..5]) jedes
-    // Baum-Eintrags neu — einmal nach der Buch-Ankunft, die Kosten tragen nur die Baum-Einträge.
+    // Die Stamm-Blocker (`_populateBlockerAABBs` × `_baumWeltSkala`) jedes Baum-Eintrags neu — einmal nach der Buch-Ankunft,
+    // die Kosten tragen nur die Baum-Einträge.
     _baumHuellenNachBuch() {
         for (const e of this.state.architectures || []) {
             if (!e || !e.position || !/^baum_/.test(e.type || "")) continue;
             this._populateBlockerAABBs(e);
-            const kr = this._kronenRadiusFuer(e.type, e.scale);
-            if (!kr) continue;
-            const h = this._lodTreeVisHeight(e, true);
-            this._kronenStreuNeu("a:" + e.id, e.position.x, e.position.z, kr, {
-                krone: this._naturKrone(e.type, e),
-                y0: e.position.y,
-                y1: h > 0 ? e.position.y + h : null,
-            });
         }
     }
 
@@ -73553,6 +73570,16 @@ class AnazhRealm {
                         mat.userData.foundryCrossfade = true;
                         mat.userData.foundryCrossfadeKanal = kanal;
                     }
+                }
+            }
+            // DIE DURCHSICHT: jeder Pflanzen-Stoff (Rinde · Stiel · Laub · Blatt-Karte; nie Gras, nie die Klassen-Look-Familie
+            // der Kreaturen und Menschen) wird zwischen Auge und Spieler durchsichtig (`_kameraDurchsichtNode`) — im maskNode,
+            // den nur der Bild-Pass liest; der Schatten-Pass liest seinen eigenen maskShadowNode (immer behalten).
+            if (!klasseLook && (isBark || kind === "foliage" || kind === "foliageTex")) {
+                const _durch = this._kameraDurchsichtNode(TSL);
+                if (_durch) {
+                    mat.maskNode = _durch;
+                    mat.maskShadowNode = TSL.bool(true);
                 }
             }
             // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest dieselbe Böen-Welle wie die Streu
@@ -87826,8 +87853,8 @@ class AnazhRealm {
     // ### 6.G3.c — Fauna-Lifecycle ###
 
     // Raycast-Helper: der Aufrufer übergibt einen Extractor (Normale, hitPoint oder nur hasHit) —
-    // der Lifecycle bleibt in dieser EINEN Funktion.
-    _runRaycast(rayStart, rayEnd, extractor) {
+    // der Lifecycle bleibt in dieser EINEN Funktion. `o` reicht die Optionen des Feld-Strahls durch (`_fieldRaycast`).
+    _runRaycast(rayStart, rayEnd, extractor, o) {
         // Feld-nativer Raycast (DDA durch das Dichtefeld + Struktur-Box-Ray, kein Ammo). Ein synthetisches
         // `cb` mit derselben Schnittstelle (get_m_hitPointWorld/get_m_hitNormalWorld/hasHit) hält alle
         // Aufrufer unverändert. rayStart/rayEnd in skalierten Einheiten → × sf rein, ÷ sf im cb raus.
@@ -87838,7 +87865,8 @@ class AnazhRealm {
             rayStart.z() * sf,
             rayEnd.x() * sf,
             rayEnd.y() * sf,
-            rayEnd.z() * sf
+            rayEnd.z() * sf,
+            o
         );
         const cb = {
             get_m_hitPointWorld: () => ({ x: () => rc.x / sf, y: () => rc.y / sf, z: () => rc.z / sf }),
@@ -92247,52 +92275,13 @@ class AnazhRealm {
         };
     }
 
-    // DIE KRONEN-HÜLLE DER 3RD-KAMERA (Leben-Schau 07.10., L-Kamera): die Kamera-Kollision traf nur Terrain und Strukturen,
-    // die Krone eines Baums nie — in 8 von 15 3rd-Person-Bildern hing die Kamera in Ästen und Nadeln, eine Nadelwand vor dem
-    // Spieler (und die Stamm-Hülle endet unter dem Kopf: die Kamera stand in einem Kiefernstamm). Jeder Baum trägt seine
-    // Hülle im Kronen-Register (`_kronenStreuNeu`, c[3..5]): die Krone in der Welt (`_naturKrone`) als senkrechter Zylinder
-    // um den Stamm, vom Fuß bis zur Sichthöhe. Die Regel: die Kamera geht nie tiefer in eine Krone, als der Spieler selbst
-    // steht — eine Krone, unter der er nicht steht, betritt sie nie; unter einer Krone kommt sie dem Stamm nie näher als
-    // er, aber nie näher als KAMERA_KRONEN_MIN_M an seine Brust. Gibt den Anteil t ∈ [0, 1] des Wegs Brust (tx, ty, tz) →
-    // Wunsch-Position (wx, wy, wz), den die Kamera gehen darf.
-    _kameraKronenGrenze(tx, ty, tz, wx, wy, wz) {
-        const wk = this.state.wegeKarte;
-        if (!wk || !wk.kronenZellen || !wk.kronenZellen.size) return 1;
-        const dx = wx - tx;
-        const dy = wy - ty;
-        const dz = wz - tz;
-        const a = dx * dx + dz * dz;
-        if (a < 1e-9) return 1;
-        const R = wk.kronenWeltMax || 0;
-        const Z = AnazhRealm.LAUB_STREU.zelleM;
-        const ABSTAND = AnazhRealm.KAMERA_KRONEN_ABSTAND;
-        let tMin = 1;
-        for (let gx = Math.floor((Math.min(tx, wx) - R) / Z); gx <= Math.floor((Math.max(tx, wx) + R) / Z); gx++)
-            for (let gz = Math.floor((Math.min(tz, wz) - R) / Z); gz <= Math.floor((Math.max(tz, wz) + R) / Z); gz++) {
-                const zelle = wk.kronenZellen.get(gx + "," + gz);
-                if (!zelle) continue;
-                for (const c of zelle.values()) {
-                    if (!(c[3] > 0)) continue;
-                    const fx = tx - c[0];
-                    const fz = tz - c[1];
-                    const r = Math.min(c[3], Math.hypot(fx, fz)) - ABSTAND;
-                    if (r <= 0) continue;
-                    const b = 2 * (fx * dx + fz * dz);
-                    const disc = b * b - 4 * a * (fx * fx + fz * fz - r * r);
-                    if (disc <= 0) continue;
-                    const t0 = (-b - Math.sqrt(disc)) / (2 * a);
-                    if (!(t0 > 0 && t0 < tMin)) continue;
-                    const y = ty + t0 * dy;
-                    if (c[4] != null && y < c[4] - 0.5) continue; // unter dem Fuß (am Hang)
-                    if (c[5] != null && y > c[5]) continue; // über der Krone
-                    tMin = t0;
-                }
-            }
-        // Der Spieler bleibt sichtbar: unter einer Krone rückt die Kamera nie näher als KAMERA_KRONEN_MIN_M an die Brust
-        // (ganz an den Spieler gezogen füllte sein Kopf das Bild). Ein Stamm hält sie davor trotzdem (die Struktur-Grenze
-        // im Aufrufer gewinnt, die Stamm-Hülle ist ein Bau-Blocker).
-        const ganz = Math.hypot(dx, dy, dz);
-        return Math.max(tMin, Math.min(1, AnazhRealm.KAMERA_KRONEN_MIN_M / ganz));
+    // DAS ZIEL DER DURCHSICHT (`uKamZiel`, Leben-Schau 07.10. L-Kamera, Gegenprüfung Runde 1): wohin das Auge blickt und wie
+    // weit um den Sicht-Strahl eine Pflanze durchsichtig wird (`_kameraDurchsichtNode`) — 3rd die Brust (zu Fuß
+    // KAMERA_DURCHSICHT.fussM, im Ritt rittM: der Wagen ist breiter als der Leib), 1st das Auge selbst (egoM: was das
+    // Gesicht streift). Der EINE Schreiber ist `_loopCamera`, je Bild nach dem Setzen der Kamera.
+    _kamZielSetzen(x, y, z, r) {
+        const lu = this.state.lodUniforms;
+        if (lu && lu.uKamZiel) lu.uKamZiel.value.set(x, y, z, r);
     }
 
     _loopCamera(currentTime) {
@@ -92362,34 +92351,74 @@ class AnazhRealm {
                 // Pitch-Wunsch-Höhe (nach Boden-Clamp, VOR der Kollision) als State spiegeln: der Playtest prüft die
                 // Pitch-Inversion daran deterministisch (die Kollision hängt von der Umgebung ab).
                 this.state._cameraDesiredY = camY;
-                // Kamera-Kollision: Raycast vom Blickziel (Brust) zur Wunsch-Position; trifft er Terrain/Struktur,
-                // rückt die Kamera an den Treffer (15 % Puffer) — eine Lösung für Loch, Wand und Bauwerk.
-                const tx = player.position.x;
-                const ty = player.position.y + 1.0;
-                const tz = player.position.z;
-                // Der Anteil t des Wegs Brust → Wunsch-Position, den die Kamera gehen darf: Terrain/Struktur (Treffer × 0,85)
-                // und die Kronen-Hülle der Bäume (`_kameraKronenGrenze`) — das kleinere gewinnt.
-                let t = 1;
-                if (this.state.tmpVec1) {
-                    const sf = this.state.scaleFactor || 1;
-                    const rs = this.setVec(this.state.tmpVec1, tx / sf, ty / sf, tz / sf);
-                    const re = this.setVec(this.state.tmpVec2, camX / sf, camY / sf, camZ / sf);
-                    const hp = this._runRaycast(rs, re, (cb, hit) => {
-                        if (!hit) return null;
-                        const p = cb.get_m_hitPointWorld();
-                        return { x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
-                    });
-                    if (hp) {
-                        const ganz = Math.hypot(camX - tx, camY - ty, camZ - tz);
-                        if (ganz > 1e-6) t = Math.min(t, (0.85 * Math.hypot(hp.x - tx, hp.y - ty, hp.z - tz)) / ganz);
-                    }
+                // Kamera-Kollision: Strahl vom Blickziel zur Wunsch-Position; trifft er Boden oder Bau, rückt die Kamera an
+                // den Treffer (15 % Puffer) — eine Lösung für Loch, Wand und Bauwerk. EINE PFLANZE HÄLT SIE NIE (Leben-Schau
+                // 07.10. L-Kamera, Gegenprüfung Runde 1): der Strahl geht `durchPflanzen`, und was von einer Pflanze zwischen
+                // Auge und Spieler liegt, wird durchsichtig (`_kameraDurchsichtNode`). Die Kronen-Hülle (5167fd85) hielt die
+                // Verfolger-Kamera in 641 von 2400 Fahr-Proben unter 3 m (am Wagendach, 137 Sprünge > 2 m) und die Kamera zu
+                // Fuß in 43 % der Proben in Baumnähe auf dem 2-m-Minimum — ein Wald ist für eine Kamera mit 9,6 m Arm nie frei.
+                const bx = player.position.x;
+                const by = player.position.y + 1.0;
+                const bz = player.position.z;
+                const sf = this.state.scaleFactor || 1;
+                const strahl = (ax, ay, az, ex, ey, ez) => {
+                    if (!this.state.tmpVec1) return 1;
+                    const rs = this.setVec(this.state.tmpVec1, ax / sf, ay / sf, az / sf);
+                    const re = this.setVec(this.state.tmpVec2, ex / sf, ey / sf, ez / sf);
+                    const hp = this._runRaycast(
+                        rs,
+                        re,
+                        (cb, hit) => {
+                            if (!hit) return null;
+                            const p = cb.get_m_hitPointWorld();
+                            return { x: p.x() * sf, y: p.y() * sf, z: p.z() * sf };
+                        },
+                        { durchPflanzen: true }
+                    );
+                    const ganz = Math.hypot(ex - ax, ey - ay, ez - az);
+                    return hp && ganz > 1e-6
+                        ? Math.min(1, (0.85 * Math.hypot(hp.x - ax, hp.y - ay, hp.z - az)) / ganz)
+                        : 1;
+                };
+                // DIE SCHULTER (Gegenprüfung Runde 1: das Fadenkreuz stand in 3rd auf dem Kopf der Figur): zu Fuß blickt die
+                // Kamera über die rechte Schulter — Auge und Blickziel stehen KAMERA_SCHULTER_M rechts (Bildschirm-rechts
+                // = (−cos Gier, 0, sin Gier)), die Figur steht links der Bildmitte, das Fadenkreuz trifft daneben die Welt.
+                // Steht rechts eine Wand, rückt die Schulter vor ihr ein. Der Ritt blickt auf die Kabine (der Wagen).
+                let sx = 0;
+                let sz = 0;
+                if (!_fahrRitt) {
+                    const S = AnazhRealm.KAMERA_SCHULTER_M;
+                    const rx = -Math.cos(this.state.yaw);
+                    const rz = Math.sin(this.state.yaw);
+                    const s = S * strahl(bx, by, bz, bx + rx * S, by, bz + rz * S);
+                    sx = rx * s;
+                    sz = rz * s;
                 }
-                t = Math.min(t, this._kameraKronenGrenze(tx, ty, tz, camX, camY, camZ));
-                const finalX = tx + (camX - tx) * t;
-                const finalY = ty + (camY - ty) * t;
-                const finalZ = tz + (camZ - tz) * t;
-                camera.position.set(finalX, finalY, finalZ);
+                const tx = bx + sx;
+                const ty = by;
+                const tz = bz + sz;
+                camX += sx;
+                camZ += sz;
+                // DER GLEITENDE ARM: ein Hindernis zieht die Kamera sofort heran (sie steht nie in Boden oder Bau), frei
+                // fährt sie gleitend hinaus — der Rest 1 − Ruhe^dt je Bild, im Ritt die Ruhe des Kern-Gesetzes
+                // (`kamera.posEase`, mit der die Probefahrt-Kamera ihrer Stelle folgt), zu Fuß KAMERA_ARM_RUHE.
+                const t = strahl(tx, ty, tz, camX, camY, camZ);
+                const armDt = Math.min(0.1, Math.max(0.0001, currentTime - (this.state._kamArmT || currentTime)));
+                this.state._kamArmT = currentTime;
+                let arm = this.state._kamArm;
+                if (!(arm >= 0) || t <= arm) arm = t;
+                else {
+                    const ruhe =
+                        _fahrRitt && _fahrRitt.kam && _fahrRitt.kam.posEase > 0
+                            ? _fahrRitt.kam.posEase
+                            : AnazhRealm.KAMERA_ARM_RUHE;
+                    arm += (t - arm) * (1 - Math.pow(ruhe, armDt));
+                }
+                this.state._kamArm = arm;
+                camera.position.set(tx + (camX - tx) * arm, ty + (camY - ty) * arm, tz + (camZ - tz) * arm);
                 camera.lookAt(tx, ty, tz);
+                const KD = AnazhRealm.KAMERA_DURCHSICHT;
+                this._kamZielSetzen(bx, by, bz, _fahrRitt ? KD.rittM : KD.fussM);
             } else {
                 // View-Height-Smoothing (à la Source `SmoothViewOnStairs`): Füße/Kollision rasten hart auf den Boden,
                 // das AUGE gleitet gedämpft nach → der Körper federt Stufen/Buckel ab. Nur am Boden glätten; in der
@@ -92438,6 +92467,8 @@ class AnazhRealm {
                     this._egoBlick || (this._egoBlick = {})
                 );
                 camera.lookAt(player.position.x + blick.x, eyeY + blick.y, player.position.z + blick.z);
+                this.state._kamArm = undefined; // der Arm der 3rd-Kamera beginnt beim Wechsel frei
+                this._kamZielSetzen(player.position.x, eyeY, player.position.z, AnazhRealm.KAMERA_DURCHSICHT.egoM);
             }
             if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                 this.log(
@@ -99806,11 +99837,15 @@ AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN = 3.5; // m über den Footprint hinaus
 // Grund mit Worker-Zustand, der Spieler hört Worte).
 AnazhRealm.SIEDLUNG_KALT_SATZ = "Die Werkstatt der Welt erwacht noch — versuch es gleich noch einmal.";
 AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional → nicht schieben
-// Der Abstand der 3rd-Kamera zur Kronen-Hülle (`_kameraKronenGrenze`): sie bleibt so weit außerhalb der Tiefe, in der der
-// Spieler selbst in der Krone steht (m).
-AnazhRealm.KAMERA_KRONEN_ABSTAND = 0.3;
-// Der kleinste Abstand der 3rd-Kamera zur Brust, den eine Krone erzwingen darf (m): darunter füllt der Kopf das Bild.
-AnazhRealm.KAMERA_KRONEN_MIN_M = 2.0;
+// DIE DURCHSICHT DER KAMERA (`_kameraDurchsichtNode`): um den Sicht-Strahl Auge → Ziel (`_kamZielSetzen`) wird eine
+// Pflanze bis zum Radius durchsichtig und über den Saum ausgedithert (m) — zu Fuß der Leib (Schultern ± 0,25 m, der Kopf
+// 0,7 m über der Brust), im Ritt der Wagen (4,5 × 1,9 m um die Kabine), im 1st was das Gesicht streift.
+AnazhRealm.KAMERA_DURCHSICHT = Object.freeze({ fussM: 0.9, rittM: 2.0, egoM: 0.5, saumM: 0.6 });
+// Die Schulter der 3rd-Kamera zu Fuß (m): Auge und Blickziel stehen so weit rechts, die Figur links der Bildmitte.
+AnazhRealm.KAMERA_SCHULTER_M = 0.6;
+// Der gleitende Arm der 3rd-Kamera zu Fuß: der Rest je Sekunde, den er nach einem Hindernis noch vor sich hat (wie die
+// Probefahrt-Kamera des Labors, vehicle-core `kamera.posEase`) — nach 0,1 s 47 %, nach 0,5 s 96 % hinaus.
+AnazhRealm.KAMERA_ARM_RUHE = 0.0016;
 // Fällt der Spieler trotzdem durch (jede Ursache: Remesh-Timing, Teleport, …),
 // fängt ihn dieser Boden: unter dem Voxel-Boden (base−floorDrop ≈ −90 m) → zurück
 // an die Oberfläche. Bis V17.28 hatten NUR Kreaturen so eine Rettung (y < −50).
