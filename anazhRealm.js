@@ -50796,6 +50796,10 @@ class AnazhRealm {
             // die Oberschenkel liegen auf der Sitzfläche (waagerecht nach vorn; vorher −1,3: 15° hinab, das Knie im Polster)
             rig.legL.hip.rotation.x = -Math.PI / 2;
             rig.legR.hip.rotation.x = -Math.PI / 2;
+            // die Knie zur Mitte, die Füße zu den Pedalen (je 0,1 rad: ~9 cm nach innen) — gestreckt im Fußraum stand der
+            // äußere Fuß sonst in der eingezogenen Front eines schmalen Wagens (Kompakt: 1,8 % der Haut durch die Haut)
+            rig.legL.hip.rotation.z = -0.1;
+            rig.legR.hip.rotation.z = 0.1;
             rig.legL.knee.rotation.x = 1.05; // Unterschenkel hängt
             rig.legR.knee.rotation.x = 1.05;
             rig.armL.shoulder.rotation.x = -0.4; // Arme vorgehalten (Zügel-Geste)
@@ -50834,12 +50838,17 @@ class AnazhRealm {
                 hips.rotation.y = 0;
                 L.leib = rig._sitzLeibMass || (rig._sitzLeibMass = this._sitzLeib(group, rig));
                 L.phi = this._sitzNeigung(group, rig, ort, L.leib);
+                L.knie = this._sitzKnie(ort, L.leib);
             }
         }
         const ort = L.ort;
         if (!ort || !L.leib) return;
-        // der Rumpf neigt sich, der Kopf bleibt aufrecht
+        // der Rumpf neigt sich, der Kopf bleibt aufrecht; das Knie hält die Sohle über dem Bauch
         if (rig.spine) rig.spine.rotation.x = -L.phi;
+        if (Number.isFinite(L.knie)) {
+            if (rig.legL.knee) rig.legL.knee.rotation.x = L.knie;
+            if (rig.legR.knee) rig.legR.knee.rotation.x = L.knie;
+        }
         if (L.leib.kopfMit) rig.head.rotation.x = L.phi;
         // der Blick längs der Fahrt: die Gier des Gefährts im Rahmen des Spielers (das Modell schaut längs +z)
         const th = Number.isFinite(entry.rotationY) ? entry.rotationY : 0;
@@ -50891,6 +50900,7 @@ class AnazhRealm {
                 y: d.sitz.y * sc,
                 z: d.sitz.z * sc,
                 dach: d.huelle && Number.isFinite(d.huelle.yRoof) ? d.huelle.yRoof * sc : null,
+                bauch: d.huelle && Number.isFinite(d.huelle.ySill) ? d.huelle.ySill * sc : null,
                 lehne: F.sitzLehneRad,
                 lehneMax: F.sitzLehneMaxRad,
                 kopfFrei: F.kopfFreiraumM,
@@ -50902,7 +50912,17 @@ class AnazhRealm {
         if (!sp || !Number.isFinite(sp.y)) return null;
         const x = Number.isFinite(sp.x) ? sp.x : 0;
         const z = Number.isFinite(sp.z) ? sp.z : 0;
-        return { x: x * sc, y: sp.y * sc, z: z * sc, dach: null, lehne: 0, lehneMax: 0, kopfFrei: 0, achseX };
+        return {
+            x: x * sc,
+            y: sp.y * sc,
+            z: z * sc,
+            dach: null,
+            bauch: null,
+            lehne: 0,
+            lehneMax: 0,
+            kopfFrei: 0,
+            achseX,
+        };
     }
 
     // DER SITZENDE LEIB, an der HAUT gemessen (0710-4 Klasse 4; einmal je Rig — die Pose ist für jedes Gefährt dieselbe):
@@ -50918,6 +50938,16 @@ class AnazhRealm {
         const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
         const v = new THREE.Vector3();
         const schenkel = new Set([rig.legL.hip, rig.legR.hip]);
+        // Schienbein und Fuß (die Ecken der Knie- und Knöchel-Knochen): je Bein relativ zu seinem Knie-Gelenk (y, z im
+        // Rahmen des Spielers; die Oberschenkel liegen längs z, das Knie dreht um x)
+        const unten2 = new Map();
+        for (const leg of [rig.legL, rig.legR]) {
+            if (!leg.knee) continue;
+            const kp = leg.knee.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv);
+            const eintrag = { ky: kp.y, kz: kp.z, proben: [] };
+            unten2.set(leg.knee, eintrag);
+            if (leg.ankle) unten2.set(leg.ankle, eintrag);
+        }
         const unterKopf = (o) => {
             for (let n = o; n && n !== group; n = n.parent) if (n === rig.head) return true;
             return false;
@@ -50945,10 +50975,12 @@ class AnazhRealm {
                 }
                 const bein = kn !== null && schenkel.has(kn);
                 const kopf = starr || (kn !== null && kn === rig.head);
-                if (!bein && !kopf) continue;
+                const fuss = kn !== null ? unten2.get(kn) : null;
+                if (!bein && !kopf && !fuss) continue;
                 o.getVertexPosition(i, v).applyMatrix4(o.matrixWorld).applyMatrix4(inv);
                 if (bein && v.y < unten) unten = v.y;
                 if (kopf && v.y > oben) oben = v.y;
+                if (fuss) fuss.proben.push(v.y - fuss.ky, v.z - fuss.kz);
             }
         });
         const hL = rig.legL.hip.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv);
@@ -50958,7 +50990,44 @@ class AnazhRealm {
         for (let n = rig.head; n && rig.spine && rig.head !== rig.spine; n = n.parent)
             if (n === rig.spine) kopfMit = true;
         if (!(unten < Infinity) || !(oben > -Infinity) || !kp) return null;
-        return { gesaess: (hL.y + hR.y) / 2 - unten, kopfOben: oben - kp.y, kopfMit };
+        // die Beine: das Knie relativ zum Hüftgelenk und die Ecken unter ihm (ein Bein genügt, die Pose ist symmetrisch)
+        const hy = (hL.y + hR.y) / 2;
+        const beinL = rig.legL.knee ? unten2.get(rig.legL.knee) : null;
+        const bein =
+            beinL && beinL.proben.length
+                ? { knieRel: beinL.ky - hy, proben: beinL.proben, knie0: rig.legL.knee.rotation.x }
+                : null;
+        return { gesaess: hy - unten, kopfOben: oben - kp.y, kopfMit, bein };
+    }
+
+    // DAS KNIE IN EINEM GEFÄHRT (rad): so weit gebeugt wie die Sitz-Pose (knie0), höchstens so weit, dass die Sohle über dem
+    // Bauch des Gefährts bleibt (exportDrive.huelle.ySill + 3 cm) — Schienbein und Fuß drehen starr um das Knie; gestreckter
+    // stehen die Füße weiter vorn im Fußraum. Vorher hingen sie mit 60° Beugung bis 0,17 m unter dem Wagen.
+    _sitzKnie(ort, leib) {
+        const b = leib && leib.bein;
+        if (!b || ort.bauch === null) return b ? b.knie0 : null;
+        const frei = ort.y + leib.gesaess + b.knieRel - (ort.bauch + 0.03); // so tief darf die Sohle unter dem Knie liegen
+        const tiefste = (k) => {
+            const d = k - b.knie0; // die Drehung gegen die gemessene Pose
+            const c = Math.cos(d);
+            const s = Math.sin(d);
+            let m = Infinity;
+            for (let i = 0; i < b.proben.length; i += 2) {
+                const y = b.proben[i] * c - b.proben[i + 1] * s;
+                if (y < m) m = y;
+            }
+            return -m; // wie tief die Sohle unter dem Knie liegt
+        };
+        if (tiefste(b.knie0) <= frei) return b.knie0;
+        let lo = 0;
+        let hi = b.knie0;
+        if (tiefste(lo) > frei) return lo;
+        for (let i = 0; i < 20; i++) {
+            const m = (lo + hi) / 2;
+            if (tiefste(m) <= frei) lo = m;
+            else hi = m;
+        }
+        return lo;
     }
 
     // DIE NEIGUNG DES RUMPFS in einem Gefährt (rad): die Lehne des Kerns, und reicht der Raum unter dem Dach nicht, so weit

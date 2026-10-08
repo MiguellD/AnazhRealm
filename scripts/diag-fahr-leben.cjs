@@ -472,6 +472,7 @@ const STATION = {
     sitzM: 0.03, // m: so weit dürfen die Oberschenkel über oder in der Sitzfläche liegen (0710-4 Klasse 4)
     ankerM: 0.05, // m: so weit darf das Hüftgelenk neben dem Sitz-Anker stehen
     blickGrad: 5, // °: so weit darf der sitzende Leib neben die Fahrt schauen
+    hautAussen: 0.005, // Anteil der Haut des Reiters, der je Richtung außerhalb der Hülle des Wagens liegen darf
     spielerDv: 0.3, // m/s: so viel bekommt der Spieler mindestens vom rutschenden GT
     spielerTiefM: 0.12, // m: höchstens EIN Frame der Anfahrt (zwei Sim-Schritte bei 3,5 m/s) zwischen Kapsel und Blocker-Box — die
     // Lage des Spielers setzt sein Sim-Schritt (der Stoß trägt ihn im nächsten fort), die Blocker-Boxen des rutschenden Wagens
@@ -614,7 +615,8 @@ function stationVerdict(s) {
     const sw = s.spielerWagen;
     if (!sw || !sw.a || !sw.b) out.push("spieler-wagen keine Probe");
     else {
-        if (!(sw.a.kontakt >= 0 && sw.a.vorKontakt >= 1))
+        // im Lauf = er geht (die Kadenz folgt der Emotion: 0,81 · 1,15 · 1,44 m/s über die Läufe), nicht: er steht
+        if (!(sw.a.kontakt >= 0 && sw.a.vorKontakt >= 0.5))
             out.push(
                 `spieler-wagen: der Spieler erreicht den GT nicht im Lauf (vakuös, ${(sw.a.vorKontakt || 0).toFixed(2)} m/s)`
             );
@@ -662,6 +664,24 @@ function stationVerdict(s) {
                 out.push(
                     `reiter ${q.typ}: der Leib schaut ${q.blickGrad.toFixed(0)}° neben die Fahrt (er folgt der Maus)`
                 );
+            const gl = q.glas;
+            if (gl && gl.n > 0 && gl.aussen / gl.n > STATION.hautAussen)
+                out.push(
+                    `reiter ${q.typ}: ${((100 * gl.aussen) / gl.n).toFixed(1)} % der Haut seitlich durch die gezeichnete Haut des Wagens (${Object.entries(
+                        gl.wer
+                    )
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(0, 3)
+                        .map(([w, k]) => `${w} ×${k}`)
+                        .join(", ")})`
+                );
+            const au = q.aussen;
+            if (au && au.n > 0)
+                for (const art of ["unten", "seite", "oben", "laengs"])
+                    if (au[art] / au.n > STATION.hautAussen)
+                        out.push(
+                            `reiter ${q.typ}: ${((100 * au[art]) / au.n).toFixed(1)} % der Haut ${{ unten: "unter dem Bauch", seite: "seitlich aus der Kabine", oben: "über dem Dach", laengs: "vor dem Bug / hinter dem Heck" }[art]} (bis ${au.tief[art]} m, ${au.wer[art]})`
+                        );
         }
     if (s.reiterStand && !(s.reiterStand.abw <= 1e-6))
         // die Gier des Beckens setzt der Gang selbst
@@ -681,7 +701,7 @@ function stationVerdict(s) {
     if (!s.lockstep) out.push("lockstep keine Probe");
     else if (!(s.lockstep.abw <= STATION.lockstepM) || !(s.lockstep.baerAbw <= STATION.lockstepM))
         out.push(
-            `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${s.lockstep.abw.toFixed(3)} m anders als bei 60 fps (Bär ${s.lockstep.baerAbw.toFixed(3)} m)${s.lockstep.erst ? ` — zuerst in Schritt ${s.lockstep.erst.schritt}: ${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}` : ""}`
+            `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${s.lockstep.abw.toFixed(3)} m anders als bei 60 fps (Bär ${s.lockstep.baerAbw.toFixed(3)} m)${s.lockstep.erst ? ` — zuerst in Schritt ${s.lockstep.erst.schritt}: ${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}${s.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${s.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
         );
     // L2 DIE SPALTKANTE (0710-2): der Wagen fährt über die Kante und fällt.
     const sp = s.spalt;
@@ -2318,11 +2338,13 @@ async function probeLeben(expected) {
                     if (!gS) return null;
                     const bx = gasse.x + ux * 9;
                     const bz = gasse.z + uz * 9;
-                    st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + 1);
-                    // die Gasse frei von anderen Tieren (dieselbe Räumung wie die Stoß-Proben)
+                    // die Welt der anderen Tiere ruht: der Umkreis 60 m geräumt, keine Geburt während der Probe (die Kappe
+                    // steht auf dem Bestand + dem Bären) — der Lockstep prüft den Stoß, nicht den Takt des Spawners
                     for (const cr of (st.creatures || []).slice())
-                        if (cr && cr.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 30)
+                        if (cr && cr.position && Math.hypot(cr.position.x - bx, cr.position.z - bz) < 60)
                             r.removeCreature(cr);
+                    const kappeL = st.maxCreatures;
+                    st.maxCreatures = st.creatures.length + 1;
                     const b = r.spawnCreatureAt(bx, hh(bx, bz) + 0.5, bz, "calm", "baer", {
                         precise: true,
                         bodySize: 1,
@@ -2346,6 +2368,10 @@ async function probeLeben(expected) {
                         {
                             const sv = b.userData._stossV;
                             const pmT = st.playerMesh.position;
+                            let nah = 0;
+                            for (const cr of st.creatures || [])
+                                if (cr && cr !== b && Math.hypot(cr.position.x - pmT.x, cr.position.z - pmT.z) < 12)
+                                    nah++;
                             spur.push([
                                 pmT.x,
                                 pmT.z,
@@ -2353,6 +2379,7 @@ async function probeLeben(expected) {
                                 b.position.z,
                                 b.position.y,
                                 sv ? Math.hypot(sv.x, sv.z) : 0,
+                                nah,
                             ]);
                         }
                         // die Sim-Lage des Reiters (im Schritt die Wahrheit; die Lage des Werks folgt ihr je Frame)
@@ -2365,6 +2392,7 @@ async function probeLeben(expected) {
                     } finally {
                         r._stepFixedSim = PF;
                         tasten(false);
+                        st.maxCreatures = kappeL;
                     }
                     weg(gS);
                     r.removeCreature(b);
@@ -2376,7 +2404,7 @@ async function probeLeben(expected) {
                 // der erste Schritt, in dem die Läufe auseinandergehen, und die Größe, die zuerst abweicht (die Linse nennt sie)
                 let erst = null;
                 if (l60 && lMix) {
-                    const namen = ["Wagen x", "Wagen z", "Bär x", "Bär z", "Bär y", "Bär Stoß"];
+                    const namen = ["Wagen x", "Wagen z", "Bär x", "Bär z", "Bär y", "Bär Stoß", "Tiere nahe dem Wagen"];
                     for (let i = 0; i < Math.min(l60.spur.length, lMix.spur.length) && !erst; i++)
                         for (let k = 0; k < namen.length; k++)
                             if (l60.spur[i][k] !== lMix.spur[i][k]) {
@@ -2384,6 +2412,7 @@ async function probeLeben(expected) {
                                     schritt: i + 1,
                                     groesse: namen[k],
                                     d: +(lMix.spur[i][k] - l60.spur[i][k]).toFixed(5),
+                                    tiere: [l60.spur[i][6], lMix.spur[i][6]], // die Tiere nahe dem Wagen in beiden Läufen
                                 };
                                 break;
                             }
@@ -2440,6 +2469,21 @@ async function probeLeben(expected) {
                 const schenkel = new Set([rg.legL.hip, rg.legR.hip]);
                 let oben = -Infinity;
                 let unten = Infinity;
+                // die Hülle des Kerns im Rahmen des Wagens (vor dem Durchlauf: Rahmen und Stationen)
+                const fzgH = r._fahrzeugGesetzFor(e);
+                const hu = fzgH && fzgH.drive && fzgH.drive.huelle ? fzgH.drive.huelle : null;
+                const scH = Number.isFinite(e.scale) ? e.scale : 1;
+                const thH = Number.isFinite(e.rotationY) ? e.rotationY : 0;
+                const basisH = e.position.y - 0.5;
+                const aussen = { unten: 0, oben: 0, seite: 0, laengs: 0, n: 0, tief: {}, wer: {} };
+                const strahlProben = []; // jede 40. Ecke: Welt-Lage, Seite (±1 quer), Knochen
+                const raus = (art, um, kn) => {
+                    aussen[art]++;
+                    if (!(aussen.tief[art] >= um)) {
+                        aussen.tief[art] = +um.toFixed(3);
+                        aussen.wer[art] = kn;
+                    }
+                };
                 pm.updateMatrixWorld(true);
                 nah.traverse((o) => {
                     if (!o.isMesh || !o.geometry || !o.geometry.attributes.position) return;
@@ -2451,19 +2495,80 @@ async function probeLeben(expected) {
                         o.getVertexPosition(i, V);
                         V.applyMatrix4(o.matrixWorld);
                         if (V.y > oben) oben = V.y;
-                        if (!sw) continue;
-                        let bw = -1;
                         let kn = null;
-                        for (let k = 0; k < 4; k++) {
-                            const w = sw.getComponent(i, k);
-                            if (w > bw) {
-                                bw = w;
-                                kn = o.skeleton.bones[si.getComponent(i, k)];
+                        if (sw) {
+                            let bw = -1;
+                            for (let k = 0; k < 4; k++) {
+                                const w = sw.getComponent(i, k);
+                                if (w > bw) {
+                                    bw = w;
+                                    kn = o.skeleton.bones[si.getComponent(i, k)];
+                                }
                             }
+                            if (schenkel.has(kn) && V.y < unten) unten = V.y;
                         }
-                        if (schenkel.has(kn) && V.y < unten) unten = V.y;
+                        if (!hu) continue;
+                        aussen.n++;
+                        if (aussen.n % 40 === 0) {
+                            const lzS = (V.x - e.position.x) * Math.sin(thH) + (V.z - e.position.z) * Math.cos(thH);
+                            strahlProben.push(V.x, V.y, V.z, lzS >= 0 ? 1 : -1, (kn && kn.name) || o.name || "?");
+                        }
+                        const dxH = V.x - e.position.x;
+                        const dzH = V.z - e.position.z;
+                        const lx = (dxH * Math.cos(thH) - dzH * Math.sin(thH)) / scH;
+                        const lz = (dxH * Math.sin(thH) + dzH * Math.cos(thH)) / scH;
+                        const ly = (V.y - basisH) / scH;
+                        const name = (kn && kn.name) || o.name || "?";
+                        const T = 0.02;
+                        if (ly < hu.ySill - T) raus("unten", hu.ySill - ly, name);
+                        else if (ly > hu.yRoof + T) raus("oben", ly - hu.yRoof, name);
+                        else {
+                            const breit = hu.cw; // der Reiter sitzt in der Kabine (ihre halbe Breite, jede Höhe)
+                            if (Math.abs(lz) > breit + T) raus("seite", Math.abs(lz) - breit, name);
+                            else if (lx > hu.noseX + T || lx < hu.tailX - T)
+                                raus("laengs", Math.max(lx - hu.noseX, hu.tailX - lx), name);
+                        }
                     }
                 });
+                // die Strahlen gegen die gezeichnete Haut (die Instanz-Gruppen dieses Wagens, je Leaf ein Slot)
+                let glas = null;
+                if (strahlProben.length) {
+                    const G = st.archInstanceGroups;
+                    const refs = [...(e.instSlots || []), ...(e.instSlotsBand || [])];
+                    const ziele = new Map();
+                    for (const ref of refs) {
+                        const g = G && G.get(ref.key);
+                        if (!g || !g.mesh) continue;
+                        g.mesh.updateMatrixWorld(true);
+                        if (!ziele.has(g.mesh)) ziele.set(g.mesh, new Set());
+                        ziele.get(g.mesh).add(ref.slot);
+                    }
+                    const rc = new T.Raycaster();
+                    rc.far = 2.5;
+                    const O = new T.Vector3();
+                    const Dq = new T.Vector3();
+                    glas = { n: 0, aussen: 0, wer: {} };
+                    for (let i = 0; i < strahlProben.length; i += 5) {
+                        O.set(strahlProben[i], strahlProben[i + 1], strahlProben[i + 2]);
+                        const sd = strahlProben[i + 3];
+                        Dq.set(Math.sin(thH) * sd, 0, Math.cos(thH) * sd); // quer nach außen (R_y(θ)·(0,0,±1))
+                        rc.set(O, Dq);
+                        let trifft = false;
+                        for (const [mesh, slots] of ziele) {
+                            const hits = rc.intersectObject(mesh, false);
+                            if (hits.some((h) => h.instanceId === undefined || slots.has(h.instanceId))) {
+                                trifft = true;
+                                break;
+                            }
+                        }
+                        glas.n++;
+                        if (!trifft) {
+                            glas.aussen++;
+                            const w = strahlProben[i + 4];
+                            glas.wer[w] = (glas.wer[w] || 0) + 1;
+                        }
+                    }
+                }
                 const sc = Number.isFinite(e.scale) ? e.scale : 1;
                 const fzg = r._fahrzeugGesetzFor(e);
                 const d = fzg && fzg.drive;
@@ -2493,6 +2598,8 @@ async function probeLeben(expected) {
                     ankerQ: sitz ? +(lz - sitz.z * sc).toFixed(3) : null,
                     blickGrad: +((Math.acos(Math.max(-1, Math.min(1, cosB))) * 180) / Math.PI).toFixed(1),
                     lehneGrad: rg.spine ? +((-rg.spine.rotation.x * 180) / Math.PI).toFixed(1) : null,
+                    aussen: hu ? aussen : null,
+                    glas,
                 });
                 weg(e);
             }
@@ -2747,6 +2854,34 @@ async function probeLeben(expected) {
                             ankerQ: 0.4,
                             blickGrad: 90,
                             lehneGrad: 0,
+                        },
+                    ],
+                },
+                "reiter fahrzeug_gt",
+            ],
+            [
+                "die Füße des Reiters hängen unter dem Wagen (Gegenprüfung 0710-4, das Auge)",
+                {
+                    reiter: [
+                        {
+                            typ: "fahrzeug_gt",
+                            oben: 1.15,
+                            dach: 1.2,
+                            schenkel: 0.475,
+                            sitz: 0.475,
+                            ankerL: 0,
+                            ankerQ: 0,
+                            blickGrad: 0,
+                            lehneGrad: 60,
+                            aussen: {
+                                unten: 4200,
+                                seite: 0,
+                                oben: 0,
+                                laengs: 0,
+                                n: 116000,
+                                tief: { unten: 0.18 },
+                                wer: { unten: "ankle1" },
+                            },
                         },
                     ],
                 },
@@ -3245,9 +3380,12 @@ async function probeLeben(expected) {
     check(
         "L6 Spieler und Wagen (0710-4): der laufende Spieler prallt am gebremsten GT ab (der Wagen hält), ein rutschender GT stößt den stehenden Spieler — Impuls nach Masse, keine Durchdringung",
         !hat("kern") && !hat("spieler-wagen") && !hat("wagen-spieler"),
-        swz.a && swz.b
+        (swz.a && swz.b
             ? `Spieler → GT: Fahrt in den Wagen ${swz.a.vorKontakt.toFixed(2)} → ${swz.a.nachKontakt.toFixed(2)} m/s, Wagen ${swz.a.wagenWeg.toFixed(3)} m gerutscht, tiefste Berührung ${swz.a.minAbstand.toFixed(3)} m, Schub des Wagens in ${swz.a.schub} Schritten, ${swz.a.paare} Stöße (Rest der Fahrt in den Wagen danach höchstens ${Number.isFinite(swz.a.prallNach) ? (swz.a.prallNach * 100).toFixed(0) : "–"} %), Fuß bis ${Number.isFinite(swz.a.aufstieg) ? swz.a.aufstieg.toFixed(2) : "–"} m über dem Boden · GT → Spieler: Spieler ${swz.b.spielerDv.toFixed(2)} m/s, tiefste Berührung ${swz.b.minAbstand.toFixed(3)} m`
-            : "keine Probe"
+            : "keine Probe") +
+            (hat("spieler-wagen") || hat("wagen-spieler")
+                ? ` — ${vS.filter((x) => x.startsWith("spieler-wagen") || x.startsWith("wagen-spieler")).join(" · ")}`
+                : "")
     );
     const lwz = S.leibWand || {};
     const lwT = (k) =>
@@ -3261,18 +3399,31 @@ async function probeLeben(expected) {
         "L8 Lockstep (0710-5): der Wagen steht nach 200 Sim-Schritten gegen einen Bären bei 60 fps und gemischten Frames an derselben Stelle",
         !hat("kern") && !hat("lockstep"),
         S.lockstep
-            ? `Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}` : ""}`
+            ? `Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
             : "keine Probe"
     );
     const reiterZeile = (q) =>
         q.fehler || q.sitz === null
             ? `${q.typ} ${q.fehler || "ohne Sitz"}`
-            : `${q.typ.replace("fahrzeug_", "")}: Kopf ${q.dach === null ? "offen" : (q.oben - q.dach).toFixed(2)} · Schenkel ${(q.schenkel - q.sitz).toFixed(2)} · Anker ${Math.hypot(q.ankerL, q.ankerQ).toFixed(2)} · Blick ${q.blickGrad.toFixed(0)}° · Lehne ${q.lehneGrad}°`;
+            : `${q.typ.replace("fahrzeug_", "")}: Kopf ${q.dach === null ? "offen" : (q.oben - q.dach).toFixed(2)} · Schenkel ${(q.schenkel - q.sitz).toFixed(2)} · Anker ${Math.hypot(q.ankerL, q.ankerQ).toFixed(2)} · Blick ${q.blickGrad.toFixed(0)}° · Lehne ${q.lehneGrad}°${q.glas && q.glas.n ? ` · durch die Tür ${((100 * q.glas.aussen) / q.glas.n).toFixed(1)} %` : ""}${
+                  q.aussen && q.aussen.n
+                      ? ` · außen ${
+                            ["unten", "seite", "oben", "laengs"]
+                                .filter((k) => q.aussen[k])
+                                .map(
+                                    (k) =>
+                                        `${k} ${((100 * q.aussen[k]) / q.aussen.n).toFixed(1)} % (${q.aussen.tief[k]} m ${q.aussen.wer[k]})`
+                                )
+                                .join(", ") || "0"
+                        }`
+                      : ""
+              }`;
     check(
         "L9 der Reiter im Wagen (0710-4 Klasse 4): je Wagen-Art die Oberkante ≤ Dachlinie, die Oberschenkel auf dem Polster, das Hüftgelenk über dem Sitz-Anker, der Leib schaut längs der Fahrt (die Maus quer); abgestiegen steht er wie vorher",
         !hat("kern") && !hat("reiter"),
         (S.reiter || []).map(reiterZeile).join(" · ") +
-            (S.reiterStand ? ` · abgestiegen: Wurzel ${S.reiterStand.abw} m, Gier ${S.reiterStand.gier}` : "")
+            (S.reiterStand ? ` · abgestiegen: Wurzel ${S.reiterStand.abw} m, Gier ${S.reiterStand.gier}` : "") +
+            (hat("reiter") ? ` — ${vS.filter((x) => x.startsWith("reiter")).join(" · ")}` : "")
     );
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
