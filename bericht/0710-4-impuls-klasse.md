@@ -87,7 +87,7 @@ playtest „Alle Invarianten OK".
   Partner ohne Annäherung und die Tiere in der Gasse.
 - 37702556246 (f8a539c6): check grün, playtest bis Schritt 74 grün (fahr-leben eingeschlossen), Schritt 75 an der 45-min-Kappe
   abgebrochen.
-- 37709343976 (f3240335): check grün; playtest rot in Schritt 43 `gate:asset-inventory` (Zensus + requested ⊆ visible|cached). Lokal am Kopf grün (147 Emitter erklärt, 0 Fremd-Silhouetten, H3 44/44); bei 54480d58, 20b0a5ef und f8a539c6 lief dieser Schritt in der CI grün. Ohne Log nicht benannt.
+- 37709343976 (f3240335): check grün; playtest rot in Schritt 43 `gate:asset-inventory` (Zensus + requested ⊆ visible|cached). Lokal am Kopf grün (147 Emitter erklärt, 0 Fremd-Silhouetten, H3 44/44); bei 54480d58, 20b0a5ef und f8a539c6 lief dieser Schritt in der CI grün. Ursache (CI-Log, Koordinator): eine Fremd-Silhouette `siedlung-zaun` (inst×3, ohne Emitter-Identität) — der Zaun-Pool der Siedlung erscheint nur, wenn das Auto-Dorf während der Inventur kommt; nicht dieser Zweig, der Integrator schneidet die Klasse auf integ-probe.
 
 ## Offen
 
