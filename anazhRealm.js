@@ -75822,8 +75822,9 @@ class AnazhRealm {
     // Art:Gestalt:LOD:Teil ein leafKey im BESTEHENDEN HISM; null solange das Asset lädt (Tick baut nach).
     // DIE GESTALT eines Samens (V18.527): eine von V Gestalten je Art, V aus dem Studio-Budget
     // (`PORTAL_RENDER_CONFIG.lod.budget.gestalten` über das Buch — eiche/fichte/birke/tanne 2 · weide/mammut/strauch 1 ·
-    // '*' 16; seit W8 zählt jeder Zweit-Kern die Gestalten SEINER Rezepte selbst, Haus/Tor/Fahrzeug/Klinge/Körper/Tier
-    // je 16, gemergt am Ingest), dieselben Zahlen, mit denen der Studio-Wald pflanzt. Die Wahl liest die HOHEN Hash-Bits (h·V / 2³²): das
+    // '*' 16; seit W8 zählt jeder Zweit-Kern die Gestalten SEINER Rezepte selbst, gemergt am Ingest — seit S3 nur
+    // verschiedene Individuen: Haus 16 · Fahrzeug 8 (je Lack eine) · Tor/Klinge/Körper/Tier 1, seed-invariant; die
+    // Gestalten-Wand in gate:asset-contract), dieselben Zahlen, mit denen der Studio-Wald pflanzt. Die Wahl liest die HOHEN Hash-Bits (h·V / 2³²): das
     // alte `h % 16` hing an den unteren Bits, die im Baum-Raster periodisch laufen — dieselbe Gestalt 16 Zellen weiter
     // mit 0,339 statt 1/16 (ein Klon-Gitter mit 54 m Periode). Ohne Buch null: der Aufrufer deferriert, nie eine
     // geratene Zahl. Gleicher Same = gleicher Baum, scale/yaw/tint je Instanz.

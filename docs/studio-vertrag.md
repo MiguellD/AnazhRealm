@@ -125,10 +125,12 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   das Wirts-16 gehört dem Gesetzbuch). **V Gestalten sind V verschiedene Individuen (S3, 08.10.):** ein Rezept, dessen
   Bau den Samen nicht liest (seed-invariant), zählt EINE Gestalt — mehr nur mit bewiesener Seed-Achse; eine Achse zu
   schaffen ist ein Re-Mint-Akt des Kerns, nie eine Zahl in der Zeile. Die Wand: `gate:asset-contract` baut je Art und
-  Rezept mit V ≥ 2 die Samen 1 und 2 über die echte Brücke und nennt gleiche Bau-Abdrücke beim Namen
-  („Gestalten-Lüge: porta-Rezept drachentor“; Selbsttest: drachentor mit V 2 MUSS rot werden). Gemessen 08.10.: porta
-  7 · schmiede 21 · tetrapoda 4 · koerper 1 waren seed-invariant und zählen 1; fachwerk (Haus 16, Ausstattung 2/3/2)
-  und vehicle 16 tragen eine echte Achse (vehicle: der Lack je Same, Same 1 Lack 031107 ↔ Same 2 777d84 metallisch).
+  Rezept mit V ≥ 2 JEDE Gestalt 1..V über die echte Brücke (die Zweit-Kerne aus dem Bau des Kosten-Zugs) und verlangt V
+  verschiedene Bau-Abdrücke — jeder Zwilling steht beim Namen („Gestalten-Lüge: vehicle-Rezept gt (8 von 16 verschieden:
+  1=9, …)“; Selbsttests: drachentor mit V 2 und gt mit V + 1 MÜSSEN rot werden). Gemessen 08.10.: porta 7 · schmiede 21
+  · tetrapoda 4 · koerper 1 waren seed-invariant und zählen 1; das Fahrzeug trägt EINE Achse, den Lack je Same
+  (`lackIndex`, reihum über acht Lacke) — es zählt 8 (`GESTALTEN_JE_REZEPT` = die Lacke ohne Clay), mit 16 trugen Same
+  9..16 den Lack von 1..8 (40 byte-gleiche Zwillinge); fachwerk (Haus 16, Ausstattung 2/3/2) zeigt V von V.
 - **Das Budget-Gesetz (W8, phyto-core `budgetErzwingen`):** der EINE Ausgang jeder Zweit-Kern-Gestalt —
   die Brücke (`__replyBuildAsset`) UND der Sync-Guss des Wirts-Ofens (`_ofenBudget`, Tier + Mensch)
   falten eine Stufe über `draws` auf ihre Zeile: Stoffe (der Wirts-Material-Schlüssel `budgetStoff`; die
