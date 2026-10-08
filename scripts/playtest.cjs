@@ -39983,16 +39983,24 @@ async function checkBandWelle6XAudit(ctx) {
         const dslOut = r.parseChatToDsl("baue dorf hier");
         out.chatBuildDorfParses = !!(dslOut && dslOut.program);
         if (dslOut && dslOut.program) {
-            // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed]
+            // Erwartetes Format: ["spawn_village", ["at", x, y, z], seed, gier, tanH]
             out.chatBuildDorfFormat =
                 dslOut.program[0] === "spawn_village" &&
                 Array.isArray(dslOut.program[1]) &&
                 dslOut.program[1][0] === "at" &&
                 typeof dslOut.program[2] === "number";
-            // Position ist NICHT bei (0,0,0) — sondern 8m vor dem
-            // Spieler. yaw=0 → der Blick geht nach +Z, also z ≈ +8.
+            // Das Dorf trägt Ort UND Blick des Sprechers (Gegenprüfung Runde 1: der Anker hing am Blick jedes Peers):
+            // der Ort ist der Sprecher (z ≈ 0), dazu seine Gier (0) und sein Bildwinkel (> 0) — „vor dem Blick" legt
+            // `_siedlungsAnker` das Dorf aus dem Plan (gate:ankunft D9 misst die Häuser vor dem Spieler).
             const z = dslOut.program[1][3];
-            out.chatBuildDorfForwardOffset = Math.abs(z - 8) < 0.5;
+            r.state.yaw = Math.PI / 2;
+            const dslOut2 = r.parseChatToDsl("baue dorf hier");
+            r.state.yaw = 0;
+            out.chatBuildDorfForwardOffset =
+                Math.abs(z) < 0.5 &&
+                dslOut.program[3] === 0 &&
+                dslOut.program[4] > 0 &&
+                !!(dslOut2 && Math.abs(dslOut2.program[3] - Math.PI / 2) < 1e-9);
         }
 
         // --- C3: _canSoulJumpFromSlope existiert
@@ -40084,7 +40092,7 @@ async function checkBandWelle6XAudit(ctx) {
             wave6x3Results.chatBuildDorfFormat
         );
         check(
-            "Welle 6.X.3 C1: Chat 'baue dorf hier' embedded Forward-Offset (z ≈ +8, vor dem Blick)",
+            "Welle 6.X.3 C1: Chat 'baue dorf hier' trägt Ort und Blick des Sprechers (z ≈ 0, Gier 0 bzw. π/2, Bildwinkel > 0)",
             wave6x3Results.chatBuildDorfForwardOffset
         );
         check("Welle 6.X.3 C3: _canSoulJumpFromSlope-Methode existiert", wave6x3Results.canJumpFromSlopeExists);

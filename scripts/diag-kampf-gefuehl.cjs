@@ -1027,11 +1027,13 @@ async function WELLE_L() {
         s.pitch = 0;
         kamera();
         const dD = camDir();
+        // „baue dorf hier" trägt den Blick des Sprechers (Gier, Programm-Stelle 3 — die Welle L Folge, Gegenprüfung Runde 1:
+        // der Anker hing am Blick jedes Peers): seine Vorwärts-Richtung (`_blickVorn`) blickt wie die Kamera.
         const dsl = r.parseChatToDsl("baue dorf hier");
-        const at = dsl && dsl.program && Array.isArray(dsl.program[1]) ? dsl.program[1] : null;
-        w.z.dorfCos = at
-            ? ((at[1] - pm.position.x) * dD.x + (at[3] - pm.position.z) * dD.z) /
-              (Math.hypot(dD.x, dD.z) * (Math.hypot(at[1] - pm.position.x, at[3] - pm.position.z) || 1))
+        const gier = dsl && dsl.program ? dsl.program[3] : null;
+        const vg = Number.isFinite(gier) ? r._blickVorn(gier, 0) : null;
+        w.z.dorfCos = vg
+            ? (vg.x * dD.x + vg.z * dD.z) / (Math.hypot(dD.x, dD.z) * (Math.hypot(vg.x, vg.z) || 1))
             : null;
         w.c.vorDir = w.z.vorDirCos > 0.9 && w.z.dorfCos !== null && w.z.dorfCos > 0.9;
         // (S3) SELBST-TEST: die alte −(sin, cos)-Richtung in der Naht → „vor dir" kippt hinter dich
