@@ -10,10 +10,10 @@
 //  (A) ANIM-RATEN-LOD: die Auswertungs-Rate der Kreatur-Animation folgt der
 //      Distanz (das aiDiv-Muster V17.115 U3, auf den Anim-Block gehoben).
 //      Gezählt wird der ECHTE _animateCompoundMotion-KONSUM über N Ticks:
-//      nah = jeder Frame · halbe Zone = 1/2 · viertel Zone = 1/4 · hinterm
-//      Standbild-Toggle = GAR NICHT. walkPhase/Uhr akkumulieren weiter —
+//      nah = jeder Frame · halbe Zone = 1/2 · viertel Zone = 1/4 · jenseits der
+//      Stufen-Grenze (`ab` × Größe) = GAR NICHT. walkPhase/Uhr akkumulieren weiter —
 //      der Gang bleibt gleich schnell, nur seltener ausgewertet.
-//  (B) NEUTRALE STANCE: hinterm Standbild friert der bauTier-Baum in der
+//  (B) NEUTRALE STANCE: jenseits der Grenze friert der bauTier-Baum in der
 //      Kern-STAND_POSE ein (kein Mid-Step-Gelenkwinkel über Schwelle) —
 //      vorher fror er mitten im Schritt (harter Pop beim Wieder-Annähern).
 //      Prämisse mitgemessen: VOR dem Freeze ist der Schritt messbar
@@ -229,7 +229,7 @@ const server = http.createServer((req, res) => {
             o.checks.aVoll = counts.voll === N; // nah = JEDER Frame
             o.checks.aHalb = counts.halb <= N * 0.55 && counts.halb >= N * 0.4; // exakt 1/2 (Stagger-treu)
             o.checks.aViertel = counts.viertel <= N * 0.3 && counts.viertel >= N * 0.15; // exakt 1/4
-            o.checks.aHinter = counts.hinter === 0; // hinterm Standbild: GAR nicht
+            o.checks.aHinter = counts.hinter === 0; // jenseits der Grenze: GAR nicht
             o.checks.aFernOrdnung = counts.halb <= counts.voll / 2 + 1 && counts.viertel <= counts.halb / 2 + 1;
             o.hinterEingefroren = probes.hinter.userData._animEingefroren === true;
             o.checks.aEingefroren = o.hinterEingefroren;
@@ -249,7 +249,7 @@ const server = http.createServer((req, res) => {
             o.s1Hinter = counts.hinter;
             o.checks.s1LensFires = counts.hinter === NS; // ohne Leiter tickt auch hinter voll
 
-            // ── (B) NEUTRALE STANCE: mid-step posieren → hinterm Standbild einfrieren ──
+            // ── (B) NEUTRALE STANCE: mid-step posieren → jenseits der Grenze einfrieren ──
             const probeS = probes.voll;
             const roles = r._motionRolesForSoul(probeS.userData.soul);
             // Gehen heißt WEG (Welle 5, das Gang-Gesetz): der Schritt-Schwung folgt der Lage-Änderung des Leibs — die
@@ -267,7 +267,7 @@ const server = http.createServer((req, res) => {
             schreite(probeS); // moving → Schritt-Schwung
             o.devMid = maxDev(probeS);
             o.checks.bMidStepPremise = Number.isFinite(o.devMid) && o.devMid > 0.05; // Prämisse: WAR mid-step
-            // hinter das Standbild pinnen + ticken → der Freeze-Pfad greift
+            // jenseits der Grenze pinnen + ticken → der Freeze-Pfad greift
             probeS.userData._animEingefroren = false;
             dists.voll = 1.25 * fern;
             pin();
@@ -835,7 +835,7 @@ const server = http.createServer((req, res) => {
     } else {
         const c = out.checks;
         console.log(
-            `  (A) Anim-Auswertungen über 100 Ticks (Standbild-Schwelle ${out.fernDist.toFixed(1)} m): nah ${out.counts.voll} · halb ${out.counts.halb} · viertel ${out.counts.viertel} · hinter ${out.counts.hinter}`
+            `  (A) Anim-Auswertungen über 100 Ticks (Stufen-Grenze ${out.fernDist.toFixed(1)} m): nah ${out.counts.voll} · halb ${out.counts.halb} · viertel ${out.counts.viertel} · hinter ${out.counts.hinter}`
         );
         console.log(
             `  (B) Gelenk-Abweichung von STAND_POSE: mid-step ${out.devMid && out.devMid.toFixed(3)} rad → eingefroren ${out.devFrozen && out.devFrozen.toFixed(4)} rad (Schwanz ${out.tailDev && out.tailDev.toFixed(4)})`
@@ -847,7 +847,7 @@ const server = http.createServer((req, res) => {
         check(c.aVoll, `(A) NAH voll: die nahe Kreatur wertet JEDEN Tick aus (${out.counts.voll}/100)`);
         check(c.aHalb, `(A) HALB-Zone: ~1/2 Rate (${out.counts.halb}/100)`);
         check(c.aViertel, `(A) VIERTEL-Zone: ~1/4 Rate (${out.counts.viertel}/100)`);
-        check(c.aHinter, `(A) HINTERM Standbild: GAR keine Auswertung (${out.counts.hinter}/100)`);
+        check(c.aHinter, `(A) JENSEITS der Grenze: GAR keine Auswertung (${out.counts.hinter}/100)`);
         check(c.aFernOrdnung, "(A) und die Leiter ist monoton (fern wertet ≤ 1/2 der näheren Stufe aus)");
         check(c.aEingefroren, "(A) die Hinter-Kreatur trägt den Einfrier-Stempel (_animEingefroren)");
         check(

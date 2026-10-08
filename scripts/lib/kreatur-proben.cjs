@@ -1212,7 +1212,7 @@ async function kreaturProben(r, T, opts) {
                         }
                     }
             );
-        // innerhalb der Standbild-Schwelle der Welt-Tiere (TIER_FERN_DIST 35 m): dort geht auch ein Welt-Tier
+        // diesseits der Stufen-Grenze der Welt-Tiere (`ab` 35 m der Kern-Zeile kreatur): dort geht auch ein Welt-Tier
         const o = land(14, -16);
         const dt = 1 / 30;
         let x = o.x;

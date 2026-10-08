@@ -17103,13 +17103,33 @@ class AnazhRealm {
         if (kugel)
             for (const m of meshes) m.boundingSphere = kugel.clone().applyMatrix4(inv.copy(m.matrixWorld).invert());
         wrap.add(fern);
-        return { nah: klon, fern, meshes, abM: s1.ab, hyst: z0.hyst, zwilling: z0.zeile.schatten === 1, istFern: true };
+        // DIE RUHE des Menschen: die Pose seiner Gelenke beim Bau (der Klon der Vorlage, die Ruhe-Pose des Ofens) —
+        // jenseits der Grenze steht er in ihr (`_gelenkRuhe`). Das Tier ruht in der Kern-STAND_POSE (kein Satz nötig).
+        const ruhe =
+            kind === "kreatur"
+                ? null
+                : Object.keys(teile).map((nm) => {
+                      const k = teile[nm];
+                      return [k, k.position.clone(), k.quaternion.clone(), k.scale.clone()];
+                  });
+        return {
+            nah: klon,
+            fern,
+            meshes,
+            abM: s1.ab,
+            hyst: z0.hyst,
+            zwilling: z0.zeile.schatten === 1,
+            istFern: true,
+            ruhe,
+        };
     }
 
     // DER EINE STUFEN-SCHALTER der Gelenk-Gestalt (Tier, Mensch, Peer, Werkstatt): jenseits `ab` × Größe trägt die
     // Grobstufe das Bild, diesseits die feine — und die Grobstufe wirft als ihr Zwilling auf SHADOW_TWIN_LAYER (die
     // Haupt-Kamera sieht sie nie, die Kaskaden immer). Hysterese ±`hyst` (fern erst jenseits (1+h)·Grenze, zurück erst
-    // innerhalb (1−h)·Grenze); geschaltet werden nur `visible` und die Ebenen, nur beim Wechsel. Rückgabe: fern?
+    // innerhalb (1−h)·Grenze); geschaltet werden nur `visible` und die Ebenen, nur beim Wechsel. Jenseits ruht jeder Gang
+    // (updateCreatures, der Peer-Tick, die Sicht-Kopie) — der Wechsel nach fern stellt die Gestalt in ihre Ruhe
+    // (`_gelenkRuhe`), denn beide Stufen tragen dieselben Knochen. Rückgabe: fern?
     _gelenkStufe(gruppe, distSq) {
         const g = gruppe.userData._gelenk;
         const s = gruppe.scale.x || 1;
@@ -17122,8 +17142,23 @@ class AnazhRealm {
             g.fern.visible = fern || g.zwilling;
             const ebene = fern ? 0 : AnazhRealm.SHADOW_TWIN_LAYER;
             for (const m of g.meshes) m.layers.set(ebene);
+            if (fern) this._gelenkRuhe(gruppe);
         }
         return fern;
+    }
+
+    // DIE RUHE der Gelenk-Gestalt (S3): die Grobstufe hängt an den Knochen der feinen — wo der Gang ruht, stünde sie sonst
+    // mitten im Schritt erstarrt (gate:kreatur-kosten (F): der ferne Mensch-Peer 0,454 rad, die Sicht-Kopie 1,064 rad). Das
+    // Tier steht in der Kern-STAND_POSE (`_tierBaumNeutralStance`, dieselbe wie hinter der Anim-Leiter), der Mensch in der
+    // Ruhe-Pose seiner Vorlage (die Pose, die das Standbild der Basis trug).
+    _gelenkRuhe(gruppe) {
+        const ruhe = gruppe.userData._gelenk.ruhe;
+        if (!ruhe) return this._tierBaumNeutralStance(gruppe);
+        for (const [k, p, q, s] of ruhe) {
+            k.position.copy(p);
+            k.quaternion.copy(q);
+            k.scale.copy(s);
+        }
     }
 
     // ═══ KÖRPER-BEWEGUNG — DIE GANG-GESETZE ═══
@@ -18194,8 +18229,8 @@ class AnazhRealm {
                 P = VA._P;
             }
         }
-        // AUSKLINGE-SAUM: am Standbild-Saum schreibt updateCreatures ud._animFade (1→0); Schritt/Sway/
-        // Schwanz/Kopf klingen in die Stand-Pose aus, damit der wrap↔fern-Toggle eine STEHENDE Gestalt
+        // AUSKLINGE-SAUM: vor der Stufen-Grenze (`ab` × Größe) schreibt updateCreatures ud._animFade (1→0); Schritt/Sway/
+        // Schwanz/Kopf klingen in die Stand-Pose aus, damit der Stufen-Schalter (`_gelenkStufe`) eine STEHENDE Gestalt
         // trifft. Aufrufer ohne _animFade → fadeMul 1.
         const fade = group.userData._animFade;
         const fadeMul = fade !== undefined && fade < 1 ? (fade > 0 ? fade : 0) : 1;
@@ -21764,8 +21799,8 @@ class AnazhRealm {
     }
 
     // ═══ KREATUR-KOSTEN — DIE ANIM-RATEN-LEITER ═══
-    // EINE Rate je Distanz relativ zur Standbild-Schwelle (dieselbe wie der wrap↔fern-Toggle): 1 = jeden
-    // Frame · 2 · 4 · 0 = hinterm Standbild (eingefroren in Stand-Pose). walkPhase + Anim-Uhr akkumulieren
+    // EINE Rate je Distanz relativ zur Stufen-Grenze der Gelenk-Gestalt (`ab` × Größe, dieselbe wie `_gelenkStufe`): 1 =
+    // jeden Frame · 2 · 4 · 0 = jenseits der Grenze (eingefroren in Stand-Pose). walkPhase + Anim-Uhr akkumulieren
     // JEDEN Frame → der Gang bleibt gleich schnell, nur seltener ausgewertet. Linse: gate:kreatur-kosten.
     _creatureAnimDiv(dist, fernDist, omega, frameDt) {
         if (!(fernDist > 0) || !(dist >= 0)) return 1;
@@ -21778,8 +21813,8 @@ class AnazhRealm {
             return Math.max(1, Math.min(div, Math.floor((2 * Math.PI) / omega / (4 * frameDt))));
         return div;
     }
-    // AUSKLINGE-SAUM (letzte 15 % vor der Standbild-Schwelle): 1 → 0 linear; _animateTierBaum
-    // multipliziert Schritt/Schwanz/Sway/Kopf damit → der Toggle trifft die Stand-Pose. Jenseits 0.
+    // AUSKLINGE-SAUM (letzte 15 % vor der Stufen-Grenze): 1 → 0 linear; _animateTierBaum
+    // multipliziert Schritt/Schwanz/Sway/Kopf damit → der Stufen-Schalter trifft die Stand-Pose. Jenseits 0.
     _creatureAnimFade(dist, fernDist) {
         if (!(fernDist > 0) || !(dist >= 0)) return 1;
         const saum = fernDist * 0.85;
@@ -21787,8 +21822,8 @@ class AnazhRealm {
         if (dist >= fernDist) return 0;
         return 1 - (dist - saum) / (fernDist - saum);
     }
-    // NEUTRALE STAND-POSE (Standbild-Freeze): friert den bauTier-Baum in der Kern-STAND_POSE ein
-    // (Ketten = Stand-Winkel, Schwanz/Kopf/Roll = 0) statt mitten im Schritt. tb._gang fällt → beim
+    // NEUTRALE STAND-POSE (die Ruhe des Tiers jenseits der Grenze, auch `_gelenkRuhe`): friert den bauTier-Baum in der
+    // Kern-STAND_POSE ein (Ketten = Stand-Winkel, Schwanz/Kopf/Roll = 0) statt mitten im Schritt. tb._gang fällt → beim
     // Aufwachen seedet der CPG frisch aus walkPhase. Ketten-Ordnung = _animateTierBaum.
     _tierBaumNeutralStance(group) {
         const tb = group && group.userData && group.userData._tierBaum;
@@ -22360,7 +22395,7 @@ class AnazhRealm {
                     } else if (animDiv === 1 || (aiFrame + i) % animDiv === 0) {
                         creature.userData._animEingefroren = false;
                         // der Ausklinge-Saum: vor der Schwelle blendet der Schritt in
-                        // die Stand-Pose — der Standbild-Toggle trifft eine STEHENDE
+                        // die Stand-Pose — der Stufen-Schalter trifft eine STEHENDE
                         // Gestalt (_animateTierBaum konsumiert _animFade).
                         creature.userData._animFade = this._creatureAnimFade(distToPlayer, fernDist);
                         // ABSCHIEDS-WELLE (Motion-Vollendung) — das Kreatur-Innenleben reist in
