@@ -128,3 +128,12 @@ Substanz-`signaturen` und ihr `floor`, die Substanz-Gewichte `furcht.boldFromDic
 Tiere sind tag-gleich (Lehre 8), Hirsch und Fuchs waren „wehrhaft", jeder Hirsch stand neugierig am Spieler (Leben-Schau
 07.10., D16/K-D12). Genau 28 Felder (7 je Rezept), der Rest des Buchs byte-gleich (gegen die alten Bytes geprüft);
 recipes.json `7a35306b727b…` → `622864e73bb6…`.
+
+**Re-Mint 08.10.2026 (Welle LF rudel, begründet — DER PERSÖNLICHE RAUM):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1` (world-params, render-config und jede Mesh-Golden byte-gleich). Im tetrapoda-Buch hält jeder Leib seinen
+Raum aus seiner Körper-Kugel (`separation.raumKugel` × halb + Radius des Leibs, Art und Größe), die Herde zieht nur
+jenseits des Paar-Raums (`herde.fensterRaum`, der Zug ist das Mittel × Tempo), die Neugier hält am Paar-Raum mit dem Spieler.
+Gefallen: der feste Paar-Radius `separation.radiusBaseM` (1,6 m × bodySize für jede Art), `herde.minAbstSq`/`fensterSq`
+und `furcht.neugierStoppM` — die neugierige Schar kroch auf 0,7 m zusammen und durchdrang sich und den Spieler (Leben-Schau
+07.10.). Genau 24 Felder (6 je Rezept), der Rest byte-gleich (gegen die alten Bytes geprüft); recipes.json
+`622864e73bb6…` → `0d8f4316502b…`.

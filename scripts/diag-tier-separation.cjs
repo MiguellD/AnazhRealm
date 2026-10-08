@@ -158,7 +158,7 @@ const server = http.createServer((req, res) => {
             o.aGap = gap(a1, a2);
             // SCHLUSS-WELLE 17.07. — die Separations-Zahlen wohnen im tetrapoda-
             // Gesetzbuch (VERHALTEN.separation, _verhaltenGesetz fail-closed).
-            o.aBodyRadius = A._verhaltenGesetz().separation.radiusBaseM / 2; // Körperradius bei bodySize 1
+            o.aBodyRadius = r._kreaturRaum(a1) / A._verhaltenGesetz().separation.raumKugel; // die Körper-Kugel des Leibs (Welle LF)
             o.aPlayerDist = distXZ(a1, pm);
             o.checks.aStacked0 = o.a0 < 1e-6;
             o.checks.aSeparated = o.aGap > o.aBodyRadius;

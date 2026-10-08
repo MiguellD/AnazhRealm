@@ -40,3 +40,10 @@ gate:altlasten (`impulsProM` auch im Gesetzbuch), gate:kreatur-takt huepfer (Sch
 diese Felder ist das kanonische JSON byte-gleich (geprüft). Das Gemüt eines Tiers ist `temperamentDerGattung(dials,
 bodySize, gattung)` (Ernährung × Masse; Lehre 8: die Tiere sind tag-gleich). Wächter: gate:studio-vertrag (Gattungs-Zeile
 Pflicht, Signaturen und Substanz-Gewichte kehren nicht zurück, Selbsttest), gate:kreatur-takt temperament.
+
+**Vertrags-Akt 08.10.2026 (Welle LF rudel — DER PERSÖNLICHE RAUM):** `tetrapoda-core.js` neu gemintet (`052f6bddb264…` →
+`42238c7bdb5e…`, klang- und koerper-core byte-gleich). Geändert sind genau 24 Felder in `PRESETS.<tier>.fx.verhalten`:
+`separation.radiusBaseM` → `separation.raumKugel`, `herde.minAbstSq`/`fensterSq` → `herde.fensterRaum`,
+`furcht.neugierStoppM` fiel. Ohne diese Felder byte-gleich (geprüft). Der Raum eines Tiers ist seine Körper-Kugel ×
+`raumKugel` (Art und Größe), herdeZug zieht nur jenseits des Paar-Raums und liefert das Mittel. Wächter: gate:studio-vertrag
+(die alten Felder kehren nicht zurück), gate:kreatur-takt abstand.

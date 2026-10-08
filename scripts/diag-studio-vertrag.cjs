@@ -519,7 +519,6 @@ function validateManifest(m) {
             // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke sind Vertrag
             // (dieselben Felder, die die _verhaltenGesetz-Wand des Wirts prüft):
             Number.isFinite(V.jagd.pirschStoppM) &&
-            Number.isFinite(V.furcht.neugierStoppM) &&
             V.stimmung &&
             V.stimmung.schwellen &&
             Number.isFinite(V.stimmung.schwellen.weideDiet) &&
@@ -534,16 +533,23 @@ function validateManifest(m) {
             Array.isArray(V.groessen) &&
             V.groessen.length >= 2 &&
             V.separation &&
-            Number.isFinite(V.separation.radiusBaseM) &&
+            // DER PERSOENLICHE RAUM (Welle LF, Vertrags-Akt 08.10.): der Raum je Leib (raumKugel × Koerper-Kugel), das
+            // Herden-Fenster im Paar-Raum; der feste Paar-Radius, das feste Fenster und der Neugier-Stopp kehren nicht zurueck.
+            Number.isFinite(V.separation.raumKugel) &&
+            V.separation.radiusBaseM === undefined &&
+            V.furcht.neugierStoppM === undefined &&
             V.aufgaben &&
             Number.isFinite(V.aufgaben.followTempo) &&
             V.herde &&
             Number.isFinite(V.herde.gewicht) &&
+            Number.isFinite(V.herde.fensterRaum) &&
+            V.herde.minAbstSq === undefined &&
+            V.herde.fensterSq === undefined &&
             V.wasser &&
             Number.isFinite(V.wasser.uferBias);
         if (!seeleOk)
             v.push(
-                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeRange/pirschStoppM · furcht.fleeThreshold/neugierStoppM · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation/aufgaben/herde/wasser)"
+                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeRange/pirschStoppM · furcht.fleeThreshold · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
             );
     }
     return v;

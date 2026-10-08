@@ -174,6 +174,20 @@ async function kreaturProben(r, T, opts) {
                     return o;
                 }
         );
+        // DER LEIB-LÖSER nach dem Takt (Welle LF, _kreaturLeibKontakte): ein Leib, den er aus einem anderen oder aus dem
+        // Spieler schiebt, prallt — derselbe Anprall wie an der Wand.
+        if (typeof r._kreaturLeibKontakte === "function")
+            decke(
+                restore,
+                "_kreaturLeibKontakte",
+                (alt) =>
+                    function (...a) {
+                        const vor = this.state.creatures.map((c) => [c.position, c.position.x, c.position.z]);
+                        const o = alt.apply(this, a);
+                        for (const [p, x, z] of vor) if (p.x !== x || p.z !== z) geschoben.add(p);
+                        return o;
+                    }
+            );
         return geschoben;
     };
 
@@ -749,10 +763,10 @@ async function kreaturProben(r, T, opts) {
         const zugAlt = K.herdeZug;
         let gleichartigN = 0,
             zugRufe = 0;
-        K.herdeZug = function (x, z, gattung, nachbarn, H, out) {
+        K.herdeZug = function (x, z, gattung, nachbarn, H, out, ...rest) {
             // R-D5 artfremd: die Herde zählt jeden Nachbarn, gleich welcher Gattung (der Fuchs zieht den Bären)
             if (taeter === "herde-artfremd") for (const e of nachbarn) e.gattung = gattung;
-            const o = zugAlt.call(this, x, z, gattung, nachbarn, H, out);
+            const o = zugAlt.call(this, x, z, gattung, nachbarn, H, out, ...rest);
             zugRufe++;
             if (o && o.n > gleichartigN) gleichartigN = o.n;
             return o;
@@ -1470,6 +1484,154 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
+    // ── abstand (Leben-Schau 07.10., D5/Neu 2): der persönliche Raum je Leib — die neugierige Schar am ruhigen Spieler im
+    // Modus frieden kroch auf 0,7 m zusammen (Paar-Abstand 0,66–0,96 m), die Leiber durchdrangen sich und den Spieler. Der
+    // Leib ist die EINE benannte Größe (_kreaturLeib: Achse längs der Gier ± halb, Radius); gemessen je Takt die Lücke
+    // zwischen zwei Leibern (Kapsel gegen Kapsel in XZ) und zwischen Leib und Spieler-Kapsel (PLAYER_WALL_RADIUS), am Ende
+    // der Abstand der Mitten gegen die Körper-Kugeln (halb + Radius) ──
+    await buehne("abstand", async (restore) => {
+        r.setGameMode("frieden");
+        if (s.player.emotions)
+            Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0.9, chaos: 0 });
+        if (taeter === "abstand") {
+            // der alte Zug der Herde: je Nachbar ab 1 m, die Summe (der Körper zählt nicht), keine Kontakt-Lösung
+            const K = A._steuerGesetz();
+            const alt = K.herdeZug;
+            K.herdeZug = function (x, z, gattung, nachbarn, H, out) {
+                const o = out || { x: 0, z: 0, n: 0 };
+                o.x = 0;
+                o.z = 0;
+                o.n = 0;
+                for (const nb of nachbarn) {
+                    if (o.n >= 6 || !nb || nb.gattung !== gattung) continue;
+                    const dx = nb.x - x,
+                        dz = nb.z - z,
+                        dsq = dx * dx + dz * dz;
+                    if (!(dsq > 1 && dsq < 25)) continue;
+                    const d = Math.sqrt(dsq);
+                    o.x += (dx / d) * 0.5;
+                    o.z += (dz / d) * 0.5;
+                    o.n++;
+                }
+                return o;
+            };
+            restore.push(() => {
+                K.herdeZug = alt;
+            });
+            if (typeof r._kreaturLeibKontakte === "function") decke(restore, "_kreaturLeibKontakte", () => function () {});
+        }
+        // im Freien (keine Hülle im Umkreis): die Wand eines Baus hat das letzte Wort und schöbe einen Leib in den nächsten
+        const start = frei(40, -40, 20) || land(40, -40);
+        pm.set(start.x, start.y, start.z);
+        const tiere = [];
+        for (let k = 0; k < 8; k++) {
+            const a = (k / 8) * Math.PI * 2 + 0.2;
+            const d = k < 6 ? 7 : 9;
+            const c = tier({ x: pm.x + Math.cos(a) * d, y: pm.y, z: pm.z + Math.sin(a) * d }, k < 6 ? "baer" : "wolf", 1);
+            ruhig(c);
+            tiere.push(c);
+        }
+        const leibVon = A.prototype._kreaturLeib;
+        const seg = (c) => {
+            const lb = leibVon.call(r, c, undefined, {});
+            return {
+                ax: c.position.x - lb.fx * lb.halb,
+                az: c.position.z - lb.fz * lb.halb,
+                bx: c.position.x + lb.fx * lb.halb,
+                bz: c.position.z + lb.fz * lb.halb,
+                r: lb.radius,
+                kugel: lb.halb + lb.radius,
+            };
+        };
+        // Abstand zweier Strecken in XZ (die Kapsel-Achsen)
+        const pS = (px, pz, s0) => {
+            const vx = s0.bx - s0.ax,
+                vz = s0.bz - s0.az;
+            const l2 = vx * vx + vz * vz;
+            const t = l2 > 0 ? Math.max(0, Math.min(1, ((px - s0.ax) * vx + (pz - s0.az) * vz) / l2)) : 0;
+            return Math.hypot(px - (s0.ax + vx * t), pz - (s0.az + vz * t));
+        };
+        const sS = (a, b) => {
+            // Kreuzung?
+            const cr = (ox, oz, ux, uz, wx, wz) => ux * (wz - oz) - uz * (wx - ox);
+            const d1 = cr(a.ax, a.az, a.bx - a.ax, a.bz - a.az, b.ax, b.az),
+                d2 = cr(a.ax, a.az, a.bx - a.ax, a.bz - a.az, b.bx, b.bz),
+                d3 = cr(b.ax, b.az, b.bx - b.ax, b.bz - b.az, a.ax, a.az),
+                d4 = cr(b.ax, b.az, b.bx - b.ax, b.bz - b.az, a.bx, a.bz);
+            if (d1 * d2 < 0 && d3 * d4 < 0) return 0;
+            return Math.min(pS(a.ax, a.az, b), pS(a.bx, a.bz, b), pS(b.ax, b.az, a), pS(b.bx, b.bz, a));
+        };
+        const RP = A.PLAYER_WALL_RADIUS;
+        let minLeib = Infinity,
+            minSpieler = Infinity,
+            durchFrames = 0,
+            spielerFrames = 0;
+        const nnRaum = []; // je Tier und Takt (die zweite Hälfte): der nächste Nachbar in Körper-Kugeln
+        const N = 900;
+        for (let k = 0; k < N; k++) {
+            takt(1 / 60);
+            if (k < 30) continue;
+            const S = tiere.map(seg);
+            if (k >= N / 2)
+                for (let i = 0; i < tiere.length; i++) {
+                    let m = Infinity;
+                    for (let j = 0; j < tiere.length; j++)
+                        if (j !== i)
+                            m = Math.min(
+                                m,
+                                Math.hypot(
+                                    tiere[i].position.x - tiere[j].position.x,
+                                    tiere[i].position.z - tiere[j].position.z
+                                ) /
+                                    (S[i].kugel + S[j].kugel)
+                            );
+                    nnRaum.push(m);
+                }
+            let durch = false,
+                imSp = false;
+            for (let i = 0; i < S.length; i++) {
+                const gs = pS(pm.x, pm.z, S[i]) - S[i].r - RP;
+                if (gs < minSpieler) minSpieler = gs;
+                if (gs < -0.02) imSp = true;
+                for (let j = i + 1; j < S.length; j++) {
+                    const g = sS(S[i], S[j]) - S[i].r - S[j].r;
+                    if (g < minLeib) minLeib = g;
+                    if (g < -0.02) durch = true;
+                }
+            }
+            if (durch) durchFrames++;
+            if (imSp) spielerFrames++;
+        }
+        // Am Ende: der Abstand der Mitten gegen die Körper-Kugeln (persönlicher Raum), die Schar um den Spieler.
+        const S = tiere.map(seg);
+        let raumMin = Infinity,
+            paarMin = Infinity;
+        for (let i = 0; i < tiere.length; i++)
+            for (let j = i + 1; j < tiere.length; j++) {
+                const d = Math.hypot(
+                    tiere[i].position.x - tiere[j].position.x,
+                    tiere[i].position.z - tiere[j].position.z
+                );
+                paarMin = Math.min(paarMin, d);
+                raumMin = Math.min(raumMin, d / (S[i].kugel + S[j].kugel));
+            }
+        const dSp = tiere.map((c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z));
+        return {
+            tiere: tiere.length,
+            minLeibLueckeM: +minLeib.toFixed(3),
+            durchFrames,
+            minSpielerLueckeM: +minSpieler.toFixed(3),
+            spielerFrames,
+            paarMinM: +paarMin.toFixed(2),
+            raumMin: +raumMin.toFixed(3),
+            spielerMinM: +Math.min(...dSp).toFixed(2),
+            nachbarRaumP10: +quantil(nnRaum, 0.1).toFixed(3),
+            nachbarRaumP50: +quantil(nnRaum, 0.5).toFixed(3),
+            spielerMaxM: +Math.max(...dSp).toFixed(2),
+            kugelBaerM: +S[0].kugel.toFixed(2),
+        };
+    });
+
     return aus;
 }
 
@@ -1491,6 +1653,7 @@ const PROBEN = [
     "zufall",
     "nexus",
     "temperament",
+    "abstand",
 ];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
@@ -1674,6 +1837,23 @@ function urteil(name, z) {
                 `der Kampf liest ein anderes Temperament: ${wer} fürchtet ${k.dauer} s (Soll ${k.soll} s)`
             );
     }
+    if (name === "abstand") {
+        soll(z.tiere >= 6, "keine neugierige Schar (vakuös)");
+        soll(
+            z.durchFrames === 0,
+            `Durchdringung: in ${z.durchFrames} Takten durchdringen sich zwei Leiber (tiefste ${-z.minLeibLueckeM} m)`
+        );
+        soll(
+            z.spielerFrames === 0,
+            `Leib im Spieler: in ${z.spielerFrames} Takten (tiefste ${-z.minSpielerLueckeM} m)`
+        );
+        // Der persönliche Raum über die zweite Hälfte des Laufs (je Tier und Takt der nächste Nachbar in Körper-Kugeln):
+        // die Schar steht im Mittel mindestens Kugel an Kugel, kaum enger (die Leben-Schau maß 0,33–0,48 bei den Hirschen).
+        soll(
+            z.nachbarRaumP50 >= 1 && z.nachbarRaumP10 >= 0.85,
+            `kein persönlicher Raum: der nächste Nachbar p50 ${z.nachbarRaumP50} / p10 ${z.nachbarRaumP10} der Körper-Kugeln (Soll ≥ 1 / 0,85; zuletzt zwei Mitten ${z.paarMinM} m)`
+        );
+    }
     return { ok: f.length === 0, grund: f.join(" · ") };
 }
 
@@ -1719,6 +1899,7 @@ const TAETER = {
         ["nexus-geburt", /Nexus-Geburten im Blick|Nexus-Geburt .* vor dem Spieler/],
     ],
     temperament: [["temperament", /Temperament nicht aus Gattung und Größe/]],
+    abstand: [["abstand", /Durchdringung|kein persönlicher Raum/]],
 };
 
 // Der Kommentar-Stripper der Absenz-Proben — dieselbe Quelle wie window.__codeOf im Playtest-Harness (Kommentare

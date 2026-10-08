@@ -338,11 +338,15 @@ Komponenten-SÄTZE, keine Klassen):
   EINE Quelle eines Sprungs, froh `hopHochM`, sonst `hopBasisM`, der Abflug
   v0 = √(2·g·h) mit `GANG_GESETZ.g` im Wirt `creatureJump`; eine Aktion
   trägt nur `hop: true`, der Abflug in m/s fiel mit) · `groessen[]`
-  (Körpergrößen-Bänder) · `separation { radiusBaseM strength }` (der
-  Stamm-Zwilling `CREATURE_SEPARATION` fiel, Absenz-Wand) · `aufgaben`
+  (Körpergrößen-Bänder) · `separation { raumKugel strength }` (der
+  Stamm-Zwilling `CREATURE_SEPARATION` fiel, Absenz-Wand; VERTRAGS-AKT Welle LF
+  08.10.: DER PERSÖNLICHE RAUM — je Leib die Körper-Kugel × `raumKugel`, der
+  Paar-Raum ist die Summe, der feste Paar-Radius `radiusBaseM` fiel) · `aufgaben`
   (Gefährten-Tempi/Halt-Distanzen — die Stamm-Getter wurden Leser) ·
-  `herde` (Schwarm-Kohäsion) · `wasser` (Ufer-Scheu) ·
-  `jagd.pirschStoppM`/`furcht.neugierStoppM` · `stimmung.schwellen`
+  `herde { fensterRaum gewicht maxNachbarn }` (Schwarm-Kohäsion; Welle LF: im
+  Paar-Raum zieht niemand, der Zug ist das Mittel × Tempo — `minAbstSq`/`fensterSq`
+  fielen) · `wasser` (Ufer-Scheu) · `jagd.pirschStoppM` (`furcht.neugierStoppM`
+  fiel: die Neugier hält am Paar-Raum mit dem Spieler) · `stimmung.schwellen`
   (die Schwellen-DATEN-Zeile der Stimmungs-Tabelle — KEINE Stimmung,
   Validator/Leser überspringen den Schlüssel). Alle Kern-Pflicht
   (Wand je Block ein Feld; alter Kern → Bruch, nie Misch-Gesetz).

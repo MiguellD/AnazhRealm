@@ -118,7 +118,7 @@ if (V) {
         "VERHALTEN trägt die Schluss-Welle-Blöcke (schwellen/freude mit Huepf-Hoehen/groessen/separation/aufgaben/herde/wasser + Stopp-Distanzen)",
         !!(
             Number.isFinite(V.jagd && V.jagd.pirschStoppM) &&
-            Number.isFinite(V.furcht && V.furcht.neugierStoppM) &&
+            Number.isFinite(V.herde && V.herde.fensterRaum) &&
             V.stimmung.schwellen &&
             Number.isFinite(V.stimmung.schwellen.weideDiet) &&
             V.freude &&
@@ -129,7 +129,7 @@ if (V) {
             V.groessen.length >= 2 &&
             V.groessen.every((k) => k && typeof k.name === "string" && k.min > 0 && k.min < k.max) &&
             V.separation &&
-            Number.isFinite(V.separation.radiusBaseM) &&
+            Number.isFinite(V.separation.raumKugel) &&
             V.aufgaben &&
             Number.isFinite(V.aufgaben.followTempo) &&
             V.herde &&
@@ -171,7 +171,7 @@ probe(
     /\.herdeZug\([\s\S]{0,400}VG\.herde/
 );
 probe("die Ufer-Scheu liest das Gesetz (wasser.tiefenScheuM/uferBias)", /WAS\.tiefenScheuM/);
-probe("Pirsch-/Neugier-Stopp lesen das Gesetz (pirschStoppM/neugierStoppM)", /VG\.jagd\.pirschStoppM/);
+probe("der Pirsch-Stopp liest das Gesetz (pirschStoppM; die Neugier hält am persönlichen Raum)", /VG\.jagd\.pirschStoppM/);
 probe(
     "das Sprung-Gesetz: der Abflug ist die Parabel des Gang-Gesetzes aus der Huepf-Hoehe der Freude (v0 = √(2·g·h))",
     /Math\.sqrt\(2 \* AnazhRealm\._hopSchwere\(\) \* \(froh \? F\.hopHochM : F\.hopBasisM\)\)/

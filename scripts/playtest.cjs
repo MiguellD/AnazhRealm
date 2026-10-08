@@ -46815,11 +46815,11 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const out = {};
         const src = window.__codeOf(r.updateCreatures);
         // Strukturell (Welle L): die Kohäsion ist die Herden-Form des Kerns (tetrapoda herdeZug) über die 9 Gitter-Zellen
-        // um das Tier, und herdeZug misst das Quadrat vor jeder Wurzel (O(N²) entschärft); kein Hindernis-Strahl je Tier
-        // und Frame — der EINE Leib löst gegen die Hüllen (_kreaturHuellenKontakt). Scratch gepoolt.
+        // um das Tier, und herdeZug zieht nur jenseits des Paar-Raums (Welle LF: der persönliche Raum je Leib); kein
+        // Hindernis-Strahl je Tier und Frame — der EINE Leib löst gegen die Hüllen (_kreaturHuellenKontakt). Scratch gepoolt.
         const herde = String(r.constructor._steuerGesetz().herdeZug);
         out.herdeImGitter =
-            /herdeZug\(/.test(src) && /flockGrid\.get\(/.test(src) && /dsq > H\.minAbstSq && dsq < H\.fensterSq/.test(herde);
+            /herdeZug\(/.test(src) && /flockGrid\.get\(/.test(src) && /d > paar && d < paar \* H\.fensterRaum/.test(herde);
         out.leibStattStrahl =
             /this\._kreaturHuellenKontakt\(/.test(src) && !/_runRaycast\(|_fieldRaycast\(/.test(src);
         out.scratchPooled = /_creatureScratchDir/.test(src);

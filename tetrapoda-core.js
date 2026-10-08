@@ -161,7 +161,6 @@
             fleeSpeedBoost: 1.6, // Flucht ist schneller als das Schlendern
             combatFearWariness: 1.5, // ein getroffenes Wesen ist garantiert ueber der Flucht-Schwelle
             fearSec: 5, // s — wie lange die Kampf-Furcht (fearUntil) anhaelt
-            neugierStoppM: 2, // m — SCHLUSS-WELLE: naeher tritt ein neugieriges Wesen nicht heran
         },
         temperament: {
             // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., VERTRAGS-AKT): aus der Ernaehrung (Dial diet) und der Masse
@@ -202,7 +201,7 @@
         // Lehre 8: DIE Differenzierungs-Achse) · separation (Herden-Abstand) ·
         // aufgaben (Gefaehrten-Tempi + Halt-Distanzen) · herde (Schwarm-
         // Kohaesion) · wasser (Ufer-Scheu) — plus jagd.pirschStoppM,
-        // furcht.neugierStoppM und stimmung.schwellen oben. Der Wirt liest
+        // stimmung.schwellen oben (furcht.neugierStoppM fiel mit dem persoenlichen Raum, Welle LF). Der Wirt liest
         // fail-closed via AnazhRealm._verhaltenGesetz (Kern-Pflicht); die
         // Werte sind byte-gleich den historischen Stamm-Literalen.
         // must-ignore: fremde Leser ueberlesen die Bloecke. ──
@@ -223,7 +222,12 @@
             { name: "gigant", bis: 1, min: 1.9, max: 2.7 }, // GIGANT — ein Koloss (robust, traege), selten
         ],
         separation: {
-            radiusBaseM: 1.6, // m — Paar-Radius zweier Normal-Wesen (bodySize 1); skaliert × (bsI+bsJ)/2
+            // DER PERSOENLICHE RAUM (Welle LF 08.10., VERTRAGS-AKT): je Leib die Koerper-Kugel (die waagrechte Spanne der
+            // Gestalt um ihre Mitte, beim Wirt halb + Radius des Leibs, in Hueft-Hoehen der Art und Groesse) × raumKugel; der
+            // Paar-Raum zweier Tiere ist die Summe, auch zum Spieler (seine Wand-Kapsel × raumKugel). Darin stoesst die
+            // Separation, die Herde zieht nicht, die Neugier haelt an. Vorher galt fuer jede Art 1,6 m × bodySize, die
+            // neugierige Schar kroch auf 0,7 m zusammen und durchdrang sich und den Spieler (Leben-Schau 07.10.).
+            raumKugel: 1.3, // × Koerper-Kugel — der Raum, den ein Leib um sich haelt
             strength: 1.5, // Abstoss-Gewicht (× speed) bei voller Deckung; linear → 0 am Radius-Rand
         },
         aufgaben: {
@@ -240,9 +244,10 @@
             trinkTempo: 3.0, // m/s — sichtbares Gehen zum Ufer
         },
         herde: {
-            minAbstSq: 1, // m² — darunter zaehlt der Nachbar nicht zur Kohaesion (Deckung → Separation)
-            fensterSq: 25, // m² — das Kohaesions-Fenster (5 m) der neugierigen Schar
-            gewicht: 0.5, // Zug-Gewicht je Nachbar auf die Richtung
+            // (Welle LF 08.10., VERTRAGS-AKT): im Paar-Raum zieht kein Nachbar, das Fenster und der Zug messen in ihm und im
+            // Tempo des Tiers — vorher zog jeder Nachbar ab 1 m mit 0,5 m/s, mehr als die Separation stiess.
+            fensterRaum: 2.5, // × Paar-Raum — bis dahin zieht die Schar zusammen
+            gewicht: 0.5, // × Tempo des Tiers — der Zug je Nachbar
             maxNachbarn: 6, // Kohaesions-Budget je Wesen (dann bricht der Scan ab)
         },
         wasser: {
@@ -1374,8 +1379,12 @@
     // Gattung (die Art unterscheidet die Gestalt, nie ein Tag; Lehre 8) und haengt nie am Blick des Spielers (der Wirt
     // ruft ihn fuer jedes Tier). Die Leben-Pruefung 06.10. sah artfremde Nachbarn (Fuchs zieht Hirsch) und eine Kohaesion
     // nur im Frustum. Das Herden-VERHALTEN (Verband, Anker, Ausrichtung) ist nach v1.0 — dies ist die Form, die es traegt.
-    // nachbarn: [{x, z, gattung}] (Kandidaten im Gitter des Wirts), H = VERHALTEN.herde. Liefert {x, z, n} (n Mitglieder).
-    function herdeZug(x, z, gattung, nachbarn, H, out) {
+    // DER PERSOENLICHE RAUM (Welle LF 08.10.): raum = der Raum dieses Tiers (m), nb.raum der des Nachbarn — im Paar-Raum
+    // (Summe) zieht niemand, bis fensterRaum × Paar-Raum zieht die Schar; der Zug ist das MITTEL der Richtungen × H.gewicht
+    // (der Wirt multipliziert das Tempo) — nie die Summe: sechs Nachbarn zogen sechsfach und drueckten die Schar durch die
+    // Separation hindurch zusammen. nachbarn: [{x, z, gattung, raum}] (Kandidaten im Gitter des Wirts), H = VERHALTEN.herde.
+    // Liefert {x, z, n}.
+    function herdeZug(x, z, gattung, nachbarn, H, out, raum) {
         var o = out || { x: 0, z: 0, n: 0 };
         o.x = 0;
         o.z = 0;
@@ -1385,12 +1394,16 @@
             if (!nb || nb.gattung !== gattung) continue;
             var dx = nb.x - x,
                 dz = nb.z - z;
-            var dsq = dx * dx + dz * dz;
-            if (!(dsq > H.minAbstSq && dsq < H.fensterSq)) continue;
-            var d = Math.sqrt(dsq);
+            var d = Math.sqrt(dx * dx + dz * dz);
+            var paar = (raum > 0 ? raum : 0) + (nb.raum > 0 ? nb.raum : 0);
+            if (!(d > paar && d < paar * H.fensterRaum)) continue;
             o.x += (dx / d) * H.gewicht;
             o.z += (dz / d) * H.gewicht;
             o.n++;
+        }
+        if (o.n > 1) {
+            o.x /= o.n;
+            o.z /= o.n;
         }
         return o;
     }

@@ -455,6 +455,12 @@ const FORBIDDEN = [
     { token: "_temperamentSoul", fiel: "Welle LF rudel — das Temperament ist je Gattung × Größe gecacht" },
     { token: "boldFromDichte", fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments", auch: ["tetrapoda-core.js"] },
     { token: "shyFromLebendig", fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments", auch: ["tetrapoda-core.js"] },
+    // WELLE LF RUDEL (Vertrags-Akt 08.10., der persönliche Raum): der feste Paar-Radius jeder Art, das feste Herden-Fenster
+    // und der feste Neugier-Stopp kehren nicht zurück — der Raum ist die Körper-Kugel des Leibs × raumKugel.
+    { token: "radiusBaseM", fiel: "Welle LF rudel — der Raum je Leib (separation.raumKugel)", auch: ["tetrapoda-core.js"] },
+    { token: "minAbstSq", fiel: "Welle LF rudel — die Herde zieht jenseits des Paar-Raums", auch: ["tetrapoda-core.js"] },
+    { token: "fensterSq", fiel: "Welle LF rudel — das Herden-Fenster misst im Paar-Raum", auch: ["tetrapoda-core.js"] },
+    { token: "neugierStoppM", fiel: "Welle LF rudel — die Neugier hält am Paar-Raum", auch: ["tetrapoda-core.js"] },
     { token: "OBSTACLE_RAYCAST_MAX_DIST_SQ", fiel: "Welle L kreatur — _kreaturHuellenKontakt (kein Strahl je Frame)" },
     { token: "hasHit = this._runRaycast(", fiel: "Welle L kreatur — _kreaturHuellenKontakt" },
     // Nachbesserung 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters — auch die Eintrags-
