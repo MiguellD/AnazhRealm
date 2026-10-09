@@ -1056,6 +1056,127 @@ jobs:
               # zuerst.
               run: npm run gate:wasser-leben
 
+            # ── DIE WÄNDE OHNE WORKFLOW (09.10., gate:ci-deckung (W)) ── Bis hier liefen 50 der 152 `gate:*` nirgends
+            # automatisch. Die folgenden 29 fahren headless (Null-Renderer, swiftshader nur für Rechen- und Bäcker-Proben)
+            # und liefen am 09.10. lokal grün (foliage-res und membran-gesetz nach der Heilung ihrer Proben); verteilt nach
+            # Familie und Gewicht, Gruppe 1 Kreatur und Übergabe, Gruppe 2 Regler und Leistung, Gruppe 3 Wasser und
+            # Studio-Naht. Wer hier fehlt, steht mit Klasse und Grund in AUSNAHMEN (scripts/diag-ci-deckung.cjs).
+            - name: Tier-Separation (die Tiere entstapeln sich und differenzieren sich über die Größen-Achse)
+              if: matrix.gruppe == 1
+              run: npm run gate:tier-separation
+
+            - name: Kreatur-Kosten (die Kreatur kostet, was man von ihr sieht)
+              if: matrix.gruppe == 1
+              run: npm run gate:kreatur-kosten
+
+            - name: Tier-Fern-Guss (die Geometrie-Fernstufe der Kreaturen trägt)
+              if: matrix.gruppe == 1
+              run: npm run gate:tier-fern
+
+            - name: Körper-Bewegung (der Körper geht den Weg, nicht die Uhr)
+              if: matrix.gruppe == 1
+              run: npm run gate:koerper-bewegung
+
+            - name: Schritt-Klang (der Fuß spielt den Boden, nicht die Uhr)
+              if: matrix.gruppe == 1
+              run: npm run gate:schritt-klang
+
+            - name: Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)
+              if: matrix.gruppe == 1
+              run: npm run gate:reload-treue
+
+            - name: Studio-Übergabe (die Live-Bearbeitung eines Studios reist in die Welt)
+              if: matrix.gruppe == 1
+              run: npm run gate:studio-uebergabe
+
+            - name: P2P-Gestalt (die Studio-Übergabe reist zu den Mitspielern)
+              if: matrix.gruppe == 1
+              run: npm run gate:p2p-gestalt
+
+            - name: Prägung-Welt (die Prägung reist mit dem Artefakt in die Welt-Pfade)
+              if: matrix.gruppe == 1
+              run: npm run gate:praegung-welt
+
+            - name: Scatter-LOD (die Streu-Stufen folgen der Live-Distanz, ohne Flacker-Churn, über Region-Grenzen)
+              if: matrix.gruppe == 2
+              run: npm run gate:scatter-lod
+
+            - name: Leistungs-Vertrag (Stand-Churn null, Ingest-Takt, Gruppen-Stabilität, Linsen-Konsum)
+              if: matrix.gruppe == 2
+              run: npm run gate:leistungs-vertrag
+
+            - name: Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)
+              if: matrix.gruppe == 2
+              run: npm run gate:erstarren
+
+            - name: Existenz-Boden (bei leerem Budget läuft die Welt-Substanz jeden Frame, Deko jeden vierten)
+              if: matrix.gruppe == 2
+              run: npm run gate:existenz-boden
+
+            - name: Perf-Panel (das Screenshot-Panel füllt sich aus den EINEN Quellen, der Export liefert den Trace)
+              if: matrix.gruppe == 2
+              run: npm run gate:perf-panel
+
+            - name: GPU-Zeit-Linse (headless der Proxy, die echte Leitung über ein API-treues Fake-Backend)
+              if: matrix.gruppe == 2
+              run: npm run gate:gpu-zeit
+
+            - name: Render-Diät (ein geteiltes Material je Tag-Signatur, die Part-Farbe reist als Instanz-Farbe)
+              if: matrix.gruppe == 2
+              run: npm run gate:render-diaet
+
+            - name: Laub-Auflösung (die Szene-Auflösung folgt dem EINEN Regler, Last-Boden im Stand, Bewegungs-Boden)
+              if: matrix.gruppe == 2
+              run: npm run gate:foliage-res
+
+            - name: Fern-Ring (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz, der Feld-Zeichner auf swiftshader)
+              if: matrix.gruppe == 2
+              run: npm run gate:fern-ring
+
+            - name: Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)
+              if: matrix.gruppe == 3
+              run: npm run gate:fern-wasser
+
+            - name: Warm-Start (der zweite Boot liest den Ring byte-gleich aus der Platte, ein Edit geht am Cache vorbei)
+              if: matrix.gruppe == 3
+              run: npm run gate:warm-start
+
+            - name: Wasser-Wahrheit (kein Wasser an der Wand, kein Spiegel über Land, keine bleibenden Blobs, Stau nur geschlossen)
+              if: matrix.gruppe == 3
+              run: npm run gate:wasser-wahrheit
+
+            - name: Kopplung (die Welt fasst den Körper an — Strömung, Gleiten, Wind-Richtung, Gras-Biegung)
+              if: matrix.gruppe == 3
+              run: npm run gate:kopplung
+
+            - name: Worker-Wasser-Sheet (der Spiegel im Worker ist byte-identisch, Lehre 7)
+              if: matrix.gruppe == 3
+              run: npm run gate:worker-watersheet
+
+            - name: Portal-Membran (ein Tor-Gestalt-Portal ist in der Welt ganz eingefädelt)
+              if: matrix.gruppe == 3
+              run: npm run gate:portal-membran
+
+            - name: Dritter Spiegel (das Makro-Gesetz rechnet auf swiftshader-WebGPU seh-paritätisch)
+              if: matrix.gruppe == 3
+              run: npm run gate:dritter-spiegel
+
+            - name: Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)
+              if: matrix.gruppe == 3
+              run: npm run gate:fahrzeug-fern
+
+            - name: Bäcker-Kanal (der Studio-Bäcker antwortet im Foundry-Worker)
+              if: matrix.gruppe == 3
+              run: npm run gate:baecker-kanal
+
+            - name: Konsum-Matrix (je Gattung und Facette, was das Studio liefert und wer es liest — die Ratsche hält jede volle Zelle)
+              if: matrix.gruppe == 3
+              run: npm run gate:konsum-matrix
+
+            - name: Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)
+              if: matrix.gruppe == 3
+              run: npm run gate:seam
+
             - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
               if: matrix.gruppe == 2
               # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks

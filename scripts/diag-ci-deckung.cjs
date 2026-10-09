@@ -57,7 +57,29 @@ const KLASSEN = {
     ROT: "rot an der Basis", // rot auf main, Täter benannt — die Heilung ist größer als diese Wand
 };
 // Die EINE Ausnahme-Liste: Wand → { klasse, grund }. Wer hier steht, läuft in keinem Workflow — mit Grund.
-const AUSNAHMEN = {};
+const AUSNAHMEN = {
+    "gate:weltbild-frost:echt": {
+        klasse: KLASSEN.GPU,
+        grund:
+            "fährt die Frost-Wand mit dem Hardware-Adapter der Werkbank (--echt, echteWebGpuArgs); der Läufer hat keine " +
+            "GPU — die swiftshader-Fassung gate:weltbild-frost läuft in Gruppe 1",
+    },
+    "gate:arch-feld": {
+        klasse: KLASSEN.ROT,
+        grund:
+            "rot seit spätestens V18.536 (76c9624d): Teil D (Feld-Licht, neutrale Feld-Box gegen MeshStandard-Box) schießt " +
+            "leer (dc 0), an der Basis und am Kopf der Wiesen-Prüfung 09.10. gleich; Täter nicht benannt — die Linse " +
+            "rastert die Welt auf swiftshader-WebGPU (Analog-Pfad, der Null-Renderer ist blind), den die Familie " +
+            "„Wände in die CI“ nicht fährt",
+    },
+    "gate:webgl-probe": {
+        klasse: KLASSEN.RENDERER,
+        grund:
+            "erzwingt den WebGL2-Rückfall (__anazhForceWebGL) und rastert die Welt auf swiftshader-GL in ein RenderTarget " +
+            "(W5 Substanz) — am 09.10. nicht lokal gefahren, weil die Familie „Wände in die CI“ keinen echten Renderer " +
+            "fährt; ihr Stand ist ungemessen",
+    },
+};
 
 // Die Befehle eines Shell-Texts (run-Block oder npm-Skript): Zeilen, &&, ||, ; — Kommentar-Zeilen fallen, führende
 // Umgebungs-Zuweisungen (`X=1 node …`) und `./` vor scripts/ sind kein Unterschied.
