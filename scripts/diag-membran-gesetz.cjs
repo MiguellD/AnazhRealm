@@ -184,11 +184,14 @@ const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
 check("Stamm konsumiert membranUniforms (Welt-Leser)", stamm.includes("membranUniforms"));
 check("Stamm konsumiert MEMBRAN_GESETZ (Welt-Leser)", stamm.includes("MEMBRAN_GESETZ"));
 // PORTA-NEBEL (18.07.) — der KONSUM des vormals TOTEN Kanals: mu.fog speist
-// eine LEBENDE Uniform im Membran-Tick (kein String-Zufall — die exakte
-// Speise-Zeile) und der Nebel-Port existiert als Material-Bauer.
+// eine LEBENDE Uniform im Membran-Tick (kein String-Zufall — die Speise-
+// Anweisung selbst) und der Nebel-Port existiert als Material-Bauer. Seit
+// 23.09. (3242b360) läuft die Speisung über das Gesetz `pcN.nebelAct(mu.fog,
+// act)`; die Probe las bis 09.10. nur die alte Zeile `nebelAct.value = mu.fog`
+// und stand rot — sie liest jetzt die Zuweisung bis zu ihrem Semikolon.
 check(
     "Stamm konsumiert mu.fog (nebelAct-Uniform-Speisung im Tick — der Kanal ist nicht mehr tot)",
-    /nebelAct\.value = mu\.fog/.test(stamm) && stamm.includes("_nebelMaterialFor")
+    /nebelAct\.value\s*=[^;]*\bmu\.fog\b/.test(stamm) && stamm.includes("_nebelMaterialFor")
 );
 const idx = fs.readFileSync(path.join(root, "index.html"), "utf8");
 check("porta-core lädt main-seitig (mit ?v=-Buster)", /porta-core\.js\?v=/.test(idx));
