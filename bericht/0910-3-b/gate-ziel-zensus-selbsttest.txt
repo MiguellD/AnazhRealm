@@ -1,0 +1,43 @@
+=== ZIEL-ZENSUS — Selbsttest (ohne Browser) ===
+  ✅ sauberer Lauf → grün
+  ✅ Ziel ohne Leser → OHNE LESER: x:ohne-leser (rgba8unorm 64×64, 0.02 MB, anazhRealm.js · _probe) — geschrieben in probe, gelesen von keinem Pass in 4 Frames
+  ✅ Bloom in Leinwand-Größe → VOLLE AUFLÖSUNG: x:bloom (rgba16float 1920×1080, 15.82 MB) — ein niederfrequenter Effekt in Leinwand-Größe (1920×1080); ein Viertel der Pixel trüge dasselbe Bild · TEILBAR: output und x:bloom (rgba16float 1920×1080, je 15.82 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −15.82 MB · TEILBAR: TRAANode.resolve und x:bloom (rgba16float 1920×1080, je 15.82 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −15.82 MB
+  ✅ Tiefe ohne Nutzung → TIEFE OHNE LESER: x:tiefe-ohne (depth24plus 1920×1080, 7.91 MB) — angehängt in probe, keine Pipeline testet oder schreibt sie, kein Pass liest sie · TEILBAR: depth und x:tiefe-ohne (depth24plus 1920×1080, je 7.91 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −7.91 MB
+  ✅ doppelte Tiefe → DOPPELTE TIEFE: x:tiefe-kopie (depth24plus 1920×1080, 7.91 MB) ist eine Kopie von depth, die 4× gelesen wird, während die Quelle unverändert und frei lesbar ist · TEILBAR: depth und x:tiefe-kopie (depth24plus 1920×1080, je 7.91 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −7.91 MB
+  ✅ teilbares Paar → TEILBAR: x:paar-a und x:paar-b (rgba8unorm 128×128, je 0.06 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −0.06 MB
+  ✅ 32 bit mit 16-bit-Inhalt → FORMAT: x:f32 (rgba32float 64×64, 0.06 MB) trägt nur 16-bit-Inhalt — jeder Wert liegt exakt in rgba16float, die Hälfte reicht (−0.03 MB)
+  ✅ Textur ohne Erzeuger → ERZEUGER: #11 (r8unorm 16×16, 0 MB) trägt keinen Erzeuger — die Linse ist blind
+  ✅ blindes Bündel → ZENSUS: 3 Bündel ohne bekannten Inhalt — der Abgriff lief nicht ab Dokument-Start, die Linse ist blind
+  ✅ zu kurzes Fenster → ZENSUS: nur 2 Frames im Fenster — die Linse sieht keine Lebenszeit
+  ✅ Attrappe ohne Umleitungs-Marke → TIEFE OHNE LESER: x:attrappe (depth24plus 1×1, 0 MB) — geschrieben, nie gelesen
+  ✅ Szenen-Ziel in 64 bit auf einem rg11b10-Gerät → AUSGABE-FORMAT: output (rgba16float 1920×1080, 15.82 MB) — das Gerät rendert rg11b10ufloat, der Inhalt ist lineares Licht ≥ 0, Kanal a liest keiner: die Hälfte reicht (−7.91 MB; anazhRealm.js `_ausgabeFormat`)
+  ✅ ausgewiesenes Szenen-Ziel in 64 bit → TEILBAR: TRAANode.resolve und x:ausgabe (rgba16float 1920×1080, je 15.82 MB) leben in keinem von 4 Frames zugleich und tragen nichts über den Frame — ein Ziel trüge beide, −15.82 MB · AUSGABE-FORMAT: x:ausgabe (rgba16float 1920×1080, 15.82 MB) — das Gerät rendert rg11b10ufloat, der Inhalt ist lineares Licht ≥ 0, Kanal a liest keiner: die Hälfte reicht (−7.91 MB; anazhRealm.js `_ausgabeFormat`)
+  ✅ Attrappe mit Umleitungs-Marke → grün · UMLEITUNG: x:attrappe (depth24plus 1×1, 0 MB) — die Kopie hinein zeichnet der Stamm als Pass in x:abbild; die Textur ist eine Attrappe
+  ✅ Szenen-Ziel in rg11b10 → grün
+  ✅ Gerät ohne rg11b10ufloat-renderable → grün · ADAPTER: rg11b10ufloat-renderable fehlt auf diesem Gerät — output bleibt rgba16float 1920×1080 (15.82 MB, +7.91 MB gegen ein Gerät mit dem Feature)
+  ✅ Selbsttest „Täter im Zensus" → ZENSUS: OHNE LESER: kaskade0:farbe
+  ✅ Selbsttest „Farbe auf der GPU" → KARTE: die Farbe der Schatten-Karte trägt eine GPU-Textur — sie hat keinen Leser
+  ✅ Selbsttest „Farb-Anhang im Schatten-Pass" → KARTE: der Schatten-Pass zeichnet mit 1 Farb-Anhängen (Soll 0)
+  ✅ Selbsttest „Schatten fällt nicht" → KARTE: unter der Kiste ist es nur 1 dunkler als daneben (Soll ≥ 12) — der Schatten fällt nicht
+  ✅ Selbsttest „Hülle fehlt" → KARTE: der Schatten-Knoten der Bühne trägt die Hülle nicht (die Karte ohne Farbe ist blind)
+  ✅ Selbsttest „Bühne blind" → KARTE: die Schatten-Bühne lief nicht (die Wand ist blind für die Karte ohne Farbe)
+  ✅ Selbsttest „Vortiefe 32 bit" → VORTIEFE: die Geschichts-Tiefe trägt depth24plus, nicht depth16unorm
+  ✅ Selbsttest „Vortiefe leer" → VORTIEFE: die Vortiefe trägt den Verlauf der Ebene nicht (oben 1 · Mitte 1 · unten 1)
+  ✅ Selbsttest „Geschichte überschrieben" → VORTIEFE: die Farbe der Geschichte änderte sich ([0,0,0] statt [0.25,0.5,0.75])
+  ✅ Selbsttest „GPU-Validierung" → GPU: Attachment state mismatch
+  ✅ Selbsttest „Schmuggel blind" → SELBSTTEST: blind für TEILBAR
+  ✅ Selbsttest „Schmuggel bleibt" → SELBSTTEST: nach dem Abbau noch im Zensus: zensus-selbsttest:bloom
+  ✅ Selbsttest „Sonde lief nicht" → RUNDUNG: die Sonde lief nicht — das Gerät schreibt 11/11/10, und keiner weiß, wie es rundet
+  ✅ Selbsttest „Ausgleich verloren" → RUNDUNG: der Ausgleich [1,1,1] passt nicht zur Rundung „gegen null“ (Soll 1.00563/1.00563/1.01127)
+  ✅ Selbsttest „Ausgleich auf einem Gerät, das zum nächsten rundet" → RUNDUNG: der Ausgleich [1.0056328125,1.0056328125,1.011265625] passt nicht zur Rundung „zum nächsten“ (Soll 1.00000/1.00000/1.00000)
+  ✅ Selbsttest „anderer Vektor" → RUNDUNG: die Post-Kette liest einen anderen Vektor als den, den die Sonde setzt
+  ✅ Selbsttest „Ausgleich nicht verbraucht" → RUNDUNG: der Ausgleich ×2 hebt das Mittel des Ausgabe-Bilds nur um 0 Stufen (Soll ≥ 3) — die Post-Kette liest ihn nicht
+  ✅ Selbsttest „Rundungs-Probe blind" → RUNDUNG: die Probe lief nicht (die Wand ist blind für den Ausgleich)
+  ✅ Selbsttest „Quelle ohne Ausgleich" → RUNDUNG (Quelle): x
+  ✅ Quell-Wand der Rundung am Stamm → grün
+  ✅ Selbsttest „Ausgleich entfernt" → die Abtastung des Szenen-Bilds (`bild`) trägt den Ausgleich nicht (`.mul(u.ausgabeAusgleich)`)
+  ✅ Selbsttest „zweite Abtastung am Ausgleich vorbei" → das Szenen-Bild wird 2× abgetastet — nur EINMAL in `bild`, jede andere Abtastung umgeht den Ausgleich
+  ✅ Selbsttest „Sonde nicht gerufen" → `_ausgabeFormat` ruft die Sonde nicht (`_ausgabeSonde`)
+
+✅ SELBSTTEST GRÜN — das Urteil nennt jeden gebauten Täter beim Namen, der saubere Lauf bleibt grün.
+EXIT=0

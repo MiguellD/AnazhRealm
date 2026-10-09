@@ -1,0 +1,14 @@
+=== ZIEL-ZENSUS — die Wand am echten Frame (WebGPU auf swiftshader) ===
+  [4 s] Renderer und Post-Kette bereit nach 3 s
+  [25 s] Schmuggel: 6 von 6 Tätern beim Namen
+  [27 s] Zensus: 13 Texturen, 8 Frames, 1 rot, 6 Hinweise; Ruhe der Erst-Zeichnung 2 ms, offen 0
+  [27 s] Karte ohne Farbe: {"gelaufen":true,"huelle":true,"dunkler":128,"luma":[9,137],"farbeGpu":false,"schattenPaesse":1,"farbAnhaenge":0}
+  [27 s] Vortiefe: {"gelaufen":true,"typ":true,"format":"depth16unorm","oben":0.9842,"mitte":0.9323,"unten":0.8805,"farbe":[0.25,0.5,0.75]}
+  [27 s] Rundung: {"gelaufen":true,"format":null,"rundung":null,"faktor":null,"gleich":false,"verbrauch":0,"zurueck":0}
+
+❌ ROT — 5 Verletzung(en):
+   • ZENSUS: AUSGABE-FORMAT: output (rgba16float 320×240, 0.59 MB) — das Gerät rendert rg11b10ufloat, der Inhalt ist lineares Licht ≥ 0, Kanal a liest keiner: die Hälfte reicht (−0.29 MB; anazhRealm.js `_ausgabeFormat`)
+   • RUNDUNG (Quelle): die Abtastung des Szenen-Bilds (`bild`) trägt den Ausgleich nicht (`.mul(u.ausgabeAusgleich)`)
+   • RUNDUNG (Quelle): das Szenen-Bild wird 4× abgetastet — nur EINMAL in `bild`, jede andere Abtastung umgeht den Ausgleich
+   • RUNDUNG (Quelle): das Uniform `ausgabeAusgleich` liest nicht den Vektor der Sonde (`state._ausgabeAusgleich`)
+   • RUNDUNG (Quelle): `_ausgabeFormat` ruft die Sonde nicht (`_ausgabeSonde`)

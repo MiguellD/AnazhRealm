@@ -1,0 +1,9 @@
+=== ZIEL-ZENSUS — die Wand am echten Frame (WebGPU auf swiftshader) ===
+  [4 s] Renderer und Post-Kette bereit nach 2 s
+  [9 s] Schmuggel: 6 von 6 Tätern beim Namen
+  [9 s] Zensus: 9 Texturen, 8 Frames, 0 rot, 5 Hinweise; Ruhe der Erst-Zeichnung 2 ms, offen 0
+  [10 s] Karte ohne Farbe: {"gelaufen":true,"huelle":true,"dunkler":128,"luma":[9,137],"farbeGpu":false,"schattenPaesse":1,"farbAnhaenge":0}
+  [10 s] Vortiefe: {"gelaufen":true,"typ":true,"format":"depth16unorm","oben":0.9842,"mitte":0.9323,"unten":0.8805,"farbe":[0.25,0.5,0.75]}
+  [10 s] Rundung: {"gelaufen":true,"format":"rg11b10ufloat","rundung":"gegen null","faktor":[1.0056328125,1.0056328125,1.011265625],"gleich":true,"mittel":105.3,"verbrauch":48.05,"zurueck":0}
+
+✅ GRÜN — kein Ziel ohne Leser, keine Klasse fällt; die Schatten-Karte zeichnet ohne Farbe (1 Pässe, 0 Farb-Anhänge, Schatten 128 dunkler); die Vortiefe trägt 16 bit (Verlauf 0.9842 → 0.8805, Geschichte unberührt); 6 eingeschmuggelte Täter beim Namen und restlos fort; die Ausgabe rg11b10ufloat rundet gegen null, der Ausgleich [1.0056328125,1.0056328125,1.011265625] wirkt (×2 hebt das Mittel um 48.05 Stufen).

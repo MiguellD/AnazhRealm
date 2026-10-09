@@ -1,0 +1,37 @@
+00:52:50 t1 bereit 1dee7452
+00:53:05 t1 mittag himmel "hell": 117.2 nord "hell": 131.7 wald "hell": 120.5 wald-tief "hell": 141.5 
+00:53:09 t1 nacht gestellt {"ergebnis":{"zeit":0.08333333333333333,"belichtung":1,"licht":0.22,"nebel":null},"ms":2882}
+00:53:13 t1 nacht n-nord hell 18.4 belichtung 1 n-himmel hell 33.6 belichtung 1 n-wald hell 27.6 belichtung 1 n-wald-tief hell 43.3 belichtung 1 n-ufer hell 43.2 belichtung 1 
+00:53:13 t1 gpu-fehler: {"ergebnis":[],"ms":2}
+00:53:21 t1 gestoppt
+00:53:59 t2 bereit 1dee7452
+00:54:15 t2 mittag himmel "hell": 117.2 nord "hell": 131.3 wald "hell": 120.6 wald-tief "hell": 141.5 
+00:54:18 t2 nacht gestellt {"ergebnis":{"zeit":0.08333333333333333,"belichtung":1,"licht":0.22,"nebel":null},"ms":2873}
+00:54:24 t2 nacht n-nord hell 18.4 belichtung 1 n-himmel hell 52.3 belichtung 1 n-wald hell 29.1 belichtung 1 n-wald-tief hell 44.4 belichtung 1 n-ufer hell 43.1 belichtung 1 
+00:54:24 t2 gpu-fehler: {"ergebnis":[],"ms":2}
+00:54:32 t2 gestoppt
+--- nacht-serie 00:55:00: A main 76c9624d, B Kopf 1dee7452
+00:55:14 na1 bereit 76c9624d
+00:55:29 na1 mittag himmel "hell": 117.2 nord "hell": 131.9 wald "hell": 120.6 wald-tief "hell": 141.5 
+00:55:33 na1 nacht gestellt {"ergebnis":{"zeit":0.08333333333333333,"belichtung":1,"licht":0.22,"nebel":null},"ms":2874}
+00:55:38 na1 nacht n-nord hell 18.4 belichtung 1 n-himmel hell 52.3 belichtung 1 n-wald hell 29 belichtung 1 n-wald-tief hell 44.4 belichtung 1 n-ufer hell 43.1 belichtung 1 
+00:55:38 na1 gpu-fehler: {"ergebnis":[],"ms":2}
+00:55:46 na1 gestoppt
+00:56:10 nb1 bereit 1dee7452
+00:56:39 nb1 mittag himmel "hell": 117 nord "hell": 132.4 wald "hell": 121 wald-tief "hell": 141.5 
+00:56:42 nb1 nacht gestellt {"ergebnis":{"zeit":0.08333333333333333,"belichtung":1,"licht":0.22,"nebel":null},"ms":3275}
+00:56:48 nb1 nacht n-nord hell 18.7 belichtung 1 n-himmel hell 52.4 belichtung 1 n-wald hell 29.3 belichtung 1 n-wald-tief hell 44.7 belichtung 1 n-ufer hell 43.1 belichtung 1 
+00:56:48 nb1 gpu-fehler: {"ergebnis":[],"ms":2}
+00:56:56 nb1 gestoppt
+00:57:10 na2 bereit 76c9624d
+00:57:26 na2 mittag himmel "hell": 117.2 nord "hell": 132.5 wald "hell": 121 wald-tief "hell": 141.5 
+00:57:30 na2 nacht gestellt {"ergebnis":{"zeit":0.08333333333333333,"belichtung":1,"licht":0.22,"nebel":null},"ms":2913}
+00:57:35 na2 nacht n-nord hell 18.4 belichtung 1 n-himmel hell 52.3 belichtung 1 n-wald hell 29 belichtung 1 n-wald-tief hell 44.4 belichtung 1 n-ufer hell 43.1 belichtung 1 
+00:57:35 na2 gpu-fehler: {"ergebnis":[],"ms":2}
+00:57:43 na2 gestoppt
+00:57:57 nb2 bereit 1dee7452
+00:58:13 nb2 mittag himmel "hell": 117.3 nord "hell": 131.7 wald "hell": 120.6 wald-tief "hell": 141.5 
+00:58:16 nb2 nacht gestellt {"ergebnis":{"zeit":0.08333333333333333,"belichtung":1,"licht":0.22,"nebel":null},"ms":2906}
+00:58:22 nb2 nacht n-nord hell 18.4 belichtung 1 n-himmel hell 52.3 belichtung 1 n-wald hell 29.1 belichtung 1 n-wald-tief hell 44.4 belichtung 1 n-ufer hell 43.1 belichtung 1 
+00:58:22 nb2 gpu-fehler: {"ergebnis":[],"ms":1}
+00:58:30 nb2 gestoppt
