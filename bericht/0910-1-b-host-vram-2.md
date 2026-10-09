@@ -132,6 +132,24 @@ Das Band bleibt auf beiden Seiten ROT, weil die Dreiecke 1,11–1,16× über der
   - Im Blick „fern“ (25 m über der Wiese, 200 m nach Norden, Mittag) liegt 1024 mit 0,735 gegen 0,510 um +0,23 über dem Rausch-Boden,
     das sind 37 % des ganzen k1-Beitrags.
   - Das ist eine kleine, aber messbare Änderung, und sie ist nicht nötig, weil der Wasser-Satz die MB bildneutral trägt.
+  - Die Zahlen je Blick (mittlere |ΔLuma| über das ganze Bild, in Klammern der Anteil der Pixel > 8 Stufen;
+    `daten/k1-an-aus-1024.txt`, `daten/k1-leer.sh`, `daten/dluma2.cjs`):
+
+| Blick | Signal: k1 an ↔ aus (C) | Wirkung: k1 2048 ↔ 1024 (C an ↔ D an) | Kontrolle: C aus ↔ D aus | Wirkung − Kontrolle |
+|---|---|---|---|---|
+| fern (25 m hoch, Nord, Mittag) | 0,602 (1,47 %) | 0,735 (2,32 %) | 0,510 (1,73 %) | **+0,225** |
+| fern-ost (25 m hoch, Ost, Mittag) | 0,340 (1,01 %) | 0,563 (1,75 %) | 0,563 (1,74 %) | 0,000 |
+| fern-flach (Auge, Nord, Mittag) | 0,315 (0,75 %) | 0,931 (2,78 %) | 0,923 (2,80 %) | +0,008 |
+| flach-ost (Auge, Ost, Mittag) | 0,400 (0,69 %) | 1,914 (6,97 %) | 1,895 (6,97 %) | +0,019 |
+| flach-west (Auge, West, Mittag) | 0,268 (0,28 %) | 2,838 (8,38 %) | 2,841 (8,38 %) | −0,003 |
+| a-fern (25 m hoch, Nord, Abend) | 0,120 (0,13 %) | 0,110 (0,12 %) | 0,111 (0,12 %) | −0,001 |
+| a-flach-west (Auge, West, Abend) | 0,210 (0,32 %) | 1,282 (2,87 %) | 1,282 (2,87 %) | 0,000 |
+| a-flach-ost (Auge, Ost, Abend) | 0,305 (0,30 %) | 0,285 (0,29 %) | 0,284 (0,28 %) | +0,001 |
+
+  - Im Bild-Instrument der Boots (feste Phase, gleicher Weltzustand in c2 und d1) lag 2048 ↔ 1024 in den Fernblicken bei
+    0,000–0,005 (fern 0,000, fern-ost 0,005, a-fern 0,000).
+  - Die +0,225 im Blick „fern“ stammen aus EINER Sitzung je Seite. Ob sie die Auflösung sind oder der Weltzustand dieser einen
+    Sitzung, entscheidet erst ein zweites Sitzungs-Paar. Der Texel der Kaskade 1 wüchse von 0,47 auf 0,84 m (W7, 04.10.).
 - **Das Raster** (f9f03290): Die Kartengröße auf den Bedarf statt auf die nächste Zweierpotenz gerundet (k0 1984, k1 1856; −1,9 MB).
   - Die Texel-Dichte fällt auf `texelM` zurück (die Dichte bis V18.529); main lag 3 % bzw. 10 % feiner.
   - Gegen C liegen die Tagesblicke mit Sonnen-Schatten unter dem Rausch-Boden: MSSIM bis 0,968 im Wald (Rauschen 0,989), 3,4 %
@@ -215,6 +233,9 @@ Probe-Merge (`git merge-tree`) gegen main 7dd944e6 (V18.537) und gegen welle-m-s
 
 - **Die Radeon-Zahl:** Ich kann die Radeon nicht messen. Erwartet aus 125,9–127,0 − 7,9 − 2,3 sind ≈ 115,7–116,8 MB.
   - Rundet die 890M gegen null (W7), greift der Ausgleich; meldet sie das Feature nicht, nennt es der Zensus.
-- **Kandidat 3** (k1 1024, −6 MB): messbare Änderung im Fernblick (+0,23 über dem Rausch-Boden), nicht gebaut.
+- **Kandidat 3** (k1 1024², −6,0 MB; Band nach der Ankunft 116,3 → ~110,3 MB): nicht gebaut.
+  - Im Fernblick „fern“ liegt die Änderung 0,225 Luma-Stufen über der Kontrolle (37 % des k1-Beitrags von 0,602).
+  - In den übrigen 7 Blicken liegt sie auf der Kontrolle (−0,003…+0,019), im Boot-Instrument bei 0,000–0,005.
+  - n = 1 Sitzung je Seite; offen, bis ein zweites Sitzungs-Paar die +0,225 bestätigt oder verwirft.
 - **Der Boden-Index nach der Ankunft** (−2 MB möglich): nicht geschnitten, weil der Index dann in der Gate-Welt und am Abend wächst.
 - **Kaskaden-Ziele beim Neubau zur Laufzeit:** dieselbe Klasse wie das Tiefen-Abbild der Leben-Schau 2, im Spiel nicht ausgelöst.
