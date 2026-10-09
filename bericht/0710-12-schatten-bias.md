@@ -3,6 +3,12 @@
 Auftrag: `auftrag/0710-12-omen-schatten-bias.md`. Kopf: **welle-m-schatten 36191f63** (Basis main 76c9624d, per `git ls-remote`).
 CI: Lauf 37964999684 am Kopf 36191f63 — 5 von 5 grün (check, erst-zeichnung, playtest 1/3, 2/3, 3/3).
 
+**Richtigstellung 09.10. (Nachtrag 0710-12, Gegenprüfung):** Die Nachher-Zahlen stammten nicht aus der Rohdatei des Kopfs.
+Jede Zahl unten steht jetzt so in `bericht/0710-12/wand-nachher-kopf.txt` (nachher) bzw. `wand-vorher-main.txt` (vorher) und
+`rand-sweep.txt` (Rand). Gefallen: die Rand-Zeile „1 / 1,5 (erster Bau)“ und „vorher 1“ beim Fern-Busch (in keiner Rohdatei).
+Die Quell-Wand nennt auf main sechs Befunde, nicht fünf. Das Gate steht nicht in `npm run check`; die CI fährt den Selbsttest
+(check.yml:297–303), das Bild-Urteil nur `--echt`. Neue Messungen und die Kopf-Fixes: `bericht/0710-12-nachtrag.md`.
+
 ## In drei Sätzen
 
 Geschnitten: Der Schatten-Bias ist EIN Gesetz je Karte (`_schattenBias`) aus der Texel-Kante der Kaskade, 0,5 Texel
@@ -10,8 +16,8 @@ normal und 0,75 Texel Tiefe. Vorher galt 1 m normal und −0,25 / −0,5 m Tiefe
 `atmosphere.shadowBias` ist jetzt der Hebel auf das Gesetz.
 
 Gemessen auf der GTX 1060 mit der neuen Wand `gate:schatten-bias --echt`: Wolf, Fuchs, Busch und Zaun-Pfosten werfen jetzt.
-Die Boden-IoU mit einem Texel Saum steigt seitlich von 0,00–0,07 auf 0,88–1,00 und mittags von 0,00–0,19 auf 0,96–0,98. Akne
-bleibt auf allen neun Platten bei 0,00 % (die Gegenprobe zeigt 10,9 %). Die Schatten-Pässe kosten gleich viel.
+Die Boden-IoU mit einem Texel Saum steigt seitlich von 0,00–0,07 auf 0,90–1,00 und mittags von 0,00–0,19 auf 0,97–0,99. Akne
+bleibt auf allen neun Platten bei 0,00 % (die Gegenprobe zeigt 10,6 %). Die Schatten-Pässe kosten gleich viel.
 
 Ehrlich offen:
 - In der fernen Kaskade (k1, 130 m) liegen Wolf und Fuchs unter der Auflösung des Bildes, nur der Busch trägt dort ein Signal.
@@ -51,11 +57,11 @@ bias       = −tiefeTexel (0,75) · Texel / Tiefe der Box
 
 ## Die Linse: gate:schatten-bias
 
-`scripts/diag-schatten-bias.cjs`. In `npm run check` und CI-Gruppe 1 läuft der Selbsttest samt Quell-Wand am Stamm. Am echten
-Renderer misst `--echt` am OMEN.
+`scripts/diag-schatten-bias.cjs`. In CI-Gruppe 1 läuft der Selbsttest samt Quell-Wand am Stamm (`npm run gate:schatten-bias`,
+check.yml:297–303; nicht in `npm run check`). Am echten Renderer misst nur `--echt` am OMEN.
 
 **(Q) Quell-Wand (AST):** `normalBias` und den Tiefen-Bias einer Schatten-Karte (`….shadow.bias` / `sh.bias`) schreibt nur das
-Gesetz. Main fällt mit fünf Befunden rot (drei feste normalBias-Schreiber, zwei Tiefen-Nudges, kein Gesetz).
+Gesetz. Main fällt mit sechs Befunden rot (drei feste normalBias-Schreiber, zwei Tiefen-Nudges, kein Gesetz).
 
 **(S) Der Schatten:**
 - Je Werfer (Wolf, Fuchs, Busch, Zaun-Pfosten, Spieler) auf der ebenen Bühne der Mess-Wiese, bei Sonne seitlich (26°) und
@@ -89,7 +95,7 @@ Die Labor-Bedingungen, jede mit ihrem Grund:
   ist so nie aknefähig.
 - Warum ein heller Stoff: Bei 11° Sonne trägt die Fläche nur N·L ≈ 0,2 direktes Licht. Auf dunklem Stein blieb selbst volle Akne
   unter der Schwelle.
-- **ZÄHNE** (die Gegenprobe): 0,1 Texel normal ohne Tiefen-Bias muss Akne zeigen. Gemessen 10,6–11,2 %, im Bild die typischen
+- **ZÄHNE** (die Gegenprobe): 0,1 Texel normal ohne Tiefen-Bias muss Akne zeigen. Gemessen 10,6–11,4 % (alle Rohdateien), im Bild die typischen
   Streifen.
 
 ## Gemessen (GTX 1060, Mess-Wiese, 960×540, je ein Lauf vorher = main 76c9624d, nachher = Gesetz)
@@ -98,25 +104,24 @@ Boden-IoU mit Saum (in Klammern ohne Saum):
 
 | Werfer | seitlich vorher | seitlich nachher | mittags vorher | mittags nachher |
 |---|---|---|---|---|
-| Wolf | 0,000 (0,00) | **0,995** (0,66) | 0,083 (0,01) | **0,967** (0,60) |
-| Fuchs | 0,004 (0,00) | **0,986** (0,50) | 0,193 (0,03) | **0,981** (0,44) |
-| Busch | 0,072 (0,06) | **0,884** (0,67) | 0,000 (0,00) | **0,982** (0,42) |
-| Zaun-Pfosten | 0,000 (0,00) | **0,999** (0,61) | 0,005 (0,00) | **0,957** (0,68) |
-| Spieler (3rd) | 0,513 (0,37) | **0,983** (0,82) | 0,989 (0,35) | **0,993** (0,60) |
+| Wolf | 0,000 (0,00) | **0,981** (0,66) | 0,083 (0,01) | **0,974** (0,52) |
+| Fuchs | 0,004 (0,00) | **0,988** (0,50) | 0,193 (0,03) | **0,983** (0,44) |
+| Busch | 0,072 (0,06) | **0,897** (0,69) | 0,000 (0,00) | **0,980** (0,44) |
+| Zaun-Pfosten | 0,000 (0,00) | **0,999** (0,69) | 0,005 (0,00) | **0,985** (0,55) |
+| Spieler (3rd) | 0,513 (0,37) | **0,981** (0,82) | 0,989 (0,35) | **0,995** (0,68) |
 
 Akne:
 - Vorher und nachher je 0,00 % auf allen neun Platten.
-- Zähne: vorher 10,90 %, nachher 11,20 %.
+- Zähne: vorher 10,90 %, nachher 10,62 %.
 - Urteil: vorher ROT (acht Werfer-Befunde, dazu die Quell-Wand), nachher GRÜN.
 
 **Der Rand** (Sweep, Live-Versuche des Bias über dieselbe Sonde, Akne bei 11° und 26°, Wolf/Fuchs/Pfosten seitlich):
 
 | normal / Tiefe (Texel) | Akne | IoU mit Saum | IoU ohne Saum |
 |---|---|---|---|
-| 1 / 1,5 (erster Bau) | 0,00 % | 0,93–0,99 | 0,26–0,68 |
-| **0,5 / 0,75 (das Gesetz)** | 0,00 % | 0,97–1,00 | 0,52–0,79 |
+| **0,5 / 0,75 (das Gesetz)** | 0,00 % | 0,968–0,998 | 0,52–0,79 |
 | 0,25 / 0,4 | 0,00 % | 0,99–1,00 | 0,58–0,70 |
-| 0 / 1 | **4,88 % im Streiflicht 26°** | 1,00 | — |
+| 0 / 1 | **4,88 % im Streiflicht 26°** (eben 11°: 0,16 %, Streiflicht 11°: 0,02 %) | 0,996–0,997 | 0,62–0,72 |
 | 1 / 0 | 0,00 % | 0,90–0,99 | 0,32–0,66 |
 | 0,1 / 0 (Zähne) | **10,8–11,4 %** | — | — |
 
@@ -135,8 +140,9 @@ und 0,25/0,4. Das Gesetz hält doppelten Abstand zu ihr, für gekrümmten Boden,
 Gleich. Die Draws in k0 liegen bei 9,5 je Frame auf beiden Seiten.
 
 **Fern (k1)**, der Werfer auf dem offenen Fleck, die Kamera 130 m senkrecht darüber, k1-Texel 0,25–0,27 m:
-- Der Busch dunkelt in seitlicher Sonne vorher 1, nachher 27 der 50 erwarteten Pixel ab. Die Lupe zeigt nachher den Fleck neben
-  der Silhouette.
+- Der Busch dunkelt in seitlicher Sonne nachher 29 der 50 erwarteten Pixel ab (31 Pixel außerhalb der Silhouette). Die Lupe zeigt
+  nachher den Fleck neben der Silhouette. Vorher gibt es nur das Bild (`fern-busch-0.32-vorher.png`), die Fern-Probe lief im
+  main-Lauf nicht — keine Zahl.
 - Wolf und Fuchs erwarten dort nur 7–16 Pixel. Das liegt unter der Auflösung, ein Urteil ist da nicht möglich.
 
 ## Bilder (selbst angesehen; `bericht/0710-12/`)
@@ -159,7 +165,7 @@ Exit UND Urteils-Zeile gelesen, alle grün:
 
 | Wand | Urteil |
 |---|---|
-| check | `GRÜN arch-fachwerk-fit` (letztes Glied der Kette; darin der Selbsttest von gate:schatten-bias) |
+| check | `GRÜN arch-fachwerk-fit` (letztes Glied der Kette; der Selbsttest von gate:schatten-bias steht nicht darin) |
 | lint | 0 Fehler, 3 Warnungen wie auf main |
 | format:check | „All matched files use Prettier code style!“ |
 | gate:vendor-anker | „steht — … 167 Anker“ (normalBias-Uniform, Probe in Welt-Metern, bias auf der Koordinate) |
