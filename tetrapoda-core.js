@@ -1524,6 +1524,13 @@
     //    Anteil seiner Masse — im Tempo des Ansprungs (VERHALTEN.aktionen.pounce.tempo × tempoEinheit(L)). Sein Impuls
     //    geht durch das EINE Impuls-Gesetz des Wirts wie Klinge, Pfeil und Wagen (vorher: Schaden ohne Rückstoß). ──
     var BISS = Object.freeze({ masseAnteil: 0.3 });
+    // ── Welle LF 09.10. (rein additiv) — DIE KAMPF-GRÖSSE DES LEIBS: Biss, Haut und Leben eines Tiers folgen der EINEN Masse
+    //    seines Leibs (das Volumen der Gestalt × dichteKgM3 — Gattung UND Größe) gegen die Bezugs-Masse refKg, den Wolf der
+    //    Größe 1 (64 kg; an ihm ist der Biss geeicht, 8,73 HP am Spieler). Die Kraft des Bisses wächst mit dem Querschnitt der
+    //    Kau-Muskeln (∝ m^⅔; Christiansen & Wroe 2007: Beißkraft ∝ Körpermasse^0,6–0,7), die Dicke der Haut mit der Länge
+    //    (∝ m^⅓), das Leben mit dem Querschnitt des Leibs (∝ m^⅔). Wirt: _kreaturKampfGroesse in computeCreatureStats (vorher
+    //    damage 19,75 und defense 11,9 für jede Gattung und Größe — die Tiere sind tag-gleich). ──
+    var KAMPF = Object.freeze({ refKg: 64, biss: 2 / 3, haut: 1 / 3, leben: 2 / 3 });
 
     // ════════════════════════════════════════════════════════════════════
     // DIE ART-GESTALT (Welle 5, Tour 09: „der Rumpf ist ein Sack auf dünnen Beinen"): die Anatomie je Art als
@@ -2803,6 +2810,7 @@
         bauTier: bauTier,
         MASSSTAB: MASSSTAB,
         BISS: BISS,
+        KAMPF: KAMPF,
         ART_GESTALT: ART_GESTALT,
         artGestalt: artGestalt,
         tierAuge: tierAuge,

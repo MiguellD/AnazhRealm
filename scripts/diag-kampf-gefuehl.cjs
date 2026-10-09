@@ -247,6 +247,26 @@ function ausdauerVerdict(A) {
             );
     return v;
 }
+// (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Welle LF kampf, Posten 6 — pure Funktion, Probe UND Selbst-Test): Biss, Haut
+// und Leben eines Tiers steigen streng mit der Masse seines Leibs — über alle Gattungen und Größen hinweg (die Masse IST
+// Gattung × Größe). Befund 07.10.: damage 19,75 und defense 11,9 für jede Gattung und Größe.
+function kampfWerteVerdict(R) {
+    if (!Array.isArray(R) || R.length < 6) return ["kampfwerte keine Probe"];
+    const v = [];
+    const s = R.slice().sort((a, b) => a.kg - b.kg);
+    for (const k of ["damage", "defense", "hpMax"]) {
+        let flach = 0,
+            erst = null;
+        for (let i = 1; i < s.length; i++)
+            if (s[i].kg > s[i - 1].kg * 1.05 && !(s[i][k] > s[i - 1][k])) {
+                flach++;
+                if (!erst) erst = `${s[i - 1].seele}@${s[i - 1].L} ${s[i - 1][k]} → ${s[i].seele}@${s[i].L} ${s[i][k]}`;
+            }
+        if (flach)
+            v.push(`kampfwerte-${k}: ${flach} Stufen der Massen-Reihe ohne Zuwachs (${erst}) — gattungs-/größenblind`);
+    }
+    return v;
+}
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -1729,6 +1749,38 @@ async function WELLE_L() {
             if (r.getGameMode() !== modeA) r.setGameMode(modeA);
             w.z.ausdauer = zehr;
         }
+        // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Posten 6): je Gattung (Fuchs · Wolf · Hirsch · Bär) und Größe (0,62 · 1 ·
+        // 2) ein frisches Tier — Biss (damage), Haut (defense), Leben (hpMax) aus computeCreatureStats und die EINE Masse
+        // seines Leibs (_leibMasse). Befund: damage 19,75 und defense 11,9 überall, nur hpMax 99,8–158,9.
+        {
+            const reihe = [];
+            for (const seele of ["fuchs", "wolf", "wesen", "baer"])
+                for (const L of [0.62, 1, 2]) {
+                    s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 2);
+                    const c = r.spawnCreatureAt(
+                        pm.position.x + 500,
+                        pm.position.y,
+                        pm.position.z + 500,
+                        "calm",
+                        seele,
+                        {
+                            bodySize: L,
+                        }
+                    );
+                    if (!c) continue;
+                    const st0 = r.computeCreatureStats(c).stats;
+                    reihe.push({
+                        seele,
+                        L,
+                        kg: +r._leibMasse(c).toFixed(1),
+                        damage: +st0.damage.toFixed(2),
+                        defense: +st0.defense.toFixed(2),
+                        hpMax: +st0.hpMax.toFixed(1),
+                    });
+                    r.removeCreature(c);
+                }
+            w.z.kampfWerte = reihe;
+        }
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
@@ -2621,6 +2673,40 @@ async function WELLE_L() {
         check(
             avGut.length === 0 && avAlt.some((x) => x.startsWith("ausdauer-flach")),
             "Selbst-Test T19: der Befund (5 je Hieb für jede Waffe) nennt die flache Reihe; eine Reihe nach Masse bleibt grün"
+        );
+        console.log(
+            `  (T20) Kampf-Werte (kg → Biss/Haut/Leben): ${(z.kampfWerte || []).map((x) => `${x.seele}@${x.L} ${x.kg} → ${x.damage}/${x.defense}/${x.hpMax}`).join(" · ")}`
+        );
+        const kv = kampfWerteVerdict(z.kampfWerte);
+        check(
+            kv.length === 0,
+            "LF Posten 6: Biss, Haut und Leben eines Tiers steigen mit der EINEN Masse seines Leibs — Gattung × Größe, nie gattungs- oder größenblind" +
+                (kv.length ? " — " + kv.join(" · ") : "")
+        );
+        const kvAlt = kampfWerteVerdict(
+            [15, 64, 94, 335, 4, 60].map((kg, i) => ({
+                seele: "t" + i,
+                L: 1,
+                kg,
+                damage: 19.75,
+                defense: 11.9,
+                hpMax: 100 + i * 10,
+            }))
+        );
+        const kvGut = kampfWerteVerdict(
+            [15, 64, 94, 335, 4, 60].map((kg, i) => ({
+                seele: "t" + i,
+                L: 1,
+                kg,
+                damage: kg,
+                defense: Math.cbrt(kg),
+                hpMax: kg * 2,
+            }))
+        );
+        check(
+            kvGut.length === 0 &&
+                ["kampfwerte-damage", "kampfwerte-defense"].every((t) => kvAlt.some((x) => x.startsWith(t))),
+            "Selbst-Test T20: der Befund (damage 19,75 · defense 11,9 überall) nennt Biss und Haut; Werte nach Masse bleiben grün"
         );
         check(
             c.bogenVerschleiss,

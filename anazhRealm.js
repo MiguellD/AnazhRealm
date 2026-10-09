@@ -19410,6 +19410,8 @@ class AnazhRealm {
         // V18.312 (Gesetz #0) — Tags → Stats + Invers-dichte-Floor über die kanonische Quelle
         // (DIESELBE wie der Spieler — §1.3 fraktal: eine Sprache, eine Berechnung, zwei Anwendungen).
         const stats = this._statsFromTags(finalTags);
+        // das Leben der Substanz VOR der Größen-Symmetrie — die Kampf-Größe des Leibs trägt es (unten)
+        const hpSubstanz = stats.hpMax;
         // Größen-Stat-Symmetrie (wie beim Spieler): größer = robuster (HP/Stamina/Mana), aber langsamer
         // (speed/attackSpeed/jumpPower). `_compoundSizeFactor` ∈ [0.7, 1.7], sqrt → mul ∈ [0.84, 1.30].
         const creatureSoulName = creature.userData && creature.userData.soul;
@@ -19425,6 +19427,16 @@ class AnazhRealm {
             // HIER wird nur der kreatur-eigene Eingang berechnet (Substanz-Größe × bodySize^0.5).
             this._applySizeMultipliersToStats(stats, Math.sqrt(creatureSize));
         }
+        // DIE KAMPF-GRÖSSE DES LEIBS (Welle LF 09.10., Posten 6 / K-D18): Biss, Haut und Leben folgen der EINEN Masse des Leibs
+        // (_leibMasse — das Volumen der Gestalt × MASSSTAB.dichteKgM3: Gattung UND Größe, dieselbe Masse wie Stoß, Beute und
+        // Temperament) gegen die Bezugs-Masse des tetrapoda-Gesetzbuchs (KAMPF.refKg, der Wolf der Größe 1): damage ×
+        // (m/ref)^biss, defense × (m/ref)^haut, hpMax = Leben der Substanz × (m/ref)^leben. Vorher damage 19,75 und defense 11,9
+        // für jede Gattung und Größe (die Tiere sind tag-gleich), hpMax nur 99,8–158,9 von Fuchs 0,62 bis Bär 2.
+        const KG = AnazhRealm._kampfGroesseGesetz();
+        const q = this._leibMasse(creature) / KG.refKg;
+        stats.damage *= Math.pow(q, KG.biss);
+        stats.defense *= Math.pow(q, KG.haut);
+        stats.hpMax = hpSubstanz * Math.pow(q, KG.leben);
         return { tags: finalTags, stats };
     }
 
@@ -99538,6 +99550,17 @@ AnazhRealm._bissGesetz = function () {
         return AnazhRealm._kernPflichtBruch("tetrapoda:VERHALTEN.aktionen.pounce.tempo");
     AnazhRealm._bissGesetzMemo = Object.freeze({ masseAnteil: anteil, tempo: pounce.tempo });
     return AnazhRealm._bissGesetzMemo;
+};
+// DIE KAMPF-GRÖSSE DES LEIBS (Welle LF, Posten 6): die Bezugs-Masse und die Exponenten von Biss, Haut und Leben aus dem
+// tetrapoda-Gesetzbuch (KAMPF) — der EINE Leser (computeCreatureStats). Fail-closed.
+AnazhRealm._kampfGroesseGesetz = function () {
+    if (AnazhRealm._kampfGroesseMemo) return AnazhRealm._kampfGroesseMemo;
+    const T = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
+    const K = T && T.KAMPF;
+    if (!K || !(K.refKg > 0) || ![K.biss, K.haut, K.leben].every((x) => Number.isFinite(x) && x >= 0))
+        return AnazhRealm._kernPflichtBruch("tetrapoda:KAMPF");
+    AnazhRealm._kampfGroesseMemo = Object.freeze({ refKg: K.refKg, biss: K.biss, haut: K.haut, leben: K.leben });
+    return AnazhRealm._kampfGroesseMemo;
 };
 // Das Volumen einer GESCHLOSSENEN Fläche (m³ im Rahmen ihrer Geometrie) über den Divergenz-Satz, Σ a · (b × c) / 6 je
 // Dreieck — und ob sie geschlossen ist (jede Kante gerade oft: die glatte Vereinigung der Haut teilt manche Kante mit vier
