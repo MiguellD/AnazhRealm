@@ -35210,6 +35210,8 @@ class AnazhRealm {
         A.attrappe.type = quelle.format === "depth32float" ? THREE.FloatType : THREE.UnsignedIntType;
         rend._textures.updateTexture(A.attrappe);
         A.attrappeGpu = be.get(A.attrappe).texture;
+        // die Marke für den Ziel-Zensus: die Kopie hierher findet nie statt, der Haken zeichnet sie ins Abbild
+        if (A.attrappeGpu) A.attrappeGpu.__umleitung = "szene:tiefenabbild";
         // DER HAKEN AN DER ENCODER-KOPIE liegt EINMAL (Gegenprüfung 0710-3: vorher je Frame ein- und ausgehängt — jede
         // Zuweisung an `GPUCommandEncoder.prototype` verwirft, was der Motor über die Methode aller Aufrufer annahm); scharf
         // ist er nur für die Dauer des EINEN Bruchs (`A.scharf`, try/finally), jede andere Kopie fährt r184 unverändert.
@@ -94904,13 +94906,191 @@ class AnazhRealm {
         }
         const tiefe = ziel.depthTexture;
         tiefe.type = THREE.UnsignedShortType;
+        const farbe = ziel.texture;
         const realm = this;
         const roh = rend.copyTextureToTexture;
         rend.copyTextureToTexture = function (von, nach, ...rest) {
-            if (nach !== tiefe || !von || von.isDepthTexture !== true) return roh.call(this, von, nach, ...rest);
-            realm._traaVortiefeZug(this, von, tiefe);
-            return undefined;
+            if (nach === tiefe && von && von.isDepthTexture === true) {
+                realm._traaVortiefeZug(this, von, tiefe);
+                return undefined;
+            }
+            // DER NEUSTART DER GESCHICHTE (0910-1 B): bei jedem Größenwechsel kopiert der Knoten das Szenen-Bild in die
+            // Geschichte (vendor/TRAANode.js `needsRestart`). Trägt das Szenen-Ziel rg11b10ufloat (`_ausgabeFormat`), die
+            // Geschichte rgba16float, verbietet WebGPU die Kopie — ein Vollbild-Zug lädt Texel für Texel und schreibt Alpha 1.
+            if (nach === farbe && von && von.type !== nach.type) {
+                realm._traaNeustartZug(this, von, farbe);
+                return undefined;
+            }
+            return roh.call(this, von, nach, ...rest);
         };
+    }
+
+    // DAS AUSGABE-ZIEL DER SZENE IN 32 BIT (0910-1 B, Host-VRAM Runde 2): r184s Szenen-Pass legt `output` als rgba16float an
+    // (8 Byte je Pixel, 15,8 MB bei 1080p). Sein Inhalt ist lineares HDR-Licht ≥ 0, und der Kanal a steht an jedem Ort auf 1
+    // (der Ziel-Zensus, 07.10.): TRAA reicht `currentColor.a` nur durch (vendor/TRAANode.js clipAABB), kein Leser wertet ihn.
+    // rg11b10ufloat trägt dieselben drei Kanäle in 4 Byte (−7,9 MB) mit 6/6/5 Bit Mantisse — für das EINE Bild eines Frames.
+    // Auflösung und Geschichte bleiben rgba16float: dort summiert die zeitliche Auflösung über 32 Frames, und rg11b10 posterisierte
+    // die Wolken zu Höhenlinien (W7, alle drei in 11/11/10). Ohne das Geräte-Feature `rg11b10ufloat-renderable` bleibt `output`
+    // rgba16float — LAUT (WARN mit Grund und Zahl, und der Ziel-Zensus nennt das Format), nie still.
+    _ausgabeFormat(szenePass) {
+        const rend = this.state.renderer;
+        const be = rend && rend.backend;
+        const ziel = szenePass && szenePass.renderTarget;
+        if (!ziel || !ziel.texture) return;
+        const dev = be && be.isWebGPUBackend === true ? be.device : null;
+        if (!(dev && dev.features && dev.features.has("rg11b10ufloat-renderable"))) {
+            this.state._ausgabeFormat = "rgba16float";
+            this.log(
+                "AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel " +
+                    "bleibt rgba16float, +7,9 MB bei 1080p",
+                "WARN"
+            );
+            return;
+        }
+        // r184 `PassNode.setup` schreibt bei jedem Bau `texture.type = renderer.getOutputBufferType()` (rgba16float) — das Format
+        // gehört diesem EINEN Pass, nicht dem Renderer (dessen Typ legt auch das Rahmen-Ziel des Direktpfads an, RGBA: dort gibt es
+        // kein 11/11/10). Der Pass stellt es darum nach seinem eigenen Bau.
+        const P = Object.getPrototypeOf(szenePass);
+        szenePass.setup = function (builder) {
+            const o = P.setup.call(this, builder);
+            this.renderTarget.texture.type = THREE.UnsignedInt101111Type;
+            this.renderTarget.texture.format = THREE.RGBFormat;
+            return o;
+        };
+        ziel.texture.type = THREE.UnsignedInt101111Type;
+        ziel.texture.format = THREE.RGBFormat;
+        this.state._ausgabeFormat = "rg11b10ufloat";
+        this._ausgabeSonde(dev);
+    }
+
+    // DIE RUNDUNG DES GERÄTS (0910-1 B): GTX 1060 und Radeon 890M runden beim Schreiben in 11/11/10 GEGEN NULL (Sonde: 1 + ¾ ulp
+    // → 1,0; W7 sah es auf der Radeon in der Geschichte). Je Kanal fehlt dann im Mittel ein halbes ulp — bei 6 Bit Mantisse
+    // 2⁻⁷ · E[1/m] = 0,56 %, beim Blau (5 Bit) 1,13 % (m die Mantisse, log-gleich verteilt: E[1/m] = 1/(2 ln 2) = 0,721): das
+    // Bild wurde 0,2–0,7 Luma-Stufen dunkler und gelber (gemessen OMEN, 16 Blicke, A/B gegen rgba16float). Die Sonde schreibt
+    // 1 + ¾ ulp in ein 1×1-Ziel und liest zurück; rundet das Gerät gegen null, hebt der Ausgleich jede Abtastung des
+    // Szenen-Bilds in der Post-Kette (`ausgabeAusgleich`) um dieses Mittel — rundet es zum nächsten, bleibt er 1.
+    _ausgabeSonde(dev) {
+        const st = this.state;
+        if (!st._ausgabeAusgleich) st._ausgabeAusgleich = new THREE.Vector3(1, 1, 1);
+        const A = st._ausgabeAusgleich;
+        const tex = dev.createTexture({
+            label: "ausgabe-sonde",
+            size: [1, 1],
+            format: "rg11b10ufloat",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        });
+        const modul = dev.createShaderModule({
+            label: "ausgabe-sonde",
+            code:
+                "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
+                "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
+                "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
+                "}\n" +
+                "@fragment fn fs() -> @location(0) vec4f { return vec4f(1.01171875, 1.01171875, 1.0234375, 1.0); }\n",
+        });
+        const pipe = dev.createRenderPipeline({
+            label: "ausgabe-sonde",
+            layout: "auto",
+            vertex: { module: modul, entryPoint: "vs" },
+            fragment: { module: modul, entryPoint: "fs", targets: [{ format: "rg11b10ufloat" }] },
+            primitive: { topology: "triangle-list" },
+        });
+        const buf = dev.createBuffer({
+            label: "ausgabe-sonde",
+            size: 256,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        });
+        const enc = dev.createCommandEncoder({ label: "ausgabe-sonde" });
+        const pass = enc.beginRenderPass({
+            label: "ausgabe-sonde",
+            colorAttachments: [{ view: tex.createView(), loadOp: "clear", clearValue: [0, 0, 0, 0], storeOp: "store" }],
+        });
+        pass.setPipeline(pipe);
+        pass.draw(3);
+        pass.end();
+        enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: 256 }, [1, 1]);
+        dev.queue.submit([enc.finish()]);
+        return buf
+            .mapAsync(GPUMapMode.READ)
+            .then(() => {
+                const w = new Uint32Array(buf.getMappedRange())[0];
+                buf.unmap();
+                // R: Mantisse Bit 0–5 über 1 + ¾ ulp: 0 = gegen null, 1 = zum nächsten
+                const nullRund = (w & 0x3f) === 0;
+                st._ausgabeRundung = nullRund ? "gegen null" : "zum nächsten";
+                if (nullRund) A.set(1 + 0.721 / 128, 1 + 0.721 / 128, 1 + 0.721 / 64);
+                else A.set(1, 1, 1);
+                const faktor = A.toArray().map((x) => x.toFixed(4));
+                this.log(
+                    `AUSGABE: rg11b10ufloat, das Gerät rundet ${st._ausgabeRundung} — Ausgleich ${faktor.join("/")}`,
+                    "INFO"
+                );
+            })
+            .catch((e) => {
+                this.log("AUSGABE: die Rundungs-Sonde fiel (" + ((e && e.message) || e) + ") — kein Ausgleich", "WARN");
+            })
+            .finally(() => {
+                tex.destroy();
+                buf.destroy();
+            });
+    }
+
+    // DER ZUG DES NEUSTARTS: ein roher Pass auf eigenem Encoder wie `_traaVortiefeZug` — ein Vollbild-Dreieck lädt das
+    // Szenen-Bild Texel für Texel und schreibt es mit Alpha 1 in die Farbe der Geschichte (die Ziele legt r184 an wie für
+    // seine Kopie, `_textures.updateTexture`).
+    _traaNeustartZug(rend, von, nach) {
+        const be = rend.backend;
+        rend._textures.updateTexture(von);
+        rend._textures.updateTexture(nach);
+        const q = be.get(von).texture;
+        const z = be.get(nach).texture;
+        if (!q || !z) return;
+        let N = this._traaNeustartGpu;
+        if (!N || N.format !== z.format) {
+            const modul = be.device.createShaderModule({
+                label: "TRAA-Neustart",
+                code:
+                    "@group(0) @binding(0) var bild: texture_2d<f32>;\n" +
+                    "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
+                    "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
+                    "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
+                    "}\n" +
+                    "@fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f {\n" +
+                    "    return vec4f(textureLoad(bild, vec2i(p.xy), 0).rgb, 1.0);\n" +
+                    "}\n",
+            });
+            N = this._traaNeustartGpu = {
+                format: z.format,
+                pipe: be.device.createRenderPipeline({
+                    label: "TRAA-Neustart",
+                    layout: "auto",
+                    vertex: { module: modul, entryPoint: "vs" },
+                    fragment: { module: modul, entryPoint: "fs", targets: [{ format: z.format }] },
+                    primitive: { topology: "triangle-list" },
+                }),
+                quelle: null,
+                ziel: null,
+            };
+        }
+        if (N.quelle !== q || N.ziel !== z) {
+            N.gruppe = be.device.createBindGroup({
+                layout: N.pipe.getBindGroupLayout(0),
+                entries: [{ binding: 0, resource: q.createView() }],
+            });
+            N.ansicht = z.createView();
+            N.quelle = q;
+            N.ziel = z;
+        }
+        const enc = be.device.createCommandEncoder({ label: "TRAA-Neustart" });
+        const pass = enc.beginRenderPass({
+            label: "TRAA-Neustart",
+            colorAttachments: [{ view: N.ansicht, loadOp: "clear", clearValue: [0, 0, 0, 1], storeOp: "store" }],
+        });
+        pass.setPipeline(N.pipe);
+        pass.setBindGroup(0, N.gruppe);
+        pass.draw(3);
+        pass.end();
+        be.device.queue.submit([enc.finish()]);
     }
 
     // DER ZUG DER VORTIEFE (Gegenprüfung 0710-3, gelb: gpu-bank CPU je Frame 2,73 → 3,04 ms — der Zug war ein eigenes
@@ -95006,6 +95186,7 @@ class AnazhRealm {
             // Das Szene-RT bleibt auf Skala 1 (setResolutionScale): jeder Laufzeit-Realloc zerstört die
             // Depth-View des Render-Kontexts (s. _loopRender).
             if (typeof scenePass.setResolutionScale === "function") scenePass.setResolutionScale(1);
+            this._ausgabeFormat(scenePass); // das Szenen-Ziel in rg11b10ufloat (0910-1 B), vor dem ersten Render
             this.state.scenePass = scenePass;
             // EIN Szene-Pass, eine Diät-Wahrheit: ein zweiter Szene-Pass (die Fern-Schicht) ließ Material-Diät
             // und Uniform-Updates zwischen den Pässen racen (Schwarz-Flackern); das Ferne trägt der Welt-March.
@@ -95022,11 +95203,13 @@ class AnazhRealm {
             // Bloom, Godrays und lokaler Kontrast lesen das aufgelöste Bild. Die Bewegung je Pixel ist die
             // KAMERA-Bewegung aus der Tiefe (`_traaKameraBewegung`), keine MRT-Velocity. Kosten (04.10., echte GPU
             // Radeon 890M, 1080p, ruhig, gpu-bank 200 Frames × 12 Paare gegen FXAA): +1,1 ms je Frame (die Pass-
-            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB. Szene,
-            // Auflösung und Geschichte bleiben rgba16float (die Geschichts-Kopien verlangen EIN Format für alle drei):
-            // rg11b10ufloat (−23,7 MB, W7, echte GPU) posterisierte die Wolken zu Höhenlinien, die Radeon rundet beim
-            // Schreiben gegen null (Sonde 1,0117 → 1,0; das Mittel −2…−3 % Luma) und die Ruhe halbierte sich (Frame zu Frame
-            // 0,29 → 0,58 Luma auf Armlänge) — 6 bzw. 5 Mantissen-Bit tragen die zeitliche Auflösung nicht.
+            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB. Auflösung
+            // und Geschichte bleiben rgba16float: alle drei in rg11b10ufloat (−23,7 MB, W7, echte GPU) posterisierten die
+            // Wolken zu Höhenlinien, die Radeon rundet beim Schreiben gegen null (Sonde 1,0117 → 1,0; über die Geschichte das
+            // Mittel −2…−3 % Luma) und die Ruhe halbierte sich (Frame zu Frame 0,29 → 0,58 Luma auf Armlänge) — 6 bzw. 5
+            // Mantissen-Bit tragen die zeitliche Auflösung nicht. Das Szenen-Bild EINES Frames trägt sie: es liegt seit 0910-1 B
+            // in rg11b10ufloat (`_ausgabeFormat`, −7,9 MB), die Rundung gleicht `_ausgabeSonde` aus, den Neustart der
+            // Geschichte zeichnet `_traaNeustartZug` (die Kopie verlangte gleiche Formate).
             // Fehlt TRAANode im THREE der Seite (eine Cache-Kopie des Bootstraps von vor der zeitlichen Auflösung), bricht
             // die Kette LAUT — nie still ohne Kantenglättung, Bloom und Grading weiter.
             if (this.state._traa && typeof THREE.TRAANode !== "function") {
@@ -95092,6 +95275,9 @@ class AnazhRealm {
                 godrayStrength: uniform(0),
                 godrayDensity: uniform(0.55),
                 godrayThreshold: uniform(0.8),
+                // DER AUSGLEICH DER AUSGABE-RUNDUNG (0910-1 B, `_ausgabeSonde`): je Kanal der Faktor, um den das Szenen-Bild
+                // in 11/11/10 im Mittel zu dunkel ankommt — derselbe Vektor, den die Sonde setzt (1 ohne Sonde).
+                ausgabeAusgleich: uniform(this.state._ausgabeAusgleich || new THREE.Vector3(1, 1, 1)),
             };
             this.state.postProcessingUniforms = u;
             // V8 (Kür) — die EINE benannte Godray-Quelle (Gesetz #0): der Frame-Code (`_loopRender`)
@@ -95126,9 +95312,11 @@ class AnazhRealm {
             // -> Glanz/Gluehen an Wasser/Sonne/Highlights. `bright` sampelt den
             // Szene-Textur-Node an versetzter UV. Die MITTE ist zugleich das Bild selbst (`base`): EINE Abtastung
             // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV).
-            const mitte = sceneColor.sample(screenUV);
+            // Jede Abtastung des Szenen-Bilds trägt den Ausgleich der Ausgabe-Rundung (`_ausgabeSonde`; 1 auf rgba16float).
+            const bild = (uv) => sceneColor.sample(uv).rgb.mul(u.ausgabeAusgleich);
+            const mitte = bild(screenUV);
             const bright = (uv) => {
-                const c = (uv === screenUV ? mitte : sceneColor.sample(uv)).rgb;
+                const c = uv === screenUV ? mitte : bild(uv);
                 const l = luminance(c);
                 const m = smoothstep(u.bloomThreshold, u.bloomThreshold.add(float(0.25)), l);
                 return c.mul(m);
@@ -95162,7 +95350,7 @@ class AnazhRealm {
             let gacc = null;
             for (let i = 0; i < GN; i++) {
                 const uvI = screenUV.add(gDelta.mul(u.godrayDensity.mul(float(i / GN))));
-                const cI = sceneColor.sample(uvI).rgb;
+                const cI = bild(uvI);
                 const mI = smoothstep(u.godrayThreshold, u.godrayThreshold.add(float(0.2)), luminance(cI));
                 const wI = Math.pow(0.96, i) * (1 / GN); // JS-Skalar-Gewicht
                 const srcI = cI.mul(mI).mul(float(wI));
@@ -95171,7 +95359,7 @@ class AnazhRealm {
             const godray = nurBeiStaerke(gacc.mul(u.godrayStrength), u.godrayStrength);
 
             // --- Color-Grading: Saettigung + Kontrast um 0.5 ---
-            const base = mitte.rgb;
+            const base = mitte;
             const bloomed = base.add(bloom).add(godray);
             // V17.13 — lokaler Kontrast (Unsharp-Mask): die lokale Umgebungs-
             // Luminanz aus 4 versetzten Samples mitteln; die Differenz Pixel −
@@ -95181,7 +95369,7 @@ class AnazhRealm {
             // ist etwas weiter als das Bloom-px (groebere Umgebung = Mikro-Detail).
             // Kanten-Schärfe 0 (der Regler „aus") → der Zweig fällt mit seinen 4 Abtastungen (`nurBeiStaerke`).
             const lcPx = float(0.0026);
-            const lumAt = (uv) => luminance(sceneColor.sample(uv).rgb);
+            const lumAt = (uv) => luminance(bild(uv));
             const localAvg = lumAt(screenUV.add(vec2(lcPx, float(0.0))))
                 .add(lumAt(screenUV.add(vec2(lcPx.negate(), float(0.0)))))
                 .add(lumAt(screenUV.add(vec2(float(0.0), lcPx))))
