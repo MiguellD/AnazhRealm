@@ -99,8 +99,19 @@ async function kreaturProben(r, T, opts) {
         }
         return { x: P0.x + dx, y: P0.y, z: P0.z + dz };
     };
-    // Ein Ort auf Land ohne Bauwerks-Hülle im Umkreis R — die Witterungs-Jagd im Freien: an einer Wand gleitet ein Leib
-    // längs der Box-Kante (achsparallel), das misst die Hindernis-Probe, nicht die Richtung der Jagd.
+    // Ein Ort auf Land ohne Bauwerks-Hülle und ohne Wasser im Umkreis R — die Witterungs-Jagd im Freien: an einer Wand
+    // gleitet ein Leib längs der Box-Kante (achsparallel), im Wasser schwimmt er in einer Himmelsrichtung ans Ufer
+    // (`_creatureWaterContextAt`, vier Richtungen) — beides misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der
+    // Jagd. Seit Schau-2 nennt das Land (`_landAt`) das Ufer eines Sees genau (die Zwillings-Probe dehnte jeden See um
+    // eine 16-m-Zelle): ohne die Wasser-Wand wählte die Probe ein Feld am Ufer, und die Jagd lief ins Wasser.
+    const imUmkreisLand = (x, z, R) => {
+        for (const f of [0.5, 1])
+            for (let q = 0; q < 8; q++) {
+                const a = (q / 8) * Math.PI * 2;
+                if (!r._landAt(x + Math.cos(a) * R * f, z + Math.sin(a) * R * f)) return false;
+            }
+        return true;
+    };
     const frei = (dx, dz, R) => {
         const arches = s.architectures || [];
         for (let ring = 0; ring < 40; ring++) {
@@ -109,7 +120,7 @@ async function kreaturProben(r, T, opts) {
                 const a = (q / n) * Math.PI * 2;
                 const x = P0.x + dx + Math.cos(a) * ring * 8,
                     z = P0.z + dz + Math.sin(a) * ring * 8;
-                if (!r._landAt(x, z)) continue;
+                if (!r._landAt(x, z) || !imUmkreisLand(x, z, R)) continue;
                 let ok = true;
                 for (const e of arches) {
                     if (!e || !e.blockerAABBs || !e.position) continue;
@@ -707,7 +718,8 @@ async function kreaturProben(r, T, opts) {
             achs = 0,
             achs5 = 0,
             bedroht = 0,
-            fort = 0;
+            fort = 0,
+            imWasser = 0;
         let wv = { x: wolf.position.x, z: wolf.position.z };
         const bv = beute.map((c) => ({ x: c.position.x, z: c.position.z }));
         for (let k = 0; k < 1800; k++) {
@@ -718,6 +730,7 @@ async function kreaturProben(r, T, opts) {
             const anprall = geschoben.has(wolf.position);
             geschoben.clear();
             if (jagt && anprall) kontakt++;
+            if (jagt && r._nassAt(wolf.position.x, wolf.position.z)) imWasser++; // die Jagd im Wasser (Diagnose)
             if (jagt && !anprall && Math.hypot(dx, dz) / dt > 0.3) {
                 jagdFrames++;
                 const h = Math.atan2(dx, dz);
@@ -754,6 +767,7 @@ async function kreaturProben(r, T, opts) {
         return {
             jagdFrames,
             kontaktFrames: kontakt,
+            wasserFrames: imWasser,
             achsAnteil: jagdFrames ? +(achs / jagdFrames).toFixed(3) : null,
             achsAnteil5Grad: jagdFrames ? +(achs5 / jagdFrames).toFixed(3) : null,
             bedrohtFrames: bedroht,
