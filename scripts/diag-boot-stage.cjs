@@ -9,7 +9,8 @@
 // V18.419-Auto-Blueprint-Klasse macht jede feste Zahl stale):
 //   RING    _activeRingRadius ≥ Ziel (der Weitblick hängt daran)
 //   GRAS    pendingGrass leer            WASSER  pendingWaterIso leer
-//   STREU   keine Region._deferredFoundry (der stille Saug ist durch)
+//   STREU   `_streuWartet` 0: keine Region in Reichweite fehlt, wartet auf ihr Asset oder trägt eine offene Scheibe
+//           (der stille Saug ist durch; eine fehlende Regionen-Karte heißt „der Streamer lief noch nie", nie „steht")
 //   BIBLIO  Foundry ready + Prefetch fertig
 //   IMPOST  Bake-Queue leer + kein Bake pending (non-headless; der Null-
 //           Renderer no-opt den RTT-Bake gate-treu → Term dort übersprungen)
@@ -18,7 +19,7 @@
 // Zeitleiste: t(Kontrolle) / t(Bibliothek) / t(Ring) / t(Impostoren) / t(Bühne)
 // in TICKS (Mechanik-Reihenfolge, hardware-unabhängig) + Wall-Clock (Container-
 // Anhalt; die Schöpfer-GPU-Zahl liefert W8). --selftest beweist die Linse feuert
-// (eine injizierte deferierte Region macht das Prädikat rot).
+// (die wartende Spieler-Region und die fehlende Regionen-Karte machen das Prädikat rot).
 //   node scripts/diag-boot-stage.cjs [--selftest]
 // ─────────────────────────────────────────────────────────────────────────
 const puppeteer = require("puppeteer");
@@ -78,19 +79,19 @@ const server = http.createServer((req, res) => {
             const terms = () => {
                 const f = r._foundry;
                 const ringTarget = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-                let deferred = 0;
-                if (st.scatterRegions)
-                    for (const reg of st.scatterRegions.values()) if (reg && reg._deferredFoundry) deferred++;
+                // die EINE Antwort der Welt (`_streuWartet`): fehlend · aufgeschoben · Scheibe offen, je Region in Reichweite.
+                // Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte (der Streamer lief noch nie) als „steht".
+                const wartet = r._streuWartet(st.playerMesh ? st.playerMesh.position : null);
                 const q = r._impostorBakeQueue;
                 return {
                     ring: st._activeRingRadius != null && st._activeRingRadius >= ringTarget,
                     grass: !st.pendingGrass || st.pendingGrass.size === 0,
                     water: !st.pendingWaterIso || st.pendingWaterIso.size === 0,
-                    streu: deferred === 0,
+                    streu: !!st.playerMesh && wartet === 0,
                     biblio: !!(f && f.ready && !f._prefetching),
                     // Headless no-opt der RTT-Bake (gate-treu) → Term übersprungen, ehrlich markiert.
                     impost: headless ? true : (!q || q.length === 0) && !r._impostorBakePending,
-                    _deferredRegions: deferred,
+                    _streuWartet: wartet,
                 };
             };
             const sichtM = () => (st.luft ? r._luftSichtM(st.playerMesh ? st.playerMesh.position.y : 0) : -1);
@@ -128,16 +129,42 @@ const server = http.createServer((req, res) => {
             };
             o.chunks = st.voxelChunks ? st.voxelChunks.size : 0;
             o.impostorRecords = r._kartenAtlas ? r._kartenAtlas.zellen.size : 0;
-            // ── SELBST-TEST: eine injizierte deferierte Region macht das Prädikat rot ──
+            // ── SELBST-TEST: die Spieler-Region wartet auf ihr Asset, und die Regionen-Karte fehlt (der Streamer lief noch
+            // nie, Befund 09.10.) — beide machen das Prädikat rot. Beide Fälle stehen in jedem Lauf: schließt die Bühne,
+            // steht die Spieler-Region (sie ist stets in Reichweite).
             if (selftest && mark.stage) {
+                const SC = r.constructor.SCATTER;
+                const p = st.playerMesh.position;
                 const map = st.scatterRegions;
-                if (map) {
-                    const fake = { regX: 9999, regZ: 9999, cells: [], _deferredFoundry: true };
-                    map.set("9999,9999", fake);
-                    const dirty = terms();
-                    map.delete("9999,9999");
-                    const clean = terms();
-                    o.selftest = { firesOnInject: dirty.streu === false, healsOnClean: clean.streu === true };
+                const reg = map ? map.get(`${Math.floor(p.x / SC.regionM)},${Math.floor(p.z / SC.regionM)}`) : null;
+                o.selftest = { spielerRegion: !!reg };
+                if (reg) {
+                    reg._deferredFoundry = true;
+                    o.selftest.firesOnInject = terms().streu === false;
+                    delete reg._deferredFoundry;
+                }
+                delete st.scatterRegions;
+                o.selftest.firesOhneKarte = terms().streu === false;
+                st.scatterRegions = map;
+                o.selftest.healsOnClean = terms().streu === true;
+                // die Bühnen-Wahrheit der Welt (`_buehneSteht`, das Prädikat live) liest dieselbe Antwort: ohne Regionen-Karte
+                // steht sie nicht, mit ihr steht sie — nicht-headless gerechnet; Latch, Uhr und Renderer-Marke kehren zurück
+                {
+                    const merk = { h: st.renderer._isHeadlessNull, latch: st._buehneStand, t0: r._buehneT0 };
+                    const frag = (ohneKarte) => {
+                        st.renderer._isHeadlessNull = false;
+                        st._buehneStand = false;
+                        r._buehneT0 = null; // die Uhr beginnt in `_buehneSteht` neu
+                        if (ohneKarte) delete st.scatterRegions;
+                        const steht = r._buehneSteht();
+                        st.scatterRegions = map;
+                        return steht;
+                    };
+                    o.selftest.buehneOhneKarte = frag(true);
+                    o.selftest.buehneMitKarte = frag(false);
+                    st.renderer._isHeadlessNull = merk.h;
+                    st._buehneStand = merk.latch;
+                    r._buehneT0 = merk.t0;
                 }
                 // ── W4.3 — DER BAKE-WATCHDOG (die 0/115-Wurzel): ein hängender async RTT-Bake
                 // (Readback resolvt nie) würde den IMPOST-Term dieser Bühne FÜR IMMER deadlocken.
@@ -220,7 +247,10 @@ const server = http.createServer((req, res) => {
             name: `GRAS aufgeholt (${T.grass}) · WASSER aufgeholt (${T.water})`,
             pass: T.grass === true && T.water === true,
         },
-        { name: `STREU konvergiert — keine deferierte Region (${T._deferredRegions})`, pass: T.streu === true },
+        {
+            name: `STREU steht — keine Region in Reichweite fehlt, wartet oder trägt eine offene Scheibe (\`_streuWartet\` ${T._streuWartet})`,
+            pass: T.streu === true,
+        },
         {
             name: `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost})`,
             pass: T.biblio === true && T.impost === true,
@@ -228,9 +258,16 @@ const server = http.createServer((req, res) => {
         { name: "die BÜHNE wurde erreicht (das Prädikat schloss)", pass: !!tl.stage },
     ];
     if (SELFTEST) {
+        const s = out.selftest || {};
         checks.push({
-            name: "SELBST-TEST: injizierte deferierte Region macht das Prädikat rot + heilt nach Entfernen",
-            pass: !!(out.selftest && out.selftest.firesOnInject && out.selftest.healsOnClean),
+            name:
+                "SELBST-TEST: die wartende Spieler-Region und die fehlende Regionen-Karte machen das Prädikat rot + es heilt " +
+                `(Spieler-Region ${s.spielerRegion ? "steht" : "FEHLT beim Schluss der Bühne"} · wartet → ${s.firesOnInject ? "rot" : "STUMPF"} · ohne Karte → ${s.firesOhneKarte ? "rot" : "STUMPF"} · heilt ${!!s.healsOnClean})`,
+            pass: !!(s.spielerRegion && s.firesOnInject && s.firesOhneKarte && s.healsOnClean),
+        });
+        checks.push({
+            name: `SELBST-TEST: die Bühnen-Wahrheit der Welt (\`_buehneSteht\`) liest dieselbe Streu — ohne Regionen-Karte ${s.buehneOhneKarte === false ? "steht sie nicht" : "STEHT sie"}, mit ihr ${s.buehneMitKarte ? "steht sie" : "steht sie NICHT"}`,
+            pass: s.buehneOhneKarte === false && s.buehneMitKarte === true,
         });
         checks.push({
             name: `W4.3 BAKE-WATCHDOG: ein hängender Bake wird graziös verworfen (pending frei · Retry/gescheitert · Token) — die Queue kann nie mehr still verhungern (${JSON.stringify(out.watchdog || null)})`,

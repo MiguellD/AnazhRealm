@@ -21680,7 +21680,7 @@ class AnazhRealm {
 
     // DIE EINE BÜHNEN-WAHRHEIT (das W2-Prädikat aus `diag-boot-stage.cjs`, live): alle spielfremden
     // Tick-Quellen (Nexus, Wetter, Brennglas …) LESEN sie statt eigener Boot-Heuristik. „Bühne steht“ =
-    // Ring am Ziel + Gras/Wasser aufgeholt + keine deferierte Streu-Region — bewusst OHNE Impostor-Term (die Streu
+    // Ring am Ziel + Gras/Wasser aufgeholt + die Streu steht (`_streuWartet` 0) — bewusst OHNE Impostor-Term (die Streu
     // wartet auf ihre Karten; der Karten-Bäcker läuft seit 04.10. frei im festen Takt, nie hinter der Bühne — der Kreis
     // Bühne → Streu → Karte → Bühne ist gelöst). Latch `state._buehneStand`; headless sofort.
     // Deckel: nach BUEHNE_SETTLE_CAP_MS öffnet sie bedingungslos (Dauer-über-Budget erreicht nie das Ziel)
@@ -21700,15 +21700,10 @@ class AnazhRealm {
             const ring = st._activeRingRadius != null && st._activeRingRadius >= ringTarget;
             const grass = !st.pendingGrass || st.pendingGrass.size === 0;
             const water = !st.pendingWaterIso || st.pendingWaterIso.size === 0;
-            let streu = true;
-            if (ring && grass && water && st.scatterRegions) {
-                for (const reg of st.scatterRegions.values()) {
-                    if (reg && reg._deferredFoundry) {
-                        streu = false;
-                        break;
-                    }
-                }
-            }
+            // die Streu steht nach der EINEN Antwort (`_streuWartet`) — der eigene Zähler las die fehlende Regionen-Karte
+            // (der Streamer lief noch nie) als „keine deferierte Region" (Befund 09.10.)
+            const streu =
+                ring && grass && water && this._streuWartet(st.playerMesh ? st.playerMesh.position : null) === 0;
             steht = ring && grass && water && streu;
         }
         if (steht) {
@@ -56372,6 +56367,32 @@ class AnazhRealm {
         const nx = Math.max(rx * SC.regionM, Math.min(p.x, (rx + 1) * SC.regionM));
         const nz = Math.max(rz * SC.regionM, Math.min(p.z, (rz + 1) * SC.regionM));
         return Math.hypot(nx - p.x, nz - p.z) <= R;
+    }
+
+    // Steht die Streu? — die EINE Antwort (das erste Weltbild `_weltbildFehlt`, die Bühnen-Linse): wie viele Streu-Regionen
+    // in Reichweite (`_streuRegionInReichweite`) nicht stehen — sie fehlen, warten auf ihr Asset oder tragen eine offene
+    // Scheibe. Keine Regionen-Karte heißt: der Streamer lief noch nie (der Deko-Job wartet, solange der Ring Chunks baut),
+    // jede Region in Reichweite fehlt. Befund 09.10. (gate:ankunft, CI 37942425121): bei langsamem Takt stand der Ring am
+    // Existenz-Boden, bevor der Streamer einen Frame bekam — die fehlende Karte galt als „nichts wartet", der Ladeschirm wich
+    // ohne ein einziges Wald-Stück. Ist die Streu aus (`gpuScatter === false`), wartet nichts; ohne Spieler-Ort steht keine.
+    _streuWartet(p) {
+        const SC = AnazhRealm.SCATTER;
+        const st = this.state;
+        if (st.atmosphere && st.atmosphere.gpuScatter === false) return 0;
+        if (!p) return 1;
+        const regionen = st.scatterRegions;
+        const rx0 = Math.floor(p.x / SC.regionM);
+        const rz0 = Math.floor(p.z / SC.regionM);
+        let warten = 0;
+        for (let dz = -SC.ringRegions; dz <= SC.ringRegions; dz++)
+            for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
+                const rx = rx0 + dx;
+                const rz = rz0 + dz;
+                if (!this._streuRegionInReichweite(rx, rz, p)) continue;
+                const reg = regionen ? regionen.get(`${rx},${rz}`) : null;
+                if (!reg || reg._deferredFoundry || reg._cont) warten++;
+            }
+        return warten;
     }
 
     _tickScatterStreaming(playerPos, deadlineMs) {
@@ -97109,7 +97130,7 @@ class AnazhRealm {
     // Was dem ersten Weltbild fehlt — leer heißt: es steht. Je Lücke ein Satz für die Stand-Zeile (mit ihrer Zahl, die sinkt,
     // solange die Welt wächst): der Boden bis zum Existenz-Boden des Rings (RING_EXIST_FLOOR, die Ringe ohne fps-Tor), das
     // Buch der Studios und sein Vor-Backen, jeder Bau und Baum der Mesh-Zone (`architectureCullingRadius`) gezeichnet, jede
-    // Streu-Region, die der Streamer holt (`_streuRegionInReichweite`), gebaut (keine wartet auf ihr Asset), keine Karte eines
+    // Streu-Region, die der Streamer holt, gebaut (`_streuWartet`: keine fehlt, keine wartet auf ihr Asset), keine Karte eines
     // fernen Baums offen.
     _weltbildFehlt() {
         const st = this.state;
@@ -97137,22 +97158,8 @@ class AnazhRealm {
             if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e)) ungebaut++;
         }
         if (ungebaut) out.push(`${ungebaut} Bäume und Bauten wachsen`);
-        const SC = AnazhRealm.SCATTER;
-        const regionen = st.scatterRegions;
-        if (SC && regionen && !(st.atmosphere && st.atmosphere.gpuScatter === false)) {
-            const rx0 = Math.floor(p.x / SC.regionM);
-            const rz0 = Math.floor(p.z / SC.regionM);
-            let warten = 0;
-            for (let dz = -SC.ringRegions; dz <= SC.ringRegions; dz++)
-                for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
-                    const rx = rx0 + dx;
-                    const rz = rz0 + dz;
-                    if (!this._streuRegionInReichweite(rx, rz, p)) continue;
-                    const reg = regionen.get(`${rx},${rz}`);
-                    if (!reg || reg._deferredFoundry || reg._cont) warten++;
-                }
-            if (warten) out.push(`${warten} Wald-Stücke warten auf ihre Gestalt`);
-        }
+        const warten = this._streuWartet(p);
+        if (warten) out.push(`${warten} Wald-Stücke warten auf ihre Gestalt`);
         const karten =
             (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) + (this._impostorBakePending ? 1 : 0);
         if (karten) out.push(`${karten} ferne Bäume werden gemalt`);

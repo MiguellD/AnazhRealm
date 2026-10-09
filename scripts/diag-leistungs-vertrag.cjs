@@ -95,11 +95,9 @@ const server = http.createServer((req, res) => {
                 // ... und bis der Vorrat steht (`_foundryPrefetchLibrary`): solange er saugt, baut der gelüftete Ring
                 // jede neue Region leer und aufgeschoben (der Prefetch-Zweig von `_scatterRegion`).
                 const vorrat = () => !!(r._foundry && r._foundry._prefetching);
-                const wartend = () => {
-                    let n = 0;
-                    if (st.scatterRegions) for (const reg of st.scatterRegions.values()) if (reg && reg._deferredFoundry) n++;
-                    return n;
-                };
+                // die EINE Antwort der Welt (`_streuWartet`, Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte
+                // — der Streamer lief noch nie — als „keine wartet")
+                const wartend = () => (st.playerMesh ? r._streuWartet(st.playerMesh.position) : 1);
                 while ((wartend() > 0 || vorrat()) && performance.now() < dlW) {
                     for (let i = 0; i < 30; i++) {
                         try {
