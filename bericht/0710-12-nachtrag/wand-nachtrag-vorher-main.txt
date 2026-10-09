@@ -1,0 +1,64 @@
+=== DER SCHATTEN KLEINER WERFER — der Bias als Gesetz der Kaskade (echter Renderer) ===
+  Renderer: die GPU des Rechners · 960×540 · 341 s · normalBias je Kaskade [1,1] m · Tiefen-Bias [0.25,0.5] m · Texel [0.156,0.346] m
+  wolf     @0.32 (seitlich): IoU mit Saum 0.001 (7 px) · IoU 0 · Deckung 0 · gemessen 15 px · erwartet 3034 px · 28710 Dreiecke
+  fuchs    @0.32 (seitlich): IoU mit Saum 0.003 (8 px) · IoU 0 · Deckung 0 · gemessen 11 px · erwartet 1589 px · 30178 Dreiecke
+  busch    @0.32 (seitlich): IoU mit Saum 0.069 (7 px) · IoU 0.063 · Deckung 0.063 · gemessen 702 px · erwartet 10913 px · 1020 Dreiecke · Stufe 0 · 141 Fremde der Art aus
+  pfosten  @0.32 (seitlich): IoU mit Saum 0 (8 px) · IoU 0 · Deckung 0 · gemessen 1 px · erwartet 1179 px · 12 Dreiecke
+  spieler  @0.32 (seitlich): IoU mit Saum 0.518 (7 px) · IoU 0.406 · Deckung 0.419 · gemessen 1513 px · erwartet 3363 px · 162412 Dreiecke
+  wolf     @0.5: IoU mit Saum 0.079 (11 px) · IoU 0.018 · Deckung 0.02 · gemessen 70 px · erwartet 866 px · 28710 Dreiecke
+  fuchs    @0.5: IoU mit Saum 0.235 (11 px) · IoU 0.025 · Deckung 0.027 · gemessen 47 px · erwartet 438 px · 30178 Dreiecke
+  busch    @0.5: IoU mit Saum 0 (11 px) · IoU 0 · Deckung 0 · gemessen 0 px · erwartet 1561 px · 1020 Dreiecke · Stufe 0 · 141 Fremde der Art aus
+  pfosten  @0.5: IoU mit Saum 0.073 (11 px) · IoU 0 · Deckung 0 · gemessen 6 px · erwartet 164 px · 12 Dreiecke
+  spieler  @0.5: IoU mit Saum 0.985 (11 px) · IoU 0.379 · Deckung 0.431 · gemessen 264 px · erwartet 464 px · 162412 Dreiecke
+  fern (k1, 130 m über dem Fleck) wolf   @0.32: 25 Pixel außerhalb der Silhouette abgedunkelt, davon 0 in der Erwartung (15 px) · Texel k1 0.272 m
+  fern (k1, 130 m über dem Fleck) fuchs  @0.32: 14 Pixel außerhalb der Silhouette abgedunkelt, davon 1 in der Erwartung (7 px) · Texel k1 0.272 m
+  fern (k1, 130 m über dem Fleck) busch  @0.32: 3 Pixel außerhalb der Silhouette abgedunkelt, davon 2 in der Erwartung (50 px) · Texel k1 0.279 m · 109 Fremde der Art aus
+  fern (k1, 130 m über dem Fleck) wolf   @0.5: 1543 Pixel außerhalb der Silhouette abgedunkelt, davon 0 in der Erwartung (1 px) · Texel k1 0.254 m
+  fern (k1, 130 m über dem Fleck) fuchs  @0.5: 315 Pixel außerhalb der Silhouette abgedunkelt, davon 0 in der Erwartung (0 px) · Texel k1 0.26 m
+  fern (k1, 130 m über dem Fleck) busch  @0.5: 311 Pixel außerhalb der Silhouette abgedunkelt, davon 0 in der Erwartung (3 px) · Texel k1 0.26 m · 126 Fremde der Art aus
+  Akne eben@0.28         0°: 0.00 % von 191244 Pixeln
+  Akne streif@0.28       1°: 0.00 % von 188905 Pixeln
+  Akne dach@0.28        40°: 0.00 % von 196928 Pixeln
+  Akne eben@0.32         0°: 0.00 % von 191234 Pixeln
+  Akne streif@0.32      15°: 0.00 % von 199093 Pixeln
+  Akne dach@0.32        40°: 0.00 % von 196928 Pixeln
+  Akne eben@0.5          0°: 0.00 % von 191239 Pixeln
+  Akne streif@0.5       60°: 0.00 % von 191060 Pixeln
+  Akne dach@0.5         40°: 0.00 % von 196926 Pixeln
+  Zähne (0,1 Texel, ohne Tiefen-/Hang-Bias): 10.64 % von 191257 Pixeln
+  Akne-Fleck (offen, isoliert): [-851.4,-887.3,60] (x, z, Abstand zur Bühne m)
+  NACHTRAG (gemessen, kein Urteil):
+    tiefe Sonne wolf          @0.28: IoU mit Saum 0 · IoU 0 · Deckung 0 · gemessen 2 px · erwartet 4473 px · hell 41.9 / abgedunkelt -0.2
+    tiefe Sonne fuchs         @0.28: IoU mit Saum 0 · IoU 0 · Deckung 0 · gemessen 1 px · erwartet 1392 px · hell 39.2 / abgedunkelt -0.1
+    tiefe Sonne busch         @0.28: IoU mit Saum 0.042 · IoU 0.037 · Deckung 0.038 · gemessen 1289 px · erwartet 21833 px · hell 42.8 / abgedunkelt 0.9 · 145 Fremde der Art aus
+    tiefe Sonne pfosten       @0.28: IoU mit Saum 0 · IoU 0 · Deckung 0 · gemessen 2 px · erwartet 1940 px · hell 45.9 / abgedunkelt 0
+    Nacht (Mond) wolf          @0: IoU mit Saum 0 · IoU 0 · Deckung 0 · gemessen 0 px · erwartet 868 px · hell 0 / abgedunkelt 0
+    Nacht (Mond) pfosten       @0: IoU mit Saum 0 · IoU 0 · Deckung 0 · gemessen 0 px · erwartet 164 px · hell 0 / abgedunkelt 0
+    Gras wolf-gras     @0.32: IoU mit Saum 0.093 · IoU 0.018 · Deckung 0.021 · gemessen 366 px · erwartet 2340 px · hell 96.8 / abgedunkelt 0.1
+    Gras busch-gras    @0.32: IoU mit Saum 0.215 · IoU 0.102 · Deckung 0.108 · gemessen 1578 px · erwartet 9764 px · hell 96.1 / abgedunkelt 2.3 · 145 Fremde der Art aus
+    Hang 20° @0.28 (21.3°, n·l 0.5, [-851.4,-802.5]): Boden wirft auf sich 70.30 % (Sonne verdeckt nach 22 m) von 82772 Pixeln · Pfosten IoU mit Saum 0 (IoU 0, erwartet 685 px)
+    Hang 35° @0.28 (35.4°, n·l 0.65, [-845.3,-816.9]): Boden wirft auf sich 9.72 % (Sonne frei) von 34294 Pixeln · Pfosten IoU mit Saum 0 (IoU 0, erwartet 712 px)
+    Hang 20° @0.32 (21.3°, n·l 0.69, [-851.4,-802.5]): Boden wirft auf sich 0.01 % (Sonne frei) von 82636 Pixeln · Pfosten IoU mit Saum 0.002 (IoU 0.001, erwartet 960 px)
+    Hang 35° @0.32 (35.4°, n·l 0.82, [-845.3,-816.9]): Boden wirft auf sich 0.01 % (Sonne frei) von 82675 Pixeln · Pfosten IoU mit Saum 0 (IoU 0, erwartet 528 px)
+    Übergang k0→k1 @0.32: Grenze bei 113 m (Bild uebergang-0.32)
+    Übergang k0→k1 @0.5: Grenze bei 113.9 m (Bild uebergang-0.5)
+  echt: {"name":"dach","haus":"haus_alemannisch","stufe":0}
+  echt: {"name":"hang","ort":[-918.3,-785.8],"grad":24.8}
+  Bilder: C:\Users\micha\Desktop\AnazhRealm-OMEN\abab-b536\artifacts\schatten-bias\nachtrag-vorher
+
+ROT:
+  • (Q) QUELLE: setShadowBias Zeile 70460: schreibt normalBias ohne das Gesetz — dl.shadow.normalBias = m
+  • (Q) QUELLE: setShadowBias Zeile 70466: schreibt normalBias ohne das Gesetz — lw.shadow.normalBias = m
+  • (Q) QUELLE: init Zeile 91567: schreibt den Tiefen-Bias einer Schatten-Karte neben dem Gesetz — directionalLight.shadow.bias = -0.0005
+  • (Q) QUELLE: init Zeile 91568: schreibt normalBias ohne das Gesetz — directionalLight.shadow.normalBias = Number.isFinite(_atmo.shadowBias) ? Math.ma
+  • (Q) QUELLE: _kaskadeFit Zeile 95573: schreibt den Tiefen-Bias einer Schatten-Karte neben dem Gesetz — sh.bias = K.biasM[Math.min(i, K.biasM.length - 1)] / (zt - zb)
+  • (Q) QUELLE: das Gesetz `_schattenNormalBias` fehlt (der Bias ist ein fester Meter-Wert)
+  • (S) wolf @0.32: Boden-IoU (Saum 7 px) 0.001 < 0.4 (gemessen 15 px, erwartet 3034 px, Deckung 0) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) fuchs @0.32: Boden-IoU (Saum 8 px) 0.003 < 0.4 (gemessen 11 px, erwartet 1589 px, Deckung 0) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) busch @0.32: Boden-IoU (Saum 7 px) 0.069 < 0.4 (gemessen 702 px, erwartet 10913 px, Deckung 0.063) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) pfosten @0.32: Boden-IoU (Saum 8 px) 0 < 0.4 (gemessen 1 px, erwartet 1179 px, Deckung 0) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) wolf @0.5: Boden-IoU (Saum 11 px) 0.079 < 0.4 (gemessen 70 px, erwartet 866 px, Deckung 0.02) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) fuchs @0.5: Boden-IoU (Saum 11 px) 0.235 < 0.4 (gemessen 47 px, erwartet 438 px, Deckung 0.027) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) busch @0.5: Boden-IoU (Saum 11 px) 0 < 0.4 (gemessen 0 px, erwartet 1561 px, Deckung 0) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) pfosten @0.5: Boden-IoU (Saum 11 px) 0.073 < 0.4 (gemessen 6 px, erwartet 164 px, Deckung 0) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+EXIT=1 (359 s)
