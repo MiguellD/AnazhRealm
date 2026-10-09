@@ -169,8 +169,11 @@ function validateManifest(m) {
     // VOLLSTÄNDIG — jede Art aus seinen kindStages × jede deklarierte Stufe hat eine Zeile {tris, draws,
     // schatten}; tris ganzzahlig > 0, draws ganzzahlig ≥ 1, schatten = eine deklarierte Stufe der Art oder
     // false; MONOTON — tris fällt je Stufe streng, draws steigt nie; die Karten-Stufe (karte: true) ist die
-    // letzte Stufe und wirft nicht. Die DARF-Regler (blattKarte/nadelKarte endlich > 0,
-    // deckung ein Band [lo<=1<=hi]) halten ihre Form. Die Konsum-Wand (gebaute Stufen) steht in gate:asset-contract.
+    // letzte Stufe und wirft nicht. Die DARF-Regler (blattKarte endlich > 0, deckung ein Band [lo<=1<=hi]) halten
+    // ihre Form. Die Konsum-Wand (gebaute Stufen) steht in gate:asset-contract. S3 (09.10.): die Baum-Zeile des Haupt-Kerns
+    // trägt ihre Kosten-Regler als PFLICHT — lagen · geruest · blattKarte · wedel je Stufe 0/1, quote und der Wurf-Teil
+    // (wurf.teil "schatten") an der Stufe 1 —, die Nadel-Karte (nadelKarte) und der Blatt-Stride (dichte.laub/nadel) sind
+    // gefallen, der Fels bleibt einstufig.
     if (lodC && lodC.budget) {
         const ks = lodC.kindStages || {};
         const B = lodC.budget;
@@ -251,9 +254,22 @@ function validateManifest(m) {
                             `B2c: lod.budget.${k}[${st}].karte — nur die letzte Stufe ist Karte, und sie wirft nicht`
                         );
                 }
-                for (const f of ["blattKarte", "nadelKarte"])
-                    if (f in z && !(typeof z[f] === "number" && z[f] > 0 && isFinite(z[f])))
-                        v.push(`B2c: lod.budget.${k}[${st}].${f} muss endlich > 0 sein`);
+                if ("blattKarte" in z && !(typeof z.blattKarte === "number" && z.blattKarte > 0 && isFinite(z.blattKarte)))
+                    v.push(`B2c: lod.budget.${k}[${st}].blattKarte muss endlich > 0 sein`);
+                // S3 (09.10.): die Kosten-Regler der Krone — lagen (Quad-Lagen je Kronen-Pixel, > 0), quote (Dreiecke der
+                // Stufe / der Nah-Stufe, in (0, 1)), geruest (Röhren ab geruest·trunkR, in (0, 1)), wedel (der Nadel-Ast als
+                // Strähne: ab in [0, 1), teile ganz >= 1, breite > 0).
+                if ("lagen" in z && !(typeof z.lagen === "number" && z.lagen > 0 && isFinite(z.lagen)))
+                    v.push(`B2c: lod.budget.${k}[${st}].lagen muss endlich > 0 sein`);
+                if ("quote" in z && !(typeof z.quote === "number" && z.quote > 0 && z.quote < 1))
+                    v.push(`B2c: lod.budget.${k}[${st}].quote muss in (0, 1) liegen`);
+                if ("geruest" in z && !(typeof z.geruest === "number" && z.geruest > 0 && z.geruest < 1))
+                    v.push(`B2c: lod.budget.${k}[${st}].geruest muss in (0, 1) liegen`);
+                if ("wedel" in z) {
+                    const w = z.wedel;
+                    if (!w || !(w.ab >= 0 && w.ab < 1) || !(Number.isInteger(w.teile) && w.teile >= 1) || !(w.breite > 0 && isFinite(w.breite)))
+                        v.push(`B2c: lod.budget.${k}[${st}].wedel muss ab in [0, 1), teile (ganz >= 1) und breite (> 0) tragen`);
+                }
                 // W5: der Anteil der gewachsenen Blattstellen je Kronen-Art, die eine Karte/Strähne tragen — (0, 1].
                 if ("dichte" in z) {
                     const d = z.dichte;
@@ -284,12 +300,18 @@ function validateManifest(m) {
                     v.push(`B2c: lod.budget.${k}[${st}].ringToleranz muss in (0, 0,01) Baumhoehen liegen`);
                 // W6 (05.10.): der Wurf-Teil — Straenge ab durchmesserM Welt-Durchmesser werfen (der Kaskaden-Texel k0);
                 // nur eine Stufe, die selbst wirft, kann einen Wurf-Teil nennen.
+                // S3 (das EINE Wurf-Gesetz E1): der Wurf-Teil reist als eigenes Gitter `teil` ("schatten") mit höchstens
+                // `tris` Dreiecken, seine Karten auf höchstens `lagen` Lagen; durchmesserM bleibt die Texel-Grenze.
                 if ("wurf" in z) {
                     const w = z.wurf;
                     if (!w || !(typeof w.durchmesserM === "number" && w.durchmesserM > 0 && isFinite(w.durchmesserM)))
                         v.push(`B2c: lod.budget.${k}[${st}].wurf.durchmesserM muss endlich > 0 sein`);
                     else if (z.schatten !== Number(st))
                         v.push(`B2c: lod.budget.${k}[${st}].wurf — nur eine Stufe, die selbst wirft, nennt einen Wurf-Teil`);
+                    if (w && "teil" in w && w.teil !== "schatten")
+                        v.push(`B2c: lod.budget.${k}[${st}].wurf.teil muss "schatten" sein`);
+                    if (w && "teil" in w && !(Number.isInteger(w.tris) && w.tris > 0 && w.lagen > 0 && isFinite(w.lagen)))
+                        v.push(`B2c: lod.budget.${k}[${st}].wurf mit teil trägt tris (ganz > 0) und lagen (> 0)`);
                 }
                 // Welle 5 (Integration 05.10.): das Reisig des Strauchs — schnitt (Radius-Schnitt der Stufe in trunkR:
                 // duennere Straenge fallen) < rute (in trunkR: darunter Vierkant-Roehre auf jedem 3. Ring) < 1.
@@ -315,6 +337,24 @@ function validateManifest(m) {
                 vor = { st, z };
             }
         }
+        // S3 (Vertrags-Akt 09.10.) — PFLICHT im Haupt-Kern: die Baum-Stufen 0/1 tragen ihre Kosten-Regler, der Fels ist
+        // einstufig (eine Fels-L1 spart an der Mess-Wiese < 3k Dreiecke: formationen 10 240 / Haushalt 30 000).
+        if (!m.zweit && B.tree) {
+            for (const st of [0, 1]) {
+                const z = B.tree[st];
+                if (!z) continue;
+                for (const f of ["lagen", "geruest", "blattKarte", "wedel"])
+                    if (!(f in z)) v.push(`B2c: lod.budget.tree[${st}].${f} fehlt (S3-Pflicht)`);
+                for (const f of ["nadelKarte"]) if (f in z) v.push(`B2c: lod.budget.tree[${st}].${f} ist gefallen (S3: der Wedel)`);
+                if (z.dichte && ("laub" in z.dichte || "nadel" in z.dichte))
+                    v.push(`B2c: lod.budget.tree[${st}].dichte.laub/nadel ist gefallen (S3: die Lagen-Wahl)`);
+            }
+            if (B.tree[1] && !("quote" in B.tree[1])) v.push("B2c: lod.budget.tree[1].quote fehlt (S3-Pflicht)");
+            if (B.tree[1] && !(B.tree[1].wurf && B.tree[1].wurf.teil === "schatten"))
+                v.push('B2c: lod.budget.tree[1].wurf.teil "schatten" fehlt (S3-Pflicht: der Schatten-Teil)');
+        }
+        if (!m.zweit && ks.rock && (ks.rock.length !== 1 || ks.rock[0] !== 0 || (B.rock && 1 in B.rock)))
+            v.push("B2c: lod.kindStages.rock ist [0] (S3: die Fels-L1 ist FINAL GESTRICHEN)");
     }
     const pl = m.cfg && m.cfg.placement;
     if (pl) {
@@ -953,7 +993,11 @@ function validateManifest(m) {
                             tris: 10,
                             draws: 1,
                             schatten: 1,
-                            nadelKarte: -2,
+                            blattKarte: -2,
+                            lagen: 0,
+                            quote: 1.2,
+                            geruest: 0,
+                            wedel: { ab: 1, teile: 0, breite: 0 },
                             dichte: { laub: 1.5 },
                             rinde: { ast: 0.1, reisig: 0.3 },
                             straehne: { teile: 0, breite: 1 },
@@ -1027,7 +1071,11 @@ function validateManifest(m) {
             bv.some((s) => s.includes("placement.boden.BÖSE ID.skala muss")) &&
             bv.some((s) => s.includes("placement.boden.BÖSE ID.licht muss ein Trapez")) &&
             bv.some((s) => s.includes("placement.boden.BÖSE ID.weite muss")) &&
-            bvB.some((s) => s.includes("nadelKarte muss")) &&
+            bvB.some((s) => s.includes("shrub[1].blattKarte muss")) &&
+            bvB.some((s) => s.includes("lagen muss")) &&
+            bvB.some((s) => s.includes("quote muss")) &&
+            bvB.some((s) => s.includes("geruest muss")) &&
+            bvB.some((s) => s.includes("wedel muss")) &&
             bvB.some((s) => s.includes("dichte.laub muss")) &&
             bvB.some((s) => s.includes("rinde muss")) &&
             bvB.some((s) => s.includes("straehne muss")) &&
@@ -1071,6 +1119,59 @@ function validateManifest(m) {
                 hopMs.some((s) => s.includes("ohne sprung-Zwilling")) &&
                 faktor.some((s) => s.includes("ohne sprung-Zwilling")),
             `echt ${echt.length} · m/s ${hopMs.length} · Faktor ${faktor.length}`
+        );
+    }
+    // S3 (Vertrags-Akt 09.10.) — DIE ABSENZ-WAND DER FINAL GESTRICHENEN: (a) budgetErzwingen faltet nur Zweit-Kern-Gestalten
+    // (die Pflanzen-Zeile IST der Bau-Regler — ein Ausgangs-Falten wäre ein Zwilling), (b) die Seh-Klasse `laub` existiert
+    // nicht (ihr einziger Leser wäre dieses Falten: Konsum 0), (c) die Baum-Zeile trägt ihre S3-Pflicht und der Fels ist
+    // einstufig (validateManifest oben; hier der Selbsttest).
+    {
+        const pg = fs.readFileSync(path.join(root, "worlds", "terrain", "phytogenesis.js"), "utf8");
+        const pcSrc = fs.readFileSync(path.join(root, "phyto-core.js"), "utf8");
+        const absenz = (pgS, pcS) => {
+            const v = [];
+            const a = pgS.indexOf("function __replyBuildAsset(");
+            const body = a >= 0 ? pgS.slice(a, pgS.indexOf("\n    }\n", a)) : "";
+            const zweig = body.indexOf("if (isZweitKern) {");
+            const ruf = [...body.matchAll(/budgetErzwingen\(/g)].map((x) => x.index);
+            if (!body) v.push("__replyBuildAsset nicht gefunden");
+            else if (ruf.some((i) => zweig < 0 || i < zweig || i > body.indexOf("\n            }\n", zweig)))
+                v.push("budgetErzwingen faltet außerhalb des Zweit-Kern-Zweigs (die Pflanzen-Zeile ist der Bau-Regler)");
+            const seh = /seh: Object\.freeze\((\[[^\]]*\])\)/.exec(pcS);
+            if (!seh || JSON.parse(seh[1]).indexOf("laub") >= 0) v.push("die Seh-Klasse laub lebt in BUDGET_GESETZ.seh");
+            return v;
+        };
+        const echt = absenz(pg, pcSrc);
+        check("B2c S3-Absenz: kein Pflanzen-Falten (budgetErzwingen nur im Zweit-Kern-Zweig), keine Seh-Klasse laub", echt.length === 0, echt.join(" · "));
+        const pflicht = validateManifest({
+            vertrag: 1,
+            presets: { a: { kind: "tree" } },
+            build: function () {},
+            cfg: {
+                lod: {
+                    kindStages: { tree: [0, 1], rock: [0, 1] },
+                    budget: {
+                        tree: {
+                            0: { tris: 100, draws: 1, schatten: 1, nadelKarte: 2, dichte: { laub: 0.4 } },
+                            1: { tris: 50, draws: 1, schatten: 1, wurf: { durchmesserM: 0.17 } },
+                            fernform: "gesetz",
+                        },
+                        rock: { 0: { tris: 10, draws: 1, schatten: 0 }, 1: { tris: 5, draws: 1, schatten: 1 }, fernform: "gesetz" },
+                        gestalten: { "*": 1 },
+                    },
+                },
+            },
+        });
+        const falten = absenz(pg.replace("if (isZweitKern) {", "if (true) {").replace("const res = PC.budgetErzwingen(meshes", "const res0 = PC.budgetErzwingen(meshes, null); const res = PC.budgetErzwingen(meshes"), pcSrc);
+        const laub = absenz(pg, pcSrc.replace('seh: Object.freeze(["stoff",', 'seh: Object.freeze(["laub", "stoff",'));
+        check(
+            "SELBST-TEST: die S3-Wand feuert (Baum-Zeile ohne lagen/geruest/blattKarte/wedel/quote/wurf.teil, mit nadelKarte und dichte.laub · Fels zweistufig · Pflanzen-Falten · Seh-Klasse laub)",
+            ["tree[0].lagen fehlt", "tree[0].geruest fehlt", "tree[0].blattKarte fehlt", "tree[0].wedel fehlt", "tree[0].nadelKarte ist gefallen", "dichte.laub/nadel ist gefallen", "tree[1].quote fehlt", 'wurf.teil "schatten" fehlt', "rock ist [0]"].every((t) =>
+                pflicht.some((s) => s.includes(t))
+            ) &&
+                falten.length > 0 &&
+                laub.length > 0,
+            `${pflicht.length} Zeilen-Befunde · Falten ${falten.length} · laub ${laub.length}`
         );
     }
 

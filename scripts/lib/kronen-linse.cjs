@@ -411,10 +411,14 @@ function schwebe(meshes) {
     const fest = karten.map((k) => {
         if (abstand(k.m, k.h * 0.5) <= k.h * 0.5) return true;
         const tol = Math.max(k.h * 0.15, H * 0.003);
+        // die Kante berührt die Rinde: ihre Mitte — und (S3, 09.10.) acht weitere Proben je Kante: der Wedel tritt aus dem
+        // offenen Ende seiner Röhre, seine Ansatz-Kante kreuzt die Röhren-Wand, ihre Mitte liegt auf der Achse (r entfernt)
         for (let e = 0; e < 4; e++) {
             const A = k.c[e],
                 B = k.c[(e + 1) % 4];
-            if (abstand([(A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2], tol) <= tol) return true;
+            for (const t of [0.5, 0.0625, 0.1875, 0.3125, 0.4375, 0.5625, 0.6875, 0.8125, 0.9375])
+                if (abstand([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t], tol) <= tol)
+                    return true;
         }
         return false;
     });
@@ -437,7 +441,25 @@ function schwebe(meshes) {
                 for (let z = c[2] - 1; z <= c[2] + 1; z++)
                     for (const i of G2.get(x + "," + y + "," + z) || []) {
                         if (fest[i]) continue;
-                        if (Math.hypot(...sub(karten[i].m, kj.m)) < (karten[i].h + kj.h) * 0.75) {
+                        // S3 (09.10.): eine Kanten-Mitte der Karte liegt IN der hängenden Karte (die Glieder einer Strähne
+                        // überlappen je ein Zehntel — der Wedel teilt seine Bahn in Stücke von Nadel-Maß, schmaler als die
+                        // Mitten-Regel reicht)
+                        const ki = karten[i];
+                        let haengt = Math.hypot(...sub(ki.m, kj.m)) < (ki.h + kj.h) * 0.75;
+                        const tol = Math.max(ki.h * 0.15, H * 0.003);
+                        for (let e = 0; e < 4 && !haengt; e++) {
+                            const A = ki.c[e],
+                                B = ki.c[(e + 1) % 4];
+                            const mi = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2];
+                            for (const [a, b, c2] of [
+                                [kj.c[0], kj.c[1], kj.c[2]],
+                                [kj.c[0], kj.c[2], kj.c[3]],
+                            ]) {
+                                const q = naechster(mi, a, b, c2);
+                                if (Math.hypot(mi[0] - q[0], mi[1] - q[1], mi[2] - q[2]) <= tol) haengt = true;
+                            }
+                        }
+                        if (haengt) {
                             fest[i] = true;
                             offen.push(i);
                         }

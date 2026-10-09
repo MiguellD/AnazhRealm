@@ -839,6 +839,22 @@ const FORBIDDEN = [
     // Warteschlange `_erstWartet`, bereit ist die Pipeline, sobald r184 sie in seinen Zustand schreibt.
     { token: "_erstPipeline", fiel: "Welle K — die Bereitschaft liest den Zustand (_erstWartet), nie das Versprechen" },
     { token: "_erstNeuAufnehmen", fiel: "Welle K — EINE Warteschlange (_erstWartet ohne Pipeline)" },
+    // S3 PFLANZEN (09.10.) — DER DRAWRANGE-WURF-VORSATZ IST GEFALLEN: die Baum-L1 liefert ihren Wurf als eigenes Gitter
+    // (`teil: "schatten"`, aDeckt, EIN Schatten-Stoff); der Index-Vorsatz der Rinde, seine Zahl je Teil und das
+    // Vorsatz-Verschmelzen leben nirgends mehr. Die Nadel-Karte ist mit dem Wedel gefallen (der Nadel-Ast IST seine Strähne
+    // aus der Wedel-Zelle), der Blatt-Stride der Laub-L0 mit der Lagen-Wahl.
+    {
+        token: "__wurf",
+        fiel: "S3 — der Schatten-Teil (teil schatten) trägt den Wurf, kein Index-Vorsatz",
+        auch: ["foundry-core.js", "worlds/terrain/phytogenesis.js"],
+    },
+    { token: "lf.wurf", fiel: "S3 — der Schatten-Teil ist selbst der Zwilling (_foundryFlattenFor)" },
+    { token: "wurfe", fiel: "S3 — das Verschmelzen legt keinen Wurf-Vorsatz mehr nach vorn (_geoVerbinden)" },
+    { token: "_wurfDreiecke", fiel: "S3 — der Wurf-Vorsatz der L1-Rinde", auch: ["foundry-core.js"] },
+    { token: "barkFein", fiel: "S3 — die Rinde der L1 ist EIN Teil, der Wurf ein eigenes", auch: ["foundry-core.js"] },
+    { token: "nadelKarte", fiel: "S3 — der Nadel-Ast ist sein Wedel (tree[Stufe].wedel)", auch: ["foundry-core.js"] },
+    { token: "BLATT_ATLAS_NADEL", fiel: "S3 — Zelle 3 ist die Wedel-Zelle (BLATT_ATLAS_WEDEL)", auch: ["foundry-core.js", "phyto-core.js"] },
+    { token: "NADEL_ZWEIG", fiel: "S3 — der Maler der Zelle 3 malt den Wedel (WEDEL_ZWEIG)", auch: ["phyto-core.js"] },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

@@ -367,7 +367,8 @@
     // DER ATLAS-STECKBRIEF (04.10., echte GPU): was der Maler in eine Zelle setzt, als ZAHL — damit die
     // Karte nur rastert, was der Atlas trägt. EIN Atlas, vier Zellen: 0 der Baum-Zweig (Laub-Karten der Bäume routen
     // `zelle % zellen`), 1 der Weiden-Zweig (die Strähnen der Trauerweide; BLATT_ATLAS_WEIDE), 2 der Großblatt-Zweig
-    // (Strauch; BLATT_ATLAS_GROSS), 3 die Nadel-Zweiglein (Nadel-Karten der Koniferen). `kern` = halbe Ausdehnung
+    // (Strauch; BLATT_ATLAS_GROSS), 3 der Wedel (S3: die Nadel-Äste der Koniferen als Strähne; BLATT_ATLAS_WEDEL —
+    // vorher Nadel-Zweiglein der Nadel-Karten, die mit der Wedel-Strähne gefallen sind). `kern` = halbe Ausdehnung
     // um die Zellmitte als Anteil der halben Zelle (Breitblatt reicht Alpha>0 höchstens bis 0,7148 — die
     // Laub-Karte schneidet auf ihn zu, gemessen verwarfen die ungeschnittenen Karten 84 % ihrer Fragmente);
     // `fuellung` = mittlere Alpha-Deckung der GANZEN Zelle (512er-Ast 05.10.: 0,1796/0,1786/0,1797 bis 0,709 — davor
@@ -377,7 +378,9 @@
     // Integration 05.10.: die zweite Baum-Zelle war ein Zwilling der ersten (derselbe Zweig, derselbe Strom — Prüfer W5:
     // „die zwei Baum-Zellen sind fast gleich"); sie trägt seither den Weiden-Zweig, die Bäume lesen Zelle 0.
     const BLATT_ATLAS_BREIT = { zellen: 1, kern: 0.72, fuellung: 0.1796 };
-    const BLATT_ATLAS_NADEL = { zelle: 3, kern: 1, fuellung: 0.2537 };
+    // Die Wedel-Zelle (S3, 09.10.): der Wedel reicht bis 0,936 der halben Zelle (kern 1), Füllung 0,2811 gemessen (gate:asset-contract
+    // malt den Atlas und hält die Zahl gegen den Maler; vorher die Nadel-Zweiglein 0,2537).
+    const BLATT_ATLAS_WEDEL = { zelle: 3, kern: 1, fuellung: 0.2811 };
     // DIE GROSSBLATT-ZELLE (05.10.): das Blatt-Mass ist eine Eigenschaft der Art — die Baum-Karten (Zelle 0) tragen
     // das Natur-Blatt der Baeume (14 px in der 512er-Zelle), die kleine Karte des Strauchs und die gestreckte Straehne
     // der Weide trugen damit 0,026 bzw. 0,039 m (Hasel und Weide: 0,06–0,15 m). Zelle 2 traegt ihr den Zweig mit
@@ -476,21 +479,24 @@
         seitWinkel: [0.7, 0.35],
         strom: 0x1eb1,
     };
-    // DER NADEL-ZWEIG der Nadel-Zelle (05.10.), in Atlas-Pixeln: `aeste` Zweiglein strahlen aus der Zellmitte (Länge
-    // `laenge` [min, max] px), jedes mit `unter` Seitenzweiglein (`unterSeite`·Länge), rundum dicht benadelt: alle
-    // `abstand` px je Seite eine Nadel der Länge `nadel` px (±20 %), Breite `breite`, `winkel` rad zur Achse nach vorn.
-    // Befund: die Zelle trug 70 Striche von 4 px Breite und 40–94 px Länge — auf der L0-Karte (Fichte 1,2 m) eine
-    // „Nadel" von 19–44 cm Länge und 2 cm Dicke (Natur 1,5–3 cm). Jetzt liegt die Nadel bei ~2 cm (Fichte, Tanne; die
-    // 512er-Zelle trägt doppelt so lange Zweiglein mit Nadeln derselben Pixel-Länge).
-    const NADEL_ZWEIG = {
-        aeste: 15,
-        laenge: [160, 232],
-        unter: 7,
-        unterSeite: 0.36,
-        abstand: 1.7,
-        nadel: 8,
-        breite: 1.3,
-        winkel: 0.95,
+    // DER WEDEL der Wedel-Zelle (S3, 09.10.), in Atlas-Pixeln: der Nadel-Ast einer Konifere als EIN flacher Wedel — eine
+    // Rachis (Haupt-Achse) vom Ansatz (unterer Rand der Zelle: die Strähne legt ihn an den Träger) zur Spitze, daran
+    // wechselständig `seiten` Zweiglein im Winkel `winkel` [Basis, Zufall] rad zur Spitze geneigt, ihre Länge fällt vom
+    // Ansatz (`laenge` · Zellhalbe) zur Spitze auf 0 (die Wedel-Gestalt der Tanne von oben), jedes dicht benadelt: alle
+    // `abstand` px je Seite eine Nadel von `nadel` px (±20 %), Breite `breite`, `nadelWinkel` rad nach vorn. Befund (W5,
+    // Späher S3): die Nadel-Zelle trug radiale Zweiglein — auf der Krone las jeder Nadel-Ast als „kugeliges Büschel"
+    // (Radial-Stern), die Nadel-Äste selbst als Röhren (Koniferen-L0 78–80 % Rinde). Der Wedel ist der Ast UND seine
+    // Nadeln: die Strähne zieht ihn entlang der gewachsenen Bahn (foundry-core, budget.tree[Stufe].wedel).
+    const WEDEL_ZWEIG = {
+        seiten: 36,
+        laenge: 0.95,
+        winkel: [0.82, 0.18],
+        unter: 4,
+        abstand: 1.6,
+        nadel: 12,
+        breite: 1.6,
+        nadelWinkel: 1.05,
+        rand: 0.92,
         strom: 0xbeef,
     };
 
@@ -688,22 +694,24 @@
             }
             x.restore();
         }
-        // Zelle 3 — DER NADEL-ZWEIG (Wert-only) für die Nadel-Karten (L0 und L1 der Koniferen), auf IHRE Zelle
-        // geschnitten: Zweiglein aus der Zellmitte, rundum benadelt (NADEL_ZWEIG) — jede Nadel ein kurzer Strich schräg
-        // nach vorn, je Zweiglein EIN Pfad (ein Wert, ein Strich-Aufruf).
+        // Zelle 3 — DER WEDEL (Wert-only, WEDEL_ZWEIG) für die Nadel-Äste der Koniferen (L0 distal, L1 ganz, als Strähne),
+        // auf IHRE Zelle geschnitten: die Rachis vom Ansatz (unten) zur Spitze (oben), wechselständige benadelte
+        // Zweiglein, deren Länge zur Spitze fällt — jede Nadel ein kurzer Strich schräg nach vorn, je Achse EIN Pfad.
         {
-            const NZ = NADEL_ZWEIG;
-            const rg = _atlasRnd(NZ.strom); // eigener Strom (verbraucht kein Welt-RNG)
-            const z0 = BLATT_ATLAS_NADEL.zelle * Z;
+            const WZ = WEDEL_ZWEIG;
+            const rg = _atlasRnd(WZ.strom); // eigener Strom (verbraucht kein Welt-RNG)
+            const z0 = BLATT_ATLAS_WEDEL.zelle * Z;
             const ox = z0 + Z / 2,
-                oy = Z / 2;
+                halbe = (Z / 2) * WZ.rand,
+                yA = Z / 2 + halbe,
+                yS = Z / 2 - halbe;
             x.save();
             x.beginPath();
             x.rect(z0, 0, Z, Z);
             x.clip();
             x.lineCap = "round";
-            // Eine Achse (Start p0, Richtung w, Länge L, Krümmung k): das Holz und ihre Nadeln.
-            const zweig = (p0, w, L, k, dicke) => {
+            // Eine Achse (Start p0, Richtung w — 0 = zur Spitze —, Länge L, Krümmung k): das Holz und ihre Nadeln.
+            const achse = (p0, w, L, k, dicke, nadelMul) => {
                 const p = (t) => {
                     const a = w + k * t;
                     return [p0[0] + Math.sin(a) * L * t, p0[1] - Math.cos(a) * L * t];
@@ -720,16 +728,16 @@
                 const v = 0.84 + rg() * 0.24;
                 x.strokeStyle =
                     "rgba(" + Math.round(236 * v) + "," + Math.round(244 * v) + "," + Math.round(224 * v) + ",1)";
-                x.lineWidth = NZ.breite;
+                x.lineWidth = WZ.breite;
                 x.beginPath();
-                const n = Math.max(2, Math.round(L / NZ.abstand));
+                const n = Math.max(2, Math.round(L / WZ.abstand));
                 for (let i = 0; i < n; i++) {
                     const t = (i + 0.5) / n,
                         q = p(t),
                         a = w + k * t;
                     for (const sg of [-1, 1]) {
-                        const r = a + sg * (NZ.winkel + (rg() - 0.5) * 0.4),
-                            l = NZ.nadel * (0.8 + rg() * 0.4) * (1 - 0.35 * t);
+                        const r = a + sg * (WZ.nadelWinkel + (rg() - 0.5) * 0.4),
+                            l = WZ.nadel * nadelMul * (0.8 + rg() * 0.4) * (1 - 0.3 * t);
                         x.moveTo(q[0], q[1]);
                         x.lineTo(q[0] + Math.sin(r) * l, q[1] - Math.cos(r) * l);
                     }
@@ -737,16 +745,22 @@
                 x.stroke();
                 return p;
             };
-            for (let i = 0; i < NZ.aeste; i++) {
-                const w = (i / NZ.aeste) * 6.2831 + (rg() - 0.5) * 0.5,
-                    L = NZ.laenge[0] + rg() * (NZ.laenge[1] - NZ.laenge[0]),
-                    k = (rg() - 0.5) * 0.5,
-                    p0 = [ox + Math.sin(w) * 5, oy - Math.cos(w) * 5];
-                const p = zweig(p0, w, L, k, 1.4);
-                for (let u = 0; u < NZ.unter; u++) {
-                    const tu = 0.28 + (0.5 * u) / Math.max(1, NZ.unter - 1) + (rg() - 0.5) * 0.08,
+            // Die Rachis (leicht gebogen) trägt die Zweiglein; ihre eigenen Nadeln sind kürzer (sie liegt im Wedel).
+            const kr = (rg() - 0.5) * 0.12;
+            const rachis = achse([ox, yA], 0, yA - yS, kr, 2.2, 0.8);
+            for (let i = 0; i < WZ.seiten; i++) {
+                const t = 0.04 + (0.9 * (i + 0.5)) / WZ.seiten,
+                    sg = i % 2 ? 1 : -1,
+                    q = rachis(t),
+                    w = kr * t + sg * (WZ.winkel[0] + rg() * WZ.winkel[1]),
+                    L = halbe * WZ.laenge * Math.pow(1 - t, 0.85) * (0.85 + rg() * 0.3);
+                if (L < WZ.nadel) continue;
+                const pz = achse(q, w, L, -sg * 0.18, 1.3, 1);
+                // Unter-Zweiglein am äußeren Teil der langen Zweiglein (der Wedel wird nach außen dichter).
+                for (let u = 0; u < WZ.unter && L > 6 * WZ.nadel; u++) {
+                    const tu = 0.35 + (0.5 * u) / Math.max(1, WZ.unter - 1),
                         su = (u + i) % 2 ? 1 : -1;
-                    zweig(p(tu), w + k * tu + su * (0.7 + rg() * 0.25), L * NZ.unterSeite * (1 - 0.3 * tu), 0, 0.9);
+                    achse(pz(tu), w - sg * 0.18 * tu + su * (0.62 + rg() * 0.2), L * 0.3 * (1 - 0.4 * tu), 0, 0.9, 0.9);
                 }
             }
             x.restore();
@@ -937,8 +951,8 @@
             // opts.cell erzwingt die Atlas-Zelle (die Studio-Karten routen sie je Blatt); ohne opts.cell der
             // Zyklus des Steckbriefs (Nadel → ihre Zelle, sonst li % Breitblatt-Zellen).
             const cell =
-                opts.cell != null ? opts.cell : needle ? BLATT_ATLAS_NADEL.zelle : li % BLATT_ATLAS_BREIT.zellen;
-            const k = needle ? BLATT_ATLAS_NADEL.kern : kern;
+                opts.cell != null ? opts.cell : needle ? BLATT_ATLAS_WEDEL.zelle : li % BLATT_ATLAS_BREIT.zellen;
+            const k = needle ? BLATT_ATLAS_WEDEL.kern : kern;
             const s = (l.scale || 0.5) * (needle ? nScale : bScale) * 0.5 * k;
             // k = 1: u0 = cell·0.25, u1 = u0 + 0.25, v 0..1 — exakt die alten Werte (Byte-Treue ohne Kern).
             const u0 = cell * 0.25 + 0.125 * (1 - k),
@@ -975,6 +989,88 @@
             qi++;
         }
         return { positions, normals, colors, aFlex, aPhase, uvs, indices, count: qi };
+    }
+
+    // DIE LAGEN EINER KRONE (S3, 09.10.) — der Bau-Regler der Karten-Wahl: wie viele Karten-Lagen ein Kronen-Pixel trägt,
+    // wenn JEDE Blattstelle ihre Karte trüge (Kante `kante` Blatt-Größen, Kern `kern`; dieselbe Karten-Geometrie wie
+    // buildFoliageQuads). Gerastert in 8 Ansichten (4 Azimute × Blick 0° und 45° von unten), `aufl` Pixel über die
+    // Ausdehnung; gemittelt über die Pixel mit mindestens einer Lage. Die Stufe trägt dann den Anteil, der die Zeile
+    // `lagen` hält (foundry-core `__lagenWahl`) — die Zeile IST der Regler, gate:asset-contract misst mit der kronen-linse
+    // (24 Ansichten) nach: Schätzung/Messung 0,87–0,94 über 16 Laub-Gestalten (Kern V18.536).
+    function kronenLagen(blaetter, kante, kern, aufl) {
+        const q = buildFoliageQuads(
+            blaetter.map((l) => ({ pos: l.pos, dir: l.dir, up: l.up, scale: l.scale * kante, phase: l.phase })),
+            { scale: 1, cell: 0, kern: kern }
+        );
+        return quadLagen(q.positions, q.count, aufl);
+    }
+    // Die Lagen beliebiger Karten (je Karte vier Ecken in Bau-Reihenfolge, Dreiecke 0-1-2 und 0-2-3): die Strähnen der
+    // Trauer-Krone und der Wedel lesen dasselbe Raster wie die Laub-Karten.
+    function quadLagen(P, n, aufl) {
+        if (!n) return 0;
+        const U = new Float32Array(n * 4),
+            V = new Float32Array(n * 4);
+        let sQ = 0,
+            nQ = 0;
+        for (let k = 0; k < 8; k++) {
+            const th = ((k % 4) * Math.PI) / 4,
+                e = k < 4 ? 0 : Math.PI / 4;
+            const cx = Math.cos(th),
+                cz = Math.sin(th),
+                ux = Math.sin(th) * Math.sin(e),
+                uy = Math.cos(e),
+                uz = -Math.cos(th) * Math.sin(e);
+            let u0 = Infinity,
+                u1 = -Infinity,
+                v0 = Infinity,
+                v1 = -Infinity;
+            for (let i = 0; i < n * 4; i++) {
+                U[i] = P[i * 3] * cx + P[i * 3 + 2] * cz;
+                V[i] = P[i * 3] * ux + P[i * 3 + 1] * uy + P[i * 3 + 2] * uz;
+                if (U[i] < u0) u0 = U[i];
+                if (U[i] > u1) u1 = U[i];
+                if (V[i] < v0) v0 = V[i];
+                if (V[i] > v1) v1 = V[i];
+            }
+            const px = Math.max(u1 - u0, v1 - v0) / aufl;
+            if (!(px > 0)) continue;
+            const W = Math.ceil((u1 - u0) / px) + 2,
+                H = Math.ceil((v1 - v0) / px) + 2;
+            const buf = new Uint16Array(W * H);
+            for (let c = 0; c < n; c++)
+                for (let d = 0; d < 2; d++) {
+                    const a = c * 4,
+                        b = c * 4 + 1 + d,
+                        f = c * 4 + 2 + d;
+                    const ax = (U[a] - u0) / px,
+                        ay = (V[a] - v0) / px,
+                        bx = (U[b] - u0) / px,
+                        by = (V[b] - v0) / px,
+                        qx = (U[f] - u0) / px,
+                        qy = (V[f] - v0) / px;
+                    const fl = (bx - ax) * (qy - ay) - (by - ay) * (qx - ax);
+                    if (Math.abs(fl) < 1e-12) continue;
+                    const xa = Math.max(0, Math.floor(Math.min(ax, bx, qx))),
+                        xb = Math.min(W - 1, Math.ceil(Math.max(ax, bx, qx))),
+                        ya = Math.max(0, Math.floor(Math.min(ay, by, qy))),
+                        yb = Math.min(H - 1, Math.ceil(Math.max(ay, by, qy)));
+                    for (let y = ya; y <= yb; y++)
+                        for (let x = xa; x <= xb; x++) {
+                            const sx = x + 0.5,
+                                sy = y + 0.5;
+                            const w0 = ((bx - sx) * (qy - sy) - (by - sy) * (qx - sx)) / fl,
+                                w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl;
+                            if (w0 < 0 || w1 < 0 || 1 - w0 - w1 <= 0) continue;
+                            buf[y * W + x]++;
+                        }
+                }
+            for (let i = 0; i < buf.length; i++)
+                if (buf[i]) {
+                    sQ += buf[i];
+                    nQ++;
+                }
+        }
+        return nQ ? sQ / nQ : 0;
     }
 
     // EINS W4 (P1) — DIE SUPERFORMEL (Gielis, Vorlage `superR` Z.240): EIN Gesetz, riesige
@@ -2296,6 +2392,14 @@
         zeilenAb: 0.4,
     };
 
+    // DIE BILD-HÖHE EINES BAUMS an der Nahkante seiner Stufe in Pixeln (S3, 09.10.; 1080 Zeilen bei 75° Sichtfeld): die
+    // L1 beginnt bei Distanz = Baumhöhe (704 px je Baumhöhe, wie tree[1].ringToleranz rechnet), die L0 zeigt ihn nah bei
+    // halber Höhe (1 408 px). Ein Gitter-Merkmal unter einem Pixel dieser Kante trägt die Stufe nicht.
+    const STUFEN_BILD_PX = [1408, 704];
+    // Der Umkreis-Faktor des Wurf-Kants (S3): ein gleichseitiges Dreieck mit Umkreis R hat die mittlere Breite 3√3·R/π —
+    // gleich der des Kreises 2r bei R = 2π/(3√3)·r.
+    const WURF_KANT = (2 * Math.PI) / (3 * Math.sqrt(3));
+
     // Das Ring-Gitter einer Birken-Röhre: die Fuß-Zone im Raster `fussRaster`, darüber je Lentizellen-Zeile vier Ringe
     // (linear auf dem gewachsenen Strang eingesetzt — die Gestalt bleibt, das Gitter verdichtet sich). Ringe tragen
     // `zeile` (Index der Zeile, nur die dunklen) — die Farbe liest es.
@@ -2343,13 +2447,19 @@
             s += B.zeile * dicht * (0.55 + 0.9 * fbm2(z * 1.7 + seed * 0.13, 5.3));
             if (s >= L) break;
             const q = auf(s);
-            if (!q.fuss && q.r >= rMin && q.c[1] > borkeH * 0.7) {
-                const h = B.hoehe[0] + (B.hoehe[1] - B.hoehe[0]) * fbm2(z * 2.9 + seed, 1.7);
+            const h = B.hoehe[0] + (B.hoehe[1] - B.hoehe[0]) * fbm2(z * 2.9 + seed, 1.7);
+            // DAS PIXEL-GESETZ DER ZEILE (S3, 09.10.): eine Zeile ist ein Band, wo sie an der Nahkante der Stufe mindestens
+            // zwei Bild-Pixel hoch ist (Nyquist, wie das Gitter-Gesetz der Ringe) — darunter flimmert sie als Linie und
+            // trägt keine eigenen Ringe. Befund: die Birken-L1 trug je Stamm 87 Ringe (die L0 88) — 3,4–3,8k Dreiecke Rinde.
+            if (!q.fuss && q.r >= rMin && q.c[1] > borkeH * 0.7 && h >= (2 * P.height) / STUFEN_BILD_PX[lod]) {
                 const a0 = s - h * 0.5,
                     a1 = s + h * 0.5;
                 neu.push({ s: a0, zeile: z }, { s: a1, zeile: z });
-                // Die harte Kante (zwei Naht-Ringe) trägt nur die Nah-Stufe; die L1 (ab 12 m) zeichnet die Zeile weich.
-                if (lod === 0) neu.push({ s: a0 - B.naht, zeile: -1 }, { s: a1 + B.naht, zeile: -1 });
+                // Die harte Kante (zwei Naht-Ringe) trägt eine Stufe nur, wo das Pixel sie trägt (S3, 09.10.): die Naht
+                // ist mindestens ein Bild-Pixel an der Nahkante der Stufe (STUFEN_BILD_PX). Befund: 1,5 mm Vorlage
+                // = 0,6 px an der L0-Nahkante — die Birken-L0 trug je Zeile vier Ringe, der Stamm 128 statt 70.
+                if (B.naht >= P.height / STUFEN_BILD_PX[lod])
+                    neu.push({ s: a0 - B.naht, zeile: -1 }, { s: a1 + B.naht, zeile: -1 });
             }
             z++;
         }
@@ -2396,7 +2506,7 @@
             thick = clamp((baseR - trunkR * 0.12) / (trunkR * 0.88), 0, 1); // 0 Zweig .. 1 Stamm
         // Die Birke verdichtet ihr Gitter (L0/L1, Stamm + Äste ab zweigR[0]): Fuß-Raster und Lentizellen-Zeilen. Die
         // Wurzeln tragen die Borke ganz — ihr Gitter bleibt.
-        if (prof.papery && __lod !== 2 && barkThick === undefined && baseR >= trunkR * BIRKEN_RINDE.zweigR[0])
+        if (prof.papery && !(__lod >= 2) && barkThick === undefined && baseR >= trunkR * BIRKEN_RINDE.zweigR[0])
             rings = birkenGitter(rings, P, trunkR, rings[0].c[0] * 7.3 + rings[0].c[2] * 3.1, vlen, vsub, __lod || 0);
         const M = rings.length;
         const bthick = barkThick !== undefined ? barkThick : thick; // Wurzel/Totast erben die STAMM-Oberflaeche (gleiche Furchentiefe), nicht die duenn-glatte
@@ -2405,10 +2515,26 @@
                 ? Math.max(3, Math.round(prof.ridges * clamp(baseR / trunkR, 0.28, 1)))
                 : Math.round(lerp(4, prof.ridges, bthick)); // Wurzel: Furchen in WELT-Groesse des Stamms (nicht enger), nur Tiefe wie Stamm
         let R = Math.max(6, Math.round(ridges * (bthick > 0.6 ? 3.0 : 2.4)));
+        // DER WURF-KANT (S3, 09.10., `lodIn` 3): das Gerüst des Schatten-Teils (foundry-core tree[1].wurf) ist ein
+        // Dreikant — der Schatten-Pass sieht nur den Umriss, nie Furche, Farbe oder Licht.
         R =
-            typeof __lod !== "undefined" && __lod === 2
-                ? Math.max(4, Math.round(R * 0.4))
-                : Math.max(5, R - (typeof __lod !== "undefined" ? __lod * 4 : 0)); // Stamm (thick) SCHARF, Aeste sparsam
+            __lod === 3
+                ? 3
+                : typeof __lod !== "undefined" && __lod === 2
+                  ? Math.max(4, Math.round(R * 0.4))
+                  : Math.max(5, R - (typeof __lod !== "undefined" ? __lod * 4 : 0)); // Stamm (thick) SCHARF, Aeste sparsam
+        // DAS PIXEL-GESETZ DER RÖHRE (S3, 09.10.; L0/L1): die Radial-Teilung folgt dem Bild — so viele Seiten, wie der
+        // Umriss an der Nahkante der Stufe braucht (Sehnen-Abstand ≤ ½ px bei STUFEN_BILD_PX je Baumhöhe), und
+        // mindestens zwei je Furche (Nyquist, wie das Gitter-Gesetz der Ringe); nie mehr, als das Rinden-Gesetz gibt.
+        // Befund: die Mammut-L1 trug ihren Stamm mit 38 Seiten (1 520 Dreiecke) — der Umriss braucht an der L1-Kante 25,
+        // die 14 Furchen 28.
+        if (P.kind === "tree" && (__lod === 0 || __lod === 1)) {
+            let rMax = 0;
+            for (const x of rings) if (!x.fuss && x.r > rMax) rMax = x.r;
+            const rPx = (rMax / Math.max(1e-6, P.height)) * STUFEN_BILD_PX[__lod];
+            const nUmriss = rPx > 0.5 ? Math.ceil(Math.PI / Math.acos(1 - 0.5 / rPx)) : 3;
+            R = Math.min(R, Math.max(5, nUmriss, 2 * ridges));
+        }
         const depth = prof.depth * lerp(0.28, 1, bthick),
             lichenA = prof.lichen * 0.6; // __lichen existierte in keinem Regime — der alte Guard fiel IMMER auf 0.6
         const lichenCol = new THREE.Color(0x8a946a),
@@ -2575,7 +2701,8 @@
                     scarR += -0.42 * gg + 0.24 * Math.max(0, d2 - 0.9) * Math.exp(-d2 * 0.6); // konkave Delle + aufgeworfener Wulst-Kragen
                     if (gg > scarDark) scarDark = gg;
                 }
-                let disp = ring.r * (1 + (relief - 0.62) * tiefe + scarR) * flute;
+                // Der Wurf-Kant (`lodIn` 3): Umkreis 2π/(3√3)·r — seine mittlere Breite (Umfang/π) ist die des Rundstrangs.
+                let disp = __lod === 3 ? ring.r * WURF_KANT : ring.r * (1 + (relief - 0.62) * tiefe + scarR) * flute;
                 if (j === R) disp = _fd; // NAHT ZU: Position der Saumspalte = exakt Spalte 0
                 const vx = c[0] + (Math.cos(rad) * u[0] + Math.sin(rad) * v[0]) * disp,
                     vy = c[1] + (Math.cos(rad) * u[1] + Math.sin(rad) * v[1]) * disp,
@@ -3566,14 +3693,15 @@
     function _budgetMal(m) {
         return m.rad && Array.isArray(m.rad.raeder) && m.rad.raeder.length ? m.rad.raeder.length : 1;
     }
-    // Die Kosten einer gelieferten Stufe nach der Regel des Wirts (Beipack ohne Puffer zählt nicht).
+    // Die Kosten einer gelieferten Stufe nach der Regel des Wirts (Beipack ohne Puffer zählt nicht). Der Schatten-Teil
+    // (S3, `teil: "schatten"`) zeichnet nur in den Kaskaden — er zählt nicht zur Stufe, sondern zu ihrem Wurf (`budgetWurf`).
     function budgetSippen(meshes) {
         let tris = 0,
             verts = 0,
             draws = 0;
         const gr = new Map();
         for (const m of meshes || []) {
-            if (!_budgetTeil(m)) continue;
+            if (!_budgetTeil(m) || m.teil === "schatten") continue;
             const nv = m.position.array.length / 3;
             tris += _budgetTris(m) * _budgetMal(m);
             verts += nv;
@@ -3590,6 +3718,18 @@
         }
         for (const g of gr.values()) draws += g.gelenk || g.n < 2 || g.v <= BUDGET_GESETZ.verschmelzVerts ? 1 : g.n;
         return { tris: tris, verts: verts, draws: draws };
+    }
+    // Der Wurf einer gelieferten Stufe (S3, das EINE Wurf-Gesetz): die Teile `teil: "schatten"` — Dreiecke und Teile (je
+    // Teil ein Befehl je Kaskade, der Wirt zeichnet es mit EINEM Schatten-Stoff).
+    function budgetWurf(meshes) {
+        let tris = 0,
+            teile = 0;
+        for (const m of meshes || [])
+            if (_budgetTeil(m) && m.teil === "schatten") {
+                tris += _budgetTris(m);
+                teile++;
+            }
+        return { tris: tris, teile: teile };
     }
     // Die Zeile einer Bau-Anfrage: die GRÖSSTE deklarierte Stufe ≤ dem Wunsch (sonst die kleinste) — dieselbe Klammer,
     // mit der Kern und Wirt die Stufe wählen — und ihre Budget-Zeile (null, wenn der Kern keine trägt).
@@ -3984,15 +4124,17 @@
         blattAtlasFracht: blattAtlasFracht, // die Fracht des Atlas je Format: BC1 ab Stufe 0, rgba ab Stufe 1 (05.10.)
         BLATT_ATLAS_ZELLE: BLATT_ATLAS_ZELLE, // die Zelle des Atlas in Pixeln (512, 05.10.)
         buildFoliageQuads: buildFoliageQuads,
+        kronenLagen: kronenLagen, // S3: die Lagen einer Krone — der Bau-Regler der Karten-Wahl (foundry-core __lagenWahl)
+        quadLagen: quadLagen, // S3: die Lagen beliebiger Karten (Strähnen der Trauer-Krone)
         BLATT_ATLAS_BREIT: BLATT_ATLAS_BREIT, // der Atlas-Steckbrief (Zellen + Kern + Füllung) der Breitblatt-Zellen
-        BLATT_ATLAS_NADEL: BLATT_ATLAS_NADEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) der Nadel-Spray
+        BLATT_ATLAS_WEDEL: BLATT_ATLAS_WEDEL, // der Atlas-Steckbrief (Zelle + Kern + Füllung) des Wedels (S3: Zelle 3)
         buildLeafBlades: buildLeafBlades, // Eins W4 (P1): die 30-Vert-Superformel-Klinge für L0
         ZWEIG_BLATT: ZWEIG_BLATT, // der Blatt-Zweig der Baum-Zellen (Pixel-Maße des Malers, 05.10.)
         ZWEIG_GROSS: ZWEIG_GROSS, // der Großblatt-Zweig der Zelle 2 (Strauch; 05.10.)
         ZWEIG_WEIDE: ZWEIG_WEIDE, // der Weiden-Zweig der Zelle 1 (die Trauer-Strähnen; Integration 05.10.)
         BLATT_ATLAS_WEIDE: BLATT_ATLAS_WEIDE, // der Atlas-Steckbrief der Weiden-Zelle (Integration 05.10.)
         BLATT_ATLAS_GROSS: BLATT_ATLAS_GROSS, // der Atlas-Steckbrief der Großblatt-Zelle (05.10.)
-        NADEL_ZWEIG: NADEL_ZWEIG, // der Nadel-Zweig der Nadel-Zelle (Pixel-Maße des Malers, 05.10.)
+        WEDEL_ZWEIG: WEDEL_ZWEIG, // der Wedel der Wedel-Zelle (Pixel-Maße des Malers, S3 09.10.)
         BLUETEN_BLATT: BLUETEN_BLATT, // das Blütenblatt: Saftmal-Grund, Rückbiegung, Würfel je Blatt (05.10.)
         BLATT_UNTERSEITE: BLATT_UNTERSEITE, // die hellere, mattere Blatt-Unterseite — Labor-Shader und Welt-Stoff (05.10.)
         BIRKEN_RINDE: BIRKEN_RINDE, // die papierene Rinde: Lentizellen-Zeilen, Fuß-Borke, Zweig-Rinde (05.10.)
@@ -4025,6 +4167,7 @@
         budgetGlut: budgetGlut,
         budgetSippe: budgetSippe, // die EINE Verschmelz-Regel eines Teils (Wirt: Flatten + Ofen, Gesetz: Draws)
         budgetSippen: budgetSippen, // Dreiecke + Draws einer gelieferten Stufe nach der Regel des Wirts
+        budgetWurf: budgetWurf, // S3: der Schatten-Teil einer Stufe (Dreiecke, Teile)
         budgetZeile: budgetZeile, // Stufen-Klammer + Budget-Zeile eines Kerns
         kerneVereinen: kerneVereinen, // der EINE Merge der Zweit-Kern-Blöcke (Stufen · Budget · Gestalten)
         budgetErzwingen: budgetErzwingen, // DER Ausgang: faltet auf die Zeile, berichtet vorher/nachher + Bruch
