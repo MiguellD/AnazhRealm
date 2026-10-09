@@ -28,7 +28,8 @@
 // Schreiber rot; das Urteil fällt bei leerem Schatten, vakuöser Probe, Akne und blinder Akne-Probe rot.
 //   node scripts/diag-schatten-bias.cjs [--selftest] [--echt] [--tag name]   (npm run gate:schatten-bias; Port SCHATTEN_BIAS_PORT)
 //   Umgebung (Werkplatz): SB_NUR=wolf,fuchs (Werfer) · SB_ZEITEN=0.32 · SB_OHNE_AKNE=1 · SB_VERSUCH='{"n":1,"d":1.5}'
-//   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
+//   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1 · SB_NACHTRAG=1 (Nachtrag 0710-12,
+//   ohne Urteil: tiefe Sonne 11° für die Werfer, Nacht, die Nah-Wiese als Empfänger, Hang 20°/35°, Übergang k0→k1)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const fs = require("fs");
@@ -376,8 +377,9 @@ async function probe(cfg) {
         r._applyDayNightToScene();
         await halten(4);
     };
+    let mitGras = false; // der Nachtrag (G) misst mit der Nah-Wiese im Bild, jeder andere Schuss ohne
     const wieseAus = () => {
-        if (st.nahWiese && st.nahWiese.gruppe) st.nahWiese.gruppe.visible = false;
+        if (st.nahWiese && st.nahWiese.gruppe) st.nahWiese.gruppe.visible = mitGras;
     };
     // DIE BIAS-STEUERUNG: „spiel" = das Gesetz des Stamms (`_schattenBias` je Kaskade; ohne Gesetz der feste Meter-Wert und der
     // Tiefen-Nudge `biasM`), „versuch" = n/d in Texeln der Kaskade. Sie hängt hinter jeder neuen Box (`_kaskadeFit`) und gilt
@@ -650,6 +652,7 @@ async function probe(cfg) {
             if (!e) return null;
             return {
                 weg: () => r.removeArchitecture(e),
+                eintrag: e,
                 wurzeln: () => [e.mesh],
                 slots: () => e.instSlots || [],
                 stufe: e._lodLevel,
@@ -767,18 +770,21 @@ async function probe(cfg) {
     };
     // nachgezogene Fremde: Slots der Art, die weder gemerkt noch der Werfer sind und nicht auf 0 stehen (ein Stufen-Wechsel
     // setzte sie während der Messung neu) — die Linse nennt ihre Zahl, nie still
-    const fremdNach = (typ, merk, eigen) => {
+    // der Werfer selbst zählt nie als fremd: seine Slots (`instSlots`) und jeder Slot seines Eintrags (die Band-Slots der
+    // Stufen-Blende, `instSlotsBand` — der erste Lauf des Nachtrags nannte sie „2 Fremde")
+    const fremdNach = (typ, merk, eigen, eintrag) => {
         const bekannt = new Set(merk.map((x) => x[1]));
         for (const h of eigen || []) bekannt.add(h);
         const m = new T.Matrix4();
         let n = 0;
         for (const [g, , i] of artSlots(typ, bekannt)) {
+            if (eintrag && g.slotEntry[i] === eintrag) continue;
             g.mesh.getMatrixAt(i, m);
             if (m.determinant() !== 0) n++;
         }
         return n;
     };
-    const kameraFuer = () => {
+    const kameraFuer = (o = { x: bx, z: bz, gy: gyB }) => {
         const d = lichtDir();
         const h = Math.hypot(d.x, d.z) || 1;
         const sx = d.x / h,
@@ -787,44 +793,66 @@ async function probe(cfg) {
         const qx = -sz,
             qz = sx;
         return {
-            px: bx - sx * 1.2 + qx * 3.6,
-            py: gyB + 3.4,
-            pz: bz - sz * 1.2 + qz * 3.6,
-            lx: bx + sx * 1.0,
-            ly: gyB + 0.1,
-            lz: bz + sz * 1.0,
+            px: o.x - sx * 1.2 + qx * 3.6,
+            py: o.gy + 3.4,
+            pz: o.z - sz * 1.2 + qz * 3.6,
+            lx: o.x + sx * 1.0,
+            ly: o.gy + 0.1,
+            lz: o.z + sz * 1.0,
         };
     };
-    const messen = async (w, zeit, seitlich) => {
+    const messen = async (w, zeit, seitlich, o = { x: bx, z: bz, gy: gyB }) => {
         verstecken();
         isoAn();
-        const k = kameraFuer();
+        const k = kameraFuer(o);
         const fremd = w.art === "bau" && w.typ ? fremdWeg(w.typ) : [];
         const leer = await schuss(k);
-        const h = await setze(w);
+        const h = await setze(w, o);
         if (!h) {
             isoAus();
             fremdZurueck(fremd);
-            return { name: w.name, zeit, seitlich, fehler: "Werfer nicht gesetzt" };
+            return { name: w.name + (o.tag || ""), zeit, seitlich, fehler: "Werfer nicht gesetzt" };
         }
         const wz = h.wurzeln(),
             sl = h.slots();
         isoEbene(wz, sl, true);
         await schattenWarm(k);
         const mit = await schuss(k);
-        const nachgezogen = fremd.length ? fremdNach(w.typ, fremd, sl) : 0;
+        const nachgezogen = fremd.length ? fremdNach(w.typ, fremd, sl, h.eintrag) : 0;
         const dreiecke = werferDreiecke(wz, sl);
         const d = lichtDir();
         const projiziert = (v) => {
-            // entlang des Lichts auf den gezeichneten Boden (zwei Schritte: die Höhe am Fußpunkt der ersten Projektion)
-            let y = gyB;
+            // entlang des Lichts auf den gezeichneten Boden: zwei Schritte (die Höhe am Fußpunkt der ersten Projektion) tragen den
+            // ebenen Boden. Bleibt der Strahl dort mehr als 5 cm neben dem Boden (ein Hang), schneidet ihn ein Marsch mit dem
+            // Höhenfeld (0,25 m, dann halbiert) — Nachtrag 0710-12: am 35°-Hang lag die Erwartung sonst neben dem Schatten
+            let y = o.gy,
+                x = v.x,
+                z = v.z,
+                t = 0;
             for (let s = 0; s < 2; s++) {
-                const t = (y - v.y) / d.y;
-                const x = v.x + d.x * t,
-                    z = v.z + d.z * t;
+                t = (y - v.y) / d.y;
+                x = v.x + d.x * t;
+                z = v.z + d.z * t;
                 y = boden(x, z);
-                if (s === 1) v.set(x, y, z);
             }
+            if (Math.abs(v.y + d.y * t - y) > 0.05) {
+                const unter = (s) => v.y + d.y * s <= boden(v.x + d.x * s, v.z + d.z * s);
+                let a = 0,
+                    b = 0;
+                while (!unter(b) && b < 400) {
+                    a = b;
+                    b += 0.25;
+                }
+                for (let i = 0; i < 14; i++) {
+                    const m = (a + b) / 2;
+                    if (unter(m)) b = m;
+                    else a = m;
+                }
+                x = v.x + d.x * b;
+                z = v.z + d.z * b;
+                y = boden(x, z);
+            }
+            v.set(x, y, z);
         };
         const E = maske(dreiecke, projiziert);
         const S = maske(dreiecke, () => {});
@@ -863,7 +891,9 @@ async function probe(cfg) {
             vereint = 0,
             gemessen = 0,
             erwartet = 0,
-            stroemte = 0;
+            stroemte = 0,
+            hellS = 0, // die Helligkeit der Erwartung im Leer-Schuss und ihr Abdunkeln im Mit-Schuss (der Kontrast, den die
+            dunkelS = 0; // Schwelle von 8 Stufen sehen kann — bei tiefer Sonne und nachts schwindet er)
         const M = new Uint8Array(W * H),
             Eo = new Uint8Array(W * H);
         for (let y = y0; y <= y1; y++)
@@ -881,6 +911,10 @@ async function probe(cfg) {
                 Eo[i] = e;
                 gemessen += m;
                 erwartet += e;
+                if (e) {
+                    hellS += lum(leer, p);
+                    dunkelS += lum(leer, p) - lum(mit, p);
+                }
                 if (m && e) schnitt++;
                 if (m || e) vereint++;
             }
@@ -891,7 +925,7 @@ async function probe(cfg) {
         const f0 = csm && csm._anazhFit && csm._anazhFit[0];
         const texel0 = f0 && lichter[0] ? texelVon(lichter[0].shadow, f0) : 0.15;
         const kam = st.camera;
-        const abstand = Math.hypot(k.px - bx, k.py - gyB, k.pz - bz);
+        const abstand = Math.hypot(k.px - o.x, k.py - o.gy, k.pz - o.z);
         const pxJeM = H / (2 * abstand * Math.tan(((kam.fov || 75) * Math.PI) / 360));
         const saum = Math.max(2, Math.round(texel0 * pxJeM));
         const dehne = (m) => {
@@ -927,7 +961,7 @@ async function probe(cfg) {
             if (Eo[i] && !Md[i]) fn++;
         }
         const erg = {
-            name: w.name,
+            name: w.name + (o.tag || ""),
             zeit,
             seitlich,
             iouSaum: tp + fp + fn ? +(tp / (tp + fp + fn)).toFixed(3) : 0,
@@ -940,6 +974,8 @@ async function probe(cfg) {
             dreiecke: dreiecke.length / 9,
             fremd: fremd.length,
             nachgezogen,
+            hell: erwartet ? +(hellS / erwartet).toFixed(1) : null,
+            abdunkeln: erwartet ? +(dunkelS / erwartet).toFixed(1) : null,
             stufe: h.stufe == null ? null : h.stufe,
             fund: fund.slice(),
             licht: d.toArray().map((x) => +x.toFixed(3)),
@@ -947,7 +983,7 @@ async function probe(cfg) {
         };
         if (cfg.bilder)
             aus.bilder.push({
-                name: `${w.name}-${zeit}`,
+                name: `${w.name}${o.tag || ""}-${zeit}`,
                 mit: png(mit),
                 ueber: png(mit, { e: Eo, m: M }),
                 leer: png(leer),
@@ -978,7 +1014,7 @@ async function probe(cfg) {
         isoEbene(wz, sl, true);
         await schattenWarm(k);
         const mit = await schuss(k);
-        const nachgezogen = fremd.length ? fremdNach(w.typ, fremd, sl) : 0;
+        const nachgezogen = fremd.length ? fremdNach(w.typ, fremd, sl, hh.eintrag) : 0;
         const dreiecke = werferDreiecke(wz, sl);
         const d = lichtDir();
         const projiziert = (v) => {
@@ -1224,6 +1260,153 @@ async function probe(cfg) {
         const f = csm._anazhFit && csm._anazhFit[i];
         return f ? +texelVon(lw.shadow, f).toFixed(3) : null;
     });
+    // ── DER NACHTRAG 0710-12 (`SB_NACHTRAG=1`): gemessen, kein Merge-Tor — er steht in `aus.nachtrag`, nie im Urteil ──
+    if (cfg.nachtrag) {
+        const N = (aus.nachtrag = { tief: [], nacht: [], gras: [], hang: [], uebergang: [] });
+        const bauW = werferArten.filter((w) => w.name !== "spieler" && (!cfg.nur || cfg.nur.includes(w.name)));
+        const vorlauf = async (zeit) => {
+            await sonne(zeit);
+            biasSetzen(grund);
+            await schuss(kameraFuer());
+        };
+        // (T) DIE TIEFE SONNE (cfg.tief, 11°) für die Werfer — bisher maß sie nur die Akne
+        await vorlauf(cfg.tief);
+        for (const w of bauW) N.tief.push(await messen(w, cfg.tief, false));
+        // (N) DIE NACHT: das Richtlicht ist dann der Mond (`_dayNightApplyDirectionalLight`, von oben)
+        await vorlauf(0);
+        for (const w of bauW.filter((x) => x.name === "wolf" || x.name === "pfosten"))
+            N.nacht.push(await messen(w, 0, false));
+        // (G) DIE NAH-WIESE ALS EMPFÄNGER: dieselbe Messung in seitlicher Sonne mit dem Gras im Bild
+        mitGras = true;
+        await vorlauf(cfg.seitlich);
+        for (const w of bauW.filter((x) => x.name === "wolf" || x.name === "busch"))
+            N.gras.push(await messen(w, cfg.seitlich, false, { x: bx, z: bz, gy: gyB, tag: "-gras" }));
+        mitGras = false;
+        // (H) DER ECHTE HANG (20° und 35°, der Sonne zugewandt): der Boden-Satz wirft auf sich selbst (die Akne des Bodens: was
+        // er im Mittel-Fenster abdunkelt, sobald er unter der Isolation wirft — im Bild trennt das Auge Streifen von echtem
+        // Relief-Schatten) und ein Pfosten am Hang (das Peter-Panning: die Boden-IoU wie auf der Bühne)
+        const bodenSatz = st.chunkSaetze && st.chunkSaetze.get("boden");
+        const hangOrt = (soll) => {
+            const d = lichtDir();
+            let best = null;
+            for (let rad = 8; rad <= 64; rad += 4)
+                for (let a = 0; a < 24; a++) {
+                    const x = bx + rad * Math.cos((a * Math.PI) / 12),
+                        z = bz + rad * Math.sin((a * Math.PI) / 12);
+                    const gx = (boden(x + 1, z) - boden(x - 1, z)) / 2,
+                        gz = (boden(x, z + 1) - boden(x, z - 1)) / 2;
+                    const grad = (Math.atan(Math.hypot(gx, gz)) * 180) / Math.PI;
+                    if (!Number.isFinite(grad) || Math.abs(grad - soll) > 4) continue;
+                    // n = (−gx, 1, −gz)/|n|, zur Sonne −d: n·(−d)
+                    const nl = (gx * d.x - d.y + gz * d.z) / Math.hypot(gx, 1, gz);
+                    if (!best || nl > best.nl) best = { x, z, gy: boden(x, z), grad, nl };
+                }
+            return best;
+        };
+        for (const zeit of [cfg.tief, cfg.seitlich]) {
+            await vorlauf(zeit);
+            for (const soll of [20, 35]) {
+                const o = hangOrt(soll);
+                if (!o || !bodenSatz || !bodenSatz.mesh) {
+                    N.hang.push({
+                        soll,
+                        zeit,
+                        fehler: o ? "kein Boden-Satz" : "kein Hang dieser Neigung um die Bühne",
+                    });
+                    continue;
+                }
+                const d = lichtDir();
+                const h = Math.hypot(d.x, d.z) || 1;
+                const k = {
+                    px: o.x - (d.x / h) * 9,
+                    py: o.gy + 5,
+                    pz: o.z - (d.z / h) * 9,
+                    lx: o.x,
+                    ly: o.gy,
+                    lz: o.z,
+                };
+                verstecken();
+                isoAn();
+                const leer = await schuss(k);
+                bodenSatz.mesh.layers.enable(ISO);
+                await schattenWarm(k);
+                const mit = await schuss(k);
+                bodenSatz.mesh.layers.disable(ISO);
+                const leer2 = await schuss(k);
+                isoAus();
+                let n = 0,
+                    dunkel = 0;
+                const D = new Uint8Array(W * H);
+                for (let y = Math.floor(H * 0.3); y < H * 0.7; y++)
+                    for (let x = Math.floor(W * 0.3); x < W * 0.7; x++) {
+                        const p = (y * W + x) * 4;
+                        if (Math.abs(lum(leer2, p) - lum(leer, p)) > 4) continue;
+                        n++;
+                        if (lum(mit, p) < lum(leer, p) - 6) {
+                            dunkel++;
+                            D[y * W + x] = 1;
+                        }
+                    }
+                const pf = bauW.find((x) => x.name === "pfosten");
+                const panning = pf
+                    ? await messen(pf, zeit, false, { x: o.x, z: o.z, gy: o.gy, tag: `-hang${soll}` })
+                    : null;
+                // DIE SONNE AM ORT: ein Strahl vom Hang (0,3 m darüber) zur Sonne über das Höhenfeld — trifft er Gelände, liegt der
+                // Hang im echten Relief-Schatten, und was der Boden dort abdunkelt, ist keine Akne
+                let verdeckt = null;
+                for (let s = 1; s <= 400 && verdeckt === null; s += 1) {
+                    const hy = boden(o.x - d.x * s, o.z - d.z * s);
+                    if (Number.isFinite(hy) && hy > o.gy + 0.3 - d.y * s) verdeckt = s;
+                }
+                N.hang.push({
+                    soll,
+                    zeit,
+                    grad: +o.grad.toFixed(1),
+                    nl: +o.nl.toFixed(2),
+                    ort: [+o.x.toFixed(1), +o.z.toFixed(1)],
+                    selbst: n ? +(dunkel / n).toFixed(4) : null,
+                    pixel: n,
+                    sonne: verdeckt === null ? "frei" : `verdeckt nach ${verdeckt} m`,
+                    pfosten: panning && {
+                        iouSaum: panning.iouSaum,
+                        iou: panning.iou,
+                        deckung: panning.deckung,
+                        erwartet: panning.erwartet,
+                    },
+                });
+                if (cfg.bilder)
+                    aus.bilder.push({
+                        name: `hang${soll}-boden-${zeit}`,
+                        mit: png(mit),
+                        ueber: png(mit, { e: new Uint8Array(W * H), m: D }),
+                    });
+            }
+        }
+        // (K) DER ÜBERGANG k0 → k1: das Spielbild (ohne Isolation, alle Werfer) entlang des Bodens über die Kaskaden-Grenze
+        // (~108 m an der Wiese) — für das Auge; die Zahl ist die Grenze selbst
+        for (const zeit of [cfg.seitlich, 0.5]) {
+            await vorlauf(zeit);
+            const d = lichtDir();
+            const h = Math.hypot(d.x, d.z) || 1;
+            // quer zum Licht, damit Schatten-Kanten den Blick kreuzen
+            const qx = -d.z / h,
+                qz = d.x / h;
+            const k = { px: bx, py: gyB + 1.7, pz: bz, lx: bx + qx * 120, ly: gyB, lz: bz + qz * 120 };
+            verstecken();
+            const bild = await schuss(k);
+            // die Grenze in Sicht-Metern, wie der Stamm sie schneidet (`_kaskadenSaum` über `csm.breaks`, der Saum der Blende)
+            let k0bis = null;
+            if (csm && csm.breaks && typeof r._kaskadenSaum === "function") {
+                const cam = st.camera;
+                const far = Math.min(cam.far, csm.maxFar);
+                const sm = [0, 1];
+                r._kaskadenSaum(csm.breaks, 0, csm.fade === true, sm);
+                k0bis = +(cam.near + sm[1] * (far - cam.near)).toFixed(1);
+            }
+            N.uebergang.push({ zeit, k0bis });
+            if (cfg.bilder) aus.bilder.push({ name: `uebergang-${zeit}`, mit: png(bild) });
+        }
+    }
     if (cfg.ohneAkne) return aus;
     // DIE AKNE: je Sonne die ebene Platte, die Platte im Streiflicht (10° gegen das Licht) und die Dach-Platte (40° zur Sonne)
     for (const zeit of cfg.akneZeiten || [cfg.tief, cfg.seitlich, 0.5]) {
@@ -1341,6 +1524,7 @@ async function probe(cfg) {
             fern: !process.env.SB_OHNE_FERN,
             akneZeiten: process.env.SB_AKNE_ZEITEN ? process.env.SB_AKNE_ZEITEN.split(",").map(Number) : null,
             versuch: process.env.SB_VERSUCH ? JSON.parse(process.env.SB_VERSUCH) : null,
+            nachtrag: !!process.env.SB_NACHTRAG,
         });
     await browser.close();
     server.close();
@@ -1373,6 +1557,29 @@ async function probe(cfg) {
             `  Zähne (0,1 Texel, ohne Tiefen-/Hang-Bias): ${(S.zaehne.anteil * 100).toFixed(2)} % von ${S.zaehne.maske} Pixeln`
         );
     if (S.fleck) console.log(`  Akne-Fleck (offen, isoliert): ${JSON.stringify(S.fleck)} (x, z, Abstand zur Bühne m)`);
+    // der Nachtrag 0710-12 (SB_NACHTRAG=1): Zahlen ohne Urteil
+    const NT = S.nachtrag;
+    if (NT) {
+        console.log("  NACHTRAG (gemessen, kein Urteil):");
+        const zeile = (was, w) =>
+            console.log(
+                `    ${was} ${String(w.name).padEnd(13)} @${w.zeit}: IoU mit Saum ${w.iouSaum} · IoU ${w.iou} · Deckung ${w.deckung} · ` +
+                    `gemessen ${w.gemessen} px · erwartet ${w.erwartet} px · hell ${w.hell} / abgedunkelt ${w.abdunkeln}${w.fremd ? " · " + w.fremd + " Fremde der Art aus" : ""}${w.fehler ? " · " + w.fehler : ""}`
+            );
+        for (const w of NT.tief) zeile("tiefe Sonne", w);
+        for (const w of NT.nacht) zeile("Nacht (Mond)", w);
+        for (const w of NT.gras) zeile("Gras", w);
+        for (const h of NT.hang)
+            console.log(
+                h.fehler
+                    ? `    Hang ${h.soll}° @${h.zeit}: ${h.fehler}`
+                    : `    Hang ${h.soll}° @${h.zeit} (${h.grad}°, n·l ${h.nl}, ${JSON.stringify(h.ort)}): Boden wirft auf sich ${(h.selbst * 100).toFixed(2)} % (Sonne ${h.sonne}) ` +
+                          `von ${h.pixel} Pixeln · Pfosten IoU mit Saum ${h.pfosten ? h.pfosten.iouSaum : "-"} (IoU ${h.pfosten ? h.pfosten.iou : "-"}, ` +
+                          `erwartet ${h.pfosten ? h.pfosten.erwartet : "-"} px)`
+            );
+        for (const u of NT.uebergang)
+            console.log(`    Übergang k0→k1 @${u.zeit}: Grenze bei ${u.k0bis} m (Bild uebergang-${u.zeit})`);
+    }
     for (const e of S.echt || []) console.log(`  echt: ${JSON.stringify(e)}`);
     console.log(`  Bilder: ${OUT}`);
     const rot = urteil(S, Q, pageErrors);
