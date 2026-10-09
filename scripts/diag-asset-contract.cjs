@@ -95,9 +95,9 @@ function meshDiff(tag, gold, live) {
         const a = gold[i],
             b = live[i];
         if (a.kind !== b.kind) return `${tag} Mesh${i}: kind ${a.kind} vs ${b.kind}`;
-        // Der Wurf-Teil der Baum-L1 (W6): die Zahl der werfenden Dreiecke ist Teil des Vertrags.
-        if ((a.wurf === undefined ? null : a.wurf) !== (b.wurf === undefined ? null : b.wurf))
-            return `${tag} Mesh${i}: wurf ${a.wurf} vs ${b.wurf}`;
+        // Der Schatten-Teil der Baum-L1 (S3): welches Teil wirft, ist Teil des Vertrags.
+        if ((a.teil === undefined ? null : a.teil) !== (b.teil === undefined ? null : b.teil))
+            return `${tag} Mesh${i}: teil ${a.teil} vs ${b.teil}`;
         if (JSON.stringify(a.mat || null) !== JSON.stringify(b.mat || null)) return `${tag} Mesh${i}: mat divergiert`;
         const keys = new Set([...Object.keys(a.attrs || {}), ...Object.keys(b.attrs || {})]);
         for (const k of keys) {
@@ -125,7 +125,7 @@ function meshDiff(tag, gold, live) {
 //      Täter: `tree[1] weide-s12345-L1-summer: 10204 Dreiecke > 10000`. Die Karten-Stufe (karte) ist kein
 //      Gitter — ihre L2-Geometrie wird nicht geliefert (die Karten-Linse in gate:studio-vertrag hält das).
 //  (A) STECKBRIEF — der gemalte EINE Blatt-Atlas passt in die deklarierten Kerne (Alpha>0 nie jenseits `kern`)
-//      und seine Füllungen sind die deklarierten (±0,01): Breitblatt-Zellen und Nadel-Zelle.
+//      und seine Füllungen sind die deklarierten (±0,01): Breitblatt-Zellen und Wedel-Zelle (S3: der Nadel-Ast).
 //  (D) DECKUNG — die gebaute L1-Krone bedeckt die L0-Krone desselben Baums im Band budget.tree[1].deckung, als
 //      Verhältnis der BILD-DECKUNG (scripts/lib/kronen-linse.cjs, S7): die Silhouette gerastert in 24 Ansichten (acht
 //      Azimute × Blick-Hebung 0°/30°/60° von unten), Karten mit der Alpha des EINEN Atlas — ein Pixel zählt einmal.
@@ -147,6 +147,7 @@ function teileAus(meshes) {
             const t = { kind: m.kind, mat: m.mat };
             if (m.tuer) t.tuer = m.tuer;
             if (m.joint) t.joint = m.joint;
+            if (m.teil) t.teil = m.teil;
             for (const k of Object.keys(m.attrs))
                 t[k] = { array: dekodiere(m.attrs[k].b64, Float32Array), itemSize: m.attrs[k].itemSize };
             if (m.index) t.index = dekodiere(m.index, Uint32Array);
@@ -204,24 +205,24 @@ function kostenUrteil(messungen, budget) {
     }
     return v;
 }
-function steckbriefUrteil(atlas, breit, nadel, gross, weide) {
+function steckbriefUrteil(atlas, breit, wedel, gross, weide) {
     const v = [];
     if (!breit || !(breit.kern > 0) || !(breit.fuellung > 0) || !(breit.zellen >= 1))
         return ["Steckbrief BLATT_ATLAS_BREIT fehlt"];
-    if (!nadel || !(nadel.kern > 0) || !(nadel.fuellung > 0) || !Number.isInteger(nadel.zelle))
-        return ["Steckbrief BLATT_ATLAS_NADEL fehlt"];
+    if (!wedel || !(wedel.kern > 0) || !(wedel.fuellung > 0) || !Number.isInteger(wedel.zelle))
+        return ["Steckbrief BLATT_ATLAS_WEDEL fehlt"];
     for (let c = 0; c < breit.zellen; c++)
         if (atlas.ext[c] > breit.kern)
             v.push(`Zelle ${c}: Alpha reicht bis ${atlas.ext[c].toFixed(4)} > kern ${breit.kern}`);
     const f = atlas.fill.slice(0, breit.zellen).reduce((s, x) => s + x, 0) / breit.zellen;
     if (Math.abs(f - breit.fuellung) > 0.01)
         v.push(`Breitblatt-Füllung ${f.toFixed(4)} ≠ Steckbrief ${breit.fuellung}`);
-    if (atlas.ext[nadel.zelle] > nadel.kern)
+    if (atlas.ext[wedel.zelle] > wedel.kern)
         v.push(
-            `Nadel-Zelle ${nadel.zelle}: Alpha reicht bis ${atlas.ext[nadel.zelle].toFixed(4)} > kern ${nadel.kern}`
+            `Wedel-Zelle ${wedel.zelle}: Alpha reicht bis ${atlas.ext[wedel.zelle].toFixed(4)} > kern ${wedel.kern}`
         );
-    if (Math.abs(atlas.fill[nadel.zelle] - nadel.fuellung) > 0.01)
-        v.push(`Nadel-Füllung ${atlas.fill[nadel.zelle].toFixed(4)} ≠ Steckbrief ${nadel.fuellung}`);
+    if (Math.abs(atlas.fill[wedel.zelle] - wedel.fuellung) > 0.01)
+        v.push(`Wedel-Füllung ${atlas.fill[wedel.zelle].toFixed(4)} ≠ Steckbrief ${wedel.fuellung}`);
     // Die Großblatt-Zelle (05.10.: Strauch) und die Weiden-Zelle (Integration 05.10.: die Trauer-Strähnen) — Kern wie
     // die Baum-Zweige, je eine eigene Füllung.
     for (const [name, z] of [
@@ -283,6 +284,22 @@ function quoteUrteil(paare, budget) {
     }
     return v;
 }
+// (W) DER SCHATTEN-TEIL (S3, das EINE Wurf-Gesetz): je Baum-L1 genau ein Teil `teil: "schatten"` mit aDeckt, höchstens
+// tree[1].wurf.tris Dreiecke, seine Karten auf höchstens tree[1].wurf.lagen Lagen.
+function wurfUrteil(mess, budget) {
+    const v = [];
+    const w = budget && budget.tree && budget.tree[1] && budget.tree[1].wurf;
+    for (const m of mess) {
+        if (m.fehlt) {
+            v.push(`${m.fall}: Schatten-Teil ohne ${m.fehlt}`);
+            continue;
+        }
+        if (m.teile !== 1) v.push(`${m.fall}: ${m.teile} Schatten-Teile statt 1`);
+        if (w && w.tris != null && m.tris > w.tris) v.push(`${m.fall}: Schatten-Teil ${m.tris} Dreiecke > ${w.tris}`);
+        if (w && w.lagen != null && m.lagen > w.lagen) v.push(`${m.fall}: Schatten-Karten ${m.lagen.toFixed(1)} Lagen > ${w.lagen}`);
+    }
+    return v;
+}
 function d0Urteil(mess, tafel) {
     const v = [];
     for (const [k, m] of Object.entries(mess)) {
@@ -327,6 +344,7 @@ function d0Urteil(mess, tafel) {
     const lagenMess = [];
     const quotePaare = {};
     const d0Mess = {};
+    const wurfMess = [];
     let kronenProbe = null;
     await runWithWorker(PORT, async ({ build, kostenListe, getData, atlas, atlasAlpha, karte, probeLauf }) => {
         // Die Atlas-Alpha zuerst: die Kronen-Kosten (L/Q/D0) lesen sie an jedem gebauten Baum.
@@ -373,6 +391,31 @@ function d0Urteil(mess, tafel) {
                 fails.push(`Schwebe: ${fall}: ${sw.schwebend} von ${sw.karten} Karten ohne Träger (z. B. bei ${sw.beispiel})`);
             const yb = unterBoden(kroneAus(a.meshes));
             if (yb < 0) fails.push(`Boden: ${fall}: Laub reicht bis y = ${yb.toFixed(3)} unter den Boden der Vorlage`);
+        };
+        // DER SCHATTEN-TEIL je Baum-L1 (Goldens und Gestalten der Welt): Teile, Dreiecke, Lagen seiner Karten.
+        const wurfMass = (c, a, fall) => {
+            const teile = (a.meshes || []).filter((m) => m.teil === "schatten" && m.attrs && m.attrs.position);
+            const k = PC.budgetWurf(teileAus(a.meshes));
+            let lag = 0;
+            if (teile.length === 1) {
+                const m = teile[0];
+                const pos = dekodiere(m.attrs.position.b64, Float32Array),
+                    uv = m.attrs.uv ? dekodiere(m.attrs.uv.b64, Float32Array) : null,
+                    deckt = m.attrs.aDeckt ? dekodiere(m.attrs.aDeckt.b64, Float32Array) : null,
+                    ix = dekodiere(m.index, Uint32Array);
+                const karten = [];
+                if (deckt) for (let t = 0; t < ix.length; t += 3) if (!deckt[ix[t]] && !deckt[ix[t + 1]] && !deckt[ix[t + 2]]) karten.push(ix[t], ix[t + 1], ix[t + 2]);
+                let lo = Infinity,
+                    hi = -Infinity;
+                for (let i = 1; i < pos.length; i += 3) {
+                    if (pos[i] < lo) lo = pos[i];
+                    if (pos[i] > hi) hi = pos[i];
+                }
+                if (karten.length && uv)
+                    lag = bildLagen([{ kind: "foliageTex", pos, idx: Uint32Array.from(karten), uv }], alpha0, (hi - Math.max(0, lo)) / LAGEN_TEILER).quad;
+                if (!deckt) wurfMess.push({ fall, fehlt: "aDeckt" });
+            }
+            wurfMess.push({ fall, teile: teile.length, tris: k.tris, lagen: lag });
         };
         // DIE KRONEN-KOSTEN je Baum-Art × Gestalt × Stufe (Sommer, L0/L1): Lagen (L), Dreiecke der Quote (Q), L0-Bild (D0).
         const kronenMass = (c, a) => {
@@ -441,22 +484,11 @@ function d0Urteil(mess, tafel) {
             miss(c, a, f.replace(/\.json$/, ""));
             kroneWand(c, a, f.replace(/\.json$/, ""));
             kronenMass(c, a);
-            // (W) DER WURF-TEIL (W6, Konsum von tree[1].wurf): jedes Teil der Baum-L1 nennt die Zahl seiner werfenden
-            // Dreiecke (der Index-Vorsatz) — ganzzahlig in [0, Dreiecke des Teils], und der Baum wirft überhaupt. Der Wirt
-            // bricht ohne die Zahl (KERN-PFLICHT); hier fällt der Bruch am Studio-Ausgang auf, Teil für Teil benannt.
-            if (c.lod === 1 && artVon(c.presetId) === "tree") {
-                let wirft = 0;
-                a.meshes.forEach((m, i) => {
-                    if (!m.attrs || !m.attrs.position) return;
-                    const nv = Buffer.from(m.attrs.position.b64, "base64").length / 12;
-                    const ni = m.index ? Buffer.from(m.index, "base64").length / 4 : nv; // der Studio-Index reist als Uint32
-                    const tris = m.index ? ni / 3 : nv / 3;
-                    if (!Number.isInteger(m.wurf) || m.wurf < 0 || m.wurf > tris)
-                        fails.push(`Wurf-Teil ${f} Mesh${i} (${m.kind}): wurf ${m.wurf} nicht in [0, ${tris}]`);
-                    else wirft += m.wurf;
-                });
-                if (!(wirft > 0)) fails.push(`Wurf-Teil ${f}: kein Teil wirft`);
-            }
+            // (W) DER SCHATTEN-TEIL (S3, das EINE Wurf-Gesetz, Konsum von tree[1].wurf): die Baum-L1 liefert GENAU EIN Teil
+            // `teil: "schatten"` — das Gerüst als Dreikant (aDeckt 1) und die Schatten-Karten (aDeckt 0) —, höchstens
+            // wurf.tris Dreiecke, seine Karten auf höchstens wurf.lagen Lagen (kronen-linse). Der Wirt bricht ohne das Teil
+            // (KERN-PFLICHT); hier fällt der Bruch am Studio-Ausgang auf.
+            if (c.lod === 1 && artVon(c.presetId) === "tree") wurfMass(c, a, f.replace(/\.json$/, ""));
             if (c.lod <= 1 && artVon(c.presetId) === "tree" && c.season === "summer") {
                 const pk = `${c.presetId}-s${c.seed}-${c.season}`;
                 const fx = (buch[c.presetId] && buch[c.presetId].fx) || {};
@@ -529,6 +561,7 @@ function d0Urteil(mess, tafel) {
                         miss(c, a, `${preset}-s${v}-L${lod}-summer (Gestalt)`);
                         kroneWand(c, a, `${preset}-s${v}-L${lod}-summer (Gestalt)`);
                         kronenMass(c, a);
+                        if (lod === 1 && kind === "tree") wurfMass(c, a, `${preset}-s${v}-L${lod}-summer (Gestalt)`);
                     }
                 }
             }
@@ -561,11 +594,12 @@ function d0Urteil(mess, tafel) {
         else if (!Array.isArray(band)) fails.push("Budget: render-config trägt kein lod.budget.tree[1].deckung");
         else {
             fails.push(...kostenUrteil(messungen, budget).map((x) => "Kosten: " + x));
-            fails.push(...steckbriefUrteil(at, at.steckbrief, at.nadel, at.gross, at.weide).map((x) => "Steckbrief: " + x));
+            fails.push(...steckbriefUrteil(at, at.steckbrief, at.wedel, at.gross, at.weide).map((x) => "Steckbrief: " + x));
             fails.push(...deckungsUrteil(paare, band, alpha).map((x) => "Deckung: " + x));
             fails.push(...sehUrteil(sehProben).map((x) => "Seh: " + x));
             fails.push(...lagenUrteil(lagenMess, budget).map((x) => "Lagen: " + x));
             fails.push(...quoteUrteil(quotePaare, budget).map((x) => "Quote: " + x));
+            fails.push(...wurfUrteil(wurfMess, budget).map((x) => "Wurf: " + x));
             if (!tafelSchreiben) fails.push(...d0Urteil(d0Mess, tafel).map((x) => "L0-Deckung: " + x));
         }
         // DIE PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Golden-Fall mit Samen 7 im Sommer baut
@@ -615,7 +649,7 @@ function d0Urteil(mess, tafel) {
         console.log(
             `Atlas: Breitblatt-Kern bis ${Math.max(...at.ext.slice(0, at.steckbrief.zellen)).toFixed(4)} (Steckbrief ${at.steckbrief.kern}) · ` +
                 `Füllung ${(at.fill.slice(0, at.steckbrief.zellen).reduce((s, x) => s + x, 0) / at.steckbrief.zellen).toFixed(4)} (${at.steckbrief.fuellung}) · ` +
-                `Nadel-Zelle bis ${at.ext[at.nadel.zelle].toFixed(4)} · Füllung ${at.fill[at.nadel.zelle].toFixed(4)} (${at.nadel.fuellung}) · ` +
+                `Wedel-Zelle bis ${at.ext[at.wedel.zelle].toFixed(4)} · Füllung ${at.fill[at.wedel.zelle].toFixed(4)} (${at.wedel.fuellung}) · ` +
                 `Großblatt-Zelle bis ${at.ext[at.gross.zelle].toFixed(4)} · Füllung ${at.fill[at.gross.zelle].toFixed(4)} (${at.gross.fuellung}) · ` +
                 `Weiden-Zelle bis ${at.ext[at.weide.zelle].toFixed(4)} · Füllung ${at.fill[at.weide.zelle].toFixed(4)} (${at.weide.fuellung})`
         );
@@ -691,7 +725,7 @@ function d0Urteil(mess, tafel) {
         console.log(
             `Schwebe-Wand: ${schwebeMess.length} Baum-L0 gemessen, ${schwebeMess.reduce((m, x) => m + x.karten, 0)} Karten, schwebend höchstens ${sMax}`
         );
-        const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.nadel, at.gross, at.weide).length > 0;
+        const s5 = steckbriefUrteil(at, Object.assign({}, at.steckbrief, { kern: 0.6 }), at.wedel, at.gross, at.weide).length > 0;
         const arten = new Set(gemesseneP.map(([, p]) => p.art));
         // 05.10.: keine L1-Krone mehr aus Klingen (die Trauer-Klinge las als Papier-Streifen) — jede Krone ist Karte.
         const s6 = arten.has("laub") && arten.has("nadel") && !arten.has("klinge") && gemesseneP.length >= 16;
@@ -785,15 +819,28 @@ function d0Urteil(mess, tafel) {
             sD = !!t && d0Urteil({ "eiche-s7": { px: kronenProbe.px, mittel: halb } }, { faelle: { "eiche-s7": t } }).length === 1;
         }
         sQ = quoteUrteil({ "birke-L1": { l0: 1000, l1: 630 } }, { tree: { 1: { quote: 0.35 } } }).length === 1;
+        // (W) ein fehlender Schatten-Teil, einer über der Zeile und einer mit 7 Lagen feuern je; die Wand liest die gebauten
+        const wB = { tree: { 1: { wurf: { tris: 1200, lagen: 6 } } } };
+        const sW =
+            wurfUrteil([{ fall: "ohne", teile: 0, tris: 0, lagen: 0 }], wB).length === 1 &&
+            wurfUrteil([{ fall: "schwer", teile: 1, tris: 1201, lagen: 3 }], wB).length === 1 &&
+            wurfUrteil([{ fall: "dicht", teile: 1, tris: 600, lagen: 7 }], wB).length === 1 &&
+            wurfMess.filter((m) => !m.fehlt).length >= 16;
         const qs = Object.values(quotePaare)
             .filter((p) => p.l0 > 0 && p.l1 > 0)
             .map((p) => p.l1 / p.l0);
         sQ2 = qs.length > 0 && quoteUrteil(quotePaare, { tree: { 1: { quote: Math.min(...qs) - 0.01 } } }).length >= 1;
         console.log(
             `Selbsttest Kronen-Kosten: verdreifachte Karten > 16 Lagen ${sL ? "✅" : "❌"} · die Wand liest ${lagenMess.length} Kronen ${sL2 ? "✅" : "❌"} · ` +
-                `Birke-L1 0,63 > 0,35 ${sQ ? "✅" : "❌"} · die Wand liest ${qs.length} Paare ${sQ2 ? "✅" : "❌"} · halbierte Krone fällt aus dem L0-Band ${sD ? "✅" : tafelSchreiben ? "— (Tafel wird geschrieben)" : "❌"}`
+                `Birke-L1 0,63 > 0,35 ${sQ ? "✅" : "❌"} · die Wand liest ${qs.length} Paare ${sQ2 ? "✅" : "❌"} · Schatten-Teil fehlt/schwer/dicht wird rot (${wurfMess.length} gelesen) ${sW ? "✅" : "❌"} · halbierte Krone fällt aus dem L0-Band ${sD ? "✅" : tafelSchreiben ? "— (Tafel wird geschrieben)" : "❌"}`
         );
-        if (!sL || !sL2 || !sQ || !sQ2 || (!sD && !tafelSchreiben)) fails.push("Selbsttest der Kronen-Kosten feuert nicht");
+        if (!sL || !sL2 || !sQ || !sQ2 || !sW || (!sD && !tafelSchreiben)) fails.push("Selbsttest der Kronen-Kosten feuert nicht");
+        const wMax = wurfMess.reduce((m, x) => (x.tris > m.tris ? x : m), { tris: 0, fall: "—" });
+        const wMittel = wurfMess.length ? wurfMess.reduce((s, x) => s + (x.tris || 0), 0) / wurfMess.length : 0;
+        console.log(
+            `Schatten-Teil (${wurfMess.length} Baum-L1): höchstens ${wMax.tris} Dreiecke (${wMax.fall}), im Mittel ${Math.round(wMittel)}, ` +
+                `Karten bis ${wurfMess.reduce((m, x) => Math.max(m, x.lagen || 0), 0).toFixed(1)} Lagen`
+        );
         if (tafelSchreiben) {
             const faelle = {};
             for (const k of Object.keys(d0Mess).sort())

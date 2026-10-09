@@ -54,7 +54,8 @@ function statisch(src) {
     const m = src.match(/AnazhRealm\.FOUNDRY_LESEN = (\[[^\]]*\]);/);
     let lesen = null;
     try {
-        lesen = m ? JSON.parse(m[1]) : null;
+        // die Liste darf über Zeilen laufen (Prettier bricht sie mit Schluss-Komma um)
+        lesen = m ? JSON.parse(m[1].replace(/,\s*\]$/, "]")) : null;
     } catch (_e) {}
     const bau = methode(src, "_foundryBuildMesh(m) {");
     const gelesen = new Set();

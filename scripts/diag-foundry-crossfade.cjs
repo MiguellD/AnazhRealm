@@ -863,23 +863,25 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
         v.push("der Band-Partner wirft den Zwilling der Primär-Stufe ein zweites Mal");
     if (!/const pf = pf0 && pf0\.instanceable \? this\._bandOhneZwilling\(pf0, foundryFlat\) : pf0;/.test(srcNC))
         v.push("der gestreute Band-Partner wirft den Zwilling der Primär-Stufe ein zweites Mal");
-    // DER WURF-TEIL (W6): der Zwilling wirft nur den Vorsatz seines Teils (drawRange), die Fassade der Gruppe behält
-    // ihn, ein Teil ohne Wurf (die Wurzeln) wirft nicht, das Verschmelzen legt alle Vorsätze nach vorn — und die Wurf-
-    // Grenze des Studios IST der Kaskaden-Texel k0 der Welt.
-    if (!/z\.drawRange\.count = teil \? lf\.wurf \* 3 : g\.drawRange\.count;/.test(gestalt))
-        v.push("der Schatten-Zwilling wirft das ganze Teil statt seines Wurf-Vorsatzes");
+    // DER SCHATTEN-TEIL (S3, das EINE Wurf-Gesetz E1): die Stufe mit Wurf-Teil wirft NUR ihr Teil "schatten" — es ist
+    // selbst der Zwilling (nie im Hauptbild), jedes andere Teil wirft nicht; fehlt es, ist das KERN-PFLICHT; es zeichnet mit
+    // dem EINEN Schatten-Stoff (Alpha = max(aDeckt, Atlas-Alpha) in colorNode — der Schattenpass liest opacityNode nie);
+    // der drawRange-Vorsatz (W6) ist gefallen — und die Wurf-Grenze des Studios IST der Kaskaden-Texel k0 der Welt.
+    if (!/if \(lf\.teil !== wurfTeil\.teil\) continue;/.test(flat) || !/z\.geom = this\._foundrySchattenGeom\(z\);/.test(flat))
+        v.push("der Schatten-Teil ist nicht selbst der Zwilling (er zeichnete im Hauptbild, oder jedes Teil würfe)");
+    if (!/if \(!hat\)\s*AnazhRealm\._kernPflichtBruch\(/.test(flat))
+        v.push("eine Stufe ohne Schatten-Teil wirft still nicht (fail-soft) statt KERN-PFLICHT");
+    if (/lf\.wurf|__wurf/.test(flat + gestalt))
+        v.push("der drawRange-Vorsatz (lf.wurf/__wurf) lebt noch — der Zwilling würfe einen Index-Vorsatz");
+    const stoffS = fnBody(srcNC, /_foundryTreeMaterial\(kind, mp, wiegen\)\s*/) || "";
+    if (!/kind === "schatten"[\s\S]*?mat\.colorNode = TSL\.vec4\(TSL\.vec3\(0\.0\), atl \? TSL\.max\(deckt, atl\.a\) : deckt\);/.test(stoffS))
+        v.push("der Schatten-Stoff schneidet nicht über colorNode.a = max(aDeckt, Atlas-Alpha) aus");
     const fassade = fnBody(srcNC, /\n {4}_lodInstanceFacade\(srcGeom, capacity\)\s*\{/) || "";
     if (!/g2\.setDrawRange\(srcGeom\.drawRange\.start, srcGeom\.drawRange\.count\);/.test(fassade))
         v.push("die Instanz-Fassade verliert den drawRange ihrer Quelle (der Zwilling würfe ganz)");
-    if (!/if \(lf\.wurf === 0\) continue;/.test(flat)) v.push("ein Teil ohne Wurf (die Wurzeln) wirft als Zwilling");
-    if (!/if \(mitWurf && !Number\.isInteger\(lf\.wurf\)\)\s*AnazhRealm\._kernPflichtBruch\(/.test(flat))
-        v.push("ein Teil ohne Wurf-Zahl wirft still ganz (fail-soft) statt KERN-PFLICHT");
-    const verb = fnBody(srcNC, /\n {4}static _geoVerbinden\(geoms, wurfe\)\s*\{/) || "";
-    if (!/wurfe && Number\.isInteger\(wurfe\[j\]\)\s*\?\s*Math\.min\(geoms\[j\]\.index\.count, wurfe\[j\] \* 3\)/.test(verb))
-        v.push("das Verschmelzen legt die Wurf-Vorsätze nicht nach vorn (der Zwilling würfe fremde Dreiecke)");
     // der Texel der KASKADE (SCHATTEN_KASKADE.texelM[0]) — nie das erste texelM des Stamms (die Laub-Streu trägt eines)
     const tex = /SCHATTEN_KASKADE = Object\.freeze\(\{\s*texelM: Object\.freeze\(\[([\d.]+),/.exec(srcNC);
-    const dm = /wurf: \{ durchmesserM: ([\d.]+) \}/.exec(fcSrc);
+    const dm = /wurf: \{ durchmesserM: ([\d.]+),/.exec(fcSrc);
     if (!tex || !dm || Number(tex[1]) !== Number(dm[1]))
         v.push(
             `die Wurf-Grenze des Studios (${dm ? dm[1] : "—"} m) ist nicht der Kaskaden-Texel k0 der Welt (${tex ? tex[1] : "—"} m)`
@@ -888,7 +890,11 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     if (!/lf\._schattenGeom\.dispose\(\)/.test(weg)) v.push("die Zwillings-Gestalt fällt nicht mit ihrem L1-Leaf (Leck)");
     // DAS WURF-RECHT DES TEILS (Integration W5 × W6): der Zwilling wirft nach `teilWirft` (Lichtquelle, Durchsicht,
     // Fell-Schale nie) — `lf.castShadow` ist bei einer Zwillings-Quelle false, Bäume und Sträucher würfen still keinen.
-    if (!/teilWirft: child\.castShadow !== false,/.test(flat) || !/castShadow: lf\.teilWirft,\s*shadowTwin: true/.test(flat))
+    // beide Zwillings-Wege (der Schatten-Teil S3 und der ganze Zwilling ohne Wurf-Teil) werfen nach dem Wurf-Recht
+    if (
+        !/teilWirft: child\.castShadow !== false,/.test(flat) ||
+        (flat.match(/castShadow: lf\.teilWirft,\s*shadowTwin: true/g) || []).length < 2
+    )
         v.push("der Schatten-Zwilling wirft nach lf.castShadow statt nach dem Wurf-Recht seines Teils (teilWirft) — Bäume und Sträucher werfen still nicht");
     if (!/shadowTwin: true,\s*_eigen: false/.test(flat))
         v.push("der Schatten-Zwilling erbt das Eigentum der L1-Geometrie (der L0-Dispose zerstört sie)");
@@ -997,11 +1003,11 @@ async function main() {
             ["L0 baut eigenen Zwilling", nc.replace("for (const lf of schatten.leaves) if (lf.shadowTwin) leaves.push(lf);", "for (const lf of schatten.leaves) leaves.push(lf);")],
             ["Band wirft doppelt", nc.replace("this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true", "this._archInstanceAdd(entry, flat, { band: true")],
             ["Streu-Band wirft doppelt", nc.replace("const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;", "const pf = pf0;")],
-            ["Zwilling wirft ganz", nc.replace("z.drawRange.count = teil ? lf.wurf * 3 : g.drawRange.count;", "z.drawRange.count = g.drawRange.count;")],
+            ["Schatten-Teil im Hauptbild, jedes Teil wirft", nc.replace("if (lf.teil !== wurfTeil.teil) continue;", "")],
+            ["Schatten-Teil fehlt still", nc.replace("if (!hat)", "if (false)")],
+            ["Schatten-Stoff über opacityNode", nc.replace("mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);", "mat.colorNode = TSL.vec4(TSL.vec3(0.0), 1.0); mat.opacityNode = TSL.max(deckt, atl.a);")],
+            ["Index-Vorsatz kehrt zurück", nc.replace("z.drawRange.count = g.drawRange.count;", "z.drawRange.count = lf.wurf * 3;")],
             ["Fassade verliert den Wurf", nc.replace("g2.setDrawRange(srcGeom.drawRange.start, srcGeom.drawRange.count);", "")],
-            ["Wurzel wirft", nc.replace("if (lf.wurf === 0) continue;", "")],
-            ["Wurf still ganz", nc.replace("if (mitWurf && !Number.isInteger(lf.wurf))", "if (false)")],
-            ["Verschmelzen mischt den Vorsatz", nc.replace("? Math.min(geoms[j].index.count, wurfe[j] * 3)", "? geoms[j].index.count")],
             ["Zwillings-Gestalt leckt", nc.replace("lf._schattenGeom.dispose();", "")],
             ["Zwilling besitzt L1-Geometrie", nc.replace("_eigen: false,", "")],
             ["Zwilling liest das Stufen-Flag", nc.replace("castShadow: lf.teilWirft,", "castShadow: lf.castShadow !== false,")],
@@ -1017,7 +1023,7 @@ async function main() {
         }
         {
             // Die Studio-Seite des Wurf-Teils: eine Wurf-Grenze, die nicht der Kaskaden-Texel ist, nennt das Gesetz.
-            const fc = foundrySrc.replace("wurf: { durchmesserM: 0.17 }", "wurf: { durchmesserM: 0.12 }");
+            const fc = foundrySrc.replace("wurf: { durchmesserM: 0.17,", "wurf: { durchmesserM: 0.12,");
             const v = schattenWahrheit(nc, fc);
             check(
                 'Selbst-Test Schatten: „Wurf-Grenze neben dem Texel" → das Gesetz nennt ihn',
