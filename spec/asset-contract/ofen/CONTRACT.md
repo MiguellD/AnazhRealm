@@ -37,6 +37,13 @@ Beipack (`skinJoints` wolf 31 · fox 33 · bear 25 · deer 26 · mensch 23; bis 
 Neu geprägt NUR die 40 Schlüssel `*-L1|*` (35 Stoff-Klassen + 5 Beipacks); L0 297/297 byte-gleich, die Klassen-Menge,
 die Gelenke und die Dreiecke je Klasse unverändert.
 
+Vertrags-Akt S3 kreatur, Nachbesserung (09.10.2026, Spike-Urteil am echten Renderer — Lehre 18): die Grobstufe wirft für
+die feine, ihr Umriss muss deren Umriss tragen. Die Laplace-Glättung zog die Hülle auf dem doppelt so groben Raster nach
+innen (dünne Läufe bis zur halben Dicke); jetzt kehrt jede geglättete Ecke der Grobstufe auf die Niveau-Fläche ihres Felds
+zurück (`__aufsNiveau`, Tier und Mensch). Neu geprägt NUR die 8 Hüllen-Schlüssel `wolf|fox|bear|deer-L1|fell|wolf` und
+`mensch-L1|haut|mensch` · `mensch-L1|stoff_*|mensch` (3); Ecken, Dreiecke und Meshes je Klasse unverändert, alle übrigen
+475 Klassen byte-gleich (L0 297/297).
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.
