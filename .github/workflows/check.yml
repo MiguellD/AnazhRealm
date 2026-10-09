@@ -512,6 +512,23 @@ jobs:
               # die Boxen, die sein Segment beruehren; das Netz ist der Bestand; jeder Schreiber des Bestands stempelt.
               run: npm run gate:blocker-netz
 
+            - name: Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)
+              if: matrix.gruppe == 2
+              # Null-Renderer, eine echte Welt (drei Doerfer, vier Brennglaeser, Brennbares in ihren Brennpunkten): ueber
+              # einen Tag (Morgen, Mittag, Regen und Sturm, Nachmittag, Abend, Nacht) urteilt der Brennglas-Takt je Schritt
+              # byte-gleich wie der alte Takt ueber den ganzen Bestand (Hitze, Saetze, Feuer), mit Abriss, neuem Array und
+              # neuen Zielen mitten im Tag, und fasst nur die Betroffenen an; das Verzeichnis je Affordanz und Kamin ist der
+              # Filter ueber den Bestand (auch nach einem nachgezogenen Tor); Resonanz und Dorf-Rauch wie die Schleife.
+              run: npm run gate:brennglas-takt
+
+            - name: Raum-Tags (0710-11 — das Gedaechtnis der Raum-Tags sieht jeden Schreiber)
+              if: matrix.gruppe == 1
+              # Null-Renderer, eine echte Welt: der Schluessel liest jeden Eingang der Rechnung (Proxy-Linse ueber jeden Bauplan);
+              # ueber eine Werkstatt-Sitzung (verschieben, Stoff, Form, Farbe, hinzufuegen, loeschen, Undo/Redo, direkte Aenderungen
+              # ohne API, defineMaterial, ein geladener Spielstand, neues Teile-Array, neues Bauplan-Objekt) urteilt das Gedaechtnis
+              # byte-gleich wie die Rechnung und rechnet nur nach einer Aenderung; ein Schluessel ohne Stoffe faellt rot.
+              run: npm run gate:raum-tags
+
             - name: Stand-Takt (Welle K — im Stand kostet die Welt nichts, Gehen kostet die Änderung)
               if: matrix.gruppe == 2
               # An der Mess-Wiese, Null-Renderer, Fern-Ring über seinen Haken, Foundry an, der Regler hält: die Stand-Linse

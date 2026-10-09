@@ -27,7 +27,11 @@
 //   vergleichbar gefiltert werden. Die Zahl ist Weltzustand und nie rot; nur ein fehlender oder zerbrochener Zähler ist ein
 //   Befund (`tierUrteil`: die Messung stünde ohne ihre Tiere).
 //   Die Messwerte stehen roh je Schritt im JSON, dazu die Kurzfassung (`kurz`): fps · Frame p50/p95/max · CPU-Takt · render-EWMA
-//   je Lauf, gpu-bank, Band-Urteil, Profil-Top, die Tiere je Messung. Exit 0 = alle Wachen grün, 1 = eine Wache rot (der Lauf
+//   je Lauf, gpu-bank, Band-Urteil, Profil-Top, die Tiere je Messung. Die render-EWMA ist die WANDUHR der Render-Phase
+//   (`_loopShadowUpdate` + `_loopRender`) und trägt den Takt-Zustand der CPU mit (0710-11, Werkbank an der Wiese: dieselbe feste
+//   Rechnung lief 12–15 % langsamer, wenn der Takt davor leichter war; eine Dosis Rechnung vor dem Render kürzte die Phase,
+//   ein leichterer Takt dehnte sie bei gleichem Render-Pfad um 0,26–0,41 ms) — die Zeile nennt sie so; ein Kosten-Urteil über
+//   den Render geben gpu-bank, Band und die Frame-Zeit, über die CPU der CPU-Takt (die Summe aller Phasen). Exit 0 = alle Wachen grün, 1 = eine Wache rot (der Lauf
 //   misst Falsches — die Zahlen stehen trotzdem im JSON, beim Namen markiert), 2 = Abbruch. Am Ende stirbt die Werkbank samt
 //   Chrome (`beendeBaum`: `/stop`, und hängt er, der ganze Prozess-Baum) — erst dann endet die Folge.
 //
@@ -463,7 +467,7 @@ async function folge() {
         if (l && l.frameMs)
             console.log(
                 `  ${k}: ${l.fps} fps · Frame p50/p95/max ${l.frameMs.p50}/${l.frameMs.p95}/${l.frameMs.max} ms · CPU p50/p95 ` +
-                    `${l.cpuTaktMs.p50}/${l.cpuTaktMs.p95} · render-EWMA ${l.renderEwmaMs} · ${tierZeile(l.tiere)}`
+                    `${l.cpuTaktMs.p50}/${l.cpuTaktMs.p95} · render-Wanduhr (EWMA, mit CPU-Zustand) ${l.renderEwmaMs} · ${tierZeile(l.tiere)}`
             );
     }
     for (const [g, b] of Object.entries(aus.kurz.gpuBank || {}))
