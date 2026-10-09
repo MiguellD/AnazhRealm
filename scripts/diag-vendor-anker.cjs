@@ -322,6 +322,12 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "class GS extends u{", organ: "_rahmenZielAbschied (das Leinwand-Ziel ist ein EventDispatcher)" },
     { file: "vendor/three.webgpu.min.js", sub: "EventDispatcher as u", organ: "_rahmenZielAbschied (u ist der EventDispatcher von three.core)" },
     { file: "vendor/three.webgpu.min.js", sub: "this._canvasTarget=new GS(", organ: "_rahmenZielAbschied (der Renderer hält sein Leinwand-Ziel)" },
+    // DAS GESETZ DES SCHATTEN-BIAS (`_schattenBias`, 0710-12): r184 schiebt die Probe des Empfängers um normalWorld × normalBias
+    // in WELT-METERN und addiert `bias` auf die Tiefe der Schatten-Koordinate (0..1) — beides in Texeln der Kaskade.
+    { file: "vendor/three.webgpu.min.js", sub: "qc(\"normalBias\",\"float\",i).setGroup(_a)", organ: "_schattenBias (normalBias ist eine Uniform des Lichts)" },
+    { file: "vendor/three.webgpu.min.js", sub: "h=Rc.mul(d);", organ: "_schattenBias (normalBias × normalWorld)" },
+    { file: "vendor/three.webgpu.min.js", sub: "p=c.mul(w_.add(h))", organ: "_schattenBias (die Probe sitzt bei positionWorld + normalWorld × normalBias — Welt-Meter)" },
+    { file: "vendor/three.webgpu.min.js", sub: "s.reversedDepthBuffer?n.sub(i):n.add(i)", organ: "_schattenBias (bias addiert auf die Tiefe der Schatten-Koordinate)" },
     // DIE STUFE KOSTET NUR, WENN SIE ZEIGT (`nurBeiStaerke` in _ensurePostProcessing): ein Fn-Aufruf trägt seine Argumente
     // als `rawInputs` (der Ketten-Graph der Zerleg-Linse liest sie), ein Fn ohne Layout baut seinen Rumpf inline.
     { file: "vendor/three.webgpu.min.js", sub: "constructor(e,t){super(),this.shaderNode=e,this.rawInputs=t,this.isShaderCallNodeInternal=!0}", organ: "_ensurePostProcessing (nurBeiStaerke — die Stufe bleibt im Ketten-Graph sichtbar)" },
