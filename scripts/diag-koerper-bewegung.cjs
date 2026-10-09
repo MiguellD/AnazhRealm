@@ -16,7 +16,7 @@
 //  (C) POSEN-BLEND stetig: Δw ≤ 0.2 je Tick beim Schwellen-Sprung 0→6 m/s
 //      und zurück — am Konsumenten gemessen (p._gaitW über echte Ticks).
 //  (D) TIER-BODENKONTAKT: auf einem 30°-Hang (gestubbter Boden-Chokepoint
-//      Gesetz-Leser _kreaturBodenUnter) folgt der Kreatur-Root-Pitch dem Hang (30° ± 5°,
+//      Gesetz-Leser _koerperBodenUnter) folgt der Kreatur-Root-Pitch dem Hang (30° ± 5°,
 //      Vorzeichen: vorn höher → Nase hebt) und die Kreatur steht GEERDET
 //      (Sohlen an der Proben-Mitte — der +0.5-m-Schwebe-Anker ist tot).
 //  (E) FUSS-IK-KONSUM über den ECHTEN Pfad (_gaitBodenY → _standSicht, kein Stub): der Träger des
@@ -350,8 +350,8 @@ const server = http.createServer((req, res) => {
                     cz = pm.z;
                 const c = r.spawnCreatureAt(cx, 30, cz, "happy", "wesen", { precise: true, bodySize: 1 });
                 if (!c) return { error: "Tier-Spawn fehlgeschlagen" };
-                const savedSurf = r._kreaturBodenUnter;
-                r._kreaturBodenUnter = (x, _y, z) => ebene(x, z);
+                const savedSurf = r._koerperBodenUnter;
+                r._koerperBodenUnter = (x, _y, z) => ebene(x, z);
                 const tiere = (n) => {
                     for (let k = 0; k < n; k++) {
                         r.updateCreatures(0.02);
@@ -374,7 +374,7 @@ const server = http.createServer((req, res) => {
                 r._slopePitch = savedPitch; // restaurieren (Gate-Hook-Lehre)
                 o.s2PitchDeg = (c.rotation.x * 180) / Math.PI;
                 o.checks.s2LensFires = Math.abs(o.s2PitchDeg) < 3; // ohne Formel kein Hang-Folgen
-                r._kreaturBodenUnter = savedSurf; // restaurieren
+                r._koerperBodenUnter = savedSurf; // restaurieren
                 // Boden-Caches der Welt-Kreaturen entstubben (kein stale Hang-Boden)
                 for (const cr of s.creatures) {
                     const ud = cr.userData || {};

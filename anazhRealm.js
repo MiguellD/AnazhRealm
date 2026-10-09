@@ -21305,7 +21305,9 @@ class AnazhRealm {
             // Wasserlinie seiner Gestalt), steht er an seiner Schwimm-Linie (`_kreaturSchwimmLinie`, dieselbe wie im
             // Frame-Takt) — vorher setzte dieser Schritt auch im Wasser den Boden (gate:fahr-leben L10: ein Fuchs in 3,2 m Wasser
             // sank beim Gleiten 2,77 m tief), danach setzte der Frame-Takt die Höhe mit seiner Welle (L8: 0,127 m je Bildrate).
-            const gesetz = this.getTerrainHeightAt(c.position.x, c.position.z);
+            // der Boden UNTER dem Leib (`_koerperBodenUnter`, ab seiner Höhe), nie die Oberkante der Säule — ein in der Höhle
+            // gestoßenes Tier glitt sonst aufs Dach
+            const gesetz = this._koerperBodenUnter(c.position.x, c.position.y, c.position.z);
             const spiegelS = this._kreaturSchwimmt(c, gesetz);
             if (spiegelS !== null) c.position.y = this._kreaturSchwimmLinie(c, spiegelS);
             else {
@@ -22379,7 +22381,11 @@ class AnazhRealm {
             const pz = creature.position.z + oz[k];
             this._creatureSlopeProbe(P[k], px, pz, centerG);
             const v = this._standSicht(px, pz, Number.isFinite(P[k].g) ? P[k].g : centerG, false);
-            y[k] = Number.isFinite(v) ? v : centerG;
+            // EINE KANTE ist keine Ebene (Leben-Schau 2, gate:fall-waechter — wie der Fahr-Kern `fahrEbene`): liegt der Boden
+            // einer Probe steiler als 45° über oder unter der Mitte (eine Stufe, ein Loch in die tiefere Höhle), trägt sie nicht —
+            // sie stünde in einer anderen Schicht, und die Mitte der vier zog den Leib in den Fels (ein in der Höhle gestoßener
+            // Wolf stand 1,5 m unter seinem Grund). Dort trägt der Grund unter der Mitte.
+            y[k] = Number.isFinite(v) && Math.abs(v - centerG) <= hl ? v : centerG;
         }
         if (!y.every(Number.isFinite)) return null;
         return {
@@ -22390,14 +22396,14 @@ class AnazhRealm {
     }
     // EINE Gesetz-Probe (gecacht): re-scannt nur nach > 0.5 m Wanderung UND mit freiem Frame-Budget (der
     // Kreatur-FPS-Dirigent V17.113 — dieselbe Kasse wie _creatureGroundY; Budget leer → der stale Cache trägt den Frame).
-    // Der Boden UNTER dem Körper (`_kreaturBodenUnter` ab der Gesetz-Höhe der Mitte), nie die Oberkante der Säule.
+    // Der Boden UNTER dem Körper (`_koerperBodenUnter` ab der Gesetz-Höhe der Mitte), nie die Oberkante der Säule.
     _creatureSlopeProbe(p, x, z, yRef) {
         const dx = x - p.x;
         const dz = z - p.z;
         if (Number.isFinite(p.g) && Number.isFinite(dx) && Number.isFinite(dz) && dx * dx + dz * dz < 0.25) return;
         if (!(this._creatureGroundBudget > 0)) return;
         this._creatureGroundBudget--;
-        const g = this._kreaturBodenUnter(x, yRef, z);
+        const g = this._koerperBodenUnter(x, yRef, z);
         p.x = x;
         p.z = z;
         p.g = typeof g === "number" && Number.isFinite(g) ? g : NaN;
@@ -33737,7 +33743,12 @@ class AnazhRealm {
     // Kapsel-Schritt (`_fieldSurfaceBelow`), ab der Körper-Höhe abwärts statt ab der Chunk-Decke. `_voxelSurfaceY` nahm
     // die erste Luft→Fels-Grenze von OBEN: ein Wolf, gerufen auf dem Höhlen-Boden, stand im ersten Frame auf dem Dach
     // (+32,6 m). Ohne Fels im Band (Sturz, Spawn hoch über dem Grund) trägt die Oberkante der Säule.
-    _kreaturBodenUnter(x, yRef, z) {
+    // JEDER KÖRPER (Leben-Schau 2, 09.10., Spaltgrund −900,3/−976,1): auch das Gefährt und das gestoßene Tier lesen hier
+    // ihren Boden. Der Fahr-Schritt las die Oberkante der Säule (`getTerrainHeightAt`): unter dem Überhang des Spalts
+    // (Fels 22,3–29,5 m, Luft 16–22,3 m) stand der Boden 12 m ÜBER dem Wagen, der Flug-Zweig des Kerns ließ ihn fallen —
+    // −6 428 m nach 30 s, durch den Grund bei 16 m. Leser: `_creatureGroundY`, `_creatureSlopeProbe`, `_kreaturStossSchritt`,
+    // `_fahrBoden`, `_rittEbene`, `_rittSchritt` (gate:fall-waechter nennt jeden anderen Leser beim Namen).
+    _koerperBodenUnter(x, yRef, z) {
         if (Number.isFinite(yRef)) {
             // eingegraben (der Hang stieg unter dem Schritt): nur eine Stufe aufwärts suchen — tiefer im Fels ist kein
             // Gang (ein Spawn im Gestein), dort trägt die Säule
@@ -33789,7 +33800,7 @@ class AnazhRealm {
         return unten + 1.2 * Math.min(1, Math.max(0, t)) > hoehe;
     }
 
-    // Boden-Cache je Kreatur: der Boden unter dem Körper (`_kreaturBodenUnter`) nur neu scannen, wenn sie sich > 0.5 m
+    // Boden-Cache je Kreatur: der Boden unter dem Körper (`_koerperBodenUnter`) nur neu scannen, wenn sie sich > 0.5 m
     // bewegt hat UND Frame-Budget frei ist — sonst Cache; eine frische Kreatur scannt einmal ohne Budget (ein
     // Makro-Schätzwert hob sie in der Höhle aufs Dach, und von dort fand der Scan nur noch das Dach). Der Scan-Aufwand pro
     // Frame ist unabhängig von der Kreatur-Zahl. EINE Quelle für Settle + `_creatureWaterContextAt` (kein Doppel-Scan); der
@@ -33805,17 +33816,15 @@ class AnazhRealm {
         }
         if (this._creatureGroundBudget > 0 || ud.cachedGroundY === undefined) {
             if (this._creatureGroundBudget > 0) this._creatureGroundBudget--;
-            const gY = this._kreaturBodenUnter(cx, creature.position.y - (ud._hopH || 0), cz);
+            const gY = this._koerperBodenUnter(cx, creature.position.y - (ud._hopH || 0), cz);
             ud.cachedGroundY = gY;
             ud.cachedGroundX = cx;
             ud.cachedGroundZ = cz;
             return gY;
         }
-        // Budget erschöpft: leicht veralteter Cache (imperzeptibel, < 1 Frame) ODER
-        // — für eine frische Kreatur ohne Cache — ein billiger Makro-Schätzwert
-        // (kein Density-Scan; nächsten Frame vom Budget verfeinert).
-        if (ud.cachedGroundY !== undefined) return ud.cachedGroundY;
-        return this._terrainMacroSurfaceY(cx, cz);
+        // Budget erschöpft: der leicht veraltete Cache (imperzeptibel, < 1 Frame) — eine frische Kreatur scannte oben. Der
+        // Makro-Schätzwert dahinter war unerreichbar und las die Oberkante der Säule (das Dach); er fiel (Leben-Schau 2).
+        return ud.cachedGroundY;
     }
 
     _creatureWaterContextAt(creature, surfaceY) {
@@ -54156,12 +54165,31 @@ class AnazhRealm {
         const { vc } = AnazhRealm._fahrSchrittGesetz();
         const eb = vc.fahrEbene(
             { auf: this._rittAufstand(entry) },
-            this._fahrTerrainBoden || (this._fahrTerrainBoden = (a, b) => this.getTerrainHeightAt(a, b)),
+            this._werkBoden(entry),
             x,
             z,
             fahrtYaw - Math.PI / 2
         );
         return eb ? { y: eb.y, nick: -eb.steig, wank: eb.wank } : null;
+    }
+
+    // DER BODEN UNTER EINEM WERK (Leben-Schau 2, 09.10.): der Boden des Körpers (`_koerperBodenUnter`) ab der Höhe des
+    // Werks — der Ebene seiner Räder im Fahr-Zustand, sonst seiner Basis (y − 0,5). Bis dahin las jeder Fahr- und Ritt-Leser
+    // die Oberkante der Säule: unter einem Überhang oder in einer Höhle lag der Boden über dem Werk (der Wagen fiel im
+    // Spaltgrund durch die Welt, ein in der Höhle gesetzter Wagen sprang aufs Dach). Je Werk EINE Funktion.
+    _werkBoden(entry) {
+        if (entry._werkBodenFn) return entry._werkBodenFn;
+        entry._werkBodenFn = (x, z) => {
+            const fz = entry._fahr;
+            const ref =
+                fz && Number.isFinite(fz.y)
+                    ? fz.y
+                    : entry.position && Number.isFinite(entry.position.y)
+                      ? entry.position.y - 0.5
+                      : NaN;
+            return this._koerperBodenUnter(x, ref, z);
+        };
+        return entry._werkBodenFn;
     }
 
     // DER FAHR-SATZ eines gerittenen Werks (Welle L, Q13): der EINE Fahr-Schritt des Kerns (vehicle-core fahrGesetz) aus
@@ -54208,8 +54236,9 @@ class AnazhRealm {
         if (entry._fahrBodenFn) return entry._fahrBodenFn;
         const gestalt = this._fahrzeugGestalt(entry, this._vehicleProfile(entry));
         const traegt = gestalt.linie !== Infinity;
+        const boden = this._werkBoden(entry); // der Boden UNTER dem Werk, nie die Oberkante der Säule
         entry._fahrBodenFn = (x, z) => {
-            const t = this.getTerrainHeightAt(x, z);
+            const t = boden(x, z);
             if (!traegt || !Number.isFinite(t)) return t;
             this._koerperWasser(x, z, t, gestalt);
             return gestalt.lage.schwimmt ? gestalt.lage.unterkante : t;
@@ -54300,7 +54329,7 @@ class AnazhRealm {
         // Gesetz-Werk die Wasserlinie auf der ballistischen Vertikale des Fahr-Schritts (`_fahrBoden`), seine Feder federt
         // den Aufbau (Nick · Wank · Hub); ein Werk ohne Fahr-Gesetz folgt ihr mit exp-k 8.
         entry._afloat = false;
-        const t0 = this.getTerrainHeightAt(pm.x, pm.z);
+        const t0 = this._werkBoden(entry)(pm.x, pm.z);
         const gestalt = this._fahrzeugGestalt(entry, rideProf);
         if (gestalt.linie !== Infinity && Number.isFinite(t0)) {
             this._koerperWasser(pm.x, pm.z, t0, gestalt);
@@ -93479,7 +93508,7 @@ class AnazhRealm {
     }
 
     // Kein Ammo: der Spieler läuft feld-nativ (`_stepCharacter`), Kreaturen erden aus
-    // `_creatureGroundY`, Fahrzeuge aus `getTerrainHeightAt`. Dieser Schritt fährt nur den
+    // `_creatureGroundY`, Fahrzeuge aus `_werkBoden` (beide `_koerperBodenUnter`). Dieser Schritt fährt nur den
     // Feld-Controller (Wasser-Auftrieb/Killplane des Spielers leben in `_stepCharacter`).
     _loopPhysicsSync(delta, currentTime) {
         this._stepCharacter(delta, currentTime);

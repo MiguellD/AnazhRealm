@@ -23939,15 +23939,15 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         for (let i = 0; i < 200; i++) r._creatureWaterContextAt(probe, psy);
         out.perfMs = performance.now() - t0;
 
-        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` liest den Boden UNTER dem Körper (`_kreaturBodenUnter`:
+        // Source-Probe der Wahrheits-Quellen: `_creatureGroundY` liest den Boden UNTER dem Körper (`_koerperBodenUnter`:
         // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle); der Helper liest die
         // EINE Wasser-Wahrheit am Körper (`_koerperWasser`, Welle L wasser) — Tiefe UND Ufer-Suche —, nie mehr das 3×3-gedehnte
         // `_waterLevelAt` / `_isAboveWaterAt` (die zweite Wahrheit der Ufer-Scheu).
         const helperSrc = window.__codeOf(r._creatureWaterContextAt);
         out.usesVoxelSurfaceY =
-            /_kreaturBodenUnter\(/.test(window.__codeOf(r._creatureGroundY)) &&
-            /_fieldSurfaceBelow\(/.test(window.__codeOf(r._kreaturBodenUnter)) &&
-            /_voxelSurfaceY\(/.test(window.__codeOf(r._kreaturBodenUnter));
+            /_koerperBodenUnter\(/.test(window.__codeOf(r._creatureGroundY)) &&
+            /_fieldSurfaceBelow\(/.test(window.__codeOf(r._koerperBodenUnter)) &&
+            /_voxelSurfaceY\(/.test(window.__codeOf(r._koerperBodenUnter));
         out.usesKoerperWasser = (helperSrc.match(/_koerperWasser\(/g) || []).length >= 2;
         out.ohneZweiteWahrheit = !/_waterLevelAt\(|_isAboveWaterAt\(/.test(helperSrc);
 
@@ -24025,7 +24025,7 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         `200 calls in ${res.perfMs?.toFixed(1)} ms`
     );
     check(
-        "Welle V11.0-d.1: _creatureGroundY liest den Boden unter dem Körper (_kreaturBodenUnter → _fieldSurfaceBelow, Säule nur ohne Fels)",
+        "Welle V11.0-d.1: _creatureGroundY liest den Boden unter dem Körper (_koerperBodenUnter → _fieldSurfaceBelow, Säule nur ohne Fels)",
         res.usesVoxelSurfaceY === true
     );
     check(

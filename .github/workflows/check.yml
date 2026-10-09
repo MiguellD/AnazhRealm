@@ -521,6 +521,15 @@ jobs:
               # Der eingeschmuggelte Spender-Felsturm faellt rot beim Namen; Selbsttest inklusive.
               run: npm run gate:kollision-bild
 
+            - name: Fall-Waechter (Leben-Schau 2 — jeder Koerper steht auf dem Boden unter ihm)
+              if: matrix.gruppe == 3
+              # Null-Renderer, echter Spiel-Takt: der Wagen im Spaltgrund unter dem Ueberhang (−900,6/−976,1), die Fahrt der
+              # Schau ueber die Spaltkante, Wagen, gestossener Wolf und Spieler in der Hoehle (−875,5/−1229,4) und ein Zensus
+              # der Ueberhang-Spalten — keiner faellt durch seinen Grund, keiner springt aufs Dach (Boden-Wahrheit: das
+              # Dichtefeld). Befund 09.10.: −6 428 m nach 30 s. AST-Wand: die Koerper-Schritte lesen nur _koerperBodenUnter;
+              # der eingeschmuggelte Dach-Leser faellt rot beim Namen; Selbsttest inklusive.
+              run: npm run gate:fall-waechter
+
             - name: Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)
               if: matrix.gruppe == 2
               # Null-Renderer, eine echte Welt (drei Doerfer, vier Brennglaeser, Brennbares in ihren Brennpunkten): ueber

@@ -872,6 +872,8 @@ const FORBIDDEN = [
     // KOLLISION = BILD (Leben-Schau 2, 09.10.): jeder Körper liest den Boden UNTER sich (der Wagen las die Oberkante der Säule
     // und fiel unter dem Überhang des Spalts durch die Welt), jedes Studio-Werk kollidiert in seiner Welt-Skala und Gestalt
     // (der Felsturm stieß als Eisen-Mast), die Platzierung liest der Kern statt eines Hand-Spiegels.
+    { token: "_kreaturBodenUnter", fiel: "Leben-Schau 2 — jeder Körper liest seinen Boden über _koerperBodenUnter" },
+    { token: "_fahrTerrainBoden", fiel: "Leben-Schau 2 — die Ebene des Werks liest _werkBoden (den Boden unter ihm)" },
     { token: "_baumWeltSkala", fiel: "Leben-Schau 2 — _studioWeltSkala trägt die Welt-Skala jedes Studio-Werks" },
     { token: "STUDIO_WORLD_SCALE", fiel: "Leben-Schau 2 — die Welt-Skala liest der Kern (__terrainCore.PORTAL_RENDER_CONFIG)" },
     { token: "STUDIO_TREE_SCALE_MUL", fiel: "Leben-Schau 2 — der Wald-Mul liest der Kern (placement.treeScaleMul)" },
