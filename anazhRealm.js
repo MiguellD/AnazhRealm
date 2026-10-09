@@ -19431,12 +19431,17 @@ class AnazhRealm {
         // (_leibMasse — das Volumen der Gestalt × MASSSTAB.dichteKgM3: Gattung UND Größe, dieselbe Masse wie Stoß, Beute und
         // Temperament) gegen die Bezugs-Masse des tetrapoda-Gesetzbuchs (KAMPF.refKg, der Wolf der Größe 1): damage ×
         // (m/ref)^biss, defense × (m/ref)^haut, hpMax = Leben der Substanz × (m/ref)^leben. Vorher damage 19,75 und defense 11,9
-        // für jede Gattung und Größe (die Tiere sind tag-gleich), hpMax nur 99,8–158,9 von Fuchs 0,62 bis Bär 2.
-        const KG = AnazhRealm._kampfGroesseGesetz();
-        const q = this._leibMasse(creature) / KG.refKg;
-        stats.damage *= Math.pow(q, KG.biss);
-        stats.defense *= Math.pow(q, KG.haut);
-        stats.hpMax = hpSubstanz * Math.pow(q, KG.leben);
+        // für jede Gattung und Größe (die Tiere sind tag-gleich), hpMax nur 99,8–158,9 von Fuchs 0,62 bis Bär 2. Ein Leib ohne
+        // Gestalt (kein Studio-Tier: kein _tierBaum mit Volumen) hat keine Masse — er behält die Werte seiner Substanz, dieselbe
+        // Grenze wie ein ungemessenes Gerät.
+        const tbK = creature.userData && creature.userData._tierBaum;
+        if (tbK && tbK.leibV > 0) {
+            const KG = AnazhRealm._kampfGroesseGesetz();
+            const q = this._leibMasse(creature) / KG.refKg;
+            stats.damage *= Math.pow(q, KG.biss);
+            stats.defense *= Math.pow(q, KG.haut);
+            stats.hpMax = hpSubstanz * Math.pow(q, KG.leben);
+        }
         return { tags: finalTags, stats };
     }
 
