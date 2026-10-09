@@ -1019,43 +1019,6 @@ jobs:
               # in BEIDEN Stufen-Gruppen, außerhalb exakt einer, nie 0, Slot-Bilanz dicht (kein Leck).
               run: npm run gate:foundry-crossfade
 
-            - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
-              if: matrix.gruppe == 3
-              # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
-              # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
-              # bricht jede Stelle einzeln.
-              run: npm run gate:v1-pfad
-
-            - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
-              if: matrix.gruppe == 3
-              # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen:
-              # jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest bricht Verdikte
-              # und Wand je einzeln.
-              run: npm run gate:werkstatt-weg
-
-            - name: Die Ankunfts-Linse (Welle L Folge - Ladeschirm, Fadenkreuz, Hilfe, Chat-Taste, Start-Gurt, Kamera im Baum, Dorf vor dir)
-              if: matrix.gruppe == 3
-              # Die Defekte der sichtbaren Leben-Schau 07.10. auf den v1-Schritten 1-2, je beim Namen: jede Probe ruft den
-              # Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest nennt jeden Befund-Zustand und
-              # die statische Wand feuert am Vor-Stand.
-              run: npm run gate:ankunft
-
-            - name: Die GPU-Fehler-Linse (Welle L - V-D7, Selbsttest)
-              if: matrix.gruppe == 1
-              # Die Werkbank nennt jede WebGPU-Validierung mit Pass und Objekt (scripts/lib/gpu-fehler.cjs); der
-              # Selbsttest zeichnet auf einer nackten WebGPU-Seite einmal ohne Vertex-Slot - die Linse muss ihn nennen.
-              run: npm run gate:gpu-fehler
-
-            - name: Wasser-Wand (Welle L — Q6 + Q7, die Proben rufen die Chokepoints selbst)
-              if: matrix.gruppe == 3
-              # Null-Renderer an der Mess-Wiese (Sync-Bau, Worker ausgehängt): der Fluss-Spiegel stromab nie steigend,
-              # quer waagrecht, die Quelle ein Rinnsal, die Bank nie steiler als der Fels, Kanal Main = Worker; der
-              # Körper nach seiner Gestalt im Wasser (Hineingehen, Brustkorb-Linie, Kraulen, Eintauchen, Tier, Mitspieler,
-              # Licht, Medium), die Decke über trockenen Höhlen, der Wagen watet und das Boot treibt, keine Ufer-Flut,
-              # Klang · Tier-Scheu · Küsten-Sheet lesen die EINE Wahrheit, die Ufer-Bänder stetig über die Krone. --selftest
-              # zuerst.
-              run: npm run gate:wasser-leben
-
             # ── DIE WÄNDE OHNE WORKFLOW (09.10., gate:ci-deckung (W)) ── Bis hier liefen 50 der 152 `gate:*` nirgends
             # automatisch. Die folgenden 29 fahren headless (Null-Renderer, swiftshader nur für Rechen- und Bäcker-Proben)
             # und liefen am 09.10. lokal grün (foliage-res und membran-gesetz nach der Heilung ihrer Proben); verteilt nach
@@ -1176,6 +1139,43 @@ jobs:
             - name: Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)
               if: matrix.gruppe == 3
               run: npm run gate:seam
+
+            - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
+              if: matrix.gruppe == 3
+              # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
+              # Chokepoint selbst im echten Boot (headless, foundry-ON) und misst seine Wirkung; der Selbsttest
+              # bricht jede Stelle einzeln.
+              run: npm run gate:v1-pfad
+
+            - name: Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)
+              if: matrix.gruppe == 3
+              # Die Defekte der sichtbaren Leben-Schau 07.10. auf dem Weg Satz/Werkstatt -> stehendes Werk, je beim Namen:
+              # jede Probe ruft den Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest bricht Verdikte
+              # und Wand je einzeln.
+              run: npm run gate:werkstatt-weg
+
+            - name: Die Ankunfts-Linse (Welle L Folge - Ladeschirm, Fadenkreuz, Hilfe, Chat-Taste, Start-Gurt, Kamera im Baum, Dorf vor dir)
+              if: matrix.gruppe == 3
+              # Die Defekte der sichtbaren Leben-Schau 07.10. auf den v1-Schritten 1-2, je beim Namen: jede Probe ruft den
+              # Chokepoint selbst im echten Boot (headless, foundry-ON); der Selbsttest nennt jeden Befund-Zustand und
+              # die statische Wand feuert am Vor-Stand.
+              run: npm run gate:ankunft
+
+            - name: Die GPU-Fehler-Linse (Welle L - V-D7, Selbsttest)
+              if: matrix.gruppe == 1
+              # Die Werkbank nennt jede WebGPU-Validierung mit Pass und Objekt (scripts/lib/gpu-fehler.cjs); der
+              # Selbsttest zeichnet auf einer nackten WebGPU-Seite einmal ohne Vertex-Slot - die Linse muss ihn nennen.
+              run: npm run gate:gpu-fehler
+
+            - name: Wasser-Wand (Welle L — Q6 + Q7, die Proben rufen die Chokepoints selbst)
+              if: matrix.gruppe == 3
+              # Null-Renderer an der Mess-Wiese (Sync-Bau, Worker ausgehängt): der Fluss-Spiegel stromab nie steigend,
+              # quer waagrecht, die Quelle ein Rinnsal, die Bank nie steiler als der Fels, Kanal Main = Worker; der
+              # Körper nach seiner Gestalt im Wasser (Hineingehen, Brustkorb-Linie, Kraulen, Eintauchen, Tier, Mitspieler,
+              # Licht, Medium), die Decke über trockenen Höhlen, der Wagen watet und das Boot treibt, keine Ufer-Flut,
+              # Klang · Tier-Scheu · Küsten-Sheet lesen die EINE Wahrheit, die Ufer-Bänder stetig über die Krone. --selftest
+              # zuerst.
+              run: npm run gate:wasser-leben
 
             - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
               if: matrix.gruppe == 2
