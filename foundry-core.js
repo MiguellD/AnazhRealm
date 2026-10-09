@@ -321,7 +321,7 @@ const PORTAL_RENDER_CONFIG = {
         budget: {
             tree: {
                 0: {
-                    tris: 9500,
+                    tris: 12000,
                     draws: 2,
                     schatten: 1,
                     lagen: 16,

@@ -2393,9 +2393,12 @@
     };
 
     // DIE BILD-HÖHE EINES BAUMS an der Nahkante seiner Stufe in Pixeln (S3, 09.10.; 1080 Zeilen bei 75° Sichtfeld): die
-    // L1 beginnt bei Distanz = Baumhöhe (704 px je Baumhöhe, wie tree[1].ringToleranz rechnet), die L0 zeigt ihn nah bei
-    // halber Höhe (1 408 px). Ein Gitter-Merkmal unter einem Pixel dieser Kante trägt die Stufe nicht.
-    const STUFEN_BILD_PX = [1408, 704];
+    // L1 beginnt bei Distanz = Baumhöhe (704 px je Baumhöhe, wie tree[1].ringToleranz rechnet); die L0 beginnt auf
+    // Armlänge — an ihrer Nahkante ist jedes Merkmal im Bild (unendlich). Gemessen: ohne die Naht-Ringe (1,5 mm Vorlage,
+    // an einer L0-Kante von 1 408 px je Baumhöhe 0,6 px) verschmierte die Lentizelle, die Birken-L0 fiel auf Stamm-Albedo
+    // 0,291 (Band 0,30–0,55, gate:pflanzen-nah) — auf 3 m ist die Naht 2–3 px. Ein Merkmal unter dem Pixel der Kante
+    // trägt die Stufe nicht.
+    const STUFEN_BILD_PX = [Infinity, 704];
     // Der Umkreis-Faktor des Wurf-Kants (S3): ein gleichseitiges Dreieck mit Umkreis R hat die mittlere Breite 3√3·R/π —
     // gleich der des Kreises 2r bei R = 2π/(3√3)·r.
     const WURF_KANT = (2 * Math.PI) / (3 * Math.sqrt(3));
@@ -2450,14 +2453,15 @@
             const h = B.hoehe[0] + (B.hoehe[1] - B.hoehe[0]) * fbm2(z * 2.9 + seed, 1.7);
             // DAS PIXEL-GESETZ DER ZEILE (S3, 09.10.): eine Zeile ist ein Band, wo sie an der Nahkante der Stufe mindestens
             // zwei Bild-Pixel hoch ist (Nyquist, wie das Gitter-Gesetz der Ringe) — darunter flimmert sie als Linie und
-            // trägt keine eigenen Ringe. Befund: die Birken-L1 trug je Stamm 87 Ringe (die L0 88) — 3,4–3,8k Dreiecke Rinde.
+            // trägt keine eigenen Ringe. Befund: die Birken-L1 trug je Stamm 87 Ringe (die L0 88) — 3,4–3,8k Dreiecke Rinde;
+            // die L0 (Armlänge) trägt jede Zeile.
             if (!q.fuss && q.r >= rMin && q.c[1] > borkeH * 0.7 && h >= (2 * P.height) / STUFEN_BILD_PX[lod]) {
                 const a0 = s - h * 0.5,
                     a1 = s + h * 0.5;
                 neu.push({ s: a0, zeile: z }, { s: a1, zeile: z });
                 // Die harte Kante (zwei Naht-Ringe) trägt eine Stufe nur, wo das Pixel sie trägt (S3, 09.10.): die Naht
-                // ist mindestens ein Bild-Pixel an der Nahkante der Stufe (STUFEN_BILD_PX). Befund: 1,5 mm Vorlage
-                // = 0,6 px an der L0-Nahkante — die Birken-L0 trug je Zeile vier Ringe, der Stamm 128 statt 70.
+                // ist mindestens ein Bild-Pixel an der Nahkante der Stufe (STUFEN_BILD_PX) — die L0 trägt sie (Armlänge),
+                // die L1 (12 m) zeichnet die Zeile weich.
                 if (B.naht >= P.height / STUFEN_BILD_PX[lod])
                     neu.push({ s: a0 - B.naht, zeile: -1 }, { s: a1 + B.naht, zeile: -1 });
             }
@@ -2523,8 +2527,9 @@
                 : typeof __lod !== "undefined" && __lod === 2
                   ? Math.max(4, Math.round(R * 0.4))
                   : Math.max(5, R - (typeof __lod !== "undefined" ? __lod * 4 : 0)); // Stamm (thick) SCHARF, Aeste sparsam
-        // DAS PIXEL-GESETZ DER RÖHRE (S3, 09.10.; L0/L1): die Radial-Teilung folgt dem Bild — so viele Seiten, wie der
-        // Umriss an der Nahkante der Stufe braucht (Sehnen-Abstand ≤ ½ px bei STUFEN_BILD_PX je Baumhöhe), und
+        // DAS PIXEL-GESETZ DER RÖHRE (S3, 09.10.; greift an der L1 — die L0 beginnt auf Armlänge): die Radial-Teilung
+        // folgt dem Bild — so viele Seiten, wie der Umriss an der Nahkante der Stufe braucht (Sehnen-Abstand ≤ ½ px bei
+        // STUFEN_BILD_PX je Baumhöhe), und
         // mindestens zwei je Furche (Nyquist, wie das Gitter-Gesetz der Ringe); nie mehr, als das Rinden-Gesetz gibt.
         // Befund: die Mammut-L1 trug ihren Stamm mit 38 Seiten (1 520 Dreiecke) — der Umriss braucht an der L1-Kante 25,
         // die 14 Furchen 28.
