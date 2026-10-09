@@ -38262,7 +38262,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
                     d = 20 + (i % 8) * 8;
                 const x = p.x + Math.cos(a) * d,
                     z = p.z + Math.sin(a) * d;
-                if (Math.hypot(x - gM.x, z - gM.z) >= 50 && r._isAboveWaterAt(x, z, 2)) spot = { x, z };
+                if (Math.hypot(x - gM.x, z - gM.z) >= 50 && r._landAt(x, z, 2)) spot = { x, z };
             }
             out.spot = !!spot;
             const vorher = archs.length;
@@ -38270,7 +38270,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
             const neu = archs.slice(vorher);
             out.neuZahl = neu.length;
             out.alleEiche = neu.length > 0 && neu.every((e) => e.type === "baum_eiche");
-            out.alleTrocken = neu.every((e) => r._isAboveWaterAt(e.position.x, e.position.z, 0.2));
+            out.alleTrocken = neu.every((e) => r._landAt(e.position.x, e.position.z, 0.2));
             out.alleGeerdet = neu.every((e) => {
                 const sy = r._voxelSurfaceY(e.position.x, e.position.z);
                 return Number.isFinite(sy) && Math.abs(e.position.y - (sy + 0.5)) < 0.6;
@@ -38295,7 +38295,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
             for (let dz = -166; dz <= 166; dz += 4)
                 for (let dx = -166; dx <= 166; dx += 4) {
                     const d = Math.hypot(dx, dz);
-                    if (d > 166 || r._isAboveWaterAt(pm0.x + dx, pm0.z + dz, 0.2)) continue;
+                    if (d > 166 || r._landAt(pm0.x + dx, pm0.z + dz, 0.2)) continue;
                     nassFern = true;
                     if (d <= 150) nassNah = true;
                     nassPunkte.push([pm0.x + dx, pm0.z + dz]);
@@ -38317,7 +38317,7 @@ async function checkBandV18493CoSchoepferStudio(ctx) {
             const benannt = nwFehler === "kein Wasser im Umkreis von 160 m";
             out.nearWater = nassNah ? amWasser : !nassFern ? benannt : amWasser || benannt;
             out.nearWaterBefund = { nassNah, nassFern, nw, nwFehler };
-            out.nearWaterTrocken = nw ? r._isAboveWaterAt(nw.x, nw.z, 0.3) : benannt;
+            out.nearWaterTrocken = nw ? r._landAt(nw.x, nw.z, 0.3) : benannt;
             const prompt = r.llmBuildSystemPrompt();
             out.promptOp = /spawn_studio/.test(prompt) && /near_water/.test(prompt);
             out.promptWoerter = /Bäume: /.test(prompt);

@@ -183,7 +183,7 @@ const RENDER_FN = async (kam, W, H, png) => {
                 const w = (k * Math.PI) / 6;
                 const x = -900 + Math.cos(w) * d,
                     z = -850 + Math.sin(w) * d;
-                if (typeof r._isAboveWaterAt === "function" && !r._isAboveWaterAt(x, z, 0.3)) continue;
+                if (!r._landAt(x, z, 0.3)) continue;
                 let lo = Infinity,
                     hi = -Infinity;
                 for (const [dx, dz] of [

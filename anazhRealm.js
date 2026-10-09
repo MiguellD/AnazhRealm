@@ -2169,7 +2169,7 @@ class AnazhRealm {
                     if (entry) spawned++;
                 }
                 ctx.log.push({ event: "spawned_tree", count: spawned, pos, kind: treeKind });
-                if (weicht.haus || weicht.lichtung)
+                if (weicht.haus || weicht.lichtung || weicht.wasser)
                     ctx.log.push({ event: "natur_weicht", op: "spawn_tree", grundriss: weicht, gesetzt: spawned });
             },
             // Co-Schöpfer pflanzt Studio-Assets: ein Wort ("eiche", "birken", "fels", ein Haus-/Tor-Rezept)
@@ -3004,7 +3004,7 @@ class AnazhRealm {
     }
 
     // Platzier-Schleife des Co-Schöpfers: n Stück im Jitter-Kreis um pos, je ein trockener Fleck
-    // (max 4 Würfe, _isAboveWaterAt), geerdet auf die Voxel-Oberfläche (+0.5), Streuung + Drehung + Baum-Größe aus dem
+    // (max 4 Würfe, die EINE Spalten-Probe `_nassAt`), geerdet auf die Voxel-Oberfläche (+0.5), Streuung + Drehung + Baum-Größe aus dem
     // Strom des Samens (`_samenStrom`: der Hain ist eine Funktion seines Samens, auf jedem Peer derselbe; ohne Samen der
     // nächste des Welt-Stroms), Preset-Stempel am Eintrag. Budget wie jeder Spawn-Op. Natur (Baum, Strauch, Fels
     // — `_istNatur`) setzt durch die EINE Natur-Wand (`_naturSetzen`): kein Hain der KI wächst in einem Haus.
@@ -3029,7 +3029,7 @@ class AnazhRealm {
                 const off = n > 1 || t > 0 ? Math.max(jitter, 2.5) : 0;
                 x = pos.x + (wurf() - 0.5) * 2 * off;
                 z = pos.z + (wurf() - 0.5) * 2 * off;
-                trocken = typeof this._isAboveWaterAt !== "function" || this._isAboveWaterAt(x, z, 0.2);
+                trocken = this._landAt(x, z, 0.2);
             }
             if (!trocken) continue;
             ctx.budget.spawnsLeft--;
@@ -3042,7 +3042,7 @@ class AnazhRealm {
             if (natur ? this._naturSetzen(name, ort, opts, null, absage) : this.spawnArchitecture(name, ort, opts))
                 spawned++;
         }
-        if (weicht.haus || weicht.lichtung)
+        if (weicht.haus || weicht.lichtung || weicht.wasser)
             ctx.log.push({ event: "natur_weicht", op: "spawn_studio", grundriss: weicht, gesetzt: spawned });
         return spawned;
     }
@@ -3127,6 +3127,16 @@ class AnazhRealm {
             near_water: ([radius], ctx) => {
                 const r = zahl("near_water", "Radius", radius, 8, 200, 60);
                 const p = spieler("near_water", ctx);
+                // STEHT DER SPIELER IM WASSER (Schau-2: der Vorführ-Satz am Fluss −872/−1127), ist sein Ufer der nächste
+                // trockene Fleck — von ihm 2 m weiter landeinwärts (die Richtung vom Spieler weg). Bis V18.537 lief der Weg
+                // zurück zum Spieler durchs Wasser, und die Zwillings-Probe nannte den Rand des Flusses Land.
+                if (!this._landAt(p.x, p.z, 0.4)) {
+                    const u = this._findNearestWaterPoint(p.x, p.z, r, true);
+                    if (!u)
+                        throw this._dslKeinOrt("near_water", `kein trockenes Ufer im Umkreis von ${Math.round(r)} m`);
+                    const L = Math.hypot(u.x - p.x, u.z - p.z) || 1;
+                    return { x: u.x + ((u.x - p.x) / L) * 2, y: p.y, z: u.z + ((u.z - p.z) / L) * 2 };
+                }
                 const w = this._findNearestWaterPoint(p.x, p.z, r);
                 if (!w) throw this._dslKeinOrt("near_water", `kein Wasser im Umkreis von ${Math.round(r)} m`);
                 const dx = p.x - w.x,
@@ -3135,7 +3145,7 @@ class AnazhRealm {
                 for (let s = 1; s <= Math.ceil(L); s++) {
                     const x = w.x + (dx / L) * s,
                         z = w.z + (dz / L) * s;
-                    if (this._isAboveWaterAt(x, z, 0.4)) return { x: x + (dx / L) * 2, y: p.y, z: z + (dz / L) * 2 };
+                    if (this._landAt(x, z, 0.4)) return { x: x + (dx / L) * 2, y: p.y, z: z + (dz / L) * 2 };
                 }
                 throw this._dslKeinOrt("near_water", "kein trockenes Ufer zwischen dem Wasser und dir");
             },
@@ -9956,9 +9966,10 @@ class AnazhRealm {
 
     // Steht an (x, z) Wasser? Der Boden (Voxel-Surface) liegt mehr als 5 cm unter der EINEN Wasser-Wahrheit am Körper
     // (`_koerperWasser` über diesem Boden: See, Fluss bis zur Krone, Rand, Aquifer, Decke); eine Höhle, ein Loch (Surface
-    // null) trägt kein Wasser. Die EINE Nässe des Klangs (der Hör-Ring und der Wasser-Hauch) und — mit `marge` (m über dem
-    // Spiegel, der Rand zählt mit) — des Trink-Ziels der Tiere (`_findNearestWaterPoint`). Bis zur Gegenprüfung las der
-    // Klang das 3×3-gedehnte `_waterLevelAt`, das Trink-Ziel `_isAboveWaterAt` (zwei Wahrheiten neben dem Körper).
+    // null) trägt kein Wasser. DIE EINE SPALTEN-PROBE „ist hier Wasser": die Nässe des Klangs (der Hör-Ring und der
+    // Wasser-Hauch) und — mit `marge` (m über dem Spiegel, der Rand zählt mit) — das Trink-Ziel der Tiere
+    // (`_findNearestWaterPoint`) und die erste Hälfte des LANDS jedes Werks (`_landAt`). Bis zur Gegenprüfung las der Klang
+    // das 3×3-gedehnte `_waterLevelAt`; bis Schau-2 (09.10.) las das Land eine Zwillings-Probe über `_waterLevelAt`.
     // DER BILLIGE BEWEIS ZUERST (Lehre 25; Integration Welle L: wasser × auge-v1 R2): die Wahrheit am Körper trägt an (x, z)
     // höchstens das gezeichnete Wasser (geladener Chunk, `_wasserBildAt`) bzw. ohne Chunk den Spiegel des Gesetzes samt Rand
     // und voller Fluss-Breite (`_atlasWaterLevelAt` mit einem Boden unter allem) — gleich über welchem Boden, die Decke nimmt
@@ -9973,6 +9984,24 @@ class AnazhRealm {
         if (this._felsUeber(x, z, oben + marge)) return false;
         const boden = this._voxelSurfaceY(x, z);
         return boden !== null && Number.isFinite(boden) && boden < this._koerperWasser(x, z, boden) + marge;
+    }
+
+    // DAS LAND EINES WERKS (Schau-2 wasser-wahrheit): der Boden an (x, z) liegt mehr als `marge` über dem Wasser — dem
+    // gezeichneten (`_nassAt`: was das Auge sieht, samt Live-Dach und Ufer) UND dem des Gesetzes, aus dem das Bild wird
+    // (`_atlasWaterLevelAt` über dem Boden der Spalte: ein Chunk, dessen Sheet ein Wasser noch nicht zeichnet, trägt es
+    // schon — am See −1080/−1135 zeichnete der Fern-Chunk den 8 m tiefen See noch nicht, der Wald pflanzte Erlen auf
+    // seinen Grund). Eine Höhle, ein Loch (kein Boden) ist kein Land. Leser: jedes Werk, das gesetzt wird — der Hain und
+    // der Satz („am Wasser"), die Natur-Wand (Wald, Unterholz, Streu, Hof-Baum, Bau-Phantom), die Siedlung samt Fundament,
+    // Wege, Zäune, Brunnen, Stände, der Ort des Dorfs und der Spawn. Billige Beweise zuerst (Lehre 25): kein Wasser des
+    // Gesetzes in der Spalte, oder Fels über seinem Spiegel + Marge — Land ohne Spalten-Scan.
+    _landAt(x, z, marge = 0) {
+        if (this._nassAt(x, z, marge)) return false;
+        const oben = this._atlasWaterLevelAt(x, z, -1e9);
+        if (!(oben > -Infinity)) return true;
+        if (this._felsUeber(x, z, oben + marge)) return true;
+        const boden = this._voxelSurfaceY(x, z);
+        if (boden === null || !Number.isFinite(boden)) return false;
+        return !(boden < this._atlasWaterLevelAt(x, z, boden) + marge);
     }
 
     // Glut-Bauten im Hör-Radius: je Frame `n` Einträge von state.architectures (rund um die Liste); ein voller Umlauf
@@ -21666,8 +21695,9 @@ class AnazhRealm {
     // zwischen zwei Proben ≤ 4 m bleibt (bis 06.10. 8 Strahlen: bei 80 m lagen 63 m zwischen zwei Proben, ein Bach
     // fiel durch); der erste Treffer gewinnt — innen nach außen = kürzeste Distanz. Treffer = Wasser oder sein Rand (bis
     // 0,2 m über dem Spiegel), wie der Körper es trägt (`_nassAt` über `_koerperWasser`); bis zur Gegenprüfung der Welle L
-    // `_isAboveWaterAt` (34 von 451 Zielen trocken). → {x, z} | null.
-    _findNearestWaterPoint(cx, cz, radius) {
+    // die Zwillings-Probe des Lands (34 von 451 Zielen trocken). → {x, z} | null. `land`: der nächste TROCKENE Fleck (das
+    // Ufer dessen, der im Wasser steht: „am Wasser" der DSL) — dieselbe Spalten-Probe, 0,4 m über dem Spiegel.
+    _findNearestWaterPoint(cx, cz, radius, land = false) {
         const STEP = 4;
         for (let r = STEP; r <= radius; r += STEP) {
             const DIRS = Math.max(8, Math.ceil((2 * Math.PI * r) / STEP));
@@ -21675,7 +21705,7 @@ class AnazhRealm {
                 const angle = (d / DIRS) * Math.PI * 2;
                 const x = cx + Math.cos(angle) * r;
                 const z = cz + Math.sin(angle) * r;
-                if (this._nassAt(x, z, 0.2)) {
+                if (land ? this._landAt(x, z, 0.4) : this._nassAt(x, z, 0.2)) {
                     return { x, z };
                 }
             }
@@ -26308,7 +26338,7 @@ class AnazhRealm {
 
     // Deterministischer (alle Peers gleich) offener, flacher, trockener Spawn-Punkt: Ring-Spirale um
     // (0,0), der ERSTE Punkt, der (a) kein Kavernenboden ist (surf ≥ macro − 6; `getTerrainHeightAt` ist
-    // die echte Voxel-Oberfläche), (b) trocken liegt — über JEDEM Wasser (`_isAboveWaterAt`, Marge 1,5 m: See,
+    // die echte Voxel-Oberfläche), (b) trocken liegt — über JEDEM Wasser (`_nassAt`, Marge 1,5 m: See,
     // Fluss, Tarn; bis 06.10. nur über dem Meeresspiegel), (c) flach ist (±6-m-Proben, Δ ≤ 3.5 m). Die Lichtung um
     // die Plattform hält die EINE Natur-Wand frei (ihr Bauplan trägt sie, Befund V-D1). Nichts gefunden bis 240 m → (0,0).
     _findOpenSpawnSpot() {
@@ -26324,7 +26354,7 @@ class AnazhRealm {
             if (!Number.isFinite(surf)) continue;
             const macro = this._terrainMacroSurfaceY(x, z);
             if (Number.isFinite(macro) && surf < macro - 6) continue; // Kavernen-/Kraterboden
-            if (!this._isAboveWaterAt(x, z, 1.5)) continue; // nass (jedes Wasser)
+            if (!this._landAt(x, z, 1.5)) continue; // nass (jedes Wasser)
             let flat = true;
             for (const [dx, dz] of [
                 [6, 0],
@@ -33629,9 +33659,10 @@ class AnazhRealm {
         return { waterY, waterKind };
     }
 
-    // Wasser-Oberflächen-Höhe an (x,z) = MAX aus Ozean (`waterLevel`, Default überall), See-Becken
-    // (`lake.level`) und Fluss-Bett-Profil. Nass ist, wo `_voxelSurfaceY < _waterLevelAt` — die
-    // Uferlinie ist der exakte Schnitt mit dem echten Voxel-Terrain. `aus` (optional) bekommt die beiden Bezüge der
+    // DER BEZUG DER UFER-BÄNDER (der Boden-Farbe, Bank und Schilf; bit-gleich im Worker): MAX aus Ozean (`waterLevel`,
+    // Default überall), See-Becken (`lake.level`) und Fluss-Bett-Profil. KEINE Wasser-Probe: „ist hier Wasser / wie tief"
+    // fragt jeder Leser die EINE Wahrheit (`_nassAt` · `_koerperWasser`); bis Schau-2 (09.10.) urteilte über diesen Bezug
+    // eine Zwillings-Probe des Lands, blind für das gezeichnete Wasser. `aus` (optional) bekommt die beiden Bezüge der
     // Ufer-Bänder getrennt: `see` (Meer/See), `fluss` (der Fluss-Spiegel oder null) und `ufer` (seine Kronen-Blende). Ein
     // Ufer-Band (Strand, Schlick, Pfad, Höhen-Feuchte) ist das Maximum aus dem Band über `see` und dem Band über `fluss`
     // × `ufer` — stetig über die Krone, wo der Fluss-Spiegel endet (bis Welle L lasen die Bänder das Maximum der Spiegel:
@@ -33755,19 +33786,6 @@ class AnazhRealm {
             AnazhRealm.Gesetz("terrain:WASSER_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:WASSER_GESETZ");
         const speed = WG.wellen.adv * center;
         return { x: (rv.flowX / m) * speed, z: (rv.flowZ / m) * speed };
-    }
-
-    // Ist (x,z) trockenes Land? true, wenn die Voxel-Surface ≥ `marge` m über dem Wasser-Spiegel liegt.
-    // EINE Quelle für alle Schichten, die Wasser kennen müssen (Vegetation, Bauwerke, Küste, Kreaturen, die Wasser-Suche);
-    // `surfaceY = null` (Höhle/Loch) zählt nicht als Land. Der billige Beweis zuerst (Lehre 25): ist ein Gitterpunkt des
-    // Scans über Spiegel + Marge Fels (`_felsUeber`, EINE Dichte-Probe), ist die Spalte trocken — dasselbe Urteil, ohne den
-    // Scan. Nur Spalten am Wasser (und was der Beweis nicht trägt) zahlen `_voxelSurfaceY`.
-    _isAboveWaterAt(x, z, marge = 0) {
-        const waterY = this._waterLevelAt(x, z);
-        if (this._felsUeber(x, z, waterY + marge)) return true;
-        const surfaceY = this._voxelSurfaceY(x, z);
-        if (surfaceY === null || !Number.isFinite(surfaceY)) return false;
-        return surfaceY > waterY + marge;
     }
 
     // DER BODEN UNTER DEM KÖRPER (Q4, Kritik §2.1): die erste Fels-Grenze UNTER dem Körper — derselbe Feld-Scan wie der
@@ -56380,15 +56398,10 @@ class AnazhRealm {
                 if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) continue;
                 // Gate-Ordnung: billiges Feld zuerst, dann Slope, erst DANN das teure exakte Wasser-Verdikt (steile
                 // Zellen sparen den _voxelSurfaceY-Scan). Zwischen den Gates zieht nichts aus dem RNG → identischer
-                // Satz (gate:scatter-ab). Das Wasser-Verdikt bleibt der EXAKTE _isAboveWaterAt-Scan: das Feld weicht
+                // Satz (gate:scatter-ab). Das Wasser-Verdikt bleibt die EXAKTE Spalten-Probe `_nassAt`: das Feld weicht
                 // bis ~48 m ab (Content-Drift). `state.__scatterExactWater` erzwingt die Legacy-Ordnung (A/B-Ufer).
                 const _legacyOrder = this.state.__scatterExactWater === true;
-                if (
-                    _legacyOrder &&
-                    typeof this._isAboveWaterAt === "function" &&
-                    !this._isAboveWaterAt(tf.x, tf.z, 0.4)
-                )
-                    continue;
+                if (_legacyOrder && !this._landAt(tf.x, tf.z, 0.4)) continue;
                 const field = this._sampleBakedField ? this._sampleBakedField(tf.x, tf.z) : null;
                 let lebendig, slope, moisture, surfY;
                 if (field) {
@@ -56406,12 +56419,7 @@ class AnazhRealm {
                     moisture = this._feuchteAt ? this._feuchteAt(tf.x, tf.z, surfY) : 0;
                 }
                 if (slope > slopeMax) continue;
-                if (
-                    !_legacyOrder &&
-                    typeof this._isAboveWaterAt === "function" &&
-                    !this._isAboveWaterAt(tf.x, tf.z, 0.4)
-                )
-                    continue;
+                if (!_legacyOrder && !this._landAt(tf.x, tf.z, 0.4)) continue;
                 let prob;
                 if (layer.kind === "rock") {
                     // rockExposure: Fels bricht an STEILEN, TROCKENEN, KAHLEN Hängen durch — slope hebt, (1−moisture)
@@ -69760,7 +69768,7 @@ class AnazhRealm {
         if (P.mesh.instanceColor) P.mesh.instanceColor.needsUpdate = true;
     }
     // Die Boden-Schichten EINES Settlement-Exports (Straßen · Feldwege · Platz · Äcker) in die Wege-Karte und die
-    // Zäune in den Zaun-Pool — verankert am `origin`, je Form Wasser-bewacht (`_isAboveWaterAt`; Fluss-Querungen
+    // Zäune in den Zaun-Pool — verankert am `origin`, je Form Wasser-bewacht (`_nassAt`; Fluss-Querungen
     // bleiben offen, die bruecken-Schicht reist unkonsumiert). `key` = Session-Gedächtnis (kein Doppel-Bau je Boot).
     _stlWegeBuild(plan, origin, key) {
         if (!plan || !origin || !this.state.scene) return 0;
@@ -69790,7 +69798,7 @@ class AnazhRealm {
                 const bx = origin.x + pts[i + 1].x;
                 const bz = origin.z + pts[i + 1].z;
                 if (!(Math.hypot(bx - ax, bz - az) > 0.01)) continue;
-                if (!this._isAboveWaterAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue; // die Wasser-Wand
+                if (!this._landAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue; // die Wasser-Wand
                 form({ typ: "segment", kanal: 0, ax, az, bx, bz, halb: Math.max(1.2, w || 2.5) / 2 });
             }
         };
@@ -69801,7 +69809,7 @@ class AnazhRealm {
         if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex) && pz.typ !== "gras" && n < MAX) {
             const wx = origin.x + pz.cx;
             const wz = origin.z + pz.cz;
-            if (this._isAboveWaterAt(wx, wz, 0.2))
+            if (this._landAt(wx, wz, 0.2))
                 form({
                     typ: "kasten",
                     kanal: 0,
@@ -69822,7 +69830,7 @@ class AnazhRealm {
             if (!fd || !Number.isFinite(fd.cx) || !Number.isFinite(fd.ex)) continue;
             const wx = origin.x + fd.cx;
             const wz = origin.z + fd.cz;
-            if (!this._isAboveWaterAt(wx, wz, 0.2)) continue;
+            if (!this._landAt(wx, wz, 0.2)) continue;
             form({
                 typ: "kasten",
                 kanal: 1,
@@ -69856,7 +69864,7 @@ class AnazhRealm {
             const dz = bz - az;
             const len = Math.hypot(dx, dz);
             if (!(len > 0.4)) continue;
-            if (!this._isAboveWaterAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue;
+            if (!this._landAt((ax + bx) / 2, (az + bz) / 2, 0.2)) continue;
             const y0 = this.getTerrainHeightAt(ax, az);
             const y1 = this.getTerrainHeightAt(bx, bz);
             if (!Number.isFinite(y0) || !Number.isFinite(y1)) continue;
@@ -71628,6 +71636,14 @@ class AnazhRealm {
         // Die Pflanz-Logik lebt EINMAL in phyto-core (planForestCell); hier nur Memo + Welt-Reads als ctx-
         // Funktionen (Oberfläche · Wasser · Slope · Feuchte · fbm). Ohne Kern → leerer Wald.
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        // Das Wasser eines Darts ist das Gesetz über SEINEM Boden (`_atlasWaterLevelAt`, die Hälfte von `_landAt`, aus der
+        // das Bild wird): der Plan bleibt eine reine Funktion von Zelle und Same (jeder Peer, jede Lade-Reihenfolge derselbe
+        // Wald) — das gezeichnete Wasser fragt die Natur-Wand beim Setzen (`_naturWand` → `_landAt`). Der Kern liest erst die
+        // Oberfläche, dann das Wasser derselben Stelle — der Boden reist mit. Bis Schau-2 (09.10.) las der Wald den Bezug
+        // der Ufer-Bänder (`_waterLevelAt`).
+        let bodenX = NaN;
+        let bodenZ = NaN;
+        let bodenY = null;
         const out =
             core && typeof core.planForestCell === "function"
                 ? core.planForestCell(cx, cz, seedInt, {
@@ -71635,10 +71651,18 @@ class AnazhRealm {
                       baseH: (this.state && this.state.terrainBaseHeight) || 0,
                       extras: this._forestExtraSpecies(),
                       fbm: (px, pz) => this._forestFbm(px, pz),
-                      surfaceYAt: (x, z) =>
-                          typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : null,
+                      surfaceYAt: (x, z) => {
+                          bodenX = x;
+                          bodenZ = z;
+                          bodenY = this._voxelSurfaceY(x, z);
+                          return bodenY;
+                      },
                       waterYAt: (x, z) =>
-                          typeof this._waterLevelAt === "function" ? this._waterLevelAt(x, z) : -Infinity,
+                          this._atlasWaterLevelAt(
+                              x,
+                              z,
+                              x === bodenX && z === bodenZ ? bodenY : this._voxelSurfaceY(x, z)
+                          ),
                       slopeAt: (x, z) =>
                           typeof this._slopeAt === "function"
                               ? this._slopeAt(x, z, (px, pz) => this.getTerrainHeightAt(px, pz), 2)
@@ -72428,7 +72452,7 @@ class AnazhRealm {
     }
     // DIE EINE SLOT-QUELLE: `_spawnSettlementFromExport` (alle Slots sofort) und `_tickAutoSettlement`
     // (über Ticks) heben jeden Slot hier. Blueprint-Name aus KIND_POLICY über den kind des LIVE-Rezepts
-    // (prefix + kultur, kein "haus_"-Literal); `_isAboveWaterAt` vor JEDEM Spawn; fehlender Blueprint/
+    // (prefix + kultur, kein "haus_"-Literal); die Spalten-Probe `_nassAt` über dem ganzen Fundament vor JEDEM Spawn; fehlender Blueprint/
     // fremde Kultur → Slot fällt GESCHLOSSEN aus. Γ5: aller Zufall lebt im Export, hier nur lesen +
     // platzieren (spawnArchitecture silent). Rückgabe true = platziert.
     // DIE BAU-WAND (Integration Welle L, Stufe kampf-maus): ein Haus landet nie IN einem bestehenden Bau, und vor seiner
@@ -72569,7 +72593,7 @@ class AnazhRealm {
         const tu = slot.tuer;
         // Trägt der Ort (wx, wz) das Haus? Die Wände je Ort: Wasser, Klippe (Raster), Bau. Gibt { hMax, fundament } oder null.
         const traegt = (wx, wz) => {
-            if (!this._isAboveWaterAt(wx, wz, 0.2)) return null; // die Wasser-Wand
+            if (!this._landAt(wx, wz, 0.2)) return null; // die Wasser-Wand
             // Die Höhe urteilt über den FOOTPRINT: das obb-Raster (Export) + Zentrum + Tür-Vorplatz; Basis = MAX (kein Punkt
             // im Berg), Δh > SIEDLUNG.fundamentMaxDh → der Ort fällt GESCHLOSSEN (kein schwebendes Haus). Der Eintrag trägt
             // `fundament` {ex,ez}; Podest + Blocker leiten die Tiefe LIVE aus dem Feld ab. Ohne obb (fremder Export):
@@ -72593,8 +72617,14 @@ class AnazhRealm {
                 // im Hang).
                 const nx = Math.min(12, Math.max(1, Math.ceil(obb.ex)));
                 const nz = Math.min(12, Math.max(1, Math.ceil(obb.ez)));
+                // DAS FUNDAMENT IM WASSER (Schau-2 wasser-wahrheit): dasselbe Raster fragt die EINE Spalten-Probe — die Mitte
+                // auf dem Trockenen trug bis V18.537 ein Haus, dessen Fundament im Fluss stand.
+                let nass = false;
                 const probe = (lx, lz, auchMin) => {
-                    const h = this.getTerrainHeightAt(wx + lx * rc + lz * rs, wz - lx * rs + lz * rc);
+                    const px = wx + lx * rc + lz * rs;
+                    const pz = wz - lx * rs + lz * rc;
+                    if (!nass && !this._landAt(px, pz, 0.2)) nass = true;
+                    const h = this.getTerrainHeightAt(px, pz);
                     if (!Number.isFinite(h)) return;
                     if (h > hMax) hMax = h;
                     if (auchMin && h < hMin) hMin = h;
@@ -72607,6 +72637,7 @@ class AnazhRealm {
                         probe(tu.x + (i * tu.w) / 2, tu.z - 0.25, false);
                         probe(tu.x + (i * tu.w) / 2, tu.z - 1, false);
                     }
+                if (nass) return null; // die Wasser-Wand über dem ganzen Fundament und dem Vorplatz der Tür
                 // ZENSUS 17.07. — die Klippen-Wand ist fachwerk-Gesetz (SIEDLUNG); kaltes Buch → kein Ort.
                 const S = AnazhRealm._siedlungGesetz();
                 if (!S || hMax - hMin > S.fundamentMaxDh) return null; // die Klippen-Wand (fail-closed)
@@ -72680,7 +72711,7 @@ class AnazhRealm {
             if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.z)) continue;
             const wx = origin.x + b.x;
             const wz = origin.z + b.z;
-            if (!this._isAboveWaterAt(wx, wz, 0.2)) continue; // die Wasser-Wand (EINE Quelle)
+            if (!this._landAt(wx, wz, 0.2)) continue; // die Wasser-Wand (EINE Quelle)
             const wy = this.getTerrainHeightAt(wx, wz);
             if (!Number.isFinite(wy)) continue;
             if (!this._bauFreiRund("brunnen_dorf", wx, wz, wy)) continue; // die Bau-Wand: nie in einem Bau
@@ -72705,7 +72736,7 @@ class AnazhRealm {
                 if (!st || !Number.isFinite(st.x) || !Number.isFinite(st.z)) continue;
                 const wx = origin.x + st.x;
                 const wz = origin.z + st.z;
-                if (!this._isAboveWaterAt(wx, wz, 0.2)) continue;
+                if (!this._landAt(wx, wz, 0.2)) continue;
                 const wy = this.getTerrainHeightAt(wx, wz);
                 if (!Number.isFinite(wy)) continue;
                 if (!this._bauFreiRund("marktstand_dorf", wx, wz, wy)) continue; // die Bau-Wand: nie in einem Bau
@@ -72735,7 +72766,7 @@ class AnazhRealm {
             if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.z)) continue;
             const wx = origin.x + b.x;
             const wz = origin.z + b.z;
-            if (!this._isAboveWaterAt(wx, wz, 0.2)) continue;
+            if (!this._landAt(wx, wz, 0.2)) continue;
             const wy = this.getTerrainHeightAt(wx, wz);
             if (!Number.isFinite(wy)) continue;
             const seedT = ((plan.seed >>> 0 || 1) + 31 + t * 7919) >>> 0;
@@ -73107,7 +73138,7 @@ class AnazhRealm {
             const g = this._genesisMitte();
             if (Math.hypot(x - g.x, z - g.z) < A.spawnClearM) return false; // die Warmup-Welt bleibt dorffrei
         }
-        if (!this._isAboveWaterAt(x, z, 0.2)) return false; // die Wasser-Wand (EINE Quelle)
+        if (!this._landAt(x, z, 0.2)) return false; // die Wasser-Wand (EINE Quelle)
         const slope = this._slopeAt ? this._slopeAt(x, z) : 0;
         // ZENSUS 17.07. — die Steil-Wand ist fachwerk-Gesetz (SIEDLUNG.slopeMax).
         const SG = AnazhRealm._siedlungGesetz();
@@ -77853,7 +77884,7 @@ class AnazhRealm {
                         const dist = 3 + d.keep * 2;
                         const tx = d.x + Math.cos(ang) * dist;
                         const tz = d.z + Math.sin(ang) * dist;
-                        if (typeof this._isAboveWaterAt === "function" && this._isAboveWaterAt(tx, tz, 0.4)) {
+                        if (this._landAt(tx, tz, 0.4)) {
                             const tsy =
                                 typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(tx, tz) : d.surfaceY;
                             this._enqueueVegetationSpawn(
@@ -77899,7 +77930,7 @@ class AnazhRealm {
                     if (bxp < ox || bxp >= ox + span || bzp < oz || bzp >= oz + span) continue;
                     const bsy = this._voxelSurfaceY(bxp, bzp);
                     if (bsy === null || !Number.isFinite(bsy)) continue;
-                    if (!(typeof this._isAboveWaterAt === "function" && this._isAboveWaterAt(bxp, bzp, 0.1))) continue;
+                    if (!this._landAt(bxp, bzp, 0.1)) continue;
                     const bFeuchte = this._feuchteAt ? this._feuchteAt(bxp, bzp, bsy) : 0;
                     const L = this._canopyLightAt(bxp, bzp, bsy, bFeuchte);
                     const slopeB = this._slopeAt(bxp, bzp);
@@ -78013,9 +78044,9 @@ class AnazhRealm {
     }
 
     _vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn, tagsJe) {
-        // Nichts wächst im Wasser (0.4 m Marge gegen knöcheltiefes Ufer). Eine Quelle: `_isAboveWaterAt` —
+        // Nichts wächst im Wasser (0.4 m Marge gegen knöcheltiefes Ufer). Eine Quelle: die Spalten-Probe `_nassAt` —
         // alle wasser-respektierenden Welt-Schichten lesen denselben Helfer.
-        if (!this._isAboveWaterAt(sampleX, sampleZ, 0.4)) return 0;
+        if (!this._landAt(sampleX, sampleZ, 0.4)) return 0;
 
         // Landmark-Pass: seltener, UNIFORMER Hash-Wurf. Eine Felsformation spawnt nur, wo die Region sie trägt
         // (dichte-getrieben); Bogen oder Turm entscheidet ein Hash-Münzwurf, kein Affinitäts-Wettstreit.
@@ -78350,10 +78381,16 @@ class AnazhRealm {
         return setzen ? setzen() : this.spawnArchitecture(name, position, opts);
     }
 
-    // Das Urteil der Natur-Wand für einen Wurf an `position` ("haus" | "lichtung" | false) — der EINE Leser von Grundriss und
-    // Krone; `_naturSetzen` setzt danach, das Bau-Phantom färbt sich danach.
+    // Das Urteil der Natur-Wand für einen Wurf an `position` ("haus" | "lichtung" | "wasser" | false) — der EINE Leser von
+    // Grundriss und Krone; `_naturSetzen` setzt danach, das Bau-Phantom färbt sich danach. NATUR WEICHT DEM WASSER (Schau-2
+    // wasser-wahrheit): ein benannter Wurf steht nie, wo die Spalte kein Land ist (`_landAt`, 5 cm über dem Spiegel — der
+    // Wald plante bis dahin gegen den Bezug der Ufer-Bänder, das Bau-Phantom stand am Fluss grün). Die Nah-Streu (ohne
+    // Namen) urteilt selbst, ihr Schilf steht im Ufer-Wasser.
     _naturWand(name, position, opts) {
-        return position ? this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts)) : false;
+        if (!position) return false;
+        const g = this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));
+        if (g) return g;
+        return name && !this._landAt(position.x, position.z, 0.05) ? "wasser" : false;
     }
 
     // Der Satz der Natur-Wand nach einem Programm: lagen Würfe eines Hains (`spawn_tree`, `spawn_studio`) in einem Grundriss,
@@ -78362,20 +78399,23 @@ class AnazhRealm {
     _naturAbsageSatz(log) {
         let lichtung = 0;
         let haus = 0;
+        let wasser = 0;
         let gesetzt = 0;
         for (const e of log || []) {
             if (!e || e.event !== "natur_weicht") continue;
             lichtung += e.grundriss.lichtung || 0;
             haus += e.grundriss.haus || 0;
+            wasser += e.grundriss.wasser || 0;
             gesetzt += e.gesetzt || 0;
         }
-        if (!lichtung && !haus) return null;
+        if (!lichtung && !haus && !wasser) return null;
         const gruende = [];
         if (lichtung) gruende.push(AnazhRealm.NATUR_WAND_GRUND.lichtung);
         if (haus) gruende.push(AnazhRealm.NATUR_WAND_GRUND.haus);
+        if (wasser) gruende.push(AnazhRealm.NATUR_WAND_GRUND.wasser);
         const g = gruende.join("; ");
         return gesetzt
-            ? { satz: `${lichtung + haus} davon wuchsen nicht: ${g}.`, nichts: false }
+            ? { satz: `${lichtung + haus + wasser} davon wuchsen nicht: ${g}.`, nichts: false }
             : { satz: `Hier wächst nichts: ${g} — geh ein paar Schritte weiter.`, nichts: true };
     }
 
@@ -102299,6 +102339,7 @@ AnazhRealm._llmFuenferModell = function (model) {
 AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
     lichtung: "die Lichtung der Genesis-Plattform bleibt frei, keine Krone steht über ihrer Scheibe",
     haus: "im Grundriss eines Hauses wächst nichts",
+    wasser: "im Wasser wächst nichts, die Natur steht am Ufer",
 });
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.

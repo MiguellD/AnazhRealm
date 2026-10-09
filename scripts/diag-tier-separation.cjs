@@ -169,7 +169,7 @@ const server = http.createServer((req, res) => {
                     const a = ang + Math.floor(i / 40) * 0.4;
                     const x = pm.x + Math.cos(a) * d;
                     const z = pm.z + Math.sin(a) * d;
-                    if (!r._isAboveWaterAt || r._isAboveWaterAt(x, z)) {
+                    if (r._landAt(x, z)) {
                         const h = r.getTerrainHeightAt(x, z);
                         return { x, y: (Number.isFinite(h) ? h : 0) + 1, z };
                     }

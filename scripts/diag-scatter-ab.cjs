@@ -2,7 +2,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-scatter-ab.cjs — DIE BYTE-WAND FÜR DEN SCATTER-WASSER-GATE (W3.3a, npm run gate:scatter-ab)
 //
-// GEMESSEN (W1-Attribution, Spieler-Region): `_isAboveWaterAt` = 74 % der
+// GEMESSEN (W1-Attribution, Spieler-Region): das Wasser-Verdikt (heute `_landAt`) = 74 % der
 // _scatterRegion-Kosten, davon praktisch alles `_voxelSurfaceY` (302 Voll-
 // Scans à ~41 µs); `_sampleBakedField` liefert dieselbe Oberfläche ~30×
 // billiger. 3a ersetzt den Voll-Scan durch das Feld-Verdikt MIT konservativem
@@ -210,10 +210,10 @@ const server = http.createServer((req, res) => {
             {
                 const c = corpus.find((cc) => cc.cl.shore >= 8) || corpus[0];
                 const a = buildAt(c, true);
-                const orig = r._isAboveWaterAt;
-                r._isAboveWaterAt = () => true; // die Störung: Wasser existiert nicht mehr
+                const orig = r._landAt;
+                r._landAt = () => true; // die Störung: Wasser existiert nicht mehr
                 const bad = buildAt(c, false);
-                r._isAboveWaterAt = orig;
+                r._landAt = orig;
                 o.selftestFires = a !== bad;
                 o.selftestRegion = { rx: c.rx, rz: c.rz, shore: c.cl.shore };
             }

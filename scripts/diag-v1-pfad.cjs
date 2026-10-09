@@ -42,7 +42,7 @@
 //       ein FEHLENDER Radius/Abstand ist der dokumentierte (near_water 60 m, at_player_forward 5 m, at_field_need 50 m),
 //       nie die Untergrenze von `dslClamp`. Befund c52089c7: der Text wird der Ursprung, at(null) die 0, das Dorf ohne
 //       Abstände steht beim Spieler, voxel_carve(null) gräbt bei 0, near_water ohne Radius sucht 8 m.
-//     R2 — DIE WASSER-SUCHE: das Urteil `_isAboveWaterAt` (mit dem Fels-Beweis `_felsUeber`) gegen den vollen Spalten-Scan,
+//     R2 — DIE WASSER-SUCHE: das Urteil des Lands `_landAt` (mit den Fels-Beweisen `_felsUeber`) gegen den vollen Spalten-Scan,
 //       3 600 Urteile um den trockenen Ort, die Plattform und das nächste Wasser — 0 Abweichungen; dann
 //       `_findNearestWaterPoint` für Trinken (40 m), Chat (80 m), KI (200 m), Spalten-Scans gezählt (Scan und Urteil sind
 //       Beobachtungs-Punkte). Soll trocken ≤ 8 je 4-m-Ring (die Strahlen-Suche von cf9a07ba). Befund 6b988a07: 351/1330/8037.
@@ -269,7 +269,7 @@ function knotenVerdict(m) {
     return out;
 }
 
-// R2 — DIE WASSER-SUCHE: das Urteil `_isAboveWaterAt` ist bit-gleich zum vollen Spalten-Scan, und die dichte Ring-Suche
+// R2 — DIE WASSER-SUCHE: das Urteil des Lands `_landAt` ist bit-gleich zum vollen Spalten-Scan, und die dichte Ring-Suche
 // scannt am trockenen Ort (kein Wasser im Kreis, der teuerste Fall) nicht mehr Spalten als die 8-Strahlen-Suche von
 // cf9a07ba (8 je 4-m-Ring). Befund 6b988a07: 351/1330/8037 Spalten für 40/80/200 m.
 const ALT8 = (R) => 8 * Math.floor(R / 4);
@@ -394,7 +394,7 @@ async function probe(arg) {
         const platR = st.blueprints.start_plattform.parts[0].size.x / 2;
         const P = plat.position;
         m.plattform = [+P.x.toFixed(1), +P.z.toFixed(1)];
-        m.trocken = r._isAboveWaterAt(P.x, P.z, 0);
+        m.trocken = r._landAt(P.x, P.z, 0);
         // Der Wald wächst um den Spieler: ticken, bis die Bäume im 40-m-Kreis ruhen.
         const baeume = () =>
             st.architectures.filter((a) => a && /^baum_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 40);
@@ -541,7 +541,7 @@ async function probe(arg) {
         const pm = st.playerMesh.position;
         const ausgabe = document.getElementById("chat-output");
         const letzteZeile = () => (ausgabe && ausgabe.lastElementChild ? ausgabe.lastElementChild.textContent : "");
-        const nass = (x, z) => !r._isAboveWaterAt(x, z, 0.2);
+        const nass = (x, z) => !r._landAt(x, z, 0.2);
         // Ein Ort ohne Wasser im 84-m-Kreis (eigenes 4-m-Raster, unabhängig von der Such-Funktion des Spiels).
         const trockenUm = (x, z) => {
             for (let dz = -84; dz <= 84; dz += 4)
@@ -550,7 +550,7 @@ async function probe(arg) {
         };
         let ort = null;
         for (const [x, z] of [[pm.x, pm.z], [200, 200], [-200, 200], [200, -200], [-200, -200], [400, 0], [0, 400], [-400, 0]]) {
-            if (r._isAboveWaterAt(x, z, 1) && trockenUm(x, z)) {
+            if (r._landAt(x, z, 1) && trockenUm(x, z)) {
                 ort = { x, z };
                 break;
             }
@@ -764,12 +764,14 @@ async function probe(arg) {
         const plat = st.architectures.find((a) => a && a.type === "start_plattform");
         const P = plat ? { x: plat.position.x, z: plat.position.z } : { x: 0, z: 0 };
         const scan = r._voxelSurfaceY;
-        const urteil = r._isAboveWaterAt;
+        const urteil = r._landAt;
         // (a) Das Urteil gegen den vollen Spalten-Scan (die Referenz, wie bis 06.10. gerechnet): 3 Margen, je 400 Punkte
         //     um den trockenen Ort, die Plattform und das nächste Wasser (deterministischer Zufall).
         const ref = (x, z, mg) => {
             const s = scan.call(r, x, z);
-            return s !== null && Number.isFinite(s) && s > r._waterLevelAt(x, z) + mg;
+            // die Definition des Lands ohne Beweise: über dem gezeichneten Wasser am Körper UND über dem des Gesetzes
+            if (s === null || !Number.isFinite(s)) return !(r._atlasWaterLevelAt(x, z, -1e9) > -Infinity);
+            return !(s < r._koerperWasser(x, z, s) + mg) && !(s < r._atlasWaterLevelAt(x, z, s) + mg);
         };
         const w0 = r._findNearestWaterPoint(P.x, P.z, 200);
         const zentren = [ort, P].concat(w0 ? [w0] : []);
@@ -830,14 +832,16 @@ async function probe(arg) {
         let scans = 0,
             proben = 0;
         const eigen = (k) => Object.prototype.hasOwnProperty.call(r, k);
-        const hatte = { scan: eigen("_voxelSurfaceY"), urteil: eigen("_isAboveWaterAt") };
+        const nassAlt = r._nassAt;
+        const hatte = { scan: eigen("_voxelSurfaceY"), urteil: eigen("_nassAt") };
         r._voxelSurfaceY = function (...a) {
             scans++;
             return scan.apply(this, a);
         };
-        r._isAboveWaterAt = function (...a) {
+        // die Ring-Suche fragt die Spalten-Probe `_nassAt` (der Beobachtungs-Punkt zählt und reicht durch)
+        r._nassAt = function (...a) {
             proben++;
-            return urteil.apply(this, a);
+            return nassAlt.apply(this, a);
         };
         try {
             for (const [pfad, R] of [
@@ -863,7 +867,7 @@ async function probe(arg) {
                 const D = Math.max(8, Math.ceil((2 * Math.PI * rr) / 4));
                 for (let d = 0; d < D; d++) {
                     const s0 = scans;
-                    const ja = r._isAboveWaterAt(ort.x + Math.cos((d / D) * Math.PI * 2) * rr, ort.z + Math.sin((d / D) * Math.PI * 2) * rr, 0.2);
+                    const ja = !r._nassAt(ort.x + Math.cos((d / D) * Math.PI * 2) * rr, ort.z + Math.sin((d / D) * Math.PI * 2) * rr, 0.2);
                     if (ja) {
                         trockenProben++;
                         trockenScans += scans - s0;
@@ -883,8 +887,8 @@ async function probe(arg) {
         } finally {
             if (hatte.scan) r._voxelSurfaceY = scan;
             else delete r._voxelSurfaceY;
-            if (hatte.urteil) r._isAboveWaterAt = urteil;
-            else delete r._isAboveWaterAt;
+            if (hatte.urteil) r._nassAt = nassAlt;
+            else delete r._nassAt;
         }
         m.gestartet = true;
     } catch (e) {

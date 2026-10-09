@@ -371,7 +371,7 @@ const SCHUSS_FN = async (kam) => {
             const y = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(x, z) : r.getTerrainHeightAt(x, z);
             return typeof y === "number" && isFinite(y) ? y : pm.y;
         };
-        const trocken = (x, z) => (typeof r._isAboveWaterAt === "function" ? r._isAboveWaterAt(x, z, 0.3) : true);
+        const trocken = (x, z) => (typeof r._landAt === "function" ? r._landAt(x, z, 0.3) : true);
         // DIE BÜHNE: je Klasse ein FLACHER, TROCKENER Platz um die Mess-Wiese —
         // Höhen-Spanne über Mitte + 2 Ringe (r, r/2 × 8 Richtungen) ≤ tol, alle Proben trocken,
         // Abstand zu den schon vergebenen Bühnen. Kamera und Objekt stehen auf DERSELBEN Bühne.

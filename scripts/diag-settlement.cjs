@@ -472,7 +472,8 @@ const FIXTURES = [
             !/Math\.random/.test(srcSame);
         // Nachlese-Welle (V9.56-i — die Probe wandert mit dem Code): die Wasser-Wand
         // lebt seit der Slot-Extraktion in der EINEN Slot-Quelle _spawnSettlementSlot.
-        res.waterWall = /_isAboveWaterAt/.test(
+        // Schau-2: das LAND (`_landAt`) über dem ganzen Fundament, die Zwillings-Probe fiel.
+        res.waterWall = /_landAt\(/.test(
             window.__codeOf ? window.__codeOf(r._spawnSettlementSlot) : r._spawnSettlementSlot.toString()
         );
         // Der Anker misst den Plan selbst (`_siedlungsAnker`: das Dorf vor dem Spieler, im Bildwinkel); die Schätzung über
@@ -824,7 +825,7 @@ const FIXTURES = [
         `nH ${out.villageNH} (Soll ${out.villageNHSoll})${out.villageNHErr ? " err=" + out.villageNHErr : ""}`
     );
     check(
-        "B: die Wasser-Wand steht in der EINEN Slot-Quelle (_spawnSettlementSlot, _isAboveWaterAt je Slot)",
+        "B: die Wasser-Wand steht in der EINEN Slot-Quelle (_spawnSettlementSlot, _landAt je Slot und Fundament)",
         out.waterWall === true
     );
     check("B: der Anker misst den Plan (_siedlungsAnker, keine haus_basis-Schaetzung)", out.anchorChokepoint === true);

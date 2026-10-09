@@ -869,6 +869,9 @@ const FORBIDDEN = [
     // Warteschlange `_erstWartet`, bereit ist die Pipeline, sobald r184 sie in seinen Zustand schreibt.
     { token: "_erstPipeline", fiel: "Welle K — die Bereitschaft liest den Zustand (_erstWartet), nie das Versprechen" },
     { token: "_erstNeuAufnehmen", fiel: "Welle K — EINE Warteschlange (_erstWartet ohne Pipeline)" },
+    // DIE EINE WASSER-WAHRHEIT (Schau-2 wasser-wahrheit, 09.10.): die Land-Probe las den Bezug der Ufer-Bänder
+    // (`_waterLevelAt`), blind für das gezeichnete Wasser — jedes Werk fragt das Land (`_landAt`: Bild UND Gesetz).
+    { token: "_isAboveWaterAt", fiel: "Schau-2 — die Zwillings-Probe des Lands (jedes Werk fragt `_landAt`)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

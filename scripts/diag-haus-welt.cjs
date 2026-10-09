@@ -69,8 +69,9 @@ const BASIS = {
     obb: [["        const ob = box.obb;\n        if (ob) {", "        const ob = null;\n        if (ob) {"]],
     // die Natur wirft in den Grundriss, und das Dorf räumt nicht
     grundriss: [
-        // das Urteil der Wand lebt seit Welle L Folge in `_naturWand` (Bau-Modus und Phantom fragen es mit)
-        ["return position ? this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts)) : false;", "return false;"],
+        // das Urteil der Wand lebt seit Welle L Folge in `_naturWand` (Bau-Modus und Phantom fragen es mit); seit Schau-2
+        // urteilt sie danach über das Wasser (`_landAt`) — die Basis kennt nur noch das Wasser, keinen Grundriss
+        ["const g = this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));", "const g = false;"],
         ["if (entry) this._grundrissRaeumen(entry);", ""],
     ],
     // die Streu der Region räumt nicht, wenn das Dorf kommt
@@ -544,7 +545,7 @@ async function proben(phasen) {
                 for (let a = 0; a < 16 && fx === null; a++) {
                     const qx = L.x + Math.cos((a / 16) * Math.PI * 2) * 120;
                     const qz = L.z + Math.sin((a / 16) * Math.PI * 2) * 120;
-                    if (r._isAboveWaterAt(qx, qz, 0.5) && Number.isFinite(r.getTerrainHeightAt(qx, qz))) fx = [qx, qz];
+                    if (r._landAt(qx, qz, 0.5) && Number.isFinite(r.getTerrainHeightAt(qx, qz))) fx = [qx, qz];
                 }
                 if (fx) {
                     stell(fx[0], r.getTerrainHeightAt(fx[0], fx[1]) + 3, fx[1]);
@@ -672,7 +673,7 @@ async function proben(phasen) {
             for (let a = 0; a < 16 && w8.gegenprobe === null; a++) {
                 const gx = L.x + Math.cos((a / 16) * Math.PI * 2) * 150;
                 const gz = L.z + Math.sin((a / 16) * Math.PI * 2) * 150;
-                if (!r._isAboveWaterAt(gx, gz, 0.5)) continue;
+                if (!r._landAt(gx, gz, 0.5)) continue;
                 if (s.architectures.some((e) => e.fundament && Math.hypot(e.position.x - gx, e.position.z - gz) < 60)) continue;
                 w8.gegenprobe = hain(gx, gz).neu.length;
             }
@@ -848,7 +849,7 @@ async function proben(phasen) {
                     const cz = start.z + Math.sin((a / 48) * Math.PI * 2) * d;
                     if (orte.some((q) => Math.hypot(q.x - cx, q.z - cz) < 70)) continue;
                     if (Math.hypot(cx - fx, cz - fz) < 120 || Math.hypot(cx - dorfMitte.x, cz - dorfMitte.z) < 90) continue;
-                    if (!r._isAboveWaterAt(cx, cz, 0.5)) continue;
+                    if (!r._landAt(cx, cz, 0.5)) continue;
                     const gx = (r0(cx + 4, cz) - r0(cx - 4, cz)) / 8;
                     const gz = (r0(cx, cz + 4) - r0(cx, cz - 4)) / 8;
                     if (!Number.isFinite(gx) || !Number.isFinite(gz) || Math.hypot(gx, gz) < 0.02) continue;

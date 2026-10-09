@@ -92,7 +92,7 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 40; k++) {
             const x = P0.x + dx + (k % 8) * 3,
                 z = P0.z + dz + Math.floor(k / 8) * 3;
-            if (!r._isAboveWaterAt || r._isAboveWaterAt(x, z)) {
+            if (r._landAt(x, z)) {
                 const h = r.getTerrainHeightAt(x, z);
                 return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
             }
@@ -109,7 +109,7 @@ async function kreaturProben(r, T, opts) {
                 const a = (q / n) * Math.PI * 2;
                 const x = P0.x + dx + Math.cos(a) * ring * 8,
                     z = P0.z + dz + Math.sin(a) * ring * 8;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) continue;
+                if (!r._landAt(x, z)) continue;
                 let ok = true;
                 for (const e of arches) {
                     if (!e || !e.blockerAABBs || !e.position) continue;
@@ -2171,7 +2171,7 @@ async function kreaturProben(r, T, opts) {
                 const a = (q / n) * Math.PI * 2;
                 const x = P0.x + Math.cos(a) * ring * 5,
                     z = P0.z + Math.sin(a) * ring * 5;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) continue;
+                if (!r._landAt(x, z)) continue;
                 const gx = (h(x + 1.5, z) - h(x - 1.5, z)) / 3,
                     gz = (h(x, z + 1.5) - h(x, z - 1.5)) / 3;
                 const g = Math.hypot(gx, gz);
@@ -2358,7 +2358,7 @@ async function kreaturProben(r, T, opts) {
             for (const d of [45, 55, 65, 75, 85, 95]) {
                 const x = P0.x + Math.cos(a) * d,
                     z = P0.z + Math.sin(a) * d;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) ok = false;
+                if (!r._landAt(x, z)) ok = false;
             }
             if (ok) richtung = a;
         }

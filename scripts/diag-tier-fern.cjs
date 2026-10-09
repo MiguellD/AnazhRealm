@@ -288,7 +288,7 @@ const server = http.createServer((req, res) => {
                 const a = (q / 24) * Math.PI * 2;
                 const lx = pm.x + Math.cos(a) * 1.4 * fern,
                     lz = pm.z + Math.sin(a) * 1.4 * fern;
-                if (!r._isAboveWaterAt || r._isAboveWaterAt(lx, lz)) {
+                if (r._landAt(lx, lz)) {
                     landWinkel = a;
                     break;
                 }

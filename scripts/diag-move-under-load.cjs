@@ -127,7 +127,7 @@ const server = http.createServer((req, res) => {
                     const x = x0 + ((i * 53) % (x1 - x0));
                     const z = ((i * 31) % 120) - 60 + zJit;
                     const h = r.getTerrainHeightAt(x, z);
-                    if (Number.isFinite(h) && r._isAboveWaterAt && r._isAboveWaterAt(x, z)) return { x, y: h + 1.5, z };
+                    if (Number.isFinite(h) && r._landAt(x, z)) return { x, y: h + 1.5, z };
                 }
                 return null;
             };
