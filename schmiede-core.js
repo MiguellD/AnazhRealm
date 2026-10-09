@@ -3245,11 +3245,30 @@
                   : "abseits des Knotens — " + (flex > 1.2 ? "die biegsame Klinge schwingt" : "Vibration");
         }
         var zk = t.zone && ARENA.zonen[t.zone] ? t.zone : null;
+        // DER TREFFER-WEG (Welle LF 09.10., additiv — nur wer t.weg reicht, die Shell reicht ihn nie): t.weg = [xLo, xHi],
+        // wo die Waffe den Leib auf ihrem Bogen durchquert (m ab dem Knauf, gemessen am ganzen Bogen, nie an der ersten
+        // Kontaktstelle). Getroffen wird am Punkt des Wegs, der dem SCHLAGPUNKT S.impactX am nächsten liegt (dort misst
+        // mEff; t.vLat/vAx sind das Tempo dieses Punkts). Liegt der Leib nur am Griff oder nur an der Spitze, sinkt die
+        // Wirkung mit dem Abstand zum Schlagpunkt — das Gesetz der Bambus-Probe des Prüfstands, 1 − 1,4·|x − x_S|/L mit
+        // dem Boden 0,25 (die benannte, begrenzte Streuung) —, der Impuls mit ihrer Wurzel (KE = p²/2m bei derselben
+        // Masse). Vorher richtete die erste Kontaktstelle der Welt-Klinge: das Großschwert 1,6–138 J je Lage des Leibs.
+        var eff = 1,
+            ort = null;
+        if (t.weg && m.S && isFinite(m.S.impactX) && m.S.L > 0) {
+            var xs = m.S.impactX,
+                xa = Math.min(+t.weg[0], +t.weg[1]),
+                xb = Math.max(+t.weg[0], +t.weg[1]),
+                xh = isFinite(xa) && isFinite(xb) ? clamp(xs, xa, xb) : xs,
+                ab = Math.abs(xh - xs) / m.S.L;
+            eff = clamp(1 - 1.4 * ab, 0.25, 1);
+            ort = ab < 0.12 ? "schlagpunkt" : xh < xs ? (xh < (m.S.xBlade0 || 0) ? "hand" : "griffnah") : "spitze";
+            KE *= eff;
+        }
         return {
             art: art,
             KE: KE,
             v: v,
-            p: mEff * v,
+            p: mEff * v * Math.sqrt(eff),
             mEff: mEff,
             pen: pen,
             clean: clean,
@@ -3257,6 +3276,8 @@
             verdict: verdict,
             zone: zk,
             zoneMul: zk ? ARENA.zonen[zk].mul : 1,
+            eff: eff,
+            ort: ort,
         };
     }
 

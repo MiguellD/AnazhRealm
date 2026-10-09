@@ -80970,8 +80970,14 @@ class AnazhRealm {
             const tr = this._kreaturGliedTreffer(c, ax, ay, az, bx, by, bz, K.bladeRadiusM);
             if (!tr) continue;
             sw.hits.add(c);
-            const hebel = 0.25 + tr.s * (reach - 0.25);
-            const urteil = this._kampfUrteil(omega * hebel, 0, tr.zone);
+            // DER TREFFER-WEG (Welle LF, Leben-Schau 07.10. Posten 1): die Energie folgt dem Schwung über den Weg, den die
+            // Klinge durch den Leib nimmt (_kampfTrefferWeg), nie der ersten Kontaktstelle — die lag bei nahem Ziel am
+            // Griff-Drittel (Großschwert 1,6 m: 15–18 J, in 1,7 m 91 J). Das Tempo ist das des Schlagpunkts der Waffe
+            // (_kampfSchlagpunkt), der Kern richtet den Ort auf dem Weg (trefferUrteil t.weg).
+            const weg = this._kampfTrefferWeg(c, ox, oy, oz, achse, arcYaw, 0.25 + tr.s * (reach - 0.25), reach);
+            const rS = this._kampfSchlagpunkt(reach);
+            const hebel = Math.max(weg.lo, Math.min(weg.hi, rS));
+            const urteil = this._kampfUrteil(omega * rS, 0, tr.zone, [weg.lo - K.reachBaseM, weg.hi - K.reachBaseM]);
             const bp = this._heldImplementBlueprint();
             const roh = this._kampfRohSchaden(urteil, tr.zone, this._kampfKraft());
             this._kampfVerschleiss(bp);
@@ -81014,6 +81020,67 @@ class AnazhRealm {
         return { yaw: Math.atan2(tx, tz), pitch: Math.atan2(ty, Math.hypot(tx, tz)) };
     }
 
+    // DER TREFFER-WEG (Welle LF 09.10., Posten 1): wo die Klinge auf ihrem Bogen durch den Leib geht — das Intervall des Hebels
+    // [lo, hi] (m ab dem Schultergelenk O), auf dem eine Glied-Kapsel des Tiers die Fläche schneidet, die die Klinge vom Kontakt
+    // bis zum Ende des Strikes überstreicht. Die Klinge fegt mit fester Neigung φ = achse.pitch von der Gier `arcJetzt` bis
+    // achse.yaw − arcHalf; ein Glied-Punkt P (h waagrecht, y über O) liegt auf dem Weg, wenn er der Mantellinie seiner Gier
+    // näher ist als Glied- + Klingen-Radius R (δ = |−h·sin φ + y·cos φ|) — beim Hebel ρ = h·cos φ + y·sin φ ± √(R² − δ²).
+    // Je Glied TREFFER_WEG_PROBEN Punkte; Saat ist der Kontakt selbst (kein Treffer ohne Weg). Vorher zählte nur der
+    // Strecken-Parameter des ersten Kontakts — bei einem Leib längs der Klinge entartet er an ihr nahes Ende: Großschwert in
+    // 1,6 m 15–18 J (Griff-Drittel), in 1,7 m 91 J.
+    _kampfTrefferWeg(cr, ox, oy, oz, achse, arcJetzt, kontakt, reach) {
+        const K = AnazhRealm._arenaGesetz().schwung;
+        const out = this._trefferWegOut || (this._trefferWegOut = { lo: 0, hi: 0 });
+        out.lo = out.hi = Math.max(0.25, Math.min(reach, kontakt));
+        const gl = this._kreaturTrefferGlieder(cr);
+        if (!gl) return out;
+        const cp = Math.cos(achse.pitch),
+            spn = Math.sin(achse.pitch);
+        const v = this._trefferVek || (this._trefferVek = [new THREE.Vector3(), new THREE.Vector3()]);
+        const P = this._trefferWegP || (this._trefferWegP = new THREE.Vector3());
+        const n = AnazhRealm.TREFFER_WEG_PROBEN;
+        const TAU = 2 * Math.PI;
+        let von = arcJetzt - achse.yaw;
+        von -= TAU * Math.round(von / TAU);
+        cr.updateMatrixWorld(true);
+        for (const g of gl) {
+            const pa = v[0].copy(g.a).applyMatrix4(g.anker.matrixWorld);
+            const pb = v[1].copy(g.b).applyMatrix4(g.anker.matrixWorld);
+            const R = K.bladeRadiusM + g.r * g.anker.matrixWorld.getMaxScaleOnAxis();
+            for (let k = 0; k <= n; k++) {
+                P.copy(pa).lerp(pb, k / n);
+                const wx = P.x - ox,
+                    wz = P.z - oz,
+                    y = P.y - oy;
+                const h = Math.hypot(wx, wz);
+                if (h < 1e-6) continue;
+                let dg = Math.atan2(wx, wz) - achse.yaw;
+                dg -= TAU * Math.round(dg / TAU);
+                const rand = R / h;
+                if (dg > von + rand || dg < -K.arcHalfRad - rand) continue; // nicht auf dem restlichen Bogen
+                const delta = Math.abs(-h * spn + y * cp);
+                if (delta > R) continue;
+                const rho = h * cp + y * spn;
+                const halb = Math.sqrt(R * R - delta * delta);
+                out.lo = Math.min(out.lo, Math.max(0.25, rho - halb));
+                out.hi = Math.max(out.hi, Math.min(reach, rho + halb));
+            }
+        }
+        return out;
+    }
+
+    // DER SCHLAGPUNKT der gehaltenen Waffe als Hebel ab der Schulter: die Hand sitzt bei reachBaseM, der Schlagpunkt des Kerns
+    // (S.impactX — dort misst kampfMasze die wirksame Masse) davor; ungemessene Geräte (Faust, Eigenwerk) schlagen bei 70 %
+    // ihrer Länge (dieselbe Lage wie der Klingen-Schlagpunkt des Kerns).
+    _kampfSchlagpunkt(reach) {
+        const K = AnazhRealm._arenaGesetz().schwung;
+        const bp = this._heldImplementBlueprint();
+        const km = bp ? this._schmiedeKampfMasze(bp) : null;
+        const S = km && km.mess && km.mess.S;
+        if (S && Number.isFinite(S.impactX)) return Math.min(reach, K.reachBaseM + S.impactX);
+        return K.reachBaseM + 0.7 * Math.max(0, reach - K.reachBaseM);
+    }
+
     // DER UNGEMESSENE SCHLAG (das EINE Impuls-Gesetz): Faust und Eigenwerke ohne Schmiede-Rezept tragen keine Messung —
     // ihr Impuls ist der emergente Rückschlag des Gehaltenen (`knockback` ∝ dichte + härte, je Punkt `gefuehl.pProKb`),
     // ihre wirksame Masse folgt aus der Schlag-Geschwindigkeit an der Klinge (m = p / v). Wie der Schaden: gemessen
@@ -81025,14 +81092,15 @@ class AnazhRealm {
 
     // DAS TREFFER-URTEIL der Welt (Welle L, K-D2): das gehaltene Studio-Gerät richtet der Kern (schmiede
     // trefferUrteil über seine Messung kampfMasze.mess — Schnitt · Stich · Schlag, KE, Impuls, Zone). Faust und
-    // Eigenwerke ohne Schmiede-Rezept haben keine Messung → null (sie tragen die Hand ×1).
-    _kampfUrteil(vLat, vAx, zone) {
+    // Eigenwerke ohne Schmiede-Rezept haben keine Messung → null (sie tragen die Hand ×1). `weg` = der Treffer-Weg auf der
+    // Waffe ([xLo, xHi], m ab dem Knauf — _kampfTrefferWeg): der Kern richtet den Ort, vLat ist das Tempo des Schlagpunkts.
+    _kampfUrteil(vLat, vAx, zone, weg) {
         const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
         if (!sc || typeof sc.trefferUrteil !== "function") AnazhRealm._kernPflichtBruch("schmiede:trefferUrteil");
         const bp = this._heldImplementBlueprint();
         const km = bp ? this._schmiedeKampfMasze(bp) : null;
         if (!km || !km.mess) return null;
-        return sc.trefferUrteil(km.mess, { vLat, vAx, edgeQ: 1, zone });
+        return sc.trefferUrteil(km.mess, { vLat, vAx, edgeQ: 1, zone, weg: weg || null });
     }
 
     // DER ROH-SCHADEN EINES TREFFERS (Welle L, K-D5 + K-D6) — das EINE Gesetz für JEDE geführte Waffe, Klinge wie Pfeil:
@@ -99225,6 +99293,9 @@ AnazhRealm.HELD_MESH = Object.freeze({
 // Konsumenten lesen _arenaGesetz(), fail-closed. Die Mechanik hält gate:kampf-gefuehl.
 // maxPfeile ist Wirts-Infrastruktur (Perf-Deckel lebender Pfeile), kein Gefühls-Gesetz:
 AnazhRealm.MAX_PFEILE = 16;
+// Der Treffer-Weg (_kampfTrefferWeg) tastet jede Glied-Kapsel in so vielen Schritten ab — Wirts-Auflösung, kein Gefühls-
+// Gesetz; je Treffer, nie je Frame.
+AnazhRealm.TREFFER_WEG_PROBEN = 6;
 // Die Weite des Fadenkreuz-Punkts (_blickZiel): der Pfeil zielt auf den Welt-Treffer des Blicks bis hierhin, dahinter
 // auf den Punkt in dieser Weite (die Parallaxe Mündung ↔ Auge fällt dort unter 0,3°).
 AnazhRealm.BLICK_ZIEL_M = 80;

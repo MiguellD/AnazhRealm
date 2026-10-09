@@ -165,6 +165,42 @@ function bissVerdict(B) {
     }
     return v;
 }
+// (T16) DIE TREFFER-ENERGIE FOLGT DEM SCHWUNG (Welle LF kampf, Posten 1 — pure Funktion, Probe UND Selbst-Test): derselbe
+// Großschwert-Hieb auf denselben Hirsch (drei Abstände × fünf Lagen, Fadenkreuz auf der Leibes-Mitte) trifft jedes Mal, und
+// seine Energie streut höchstens um den Faktor `streuung` (benannt: der Treffer-Ort auf der Klinge, Sweetspot bis Griff-
+// Drittel — die Effizienz des Kerns hält ihn begrenzt); das schwere Schwert schlägt im Mittel nie schwächer als der Dolch.
+// Befund 07.10.: Kontakt am Griff-Drittel 15–18 J, in 1,7 m 91 J (×6), schwächer als der Dolch (24–32 J).
+const ENERGIE_SOLL = { treffer: 13, streuung: 2.0 };
+function energieVerdict(E) {
+    if (!E || !Array.isArray(E.gross) || !Array.isArray(E.dolch)) return ["energie keine Probe"];
+    const v = [];
+    const g = E.gross.filter((x) => Number.isFinite(x) && x > 0);
+    const d = E.dolch.filter((x) => Number.isFinite(x) && x > 0);
+    if (g.length < ENERGIE_SOLL.treffer)
+        v.push(
+            `energie-treffer: ${g.length} von ${E.gross.length} Großschwert-Hieben trafen (Soll ≥ ${ENERGIE_SOLL.treffer})`
+        );
+    if (!g.length || !d.length) return v.concat(["energie keine Treffer"]);
+    const lo = Math.min(...g),
+        hi = Math.max(...g);
+    if (!(hi <= ENERGIE_SOLL.streuung * lo))
+        v.push(
+            `energie-kontakt: derselbe Hieb ${lo.toFixed(1)}–${hi.toFixed(1)} J (×${(hi / lo).toFixed(1)}, Soll ≤ ×${ENERGIE_SOLL.streuung}) — die erste Kontaktstelle richtet`
+        );
+    const med = (a) => a.slice().sort((x, y) => x - y)[a.length >> 1];
+    if (!(med(g) >= med(d)))
+        v.push(`energie-waffe: Großschwert ${med(g).toFixed(1)} J im Mittel unter dem Dolch ${med(d).toFixed(1)} J`);
+    // zu nah: der Ort ist benannt (nicht der Schlagpunkt) und die Wirkung bleibt über dem Boden des Kerns (¼ des Mittels)
+    const n = E.nah;
+    if (!n || !Number.isFinite(n.ke)) v.push("energie-nah: zu nah traf nicht (keine Probe)");
+    else if (!n.ort || n.ort === "schlagpunkt")
+        v.push(`energie-nah: zu nah ohne benannten Ort (${n.ort || "keiner"}) — die Streuung ist nicht benannt`);
+    else if (!(n.ke >= 0.25 * med(g) - 1e-6 && n.ke < med(g)))
+        v.push(
+            `energie-nah: zu nah ${n.ke.toFixed(1)} J gegen ${med(g).toFixed(1)} J — die Streuung ist nicht begrenzt`
+        );
+    return v;
+}
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -241,7 +277,8 @@ async function WELLE_L() {
     r._kampfHitJuice = function (...a) {
         // neu: (creature, now, urteil, keEigen) — die Zone reist im Urteil; alt: (creature, now, keOpt, zoneKind)
         const z = a[2] && typeof a[2] === "object" ? a[2].zone || null : typeof a[3] === "string" ? a[3] : null;
-        juice.push({ zone: z, t: T });
+        const u = a[2] && typeof a[2] === "object" ? a[2] : null;
+        juice.push({ zone: z, t: T, ke: u && Number.isFinite(u.KE) ? u.KE : null, ort: u ? u.ort || null : null });
         return orig.juice.apply(this, a);
     };
     r._beginPlayerSwing = function () {
@@ -1404,6 +1441,62 @@ async function WELLE_L() {
             }
             w.c.pfeilFadenkreuz = Number.isFinite(w.z.pfeilFadenkreuz) && w.z.pfeilFadenkreuz < 1;
         }
+
+        // ═══ WELLE LF KAMPF (09.10.) — die Posten der Leben-Schau 07.10. (befund-kampf.md) ═══
+        if (fn("setCameraMode")) r.setCameraMode("first");
+        // (T16) DIE TREFFER-ENERGIE FOLGT DEM SCHWUNG (Posten 1): derselbe Hieb auf denselben Hirsch — drei Abstände (1,3 ·
+        // 1,6 · 1,9 m) × fünf Lagen des Leibs (Breitseite, abgewandt, zugewandt, zwei schräg), das Fadenkreuz auf der
+        // Leibes-Mitte. Gemessen: die Energie des Urteils je Treffer (KE am Kontakt). Befund: Großschwert in 1,6 m, Hirsch
+        // abgewandt → Kontakt am Griff-Drittel, 15–18 J; in 1,7 m 91 J; der Dolch 24–32 J.
+        {
+            const hE = setze("wesen");
+            const energie = (name, d, rotY, dy = 0) => {
+                ausruesten(name);
+                if (s.blueprints[name]) r._setBlueprintWear(s.blueprints[name], 1);
+                stelle(hE, d, 0, dy);
+                hE.rotation.set(0, rotY, 0);
+                hE.updateMatrixWorld(true);
+                zielen(punkt(hE, null));
+                const sw = schwung();
+                const j = traf(sw, hE) && sw.juice[0];
+                return j && Number.isFinite(j.ke) ? +j.ke.toFixed(2) : null;
+            };
+            const lagen = [Math.PI / 2, 0, Math.PI, Math.PI / 4, -Math.PI / 4];
+            const reihe = (name, abst) => {
+                const out = [];
+                for (const d of abst) for (const ry of lagen) out.push(energie(name, d, ry));
+                return out;
+            };
+            w.z.energie = {
+                gross: reihe("klinge_grossschwert", [1.3, 1.6, 1.9]),
+                dolch: reihe("klinge_dolch", [1.2, 1.6]),
+            };
+            // die benannte Streuung: zu nah (ein Kitz, L 0,6, in 0,6 m auf einer Stufe 1 m über dem Fuß, Breitseite — der Bogen
+            // liegt waagrecht, der Leib nur am Griff-Teil) trifft das Großschwert nicht mit dem Schlagpunkt — der Kern nennt
+            // den Ort und hält die Wirkung über seinem Boden
+            {
+                const wegRoh = r._kampfTrefferWeg;
+                let weg = null;
+                r._kampfTrefferWeg = function (...a) {
+                    const o = wegRoh.apply(this, a);
+                    weg = o ? [+o.lo.toFixed(2), +o.hi.toFixed(2)] : null;
+                    return o;
+                };
+                let ke;
+                const L0e = hE.scale.x;
+                try {
+                    hE.scale.setScalar(0.6);
+                    ke = energie("klinge_grossschwert", 0.6, Math.PI / 2, 1.0);
+                } finally {
+                    hE.scale.setScalar(L0e);
+                    r._kampfTrefferWeg = wegRoh;
+                    delete r._kampfTrefferWeg;
+                }
+                const j = juice[juice.length - 1];
+                w.z.energie.nah = { ke, ort: j ? j.ort : null, weg };
+            }
+            if (hE) parke(hE);
+        }
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
@@ -2198,6 +2291,34 @@ async function WELLE_L() {
                 ["biss-beute", "biss-spieler"].every((t) => bvAlt.some((x) => x.startsWith(t))) &&
                 bvVerkehrt.some((x) => x.startsWith("biss-masse")),
             "Selbst-Test T15: der Befund (Biss ohne Rückstoß) nennt Beute und Spieler, ein Jäger-Gewicht ohne Wirkung nennt die Masse; ein Biss nach Masse bleibt grün"
+        );
+        // ═══ WELLE LF KAMPF — die Posten der Leben-Schau 07.10. ═══
+        const ez = z.energie || {};
+        const fJ = (a) => (Array.isArray(a) ? a.map((x) => (x === null ? "–" : x.toFixed(1))).join(" ") : "–");
+        const en = ez.nah || {};
+        console.log(
+            `  (T16) Treffer-Energie J: Großschwert ${fJ(ez.gross)} · Dolch ${fJ(ez.dolch)} · zu nah (Kitz 0,6 m, 1 m höher) ${Number.isFinite(en.ke) ? en.ke.toFixed(1) : "–"} J am Ort ${en.ort || "–"}, Weg ${JSON.stringify(en.weg || null)} m`
+        );
+        const ev = energieVerdict(z.energie);
+        check(
+            ev.length === 0,
+            "LF Posten 1: die Treffer-Energie folgt dem Schwung — derselbe Hieb trifft immer, streut höchstens ×2, zu nah benennt der Kern den Ort und hält ¼ der Wirkung, das Großschwert schlägt nie schwächer als der Dolch" +
+                (ev.length ? " — " + ev.join(" · ") : "")
+        );
+        const evAlt = energieVerdict({
+            gross: [15, 18, 16, 91, 25, 17, 15, 18, 16, 91, 25, 17, 60, 40, 30],
+            dolch: [24, 32, 28],
+            nah: { ke: 1.6, ort: null },
+        });
+        const evGut = energieVerdict({
+            gross: [60, 62, 58, 70, 66, 61, 59, 64, 63, 72, 55, 57, 60, 62, 65],
+            dolch: [20, 24],
+            nah: { ke: 30, ort: "griffnah" },
+        });
+        check(
+            evGut.length === 0 &&
+                ["energie-kontakt", "energie-waffe", "energie-nah"].every((t) => evAlt.some((x) => x.startsWith(t))),
+            "Selbst-Test T16: der Befund (15–91 J je Kontakt, unter dem Dolch) nennt Kontakt und Waffe; ein Schwung-Gesetz bleibt grün"
         );
         check(
             c.bogenVerschleiss,
