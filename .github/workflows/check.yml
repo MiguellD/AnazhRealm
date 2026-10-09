@@ -1023,7 +1023,9 @@ jobs:
             # automatisch. Die folgenden 29 fahren headless (Null-Renderer, swiftshader nur für Rechen- und Bäcker-Proben)
             # und liefen am 09.10. lokal grün (foliage-res und membran-gesetz nach der Heilung ihrer Proben); verteilt nach
             # Familie und Gewicht, Gruppe 1 Kreatur und Übergabe, Gruppe 2 Regler und Leistung, Gruppe 3 Wasser und
-            # Studio-Naht. Wer hier fehlt, steht mit Klasse und Grund in AUSNAHMEN (scripts/diag-ci-deckung.cjs).
+            # Studio-Naht. Am 10.10. kamen zwei mit echtem Renderer dazu: gate:arch-feld (swiftshader-WebGPU, D liest die
+            # EINE Aufnahme) und gate:webgl-probe (swiftshader-GL). Wer hier fehlt, steht mit Klasse und Grund in AUSNAHMEN
+            # (scripts/diag-ci-deckung.cjs).
             - name: Tier-Separation (die Tiere entstapeln sich und differenzieren sich über die Größen-Achse)
               if: matrix.gruppe == 1
               run: npm run gate:tier-separation
@@ -1060,6 +1062,15 @@ jobs:
               if: matrix.gruppe == 1
               run: npm run gate:praegung-welt
 
+            - name: Gesetzte Dinge erscheinen (nah als Mesh, fern im Feld oder als Karte, das Feld liest das Licht des Meshes)
+              if: matrix.gruppe == 1
+              # Echter Renderer (WebGPU auf swiftshader — der Null-Renderer ist für den Analog-Pfad blind), Mess-Wiese
+              # −900/−850: A/AM nah das Studio-Mesh binnen 200/800 Takten, A' fern Feld-Slot und Karte nach dem Gesetz des
+              # Bäckers, S die Distanz-Schlange, B kein Bau ausgebrannt, C keine Eiche im Feld-Satz, D Feld-Box gegen
+              # MeshStandard-Box aus der EINEN Aufnahme, sobald der Feld-Pass steht (Luminanz 0,8–1,25), T keine Ausnahme
+              # im Spiel-Takt.
+              run: npm run gate:arch-feld
+
             - name: Scatter-LOD (die Streu-Stufen folgen der Live-Distanz, ohne Flacker-Churn, über Region-Grenzen)
               if: matrix.gruppe == 2
               run: npm run gate:scatter-lod
@@ -1095,6 +1106,13 @@ jobs:
             - name: Fern-Ring (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz, der Feld-Zeichner auf swiftshader)
               if: matrix.gruppe == 2
               run: npm run gate:fern-ring
+
+            - name: WebGL2-Rückfall (ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt)
+              if: matrix.gruppe == 2
+              # swiftshader-GL (__anazhForceWebGL, der EINE Hook): W1 der Backend ist WebGL, W2 der Rückfall wird einmal laut
+              # benannt, W3 Feld-Pass und Region-Bundles ruhen, W4 der Fern-Ring verfeinert auf CPU, W5 Takte laufen und ein
+              # Render trägt Substanz.
+              run: npm run gate:webgl-probe
 
             - name: Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)
               if: matrix.gruppe == 3

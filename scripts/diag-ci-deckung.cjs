@@ -48,10 +48,11 @@ const name = (s) => String(s.name || s.uses || lauf(s).split("\n")[0]).replace(/
 
 // ── DIE GEGENRICHTUNG (W)/(A)/(R) ──
 const WORKFLOWS = ".github/workflows";
-// Die Klassen, aus denen eine Wand der CI fernbleiben darf. Jede nennt eine Eigenschaft der Wand, keinen Zeitplan.
+// Die Klassen, aus denen eine Wand der CI fernbleiben darf. Jede nennt eine Eigenschaft der Wand, keinen Zeitplan. (Die
+// Klasse „echter Renderer nötig" fiel am 10.10.: der Läufer rastert swiftshader-WebGPU und -GL, gate:arch-feld und
+// gate:webgl-probe laufen in Gruppe 1 und 2.)
 const KLASSEN = {
     GPU: "echte GPU nötig", // der Läufer hat keinen Hardware-Adapter (Werkbank `--echt`)
-    RENDERER: "echter Renderer nötig", // die Welt zeichnet auf swiftshader-WebGPU, nicht auf dem Null-Renderer
     MESS: "Messwerkzeug, kein Urteil", // gibt Zahlen aus, kennt kein Rot
     FRIST: "Zeitfrist/Einschwingen > CI-Budget", // ein Lauf trägt den Deckel einer Gruppe nicht
     ROT: "rot an der Basis", // rot auf main, Täter benannt — die Heilung ist größer als diese Wand
@@ -63,21 +64,6 @@ const AUSNAHMEN = {
         grund:
             "fährt die Frost-Wand mit dem Hardware-Adapter der Werkbank (--echt, echteWebGpuArgs); der Läufer hat keine " +
             "GPU — die swiftshader-Fassung gate:weltbild-frost läuft in Gruppe 1",
-    },
-    "gate:arch-feld": {
-        klasse: KLASSEN.ROT,
-        grund:
-            "rot seit spätestens V18.536 (76c9624d): Teil D (Feld-Licht, neutrale Feld-Box gegen MeshStandard-Box) schießt " +
-            "leer (dc 0), an der Basis und am Kopf der Wiesen-Prüfung 09.10. gleich; Täter nicht benannt — die Linse " +
-            "rastert die Welt auf swiftshader-WebGPU (Analog-Pfad, der Null-Renderer ist blind), den die Familie " +
-            "„Wände in die CI“ nicht fährt",
-    },
-    "gate:webgl-probe": {
-        klasse: KLASSEN.RENDERER,
-        grund:
-            "erzwingt den WebGL2-Rückfall (__anazhForceWebGL) und rastert die Welt auf swiftshader-GL in ein RenderTarget " +
-            "(W5 Substanz) — am 09.10. nicht lokal gefahren, weil die Familie „Wände in die CI“ keinen echten Renderer " +
-            "fährt; ihr Stand ist ungemessen",
     },
 };
 
