@@ -1,0 +1,56 @@
+
+> anazhrealm@18.536.0 gate:post-kette
+> node scripts/diag-post-kette.cjs --selftest && node scripts/diag-post-kette.cjs
+
+=== POST-KETTE — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „Direktpfad stürzt" → rot: WEICHE: Direktpfad — TypeError: Invalid value used as weak map key
+  ✅ Selbsttest „Direktpfad ohne Tiefe" → rot: TIEFE: Direktpfad — der Direktpfad zeichnet ohne Tiefe (renderer.depth false)
+  ✅ Selbsttest „Leinwand-Tiefe in der Kette" → rot: TIEFE: Post-Kette zurück — die Post-Kette trägt eine Leinwand-Tiefe (renderer.depth true)
+  ✅ Selbsttest „GPU-Textur bleibt" → rot: TIEFE: Post-Kette zurück — die GPU-Textur der Leinwand-Tiefe lebt in der Post-Kette weiter
+  ✅ Selbsttest „Rahmen-Ziel bleibt nach dem Ausflug (0710-9: band nach zerlegen, +23,7 MB)" → rot: RAHMEN-ZIEL: Post-Kette zurück — 1 r184-Rahmen-Ziel(e) leben in der Post-Kette weiter: tex:r184-ausgabe 23.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)
+  ✅ Selbsttest „Rahmen-Ziel am Ende" → rot: RAHMEN-ZIEL: am Ende (nach Wasser und Godrays) — 1 r184-Rahmen-Ziel(e) leben in der Post-Kette weiter: 1 Ziel(e) ohne Textur
+  ✅ Selbsttest „Direktpfad ohne Rahmen-Ziel (blind)" → rot: RAHMEN-ZIEL: Direktpfad — r184 legte kein Rahmen-Ziel an, oder die Band nennt es nicht ({"ziele":0,"n":0,"mb":0}) — die Probe ist blind
+  ✅ Selbsttest „Rahmen-Ziel ungemessen" → rot: RAHMEN-ZIEL: Post-Kette — nicht gemessen (die Wand ist blind)
+  ✅ Selbsttest „Drift: das Ziel bleibt ohne r184s Hörer" → rot: RAHMEN-ZIEL: Post-Kette nach Drift — 1 r184-Rahmen-Ziel(e) leben in der Post-Kette weiter: tex:r184-ausgabe 0.9 MB in 2 Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)
+  ✅ Selbsttest „Drift: der Abschied fällt still" → rot: RAHMEN-ZIEL: ohne r184s Hörer fiel der Abschied STILL ([]) — die Drift bräche nur im Log · RAHMEN-ZIEL: 1 ERROR-Zeile(n) von `_rahmenZielAbschied` außerhalb der Drift-Probe: [AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt
+  ✅ Selbsttest „Drift: kein r184-Hörer zu finden (Vendor-Drift)" → rot: RAHMEN-ZIEL: am Leinwand-Ziel hängt kein r184-Abschied (`_frameBufferTargets.delete(`) — Vendor-Drift, die Probe ist blind
+  ✅ Selbsttest „Drift-Probe fehlt" → rot: RAHMEN-ZIEL: die Drift-Probe lief nicht (der zweite Abschied steht ohne Wand) · RAHMEN-ZIEL: 1 ERROR-Zeile(n) von `_rahmenZielAbschied` außerhalb der Drift-Probe: [AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt
+  ✅ Selbsttest „ERROR von _rahmenZielAbschied außerhalb der Drift" → rot: RAHMEN-ZIEL: 1 ERROR-Zeile(n) von `_rahmenZielAbschied` außerhalb der Drift-Probe: [AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt
+  ✅ Selbsttest „eine fremde ERROR-Zeile der Seite" → rot: KONSOLE: [AnazhRealm V18.536] [ERROR] Post-Processing fehlt
+  ✅ Selbsttest „Abbild fehlt" → rot: ABBILD: Post-Kette — kein Tiefen-Abbild (die Leser der Szenen-Tiefe lesen nichts)
+  ✅ Selbsttest „Abbild in voller Auflösung" → rot: ABBILD: Direktpfad — r32float 32×24 statt r32float 16×24 (halbe Breite, ganze Höhe)
+  ✅ Selbsttest „Abbild als 2×2-Block (die Zeile halbiert)" → rot: ABBILD: Direktpfad — r32float 16×12 statt r32float 16×24 (halbe Breite, ganze Höhe)
+  ✅ Selbsttest „Abbild leer" → rot: ABBILD: Post-Kette zurück — an der Bild-Mitte 1 statt der Kisten-Tiefe 0.98 (das Abbild trägt die Szene nicht)
+  ✅ Selbsttest „Wasser liest eine andere Tiefe (vec4-Weg)" → rot: WASSER: mit dem Abbild [60,90,80], mit r184s Viewport-Tiefe [75,118,105] (Soll ≤ 4 je Kanal) — das Wasser liest eine andere Tiefe
+  ✅ Selbsttest „Wasser-Probe blind" → rot: WASSER: mit und ohne Grund [60,90,80] / [60,90,80] — die Farbe hängt nicht an der Tiefe (die Probe ist blind)
+  ✅ Selbsttest „Wasser nicht umgehängt" → rot: WASSER: das Bühnen-Wasser wurde nicht umgehängt ([0,1]) — die Probe vergleicht nichts
+  ✅ Selbsttest „Wasser-Probe fehlt" → rot: WASSER: die Probe Abbild gegen r184s Viewport-Tiefe lief nicht
+  ✅ Selbsttest „Saum auf ungerader Leinwand (Gegenprüfung 0710-3: 37 von 561 Kanten-Pixeln bis +25 Luma)" → rot: SAUM: 14 von 30 Kanten-Pixeln links am Gegenstand weichen bis 25 Luma ab — das Abbild liest auf ungerader Leinwand den Nachbar-Block (ein heller Saum)
+  ✅ Selbsttest „Saum-Probe auf gerader Leinwand (blind)" → rot: SAUM: die Leinwand 320×240 ist nicht ungerade (die Probe ist blind)
+  ✅ Selbsttest „kein Gegenstand vor dem Wasser (blind)" → rot: SAUM: 0 Kanten-Pixel in 0 Paritäten — kein Gegenstand vor dem Wasser (die Probe ist blind)
+  ✅ Selbsttest „ferne Kiste vorn" → rot: TIEFE: Direktpfad — die Bild-Mitte ist [40,190,40], nicht die nahe rote Kiste (Tiefentest fehlt)
+  ✅ Selbsttest „Tiefen-Leser blind" → rot: WEICHE: Post-Kette — der Tiefen-Leser kopierte nie (die Wand ist blind für die Szenen-Tiefe)
+  ✅ Selbsttest „Fang ohne Direktpfad" → rot: TIEFE: Render-Fehler — die Post-Kette trägt eine Leinwand-Tiefe (renderer.depth true) · WEICHE: nach dem Render-Fehler der Kette fährt der Loop nicht den Direktpfad
+  ✅ Selbsttest „GPU-Validierung" → rot: GPU: 1 Validierungs-Fehler: Attachment state mismatch
+  ✅ Selbsttest „Godrays unbedingt" → rot: SHADER: Ausgabe der Post-Kette: 29 unbedingte Abtastungen je Fragment (Budget ≤ 9) — eine Stufe zahlt auch, wenn sie nichts zeigt · SHADER: Ausgabe der Post-Kette: 4 Abtastungen in Zweigen (Budget ≥ 24) — eine Stufe steht nicht mehr hinter ihrer Stärke
+  ✅ Selbsttest „Shader blind" → rot: SHADER: kein Fragment der Ausgabe gefunden (die Linse ist blind)
+  ✅ Selbsttest „Bühne bricht ab" → rot: ABBRUCH: die Bühne brach ab — TypeError: x
+  ✅ Selbsttest „Godray-Zweig trägt nicht" → rot: GODRAYS: mit der Sonne im Bild ändern die Godrays 0 % der Pixel (Soll ≥ 2) — der Zweig trägt nicht
+  ✅ Selbsttest „Godray-Probe blind" → rot: GODRAYS: die Sonne im Bild gibt Stärke 0 (die Probe ist blind)
+
+✅ SELBSTTEST GRÜN — die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays ===
+  [3 s] Renderer und Post-Kette bereit nach 2 s
+  [18 s] Saum (ungerade Leinwand 321×241): 0 von 38 Kanten-Pixeln links am Pfahl weichen > 8 Luma ab (größte 0, Paritäten 2)
+  [18 s] Post-Kette: Post-Kette · Tiefe false · Leinwand-Tiefe auf der GPU false · Rahmen-Ziele 0 (0 Texturen, 0 MB) · Tiefen-Kopien 44 · Mitte [231,0,12] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [18 s] Direktpfad: Direktpfad · Tiefe true · Leinwand-Tiefe auf der GPU true · Rahmen-Ziele 1 (2 Texturen, 0.88 MB) · Tiefen-Kopien 56 · Mitte [219,0,22] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [18 s] Post-Kette zurück: Post-Kette · Tiefe false · Leinwand-Tiefe auf der GPU false · Rahmen-Ziele 0 (0 Texturen, 0 MB) · Tiefen-Kopien 7 · Mitte [231,0,12] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [18 s] Render-Fehler: Direktpfad · Tiefe true · Leinwand-Tiefe auf der GPU true · Rahmen-Ziele 1 (2 Texturen, 0.88 MB) · Tiefen-Kopien 7 · Mitte [219,0,22] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [18 s] Post-Kette nach Drift: Post-Kette · Tiefe false · Leinwand-Tiefe auf der GPU false · Rahmen-Ziele 0 (0 Texturen, 0 MB) · Tiefen-Kopien 7 · Mitte [231,0,12] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [18 s] Rahmen-Ziele am Ende: 0 (0 Texturen, 0 MB)
+  [18 s] Drift (r184s Abschied entfernt): 1 Hörer fort · ERROR-Meldungen ["RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt"]
+  [18 s] Ausgabe-Fragment: 33 Abtastungen (unbedingt 9 · Zweig 24 · Schleife 0) · 0 Schleifen · 0 Rausch-Aufrufe
+  [18 s] Wasser über dem Grund: Abbild [135.5,137.8,138.1] · r184-Tiefe [135.5,137.8,138.1] · Abbild wieder [135.5,137.8,138.1] · ohne Grund [23.4,36.3,44.8] · umgehängt [1,1]
+  [18 s] Godrays mit der Sonne im Bild: Stärke 1 · 2.64 % der Pixel geändert (Rausch-Boden 0 %)
+
+✅ GRÜN — fünf Wege durch die Weiche ohne Fehler (mit der Drift ohne r184s Abschied), der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe und ohne Rahmen-Ziel; die Ausgabe tastet unbedingt 9×, 24× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild (2.64 % der Pixel gegen 0 % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ([135.5,137.8,138.1] gegen [135.5,137.8,138.1], ohne Grund [23.4,36.3,44.8]).

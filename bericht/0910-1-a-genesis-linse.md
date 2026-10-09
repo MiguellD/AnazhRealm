@@ -1,7 +1,8 @@
 # Bericht 0910-1 Teil A: die Genesis-Linse — Rahmen-Ziel des Direktpfads und Genesis im eigenen Boot
 
 Auftrag: `auftrag/0910-1-omen-linse-genesis-und-host-vram-2.md`, Teil A. Stand 09.10.2026.
-Kopf: **welle-m-genesis-linse 2983c6a7** (Basis main 76c9624d, per `git ls-remote`). CI: Lauf 37950704605 (läuft beim Bericht; Ergebnis folgt als Nachtrag).
+Kopf: **welle-m-genesis-linse 2983c6a7** (Basis main 76c9624d, per `git ls-remote`). CI: Lauf 37950704605 — **rot** (playtest 1/3, Schritt 95 „Post-Kette“: das Gate stürzte ab, siehe `bericht/0910-1-a-nachbesserung.md`).
+Nachbesserung: Kopf 57ccc4fb, CI 37954511176, 5 von 5 grün.
 
 ## In drei Sätzen
 
@@ -70,7 +71,11 @@ Selbsttests:
 
 ## Wände
 
-`npm run check`, lint, format:check, gate:post-kette, gate:ziel-zensus, gate:kamera-treue, playtest:fast, voller Playtest (165 s, „Alle Invarianten OK“) — alle grün, lokal am Kopf 2983c6a7.
+**RICHTIGGESTELLT** (siehe `bericht/0910-1-a-nachbesserung.md`). Hier stand: „check, lint, format:check, gate:post-kette,
+gate:ziel-zensus, gate:kamera-treue, playtest:fast, voller Playtest — alle grün, lokal am Kopf 2983c6a7“. Für gate:post-kette war
+das FALSCH: Es stürzte am Kopf 2983c6a7 ab, weil `out.ausgabe` fehlte („reading 'abtastungen'“). Meine Wand-Hülle meldete trotzdem
+Exit 0, weil sie `$?` nach `$(date)` las. Die übrigen Wände waren grün. Am Kopf 57ccc4fb sind alle Wände grün, mit Exit und
+Urteils-Zeile gelesen.
 
 ## Für V18.537
 
