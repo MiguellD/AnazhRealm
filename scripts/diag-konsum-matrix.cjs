@@ -116,10 +116,10 @@ const P = {
         dynamik: ["_tickAutoSettlement"],
     },
     mensch: {
-        // KREATUR-KOSTEN (Orakel Tier-1 #2): der lod1-Fern-Guss (bakeMenschInstance
-        // fein) wird KONSUMIERT — der EINE Toggle-Chokepoint + die EINE Distanz-
-        // Konstante (Peer-Tick liest sie; gate:kreatur-kosten misst den Konsum live).
-        lods: ["_menschFernToggle", "MENSCH_FERN_DIST_SQ"],
+        // KREATUR-KOSTEN (Orakel Tier-1 #2; S3): die gelenkige Grobstufe (bakeMenschInstance
+        // fein) wird KONSUMIERT — die EINE Gelenk-Gestalt + der EINE Stufen-Schalter
+        // (Grenze aus der Kern-Zeile; Peer-Tick liest ihn; gate:kreatur-kosten misst den Konsum live).
+        lods: ["_gelenkStufe", "_gelenkGestalt"],
         rahmen: ["bauMensch"],
         bewegung: ["_animateCompoundMotion"],
         material: ["_koerperDials"],
@@ -129,12 +129,11 @@ const P = {
         dynamik: ["morphAuf"],
     },
     tier: {
-        // KREATUR-KOSTEN: das Standbild (wrap↔fern, TIER_FERN) + die Anim-Raten-
-        // Leiter (_creatureAnimDiv) werden konsumiert; V18.477 dazu die HYSTERESE
-        // (TIER_FERN_HYST — die EINE Fern-Bande, auch der mensch-Toggle liest sie;
-        // gate:tier-fern misst Guss+Band live). TEIL bleibt ehrlich — die
-        // Vertrags-Seite trägt weiter keine kreatur-Stufen-Zeile (benannte Lücke).
-        lods: ["TIER_FERN_DIST_SQ", "_creatureAnimDiv", "TIER_FERN_HYST"],
+        // KREATUR-KOSTEN (S3): die gelenkige Grobstufe (der EINE Schalter _gelenkStufe, Grenze `ab` und
+        // Hysterese `hyst` aus der Kern-Zeile über _ofenZeile) + die Anim-Raten-Leiter (_creatureAnimDiv)
+        // werden konsumiert (gate:tier-fern misst Guss+Band live). TEIL bleibt ehrlich, solange die Kreatur
+        // zwei Stufen trägt (Schöpfer-Soll ≥ 3).
+        lods: ["_gelenkStufe", "_creatureAnimDiv", "_ofenZeile"],
         rahmen: ["bauTier"],
         bewegung: ["_animateCompoundMotion"],
         material: ["computeCreatureStats"],

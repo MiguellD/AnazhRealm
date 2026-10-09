@@ -78,6 +78,15 @@ function absorber() {
     return a;
 }
 
+// DIE SEH-KLASSEN (phyto-core BUDGET_GESETZ.seh — die EINE Liste): `wurf.seh` einer Gelenk-Gestalt wählt aus ihr (S3).
+const SEH_KLASSEN = (() => {
+    const ctx = vm.createContext({ THREE: absorber(), console: { log() {}, warn() {}, error() {} } });
+    ctx.self = ctx;
+    ctx.globalThis = ctx;
+    vm.runInContext(fs.readFileSync(path.join(root, "phyto-core.js"), "utf8"), ctx, { timeout: 30000 });
+    return ctx.__phytoCore.BUDGET_GESETZ.seh.slice();
+})();
+
 function loadCore(entry) {
     const ctx = vm.createContext({
         THREE: absorber(),
@@ -202,9 +211,13 @@ function validateManifest(m) {
                 continue;
             }
             for (const st in B[k]) {
-                if (st === "fernform") continue; // die Fernform der Art (unten), keine Stufe
+                if (st === "fernform" || st === "hyst") continue; // Felder der Art (unten), keine Stufe
                 if (ks[k].indexOf(Number(st)) < 0) v.push(`B2c: lod.budget.${k}[${st}] — keine gelieferte Stufe`);
             }
+            // S3 (DARF, Art-Ebene): die Hysterese der Stufen-Grenze `ab` — 0 < hyst < 0,5 (fern erst jenseits (1+h)·ab,
+            // zurück erst innerhalb (1−h)·ab; ab 0,5 läge die Rück-Kante bei der Hälfte der Grenze).
+            if ("hyst" in B[k] && !(typeof B[k].hyst === "number" && B[k].hyst > 0 && B[k].hyst < 0.5))
+                v.push(`B2c: lod.budget.${k}.hyst muss in (0, 0,5) liegen`);
             // DIE FERNFORM (B2c 04.10.): was die Art jenseits der Nah-Grenze des Wirts ist — "karte" (ihre Karten-Stufe),
             // "gesetz" (ihr Satz im Welt-March) oder "boden" (keine Geometrie). "karte" genau dann, wenn die letzte Stufe
             // Karte ist. PFLICHT je Budget-Art (B2c vollständig): der Host-Leser (_foundryFernForm) liest sie für jede
@@ -224,6 +237,7 @@ function validateManifest(m) {
         for (const k in ks) {
             const stufen = Array.isArray(ks[k]) ? ks[k] : [];
             let vor = null;
+            let abVor = null;
             for (const st of stufen) {
                 const z = B[k] && B[k][st];
                 if (!z || typeof z !== "object") {
@@ -289,14 +303,39 @@ function validateManifest(m) {
                     v.push(`B2c: lod.budget.${k}[${st}].ringToleranz muss in (0, 0,01) Baumhoehen liegen`);
                 // W6 (05.10.): der Wurf-Teil — Straenge ab durchmesserM Welt-Durchmesser werfen (der Kaskaden-Texel k0);
                 // nur eine Stufe, die selbst wirft, kann einen Wurf-Teil nennen.
+                // S3 (Gelenk-Gestalt): der Wurf-Teil als Seh-Klassen (`wurf.seh`) — eine nicht-leere Teilmenge von
+                // phyto-core BUDGET_GESETZ.seh ohne Doppel; dieselbe Regel: nur eine Stufe, die selbst wirft, nennt ihn.
                 if ("wurf" in z) {
                     const w = z.wurf;
-                    if (!w || !(typeof w.durchmesserM === "number" && w.durchmesserM > 0 && isFinite(w.durchmesserM)))
+                    const sehForm = !!w && typeof w === "object" && "seh" in w;
+                    if (sehForm) {
+                        const s = w.seh;
+                        if (
+                            !Array.isArray(s) ||
+                            !s.length ||
+                            s.some((x) => SEH_KLASSEN.indexOf(x) < 0) ||
+                            new Set(s).size !== s.length
+                        )
+                            v.push(`B2c: lod.budget.${k}[${st}].wurf.seh muss eine Teilmenge der Seh-Klassen sein`);
+                    } else if (
+                        !w ||
+                        !(typeof w.durchmesserM === "number" && w.durchmesserM > 0 && isFinite(w.durchmesserM))
+                    )
                         v.push(`B2c: lod.budget.${k}[${st}].wurf.durchmesserM muss endlich > 0 sein`);
-                    else if (z.schatten !== Number(st))
+                    if (w && z.schatten !== Number(st))
                         v.push(
                             `B2c: lod.budget.${k}[${st}].wurf — nur eine Stufe, die selbst wirft, nennt einen Wurf-Teil`
                         );
+                }
+                // S3 (DARF): die Stufen-Grenze — ab `ab` m × Körpergröße trägt die Stufe das Bild (die Gelenk-Gestalt
+                // liest sie, `_gelenkStufe`): endlich > 0, nie an der ersten Stufe, streng steigend über die Stufen.
+                if ("ab" in z) {
+                    if (!(typeof z.ab === "number" && z.ab > 0 && isFinite(z.ab)))
+                        v.push(`B2c: lod.budget.${k}[${st}].ab muss endlich > 0 sein`);
+                    else if (st === stufen[0]) v.push(`B2c: lod.budget.${k}[${st}].ab — die erste Stufe beginnt bei 0`);
+                    else if (abVor !== null && !(z.ab > abVor))
+                        v.push(`B2c: lod.budget.${k}[${st}].ab steigt nicht streng (${abVor} → ${z.ab})`);
+                    if (typeof z.ab === "number") abVor = z.ab;
                 }
                 // Welle 5 (Integration 05.10.): das Reisig des Strauchs — schnitt (Radius-Schnitt der Stufe in trunkR:
                 // duennere Straenge fallen) < rute (in trunkR: darunter Vierkant-Roehre auf jedem 3. Ring) < 1.
@@ -1035,6 +1074,29 @@ function validateManifest(m) {
             },
         })
     );
+    // S3 — die Gelenk-Gestalt: eine Stufen-Grenze an der ersten Stufe, eine fallende Grenze, eine Hysterese über 0,5, ein
+    // Wurf-Teil mit fremder Seh-Klasse und einer an einer Stufe, die nicht selbst wirft.
+    const bvS3 = validateManifest({
+        vertrag: 1,
+        zweit: true,
+        meshfrei: true,
+        presets: { a: { kind: "kreatur" } },
+        cfg: {
+            lod: {
+                kindStages: { kreatur: [0, 1, 2] },
+                budget: {
+                    kreatur: {
+                        0: { tris: 30, draws: 3, schatten: 1, ab: 5 },
+                        1: { tris: 20, draws: 2, schatten: 1, ab: 40, wurf: { seh: ["haar", "fell"] } },
+                        2: { tris: 10, draws: 1, schatten: 1, ab: 30, wurf: { seh: ["haar"] } },
+                        hyst: 0.7,
+                        fernform: "gesetz",
+                    },
+                    gestalten: { a: 1 },
+                },
+            },
+        },
+    });
     const bvVer = validateManifest({ vertrag: null, presets: { a: { kind: "tree" } }, build: function () {} });
     // §8 — ein MESHFREI-Kern mit buildInstance ist widersprüchlich (die Linse feuert).
     const bvMesh = validateManifest({
@@ -1055,7 +1117,7 @@ function validateManifest(m) {
         verhalten: { aktionen: { a: {} }, stimmung: { x: { aktionen: ["fremd"], alle: [1, 2] } } },
     });
     check(
-        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · Boden-Gesetz · kindStages · Budget · Fernform · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
+        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · Boden-Gesetz · kindStages · Budget · Fernform · Gelenk-Gestalt ab/hyst/wurf.seh · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
         bv.some((s) => s.includes("kein kind")) &&
             bv.some((s) => s.includes("Namensraum")) &&
             bv.some((s) => s.includes("rarity")) &&
@@ -1095,6 +1157,12 @@ function validateManifest(m) {
             bvB.some((s) => s.includes("gestalten.geist — kein Rezept")) &&
             bvB.some((s) => s.includes("gestalten.* — kein Rezept")) &&
             bvB.some((s) => s.includes("gestalten.b fehlt")) &&
+            bvS3.some((s) => s.includes("kreatur.hyst muss in (0, 0,5)")) &&
+            bvS3.some((s) => s.includes("kreatur[0].ab — die erste Stufe beginnt bei 0")) &&
+            bvS3.some((s) => s.includes("kreatur[2].ab steigt nicht streng")) &&
+            bvS3.some((s) => s.includes("kreatur[1].wurf.seh muss eine Teilmenge")) &&
+            bvS3.some((s) => s.includes("kreatur[2].wurf — nur eine Stufe, die selbst wirft")) &&
+            !bvS3.some((s) => s.includes("kreatur[1].wurf — nur eine Stufe")) &&
             bvVer.some((s) => s.includes("G4.3")) &&
             bvMesh.some((s) => s.includes("MESHFREI")) &&
             bvFx.some((s) => s.includes("schwimmen unvollständig")) &&
@@ -1102,7 +1170,7 @@ function validateManifest(m) {
             bvFx.some((s) => s.includes("ARENA unvollständig")) &&
             bvFx.some((s) => s.includes("FAHR.lenkung unvollständig")) &&
             bvFx.some((s) => s.includes("VERHALTEN unvollständig")),
-        `${bv.length + bvVer.length + bvMesh.length + bvFx.length} erkannt`
+        `${bv.length + bvS3.length + bvVer.length + bvMesh.length + bvFx.length} erkannt`
     );
     // DAS SPRUNG-GESETZ (Welle L, Vertrags-Akt 07.10.): der echte tetrapoda-Kern, einmal mit dem Abflug in m/s einer
     // Aktion (der alte bound-Zwilling 3,2) und einmal mit dem linearen sprung-Faktor — beide feuern die VERHALTEN-Wand.

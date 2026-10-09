@@ -38591,9 +38591,9 @@ async function checkBandKonvergenzTierBaum(ctx) {
         const stand = trabLauf(0);
         out.trabZahlen = { lauf, stand };
         out.trab = !!(lauf && stand && lauf.falte > 0.3 && lauf.gegen < 0 && stand.falte < 0.05);
-        // (5) DER FERN-GUSS + sein CONSUM: die Kreatur trägt das gemergte
-        // Standbild (wenige Meshes); updateCreatures toggelt es jenseits
-        // TIER_FERN_DIST (Frustum gestubbt, Liste isoliert — V18.347-Klasse).
+        // (5) DIE GROBSTUFE + ihr CONSUM: die Kreatur trägt die gelenkige Grobstufe
+        // (wenige Meshes, S3); updateCreatures schaltet sie am EINEN Schalter jenseits
+        // `ab` der Kern-Zeile (Frustum gestubbt, Liste isoliert — V18.347-Klasse).
         out.fernExists = false;
         out.fernMeshN = -1;
         out.fernFar = false;
@@ -38607,21 +38607,17 @@ async function checkBandKonvergenzTierBaum(ctx) {
             r.state.creatures = [];
             r.state.creatureEmotions = [];
             t5 = r.spawnCreatureAt(pm5.position.x + 2, pm5.position.y, pm5.position.z + 2, "happy", "wolf");
-            if (t5 && t5.userData._tierBaum && t5.userData._tierBaum.fern) {
-                const tB5 = t5.userData._tierBaum;
+            const gl5 = t5 && t5.userData._gelenk;
+            if (gl5 && gl5.fern) {
                 out.fernExists = true;
-                let n5 = 0;
-                tB5.fern.traverse((m5) => {
-                    if (m5.isMesh) n5++;
-                });
-                out.fernMeshN = n5;
+                out.fernMeshN = gl5.meshes.length;
                 r.isInFrustum = () => true;
                 t5.position.set(pm5.position.x + 200, pm5.position.y, pm5.position.z + 200);
                 r.updateCreatures(0.016);
-                out.fernFar = tB5.fern.visible === true && tB5.wrap.visible === false;
+                out.fernFar = gl5.istFern === true && gl5.nah.visible === false && gl5.meshes.every((m) => m.layers.isEnabled(0));
                 t5.position.set(pm5.position.x + 2, pm5.position.y, pm5.position.z + 2);
                 r.updateCreatures(0.016);
-                out.fernNear = tB5.wrap.visible === true && tB5.fern.visible === false;
+                out.fernNear = gl5.istFern === false && gl5.nah.visible === true && gl5.meshes.every((m) => !m.layers.isEnabled(0));
             }
         } finally {
             r.isInFrustum = origFrustum5;
@@ -38652,11 +38648,11 @@ async function checkBandKonvergenzTierBaum(ctx) {
         res && res.trab === true
     );
     check(
-        `KONVERGENZ III (5) DER FERN-GUSS existiert (≤16 Meshes, gemessen ${res && res.fernMeshN})`,
+        `KONVERGENZ III (5) DIE GELENKIGE GROBSTUFE existiert (≤16 Meshes, gemessen ${res && res.fernMeshN})`,
         !!res && res.fernExists === true && res.fernMeshN > 0 && res.fernMeshN <= 16
     );
     check(
-        "KONVERGENZ III (5) CONSUM: fern trägt das Standbild, nah der lebendige Baum",
+        "KONVERGENZ III (5) CONSUM: fern trägt die Grobstufe das Bild, nah der volle Baum (die Grobstufe nur in den Kaskaden)",
         !!res && res.fernFar === true && res.fernNear === true
     );
 }

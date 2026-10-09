@@ -330,7 +330,7 @@ function lauf(sb, opts) {
         m.kahl = kahlAnteile(g);
         for (const [r, x] of Object.entries(m.kahl)) if (!(x <= KAHL_MAX)) u.v.push(`${art} kahl ${r} ${x.toFixed(3)} > ${KAHL_MAX}`);
         u.roh.kahl = m.kahl;
-        // die zweite Stufe (das Fern-Standbild) gegen ihre Budget-Zeile
+        // die zweite Stufe (die gelenkige Grobstufe) gegen ihre Budget-Zeile
         const g1 = sb.BAKERS_BY_KIND.kreatur(TC, art, 0, 1, null);
         let t1 = 0;
         g1.traverse((o) => {

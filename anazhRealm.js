@@ -6942,11 +6942,11 @@ class AnazhRealm {
                 m.rotation.y += dg * k;
             }
             const sp = dt > 0 ? Math.hypot(m.position.x - x0, m.position.z - z0) / dt : 0;
-            // Kosten am Schirm: jenseits der Standbild-Schwelle der Welt-Tiere (TIER_FERN_DIST × Größe) ruht der Gang.
-            const fs = (m.scale && m.scale.x) || 1;
+            // Kosten am Schirm: die Kopie schaltet ihre Stufe am EINEN Schalter der Gelenk-Gestalt (`_gelenkStufe`, Grenze
+            // `ab` × Größe aus der Kern-Zeile) — jenseits trägt die Grobstufe das Bild und der Gang ruht.
             const ddx = pm ? m.position.x - pm.x : 0,
                 ddz = pm ? m.position.z - pm.z : 0;
-            if (m.userData && m.userData._tierBaum && ddx * ddx + ddz * ddz < AnazhRealm.TIER_FERN_DIST_SQ * fs * fs) {
+            if (m.userData && m.userData._tierBaum && !this._gelenkStufe(m, ddx * ddx + ddz * ddz)) {
                 const ud = m.userData;
                 ud.walkPhase = (ud.walkPhase || 0) + (sp > 0.1 ? (dt || 0) * 5.0 : 0);
                 this._animateCompoundMotion(m, null, t, ud.walkPhase, sp > 0.1, null);
@@ -7738,19 +7738,15 @@ class AnazhRealm {
         // Built-in-Seelen voll animieren (Geh-/Schwimm-Zyklus), abgeleitet aus
         // dem Positions-Stream — keine Extra-Bandbreite.
         if (entry.meshKind === "soul") {
-            // Der FERNE Mensch trägt die gemergte lod1-Fern-Gestalt (EIN Toggle-Chokepoint `_menschFernToggle`,
-            // TIER_FERN-Muster); dahinter ruht auch der Rig-Tick (verdeckt animiert niemand).
-            // Nur der Mensch-Guss trägt _menschFern.
+            // Der FERNE Leib trägt seine gelenkige Grobstufe (der EINE Stufen-Schalter `_gelenkStufe`, Grenze aus der
+            // Kern-Zeile); dahinter ruht auch der Rig-Tick. Jede Gelenk-Gestalt (Mensch, Tier-Seele) trägt `_gelenk`.
             let fernAktiv = false;
-            const mf = mesh.userData && mesh.userData._menschFern;
-            if (mf) {
+            const gl = mesh.userData && mesh.userData._gelenk;
+            if (gl) {
                 const pp = this.state.playerMesh && this.state.playerMesh.position;
-                if (pp) {
-                    const fdx = entry.x - pp.x;
-                    const fdz = entry.z - pp.z;
-                    this._menschFernToggle(mesh, fdx * fdx + fdz * fdz);
-                }
-                fernAktiv = !!(mf.fern && mf.fern.visible);
+                fernAktiv = pp
+                    ? this._gelenkStufe(mesh, (entry.x - pp.x) * (entry.x - pp.x) + (entry.z - pp.z) * (entry.z - pp.z))
+                    : gl.istFern;
             }
             const def = this.playerSoulDefs[entry.soulName];
             if (!fernAktiv && def && typeof def.animate === "function" && mesh.userData && mesh.userData.parts) {
@@ -17016,24 +17012,17 @@ class AnazhRealm {
         wrap.add(klon);
         wrap.userData._creatureSkin = true; // die 1st-Person-Regel deckt den GANZEN Leib (wie zuvor die Haut)
         wrap.userData.hautTon = skinCol; // die EINE Farb-Wahrheit für Leser (Band/Tint — Genom/Studio-Zahl)
-        // Ferner Mensch aus derselben Pipe: lod1 = gemergte Fern-Gestalt (grobe Segmente, kahl, wenige
-        // Meshes), verdeckt gebaut; `_menschFernToggle` schaltet nah↔fern. Kalter lod1-Guss → kein
-        // Fern-Zweig, es bleibt lod 0.
+        // Die Grobstufe aus derselben Pipe (lod 1, gelenkig — dasselbe Gesetz wie das Tier, `_gelenkGestalt`): unter
+        // DEMSELBEN Wrap an die Knochen der feinen gebunden, Wurf und Stufen-Grenze aus der Kern-Zeile; fehlt sie, gibt
+        // es keinen Menschen (fail-closed).
         const t1 = this._ofenMenschTemplate(dials, skinCol, hairCol, 1, g.eigen === true);
-        if (t1 && t1.root) {
-            const fernKlon = t1.root.clone(true);
-            const teileF = {};
-            fernKlon.traverse((n) => {
-                if ((n.isGroup || n.isBone) && n.name) teileF[n.name] = n;
-            });
-            fernKlon.traverse((n) => {
-                if (n.isMesh) n.castShadow = false;
-            });
-            AnazhRealm._ofenKlonRebind(fernKlon, teileF);
-            fernKlon.visible = false;
-            wrap.add(fernKlon);
-            wrap.userData._menschFern = { nah: klon, fern: fernKlon };
+        const gelenk = this._gelenkGestalt(core, "koerper", wrap, klon, teile, t1);
+        if (!gelenk) {
+            this.log("Mensch: ohne gelenkige Grobstufe kein Körper (fail-closed).", "ERROR");
+            return null;
         }
+        wrap.userData._gelenk = gelenk;
+        this._gelenkStufe(wrap, 0);
         // der Leib meldet sich bei seinen Vorlagen an (die Grenze des Ofen-Memos, `_ofenVorlage`)
         this._ofenVorlagenBinden(wrap, [t0, t1]);
         const P2 = (n2) => teile[n2] || null;
@@ -17069,19 +17058,111 @@ class AnazhRealm {
         return { mesh: wrap, rig, kh, bones: [] };
     }
 
-    // DER EINE MENSCH-FERN-TOGGLE (Chokepoint, TIER_FERN-Muster): jenseits MENSCH_FERN_DIST_SQ trägt
-    // die statische lod1-Gestalt statt des animierten Gelenk-Baums. Idempotent (visible nur bei Wechsel),
-    // no-op ohne Fern-Zweig; Konsument _p2pUpdatePeer. Hysterese TIER_FERN_HYST (die EINE Bande aller
-    // Fern-Toggles), sonst flackert ein Peer an der Schwelle. Linse: gate:kreatur-kosten.
-    _menschFernToggle(group, distSq) {
-        const mf = group && group.userData && group.userData._menschFern;
-        if (!mf || !mf.nah || !mf.fern) return;
-        const h = AnazhRealm.TIER_FERN_HYST;
-        const kante = mf.nah.visible ? (1 + h) * (1 + h) : (1 - h) * (1 - h);
-        const nah = distSq < AnazhRealm.MENSCH_FERN_DIST_SQ * kante;
-        if (mf.nah.visible !== nah) {
-            mf.nah.visible = nah;
-            mf.fern.visible = !nah;
+    // DIE GELENK-GESTALT (S3, Lehre 19 — die Grobstufe ist gelenkig, das Standbild fiel an der Wurzel): EIN Wrap trägt
+    // beide Klone; die Grobstufe (lod 1) bindet in der Ruhe-Pose an die Knochen der feinen — EIN Skelett je Gestalt (der
+    // Ofen bindet jedes ihrer Teile, auch die starren mit Gewicht 1). Den Wurf liest sie aus der Kern-Zeile (`_ofenZeile`):
+    // Stufe 0 wirft über `schatten` (1 = die Grobstufe ist ihr Zwilling), die Grobstufe wirft mit ihrem Teil `wurf.seh`,
+    // jeder andere Teil nie; die Stufen-Grenze (`ab` × Größe, `hyst`) kommt aus derselben Zeile. Die Grobstufe ist Pflicht:
+    // fehlt sie, ihre Zeile oder die Bindung eines Teils, schreit der Bau und liefert nichts (fail-closed).
+    _gelenkGestalt(core, kind, wrap, klon, teile, t1) {
+        const z0 = this._ofenZeile(core, kind, 0);
+        const z1 = this._ofenZeile(core, kind, 1);
+        const s1 = z1.zeile;
+        if (!t1 || !t1.root || !z0.zeile || z1.stufe !== 1 || !s1 || !(s1.ab > 0) || !(z0.hyst > 0 && z0.hyst < 0.5)) {
+            this.log(
+                `GELENK-GESTALT ${kind}: die Grobstufe oder ihre Kern-Zeile (ab, hyst) fehlt — fail-closed`,
+                "ERROR"
+            );
+            return null;
+        }
+        const fern = t1.root.clone(true);
+        const seh = s1.wurf && Array.isArray(s1.wurf.seh) ? s1.wurf.seh : null;
+        const meshes = [];
+        const lose = [];
+        fern.traverse((n) => {
+            if (!n.isMesh) return;
+            const namen = n.isSkinnedMesh ? n.userData.__skinJoints : null;
+            if (!Array.isArray(namen) || !namen.length || namen.some((nm) => !teile[nm])) lose.push(n.name || n.type);
+            n.castShadow = n.castShadow && s1.schatten === 1 && (!seh || seh.indexOf(n.userData.__seh) >= 0);
+            meshes.push(n);
+        });
+        if (lose.length) {
+            this.log(
+                `GELENK-GESTALT ${kind}: ${lose.length} Teile der Grobstufe ohne Knochen der feinen — fail-closed`,
+                "ERROR"
+            );
+            return null;
+        }
+        AnazhRealm._ofenKlonRebind(fern, teile); // EIN Skelett: die Grobstufe trägt die Knochen der feinen
+        // EINE Körper-Kugel je Gestalt: die Grobstufe cullt (Bild und Kaskaden) gegen die Kugel der feinen — ihre eigene
+        // (ohne die Fell-Schalen) ließ den Schweif im Gang hinaus (Pose-Probe gate:kreatur-kosten (R): 4 von 246 240).
+        let kugel = null;
+        klon.traverse((n) => {
+            if (n.isMesh) n.castShadow = n.castShadow && z0.zeile.schatten === 0;
+            if (!kugel && n.isSkinnedMesh && n.boundingSphere)
+                kugel = n.boundingSphere.clone().applyMatrix4(n.matrixWorld);
+        });
+        const inv = new THREE.Matrix4();
+        if (kugel)
+            for (const m of meshes) m.boundingSphere = kugel.clone().applyMatrix4(inv.copy(m.matrixWorld).invert());
+        wrap.add(fern);
+        // DIE RUHE des Menschen: die Pose seiner Gelenke beim Bau (der Klon der Vorlage, die Ruhe-Pose des Ofens) —
+        // jenseits der Grenze steht er in ihr (`_gelenkRuhe`). Das Tier ruht in der Kern-STAND_POSE (kein Satz nötig).
+        const ruhe =
+            kind === "kreatur"
+                ? null
+                : Object.keys(teile).map((nm) => {
+                      const k = teile[nm];
+                      return [k, k.position.clone(), k.quaternion.clone(), k.scale.clone()];
+                  });
+        return {
+            nah: klon,
+            fern,
+            meshes,
+            abM: s1.ab,
+            hyst: z0.hyst,
+            zwilling: z0.zeile.schatten === 1,
+            istFern: true,
+            ruhe,
+        };
+    }
+
+    // DER EINE STUFEN-SCHALTER der Gelenk-Gestalt (Tier, Mensch, Peer, Werkstatt): jenseits `ab` × Größe trägt die
+    // Grobstufe das Bild, diesseits die feine — und die Grobstufe wirft als ihr Zwilling auf SHADOW_TWIN_LAYER (die
+    // Haupt-Kamera sieht sie nie, die Kaskaden immer). Hysterese ±`hyst` (fern erst jenseits (1+h)·Grenze, zurück erst
+    // innerhalb (1−h)·Grenze); geschaltet werden nur `visible` und die Ebenen, nur beim Wechsel. Jenseits ruht jeder Gang
+    // (updateCreatures, der Peer-Tick, die Sicht-Kopie) außer dem eines laufenden Tiers (`_kreaturLaeuft`, Welle LF) —
+    // der Wechsel nach fern stellt die Gestalt in ihre Ruhe (`_gelenkRuhe`), denn beide Stufen tragen dieselben Knochen.
+    // Rückgabe: fern?
+    _gelenkStufe(gruppe, distSq) {
+        const g = gruppe.userData._gelenk;
+        const s = gruppe.scale.x || 1;
+        const grenzSq = g.abM * g.abM * s * s;
+        const h = g.hyst;
+        const fern = !(distSq < grenzSq * (g.istFern ? (1 - h) * (1 - h) : (1 + h) * (1 + h)));
+        if (fern !== g.istFern) {
+            g.istFern = fern;
+            g.nah.visible = !fern;
+            g.fern.visible = fern || g.zwilling;
+            const ebene = fern ? 0 : AnazhRealm.SHADOW_TWIN_LAYER;
+            for (const m of g.meshes) m.layers.set(ebene);
+            // wer läuft, behält seinen Schritt (Welle LF, der ferne Gang: die Raten-Leiter wertet ihn jenseits weiter aus)
+            if (fern && !this._kreaturLaeuft(gruppe)) this._gelenkRuhe(gruppe);
+        }
+        return fern;
+    }
+
+    // DIE RUHE der Gelenk-Gestalt (S3): die Grobstufe hängt an den Knochen der feinen — wo der Gang ruht, stünde sie sonst
+    // mitten im Schritt erstarrt (gate:kreatur-kosten (F): der ferne Mensch-Peer 0,454 rad, die Sicht-Kopie 1,064 rad). Das
+    // Tier steht in der Kern-STAND_POSE (`_tierBaumNeutralStance`, dieselbe wie hinter der Anim-Leiter), der Mensch in der
+    // Ruhe-Pose seiner Vorlage (die Pose, die das Standbild der Basis trug).
+    _gelenkRuhe(gruppe) {
+        const ruhe = gruppe.userData._gelenk.ruhe;
+        if (!ruhe) return this._tierBaumNeutralStance(gruppe);
+        for (const [k, p, q, s] of ruhe) {
+            k.position.copy(p);
+            k.quaternion.copy(q);
+            k.scale.copy(s);
         }
     }
 
@@ -17713,6 +17794,8 @@ class AnazhRealm {
             // Template-Geometrie ist über ALLE Klone geteilt — der Dispose-
             // Chokepoint (_disposeSoulGroup) lässt sharedGeom stehen.
             mesh.userData.sharedGeom = true;
+            // Die Seh-Klasse des Stoffs steht am Teil: die Gelenk-Gestalt wählt mit ihr den Wurf-Teil (`wurf.seh`, S3).
+            if (m.mat && typeof m.mat.seh === "string") mesh.userData.__seh = m.mat.seh;
             (teile[m.joint] || teile[rootName] || root).add(mesh);
             gebaut++;
         }
@@ -17855,13 +17938,26 @@ class AnazhRealm {
             });
         }
     }
+    // DIE ZEILE DER GELENK-GESTALT (S3, Lehre 19) — der EINE Leser der Kern-Zeile für Tier und Mensch: phyto-core
+    // `budgetZeile` (die Stufen-Klammer) und die Art-Ebene (`hyst`). Der Ausgang des Ofens (`_ofenBudget`) faltet auf sie,
+    // die Gestalt (`_gelenkGestalt`) liest aus ihr den Wurf (`schatten`, `wurf.seh`) und die Stufen-Grenze (`ab`, `hyst`).
+    _ofenZeile(core, kind, lod) {
+        const cfg = core && core.PORTAL_RENDER_CONFIG;
+        const bz = globalThis.__phytoCore.budgetZeile(cfg, kind, lod | 0);
+        const block = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget[kind] : null;
+        return {
+            stufe: bz ? bz.stufe : null,
+            zeile: bz ? bz.zeile : null,
+            hyst: block && typeof block.hyst === "number" ? block.hyst : null,
+        };
+    }
     // DAS BUDGET-GESETZ im Sync-Guss (W8): der Haupt-Thread-Guss verlässt das Studio an DERSELBEN Stelle wie die
     // Worker-Antwort (`__replyBuildAsset`) — phyto-core `budgetErzwingen` auf der Zeile des Kerns (seine
-    // PORTAL_RENDER_CONFIG.lod.budget[kind][stufe]); ein Bruch schreit, nie still.
+    // PORTAL_RENDER_CONFIG.lod.budget[kind][stufe], `_ofenZeile`); ein Bruch schreit, nie still.
     _ofenBudget(core, kind, lod, eintraege, name) {
         const PC = globalThis.__phytoCore;
-        const bz = PC.budgetZeile(core && core.PORTAL_RENDER_CONFIG, kind, lod | 0);
-        const res = PC.budgetErzwingen(eintraege, bz && bz.zeile);
+        const bz = this._ofenZeile(core, kind, lod);
+        const res = PC.budgetErzwingen(eintraege, bz.zeile);
         if (res.bericht.bruch.length)
             this.log("BUDGET-BRUCH " + name + " L" + (lod | 0) + ": " + JSON.stringify(res.bericht.bruch), "ERROR");
         return res.meshes;
@@ -18015,8 +18111,8 @@ class AnazhRealm {
             const dM = Object.assign({}, kc.START_PARAMS, bmD || {});
             const fM = this._menschGussFarben(bmD);
             // KREATUR-KOSTEN (3) — beide Stufen vorbacken (das Kreatur-Muster
-            // unten): lod 0 = der animierte Gelenk-Baum, lod 1 = die gemergte
-            // Fern-Gestalt (der _menschFernToggle-Zweig). Warm = Spawn ~1 ms.
+            // unten): lod 0 = der animierte Gelenk-Baum, lod 1 = die gelenkige
+            // Grobstufe (`_gelenkGestalt`). Warm = Spawn ~1 ms.
             for (const lodM of [0, 1]) {
                 if (fM.skin === null || fM.hair === null) break; // Kern kalt → der Guss schreit ohnehin
                 const keyM = this._ofenMenschKey(dM, fM.skin, fM.hair, lodM);
@@ -18138,8 +18234,8 @@ class AnazhRealm {
                 P = VA._P;
             }
         }
-        // AUSKLINGE-SAUM: am Standbild-Saum schreibt updateCreatures ud._animFade (1→0); Schritt/Sway/
-        // Schwanz/Kopf klingen in die Stand-Pose aus, damit der wrap↔fern-Toggle eine STEHENDE Gestalt
+        // AUSKLINGE-SAUM: vor der Stufen-Grenze (`ab` × Größe) schreibt updateCreatures ud._animFade (1→0); Schritt/Sway/
+        // Schwanz/Kopf klingen in die Stand-Pose aus, damit der Stufen-Schalter (`_gelenkStufe`) eine STEHENDE Gestalt
         // trifft. Aufrufer ohne _animFade → fadeMul 1.
         const fade = group.userData._animFade;
         const fadeMul = fade !== undefined && fade < 1 ? (fade > 0 ? fade : 0) : 1;
@@ -18528,24 +18624,6 @@ class AnazhRealm {
         const rate = Math.max(0.4, Number(P.tailRate) || 0.5);
         const ts = tb.tailSegs || [];
         for (let i = 0; i < ts.length; i++) ts[i].rotation.y = Math.sin(t * rate - i * 0.5) * amp;
-        this._tierFernFolgt(tb);
-    }
-
-    // DAS FERN-BILD GEHT MIT (Welle LF, der ferne Gang): jenseits der Standbild-Schwelle trug ein ungeskinntes Standbild
-    // das Tier — es glitt erstarrt über den Boden (5 Hirsche in 65 m). Seine Haut ist jetzt an seine Gelenke gebunden
-    // (foundry-core, Stufe 1 geskinnt); dieser Spiegel legt die Pose des EINEN animierten Baums auf sie (Lage, Drehung,
-    // Größe je Gelenk — 27 Kopien je Auswertung). Die Glieder-Kapseln jenseits 64 m lesen den Baum selbst.
-    _tierFernFolgt(tb) {
-        const F = tb && tb.fernTeile;
-        if (!F || !tb.teile) return;
-        for (const name in F) {
-            const q = tb.teile[name],
-                z = F[name];
-            if (!q || !z) continue;
-            z.position.copy(q.position);
-            z.quaternion.copy(q.quaternion);
-            z.scale.copy(q.scale);
-        }
     }
 
     // DER BODEN UNTER EINER PFOTE (Welle LF, die Pfoten-IK _animateTierBaum): der Stand-Leser der Sicht um den Träger des
@@ -18634,35 +18712,20 @@ class AnazhRealm {
             wrap2.scale.setScalar(f2);
             wrap2.position.y = -t0.minY * f2;
             wrap2.add(klon);
-            wrap2.userData._creatureSkin = true; // die 1st-Person-Regel deckt den Leib
+            wrap2.userData._creatureSkin = true; // die 1st-Person-Regel deckt den Leib (beide Stufen)
             group2.add(wrap2);
-            // DER FERN-GUSS aus DERSELBEN Pipe: lod1 = das gemergte Standbild
-            // (~8 Meshes). updateCreatures toggelt wrap↔fern (TIER_FERN_DIST).
-            let wrap3 = null,
-                fernTeile = null;
+            // DIE GROBSTUFE aus DERSELBEN Pipe (lod 1, gelenkig): unter DEMSELBEN Wrap an die Knochen der feinen gebunden,
+            // Wurf und Stufen-Grenze aus der Kern-Zeile (`_gelenkGestalt`); fehlt sie, gibt es kein Tier (fail-closed).
             const t1 = this._ofenKreaturTemplate(recId, opts && opts.dialsOv, 1, !!(opts && opts.eigen));
-            if (t1 && t1.root) {
-                wrap3 = new THREE.Group();
-                wrap3.scale.setScalar(f2);
-                wrap3.position.y = -t0.minY * f2;
-                const fernKlon = t1.root.clone(true);
-                const teileF = {};
-                fernKlon.traverse((n) => {
-                    if ((n.isGroup || n.isBone) && n.name) teileF[n.name] = n;
-                });
-                fernKlon.traverse((n) => {
-                    if (n.isMesh) n.castShadow = false;
-                });
-                AnazhRealm._ofenKlonRebind(fernKlon, teileF); // die starr gebundenen Teile hängen an SEINEN Gelenken
-                fernTeile = teileF;
-                wrap3.add(fernKlon);
-                wrap3.visible = false;
-                wrap3.userData._creatureSkin = true;
-                group2.add(wrap3);
+            const gelenk = this._gelenkGestalt(window.__tetrapodaCore, "kreatur", wrap2, klon, teile, t1);
+            if (!gelenk) {
+                this.log(`Kreatur „${soulKey}": ohne gelenkige Grobstufe kein Tier (fail-closed).`, "ERROR");
+                return null;
             }
             // der Leib meldet sich bei seinen Vorlagen an (die Grenze des Ofen-Memos, `_ofenVorlage`)
             this._ofenVorlagenBinden(group2, [t0, t1]);
             group2.userData._soulParts = parts2;
+            group2.userData._gelenk = gelenk;
             group2.userData._tierBaum = {
                 teile,
                 tailSegs,
@@ -18671,12 +18734,10 @@ class AnazhRealm {
                 beinL: (new THREE.Vector3().setFromMatrixPosition(t0.teile.legHL.matrixWorld).y - t0.minY) * f2,
                 bein: AnazhRealm._tierBeinMass(t0, f2),
                 wrap: wrap2,
-                fern: wrap3,
-                // die Gelenke des Fern-Bilds (Welle LF: seine Haut ist geskinnt — _tierFernFolgt spiegelt den Baum hinein)
-                fernTeile,
                 // das Volumen der Gestalt bei Größe 1 (m³, die Nah-Gestalt im Rahmen des Tiers) — die Masse liest es
-                leibV: AnazhRealm._leibVolumen(wrap2, group2),
+                leibV: AnazhRealm._leibVolumen(klon, group2),
             };
+            this._gelenkStufe(group2, 0);
             return group2;
         }
         this.log(`Kreatur-Ofen für „${soulKey}" fiel aus (kalter Kern?) — fail-closed, kein Ersatz-Körper.`, "ERROR");
@@ -22235,12 +22296,12 @@ class AnazhRealm {
     }
 
     // ═══ KREATUR-KOSTEN — DIE ANIM-RATEN-LEITER ═══
-    // EINE Rate je Distanz relativ zur Standbild-Schwelle (dieselbe wie der wrap↔fern-Toggle): 1 = jeden
-    // Frame · 2 · 4 · 0 = hinterm Standbild (eingefroren in Stand-Pose). walkPhase + Anim-Uhr akkumulieren
+    // EINE Rate je Distanz relativ zur Stufen-Grenze der Gelenk-Gestalt (`ab` × Größe, dieselbe wie `_gelenkStufe`): 1 =
+    // jeden Frame · 2 · 4 · 0 = jenseits der Grenze (eingefroren in Stand-Pose). walkPhase + Anim-Uhr akkumulieren
     // JEDEN Frame → der Gang bleibt gleich schnell, nur seltener ausgewertet. Linse: gate:kreatur-kosten.
-    // Jenseits der Schwelle friert nur ein Tier, das STEHT (Welle LF, der ferne Gang): wer läuft (laeuft), wird auf der
-    // Stufe 1/8 weiter ausgewertet (nie gröber als ein Viertel seines Takts) — seine Knochen tragen das geskinnte Fern-Bild
-    // und die Glieder-Kapseln.
+    // Jenseits der Grenze friert nur ein Tier, das STEHT (Welle LF, der ferne Gang): wer läuft (laeuft), wird auf der
+    // Stufe 1/8 weiter ausgewertet (nie gröber als ein Viertel seines Takts) — seine Knochen tragen die gelenkige
+    // Grobstufe (EIN Skelett, S3) und die Glieder-Kapseln.
     _creatureAnimDiv(dist, fernDist, omega, frameDt, laeuft) {
         if (!(fernDist > 0) || !(dist >= 0)) return 1;
         if (dist >= fernDist && laeuft !== true) return 0;
@@ -22254,7 +22315,7 @@ class AnazhRealm {
     }
     // DER LAUF DES LEIBS (Welle LF, der ferne Gang): je Takt die Lage-Änderung des Leibs, geglättet (ein Sprung über das
     // vMax des Gang-Gesetzes — Spawn, Teleport, Peer-Schnapp — ist kein Lauf); „läuft" mit Hysterese (ein ab 0,2 m/s, aus
-    // unter 0,1 m/s). Leser: _kreaturLaeuft — die Raten-Leiter und das Standbild (beide am EINEN Ort in updateCreatures).
+    // unter 0,1 m/s). Leser: _kreaturLaeuft — die Raten-Leiter (updateCreatures) und die Ruhe am Stufen-Schalter (`_gelenkStufe`).
     _kreaturLaufTakt(creature, delta) {
         const tc = globalThis.__tetrapodaCore;
         if (!tc || !tc.GANG_GESETZ) AnazhRealm._kernPflichtBruch("tetrapoda:GANG_GESETZ");
@@ -22276,8 +22337,8 @@ class AnazhRealm {
     _kreaturLaeuft(creature) {
         return !!(creature && creature.userData && creature.userData._laeuft === true);
     }
-    // AUSKLINGE-SAUM (letzte 15 % vor der Standbild-Schwelle): 1 → 0 linear; _animateTierBaum
-    // multipliziert Schritt/Schwanz/Sway/Kopf damit → der Toggle trifft die Stand-Pose. Jenseits 0.
+    // AUSKLINGE-SAUM (letzte 15 % vor der Stufen-Grenze): 1 → 0 linear; _animateTierBaum
+    // multipliziert Schritt/Schwanz/Sway/Kopf damit → der Stufen-Schalter trifft die Stand-Pose. Jenseits 0.
     _creatureAnimFade(dist, fernDist) {
         if (!(fernDist > 0) || !(dist >= 0)) return 1;
         const saum = fernDist * 0.85;
@@ -22285,8 +22346,8 @@ class AnazhRealm {
         if (dist >= fernDist) return 0;
         return 1 - (dist - saum) / (fernDist - saum);
     }
-    // NEUTRALE STAND-POSE (Standbild-Freeze): friert den bauTier-Baum in der Kern-STAND_POSE ein
-    // (Ketten = Stand-Winkel, Schwanz/Kopf/Roll = 0) statt mitten im Schritt. tb._gang fällt → beim
+    // NEUTRALE STAND-POSE (die Ruhe des Tiers jenseits der Grenze, auch `_gelenkRuhe`): friert den bauTier-Baum in der
+    // Kern-STAND_POSE ein (Ketten = Stand-Winkel, Schwanz/Kopf/Roll = 0) statt mitten im Schritt. tb._gang fällt → beim
     // Aufwachen seedet der CPG frisch aus walkPhase. Ketten-Ordnung = _animateTierBaum.
     _tierBaumNeutralStance(group) {
         const tb = group && group.userData && group.userData._tierBaum;
@@ -22325,7 +22386,6 @@ class AnazhRealm {
         const ts = tb.tailSegs || [];
         for (let i = 0; i < ts.length; i++) ts[i].rotation.y = 0;
         tb._gang = null;
-        this._tierFernFolgt(tb);
     }
 
     // DIE KÖRPERLÄNGE (m) einer Kreatur: die z-Ausdehnung ihrer Seelen-Teile (`_soulParts`, die Körper-Achse) ×
@@ -22575,9 +22635,6 @@ class AnazhRealm {
         // Ferne Kreaturen rechnen die teure KI-Richtung seltener (Band-`aiDiv`), bewegen sich aber jeden
         // Frame glatt weiter; der Frame-Zähler staffelt die Neuberechnung (kein Sammel-Spike).
         const aiFrame = (this._creatureAiFrame = (this._creatureAiFrame || 0) + 1);
-        // Standbild-Schwelle als DISTANZ: EINE Wurzel pro Frame (die Anim-Raten-Leiter skaliert sie je
-        // Kreatur mit L; der wrap↔fern-Toggle liest das Quadrat — dieselbe Schwelle).
-        const tierFernDist = Math.sqrt(AnazhRealm.TIER_FERN_DIST_SQ);
         // SCHLUSS-WELLE — das EINE Verhaltens-Gesetz für den ganzen Tick
         // (memoisiert, fail-closed): Freude-Tempo/Hüpf-Höhen · Herde · Wasser.
         const VGL = AnazhRealm._verhaltenGesetz();
@@ -22909,7 +22966,7 @@ class AnazhRealm {
                 baseY = this._standSicht(creature.position.x, creature.position.z, terrainHeight, false);
                 if (!Number.isFinite(baseY)) baseY = terrainHeight;
                 const fLB = creature.scale.x || 1;
-                if (distToPlayer < tierFernDist * fLB * 0.5) {
+                if (distToPlayer < creature.userData._gelenk.abM * fLB * 0.5) {
                     const sp = this._creatureSlopeProben(creature, terrainHeight);
                     if (sp) {
                         baseY = sp.mitte;
@@ -22978,19 +23035,19 @@ class AnazhRealm {
                     const movingNow = steuer.v > 0.1; // der Leib läuft (das Tempo des Steuer-Schritts), nicht der Wunsch
                     creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? delta * 5.0 : 0);
                     // ANIM-RATEN-LOD: walkPhase + creatureAnimationTime akkumulieren JEDEN Frame (Gang gleich schnell),
-                    // ferne Wesen werten nur 1/2 · 1/4 aus ((aiFrame+i)-Stagger, kein Spike). Hinterm Standbild-Toggle
-                    // tickt nichts — die Gestalt friert EINMAL in der Stand-Pose ein. Ohne Fern-Guss bleibt 1/4 die
-                    // unterste Stufe (sonst stünde die volle Gestalt sichtbar im Schritt).
+                    // ferne Wesen werten nur 1/2 · 1/4 aus ((aiFrame+i)-Stagger, kein Spike). Jenseits der Stufen-Grenze
+                    // tickt nur, wer läuft (1/8) — wer steht, friert EINMAL in der Stand-Pose ein (die Grobstufe trägt
+                    // dieselben Knochen). Die Grenze der Gestalt (`ab` aus der Kern-Zeile, `_gelenkGestalt`) × Größe —
+                    // dieselbe wie der Schalter.
                     const fLA = creature.scale.x || 1;
-                    const fernDist = tierFernDist * fLA;
+                    const fernDist = creature.userData._gelenk.abM * fLA;
                     const tBA = creature.userData._tierBaum;
                     const omegaGang = tBA && tBA._gang ? tBA._gang.omega : 0;
-                    // KOSTEN AN DEN SCHIRM (Gebot 7): jenseits der Standbild-Schwelle läuft der Gang nur, wo der Blick ihn
+                    // KOSTEN AN DEN SCHIRM (Gebot 7): jenseits der Stufen-Grenze läuft der Gang nur, wo der Blick ihn
                     // sieht — ein ferner Läufer hinter der Kamera steht still, bis er ins Bild kommt (39 Tiere, 32 fern:
                     // der Kreatur-Takt kostete mit jedem fernen Läufer 0,78 ms statt 0,41)
                     const laeuft = this._kreaturLaeuft(creature) && (inFrustum || distToPlayer < fernDist);
-                    let animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, delta, laeuft);
-                    if (animDiv === 0 && !(tBA && tBA.fern)) animDiv = 4;
+                    const animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, delta, laeuft);
                     if (animDiv === 0) {
                         if (!creature.userData._animEingefroren) {
                             creature.userData._animEingefroren = true;
@@ -22999,9 +23056,9 @@ class AnazhRealm {
                     } else if (animDiv === 1 || (aiFrame + i) % animDiv === 0) {
                         creature.userData._animEingefroren = false;
                         // der Ausklinge-Saum: vor der Schwelle blendet der Schritt in
-                        // die Stand-Pose — der Standbild-Toggle trifft eine STEHENDE
+                        // die Stand-Pose — der Stufen-Schalter trifft eine STEHENDE
                         // Gestalt (_animateTierBaum konsumiert _animFade).
-                        // (wer läuft, behält seinen Schritt: das Standbild trägt nur, wer steht)
+                        // (wer läuft, behält seinen Schritt: die Ruhe trägt nur, wer steht)
                         creature.userData._animFade = laeuft ? 1 : this._creatureAnimFade(distToPlayer, fernDist);
                         // ABSCHIEDS-WELLE (Motion-Vollendung) — das Kreatur-Innenleben reist in
                         // die EINE Emotions→Profil-Brücke (chaos→flee · joy→joy · null→Default).
@@ -23020,24 +23077,11 @@ class AnazhRealm {
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
             // sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
             if (inFrustum) {
-                // FERN-GUSS-Leser: jenseits ~TIER_FERN_DIST·L trägt das gemergte Standbild (~8 Draws) statt des
-                // animierten Baums (~235). Nur im Frustum getoggelt; beim Frustum-Eintritt setzt DERSELBE Frame
-                // den korrekten Zustand.
+                // DIE STUFE der Gelenk-Gestalt (der EINE Schalter `_gelenkStufe`, Grenze `ab` × Größe aus der Kern-Zeile):
+                // jenseits trägt die gelenkige Grobstufe das Bild, diesseits wirft sie als Zwilling. Nur im Frustum
+                // geschaltet; beim Frustum-Eintritt setzt DERSELBE Frame den Zustand. Render-rein.
                 const tB = creature.userData._tierBaum;
-                if (tB && tB.fern && tB.wrap) {
-                    const fL = creature.scale.x || 1;
-                    const grenzSq = AnazhRealm.TIER_FERN_DIST_SQ * fL * fL;
-                    // HYSTERESE am EINEN Chokepoint (gate:tier-fern): im ±TIER_FERN_HYST-Band hält der letzte Zustand
-                    // (kein Flackern); geschaltet wird NUR visible, die Templates bleiben memoisiert. Render-rein.
-                    const h = AnazhRealm.TIER_FERN_HYST;
-                    const kante = tB.wrap.visible ? (1 + h) * (1 + h) : (1 - h) * (1 - h);
-                    const nah = distSqToPlayer < grenzSq * kante;
-                    if (tB.wrap.visible !== nah) {
-                        tB.wrap.visible = nah;
-                        tB.fern.visible = !nah;
-                    }
-                    if (nah) this._fellBildschirmGesetz(creature, tB);
-                }
+                if (!this._gelenkStufe(creature, distSqToPlayer) && tB) this._fellBildschirmGesetz(creature, tB);
                 // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
                 const aura = creature.userData && creature.userData.taskAura;
                 if (aura) {
@@ -52811,10 +52855,9 @@ class AnazhRealm {
                 (built.mesh.userData && built.mesh.userData._leibNah) || built.mesh,
                 group
             );
-            // KREATUR-KOSTEN (3) — die Fern-Gestalt-Refs am Gruppen-Level: der
-            // Peer-Tick liest entry.mesh.userData._menschFern (EIN Chokepoint,
-            // _menschFernToggle). null = kein lod1-Guss → Toggle no-op.
-            group.userData._menschFern = (built.mesh.userData && built.mesh.userData._menschFern) || null;
+            // DIE GELENK-GESTALT am Gruppen-Level (S3): der Peer-Tick und die Werkstatt schalten die Stufe am Leib
+            // (`_gelenkStufe`); der Rig-Bau liefert sie immer (fail-closed ohne Grobstufe).
+            group.userData._gelenk = built.mesh.userData._gelenk;
             return group;
         }
         // Kein Rig → fail-LAUT: sichtbarer Not-Körper (Magenta-Kapsel) + Log statt stumm-leerer Gruppe
@@ -53021,7 +53064,7 @@ class AnazhRealm {
     // (die Ecken des Kopf-Knochens und die Meshes unter ihm: Haar, Augen). kopfMit: der Kopf hängt am Rumpf (dann gleicht
     // er dessen Neigung aus und bleibt aufrecht). Rahmen: der Spieler (seine Gier ändert keine Höhe).
     _sitzLeib(group, rig) {
-        const nah = (group.userData._menschFern && group.userData._menschFern.nah) || group;
+        const nah = group.userData._gelenk ? group.userData._gelenk.nah : group;
         if (rig.spine) rig.spine.rotation.x = 0;
         if (rig.head) rig.head.rotation.x = 0;
         group.updateMatrixWorld(true);
@@ -75473,7 +75516,7 @@ class AnazhRealm {
 
     // DIE GLIEDER DER GESTALT — EINE Quelle für Fern-Bild UND Treffer (Welle L 06.10.): jedes Mesh gehört seinem
     // nächsten artikulierten Anker (die Gruppen, die _animateTierBaum rotiert; die Tier-Haut zerfällt je dominantem
-    // Bone), Mini-Gruppen verschmelzen in den Eltern-Anker, Deckel 12 je Tier. Der Fern-Standbild-Ast zählt NIE
+    // Bone), Mini-Gruppen verschmelzen in den Eltern-Anker, Deckel 12 je Tier. Die Grobstufe (`_gelenk.fern`) zählt NIE
     // (Doppel-Körper). Liefert { gruppen: Map(Anker → {meshes, verts}), wurzel, gattung } oder null.
     _kreaturGliederGruppen(cr) {
         const tb = cr.userData && cr.userData._tierBaum;
@@ -75496,13 +75539,8 @@ class AnazhRealm {
         cr.updateMatrixWorld(true);
         cr.traverse((o) => {
             if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
-            if (tb && tb.fern) {
-                let p = o;
-                while (p && p !== cr) {
-                    if (p === tb.fern) return; // das gemergte Standbild wäre der Doppel-Körper
-                    p = p.parent;
-                }
-            }
+            const grob = cr.userData._gelenk ? cr.userData._gelenk.fern : null;
+            for (let p = o; grob && p && p !== cr; p = p.parent) if (p === grob) return; // die Grobstufe wäre der Doppel-Körper
             // Die Tier-Haut (V18.497) ist EIN SkinnedMesh über alle Glieder: je Vertex zählt der dominante
             // Bone (skinIndex[0] trägt das größte Gewicht) — die Haut zerfällt in Glied-Stücke, deren
             // matrixWorld (Bone · boneInverse · bindMatrix) den Bind-Raum starr an die LAUFENDE Pose hängt.
@@ -85903,32 +85941,13 @@ class AnazhRealm {
             }
             if (soulKey) {
                 group = this._buildCreatureGroup(soulKey, { dialsOv: ov || null, eigen: true });
-                // Die LOD-Wahl toggelt nah↔fern am Guss (userData._tierBaum, der Welt-
-                // Chokepoint-Struktur folgend): L0 = der Gelenk-Baum, L1 = das gemergte
-                // Standbild aus DERSELBEN Pipe. Fail-soft: kein fern-Guss → nah bleibt.
-                const tb = group && group.userData && group.userData._tierBaum;
-                if (tb && tb.wrap) {
-                    const useFern = lodN >= 1 && !!tb.fern;
-                    tb.wrap.visible = !useFern;
-                    if (tb.fern) tb.fern.visible = useFern;
-                } else if (group) {
-                    // Ohne Baum-Refs (Alt-Guss): die Teile sichtbar lassen (ehrliches Interim).
-                    for (const ch of group.children) ch.visible = true;
-                }
             }
-        } else {
-            group = this._buildHumanGroup(ov || undefined, { eigen: true });
-            // Dieselbe Stufen-Wahl am Mensch-Guss (userData._menschFern = {nah, fern},
-            // der _menschFernToggle-Chokepoint-Struktur folgend). Fail-soft: kein
-            // lod1-Guss → alles bleibt byte-alt L0.
-            const mf = group && group.userData && group.userData._menschFern;
-            if (mf && mf.nah && mf.fern) {
-                const useFernM = lodN >= 1;
-                mf.nah.visible = !useFernM;
-                mf.fern.visible = useFernM;
-            }
-        }
+        } else group = this._buildHumanGroup(ov || undefined, { eigen: true });
         if (!group || !group.children) return false;
+        // Die LOD-Wahl der Vorschau schaltet die Stufe am EINEN Schalter der Gelenk-Gestalt (Tier und Mensch): L0 = die
+        // feine, L1 = die gelenkige Grobstufe aus DERSELBEN Pipe (jede Gelenk-Gestalt trägt beide, fail-closed im Bau; der
+        // magentafarbene Not-Körper eines kalten Kerns ist keine).
+        if (group.userData._gelenk) this._gelenkStufe(group, lodN >= 1 ? Infinity : 0);
         // Der Guss gehört dem Ofen (`eigen`): ein Regler-Einzelstück trägt keine Geteilt-Markierung, eine Vorlage aus dem
         // Memo ihre eigene — `_disposeSoulGroup` entsorgt beim Wechsel genau das Einzelstück. Die Bauplan-Vorschau rührt
         // die Gestalt des Ofens nie an (`_workshopRebuildPreviewMesh`).
@@ -100834,22 +100853,6 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
     }),
 });
 AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
-
-// Fern-Guss-Distanz (m, Körpergröße L=1): jenseits tauscht der animierte Baum gegen das gemergte lod1-Standbild —
-// für ein Tier, das STEHT (Welle LF: wer läuft, behält den Baum und seinen Schritt). Als Quadrat (der Loop führt distSqToPlayer ohne sqrt).
-// 35 m: der Beinschwung ist dort ~2.7 px (Sichtbarkeits-Kante); skaliert mit der Körpergröße (fL).
-AnazhRealm.TIER_FERN_DIST_SQ = 35 * 35;
-// Hysterese des wrap↔fern-Toggles: ±10-%-Band — fern erst jenseits (1+h)·Grenze, zurück erst
-// innerhalb (1−h)·Grenze → kein Flackern; der Toggle schreibt NUR `visible`. EIN Leser: der
-// wrap↔fern-Chokepoint in updateCreatures (gate:tier-fern).
-AnazhRealm.TIER_FERN_HYST = 0.1;
-// Mensch-Fern-Guss (Peers): jenseits trägt die Menschen-Gestalt den gemergten lod1-Guss (wenige
-// Draws, kein Rig-Tick). 40 m ist eine KOSTEN-Grenze, keine Pixel-Grenze: gemessen 06.10. (Leben-Prüfung N-D7, echte
-// GPU) spreizen die Beine in 38 m noch 10,4–10,6 px bei 720 p (15,6 px bei 1080 p) — die „< 2,6 px" dieser Zeile
-// stimmten nie, unter 2,6 px fällt der Schwung erst jenseits ~150 m (720 p). Jenseits 44 m (Hysterese) gleitet ein
-// Peer als Standbild, bis die Grobstufe die Gang-Phase trägt (Mensch-L1, synthese W3c/W3g). Als Quadrat (distSq XZ);
-// EIN Leser: _menschFernToggle.
-AnazhRealm.MENSCH_FERN_DIST_SQ = 40 * 40;
 
 // HARVEST_VOLUME_TO_UNITS — Volumen→Material-Einheiten für harvestArchitecture: k=4 →
 // 1×1×1-Box = 4 Einheiten, 0.5³ → 1 (min 1).

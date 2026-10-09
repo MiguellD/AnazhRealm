@@ -869,6 +869,25 @@ const FORBIDDEN = [
     // Warteschlange `_erstWartet`, bereit ist die Pipeline, sobald r184 sie in seinen Zustand schreibt.
     { token: "_erstPipeline", fiel: "Welle K — die Bereitschaft liest den Zustand (_erstWartet), nie das Versprechen" },
     { token: "_erstNeuAufnehmen", fiel: "Welle K — EINE Warteschlange (_erstWartet ohne Pipeline)" },
+    // S3 kreatur (Lehre 19): die Grobstufe der Gelenk-Gestalt ist gelenkig — das Standbild an der Wurzel fiel, die L1 bindet
+    // an die Knochen der L0 unter EINEM Wrap (`_gelenkGestalt`), EIN Stufen-Schalter (`_gelenkStufe`) ersetzt die vier
+    // Schreiber (updateCreatures, der Mensch-Toggle, die Werkstatt Tier + Mensch); die Fern-Wraps und ihr Leser fallen.
+    { token: "_menschFern", fiel: "S3 kreatur — die Gelenk-Gestalt (_gelenk) und der EINE Schalter _gelenkStufe" },
+    { token: "wrap3", fiel: "S3 kreatur — beide Stufen unter EINEM Wrap (_gelenkGestalt)" },
+    // S3 kreatur: die Stufen-Grenze lebt im Kern (lod.budget.kreatur/koerper[1].ab, hyst der Art) — die Gestalt liest sie
+    // beim Bau (`_gelenkGestalt` → `_gelenk.abM`), jeder Leser fragt die Gestalt; die Wirts-Distanzen fallen.
+    { token: "TIER_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.kreatur[1].ab (_gelenk.abM)" },
+    { token: "TIER_FERN_HYST", fiel: "S3 kreatur — die Hysterese ist lod.budget.kreatur.hyst (_gelenk.hyst)" },
+    { token: "MENSCH_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.koerper[1].ab (_gelenk.abM)" },
+    // V18.538 (welle-lf-rudel × S3 kreatur): beide skinnten die Stufe 1 — rudel als zweites Skelett mit einem Spiegel je
+    // Auswertung (27 Gelenk-Kopien) und einem Tier-Sonderweg im Gelenk-Guss, S3 als EIN Skelett für Tier UND Mensch.
+    // EINE Wahrheit: die Grobstufe bindet an die Knochen der feinen; der Spiegel und der Sonderweg kehren nicht zurück.
+    { token: "_tierFernFolgt", fiel: "V18.538 — EIN Skelett: die Grobstufe trägt die Knochen der feinen (_gelenkGestalt)" },
+    {
+        token: "fernStarr",
+        fiel: "V18.538 — der Gelenk-Guss bindet die Grobstufe für Tier UND Mensch (S3), kein Tier-Sonderweg",
+        auch: ["foundry-core.js"],
+    },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

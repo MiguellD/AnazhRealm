@@ -10,19 +10,19 @@
 //  (A) ANIM-RATEN-LOD: die Auswertungs-Rate der Kreatur-Animation folgt der
 //      Distanz (das aiDiv-Muster V17.115 U3, auf den Anim-Block gehoben).
 //      Gezählt wird der ECHTE _animateCompoundMotion-KONSUM über N Ticks:
-//      nah = jeder Frame · halbe Zone = 1/2 · viertel Zone = 1/4 · hinterm
-//      Standbild-Toggle = GAR NICHT. walkPhase/Uhr akkumulieren weiter —
+//      nah = jeder Frame · halbe Zone = 1/2 · viertel Zone = 1/4 · jenseits der
+//      Stufen-Grenze (`ab` × Größe) = GAR NICHT. walkPhase/Uhr akkumulieren weiter —
 //      der Gang bleibt gleich schnell, nur seltener ausgewertet.
-//  (B) NEUTRALE STANCE: hinterm Standbild friert der bauTier-Baum in der
+//  (B) NEUTRALE STANCE: jenseits der Grenze friert der bauTier-Baum in der
 //      Kern-STAND_POSE ein (kein Mid-Step-Gelenkwinkel über Schwelle) —
 //      vorher fror er mitten im Schritt (harter Pop beim Wieder-Annähern).
 //      Prämisse mitgemessen: VOR dem Freeze ist der Schritt messbar
 //      mid-step (> Schwelle), sonst wäre die Linse trivial grün.
-//  (C) MENSCH-FERN-GUSS: der lod≥1-Pfad des koerper-Gusses (bakeMenschInstance
-//      fein — gemergte Fern-Gestalt) wird KONSUMIERT: _buildHumanGroup trägt
-//      nah+fern, der EINE Toggle-Chokepoint (_menschFernToggle) schaltet am
-//      Distanz-Band (MENSCH_FERN_DIST_SQ), und der ECHTE Peer-Tick
-//      (_p2pUpdatePeer) konsumiert ihn. Mesh-/Vertex-Differenz gemessen.
+//  (C) DIE GROBSTUFE DES MENSCHEN: der lod≥1-Pfad des koerper-Gusses (bakeMenschInstance
+//      fein — die gelenkige Grobstufe, S3) wird KONSUMIERT: _buildHumanGroup trägt
+//      nah+fern (_gelenk), der EINE Stufen-Schalter (_gelenkStufe) schaltet an der
+//      Grenze der Kern-Zeile (ab, hyst), und der ECHTE Peer-Tick (_p2pUpdatePeer)
+//      konsumiert ihn. Mesh-/Vertex-Differenz gemessen.
 //  (R) STARR-BINDUNG + KÖRPER-KUGEL (02.10.): der Ofen-Guss zieht je Material
 //      EINEN Draw — kein starres Teil teilt Material/Schatten/Attribut-Satz mit
 //      einem zweiten ungebundenen (vorher 35 Draws je Wolf); jede geskinnte
@@ -30,6 +30,20 @@
 //      (ein Wolf im Gang, 24 Takte, jede Hülle Vertex für Vertex in der Pose)
 //      bleibt in der Kugel — kein Pop am Bildrand. (S3) Starr-Bindung gestubbt →
 //      die Linse zählt die unverschmolzenen Teile.
+//  (W) DER WERFER JE GESTALT (S3, Lehre 19): je Art und Mensch nah (10 m × Größe) und mittel (45 m × Größe) nach
+//      dem echten Tick — Werfer = jedes Mesh mit castShadow, sichtbarer Kette und Ebenen in der Kaskaden-Maske. Soll
+//      aus der Kern-Zeile: der Wurf-Teil der Grobstufe (`wurf.seh`, gezählt mit phyto-core budgetSippen über den
+//      Ofen-Ausgang), Tier ≤ 6 200 / 1, Mensch ≤ 38 000 / 5, mittel wirft, nah wirft kein L0-Mesh; dazu die Absenz der
+//      castShadow-Literale am Gelenk-Guss und der Wirts-Distanzen. (S5) Zwilling gestubbt → die L0 wirft wieder, rot.
+//      (R) prüft dazu: die Grobstufe ist geskinnt und trägt die Knochen der L0 (EIN Skelett), im Gang in ihrer Kugel.
+//      DECKUNG: der Zwilling wirft den Umriss der feinen Stufe — je Gestalt Stand-Pose + drei Gang-Posen × vier Sonnen,
+//      die Werfer-Ecken (getVertexPosition) entlang der Sonne auf 1 cm gerastert gegen den Umriss der feinen Stufe nach
+//      dem Wurf-Gesetz des Ofens (alles ausser den Fell-Schalen); IoU ≥ 0,94 in jeder Lage, Täter = das Gelenk mit der
+//      größten ungedeckten Fläche. (S7) der Zwilling 6 % zur Mitte gezogen → rot.
+//  (F) DIE RUHE JENSEITS DER GRENZE (S3): beide Stufen tragen DIESELBEN Knochen — wo der Gang jenseits der Grenze ruht
+//      (der Peer-Tick des Menschen, die Sicht-Kopie eines fremden Tiers), stehen sie in der Ruhe-Pose: der Mensch in der
+//      seiner Vorlage (≤ 0,01 rad je Gelenk), das Tier in der Kern-STAND_POSE (≤ 0,02 rad), nie mitten im Schritt.
+//      (S6) die Ruhe gestubbt → der ferne Mensch bleibt mitten im Schritt, rot.
 //  (T) SCHMAL (W7): jeder Index über ≤ 65 535 Vertices trägt 16 bit (r184 weitete ihn auf 32, der Stamm hält ihn
 //      schmal — `_backendGesetz`), jedes Haut-Gewicht unorm16 (Wolf · Mensch). (S4) die alten Formen gestubbt → die Linse
 //      nennt die breiten Puffer.
@@ -91,6 +105,11 @@ const server = http.createServer((req, res) => {
     });
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true; // GPU-frei, Produktions-Boot
+        // der Kommentar-Stripper der Absenz-Proben (Kommentare zitieren die gefallenen Namen)
+        window.__codeOf = (fnOrSrc) =>
+            String(fnOrSrc)
+                .replace(/\/\/.*$/gm, "")
+                .replace(/\/\*[\s\S]*?\*\//g, "");
     });
     let out = null;
     try {
@@ -131,7 +150,7 @@ const server = http.createServer((req, res) => {
                 "_creatureAnimDiv",
                 "_creatureAnimFade",
                 "_tierBaumNeutralStance",
-                "_menschFernToggle",
+                "_gelenkStufe",
                 "_animateCompoundMotion",
                 "_buildHumanGroup",
                 "_p2pUpdatePeer",
@@ -180,7 +199,8 @@ const server = http.createServer((req, res) => {
             const p0 = spawnAt(30, 0); // Platzhalter-Position; das Pinnen setzt die Wahrheit
             if (!p0) return { error: "Spawn fehlgeschlagen" };
             const fL = p0.scale.x || 1;
-            const fern = Math.sqrt(A.TIER_FERN_DIST_SQ) * fL;
+            // die Stufen-Grenze aus der Kern-Zeile (`ab` × Größe, S3) — dieselbe, die der Schalter liest
+            const fern = window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur[1].ab * fL;
             o.fernDist = fern;
             const dists = { voll: 0.4 * fern, halb: 0.6 * fern, viertel: 0.83 * fern, hinter: 1.25 * fern };
             const winkel = { voll: 0, halb: Math.PI / 2, viertel: Math.PI, hinter: -Math.PI / 2 };
@@ -213,7 +233,7 @@ const server = http.createServer((req, res) => {
             o.checks.aVoll = counts.voll === N; // nah = JEDER Frame
             o.checks.aHalb = counts.halb <= N * 0.55 && counts.halb >= N * 0.4; // exakt 1/2 (Stagger-treu)
             o.checks.aViertel = counts.viertel <= N * 0.3 && counts.viertel >= N * 0.15; // exakt 1/4
-            o.checks.aHinter = counts.hinter === 0; // hinterm Standbild: GAR nicht
+            o.checks.aHinter = counts.hinter === 0; // jenseits der Grenze: GAR nicht
             o.checks.aFernOrdnung = counts.halb <= counts.voll / 2 + 1 && counts.viertel <= counts.halb / 2 + 1;
             o.hinterEingefroren = probes.hinter.userData._animEingefroren === true;
             o.checks.aEingefroren = o.hinterEingefroren;
@@ -233,7 +253,7 @@ const server = http.createServer((req, res) => {
             o.s1Hinter = counts.hinter;
             o.checks.s1LensFires = counts.hinter === NS; // ohne Leiter tickt auch hinter voll
 
-            // ── (B) NEUTRALE STANCE: mid-step posieren → hinterm Standbild einfrieren ──
+            // ── (B) NEUTRALE STANCE: mid-step posieren → jenseits der Grenze einfrieren ──
             const probeS = probes.voll;
             const roles = r._motionRolesForSoul(probeS.userData.soul);
             // Gehen heißt WEG (Welle 5, das Gang-Gesetz): der Schritt-Schwung folgt der Lage-Änderung des Leibs — die
@@ -251,7 +271,7 @@ const server = http.createServer((req, res) => {
             schreite(probeS); // moving → Schritt-Schwung
             o.devMid = maxDev(probeS);
             o.checks.bMidStepPremise = Number.isFinite(o.devMid) && o.devMid > 0.05; // Prämisse: WAR mid-step
-            // hinter das Standbild pinnen + ticken → der Freeze-Pfad greift
+            // jenseits der Grenze pinnen + ticken → der Freeze-Pfad greift
             probeS.userData._animEingefroren = false;
             dists.voll = 1.25 * fern;
             pin();
@@ -289,10 +309,17 @@ const server = http.createServer((req, res) => {
             cleanup([probes.voll, probes.halb, probes.viertel, probes.hinter]);
             s.maxCreatures = saveMax;
 
-            // ── (C) MENSCH-FERN-GUSS: lod1 gebaut + am ECHTEN Peer-Tick konsumiert ──
+            // ── (C) DIE GELENK-GESTALT DES MENSCHEN: die Grobstufe gebaut + am ECHTEN Peer-Tick über den EINEN Schalter ──
             const g = r._buildHumanGroup();
-            const mf = g && g.userData && g.userData._menschFern;
+            const mf = g && g.userData && g.userData._gelenk;
             o.checks.cFernGebaut = !!(mf && mf.nah && mf.fern);
+            // die Stufen eines Zustands: nah = die feine sichtbar, die Grobstufe nur in den Kaskaden; fern = umgekehrt
+            const istNah = () =>
+                mf.istFern === false &&
+                mf.nah.visible === true &&
+                mf.meshes.every((m) => !m.layers.isEnabled(0) && m.layers.isEnabled(A.SHADOW_TWIN_LAYER));
+            const istFern = () =>
+                mf.istFern === true && mf.nah.visible === false && mf.meshes.every((m) => m.layers.isEnabled(0));
             if (mf && mf.nah && mf.fern) {
                 const stat = (node) => {
                     let m = 0,
@@ -310,11 +337,11 @@ const server = http.createServer((req, res) => {
                 o.fernStat = stat(mf.fern);
                 o.checks.cVertexDiff = o.fernStat.v > 0 && o.fernStat.v < o.nahStat.v * 0.8; // messbar leichter
                 o.checks.cMeshDiff = o.fernStat.m < o.nahStat.m; // weniger Draws
-                // der EINE Toggle-Chokepoint
-                r._menschFernToggle(g, A.MENSCH_FERN_DIST_SQ * 4);
-                const t1 = mf.fern.visible === true && mf.nah.visible === false;
-                r._menschFernToggle(g, 4);
-                const t2 = mf.nah.visible === true && mf.fern.visible === false;
+                // der EINE Stufen-Schalter (Grenze `ab` aus der Kern-Zeile)
+                r._gelenkStufe(g, mf.abM * mf.abM * 4);
+                const t1 = istFern();
+                r._gelenkStufe(g, 4);
+                const t2 = istNah();
                 o.checks.cToggle = t1 && t2;
                 // der ECHTE Konsument: _p2pUpdatePeer schaltet am Distanz-Band
                 const entry = {
@@ -329,10 +356,10 @@ const server = http.createServer((req, res) => {
                     lastMovedAt: 0,
                 };
                 r._p2pUpdatePeer(entry, performance.now() / 1000, 0.016);
-                o.checks.cPeerFern = mf.fern.visible === true && mf.nah.visible === false;
+                o.checks.cPeerFern = istFern();
                 entry.x = pm.x + 5;
                 r._p2pUpdatePeer(entry, performance.now() / 1000, 0.016);
-                o.checks.cPeerNah = mf.nah.visible === true && mf.fern.visible === false;
+                o.checks.cPeerNah = istNah();
             }
 
             // ── (R) STARR-BINDUNG + KÖRPER-KUGEL ──
@@ -372,7 +399,7 @@ const server = http.createServer((req, res) => {
             const wolfT = recW ? r._ofenKreaturTemplate(recW, null, 0) : null;
             o.rWolf = wolfT ? starrZensus(wolfT.root) : null;
             const gM = r._buildHumanGroup();
-            const mfM = gM && gM.userData && gM.userData._menschFern;
+            const mfM = gM && gM.userData && gM.userData._gelenk;
             o.rMensch = mfM && mfM.nah ? starrZensus(mfM.nah) : null;
             o.checks.rWolfStarr = !!o.rWolf && o.rWolf.unverschmolzen === 0 && o.rWolf.skins >= 2;
             o.checks.rMenschStarr = !!o.rMensch && o.rMensch.unverschmolzen === 0;
@@ -384,15 +411,40 @@ const server = http.createServer((req, res) => {
             let raus = 0,
                 geprueft = 0,
                 maxUeber = 0;
+            // DER ZWILLING TRÄGT DAS SKELETT DER NAHEN (S3): jedes Mesh der Grobstufe ist geskinnt, und seine Knochen SIND die
+            // Knochen der L0 (Identität je Name) — EIN Skelett je Gestalt; im Gang bleibt auch er in seiner Kugel.
+            const zw = { meshes: 0, geskinnt: 0, knochen: 0, fremd: 0, geprueft: 0 };
             const wp = spawnAt(6, 0);
             if (wp && wp.userData && wp.userData._tierBaum) {
                 const v = new T3.Vector3();
+                let l1Geo = null;
+                wp.traverse((n) => {
+                    for (const vl of n.__ofenVorlagen || [])
+                        if (vl && vl.__ofen && String(vl.__ofen.key).split("|")[1] === "1") {
+                            l1Geo = new Set();
+                            vl.root.traverse((q) => {
+                                if (q.isMesh && q.geometry) l1Geo.add(q.geometry);
+                            });
+                        }
+                });
+                const teileL0 = wp.userData._tierBaum.teile || {};
+                wp.traverse((n) => {
+                    if (!n.isMesh || !l1Geo || !l1Geo.has(n.geometry)) return;
+                    zw.meshes++;
+                    if (!n.isSkinnedMesh || !n.skeleton) return;
+                    zw.geskinnt++;
+                    for (const b of n.skeleton.bones) {
+                        zw.knochen++;
+                        if (teileL0[b.name] !== b) zw.fremd++;
+                    }
+                });
                 for (let k = 0; k < 24; k++) {
                     wp.position.x += 1.6 * 0.07; // der Gang folgt dem Weg (1,6 m/s)
                     r._animateTierBaum(wp, k * 0.07, k * 0.35, true, null);
                     wp.updateMatrixWorld(true);
-                    wp.userData._tierBaum.wrap.traverse((n) => {
+                    wp.traverse((n) => {
                         if (!n.isSkinnedMesh || !n.boundingSphere) return;
+                        if (l1Geo && l1Geo.has(n.geometry)) zw.geprueft++;
                         const kugel = n.boundingSphere.clone().applyMatrix4(n.matrixWorld);
                         const pos = n.geometry.attributes.position;
                         for (let i = 0; i < pos.count; i += 3) {
@@ -411,6 +463,9 @@ const server = http.createServer((req, res) => {
             }
             o.rPose = { geprueft, raus, maxUeber };
             o.checks.rPoseInKugel = geprueft > 1000 && raus === 0;
+            o.rZwilling = zw;
+            o.checks.rZwillingKnochen =
+                zw.meshes > 0 && zw.geskinnt === zw.meshes && zw.knochen > 0 && zw.fremd === 0 && zw.geprueft > 0;
             // (S3) SELBST-TEST: ohne Starr-Bindung zählt die Linse die unverschmolzenen Teile
             const saveStarr = A._ofenStarrBinden;
             const saveMemo = A._tierOfenMemo;
@@ -438,6 +493,578 @@ const server = http.createServer((req, res) => {
             A._tierOfenMemo = saveMemo;
             o.checks.s4LensFires = !!o.s4Breit && o.s4Breit.length > 0;
 
+            // ── (W) DER WERFER JE GESTALT (S3, Lehre 19): die Kern-Zeile sagt, welche Stufe wirft (`schatten`) und welcher
+            // Teil von ihr (`wurf.seh`). Gezählt wird, was die Kaskaden zeichnen: jedes Mesh der Gestalt mit castShadow, dessen
+            // Kette sichtbar ist und dessen Ebenen die Kaskaden-Maske treffen (Layer 0 oder SHADOW_TWIN_LAYER) — nah (10 m ×
+            // Größe) und mittel (45 m × Größe) nach dem ECHTEN Tick (updateCreatures, _p2pUpdatePeer). Das Soll des Wurf-Teils
+            // rechnet phyto-core `budgetSippen` aus dem Ausgang des Ofens (`_ofenBudget`, Stufe 1, gefiltert nach `wurf.seh`).
+            const T3W = T3;
+            const PCW = window.__phytoCore;
+            const maskeK = new T3W.Layers();
+            maskeK.enable(A.SHADOW_TWIN_LAYER);
+            const ketteSichtbar = (o, bis) => {
+                for (let p = o; p; p = p.parent) {
+                    if (p.visible === false) return false;
+                    if (p === bis) return true;
+                }
+                return true;
+            };
+            const dreieckeVon = (geo) => (geo.index ? geo.index.count / 3 : geo.attributes.position.count / 3);
+            const geoMenge = (root) => {
+                const m = new Set();
+                root.traverse((n) => {
+                    if (n.isMesh && n.geometry) m.add(n.geometry);
+                });
+                return m;
+            };
+            // die Vorlagen eines Leibs (das Memo meldet sie am Leib an: `_ofenVorlagenBinden`) je Stufe
+            const vorlagenVon = (gruppe) => {
+                const je = {};
+                gruppe.traverse((n) => {
+                    for (const v of n.__ofenVorlagen || [])
+                        if (v && v.__ofen && v.root) je[String(v.__ofen.key).split("|")[1]] = v;
+                });
+                return je;
+            };
+            const werferVon = (gruppe, l0, l1) => {
+                const w = { tris: 0, draws: 0, l0: 0, l0Tris: 0, l1: 0, fremd: 0 };
+                gruppe.traverse((n) => {
+                    if (!n.isMesh || !n.geometry || n.castShadow !== true || !n.layers.test(maskeK)) return;
+                    if (!ketteSichtbar(n, gruppe)) return;
+                    const t = dreieckeVon(n.geometry);
+                    w.tris += t;
+                    w.draws++;
+                    if (l0.has(n.geometry)) {
+                        w.l0++;
+                        w.l0Tris += t;
+                    } else if (l1.has(n.geometry)) w.l1++;
+                    else w.fremd++;
+                });
+                return w;
+            };
+            // Das Budget je Gestalt und Pass (Plan §3.5, Soll-Bild): der Zwilling ist der Wurf-Teil der Grobstufe.
+            const WURF_SOLL = { kreatur: { draws: 1, tris: 6200 }, koerper: { draws: 5, tris: 38000 } };
+            const budgetFang = new Map();
+            const saveBudget = r._ofenBudget;
+            const saveMemoW = A._tierOfenMemo;
+            const saveFrustumW = r.isInFrustum;
+            r._ofenBudget = function (core, kind, lod) {
+                const aus = saveBudget.apply(this, arguments);
+                budgetFang.set(kind + "|" + (lod | 0), aus);
+                return aus;
+            };
+            r.isInFrustum = function () {
+                return true; // der Stufen-Schalter läuft nur im Bild — für die Messung immer „im Bild"
+            };
+            A._tierOfenMemo = new Map(); // ein frischer Guss je Gestalt: der Ausgang des Ofens wird gefangen
+            const wurfTeil = (core, kind) => {
+                const B = core && core.PORTAL_RENDER_CONFIG && core.PORTAL_RENDER_CONFIG.lod.budget[kind];
+                const z1 = B && B[1];
+                const seh = z1 && z1.wurf && Array.isArray(z1.wurf.seh) ? z1.wurf.seh : null;
+                const aus = budgetFang.get(kind + "|1");
+                if (!seh || !aus) return { fehlt: !seh ? "wurf.seh fehlt an der Stufe 1" : "kein Ausgang der Stufe 1" };
+                const teil = aus.filter((m) => m && m.position && m.mat && seh.indexOf(m.mat.seh) >= 0);
+                return Object.assign({ seh }, PCW.budgetSippen(teil));
+            };
+            const urteil = (kind, B, stufe, w, soll) => {
+                const st = B[stufe] && Number.isInteger(B[stufe].schatten) ? B[stufe].schatten : stufe;
+                const zt = B[st] ? B[st].tris : 0;
+                return (
+                    w.draws > 0 &&
+                    w.l0 === 0 &&
+                    w.fremd === 0 &&
+                    w.draws <= WURF_SOLL[kind].draws &&
+                    w.tris <= WURF_SOLL[kind].tris &&
+                    w.tris <= zt &&
+                    !soll.fehlt &&
+                    w.tris === soll.tris &&
+                    w.draws <= soll.draws
+                );
+            };
+            // (W) DECKUNG — der Zwilling wirft den Umriss der feinen Stufe (das Spike-Soll, Lehre 18; Gegenprüfung S3: der
+            // Wurf-Umriss der Grobstufe lag am Wolf 7 % unter dem der feinen, Lauf und Pfote fehlten). Je Gestalt in der
+            // Stand-Pose und drei Gang-Posen (der echte Gang-Chokepoint), je Sonne (seitlich 25° und 45°, schräg 35°, hoch
+            // 75°): der Umriss der Werfer, entlang der Sonne auf den Boden projiziert und auf 1 cm gerastert, gegen den
+            // Umriss der feinen Stufe, wie sie vor S3 warf (ihre Teile nach dem Wurf-Gesetz des Ofens: alles ausser den
+            // Fell-Schalen) — dieselben Knochen, dieselbe Pose (getVertexPosition: die Haut, wie der Renderer sie stellt).
+            // Täter = das Gelenk, dessen Fläche der Zwilling nicht deckt.
+            const DECKUNG_MIN = 0.94;
+            const ZELLE_W = 0.01;
+            const vW = new T3W.Vector3();
+            const punkte = (meshes) =>
+                meshes.map((m) => {
+                    const g = m.geometry,
+                        pos = g.attributes.position,
+                        n = pos.count;
+                    const P = new Float64Array(n * 3);
+                    for (let i = 0; i < n; i++) {
+                        m.getVertexPosition(i, vW);
+                        vW.applyMatrix4(m.matrixWorld);
+                        P[i * 3] = vW.x;
+                        P[i * 3 + 1] = vW.y;
+                        P[i * 3 + 2] = vW.z;
+                    }
+                    const si = g.attributes.skinIndex,
+                        sw = g.attributes.skinWeight;
+                    const knochen = (i) => {
+                        if (!si || !m.skeleton) return m.name || "starr";
+                        let b = 0,
+                            bw = -1;
+                        for (let k = 0; k < 4; k++) {
+                            const w = sw.getComponent(i, k);
+                            if (w > bw) {
+                                bw = w;
+                                b = si.getComponent(i, k);
+                            }
+                        }
+                        const bn = m.skeleton.bones[b];
+                        return bn ? bn.name : "?";
+                    };
+                    return { P, idx: g.index ? g.index.array : null, n, knochen };
+                });
+            const umriss = (sets, L, y0, box, mitTaeter) => {
+                const nx = Math.ceil((box[2] - box[0]) / ZELLE_W),
+                    nz = Math.ceil((box[3] - box[1]) / ZELLE_W);
+                const M = new Uint8Array(nx * nz);
+                const G = mitTaeter ? new Array(nx * nz) : null;
+                const pr = (P, i) => {
+                    const t = (P[i * 3 + 1] - y0) / L.y;
+                    return [(P[i * 3] - L.x * t - box[0]) / ZELLE_W, (P[i * 3 + 2] - L.z * t - box[1]) / ZELLE_W];
+                };
+                for (const m of sets) {
+                    const nT = m.idx ? m.idx.length / 3 : m.n / 3;
+                    for (let t = 0; t < nT; t++) {
+                        const i0 = m.idx ? m.idx[t * 3] : t * 3,
+                            i1 = m.idx ? m.idx[t * 3 + 1] : t * 3 + 1,
+                            i2 = m.idx ? m.idx[t * 3 + 2] : t * 3 + 2;
+                        const a = pr(m.P, i0),
+                            b = pr(m.P, i1),
+                            c = pr(m.P, i2);
+                        const d = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+                        if (Math.abs(d) < 1e-12) continue;
+                        const x0 = Math.max(0, Math.floor(Math.min(a[0], b[0], c[0]))),
+                            x1 = Math.min(nx - 1, Math.ceil(Math.max(a[0], b[0], c[0]))),
+                            z0 = Math.max(0, Math.floor(Math.min(a[1], b[1], c[1]))),
+                            z1 = Math.min(nz - 1, Math.ceil(Math.max(a[1], b[1], c[1])));
+                        let wer = null;
+                        for (let z = z0; z <= z1; z++)
+                            for (let x = x0; x <= x1; x++) {
+                                const px = x + 0.5,
+                                    pz = z + 0.5;
+                                const w0 = ((b[0] - px) * (c[1] - pz) - (b[1] - pz) * (c[0] - px)) / d,
+                                    w1 = ((c[0] - px) * (a[1] - pz) - (c[1] - pz) * (a[0] - px)) / d;
+                                if (w0 < 0 || w1 < 0 || 1 - w0 - w1 < 0) continue;
+                                const id = x + nx * z;
+                                M[id] = 1;
+                                if (G && !G[id]) G[id] = wer || (wer = m.knochen(i0));
+                            }
+                    }
+                }
+                return { M, G };
+            };
+            // je Pose die Punkte beider Sätze, je Sonne der Vergleich; schrumpf: der Selbst-Test zieht den Zwilling zur Mitte
+            const deckungJe = (soll, ist, yaw, y0, schrumpf) => {
+                const S = punkte(soll),
+                    I = punkte(ist);
+                if (schrumpf) {
+                    let cx = 0,
+                        cy = 0,
+                        cz = 0,
+                        n = 0;
+                    for (const m of I)
+                        for (let i = 0; i < m.n; i++) {
+                            cx += m.P[i * 3];
+                            cy += m.P[i * 3 + 1];
+                            cz += m.P[i * 3 + 2];
+                            n++;
+                        }
+                    for (const m of I)
+                        for (let i = 0; i < m.n; i++) {
+                            m.P[i * 3] = cx / n + (m.P[i * 3] - cx / n) * schrumpf;
+                            m.P[i * 3 + 1] = cy / n + (m.P[i * 3 + 1] - cy / n) * schrumpf;
+                            m.P[i * 3 + 2] = cz / n + (m.P[i * 3 + 2] - cz / n) * schrumpf;
+                        }
+                }
+                const fx = Math.sin(yaw),
+                    fz = Math.cos(yaw),
+                    sx = Math.cos(yaw),
+                    sz = -Math.sin(yaw);
+                const sonne = (ax, az, grad) => {
+                    const e = (grad * Math.PI) / 180,
+                        l = Math.hypot(ax, az) || 1;
+                    return new T3W.Vector3((ax / l) * Math.cos(e), Math.sin(e), (az / l) * Math.cos(e));
+                };
+                const SONNEN = {
+                    seite25: sonne(sx, sz, 25),
+                    seite45: sonne(sx, sz, 45),
+                    schraeg35: sonne(sx + fx, sz + fz, 35),
+                    hoch75: sonne(sx, sz, 75),
+                };
+                const out = [];
+                for (const [name, L] of Object.entries(SONNEN)) {
+                    const box = [1e9, 1e9, -1e9, -1e9];
+                    for (const m of S.concat(I))
+                        for (let i = 0; i < m.n; i++) {
+                            const t = (m.P[i * 3 + 1] - y0) / L.y;
+                            const gx = m.P[i * 3] - L.x * t,
+                                gz = m.P[i * 3 + 2] - L.z * t;
+                            if (gx < box[0]) box[0] = gx;
+                            if (gz < box[1]) box[1] = gz;
+                            if (gx > box[2]) box[2] = gx;
+                            if (gz > box[3]) box[3] = gz;
+                        }
+                    box[0] -= 0.05;
+                    box[1] -= 0.05;
+                    box[2] += 0.05;
+                    box[3] += 0.05;
+                    const A = umriss(S, L, y0, box, true),
+                        B = umriss(I, L, y0, box, false);
+                    let ab = 0,
+                        ao = 0,
+                        bo = 0,
+                        nA = 0,
+                        nB = 0;
+                    const taeter = {};
+                    for (let i = 0; i < A.M.length; i++) {
+                        if (A.M[i]) nA++;
+                        if (B.M[i]) nB++;
+                        if (A.M[i] && B.M[i]) ab++;
+                        else if (A.M[i]) {
+                            ao++;
+                            taeter[A.G[i]] = (taeter[A.G[i]] || 0) + 1;
+                        } else if (B.M[i]) bo++;
+                    }
+                    const top = Object.entries(taeter).sort((x, y) => y[1] - x[1])[0] || null;
+                    out.push({
+                        sonne: name,
+                        iou: ab / Math.max(1, ab + ao + bo),
+                        flaeche: nB / Math.max(1, nA) - 1,
+                        top,
+                    });
+                }
+                return out;
+            };
+            // die Werfer einer Gestalt (wie werferVon) und die Teile ihrer feinen Stufe nach dem Wurf-Gesetz des Ofens
+            const werferMeshes = (gruppe) => {
+                const w = [];
+                gruppe.traverse((n) => {
+                    if (
+                        n.isMesh &&
+                        n.geometry &&
+                        n.castShadow === true &&
+                        n.layers.test(maskeK) &&
+                        ketteSichtbar(n, gruppe)
+                    )
+                        w.push(n);
+                });
+                return w;
+            };
+            const feineWerfer = (gruppe, l0) => {
+                const w = [];
+                gruppe.traverse((n) => {
+                    const mt = n.material || {};
+                    if (!n.isMesh || !l0.has(n.geometry) || n.userData.__klasse === "fellSchale") return;
+                    if (mt.transparent && mt.opacity < 1) return;
+                    w.push(n);
+                });
+                return w;
+            };
+            const deckungUrteil = (je) => {
+                let schlecht = null;
+                let summe = 0;
+                for (const x of je) {
+                    summe += x.iou;
+                    if (!schlecht || x.iou < schlecht.iou) schlecht = x;
+                }
+                return { min: schlecht, mittel: summe / Math.max(1, je.length), n: je.length };
+            };
+            o.w = [];
+            const tcW = window.__tetrapodaCore;
+            const kcW = window.__koerperCore;
+            const BT = tcW.PORTAL_RENDER_CONFIG.lod.budget.kreatur;
+            const BM = kcW.PORTAL_RENDER_CONFIG.lod.budget.koerper;
+            const SM = A.TETRAPODA_SOUL_MAP || {};
+            for (const art of ["wolf", "fox", "bear", "deer"]) {
+                const seele = Object.keys(SM).find((k) => SM[k] === art);
+                budgetFang.clear();
+                const x0 = pm.x + 10,
+                    hW = r.getTerrainHeightAt(x0, pm.z);
+                const cw = seele
+                    ? r.spawnCreatureAt(x0, (Number.isFinite(hW) ? hW : 0) + 1, pm.z, "happy", seele, {
+                          precise: true,
+                          bodySize: 1,
+                      })
+                    : null;
+                if (!cw) {
+                    o.w.push({ name: "tier:" + art, fehler: "Spawn fehlgeschlagen" });
+                    continue;
+                }
+                const fLw = cw.scale.x || 1;
+                const vl = vorlagenVon(cw);
+                const l0 = vl["0"] ? geoMenge(vl["0"].root) : new Set();
+                const l1 = vl["1"] ? geoMenge(vl["1"].root) : new Set();
+                const tick = (d) => {
+                    for (let k = 0; k < 3; k++) {
+                        cw.position.x = pm.x + d;
+                        cw.position.z = pm.z;
+                        r.updateCreatures(0.02);
+                    }
+                    cw.position.x = pm.x + d;
+                    cw.position.z = pm.z;
+                    cw.updateMatrixWorld(true);
+                };
+                tick(10 * fLw);
+                const nah = werferVon(cw, l0, l1);
+                // (W) DECKUNG: die Stand-Pose und drei Gang-Posen (der echte Gang-Chokepoint), dieselben Knochen
+                const dk = [];
+                const messW = (pose, schrumpf) => {
+                    cw.updateMatrixWorld(true);
+                    const je = deckungJe(feineWerfer(cw, l0), werferMeshes(cw), cw.rotation.y, 0, schrumpf);
+                    if (!schrumpf) for (const x of je) dk.push(Object.assign({ pose }, x));
+                    return je;
+                };
+                r._tierBaumNeutralStance(cw);
+                messW("stand");
+                for (let k = 0; k < 16; k++) {
+                    cw.position.x += 0.112; // der Gang folgt dem Weg (1,6 m/s im Takt 0,07 s)
+                    r._animateTierBaum(cw, k * 0.07, k * 0.35, true, null);
+                    if (k === 7 || k === 11 || k === 15) messW("gang" + k);
+                }
+                // (S7) SELBST-TEST: der Zwilling 6 % zur Mitte gezogen — die Deckung fällt unter die Schwelle
+                const s7 = art === "wolf" ? deckungUrteil(messW("s7", 0.94)) : null;
+                // (S5) SELBST-TEST: der Zwilling gestubbt — die nahe Stufe wirft wieder selbst (der alte Zustand)
+                let s5 = null;
+                if (art === "wolf") {
+                    const gesichert = [];
+                    cw.traverse((n) => {
+                        if (n.isMesh && l0.has(n.geometry)) {
+                            gesichert.push([n, n.castShadow]);
+                            n.castShadow = n.userData.__klasse !== "fellSchale";
+                        }
+                    });
+                    s5 = werferVon(cw, l0, l1);
+                    for (const [n, c] of gesichert) n.castShadow = c; // restaurieren (Gate-Hook-Lehre)
+                }
+                tick(45 * fLw);
+                const mittel = werferVon(cw, l0, l1);
+                const soll = wurfTeil(tcW, "kreatur");
+                o.w.push({
+                    name: "tier:" + art,
+                    nah,
+                    mittel,
+                    soll,
+                    schatten1: BT[1] ? BT[1].schatten : null,
+                    gruen: urteil("kreatur", BT, 0, nah, soll) && urteil("kreatur", BT, 1, mittel, soll),
+                    nahGruen: urteil("kreatur", BT, 0, nah, soll),
+                    s5Rot: s5 ? !urteil("kreatur", BT, 0, s5, soll) && s5.l0 > 0 : null,
+                    s5,
+                    deckung: deckungUrteil(dk),
+                    s7,
+                });
+                r.removeCreature(cw);
+            }
+            {
+                budgetFang.clear();
+                const gW = r._buildHumanGroup();
+                const vl = gW ? vorlagenVon(gW) : {};
+                const l0 = vl["0"] ? geoMenge(vl["0"].root) : new Set();
+                const l1 = vl["1"] ? geoMenge(vl["1"].root) : new Set();
+                const peer = (d) => {
+                    const e = {
+                        mesh: gW,
+                        x: pm.x + d,
+                        y: pm.y + 1,
+                        z: pm.z,
+                        yaw: 0,
+                        meshKind: "soul",
+                        soulName: "human",
+                        walkPhase: 0,
+                        lastMovedAt: 0,
+                    };
+                    r._p2pUpdatePeer(e, performance.now() / 1000, 0.016);
+                    gW.updateMatrixWorld(true);
+                };
+                if (gW) {
+                    peer(10);
+                    const nah = werferVon(gW, l0, l1);
+                    // (W) DECKUNG: die Ruhe des Nah-Peers und drei Gang-Posen am echten Peer-Tick (dieselben Knochen)
+                    const dkM = [];
+                    const messM = (pose) => {
+                        gW.updateMatrixWorld(true);
+                        for (const x of deckungJe(feineWerfer(gW, l0), werferMeshes(gW), gW.rotation.y, 0))
+                            dkM.push(Object.assign({ pose }, x));
+                    };
+                    messM("stand");
+                    const eM = {
+                        mesh: gW,
+                        x: pm.x + 10,
+                        y: pm.y + 1,
+                        z: pm.z,
+                        yaw: 0,
+                        meshKind: "soul",
+                        soulName: "human",
+                        walkPhase: 0,
+                        lastMovedAt: 0,
+                    };
+                    for (let k = 0; k < 30; k++) {
+                        eM.x += 0.1; // 3 m/s im Takt 1/30 s
+                        eM.lastMovedAt = performance.now() / 1000;
+                        r._p2pUpdatePeer(eM, performance.now() / 1000, 1 / 30);
+                        if (k === 9 || k === 19 || k === 29) messM("gang" + k);
+                    }
+                    peer(45);
+                    const mittel = werferVon(gW, l0, l1);
+                    const soll = wurfTeil(kcW, "koerper");
+                    o.w.push({
+                        name: "mensch",
+                        nah,
+                        mittel,
+                        soll,
+                        schatten1: BM[1] ? BM[1].schatten : null,
+                        gruen: urteil("koerper", BM, 0, nah, soll) && urteil("koerper", BM, 1, mittel, soll),
+                        deckung: deckungUrteil(dkM),
+                    });
+                } else o.w.push({ name: "mensch", fehler: "kein Mensch-Guss" });
+            }
+            r._ofenBudget = saveBudget; // restaurieren (Gate-Hook-Lehre)
+            r.isInFrustum = saveFrustumW;
+            A._tierOfenMemo = saveMemoW;
+            o.checks.wWerfer = o.w.length === 5 && o.w.every((x) => x.gruen === true);
+            o.checks.s5LensFires = o.w.some((x) => x.s5Rot === true);
+            o.deckungMin = DECKUNG_MIN;
+            o.checks.wDeckung =
+                o.w.length === 5 &&
+                o.w.every((x) => x.deckung && x.deckung.n >= 16 && x.deckung.min.iou >= DECKUNG_MIN);
+            const s7W = o.w.find((x) => x.s7);
+            o.s7 = s7W ? s7W.s7 : null;
+            o.checks.s7LensFires = !!o.s7 && o.s7.min.iou < DECKUNG_MIN;
+            // Absenz (window.__codeOf, Kommentare gestrippt): kein castShadow-Literal am Gelenk-Guss, kein Leser der Wirts-
+            // Distanzen (die Gestalt liest `ab`/`hyst` aus ihrer Kern-Zeile).
+            const codeW = window.__codeOf;
+            const LIT = /castShadow\s*=\s*false/g;
+            o.wLiterale = ["_buildCreatureGroup", "_buildHumanoidRig"].reduce(
+                (n, k) => n + ((typeof r[k] === "function" ? codeW(r[k]) : "").match(LIT) || []).length,
+                0
+            );
+            const DIST = /\b(?:TIER_FERN_DIST_SQ|TIER_FERN_HYST|MENSCH_FERN_DIST_SQ)\b/g;
+            const distLeser = [];
+            for (const ziel of [A.prototype, A]) {
+                for (const k of Object.getOwnPropertyNames(ziel)) {
+                    if (k === "constructor") continue; // die Klasse selbst ist kein Leser (ihr Text trüge jeden)
+                    const d = Object.getOwnPropertyDescriptor(ziel, k);
+                    for (const fn of [d && d.value, d && d.get]) {
+                        if (typeof fn !== "function") continue;
+                        const n = (codeW(fn).match(DIST) || []).length;
+                        if (n) distLeser.push(k + "×" + n);
+                    }
+                }
+            }
+            o.wDistLeser = distLeser;
+            o.wDistKonst = ["TIER_FERN_DIST_SQ", "TIER_FERN_HYST", "MENSCH_FERN_DIST_SQ"].filter((k) => k in A);
+            o.checks.wAbsenz = o.wLiterale === 0 && distLeser.length === 0 && o.wDistKonst.length === 0;
+
+            // ── (F) DIE RUHE JENSEITS DER GRENZE (S3): beide Stufen tragen DIESELBEN Knochen — wo der Gang jenseits der Grenze
+            // ruht (der Peer-Tick des Menschen, die Sicht-Kopie eines fremden Tiers), stehen sie in der Ruhe-Pose, nie mitten
+            // im Schritt (das Standbild der Basis stand in der Ruhe-Pose). Gemessen nach dem ECHTEN Tick: erst nah gehen
+            // (Prämisse: mitten im Schritt), dann jenseits der Grenze ein Tick. Mensch gegen die Ruhe-Pose seiner Vorlage
+            // (Winkel je Gelenk), Tier gegen die Kern-STAND_POSE (dieselbe Ketten-Wahrheit wie (B)). ──
+            const ruheAbw = (nah, vorlage) => {
+                const a = { rad: 0, gelenk: null };
+                if (!nah || !vorlage || !vorlage.teile) return a;
+                nah.traverse((n) => {
+                    const q = n.name && vorlage.teile[n.name];
+                    if (!q || !(n.isGroup || n.isBone)) return;
+                    const w = n.quaternion.angleTo(q.quaternion);
+                    if (w > a.rad) {
+                        a.rad = w;
+                        a.gelenk = n.name;
+                    }
+                });
+                return a;
+            };
+            const peerF = (gF, eF, d, gehen) => {
+                eF.x = pm.x + d;
+                for (let k = 0; k < (gehen ? 30 : 1); k++) {
+                    if (gehen) {
+                        eF.x += 0.1; // 3 m/s im Takt 1/30 s — der Gang folgt dem Weg
+                        eF.lastMovedAt = performance.now() / 1000;
+                    }
+                    r._p2pUpdatePeer(eF, performance.now() / 1000, 1 / 30);
+                }
+                gF.updateMatrixWorld(true);
+            };
+            const menschRuhe = () => {
+                const gF = r._buildHumanGroup();
+                const mfF = gF && gF.userData && gF.userData._gelenk;
+                const vF = gF ? vorlagenVon(gF)["0"] : null;
+                if (!mfF || !vF) return null;
+                const eF = {
+                    mesh: gF,
+                    x: pm.x + 8,
+                    y: pm.y + 1,
+                    z: pm.z,
+                    yaw: 0,
+                    meshKind: "soul",
+                    soulName: "human",
+                    walkPhase: 0,
+                    lastMovedAt: 0,
+                };
+                peerF(gF, eF, 8, true);
+                const mitte = ruheAbw(mfF.nah, vF);
+                peerF(gF, eF, 2.5 * mfF.abM, false);
+                const fern = ruheAbw(mfF.nah, vF);
+                return { mitte, fern, istFern: mfF.istFern === true };
+            };
+            o.fMensch = menschRuhe();
+            // die Sicht-Kopie eines fremden Wolfs (der Peer-Strom, `_p2pTickRemoteCreatures`)
+            const seeleF = Object.keys(SM).find((k) => SM[k] === "wolf");
+            const kopieRuhe = () => {
+                const mK = seeleF ? r._buildCreatureGroup(seeleF) : null;
+                const glK = mK && mK.userData && mK.userData._gelenk;
+                if (!glK) return null;
+                const remote = s.p2p.remoteCreatures;
+                const rcK = { mesh: mK, peerId: "__linseF" };
+                remote.set("__linseF|1", rcK);
+                const zuK = (d, gehen) => {
+                    const t0K = performance.now() / 1000;
+                    if (!gehen) {
+                        mK.position.set(pm.x + d, pm.y, pm.z);
+                        rcK.tx = pm.x + d;
+                        rcK.tz = pm.z;
+                        rcK.ty = pm.y;
+                        r._p2pTickRemoteCreatures(t0K, 1 / 30);
+                        return;
+                    }
+                    mK.position.set(pm.x + d, pm.y, pm.z);
+                    for (let k = 0; k < 30; k++) {
+                        rcK.tx = mK.position.x + 0.2; // der Sender läuft voraus — die Kopie zieht nach und geht
+                        rcK.tz = pm.z;
+                        rcK.ty = pm.y;
+                        r._p2pTickRemoteCreatures(t0K + k / 30, 1 / 30);
+                    }
+                };
+                zuK(6, true);
+                const mitte = maxDev(mK);
+                zuK(2.5 * glK.abM, false);
+                const fern = maxDev(mK);
+                const istFern = glK.istFern === true;
+                remote.delete("__linseF|1");
+                if (typeof r._disposeSoulGroup === "function") r._disposeSoulGroup(mK);
+                return { mitte, fern, istFern };
+            };
+            o.fKopie = kopieRuhe();
+            o.checks.fMenschPraemisse = !!o.fMensch && o.fMensch.mitte.rad > 0.05;
+            o.checks.fMenschRuhe = !!o.fMensch && o.fMensch.istFern && o.fMensch.fern.rad <= 0.01;
+            o.checks.fKopiePraemisse = !!o.fKopie && o.fKopie.mitte > 0.05;
+            o.checks.fKopieRuhe = !!o.fKopie && o.fKopie.istFern && o.fKopie.fern <= 0.02;
+            // (S6) SELBST-TEST: die Ruhe gestubbt — der ferne Mensch friert wieder mitten im Schritt
+            const saveRuhe = r._gelenkRuhe;
+            r._gelenkRuhe = function () {};
+            o.s6 = menschRuhe();
+            if (saveRuhe) r._gelenkRuhe = saveRuhe;
+            else delete r._gelenkRuhe; // restaurieren (Gate-Hook-Lehre)
+            o.checks.s6LensFires = !!o.s6 && o.s6.fern.rad > 0.05;
+
             o.creaturesAfter = s.creatures.length;
             return o;
         });
@@ -448,7 +1075,7 @@ const server = http.createServer((req, res) => {
     server.close();
 
     console.log(
-        "\n===== KREATUR-KOSTEN — Anim-Raten-LOD · neutrale Stance · Mensch-Fern-Guss (gate:kreatur-kosten) =====\n"
+        "\n===== KREATUR-KOSTEN — Anim-Raten-LOD · neutrale Stance · Grobstufe · Werfer je Gestalt (gate:kreatur-kosten) =====\n"
     );
     let ok = true;
     const check = (cond, msg) => {
@@ -461,7 +1088,7 @@ const server = http.createServer((req, res) => {
     } else {
         const c = out.checks;
         console.log(
-            `  (A) Anim-Auswertungen über 100 Ticks (Standbild-Schwelle ${out.fernDist.toFixed(1)} m): nah ${out.counts.voll} · halb ${out.counts.halb} · viertel ${out.counts.viertel} · hinter ${out.counts.hinter}`
+            `  (A) Anim-Auswertungen über 100 Ticks (Stufen-Grenze ${out.fernDist.toFixed(1)} m): nah ${out.counts.voll} · halb ${out.counts.halb} · viertel ${out.counts.viertel} · hinter ${out.counts.hinter}`
         );
         console.log(
             `  (B) Gelenk-Abweichung von STAND_POSE: mid-step ${out.devMid && out.devMid.toFixed(3)} rad → eingefroren ${out.devFrozen && out.devFrozen.toFixed(4)} rad (Schwanz ${out.tailDev && out.tailDev.toFixed(4)})`
@@ -473,7 +1100,7 @@ const server = http.createServer((req, res) => {
         check(c.aVoll, `(A) NAH voll: die nahe Kreatur wertet JEDEN Tick aus (${out.counts.voll}/100)`);
         check(c.aHalb, `(A) HALB-Zone: ~1/2 Rate (${out.counts.halb}/100)`);
         check(c.aViertel, `(A) VIERTEL-Zone: ~1/4 Rate (${out.counts.viertel}/100)`);
-        check(c.aHinter, `(A) HINTERM Standbild: GAR keine Auswertung (${out.counts.hinter}/100)`);
+        check(c.aHinter, `(A) JENSEITS der Grenze: GAR keine Auswertung (${out.counts.hinter}/100)`);
         check(c.aFernOrdnung, "(A) und die Leiter ist monoton (fern wertet ≤ 1/2 der näheren Stufe aus)");
         check(c.aEingefroren, "(A) die Hinter-Kreatur trägt den Einfrier-Stempel (_animEingefroren)");
         check(
@@ -528,16 +1155,82 @@ const server = http.createServer((req, res) => {
                 .slice(0, 2)
                 .join(" · ")})`
         );
-        check(c.cFernGebaut, "(C) der Mensch trägt den lod1-Fern-Guss (_menschFern nah+fern)");
+        check(
+            c.rZwillingKnochen,
+            `(R) ZWILLING: die Grobstufe ist geskinnt und trägt die Knochen der nahen (${out.rZwilling && out.rZwilling.geskinnt}/${out.rZwilling && out.rZwilling.meshes} geskinnt, ${out.rZwilling && out.rZwilling.fremd} fremde von ${out.rZwilling && out.rZwilling.knochen} Knochen) und bleibt im Gang in ihrer Kugel`
+        );
+        const fW = (w) => (w ? `${Math.round(w.tris).toLocaleString("de-DE")}/${w.draws}` : "?");
+        for (const g of out.w || []) {
+            if (g.fehler) {
+                check(false, `(W) ${g.name}: ${g.fehler}`);
+                continue;
+            }
+            const sollT =
+                g.soll && !g.soll.fehlt ? `${fW(g.soll)} (seh ${g.soll.seh.join("+")})` : g.soll && g.soll.fehlt;
+            const taeter =
+                `${g.name} nah wirft ${fW(g.nah)}${g.nah.l0 ? ` (L0 ${fW({ tris: g.nah.l0Tris, draws: g.nah.l0 })})` : ""}` +
+                `, mittel ${fW(g.mittel)}${g.mittel.draws === 0 && g.schatten1 === 1 ? " trotz schatten 1" : ""}`;
+            check(g.gruen, `(W) ${taeter} — Soll Wurf-Teil der Grobstufe ${sollT}`);
+        }
+        if (out.w && out.w[0] && out.w[0].s5)
+            check(
+                c.s5LensFires,
+                `SELBST-TEST (S5): Zwilling gestubbt → die nahe Stufe wirft wieder ${fW(out.w[0].s5)} (L0 ${out.w[0].s5.l0}) — rot an genau dieser Zeile`
+            );
+        const fD = (d) =>
+            d && d.min
+                ? `IoU min ${d.min.iou.toFixed(3)} (${d.min.pose || "gang"}/${d.min.sonne}, Fläche ${(d.min.flaeche * 100).toFixed(1)} %${
+                      d.min.top ? `, Täter ${d.min.top[0]} ${d.min.top[1]} cm²` : ""
+                  }) · Mittel ${d.mittel.toFixed(3)} über ${d.n} Posen × Sonnen`
+                : "?";
+        for (const g of out.w || [])
+            if (g.deckung)
+                check(
+                    !!g.deckung.min && g.deckung.n >= 16 && g.deckung.min.iou >= out.deckungMin,
+                    `(W) DECKUNG ${g.name}: der Zwilling wirft den Umriss der feinen Stufe — ${fD(g.deckung)} ≥ ${out.deckungMin}`
+                );
+        if (out.s7)
+            check(
+                c.s7LensFires,
+                `SELBST-TEST (S7): der Zwilling 6 % zur Mitte gezogen → ${fD(out.s7)} < ${out.deckungMin} — die Deckung ist nicht blind`
+            );
+        check(
+            c.wAbsenz,
+            `(W) ABSENZ: castShadow-Literale am Gelenk-Guss ${out.wLiterale} · Leser der Wirts-Distanzen ${out.wDistLeser.length}${out.wDistLeser.length ? " (" + out.wDistLeser.join(", ") + ")" : ""} · Konstanten ${out.wDistKonst.length ? out.wDistKonst.join(", ") : "0"}`
+        );
+        check(c.cFernGebaut, "(C) der Mensch trägt die gelenkige Grobstufe (_gelenk nah+fern)");
         check(c.cVertexDiff, "(C) messbare Vertex-Differenz (fern < 80 % von nah)");
         check(c.cMeshDiff, "(C) weniger Meshes im Fern-Guss");
-        check(c.cToggle, "(C) der EINE Toggle-Chokepoint schaltet nah↔fern am Distanz-Band");
-        check(c.cPeerFern, "(C) KONSUM: der echte Peer-Tick schaltet den fernen Menschen auf den Fern-Guss");
-        check(c.cPeerNah, "(C) und zurück auf nah, wenn er herankommt");
+        check(c.cToggle, "(C) der EINE Stufen-Schalter (_gelenkStufe) schaltet nah↔fern an der Grenze der Kern-Zeile");
+        check(c.cPeerFern, "(C) KONSUM: der echte Peer-Tick schaltet den fernen Menschen auf die Grobstufe (Layer 0)");
+        check(c.cPeerNah, "(C) und zurück auf nah, wenn er herankommt (die Grobstufe nur in den Kaskaden)");
+        const fR = (a) => (a ? `${a.rad.toFixed(3)} rad${a.gelenk ? " (" + a.gelenk + ")" : ""}` : "?");
+        const fM = out.fMensch,
+            fK = out.fKopie;
+        check(
+            c.fMenschPraemisse,
+            `(F) PRÄMISSE: der gehende Mensch-Peer ist nah mitten im Schritt (${fM ? fR(fM.mitte) : "kein Peer"} > 0,05)`
+        );
+        check(
+            c.fMenschRuhe,
+            `(F) RUHE: der ferne Mensch-Peer (Grobstufe im Bild${fM && fM.istFern ? "" : " — FEHLT"}) steht in der Ruhe-Pose — ${fM ? fR(fM.fern) : "?"} ≤ 0,01`
+        );
+        check(
+            c.fKopiePraemisse,
+            `(F) PRÄMISSE: die gehende Sicht-Kopie eines Wolfs ist nah mitten im Schritt (${fK ? fK.mitte.toFixed(3) : "?"} rad > 0,05)`
+        );
+        check(
+            c.fKopieRuhe,
+            `(F) RUHE: die ferne Sicht-Kopie (Grobstufe${fK && fK.istFern ? "" : " — FEHLT"}) steht in der Kern-STAND_POSE — ${fK ? fK.fern.toFixed(3) : "?"} rad ≤ 0,02`
+        );
+        check(
+            c.s6LensFires,
+            `SELBST-TEST (S6): die Ruhe gestubbt → der ferne Mensch bleibt mitten im Schritt (${out.s6 ? fR(out.s6.fern) : "?"})`
+        );
         check(!pageErr, `kein Page-Error (${pageErr || "sauber"})`);
     }
     console.log(
-        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Mensch-Fern-Guss KONSUMIERT · Starr-Bindung · Körper-Kugel)" : "❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
+        `\n  ${ok ? "✅ GRÜN — die Kreatur kostet, was man von ihr sieht (Anim-Rate · Stand-Pose · Grobstufe KONSUMIERT · Starr-Bindung · Körper-Kugel · Werfer aus der Kern-Zeile · Ruhe jenseits der Grenze)" : "❌ ROT — die Kreatur-Kosten-Verdrahtung trägt nicht"}\n`
     );
     process.exit(ok ? 0 : 1);
 })();

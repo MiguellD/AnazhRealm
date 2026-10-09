@@ -27,8 +27,8 @@
 //   zufall    (Q2) kein Math.random im Kreatur-Leben (window.__codeOf über jede Tier-Methode + die benannten Wurf-Stellen)
 //   querhang  (Welle LF) am Hang von 20–30°: das Bein-Lot ≤ 10° bei rollendem Leib, der Stand-Schlupf im Lauf ≤ 0,2
 //             (eine Sohle höchstens 3 cm über dem Boden unter ihr steht; ihr Weg je Weg des Leibs)
-//   ferngang  (Welle LF) laufende Hirsche in der Standbild-Zone (45–60 m) und der Kapsel-Zone (70–90 m) bewegen die Beine
-//             in ≥ 95 % der laufenden Takte (nie das Standbild, nie eingefrorene Knochen)
+//   ferngang  (Welle LF) laufende Hirsche in der Grobstufen-Zone (45–60 m) und der Kapsel-Zone (70–90 m) bewegen die Beine
+//             in ≥ 95 % der laufenden Takte (nie ein Standbild, nie eingefrorene Knochen)
 "use strict";
 
 // ═══ DIE SEITEN-FUNKTION (läuft im Browser: r = die Welt, T = THREE) ═══
@@ -1263,7 +1263,7 @@ async function kreaturProben(r, T, opts) {
                         }
                     }
             );
-        // innerhalb der Standbild-Schwelle der Welt-Tiere (TIER_FERN_DIST 35 m): dort geht auch ein Welt-Tier
+        // diesseits der Stufen-Grenze der Welt-Tiere (`ab` 35 m der Kern-Zeile kreatur): dort geht auch ein Welt-Tier
         const o = land(14, -16);
         const dt = 1 / 30;
         let x = o.x;
@@ -2319,12 +2319,13 @@ async function kreaturProben(r, T, opts) {
 
     // ── ferngang (Leben-Schau 07.10., D-Fern): ferne Tiere gehen, sie gleiten nie — 5 Hirsche in 65 m glitten erstarrt
     // (jenseits der Standbild-Schwelle 35·L fror der Baum in der Stand-Pose ein, das gemergte Standbild trug ihn, die
-    // Glieder-Kapseln jenseits 64 m lasen eingefrorene Knochen). Gemessen am echten Takt: 4 Hirsche in der Standbild-Zone
-    // (45–60 m), 4 in der Kapsel-Zone (70–90 m) folgen dem Spieler (er steht, der Blick liegt auf ihnen); je laufendem Takt
-    // (Leib-Weg > 0,3 m/s) GLEITET ein Tier, wenn sein SICHTBARER Leib die Beine nicht bewegt: trägt das Fern-Bild, zählen
-    // die Gelenke, an die seine Haut gebunden ist (ein Fern-Bild ohne Haut-Gelenke ist ein Standbild — es gleitet immer),
-    // sonst die des Baums; gleiten heißt, die Hüft-Winkel der vier Beine liegen über 24 Takte (0,4 s, die Stufe 1/8 wertet
-    // dreimal aus) in 0,02 rad ──
+    // Glieder-Kapseln jenseits 64 m lasen eingefrorene Knochen). Seit S3 trägt jenseits der Stufen-Grenze (`ab` × Größe)
+    // die gelenkige Grobstufe das Bild, an die Knochen der feinen gebunden (EIN Skelett, `_gelenkGestalt`). Gemessen am
+    // echten Takt: 4 Hirsche in der Grobstufen-Zone (45–60 m), 4 in der Kapsel-Zone (70–90 m) folgen dem Spieler (er
+    // steht, der Blick liegt auf ihnen); je laufendem Takt (Leib-Weg > 0,3 m/s) GLEITET ein Tier, wenn sein SICHTBARER
+    // Leib die Beine nicht bewegt: trägt die Grobstufe, zählen die Gelenke, an die ihre Haut gebunden ist (eine Grobstufe
+    // ohne Haut-Gelenke ist ein Standbild — sie gleitet immer), sonst die der feinen; gleiten heißt, die Hüft-Winkel der
+    // vier Beine liegen über 24 Takte (0,4 s, die Stufe 1/8 wertet dreimal aus) in 0,02 rad ──
     await buehne("ferngang", async (restore) => {
         r.setGameMode("frieden");
         const altUhr = s.creatureAnimationTime;
@@ -2338,16 +2339,26 @@ async function kreaturProben(r, T, opts) {
                 "_kreaturLaeuft",
                 () =>
                     function () {
-                        return false; // der Täter: der Standbild-Freeze gilt auch dem, der läuft
+                        return false; // der Täter: die Ruhe jenseits der Grenze gilt auch dem, der läuft
                     }
             );
-        if (taeter === "ferngang-spiegel")
+        if (taeter === "ferngang-bindung")
             decke(
                 restore,
-                "_tierFernFolgt",
-                () =>
-                    function () {
-                        // der Täter: das Fern-Bild trägt nicht die Pose des Baums (das ungeskinnte Standbild)
+                "_gelenkGestalt",
+                (orig) =>
+                    function (...arg) {
+                        // der Täter: die Grobstufe trägt ihre EIGENEN Knochen (das Fern-Bild vor S3 ohne Spiegel) — sie
+                        // bindet nie an die animierten Knochen der feinen
+                        const g = orig.apply(this, arg);
+                        if (g && g.fern) {
+                            const eigene = {};
+                            g.fern.traverse((n) => {
+                                if ((n.isGroup || n.isBone) && n.name) eigene[n.name] = n;
+                            });
+                            r.constructor._ofenKlonRebind(g.fern, eigene);
+                        }
+                        return g;
                     }
             );
         // die Richtung mit Land in 45–90 m
@@ -2366,7 +2377,7 @@ async function kreaturProben(r, T, opts) {
         const ux = Math.cos(richtung),
             uz = Math.sin(richtung);
         kamera(ux, uz);
-        const zonen = { standbild: [45, 50, 55, 60], kapsel: [70, 77, 84, 90] };
+        const zonen = { grobstufe: [45, 50, 55, 60], kapsel: [70, 77, 84, 90] };
         const tiere = [];
         for (const [zone, ds] of Object.entries(zonen))
             ds.forEach((d, k) => {
@@ -2379,13 +2390,14 @@ async function kreaturProben(r, T, opts) {
                 tiere.push({ c, zone, spur: [], lage: null });
             });
         const BEINE = ["legFL", "legFR", "legHL", "legHR"];
-        // der sichtbare Leib: das Fern-Bild (die Gelenke seiner Haut) oder der Baum
+        // der sichtbare Leib: die Grobstufe (die Gelenke ihrer Haut) oder die feine Stufe
         const sichtbar = (c) => {
             const tb = c.userData._tierBaum;
-            if (!tb) return { fern: false, beine: null };
-            if (tb.fern && tb.fern.visible && !(tb.wrap && tb.wrap.visible)) {
+            const gl = c.userData._gelenk;
+            if (!tb || !gl) return { fern: false, beine: null };
+            if (gl.fern.visible && !gl.nah.visible) {
                 let haut = null;
-                tb.fern.traverse((o) => {
+                gl.fern.traverse((o) => {
                     if (!haut && o.isSkinnedMesh && o.skeleton && o.userData && o.userData.__skinJoints) haut = o;
                 });
                 if (!haut) return { fern: true, beine: null };
@@ -2397,7 +2409,7 @@ async function kreaturProben(r, T, opts) {
             return { fern: false, beine: Tt ? BEINE.map((n) => (Tt[n] ? Tt[n].rotation.x : 0)) : null };
         };
         const z = {
-            standbild: { lauf: 0, gleit: 0, fernBild: 0 },
+            grobstufe: { lauf: 0, gleit: 0, fernBild: 0 },
             kapsel: { lauf: 0, gleit: 0, fernBild: 0 },
         };
         const dt = 1 / 60;
@@ -2409,7 +2421,7 @@ async function kreaturProben(r, T, opts) {
                 const p = { x: c.position.x, z: c.position.z };
                 const sb = sichtbar(c);
                 const b = sb.beine;
-                if (t.warFern !== sb.fern) t.spur.length = 0; // der Wechsel Baum ↔ Fern-Bild beginnt eine neue Spur
+                if (t.warFern !== sb.fern) t.spur.length = 0; // der Wechsel feine Stufe ↔ Grobstufe beginnt eine neue Spur
                 t.warFern = sb.fern;
                 t.spur.push(b);
                 if (t.spur.length > 24) t.spur.shift();
@@ -2735,13 +2747,13 @@ function urteil(name, z) {
     }
     if (name === "ferngang") {
         for (const [zone, Z] of [
-            ["Standbild-Zone 45–60 m", z.standbild],
+            ["Grobstufen-Zone 45–60 m", z.grobstufe],
             ["Kapsel-Zone 70–90 m", z.kapsel],
         ]) {
             soll(Z.laufTakte >= 200, `${zone}: nur ${Z.laufTakte} laufende Takte (die Probe braucht ≥ 200)`);
             soll(
                 Z.gleitAnteil !== null && Z.gleitAnteil <= 0.05,
-                `ferner Gang gleitet: ${zone} ${Z.gleitTakte} von ${Z.laufTakte} laufenden Takten ohne Beinschlag (Soll ≤ 5 %; das Fern-Bild trug ${Z.fernBild})`
+                `ferner Gang gleitet: ${zone} ${Z.gleitTakte} von ${Z.laufTakte} laufenden Takten ohne Beinschlag (Soll ≤ 5 %; die Grobstufe trug ${Z.fernBild})`
             );
         }
     }
@@ -2824,7 +2836,7 @@ const TAETER = {
     ],
     ferngang: [
         ["ferngang", /ferner Gang gleitet/],
-        ["ferngang-spiegel", /ferner Gang gleitet: Standbild-Zone/],
+        ["ferngang-bindung", /ferner Gang gleitet: Grobstufen-Zone/],
     ],
 };
 

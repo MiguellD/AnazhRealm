@@ -2644,7 +2644,7 @@ async function probeLeben(expected) {
                 st.yaw = gierUnwrap(e) + Math.PI / 2; // der Spieler schaut quer zur Fahrt
                 for (let i = 0; i < 6; i++) frame(i);
                 const rg = rigR();
-                const nah = (pm.userData._menschFern && pm.userData._menschFern.nah) || pm;
+                const nah = pm.userData._gelenk ? pm.userData._gelenk.nah : pm;
                 const schenkel = new Set([rg.legL.hip, rg.legR.hip]);
                 let oben = -Infinity;
                 let unten = Infinity;

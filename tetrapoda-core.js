@@ -23,7 +23,7 @@
     var MESHFREI = 1; // v1.1 §8 — components-only-Kern (keine Gestalt, nur Daten)
     // v1.2 §8.5 (V18.478, rein additiv) — DIE OFEN-STUFEN-ZEILE: ein MESHFREI-Kern
     // deklariert hiermit die LOD-Stufen, die der WIRTS-OFEN seiner Gestalt bäckt
-    // (bauTier: Stufe 0 = voller Gelenk-Baum · Stufe 1 = gemergtes Fern-Standbild).
+    // (bauTier: Stufe 0 = voller Gelenk-Baum · Stufe 1 = gelenkige Grobstufe).
     // B2 bleibt N/A (kein buildInstance) — die Zeile ist die VERTRAGS-Wahrheit der
     // Pipe-Bäckerei (BAKERS_BY_KIND), gemessen von gate:konsum-matrix/gate:tier-fern.
     // B2c-Daten (W8, rein additiv): DAS BUDGET je Ofen-Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
@@ -40,8 +40,13 @@
             kindStages: { kreatur: [0, 1] },
             budget: {
                 kreatur: {
-                    0: { tris: 62000, band: 20000, draws: 8, schatten: 0 },
-                    1: { tris: 7000, band: 3000, draws: 5, schatten: 1 },
+                    0: { tris: 62000, band: 20000, draws: 8, schatten: 1 },
+                    1: { tris: 7000, band: 3000, draws: 5, schatten: 1, ab: 35, wurf: { seh: ["haar"] } },
+                    // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m × Körpergröße das Bild und wirft für beide
+                    // Stufen (die feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil
+                    // (das Fell: Leib, Ohren, Lider, Pfoten). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 35 m: der
+                    // Beinschwung ist dort ~2,7 px (die Grenze war bis S3 die Wirts-Konstante TIER_FERN_DIST_SQ).
+                    hyst: 0.1,
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze tragen die Glieder-Kapseln im Welt-March
                     fernform: "gesetz",
                 },

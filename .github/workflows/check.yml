@@ -937,10 +937,27 @@ jobs:
               # Durchdringung, die Neugier stellt sich an) · jagdkreis (Welle LF: der Witterungs-Jäger läuft zur Beute, das
               # Rudel und der Wolf am Kitz beißen, der Sprinter wird eingeholt) · rudel (das Rudel umstellt) · sockel (Welle LF:
               # das Tier steht auf der Auflage der Bauten) · querhang (Welle LF: die Beine stehen im Lot, der stehende Fuß
-              # gleitet nicht) · ferngang (Welle LF: ferne Tiere gehen — das Fern-Bild ist geskinnt, wer läuft, wird
-              # ausgewertet). --selftest zuerst: je Probe spielt
+              # gleitet nicht) · ferngang (Welle LF: ferne Tiere gehen — die gelenkige Grobstufe trägt die Knochen der feinen,
+              # wer läuft, wird ausgewertet). --selftest zuerst: je Probe spielt
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.
               run: npm run gate:kreatur-takt
+
+            - name: Die Kreatur-Kosten (S3 — der Werfer je Gestalt aus der Kern-Zeile)
+              if: matrix.gruppe == 2
+              # Headless (Null-Renderer, Produktions-Boot), Port KREATUR_KOSTEN_PORT: die Anim-Raten-Leiter, die Stand-Pose,
+              # die Grobstufe des Menschen am echten Peer-Tick, Starr-Bindung + Körper-Kugel (Pose-Probe auch der Grobstufe:
+              # ihre Knochen SIND die der feinen), schmale Puffer — und (W) der Werfer je Gestalt: je Art und Mensch nah und
+              # mittel wirft genau der Wurf-Teil der Grobstufe (`wurf.seh` der Kern-Zeile, Tier ≤ 6 200 / 1, Mensch ≤ 38 000 / 5),
+              # nah nie die feine Stufe; Absenz der castShadow-Literale und der Wirts-Distanzen. Fünf Selbst-Tests (S1–S5).
+              run: npm run gate:kreatur-kosten
+
+            - name: Die gelenkige Grobstufe (S3 — gate tier-fern am EINEN Stufen-Schalter)
+              if: matrix.gruppe == 3
+              # Headless (Null-Renderer, Produktions-Boot), Port TIER_FERN_PORT: der Wolf zeigt nah die feine Stufe, fern
+              # die gelenkige Grobstufe (dieselben Knochen), die Grenze des Schalters IST die Kern-Zeile (ab, hyst); Hysterese
+              # ohne Flackern und ohne Guss im Takt, die Sim-Spur byte-gleich mit und ohne Schalter; Selbst-Test (gestubbter
+              # Schalter) rot.
+              run: npm run gate:tier-fern
 
             - name: Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)
               if: matrix.gruppe == 3
