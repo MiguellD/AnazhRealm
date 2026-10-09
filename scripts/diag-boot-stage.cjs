@@ -151,10 +151,11 @@ const server = http.createServer((req, res) => {
                 // steht sie nicht, mit ihr steht sie — nicht-headless gerechnet; Latch, Uhr und Renderer-Marke kehren zurück
                 {
                     const merk = { h: st.renderer._isHeadlessNull, latch: st._buehneStand, t0: r._buehneT0 };
-                    const frag = (ohneKarte) => {
+                    const frag = (ohneKarte, gedeckelt) => {
                         st.renderer._isHeadlessNull = false;
                         st._buehneStand = false;
-                        r._buehneT0 = null; // die Uhr beginnt in `_buehneSteht` neu
+                        // die Uhr beginnt in `_buehneSteht` neu — oder sie steht weit hinter dem Deckel
+                        r._buehneT0 = gedeckelt ? -Infinity : null;
                         if (ohneKarte) delete st.scatterRegions;
                         const steht = r._buehneSteht();
                         st.scatterRegions = map;
@@ -162,6 +163,12 @@ const server = http.createServer((req, res) => {
                     };
                     o.selftest.buehneOhneKarte = frag(true);
                     o.selftest.buehneMitKarte = frag(false);
+                    // der Deckel öffnet LAUT: ohne Regionen-Karte und hinter BUEHNE_SETTLE_CAP_MS steht die Bühne, und das Log
+                    // nennt die Lücke (WARN „Die Bühne steht ohne: … Wald-Stücke …")
+                    const warnt = () => st.logBuffer.slice(-30).filter((z) => /Bühne steht ohne: .*Wald-Stücke/.test(z)).length;
+                    const w0 = warnt();
+                    o.selftest.deckelSteht = frag(true, true);
+                    o.selftest.deckelWarnt = warnt() > w0;
                     st.renderer._isHeadlessNull = merk.h;
                     st._buehneStand = merk.latch;
                     r._buehneT0 = merk.t0;
@@ -268,6 +275,10 @@ const server = http.createServer((req, res) => {
         checks.push({
             name: `SELBST-TEST: die Bühnen-Wahrheit der Welt (\`_buehneSteht\`) liest dieselbe Streu — ohne Regionen-Karte ${s.buehneOhneKarte === false ? "steht sie nicht" : "STEHT sie"}, mit ihr ${s.buehneMitKarte ? "steht sie" : "steht sie NICHT"}`,
             pass: s.buehneOhneKarte === false && s.buehneMitKarte === true,
+        });
+        checks.push({
+            name: `SELBST-TEST: der Deckel der Bühne öffnet laut — ohne Regionen-Karte hinter BUEHNE_SETTLE_CAP_MS ${s.deckelSteht ? "steht sie" : "steht sie NICHT"}, das Log ${s.deckelWarnt ? "nennt die Lücke (WARN)" : "SCHWEIGT"}`,
+            pass: s.deckelSteht === true && s.deckelWarnt === true,
         });
         checks.push({
             name: `W4.3 BAKE-WATCHDOG: ein hängender Bake wird graziös verworfen (pending frei · Retry/gescheitert · Token) — die Queue kann nie mehr still verhungern (${JSON.stringify(out.watchdog || null)})`,

@@ -21683,7 +21683,8 @@ class AnazhRealm {
     // Ring am Ziel + Gras/Wasser aufgeholt + die Streu steht (`_streuWartet` 0) — bewusst OHNE Impostor-Term (die Streu
     // wartet auf ihre Karten; der Karten-Bäcker läuft seit 04.10. frei im festen Takt, nie hinter der Bühne — der Kreis
     // Bühne → Streu → Karte → Bühne ist gelöst). Latch `state._buehneStand`; headless sofort.
-    // Deckel: nach BUEHNE_SETTLE_CAP_MS öffnet sie bedingungslos (Dauer-über-Budget erreicht nie das Ziel)
+    // Deckel: nach BUEHNE_SETTLE_CAP_MS öffnet sie bedingungslos und laut (WARN mit der Lücke) — Dauer-über-Budget
+    // erreicht nie das Ziel
     _buehneSteht() {
         const st = this.state;
         if (st._buehneStand) return true;
@@ -21692,28 +21693,30 @@ class AnazhRealm {
             return true;
         }
         if (this._buehneT0 == null) this._buehneT0 = performance.now();
-        let steht = false;
-        if (performance.now() - this._buehneT0 > AnazhRealm.BUEHNE_SETTLE_CAP_MS) {
-            steht = true; // der Deckel: die Welt hat settled, was die Hardware trägt
-        } else {
-            const ringTarget = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-            const ring = st._activeRingRadius != null && st._activeRingRadius >= ringTarget;
-            const grass = !st.pendingGrass || st.pendingGrass.size === 0;
-            const water = !st.pendingWaterIso || st.pendingWaterIso.size === 0;
-            // die Streu steht nach der EINEN Antwort (`_streuWartet`) — der eigene Zähler las die fehlende Regionen-Karte
-            // (der Streamer lief noch nie) als „keine deferierte Region" (Befund 09.10.)
-            const streu =
-                ring && grass && water && this._streuWartet(st.playerMesh ? st.playerMesh.position : null) === 0;
-            steht = ring && grass && water && streu;
-        }
-        if (steht) {
-            st._buehneStand = true;
+        // Was der Bühne fehlt — je Term ein Satz mit seiner Zahl. Die Streu steht nach der EINEN Antwort (`_streuWartet`):
+        // der eigene Zähler las die fehlende Regionen-Karte (der Streamer lief noch nie) als „keine deferierte Region"
+        // (Befund 09.10.).
+        const fehlt = [];
+        const ringTarget = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+        if (!(st._activeRingRadius != null && st._activeRingRadius >= ringTarget))
+            fehlt.push(`der Ring (${st._activeRingRadius != null ? st._activeRingRadius : "—"} von ${ringTarget})`);
+        if (st.pendingGrass && st.pendingGrass.size) fehlt.push(`${st.pendingGrass.size} Gras-Stücke`);
+        if (st.pendingWaterIso && st.pendingWaterIso.size) fehlt.push(`${st.pendingWaterIso.size} Wasser-Stücke`);
+        const streuListe = [];
+        const streu = this._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe);
+        if (streu) fehlt.push(`${streu} Wald-Stücke (${streuListe.slice(0, 3).join(" · ")})`);
+        // der Deckel: die Welt hat settled, was die Hardware trägt — er öffnet LAUT wie das erste Weltbild (`_ankunftsBild`):
+        // das Log nennt die Lücke
+        const gedeckelt = performance.now() - this._buehneT0 > AnazhRealm.BUEHNE_SETTLE_CAP_MS;
+        if (fehlt.length && !gedeckelt) return false;
+        st._buehneStand = true;
+        if (fehlt.length)
             this.log(
-                "Die Bühne steht — die Welt-Systeme (Wetter-Zug · Nexus · Begleiter · Fern-Deko) starten.",
-                "INFO"
+                `Die Bühne steht ohne: ${fehlt.join(" · ")} — der Deckel von ${AnazhRealm.BUEHNE_SETTLE_CAP_MS} ms ist erreicht.`,
+                "WARN"
             );
-        }
-        return steht;
+        this.log("Die Bühne steht — die Welt-Systeme (Wetter-Zug · Nexus · Begleiter · Fern-Deko) starten.", "INFO");
+        return true;
     }
 
     // ═══ KREATUR-KOSTEN — DIE ANIM-RATEN-LEITER ═══
@@ -56375,12 +56378,15 @@ class AnazhRealm {
     // jede Region in Reichweite fehlt. Befund 09.10. (gate:ankunft, CI 37942425121): bei langsamem Takt stand der Ring am
     // Existenz-Boden, bevor der Streamer einen Frame bekam — die fehlende Karte galt als „nichts wartet", der Ladeschirm wich
     // ohne ein einziges Wald-Stück. Ist die Streu aus (`gpuScatter === false`), wartet nichts; ohne Spieler-Ort steht keine.
-    _streuWartet(p) {
+    // `liste` (optional) nimmt je wartende Region ihren Schlüssel und Grund auf (`_streuRegionWartet`).
+    _streuWartet(p, liste) {
         const SC = AnazhRealm.SCATTER;
         const st = this.state;
         if (st.atmosphere && st.atmosphere.gpuScatter === false) return 0;
-        if (!p) return 1;
-        const regionen = st.scatterRegions;
+        if (!p) {
+            if (liste) liste.push("kein Spieler-Ort");
+            return 1;
+        }
         const rx0 = Math.floor(p.x / SC.regionM);
         const rz0 = Math.floor(p.z / SC.regionM);
         let warten = 0;
@@ -56389,10 +56395,24 @@ class AnazhRealm {
                 const rx = rx0 + dx;
                 const rz = rz0 + dz;
                 if (!this._streuRegionInReichweite(rx, rz, p)) continue;
-                const reg = regionen ? regionen.get(`${rx},${rz}`) : null;
-                if (!reg || reg._deferredFoundry || reg._cont) warten++;
+                const grund = this._streuRegionWartet(`${rx},${rz}`);
+                if (!grund) continue;
+                warten++;
+                if (liste) liste.push(`${rx},${rz} ${grund}`);
             }
         return warten;
+    }
+
+    // Worauf EINE Streu-Region wartet — die Regel je Region (null: sie steht): sie fehlt (keine Karte oder kein Eintrag),
+    // wartet auf ihr Asset (`_deferredFoundry`, der Nachschub baut sie nach der Lieferung neu) oder trägt eine offene
+    // Scheibe (`_cont`). Jeder Leser fragt hier, keiner liest die Marken selbst.
+    _streuRegionWartet(rk) {
+        const regionen = this.state.scatterRegions;
+        const reg = regionen ? regionen.get(rk) : null;
+        if (!reg) return "fehlt";
+        if (reg._deferredFoundry) return "wartet auf ihr Asset";
+        if (reg._cont) return "Scheibe offen";
+        return null;
     }
 
     _tickScatterStreaming(playerPos, deadlineMs) {
