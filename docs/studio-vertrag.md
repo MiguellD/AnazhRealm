@@ -100,10 +100,10 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 - `karte: true` (nur die letzte Stufe, wirft nicht): die Stufe IST die Studio-Karte (bakeImpostorAtlas),
   ihre Gitter-Geometrie wird nicht geliefert; sie gilt genau dort, wo der Wirt die Art als Impostor führt
   (`KIND_POLICY[kind].impostor` — die Karten-Linse in `gate:studio-vertrag`).
-- DARF-Regler einer Stufe (Form geprüft): `blattKarte` / `nadelKarte` (Kartenkante in Blatt- bzw.
-  Nadel-Längen, endlich > 0) · `dichte` (je
-  Kronen-Art der Anteil der gewachsenen Blattstellen, der eine Karte trägt, bzw. der Peitschen, die eine Strähne
-  tragen, in (0, 1]) · `straehne` ({teile ganz ≥ 1, breite > 0}: Stücke je Peitsche, Kartenbreite in Blattlängen —
+- DARF-Regler einer Stufe (Form geprüft): `blattKarte` (Kartenkante in Blatt-Größen, endlich > 0) · `dichte` (je
+  Kronen-Art der Anteil der gewachsenen Blattstellen, der eine Karte trägt, in (0, 1] — seit S3 nur noch der Strauch,
+  `shrub[0].dichte.laub`; die Baum-Krone wählt über `lagen`) · `lagen` · `quote` · `geruest` · `wedel` · `wurf`
+  (die Kronen-Kosten, unten) · `straehne` ({teile ganz ≥ 1, breite > 0}: Stücke je Peitsche, Kartenbreite in Blattlängen —
   die Trauer-Krone in L0 und L1) ·
   `rinde` ({ast, reisig} in trunkR, 0 < reisig < ast < 1) · `schnitt` / `rute` (das Reisig des Strauchs, in
   trunkR, 0 < schnitt < rute < 1: dünnere Stränge als `schnitt` fallen, unter `rute` trägt der Strang die
@@ -208,6 +208,44 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   Nadel-Röhren von gestern deckten unter ihrer eigenen L1, die L1 deckt die L0 jetzt im Band) und 1,04–1,17 (Weide)
   der L0 von gestern; L1/L0 1,00–1,12. Dreiecke höchstens 17 720 (Tanne s2). Gemessen mit SCHWEBE: 0 von 41 404 Karten
   in 34 Baum-L0 (Goldens + Gestalten).
+- **Die Kronen-Kosten (S3, 09.10. — Vertrags-Akt, Pflicht in `gate:studio-vertrag`, Wände in `gate:asset-contract`).**
+  Befund (Kern V18.536, kronen-linse 24 Ansichten): die Zeile war nur gegen die sättigende BINÄRE Deckung geeicht —
+  die Laub-L0 trug 35–72 Quad-Lagen je Kronen-Pixel (jede Lage alpha-getestet und schattiert, 65 % ihrer Fragmente
+  verworfen), die L1 24–47 und war die ausgedünnte L0 (Quote 0,46–0,71), der Nadel-Ast eine Röhre unter radialen
+  Nadel-Sprays (Koniferen-L0 78–80 % Rinde), der Wurf ein Index-Vorsatz zweier Teile. Die Baum-Zeilen tragen:
+  - `lagen` (tree[0] 16 · tree[1] 12): Quad-Lagen je Kronen-Pixel (kronen-linse `bildLagen`) — der BAU-REGLER der
+    Karten-Wahl (`__lagenWahl`: phyto-core `kronenLagen` schätzt die volle Krone, die Stufe trägt 0,82·lagen davon
+    im Index-Stride; die Trauer-Krone wählt ihre Peitschen über `quadLagen`) UND die Wand (L);
+  - `quote` (tree[1] 0,42): Dreiecke L1 / L0 desselben Baums (Q) — Laub ≤ 0,29, Koniferen ≤ 0,38, Birke 0,30–0,33;
+    das Soll 0,35 halten Totholz (0,36–0,42: seine L0 ist schon Gerüst) und Mammut (0,37–0,39: 14 Furchen am Stamm)
+    nicht, die Zeile steht offen bei 0,42;
+  - `geruest` (tree[0] 0,1 · tree[1] 0,25 trunkR): die Stufe trägt als Röhre nur Stränge ab geruest·trunkR — jeder
+    feinere Strang ist seine Karte (das Atlas-Bild ist ein belaubter Zweig) bzw. Strähne;
+  - `wedel` ({ab, teile, breite, nadel}; tree[0] {0,35, 1, 1,1, 0,025 m} · tree[1] {0, 2, 0,9, 0,05 m}): der Nadel-Ast
+    (jeder Seitenast des Leittriebs) ist bis `ab` seiner Bahn Röhre, danach Strähnen aus der Wedel-Zelle
+    (`BLATT_ATLAS_WEDEL`, Zelle 3, Füllung 0,2811), mindestens `teile` und so viele Stücke, dass die Nadel in der
+    Welt `nadel` misst; breit wie seine Nadeln reichen (mindestens 0,12 seiner Länge je Seite) × `breite`. Was am Ast
+    wächst, fällt mit ihm; die Nadel-Karte (`nadelKarte`) und der Blatt-Stride der Laub-L0 (`dichte.laub`) sind gefallen;
+  - `wurf` (tree[1] {durchmesserM 0,17, teil "schatten", lagen 12, tris 1 200}) — DAS EINE WURF-GESETZ (E1): die Stufe,
+    auf die `schatten` zeigt, liefert ihren Wurf als EIGENES Teil `teil: "schatten"` mit dem Attribut `aDeckt` (Rinde 1,
+    Karte 0): das Gerüst ab `durchmesserM` Welt-Durchmesser (der Kaskaden-Texel k0) als Dreikant mit der mittleren
+    Breite des Rundstrangs (Umkreis 2π/(3√3)·r) und die Karten bzw. Strähnen der Krone auf höchstens `lagen` Lagen.
+    Der Wirt zeichnet das Teil mit EINEM Schatten-Stoff (Alpha = max(aDeckt, Atlas-Alpha) in colorNode, beidseitig)
+    nur auf SHADOW_TWIN_LAYER, jedes andere Teil der Stufe wirft nicht; fehlt das Teil, KERN-PFLICHT. Der drawRange-
+    Vorsatz (`__wurf`, `lf.wurf`) ist gefallen. Mit 6 Lagen deckte der Wurf von oben 61 % des L1-Bilds (Eiche), mit 12
+    81–94 % — die Zeile trägt 12. Haus (Stufe 3, aDeckt 1) und Kreatur (`wurf.seh`) lesen dasselbe Gesetz.
+  - Die Zeilen: `tree[0].tris` 18 000 → 12 000 (Soll 9 000 — die Birke trägt 10 980–11 950: das Lentizellen-Gitter mit
+    seinen Naht-Ringen, die die Armlänge braucht — ohne sie fiel die Stamm-Albedo auf 0,291 < 0,30; Laub 4 902–7 554,
+    Koniferen 5 012–6 328, Weide 6 482–8 922), `tree[1].tris` 10 000 → 2 900 (Soll 2 400 — die Birke 2 808–2 890;
+    jede andere Art ≤ 2 448), `draws` 3 → 2 (die Birken-Wurzel trägt den Birken-Stoff).
+  - Die Pixel-Gesetze der L1 (ihre Nahkante: 704 px je Baumhöhe; die L0 beginnt auf Armlänge, dort trägt jedes Merkmal):
+    die Radial-Teilung folgt dem Umriss (Sehnen-Abstand ≤ ½ px) und trägt mindestens zwei Seiten je Furche; die
+    Birken-Zeile ist ein Band nur ab 2 px, ihre Naht ab 1 px; die L1-Wurzel liegt in der Radial-Teilung der L2.
+  - **FINAL GESTRICHEN (S3):** die Fels-L1 — `formationen` an der Mess-Wiese 3/20 Befehle, 10 240/30 000 Dreiecke,
+    Genesis 3 / 14 720, Fels-L0 320–1 280 je Stein: eine L1 spart < 3k, `kindStages.rock` bleibt [0] (der Validator
+    hält es) · `budgetErzwingen` für Pflanzen — die Zeile IST der Bau-Regler, `gate:asset-contract` die Wand, ein
+    Ausgangs-Falten wäre ein Zwilling (`gate:studio-vertrag`: der Ruf lebt nur im Zweit-Kern-Zweig der Brücke) · die
+    Seh-Klasse `laub` — ihr einziger Leser wäre dieses Falten (Konsum 0); `BUDGET_GESETZ.seh` trägt sie nicht.
 - **Der EINE Blatt-Atlas als Textur** (`bakeLeafAtlasBild`, phyto-core): die gemalte Leinwand blutet (nicht
   deckende Texel tragen das Zell-Mittel statt Schwarz), alle Zellen tragen dasselbe lineare Mittel `wert`,
   die Mip-Kette ist die des Karten-Gesetzes (`impostorMips`, die vier Zellen als Ansichten nebeneinander: je Stufe
