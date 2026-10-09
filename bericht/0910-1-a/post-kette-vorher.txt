@@ -1,0 +1,16 @@
+=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays ===
+  [4 s] Renderer und Post-Kette bereit nach 3 s
+  [18 s] Saum (ungerade Leinwand 321×241): 0 von 38 Kanten-Pixeln links am Pfahl weichen > 8 Luma ab (größte 0, Paritäten 2)
+  [18 s] Post-Kette: Post-Kette · Tiefe false · Leinwand-Tiefe auf der GPU false · Rahmen-Ziele 0 (0 Texturen, 0 MB) · Tiefen-Kopien 35 · Mitte [231,0,12] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [18 s] Direktpfad: Direktpfad · Tiefe true · Leinwand-Tiefe auf der GPU true · Rahmen-Ziele 1 (2 Texturen, 0.88 MB) · Tiefen-Kopien 56 · Mitte [219,0,22] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [18 s] Post-Kette zurück: Post-Kette · Tiefe false · Leinwand-Tiefe auf der GPU false · Rahmen-Ziele 1 (2 Texturen, 0.88 MB) · Tiefen-Kopien 7 · Mitte [231,0,12] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [18 s] Render-Fehler: Direktpfad · Tiefe true · Leinwand-Tiefe auf der GPU true · Rahmen-Ziele 1 (2 Texturen, 0.88 MB) · Tiefen-Kopien 7 · Mitte [219,0,22] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [18 s] Rahmen-Ziele am Ende: 1 (2 Texturen, 0.88 MB)
+  [18 s] Ausgabe-Fragment: 33 Abtastungen (unbedingt 9 · Zweig 24 · Schleife 0) · 0 Schleifen · 0 Rausch-Aufrufe
+  [18 s] Wasser über dem Grund: Abbild [135.5,137.8,138.1] · r184-Tiefe [135.5,137.8,138.1] · Abbild wieder [135.5,137.8,138.1] · ohne Grund [23.4,36.3,44.8] · umgehängt [1,1]
+  [18 s] Godrays mit der Sonne im Bild: Stärke 1 · 2.7 % der Pixel geändert (Rausch-Boden 0 %)
+
+❌ ROT — 2 Verletzung(en):
+   • RAHMEN-ZIEL: Post-Kette zurück — 1 r184-Rahmen-Ziel(e) leben in der Post-Kette weiter: tex:r184-ausgabe 0.9 MB in 2 Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)
+   • RAHMEN-ZIEL: am Ende (nach Wasser und Godrays) — 1 r184-Rahmen-Ziel(e) leben in der Post-Kette weiter: tex:r184-ausgabe 0.9 MB in 2 Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)
+EXIT=1

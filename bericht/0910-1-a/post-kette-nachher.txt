@@ -1,0 +1,14 @@
+=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays ===
+  [3 s] Renderer und Post-Kette bereit nach 2 s
+  [21 s] Saum (ungerade Leinwand 321×241): 0 von 38 Kanten-Pixeln links am Pfahl weichen > 8 Luma ab (größte 0, Paritäten 2)
+  [21 s] Post-Kette: Post-Kette · Tiefe false · Leinwand-Tiefe auf der GPU false · Rahmen-Ziele 0 (0 Texturen, 0 MB) · Tiefen-Kopien 45 · Mitte [231,0,12] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [21 s] Direktpfad: Direktpfad · Tiefe true · Leinwand-Tiefe auf der GPU true · Rahmen-Ziele 1 (2 Texturen, 0.88 MB) · Tiefen-Kopien 56 · Mitte [219,0,22] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [21 s] Post-Kette zurück: Post-Kette · Tiefe false · Leinwand-Tiefe auf der GPU false · Rahmen-Ziele 0 (0 Texturen, 0 MB) · Tiefen-Kopien 7 · Mitte [231,0,12] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [21 s] Render-Fehler: Direktpfad · Tiefe true · Leinwand-Tiefe auf der GPU true · Rahmen-Ziele 1 (2 Texturen, 0.88 MB) · Tiefen-Kopien 7 · Mitte [219,0,22] · Abbild r32float 160×240 Mitte 0.980867/0.980867
+  [21 s] Rahmen-Ziele am Ende: 0 (0 Texturen, 0 MB)
+  [21 s] Ausgabe-Fragment: 33 Abtastungen (unbedingt 9 · Zweig 24 · Schleife 0) · 0 Schleifen · 0 Rausch-Aufrufe
+  [21 s] Wasser über dem Grund: Abbild [135.5,137.8,138.1] · r184-Tiefe [135.5,137.8,138.1] · Abbild wieder [135.5,137.8,138.1] · ohne Grund [23.4,36.3,44.8] · umgehängt [1,1]
+  [21 s] Godrays mit der Sonne im Bild: Stärke 1 · 2.67 % der Pixel geändert (Rausch-Boden 0 %)
+
+✅ GRÜN — vier Wege durch die Weiche ohne Fehler, der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe; die Ausgabe tastet unbedingt 9×, 24× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild (2.67 % der Pixel gegen 0 % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ([135.5,137.8,138.1] gegen [135.5,137.8,138.1], ohne Grund [23.4,36.3,44.8]).
+EXIT=0

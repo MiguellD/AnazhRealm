@@ -1,0 +1,22 @@
+[17:01:50] START  A=76c9624d  B=76c9624d (+ Arbeitsbaum)  Instrument=B
+[17:01:51] A Seite ed9547d9079aa0fd (soll ed9547d9079aa0fd)
+[17:02:53] A band vor zerlegen: BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 780k/680k (1.15×) · VRAM MB 126.4/118 (1.07×) · GPU ms/Frame 15.43/16.7 (0.92×)  Rahmen: {  "ergebnis": {   "ziele": 0,   "texturen": 0,   "mb": 0  },  "ms": 2 } 
+[17:03:55] A zerlegen exit=0  Rahmen: {  "ergebnis": {   "ziele": 1,   "texturen": 2,   "mb": 23.73  },  "ms": 2 } 
+[17:04:09] A band nach zerlegen: BAND ROT: Befehle 92/208 (0.44×) · Dreiecke 788k/680k (1.16×) · VRAM MB 145.6/118 (1.23×) · GPU ms/Frame 15.36/16.7 (0.92×)  Rahmen: {  "ergebnis": {   "ziele": 1,   "texturen": 2,   "mb": 23.73  },  "ms": 2 } 
+           23.7 MB  2     tex:r184-ausgabe
+      LINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:
+        [leck] tex:r184-ausgabe 23.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)
+[17:04:15] A genesis-Folge (eigener Boot)
+[17:04:16] A-genesis Seite ed9547d9079aa0fd (soll ed9547d9079aa0fd)
+[17:05:30] A genesis exit=0  MESS-FOLGE GRUEN — 0 Befunde   band: ROT (Linse SAUBER, Stempel GRUEN) · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+        band: ROT (Linse SAUBER, Stempel GRUEN) · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2)
+[17:05:57] B Seite aa7cee02567b8568 (soll aa7cee02567b8568)
+[17:06:56] B band vor zerlegen: BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 787k/680k (1.16×) · VRAM MB 126.5/118 (1.07×) · GPU ms/Frame 16.21/16.7 (0.97×)  Rahmen: {  "ergebnis": {   "ziele": 0,   "texturen": 0,   "mb": 0  },  "ms": 2 } 
+[17:08:02] B zerlegen exit=0  Rahmen: {  "ergebnis": {   "ziele": 0,   "texturen": 0,   "mb": 0  },  "ms": 2 } 
+[17:08:16] B band nach zerlegen: BAND ROT: Befehle 92/208 (0.44×) · Dreiecke 792k/680k (1.17×) · VRAM MB 122/118 (1.03×) · GPU ms/Frame 16.45/16.7 (0.99×)  Rahmen: {  "ergebnis": {   "ziele": 0,   "texturen": 0,   "mb": 0  },  "ms": 2 } 
+      LINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:
+[17:08:23] B genesis-Folge (eigener Boot)
+[17:08:24] B-genesis Seite aa7cee02567b8568 (soll aa7cee02567b8568)
+[17:09:34] B genesis exit=0  MESS-FOLGE GRUEN — 0 Befunde   band: ROT (Linse SAUBER, Stempel GRUEN) · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2) 
+        band: ROT (Linse SAUBER, Stempel GRUEN) · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 5, fox 2)
+[17:10:01] ENDE
