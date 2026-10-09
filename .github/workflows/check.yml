@@ -512,6 +512,15 @@ jobs:
               # die Boxen, die sein Segment beruehren; das Netz ist der Bestand; jeder Schreiber des Bestands stempelt.
               run: npm run gate:blocker-netz
 
+            - name: Kollision = Bild (Leben-Schau 2 — jede Box hat ihr Bild, der Fels misst seine Gestalt)
+              if: matrix.gruppe == 2
+              # Null-Renderer, Foundry an, die Mess-Wiese (150 m) und je Klasse ein Exemplar (sieben Fels-Arten, GT, sieben
+              # Tore, Haus, Brunnen, Marktstand): je Studio-Werk das Bild (die Studio-Gestalt LOD 0 in ihrer Instanz-Matrix)
+              # gegen die Blocker-Boxen in ihrem Rahmen — keine Box ragt ueber das Bild, ein fester Fels ist ganz gedeckt, der
+              # Fels-Blocker misst die gezeichnete Gestalt. Befund 09.10.: der Felsturm stiess als Eisen-Mast 4,4 x 16,8 m.
+              # Der eingeschmuggelte Spender-Felsturm faellt rot beim Namen; Selbsttest inklusive.
+              run: npm run gate:kollision-bild
+
             - name: Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)
               if: matrix.gruppe == 2
               # Null-Renderer, eine echte Welt (drei Doerfer, vier Brennglaeser, Brennbares in ihren Brennpunkten): ueber

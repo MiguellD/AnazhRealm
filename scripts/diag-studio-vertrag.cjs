@@ -943,12 +943,12 @@ function validateManifest(m) {
             check("SELBST-TEST: ein injizierter Inline-Fallback feuert die Wand", inj === true);
             // FELS-/KRISTALL-HÜLLE (18.07., M1): der vierte Gesetz-Blocker-Zweig
             // lebt (Konsum: _felsBlockerParts VOR dem generischen Parts-Pfad im
-            // EINEN Chokepoint) und die Tafel trägt die gemessene Hülle.
+            // EINEN Chokepoint) und die Tafel trägt die gemessene Hülle — seit der Leben-Schau 2 je Gestalt (fx.huellen).
             const pbaM =
                 src && src.match(/_populateBlockerAABBs\(entry\) \{[\s\S]{0,9000}?entry\.blockerAABBs = solidAABBs/);
             check(
-                "KONSUM: der Fels-Blocker-Zweig liest die Studio-Hülle (fx.huelle) im EINEN Chokepoint vor dem Parts-Pfad",
-                !!pbaM && pbaM[0].indexOf("_felsBlockerParts") >= 0 && !!fc && /huelle: \{ rx:/.test(fc)
+                "KONSUM: der Fels-Blocker-Zweig liest die Studio-Hülle je Gestalt (fx.huellen) im EINEN Chokepoint vor dem Parts-Pfad",
+                !!pbaM && pbaM[0].indexOf("_felsBlockerParts") >= 0 && !!fc && /huellen: \[\n\s+\[-?\d/.test(fc)
             );
         })();
     })();

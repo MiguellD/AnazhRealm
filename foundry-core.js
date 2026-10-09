@@ -3800,9 +3800,28 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.66, elong: 0.22, rnd: 0.42, rgh: 0.55, str: 0.1, gen: 0.55 },
         fx: {
-            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
-            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
-            huelle: { rx: 2.7, rz: 1.9, y1: 1.8 },
+            // FELS-HUELLEN JE GESTALT (Leben-Schau 2, 09.10.; vorher EINE Huelle je Art, gemessen ueber 4 Varianten): je
+            // Gestalt 1..V (lod.budget.gestalten) die Huelle ihrer Studio-Gestalt LOD 0 im Vorlagen-Raum [x0, x1, y1, z0, z1]
+            // (+5 %, Boden y 0) - der Welt-Blocker liest die Zeile seiner Gestalt in der Welt-Skala, gate:kollision-bild
+            // misst sie gegen das gezeichnete Werk. Nur der Wirt liest sie (die Gestalt selbst baut sie nie).
+            huellen: [
+                [-2.17, 1.94, 1.38, -1.71, 1.55],
+                [-2.27, 2.37, 1.36, -1.67, 1.62],
+                [-2.43, 1.8, 1.61, -2.06, 1.96],
+                [-2.15, 1.99, 1.64, -1.64, 1.62],
+                [-2.13, 2.69, 1.78, -1.88, 1.82],
+                [-2.01, 2.17, 1.54, -1.7, 1.69],
+                [-2.1, 2.35, 1.52, -1.66, 1.61],
+                [-2.18, 2.49, 1.61, -1.74, 1.59],
+                [-2.07, 2.22, 1.59, -1.77, 1.76],
+                [-1.97, 2.1, 1.41, -1.65, 1.66],
+                [-2.42, 2.47, 1.85, -2.03, 2.12],
+                [-2.55, 2.58, 1.75, -1.99, 1.97],
+                [-2.17, 2.23, 1.53, -1.44, 1.58],
+                [-2.59, 2.56, 1.67, -2.06, 2.23],
+                [-2.54, 2.65, 1.86, -2.02, 2.21],
+                [-2.49, 2.44, 1.77, -1.85, 2.1],
+            ],
             rkind: "boulder",
             size: 1.6,
             rockA: 0x8a8278,
@@ -3818,9 +3837,28 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.5, elong: 0.3, rnd: 0.3, rgh: 0.4, str: 0.2, gen: 0.32 },
         fx: {
-            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
-            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
-            huelle: { rx: 1.9, rz: 1.9, y1: 4.7 },
+            // FELS-HUELLEN JE GESTALT (Leben-Schau 2, 09.10.; vorher EINE Huelle je Art, gemessen ueber 4 Varianten): je
+            // Gestalt 1..V (lod.budget.gestalten) die Huelle ihrer Studio-Gestalt LOD 0 im Vorlagen-Raum [x0, x1, y1, z0, z1]
+            // (+5 %, Boden y 0) - der Welt-Blocker liest die Zeile seiner Gestalt in der Welt-Skala, gate:kollision-bild
+            // misst sie gegen das gezeichnete Werk. Nur der Wirt liest sie (die Gestalt selbst baut sie nie).
+            huellen: [
+                [-1.83, 1.86, 4.54, -1.58, 1.87],
+                [-1.81, 1.84, 4.56, -1.56, 1.79],
+                [-1.81, 1.84, 4.72, -1.57, 1.88],
+                [-1.91, 1.87, 4.57, -1.58, 1.87],
+                [-1.82, 1.86, 4.57, -1.57, 1.8],
+                [-1.79, 1.84, 4.48, -1.57, 1.78],
+                [-1.79, 1.84, 4.61, -1.56, 1.88],
+                [-1.86, 1.85, 4.52, -1.57, 1.8],
+                [-1.85, 1.83, 4.63, -1.57, 1.87],
+                [-1.8, 1.84, 4.5, -1.56, 1.87],
+                [-1.75, 1.86, 4.54, -1.57, 1.86],
+                [-1.83, 1.84, 4.56, -1.57, 1.8],
+                [-1.82, 1.85, 4.64, -1.56, 1.89],
+                [-1.79, 1.61, 4.6, -1.57, 1.79],
+                [-1.88, 1.84, 4.45, -1.57, 1.89],
+                [-1.88, 1.87, 4.66, -1.57, 1.89],
+            ],
             rkind: "columns",
             rockA: 0x33363a,
             rockB: 0x202327,
@@ -3837,9 +3875,28 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.3, elong: 0.4, rnd: 0.3, rgh: 0.5, str: 0.85, gen: 0.6 },
         fx: {
-            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
-            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
-            huelle: { rx: 2.6, rz: 1.8, y1: 1.3 },
+            // FELS-HUELLEN JE GESTALT (Leben-Schau 2, 09.10.; vorher EINE Huelle je Art, gemessen ueber 4 Varianten): je
+            // Gestalt 1..V (lod.budget.gestalten) die Huelle ihrer Studio-Gestalt LOD 0 im Vorlagen-Raum [x0, x1, y1, z0, z1]
+            // (+5 %, Boden y 0) - der Welt-Blocker liest die Zeile seiner Gestalt in der Welt-Skala, gate:kollision-bild
+            // misst sie gegen das gezeichnete Werk. Nur der Wirt liest sie (die Gestalt selbst baut sie nie).
+            huellen: [
+                [-2.04, 2.01, 1.01, -1.44, 1.38],
+                [-2.19, 2.17, 1.03, -1.41, 1.4],
+                [-2.37, 2.3, 1.19, -1.66, 1.66],
+                [-2.37, 2.27, 1.08, -1.51, 1.46],
+                [-2.57, 2.49, 1.22, -1.72, 1.65],
+                [-2.12, 2.03, 0.94, -1.5, 1.45],
+                [-2.21, 2.2, 0.98, -1.46, 1.41],
+                [-2.39, 2.41, 1.09, -1.51, 1.49],
+                [-2.19, 2.17, 1.03, -1.58, 1.59],
+                [-2, 1.99, 1.07, -1.5, 1.51],
+                [-2.57, 2.59, 1.2, -1.83, 1.84],
+                [-2.56, 2.51, 1.1, -1.72, 1.8],
+                [-2.34, 2.28, 0.95, -1.39, 1.46],
+                [-2.45, 2.43, 1.25, -1.83, 1.89],
+                [-2.76, 2.69, 1.15, -1.83, 1.94],
+                [-2.52, 2.47, 1.03, -1.69, 1.79],
+            ],
             rkind: "boulder",
             size: 1.9,
             rockA: 0xb09870,
@@ -3855,9 +3912,28 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.4, elong: 0.6, rnd: 0.12, rgh: 0.6, str: 0.1, gen: 0.55 },
         fx: {
-            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
-            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
-            huelle: { rx: 2.6, rz: 1.6, y1: 1.3 },
+            // FELS-HUELLEN JE GESTALT (Leben-Schau 2, 09.10.; vorher EINE Huelle je Art, gemessen ueber 4 Varianten): je
+            // Gestalt 1..V (lod.budget.gestalten) die Huelle ihrer Studio-Gestalt LOD 0 im Vorlagen-Raum [x0, x1, y1, z0, z1]
+            // (+5 %, Boden y 0) - der Welt-Blocker liest die Zeile seiner Gestalt in der Welt-Skala, gate:kollision-bild
+            // misst sie gegen das gezeichnete Werk. Nur der Wirt liest sie (die Gestalt selbst baut sie nie).
+            huellen: [
+                [-1.96, 2.03, 1.11, -1.38, 1.38],
+                [-2.58, 1.23, 1.07, -1.34, 1.3],
+                [-2.59, 1.84, 1.29, -1.57, 1.64],
+                [-2.47, 1.75, 1.12, -1.33, 1.36],
+                [-2.07, 2.57, 1.3, -1.56, 1.55],
+                [-2.19, 2.15, 1.12, -1.33, 1.32],
+                [-2.24, 2.43, 1.11, -1.31, 1.3],
+                [-2.15, 2.84, 1.19, -1.44, 1.26],
+                [-1.84, 2.55, 1.17, -1.36, 1.41],
+                [-2, 2.58, 1.04, -1.2, 1.37],
+                [-2.39, 2.71, 1.33, -1.59, 1.67],
+                [-2.82, 3.07, 1.31, -1.58, 1.69],
+                [-2.35, 2.43, 1.23, -1.15, 1.38],
+                [-2.22, 2.01, 1.2, -1.57, 1.72],
+                [-1.74, 3.07, 1.41, -1.54, 1.78],
+                [-1.78, 2.75, 1.31, -1.46, 1.65],
+            ],
             rkind: "boulder",
             size: 1.7,
             rockA: 0x6a6660,
@@ -3873,9 +3949,13 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.45, elong: 0.4, rnd: 0.25, rgh: 0.55, str: 0.1, gen: 0.85 },
         fx: {
-            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
-            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
-            huelle: { rx: 2.1, rz: 2.1, y1: 1.9 },
+            // FELS-HUELLEN JE GESTALT (Leben-Schau 2, 09.10.; vorher EINE Huelle je Art, gemessen ueber 4 Varianten): je
+            // Gestalt 1..V (lod.budget.gestalten) die Huelle ihrer Studio-Gestalt LOD 0 im Vorlagen-Raum [x0, x1, y1, z0, z1]
+            // (+5 %, Boden y 0) - der Welt-Blocker liest die Zeile seiner Gestalt in der Welt-Skala, gate:kollision-bild
+            // misst sie gegen das gezeichnete Werk. Nur der Wirt liest sie (die Gestalt selbst baut sie nie).
+            huellen: [
+                [-1.58, 1.65, 1.82, -2, 2.1],
+            ],
             rkind: "scree",
             size: 1.8,
             rockA: 0x7a7268,
@@ -3892,9 +3972,28 @@ const PRESETS = {
         panel: "rock",
         s: { sph: 0.5, elong: 0.5, rnd: 0.3, rgh: 0.4, str: 0.1, gen: 0.1 },
         fx: {
-            // FELS-HÜLLE (18.07., gemessen im Worker über 4 Varianten, +5%):
-            // die Kollisions-Hülle der Studio-Gestalt — der Welt-Blocker liest sie.
-            huelle: { rx: 3.1, rz: 2.2, y1: 3.3 },
+            // FELS-HUELLEN JE GESTALT (Leben-Schau 2, 09.10.; vorher EINE Huelle je Art, gemessen ueber 4 Varianten): je
+            // Gestalt 1..V (lod.budget.gestalten) die Huelle ihrer Studio-Gestalt LOD 0 im Vorlagen-Raum [x0, x1, y1, z0, z1]
+            // (+5 %, Boden y 0) - der Welt-Blocker liest die Zeile seiner Gestalt in der Welt-Skala, gate:kollision-bild
+            // misst sie gegen das gezeichnete Werk. Nur der Wirt liest sie (die Gestalt selbst baut sie nie).
+            huellen: [
+                [-1.47, 1.29, 3.16, -1.77, 2.18],
+                [-2.26, 2.87, 3.11, -2.02, 1.43],
+                [-2.19, 2.16, 3.27, -2.88, 1.88],
+                [-2.7, 2.18, 2.87, -2.19, 1.66],
+                [-1.29, 1.47, 3.22, -2.04, 2.18],
+                [-1.98, 3.22, 3.06, -2.44, 1.76],
+                [-2.43, 1.58, 2.88, -2.01, 2.3],
+                [-1.13, 2.44, 3, -2.52, 2.2],
+                [-3.08, 2.03, 3.11, -2.14, 2.13],
+                [-1.92, 1, 2.87, -1.4, 0.92],
+                [-1.81, 1.3, 2.98, -1.32, 0.96],
+                [-1.42, 1.85, 2.91, -1.22, 1.84],
+                [-1.53, 1.18, 2.79, -1.87, 1.57],
+                [-2.13, 1.58, 3.07, -2.68, 1.67],
+                [-1.85, 1.66, 2.48, -1.5, 2.08],
+                [-2.45, 1.21, 3.34, -1.44, 1.73],
+            ],
             rkind: "crystal",
             size: 2.4,
             count: 20,
@@ -6044,3 +6143,7 @@ __terrainCore.PHYTO_PRESETS = PRESETS;
 __terrainCore.PORTAL_GROUND = PORTAL_GROUND;
 // Die Halm-Spitze des Grases (emitGrass) reist mit: der Stamm hellt den Saison-Akzent um DIESELBE Zahl auf (rein additiv).
 __terrainCore.GRAS_SPITZE_HELL = GRAS_SPITZE_HELL;
+// DIE PLATZIERUNG (Welt-Skala je Preset) reist mit zum SYNCHRONEN Stamm-Leser (rein additiv, Leben-Schau 2, 09.10.): die
+// Kollision eines Studio-Werks misst in derselben Welt-Skala, in der es gezeichnet wird — ab dem Spawn, nicht erst nach dem
+// async Buch (vorher trug ein Hand-Spiegel nur die Baeume: ein Fels kollidierte bis zum Buch in Vorlagen-Groesse).
+__terrainCore.PORTAL_RENDER_CONFIG = PORTAL_RENDER_CONFIG;

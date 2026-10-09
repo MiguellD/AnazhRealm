@@ -33895,8 +33895,8 @@ class AnazhRealm {
         if (!part || !part.size || !part.position) return null;
         // V13.13.1 — `entry.scale` exakt wie `_rebuildArchitectureMesh` anwenden
         // (groupOrigin + part.position·scale, Größe part.size·scale — der
-        // „Wasser-Schatten zur Struktur"-Befund, diag-scale-stamp). `mul`: die Welt-Skala des Studio-Baums
-        // (`_baumWeltSkala`), mit der er gezeichnet wird.
+        // „Wasser-Schatten zur Struktur"-Befund, diag-scale-stamp). `mul`: die Welt-Skala des Studio-Werks
+        // (`_studioWeltSkala`), mit der es gezeichnet wird.
         const scale = (Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1) * (mul > 0 ? mul : 1);
         const hx = ((part.size.x || 1) / 2) * scale;
         const hy = ((part.size.y || 1) / 2) * scale;
@@ -33989,12 +33989,13 @@ class AnazhRealm {
         return { minX, maxX, minZ, maxZ, topY, botY };
     }
 
-    // Die Welt-Skala eines Studio-Baums: dieselbe, mit der er gezeichnet wird (`_foundryWorldScaleMatrix` seines Presets)
-    // — 1 für alles, was kein Studio-Baum ist (Haus, Tor, Wagen und Fels tragen ihre eigene Studio-Hülle).
-    _baumWeltSkala(entry) {
+    // Die Welt-Skala eines Studio-Werks: dieselbe, mit der es gezeichnet wird (`_foundryWorldScaleMatrix` seines Presets) —
+    // JEDES Werk, das das Studio zeichnet (Leben-Schau 2, 09.10.: bis dahin nur die Bäume; Fels 0,34–0,42, Kristall 0,15 und
+    // Blume 0,27 kollidierten in Vorlagen-Größe), 1 für alles, was das Studio nicht zeichnet.
+    _studioWeltSkala(entry) {
         if (!entry || !this._foundryEnabled()) return 1;
         const pr = this._foundryPresetForEntry(entry);
-        if (!pr || !this._foundryPresetIsTree(pr)) return 1;
+        if (!pr) return 1;
         const k = this._foundryWorldScaleMatrix(pr).elements[0];
         return Number.isFinite(k) && k > 0 ? k : 1;
     }
@@ -34041,14 +34042,16 @@ class AnazhRealm {
                 return;
             }
         }
-        // FELS-/KRISTALL-HÜLLE (18.07.) — vierter Gesetz-Zweig (die Tor-Klasse):
-        // Streu-Formationen decken die GEMESSENE Studio-Hülle statt der
-        // Substanz-Variant-Parts. Fail-closed: keine Tafel/Hülle → Parts-Pfad.
+        // FELS-/KRISTALL-HÜLLE (18.07.) — vierter Gesetz-Zweig (die Tor-Klasse): JEDES Werk, das das Studio als Fels
+        // zeichnet, deckt die GEMESSENE Studio-Hülle in seiner Welt-Skala statt der Substanz-Parts (Leben-Schau 2: der
+        // Felsturm stieß als 4,4 × 16,8-m-Eisenmast, gezeichnet stand ein 1,4 × 0,8-m-Zacken). Fail-closed: das Studio
+        // zeichnet ihn nicht → Parts-Pfad (die Parts SIND dann das Bild).
         const felsParts = this._felsBlockerParts(entry);
         if (felsParts) {
             const felsBoxes = [];
+            const kFels = this._studioWeltSkala(entry);
             for (const part of felsParts) {
-                const aabb = this._blockerComputePartAABB(entry, part);
+                const aabb = this._blockerComputePartAABB(entry, part, kFels);
                 if (aabb) felsBoxes.push(aabb);
             }
             if (felsBoxes.length) {
@@ -34063,8 +34066,9 @@ class AnazhRealm {
         // DIE STAMM-HÜLLE IM WELTMASS (Leben-Schau 07.10., L-Kamera / V-D1): der Studio-Baum steht in der Welt × seiner
         // Welt-Skala (`_foundryWorldScaleMatrix`, 3,4–4,0), sein Stamm-Blocker stand im Vorlagen-Maß — 0,19 m halbe Breite
         // und 0,6 m hoch an einer Kiefer, deren Stamm 13 m hoch steht: der Spieler lief durch den Stamm, die 3rd-Kamera
-        // stand in ihm (0,53 m von der Achse). Kollision == Optik: die Teile tragen dieselbe Skala wie die Gestalt.
-        const kWelt = this._baumWeltSkala(entry);
+        // stand in ihm (0,53 m von der Achse). Kollision == Optik: die Teile tragen dieselbe Skala wie die Gestalt — jedes
+        // Studio-Werk, nicht nur der Baum (Leben-Schau 2: die Blume 0,27 stand 2,1 m über ihrem Bild).
+        const kWelt = this._studioWeltSkala(entry);
         const scD = (Number.isFinite(entry.scale) ? entry.scale : 1) * kWelt;
         // Die Hülle einer PFLANZE (Natur, die nicht Fels ist — der Fels hat seinen Zweig oben): der Körper stößt an sie, der
         // Strahl der 3rd-Kamera geht durch sie (`_fieldRaycast` `durchPflanzen`), die Pflanze wird durchsichtig.
@@ -34651,24 +34655,34 @@ class AnazhRealm {
         return teile;
     }
 
-    // Fels-/Kristall-Hülle: die Streu-Formationen (fels_var* bzw. kristall_var*) kollidieren mit der
-    // gemessenen Studio-Hülle (fx.huelle der Tafel, synchron via __terrainCore.PHYTO_PRESETS) statt mit
-    // Substanz-Parts. NUR die *_var-Klasse: felsbogen/felsturm behalten ihre Öffnungs-Parts (eine
-    // Voll-Box schlösse den Bogen).
+    // Fels-/Kristall-Hülle: JEDES Werk, das das Studio als Fels zeichnet (sein Preset ist ein Fels-Rezept mit gemessener
+    // Hülle: die Streu-Formationen fels_var*/kristall_var*, Felsturm, Felsbogen, Steinblock, Kiesel, Felsbrocken, Geode …),
+    // kollidiert mit der gemessenen Studio-Hülle (fx.huelle der Tafel, synchron via __terrainCore.PHYTO_PRESETS) statt mit
+    // Substanz-Parts. Bis zur Leben-Schau 2 nur die *_var-Klasse: Felsbogen und Felsturm behielten ihre Spender-Parts (ein
+    // Stein-Bogen 8,4 × 8 m, ein Eisen-Mast 4,4 × 16,8 m) — gezeichnet wird aber der Zacken des Studios, ohne Bogen.
+    // Nur, wo das Studio zeichnet (ohne Foundry sind die Parts das Bild).
     _felsBlockerParts(entry) {
-        if (!entry || typeof entry.type !== "string") return null;
-        if (!/^(fels|kristall)_var\d+$/.test(entry.type)) return null;
+        if (!entry || typeof entry.type !== "string" || !this._foundryEnabled()) return null;
         const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
         const tab = tc && tc.PHYTO_PRESETS;
         if (!tab) return null;
         const preset = this._foundryPresetForEntry(entry);
         const rec = preset ? tab[preset] : null;
-        const h = rec && rec.kind === "rock" && rec.fx && rec.fx.huelle;
-        if (!h || !Number.isFinite(h.rx) || !Number.isFinite(h.y1)) return null;
+        if (!rec || rec.kind !== "rock") return null;
+        // DIE HÜLLE SEINER GESTALT (Leben-Schau 2): das Studio zeichnet je Samen EINE von V Gestalten (`_foundryVariantFor`),
+        // die Tafel trägt je Gestalt ihre gemessene Hülle [x0, x1, y1, z0, z1] im Vorlagen-Raum. V liest der Blocker aus dem
+        // Kern (synchron am Spawn, Lockstep) — für die Fels-Arten dieselbe Zahl, die das Buch dem Bild gibt. Eine Fels-Art ohne
+        // Zeile für ihre Gestalt ist ein Vertragsbruch (laut), nie ein stiller Rückfall auf die Spender-Parts.
+        const H = rec.fx && rec.fx.huellen;
+        const g = this._foundryVariantFor(entry.seed, preset, AnazhRealm._studioGestaltenKern(preset));
+        const h = Array.isArray(H) && Number.isInteger(g) ? H[g - 1] : null;
+        if (!Array.isArray(h) || h.length !== 5 || !h.every(Number.isFinite))
+            return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS." + preset + ".fx.huellen[" + g + "]");
+        const [x0, x1, y1, z0, z1] = h;
         return [
             {
-                position: { x: 0, y: h.y1 / 2, z: 0 },
-                size: { x: h.rx * 2, y: h.y1, z: h.rz * 2 },
+                position: { x: (x0 + x1) / 2, y: y1 / 2, z: (z0 + z1) / 2 },
+                size: { x: x1 - x0, y: y1, z: z1 - z0 },
             },
         ];
     }
@@ -34681,47 +34695,81 @@ class AnazhRealm {
         if (!tor) return null;
         const mu = tor.mu;
         if (!mu || !Number.isFinite(mu.apexY)) return null;
-        const halbTiefe = Math.max(
-            mu.zFace + 0.05,
-            (mu.orders - 1) * mu.depthStep + (mu.frameDepth * (1 + 0.18 * (mu.orders - 1))) / 2
-        );
-        const tiefe = halbTiefe * 2;
-        const pfostenB = Math.max(0.3, mu.jambW * (mu.orders + 0.5));
-        const kroneH = Math.max(0.3, mu.jambW * 1.3);
+        // DIE MASSE AUS DEM BILD (Leben-Schau 2, gate:kollision-bild): Pfosten-Außenkante, Tiefe und Krone misst die gezeichnete
+        // Gestalt selbst (`_torHuelleGemessen`) — die Öffnung (±rimAx bis zur Bogenkurve) und die Schultern bleiben das Gesetz.
+        // Bis dahin schätzte der Wirt sie aus dem Gesetz (Pfosten jambW·(Ordnungen + ½), Tiefe aus der Staffelung): der
+        // Drachentor-Pfosten stand 0,57 m neben seinem Bild, die Ruine 0,99 m innerhalb.
+        const hm = this._torHuelleGemessen(tor);
+        if (!hm) return null;
         const rise = Math.max(0.05, mu.apexY - mu.springY);
         const schulterB = mu.rimAx * 0.45;
         const schulterY0 = mu.springY + rise * 0.3;
-        const pseudo = [
-            // Pfosten L/R — von der Öffnungskante (±rimAx) nach außen, volle Höhe.
-            {
-                position: { x: -(mu.rimAx + pfostenB / 2), y: mu.apexY / 2, z: 0 },
-                size: { x: pfostenB, y: mu.apexY, z: tiefe },
-            },
-            {
-                position: { x: +(mu.rimAx + pfostenB / 2), y: mu.apexY / 2, z: 0 },
-                size: { x: pfostenB, y: mu.apexY, z: tiefe },
-            },
-            // Bogen-Schultern — die Haunches über der Kämpferlinie (Mitte frei).
-            {
-                position: { x: -(mu.rimAx - schulterB / 2), y: (schulterY0 + mu.apexY) / 2, z: 0 },
-                size: { x: schulterB, y: mu.apexY - schulterY0, z: tiefe },
-            },
-            {
-                position: { x: +(mu.rimAx - schulterB / 2), y: (schulterY0 + mu.apexY) / 2, z: 0 },
-                size: { x: schulterB, y: mu.apexY - schulterY0, z: tiefe },
-            },
-            // Krone — Schlussstein-/Rim-Zone über dem Scheitel, volle Breite.
-            {
-                position: { x: 0, y: mu.apexY + kroneH / 2, z: 0 },
-                size: { x: 2 * (mu.rimAx + pfostenB), y: kroneH, z: tiefe },
-            },
-        ];
+        const box = (x0, x1, y0, y1, hz) =>
+            x1 - x0 > 0.02 && y1 - y0 > 0.02 && hz > 0.01
+                ? {
+                      position: { x: (x0 + x1) / 2, y: (y0 + y1) / 2, z: 0 },
+                      size: { x: x1 - x0, y: y1 - y0, z: 2 * hz },
+                  }
+                : null;
+        const pseudo = [];
+        [-1, 1].forEach((sx, k) => {
+            const hs = hm.seiten[k];
+            const spiegel = (b) =>
+                b ? Object.assign(b, { position: Object.assign(b.position, { x: sx * b.position.x }) }) : null;
+            // Pfosten — von der Öffnungskante (rimAx) bis zur gezeichneten Außenkante, bis zur Kämpferlinie
+            pseudo.push(spiegel(box(mu.rimAx, hs.pfostenX, 0, mu.springY, hs.pfostenZ)));
+            // über der Kämpferlinie bis zum Scheitel: der Rahmen bis zur Außenkante oben, die Schulter über der Öffnung
+            pseudo.push(spiegel(box(mu.rimAx, hs.obenX, mu.springY, mu.apexY, hs.obenZ)));
+            pseudo.push(spiegel(box(mu.rimAx - schulterB, mu.rimAx, schulterY0, mu.apexY, hs.obenZ)));
+            // die Krone über dem Scheitel bis zur gezeichneten Oberkante, die Hälfte dieser Seite
+            pseudo.push(spiegel(box(0, hs.obenX, mu.apexY, hm.oberkante, hs.obenZ)));
+        });
         const boxes = [];
         for (const part of pseudo) {
             const aabb = this._blockerComputePartAABB(entry, part);
             if (aabb) boxes.push(aabb);
         }
         return boxes;
+    }
+
+    // DIE GEMESSENE TOR-HÜLLE (Leben-Schau 2): die Gestalt, die die Welt zeichnet (porta-core `buildInstance` — dieselbe
+    // Bau-Funktion, die das Studio im Worker ruft; seed-invariant, die Goldens frieren es ein), EINMAL je Gestalt synchron im
+    // Kern gebaut und gemessen (am Spawn, Lockstep): die Außenkante der Pfosten (Punkte außerhalb der Öffnung ±rimAx im
+    // Körper-Band bis zur Kämpferlinie), die Tiefe dort, und darüber Außenkante, Tiefe und Oberkante des Rahmens. Gemerkt am
+    // Tor-Gesetz (`_torGesetzFor`, je Gestalt); die Gruppe erreicht nie einen Renderer (keine GPU-Puffer), der Sammler nimmt
+    // sie. null ohne Bau-Funktion (das Tor kollidiert dann nicht als Gestalt, der Parts-Pfad trägt).
+    _torHuelleGemessen(tor) {
+        if (tor.huelle !== undefined) return tor.huelle;
+        const core = typeof globalThis !== "undefined" ? globalThis.__portaCore : null;
+        const g = core && typeof core.buildInstance === "function" ? core.buildInstance(tor.gestalt, 0, 0) : null;
+        if (!g) return (tor.huelle = null);
+        const mu = tor.mu;
+        const v = new THREE.Vector3();
+        // je Seite (0: x < 0, 1: x > 0) — eine Ruine fehlt hier ein Stein, dort nicht
+        const seite = () => ({ pfostenX: mu.rimAx, pfostenZ: 0, obenX: mu.rimAx, obenZ: 0 });
+        const S = [seite(), seite()];
+        let oberkante = mu.apexY;
+        g.updateMatrixWorld(true);
+        g.traverse((o) => {
+            const P = o.isMesh && o.geometry && o.geometry.attributes ? o.geometry.attributes.position : null;
+            if (P)
+                for (let i = 0; i < P.count; i++) {
+                    v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);
+                    const s = S[v.x < 0 ? 0 : 1];
+                    const ax = Math.abs(v.x);
+                    const az = Math.abs(v.z);
+                    if (v.y > oberkante) oberkante = v.y;
+                    if (v.y > mu.springY) {
+                        if (ax > s.obenX) s.obenX = ax;
+                        if (az > s.obenZ) s.obenZ = az;
+                    } else if (v.y > 0.1 && ax >= mu.rimAx) {
+                        if (ax > s.pfostenX) s.pfostenX = ax;
+                        if (az > s.pfostenZ) s.pfostenZ = az;
+                    }
+                }
+        });
+        tor.huelle = { seiten: S, oberkante };
+        return tor.huelle;
     }
 
     // Nächstes Fluss-Segment an (x,z), wenn der Punkt im Kanal liegt (dist ≤ halbe Breite + Tiefe / bankNeigung, die
@@ -71829,18 +71877,8 @@ class AnazhRealm {
             this._blattAtlasBild = m.blattAtlas;
         // Der Katalog steht: die Hotbar urteilt über ihre Namen und legt, wenn sie leer ist, den Start-Gurt.
         this._hotbarNachBuch();
-        // Die Welt-Skala der Bäume steht (`PORTAL_RENDER_CONFIG.placement`): die Stamm-Hülle der Bäume, die vor dem Buch
-        // entstanden (Reload mit kaltem Buch), misst jetzt im Weltmaß.
-        this._baumHuellenNachBuch();
-    }
-
-    // Die Stamm-Blocker (`_populateBlockerAABBs` × `_baumWeltSkala`) jedes Baum-Eintrags neu — einmal nach der Buch-Ankunft,
-    // die Kosten tragen nur die Baum-Einträge.
-    _baumHuellenNachBuch() {
-        for (const e of this.state.architectures || []) {
-            if (!e || !e.position || !/^baum_/.test(e.type || "")) continue;
-            this._populateBlockerAABBs(e);
-        }
+        // (Die Stamm-Hüllen brauchen das Buch nicht mehr: die Welt-Skala liest vor ihm DIESELBE Tafel aus dem Kern —
+        // `_baumHuellenNachBuch` fiel mit dem Hand-Spiegel, Leben-Schau 2.)
     }
 
     // DER START-GURT (Leben-Schau 07.10., L7): je Studio-Art EIN platzierbares Werk, in der Reihenfolge des Katalogs
@@ -76636,8 +76674,10 @@ class AnazhRealm {
     // alte `h % 16` hing an den unteren Bits, die im Baum-Raster periodisch laufen — dieselbe Gestalt 16 Zellen weiter
     // mit 0,339 statt 1/16 (ein Klon-Gitter mit 54 m Periode). Ohne Buch null: der Aufrufer deferriert, nie eine
     // geratene Zahl. Gleicher Same = gleicher Baum, scale/yaw/tint je Instanz.
-    _foundryVariantFor(seed, preset) {
-        const V = this._foundryGestalten(preset);
+    // `Vk` (optional): die Gestalten-Zahl aus dem Kern (`_studioGestaltenKern`) — der Blocker eines Fels-Werks wählt seine
+    // Gestalt synchron am Spawn, das Bild mit der Zahl des Buchs (für die Fels-Arten dieselbe; gate:kollision-bild misst es).
+    _foundryVariantFor(seed, preset, Vk) {
+        const V = Number.isInteger(Vk) && Vk >= 1 ? Vk : this._foundryGestalten(preset);
         if (!V) return null;
         const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0; // Knuth-Mix
         return 1 + Math.floor((h * V) / 4294967296);
@@ -77456,19 +77496,21 @@ class AnazhRealm {
         return out;
     }
     // Die EINE Template→Welt-Scale-Quelle (Studio `SCALE[sp]·tr.s·0.82`): gecachte Scale-Matrix für die
-    // Flat-Leaves. Bäume tragen den 0.82-Wald-Mul, strauch/blume die reinen Tabellen-Werte, Fels/Kristall/
-    // Unbekanntes → Identität (separat abgeglichen, hier NICHT anfassen). Read-only → ein Cache je Faktor.
+    // Flat-Leaves. Bäume tragen den 0.82-Wald-Mul, strauch/blume/Fels/Kristall die reinen Tabellen-Werte,
+    // Unbekanntes → Identität. Read-only → ein Cache je Faktor. Leser: das Bild (`_foundryFlattenFor`, die Karte) UND die
+    // Kollision (`_studioWeltSkala`) — beide in derselben Skala.
     _foundryWorldScaleMatrix(preset) {
         if (!this._foundryScaleMats) this._foundryScaleMats = new Map();
         // Die LIVE-Quelle führt: `PORTAL_RENDER_CONFIG.placement` (foundry-core.js via get-render-config)
         // trägt die Welt-Skala je Preset — Studio-Edit oder neues Preset folgt ohne Code (gate:nervensystem).
-        // STUDIO_WORLD_SCALE ist NUR Boot-Fenster-Fallback. Understory (Vorlagen-scale < 1) trägt den
-        // 0.82-Mul NICHT; ein Preset ohne scale-Zeile → 1.
+        // Vor dem Buch liest sie DIESELBE Tafel synchron aus dem Kern (`__terrainCore.PORTAL_RENDER_CONFIG`) — der
+        // Hand-Spiegel STUDIO_WORLD_SCALE fiel (er trug nur die Bäume: ein Fels kollidierte bis zum Buch in
+        // Vorlagen-Größe, Leben-Schau 2). Understory (Vorlagen-scale < 1) trägt den 0.82-Mul NICHT; ein Preset ohne
+        // scale-Zeile → 1.
         const rc = AnazhRealm._studioRenderConfig;
-        const live = rc && rc.placement && rc.placement.scale ? rc.placement : null;
-        const T = live ? live.scale : AnazhRealm.STUDIO_WORLD_SCALE;
-        const treeMul =
-            live && typeof live.treeScaleMul === "number" ? live.treeScaleMul : AnazhRealm.STUDIO_TREE_SCALE_MUL;
+        const live = rc && rc.placement && rc.placement.scale ? rc.placement : AnazhRealm._studioPlatzKern();
+        const T = live.scale;
+        const treeMul = live.treeScaleMul;
         const base = T && Object.prototype.hasOwnProperty.call(T, preset) ? T[preset] : 1;
         const k = base === 1 ? 1 : base < 1 ? base : base * treeMul;
         let m = this._foundryScaleMats.get(k);
@@ -101127,26 +101169,33 @@ AnazhRealm.UNDERGROWTH = Object.freeze({
     canopyK: 0.85, // exp(-cover·canopyK): Dach-Dämpfung des Bodenlichts (1=Lichtung, →0 dichtes Dach)
 });
 
-// STUDIO_WORLD_SCALE — Studio-Welt-Scale-Tabelle (Vorlage phytogenesis, byte-treu): das Studio baut
-// Templates KLEIN (Baum ~4.1 m) und platziert sie mit DIESEN Faktoren (Bäume zusätzlich ·0.82) →
-// 14-m-Eichen, 1.3-m-Sträucher. Konsument: der EINE Chokepoint `_foundryWorldScaleMatrix` →
-// `_foundryFlattenFor`/`_foundryBuildImpostorFlat`. Ändert sich die Tabelle im Portalfile, muss
-// dieser Spiegel nach (Doc-Sync-Grep: STUDIO_WORLD_SCALE).
+// DIE PLATZIERUNG DES KERNS (Leben-Schau 2, 09.10.): die Welt-Skala je Preset (`placement.scale`, `treeScaleMul`) lebt
+// EINMAL in foundry-core.js (`PORTAL_RENDER_CONFIG.placement`) und reist synchron im Terrain-Namensraum — der Leser vor
+// dem Buch (`_foundryWorldScaleMatrix`). Der Hand-Spiegel STUDIO_WORLD_SCALE (acht Baum-/Busch-Zeilen) fiel: ohne Fels-
+// und Kristall-Zeilen kollidierte jeder Fels bis zum Buch in Vorlagen-Größe. Fehlt der Kern, bricht es laut.
+AnazhRealm._studioPlatzKern = function () {
+    const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+    const pl = tc && tc.PORTAL_RENDER_CONFIG ? tc.PORTAL_RENDER_CONFIG.placement : null;
+    if (!pl || !pl.scale || typeof pl.treeScaleMul !== "number")
+        throw new Error("Die Platzierung: foundry-core.js fehlt (__terrainCore.PORTAL_RENDER_CONFIG.placement)");
+    return pl;
+};
+// Die Gestalten-Zahl einer Art aus dem Kern (`PORTAL_RENDER_CONFIG.lod.budget.gestalten`, synchron): die Budget-Zeile der
+// Art, sonst '*' — dieselbe Regel wie `_foundryGestalten` am Buch (das Buch mischt die Zeilen der Zweit-Kerne hinzu, die
+// Fels-Arten tragen nur die Zeilen dieses Kerns). Leser: der Fels-Blocker (`_felsBlockerParts`).
+AnazhRealm._studioGestaltenKern = function (preset) {
+    const tc = typeof globalThis !== "undefined" ? globalThis.__terrainCore : null;
+    const rc = tc ? tc.PORTAL_RENDER_CONFIG : null;
+    const G = rc && rc.lod && rc.lod.budget ? rc.lod.budget.gestalten : null;
+    if (!G) return AnazhRealm._kernPflichtBruch("terrain:PORTAL_RENDER_CONFIG.lod.budget.gestalten");
+    const V = Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
+    if (!(Number.isInteger(V) && V >= 1)) return AnazhRealm._kernPflichtBruch("terrain:lod.budget.gestalten['*']");
+    return V;
+};
 // Wald-Generator (unten, Vorlage `plantForest`): variabel-radius Poisson-Disc mit
 // Kronen-Schüchternheit + Arten-Nische. `crown` = Beästungsradius (m) bei Größe 1; `pack` = Zentren
 // ≥ pack·(Ti+Tj); `dartsPerCell` = Kandidaten je Zelle; `slope*` = Boden-Grundierung für Klippen.
 // Gelesen NUR von `_forestCellDarts`/`_forestPlantChunk`.
-AnazhRealm.STUDIO_WORLD_SCALE = Object.freeze({
-    eiche: 4.16,
-    fichte: 4.85,
-    birke: 4.13,
-    tanne: 4.26,
-    weide: 2.75,
-    mammut: 4.31,
-    strauch: 0.332,
-    blume: 0.27,
-});
-AnazhRealm.STUDIO_TREE_SCALE_MUL = 0.82; // der Vorlagen-Wald-Mul (Z.2375, nur Bäume)
 AnazhRealm.FOREST = Object.freeze({
     cell: 12, // Poisson-Zell-Raster (m) — Kronen-Schüchternheit liest ±2 Zellen
     pack: 1.16, // Zentren ≥ pack·(Ti+Tj): echte Lichtkonkurrenz (Vorlage PACK, kein Ineinanderwachsen)

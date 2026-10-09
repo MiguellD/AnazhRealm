@@ -869,6 +869,13 @@ const FORBIDDEN = [
     // Warteschlange `_erstWartet`, bereit ist die Pipeline, sobald r184 sie in seinen Zustand schreibt.
     { token: "_erstPipeline", fiel: "Welle K — die Bereitschaft liest den Zustand (_erstWartet), nie das Versprechen" },
     { token: "_erstNeuAufnehmen", fiel: "Welle K — EINE Warteschlange (_erstWartet ohne Pipeline)" },
+    // KOLLISION = BILD (Leben-Schau 2, 09.10.): jeder Körper liest den Boden UNTER sich (der Wagen las die Oberkante der Säule
+    // und fiel unter dem Überhang des Spalts durch die Welt), jedes Studio-Werk kollidiert in seiner Welt-Skala und Gestalt
+    // (der Felsturm stieß als Eisen-Mast), die Platzierung liest der Kern statt eines Hand-Spiegels.
+    { token: "_baumWeltSkala", fiel: "Leben-Schau 2 — _studioWeltSkala trägt die Welt-Skala jedes Studio-Werks" },
+    { token: "STUDIO_WORLD_SCALE", fiel: "Leben-Schau 2 — die Welt-Skala liest der Kern (__terrainCore.PORTAL_RENDER_CONFIG)" },
+    { token: "STUDIO_TREE_SCALE_MUL", fiel: "Leben-Schau 2 — der Wald-Mul liest der Kern (placement.treeScaleMul)" },
+    { token: "_baumHuellenNachBuch", fiel: "Leben-Schau 2 — die Stamm-Hülle misst ab dem Spawn in der Welt-Skala" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

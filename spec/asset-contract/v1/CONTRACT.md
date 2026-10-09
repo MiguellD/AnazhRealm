@@ -155,3 +155,11 @@ kolossMasse`), `jagd.beuteMasse` 1,25 → 2,0 (× die Masse des Jägers in kg: d
 den Bären, 335 kg). Gegen den Zweig genau 28 Felder (7 je Rezept) plus die 5 Fahrzeug-Felder `fahrprofil.huelle.dichte`
 aus main; gegen main genau die 72 Felder der Welle-LF-Vertrags-Akte (18 je Rezept), der Rest byte-gleich (gegen beide
 alten Bytes geprüft).
+
+**Re-Mint 09.10.2026 (Leben-Schau 2 koerper-bild, begründet — DIE HÜLLE JE GESTALT):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1` (world-params, render-config und alle 124 Mesh-Goldens byte-gleich, `gate:asset-contract` vor dem
+Re-Mint: 124 von 124). Die Fels-Rezepte trugen EINE Kollisions-Hülle je Art (`fx.huelle {rx, rz, y1}`, gemessen über
+4 Varianten); das Studio zeichnet 16 Gestalten (Geröll 1), der Felsturm stieß als Eisen-Mast. Jetzt `fx.huellen`: je
+Gestalt 1..V die Hülle ihrer LOD-0-Gestalt im Vorlagen-Raum `[x0, x1, y1, z0, z1]` (+5 %), der Welt-Blocker liest die
+Zeile seiner Gestalt in der Welt-Skala (`gate:kollision-bild`: Felsturm 16,46 → 0,05 m über dem Bild). Genau 12 Felder
+(je Fels-Rezept `huelle` fort, `huellen` neu), der Rest byte-gleich; die Gestalt liest die Hülle nie.

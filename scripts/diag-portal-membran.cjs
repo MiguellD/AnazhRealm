@@ -112,9 +112,12 @@ function check(name, ok, detail) {
             !hit(ex - mu.rimAx * 0.6, ey + 1.2, ez) &&
             !hit(ex, ey + 1.2, ez + mu.zFace * 0.8) &&
             !hit(ex, ey + 1.2, ez - mu.zFace * 0.8);
-        // Pfosten-Probe: mitten im Rahmen, beidseitig.
-        const jambX = mu.rimAx + Math.max(0.3, mu.jambW * (mu.orders + 0.5)) / 2;
-        res.k.pfostenSolide = hit(ex + jambX, ey + 1.2, ez) && hit(ex - jambX, ey + 1.2, ez);
+        // Pfosten-Probe: mitten im Rahmen, beidseitig — der Pfosten reicht von der Öffnung bis zur gezeichneten Außenkante
+        // (`_torHuelleGemessen`, seit der Leben-Schau 2 aus dem Bild statt aus jambW·(Ordnungen + ½)).
+        const hm = r._torHuelleGemessen(tor);
+        const jambXr = (mu.rimAx + hm.seiten[1].pfostenX) / 2;
+        const jambXl = (mu.rimAx + hm.seiten[0].pfostenX) / 2;
+        res.k.pfostenSolide = hit(ex + jambXr, ey + 1.2, ez) && hit(ex - jambXl, ey + 1.2, ez);
         // Krone-Probe: über dem Scheitel.
         res.k.kroneSolide = hit(ex, ey + mu.apexY + 0.15, ez);
 
