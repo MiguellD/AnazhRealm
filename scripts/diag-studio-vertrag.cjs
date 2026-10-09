@@ -278,13 +278,14 @@ function validateManifest(m) {
                 }
                 if ("boden" in z && !(typeof z.boden === "number" && z.boden >= 0 && z.boden < 1))
                     v.push(`B2c: lod.budget.${k}[${st}].boden muss in [0, 1) liegen`);
-                // S3 (08.10.): die Rispe des Grases — Grannen und Segmente je Rispe (ganz >= 1), die Breite der Granne in
-                // Einheiten der vollen (> 0); emitGrass liest sie je gelieferter Stufe.
+                // S3 (08.10.): die Rispe des Grases — Grannen (ganz >= 1) und Segmente je Rispe (ganz 1..3: die Stufe tastet
+                // die EINE Kurve der Granne in 3 Segmenten ab, sie verfeinert nie), die Breite der Granne in Einheiten der
+                // vollen (> 0); emitGrass liest sie je gelieferter Stufe.
                 if ("rispe" in z) {
                     const r = z.rispe;
                     const ganz = (x) => Number.isInteger(x) && x >= 1;
-                    if (!r || !ganz(r.grannen) || !ganz(r.segmente) || !(r.breite > 0 && isFinite(r.breite)))
-                        v.push(`B2c: lod.budget.${k}[${st}].rispe muss grannen, segmente (ganz >= 1) und breite (> 0) tragen`);
+                    if (!r || !ganz(r.grannen) || !ganz(r.segmente) || r.segmente > 3 || !(r.breite > 0 && isFinite(r.breite)))
+                        v.push(`B2c: lod.budget.${k}[${st}].rispe muss grannen, segmente (ganz, 1..3) und breite (> 0) tragen`);
                 }
                 // W6 (05.10.): die Bahn der L1-Aeste — ein Ring faellt, wenn Mitte und Radius hoechstens so viele
                 // Baumhoehen von der Strecke seiner Nachbarn abweichen (foundry-core __ringBahn): 0 < ringToleranz < 0,01.
