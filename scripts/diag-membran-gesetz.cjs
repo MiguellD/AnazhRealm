@@ -188,10 +188,17 @@ check("Stamm konsumiert MEMBRAN_GESETZ (Welt-Leser)", stamm.includes("MEMBRAN_GE
 // Anweisung selbst) und der Nebel-Port existiert als Material-Bauer. Seit
 // 23.09. (3242b360) läuft die Speisung über das Gesetz `pcN.nebelAct(mu.fog,
 // act)`; die Probe las bis 09.10. nur die alte Zeile `nebelAct.value = mu.fog`
-// und stand rot — sie liest jetzt die Zuweisung bis zu ihrem Semikolon.
+// und stand rot — sie liest jetzt die Zuweisung bis zu ihrem Semikolon, und darin den Ruf des GESETZES mit mu.fog
+// (Gegenprüfung 09.10.: ein mu.fog allein im Rückfall-Zweig hätte die Probe grün gelassen).
+const nebelSpeise = /nebelAct\.value\s*=[^;]*\bpcN\.nebelAct\(\s*mu\.fog\s*,/;
 check(
-    "Stamm konsumiert mu.fog (nebelAct-Uniform-Speisung im Tick — der Kanal ist nicht mehr tot)",
-    /nebelAct\.value\s*=[^;]*\bmu\.fog\b/.test(stamm) && stamm.includes("_nebelMaterialFor")
+    "Stamm konsumiert mu.fog (nebelAct-Uniform-Speisung im Tick über das Gesetz pcN.nebelAct — der Kanal ist nicht mehr tot)",
+    nebelSpeise.test(stamm) && stamm.includes("_nebelMaterialFor")
+);
+// Gegenprobe: steht mu.fog nur noch im Rückfall-Zweig, fällt die Probe rot
+check(
+    "SELBST-TEST: mu.fog nur im Rückfall-Zweig wird erkannt",
+    !nebelSpeise.test(stamm.replace(/pcN\.nebelAct\(\s*mu\.fog\s*,/g, "pcN.nebelAct(undefined,"))
 );
 const idx = fs.readFileSync(path.join(root, "index.html"), "utf8");
 check("porta-core lädt main-seitig (mit ?v=-Buster)", /porta-core\.js\?v=/.test(idx));
