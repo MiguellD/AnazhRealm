@@ -29,6 +29,13 @@
 //       Uhren dieselbe Farbe mit dem Abbild und mit dem vollen Klon, und ohne Grund eine andere (die Probe hängt an der
 //       Tiefe). Die Bühnen-Ebene trägt die Wicklung des Iso-Wassers (Vorderseite unten, der Stoff zeichnet BackSide) —
 //       bis 07.10. lag sie umgekehrt, das Wasser der Wand wurde gezeichnet und gecullt, kein Pixel.
+//   (g) RAHMEN-ZIEL (0910-1) — der Direktpfad zeichnet in r184s Rahmen-Ziel (`_getFrameBufferTarget`, rgba16float +
+//       depth24plus, `isPostProcessingRenderTarget` → im Band `tex:r184-ausgabe`); die Post-Kette legt es nie an. Vor dem
+//       ersten Ausflug, nach der Rückkehr und am Ende lebt keines (r184 hielt es bis zur Entsorgung der Leinwand: 0710-6 und
+//       0710-9 maßen `band --ort genesis` nach `zerlegen` mit 23,7 MB davon), im Direktpfad steht es, und die Regel der Band
+//       (`rahmenZielBefunde`) nennt es.
+//       DIE DRIFT (Gegenprüfung 0910-1 A): fehlt r184s Abschied am Leinwand-Ziel, fällt das Ziel trotzdem, und `_rahmenZielAbschied`
+//       meldet ERROR — eine ERROR-Zeile von ihm außerhalb der Probe und jede andere ERROR-Zeile der Seite sind rot.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette; Port POST_KETTE_PORT, Standard 4583)
@@ -36,6 +43,7 @@
 "use strict";
 
 const SK = require("./lib/shader-kosten.cjs");
+const BAND = require("./lib/band-urteil.cjs");
 
 const N_FRAMES = 4;
 const BUDGET_AUSGABE = { unbedingtMax: 9, zweigMin: 24 };
@@ -134,6 +142,49 @@ function urteil(z) {
         if (sm.gpuFehler && sm.gpuFehler.length)
             v.push(`SAUM: ${sm.gpuFehler.length} GPU-Validierungs-Fehler: ${sm.gpuFehler[0]}`);
     }
+    // (g) DAS RAHMEN-ZIEL: der Direktpfad legt es an (sonst ist die Probe blind), und die Regel der Band nennt es; in der
+    // Post-Kette — vor dem ersten Ausflug, nach der Rückkehr und am Ende — lebt keines
+    const rahmenRot = (wo, rz) => {
+        if (!rz) return v.push(`RAHMEN-ZIEL: ${wo} — nicht gemessen (die Wand ist blind)`);
+        if (rz.ziele > 0 || rz.n > 0)
+            v.push(
+                `RAHMEN-ZIEL: ${wo} — ${rz.ziele} r184-Rahmen-Ziel(e) leben in der Post-Kette weiter: ` +
+                    (BAND.rahmenZielBefunde(null, { erzeuger: [{ erzeuger: "r184-ausgabe", mb: rz.mb, n: rz.n }] })
+                        .map((b) => b.text)
+                        .join("") || `${rz.ziele} Ziel(e) ohne Textur`)
+            );
+    };
+    for (const s of schritte) {
+        if (s.name === "Render-Fehler") continue; // der Rückfall des Spiels bleibt im Direktpfad, sein Ziel ist in Gebrauch
+        if (!s.direkt) rahmenRot(s.name, s.rahmenZiel);
+        else if (
+            !(s.rahmenZiel && s.rahmenZiel.ziele >= 1 && s.rahmenZiel.n >= 1) ||
+            BAND.rahmenZielBefunde(null, {
+                erzeuger: [{ erzeuger: "r184-ausgabe", mb: s.rahmenZiel.mb, n: s.rahmenZiel.n }],
+            }).length !== 1
+        )
+            v.push(
+                `RAHMEN-ZIEL: ${s.name} — r184 legte kein Rahmen-Ziel an, oder die Band nennt es nicht ` +
+                    `(${JSON.stringify(s.rahmenZiel)}) — die Probe ist blind`
+            );
+    }
+    if (schritte.length >= 4) rahmenRot("am Ende (nach Wasser und Godrays)", z.rahmenEnde);
+    // (g) die Drift: ohne r184s Hörer fällt das Ziel trotzdem (die Schritt-Prüfung oben: „Post-Kette nach Drift" trägt 0), und
+    // der Abschied meldet es LAUT — eine ERROR-Zeile von `_rahmenZielAbschied` außerhalb der Drift ist rot
+    const DRIFT = /RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt/;
+    const d = z.drift;
+    if (!d) v.push("RAHMEN-ZIEL: die Drift-Probe lief nicht (der zweite Abschied steht ohne Wand)");
+    else if (!(d.hoererWeg >= 1))
+        v.push("RAHMEN-ZIEL: am Leinwand-Ziel hängt kein r184-Abschied (`_frameBufferTargets.delete(`) — Vendor-Drift, die Probe ist blind");
+    else if (!(d.fehler || []).some((f) => DRIFT.test(f)))
+        v.push(`RAHMEN-ZIEL: ohne r184s Hörer fiel der Abschied STILL (${JSON.stringify(d.fehler)}) — die Drift bräche nur im Log`);
+    const rahmenErrors = (z.konsolenFehler || []).filter((t) => /RAHMEN-ZIEL/.test(t));
+    const erwartet = d ? (d.fehler || []).filter((f) => DRIFT.test(f)).length : 0;
+    if (rahmenErrors.length > erwartet)
+        v.push(
+            `RAHMEN-ZIEL: ${rahmenErrors.length - erwartet} ERROR-Zeile(n) von \`_rahmenZielAbschied\` außerhalb der Drift-Probe: ${rahmenErrors[0]}`
+        );
+    for (const t of (z.konsolenFehler || []).filter((x) => !/RAHMEN-ZIEL/.test(x))) v.push(`KONSOLE: ${t}`);
     const fang = schritte.find((s) => s.name === "Render-Fehler");
     if (fang && !fang.direkt) v.push("WEICHE: nach dem Render-Fehler der Kette fährt der Loop nicht den Direktpfad");
     if (z.seitenFehler && z.seitenFehler.length)
@@ -169,6 +220,7 @@ function selbsttest() {
         tiefenKopien: 4,
         tiefe: direkt,
         leinwandTiefeGpu: false,
+        rahmenZiel: direkt ? { ziele: 1, n: 2, mb: 0.01 } : { ziele: 0, n: 0, mb: 0 },
         mitte: [190, 40, 40],
         abbild: { format: "r32float", groesse: [16, 24], leinwand: [32, 24], mitte: 0.98, soll: 0.98 },
     });
@@ -178,6 +230,14 @@ function selbsttest() {
             schritt("Direktpfad", true),
             schritt("Post-Kette zurück", false),
             schritt("Render-Fehler", true),
+            schritt("Post-Kette nach Drift", false),
+        ],
+        drift: {
+            hoererWeg: 1,
+            fehler: ["RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt"],
+        },
+        konsolenFehler: [
+            "[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt",
         ],
         seitenFehler: [],
         gpuFehler: [],
@@ -191,6 +251,7 @@ function selbsttest() {
             ohneGrund: [20, 40, 50],
         },
         saum: { leinwand: [321, 241], kanten: 30, abweichend: 0, dMax: 3, paritaeten: 2, gpuFehler: [] },
+        rahmenEnde: { ziele: 0, n: 0, mb: 0 },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const mit = (f) => {
@@ -218,6 +279,48 @@ function selbsttest() {
             name: "GPU-Textur bleibt",
             z: mit((z) => (z.schritte[2].leinwandTiefeGpu = true)),
             muss: /GPU-Textur der Leinwand-Tiefe lebt/,
+        },
+        {
+            name: "Rahmen-Ziel bleibt nach dem Ausflug (0710-9: band nach zerlegen, +23,7 MB)",
+            z: mit((z) => (z.schritte[2].rahmenZiel = { ziele: 1, n: 2, mb: 23.73 })),
+            muss: /RAHMEN-ZIEL: Post-Kette zurück — 1 r184-Rahmen-Ziel\(e\) leben .*23\.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads/,
+        },
+        {
+            name: "Rahmen-Ziel am Ende",
+            z: mit((z) => (z.rahmenEnde = { ziele: 1, n: 0, mb: 0 })),
+            muss: /RAHMEN-ZIEL: am Ende .* 1 Ziel\(e\) ohne Textur/,
+        },
+        {
+            name: "Direktpfad ohne Rahmen-Ziel (blind)",
+            z: mit((z) => (z.schritte[1].rahmenZiel = { ziele: 0, n: 0, mb: 0 })),
+            muss: /RAHMEN-ZIEL: Direktpfad — r184 legte kein Rahmen-Ziel an/,
+        },
+        { name: "Rahmen-Ziel ungemessen", z: mit((z) => delete z.schritte[0].rahmenZiel), muss: /nicht gemessen/ },
+        {
+            name: "Drift: das Ziel bleibt ohne r184s Hörer",
+            z: mit((z) => (z.schritte[4].rahmenZiel = { ziele: 1, n: 2, mb: 0.88 })),
+            muss: /RAHMEN-ZIEL: Post-Kette nach Drift — 1 r184-Rahmen-Ziel/,
+        },
+        {
+            name: "Drift: der Abschied fällt still",
+            z: mit((z) => (z.drift.fehler = [])),
+            muss: /ohne r184s Hörer fiel der Abschied STILL/,
+        },
+        {
+            name: "Drift: kein r184-Hörer zu finden (Vendor-Drift)",
+            z: mit((z) => (z.drift.hoererWeg = 0)),
+            muss: /kein r184-Abschied .* die Probe ist blind/,
+        },
+        { name: "Drift-Probe fehlt", z: mit((z) => delete z.drift), muss: /die Drift-Probe lief nicht/ },
+        {
+            name: "ERROR von _rahmenZielAbschied außerhalb der Drift",
+            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied … (Vendor-Drift)")),
+            muss: /1 ERROR-Zeile\(n\) von `_rahmenZielAbschied` außerhalb der Drift-Probe/,
+        },
+        {
+            name: "eine fremde ERROR-Zeile der Seite",
+            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] Post-Processing fehlt")),
+            muss: /KONSOLE: .*Post-Processing fehlt/,
         },
         { name: "Abbild fehlt", z: mit((z) => (z.schritte[0].abbild = { fehlt: true })), muss: /kein Tiefen-Abbild/ },
         {
@@ -517,6 +620,23 @@ function buehne(nFrames) {
             const t = rend.getCanvasTarget().depthTexture;
             return !!(t && rend.backend.has(t) && rend.backend.get(t).texture);
         };
+        // (g) DAS RAHMEN-ZIEL DES DIREKTPFADS (0910-1): r184s Rahmen-Ziele (`_frameBufferTargets`, je Leinwand- bzw.
+        // Ausgabe-Ziel) und die Textur-Objekte, die der Zensus der Band dem Erzeuger `r184-ausgabe` gibt
+        // (`isPostProcessingRenderTarget`) — in MB nach r184s eigener Schätzung
+        const rahmenZiel = () => {
+            let n = 0,
+                b = 0;
+            for (const [t, v] of rend.info.memoryMap)
+                if (t && t.isTexture && t.renderTarget && t.renderTarget.isPostProcessingRenderTarget) {
+                    n++;
+                    b += typeof v === "number" ? v : 0;
+                }
+            return {
+                ziele: rend._frameBufferTargets ? rend._frameBufferTargets.size : null,
+                n,
+                mb: +(b / 1048576).toFixed(2),
+            };
+        };
         const schritte = [];
         const schritt = async (name) => {
             const s = { name, fehler: [] };
@@ -539,6 +659,7 @@ function buehne(nFrames) {
             s.direkt = !st.postProcessing || st.postProcessingFailed === true;
             s.tiefe = rend.depth;
             s.leinwandTiefeGpu = canvasTiefe();
+            s.rahmenZiel = rahmenZiel();
             // Die Bild-Mitte aus dem Ausgabe-Pfad (was der Spieler sieht): 32×24, das Mittel der vier Mitten-Zellen.
             try {
                 setzeKamera();
@@ -602,6 +723,27 @@ function buehne(nFrames) {
                 throw new Error("gate:post-kette — erzwungener Render-Fehler der Kette");
             };
             await schritt("Render-Fehler");
+            // (g) DIE DRIFT (Gegenprüfung 0910-1 A): fehlt r184s Abschied am Leinwand-Ziel (der dispose-Hörer, den
+            // `_getFrameBufferTarget` anhängt), fällt das Rahmen-Ziel des Rückfalls trotzdem — LAUT: `_rahmenZielAbschied` meldet
+            // ERROR. Die Wand nimmt den Hörer fort, kehrt zur Kette zurück und verlangt beides; ihre ERROR-Zeile ist die einzige,
+            // die das Urteil duldet.
+            const leinwand = rend.getCanvasTarget();
+            const hoerer = (leinwand._listeners && leinwand._listeners.dispose) || [];
+            const fort = hoerer.filter((h) => /_frameBufferTargets\.delete\(/.test(Function.prototype.toString.call(h)));
+            for (const h of fort) leinwand.removeEventListener("dispose", h);
+            const driftFehler = [];
+            const logRoh = r.log;
+            r.log = function (m, lvl) {
+                if (lvl === "ERROR") driftFehler.push(String(m).slice(0, 200));
+                return logRoh.apply(this, arguments);
+            };
+            st.postProcessingFailed = false;
+            try {
+                await schritt("Post-Kette nach Drift");
+            } finally {
+                delete r.log;
+            }
+            aus.drift = { hoererWeg: fort.length, fehler: driftFehler };
             st.postProcessingFailed = false;
             // (e) DAS WASSER LIEST DAS ABBILD WIE r184s TIEFE: die unteren sieben Zeilen des Bildes (32×24) sind Wasser über
             // dem Grund. Bei festen Uhren (Wasser, Schaum, Knoten-Zeit) einmal mit dem Abbild, einmal mit r184s
@@ -694,6 +836,9 @@ function buehne(nFrames) {
                 aenderungPct: diff(mit1, ohne),
                 rauschenPct: diff(mit1, mit2),
             };
+            // (g) am Ende: nach Wasser und Godrays (Post-Kette) steht kein Rahmen-Ziel mehr
+            await dev.queue.onSubmittedWorkDone();
+            aus.rahmenEnde = rahmenZiel();
         } catch (e) {
             aus.abbruch = String((e && (e.stack || e.message)) || e)
                 .split("\n")
@@ -718,6 +863,12 @@ function buehne(nFrames) {
     await page.setViewport({ width: 320, height: 240 });
     const seitenFehler = [];
     page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
+    // die ERROR-Zeilen der Seite (das Spiel meldet über `log(…, "ERROR")` → console.log „[ERROR]")
+    const konsolenFehler = [];
+    page.on("console", (m) => {
+        const t = m.text();
+        if (m.type() === "error" || /\[ERROR\]/.test(t)) konsolenFehler.push(t.slice(0, 240));
+    });
     let out = null;
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
@@ -770,7 +921,14 @@ function buehne(nFrames) {
         for (const s of out.schritte)
             log(
                 `${s.name}: ${s.direkt ? "Direktpfad" : "Post-Kette"} · Tiefe ${s.tiefe} · Leinwand-Tiefe auf der GPU ${s.leinwandTiefeGpu} · ` +
+                    `Rahmen-Ziele ${s.rahmenZiel ? `${s.rahmenZiel.ziele} (${s.rahmenZiel.n} Texturen, ${s.rahmenZiel.mb} MB)` : "?"} · ` +
                     `Tiefen-Kopien ${s.tiefenKopien} · Mitte ${JSON.stringify(s.mitte)} · Abbild ${s.abbild && !s.abbild.fehlt ? `${s.abbild.format} ${s.abbild.groesse.join("×")} Mitte ${s.abbild.mitte}/${s.abbild.soll}` : "fehlt"}${s.fehler.length ? " · FEHLER " + s.fehler[0] : ""}`
+            );
+        if (out.rahmenEnde)
+            log(`Rahmen-Ziele am Ende: ${out.rahmenEnde.ziele} (${out.rahmenEnde.n} Texturen, ${out.rahmenEnde.mb} MB)`);
+        if (out.drift)
+            log(
+                `Drift (r184s Abschied entfernt): ${out.drift.hoererWeg} Hörer fort · ERROR-Meldungen ${JSON.stringify(out.drift.fehler)}`
             );
         out.ausgabe = out.ausgabeWgsl ? SK.wgslKosten(out.ausgabeWgsl) : null;
         if (out.ausgabe)
@@ -800,6 +958,7 @@ function buehne(nFrames) {
         process.exit(1);
     }
     out.seitenFehler = seitenFehler;
+    out.konsolenFehler = konsolenFehler;
     const v = urteil(out);
     if (v.length) {
         console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
@@ -808,7 +967,7 @@ function buehne(nFrames) {
     }
     const a = out.ausgabe.abtastungen;
     console.log(
-        `\n✅ GRÜN — vier Wege durch die Weiche ohne Fehler, der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe; ` +
+        `\n✅ GRÜN — fünf Wege durch die Weiche ohne Fehler (mit der Drift ohne r184s Abschied), der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe und ohne Rahmen-Ziel; ` +
             `die Ausgabe tastet unbedingt ${a.unbedingt}×, ${a.zweig}× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild ` +
             `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
             `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}).`

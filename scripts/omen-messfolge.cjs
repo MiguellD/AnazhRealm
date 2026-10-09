@@ -9,7 +9,10 @@
 //   DIE FOLGE: boot · dorf-aus (`window.__anazhAutoSettlement = false`, vor dem Umstellen) · fenster 1920 1080 · umstellen
 //   --ort wiese · buehne (einmal: Mittag · Sonne · Sommer, das Wetter gehalten) · lauf voll · lauf frei (je `lauf 30 --ein 20
 //   --ruhe 300 --tiere frei`) · gpu-bank (12 × 3 je Blick: Gier 0 und −0,88, danach zurück zur Gier des Orts) · band ·
-//   profil (12 s, Regler voll, Top 60) — und stop.
+//   profil (12 s, Regler voll, Top 60) — und stop. DER GENESIS-RING (`--ort genesis`, 0910-1) misst in seinem EIGENEN Boot:
+//   boot · dorf-aus · fenster · umstellen --ort genesis · buehne · band — nie in einer Sitzung, die schon anderes maß.
+//   DIE BAND urteilt ihre Aufzeichnung selbst: steht der Ort nicht (`ortGestellt`: „NICHT GESTELLT"), ist der Lauf ROT und
+//   zählt nie; ein Rahmen-Ziel des Direktpfads im VRAM (`tex:r184-ausgabe`, ein Linsen-Rest) ebenso.
 //   DIE WACHEN nach jedem Schritt (`/wache` der Werkbank):
 //     WETTER   ab der Bühne: kein Schreiber dreht das Wetter (das Buch des Wetter-Spions, `wetterUrteil`), die Uhr des
 //              Auto-Zugs steht eingefroren, das Wort bleibt „sunny";
@@ -35,7 +38,7 @@
 //   misst Falsches — die Zahlen stehen trotzdem im JSON, beim Namen markiert), 2 = Abbruch. Am Ende stirbt die Werkbank samt
 //   Chrome (`beendeBaum`: `/stop`, und hängt er, der ganze Prozess-Baum) — erst dann endet die Folge.
 //
-//   node scripts/omen-messfolge.cjs [--port 4490] [--seite http://localhost:4312] [--serie <name>] [--datei f.json]
+//   node scripts/omen-messfolge.cjs [--ort wiese|genesis] [--port 4490] [--seite http://localhost:4312] [--serie <name>] [--datei f.json]
 //                                   [--lauf-sek 30] [--ein 20] [--ruhe 300] [--profil-sek 12] [--proben 6]
 //   node scripts/omen-messfolge.cjs --selbsttest       (ohne Welt: jede Wache und die Folge-Regel fallen bei ihrem Täter rot)
 //
@@ -57,21 +60,29 @@ const opt = (k, d) => {
     return i >= 0 ? argv[i + 1] : d;
 };
 
-// DIE FOLGE — fest; die Ordnung ist das Gesetz der Messung.
-const FOLGE = [
-    "boot",
-    "dorf-aus",
-    "fenster",
-    "umstellen",
-    "buehne",
-    "lauf-voll",
-    "lauf-frei",
-    "gpu-bank",
-    "band",
-    "profil",
-];
+// DIE FOLGE je Messort — fest; die Ordnung ist das Gesetz der Messung. Die Mess-Wiese trägt die volle Folge. Der Genesis-Ring
+// (0910-1) misst sein Band in einer EIGENEN frischen Sitzung (jeder Aufruf ist ein Boot): in 0710-6 und 0710-9 lief
+// `band --ort genesis` in der Zerleg-Sitzung an der Wiese — die Band-Linse schrieb selbst „NICHT GESTELLT … aufgestellt am Ort
+// wiese", und das Band trug 23,7 MB Rahmen-Ziel des Direktpfads (`tex:r184-ausgabe`). Keine der beiden Zahlen war Genesis.
+const FOLGEN = {
+    wiese: [
+        "boot",
+        "dorf-aus",
+        "fenster",
+        "umstellen",
+        "buehne",
+        "lauf-voll",
+        "lauf-frei",
+        "gpu-bank",
+        "band",
+        "profil",
+    ],
+    genesis: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "band"],
+};
+const ORT = opt("--ort", "wiese");
+if (!FOLGEN[ORT]) throw new Error(`omen-messfolge: kein Messort „${ORT}" (Folgen: ${Object.keys(FOLGEN).join(", ")})`);
+const FOLGE = FOLGEN[ORT];
 const FENSTER = [1920, 1080];
-const ORT = "wiese";
 // die messenden Schritte (Ort und Fenster gelten vor und nach ihnen), die Leser der Pass-Stempel und die Pool-Füller
 const MESSEN = new Set(["lauf-voll", "lauf-frei", "gpu-bank", "band", "profil"]);
 const STEMPEL_LESER = new Set(["lauf-voll", "lauf-frei"]);
@@ -79,8 +90,8 @@ const POOL_FUELLER = new Set(["gpu-bank", "band"]);
 // die Blicke der GPU-Bank (Gier, Bogenmaß): der Blick des Orts und der Schräg-Blick, in dem die ferne Kaskade mehr nimmt
 const BANK_GIER = [0, -0.88];
 
-// DIE FOLGE-REGEL (rein): die gefahrenen Schritte gegen das Gesetz der Messung — jeder Bruch beim Namen.
-function folgeUrteil(namen) {
+// DIE FOLGE-REGEL (rein): die gefahrenen Schritte gegen das Gesetz der Messung (die Folge des Orts) — jeder Bruch beim Namen.
+function folgeUrteil(namen, FOLGE = FOLGEN.wiese) {
     const v = [];
     let i = -1;
     for (const n of namen) {
@@ -119,6 +130,19 @@ function tierUrteil(name, t) {
         if (typeof n !== "number" || !Number.isFinite(n)) v.push(`TIERE ${name}: ${k} ist ${n}`);
     return v;
 }
+// DIE BAND-MESSUNG SELBST (rein, 0910-1): was die Band beim Zählen aufzeichnete — der gestellte Ort (`ortGestellt`: Ort der
+// letzten Aufstellung, Dorf-Zug, Ort-Takt, Gier; „NICHT GESTELLT" ist ROT, der Lauf zählt nie) und ein Rahmen-Ziel des
+// Direktpfads im VRAM (ein Linsen-Rest, `BAND.rahmenZielBefunde`).
+function bandBefunde(messung) {
+    if (!messung || typeof messung !== "object") return ["BAND band: keine Messung (die Band schrieb keine Datei)"];
+    const v = [];
+    if (!Array.isArray(messung.ortGestellt)) v.push("ORT band: die Band zeichnete den gestellten Ort nicht auf");
+    else if (messung.ortGestellt.length) v.push(`ORT band: NICHT GESTELLT — ${messung.ortGestellt.join(" · ")}`);
+    const roh = messung.roh || {};
+    for (const b of BAND.rahmenZielBefunde(roh.vram, roh.texturen)) v.push(`RAHMEN-ZIEL band: ${b.text}`);
+    return v;
+}
+
 // die Tiere in der Kurzfassung (je Messung eine Zeile im Bericht)
 const tierKurz = (t) =>
     t && typeof t === "object"
@@ -384,9 +408,10 @@ async function folge() {
             return e ? e.tiere || null : null;
         };
         const mitTieren = (k) => (k ? Object.assign(k, { tiere: tiereZuletzt() }) : { tiere: tiereZuletzt() });
+        const hat = (n) => FOLGE.includes(n);
         const lauf = (regler) => R("/lauf", { sek: P.laufSek, ein: P.ein, ruhe: P.ruhe, regler, tiere: "frei" });
-        aus.kurz.laufVoll = mitTieren(laufKurz(await schritt("lauf-voll", () => lauf("voll"))));
-        aus.kurz.laufFrei = mitTieren(laufKurz(await schritt("lauf-frei", () => lauf("frei"))));
+        if (hat("lauf-voll")) aus.kurz.laufVoll = mitTieren(laufKurz(await schritt("lauf-voll", () => lauf("voll"))));
+        if (hat("lauf-frei")) aus.kurz.laufFrei = mitTieren(laufKurz(await schritt("lauf-frei", () => lauf("frei"))));
         // DIE BANK je Blick (Gier 0 und −0,88: der ferne Schatten nimmt je Blick andere Gruppen mit), danach steht der Blick
         // wieder auf der Gier des Orts — die Ort-Wache nach dem Schritt prüft es. Je Blick zählt die Werkbank die Tiere
         // (Sichtkegel und Kaskaden dieses Blicks).
@@ -399,53 +424,78 @@ async function folge() {
                     "r.state.renderer.setAnimationLoop(null); " +
                     "return { gier: r.state.yaw, tiere: typeof window.__tierZahl === 'function' ? window.__tierZahl() : null };",
             });
-        const bank = await schritt("gpu-bank", async () => {
-            const je = {};
+        if (hat("gpu-bank")) {
+            const bank = await schritt("gpu-bank", async () => {
+                const je = {};
+                for (const g of BANK_GIER) {
+                    const b = await blick(g);
+                    je[String(g)] = await R("/gpu-bank", { n: 12, runden: 3 });
+                    if (je[String(g)] && typeof je[String(g)] === "object")
+                        je[String(g)].tiere = b && b.ergebnis ? b.ergebnis.tiere : null;
+                }
+                await blick(BAND.ortGier(ort));
+                return je;
+            });
+            aus.kurz.gpuBank = {};
             for (const g of BANK_GIER) {
-                const b = await blick(g);
-                je[String(g)] = await R("/gpu-bank", { n: 12, runden: 3 });
-                if (je[String(g)] && typeof je[String(g)] === "object")
-                    je[String(g)].tiere = b && b.ergebnis ? b.ergebnis.tiere : null;
+                const b = bank && bank[String(g)];
+                if (abbruchVon(b)) aus.befunde.push(`SCHRITT gpu-bank (Gier ${g}): ${abbruchVon(b)}`);
+                else aus.befunde.push(...tierUrteil(`gpu-bank (Gier ${g})`, b && b.tiere));
+                aus.kurz.gpuBank[String(g)] =
+                    b && !abbruchVon(b)
+                        ? { gpuJeFrameMs: b.gpuJeFrameMs, cpuJeFrameMs: b.cpuJeFrameMs, tiere: tierKurz(b.tiere) }
+                        : b;
             }
-            await blick(BAND.ortGier(ort));
-            return je;
-        });
-        aus.kurz.gpuBank = {};
-        for (const g of BANK_GIER) {
-            const b = bank && bank[String(g)];
-            if (abbruchVon(b)) aus.befunde.push(`SCHRITT gpu-bank (Gier ${g}): ${abbruchVon(b)}`);
-            else aus.befunde.push(...tierUrteil(`gpu-bank (Gier ${g})`, b && b.tiere));
-            aus.kurz.gpuBank[String(g)] =
-                b && !abbruchVon(b)
-                    ? { gpuJeFrameMs: b.gpuJeFrameMs, cpuJeFrameMs: b.cpuJeFrameMs, tiere: tierKurz(b.tiere) }
-                    : b;
         }
         const bandDatei = path.join(os.tmpdir(), `messfolge-band-${PORT}-${Date.now()}.json`);
         const band = await schritt("band", () => R("/band", { ort: ORT, datei: bandDatei, proben: P.proben }));
         // die Band-Messung reist im EINEN JSON mit (die Werkbank schrieb sie in eine Zwischen-Datei)
+        let messung = null;
         if (band && fs.existsSync(bandDatei)) {
             const e = aus.schritte[aus.schritte.length - 1];
-            e.ergebnis = Object.assign({}, band, { messung: JSON.parse(fs.readFileSync(bandDatei, "utf8")) });
+            messung = JSON.parse(fs.readFileSync(bandDatei, "utf8"));
+            e.ergebnis = Object.assign({}, band, { messung });
             delete e.ergebnis.datei;
             fs.rmSync(bandDatei, { force: true });
-            schreibe();
         }
+        // die Band urteilt ihre eigene Aufzeichnung: der gestellte Ort und kein Rahmen-Ziel des Direktpfads
+        if (!abbruchVon(band)) {
+            const e = aus.schritte[aus.schritte.length - 1];
+            const bb = bandBefunde(messung);
+            e.befunde.push(...bb);
+            aus.befunde.push(...bb);
+            for (const b of bb) console.log(`  ROT ${b}`);
+        }
+        schreibe();
+        const vram = messung && messung.vram ? messung.vram.mb : null;
         aus.kurz.band = mitTieren(
-            band ? { urteil: band.urteil, linse: band.linse, stempel: band.stempel && band.stempel.urteil } : null
+            band
+                ? {
+                      urteil: band.urteil,
+                      linse: band.linse,
+                      stempel: band.stempel && band.stempel.urteil,
+                      gestellt: messung && Array.isArray(messung.ortGestellt) ? messung.ortGestellt.length === 0 : null,
+                      vramMB: vram,
+                  }
+                : null
         );
-        const prof = await schritt("profil", () =>
-            R("/profil", { sek: P.profilSek, regler: "voll", tiere: "frei", top: 60 })
-        );
-        aus.kurz.profil = mitTieren(
-            prof && !abbruchVon(prof) ? { frames: prof.frames, fps: prof.fps, selbst: prof.selbst.slice(0, 12) } : null
-        );
-        if (prof && prof.wetterHalt && prof.wetterHalt.urteil === "ROT")
-            aus.befunde.push(...prof.wetterHalt.taeter.map((t) => `WETTER profil (Lauf): ${t}`));
+        if (hat("profil")) {
+            const prof = await schritt("profil", () =>
+                R("/profil", { sek: P.profilSek, regler: "voll", tiere: "frei", top: 60 })
+            );
+            aus.kurz.profil = mitTieren(
+                prof && !abbruchVon(prof)
+                    ? { frames: prof.frames, fps: prof.fps, selbst: prof.selbst.slice(0, 12) }
+                    : null
+            );
+            if (prof && prof.wetterHalt && prof.wetterHalt.urteil === "ROT")
+                aus.befunde.push(...prof.wetterHalt.taeter.map((t) => `WETTER profil (Lauf): ${t}`));
+        }
     } catch (e) {
         abbruch = String((e && e.message) || e);
         aus.abbruch = abbruch;
     } finally {
-        aus.befunde.push(...folgeUrteil(gefahren).filter(() => !abbruch));
+        aus.befunde.push(...folgeUrteil(gefahren, FOLGE).filter(() => !abbruch));
         if (!abbruch && gefahren.length !== FOLGE.length)
             aus.befunde.push(`FOLGE: ${gefahren.length} von ${FOLGE.length} Schritten gefahren`);
         try {
@@ -708,6 +758,60 @@ async function selbsttest() {
         /WELTAKT lauf-voll: kein Welt-Akt-Spion/
     );
     pruefe("vor der Bühne zählen Welt-Akte nicht", wachenUrteil("umstellen", wache(), dorf, ort, false), null);
+    // DER GENESIS-RING (0910-1): seine Folge ist die eigene, kurze (Boot · Ort · Bühne · Band); ein Lauf an der Wiese, der
+    // „genesis" heißt, fällt an der Ort-Wache und an der Aufzeichnung der Band — und ein liegen gelassenes Rahmen-Ziel des
+    // Direktpfads (0710-9 B: `band --ort genesis` nach `zerlegen` in derselben Sitzung) beim Namen.
+    pruefe("die Genesis-Folge", folgeUrteil(FOLGEN.genesis, FOLGEN.genesis), null);
+    pruefe(
+        "Genesis mit einem Lauf der Wiese",
+        folgeUrteil(["boot", "dorf-aus", "fenster", "umstellen", "buehne", "lauf-voll", "band"], FOLGEN.genesis),
+        /unbekannter Schritt „lauf-voll"/
+    );
+    {
+        const g = BAND.ladeSpec("genesis").ort;
+        const anWiese = wache({ ort: Object.assign({}, wache().ort, { spieler: g.spieler.slice() }) });
+        pruefe(
+            "Genesis gezählt an der Wiese (Ort-Wache)",
+            wachenUrteil("band", anWiese, anWiese, g, true),
+            /ORT band \(vor\): aufgestellt am Ort wiese, nicht genesis/
+        );
+        const zerlegSitzung = {
+            ortGestellt: [
+                "aufgestellt am Ort wiese, nicht genesis",
+                "Ort-Takt [], der Ort will [_genesisPortalRing,_portalApproachPrefetch]",
+            ],
+            roh: {
+                vram: {
+                    mb: 141.1,
+                    liste: [
+                        { k: "buf:szene:bodenSatz", mb: 24.5, n: 6 },
+                        { k: "tex:r184-ausgabe rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+                        { k: "tex:r184-ausgabe:tiefe depth24plus 1920x1080x1", mb: 7.9, n: 1 },
+                    ],
+                },
+            },
+        };
+        const bz = bandBefunde(zerlegSitzung);
+        pruefe(
+            "0710-9: Genesis nicht gestellt",
+            bz,
+            /ORT band: NICHT GESTELLT — aufgestellt am Ort wiese, nicht genesis/
+        );
+        pruefe(
+            "0710-9: das Rahmen-Ziel der Zerleg-Linse",
+            bz,
+            /RAHMEN-ZIEL band: tex:r184-ausgabe 23\.7 MB in 2 Texturen/
+        );
+        pruefe(
+            "gestellter Ring ohne Rahmen-Ziel",
+            bandBefunde({
+                ortGestellt: [],
+                roh: { vram: { mb: 98, liste: [{ k: "buf:szene:bodenSatz", mb: 24.5, n: 6 }] } },
+            }),
+            null
+        );
+        pruefe("die Band schrieb keine Messung", bandBefunde(null), /keine Messung/);
+    }
     // DAS ENDE DER WERKBANK: eine Werkbank, deren `/stop` hängt (sie lebt weiter) und die ein Kind trägt (Chrome) — nach
     // `beendeBaum` lebt keiner der beiden mehr (vorher: der Abbau stand in einem unref-Timer, die Werkbank blieb als Waise)
     {
@@ -778,4 +882,4 @@ if (require.main === module) {
         });
 }
 
-module.exports = { FOLGE, folgeUrteil, wachenUrteil, tierUrteil, beendeBaum };
+module.exports = { FOLGE, FOLGEN, folgeUrteil, wachenUrteil, tierUrteil, bandBefunde, beendeBaum };

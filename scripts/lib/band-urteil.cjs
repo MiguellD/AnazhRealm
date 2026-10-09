@@ -14,7 +14,8 @@
 //     stufe      eine Nah-Stufe in der Ferne (die `stufenWand` des Haushalts — der stille L0-Rückfall)
 //     ratsche    eine Klasse × Pass (oder ein VRAM-Erzeuger, oder die Summe) über ihrem letzten Ist plus Toleranz
 //     leck       VRAM, den kein Bild trägt: Geometrie-Puffer, die nur der Foundry-Cache (`buf:ruhend`) oder nur r184s
-//                Attribut-Register (`buf:verwaist`) hält — der Täter beim Namen (W6)
+//                Attribut-Register (`buf:verwaist`) hält — der Täter beim Namen (W6); und das Rahmen-Ziel des Direktpfads
+//                (`tex:r184-ausgabe`), das eine Linse liegen ließ (0910-1)
 //
 // Die RATSCHE zieht nur die HÜLLE einer Mess-Serie nach (`werkbank ratsche`: ≥ 4 eingeschwungene Läufe der vollen
 // Welt aus Erst- und Zweit-Boot, je Klasse × Pass das Maximum) und nur ohne Linsen-Fehler (unbenannt · haushalt ·
@@ -132,6 +133,42 @@ const LINSEN_ARTEN = ["unbenannt", "haushalt", "ratsche", "leck"];
 // (`ruhend`) oder nur r184s Attribut-Register (`verwaist`) hält (`__pufferZensus`, draw-zaehler) — VRAM an der Geschichte
 // statt am Schirm. Jedes MB davon ist ein LECK, der Täter steht im Urteil beim Namen.
 const LECK_ERZEUGER = /^buf:(ruhend|verwaist)$/;
+// DAS RAHMEN-ZIEL DES DIREKTPFADS (0910-1): r184 legt es nur an, wenn ein Render MIT Tonemapping auf die Leinwand geht
+// (`_getFrameBufferTarget`: rgba16float + depth24plus, 15,8 + 7,9 MB bei 1080p, `isPostProcessingRenderTarget` → der Erzeuger
+// `r184-ausgabe`). Die Post-Kette tut das nie (r184 schaltet Tonemapping und Farbraum für ihr Quad ab), im Spiel lebt es also
+// nur im Rückfall ohne Kette. Steht es im Band, fuhr eine Linse den Direktpfad und ließ es liegen: in 0710-6 und 0710-9 trug
+// `band --ort genesis` nach `zerlegen` 23,7 MB davon. Der Stamm entsorgt es, sobald die Kette wieder zeichnet (`_leinwandWeg`);
+// was dennoch im Band steht, ist ein Linsen-Rest beim Namen. Gezählt aus dem VRAM-Abgriff (WebGPU), sonst aus den
+// Textur-Objekten (jedes Backend).
+const RAHMEN_ZIEL = /^r184-ausgabe/;
+function rahmenZielBefunde(vram, texturen) {
+    let mb = 0,
+        n = 0;
+    if (vram && Array.isArray(vram.liste)) {
+        for (const v of vram.liste) {
+            const { art, erzeuger } = erzeugerOf(v.k);
+            if (art === "tex" && RAHMEN_ZIEL.test(erzeuger)) {
+                mb += v.mb;
+                n += v.n;
+            }
+        }
+    } else if (texturen)
+        for (const e of texturen.erzeuger || [])
+            if (RAHMEN_ZIEL.test(e.erzeuger)) {
+                mb += e.mb;
+                n += e.n;
+            }
+    return n > 0
+        ? [
+              {
+                  art: "leck",
+                  text:
+                      `tex:r184-ausgabe ${+mb.toFixed(1)} MB in ${n} Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie ` +
+                      "angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)",
+              },
+          ]
+        : [];
+}
 // Eine FREIE Klasse misst den Weltzustand, nicht die Kosten (die Tiere wandern: an der Mess-Wiese 0 bis 3 Arten im Bild):
 // die Ratsche hält sie nicht, ihre Kosten je Einheit hält das Gate, das ihr Grund nennt. Im Band zählt sie voll.
 const freiGrund = (ratsche, id) => (ratsche && ratsche.frei && ratsche.frei[id]) || null;
@@ -479,6 +516,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
         // gebunden = ohne die freien Erzeuger (wie die Summen-Ratsche der Befehle): die Ratsche hält, was Kosten sind
         speicher = { mb: vram.mb, gebunden: +(vram.mb - frei).toFixed(1), band: haushalt.band.vramMB, erzeuger: liste };
     }
+    rot.push(...rahmenZielBefunde(vram, texturen));
     // DIE TEXTUR-OBJEKTE (Backend-unabhängig): jedes trägt seinen Erzeuger — selbst oder über sein Render-Ziel.
     if (texturen)
         for (const t of texturen.unbenannt || [])
@@ -747,6 +785,7 @@ module.exports = {
     bandHuelle,
     ratscheNachziehen,
     vramBefunde,
+    rahmenZielBefunde,
     bandTabelle,
     einOf,
     zuordnen,
