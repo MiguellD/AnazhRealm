@@ -70430,6 +70430,7 @@ class AnazhRealm {
             sc.top = m;
             sc.bottom = -m;
             sc.updateProjectionMatrix();
+            this._hauptSchattenBias(dl); // der Texel der Haupt-Karte folgt der Reichweite
         }
         const csm = this.state.csmNode;
         if (csm) {
@@ -70449,24 +70450,65 @@ class AnazhRealm {
         return m;
     }
 
-    // Schatten-Bias (shadow.normalBias): verschiebt den Sample entlang der Normale — zu klein → Acne-
-    // Streifen an steilen Wänden, zu groß → Peter-Panning (Schatten löst sich vom Fuß). Default 1.0.
+    // DER SCHATTEN-HEBEL (`atmosphere.shadowBias`, 0..3, Standard 1): er skaliert das GESETZ des Bias (`_schattenBias`) — bis
+    // 0710-12 war er der normalBias selbst, ein fester Meter-Wert für jede Kaskade (1,0 m: kein Werfer unter ~1 m erreichte den
+    // Boden). Jeder gespeicherte Stand trägt 1 = das Gesetz. Er stellt jede Karte sofort: das Haupt-Licht (der Rückfall ohne
+    // Kaskaden) und jede Kaskade mit der Box ihres letzten Renders (B4, V18.130: die Kaskaden-Lichter klonen nur beim Init).
     setShadowBias(bias) {
         const v = Math.max(0, Math.min(3, Number(bias)));
         const m = Number.isFinite(v) ? v : 1.0;
         if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.shadowBias = m;
-        const dl = this.state.directionalLight;
-        if (dl && dl.shadow) dl.shadow.normalBias = m;
-        // B4 (V18.130) — die CSM-Kaskaden-Lichter klonen den normalBias nur
-        // beim Init; ein Live-Hebel MUSS sie mit-stellen (sonst stellt der
-        // Slider nur die unbenutzte Haupt-Map — der Passagier-Trugschluss).
+        this._hauptSchattenBias(this.state.directionalLight);
         const csm = this.state.csmNode;
-        if (csm && Array.isArray(csm.lights)) {
-            for (const lw of csm.lights) if (lw && lw.shadow) lw.shadow.normalBias = m;
-        }
+        if (csm && Array.isArray(csm.lights) && csm._anazhFit)
+            csm.lights.forEach((lw, i) => {
+                const f = csm._anazhFit[i];
+                if (lw && lw.shadow && f)
+                    this._schattenBias(
+                        lw,
+                        Math.max(f.W / lw.shadow.mapSize.width, f.H / lw.shadow.mapSize.height),
+                        f.zt - f.zb
+                    );
+            });
         if (typeof this.saveState === "function") this.saveState();
         return m;
+    }
+
+    // DAS GESETZ DES SCHATTEN-BIAS (0710-12) — je Karte aus ihrer Texel-Kante, nie ein Meter-Wert für alle Kaskaden. Befund
+    // (Studio-Welle S3, Familie kreatur): `normalBias` 1,0 m für beide Kaskaden; r184 schiebt die Probe jedes Empfängers um
+    // `normalWorld × normalBias` in WELT-METERN (ShadowNode: `positionWorld.add(normalWorld.mul(normalBias))`), der Boden fragte
+    // die Karte 1 m über sich ab — Wolf, Fuchs, Busch, Zaun-Pfosten und die Beine des Spielers warfen keinen sichtbaren
+    // Schatten (Boden-IoU ≈ 0; die Kaskaden tragen an der Wiese 0,11–0,16 / 0,16–0,41 m je Texel, 1 m waren 3–9 Texel). Akne
+    // entsteht innerhalb EINES Texels — der Bias, der sie hält, ist ein Bruchteil der Texel-Kante:
+    //   normalBias = normalTexel · Hebel · Texel   (`_schattenNormalBias`, die EINE Quelle `atmosphere.shadowBias`)
+    //   bias       = −tiefeTexel · Texel / Tiefe der Box   (r184 addiert ihn auf die Tiefe der Schatten-Koordinate, 0..1)
+    // `texel` = die gröbere Kante der Karte (Welt-Meter), `tiefe` = Fern- minus Nah-Ebene ihrer Kamera. Gemessen 09.10. (GTX 1060,
+    // gate:schatten-bias --echt, 2-mm-Platten eben · im Streiflicht 10° · Dach 40° bei 11° und 26° Sonne): die Akne-Kante liegt
+    // zwischen 0,1/0 und 0,25/0,4 Texel (normal/Tiefe); ohne Normal-Anteil (0/1) streift das Streiflicht 4,9 %; das Gesetz 0,5/0,75
+    // hält jede Platte bei 0,00 % und die kleinen Werfer am Fuß (Boden-IoU mit Saum 0,97–1,0).
+    // KEIN HANG-BIAS: r184 trägt den hang-skalierten Tiefen-Bias (polygonOffset des Schatten-Stoffs → Pipeline
+    // depthBiasSlopeScale) nicht verlässlich — der Pipeline-Schlüssel enthält ihn nicht (WebGPUBackend.getRenderCacheKey), der
+    // Stoff-Schlüssel kennt Zahlen nur als 0/≠0, und r184 legt den Schatten-Stoff einer Kaskade neu an (bei der Geburt gesetzt,
+    // im Lauf wieder 0: gemessen 09.10.). Ein Bias, der nach dem nächsten Neubau still fehlt, wäre der Bruch.
+    _schattenBias(licht, texel, tiefe) {
+        const K = AnazhRealm.SCHATTEN_KASKADE;
+        const sh = licht && licht.shadow;
+        if (!sh || !(texel > 0) || !(tiefe > 0)) return;
+        sh.normalBias = this._schattenNormalBias(texel);
+        sh.bias = (-K.tiefeTexel * texel) / tiefe;
+    }
+    _schattenNormalBias(texel) {
+        const a = this.state.atmosphere;
+        const hebel = a && Number.isFinite(a.shadowBias) ? Math.max(0, Math.min(3, a.shadowBias)) : 1;
+        return AnazhRealm.SCHATTEN_KASKADE.normalTexel * hebel * texel;
+    }
+    // Das Haupt-Licht: der Rückfall ohne Kaskaden und die Vorlage, aus der die Kaskaden-Lichter klonen. Seine Karte deckt
+    // ±Reichweite um den Spieler — ein Texel ist 2 · Reichweite / Kartengröße.
+    _hauptSchattenBias(dl) {
+        const c = dl && dl.shadow && dl.shadow.camera;
+        if (!c) return;
+        this._schattenBias(dl, (c.right - c.left) / dl.shadow.mapSize.width, c.far - c.near);
     }
 
     // ===== ATLAS §20 · SPAWN-ÖKOLOGIE — Affinität · Boden-Material · Klump/Streu-Verteilung =====
@@ -90619,7 +90661,8 @@ class AnazhRealm {
             });
         }
         // Schatten-Reichweite (Frustum-Halbbreite 80..400 m; kleiner = schärfere Texel) + Schatten-Bias
-        // (normalBias ×100, 0..3). Das Wandern heilt der Light-Space-Snap; diese Regler feilen die Schärfe.
+        // (der Hebel auf das Gesetz `_schattenBias` ×100, 0..3; 1 = das Gesetz). Das Wandern heilt der Light-Space-Snap; diese
+        // Regler feilen die Schärfe.
         const srS = document.getElementById("slider-shadowrange");
         const srVal = document.getElementById("slider-shadowrange-val");
         if (srS) {
@@ -91564,10 +91607,8 @@ class AnazhRealm {
         // Shadow-Acne-Schutz: ohne Bias schattet die grobe Map flache, zur Sonne zeigende Flächen selbst
         // (Streifen auf Dächern). normalBias (Sample entlang der Normale) ist der wirksame Acne-Killer,
         // bias nur ein kleiner Tiefen-Nudge; mapSize 2048.
-        directionalLight.shadow.bias = -0.0005;
-        directionalLight.shadow.normalBias = Number.isFinite(_atmo.shadowBias)
-            ? Math.max(0, Math.min(3, _atmo.shadowBias))
-            : 1.0;
+        // Beide aus dem EINEN Gesetz (`_schattenBias`, 0710-12): Texel der Karte = 2 · Reichweite / Kartengröße.
+        this._hauptSchattenBias(directionalLight);
         // KRITISCH: nach dem Setzen der Shadow-Camera-Bounds MUSS updateProjectionMatrix() laufen — die
         // OrthographicCamera rechnet sie nur im Konstruktor; sonst ist light.shadow.matrix degeneriert
         // und es fällt nie ein Schatten.
@@ -95570,7 +95611,7 @@ class AnazhRealm {
         c.near = 0;
         c.far = zt - zb;
         c.updateProjectionMatrix();
-        sh.bias = K.biasM[Math.min(i, K.biasM.length - 1)] / (zt - zb);
+        this._schattenBias(lw, Math.max(tx, ty), zt - zb);
         const f = alt || { basisInv: new THREE.Matrix4() };
         f.basisInv.copy(S.basisInv);
         f.x0 = bx0;
@@ -101641,7 +101682,9 @@ AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;
 // Kaskaden-Geburt; k0 = k1 = 2048, gate:schatten-werfer K5/K6). `rasterTeiler`: die Box wächst in Schritten von
 // Scheiben-Tiefe / rasterTeiler (eine Größe hält, solange die Scheibe hineinpasst — sonst schimmert jede Drehung);
 // `randM` = Saum der Werfer-Hülle (Wind, Morph), `luftM` = Saum über dem höchsten Werfer und unter der tiefsten
-// Scheibe; `biasM` = der Tiefen-Nudge je Kaskade in Metern (bisher −0,0005 × 500 m × (i+1)).
+// Scheibe. DER BIAS (0710-12, `_schattenBias`) in Texeln der Karte, nie in Metern: `normalTexel` = der normalBias je Texel
+// (mal dem Hebel `atmosphere.shadowBias`), `tiefeTexel` = der Tiefen-Nudge entlang des Lichts. Bis 0710-12: normalBias 1,0 m
+// für jede Kaskade und `biasM` −0,25 / −0,5 m.
 AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     texelM: Object.freeze([0.17, 0.47]),
     bezugAspekt: 16 / 9,
@@ -101649,7 +101692,8 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     rasterTeiler: 8,
     randM: 2,
     luftM: 4,
-    biasM: Object.freeze([-0.25, -0.5]),
+    normalTexel: 0.5,
+    tiefeTexel: 0.75,
 });
 // DAS GESETZ DER PASS-WAHL (`_passTrifft`, W7-Vereinigung) — EIN Urteil je Körper und Pass für jeden Leser (Zellen der
 // Sätze · Werfer der Bündel · Instanzen der Wahl-Gruppen · Büschel der Nah-Wiese). `sichtRand` je Meter Abstand zum Auge:

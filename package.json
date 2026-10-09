@@ -32,6 +32,7 @@
         "gate:feld-stellvertreter": "node scripts/diag-feld-stellvertreter.cjs",
         "gate:schatten-takt": "node scripts/diag-schatten-takt.cjs",
         "gate:schatten-werfer": "node scripts/diag-schatten-werfer.cjs --selftest",
+        "gate:schatten-bias": "node scripts/diag-schatten-bias.cjs --selftest",
         "gate:persistence": "node scripts/diag-persistence.cjs",
         "gate:carve": "node scripts/diag-carve-adaptive.cjs",
         "gate:grass-thin": "node scripts/diag-grass-thin.cjs",

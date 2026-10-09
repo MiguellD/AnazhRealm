@@ -308,6 +308,12 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getCanvasTarget(){return this._canvasTarget}", organ: "_leinwandTiefe (das Leinwand-Ziel)" },
     { file: "vendor/three.webgpu.min.js", sub: "destroyTexture(e,t=!1){this.textureUtils.destroyTexture(e,t)}", organ: "_leinwandTiefe (die GPU-Textur der Leinwand-Tiefe fällt in der Post-Kette)" },
     { file: "vendor/three.webgpu.min.js", sub: "destroyTexture(e,t=!1){const r=this.backend,s=r.get(e);void 0!==s.texture&&!1===t&&s.texture.destroy(),void 0!==s.msaaTexture&&s.msaaTexture.destroy(),r.delete(e)}", organ: "_leinwandTiefe (destroyTexture zerstört und vergisst — getDepthBuffer legt sie im Direktpfad neu an)" },
+    // DAS GESETZ DES SCHATTEN-BIAS (`_schattenBias`, 0710-12): r184 schiebt die Probe des Empfängers um normalWorld × normalBias
+    // in WELT-METERN und addiert `bias` auf die Tiefe der Schatten-Koordinate (0..1) — beides in Texeln der Kaskade.
+    { file: "vendor/three.webgpu.min.js", sub: "qc(\"normalBias\",\"float\",i).setGroup(_a)", organ: "_schattenBias (normalBias ist eine Uniform des Lichts)" },
+    { file: "vendor/three.webgpu.min.js", sub: "h=Rc.mul(d);", organ: "_schattenBias (normalBias × normalWorld)" },
+    { file: "vendor/three.webgpu.min.js", sub: "p=c.mul(w_.add(h))", organ: "_schattenBias (die Probe sitzt bei positionWorld + normalWorld × normalBias — Welt-Meter)" },
+    { file: "vendor/three.webgpu.min.js", sub: "s.reversedDepthBuffer?n.sub(i):n.add(i)", organ: "_schattenBias (bias addiert auf die Tiefe der Schatten-Koordinate)" },
     // DIE STUFE KOSTET NUR, WENN SIE ZEIGT (`nurBeiStaerke` in _ensurePostProcessing): ein Fn-Aufruf trägt seine Argumente
     // als `rawInputs` (der Ketten-Graph der Zerleg-Linse liest sie), ein Fn ohne Layout baut seinen Rumpf inline.
     { file: "vendor/three.webgpu.min.js", sub: "constructor(e,t){super(),this.shaderNode=e,this.rawInputs=t,this.isShaderCallNodeInternal=!0}", organ: "_ensurePostProcessing (nurBeiStaerke — die Stufe bleibt im Ketten-Graph sichtbar)" },

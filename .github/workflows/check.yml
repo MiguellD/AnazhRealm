@@ -294,6 +294,14 @@ jobs:
               # Die Selbsttests zeigen, dass die alten Regeln (Haupt-Urteil je Pass, Huellen ohne Boden) rot werden.
               run: npm run gate:schatten-werfer
 
+            - name: Schatten-Bias (das Gesetz der Kaskade statt eines festen Meter-Werts)
+              if: matrix.gruppe == 1
+              # Die Quell-Wand am Stamm: normalBias und den Tiefen-Bias einer Schatten-Karte schreibt nur das Gesetz
+              # (`_schattenBias`: Texel der Kaskade, EINE Quelle atmosphere.shadowBias). Der Selbsttest zeigt, dass ein fester
+              # Meter-Wert, ein leerer Schatten, eine vakuöse Probe, Akne und eine blinde Akne-Probe rot werden. Die Messung am
+              # echten Renderer (Boden-IoU kleiner Werfer, Akne-Platten, Zähne) fährt der OMEN: diag-schatten-bias.cjs --echt.
+              run: npm run gate:schatten-bias
+
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               if: matrix.gruppe == 1
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
