@@ -823,9 +823,48 @@ async function runPartB() {
         return o;
     });
 
+    // ── DER KEHRAUS DES WURFS (Gegenprüfung S3 R2, 09.10.): die L0 trägt DIESELBEN Zwillings-Leaves wie ihre Wurf-Stufe
+    // (L1) — räumt die L0-Gruppe, fällt keine Geometrie der lebenden L1 (r184 zerstörte sonst die GPU-Puffer des Wurfs
+    // und lüde sie neu, der Dispose-Hörer wäre fort); räumt die L1-Gruppe, fällt jede Wurf-Gestalt genau einmal. Am
+    // gewärmten Proben-Baum (Eiche, Cache warm), zuletzt (die Probe räumt zwei Cache-Gruppen). ──
+    const kehraus = await page.evaluate(() => {
+        const r = window.anazhRealm;
+        const key = r._growTreeBlueprintForSpawn("baum_eiche", "w54-band-sweep");
+        const ex = 15345,
+            ez = 6789;
+        const e = r.spawnArchitecture(key, { x: ex, y: r._voxelSurfaceY(ex, ez) || 1, z: ez }, { silent: true, seed: 1 });
+        if (!e) return { err: "spawnArchitecture gab null" };
+        const preset = r._foundryPresetForEntry(e);
+        const fl0 = r._foundryFlattenFor(e, preset, 0),
+            fl1 = r._foundryFlattenFor(e, preset, 1);
+        if (!(fl0 && fl0.leaves && fl1 && fl1.leaves)) return { err: "Stufen nicht warm" };
+        const tw1 = fl1.leaves.filter((l) => l.shadowTwin),
+            tw0 = fl0.leaves.filter((l) => l.shadowTwin);
+        const eigen0 = fl0.leaves.find((l) => !l.shadowTwin);
+        const g0 = eigen0 && eigen0._srcGroup,
+            g1 = tw1.length ? tw1[0]._srcGroup : null;
+        const geoms = new Set();
+        for (const l of tw1) for (const g of [l.geom, l._schattenGeom]) if (g) geoms.add(g);
+        let n = 0;
+        for (const g of geoms) g.addEventListener("dispose", () => n++);
+        r.removeArchitecture(e);
+        if (!g0 || !g1 || g0 === g1) return { err: "Gruppen nicht gefunden", tw0: tw0.length, tw1: tw1.length };
+        r._disposeFoundryGroupGeom(g0);
+        const nachL0 = n;
+        r._disposeFoundryGroupGeom(g1);
+        return {
+            tw0: tw0.length,
+            tw1: tw1.length,
+            geteilt: tw0.length > 0 && tw0.every((l) => tw1.includes(l)),
+            geoms: geoms.size,
+            nachL0,
+            nachL1: n,
+        };
+    });
+
     await browser.close();
     server.close();
-    return { out, pageErrors, attrWand, gnade };
+    return { out, pageErrors, attrWand, gnade, kehraus };
 }
 
 // DIE SCHATTEN-WAHRHEIT (statisch, auf der kommentar-gestrippten Quelle) → Liste der Verstöße mit Namen.
@@ -867,8 +906,12 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     // selbst der Zwilling (nie im Hauptbild), jedes andere Teil wirft nicht; fehlt es, ist das KERN-PFLICHT; es zeichnet mit
     // dem EINEN Schatten-Stoff (Alpha = max(aDeckt, Atlas-Alpha) in colorNode — der Schattenpass liest opacityNode nie);
     // der drawRange-Vorsatz (W6) ist gefallen — und die Wurf-Grenze des Studios IST der Kaskaden-Texel k0 der Welt.
-    if (!/if \(lf\.teil !== wurfTeil\.teil\) continue;/.test(flat) || !/z\.geom = this\._foundrySchattenGeom\(z\);/.test(flat))
+    if (!/if \(lf\.teil !== wurfTeil\) continue;/.test(flat) || !/z\.geom = this\._foundrySchattenGeom\(z\);/.test(flat))
         v.push("der Schatten-Teil ist nicht selbst der Zwilling (er zeichnete im Hauptbild, oder jedes Teil würfe)");
+    // der Wähler ist fail-closed: eine Wurf-Zeile ohne Teil-Namen bricht KERN-PFLICHT (sonst träfe undefined === undefined
+    // jedes Leaf ohne Teil — die ganze Stufe würfe still als Zwilling)
+    if (!/if \(wurf && !\(typeof wurfTeil === "string" && wurfTeil\)\)\s*AnazhRealm\._kernPflichtBruch\(/.test(flat))
+        v.push("eine Wurf-Zeile ohne Teil-Namen macht die ganze Stufe still zum Zwilling (undefined === undefined) statt KERN-PFLICHT");
     if (!/if \(!hat\)\s*AnazhRealm\._kernPflichtBruch\(/.test(flat))
         v.push("eine Stufe ohne Schatten-Teil wirft still nicht (fail-soft) statt KERN-PFLICHT");
     if (/lf\.wurf|__wurf/.test(flat + gestalt))
@@ -888,6 +931,10 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
         );
     const weg = fnBody(srcNC, /_disposeFoundryGroupGeom\(g\)\s*/) || "";
     if (!/lf\._schattenGeom\.dispose\(\)/.test(weg)) v.push("die Zwillings-Gestalt fällt nicht mit ihrem L1-Leaf (Leck)");
+    // das Eigentum des Leafs (Gegenprüfung S3 R2): der Kehraus einer Gruppe räumt nur ihre eigenen Leaves — die L0 trägt
+    // die Zwillings-Leaves ihrer Wurf-Stufe, deren Gestalt fällt mit der Wurf-Stufe (Teil b prüft es am lebenden Baum)
+    if (!/if \(lf\._srcGroup !== g\) continue;/.test(weg))
+        v.push("der Kehraus räumt Leaves fremder Gruppen (die L0 gibt die Wurf-Gestalt der lebenden L1 frei)");
     // DAS WURF-RECHT DES TEILS (Integration W5 × W6): der Zwilling wirft nach `teilWirft` (Lichtquelle, Durchsicht,
     // Fell-Schale nie) — `lf.castShadow` ist bei einer Zwillings-Quelle false, Bäume und Sträucher würfen still keinen.
     // beide Zwillings-Wege (der Schatten-Teil S3 und der ganze Zwilling ohne Wurf-Teil) werfen nach dem Wurf-Recht
@@ -897,7 +944,7 @@ function schattenWahrheit(srcNC, fcSrc = foundrySrc) {
     )
         v.push("der Schatten-Zwilling wirft nach lf.castShadow statt nach dem Wurf-Recht seines Teils (teilWirft) — Bäume und Sträucher werfen still nicht");
     if (!/shadowTwin: true,\s*_eigen: false/.test(flat))
-        v.push("der Schatten-Zwilling erbt das Eigentum der L1-Geometrie (der L0-Dispose zerstört sie)");
+        v.push("der ganze Zwilling (ohne Wurf-Teil) erbt das Eigentum der Quell-Geometrie (doppelter Dispose)");
     return v;
 }
 
@@ -1003,13 +1050,15 @@ async function main() {
             ["L0 baut eigenen Zwilling", nc.replace("for (const lf of schatten.leaves) if (lf.shadowTwin) leaves.push(lf);", "for (const lf of schatten.leaves) leaves.push(lf);")],
             ["Band wirft doppelt", nc.replace("this._archInstanceAdd(entry, this._bandOhneZwilling(flat, primFlat), { band: true", "this._archInstanceAdd(entry, flat, { band: true")],
             ["Streu-Band wirft doppelt", nc.replace("const pf = pf0 && pf0.instanceable ? this._bandOhneZwilling(pf0, foundryFlat) : pf0;", "const pf = pf0;")],
-            ["Schatten-Teil im Hauptbild, jedes Teil wirft", nc.replace("if (lf.teil !== wurfTeil.teil) continue;", "")],
+            ["Schatten-Teil im Hauptbild, jedes Teil wirft", nc.replace("if (lf.teil !== wurfTeil) continue;", "")],
+            ["Wurf-Zeile ohne Teil-Namen trifft still jedes Leaf", nc.replace('if (wurf && !(typeof wurfTeil === "string" && wurfTeil))', "if (false)")],
             ["Schatten-Teil fehlt still", nc.replace("if (!hat)", "if (false)")],
             ["Schatten-Stoff über opacityNode", nc.replace("mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);", "mat.colorNode = TSL.vec4(TSL.vec3(0.0), 1.0); mat.opacityNode = TSL.max(deckt, atl.a);")],
             ["Index-Vorsatz kehrt zurück", nc.replace("z.drawRange.count = g.drawRange.count;", "z.drawRange.count = lf.wurf * 3;")],
             ["Fassade verliert den Wurf", nc.replace("g2.setDrawRange(srcGeom.drawRange.start, srcGeom.drawRange.count);", "")],
             ["Zwillings-Gestalt leckt", nc.replace("lf._schattenGeom.dispose();", "")],
             ["Zwilling besitzt L1-Geometrie", nc.replace("_eigen: false,", "")],
+            ["L0-Kehraus räumt die Wurf-Gestalt der L1", nc.replace("if (lf._srcGroup !== g) continue;", "")],
             ["Zwilling liest das Stufen-Flag", nc.replace("castShadow: lf.teilWirft,", "castShadow: lf.castShadow !== false,")],
         ];
         check("Selbst-Test 3: die echte Quelle hält das Schatten-Gesetz", schattenWahrheit(nc).length === 0, schattenWahrheit(nc).join(" · "));
@@ -1238,7 +1287,17 @@ async function main() {
     );
 
     console.log("--- Teil (b) — W5.4: die Doppel-Mitgliedschaft im lebenden System (headless, foundry-ON) ---");
-    const { out, pageErrors, attrWand, gnade } = await runPartB();
+    const { out, pageErrors, attrWand, gnade, kehraus } = await runPartB();
+    check(
+        "KEHRAUS DES WURFS: die L0 trägt die Zwillings-Leaves ihrer L1 · ihr Räumen lässt die Wurf-Gestalt der lebenden L1 stehen · das Räumen der L1 gibt jede genau einmal frei",
+        kehraus &&
+            !kehraus.err &&
+            kehraus.tw1 > 0 &&
+            kehraus.geteilt === true &&
+            kehraus.nachL0 === 0 &&
+            kehraus.nachL1 === kehraus.geoms,
+        kehraus ? JSON.stringify(kehraus) : "Probe lief nicht"
+    );
     // Die Untergrenze ist die Nicht-Vakuität, nicht die Weltgröße: seit dem Budget-Gesetz (W8) faltet der Ofen die
     // Tier- und Mensch-Gestalt auf ihre Zeile (Tier 13 → 8, Mensch 16 → 8 Meshes) — dieselbe Probe-Welt trägt 69
     // statt 175 Masken-Meshes.

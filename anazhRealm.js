@@ -75943,6 +75943,11 @@ class AnazhRealm {
         const fl = g._foundryFlat;
         if (fl && Array.isArray(fl.leaves))
             for (const lf of fl.leaves) {
+                // DAS EIGENTUM DES LEAFS: ein Leaf gehört der Gruppe, aus der es gebaut ist (`_srcGroup`). Die L0 trägt die
+                // Zwillings-Leaves ihrer Wurf-Stufe — DIESELBEN Objekte (`_foundryFlattenFor`) —, deren Geometrie fällt mit
+                // der Wurf-Stufe, nie mit der L0. Befund (Gegenprüfung S3 R2): der L0-Kehraus gab die gestempelte Gestalt
+                // des Schatten-Teils der lebenden L1 frei (r184 zerstört dann die GPU-Puffer des Wurfs und lädt sie neu).
+                if (lf._srcGroup !== g) continue;
                 if (lf._eigen && lf.geom && typeof lf.geom.dispose === "function") lf.geom.dispose();
                 // die L0-gestempelte Zwillings-Gestalt teilt die Puffer dieses Leafs — sie fällt mit ihm
                 if (lf._schattenGeom) {
@@ -76154,14 +76159,21 @@ class AnazhRealm {
                 // Nennt die Stufe einen WURF-TEIL (B2c `wurf.teil`, S3 — das EINE Wurf-Gesetz E1: Baum-L1 `teil: "schatten"`),
                 // wirft NUR dieses Teil: es ist selbst der Zwilling (SHADOW_TWIN_LAYER, Stempel 3 über `_foundrySchattenGeom`),
                 // im Hauptbild zeichnet es nie, jedes andere Teil wirft nicht. Fehlt das Teil, ist das ein Vertragsbruch
-                // (KERN-PFLICHT), nie still die ganze Stufe. Ohne Wurf-Teil (Strauch) wirft jedes Teil ganz als Zwilling.
-                const wurfTeil = this._foundryBudgetZeile(preset, lod).wurf;
+                // (KERN-PFLICHT), nie still die ganze Stufe. Ohne Wurf-Zeile (Strauch) wirft jedes Teil ganz als Zwilling.
+                // DER WÄHLER IST FAIL-CLOSED (Gegenprüfung S3): eine Zeile `wurf` nennt ihr Teil beim Namen — ohne ihn träfe
+                // der Vergleich jedes Leaf ohne Teil (undefined === undefined), die ganze Stufe würfe still als Zwilling.
+                const wurf = this._foundryBudgetZeile(preset, lod).wurf;
+                const wurfTeil = wurf ? wurf.teil : null;
+                if (wurf && !(typeof wurfTeil === "string" && wurfTeil))
+                    AnazhRealm._kernPflichtBruch(
+                        "phyto:lod.budget." + preset + "[" + lod + "].wurf.teil (kein Teil-Name)"
+                    );
                 const n = leaves.length;
-                if (wurfTeil) {
+                if (wurf) {
                     let hat = false;
                     for (let i = 0; i < n; i++) {
                         const lf = leaves[i];
-                        if (lf.teil !== wurfTeil.teil) continue;
+                        if (lf.teil !== wurfTeil) continue;
                         hat = true;
                         const z = Object.assign({}, lf, {
                             leafKey: lf.leafKey + "#S",
@@ -76174,7 +76186,7 @@ class AnazhRealm {
                     }
                     if (!hat)
                         AnazhRealm._kernPflichtBruch(
-                            "phyto:lod.budget." + preset + "[" + lod + "].wurf (kein Teil " + wurfTeil.teil + ")"
+                            "phyto:lod.budget." + preset + "[" + lod + "].wurf (kein Teil " + wurfTeil + ")"
                         );
                 } else
                     for (let i = 0; i < n; i++) {
