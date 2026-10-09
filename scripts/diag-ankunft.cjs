@@ -8,7 +8,9 @@
 //       Rings, ein Baum oder Bau der Mesh-Zone ohne Gestalt, eine Streu-Region ohne ihr Asset, die Karte eines fernen
 //       Baums —, bleibt er und nennt die Lücke in seiner Stand-Zeile; steht alles, weicht er; ruht eine Lücke, weicht er
 //       laut (WARN). Befund: das erste Bild war die schwarze Leinwand (Radeon: 1,6 s bis 14,5 s nach dem Laden);
-//       Gegenprüfung Runde 1: der Ladeschirm wich beim eigenen Chunk, das erste Weltbild zeigte keinen Baum.
+//       Gegenprüfung Runde 1: der Ladeschirm wich beim eigenen Chunk, das erste Weltbild zeigte keinen Baum. Befund 09.10.
+//       (CI 37942425121): bei langsamem Takt lief der Streu-Streamer vor dem Weltbild nie, die fehlende Regionen-Karte galt
+//       als „nichts wartet" — jeder Fall wird hergestellt, einer, der fehlt, ist ROT bei seinem Grund (`ohneFall`).
 //   L1  DAS FADENKREUZ — `#fadenkreuz` steht in der Bildmitte (dort trifft `_blickZiel`), weicht einer offenen Schublade.
 //       Befund: 0 Fadenkreuz-Elemente.
 //   L2b DIE HILFE — „hilfe" / „help" / „?" nennt jedes Beispiel der EINEN Tafeln (`chatDslPatterns`, `chatSystemPatterns`,
@@ -100,23 +102,27 @@ function ladeschirmVerdict(m) {
     }
     const f = m.faelle || {};
     if (f.fehler) return out.concat([f.fehler]);
+    // Ein Fall, den die Probe nicht herstellen konnte, ist ROT beim Grund, den sie nennt (`ohneFall`) — nie still „kein Fall"
+    // (Befund 09.10.: der Streu-Fall fehlte je nach Boot-Takt, CI 37942425121).
+    const ohne = (k) => `${(m.ohneFall || {})[k] || "die Probe stellte den Fall nicht her und nennt keinen Grund"} (Vorbedingung)`;
     // eine Lücke hält den Ladeschirm und die Stand-Zeile nennt sie
     for (const [k, name, wort] of [
         ["ohneBoden", "ohne Boden unter dem Spieler", /Boden/],
         ["baumUngebaut", "mit einem Baum der Mesh-Zone ohne Gestalt", /Bäume und Bauten/],
         ["streuWartet", "mit einer Streu-Region, die auf ihr Asset wartet", /Wald-Stück/],
+        ["streuNie", "ohne eine gestreamte Streu-Region (der Streamer lief noch nie)", /Wald-Stück/],
         ["karteOffen", "mit der offenen Karte eines fernen Baums", /ferne Bäume/],
     ]) {
         const z = f[k];
-        if (!z) out.push(`${name}: kein Fall (Vorbedingung)`);
+        if (!z) out.push(`${name}: ${ohne(k)}`);
         else if (z.weg) out.push(`${name} weicht der Ladeschirm (das halbe Weltbild)`);
         else if (!wort.test(z.stand || "")) out.push(`${name} nennt die Stand-Zeile die Lücke nicht („${z.stand}")`);
     }
     if (!f.allesSteht || !f.allesSteht.weg) out.push(`steht alles, bleibt der Ladeschirm („${(f.allesSteht && f.allesSteht.stand) || ""}"${m.fehltNachBoot && m.fehltNachBoot.length ? `, nach dem Boot fehlt ${m.fehltNachBoot.join(" · ")}` : ""})`);
-    if (!f.lueckeRuht) out.push("eine ruhende Lücke: kein Fall (Vorbedingung)");
+    if (!f.lueckeRuht) out.push(`eine ruhende Lücke: ${ohne("lueckeRuht")}`);
     else if (!f.lueckeRuht.weg) out.push("eine ruhende Lücke hält den Spieler vor der Welt fest");
     else if (!f.lueckeRuht.warn) out.push("eine ruhende Lücke weicht ohne Wort im Log");
-    if (!f.lueckeFlackert) out.push("eine flackernde Lücke: kein Fall (Vorbedingung)");
+    if (!f.lueckeFlackert) out.push(`eine flackernde Lücke: ${ohne("lueckeFlackert")}`);
     else if (!f.lueckeFlackert.weg) out.push("eine flackernde Lücke hält den Ladeschirm ohne Grenze (kein Deckel)");
     else if (!f.lueckeFlackert.warn) out.push("eine flackernde Lücke weicht ohne Wort im Log");
     const g = m.weichtGanz;
@@ -385,7 +391,7 @@ async function probe(arg) {
     await tick(30, 30);
     // ── L2a: das erste Weltbild ──
     try {
-        const m = { gestartet: false, faelle: {} };
+        const m = { gestartet: false, faelle: {}, ohneFall: {} };
         out.lade = m;
         const ls = document.getElementById("ladeschirm");
         m.nachBootWeg = !ls || ls.hidden || ls.classList.contains("weg");
@@ -436,11 +442,27 @@ async function probe(arg) {
             if (baum) {
                 m.baumD = +Math.hypot(baum.position.x - pm.x, baum.position.z - pm.z).toFixed(1);
                 fall("baumUngebaut", baumWeg, baumHer);
+            } else {
+                const n = st.architectures.filter((a) => a && /^baum_/.test(a.type || "")).length;
+                m.ohneFall.baumUngebaut = m.ohneFall.lueckeRuht = m.ohneFall.lueckeFlackert = `kein gezeichneter Baum in der Welt (${n} Baum-Einträge, keiner gezeichnet)`;
             }
-            // (3) die Streu-Region des Spielers wartet auf ihr Asset
+            // (3) die Streu-Region des Spielers wartet auf ihr Asset. Die Region steht nach dem Boot IMMER: der Spieler-Ort ist
+            // stets in Reichweite (`_streuRegionInReichweite`), und das Weltbild gilt erst als fertig, wenn sie gebaut ist — fehlt
+            // sie, ist das der Täter beim Namen (Befund 09.10.: bei langsamem Takt lief der Streamer nie, `_weltbildFehlt` las
+            // die fehlende Regionen-Karte als „nichts wartet", der Ladeschirm wich ohne Wald und der Fall fehlte).
             const SC = r.constructor.SCATTER;
-            const reg = st.scatterRegions ? st.scatterRegions.get(`${Math.floor(pm.x / SC.regionM)},${Math.floor(pm.z / SC.regionM)}`) : null;
+            const regKey = `${Math.floor(pm.x / SC.regionM)},${Math.floor(pm.z / SC.regionM)}`;
+            const reg = st.scatterRegions ? st.scatterRegions.get(regKey) : null;
             if (reg) fall("streuWartet", () => (reg._deferredFoundry = true), () => delete reg._deferredFoundry);
+            else
+                m.ohneFall.streuWartet =
+                    `die Streu-Region des Spielers (${regKey}) steht nach dem Boot nicht (Regionen-Karte: ` +
+                    (st.scatterRegions ? `${st.scatterRegions.size} Regionen` : "keine, der Streamer lief nie") +
+                    (st.atmosphere && st.atmosphere.gpuScatter === false ? ", die Streu ist aus" : "") +
+                    (m.fehltNachBoot && m.fehltNachBoot.length ? `; nach dem Boot fehlt ${m.fehltNachBoot.join(" · ")})` : "; das Weltbild galt ohne sie als fertig)");
+            // (3b) der Streamer lief noch nie (keine Regionen-Karte) — der Fall des Befunds, in jedem Boot hergestellt
+            const merkKarte = st.scatterRegions;
+            fall("streuNie", () => delete st.scatterRegions, () => (st.scatterRegions = merkKarte));
             // (4) die Karte eines fernen Baums ist offen
             fall(
                 "karteOffen",
@@ -1292,6 +1314,16 @@ async function probe(arg) {
     const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
     if (process.argv.includes("--selftest")) {
         console.log("=== SELBST-TEST — die Ankunfts-Linse nennt ihre Täter ===");
+        const l2aFaelle = {
+            ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0 },
+            baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0 },
+            streuWartet: { weg: false, stand: "1 Wald-Stücke warten auf ihre Gestalt", warn: 0 },
+            streuNie: { weg: false, stand: "6 Wald-Stücke warten auf ihre Gestalt", warn: 0 },
+            karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0 },
+            allesSteht: { weg: true, stand: "", warn: 0 },
+            lueckeRuht: { weg: true, stand: "", warn: 1 },
+            lueckeFlackert: { weg: true, stand: "", warn: 1 },
+        };
         const faelle = [
             [
                 "L2a",
@@ -1304,17 +1336,19 @@ async function probe(arg) {
                     nachBootWeg: true,
                     tastenHinter: { w: false, enter: "BODY", omnibox: false },
                     weichtGanz: { hidden: true, display: "none", animationen: 0 },
-                    faelle: {
-                        ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0 },
-                        baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0 },
-                        streuWartet: { weg: false, stand: "1 Wald-Stücke warten auf ihre Gestalt", warn: 0 },
-                        karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0 },
-                        allesSteht: { weg: true, stand: "", warn: 0 },
-                        lueckeRuht: { weg: true, stand: "", warn: 1 },
-                        lueckeFlackert: { weg: true, stand: "", warn: 1 },
-                    },
+                    faelle: l2aFaelle,
                 },
                 [
+                    [
+                        "die Streu-Region fehlt nach dem Boot (Befund 09.10., CI 37942425121)",
+                        {
+                            faelle: Object.assign({}, l2aFaelle, { streuWartet: undefined }),
+                            ohneFall: { streuWartet: "die Streu-Region des Spielers (0,0) steht nach dem Boot nicht (Regionen-Karte: keine, der Streamer lief nie; das Weltbild galt ohne sie als fertig)" },
+                        },
+                        "mit einer Streu-Region, die auf ihr Asset wartet: die Streu-Region des Spielers (0,0) steht nach dem Boot nicht",
+                    ],
+                    ["ohne Streamer weicht der Ladeschirm (Befund 09.10.)", { faelle: Object.assign({}, l2aFaelle, { streuNie: { weg: true, stand: "", warn: 0 } }) }, "ohne eine gestreamte Streu-Region (der Streamer lief noch nie) weicht der Ladeschirm"],
+                    ["ein Fall ohne Grund", { faelle: Object.assign({}, l2aFaelle, { karteOffen: undefined }) }, "mit der offenen Karte eines fernen Baums: die Probe stellte den Fall nicht her und nennt keinen Grund"],
                     ["kein Ladeschirm (Befund)", { imHtml: false }, "kein Ladeschirm im HTML"],
                     ["unter der UI", { zIndex: 5 }, "der Ladeschirm liegt unter der UI"],
                     [

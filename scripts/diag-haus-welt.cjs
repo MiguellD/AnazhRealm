@@ -555,10 +555,7 @@ async function proben(phasen) {
                     for (const k of keys) r._disposeScatterRegion(k);
                     keysW8 = keys;
                     const steht = () =>
-                        [...keys].every((q) => {
-                            const rg = s.scatterRegions && s.scatterRegions.get(q);
-                            return rg && !rg._cont && !rg._deferredFoundry;
-                        });
+                        [...keys].every((q) => !r._streuRegionWartet(q));
                     for (let k = 0; k < 1500 && !steht(); k++) await pumpe(2);
                     await pumpe(10);
                     w8.streuSteht = steht();
@@ -693,17 +690,14 @@ async function proben(phasen) {
         stell(start.x, start.y + 3, start.z);
         await pumpe(60);
         // die Streu steht, bevor das Dorf kommt (wie im Spiel: das Auto-Dorf ab 260 m, die Streu bis 384 m): gewartet wird, bis
-        // jede Region unter dem Dorf-Ort gebaut ist, ohne Foundry-Aufschub (`_deferredFoundry`: die Region baut nach der Lieferung
-        // neu, dann durch die Wand — eine frische Welt verlor so ihre Zellen unter den Häusern; die Vorphasen trugen das sonst
-        // zufällig mit)
+        // jede Region unter dem Dorf-Ort gebaut ist, ohne Foundry-Aufschub (die Regel je Region der Welt, `_streuRegionWartet`;
+        // eine aufgeschobene Region baut nach der Lieferung neu, dann durch die Wand — eine frische Welt verlor so ihre Zellen
+        // unter den Häusern; die Vorphasen trugen das sonst zufällig mit)
         const RMd = A.SCATTER.regionM;
         const dorfRegionen = new Set();
         for (const dx of [-40, 0, 40]) for (const dz of [-40, 0, 40]) dorfRegionen.add(`${Math.floor((fx + dx) / RMd)},${Math.floor((fz + dz) / RMd)}`);
         const streuSteht = () =>
-            [...dorfRegionen].every((q) => {
-                const rg = s.scatterRegions && s.scatterRegions.get(q);
-                return rg && !rg._cont && !rg._deferredFoundry;
-            });
+            [...dorfRegionen].every((q) => !r._streuRegionWartet(q));
         for (let k = 0; k < 1500 && !streuSteht(); k++) await pumpe(4);
         let vorZellen = 0;
         for (const region of (s.scatterRegions && s.scatterRegions.values()) || [])
@@ -732,10 +726,7 @@ async function proben(phasen) {
             for (const hs of FH) keys.add(`${Math.floor(hs.position.x / RM)},${Math.floor(hs.position.z / RM)}`);
             for (const k of keys) r._disposeScatterRegion(k);
             const neuSteht = () =>
-                [...keys].every((q) => {
-                    const rg = s.scatterRegions.get(q);
-                    return rg && !rg._cont && !rg._deferredFoundry;
-                });
+                [...keys].every((q) => !r._streuRegionWartet(q));
             for (let k = 0; k < 1500 && !neuSteht(); k++) await pumpe(2);
             await pumpe(10);
             o.w4b.neubau = streuImHaus(FH);

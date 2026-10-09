@@ -723,11 +723,12 @@ function bandEinschwingen(k) {
             if (kb) o.kartenBake = kb;
             if (r._scatterRefillPending) o.streuNachschub = 1;
             if (st.voxelMeshPending && st.voxelMeshPending.size) o.chunkBau = st.voxelMeshPending.size;
-            // Eine aufgeschobene Streu-Region wartet auf ein Asset oder eine Karte — ruhig ist die Welt erst ohne sie
-            // (eine, die in Ruhe aufgeschoben bleibt, ist ein Befund: die Messung schwingt nicht ein).
-            let aufgeschoben = 0;
-            if (st.scatterRegions) for (const reg of st.scatterRegions.values()) if (reg._deferredFoundry) aufgeschoben++;
-            if (aufgeschoben) o.streuAufgeschoben = aufgeschoben;
+            // Eine Streu-Region in Reichweite fehlt, wartet auf ein Asset oder eine Karte oder trägt eine offene Scheibe —
+            // ruhig ist die Welt erst ohne sie (eine, die in Ruhe wartet, ist ein Befund: die Messung schwingt nicht ein).
+            // Die EINE Antwort der Welt (`_streuWartet`); der eigene Zähler las die fehlende Regionen-Karte als „keine
+            // aufgeschoben" und sah fehlende und angeschnittene Regionen nie (Befund 09.10.).
+            const streuListe = [];
+            if (r._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe)) o.streuWartet = streuListe.join(" · ");
             const s = stand();
             if (s.loadScale < 1) o.loadScale = s.loadScale;
             if (vor) for (const key of Object.keys(s)) if (s[key] !== vor[key]) o[key] = `${vor[key]}→${s[key]}`;
