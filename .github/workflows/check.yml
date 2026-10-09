@@ -385,7 +385,7 @@ jobs:
               # IDENTISCHE Normalen tragen (≤1°, vor V18.372 bis 69° = eine Lichtungs-Naht, der „Naht
               # direkt unter dem Wasser"-Befund). Die Heilung: in der Rand-Schale rechnet der Gradient
               # via sample() (reine Funktion der Welt-Position) → beide Nachbarn rechnen dieselbe Normale.
-              # Schnell (3 Chunks); der volle ring-4 `gate:seam` bleibt manuell/Full-Tier.
+              # Schnell (3 Chunks); der volle ring-4 `gate:seam` läuft in Gruppe 3 (Chunk-Naht).
               run: npm run gate:seam-normal
 
             - name: Godrays (V8 Kür — die Licht-Schäfte im EINEN Post-FX-Pass + unter dem EINEN Regler)
@@ -931,6 +931,22 @@ jobs:
               # jeder alte Defekt als Täter ein, die Linse muss ROT lesen und ihn beim Namen nennen.
               run: npm run gate:kreatur-takt
 
+            # Die zwei Kreatur-Wände stehen an DERSELBEN Stelle und in DENSELBEN Gruppen wie in studio-s3-kreatur (168965b9):
+            # wer als Zweiter vereinigt, trifft hier nur die Namen und Kommentare (der Stand dort trägt Block W und die
+            # gelenkige Grobstufe), nie einen zweiten Schritt.
+            - name: Kreatur-Kosten (die Kreatur kostet, was man von ihr sieht)
+              if: matrix.gruppe == 2
+              # Headless (Null-Renderer, Produktions-Boot), Port KREATUR_KOSTEN_PORT: die Anim-Raten-Leiter, die Stand-Pose,
+              # der Mensch-Fern-Guss am echten Peer-Tick, Starr-Bindung + Körper-Kugel, schmale Puffer; Selbst-Tests S1–S4.
+              run: npm run gate:kreatur-kosten
+
+            - name: Tier-Fern-Guss (die Geometrie-Fernstufe der Kreaturen trägt)
+              if: matrix.gruppe == 3
+              # Headless (Null-Renderer, Produktions-Boot), Port TIER_FERN_PORT: nah der Gelenk-Baum, fern das gemergte
+              # Standbild am wrap↔fern-Toggle; Hysterese ohne Flackern und ohne Guss, die Sim-Spur byte-gleich mit und ohne
+              # Fern-Zweig.
+              run: npm run gate:tier-fern
+
             - name: Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)
               if: matrix.gruppe == 3
               # cv:7 (spec/asset-contract/v7): sha256 ueber PRESETS+PARAMS je Kern (klang/
@@ -1025,18 +1041,10 @@ jobs:
             # Familie und Gewicht, Gruppe 1 Kreatur und Übergabe, Gruppe 2 Regler und Leistung, Gruppe 3 Wasser und
             # Studio-Naht. Am 10.10. kamen zwei mit echtem Renderer dazu: gate:arch-feld (swiftshader-WebGPU, D liest die
             # EINE Aufnahme) und gate:webgl-probe (swiftshader-GL). Wer hier fehlt, steht mit Klasse und Grund in AUSNAHMEN
-            # (scripts/diag-ci-deckung.cjs).
+            # (scripts/diag-ci-deckung.cjs); wer nur abgeschaltet läuft (nächtlich, || true, continue-on-error), ist (S) rot.
             - name: Tier-Separation (die Tiere entstapeln sich und differenzieren sich über die Größen-Achse)
               if: matrix.gruppe == 1
               run: npm run gate:tier-separation
-
-            - name: Kreatur-Kosten (die Kreatur kostet, was man von ihr sieht)
-              if: matrix.gruppe == 1
-              run: npm run gate:kreatur-kosten
-
-            - name: Tier-Fern-Guss (die Geometrie-Fernstufe der Kreaturen trägt)
-              if: matrix.gruppe == 1
-              run: npm run gate:tier-fern
 
             - name: Körper-Bewegung (der Körper geht den Weg, nicht die Uhr)
               if: matrix.gruppe == 1
