@@ -273,8 +273,7 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     const topMargin = 4 * step;
     // V18.321 (mirror von `_voxelSampleDensityGrid`-Hoist): der rein-2D `terrainColumnContext`
     // EINMAL pro Spalte (statt pro Voxel die Makro-Oberfläche [61 %] neu zu rechnen) — deckt
-    // die Band-Grenzen (`ctx.surf`) UND die per-Voxel-Auswertung (`terrainDensityAtCol`).
-    // BYTE-IDENTISCH (terrainDensityAtCol(x,y,z,ctx) == terrainDensityAt(x,y,z)). Bit-identisch zur Main.
+    // die Band-Grenzen (`ctx.surf`) UND die per-Voxel-Auswertung (`terrainBaseDensityCol`).
     for (let k = 0; k < Nz; k++) {
         const wz = oz + k * step;
         for (let i = 0; i < Nx; i++) {
@@ -289,11 +288,57 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
                 const idx = colBase + j * Nx;
                 if (j > bandTopJ) density[idx] = -1;
                 else if (j < bandBotJ) density[idx] = 1;
-                else density[idx] = ctx ? terrainDensityAtCol(wx, oy + j * step, wz, ctx) : 0;
+                else density[idx] = ctx ? terrainBaseDensityCol(wx, oy + j * step, wz, ctx) : 0;
             }
         }
     }
+    // Die Edits liegen wie im Main (`_voxelEditedDensityGrid`) auf dem BASIS-Gitter, je Kugel über ihren Index-Kasten
+    // und in Float32 — auch über und unter dem Band. Bis 09.10. legte der Worker sie nur im Band (je Ecke in f64): eine
+    // Füll-Kugel über dem Band stand im Main-Chunk und fehlte im Worker-Chunk (gate:worker-dichte, Mess-Wiese: LOD 0
+    // 93 Ecken, LOD 1 7 Ecken, maxDiff 42,2).
+    applyVoxelEditsGrid(density, ox, oy, oz, Nx, Ny, Nz, step);
     return density;
+}
+
+// Spiegel der Edit-Schleife von `_voxelEditedDensityGrid` (anazhRealm.js) — dieselben Kästen, dieselbe Reihenfolge,
+// dieselbe Float32-Akkumulation. MUSS bit-identisch zur Main (gate:worker-dichte).
+function applyVoxelEditsGrid(out, gox, goy, goz, Nx, Ny, Nz, step) {
+    const edits = state.voxelEdits;
+    if (!edits || !edits.length) return;
+    for (let e = 0; e < edits.length; e++) {
+        const ed = edits[e];
+        if (!ed) continue;
+        const r = ed.r;
+        const r2 = r * r;
+        const strength = ed.strength || 48;
+        const isFill = ed.mode === "fill";
+        const i0 = Math.max(0, Math.floor((ed.x - r - gox) / step));
+        const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - gox) / step));
+        const j0 = Math.max(0, Math.floor((ed.y - r - goy) / step));
+        const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - goy) / step));
+        const k0 = Math.max(0, Math.floor((ed.z - r - goz) / step));
+        const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - goz) / step));
+        for (let k = k0; k <= k1; k++) {
+            const wz = goz + k * step;
+            const dz = wz - ed.z;
+            for (let j = j0; j <= j1; j++) {
+                const wy = goy + j * step;
+                const dy = wy - ed.y;
+                for (let i = i0; i <= i1; i++) {
+                    const wx = gox + i * step;
+                    const dx = wx - ed.x;
+                    const dist2 = dx * dx + dy * dy + dz * dz;
+                    if (dist2 < r2) {
+                        const fall = 1 - Math.sqrt(dist2) / r;
+                        const amt = fall * strength;
+                        const idx = i + j * Nx + k * Nx * Ny;
+                        if (isFill) out[idx] += amt;
+                        else out[idx] -= amt;
+                    }
+                }
+            }
+        }
+    }
 }
 
 // =============================================================================

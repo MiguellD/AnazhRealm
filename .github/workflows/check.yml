@@ -294,6 +294,14 @@ jobs:
               # Die Selbsttests zeigen, dass die alten Regeln (Haupt-Urteil je Pass, Huellen ohne Boden) rot werden.
               run: npm run gate:schatten-werfer
 
+            - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)
+              if: matrix.gruppe == 2
+              # Faehrt die echte Welt (Null-Renderer) und vergleicht je Ort und LOD 0-3 das Gitter des Mains
+              # (`_voxelEditedDensityGrid`) mit dem des Workers (`computeDensityGrid`) Wort fuer Wort - die Standard-Welt
+              # (Mess-Wiese, Genesis, ein Fluss), dazu
+              # eine Fuell-Kugel ueber dem Band. Der Selbsttest verfaelscht EINEN Term nur im Worker und muss rot werden.
+              run: npm run gate:worker-dichte
+
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               if: matrix.gruppe == 1
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr

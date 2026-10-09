@@ -27473,8 +27473,9 @@ class AnazhRealm {
     // direkte Aufrufer); der Chunk-Grid-Pfad nutzt `_voxelEditedDensityGrid` (base-gecacht + Delta).
     _terrainDensityAt(x, y, z) {
         // Die Edit-Deltas leben in `_voxelEditDeltaAt`, damit der feld-native Kollisions-Pfad
-        // (`_fieldDensityAt`) DIESELBE Edit-Wahrheit liest; base + Σ delta ist bit-identisch
-        // (diag-density-refactor / diag-worker-chunk: maxDiff 0).
+        // (`_fieldDensityAt`) DIESELBE Edit-Wahrheit liest. Das Chunk-GITTER (`_voxelEditedDensityGrid`) legt die
+        // Edits in Float32 auf das Basis-Gitter; sein Worker-Spiegel `computeDensityGrid` ist byte-gleich
+        // (gate:worker-dichte: maxDiff 0, LOD 0–3, mit Edits über dem Band).
         return this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
     }
 
