@@ -201,6 +201,20 @@ function energieVerdict(E) {
         );
     return v;
 }
+// (T17) EINE REICHWEITE AUS DER WAFFE (Welle LF kampf, Posten 3 — pure Funktion, Probe UND Selbst-Test): das Verb-Tor des
+// Klicks liest dieselbe Reichweite wie die Klinge (kein reachMaxM im Dispatcher); ein Tier unter dem Fadenkreuz jenseits der
+// Klinge bekommt keinen stummen Hieb — der Spieler-Kanal nennt die Reichweite; in Reichweite trifft die Serie (≥ 8 von 9).
+const REICH_SOLL = { nah: 8 };
+function reichVerdict(R) {
+    if (!R || !R.weit || !R.nah) return ["reich keine Probe"];
+    const v = [];
+    if (R.toreZahl > 0)
+        v.push(`reich-zwilling: das Verb-Tor liest reachMaxM neben der Klinge (${R.klinge} m) — zwei Reichweiten`);
+    if (!R.weit.gesagt.some((t) => /reicht/.test(t)))
+        v.push(`reich-stumm: ${9 - R.weit.treffer} Hiebe ins Leere jenseits der Klinge (${R.klinge} m) ohne Hinweis`);
+    if (!(R.nah.treffer >= REICH_SOLL.nah)) v.push(`reich-nah: in Reichweite nur ${R.nah.treffer} von 9 Treffern`);
+    return v;
+}
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -1497,6 +1511,65 @@ async function WELLE_L() {
             }
             if (hE) parke(hE);
         }
+        // (T17) EINE REICHWEITE AUS DER WAFFE (Posten 3): die Befund-Geometrie — ein Fuchs 1,8 m vor dir, seine Füße 0,77 m
+        // tiefer, das Fadenkreuz auf ihm, neun Klicks über den EINEN Dispatcher (tryMouseBreak) mit dem Langschwert. Gemessen:
+        // das Verb des Drückens (hieb am Tier oder Luftschlag), Treffer, und was der Spieler-Kanal sagt. Gegenprobe: derselbe
+        // Fuchs in 1,3 m / −0,6 m (in Reichweite) trifft. Befund: das Tor wählte „hieb" bis 6 m ab der Schulter, die Klinge
+        // reichte 2,46 m — 9 Schwünge, 0 Treffer, kein Hinweis.
+        {
+            const fR = setze("fuchs");
+            ausruesten("klinge_langschwert");
+            if (s.blueprints.klinge_langschwert) r._setBlueprintWear(s.blueprints.klinge_langschwert, 1);
+            const sagRoh = r._spielerSagt;
+            const gesagt = [];
+            r._spielerSagt = function (t) {
+                gesagt.push(String(t));
+                return sagRoh.call(this, t);
+            };
+            const klick = () => {
+                p._swing = null;
+                p._hitStopUntil = 0;
+                r._spielerSagtLetzte = null;
+                const n0 = treff.length;
+                r.tryMouseBreak();
+                if (p._swing) {
+                    p._swing.lastT = T;
+                    for (let k = 0; k < 1200 && p._swing; k++) {
+                        T += 0.005;
+                        r._tickKampfSchwung(T);
+                    }
+                }
+                return treff.slice(n0).filter((t) => t.c === fR && t.src === "player").length;
+            };
+            const serieR = (d, dy) => {
+                const g0 = gesagt.length;
+                let n = 0;
+                for (let i = 0; i < 9; i++) {
+                    stelle(fR, d, 0, dy);
+                    zielen(punkt(fR, null));
+                    n += klick();
+                }
+                return { treffer: n, gesagt: gesagt.slice(g0) };
+            };
+            try {
+                w.z.reich = {
+                    klinge: +r._kampfBladeReach().toFixed(2),
+                    weit: serieR(1.8, -0.77),
+                    nah: serieR(1.3, -0.6),
+                    // der Code des Dispatchers ohne Kommentare (die Kommentare zitieren die alte Zahl)
+                    toreZahl: (
+                        A.prototype.tryMouseBreak
+                            .toString()
+                            .replace(/\/\/[^\n]*/g, "")
+                            .match(/reachMaxM/g) || []
+                    ).length,
+                };
+            } finally {
+                r._spielerSagt = sagRoh;
+                delete r._spielerSagt;
+                parke(fR);
+            }
+        }
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
@@ -2319,6 +2392,33 @@ async function WELLE_L() {
             evGut.length === 0 &&
                 ["energie-kontakt", "energie-waffe", "energie-nah"].every((t) => evAlt.some((x) => x.startsWith(t))),
             "Selbst-Test T16: der Befund (15–91 J je Kontakt, unter dem Dolch) nennt Kontakt und Waffe; ein Schwung-Gesetz bleibt grün"
+        );
+        const rzz = z.reich || {};
+        console.log(
+            `  (T17) Reichweite: Klinge ${rzz.klinge} m · Fuchs 1,8 m/−0,77 m: ${rzz.weit ? rzz.weit.treffer : "–"}/9 Treffer, gesagt ${JSON.stringify((rzz.weit && rzz.weit.gesagt.slice(0, 1)) || [])} · Fuchs 1,3 m/−0,6 m: ${rzz.nah ? rzz.nah.treffer : "–"}/9 · reachMaxM im Verb-Tor ${rzz.toreZahl}`
+        );
+        const rv2 = reichVerdict(z.reich);
+        check(
+            rv2.length === 0,
+            "LF Posten 3: EINE Reichweite aus der Waffe — das Verb-Tor liest die Klinge, jenseits nennt der Spieler-Kanal die Reichweite, in ihr trifft die Serie" +
+                (rv2.length ? " — " + rv2.join(" · ") : "")
+        );
+        const rv2Alt = reichVerdict({
+            klinge: 2.11,
+            toreZahl: 1,
+            weit: { treffer: 0, gesagt: [] },
+            nah: { treffer: 3, gesagt: [] },
+        });
+        const rv2Gut = reichVerdict({
+            klinge: 2.11,
+            toreZahl: 0,
+            weit: { treffer: 0, gesagt: ["Zu weit: die Klinge reicht 2,5 m"] },
+            nah: { treffer: 9, gesagt: [] },
+        });
+        check(
+            rv2Gut.length === 0 &&
+                ["reich-zwilling", "reich-stumm", "reich-nah"].every((t) => rv2Alt.some((x) => x.startsWith(t))),
+            "Selbst-Test T17: der Befund (Tor 6 m, 9 stumme Hiebe) nennt Zwilling, Stille und Nähe; EINE Reichweite bleibt grün"
         );
         check(
             c.bogenVerschleiss,

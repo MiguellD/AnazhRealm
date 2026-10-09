@@ -81974,10 +81974,14 @@ class AnazhRealm {
         }
         // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite UND näher als eine
         // Architektur wird ANGEGRIFFEN statt abgebaut. _pickCreatureAtCrosshair liefert {creature, point} (far 30);
-        // das Nahkampf-Tor misst vom Schultergelenk des Spielers (ARENA.schwung.reachMaxM).
+        // das Nahkampf-Tor misst vom Schultergelenk des Spielers. EINE REICHWEITE AUS DER WAFFE (Welle LF, Posten 3): das
+        // Tor liest, was die Klinge fegt (_kampfBladeReach + Klingen-Radius) — vorher wählte es „hieb" bis zum Deckel 6 m,
+        // die Klinge reichte 2,46 m: am Hang 9 Schwünge, 0 Treffer, kein Hinweis. Steht das Tier unter dem Fadenkreuz
+        // jenseits der Klinge, nennt der Spieler-Kanal beim Drücken die Reichweite (der Klick bleibt ein Luftschlag).
         const creaturePick = this._pickCreatureAtCrosshair();
         const pick = this._pickArchitectureAtCrosshair();
         let verb = null;
+        let zuWeit = null;
         if (creaturePick && creaturePick.point) {
             const K = AnazhRealm._arenaGesetz().schwung;
             const pmB = this.state.playerMesh;
@@ -81987,7 +81991,11 @@ class AnazhRealm {
                 : Infinity;
             const creatureDist = this.state.camera.position.distanceTo(pt);
             const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
-            if (nahDist <= K.reachMaxM && creatureDist <= archDist) verb = "hieb";
+            const klinge = this._kampfBladeReach() + K.bladeRadiusM;
+            if (creatureDist <= archDist) {
+                if (nahDist <= klinge) verb = "hieb";
+                else zuWeit = { d: nahDist, klinge };
+            }
         }
         // S6-B (V18.133) — FORAGING vor dem Graben: nahe Klein-Vegetation in Arm-Laenge wird GEPFLUECKT (wer auf die
         // Bluete zielt, will sie — kein Loch darunter). Reichweite 6 m « der 30-m-Grabe-Ray.
@@ -82009,6 +82017,14 @@ class AnazhRealm {
             if (!gate.ok) {
                 this.log(`Angriff: zu wenig Stamina (${gate.have}/${gate.cost}).`, "INFO");
                 return false;
+            }
+            if (zuWeit && !gehalten) {
+                const bpW = this._heldImplementBlueprint();
+                const was = bpW ? String(bpW.label || bpW.name).split(/\s[·—(]/)[0] : "Deine Faust";
+                const m = (x) => x.toFixed(1).replace(".", ",");
+                this._spielerSagt(
+                    `Zu weit: ${was} reicht ${m(zuWeit.klinge)} m — das Ziel steht ${m(zuWeit.d)} m vor deiner Schulter.`
+                );
             }
             // der Schwung löst das Ziel in der Strike-Phase auf (Kreatur → Treffer, Leere → Luftschlag)
             return this._playerAttackCreature(creaturePick && creaturePick.creature);
