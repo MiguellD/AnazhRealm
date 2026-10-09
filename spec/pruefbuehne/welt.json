@@ -1,0 +1,77 @@
+{
+    "zweck": "DIE PRÜFBÜHNE (Spike 09.10., artifacts/profiband/pruefbuehne/plan.md §6): eine Welt aus dem Welt-Motor, deren Erbgut statt der Wildnis analytische Gelände-Terme trägt — eine Insel im Meer (Plateau 12 m über dem Spiegel, Kuppel 0,3 %, Schelf auf 12 m unter den Spiegel), die 30°-Rampe an S2 und die Meeres-Bucht mit Furt und Kolk an S5. Höhen relativ zur Basis (terrainBaseHeight 0; der Meeresspiegel liegt bei Basis − 3). Wo der Wildnis-Term nicht wiegt, wirft das Feld nichts: kein Wald, keine Streu, keine ungesetzten Tiere, kein Dorf, keine Schwebe-Insel. Geboren wie jede fremde Welt: importWorldBeside (Welt-Tor) + aktiv + Reload.",
+    "playerPosition": null,
+    "knowledgeBase": [],
+    "version": "18.537.0",
+    "selfAwareness": { "components": [], "weaknesses": [] },
+    "creatures": [],
+    "creatureEmotions": [],
+    "terrainSteepness": 1,
+    "terrainBaseHeight": 0,
+    "weather": "sunny",
+    "worldMeta": {
+        "worldId": "pruefbuehne",
+        "slug": "pruefbuehne",
+        "creator": "local",
+        "visibility": "privat",
+        "parentWorlds": [],
+        "bornAt": 0,
+        "seed": "pruefbuehne-1",
+        "genVersion": 9,
+        "schemaVersion": "10.5-chunk-delta-v1",
+        "gameMode": "frieden",
+        "voxelTerrain": true,
+        "bauSame": {},
+        "erbgut": {
+            "terme": [
+                { "art": "insel", "x": 0, "z": 0, "r": 420, "plateau": 9, "kuppel": 0.003, "schelf": 60, "grund": -15 },
+                {
+                    "art": "rampe",
+                    "x": 0,
+                    "z": 170,
+                    "richtung": 0,
+                    "breite": 30,
+                    "lauf": 32,
+                    "krone": 12,
+                    "winkel": 30,
+                    "boeschung": 45
+                },
+                {
+                    "art": "bucht",
+                    "x0": 0,
+                    "z0": -330,
+                    "x1": 0,
+                    "z1": -540,
+                    "sohle": 64,
+                    "grund": -6,
+                    "ufer": 25,
+                    "furtLage": 50,
+                    "furtBreite": 6,
+                    "furtKrone": -3.6,
+                    "furtFlanke": 20,
+                    "kolkLage": 20,
+                    "kolkR": 10,
+                    "kolkTiefe": 6
+                }
+            ]
+        }
+    },
+    "dslAbilities": [],
+    "dslHistory": [],
+    "dslPatternMemory": {},
+    "playerPathBuckets": null,
+    "worldJournal": {
+        "entries": [
+            { "id": 1, "at": 0, "tick": 0, "type": "genesis", "text": "Ich erwache als pruefbuehne.", "ctx": {} }
+        ],
+        "seen": { "genesis": true }
+    },
+    "playerEmotions": { "joy": 0, "awe": 0, "sorrow": 0, "hope": 0, "peace": 0, "chaos": 0 },
+    "playerSoul": "human",
+    "playerTools": [],
+    "architectures": [],
+    "blueprints": [],
+    "tools": [],
+    "materials": [],
+    "hotbar": []
+}

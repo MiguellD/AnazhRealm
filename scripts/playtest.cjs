@@ -10276,6 +10276,46 @@ async function checkBandRing8(ctx) {
         // Legacy-Single-Key wurde nach Migration (falls vorhanden) entfernt.
         out.legacyKeyAbsent = localStorage.getItem("anazhRealmState") === null;
 
+        // DIE GEBURT ERBT NICHTS (Positiv-Liste, 09.10.): die alte Welt trägt jedes Identitäts-Feld (Anker, Edits,
+        // Dorf-Zellen, Ring- und Vorschau-Stempel, Erbgut, Saat, Rolle, Bann-Liste …) — der leere Snapshot der neuen Welt
+        // darf davon keins tragen, nur die Wahl des Schöpfers (visibility, creator). Die alte Welt steht dafür nur
+        // synchron in state.worldMeta (kein Takt dazwischen), danach wieder die echte.
+        {
+            const echt = r.state.worldMeta;
+            r.state.worldMeta = Object.assign({}, echt, {
+                macro: { massivC: { x: 1, z: 2 } },
+                voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, strength: 48, mode: "carve" }],
+                settlementCells: { start: { x: 0, z: 0 } },
+                genesisPortalRing: true,
+                portalPreviewFachwerk: true,
+                erbgut: { terme: [{ art: "wildnis" }] },
+                saat: [{ dsl: "x" }],
+                role: "host",
+                hostInfo: { peerId: "p" },
+                banList: { peerIds: ["p"], vibePassKeys: [] },
+                guestRights: "frieden",
+                worldAddress: "anazh://alt",
+                regionsActive: true,
+                currentRegionKey: "r0_0",
+                visibility: "privat",
+                creator: "local",
+            });
+            let leer = null;
+            try {
+                leer = r._buildEmptyWorldSnapshot(r._generateFreshWorldMeta("test-erbe"), false);
+            } finally {
+                r.state.worldMeta = echt;
+            }
+            const NEU = new Set(["worldId", "slug", "bornAt", "seed", "genVersion", "variantSeed"]);
+            const SCHNAPPSCHUSS = new Set(["parentWorlds", "bauSame", "schemaVersion", "gameMode"]);
+            const POSITIV = new Set(["visibility", "creator"]);
+            const wmNeu = (leer && leer.worldMeta) || {};
+            out.geborenGeerbt = Object.keys(wmNeu).filter(
+                (k) => wmNeu[k] !== undefined && !NEU.has(k) && !SCHNAPPSCHUSS.has(k) && !POSITIV.has(k)
+            );
+            out.geborenPositiv = wmNeu.visibility === "privat" && wmNeu.creator === "local";
+        }
+
         // createNewWorld (ohne Reload) erzeugt eine neue Welt im Index.
         // Ziel: Ring-8-Invarianten ohne page-reload prüfbar.
         const beforeCount = r.worldsIndexLoad().length;
@@ -10381,6 +10421,12 @@ async function checkBandRing8(ctx) {
         check("Ring 8: anazhRealmActiveWorld zeigt auf aktive Welt", ring8Results.activeWorldPointerSet);
         check("Ring 8: Per-Welt-Save-Key existiert", ring8Results.perWorldSaveExists);
         check("Ring 8: Legacy-Single-Key nach Migration weg", ring8Results.legacyKeyAbsent);
+        check(
+            "Ring 8: eine neue Welt erbt kein Identitäts-Feld der alten (Positiv-Liste visibility · creator)",
+            Array.isArray(ring8Results.geborenGeerbt) && ring8Results.geborenGeerbt.length === 0,
+            `geerbt: ${(ring8Results.geborenGeerbt || ["?"]).join(", ") || "—"}`
+        );
+        check("Ring 8: die Positiv-Liste reist (visibility, creator)", ring8Results.geborenPositiv === true);
         check("Ring 8: createNewWorld liefert neue worldId", ring8Results.newWorldCreated);
         check("Ring 8: Index wächst um eins nach createNewWorld", ring8Results.indexGrewByOne);
         check("Ring 8: Neue Welt im Index mit slug", ring8Results.newWorldInIndex);

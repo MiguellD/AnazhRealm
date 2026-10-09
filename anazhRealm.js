@@ -2100,6 +2100,7 @@ class AnazhRealm {
                     let sy = pos.y;
                     if (autonom) {
                         const ort = this._kreaturGeburtsOrt(ctx.rng, 80, { x: sx, z: sz });
+                        if (!ort) continue; // die Wildnis trägt den Ort nicht: keine autonome Geburt
                         if (ort.x !== sx || ort.z !== sz) {
                             sx = ort.x;
                             sz = ort.z;
@@ -13146,6 +13147,7 @@ class AnazhRealm {
     // Snapshot einer leeren Welt mit gegebenem worldMeta (optional mit Player-Snapshot für „Person
     // übernehmen"). Wird vor dem Reload geschrieben — der Reload-Init findet einen gültigen Per-Welt-Save.
     _buildEmptyWorldSnapshot(worldMeta, inheritPlayer) {
+        const alt = this.state.worldMeta || {};
         const snap = {
             // playerPosition:null markiert „Welt VOR ihrem Erst-Spawn": terrainEverGenerated bleibt false,
             // generateTerrainWithParameters fährt den echten Erst-Spawn (offener Punkt + Genesis-Plattform).
@@ -13159,15 +13161,17 @@ class AnazhRealm {
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
             weather: "sunny",
-            // Eine neue Welt erbt KEINE parentWorlds — sie ist eigenständig
-            // (Fusion mit parentWorlds folgt in Ring 10). visibility/creator
-            // bleiben aus der Schöpfer-Wahl (Default „private"/„local").
+            // Eine neue Welt ist eigenständig: sie erbt von der alten NUR die Wahl des Schöpfers (die Positiv-Liste:
+            // visibility, creator), nie ihre Identität — keine parentWorlds (Fusion: Ring 10), keinen Makro-Anker, keine
+            // Edits, keine Dorf-Zellen, keine Ring- und Vorschau-Stempel, kein Erbgut. Bis 09.10. spreizte sie das GANZE
+            // worldMeta der alten Welt: die neue trug deren Anker und Krater und bekam nie einen Portal-Ring, keine
+            // Vorschauen und kein Start-Dorf (deren Stempel standen schon; Playtest Ring 8: geerbte Felder 0).
             worldMeta: {
-                ...this.state.worldMeta,
+                visibility: alt.visibility,
+                creator: alt.creator,
                 ...worldMeta,
                 parentWorlds: [],
-                // Der Welt-Strom beginnt neu (`_bauSame`: der Zähler ist das Gedächtnis DIESER Welt, Auflage 6 der zweiten
-                // Werkstatt-Gegenprüfung — der Spread oben trug die Zähler der alten Welt in die neue).
+                // Der Welt-Strom beginnt neu (`_bauSame`: der Zähler ist das Gedächtnis DIESER Welt).
                 bauSame: {},
                 // Kein `chunkDeltas`-Feld mehr (Welt-Mods wirken im 3D-Voxel-Feld); das Schema bleibt
                 // 10.5-chunk-delta-v1 (kein Bump für eine Feld-Löschung).
@@ -22142,7 +22146,9 @@ class AnazhRealm {
         // blendet beim ersten Erscheinen ein (`einblenden`). Der Ort ist das EINE Geburts-Gesetz (_kreaturGeburtsOrt:
         // fern um den Spieler, außerhalb des Blicks), jeder Wurf aus dem Fauna-Strom (Γ5).
         const rng = this._faunaRng();
-        const { x, z } = this._kreaturGeburtsOrt(rng, Math.max(80, spawnRadius * 1.6));
+        const ort = this._kreaturGeburtsOrt(rng, Math.max(80, spawnRadius * 1.6));
+        if (!ort) return; // die Wildnis trägt den Ort nicht: kein Boot-Tier
+        const { x, z } = ort;
         const terrainHeight = this.getTerrainHeightAt(x, z);
         const nass = this._weatherIsWet();
         const emotion = rng() < 0.7 ? (nass ? "sad" : "happy") : nass ? "happy" : "sad";
@@ -23241,6 +23247,9 @@ class AnazhRealm {
             // Der persistierte macroAnker reist mit — sonst baut der Worker nach einer Konstanten-Änderung
             // einen anderen Anker als der Main (Naht-Drift). null bei gen < 3.
             macroAnker: typeof this._macroAnker === "function" ? this._macroAnker() : null,
+            // DAS ERBGUT reist in seiner Normalform mit (die Terme der EINEN 2D-Höhe, das Wildnis-Gewicht): der Worker
+            // rechnet dieselben Zahlen, nie eine eigene Ableitung.
+            erbgut: this._erbgut(),
             // DIE BODEN-PALETTE reist mit: der Worker färbt mit DENSELBEN linearen Zahlen (`attachFieldColors`),
             // kein hartkodierter Spiegel der Farben.
             bodenPalette: AnazhRealm.BODEN_FARBE,
@@ -23511,12 +23520,15 @@ class AnazhRealm {
         // KEY (`_chunkIdbKey`); Welt-Wechsel ohne Reload behält den Boot-Stempel (Keys sind seed-scoped).
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
         const anker = typeof this._macroAnker === "function" ? this._macroAnker() : null;
+        // + der Hash des Erbguts (seine Terme formen jeden Chunk: ein fremdes Erbgut darf nie alte Bytes lesen).
         const stamp =
             AnazhRealm.VERSION +
             "|" +
             genV +
             "|" +
             this._fastHash(JSON.stringify(anker || null)) +
+            "|" +
+            this._erbgut().hash +
             "|" +
             AnazhRealm.CHUNK_IDB_FORM;
         c._stamp = stamp;
@@ -26196,6 +26208,9 @@ class AnazhRealm {
             const islandHeight = 6 + rng() * 10; // 6..16 m Wölbung
             const islandX = (rng() - 0.5) * WORLD_SIZE * 0.8;
             const islandZ = (rng() - 0.5) * WORLD_SIZE * 0.8;
+            // Die Schwebe-Insel ist ein Wurf des Feldes: trägt die Wildnis den Ort nicht, steht keine (die Würfe davor
+            // bleiben, der Strom je Insel ist eigen).
+            if (!this._wildnisTraegt(islandX, islandZ)) continue;
             const surfY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(islandX, islandZ) : 0;
             const baseSurf = Number.isFinite(surfY) ? surfY : this.state.terrainBaseHeight || 0;
             const islandY = baseSurf + 50 + rng() * 90; // 50..140 m über dem Boden
@@ -26390,6 +26405,11 @@ class AnazhRealm {
     // der Drainage (`_erosionIncisionPass`), gespeichert als Delta (erodiert − roh). Läuft VOR
     // `_computeHydrosphere`; zirkelfrei (`_erosionDeltaAt` = 0 solange `state.erosion` null), ohne RNG.
     _computeErosion(origin = null) {
+        // Die Erosion ist Zustand des Wildnis-Terms (nur `_wildnisY` liest ihr Delta): eine Welt ohne ihn rechnet sie nicht.
+        if (!(this._erbgut().wildnis > 0)) {
+            if (!origin) this.state.erosion = null;
+            return null;
+        }
         const E = AnazhRealm.EROSION;
         const dim = Math.max(8, Math.round(E.regionSize / E.cell));
         // Parametrisierter Ursprung (Kachel-Erosion): die Heimat-Region nullt `state.erosion` (Re-Compute-
@@ -26727,8 +26747,10 @@ class AnazhRealm {
                 // EROSION ZUERST (wie die Heimat: die Hydro-Probe sieht die erodierten Täler via _erosionFor).
                 // flowTo (64 KB) trägt nur der Heimat-Atlas (diag-flow-bias liest ihn) — die Kachel bleibt schlank.
                 const eTile = this._computeErosion(origin);
-                eTile.flowTo = null;
-                this.state.erosionTiles.set(key, eTile);
+                if (eTile) {
+                    eTile.flowTo = null;
+                    this.state.erosionTiles.set(key, eTile);
+                }
                 this.state.hydroTiles.set(key, this._computeHydrosphere(origin));
                 this._computeHydroBand();
                 made++;
@@ -26769,6 +26791,8 @@ class AnazhRealm {
     // ACHTUNG: wer `_computeErosion` neu rechnet, MUSS diesen Pass danach erneut rufen.
     _hydroSeedTarns() {
         this.state.tarns = [];
+        // Die Tarne sind Mulden des Wildnis-Terms (`_wildnisY` addiert sie): eine Welt ohne ihn sät keine.
+        if (!(this._erbgut().wildnis > 0)) return this.state.tarns;
         const T = AnazhRealm.TARN;
         const base = this.state.terrainBaseHeight || 0;
         const region = AnazhRealm.EROSION.regionSize;
@@ -26963,6 +26987,8 @@ class AnazhRealm {
     _macroAnker() {
         if (this._macroAnkerCache) return this._macroAnkerCache;
         if (this._genVersion() < 3) return null;
+        // Der Anker ist Zustand des Wildnis-Terms: eine Welt ohne ihn hat keinen (und schreibt keinen in ihr worldMeta).
+        if (!(this._erbgut().wildnis > 0)) return null;
         const wm = this.state.worldMeta;
         if (!wm) return null;
         if (wm.macro && AnazhRealm._isValidMacroAnker(wm.macro)) {
@@ -27182,7 +27208,171 @@ class AnazhRealm {
         return { massiv, becken, tDist, tFloor, mShape };
     }
 
+    // DIE EINE 2D-HÖHE der Welt = der Term-Auswerter ihres ERBGUTS (`_erbgut().terme`): der erste Term setzt den
+    // Startwert (die Wildnis `_wildnisY` oder eine Insel), jeder weitere legt sich nach seiner Art darauf — die Rampe
+    // addiert, die Bucht schneidet (Minimum). Eine Welt ohne Erbgut liest [wildnis]: kein Term wird addiert, der Wert
+    // ist byte-gleich zum Rumpf (gate:worker-dichte --abdruck). Liest jeder Leser der Höhe (Dichte, Hydrosphäre,
+    // Fern-Ring, Spawn-Ort, Erosion); MUSS bit-identisch im Worker (`terrainMacroSurfaceY`).
     _terrainMacroSurfaceY(x, z, includeDetail = true) {
+        const T = (this._erbgutCache || this._erbgut()).terme;
+        const t0 = T[0];
+        let h = t0.art === "wildnis" ? this._wildnisY(x, z, includeDetail) : AnazhRealm._erbgutTermY(t0, 0, x, z, this);
+        for (let i = 1; i < T.length; i++) h = AnazhRealm._erbgutTermY(T[i], h, x, z, this);
+        return h;
+    }
+
+    // Ein Term des Erbguts an (x, z) auf die Höhe `h` darunter (Bühnen-Terme sind analytisch, kein Rauschen). Höhen sind
+    // relativ zur Basis (`terrainBaseHeight`; der Meeresspiegel liegt bei Basis − 3). Die Winkel-Größen (Sinus, Tangens)
+    // rechnet `_erbgutNormal` EINMAL, der Worker liest dieselben Zahlen. MUSS bit-identisch im Worker (`erbgutTermY`).
+    static _erbgutTermY(t, h, x, z, realm) {
+        const base = realm.state.terrainBaseHeight || 0;
+        if (t.art === "insel") {
+            // Plateau mit Kuppel (steigt zur Mitte, entwässert), dann der Schelf (smoothstep) bis zum Grund.
+            const r = Math.hypot(x - t.x, z - t.z);
+            if (r <= t.r) return base + t.plateau + t.kuppel * (t.r - r);
+            const u = (r - t.r) / t.schelf;
+            if (u >= 1) return base + t.grund;
+            return base + t.plateau + (t.grund - t.plateau) * (u * u * (3 - 2 * u));
+        }
+        if (t.art === "rampe") {
+            // Der Damm: längs der Falllinie (u) die Krone, beidseits der Lauf mit dem Winkel; quer (v) die Breite, dahinter
+            // die Böschung. Addiert (≥ 0).
+            const dx = x - t.x;
+            const dz = z - t.z;
+            const u = Math.abs(dx * t.ux + dz * t.uz) - t.krone * 0.5;
+            let p = u > 0 ? t.hoehe - u * t.tanW : t.hoehe;
+            if (p <= 0) return h;
+            const w = Math.abs(dz * t.ux - dx * t.uz) - t.breite * 0.5;
+            if (w > 0) p -= w * t.tanB;
+            return p > 0 ? h + p : h;
+        }
+        // "bucht": die Rinne A → B (offene Mündung ins Meer), Sohle eben, quer die Ufer mit ihrem Winkel; längs eine
+        // Furt-Schwelle (Krone über ihre Breite, Flanken mit tanF) und ein Kolk (Kosinus-Mulde). Schneidet (Minimum).
+        let q = ((x - t.x0) * t.ex + (z - t.z0) * t.ez) / t.len2;
+        if (q < 0) q = 0;
+        else if (q > 1) q = 1;
+        const d = Math.hypot(x - (t.x0 + t.ex * q), z - (t.z0 + t.ez * q));
+        let g = base + t.grund;
+        const f = Math.abs(q * t.len - t.furtLage) - t.furtBreite * 0.5;
+        const furt = base + t.furtKrone - (f > 0 ? f * t.tanF : 0);
+        if (furt > g) g = furt;
+        const kd = Math.hypot(x - t.kolkX, z - t.kolkZ);
+        if (kd < t.kolkR) g -= t.kolkTiefe * 0.5 * (1 + Math.cos((Math.PI * kd) / t.kolkR));
+        const w = d - t.sohle * 0.5;
+        const b = w > 0 ? g + w * t.tanU : g;
+        return b < h ? b : h;
+    }
+
+    // DAS ERBGUT der Welt (`worldMeta.erbgut`), validiert und gemerkt: { terme, wildnis, hash }. Fehlt es, ist die Welt
+    // [wildnis] (jeder heutige Save). Die Empfänger-Wand ist fail-closed nach dem Muster `_isValidMacroAnker`, aber
+    // ohne stillen Ersatz: eine unbekannte Term-Art, eine fehlende Zahl oder eine Form außerhalb der Regeln WIRFT — die
+    // Welt erwacht nicht und sagt es auf dem Ladeschirm (init), nie still Wildnis. `wildnis` ist das Gewicht des
+    // Wildnis-Terms (1 = die Welt trägt ihn, 0 = nicht); `_wildnisTraegt` und die Spalte lesen es.
+    _erbgut() {
+        const wm = this.state.worldMeta;
+        const roh = wm ? wm.erbgut : undefined;
+        if (this._erbgutCache && this._erbgutRoh === roh) return this._erbgutCache;
+        const terme = AnazhRealm._erbgutNormal(roh);
+        this._erbgutRoh = roh;
+        this._erbgutCache = {
+            terme,
+            wildnis: terme[0].art === "wildnis" ? 1 : 0,
+            hash: this._fastHash(JSON.stringify(terme)),
+        };
+        return this._erbgutCache;
+    }
+
+    // Die Normalform der Terme (die Zahlen geklemmt, die Winkel-Größen gerechnet) oder ein Wurf mit dem Grund.
+    static _erbgutNormal(roh) {
+        if (roh == null) return [{ art: "wildnis" }];
+        const nein = (grund) => {
+            throw new Error(`Erbgut abgelehnt: ${grund}`);
+        };
+        if (typeof roh !== "object" || !Array.isArray(roh.terme)) nein("keine Liste `terme`");
+        if (roh.terme.length < 1 || roh.terme.length > 32) nein(`${roh.terme.length} Terme (1–32)`);
+        const zahl = (t, k, lo, hi) => {
+            const v = t[k];
+            if (typeof v !== "number" || !Number.isFinite(v)) nein(`${t.art}.${k} ist keine Zahl`);
+            return Math.min(hi, Math.max(lo, v));
+        };
+        const RAD = Math.PI / 180;
+        return roh.terme.map((t, i) => {
+            if (!t || typeof t !== "object") nein(`Term ${i} ist kein Objekt`);
+            const basis = t.art === "wildnis" || t.art === "insel";
+            if (basis !== (i === 0)) nein(`Term ${i} (${t.art}): nur der erste Term setzt den Grund`);
+            if (t.art === "wildnis") return { art: "wildnis" };
+            if (t.art === "insel")
+                return {
+                    art: "insel",
+                    x: zahl(t, "x", -1e5, 1e5),
+                    z: zahl(t, "z", -1e5, 1e5),
+                    r: zahl(t, "r", 10, 5000),
+                    plateau: zahl(t, "plateau", -100, 200),
+                    kuppel: zahl(t, "kuppel", 0, 0.05),
+                    schelf: zahl(t, "schelf", 1, 1000),
+                    grund: zahl(t, "grund", -120, 0),
+                };
+            if (t.art === "rampe") {
+                const w = zahl(t, "winkel", 1, 60) * RAD;
+                const a = zahl(t, "richtung", -360, 360) * RAD;
+                const lauf = zahl(t, "lauf", 1, 500);
+                return {
+                    art: "rampe",
+                    x: zahl(t, "x", -1e5, 1e5),
+                    z: zahl(t, "z", -1e5, 1e5),
+                    ux: Math.sin(a),
+                    uz: Math.cos(a),
+                    breite: zahl(t, "breite", 1, 500),
+                    krone: zahl(t, "krone", 0, 500),
+                    hoehe: lauf * Math.tan(w),
+                    tanW: Math.tan(w),
+                    tanB: Math.tan(zahl(t, "boeschung", 10, 80) * RAD),
+                };
+            }
+            if (t.art === "bucht") {
+                const x0 = zahl(t, "x0", -1e5, 1e5);
+                const z0 = zahl(t, "z0", -1e5, 1e5);
+                const ex = zahl(t, "x1", -1e5, 1e5) - x0;
+                const ez = zahl(t, "z1", -1e5, 1e5) - z0;
+                const len = Math.hypot(ex, ez);
+                if (!(len >= 1)) nein("bucht: A und B fallen zusammen");
+                const kolk = Math.min(len, zahl(t, "kolkLage", 0, 1e5)) / len;
+                return {
+                    art: "bucht",
+                    x0,
+                    z0,
+                    ex,
+                    ez,
+                    len,
+                    len2: ex * ex + ez * ez,
+                    sohle: zahl(t, "sohle", 4, 500),
+                    grund: zahl(t, "grund", -100, 50),
+                    tanU: Math.tan(zahl(t, "ufer", 5, 60) * RAD),
+                    furtLage: Math.min(len, zahl(t, "furtLage", 0, 1e5)),
+                    furtBreite: zahl(t, "furtBreite", 0, 100),
+                    furtKrone: zahl(t, "furtKrone", -50, 50),
+                    tanF: Math.tan(zahl(t, "furtFlanke", 5, 60) * RAD),
+                    kolkX: x0 + ex * kolk,
+                    kolkZ: z0 + ez * kolk,
+                    kolkR: zahl(t, "kolkR", 1, 100),
+                    kolkTiefe: zahl(t, "kolkTiefe", 0, 30),
+                };
+            }
+            return nein(`unbekannte Term-Art „${t.art}"`);
+        });
+    }
+
+    // Trägt die Wildnis den Ort? Das EINE Prädikat an den WÜRFEN des Feldes (Wald, Streu, Nah-Streu, Geburts-Ort, Dorf-
+    // Ort, Schwebe-Inseln): wo der Wildnis-Term nicht wiegt, wirft das Feld nichts — Akte (Mensch, KI, Saat, Linse)
+    // setzen überall. Liest das Gewicht des Erbguts (heute je Welt: 1 oder 0, der Ort ist die Naht künftiger Masken).
+    _wildnisTraegt(_x, _z) {
+        return (this._erbgutCache || this._erbgut()).wildnis > 0;
+    }
+
+    // DER WILDNIS-TERM (`art: "wildnis"`): die Natur-Höhe der Welt — Rauschen, Erosion, Makro-Anker, Canyon, Tafelberg,
+    // Deckel, Tiefsee und Tarn. Unteilbar: ihre Klemmen folgen nichtlinear aufeinander (der Anker addiert vor Canyon-
+    // Boden, Terrasse, Deckel, Tiefsee und Tarn-Klemme), darum ist sie EIN Term und nie die Summe ihrer Teile.
+    _wildnisY(x, z, includeDetail = true) {
         if (!this._voxelNoise) {
             const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
             this._voxelNoise = new SimplexNoise(seed + ":voxel");
@@ -27383,17 +27573,27 @@ class AnazhRealm {
         const n = this._voxelNoise;
         const base = this.state.terrainBaseHeight || 0;
         const surf = this._terrainMacroSurfaceY(x, z);
-        // T6c — WEITE FELDER: `mtnR` (Ruggedness, λ~2000 m) → Roughness regional (0.16 + 0.84·mtnR).
-        const eroR = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
-        let mtnR = 1 - eroR;
-        if (mtnR < 0) mtnR = 0;
-        mtnR *= mtnR;
-        const roughScale = 0.16 + 0.84 * mtnR;
-        // T5 (G3) — die CANYON-MASKE (2D, freq 0.0065) hebt die Höhlen-Decke selektiv → Canyons.
-        const canyonOpen = Math.max(0, Math.min(1, (n.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18));
-        // T7b-ii (Aquifer-Gate): unter Wasser hält die Decke −24 m Abstand + kein canyonOpen (kein Abfluss).
-        const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
-        const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+        // DAS WILDNIS-GEWICHT der Spalte: die 3D-Rauheit und die Höhlen-Hülle sind Wildnis — sie wiegen mit ihm (Wildnis-
+        // Welt ≡ 1: jeder Wert byte-gleich; ohne Wildnis-Term 0: kein noise3D, keine Höhle, der Boden ist die Term-Höhe).
+        const wild = (this._erbgutCache || this._erbgut()).wildnis;
+        let roughScale = 0;
+        let ceilOffset = -24;
+        if (wild > 0) {
+            // T6c — WEITE FELDER: `mtnR` (Ruggedness, λ~2000 m) → Roughness regional (0.16 + 0.84·mtnR).
+            const eroR = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
+            let mtnR = 1 - eroR;
+            if (mtnR < 0) mtnR = 0;
+            mtnR *= mtnR;
+            roughScale = (0.16 + 0.84 * mtnR) * wild;
+            // T5 (G3) — die CANYON-MASKE (2D, freq 0.0065) hebt die Höhlen-Decke selektiv → Canyons.
+            const canyonOpen = Math.max(
+                0,
+                Math.min(1, (n.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18)
+            );
+            // T7b-ii (Aquifer-Gate): unter Wasser hält die Decke −24 m Abstand + kein canyonOpen (kein Abfluss).
+            const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
+            ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+        }
         // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
         const hydro = this.state.hydrosphere;
         const hydroActive = !!(hydro && hydro.ready && !this._hydroComputing);
@@ -27406,6 +27606,7 @@ class AnazhRealm {
         out.n = n;
         out.base = base;
         out.surf = surf;
+        out.wild = wild;
         out.roughScale = roughScale;
         out.ceilOffset = ceilOffset;
         out.hydroActive = hydroActive;
@@ -27422,21 +27623,24 @@ class AnazhRealm {
         const base = ctx.base;
         const surf = ctx.surf;
         let d = surf - y;
-        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
-        d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
-        const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
-        const caveCeil = Math.max(0, Math.min(1, (surf + ctx.ceilOffset - y) / 8));
-        const caveEnv = caveFloor * caveCeil;
-        if (caveEnv > 0) {
-            const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
-            const cave = Math.max(0, (ridge - 0.7) / 0.3);
-            d -= cave * caveEnv * 36;
-            const cavern = n.noise3D(x * 0.013, y * 0.018, z * 0.013);
-            const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
-            d -= cavernCarve * caveEnv * 46;
-            const hall = n.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
-            const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
-            d -= hallCarve * caveEnv * 72;
+        // Rauheit und Höhlen sind Wildnis: ohne ihr Gewicht (ctx.wild 0) wird kein noise3D gerechnet.
+        if (ctx.wild > 0) {
+            d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
+            d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
+            const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
+            const caveCeil = Math.max(0, Math.min(1, (surf + ctx.ceilOffset - y) / 8));
+            const caveEnv = caveFloor * caveCeil * ctx.wild;
+            if (caveEnv > 0) {
+                const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
+                const cave = Math.max(0, (ridge - 0.7) / 0.3);
+                d -= cave * caveEnv * 36;
+                const cavern = n.noise3D(x * 0.013, y * 0.018, z * 0.013);
+                const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
+                d -= cavernCarve * caveEnv * 46;
+                const hall = n.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
+                const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
+                d -= hallCarve * caveEnv * 72;
+            }
         }
         if (ctx.hydroActive) {
             // Der Fluss-Kanal (`_hydrosphereCarveAt`): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit
@@ -36806,6 +37010,9 @@ class AnazhRealm {
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         if (!core || typeof core.bodenGewicht !== "function")
             throw new Error("_nahStreuKachel: das Boden-Gesetz (__phytoCore.bodenGewicht) fehlt");
+        // Die Nah-Streu ist ein Wurf des Feldes: trägt die Wildnis die Kachel nicht, bleibt sie leer (und liest kein Wasser).
+        if (!this._wildnisTraegt((tx + 0.5) * NS.kachel, (tz + 0.5) * NS.kachel))
+            return { items: [], chunks: new Map(), wasser: [] };
         const span = this._voxelChunkConfig(0).span;
         const seedInt = this._forestSeedInt();
         const last = this._effectiveFoliageDensity();
@@ -44840,6 +45047,9 @@ class AnazhRealm {
         } else {
             this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
         }
+        // Der Erbgut-Merker fällt mit dem worldMeta: die Terme der Welt kommen mit ihm (der Heiß-Pfad liest den Merker
+        // direkt, ohne die Identitäts-Probe von `_erbgut`).
+        this._erbgutCache = null;
         // V18.221 — die SCATTER-PROMOTED-Set aus dem worldMeta-Array wiederherstellen.
         // worldMeta.scatterPromoted wandert via Array, hier re-bilden wir das Set.
         // Backward-kompat: alte Welten ohne Feld → leeres Set.
@@ -56294,6 +56504,8 @@ class AnazhRealm {
     // Deko-Instanzen in die GETEILTEN HISM-Gruppen. Deterministisch (pcg2d).
     _scatterPass(region, layer, regX, regZ, seedHash, playerPos, cont, deadlineMs) {
         const SC = AnazhRealm.SCATTER;
+        // Die Streu-Zelle ist ein Wurf des Feldes: trägt die Wildnis die Region nicht, entsteht keine (und keine Promotion).
+        if (!this._wildnisTraegt((regX + 0.5) * SC.regionM, (regZ + 0.5) * SC.regionM)) return 0;
         const cellM = layer.cellM;
         const cellsPerRegion = Math.round(SC.regionM / cellM);
         const baseCellX = Math.round((regX * SC.regionM) / cellM);
@@ -73057,6 +73269,8 @@ class AnazhRealm {
     }
 
     _autoSettlementSiteOk(x, z, noSpawnClear) {
+        // Der Dorf-Ort ist ein Wurf des Feldes (Auto-Dorf, Start-Dorf): wo die Wildnis nicht trägt, steht keins.
+        if (!this._wildnisTraegt(x, z)) return false;
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (spawnClearM)
         if (!noSpawnClear) {
             const g = this._genesisMitte();
@@ -78276,6 +78490,8 @@ class AnazhRealm {
     // Per-Frame-Spawn-Budget: FIFO-Queue, `_tickPendingVegSpawns` arbeitet sie mit Frame-Limit ab;
     // Welt-Wechsel/Reload räumt sie. `this._vegSpawnImmediate === true` (Test/Worldgen) spawnt synchron.
     _enqueueVegetationSpawn(name, position, opts) {
+        // Ein Wurf des Feldes (Wald, Unterholz, Totholz, Fels-Streu): wo die Wildnis nicht trägt, fällt er.
+        if (!this._wildnisTraegt(position.x, position.z)) return;
         if (this._vegSpawnImmediate) {
             this._naturSetzen(name, position, opts);
             return;
@@ -90864,7 +91080,8 @@ class AnazhRealm {
         const v = this._geburtsOrtV || (this._geburtsOrtV = new THREE.Vector3());
         if (wunsch && Math.hypot(wunsch.x - cx, wunsch.z - cz) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN) {
             v.set(wunsch.x, this.getTerrainHeightAt(wunsch.x, wunsch.z) + 1, wunsch.z);
-            if (!fr || !fr.containsPoint(v)) return { x: wunsch.x, z: wunsch.z };
+            if (!fr || !fr.containsPoint(v))
+                return this._wildnisTraegt(wunsch.x, wunsch.z) ? { x: wunsch.x, z: wunsch.z } : null;
         }
         let x = cx;
         let z = cz;
@@ -90877,7 +91094,9 @@ class AnazhRealm {
             v.set(x, this.getTerrainHeightAt(x, z) + 1, z);
             if (!fr.containsPoint(v)) break;
         }
-        return { x, z };
+        // Die Geburt ist ein Wurf des Feldes: trägt die Wildnis den Ort nicht, gibt es keinen (null — kein Boot-, Natur-
+        // oder Nexus-Tier; der Akt eines Menschen ruft Leben weiter überall).
+        return this._wildnisTraegt(x, z) ? { x, z } : null;
     }
 
     // [ATMOSPHERE] Geburt: 6 Kandidaten-Orte nach dem Geburts-Gesetz (fern, außerhalb des Blicks), je die affinity-beste
@@ -90891,6 +91110,7 @@ class AnazhRealm {
         const candidates = [];
         for (let i = 0; i < 6; i++) {
             const ort = this._kreaturGeburtsOrt(rng);
+            if (!ort) continue; // die Wildnis trägt den Ort nicht
             const field = typeof this.worldFieldAt === "function" ? this.worldFieldAt(ort.x, ort.z) : null;
             const soul = this._pickFaunaSoulAtPlayer(ort.x, ort.z, rng);
             // Resonanz-Score: Soul-Tags · Field, total
@@ -90904,6 +91124,7 @@ class AnazhRealm {
             candidates.push({ x: ort.x, z: ort.z, soul, score });
         }
         // Welt entscheidet: höchster Resonanz-Score gewinnt; der Strom streut schon die Orte.
+        if (!candidates.length) return false;
         let best = candidates[0];
         for (const c of candidates) if (c.score > best.score) best = c;
         const gY = this.getTerrainHeightAt(best.x, best.z);
@@ -92083,6 +92304,9 @@ class AnazhRealm {
         // für eine bestehende Welt. Migriert nebenbei einen Legacy-Single-Welt-Save.
         this._preloadActiveWorldMeta();
         this.ensureWorldMeta();
+        // Die Empfänger-Wand des Erbguts (fail-closed): ein Erbgut, das dieser Build nicht trägt, lässt die Welt nicht
+        // erwachen — der Wurf landet auf dem Ladeschirm (`_bootAnazhRealm`), nie fährt sie still als Wildnis.
+        this._erbgut();
         // Vibe-Pass laden oder beim ersten Erwachen erzeugen — nach ensureWorldMeta, damit die
         // Genesis-Erinnerung ins Journal der aktiven Welt fließt (die Identität ist welt-unabhängig).
         await this._ensureVibePass();

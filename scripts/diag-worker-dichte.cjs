@@ -40,7 +40,7 @@ const ABDRUCK = opt("--abdruck", null);
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.WORKER_DICHTE_PORT) || 4392;
 const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));
-const WELTEN = ABDRUCK ? ["standard"] : String(opt("--welten", "standard")).split(",").filter(Boolean);
+const WELTEN = ABDRUCK ? ["standard"] : String(opt("--welten", "standard,buehne")).split(",").filter(Boolean);
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
 
 const mime = {
@@ -231,6 +231,12 @@ async function probe(page, welt, mitAbdruck) {
                 out.shaMakro = await hex(h);
             }
             out.warteAck = typeof warteAck === "function";
+            // Das lebende Erbgut (die Bühne MUSS ihre Terme tragen, sonst verglich die Linse eine Wildnis-Welt).
+            if (typeof r._erbgut === "function") {
+                const E = r._erbgut();
+                out.erbgut = { terme: E.terme.map((t) => t.art), wildnis: E.wildnis, hash: E.hash };
+                out.hoehen = orte.map((o) => ({ id: o.id, y: +r._terrainMacroSurfaceY(o.x, o.z).toFixed(3) }));
+            }
             return out;
         },
         welt,
@@ -357,6 +363,18 @@ function zeige(rep) {
         rep.welt = welt;
         rep.bootMs = b.ms;
         zeige(rep);
+        if (rep.erbgut) {
+            console.log(
+                `    Erbgut: [${rep.erbgut.terme.join(", ")}] · Wildnis-Gewicht ${rep.erbgut.wildnis} · Höhen ${rep.hoehen.map((h) => h.id + " " + h.y).join(" · ")}`
+            );
+            if (welt === "buehne") {
+                const soll = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8")).worldMeta.erbgut.terme.map((t) => t.art);
+                if (rep.erbgut.wildnis !== 0 || rep.erbgut.terme.join() !== soll.join())
+                    rep.befunde.push(`die Bühne trägt nicht ihr Erbgut (lebend [${rep.erbgut.terme}], Spec [${soll}])`);
+            } else if (rep.erbgut.wildnis !== 1 || rep.erbgut.terme.join() !== "wildnis")
+                rep.befunde.push(`die Standard-Welt trägt nicht [wildnis] (lebend [${rep.erbgut.terme}])`);
+            if (rep.befunde.length) rot = true;
+        }
         berichte.push(rep);
         if (rep.abweichend > 0 || rep.befunde.length) rot = true;
         if (SELBSTTEST && welt === "standard") {

@@ -1,0 +1,26 @@
+{
+    "zweck": "DIE STATIONEN DER PRÜFBÜHNE (Spike 09.10.): je Station ihr Ort (x|z, Meter) und die Gesetz-Zahlen, die eine Linse am lebenden Erbgut prüft (der Term der Station steht ≤ 1 m neben der Spec). Höhen relativ zur Basis (Spiegel = Basis − 3). Kameras: A = die benannte Pose des Bild-Paars. Der Spike trägt S0 (Atrium), S2 (die 30°-Rampe) und S5 (die Bucht mit Furt); `meer` ist der Schelf-Grund vor der Insel.",
+    "spiegel": -3,
+    "stationen": [
+        { "id": "s0-atrium", "x": 0, "z": 0, "plateau": 9 },
+        {
+            "id": "s2-hang30",
+            "x": 0,
+            "z": 148,
+            "winkel": 30,
+            "fusZ": 132,
+            "kroneZ": 164,
+            "breite": 30,
+            "kamera": {
+                "A": {
+                    "von": [12, "+1.2"],
+                    "auf": [0, "+0.8"],
+                    "satz": "quer zur Falllinie, 12 m, halbe Höhe — der Hang im Profil"
+                }
+            }
+        },
+        { "id": "s5-furt", "x": 0, "z": -380, "furtKrone": -3.6, "tiefeSoll": 0.6 },
+        { "id": "s5-kolk", "x": 0, "z": -350 },
+        { "id": "meer", "x": 0, "z": 640 }
+    ]
+}

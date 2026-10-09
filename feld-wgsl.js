@@ -425,6 +425,11 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
         if (!realm || typeof realm._terrainMacroSurfaceY !== "function") {
             throw new Error("__feldWgsl.spiegelEingaben: realm ohne _terrainMacroSurfaceY");
         }
+        // Der Spiegel trägt nur den Wildnis-Term: trägt das Erbgut der Welt mehr oder anderes (Insel, Rampe,
+        // Bucht), lehnt er ab (null → der Feld-Pass bleibt unsichtbar, die CPU zeichnet die Schalen) — nie malt er Wildnis
+        // über eine andere Welt.
+        const erbgut = realm._erbgut();
+        if (erbgut.terme.length !== 1 || !(erbgut.wildnis > 0)) return null;
         // Lazy-Init der lebenden Streams (ein Aufruf weckt _voxelNoise und —
         // wenn ein Anker existiert — _macroRidgeNoise über den Anker-Pfad).
         realm._terrainMacroSurfaceY(0, 0);
