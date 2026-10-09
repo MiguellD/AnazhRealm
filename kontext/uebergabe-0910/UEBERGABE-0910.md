@@ -54,7 +54,7 @@ auf `<transcriptDir>/journal.jsonl` des laufenden Workflows (nur EINE Wache je J
 - Neue Remote-Sitzung auf dem OMEN in `C:\Users\micha\Desktop\AnazhRealm-OMEN` starten; sie liest zuerst ihr Gedächtnis +
   `UEBERGABE-OMEN-*.md` dort und **`git show origin/koordination:auftrag/0910-omen-uebergabe.md`** (die neue Übergabe für ihn).
 - Erreichen: `ListAgents` → die Zeile „Remote control … Remote Control" (Name/ID wechselt je Sitzung) → SendMessage.
-- **Sofort für den OMEN:** seine Arbeit an 0710-12 (Branch `welle-m-schatten`, normalBias 1,0 m → kein Werfer unter ~1 m wirft
+- **Sofort für den OMEN:** ZUERST Auftrag 0910-S (`auftrag/0910-omen-sicherung.md`: jeder Worktree gepusht, Gedächtnis + Ordner-Dateien kopiert, UEBERGABE-OMEN-0910.md); seine Arbeit an 0710-12 (Branch `welle-m-schatten`, normalBias 1,0 m → kein Werfer unter ~1 m wirft
   einen sichtbaren Schatten) liegt nur lokal in seinem Mess-Klon — sichten, als WIP committen, pushen, dann fortsetzen.
 - Der OMEN kann keine CI-Logs lesen und keine Reruns auslösen (kein Token) — das macht der Koordinator per API.
 

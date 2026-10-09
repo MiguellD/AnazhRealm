@@ -6,6 +6,8 @@ Messaufträge haben Vorrang (WIP sichern, Ruhe herstellen, messen), dazwischen W
 (Ports 7900–7909). Kanal: dieser Branch `koordination` (`auftrag/` schreibt der Koordinator, `bericht/` du).
 
 ## Sofort
+0. **ZUERST `auftrag/0910-omen-sicherung.md` ganz ausführen** (Auftrag 0910-S: jeder Worktree, Gedächtnis, Ordner-Dateien,
+   UEBERGABE-OMEN-0910.md). Punkt 1 unten ist darin enthalten.
 1. **Sichern:** im Mess-Klon `C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess` jeden Worktree sichten
    (`git worktree list`, je `git status`, `git log --oneline -5`). Der Worktree von **`welle-m-schatten`** (Auftrag 0710-12,
    Basis main 76c9624d) trägt vermutlich unfertige Arbeit: als „Zwischenstand-Sicherung … UNGEPRUEFT" committen und

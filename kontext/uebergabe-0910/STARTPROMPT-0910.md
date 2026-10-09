@@ -14,6 +14,12 @@ Falls das Gedächtnis im neuen Konto fehlt: die Kopie liegt unter `artifacts/pro
 
 ## OMEN (Messplatz + Werkplatz, GTX 1060) — Remote-Sitzung im Ordner `C:\Users\micha\Desktop\AnazhRealm-OMEN` starten
 > Du bist der Messplatz und Werkplatz von AnazhRealm auf dem OMEN. Lies zuerst dein Gedächtnis und UEBERGABE-OMEN-*.md in diesem
-> Ordner, dann im Mess-Klon `git fetch origin koordination` und `git show origin/koordination:auftrag/0910-omen-uebergabe.md`.
-> Sichere zuerst den Worktree welle-m-schatten (WIP-Commit + Push, nie stash), melde dich per ListAgents beim Koordinator auf dem
-> anderen PC und setze Auftrag 0710-12 (Schatten-Bias) fort; Messaufträge des Koordinators haben Vorrang.
+> Ordner, dann im Mess-Klon `git fetch origin koordination` und führe ZUERST
+> `git show origin/koordination:auftrag/0910-omen-sicherung.md` ganz aus (jeder Worktree gepusht, vor allem welle-m-schatten;
+> Gedächtnis + Ordner-Dateien nach gedaechtnis-0910\ und koordination; UEBERGABE-OMEN-0910.md; nie stash). Danach
+> `auftrag/0910-omen-uebergabe.md`: melde dich per ListAgents beim Koordinator auf dem anderen PC und setze Auftrag 0710-12
+> (Schatten-Bias) fort; Messaufträge des Koordinators haben Vorrang.
+
+Falls dein Gedächtnis im neuen Konto fehlt: es liegt auf der Platte unter
+`C:\Users\micha\.claude\projects\C--Users-micha-Desktop-AnazhRealm-OMEN\memory\` (der Kontowechsel löscht keine lokalen Dateien),
+nach Auftrag 0910-S zusätzlich unter `AnazhRealm-OMEN\gedaechtnis-0910\`.
