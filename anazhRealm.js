@@ -81922,24 +81922,47 @@ class AnazhRealm {
         }
     }
 
-    // Pfeil-Optik (render-seitig, headless-fest: ohne THREE/Szene fliegt die
-    // reine Sim). EIN geteiltes Geo/Mat-Paar (der Schaft entlang +Z = lookAt-
-    // Konvention) — kein Alloc-Churn pro Schuss.
+    // Pfeil-Optik (render-seitig, headless-fest: ohne THREE/Szene fliegt die reine Sim): DIE GESTALT DES SCHMIEDE-KERNS
+    // (Welle LF 09.10., Posten 4 — schmiede buildPfeil: Schaft, Spitze, Nocke, drei Federn; die Albedo im Vertex) durch den
+    // EINEN Stoff-Weg der Welt (_ofenMeshEintragAusThree → _foundryBuildGroup, wie jeder Guss des Ofens): einmal als Vorlage
+    // gebaut, je Schuss ein Klon, der Geometrie und Stoffe teilt — kein Alloc-Churn. Die Vorlage liegt längs +X, die Hülle
+    // dreht sie auf +Z (die lookAt-Konvention des Flugs). Vorher ein eigener Zylinder des Wirts in MeshBasic: ein brauner
+    // Stab ohne Spitze, Federn, Licht und Schatten (Leben-Schau 07.10., Bild ks08).
+    _pfeilVorlage() {
+        if (this._pfeilVorlageMemo) return this._pfeilVorlageMemo;
+        const sc = typeof globalThis !== "undefined" ? globalThis.__schmiedeCore : null;
+        if (!sc || typeof sc.buildPfeil !== "function") return AnazhRealm._kernPflichtBruch("schmiede:buildPfeil");
+        const g = sc.buildPfeil();
+        g.updateMatrixWorld(true);
+        const eintraege = [];
+        g.traverse((o) => {
+            if (!o.isMesh) return;
+            const geo = o.geometry.clone().applyMatrix4(o.matrixWorld);
+            eintraege.push(
+                this._ofenMeshEintragAusThree({ geometry: geo, material: o.material, userData: o.userData })
+            );
+        });
+        const teile = this._foundryBuildGroup(eintraege, { lod: 0 });
+        if (!teile) return null;
+        teile.rotation.y = -Math.PI / 2;
+        teile.traverse((o) => {
+            if (o.isMesh) o.castShadow = o.receiveShadow = true;
+        });
+        const huelle = new THREE.Group();
+        huelle.name = "pfeil";
+        huelle.add(teile);
+        this._pfeilVorlageMemo = huelle;
+        return huelle;
+    }
+
     _pfeilMeshAttach(pf) {
         if (typeof THREE === "undefined" || !this.state.scene) return;
-        try {
-            if (!this._pfeilGeo) {
-                this._pfeilGeo = new THREE.CylinderGeometry(0.015, 0.015, 0.55, 5);
-                this._pfeilGeo.rotateX(Math.PI / 2);
-                this._pfeilMat = new THREE.MeshBasicMaterial({ color: 0x8a6a3a });
-            }
-            pf.mesh = new THREE.Mesh(this._pfeilGeo, this._pfeilMat);
-            pf.mesh.name = "pfeil";
-            pf.mesh.position.set(pf.x, pf.y, pf.z);
-            this.state.scene.add(pf.mesh);
-        } catch (_e) {
-            pf.mesh = null;
-        }
+        const v = this._pfeilVorlage();
+        if (!v) return;
+        pf.mesh = v.clone();
+        pf.mesh.position.set(pf.x, pf.y, pf.z);
+        pf.mesh.lookAt(pf.x + pf.vx, pf.y + pf.vy, pf.z + pf.vz);
+        this.state.scene.add(pf.mesh);
     }
 
     _pfeilDespawn(pf) {

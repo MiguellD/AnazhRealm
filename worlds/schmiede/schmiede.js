@@ -161,14 +161,9 @@ function buildZielscheibe(){const G=new THREE.Group();
   const backleg=new THREE.Mesh(new THREE.CylinderGeometry(0.018,0.022,1.10,8),matCol(0x4a3520,0.85,0));backleg.position.set(0.40,-0.40,0);backleg.rotation.z=-0.40;backleg.castShadow=true;G.add(backleg);
   G.userData.R=R; G.userData.faceX=-0.006;
   return G;}
-// — Pfeil: Schaft + Bodkin-Spitze + Nocke + drei Federn. Liegt entlang +X (Flugrichtung). —
-function buildPfeil(){const G=new THREE.Group(); const L=0.72, shR=0.0035;
-  const shaft=cyl(shR,shR,L,matCol(0x9a7a4a,0.8,0),8); shaft.rotation.z=Math.PI/2; shaft.position.set(0,0,0); G.add(shaft);
-  const head=new THREE.Mesh(new THREE.ConeGeometry(shR*1.8,0.035,8),matCol(0x9099a0,0.5,0.7)); head.rotation.z=-Math.PI/2; head.position.set(L/2+0.017,0,0); G.add(head);
-  const nock=new THREE.Mesh(new THREE.CylinderGeometry(shR*1.5,shR,0.02,8),matCol(0x222428,0.6,0)); nock.rotation.z=Math.PI/2; nock.position.set(-L/2-0.01,0,0); G.add(nock);
-  for(let i=0;i<3;i++){const a=i/3*Math.PI*2; const fl=new THREE.Mesh(new THREE.BoxGeometry(0.05,0.022,0.0015),matCol(i===0?0xd24b4b:0xe8e0d0,0.9,0));
-    const grp=new THREE.Group(); fl.position.set(-L/2+0.04,0.011,0); grp.add(fl); grp.rotation.x=a; G.add(grp);}
-  return G;}
+// — Pfeil: lebt im Kern (__schmiedeCore.buildPfeil, Welle LF 09.10.) — DIESELBE Gestalt fliegt in der Welt; die Albedo
+//   trägt der Vertex (FARB-GESETZ), der eigene Bau der Shell (matCol-Farben) fiel. —
+const buildPfeil=()=>SC.buildPfeil();
 // chiselZ · grabeBlatt · buildHead (Axt/Hammer/Sledge/Kolben/Pick/Grabeblatt/Keule) — leben im Kern (__schmiedeCore).
 
 // 2 · DAS RÜCKGRAT — stations(P) lebt im Kern (__schmiedeCore).

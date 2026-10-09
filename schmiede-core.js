@@ -3320,6 +3320,68 @@
         return isFinite(f) && f > 0 ? f : ARENA.guete.faktorVoll;
     }
 
+    // ═══ DER PFEIL (Welle LF 09.10., additiv) — die EINE Gestalt für Prüfstand und Welt ═══
+    // Schaft, Bodkin-Spitze, Nocke und drei Federn (die Leitfeder rot), längs +X (die Flug-Richtung), die Mitte des Schafts
+    // im Ursprung. Die Albedo trägt der Vertex — die Paletten-Hexe als sRGB-Absicht, linear gerechnet (linKanal, das
+    // FARB-GESETZ), kein Farb-Management der Laufzeit rechnet mit —, der Stoff ist weiß (hautStoff): Labor (r128) und Welt
+    // (r184, Haupt-Faden) tragen dieselbe Farbe. Vorher baute nur die Prüfstand-Shell den Pfeil (mit eigenen Farben); die
+    // Welt zeichnete einen braunen MeshBasic-Zylinder ohne Licht und Schatten (Leben-Schau 07.10., K-D8, Bild ks08).
+    var PFEIL = Object.freeze({
+        laengeM: 0.72,
+        schaftR: 0.0035,
+        schaft: 0x9a7a4a,
+        spitze: 0x9099a0,
+        nocke: 0x222428,
+        feder: 0xe8e0d0,
+        leitfeder: 0xd24b4b,
+    });
+    function vertexAlbedo(geo, hex) {
+        var r = linKanal(((hex >> 16) & 255) / 255),
+            g = linKanal(((hex >> 8) & 255) / 255),
+            b = linKanal((hex & 255) / 255);
+        var n = geo.attributes.position.count;
+        var c = new Float32Array(n * 3);
+        for (var i = 0; i < n; i++) {
+            c[i * 3] = r;
+            c[i * 3 + 1] = g;
+            c[i * 3 + 2] = b;
+        }
+        geo.setAttribute("color", new THREE.BufferAttribute(c, 3));
+        return geo;
+    }
+    function buildPfeil() {
+        materials();
+        var L = PFEIL.laengeM,
+            shR = PFEIL.schaftR;
+        var G = new THREE.Group();
+        var teil = function (geo, mat, hex) {
+            var e = new THREE.Mesh(vertexAlbedo(geo, hex), hautStoff(mat));
+            e.castShadow = e.receiveShadow = true;
+            return e;
+        };
+        var schaft = teil(new THREE.CylinderGeometry(shR, shR, L, 8), M.wood, PFEIL.schaft);
+        schaft.rotation.z = Math.PI / 2;
+        G.add(schaft);
+        var spitze = teil(new THREE.ConeGeometry(shR * 1.8, 0.035, 8), M.iron, PFEIL.spitze);
+        spitze.rotation.z = -Math.PI / 2;
+        spitze.position.set(L / 2 + 0.017, 0, 0);
+        G.add(spitze);
+        var nocke = teil(new THREE.CylinderGeometry(shR * 1.5, shR, 0.02, 8), M.cord, PFEIL.nocke);
+        nocke.rotation.z = Math.PI / 2;
+        nocke.position.set(-L / 2 - 0.01, 0, 0);
+        G.add(nocke);
+        for (var i = 0; i < 3; i++) {
+            var fl = teil(new THREE.BoxGeometry(0.05, 0.022, 0.0015), M.cord, i === 0 ? PFEIL.leitfeder : PFEIL.feder);
+            var grp = new THREE.Group();
+            fl.position.set(-L / 2 + 0.04, 0.011, 0);
+            grp.add(fl);
+            grp.rotation.x = (i / 3) * Math.PI * 2;
+            G.add(grp);
+        }
+        G.userData = { kind: "pfeil" };
+        return G;
+    }
+
     // W8 — die Gestalten je Rezept (B2c): JEDES Stück trägt GESTALTEN_JE_REZEPT Individuen (ein neues zählt mit).
     for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
@@ -3331,6 +3393,8 @@
         gueteAnteil: gueteAnteil,
         kampfMasze: kampfMasze,
         trefferUrteil: trefferUrteil,
+        PFEIL: PFEIL,
+        buildPfeil: buildPfeil,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { weapon: PARAMS },

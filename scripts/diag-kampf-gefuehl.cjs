@@ -288,6 +288,21 @@ function kampfWerteVerdict(R) {
     }
     return v;
 }
+// (T21) DIE GESTALT DES PFEILS (Welle LF kampf, Posten 4 — pure Funktion, Probe UND Selbst-Test): was fliegt, ist der Pfeil
+// des Schmiede-Kerns — Schaft, Spitze, Nocke, drei Federn (mindestens 6 Teile, mindestens 3 Farben), beleuchtet, wirft Schatten,
+// 0,70–0,85 m lang; der Wirt baut keinen eigenen Zylinder, die Prüfstand-Shell keinen eigenen Pfeil.
+function pfeilVerdict(P, shell) {
+    if (!P) return ["pfeil keine Probe"];
+    const v = [];
+    if (!(P.teile >= 6 && P.farben >= 3))
+        v.push(`pfeil-gestalt: ${P.teile} Teile, ${P.farben} Farben — kein Schaft mit Spitze, Nocke und Federn`);
+    if (P.unbeleuchtet > 0) v.push(`pfeil-licht: ${P.unbeleuchtet} Teile in MeshBasic (ohne Licht)`);
+    if (!(P.wirft > 0)) v.push("pfeil-schatten: kein Teil wirft Schatten");
+    if (!(P.laenge >= 0.7 && P.laenge <= 0.85)) v.push(`pfeil-laenge: ${P.laenge} m längs der Flug-Richtung`);
+    if (P.wirtZylinder) v.push("pfeil-zwilling: der Wirt baut seinen eigenen Zylinder (_pfeilMeshAttach)");
+    if (shell && shell.eigenerPfeil) v.push("pfeil-zwilling: die Prüfstand-Shell baut ihren eigenen Pfeil");
+    return v;
+}
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -1936,6 +1951,49 @@ async function WELLE_L() {
                 }
             w.z.kampfWerte = reihe;
         }
+        // (T21) DIE GESTALT DES PFEILS AUS DEM SCHMIEDE-KERN (Posten 4): ein Schuss mit dem Langbogen — gezählt, was fliegt
+        // (Teile, beleuchteter Stoff, Schatten, Länge längs der Flug-Richtung), dazu die Quelle: der Wirt baut keinen eigenen
+        // Zylinder, die Prüfstand-Shell keinen eigenen Pfeil. Befund: ein brauner MeshBasic-Zylinder ohne Spitze und Federn.
+        {
+            ausruesten("klinge_langbogen");
+            const recP = fn("_heldBogenRecipe") ? r._heldBogenRecipe() : null;
+            const pfeilAus = { teile: 0, unbeleuchtet: 0, wirft: 0, laenge: null, farben: 0 };
+            if (recP) {
+                const n0 = (s._pfeile || []).length;
+                p._shotCooldownUntil = 0;
+                r._beginPlayerShot(recP, 1);
+                const pf = (s._pfeile || [])[n0];
+                if (pf && pf.mesh) {
+                    pf.mesh.updateMatrixWorld(true);
+                    const inv = new THREE.Matrix4().copy(pf.mesh.matrixWorld).invert();
+                    const box = new THREE.Box3().makeEmpty();
+                    const bb = new THREE.Box3();
+                    const farben = new Set();
+                    pf.mesh.traverse((o) => {
+                        if (!o.isMesh) return;
+                        pfeilAus.teile++;
+                        if (o.material && o.material.isMeshBasicMaterial) pfeilAus.unbeleuchtet++;
+                        if (o.castShadow) pfeilAus.wirft++;
+                        if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
+                        box.union(
+                            bb
+                                .copy(o.geometry.boundingBox)
+                                .applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, o.matrixWorld))
+                        );
+                        const c = o.geometry.attributes.color;
+                        if (c) farben.add([c.getX(0), c.getY(0), c.getZ(0)].map((x) => x.toFixed(2)).join("/"));
+                    });
+                    pfeilAus.laenge = +(box.max.z - box.min.z).toFixed(3);
+                    pfeilAus.farben = farben.size;
+                }
+                if (pf) {
+                    r._pfeilDespawn(pf);
+                    s._pfeile.splice(s._pfeile.indexOf(pf), 1);
+                }
+            }
+            pfeilAus.wirtZylinder = /CylinderGeometry\(0\.015/.test(A.prototype._pfeilMeshAttach.toString());
+            w.z.pfeilGestalt = pfeilAus;
+        }
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
@@ -2897,6 +2955,36 @@ async function WELLE_L() {
             kvGut.length === 0 &&
                 ["kampfwerte-damage", "kampfwerte-defense"].every((t) => kvAlt.some((x) => x.startsWith(t))),
             "Selbst-Test T20: der Befund (damage 19,75 · defense 11,9 überall) nennt Biss und Haut; Werte nach Masse bleiben grün"
+        );
+        const shellSrc = fs.readFileSync(path.join(root, "worlds/schmiede/schmiede.js"), "utf8");
+        const shellPf = {
+            eigenerPfeil:
+                /function buildPfeil\s*\(/.test(shellSrc) ||
+                !/buildPfeil\s*=\s*\(\)\s*=>\s*SC\.buildPfeil\(\)/.test(shellSrc),
+        };
+        console.log(
+            `  (T21) Pfeil: ${JSON.stringify(z.pfeilGestalt || null)} · Shell eigener Pfeil ${shellPf.eigenerPfeil}`
+        );
+        const pv2 = pfeilVerdict(z.pfeilGestalt, shellPf);
+        check(
+            pv2.length === 0,
+            "LF Posten 4: der Pfeil ist die Gestalt des Schmiede-Kerns — Schaft, Spitze, Nocke, Federn, beleuchtet, mit Schatten; kein Wirts- und kein Shell-Zwilling" +
+                (pv2.length ? " — " + pv2.join(" · ") : "")
+        );
+        const pv2Alt = pfeilVerdict(
+            { teile: 1, farben: 1, unbeleuchtet: 1, wirft: 0, laenge: 0.55, wirtZylinder: true },
+            { eigenerPfeil: true }
+        );
+        const pv2Gut = pfeilVerdict(
+            { teile: 6, farben: 4, unbeleuchtet: 0, wirft: 6, laenge: 0.76, wirtZylinder: false },
+            { eigenerPfeil: false }
+        );
+        check(
+            pv2Gut.length === 0 &&
+                ["pfeil-gestalt", "pfeil-licht", "pfeil-schatten", "pfeil-laenge", "pfeil-zwilling"].every((t) =>
+                    pv2Alt.some((x) => x.startsWith(t))
+                ),
+            "Selbst-Test T21: der Befund (ein MeshBasic-Zylinder, 0,55 m, Zwillinge) nennt Gestalt, Licht, Schatten, Länge und Zwilling; der Kern-Pfeil bleibt grün"
         );
         check(
             c.bogenVerschleiss,
