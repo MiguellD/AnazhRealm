@@ -95882,13 +95882,11 @@ class AnazhRealm {
     // Bezugs-Seitenverhältnis `bezugAspekt`): die Scheibe des Referenz-Blicks (Kamera waagrecht, Licht im Zenit —
     // Breite = Frustum-Breite am fernen Rand, Tiefe = Scheiben-Tiefe, beide mit Fade-Saum) liegt in der FESTEN
     // Licht-Basis je nach Blickrichtung gedreht; ihre Box ist höchstens so lang wie ihre Diagonale (Drehung um 45°
-    // gegen die Basis). Die Karte trägt diese längste Kante bei `texelM` — quadratisch, auf `karteRaster` Texel gerundet
-    // (gedeckelt auf karteMax). Eine Flächen-Regel (√(Breite·Tiefe)) gab k1 1024 und damit auf der langen Achse 0,84 m je
-    // Texel statt 0,47 (gemessen 04.10., Prüfer W7): ferne Schatten in Blickbreite wurden 1,8-fach gröber als beim Addon.
-    // 306 m Reichweite, 75° · 16:9: k0 308 × 113 m (Diagonale 328 m, 1930 Texel) → 1984, k1 835 × 203 m (859 m, 1828 Texel)
-    // → 1856. Bis 0910-1 B rundete die Größe auf die nächste Zweierpotenz (beide 2048): der Saum über dem Bedarf trug
-    // 1,9 MB Tiefe, die kein Texel feiner machte — WebGPU verlangt keine Zweierpotenz, keine Mip-Kette liest die Karte.
-    // Eine Eigenschaft des Inhalts, nie des Fensters.
+    // gegen die Basis). Die Karte trägt diese längste Kante bei `texelM` — quadratisch, eine Zweierpotenz (gedeckelt
+    // auf karteMax). Eine Flächen-Regel (√(Breite·Tiefe)) gab k1 1024 und damit auf der langen Achse 0,84 m je Texel
+    // statt 0,47 (gemessen 04.10., Prüfer W7): ferne Schatten in Blickbreite wurden 1,8-fach gröber als beim Addon.
+    // 306 m Reichweite, 75° · 16:9: k0 308 × 113 m (Diagonale 328 m) → 2048, k1 835 × 203 m (859 m) → 2048. Eine
+    // Eigenschaft des Inhalts, nie des Fensters.
     _kaskadenKarten(csm) {
         const K = AnazhRealm.SCHATTEN_KASKADE;
         const cam = csm.camera;
@@ -95904,7 +95902,7 @@ class AnazhRealm {
             const dB = cam.near + saum[1] * (far - cam.near);
             const texel = K.texelM[Math.min(i, K.texelM.length - 1)];
             const bedarf = Math.hypot(2 * halb * dB, dB - dA) / texel;
-            const n = Math.min(K.karteMax, K.karteRaster * Math.ceil(Math.max(1, bedarf) / K.karteRaster));
+            const n = Math.min(K.karteMax, 2 ** Math.ceil(Math.log2(Math.max(1, bedarf))));
             csm.lights[i].shadow.mapSize.set(n, n);
             groessen.push(n);
         }
@@ -101827,8 +101825,8 @@ AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;
 // DIE KASKADEN-BOX (_kaskadenPassen): jede Kaskade misst die Frustum-Scheibe im Licht-Raum statt ihrer Diagonale.
 // `texelM` = die Texel-Kante je Kaskade, die die längste Box-Kante bei jeder Blickrichtung hält — die des
 // Addon-Quadrats (k0 339 m / 2048, k1 961 m / 2048): kein Schatten wird gröber als bis V18.529. Die Karten-Größe folgt
-// daraus am Standard-Bereich und Bezugs-Seitenverhältnis `bezugAspekt` (die kleinste Größe im Raster `karteRaster`, einmal
-// bei der Kaskaden-Geburt; k0 1984, k1 1856, gate:schatten-werfer K5/K6). `rasterTeiler`: die Box wächst in Schritten von
+// daraus am Standard-Bereich und Bezugs-Seitenverhältnis `bezugAspekt` (kleinste Zweierpotenz, einmal bei der
+// Kaskaden-Geburt; k0 = k1 = 2048, gate:schatten-werfer K5/K6). `rasterTeiler`: die Box wächst in Schritten von
 // Scheiben-Tiefe / rasterTeiler (eine Größe hält, solange die Scheibe hineinpasst — sonst schimmert jede Drehung);
 // `randM` = Saum der Werfer-Hülle (Wind, Morph), `luftM` = Saum über dem höchsten Werfer und unter der tiefsten
 // Scheibe; `biasM` = der Tiefen-Nudge je Kaskade in Metern (bisher −0,0005 × 500 m × (i+1)).
@@ -101836,7 +101834,6 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     texelM: Object.freeze([0.17, 0.47]),
     bezugAspekt: 16 / 9,
     karteMax: 2048,
-    karteRaster: 64,
     rasterTeiler: 8,
     randM: 2,
     luftM: 4,
