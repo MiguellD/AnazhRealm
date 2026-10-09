@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.536.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.537.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -80,24 +80,20 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
 LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.536 — IMPULS, WERKSTATT, ANKUNFT, FROST, NEXUS:** EIN Impuls-Gesetz für Fahrzeug, Leib und Biss (der gestoßene Leib
-im Sim-Schritt, EINE Wasser-Regel der Tiere); der Weg Werkstatt → stehendes Werk (je Setzen ein Same, `_setzUrteil` färbt
-das Phantom, die Klemme misst die Studio-Gestalt); die Ankunft (Ladeschirm, bis das Weltbild steht, EIN Tasten-Fänger, der
-Fadenkreuz-Strahl ab dem Blickpunkt, die 3rd-Kamera weicht Stamm und Krone); der Frost (die Render-Objekte eines Leibs lösen
-sich, das Ofen-Memo kennt seine Leiber, die AST-Entsorgungs-Wand); nexus (der Blick gehört dem, der das Dorf verlangt, der
-Mess-Halt für jeden Welt-Akt, die Blocker-Nachbarschaft: Box-Lösungen 12 041 → 26 je Schritt). OMEN gegen V18.535: CPU p95
-9,3 → 6,7 ms, Frame p95 25,0 → 16,9 ms.
+**V18.537 — DER TAKT FRAGT DIE NACHBARSCHAFT, DAS RUDEL HAT EINEN LEIB:** das Blocker-Netz trägt ein Verzeichnis je
+Affordanz (`_blockerMit`); Brennglas, Strahlen, Heben, Portal, Dorf-Rauch und Boost-Resonanz fragen Verzeichnis oder Plätze
+statt des Bestands (1 578 → 1 Einträge je Brennglas-Takt, Boost-Spitze 11,1 → 0,4 ms), die Raum-Tags haben ein Gedächtnis
+mit Inhalts-Schlüssel, die Haus-Tür scannt jede Sekunde. Das Rudel: der persönliche Raum je Leib im EINEN Leib-Löser
+(`_leibKontakte`), das Temperament aus Gattung und Masse, Jagd-Kreis und Rudel-Ring, Bein-Lot, Fern-Gang, das Tier auf der
+Auflage der Bauten, der Nexus würfelt kein Körper-Gesetz (Durchdringung 0 von 870 Takten, Separation 2,06 → 0,10 ms).
 
-**V18.533–535 — GPU-KETTE, WELLE K, WELLE L, WASSER:** Zerleg- und Shader-Kosten-Linse (gpu-bank 24,85 → 14,70 ms), Golden-
-Sätze in der CI, die Sicht-Kette hält ihre Wahl (`_wahlHaelt`); Welle K: die Erst-Zeichnung (EINE Warteschlange
-`_erstWartet`, Hänger beim Tier-Erstbau 1 862 → 64 ms), die Stand-Wache, die Diät, host-vram (Host-Ziele 108,8 → ~93 MB);
-Welle L ganz und wasser (der Körper liest das gezeichnete Wasser); das Backend-Gesetz, EIN GPU-Melder `_gpuWacheMeldung`,
-EINE Entsorgungs-Regel `_disposeSoulGroup`; die CI in drei Gruppen (`gate:ci-deckung`), die Zeit misst der OMEN (ABAB).
-
-**V18.496–532 — AAA NAH UND DIE KOSTEN-MECHANIK:** Studio-Mesh mit LOD-Kette, EINE geskinnte Haut, FARB-GESETZ, EIN Himmel,
-NAH-WIESE, `_foundrySchale`, TRAA, Band-Linse und Ratsche, EIN Karten-Atlas, Koschmieder-Luft; Welle 5 (Pflanzen nah,
-Fernwald, Waldboden, Ausstattung, Stoffe, Fell, Klang); EIN Gesetz der Pass-Wahl (`_passTrifft`), Satz-Abschnitte je Pass,
-Höhlen-Sicht, Instanz-Wahl. Werkbank: `albedo` · `licht` · `zaehlen` · `band` · `lauf` · `zerlegen` · `shader` · `sicht`.
+**V18.496–536 — AAA NAH, KOSTEN-MECHANIK, ANKUNFT:** Studio-Mesh mit LOD-Kette, EINE geskinnte Haut, FARB-GESETZ, EIN
+Himmel, NAH-WIESE, `_foundrySchale`, TRAA, EIN Karten-Atlas, Koschmieder-Luft, Welle 5 (Pflanzen nah, Fernwald, Stoffe, Fell,
+Klang); die GPU-Kette (gpu-bank 24,85 → 14,70 ms, `_passTrifft`, `_wahlHaelt`), Welle K (Erst-Zeichnung `_erstWartet`,
+Stand-Wache, Diät, host-vram) und L (Wasser, Backend-Gesetz, `_disposeSoulGroup`), die CI in drei Gruppen; V18.536 EIN
+Impuls-Gesetz (Fahrzeug, Leib, Biss), der Weg Werkstatt → stehendes Werk (`_setzUrteil`), die Ankunft (Ladeschirm, EIN
+Tasten-Fänger), der Frost, der Mess-Halt jedes Welt-Akts (OMEN gegen V18.535: Frame p95 25,0 → 16,9 ms). Werkbank:
+`albedo` · `licht` · `zaehlen` · `band` · `lauf` · `zerlegen` · `shader` · `sicht`.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Pass, je Satz ein
 Stellvertreter · NAH/MITTEL (< 64 m) = Studio-Mesh + LOD-Kette, jede Karte eine Schicht des EINEN Atlas · FERN = Glieder-
@@ -106,7 +102,8 @@ Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m) · BODEN-STOFF = d
 Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, EIN Werfer je Gestalt, die Box hält ihren Takt · PASS-WAHL = EIN Gesetz
 (`_passTrifft`), jede Wahl hält nach `_wahlHaelt` · SÄTZE = EIN Pool je Stoff, je Pass ein Abschnitt · SONNE = gestuft
 (höchstens ein Bildpunkt in der Bildecke) · SCHIRM = EINE Quelle (`_schirm`) · STUDIOS = 6 Golden-Sätze + Ofen in der CI ·
-MESSORTE = Wiese und Genesis-Ring · LINSEN-START = `software-gpu.cjs`.
+MESSORTE = Wiese und Genesis-Ring · LINSEN-START = `software-gpu.cjs` · NACHBARSCHAFT = das Blocker-Netz (Verzeichnis je
+Affordanz + Plätze), nie der Bestand · LEIB = EIN Leib-Löser im festen Sim-Schritt, EINE Masse.
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
