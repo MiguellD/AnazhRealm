@@ -562,6 +562,37 @@ function selbsttest() {
             szene.form[0] === "buf:szene:bodenSatz" &&
             szene.form[1] === "buf:szene:spieler"
     );
+    // S17c — DAS RAHMEN-ZIEL DES DIREKTPFADS (0910-1): `tex:r184-ausgabe` im Band ist ein Linsen-Rest (0710-9 B: 23,7 MB in
+    // `band --ort genesis` nach `zerlegen`) → LINSE rot `leck` mit Zahl und Grund; ohne VRAM-Abgriff zählen die Textur-Objekte;
+    // ein Band ohne Rahmen-Ziel bleibt sauber.
+    const u17c = v17([
+        { k: "buf:szene:bodenSatz", mb: 21.0, n: 6 },
+        { k: "tex:r184-ausgabe rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+        { k: "tex:r184-ausgabe:tiefe depth24plus 1920x1080x1", mb: 7.9, n: 1 },
+    ]);
+    const r17c = BAND.rahmenZielBefunde(null, {
+        mb: 30,
+        erzeuger: [
+            { erzeuger: "TRAANode", mb: 15.8, n: 2 },
+            { erzeuger: "r184-ausgabe", mb: 23.7, n: 2 },
+        ],
+        unbenannt: [],
+    });
+    t(
+        "tex:r184-ausgabe → LINSE rot `leck` (23.7 MB, Rahmen-Ziel des Direktpfads); aus den Textur-Objekten ebenso; ohne es sauber",
+        u17c.linse === "ROT" &&
+            u17c.rot.some(
+                (x) =>
+                    x.art === "leck" &&
+                    /tex:r184-ausgabe 23\.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads/.test(x.text)
+            ) &&
+            BAND.vramBefunde(u17c).length === 1 &&
+            r17c.length === 1 &&
+            /23\.7 MB/.test(r17c[0].text) &&
+            BAND.rahmenZielBefunde({ mb: 21, liste: [{ k: "buf:szene:bodenSatz", mb: 21, n: 6 }] }, null).length ===
+                0 &&
+            !u17.rot.some((x) => /r184-ausgabe/.test(x.text))
+    );
     // S18 — ein gefallener VRAM-Erzeuger (der Abgriff sieht ihn nicht mehr) zieht seine Ratsche auf 0, ein lebender sinkt.
     const r18 = JSON.parse(JSON.stringify(rt));
     r18.vramMB = { "tex:depthBuffer": 7.9, "buf:szene": 50 };

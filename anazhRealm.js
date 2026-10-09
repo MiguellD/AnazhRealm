@@ -94856,7 +94856,8 @@ class AnazhRealm {
         return n;
     }
 
-    // DER EINE TIEFEN-WEG DER LEINWAND (06.10.): in die Leinwand zeichnet die Post-Kette nur ihr Ausgabe-Quad (die Szene
+    // DER EINE LEINWAND-WEG (06.10., 0910-1) — was der Direktpfad an der Leinwand braucht, lebt nur, solange er zeichnet.
+    // DIE TIEFE: in die Leinwand zeichnet die Post-Kette nur ihr Ausgabe-Quad (die Szene
     // lebt im Ziel des Szene-Passes, mit eigener Tiefe) — r184 legt für jeden Leinwand-Pass dennoch eine Tiefe in Leinwand-
     // Größe an (`depthBuffer`, depth24plus, 7,9 MB bei 1080p), die dort kein Pixel liest. Der Direktpfad dagegen zeichnet
     // die Szene in das Rahmen-Ziel des Renderers (`_getFrameBufferTarget`, das Tonemapping zur Leinwand), dessen Tiefe
@@ -94866,9 +94867,18 @@ class AnazhRealm {
     // Render-Fehlers gab sie zurück) — jeder andere Weg in den Direktpfad (die Weiche der Zerleg-Linse `post`/`leer`) fuhr
     // ohne und stürzte. Jetzt stellt sie die Weiche in `_loopRender` je Frame hier: Direktpfad → mit Tiefe, Post-Kette →
     // ohne, und die GPU-Textur der Leinwand-Tiefe fällt dabei mit (sonst hielte ein Ausflug in den Direktpfad die 7,9 MB
-    // für immer). Nur WebGPU: das WebGL2-Rückend legt die Tiefe mit dem Kontext an. Die Wand: gate:post-kette.
-    _leinwandTiefe(direkt) {
+    // für immer). Nur WebGPU: das WebGL2-Rückend legt die Tiefe mit dem Kontext an.
+    // DAS RAHMEN-ZIEL (0910-1, Koordinator + OMEN): r184 legt es beim ersten Leinwand-Render mit Tonemapping an
+    // (`_getFrameBufferTarget`: rgba16float + depth24plus, 15,8 + 7,9 MB bei 1080p, `isPostProcessingRenderTarget`) und
+    // entsorgt es nur mit dem Leinwand-Ziel. Die Post-Kette legt es nie an (r184 schaltet Tonemapping und Farbraum für ihr
+    // Quad ab) — jeder Ausflug in den Direktpfad hielt es für immer: `zerlegen` (die Weiche `post`) ließ 23,7 MB
+    // `tex:r184-ausgabe` in der Sitzung, und `band --ort genesis` danach maß sie mit (0710-6, 0710-9). Zeichnet die Kette,
+    // verlässt jedes Rahmen-Ziel die GPU (`_rahmenZielAbschied`), gleich wer es anlegte — die Weiche oder eine Linse mit
+    // eigenem Leinwand-Render; eine Prüfung der Map-Größe je Frame. Die Wand: gate:post-kette (b) und (g).
+    _leinwandWeg(direkt) {
         const rend = this.state.renderer;
+        if (rend && direkt !== true && rend._frameBufferTargets && rend._frameBufferTargets.size > 0)
+            this._rahmenZielAbschied(rend);
         const be = rend && rend.backend;
         if (!be || be.isWebGPUBackend !== true) return;
         const soll = direkt === true;
@@ -94880,6 +94890,29 @@ class AnazhRealm {
         if (!soll) {
             const t = rend.getCanvasTarget().depthTexture;
             if (t && be.has(t)) be.destroyTexture(t);
+        }
+    }
+
+    // DER ABSCHIED DES RAHMEN-ZIELS: r184s eigener — der dispose-Hörer, den `_getFrameBufferTarget` an das Leinwand- bzw.
+    // Ausgabe-Ziel hängt (Hörer ab, Ziel entsorgt: seine Farb- und Tiefen-Textur verlassen die GPU, der Eintrag fällt). Er
+    // ist am Text erkennbar (er löscht aus `_frameBufferTargets`; gate:vendor-anker pinnt ihn). Fehlt er (Vendor-Drift),
+    // fällt das Ziel trotzdem — LAUT, mit dem Grund.
+    _rahmenZielAbschied(rend) {
+        for (const [ziel, rahmen] of [...rend._frameBufferTargets]) {
+            const hoerer = (ziel && ziel._listeners && ziel._listeners.dispose) || [];
+            const abschied = hoerer.find((h) =>
+                /_frameBufferTargets\.delete\(/.test(Function.prototype.toString.call(h))
+            );
+            if (abschied) {
+                abschied.call(ziel);
+                continue;
+            }
+            this.log(
+                "RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt",
+                "ERROR"
+            );
+            rahmen.dispose();
+            rend._frameBufferTargets.delete(ziel);
         }
     }
 
@@ -95211,7 +95244,7 @@ class AnazhRealm {
             // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
             pp.outputNode = graded;
             this.state.postProcessing = pp;
-            // Die Leinwand-Tiefe stellt die Weiche in `_loopRender` (`_leinwandTiefe`) je Pfad — nie der Bau.
+            // Die Leinwand-Tiefe stellt die Weiche in `_loopRender` (`_leinwandWeg`) je Pfad — nie der Bau.
             // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
             this.state.traaNode = traa;
             this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
@@ -96836,10 +96869,10 @@ class AnazhRealm {
         // offener Pipeline, die Erst-Zeichnung) hängen am Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View
         // (Fehler-Klasse ohne fps-Gewinn). Die statische KLASSEN-PIXEL-KAPPE (Boot-Set) trägt die Auflösungs-
         // Ökonomie; eine Wahrnehmungs-Auflösung nur realloc-frei (Viewport-Scaling).
-        // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr die Leinwand-Tiefe (`_leinwandTiefe`, der EINE Tiefen-Weg).
+        // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr Leinwand-Tiefe und Rahmen-Ziel (`_leinwandWeg`, der EINE Weg).
         let direkt = !pp || this.state.postProcessingFailed === true;
         if (!direkt) {
-            this._leinwandTiefe(false);
+            this._leinwandWeg(false);
             try {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
@@ -96853,7 +96886,7 @@ class AnazhRealm {
             }
         }
         if (direkt) {
-            this._leinwandTiefe(true);
+            this._leinwandWeg(true);
             this.state.renderer.render(this.state.scene, this.state.camera);
         }
         // Das erste fertige Weltbild nimmt den Ladeschirm weg (L2: nie die schwarze Leinwand).
