@@ -4584,13 +4584,63 @@ function __streuGeo(row, seed, tonRGB) {
     return geo;
 }
 
+// AUFS NIVEAU (S3, die gelenkige Grobstufe wirft für die feine): die Laplace-Glättung zieht jede gewölbte Fläche nach
+// innen, um so mehr, je gröber das Raster ist (der Schwund wächst mit vox²) — auf dem Raster der Grobstufe (0,04 H) um
+// Zentimeter, an den dünnen Läufen bis zur halben Dicke: der Wurf-Umriss der Grobstufe lag beim Wolf 7 % unter dem der
+// feinen (IoU 0,92, Lauf und Pfote fehlten). Jede geglättete Ecke kehrt auf die Niveau-Fläche des Felds zurück (Newton
+// über das trilineare Feld, Zentral-Gradient, je Schritt höchstens ½ Zelle): die Fläche bleibt glatt und liegt wieder auf
+// dem Gesetz, ihre Dreiecke bleiben dieselben.
+function __aufsNiveau(verts, f, nx, ny, nz, lo, vox, level) {
+    const dy = nx,
+        dz = nx * ny;
+    for (const p of verts)
+        for (let s = 0; s < 3; s++) {
+            // das trilineare Feld und sein Gradient in EINEM Zugriff auf die acht Ecken der Zelle
+            const gx = Math.min(nx - 1.000001, Math.max(0, (p[0] - lo[0]) / vox)),
+                gy = Math.min(ny - 1.000001, Math.max(0, (p[1] - lo[1]) / vox)),
+                gz = Math.min(nz - 1.000001, Math.max(0, (p[2] - lo[2]) / vox));
+            const i = Math.floor(gx),
+                j = Math.floor(gy),
+                k = Math.floor(gz);
+            const u = gx - i,
+                v = gy - j,
+                w = gz - k;
+            const a = i + nx * (j + ny * k);
+            const f000 = f[a],
+                f100 = f[a + 1],
+                f010 = f[a + dy],
+                f110 = f[a + dy + 1],
+                f001 = f[a + dz],
+                f101 = f[a + dz + 1],
+                f011 = f[a + dy + dz],
+                f111 = f[a + dy + dz + 1];
+            const c00 = f000 + (f100 - f000) * u,
+                c10 = f010 + (f110 - f010) * u,
+                c01 = f001 + (f101 - f001) * u,
+                c11 = f011 + (f111 - f011) * u;
+            const c0 = c00 + (c10 - c00) * v,
+                c1 = c01 + (c11 - c01) * v;
+            const d = c0 + (c1 - c0) * w - level;
+            const ex = (((f100 - f000) * (1 - v) + (f110 - f010) * v) * (1 - w) + ((f101 - f001) * (1 - v) + (f111 - f011) * v) * w) / vox,
+                ey = ((c10 - c00) * (1 - w) + (c11 - c01) * w) / vox,
+                ez = (c1 - c0) / vox;
+            const g2 = ex * ex + ey * ey + ez * ez;
+            if (!(g2 > 1e-6)) break;
+            const lim = (0.5 * vox) / Math.sqrt(g2);
+            const t = Math.max(-lim, Math.min(lim, d / g2));
+            p[0] -= t * ex;
+            p[1] -= t * ey;
+            p[2] -= t * ez;
+        }
+}
 
 // ── DIE HÜLLEN-MASCHINE DES OFENS (V18.497 — ein Gesetz für Mensch UND Tier): Feld → Surface-Nets
-// (koerper-core, verbatim Lab) → Orientierung → 2× Laplace → CLR-Push → Gelenk-Gewichte → Geometrie.
+// (koerper-core, verbatim Lab) → Orientierung → 2× Laplace → [aufs Niveau] → CLR-Push → Gelenk-Gewichte → Geometrie.
 // Der Aufrufer liefert das FELD (Mensch: Punkt-Splat + Closing · Tier: Primitiv-Füllung); zentren =
 // [{j, c, d?}] je Teil-Primitiv (d(v) = eigener Abstand², sonst Zentrums-Abstand), skinJoints = Bone-
-// Ordnung (null = ungeskinnte Hülle, die Fern-Stufe), kandidaten(v) = optionale Vorauswahl der zentren. ──
-function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, eW, kandidaten) {
+// Ordnung (null = ungeskinnte Hülle: die starren Kopf- und Hand-Häute), kandidaten(v) = optionale Vorauswahl der
+// zentren, aufsNiveau = die geglätteten Ecken kehren auf die Niveau-Fläche des Felds zurück (__aufsNiveau). ──
+function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, eW, kandidaten, aufsNiveau) {
     const sn = hk.surfaceNets(f, nx, ny, nz, level, lo[0], lo[1], lo[2], vox);
     if (!sn.verts.length || !sn.faces.length) return null;
     // ORIENTIERUNG pro Hülle (das Lab-Mehrheitsvotum): Nets kann nach
@@ -4651,6 +4701,7 @@ function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJo
                 v[2] = v[2] * 0.5 + acc[i * 3 + 2] * k;
             }
     }
+    if (aufsNiveau) __aufsNiveau(sn.verts, f, nx, ny, nz, lo, vox, level);
     // CLR-PUSH: jeden Vertex entlang seiner Flächen-Normale nach AUSSEN
     // (die Vorlagen-Klarheit: Hülle ÜBER den Primitiven, kein Durchstoß).
     if (clr) {
@@ -4998,8 +5049,8 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
         for (let c = n; c; c = c.parent) if (nodeName.has(c)) return nodeName.get(c);
         return "wolf";
     };
-    // Stufe 0: der Kopf trägt seine eigenen starren Häute (__tierKopfHaeute); das Fern-Standbild ist starr
-    // und nimmt ihn in die eine Haut.
+    // Stufe 0: der Kopf trägt seine eigenen starren Häute (__tierKopfHaeute); die Grobstufe nimmt ihn in die eine Haut
+    // (Kopf und Kiefer binden über die Gewichte an ihre Gelenke).
     const nimmHaut = (n) => fein || !unterKopf(n);
     let prims = __tierPrims(root, root, nimmHaut, vox, blend, gelenkVon);
     if (prims.length < 4) return null;
@@ -5062,7 +5113,9 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
         kandidaten = (v) => zellen[zi(v[0], 0, cnx) + cnx * (zi(v[1], 1, cny) + cny * zi(v[2], 2, cnz))] || zentren;
     }
     const eW = TIER_HAUT.eW * H;
-    const geo = __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten);
+    // Die Grobstufe liegt auf dem Gesetz (__aufsNiveau): ihr Raster ist doppelt so grob, die Glättung zöge sie sonst nach
+    // innen — sie wirft den Schatten der feinen (B2c), ihr Umriss muss deren Umriss tragen.
+    const geo = __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten, fein);
     if (!geo) throw new Error("TIER-HAUT: die Hüllen-Maschine lieferte keine Fläche");
     // Das Fell-Muster auf der Haut: beide Stufen über die Bone-Gewichte (EINE Regel; das Glied-Raten der Grobstufe fiel mit
     // ihrem Standbild).
@@ -5775,7 +5828,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             let f = new Float32Array(g.length);
             for (let i = 0; i < g.length; i++) f[i] = g[i];
             f = kern.blur3(f, nx, ny, nz, sigma);
-            const geo = __huelleAusFeld(kern, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, 0.04);
+            // die Grobstufe liegt auf dem Gesetz wie die des Tiers (__aufsNiveau): ihre Hüllen werfen für die feine
+            const geo = __huelleAusFeld(kern, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, 0.04, undefined, fein);
             if (!geo) return;
             const mesh = new THREE.Mesh(geo, matFuer(klasse));
             mesh.userData.__skinned = true;
@@ -5875,7 +5929,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // Kinn, Wangen, Masseter, Lippen — jede mit eigener Kante, der Kartoffel-Kopf der Tour). Wie beim Tier (V18.499)
     // gießt derselbe SDF-Guss die Haut- und Lippen-Kugeln des Kopfes (ohne die Augen-Gruppen: ihre Lider blinzeln) zu
     // EINER glatten Fläche im Kopf-Raum; die Lippe ist eine Farbe der Haut (Vertex, je Punkt das nächste Primitiv),
-    // keine Wurst auf dem Gesicht. Nur nah (lod 0) — das Fern-Standbild bleibt der Primitiv-Guss. Ohne Hüllen-Maschine
+    // keine Wurst auf dem Gesicht. Nur nah (lod 0) — die Grobstufe bleibt der Primitiv-Guss. Ohne Hüllen-Maschine
     // oder Gestalt-Tafel kein Mensch nah: LAUT (Integration W5-Körper; vorher fiel die Haut still weg — Kugel-Gesicht).
     const handMitte = {};
     if (!fein) {

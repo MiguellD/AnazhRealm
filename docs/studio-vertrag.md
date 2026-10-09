@@ -91,7 +91,9 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   der Flatten und die Starr-Bindung des Ofens gruppieren nach ihr, das Gesetz zählt mit ihr = Draws je
   Instanz-Gruppe und Pass) · `schatten` = die Stufe, deren Gestalt wirft (der L0-Baum wirft seine L1), oder `false`.
   Bei einer GELENK-GESTALT (Tier, Mensch — §8.4) darf `schatten` auf die gelenkige Grobstufe zeigen: sie bindet an das
-  Skelett der feinen (EIN Skelett je Gestalt) und wirft für beide Stufen mit ihren eigenen Stoffen (S3, Lehre 19).
+  Skelett der feinen (EIN Skelett je Gestalt) und wirft für beide Stufen mit ihren eigenen Stoffen (S3, Lehre 19). Ihr
+  Umriss trägt den der feinen: die Grobstufe liegt auf dem Gesetz (`__aufsNiveau` — die Glättung zieht sie nicht nach
+  innen), `gate:kreatur-kosten` (W) DECKUNG misst den Wurf-Umriss je Pose × Sonne gegen die feine Stufe (IoU ≥ 0,94).
 - **Wurf am Konsum:** der EINE Host-Leser `_foundryBudgetZeile(preset, stufe)` liest `schatten` für jeden
   Foundry-Flat (die eigene Stufe wirft selbst, eine andere reist als Schatten-Zwilling im selben Zug,
   `false` wirft nicht) und für die Nah-Wiese, die Gelenk-Gestalt liest sie über `_ofenZeile` (den Leser von

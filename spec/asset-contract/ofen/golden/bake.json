@@ -279,7 +279,7 @@
    "meshes": 1,
    "verts": 3439,
    "tris": 5612,
-   "sha256": "27e893bc6a54330678450174d85bf32ad891c7c8fe212e44aa77c0b4d6396175"
+   "sha256": "acdeb6d6e8bd77ff955658f1a3ec92c9ac54f3d5d5299dcff7fc75da550e04f6"
   },
   "wolf-L1|straehneD|wolf": {
    "meshes": 1,
@@ -717,7 +717,7 @@
    "meshes": 1,
    "verts": 3613,
    "tris": 5938,
-   "sha256": "988c31f9835e72bdefcde8ce742e3c3f66c8525aac38caf2d84659664bc9c07c"
+   "sha256": "b2e8030c32d9c38249257d65fe4705a2577b391a110cefab84a6904b1ded722e"
   },
   "fox-L1|straehneD|wolf": {
    "meshes": 1,
@@ -1101,7 +1101,7 @@
    "meshes": 1,
    "verts": 3558,
    "tris": 6124,
-   "sha256": "17661c0fd8db0ce5ed25475d9195afb3f1a3b022c0ccddae42995560e7d3d29e"
+   "sha256": "91ee25b28b4558347800b8dc972cecd26f3af674afba44ab740970974f6464ed"
   },
   "bear-L1|straehneD|wolf": {
    "meshes": 1,
@@ -1440,7 +1440,7 @@
    "meshes": 1,
    "verts": 2769,
    "tris": 5146,
-   "sha256": "607f1a22f015c86b8be1f9dc297e6bc94d037a2ca8be366dd4d947a5203287a2"
+   "sha256": "85421cffeeacf76c158aa9cb53ed632b62156591ad1209ca515bd623f1934017"
   },
   "deer-L1|straehneD|wolf": {
    "meshes": 1,
@@ -1926,25 +1926,25 @@
    "meshes": 1,
    "verts": 5988,
    "tris": 11972,
-   "sha256": "0f867f11adb5b70866a3773654523c6e63ddb0f42690f189d4bf2295023a4c37"
+   "sha256": "303a492e72a91c000681fd015c58b3a4e972ea92c8144149e4628a8c86600b48"
   },
   "mensch-L1|stoff_233047|mensch": {
    "meshes": 1,
    "verts": 2706,
    "tris": 5408,
-   "sha256": "4d8be1df535f31961555e9ffede8176914cac22b0cd6e1f7289c94e3e719f930"
+   "sha256": "d6c769e80773b4c86de2c1e19df118b61a36ed68ee6fcf20e210e33c6fb51749"
   },
   "mensch-L1|stoff_2a2c30|mensch": {
    "meshes": 1,
    "verts": 2172,
    "tris": 4340,
-   "sha256": "3c3436009c0c4ba21b79fd4e6192c24cd5d930197337c3d46bd4ce7a33087164"
+   "sha256": "78f375577ac58157351d626ade792d573db09e7c57f33527a31aeb057ef225bd"
   },
   "mensch-L1|stoff_e8e6e0|mensch": {
    "meshes": 1,
    "verts": 686,
    "tris": 1364,
-   "sha256": "9f49aa3df6618ee5297b88f1b4e99cd0b47a70ca48df3e8452c66a92fb91e62a"
+   "sha256": "a74c566f75a0c693441eecec134fad944884946f71f1663d6c1f3fbc4ed300e1"
   },
   "mensch-L1|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"
