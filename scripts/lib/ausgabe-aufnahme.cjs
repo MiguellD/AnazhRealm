@@ -81,6 +81,8 @@ function wetterSpion() {
     const buche = (e) => {
         e.seq = ++S.seq;
         e.t = Math.round(performance.now());
+        // die Spiel-Zeit eines getakteten Laufs (`window.__taktZeit`, Sekunden): der Takt der Uhr-Wache rechnet in ihr
+        if (Number.isFinite(window.__taktZeit)) e.tv = +window.__taktZeit.toFixed(2);
         e.uhr = Number.isFinite(st.weatherEffectTime) ? +st.weatherEffectTime.toFixed(1) : null;
         S.buch.push(e);
         if (S.buch.length > 500) S.buch.splice(0, S.buch.length - 500);
@@ -107,11 +109,14 @@ function wetterSpion() {
             const vor = this.state.weather;
             const q0 = S.quelle,
                 s0 = S.stapel;
-            S.quelle = quelle || "?";
+            S.quelle = S.buehne ? "buehne" : quelle || "?";
             S.stapel = wer();
             try {
                 const ok = Object.getPrototypeOf(this)._setWeather.call(this, name, quelle);
-                if (ok === false && name !== vor && name in this.constructor.WEATHER_INTENSITY)
+                // ein Wunsch der Welt an den Wetter-Zug (das Gesetz der Schreiber): gebucht, nicht geschrieben
+                if (ok === "wunsch")
+                    buche({ art: "gewuenscht", von: vor, zu: name, quelle: S.quelle, stapel: S.stapel });
+                else if (ok === false && name !== vor && name in this.constructor.WEATHER_INTENSITY)
                     buche({ art: "verweigert", von: vor, zu: name, quelle: S.quelle, stapel: S.stapel });
                 return ok;
             } finally {
@@ -137,18 +142,103 @@ function wetterBuch(seit) {
 }
 
 // Die Bühne setzt das Wetter IHRER Messung: der Halter selbst ist der eine Schreiber, den der Halt durchlässt — die Uhr
-// taut für DIESEN Zug (Quelle „buehne") und steht danach wieder, wie sie stand (oder eingefroren). Der Cross-Fade fällt.
+// taut für DIESEN Zug (im Buch Quelle „buehne") und steht danach wieder, wie sie stand (oder eingefroren). Der Cross-Fade
+// fällt. Die Bühne spricht wie der Spieler („setze wetter sonnig", wie jede Spur der Leben-Schau): das Gesetz der Schreiber
+// (Leben-Schau 2, 09.10.) lässt die Welt das Wetter nie direkt schreiben — sie wünscht nur das nächste Wort des Zugs.
 function wetterSetzen(wort) {
     const r = window.anazhRealm;
     const st = r.state;
-    window.__wetterSpion();
+    const S = window.__wetterSpion();
     const uhr = st.weatherEffectTime;
     st.weatherEffectTime = 0;
-    r._setWeather(wort, "buehne");
+    S.buehne = true;
+    try {
+        r._setWeather(wort, "human");
+    } finally {
+        S.buehne = false;
+    }
     st.weatherEffectTime = uhr;
     window.__wetterHalten();
     st.weatherTransition = null;
     return st.weather;
+}
+
+// DER UHR-SPION (die Linse der Uhr, Leben-Schau 2, 09.10.): JEDER Schreiber der Tageszeit (`state.timeOfDay`) beim Namen.
+// Der EINE Uhr-Schreiber des Spiels (`_uhrSetzen`, falls es ihn gibt) bucht je Aufruf seine Quelle (`human` · `regler` ·
+// `nexus` · `rule:…` · `laden` …) und einen verweigerten Zug als „verweigert"; `state.timeOfDay` selbst trägt einen Accessor:
+// wer die Uhr am Schreiber vorbei setzt, steht als „roh" mit den Spiel-Rahmen seines Stapels im Buch (in der Schau: ein
+// Nexus-Gesetz „time_of_day ← dslEval ← _tickWorldRules"). Der eigene Gang der Uhr (Quelle „uhr", oder ohne Schreiber ein
+// Stapel aus `tickDayNight`) bucht nicht je Takt, er summiert: Schritte, Weg (Tag-Bruchteile vorwärts), größter Schritt.
+function uhrSpion() {
+    const r = window.anazhRealm;
+    const st = r.state;
+    const S =
+        window.__uhrSpionBuch ||
+        (window.__uhrSpionBuch = {
+            seq: 0,
+            buch: [],
+            staende: new WeakSet(),
+            quelle: null,
+            stapel: null,
+            gang: { n: 0, weg: 0, max: 0 },
+        });
+    if (S.staende.has(st)) return S;
+    S.staende.add(st);
+    const buche = (e) => {
+        e.seq = ++S.seq;
+        e.t = Math.round(performance.now());
+        if (Number.isFinite(window.__taktZeit)) e.tv = +window.__taktZeit.toFixed(2);
+        S.buch.push(e);
+        if (S.buch.length > 500) S.buch.splice(0, S.buch.length - 500);
+    };
+    let wert = st.timeOfDay;
+    Object.defineProperty(st, "timeOfDay", {
+        configurable: true,
+        enumerable: true,
+        get: () => wert,
+        set: (v) => {
+            if (v !== wert) {
+                const stapel = S.quelle === "uhr" ? "uhr" : S.stapel || window.__spielStapel();
+                if (S.quelle === "uhr" || (S.quelle == null && /^tickDayNight\b/.test(stapel))) {
+                    const d = (((v - wert) % 1) + 1) % 1;
+                    S.gang.n++;
+                    S.gang.weg += d;
+                    if (d > S.gang.max) S.gang.max = d;
+                } else
+                    buche({ art: S.quelle != null ? "schreiber" : "roh", von: wert, zu: v, quelle: S.quelle, stapel });
+            }
+            wert = v;
+        },
+    });
+    if (typeof r._uhrSetzen === "function" && !Object.prototype.hasOwnProperty.call(r, "_uhrSetzen"))
+        r._uhrSetzen = function (t, quelle) {
+            const vor = this.state.timeOfDay;
+            const q0 = S.quelle,
+                s0 = S.stapel;
+            S.quelle = quelle || "?";
+            S.stapel = S.quelle === "uhr" ? "uhr" : window.__spielStapel();
+            try {
+                const ok = Object.getPrototypeOf(this)._uhrSetzen.call(this, t, quelle);
+                if (ok === false && Number.isFinite(Number(t)) && Number(t) !== vor)
+                    buche({ art: "verweigert", von: vor, zu: Number(t), quelle: S.quelle, stapel: S.stapel });
+                return ok;
+            } finally {
+                S.quelle = q0;
+                S.stapel = s0;
+            }
+        };
+    return S;
+}
+
+// Das Buch des Uhr-Spions seit `seit` (seq), der Gang der Uhr (Summe seit dem Einbau) und die Uhr jetzt.
+function uhrBuch(seit) {
+    const S = window.__uhrSpion();
+    return {
+        seq: S.seq,
+        uhr: window.anazhRealm.state.timeOfDay,
+        gang: Object.assign({}, S.gang),
+        buch: S.buch.filter((e) => e.seq > (seit || 0)),
+    };
 }
 
 // DER WELT-AKT-SPION (die Linse der Welt-Wache, 0710-7): jeder Welt-Akt der DSL beim Namen. Unter dem Halt einer Messung (die
@@ -510,6 +600,284 @@ function wetterSelbsttest() {
     return v;
 }
 
+// DAS URTEIL DER HIMMELS-WACHE (rein, Node; Leben-Schau 2, 09.10.: „Uhr und Wetter gehören dem Spieler"). `g` = ein getakteter
+// Lauf des Spiels mit laufendem Nexus NACH dem Wort des Spielers: { phase: "gesetz" | "frei", uhr: { buch, gang, start, ende },
+// takt: { schritte, schrittSek, tagMin }, wetter: { buch, wort, ende, freiAb }, zugSek, taeter: [{ name, wo, quelle, stapel }] }.
+// ROT, beim Namen:
+//   UHR    jeder Schreiber der Uhr im Fenster außer ihrem eigenen Gang (der Spieler sprach vorher; ein roher Schreiber am
+//          Uhr-Schreiber vorbei); der Gang läuft nicht im Gesetz der Tag-Länge (Weg ≠ Schritte · Schritt / Tag) oder springt;
+//          die Uhr steht am Ende anderswo als ihr Gang sagt, ohne gebuchten Schreiber (der Spion ist blind);
+//   WETTER „gesetz": jede Änderung gegen das Wort des Spielers; „frei": jeder Schreiber außer dem Wetter-Zug (die Welt wünscht
+//          nur), ein Zug schneller als `zugSek`, kein Wunsch der Welt im Buch, kein Zug zieht ein gewünschtes Wort;
+//   TÄTER  ein Täter des Laufs steht nicht im Buch (er schrieb nicht oder der Spion ist blind).
+// Verweigerte Züge und Wünsche sind grün und stehen je Quelle beim Namen.
+function himmelUrteil(g) {
+    const taeter = [];
+    const verweigert = {};
+    const gewuenscht = {};
+    const hm = (t) => {
+        const x = (((Number(t) % 1) + 1) % 1) * 24;
+        const h = Math.floor(x);
+        return `${String(h).padStart(2, "0")}:${String(Math.floor((x - h) * 60)).padStart(2, "0")}`;
+    };
+    const wer = (e) => (e.quelle && e.quelle !== "?" ? `${e.quelle} (${e.stapel})` : e.stapel);
+    const U = g.uhr || { buch: [], gang: { n: 0, weg: 0, max: 0 } };
+    const W = g.wetter || { buch: [] };
+    let uhrSchreiber = 0;
+    for (const e of U.buch || []) {
+        if (e.art === "verweigert") {
+            const k = `${e.quelle} → Uhr ${hm(e.zu)}`;
+            verweigert[k] = (verweigert[k] || 0) + 1;
+            continue;
+        }
+        uhrSchreiber++;
+        taeter.push(
+            `${e.art === "roh" ? "ROH am Uhr-Schreiber vorbei: " : ""}Uhr ${hm(e.von)} → ${hm(e.zu)} durch ${wer(e)}`
+        );
+    }
+    const T = g.takt || {};
+    const schritt = Math.min(1, T.schrittSek) / (T.tagMin * 60);
+    const soll = T.schritte * schritt;
+    const gang = U.gang || { n: 0, weg: 0, max: 0 };
+    if (!(Number.isFinite(soll) && Math.abs(gang.weg - soll) <= 1e-6 + 1e-9 * T.schritte))
+        taeter.push(
+            `die Uhr läuft nicht im Gesetz der Tag-Länge: ihr Gang ${(gang.weg * T.tagMin * 60).toFixed(1)} s statt ` +
+                `${(soll * T.tagMin * 60).toFixed(1)} s (${T.schritte} Takte zu ${T.schrittSek} s, Tag ${T.tagMin} min)`
+        );
+    if (gang.max > schritt + 1e-9)
+        taeter.push(
+            `die Uhr springt: größter Schritt ${(gang.max * 1440).toFixed(2)} min statt ${(schritt * 1440).toFixed(2)}`
+        );
+    const d = ((((U.ende - (U.start + gang.weg)) % 1) + 1.5) % 1) - 0.5;
+    if (!uhrSchreiber && !(Math.abs(d) <= 1e-6))
+        taeter.push(
+            `die Uhr steht bei ${hm(U.ende)} statt ${hm(U.start + gang.weg)} ohne gebuchten Schreiber (der Spion ist blind)`
+        );
+    const zuege = [];
+    let wetterSchreiber = 0;
+    for (const e of W.buch || []) {
+        if (e.art === "verweigert") {
+            const k = `${e.quelle} → ${e.zu}`;
+            verweigert[k] = (verweigert[k] || 0) + 1;
+            continue;
+        }
+        if (e.art === "gewuenscht") {
+            const k = `${e.quelle} → ${e.zu}`;
+            gewuenscht[k] = (gewuenscht[k] || 0) + 1;
+            continue;
+        }
+        if (g.phase === "frei" && e.quelle === "auto-zug") {
+            zuege.push(e);
+            continue;
+        }
+        wetterSchreiber++;
+        taeter.push(
+            g.phase === "frei"
+                ? `${wer(e)} schreibt das Wetter selbst (${e.von} → ${e.zu}), statt dem Wetter-Zug sein Wort zu wünschen`
+                : `Wetter ${e.von} → ${e.zu} gegen das Wort des Spielers („${W.wort}") durch ${wer(e)}`
+        );
+    }
+    if (g.phase !== "frei" && !wetterSchreiber && W.ende !== W.wort)
+        taeter.push(
+            `das Wetter ist „${W.ende}" statt des Worts „${W.wort}" ohne gebuchten Schreiber (der Spion ist blind)`
+        );
+    if (g.phase === "frei") {
+        let vor = Number.isFinite(W.freiAb) ? W.freiAb : null;
+        const zugSek = g.zugSek || 120;
+        for (const z of zuege) {
+            if (vor != null && Number.isFinite(z.tv) && z.tv - vor < zugSek - (T.schrittSek || 0) - 1e-6)
+                taeter.push(
+                    `der Wetter-Zug zieht nach ${(z.tv - vor).toFixed(1)} s (${z.von} → ${z.zu}) statt nach ≥ ${zugSek} s`
+                );
+            if (Number.isFinite(z.tv)) vor = z.tv;
+        }
+        const wuensche = (W.buch || []).filter((e) => e.art === "gewuenscht");
+        if (!wuensche.length) taeter.push("kein Wunsch der Welt im Buch (die Welt schweigt oder der Spion ist blind)");
+        else if (!zuege.some((z) => wuensche.some((w) => w.seq < z.seq && w.zu === z.zu)))
+            taeter.push(
+                `kein Wetter-Zug zieht ein gewünschtes Wort (${zuege.length} Züge, ${wuensche.length} Wünsche)`
+            );
+    }
+    for (const t of g.taeter || []) {
+        const buch = t.wo === "uhr" ? U.buch || [] : W.buch || [];
+        const da = buch.some(
+            (e) =>
+                (t.quelle && e.quelle && e.quelle.startsWith(t.quelle)) ||
+                (t.stapel && String(e.stapel).includes(t.stapel))
+        );
+        if (!da) taeter.push(`${t.name}: nicht im Buch (${t.wo}) — er schrieb nicht oder der Spion ist blind`);
+    }
+    return { urteil: taeter.length ? "ROT" : "GRUEN", taeter, verweigert, gewuenscht, zuege: zuege.length };
+}
+
+// DER SELBSTTEST DES HIMMELS-URTEILS (rein): jeder eingeschmuggelte Täter fällt rot und steht beim Namen; der ruhige Lauf —
+// die Uhr geht ihren Gang, die Welt wird verweigert oder wünscht, der Zug zieht im Takt das gewünschte Wort — bleibt grün.
+function himmelSelbsttest() {
+    const v = [];
+    const takt = { schritte: 1000, schrittSek: 0.25, tagMin: 60 };
+    const s = 0.25 / 3600;
+    const gang = { n: 1000, weg: 1000 * s, max: s };
+    const nein = (wo, quelle, zu) => ({
+        art: "verweigert",
+        von: wo === "uhr" ? 0.5 : "sunny",
+        zu,
+        quelle,
+        stapel: "x",
+    });
+    const taeterG = [
+        { name: "Nexus-Gesetz Uhr", wo: "uhr", quelle: "rule:nexus", stapel: "_tickWorldRules" },
+        { name: "Nexus-Gesetz Regen", wo: "wetter", quelle: "rule:nexus", stapel: "_tickWorldRules" },
+    ];
+    const gesetz = (o) =>
+        Object.assign(
+            {
+                phase: "gesetz",
+                takt,
+                uhr: { buch: [nein("uhr", "rule:nexus", 0.17)], gang, start: 0.5, ende: 0.5 + 1000 * s },
+                wetter: { buch: [nein("wetter", "rule:nexus", "rainy")], wort: "sunny", ende: "sunny" },
+                taeter: taeterG,
+            },
+            o
+        );
+    const frei = (buch, o) =>
+        Object.assign(
+            {
+                phase: "frei",
+                takt,
+                zugSek: 120,
+                uhr: { buch: [nein("uhr", "rule:nexus", 0.17)], gang, start: 0.5, ende: 0.5 + 1000 * s },
+                wetter: { buch, wort: null, ende: "rainy", freiAb: 5 },
+                taeter: taeterG,
+            },
+            o
+        );
+    const wunsch = {
+        art: "gewuenscht",
+        von: "sunny",
+        zu: "rainy",
+        quelle: "rule:nexus",
+        stapel: "_tickWorldRules",
+        tv: 10,
+        seq: 1,
+    };
+    const zug = (tv, seq, von, zu) => ({
+        art: "schreiber",
+        von,
+        zu,
+        quelle: "auto-zug",
+        stapel: "_loopWeatherAndGrowth",
+        tv,
+        seq,
+    });
+    const roh = {
+        art: "roh",
+        von: 0.5,
+        zu: 0.17,
+        quelle: null,
+        stapel: "time_of_day ← dslEval ← _tickWorldRules ← loop",
+    };
+    const faelle = [
+        ["gesetz ruhig", gesetz({}), "GRUEN", null],
+        [
+            "Nexus schreibt die Uhr",
+            gesetz({
+                uhr: {
+                    buch: [
+                        {
+                            art: "schreiber",
+                            von: 0.5,
+                            zu: 0.17,
+                            quelle: "rule:nexus",
+                            stapel: "set_time_of_day ← _tickWorldRules",
+                        },
+                    ],
+                    gang,
+                    start: 0.5,
+                    ende: 0.17,
+                },
+            }),
+            "ROT",
+            "rule:nexus",
+        ],
+        [
+            "roh an der Uhr",
+            gesetz({ uhr: { buch: [roh], gang, start: 0.5, ende: 0.17 } }),
+            "ROT",
+            "ROH am Uhr-Schreiber vorbei",
+        ],
+        [
+            "die Uhr springt",
+            gesetz({
+                uhr: { buch: [], gang: Object.assign({}, gang, { max: 0.2 }), start: 0.5, ende: 0.5 + 1000 * s },
+            }),
+            "ROT",
+            "springt",
+        ],
+        ["der Gang lahmt", gesetz({ takt: Object.assign({}, takt, { tagMin: 8 }) }), "ROT", "Gesetz der Tag-Länge"],
+        [
+            "blinde Uhr",
+            gesetz({ uhr: { buch: [nein("uhr", "rule:nexus", 0.17)], gang, start: 0.5, ende: 0.17 } }),
+            "ROT",
+            "blind",
+        ],
+        [
+            "Zug gegen das Wort",
+            gesetz({
+                wetter: {
+                    buch: [nein("wetter", "rule:nexus", "rainy"), zug(130, 2, "sunny", "rainy")],
+                    wort: "sunny",
+                    ende: "rainy",
+                },
+            }),
+            "ROT",
+            "auto-zug",
+        ],
+        [
+            "blindes Wetter",
+            gesetz({ wetter: { buch: [nein("wetter", "rule:nexus", "rainy")], wort: "sunny", ende: "rainy" } }),
+            "ROT",
+            "blind",
+        ],
+        [
+            "Täter fehlt",
+            gesetz({ uhr: { buch: [], gang, start: 0.5, ende: 0.5 + 1000 * s } }),
+            "ROT",
+            "Nexus-Gesetz Uhr: nicht im Buch",
+        ],
+        ["frei ruhig", frei([wunsch, zug(130, 2, "sunny", "rainy")]), "GRUEN", null],
+        [
+            "frei: die Welt schreibt selbst",
+            frei([wunsch, Object.assign({}, wunsch, { art: "schreiber", seq: 2 }), zug(130, 3, "rainy", "rainy")]),
+            "ROT",
+            "statt dem Wetter-Zug",
+        ],
+        [
+            "frei: Zug im Galopp",
+            frei([wunsch, zug(130, 2, "sunny", "rainy"), zug(160, 3, "rainy", "stormy")]),
+            "ROT",
+            "zieht nach 30.0 s",
+        ],
+        ["frei: die Welt schweigt", frei([zug(130, 2, "sunny", "rainy")]), "ROT", "kein Wunsch"],
+        [
+            "frei: der Zug hört nicht",
+            frei([wunsch, zug(130, 2, "sunny", "stormy")]),
+            "ROT",
+            "kein Wetter-Zug zieht ein gewünschtes",
+        ],
+    ];
+    for (const [name, g, soll, t] of faelle) {
+        const u = himmelUrteil(g);
+        if (u.urteil !== soll) v.push(`${name}: ${u.urteil} statt ${soll} (${u.taeter.join(" · ")})`);
+        if (t && !u.taeter.some((x) => x.includes(t))) v.push(`${name}: der Täter „${t}" steht nicht im Urteil`);
+    }
+    const ruhig = himmelUrteil(faelle[0][1]);
+    if (ruhig.verweigert["rule:nexus → Uhr 04:04"] !== 1 || ruhig.verweigert["rule:nexus → rainy"] !== 1)
+        v.push(`verweigert: die Quellen stehen nicht beim Namen (${JSON.stringify(ruhig.verweigert)})`);
+    if (himmelUrteil(faelle[9][1]).gewuenscht["rule:nexus → rainy"] !== 1)
+        v.push("gewünscht: der Wunsch steht nicht beim Namen");
+    return v;
+}
+
 // DAS URTEIL DER WELT-WACHE (rein, Node): `b` = das Buch des Welt-Akt-Spions im Fenster einer Messung (`__weltaktBuch(seit)`).
 // ROT: kein Spion (die Werkbank kennt das Buch nicht), ein blinder Spion (das Spiel nennt keine Welt-Akte), ein Welt-Akt lief
 // unter dem Halt durch — beim Op, bei der Quelle und beim Stapel. Verweigerte Akte (die Engstelle hielt) sind grün und stehen
@@ -573,6 +941,8 @@ function weltaktSelbsttest() {
 module.exports = {
     wetterUrteil,
     wetterSelbsttest,
+    himmelUrteil,
+    himmelSelbsttest,
     weltaktUrteil,
     weltaktSelbsttest,
     AUSGABE_INSTALL:
@@ -585,6 +955,8 @@ module.exports = {
         `window.__wetterBuch = ${wetterBuch.toString()};` +
         `window.__wetterSetzen = ${wetterSetzen.toString()};` +
         `window.__wetterHalten = ${wetterHalten.toString()};` +
+        `window.__uhrSpion = ${uhrSpion.toString()};` +
+        `window.__uhrBuch = ${uhrBuch.toString()};` +
         `window.__buehne = ${buehne.toString()};` +
         `window.__tiereHalten = ${tiereHalten.toString()};` +
         `(${saisonFest.toString()})();`,
