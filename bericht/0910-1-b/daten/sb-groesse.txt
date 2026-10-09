@@ -1,0 +1,6 @@
+{ "ergebnis": { "fenster": [ 1920, 1080 ], "leinwand": [ 1920, 1080 ], "output": [ "rg11b10ufloat", 1920, 1080 ], "neustartZiel": [ 1920, 1080 ], "gpuFehler": 0, "ersterFehler": null }, "ms": 1320}
+{ "ergebnis": { "fenster": [ 1280, 720 ], "leinwand": [ 1280, 720 ], "output": [ "rg11b10ufloat", 1280, 720 ], "neustartZiel": [ 1280, 720 ], "gpuFehler": 0, "ersterFehler": null }, "ms": 1043}
+{ "ergebnis": { "fenster": [ 1920, 1080 ], "leinwand": [ 1920, 1080 ], "output": [ "rg11b10ufloat", 1920, 1080 ], "neustartZiel": [ 1920, 1080 ], "gpuFehler": 0, "ersterFehler": null }, "ms": 1081}
+{ "ergebnis": { "fenster": [ 1600, 900 ], "leinwand": [ 1600, 900 ], "output": [ "rg11b10ufloat", 1600, 900 ], "neustartZiel": [ 1600, 900 ], "gpuFehler": 0, "ersterFehler": null }, "ms": 1036}
+{ "ergebnis": { "fenster": [ 1366, 768 ], "leinwand": [ 1366, 768 ], "output": [ "rg11b10ufloat", 1366, 768 ], "neustartZiel": [ 1366, 768 ], "gpuFehler": 0, "ersterFehler": null }, "ms": 1021}
+{ "ergebnis": { "fenster": [ 1920, 1080 ], "leinwand": [ 1920, 1080 ], "output": [ "rg11b10ufloat", 1920, 1080 ], "neustartZiel": [ 1920, 1080 ], "gpuFehler": 0, "ersterFehler": null }, "ms": 1043}

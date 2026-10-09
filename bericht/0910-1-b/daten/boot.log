@@ -1,0 +1,121 @@
+19:54:35 a1 bereit 76c9624d 0 geändert
+19:54:46 a1 format {"ergebnis":{"feature":true,"ausgabe":null,"gpu":"rgba16float","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":false,"warn":[]},"ms":2}
+19:55:25 a1 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 757k/680k (1.11×) · VRAM MB 126.5/118 (1.07×) · GPU ms/Frame 15.13/16.7 (0.91×)
+19:55:26 a1 ziele ZIEL-ZENSUS — 27 Texturen, 92.9 MB · 12 Frames · Leinwand 1920×1080 ·  15.82 output rgba16float 1920×1080 r184 PassNode · _ensur · ROT (1):
+19:55:53 a1 bilder 18 bewegung 2 · 0 Aufnahmen
+19:55:54 a1 gpu-fehler: {"ergebnis":[],"ms":2}
+19:56:02 a1 gestoppt
+19:56:21 b1 bereit 76c9624d 2 geändert
+19:56:31 b1 format {"ergebnis":{"feature":true,"ausgabe":"rg11b10ufloat","gpu":"rg11b10ufloat","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":true,"warn":[]},"ms":2}
+19:57:13 b1 band BAND ROT: Befehle 91/208 (0.44×) · Dreiecke 772k/680k (1.13×) · VRAM MB 119.4/118 (1.01×) · GPU ms/Frame 15.3/16.7 (0.92×)
+19:57:14 b1 ziele ZIEL-ZENSUS — 27 Texturen, 84.9 MB · 12 Frames · Leinwand 1920×1080 ·  7.91 output rg11b10ufloat 1920×1080 r184 PassNode · _ensu · ROT (1):
+19:57:42 b1 bilder 18 bewegung 2 · 0 Aufnahmen
+19:57:42 b1 gpu-fehler: {"ergebnis":[],"ms":1}
+19:57:50 b1 gestoppt
+19:58:04 a2 bereit 76c9624d 0 geändert
+19:58:17 a2 format {"ergebnis":{"feature":true,"ausgabe":null,"gpu":"rgba16float","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":false,"warn":[]},"ms":2}
+19:58:56 a2 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 786k/680k (1.16×) · VRAM MB 126.8/118 (1.07×) · GPU ms/Frame 15.37/16.7 (0.92×)
+19:58:57 a2 ziele ZIEL-ZENSUS — 27 Texturen, 92.9 MB · 12 Frames · Leinwand 1920×1080 ·  15.82 output rgba16float 1920×1080 r184 PassNode · _ensur · ROT (2):
+19:59:25 a2 bilder 18 bewegung 2 · 0 Aufnahmen
+19:59:25 a2 gpu-fehler: {"ergebnis":[],"ms":2}
+19:59:33 a2 gestoppt
+19:59:47 b2 bereit 76c9624d 2 geändert
+20:00:00 b2 format {"ergebnis":{"feature":true,"ausgabe":"rg11b10ufloat","gpu":"rg11b10ufloat","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":true,"warn":[]},"ms":2}
+20:00:39 b2 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 772k/680k (1.13×) · VRAM MB 118.6/118 (1.01×) · GPU ms/Frame 16.03/16.7 (0.96×)
+20:00:40 b2 ziele ZIEL-ZENSUS — 27 Texturen, 84.9 MB · 12 Frames · Leinwand 1920×1080 ·  7.91 output rg11b10ufloat 1920×1080 r184 PassNode · _ensu · ROT (1):
+20:01:08 b2 bilder 18 bewegung 2 · 0 Aufnahmen
+20:01:08 b2 gpu-fehler: {"ergebnis":[],"ms":2}
+20:01:16 b2 gestoppt
+20:01:17 SERIE FERTIG
+--- serie 2 20:07:53: Kopf = rg11b10 + Sonde/Ausgleich + Kaskaden-Raster
+20:08:09 a3 bereit 76c9624d 0 geändert
+20:08:21 a3 format {"ergebnis":{"feature":true,"ausgabe":null,"gpu":"rgba16float","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":false,"rundung":null,"ausgleich":null,"karten":[2048,2048],"warn":[]},"ms"
+20:08:59 a3 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 773k/680k (1.14×) · VRAM MB 126.2/118 (1.07×) · GPU ms/Frame 15.88/16.7 (0.95×)
+20:09:01 a3 ziele ZIEL-ZENSUS — 27 Texturen, 92.9 MB · 12 Frames · Leinwand 1920×1080 ·  15.82 output rgba16float 1920×1080 r184 PassNode · _ensur · ROT (2):
+20:09:33 a3 bilder 22 bewegung 2 · 0 Aufnahmen
+20:09:33 a3 gpu-fehler: {"ergebnis":[],"ms":1}
+20:09:41 a3 gestoppt
+20:09:55 b3 bereit 76c9624d 4 geändert
+20:10:08 b3 format {"ergebnis":{"feature":true,"ausgabe":"rg11b10ufloat","gpu":"rg11b10ufloat","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":true,"rundung":"gegennull","ausgleich":[1.0056,1.0056,1.0113]
+20:10:47 b3 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 758k/680k (1.12×) · VRAM MB 116.6/118 (0.99×) · GPU ms/Frame 15.77/16.7 (0.94×)
+20:10:48 b3 ziele ZIEL-ZENSUS — 27 Texturen, 83.0 MB · 12 Frames · Leinwand 1920×1080 ·  7.91 output rg11b10ufloat 1920×1080 r184 PassNode · _ensu · ROT 0
+20:11:20 b3 bilder 22 bewegung 2 · 0 Aufnahmen
+20:11:20 b3 gpu-fehler: {"ergebnis":[],"ms":3}
+20:11:28 b3 gestoppt
+20:11:42 a4 bereit 76c9624d 0 geändert
+20:11:55 a4 format {"ergebnis":{"feature":true,"ausgabe":null,"gpu":"rgba16float","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":false,"rundung":null,"ausgleich":null,"karten":[2048,2048],"warn":[]},"ms"
+20:12:33 a4 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 757k/680k (1.11×) · VRAM MB 127/118 (1.08×) · GPU ms/Frame 16.02/16.7 (0.96×)
+20:12:35 a4 ziele ZIEL-ZENSUS — 27 Texturen, 92.9 MB · 12 Frames · Leinwand 1920×1080 ·  15.82 output rgba16float 1920×1080 r184 PassNode · _ensur · ROT (2):
+20:13:08 a4 bilder 22 bewegung 2 · 0 Aufnahmen
+20:13:08 a4 gpu-fehler: {"ergebnis":[],"ms":2}
+20:13:16 a4 gestoppt
+20:13:30 b4 bereit 76c9624d 4 geändert
+20:13:42 b4 format {"ergebnis":{"feature":true,"ausgabe":"rg11b10ufloat","gpu":"rg11b10ufloat","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":true,"rundung":"gegennull","ausgleich":[1.0056,1.0056,1.0113]
+20:14:21 b4 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 758k/680k (1.12×) · VRAM MB 116.6/118 (0.99×) · GPU ms/Frame 15.92/16.7 (0.95×)
+20:14:23 b4 ziele ZIEL-ZENSUS — 27 Texturen, 83.0 MB · 12 Frames · Leinwand 1920×1080 ·  7.91 output rg11b10ufloat 1920×1080 r184 PassNode · _ensu · ROT 0
+20:14:55 b4 bilder 22 bewegung 2 · 0 Aufnahmen
+20:14:55 b4 gpu-fehler: {"ergebnis":[],"ms":2}
+20:15:03 b4 gestoppt
+20:15:03 SERIE 2 FERTIG
+--- serie 3 22:07:34: C = nur Ausgabe (04e72fa0)
+22:07:48 c1 bereit 04e72fa0 0 geändert
+22:08:00 c1 format {"ergebnis":{"feature":true,"ausgabe":"rg11b10ufloat","gpu":"rg11b10ufloat","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":true,"rundung":"gegennull","ausgleich":[1.0056,1.0056,1.0113]
+22:08:39 c1 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 758k/680k (1.11×) · VRAM MB 118.6/118 (1.01×) · GPU ms/Frame 15.4/16.7 (0.92×)
+22:08:40 c1 ziele ZIEL-ZENSUS — 27 Texturen, 84.9 MB · 12 Frames · Leinwand 1920×1080 ·  7.91 output rg11b10ufloat 1920×1080 r184 PassNode · _ensu · ROT 0
+22:09:11 c1 bilder 22 bewegung 2 · 0 Aufnahmen
+22:09:11 c1 gpu-fehler: {"ergebnis":[],"ms":2}
+22:09:19 c1 gestoppt
+22:09:32 c2 bereit 04e72fa0 0 geändert
+22:09:44 c2 format {"ergebnis":{"feature":true,"ausgabe":"rg11b10ufloat","gpu":"rg11b10ufloat","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":true,"rundung":"gegennull","ausgleich":[1.0056,1.0056,1.0113]
+22:10:21 c2 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 756k/680k (1.11×) · VRAM MB 118.6/118 (1.01×) · GPU ms/Frame 14.51/16.7 (0.87×)
+22:10:22 c2 ziele ZIEL-ZENSUS — 27 Texturen, 84.9 MB · 12 Frames · Leinwand 1920×1080 ·  7.91 output rg11b10ufloat 1920×1080 r184 PassNode · _ensu · ROT 0
+22:10:53 c2 bilder 22 bewegung 2 · 0 Aufnahmen
+22:10:53 c2 gpu-fehler: {"ergebnis":[],"ms":1}
+22:11:01 c2 gestoppt
+22:11:15 sb bereit f9f03290
+22:11:35 sb groesse: "gpuFehler": 0 "gpuFehler": 0 "gpuFehler": 0 "gpuFehler": 0 "gpuFehler": 0 "gpuFehler": 0 
+22:11:47 sb k1: "gpu": [ "depth16unorm", 1856, 1856 ] "gpuFehler": 0 "gpu": [ "depth16unorm", 1024, 1024 ] "gpuFehler": 1 "gpu": [ "depth16unorm", 1856, 1856 ] "gpuFehler": 415 
+22:11:47 sb gpu-fehler gesamt: {"ergebnis":{"n":420,"erste":["Destroyedtexture[Texture\"kaskade1:tiefe\"]usedinasubmit.\n-Whilecalling[Queue].Submit([[CommandBufferfromCommandEncoder\"renderContext_4\"]])\n","Destroyedtexture[Textu
+22:11:55 sb gestoppt
+22:11:55 SERIE 3 FERTIG
+--- serie 4 22:13:58: D = Ausgabe + k1 1024 ab Geburt
+22:14:12 d1 bereit 04e72fa0 1 geändert
+22:14:24 d1 format {"ergebnis":{"feature":true,"ausgabe":"rg11b10ufloat","gpu":"rg11b10ufloat","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":true,"rundung":"gegennull","ausgleich":[1.0056,1.0056,1.0113]
+22:15:02 d1 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 764k/680k (1.12×) · VRAM MB 113/118 (0.96×) · GPU ms/Frame 15/16.7 (0.9×)
+22:15:03 d1 saetze wasser v 9849/65536 i 30720/262144 takt 579 verdichtet 0
+22:15:04 d1 ziele ZIEL-ZENSUS — 27 Texturen, 78.9 MB · 12 Frames · Leinwand 1920×1080 ·  7.91 output rg11b10ufloat 1920×1080 r184 PassNode · _ensu · ROT 0
+22:15:36 d1 bilder 22 bewegung 2 · 0 Aufnahmen
+22:15:36 d1 gpu-fehler: {"ergebnis":[],"ms":2}
+22:15:44 d1 gestoppt
+22:15:59 d2 bereit 04e72fa0 1 geändert
+22:16:12 d2 format {"ergebnis":{"feature":true,"ausgabe":"rg11b10ufloat","gpu":"rg11b10ufloat","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":true,"rundung":"gegennull","ausgleich":[1.0056,1.0056,1.0113]
+22:16:53 d2 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 793k/680k (1.17×) · VRAM MB 112.6/118 (0.95×) · GPU ms/Frame 16.04/16.7 (0.96×)
+22:16:54 d2 saetze wasser v 9849/65536 i 30720/262144 takt 566 verdichtet 0
+22:16:55 d2 ziele ZIEL-ZENSUS — 27 Texturen, 78.9 MB · 12 Frames · Leinwand 1920×1080 ·  7.91 output rg11b10ufloat 1920×1080 r184 PassNode · _ensu · ROT 0
+22:17:30 d2 bilder 22 bewegung 2 · 0 Aufnahmen
+22:17:30 d2 gpu-fehler: {"ergebnis":[],"ms":1}
+22:17:39 d2 gestoppt
+22:17:39 SERIE 4 FERTIG
+22:20:10 k1leer bereit 04e72fa0
+22:20:41 k1leer k1 an/aus: 0 Aufnahmen
+22:20:49 k1leer gestoppt
+22:21:47 k1leer-d bereit 04e72fa0
+22:22:17 k1leer-d k1 an/aus: 0 Aufnahmen
+22:22:25 k1leer-d gestoppt
+--- serie 5 22:23:27: E = Ausgabe + Wasser-Satz (Arbeitsbaum auf f4731281)
+22:23:41 e1 bereit f4731281 1 geändert
+22:23:54 e1 format {"ergebnis":{"feature":true,"ausgabe":"rg11b10ufloat","gpu":"rg11b10ufloat","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":true,"rundung":"gegennull","ausgleich":[1.0056,1.0056,1.0113]
+22:24:32 e1 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 758k/680k (1.11×) · VRAM MB 116.3/118 (0.99×) · GPU ms/Frame 14.93/16.7 (0.89×)
+22:24:32 e1 saetze wasser v 9849/16384 i 30720/65536 takt 574 verdichtet 0
+22:24:34 e1 ziele ZIEL-ZENSUS — 27 Texturen, 84.9 MB · 12 Frames · Leinwand 1920×1080 ·  7.91 output rg11b10ufloat 1920×1080 r184 PassNode · _ensu · ROT 0
+22:25:06 e1 bilder 22 bewegung 2 · 0 Aufnahmen
+22:25:06 e1 gpu-fehler: {"ergebnis":[],"ms":3}
+22:25:14 e1 gestoppt
+22:25:28 e2 bereit f4731281 1 geändert
+22:25:40 e2 format {"ergebnis":{"feature":true,"ausgabe":"rg11b10ufloat","gpu":"rg11b10ufloat","groesse":[1920,1080],"geschichte":"rgba16float","neustartZug":true,"rundung":"gegennull","ausgleich":[1.0056,1.0056,1.0113]
+22:26:19 e2 band BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 786k/680k (1.16×) · VRAM MB 116.3/118 (0.99×) · GPU ms/Frame 15.97/16.7 (0.96×)
+22:26:19 e2 saetze wasser v 9849/16384 i 27648/65536 takt 576 verdichtet 0
+22:26:20 e2 ziele ZIEL-ZENSUS — 27 Texturen, 84.9 MB · 12 Frames · Leinwand 1920×1080 ·  7.91 output rg11b10ufloat 1920×1080 r184 PassNode · _ensu · ROT 0
+22:26:53 e2 bilder 22 bewegung 2 · 0 Aufnahmen
+22:26:53 e2 gpu-fehler: {"ergebnis":[],"ms":2}
+22:27:01 e2 gestoppt

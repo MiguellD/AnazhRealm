@@ -1,0 +1,36 @@
+{ "ergebnis": { "k1": 1856, "gpu": [ "depth16unorm", 1856, 1856 ], "gpuFehler": 0 }, "ms": 26}
+ZIEL-ZENSUS — 24 Texturen, 80.4 MB · 4 Frames · Leinwand 1920×1080
+ 7.51 kaskade0:tiefe depth16unorm 1984×1984 anazhRealm.js · _kaskadenZiele · k0 → haupt (haupt (Frame 4)) · trägt
+ 6.57 kaskade1:tiefe depth16unorm 1856×1856 anazhRealm.js · _kaskadenZiele · — → haupt (haupt (Frame 4)) · träg
+{ "kamera": [ -900, 49.22, -850 ], "hell": 103.4, "kontrast": 6.71, "dc": 22, "dreiecke": 94268, "ms": 215, "d
+
+{ "kamera": [ -900, 49.22, -850 ], "hell": 80.7, "kontrast": 7.9, "dc": 35, "dreiecke": 156827, "ms": 254, "da
+
+{ "kamera": [ -900, 25.92, -850 ], "hell": 133.4, "kontrast": 6.93, "dc": 42, "dreiecke": 293047, "ms": 310, "
+
+{ "kamera": [ -900, 49.22, -850 ], "hell": 50.9, "kontrast": 3.89, "dc": 22, "dreiecke": 94268, "ms": 213, "da
+
+{ "kamera": [ -900, 49.22, -850 ], "hell": 67.5, "kontrast": 4.29, "dc": 35, "dreiecke": 156827, "ms": 251, "d
+
+{ "kamera": [ -900, 25.92, -850 ], "hell": 89.3, "kontrast": 4.28, "dc": 42, "dreiecke": 293047, "ms": 305, "d
+
+{ "ergebnis": { "k1": 1024, "gpu": [ "depth16unorm", 1024, 1024 ], "gpuFehler": 1 }, "ms": 17}
+ZIEL-ZENSUS — 25 Texturen, 75.8 MB · 4 Frames · Leinwand 1920×1080
+ 7.51 kaskade0:tiefe depth16unorm 1984×1984 anazhRealm.js · _kaskadenZiele · k0 → haupt (haupt (Frame 4)) · trägt
+ 2.00 kaskade1:tiefe depth16unorm 1024×1024 anazhRealm.js · _kaskadenZiele · k1 → haupt (haupt (Frame 4)) · trägt
+{ "kamera": [ -900, 49.22, -850 ], "hell": 63.1, "kontrast": 4.63, "dc": 22, "dreiecke": 94268, "ms": 40, "dat
+
+{ "kamera": [ -900, 49.22, -850 ], "hell": 63.1, "kontrast": 4.63, "dc": 35, "dreiecke": 156827, "ms": 41, "da
+
+{ "kamera": [ -900, 25.92, -850 ], "hell": 63.1, "kontrast": 4.63, "dc": 42, "dreiecke": 293047, "ms": 38, "da
+
+{ "kamera": [ -900, 49.22, -850 ], "hell": 89.4, "kontrast": 5.78, "dc": 22, "dreiecke": 94268, "ms": 38, "dat
+
+{ "kamera": [ -900, 49.22, -850 ], "hell": 89.4, "kontrast": 5.78, "dc": 35, "dreiecke": 156827, "ms": 39, "da
+
+{ "kamera": [ -900, 25.92, -850 ], "hell": 89.4, "kontrast": 5.78, "dc": 42, "dreiecke": 293047, "ms": 33, "da
+
+{ "ergebnis": { "k1": 1856, "gpu": [ "depth16unorm", 1856, 1856 ], "gpuFehler": 415 }, "ms": 16}
+ZIEL-ZENSUS — 26 Texturen, 80.4 MB · 4 Frames · Leinwand 1920×1080
+ 7.51 kaskade0:tiefe depth16unorm 1984×1984 anazhRealm.js · _kaskadenZiele · k0 → haupt (haupt (Frame 4)) · trägt
+ 6.57 kaskade1:tiefe depth16unorm 1856×1856 anazhRealm.js · _kaskadenZiele · — → haupt (haupt (Frame 4)) · träg

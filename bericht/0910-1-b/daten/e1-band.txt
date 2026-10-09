@@ -1,0 +1,49 @@
+BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 758k/680k (1.11×) · VRAM MB 116.3/118 (0.99×) · GPU ms/Frame 14.93/16.7 (0.89×)
+ORT wiese — gestellt (Ort, Dorf-Zug, Ort-Takt, Blick)
+
+Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)
+boden                        8/12          6/1/1          172k/200k  bodenSatz 3 · fern-ring 3 · wasserSatz 1 · farWater 1
+streu                         5/9          5/0/0            29k/40k  streuSatz 5
+karten                        1/1          1/0/0              1k/1k !fimp:atlas:L2 1
+baum                        52/40        30/18/4          388k/150k !fscatter:fichte:L1 12 · f:tanne:L1 8 · f:fichte:L1 8 · f:eiche:L1 8
+busch                         6/8          4/2/0            18k/40k  f:strauch:L1 4 · f:strauch:L0 2
+nahWiese                      4/4          4/0/0            84k/80k !nahWiese 4
+tier*                        0/30          0/0/0              0/60k  
+bau                          4/40          2/1/1            44k/60k  bauSatz 4
+formationen                  3/20          1/1/1            10k/30k  formationenSatz 3
+einzelstuecke                7/25          7/0/0            12k/15k  dsl-insel 3 · feld-pass 2 · himmel 1 · himmel-sonne 1
+reserve                      0/19          0/0/0               0/4k  
+SUMME                      90/208        60/23/7          758k/680k  Abstand 0.43× Befehle · 1.11× Dreiecke
+* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.
+außerhalb des Haushalts (Post-Kette): OrthographicCamera 2 Befehle
+
+VRAM 116.3 MB / Band 118 MB (0.99×) — je Erzeuger:
+     31.3 MB  516   buf:szene  (bodenSatz · bauSatz · streuSatz)
+     19.8 MB  2     tex:TRAANode.history
+     15.8 MB  1     tex:TRAANode.resolve
+      8.0 MB  1     tex:kaskade0
+      8.0 MB  1     tex:kaskade1
+      7.9 MB  1     tex:output
+      7.9 MB  1     tex:depth
+      4.0 MB  2     tex:szene
+      4.0 MB  2     tex:wege-karte
+      2.7 MB  1     tex:karte-albedo
+      1.9 MB  1     tex:feld-pass-panorama
+      1.3 MB  1     tex:karte-normal
+      1.0 MB  4     tex:PMREM.cubeUv
+      0.8 MB  1     tex:rausch-atlas
+      0.7 MB  1     tex:laub-cluster-atlas
+      0.5 MB  1     tex:welt-march-liste
+      0.5 MB  2     tex:kronen-streu
+      0.3 MB  1     tex:welt-march-kapseln
+
+erst-Boot, Ladung 1 · eingeschwungen nach 412 Takten (31 s), 6 Proben (Maximum je Klasse × Pass) · Foundry 165 Antworten 35 MB — von der Platte 6 (0.4 MB), Neubau 34.6 MB
+
+BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 758k/680k (1.11×) · VRAM MB 116.3/118 (0.99×) · GPU ms/Frame 14.93/16.7 (0.89×)
+LINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:
+  [ratsche] nahWiese haupt: 84336 dreiecke über der Ratsche 57066 (Täter: nahWiese)
+  [ratsche] bau k0: 14520 dreiecke über der Ratsche 4224 (Täter: bauSatz)
+  [ratsche] bau k1: 10120 dreiecke über der Ratsche 4080 (Täter: bauSatz)
+STEMPEL-POOL GRUEN: 0 verweigerte Abfragen seit Boot (Einschwingen 0 · Proben 0 · Bank 0), Warnung 0, Spitze 104/2048
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\hv2\daten\e1-band.json

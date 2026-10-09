@@ -1,0 +1,83 @@
+22:36:31 SERIE START  A=76c9624d (main V18.536)  B=33c47206 (welle-m-host-vram-2)  Instrument=7dd944e6
+22:36:31 anazhRealm.js  A=ed9547d9079aa0fd  B=642768715ce90196
+22:36:36 1A boot (Versuch 1)  GPU[62, 139 MHz, 21 %, P8] eigene-reste=0
+22:36:37 1A Seite geliefert (ed9547d9079aa0fd)
+22:39:10 1A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 59.9 fps · Frame p50/p95/max 16.7/17.1/25.3 ms · CPU p50/p95 4.4/6.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.63 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 64.8 fps · Frame p50/p95/max 16.7/16.9/258.3 ms · CPU p50/p95 4.1/6.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 3.65 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 14.88 ms je Frame (CPU 1.66) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 13.43 ms je Frame (CPU 1.78) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+22:39:16 1A Pause 60 s  GPU[81, 1822 MHz, 0 %, P0] eigene-reste=0
+22:40:21 2B boot (Versuch 1)  GPU[64, 139 MHz, 0 %, P8] eigene-reste=0
+22:40:22 2B Seite geliefert (642768715ce90196)
+22:42:54 2B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 60.5 fps · Frame p50/p95/max 16.7/17/25.4 ms · CPU p50/p95 4/6 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.45 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 66.3 fps · Frame p50/p95/max 16.7/16.8/33.4 ms · CPU p50/p95 3.8/5.3 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.46 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 14.58 ms je Frame (CPU 1.35) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 13.73 ms je Frame (CPU 1.6) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+22:42:59 2B Pause 60 s  GPU[79, 1784 MHz, 0 %, P0] eigene-reste=0
+22:44:04 3A boot (Versuch 1)  GPU[64, 139 MHz, 0 %, P8] eigene-reste=0
+22:44:05 3A Seite geliefert (ed9547d9079aa0fd)
+22:46:41 3A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 55 fps · Frame p50/p95/max 16.7/25.1/33.4 ms · CPU p50/p95 4.4/6.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.51 · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        laufFrei: 60.1 fps · Frame p50/p95/max 16.7/25/258.5 ms · CPU p50/p95 4.2/8.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.03 · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        gpu-bank Gier 0: 16.22 ms je Frame (CPU 1.73) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        gpu-bank Gier -0.88: 14.57 ms je Frame (CPU 1.56) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+22:46:46 3A Pause 60 s  GPU[79, 1695 MHz, 0 %, P0] eigene-reste=0
+22:47:51 4B boot (Versuch 1)  GPU[65, 139 MHz, 0 %, P8] eigene-reste=0
+22:47:52 4B Seite geliefert (642768715ce90196)
+22:50:25 4B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 60.8 fps · Frame p50/p95/max 16.7/16.9/25.3 ms · CPU p50/p95 4.1/6.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.53 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 66.1 fps · Frame p50/p95/max 16.7/17/50 ms · CPU p50/p95 3.9/6.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 1.88 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 14.72 ms je Frame (CPU 1.74) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 13.67 ms je Frame (CPU 1.68) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+22:50:30 4B Pause 60 s  GPU[80, 1771 MHz, 0 %, P0] eigene-reste=0
+22:51:35 5A boot (Versuch 1)  GPU[66, 139 MHz, 0 %, P8] eigene-reste=0
+22:51:36 5A Seite geliefert (ed9547d9079aa0fd)
+22:54:11 5A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 49.2 fps · Frame p50/p95/max 16.7/25.2/33.7 ms · CPU p50/p95 4.5/6.9 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.66 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 51.8 fps · Frame p50/p95/max 16.7/25.1/258.3 ms · CPU p50/p95 4/5.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.54 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 18.28 ms je Frame (CPU 1.73) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 16.8 ms je Frame (CPU 1.52) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+22:54:16 5A Pause 60 s  GPU[79, 1809 MHz, 0 %, P0] eigene-reste=0
+22:55:21 6B boot (Versuch 1)  GPU[66, 139 MHz, 0 %, P8] eigene-reste=0
+22:55:22 6B Seite geliefert (642768715ce90196)
+22:57:55 6B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 60.1 fps · Frame p50/p95/max 16.7/17/33.3 ms · CPU p50/p95 4.2/7.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.66 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 68.8 fps · Frame p50/p95/max 16.6/16.8/33.4 ms · CPU p50/p95 3.8/5.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.1 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 14.83 ms je Frame (CPU 1.77) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 13.35 ms je Frame (CPU 1.51) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+22:58:00 6B Pause 60 s  GPU[81, 1822 MHz, 0 %, P0] eigene-reste=0
+22:59:05 7A boot (Versuch 1)  GPU[66, 139 MHz, 0 %, P8] eigene-reste=0
+22:59:06 7A Seite geliefert (ed9547d9079aa0fd)
+23:01:39 7A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 60.3 fps · Frame p50/p95/max 16.7/17/32.1 ms · CPU p50/p95 4.1/6.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.28 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 65.8 fps · Frame p50/p95/max 16.7/16.9/25.3 ms · CPU p50/p95 3.8/5.9 · render-Wanduhr (EWMA, mit CPU-Zustand) 1.98 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 14.8 ms je Frame (CPU 1.68) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 13.78 ms je Frame (CPU 1.55) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+23:01:44 7A Pause 60 s  GPU[81, 1771 MHz, 0 %, P0] eigene-reste=0
+23:02:49 8B boot (Versuch 1)  GPU[66, 139 MHz, 0 %, P8] eigene-reste=0
+23:02:50 8B Seite geliefert (642768715ce90196)
+23:05:22 8B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 63.2 fps · Frame p50/p95/max 16.7/16.9/25.4 ms · CPU p50/p95 4.1/6.2 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.31 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 72.1 fps · Frame p50/p95/max 16.6/16.8/25.3 ms · CPU p50/p95 3.9/5.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.04 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 12.18 ms je Frame (CPU 1.77) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 12.18 ms je Frame (CPU 1.78) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+23:05:27 8B Pause 60 s  GPU[81, 1809 MHz, 0 %, P0] eigene-reste=0
+23:06:32 ALLES ENDE

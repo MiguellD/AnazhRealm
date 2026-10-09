@@ -1,0 +1,1020 @@
+{
+ "zeilen": [
+  {
+   "N": "1A",
+   "tiereVoll": 11,
+   "tiereVollSicht": 1,
+   "tiereFrei": 11,
+   "tiereFreiSicht": 1,
+   "hgN": null,
+   "hgMax": null,
+   "hgP95": null,
+   "hgKlasse": null,
+   "hgUrsachen": null,
+   "hgBau": null,
+   "hgPipeSync": null,
+   "S": "A",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 59.9,
+    "p50": 16.7,
+    "p95": 17.1,
+    "max": 25.3,
+    "cpu50": 4.4,
+    "cpu95": 6.5,
+    "render": 2.63,
+    "creatures": 0.8,
+    "streaming": 0.32,
+    "gpuD50": 16.8,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 64.8,
+    "p50": 16.7,
+    "p95": 16.9,
+    "max": 258.3,
+    "cpu50": 4.1,
+    "cpu95": 6.6,
+    "render": 3.65,
+    "creatures": 0.96,
+    "streaming": 0.43,
+    "gpuD50": 15.5,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 14.88,
+   "bank0cpu": 1.66,
+   "bank88": 13.43,
+   "bank88cpu": 1.78,
+   "bandBefehle": 90,
+   "bandTris": 763303,
+   "bandVram": 122.1,
+   "bandGpu": 15.68,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {
+    "rule:nexus→rainy": 17,
+    "nexus→rainy": 2
+   },
+   "welt": {
+    "verweigert nexus→spawn_creature": 2,
+    "verweigert nexus→skybox_color": 1,
+    "verweigert nexus→creatures_emotion": 4,
+    "verweigert nexus→player_jump_power": 5,
+    "verweigert nexus→player_speed": 1,
+    "verweigert nexus→creatures_speed_mul": 1
+   },
+   "gpuStart": "62, 139 MHz, 21 %, P8",
+   "version": "18.536.0",
+   "tierBefehle": 0,
+   "tierTrisK": 0
+  },
+  {
+   "N": "2B",
+   "tiereVoll": 11,
+   "tiereVollSicht": 1,
+   "tiereFrei": 11,
+   "tiereFreiSicht": 1,
+   "hgN": null,
+   "hgMax": null,
+   "hgP95": null,
+   "hgKlasse": null,
+   "hgUrsachen": null,
+   "hgBau": null,
+   "hgPipeSync": null,
+   "S": "B",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 60.5,
+    "p50": 16.7,
+    "p95": 17,
+    "max": 25.4,
+    "cpu50": 4,
+    "cpu95": 6,
+    "render": 2.45,
+    "creatures": 0.51,
+    "streaming": 0.19,
+    "gpuD50": 16.7,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 66.3,
+    "p50": 16.7,
+    "p95": 16.8,
+    "max": 33.4,
+    "cpu50": 3.8,
+    "cpu95": 5.3,
+    "render": 2.46,
+    "creatures": 0.57,
+    "streaming": 0.5,
+    "gpuD50": 15.4,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 14.58,
+   "bank0cpu": 1.35,
+   "bank88": 13.73,
+   "bank88cpu": 1.6,
+   "bandBefehle": 90,
+   "bandTris": 777712,
+   "bandVram": 114.5,
+   "bandGpu": 15.71,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {
+    "rule:nexus→rainy": 17,
+    "nexus→rainy": 2
+   },
+   "welt": {
+    "verweigert nexus→spawn_creature": 2,
+    "verweigert nexus→skybox_color": 1,
+    "verweigert nexus→creatures_emotion": 4,
+    "verweigert nexus→player_jump_power": 5,
+    "verweigert nexus→player_speed": 1,
+    "verweigert nexus→creatures_speed_mul": 1
+   },
+   "gpuStart": "64, 139 MHz, 0 %, P8",
+   "version": "18.536.0",
+   "tierBefehle": 0,
+   "tierTrisK": 0
+  },
+  {
+   "N": "3A",
+   "tiereVoll": 11,
+   "tiereVollSicht": 2,
+   "tiereFrei": 11,
+   "tiereFreiSicht": 2,
+   "hgN": null,
+   "hgMax": null,
+   "hgP95": null,
+   "hgKlasse": null,
+   "hgUrsachen": null,
+   "hgBau": null,
+   "hgPipeSync": null,
+   "S": "A",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 55,
+    "p50": 16.7,
+    "p95": 25.1,
+    "max": 33.4,
+    "cpu50": 4.4,
+    "cpu95": 6.5,
+    "render": 2.51,
+    "creatures": 0.6,
+    "streaming": 0.22,
+    "gpuD50": 18.2,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 60.1,
+    "p50": 16.7,
+    "p95": 25,
+    "max": 258.5,
+    "cpu50": 4.2,
+    "cpu95": 8.6,
+    "render": 4.03,
+    "creatures": 0.66,
+    "streaming": 2.21,
+    "gpuD50": 16.6,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 16.22,
+   "bank0cpu": 1.73,
+   "bank88": 14.57,
+   "bank88cpu": 1.56,
+   "bandBefehle": 91,
+   "bandTris": 763588,
+   "bandVram": 122.9,
+   "bandGpu": 17.24,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {
+    "rule:nexus→rainy": 17,
+    "nexus→rainy": 2
+   },
+   "welt": {
+    "verweigert nexus→spawn_creature": 2,
+    "verweigert nexus→skybox_color": 1,
+    "verweigert nexus→creatures_emotion": 4,
+    "verweigert nexus→player_jump_power": 5,
+    "verweigert nexus→player_speed": 1,
+    "verweigert nexus→creatures_speed_mul": 1
+   },
+   "gpuStart": "64, 139 MHz, 0 %, P8",
+   "version": "18.536.0",
+   "tierBefehle": 0,
+   "tierTrisK": 0
+  },
+  {
+   "N": "4B",
+   "tiereVoll": 11,
+   "tiereVollSicht": 1,
+   "tiereFrei": 11,
+   "tiereFreiSicht": 1,
+   "hgN": null,
+   "hgMax": null,
+   "hgP95": null,
+   "hgKlasse": null,
+   "hgUrsachen": null,
+   "hgBau": null,
+   "hgPipeSync": null,
+   "S": "B",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 60.8,
+    "p50": 16.7,
+    "p95": 16.9,
+    "max": 25.3,
+    "cpu50": 4.1,
+    "cpu95": 6.2,
+    "render": 2.53,
+    "creatures": 0.59,
+    "streaming": 0.21,
+    "gpuD50": 16.6,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 66.1,
+    "p50": 16.7,
+    "p95": 17,
+    "max": 50,
+    "cpu50": 3.9,
+    "cpu95": 6.5,
+    "render": 1.88,
+    "creatures": 0.49,
+    "streaming": 0.16,
+    "gpuD50": 15.4,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 14.72,
+   "bank0cpu": 1.74,
+   "bank88": 13.67,
+   "bank88cpu": 1.68,
+   "bandBefehle": 90,
+   "bandTris": 774786,
+   "bandVram": 114.5,
+   "bandGpu": 15.53,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {
+    "rule:nexus→rainy": 17,
+    "nexus→rainy": 2
+   },
+   "welt": {
+    "verweigert nexus→spawn_creature": 2,
+    "verweigert nexus→skybox_color": 1,
+    "verweigert nexus→creatures_emotion": 4,
+    "verweigert nexus→player_jump_power": 5,
+    "verweigert nexus→player_speed": 1,
+    "verweigert nexus→creatures_speed_mul": 1
+   },
+   "gpuStart": "65, 139 MHz, 0 %, P8",
+   "version": "18.536.0",
+   "tierBefehle": 0,
+   "tierTrisK": 0
+  },
+  {
+   "N": "5A",
+   "tiereVoll": 11,
+   "tiereVollSicht": 1,
+   "tiereFrei": 11,
+   "tiereFreiSicht": 1,
+   "hgN": null,
+   "hgMax": null,
+   "hgP95": null,
+   "hgKlasse": null,
+   "hgUrsachen": null,
+   "hgBau": null,
+   "hgPipeSync": null,
+   "S": "A",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 49.2,
+    "p50": 16.7,
+    "p95": 25.2,
+    "max": 33.7,
+    "cpu50": 4.5,
+    "cpu95": 6.9,
+    "render": 2.66,
+    "creatures": 0.73,
+    "streaming": 0.28,
+    "gpuD50": 20.1,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 51.8,
+    "p50": 16.7,
+    "p95": 25.1,
+    "max": 258.3,
+    "cpu50": 4,
+    "cpu95": 5.8,
+    "render": 2.54,
+    "creatures": 0.7,
+    "streaming": 0.17,
+    "gpuD50": 18.8,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 18.28,
+   "bank0cpu": 1.73,
+   "bank88": 16.8,
+   "bank88cpu": 1.52,
+   "bandBefehle": 91,
+   "bandTris": 763965,
+   "bandVram": 118.5,
+   "bandGpu": 19.28,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {
+    "rule:nexus→rainy": 12,
+    "nexus→rainy": 1
+   },
+   "welt": {
+    "verweigert nexus→spawn_creature": 2,
+    "verweigert nexus→skybox_color": 1,
+    "verweigert nexus→creatures_emotion": 3,
+    "verweigert nexus→player_jump_power": 5,
+    "verweigert nexus→player_speed": 1
+   },
+   "gpuStart": "66, 139 MHz, 0 %, P8",
+   "version": "18.536.0",
+   "tierBefehle": 0,
+   "tierTrisK": 0
+  },
+  {
+   "N": "6B",
+   "tiereVoll": 11,
+   "tiereVollSicht": 1,
+   "tiereFrei": 11,
+   "tiereFreiSicht": 1,
+   "hgN": null,
+   "hgMax": null,
+   "hgP95": null,
+   "hgKlasse": null,
+   "hgUrsachen": null,
+   "hgBau": null,
+   "hgPipeSync": null,
+   "S": "B",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 60.1,
+    "p50": 16.7,
+    "p95": 17,
+    "max": 33.3,
+    "cpu50": 4.2,
+    "cpu95": 7.2,
+    "render": 2.66,
+    "creatures": 0.73,
+    "streaming": 0.27,
+    "gpuD50": 16.7,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 68.8,
+    "p50": 16.6,
+    "p95": 16.8,
+    "max": 33.4,
+    "cpu50": 3.8,
+    "cpu95": 5.8,
+    "render": 2.1,
+    "creatures": 0.54,
+    "streaming": 0.22,
+    "gpuD50": 14.8,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 14.83,
+   "bank0cpu": 1.77,
+   "bank88": 13.35,
+   "bank88cpu": 1.51,
+   "bandBefehle": 90,
+   "bandTris": 777907,
+   "bandVram": 114.4,
+   "bandGpu": 15.59,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {
+    "rule:nexus→rainy": 17,
+    "nexus→rainy": 2
+   },
+   "welt": {
+    "verweigert nexus→spawn_creature": 2,
+    "verweigert nexus→skybox_color": 1,
+    "verweigert nexus→creatures_emotion": 4,
+    "verweigert nexus→player_jump_power": 5,
+    "verweigert nexus→player_speed": 1,
+    "verweigert nexus→creatures_speed_mul": 1
+   },
+   "gpuStart": "66, 139 MHz, 0 %, P8",
+   "version": "18.536.0",
+   "tierBefehle": 0,
+   "tierTrisK": 0
+  },
+  {
+   "N": "7A",
+   "tiereVoll": 11,
+   "tiereVollSicht": 1,
+   "tiereFrei": 11,
+   "tiereFreiSicht": 1,
+   "hgN": null,
+   "hgMax": null,
+   "hgP95": null,
+   "hgKlasse": null,
+   "hgUrsachen": null,
+   "hgBau": null,
+   "hgPipeSync": null,
+   "S": "A",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 60.3,
+    "p50": 16.7,
+    "p95": 17,
+    "max": 32.1,
+    "cpu50": 4.1,
+    "cpu95": 6.2,
+    "render": 2.28,
+    "creatures": 0.53,
+    "streaming": 0.22,
+    "gpuD50": 16.8,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 65.8,
+    "p50": 16.7,
+    "p95": 16.9,
+    "max": 25.3,
+    "cpu50": 3.8,
+    "cpu95": 5.9,
+    "render": 1.98,
+    "creatures": 0.52,
+    "streaming": 0.17,
+    "gpuD50": 15.5,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 14.8,
+   "bank0cpu": 1.68,
+   "bank88": 13.78,
+   "bank88cpu": 1.55,
+   "bandBefehle": 90,
+   "bandTris": 775549,
+   "bandVram": 122.3,
+   "bandGpu": 15.77,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {
+    "rule:nexus→rainy": 17,
+    "nexus→rainy": 2
+   },
+   "welt": {
+    "verweigert nexus→spawn_creature": 2,
+    "verweigert nexus→skybox_color": 1,
+    "verweigert nexus→creatures_emotion": 4,
+    "verweigert nexus→player_jump_power": 5,
+    "verweigert nexus→player_speed": 1,
+    "verweigert nexus→creatures_speed_mul": 1
+   },
+   "gpuStart": "66, 139 MHz, 0 %, P8",
+   "version": "18.536.0",
+   "tierBefehle": 0,
+   "tierTrisK": 0
+  },
+  {
+   "N": "8B",
+   "tiereVoll": 11,
+   "tiereVollSicht": 1,
+   "tiereFrei": 11,
+   "tiereFreiSicht": 1,
+   "hgN": null,
+   "hgMax": null,
+   "hgP95": null,
+   "hgKlasse": null,
+   "hgUrsachen": null,
+   "hgBau": null,
+   "hgPipeSync": null,
+   "S": "B",
+   "verworfen": 0,
+   "urteil": "GRUEN",
+   "befunde": 0,
+   "voll": {
+    "fps": 63.2,
+    "p50": 16.7,
+    "p95": 16.9,
+    "max": 25.4,
+    "cpu50": 4.1,
+    "cpu95": 6.2,
+    "render": 2.31,
+    "creatures": 0.56,
+    "streaming": 0.16,
+    "gpuD50": 15.8,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "frei": {
+    "fps": 72.1,
+    "p50": 16.6,
+    "p95": 16.8,
+    "max": 25.3,
+    "cpu50": 3.9,
+    "cpu95": 5.6,
+    "render": 2.04,
+    "creatures": 0.48,
+    "streaming": 0.17,
+    "gpuD50": 14,
+    "stempel": true,
+    "wetter": "GRUEN"
+   },
+   "bank0": 12.18,
+   "bank0cpu": 1.77,
+   "bank88": 12.18,
+   "bank88cpu": 1.78,
+   "bandBefehle": 90,
+   "bandTris": 773418,
+   "bandVram": 114.4,
+   "bandGpu": 14.92,
+   "bandTier": null,
+   "bandStempel": "GRUEN",
+   "wetterEnde": "sunny",
+   "verw": {
+    "rule:nexus→rainy": 17,
+    "nexus→rainy": 2
+   },
+   "welt": {
+    "verweigert nexus→spawn_creature": 2,
+    "verweigert nexus→skybox_color": 1,
+    "verweigert nexus→creatures_emotion": 4,
+    "verweigert nexus→player_jump_power": 5,
+    "verweigert nexus→player_speed": 1,
+    "verweigert nexus→creatures_speed_mul": 1
+   },
+   "gpuStart": "66, 139 MHz, 0 %, P8",
+   "version": "18.536.0",
+   "tierBefehle": 0,
+   "tierTrisK": 0
+  }
+ ],
+ "profil": {
+  "A": {
+   "(idle) :0": [
+    41,
+    40.1,
+    40.8,
+    42
+   ],
+   "(program) :0": [
+    16.1,
+    15.9,
+    15.6,
+    15.9
+   ],
+   "_tickFocusingAffordances anazhRealm.js": [
+    2.3,
+    3,
+    2.9,
+    2.3
+   ],
+   "updateMatrixWorld three.core.min.js": [
+    2.1,
+    1.7,
+    1.6,
+    1.9
+   ],
+   "tickAffordances anazhRealm.js": [
+    2,
+    3.8,
+    4.1,
+    1.9
+   ],
+   "_updateDorfRauch anazhRealm.js": [
+    1.9,
+    1.9,
+    2.3,
+    1.9
+   ],
+   "loop anazhRealm.js": [
+    1.4,
+    1.5,
+    1.5,
+    1.5
+   ],
+   "_weltFeldMatrix anazhRealm.js": [
+    0.8,
+    0.7,
+    0.8,
+    0.7
+   ],
+   "update three.webgpu.min.js": [
+    0.7,
+    0.8,
+    0.8,
+    0.8
+   ],
+   "updateCreatures anazhRealm.js": [
+    0.7,
+    0.7,
+    0.8,
+    0.6
+   ],
+   "(garbage collector) :0": [
+    0.7,
+    0.6,
+    0.7,
+    0.6
+   ],
+   "_kreaturHuellenKontakt anazhRealm.js": [
+    0.7,
+    0.7,
+    0.6,
+    0.7
+   ],
+   "AnazhRealm._diaetRefresh anazhRealm.js": [
+    0.7,
+    0.6,
+    0.5,
+    0.6
+   ],
+   "_tickRadiatingAffordances anazhRealm.js": [
+    0.7,
+    1.1,
+    1.2,
+    0.8
+   ],
+   "_tickLiftingAffordances anazhRealm.js": [
+    0.6,
+    0.9,
+    0.9,
+    0.6
+   ],
+   "_tickBalancingAffordances anazhRealm.js": [
+    0.6,
+    0.4,
+    0.6
+   ],
+   "get three.webgpu.min.js": [
+    0.5,
+    0.5,
+    0.5,
+    0.6
+   ],
+   "submit :0": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "equals three.webgpu.min.js": [
+    0.5,
+    0.4,
+    0.5
+   ],
+   "_projectObject three.webgpu.min.js": [
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "zeichne anazhRealm.js": [
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "_partsAreInContact anazhRealm.js": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "noise2D simplex-noise.js": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "_tickPortalAffordance anazhRealm.js": [
+    0.5,
+    0.8,
+    1,
+    0.5
+   ],
+   "updateByType three.webgpu.min.js": [
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "_findNearestAffordanceEntry anazhRealm.js": [
+    0.5,
+    0.5
+   ],
+   "(anonym) anazhRealm.js": [
+    0.4,
+    0.4
+   ],
+   "AnazhRealm._diaetGeteiltSchreiben anazhRealm.js": [
+    0.4
+   ]
+  },
+  "B": {
+   "(idle) :0": [
+    41.9,
+    40.3,
+    40.9,
+    39.2
+   ],
+   "(program) :0": [
+    16,
+    16.1,
+    16,
+    16.3
+   ],
+   "_tickFocusingAffordances anazhRealm.js": [
+    2.3,
+    2.4,
+    2.4,
+    2.4
+   ],
+   "updateMatrixWorld three.core.min.js": [
+    2.2,
+    2.1,
+    2.2,
+    2.1
+   ],
+   "tickAffordances anazhRealm.js": [
+    1.9,
+    2,
+    1.9,
+    2.1
+   ],
+   "_updateDorfRauch anazhRealm.js": [
+    1.9,
+    2,
+    1.9,
+    2
+   ],
+   "loop anazhRealm.js": [
+    1.6,
+    1.6,
+    1.4,
+    1.6
+   ],
+   "updateCreatures anazhRealm.js": [
+    0.8,
+    0.7,
+    0.8,
+    1
+   ],
+   "update three.webgpu.min.js": [
+    0.8,
+    0.8,
+    0.7,
+    0.9
+   ],
+   "_tickRadiatingAffordances anazhRealm.js": [
+    0.7,
+    0.8,
+    0.7,
+    0.8
+   ],
+   "get three.webgpu.min.js": [
+    0.6,
+    0.5,
+    0.6,
+    0.7
+   ],
+   "(garbage collector) :0": [
+    0.6,
+    0.6,
+    0.7,
+    0.6
+   ],
+   "_kreaturHuellenKontakt anazhRealm.js": [
+    0.6,
+    0.7,
+    0.7,
+    0.8
+   ],
+   "_weltFeldMatrix anazhRealm.js": [
+    0.6,
+    0.7,
+    0.6,
+    0.7
+   ],
+   "_tickLiftingAffordances anazhRealm.js": [
+    0.6,
+    0.6,
+    0.7,
+    0.7
+   ],
+   "AnazhRealm._diaetRefresh anazhRealm.js": [
+    0.5,
+    0.7,
+    0.7,
+    0.6
+   ],
+   "submit :0": [
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "equals three.webgpu.min.js": [
+    0.5,
+    0.5
+   ],
+   "_tickBalancingAffordances anazhRealm.js": [
+    0.5,
+    0.6,
+    0.7,
+    0.7
+   ],
+   "_tickPortalAffordance anazhRealm.js": [
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "noise2D simplex-noise.js": [
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "(anonym) anazhRealm.js": [
+    0.5
+   ],
+   "_partsAreInContact anazhRealm.js": [
+    0.5,
+    0.5,
+    0.5,
+    0.6
+   ],
+   "_projectObject three.webgpu.min.js": [
+    0.5,
+    0.5,
+    0.6,
+    0.5
+   ],
+   "setVertexBuffer :0": [
+    0.4,
+    0.4
+   ],
+   "updateByType three.webgpu.min.js": [
+    0.5,
+    0.5,
+    0.6
+   ],
+   "zeichne anazhRealm.js": [
+    0.5,
+    0.5,
+    0.6
+   ],
+   "AnazhRealm._diaetGeteiltSchreiben anazhRealm.js": [
+    0.5
+   ]
+  }
+ },
+ "inkl": {
+  "A": {
+   "_loopCamera": [
+    1.4,
+    1.3,
+    1.3,
+    1.5
+   ],
+   "_ceilingHeadroom": [
+    1.3,
+    1.1,
+    1.2,
+    1.3
+   ],
+   "_fieldRaycast": [
+    1.2,
+    1.1,
+    1.1,
+    1.2
+   ],
+   "_segmentAABB": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "_loopFixedStep": [
+    1,
+    0.9,
+    0.9,
+    0.8
+   ],
+   "_stepCharacterStructures": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "_kreaturHuellenKontakt": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "updateCreatures": [
+    3.8,
+    3.5,
+    3.6,
+    3.5
+   ],
+   "tickAffordances": [
+    8.3,
+    10.9,
+    11.5,
+    8.2
+   ]
+  },
+  "B": {
+   "_loopCamera": [
+    1.3,
+    1.4,
+    1.5,
+    1.4
+   ],
+   "_ceilingHeadroom": [
+    1.2,
+    1.3,
+    1.3,
+    1.3
+   ],
+   "_fieldRaycast": [
+    1.1,
+    1.3,
+    1.3,
+    1.2
+   ],
+   "_segmentAABB": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "_loopFixedStep": [
+    0,
+    0,
+    1,
+    0
+   ],
+   "_stepCharacterStructures": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "_kreaturHuellenKontakt": [
+    0,
+    0,
+    0,
+    0
+   ],
+   "updateCreatures": [
+    3.5,
+    3.6,
+    3.6,
+    4
+   ],
+   "tickAffordances": [
+    8.1,
+    8.5,
+    8.6,
+    8.8
+   ]
+  }
+ },
+ "genesis": {}
+}
