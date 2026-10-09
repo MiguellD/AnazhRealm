@@ -10315,6 +10315,30 @@ async function checkBandRing8(ctx) {
             );
             out.geborenPositiv = wmNeu.visibility === "privat" && wmNeu.creator === "local";
         }
+        // DIE EMPFÄNGER-WAND DES ERBGUTS (docs/taille-spec.md §3): ohne Feld [wildnis]; eine unbekannte Term-Art, ein
+        // Grund-Term nicht zuerst, eine fehlende Zahl werfen (fail-closed, nie still Wildnis).
+        {
+            const wirft = (roh) => {
+                try {
+                    r.constructor._erbgutNormal(roh);
+                    return "";
+                } catch (e) {
+                    return String(e.message);
+                }
+            };
+            out.erbgutWand = {
+                ohne: JSON.stringify(r.constructor._erbgutNormal(undefined)) === '[{"art":"wildnis"}]',
+                unbekannt: /unbekannte Term-Art/.test(wirft({ terme: [{ art: "vulkan" }] })),
+                grundZuerst: /nur der erste Term/.test(
+                    wirft({
+                        terme: [
+                            { art: "rampe", x: 0, z: 0, richtung: 0, breite: 9, lauf: 9, krone: 1, winkel: 9, boeschung: 45 },
+                        ],
+                    })
+                ),
+                zahl: /keine Zahl/.test(wirft({ terme: [{ art: "insel", x: 0 }] })),
+            };
+        }
 
         // createNewWorld (ohne Reload) erzeugt eine neue Welt im Index.
         // Ziel: Ring-8-Invarianten ohne page-reload prüfbar.
@@ -10427,6 +10451,12 @@ async function checkBandRing8(ctx) {
             `geerbt: ${(ring8Results.geborenGeerbt || ["?"]).join(", ") || "—"}`
         );
         check("Ring 8: die Positiv-Liste reist (visibility, creator)", ring8Results.geborenPositiv === true);
+        const ew = ring8Results.erbgutWand || {};
+        check(
+            "Erbgut: ohne Feld [wildnis]; unbekannte Term-Art, Grund nicht zuerst, fehlende Zahl werfen (fail-closed)",
+            ew.ohne === true && ew.unbekannt === true && ew.grundZuerst === true && ew.zahl === true,
+            JSON.stringify(ew)
+        );
         check("Ring 8: createNewWorld liefert neue worldId", ring8Results.newWorldCreated);
         check("Ring 8: Index wächst um eins nach createNewWorld", ring8Results.indexGrewByOne);
         check("Ring 8: Neue Welt im Index mit slug", ring8Results.newWorldInIndex);

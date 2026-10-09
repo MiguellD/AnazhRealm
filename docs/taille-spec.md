@@ -84,6 +84,13 @@ Kein Import-Pfad übernimmt Abgeleitetes als Wahrheit:
 - Jeder Artefakt-Import läuft durch **EINEN Eingang** (`_admitForeignArtifact`): Signatur-
   Status ans Artefakt, Rückruf-Sieb AM EINGANG, Provenance angehängt, Behauptung/Wahrheit
   getrennt.
+- **Das Erbgut einer Welt** (`worldMeta.erbgut = { terme: [...] }`, additiv seit 10.10.; ohne
+  Feld = `[wildnis]`) ist keine Behauptung, sondern das Gesetz ihres Bodens: die Terme der
+  EINEN 2D-Höhe (`_terrainMacroSurfaceY`; Arten `wildnis` · `insel` zuerst, dann `rampe` ·
+  `bucht`, höchstens 32, Zahlen am Empfänger geklemmt). Die Empfänger-Wand `_erbgut()` ist
+  hier **fail-closed** — die Ausnahme zu §2: eine Term-Art, die dieser Build nicht trägt,
+  lässt die Welt nicht erwachen (der Grund steht auf dem Ladeschirm); sie still als Wildnis
+  zu lesen hieße, eine andere Welt zu zeichnen. Die Bühne `spec/pruefbuehne/welt.json`.
 
 ## §4 · Die Versions-Regel (EINE Semantik)
 
