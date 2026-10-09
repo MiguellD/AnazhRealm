@@ -215,6 +215,23 @@ function reichVerdict(R) {
     if (!(R.nah.treffer >= REICH_SOLL.nah)) v.push(`reich-nah: in Reichweite nur ${R.nah.treffer} von 9 Treffern`);
     return v;
 }
+// (T18) POSE = TREFFER-VOLUMEN = ICH-SICHT (Welle LF kampf, Posten 2 — pure Funktion, Probe UND Selbst-Test): im Treffer-Takt
+// liegen die sichtbare Spitze des Geräts und seine Mitte auf der Geraden der Strecke, die der Sweep der Gestalt reicht (höchstens
+// ihr Klingen-Radius daneben), und Spitze und Mitte stehen im Bild der Ich-Kamera — bei jedem der drei Ziele.
+function poseVerdict(P) {
+    if (!Array.isArray(P) || !P.length) return ["pose keine Probe"];
+    const v = [];
+    P.forEach((x, i) => {
+        if (!x || !x.traf) return v.push(`pose-treffer: Ziel ${i + 1} nicht getroffen (keine Probe)`);
+        if (!Number.isFinite(x.spitzeAb)) return v.push(`pose-geraet: Ziel ${i + 1} ohne sichtbares Gerät`);
+        if (!(x.spitzeAb <= x.rad && x.mitteAb <= x.rad))
+            v.push(
+                `pose-volumen: Ziel ${i + 1} — die sichtbare Klinge ${x.spitzeAb} m (Spitze) / ${x.mitteAb} m (Mitte) neben dem Treffer-Volumen (Soll ≤ ${x.rad} m)`
+            );
+        if (!x.imBild) v.push(`pose-ich: Ziel ${i + 1} — im Treffer-Takt zeigt die Ich-Sicht keine Klinge`);
+    });
+    return v;
+}
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -1570,6 +1587,101 @@ async function WELLE_L() {
                 parke(fR);
             }
         }
+        // (T18) POSE, TREFFER-VOLUMEN UND ICH-SICHT LESEN DENSELBEN SCHWUNG (Posten 2): je Ziel EIN Großschwert-Hieb; im
+        // Treffer-Takt steht die Anzeige-Uhr (Hit-Stop ∞), die Pose des Spielers wird gelegt (animatePlayerSoul), die Kamera
+        // folgt (_loopCamera). Gemessen gegen das TREFFER-VOLUMEN selbst — die Strecke, die der Sweep der Gestalt reicht
+        // (_kreaturGliedTreffer, Strecke a→b): der Abstand der sichtbaren Spitze und der Klingen-Mitte (Ecken des Geräts in
+        // Welt, die Spitze am weitesten vom Handgelenk) von ihrer Geraden, und ob Spitze und Mitte im Bild der Ich-Kamera
+        // liegen (Spitze UND Mitte). Befund: im Treffer-Takt stand das Großschwert über dem Kopf (ks02), die Ich-Sicht zeigte keine Klinge (ks01).
+        {
+            const hP = setze("wesen");
+            ausruesten("klinge_grossschwert");
+            if (s.blueprints.klinge_grossschwert) r._setBlueprintWear(s.blueprints.klinge_grossschwert, 1);
+            const gtRoh = r._kreaturGliedTreffer;
+            let strecke = null;
+            r._kreaturGliedTreffer = function (cr, ax, ay, az, bx, by, bz, rad) {
+                const tr = gtRoh.call(this, cr, ax, ay, az, bx, by, bz, rad);
+                if (tr && cr === hP && !strecke) strecke = { a: V3().set(ax, ay, az), b: V3().set(bx, by, bz), rad };
+                return tr;
+            };
+            const geraetPunkte = () => {
+                const held = pm.userData && pm.userData.heldMesh;
+                const rig = pm.userData && pm.userData.rig;
+                if (!held || !rig || !rig.armR || !rig.armR.wrist) return null;
+                pm.updateMatrixWorld(true);
+                const W = rig.armR.wrist.getWorldPosition(V3());
+                let tip = null,
+                    best = -1;
+                const v = V3();
+                held.traverse((o) => {
+                    const pa = o.isMesh && o.geometry && o.geometry.attributes && o.geometry.attributes.position;
+                    if (!pa) return;
+                    for (let i = 0; i < pa.count; i += Math.max(1, Math.floor(pa.count / 400))) {
+                        v.fromBufferAttribute(pa, i).applyMatrix4(o.matrixWorld);
+                        const d2 = v.distanceToSquared(W);
+                        if (d2 > best) {
+                            best = d2;
+                            tip = v.clone();
+                        }
+                    }
+                });
+                return tip ? { W, T: tip, M: W.clone().add(tip).multiplyScalar(0.5) } : null;
+            };
+            const abGerade = (q, a, b) => {
+                const ab = V3().subVectors(b, a);
+                const t = V3().subVectors(q, a).dot(ab) / Math.max(1e-9, ab.lengthSq());
+                return V3().copy(a).addScaledVector(ab, t).distanceTo(q);
+            };
+            const imBild = (q) => {
+                const n = q.clone().project(s.camera);
+                return Math.abs(n.x) <= 1 && Math.abs(n.y) <= 1 && n.z < 1 && n.z > -1;
+            };
+            const probe = (d, rotY, seit) => {
+                stelle(hP, d, seit);
+                hP.rotation.set(0, rotY, 0);
+                hP.updateMatrixWorld(true);
+                zielen(punkt(hP, null));
+                strecke = null;
+                p._swing = null;
+                p._hitStopUntil = 0;
+                const n0 = treff.length;
+                if (!r._beginPlayerSwing() || !p._swing) return null;
+                p._swing.lastT = T;
+                for (let k = 0; k < 1200 && p._swing && !treff.slice(n0).some((t) => t.c === hP); k++) {
+                    T += 0.004;
+                    r._tickKampfSchwung(T);
+                }
+                if (!strecke || !p._swing) return { traf: false };
+                // der Treffer-Takt: die Anzeige-Uhr steht, die Pose dieses Takts wird gelegt, die Ich-Kamera folgt
+                p._hitStopUntil = Infinity;
+                r.animatePlayerSoul(T);
+                r._loopCamera(T);
+                s.camera.updateMatrixWorld(true);
+                const g = geraetPunkte();
+                const out = { traf: true };
+                if (g) {
+                    out.spitzeAb = +abGerade(g.T, strecke.a, strecke.b).toFixed(2);
+                    out.mitteAb = +abGerade(g.M, strecke.a, strecke.b).toFixed(2);
+                    // die Klinge steht im Bild: Spitze UND Mitte in der Ich-Kamera (die Hand allein ist keine Klinge)
+                    out.imBild = imBild(g.T) && imBild(g.M);
+                    out.held = pm.userData.heldMesh.userData.foundryHeld ? "studio" : "teile";
+                    out.rad = strecke.rad;
+                }
+                p._hitStopUntil = 0;
+                p._swing = null;
+                r.animatePlayerSoul(T + 0.02);
+                return out;
+            };
+            try {
+                w.z.pose = [probe(1.6, 0, 0), probe(1.6, Math.PI / 2, 0), probe(1.8, Math.PI / 2, 0.3)];
+            } finally {
+                r._kreaturGliedTreffer = gtRoh;
+                delete r._kreaturGliedTreffer;
+                p._hitStopUntil = 0;
+                p._swing = null;
+                parke(hP);
+            }
+        }
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
@@ -2419,6 +2531,26 @@ async function WELLE_L() {
             rv2Gut.length === 0 &&
                 ["reich-zwilling", "reich-stumm", "reich-nah"].every((t) => rv2Alt.some((x) => x.startsWith(t))),
             "Selbst-Test T17: der Befund (Tor 6 m, 9 stumme Hiebe) nennt Zwilling, Stille und Nähe; EINE Reichweite bleibt grün"
+        );
+        console.log(
+            `  (T18) Pose im Treffer-Takt: ${JSON.stringify(z.pose || null)
+                .replace(/"/g, "")
+                .slice(0, 400)}`
+        );
+        const pv = poseVerdict(z.pose);
+        check(
+            pv.length === 0,
+            "LF Posten 2: Pose, Treffer-Volumen und Ich-Sicht lesen DENSELBEN Schwung — im Treffer-Takt liegt die sichtbare Klinge auf dem Volumen und steht im Bild der Ich-Kamera" +
+                (pv.length ? " — " + pv.join(" · ") : "")
+        );
+        const pvAlt = poseVerdict([
+            { traf: true, spitzeAb: 1.4, mitteAb: 0.9, imBild: false, rad: 0.35 },
+            { traf: true, spitzeAb: 1.2, mitteAb: 0.8, imBild: false, rad: 0.35 },
+        ]);
+        const pvGut = poseVerdict([{ traf: true, spitzeAb: 0.1, mitteAb: 0.2, imBild: true, rad: 0.35 }]);
+        check(
+            pvGut.length === 0 && ["pose-volumen", "pose-ich"].every((t) => pvAlt.some((x) => x.startsWith(t))),
+            "Selbst-Test T18: der Befund (Klinge über dem Kopf, Ich-Sicht leer) nennt Volumen und Ich-Sicht; derselbe Schwung bleibt grün"
         );
         check(
             c.bogenVerschleiss,
