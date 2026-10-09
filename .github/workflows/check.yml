@@ -28,6 +28,19 @@ jobs:
                   node-version: "22"
                   cache: "npm"
 
+            # Die Statik (`npm run check`) bootet in gate:taille einmal Chromium (puppeteer) gegen den eigenen save-server.
+            - name: System-Libs für headless Chromium
+              run: |
+                  sudo apt-get update -qq
+                  sudo apt-get install -y --no-install-recommends \
+                    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+                    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+                    libgbm1 libpango-1.0-0 libcairo2 libasound2t64 || \
+                  sudo apt-get install -y --no-install-recommends \
+                    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+                    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+                    libgbm1 libpango-1.0-0 libcairo2 libasound2
+
             - name: Dependencies installieren
               run: npm ci --no-audit --no-fund
 
@@ -70,30 +83,23 @@ jobs:
                   fi
                   echo "✅ Keine Duplikate ($n Methoden in class AnazhRealm)"
 
-            - name: Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben — die c1c1271-Klasse)
-              run: npm run gate:source-probes
-
-            - name: CI-Deckung (die Gruppen des playtest-Jobs - jeder Gate-Schritt genau einmal, jede Gruppe vorbereitet)
-              # Der playtest-Job laeuft in drei Gruppen (Matrix): jeder Gate-Schritt traegt genau EINE Gruppe, die
-              # Vorbereitung keine; ein Schritt ohne Gruppe (dreifach), mit einer Gruppe ausserhalb der Matrix (nie),
-              # doppelt in zwei Jobs oder eine leere Gruppe fallen rot beim Namen. --selftest zuerst.
-              run: npm run gate:ci-deckung
+            - name: Statik (npm run check — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)
+              # Die EINE Statik, dieselbe wie lokal: bis 09.10. stand `npm run check` in keinem Workflow — die Norm-Wände
+              # (Verfassung, Studio-Vertrag, Altlasten, Apparat, Vendor-Anker, Betriebsgesetz, Taille, Start-Rezept …)
+              # waren Wachsamkeit. Darin: die Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben, c1c1271-Klasse),
+              # die Band-Wand (Haushalt des Profi-Bands, Ratsche, Textur-Namen, Täter-Klasse — gemessen wird mit
+              # `werkbank band` an der echten GPU), das Wasser-Urteil (jeder Täter der Wasser-Wand fällt beim Namen rot)
+              # und die CI-Deckung: jeder Gate-Schritt trägt genau EINE Gruppe, und in der Gegenrichtung läuft jedes
+              # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
+              # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
+              # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium.
+              run: npm run check
 
             - name: Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)
               # GPU-frei, reines Node: liest die Boden-Zeilen des Pflanzen-Kerns (placement.boden ring nah), jeder Emitter mit
               # weichem Gewebe backt seine Palette über vegFarbe; die Senken zeichnen mit dem Studio-Stoff (nie Lambert —
               # r184-Lambert liest scene.environment nie diffus) und wiegen im EINEN Wind; der Karten-Codec kodiert sRGB.
               run: npm run gate:streu-wahrheit
-
-            - name: Band-Wand (W0 — Haushalt des Profi-Bands, Ratsche, Textur-Namen, Täter-Klasse des Stamms)
-              # GPU-frei, reines Node: der Haushalt (spec/profiband/haushalt.json) hält das Band 208 Befehle / 680k
-              # Dreiecke ohne Sammelzeile und mit verankerten Mustern, die Ratsche trägt jede Klasse × Pass (Hülle einer
-              # eingeschwungenen Serie der echten GPU), jede Textur des Stamms trägt den Namen ihres Erzeugers, die
-              # Täter-Klasse des Stamms (_taeterKlasse) klassifiziert jede Schlüssel-Form. --selftest zuerst: 15
-              # injizierte Fälle (unbenanntes Mesh, Täter ohne Haushalt-Regel, Fern-Geröll-L0 bei 200 m, Klasse über der
-              # Ratsche, Band überschritten bei sauberer Linse …) werden rot, ein sauberer Zensus im Band bleibt grün.
-              # Die Messung selbst: `werkbank band` / `werkbank ratsche` (echte GPU).
-              run: npm run gate:profiband
 
             - name: Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)
               # GPU-frei, reines Node (three r128 im vm wie im Foundry-Worker): der Kreatur-Bäcker backt Wolf · Fuchs ·
@@ -109,13 +115,6 @@ jobs:
               # Pupillen-Abstand, Augapfel, Iris, Mund, Fuß gegen koerper-core MENSCH_SOLL. --selftest zuerst: 1,5-fache
               # Hand, doppelte Augäpfel, doppelter Pupillen-Abstand → rot.
               run: npm run gate:mensch-anatomie
-
-            - name: Wasser-Urteil (Welle L — das Urteil der Wasser-Linse gegen jeden Täter, ohne Browser)
-              # GPU-frei, reines Node: ein grüner Befund bleibt grün, jeder Täter der Wasser-Wand (Fluss bergauf, Buckel,
-              # Quelle, Steilwand, Kanal-Parität, Körper am Grund, Zell-Dach, Höhle, Wagen, Rand-Streifen, Ufer-Flut, die
-              # Leser der EINEN Wahrheit, Schilf-Sprung, Zebra, Regen …) fällt beim Namen rot. Die Linse selbst läuft
-              # im playtest-Job (gate:wasser-leben und gate:wasser-leben:bild).
-              run: node scripts/diag-wasser-leben.cjs --selftest
 
             - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
               # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
