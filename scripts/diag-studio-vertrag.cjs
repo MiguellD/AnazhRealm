@@ -505,7 +505,11 @@ function validateManifest(m) {
         // Wirts prüft (je Block EIN Wander-Feld; alter Kern → ganz byte-alt).
         const seeleOk =
             V.jagd &&
-            Number.isFinite(V.jagd.strikeRange) &&
+            Number.isFinite(V.jagd.strikeCooldownSec) &&
+            // DER BISS IST DER ANSPRUNG (Welle LF kampf, Vertrags-Akt 09.10.): die Reichweite um die Mitten und der feste
+            // Pirsch-Stopp kehren nicht zurueck (die Reichweite ist der Weg des Ansprungs, der Halt das Maul am Leib).
+            V.jagd.strikeRange === undefined &&
+            V.jagd.pirschStoppM === undefined &&
             V.furcht &&
             Number.isFinite(V.furcht.fleeThreshold) &&
             V.temperament &&
@@ -529,7 +533,6 @@ function validateManifest(m) {
             Number.isFinite(V.wandern.leashBaseM) &&
             // SCHLUSS-WELLE 17.07. — die neun heimgekehrten Blöcke sind Vertrag
             // (dieselben Felder, die die _verhaltenGesetz-Wand des Wirts prüft):
-            Number.isFinite(V.jagd.pirschStoppM) &&
             // DIE JAGD SCHLIESST SICH (Welle LF, Vertrags-Akt 08.10.): der Ring der Hetze, die Pirsch-Sicht und die
             // Beute-Masse sind Vertrag; der Gradienten-Schritt der Witterung und der Trab der Flucht kehren nicht zurueck
             // (die Flucht ist der Sprint der Gestalt, STEUER_GESETZ.sprint).
@@ -568,7 +571,7 @@ function validateManifest(m) {
             Number.isFinite(V.wasser.uferBias);
         if (!seeleOk)
             v.push(
-                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeRange/pirschStoppM/hetzM/pirschSichtM/beuteMasse ohne Gradienten-Schritt · furcht.fleeThreshold ohne Trab-Flucht · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
+                "§B6+ VERHALTEN unvollständig (KREATUR-SEELE: jagd.strikeCooldownSec/hetzM/pirschSichtM/beuteMasse ohne Gradienten-Schritt, Reichweite um die Mitten und festen Pirsch-Stopp · furcht.fleeThreshold ohne Trab-Flucht · temperament{gattung,profile} ohne Substanz-Signaturen, furcht.mutGewicht ohne Substanz-Gewichte · wandern.leashBaseM · stimmung.schwellen · freude{tempoMul,hopHochM,hopBasisM} ohne sprung-Zwilling, hop nur true · groessen/separation{raumKugel}/aufgaben/herde{fensterRaum} ohne festen Paar-Radius, Fenster und Neugier-Stopp/wasser)"
             );
     }
     return v;

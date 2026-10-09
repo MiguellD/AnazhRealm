@@ -317,6 +317,31 @@ function todVerdict(T) {
     if (!T.liegt10s) v.push("tod-leichnam: 10 s nach dem Tod ist der Leib fort");
     return v;
 }
+// (T23) DER BISS TRIFFT, WO DIE GESTE SCHNAPPT (Welle LF kampf, Posten 5 — pure Funktion, Probe UND Selbst-Test): auf jedem
+// der drei Biss-Wege (Jagd auf den Spieler, Beute, Gegenwehr) beißt das Tier im Ansprung (die Geste pounce läuft im
+// Biss-Takt) und mit dem Maul am Leib (Spalt Kopf ↔ Leib ≤ 0,05 m). Befund K-D13: 9 von 12 Bissen ohne Geste, aus 1,36–2,39 m XZ.
+function bissGesteVerdict(B) {
+    if (!B) return ["biss-geste keine Probe"];
+    const v = [];
+    for (const art of ["jagd", "beute", "gegenwehr"]) {
+        const L = B[art] || [];
+        if (!L.length) {
+            v.push(`biss-weg: ${art} — kein Biss im Takt`);
+            continue;
+        }
+        const ohne = L.filter((b) => b.geste !== "pounce");
+        if (ohne.length)
+            v.push(
+                `biss-geste: ${art} beißt ohne Ansprung (${ohne.length} von ${L.length}: ${ohne.map((b) => b.geste).join(", ")})`
+            );
+        const fern = L.filter((b) => !(b.spalt <= 0.05));
+        if (fern.length)
+            v.push(
+                `biss-ferne: ${art} beißt mit dem Kopf ${Math.max(...fern.map((b) => b.spalt)).toFixed(2)} m vor dem Leib (Mitten ${fern.map((b) => b.xz).join(" / ")} m)`
+            );
+    }
+    return v;
+}
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -472,9 +497,21 @@ async function WELLE_L() {
             c.rotation.set(0, Math.PI / 2, 0);
             c.userData.hp = 1e6;
             c.userData.fearUntil = 0;
+            c.userData._steuer = null; // es STEHT: der Steuer-Schritt beginnt neu aus dieser Gier, ohne Lauf und Sprung
+            c.userData._hopH = 0;
+            c.userData._hopV = 0;
             c.updateMatrixWorld(true);
         };
         const parke = (c) => stelle(c, 60, 60 + tiere.indexOf(c) * 4);
+        // der Spieler STEHT auf dem Boden (seine Füße auf der Höhe, auf der die Tiere im Takt stehen): ein Biss braucht den Kopf
+        // am Leib, auch in der Höhe (Posten 5). `halte` stellt ihn je Takt zurück, `zurueck` an die Lage davor.
+        const amBoden = () => {
+            const alt = { x: pm.position.x, y: pm.position.y, z: pm.position.z };
+            const P = { x: alt.x, y: r.getTerrainHeightAt(alt.x, alt.z) + A.PLAYER_FOOT_OFFSET, z: alt.z };
+            const halte = () => pm.position.set(P.x, P.y, P.z);
+            halte();
+            return { P, halte, zurueck: () => pm.position.set(alt.x, alt.y, alt.z) };
+        };
         const punkt = (c, teil) => {
             c.updateMatrixWorld(true);
             const tb = c.userData._tierBaum;
@@ -753,47 +790,96 @@ async function WELLE_L() {
             }
             w.z.masse = { leiber, kernFehlt, zwillinge };
         }
-        // (T15) DER BISS ALS STOSS (0710-4): je Jäger (Größe 1) ein Biss auf ein frisches Kitz 1,5 m vor ihm (die Jagd
-        // auf Beute, _tickCreatureScentStrike) und einer auf den Spieler 1,5 m vor ihm (die Jagd, _tickCreatureHuntStrike,
-        // im Pfad-Modus, volle Gesundheit). Gemessen: das Δv des Ziels im Biss-Takt.
+        // (T15) DER BISS ALS STOSS (0710-4): je Jäger (Größe 1) ein Biss auf ein frisches Kitz 1,2 m neben ihm (die Jagd auf
+        // Beute, _tickCreatureScentStrike) und einer auf den Spieler 1,2 m vor ihm (die Jagd, _tickCreatureHuntStrike, im
+        // Pfad-Modus, volle Gesundheit, der Spieler auf dem Boden). Der Biss ist der Ansprung (Posten 5): der Kreatur-Takt läuft,
+        // bis das Maul schnappt (höchstens 1,5 s). Gemessen: das Δv, das der Stoß des Bisses dem Ziel gibt (im Biss-Takt, am
+        // Ziel gelesen — vorher und nachher _stossV bzw. playerVel).
         {
             const bissAlt = { mode: r.getGameMode(), hp: p.hp, gnade: p.respawnGraceUntil };
             r.setGameMode("pfad");
-            const ort0 = pm.position;
+            const B0 = amBoden();
+            const ort0 = B0.P;
             const beute = {};
             const spieler = {};
-            for (const seele of ["fuchs", "wolf", "baer"]) {
-                s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 3);
-                const bx = ort0.x + 400,
-                    bz = ort0.z + 400;
-                const j = r.spawnCreatureAt(bx, ort0.y, bz, "calm", seele, { bodySize: 1 });
-                const h = r.spawnCreatureAt(bx + 1.5, ort0.y, bz, "calm", "wesen", { bodySize: 0.6 });
-                if (j && h) {
-                    j.position.set(bx, r.getTerrainHeightAt(bx, bz), bz);
-                    h.position.set(bx + 1.5, r.getTerrainHeightAt(bx + 1.5, bz), bz);
-                    h.userData._stossV = null;
-                    j.userData.nextHuntStrikeAt = 0;
-                    const biss = r._tickCreatureScentStrike(j) === true;
-                    const sv = h.userData._stossV;
-                    beute[seele] = { biss, dv: sv ? Math.hypot(sv.x, sv.z) : 0 };
+            let stossNach = null;
+            const geschw = (ziel) => {
+                if (!ziel) return { x: s.playerVel.x(), z: s.playerVel.z() };
+                const sv = ziel.userData._stossV;
+                return { x: sv ? sv.x : 0, z: sv ? sv.z : 0 };
+            };
+            const bsRoh = r._bissStoss;
+            r._bissStoss = function (beisser, ziel) {
+                const v0 = geschw(ziel);
+                const o = bsRoh.call(this, beisser, ziel);
+                const v1 = geschw(ziel);
+                stossNach = Math.hypot(v1.x - v0.x, v1.z - v0.z);
+                return o;
+            };
+            const beiss = (fest) => {
+                stossNach = null;
+                for (let k = 0; k < 90 && stossNach === null; k++) {
+                    fest();
+                    r.updateCreatures(1 / 60);
+                    r._kreaturStossSchritt(1 / 60);
+                    r._leibKontakte();
                 }
-                if (h) r.removeCreature(h);
-                if (j) {
-                    // derselbe Jäger 1,5 m vor dem Spieler
-                    j.position.set(ort0.x + 1.5, ort0.y, ort0.z);
-                    j.userData.nextHuntStrikeAt = 0;
-                    p.hp = p.maxHp || 100;
-                    p.respawnGraceUntil = 0;
-                    s.playerVel.setValue(0, s.playerVel.y(), 0);
-                    const biss = r._tickCreatureHuntStrike(j) === true;
-                    spieler[seele] = { biss, dv: Math.hypot(s.playerVel.x(), s.playerVel.z()) };
-                    s.playerVel.setValue(0, s.playerVel.y(), 0);
-                    r.removeCreature(j);
+                return stossNach;
+            };
+            try {
+                for (const seele of ["fuchs", "wolf", "baer"]) {
+                    s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 3);
+                    const bx = ort0.x + 400,
+                        bz = ort0.z + 400;
+                    const j = r.spawnCreatureAt(bx, ort0.y, bz, "calm", seele, { bodySize: 1 });
+                    const h = r.spawnCreatureAt(bx + 1.2, ort0.y, bz, "calm", "wesen", { bodySize: 0.6 });
+                    if (j && h) {
+                        j.position.set(bx, r.getTerrainHeightAt(bx, bz), bz);
+                        j.rotation.set(0, Math.PI / 2, 0); // dem Kitz zugewandt
+                        j.userData._steuer = null;
+                        h.position.set(bx + 1.2, r.getTerrainHeightAt(bx + 1.2, bz), bz);
+                        h.userData._stossV = null;
+                        h.userData.hp = 1e6;
+                        j.userData.nextHuntStrikeAt = 0;
+                        const ansatz = r._tickCreatureScentStrike(j) === true;
+                        const dv = ansatz
+                            ? beiss(() => {
+                                  h.position.x = bx + 1.2;
+                                  h.position.z = bz;
+                                  h.userData.fearUntil = 0;
+                              })
+                            : null;
+                        beute[seele] = { biss: dv !== null, dv: dv || 0 };
+                    }
+                    if (h) r.removeCreature(h);
+                    if (j) {
+                        // derselbe Jäger 1,2 m vor dem Spieler, ihm zugewandt
+                        j.position.set(ort0.x + 1.2, r.getTerrainHeightAt(ort0.x + 1.2, ort0.z), ort0.z);
+                        j.rotation.set(0, -Math.PI / 2, 0);
+                        j.userData._steuer = null;
+                        j.userData._stossV = null;
+                        j.userData._verhaltenAktion = null;
+                        j.userData._hopH = 0; // es steht (der Sprung am Kitz ist gelandet)
+                        j.userData._hopV = 0;
+                        j.userData.nextHuntStrikeAt = 0;
+                        p.hp = p.maxHp || 100;
+                        p.respawnGraceUntil = 0;
+                        B0.halte();
+                        s.playerVel.setValue(0, s.playerVel.y(), 0);
+                        const ansatz = r._tickCreatureHuntStrike(j) === true;
+                        const dv = ansatz ? beiss(B0.halte) : null;
+                        spieler[seele] = { biss: dv !== null, dv: dv || 0 };
+                        s.playerVel.setValue(0, s.playerVel.y(), 0);
+                        r.removeCreature(j);
+                    }
                 }
+            } finally {
+                delete r._bissStoss;
+                B0.zurueck();
+                p.hp = bissAlt.hp;
+                p.respawnGraceUntil = bissAlt.gnade;
+                if (r.getGameMode() !== bissAlt.mode) r.setGameMode(bissAlt.mode);
             }
-            p.hp = bissAlt.hp;
-            p.respawnGraceUntil = bissAlt.gnade;
-            if (r.getGameMode() !== bissAlt.mode) r.setGameMode(bissAlt.mode);
             w.z.biss = { beute, spieler };
         }
         parke(hirsch);
@@ -852,15 +938,28 @@ async function WELLE_L() {
         r.setGameMode("pfad");
         p.hp = 1e9;
         p.respawnGraceUntil = -Infinity;
+        // Die Gegenwehr ist der Ansprung (Welle LF kampf, Posten 5): nach jedem Treffer läuft der Kreatur-Takt 1 s (der Spieler
+        // steht auf dem Boden) — gezählt wird, was das Maul am Leib schnappt.
         const gegenwehrAn = (c) => {
             const g0 = zaehl.gegenwehr;
-            for (let i = 0; i < 20; i++) {
-                stelle(c, 1.6);
-                r.damageCreature(c, 5, {
-                    source: "player",
-                    fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
-                    knockback: 16,
-                });
+            const B = amBoden();
+            try {
+                for (let i = 0; i < 20; i++) {
+                    stelle(c, 1.6);
+                    r.damageCreature(c, 5, {
+                        source: "player",
+                        fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
+                        knockback: 16,
+                    });
+                    for (let k = 0; k < 60; k++) {
+                        B.halte();
+                        r.updateCreatures(1 / 60);
+                        r._kreaturStossSchritt(1 / 60);
+                        r._leibKontakte();
+                    }
+                }
+            } finally {
+                B.zurueck();
             }
             parke(c);
             return zaehl.gegenwehr - g0;
@@ -2043,6 +2142,182 @@ async function WELLE_L() {
             w.z.tod = tod;
             if (s.creatures.indexOf(hT) !== -1) r.removeCreature(hT);
         }
+        // (T23) DER BISS TRIFFT, WO DIE GESTE SCHNAPPT (Posten 5): alle drei Biss-Wege im ECHTEN Kreatur-Takt (updateCreatures,
+        // 1/60 s) — ein Wolf jagt den stehenden Spieler (6 m vor ihm), ein Wolf beißt ein Kitz 1,5 m vor seiner Schnauze (der
+        // Beute-Biss, _tickCreatureScentStrike), ein Bär wehrt sich gegen Hiebe aus 1,6 m (die Gegenwehr). Gemessen im Biss-Takt
+        // (damagePlayer / damageCreature): die Geste des Beißers (seine laufende Aktion) und der Spalt zwischen seinem KOPF
+        // (die Treffer-Glieder der Zone kopf, die Gestalt) und dem Leib des Gebissenen (die Kapsel des Spielers / die Glieder
+        // des Tiers), dazu der Abstand der Mitten. Befund K-D13: 12 Bisse am stehenden Spieler, 9 ohne Geste, aus 1,36–2,39 m XZ.
+        {
+            const kopfKapseln = (c) => {
+                c.updateMatrixWorld(true);
+                return (r._kreaturTrefferGlieder(c) || [])
+                    .filter((g) => g.zone === "kopf")
+                    .map((g) => ({
+                        a: g.a.clone().applyMatrix4(g.anker.matrixWorld),
+                        b: g.b.clone().applyMatrix4(g.anker.matrixWorld),
+                        r: g.r * g.anker.matrixWorld.getMaxScaleOnAxis(),
+                    }));
+            };
+            const abst = (a, b, c2, d) =>
+                Math.sqrt(r._segSegDistSq(a.x, a.y, a.z, b.x, b.y, b.z, c2.x, c2.y, c2.z, d.x, d.y, d.z));
+            const spaltSpieler = (c) => {
+                // die Achse der Spieler-Kapsel zwischen ihren Kappen (Fuß + Radius … Saum − Radius)
+                const rK = A.PLAYER_WALL_RADIUS;
+                const P0 = V3().set(pm.position.x, pm.position.y - A.PLAYER_FOOT_OFFSET + rK, pm.position.z);
+                const P1 = V3().set(
+                    pm.position.x,
+                    pm.position.y + A.PLAYER_FOOT_OFFSET + A.PLAYER_STEP_UP - rK,
+                    pm.position.z
+                );
+                let m = Infinity;
+                for (const k of kopfKapseln(c)) m = Math.min(m, abst(k.a, k.b, P0, P1) - k.r - A.PLAYER_WALL_RADIUS);
+                return m;
+            };
+            const spaltTier = (c, z) => {
+                const K = kopfKapseln(c);
+                z.updateMatrixWorld(true);
+                let m = Infinity;
+                for (const g of r._kreaturTrefferGlieder(z) || []) {
+                    const pa = g.a.clone().applyMatrix4(g.anker.matrixWorld);
+                    const pb = g.b.clone().applyMatrix4(g.anker.matrixWorld);
+                    const rg = g.r * g.anker.matrixWorld.getMaxScaleOnAxis();
+                    for (const k of K) m = Math.min(m, abst(k.a, k.b, pa, pb) - k.r - rg);
+                }
+                return m;
+            };
+            const geste = (c) => {
+                const a = c.userData._verhaltenAktion;
+                return a && s.creatureAnimationTime < a.bis ? a.name : "keine";
+            };
+            const xz = (a, b) => +Math.hypot(a.position.x - b.position.x, a.position.z - b.position.z).toFixed(2);
+            const neu = (seele, x, z, L) => {
+                s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4);
+                const c = r.spawnCreatureAt(x, pm.position.y, z, "calm", seele, { bodySize: L });
+                if (!c) return null;
+                tiere.push(c);
+                c.position.set(x, fussY(), z);
+                c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+                c.userData.fearUntil = 0;
+                c.userData.hp = 1e6;
+                c.updateMatrixWorld(true);
+                return c;
+            };
+            const bisse = { jagd: [], beute: [], gegenwehr: [] };
+            const mitBiss = { spieler: null, tier: null, kitz: null };
+            const dpGate = r.damagePlayer;
+            const dcGate = r.damageCreature;
+            r.damagePlayer = function (amount, source) {
+                const c = mitBiss.spieler;
+                if (c && (source === "jagd" || source === "gegenwehr"))
+                    bisse[source].push({ geste: geste(c), spalt: +spaltSpieler(c).toFixed(3), xz: xz(c, pm) });
+                return dpGate.call(this, amount, source);
+            };
+            r.damageCreature = function (c2, amount, opts) {
+                const j = mitBiss.tier;
+                if (j && c2 === mitBiss.kitz && opts && opts.source === "jagd")
+                    bisse.beute.push({ geste: geste(j), spalt: +spaltTier(j, c2).toFixed(3), xz: xz(j, c2) });
+                return dcGate.call(this, c2, amount, opts);
+            };
+            const savedT23 = {
+                mode: r.getGameMode(),
+                hp: p.hp,
+                gnade: p.respawnGraceUntil,
+                ort: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
+            };
+            // der Spieler steht auf dem Boden (seine Füße auf der Höhe, auf der auch die Tiere stehen)
+            const P = {
+                x: pm.position.x,
+                y: r.getTerrainHeightAt(pm.position.x, pm.position.z) + A.PLAYER_FOOT_OFFSET,
+                z: pm.position.z,
+            };
+            const halte = () => {
+                pm.position.set(P.x, P.y, P.z);
+                s.playerVel.setValue(0, s.playerVel.y(), 0);
+                p.hp = 1e9;
+                p.respawnGraceUntil = -Infinity;
+            };
+            // der Takt des Spiels: der Kreatur-Takt, dann der feste Sim-Schritt der Leiber (der getragene Stoß, Leib an Leib)
+            const tickT23 = () => {
+                halte();
+                r.updateCreatures(1 / 60);
+                r._kreaturStossSchritt(1 / 60);
+                r._leibKontakte();
+            };
+            try {
+                r.setGameMode("pfad");
+                for (const c of tiere) if (c.parent) parke(c);
+                // (a) die Jagd auf den stehenden Spieler
+                const wolf = neu("wolf", P.x + 0.4, P.z + 6, 1);
+                if (wolf) {
+                    wolf.rotation.set(0, Math.PI, 0);
+                    mitBiss.spieler = wolf;
+                    for (let k = 0; k < 1500 && bisse.jagd.length < 3; k++) tickT23();
+                    mitBiss.spieler = null;
+                    r.removeCreature(wolf);
+                }
+                // (b) der Beute-Biss: ein Wolf, das Kitz 1,5 m vor ihm (40 m vom Spieler — er jagt das Kitz, nicht ihn)
+                const jaeger = neu("wolf", P.x + 40, P.z + 40, 1);
+                const kitz = neu("wesen", P.x + 40, P.z + 41.5, 0.6);
+                if (jaeger && kitz) {
+                    jaeger.rotation.set(0, 0, 0);
+                    kitz.rotation.set(0, Math.PI / 2, 0);
+                    mitBiss.tier = jaeger;
+                    mitBiss.kitz = kitz;
+                    const K0 = { x: kitz.position.x, y: kitz.position.y, z: kitz.position.z };
+                    const J0 = { x: jaeger.position.x, y: jaeger.position.y, z: jaeger.position.z };
+                    // je Versuch: der Wolf steht wieder 1,5 m vor dem Kitz (ruhend, ihm zugewandt), seine Biss-Uhr ist frei;
+                    // der Takt läuft, bis der Ansprung endet (das Kitz hält still)
+                    for (let a = 0; a < 6 && bisse.beute.length < 2; a++) {
+                        jaeger.position.set(J0.x, J0.y, J0.z);
+                        jaeger.rotation.set(0, 0, 0);
+                        jaeger.userData._steuer = null;
+                        jaeger.userData._stossV = null;
+                        jaeger.userData.nextHuntStrikeAt = 0;
+                        jaeger.userData._verhaltenAktion = null;
+                        jaeger.userData._hopH = 0;
+                        jaeger.userData._hopV = 0;
+                        for (let k = 0; k < 90; k++) {
+                            kitz.position.set(K0.x, kitz.position.y, K0.z);
+                            kitz.userData._stossV = null;
+                            kitz.userData.hp = 1e6;
+                            kitz.userData.fearUntil = 0;
+                            if (k === 0) r._tickCreatureScentStrike(jaeger);
+                            tickT23();
+                        }
+                    }
+                    mitBiss.tier = null;
+                }
+                if (jaeger) r.removeCreature(jaeger);
+                if (kitz) r.removeCreature(kitz);
+                // (c) die Gegenwehr: ein Bär wird aus 1,6 m geschlagen (Breitseite, wie T5), dann läuft der Takt 1 s
+                const baer = neu("baer", P.x, P.z + 1.6, 1);
+                if (baer) {
+                    mitBiss.spieler = baer;
+                    for (let h = 0; h < 30 && bisse.gegenwehr.length < 2; h++) {
+                        stelle(baer, 1.6);
+                        baer.userData._stossV = null;
+                        dcGate.call(r, baer, 5, {
+                            source: "player",
+                            fromPos: { x: P.x, y: P.y, z: P.z },
+                            knockback: 16,
+                        });
+                        for (let k = 0; k < 60; k++) tickT23();
+                    }
+                    mitBiss.spieler = null;
+                    r.removeCreature(baer);
+                }
+            } finally {
+                r.damagePlayer = dpGate;
+                r.damageCreature = dcGate;
+                halte();
+                pm.position.set(savedT23.ort.x, savedT23.ort.y, savedT23.ort.z);
+                p.hp = savedT23.hp;
+                p.respawnGraceUntil = savedT23.gnade;
+                if (r.getGameMode() !== savedT23.mode) r.setGameMode(savedT23.mode);
+            }
+            w.z.bissGeste = bisse;
+        }
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
@@ -3055,6 +3330,29 @@ async function WELLE_L() {
         check(
             tvGut.length === 0 && ["tod-flanke", "tod-leichnam"].every((t) => tvAlt.some((x) => x.startsWith(t))),
             "Selbst-Test T22: der Befund (auf dem Hinterteil, nach 22 Takten fort) nennt Flanke und Leichnam; ein Tier auf der Flanke bleibt grün"
+        );
+        const bgz = z.bissGeste || {};
+        const bgZeile = (L) =>
+            (L || []).map((b) => `${b.geste} Spalt ${b.spalt.toFixed(2)} m / Mitten ${b.xz} m`).join(" · ") || "–";
+        console.log(
+            `  (T23) Biss — Jagd: ${bgZeile(bgz.jagd)}\n         Beute: ${bgZeile(bgz.beute)}\n         Gegenwehr: ${bgZeile(bgz.gegenwehr)}`
+        );
+        const bgv = bissGesteVerdict(z.bissGeste);
+        check(
+            bgv.length === 0,
+            "LF Posten 5: der Biss trifft, wo die Geste schnappt — auf jedem Biss-Weg im Ansprung und mit dem Kopf am Leib" +
+                (bgv.length ? " — " + bgv.join(" · ") : "")
+        );
+        const befundBiss = [
+            { geste: "keine", spalt: 1.02, xz: 2.39 },
+            { geste: "pounce", spalt: 0.61, xz: 1.36 },
+        ];
+        const bgvAlt = bissGesteVerdict({ jagd: befundBiss, beute: befundBiss, gegenwehr: [] });
+        const gutBiss = [{ geste: "pounce", spalt: -0.01, xz: 1.1 }];
+        const bgvGut = bissGesteVerdict({ jagd: gutBiss, beute: gutBiss, gegenwehr: gutBiss });
+        check(
+            bgvGut.length === 0 && ["biss-geste", "biss-ferne", "biss-weg"].every((t) => bgvAlt.some((x) => x.startsWith(t))),
+            "Selbst-Test T23: der Befund (Biss ohne Geste, aus 2,39 m, ein Weg ohne Biss) nennt Geste, Ferne und Weg; ein Biss im Ansprung am Leib bleibt grün"
         );
         check(
             c.bogenVerschleiss,

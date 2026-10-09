@@ -561,6 +561,11 @@ const FORBIDDEN = [
     { token: "scentProbeM", fiel: "Welle LF rudel — die Witterung wählt die Beute an der Nase", auch: ["tetrapoda-core.js"] },
     { token: "this._scentAt(cx + probeStep", fiel: "Welle LF rudel — kein Gradient der Witterung" },
     { token: "fleeSpeedBoost", fiel: "Welle LF rudel — die Flucht ist der Sprint der Gestalt", auch: ["tetrapoda-core.js"] },
+    // WELLE LF KAMPF (Vertrags-Akt 09.10., der Biss ist der Ansprung): die Biss-Reichweite um die Mitten (2,4 m, jede Gestalt)
+    // und der feste Pirsch-Stopp (1,6 m) kehren nicht zurück — die Reichweite ist der Weg des Ansprungs, gebissen wird, wo der
+    // Kopf den Leib berührt.
+    { token: "strikeRange", fiel: "Welle LF kampf — der Biss ist der Ansprung (_kreaturBissReich)", auch: ["tetrapoda-core.js"] },
+    { token: "pirschStoppM", fiel: "Welle LF kampf — die Hetze hält in der Weite des Ansprungs", auch: ["tetrapoda-core.js"] },
     // WELLE LF RUDEL (Leben-Schau 07.10., D11/D1-Rest): das Fuß-Ziel in der Ebene des Leibs (das Ziel im Gruppen-Raum,
     // per Rumpf-Quaternion zurückgedreht — am Querhang kippten die Beine mit dem Leib) kehrt nicht zurück.
     { token: "_gangQ", fiel: "Welle LF rudel — das Fuß-Ziel liegt in der Welt (Pfoten-IK _animateTierBaum)" },

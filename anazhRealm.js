@@ -18211,13 +18211,23 @@ class AnazhRealm {
             }
             if (Number.isFinite(d.kopfSweep)) sweepY = Math.sin(nowS * 1.3) * d.kopfSweep * fadeMul;
         }
+        // DIE HALTUNG DES BISSES (Welle LF kampf, Posten 5): im Ansprung neigen sich Rumpf und Kopf auf den Leib des Ziels
+        // (VA.rumpfZiel · VA.kopfZiel, _kreaturBissKopf) — mit der Folge-Rate der Glieder (ihr Boden 18/s, legA); endet der
+        // Ansprung, löst sich die Haltung ebenso.
+        {
+            const BZ = VA && VA.bissAkt ? VA : null;
+            const haltA = dt > 0 ? 1 - Math.exp(-18 * dt) : 1;
+            g.bissRumpf = (g.bissRumpf || 0) + (((BZ && BZ.rumpfZiel) || 0) - (g.bissRumpf || 0)) * haltA;
+            g.bissKopf = (g.bissKopf || 0) + (((BZ && BZ.kopfZiel) || 0) - (g.bissKopf || 0)) * haltA;
+        }
         if (T.wolf) {
             T.wolf.rotation.z = roll;
             // bodyX-Konsum: die Rumpf-Neigung der Profile (hunt duckt, playbow verbeugt); der Hang-Pitch lebt
             // getrennt am Kreatur-ROOT (creature.rotation.x). bob (Galopp-Federn, Lab: spineX·bob·sin(ph·2))
             // wird auf wolf.rotation.x verdichtet.
             const bob = (Number(P.bob) || 0) * fadeMul;
-            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul + Math.sin(g.ph[0] * 2) * bob * g.schritt;
+            T.wolf.rotation.x =
+                (Number(P.bodyX) || 0) * fadeMul + Math.sin(g.ph[0] * 2) * bob * g.schritt + g.bissRumpf;
             T.wolf.rotation.y = drehY;
         }
         // PD-Kanäle aus dem MOTION-Preset: tension → Stand-Unruhe + Rumpf-Plant-Pitch; kpMul → einpolige
@@ -18515,7 +18525,8 @@ class AnazhRealm {
         }
         g.legInit = true;
         if (T.headGroup) {
-            T.headGroup.rotation.x = ((Number(P.headX) || 0) + 0.04 * Math.sin(t * 1.7)) * fadeMul;
+            // im Ansprung eines Bisses zielt der Kopf auf den Leib des Ziels (die Haltung des Bisses, g.bissKopf)
+            T.headGroup.rotation.x = ((Number(P.headX) || 0) + 0.04 * Math.sin(t * 1.7)) * fadeMul + g.bissKopf;
             // KREATUR-LEBEN — das Scan-Pendel (kopfSweep); ohne Aktion 0 = byte-alt.
             // V18.491.80 — headY aus MOTION-Preset (Lab-Yaw) + Sweep additiv.
             T.headGroup.rotation.y = sweepY + (Number(P.headY) || 0) * fadeMul;
@@ -19019,6 +19030,9 @@ class AnazhRealm {
     _tickKreaturVerhalten(creature, i, nowS) {
         const ud = creature.userData;
         if (!ud) return;
+        // der Ansprung eines Bisses (_kreaturBissAnsatz) spielt zu Ende — auch in Hetze und Flucht
+        const AB = ud._verhaltenAktion;
+        if (AB && AB.bissAkt && nowS < AB.bis) return;
         const z = ud._motionZustand;
         if (z === "flucht" || z === "schwimmen" || z === "hetzen") {
             ud._verhaltenAktion = null;
@@ -19503,19 +19517,19 @@ class AnazhRealm {
         if (opts.fromPos && typeof this.getGameMode === "function" && this.getGameMode() === "pfad") {
             const chaos = (creature.userData.emotions && creature.userData.emotions.chaos) || 0;
             const strikeChance = Math.min(tProf.strikeCap, tProf.strike + chaos * tProf.strikeChaos);
-            const pmPos = this.state.playerMesh && this.state.playerMesh.position;
-            // SPIEGEL-ZENSUS — die Gegenwehr schlägt mit der EINEN Biss-Reichweite
-            // (VERHALTEN.jagd.strikeRange 2.4; das nackte 4 fiel — zwei Reichweiten-
-            // Wahrheiten wurden eine, bewusster Wert-Entscheid der Zensus-Zeile).
-            if (
-                strikeChance > 0 &&
-                pmPos &&
-                Math.hypot(pmPos.x - creature.position.x, pmPos.z - creature.position.z) < VG.jagd.strikeRange &&
-                this._faunaRng()() < strikeChance // der Wurf aus dem Fauna-Strom (Γ5), nie Math.random
-            ) {
-                const counter = Math.max(2, (stats.damage || 4) * tProf.counterMul);
-                if (this.damagePlayer(counter, "gegenwehr")) this._bissStoss(creature, null);
-                this.log(`${creature.userData.name || "Ein Wesen"} wehrt sich!`, "INFO");
+            // DIE GEGENWEHR IST DER EINE BISS (Welle LF kampf, Posten 5): erreicht das Maul den Spieler (_kreaturBissRadial ≤
+            // _kreaturBissReich — die EINE Biss-Reichweite, die Reichweite des Ansprungs) und fällt der Wurf aus dem
+            // Fauna-Strom (Γ5, nie Math.random), springt das Tier an (_kreaturBissAnsatz); gebissen wird im Schnappen, wenn
+            // der Kopf den Leib berührt. Vorher biss es sofort aus jagd.strikeRange 2,4 m um die Mitten, ohne Geste.
+            if (strikeChance > 0 && this.state.playerMesh) {
+                const spalt = this._kreaturBissRadial(creature, null);
+                if (spalt !== null && spalt <= this._kreaturBissReich(creature) && this._faunaRng()() < strikeChance)
+                    this._kreaturBissAnsatz(
+                        creature,
+                        null,
+                        "gegenwehr",
+                        Math.max(2, (stats.damage || 4) * tProf.counterMul)
+                    );
             }
         }
         // DER RÜCKSTOSS (das EINE Impuls-Gesetz, AnazhRealm.STOSS — 0710-2, K-D9), nur wenn der Angreifer Ort und Stoß
@@ -20680,7 +20694,7 @@ class AnazhRealm {
     // vom Jäger fort, schneller als ein Schritt), hetzt der Jäger schon aus drei Ringen. Vorher pirschte jeder Jäger einzeln
     // im Schritt-Tempo geradewegs auf das Ziel (Leben-Schau 07.10.: drei Wölfe von einer Seite, größte Lücke 239–288°; der
     // Sprinter entkam immer).
-    _kreaturJagdZug(creature, tx, tz, zielKey, direction, speed, hueftL, vx = 0, vz = 0) {
+    _kreaturJagdZug(creature, tx, tz, zielKey, direction, speed, hueftL, vx = 0, vz = 0, ziel = null) {
         const J = AnazhRealm._verhaltenGesetz().jagd;
         const ud = creature.userData;
         const p = creature.position;
@@ -20739,7 +20753,14 @@ class AnazhRealm {
             const K = AnazhRealm._steuerGesetz();
             const fort = d > 1e-6 ? Math.max(0, (vx * dx + vz * dz) / d) : 0;
             const sprint = K.sprintTempo(hueftL);
-            const vh = d > J.pirschStoppM ? Math.min(sprint, K.ankunftTempo(d - J.pirschStoppM, sprint) + fort) : 0;
+            // DIE HETZE HÄLT IN DER WEITE DES ANSPRUNGS (Welle LF kampf, Posten 5): der Rest ist der Spalt vor dem Maul
+            // (_kreaturBissRadial, die Gestalt des Jägers am Leib des Ziels) weniger dem halben Weg des Ansprungs
+            // (_kreaturBissReich) — der Jäger steht, wo sein Sprung den Leib sicher erreicht, und drängt sich nicht an ihn.
+            // Vorher hielt sie bei jagd.pirschStoppM 1,6 m um die Mitten, für jede Gestalt (ein kleiner Fuchs stand dort, wo
+            // sein Ansprung den Spieler nie erreichte).
+            const spalt = this._kreaturBissRadial(creature, ziel);
+            const rest = spalt === null ? d : spalt - this._kreaturBissReich(creature) / 2;
+            const vh = rest > 0 ? Math.min(sprint, K.ankunftTempo(rest, sprint) + fort) : 0;
             if (d > 1e-6) direction.set((dx / d) * vh, 0, (dz / d) * vh);
             else direction.set(0, 0, 0);
             return;
@@ -21082,7 +21103,7 @@ class AnazhRealm {
         if (!(d > 1e-6)) return null;
         const mB = this._leibMasse(beisser) * BG.masseAnteil;
         const mZ = this._leibMasse(zk);
-        const v = BG.tempo * AnazhRealm._steuerGesetz().tempoEinheit(this._kreaturHueftL(beisser));
+        const v = this._kreaturBissTempo(beisser);
         const J = AnazhRealm._stossImpuls(mB, mZ, v, AnazhRealm.STOSS.stossZahl.leib);
         if (!(J > 0)) return null;
         if (spieler) this._spielerStoss(dx / d, dz / d, J / mZ);
@@ -21143,6 +21164,21 @@ class AnazhRealm {
         return J;
     }
 
+    // DER LEIB DES SPIELERS unter den Leibern (Welle LF): seine Wand-Kapsel — die Mitte (x, z), der Radius PLAYER_WALL_RADIUS,
+    // vom Fuß (y0) bis über den Stufen-Saum (y1). Ihn lesen der Kontakt Leib an Leib (_leibKontakte) und der Biss
+    // (_kreaturBissRadial, _kreaturBissKontakt) — EINE Gestalt des Spielers, an die ein Tier stößt und die es beißt.
+    _spielerKapsel(out) {
+        const pm = this.state.playerMesh;
+        const fd = AnazhRealm.PLAYER_FOOT_OFFSET;
+        const o = out || {};
+        o.x = pm.position.x;
+        o.z = pm.position.z;
+        o.r = AnazhRealm.PLAYER_WALL_RADIUS;
+        o.y0 = pm.position.y - fd;
+        o.y1 = pm.position.y + fd + AnazhRealm.PLAYER_STEP_UP;
+        return o;
+    }
+
     // LEIB AN LEIB (das EINE Impuls-Gesetz, 0710-4): je Paar naher Leiber — Tier an Tier, Tier am Spieler zu Fuß — ihre
     // Achsen (das Tier: die Strecke −halb … +halb längs seiner Gier mit seinem Radius, `_kreaturLeib`; der Spieler: seine
     // Kapsel r PLAYER_WALL_RADIUS) als Strecke gegen Strecke. Durchdringen sie sich, trennt der Kontakt sie nach ihren Massen
@@ -21178,15 +21214,15 @@ class AnazhRealm {
         const zuFuss = pm && pm.position && !(st.player && st.player.mountedArch != null);
         if (zuFuss) {
             const t = teil(n++);
-            const fd = AnazhRealm.PLAYER_FOOT_OFFSET;
+            const K = this._spielerKapsel(this._leibKapsel || (this._leibKapsel = {}));
             t.q = pm;
-            t.x = pm.position.x;
-            t.z = pm.position.z;
+            t.x = K.x;
+            t.z = K.z;
             t.hx = 0;
             t.hz = 0;
-            t.r = AnazhRealm.PLAYER_WALL_RADIUS;
-            t.y0 = pm.position.y - fd;
-            t.y1 = pm.position.y + fd + AnazhRealm.PLAYER_STEP_UP;
+            t.r = K.r;
+            t.y0 = K.y0;
+            t.y1 = K.y1;
             t.reich = t.r;
         }
         if (n < 2) return;
@@ -21521,68 +21557,114 @@ class AnazhRealm {
         }
     }
 
-    // V18.210 (§1-A3) — der BISS auf eine BEUTE-KREATUR (analog _tickCreatureHuntStrike,
-    // aber Ziel ist eine ANDERE Kreatur statt des Spielers). Modus-Gate
-    // identisch (pfad-only); Cooldown identisch.
+    // DER BISS AUF EINE BEUTE (V18.210 §1-A3, die Jagd auf Tiere): unter allen Tieren, die Beute sind (_kreaturIstBeute),
+    // das, dessen Leib das Maul am nächsten erreicht — es setzt den EINEN Biss an (_kreaturBissAnsatz). Der Biss-Takt läuft
+    // auf der Kreatur-Uhr (Welle LF, Q1).
     _tickCreatureScentStrike(creature) {
         const HUNT = AnazhRealm._verhaltenGesetz().jagd;
-        // der Biss-Takt läuft auf der Kreatur-Uhr (Welle LF, Q1: was den Körper bewegt, läuft im Takt)
-        const now = this.state.creatureAnimationTime;
         const ud = creature.userData || {};
-        if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
-        // Beute in Strike-Range finden (Bestes Ziel = nächstes nicht-wildes Wesen).
+        if (Number.isFinite(ud.nextHuntStrikeAt) && this.state.creatureAnimationTime < ud.nextHuntStrikeAt)
+            return false;
+        const maul = this._kreaturMaul(creature, this._bissMaulBeute || (this._bissMaulBeute = {}));
+        if (!maul) return false;
         let nearest = null;
-        let nearestDist = HUNT.strikeRange;
+        let nearestSpalt = this._kreaturBissReich(creature);
         const creatures = this.state.creatures || [];
         for (let i = 0; i < creatures.length; i++) {
             const other = creatures[i];
             if (!this._kreaturIstBeute(creature, other)) continue;
-            const dx = other.position.x - creature.position.x;
-            const dz = other.position.z - creature.position.z;
-            const dist = Math.hypot(dx, dz);
-            if (dist < nearestDist) {
-                nearestDist = dist;
+            const spalt = this._kreaturBissRadial(creature, other, maul);
+            if (spalt <= nearestSpalt) {
+                nearestSpalt = spalt;
                 nearest = other;
             }
         }
         if (!nearest) return false;
+        // Der Biss-TAKT konsumiert das tag-emergente attackSpeed-Profil (leicht+flink beißt schneller) — das Gegenstück zur
+        // √I-Schwungdauer des Spielers (im Ansatz).
         const stats = this.computeCreatureStats(creature).stats || {};
-        // Der Biss-TAKT konsumiert das tag-emergente attackSpeed-Profil (leicht+flink beißt schneller) —
-        // das Gegenstück zur √I-Schwungdauer des Spielers.
+        return this._kreaturBissAnsatz(creature, nearest, "jagd", Math.max(2, (stats.damage || 4) * HUNT.damageMul));
+    }
+
+    // DER BISS AUF DEN SPIELER (die Jagd): erreicht das Maul ihn, setzt das Tier den EINEN Biss an (_kreaturBissAnsatz); der
+    // Schaden geht beim Schnappen durch DASSELBE damagePlayer-Tor wie die Gegenwehr (Quelle "jagd").
+    _tickCreatureHuntStrike(creature) {
+        const HUNT = AnazhRealm._verhaltenGesetz().jagd;
+        const stats = this.computeCreatureStats(creature).stats || {};
+        return this._kreaturBissAnsatz(creature, null, "jagd", Math.max(2, (stats.damage || 4) * HUNT.damageMul));
+    }
+
+    // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5 — K-D13): EIN Akt für alle drei Biss-Wege (Jagd auf den Spieler,
+    // Jagd auf Beute, Gegenwehr). Der ANSATZ: erreicht das Maul das Ziel (_kreaturBissRadial ≤ _kreaturBissReich — so weit
+    // trägt der Ansprung den Kopf) und ist die Biss-Uhr frei, springt das Tier an — die Geste ist die Aktion pounce des
+    // tetrapoda-Gesetzbuchs (_bissGesetz().geste), ihr Hüpfer das EINE Sprung-Gesetz, ihr Ansprung der Wunsch auf das Ziel
+    // (updateCreatures). Gebissen wird im SCHNAPPEN (_kreaturBissTakt): wenn der Kopf den Leib berührt, nie aus der Ferne;
+    // endet die Geste ohne Berührung, schnappt das Maul ins Leere. Vorher biss jedes Tier aus jagd.strikeRange 2,4 m um die
+    // Mitten, ohne Geste (Leben-Schau 07.10.: 9 von 12 Bissen ohne Geste, aus 1,36–2,39 m XZ). `ziel` = ein Tier oder null
+    // (der Spieler), `quelle` "jagd" | "gegenwehr", `dmg` der Schaden. Rückgabe: true, wenn der Ansprung beginnt.
+    _kreaturBissAnsatz(creature, ziel, quelle, dmg) {
+        const ud = creature && creature.userData;
+        if (!ud || ud.dying) return false;
+        const now = this.state.creatureAnimationTime;
+        const A0 = ud._verhaltenAktion;
+        if (A0 && A0.bissAkt && now < A0.bis) return false; // ein Ansprung läuft
+        if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
+        const spalt = this._kreaturBissRadial(creature, ziel);
+        if (spalt === null || spalt > this._kreaturBissReich(creature)) return false;
+        const HUNT = AnazhRealm._verhaltenGesetz().jagd;
+        const def = AnazhRealm._bissGesetz().geste;
+        const stats = this.computeCreatureStats(creature).stats || {};
         ud.nextHuntStrikeAt =
             now + HUNT.strikeCooldownSec / Math.max(0.25, Number.isFinite(stats.attackSpeed) ? stats.attackSpeed : 1);
         ud.lastHuntAt = now;
-        const dmg = Math.max(2, (stats.damage || 4) * HUNT.damageMul);
-        if (typeof this.damageCreature === "function") {
-            const res = this.damageCreature(nearest, dmg, { source: "jagd" });
-            if (res && res.ok && !res.killed) this._bissStoss(creature, nearest);
-        }
+        ud._verhaltenAktion = {
+            name: "pounce",
+            def,
+            start: now,
+            bis: now + this._kreaturSprungZeit(creature),
+            bissAkt: true,
+            biss: { ziel: ziel || null, quelle, dmg },
+        };
+        if (def.hop === true) this.creatureJump(creature);
         this._feelCreatureAction(creature, "attack", 1);
         return true;
     }
 
-    // BISS: in Reichweite + Cooldown vorbei → Schaden durch DASSELBE damagePlayer-Tor wie die Gegenwehr
-    // (Quelle "jagd"). Das Wesen fühlt den Angriff (chaos, ACTION_TO_EMOTION); die erste Jagd eines
-    // Wesens wird Journal-Erinnerung (Bedrohung LESBAR, kein Schaden aus dem Nichts).
-    _tickCreatureHuntStrike(creature) {
-        const HUNT = AnazhRealm._verhaltenGesetz().jagd;
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
-        if (!pm) return false;
-        const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
-        if (dist > HUNT.strikeRange) return false;
-        const ud = creature.userData || {};
-        const now = this.state.creatureAnimationTime; // der Biss-Takt auf der Kreatur-Uhr (Welle LF)
-        if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
-        const stats = this.computeCreatureStats(creature).stats || {};
-        // ZENSUS-REST V18.488 — derselbe attackSpeed-Biss-Takt wie die
-        // Kreatur-vs-Kreatur-Jagd (EINE Regel, beide Chokepoints).
-        ud.nextHuntStrikeAt =
-            now + HUNT.strikeCooldownSec / Math.max(0.25, Number.isFinite(stats.attackSpeed) ? stats.attackSpeed : 1);
-        ud.lastHuntAt = now;
-        const dmg = Math.max(2, (stats.damage || 4) * HUNT.damageMul);
-        if (this.damagePlayer(dmg, "jagd")) this._bissStoss(creature, null);
-        this._feelCreatureAction(creature, "attack", 1);
+    // DAS SCHNAPPEN (je Kreatur-Takt, solange ein Ansprung offen ist — nach der Lage und der Pose des Takts): berührt der Kopf
+    // den Leib des Ziels (_kreaturBissKontakt), beißt das Tier EINMAL — der Schaden durch das Tor des Ziels (damagePlayer /
+    // damageCreature), der Stoß durch das EINE Impuls-Gesetz (_bissStoss). Ein Ziel, das stirbt oder fort ist, und das Ende der
+    // Geste schließen den Biss ohne Schaden.
+    _kreaturBissTakt(creature) {
+        const ud = creature.userData;
+        const A0 = ud && ud._verhaltenAktion;
+        const B = A0 && A0.biss;
+        if (!B) return;
+        const ziel = B.ziel;
+        if (
+            ud.dying ||
+            this.state.creatureAnimationTime >= A0.bis ||
+            (ziel && (!ziel.userData || ziel.userData.dying || (this.state.creatures || []).indexOf(ziel) === -1))
+        ) {
+            A0.biss = null; // ins Leere
+            return;
+        }
+        if (!this._kreaturBissKontakt(creature, ziel)) {
+            const m = this._kreaturMaul(creature, this._bissMaulKon || (this._bissMaulKon = {}));
+            if (m) this._kreaturBissKopf(creature, A0, m, ziel);
+            return;
+        }
+        A0.biss = null; // der Biss schnappt — EINMAL je Ansprung
+        if (ziel) {
+            const res = this.damageCreature(ziel, B.dmg, { source: B.quelle });
+            if (res && res.ok && !res.killed) this._bissStoss(creature, ziel);
+            return;
+        }
+        if (this.damagePlayer(B.dmg, B.quelle)) this._bissStoss(creature, null);
         const name = ud.name || "Ein wildes Wesen";
+        if (B.quelle === "gegenwehr") {
+            this.log(`${name} wehrt sich!`, "INFO");
+            return;
+        }
         this.log(`${name} jagt dich!`, "WARN");
         if (typeof this.journalAppendOnce === "function") {
             this.journalAppendOnce(
@@ -21591,7 +21673,174 @@ class AnazhRealm {
                 `${name} witterte dich als Beute — die Wildnis hat Zähne.`
             );
         }
-        return true;
+    }
+
+    // DAS MAUL (Posten 5): der Kopf der Gestalt — die Treffer-Glieder der Zone kopf (tetrapoda trefferZone) in der laufenden
+    // Pose, dieselbe Gestalt, die die Klinge trifft. `out` = die Kopf-Kapsel in der Welt (a, b, r) und vorM: wie weit ihre
+    // Spitze waagrecht um die Mitte des Leibs reicht (das Maul, wenn das Tier sich dem Ziel zuwendet). null = keine Gestalt —
+    // ein Leib ohne Kopf beißt nicht.
+    _kreaturMaul(creature, out) {
+        const gl = this._kreaturTrefferGlieder(creature);
+        if (!gl) return null;
+        const v = this._maulVek || (this._maulVek = [new THREE.Vector3(), new THREE.Vector3()]);
+        const cx = creature.position.x,
+            cz = creature.position.z;
+        const o = out || {};
+        let best = -Infinity;
+        for (const g of gl) {
+            if (g.zone !== "kopf") continue;
+            g.anker.updateWorldMatrix(true, false);
+            const pa = v[0].copy(g.a).applyMatrix4(g.anker.matrixWorld);
+            const pb = v[1].copy(g.b).applyMatrix4(g.anker.matrixWorld);
+            const rg = g.r * g.anker.matrixWorld.getMaxScaleOnAxis();
+            const spanne = Math.max(Math.hypot(pa.x - cx, pa.z - cz), Math.hypot(pb.x - cx, pb.z - cz)) + rg;
+            if (spanne <= best) continue;
+            best = spanne;
+            o.ax = pa.x;
+            o.ay = pa.y;
+            o.az = pa.z;
+            o.bx = pb.x;
+            o.by = pb.y;
+            o.bz = pb.z;
+            o.r = rg;
+            o.vorM = spanne;
+        }
+        return best > -Infinity ? o : null;
+    }
+
+    // DAS TEMPO DES ANSPRUNGS (m/s): pounce.tempo × die Tempo-Einheit der Hüft-Höhe — dasselbe Tempo, mit dem der Biss stößt
+    // (_bissStoss). DIE REICHWEITE (m): so weit trägt es den Kopf, solange der Ansprung dauert (_kreaturSprungZeit).
+    _kreaturBissTempo(creature) {
+        return AnazhRealm._bissGesetz().tempo * AnazhRealm._steuerGesetz().tempoEinheit(this._kreaturHueftL(creature));
+    }
+    _kreaturBissReich(creature) {
+        return this._kreaturBissTempo(creature) * this._kreaturSprungZeit(creature);
+    }
+
+    // DER SPALT VOR DEM MAUL (m, waagrecht), wenn das Tier sich dem Ziel zuwendet: der Abstand seiner Mitte zum Leib des Ziels
+    // — der Spieler-Kapsel (_spielerKapsel) oder der Gestalt eines Tiers (seine Treffer-Glieder, dieselben, die das Maul
+    // berühren muss) — weniger die Spanne des Mauls (vorM). Ihn lesen der Ansatz des Bisses, der Ansprung (er schließt ihn bis
+    // zur Landung) und die Hetze, die dort hält, wo das Maul den Leib erreicht. null = kein Maul oder ein Ziel ohne Gestalt.
+    _kreaturBissRadial(creature, ziel, maul) {
+        const m = maul || this._kreaturMaul(creature, this._bissMaulRad || (this._bissMaulRad = {}));
+        if (!m) return null;
+        const cx = creature.position.x,
+            cz = creature.position.z;
+        // DIE HÖHE: höher als der Kopf plus die Höhe des Sprungs reicht kein Ansprung — liegt die Unterkante des Leibs darüber
+        // (der Spieler auf einem Sims, über einem Abhang), ist der Spalt ihr Rest nach oben
+        const kopfOben =
+            Math.max(m.ay, m.by) + m.r + (AnazhRealm._bissGesetz().geste.hop ? this._kreaturSprungHoehe(creature) : 0);
+        if (!ziel) {
+            const K = this._spielerKapsel(this._bissKapsel || (this._bissKapsel = {}));
+            return Math.max(Math.hypot(K.x - cx, K.z - cz) - m.vorM - K.r, K.y0 - kopfOben);
+        }
+        const hoch = ziel.position.y - kopfOben;
+        const gl = this._kreaturTrefferGlieder(ziel);
+        if (!gl) return null;
+        ziel.updateMatrixWorld(true);
+        const v = this._maulVek2 || (this._maulVek2 = [new THREE.Vector3(), new THREE.Vector3()]);
+        let best = Infinity;
+        for (const g of gl) {
+            const pa = v[0].copy(g.a).applyMatrix4(g.anker.matrixWorld);
+            const pb = v[1].copy(g.b).applyMatrix4(g.anker.matrixWorld);
+            const ux = pb.x - pa.x,
+                uz = pb.z - pa.z;
+            const uu = ux * ux + uz * uz;
+            const t = uu > 1e-12 ? Math.max(0, Math.min(1, ((cx - pa.x) * ux + (cz - pa.z) * uz) / uu)) : 0;
+            const d =
+                Math.hypot(cx - pa.x - ux * t, cz - pa.z - uz * t) - g.r * g.anker.matrixWorld.getMaxScaleOnAxis();
+            if (d < best) best = d;
+        }
+        return Math.max(best - m.vorM, hoch);
+    }
+
+    // DER WEG DES KOPFES (m, waagrecht, Posten 5): wie weit die Kopf-Kapsel (_kreaturMaul) noch von der Mittel-Linie des
+    // Leibs liegt — der Achse der Spieler-Kapsel, dem nächsten Treffer-Glied eines Tiers. Der Ansprung trägt den Kopf über
+    // den Leib, nicht an seinen Rand (am Rand fiele er daneben, über einem kleinen Leib fiele er darüber hinweg). null = ein
+    // Ziel ohne Gestalt.
+    _kreaturBissKopfWeg(ziel, m) {
+        let d2 = Infinity;
+        if (!ziel) {
+            const K = this._spielerKapsel(this._bissKapsel || (this._bissKapsel = {}));
+            d2 = this._segSegDistSq(m.ax, 0, m.az, m.bx, 0, m.bz, K.x, 0, K.z, K.x, 0, K.z);
+        } else {
+            const gl = this._kreaturTrefferGlieder(ziel);
+            if (!gl) return null;
+            ziel.updateMatrixWorld(true);
+            const v = this._maulVek2 || (this._maulVek2 = [new THREE.Vector3(), new THREE.Vector3()]);
+            for (const g of gl) {
+                const pa = v[0].copy(g.a).applyMatrix4(g.anker.matrixWorld);
+                const pb = v[1].copy(g.b).applyMatrix4(g.anker.matrixWorld);
+                d2 = Math.min(d2, this._segSegDistSq(m.ax, 0, m.az, m.bx, 0, m.bz, pa.x, 0, pa.z, pb.x, 0, pb.z));
+            }
+        }
+        return Math.sqrt(d2) - m.r;
+    }
+
+    // DER KOPF ZIELT (Posten 5): im Ansprung neigt das Tier den Kopf auf den Leib des Ziels — die Schnauze (vom Kopf-Gelenk zur
+    // Spitze der Kopf-Kapsel) auf den nächsten Punkt seines Leibs (die Achse der Spieler-Kapsel, das nächste Treffer-Glied). Die
+    // Neigung lebt an der Geste (`VA.kopfZiel`, rad, Nase abwärts positiv wie headX), _animateTierBaum trägt sie auf den Kopf;
+    // je Takt rückt sie um den Rest-Winkel nach (die Pose des Takts zeigt, wohin die Schnauze jetzt weist).
+    _kreaturBissKopf(creature, VA, m, ziel) {
+        const kopf = creature.userData._tierBaum && creature.userData._tierBaum.teile.headGroup;
+        if (!kopf) return;
+        const H = kopf.getWorldPosition(this._bissKopfH || (this._bissKopfH = new THREE.Vector3()));
+        // die Spitze: das Ende der Kopf-Kapsel, das weiter vom Gelenk liegt
+        const da = (m.ax - H.x) ** 2 + (m.ay - H.y) ** 2 + (m.az - H.z) ** 2;
+        const db = (m.bx - H.x) ** 2 + (m.by - H.y) ** 2 + (m.bz - H.z) ** 2;
+        const sx = db >= da ? m.bx : m.ax,
+            sy = db >= da ? m.by : m.ay,
+            sz = db >= da ? m.bz : m.az;
+        let zx, zy, zz;
+        if (!ziel) {
+            const K = this._spielerKapsel(this._bissKapsel || (this._bissKapsel = {}));
+            zx = K.x;
+            zy = Math.max(K.y0 + K.r, Math.min(K.y1 - K.r, H.y));
+            zz = K.z;
+        } else {
+            const gl = this._kreaturTrefferGlieder(ziel);
+            if (!gl) return;
+            const v = this._maulVek2 || (this._maulVek2 = [new THREE.Vector3(), new THREE.Vector3()]);
+            let bd = Infinity;
+            for (const g of gl) {
+                const pa = v[0].copy(g.a).applyMatrix4(g.anker.matrixWorld);
+                const pb = v[1].copy(g.b).applyMatrix4(g.anker.matrixWorld);
+                const d2 = this._segSegDistSq(H.x, H.y, H.z, H.x, H.y, H.z, pa.x, pa.y, pa.z, pb.x, pb.y, pb.z);
+                if (d2 >= bd) continue;
+                bd = d2;
+                const t = this._segSegST.t;
+                zx = pa.x + (pb.x - pa.x) * t;
+                zy = pa.y + (pb.y - pa.y) * t;
+                zz = pa.z + (pb.z - pa.z) * t;
+            }
+            if (!(bd < Infinity)) return;
+        }
+        const BG = AnazhRealm._bissGesetz();
+        // die Front: liegt der Punkt tiefer als das Kopf-Gelenk, senkt sich der Rumpf (um sein Gelenk), bis das Kopf-Gelenk auf
+        // seiner Höhe steht — höchstens rumpfNeigung; nie hebt er sich (ein höheres Ziel erreicht der Kopf allein)
+        const rumpf = creature.userData._tierBaum.teile.wolf;
+        if (rumpf) {
+            const R = rumpf.getWorldPosition(this._bissRumpfR || (this._bissRumpfR = new THREE.Vector3()));
+            const hebel = Math.max(0.1, Math.hypot(H.x - R.x, H.z - R.z));
+            VA.rumpfZiel = Math.max(0, Math.min(BG.rumpfNeigung, (VA.rumpfZiel || 0) + Math.atan2(H.y - zy, hebel)));
+        }
+        const ist = Math.atan2(H.y - sy, Math.hypot(sx - H.x, sz - H.z));
+        const soll = Math.atan2(H.y - zy, Math.hypot(zx - H.x, zz - H.z));
+        VA.kopfZiel = Math.max(BG.kopfNeigung[0], Math.min(BG.kopfNeigung[1], (VA.kopfZiel || 0) + soll - ist));
+    }
+
+    // DIE BERÜHRUNG: der Kopf (_kreaturMaul) am Leib des Ziels — an der Spieler-Kapsel (die Achse zwischen ihren Kappen, ihr
+    // Radius) oder an der Gestalt eines Tiers (_kreaturGliedTreffer, dieselben Glieder, die Klinge und Pfeil treffen).
+    _kreaturBissKontakt(creature, ziel) {
+        const m = this._kreaturMaul(creature, this._bissMaulKon || (this._bissMaulKon = {}));
+        if (!m) return false;
+        if (ziel) return this._kreaturGliedTreffer(ziel, m.ax, m.ay, m.az, m.bx, m.by, m.bz, m.r) !== null;
+        const K = this._spielerKapsel(this._bissKapsel || (this._bissKapsel = {}));
+        const rr = m.r + K.r;
+        return (
+            this._segSegDistSq(m.ax, m.ay, m.az, m.bx, m.by, m.bz, K.x, K.y0 + K.r, K.z, K.x, K.y1 - K.r, K.z) <=
+            rr * rr
+        );
     }
 
     // Direction-Berechnung für den aktiven Task. Liefert immer einen
@@ -22795,7 +23044,8 @@ class AnazhRealm {
                                 speed,
                                 hueftL,
                                 Math.sin(beute.rotation.y) * bv,
-                                Math.cos(beute.rotation.y) * bv
+                                Math.cos(beute.rotation.y) * bv,
+                                beute
                             );
                             this._tickCreatureScentStrike(creature);
                         } else {
@@ -22859,7 +23109,38 @@ class AnazhRealm {
             // hinaus wanderte, lag in der Ruhe-Pose und lief (95 % der Ruhe-Takte bewegt).
             {
                 const VA = udW._verhaltenAktion;
-                if (VA && VA.def && Number.isFinite(VA.def.tempo) && this.state.creatureAnimationTime < VA.bis) {
+                const now = this.state.creatureAnimationTime;
+                const B = VA && VA.biss;
+                if (B && now < VA.bis) {
+                    // DER ANSPRUNG (Welle LF kampf, Posten 5): solange der Biss nicht geschnappt hat, trägt der Sprung den Kopf
+                    // auf das Ziel — derselbe Weg wie die Hetze (_kreaturJagdZug): der Wunsch zeigt auf es, das Ankunfts-Gesetz
+                    // im Sprint der Gestalt plus dem Lauf des Ziels von ihm fort hält ihn dort, wo der Kopf über der
+                    // Mittel-Linie des Leibs steht (_kreaturBissKopfWeg); im Fallen neigt er sich auf den Leib
+                    // (_kreaturBissKopf). Ein Sprung, der weiterflöge, trüge den Kopf über ein kleines Ziel hinweg; einer, der
+                    // am Rand hielte, schnappte daneben; einer im Schritt verlöre jede fliehende Beute.
+                    const zp = B.ziel ? B.ziel.position : playerPos;
+                    const bx = zp.x - creature.position.x,
+                        bz = zp.z - creature.position.z;
+                    const bd = Math.hypot(bx, bz);
+                    const mB = this._kreaturMaul(creature, this._bissMaulZug || (this._bissMaulZug = {}));
+                    const weg = mB ? this._kreaturBissKopfWeg(B.ziel, mB) : null;
+                    let zvx = 0,
+                        zvz = 0;
+                    if (B.ziel) {
+                        const g = this._kreaturGeschw(B.ziel);
+                        zvx = g.x;
+                        zvz = g.z;
+                    } else if (this._spielerLageAlt) {
+                        zvx = this._spielerLageAlt.vx;
+                        zvz = this._spielerLageAlt.vz;
+                    }
+                    const fort = bd > 1e-6 ? Math.max(0, (zvx * bx + zvz * bz) / bd) : 0;
+                    const SG = AnazhRealm._steuerGesetz();
+                    const sprint = SG.sprintTempo(hueftL);
+                    // (ein Hauch von Wunsch bleibt: er trägt die Wendung zum Ziel, auch wenn der Kopf es schon erreicht)
+                    const bv = Math.max(1e-3, weg > 0 ? Math.min(sprint, SG.ankunftTempo(weg, sprint) + fort) : fort);
+                    if (bd > 1e-6) direction.set((bx / bd) * bv, 0, (bz / bd) * bv);
+                } else if (VA && VA.def && Number.isFinite(VA.def.tempo) && now < VA.bis) {
                     direction.multiplyScalar(Math.max(0, VA.def.tempo));
                 }
             }
@@ -23017,6 +23298,10 @@ class AnazhRealm {
                     const laeuft = this._kreaturLaeuft(creature) && (inFrustum || distToPlayer < fernDist);
                     let animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, delta, laeuft);
                     if (animDiv === 0 && !(tBA && tBA.fern)) animDiv = 4;
+                    // ein offener Biss braucht seine Pose in jedem Takt (Posten 5): ob das Maul den Leib berührt, entscheidet
+                    // der geneigte Kopf (_kreaturBissTakt), auch ungesehen — die Kosten trägt nur der Ansprung (unter 1 s)
+                    const VAb = creature.userData._verhaltenAktion;
+                    if (VAb && VAb.biss) animDiv = 1;
                     if (animDiv === 0) {
                         if (!creature.userData._animEingefroren) {
                             creature.userData._animEingefroren = true;
@@ -23042,6 +23327,9 @@ class AnazhRealm {
                     }
                 }
             }
+            // DAS SCHNAPPEN (Posten 5): nach der Lage UND der Pose des Takts berührt der Kopf den Leib — oder nicht
+            if (creature.userData._verhaltenAktion && creature.userData._verhaltenAktion.biss)
+                this._kreaturBissTakt(creature);
 
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
             // sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
@@ -24479,10 +24767,23 @@ class AnazhRealm {
     creatureJump(creature) {
         const ud = creature && creature.userData;
         if (!ud || ud._hopV > 0 || ud._hopH > 0) return false;
+        ud._hopV = Math.sqrt(2 * AnazhRealm._hopSchwere() * this._kreaturSprungHoehe(creature));
+        return true;
+    }
+    // DIE HÖHE DES SPRUNGS (m) — das Freude-Gesetz, die EINE Quelle (creatureJump, die Flugzeit des Ansprungs
+    // _kreaturSprungZeit): froh hopHochM, sonst hopBasisM.
+    _kreaturSprungHoehe(creature) {
         const F = AnazhRealm._verhaltenGesetz().freude;
         const froh = this.state.creatureEmotions[this.state.creatures.indexOf(creature)] === "happy";
-        ud._hopV = Math.sqrt(2 * AnazhRealm._hopSchwere() * (froh ? F.hopHochM : F.hopBasisM));
-        return true;
+        return froh ? F.hopHochM : F.hopBasisM;
+    }
+    // DIE DAUER DES ANSPRUNGS (s, Welle LF kampf, Posten 5): die Geste des Bisses (pounce) springt — sie dauert, bis der Leib
+    // wieder steht: die Flugzeit 2·√(2h/g) des Sprung-Gesetzes, mindestens die Dauer der Geste. In ihr trägt der Ansprung den
+    // Kopf auf das Ziel, beim Landen schnappt das Maul.
+    _kreaturSprungZeit(creature) {
+        const BG = AnazhRealm._bissGesetz();
+        if (BG.geste.hop !== true) return BG.dauer;
+        return Math.max(BG.dauer, 2 * Math.sqrt((2 * this._kreaturSprungHoehe(creature)) / AnazhRealm._hopSchwere()));
     }
 
     isInFrustum(object, providedFrustum = null) {
@@ -99676,7 +99977,7 @@ AnazhRealm._verhaltenGesetz = function () {
         if (
             v &&
             v.jagd &&
-            Number.isFinite(v.jagd.strikeRange) &&
+            Number.isFinite(v.jagd.strikeCooldownSec) &&
             v.furcht &&
             Number.isFinite(v.furcht.fleeThreshold) &&
             v.temperament &&
@@ -99691,7 +99992,6 @@ AnazhRealm._verhaltenGesetz = function () {
             // SCHLUSS-WELLE (17.07.) — die neun heimgekehrten Blöcke sind
             // Kern-Pflicht: je Block deckt EIN Feld (alter Kern → Bruch,
             // nie ein Misch-Gesetz aus neuem Leser + fehlender Zeile).
-            Number.isFinite(v.jagd.pirschStoppM) &&
             Number.isFinite(v.jagd.hetzM) &&
             Number.isFinite(v.jagd.pirschSichtM) &&
             Number.isFinite(v.jagd.beuteMasse) &&
@@ -99945,7 +100245,9 @@ AnazhRealm._leibGesetz = function () {
     return AnazhRealm._leibGesetzMemo;
 };
 // DER BISS ALS STOSS (0710-4): der Anteil der Jäger-Masse hinter dem Biss (tetrapoda BISS.masseAnteil) und das Tempo
-// des Ansprungs (VERHALTEN.aktionen.pounce.tempo, in der Tempo-Einheit des Steuer-Gesetzes). Fail-closed.
+// des Ansprungs (VERHALTEN.aktionen.pounce.tempo, in der Tempo-Einheit des Steuer-Gesetzes). DER BISS IST DER ANSPRUNG
+// (Welle LF kampf, Posten 5): seine Geste ist die Aktion pounce — ihre Dauer und ihr Tempo sind die Reichweite des Mauls
+// (_kreaturBissReich). Fail-closed.
 AnazhRealm._bissGesetz = function () {
     if (AnazhRealm._bissGesetzMemo) return AnazhRealm._bissGesetzMemo;
     const T = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -99955,7 +100257,20 @@ AnazhRealm._bissGesetz = function () {
     if (!(anteil > 0 && anteil <= 1)) return AnazhRealm._kernPflichtBruch("tetrapoda:BISS.masseAnteil");
     if (!pounce || !(pounce.tempo > 0))
         return AnazhRealm._kernPflichtBruch("tetrapoda:VERHALTEN.aktionen.pounce.tempo");
-    AnazhRealm._bissGesetzMemo = Object.freeze({ masseAnteil: anteil, tempo: pounce.tempo });
+    if (!(pounce.dauer > 0)) return AnazhRealm._kernPflichtBruch("tetrapoda:VERHALTEN.aktionen.pounce.dauer");
+    const kopf = T && T.BISS ? T.BISS.kopfNeigung : null;
+    if (!(Array.isArray(kopf) && kopf.length === 2 && kopf[0] < 0 && kopf[1] > 0))
+        return AnazhRealm._kernPflichtBruch("tetrapoda:BISS.kopfNeigung");
+    const rumpf = T && T.BISS ? T.BISS.rumpfNeigung : NaN;
+    if (!(rumpf > 0)) return AnazhRealm._kernPflichtBruch("tetrapoda:BISS.rumpfNeigung");
+    AnazhRealm._bissGesetzMemo = Object.freeze({
+        masseAnteil: anteil,
+        tempo: pounce.tempo,
+        dauer: pounce.dauer,
+        geste: pounce,
+        kopfNeigung: kopf,
+        rumpfNeigung: rumpf,
+    });
     return AnazhRealm._bissGesetzMemo;
 };
 // DIE KAMPF-GRÖSSE DES LEIBS (Welle LF, Posten 6): die Bezugs-Masse und die Exponenten von Biss, Haut und Leben aus dem

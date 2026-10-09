@@ -1813,7 +1813,8 @@ async function kreaturProben(r, T, opts) {
                         const dx = tx - c.position.x,
                             dz = tz - c.position.z;
                         const J = A._verhaltenGesetz().jagd;
-                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - J.pirschStoppM, speed * J.speedBoost);
+                        // der alte Pirsch-Stopp (1,6 m um die Mitten — jagd.pirschStoppM fiel mit dem Biss im Ansprung)
+                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - 1.6, speed * J.speedBoost);
                     }
             );
         if (taeter === "jagd-schritt") schrittJagd();
@@ -1854,7 +1855,10 @@ async function kreaturProben(r, T, opts) {
             if (z === "jagd" || z === "hetzen") {
                 jagdT += dt;
                 jagdWeg += v;
-                if (v / dt > 0.3) {
+                // der Weg ZUR BEUTE zählt nur die Schritte der Jagd auf sie: verliert der Wolf den Hirsch und kommt dem
+                // Spieler nah, jagt er ihn (_jagdZiel "spieler") — seit der Biss ein Ansprung ist (Welle LF kampf), springt er
+                // ihn an, statt still neben ihm aus der Ferne zu beißen; diese Schritte gehen nicht zum Hirsch
+                if (v / dt > 0.3 && wolf.userData._jagdZiel !== "spieler") {
                     bewegt++;
                     if (vx * (hx - wx) + vz * (hz - wz) > 0) hin++;
                 }
@@ -1919,15 +1923,15 @@ async function kreaturProben(r, T, opts) {
             s.player.respawnGraceUntil = altGnade;
         });
         s.player.hp = 1e9;
+        // gezählt wird der Biss, der den Spieler trifft (das Maul am Leib, Welle LF kampf) — nicht der Ansprung
         let spielerBisse = 0;
         decke(
             restore,
-            "_tickCreatureHuntStrike",
+            "damagePlayer",
             (alt) =>
-                function (...a) {
-                    const o = alt.apply(this, a);
-                    if (o) spielerBisse++;
-                    return o;
+                function (amount, quelle) {
+                    if (quelle === "jagd") spielerBisse++;
+                    return alt.call(this, amount, quelle);
                 }
         );
         const sprint = s.sprintSpeed;
@@ -1935,6 +1939,10 @@ async function kreaturProben(r, T, opts) {
         let abstMin = abst0;
         for (let k = 0; k < 600; k++) {
             pm.x += sprint * dt;
+            // die Füße des Läufers bleiben auf dem Boden (die Probe trägt ihn ohne Physik; der Biss braucht den Kopf am
+            // Leib, auch in der Höhe — Welle LF kampf)
+            const hS = r.getTerrainHeightAt(pm.x, pm.z);
+            if (Number.isFinite(hS)) pm.y = hS + 0.5;
             ruhigSpieler();
             takt(dt);
             abstMin = Math.min(abstMin, Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z));
@@ -1985,7 +1993,8 @@ async function kreaturProben(r, T, opts) {
                         const dx = tx - c.position.x,
                             dz = tz - c.position.z;
                         const J = A._verhaltenGesetz().jagd;
-                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - J.pirschStoppM, speed * J.speedBoost);
+                        // der alte Pirsch-Stopp (1,6 m um die Mitten — jagd.pirschStoppM fiel mit dem Biss im Ansprung)
+                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - 1.6, speed * J.speedBoost);
                     }
             );
         const o = frei(60, -60, 25) || land(60, -60);
@@ -2002,15 +2011,15 @@ async function kreaturProben(r, T, opts) {
             ruhig(c);
             return c;
         });
+        // die Lücke beim ersten Biss, der den Spieler trifft (das Maul am Leib, Welle LF kampf)
         let ersterBiss = null;
         decke(
             restore,
-            "_tickCreatureHuntStrike",
+            "damagePlayer",
             (alt) =>
-                function (...a) {
-                    const out = alt.apply(this, a);
-                    if (out && ersterBiss === null) ersterBiss = luecke();
-                    return out;
+                function (amount, quelle) {
+                    if (quelle === "jagd" && ersterBiss === null) ersterBiss = luecke();
+                    return alt.call(this, amount, quelle);
                 }
         );
         const luecke = () => {

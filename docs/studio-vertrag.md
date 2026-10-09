@@ -331,7 +331,7 @@ rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] }
   — der Wirt wählt/stempelt FNV-deterministisch, der Baum-Gang trägt den
   Overlay. Jede Stimmungs-Aktion MUSS in `aktionen` existieren (Validator).
   Spiegel-Zensus 17.07. (V18.486+, rein additiv): die KREATUR-SEELE reist —
-  `jagd { radius speedBoost strikeRange strikeCooldownSec damageMul
+  `jagd { radius speedBoost strikeCooldownSec damageMul
 fearHpFrac triumphWindowSec scentRangeM hetzM pirschSichtM beuteMasse }`
   (VERTRAGS-AKT Welle LF 08.10.: DIE JAGD SCHLIESST SICH — die Witterung wählt
   die Beute an der Nase, der Gradienten-Schritt `scentProbeM` fiel; das Rudel
@@ -368,7 +368,7 @@ hopHochM hopBasisM }` · `sprung { impulsProM }` (VERTRAGS-AKT Welle L
   (Gefährten-Tempi/Halt-Distanzen — die Stamm-Getter wurden Leser) ·
   `herde { fensterRaum gewicht maxNachbarn }` (Schwarm-Kohäsion; Welle LF: im
   Paar-Raum zieht niemand, der Zug ist das Mittel × Tempo — `minAbstSq`/`fensterSq`
-  fielen) · `wasser` (Ufer-Scheu) · `jagd.pirschStoppM` (`furcht.neugierStoppM`
+  fielen) · `wasser` (Ufer-Scheu) · (`furcht.neugierStoppM`
   fiel: die Neugier hält am Paar-Raum mit dem Spieler) · `stimmung.schwellen`
   (die Schwellen-DATEN-Zeile der Stimmungs-Tabelle — KEINE Stimmung,
   Validator/Leser überspringen den Schlüssel). Alle Kern-Pflicht
@@ -380,8 +380,14 @@ matResilienz · greifkraft · pobZiel · ableitenPick/Graben/Klinge`)
   Maschinen leben intern weiter, `buildInstance` byte-unberührt
   (52/52 Goldens; nur die recipes/render-config-Datenkanäle wurden
   per Mint-Mechanik neu gemünzt).
-  Die Gegenwehr-Reichweite liest `jagd.strikeRange` (die EINE
-  Reichweiten-Wahrheit; das nackte Stamm-`4` fiel bewusst auf 2.4).
+  DER BISS IST DER ANSPRUNG (VERTRAGS-AKT Welle LF kampf 09.10.): alle drei
+  Biss-Wege (Jagd auf den Spieler, Beute, Gegenwehr) springen an
+  (`aktionen.pounce`) und beißen, wenn der Kopf der Gestalt den Leib des
+  Ziels berührt; die Reichweite ist der Weg des Ansprungs (`pounce.tempo` ×
+  `tempoEinheit` × seine Dauer, die Flugzeit des Sprung-Gesetzes), die Hetze
+  hält, wo das Maul den Leib erreicht. `jagd.strikeRange` und
+  `jagd.pirschStoppM` fielen; `BISS.kopfNeigung` (rein additiv) ist der
+  Bereich, in dem der Kopf im Ansprung auf das Ziel zielt.
 - **`STEUER_GESETZ` + `tempoEinheit` · `steuerSchritt` · `ankunftTempo` ·
   `herdeZug` (Welle L 06.10., tetrapoda-core, Namensraum-Export, rein
   additiv — PRESETS/PARAMS unberührt, der v7-Fingerabdruck wandert nicht

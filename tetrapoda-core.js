@@ -133,13 +133,15 @@
         jagd: {
             radius: 12, // m — Spieler-Witterungs-Reichweite (darueber wandert das Raubtier)
             speedBoost: 1.45, // Jagd ist schneller als Schlendern, langsamer als Flucht (1.6)
-            strikeRange: 2.4, // m — Biss-Reichweite (die EINE Reichweiten-Wahrheit, auch Gegenwehr)
             strikeCooldownSec: 1.6, // s — zwischen zwei Bissen
             damageMul: 0.8, // × dem damage-Stat des Wesens
             fearHpFrac: 0.5, // unter dieser HP-Fraktion wird Schaden zur FURCHT (threatened)
             triumphWindowSec: 20, // s — ein Jaeger, so frisch er biss, gebiert beim Fall TRIUMPH
             scentRangeM: 50, // m — Beute-Wittern ueber das Geruch-Feld (weiter als Sehen)
-            pirschStoppM: 1.6, // m — SCHLUSS-WELLE: naeher pirscht der Jaeger nicht heran (Stopp vor dem Biss)
+            // DER BISS IST DER ANSPRUNG (Welle LF kampf 09.10., VERTRAGS-AKT): gebissen wird im Ansprung (aktionen.pounce),
+            // wenn der Kopf der Gestalt den Leib des Ziels beruehrt — die Reichweite ist der Weg des Ansprungs (pounce.tempo ×
+            // tempoEinheit × seine Dauer), die Hetze haelt, wo das Maul den Leib erreicht. strikeRange (2,4 m um die Mitten,
+            // jede Gestalt) und pirschStoppM (1,6 m) fielen: Bisse ohne Geste aus 1,36–2,39 m (Leben-Schau 07.10., K-D13).
             // DIE JAGD SCHLIESST SICH (Welle LF 08.10., VERTRAGS-AKT): der Jaeger pirscht (unbemerkt bis pirschSichtM),
             // bezieht im Rudel seinen Platz auf dem Ring hetzM um das Ziel (die Flanke) und hetzt von dort im Sprint der
             // Gestalt (STEUER_GESETZ.sprint); Beute ist, wer nicht wild ist und hoechstens beuteMasse × die eigene Masse
@@ -210,7 +212,7 @@
         // groessen (die Koerpergroessen-Baender,
         // Lehre 8: DIE Differenzierungs-Achse) · separation (Herden-Abstand) ·
         // aufgaben (Gefaehrten-Tempi + Halt-Distanzen) · herde (Schwarm-
-        // Kohaesion) · wasser (Ufer-Scheu) — plus jagd.pirschStoppM,
+        // Kohaesion) · wasser (Ufer-Scheu) — plus
         // stimmung.schwellen oben (furcht.neugierStoppM fiel mit dem persoenlichen Raum, Welle LF). Der Wirt liest
         // fail-closed via AnazhRealm._verhaltenGesetz (Kern-Pflicht); die
         // Werte sind byte-gleich den historischen Stamm-Literalen.
@@ -1523,7 +1525,12 @@
     // ── 0710-4 (rein additiv) — DER BISS ALS STOSS: der Jäger trifft mit seiner Vorhand (Kopf, Hals, Brust) — dieser
     //    Anteil seiner Masse — im Tempo des Ansprungs (VERHALTEN.aktionen.pounce.tempo × tempoEinheit(L)). Sein Impuls
     //    geht durch das EINE Impuls-Gesetz des Wirts wie Klinge, Pfeil und Wagen (vorher: Schaden ohne Rückstoß). ──
-    var BISS = Object.freeze({ masseAnteil: 0.3 });
+    // ── Welle LF 09.10. (rein additiv) — DER KOPF ZIELT: im Ansprung neigt der Jaeger den Kopf auf den Leib des Ziels, in
+    //    diesem Bereich (rad, Nase abwaerts positiv wie headX): hoch bis -0,6 (die Kehle eines Stehenden), tief bis 1,0 (die
+    //    Flanke eines Kitzes; grasen senkt die Nase mit 0,95 ins Gras); liegt der Leib tiefer als der Kopf, senkt er die Front
+    //    bis rumpfNeigung (rad, wie bodyX: die Verbeugung playbow senkt sie um 0,35) — so reicht das Maul an den Ruecken eines
+    //    Fuchses. ──
+    var BISS = Object.freeze({ masseAnteil: 0.3, kopfNeigung: Object.freeze([-0.6, 1.0]), rumpfNeigung: 0.5 });
     // ── Welle LF 09.10. (rein additiv) — DIE KAMPF-GRÖSSE DES LEIBS: Biss, Haut und Leben eines Tiers folgen der EINEN Masse
     //    seines Leibs (das Volumen der Gestalt × dichteKgM3 — Gattung UND Größe) gegen die Bezugs-Masse refKg, den Wolf der
     //    Größe 1 (64 kg; an ihm ist der Biss geeicht, 8,73 HP am Spieler). Die Kraft des Bisses wächst mit dem Querschnitt der
