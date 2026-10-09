@@ -29790,6 +29790,10 @@ class AnazhRealm {
     // Stempelt solide Architektur-AABBs (`blockerAABBs`) als SOLID ins Cell-Feld, nach der Density-
     // Klassifikation; Y-Range je AABB von aabb.botY bis topY. `lod` MUSS zur Cell-Grid-Geometrie des
     // Aufrufers passen — sonst out-of-bounds-Writes.
+    // DIE PFLANZE STEHT IM WASSER (Schau-2 wasser-wahrheit): die Hülle einer Pflanze (`aabb.pflanze`: Stamm, Trieb) stempelt
+    // keine Zelle — das Wasser fließt um sie, wie der Körper sie schon liest (`_koerperWasserSpiegel`). Auf dem 1,8-m-Gitter
+    // wurde ein 0,6-m-Stamm am Ufer zu einer Zellen-Säule, die Wasser verdrängte: der Bau weckte den Automaten, und der
+    // flutete das Tal (Schau 09.10.: der Eichenhain am Fluss −872/−1127 stand nach 20 s 1,9–3,8 m unter dem Wasser).
     _stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod = 0) {
         if (!Array.isArray(this.state.architectures) || this.state.architectures.length === 0) return;
         const { dim, dimY, step } = this._voxelChunkConfig(lod);
@@ -29797,29 +29801,62 @@ class AnazhRealm {
         for (const entry of this.state.architectures) {
             if (!entry || !entry.blockerAABBs) continue;
             for (const aabb of entry.blockerAABBs) {
-                // Chunk-Footprint-Schnitt
-                if (aabb.maxX < ox || aabb.minX > ox + dim * step) continue;
-                if (aabb.maxZ < oz || aabb.minZ > oz + dim * step) continue;
-                // Cell-Range im Chunk (xz)
-                const i0 = Math.max(0, Math.floor((aabb.minX - ox) / step));
-                const i1 = Math.min(dim - 1, Math.floor((aabb.maxX - ox) / step));
-                const k0 = Math.max(0, Math.floor((aabb.minZ - oz) / step));
-                const k1 = Math.min(dim - 1, Math.floor((aabb.maxZ - oz) / step));
-                // Y-Range: vom Bottom bis zur topY der Architektur
-                const yBot = Number.isFinite(aabb.botY) ? aabb.botY : aabb.topY - 4;
-                const j0 = Math.max(0, Math.floor((yBot - oy) / step));
-                const j1 = Math.min(dimY - 1, Math.floor((aabb.topY - oy) / step));
-                for (let j = j0; j <= j1; j++) {
+                const s = this._stempelSpanne(aabb, ox, oy, oz, dim, dimY, step);
+                if (!s) continue;
+                for (let j = s.j0; j <= s.j1; j++) {
                     const baseJ = j * dim * dim;
-                    for (let k = k0; k <= k1; k++) {
+                    for (let k = s.k0; k <= s.k1; k++) {
                         const baseK = k * dim;
-                        for (let i = i0; i <= i1; i++) {
+                        for (let i = s.i0; i <= s.i1; i++) {
                             cells[i + baseK + baseJ] = STATE.SOLID;
                         }
                     }
                 }
             }
         }
+    }
+
+    // Die Zellen, die eine Blocker-Hülle in einem Chunk (Ursprung ox/oy/oz) stempelt: xz der Überlapp, y vom Fuß (botY, sonst
+    // topY − 4) bis zum Kopf — EINE Regel für den Stempel und die Frage, ob er Wasser verdrängt (`_stempelImWasser`). null =
+    // die Hülle stempelt hier nichts (außerhalb des Chunks, oder eine Pflanze). Liefert ein geteiltes Scratch-Objekt.
+    _stempelSpanne(aabb, ox, oy, oz, dim, dimY, step) {
+        if (aabb.pflanze) return null;
+        if (aabb.maxX < ox || aabb.minX > ox + dim * step) return null;
+        if (aabb.maxZ < oz || aabb.minZ > oz + dim * step) return null;
+        const s = this._stempelScratch || (this._stempelScratch = {});
+        s.i0 = Math.max(0, Math.floor((aabb.minX - ox) / step));
+        s.i1 = Math.min(dim - 1, Math.floor((aabb.maxX - ox) / step));
+        s.k0 = Math.max(0, Math.floor((aabb.minZ - oz) / step));
+        s.k1 = Math.min(dim - 1, Math.floor((aabb.maxZ - oz) / step));
+        const yBot = Number.isFinite(aabb.botY) ? aabb.botY : aabb.topY - 4;
+        s.j0 = Math.max(0, Math.floor((yBot - oy) / step));
+        s.j1 = Math.min(dimY - 1, Math.floor((aabb.topY - oy) / step));
+        return s;
+    }
+
+    // Verdrängt der Stempel dieser Hüllen Wasser? Je geladenem Chunk unter ihnen: liegt eine Wasser-Zelle in den Zellen, die
+    // er stempeln wird (`_stempelSpanne`, auf den Zellen VOR dem Stempel)? Nur dann weicht die Welt ab und der Automat wacht.
+    _stempelImWasser(aabbs) {
+        if (!Array.isArray(aabbs) || !this.state.voxelChunks) return false;
+        const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
+        const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
+        const W = AnazhRealm.CELL_STATE.WATER;
+        for (const aabb of aabbs) {
+            if (!aabb || aabb.pflanze) continue;
+            for (let cz = Math.floor(aabb.minZ / span); cz <= Math.floor(aabb.maxZ / span); cz++)
+                for (let cx = Math.floor(aabb.minX / span); cx <= Math.floor(aabb.maxX / span); cx++) {
+                    const e = this.state.voxelChunks.get(`${cx},${cz}`);
+                    const cells = e ? e.waterCells : null;
+                    if (!cells) continue;
+                    const s = this._stempelSpanne(aabb, cx * span, oy, cz * span, dim, dimY, step);
+                    if (!s) continue;
+                    for (let j = s.j0; j <= s.j1; j++)
+                        for (let k = s.k0; k <= s.k1; k++)
+                            for (let i = s.i0; i <= s.i1; i++)
+                                if (cells[i + k * dim + j * dim * dim] === W) return true;
+                }
+        }
+        return false;
     }
 
     // Das Wasser eines Chunks (EIN Render-Pfad: das Zell-Oberkanten-Sheet). Idempotent: das alte Mesh fällt vor dem Bau.
@@ -70640,12 +70677,16 @@ class AnazhRealm {
         // den Cell-Stempel. Kein Type-Whitelist — die Substanz entscheidet (Stamm stempelt, Laub nicht).
         this._populateBlockerAABBs(entry);
         // Voxel-Chunks im Footprint dirty markieren → das Cell-Feld wird mit dem Architektur-Stempel neu
-        // gebaut (Damm-Cells SOLID, Wasser-Cells im Stempel überschrieben).
-        if (!opts.silent && entry.blockerAABBs) {
+        // gebaut (Damm-Cells SOLID, Wasser-Cells im Stempel überschrieben). Eine Pflanze stempelt nicht
+        // (`_stempelSpanne`): ihr Bau lässt die Zellen und den Automaten in Ruhe.
+        const stempel = entry.blockerAABBs ? entry.blockerAABBs.filter((a) => !a.pflanze) : [];
+        if (!opts.silent && stempel.length) {
             const { span: _fpSpan } = this._voxelChunkConfig();
             const footprintKeys = new Set();
             const fussabdruecke = [];
-            for (const aabb of entry.blockerAABBs) {
+            // DER STEMPEL IM WASSER (Schau-2 wasser-wahrheit): auf den Zellen VOR dem Stempel gefragt.
+            const verdraengt = this._stempelImWasser(stempel);
+            for (const aabb of stempel) {
                 const cxw = (aabb.minX + aabb.maxX) * 0.5;
                 const czw = (aabb.minZ + aabb.maxZ) * 0.5;
                 const r = Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5;
@@ -70677,16 +70718,21 @@ class AnazhRealm {
             // Mutiert eine solide Architektur die Cell-Klassifikation (Wasser strömt um den Damm), antwortet die
             // Welt mit einem kurzen Strömungs-Hauch — nur wo Wasser ist. KEIN Journal-Eintrag je Spawn (Journal-Idempotenz).
             this._playWaterReactionPing(fussabdruecke);
-            // V18.129 — eine solide Architektur kann ein DAMM sein: Kappen/Stau-
-            // Felder der Region verwerfen (lazy-Neubau liest die frisch
-            // gestempelten Zellen) + CA wecken → das Wasser staut sich auf.
-            for (const aabb of entry.blockerAABBs) {
-                this._invalidateWaterCapsAround(
-                    (aabb.minX + aabb.maxX) * 0.5,
-                    (aabb.minZ + aabb.maxZ) * 0.5,
-                    Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5
-                );
-            }
+            // V18.129 — eine solide Architektur kann ein DAMM sein: Kappen/Stau-Felder der Region verwerfen (lazy-Neubau
+            // liest die frisch gestempelten Zellen) + CA wecken → das Wasser staut sich auf. DER AUTOMAT WACHT NUR, WO DIE
+            // WELT ABWEICHT (Schau-2 wasser-wahrheit, die Lehre W-W1 der Welle L): nur ein Stempel, der Wasser verdrängt,
+            // ist ein Damm. Bis V18.537 weckte JEDER Bau den Automaten im weiten Stau-Radius — sechs Eichen am Ufer des
+            // Flusses −872/−1127 weckten 15 Chunks, der Automat rechnete den fließenden Fluss in ganzen Zellen nach, der
+            // Quellen-Pin füllte das Tal: nach 20 s standen 6 von 6 Stämmen 1,9–3,8 m unter dem gezeichneten Wasser.
+            entry._wasserVerdraengt = verdraengt;
+            if (verdraengt)
+                for (const aabb of stempel) {
+                    this._invalidateWaterCapsAround(
+                        (aabb.minX + aabb.maxX) * 0.5,
+                        (aabb.minZ + aabb.maxZ) * 0.5,
+                        Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5
+                    );
+                }
         }
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
@@ -80851,15 +80897,18 @@ class AnazhRealm {
         this._archZiegelTod(entry); // die Ziegel-Fernstufe stirbt mit dem Eintrag
         // Blocker-Index beim Remove pflegen (früher Out ohne solide Parts via entry.blockerAABBs); vorher
         // merken, ob es ein Blocker war — danach dirty markieren (das Wasser bekommt den Pfad zurück).
-        const wasBlocker = !!entry.blockerAABBs;
+        // Eine Pflanze stempelte nie (`_stempelSpanne`): ihr Abbau gibt keiner Zelle etwas zurück.
+        const wasBlocker = !!entry.blockerAABBs && entry.blockerAABBs.some((a) => !a.pflanze);
         // Footprint-bboxes VOR dem Index-Remove einfrieren (danach sind sie weg); Voxel-Chunks im Footprint
         // werden dirty → das Cell-Feld baut ohne Architektur-Stempel, Wasser-Cells nehmen den Platz zurück.
         const blockerFootprints = wasBlocker
-            ? entry.blockerAABBs.map((a) => ({
-                  cx: (a.minX + a.maxX) * 0.5,
-                  cz: (a.minZ + a.maxZ) * 0.5,
-                  r: Math.max(a.maxX - a.minX, a.maxZ - a.minZ) * 0.5,
-              }))
+            ? entry.blockerAABBs
+                  .filter((a) => !a.pflanze)
+                  .map((a) => ({
+                      cx: (a.minX + a.maxX) * 0.5,
+                      cz: (a.minZ + a.maxZ) * 0.5,
+                      r: Math.max(a.maxX - a.minX, a.maxZ - a.minZ) * 0.5,
+                  }))
             : null;
         // Ohne Hydro-Recompute: betroffene Voxel-Chunks remeshen (der Eintrag ist schon aus
         // state.architectures raus), Wasser-Cells nehmen den Platz zurück.
@@ -80874,8 +80923,10 @@ class AnazhRealm {
             // V9.75 — Spiegel zum Spawn-Trigger: das Wasser kehrt zurück (klingt nur, wo Wasser ist).
             this._playWaterReactionPing(blockerFootprints);
             // Ein abgebauter DAMM lässt seinen Stausee ablaufen: Kappen/Stau-Felder verwerfen + CA wecken
-            // (Gravitation ist kappen-frei; die Empfänger-Kappe sinkt lazy zurück).
-            for (const fp of blockerFootprints) this._invalidateWaterCapsAround(fp.cx, fp.cz, fp.r);
+            // (Gravitation ist kappen-frei; die Empfänger-Kappe sinkt lazy zurück). Ein Damm ist nur, wer beim Bau
+            // Wasser verdrängte (`_wasserVerdraengt`) — der Abbau eines Baums am Ufer weckt den Automaten nicht.
+            if (entry._wasserVerdraengt)
+                for (const fp of blockerFootprints) this._invalidateWaterCapsAround(fp.cx, fp.cz, fp.r);
         }
         // Resonierende Strukturen verstummen beim Abbau mit abklingendem Sinus; stumme bleiben still.
         this._playArchitectureFarewellPing(entry);
