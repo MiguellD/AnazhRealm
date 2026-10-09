@@ -303,6 +303,20 @@ function pfeilVerdict(P, shell) {
     if (shell && shell.eigenerPfeil) v.push("pfeil-zwilling: die Prüfstand-Shell baut ihren eigenen Pfeil");
     return v;
 }
+// (T22) EIN TIER STIRBT WIE EIN TIER (Welle LF kampf, Posten 7 — pure Funktion, Probe UND Selbst-Test): nach dem Kippen liegt
+// der Leib auf der Flanke — die Leibes-Achse waagrecht (|vorn·y| ≤ 0,3), die Hochachse gekippt (oben·y ≤ 0,35) — auch wenn
+// das Gefälle längs der Achse fällt; und er liegt 10 s danach noch da. Befund: Kopf senkrecht (vorn·y ≈ 1), nach 22 Takten fort.
+function todVerdict(T) {
+    if (!T) return ["tod keine Probe"];
+    const v = [];
+    if (!(Math.abs(T.vornY) <= 0.3))
+        v.push(
+            `tod-flanke: die Leibes-Achse zeigt nach dem Kippen ${T.vornY > 0 ? "hinauf" : "hinab"} (vorn·y ${T.vornY}) — er steht auf dem ${T.vornY > 0 ? "Hinterteil" : "Kopf"}`
+        );
+    if (!(T.obenY <= 0.35)) v.push(`tod-kipp: die Hochachse steht (oben·y ${T.obenY})`);
+    if (!T.liegt10s) v.push("tod-leichnam: 10 s nach dem Tod ist der Leib fort");
+    return v;
+}
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -1994,6 +2008,41 @@ async function WELLE_L() {
             pfeilAus.wirtZylinder = /CylinderGeometry\(0\.015/.test(A.prototype._pfeilMeshAttach.toString());
             w.z.pfeilGestalt = pfeilAus;
         }
+        // (T22) EIN TIER STIRBT WIE EIN TIER (Posten 7): ein Hirsch auf geneigtem Boden, das Gefälle LÄNGS seiner Leibes-Achse
+        // (die Befund-Lage ks09: er blickt hangab) — die Naht `_fieldGradient` trägt das Gefälle (0,3 längs der Achse); dann der
+        // Tod und der Kreatur-Takt. Gemessen: wohin die Leibes-Achse (vorn, lokal +z) und die Hochachse nach dem Kippen zeigen,
+        // und ob der Leib 10 s danach noch liegt. Befund: der Hirsch richtete sich auf das Hinterteil auf (Kopf senkrecht) und war
+        // nach 22 Takten fort.
+        {
+            const hT = setze("wesen");
+            stelle(hT, 20, 6);
+            const gier = 0.7;
+            hT.rotation.set(0, gier, 0);
+            hT.updateMatrixWorld(true);
+            const fgRoh = r._fieldGradient;
+            r._fieldGradient = function () {
+                // das Gefälle zeigt hangab = längs der Leibes-Achse (die Außen-Normale neigt sich nach vorn)
+                return { x: Math.sin(gier) * 0.3, y: 1, z: Math.cos(gier) * 0.3 };
+            };
+            let tod = null;
+            try {
+                r.damageCreature(hT, 1e9, { source: "world" });
+            } finally {
+                r._fieldGradient = fgRoh;
+                delete r._fieldGradient;
+            }
+            const K = A._arenaGesetz().gefuehl;
+            for (let k = 0; k < Math.ceil((K.kippDauerSec + 0.2) / 0.05); k++) r.updateCreatures(0.05);
+            hT.updateMatrixWorld(true);
+            const q = hT.getWorldQuaternion(new THREE.Quaternion());
+            const vorn = V3().set(0, 0, 1).applyQuaternion(q);
+            const oben = V3().set(0, 1, 0).applyQuaternion(q);
+            tod = { vornY: +vorn.y.toFixed(2), obenY: +oben.y.toFixed(2) };
+            for (let k = 0; k < 200; k++) r.updateCreatures(0.05); // 10 s danach
+            tod.liegt10s = s.creatures.indexOf(hT) !== -1 && !!hT.parent && !!hT.userData.dying;
+            w.z.tod = tod;
+            if (s.creatures.indexOf(hT) !== -1) r.removeCreature(hT);
+        }
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
@@ -2418,8 +2467,13 @@ async function WELLE_L() {
             const uyC = upY(cTod);
             o.kipp.uyC = uyC;
             o.checks.dGekippt = uyC < 0.35 && s.creatures.indexOf(cTod) !== -1;
-            tick(4, 0.1); // t=1.4 > kippDauer + Nachklang → der bestehende Abschied
-            o.checks.dDespawnNachFrist = s.creatures.indexOf(cTod) === -1;
+            // der Leichnam liegt (Welle LF, Posten 7): nach dem Kippen bleibt er, bis die Frist des Gesetzbuchs (kippDauer +
+            // leichnamSec, Kreatur-Uhr) verstrichen ist — dann kehrt er zur Erde zurück
+            const GT = r.constructor._arenaGesetz().gefuehl;
+            tick(4, 0.1); // t=1.4
+            const liegtNoch = s.creatures.indexOf(cTod) !== -1;
+            tick(Math.ceil((GT.kippDauerSec + GT.leichnamSec - 1.4) / 0.1) + 3, 0.1);
+            o.checks.dDespawnNachFrist = liegtNoch && s.creatures.indexOf(cTod) === -1;
 
             // ── EINHEITSBREI-WAND (18.07.) — die 13 Gattungen differenzieren ──
             // Fake-Blueprints mit BYTE-GLEICHEN Donor-Parts (KIND_SUBSTANCE.
@@ -2609,7 +2663,10 @@ async function WELLE_L() {
         check(c.dRotationWaechst, "(D) der Körper KIPPT: die Rotation wächst über die Ticks (entlang _fieldGradient)");
         check(c.dSterbendInert, "(D) ein sterbendes Wesen ist inert (damageCreature-Wand: reason=dying)");
         check(c.dGekippt && c.dNochDa, "(D) gekippt (~83°) und noch DA während des Nachklangs");
-        check(c.dDespawnNachFrist, "(D) der Despawn kommt erst NACH der Frist (Kipp + Nachklang)");
+        check(
+            c.dDespawnNachFrist,
+            "(D) der Leichnam liegt nach dem Kippen und fällt erst NACH der Frist (Kipp + Leichnam)"
+        );
         check(
             c.todKipptStattDespawn,
             "(D) Source-Wand: _creatureCombatDeath kippt (_fieldGradient), despawnt nicht selbst"
@@ -2985,6 +3042,19 @@ async function WELLE_L() {
                     pv2Alt.some((x) => x.startsWith(t))
                 ),
             "Selbst-Test T21: der Befund (ein MeshBasic-Zylinder, 0,55 m, Zwillinge) nennt Gestalt, Licht, Schatten, Länge und Zwilling; der Kern-Pfeil bleibt grün"
+        );
+        console.log(`  (T22) Tod am Hang (Gefälle längs der Leibes-Achse): ${JSON.stringify(z.tod || null)}`);
+        const tv = todVerdict(z.tod);
+        check(
+            tv.length === 0,
+            "LF Posten 7: ein Tier stirbt wie ein Tier — es fällt auf die Flanke (auch wenn das Gefälle längs seiner Achse fällt) und bleibt liegen" +
+                (tv.length ? " — " + tv.join(" · ") : "")
+        );
+        const tvAlt = todVerdict({ vornY: 0.99, obenY: 0.12, liegt10s: false });
+        const tvGut = todVerdict({ vornY: 0.05, obenY: 0.1, liegt10s: true });
+        check(
+            tvGut.length === 0 && ["tod-flanke", "tod-leichnam"].every((t) => tvAlt.some((x) => x.startsWith(t))),
+            "Selbst-Test T22: der Befund (auf dem Hinterteil, nach 22 Takten fort) nennt Flanke und Leichnam; ein Tier auf der Flanke bleibt grün"
         );
         check(
             c.bogenVerschleiss,

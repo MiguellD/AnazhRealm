@@ -3031,7 +3031,7 @@
     // schwung traegt jetzt auch die HIEB-GEOMETRIE (Phasen-Anteile, Sweep-
     // Bogen +-arcHalfRad um den Blick, Klingen-Kapselradius, Arm-Anteil +
     // Deckel der Reichweite, Sweep-Ursprung ueber der Koerper-Position);
-    // gefuehl den STOSS + das TOD-KIPPEN (Kipp-Dauer + Nachklang). Der Stoss
+    // gefuehl den STOSS + das TOD-KIPPEN (Kipp-Dauer, Leichnam, Versinken). Der Stoss
     // (0710-2, das EINE Impuls-Gesetz des Wirts, AnazhRealm.STOSS): der Schlag
     // ist ein Koerper mit der wirksamen Masse und dem Impuls p des
     // trefferUrteil, verstaerkt um wucht (das Gefuehl der Arena); die Masse des
@@ -3085,7 +3085,12 @@
             wucht: 2.7,
             pProKb: 0.5,
             kippDauerSec: 1.0,
-            kippNachklangSec: 0.35,
+            // VERTRAGS-AKT Welle LF 09.10. (Leben-Schau, Posten 7: „der Körper verschwindet"): der Leichnam liegt
+            // leichnamSec (Kreatur-Uhr) auf der Flanke und sinkt in der letzten Spanne leichnamSinkSec in die Erde —
+            // statt kippNachklangSec 0,35 (nach 1,35 s war der Hirsch fort, es blieb kein Leichnam). Der Nachklang fiel
+            // mit ihm (sein einziger Leser war der Despawn).
+            leichnamSec: 90,
+            leichnamSinkSec: 4,
         },
         bogen: {
             mArrow: 0.05,

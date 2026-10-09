@@ -19591,27 +19591,29 @@ class AnazhRealm {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
             this.journalAppend("relationship", `${name} fiel im Kampf${lootSummary}.`, { source, loot });
         }
-        // ═══ KAMPF-GEFÜHL — TOD-KIPPEN statt Sofort-Despawn ═══
-        // Der Körper kippt render-seitig entlang der _fieldGradient-Hang-Richtung (~1 s, updateCreatures
-        // treibt `dying`), kurzer Nachklang, DANN removeCreature (Loot/Schuld/Triumph/Journal sind schon
-        // gestempelt). Ein sterbendes Wesen ist inert (damageCreature-Wand, keine KI, kein Sweep-Ziel).
-        const K = AnazhRealm._arenaGesetz().gefuehl; // Kipp-Dauer + Nachklang = ARENA-Daten
+        // ═══ KAMPF-GEFÜHL — TOD-KIPPEN statt Sofort-Despawn: EIN TIER STIRBT WIE EIN TIER (Welle LF 09.10., Posten 7) ═══
+        // Der Körper kippt render-seitig auf seine FLANKE (~1 s, updateCreatures treibt `dying`): die Kipp-Richtung steht
+        // quer zur Leibes-Achse (vorn = (sin ry, cos ry)), auf die Seite, die hangab liegt (_fieldGradient: die waagrechte
+        // Komponente der Außen-Normale gegen die Flanke), auf flachem Boden oder bei Gefälle längs der Achse zur rechten
+        // Seite. Dann LIEGT er (gefuehl.leichnamSec, Kreatur-Uhr) und sinkt in der letzten Spanne (leichnamSinkSec) in die
+        // Erde, DANN removeCreature (Loot/Schuld/Triumph/Journal sind schon gestempelt). Ein sterbendes Wesen ist inert
+        // (damageCreature-Wand, keine KI, kein Sweep-Ziel). Vorher kippte er in die Hang-Richtung, wie sie fiel — längs der
+        // Achse stand der Hirsch auf dem Hinterteil, Kopf senkrecht (Bild ks09) —, und nach 0,35 s Nachklang war er fort.
+        const K = AnazhRealm._arenaGesetz().gefuehl; // Kipp-Dauer, Leichnam, Versinken = ARENA-Daten
         const g = this._fieldGradient(creature.position.x, creature.position.y + 0.5, creature.position.z, {});
-        let hx = g.x;
-        let hz = g.z;
-        const hMag = Math.hypot(hx, hz);
-        if (hMag > 0.05) {
-            hx /= hMag; // hangabwärts: die horizontale Komponente der Außen-Normale
-            hz /= hMag;
-        } else {
-            const ry = creature.rotation.y || 0; // flacher Boden: zur Seite der Blickrichtung
-            hx = Math.cos(ry);
-            hz = -Math.sin(ry);
+        const ry = creature.rotation.y || 0;
+        // die Flanke (rechts der Blickrichtung); hangab, wo das Gefälle quer zur Achse fällt
+        let hx = Math.cos(ry);
+        let hz = -Math.sin(ry);
+        if (g.x * hx + g.z * hz < -0.05) {
+            hx = -hx;
+            hz = -hz;
         }
         creature.userData.dying = {
             t: 0,
             dauer: K.kippDauerSec,
-            nachklang: K.kippNachklangSec,
+            nachklang: K.leichnamSec,
+            sinken: K.leichnamSinkSec,
             dirX: hx,
             dirZ: hz,
             baseQuat: creature.quaternion.clone(),
@@ -22623,7 +22625,16 @@ class AnazhRealm {
                     dying.sounded = true;
                     this._tierRuf(creature, "trauer"); // der letzte Ruf — die Stimme des fallenden Körpers
                 }
-                if (dying.t >= dying.dauer + dying.nachklang) {
+                // DER LEICHNAM sinkt in der letzten Spanne seiner Frist in die Erde (die Höhe seines Leibs), dann fällt er
+                const ende = dying.dauer + dying.nachklang;
+                if (dying.sinken > 0 && dying.t > ende - dying.sinken) {
+                    if (!Number.isFinite(dying.liegeY)) dying.liegeY = creature.position.y;
+                    const u2 = Math.min(1, (dying.t - (ende - dying.sinken)) / dying.sinken);
+                    creature.position.y =
+                        dying.liegeY -
+                        u2 * u2 * this._kreaturLeib(creature, 0, this._sinkLeib || (this._sinkLeib = {})).hoehe;
+                }
+                if (dying.t >= ende) {
                     this.removeCreature(creature);
                     i--;
                 }
