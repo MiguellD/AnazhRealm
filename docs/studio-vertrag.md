@@ -120,7 +120,8 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   0 < hyst < 0,5) = die Hysterese dieser Grenze (fern erst jenseits (1+h)·ab, zurück erst innerhalb (1−h)·ab) ·
   `wurf.seh` (nur an einer selbst werfenden Stufe; eine nicht-leere Teilmenge von phyto-core `BUDGET_GESETZ.seh`) =
   der werfende Teil der Stufe nach Seh-Klasse (Tier `["haar"]`, Mensch `["haut", "stoff", "haar"]`); der Rest
-  der Stufe wirft nie. (Die Baum-Form `wurf.durchmesserM` bleibt; beide Formen trägt derselbe Validator.)
+  der Stufe wirft nie. (Der Wurf-Teil des Baums ist eine eigene Form derselben Zeile — E1, Sache der Pflanzen-Familie;
+  `wurf.seh` ist die Form der Gelenk-Gestalt, der Validator prüft sie neben jener.)
 - `band` (DARF, ganze Zahl > 0 und < `tris`): das Profi-Band-Ziel der Stufe (Haushalt), solange die
   gebaute Hülle `tris` darüber liegt — offen und benannt, die Wand druckt den Faktor; erreicht die Stufe
   das Band, fällt das Feld und `tris` IST das Band. `tris` bleibt die Ratsche (darf nur fallen).
