@@ -1,0 +1,21 @@
+basis (f2361bb1) bereit 23:20:44
+basis lauf fertig 23:21:37
+basis zerlegen (ohne post) exit 0 23:23:24
+basis post-probe exit 1 23:23:33
+basis fertig 23:23:33
+boden (d812a15e) bereit 23:23:48
+boden lauf fertig 23:24:44
+boden zerlegen (ohne post) exit 0 23:25:53
+boden post-probe exit 1 23:26:01
+boden rauschprobe exit 0 23:26:01
+boden fertig 23:26:01
+feld (fd383b38) bereit 23:26:21
+feld lauf fertig 23:27:15
+feld zerlegen (ohne post) exit 0 23:28:31
+feld post-probe exit 1 23:28:39
+feld fertig 23:28:39
+post (24c955cc) bereit 23:28:54
+post lauf fertig 23:29:48
+post zerlegen exit 0 23:31:21
+post fertig 23:31:25
+ALLES ENDE 23:31:30

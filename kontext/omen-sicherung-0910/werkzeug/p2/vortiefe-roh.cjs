@@ -1,0 +1,120 @@
+// Umbau: die Vortiefe zieht ihr Bild als rohen Pass (0710-3, gelb +0,31 ms CPU) — node vortiefe-roh.cjs <anazhRealm.js>
+const fs = require("fs");
+const f = process.argv[2];
+let s = fs.readFileSync(f, "utf8");
+const r = (a, b) => {
+    if (s.split(a).length !== 2) throw new Error("Anker: " + a.slice(0, 70));
+    s = s.replace(a, b);
+};
+const NL = "\n";
+r(
+    [
+        "    // bei 1080p. Jetzt trägt die Vortiefe 16 bit (3,95 MB), und an der EINEN Stelle, an der der Knoten kopiert",
+        "    // (`renderer.copyTextureToTexture(currentDepth, _historyRenderTarget.depthTexture)`), zeichnet ein Vollbild-Quad die",
+        "    // Szenen-Tiefe als Fragment-Tiefe in das Geschichts-Ziel — Farbe ungeschrieben (die Geschichte bleibt, wie sie ist),",
+        "    // Tiefe ohne Test (jedes Pixel), geladen Texel für Texel (`load`, kein Filter). Jeder andere Kopier-Ruf fährt r184.",
+        "    // Das Geschichts-Ziel trägt seine Tiefe als Anhang (`depthBuffer`, sonst baut r184 keinen Tiefen-Anhang) — dauerhaft:",
+        "    // r184 hält den Pass-Deskriptor je Ziel ohne den Schalter im Schlüssel, ein Zug mit umgeschaltetem Anhang fände einen",
+        '    // Deskriptor ohne Tiefe (gate:ziel-zensus, Probe mit vorher geleertem Ziel: "setting depthLoadOp" auf undefined). Die',
+        "    // Geschichte zeichnet sonst niemand. gate:vendor-anker pinnt die Kopier-Stelle des Knotens, gate:ziel-zensus (d) den Weg.",
+        "    _traaVortiefe(traa) {",
+        "        const rend = this.state.renderer;",
+        "        const ziel = traa && traa._historyRenderTarget;",
+        "        const T = THREE.TSL;",
+        '        if (!ziel || !ziel.depthTexture || !rend || typeof rend.copyTextureToTexture !== "function" || !T) {',
+    ].join(NL),
+    [
+        "    // bei 1080p. Jetzt trägt die Vortiefe 16 bit (3,95 MB), und an der EINEN Stelle, an der der Knoten kopiert",
+        "    // (`renderer.copyTextureToTexture(currentDepth, _historyRenderTarget.depthTexture)`), zeichnet ein Vollbild-Zug die",
+        "    // Szenen-Tiefe als Fragment-Tiefe in die Tiefe des Geschichts-Ziels (`_traaVortiefeZug`) — Farbe ungeschrieben (die",
+        "    // Geschichte bleibt, wie sie ist), Tiefe ohne Test (jedes Pixel), geladen Texel für Texel (kein Filter). Jeder andere",
+        "    // Kopier-Ruf fährt r184. gate:vendor-anker pinnt die Kopier-Stelle des Knotens, gate:ziel-zensus (d) den Weg.",
+        "    _traaVortiefe(traa) {",
+        "        const rend = this.state.renderer;",
+        "        const ziel = traa && traa._historyRenderTarget;",
+        '        if (!ziel || !ziel.depthTexture || !rend || typeof rend.copyTextureToTexture !== "function" || !rend.backend) {',
+    ].join(NL)
+);
+const alt0 = s.indexOf("        const tiefe = ziel.depthTexture;\n        tiefe.type = THREE.UnsignedShortType;\n        ziel.depthBuffer = true;");
+const ende = "            return undefined;\n        };\n    }\n";
+const alt1 = s.indexOf(ende, alt0);
+if (alt0 < 0 || alt1 < 0) throw new Error("Anker Vortiefe-Rumpf");
+const neu = [
+    "        const tiefe = ziel.depthTexture;",
+    "        tiefe.type = THREE.UnsignedShortType;",
+    "        const realm = this;",
+    "        const roh = rend.copyTextureToTexture;",
+    "        rend.copyTextureToTexture = function (von, nach, ...rest) {",
+    "            if (nach !== tiefe || !von || von.isDepthTexture !== true) return roh.call(this, von, nach, ...rest);",
+    "            realm._traaVortiefeZug(this, von, tiefe);",
+    "            return undefined;",
+    "        };",
+    "    }",
+    "",
+    "    // DER ZUG DER VORTIEFE (Gegenprüfung 0710-3, gelb: gpu-bank CPU je Frame 2,73 → 3,04 ms — der Zug war ein eigenes",
+    "    // `renderer.render` einer Szene mit Orthogonal-Kamera, Render-Liste, Material-Weg und Pass-Deskriptor für EIN",
+    "    // Vollbild-Dreieck): ein roher Pass auf eigenem Encoder, so wie r184s eigene Kopie (`copyTextureToTexture` erzeugt",
+    "    // einen Encoder und reicht ihn sofort ein) — dieselbe Stelle in der Folge der Queue. Ein Vollbild-Dreieck lädt die",
+    "    // Szenen-Tiefe Texel für Texel und schreibt sie als Fragment-Tiefe (Test immer, kein Farb-Anhang); die Ziele legt r184",
+    "    // an wie für seine Kopie (`_textures.updateTexture`, auch nach jedem Resize).",
+    "    _traaVortiefeZug(rend, von, nach) {",
+    "        const be = rend.backend;",
+    "        rend._textures.updateTexture(von);",
+    "        rend._textures.updateTexture(nach);",
+    "        const q = be.get(von).texture;",
+    "        const z = be.get(nach).texture;",
+    "        if (!q || !z) return;",
+    "        let V = this._traaVortiefeGpu;",
+    "        if (!V || V.format !== z.format) {",
+    "            const modul = be.device.createShaderModule({",
+    '                label: "TRAA-Vortiefe",',
+    "                code:",
+    '                    "@group(0) @binding(0) var tiefe: texture_depth_2d;\\n" +',
+    '                    "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\\n" +',
+    '                    "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\\n" +',
+    '                    "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\\n" +',
+    '                    "}\\n" +',
+    '                    "@fragment fn fs(@builtin(position) p: vec4f) -> @builtin(frag_depth) f32 {\\n" +',
+    '                    "    return textureLoad(tiefe, vec2i(p.xy), 0);\\n" +',
+    '                    "}\\n",',
+    "            });",
+    "            V = this._traaVortiefeGpu = {",
+    "                format: z.format,",
+    "                pipe: be.device.createRenderPipeline({",
+    '                    label: "TRAA-Vortiefe",',
+    '                    layout: "auto",',
+    '                    vertex: { module: modul, entryPoint: "vs" },',
+    '                    fragment: { module: modul, entryPoint: "fs", targets: [] },',
+    '                    depthStencil: { format: z.format, depthWriteEnabled: true, depthCompare: "always" },',
+    '                    primitive: { topology: "triangle-list" },',
+    "                }),",
+    "                quelle: null,",
+    "                ziel: null,",
+    "            };",
+    "        }",
+    "        if (V.quelle !== q || V.ziel !== z) {",
+    "            V.gruppe = be.device.createBindGroup({",
+    "                layout: V.pipe.getBindGroupLayout(0),",
+    '                entries: [{ binding: 0, resource: q.createView({ aspect: "depth-only" }) }],',
+    "            });",
+    "            V.ansicht = z.createView();",
+    "            V.quelle = q;",
+    "            V.ziel = z;",
+    "        }",
+    '        const enc = be.device.createCommandEncoder({ label: "TRAA-Vortiefe" });',
+    "        const pass = enc.beginRenderPass({",
+    '            label: "TRAA-Vortiefe",',
+    "            colorAttachments: [],",
+    '            depthStencilAttachment: { view: V.ansicht, depthLoadOp: "load", depthStoreOp: "store" },',
+    "        });",
+    "        pass.setPipeline(V.pipe);",
+    "        pass.setBindGroup(0, V.gruppe);",
+    "        pass.draw(3);",
+    "        pass.end();",
+    "        be.device.queue.submit([enc.finish()]);",
+    "    }",
+    "",
+].join(NL);
+s = s.slice(0, alt0) + neu + s.slice(alt1 + ende.length);
+fs.writeFileSync(f, s);
+console.log("Vortiefe als roher Pass geschrieben");

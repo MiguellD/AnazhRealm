@@ -1,0 +1,8610 @@
+{
+ "echt": true,
+ "boot": {
+  "art": "erst",
+  "serie": null,
+  "ladungen": 1
+ },
+ "inventur": {
+  "zensus": {
+   "klassen": [
+    {
+     "klasse": "f:tanne:L1",
+     "stufe": 1,
+     "art": "tree",
+     "cmd": 8,
+     "tris": 61796,
+     "je": {
+      "k0": 4,
+      "haupt": 4
+     },
+     "jeTris": {
+      "k0": 29210,
+      "haupt": 32586
+     },
+     "inst": 14,
+     "dMin": 10,
+     "dMax": 36
+    },
+    {
+     "klasse": "f:fichte:L1",
+     "stufe": 1,
+     "art": "tree",
+     "cmd": 8,
+     "tris": 49148,
+     "je": {
+      "k0": 4,
+      "haupt": 4
+     },
+     "jeTris": {
+      "k0": 23102,
+      "haupt": 26046
+     },
+     "inst": 10,
+     "dMin": 23,
+     "dMax": 47
+    },
+    {
+     "klasse": "f:eiche:L1",
+     "stufe": 1,
+     "art": "tree",
+     "cmd": 8,
+     "tris": 22348,
+     "je": {
+      "k0": 4,
+      "haupt": 4
+     },
+     "jeTris": {
+      "k0": 7306,
+      "haupt": 15042
+     },
+     "inst": 4,
+     "dMin": 15,
+     "dMax": 18
+    },
+    {
+     "klasse": "f:birke:L1",
+     "stufe": 1,
+     "art": "tree",
+     "cmd": 5,
+     "tris": 27256,
+     "je": {
+      "haupt": 3,
+      "k0": 2
+     },
+     "jeTris": {
+      "haupt": 17812,
+      "k0": 9444
+     },
+     "inst": 6,
+     "dMin": 5,
+     "dMax": 16
+    },
+    {
+     "klasse": "streuSatz",
+     "stufe": null,
+     "art": null,
+     "cmd": 5,
+     "tris": 28540,
+     "je": {
+      "haupt": 5
+     },
+     "jeTris": {
+      "haupt": 28540
+     },
+     "inst": 5,
+     "dMin": 1238,
+     "dMax": 1238
+    },
+    {
+     "klasse": "f:strauch:L1",
+     "stufe": 1,
+     "art": "shrub",
+     "cmd": 4,
+     "tris": 7424,
+     "je": {
+      "k0": 2,
+      "haupt": 2
+     },
+     "jeTris": {
+      "k0": 4364,
+      "haupt": 3060
+     },
+     "inst": 6,
+     "dMin": 10,
+     "dMax": 22
+    },
+    {
+     "klasse": "nahWiese",
+     "stufe": null,
+     "art": null,
+     "cmd": 4,
+     "tris": 80094,
+     "je": {
+      "haupt": 4
+     },
+     "jeTris": {
+      "haupt": 80094
+     },
+     "inst": 259,
+     "dMin": 2,
+     "dMax": 16
+    },
+    {
+     "klasse": "bodenSatz",
+     "stufe": null,
+     "art": null,
+     "cmd": 3,
+     "tris": 106330,
+     "je": {
+      "k0": 1,
+      "k1": 1,
+      "haupt": 1
+     },
+     "jeTris": {
+      "k0": 50452,
+      "k1": 28622,
+      "haupt": 27256
+     },
+     "inst": 1,
+     "dMin": 1238,
+     "dMax": 1238
+    },
+    {
+     "klasse": "bauSatz",
+     "stufe": null,
+     "art": null,
+     "cmd": 3,
+     "tris": 6650,
+     "je": {
+      "k0": 1,
+      "haupt": 2
+     },
+     "jeTris": {
+      "k0": 3080,
+      "haupt": 3570
+     },
+     "inst": 2,
+     "dMin": 1238,
+     "dMax": 1238
+    },
+    {
+     "klasse": "f:birke:L0",
+     "stufe": 0,
+     "art": "tree",
+     "cmd": 3,
+     "tris": 17368,
+     "je": {
+      "haupt": 3
+     },
+     "jeTris": {
+      "haupt": 17368
+     },
+     "inst": 3,
+     "dMin": 5,
+     "dMax": 5
+    },
+    {
+     "klasse": "fern-ring",
+     "stufe": null,
+     "art": null,
+     "cmd": 3,
+     "tris": 17280,
+     "je": {
+      "haupt": 3
+     },
+     "jeTris": {
+      "haupt": 17280
+     },
+     "inst": 3,
+     "dMin": 25,
+     "dMax": 126
+    },
+    {
+     "klasse": "dsl-insel",
+     "stufe": null,
+     "art": null,
+     "cmd": 3,
+     "tris": 9064,
+     "je": {
+      "haupt": 3
+     },
+     "jeTris": {
+      "haupt": 9064
+     },
+     "inst": 3,
+     "dMin": 1206,
+     "dMax": 1211
+    },
+    {
+     "klasse": "formationenSatz",
+     "stufe": null,
+     "art": null,
+     "cmd": 2,
+     "tris": 2240,
+     "je": {
+      "k0": 1,
+      "haupt": 1
+     },
+     "jeTris": {
+      "k0": 1280,
+      "haupt": 960
+     },
+     "inst": 1,
+     "dMin": 1238,
+     "dMax": 1238
+    },
+    {
+     "klasse": "f:tanne:L0",
+     "stufe": 0,
+     "art": "tree",
+     "cmd": 2,
+     "tris": 17720,
+     "je": {
+      "haupt": 2
+     },
+     "jeTris": {
+      "haupt": 17720
+     },
+     "inst": 2,
+     "dMin": 10,
+     "dMax": 10
+    },
+    {
+     "klasse": "f:strauch:L0",
+     "stufe": 0,
+     "art": "shrub",
+     "cmd": 2,
+     "tris": 8612,
+     "je": {
+      "haupt": 2
+     },
+     "jeTris": {
+      "haupt": 8612
+     },
+     "inst": 2,
+     "dMin": 10,
+     "dMax": 10
+    },
+    {
+     "klasse": "feld-pass",
+     "stufe": null,
+     "art": null,
+     "cmd": 2,
+     "tris": 13,
+     "je": {
+      "haupt": 2
+     },
+     "jeTris": {
+      "haupt": 13
+     },
+     "inst": 2,
+     "dMin": 1239,
+     "dMax": 1239
+    },
+    {
+     "klasse": "Render Pipeline",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 1,
+     "je": {
+      "OrthographicCamera": 1
+     },
+     "jeTris": {
+      "OrthographicCamera": 1
+     },
+     "inst": 0,
+     "dMin": null,
+     "dMax": null
+    },
+    {
+     "klasse": "TRAA",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 1,
+     "je": {
+      "OrthographicCamera": 1
+     },
+     "jeTris": {
+      "OrthographicCamera": 1
+     },
+     "inst": 0,
+     "dMin": null,
+     "dMax": null
+    },
+    {
+     "klasse": "fimp:atlas:L2",
+     "stufe": 2,
+     "art": null,
+     "cmd": 1,
+     "tris": 190,
+     "je": {
+      "haupt": 1
+     },
+     "jeTris": {
+      "haupt": 190
+     },
+     "inst": 95,
+     "dMin": 15,
+     "dMax": 80
+    },
+    {
+     "klasse": "himmel",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 1984,
+     "je": {
+      "haupt": 1
+     },
+     "jeTris": {
+      "haupt": 1984
+     },
+     "inst": 1,
+     "dMin": 0,
+     "dMax": 0
+    },
+    {
+     "klasse": "himmel-sonne",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 480,
+     "je": {
+      "haupt": 1
+     },
+     "jeTris": {
+      "haupt": 480
+     },
+     "inst": 1,
+     "dMin": 395,
+     "dMax": 395
+    },
+    {
+     "klasse": "wasserSatz",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 2164,
+     "je": {
+      "haupt": 1
+     },
+     "jeTris": {
+      "haupt": 2164
+     },
+     "inst": 1,
+     "dMin": 1238,
+     "dMax": 1238
+    },
+    {
+     "klasse": "farWater",
+     "stufe": null,
+     "art": null,
+     "cmd": 1,
+     "tris": 2376,
+     "je": {
+      "haupt": 1
+     },
+     "jeTris": {
+      "haupt": 2376
+     },
+     "inst": 1,
+     "dMin": 32,
+     "dMax": 32
+    }
+   ],
+   "passe": {
+    "OrthographicCamera": {
+     "cmd": 2,
+     "tris": 2
+    },
+    "haupt": {
+     "cmd": 50,
+     "tris": 312217
+    },
+    "k0": {
+     "cmd": 19,
+     "tris": 128238
+    },
+    "k1": {
+     "cmd": 1,
+     "tris": 28622
+    }
+   },
+   "gesamt": {
+    "cmd": 72,
+    "tris": 469079
+   },
+   "unbenannt": 0
+  },
+  "passe": [
+   {
+    "name": "post",
+    "n": 1,
+    "tiefe": 0,
+    "eltern": null,
+    "kinder": [
+     "TRAA"
+    ]
+   },
+   {
+    "name": "TRAA",
+    "n": 1,
+    "tiefe": 1,
+    "eltern": "post",
+    "kinder": [
+     "haupt"
+    ]
+   },
+   {
+    "name": "haupt",
+    "n": 1,
+    "tiefe": 2,
+    "eltern": "TRAA",
+    "kinder": [
+     "k0",
+     "k1"
+    ]
+   },
+   {
+    "name": "k0",
+    "n": 1,
+    "tiefe": 3,
+    "eltern": "haupt",
+    "kinder": []
+   },
+   {
+    "name": "k1",
+    "n": 1,
+    "tiefe": 3,
+    "eltern": "haupt",
+    "kinder": []
+   }
+  ],
+  "knoten": {
+   "post": true,
+   "traa": true,
+   "tiefenkopie": true
+  },
+  "kette": {
+   "bloomStrength": {
+    "tiefe": 3,
+    "knoten": 1008,
+    "kante": "OperatorNode(+).bNode"
+   },
+   "godrayStrength": {
+    "tiefe": 3,
+    "knoten": 1008,
+    "kante": "OperatorNode(+).bNode"
+   },
+   "localContrast": {
+    "tiefe": 5,
+    "knoten": 1008,
+    "kante": "OperatorNode(+).bNode"
+   }
+  },
+  "schattenTakt": {
+   "k0": 2,
+   "k1": 12
+  },
+  "anatomie": {
+   "frames": 12,
+   "renderPaesse": [
+    {
+     "was": "haupt",
+     "n": 1,
+     "mb": 23.73,
+     "ziele": "rgba16float 1920×1080 clear + depth24plus 1920×1080 clear"
+    },
+    {
+     "was": "haupt (Neustart)",
+     "n": 1,
+     "mb": 23.73,
+     "ziele": "rgba16float 1920×1080 load + depth24plus 1920×1080 load"
+    },
+    {
+     "was": "TRAA",
+     "n": 1,
+     "mb": 15.82,
+     "ziele": "rgba16float 1920×1080 clear"
+    },
+    {
+     "was": "post",
+     "n": 1,
+     "mb": 7.91,
+     "ziele": "bgra8unorm 1920×1080 clear"
+    },
+    {
+     "was": "k0",
+     "n": 0.5,
+     "mb": 6,
+     "ziele": "r8unorm 2048×2048 clear + depth16unorm 2048×2048 clear"
+    },
+    {
+     "was": "k1",
+     "n": 0.08,
+     "mb": 1,
+     "ziele": "r8unorm 2048×2048 clear + depth16unorm 2048×2048 clear"
+    }
+   ],
+   "renderSumme": {
+    "n": 4.58,
+    "mb": 78.191
+   },
+   "ungestempelt": [],
+   "stempelBruch": [
+    {
+     "was": "haupt",
+     "n": 1,
+     "mb": 0
+    }
+   ],
+   "computePaesse": [],
+   "dispatches": 0,
+   "kopien": [
+    {
+     "was": "post: Textur TRAANode.resolve → TRAANode.history",
+     "n": 1,
+     "mb": 15.82
+    },
+    {
+     "was": "haupt: Textur depth → szene:tiefenkopie",
+     "n": 1,
+     "mb": 7.91
+    },
+    {
+     "was": "post: Textur depth → ?",
+     "n": 1,
+     "mb": 7.91
+    }
+   ],
+   "kopienSumme": {
+    "n": 3,
+    "mb": 31.641
+   },
+   "hochladen": [
+    {
+     "was": "haupt: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+     "n": 100,
+     "mb": 0.003
+    },
+    {
+     "was": "haupt: Puffer bindingBufferundefined_UniformBuffer_#_(fragment)",
+     "n": 41,
+     "mb": 0.001
+    },
+    {
+     "was": "k0: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+     "n": 1.5,
+     "mb": 0
+    },
+    {
+     "was": "TRAA: Puffer bindingBuffer#_object_(vertex,fragment,compute)",
+     "n": 1,
+     "mb": 0
+    },
+    {
+     "was": "k1: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+     "n": 0.25,
+     "mb": 0
+    }
+   ],
+   "hochladenSumme": {
+    "n": 143.75,
+    "mb": 0.004
+   },
+   "submits": 5.58,
+   "befehlsPuffer": 5.58,
+   "executeBundles": 1,
+   "bundles": 1,
+   "draws": [
+    {
+     "was": "haupt",
+     "n": 25,
+     "mb": 0
+    },
+    {
+     "was": "k0",
+     "n": 9.5,
+     "mb": 0
+    },
+    {
+     "was": "TRAA",
+     "n": 1,
+     "mb": 0
+    },
+    {
+     "was": "post",
+     "n": 1,
+     "mb": 0
+    },
+    {
+     "was": "k1",
+     "n": 0.08,
+     "mb": 0
+    }
+   ],
+   "setPipeline": 23.58,
+   "setBindGroup": 63.67,
+   "anlegen": {
+    "createCommandEncoder": 5.58
+   },
+   "leinwand": 1
+  },
+  "leinwand": [
+   1920,
+   1080
+  ],
+  "kamera": {
+   "pos": [
+    -900,
+    26.3,
+    -850
+   ],
+   "blick": [
+    0,
+    0,
+    1
+   ]
+  },
+  "adapter": "nvidia pascal"
+ },
+ "schalter": {
+  "schalter": [
+   {
+    "id": "haupt",
+    "titel": "Hauptbild ganz (Szenen-Pass samt Schatten-Auslösung und Tiefen-Kopie)",
+    "art": "pass",
+    "passe": [
+     "haupt"
+    ],
+    "sigma": false
+   },
+   {
+    "id": "traa",
+    "titel": "TRAA (Resolve-Quad + Geschichts- und Tiefen-Kopie)",
+    "art": "knoten",
+    "traa": true,
+    "sigma": true
+   },
+   {
+    "id": "traaKopien",
+    "titel": "  davon die zwei Kopien im TRAA-Knoten",
+    "art": "knoten",
+    "traaKopien": true,
+    "sigma": false
+   },
+   {
+    "id": "nachbild",
+    "titel": "Nachbild (Bloom · Godrays · Kontrast · Grading; die Ausgabe-Wandlung bleibt)",
+    "art": "kette",
+    "nachbild": true,
+    "sigma": false
+   },
+   {
+    "id": "bloom",
+    "titel": "  Bloom (9 Abtastungen des aufgelösten Bilds)",
+    "art": "kette",
+    "stufe": "bloomStrength",
+    "sigma": true
+   },
+   {
+    "id": "godrays",
+    "titel": "  Godrays (20 Abtastungen, radialer March)",
+    "art": "kette",
+    "stufe": "godrayStrength",
+    "sigma": true
+   },
+   {
+    "id": "kontrast",
+    "titel": "  Lokaler Kontrast (4 Abtastungen)",
+    "art": "kette",
+    "stufe": "localContrast",
+    "sigma": true
+   },
+   {
+    "id": "baum",
+    "titel": "Baum L0/L1 + Werfer",
+    "art": "klasse",
+    "klassen": [
+     "f:tanne:L1",
+     "f:fichte:L1",
+     "f:eiche:L1",
+     "f:birke:L1",
+     "f:birke:L0",
+     "f:tanne:L0"
+    ],
+    "befehle": 34,
+    "sigma": true
+   },
+   {
+    "id": "boden",
+    "titel": "Boden (Boden-Satz · Wasser-Satz · Fern-Ring · Fern-Wasser)",
+    "art": "klasse",
+    "klassen": [
+     "bodenSatz",
+     "fern-ring"
+    ],
+    "befehle": 6,
+    "sigma": true
+   },
+   {
+    "id": "feldPass",
+    "titel": "Feld-Pass / Welt-March (Stellvertreter-March + Panorama-Dreieck, die letzten Draws)",
+    "art": "klasse",
+    "klassen": [
+     "feld-pass"
+    ],
+    "befehle": 2,
+    "sigma": true
+   },
+   {
+    "id": "karten",
+    "titel": "Karten (jede Fernstufe L2)",
+    "art": "klasse",
+    "klassen": [
+     "fimp:atlas:L2"
+    ],
+    "befehle": 1,
+    "sigma": true
+   },
+   {
+    "id": "leer",
+    "titel": "Untergrenze: Leinwand-Clear + Ausgabe (Direktpfad, nichts sichtbar, kein Schatten, kein unbekannter Pass)",
+    "art": "boden",
+    "direkt": true,
+    "alleKlassen": true,
+    "passe": [
+     "k0",
+     "k1"
+    ],
+    "sigma": false
+   }
+  ],
+  "huellen": [],
+  "unbekannt": [],
+  "fehlend": []
+ },
+ "auswertung": {
+  "n": 12,
+  "runden": 8,
+  "gesamtMs": 19.41,
+  "gesamtCpuMs": 3.25,
+  "gesamtStempelMs": 0.16,
+  "stempelJePass": {
+   "post": 0.09,
+   "TRAA": 0.05,
+   "haupt": 0,
+   "k0": 0.01,
+   "k1": 0
+  },
+  "gpuGebunden": true,
+  "sigmaMs": 14.32,
+  "restMs": 5.09,
+  "leererFrameMs": 1.28,
+  "wechselwirkungMs": 3.81,
+  "zeilen": [
+   {
+    "id": "haupt",
+    "titel": "Hauptbild ganz (Szenen-Pass samt Schatten-Auslösung und Tiefen-Kopie)",
+    "art": "pass",
+    "sigma": false,
+    "deltaMs": 17.27,
+    "streuungMs": 0.14,
+    "spanneMs": [
+     17.05,
+     17.9
+    ],
+    "deltas": [
+     17.36,
+     17.05,
+     17.31,
+     17.23,
+     17.31,
+     17.08,
+     17.17,
+     17.9
+    ],
+    "anMs": 19.48,
+    "ausMs": 2.27,
+    "deltaCpuMs": 2.97,
+    "deltaStempelMs": 0.02,
+    "stempelAn": {
+     "post": 0.088,
+     "TRAA": 0.052,
+     "haupt": 0.003,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "post": 0.085,
+     "TRAA": 0.052
+    },
+    "geschaltet": true,
+    "beleg": "Renders 96→0 · Bild 5.7 %",
+    "klassen": null,
+    "anteilPct": 89
+   },
+   {
+    "id": "traa",
+    "titel": "TRAA (Resolve-Quad + Geschichts- und Tiefen-Kopie)",
+    "art": "knoten",
+    "sigma": true,
+    "deltaMs": 1.1,
+    "streuungMs": 0.14,
+    "spanneMs": [
+     0.95,
+     1.7
+    ],
+    "deltas": [
+     1.7,
+     0.97,
+     1.1,
+     1.09,
+     1.01,
+     0.95,
+     1.18,
+     1.19
+    ],
+    "anMs": 19.41,
+    "ausMs": 18.34,
+    "deltaCpuMs": 0.14,
+    "deltaStempelMs": 0.05,
+    "stempelAn": {
+     "post": 0.088,
+     "TRAA": 0.052,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "post": 0.087,
+     "haupt": 0.002,
+     "k0": 0.043,
+     "k1": 0.002
+    },
+    "geschaltet": true,
+    "beleg": "TRAA 96→0, Szene im AUS 96× gerendert, Haken 1/Frame · Bild 5.7 %",
+    "klassen": null,
+    "anteilPct": 5.7
+   },
+   {
+    "id": "traaKopien",
+    "titel": "  davon die zwei Kopien im TRAA-Knoten",
+    "art": "knoten",
+    "sigma": false,
+    "deltaMs": 0.22,
+    "streuungMs": 0.06,
+    "spanneMs": [
+     0.12,
+     0.41
+    ],
+    "deltas": [
+     0.25,
+     0.2,
+     0.12,
+     0.25,
+     0.18,
+     0.26,
+     0.18,
+     0.41
+    ],
+    "anMs": 19.33,
+    "ausMs": 19.08,
+    "deltaCpuMs": -0.23,
+    "deltaStempelMs": 0,
+    "stempelAn": {
+     "post": 0.088,
+     "TRAA": 0.053,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "post": 0.088,
+     "TRAA": 0.053,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "geschaltet": true,
+    "beleg": "2 Kopien/Frame unterdrückt · Bild 3.8 %",
+    "klassen": null,
+    "anteilPct": 1.1
+   },
+   {
+    "id": "nachbild",
+    "titel": "Nachbild (Bloom · Godrays · Kontrast · Grading; die Ausgabe-Wandlung bleibt)",
+    "art": "kette",
+    "sigma": false,
+    "deltaMs": 1.14,
+    "streuungMs": 0.12,
+    "spanneMs": [
+     0.97,
+     1.33
+    ],
+    "deltas": [
+     0.97,
+     1.19,
+     1.25,
+     1.08,
+     1.12,
+     1.17,
+     0.98,
+     1.33
+    ],
+    "anMs": 19.38,
+    "ausMs": 18.24,
+    "deltaCpuMs": -0.05,
+    "deltaStempelMs": 0.08,
+    "stempelAn": {
+     "post": 0.088,
+     "TRAA": 0.052,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "post": 0.008,
+     "TRAA": 0.052,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "geschaltet": true,
+    "beleg": "Abtastungen der Ausgabe 36→3 · Bild 93.3 %",
+    "klassen": null,
+    "anteilPct": 5.9
+   },
+   {
+    "id": "bloom",
+    "titel": "  Bloom (9 Abtastungen des aufgelösten Bilds)",
+    "art": "kette",
+    "sigma": true,
+    "deltaMs": 0.33,
+    "streuungMs": 0.22,
+    "spanneMs": [
+     -0.02,
+     0.66
+    ],
+    "deltas": [
+     -0.02,
+     0.1,
+     0.32,
+     0.55,
+     0.4,
+     0.32,
+     0.66,
+     0.33
+    ],
+    "anMs": 19.56,
+    "ausMs": 19.19,
+    "deltaCpuMs": 0.14,
+    "deltaStempelMs": 0.02,
+    "stempelAn": {
+     "post": 0.088,
+     "TRAA": 0.052,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "post": 0.063,
+     "TRAA": 0.053,
+     "haupt": 0.003,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "geschaltet": true,
+    "beleg": "Abtastungen der Ausgabe 36→27 · Bild 2.4 %",
+    "klassen": null,
+    "anteilPct": 1.7
+   },
+   {
+    "id": "godrays",
+    "titel": "  Godrays (20 Abtastungen, radialer March)",
+    "art": "kette",
+    "sigma": true,
+    "deltaMs": 0.66,
+    "streuungMs": 0.11,
+    "spanneMs": [
+     0.35,
+     1.08
+    ],
+    "deltas": [
+     1.08,
+     0.63,
+     0.6,
+     0.61,
+     0.69,
+     0.74,
+     0.35,
+     0.9
+    ],
+    "anMs": 19.38,
+    "ausMs": 18.71,
+    "deltaCpuMs": -0.14,
+    "deltaStempelMs": 0.05,
+    "stempelAn": {
+     "post": 0.088,
+     "TRAA": 0.052,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "post": 0.038,
+     "TRAA": 0.053,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "geschaltet": true,
+    "beleg": "Abtastungen der Ausgabe 36→16 · Bild 2.4 %",
+    "klassen": null,
+    "anteilPct": 3.4
+   },
+   {
+    "id": "kontrast",
+    "titel": "  Lokaler Kontrast (4 Abtastungen)",
+    "art": "kette",
+    "sigma": true,
+    "deltaMs": 0.12,
+    "streuungMs": 0.18,
+    "spanneMs": [
+     -0.13,
+     0.29
+    ],
+    "deltas": [
+     0.09,
+     0.14,
+     0.29,
+     -0.13,
+     -0.12,
+     0.28,
+     0.19,
+     0.07
+    ],
+    "anMs": 19.45,
+    "ausMs": 19.35,
+    "deltaCpuMs": -0.08,
+    "deltaStempelMs": 0.01,
+    "stempelAn": {
+     "post": 0.116,
+     "TRAA": 0.053,
+     "haupt": 0.003,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "post": 0.081,
+     "TRAA": 0.052,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "geschaltet": true,
+    "beleg": "Abtastungen der Ausgabe 36→32 · Bild 1.8 %",
+    "klassen": null,
+    "anteilPct": 0.6
+   },
+   {
+    "id": "baum",
+    "titel": "Baum L0/L1 + Werfer",
+    "art": "klasse",
+    "sigma": true,
+    "deltaMs": 4.83,
+    "streuungMs": 0.13,
+    "spanneMs": [
+     4.63,
+     4.98
+    ],
+    "deltas": [
+     4.67,
+     4.86,
+     4.68,
+     4.63,
+     4.84,
+     4.85,
+     4.98,
+     4.83
+    ],
+    "anMs": 19.43,
+    "ausMs": 14.6,
+    "deltaCpuMs": 0.24,
+    "deltaStempelMs": 0.01,
+    "stempelAn": {
+     "post": 0.088,
+     "TRAA": 0.053,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "post": 0.086,
+     "TRAA": 0.052,
+     "haupt": 0.004,
+     "k0": 0.008,
+     "k1": 0.002
+    },
+    "geschaltet": true,
+    "beleg": "Befehle 34→0 · 34 Objekte · Bild 84.7 %",
+    "klassen": [
+     "f:tanne:L1",
+     "f:fichte:L1",
+     "f:eiche:L1",
+     "f:birke:L1",
+     "f:birke:L0",
+     "f:tanne:L0"
+    ],
+    "anteilPct": 24.9
+   },
+   {
+    "id": "boden",
+    "titel": "Boden (Boden-Satz · Wasser-Satz · Fern-Ring · Fern-Wasser)",
+    "art": "klasse",
+    "sigma": true,
+    "deltaMs": 6.7,
+    "streuungMs": 0.21,
+    "spanneMs": [
+     6.47,
+     7.02
+    ],
+    "deltas": [
+     6.68,
+     6.88,
+     6.6,
+     6.72,
+     7.02,
+     6.47,
+     7,
+     6.65
+    ],
+    "anMs": 19.32,
+    "ausMs": 12.62,
+    "deltaCpuMs": 0.07,
+    "deltaStempelMs": 0,
+    "stempelAn": {
+     "post": 0.089,
+     "TRAA": 0.053,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "post": 0.088,
+     "TRAA": 0.054,
+     "haupt": 0.013,
+     "k0": 0.007,
+     "k1": 0
+    },
+    "geschaltet": true,
+    "beleg": "Befehle 6→0 · 4 Objekte · Bild 50.3 %",
+    "klassen": [
+     "bodenSatz",
+     "fern-ring"
+    ],
+    "anteilPct": 34.5
+   },
+   {
+    "id": "feldPass",
+    "titel": "Feld-Pass / Welt-March (Stellvertreter-March + Panorama-Dreieck, die letzten Draws)",
+    "art": "klasse",
+    "sigma": true,
+    "deltaMs": 0.09,
+    "streuungMs": 0.18,
+    "spanneMs": [
+     -0.13,
+     0.32
+    ],
+    "deltas": [
+     -0.13,
+     0.13,
+     -0.1,
+     0.09,
+     0.02,
+     0.32,
+     0.09,
+     0.26
+    ],
+    "anMs": 19.45,
+    "ausMs": 19.35,
+    "deltaCpuMs": -0.1,
+    "deltaStempelMs": 0,
+    "stempelAn": {
+     "post": 0.087,
+     "TRAA": 0.052,
+     "haupt": 0.002,
+     "k0": 0.014,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "post": 0.089,
+     "TRAA": 0.053,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "geschaltet": true,
+    "beleg": "Befehle 2→0 · 2 Objekte · Bild 1.9 %",
+    "klassen": [
+     "feld-pass"
+    ],
+    "anteilPct": 0.5
+   },
+   {
+    "id": "karten",
+    "titel": "Karten (jede Fernstufe L2)",
+    "art": "klasse",
+    "sigma": true,
+    "deltaMs": 0.49,
+    "streuungMs": 0.09,
+    "spanneMs": [
+     -14.3,
+     0.66
+    ],
+    "deltas": [
+     0.56,
+     -14.3,
+     0.47,
+     0.66,
+     0.52,
+     0.42,
+     0.52,
+     0.43
+    ],
+    "anMs": 19.35,
+    "ausMs": 18.85,
+    "deltaCpuMs": 0.16,
+    "deltaStempelMs": 0,
+    "stempelAn": {
+     "post": 0.087,
+     "TRAA": 0.052,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "post": 0.088,
+     "TRAA": 0.053,
+     "haupt": 0.003,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "geschaltet": true,
+    "beleg": "Befehle 1→0 · 1 Objekte · Bild 9.7 %",
+    "klassen": [
+     "fimp:atlas:L2"
+    ],
+    "anteilPct": 2.5
+   },
+   {
+    "id": "leer",
+    "titel": "Untergrenze: Leinwand-Clear + Ausgabe (Direktpfad, nichts sichtbar, kein Schatten, kein unbekannter Pass)",
+    "art": "boden",
+    "sigma": false,
+    "deltaMs": 18.13,
+    "streuungMs": 0.19,
+    "spanneMs": [
+     17.93,
+     18.53
+    ],
+    "deltas": [
+     17.95,
+     18.47,
+     18.15,
+     18.12,
+     18.1,
+     18.53,
+     17.93,
+     18.21
+    ],
+    "anMs": 19.42,
+    "ausMs": 1.26,
+    "deltaCpuMs": 2.13,
+    "deltaStempelMs": 0.15,
+    "stempelAn": {
+     "post": 0.088,
+     "TRAA": 0.052,
+     "haupt": 0.002,
+     "k0": 0.015,
+     "k1": 0.002
+    },
+    "stempelAus": {
+     "haupt": 0,
+     "Output Color Transform": 0.007
+    },
+    "geschaltet": true,
+    "beleg": "Hauptbild-Befehle 50→0, post 96→0 · Bild 99.8 %",
+    "klassen": null,
+    "anteilPct": 93.4
+   }
+  ],
+  "bildRauschenPct": 2.4,
+  "zurueck": [],
+  "sekunden": 76.1,
+  "fenster": []
+ },
+ "roh": {
+  "n": 12,
+  "runden": 8,
+  "schalter": [
+   {
+    "id": "haupt",
+    "runden": [
+     {
+      "an": {
+       "ms": 19.533,
+       "cpu": 3.35,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 2.175,
+       "cpu": 0.325,
+       "stempel": 0.136,
+       "jePass": {
+        "post": 0.085,
+        "TRAA": 0.052
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 0,
+         "aus": 12
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 2.317,
+       "cpu": 0.242,
+       "stempel": 0.145,
+       "jePass": {
+        "post": 0.091,
+        "TRAA": 0.055
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 0,
+         "aus": 12
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.367,
+       "cpu": 3.167,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.583,
+       "cpu": 3.783,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 2.275,
+       "cpu": 0.408,
+       "stempel": 0.138,
+       "jePass": {
+        "post": 0.086,
+        "TRAA": 0.052
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 0,
+         "aus": 12
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 2.267,
+       "cpu": 0.292,
+       "stempel": 0.149,
+       "jePass": {
+        "post": 0.093,
+        "TRAA": 0.056
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 0,
+         "aus": 12
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.492,
+       "cpu": 3.7,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.014,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.475,
+       "cpu": 3.275,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 2.167,
+       "cpu": 0.233,
+       "stempel": 0.142,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.054
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 0,
+         "aus": 12
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 2.283,
+       "cpu": 0.367,
+       "stempel": 0.142,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.054
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 0,
+         "aus": 12
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.367,
+       "cpu": 3.25,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.342,
+       "cpu": 2.875,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 2.167,
+       "cpu": 0.2,
+       "stempel": 0.138,
+       "jePass": {
+        "post": 0.086,
+        "TRAA": 0.052
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 0,
+         "aus": 12
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 2.3,
+       "cpu": 0.242,
+       "stempel": 0.146,
+       "jePass": {
+        "post": 0.091,
+        "TRAA": 0.055
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 0,
+         "aus": 12
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 20.2,
+       "cpu": 3.092,
+       "stempel": 0.157,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 0,
+    "objekte": 0,
+    "beleg": {
+     "befehleAn": 0,
+     "befehleAus": 0,
+     "kollateral": 70,
+     "kollateralKlassen": [
+      "f:tanne:L1 8→0",
+      "f:fichte:L1 8→0",
+      "f:eiche:L1 8→0",
+      "f:birke:L1 5→0",
+      "streuSatz 5→0",
+      "f:strauch:L1 4→0",
+      "nahWiese 4→0",
+      "bodenSatz 3→0"
+     ],
+     "abtastungenAus": 36,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      }
+     },
+     "bildAenderungPct": 5.7
+    }
+   },
+   {
+    "id": "traa",
+    "runden": [
+     {
+      "an": {
+       "ms": 20.058,
+       "cpu": 3.358,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.358,
+       "cpu": 3.267,
+       "stempel": 0.134,
+       "jePass": {
+        "post": 0.087,
+        "haupt": 0.002,
+        "k0": 0.043,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 12
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.392,
+       "cpu": 3.383,
+       "stempel": 0.105,
+       "jePass": {
+        "post": 0.087,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 12
+      },
+      "an": {
+       "ms": 19.358,
+       "cpu": 3.35,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.35,
+       "cpu": 3.3,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.25,
+       "cpu": 3.267,
+       "stempel": 0.107,
+       "jePass": {
+        "post": 0.088,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 12
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.367,
+       "cpu": 3.308,
+       "stempel": 0.107,
+       "jePass": {
+        "post": 0.088,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 12
+      },
+      "an": {
+       "ms": 19.458,
+       "cpu": 3.583,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.392,
+       "cpu": 3.542,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.383,
+       "cpu": 3.017,
+       "stempel": 0.105,
+       "jePass": {
+        "post": 0.086,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 12
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.283,
+       "cpu": 3.283,
+       "stempel": 0.106,
+       "jePass": {
+        "post": 0.087,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 12
+      },
+      "an": {
+       "ms": 19.233,
+       "cpu": 3.467,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.433,
+       "cpu": 2.842,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.25,
+       "cpu": 2.983,
+       "stempel": 0.106,
+       "jePass": {
+        "post": 0.087,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 12
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.317,
+       "cpu": 2.85,
+       "stempel": 0.107,
+       "jePass": {
+        "post": 0.088,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 12
+      },
+      "an": {
+       "ms": 19.508,
+       "cpu": 3.325,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 147,
+    "objekte": 0,
+    "beleg": {
+     "befehleAn": 0,
+     "befehleAus": 0,
+     "kollateral": 1,
+     "kollateralKlassen": [
+      "TRAA 1→0"
+     ],
+     "abtastungenAus": 36,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 1,
+       "tris": 1
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "bildAenderungPct": 5.7
+    }
+   },
+   {
+    "id": "traaKopien",
+    "runden": [
+     {
+      "an": {
+       "ms": 19.35,
+       "cpu": 3.05,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.1,
+       "cpu": 3.533,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 24
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.033,
+       "cpu": 4.067,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 24
+      },
+      "an": {
+       "ms": 19.233,
+       "cpu": 3.458,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.317,
+       "cpu": 3.317,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.2,
+       "cpu": 3.55,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 24
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.133,
+       "cpu": 3.333,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 24
+      },
+      "an": {
+       "ms": 19.383,
+       "cpu": 3.1,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.4,
+       "cpu": 3.233,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.217,
+       "cpu": 3.5,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 24
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.017,
+       "cpu": 3.067,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 24
+      },
+      "an": {
+       "ms": 19.275,
+       "cpu": 3.408,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.225,
+       "cpu": 3.308,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.05,
+       "cpu": 3.392,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 24
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.933,
+       "cpu": 3.042,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 24
+      },
+      "an": {
+       "ms": 19.342,
+       "cpu": 3.267,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 288,
+    "objekte": 0,
+    "beleg": {
+     "befehleAn": 0,
+     "befehleAus": 0,
+     "kollateral": 0,
+     "kollateralKlassen": [],
+     "abtastungenAus": 36,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "bildAenderungPct": 3.8
+    }
+   },
+   {
+    "id": "nachbild",
+    "runden": [
+     {
+      "an": {
+       "ms": 19.267,
+       "cpu": 2.992,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.3,
+       "cpu": 2.908,
+       "stempel": 0.079,
+       "jePass": {
+        "post": 0.008,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.242,
+       "cpu": 3.15,
+       "stempel": 0.079,
+       "jePass": {
+        "post": 0.008,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.433,
+       "cpu": 3.583,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.492,
+       "cpu": 3.192,
+       "stempel": 0.161,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.242,
+       "cpu": 3.183,
+       "stempel": 0.078,
+       "jePass": {
+        "post": 0.008,
+        "TRAA": 0.051,
+        "haupt": 0.002,
+        "k0": 0.014,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.217,
+       "cpu": 3.217,
+       "stempel": 0.079,
+       "jePass": {
+        "post": 0.008,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.014,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.3,
+       "cpu": 3.033,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.508,
+       "cpu": 3.375,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.392,
+       "cpu": 3.375,
+       "stempel": 0.08,
+       "jePass": {
+        "post": 0.008,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.192,
+       "cpu": 3.167,
+       "stempel": 0.078,
+       "jePass": {
+        "post": 0.008,
+        "TRAA": 0.051,
+        "haupt": 0.003,
+        "k0": 0.014,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.358,
+       "cpu": 3.067,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.283,
+       "cpu": 3.267,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.308,
+       "cpu": 3.575,
+       "stempel": 0.079,
+       "jePass": {
+        "post": 0.008,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.014,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.058,
+       "cpu": 3.583,
+       "stempel": 0.079,
+       "jePass": {
+        "post": 0.008,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.392,
+       "cpu": 3.25,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 8,
+    "objekte": 0,
+    "beleg": {
+     "befehleAn": 0,
+     "befehleAus": 0,
+     "kollateral": 0,
+     "kollateralKlassen": [],
+     "abtastungenAus": 3,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "bildAenderungPct": 93.3
+    }
+   },
+   {
+    "id": "bloom",
+    "runden": [
+     {
+      "an": {
+       "ms": 19.208,
+       "cpu": 3.058,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.225,
+       "cpu": 3.533,
+       "stempel": 0.134,
+       "jePass": {
+        "post": 0.063,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.242,
+       "cpu": 3.358,
+       "stempel": 0.135,
+       "jePass": {
+        "post": 0.063,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.342,
+       "cpu": 3.142,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.45,
+       "cpu": 3.117,
+       "stempel": 0.157,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.014,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.125,
+       "cpu": 2.825,
+       "stempel": 0.135,
+       "jePass": {
+        "post": 0.063,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.042,
+       "cpu": 3.225,
+       "stempel": 0.134,
+       "jePass": {
+        "post": 0.063,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.592,
+       "cpu": 3.217,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.558,
+       "cpu": 3.408,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.158,
+       "cpu": 3.083,
+       "stempel": 0.134,
+       "jePass": {
+        "post": 0.063,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.233,
+       "cpu": 3.442,
+       "stempel": 0.133,
+       "jePass": {
+        "post": 0.062,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.558,
+       "cpu": 3.358,
+       "stempel": 0.161,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.625,
+       "cpu": 3.65,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.967,
+       "cpu": 3.167,
+       "stempel": 0.134,
+       "jePass": {
+        "post": 0.063,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.25,
+       "cpu": 3.408,
+       "stempel": 0.134,
+       "jePass": {
+        "post": 0.062,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.583,
+       "cpu": 3.808,
+       "stempel": 0.157,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.014,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 8,
+    "objekte": 0,
+    "beleg": {
+     "befehleAn": 0,
+     "befehleAus": 0,
+     "kollateral": 0,
+     "kollateralKlassen": [],
+     "abtastungenAus": 27,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "bildAenderungPct": 2.4
+    }
+   },
+   {
+    "id": "godrays",
+    "runden": [
+     {
+      "an": {
+       "ms": 19.683,
+       "cpu": 3.3,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.6,
+       "cpu": 3.192,
+       "stempel": 0.11,
+       "jePass": {
+        "post": 0.038,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.7,
+       "cpu": 3.783,
+       "stempel": 0.11,
+       "jePass": {
+        "post": 0.038,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.333,
+       "cpu": 3.533,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.333,
+       "cpu": 3.275,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.014,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.733,
+       "cpu": 3.25,
+       "stempel": 0.109,
+       "jePass": {
+        "post": 0.038,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.725,
+       "cpu": 3.15,
+       "stempel": 0.11,
+       "jePass": {
+        "post": 0.038,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.333,
+       "cpu": 2.842,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.45,
+       "cpu": 2.925,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.758,
+       "cpu": 2.833,
+       "stempel": 0.11,
+       "jePass": {
+        "post": 0.038,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.683,
+       "cpu": 3.5,
+       "stempel": 0.109,
+       "jePass": {
+        "post": 0.038,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.425,
+       "cpu": 3.183,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.175,
+       "cpu": 3.208,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.825,
+       "cpu": 3.675,
+       "stempel": 0.11,
+       "jePass": {
+        "post": 0.038,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.617,
+       "cpu": 2.875,
+       "stempel": 0.108,
+       "jePass": {
+        "post": 0.038,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.517,
+       "cpu": 2.842,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 8,
+    "objekte": 0,
+    "beleg": {
+     "befehleAn": 0,
+     "befehleAus": 0,
+     "kollateral": 0,
+     "kollateralKlassen": [],
+     "abtastungenAus": 16,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "bildAenderungPct": 2.4
+    }
+   },
+   {
+    "id": "kontrast",
+    "runden": [
+     {
+      "an": {
+       "ms": 19.483,
+       "cpu": 2.9,
+       "stempel": 0.188,
+       "jePass": {
+        "post": 0.116,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.392,
+       "cpu": 2.983,
+       "stempel": 0.151,
+       "jePass": {
+        "post": 0.081,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.392,
+       "cpu": 3.408,
+       "stempel": 0.153,
+       "jePass": {
+        "post": 0.082,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.533,
+       "cpu": 3.333,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.6,
+       "cpu": 3.283,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.308,
+       "cpu": 3.108,
+       "stempel": 0.153,
+       "jePass": {
+        "post": 0.081,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.567,
+       "cpu": 3.467,
+       "stempel": 0.153,
+       "jePass": {
+        "post": 0.081,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.433,
+       "cpu": 3.45,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.225,
+       "cpu": 3.158,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.342,
+       "cpu": 2.958,
+       "stempel": 0.153,
+       "jePass": {
+        "post": 0.081,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.125,
+       "cpu": 3.8,
+       "stempel": 0.153,
+       "jePass": {
+        "post": 0.081,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.408,
+       "cpu": 2.783,
+       "stempel": 0.157,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.458,
+       "cpu": 3.233,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.267,
+       "cpu": 3.317,
+       "stempel": 0.153,
+       "jePass": {
+        "post": 0.081,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.35,
+       "cpu": 3.675,
+       "stempel": 0.153,
+       "jePass": {
+        "post": 0.081,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.417,
+       "cpu": 3.158,
+       "stempel": 0.161,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 8,
+    "objekte": 0,
+    "beleg": {
+     "befehleAn": 0,
+     "befehleAus": 0,
+     "kollateral": 0,
+     "kollateralKlassen": [],
+     "abtastungenAus": 32,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "bildAenderungPct": 1.8
+    }
+   },
+   {
+    "id": "baum",
+    "runden": [
+     {
+      "an": {
+       "ms": 19.3,
+       "cpu": 3.317,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 14.633,
+       "cpu": 2.658,
+       "stempel": 0.152,
+       "jePass": {
+        "post": 0.086,
+        "TRAA": 0.052,
+        "haupt": 0.004,
+        "k0": 0.008,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 14.592,
+       "cpu": 2.817,
+       "stempel": 0.152,
+       "jePass": {
+        "post": 0.086,
+        "TRAA": 0.052,
+        "haupt": 0.004,
+        "k0": 0.009,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.45,
+       "cpu": 3.142,
+       "stempel": 0.161,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.325,
+       "cpu": 3.108,
+       "stempel": 0.161,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 14.642,
+       "cpu": 2.95,
+       "stempel": 0.155,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.053,
+        "haupt": 0.004,
+        "k0": 0.009,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 14.633,
+       "cpu": 2.942,
+       "stempel": 0.152,
+       "jePass": {
+        "post": 0.086,
+        "TRAA": 0.052,
+        "haupt": 0.004,
+        "k0": 0.009,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.258,
+       "cpu": 3.392,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.45,
+       "cpu": 3.108,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 14.608,
+       "cpu": 3.317,
+       "stempel": 0.155,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.053,
+        "haupt": 0.004,
+        "k0": 0.008,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 14.6,
+       "cpu": 3.033,
+       "stempel": 0.155,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.053,
+        "haupt": 0.004,
+        "k0": 0.009,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.45,
+       "cpu": 3.142,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.475,
+       "cpu": 3.233,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 14.492,
+       "cpu": 3.375,
+       "stempel": 0.155,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.053,
+        "haupt": 0.004,
+        "k0": 0.009,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 14.592,
+       "cpu": 2.458,
+       "stempel": 0.152,
+       "jePass": {
+        "post": 0.086,
+        "TRAA": 0.052,
+        "haupt": 0.004,
+        "k0": 0.008,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.417,
+       "cpu": 2.85,
+       "stempel": 0.163,
+       "jePass": {
+        "post": 0.091,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 0,
+    "objekte": 34,
+    "beleg": {
+     "befehleAn": 34,
+     "befehleAus": 0,
+     "kollateral": 0,
+     "kollateralKlassen": [],
+     "abtastungenAus": 36,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 30,
+       "tris": 185643
+      },
+      "k0": {
+       "cmd": 5,
+       "tris": 52270
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "bildAenderungPct": 84.7
+    }
+   },
+   {
+    "id": "boden",
+    "runden": [
+     {
+      "an": {
+       "ms": 19.233,
+       "cpu": 2.825,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 12.558,
+       "cpu": 2.983,
+       "stempel": 0.163,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.054,
+        "haupt": 0.013,
+        "k0": 0.007,
+        "k1": 0
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 12.55,
+       "cpu": 3.233,
+       "stempel": 0.164,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.055,
+        "haupt": 0.014,
+        "k0": 0.007,
+        "k1": 0
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.433,
+       "cpu": 3.008,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.242,
+       "cpu": 3.617,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.014,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 12.642,
+       "cpu": 3.375,
+       "stempel": 0.166,
+       "jePass": {
+        "post": 0.09,
+        "TRAA": 0.055,
+        "haupt": 0.014,
+        "k0": 0.007,
+        "k1": 0
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 12.6,
+       "cpu": 3.158,
+       "stempel": 0.163,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.054,
+        "haupt": 0.013,
+        "k0": 0.007,
+        "k1": 0
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.325,
+       "cpu": 3.508,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.6,
+       "cpu": 3.392,
+       "stempel": 0.161,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 12.583,
+       "cpu": 3.283,
+       "stempel": 0.162,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.054,
+        "haupt": 0.013,
+        "k0": 0.007,
+        "k1": 0
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 12.717,
+       "cpu": 3.867,
+       "stempel": 0.162,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.054,
+        "haupt": 0.014,
+        "k0": 0.007,
+        "k1": 0
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.192,
+       "cpu": 3.075,
+       "stempel": 0.161,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.65,
+       "cpu": 3.708,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 12.65,
+       "cpu": 3.033,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.086,
+        "TRAA": 0.053,
+        "haupt": 0.014,
+        "k0": 0.007,
+        "k1": 0
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 12.658,
+       "cpu": 3.258,
+       "stempel": 0.163,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.054,
+        "haupt": 0.013,
+        "k0": 0.007,
+        "k1": 0
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.308,
+       "cpu": 3.283,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 0,
+    "objekte": 4,
+    "beleg": {
+     "befehleAn": 6,
+     "befehleAus": 0,
+     "kollateral": 0,
+     "kollateralKlassen": [],
+     "abtastungenAus": 36,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 46,
+       "tris": 267681
+      },
+      "k0": {
+       "cmd": 18,
+       "tris": 77786
+      }
+     },
+     "bildAenderungPct": 50.3
+    }
+   },
+   {
+    "id": "feldPass",
+    "runden": [
+     {
+      "an": {
+       "ms": 19.383,
+       "cpu": 3.042,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.014,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.508,
+       "cpu": 3.15,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.35,
+       "cpu": 3.433,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.475,
+       "cpu": 3.35,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.342,
+       "cpu": 2.917,
+       "stempel": 0.161,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.442,
+       "cpu": 2.833,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.35,
+       "cpu": 3.208,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.442,
+       "cpu": 2.792,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.458,
+       "cpu": 3.408,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.442,
+       "cpu": 4.033,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.217,
+       "cpu": 2.975,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.533,
+       "cpu": 3.25,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.283,
+       "cpu": 3.458,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 19.192,
+       "cpu": 3.508,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 19.192,
+       "cpu": 3.25,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.45,
+       "cpu": 3.1,
+       "stempel": 0.157,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 0,
+    "objekte": 2,
+    "beleg": {
+     "befehleAn": 2,
+     "befehleAus": 0,
+     "kollateral": 0,
+     "kollateralKlassen": [],
+     "abtastungenAus": 36,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 48,
+       "tris": 312204
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "bildAenderungPct": 1.9
+    }
+   },
+   {
+    "id": "karten",
+    "runden": [
+     {
+      "an": {
+       "ms": 19.417,
+       "cpu": 3,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.858,
+       "cpu": 3.083,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 33.733,
+       "cpu": 3.158,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.433,
+       "cpu": 3.192,
+       "stempel": 0.161,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.225,
+       "cpu": 3.625,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.758,
+       "cpu": 3.05,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.85,
+       "cpu": 3.15,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.508,
+       "cpu": 3.417,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.089,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.317,
+       "cpu": 3.333,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.792,
+       "cpu": 2.7,
+       "stempel": 0.161,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.917,
+       "cpu": 3.3,
+       "stempel": 0.161,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.333,
+       "cpu": 2.75,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.358,
+       "cpu": 3.217,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 18.842,
+       "cpu": 3.167,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 18.825,
+       "cpu": 2.992,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.258,
+       "cpu": 3.292,
+       "stempel": 0.158,
+       "jePass": {
+        "post": 0.087,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.014,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 0,
+    "objekte": 1,
+    "beleg": {
+     "befehleAn": 1,
+     "befehleAus": 0,
+     "kollateral": 0,
+     "kollateralKlassen": [],
+     "abtastungenAus": 36,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 49,
+       "tris": 312027
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "bildAenderungPct": 9.7
+    }
+   },
+   {
+    "id": "leer",
+    "runden": [
+     {
+      "an": {
+       "ms": 19.342,
+       "cpu": 3.25,
+       "stempel": 0.159,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 1.392,
+       "cpu": 1.108,
+       "stempel": 0.007,
+       "jePass": {
+        "haupt": 0,
+        "Output Color Transform": 0.007
+       },
+       "zaehl": {
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "Output Color Transform": {
+         "an": 12,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 1.258,
+       "cpu": 0.933,
+       "stempel": 0.007,
+       "jePass": {
+        "haupt": 0,
+        "Output Color Transform": 0.007
+       },
+       "zaehl": {
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "Output Color Transform": {
+         "an": 12,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.725,
+       "cpu": 3.417,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.542,
+       "cpu": 3.442,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 1.392,
+       "cpu": 0.983,
+       "stempel": 0.008,
+       "jePass": {
+        "haupt": 0,
+        "Output Color Transform": 0.008
+       },
+       "zaehl": {
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "Output Color Transform": {
+         "an": 12,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 1.267,
+       "cpu": 0.958,
+       "stempel": 0.008,
+       "jePass": {
+        "haupt": 0,
+        "Output Color Transform": 0.008
+       },
+       "zaehl": {
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "Output Color Transform": {
+         "an": 12,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.383,
+       "cpu": 2.892,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.3,
+       "cpu": 3.008,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 1.2,
+       "cpu": 0.975,
+       "stempel": 0.008,
+       "jePass": {
+        "haupt": 0,
+        "Output Color Transform": 0.008
+       },
+       "zaehl": {
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "Output Color Transform": {
+         "an": 12,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 1.167,
+       "cpu": 0.842,
+       "stempel": 0.008,
+       "jePass": {
+        "haupt": 0,
+        "Output Color Transform": 0.008
+       },
+       "zaehl": {
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "Output Color Transform": {
+         "an": 12,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.7,
+       "cpu": 2.95,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.052,
+        "haupt": 0.003,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "an": {
+       "ms": 19.342,
+       "cpu": 3.092,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "aus": {
+       "ms": 1.408,
+       "cpu": 1.167,
+       "stempel": 0.008,
+       "jePass": {
+        "haupt": 0,
+        "Output Color Transform": 0.008
+       },
+       "zaehl": {
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "Output Color Transform": {
+         "an": 12,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     },
+     {
+      "aus": {
+       "ms": 1.258,
+       "cpu": 0.942,
+       "stempel": 0.008,
+       "jePass": {
+        "haupt": 0,
+        "Output Color Transform": 0.008
+       },
+       "zaehl": {
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "Output Color Transform": {
+         "an": 12,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      },
+      "an": {
+       "ms": 19.467,
+       "cpu": 3.533,
+       "stempel": 0.16,
+       "jePass": {
+        "post": 0.088,
+        "TRAA": 0.053,
+        "haupt": 0.002,
+        "k0": 0.015,
+        "k1": 0.002
+       },
+       "zaehl": {
+        "post": {
+         "an": 12,
+         "aus": 0
+        },
+        "TRAA": {
+         "an": 12,
+         "aus": 0
+        },
+        "haupt": {
+         "an": 12,
+         "aus": 0
+        },
+        "k0": {
+         "an": 6,
+         "aus": 0
+        },
+        "k1": {
+         "an": 1,
+         "aus": 0
+        }
+       },
+       "treffer": 0
+      }
+     }
+    ],
+    "treffer": 0,
+    "objekte": 97,
+    "beleg": {
+     "befehleAn": 0,
+     "befehleAus": 0,
+     "kollateral": 73,
+     "kollateralKlassen": [
+      "f:tanne:L1 8→0",
+      "f:fichte:L1 8→0",
+      "f:eiche:L1 8→0",
+      "f:birke:L1 5→0",
+      "streuSatz 5→0",
+      "f:strauch:L1 4→0",
+      "nahWiese 4→0",
+      "bodenSatz 3→0"
+     ],
+     "abtastungenAus": 36,
+     "passeAn": {
+      "OrthographicCamera": {
+       "cmd": 2,
+       "tris": 2
+      },
+      "haupt": {
+       "cmd": 50,
+       "tris": 312217
+      },
+      "k0": {
+       "cmd": 19,
+       "tris": 121332
+      },
+      "k1": {
+       "cmd": 1,
+       "tris": 24544
+      }
+     },
+     "passeAus": {
+      "OrthographicCamera": {
+       "cmd": 1,
+       "tris": 1
+      }
+     },
+     "bildAenderungPct": 99.8
+    }
+   }
+  ],
+  "fenster": [],
+  "abtastungenAn": 36,
+  "bildRauschenPct": 2.4,
+  "zurueck": [],
+  "sekunden": 76.1
+ },
+ "selbsttest": null
+}

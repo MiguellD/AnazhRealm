@@ -1,0 +1,30 @@
+AnazhRealm-mess|main|2b60988b|4|ja (Vorfahre der Remote-Spitze 76c9624d)
+abab-a535|(detached)|78ee56da|0|ja (Vorfahre von 32594824 refs/heads/studio-s3-kreatur)
+abab-b-nexus|(detached)|91c44f0f|0|ja (Vorfahre von 32594824 refs/heads/studio-s3-kreatur)
+abab-b535|(detached)|c966b9c3|0|ja (Vorfahre von 32594824 refs/heads/studio-s3-kreatur)
+abab-b536|(detached)|76c9624d|0|ja (HEAD)
+abab-boosts|(detached)|cce9da43|0|ja (refs/heads/welle-m-boosts)
+abab-glas|(detached)|3da7e286|0|ja (refs/heads/welle-m-brennglas)
+AnazhRealm-csicht|(detached)|44f41dcf|0|ja (Vorfahre von 3121117c refs/heads/welle-lf-v1-ankunft)
+AnazhRealm-gboden|(detached)|d812a15e|0|ja (Vorfahre von 0b9facb1 refs/heads/studio-s1-vertraege)
+AnazhRealm-gfeldpass|(detached)|fd383b38|0|ja (Vorfahre von 0b9facb1 refs/heads/studio-s1-vertraege)
+AnazhRealm-gpost|(detached)|24c955cc|0|ja (refs/heads/welle-g-post)
+AnazhRealm-kand|(detached)|cf9a07ba|0|ja (Vorfahre von 0b9facb1 refs/heads/studio-s1-vertraege)
+AnazhRealm-kandz|(detached)|f2361bb1|0|ja (refs/heads/kandidat-zerlegen)
+AnazhRealm-zerlegen|(detached)|7ff4b81a|0|ja (refs/heads/werkzeug-zerlegen)
+host-vram|host-vram|520e941d|0|ja
+host-vram-kopf|(detached)|7e5180d0|0|ja (Vorfahre von 3121117c refs/heads/welle-lf-v1-ankunft)
+koordination|koordination|25104ce1|1|ja
+mess-a|(detached)|2b60988b|0|ja (refs/heads/claude/profi-band-pflanzen)
+mess-b|(detached)|251f2f72|0|ja (refs/heads/kandidat-v18532)
+mess-c|(detached)|516e704a|0|ja (Vorfahre von 0b9facb1 refs/heads/studio-s1-vertraege)
+mess-d|(detached)|78d66a63|0|ja (Vorfahre von 3121117c refs/heads/welle-lf-v1-ankunft)
+mess-haenger|(detached)|a20e1444|0|ja (Vorfahre von 32594824 refs/heads/studio-s3-kreatur)
+mess-kmw|(detached)|9f50dc1d|0|ja (Vorfahre von 3121117c refs/heads/welle-lf-v1-ankunft)
+mess-v533|(detached)|2f237817|0|ja (Vorfahre von 3121117c refs/heads/welle-lf-v1-ankunft)
+welle-m-boosts|welle-m-boosts|cce9da43|0|ja
+welle-m-brennglas|welle-m-brennglas|3da7e286|0|ja
+welle-m-fahren|welle-m-fahren|7f97d339|0|ja
+welle-m-impuls|welle-m-impuls|35ba704c|0|ja
+welle-m-nexus|welle-m-nexus|dc877d19|0|ja
+welle-m-schatten|welle-m-schatten|bf01c035|0|ja

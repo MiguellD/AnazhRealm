@@ -1,0 +1,1245 @@
+{
+  "kind": "anazh-flight-recorder",
+  "version": "18.534.0",
+  "savedAt": "2026-10-08T04:24:48.797Z",
+  "verdict": "schlimmster Frame 139880.2 ms ist GPU/Render-GEBUNDEN: 139693.5 ms GPU (Proxy frameMs−ΣCPU) vs nur 186.7 ms CPU — bei 71 draw-calls / 0.4M Dreiecken. Der Hebel ist die RENDER-Last (Culling/Draw-Calls), nicht die CPU.",
+  "leakVerdict": "LECK: Heap +0.71 MB/s über 214s — der größte Wächst: architectures 1→1537 (+1536 über 214s).",
+  "memory": {
+    "heapMB": 214.9,
+    "heapGrowthMBPerSec": 0.71,
+    "windowSec": 214,
+    "verdict": "LECK: Heap +0.71 MB/s über 214s — der größte Wächst: architectures 1→1537 (+1536 über 214s).",
+    "topGrower": "architectures 1→1537 (+1536 über 214s)",
+    "sceneBreakdown": null,
+    "sizesNow": {
+      "sceneChildren": 45,
+      "voxelChunks": 81,
+      "pendingDisposals": 0,
+      "voxelMeshCache": 0,
+      "architectures": 1537,
+      "creatures": 11,
+      "abilities": 1,
+      "dslHistory": 1,
+      "worldRules": 2,
+      "rigidBodies": 0,
+      "pendingWaterIso": 1,
+      "nahStreu": 138,
+      "pendingGrass": 0,
+      "pendingFoliage": 8,
+      "floatingIslands": 3,
+      "ufos": 0,
+      "archInstanceGroups": 80,
+      "scatterRegions": 8,
+      "logBuffer": 50
+    },
+    "growthOverWindow": {
+      "sceneChildren": 27,
+      "voxelChunks": 81,
+      "pendingDisposals": 0,
+      "voxelMeshCache": 0,
+      "architectures": 1536,
+      "creatures": 10,
+      "abilities": 1,
+      "dslHistory": 1,
+      "worldRules": 2,
+      "rigidBodies": 0,
+      "pendingWaterIso": 1,
+      "nahStreu": 138,
+      "pendingGrass": 0,
+      "pendingFoliage": 8,
+      "floatingIslands": 0,
+      "ufos": 0,
+      "archInstanceGroups": 80,
+      "scatterRegions": 8,
+      "logBuffer": 9
+    },
+    "gcN": 12
+  },
+  "device": {
+    "version": "18.534.0",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36",
+    "cores": 12,
+    "deviceMemoryGb": 16,
+    "screen": "1920x1080",
+    "dpr": 1,
+    "rendererType": "webgpu",
+    "webgpu": true,
+    "foliageRadius": [
+      70,
+      240
+    ],
+    "klasse": "mittel",
+    "reglerSeed": 0.7,
+    "seedKonsumiert": 0.7
+  },
+  "session": {
+    "seconds": 213.7,
+    "frames": 497,
+    "avgFps": 2.3,
+    "avgFrameMs": 432.6,
+    "maxFrameMs": 139880.2,
+    "overBudgetPct": 1.4,
+    "distribution": {
+      "<17ms (>59fps)": 0,
+      "17-33ms (30-59fps)": 0,
+      "33-50ms (20-30fps)": 0,
+      "50-100ms (10-20fps)": 246,
+      "100-200ms (5-10fps)": 190,
+      ">200ms (<5fps)": 61
+    },
+    "longTasks": {
+      "n": 238,
+      "ms": 33078,
+      "maxMs": 971
+    }
+  },
+  "steadyState": {
+    "frameMsEwma": 122.9,
+    "frameMaxMs": 440.4,
+    "drawCalls": 92,
+    "drawCallsMax": 102,
+    "triangles": 841784,
+    "loadScalePct": 100,
+    "phaseMsEwma": {
+      "streaming": 3.18,
+      "waterIso": 5.04,
+      "archCulling": 0.94,
+      "creatures": 1.16,
+      "physics": 4.59,
+      "render": 41.53
+    },
+    "gpuMsEwma": 2.1,
+    "gpuMaxMs": 2.1,
+    "gpuQuelle": "echt",
+    "pipelines": {
+      "total": 75,
+      "neuProS": 0.01,
+      "ofenFamilien": 12,
+      "ofenGewaermt": 12,
+      "ofenOffen": 0
+    },
+    "uploadKBProS": 316.8,
+    "uploadKlassen": {
+      "bis16K": {
+        "n": 1671680,
+        "mb": 72.3
+      },
+      "bis256K": {
+        "n": 1603,
+        "mb": 84.5
+      },
+      "bis2M": {
+        "n": 26,
+        "mb": 13.9
+      },
+      "ueber2M": {
+        "n": 0,
+        "mb": 0
+      }
+    },
+    "stellgroessen": {
+      "foliageRadius": 216,
+      "foliageDensity": 1,
+      "foliageRes": 1,
+      "renderScale": 1,
+      "camMotion": 0,
+      "archRadius": 150,
+      "streamBudgetMs": 5
+    },
+    "gruppenKlassen": {
+      "fscatter": 8,
+      "fimp": 1,
+      "foundry": 71,
+      "superRegion": 0,
+      "streuRegion": 0,
+      "global": 80
+    },
+    "gruppenChurn": {
+      "mints": 80,
+      "tode": 0,
+      "wiederkehrer": 0,
+      "top": []
+    },
+    "bergCull": {
+      "tests": 0,
+      "verdecktFrames": 0
+    },
+    "weltMarch": {
+      "belegt": 359,
+      "stellvertreter": 5744,
+      "kapseln": 68,
+      "felderFrei": 3737,
+      "gesetzBloecke": 88,
+      "gesetzPlaetze": 1121
+    },
+    "eMetrologieStamps": [],
+    "ingestTakt": {
+      "frei": 138,
+      "stau": 0,
+      "stauMax": 67
+    },
+    "bundleDeckung": {
+      "drin": 61,
+      "draussen": 182,
+      "deckungPct": 25,
+      "topDraussen": [
+        {
+          "name": "tier:fuchs",
+          "n": 65
+        },
+        {
+          "name": "tier:baer",
+          "n": 39
+        },
+        {
+          "name": "tier:wesen",
+          "n": 39
+        },
+        {
+          "name": "spieler",
+          "n": 14
+        },
+        {
+          "name": "streuSatz",
+          "n": 5
+        },
+        {
+          "name": "nahWiese",
+          "n": 4
+        },
+        {
+          "name": "dsl-insel",
+          "n": 3
+        },
+        {
+          "name": "fern-ring",
+          "n": 3
+        }
+      ]
+    },
+    "heapZensus": {
+      "szeneMB": 48,
+      "top": [
+        {
+          "familie": "bodenSatz",
+          "mb": 11.8
+        },
+        {
+          "familie": "spieler",
+          "mb": 8.7
+        },
+        {
+          "familie": "wasserSatz",
+          "mb": 3.3
+        },
+        {
+          "familie": "bauSatz",
+          "mb": 3.1
+        },
+        {
+          "familie": "tier:fuchs",
+          "mb": 3
+        },
+        {
+          "familie": "tier:baer",
+          "mb": 2.9
+        },
+        {
+          "familie": "streuSatz",
+          "mb": 2.5
+        },
+        {
+          "familie": "tier:wesen",
+          "mb": 2.5
+        },
+        {
+          "familie": "f:tanne:L0",
+          "mb": 1.9
+        },
+        {
+          "familie": "f:eiche:L0",
+          "mb": 1.6
+        }
+      ],
+      "halter": {
+        "foundryCacheN": 116,
+        "foundryCacheMB": 18.5,
+        "chunkSaetze": {
+          "boden": {
+            "bereiche": 97,
+            "vEnde": 155566,
+            "vKap": 177503,
+            "index": 737088,
+            "abschnitte": {
+              "haupt": 141693,
+              "k0": 182475,
+              "k1": 190533
+            },
+            "luecken": {
+              "haupt": 0,
+              "k0": 0,
+              "k1": 0
+            },
+            "iEnde": 688128,
+            "iKap": 798000,
+            "wachse": 10,
+            "schreiben": {
+              "haupt>haupt": 5486592,
+              "k0>k0": 4432728,
+              "haupt>k0": 2867220,
+              "k1>k1": 4666176,
+              "haupt>k1": 1310676,
+              "k0>k1": 111504,
+              "k1>k0": 2145228
+            }
+          },
+          "streuSatz|0dfd25b1-f900-46e6-8eb0-824e4a9ad2cd": {
+            "bereiche": 93,
+            "vEnde": 38600,
+            "vKap": 41868,
+            "index": 105129,
+            "abschnitte": {
+              "haupt": 63570
+            },
+            "luecken": {
+              "haupt": 0
+            },
+            "iEnde": 67584,
+            "iKap": 69120,
+            "wachse": 10,
+            "schreiben": {
+              "haupt>haupt": 1214964
+            }
+          },
+          "streuSatz|ac270b5b-ae5d-458c-8841-c65456fe2aad": {
+            "bereiche": 43,
+            "vEnde": 6574,
+            "vKap": 7776,
+            "index": 16734,
+            "abschnitte": {
+              "haupt": 8940
+            },
+            "luecken": {
+              "haupt": 0
+            },
+            "iEnde": 9216,
+            "iKap": 9216,
+            "wachse": 7,
+            "schreiben": {
+              "haupt>haupt": 126984
+            }
+          },
+          "streuSatz|9902a7a3-e408-44d3-80cc-f40ed79d4970": {
+            "bereiche": 2,
+            "vEnde": 1824,
+            "vKap": 1824,
+            "index": 7680,
+            "abschnitte": {
+              "haupt": 3840
+            },
+            "luecken": {
+              "haupt": 0
+            },
+            "iEnde": 6144,
+            "iKap": 6144,
+            "wachse": 2,
+            "schreiben": {
+              "haupt>haupt": 15360
+            }
+          },
+          "streuSatz|7e4f2fbd-340a-408f-a82a-e53dad56a65b": {
+            "bereiche": 2,
+            "vEnde": 1980,
+            "vKap": 1980,
+            "index": 8880,
+            "abschnitte": {
+              "haupt": 8880
+            },
+            "luecken": {
+              "haupt": 0
+            },
+            "iEnde": 12288,
+            "iKap": 12288,
+            "wachse": 3,
+            "schreiben": {
+              "haupt>haupt": 53280
+            }
+          },
+          "bauSatz|cdd3d671-e6a2-4e37-9aa8-3639ae0d2e98|w": {
+            "bereiche": 2,
+            "vEnde": 37485,
+            "vKap": 39870,
+            "index": 112200,
+            "abschnitte": {
+              "haupt": 44880,
+              "k0": 46200,
+              "k1": 33000
+            },
+            "luecken": {
+              "haupt": 0,
+              "k0": 0,
+              "k1": 0
+            },
+            "iEnde": 147456,
+            "iKap": 175782,
+            "wachse": 15,
+            "schreiben": {
+              "haupt>haupt": 2307360,
+              "k0>k0": 2228160,
+              "haupt>k0": 538560,
+              "k1>k0": 332640,
+              "k1>k1": 876480,
+              "haupt>k1": 242880,
+              "k0>k1": 10560
+            }
+          },
+          "bauSatz|07b33c97-9e56-4c83-acdb-77dc6561e72b|-": {
+            "bereiche": 2,
+            "vEnde": 10710,
+            "vKap": 11393,
+            "index": 39525,
+            "abschnitte": {
+              "haupt": 15810
+            },
+            "luecken": {
+              "haupt": 0
+            },
+            "iEnde": 18432,
+            "iKap": 18432,
+            "wachse": 9,
+            "schreiben": {
+              "haupt>haupt": 749580
+            }
+          },
+          "formationenSatz|7e7f5f4a-1f48-4abf-b73c-d538688152ce|w": {
+            "bereiche": 15,
+            "vEnde": 7320,
+            "vKap": 8688,
+            "index": 32640,
+            "abschnitte": {
+              "haupt": 11520,
+              "k0": 13440,
+              "k1": 5760
+            },
+            "luecken": {
+              "haupt": 0,
+              "k0": 0,
+              "k1": 0
+            },
+            "iEnde": 33792,
+            "iKap": 36000,
+            "wachse": 11,
+            "schreiben": {
+              "haupt>haupt": 257280,
+              "k0>k0": 218880,
+              "haupt>k0": 84480,
+              "k1>k0": 57600,
+              "k1>k1": 65280,
+              "haupt>k1": 19200
+            }
+          },
+          "wasser": {
+            "bereiche": 34,
+            "vEnde": 10524,
+            "vKap": 65536,
+            "index": 50664,
+            "abschnitte": {
+              "haupt": 26706
+            },
+            "luecken": {
+              "haupt": 0
+            },
+            "iEnde": 33792,
+            "iKap": 262144,
+            "wachse": 0,
+            "schreiben": {
+              "haupt>haupt": 13517400
+            }
+          },
+          "streuSatz|fa8334fd-1191-4917-86c8-502524fd86af": {
+            "bereiche": 1,
+            "vEnde": 101,
+            "vKap": 1024,
+            "index": 390,
+            "abschnitte": {
+              "haupt": 390
+            },
+            "luecken": {
+              "haupt": 0
+            },
+            "iEnde": 3072,
+            "iKap": 3072,
+            "wachse": 1,
+            "schreiben": {
+              "haupt>haupt": 1560
+            }
+          }
+        }
+      }
+    }
+  },
+  "worstFrames": [
+    {
+      "frameMs": 139880.2,
+      "cpuSumMs": 186.7,
+      "gpuGapMs": 139693.5,
+      "gpuMs": 139693.5,
+      "gpuQuelle": "proxy",
+      "longTasks": {
+        "n": 2,
+        "ms": 1033,
+        "max": 971
+      },
+      "pipelinesNeu": 19,
+      "uploadKB": 40621.2,
+      "cpu": {
+        "streaming": 96.1,
+        "waterIso": 0.1,
+        "archCulling": 2.6,
+        "creatures": 0.4,
+        "physics": 4.1,
+        "render": 83.4
+      },
+      "drawCalls": 71,
+      "triangles": 364440,
+      "ctx": {
+        "foliageRadius": 60,
+        "foliageDensity": 0.22,
+        "foliageRes": 0.66,
+        "creatures": 1,
+        "chunks": 10,
+        "chunkQueue": 0,
+        "architectures": 136,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 24.7,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "spieler",
+          "trisK": 201
+        },
+        {
+          "name": "nahWiese",
+          "trisK": 84
+        },
+        {
+          "name": "tier:baer",
+          "trisK": 67
+        },
+        {
+          "name": "bodenSatz",
+          "trisK": 63
+        },
+        {
+          "name": "f:tanne:L1",
+          "trisK": 56
+        }
+      ],
+      "atFrame": 7
+    },
+    {
+      "frameMs": 3071.7,
+      "cpuSumMs": 455.4,
+      "gpuGapMs": 2616.3,
+      "gpuMs": 2616.3,
+      "gpuQuelle": "proxy",
+      "longTasks": {
+        "n": 4,
+        "ms": 1664,
+        "max": 799
+      },
+      "pipelinesNeu": 3,
+      "uploadKB": 3.3,
+      "cpu": {
+        "streaming": 12.8,
+        "waterIso": 0,
+        "archCulling": 0,
+        "creatures": 0.3,
+        "physics": 1.3,
+        "render": 441
+      },
+      "drawCalls": 10,
+      "triangles": 18978,
+      "ctx": {
+        "foliageRadius": 70,
+        "foliageDensity": 0.22,
+        "foliageRes": 0.96,
+        "creatures": 1,
+        "chunks": 0,
+        "chunkQueue": 6,
+        "architectures": 1,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 26,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "tier:baer",
+          "trisK": 67
+        }
+      ],
+      "atFrame": 2
+    },
+    {
+      "frameMs": 2971.8,
+      "cpuSumMs": 1816.8,
+      "gpuGapMs": 1155,
+      "gpuMs": 11,
+      "gpuQuelle": "echt",
+      "longTasks": {
+        "n": 7,
+        "ms": 1584,
+        "max": 765
+      },
+      "pipelinesNeu": 12,
+      "uploadKB": 1212.6,
+      "cpu": {
+        "streaming": 767.7,
+        "waterIso": 5.3,
+        "archCulling": 166.4,
+        "creatures": 1.6,
+        "physics": 31.2,
+        "render": 844.6
+      },
+      "drawCalls": 66,
+      "triangles": 351152,
+      "ctx": {
+        "foliageRadius": 60,
+        "foliageDensity": 0.22,
+        "foliageRes": 0.62,
+        "creatures": 1,
+        "chunks": 9,
+        "chunkQueue": 0,
+        "architectures": 124,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 24.7,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "bodenSatz",
+          "trisK": 437
+        },
+        {
+          "name": "spieler",
+          "trisK": 201
+        },
+        {
+          "name": "nahWiese",
+          "trisK": 84
+        },
+        {
+          "name": "tier:baer",
+          "trisK": 67
+        },
+        {
+          "name": "f:tanne:L1",
+          "trisK": 56
+        }
+      ],
+      "atFrame": 5
+    },
+    {
+      "frameMs": 2812.5,
+      "cpuSumMs": 1256.7,
+      "gpuGapMs": 1555.8,
+      "gpuMs": 5.6,
+      "gpuQuelle": "echt",
+      "longTasks": {
+        "n": 10,
+        "ms": 3323,
+        "max": 799
+      },
+      "pipelinesNeu": 12,
+      "uploadKB": 11.4,
+      "cpu": {
+        "streaming": 847.7,
+        "waterIso": 0.8,
+        "archCulling": 20,
+        "creatures": 3.5,
+        "physics": 21.1,
+        "render": 363.6
+      },
+      "drawCalls": 18,
+      "triangles": 51470,
+      "ctx": {
+        "foliageRadius": 65,
+        "foliageDensity": 0.22,
+        "foliageRes": 0.83,
+        "creatures": 1,
+        "chunks": 1,
+        "chunkQueue": 0,
+        "architectures": 28,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 24.7,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "bodenSatz",
+          "trisK": 437
+        },
+        {
+          "name": "spieler",
+          "trisK": 201
+        },
+        {
+          "name": "tier:baer",
+          "trisK": 67
+        },
+        {
+          "name": "fern-ring",
+          "trisK": 17
+        },
+        {
+          "name": "f:birke:L1",
+          "trisK": 17
+        }
+      ],
+      "atFrame": 3
+    },
+    {
+      "frameMs": 2189.4,
+      "cpuSumMs": 2087.9,
+      "gpuGapMs": 101.5,
+      "gpuMs": 101.5,
+      "gpuQuelle": "proxy",
+      "longTasks": {
+        "n": 5,
+        "ms": 1871,
+        "max": 490
+      },
+      "pipelinesNeu": 1,
+      "uploadKB": 1766.6,
+      "cpu": {
+        "streaming": 938,
+        "waterIso": 0.5,
+        "archCulling": 483.3,
+        "creatures": 0.8,
+        "physics": 6.7,
+        "render": 658.6
+      },
+      "drawCalls": 41,
+      "triangles": 164494,
+      "ctx": {
+        "foliageRadius": 60,
+        "foliageDensity": 0.22,
+        "foliageRes": 0.6,
+        "creatures": 1,
+        "chunks": 6,
+        "chunkQueue": 3,
+        "architectures": 52,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 24.7,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "bodenSatz",
+          "trisK": 437
+        },
+        {
+          "name": "spieler",
+          "trisK": 201
+        },
+        {
+          "name": "tier:baer",
+          "trisK": 67
+        },
+        {
+          "name": "f:birke:L1",
+          "trisK": 34
+        },
+        {
+          "name": "f:eiche:L1",
+          "trisK": 30
+        }
+      ],
+      "atFrame": 4
+    },
+    {
+      "frameMs": 2089.4,
+      "cpuSumMs": 1483.3,
+      "gpuGapMs": 606.1,
+      "gpuMs": 606.1,
+      "gpuQuelle": "proxy",
+      "longTasks": {
+        "n": 0,
+        "ms": 0,
+        "max": 0
+      },
+      "pipelinesNeu": 0,
+      "uploadKB": 371.7,
+      "cpu": {
+        "streaming": 1276.7,
+        "waterIso": 0.2,
+        "archCulling": 4.5,
+        "creatures": 26.4,
+        "physics": 5,
+        "render": 170.5
+      },
+      "drawCalls": 5,
+      "triangles": 4842,
+      "ctx": {
+        "foliageRadius": null,
+        "foliageDensity": null,
+        "foliageRes": null,
+        "creatures": 1,
+        "chunks": 0,
+        "chunkQueue": 6,
+        "architectures": 1,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 26,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "tier:baer",
+          "trisK": 67
+        }
+      ],
+      "atFrame": 1
+    },
+    {
+      "frameMs": 1046.1,
+      "cpuSumMs": 40.3,
+      "gpuGapMs": 1005.8,
+      "gpuMs": 11,
+      "gpuQuelle": "echt",
+      "longTasks": {
+        "n": 8,
+        "ms": 2555,
+        "max": 971
+      },
+      "pipelinesNeu": 2,
+      "uploadKB": 83.2,
+      "cpu": {
+        "streaming": 10.6,
+        "waterIso": 0,
+        "archCulling": 1.3,
+        "creatures": 0.1,
+        "physics": 2.6,
+        "render": 25.7
+      },
+      "drawCalls": 69,
+      "triangles": 358786,
+      "ctx": {
+        "foliageRadius": 60,
+        "foliageDensity": 0.22,
+        "foliageRes": 0.64,
+        "creatures": 1,
+        "chunks": 9,
+        "chunkQueue": 3,
+        "architectures": 128,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 24.7,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "bodenSatz",
+          "trisK": 437
+        },
+        {
+          "name": "spieler",
+          "trisK": 201
+        },
+        {
+          "name": "nahWiese",
+          "trisK": 84
+        },
+        {
+          "name": "tier:baer",
+          "trisK": 67
+        },
+        {
+          "name": "f:tanne:L1",
+          "trisK": 56
+        }
+      ],
+      "atFrame": 6
+    },
+    {
+      "frameMs": 715.9,
+      "cpuSumMs": 293.7,
+      "gpuGapMs": 422.2,
+      "gpuMs": 1.3,
+      "gpuQuelle": "echt",
+      "longTasks": {
+        "n": 3,
+        "ms": 1257,
+        "max": 971
+      },
+      "pipelinesNeu": 2,
+      "uploadKB": 175.8,
+      "cpu": {
+        "streaming": 192.5,
+        "waterIso": 21.5,
+        "archCulling": 9.8,
+        "creatures": 0.9,
+        "physics": 25.2,
+        "render": 43.8
+      },
+      "drawCalls": 68,
+      "triangles": 362739,
+      "ctx": {
+        "foliageRadius": 60,
+        "foliageDensity": 0.22,
+        "foliageRes": 0.7,
+        "creatures": 1,
+        "chunks": 16,
+        "chunkQueue": 1,
+        "architectures": 172,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 24.7,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "spieler",
+          "trisK": 201
+        },
+        {
+          "name": "nahWiese",
+          "trisK": 84
+        },
+        {
+          "name": "tier:baer",
+          "trisK": 67
+        },
+        {
+          "name": "bodenSatz",
+          "trisK": 63
+        },
+        {
+          "name": "f:tanne:L1",
+          "trisK": 56
+        }
+      ],
+      "atFrame": 9
+    },
+    {
+      "frameMs": 544.7,
+      "cpuSumMs": 117.7,
+      "gpuGapMs": 427,
+      "gpuMs": 2.9,
+      "gpuQuelle": "echt",
+      "longTasks": {
+        "n": 6,
+        "ms": 1395,
+        "max": 488
+      },
+      "pipelinesNeu": 0,
+      "uploadKB": 265.3,
+      "cpu": {
+        "streaming": 68.5,
+        "waterIso": 27.6,
+        "archCulling": 0.3,
+        "creatures": 0.7,
+        "physics": 5.2,
+        "render": 15.4
+      },
+      "drawCalls": 77,
+      "triangles": 671261,
+      "ctx": {
+        "foliageRadius": 213,
+        "foliageDensity": 0.69,
+        "foliageRes": 1,
+        "creatures": 10,
+        "chunks": 81,
+        "chunkQueue": 0,
+        "architectures": 460,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 24.7,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "bodenSatz",
+          "trisK": 266
+        },
+        {
+          "name": "tier:fuchs",
+          "trisK": 258
+        },
+        {
+          "name": "tier:baer",
+          "trisK": 201
+        },
+        {
+          "name": "spieler",
+          "trisK": 201
+        },
+        {
+          "name": "tier:wesen",
+          "trisK": 177
+        }
+      ],
+      "atFrame": 105
+    },
+    {
+      "frameMs": 531.9,
+      "cpuSumMs": 255.4,
+      "gpuGapMs": 276.5,
+      "gpuMs": 2.8,
+      "gpuQuelle": "echt",
+      "longTasks": {
+        "n": 5,
+        "ms": 1227,
+        "max": 480
+      },
+      "pipelinesNeu": 0,
+      "uploadKB": 1063.8,
+      "cpu": {
+        "streaming": 218.9,
+        "waterIso": 12.8,
+        "archCulling": 0.4,
+        "creatures": 0.7,
+        "physics": 4.9,
+        "render": 17.7
+      },
+      "drawCalls": 71,
+      "triangles": 514683,
+      "ctx": {
+        "foliageRadius": 85,
+        "foliageDensity": 0.41,
+        "foliageRes": 1,
+        "creatures": 10,
+        "chunks": 35,
+        "chunkQueue": 6,
+        "architectures": 244,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 24.7,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "tier:fuchs",
+          "trisK": 258
+        },
+        {
+          "name": "tier:baer",
+          "trisK": 201
+        },
+        {
+          "name": "spieler",
+          "trisK": 201
+        },
+        {
+          "name": "tier:wesen",
+          "trisK": 177
+        },
+        {
+          "name": "bodenSatz",
+          "trisK": 136
+        }
+      ],
+      "atFrame": 54
+    },
+    {
+      "frameMs": 517.6,
+      "cpuSumMs": 439.9,
+      "gpuGapMs": 77.7,
+      "gpuMs": 4.9,
+      "gpuQuelle": "echt",
+      "longTasks": {
+        "n": 3,
+        "ms": 785,
+        "max": 462
+      },
+      "pipelinesNeu": 0,
+      "uploadKB": 225.3,
+      "cpu": {
+        "streaming": 395.8,
+        "waterIso": 27.6,
+        "archCulling": 0.3,
+        "creatures": 0.4,
+        "physics": 3.1,
+        "render": 12.7
+      },
+      "drawCalls": 74,
+      "triangles": 576638,
+      "ctx": {
+        "foliageRadius": 170,
+        "foliageDensity": 0.52,
+        "foliageRes": 1,
+        "creatures": 10,
+        "chunks": 76,
+        "chunkQueue": 5,
+        "architectures": 392,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 24.7,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "tier:fuchs",
+          "trisK": 258
+        },
+        {
+          "name": "bodenSatz",
+          "trisK": 213
+        },
+        {
+          "name": "tier:baer",
+          "trisK": 201
+        },
+        {
+          "name": "spieler",
+          "trisK": 201
+        },
+        {
+          "name": "tier:wesen",
+          "trisK": 177
+        }
+      ],
+      "atFrame": 88
+    },
+    {
+      "frameMs": 491.8,
+      "cpuSumMs": 69.3,
+      "gpuGapMs": 422.5,
+      "gpuMs": 3,
+      "gpuQuelle": "echt",
+      "longTasks": {
+        "n": 6,
+        "ms": 1551,
+        "max": 441
+      },
+      "pipelinesNeu": 0,
+      "uploadKB": 1363.1,
+      "cpu": {
+        "streaming": 32.9,
+        "waterIso": 18.4,
+        "archCulling": 0.2,
+        "creatures": 0.4,
+        "physics": 2.5,
+        "render": 14.9
+      },
+      "drawCalls": 74,
+      "triangles": 547479,
+      "ctx": {
+        "foliageRadius": 110,
+        "foliageDensity": 0.46,
+        "foliageRes": 1,
+        "creatures": 10,
+        "chunks": 46,
+        "chunkQueue": 3,
+        "architectures": 296,
+        "timeOfDay": 0.5,
+        "pos": {
+          "x": -900,
+          "y": 24.7,
+          "z": -850
+        },
+        "activeKeys": []
+      },
+      "triZensus": [
+        {
+          "name": "tier:fuchs",
+          "trisK": 258
+        },
+        {
+          "name": "bodenSatz",
+          "trisK": 213
+        },
+        {
+          "name": "tier:baer",
+          "trisK": 201
+        },
+        {
+          "name": "spieler",
+          "trisK": 201
+        },
+        {
+          "name": "tier:wesen",
+          "trisK": 177
+        }
+      ],
+      "atFrame": 64
+    }
+  ],
+  "impostorZensus": {
+    "zellen": 14,
+    "gebacken": 14,
+    "gescheitert": 0,
+    "wartend": 0,
+    "vonPlatte": 0,
+    "fmt": "bc",
+    "schichten": 16,
+    "mb": 4,
+    "haengendeBakes": 0,
+    "verworfeneBakes": 0,
+    "gescheitertArten": []
+  },
+  "materialZensus": {
+    "unique": 49,
+    "top": [
+      {
+        "name": "MeshStandardNodeMaterial",
+        "n": 39
+      },
+      {
+        "name": "MeshBasicNodeMaterial",
+        "n": 5
+      },
+      {
+        "name": "MeshBasicMaterial",
+        "n": 2
+      },
+      {
+        "name": "MeshPhysicalNodeMaterial",
+        "n": 2
+      },
+      {
+        "name": "sharedFoliage",
+        "n": 1
+      }
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+{
+ "takte": 40,
+ "chunks": 1,
+ "ms": 6808
+}
+===BAND
+BAND ROT: Befehle 228/208 (1.1×) · Dreiecke 2207k/680k (3.25×) · VRAM MB 160.8/118 (1.36×) · GPU ms/Frame 25.68/16.7 (1.54×)
+
+Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle)
+boden                        8/12          6/1/1          774k/200k !bodenSatz 3 · fern-ring 3 · wasserSatz 1 · farWater 1
+streu                        15/9         15/0/0            38k/40k !streuNah:blume 8 · streuNah:gestruepp 3 · streuNah:farn 2 · streuNah:geroell 1
+karten                       37/1         37/0/0             33k/1k !f:griechisch:L2 33 · f:roemisch:L2 3 · fimp:atlas:L2 1
+baum                        72/40        34/34/4          858k/150k !f:tanne:L1 12 · f:eiche:L1 12 · fscatter:fichte:L1 12 · f:birke:L1 9
+busch                         4/8          2/2/0           121k/40k !f:strauch:L1 4
+nahWiese                     19/4         19/0/0           121k/80k !nahWiese 19
+tier*                       13/30          6/7/0            88k/60k !tier:fuchs 13
+bau                         18/40         10/6/2           127k/60k !f:feuerstelle:L1 8 · f:marktstand:L1 8 · bau-fundament 1 · siedlung-zaun 1
+formationen                 34/20        15/14/5            25k/30k !f:zacken:L0 34
+einzelstuecke                8/25          8/0/0            23k/15k !dsl-insel 3 · himmel-sterne 2 · himmel 1 · himmel-sonne 1
+reserve                      0/19          0/0/0               0/4k  
+SUMME                     228/208      152/64/12         2207k/680k  Abstand 1.1× Befehle · 3.25× Dreiecke
+* tier ist frei (keine Ratsche): Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll.
+außerhalb des Haushalts (Post-Kette): ortho 2 Befehle
+
+VRAM 160.8 MB / Band 118 MB (1.36×) — je Erzeuger:
+     44.3 MB  1518  buf:?
+     23.7 MB  2     tex:TRAANode.history
+     15.8 MB  1     tex:output
+     15.8 MB  1     tex:TRAANode.resolve
+     12.0 MB  2     tex:kaskade0
+     12.0 MB  2     tex:kaskade1
+      7.9 MB  1     tex:depthBuffer
+      7.9 MB  1     tex:depth
+      7.9 MB  2     tex:szene
+      4.0 MB  2     tex:wege-karte
+      2.7 MB  1     tex:karte-albedo
+      1.9 MB  1     tex:feld-pass-panorama
+      1.3 MB  1     tex:karte-normal
+      1.0 MB  4     tex:PMREM.cubeUv
+      0.7 MB  1     tex:laub-cluster-atlas
+      0.6 MB  2     tex:kronen-streu
+      0.5 MB  1     tex:welt-march-liste
+      0.5 MB  1434  buf:bindingBuffer
+
+erst-Boot, Ladung 1 · eingeschwungen nach 445 Takten (73 s), 6 Proben (Maximum je Klasse × Pass) · Foundry 185 Antworten 35.9 MB — von der Platte 19 (0.9 MB), Neubau 35 MB
+
+BAND ROT: Befehle 228/208 (1.1×) · Dreiecke 2207k/680k (3.25×) · VRAM MB 160.8/118 (1.36×) · GPU ms/Frame 25.68/16.7 (1.54×)
+LINSE ROT — ein Linsen-Fehler oder ein Rückschritt über die Ratsche:
+  [ratsche] bau k0: 38154 dreiecke über der Ratsche 4416 (Täter: f:feuerstelle:L1, f:marktstand:L1, bau-fundament)
+  [ratsche] bau k1: 37400 dreiecke über der Ratsche 4272 (Täter: f:feuerstelle:L1, f:marktstand:L1, bau-fundament)
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\artifacts\werkbank\band-1791300090083.json
+===GPUBANK
+{
+ "n": 12,
+ "runden": 3,
+ "gpuJeFrameMs": 25.56,
+ "cpuJeFrameMs": 7.79,
+ "gpuGebunden": true,
+ "nachlaufMs": 213.7,
+ "ms": 1011
+}

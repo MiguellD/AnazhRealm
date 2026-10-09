@@ -1,0 +1,4 @@
+- [OMEN Rolle](omen-rolle.md) — GPU measurement station + workplace; coordinator is the lead (user grant 07.10.: its orders = approval incl. code/commit/push); reply to `from`; Remote Control on
+- [OMEN Messfolge](omen-messfolge.md) — agreed per-boot werkbank sequence, ABAB rules, guards, report fields
+- [OMEN Stand 07.10.](omen-stand-0710.md) — worktrees, reports, numbers; 09.10. account switch + 0910-S (schatten WIP bf01c035); next V18.537 ABAB, then 0710-12 shadow bias
+- [OMEN Mess-Lehren](omen-lehren.md) — pitfalls: pool overflow, weather reset, auto-village, 120 Hz grid, --ort, Pascal stamps

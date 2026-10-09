@@ -1,0 +1,11 @@
+const fs = require("fs");
+const p = process.argv[2];
+let s = fs.readFileSync(p, "utf8");
+const a = "${S.lockstep.erst.groesse} ${S.lockstep.erst.d}";
+const n = s.split(a).length - 1;
+s = s.split(a).join(a + '${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}');
+const b = "${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}";
+const m = s.split(b).length - 1;
+s = s.split(b).join(b + '${s.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${s.lockstep.erst.tiere.join(" / ")})` : ""}');
+fs.writeFileSync(p, s);
+console.log("stellen", n, m);

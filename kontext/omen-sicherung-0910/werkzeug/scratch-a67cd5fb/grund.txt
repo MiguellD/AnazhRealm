@@ -1,0 +1,61 @@
+    // DER GRUND DES ZIEL-ZENSUS (scripts/lib/ziel-zensus.cjs, 07.10.): was eine Bind-Gruppe, ein Render-Bündel und eine
+    // Pipeline lesen, steht nur beim ANLEGEN im Klartext — danach ist das GPU-Objekt undurchsichtig. Der Abgriff merkt es sich
+    // je Objekt, nur beim Anlegen (nie im Frame): je Bind-Gruppe die Texturen ihrer Ansichten, je Bündel seine Gruppen und
+    // Pipelines (aufgenommen am Bündel-Kodierer), je Pipeline, ob sie die Tiefe testet oder schreibt. Der Zensus liest es im
+    // Fenster — welche Textur ein Draw liest, ob ein Pass seine Tiefe nutzt.
+    const gruppeTex = (window.__gruppeTex = new WeakMap());
+    const pipeTiefe = (window.__pipeTiefe = new WeakMap());
+    const buendel = (window.__buendelInhalt = new WeakMap());
+    const cbg = P.createBindGroup;
+    P.createBindGroup = function (d) {
+        const g = cbg.call(this, d);
+        const tex = [];
+        for (const e of (d && d.entries) || []) {
+            const t = e && e.resource ? ansichtTextur.get(e.resource) : undefined;
+            if (t) tex.push(t);
+        }
+        if (tex.length) gruppeTex.set(g, tex);
+        return g;
+    };
+    const tiefeVon = (d) => {
+        const ds = d && d.depthStencil;
+        return {
+            testet: !!ds && ds.depthCompare !== undefined && ds.depthCompare !== "always",
+            schreibt: !!ds && ds.depthWriteEnabled === true,
+            farben: ((d && d.fragment && d.fragment.targets) || []).filter(Boolean).length,
+        };
+    };
+    const crp = P.createRenderPipeline;
+    P.createRenderPipeline = function (d) {
+        const p = crp.call(this, d);
+        pipeTiefe.set(p, tiefeVon(d));
+        return p;
+    };
+    const crpa = P.createRenderPipelineAsync;
+    if (typeof crpa === "function")
+        P.createRenderPipelineAsync = function (d) {
+            return crpa.call(this, d).then((p) => {
+                pipeTiefe.set(p, tiefeVon(d));
+                return p;
+            });
+        };
+    const BE = typeof GPURenderBundleEncoder !== "undefined" ? GPURenderBundleEncoder.prototype : null;
+    if (BE) {
+        const sbg = BE.setBindGroup,
+            sp = BE.setPipeline,
+            fin = BE.finish;
+        BE.setBindGroup = function (i, g, ...rest) {
+            if (g) (this.__zG || (this.__zG = [])).push(g);
+            return sbg.call(this, i, g, ...rest);
+        };
+        BE.setPipeline = function (p) {
+            (this.__zP || (this.__zP = [])).push(p);
+            return sp.call(this, p);
+        };
+        BE.finish = function (d) {
+            const b = fin.call(this, d);
+            buendel.set(b, { gruppen: this.__zG || [], pipes: this.__zP || [] });
+            this.__zG = this.__zP = null;
+            return b;
+        };
+    }

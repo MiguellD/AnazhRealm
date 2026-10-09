@@ -1,0 +1,57 @@
+15:15:31 SERIE START  A=76c9624d (main V18.536)  B=3da7e286 (welle-m-brennglas)  Instrument=3da7e286
+15:15:31 anazhRealm.js  A=ed9547d9079aa0fd  B=21f27fbde8b3df4a
+15:15:36 1A boot (Versuch 1)  GPU[63, 240 MHz, 28 %, P8] eigene-reste=0
+15:15:37 1A Seite geliefert (ed9547d9079aa0fd)
+15:18:12 1A exit=0  GRUEN |  | 
+15:18:20 1A haenger-Sitzung  GPU[81, 1809 MHz, 3 %, P0] eigene-reste=1
+15:19:29 1A haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab0710-10\1A-haenger.json 
+15:19:41 1A Pause 60 s  GPU[77, 329 MHz, 24 %, P8] eigene-reste=0
+15:20:46 2B boot (Versuch 1)  GPU[66, 139 MHz, 34 %, P8] eigene-reste=0
+15:20:47 2B Seite geliefert (21f27fbde8b3df4a)
+15:23:23 2B exit=0  GRUEN |  | 
+15:23:31 2B haenger-Sitzung  GPU[81, 1809 MHz, 3 %, P0] eigene-reste=1
+15:24:40 2B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab0710-10\2B-haenger.json 
+15:24:52 2B Pause 60 s  GPU[77, 822 MHz, 10 %, P5] eigene-reste=0
+15:25:57 3A boot (Versuch 1)  GPU[67, 202 MHz, 31 %, P8] eigene-reste=0
+15:25:58 3A Seite geliefert (ed9547d9079aa0fd)
+15:28:32 3A exit=0  GRUEN |  | 
+15:28:40 3A haenger-Sitzung  GPU[80, 1759 MHz, 3 %, P0] eigene-reste=1
+15:29:48 3A haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab0710-10\3A-haenger.json 
+15:30:00 3A Pause 60 s  GPU[77, 379 MHz, 21 %, P8] eigene-reste=0
+15:31:06 4B boot (Versuch 1)  GPU[67, 177 MHz, 27 %, P8] eigene-reste=0
+15:31:06 4B Seite geliefert (21f27fbde8b3df4a)
+15:33:40 4B exit=0  GRUEN |  | 
+15:33:48 4B haenger-Sitzung  GPU[78, 1695 MHz, 3 %, P0] eigene-reste=1
+15:34:57 4B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab0710-10\4B-haenger.json 
+15:35:09 4B Pause 60 s  GPU[77, 316 MHz, 19 %, P8] eigene-reste=0
+15:36:14 5A boot (Versuch 1)  GPU[67, 139 MHz, 15 %, P8] eigene-reste=0
+15:36:15 5A Seite geliefert (ed9547d9079aa0fd)
+15:38:49 5A exit=0  GRUEN |  | 
+15:38:56 5A haenger-Sitzung  GPU[81, 1809 MHz, 2 %, P0] eigene-reste=1
+15:40:05 5A haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab0710-10\5A-haenger.json 
+15:40:17 5A Pause 60 s  GPU[77, 822 MHz, 7 %, P5] eigene-reste=0
+15:41:22 6B boot (Versuch 1)  GPU[67, 139 MHz, 31 %, P8] eigene-reste=0
+15:41:23 6B Seite geliefert (21f27fbde8b3df4a)
+15:43:57 6B exit=0  GRUEN |  | 
+15:44:05 6B haenger-Sitzung  GPU[78, 1695 MHz, 2 %, P0] eigene-reste=1
+15:45:17 6B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab0710-10\6B-haenger.json 
+15:45:29 6B Pause 60 s  GPU[77, 822 MHz, 7 %, P5] eigene-reste=0
+15:46:34 7A boot (Versuch 1)  GPU[67, 139 MHz, 29 %, P8] eigene-reste=0
+15:46:35 7A Seite geliefert (ed9547d9079aa0fd)
+15:49:09 7A exit=0  GRUEN |  | 
+15:49:17 7A haenger-Sitzung  GPU[79, 1809 MHz, 3 %, P0] eigene-reste=1
+15:50:25 7A haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab0710-10\7A-haenger.json 
+15:50:33 A zerlegen + band genesis  GPU[79, 835 MHz, 4 %, P3] eigene-reste=1
+15:53:16 A zerlegen exit=0
+15:53:56 A band genesis exit=1  BAND ROT: Befehle 90/208 (0.43×) · Dreiecke 781k/680k (1.15×) · VRAM MB 140.9/118 (1.19×) · GPU ms/Frame 16.19/16.7 (0.97×) Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle) SUMME                  
+15:54:08 7A Pause 60 s  GPU[78, 1797 MHz, 2 %, P0] eigene-reste=0
+15:55:13 8B boot (Versuch 1)  GPU[67, 139 MHz, 25 %, P8] eigene-reste=0
+15:55:14 8B Seite geliefert (21f27fbde8b3df4a)
+15:57:48 8B exit=0  GRUEN |  | 
+15:57:56 8B haenger-Sitzung  GPU[79, 1683 MHz, 2 %, P0] eigene-reste=1
+15:59:04 8B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab0710-10\8B-haenger.json 
+15:59:12 B zerlegen + band genesis  GPU[79, 923 MHz, 3 %, P2] eigene-reste=1
+16:01:42 B zerlegen exit=0
+16:02:23 B band genesis exit=1  BAND ROT: Befehle 91/208 (0.44×) · Dreiecke 787k/680k (1.16×) · VRAM MB 141.9/118 (1.2×) · GPU ms/Frame 15.56/16.7 (0.93×) Klasse           Befehle Ist/Soll    haupt/k0/k1  Dreiecke Ist/Soll  Täter (Befehle) SUMME                   
+16:02:35 8B Pause 60 s  GPU[77, 1822 MHz, 2 %, P0] eigene-reste=0
+16:03:39 ALLES ENDE

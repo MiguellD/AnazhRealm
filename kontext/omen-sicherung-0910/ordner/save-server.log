@@ -1,0 +1,6 @@
+
+> anazhrealm@18.531.0 start
+> node save-server.js
+
+Anazh Save-Server läuft: http://127.0.0.1:4312
+Öffne das Spiel über diese URL, damit direkt in den Spielordner gespeichert wird.
