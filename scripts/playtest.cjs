@@ -17482,9 +17482,16 @@ async function checkBandWelle6GHylomorphism(ctx) {
         const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
         const vegBefore = r.state.vegetation ? r.state.vegetation.length : 0;
         const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
-        const tx = playerPos.x + 50;
+        // der Ort des Baums liegt auf dem LAND (Schau-2: die Natur-Wand lässt keinen Baum ins Wasser — der feste Versatz
+        // +50/+50 lag im Wasser, der Baum fiel benannt „wasser")
+        let tx = playerPos.x + 50;
         const ty = playerPos.y;
-        const tz = playerPos.z + 50;
+        let tz = playerPos.z + 50;
+        out.treeOrtWasser = !r._landAt(tx, tz, 0.4);
+        for (let k = 0; k < 64 && !r._landAt(tx, tz, 0.4); k++) {
+            tx = playerPos.x + 50 + Math.cos(k * 0.9) * (4 + k);
+            tz = playerPos.z + 50 + Math.sin(k * 0.9) * (4 + k);
+        }
 
         r.dslRun(["spawn_tree", ["at", tx, ty, tz], 1], { source: "test" });
         r.dslRun(["spawn_island", ["at", tx + 20, ty, tz + 20], 5, 12345], {
