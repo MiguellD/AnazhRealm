@@ -18,7 +18,7 @@ jeder Zweig steht auf GitHub (per `git ls-remote` geprüft). Es laufen keine Pro
 | `studio-s3-kreatur` (Worktree `…/vigorous-nash-s3-kreatur`) | **32594824** (WIP) | Runde 1 rot (`studios/s3-pruef1-kreatur.md`: Spike-Soll IoU < 0,9 verfehlt, Golden trotz Halt-Regel geprägt), Nachbesserung halb (WIP-Commit, darunter 00381bd1 „gate:kreatur-kosten W DECKUNG") |
 | S3 pflanzen · haus · tor-fahrzeug-klinge | — | nicht begonnen (Skript `workflows/studio-s3-kosten.js`, Punkt 14 Wagen-Tiefe ergänzt) |
 | `welle-m-schatten` (OMEN, Auftrag 0710-12) | **nur auf dem OMEN-PC** | NICHT auf origin — die OMEN-Sitzung endete am Limit; siehe §4 |
-| `koordination` | 0dd8d2e4 | Datei-Kanal zum OMEN (`auftrag/` Koordinator, `bericht/` OMEN, `kontext/`) |
+| `koordination` | wandert (09.10.: a5163c80) | Datei-Kanal zum OMEN (`auftrag/` Koordinator, `bericht/` OMEN, `kontext/`) |
 | `welle-bundle-abschied` | 61901588 | alter Zweig, NICHT in main — nur zur Sicherheit gepusht; ungeprüft, vermutlich überholt |
 
 ## 2. Was fertig ist (diese Sitzung, 07.–08.10.)
