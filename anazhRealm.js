@@ -27298,6 +27298,7 @@ class AnazhRealm {
         const RAD = Math.PI / 180;
         return roh.terme.map((t, i) => {
             if (!t || typeof t !== "object") nein(`Term ${i} ist kein Objekt`);
+            if (!["wildnis", "insel", "rampe", "bucht"].includes(t.art)) nein(`unbekannte Term-Art „${t.art}"`);
             const basis = t.art === "wildnis" || t.art === "insel";
             if (basis !== (i === 0)) nein(`Term ${i} (${t.art}): nur der erste Term setzt den Grund`);
             if (t.art === "wildnis") return { art: "wildnis" };

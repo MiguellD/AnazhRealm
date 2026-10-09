@@ -332,6 +332,20 @@ function zeige(rep) {
     console.log("\n========= DER DICHTE-SPIEGEL — Main _voxelEditedDensityGrid == Worker computeDensityGrid =========");
     const berichte = [];
     let rot = false;
+    // DIE ABSENZ (plan §10 R1): der Name der Bühne steht nur in spec/ und in der Werkbank — der Stamm, der Worker und der
+    // Seh-Spiegel lesen Zahlen (Terme, Wildnis-Gewicht), nie einen Namen (kein Flag unter anderem Namen).
+    const NAME = /pruefbuehne|prüfbühne/i;
+    for (const datei of ["anazhRealm.js", "voxel-worker.js", "feld-wgsl.js"]) {
+        const n = (fs.readFileSync(path.join(root, datei), "utf8").match(new RegExp(NAME.source, "gi")) || []).length;
+        if (n) {
+            console.log(`  ⛔ ABSENZ: ${datei} nennt die Bühne ${n}× (ein Flag statt der Terme)`);
+            rot = true;
+        }
+    }
+    if (SELBSTTEST && !NAME.test('if (welt.slug === "pruefbuehne") return 0;')) {
+        console.log("  ⛔ ABSENZ-SELBSTTEST: der Grep sieht den Namen nicht");
+        rot = true;
+    }
     let selbst = null;
     for (const welt of WELTEN) {
         let weltArg = welt;

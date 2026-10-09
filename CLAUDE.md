@@ -95,7 +95,7 @@ Impuls-Gesetz (Fahrzeug, Leib, Biss), der Weg Werkstatt → stehendes Werk (`_se
 Tasten-Fänger), der Frost, der Mess-Halt jedes Welt-Akts (OMEN gegen V18.535: Frame p95 25,0 → 16,9 ms). Werkbank:
 `albedo` · `licht` · `zaehlen` · `band` · `lauf` · `zerlegen` · `shader` · `sicht`.
 
-**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Pass, je Satz ein
+**WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE; die Höhe = die Terme des Erbguts, Wildnis = EIN Term, die Prüfbühne `spec/pruefbuehne`) · WELT-MARCH: EIN Pass, je Satz ein
 Stellvertreter · NAH/MITTEL (< 64 m) = Studio-Mesh + LOD-Kette, jede Karte eine Schicht des EINEN Atlas · FERN = Glieder-
 Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m) · BODEN-STOFF = das Rausch-Gesetz · WALD-ORT = die Kronen-Karte
 · GRAS = nah Nah-Wiese, fern Boden-Funktion · KLANG = das Klang-Gesetz · LUFT = EINE Koschmieder-Luft · POST = TRAA, die
@@ -137,7 +137,8 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
    ungetont (r184), so logen aaa8–aaa11 „dunkle Schattenseiten".
 6. **Tests wandern mit dem Code;** Absenz-Greps über `window.__codeOf` (Kommentare zitieren).
 7. **Worker-Spiegel bit-identisch** (Main ↔ voxel-worker; jede Sheet-/Density-Änderung in BEIDE +
-   `diag-worker-watersheet` maxDiff 0). Welt-Substanz zieht aus Γ5-Seed-Streams, nie Math.random.
+   `diag-worker-watersheet` maxDiff 0; das Chunk-Gitter `gate:worker-dichte`, Edits auch über dem Band). Welt-Substanz
+   zieht aus Γ5-Seed-Streams, nie Math.random.
 8. **Spawn-Affinität ist TAG-NEUTRAL** (winner-take-all; die Tiere sind bewusst tag-identisch —
    Differenzierung über die Größen-/Gattungs-Achse, nie über Tags).
 9. **`gate | tail` maskiert Exit-Codes** — Exits IMMER explizit (`echo EXIT=$?`).
