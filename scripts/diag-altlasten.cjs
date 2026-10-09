@@ -168,7 +168,10 @@ const FORBIDDEN = [
     // Der Körper im Wasser liest EINE Wahrheit (`_koerperWasser`: die Lauf-Fläche des Gesetzes über seinem Grund + die
     // Abweichung des Live-Automaten), nie das 1,8-m-Zell-Dach; die Strömung ist das Gesetz (wellen.adv) und koppelt additiv.
     { token: "_playerWaterContext", fiel: "Welle L Q6 — das Zell-Dach als Körper-Spiegel (W-K2)" },
-    { token: "_waterCellAt", fiel: "Welle L Q6 — der Zell-Leser als dritte Wahrheit, nur noch von einer Probe gerufen" },
+    {
+        token: "_waterCellAt",
+        fiel: "Welle L Q6 — der Zell-Leser als dritte Wahrheit, nur noch von einer Probe gerufen",
+    },
     { token: "FLOW_ADVECT_SPEED", fiel: "Welle L Q6 — die Host-Strömung 3,2 m/s neben dem Gesetz 1,2 (W-kD4)" },
     { token: "FLOW_ADVECT_K", fiel: "Welle L Q6 — die Schlupf-Kopplung des Spielers neben der additiven des Tiers" },
     // Der Fluss-Spiegel ist das Gesetz (`_hydroRiverSpiegel`: stromab nie steigend, quer waagrecht; das Bett folgt ihm) —
@@ -196,7 +199,11 @@ const FORBIDDEN = [
     // Vertex aus Saat und Zeit rechnet; die Punktwolke (Math.random-Saat, je Frame im Haupt-Thread gefallen, 1 Pixel groß)
     // und die eigenen Zahlen des Labors sind gefallen (W-R1/W-kD5).
     { token: "sys.lastT", fiel: "Welle L Q7 — der Regen fiel je Frame im Haupt-Thread; die Lage rechnet der Vertex" },
-    { token: "dt * 42", fiel: "Welle L Q7 — die Fall-Zahl des Labors wohnt im REGEN_GESETZ", auch: ["worlds/terrain/phytogenesis.js"] },
+    {
+        token: "dt * 42",
+        fiel: "Welle L Q7 — die Fall-Zahl des Labors wohnt im REGEN_GESETZ",
+        auch: ["worlds/terrain/phytogenesis.js"],
+    },
     // DIE UFER-BÄNDER sind stetig: Strand, Schlick, Pfad und Höhen-Feuchte lesen beide Bezüge (`_waterLevelAt` → see ·
     // fluss · ufer); das Strand-Fenster schnitt die Glocke bei 2,0 m, die Worker-Feuchte las eine Halbbreite, die kein
     // Segment trägt (2137 von 7578 Ufer-Vertices anders gefärbt als im Main).
@@ -209,7 +216,10 @@ const FORBIDDEN = [
     { token: "kn.T - y", fiel: "Gegenprüfung 07.10. — das Gewicht der Gleit-Zone; die Dichte nimmt Kanal und Damm" },
     // DER SCHILF-BEZUG der Nah-Streu liest beide Bezüge (`_nahStreuBodenGewicht`: das Band über See und das über dem Fluss
     // mit seiner Kronen-Blende), jede andere Art die EINE Wahrheit am Körper; das Maximum der Spiegel sprang an der Krone.
-    { token: "_nahStreuSpiegel", fiel: "Gegenprüfung 07.10. — der Kronen-Sprung des Schilf-Bands (13 Sprünge bis 1,0)" },
+    {
+        token: "_nahStreuSpiegel",
+        fiel: "Gegenprüfung 07.10. — der Kronen-Sprung des Schilf-Bands (13 Sprünge bis 1,0)",
+    },
     // Die Chunk-Einbürgerung in Region-Bundles hat keinen Bürger mehr (Boden · Stitch · Wasser sind Sätze, die
     // Klein-Streu ist EINE InstancedMesh je Art); der Streu-Pool je Chunk und der Deck-Zwilling des Fernfelds
     // sind gefallen.
@@ -522,7 +532,11 @@ const FORBIDDEN = [
     // DAS SPRUNG-GESETZ (Nachbesserung 07.10., Vertrags-Akt): die Huepf-Hoehe der Freude ist die EINE Quelle eines
     // Sprungs (creatureJump, v0 = √(2·g·h)) — der lineare Faktor Hoehe → m/s und der Abflug in m/s der Aktionen (bound
     // 3,2, pounce 4,5: der frohe Sprung stieg 0,52 statt 1,2 m) kehren weder im Stamm noch im Gesetzbuch zurueck.
-    { token: "impulsProM", fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (creatureJump)", auch: ["tetrapoda-core.js"] },
+    {
+        token: "impulsProM",
+        fiel: "Welle L kreatur — der Abflug ist v0 = √(2·g·h) (creatureJump)",
+        auch: ["tetrapoda-core.js"],
+    },
     { token: "_hopV = def.hop", fiel: "Welle L kreatur — eine Aktion springt über creatureJump (das Sprung-Gesetz)" },
     { token: "updateGrowth", fiel: "Welle L kreatur — die Größe ist bodySize aus der Identität, kein Wachsen-Würfel" },
     { token: "lastGrowthUpdate", fiel: "Welle L kreatur — das Wachsen-Relikt fiel" },
@@ -541,6 +555,17 @@ const FORBIDDEN = [
     { token: '"player_speed", Number((4', fiel: "Welle LF rudel — kein Würfel schreibt das Lauf-Tempo" },
     { token: '"creatures_size_mul", Number(', fiel: "Welle LF rudel — kein Würfel schreibt die Tier-Größe" },
     { token: "cr.scale.multiplyScalar(f)", fiel: "Welle LF rudel — die Tier-Größe ist die bodySize-Achse" },
+    // LEBEN-SCHAU 2 (09.10., §6 #1): UHR UND WETTER GEHÖREN DEM SPIELER — der Zwilling `time_of_day` (schrieb die Uhr roh neben
+    // set_time_of_day; Nexus-Würfel Gewicht 5, Mutationen in Nexus-Gesetzen warfen die Uhr 30-mal in 160 s) und die Tag-Länge
+    // im Spielstand (jeder alte Stand hielt den 8-min-Tag fest) kehren nicht zurück; die Uhr schreibt nur `_uhrSetzen`, das
+    // Wetter nur `_setWeather` (gate:wetter-wache).
+    { token: '"time_of_day"', fiel: "Leben-Schau 2 — der Zwilling fiel, die Uhr stellt nur set_time_of_day" },
+    { token: "time_of_day: ([value])", fiel: "Leben-Schau 2 — der Zwilling time_of_day schrieb die Uhr roh" },
+    {
+        token: "this.state.dayLengthMinutes = state.dayLengthMinutes",
+        fiel: "Leben-Schau 2 — die Tag-Länge ist die Wahl des Spielers (localStorage), das Laden setzt sie nie",
+    },
+    { token: "dayLengthMinutes || 8", fiel: "Leben-Schau 2 — der Standard ist DAY_LENGTH_DEFAULT_MINUTES (60)" },
     { token: "player_size_mul", fiel: "Welle LF rudel — die Spieler-Skala ohne Gesetz-Achse fiel" },
     { token: "cr.userData.speedMul =", fiel: "Welle LF rudel — der Tempo-Hauch wird gelesen (tempoHauch)" },
     // WELLE LF RUDEL (D16/K-D12, Vertrags-Akt 08.10.): das Temperament aus der Substanz (Resonanz-Signaturen, Floor, die
@@ -548,19 +573,43 @@ const FORBIDDEN = [
     // Tiere sind tag-gleich (Lehre 8), das Gemüt ist temperamentDerGattung (Ernährung × Masse).
     { token: "TG.signaturen", fiel: "Welle LF rudel — das Temperament ist temperamentDerGattung" },
     { token: "_temperamentSoul", fiel: "Welle LF rudel — das Temperament ist je Gattung × Größe gecacht" },
-    { token: "boldFromDichte", fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments", auch: ["tetrapoda-core.js"] },
-    { token: "shyFromLebendig", fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments", auch: ["tetrapoda-core.js"] },
+    {
+        token: "boldFromDichte",
+        fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments",
+        auch: ["tetrapoda-core.js"],
+    },
+    {
+        token: "shyFromLebendig",
+        fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments",
+        auch: ["tetrapoda-core.js"],
+    },
     // WELLE LF RUDEL (Vertrags-Akt 08.10., der persönliche Raum): der feste Paar-Radius jeder Art, das feste Herden-Fenster
     // und der feste Neugier-Stopp kehren nicht zurück — der Raum ist die Körper-Kugel des Leibs × raumKugel.
-    { token: "radiusBaseM", fiel: "Welle LF rudel — der Raum je Leib (separation.raumKugel)", auch: ["tetrapoda-core.js"] },
-    { token: "minAbstSq", fiel: "Welle LF rudel — die Herde zieht jenseits des Paar-Raums", auch: ["tetrapoda-core.js"] },
+    {
+        token: "radiusBaseM",
+        fiel: "Welle LF rudel — der Raum je Leib (separation.raumKugel)",
+        auch: ["tetrapoda-core.js"],
+    },
+    {
+        token: "minAbstSq",
+        fiel: "Welle LF rudel — die Herde zieht jenseits des Paar-Raums",
+        auch: ["tetrapoda-core.js"],
+    },
     { token: "fensterSq", fiel: "Welle LF rudel — das Herden-Fenster misst im Paar-Raum", auch: ["tetrapoda-core.js"] },
     { token: "neugierStoppM", fiel: "Welle LF rudel — die Neugier hält am Paar-Raum", auch: ["tetrapoda-core.js"] },
     // WELLE LF RUDEL (Vertrags-Akt 08.10., die Jagd schließt sich): der Gradient der Witterung über vier Proben (nah an
     // der Quelle zeigte er vom Ziel fort), der Trab der Flucht und der Biss-Takt auf der Wand-Uhr kehren nicht zurück.
-    { token: "scentProbeM", fiel: "Welle LF rudel — die Witterung wählt die Beute an der Nase", auch: ["tetrapoda-core.js"] },
+    {
+        token: "scentProbeM",
+        fiel: "Welle LF rudel — die Witterung wählt die Beute an der Nase",
+        auch: ["tetrapoda-core.js"],
+    },
     { token: "this._scentAt(cx + probeStep", fiel: "Welle LF rudel — kein Gradient der Witterung" },
-    { token: "fleeSpeedBoost", fiel: "Welle LF rudel — die Flucht ist der Sprint der Gestalt", auch: ["tetrapoda-core.js"] },
+    {
+        token: "fleeSpeedBoost",
+        fiel: "Welle LF rudel — die Flucht ist der Sprint der Gestalt",
+        auch: ["tetrapoda-core.js"],
+    },
     // WELLE LF RUDEL (Leben-Schau 07.10., D11/D1-Rest): das Fuß-Ziel in der Ebene des Leibs (das Ziel im Gruppen-Raum,
     // per Rumpf-Quaternion zurückgedreht — am Querhang kippten die Beine mit dem Leib) kehrt nicht zurück.
     { token: "_gangQ", fiel: "Welle LF rudel — das Fuß-Ziel liegt in der Welt (Pfoten-IK _animateTierBaum)" },
@@ -802,11 +851,17 @@ const FORBIDDEN = [
     { token: "_hausTuerBlockerParts", fiel: "Welle L — die Haus-Hülle der Stufe (_hausBlockerBoxen, OBB)" },
     { token: "_slopeProbeV", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
     { token: "_slopeProbeH", fiel: "Welle L — vier Proben im Leib-Rahmen (_slopeProben, _standSicht)" },
-    { token: "_siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT", fiel: "Welle L — kein Siedlungs-Zwilling (fachwerk SIEDLUNG)" },
+    {
+        token: "_siedlungGesetzMemo || AnazhRealm.AUTO_SETTLEMENT",
+        fiel: "Welle L — kein Siedlungs-Zwilling (fachwerk SIEDLUNG)",
+    },
     { token: "_settlementCount", fiel: "Welle L — der Bau-Same je Art (_bauSame)" },
     // DER SAME DES WERKS (Gegenprüfung 08.10.): der Zähler des Welt-Stroms ist Welt-Gedächtnis, der Same eines Werks EINER.
     { token: "_bauSameZaehler", fiel: "Gegenprüfung 08.10. — der Zähler des Welt-Stroms reist in worldMeta.bauSame" },
-    { token: "Math.imul(seedNum, 131)", fiel: "Gegenprüfung 08.10. — EIN Same je Werk (_werkSame), vier Kopien fielen" },
+    {
+        token: "Math.imul(seedNum, 131)",
+        fiel: "Gegenprüfung 08.10. — EIN Same je Werk (_werkSame), vier Kopien fielen",
+    },
     // D5 (Integration Welle L, 07.10.): das Tier am gedrehten Haus — der OBB-Zweig des Kapsel-Lösers ließ den Kontakt-
     // Empfänger des Tiers fallen und drehte die Parkour-Wand des Spielers über eine Zeit-Gleichheit zurück; die Gier-Ordnung
     // YXZ setzte der Takt je Frame neu. Der Kontakt reist im Empfänger (`_wandKontaktSetzen`), YXZ setzt `spawnCreatureAt`.
@@ -815,12 +870,19 @@ const FORBIDDEN = [
     // DER EINE FAHR-SCHRITT (Welle L, Q13, 06.10.): die zweite Kopie des Zweispur-Modells im Stamm fiel (Längs-Antrieb als
     // exp-Lerp, gemessene Längs-Beschleunigung, eigene Federn je Werk) — der Ritt fährt vehicle-core fahrSchritt, die
     // Probefahrt auch (`FlatF` lebt nur im Kern: gate:fahr-leben K1).
-    { token: "_fahrVLongPrev", fiel: "Welle L Q13 — die Längs-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLong)" },
+    {
+        token: "_fahrVLongPrev",
+        fiel: "Welle L Q13 — die Längs-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLong)",
+    },
     { token: "_ridePitchV", fiel: "Welle L Q13 — die Nick-Feder lebt im Fahr-Zustand des Kerns (fNickV)" },
     { token: "_rideKurvenRollV", fiel: "Welle L Q13 — die Wank-Feder lebt im Fahr-Zustand des Kerns (fWankV)" },
     { token: "_rideHeaveV", fiel: "Welle L Q13 — die Hub-Feder lebt im Fahr-Zustand des Kerns (fHubV)" },
     { token: "_rideYawPrev", fiel: "Welle L Q13 — die Quer-Beschleunigung ist die Reifen-Kraft des Kerns (z.aLat)" },
-    { token: "Spring.prototype.step", fiel: "Welle L Q13 — die Probefahrt-Feder ist fahrFeder im Kern", auch: ["worlds/garage/garage.js"] },
+    {
+        token: "Spring.prototype.step",
+        fiel: "Welle L Q13 — die Probefahrt-Feder ist fahrFeder im Kern",
+        auch: ["worlds/garage/garage.js"],
+    },
     // DAS EINE TREFFER-URTEIL (Welle L, Klasse Q8): fünf Phantom-Leser ohne Definition im Kern (zone = null in 222 von
     // 222 Treffern), die gattungs- und höhenblinde Säule, die Schadens-Klemme und die Wirts-Eichung des Pfeils sind
     // gefallen — das Urteil fällt schmiede trefferUrteil, getroffen wird die Gestalt (_kreaturGliedTreffer).
@@ -849,7 +911,10 @@ const FORBIDDEN = [
     // DIE LICHTUNG IST EIN GRUNDRISS (Integration Welle L, Stufe auge-v1, Entscheid D3): der Pflanz-Gang des Walds hielt die
     // Genesis-Scheibe mit einem eigenen Filter frei — die Streu, die Promotion, die Nah-Streu und der Hain der KI standen über
     // ihr. Die Plattform trägt ihre Lichtung im Bauplan (`_grundrissVon`), die EINE Natur-Wand fragt die Krone (`_naturKrone`).
-    { token: "_genesisLichtung", fiel: "Integration L D3 — die Lichtung ist ein Grundriss der Natur-Wand (_grundrissVon)" },
+    {
+        token: "_genesisLichtung",
+        fiel: "Integration L D3 — die Lichtung ist ein Grundriss der Natur-Wand (_grundrissVon)",
+    },
     { token: "_forestKroneWelt", fiel: "Integration L D3 — die Krone eines Wurfs ist _naturKrone (jede Quelle)" },
     // DIE ERST-ZEICHNUNG (Welle K, Hänger): die erste Zeichnung baut den Stoff im Pass (je Render-Aufruf einer) und lässt die
     // Pipeline asynchron entstehen — am EINEN Ort (`_configureRenderer`). Die Vorwärmer daneben fallen: das r184-compileAsync
@@ -862,7 +927,10 @@ const FORBIDDEN = [
     { token: "_pipeOfenMerke", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
     { token: "_pipeOfenTick", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
     { token: "_pipeOfenDone", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
-    { token: "_bundleReifeWache", fiel: "Welle K — die Erst-Zeichnung nimmt das Bundle neu auf, wenn die Pipeline steht" },
+    {
+        token: "_bundleReifeWache",
+        fiel: "Welle K — die Erst-Zeichnung nimmt das Bundle neu auf, wenn die Pipeline steht",
+    },
     { token: "_foundryWarmedMats", fiel: "Welle K — die Erst-Zeichnung" },
     // DIE BEREITSCHAFT AM ZUSTAND (Welle K, Nachbesserung): die Neuaufnahme hing am Vendor-Versprechen (es wartet auf
     // popErrorScope: auf der Spielseite > 5 s, auf Windows-swiftshader nie) und der Neubau meldete sich nie an — EINE

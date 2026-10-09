@@ -29,7 +29,7 @@
 //       die Welt sich wünscht;
 //   (R) REGLER: der Tageszeit-Regler der Einstellungen zeigt die Welt-Zeit;
 //   (T) TAG: die Tag-Länge einer frischen Welt trägt eine Szene (von Mittag bis Sonnenuntergang ≥ `TAG_SZENE_MINUTEN`), und
-//       der Spielstand trägt sie nicht (die Wahl des Spielers lebt bei ihm, ein alter Stand hält keinen alten Tag fest);
+//       ein alter Spielstand setzt sie nicht zurück (die Wahl des Spielers lebt bei ihm, der Kopf trägt sie nur für die Taille);
 //   (Q) QUELLE: im Stamm schreibt `state.weather` nur `_setWeather` und das Laden (genau zweimal), `state.timeOfDay` nur
 //       `_uhrSetzen` (genau einmal), `_setWeather` liest den Halt; der Zwilling `time_of_day` ist fort; kein Würfel des Nexus
 //       (4000 Atome, 4000 Gesetze, 4000 Mutationen) trägt einen Uhr-Op;
@@ -200,19 +200,22 @@ function himmelProbe(o) {
     const r = window.anazhRealm;
     const st = r.state;
     const aus = {};
-    // (T) die Tag-Länge einer frischen Welt, und ob der Spielstand sie trägt
-    let snap = null;
+    // (T) die Tag-Länge einer frischen Welt, und was ein alter Spielstand (8-min-Tag, wie jeder Stand bis zur Schau) aus
+    // ihr macht — das Laden des echten Restore-Wegs (`_loadStateRestoreSoulAndAtmosphere`)
+    const tagMin = st.dayLengthMinutes;
+    let alterStand = null;
     try {
-        const s = r.buildStateSnapshot();
-        snap = s && Object.prototype.hasOwnProperty.call(s, "dayLengthMinutes") ? s.dayLengthMinutes : "-";
+        r._loadStateRestoreSoulAndAtmosphere({ dayLengthMinutes: 8, timeOfDay: st.timeOfDay });
+        alterStand = st.dayLengthMinutes;
     } catch (e) {
-        snap = "Fehler: " + e.message;
+        alterStand = "Fehler: " + e.message;
     }
+    st.dayLengthMinutes = tagMin;
     aus.tag = {
-        tagMin: st.dayLengthMinutes,
+        tagMin,
         standard: r.constructor.DAY_LENGTH_DEFAULT_MINUTES,
         szene: r.constructor.TAG_SZENE_MINUTEN,
-        spielstand: snap,
+        alterStand,
     };
     st.renderer.setAnimationLoop(null);
     const U = window.__uhrSpion();
@@ -389,7 +392,7 @@ function urteil(S, H, quelle, pageErrors) {
     if (R.wert == null) rot.push("(R) REGLER: #slider-timeofday fehlt");
     else if (Math.abs(R.wert - R.welt * 1000) > 1.5 || R.text !== R.label)
         rot.push(`(R) REGLER: der Tageszeit-Regler zeigt ${R.text} (${R.wert}), die Welt steht bei ${R.label}`);
-    // (T) die Tag-Länge trägt eine Szene, der Spielstand trägt sie nicht
+    // (T) die Tag-Länge trägt eine Szene, ein alter Spielstand setzt sie nicht zurück
     const T = H.tag;
     const szene = Number.isFinite(T.szene) ? T.szene : SZENE_SCHAU_MIN;
     if (!(0.25 * T.tagMin >= szene))
@@ -397,9 +400,9 @@ function urteil(S, H, quelle, pageErrors) {
             `(T) TAG: ein Tag von ${T.tagMin} min trägt von Mittag bis Sonnenuntergang ${(0.25 * T.tagMin).toFixed(1)} min — die Szene braucht ${szene} min`
         );
     if (!Number.isFinite(T.szene)) rot.push("(T) TAG: das Spiel nennt die Szene nicht (`TAG_SZENE_MINUTEN`)");
-    if (T.spielstand !== "-")
+    if (T.alterStand !== T.tagMin)
         rot.push(
-            `(T) TAG: der Spielstand trägt die Tag-Länge (${T.spielstand}) — ein alter Stand hält den alten Tag fest`
+            `(T) TAG: ein alter Spielstand (8-min-Tag) setzt die Tag-Länge auf ${T.alterStand} — er hält den alten Tag fest`
         );
     for (const e of pageErrors) rot.push(`(P) PAGE-ERROR: ${e}`);
     return rot;
@@ -483,7 +486,7 @@ async function boot(browser, pageErrors) {
         `  Würfel: Uhr-Ops in ${S.wuerfe.atome}/${S.wuerfe.n} Atomen, ${S.wuerfe.gesetze}/${S.wuerfe.n} Gesetzen, ${S.wuerfe.mutationen}/${S.wuerfe.n} Mutationen`
     );
     console.log(
-        `  Tag: ${H.tag.tagMin} min (Standard ${H.tag.standard}, Szene ${H.tag.szene ?? `– (Schau ${SZENE_SCHAU_MIN})`}), Mittag → Sonnenuntergang ${(0.25 * H.tag.tagMin).toFixed(1)} min; Spielstand trägt: ${H.tag.spielstand}`
+        `  Tag: ${H.tag.tagMin} min (Standard ${H.tag.standard}, Szene ${H.tag.szene ?? `– (Schau ${SZENE_SCHAU_MIN})`}), Mittag → Sonnenuntergang ${(0.25 * H.tag.tagMin).toFixed(1)} min; nach einem alten Stand (8 min): ${H.tag.alterStand} min`
     );
     console.log(
         `  Wort des Spielers: Uhr ${hm(H.wort.uhr)}, Wetter ${H.wort.wetter} (getaktet ${HIMMEL_MIN} min je Fenster, ${laufS.toFixed(1)} s Wanduhr)`

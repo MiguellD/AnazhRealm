@@ -79,7 +79,7 @@ const GESCHICKT = [
     "creatures_size_mul",
     "creatures_speed_mul",
     "creatures_color",
-    "time_of_day",
+    "set_time_of_day",
     "player_speed",
     "player_jump_power",
     "skybox_color",
@@ -161,7 +161,7 @@ async function probe(GESCHICKT) {
                     ["spawn_creature", ["at_player"], 3, "happy"],
                     ["creatures_size_mul", 1.5],
                     ["creatures_speed_mul", 1.7],
-                    ["time_of_day", 0.1],
+                    ["set_time_of_day", 0.1],
                     ["player_speed", 20],
                     ["skybox_color", "#ff00ff"],
                 ],
@@ -186,7 +186,7 @@ async function probe(GESCHICKT) {
                 source: "human",
             }),
         mitspieler: () =>
-            r.dslRun(["chain", ["time_of_day", 0.9], ["player_jump_power", 30], ["creatures_color", "#00ff00"]], {
+            r.dslRun(["chain", ["set_time_of_day", 0.9], ["player_jump_power", 30], ["creatures_color", "#00ff00"]], {
                 source: "remote:peer-wache",
             }),
         spaeter: () => {
@@ -257,7 +257,7 @@ function urteil(S, pageErrors) {
             "nexus → spawn_creature",
             "nexus → creatures_size_mul",
             "nexus → creatures_speed_mul",
-            "nexus → time_of_day",
+            "nexus → set_time_of_day",
             "nexus → player_speed",
             "nexus → skybox_color",
         ],
@@ -265,7 +265,7 @@ function urteil(S, pageErrors) {
         gesetz: ["rule:human → spawn_creature"],
         mensch: ["human → spawn_tree", "human → spawn_creature"],
         mitspieler: [
-            "remote:peer-wache → time_of_day",
+            "remote:peer-wache → set_time_of_day",
             "remote:peer-wache → player_jump_power",
             "remote:peer-wache → creatures_color",
         ],
@@ -294,9 +294,14 @@ function urteil(S, pageErrors) {
         rot.push(
             `(F) FREI: der Nexus setzt ohne Halt kein Dorf (${JSON.stringify(fn.vorher)} → ${JSON.stringify(fn.nachher)})`
         );
-    if (!(fn.nachher.tiere > fn.vorher.tiere && fn.nachher.zeit === 0.1 && fn.nachher.himmel === "ff00ff"))
+    if (!(fn.nachher.tiere > fn.vorher.tiere && fn.nachher.himmel === "ff00ff"))
         rot.push(
             `(F) FREI: der Nexus wirkt ohne Halt nicht (${JSON.stringify(fn.vorher)} → ${JSON.stringify(fn.nachher)})`
+        );
+    // Die Uhr gehört dem Spieler (Leben-Schau 2, `_himmelSchreiber`, gate:wetter-wache): auch ohne Halt stellt der Nexus sie nie.
+    if (fn.nachher.zeit !== fn.vorher.zeit)
+        rot.push(
+            `(F) FREI: der Nexus stellt die Uhr (${fn.vorher.zeit} → ${fn.nachher.zeit}) — sie gehört dem Spieler`
         );
     if (!(S.frei.mensch.nachher.tiere > S.frei.mensch.vorher.tiere))
         rot.push(`(F) FREI: der Mensch setzt ohne Halt keine Tiere (${JSON.stringify(S.frei.mensch)})`);

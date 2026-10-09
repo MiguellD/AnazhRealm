@@ -221,7 +221,14 @@ async function checkRing2Dsl(ctx) {
         out.slugSet = typeof m.slug === "string" && m.slug.length > 0;
 
         const jpBefore = r.state.jumpPower;
-        const res1 = r.dslRun(["weather", "rainy"]);
+        // UHR UND WETTER GEHÖREN DEM SPIELER (Leben-Schau 2): die Probe spricht als Spieler — ein Programm ohne Quelle ist
+        // eine Stimme der Welt und wünscht das Wetter nur (der Wetter-Zug zieht es in seinem Takt).
+        const res0 = r.dslRun(["weather", "stormy"]);
+        out.weltWuenscht =
+            res0.ok &&
+            r.state.weather !== "stormy" &&
+            res0.log.some((e) => e.event === "wetter_gewuenscht" || e.event === "wetter_gehalten");
+        const res1 = r.dslRun(["weather", "rainy"], { source: "human" });
         out.weatherEffect = res1.ok && r.state.weather === "rainy";
 
         // DIE KÖRPER-GESETZE SIND GESETZ (Leben-Schau 07.10.): player_jump_power wiegt nur im Gesetz-Band des Leibs — der
@@ -229,7 +236,7 @@ async function checkRing2Dsl(ctx) {
         const jBand = r._koerperGesetzBand("jumpPower");
         const jA = +(jBand.min + 0.3 * (jBand.max - jBand.min)).toFixed(3);
         const jB = +(jBand.min + 0.7 * (jBand.max - jBand.min)).toFixed(3);
-        const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", jA]]);
+        const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", jA]], { source: "human" });
         out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === jA;
 
         const creBefore = r.state.creatures.length;
@@ -316,7 +323,11 @@ async function checkRing2Dsl(ctx) {
     } else {
         check("Welt-Identität (worldId) gesetzt", dslResults.worldIdSet);
         check("Welt-Slug gesetzt", dslResults.slugSet);
-        check("DSL-Effekt: weather wirkt auf state", dslResults.weatherEffect);
+        check("DSL-Effekt: weather wirkt auf state (Satz des Spielers)", dslResults.weatherEffect);
+        check(
+            "Leben-Schau 2: ein Programm ohne Quelle (die Welt) schreibt das Wetter nie selbst — es wünscht",
+            dslResults.weltWuenscht
+        );
         check("DSL-Komposition: chain führt mehrere Effekte aus", dslResults.chainEffect);
         check("DSL-Position: at_origin + spawn_creature wirkt", dslResults.positionEffect);
         check("DSL-Condition: when/weather_is verzweigt korrekt", dslResults.conditionEffect);
@@ -2722,7 +2733,8 @@ async function checkBandV1741RuleThread(ctx) {
         r.state.weather = "sunny";
         nRule.lastFired = -Infinity;
         r._tickWorldRules(now());
-        out.nexusNoJournal = r.state.worldJournal.entries.length === jBeforeN && r.state.weather === "rainy";
+        // die Nexus-Regel feuerte (sie wünscht das Wetter nur — Leben-Schau 2), und keine Erinnerung entstand
+        out.nexusNoJournal = r.state.worldJournal.entries.length === jBeforeN && nRule.fires === 1;
 
         // restore
         r.state.worldRules = savedRules;
@@ -29013,7 +29025,7 @@ async function checkBandR6Capability(ctx) {
             r._portalOverlay = savedPo || null;
             r.state.capabilityProposals = savedProps;
             r.state.grantedCapabilities = savedCaps;
-            if (typeof r._setWeather === "function") r._setWeather(savedWeather, "band-r6");
+            if (typeof r._setWeather === "function") r._setWeather(savedWeather, "human");
             else r.state.weather = savedWeather;
         }
         return out;
@@ -40353,10 +40365,12 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.timeOfDayField = typeof r.state.timeOfDay === "number" && r.state.timeOfDay >= 0 && r.state.timeOfDay <= 1;
         // Der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl (V9.56-i).
         out.dayLengthDefault = r.state.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
+        // Der Tag trägt eine Szene (Leben-Schau 2): Mittag bis Sonnenuntergang = TAG_SZENE_MINUTEN (15) → 60 min.
         out.dayLengthConstantsExist =
             AnazhRealm.DAY_LENGTH_MIN_MINUTES === 1 &&
             AnazhRealm.DAY_LENGTH_MAX_MINUTES === 60 &&
-            AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 8;
+            AnazhRealm.TAG_SZENE_MINUTEN === 15 &&
+            AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES === 4 * AnazhRealm.TAG_SZENE_MINUTEN;
         out.dayNightStopsExists = Array.isArray(AnazhRealm.DAY_NIGHT_STOPS);
         // V8.26 Bug 2 — Stops erweitert von 7 auf 13 für sanftere
         // Übergänge (smoothstep + dichtere Stop-Verteilung). Test
@@ -40383,17 +40397,17 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.interpolateWrap = r._interpolateDayNight(1.5).intensity === r._interpolateDayNight(0.5).intensity;
 
         // setTimeOfDay setzt korrekt
-        r.setTimeOfDay(0.25);
+        r.setTimeOfDay(0.25, "human");
         out.setTimeOfDayWorks = Math.abs(r.state.timeOfDay - 0.25) < 0.001;
         // Sonnenaufgang Label
         out.timeLabel0_25HasEmoji = r._timeOfDayLabel(0.25).includes(":");
         out.timeLabel0_25Hours = r._timeOfDayLabel(0.25).includes("06:");
 
         // tickDayNight schreitet voran
-        r.setTimeOfDay(0.4);
+        r.setTimeOfDay(0.4, "human");
         const beforeT = r.state.timeOfDay;
         r.state._lastDayNightTick = 0;
-        r.tickDayNight(0.5); // 0.5 s delta, dayLength=8min=480s → +0.001
+        r.tickDayNight(0.5); // 0.5 s delta, dayLength=60min=3600s → +0.00014
         out.tickAdvances = r.state.timeOfDay > beforeT;
         // setDayLength clamped
         r.setDayLength(5);
@@ -40402,11 +40416,14 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         out.setDayLengthClampedMax = r.state.dayLengthMinutes === 60;
         r.setDayLength(0); // < min 1
         out.setDayLengthClampedMin = r.state.dayLengthMinutes === 1;
-        r.setDayLength(8); // zurück
+        r.setDayLength(AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES); // zurück
 
-        // DSL-Op set_time_of_day
-        r.dslRun(["set_time_of_day", 0.7]);
+        // DSL-Op set_time_of_day — die Uhr gehört dem Spieler (Leben-Schau 2): sein Satz stellt sie, der Nexus nie
+        r.dslRun(["set_time_of_day", 0.7], { source: "human" });
         out.dslSetTimeOfDay = Math.abs(r.state.timeOfDay - 0.7) < 0.001;
+        const nexusUhr = r.dslRun(["set_time_of_day", 0.1], { source: "nexus" });
+        out.dslNexusUhrGehalten =
+            Math.abs(r.state.timeOfDay - 0.7) < 0.001 && nexusUhr.log.some((e) => e.event === "uhr_gehalten");
         // NON_BROADCASTABLE
         out.setTimeOfDayInBlacklist = AnazhRealm.NON_BROADCASTABLE_OPS.has("set_time_of_day");
 
@@ -40419,10 +40436,10 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // _applyDayNightToScene setzt DirectionalLight-Position + -Farbe/-Intensität: tags die SONNE (oben,
         // hell, warm), nachts der MOND gegenüber der Sonne — AUCH über dem Horizont, gedämpft + kühl
         // (ein Licht von unten wüsche die Nacht aus).
-        r.setTimeOfDay(0.5); // Mittag
+        r.setTimeOfDay(0.5, "human"); // Mittag
         const noonY = r.state.directionalLight.position.y;
         const noonInt = r.state.directionalLight.intensity;
-        r.setTimeOfDay(0); // Mitternacht
+        r.setTimeOfDay(0, "human"); // Mitternacht
         const dlN = r.state.directionalLight;
         const midnightY = dlN.position.y;
         const midnightCool = dlN.color.b > dlN.color.r; // Mondlicht ist kühl (b > r)
@@ -40442,8 +40459,8 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         // Setze sunny als Ausgangspunkt
         r.state.weather = "sunny";
         r.state.weatherTransition = null;
-        // weather-DSL-Op startet Transition + setzt state.weather sofort
-        r.dslRun(["weather", "rainy"]);
+        // weather-DSL-Op startet Transition + setzt state.weather sofort (der Satz des Spielers; die Welt wünscht nur)
+        r.dslRun(["weather", "rainy"], { source: "human" });
         out.weatherStateImmediate = r.state.weather === "rainy";
         out.weatherTransitionStarted = !!r.state.weatherTransition;
         out.weatherTransitionFromSunny = r.state.weatherTransition && r.state.weatherTransition.from === "sunny";
@@ -40542,7 +40559,10 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             "Welle 6.G3.a: dayLengthMinutes == DAY_LENGTH_DEFAULT (die EINE Konstante)",
             wave6g3Results.dayLengthDefault
         );
-        check("Welle 6.G3.a: Tag-Längen-Konstanten (1/60/8) korrekt", wave6g3Results.dayLengthConstantsExist);
+        check(
+            "Welle 6.G3.a: Tag-Längen-Konstanten (1/60/60 = 4 Szenen zu 15 min) korrekt",
+            wave6g3Results.dayLengthConstantsExist
+        );
         check("Welle 6.G3.a: DAY_NIGHT_STOPS frozen Array", wave6g3Results.dayNightStopsExists);
         check(
             "Welle 6.G3.a: ≥7 Stops, monoton steigend von t=0 bis t=1 (V8.26: 13 Stops für smoothe Übergänge)",
@@ -40565,7 +40585,11 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         check("Welle 6.G3.a: setDayLength(5) wirkt", wave6g3Results.setDayLength5);
         check("Welle 6.G3.a: setDayLength clamped >60 auf 60", wave6g3Results.setDayLengthClampedMax);
         check("Welle 6.G3.a: setDayLength clamped <1 auf 1", wave6g3Results.setDayLengthClampedMin);
-        check("Welle 6.G3.a: DSL-Op set_time_of_day wirkt", wave6g3Results.dslSetTimeOfDay);
+        check("Welle 6.G3.a: DSL-Op set_time_of_day wirkt (Satz des Spielers)", wave6g3Results.dslSetTimeOfDay);
+        check(
+            "Leben-Schau 2: set_time_of_day des Nexus stellt die Uhr nie (uhr_gehalten im Protokoll)",
+            wave6g3Results.dslNexusUhrGehalten
+        );
         check("Welle 6.G3.a: set_time_of_day in NON_BROADCASTABLE_OPS", wave6g3Results.setTimeOfDayInBlacklist);
         check("Welle 6.G3.a: #status-time im DOM", wave6g3Results.statusTimeInDom);
         check("Welle 6.G3.a: #slider-daylength im DOM", wave6g3Results.dayLengthSliderInDom);
@@ -40700,7 +40724,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
 
         // --- Vision 4: Sky-Tint moduliert mit awe
         // Setze awe=0, lese sky-Color; setze awe=1, vergleiche.
-        r.setTimeOfDay(0.5); // Mittag
+        r.setTimeOfDay(0.5, "human"); // Mittag
         r.state.player.emotions.awe = 0;
         r.state.player.emotions.joy = 0;
         r.state.player.emotions.sorrow = 0;
@@ -40803,10 +40827,10 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
         const starU = r.state.starFieldUniforms && r.state.starFieldUniforms.grenze;
         out.starIntensityExists = !!starU;
         if (starU) {
-            r.setTimeOfDay(0.5); // Mittag
+            r.setTimeOfDay(0.5, "human"); // Mittag
             r._applyDayNightToScene();
             const grenzeMittag = starU.value;
-            r.setTimeOfDay(0); // Mitternacht
+            r.setTimeOfDay(0, "human"); // Mitternacht
             r._applyDayNightToScene();
             const grenzeNacht = starU.value;
             const hellster = Math.min(...r.constructor.HIMMEL.wandelsterne.map((w) => w.mag));
@@ -40822,11 +40846,11 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             // `_followCelestialBodies`; dieser Test ruft kein _loopRender) → skyOffset.y (= sin(angle)·380)
             // ist das kamera-unabhängige Maß für über/unter dem Horizont.
             const offY = (m) => (m.userData && m.userData.skyOffset ? m.userData.skyOffset.y : m.position.y);
-            r.setTimeOfDay(0.5); // Mittag
+            r.setTimeOfDay(0.5, "human"); // Mittag
             r._applyDayNightToScene();
             const sunYNoon = offY(r.state.sunMesh);
             const moonYNoon = offY(r.state.moonMesh);
-            r.setTimeOfDay(0); // Mitternacht
+            r.setTimeOfDay(0, "human"); // Mitternacht
             r._applyDayNightToScene();
             const sunYMidnight = offY(r.state.sunMesh);
             const moonYMidnight = offY(r.state.moonMesh);
@@ -40836,7 +40860,7 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             out.sunLowAtMidnight = sunYMidnight < -100;
             out.moonHighAtMidnight = moonYMidnight > 100;
         }
-        r.setTimeOfDay(0.5); // Reset
+        r.setTimeOfDay(0.5, "human"); // Reset
 
         // --- Vision 10: Sky-Tint moduliert mit Welt-Feld (magie-Region)
         // (auraTintStrength=1 gilt noch aus dem Block-Anfang — Mechanismus-Marge.)
@@ -41112,12 +41136,12 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         out.fogColorSet = !!lf && (lf.r > 0 || lf.g > 0 || lf.b > 0);
 
         // 2. Hemisphere-skyColor moduliert mit Tageszeit
-        r.setTimeOfDay(0.5);
+        r.setTimeOfDay(0.5, "human");
         r._applyDayNightToScene();
         const hemiNoonR = r.state.hemiLight.color.r;
         const hemiNoonG = r.state.hemiLight.color.g;
         const hemiNoonB = r.state.hemiLight.color.b;
-        r.setTimeOfDay(0); // Mitternacht
+        r.setTimeOfDay(0, "human"); // Mitternacht
         r._applyDayNightToScene();
         const hemiNightR = r.state.hemiLight.color.r;
         const hemiNightG = r.state.hemiLight.color.g;
@@ -41129,11 +41153,11 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // EIN Himmel (V18.507): am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags stellt sie
         // die 18-%-Karte auf Mittelgrau + 1 EV (< 1), nachts hält der Deckel die geeichte Nacht (1,0).
-        r.setTimeOfDay(0.5);
+        r.setTimeOfDay(0.5, "human");
         r._applyDayNightToScene();
         const intensityNoon = r.state.hemiLight.intensity;
         const belichtungMittag = r.state.renderer.toneMappingExposure;
-        r.setTimeOfDay(0);
+        r.setTimeOfDay(0, "human");
         r._applyDayNightToScene();
         const intensityNight = r.state.hemiLight.intensity;
         const belichtungNacht = r.state.renderer.toneMappingExposure;
@@ -41145,7 +41169,7 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
         // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
         // testet MIT Opt-in und mockt den echten Leser (auraAt).
-        r.setTimeOfDay(0.5);
+        r.setTimeOfDay(0.5, "human");
         const origWFA = r.worldFieldAt;
         const origAuraAt = r.auraAt;
         const savedAuraStrength = r.state.atmosphere ? r.state.atmosphere.auraTintStrength : undefined;
@@ -46709,7 +46733,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             // V17.111 R1 — deterministische schräge Sonne: der Light-Space-Snap
             // zeigt sich nur bei NICHT-achsparalleler Sonne (bei Zenit/Achse
             // deckt er sich mit dem alten Welt-Snap). t=0.3 ≈ tiefe Morgensonne.
-            r.setTimeOfDay(0.3);
+            r.setTimeOfDay(0.3, "human");
             pm.position.x = 123.5;
             pm.position.z = -77.25;
             r._applyDayNightToScene();
@@ -46745,7 +46769,7 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
             out.shadowSnapStable = latMove < 0.01 || latMove > 0.2;
             pm.position.x = ox;
             pm.position.z = oz;
-            r.setTimeOfDay(oTod);
+            r.setTimeOfDay(oTod, "human");
             r._applyDayNightToScene();
         }
         return out;
@@ -53073,22 +53097,28 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.decayLowered = out.joyAfterDecay < 0.5 && out.joyAfterDecay > 0;
         r.state.lifeField = savedLifeRing3;
 
-        // (c) Schwellen-Trigger: sorrow > 0.7 → state.weather = "rainy". lastTick nahe currentTime, damit
-        // der Decay sorrow nicht vor dem Trigger unter die Schwelle drückt.
+        // (c) Schwellen-Trigger: sorrow > 0.7 → Regen. lastTick nahe currentTime, damit der Decay sorrow nicht vor dem
+        // Trigger unter die Schwelle drückt. UHR UND WETTER GEHÖREN DEM SPIELER (Leben-Schau 2): die Emotion ist eine
+        // Stimme der Welt — sie WÜNSCHT das Wort, der Wetter-Zug zieht es in seinem Takt (ohne stehendes Wort des Spielers).
+        r._wetterFreigeben("human");
         r.state.weather = "sunny";
         r.state.player.emotions.sorrow = 0.9;
         r.state.player.emotionLastApply.sorrow = -Infinity;
         r.state.player.emotionLastTick = 199;
         r.updatePlayerEmotions(200);
         out.sorrowAfterTick = r.state.player.emotions.sorrow;
-        out.sorrowTriggersRain = r.state.weather === "rainy";
+        const sorrowWunsch = r.state.wetterWunsch && r.state.wetterWunsch.wort;
+        r.state.weatherEffectTime = r.constructor.WETTER_ZUG_SEK;
+        r._loopWeatherAndGrowth(0);
+        out.sorrowTriggersRain = sorrowWunsch === "rainy" && r.state.weather === "rainy";
 
         // (d) Trigger respektiert Cooldown — zweiter Tick 5s später
-        //     darf nicht wieder feuern.
+        //     darf nicht wieder feuern (kein neuer Wunsch).
         r.state.weather = "sunny";
+        r.state.wetterWunsch = null;
         r.state.player.emotionLastTick = 204;
         r.updatePlayerEmotions(205);
-        out.cooldownRespected = r.state.weather === "sunny";
+        out.cooldownRespected = r.state.weather === "sunny" && r.state.wetterWunsch === null;
 
         // (e) DSL-Condition emotion_above
         r.state.player.emotions.joy = 0.9;
@@ -53143,7 +53173,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
             ring3Results.decayLowered,
             `joy 0.5 → ${ring3Results.joyAfterDecay.toFixed(3)} nach 10s`
         );
-        check("Ring 3: sorrow > 0.7 triggert state.weather = 'rainy'", ring3Results.sorrowTriggersRain);
+        check(
+            "Ring 3: sorrow > 0.7 wünscht Regen, der Wetter-Zug zieht ihn (Leben-Schau 2)",
+            ring3Results.sorrowTriggersRain
+        );
         check("Ring 3: Trigger respektiert Cooldown (kein Wiederfeuern <30s)", ring3Results.cooldownRespected);
         check("Ring 3: DSL-Condition emotion_above evaluiert korrekt", ring3Results.dslConditionJoyAbove);
         check("Ring 3: Save persistiert playerEmotions", ring3Results.savedEmotions);
@@ -53177,15 +53210,21 @@ async function checkBandEarlyRingsAndUi(ctx) {
         r.updatePlayerEmotions(300);
         out.aweTriggersSkybox = !!r.state.skyTint && r.state.skyTintTarget > 0 && r.state.skyTint.getHex() === 0xd4a3ff;
 
-        // (b) hope > 0.7 → wetter sunny + kreaturen happy
+        // (b) hope > 0.7 → wetter sunny + kreaturen happy (das Wetter wünscht die Emotion, der Wetter-Zug zieht es —
+        // Leben-Schau 2: die Welt schreibt das Wetter nie selbst)
         for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
         p.emotions.hope = 0.9;
+        r._wetterFreigeben("human");
         r.state.weather = "rainy";
         r.state.creatureEmotions = r.state.creatures.map(() => "sad");
         p.emotionLastTick = 399;
         r.updatePlayerEmotions(400);
         const happyCount = r.state.creatureEmotions.filter((e) => e === "happy").length;
-        out.hopeTriggersSunnyHappy = r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
+        const hopeWunsch = r.state.wetterWunsch && r.state.wetterWunsch.wort;
+        r.state.weatherEffectTime = r.constructor.WETTER_ZUG_SEK;
+        r._loopWeatherAndGrowth(0);
+        out.hopeTriggersSunnyHappy =
+            hopeWunsch === "sunny" && r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
 
         // (c) peace > 0.7 → creatures_speed_mul = 0.7: der Tempo-Hauch der Tiere (Leben-Schau 07.10.: der alte Op schrieb
         // userData.speedMul, das niemand las) — jedes Tier trägt den Hauch, und sein Charakter-Tempo LIEST ihn (im Band).
@@ -53255,7 +53294,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("Ring 3 V2: Snapshot erreichbar", false, "page.evaluate fehlgeschlagen");
     } else {
         check("Ring 3 V2: awe > 0.7 triggert Skybox-Farbe", ring3v2Results.aweTriggersSkybox);
-        check("Ring 3 V2: hope > 0.7 triggert chain(sunny, happy)", ring3v2Results.hopeTriggersSunnyHappy);
+        check(
+            "Ring 3 V2: hope > 0.7 triggert chain(sunny, happy) — die Sonne über den Wetter-Zug",
+            ring3v2Results.hopeTriggersSunnyHappy
+        );
         check(
             "Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (Tempo-Hauch 0,7, gelesen im Wander-Band)",
             ring3v2Results.peaceTriggersSlowdown
