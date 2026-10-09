@@ -1,0 +1,43 @@
+=== DER SCHATTEN KLEINER WERFER — der Bias als Gesetz der Kaskade (echter Renderer) ===
+  Renderer: die GPU des Rechners · 960×540 · 166 s · normalBias je Kaskade [1,1] m · Tiefen-Bias [0.25,0.5] m · Texel [0.156,0.408] m
+  wolf     @0.32 (seitlich): IoU mit Saum 0 (8 px) · IoU 0 · Deckung 0 · gemessen 23 px · erwartet 3022 px · 28710 Dreiecke
+  fuchs    @0.32 (seitlich): IoU mit Saum 0.004 (8 px) · IoU 0 · Deckung 0 · gemessen 13 px · erwartet 1586 px · 30178 Dreiecke
+  busch    @0.32 (seitlich): IoU mit Saum 0.072 (8 px) · IoU 0.063 · Deckung 0.063 · gemessen 760 px · erwartet 10710 px · 1020 Dreiecke · Stufe 0
+  pfosten  @0.32 (seitlich): IoU mit Saum 0 (7 px) · IoU 0 · Deckung 0 · gemessen 1 px · erwartet 1179 px · 12 Dreiecke
+  spieler  @0.32 (seitlich): IoU mit Saum 0.513 (7 px) · IoU 0.366 · Deckung 0.4 · gemessen 1554 px · erwartet 3148 px · 162412 Dreiecke
+  wolf     @0.5: IoU mit Saum 0.083 (11 px) · IoU 0.013 · Deckung 0.014 · gemessen 77 px · erwartet 867 px · 28710 Dreiecke
+  fuchs    @0.5: IoU mit Saum 0.193 (11 px) · IoU 0.03 · Deckung 0.033 · gemessen 47 px · erwartet 430 px · 30178 Dreiecke
+  busch    @0.5: IoU mit Saum 0 (11 px) · IoU 0 · Deckung 0 · gemessen 0 px · erwartet 1561 px · 1020 Dreiecke · Stufe 0
+  pfosten  @0.5: IoU mit Saum 0.005 (11 px) · IoU 0 · Deckung 0 · gemessen 23 px · erwartet 164 px · 12 Dreiecke
+  spieler  @0.5: IoU mit Saum 0.989 (11 px) · IoU 0.345 · Deckung 0.437 · gemessen 359 px · erwartet 510 px · 162412 Dreiecke
+  Akne eben@0.28         0°: 0.00 % von 191192 Pixeln
+  Akne streif@0.28       1°: 0.00 % von 188934 Pixeln
+  Akne dach@0.28        40°: 0.00 % von 196928 Pixeln
+  Akne eben@0.32         0°: 0.00 % von 191221 Pixeln
+  Akne streif@0.32      15°: 0.00 % von 199096 Pixeln
+  Akne dach@0.32        40°: 0.00 % von 196928 Pixeln
+  Akne eben@0.5          0°: 0.00 % von 191250 Pixeln
+  Akne streif@0.5       60°: 0.00 % von 191060 Pixeln
+  Akne dach@0.5         40°: 0.00 % von 196928 Pixeln
+  Zähne (0,1 Texel, ohne Tiefen-/Hang-Bias): 10.90 % von 191250 Pixeln
+  Akne-Fleck (offen, isoliert): [-851.4,-887.3,60] (x, z, Abstand zur Bühne m)
+  echt: {"name":"dach","haus":"haus_alemannisch","stufe":0}
+  echt: {"name":"hang","ort":[-918.3,-785.8],"grad":24.8}
+  Bilder: C:\Users\micha\Desktop\AnazhRealm-OMEN\abab-b536\artifacts\schatten-bias\vorher-final
+
+ROT:
+  • (Q) QUELLE: setShadowBias Zeile 70460: schreibt normalBias ohne das Gesetz — dl.shadow.normalBias = m
+  • (Q) QUELLE: setShadowBias Zeile 70466: schreibt normalBias ohne das Gesetz — lw.shadow.normalBias = m
+  • (Q) QUELLE: init Zeile 91567: schreibt den Tiefen-Bias einer Schatten-Karte neben dem Gesetz — directionalLight. hadow.bia  = -0.0005
+  • (Q) QUELLE: init Zeile 91568: schreibt normalBias ohne das Gesetz — directionalLight.shadow.normalBias = Number.isFinite(_atmo.shadowBias) ? Math.ma
+  • (Q) QUELLE: _kaskadeFit Zeile 95573: schreibt den Tiefen-Bias einer Schatten-Karte neben dem Gesetz —  h.bia  = K.bia M[Math.min(i, K.bia M.length - 1)] / (zt - zb)
+  • (Q) QUELLE: das Gesetz `_schattenNormalBias` fehlt (der Bias ist ein fester Meter-Wert)
+  • (S) wolf @0.32: Boden-IoU (Saum 8 px) 0 < 0.4 (gemessen 23 px, erwartet 3022 px, Deckung 0) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) fuchs @0.32: Boden-IoU (Saum 8 px) 0.004 < 0.4 (gemessen 13 px, erwartet 1586 px, Deckung 0) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) busch @0.32: Boden-IoU (Saum 8 px) 0.072 < 0.4 (gemessen 760 px, erwartet 10710 px, Deckung 0.063) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) pfosten @0.32: Boden-IoU (Saum 7 px) 0 < 0.4 (gemessen 1 px, erwartet 1179 px, Deckung 0) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) wolf @0.5: Boden-IoU (Saum 11 px) 0.083 < 0.4 (gemessen 77 px, erwartet 867 px, Deckung 0.014) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) fuchs @0.5: Boden-IoU (Saum 11 px) 0.193 < 0.4 (gemessen 47 px, erwartet 430 px, Deckung 0.033) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) busch @0.5: Boden-IoU (Saum 11 px) 0 < 0.4 (gemessen 0 px, erwartet 1561 px, Deckung 0) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+  • (S) pfosten @0.5: Boden-IoU (Saum 11 px) 0.005 < 0.4 (gemessen 23 px, erwartet 164 px, Deckung 0) — der Werfer wirft keinen sichtbaren Schatten (normalBias [1,1])
+EXIT=1 (184 s)

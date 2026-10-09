@@ -1,0 +1,25 @@
+== hang 1.5 {"n":0.25,"d":0} EXIT=1
+  Stoff [{"an":false,"s":0,"u":0},{"an":false,"s":0,"u":0}] · VERSUCH {"n":0.25,"d":0}
+  wolf     @0.32 (seitlich): IoU mit Saum 0.997 (8 px) · IoU 0.708
+  fuchs    @0.32 (seitlich): IoU mit Saum 0.997 (8 px) · IoU 0.586
+  pfosten  @0.32 (seitlich): IoU mit Saum 0.996 (8 px) · IoU 0.68
+  Akne eben@0.28         0°: 0.00 % von 191257 Pixeln
+  Akne streif@0.28       1°: 0.00 % von 188932 Pixeln
+  Akne dach@0.28        40°: 0.00 % von 196928 Pixeln
+  Akne eben@0.32         0°: 11.75 % von 191249 Pixeln
+  Akne streif@0.32      15°: 0.11 % von 199095 Pixeln
+  Akne dach@0.32        40°: 0.00 % von 196928 Pixeln
+  Zähne (0,1 Texel, ohne Tiefen-/Hang-Bias): 10.82 % von 191258 Pixeln
+== hang 1.5 {"n":0,"d":0} EXIT=1
+  Stoff [{"an":false,"s":0,"u":0},{"an":false,"s":0,"u":0}] · VERSUCH {"n":0,"d":0}
+  wolf     @0.32 (seitlich): IoU mit Saum 0.997 (8 px) · IoU 0.731
+  fuchs    @0.32 (seitlich): IoU mit Saum 0.995 (7 px) · IoU 0.598
+  pfosten  @0.32 (seitlich): IoU mit Saum 0.995 (8 px) · IoU 0.633
+  Akne eben@0.28         0°: 37.29 % von 191255 Pixeln
+  Akne streif@0.28       1°: 25.11 % von 188924 Pixeln
+  Akne dach@0.28        40°: 99.36 % von 196928 Pixeln
+  Akne eben@0.32         0°: 86.79 % von 191258 Pixeln
+  Akne streif@0.32      15°: 62.96 % von 199096 Pixeln
+  Akne dach@0.32        40°: 98.69 % von 196928 Pixeln
+  Zähne (0,1 Texel, ohne Tiefen-/Hang-Bias): 10.60 % von 191243 Pixeln
+ENDE
