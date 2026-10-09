@@ -258,7 +258,9 @@ function validateManifest(m) {
                     v.push(`B2c: lod.budget.${k}[${st}].blattKarte muss endlich > 0 sein`);
                 // S3 (09.10.): die Kosten-Regler der Krone — lagen (Quad-Lagen je Kronen-Pixel, > 0), quote (Dreiecke der
                 // Stufe / der Nah-Stufe, in (0, 1)), geruest (Röhren ab geruest·trunkR, in (0, 1)), wedel (der Nadel-Ast als
-                // Strähne: ab in [0, 1), teile ganz >= 1, breite > 0).
+                // Strähne: ab in [0, 1), teile ganz >= 1, breite > 0, nadel > 0 m, rand >= 0 Nadel-Größen, winkel in (0°, 45°),
+                // holz in [0, 1) — Gegenprüfung R1: der Wedel kreuzt ±winkel aus der Lotrechten, seine Breite ist die Hülle der
+                // Nadel-Wolke, seine Farbe das Mittel aus Nadel und Holz).
                 if ("lagen" in z && !(typeof z.lagen === "number" && z.lagen > 0 && isFinite(z.lagen)))
                     v.push(`B2c: lod.budget.${k}[${st}].lagen muss endlich > 0 sein`);
                 if ("quote" in z && !(typeof z.quote === "number" && z.quote > 0 && z.quote < 1))
@@ -267,8 +269,17 @@ function validateManifest(m) {
                     v.push(`B2c: lod.budget.${k}[${st}].geruest muss in (0, 1) liegen`);
                 if ("wedel" in z) {
                     const w = z.wedel;
-                    if (!w || !(w.ab >= 0 && w.ab < 1) || !(Number.isInteger(w.teile) && w.teile >= 1) || !(w.breite > 0 && isFinite(w.breite)))
-                        v.push(`B2c: lod.budget.${k}[${st}].wedel muss ab in [0, 1), teile (ganz >= 1) und breite (> 0) tragen`);
+                    if (
+                        !w ||
+                        !(w.ab >= 0 && w.ab < 1) ||
+                        !(Number.isInteger(w.teile) && w.teile >= 1) ||
+                        !(w.breite > 0 && isFinite(w.breite)) ||
+                        !(w.nadel > 0 && isFinite(w.nadel)) ||
+                        !(w.rand >= 0 && isFinite(w.rand)) ||
+                        !(w.winkel > 0 && w.winkel < 45) ||
+                        !(w.holz >= 0 && w.holz < 1)
+                    )
+                        v.push(`B2c: lod.budget.${k}[${st}].wedel muss ab in [0, 1), teile (ganz >= 1), breite (> 0), nadel (> 0), rand (>= 0), winkel in (0, 45) und holz in [0, 1) tragen`);
                 }
                 // W5: der Anteil der gewachsenen Blattstellen je Kronen-Art, die eine Karte/Strähne tragen — (0, 1].
                 if ("dichte" in z) {
@@ -281,7 +292,8 @@ function validateManifest(m) {
                                 v.push(`B2c: lod.budget.${k}[${st}].dichte.${art} muss in (0, 1] liegen`);
                 }
                 // S7: die Regler der Nahkrone — rinde {ast, reisig} in trunkR (0 < reisig < ast < 1), straehne {teile
-                // ganz >= 1, breite > 0} in Blattlaengen, boden in [0, 1) Baumhoehen.
+                // ganz >= 1, breite > 0} in Blattlaengen (die Baum-Zeilen dazu holz in [0, 1): der Holz-Anteil an der Farbe der
+                // Strähne, Gegenprüfung R1), boden in [0, 1) Baumhoehen.
                 if ("rinde" in z) {
                     const r = z.rinde;
                     if (!r || !(r.reisig > 0 && r.reisig < r.ast && r.ast < 1))
@@ -289,8 +301,13 @@ function validateManifest(m) {
                 }
                 if ("straehne" in z) {
                     const r = z.straehne;
-                    if (!r || !(Number.isInteger(r.teile) && r.teile >= 1) || !(r.breite > 0 && isFinite(r.breite)))
-                        v.push(`B2c: lod.budget.${k}[${st}].straehne muss teile (ganz >= 1) und breite (> 0) tragen`);
+                    if (
+                        !r ||
+                        !(Number.isInteger(r.teile) && r.teile >= 1) ||
+                        !(r.breite > 0 && isFinite(r.breite)) ||
+                        (k === "tree" && !(r.holz >= 0 && r.holz < 1))
+                    )
+                        v.push(`B2c: lod.budget.${k}[${st}].straehne muss teile (ganz >= 1), breite (> 0) und am Baum holz in [0, 1) tragen`);
                 }
                 if ("boden" in z && !(typeof z.boden === "number" && z.boden >= 0 && z.boden < 1))
                     v.push(`B2c: lod.budget.${k}[${st}].boden muss in [0, 1) liegen`);

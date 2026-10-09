@@ -1,5 +1,5 @@
 {
-    "zweck": "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) und seine Studio-Karte (Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — aus dem Ist von V18.536. Je Art hält das Mittel über die Gestalten je Stufe und Hebung (und die Deckung der Karten) 0,92–1,08 davon, jede Gestalt 0,85–1,15, jede Karte ΔE76 ≤ 2.",
+    "zweck": "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) und seine Studio-Karte (Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — aus dem Ist von V18.536. Je Art hält das Mittel über die Gestalten je Stufe und Hebung (und die Deckung der Karten) 0,92–1,08 davon, jede Gestalt 0,85–1,15; die Kronenfarbe der Karten je Art im Mittel ΔE76 ≤ 2, je Gestalt ≤ 4.",
     "quelle": "node scripts/diag-asset-contract.cjs --tafel (V18.536, 76c9624d)",
     "band": [
         0.92,
@@ -10,6 +10,7 @@
         1.15
     ],
     "karteDE": 2,
+    "karteDEGestalt": 4,
     "faelle": {
         "birke-s1": {
             "px": 0.013782021,

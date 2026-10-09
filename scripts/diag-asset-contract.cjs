@@ -40,6 +40,7 @@ const TAFEL_BILD = path.resolve(__dirname, "..", "spec", "asset-contract", "v1",
 const BILD_BAND = [0.92, 1.08];
 const GESTALT_BAND = [0.85, 1.15];
 const KARTE_DE = 2;
+const KARTE_DE_GESTALT = 4;
 // ΔE76 zweier LINEARER sRGB-Farben (D65 → Lab).
 function deltaE76(a, b) {
     const lab = ([r, g, bl]) => {
@@ -326,7 +327,9 @@ function wurfUrteil(mess, budget) {
 // Stufe und Hebung (und die Deckung ihrer Karten) hält BILD_BAND — die systematische Abweichung (die Koniferen-L1 verlor
 // 22–34 % ihrer Seitenansicht in jeder Gestalt); jede einzelne GESTALT hält GESTALT_BAND — eine Gestalt wächst anders als
 // die Vorlage, aus der V18.536 sie las (die Wedel tragen die Nadel-Wolke, V18.536 je Nadelstelle eine Spray), sie streut
-// um das Mittel. Die Kronenfarbe jeder Karte hält ΔE76 ≤ KARTE_DE.
+// um das Mittel. Die Kronenfarbe der Karten hält je Art im Mittel ΔE76 ≤ KARTE_DE, jede Gestalt ≤ KARTE_DE_GESTALT — wie die
+// Deckung das Doppelte des Mittels (V18.536 zeigte zwischen dünnen Sprays je Gestalt verschieden viel Holz: 25–31 % Rinden-
+// Texel bei Tanne und Fichte).
 function bildUrteil(mess, tafel) {
     const v = [];
     const H = ["0°", "30°", "60°"];
@@ -339,7 +342,7 @@ function bildUrteil(mess, tafel) {
             continue;
         }
         m.verhaeltnis = {};
-        const a = art[m.art] || (art[m.art] = { L0: [], L1: [], karte: [] });
+        const a = art[m.art] || (art[m.art] = { L0: [], L1: [], karte: [], farbe: [], tFarbe: [] });
         for (const st of ["L0", "L1", "karte"]) {
             if (!m[st] || !t[st]) {
                 v.push(`${k}: ${st} ${m[st] ? "ohne Tafel-Zeile" : "nicht gemessen"}`);
@@ -350,9 +353,12 @@ function bildUrteil(mess, tafel) {
                     de = deltaE76(m.karte.farbe, t.karte.farbe);
                 m.verhaeltnis.karte = [r, de];
                 a.karte.push([r]);
+                a.farbe.push(m.karte.farbe);
+                a.tFarbe.push(t.karte.farbe);
                 if (!band(r, GESTALT_BAND))
                     v.push(`${k}: die Karte deckt ${r.toFixed(3)} ihres Bilds von V18.536, Gestalt-Band [${GESTALT_BAND.join(", ")}]`);
-                if (!(de <= KARTE_DE)) v.push(`${k}: die Kronenfarbe der Karte weicht um ΔE ${de.toFixed(2)} > ${KARTE_DE} ab`);
+                if (!(de <= KARTE_DE_GESTALT))
+                    v.push(`${k}: die Kronenfarbe der Karte weicht um ΔE ${de.toFixed(2)} > ${KARTE_DE_GESTALT} ab (Gestalt)`);
                 continue;
             }
             const r = m[st].map((x, i) => x / t[st][i]);
@@ -376,6 +382,14 @@ function bildUrteil(mess, tafel) {
                     );
             }
         }
+    // die Kronenfarbe je Art: das Mittel der Karten-Farben ihrer Gestalten gegen das von V18.536
+    for (const [name, a] of Object.entries(art)) {
+        if (!a.farbe.length) continue;
+        const mi = (xs) => [0, 1, 2].map((i) => xs.reduce((s2, c) => s2 + c[i], 0) / xs.length);
+        const de = deltaE76(mi(a.farbe), mi(a.tFarbe));
+        if (!(de <= KARTE_DE))
+            v.push(`${name}: die Kronenfarbe der Karten weicht im Mittel um ΔE ${de.toFixed(2)} > ${KARTE_DE} ab (${a.farbe.length} Gestalten)`);
+    }
     for (const k of Object.keys((tafel && tafel.faelle) || {})) if (!mess[k]) v.push(`${k}: Tafel-Zeile ohne gebauten Baum`);
     return v;
 }
@@ -706,11 +720,12 @@ function bildUrteil(mess, tafel) {
             TAFEL_BILD,
             JSON.stringify(
                 {
-                    zweck: "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) und seine Studio-Karte (Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — aus dem Ist von V18.536. Je Art hält das Mittel über die Gestalten je Stufe und Hebung (und die Deckung der Karten) 0,92–1,08 davon, jede Gestalt 0,85–1,15, jede Karte ΔE76 ≤ 2.",
+                    zweck: "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) und seine Studio-Karte (Deckung der Mip 0, mittlere lineare Kronenfarbe der opaken Texel) — aus dem Ist von V18.536. Je Art hält das Mittel über die Gestalten je Stufe und Hebung (und die Deckung der Karten) 0,92–1,08 davon, jede Gestalt 0,85–1,15; die Kronenfarbe der Karten je Art im Mittel ΔE76 ≤ 2, je Gestalt ≤ 4.",
                     quelle: "node scripts/diag-asset-contract.cjs --tafel (V18.536, 76c9624d)",
                     band: BILD_BAND,
                     gestaltBand: GESTALT_BAND,
                     karteDE: KARTE_DE,
+                    karteDEGestalt: KARTE_DE_GESTALT,
                     faelle,
                 },
                 null,
@@ -764,7 +779,8 @@ function bildUrteil(mess, tafel) {
         //  (1) JEDE Gitter-Zeile MUSS rot werden: tris halbiert, draws um EINS gesenkt (die Zeile ist dicht: ihr
         //      Maximum ist gemessen — ein Puffer über dem Gemessenen fiele hier auf);
         //  (2) jede Gitter-Zeile hat ≥ 1 gebauten Fall;
-        //  (3) die Laub-Karte von gestern (Kante 2,35 statt blattKarte) MUSS das Band sprengen;
+        //  (3) die Laub-Karte mit 1,5-facher Kante MUSS das Band sprengen (bis S3 die Kante 2,35 von gestern — die Zeile
+        //      trägt seit der Gegenprüfung R1 selbst 2,2);
         //  (4) eine Nadel-Karte 1,5× so lang MUSS das Band sprengen;
         //  (5) ein Kern unter der gemalten Ausdehnung MUSS den Steckbrief brechen;
         //  (6) Deckung an Laub-, Nadel- und Klingen-Paaren gemessen;
@@ -804,7 +820,7 @@ function bildUrteil(mess, tafel) {
         const eins = (P) => P.slice(0, 1);
         const gestern = {};
         for (const [k, p] of eins(laubP))
-            gestern[k] = Object.assign({}, p, { l1: kartenSkaliert(p.l1, 2.35 / wand.b1.blattKarte) });
+            gestern[k] = Object.assign({}, p, { l1: kartenSkaliert(p.l1, 1.5) });
         const s3 = laubP.length > 0 && deckungsUrteil(gestern, wand.band, wand.alpha).length === 1;
         const lang = {};
         for (const [k, p] of eins(nadelP)) lang[k] = Object.assign({}, p, { l1: kartenSkaliert(p.l1, 1.5) });
@@ -858,7 +874,7 @@ function bildUrteil(mess, tafel) {
         );
         console.log(
             `Selbsttest Budget-Wand: jede Zeile halbiert/−1 Draw wird rot ${s1 ? "✅" : "❌ " + halb.join(",")} · ` +
-                `jede Gitter-Zeile gemessen ${s2 ? "✅" : "❌ " + leer.join(",")} · Laub-Karte 2,35 sprengt das Band ${s3 ? "✅" : "❌"} · ` +
+                `jede Gitter-Zeile gemessen ${s2 ? "✅" : "❌ " + leer.join(",")} · Laub-Karte 1,5× sprengt das Band ${s3 ? "✅" : "❌"} · ` +
                 `Nadel-Karte 1,5× sprengt das Band ${s4 ? "✅" : "❌"} · Kern 0,6 bricht den Steckbrief ${s5 ? "✅" : "❌"} · ` +
                 `${gemesseneP.length} Paare (Laub/Nadel, keine Klinge) ${s6 ? "✅" : "❌"} · L0-Karte 1,5× sprengt das Band ${s7 ? "✅" : "❌"} · ` +
                 `L0 ohne Rinde schwebt ${s8 ? "✅" : "❌"} · abgesenkte Krone liegt unter dem Boden ${s9 ? "✅" : "❌"} · ` +
@@ -939,10 +955,21 @@ function bildUrteil(mess, tafel) {
                     )
                     .join(" · ")
         );
+        const inBand = (x) => x >= GESTALT_BAND[0] && x <= GESTALT_BAND[1];
         const ausBand = Object.entries(bildMess)
-            .filter(([k, m]) => bildUrteil({ [k]: m }, { faelle: { [k]: tafel && tafel.faelle && tafel.faelle[k] } }).length)
+            .filter(([, m]) => {
+                const v = m.verhaeltnis;
+                if (!v) return true;
+                return (
+                    ["L0", "L1"].some((st) => !v[st] || !v[st].every(inBand)) ||
+                    !v.karte ||
+                    !inBand(v.karte[0]) ||
+                    !(v.karte[1] <= KARTE_DE_GESTALT)
+                );
+            })
             .map(([k]) => k);
-        if (ausBand.length) console.log(`Bild außer Band: ${ausBand.length} von ${Object.keys(bildMess).length} Bäumen (${ausBand.join(", ")})`);
+        if (ausBand.length)
+            console.log(`Gestalten außer ihrem Band: ${ausBand.length} von ${Object.keys(bildMess).length} (${ausBand.join(", ")})`);
         let sL = false,
             sL2 = false,
             sQ = false,
@@ -962,7 +989,7 @@ function bildUrteil(mess, tafel) {
                 const kHalb = nur(Object.assign({}, echt, { L0: halb })).length >= 1;
                 const kDeck = nur(Object.assign({}, echt, { karte: { deckung: t.karte.deckung * 0.8, farbe: t.karte.farbe } })).length >= 1;
                 const g = t.karte.farbe;
-                const kFarbe = nur(Object.assign({}, echt, { karte: { deckung: t.karte.deckung, farbe: [g[0], g[1] * 1.12, g[2]] } })).length === 1;
+                const kFarbe = nur(Object.assign({}, echt, { karte: { deckung: t.karte.deckung, farbe: [g[0], g[1] * 1.12, g[2]] } })).length >= 1;
                 sD = gruen && kHalb && kDeck && kFarbe && Object.keys(bildMess).length >= Object.keys(tafel.faelle).length;
             }
         }

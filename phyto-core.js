@@ -4089,6 +4089,7 @@
         fbm2: fbm2,
         barkProfile: barkProfile,
         buildTubeGesetz: buildTubeGesetz,
+        STUFEN_BILD_PX: STUFEN_BILD_PX, // die Bild-Höhe eines Baums an der Nahkante seiner Stufe (S3; foundry-core: das Gerüst der L1 ohne Krone)
         impostorFrame: impostorFrame,
         scanRadialXZ: scanRadialXZ,
         forestCellRng: forestCellRng,
