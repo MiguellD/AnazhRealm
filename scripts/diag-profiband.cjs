@@ -207,10 +207,11 @@ function goldenDreiecke(arten) {
             w = 0;
         for (const x of g.meshes || []) {
             if (!x.attrs || !x.attrs.position) continue;
-            // der Studio-Index reist als Uint32, ohne Index je drei Vertices (Float32 × 3)
+            // der Studio-Index reist als Uint32, ohne Index je drei Vertices (Float32 × 3); der Schatten-Teil (S3, teil
+            // "schatten") zeichnet nur in den Kaskaden — er ist der Wurf, nicht das Bild
             const n = x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
-            t += n;
-            if (Number.isInteger(x.wurf)) w += x.wurf;
+            if (x.teil === "schatten") w += n;
+            else t += n;
         }
         const k = m[1] + "|" + m[3];
         haupt[k] = Math.max(haupt[k] || 0, t);

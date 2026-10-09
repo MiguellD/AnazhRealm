@@ -864,7 +864,8 @@ const VERHALTEN = [
     };
     if (process.argv.includes("--selftest")) {
         console.log("=== FLUSS-WAND — SELBST-TEST: die Wand feuert auf injizierte Brüche ===");
-        const t1 = statisch(stamm.replace('"skinWeight"];', '"skinWeight", "aWind"];')).gesetze.find((g) =>
+        // die Liste läuft über Zeilen (Prettier, seit S3 aDeckt) — ein Name mehr vor der schließenden Klammer
+        const t1 = statisch(stamm.replace('    "skinWeight",\n];', '    "skinWeight",\n    "aWind",\n];')).gesetze.find((g) =>
             g[0].startsWith("S1")
         );
         check("Selbst-Test 1: ein Wand-Name ohne Leser → S1 rot", t1 && !t1[1]);
