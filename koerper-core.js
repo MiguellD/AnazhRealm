@@ -1137,7 +1137,10 @@
     // ── 0710-4 (rein additiv) — DER LEIB DES MENSCHEN ALS MASSE: die Dichte des Körpers (kg/m³, mit der Luft der Lunge
     //    knapp unter Wasser). Die Masse eines Menschen ist das Volumen seiner geschlossenen Haut (bauMensch) mal dieser
     //    Zahl — EINE Quelle für jeden Stoß (Wirt: _leibMasse). ──
-    var LEIB = Object.freeze({ dichteKgM3: 985 });
+    // ── Welle LF 09.10. (rein additiv) — DER ARM ALS ANTEIL DER MASSE: ein Arm samt Hand wiegt 5,0 % des Körpers (Dempster
+    //    1955: Oberarm 2,8 · Unterarm 1,6 · Hand 0,6 %). Eine Maus-Arm-Aktion bewegt ihn samt Gerät — ihre Ausdauer wächst
+    //    mit (m_Arm + m_Gerät) / m_Arm (Wirt: _mausAusdauer; die leere Hand trägt aktionAusdauer). ──
+    var LEIB = Object.freeze({ dichteKgM3: 985, armAnteil: 0.05 });
 
     // ── Der Namensraum (Vertrag v1.1 §7 + §8 MESHFREI) ──
     root.__koerperCore = {

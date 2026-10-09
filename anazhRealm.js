@@ -80796,17 +80796,38 @@ class AnazhRealm {
     _mouseActionStaminaGate() {
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         if (mode !== "pfad") return { ok: true, mode };
-        const cost = AnazhRealm._aktionAusdauer();
+        const cost = this._mausAusdauer();
         const have = (this.state.player && this.state.player.stamina) || 0;
-        return have >= cost ? { ok: true, mode, cost } : { ok: false, mode, cost, have };
+        // die Zahlen der Absage gehen an den Spieler (eine Nachkommastelle), das Urteil fällt auf den genauen Werten
+        return have >= cost
+            ? { ok: true, mode, cost }
+            : { ok: false, mode, cost: +cost.toFixed(1), have: +have.toFixed(1) };
     }
 
     _consumeMouseStamina() {
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         if (mode !== "pfad") return;
-        const cost = AnazhRealm._aktionAusdauer();
+        const cost = this._mausAusdauer();
         const have = (this.state.player && this.state.player.stamina) || 0;
         this.state.player.stamina = Math.max(0, have - cost);
+    }
+
+    // DIE AUSDAUER EINER MAUS-ARM-AKTION (Welle LF 09.10., Posten 8 / K-L2): der Arm bewegt sich samt Gerät — die Kosten des
+    // Gesetzbuchs (koerper fx.bewegung.aktionAusdauer: die leere Hand) wachsen mit der geschwungenen Masse,
+    // (m_Arm + m_Gerät) / m_Arm; m_Arm = koerper LEIB.armAnteil × die EINE Leib-Masse des Spielers (_leibMasse), m_Gerät = die
+    // gemessene Masse des Schmiede-Geräts (kampfMasze.masseKg). Ein ungemessenes Gerät (Eigenwerk, Bogen) trägt keine Masse in
+    // kg und zehrt wie die Hand (derselbe Definitionsbereich wie Schwung-Dauer und Stoß). Vorher 5 je Hieb für Dolch und
+    // Vorschlaghammer gleich (Leben-Schau 07.10.).
+    _mausAusdauer() {
+        const basis = AnazhRealm._aktionAusdauer();
+        const bp = this._heldImplementBlueprint();
+        const km = bp ? this._schmiedeKampfMasze(bp) : null;
+        const mG = km && km.masseKg > 0 ? km.masseKg : 0;
+        if (!mG) return basis;
+        const anteil = AnazhRealm.Gesetz("koerper:LEIB.armAnteil", null);
+        if (!(anteil > 0)) return AnazhRealm._kernPflichtBruch("koerper:LEIB.armAnteil");
+        const mArm = anteil * this._leibMasse(this.state.playerMesh);
+        return (basis * (mArm + mG)) / mArm;
     }
 
     // Der LMB-Klick LÖST nur den 3-Phasen-Schwung aus (Windup/Strike/Recover); getroffen wird im

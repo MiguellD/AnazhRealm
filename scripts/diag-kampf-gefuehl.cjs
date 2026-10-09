@@ -232,6 +232,21 @@ function poseVerdict(P) {
     });
     return v;
 }
+// (T19) DIE AUSDAUER JE HIEB AUS DER WAFFEN-MASSE (Welle LF kampf, Posten 8 — pure Funktion, Probe UND Selbst-Test): ein Hieb
+// zehrt mit der Masse des Geräts — die Reihe steigt streng mit kg (Faust < Dolch < … < Vorschlaghammer), zwei Geräte
+// verschiedener Masse zehren nie gleich. Befund 07.10.: 5 je Hieb für Dolch, Großschwert und Keule.
+function ausdauerVerdict(A) {
+    if (!Array.isArray(A) || A.length < 3) return ["ausdauer keine Probe"];
+    const v = [];
+    for (const x of A) if (!Number.isFinite(x.zehrt)) v.push(`ausdauer-hieb: ${x.geraet} schwang nicht (keine Probe)`);
+    const s = A.filter((x) => Number.isFinite(x.zehrt)).sort((a, b) => a.kg - b.kg);
+    for (let i = 1; i < s.length; i++)
+        if (s[i].kg > s[i - 1].kg + 1e-6 && !(s[i].zehrt > s[i - 1].zehrt + 1e-6))
+            v.push(
+                `ausdauer-flach: ${s[i].geraet} (${s[i].kg} kg) zehrt ${s[i].zehrt}, ${s[i - 1].geraet} (${s[i - 1].kg} kg) ${s[i - 1].zehrt} — die Masse wirkt nicht`
+            );
+    return v;
+}
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -1682,6 +1697,38 @@ async function WELLE_L() {
                 parke(hP);
             }
         }
+        // (T19) DIE AUSDAUER JE HIEB AUS DER MASSE (Posten 8): im Modus pfad je Gerät EIN Hieb über _beginPlayerSwing bei
+        // voller Ausdauer — gemessen, was der Hieb zehrt, und die Masse des Geräts (kampfMasze des Kerns). Befund: 5 je Hieb
+        // für Dolch, Großschwert und Keule (flach).
+        {
+            const modeA = r.getGameMode();
+            r.setGameMode("pfad");
+            const zehr = [];
+            for (const name of [
+                null,
+                "klinge_dolch",
+                "klinge_langschwert",
+                "klinge_grossschwert",
+                "klinge_keule",
+                "klinge_vorschlaghammer",
+            ]) {
+                ausruesten(name);
+                if (name && s.blueprints[name]) r._setBlueprintWear(s.blueprints[name], 1);
+                p._swing = null;
+                p.stamina = 100;
+                const ok = r._beginPlayerSwing();
+                const km = name && s.blueprints[name] ? r._schmiedeKampfMasze(s.blueprints[name]) : null;
+                zehr.push({
+                    geraet: name ? name.replace("klinge_", "") : "faust",
+                    kg: km ? +km.masseKg.toFixed(3) : 0,
+                    zehrt: ok ? +(100 - p.stamina).toFixed(2) : null,
+                });
+                p._swing = null;
+            }
+            p.stamina = 100;
+            if (r.getGameMode() !== modeA) r.setGameMode(modeA);
+            w.z.ausdauer = zehr;
+        }
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
@@ -2551,6 +2598,29 @@ async function WELLE_L() {
         check(
             pvGut.length === 0 && ["pose-volumen", "pose-ich"].every((t) => pvAlt.some((x) => x.startsWith(t))),
             "Selbst-Test T18: der Befund (Klinge über dem Kopf, Ich-Sicht leer) nennt Volumen und Ich-Sicht; derselbe Schwung bleibt grün"
+        );
+        console.log(
+            `  (T19) Ausdauer je Hieb: ${(z.ausdauer || []).map((x) => `${x.geraet} ${x.kg} kg → ${x.zehrt}`).join(" · ")}`
+        );
+        const av = ausdauerVerdict(z.ausdauer);
+        check(
+            av.length === 0,
+            "LF Posten 8: die Ausdauer je Hieb folgt der Masse des Geräts — die Reihe steigt streng mit kg, nie flach" +
+                (av.length ? " — " + av.join(" · ") : "")
+        );
+        const avAlt = ausdauerVerdict([
+            { geraet: "dolch", kg: 0.46, zehrt: 5 },
+            { geraet: "grossschwert", kg: 2.2, zehrt: 5 },
+            { geraet: "keule", kg: 2.18, zehrt: 5 },
+        ]);
+        const avGut = ausdauerVerdict([
+            { geraet: "faust", kg: 0, zehrt: 5 },
+            { geraet: "dolch", kg: 0.46, zehrt: 5.5 },
+            { geraet: "grossschwert", kg: 2.2, zehrt: 7.2 },
+        ]);
+        check(
+            avGut.length === 0 && avAlt.some((x) => x.startsWith("ausdauer-flach")),
+            "Selbst-Test T19: der Befund (5 je Hieb für jede Waffe) nennt die flache Reihe; eine Reihe nach Masse bleibt grün"
         );
         check(
             c.bogenVerschleiss,
