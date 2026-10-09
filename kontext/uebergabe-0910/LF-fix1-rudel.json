@@ -1,0 +1,165 @@
+{
+ "branch": "welle-lf-rudel",
+ "kopf": "3c021731844dd90218e513bf2711aa12e66777d4",
+ "commits": [
+  {
+   "sha": "911ad44642c901f3cb8c33857b9c5c03a0808708",
+   "titel": "Merge main V18.536 in welle-lf-rudel: EIN Leib-Loeser und EINE Masse - Leib im Spieler 21 Takte (3,4 cm) -> 0, Beute-Urteil auf kg (Wolf 64 kg schlaegt Hirsch 94 kg, nie Baer 335 kg)"
+  },
+  {
+   "sha": "c8e85675",
+   "titel": "Die Vereinigung wandert mit den Waechtern von V18.536: das Gemuet wird mit dem Leib gegossen, die Welt-Akte nennen nur Ops, die es gibt (CI rot an wasser-leben/weltakt-wache -> gruen)"
+  },
+  {
+   "sha": "ca0c7a27",
+   "titel": "Der Kreatur-Takt kostet, was nah steht: Separation 2,06 -> 0,10 ms je Takt, Takt auf V18.536 gleichauf mit main (Kopf p50 0,89/1,16/1,35 ms, main 0,83/1,08/1,35 ms)"
+  },
+  {
+   "sha": "3c471a73",
+   "titel": "Ein Leib in der Wand geht nie tiefer hinein (Fundament-Probe 0,458 -> 0,12 m) - zurueckgenommen in 3c021731"
+  },
+  {
+   "sha": "5a350fd0",
+   "titel": "Der volle Playtest wandert mit der EINEN Masse: Band V18.210 fragt echte Leiber statt koerperloser Stubs - 1 Invariante rot -> Alle Invarianten OK"
+  },
+  {
+   "sha": "3c021731844dd90218e513bf2711aa12e66777d4",
+   "titel": "Zurueck: nie tiefer in den Kasten faellt - Dorf-Gang unbewegt (21,3 % gegen 16,2/24,7 %), gate:koerper-stand K4 Treppe 5,7 -> 11,7 cm"
+  }
+ ],
+ "posten": [
+  {
+   "posten": "1 Herde klebt am Spieler / persönlicher Raum, nie Durchdringung",
+   "stand": "geschnitten",
+   "zahl": "EIN Leib-Löser (_leibKontakte im Sim-Schritt, bis 8 Gänge) + der Spieler hält seinen Raum in der Separation: 8 neugierige Tiere, 870 Takte – Leib im Spieler 21 Takte/3,4 cm (main allein) -> 0, geerbte Durchdringung 0 (ohne Löser 743 Takte/0,46 m), nächster Nachbar p50 1,091 Körper-Kugeln; echte GPU (Lichtung): Bären/Wölfe 0,5–2,6 m -> 1,4–6,5 m vom Spieler, engstes Paar 0,87 -> 1,69 m",
+   "bild": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\lf-rudel\\bilder-runde2\\vorher-herde.png | nachher-herde.png"
+  },
+  {
+   "posten": "2 Temperament aus Gattung und Größe (Kampf liest dasselbe)",
+   "stand": "geschnitten",
+   "zahl": "EINE Masse (_leibMasse, kg): Fuchs 15 · Wolf 64 · Hirsch 94,2 · Bär 335,4; Hirsch scheu (Wariness +0,478), 4 Hirsche nach 10 s 13,5 m vom Spieler; echte GPU: Hirsche 1,6–2,2 m -> 11,9–21 m; Kampf-Furcht Hirsch 8,5 s, Bär 2,5 s aus demselben Profil; Dial-Masse-Zwilling fällt (Täter temperament-masse rot)",
+   "bild": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\lf-rudel\\bilder-runde2\\vorher-herde.png | nachher-herde.png"
+  },
+  {
+   "posten": "3 Witterungs-Jäger steht still / Kreislauf Jäger-Beute",
+   "stand": "geschnitten",
+   "zahl": "Wolf am erwachsenen Hirsch 1,77 m/s, 91 % der Schritte zur Beute, 1 Biss; 3600 Takte: Rudel am Hirsch 4, Wolf am Kitz 5 Bisse (vorher 0); Sprinter 5,98 m/s: Abstand 6 -> 1,5 m, 3 Bisse (Wolf-Sprint 7,45 m/s)",
+   "bild": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\lf-rudel\\bilder-runde2\\vorher-rudel.png | nachher-rudel.png"
+  },
+  {
+   "posten": "4 Rudel umstellt den Spieler",
+   "stand": "geschnitten",
+   "zahl": "größte Winkel-Lücke p50 226 Grad (alter Zug) -> 154 Grad, beim Biss 121 Grad; echte GPU nach 8 s: 242 Grad (V18.536) -> 125 Grad (Kopf)",
+   "bild": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\lf-rudel\\bilder-runde2\\vorher-rudel.png | nachher-rudel.png"
+  },
+  {
+   "posten": "5 Bein-Lot am Querhang / Stand-Schlupf",
+   "stand": "teilweise",
+   "zahl": "headless 27 Grad: Lot 7,4/7,5 Grad, Stand-Schlupf 0,19/0,153 (Soll <= 10 / <= 0,2); echte GPU 28 Grad: Lot 20–28 Grad -> vorn 4,6–9,5 Grad, hinten 10,2–12,8 Grad (Hinterbeine über Soll)",
+   "bild": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\lf-rudel\\bilder-runde2\\vorher-hang.png | nachher-hang.png"
+  },
+  {
+   "posten": "6 Fern-Gang gleitet",
+   "stand": "geschnitten",
+   "zahl": "gleitende Lauf-Takte 0 von 1080 (Standbild-Zone 45–60 m) und 0 von 1064 (Kapsel-Zone 70–90 m), Täter 655 und 1023; echte GPU: Hirsche in 53/60 m im Schritt statt Standbild",
+   "bild": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\lf-rudel\\bilder-runde2\\vorher-fern55-2.png | nachher-fern55-2.png | vorher-fern80-2.png | nachher-fern80-2.png"
+  },
+  {
+   "posten": "7 Tiere durch Häuser (Hülle wie der Spieler)",
+   "stand": "teilweise",
+   "zahl": "Sockel/Podest: echte GPU 25,9 cm im Stein -> 0 cm (headless 0 von 83 Takten); Dorf-Gang echte GPU (5 Hirsche, 6 Häuser, 3000 Frames, gleicher Ort): 77,6 % -> 16,2–24,7 % der Tier-Frames mit der Mitte in einer Hüllen-Box, Tiefe p50 2,14 -> 0,11–0,21 m; Rest an der Fundament-Kante",
+   "bild": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\lf-rudel\\bilder-runde2\\vorher-podest.png | nachher-podest.png | vorher-dorf.png | nachher-dorf.png"
+  },
+  {
+   "posten": "8 Nexus würfelt Körper-Gesetze",
+   "stand": "geschnitten",
+   "zahl": "4000 Würfe: 0 schreiben ein Körper-Gesetz (Täter 394); Gehen <= 2,00 m/s (Band 1,15–2,00), Sprint 9 m/s, Sprungkraft <= 4,10 (Band 2,6–4,1), 0 Größen ohne bodySize-Achse, Nexus-Geburt >= 162 m, 0 im Blick; player_size_mul fällt auch aus DSL_WELTAKTE",
+   "bild": ""
+  }
+ ],
+ "gates": [
+  {
+   "name": "gate:kreatur-takt (Selbsttest 36 Täter rot + 22 Proben)",
+   "exit": "0"
+  },
+  {
+   "name": "gate:tier-separation",
+   "exit": "0"
+  },
+  {
+   "name": "gate:kampf-gefuehl",
+   "exit": "0"
+  },
+  {
+   "name": "gate:fahr-leben",
+   "exit": "0"
+  },
+  {
+   "name": "gate:wasser-leben",
+   "exit": "0"
+  },
+  {
+   "name": "gate:weltakt-wache",
+   "exit": "0"
+  },
+  {
+   "name": "gate:koerper-stand (Endstand)",
+   "exit": "0"
+  },
+  {
+   "name": "gate:ankunft (lokal)",
+   "exit": "0"
+  },
+  {
+   "name": "gate:asset-contract (v1 Re-Mint)",
+   "exit": "0"
+  },
+  {
+   "name": "gate:studio-vertrag",
+   "exit": "0"
+  },
+  {
+   "name": "gate:ofen-contract",
+   "exit": "0"
+  },
+  {
+   "name": "gate:daten-contract (v7 Re-Mint)",
+   "exit": "0"
+  },
+  {
+   "name": "gate:altlasten",
+   "exit": "0"
+  },
+  {
+   "name": "playtest:fast",
+   "exit": "0"
+  },
+  {
+   "name": "playtest voll (Wegwerf-Kopie, Port 7941): Alle Invarianten OK",
+   "exit": "0"
+  },
+  {
+   "name": "npm run check (TAILLE_PORT 7947)",
+   "exit": "0"
+  },
+  {
+   "name": "eslint anazhRealm.js (0 Fehler)",
+   "exit": "0"
+  },
+  {
+   "name": "prettier --check",
+   "exit": "0"
+  }
+ ],
+ "ci": "Lauf 37805537756 auf 3c021731: Versuch 2 grün 5/5 (check, erst-zeichnung, playtest 1/3, 2/3, 3/3). Versuch 1 war rot an gate:ankunft L2a (das Zeitfenster des Ladeschirms); lokal ist das Gate grün, der Code ist derselbe wie auf ca0c7a27. Weitere Läufe: 37791017802 auf 911ad446 rot an wasser-leben und weltakt-wache, behoben in c8e85675. 37795152215 auf ca0c7a27 grün 5/5. 37801823404 auf 5a350fd0 rot an koerper-stand K4, verursacht von 3c471a73, das zurückgenommen ist.",
+ "konflikte": "Beim Merge von main 76c9624d gab es 5 Konfliktdateien:\n- check.yml übernimmt mains Aufteilung in drei Gruppen; die 60 min des Zweigs fallen.\n- anazhRealm.js: Der Ofen-Takt bekommt fernTeile und leibV. Der Frame-Takt nimmt mains Stoß-Höhe und die Pfoten-Folge des Zweigs, floatOffset fiel.\n- diag-tier-separation nullt den EINEN Löser.\n- v1 manifest/recipes wurden gegen die vereinten Kerne neu gemintet. Gegen den Zweig sind 33 Felder anders, gegen main 72.\n\nDie zwei stillen Zwillinge aus der Gegenprüfung sind geschnitten:\n- _kreaturLeibKontakte, seine Buchhaltung und _streckenNaechste fallen. Es bleibt _leibKontakte im Sim-Schritt, mit Gängen.\n- _kreaturMasse und die Dial-Masse jagdMasse/wehrMasse/kolossMasse fallen. Es bleibt _leibMasse in kg; tetrapoda trägt jagdKg 21,5 / wehrKg 200 / kolossKg 600 und beuteMasse 2,0. Der v7-Golden ist neu gemintet (28 Felder).\n\nZwei Wächter von main wanderten mit:\n- wasser-leben: das Gemüt wird mit dem Leib gegossen.\n- weltakt-wache: player_size_mul fällt aus DSL_WELTAKTE.\n\nDer Absenz-Grep findet keinen der Zwillingsnamen mehr; _leibKontakte hat einen Aufrufer.",
+ "offen": [
+  "Posten 5: An der echten GPU stehen die Hinterbeine am Querhang 10,2–12,8 Grad aus dem Lot (Soll höchstens 10). Die Sohlen-Sonde der Blick-Läufe misst 4–17 cm über dem Mesh, headless dagegen −1,6 bis +0,3 cm; die Ursache ist ungeklärt.",
+  "Posten 7: An der Fundament-Kante des Studio-Hauses steht die Mitte eines Hirschs p50 0,1–0,2 m in der 4,3–4,5-m-Box (Oberkante 0,6–1,1 m über dem Fuß); das betrifft 16–25 % der Tier-Frames im Dorf-Gang. Die Regel 'nie tiefer' (3c471a73) bewegte die Zahl nicht und brach gate:koerper-stand K4; sie ist zurückgenommen.",
+  "Der Leib-Löser lebt im Sim-Schritt, der Frame zeigt den Steuer-Schritt danach. Ein wendender Bär streift einen Nachbarn dabei einen Frame lang bis 2,3 cm; geerbte Durchdringung gibt es nicht (0).",
+  "Kosten: Die Pfoten-IK (_animateTierBaum) braucht 0,42 statt 0,25 ms je Takt (Profil, 40 Tiere). Vor main braucht der Kreatur-Takt noch das ABAB am OMEN.",
+  "Aus der Gegenprüfung (gelb) noch offen: Fliehende und hetzende Tiere traben mit 5,5–6,6 Hz.",
+  "Im Rudel-Bildpaar verdeckt eine Wurzel einen Teil der Wölfe; den Posten trägt die Zahl (Lücke 242 -> 125 Grad).",
+  "Pflicht-OFFEN Rest: E, das Profi-Band auf jedem Standardgerät (docs/PFLICHT-OFFEN.md). Status: ZWISCHENSTAND."
+ ]
+}

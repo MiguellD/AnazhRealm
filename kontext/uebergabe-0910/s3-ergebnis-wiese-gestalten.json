@@ -1,0 +1,290 @@
+{
+ "branch": "studio-s3-wiese-gestalten",
+ "basis": "76c9624d4957710e39fb0c8e671e885447f2cc4e",
+ "kopf": "9877c57b7f909328efa7bf9fdd2a3d6d24e3fcaa",
+ "commits": [
+  {
+   "sha": "b282856bab1cb1fdd156a3940c53d4f1e1eef20a",
+   "titel": "Die Band-Linse trennt die Stufen der Nah-Wiese: jede Senke ist ihr eigener oberster Knoten nahWiese:L<stufe>:<v>:<teil>"
+  },
+  {
+   "sha": "39da60812aaf9b6ac004552a8aca6a520ec7317e",
+   "titel": "Die Gras-Zeile kommt aus dem Band: grass 1 700/320 -> 1 000/130, die Rispe ist gestuft und liest ihre Zeile"
+  },
+  {
+   "sha": "bb43955a2ac6ee987f818b5552144527f69fca4d",
+   "titel": "Gestalten ehrlich: V Gestalten sind V verschiedene Individuen - die Wand nennt jede Luege, vier Kerne zaehlen 1"
+  },
+  {
+   "sha": "49fc632e16180d2bbab75a372765733b8f29b87a",
+   "titel": "Vertrags-Akt v1 (wiese-gestalten): render-config neu, vier Gras-Goldens additiv, 124 Goldens byte-gleich"
+  },
+  {
+   "sha": "9877c57b7f909328efa7bf9fdd2a3d6d24e3fcaa",
+   "titel": "Die L1-Rispe traegt vier Grannen: an Armlaenge ein Kreuz-Stern statt einer V-Flocke - grass[1] 1 000 -> 1 040"
+  }
+ ],
+ "befund": "Geschnitten: die Gras-Rispe liest jetzt ihre Budget-Zeile (grass 1 700/320 → 1 040/130, L1 4 Grannen × 2 Segmente, L2 eine Granne; Strom-Erhalt, die Halme bleiben byte-gleich), vier seed-invariante Zweit-Kerne (porta, schmiede, tetrapoda, koerper) zählen hinter der neuen Gestalten-Wand ehrlich EINE Gestalt (33 Lügen → 0; vehicle bleibt bei 16, weil der Lack je Same eine echte Achse ist), und die Band-Linse nennt nahWiese:L1 und nahWiese:L2 einzeln. Gemessen auf der Radeon (Mess-Wiese yaw 0, Ort gestellt): nahWiese 84 336 → 51 432 Dreiecke bei 4 Befehlen (Ratsche 57 066; Maximum über 8 Blicke 103 776 → 62 896), Puffer 0,31 → 0,21 MB; am Genesis-Ring f:drachentor:L0 46 → 24 Befehle und 8,56 → 4,33 MB bei gleichen Dreiecken; Linux-CI 37793697323 grün. Offen bleibt der Halm-Kontrast auf Armlänge mit 6,60 unter dem Soll 10 (schon die Basis liegt bei 7,65), die Zeit misst nur der OMEN, Ratsche und render-config setzt der Integrator — Pflicht-OFFEN A · B · C · E, Status ZWISCHENSTAND. Der Spieler sieht dieselbe Sommerwiese — nah ein hellbrauner Kreuz-Stern je Rispe, fern derselbe helle Saum — und jedes Tor am Ring wird je Gestalt nur einmal gezeichnet.",
+ "schnitte": [
+  {
+   "klasse": "Band-Linse der Nah-Wiese (Täter je Stufe)",
+   "engstelle": "_tickNahWiese / _nahWieseSenken / _nahWieseSicht: die Sammel-Gruppe fällt, jede Senke ist ein oberster Szenen-Knoten nahWiese:L<stufe>:<v>:<p>; spec/profiband/haushalt.json Regel ^nahWiese:L[12]$, Klasse VOR karten (deren Regel stufe [2] buchte nahWiese:L2 als Karte, 48k)",
+   "linse": "werkbank band --ort wiese (Täter je Klasse); gate:altlasten (alter Name und nw.gruppe)",
+   "zahl": "1 Täter nahWiese 4/84 336 → nahWiese:L1 2/37 800 + nahWiese:L2 2/46 536 (gleiche Summe)",
+   "stand": "b282856b, Abweichung vom Plan: Regel ohne (…)? — der Name ohne Stufe entsteht nicht mehr"
+  },
+  {
+   "klasse": "Gras-Stufe am Studio (Lehre 19)",
+   "engstelle": "foundry-core lod.budget.grass[stufe] mit Kosten-Regler rispe {grannen, segmente, breite} + emitGrass (Strom-Erhalt NawVoll 11/7/4)",
+   "linse": "gate:asset-contract Kosten-Wand (an der Basis mit gesenkter Zeile ROT: grass[1] 1 566 > 1 000, grass[2] 228 > 130); band --ort wiese + 8 Blicke; Ährchen-Anteil der Pixel; gate:studio-vertrag rispe-Form",
+   "zahl": "Kern L1 1 188/1 560 → 824/1 040 (Hülle 1 104–1 626 → 792–1 040), L2 162/228 → 96/118 (150–300 → 96–124); Welt nahWiese 84 336 → 51 432",
+   "stand": "39da6081 + 9877c57b (L1 4 × 2 statt geplanter 3 × 2, Zeile 1 040 statt 1 000: Armlänge Kreuz-Stern statt V-Flocke, Halm-Kontrast 6,21 → 6,60)"
+  },
+  {
+   "klasse": "Gestalten-Lüge (V byte-gleiche Zwillinge als eigene Leaves)",
+   "engstelle": "GESTALTEN_JE_REZEPT 16 → 1 in porta-core, schmiede-core, tetrapoda-core, koerper-core (lod.budget.gestalten über zusatzBudget)",
+   "linse": "Gestalten-Wand in gate:asset-contract (bauAbdruck Same 1 ≠ 2 über die echte Brücke; Selbsttest drachentor mit V 2 MUSS rot werden)",
+   "zahl": "Lügen 33 → 0 (54 geprüft: phyto 14 · vehicle 5 · fachwerk 35); Zweit-Kern-Zug 2 238 → 1 668 Bauten; Genesis drachentor 46 → 24 Befehle",
+   "stand": "bb43955a (vehicle FINAL nicht geschnitten: echte Lack-Achse, Same 1 Lack 031107 / Same 2 777d84 metallisch; der Vorrat-Leser critical.seeds [1, 7] bleibt, weil Same 7 eine echte Gestalt ist)"
+  },
+  {
+   "klasse": "Vertrags-Akt v1",
+   "engstelle": "spec/asset-contract/v1/golden: render-config.json, manifest.json, gras-s1/s2-L1/L2-summer (scripts/mint-asset-goldens.cjs GRAS)",
+   "linse": "gate:asset-contract 128/128 byte-gleich + Linux-CI (Plattform-Richter des ungerasterten Gras)",
+   "zahl": "+4 Goldens; 124 alte byte-gleich; v3 · v4 · v5 · v6 · v7 · ofen ohne Re-Mint grün",
+   "stand": "49fc632e + Nachzug 9877c57b (nur gras-L1 + render-config + manifest)"
+  }
+ ],
+ "gates": [
+  {
+   "name": "npm run check (TAILLE_PORT 7808, Teil-Gates auf 7803–7809)",
+   "exit": "0",
+   "notiz": "inkl. studio-vertrag (rispe-Form, Selbsttest 41), altlasten, profiband, betriebsgesetz; am Kopf 9877c57b erneut"
+  },
+  {
+   "name": "npm run lint",
+   "exit": "0",
+   "notiz": "0 Fehler, 3 Warnungen wie an der Basis"
+  },
+  {
+   "name": "npm run format:check",
+   "exit": "0"
+  },
+  {
+   "name": "gate:start-rezept",
+   "exit": "0"
+  },
+  {
+   "name": "gate:freie-slots (7803)",
+   "exit": "0",
+   "notiz": "am Kopf erneut"
+  },
+  {
+   "name": "gate:profiband",
+   "exit": "0",
+   "notiz": "am Kopf erneut"
+  },
+  {
+   "name": "gate:kamera-treue (7803)",
+   "exit": "0"
+  },
+  {
+   "name": "gate:schatten-werfer (7803)",
+   "exit": "0"
+  },
+  {
+   "name": "gate:asset-contract (7803)",
+   "exit": "0",
+   "notiz": "Kopf: 128/128, Gestalten-Wand 0 Lügen, grass[1] 1 040/1 040, grass[2] 118/130; vor dem Mint nur render-config rot (deklariert)"
+  },
+  {
+   "name": "gate:regler-wirkt (7803/7804)",
+   "exit": "0",
+   "notiz": "über Budget 9 = Ratsche 9, kein Gras-Regler darüber"
+  },
+  {
+   "name": "gate:vehicle-contract · porta-contract · schmiede-contract · fachwerk-contract · daten-contract · ofen-contract",
+   "exit": "0",
+   "notiz": "byte-gleich OHNE Re-Mint"
+  },
+  {
+   "name": "gate:fluss · asset-inventory · sicht-arbeit · weg-boden · foundry-memory · grass-thin · season-meadow · pflanzen-nah · streu-fern · sippen-wirt · stand-takt · streu-wahrheit · weather-vector (je 7803)",
+   "exit": "0",
+   "notiz": "die Gras-Leser am Kopf 9877c57b erneut"
+  },
+  {
+   "name": "gate:portal-gestalt · nervensystem-porta · nervensystem-schmiede · nervensystem-vehicle · kampf-gefuehl · tier-gang · kreatur-takt · koerper-stand · rezept-katalog · portal-konformanz · foundry-warm · portal-boot · v1-pfad · ankunft · werkstatt-weg · foundry-crossfade · trias · praegung-welt · garage-labor · place-policy",
+   "exit": "0",
+   "notiz": "gelaufen auf 49fc632e (Gestalten-Schnitt, gleicher Stand für diese Leser)"
+  },
+  {
+   "name": "playtest:fast (7803)",
+   "exit": "0",
+   "notiz": "20 ✅ · 0 ❌, am Kopf erneut"
+  },
+  {
+   "name": "playtest voll (Wegwerf-Kopie, Port 7809)",
+   "exit": "0",
+   "notiz": "„Alle Invarianten OK“ auf 49fc632e und auf dem Kopf 9877c57b; die Kopie ist gelöscht"
+  },
+  {
+   "name": "diag-wiese (WIESE_PORT 7803)",
+   "exit": "0",
+   "notiz": "Halm-Kontrast Armlänge 7,65 → 6,60, fern 14,59 → 12,91 (Soll ≥ 10 offen)"
+  },
+  {
+   "name": "gate:arch-feld (7803)",
+   "exit": "1",
+   "notiz": "D Feld-Licht leer (dc 0), an der Basis 76c9624d identisch rot; nicht in der CI, nicht berührt"
+  },
+  {
+   "name": "GitHub-CI 37793697323 (Kopf 9877c57b)",
+   "exit": "0",
+   "notiz": "check, playtest 1/3–3/3, erst-zeichnung: success; vorher 37784687092 (49fc632e) success"
+  }
+ ],
+ "omenMessen": "OMEN (GTX 1060, Zerlegung B), ABABABAB, 4 Boots je Seite. A = Basis 76c9624d4957710e39fb0c8e671e885447f2cc4e, B = Kopf 9877c57b7f909328efa7bf9fdd2a3d6d24e3fcaa (studio-s3-wiese-gestalten); SHAs per git ls-remote holen. Je Boot: (1) `node scripts/omen-messfolge.cjs --datei omen-<A|B>-<n>.json` (Wiese: dorf-aus, fenster 1920 1080, umstellen --ort wiese, buehne, lauf voll/frei 30 s --ein 20 --ruhe 300 --tiere frei, gpu-bank yaw 0/−0,88, band, profil 12). (2) Danach in einer neuen Welt (`werkbank start --echt`, dorf-aus, fenster 1920 1080, umstellen --ort wiese, __buehne): `zerlegen --nur nahWiese,haupt,schatten,leer --runden 8 --json zerlegen-wiese-<A|B>-<n>.json`. (3) Dann `umstellen --ort genesis`, __buehne, `lauf 30 --ein 20 --ruhe 300 --tiere frei`, `gpu-bank 12 --runden 3`, `zerlegen --nur bau,haupt,schatten,leer --runden 8 --json zerlegen-genesis-<A|B>-<n>.json`. Kein Zeit-Lauf nach band/gpu-bank in derselben Welt. Urteil: Frame p50/p95 und GPU-ms (gpu-bank) für B nicht schlechter als A, an der Wiese und an Genesis. Erwartet: der Posten nahWiese fällt mit den Dreiecken (84k → 51k), der Posten bau an Genesis mit den Befehlen (181 → 159, drachentor 46 → 24).",
+ "konflikte": "anazhRealm.js: _tickNahWiese (Zustand ohne gruppe; daneben Welle K _standRuht/_standMeldet, unverändert), _nahWieseSenken (Name und Eltern), _nahWieseSicht (Eltern beim Wachsen), Kommentar in _taeterName — _foundryLibrarySpec/_foundryPrefetchLibrary NICHT berührt (tor ändert critical.lods frei). foundry-core.js: der Budget-Block lod.budget.grass (direkt neben tree/shrub, pflanzen ändert tree[0]/[1] im selben Block; im Kommentar steht jetzt „flower und rock … offen“ ohne grass — tor schneidet flower/rock fernform) und emitGrass, nur der Rispen-Zweig (pflanzen fasst emitGrass nicht an, E3). porta-core.js und schmiede-core.js: Kopf-Kommentar „Hülle über alle Tore/Klingen …“ und die Zeile GESTALTEN_JE_REZEPT — derselbe Kommentar-Block über den Budget-Zeilen, die tor senkt (porta :63, schmiede :63); das ist Text-Nachbarschaft, beim Merge von Hand prüfen. tetrapoda-core.js und koerper-core.js: die Zeile GESTALTEN_JE_REZEPT samt Kommentar, neben den kreatur-Budget-Zeilen und der tor-fernform-Zeile (Integrator Schritt 2). spec/profiband/haushalt.json: Reihenfolge der Klassen (nahWiese steht jetzt VOR karten) und die nahWiese-Regel (haus legt den Messort dorf an). scripts/diag-asset-contract.cjs: Gestalten-Wand (Funktionen vor deckungsWert, Zug nach dem Zweit-Kern-Zug, Ausgabe vor dem Karten-Rundlauf; tor senkt Kosten-Zeilen, pflanzen baut die Kronen-Linse aus). scripts/diag-studio-vertrag.cjs: B2c-Regel rispe + Selbsttest-Zeile (jede Familie fügt dort B2c-Regeln an). docs/studio-vertrag.md B2c: rispe, Gras-Zeile, Gestalten-Absatz. scripts/diag-altlasten.cjs FORBIDDEN: 2 Tokens hinter der Nah-Wiesen-Zeile '\"nahWiese:\" + key' (die Vereinigung macht der Integrator). scripts/mint-asset-goldens.cjs: GRAS-Liste nach WALDBODEN (pflanzen prägt 72 Baum-Goldens über dasselbe Skript). spec/asset-contract/v1/golden/render-config.json und manifest.json (einzeilig, prägt der Integrator EINMAL), gras-s1/s2-L1/L2-summer.json neu. scripts/diag-weg-boden.cjs (Platzhalter-Zustand), scripts/lib/wiese-sicht.cjs (Kommentar). Welle K und Welle L liegen schon auf der Basis — darüber hinaus kein Konflikt.",
+ "offen": [
+  "Halm-Kontrast Armlänge (Wiesen-Linse, besonnte Wiese -809/-903, Ausgabe-Pfad): Basis 7,65 → Kopf 6,60, fern 14,59 → 12,91. Das Soll ≥ 10 (Bezug 10,99 von V18.508) hält schon die Basis nicht. Der Rest-Abstand kommt von der Rispe: 16 statt 42 Dreiecke je Rispe. Geprüft: 6 × 1 ist gleich teuer wie 3 × 2 und liegt bei 5,60; ein Stern mit mehr Strahlen kostet über der Zeile 1 040.",
+  "Abweichung L1-Zeile: Plan 1 000 (Rispe 3 × 2), gebaut 1 040 (Rispe 4 × 2). Grund: an Armlänge las 3 × 2 als V-Flocke, der Halm-Kontrast lag bei 6,21 statt 6,60. Kosten: +40 Dreiecke je Büschel, an der Mess-Wiese 49 592 → 51 432 (Ratsche 57 066 hält).",
+  "vehicle bleibt bei 16 Gestalten: der Plan zählte 38 Lügen nur am Geometrie-Abdruck, der volle Bau-Abdruck zeigt den Lack je Same (gt Same 1 Lack 031107, Same 2 777d84). Deshalb bleibt auch der kritische Vorrat [1, 7], und der Posten ‚tote Vorrat-Bauten 5 → 0‘ entfällt (Same 7 ist eine echte Gestalt). Seed-invariante Bauten im Zug: 608 → 38 statt der geplanten 688 → 43.",
+  "Ratsche nahWiese haupt 57 066: die Ursache ist benannt — der Wert vom 05.10. stammt aus einem Wege-Zustand. Mit Dorf-Zug läuft der Dorf-Weg durch den Messplatz (108 von 613 Zellen), nahWiese 47 178 (L1 7 500). Die Ratsche senkt der Integrator aus seiner EINEN Serie. Läufe am finalen Kopf: 3 (1 Erst-Boot, 2 Zweit-Boot, je 51 432) — ein 4. fehlt, das GPU-Schloss lag danach bei lf-rudel. Dazu 4 Läufe am Stand 3 × 2 (je 49 592) unter artifacts/s3-wiese-gestalten/band-*.json.",
+  "render-config.json und manifest.json prägt der Integrator nach dem letzten S3-Merge EINMAL. Auf diesem Zweig liegen zwei Akte: 49fc632e und der Nachzug 9877c57b (nur gras-L1 + render-config).",
+  "Zeit (GPU-ms, Frame p50/p95): nur der OMEN-Auftrag misst sie, keine Zeit-Zahl ist hier als Beweis eingetragen.",
+  "Genesis-Ring bleibt über dem Band: 244 Befehle / 2,49 M Dreiecke / 152,6 MB. Der Tor-Rest (Hülle 6 von 7 über 60 000) gehört tor-fahrzeug-klinge.",
+  "bau k0/k1 an der Wiese über der Ratsche (14 520 / 10 120, Täter bauSatz = Feuerstelle) gehört der Familie haus, hier nicht berührt.",
+  "Plan §8 benannt, nicht hier: der Gras-Dichte-Zwilling im Host (Literal neben phytogenesis groundCover) gehört W2(d); NAH_WIESE-Radien bleiben Host-Takt; Host-VRAM ist kein S3-Posten (Band 118 MB nicht erreichbar).",
+  "gate:arch-feld D (Feld-Licht, leere Schüsse dc 0) ist an Basis und Kopf gleich rot, läuft nicht in der CI und ist nicht von dieser Familie."
+ ],
+ "zahlen": [
+  {
+   "was": "nahWiese Hauptbild, Mess-Wiese yaw 0 (Dreiecke / Befehle)",
+   "vorher": "84 336 / 4 (Täter „nahWiese“; L1 37 800 · L2 46 536)",
+   "nachher": "51 432 / 4 (nahWiese:L1 25 840 · nahWiese:L2 25 592)",
+   "soll": "≤ 57 066 (Ratsche), 4 Befehle",
+   "ort": "werkbank band --ort wiese, Radeon, Ort gestellt, Dorf-Zug aus; deterministisch in 3 Läufen"
+  },
+  {
+   "was": "nahWiese, Maximum über 8 Blicke (alle 45°)",
+   "vorher": "103 776 (225°)",
+   "nachher": "62 896 (225°)",
+   "soll": "≤ 80 000",
+   "ort": "werkbank zaehlen je Blick, Auge −900/26,31/−850"
+  },
+  {
+   "was": "Puffer nahWiese",
+   "vorher": "0,31 MB",
+   "nachher": "0,21 MB (L1 0,16 · L2 0,05)",
+   "soll": "≈ 0,2 MB",
+   "ort": "band puffer.klassen"
+  },
+  {
+   "was": "Gras L1 am Kern (Same 1/2, Hülle 17 Samen)",
+   "vorher": "1 188/1 560 (1 104–1 626)",
+   "nachher": "824/1 040 (792–1 040)",
+   "soll": "Plan ≤ 1 000, gebaut 1 040 (offen begründet)",
+   "ort": "node-vm Worker-Boot, gras-kern.cjs"
+  },
+  {
+   "was": "Gras L2 am Kern (Same 1/2, Hülle)",
+   "vorher": "162/228 (150–300)",
+   "nachher": "96/118 (96–124)",
+   "soll": "≤ 130"
+  },
+  {
+   "was": "Halme byte-gleich / Halm-Fläche",
+   "vorher": "—",
+   "nachher": "34 von 34 Fällen; 2,702 / 3,770 m² gleich",
+   "soll": "byte-gleich"
+  },
+  {
+   "was": "Ährchen-Anteil, 8 Blicke (3 m · 4,5–5,0 m · 5,0–5,5 m)",
+   "vorher": "3,00 % · 2,29 % · 3,02 %",
+   "nachher": "2,93 % · 2,49 % · 3,27 %",
+   "soll": "±15 %",
+   "ort": "Ausgabe-Pfad, Radeon, rund-*.json"
+  },
+  {
+   "was": "Stufen-Grenze 5 m (Ährchen fern/nah)",
+   "vorher": "1,32",
+   "nachher": "1,32",
+   "soll": "kein Sprung"
+  },
+  {
+   "was": "Halm-Kontrast Armlänge / fern (Wiesen-Linse)",
+   "vorher": "7,65 / 14,59",
+   "nachher": "6,60 / 12,91",
+   "soll": "≥ 10 (Bezug 10,99 V18.508) — offen",
+   "ort": "diag-wiese, besonnte Wiese -809/-903"
+  },
+  {
+   "was": "Gestalten-Lügen (Same 1 = 2 bei V ≥ 2)",
+   "vorher": "33 (porta 7 · schmiede 21 · tetrapoda 4 · koerper 1)",
+   "nachher": "0",
+   "soll": "0 (Plan 38: vehicle trägt eine echte Lack-Achse)",
+   "ort": "gate:asset-contract Gestalten-Wand"
+  },
+  {
+   "was": "Zweit-Kern-Zug Bauten in gate:asset-contract",
+   "vorher": "2 238",
+   "nachher": "1 668 (seed-invariante Rezepte 608 → 38)",
+   "soll": "Plan 688 → 43 (inkl. vehicle)"
+  },
+  {
+   "was": "Genesis f:drachentor:L0 Befehle (haupt/k0/k1)",
+   "vorher": "46 (24/14/8)",
+   "nachher": "24 (13/7/4)",
+   "soll": "≈ 24",
+   "ort": "werkbank band --ort genesis, Radeon"
+  },
+  {
+   "was": "Genesis f:drachentor:L0 Puffer / Dreiecke",
+   "vorher": "8,56 MB / 505 960",
+   "nachher": "4,33 MB / 505 960",
+   "soll": "≈ 4,3 MB / gleich"
+  },
+  {
+   "was": "Genesis gesamt Befehle",
+   "vorher": "266",
+   "nachher": "244"
+  },
+  {
+   "was": "Genesis Ort-Blick (beide Drachentore) Bild-Abweichung",
+   "vorher": "—",
+   "nachher": "0,40 im Mittel, 0,28 % Pixel > 24",
+   "soll": "gleich im Rauschen (+x: 4,66 gegen Eigenrauschen 1,74 — animierte Portal-Membranen)"
+  },
+  {
+   "was": "Gestalten je Tor im Foundry-Cache (drachentor, 2 Exemplare)",
+   "vorher": "2",
+   "nachher": "1",
+   "soll": "≤ 1"
+  },
+  {
+   "was": "Dorf-Zug an (Ursache Ratsche 57 066)",
+   "vorher": "—",
+   "nachher": "nahWiese 47 178 (L1 7 500); Weg durch den Messplatz: 108 von 613 Zellen",
+   "soll": "Soll bleibt 57 066"
+  }
+ ],
+ "byteAkte": "v1 (Satz der Familie, nur über scripts/mint-asset-goldens.cjs; erst der Lauf OHNE Mint, rot war nur render-config): render-config.json (grass[1] 1 040 + rispe 4×2/1,45, grass[2] 130 + rispe 1×1/2,65, gestalten 16 → 1 für 33 Rezepte von porta, schmiede, koerper und tetrapoda), manifest.json (mintedCases 124 → 128), +4 gras-s1/s2-L1/L2-summer. Zwei Akte im Zweig: 49fc632e und Nachzug 9877c57b (nur gras-L1, render-config, manifest). Die 124 alten v1-Goldens sind byte-gleich. v3 vehicle, v4 porta, v5 schmiede, v6 fachwerk, v7 daten und ofen sind OHNE Re-Mint grün — die Gestalten-Zahl bewegt keine Geometrie. Plattform-Richter der ungerasterten Gras-Goldens: Linux-CI 37784687092 und 37793697323 grün.",
+ "bilder": [
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\wiese-basis-3m.png (Radeon, Basis, 3 m)",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\wiese-final-3m.png (Radeon, Kopf, 3 m)",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\wiese-basis-8m.png (Radeon, Basis, 8 m)",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\wiese-final-8m.png (Radeon, Kopf, 8 m)",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\wiese-final-arm.png (Radeon, Kopf, Armlänge)",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\wiese-final-grenze.png (Radeon, Kopf, 5-m-Grenze)",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\wiese-basis-grenze.png (Radeon, Basis, 5-m-Grenze)",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\wiese-linse-basis-arm.png (Wiesen-Linse, Basis, Armlänge, Kontrast 7,65)",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\wiese-linse-kopf-arm.png (Wiesen-Linse, Kopf 4×2, Armlänge, Kontrast 6,60)",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\wiese-dorfzug-3m.png (Dorf-Zug an: der Weg durch den Messplatz)",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\genesis-basis-minusx.png",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\genesis-kopf-minusx.png",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\genesis-basis-plusx.png",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\genesis-kopf-plusx.png",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-wiese-gestalten\\artifacts\\s3-wiese-gestalten\\rund-basis-*.png / rund-g4x2b-*.png (8 Blicke × 3 m/5 m, Ährchen-Anteil: rund-basis.json, rund-g4x2b.json)"
+ ],
+ "ci": "37793697323 auf dem Kopf 9877c57b: completed success (check, playtest 1/3, 2/3, 3/3, erst-zeichnung); vorher 37784687092 auf 49fc632e: success"
+}

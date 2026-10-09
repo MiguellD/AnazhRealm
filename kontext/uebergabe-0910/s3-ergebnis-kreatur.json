@@ -1,0 +1,374 @@
+{
+ "branch": "studio-s3-kreatur",
+ "basis": "76c9624d4957710e39fb0c8e671e885447f2cc4e",
+ "kopf": "168965b9dc00fc20612a927ed2d137a5e5d814c9",
+ "commits": [
+  {
+   "sha": "8b0b17937a8b640313082740c3b187c5fe2a0248",
+   "titel": "gate:kreatur-kosten Block (W): der Werfer je Gestalt aus der Kern-Zeile - an der Basis rot beim Namen"
+  },
+  {
+   "sha": "950ebeda543359724fd438d03b0ffec49b20d728",
+   "titel": "Ofen: die Grobstufe der Gelenk-Gestalt ist gelenkig - Haut und starre Teile binden an ihre Gelenke (Ofen-Golden-Akt *-L1|*)"
+  },
+  {
+   "sha": "447da86d12522f9868cda3736fe5b42704febe38",
+   "titel": "Kern-Zeilen der Gelenk-Gestalt: die Grobstufe wirft fuer beide Stufen, ab und hyst im Kern, wurf.seh - Vertrag B2c und Validator"
+  },
+  {
+   "sha": "9ad879e94097cd2d5b1c68e00560aee2773bd6a3",
+   "titel": "Wirt: der Werfer aus der Kern-Zeile und EIN Stufen-Schalter - die Grobstufe ist der Schatten-Zwilling der Gelenk-Gestalt"
+  },
+  {
+   "sha": "7e4178c0f6482121d175fed2407f390d9ddb3b07",
+   "titel": "Distanzen in den Kern: die Stufen-Grenze liest jeder Leser an der Gestalt - TIER_FERN_DIST_SQ, TIER_FERN_HYST und MENSCH_FERN_DIST_SQ fallen"
+  },
+  {
+   "sha": "168965b9dc00fc20612a927ed2d137a5e5d814c9",
+   "titel": "CI-Waende der Kreatur: gate:kreatur-kosten (mit Block W) und gate:tier-fern laufen in der CI - 0 -> 2 Schritte"
+  }
+ ],
+ "befund": "Geschnitten: das Standbild der Grobstufe an der Wurzel (Ofen: Haut und jedes starre Teil binden an ihre Gelenke, Golden-Akt nur *-L1|*, L0 297/297 byte-gleich), die zwei castShadow-Literale, die drei Wirts-Distanzen und vier Stufen-Schreiber samt vier fail-soft-Zweigen — an ihrer Stelle die Kern-Zeile (schatten 1, ab 35/40, hyst 0,1, wurf.seh), EIN Leser _ofenZeile, EINE Gelenk-Gestalt mit EINEM Skelett und EIN Stufen-Schalter _gelenkStufe, dazu 2 CI-Wände. Gemessen: Werfer je Gestalt und Kaskade Tier 27 880–31 760/7 → 5 194–6 172/1 nah und 0 → derselbe Wurf-Teil mittel, Mensch 162 412/8 → 37 964/5 (gate:kreatur-kosten W, headless); an der Radeon tier:wolf k0 7/28 710 → 1/5 756 bei 5 → 1 Schatten-Programmen, band wiese 1 126k → 1 007k Dreiecke (Spieler-Zwilling), VRAM +0,5 MB; CI 37794086490 grün, voller Playtest „Alle Invarianten OK“. Offen: das Spike-Soll IoU ≥ 0,9 hält nur in der Draufsicht (0,916), schräg 0,71–0,83 (die dünnen Vorder-Unterläufe der Grobstufe werfen ihren pfotennahen Lappen nicht), und im Spielbild erreicht wegen normalBias 1,0 m kein Tier-Schatten den Boden — Pflicht-OFFEN Rest A · B · C · E, Status ZWISCHENSTAND. Der Spieler sieht und fühlt keine Änderung an Tier und Mensch (der Boden-Schatten bleibt bis zum Host-Bias unsichtbar), die Schatten-Kaskade zeichnet je Tier einen Befehl statt sieben.",
+ "schnitte": [
+  {
+   "klasse": "Werfer der Gelenk-Gestalt (Tier + Mensch)",
+   "engstelle": "Kern-Zeile kreatur/koerper[0].schatten 1 + [1].wurf.seh, gelesen über _ofenZeile in _gelenkGestalt (L0 wirft nicht, Wurf-Teil der L1 wirft immer, Rest nie)",
+   "linse": "gate:kreatur-kosten Block (W) + Selbsttest S5, werkbank zaehlen tier je Pass",
+   "zahl": "Tier nah 27 880–31 760/7 → 5 194–6 172/1, mittel 0 → Wurf; Mensch 162 412/8 → 37 964/5; Radeon k0 7/28 710 → 1/5 756",
+   "stand": "geschnitten, CI-Wand"
+  },
+  {
+   "klasse": "Standbild der Grobstufe (Ofen)",
+   "engstelle": "foundry-core __tierHaut (skinJoints für beide Stufen) + __bakeGelenkBaum (a = animAhn auch fein, starre Teile Gewicht 1 im Haut-Eimer) + __tierMergeGeos (Gewichte reisen)",
+   "linse": "gate:ofen-contract (Lauf ohne Mint rot nur an *-L1|*), Pose-Probe (R) Knochen-Identität",
+   "zahl": "geskinnt 0 → 100 % der L1, skinJoints 0 → 31/33/25/26 (Mensch 15 → 23), L1-Dreiecke unverändert, Ausgang 5 Draws ohne Bruch",
+   "stand": "geschnitten, Golden-Akt"
+  },
+  {
+   "klasse": "Stufen-Schreiber + fail-soft",
+   "engstelle": "_gelenkStufe (EIN Schalter: nah L0 + L1 auf SHADOW_TWIN_LAYER, fern L1 auf Layer 0) ersetzt updateCreatures-FERN-GUSS, _menschFernToggle, Werkstatt Tier + Mensch; _p2pUpdatePeer und _p2pTickRemoteCreatures fragen ihn",
+   "linse": "gate:tier-fern (neu am Schalter, Selbsttest gestubbter Schalter), gate:kreatur-kosten (C)",
+   "zahl": "Schreiber 4 → 1, fail-soft-Zweige 4 → 0, castShadow-Literale 2 → 0",
+   "stand": "geschnitten, CI-Wand"
+  },
+  {
+   "klasse": "Wirts-Distanzen",
+   "engstelle": "Kern-Zeile [1].ab + hyst der Art, gelesen beim Bau (_gelenk.abM/hyst); Anim-Leiter, Hang-Proben, Peer-Kopie lesen die Gestalt",
+   "linse": "gate:altlasten FORBIDDEN +5 (_menschFern, wrap3, 3 Konstanten), Absenz (W) über window.__codeOf",
+   "zahl": "Leser 3 Methoden / 6 Stellen → 0, Konstanten 3 → 0, Werte gleich (35/40/0,1), Sim-Spur byte-gleich",
+   "stand": "geschnitten"
+  },
+  {
+   "klasse": "Vertrag B2c",
+   "engstelle": "diag-studio-vertrag.cjs (ab, hyst, wurf.seh als Teilmenge von BUDGET_GESETZ.seh, nur an selbst werfender Stufe) + docs/studio-vertrag.md B2c/§8.4/§8.5",
+   "linse": "gate:studio-vertrag Selbsttest (+5 Fälle, 46 erkannt)",
+   "zahl": "render-config: genau 8 Felder neu (zusatzBudget tetrapoda/koerper)",
+   "stand": "geschnitten"
+  },
+  {
+   "klasse": "CI-Deckung der Kreatur-Linsen",
+   "engstelle": ".github/workflows/check.yml (Gruppe 2 kreatur-kosten, Gruppe 3 tier-fern)",
+   "linse": "gate:ci-deckung + js-yaml",
+   "zahl": "0 → 2 CI-Schritte",
+   "stand": "geschnitten, CI grün"
+  }
+ ],
+ "gates": [
+  {
+   "name": "npm run check",
+   "exit": "0"
+  },
+  {
+   "name": "npm run lint",
+   "exit": "0",
+   "notiz": "0 Fehler, 3 alte Warnungen"
+  },
+  {
+   "name": "npm run format:check",
+   "exit": "0"
+  },
+  {
+   "name": "gate:start-rezept",
+   "exit": "0"
+  },
+  {
+   "name": "gate:ofen-contract",
+   "exit": "0",
+   "notiz": "nach MINT_FORCE (40 Schlüssel *-L1|*); ohne Mint rot nur an *-L1|*"
+  },
+  {
+   "name": "gate:studio-vertrag",
+   "exit": "0"
+  },
+  {
+   "name": "gate:altlasten (+--selftest)",
+   "exit": "0",
+   "notiz": "431 Namen grep=0"
+  },
+  {
+   "name": "gate:asset-contract",
+   "exit": "0",
+   "notiz": "124/124 Goldens byte-gleich, render-config nach MINT_NUR_DATEN"
+  },
+  {
+   "name": "gate:freie-slots",
+   "exit": "0"
+  },
+  {
+   "name": "gate:kamera-treue",
+   "exit": "0"
+  },
+  {
+   "name": "gate:schatten-werfer",
+   "exit": "0"
+  },
+  {
+   "name": "playtest:fast",
+   "exit": "0",
+   "notiz": "20/20"
+  },
+  {
+   "name": "gate:kreatur-kosten",
+   "exit": "0",
+   "notiz": "an der Basis rot (8 Zeilen), am Kopf grün inkl. W, S5, R-Zwilling"
+  },
+  {
+   "name": "gate:tier-fern",
+   "exit": "0"
+  },
+  {
+   "name": "gate:tier-gang",
+   "exit": "0"
+  },
+  {
+   "name": "gate:tier-anatomie",
+   "exit": "0"
+  },
+  {
+   "name": "gate:mensch-anatomie",
+   "exit": "0"
+  },
+  {
+   "name": "gate:konsum-matrix",
+   "exit": "0"
+  },
+  {
+   "name": "gate:kreatur-takt",
+   "exit": "0"
+  },
+  {
+   "name": "gate:sippen-wirt",
+   "exit": "0"
+  },
+  {
+   "name": "gate:fahr-leben",
+   "exit": "0"
+  },
+  {
+   "name": "gate:kampf-gefuehl",
+   "exit": "0"
+  },
+  {
+   "name": "gate:koerper-stand",
+   "exit": "0"
+  },
+  {
+   "name": "gate:nervensystem-labs",
+   "exit": "0"
+  },
+  {
+   "name": "gate:fluss",
+   "exit": "0"
+  },
+  {
+   "name": "gate:weltbild-frost",
+   "exit": "0"
+  },
+  {
+   "name": "gate:werkstatt-weg",
+   "exit": "0"
+  },
+  {
+   "name": "gate:regler-wirkt",
+   "exit": "0"
+  },
+  {
+   "name": "gate:studio-begehen",
+   "exit": "0"
+  },
+  {
+   "name": "gate:v1-pfad",
+   "exit": "0"
+  },
+  {
+   "name": "gate:page-error",
+   "exit": "0"
+  },
+  {
+   "name": "gate:persistence",
+   "exit": "0"
+  },
+  {
+   "name": "gate:rezept-katalog",
+   "exit": "0"
+  },
+  {
+   "name": "gate:wasser-leben",
+   "exit": "0"
+  },
+  {
+   "name": "gate:daten-contract",
+   "exit": "0",
+   "notiz": "v7 unberührt"
+  },
+  {
+   "name": "gate:ci-deckung (+--selftest)",
+   "exit": "0"
+  },
+  {
+   "name": "playtest voll (Wegwerf-Kopie Port 7849)",
+   "exit": "0",
+   "notiz": "Alle Invarianten OK"
+  },
+  {
+   "name": "GitHub-CI 37794086490",
+   "exit": "0",
+   "notiz": "check · erst-zeichnung · playtest 1/3 · 2/3 · 3/3 success"
+  }
+ ],
+ "omenMessen": "scripts/omen-messfolge.cjs am OMEN, ABABABAB, 4 Boots je Seite: A = Basis 76c9624d4957710e39fb0c8e671e885447f2cc4e, B = Kopf 168965b9dc00fc20612a927ed2d137a5e5d814c9, Ort wiese (Dorf aus, gestellt, Bühne), je Boot zusätzlich `werkbank zerlegen --nur schatten,tier --runden 6` und `gpu-bank` Gier 0 und −0,88; die Tiere je Messung aus `kurz` filtern (Weltzustand: nur Boots mit gleicher Tier-Zahl im Sichtkegel vergleichen), den Kamera-Modus je Boot festhalten (3rd-Person zeigt den Spieler-Zwilling: k0 162 412/8 → 37 964/5). Erwartung: Δ GPU-ms schatten sinkt mit der Tier-Zahl (je Tier k0 7 → 1 Befehl, ~29 600 → ~5 800 Dreiecke), Frame p50/p95 nicht langsamer. Der erste Boot je Seite ist kalt (Foundry-Stempel gewechselt, ~35 MB Neubau) — benennen, nicht werten.",
+ "konflikte": "foundry-core.js Ofen: __tierHaut, __tierMergeGeos, __bakeGelenkBaum, bakeTierInstance-Kommentar (tor-fahrzeug-klinge legt den additiven Export huelle() der Gelenk-Gestalt daneben, Integrator Schritt 2). tetrapoda-core.js / koerper-core.js PORTAL_RENDER_CONFIG.lod.budget: kreatur/koerper[0].schatten, [1].ab/wurf, hyst + Kopf-Kommentar „gelenkige Grobstufe“ — Nachbar der fernform-Zeile (tor Schnitt F) und der GESTALTEN_JE_REZEPT-Zeile (wiese-gestalten). scripts/diag-studio-vertrag.cjs B2c-Regel wurf (Seh-Form neben durchmesserM; pflanzen S4 legt teil/aDeckt — Validator-Merge beim Integrator), neue Regeln ab/hyst, SEH_KLASSEN-Loader, Selbsttest bvS3. docs/studio-vertrag.md B2c (Wurf am Konsum, DARF-Felder) und §8.4/§8.5. spec/asset-contract/v1/golden/render-config.json + manifest.json (auf dem Zweig geprägt, E5: Integrator prägt einmal). spec/asset-contract/ofen/golden/bake.json + CONTRACT.md (tor: ofen-Goldens unberührt). anazhRealm.js: neu _ofenZeile, _gelenkGestalt, _gelenkStufe (ersetzt _menschFernToggle); geändert _ofenBudget, _ofenAssembleAsset (__seh am Teil), _buildCreatureGroup, _buildHumanoidRig, _buildHumanGroup (_gelenk), updateCreatures (Stufen-Block, Anim-Leiter, Hang-Proben — Welle L kreatur/wasser/koerper-haus liegen auf der Basis), _p2pTickRemoteCreatures (Welle-L-Leser), _p2pUpdatePeer, _sitzLeib, _kreaturGliederGruppen (tor Schnitt F: _gliedKapselMemo/_gliedKapselFit lesen diese Gruppen), _workshopOvenPreview, _ofenPrefetchKreaturen-Kommentar, drei Konstanten fallen. scripts/diag-altlasten.cjs FORBIDDEN (+_menschFern, wrap3, TIER_FERN_DIST_SQ, TIER_FERN_HYST, MENSCH_FERN_DIST_SQ — Vereinigung je Merge). .github/workflows/check.yml (2 Schritte, Gruppen 2 und 3). Gate-Skripte: diag-kreatur-kosten, diag-tier-fern (neu geschrieben), playtest.cjs KONVERGENZ III (5), diag-fell-blick, diag-kampf-gefuehl, diag-fahr-leben (_sitzLeib-Spiegel), diag-konsum-matrix, diag-tier-gang, diag-schirm-monotonie, diag-koerper-bewegung. diag-schatten-werfer.cjs unberührt (W6/A1 grün).",
+ "offen": [
+  "Spike-Soll IoU ≥ 0,9 der Schatten-Maske hält nur in der Draufsicht (0,916, Leib-IoU 1,0); Wolf 8 m schräg 0,80, Gang 0,78/0,71/0,83, Schatten-Fläche −6 bis −12 %: die Vorder-Unterläufe der Grobstufe (flL/frL je 30 Dreiecke) bleiben dünne Primitive unter dem Raster 0,04 H ohne die smin-Naht der L0-Haut, ihr pfotennaher Schatten-Lappen fehlt (XOR-Bilder) — Heilung am Ofen (Unterläufe in die Grobstufen-Haut), nicht in diesem Auftrag; der Golden-Akt ist trotzdem geprägt und gepusht.",
+  "normalBias 1,0 m (atmosphere.shadowBias, r184 in Welt-Metern): kein Werfer unter ~1 m Höhe erreicht den Boden — im Spielbild wirft der Wolf vorher wie nachher keine erkennbare Silhouette (Spiel-Schuss Boden-IoU 0,01); mit Sonden-Bias 0,05 m 6 046 Boden-Pixel. Host-Licht, außerhalb kreatur; darum maß der Spike auf einer Leinwand mit Sonden-Bias 0,05 in beiden Läufen.",
+  "Spieler 3rd-Person 4 m nicht als Zahl beurteilbar: Pose und Ort zwischen den zwei Welten verschieden (Leib-IoU 0,37), Boden-IoU 0,62/0,69 — im Bild hängt der Zwillings-Schatten am Fuß.",
+  "Erst-Zeichnung: das neue Schatten-Programm des Tier-Zwillings (31 Knochen) entsteht asynchron — im ersten Spike-Schuss fehlte der Schatten einen Augenblick.",
+  "Haupt-Programme der fernen Grobstufe 2 → 5 (jedes L1-Teil geskinnt); Schatten-Programme tier nah 5 → 1, fern 0 → 1; Welt gesamt vertex 51 → 49, pipelines 55 → 52.",
+  "VRAM +0,5 MB (band wiese 125,9 → 126,4–126,5 MB; Plan +0,3): die geskinnten Attribute der Grobstufe (Wolf 200 → 320 KB, Mensch 1 390 → 1 801 KB).",
+  "Kalt-Guss L1 im Haupt-Thread nur ohne Prefetch-Memo (node: Wolf 225 → 319 ms, Hirsch 395 → 764 ms); der Prefetch deckt lod 0 und 1 aller vier Gattungen und des Menschen (Memo 10 Vorlagen) — werkbank takt nicht gefahren.",
+  "Abweichung skinJoints 31/33/25/26 statt 27/29/23/24: alle starren Teile der Grobstufe binden (nicht nur die Haar-Teile), Ohr- und Lid-Gelenke hängen sich an; Grund im Commit 950ebeda.",
+  "Der Gang jenseits ab ruht weiter (Anim-Leiter unverändert, Stufen-Wahl byte-gleich) — die Grobstufe könnte jetzt gehen; Kosten-Entscheid offen, nicht im Auftrag.",
+  "Zeit (GPU-ms, Frame) misst nur der OMEN — Auftrag in omenMessen.",
+  "Ratsche nicht gesenkt (E6, Integrator); Band-Läufe (1 vorher, 4 nachher: 2 Erst-Boot 3rd-Person, 2 Zweit-Boot 1st-Person) in artifacts/s3-kreatur/band; alle Läufe ROT nur an alten Ratschen-Zeilen (nahWiese, bau k0/k1, einzelstuecke) — tier 0 im Bild.",
+  "Integrator: Validator-Regeln für wurf (pflanzen teil) zusammenführen, render-config/manifest einmal prägen, FORBIDDEN vereinigen, fernform-Zeile (tor) neben die kreatur-Budget-Zeilen.",
+  "Pflicht-OFFEN Rest A · B · C · E (docs/PFLICHT-OFFEN.md) — Status ZWISCHENSTAND."
+ ],
+ "bilder": [
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\vorher\\wolf-oben-maske.jpg",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\nachher\\wolf-oben-maske.jpg",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\xor-wolf-oben.png",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\vorher\\wolf-8m-seite-maske.jpg",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\nachher\\wolf-8m-seite-maske.jpg",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\xor-wolf-8m-seite.png",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\xor-wolf-gang-10m-f2.png",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\vorher\\wolf-armlaenge-sonnenflanke-an.jpg",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\nachher\\wolf-armlaenge-sonnenflanke-an.jpg",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\vorher\\wolf-45m-maske.jpg",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\nachher\\wolf-45m-maske.jpg",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\nachher\\spieler-3rd-4m-maske.jpg",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\vorher\\wolf-8m-spiel-maske.jpg",
+  "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\vigorous-nash-s3-kreatur\\artifacts\\s3-kreatur\\spike\\nachher\\wolf-8m-spiel-maske.jpg"
+ ],
+ "byteAkte": "Ofen (spec/asset-contract/ofen/golden/bake.json, Commit 950ebeda): Lauf ohne Mint rot NUR an *-L1|* — 40 Schlüssel neu (35 Stoff-Klassen + 5 Beipacks: wolf/fox/bear/deer je 6 Klassen + Beipack, mensch 11 Klassen + Beipack), L0 297/297 byte-gleich, Klassen-Menge 483, Gelenke und Dreiecke je Klasse unverändert; CONTRACT.md nennt den Akt. v1-Daten (Commit 447da86d): MINT_NUR_DATEN=1 — render-config.json + manifest.json, der Diff trägt genau 8 Felder (zusatzBudget tetrapoda.kreatur / koerper.koerper: 0.schatten 0 → 1, 1.ab, 1.wurf.seh, hyst), recipes/world-params byte-gleich, 124/124 v1-Geometrie-Goldens byte-gleich; v7 unberührt (gate:daten-contract grün). Kerne nur additiv per Edit, nie prettier; Foundry-Stempel wechselt (einmal kalter Boot, ~35 MB Neubau).",
+ "ci": "37794086490 — success (check · erst-zeichnung · playtest 1/3 · 2/3 · 3/3); Linsen-Commit 8b0b1793 lief 37776617626 success",
+ "zahlen": [
+  {
+   "was": "Werfer tier:wolf je Kaskade nah / mittel (headless W)",
+   "vorher": "28 710/7 / 0/0",
+   "nachher": "5 756/1 / 5 756/1",
+   "ort": "gate:kreatur-kosten (W)",
+   "soll": "≤ 6 200/1, mittel > 0"
+  },
+  {
+   "was": "Werfer tier:fox · bear · deer nah",
+   "vorher": "30 178/7 · 31 760/7 · 27 880/7",
+   "nachher": "6 082/1 · 6 172/1 · 5 194/1",
+   "ort": "gate:kreatur-kosten (W)",
+   "soll": "≤ 6 200/1"
+  },
+  {
+   "was": "Werfer mensch nah / mittel",
+   "vorher": "162 412/8 / 0",
+   "nachher": "37 964/5 / 37 964/5",
+   "ort": "gate:kreatur-kosten (W)",
+   "soll": "≤ 38 000/5"
+  },
+  {
+   "was": "tier:wolf je Pass, Wolf nah (16 m)",
+   "vorher": "haupt 8/55 422 · k0 7/28 710",
+   "nachher": "haupt 8/55 422 · k0 1/5 756",
+   "ort": "Radeon werkbank zaehlen, Mess-Wiese, Wolf gesetzt",
+   "soll": "k0 ≤ 6 200/1"
+  },
+  {
+   "was": "tier:wolf je Pass, Wolf fern (45 m)",
+   "vorher": "haupt 5/6 026 · k0 0",
+   "nachher": "haupt 5/6 026 · k0 1/5 756",
+   "ort": "Radeon werkbank zaehlen",
+   "soll": "35–64 m wirft"
+  },
+  {
+   "was": "Schatten-Programme tier (k0) nah",
+   "vorher": "5",
+   "nachher": "1",
+   "ort": "Radeon, Programm-Probe",
+   "soll": "nachher ≤ vorher"
+  },
+  {
+   "was": "band wiese (Erst-Boot, 3rd-Person): Dreiecke / Befehle / einzelstuecke k0",
+   "vorher": "1 126k / 107 / 8 Befehle 162 412",
+   "nachher": "1 007–1 016k / 104 / 5 Befehle 37 964",
+   "ort": "Radeon band --ort wiese",
+   "soll": "≤ 680k gesamt (nicht S3-kreatur allein)"
+  },
+  {
+   "was": "VRAM band wiese",
+   "vorher": "125,9 MB",
+   "nachher": "126,4–126,5 MB (Zweit-Boot 126,8–127,0)",
+   "ort": "Radeon band",
+   "soll": "+0,3 MB erwartet"
+  },
+  {
+   "was": "Spike IoU Boden-Schatten Draufsicht / 8 m schräg / Gang 3 Posen",
+   "vorher": "Referenz L0",
+   "nachher": "0,916 / 0,80 / 0,78 · 0,71 · 0,83",
+   "ort": "Radeon Ausgabe-Pfad, Leinwand + Sonden-Bias 0,05, Sonne 25°",
+   "soll": "≥ 0,9"
+  },
+  {
+   "was": "Luminanz Sonnenflanke Armlänge",
+   "vorher": "145,03",
+   "nachher": "145,78 (+0,5 %)",
+   "ort": "Radeon Ausgabe-Pfad",
+   "soll": "Δ ≤ 2 %"
+  },
+  {
+   "was": "Schatten des Wolfs auf 45 m",
+   "vorher": "0 px",
+   "nachher": "66 px",
+   "ort": "Radeon Ausgabe-Pfad",
+   "soll": "wirft"
+  },
+  {
+   "was": "L1 geskinnt / skinJoints (wolf · fox · bear · deer · mensch)",
+   "vorher": "0 / 0 · 0 · 0 · 0 · 15",
+   "nachher": "100 % / 31 · 33 · 25 · 26 · 23",
+   "ort": "node Ofen-Probe",
+   "soll": "geskinnt, L1-Dreiecke unverändert"
+  },
+  {
+   "was": "castShadow-Literale · Distanz-Leser · Konstanten · Stufen-Schreiber · fail-soft · CI-Schritte",
+   "vorher": "2 · 3 Methoden/6 Stellen · 3 · 4 · 4 · 0",
+   "nachher": "0 · 0 · 0 · 1 · 0 · 2",
+   "ort": "Absenz (W) über window.__codeOf, gate:altlasten, check.yml",
+   "soll": "0 · 0 · 0 · 1 · 0 · 2"
+  },
+  {
+   "was": "Hochrechnung W5 tier k0",
+   "vorher": "255 488 / 50",
+   "nachher": "≈ 50 000 / ≈ 7",
+   "ort": "je Tier 29 632/7 → 5 801/1",
+   "soll": "≈ 52 000 / ≤ 10"
+  }
+ ]
+}
