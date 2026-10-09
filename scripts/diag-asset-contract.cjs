@@ -13,12 +13,28 @@ const fs = require("fs");
 const path = require("path");
 const { runWithWorker, fingerprintMeshes } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
-const { bildDeckung, kroneAus, kartenSkaliert, schwebe, unterBoden } = require("./lib/kronen-linse.cjs");
+const {
+    bildDeckung,
+    bildLagen,
+    bildAus,
+    kroneAus,
+    kartenSkaliert,
+    kartenVervielfacht,
+    schwebe,
+    unterBoden,
+} = require("./lib/kronen-linse.cjs");
 require("../phyto-core.js"); // das Budget-Gesetz (budgetSippen · kerneVereinen) — dieselbe Datei wie Worker und Wirt
 const PC = globalThis.__phytoCore;
 
 const PORT = Number(process.env.CONTRACT_PORT || 4542);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
+// DIE L0-DECKUNGS-TAFEL (S3 pflanzen, D0): je Baum-Art × Same (Sommer) die Bild-Deckung seiner L0 (Krone UND Rinde,
+// kronen-linse bildAus/bildDeckung, Raster-Kante `px` = L0-Höhe / 300) — gebaut aus dem Ist von V18.536
+// (`node scripts/diag-asset-contract.cjs --tafel`); jede spätere L0 deckt 0,92–1,08 davon.
+const TAFEL_D0 = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "deckung-l0.json");
+const D0_BAND = [0.92, 1.08];
+// Die Lagen-Kante: die Lagen je Pixel-Mitte sind ein Punkt-Maß, das Raster (Stufen-Höhe / 120) reicht.
+const LAGEN_TEILER = 120;
 
 function parseName(f) {
     // <preset>-s<seed>-L<lod>-<season>.json
@@ -240,6 +256,51 @@ function deckungsUrteil(paare, band, atlas) {
     return v;
 }
 
+// DIE KRONEN-KOSTEN (S3 pflanzen, 09.10.) — die Zeile war nur gegen die sättigende BINÄRE Deckung geeicht; jede Stufe
+// trug Geometrie ohne Bild. Drei Wände je Baum-Art × Gestalt (Goldens und jede Gestalt der Welt, Sommer):
+//  (L) LAGEN — Quad-Lagen je Kronen-Pixel (kronen-linse bildLagen, 24 Ansichten) ≤ lod.budget.tree[Stufe].lagen;
+//  (Q) QUOTE — Dreiecke L1 / L0 desselben Baums ≤ lod.budget.tree[1].quote (die L1 ist das Gerüst + Karten, nie die
+//      ausgedünnte L0);
+//  (D0) die L0 DECKT ihr Bild von V18.536: Bild-Deckung (Krone und Rinde) nachher/vorher ∈ [0,92; 1,08] gegen die Tafel.
+// (L) und (Q) gelten Zeilen, die ihr Feld tragen (Pflicht ab dem Vertrags-Akt); (D0) gilt immer.
+function lagenUrteil(mess, budget) {
+    const v = [];
+    for (const m of mess) {
+        const z = budget && budget.tree && budget.tree[m.lod];
+        if (!z || z.lagen == null) continue;
+        if (m.quad > z.lagen) v.push(`tree[${m.lod}] ${m.fall}: ${m.quad.toFixed(1)} Lagen > ${z.lagen}`);
+    }
+    return v;
+}
+function quoteUrteil(paare, budget) {
+    const v = [];
+    const z = budget && budget.tree && budget.tree[1];
+    if (!z || z.quote == null) return v;
+    for (const [k, p] of Object.entries(paare)) {
+        if (!(p.l0 > 0) || !(p.l1 > 0)) continue;
+        const q = p.l1 / p.l0;
+        if (q > z.quote) v.push(`${k}: L1/L0 ${p.l1}/${p.l0} = ${q.toFixed(2)} > ${z.quote}`);
+    }
+    return v;
+}
+function d0Urteil(mess, tafel) {
+    const v = [];
+    for (const [k, m] of Object.entries(mess)) {
+        const t = tafel && tafel.faelle && tafel.faelle[k];
+        if (!t) {
+            v.push(`${k}: keine Zeile in der L0-Deckungs-Tafel`);
+            continue;
+        }
+        const r = m.mittel / t.mittel;
+        m.verhaeltnis = r;
+        if (!(r >= D0_BAND[0] && r <= D0_BAND[1]))
+            v.push(`${k}: L0 deckt ${r.toFixed(3)} ihres Bilds von V18.536, Band [${D0_BAND.join(", ")}]`);
+    }
+    for (const k of Object.keys((tafel && tafel.faelle) || {}))
+        if (!mess[k]) v.push(`${k}: Tafel-Zeile ohne gebaute L0`);
+    return v;
+}
+
 (async () => {
     if (!fs.existsSync(DIR)) {
         console.error(
@@ -261,7 +322,16 @@ function deckungsUrteil(paare, band, atlas) {
     const schwebeMess = [];
     let schwebeProbe = null;
     const sehProben = [];
+    const tafelSchreiben = process.argv.includes("--tafel");
+    const tafel = fs.existsSync(TAFEL_D0) ? JSON.parse(fs.readFileSync(TAFEL_D0, "utf8")) : null;
+    const lagenMess = [];
+    const quotePaare = {};
+    const d0Mess = {};
+    let kronenProbe = null;
     await runWithWorker(PORT, async ({ build, kostenListe, getData, atlas, atlasAlpha, karte, probeLauf }) => {
+        // Die Atlas-Alpha zuerst: die Kronen-Kosten (L/Q/D0) lesen sie an jedem gebauten Baum.
+        const aa0 = await atlasAlpha();
+        const alpha0 = { w: aa0.w, h: aa0.h, alpha: new Uint8Array(Buffer.from(aa0.b64, "base64")), schwelle: 0.5 };
         // Daten-Kanäle gegen die eingefrorenen JSONs.
         // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
         // in EINEM Reply; die eingefrorenen JSONs (recipes/world-params/render-config)
@@ -304,6 +374,31 @@ function deckungsUrteil(paare, band, atlas) {
             const yb = unterBoden(kroneAus(a.meshes));
             if (yb < 0) fails.push(`Boden: ${fall}: Laub reicht bis y = ${yb.toFixed(3)} unter den Boden der Vorlage`);
         };
+        // DIE KRONEN-KOSTEN je Baum-Art × Gestalt × Stufe (Sommer, L0/L1): Lagen (L), Dreiecke der Quote (Q), L0-Bild (D0).
+        const kronenMass = (c, a) => {
+            if (c.lod > 1 || c.season !== "summer" || artVon(c.presetId) !== "tree" || !a.meshes) return;
+            const key = `${c.presetId}-s${c.seed}`;
+            let lo = Infinity,
+                hi = -Infinity;
+            const bild = bildAus(a.meshes);
+            for (const m of bild)
+                for (let i = 1; i < m.pos.length; i += 3) {
+                    if (m.pos[i] < lo) lo = m.pos[i];
+                    if (m.pos[i] > hi) hi = m.pos[i];
+                }
+            const H = hi - Math.max(0, lo);
+            const krone = kroneAus(a.meshes);
+            const lg = bildLagen(krone, alpha0, H / LAGEN_TEILER);
+            lagenMess.push({ fall: `${key}-L${c.lod}`, art: c.presetId, lod: c.lod, quad: lg.quad, alpha: lg.alpha });
+            const qp = quotePaare[key] || (quotePaare[key] = { l0: 0, l1: 0 });
+            qp["l" + c.lod] = kosten(a.meshes).tris;
+            if (c.lod === 0) {
+                const t = tafel && tafel.faelle && tafel.faelle[key];
+                const px = t ? t.px : H / 300;
+                d0Mess[key] = { px, mittel: bildDeckung(bild, alpha0, px).mittel };
+                if (key === "eiche-s7") kronenProbe = { bild, krone, H, px };
+            }
+        };
         const miss = (c, a, fall) => {
             const kind = artVon(c.presetId);
             if (!budget || !budget[kind]) return;
@@ -345,6 +440,7 @@ function deckungsUrteil(paare, band, atlas) {
             } else ok++;
             miss(c, a, f.replace(/\.json$/, ""));
             kroneWand(c, a, f.replace(/\.json$/, ""));
+            kronenMass(c, a);
             // (W) DER WURF-TEIL (W6, Konsum von tree[1].wurf): jedes Teil der Baum-L1 nennt die Zahl seiner werfenden
             // Dreiecke (der Index-Vorsatz) — ganzzahlig in [0, Dreiecke des Teils], und der Baum wirft überhaupt. Der Wirt
             // bricht ohne die Zahl (KERN-PFLICHT); hier fällt der Bruch am Studio-Ausgang auf, Teil für Teil benannt.
@@ -432,6 +528,7 @@ function deckungsUrteil(paare, band, atlas) {
                         const a = await build(c);
                         miss(c, a, `${preset}-s${v}-L${lod}-summer (Gestalt)`);
                         kroneWand(c, a, `${preset}-s${v}-L${lod}-summer (Gestalt)`);
+                        kronenMass(c, a);
                     }
                 }
             }
@@ -467,6 +564,9 @@ function deckungsUrteil(paare, band, atlas) {
             fails.push(...steckbriefUrteil(at, at.steckbrief, at.nadel, at.gross, at.weide).map((x) => "Steckbrief: " + x));
             fails.push(...deckungsUrteil(paare, band, alpha).map((x) => "Deckung: " + x));
             fails.push(...sehUrteil(sehProben).map((x) => "Seh: " + x));
+            fails.push(...lagenUrteil(lagenMess, budget).map((x) => "Lagen: " + x));
+            fails.push(...quoteUrteil(quotePaare, budget).map((x) => "Quote: " + x));
+            if (!tafelSchreiben) fails.push(...d0Urteil(d0Mess, tafel).map((x) => "L0-Deckung: " + x));
         }
         // DIE PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Golden-Fall mit Samen 7 im Sommer baut
         // in einem zweiten Worker noch einmal, während dessen Transzendenten ±1 ULP verschoben rechnen. Die Pflanzen
@@ -632,6 +732,87 @@ function deckungsUrteil(paare, band, atlas) {
         );
         if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6 || !s7 || !s8 || !s9 || !s10 || !s11 || !s12 || !s13)
             fails.push("Selbsttest der Budget-Wand feuert nicht");
+
+        // DIE KRONEN-KOSTEN (L/Q/D0): die Tabelle je Art × Stufe (Maximum über die Gestalten), dann die Selbsttests —
+        //  (L) eine Krone mit verdreifachten Karten (die Eiche-L0 des Samens 7) liegt über 16 Lagen, und die Wand liest
+        //      die gebauten Kronen (eine Zeile knapp unter dem kleinsten gemessenen L0-Wert wird rot);
+        //  (Q) eine Birke-L1 mit 0,63 der L0 liegt über 0,35, und die Wand liest die gebauten Paare;
+        //  (D0) eine halbierte Krone (jede Karte mit halber Kante) fällt aus dem Band.
+        const proArt = {};
+        for (const m of lagenMess) {
+            const k = `${m.art}-L${m.lod}`;
+            const e = proArt[k] || (proArt[k] = { quad: 0, alpha: 0, n: 0, fall: "" });
+            e.n++;
+            if (m.quad > e.quad) Object.assign(e, { quad: m.quad, alpha: m.alpha, fall: m.fall });
+        }
+        const qMax = {};
+        for (const [k, p] of Object.entries(quotePaare))
+            if (p.l0 > 0 && p.l1 > 0) {
+                const art = k.replace(/-s-?\d+$/, "");
+                if (!qMax[art] || p.l1 / p.l0 > qMax[art].q) qMax[art] = { q: p.l1 / p.l0, fall: k };
+            }
+        console.log(
+            "Kronen-Kosten (Maximum je Art × Stufe über die Gestalten): " +
+                Object.entries(proArt)
+                    .sort()
+                    .map(([k, e]) => `${k} Lagen ${e.quad.toFixed(1)} (Alpha ${e.alpha.toFixed(1)}, ${e.n} Gestalten)`)
+                    .join(" · ") +
+                " | Quote L1/L0: " +
+                Object.entries(qMax)
+                    .sort()
+                    .map(([a, e]) => `${a} ${e.q.toFixed(2)}`)
+                    .join(" · ")
+        );
+        const d0Werte = Object.values(d0Mess)
+            .map((m) => m.verhaeltnis)
+            .filter((x) => Number.isFinite(x));
+        if (d0Werte.length)
+            console.log(
+                `L0-Deckung gegen V18.536 (${d0Werte.length} Fälle): ${Math.min(...d0Werte).toFixed(3)}–${Math.max(...d0Werte).toFixed(3)}`
+            );
+        let sL = false,
+            sL2 = false,
+            sQ = false,
+            sQ2 = false,
+            sD = false;
+        if (kronenProbe) {
+            const q3 = bildLagen(kartenVervielfacht(kronenProbe.krone, 3), wand.alpha, kronenProbe.H / LAGEN_TEILER).quad;
+            sL = lagenUrteil([{ fall: "eiche-s7-L0 ×3", lod: 0, quad: q3 }], { tree: { 0: { lagen: 16 } } }).length === 1;
+            const minL0 = Math.min(...lagenMess.filter((m) => m.lod === 0).map((m) => m.quad));
+            sL2 = lagenUrteil(lagenMess, { tree: { 0: { lagen: minL0 - 0.05 } } }).length >= 1;
+            const t = tafel && tafel.faelle && tafel.faelle["eiche-s7"];
+            const halb = bildDeckung(kartenSkaliert(kronenProbe.bild, 0.5), wand.alpha, kronenProbe.px).mittel;
+            sD = !!t && d0Urteil({ "eiche-s7": { px: kronenProbe.px, mittel: halb } }, { faelle: { "eiche-s7": t } }).length === 1;
+        }
+        sQ = quoteUrteil({ "birke-L1": { l0: 1000, l1: 630 } }, { tree: { 1: { quote: 0.35 } } }).length === 1;
+        const qs = Object.values(quotePaare)
+            .filter((p) => p.l0 > 0 && p.l1 > 0)
+            .map((p) => p.l1 / p.l0);
+        sQ2 = qs.length > 0 && quoteUrteil(quotePaare, { tree: { 1: { quote: Math.min(...qs) - 0.01 } } }).length >= 1;
+        console.log(
+            `Selbsttest Kronen-Kosten: verdreifachte Karten > 16 Lagen ${sL ? "✅" : "❌"} · die Wand liest ${lagenMess.length} Kronen ${sL2 ? "✅" : "❌"} · ` +
+                `Birke-L1 0,63 > 0,35 ${sQ ? "✅" : "❌"} · die Wand liest ${qs.length} Paare ${sQ2 ? "✅" : "❌"} · halbierte Krone fällt aus dem L0-Band ${sD ? "✅" : tafelSchreiben ? "— (Tafel wird geschrieben)" : "❌"}`
+        );
+        if (!sL || !sL2 || !sQ || !sQ2 || (!sD && !tafelSchreiben)) fails.push("Selbsttest der Kronen-Kosten feuert nicht");
+        if (tafelSchreiben) {
+            const faelle = {};
+            for (const k of Object.keys(d0Mess).sort())
+                faelle[k] = { px: +d0Mess[k].px.toPrecision(8), mittel: +d0Mess[k].mittel.toPrecision(8) };
+            fs.writeFileSync(
+                TAFEL_D0,
+                JSON.stringify(
+                    {
+                        zweck: "DIE L0-DECKUNGS-TAFEL (S3 pflanzen, Wand D0 in gate:asset-contract): je Baum-Art × Same (Sommer) die Bild-Deckung seiner L0 — Krone mit der Atlas-Alpha und Rinde, 24 Ansichten der kronen-linse, Raster-Kante px (Vorlagen-Einheiten), Mittel in Vorlagen-Einheiten² — aus dem Ist von V18.536. Jede spätere L0 deckt 0,92–1,08 davon.",
+                        quelle: "node scripts/diag-asset-contract.cjs --tafel (V18.536, 76c9624d)",
+                        band: D0_BAND,
+                        faelle,
+                    },
+                    null,
+                    4
+                ) + "\n"
+            );
+            console.log(`L0-Deckungs-Tafel geschrieben: ${Object.keys(faelle).length} Fälle → ${path.relative(process.cwd(), TAFEL_D0)}`);
+        }
     }
 
     // DER KARTEN-RUNDLAUF (W6) — das Urteil je Fall, dann der Selbsttest (die gestörte Schicht MUSS rot werden, die
