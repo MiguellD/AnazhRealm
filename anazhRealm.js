@@ -54035,6 +54035,8 @@ class AnazhRealm {
         // Hang-Proben (Bug/Heck in Fahrt-Richtung): gecacht, gedeckelt 0.8..3 m.
         const ext = bp ? this._compoundVisualExtent(bp) : null;
         entry._rideHalfLen = ext ? Math.max(0.8, Math.min(3, (Math.max(ext.dx, ext.dz) * scale) / 2)) : 1;
+        // die Höhe des Teile-Werks (sein Wasser-Maß im Fahr-Schritt, `_rittAufstand` → vehicle-core fahrWasser)
+        entry._rideDach = ext && ext.dy > 0 ? ext.dy * scale : NaN;
         entry._rideY = null;
         // Spieler-Position über die Architektur heben (sodass er auf dem SITZ
         // sitzt). Architektur-Position wird in _tickMountedMovement nachgezogen.
@@ -54145,7 +54147,9 @@ class AnazhRealm {
         const auf = h ? AnazhRealm._fahrSchrittGesetz().vc.fahrAufstand(h, sc) : null;
         if (auf) return auf;
         const half = Number.isFinite(entry._rideHalfLen) ? entry._rideHalfLen : 1;
-        return { vorn: half, hinten: -half, quer: Math.max(0.6, half * 0.6), bauch: 0, hub: 0 };
+        // ohne Hülle kein Motorraum: das Wasser bremst das Teile-Werk über seine Höhe, die Ansaugung fehlt (vehicle-core
+        // fahrWasser — es treibt in jeder Tiefe)
+        return { vorn: half, hinten: -half, quer: Math.max(0.6, half * 0.6), bauch: 0, hub: 0, dach: entry._rideDach };
     }
 
     // DIE EBENE DER RÄDER bei (x, z) in Fahrt-Richtung `fahrtYaw` (sin, cos): die vier Aufstandspunkte
@@ -54428,6 +54432,18 @@ class AnazhRealm {
             : 0;
     }
 
+    // DIE TIEFE AM WAGEN (Schau-2 wasser-wahrheit): so tief steht die Unterkante des Fahr-Zustands (`fz.y`, die Ebene der
+    // Räder bzw. die Unterkante der schwimmenden Hülle) in der EINEN Wasser-Wahrheit am Körper (`_koerperWasser` über dem
+    // Grund unter dem Wagen) — der Wasser-Term des Fahr-Schritts (vehicle-core fahrKraefte `e.tiefe`). Bis V18.537 kannte der
+    // Fahr-Schritt kein Wasser: der GT fuhr 19 m durch 0,61 m Wasser mit 43 km/h.
+    _fahrTiefe(fz) {
+        if (!fz || !Number.isFinite(fz.y)) return 0;
+        const grund = this.getTerrainHeightAt(fz.x, fz.z);
+        if (!Number.isFinite(grund)) return 0;
+        const spiegel = this._koerperWasser(fz.x, fz.z, grund);
+        return spiegel > fz.y ? spiegel - fz.y : 0;
+    }
+
     // DER NACHLAUF EINES ABGESTIEGENEN GESETZ-WAGENS (Welle L, Gegenprüfung 07.10.: `dismountArchitecture` stellte den Wagen
     // nicht ab — wer im Flug ausstieg, ließ ihn bis zum Reload in der Luft hängen, an der Klippe 4,80 m über seinem Boden).
     // Je Sim-Schritt trägt ihn die ballistische Vertikale des Kerns (vehicle-core fahrStand — dieselbe wie im Ritt), bis er
@@ -54448,7 +54464,7 @@ class AnazhRealm {
             if (rutscht) {
                 const x0 = fz.x;
                 const z0 = fz.z;
-                vc.fahrKraefte(fz, { brake: 1, hand: true }, entry._fahrSatz, dt);
+                vc.fahrKraefte(fz, { brake: 1, hand: true, tiefe: this._fahrTiefe(fz) }, entry._fahrSatz, dt);
                 entry._rideYaw = fz.yaw + Math.PI / 2;
                 const k = this._fahrHuelle(entry);
                 if (k) {
@@ -94761,6 +94777,7 @@ class AnazhRealm {
                         brake: keys["s"] ? 1 : 0,
                         steer: (keys["a"] ? 1 : 0) - (keys["d"] ? 1 : 0),
                         hand: !!keys["shift"],
+                        tiefe: this._fahrTiefe(z), // das Wasser am Wagen (Schau-2: Widerstand, Ansaugung)
                     },
                     fahrG,
                     nowDt

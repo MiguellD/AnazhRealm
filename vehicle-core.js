@@ -2296,6 +2296,21 @@
             nickMax: 0.12, // rad: Anschlag der Nick-/Wank-Feder
             hubMax: 0.08, // m: Anschlag der Hub-Feder (der Landestoss schlaegt hier an)
         },
+        // ── SCHAU-2 (09.10., rein additive DATEN-Zeile — Praezedenz: schritt) — DER WAGEN IM WASSER: das Lab kennt kein
+        //    Wasser, der Welt-Ritt reicht die Tiefe der EINEN Wasser-Wahrheit am Wagen (fahrKraefte e.tiefe). Der
+        //    Widerstand eines stumpfen Koerpers ½·rho·cw·A·v² auf die getauchte Stirn (Breite × Tiefe) und Flanke
+        //    (Laenge × Tiefe), geteilt durch die Masse des Wagens: Schuettdichte × Huell-Quader (Laenge × Breite × Dach).
+        //    rho: Suesswasser. cw: die Stirn eines Wagens quer im Wasser ist eine stumpfe Platte mit Bugwelle (Platte
+        //    1,17, Wuerfel 1,05). schuett: ein Strassenwagen ueber seinen Huell-Quader (1,4 t / (4,6 × 1,85 × 1,3 m) =
+        //    126 kg/m³, Kleinwagen bis 160). Die Ansaugung sitzt unter der Haube, die Haube schliesst an der
+        //    Guertellinie (huelle.yBelt): steht das Wasser dort, ist der Motorraum voll — kein Vortrieb mehr. Der GT
+        //    (Dach 1,2 m, Laenge 4,6 m, Guertel 0,72 m) verliert in 0,61 m Wasser bei 12 m/s rund 53 m/s², watet unter
+        //    Vollgas mit rund 4,4 m/s (Antrieb gegen Roll-, Luft- und Wasser-Widerstand) und steht ab 0,72 m. ──
+        wasser: {
+            rho: 1000, // kg/m³
+            cw: 1.0,
+            schuett: 150, // kg/m³ des Huell-Quaders
+        },
     };
     // STEER_VIS — intentional dual steer visual (Feel-Entscheid .124). Do NOT merge.
     // compound "hub-yaw" = Host rad.front + rotation.y = base + _rideSteerYaw (.120).
@@ -2551,6 +2566,8 @@
     // fahrAufstand(huelle, s) — DIE Aufstandspunkte eines Studio-Fahrzeugs (Nachbesserung 07.10., rein additiv): die Achsen
     //   fAx/rAx, die halbe Spur, der Bauch (yFloor) und der FEDERWEG je Rad (schritt.radHub × radR — so weit federt ein Rad
     //   einzeln zu seinem Boden), alle × Welt-Skala s. EINE Quelle fuer Probefahrt (fahrGesetz ohne auf) und Welt-Ritt.
+    // SCHAU-2 (rein additiv): dazu die Huelle im Wasser — Breite (2·bw), Laenge (Bug bis Heck), Dach (yRoof) und die
+    // Ansaugung (die Guertellinie yBelt, FAHR.wasser), × s.
     function fahrAufstand(h, s) {
         const k = s > 0 ? s : 1;
         if (!h || !(h.fAx > h.rAx) || !(h.spur > 0)) return null;
@@ -2560,6 +2577,25 @@
             quer: (h.spur / 2) * k,
             bauch: (Number.isFinite(h.yFloor) ? h.yFloor : 0) * k,
             hub: h.radR > 0 ? FAHR.schritt.radHub * h.radR * k : 0,
+            breite: h.bw > 0 ? 2 * h.bw * k : NaN,
+            laenge: h.noseX > h.tailX ? (h.noseX - h.tailX) * k : NaN,
+            dach: h.yRoof > 0 ? h.yRoof * k : NaN,
+            ansaug: h.yBelt > 0 ? h.yBelt * k : NaN,
+        };
+    }
+    // Die Huelle im Wasser eines Fahr-Satzes (SCHAU-2): aus den Aufstandspunkten, ohne Huelle (Teile-Werk) aus Spur und
+    // Radstand; ein Werk ohne Dach traegt kein Wasser-Mass (null), ohne Ansaugung (kein Motorraum) treibt es immer.
+    function fahrWasser(a) {
+        const breite = a.breite > 0 ? a.breite : 2 * a.quer;
+        const laenge = a.laenge > 0 ? a.laenge : a.vorn - a.hinten;
+        if (!(breite > 0) || !(laenge > 0) || !(a.dach > 0)) return null;
+        const m = FAHR.wasser.schuett * breite * laenge * a.dach;
+        const q = 0.5 * FAHR.wasser.rho * FAHR.wasser.cw;
+        return {
+            kStirn: (q * breite) / m, // 1/m je m Tiefe: a = kStirn · Tiefe · v²
+            kFlanke: (q * laenge) / m,
+            dach: a.dach,
+            ansaug: a.ansaug > 0 ? a.ansaug : Infinity,
         };
     }
     function fahrGesetz(d, auf) {
@@ -2616,6 +2652,7 @@
                 bauch: Number.isFinite(a.bauch) ? a.bauch : 0,
                 hub: a.hub > 0 ? a.hub : 0, // der Federweg je Rad (fahrAufstand); ein starres Werk federt kein Rad einzeln
             },
+            wasser: fahrWasser(a), // SCHAU-2 (rein additiv): die Huelle im Wasser (fahrKraefte e.tiefe)
         };
     }
     function fahrZustand(x, z, yaw) {
@@ -2787,6 +2824,12 @@
         const thr = e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;
         const brk = e && e.brake > 0 ? Math.min(1, e.brake) : 0;
         const hand = !!(e && e.hand);
+        // SCHAU-2 (rein additiv — ohne e.tiefe byte-gleich, das Lab kennt kein Wasser): e.tiefe = wie tief die Huelle im
+        // Wasser steht (m ueber ihrer Unterkante; der Wirt liest die EINE Wasser-Wahrheit am Wagen). Steht es an der
+        // Ansaugung, treibt der Motor nicht (G.wasser, FAHR.wasser).
+        const Wg = G.wasser;
+        const tW = Wg && e && e.tiefe > 0 ? e.tiefe : 0;
+        const motor = !(tW > 0 && tW >= Wg.ansaug);
         const steerIn = e && Number.isFinite(e.steer) ? Math.max(-1, Math.min(1, e.steer)) : 0;
         // Lenksaeule: Ziel-Einschlag mit Selbstzentrierung (sf = 1/(1 + v·sfK)); der Lerp dt-ehrlich (60-fps-Basis:
         // bei 60 fps byte-gleich dem Lab-Lerp je Frame).
@@ -2825,8 +2868,8 @@
             // ── LAENGS am REIBKREIS: Antrieb, Bremse und Handbremse sind Reifenkraft — gedeckelt bei μ·N. Vorher trieb
             //    der Motor ungedeckelt: der Supersport stieg 90°, der GT 66,6°; jetzt steht jeder bei tan α = μ. ──
             let aDrive = 0;
-            if (thr > 0) aDrive += G.aEngine * thr;
-            if (brk > 0) aDrive -= vL > S.bremsV ? G.brakeDecel : G.aEngine * S.rueckAntrieb;
+            if (thr > 0 && motor) aDrive += G.aEngine * thr;
+            if (brk > 0) aDrive -= vL > S.bremsV ? G.brakeDecel : motor ? G.aEngine * S.rueckAntrieb : 0;
             let Fr = aDrive * m;
             if (hand) Fr -= G.handDecel * m * sgn;
             const capL = cap * m * g * cosN;
@@ -2863,6 +2906,20 @@
                 z.yawRate *= S.haltGier;
             } else {
                 z.vlong -= g * Math.sin(z.steig || 0) * dt;
+            }
+        }
+        if (tW > 0) {
+            // ── DAS WASSER (SCHAU-2): der Widerstand der getauchten Stirn laengs und der Flanke quer, halb-implizit
+            //    (v / (1 + k·|v|·dt): stabil bei jeder Tiefe und jedem Schritt, er kehrt die Fahrt nie um); er zaehlt in
+            //    die Beschleunigung, die die Federn neigt (der Bug taucht beim Eintauchen). ──
+            const t = Math.min(tW, Wg.dach);
+            const vL0 = z.vlong,
+                vQ0 = z.vlat;
+            z.vlong = vL0 / (1 + Wg.kStirn * t * Math.abs(vL0) * dt);
+            z.vlat = vQ0 / (1 + Wg.kFlanke * t * Math.abs(vQ0) * dt);
+            if (dt > 0) {
+                z.aLong += (z.vlong - vL0) / dt;
+                z.aLat += (z.vlat - vQ0) / dt;
             }
         }
         z.yaw += z.yawRate * dt;
