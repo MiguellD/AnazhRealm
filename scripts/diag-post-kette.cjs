@@ -34,6 +34,8 @@
 //       ersten Ausflug, nach der Rückkehr und am Ende lebt keines (r184 hielt es bis zur Entsorgung der Leinwand: 0710-6 und
 //       0710-9 maßen `band --ort genesis` nach `zerlegen` mit 23,7 MB davon), im Direktpfad steht es, und die Regel der Band
 //       (`rahmenZielBefunde`) nennt es.
+//       DIE DRIFT (Gegenprüfung 0910-1 A): fehlt r184s Abschied am Leinwand-Ziel, fällt das Ziel trotzdem, und `_rahmenZielAbschied`
+//       meldet ERROR — eine ERROR-Zeile von ihm außerhalb der Probe und jede andere ERROR-Zeile der Seite sind rot.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
 //   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette; Port POST_KETTE_PORT, Standard 4583)
@@ -167,6 +169,22 @@ function urteil(z) {
             );
     }
     if (schritte.length >= 4) rahmenRot("am Ende (nach Wasser und Godrays)", z.rahmenEnde);
+    // (g) die Drift: ohne r184s Hörer fällt das Ziel trotzdem (die Schritt-Prüfung oben: „Post-Kette nach Drift" trägt 0), und
+    // der Abschied meldet es LAUT — eine ERROR-Zeile von `_rahmenZielAbschied` außerhalb der Drift ist rot
+    const DRIFT = /RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt/;
+    const d = z.drift;
+    if (!d) v.push("RAHMEN-ZIEL: die Drift-Probe lief nicht (der zweite Abschied steht ohne Wand)");
+    else if (!(d.hoererWeg >= 1))
+        v.push("RAHMEN-ZIEL: am Leinwand-Ziel hängt kein r184-Abschied (`_frameBufferTargets.delete(`) — Vendor-Drift, die Probe ist blind");
+    else if (!(d.fehler || []).some((f) => DRIFT.test(f)))
+        v.push(`RAHMEN-ZIEL: ohne r184s Hörer fiel der Abschied STILL (${JSON.stringify(d.fehler)}) — die Drift bräche nur im Log`);
+    const rahmenErrors = (z.konsolenFehler || []).filter((t) => /RAHMEN-ZIEL/.test(t));
+    const erwartet = d ? (d.fehler || []).filter((f) => DRIFT.test(f)).length : 0;
+    if (rahmenErrors.length > erwartet)
+        v.push(
+            `RAHMEN-ZIEL: ${rahmenErrors.length - erwartet} ERROR-Zeile(n) von \`_rahmenZielAbschied\` außerhalb der Drift-Probe: ${rahmenErrors[0]}`
+        );
+    for (const t of (z.konsolenFehler || []).filter((x) => !/RAHMEN-ZIEL/.test(x))) v.push(`KONSOLE: ${t}`);
     const fang = schritte.find((s) => s.name === "Render-Fehler");
     if (fang && !fang.direkt) v.push("WEICHE: nach dem Render-Fehler der Kette fährt der Loop nicht den Direktpfad");
     if (z.seitenFehler && z.seitenFehler.length)
@@ -212,6 +230,14 @@ function selbsttest() {
             schritt("Direktpfad", true),
             schritt("Post-Kette zurück", false),
             schritt("Render-Fehler", true),
+            schritt("Post-Kette nach Drift", false),
+        ],
+        drift: {
+            hoererWeg: 1,
+            fehler: ["RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt"],
+        },
+        konsolenFehler: [
+            "[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt",
         ],
         seitenFehler: [],
         gpuFehler: [],
@@ -270,6 +296,32 @@ function selbsttest() {
             muss: /RAHMEN-ZIEL: Direktpfad — r184 legte kein Rahmen-Ziel an/,
         },
         { name: "Rahmen-Ziel ungemessen", z: mit((z) => delete z.schritte[0].rahmenZiel), muss: /nicht gemessen/ },
+        {
+            name: "Drift: das Ziel bleibt ohne r184s Hörer",
+            z: mit((z) => (z.schritte[4].rahmenZiel = { ziele: 1, n: 2, mb: 0.88 })),
+            muss: /RAHMEN-ZIEL: Post-Kette nach Drift — 1 r184-Rahmen-Ziel/,
+        },
+        {
+            name: "Drift: der Abschied fällt still",
+            z: mit((z) => (z.drift.fehler = [])),
+            muss: /ohne r184s Hörer fiel der Abschied STILL/,
+        },
+        {
+            name: "Drift: kein r184-Hörer zu finden (Vendor-Drift)",
+            z: mit((z) => (z.drift.hoererWeg = 0)),
+            muss: /kein r184-Abschied .* die Probe ist blind/,
+        },
+        { name: "Drift-Probe fehlt", z: mit((z) => delete z.drift), muss: /die Drift-Probe lief nicht/ },
+        {
+            name: "ERROR von _rahmenZielAbschied außerhalb der Drift",
+            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied … (Vendor-Drift)")),
+            muss: /1 ERROR-Zeile\(n\) von `_rahmenZielAbschied` außerhalb der Drift-Probe/,
+        },
+        {
+            name: "eine fremde ERROR-Zeile der Seite",
+            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] Post-Processing fehlt")),
+            muss: /KONSOLE: .*Post-Processing fehlt/,
+        },
         { name: "Abbild fehlt", z: mit((z) => (z.schritte[0].abbild = { fehlt: true })), muss: /kein Tiefen-Abbild/ },
         {
             name: "Abbild in voller Auflösung",
@@ -671,6 +723,27 @@ function buehne(nFrames) {
                 throw new Error("gate:post-kette — erzwungener Render-Fehler der Kette");
             };
             await schritt("Render-Fehler");
+            // (g) DIE DRIFT (Gegenprüfung 0910-1 A): fehlt r184s Abschied am Leinwand-Ziel (der dispose-Hörer, den
+            // `_getFrameBufferTarget` anhängt), fällt das Rahmen-Ziel des Rückfalls trotzdem — LAUT: `_rahmenZielAbschied` meldet
+            // ERROR. Die Wand nimmt den Hörer fort, kehrt zur Kette zurück und verlangt beides; ihre ERROR-Zeile ist die einzige,
+            // die das Urteil duldet.
+            const leinwand = rend.getCanvasTarget();
+            const hoerer = (leinwand._listeners && leinwand._listeners.dispose) || [];
+            const fort = hoerer.filter((h) => /_frameBufferTargets\.delete\(/.test(Function.prototype.toString.call(h)));
+            for (const h of fort) leinwand.removeEventListener("dispose", h);
+            const driftFehler = [];
+            const logRoh = r.log;
+            r.log = function (m, lvl) {
+                if (lvl === "ERROR") driftFehler.push(String(m).slice(0, 200));
+                return logRoh.apply(this, arguments);
+            };
+            st.postProcessingFailed = false;
+            try {
+                await schritt("Post-Kette nach Drift");
+            } finally {
+                delete r.log;
+            }
+            aus.drift = { hoererWeg: fort.length, fehler: driftFehler };
             st.postProcessingFailed = false;
             // (e) DAS WASSER LIEST DAS ABBILD WIE r184s TIEFE: die unteren sieben Zeilen des Bildes (32×24) sind Wasser über
             // dem Grund. Bei festen Uhren (Wasser, Schaum, Knoten-Zeit) einmal mit dem Abbild, einmal mit r184s
@@ -790,6 +863,12 @@ function buehne(nFrames) {
     await page.setViewport({ width: 320, height: 240 });
     const seitenFehler = [];
     page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
+    // die ERROR-Zeilen der Seite (das Spiel meldet über `log(…, "ERROR")` → console.log „[ERROR]")
+    const konsolenFehler = [];
+    page.on("console", (m) => {
+        const t = m.text();
+        if (m.type() === "error" || /\[ERROR\]/.test(t)) konsolenFehler.push(t.slice(0, 240));
+    });
     let out = null;
     const T0 = Date.now();
     const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
@@ -846,6 +925,13 @@ function buehne(nFrames) {
                     `Tiefen-Kopien ${s.tiefenKopien} · Mitte ${JSON.stringify(s.mitte)} · Abbild ${s.abbild && !s.abbild.fehlt ? `${s.abbild.format} ${s.abbild.groesse.join("×")} Mitte ${s.abbild.mitte}/${s.abbild.soll}` : "fehlt"}${s.fehler.length ? " · FEHLER " + s.fehler[0] : ""}`
             );
         if (out.rahmenEnde)
+            log(`Rahmen-Ziele am Ende: ${out.rahmenEnde.ziele} (${out.rahmenEnde.n} Texturen, ${out.rahmenEnde.mb} MB)`);
+        if (out.drift)
+            log(
+                `Drift (r184s Abschied entfernt): ${out.drift.hoererWeg} Hörer fort · ERROR-Meldungen ${JSON.stringify(out.drift.fehler)}`
+            );
+        out.ausgabe = out.ausgabeWgsl ? SK.wgslKosten(out.ausgabeWgsl) : null;
+        if (out.ausgabe)
             log(
                 `Ausgabe-Fragment: ${out.ausgabe.abtastungen.gesamt} Abtastungen (unbedingt ${out.ausgabe.abtastungen.unbedingt} · ` +
                     `Zweig ${out.ausgabe.abtastungen.zweig} · Schleife ${out.ausgabe.abtastungen.schleife}) · ${out.ausgabe.schleifen} Schleifen · ` +
@@ -872,6 +958,7 @@ function buehne(nFrames) {
         process.exit(1);
     }
     out.seitenFehler = seitenFehler;
+    out.konsolenFehler = konsolenFehler;
     const v = urteil(out);
     if (v.length) {
         console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
@@ -880,7 +967,7 @@ function buehne(nFrames) {
     }
     const a = out.ausgabe.abtastungen;
     console.log(
-        `\n✅ GRÜN — vier Wege durch die Weiche ohne Fehler, der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe und ohne Rahmen-Ziel; ` +
+        `\n✅ GRÜN — fünf Wege durch die Weiche ohne Fehler (mit der Drift ohne r184s Abschied), der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe und ohne Rahmen-Ziel; ` +
             `die Ausgabe tastet unbedingt ${a.unbedingt}×, ${a.zweig}× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild ` +
             `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
             `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}).`

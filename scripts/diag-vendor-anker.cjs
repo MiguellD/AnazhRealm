@@ -314,6 +314,14 @@ const ANKER = [
     // sobald die Post-Kette zeichnet.
     { file: "vendor/three.webgpu.min.js", sub: 'l.isPostProcessingRenderTarget=!0;const e=()=>{u.removeEventListener("dispose",e),l.dispose(),this._frameBufferTargets.delete(u)};u.addEventListener("dispose",e),this._frameBufferTargets.set(u,l)}', organ: "_rahmenZielAbschied (r184s Abschied des Rahmen-Ziels: Hörer ab, Ziel entsorgt, Eintrag fort)" },
     { file: "vendor/three.webgpu.min.js", sub: "this._frameBufferTargets=new Map;", organ: "_rahmenZielAbschied (die Rahmen-Ziele je Ziel)" },
+    // … und die Liste, aus der `_rahmenZielAbschied` den Hörer liest: der EventDispatcher von three.core hält die Hörer je Art in
+    // `this._listeners[art]`, und das Leinwand-Ziel des Renderers (`GS`) ist einer (0910-1 A, Gegenprüfung: der zweite Abschied
+    // stand ohne Wand). Die Drift-Probe in gate:post-kette (g) fährt den Zweig ohne Hörer.
+    { file: "vendor/three.core.min.js", sub: "addEventListener(t,e){void 0===this._listeners&&(this._listeners={});const i=this._listeners;void 0===i[t]&&(i[t]=[]),-1===i[t].indexOf(e)&&i[t].push(e)}", organ: "_rahmenZielAbschied (die Hörer je Art in `_listeners`)" },
+    { file: "vendor/three.core.min.js", sub: "removeEventListener(t,e){const i=this._listeners;if(void 0===i)return;const s=i[t];if(void 0!==s){const t=s.indexOf(e);-1!==t&&s.splice(t,1)}}", organ: "_rahmenZielAbschied (der Hörer nimmt sich aus `_listeners`)" },
+    { file: "vendor/three.webgpu.min.js", sub: "class GS extends u{", organ: "_rahmenZielAbschied (das Leinwand-Ziel ist ein EventDispatcher)" },
+    { file: "vendor/three.webgpu.min.js", sub: "EventDispatcher as u", organ: "_rahmenZielAbschied (u ist der EventDispatcher von three.core)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this._canvasTarget=new GS(", organ: "_rahmenZielAbschied (der Renderer hält sein Leinwand-Ziel)" },
     // DIE STUFE KOSTET NUR, WENN SIE ZEIGT (`nurBeiStaerke` in _ensurePostProcessing): ein Fn-Aufruf trägt seine Argumente
     // als `rawInputs` (der Ketten-Graph der Zerleg-Linse liest sie), ein Fn ohne Layout baut seinen Rumpf inline.
     { file: "vendor/three.webgpu.min.js", sub: "constructor(e,t){super(),this.shaderNode=e,this.rawInputs=t,this.isShaderCallNodeInternal=!0}", organ: "_ensurePostProcessing (nurBeiStaerke — die Stufe bleibt im Ketten-Graph sichtbar)" },
