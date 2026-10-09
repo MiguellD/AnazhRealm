@@ -4959,7 +4959,8 @@ class AnazhRealm {
 
     // === Welt-Aktion-Vorschlag verarbeiten ===
     // Whitelist rekursiv via _isCreatureProposalAllowed (Defense in Depth; verboten → Memory +
-    // INFO-Log + Chat-Hinweis). schöpfer → auto-execute, frieden/pfad → [Ausführen]/[Ablehnen].
+    // INFO-Log + Chat-Hinweis). schöpfer → auto-execute (ohne Zusage: das Wesen handelt als Welt, `_executeCreatureProgram` —
+    // es wünscht das Wetter nur und schreibt nie gegen das Wort des Spielers), frieden/pfad → [Ausführen]/[Ablehnen].
     // Memory-Einträge (proposed_action / accepted_action / auto_executed_action / rejected_action /
     // proposal_blocked) lassen die Kreatur aus den Spieler-Reaktionen lernen.
     _handleCreatureProposedProgram(creature, name, program) {
@@ -5003,11 +5004,19 @@ class AnazhRealm {
         return this._renderCreatureProposalButtons(creature, name, program);
     }
 
-    // Ausführen über die dslRun-Sandbox; source "creature:<name>" markiert die Herkunft (History +
-    // P2P-Loop-Schutz: ≠ "human" → kein Broadcast, wie llm:grok / nexus / emotion).
+    // Ausführen über die dslRun-Sandbox. Die Quelle trägt die ZUSAGE (das Gesetz der Schreiber, `_himmelSchreiber`): sagte der
+    // Spieler zu (sein Klick auf „Ausführen"), läuft das Programm als „zusage:creature:<name>" und schreibt wie ein Gesetz des
+    // Spielers; läuft es von selbst (der Schöpfer-Modus, auch ohne Zutun des Spielers über den Level-Aufstieg), ist es
+    // „creature:<name>" — ein Wesen der Welt, das das Wetter nur wünscht und nie gegen das Wort des Spielers schreibt. Bis zur
+    // Gegenprüfung trugen beide „creature:" (als Zusage gelesen): ein Wesen im Schöpfer-Modus drehte „setze wetter sonnig" zu
+    // Regen und nahm dem Spieler sein Wort. ≠ "human" → kein Broadcast (P2P-Loop-Schutz), wie llm:grok / nexus / emotion.
     _executeCreatureProgram(creature, name, program, auto) {
-        const result = this.dslRun(program, { source: `creature:${name}` });
+        const result = this.dslRun(program, { source: auto ? `creature:${name}` : `zusage:creature:${name}` });
         const ok = result && result.ok;
+        // was das Gesetz der Schreiber aus dem Wetter-Wort des Wesens machte (gehalten / gewünscht) — der Hinweis sagt es
+        const wetter = ((result && result.log) || []).find(
+            (e) => e && (e.event === "wetter_gehalten" || e.event === "wetter_gewuenscht")
+        );
         const memType = auto ? "auto_executed_action" : "accepted_action";
         if (typeof this._creatureRemember === "function") {
             this._creatureRemember(creature, memType, {
@@ -5024,7 +5033,12 @@ class AnazhRealm {
             const tag = auto ? "auto-ausgeführt" : "ausgeführt";
             const summary = JSON.stringify(program).slice(0, 100);
             if (ok) {
-                line.textContent = `(${name}'s Vorschlag ${tag}: ${summary})`;
+                const zusatz = !wetter
+                    ? ""
+                    : wetter.event === "wetter_gehalten"
+                      ? ` — das Wetter hält dein Wort (${this.state.wetterWort || "Halt"})`
+                      : ` — der Wetter-Zug zieht ${wetter.wort} als Nächstes`;
+                line.textContent = `(${name}'s Vorschlag ${tag}: ${summary}${zusatz})`;
             } else {
                 const reason =
                     (result &&
@@ -90590,9 +90604,12 @@ class AnazhRealm {
     //               der geteilten Stimme („remote-voice"); für das GETEILTE Wetter auch ein Mitspieler („remote:…" — die Uhr
     //               reist nie, set_time_of_day ist NON_BROADCASTABLE).
     //   „gesetz"  — ein Gesetz, das der Spieler gab („rule:" + eine Quelle des Spielers), und der Vorschlag eines Wesens,
-    //               dem der Spieler zusagte („creature:…"): es schreibt wie er (ein stehendes Wort folgt ihm).
+    //               dem der Spieler mit seinem Klick zusagte („zusage:…", `_executeCreatureProgram`): es schreibt wie er (ein
+    //               stehendes Wort folgt ihm).
     //   „eigen"   — der Gang der Uhr („uhr"), der Wetter-Zug („auto-zug"), das Laden eines Spielstands („laden").
-    //   „welt"    — alles andere: der Nexus, seine Gesetze, die Emotion, die Wesen, eine Quelle ohne Namen.
+    //   „welt"    — alles andere: der Nexus, seine Gesetze, die Emotion, die Wesen („creature:…" — auch das Wesen, das im
+    //               Schöpfer-Modus von selbst handelt; bis zur Gegenprüfung las es sich als Zusage und nahm dem Spieler sein
+    //               Wort), eine Quelle ohne Namen. Rechte trägt nur eine Quelle, die den Spieler oder seine Zusage NENNT.
     // Die Welt schreibt die Uhr nie und das Wetter nie direkt — sie wünscht das nächste Wort des Wetter-Zugs (`_setWeather`).
     // Vorher schrieben zwei Nexus-Gesetze die Uhr 30-mal in 160 s, und „setze wetter sonnig" hielt bis zum nächsten Regen.
     _himmelSchreiber(quelle, was) {
@@ -90608,9 +90625,9 @@ class AnazhRealm {
         let geber = quelle;
         while (geber.startsWith("rule:")) geber = geber.slice(5);
         if (geber !== quelle && spieler(geber)) return "gesetz";
-        // der Vorschlag eines Wesens läuft nur mit der Zusage des Spielers (`_executeCreatureProgram`: sein Klick auf
-        // „Ausführen", oder sein Schöpfer-Modus) — er schreibt wie ein Gesetz des Spielers
-        if (quelle.startsWith("creature:")) return "gesetz";
+        // der Vorschlag eines Wesens, dem der Spieler zusagte (sein Klick auf „Ausführen", `_executeCreatureProgram`), schreibt
+        // wie ein Gesetz des Spielers; was ein Wesen von selbst tut („creature:…"), ist Welt
+        if (quelle.startsWith("zusage:")) return "gesetz";
         return "welt";
     }
 

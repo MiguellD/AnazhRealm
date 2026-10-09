@@ -23,21 +23,25 @@
 //   (G) GESETZ (eine frische Welt, das Spiel läuft getaktet mit seinem Nexus, `HIMMEL_MIN` Minuten Spiel-Zeit): der Spieler
 //       sagt „setze uhrzeit mittag" und „setze wetter sonnig" (der echte Chat-Pfad); die Täter der Schau schreiben dagegen —
 //       die Nexus-Gesetze auf die Uhr (der Zwilling `time_of_day` und `set_time_of_day`) und auf den Regen, die Würfel des
-//       Nexus auf Uhr und Sturm, die Emotion sorrow — und JEDER Schreiber steht beim Namen (`himmelUrteil`): die Uhr geht nur
-//       ihren Gang im Gesetz der Tag-Länge, das Wetter bleibt sonnig, jeder Täter steht im Buch;
+//       Nexus auf Uhr und Sturm, die Emotion sorrow, und im Schöpfer-Modus ein Wesen, dessen Vorschlag von selbst läuft
+//       (`_handleCreatureProposedProgram` alle `WESEN_SEK`, Gegenprüfung 10.10.: es las sich als Zusage des Spielers und drehte
+//       sunny/sunny → rainy/rainy) — und JEDER Schreiber steht beim Namen (`himmelUrteil`): die Uhr geht nur ihren Gang im
+//       Gesetz der Tag-Länge, das Wetter bleibt sonnig, jeder Täter steht im Buch;
 //   (B) BAND: nach „setze wetter frei" schreibt nur der Wetter-Zug, nie schneller als sein Takt, und er zieht das Wort, das
-//       die Welt sich wünscht;
+//       die Welt sich wünscht (auch das Wesen wünscht nur);
 //   (R) REGLER: der Tageszeit-Regler der Einstellungen zeigt die Welt-Zeit;
 //   (T) TAG: die Tag-Länge einer frischen Welt trägt eine Szene (von Mittag bis Sonnenuntergang ≥ `TAG_SZENE_MINUTEN`), und
 //       ein alter Spielstand setzt sie nicht zurück (die Wahl des Spielers lebt bei ihm, der Kopf trägt sie nur für die Taille);
 //   (Q) QUELLE: im Stamm schreibt `state.weather` nur `_setWeather` und das Laden (genau zweimal), `state.timeOfDay` nur
-//       `_uhrSetzen` (genau einmal), `_setWeather` liest den Halt; der Zwilling `time_of_day` ist fort; kein Würfel des Nexus
-//       (4000 Atome, 4000 Gesetze, 4000 Mutationen) trägt einen Uhr-Op;
+//       `_uhrSetzen` (genau einmal), `_setWeather` liest den Halt; der Zwilling `time_of_day` ist fort; kein NEUER Wurf des
+//       Nexus (4000 Atome, 4000 Gesetze, 4000 Mutationen) trägt einen Uhr-Op — was er aus seiner Geschichte erbt (die Uhr-Sätze
+//       des Spielers, `dslSelectByFitness` → `dslMutate`), wirft die Uhr weiter und steht in (G)/(B) als verweigert beim Namen;
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Urteile der Wache (`wetterUrteil`, `himmelUrteil`) fallen bei
 // jedem eingeschmuggelten Täter rot — ein Schreiber, hin und zurück, roh, ohne Quelle, die tauende Uhr, ein blinder Spion; der
 // Nexus an der Uhr, ein roher Uhr-Schreiber, der Sprung, der lahme Gang, der Zug gegen das Wort, ein fehlender Täter, die Welt,
-// die selbst schreibt, der Zug im Galopp, die schweigende Welt — und bleiben bei Bühne, Verweigerung und Wunsch grün.
+// die selbst schreibt, der Zug im Galopp, die schweigende Welt, das Wesen gegen das Wort, das Wesen, das selbst schreibt, das
+// fehlende Wesen — und bleiben bei Bühne, Verweigerung und Wunsch grün.
 //   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -57,6 +61,8 @@ const PORT = Number(process.env.WETTER_WACHE_PORT || 4602);
 // Spiel-Minuten je Fenster (G und B): drei Takte des Wetter-Zugs (120 s), 77 Feuer eines 4,7-s-Gesetzes, 15 Nexus-Evolutionen.
 const HIMMEL_MIN = Number(process.env.HIMMEL_MIN || 6);
 const SCHRITT_SEK = 0.25;
+// Der Takt des Wesens im Schöpfer-Modus (Spiel-Sekunden): sechs Vorschläge je Fenster, zwei je Takt des Wetter-Zugs.
+const WESEN_SEK = 60;
 // Die Szene, wenn das Spiel keine nennt (der alte Stand): die längste Szene der Leben-Schau 2 außer C-8 (A-5 11 min, A-7 9 min,
 // C-9 12,3 min — aus den Zeitstempeln der Bilder).
 const SZENE_SCHAU_MIN = 15;
@@ -74,7 +80,8 @@ if (process.argv.includes("--selftest")) {
     }
     console.log(
         "✅ SELBSTTEST GRÜN — Schreiber, roh, tauende Uhr, blinder Spion; Nexus an der Uhr, Sprung, lahmer Gang, Zug gegen das " +
-            "Wort, fehlender Täter, die Welt schreibt selbst, Zug im Galopp fallen rot; Bühne, Verweigerung und Wunsch grün."
+            "Wort, fehlender Täter, die Welt schreibt selbst, Zug im Galopp, das Wesen gegen das Wort, das Wesen schreibt selbst, " +
+            "das Wesen fehlt fallen rot; Bühne, Verweigerung und Wunsch grün."
     );
     process.exit(0);
 }
@@ -223,6 +230,17 @@ function himmelProbe(o) {
     const T0 = performance.now();
     let k = 0;
     window.__taktZeit = 0;
+    // DAS WESEN IM SCHÖPFER-MODUS (Gegenprüfung 10.10.): sein Vorschlag läuft von selbst, ohne Zusage des Spielers — auch
+    // ohne sein Zutun über den Level-Aufstieg. Es schlägt alle `WESEN_SEK` Spiel-Sekunden `wesenWort` vor, über den EINEN
+    // Weg aller Vorschläge (`_handleCreatureProposedProgram`, unter ihm die LLM-Antwort und der Level-Aufstieg).
+    const pm = st.playerMesh.position;
+    const wesen =
+        r.spawnCreatureAt(pm.x + 30, pm.y, pm.z + 30, "happy", "wesen") ||
+        (st.creatures || []).find((c) => c && c.userData);
+    if (wesen && !wesen.userData.name) wesen.userData.name = "Wache-Wesen";
+    aus.wesen = wesen ? wesen.userData.name : null;
+    let wesenWort = null;
+    const WESEN_TAKTE = Math.round(o.wesenSek / o.schrittSek);
     const lauf = (sek) => {
         const n = Math.round(sek / o.schrittSek);
         for (let i = 0; i < n; i++) {
@@ -231,6 +249,8 @@ function himmelProbe(o) {
             // ein trauriger Spieler: die Emotion sorrow wirkt auf das Wetter (ihr Weg der Schau)
             st.player.emotions.sorrow = 1;
             r._gameLoopTick(T0 + k * o.schrittSek * 1000);
+            if (wesen && wesenWort && k % WESEN_TAKTE === 0)
+                r._handleCreatureProposedProgram(wesen, wesen.userData.name, ["weather", wesenWort]);
         }
         return n;
     };
@@ -289,12 +309,23 @@ function himmelProbe(o) {
         quelle: "emotion:sorrow",
         stapel: "updatePlayerEmotions",
     };
+    // beim Stapel, nicht bei der Quelle: so steht das Wesen im Buch, welchen Namen seine Quelle auch trägt
+    const wesenT = {
+        name: "Wesen im Schöpfer-Modus (von selbst)",
+        wo: "wetter",
+        quelle: null,
+        stapel: "_executeCreatureProgram",
+    };
+    r.setGameMode("schöpfer");
+    aus.modus = r.getGameMode();
+    wesenWort = "rainy";
     aus.gesetz = fenster("gesetz", o.fensterSek, "sunny", null, [
         gesetzUhr,
         { name: "Nexus-Wurf Uhr", wo: "uhr", quelle: "nexus", stapel: "_loopNexusUpdate" },
         regen,
         trauer,
         { name: "Nexus-Wurf Sturm", wo: "wetter", quelle: "nexus", stapel: "_loopNexusUpdate" },
+        wesenT,
     ]);
     // (R) der Regler der Einstellungen
     const sl = document.getElementById("slider-timeofday");
@@ -307,7 +338,8 @@ function himmelProbe(o) {
     };
     // (B) DAS BAND: der Spieler gibt das Wetter frei
     r.processChatCommand("setze wetter frei");
-    aus.frei = fenster("frei", o.fensterSek, null, window.__taktZeit, [gesetzUhr, regen, trauer]);
+    wesenWort = "stormy";
+    aus.frei = fenster("frei", o.fensterSek, null, window.__taktZeit, [gesetzUhr, regen, trauer, wesenT]);
     window.__taktZeit = undefined;
     return aus;
 }
@@ -387,6 +419,10 @@ function urteil(S, H, quelle, pageErrors) {
     }
     if (H.wort.wetter !== "sunny" || Math.abs(H.wort.uhr - 0.5) > 1e-9)
         rot.push(`(G) der Satz des Spielers wirkt nicht (Uhr ${hm(H.wort.uhr)}, Wetter ${H.wort.wetter})`);
+    if (!H.wesen || H.modus !== "schöpfer")
+        rot.push(
+            `(G) das Wesen im Schöpfer-Modus läuft nicht (Wesen ${H.wesen || "–"}, Modus ${H.modus}) — sein Täter ist ungeprüft`
+        );
     // (R) der Regler zeigt die Welt-Zeit
     const R = H.regler;
     if (R.wert == null) rot.push("(R) REGLER: #slider-timeofday fehlt");
@@ -460,7 +496,11 @@ async function boot(browser, pageErrors) {
     // (G)(B)(R)(T) in einer FRISCHEN Welt: die Probe oben hat Gesetze, Bühne und Wort hinterlassen
     const page2 = await boot(browser, pageErrors);
     const t0 = Date.now();
-    const H = await page2.evaluate(himmelProbe, { schrittSek: SCHRITT_SEK, fensterSek: HIMMEL_MIN * 60 });
+    const H = await page2.evaluate(himmelProbe, {
+        schrittSek: SCHRITT_SEK,
+        fensterSek: HIMMEL_MIN * 60,
+        wesenSek: WESEN_SEK,
+    });
     const laufS = (Date.now() - t0) / 1000;
     await browser.close();
     server.close();
@@ -490,6 +530,9 @@ async function boot(browser, pageErrors) {
     );
     console.log(
         `  Wort des Spielers: Uhr ${hm(H.wort.uhr)}, Wetter ${H.wort.wetter} (getaktet ${HIMMEL_MIN} min je Fenster, ${laufS.toFixed(1)} s Wanduhr)`
+    );
+    console.log(
+        `  Modus ${H.modus}: das Wesen „${H.wesen || "–"}" schlägt alle ${WESEN_SEK} s von selbst vor (Gesetz: rainy, Band: stormy)`
     );
     for (const f of ["gesetz", "frei"]) {
         const g = H[f];

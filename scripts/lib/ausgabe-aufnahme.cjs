@@ -776,6 +776,24 @@ function himmelSelbsttest() {
         quelle: null,
         stapel: "time_of_day ← dslEval ← _tickWorldRules ← loop",
     };
+    // das Wesen beim Stapel (seine Quelle trägt welchen Namen auch immer)
+    const wesenE = (art, seq) => ({
+        art,
+        von: "sunny",
+        zu: "rainy",
+        quelle: "creature:Fuchs",
+        stapel: "_setWeather ← … ← dslRun ← _executeCreatureProgram ← _handleCreatureProposedProgram",
+        tv: 20,
+        seq: seq || 1,
+    });
+    const taeterW = taeterG.concat([
+        { name: "Wesen im Schöpfer-Modus", wo: "wetter", quelle: null, stapel: "_executeCreatureProgram" },
+    ]);
+    const wesenWetter = (extra, ende) => ({
+        buch: [nein("wetter", "rule:nexus", "rainy"), ...extra],
+        wort: "sunny",
+        ende,
+    });
     const faelle = [
         ["gesetz ruhig", gesetz({}), "GRUEN", null],
         [
@@ -863,6 +881,38 @@ function himmelSelbsttest() {
             frei([wunsch, zug(130, 2, "sunny", "stormy")]),
             "ROT",
             "kein Wetter-Zug zieht ein gewünschtes",
+        ],
+        // DAS WESEN IM SCHÖPFER-MODUS (Gegenprüfung 10.10.): sein Vorschlag läuft von selbst — verweigert/gewünscht grün, als
+        // Schreiber rot beim Namen, und fehlt es im Buch, ist es ungeprüft
+        [
+            "Wesen verweigert",
+            gesetz({ wetter: wesenWetter([wesenE("verweigert")], "sunny"), taeter: taeterW }),
+            "GRUEN",
+            null,
+        ],
+        [
+            "Wesen gegen das Wort",
+            gesetz({ wetter: wesenWetter([wesenE("schreiber")], "rainy"), taeter: taeterW }),
+            "ROT",
+            "creature:Fuchs",
+        ],
+        [
+            "frei: das Wesen wünscht",
+            frei([wunsch, wesenE("gewuenscht", 2), zug(130, 3, "sunny", "rainy")], { taeter: taeterW }),
+            "GRUEN",
+            null,
+        ],
+        [
+            "frei: das Wesen schreibt selbst",
+            frei([wunsch, wesenE("schreiber", 2), zug(130, 3, "rainy", "rainy")], { taeter: taeterW }),
+            "ROT",
+            "statt dem Wetter-Zug",
+        ],
+        [
+            "das Wesen fehlt",
+            gesetz({ wetter: wesenWetter([], "sunny"), taeter: taeterW }),
+            "ROT",
+            "Wesen im Schöpfer-Modus: nicht im Buch",
         ],
     ];
     for (const [name, g, soll, t] of faelle) {
