@@ -292,7 +292,7 @@ function wand(src, html) {
         "_pickScatterAtCrosshair()",
         "_hasMagnifyingInSight()",
         "_blickZiel(maxDist)",
-        "_kampfKlingenAchse(ox, oy, oz, reach)",
+        "_kampfKlingenAchse(sw, out)",
     ].filter((sig) => {
         const b = fnBody(nc, new RegExp("\\n {4}" + sig.replace(/[()=]/g, (c) => "\\" + c) + " \\{")) || "";
         return !/this\._fadenkreuzStrahl\(\)/.test(b) || /getWorldDirection\(/.test(b);

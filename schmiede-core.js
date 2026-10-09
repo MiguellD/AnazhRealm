@@ -3066,7 +3066,12 @@
             windupFrac: 0.3,
             strikeFrac: 0.25,
             arcHalfRad: 1.1,
-            bladeRadiusM: 0.35,
+            // VERTRAGS-AKT Welle LF 09.10. (Leben-Schau, Posten 2: „die Klinge trifft, wo man sie sieht"): der Radius der
+            // Klingen-Kapsel ist die Klinge selbst — halbe Breite 3 cm und 4 cm Spiel — statt 0,35 m. Die dicke Kapsel
+            // ersetzte die Stetigkeit des Sweeps (ein Takt trug die Spitze des Großschwerts 0,45 m weit): sie traf bis
+            // 0,35 m vor der sichtbaren Klinge, im Treffer-Takt stand die Klinge 30° neben dem Hirsch. Die Stetigkeit trägt
+            // jetzt der Wirt (Teil-Schritte des Sweeps, die Spitze höchstens KAMPF_SWEEP_SCHRITT_M je Schritt).
+            bladeRadiusM: 0.07,
             reachBaseM: 0.9,
             reachMaxM: 6,
             shoulderH: 1.2,

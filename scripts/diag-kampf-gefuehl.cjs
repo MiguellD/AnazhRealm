@@ -166,11 +166,13 @@ function bissVerdict(B) {
     return v;
 }
 // (T16) DIE TREFFER-ENERGIE FOLGT DEM SCHWUNG (Welle LF kampf, Posten 1 — pure Funktion, Probe UND Selbst-Test): derselbe
-// Großschwert-Hieb auf denselben Hirsch (drei Abstände × fünf Lagen, Fadenkreuz auf der Leibes-Mitte) trifft jedes Mal, und
-// seine Energie streut höchstens um den Faktor `streuung` (benannt: der Treffer-Ort auf der Klinge, Sweetspot bis Griff-
-// Drittel — die Effizienz des Kerns hält ihn begrenzt); das schwere Schwert schlägt im Mittel nie schwächer als der Dolch.
-// Befund 07.10.: Kontakt am Griff-Drittel 15–18 J, in 1,7 m 91 J (×6), schwächer als der Dolch (24–32 J).
-const ENERGIE_SOLL = { treffer: 13, streuung: 2.0 };
+// Großschwert-Hieb auf denselben Hirsch (drei Abstände × fünf Lagen, Fadenkreuz auf der Leibes-Mitte) trifft jedes Mal; in der
+// Befund-Lage (abgewandt, 1,5 · 1,6 · 1,7 m) springt seine Energie nicht (höchstens ×1,25); jede Streuung ist
+// BENANNT — ein Treffer unter voller Wirkung nennt seinen Ort auf der Klinge (griffnah, hand, spitze) — und BEGRENZT (keine
+// Energie unter 0,2 × der stärksten desselben Geräts, der Boden des Kerns); das schwere Schwert schlägt im
+// Mittel nie schwächer als der Dolch. Befund 07.10.: abgewandt 1,6 m 15–18 J (Griff-Drittel), 1,7 m 91 J (×6), schwächer als
+// der Dolch (24–32 J).
+const ENERGIE_SOLL = { treffer: 13, befund: 1.25, boden: 0.2 };
 function energieVerdict(E) {
     if (!E || !Array.isArray(E.gross) || !Array.isArray(E.dolch)) return ["energie keine Probe"];
     const v = [];
@@ -181,24 +183,32 @@ function energieVerdict(E) {
             `energie-treffer: ${g.length} von ${E.gross.length} Großschwert-Hieben trafen (Soll ≥ ${ENERGIE_SOLL.treffer})`
         );
     if (!g.length || !d.length) return v.concat(["energie keine Treffer"]);
-    const lo = Math.min(...g),
-        hi = Math.max(...g);
-    if (!(hi <= ENERGIE_SOLL.streuung * lo))
+    const b = (E.befund || []).filter((x) => Number.isFinite(x) && x > 0);
+    if (b.length < 3) v.push("energie-befund: die Befund-Lage traf nicht dreimal (keine Probe)");
+    else if (!(Math.max(...b) <= ENERGIE_SOLL.befund * Math.min(...b)))
         v.push(
-            `energie-kontakt: derselbe Hieb ${lo.toFixed(1)}–${hi.toFixed(1)} J (×${(hi / lo).toFixed(1)}, Soll ≤ ×${ENERGIE_SOLL.streuung}) — die erste Kontaktstelle richtet`
+            `energie-kontakt: abgewandt 1,5–1,7 m ${b.map((x) => x.toFixed(1)).join(" / ")} J (×${(Math.max(...b) / Math.min(...b)).toFixed(1)}, Soll ≤ ×${ENERGIE_SOLL.befund}) — die erste Kontaktstelle richtet`
         );
+    const hi = Math.max(...g);
+    if (!(Math.min(...g) >= ENERGIE_SOLL.boden * hi))
+        v.push(
+            `energie-boden: ${Math.min(...g).toFixed(1)} J unter ${ENERGIE_SOLL.boden} × ${hi.toFixed(1)} J — die Streuung ist nicht begrenzt`
+        );
+    for (const x of E.detail || [])
+        if (Number.isFinite(x.eff) && x.eff < 0.99 && (!x.ort || x.ort === "schlagpunkt"))
+            v.push(
+                `energie-ort: ${x.name}@${x.d} trifft mit ${x.eff} ohne benannten Ort — die Streuung ist nicht benannt`
+            );
     const med = (a) => a.slice().sort((x, y) => x - y)[a.length >> 1];
     if (!(med(g) >= med(d)))
         v.push(`energie-waffe: Großschwert ${med(g).toFixed(1)} J im Mittel unter dem Dolch ${med(d).toFixed(1)} J`);
-    // zu nah: der Ort ist benannt (nicht der Schlagpunkt) und die Wirkung bleibt über dem Boden des Kerns (¼ des Mittels)
+    // zu nah: der Ort ist benannt (nicht der Schlagpunkt), die Wirkung steht auf oder über dem Boden des Kerns (0,25)
     const n = E.nah;
     if (!n || !Number.isFinite(n.ke)) v.push("energie-nah: zu nah traf nicht (keine Probe)");
     else if (!n.ort || n.ort === "schlagpunkt")
         v.push(`energie-nah: zu nah ohne benannten Ort (${n.ort || "keiner"}) — die Streuung ist nicht benannt`);
-    else if (!(n.ke >= 0.25 * med(g) - 1e-6 && n.ke < med(g)))
-        v.push(
-            `energie-nah: zu nah ${n.ke.toFixed(1)} J gegen ${med(g).toFixed(1)} J — die Streuung ist nicht begrenzt`
-        );
+    else if (!(n.eff >= 0.25 - 1e-9 && n.eff < 1))
+        v.push(`energie-nah: zu nah mit der Wirkung ${n.eff} — die Streuung ist nicht begrenzt`);
     return v;
 }
 // (T17) EINE REICHWEITE AUS DER WAFFE (Welle LF kampf, Posten 3 — pure Funktion, Probe UND Selbst-Test): das Verb-Tor des
@@ -218,9 +228,16 @@ function reichVerdict(R) {
 // (T18) POSE = TREFFER-VOLUMEN = ICH-SICHT (Welle LF kampf, Posten 2 — pure Funktion, Probe UND Selbst-Test): im Treffer-Takt
 // liegen die sichtbare Spitze des Geräts und seine Mitte auf der Geraden der Strecke, die der Sweep der Gestalt reicht (höchstens
 // ihr Klingen-Radius daneben), und Spitze und Mitte stehen im Bild der Ich-Kamera — bei jedem der drei Ziele.
-function poseVerdict(P) {
+const POSE_SPALT_M = 0.12;
+function poseVerdict(P, E) {
     if (!Array.isArray(P) || !P.length) return ["pose keine Probe"];
     const v = [];
+    if (!E) v.push("pose-ichregel keine Probe");
+    else {
+        if (E.rueckstand) v.push("pose-ichregel: 3rd → 1st → 3rd stellt die Sichtbarkeit des Leibs nicht wieder her");
+        if (E.hautImErsten > 0)
+            v.push(`pose-ichregel: im 1st zeichnen ${E.hautImErsten} Haut-Meshes (die Kamera sitzt im Leib)`);
+    }
     P.forEach((x, i) => {
         if (!x || !x.traf) return v.push(`pose-treffer: Ziel ${i + 1} nicht getroffen (keine Probe)`);
         if (!Number.isFinite(x.spitzeAb)) return v.push(`pose-geraet: Ziel ${i + 1} ohne sichtbares Gerät`);
@@ -229,6 +246,10 @@ function poseVerdict(P) {
                 `pose-volumen: Ziel ${i + 1} — die sichtbare Klinge ${x.spitzeAb} m (Spitze) / ${x.mitteAb} m (Mitte) neben dem Treffer-Volumen (Soll ≤ ${x.rad} m)`
             );
         if (!x.imBild) v.push(`pose-ich: Ziel ${i + 1} — im Treffer-Takt zeigt die Ich-Sicht keine Klinge`);
+        if (!(Number.isFinite(x.spalt) && x.spalt <= POSE_SPALT_M))
+            v.push(
+                `pose-spalt: Ziel ${i + 1} — im Treffer-Takt steht die sichtbare Klinge ${x.spalt} m vor dem Leib (Soll ≤ ${POSE_SPALT_M} m) — sie trifft nicht, wo man sie sieht`
+            );
     });
     return v;
 }
@@ -344,11 +365,19 @@ async function WELLE_L() {
         // neu: (creature, now, urteil, keEigen) — die Zone reist im Urteil; alt: (creature, now, keOpt, zoneKind)
         const z = a[2] && typeof a[2] === "object" ? a[2].zone || null : typeof a[3] === "string" ? a[3] : null;
         const u = a[2] && typeof a[2] === "object" ? a[2] : null;
-        juice.push({ zone: z, t: T, ke: u && Number.isFinite(u.KE) ? u.KE : null, ort: u ? u.ort || null : null });
+        juice.push({
+            zone: z,
+            t: T,
+            ke: u && Number.isFinite(u.KE) ? u.KE : null,
+            ort: u ? u.ort || null : null,
+            eff: u && Number.isFinite(u.eff) ? u.eff : null,
+            v: u && Number.isFinite(u.v) ? u.v : null,
+        });
         return orig.juice.apply(this, a);
     };
-    r._beginPlayerSwing = function () {
-        const ok = orig.swing.call(this);
+    // die Zähl-Hülle reicht die Argumente durch (das Ziel des Hiebs, Welle LF)
+    r._beginPlayerSwing = function (...a) {
+        const ok = orig.swing.apply(this, a);
         if (ok) zaehl.schwung++;
         return ok;
     };
@@ -429,7 +458,8 @@ async function WELLE_L() {
             p._hitStopUntil = 0;
             const n0 = treff.length,
                 j0 = juice.length;
-            const ok = r._beginPlayerSwing();
+            // der Klick: das Ziel ist der Pick unter dem Fadenkreuz, wie der EINE Dispatcher ihn reicht (tryMouseBreak)
+            const ok = r._beginPlayerSwing(r._pickCreatureAtCrosshair());
             if (!ok || !p._swing) return { ok: false, treff: [], juice: [] };
             p._swing.lastT = T;
             for (let k = 0; k < 1200 && p._swing; k++) {
@@ -518,10 +548,7 @@ async function WELLE_L() {
         };
         w.z.stopGross = stopEnergie("klinge_grossschwert");
         w.z.stopKeule = stopEnergie("klinge_keule");
-        w.c.hitStopEnergie =
-            w.z.stopGross !== null &&
-            w.z.stopKeule !== null &&
-            Math.abs(w.z.stopKeule - w.z.stopGross) / Math.max(w.z.stopKeule, w.z.stopGross) >= 0.1;
+        // (K-D4 entscheidet unten an der ganzen Rezept-Tafel, T4: jede Waffe stoppt nach IHRER Energie)
         // (T13) DER RÜCKSTOSS JE MASSE UND WAFFE (0710-2, K-D9 — jedes Ziel sprang bei JEDER Waffe 2,16 m, eine Kappe, in
         // EINEM Takt): ein frischer Fuchs und ein frischer Bär, Dolch und Keule, je EIN Hieb auf die Brust. Für die Probe
         // steht der Steuer-Schritt der Tiere (die Naht `_steuerGesetz`, danach restauriert): kein Wunsch, keine Flucht nach dem
@@ -762,7 +789,8 @@ async function WELLE_L() {
             }
             const z = sw.juice.length && sw.juice[0].zone;
             const zm = z && ZT && ZT[z] ? ZT[z].mul : 1;
-            faktoren.push({ id, f: t.amount / ((p.stats.damage || 5) * r._heldGueteFaktor() * zm) });
+            const ke = sw.juice.length && Number.isFinite(sw.juice[0].ke) ? sw.juice[0].ke : null;
+            faktoren.push({ id, f: t.amount / ((p.stats.damage || 5) * r._heldGueteFaktor() * zm), ke });
         }
         const fs = faktoren.filter((x) => x.f !== null).map((x) => x.f);
         const fMax = Math.max(...fs);
@@ -770,6 +798,25 @@ async function WELLE_L() {
         w.z.aufDerKappe = fs.filter((f) => f >= fMax * 0.99).length;
         w.z.nahkampfRezepte = faktoren.length;
         w.c.keineKappe = fs.length >= 15 && w.z.aufDerKappe <= 2;
+        // K-D4 — DER HIT-STOP IST ENERGIE-SKALIERT an der ganzen Tafel: die Treffer-Energie (sie trägt Hit-Stop und Dip) je
+        // Nahkampf-Rezept, ein Hieb auf die Brust; die größte Gruppe von Rezepten, deren Energie auf ±3 % gleich ist. Der Befund
+        // (Ω-Φ4-Tautologie KE = ½·I·ω² bei ω ∝ 1/√I): 13 von 17 Rezepten stoppten mit 19,8 J.
+        {
+            const ke = faktoren
+                .map((x) => x.ke)
+                .filter((x) => Number.isFinite(x) && x > 0)
+                .sort((a, b) => a - b);
+            let gruppe = 0;
+            for (let i = 0; i < ke.length; i++) {
+                let n = 0;
+                for (let j = i; j < ke.length && ke[j] <= ke[i] * 1.06; j++) n++;
+                gruppe = Math.max(gruppe, n);
+            }
+            w.z.keGruppe = gruppe;
+            w.z.keRezepte = ke.length;
+            w.z.keSpanne = ke.length ? +(ke[ke.length - 1] / ke[0]).toFixed(1) : null;
+            w.c.hitStopEnergie = ke.length >= 15 && gruppe <= 3;
+        }
         // (T5) die Gegenwehr folgt dem TEMPERAMENT DER GATTUNG (Welle LF 08.10., K-D12): 20 Treffer mit Rückstoß aus 1,6 m
         // im Modus pfad — der Bär (wehrhaft) schlägt zurück, der Hirsch derselben Größe (scheu, ein Fluchttier) nie.
         // Vorher lief die Probe am Hirsch, den die Substanz-Tags „wehrhaft" nannten.
@@ -1488,22 +1535,33 @@ async function WELLE_L() {
             });
             w.c.s3 = w.z.s3 < 0;
         }
-        // der Pfeil aufs Fadenkreuz bei 45° Steigung
+        // der Pfeil aufs Fadenkreuz bei 45° Steigung: seine BAHN erreicht den Punkt des Fadenkreuzes (Welle LF: er fällt, die
+        // Ballistik hebt ihn) — gemessen der Winkel zwischen Pfeil und Fadenkreuz-Punkt von der Kamera aus, wenn der Pfeil die
+        // Weite des Punkts erreicht
         if (rec) {
             ausruesten("klinge_langbogen");
             s.yaw = 0;
             s.pitch = Math.PI / 4;
             kamera();
-            const d = camDir();
+            const cam = s.camera.position.clone();
+            const zp = r._blickZiel(A.BLICK_ZIEL_M);
+            const Z = V3().set(zp.x, zp.y, zp.z);
+            const weite = Z.distanceTo(cam);
             const vorher = (s._pfeile || []).length;
             p._shotCooldownUntil = 0;
             r._beginPlayerShot(rec, 1);
             const pf = (s._pfeile || [])[vorher];
             if (pf) {
-                const v = V3().set(pf.vx, pf.vy, pf.vz).normalize();
-                w.z.pfeilFadenkreuz = grad(v.angleTo(d));
-                r._pfeilDespawn(pf);
-                s._pfeile.splice(s._pfeile.indexOf(pf), 1);
+                for (let k = 1; k <= 2400 && s._pfeile.includes(pf); k++) {
+                    if (V3().set(pf.x, pf.y, pf.z).distanceTo(cam) >= weite) break;
+                    r._tickPfeile(pf.born + k / 240);
+                }
+                const P = V3().set(pf.x, pf.y, pf.z);
+                w.z.pfeilFadenkreuz = grad(P.sub(cam).angleTo(V3().subVectors(Z, cam)));
+                if (s._pfeile.includes(pf)) {
+                    r._pfeilDespawn(pf);
+                    s._pfeile.splice(s._pfeile.indexOf(pf), 1);
+                }
             }
             w.c.pfeilFadenkreuz = Number.isFinite(w.z.pfeilFadenkreuz) && w.z.pfeilFadenkreuz < 1;
         }
@@ -1516,6 +1574,7 @@ async function WELLE_L() {
         // abgewandt → Kontakt am Griff-Drittel, 15–18 J; in 1,7 m 91 J; der Dolch 24–32 J.
         {
             const hE = setze("wesen");
+            const detail = [];
             const energie = (name, d, rotY, dy = 0) => {
                 ausruesten(name);
                 if (s.blueprints[name]) r._setBlueprintWear(s.blueprints[name], 1);
@@ -1525,6 +1584,14 @@ async function WELLE_L() {
                 zielen(punkt(hE, null));
                 const sw = schwung();
                 const j = traf(sw, hE) && sw.juice[0];
+                if (j)
+                    detail.push({
+                        name: name.replace("klinge_", ""),
+                        d,
+                        ort: j.ort,
+                        eff: j.eff && +j.eff.toFixed(2),
+                        v: j.v && +j.v.toFixed(1),
+                    });
                 return j && Number.isFinite(j.ke) ? +j.ke.toFixed(2) : null;
             };
             const lagen = [Math.PI / 2, 0, Math.PI, Math.PI / 4, -Math.PI / 4];
@@ -1537,6 +1604,8 @@ async function WELLE_L() {
                 gross: reihe("klinge_grossschwert", [1.3, 1.6, 1.9]),
                 dolch: reihe("klinge_dolch", [1.2, 1.6]),
             };
+            w.z.energie.detail = detail;
+            w.z.energie.befund = [1.5, 1.6, 1.7].map((d) => energie("klinge_grossschwert", d, 0));
             // die benannte Streuung: zu nah (ein Kitz, L 0,6, in 0,6 m auf einer Stufe 1 m über dem Fuß, Breitseite — der Bogen
             // liegt waagrecht, der Leib nur am Griff-Teil) trifft das Großschwert nicht mit dem Schlagpunkt — der Kern nennt
             // den Ort und hält die Wirkung über seinem Boden
@@ -1559,7 +1628,7 @@ async function WELLE_L() {
                     delete r._kampfTrefferWeg;
                 }
                 const j = juice[juice.length - 1];
-                w.z.energie.nah = { ke, ort: j ? j.ort : null, weg };
+                w.z.energie.nah = { ke, ort: j ? j.ort : null, eff: j ? j.eff : null, weg };
             }
             if (hE) parke(hE);
         }
@@ -1632,11 +1701,60 @@ async function WELLE_L() {
             const hP = setze("wesen");
             ausruesten("klinge_grossschwert");
             if (s.blueprints.klinge_grossschwert) r._setBlueprintWear(s.blueprints.klinge_grossschwert, 1);
-            const gtRoh = r._kreaturGliedTreffer;
+            // die Studio-Gestalt in der Hand abwarten (die Foundry baut sie; bis dahin trägt der Teile-Bau) — gemessen wird die
+            // Klinge, die der Spieler sieht
+            for (let i = 0; i < 120 && !(pm.userData.heldMesh && pm.userData.heldMesh.userData.foundryHeld); i++)
+                await new Promise((res) => setTimeout(res, 125));
+            // die Ich-Regel bleibt rückstandsfrei: 3rd → 1st → 3rd stellt jede Sichtbarkeit des Leibs wieder her, und im 1st
+            // zeichnet keine Haut (die Kamera sitzt im Leib) außer dem Gerät in der Hand
+            {
+                const heldR = pm.userData.heldMesh;
+                const unterGeraet = (o) => {
+                    for (let n = o; n && n !== pm; n = n.parent) if (n === heldR) return true;
+                    return false;
+                };
+                const sicht = () => {
+                    const a = [];
+                    pm.traverse((o) => {
+                        if (o.isMesh) a.push(o.visible);
+                    });
+                    return a.join(",");
+                };
+                r.setCameraMode("third");
+                r._loopCamera(T);
+                const v3 = sicht();
+                r.setCameraMode("first");
+                r._loopCamera(T);
+                let hautSichtbar = 0;
+                pm.traverseVisible((o) => {
+                    if (o.isMesh && !unterGeraet(o)) hautSichtbar++;
+                });
+                r.setCameraMode("third");
+                r._loopCamera(T);
+                w.z.egoRegel = { rueckstand: sicht() !== v3, hautImErsten: hautSichtbar };
+                r.setCameraMode("first");
+                r._loopCamera(T);
+            }
+            // die Strecke der Klinge im Kontakt-Takt: der Kontakt-Richter des Sweeps (Welle LF: _kampfKlingenKontakt —
+            // Klinge B → T und das Tier), auf älteren Ständen der Glied-Test der Gestalt (Strecke a → b)
+            const naht = fn("_kampfKlingenKontakt") ? "_kampfKlingenKontakt" : "_kreaturGliedTreffer";
+            const gtRoh = r[naht];
             let strecke = null;
-            r._kreaturGliedTreffer = function (cr, ax, ay, az, bx, by, bz, rad) {
-                const tr = gtRoh.call(this, cr, ax, ay, az, bx, by, bz, rad);
-                if (tr && cr === hP && !strecke) strecke = { a: V3().set(ax, ay, az), b: V3().set(bx, by, bz), rad };
+            r[naht] = function (...arg) {
+                const tr = gtRoh.apply(this, arg);
+                if (naht === "_kampfKlingenKontakt") {
+                    const [, cr, , B, Tt] = arg;
+                    if (tr && cr === hP && !strecke)
+                        strecke = {
+                            a: V3().set(B.x, B.y, B.z),
+                            b: V3().set(Tt.x, Tt.y, Tt.z),
+                            rad: A._arenaGesetz().schwung.bladeRadiusM,
+                        };
+                } else {
+                    const [cr, ax, ay, az, bx, by, bz, rad] = arg;
+                    if (tr && cr === hP && !strecke)
+                        strecke = { a: V3().set(ax, ay, az), b: V3().set(bx, by, bz), rad };
+                }
                 return tr;
             };
             const geraetPunkte = () => {
@@ -1680,7 +1798,7 @@ async function WELLE_L() {
                 p._swing = null;
                 p._hitStopUntil = 0;
                 const n0 = treff.length;
-                if (!r._beginPlayerSwing() || !p._swing) return null;
+                if (!r._beginPlayerSwing(r._pickCreatureAtCrosshair()) || !p._swing) return null;
                 p._swing.lastT = T;
                 for (let k = 0; k < 1200 && p._swing && !treff.slice(n0).some((t) => t.c === hP); k++) {
                     T += 0.004;
@@ -1697,9 +1815,46 @@ async function WELLE_L() {
                 if (g) {
                     out.spitzeAb = +abGerade(g.T, strecke.a, strecke.b).toFixed(2);
                     out.mitteAb = +abGerade(g.M, strecke.a, strecke.b).toFixed(2);
-                    // die Klinge steht im Bild: Spitze UND Mitte in der Ich-Kamera (die Hand allein ist keine Klinge)
-                    out.imBild = imBild(g.T) && imBild(g.M);
-                    out.held = pm.userData.heldMesh.userData.foundryHeld ? "studio" : "teile";
+                    // die Klinge steht im Bild: Spitze UND Mitte in der Ich-Kamera (die Hand allein ist keine Klinge) — und sie
+                    // ZEICHNET: das Gerät und jeder Knoten über ihm bis zur Szene sind sichtbar (die Ich-Sicht verbarg den
+                    // ganzen Leib samt der Hand, an der das Gerät hängt)
+                    const held = pm.userData.heldMesh;
+                    let zeichnet = true;
+                    for (let n = held; n && !n.isScene; n = n.parent) if (!n.visible) zeichnet = false;
+                    let meshSichtbar = 0;
+                    held.traverseVisible((o) => {
+                        if (o.isMesh) meshSichtbar++;
+                    });
+                    out.zeichnet = zeichnet && meshSichtbar > 0;
+                    out.imBild = out.zeichnet && imBild(g.T) && imBild(g.M);
+                    out.held = held.userData.foundryHeld ? "studio" : "teile";
+                    // die Klinge TRIFFT, WO MAN SIE SIEHT: der Spalt zwischen der sichtbaren Klinge (Handgelenk → Spitze) und der
+                    // Gestalt des Tiers (seine Glieder-Kapseln) im Treffer-Takt
+                    const gl = r._kreaturTrefferGlieder(hP) || [];
+                    hP.updateMatrixWorld(true);
+                    let spalt = Infinity;
+                    for (const gg of gl) {
+                        const pa = V3().copy(gg.a).applyMatrix4(gg.anker.matrixWorld);
+                        const pb = V3().copy(gg.b).applyMatrix4(gg.anker.matrixWorld);
+                        const d = Math.sqrt(
+                            r._segSegDistSq(
+                                g.W.x,
+                                g.W.y,
+                                g.W.z,
+                                g.T.x,
+                                g.T.y,
+                                g.T.z,
+                                pa.x,
+                                pa.y,
+                                pa.z,
+                                pb.x,
+                                pb.y,
+                                pb.z
+                            )
+                        );
+                        spalt = Math.min(spalt, d - gg.r * gg.anker.matrixWorld.getMaxScaleOnAxis());
+                    }
+                    out.spalt = Number.isFinite(spalt) ? +Math.max(0, spalt).toFixed(2) : null;
                     out.rad = strecke.rad;
                 }
                 p._hitStopUntil = 0;
@@ -1710,8 +1865,8 @@ async function WELLE_L() {
             try {
                 w.z.pose = [probe(1.6, 0, 0), probe(1.6, Math.PI / 2, 0), probe(1.8, Math.PI / 2, 0.3)];
             } finally {
-                r._kreaturGliedTreffer = gtRoh;
-                delete r._kreaturGliedTreffer;
+                r[naht] = gtRoh;
+                delete r[naht];
                 p._hitStopUntil = 0;
                 p._swing = null;
                 parke(hP);
@@ -2025,7 +2180,7 @@ async function WELLE_L() {
                 // ein voller Schwung über die synthetische Anzeige-Uhr; zählt die
                 // hp-Abfälle des Neben-Ziels (Dedup-Beweis) + merkt das Hit-Fenster.
                 p._swing = null;
-                const okStart = r._beginPlayerSwing();
+                const okStart = r._beginPlayerSwing(r._pickCreatureAtCrosshair());
                 if (!okStart || !p._swing) return { okStart: false, hits: 0 };
                 p._swing.lastT = t0;
                 let hits = 0;
@@ -2140,14 +2295,22 @@ async function WELLE_L() {
                 p.animationLastTick = -Infinity;
                 r.animatePlayerSoul(9000);
                 r.animatePlayerSoul(9000); // dt=0 (Uhr steht) — deterministische Idle-Pose
+                const huelle = mesh.children.find((ch) => ch && ch.userData && ch.userData._creatureSkin);
                 return {
                     armX: rig.armR.shoulder.rotation.x,
                     chestY: rig.chest ? rig.chest.rotation.y : 0,
+                    // der Layer dreht die Gelenke als Quaternion (Welle LF: der Leib folgt der Klinge) — gemessen wird der
+                    // Winkel der Drehung, nicht eine Euler-Achse
+                    armQ: rig.armR.shoulder.quaternion.clone(),
+                    chestQ: (rig.chest || rig.spine).quaternion.clone(),
+                    huelleZ: huelle ? huelle.position.z : 0,
                     legLHip: rig.legL.hip.rotation.x,
                     legRKnee: rig.legR.knee.rotation.x,
                 };
             };
             const dauerE = r._playerSwingDauer();
+            // der Schwung trägt seinen Rahmen (Körper und Gerät, _kampfSchwungRahmen) wie _beginPlayerSwing ihn legt
+            const rahmenE = r._kampfSchwungRahmen({});
             const mkSwing = (t) => ({
                 t,
                 dauer: dauerE,
@@ -2155,16 +2318,21 @@ async function WELLE_L() {
                 strikeSec: dauerE * K.strikeFrac,
                 weapon: null,
                 hits: new Set(),
-                reach: 2,
+                rahmen: rahmenE,
+                reach: rahmenE.reach,
+                ziel: null,
                 lastT: 0,
             });
             const pose0 = poseBei(null); // reine Lokomotion (Idle)
             const poseW = poseBei(mkSwing(dauerE * K.windupFrac * 0.6)); // mitten im Windup
             const poseEnd = poseBei(null); // nach dem Schwung: rückstandsfrei
-            o.pose = { pose0, poseW };
-            o.checks.eArmHebt = Math.abs(poseW.armX - pose0.armX) > 0.3 && Math.abs(poseW.chestY - pose0.chestY) > 0.05;
+            o.pose = { armRad: poseW.armQ.angleTo(pose0.armQ), rumpfRad: poseW.chestQ.angleTo(pose0.chestQ) };
+            o.checks.eArmHebt = poseW.armQ.angleTo(pose0.armQ) > 0.3 && poseW.chestQ.angleTo(pose0.chestQ) > 0.05;
             o.checks.eBeineByteGleich = poseW.legLHip === pose0.legLHip && poseW.legRKnee === pose0.legRKnee;
-            o.checks.eRueckstandsfrei = poseEnd.armX === pose0.armX && poseEnd.chestY === pose0.chestY;
+            o.checks.eRueckstandsfrei =
+                poseEnd.armQ.equals(pose0.armQ) &&
+                poseEnd.chestQ.equals(pose0.chestQ) &&
+                poseEnd.huelleZ === pose0.huelleZ;
             p._swing = null;
 
             // ── (D) TOD-KIPPEN: Rotation wächst, inert, Despawn erst nach Frist ──
@@ -2320,7 +2488,7 @@ async function WELLE_L() {
             `  (B) Reichweite ${out.reach.toFixed(2)} m · Treffer je Schwung ${out.sweep.hits} · (C) Sim-Schritte im Hit-Stop ${out.simSteps} (Δt ${out.simDelta.toFixed(3)} s) · Phase gestoppt ${out.dPhaseGestoppt.toFixed(3)} / frei ${out.dPhaseFrei.toFixed(2)}`
         );
         console.log(
-            `  (D) up·y: ${out.kipp.uy0.toFixed(2)} → ${out.kipp.uyA.toFixed(2)} → ${out.kipp.uyB.toFixed(2)} → ${out.kipp.uyC.toFixed(2)} · (E) Arm ${out.pose.pose0.armX.toFixed(2)} → ${out.pose.poseW.armX.toFixed(2)}\n`
+            `  (D) up·y: ${out.kipp.uy0.toFixed(2)} → ${out.kipp.uyA.toFixed(2)} → ${out.kipp.uyB.toFixed(2)} → ${out.kipp.uyC.toFixed(2)} · (E) Arm ${out.pose.armRad.toFixed(2)} rad · Rumpf ${out.pose.rumpfRad.toFixed(2)} rad\n`
         );
         if (out.brei) console.log(`  (BREI) ${out.brei}\n`);
         check(
@@ -2408,7 +2576,7 @@ async function WELLE_L() {
             `  (Q8) Zone Kopf÷Bein ${f1(z.zoneKopfBein)} (Ziel-Rest ${f1(z.zielKopf)}°/${f1(z.zielBein)}°, Zonen ${JSON.stringify(z.zonen)}) · hangab Hirsch ${z.hangabHirsch}/10, Fuchs ${z.hangabFuchs}/10 · klein flach ${z.kleinFlach}/10`
         );
         console.log(
-            `       Hit-Stop-Energie Grossschwert ${f1(z.stopGross)} J · Keule ${f1(z.stopKeule)} J · Kappe ${z.aufDerKappe} von ${z.nahkampfRezepte} · Gegenwehr Bär ${z.gegenwehr}/20 · Hirsch ${z.gegenwehrHirsch}/20`
+            `       Hit-Stop-Energie Grossschwert ${f1(z.stopGross)} J · Keule ${f1(z.stopKeule)} J · gleiche Energie (±3 %) höchstens ${z.keGruppe} von ${z.keRezepte} Rezepten, Spanne ×${z.keSpanne} · Kappe ${z.aufDerKappe} von ${z.nahkampfRezepte} · Gegenwehr Bär ${z.gegenwehr}/20 · Hirsch ${z.gegenwehrHirsch}/20`
         );
         console.log(`       Faktoren ${z.faktoren}`);
         console.log(
@@ -2453,7 +2621,10 @@ async function WELLE_L() {
             "Q8 K-D3: hangab (Hirsch 1,6 m/−0,62 m, Fuchs 1,3 m/−0,6 m) je ≥ 8/10 — die Klinge folgt dem Fadenkreuz"
         );
         check(c.kleinFlach, "Q8 K-D3: klein auf gleicher Höhe (Hirsch L 0,64) ≥ 8/10 — getroffen wird die Gestalt");
-        check(c.hitStopEnergie, "Q8 K-D4: der Hit-Stop ist energie-skaliert — Keule ≠ Grossschwert (≥ 10 %)");
+        check(
+            c.hitStopEnergie,
+            "Q8 K-D4: der Hit-Stop ist energie-skaliert — jedes Nahkampf-Rezept stoppt nach SEINER Treffer-Energie (höchstens 3 teilen sie auf ±3 %; Befund: 13 von 17 mit 19,8 J)"
+        );
         check(c.keineKappe, "Q8 K-D5: keine Schadens-Kappe — höchstens 2 Nahkampf-Rezepte auf dem Maximal-Faktor");
         check(c.verschleiss, "Q8 K-D6: Kampf verschleißt die Klinge, ein verbrauchtes Gerät schlägt nicht");
         check(
@@ -2581,27 +2752,36 @@ async function WELLE_L() {
         const fJ = (a) => (Array.isArray(a) ? a.map((x) => (x === null ? "–" : x.toFixed(1))).join(" ") : "–");
         const en = ez.nah || {};
         console.log(
-            `  (T16) Treffer-Energie J: Großschwert ${fJ(ez.gross)} · Dolch ${fJ(ez.dolch)} · zu nah (Kitz 0,6 m, 1 m höher) ${Number.isFinite(en.ke) ? en.ke.toFixed(1) : "–"} J am Ort ${en.ort || "–"}, Weg ${JSON.stringify(en.weg || null)} m`
+            `  (T16) Treffer-Energie J: Großschwert ${fJ(ez.gross)} · Befund-Lage abgewandt 1,5/1,6/1,7 m ${fJ(ez.befund)} · Dolch ${fJ(ez.dolch)} · zu nah (Kitz 0,6 m, 1 m höher) ${Number.isFinite(en.ke) ? en.ke.toFixed(1) : "–"} J am Ort ${en.ort || "–"}, Weg ${JSON.stringify(en.weg || null)} m`
+        );
+        console.log(
+            `       je Treffer (Ort · Wirkung · Tempo m/s): ${(ez.detail || []).map((x) => `${x.name}@${x.d} ${x.ort || "–"} ${x.eff} ${x.v}`).join(" · ")}`
         );
         const ev = energieVerdict(z.energie);
         check(
             ev.length === 0,
-            "LF Posten 1: die Treffer-Energie folgt dem Schwung — derselbe Hieb trifft immer, streut höchstens ×2, zu nah benennt der Kern den Ort und hält ¼ der Wirkung, das Großschwert schlägt nie schwächer als der Dolch" +
+            "LF Posten 1: die Treffer-Energie folgt dem Schwung — derselbe Hieb trifft immer, springt in der Befund-Lage nicht (≤ ×1,25), jede Streuung nennt ihren Ort und bleibt über dem Boden des Kerns, das Großschwert schlägt nie schwächer als der Dolch" +
                 (ev.length ? " — " + ev.join(" · ") : "")
         );
         const evAlt = energieVerdict({
             gross: [15, 18, 16, 91, 25, 17, 15, 18, 16, 91, 25, 17, 60, 40, 30],
             dolch: [24, 32, 28],
+            befund: [17, 16, 91],
+            detail: [{ name: "grossschwert", d: 1.6, ort: null, eff: 0.3 }],
             nah: { ke: 1.6, ort: null },
         });
         const evGut = energieVerdict({
             gross: [60, 62, 58, 70, 66, 61, 59, 64, 63, 72, 55, 57, 60, 62, 65],
             dolch: [20, 24],
-            nah: { ke: 30, ort: "griffnah" },
+            befund: [61, 62, 60],
+            detail: [{ name: "grossschwert", d: 1.3, ort: "griffnah", eff: 0.5 }],
+            nah: { ke: 30, ort: "griffnah", eff: 0.4 },
         });
         check(
             evGut.length === 0 &&
-                ["energie-kontakt", "energie-waffe", "energie-nah"].every((t) => evAlt.some((x) => x.startsWith(t))),
+                ["energie-kontakt", "energie-waffe", "energie-nah", "energie-boden", "energie-ort"].every((t) =>
+                    evAlt.some((x) => x.startsWith(t))
+                ),
             "Selbst-Test T16: der Befund (15–91 J je Kontakt, unter dem Dolch) nennt Kontakt und Waffe; ein Schwung-Gesetz bleibt grün"
         );
         const rzz = z.reich || {};
@@ -2636,19 +2816,29 @@ async function WELLE_L() {
                 .replace(/"/g, "")
                 .slice(0, 400)}`
         );
-        const pv = poseVerdict(z.pose);
+        console.log(`       Ich-Regel: ${JSON.stringify(z.egoRegel || null)}`);
+        const pv = poseVerdict(z.pose, z.egoRegel);
         check(
             pv.length === 0,
             "LF Posten 2: Pose, Treffer-Volumen und Ich-Sicht lesen DENSELBEN Schwung — im Treffer-Takt liegt die sichtbare Klinge auf dem Volumen und steht im Bild der Ich-Kamera" +
                 (pv.length ? " — " + pv.join(" · ") : "")
         );
-        const pvAlt = poseVerdict([
-            { traf: true, spitzeAb: 1.4, mitteAb: 0.9, imBild: false, rad: 0.35 },
-            { traf: true, spitzeAb: 1.2, mitteAb: 0.8, imBild: false, rad: 0.35 },
-        ]);
-        const pvGut = poseVerdict([{ traf: true, spitzeAb: 0.1, mitteAb: 0.2, imBild: true, rad: 0.35 }]);
+        const pvAlt = poseVerdict(
+            [
+                { traf: true, spitzeAb: 1.4, mitteAb: 0.9, imBild: false, rad: 0.35, spalt: 0.48 },
+                { traf: true, spitzeAb: 1.2, mitteAb: 0.8, imBild: false, rad: 0.35, spalt: 0.4 },
+            ],
+            { rueckstand: true, hautImErsten: 3 }
+        );
+        const pvGut = poseVerdict([{ traf: true, spitzeAb: 0.1, mitteAb: 0.2, imBild: true, rad: 0.35, spalt: 0.03 }], {
+            rueckstand: false,
+            hautImErsten: 0,
+        });
         check(
-            pvGut.length === 0 && ["pose-volumen", "pose-ich"].every((t) => pvAlt.some((x) => x.startsWith(t))),
+            pvGut.length === 0 &&
+                ["pose-volumen", "pose-ich:", "pose-ichregel", "pose-spalt"].every((t) =>
+                    pvAlt.some((x) => x.startsWith(t))
+                ),
             "Selbst-Test T18: der Befund (Klinge über dem Kopf, Ich-Sicht leer) nennt Volumen und Ich-Sicht; derselbe Schwung bleibt grün"
         );
         console.log(

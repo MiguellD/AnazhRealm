@@ -47174,6 +47174,8 @@ class AnazhRealm {
             const studio = this._heldFoundryGroup(bpName);
             const isStudio = !!(studio && studio !== "pending");
             const mesh = isStudio ? studio : this._buildFromBlueprint({ name: `held_${bpName}`, parts: bp.parts });
+            // das Gerät in der Hand ist keine Haut: die Ich-Regel (_applyEgoSicht) lässt es sichtbar
+            mesh.userData._gehalten = true;
             // Der Erst-Zeig-Stall (die V18.367-Klasse) fällt an der Erst-Zeichnung (`_configureRenderer`): die Hand
             // zeichnet ab dem Frame, in dem ihr Stoff gebaut und ihre Pipeline steht.
             // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
@@ -75475,7 +75477,10 @@ class AnazhRealm {
     // des Tiers. Trifft sie (Abstand ≤ Strecken-Radius + Glied-Radius), liefert er das tiefste Glied: seine Zone
     // (der Rumpf teilt sich am Kopf — die Hälfte zum Kopf ist Brust, die andere Bauch) und den Strecken-Parameter s
     // des Kontakts (der Hebel der Klinge, der Ort im Flug). null = vorbei.
-    _kreaturGliedTreffer(cr, ax, ay, az, bx, by, bz, radius) {
+    // `flaeche` (Welle LF, Posten 2): ein Punkt der Haut (das Ziel unter dem Fadenkreuz) gehört dem Glied, auf dessen Fläche er
+    // liegt — die Wahl nach |Abstand − Glied-Radius|, nie nach der Tiefe (die dicke Rumpf-Kapsel reicht in den Hals: der Kopf
+    // eines Hirschs wäre Bauch).
+    _kreaturGliedTreffer(cr, ax, ay, az, bx, by, bz, radius, flaeche = false) {
         const gl = this._kreaturTrefferGlieder(cr);
         if (!gl) return null;
         cr.updateMatrixWorld(true);
@@ -75485,10 +75490,11 @@ class AnazhRealm {
         for (const g of gl) {
             const pa = v[0].copy(g.a).applyMatrix4(g.anker.matrixWorld);
             const pb = v[1].copy(g.b).applyMatrix4(g.anker.matrixWorld);
-            const rr = radius + g.r * g.anker.matrixWorld.getMaxScaleOnAxis();
+            const rg = g.r * g.anker.matrixWorld.getMaxScaleOnAxis();
+            const rr = radius + rg;
             const d2 = this._segSegDistSq(ax, ay, az, bx, by, bz, pa.x, pa.y, pa.z, pb.x, pb.y, pb.z);
             if (d2 > rr * rr) continue;
-            const tiefe = Math.sqrt(d2) - rr;
+            const tiefe = flaeche ? Math.abs(Math.sqrt(d2) - rg) : Math.sqrt(d2) - rr;
             if (tiefe >= bestTiefe) continue;
             bestTiefe = tiefe;
             const st = this._segSegST;
@@ -80845,9 +80851,10 @@ class AnazhRealm {
     // Der LMB-Klick LÖST nur den 3-Phasen-Schwung aus (Windup/Strike/Recover); getroffen wird im
     // Klingen-Sweep der Strike-Phase (_kampfSweepTick). Cooldown = Schwung-Dauer ∝ √I aus der EINEN
     // Quelle _swingDauerFuerBlueprint (kein attackSpeed-Tag-Pfad); Kreaturen behalten ihr Tag-Profil.
-    // Stamina + Zorn-Affekt feuern beim Auslösen.
-    _playerAttackCreature(_creature) {
-        return this._beginPlayerSwing();
+    // Stamina + Zorn-Affekt feuern beim Auslösen. `ziel` = der Pick des Fadenkreuzes ({creature, point}) oder ein Tier
+    // (seine Leibes-Mitte): die Klinge geht durch ihn (_kampfZielMerken).
+    _playerAttackCreature(ziel) {
+        return this._beginPlayerSwing(ziel);
     }
 
     // ═══ KAMPF-GEFÜHL — DIE EINE SCHWUNG-DAUER-QUELLE ═══
@@ -80875,8 +80882,9 @@ class AnazhRealm {
     }
 
     // Der Schwung-Beginn: läuft schon einer, prallt der Klick ab (der Schwung IST der
-    // Cooldown — eine schwere Keule schlägt seltener, weil ihr √I die Dauer streckt).
-    _beginPlayerSwing() {
+    // Cooldown — eine schwere Keule schlägt seltener, weil ihr √I die Dauer streckt). Der Schwung trägt seinen RAHMEN (der
+    // Körper und das Gerät, die schwingen — _kampfSchwungRahmen) und sein ZIEL (der Punkt unter dem Fadenkreuz, _kampfZielMerken).
+    _beginPlayerSwing(ziel) {
         const p = this.state.player;
         if (!p) return false;
         if (p._swing && p._swing.t < p._swing.dauer) return false; // noch im Schwung
@@ -80893,6 +80901,7 @@ class AnazhRealm {
         // Kern-Pflicht). Die Ausholzeit ist der Anteil der EINEN Dauer ∝ √I (der Phantom-Faktor fiel, Welle L).
         const K = AnazhRealm._arenaGesetz().schwung;
         const dauer = this._playerSwingDauer();
+        const rahmen = this._kampfSchwungRahmen({});
         p._swing = {
             t: 0,
             dauer,
@@ -80900,7 +80909,9 @@ class AnazhRealm {
             strikeSec: dauer * K.strikeFrac,
             weapon: weaponName || null,
             hits: new Set(), // Dedup je Schwung: EINE Klinge trifft EIN Wesen EINMAL
-            reach: this._kampfBladeReach(),
+            rahmen,
+            reach: rahmen.reach,
+            ziel: this._kampfZielMerken(ziel),
             lastT: now,
         };
         return true;
@@ -80915,14 +80926,14 @@ class AnazhRealm {
         if (!sw) return;
         const rawDt = Math.min(0.1, Math.max(0, currentTime - (Number.isFinite(sw.lastT) ? sw.lastT : currentTime)));
         sw.lastT = currentTime;
+        const tVor = sw.t;
         sw.t += rawDt * this._hitStopFactor(currentTime);
-        if (sw.t >= sw.dauer) {
-            p._swing = null; // Recover vollendet — der nächste Klick darf schwingen
-            return;
-        }
-        if (sw.t >= sw.windupSec && sw.t < sw.windupSec + sw.strikeSec) {
-            this._kampfSweepTick(sw, currentTime);
-        }
+        // der Sweep fegt das Stück des Strikes, das dieser Takt durchlief (stetig, _kampfSweepTick) — auch das letzte vor
+        // dem Ende des Schwungs
+        const s0 = Math.max(tVor, sw.windupSec);
+        const s1 = Math.min(sw.t, sw.windupSec + sw.strikeSec);
+        if (s1 > s0) this._kampfSweepTick(sw, currentTime, s0, s1);
+        if (sw.t >= sw.dauer) p._swing = null; // Recover vollendet — der nächste Klick darf schwingen
     }
 
     // 0 = die Anzeige-Uhr steht (Hit-Stop aktiv), 1 = sie läuft. NUR animatePlayerSoul
@@ -80932,225 +80943,468 @@ class AnazhRealm {
         return p && Number.isFinite(p._hitStopUntil) && nowSec < p._hitStopUntil ? 0 : 1;
     }
 
-    // Die Klingen-Reichweite aus dem GEHALTENEN Bauplan (Substanz-Wahrheit: die
-    // längste Part-Spanne = die Klingen-Länge, dieselbe Achsen-Logik wie
-    // _inferGripPoint/handAxis) + Arm-Anteil; die leere Faust greift kurz.
+    // DIE REICHWEITE DER KLINGE ab dem Schultergelenk: der gestreckte Arm bis zur Hand-Mitte und das Gerät vor der Hand —
+    // aus EINER Messung des Körpers und des Geräts (_kampfSchwungRahmen). Die leere Faust reicht so weit wie der Arm.
     _kampfBladeReach() {
-        const K = AnazhRealm._arenaGesetz().schwung;
-        const bp = this._heldImplementBlueprint();
-        let len = 0.7; // Faust/leer: Armlänge
-        if (bp) {
-            // Studio-Klinge: GEMESSENE Gesamtlänge (kampfMasze.laengeM) statt der Donor-bbox;
-            // User-Eigenwerke behalten die Substanz-bbox (deren einzige Quelle).
-            const km = this._schmiedeKampfMasze(bp);
-            if (km && Number.isFinite(km.laengeM) && km.laengeM > 0) {
-                len = Math.max(0.4, km.laengeM);
-            } else {
-                const bb = this._compoundBBox(bp);
-                if (bb) {
-                    len = Math.max(0.4, Math.max(bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z));
-                }
-            }
-        }
-        return Math.min(K.reachMaxM, K.reachBaseM + len);
+        return this._kampfSchwungRahmen(this._reachRahmen || (this._reachRahmen = {})).reach;
     }
 
-    // ═══ KAMPF-GEFÜHL — DER KLINGEN-SWEEP (nur Strike-Phase) ═══
-    // Klinge = Welt-KAPSEL ab dem Schultergelenk, fegt über den Strike von −arcHalf nach +arcHalf (die Vorhand der rechten
-    // Hand, von rechts nach links — _kampfSchwungLage) um die Klingen-
-    // Achse; die Achse ZIELT auf das Fadenkreuz (_kampfKlingenAchse — Gier UND Neigung, Welle L K-D3), getroffen wird
-    // die GESTALT des Tiers (_kreaturGliedTreffer: Glieder-Kapseln, Zone je Glied), das Urteil fällt der Kern
-    // (schmiede trefferUrteil, Klingen-Tempo ω·r am Kontakt). Invarianten HIER: nie ein Ziel hinter dem Rücken
-    // (dot ≤ 0), Dedup je Schwung (hits-Set), sterbende Wesen inert.
-    _kampfSweepTick(sw, nowSec) {
+    // DER SCHWUNG-RAHMEN (Welle LF 09.10., Posten 2): der Körper, der schwingt, gemessen am Leib des Spielers — das rechte
+    // Schultergelenk und der Dreh-Punkt des Rumpfs (das Torso-Gelenk) im Leib-Raum (rechts · oben · vorn ab
+    // playerMesh.position, die Gier herausgerechnet), der gestreckte Arm bis zur Hand-Mitte (Oberarm + Unterarm + Hand: die
+    // Knochen der Gestalt) — und das Gerät: seine Länge und wo die Hand es hält (kampfMasze des Kerns: laengeM, S.pivot; ein
+    // Eigenwerk seine Hüll-Länge, am Ende gehalten; die Faust nichts). Ein Leib ohne Arm-Gelenke (eine Tier-Seele) schwingt
+    // um die Fühl-Konstanten des Gesetzbuchs (ARENA.schwung.shoulderH über dem Leib, reachBaseM als Arm). Vorher schwang jeder
+    // Leib um einen Punkt 0,32 m über und 0,20 m neben der rechten Schulter mit einem Arm von 0,9 m (der Mensch misst 0,66 m):
+    // die sichtbare Klinge lag nie auf dem Treffer-Volumen.
+    _kampfSchwungRahmen(out) {
+        const K = AnazhRealm._arenaGesetz().schwung;
         const pm = this.state.playerMesh;
-        const creatures = this.state.creatures;
-        if (!pm || !Array.isArray(creatures) || !creatures.length) return;
-        const K = AnazhRealm._arenaGesetz().schwung;
-        const ox = pm.position.x;
-        // V18.491.148 STUDIO_VIS.host=world-fp — Feel; schwung.shoulderH world (not Lab anthro).
-        const oy = pm.position.y + K.shoulderH;
-        const oz = pm.position.z;
-        const reach = Number.isFinite(sw.reach) ? sw.reach : this._kampfBladeReach();
-        // DER EINE SCHWUNG (_kampfSchwungLage): dieselbe Lage der Klinge, die die Pose dem Arm gibt und die Ich-Sicht zeigt
-        const lage = this._kampfSchwungLage(sw, ox, oy, oz, reach, this._sweepLage || (this._sweepLage = {}));
-        const achse = lage.achse;
-        // die Wand („nie hinter dem Rücken") misst waagrecht entlang der Achse, die Klinge läuft auf dem Bogen um sie —
-        // beide Richtungen aus der EINEN Vorwärts-Formel (_blickVorn), nie aus einer Inline-Kopie
-        const v = this._sweepVek || (this._sweepVek = [{}, {}]);
-        const vorn = this._blickVorn(achse.yaw, 0, v[0]);
-        const fx = vorn.x;
-        const fz = vorn.z;
-        const arcYaw = lage.yaw;
-        const klinge = this._blickVorn(arcYaw, lage.pitch, v[1]);
-        const dx = klinge.x;
-        const dy = klinge.y;
-        const dz = klinge.z;
-        // die Kapsel beginnt VOR dem Körper (nicht im Torso)
-        const ax = ox + dx * 0.25,
-            ay = oy + dy * 0.25,
-            az = oz + dz * 0.25;
-        const bx = ox + dx * reach,
-            by = oy + dy * reach,
-            bz = oz + dz * reach;
-        // das Winkel-Tempo der Strike-Phase (der Bogen 2·arcHalf in strikeSec): die Klinge am Hebel r läuft ω·r
-        const omega = (2 * K.arcHalfRad) / Math.max(0.05, sw.strikeSec);
-        for (let i = 0; i < creatures.length; i++) {
-            const c = creatures[i];
-            if (!c || !c.userData || c.userData.dying || sw.hits.has(c)) continue;
-            const tx = c.position.x - ox;
-            const tz = c.position.z - oz;
-            if (tx * fx + tz * fz <= 0) continue; // NIE hinter dem Rücken (die Wand)
-            if (!this._trefferErreichbar(c, ox, oz, reach + K.bladeRadiusM)) continue; // das Grob-Tor (der Leib)
-            const tr = this._kreaturGliedTreffer(c, ax, ay, az, bx, by, bz, K.bladeRadiusM);
-            if (!tr) continue;
-            sw.hits.add(c);
-            // DER TREFFER-WEG (Welle LF, Leben-Schau 07.10. Posten 1): die Energie folgt dem Schwung über den Weg, den die
-            // Klinge durch den Leib nimmt (_kampfTrefferWeg), nie der ersten Kontaktstelle — die lag bei nahem Ziel am
-            // Griff-Drittel (Großschwert 1,6 m: 15–18 J, in 1,7 m 91 J). Das Tempo ist das des Schlagpunkts der Waffe
-            // (_kampfSchlagpunkt), der Kern richtet den Ort auf dem Weg (trefferUrteil t.weg).
-            const weg = this._kampfTrefferWeg(c, ox, oy, oz, achse, arcYaw, 0.25 + tr.s * (reach - 0.25), reach);
-            const rS = this._kampfSchlagpunkt(reach);
-            const hebel = Math.max(weg.lo, Math.min(weg.hi, rS));
-            const urteil = this._kampfUrteil(omega * rS, 0, tr.zone, [weg.lo - K.reachBaseM, weg.hi - K.reachBaseM]);
-            const bp = this._heldImplementBlueprint();
-            const roh = this._kampfRohSchaden(urteil, tr.zone, this._kampfKraft());
-            this._kampfVerschleiss(bp);
-            const res = this.damageCreature(c, roh, {
-                source: "player",
-                fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
-                stoss: urteil ? { p: urteil.p, m: urteil.mEff } : this._kampfStossOhneMessung(omega * hebel),
-            });
-            if (res && res.ok) this._kampfHitJuice(c, nowSec, urteil, urteil ? null : this._eigenwerkSchwungKE(bp));
+        const o = out || {};
+        const bp = this._heldImplementBlueprint();
+        const km = bp ? this._schmiedeKampfMasze(bp) : null;
+        let laenge = 0,
+            griffX = 0;
+        if (km && km.laengeM > 0) {
+            laenge = km.laengeM;
+            const S = km.mess && km.mess.S;
+            griffX = S && Number.isFinite(S.pivot) ? Math.max(0, Math.min(laenge, S.pivot)) : 0;
+        } else if (bp) {
+            const bb = this._compoundBBox(bp);
+            if (bb) laenge = Math.max(bb.max.x - bb.min.x, bb.max.y - bb.min.y, bb.max.z - bb.min.z);
         }
+        o.laenge = laenge;
+        o.griffX = griffX;
+        const rig = pm && pm.userData && pm.userData.rig;
+        const a = rig && rig.armR;
+        if (pm && a && a.shoulder && a.elbow && a.wrist && rig.spine) {
+            pm.updateMatrixWorld(true);
+            const v =
+                this._rahmenV ||
+                (this._rahmenV = [
+                    new THREE.Vector3(),
+                    new THREE.Vector3(),
+                    new THREE.Vector3(),
+                    new THREE.Vector3(),
+                    new THREE.Vector3(),
+                ]);
+            const S = a.shoulder.getWorldPosition(v[0]);
+            const E = a.elbow.getWorldPosition(v[1]);
+            const W = a.wrist.getWorldPosition(v[2]);
+            const G = this._kampfHandMitte(rig, v[3]);
+            const H = rig.spine.getWorldPosition(v[4]);
+            o.arm = S.distanceTo(E) + E.distanceTo(W) + W.distanceTo(G);
+            this._leibLokal(pm, S, o, "s");
+            this._leibLokal(pm, H, o, "h");
+            o.rig = true;
+        } else {
+            o.arm = K.reachBaseM;
+            o.sr = o.sf = o.hr = o.hf = 0;
+            o.su = o.hu = K.shoulderH;
+            o.rig = false;
+        }
+        o.reach = Math.min(K.reachMaxM, o.arm + Math.max(0, laenge - griffX));
+        return o;
     }
 
-    // DER EINE SCHWUNG (Welle LF 09.10., Posten 2 — K-D10/K-L4): die Lage der Klinge zur Schwung-Zeit sw.t — Gier und
-    // Neigung ihrer Achse ab dem Schultergelenk O, der Anteil s des Strikes und das Gewicht w, mit dem der Arm ihr folgt.
-    // Der Strike fegt die Gier achse.yaw − arcHalf … + arcHalf (die Vorhand der rechten Hand: von rechts nach links) in der
-    // Neigung des Fadenkreuzes (_kampfKlingenAchse); der Windup führt den Arm aus der Ruhe an den Anfang des Bogens und hebt
-    // die Klinge dabei um KAMPF_AUSHOLEN_RAD (an seinem Ende wieder auf der Neigung des Strikes — kein Sprung), der Recover
-    // löst den Arm vom Ende des Bogens zurück in die Ruhe. Der Sweep (das Treffer-Volumen), die Pose (_applyKampfSchwungPose)
-    // und damit die Ich-Sicht (der Leib bleibt im 1st sichtbar) lesen DIESE Lage. Vorher drehte die Pose die Schulter um x
-    // (Klinge über dem Kopf im Treffer-Takt, Bild ks02), getroffen wurde ein waagrechter Bogen — die Ich-Sicht zeigte nichts.
-    _kampfSchwungLage(sw, ox, oy, oz, reach, out) {
+    // Die Hand-Mitte der rechten Hand in Welt (dort sitzt der Griff der Faust, Ofen-Beipack rig.handMitte), sonst das Handgelenk.
+    _kampfHandMitte(rig, out) {
+        const w = rig.armR.wrist;
+        const hm = rig.handMitte && rig.handMitte[w.name];
+        return hm ? w.localToWorld(out.set(hm[0], hm[1], hm[2])) : w.getWorldPosition(out);
+    }
+
+    // Ein Welt-Punkt im Leib-Raum des Spielers (rechts r = (−cos, 0, sin) · oben · vorn f = (sin, 0, cos) der Gier ab
+    // playerMesh.position), als o[prefix + "r" | "u" | "f"].
+    _leibLokal(pm, P, o, prefix) {
+        const y = pm.rotation.y;
+        const dx = P.x - pm.position.x,
+            dz = P.z - pm.position.z;
+        o[prefix + "r"] = -Math.cos(y) * dx + Math.sin(y) * dz;
+        o[prefix + "u"] = P.y - pm.position.y;
+        o[prefix + "f"] = Math.sin(y) * dx + Math.cos(y) * dz;
+    }
+
+    // DIE SCHULTER IN DER WELT bei Rumpf-Beuge λ (oben → vorn, um den Rumpf-Punkt), Rumpf-Drehung τ (um die Senkrechte, im
+    // Sinn der Gier) und Ausfall `aus` (der Leib tritt so weit nach vorn): der Rahmen R im Leib-Raum, die Gier des Leibs
+    // `yaw`. Dieselben Winkel dreht die Pose am Torso-Gelenk, denselben Ausfall trägt die Hülle des Leibs.
+    _kampfSchulter(R, yaw, lam, tau, aus, out) {
+        const pm = this.state.playerMesh;
+        const cy = Math.cos(yaw),
+            sy = Math.sin(yaw);
+        let vr = R.sr - R.hr,
+            vu = R.su - R.hu,
+            vf = R.sf - R.hf;
+        const cl = Math.cos(lam),
+            sl = Math.sin(lam);
+        const vu1 = vu * cl - vf * sl;
+        vf = vf * cl + vu * sl;
+        vu = vu1;
+        const ct = Math.cos(tau),
+            st = Math.sin(tau);
+        const vr1 = vr * ct - vf * st;
+        vf = vr * st + vf * ct;
+        vr = vr1;
+        const r = R.hr + vr,
+            f = R.hf + vf + aus;
+        out.x = pm.position.x - cy * r + sy * f;
+        out.y = pm.position.y + R.hu + vu;
+        out.z = pm.position.z + sy * r + cy * f;
+        return out;
+    }
+
+    // DIE BEUGE DES RUMPFS beim Schlag nach unten (Welle LF, Posten 2): wer tiefer zielt als seine Schulter, beugt sich —
+    // KAMPF_BEUGE_K je rad Neigung, höchstens KAMPF_BEUGE_MAX. Pose und Treffer-Volumen beugen gleich (_kampfSchulter).
+    _kampfBeuge(pitch) {
+        return Math.min(AnazhRealm.KAMPF_BEUGE_MAX, Math.max(0, -pitch) * AnazhRealm.KAMPF_BEUGE_K);
+    }
+
+    // DAS ZIEL DES HIEBS (Welle LF, Posten 2): der Punkt unter dem Fadenkreuz beim Drücken, im Raum des Tiers gemerkt (das
+    // Tier läuft weiter, der Punkt mit ihm); ein Tier ohne Punkt: seine Leibes-Mitte; ohne Tier null — dann geht die Klinge
+    // durch den Austritt des Fadenkreuz-Strahls aus ihrer Reichweite (_kampfKlingenAchse).
+    _kampfZielMerken(ziel) {
+        const c =
+            ziel && ziel.isObject3D ? ziel : ziel && ziel.creature && ziel.creature.isObject3D ? ziel.creature : null;
+        if (!c) return null;
+        c.updateMatrixWorld(true);
+        const pt =
+            ziel.point && Number.isFinite(ziel.point.x)
+                ? new THREE.Vector3(ziel.point.x, ziel.point.y, ziel.point.z)
+                : new THREE.Box3().setFromObject(c).getCenter(new THREE.Vector3());
+        return { c, lokal: c.worldToLocal(pt) };
+    }
+
+    // DIE ACHSE DES SCHWUNGS (Welle L K-D3, Welle LF Posten 2): Gier und Neigung, in denen die Klinge zur Mitte des Strikes
+    // liegt, und die Beuge λ dazu — von der (gebeugten) Schulter durch das Ziel des Hiebs (sw.ziel) oder, ohne Ziel, durch den
+    // Punkt, an dem der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) die Kugel der Reichweite um die Schulter verlässt. Die
+    // Klinge trifft, worauf das Fadenkreuz zeigt. Ohne Kamera der Blick selbst. Einmal je Takt.
+    _kampfKlingenAchse(sw, out) {
+        const R = sw.rahmen;
+        const yaw0 = this.state.playerMesh.rotation.y;
+        let aus = AnazhRealm.KAMPF_AUSFALL_M;
+        const S = this._kampfSchulter(R, yaw0, 0, 0, aus, this._achseS || (this._achseS = {}));
+        const P = this._achseP || (this._achseP = new THREE.Vector3());
+        const zielPunkt = () => {
+            const z = sw.ziel;
+            if (z && z.c) {
+                z.c.updateMatrixWorld(true);
+                return z.c.localToWorld(P.copy(z.lokal));
+            }
+            const F = this._fadenkreuzStrahl();
+            if (!F) return null;
+            const d = F.d;
+            const wx = F.o.x - S.x,
+                wy = F.o.y - S.y,
+                wz = F.o.z - S.z;
+            const b = d.x * wx + d.y * wy + d.z * wz;
+            const disc = b * b - (wx * wx + wy * wy + wz * wz - sw.reach * sw.reach);
+            const sAus = disc >= 0 ? -b + Math.sqrt(disc) : 0;
+            return sAus > 0
+                ? P.set(F.o.x + d.x * sAus, F.o.y + d.y * sAus, F.o.z + d.z * sAus)
+                : P.set(S.x + d.x, S.y + d.y, S.z + d.z);
+        };
+        if (!zielPunkt()) {
+            out.yaw = Number.isFinite(this.state.yaw) ? this.state.yaw : 0;
+            out.pitch = Number.isFinite(this.state.pitch) ? this.state.pitch : 0;
+            out.lam = this._kampfBeuge(out.pitch);
+            out.aus = aus;
+            return out;
+        }
+        // DER AUSFALL nach Maß: ein Ziel tritt der Schwertkämpfer nur so weit an, dass sein Schlagpunkt (_kampfSchlagpunkt) es
+        // erreicht — höchstens KAMPF_AUSFALL_M, nie zurück; ins Leere tritt er voll aus. Dann die Beuge aus der Neigung zur
+        // ungebeugten Schulter und die Achse ab der gebeugten.
+        if (sw.ziel && sw.ziel.c) {
+            this._kampfSchulter(R, yaw0, 0, 0, 0, S);
+            const dist = Math.hypot(P.x - S.x, P.y - S.y, P.z - S.z);
+            aus = Math.max(0, Math.min(AnazhRealm.KAMPF_AUSFALL_M, dist - this._kampfSchlagpunkt(R)));
+            this._kampfSchulter(R, yaw0, 0, 0, aus, S);
+        }
+        out.aus = aus;
+        out.lam = this._kampfBeuge(Math.atan2(P.y - S.y, Math.hypot(P.x - S.x, P.z - S.z)));
+        this._kampfSchulter(R, yaw0, out.lam, 0, aus, S);
+        zielPunkt();
+        out.yaw = Math.atan2(P.x - S.x, P.z - S.z);
+        out.pitch = Math.atan2(P.y - S.y, Math.hypot(P.x - S.x, P.z - S.z));
+        return out;
+    }
+
+    // DER EINE SCHWUNG (Welle LF 09.10., Posten 2 — K-D10/K-L4): die Lage der Klinge zur Schwung-Zeit t; die Achse (Gier,
+    // Neigung, Beuge — _kampfKlingenAchse, je Takt) reicht der Aufrufer herein. Der Strike fegt die Gier achse.yaw − arcHalf
+    // … + arcHalf (die Vorhand der rechten Hand: von rechts nach links) in der Neigung der Achse; der Windup führt die Klinge
+    // aus der Ruhe an den Anfang des Bogens und hebt sie dabei um KAMPF_AUSHOLEN_RAD (am Strike-Beginn wieder 0 — kein
+    // Sprung), der Recover löst sie vom Ende zurück; w ist das Gewicht, mit dem Rumpf und Arm folgen. Der Rumpf beugt (λ·w)
+    // und dreht der Gier des Bogens nach (KAMPF_RUMPF_DREH · Abweichung · w), die Schulter S folgt (_kampfSchulter), der
+    // gestreckte Arm legt die Hand-Mitte auf S + d·arm, die Klinge liegt vor ihr längs d — vom Knauf B (Hebel hb = arm −
+    // griffX) bis zur Spitze T (ht = arm + laenge − griffX). Sweep (das Treffer-Volumen B→T), Treffer-Weg, Pose
+    // (_applyKampfSchwungPose) und damit die Ich-Sicht lesen DIESE Lage. Vorher drehte die Pose die Schulter um x (die
+    // Klinge über dem Kopf im Treffer-Takt, Bild ks02), getroffen wurde ein waagrechter Bogen um einen Punkt über dem
+    // Kopf — die Ich-Sicht zeigte nichts.
+    _kampfSchwungLage(sw, t, achse, out) {
         const K = AnazhRealm._arenaGesetz().schwung;
-        const achse = this._kampfKlingenAchse(ox, oy, oz, reach);
+        const R = sw.rahmen;
         const ease = (u) => u * u * (3 - 2 * u);
         const tW = Math.max(1e-6, sw.windupSec);
         const tS = Math.max(1e-6, sw.strikeSec);
         let s, w, heb;
-        if (sw.t < tW) {
-            const u = Math.max(0, sw.t / tW);
+        if (t < tW) {
+            const u = Math.max(0, t / tW);
             s = 0;
             w = ease(u);
             heb = AnazhRealm.KAMPF_AUSHOLEN_RAD * Math.sin(Math.PI * u);
-        } else if (sw.t < tW + tS) {
-            s = (sw.t - tW) / tS;
+        } else if (t < tW + tS) {
+            s = (t - tW) / tS;
             w = 1;
             heb = 0;
         } else {
             s = 1;
-            w = 1 - ease(Math.min(1, (sw.t - tW - tS) / Math.max(1e-6, sw.dauer - tW - tS)));
+            w = 1 - ease(Math.min(1, (t - tW - tS) / Math.max(1e-6, sw.dauer - tW - tS)));
             heb = 0;
         }
-        out.achse = achse;
+        const yawLeib = this.state.playerMesh.rotation.y;
         out.s = s;
         out.w = w;
-        out.yaw = achse.yaw - K.arcHalfRad * (1 - 2 * s);
-        out.pitch = achse.pitch + heb;
+        // DIE SCHNITT-EBENE geht durch die Achse: f = die Achse, u = ihr Oben (senkrecht zu f in der Lot-Ebene), l = u × f
+        // (links); die Klinge dreht in der Ebene (f, l) um φ = arcHalf·(2s − 1) — ein Großkreis, das Tempo der Spitze ω·r für
+        // jede Neigung (ein reiner Gier-Bogen fegte bei steiler Neigung einen kleinen Kreis: ein Hieb nach unten lief bei
+        // 1,3 m mit 11 m/s, waagrecht mit 16). Der Windup hebt sie um heb zum Oben der Ebene.
+        const f = this._blickVorn(achse.yaw, achse.pitch, out.f || (out.f = {}));
+        const cp = Math.cos(achse.pitch),
+            sp = Math.sin(achse.pitch);
+        const ux = -Math.sin(achse.yaw) * sp,
+            uy = cp,
+            uz = -Math.cos(achse.yaw) * sp;
+        const lx = uy * f.z - uz * f.y,
+            ly = uz * f.x - ux * f.z,
+            lz = ux * f.y - uy * f.x;
+        const phi = K.arcHalfRad * (2 * s - 1);
+        const cf = Math.cos(phi) * Math.cos(heb),
+            sf = Math.sin(phi) * Math.cos(heb),
+            sh = Math.sin(heb);
+        const d = out.d || (out.d = {});
+        d.x = f.x * cf + lx * sf + ux * sh;
+        d.y = f.y * cf + ly * sf + uy * sh;
+        d.z = f.z * cf + lz * sf + uz * sh;
+        out.yaw = Math.atan2(d.x, d.z);
+        out.pitch = Math.asin(Math.max(-1, Math.min(1, d.y)));
+        let dg = out.yaw - yawLeib;
+        dg -= 2 * Math.PI * Math.round(dg / (2 * Math.PI));
+        out.lam = achse.lam * w;
+        out.tau = AnazhRealm.KAMPF_RUMPF_DREH * dg * w;
+        out.aus = achse.aus * w;
+        const S = this._kampfSchulter(R, yawLeib, out.lam, out.tau, out.aus, out.S || (out.S = {}));
+        out.hb = R.arm - R.griffX;
+        out.ht = R.arm + R.laenge - R.griffX;
+        const B = out.B || (out.B = {});
+        const T = out.T || (out.T = {});
+        B.x = S.x + d.x * out.hb;
+        B.y = S.y + d.y * out.hb;
+        B.z = S.z + d.z * out.hb;
+        T.x = S.x + d.x * out.ht;
+        T.y = S.y + d.y * out.ht;
+        T.z = S.z + d.z * out.ht;
         return out;
     }
 
-    // DIE KLINGE FOLGT DEM BLICK (Welle L, K-D3): die Klingen-Achse zielt vom Schultergelenk O auf den Punkt, an dem
-    // der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) die Reichweiten-Kugel um O verlässt. Ein Fuchs 1 m tiefer in
-    // 1,8 m liegt so auf der Klinge, wenn das Fadenkreuz auf ihm liegt — die alte Klinge fegte waagrecht in Schulterhöhe.
-    // Ohne Kamera der Blick selbst.
-    _kampfKlingenAchse(ox, oy, oz, reach) {
-        const yaw0 = Number.isFinite(this.state.yaw) ? this.state.yaw : 0;
-        const pitch0 = Number.isFinite(this.state.pitch) ? this.state.pitch : 0;
-        const F = this._fadenkreuzStrahl();
-        if (!F) return { yaw: yaw0, pitch: pitch0 };
-        const d = F.d;
-        const wx = F.o.x - ox,
-            wy = F.o.y - oy,
-            wz = F.o.z - oz;
-        // |w + d·s| = reach → s² + 2·s·(d·w) + |w|² − reach² = 0; die ferne Wurzel ist der Austritt.
-        const b = d.x * wx + d.y * wy + d.z * wz;
-        const disc = b * b - (wx * wx + wy * wy + wz * wz - reach * reach);
-        let tx = d.x,
-            ty = d.y,
-            tz = d.z;
-        if (disc >= 0) {
-            const sAus = -b + Math.sqrt(disc);
-            if (sAus > 0) {
-                tx = wx + d.x * sAus;
-                ty = wy + d.y * sAus;
-                tz = wz + d.z * sAus;
+    // ═══ KAMPF-GEFÜHL — DER KLINGEN-SWEEP (nur Strike-Phase) ═══
+    // Das Treffer-Volumen ist die Klinge selbst: die Strecke Knauf → Spitze des EINEN Schwungs (_kampfSchwungLage) mit dem
+    // Radius der Klinge (ARENA.schwung.bladeRadiusM), getroffen wird die GESTALT des Tiers (_kreaturGliedTreffer:
+    // Glieder-Kapseln, Zone je Glied), das Urteil fällt der Kern (schmiede trefferUrteil, das Tempo des Schlagpunkts, der Ort
+    // auf dem Treffer-Weg). STETIG (Welle LF 09.10., Posten 2): der Takt fegt das Stück [tVon, tBis] des Strikes in
+    // Teil-Schritten, in denen die Spitze höchstens KAMPF_SWEEP_SCHRITT_M weit läuft; trifft ein Teil-Schritt, steht die
+    // Schwung-Uhr auf IHM (sw.t) — der Hit-Stop hält die Klinge, wo sie trifft, und die Pose zeigt sie dort. Vorher fegte je
+    // Takt eine 0,35 m dicke Kapsel um einen Punkt über dem Kopf, die Spitze des Großschwerts sprang 0,45 m: der Treffer fiel
+    // bis 0,35 m vor der sichtbaren Klinge, im Treffer-Takt stand sie 30° neben dem Hirsch. Invarianten HIER: nie ein Ziel
+    // hinter dem Rücken (dot ≤ 0), Dedup je Schwung (hits-Set), sterbende Wesen inert.
+    _kampfSweepTick(sw, nowSec, tVon, tBis) {
+        const pm = this.state.playerMesh;
+        const creatures = this.state.creatures;
+        if (!pm || !sw.rahmen || !Array.isArray(creatures) || !creatures.length) return;
+        const K = AnazhRealm._arenaGesetz().schwung;
+        // das Winkel-Tempo der Strike-Phase (der Bogen 2·arcHalf in strikeSec): die Klinge am Hebel r läuft ω·r
+        const omega = (2 * K.arcHalfRad) / Math.max(0.05, sw.strikeSec);
+        const t0 = Number.isFinite(tVon) ? tVon : sw.t;
+        const t1 = Number.isFinite(tBis) ? tBis : sw.t;
+        const n = Math.max(1, Math.ceil((omega * sw.reach * Math.max(0, t1 - t0)) / AnazhRealm.KAMPF_SWEEP_SCHRITT_M));
+        const achse = this._kampfKlingenAchse(sw, this._sweepAchse || (this._sweepAchse = {}));
+        // die Wand („nie hinter dem Rücken") misst waagrecht entlang der Achse — aus der EINEN Vorwärts-Formel (_blickVorn)
+        const vorn = this._blickVorn(achse.yaw, 0, this._sweepVorn || (this._sweepVorn = {}));
+        const lage = this._sweepLage || (this._sweepLage = {});
+        for (let k = 1; k <= n; k++) {
+            const t = t0 + ((t1 - t0) * k) / n;
+            this._kampfSchwungLage(sw, t, achse, lage);
+            const S = lage.S,
+                B = lage.B,
+                T = lage.T;
+            let getroffen = false;
+            for (let i = 0; i < creatures.length; i++) {
+                const c = creatures[i];
+                if (!c || !c.userData || c.userData.dying || sw.hits.has(c)) continue;
+                const tx = c.position.x - S.x;
+                const tz = c.position.z - S.z;
+                if (tx * vorn.x + tz * vorn.z <= 0) continue; // NIE hinter dem Rücken (die Wand)
+                if (!this._trefferErreichbar(c, S.x, S.z, lage.ht + K.bladeRadiusM)) continue; // das Grob-Tor (der Leib)
+                const tr = this._kampfKlingenKontakt(sw, c, lage, B, T);
+                if (!tr) continue;
+                sw.hits.add(c);
+                getroffen = true;
+                // DER TREFFER-WEG (Welle LF, Leben-Schau 07.10. Posten 1): die Energie folgt dem Schwung über den Weg, den
+                // die Klinge durch den Leib nimmt (_kampfTrefferWeg), nie der ersten Kontaktstelle — die lag bei nahem Ziel
+                // am Griff-Drittel (Großschwert 1,6 m: 15–18 J, in 1,7 m 91 J). Das Tempo ist das des Schlagpunkts der Waffe
+                // (_kampfSchlagpunkt), der Kern richtet den Ort auf dem Weg (trefferUrteil t.weg, m ab dem Knauf).
+                const hb = lage.hb;
+                const weg = this._kampfTrefferWeg(c, sw, achse, t, hb + tr.s * (lage.ht - hb));
+                const rS = this._kampfSchlagpunkt(sw.rahmen);
+                const hebel = Math.max(weg.lo, Math.min(weg.hi, rS));
+                const urteil = this._kampfUrteil(this._kampfSchlagTempo(sw, achse, t, rS), 0, tr.zone, [
+                    weg.lo - hb,
+                    weg.hi - hb,
+                ]);
+                const bp = this._heldImplementBlueprint();
+                const roh = this._kampfRohSchaden(urteil, tr.zone, this._kampfKraft());
+                this._kampfVerschleiss(bp);
+                const res = this.damageCreature(c, roh, {
+                    source: "player",
+                    fromPos: { x: pm.position.x, y: pm.position.y, z: pm.position.z },
+                    stoss: urteil
+                        ? { p: urteil.p, m: urteil.mEff }
+                        : this._kampfStossOhneMessung(this._kampfSchlagTempo(sw, achse, t, hebel)),
+                });
+                if (res && res.ok) this._kampfHitJuice(c, nowSec, urteil, urteil ? null : this._eigenwerkSchwungKE(bp));
+            }
+            if (getroffen) {
+                // die Schwung-Uhr steht auf dem Teil-Schritt des Treffers: der Hit-Stop hält die Klinge am Ziel
+                sw.t = t;
+                return;
             }
         }
-        return { yaw: Math.atan2(tx, tz), pitch: Math.atan2(ty, Math.hypot(tx, tz)) };
     }
 
-    // DER TREFFER-WEG (Welle LF 09.10., Posten 1): wo die Klinge auf ihrem Bogen durch den Leib geht — das Intervall des Hebels
-    // [lo, hi] (m ab dem Schultergelenk O), auf dem eine Glied-Kapsel des Tiers die Fläche schneidet, die die Klinge vom Kontakt
-    // bis zum Ende des Strikes überstreicht. Die Klinge fegt mit fester Neigung φ = achse.pitch von der Gier `arcJetzt` bis
-    // achse.yaw + arcHalf (_kampfSchwungLage); ein Glied-Punkt P (h waagrecht, y über O) liegt auf dem Weg, wenn er der Mantellinie seiner Gier
-    // näher ist als Glied- + Klingen-Radius R (δ = |−h·sin φ + y·cos φ|) — beim Hebel ρ = h·cos φ + y·sin φ ± √(R² − δ²).
-    // Je Glied TREFFER_WEG_PROBEN Punkte; Saat ist der Kontakt selbst (kein Treffer ohne Weg). Vorher zählte nur der
-    // Strecken-Parameter des ersten Kontakts — bei einem Leib längs der Klinge entartet er an ihr nahes Ende: Großschwert in
-    // 1,6 m 15–18 J (Griff-Drittel), in 1,7 m 91 J.
-    _kampfTrefferWeg(cr, ox, oy, oz, achse, arcJetzt, kontakt, reach) {
+    // DER KONTAKT DER KLINGE mit einem Tier im Teil-Schritt (B → T, die Lage des Schwungs): das ZIEL DES HIEBS (sw.ziel — der
+    // Punkt, auf dem das Fadenkreuz beim Drücken lag) trifft die Klinge, wo sie durch diesen Punkt geht — die Zone ist das Glied
+    // unter dem Fadenkreuz, s der Ort auf der Klinge; vorher streift sie es nicht (sie ist auf dem Weg zum Ziel), nach der Mitte
+    // des Strikes zählt der erste Kontakt (das Tier lief aus dem Punkt). Jedes andere Tier trifft der erste Kontakt der
+    // Gestalt (_kreaturGliedTreffer). Vorher (die dicke Kapsel um einen Punkt über dem Kopf) traf der waagrechte Bogen meist
+    // das Glied in Höhe des Fadenkreuzes — mit der Klinge der Gestalt streifte er auf dem Weg zum Kopf den Bauch.
+    _kampfKlingenKontakt(sw, c, lage, B, T) {
+        const K = AnazhRealm._arenaGesetz().schwung;
+        const z = sw.ziel;
+        if (!z || z.c !== c) return this._kreaturGliedTreffer(c, B.x, B.y, B.z, T.x, T.y, T.z, K.bladeRadiusM);
+        c.updateMatrixWorld(true);
+        const P = c.localToWorld((this._kontaktP || (this._kontaktP = new THREE.Vector3())).copy(z.lokal));
+        const ex = T.x - B.x,
+            ey = T.y - B.y,
+            ez = T.z - B.z;
+        const l2 = ex * ex + ey * ey + ez * ez;
+        const u =
+            l2 > 1e-12 ? Math.max(0, Math.min(1, ((P.x - B.x) * ex + (P.y - B.y) * ey + (P.z - B.z) * ez) / l2)) : 0;
+        const ab = Math.hypot(B.x + ex * u - P.x, B.y + ey * u - P.y, B.z + ez * u - P.z);
+        if (ab <= K.bladeRadiusM + AnazhRealm.KAMPF_ZIEL_SPIEL_M) {
+            const tr = this._kreaturGliedTreffer(c, P.x, P.y, P.z, P.x, P.y, P.z, K.bladeRadiusM, true);
+            if (tr) return { zone: tr.zone, s: u };
+        }
+        return lage.s > 0.5 ? this._kreaturGliedTreffer(c, B.x, B.y, B.z, T.x, T.y, T.z, K.bladeRadiusM) : null;
+    }
+
+    // DER TREFFER-WEG (Welle LF 09.10., Posten 1): wo die Klinge auf ihrem restlichen Bogen durch den Leib geht — das
+    // Intervall des Hebels [lo, hi] (m ab der Schulter), auf dem die Klinge (Knauf → Spitze, _kampfSchwungLage) vom Treffer
+    // bis zum Ende des Strikes einer Glied-Kapsel des Tiers näher kommt als Glied- + Klingen-Radius. Die Glieder als Punkte
+    // (je Glied TREFFER_WEG_PROBEN + 1, im Augenblick des Treffers), der Bogen in den Teil-Schritten des Sweeps. Saat ist der
+    // Kontakt selbst (kein Treffer ohne Weg). Vorher zählte nur der Strecken-Parameter des ersten Kontakts — bei einem Leib
+    // längs der Klinge entartet er an ihr nahes Ende: Großschwert in 1,6 m 15–18 J (Griff-Drittel), in 1,7 m 91 J.
+    _kampfTrefferWeg(cr, sw, achse, tVon, kontakt) {
         const K = AnazhRealm._arenaGesetz().schwung;
         const out = this._trefferWegOut || (this._trefferWegOut = { lo: 0, hi: 0 });
-        out.lo = out.hi = Math.max(0.25, Math.min(reach, kontakt));
+        out.lo = out.hi = kontakt;
         const gl = this._kreaturTrefferGlieder(cr);
         if (!gl) return out;
-        const cp = Math.cos(achse.pitch),
-            spn = Math.sin(achse.pitch);
-        const v = this._trefferVek || (this._trefferVek = [new THREE.Vector3(), new THREE.Vector3()]);
-        const P = this._trefferWegP || (this._trefferWegP = new THREE.Vector3());
-        const n = AnazhRealm.TREFFER_WEG_PROBEN;
-        const TAU = 2 * Math.PI;
-        let von = arcJetzt - achse.yaw;
-        von -= TAU * Math.round(von / TAU);
         cr.updateMatrixWorld(true);
+        const v = this._trefferVek || (this._trefferVek = [new THREE.Vector3(), new THREE.Vector3()]);
+        const pts = this._trefferWegPts || (this._trefferWegPts = []);
+        const n = AnazhRealm.TREFFER_WEG_PROBEN;
+        let np = 0;
         for (const g of gl) {
             const pa = v[0].copy(g.a).applyMatrix4(g.anker.matrixWorld);
             const pb = v[1].copy(g.b).applyMatrix4(g.anker.matrixWorld);
-            const R = K.bladeRadiusM + g.r * g.anker.matrixWorld.getMaxScaleOnAxis();
+            const rg = K.bladeRadiusM + g.r * g.anker.matrixWorld.getMaxScaleOnAxis();
             for (let k = 0; k <= n; k++) {
-                P.copy(pa).lerp(pb, k / n);
-                const wx = P.x - ox,
-                    wz = P.z - oz,
-                    y = P.y - oy;
-                const h = Math.hypot(wx, wz);
-                if (h < 1e-6) continue;
-                let dg = Math.atan2(wx, wz) - achse.yaw;
-                dg -= TAU * Math.round(dg / TAU);
-                const rand = R / h;
-                if (dg < von - rand || dg > K.arcHalfRad + rand) continue; // nicht auf dem restlichen Bogen
-                const delta = Math.abs(-h * spn + y * cp);
-                if (delta > R) continue;
-                const rho = h * cp + y * spn;
-                const halb = Math.sqrt(R * R - delta * delta);
-                out.lo = Math.min(out.lo, Math.max(0.25, rho - halb));
-                out.hi = Math.max(out.hi, Math.min(reach, rho + halb));
+                const q = pts[np] || (pts[np] = { x: 0, y: 0, z: 0, r: 0 });
+                const u = k / n;
+                q.x = pa.x + (pb.x - pa.x) * u;
+                q.y = pa.y + (pb.y - pa.y) * u;
+                q.z = pa.z + (pb.z - pa.z) * u;
+                q.r = rg;
+                np++;
+            }
+        }
+        const omega = (2 * K.arcHalfRad) / Math.max(0.05, sw.strikeSec);
+        const tEnde = sw.windupSec + sw.strikeSec;
+        const m = Math.max(
+            1,
+            Math.ceil((omega * sw.reach * Math.max(0, tEnde - tVon)) / AnazhRealm.KAMPF_SWEEP_SCHRITT_M)
+        );
+        const L = this._wegLage || (this._wegLage = {});
+        for (let k = 0; k <= m; k++) {
+            this._kampfSchwungLage(sw, tVon + ((tEnde - tVon) * k) / m, achse, L);
+            const d = L.d,
+                B = L.B,
+                len = L.ht - L.hb;
+            for (let i = 0; i < np; i++) {
+                const q = pts[i];
+                const wx = q.x - B.x,
+                    wy = q.y - B.y,
+                    wz = q.z - B.z;
+                const u = Math.max(0, Math.min(len, wx * d.x + wy * d.y + wz * d.z));
+                const ex = wx - d.x * u,
+                    ey = wy - d.y * u,
+                    ez = wz - d.z * u;
+                const e2 = ex * ex + ey * ey + ez * ez;
+                if (e2 > q.r * q.r) continue;
+                const halb = Math.sqrt(q.r * q.r - e2);
+                out.lo = Math.min(out.lo, L.hb + Math.max(0, u - halb));
+                out.hi = Math.max(out.hi, L.hb + Math.min(len, u + halb));
             }
         }
         return out;
     }
 
-    // DER SCHLAGPUNKT der gehaltenen Waffe als Hebel ab der Schulter: die Hand sitzt bei reachBaseM, der Schlagpunkt des Kerns
-    // (S.impactX — dort misst kampfMasze die wirksame Masse) davor; ungemessene Geräte (Faust, Eigenwerk) schlagen bei 70 %
-    // ihrer Länge (dieselbe Lage wie der Klingen-Schlagpunkt des Kerns).
-    _kampfSchlagpunkt(reach) {
-        const K = AnazhRealm._arenaGesetz().schwung;
+    // DAS TEMPO EINES PUNKTS DER KLINGE (Hebel r ab der Schulter) zur Schwung-Zeit t: die Bahn des Punkts selbst — Bogen,
+    // Rumpf-Drehung, Beuge und Ausfall zusammen (zwei Lagen im Abstand KAMPF_TEMPO_DT), quer zur Klinge (das vLat des
+    // Urteils). Vorher ω·r um einen festen Punkt: die Drehung der Hüfte, die die Klinge mitnimmt, fehlte.
+    _kampfSchlagTempo(sw, achse, t, r) {
+        const dt = AnazhRealm.KAMPF_TEMPO_DT;
+        const L1 = this._kampfSchwungLage(sw, t, achse, this._tempoL1 || (this._tempoL1 = {}));
+        const L0 = this._kampfSchwungLage(sw, Math.max(0, t - dt), achse, this._tempoL0 || (this._tempoL0 = {}));
+        const d = L1.d;
+        let vx = (L1.S.x + d.x * r - (L0.S.x + L0.d.x * r)) / dt,
+            vy = (L1.S.y + d.y * r - (L0.S.y + L0.d.y * r)) / dt,
+            vz = (L1.S.z + d.z * r - (L0.S.z + L0.d.z * r)) / dt;
+        const va = vx * d.x + vy * d.y + vz * d.z;
+        vx -= d.x * va;
+        vy -= d.y * va;
+        vz -= d.z * va;
+        return Math.hypot(vx, vy, vz);
+    }
+
+    // DER SCHLAGPUNKT der gehaltenen Waffe als Hebel ab der Schulter: der Knauf liegt bei arm − griffX (_kampfSchwungRahmen),
+    // der Schlagpunkt des Kerns (S.impactX ab dem Knauf — dort misst kampfMasze die wirksame Masse) davor; ungemessene Geräte
+    // (Eigenwerk) schlagen bei 70 % ihrer Länge vor der Hand, die Faust mit der Hand.
+    _kampfSchlagpunkt(R) {
         const bp = this._heldImplementBlueprint();
         const km = bp ? this._schmiedeKampfMasze(bp) : null;
         const S = km && km.mess && km.mess.S;
-        if (S && Number.isFinite(S.impactX)) return Math.min(reach, K.reachBaseM + S.impactX);
-        return K.reachBaseM + 0.7 * Math.max(0, reach - K.reachBaseM);
+        if (S && Number.isFinite(S.impactX)) return R.arm - R.griffX + Math.max(0, Math.min(R.laenge, S.impactX));
+        return R.arm + 0.7 * Math.max(0, R.laenge - R.griffX);
+    }
+
+    // DER ABSTAND EINES ZIELS von der Schulter, die nach ihm schlägt (gebeugt wie im Schwung, _kampfBeuge) — das Verb-Tor des
+    // Klicks misst so gegen die Reichweite der Klinge (Posten 3: EINE Reichweite).
+    _kampfZielAbstand(R, P) {
+        const yaw = this.state.playerMesh.rotation.y;
+        const aus = AnazhRealm.KAMPF_AUSFALL_M;
+        const S = this._kampfSchulter(R, yaw, 0, 0, aus, this._abstandS || (this._abstandS = {}));
+        const lam = this._kampfBeuge(Math.atan2(P.y - S.y, Math.hypot(P.x - S.x, P.z - S.z)));
+        this._kampfSchulter(R, yaw, lam, 0, aus, S);
+        return Math.hypot(P.x - S.x, P.y - S.y, P.z - S.z);
     }
 
     // DER UNGEMESSENE SCHLAG (das EINE Impuls-Gesetz): Faust und Eigenwerke ohne Schmiede-Rezept tragen keine Messung —
@@ -81536,11 +81790,24 @@ class AnazhRealm {
         const my = pm.position.y + K.shoulderH + blick.y * AB.muendungM;
         const mz = pm.position.z + blick.z * AB.muendungM;
         const ziel = this._blickZiel(AnazhRealm.BLICK_ZIEL_M);
+        // DIE BAHN TRIFFT DAS FADENKREUZ (Welle LF, Posten 4): der Pfeil fällt (state.gravity) — er steigt im flachen der zwei
+        // Winkel, deren Bahn den Punkt des Fadenkreuzes trifft, tan θ = (v² − √(v⁴ − g(g·x² + 2·y·v²))) / (g·x); jenseits der
+        // Weite des Bogens unter 45°. Vorher flog er geradewegs auf den Punkt und fiel bei 13 m 0,2 m darunter durch.
         let dx = ziel.x - mx,
             dy = ziel.y - my,
             dz = ziel.z - mz;
-        const dl = Math.hypot(dx, dy, dz);
-        if (dl > 1e-6) {
+        const gB = Math.abs(Number.isFinite(this.state.gravity) ? this.state.gravity : -9.81);
+        const xh = Math.hypot(dx, dz);
+        if (xh > 1e-6 && v0 > 1e-6) {
+            const v2 = v0 * v0;
+            const disc = v2 * v2 - gB * (gB * xh * xh + 2 * dy * v2);
+            const th = disc >= 0 ? Math.atan((v2 - Math.sqrt(disc)) / (gB * xh)) : Math.PI / 4;
+            const ch = Math.cos(th);
+            dx = (dx / xh) * ch;
+            dz = (dz / xh) * ch;
+            dy = Math.sin(th);
+        } else if (Math.hypot(dx, dy, dz) > 1e-6) {
+            const dl = Math.hypot(dx, dy, dz);
             dx /= dl;
             dy /= dl;
             dz /= dl;
@@ -81677,63 +81944,98 @@ class AnazhRealm {
         }
     }
 
-    // ═══ KAMPF-GEFÜHL — DER OBERKÖRPER-LAYER: DER ARM FOLGT DER KLINGE (Welle LF 09.10., Posten 2) ═══
+    // ═══ KAMPF-GEFÜHL — DER OBERKÖRPER-LAYER: DER LEIB FOLGT DER KLINGE (Welle LF 09.10., Posten 2) ═══
     // Additiver Layer über der Lokomotion (_animateHumanoidRig setzt die Null-Basis), kein zweites Rig-System. Die Lage der
-    // Klinge kommt aus DEM Schwung (_kampfSchwungLage — derselbe, den der Sweep als Treffer-Volumen fegt): der Rumpf dreht der
-    // Gier des Bogens nach (KAMPF_RUMPF_DREH), dann dreht die rechte Schulter den ganzen Arm samt Gerät um ihr Gelenk, bis die
-    // Spitze des Geräts (_kampfGeraetSpitze) auf der Achse des Treffer-Volumens liegt — auf O + d·L, L so, dass der Abstand
-    // Schulter–Spitze bleibt. Gewicht w aus der Lage (Windup aus der Ruhe, Recover zurück, an beiden Rändern 0: kein Pop).
-    // NUR Oberkörper — die Beine gehören dem Gang. Vorher drehte die Schulter um x mit Wirts-Literalen (−1,55 · 0,25 · −0,6 ·
-    // 0,38 · 0,16 rad): im Treffer-Takt stand die Klinge über dem Kopf (Bild ks02), die Ich-Sicht sah keine Klinge (ks01).
+    // Klinge kommt aus DEM Schwung (_kampfSchwungLage — derselbe, den der Sweep als Treffer-Volumen fegt), und der Leib legt
+    // sie dorthin: (1) der Rumpf beugt (λ, um die linke Achse) und dreht (τ, um die Senkrechte) am Torso-Gelenk — dieselben
+    // Winkel, mit denen der Rahmen die Schulter rechnet (_kampfSchulter); (2) die Hülle des Leibs trägt die Schulter dorthin,
+    // wo der Rahmen sie rechnet (der Ausfall nach vorn); (3) der Unterarm streckt sich in die Flucht des Oberarms; (4) die
+    // Schulter legt die Hand-Mitte auf die Achse der Klinge; (5) das Handgelenk legt das Gerät längs der Achse. Gewicht w aus der Lage (Windup aus der Ruhe, Recover zurück, an beiden Rändern 0: kein Pop). NUR Oberkörper — die
+    // Beine gehören dem Gang. Vorher drehte die Schulter um x mit Wirts-Literalen (−1,55 · 0,25 · −0,6 · 0,38 · 0,16 rad): im
+    // Treffer-Takt stand die Klinge über dem Kopf (Bild ks02), die Ich-Sicht sah keine Klinge (ks01).
     _applyKampfSchwungPose(mesh) {
         const p = this.state.player;
         const sw = p && p._swing;
         const rig = mesh && mesh.userData && mesh.userData.rig;
-        if (!sw || !rig || !rig.armR || !rig.armR.shoulder || !rig.armR.shoulder.parent) return;
-        const K = AnazhRealm._arenaGesetz().schwung;
-        const ox = mesh.position.x,
-            oy = mesh.position.y + K.shoulderH,
-            oz = mesh.position.z;
-        const reach = Number.isFinite(sw.reach) ? sw.reach : this._kampfBladeReach();
-        const lage = this._kampfSchwungLage(sw, ox, oy, oz, reach, this._poseLage || (this._poseLage = {}));
-        if (!(lage.w > 0)) return;
-        // der Rumpf dreht dem Bogen nach (die Gier der Klinge gegen die des Körpers)
-        let dg = lage.yaw - mesh.rotation.y;
-        dg -= 2 * Math.PI * Math.round(dg / (2 * Math.PI));
-        if (rig.chest) rig.chest.rotation.y += AnazhRealm.KAMPF_RUMPF_DREH * dg * lage.w;
+        const a = rig && rig.armR;
+        // (0) ohne Schwung steht die Hülle des Leibs auf ihrem Platz (den Ausfall trägt sie nur im Schwung, Schritt 2)
+        const huelle = this._kampfHuelle(mesh);
+        if (huelle && !huelle.userData._ausfallBasis) huelle.userData._ausfallBasis = huelle.position.clone();
+        if (huelle) huelle.position.copy(huelle.userData._ausfallBasis);
+        if (!sw || !sw.rahmen || !a || !a.shoulder || !a.elbow || !a.wrist || !rig.spine || !rig.spine.parent) return;
+        const achse = this._kampfKlingenAchse(sw, this._poseAchse || (this._poseAchse = {}));
+        const L = this._kampfSchwungLage(sw, sw.t, achse, this._poseLage || (this._poseLage = {}));
+        if (!(L.w > 0)) return;
         const V =
             this._poseV ||
             (this._poseV = {
                 S: new THREE.Vector3(),
+                E: new THREE.Vector3(),
+                W: new THREE.Vector3(),
+                G: new THREE.Vector3(),
                 T: new THREE.Vector3(),
-                Z: new THREE.Vector3(),
+                a: new THREE.Vector3(),
+                b: new THREE.Vector3(),
+                ax: new THREE.Vector3(),
+                up: new THREE.Vector3(0, 1, 0),
                 q: new THREE.Quaternion(),
                 qp: new THREE.Quaternion(),
+                qa: new THREE.Quaternion(),
+                qb: new THREE.Quaternion(),
                 qw: new THREE.Quaternion(),
-                d: {},
+                qi: new THREE.Quaternion(),
             });
-        const sh = rig.armR.shoulder;
+        // eine Welt-Drehung am Gelenk: q_lokal ← P⁻¹ · q_welt · P · q_lokal (P = die Welt-Drehung des Elternknotens)
+        const drehe = (knochen, qWelt) => {
+            knochen.parent.getWorldQuaternion(V.qp);
+            V.q.copy(V.qp).invert().multiply(qWelt).multiply(V.qp);
+            knochen.quaternion.premultiply(V.q);
+            knochen.updateMatrixWorld(true);
+        };
+        const gewichtet = (qWelt) => (L.w < 1 ? qWelt.slerp(V.qi.identity(), 1 - L.w) : qWelt);
+        // (1) der Rumpf: erst die Beuge um die linke Achse (oben → vorn), dann die Drehung um die Senkrechte — L.lam und L.tau
+        // tragen das Gewicht schon
+        const yaw = mesh.rotation.y;
+        V.ax.set(Math.cos(yaw), 0, -Math.sin(yaw));
+        V.qa.setFromAxisAngle(V.ax, L.lam);
+        V.qb.setFromAxisAngle(V.up, L.tau);
         mesh.updateMatrixWorld(true);
-        sh.getWorldPosition(V.S);
-        if (!this._kampfGeraetSpitze(mesh, rig, V.T)) return;
-        const d = this._blickVorn(lage.yaw, lage.pitch, V.d);
-        // das Ziel der Spitze: auf der Achse O + d·L, im Abstand |T − S| von der Schulter (die ferne Wurzel)
-        const r2 = V.T.distanceToSquared(V.S);
-        const wx = ox - V.S.x,
-            wy = oy - V.S.y,
-            wz = oz - V.S.z;
-        const b = d.x * wx + d.y * wy + d.z * wz;
-        const disc = b * b - (wx * wx + wy * wy + wz * wz - r2);
-        const L = disc >= 0 ? -b + Math.sqrt(disc) : Math.sqrt(r2);
-        V.Z.set(ox + d.x * L - V.S.x, oy + d.y * L - V.S.y, oz + d.z * L - V.S.z).normalize();
-        V.T.sub(V.S).normalize();
-        V.qw.setFromUnitVectors(V.T, V.Z);
-        if (lage.w < 1) V.qw.slerp(V.q.identity(), 1 - lage.w);
-        // die Welt-Drehung in den Raum des Elternknotens: q_lokal ← P⁻¹ · q_welt · P · q_lokal
-        sh.parent.getWorldQuaternion(V.qp);
-        V.q.copy(V.qp).invert().multiply(V.qw).multiply(V.qp);
-        sh.quaternion.premultiply(V.q);
-        sh.updateMatrixWorld(true);
+        drehe(rig.spine, V.qw.copy(V.qb).multiply(V.qa));
+        // (2) die Schulter steht, wo der Rahmen sie rechnet (L.S — mit dem Ausfall): die Hülle trägt den Leib um den Rest
+        // (den Ausfall und was die Garde der Lokomotion seit dem Schwung-Beginn verschob), gewichtet mit w — kein Sprung
+        if (huelle) {
+            a.shoulder.getWorldPosition(V.S);
+            mesh.worldToLocal(V.a.set(L.S.x, L.S.y, L.S.z));
+            mesh.worldToLocal(V.b.copy(V.S));
+            huelle.position.addScaledVector(V.a.sub(V.b), L.w);
+            huelle.updateMatrixWorld(true);
+        }
+        // (3) der Arm streckt sich: der Unterarm in die Flucht des Oberarms
+        a.shoulder.getWorldPosition(V.S);
+        a.elbow.getWorldPosition(V.E);
+        a.wrist.getWorldPosition(V.W);
+        V.a.subVectors(V.W, V.E).normalize();
+        V.b.subVectors(V.E, V.S).normalize();
+        drehe(a.elbow, gewichtet(V.qw.setFromUnitVectors(V.a, V.b)));
+        // (4) die Schulter legt die Hand-Mitte auf die Achse der Klinge, (5) das Handgelenk das Gerät längs der Achse (die leere
+        // Faust hat keins). Die Kette der Gestalt trägt Skalen (die Morph-Proportionen): eine Welt-Drehung am Gelenk trifft
+        // in einem Zug nur auf 0,07 rad — KAMPF_POSE_ZUEGE Züge legen die Klinge auf 0,001 rad.
+        V.b.set(L.d.x, L.d.y, L.d.z);
+        const geraet = !!mesh.userData.heldMesh;
+        for (let zug = 0; zug < AnazhRealm.KAMPF_POSE_ZUEGE; zug++) {
+            V.a.subVectors(this._kampfHandMitte(rig, V.G), V.S).normalize();
+            drehe(a.shoulder, gewichtet(V.qw.setFromUnitVectors(V.a, V.b)));
+            if (geraet && this._kampfGeraetSpitze(mesh, rig, V.T)) {
+                V.a.subVectors(V.T, this._kampfHandMitte(rig, V.G)).normalize();
+                drehe(a.wrist, gewichtet(V.qw.setFromUnitVectors(V.a, V.b)));
+            }
+        }
+    }
+
+    // Die Hülle des Leibs (der _creatureSkin-Knoten des Avatars, an dessen Knochen Rig und Gerät hängen) oder null.
+    _kampfHuelle(mesh) {
+        for (const ch of mesh.children) if (ch && ch.userData && ch.userData._creatureSkin) return ch;
+        return null;
     }
 
     // DIE SPITZE DES GEHALTENEN GERÄTS in Welt (der Arm des Schwungs legt sie auf die Achse des Treffer-Volumens): das Ende der
@@ -81759,7 +82061,11 @@ class AnazhRealm {
                 if (!o.geometry.boundingBox) o.geometry.computeBoundingBox();
                 box.union(bb.copy(o.geometry.boundingBox).applyMatrix4(m.multiplyMatrices(inv, o.matrixWorld)));
             });
-            if (!box.isEmpty()) {
+            if (!box.isEmpty() && held.userData.heldAxis === "x") {
+                // die Studio-Gestalt liegt längs ihrer Vorlagen-Achse +X (Knauf bei 0, die Spitze am Ende) — die Achse selbst,
+                // nie die Mitte des Quaders (Parier und Schneide stehen außermittig)
+                e = [new THREE.Vector3(box.min.x, 0, 0), new THREE.Vector3(box.max.x, 0, 0)];
+            } else if (!box.isEmpty()) {
                 const g = box.getSize(new THREE.Vector3());
                 const achse = g.x >= g.y && g.x >= g.z ? "x" : g.y >= g.z ? "y" : "z";
                 const a = box.getCenter(new THREE.Vector3());
@@ -82128,7 +82434,8 @@ class AnazhRealm {
         // V17.54 Kampf D — das NÄCHSTE Ziel gewinnt: eine Kreatur in Angriffs-Reichweite UND näher als eine
         // Architektur wird ANGEGRIFFEN statt abgebaut. _pickCreatureAtCrosshair liefert {creature, point} (far 30);
         // das Nahkampf-Tor misst vom Schultergelenk des Spielers. EINE REICHWEITE AUS DER WAFFE (Welle LF, Posten 3): das
-        // Tor liest, was die Klinge fegt (_kampfBladeReach + Klingen-Radius) — vorher wählte es „hieb" bis zum Deckel 6 m,
+        // Tor liest, was die Klinge fegt (_kampfSchwungRahmen: Arm und Gerät ab der Schulter, die so gebeugt misst wie im Schwung —
+        // _kampfZielAbstand; dazu der Klingen-Radius) — vorher wählte es „hieb" bis zum Deckel 6 m,
         // die Klinge reichte 2,46 m: am Hang 9 Schwünge, 0 Treffer, kein Hinweis. Steht das Tier unter dem Fadenkreuz
         // jenseits der Klinge, nennt der Spieler-Kanal beim Drücken die Reichweite (der Klick bleibt ein Luftschlag).
         const creaturePick = this._pickCreatureAtCrosshair();
@@ -82139,12 +82446,11 @@ class AnazhRealm {
             const K = AnazhRealm._arenaGesetz().schwung;
             const pmB = this.state.playerMesh;
             const pt = creaturePick.point;
-            const nahDist = pmB
-                ? Math.hypot(pt.x - pmB.position.x, pt.y - (pmB.position.y + K.shoulderH), pt.z - pmB.position.z)
-                : Infinity;
+            const R = this._kampfSchwungRahmen(this._torRahmen || (this._torRahmen = {}));
+            const nahDist = pmB ? this._kampfZielAbstand(R, pt) : Infinity;
             const creatureDist = this.state.camera.position.distanceTo(pt);
             const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
-            const klinge = this._kampfBladeReach() + K.bladeRadiusM;
+            const klinge = R.reach + K.bladeRadiusM;
             if (creatureDist <= archDist) {
                 if (nahDist <= klinge) verb = "hieb";
                 else zuWeit = { d: nahDist, klinge };
@@ -82180,7 +82486,7 @@ class AnazhRealm {
                 );
             }
             // der Schwung löst das Ziel in der Strike-Phase auf (Kreatur → Treffer, Leere → Luftschlag)
-            return this._playerAttackCreature(creaturePick && creaturePick.creature);
+            return this._playerAttackCreature(verb === "hieb" && !zuWeit ? creaturePick : null);
         }
         // V17.55 W1 — Abbauen kostet jetzt MÜHE: ein Bauwerk wird per Hieb-Fortschritt
         // abgetragen (Tempo/Stamina/Ertrag ∝ Werkzeug-vs-Material), kein Instant mehr. Der
@@ -95391,14 +95697,49 @@ class AnazhRealm {
     // + _creatureSkin-Wrap; 3rd sichtbar, 1st verborgen — die Kamera sitzt im Leib). Aufrufer:
     // Avatar-Guss (applyPlayerSoul), Modus-Schalter (setCameraMode) und _loopCamera (idempotenter
     // Halter) — lebte die Regel nur im per-Frame-Tick, zeigte jeder Render davor den Kopf von innen.
+    // DAS GERÄT BLEIBT IN DER HAND (Welle LF 09.10., Posten 2 / K-L4): im 1st verbirgt die Regel die HAUT des Leibs (jedes
+    // Mesh der _creatureSkin-Hülle — die Kamera sitzt im Leib), nie die Hülle selbst: an ihren Knochen hängt das gehaltene
+    // Gerät (_refreshHeldMesh, Handgelenk), und eine verborgene Hülle nahm es mit — die Ich-Sicht zeigte keine Waffe, auch
+    // nicht im Treffer-Takt (Bild ks01). Nur die Hülle, an der das Gerät hängt, geht so (ohne den Teilbaum des Geräts,
+    // userData._gehalten); jede andere Hülle wie zuvor als Ganzes. Je Aufruf über den Baum der Hülle (rund hundert Knoten) —
+    // eine neue Haut (Seelen-Wechsel, Kleid) oder ein neues Gerät gilt sofort.
     _applyEgoSicht() {
         const player = this.state.playerMesh;
         if (!player) return;
         const third = this.state.cameraMode === "third";
         const headPart = player.userData && player.userData.parts && player.userData.parts.head;
         if (headPart) headPart.visible = third;
+        // verbergen merkt, was die Haut vorher war (_egoWar) — eine andere Regel (Fell-Strähnen, Fern-Klon) behält ihr Wort;
+        // zeigen gibt genau das zurück
+        const haut = (o, zeigen) => {
+            if (o.userData && o.userData._gehalten) return;
+            if (o.isMesh) {
+                if (!zeigen) {
+                    if (!o.userData._egoVerborgen) {
+                        o.userData._egoVerborgen = true;
+                        o.userData._egoWar = o.visible;
+                    }
+                    o.visible = false;
+                } else if (o.userData._egoVerborgen) {
+                    o.userData._egoVerborgen = false;
+                    o.visible = o.userData._egoWar !== false;
+                }
+            }
+            for (const k of o.children) haut(k, zeigen);
+        };
+        const held = player.userData && player.userData.heldMesh;
         for (const ch of player.children) {
-            if (ch && ch.userData && ch.userData._creatureSkin) ch.visible = third;
+            if (!ch || !ch.userData || !ch.userData._creatureSkin) continue;
+            let traegt = false;
+            for (let n = held; n && !traegt; n = n.parent) traegt = n === ch;
+            if (traegt && !third) {
+                // die Hülle trägt das Gerät: sie bleibt, ihre Haut geht
+                ch.visible = true;
+                haut(ch, false);
+            } else {
+                haut(ch, true);
+                ch.visible = third;
+            }
         }
     }
 
@@ -95455,9 +95796,11 @@ class AnazhRealm {
         return F;
     }
 
-    // DER FADENKREUZ-PUNKT: wo der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) die Welt trifft (Gelände und Bauten,
-    // _raycastWorldHit), sonst der Punkt in maxDist auf dem Strahl. Der Pfeil zielt darauf: aus der Mündung an der Schulter
-    // kreuzt er das Fadenkreuz am Ziel.
+    // DER FADENKREUZ-PUNKT: wo der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) zuerst trifft — ein Tier (_pickCreatureAtCrosshair)
+    // oder die Welt (Gelände und Bauten, _raycastWorldHit) —, sonst der Punkt in maxDist auf dem Strahl. Der Pfeil zielt darauf:
+    // aus der Mündung an der Schulter kreuzt er das Fadenkreuz am Ziel. DAS TIER ZUERST (Welle LF, Posten 4): vorher zählte nur
+    // die Welt — der Pfeil zielte auf das Gelände HINTER dem Tier und flog aus der tieferen Mündung bei 13 m 0,4 m unter dem
+    // Punkt des Fadenkreuzes durch, zwischen den Läufen unter dem Bauch hindurch.
     _blickZiel(maxDist) {
         const F = this._fadenkreuzStrahl();
         if (!F) {
@@ -95467,8 +95810,16 @@ class AnazhRealm {
             return { x: o.x + v.x * maxDist, y: o.y + 1.6 + v.y * maxDist, z: o.z + v.z * maxDist };
         }
         const hit = this._raycastWorldHit(maxDist);
+        const ox = F.o.x,
+            oy = F.o.y,
+            oz = F.o.z;
+        const tier = this._pickCreatureAtCrosshair();
+        const pt = tier && tier.point;
+        const dT = pt ? Math.hypot(pt.x - ox, pt.y - oy, pt.z - oz) : Infinity;
+        const dW = hit && hit.hit ? Math.hypot(hit.x - ox, hit.y - oy, hit.z - oz) : Infinity;
+        if (dT <= maxDist && dT < dW) return { x: pt.x, y: pt.y, z: pt.z };
         if (hit && hit.hit) return { x: hit.x, y: hit.y, z: hit.z };
-        return { x: F.o.x + F.d.x * maxDist, y: F.o.y + F.d.y * maxDist, z: F.o.z + F.d.z * maxDist };
+        return { x: ox + F.d.x * maxDist, y: oy + F.d.y * maxDist, z: oz + F.d.z * maxDist };
     }
 
     // DAS ZIEL DER KAMERA (`uKamZiel` und `state._kamZiel`, Leben-Schau 07.10. L-Kamera): wohin das Auge blickt — 3rd der
@@ -99470,6 +99821,23 @@ AnazhRealm.TREFFER_WEG_PROBEN = 6;
 // des Bogens mit diesem Anteil.
 AnazhRealm.KAMPF_AUSHOLEN_RAD = 0.5;
 AnazhRealm.KAMPF_RUMPF_DREH = 0.4;
+// Die Beuge des Rumpfs beim Schlag nach unten (_kampfBeuge): je rad Neigung unter der Schulter KAMPF_BEUGE_K rad, höchstens
+// KAMPF_BEUGE_MAX (34°) — der Schwertkämpfer beugt sich zum tiefen Ziel; Pose und Treffer-Volumen beugen gleich.
+AnazhRealm.KAMPF_BEUGE_K = 0.6;
+AnazhRealm.KAMPF_BEUGE_MAX = 0.6;
+// Der Ausfall des Hiebs (_kampfSchulter, die Hülle des Leibs in der Pose): der Leib tritt im Strike so weit nach vorn — ein
+// halber Schritt. Die Reichweite einer Klinge ist Ausfall + Arm + Klinge vor der Hand (Langschwert 2,1 m ab der Schulter).
+AnazhRealm.KAMPF_AUSFALL_M = 0.45;
+// Der Abstand zweier Lagen, aus denen das Tempo eines Klingen-Punkts fällt (_kampfSchlagTempo) — Wirts-Auflösung.
+AnazhRealm.KAMPF_TEMPO_DT = 0.002;
+// Die Züge, in denen die Pose Schulter und Handgelenk auf die Achse der Klinge legt (_applyKampfSchwungPose) — Wirts-Auflösung.
+AnazhRealm.KAMPF_POSE_ZUEGE = 3;
+// Wie nah die Klinge am Punkt unter dem Fadenkreuz vorbeigehen muss, damit er getroffen ist (_kampfKlingenKontakt) — über den
+// Klingen-Radius hinaus die halbe Strecke eines Teil-Schritts.
+AnazhRealm.KAMPF_ZIEL_SPIEL_M = 0.04;
+// Die Stetigkeit des Sweeps (_kampfSweepTick): je Teil-Schritt läuft die Spitze der Klinge höchstens so weit — unter dem
+// Durchmesser des dünnsten Glieds samt Klingen-Radius, kein Glied fällt zwischen zwei Schritte. Wirts-Auflösung.
+AnazhRealm.KAMPF_SWEEP_SCHRITT_M = 0.08;
 // Die Weite des Fadenkreuz-Punkts (_blickZiel): der Pfeil zielt auf den Welt-Treffer des Blicks bis hierhin, dahinter
 // auf den Punkt in dieser Weite (die Parallaxe Mündung ↔ Auge fällt dort unter 0,3°).
 AnazhRealm.BLICK_ZIEL_M = 80;
