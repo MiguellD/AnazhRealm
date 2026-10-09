@@ -3031,7 +3031,11 @@ class AnazhRealm {
                 z = pos.z + (wurf() - 0.5) * 2 * off;
                 trocken = this._landAt(x, z, 0.2);
             }
-            if (!trocken) continue;
+            // vier Würfe im Wasser: der Wurf fällt BENANNT (der Satz sagt „im Wasser wächst nichts", nie „gewachsen" bei 0)
+            if (!trocken) {
+                absage("wasser");
+                continue;
+            }
             ctx.budget.spawnsLeft--;
             const sy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : NaN;
             const y = Number.isFinite(sy) ? sy + 0.5 : pos.y;
@@ -102356,7 +102360,7 @@ AnazhRealm._llmFuenferModell = function (model) {
 AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
     lichtung: "die Lichtung der Genesis-Plattform bleibt frei, keine Krone steht über ihrer Scheibe",
     haus: "im Grundriss eines Hauses wächst nichts",
-    wasser: "im Wasser wächst nichts, die Natur steht am Ufer",
+    wasser: "im Wasser steht nichts, am Ufer schon",
 });
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.
