@@ -534,6 +534,36 @@ const FORBIDDEN = [
     // WELLE L KREATUR (Q11 + CPU): der Hindernis-Strahl je Tier und Frame (feste Diagonale, nur im Blick, Antwort ein
     // Math.random-Stoß; 29–37 % der CPU im OMEN-Profil) kehrt nicht zurück — jedes Tier löst seine Achse über den EINEN
     // Kontakt-Löser gegen die Hüllen (_kreaturHuellenKontakt), die Herde ist die Form des Kerns (herdeZug).
+    // WELLE LF RUDEL (Leben-Schau 07.10., Neu 1): der Nexus würfelt kein Körper-Gesetz — der absolute Gang- und Sprung-
+    // Würfel (Gehen 4–12, Sprungkraft 8–20), die Tier-Skala ohne bodySize-Achse und die Spieler-Skala ohne Gesetz-Achse
+    // (player_size_mul) kehren nicht zurück; ein Op wiegt nur im Gesetz-Band (_koerperHauch, _kreaturGroesseSetzen).
+    { token: '"player_jump_power", Number((8', fiel: "Welle LF rudel — kein Würfel schreibt die Sprungkraft" },
+    { token: '"player_speed", Number((4', fiel: "Welle LF rudel — kein Würfel schreibt das Lauf-Tempo" },
+    { token: '"creatures_size_mul", Number(', fiel: "Welle LF rudel — kein Würfel schreibt die Tier-Größe" },
+    { token: "cr.scale.multiplyScalar(f)", fiel: "Welle LF rudel — die Tier-Größe ist die bodySize-Achse" },
+    { token: "player_size_mul", fiel: "Welle LF rudel — die Spieler-Skala ohne Gesetz-Achse fiel" },
+    { token: "cr.userData.speedMul =", fiel: "Welle LF rudel — der Tempo-Hauch wird gelesen (tempoHauch)" },
+    // WELLE LF RUDEL (D16/K-D12, Vertrags-Akt 08.10.): das Temperament aus der Substanz (Resonanz-Signaturen, Floor, die
+    // Substanz-Gewichte der Furcht, der predator-Stempel als Gemüt) kehrt weder im Stamm noch im Gesetzbuch zurück — die
+    // Tiere sind tag-gleich (Lehre 8), das Gemüt ist temperamentDerGattung (Ernährung × Masse).
+    { token: "TG.signaturen", fiel: "Welle LF rudel — das Temperament ist temperamentDerGattung" },
+    { token: "_temperamentSoul", fiel: "Welle LF rudel — das Temperament ist je Gattung × Größe gecacht" },
+    { token: "boldFromDichte", fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments", auch: ["tetrapoda-core.js"] },
+    { token: "shyFromLebendig", fiel: "Welle LF rudel — die Natur ist der Mut des Temperaments", auch: ["tetrapoda-core.js"] },
+    // WELLE LF RUDEL (Vertrags-Akt 08.10., der persönliche Raum): der feste Paar-Radius jeder Art, das feste Herden-Fenster
+    // und der feste Neugier-Stopp kehren nicht zurück — der Raum ist die Körper-Kugel des Leibs × raumKugel.
+    { token: "radiusBaseM", fiel: "Welle LF rudel — der Raum je Leib (separation.raumKugel)", auch: ["tetrapoda-core.js"] },
+    { token: "minAbstSq", fiel: "Welle LF rudel — die Herde zieht jenseits des Paar-Raums", auch: ["tetrapoda-core.js"] },
+    { token: "fensterSq", fiel: "Welle LF rudel — das Herden-Fenster misst im Paar-Raum", auch: ["tetrapoda-core.js"] },
+    { token: "neugierStoppM", fiel: "Welle LF rudel — die Neugier hält am Paar-Raum", auch: ["tetrapoda-core.js"] },
+    // WELLE LF RUDEL (Vertrags-Akt 08.10., die Jagd schließt sich): der Gradient der Witterung über vier Proben (nah an
+    // der Quelle zeigte er vom Ziel fort), der Trab der Flucht und der Biss-Takt auf der Wand-Uhr kehren nicht zurück.
+    { token: "scentProbeM", fiel: "Welle LF rudel — die Witterung wählt die Beute an der Nase", auch: ["tetrapoda-core.js"] },
+    { token: "this._scentAt(cx + probeStep", fiel: "Welle LF rudel — kein Gradient der Witterung" },
+    { token: "fleeSpeedBoost", fiel: "Welle LF rudel — die Flucht ist der Sprint der Gestalt", auch: ["tetrapoda-core.js"] },
+    // WELLE LF RUDEL (Leben-Schau 07.10., D11/D1-Rest): das Fuß-Ziel in der Ebene des Leibs (das Ziel im Gruppen-Raum,
+    // per Rumpf-Quaternion zurückgedreht — am Querhang kippten die Beine mit dem Leib) kehrt nicht zurück.
+    { token: "_gangQ", fiel: "Welle LF rudel — das Fuß-Ziel liegt in der Welt (Pfoten-IK _animateTierBaum)" },
     { token: "OBSTACLE_RAYCAST_MAX_DIST_SQ", fiel: "Welle L kreatur — _kreaturHuellenKontakt (kein Strahl je Frame)" },
     { token: "hasHit = this._runRaycast(", fiel: "Welle L kreatur — _kreaturHuellenKontakt" },
     // Nachbesserung 06.10.: der Umzug der fernen Stufe vergaß jede Krone jenseits seines Fensters — auch die Eintrags-

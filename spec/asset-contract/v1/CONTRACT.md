@@ -118,3 +118,40 @@ ist das Freude-Gesetz (`freude.hopHochM` 1,2 m froh, `hopBasisM` 0,8 m sonst), d
 Gang-Gesetzes (der Wirt: `creatureJump`). Gefallen: der Abflug in m/s der Aktionen (bound 3,2, pounce 4,5 — der frohe
 Sprung stieg 0,52 statt 1,2 m) und der lineare Faktor `sprung.impulsProM` (2,2, seit dem Integrator ohne Leser). Genau
 12 Felder (3 je Rezept), der Rest des Buchs byte-gleich (gegen die alten Bytes geprüft).
+
+**Re-Mint 08.10.2026 (Welle LF rudel, begründet — DAS TEMPERAMENT DER GATTUNG):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1` (world-params und render-config byte-gleich, jede Mesh-Golden unberührt, gate:asset-contract 124 von
+124 byte-gleich). Im tetrapoda-Buch (`fx.verhalten` der vier Tier-Rezepte) kommt das Temperament aus Ernährung und Masse
+der Gattung (`temperament.gattung { fleischDiet pflanzDiet jagdMasse wehrMasse kolossMasse }`, Funktion
+`temperamentDerGattung`), die Natur der Wariness aus dem Mut des Temperaments (`furcht.mutGewicht`). Gefallen: die
+Substanz-`signaturen` und ihr `floor`, die Substanz-Gewichte `furcht.boldFromDichte/boldFromHärte/shyFromLebendig` — die
+Tiere sind tag-gleich (Lehre 8), Hirsch und Fuchs waren „wehrhaft", jeder Hirsch stand neugierig am Spieler (Leben-Schau
+07.10., D16/K-D12). Genau 28 Felder (7 je Rezept), der Rest des Buchs byte-gleich (gegen die alten Bytes geprüft);
+recipes.json `7a35306b727b…` → `622864e73bb6…`.
+
+**Re-Mint 08.10.2026 (Welle LF rudel, begründet — DER PERSÖNLICHE RAUM):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1` (world-params, render-config und jede Mesh-Golden byte-gleich). Im tetrapoda-Buch hält jeder Leib seinen
+Raum aus seiner Körper-Kugel (`separation.raumKugel` × halb + Radius des Leibs, Art und Größe), die Herde zieht nur
+jenseits des Paar-Raums (`herde.fensterRaum`, der Zug ist das Mittel × Tempo), die Neugier hält am Paar-Raum mit dem Spieler.
+Gefallen: der feste Paar-Radius `separation.radiusBaseM` (1,6 m × bodySize für jede Art), `herde.minAbstSq`/`fensterSq`
+und `furcht.neugierStoppM` — die neugierige Schar kroch auf 0,7 m zusammen und durchdrang sich und den Spieler (Leben-Schau
+07.10.). Genau 24 Felder (6 je Rezept), der Rest byte-gleich (gegen die alten Bytes geprüft); recipes.json
+`622864e73bb6…` → `0d8f4316502b…`.
+
+**Re-Mint 08.10.2026 (Welle LF rudel, begründet — DIE JAGD SCHLIESST SICH):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1` (world-params, render-config und jede Mesh-Golden byte-gleich). Im tetrapoda-Buch pirscht der Jäger
+unbemerkt bis `jagd.pirschSichtM`, das Rudel bezieht den Ring `jagd.hetzM` um das Ziel (die Flanke) und hetzt im Sprint der
+Gestalt (STEUER_GESETZ.sprint, kein Rezept-Feld), Beute trägt höchstens `jagd.beuteMasse` × die Masse des Jägers. Gefallen:
+`jagd.scentProbeM` (der Gradienten-Schritt der Witterung — nah an der Quelle zeigte der Gradient vom Ziel fort) und
+`furcht.fleeSpeedBoost` (die Flucht ist der Sprint, kein Trab). Genau 20 Felder (5 je Rezept), der Rest byte-gleich
+(gegen die alten Bytes geprüft); recipes.json `0d8f4316502b…` → `bdd842174cdd…`.
+
+**Re-Mint 08.10.2026 (Welle LF rudel auf V18.536, begründet — DIE EINE MASSE):** nur `recipes.json` (+ Manifest), per
+`MINT_NUR_DATEN=1` gegen die vereinten Kerne (world-params, render-config und jede Mesh-Golden byte-gleich). Die
+Vereinigung mit V18.536 trug zwei Massen: die Dial-Masse des Zweigs (size × Größe) und die Masse des Leibs aus main
+(Volumen der Gestalt × `MASSSTAB.dichteKgM3`, das Impuls-Gesetz). Es bleibt die Masse des Leibs: im tetrapoda-Buch liest
+das Temperament kg (`temperament.gattung { jagdKg 21,5 · wehrKg 200 · kolossKg 600 }` statt `jagdMasse · wehrMasse ·
+kolossMasse`), `jagd.beuteMasse` 1,25 → 2,0 (× die Masse des Jägers in kg: der Wolf, 64 kg, schlägt den Hirsch, 94 kg, nie
+den Bären, 335 kg). Gegen den Zweig genau 28 Felder (7 je Rezept) plus die 5 Fahrzeug-Felder `fahrprofil.huelle.dichte`
+aus main; gegen main genau die 72 Felder der Welle-LF-Vertrags-Akte (18 je Rezept), der Rest byte-gleich (gegen beide
+alten Bytes geprüft).

@@ -4411,12 +4411,21 @@ function __tierMergeGeos(geos, fuell) {
     const pos = new Float32Array(nv * 3);
     const nor = new Float32Array(nv * 3);
     const col = mitFarbe ? new Float32Array(nv * 3) : null;
+    // DIE BINDUNG REIST MIT (Welle LF): tragen alle Teile des Eimers Gelenk-Gewichte (die Haut des Fern-Bilds und
+    // ihre starr gebundenen Teile), verschmilzt sie mit; ein Eimer ohne Gewichte bleibt byte-gleich.
+    const mitSkin = geos.every((g) => g.attributes.skinIndex && g.attributes.skinWeight);
+    const si = mitSkin ? new Float32Array(nv * 4) : null;
+    const sw = mitSkin ? new Float32Array(nv * 4) : null;
     const idx = new Uint32Array(ni);
     let vo = 0,
         io = 0;
     for (const g of geos) {
         pos.set(g.attributes.position.array, vo * 3);
         nor.set(g.attributes.normal.array, vo * 3);
+        if (mitSkin) {
+            si.set(g.attributes.skinIndex.array, vo * 4);
+            sw.set(g.attributes.skinWeight.array, vo * 4);
+        }
         const c = g.attributes.position.count;
         if (col && g.attributes.color) col.set(g.attributes.color.array, vo * 3);
         else if (col) for (let i = 0; i < c; i++) col.set(fuell, (vo + i) * 3);
@@ -4434,6 +4443,10 @@ function __tierMergeGeos(geos, fuell) {
     out.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     out.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
     if (col) out.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    if (mitSkin) {
+        out.setAttribute("skinIndex", new THREE.BufferAttribute(si, 4));
+        out.setAttribute("skinWeight", new THREE.BufferAttribute(sw, 4));
+    }
     out.setIndex(new THREE.BufferAttribute(idx, 1));
     return out;
 }
@@ -4915,9 +4928,9 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         tailSegs: tailNamen,
         masse: B.masse || null,
         base: typeof P.cB === "number" ? P.cB : null,
-        // V18.497 — die Bone-Ordnung der Tier-Haut (nur Stufe 0 ist geskinnt).
+        // V18.497 — die Bone-Ordnung der Tier-Haut (beide Stufen sind geskinnt, Welle LF).
         ...(skinJoints ? { skinJoints } : {}),
-    });
+    }, true);
 }
 
 // ── DIE TIER-HAUT (V18.497, Schöpfer 30.09.: „am Ende AAA-Niveau, nicht Kapseln"): der Rumpf-, Hals-,
@@ -4926,12 +4939,14 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
 // Haut: das Feld ist die GLATTE Vereinigung (polynomiales smin, Verrundung `blend`) der Ellipsoid-
 // Abstände — exakt, ohne die Blur-Erosion, die dünne Beine fräße —, die Hüllen-Maschine des Ofens
 // (Surface-Nets, dieselbe wie beim Menschen) macht daraus die Fläche. Stufe 0 bindet sie per Gewicht
-// an die Bein-/Schweif-Gelenke (Abstand zur Primitiv-OBERFLÄCHE, Top-4); Stufe 1 (das Fern-Standbild)
-// bleibt ungeskinnt und gröber und schließt den Kopf mit ein. Nah tragen Kopf und Kiefer eigene starre
+// an die Bein-/Schweif-Gelenke (Abstand zur Primitiv-OBERFLÄCHE, Top-4); Stufe 1 (das Fern-Bild) ist
+// gröber, schließt den Kopf mit ein und bindet ebenso per Gewicht (Welle LF, der ferne Gang: das
+// ungeskinnte Standbild glitt erstarrt über den Boden, 5 Hirsche in 65 m — jetzt läuft es mit seinen
+// Gelenken; sein Fell-Muster bleibt das des nächsten Glieds, byte-gleich). Nah tragen Kopf und Kiefer eigene starre
 // Häute (__tierKopfHaeute); Ohren, Lider und Teile unter dem Raster (Zehen, Krallen-Bett) bleiben Primitive. Die ersetzten Kugeln bleiben im Baum (Strähnen-Wirte), gegossen werden sie
 // nicht (__nichtGiessen). Das Fern-Standbild gießt keine Teile unter der Pfote oder im Maul (Krallen,
 // Ballen, Zähne, Zahnfleisch): bei ≥ 35 m trägt es Silhouette und Farbe, nicht Details unter einem Pixel.
-// Rückgabe: skinJoints (Stufe 0) oder null.
+// Rückgabe: skinJoints (beide Stufen) oder null.
 var TIER_HAUT = Object.freeze({
     voxNah: 0.02, // × H (Rasterweite Stufe 0)
     voxFern: 0.04, // × H (Stufe 1)
@@ -5007,7 +5022,7 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     const { f, nx, ny, nz, lo, hi } = feld;
     // Gelenke der Haut in Baum-Ordnung (nur die, die ein Primitiv trägt).
     let skinJoints = null;
-    if (!fein) {
+    {
         const genutzt = new Set(prims.map((p) => p.j));
         skinJoints = [];
         for (const nm of nodeName.values()) if (genutzt.has(nm)) skinJoints.push(nm);
@@ -5053,8 +5068,8 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     const eW = TIER_HAUT.eW * H;
     const geo = __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten);
     if (!geo) throw new Error("TIER-HAUT: die Hüllen-Maschine lieferte keine Fläche");
-    // Das Fell-Muster auf der Haut: L0 über die Bone-Gewichte, das Fern-Standbild nach dem nächsten Glied.
-    const gelenkeHaut = skinJoints
+    // Das Fell-Muster auf der Haut: L0 über die Bone-Gewichte, das Fern-Bild nach dem nächsten Glied.
+    const gelenkeHaut = !fein
         ? __tierHautGelenke(geo, skinJoints)
         : (i) => {
               const p = [geo.attributes.position.getX(i), geo.attributes.position.getY(i), geo.attributes.position.getZ(i)];
@@ -5503,7 +5518,7 @@ function __tierFellSchalen(hk, f, nx, ny, nz, lo, vox, zentren, skinJoints, eW2,
 // ── DER GENERISCHE GELENK-GUSS (ein Gesetz für Tier UND Mensch): Meshes in den
 // Lokal-Raum ihres nächsten ANIMIERTEN Gelenks backen, je (Gelenk × Klasse)
 // mergen, Gelenk-Baum als __skelett-Beipack (mit root-Namen) anhängen. ──
-function __bakeGelenkBaum(root, rootName, nodeName, fein, beipack) {
+function __bakeGelenkBaum(root, rootName, nodeName, fein, beipack, fernStarr) {
     root.updateMatrixWorld(true);
     const animAhn = (node) => {
         let cur = node;
@@ -5550,17 +5565,36 @@ function __bakeGelenkBaum(root, rootName, nodeName, fein, beipack) {
     }
     const buckets = new Map();
     const tmp = new THREE.Matrix4();
+    // DAS FERN-BILD DES TIERS LÄUFT MIT (Welle LF, fernStarr nur vom Tier-Guss — der Mensch bleibt byte-gleich): trägt
+    // Stufe 1 eine geskinnte Haut (skinJoints im Beipack), binden die starren Teile STARR an ihr Gelenk (Gewicht 1) und
+    // verschmelzen mit ihr je Stoff-Klasse an der Wurzel — die Zahl der Meshes bleibt, jedes Teil folgt seinem Gelenk.
+    const starrJ = fernStarr === true && fein && beipack && Array.isArray(beipack.skinJoints) ? beipack.skinJoints : null;
     root.traverse((node) => {
         // __nichtGiessen (V18.497): das Primitiv lebt in einer Haut oder fällt im Fern-Standbild.
         if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen) return;
         const a = fein ? root : animAhn(node);
         const jName = nodeName.get(a) || rootName;
         const klasse = (node.material && node.material.userData && node.material.userData.__klasse) || "fell";
-        const key = jName + "|" + klasse + (node.geometry.attributes.skinIndex ? "|skin" : "");
+        const starr = starrJ && !node.geometry.attributes.skinIndex;
+        const key = jName + "|" + klasse + (node.geometry.attributes.skinIndex || starr ? "|skin" : "");
         inv.copy(a.matrixWorld).invert();
         tmp.multiplyMatrices(inv, node.matrixWorld);
         const g2 = node.geometry.clone();
         g2.applyMatrix4(tmp);
+        if (starr) {
+            const gName = nodeName.get(animAhn(node)) || rootName;
+            let ji = starrJ.indexOf(gName);
+            if (ji < 0) ji = starrJ.push(gName) - 1;
+            const n = g2.attributes.position.count;
+            const si = new Float32Array(n * 4),
+                sw = new Float32Array(n * 4);
+            for (let i = 0; i < n; i++) {
+                si[i * 4] = ji;
+                sw[i * 4] = 1;
+            }
+            g2.setAttribute("skinIndex", new THREE.BufferAttribute(si, 4));
+            g2.setAttribute("skinWeight", new THREE.BufferAttribute(sw, 4));
+        }
         if (!buckets.has(key)) buckets.set(key, { geos: [], mat: node.material, joint: jName });
         buckets.get(key).geos.push(g2);
     });

@@ -224,8 +224,13 @@ async function checkRing2Dsl(ctx) {
         const res1 = r.dslRun(["weather", "rainy"]);
         out.weatherEffect = res1.ok && r.state.weather === "rainy";
 
-        const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", 17]]);
-        out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === 17;
+        // DIE KÖRPER-GESETZE SIND GESETZ (Leben-Schau 07.10.): player_jump_power wiegt nur im Gesetz-Band des Leibs — der
+        // Test wählt zwei Werte IM Band (17 und 22 lagen jenseits davon und landen an seinem Rand).
+        const jBand = r._koerperGesetzBand("jumpPower");
+        const jA = +(jBand.min + 0.3 * (jBand.max - jBand.min)).toFixed(3);
+        const jB = +(jBand.min + 0.7 * (jBand.max - jBand.min)).toFixed(3);
+        const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", jA]]);
+        out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === jA;
 
         const creBefore = r.state.creatures.length;
         // V18.296 — maxCreatures 120→20 (Schöpfer-Anordnung): Raum für die 2 sichern,
@@ -240,8 +245,8 @@ async function checkRing2Dsl(ctx) {
             r.state.creatures.length === creBefore + 2;
         r.state.maxCreatures = _saveMaxPos;
 
-        const res4 = r.dslRun(["when", ["weather_is", "sunny"], ["player_jump_power", 22]]);
-        out.conditionEffect = res4.ok && r.state.jumpPower === 22;
+        const res4 = r.dslRun(["when", ["weather_is", "sunny"], ["player_jump_power", jB]]);
+        out.conditionEffect = res4.ok && r.state.jumpPower === jB;
 
         const res5 = r.dslRun(["unbekannte_op_xyz", 1, 2]);
         out.unknownOpRejected = !res5.ok && res5.log.some((e) => e.event === "unknown_op");
@@ -4763,7 +4768,7 @@ async function checkBandV1758CreatureNature(ctx) {
         const idx = r.state.creatures.indexOf(timid);
         r.damageCreature(timid, 5, { source: "player" });
         out.hitSetsFear =
-            Number.isFinite(timid.userData.fearUntil) && timid.userData.fearUntil > performance.now() / 1000;
+            Number.isFinite(timid.userData.fearUntil) && timid.userData.fearUntil > r.state.creatureAnimationTime;
         out.hitSetsSad = idx >= 0 && r.state.creatureEmotions[idx] === "sad";
         out.hitFlees = r._creatureWariness(timid) >= NAT.fleeThreshold;
         timid.userData.fearUntil = 0;
@@ -19468,7 +19473,9 @@ async function checkBandVoxelTerrainCore(ctx) {
                 const ke = r.state.voxelChunks ? r.state.voxelChunks.get(`${kcx},${kcz}`) : null;
                 const karte = ke && ke.surfMap ? r._chunkSurfaceAt(ke, kcx, kcz, testX, testZ) : null;
                 const expected =
-                    Number.isFinite(karte) && Math.abs(karte - voxelY) <= r.constructor.STAND_SICHT_BAND ? karte : voxelY;
+                    Number.isFinite(karte) && Math.abs(karte - voxelY) <= r.constructor.STAND_SICHT_BAND
+                        ? karte
+                        : voxelY;
                 const actual = creature.position.y;
                 out.creatureOnVoxelSurface = Math.abs(actual - expected) < 0.5;
                 // Fallback-Wächter nur, wo Boden und Fallback unterscheidbar sind.
@@ -20329,7 +20336,10 @@ async function checkBandHydrosphere(ctx) {
             "Voxel V9.43-d: der Carve-Index ist an state.hydrosphere verdrahtet (riverBuckets/lakeBedCell/lakeW/lakeNear)",
             d.indexWired
         );
-        check("Voxel V9.43-d → Welle L: der Kanal formt einen Fluss-Mittelpunkt (Flachboden unter dem Spiegel)", d.riverCenterCarved);
+        check(
+            "Voxel V9.43-d → Welle L: der Kanal formt einen Fluss-Mittelpunkt (Flachboden unter dem Spiegel)",
+            d.riverCenterCarved
+        );
         check("Voxel V9.43-d: das Fluss-Bett liegt unter den Ufern (die Gestalt steigt zur Bank an)", d.bedBelowBanks);
         check("Voxel V9.43-d → Welle L: die Voxel-Fläche liegt auf dem Flachboden des Kanals", d.surfaceLowered);
         check(
@@ -20438,7 +20448,9 @@ async function checkBandHydrosphere(ctx) {
         check(
             "Welle 5 Klang: der Wasserfall donnert nah, schweigt fern",
             e.hasWaterfall === true && e.fallNah >= e.schwelle && e.fallFern < e.schwelle,
-            e.hasWaterfall ? `nah=${zahl(e.fallNah)} dB fern=${zahl(e.fallFern)} dB` : "kein Wasserfall in der Hydrosphäre"
+            e.hasWaterfall
+                ? `nah=${zahl(e.fallNah)} dB fern=${zahl(e.fallFern)} dB`
+                : "kein Wasserfall in der Hydrosphäre"
         );
     }
 }
@@ -22294,7 +22306,9 @@ async function checkBandWellePerfHWaterIsoQueue(ctx) {
             const [kx, kz] = k.split(",").map(Number);
             return Math.max(Math.abs(kx - pcx), Math.abs(kz - pcz));
         };
-        const alleW = [...r.state.voxelChunks.keys()].filter((k) => distW(k) <= ringW).sort((a, b) => distW(a) - distW(b));
+        const alleW = [...r.state.voxelChunks.keys()]
+            .filter((k) => distW(k) <= ringW)
+            .sort((a, b) => distW(a) - distW(b));
         const ka = alleW.find((k) => wi.has(k));
         const kb = ka ? alleW.reverse().find((k) => k !== ka && distW(k) > distW(ka) && !wi.get(k)) : null;
         if (ka && kb) {
@@ -22966,35 +22980,32 @@ async function checkBandPhasenBF(ctx) {
         out.d3Age = /FAUNA_MAX_AGE_MS/.test(window.__codeOf(r.tickFaunaLifecycle));
         out.d3Feed = /_depositLife/.test(window.__codeOf(r._creatureNaturalDeath));
         out.d4Src = /gegenwehr/.test(window.__codeOf(r.damageCreature));
-        // D4 — das Temperament emergiert aus der Seelen-Substanz (wesen [stein+holz] → wehrhaft · geist
-        // [laub+leder] → sanft · sprite [quarz] → scheu). KONSUM: die Gegenwehr liest das Profil
-        // (strikeCap/fleeMul im Treffer-Pfad); sanft/scheu haben strike 0.
+        // D4 — DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10.): die Tiere sind tag-gleich (Lehre 8), das Gemüt kommt aus
+        // Ernährung der Gattung und der EINEN Masse des Leibs (tetrapoda temperamentDerGattung, `_leibMasse` in kg) — Hirsch
+        // scheu, Wolf wild, Bär wehrhaft, Fuchs scheu; die Größe verschiebt es (ein Koloss-Hirsch wehrt sich, ein kleiner Bär
+        // ist sanft). Die Substanz-Signaturen fielen (vorher: Hirsch, Fuchs und Bär „wehrhaft"). Gefragt wird ein
+        // gegossener Leib (die Masse ist das Volumen seiner Gestalt), fern des Spielers, danach entfernt.
         out.d4Temperament = (() => {
-            const t = (soul) => r._creatureTemperament({ userData: { soul } });
-            // ALTLASTEN-NULL: sprite/geist sind gefallen — die Substanz-
-            // Diskrimination der Signaturen prüfen LITERAL-Parts (dieselbe
-            // ÷3-Norm + argmax wie _creatureTemperament).
-            const argT = (parts) => {
-                const raw = r.computeCompoundTags({ parts }) || {};
-                const tags = {};
-                const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM || 3;
-                for (const k of AnazhRealm.MATERIAL_TAG_KEYS) tags[k] = Math.max(0, Number(raw[k]) || 0) / norm;
-                return (
-                    r._resonateArgmax(tags, AnazhRealm._verhaltenGesetz().temperament.signaturen, {
-                        floor: AnazhRealm._verhaltenGesetz().temperament.floor,
-                    }).key || "scheu"
-                );
+            const pp = r.state.playerMesh.position;
+            const t = (soul, bodySize) => {
+                const c = r.spawnCreatureAt(pp.x + 200, pp.y, pp.z + 200, "happy", soul, { precise: true, bodySize });
+                if (!c) return null;
+                try {
+                    return r._creatureTemperament(c);
+                } finally {
+                    r.removeCreature(c);
+                }
             };
-            const laubWeich = [
-                { shape: "torus", material: "laub", size: { x: 0.3, y: 0.09, z: 0.3 } },
-                { shape: "sphere", material: "leder", size: { x: 0.18, y: 0.18, z: 0.18 } },
-            ];
-            const quarzAether = [
-                { shape: "octahedron", material: "quarz", size: { x: 0.22, y: 0.22, z: 0.22 } },
-                { shape: "sphere", material: "quarz", size: { x: 0.34, y: 0.34, z: 0.34 } },
-            ];
-            return t("wesen") === "wehrhaft" && argT(laubWeich) === "sanft" && argT(quarzAether) === "scheu";
+            return (
+                t("wesen", 1) === "scheu" &&
+                t("wolf", 1) === "wild" &&
+                t("baer", 1) === "wehrhaft" &&
+                t("fuchs", 1) === "scheu" &&
+                t("wesen", 2.5) === "wehrhaft" &&
+                t("baer", 0.7) === "sanft"
+            );
         })();
+        // KONSUM: die Gegenwehr liest das Profil (strikeCap/fleeMul im Treffer-Pfad); sanft/scheu haben strike 0.
         out.d4Konsum =
             /_creatureTemperament/.test(window.__codeOf(r.damageCreature)) &&
             /fleeMul/.test(window.__codeOf(r.damageCreature)) &&
@@ -23532,7 +23543,7 @@ async function checkBandPhasenBF(ctx) {
     check("D3: der Tod nährt das Feld (_depositLife im NaturalDeath, Source)", res.d3Feed);
     check("D4: die Gegenwehr lebt im Treffer-Pfad (Source, pfad-gated)", res.d4Src);
     check(
-        "D4-VOLL: Temperament emergiert aus der Seele (wesen wehrhaft · geist sanft · sprite scheu)",
+        "D4-VOLL: Temperament aus Gattung und Größe (Hirsch scheu · Wolf wild · Bär wehrhaft · Fuchs scheu · Koloss-Hirsch wehrhaft · kleiner Bär sanft)",
         res.d4Temperament
     );
     check("D4-VOLL: die Gegenwehr KONSUMIERT das Temperament-Profil (strike/fleeMul)", res.d4Konsum);
@@ -23769,7 +23780,10 @@ async function checkBandPhaseAFundament(ctx) {
         res.a5 && res.a5.knoten === true && res.a5.sichtKlar >= 5000 && res.a5.kanteKlar === true,
         res.a5 ? `sicht=${Math.round(res.a5.sichtKlar)} m kante=${res.a5.ringEdge.toFixed(1)} m` : ""
     );
-    check("A5: _dayNightApplyHemiUndLuft liest die Extinktion aus dem Wetter (_luftBeta)", res.a5 && res.a5.src === true);
+    check(
+        "A5: _dayNightApplyHemiUndLuft liest die Extinktion aus dem Wetter (_luftBeta)",
+        res.a5 && res.a5.src === true
+    );
     check("B2/N7.4: Mantel-Methoden geschnitten (ensure + dispose weg)", res.b2 && res.b2.methodsGone === true);
     check("B2/N7.4: HORIZON_MANTLE-Konstante geschnitten", res.b2 && res.b2.constGone === true);
     check(
@@ -23847,7 +23861,10 @@ async function checkBandWelle993WaterLodSeam(ctx) {
         res.totalWithCells >= 1,
         `total=${res.totalWithCells}, lod0=${res.lod0WithCells}, lod1=${res.lod1WithCells}`
     );
-    check("Welle V9.93: die Wasser-Sheet-Mathe (_computeWaterSheetData) nutzt LOD 0 fest (Source-Probe)", res.isoUsesLod0);
+    check(
+        "Welle V9.93: die Wasser-Sheet-Mathe (_computeWaterSheetData) nutzt LOD 0 fest (Source-Probe)",
+        res.isoUsesLod0
+    );
     check("Welle V9.93: _buildVoxelChunkData baut waterCells mit lod=0 (Source-Probe)", res.buildPassesLod0);
 }
 
@@ -24499,7 +24516,10 @@ async function checkBandNahStreu(ctx) {
         "Nah-Streu: die Blöcke sind treu (Σ n = Anzahl, Identitäten und Matrizen je Block, je Block ein Bereich im Streu-Satz)",
         res.tabelleDicht === true
     );
-    check("Nah-Streu: eine gebaute Kachel trägt Blöcke (Voraussetzung der Satz-Disziplin)", res.kachelMitBloecken === true);
+    check(
+        "Nah-Streu: eine gebaute Kachel trägt Blöcke (Voraussetzung der Satz-Disziplin)",
+        res.kachelMitBloecken === true
+    );
     if (!res.kachelMitBloecken) return;
     check("Nah-Streu: Entsorgen nimmt die Kachel-Blöcke aus den Senken", res.entsorgt === true);
     check("Nah-Streu: der Neubau stellt dieselben Zahlen her", res.neuGleich === true);
@@ -26940,7 +26960,10 @@ async function checkBandWelle6HCreatures(ctx) {
         check("Welle 6.H P2A: wolf-Compound trägt resoniert > 0", wave6hP2aResults.spriteHasResoniert);
         check("Welle 6.H P2A: wesen-Compound trägt lebendig > 0", wave6hP2aResults.wesenHasLebendig);
         check("Welle 6.H P2A: fuchs-Compound trägt lebendig > 0", wave6hP2aResults.geistHasLebendig);
-        check("Welle L: ein unbekannter Seelen-Wunsch ist eine laute Absage (kein Ersatz-Tier)", wave6hP2aResults.unknownSoulAbsage);
+        check(
+            "Welle L: ein unbekannter Seelen-Wunsch ist eine laute Absage (kein Ersatz-Tier)",
+            wave6hP2aResults.unknownSoulAbsage
+        );
         check("Welle L: der Schild einer Seele (Hirsch) findet sie", wave6hP2aResults.soulLabelFindet);
         check("Welle 6.H P2A: _creatureAuraOffsetY(wolf) === 0.75", wave6hP2aResults.spriteAuraOffset);
         check("Welle 6.H P2A: _creatureAuraOffsetY(wesen) === 0.8", wave6hP2aResults.wesenAuraOffset);
@@ -29955,12 +29978,12 @@ async function checkBandPsi0Winkel(ctx) {
             motion: maxCos(A.MOTION_ROLE_SIGNATURES),
             workshop: maxCos(A.WORKSHOP_DOMAIN_SIGNATURES),
             op: maxCos(A.OP_CLASS_SIGNATURES),
-            temperament: maxCos(A._verhaltenGesetz().temperament.signaturen),
         };
     });
     // FROZEN-Baseline (12.06.2026): ROLE max 0.931 / 7 Paare > 0.85 (die bewusste
     // dichte-harte Familie brecher·armor·architecture·workshop-station + held·tool);
-    // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 · TEMPERAMENT 0.116.
+    // FORM 0.220 · MOTION 0.625 · WORKSHOP 0.056 · OP 0.023 (das TEMPERAMENT-Register fiel mit den Substanz-Signaturen,
+    // Welle LF 08.10.: das Gemüt kommt aus Gattung und Größe, tetrapoda temperamentDerGattung).
     check(
         `Ψ0 Spektrum-Register: kein Signatur-Paar enger als die kalibrierte Baseline (max ${res.role.max} [${res.role.top}] ≤ 0.94 · >0.85-Paare ${res.role.warn} ≤ 7)`,
         res.role.max <= 0.94 && res.role.warn <= 7
@@ -29970,8 +29993,8 @@ async function checkBandPsi0Winkel(ctx) {
         res.form.max <= 0.35
     );
     check(
-        `Ψ0 die übrigen Register unter Baseline: MOTION ${res.motion.max} ≤ 0.65 · WORKSHOP ${res.workshop.max} ≤ 0.07 · OP ${res.op.max} ≤ 0.04 · TEMPERAMENT ${res.temperament.max} ≤ 0.13`,
-        res.motion.max <= 0.65 && res.workshop.max <= 0.07 && res.op.max <= 0.04 && res.temperament.max <= 0.13
+        `Ψ0 die übrigen Register unter Baseline: MOTION ${res.motion.max} ≤ 0.65 · WORKSHOP ${res.workshop.max} ≤ 0.07 · OP ${res.op.max} ≤ 0.04`,
+        res.motion.max <= 0.65 && res.workshop.max <= 0.07 && res.op.max <= 0.04
     );
 
     // Ψ1 (V18.167, meister-plan §8.8a) — das EINE argmax-Organ: die ~7 Inline-
@@ -29982,9 +30005,10 @@ async function checkBandPsi0Winkel(ctx) {
         const out = {};
         const liest = (fn) => typeof fn === "function" && /_resonateArgmax/.test(window.__codeOf(fn));
         out.organDa = typeof r._resonateArgmax === "function";
+        // das Temperament fiel aus dem Organ (Welle LF, Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
+        // Tiere sind tag-gleich, Lehre 8; die Kreatur-Linse `temperament` hält es)
         out.leser =
             liest(r._computeWorkshopDomain) &&
-            liest(r._creatureTemperament) &&
             liest(r._blueprintRoleGapHint) &&
             liest(r._computeFormRole) &&
             liest(r._argmaxImplementRole) &&
@@ -30000,7 +30024,7 @@ async function checkBandPsi0Winkel(ctx) {
         return out;
     });
     check(
-        "Ψ1 das EINE argmax-Organ: alle 7 Inline-Leser konsumieren _resonateArgmax (Domäne·Temperament·GapHint·FormRolle·Implement·Op·Motion)",
+        "Ψ1 das EINE argmax-Organ: alle 6 Inline-Leser konsumieren _resonateArgmax (Domäne·GapHint·FormRolle·Implement·Op·Motion)",
         psi1.organDa && psi1.leser
     );
     check(
@@ -30756,7 +30780,8 @@ async function checkBandGammaGenese(ctx) {
             // (4) Γ2 — DAS BODEN-GESETZ (Waldboden 04.10., die Host-Kronen-Lesart fiel): die Studio-Zeilen, die die
             // Nah-Streu liest, differenzieren an kontrollierten Umwelten — Farn im Schatten (die Feuchte hebt seine
             // Licht-Grenze), Schilf nur am gemessenen Ufer (Pflicht-Band), Blume im Licht.
-            const boden = A._studioRenderConfig && A._studioRenderConfig.placement && A._studioRenderConfig.placement.boden;
+            const boden =
+                A._studioRenderConfig && A._studioRenderConfig.placement && A._studioRenderConfig.placement.boden;
             const wG = window.__phytoCore && window.__phytoCore.bodenGewicht;
             if (boden && typeof wG === "function" && boden.farn && boden.schilf && boden.blume) {
                 out.gesetz = {
@@ -30779,7 +30804,12 @@ async function checkBandGammaGenese(ctx) {
                 /_feuchteAt/.test(kSrc) &&
                 /_canopyLightAt/.test(kSrc) &&
                 /_nahStreuBodenGewicht\(/.test(kSrc);
-            out.schilfData = !!(boden && boden.schilf && Array.isArray(boden.schilf.ufer) && boden.schilf.ring === "nah");
+            out.schilfData = !!(
+                boden &&
+                boden.schilf &&
+                Array.isArray(boden.schilf.ufer) &&
+                boden.schilf.ring === "nah"
+            );
             out.farnDual = !!(boden && boden.farn && Array.isArray(boden.farn.licht) && boden.farn.feuchtLicht > 0);
             out.bodenLiest = /_feuchteAt/.test(window.__codeOf(r._terrainMaterialAt));
             out.spawnReicht =
@@ -33677,7 +33707,10 @@ async function checkBandV18199GammaMLichen(ctx) {
 
     check("V18.199 (L1a) AnazhRealm.LICHEN existiert + frozen", res.lichenExists === true && res.lichenFrozen === true);
     check("V18.199 (L1b) LICHEN-Konstanten sinnvoll (lo<hi, strength∈(0,1), tint=3er)", res.constsSensible === true);
-    check("V18.199 (L2a) Source: lichenMix + lichenCluster in der Boden-Farbe (_bodenFarbeAt)", res.mainHasLichen === true);
+    check(
+        "V18.199 (L2a) Source: lichenMix + lichenCluster in der Boden-Farbe (_bodenFarbeAt)",
+        res.mainHasLichen === true
+    );
     check("V18.199 (L2b) Mix-Stack-Order: dampEarth → lichen → lava", res.mainOrderCorrect === true);
     check(
         `V18.199 (L3a) feucht+steinig → lichen sichtbar (gemessen avg ${res.lichenAvgWetStone && res.lichenAvgWetStone.toFixed(4)})`,
@@ -34691,8 +34724,7 @@ async function checkBandV18209Konsolidierung(ctx) {
         // (K3) Γ-BOGEN 2 KOMPLETT-Probe (alle 8 Γ-Wellen-Anker existieren):
         out.gamma4Anker = typeof r._macroAnker === "function";
         out.gamma6Snowband =
-            typeof r._attachVoxelFieldColors === "function" &&
-            /SNOW_PROM_START/.test(window.__codeOf(r._bodenFarbeAt));
+            typeof r._attachVoxelFieldColors === "function" && /SNOW_PROM_START/.test(window.__codeOf(r._bodenFarbeAt));
         out.gammaMStrata = typeof A.STRATA_STEIN_DEPTH === "number";
         out.gammaMLichen = !!A.LICHEN;
         out.gammaMIronBands = !!A.IRON_BANDS;
@@ -34816,34 +34848,35 @@ async function checkBandV18210Verdrahtung(ctx) {
             const sm0 = r.getGameMode ? r.getGameMode() : "frieden";
             try {
                 if (r.setGameMode) r.setGameMode("pfad");
-                const Pred = {
-                    position: new (window.THREE || A.THREE || {}).Vector3(0, 0, 0),
-                    userData: {
-                        soul: "wesen",
-                        _temperament: "wild",
-                        _temperamentSoul: "wesen",
-                        kind: "creature",
-                        boosts: [],
-                    },
-                };
-                const Prey = {
-                    position: new (window.THREE || A.THREE || {}).Vector3(10, 0, 0),
-                    userData: {
-                        soul: "fuchs",
-                        _temperament: "scheu",
-                        _temperamentSoul: "fuchs",
-                        kind: "creature",
-                        boosts: [],
-                    },
-                };
+                // ECHTE Leiber (Welle LF): die Beute ist, wer höchstens jagd.beuteMasse × die Masse des Jägers trägt — die
+                // EINE Masse des Leibs (`_leibMasse`) liest die Gestalt; ein körperloser Stub hat keine, das Urteil bräche
+                // fail-closed. Der Wolf jagt (wild), der Fuchs (15 kg) ist seine Beute.
                 const savedC = r.state.creatures;
-                r.state.creatures = [Pred, Prey];
-                r._creatureScentHuntDir(Pred, 0.0);
-                const after1 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
-                r._creatureScentHuntDir(Pred, 0.0);
-                const after2 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
-                out.a3SizeCacheReuse = after1 === 1 && after2 === 1;
+                const pmA = r.state.playerMesh.position;
+                const capA = r.state.maxCreatures;
+                r.state.maxCreatures = Math.max(capA || 0, savedC.length + 2);
+                const Pred = r.spawnCreatureAt(pmA.x + 360, pmA.y, pmA.z - 360, "calm", "wolf", {
+                    precise: true,
+                    bodySize: 1,
+                });
+                const Prey =
+                    Pred &&
+                    r.spawnCreatureAt(pmA.x + 370, pmA.y, pmA.z - 360, "calm", "fuchs", {
+                        precise: true,
+                        bodySize: 1,
+                    });
+                r.state.maxCreatures = capA;
+                if (Pred && Prey) {
+                    r.state.creatures = [Pred, Prey];
+                    r._creatureScentHuntDir(Pred, 0.0);
+                    const after1 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
+                    r._creatureScentHuntDir(Pred, 0.0);
+                    const after2 = r._scentSizeBySoul ? r._scentSizeBySoul.size : 0;
+                    out.a3SizeCacheReuse = after1 === 1 && after2 === 1;
+                }
                 r.state.creatures = savedC;
+                if (Pred) r.removeCreature(Pred);
+                if (Prey) r.removeCreature(Prey);
             } finally {
                 if (r.setGameMode) r.setGameMode(sm0);
             }
@@ -34982,13 +35015,16 @@ async function checkBandV18210Verdrahtung(ctx) {
         out.a3HuntDirExists = typeof r._creatureScentHuntDir === "function";
         out.a3StrikeExists = typeof r._tickCreatureScentStrike === "function";
         // (A3b) Konstanten gesetzt
+        // (Welle LF: die Witterung wählt die Beute an der Nase — der Proben-Schritt des Gradienten scentProbeM fiel;
+        // der Ring der Hetze hetzM und die Pirsch-Sicht sind Jagd-Gesetz)
         out.a3ScentRangeM = A._verhaltenGesetz().jagd.scentRangeM;
-        out.a3ScentProbeM = A._verhaltenGesetz().jagd.scentProbeM;
+        out.a3ScentProbeM = A._verhaltenGesetz().jagd.hetzM;
         out.a3ConstsOk =
             typeof out.a3ScentRangeM === "number" &&
             out.a3ScentRangeM >= 30 &&
             typeof out.a3ScentProbeM === "number" &&
-            out.a3ScentProbeM > 0;
+            out.a3ScentProbeM > 0 &&
+            A._verhaltenGesetz().jagd.scentProbeM === undefined;
         // (A3c) SOURCE-PROBE: der Helper ruft _scentAt
         out.a3HelperUsesScent = /_scentAt/.test(window.__codeOf(r._creatureScentHuntDir));
         // (A3d) SOURCE-PROBE: der wander-Pfad in updateCreatures ruft den Helper
@@ -35000,35 +35036,28 @@ async function checkBandV18210Verdrahtung(ctx) {
         const savedCreatures = r.state.creatures;
         try {
             if (r.setGameMode) r.setGameMode("pfad");
-            // Fake-wildes Wesen (cached temperament=wild)
-            const predator = {
-                position: new (window.THREE || A.THREE || {}).Vector3(0, 0, 0),
-                userData: {
-                    soul: "wesen",
-                    _temperament: "wild",
-                    _temperamentSoul: "wesen",
-                    kind: "creature",
-                    boosts: [],
-                },
-            };
-            // Fake-Beute (sanft, in 20m östlich)
-            const prey = {
-                position: new (window.THREE || A.THREE || {}).Vector3(20, 0, 0),
-                userData: {
-                    soul: "fuchs",
-                    _temperament: "scheu",
-                    _temperamentSoul: "fuchs",
-                    kind: "creature",
-                    boosts: [],
-                },
-            };
-            r.state.creatures = [predator, prey];
-            const dirWithPrey = r._creatureScentHuntDir(predator, 0.0);
-            out.a3PredatorHasDir = !!(dirWithPrey && (dirWithPrey.x !== 0 || dirWithPrey.z !== 0));
-            // Ohne Beute → null
-            r.state.creatures = [predator];
-            const dirNoPrey = r._creatureScentHuntDir(predator, 0.0);
-            out.a3NoPreyNoDir = dirNoPrey === null;
+            // ein wildes Wesen und seine Beute 20 m östlich — ECHTE Leiber (Welle LF: das Beute-Urteil liest die EINE Masse
+            // des Leibs aus der Gestalt; der Wolf jagt, der Fuchs ist scheu und seine Beute)
+            const pmH = r.state.playerMesh.position;
+            const capH = r.state.maxCreatures;
+            r.state.maxCreatures = Math.max(capH || 0, savedCreatures.length + 2);
+            const optH = { precise: true, bodySize: 1 };
+            const predator = r.spawnCreatureAt(pmH.x + 380, pmH.y, pmH.z - 380, "calm", "wolf", optH);
+            const prey = predator && r.spawnCreatureAt(pmH.x + 400, pmH.y, pmH.z - 380, "calm", "fuchs", optH);
+            r.state.maxCreatures = capH;
+            if (predator && prey) {
+                prey.position.set(predator.position.x + 20, predator.position.y, predator.position.z);
+                r.state.creatures = [predator, prey];
+                const dirWithPrey = r._creatureScentHuntDir(predator, 0.0);
+                out.a3PredatorHasDir = !!(dirWithPrey && (dirWithPrey.x !== 0 || dirWithPrey.z !== 0));
+                // Ohne Beute → null
+                r.state.creatures = [predator];
+                const dirNoPrey = r._creatureScentHuntDir(predator, 0.0);
+                out.a3NoPreyNoDir = dirNoPrey === null;
+            }
+            r.state.creatures = savedCreatures;
+            if (predator) r.removeCreature(predator);
+            if (prey) r.removeCreature(prey);
             // Strike-Range-Test mit ECHTEN Leibern (0710-4: der Biss stößt durch das EINE Impuls-Gesetz und liest die
             // Masse aus der Gestalt — ein körperloser Stub hat keine, der Biss bräche fail-closed): ein Wolf, ein Fuchs
             // in 1,5 m → der Biss trifft UND stößt die Beute vom Jäger weg.
@@ -35182,7 +35211,7 @@ async function checkBandV18210Verdrahtung(ctx) {
     check("V18.210-A3a _creatureScentHuntDir Helper existiert", res.a3HuntDirExists === true);
     check("V18.210-A3a2 _tickCreatureScentStrike Helper existiert", res.a3StrikeExists === true);
     check(
-        `V18.210-A3b VERHALTEN.jagd.scentRangeM/scentProbeM Gesetz (range=${res.a3ScentRangeM}, probe=${res.a3ScentProbeM})`,
+        `V18.210-A3b VERHALTEN.jagd.scentRangeM/hetzM Gesetz, kein Gradienten-Schritt (range=${res.a3ScentRangeM}, hetzM=${res.a3ScentProbeM})`,
         res.a3ConstsOk === true
     );
     check("V18.210-A3c SOURCE: Helper ruft _scentAt", res.a3HelperUsesScent === true);
@@ -36518,8 +36547,7 @@ async function checkBandV18218LODStufen(ctx) {
             if (B && B.rock && pm && r._foundryEnabled()) {
                 const felsFern = (reg) =>
                     (reg && Array.isArray(reg.cells) ? reg.cells : []).filter(
-                        (c) =>
-                            c.layer === "rock" && c.lod >= 2 && Math.hypot(c.x - pm.x, c.z - pm.z) >= A.ANALOG_NAH_M
+                        (c) => c.layer === "rock" && c.lod >= 2 && Math.hypot(c.x - pm.x, c.z - pm.z) >= A.ANALOG_NAH_M
                     );
                 const bau = (k) => {
                     const [x, z] = k.split(",").map(Number);
@@ -36545,7 +36573,8 @@ async function checkBandV18218LODStufen(ctx) {
                     try {
                         B.rock.fernform = "boden";
                         const fz = felsFern(bau(key));
-                        out.fernBoden = fz.length > 0 && fz.every((c) => c.form === "boden" && !c.slots.length && !c.feld);
+                        out.fernBoden =
+                            fz.length > 0 && fz.every((c) => c.form === "boden" && !c.slots.length && !c.feld);
                     } finally {
                         B.rock.fernform = alt;
                     }
@@ -36654,7 +36683,10 @@ async function checkBandV18218LODStufen(ctx) {
     check("V18.218 (B6) Hysterese cur=0 + dist=t01+2h → wechselt 1", res.hyst0to1Above === true);
     check("V18.218 (B7) Hysterese cur=1 + dist=t01−2h → kehrt zu 0", res.hyst1to0Below === true);
     check("V18.218 (B8) Hysterese cur=1 + dist=t01−h/2 → bleibt 1", res.hyst1to0Above === true);
-    check("V18.526 Mehrstufen-Sprung: cur=0 jenseits t12+h → 2, cur=2 unter t01−h → 0", res.sprung0to2 === true && res.sprung2to0 === true);
+    check(
+        "V18.526 Mehrstufen-Sprung: cur=0 jenseits t12+h → 2, cur=2 unter t01−h → 0",
+        res.sprung0to2 === true && res.sprung2to0 === true
+    );
     check(
         `W1 KONSUM: rock.fernform="boden" → die neu gebaute Region trägt jenseits der Nah-Grenze form boden ohne Geometrie, zurück → gesetz (Region ${res.fernRegion}, ${res.fernZellen} Fern-Felsen)`,
         res.fernBoden === true && res.fernGesetz === true
@@ -37819,7 +37851,9 @@ async function checkBandRauschGesetz(ctx) {
     );
     const g = res.graph || {};
     const atlas = (g.texturen && g.texturen["rausch-atlas"]) || 0;
-    const namen = Object.entries(g.rauschNamen || {}).map(([f, c]) => f + " ×" + c).join(", ");
+    const namen = Object.entries(g.rauschNamen || {})
+        .map(([f, c]) => f + " ×" + c)
+        .join(", ");
     check(
         `RAUSCH-GESETZ (B) KONSUM: der gezeichnete Boden-Stoff trägt im Knoten-Graph ${atlas} Atlas-Ladungen (Soll 78), ${g.rauschen} Rausch-Funktionen (Soll 0${namen ? ": " + namen : ""}) und ${g.verborgen} verborgene Fn-Rümpfe (Soll 0) — ${g.knoten} Knoten aus ${(g.slots || []).length} Slots${g.fehler ? " — " + g.fehler : ""}`,
         !g.fehler && g.rauschen === 0 && g.verborgen === 0 && atlas === 78
@@ -38025,8 +38059,14 @@ async function checkBandWahrerAnblickAtmoBusch(ctx) {
         `Ω-OPSIS S4 (IV4) ein gewachsener Busch ist reich (≥8 Teile, gemessen ${res.buschParts})`,
         res.buschIsRich === true
     );
-    check("Ω-OPSIS S5 (V1) → V18.530: die Luft koppelt ans Wetter (Extinktion aus dem fog-Kanal)", res.hazeWeather === true);
-    check("Ω-OPSIS S5 (V2) CONSUM: Regen trübt die Sicht, Sturm mehr (β sonnig < Regen < Sturm)", res.hazeNearWeather === true);
+    check(
+        "Ω-OPSIS S5 (V1) → V18.530: die Luft koppelt ans Wetter (Extinktion aus dem fog-Kanal)",
+        res.hazeWeather === true
+    );
+    check(
+        "Ω-OPSIS S5 (V2) CONSUM: Regen trübt die Sicht, Sturm mehr (β sonnig < Regen < Sturm)",
+        res.hazeNearWeather === true
+    );
     check("Ω-OPSIS S5 (V3) die Luft-Uniforms existieren (β, Skalenhöhe)", res.hazeNearUniform === true);
     check(`Ω-OPSIS S4/S5 (VER) VERSION floor ≥ 18.231.0 (gemessen ${res.versionStr})`, res.versionFloor === true);
 }
@@ -38046,7 +38086,8 @@ async function checkBandV18264ShadowCache(ctx) {
         // CONSUM: der Aktuator fährt _shadowMinInterval (source-probe).
         out.actuatorDrives = /_shadowMinInterval/.test(window.__codeOf(r._nexusPerfActuate));
         const csm = st.csmNode;
-        const lichter = csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
+        const lichter =
+            csm && csm.lights && csm.lights.length ? csm.lights : st.directionalLight ? [st.directionalLight] : [];
         out.lichter = lichter.length;
         if (!out.hasMethod || !lichter.length || !A.SCHATTEN_TAKT) return out;
         const zaehle = (n) => {
@@ -40141,7 +40182,10 @@ async function checkBandWelle6XAudit(ctx) {
             "Welle 6.X.3 C1: at_player_forward(8) liefert Position 8m vor Spieler (yaw=0)",
             wave6x3Results.atPlayerForwardOffset
         );
-        check("Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → +X, die EINE Vorwärts-Richtung)", wave6x3Results.atPlayerForwardYawAware);
+        check(
+            "Welle 6.X.3 C1: at_player_forward respektiert yaw (π/2 → +X, die EINE Vorwärts-Richtung)",
+            wave6x3Results.atPlayerForwardYawAware
+        );
         check("Welle 6.X.3 C1: Chat 'baue dorf hier' parst zu DSL", wave6x3Results.chatBuildDorfParses);
         check(
             "Welle 6.X.3 C1: Chat 'baue dorf hier' Format [spawn_village, at, seed]",
@@ -40766,7 +40810,8 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             r._applyDayNightToScene();
             const grenzeNacht = starU.value;
             const hellster = Math.min(...r.constructor.HIMMEL.wandelsterne.map((w) => w.mag));
-            out.starsBrighterAtNight = grenzeMittag < hellster - 0.5 && grenzeNacht >= r.constructor.HIMMEL.sternMagSchwach;
+            out.starsBrighterAtNight =
+                grenzeMittag < hellster - 0.5 && grenzeNacht >= r.constructor.HIMMEL.sternMagSchwach;
         }
 
         // --- Vision 9: Sonne + Mond Meshes existieren + folgen Tageszeit
@@ -40860,7 +40905,10 @@ async function checkBandWelle6G3Lebendigkeit(ctx) {
             "Welle 6.G3 V2 Vision: Stern-Feld-Opacity existiert (V8.28 THREE.Points)",
             wave6g3v2Results.starIntensityExists
         );
-        check("Welle 6.G3 V2 Vision → V18.530: mittags ist kein Punkt sichtbar (Grenzgröße unter dem hellsten Wandelstern), nachts alle bis +6", wave6g3v2Results.starsBrighterAtNight);
+        check(
+            "Welle 6.G3 V2 Vision → V18.530: mittags ist kein Punkt sichtbar (Grenzgröße unter dem hellsten Wandelstern), nachts alle bis +6",
+            wave6g3v2Results.starsBrighterAtNight
+        );
         check("Welle 6.G3 V2 Vision: state.sunMesh ist THREE.Mesh", wave6g3v2Results.sunMeshExists);
         check("Welle 6.G3 V2 Vision: state.moonMesh ist THREE.Mesh", wave6g3v2Results.moonMeshExists);
         check("Welle 6.G3 V2 Vision: Sonne hoch am Mittag (y > 100)", wave6g3v2Results.sunHighAtNoon);
@@ -41848,7 +41896,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
         check("V8.30: state.playerUnderwater-Flag existiert", v830Results.underwaterFlagExists);
         check("V8.30: Render-Loop hat Wasser-Auftrieb", v830Results.waterBuoyancy);
         check("V8.30: Bewegung wird unter Wasser gebremst", v830Results.waterSpeedCut);
-        check("V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (die EINE Szenen-Tiefe)", v830Results.waterDepthShoreline);
+        check(
+            "V13.5: Wasser-Shader hat Tiefenpuffer-Uferlinie (die EINE Szenen-Tiefe)",
+            v830Results.waterDepthShoreline
+        );
         check("V13.5: Wasser-Shader hat Emotions-Kopplungs-Haken (uniform)", v830Results.waterEmotionHook);
         check("V13.9: Wasser-Shader hat Min-Depth-Cull-Uniform (justierbar)", v830Results.waterMinDepthUniform);
         check("V13.9.2: Min-Depth-Cull-Uniform trägt endlichen, ≥0-Wert", v830Results.waterMinDepthValueOk);
@@ -41904,7 +41955,10 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v831Results && !v831Results.error) {
-        check("V8.31 → V18.530: das Wasser dunstet durch die EINE Luft (scene.fogNode, keine Fog-Uniforms)", v831Results.waterFogUniforms);
+        check(
+            "V8.31 → V18.530: das Wasser dunstet durch die EINE Luft (scene.fogNode, keine Fog-Uniforms)",
+            v831Results.waterFogUniforms
+        );
         check("V8.31 → V18.530: kein Wasser-eigener Nebel-Mix im Builder", v831Results.waterFogInShader);
         check("V8.31: Wasser-Wellen heterogen (Mehr-Skalen organische Dünung, V18.368)", v831Results.waterHeteroSwell);
     } else {
@@ -41976,8 +42030,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     if (v832Results && !v832Results.error) {
         check("V8.32: state.playerEyesUnderwater-Flag existiert", v832Results.eyesFlagExists);
         check("V8.32: playerEyesUnderwater wird aus scaledY+1.6 berechnet (Augen-Höhe)", v832Results.eyesFlagComputed);
-        check("V8.32 → Welle L: die Unterwasser-Luft folgt dem Kamera-Medium (nie den Augen des Körpers)", v832Results.tintUsesEyesFlag);
-        check("W10: EIN Schlick-Fresnel (WASSER_GESETZ) spiegelt die Himmels-Umgebung und treibt die Deckung", v832Results.waterFresnel);
+        check(
+            "V8.32 → Welle L: die Unterwasser-Luft folgt dem Kamera-Medium (nie den Augen des Körpers)",
+            v832Results.tintUsesEyesFlag
+        );
+        check(
+            "W10: EIN Schlick-Fresnel (WASSER_GESETZ) spiegelt die Himmels-Umgebung und treibt die Deckung",
+            v832Results.waterFresnel
+        );
         check("V8.32 → V18.530: kein Fog-Slider mehr (die Luft ist Physik)", v832Results.fogSliderTo300);
         check("V8.32 → V18.530: kein setFogDistance mehr", v832Results.fogDistanceTo3);
     } else {
@@ -46708,13 +46768,14 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
         const out = {};
         const src = window.__codeOf(r.updateCreatures);
         // Strukturell (Welle L): die Kohäsion ist die Herden-Form des Kerns (tetrapoda herdeZug) über die 9 Gitter-Zellen
-        // um das Tier, und herdeZug misst das Quadrat vor jeder Wurzel (O(N²) entschärft); kein Hindernis-Strahl je Tier
-        // und Frame — der EINE Leib löst gegen die Hüllen (_kreaturHuellenKontakt). Scratch gepoolt.
+        // um das Tier, und herdeZug zieht nur jenseits des Paar-Raums (Welle LF: der persönliche Raum je Leib); kein
+        // Hindernis-Strahl je Tier und Frame — der EINE Leib löst gegen die Hüllen (_kreaturHuellenKontakt). Scratch gepoolt.
         const herde = String(r.constructor._steuerGesetz().herdeZug);
         out.herdeImGitter =
-            /herdeZug\(/.test(src) && /flockGrid\.get\(/.test(src) && /dsq > H\.minAbstSq && dsq < H\.fensterSq/.test(herde);
-        out.leibStattStrahl =
-            /this\._kreaturHuellenKontakt\(/.test(src) && !/_runRaycast\(|_fieldRaycast\(/.test(src);
+            /herdeZug\(/.test(src) &&
+            /flockGrid\.get\(/.test(src) &&
+            /d > paar && d < paar \* H\.fensterRaum/.test(herde);
+        out.leibStattStrahl = /this\._kreaturHuellenKontakt\(/.test(src) && !/_runRaycast\(|_fieldRaycast\(/.test(src);
         out.scratchPooled = /_creatureScratchDir/.test(src);
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
         // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
@@ -46754,7 +46815,10 @@ async function checkBandV8LatePolishAnd6XContinued(ctx) {
     });
 
     if (v849Results && !v849Results.error) {
-        check("Welle L: die Kohäsion ist herdeZug über das Gitter (Quadrat vor der Wurzel, O(N²) entschärft)", v849Results.herdeImGitter);
+        check(
+            "Welle L: die Kohäsion ist herdeZug über das Gitter (Quadrat vor der Wurzel, O(N²) entschärft)",
+            v849Results.herdeImGitter
+        );
         check("Welle L: kein Hindernis-Strahl je Tier — der Leib löst gegen die Hüllen", v849Results.leibStattStrahl);
         check("V8.49: Scratch-Vektoren gepoolt (keine Pro-Kreatur-Allokation)", v849Results.scratchPooled);
         check("V8.49: updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
@@ -47535,7 +47599,10 @@ async function checkBandWelle6HBuildAndPersist(ctx) {
                 wave6hP2dResults.hasSkillKey
         );
         check("Welle 6.H P2D: skillKeyForMemory mappt gathered → gather:material", wave6hP2dResults.skillKeyGather);
-        check("Welle 5 Klang: der Aufstieg klingt mit der Stimme des Tiers (genau ein Ruf)", wave6hP2dResults.levelUpRuft);
+        check(
+            "Welle 5 Klang: der Aufstieg klingt mit der Stimme des Tiers (genau ein Ruf)",
+            wave6hP2dResults.levelUpRuft
+        );
         check("Welle 6.H P2D: skillKeyForMemory mappt built → build:blueprint", wave6hP2dResults.skillKeyBuild);
         check(
             "Welle 6.H P2D: skillKeyForMemory failures (no_material, delivered) → null",
@@ -53120,18 +53187,28 @@ async function checkBandEarlyRingsAndUi(ctx) {
         const happyCount = r.state.creatureEmotions.filter((e) => e === "happy").length;
         out.hopeTriggersSunnyHappy = r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
 
-        // (c) peace > 0.7 → creatures_speed_mul = 0.7 (also speedMul wird kleiner)
+        // (c) peace > 0.7 → creatures_speed_mul = 0.7: der Tempo-Hauch der Tiere (Leben-Schau 07.10.: der alte Op schrieb
+        // userData.speedMul, das niemand las) — jedes Tier trägt den Hauch, und sein Charakter-Tempo LIEST ihn (im Band).
         for (const k of Object.keys(p.emotionLastApply)) p.emotionLastApply[k] = -Infinity;
         p.emotions.peace = 0.9;
-        // speedMul zurücksetzen, damit der Vergleich verlässlich ist
-        for (const cr of r.state.creatures) {
-            if (cr.userData) cr.userData.speedMul = 1;
-        }
+        // den Hauch zurücksetzen, damit der Vergleich verlässlich ist
+        const tempoVor = r.state.creatures.map((cr) => {
+            if (cr.userData) cr.userData.tempoHauch = 1;
+            return r._creatureMoveCharacter(cr).speedMul;
+        });
         p.emotionLastTick = 499;
         r.updatePlayerEmotions(500);
+        const W = r.constructor._verhaltenGesetz().wandern;
         const allSlowed =
             r.state.creatures.length > 0 &&
-            r.state.creatures.every((cr) => cr.userData && Math.abs(cr.userData.speedMul - 0.7) < 1e-6);
+            r.state.creatures.every((cr, i) => {
+                const sm = r._creatureMoveCharacter(cr).speedMul;
+                return (
+                    cr.userData &&
+                    Math.abs(cr.userData.tempoHauch - 0.7) < 1e-6 &&
+                    (sm < tempoVor[i] - 1e-9 || Math.abs(sm - W.speedMulMin) < 1e-9)
+                );
+            });
         out.peaceTriggersSlowdown = allSlowed;
 
         // (d) Generator-Modulation: hoher joy → mehr "sunny" als "rainy"
@@ -53179,7 +53256,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
     } else {
         check("Ring 3 V2: awe > 0.7 triggert Skybox-Farbe", ring3v2Results.aweTriggersSkybox);
         check("Ring 3 V2: hope > 0.7 triggert chain(sunny, happy)", ring3v2Results.hopeTriggersSunnyHappy);
-        check("Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (speedMul=0.7)", ring3v2Results.peaceTriggersSlowdown);
+        check(
+            "Ring 3 V2: peace > 0.7 verlangsamt Kreaturen (Tempo-Hauch 0,7, gelesen im Wander-Band)",
+            ring3v2Results.peaceTriggersSlowdown
+        );
         check(
             "Ring 3 V2: Generator-Bias — joy=1.0 → sunny dominiert (>2× rainy)",
             ring3v2Results.joyBiasWorks,
@@ -53208,7 +53288,8 @@ async function checkBandEarlyRingsAndUi(ctx) {
         out.keinDrohn = !("ambient" in s) && !("weather" in s) && !("hydroAudio" in s);
         out.masterAusGesetz =
             Math.abs(s.masterGain.gain.value - UM.masterBasis * (s.masterVolume == null ? 1 : s.masterVolume)) < 1e-6;
-        out.busAmRegler = Math.abs(s.umwelt.bus.gain.value - (s.creaturePingVolume == null ? 1 : s.creaturePingVolume)) < 1e-6;
+        out.busAmRegler =
+            Math.abs(s.umwelt.bus.gain.value - (s.creaturePingVolume == null ? 1 : s.creaturePingVolume)) < 1e-6;
 
         // (b) Der Regen ist der rain-Kanal des Wetter-Felds (transition-aware) — die Lage am Ohr liest ihn, die
         //     Mischung des Gesetzes macht ihn hörbar (rainy) oder stumm (sunny).
@@ -53262,7 +53343,10 @@ async function checkBandEarlyRingsAndUi(ctx) {
         check("Welle 5 Klang: kein Drohn, keine Wetter-/Hydro-Schicht neben dem Gesetz", ring4Results.keinDrohn);
         check("Welle 5 Klang: Master = UMWELT.masterBasis × Regler (EIN Mischpult)", ring4Results.masterAusGesetz);
         check("Welle 5 Klang: der Bus der Klang-Welt hängt am Umgebungs-Regler", ring4Results.busAmRegler);
-        check("Welle 5 Klang: Regen = rain-Kanal des Wetter-Felds (rainy hörbar, sunny stumm)", ring4Results.regenAusFeld);
+        check(
+            "Welle 5 Klang: Regen = rain-Kanal des Wetter-Felds (rainy hörbar, sunny stumm)",
+            ring4Results.regenAusFeld
+        );
         check("Welle 5 Klang: symphonyTick mischt die Lage am Ohr", ring4Results.taktMischt);
         check("Welle 5 Klang: _tierRuf zählt jeden Ruf", ring4Results.rufZaehlt);
         check("Ring 4: masterGain im plausiblen Bereich (0..1)", ring4Results.masterGainSane);
@@ -54879,7 +54963,8 @@ async function checkBandRing6Workshop(ctx) {
         // Slot-Label folgt aus blueprints.label
         const firstSlotLabel = bar.querySelector('.hotbar-slot[data-slot="0"] .label');
         out.firstSlotShowsLabel =
-            !!firstSlotLabel && (!hb0[0] || firstSlotLabel.textContent === (r.state.blueprints[hb0[0]].label || hb0[0]));
+            !!firstSlotLabel &&
+            (!hb0[0] || firstSlotLabel.textContent === (r.state.blueprints[hb0[0]].label || hb0[0]));
 
         // setHotbarSlot setzt slot 5 auf eigenen Bauplan
         r.state.blueprints["test_hotbar_bp"] = {

@@ -1611,7 +1611,6 @@ async function probeLeben(expected) {
             return d - b.leib.radius; // < 0: im Leib
         };
         const quer = Number.isFinite(gasse && gasse.fahrt) ? gasse.fahrt + Math.PI / 2 : 0;
-        const SEPW = Object.getPrototypeOf(r).constructor._verhaltenGesetz().separation;
         let baerLeib = null;
         const baerHalten = (b) => {
             b.c.position.set(b.x, b.y, b.z);
@@ -1631,7 +1630,9 @@ async function probeLeben(expected) {
                 baerLeib = {
                     radius: b.leib.radius,
                     halb: b.leib.halb,
-                    kreis: 0.5 * SEPW.radiusBaseM * (c.userData.bodySize || 1),
+                    // (der feste Paar-Radius 1,6 m dieses Kreises fiel mit dem persönlichen Raum, Welle LF — die Zahl
+                    // bleibt als Bericht des Vor-Stands)
+                    kreis: 0.5 * 1.6 * (c.userData.bodySize || 1),
                 };
                 return b;
             },
@@ -3293,7 +3294,7 @@ async function probeLeben(expected) {
         const h6Rot = huelleWand(
             quelle.replace(
                 /(\n {4}_fahrHuelleKontakt\([^)]*\) \{)/,
-                "$1\n        const SEP = AnazhRealm._verhaltenGesetz().separation;\n        const rcAlt = 0.5 * SEP.radiusBaseM;"
+                "$1\n        const SEP = AnazhRealm._verhaltenGesetz().separation;\n        const rcAlt = 0.5 * SEP.raumKugel;"
             )
         );
         check(

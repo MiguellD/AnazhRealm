@@ -11,6 +11,13 @@
 > Eingefroren S1 Wände (07.10.2026): der Handbeweis aus `3a0248e8` (das Fell folgt der Haut, „sha256 je
 > Stoff-Klasse × Gelenk, 189 Klassen") und `8e6f628c` (die Hand-Mitte, „Mensch-Bake byte-gleich, 53
 > Klassen") als Datei.
+>
+> Vertrags-Akt Welle LF (08.10.2026, der ferne Gang): die Tier-Stufe 1 (das Fern-Bild) ist geskinnt — die Haut
+> trägt Gelenk-Gewichte wie Stufe 0, jedes starre Teil hängt starr (Gewicht 1) an seinem Gelenk, `skinJoints`
+> reist im Beipack. 28 Klassen neu geprägt (je Art `L1|fell · straehneD · nase · dunkel · tierauge · pupille`
+> am Gelenk `wolf` und `L1|beipack`); Beweis: ohne `skinIndex`/`skinWeight` im Fingerabdruck trifft jede
+> L1-Stoff-Klasse ihr altes Golden byte-genau (Lage · Normale · Farbe · Index · Stoff), Stufe 0, alle 142
+> Gelenke und der Mensch bleiben unberührt.
 
 ## Fälle
 

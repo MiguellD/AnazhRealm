@@ -32,3 +32,32 @@ Ohne diese drei Felder ist das kanonische JSON byte-gleich (geprüft). Die Höhe
 `freude.hopHochM`/`hopBasisM`, der Abflug v0 = √(2·g·h) (Wirt `creatureJump`); der m/s-Abflug der Aktionen war ihr
 Zwilling (der frohe Sprung stieg 0,52 statt 1,2 m). Wächter: gate:studio-vertrag (hop nur `true`, kein `sprung`),
 gate:altlasten (`impulsProM` auch im Gesetzbuch), gate:kreatur-takt huepfer (Scheitel = Freude-Gesetz).
+
+**Vertrags-Akt 08.10.2026 (Welle LF rudel — DAS TEMPERAMENT DER GATTUNG):** `tetrapoda-core.js` neu gemintet
+(`508ac6c14735…` → `052f6bddb264…`, klang- und koerper-core byte-gleich). Geändert sind genau 28 Felder in
+`PRESETS.<tier>.fx.verhalten` (wolf · fox · bear · deer): `temperament.signaturen` und `temperament.floor` fielen,
+`temperament.gattung` kam; `furcht.boldFromDichte/boldFromHärte/shyFromLebendig` fielen, `furcht.mutGewicht` kam. Ohne
+diese Felder ist das kanonische JSON byte-gleich (geprüft). Das Gemüt eines Tiers ist `temperamentDerGattung(dials,
+bodySize, gattung)` (Ernährung × Masse; Lehre 8: die Tiere sind tag-gleich). Wächter: gate:studio-vertrag (Gattungs-Zeile
+Pflicht, Signaturen und Substanz-Gewichte kehren nicht zurück, Selbsttest), gate:kreatur-takt temperament.
+
+**Vertrags-Akt 08.10.2026 (Welle LF rudel — DER PERSÖNLICHE RAUM):** `tetrapoda-core.js` neu gemintet (`052f6bddb264…` →
+`42238c7bdb5e…`, klang- und koerper-core byte-gleich). Geändert sind genau 24 Felder in `PRESETS.<tier>.fx.verhalten`:
+`separation.radiusBaseM` → `separation.raumKugel`, `herde.minAbstSq`/`fensterSq` → `herde.fensterRaum`,
+`furcht.neugierStoppM` fiel. Ohne diese Felder byte-gleich (geprüft). Der Raum eines Tiers ist seine Körper-Kugel ×
+`raumKugel` (Art und Größe), herdeZug zieht nur jenseits des Paar-Raums und liefert das Mittel. Wächter: gate:studio-vertrag
+(die alten Felder kehren nicht zurück), gate:kreatur-takt abstand.
+
+**Vertrags-Akt 08.10.2026 (Welle LF rudel — DIE JAGD SCHLIESST SICH):** `tetrapoda-core.js` neu gemintet (`42238c7bdb5e…` →
+`195c1576f10a…`, klang- und koerper-core byte-gleich). Geändert sind genau 20 Felder in `PRESETS.<tier>.fx.verhalten`:
+`jagd.hetzM`, `jagd.pirschSichtM`, `jagd.beuteMasse` kamen, `jagd.scentProbeM` und `furcht.fleeSpeedBoost` fielen. Ohne
+diese Felder byte-gleich (geprüft). Additiv außerhalb der Rezepte: `STEUER_GESETZ.sprint` und `sprintTempo(L)` (der Galopp
+der Gestalt). Wächter: gate:studio-vertrag, gate:kreatur-takt jagdkreis und rudel.
+
+**Vertrags-Akt 08.10.2026 (Welle LF rudel auf V18.536 — DIE EINE MASSE):** `tetrapoda-core.js` neu gemintet
+(`195c1576f10a…` → `ff117e3da9fe…`, klang- und koerper-core byte-gleich). Geändert sind genau 28 Felder in
+`PRESETS.<tier>.fx.verhalten`: `temperament.gattung.jagdMasse/wehrMasse/kolossMasse` (die Dial-Masse size × Größe) →
+`jagdKg 21,5 · wehrKg 200 · kolossKg 600`, `jagd.beuteMasse` 1,25 → 2,0. Ohne diese Felder byte-gleich (geprüft). Das
+Gemüt und die Beute lesen die EINE Masse des Leibs (Volumen der Gestalt × `MASSSTAB.dichteKgM3`, Wirt `_leibMasse`), die
+auch das Impuls-Gesetz liest; `temperamentDerGattung(dials, kg, gattung)`. Wächter: gate:studio-vertrag (die Dial-Masse
+kehrt nicht zurück), gate:kreatur-takt temperament (Täter `temperament-masse`), gate:kampf-gefuehl (kein `_kreaturMasse`).
