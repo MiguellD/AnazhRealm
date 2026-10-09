@@ -97494,7 +97494,11 @@ AnazhRealm.HOEHLEN_LICHT_KACHEL_M = 4;
 // Ein Wachsen (Vertices ×1,5, Indizes ×1,25 oder auf die Summe) kostet eine frische Geometrie mit vollem Upload.
 AnazhRealm.CHUNK_SATZ = Object.freeze({
     boden: Object.freeze({ v: 229376, i: 1310720 }),
-    wasser: Object.freeze({ v: 1 << 16, i: 1 << 18 }),
+    // Der Wasser-Satz (0910-1 B) beginnt bei seinem Inhalt an der Mess-Wiese: 9 849 Vertices und ein Index-Hochwasser von
+    // 30 720 (werkbank, OMEN, Satz-Takt 579) — bis dahin begann er bei 2^16 / 2^18 und hielt so 3,0 MiB für ~0,4 MiB Inhalt, bis
+    // ihn die Ruhe-Frist verdichtete (`_chunkSatzVerdichten`, 600 Takte; das Band nach der Ankunft misst davor). Ein Seen-Land
+    // wächst ihn wie jeden Satz (×1,5): 8 Floats je Vertex, ein Wachsen lädt höchstens wenige MB neu.
+    wasser: Object.freeze({ v: 1 << 14, i: 1 << 16 }),
     // Der Bau-Satz (Welle 6) beginnt klein: je Stoff ein Satz, das Dorf der Mess-Wiese trägt in seinem größten Stoff
     // ~40k Vertices — er wächst in wenigen Schritten, eine Formation bleibt darunter.
     bau: Object.freeze({ v: 1 << 13, i: 1 << 14 }),
