@@ -347,7 +347,7 @@ class AnazhRealm {
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
                 shadowRange: 170, // V18.352 — User-CEILING (Frustum-Halbbreite m); 300→170, der Nebel deckte damals >~150 m (bis V18.530) → fern-Schatten waren unsichtbar; tighter = billiger UND schärfer. Der Perf-Regler skaliert darunter (PERF_SHADOW_RANGE_MIN).
-                shadowBias: 1.0, // normalBias (Acne ↔ Peter-Panning)
+                shadowBias: 1.0, // der Hebel auf das Bias-Gesetz der Kaskaden (_schattenBias: 1 = 0,5 / 0,75 Texel; Akne ↔ Peter-Panning)
                 // LOD-Schalter der Bäume (Browser-Toggle); false → _tickArchitectureLOD läuft im No-Op-Pfad,
                 // alle Bäume bleiben LOD0.
                 treeLOD: true,
@@ -27967,10 +27967,10 @@ class AnazhRealm {
     // trilinear aus den 8 Corner-Densities (spart 6 Dichte-Calls/Vertex); nicht abgedeckt → sample().
     _voxelGradientNormals(positions, sample, step, preGrid = null) {
         const normals = new Float32Array(positions.length);
-        // NIE up-Normalen in die Geometrie backen: `shadow.normalBias` schiebt die Schatten-Probe entlang der
-        // Normale — an Hängen dann parallel zur Fläche → Schatten-Akne-Rauten. Zwei korrekte Wahrheiten:
-        // Geometrie = echte Oberflächen-Normale (Schatten-Vertrag), das Shading flacht im Material-normalNode
-        // (TERRAIN_NORMAL_FLATTEN).
+        // NIE up-Normalen in die Geometrie backen: die Geometrie trägt die echte Oberflächen-Normale (der Boden-Stoff
+        // liest sie als `normalWorldGeometry` — das Bump-Tor nach Hangneigung, die Mischung zur Senkrechten), das
+        // Shading flacht im Material-normalNode (TERRAIN_NORMAL_FLATTEN). Der Schatten-Versatz liest NICHT die
+        // Geometrie, sondern die End-Normale dieses normalNode (r184 `normalWorld`).
         const eps = step * 1.5;
         // Schneller Trilinear-Sampler aus dem Grid. Wenn preGrid==null oder
         // Sample-Punkt out-of-bounds → fallback auf sample(x,y,z).
@@ -28442,8 +28442,9 @@ class AnazhRealm {
     }
 
     // Eingefrorener 2.5D-Lichtungs-Wert (der eine Tuning-Hebel). NUR die Shading-Normale (Material-
-    // normalNode + AO in _buildToonNodeMaterial), NIE die Geometrie — shadow.normalBias braucht die echte
-    // Oberflächen-Normale, sonst Schatten-Akne-Rauten an Hängen.
+    // normalNode + AO in _buildToonNodeMaterial), NIE die Geometrie. Der Schatten-Versatz liest dieselbe End-Normale:
+    // r184 schiebt die Probe um `normalWorld` × normalBias, und `normalWorld` IST die Normale dieses normalNode (setupNormal) —
+    // bei 1,0 zeigt der Versatz (`_schattenBias`, 0,5 Texel) auch am Hang senkrecht nach oben, nie entlang der Fläche.
     static get TERRAIN_NORMAL_FLATTEN() {
         return 1.0;
     }
@@ -91596,8 +91597,9 @@ class AnazhRealm {
         directionalLight.shadow.mapSize.height = 2048;
         directionalLight.shadow.camera.near = 0.5;
         directionalLight.shadow.camera.far = 500;
-        // Frustum-Halbbreite + normalBias aus den persistierten Schatten-Hebeln (Default 300 / 1.0), falls
-        // loadState vor der Licht-Erstellung lief; sonst greifen setShadowRange/setShadowBias in loadState.
+        // Frustum-Halbbreite aus dem persistierten Schatten-Hebel (Default 170), falls loadState vor der Licht-Erstellung
+        // lief; sonst greift setShadowRange in loadState. Den Bias setzt das Gesetz (`_hauptSchattenBias` unten, der Hebel
+        // `atmosphere.shadowBias` liest setShadowBias).
         const _atmo = this.state.atmosphere || {};
         const _shRange = Number.isFinite(_atmo.shadowRange) ? Math.max(80, Math.min(400, _atmo.shadowRange)) : 170;
         directionalLight.shadow.camera.left = -_shRange;
@@ -91628,9 +91630,9 @@ class AnazhRealm {
         // geregelten Reichweite, die dritte Kaskade klemmte auf 0,95 und deckte einen 5-%-Streifen (285–300 m), für
         // den sie alle Werfer ein drittes Mal zeichnete. Die Box jeder Kaskade misst der Host (`_kaskadenPassen`
         // ersetzt das Addon-updateBefore: Frustum-Scheibe im Licht-Raum statt Diagonal-Quadrat), die Werfer wählt
-        // jeder Pass selbst (`_passSicht` an scene.onBeforeRender); `fade` weicht den Übergang. Kaskaden klonen
-        // bias/normalBias vom Haupt-Licht (setShadowBias propagiert live), die Karten-Größe folgt der Texel-Dichte
-        // (`_kaskadenKarten`). Ohne Vendor-Symbol bleibt die EINE Map.
+        // jeder Pass selbst (`_passSicht` an scene.onBeforeRender); `fade` weicht den Übergang. Den Bias setzt jede
+        // Kaskade bei ihrem Fit aus dem EINEN Gesetz (`_schattenBias` in `_kaskadeFit`, setShadowBias stellt ihn live),
+        // die Karten-Größe folgt der Texel-Dichte (`_kaskadenKarten`). Ohne Vendor-Symbol bleibt die EINE Map.
         if (typeof THREE.CSMShadowNode === "function") {
             try {
                 const bands = AnazhRealm.DETAIL_CASCADE;
@@ -101683,8 +101685,8 @@ AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;
 // Scheiben-Tiefe / rasterTeiler (eine Größe hält, solange die Scheibe hineinpasst — sonst schimmert jede Drehung);
 // `randM` = Saum der Werfer-Hülle (Wind, Morph), `luftM` = Saum über dem höchsten Werfer und unter der tiefsten
 // Scheibe. DER BIAS (0710-12, `_schattenBias`) in Texeln der Karte, nie in Metern: `normalTexel` = der normalBias je Texel
-// (mal dem Hebel `atmosphere.shadowBias`), `tiefeTexel` = der Tiefen-Nudge entlang des Lichts. Bis 0710-12: normalBias 1,0 m
-// für jede Kaskade und `biasM` −0,25 / −0,5 m.
+// (mal dem Hebel `atmosphere.shadowBias`), `tiefeTexel` = der Tiefen-Nudge entlang des Lichts. Den Versatz trägt die
+// End-Normale des Empfänger-Stoffs (r184 `normalWorld`), am geflachten Boden also die Senkrechte (TERRAIN_NORMAL_FLATTEN).
 AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     texelM: Object.freeze([0.17, 0.47]),
     bezugAspekt: 16 / 9,

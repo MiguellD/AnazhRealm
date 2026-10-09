@@ -6,7 +6,8 @@
 // Karte 1 m über sich selbst ab: kein Werfer unter ~1 m Höhe erreichte ihn — Wolf, Fuchs, Busch, Zaun-Pfosten, die Beine des
 // Spielers warfen im Spielbild keinen sichtbaren Schatten (Boden-IoU ≈ 0). Die Kaskaden tragen an der Mess-Wiese 0,11 m (k0)
 // und 0,19–0,25 m (k1) je Texel: 1 m waren 4–9 Texel.
-// Die Wand (echter Renderer: swiftshader headless, `--echt` die GPU des Rechners mit Bild-Paaren):
+// Die Wand (echter Renderer: NUR `--echt`, die GPU des Rechners mit Bild-Paaren; ohne `--echt` bricht sie laut ab, die CI fährt
+// den Selbsttest):
 //   (S) DER SCHATTEN: je Werfer (wolf, fuchs, busch, pfosten, spieler) auf der ebenen Bühne der Mess-Wiese, Sonne seitlich
 //       (~26°) und mittags — drei Schüsse LEER · MIT · LEER2; die ERWARTUNG sind die Schatten-Dreiecke des Werfers (was mit
 //       castShadow im Schatten-Pass zeichnet, gehäutet, je Instanz) entlang des Lichts auf den gezeichneten Boden projiziert,
@@ -39,7 +40,7 @@ const root = path.resolve(__dirname, "..");
 const ECHT = process.argv.includes("--echt");
 const TAG = (() => {
     const i = process.argv.indexOf("--tag");
-    return i > 0 ? process.argv[i + 1] : ECHT ? "echt" : "sw";
+    return i > 0 ? process.argv[i + 1] : "echt";
 })();
 const OUT = path.join(root, "artifacts", "schatten-bias", TAG);
 const WERFER = ["wolf", "fuchs", "busch", "pfosten", "spieler"];
@@ -91,7 +92,7 @@ function quellWand(quelle) {
                     befunde.push(
                         `${name} Zeile ${n.loc.start.line}: schreibt den Tiefen-Bias einer Schatten-Karte neben dem Gesetz — ${quelle
                             .slice(n.start, n.end)
-                            .replace(/s+/g, " ")
+                            .replace(/\s+/g, " ")
                             .slice(0, 80)}`
                     );
                 return;
@@ -179,10 +180,13 @@ if (process.argv.includes("--selftest")) {
         v.push(`ein fester Meter-Wert fällt nicht rot (${JSON.stringify(fremd)})`);
     const ohne = quellWand("class X { a(l) { l.shadow.normalBias = 1.0; } }");
     const nudge = quellWand(
-        "class X { _schattenNormalBias(t) { return t; } _schattenBias(l, t) { l.shadow.normalBias = this._schattenNormalBias(t); l.shadow.bias = -t; } k(sh) { sh.bias = -0.25 / 500; } }"
+        "class X { _schattenNormalBias(t) { return t; } _schattenBias(l, t) { l.shadow.normalBias = this._schattenNormalBias(t); l.shadow.bias = -t; } k(sh) { sh.bias =\n        -0.25 / 500; } }"
     );
     if (!nudge.some((b) => b.includes("Tiefen-Bias einer Schatten-Karte neben dem Gesetz")))
         v.push(`ein fester Tiefen-Nudge neben dem Gesetz fällt nicht rot (${JSON.stringify(nudge)})`);
+    // der Täter-Text steht wörtlich, Leerraum gefaltet (Nachtrag 0710-12: `/s+/g` ohne Backslash nannte „hadow.bia")
+    if (!nudge.some((b) => b.endsWith("sh.bias = -0.25 / 500")))
+        v.push(`der Täter-Text des Tiefen-Nudge ist verstümmelt (${JSON.stringify(nudge)})`);
     if (!ohne.some((b) => b.includes("fehlt")))
         v.push(`ein Stamm ohne Gesetz fällt nicht rot (${JSON.stringify(ohne)})`);
     const werfer = (zeit, seitlich) =>
@@ -246,11 +250,23 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
+// DIE BILD-PROBE NUR AUF DER ECHTEN GPU (Nachtrag 0710-12): swiftshader landete ohne `?holz` über die Holz-Wahl des Stamms
+// auf kienspan — ohne Schatten-Karte, die Probe hatte nichts zu messen —, und mit `?holz=voll` kostet jedes Programm auf
+// swiftshader 50–70 s: der Lauf brach nach 1200 s ohne Urteil ab (EXIT 124). Die CI fährt den Selbsttest (Quell-Wand und
+// Urteil), das Bild-Urteil fährt `--echt`. Ohne `--echt` bricht die Linse LAUT ab, nie still auf einem schattenlosen Holz.
+if (!ECHT) {
+    console.error(
+        "SCHATTEN-BIAS: die Bild-Probe läuft nur mit --echt (die GPU des Rechners) — swiftshader landet auf dem Holz " +
+            "kienspan ohne Schatten-Karte; ohne Browser: --selftest"
+    );
+    process.exit(2);
+}
+
 const puppeteer = require("puppeteer");
-const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { echteWebGpuArgs } = require("./lib/software-gpu.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const W = ECHT ? 960 : 640,
-    H = ECHT ? 540 : 360;
+const W = 960,
+    H = 540;
 const mime = {
     ".html": "text/html",
     ".js": "application/javascript",
@@ -1208,13 +1224,13 @@ async function probe(cfg) {
 
 (async () => {
     const Q = quellWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
-    if (ECHT) fs.mkdirSync(OUT, { recursive: true });
+    fs.mkdirSync(OUT, { recursive: true });
     await new Promise((res) => server.listen(PORT, "127.0.0.1", res));
     const browser = await puppeteer.launch({
-        headless: !ECHT,
+        headless: false,
         protocolTimeout: 3600000,
         defaultViewport: { width: W, height: H },
-        args: ECHT ? echteWebGpuArgs().concat([`--window-size=${W},${H + 80}`]) : softwareWebGpuArgs(),
+        args: echteWebGpuArgs().concat([`--window-size=${W},${H + 80}`]),
     });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
@@ -1236,23 +1252,23 @@ async function probe(cfg) {
             zeiten: process.env.SB_ZEITEN ? process.env.SB_ZEITEN.split(",").map(Number) : [0.32, 0.5],
             seitlich: 0.32,
             tief: 0.28,
-            bilder: ECHT,
+            bilder: true,
             nur: process.env.SB_NUR ? process.env.SB_NUR.split(",") : null,
             ohneAkne: !!process.env.SB_OHNE_AKNE,
-            fern: ECHT && !process.env.SB_OHNE_FERN,
+            fern: !process.env.SB_OHNE_FERN,
             akneZeiten: process.env.SB_AKNE_ZEITEN ? process.env.SB_AKNE_ZEITEN.split(",").map(Number) : null,
             versuch: process.env.SB_VERSUCH ? JSON.parse(process.env.SB_VERSUCH) : null,
         });
     await browser.close();
     server.close();
-    if (ECHT && S.bilder)
+    if (S.bilder)
         for (const bi of S.bilder)
             for (const k of ["mit", "ueber", "leer"])
                 if (bi[k])
                     fs.writeFileSync(path.join(OUT, `${bi.name}-${k}.png`), Buffer.from(bi[k].split(",")[1], "base64"));
     console.log("=== DER SCHATTEN KLEINER WERFER — der Bias als Gesetz der Kaskade (echter Renderer) ===");
     console.log(
-        `  Renderer: ${ECHT ? "die GPU des Rechners" : "swiftshader"} · ${W}×${H} · ${Math.round((Date.now() - t0) / 1000)} s · ` +
+        `  Renderer: die GPU des Rechners · ${W}×${H} · ${Math.round((Date.now() - t0) / 1000)} s · ` +
             `normalBias je Kaskade ${JSON.stringify(S.bias)} m · Tiefen-Bias ${JSON.stringify(S.tiefenBias)} m · Texel ` +
             `${JSON.stringify(S.texel)} m` +
             (process.env.SB_VERSUCH ? ` · VERSUCH ${process.env.SB_VERSUCH}` : "")
@@ -1275,7 +1291,7 @@ async function probe(cfg) {
         );
     if (S.fleck) console.log(`  Akne-Fleck (offen, isoliert): ${JSON.stringify(S.fleck)} (x, z, Abstand zur Bühne m)`);
     for (const e of S.echt || []) console.log(`  echt: ${JSON.stringify(e)}`);
-    if (ECHT) console.log(`  Bilder: ${OUT}`);
+    console.log(`  Bilder: ${OUT}`);
     const rot = urteil(S, Q, pageErrors);
     if (rot.length) {
         console.error("\nROT:");
