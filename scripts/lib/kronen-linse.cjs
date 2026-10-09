@@ -9,7 +9,7 @@
 //     (Kante `px` in Vorlagen-Einheiten, für beide Stufen eines Paars dieselbe); Karten-Dreiecke lesen je Pixel die
 //     Alpha des EINEN Blatt-Atlas (Textur-Ordnung, nächster Texel von Stufe 0) gegen die Schwelle des Stoffs, Klingen
 //     und Nadel-Röhren decken voll. Ein Pixel zählt einmal, wie oft es auch überdeckt wird — das ist das Bild.
-//       bildDeckung(krone, atlas, px) → { je: [Fläche je Ansicht], mittel }
+//       bildDeckung(krone, atlas, px) → { je: [Fläche je Ansicht], mittel, hebung: [Mittel je Blick-Hebung 0°/30°/60°] }
 //         krone: [{ kind, pos: Float32Array, idx: Uint32Array, uv: Float32Array|null }] (kroneAus)
 //         atlas: { w, h, alpha: Uint8Array (w×h, Zeile 0 = v 0), schwelle: 0..1 }
 //
@@ -92,6 +92,13 @@ function bildDeckung(meshes, atlas, px) {
                     xb = Math.min(W - 1, Math.ceil(Math.max(ax, bx, qx))),
                     ya = Math.max(0, Math.floor(Math.min(ay, by, qy))),
                     yb = Math.min(H - 1, Math.ceil(Math.max(ay, by, qy)));
+                // DER BODEN (Gegenprüfung S3): das Bild ist, was über dem Boden der Vorlage steht (y ≥ 0) — die Wurzeln tauchen
+                // ab, kein Spieler sieht sie im Boden, und eine Ansicht von unten sähe sie sonst von unter der Erde.
+                const ya3 = p[a * 3 + 1],
+                    yb3 = p[b * 3 + 1],
+                    yc3 = p[c * 3 + 1];
+                if (ya3 < 0 && yb3 < 0 && yc3 < 0) continue;
+                const ganz = ya3 >= 0 && yb3 >= 0 && yc3 >= 0;
                 for (let y = ya; y <= yb; y++) {
                     const sy = y + 0.5;
                     for (let x = xa; x <= xb; x++) {
@@ -102,6 +109,7 @@ function bildDeckung(meshes, atlas, px) {
                             w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl,
                             w2 = 1 - w0 - w1;
                         if (w0 < 0 || w1 < 0 || w2 < 0) continue;
+                        if (!ganz && w0 * ya3 + w1 * yb3 + w2 * yc3 < 0) continue;
                         if (karte) {
                             const tu = w0 * uv[a * 2] + w1 * uv[b * 2] + w2 * uv[c * 2],
                                 tv = w0 * uv[a * 2 + 1] + w1 * uv[b * 2 + 1] + w2 * uv[c * 2 + 1];
@@ -118,7 +126,13 @@ function bildDeckung(meshes, atlas, px) {
         for (let i = 0; i < bild.length; i++) n += bild[i];
         je.push(n * px * px);
     }
-    return { je, mittel: je.reduce((s, x) => s + x, 0) / je.length };
+    return { je, mittel: je.reduce((s, x) => s + x, 0) / je.length, hebung: jeHebung(je) };
+}
+// Das Bild JE BLICK-HEBUNG (Gegenprüfung S3 R1, 09.10.): das Mittel über die acht Azimute je Hebung (0°, 30°, 60° von
+// unten) — das Mittel über alle 24 Ansichten wog die Seitenansicht mit einem Drittel: die flachen Wedel der Koniferen
+// deckten von unten 12–35 % mehr, als die Seitenansicht verlor (Tanne-L1 0° 0,70 des Bilds von V18.536, Mittel 0,93).
+function jeHebung(je) {
+    return HEBUNGEN.map((_, h) => je.slice(h * AZIMUTE, (h + 1) * AZIMUTE).reduce((s, x) => s + x, 0) / AZIMUTE);
 }
 
 // DIE LAGEN (4): dieselben Ansichten wie bildDeckung, aber jede Karte zählt — eine Lage je Karte über der Pixel-Mitte.
