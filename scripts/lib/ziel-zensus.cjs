@@ -322,6 +322,11 @@ function zielZensus(k) {
             rg11b10: !!(be.device && be.device.features && be.device.features.has("rg11b10ufloat-renderable")),
             ausgabe: st._ausgabeFormat || null,
         };
+        // DAS SZENEN-ZIEL, wie der Host es ausweist (das Ziel des Szenen-Passes; der Selbsttest weist für seine Dauer einen
+        // eigenen Täter aus, `window.__zielAusgabe`) — das Urteil über das Ausgabe-Format liest genau dieses Ziel, nie einen Namen
+        const ausT = window.__zielAusgabe || (st.scenePass && st.scenePass.renderTarget && st.scenePass.renderTarget.texture);
+        const ausD = ausT && be.has(ausT) ? be.get(ausT) : null;
+        geraet.ausgabeId = ausD && ausD.texture && idVon.has(ausD.texture) ? idVon.get(ausD.texture) : null;
         return { frames: frame, n, leinwand: [Math.round(db.x), Math.round(db.y)], blind, pipeBlind, ziele, erst, geraet };
     })();
 }
@@ -452,6 +457,7 @@ function zielSchmuggel(an) {
         if (!S) return { ab: false };
         S.ab();
         for (const x of S.weg) x.dispose();
+        delete window.__zielAusgabe;
         window.__zielSchmuggelStand = null;
         return { ab: true };
     }
@@ -474,6 +480,9 @@ function zielSchmuggel(an) {
     const leser = ziel("zensus-selbsttest:leser", 8, 8);
     const paarA = ziel("zensus-selbsttest:paar-a", 128, 128);
     const paarB = ziel("zensus-selbsttest:paar-b", 128, 128);
+    // das ausgewiesene Szenen-Ziel in 64 bit (0910-3 B): für die Dauer des Schmuggels weist es sich als Szenen-Ziel aus
+    // (`__zielAusgabe`), das echte bleibt unberührt (ein Format-Wechsel des echten Ziels zur Laufzeit bricht die Bündel)
+    const ausgabe = ziel("zensus-selbsttest:ausgabe", W, H, { type: T.HalfFloatType });
     const kopie = ziel("zensus-selbsttest:kopie-ziel", 4, 4, { depthBuffer: true });
     kopie.setSize(W, H);
     kopie.depthTexture = new T.DepthTexture(W, H);
@@ -497,6 +506,7 @@ function zielSchmuggel(an) {
     const liesA = stoff(TSL.texture(paarA.texture));
     const liesB = stoff(TSL.texture(paarB.texture));
     const liesF32 = stoff(TSL.texture(f32));
+    const liesAusgabe = stoff(TSL.texture(ausgabe.texture));
     const liesTiefe = stoff(TSL.vec4(TSL.texture(kopie.depthTexture).r, 0, 0, 1));
     const szene = new T.Scene();
     szene.name = "zensus-selbsttest";
@@ -525,6 +535,8 @@ function zielSchmuggel(an) {
             zeichne(paarB, farbe);
             zeichne(leser, liesB);
             zeichne(leser, liesF32);
+            zeichne(ausgabe, farbe);
+            zeichne(leser, liesAusgabe);
             rend.copyTextureToTexture(tiefe, kopie.depthTexture);
             zeichne(leser, liesTiefe);
         } finally {
@@ -532,6 +544,7 @@ function zielSchmuggel(an) {
         }
         return o;
     });
+    window.__zielAusgabe = ausgabe.texture;
     window.__zielSchmuggelStand = { ab, weg };
     return { an: true, leinwand: [W, H] };
 }
@@ -730,18 +743,22 @@ function zielUrteil(z, lesen) {
     // drei Kanäle in der Hälfte — 64 bit dort sind ein Täter (`_ausgabeFormat` griff nicht; r184 `PassNode.setup` stellt den Typ
     // je Bau zurück). Fehlt das Feature, nennt der Zensus die Adapter-Bedingung LAUT, ohne Rot: dann hält das Gerät die 64 bit.
     const geraet = z.geraet || null;
-    const aus = ziele.find((x) => x.name === "output" && x.ziel && !x.tiefe);
+    // das ausgewiesene Szenen-Ziel (`ausgabeId`, Seite); ohne Ausweis der Name des r184-Passes
+    const aus =
+        geraet && geraet.ausgabeId != null && byId.has(geraet.ausgabeId)
+            ? byId.get(geraet.ausgabeId)
+            : ziele.find((x) => x.name === "output" && x.ziel && !x.tiefe);
     if (geraet && aus) {
         if (geraet.rg11b10 && aus.format === "rgba16float")
             nenne(
                 aus,
                 "format",
-                `AUSGABE-FORMAT: output (${form(aus)}, ${mb(aus.bytes)} MB) — das Gerät rendert rg11b10ufloat, der Inhalt ist ` +
+                `AUSGABE-FORMAT: ${aus.name || "#" + aus.id} (${form(aus)}, ${mb(aus.bytes)} MB) — das Gerät rendert rg11b10ufloat, der Inhalt ist ` +
                     `lineares Licht ≥ 0, Kanal a liest keiner: die Hälfte reicht (−${mb(aus.bytes / 2)} MB; anazhRealm.js \`_ausgabeFormat\`)`
             );
         else if (!geraet.rg11b10)
             hinweis.unshift(
-                `ADAPTER: rg11b10ufloat-renderable fehlt auf diesem Gerät — output bleibt ${form(aus)} (${mb(aus.bytes)} MB, ` +
+                `ADAPTER: rg11b10ufloat-renderable fehlt auf diesem Gerät — ${aus.name || "#" + aus.id} bleibt ${form(aus)} (${mb(aus.bytes)} MB, ` +
                     `+${mb(aus.bytes / 2)} MB gegen ein Gerät mit dem Feature)`
             );
     }
@@ -849,6 +866,7 @@ function selbsttest() {
                 }))
             );
         if (mit.ausgabe) Object.assign(szene, { format: mit.ausgabe, bytes: mit.ausgabe === "rg11b10ufloat" ? 8294400 : szene.bytes });
+        if (mit.ausgewiesen) x.push((T.aus = tex(13, "x:ausgabe")));
         for (let f = 1; f <= 4; f++) {
             if (f === 1) auf(gesch, f, "W", "TRAA", "kopie", { von: 2 });
             auf(szene, f, "W", "haupt", "farbe", { pid: 10 * f });
@@ -880,6 +898,10 @@ function selbsttest() {
             if (T.f32) auf(T.f32, f, "R", "post", "zeichnen", { pid: 10 * f + 2 });
             if (T.anon) auf(T.anon, f, "R", "post", "zeichnen", { pid: 10 * f + 2 });
             if (T.att) auf(T.att, f, "W", "haupt", "kopie", { von: 1 });
+            if (T.aus) {
+                auf(T.aus, f, "W", "probe", "farbe", { pid: 10 * f + 6 });
+                auf(T.aus, f, "R", "post", "zeichnen", { pid: 10 * f + 2 });
+            }
         }
         const z = { frames: mit.frames || 4, n: 4, leinwand: [1920, 1080], blind: mit.blind || 0, pipeBlind: 0, ziele: x };
         if (mit.geraet) z.geraet = mit.geraet;
@@ -905,6 +927,12 @@ function selbsttest() {
             name: "Szenen-Ziel in 64 bit auf einem rg11b10-Gerät",
             mit: { geraet: { rg11b10: true } },
             muss: /AUSGABE-FORMAT: output \(rgba16float 1920×1080, 15\.82 MB\) .*\(−7\.91 MB/,
+        },
+        {
+            // der Schmuggel des echten Frames: ein eigenes 64-bit-Ziel als Szenen-Ziel ausgewiesen, das echte bleibt rg11b10
+            name: "ausgewiesenes Szenen-Ziel in 64 bit",
+            mit: { geraet: { rg11b10: true, ausgabeId: 13 }, ausgabe: "rg11b10ufloat", ausgewiesen: true },
+            muss: /AUSGABE-FORMAT: x:ausgabe \(rgba16float/,
         },
     ];
     for (const f of faelle) {
