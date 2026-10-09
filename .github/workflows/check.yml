@@ -1057,6 +1057,15 @@ jobs:
               # zuerst.
               run: npm run gate:wasser-leben
 
+            - name: Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt)
+              if: matrix.gruppe == 2
+              # Der Schau-Ablauf am Fluss −872/−1127 im echten Spiel-Takt (Bau-Eiche, „pflanz mir einen eichenhain am
+              # wasser", 1200 Takte): kein Stamm unter dem gezeichneten Wasser, der Wasser-Automat schläft; jedes gesetzte
+              # Werk (Wald, Hain, Dorf mit Fundament) vor seinem Stempel gegen Bild UND Gesetz des Wassers; der GT in einer
+              # Furt bremst (1 s nach dem Eintauchen ≤ 50 %), die Kamera nie unter dem Spiegel; die Leser der EINEN
+              # Wasser-Wahrheit statisch; der Wasser-Term des Kerns (ohne Tiefe byte-gleich). --selftest zuerst.
+              run: npm run gate:werk-im-wasser
+
             - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)
               if: matrix.gruppe == 2
               # Bootet die Welt render-gestubbt + kurzer Plateau-Warmup + die Kern-Gesundheits-Checks

@@ -61,6 +61,7 @@
         "gate:kopplung": "node scripts/diag-kopplung.cjs",
         "gate:worker-watersheet": "node scripts/diag-worker-watersheet.cjs",
         "gate:wasser-leben": "node scripts/diag-wasser-leben.cjs --selftest && node scripts/diag-wasser-leben.cjs",
+        "gate:werk-im-wasser": "node scripts/diag-werk-im-wasser.cjs --selftest && node scripts/diag-werk-im-wasser.cjs",
         "gate:wasser-leben:bild": "node scripts/diag-wasser-leben.cjs --bild",
         "diag:wasser-naht": "node scripts/diag-wasser-naht.cjs",
         "gate:source-probes": "node scripts/diag-source-probes.cjs",
