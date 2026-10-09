@@ -136,6 +136,11 @@ function urteil(S, Q, pageErrors) {
             continue;
         }
         if (w.seitlich) seitlich.add(w.name);
+        if (w.nachgezogen > 0)
+            rot.push(
+                `(S) ${w.name} @${w.zeit}: ${w.nachgezogen} Fremde derselben Art standen im Mit-Schuss wieder (ein Stufen-Wechsel setzte ` +
+                    `sie neu) — sie werfen unter der Isolation mit, die IoU ist unrein`
+            );
         if (!(w.iouSaum >= IOU_MIN))
             rot.push(
                 `(S) ${w.name} @${w.zeit}: Boden-IoU (Saum ${w.saumPx} px) ${w.iouSaum} < ${IOU_MIN} (gemessen ${w.gemessen} px, erwartet ${w.erwartet} px, ` +
@@ -228,6 +233,11 @@ if (process.argv.includes("--selftest")) {
             "ein Werfer bricht ab",
             (s) => (s.werfer[3].fehler = "Werfer nicht gesetzt"),
             /pfosten @0\.32: Werfer nicht gesetzt/,
+        ],
+        [
+            "Fremde derselben Art stehen im Mit-Schuss wieder",
+            (s) => (s.werfer[2].nachgezogen = 3),
+            /busch @0\.32: 3 Fremde derselben Art standen im Mit-Schuss wieder/,
         ],
     ];
     if (urteil(gut, [], []).length) v.push(`ein gutes Bild fällt rot (${JSON.stringify(urteil(gut, [], []))})`);
@@ -707,6 +717,67 @@ async function probe(cfg) {
             if (g && g.mesh) setz(g.mesh);
         }
     };
+    // DIE FREMDEN DERSELBEN ART: eine Instanz-Gruppe trägt ihre Ebene als GANZE — unter der Isolation warfen fremde Büsche
+    // derselben Art mit (Nachtrag 0710-12: konservativ, aber die IoU unrein). Darum fällt VOR dem Leer-Schuss jeder Slot der
+    // Art auf Skala 0 und kehrt NACH dem zweiten Leer-Schuss zurück: alle drei Schüsse sehen dieselbe Welt, der gemessene
+    // Werfer (danach gesetzt) ist der einzige seiner Art. Gemerkt wird je Slot-HALTER (`slotRef`), nie je Index — die Gruppe
+    // verdichtet beim Freigeben (`_instanzUmzug`) und tauscht je Pass (`_archGroupTausch`), der Halter trägt seinen Slot mit;
+    // ein freigegebener bleibt frei.
+    const NULL_MATRIX = new T.Matrix4().makeScale(0, 0, 0);
+    const artSlots = (typ, ohne) => {
+        const aus = [];
+        for (const g of st.archInstanceGroups.values()) {
+            if (!g || !g.mesh || !g.slotEntry) continue;
+            for (let i = 0; i < g.liveCount; i++) {
+                const e = g.slotEntry[i],
+                    h = g.slotRef[i];
+                if (e && h && e.type === typ && !(ohne && ohne.has(h))) aus.push([g, h, i]);
+            }
+        }
+        return aus;
+    };
+    const beruehrt = (gruppen) => {
+        for (const g of gruppen) {
+            g.mesh.instanceMatrix.needsUpdate = true;
+            g.mesh.boundingSphere = null;
+            r._archMeshBundleTouch(g.mesh);
+        }
+    };
+    const fremdWeg = (typ) => {
+        const merk = [];
+        const gruppen = new Set();
+        for (const [g, h, i] of artSlots(typ)) {
+            const m = new T.Matrix4();
+            g.mesh.getMatrixAt(i, m);
+            merk.push([g, h, m]);
+            g.mesh.setMatrixAt(i, NULL_MATRIX);
+            gruppen.add(g);
+        }
+        beruehrt(gruppen);
+        return merk;
+    };
+    const fremdZurueck = (merk) => {
+        const gruppen = new Set();
+        for (const [g, h, m] of merk)
+            if (h.slot >= 0 && g.slotRef[h.slot] === h) {
+                g.mesh.setMatrixAt(h.slot, m);
+                gruppen.add(g);
+            }
+        beruehrt(gruppen);
+    };
+    // nachgezogene Fremde: Slots der Art, die weder gemerkt noch der Werfer sind und nicht auf 0 stehen (ein Stufen-Wechsel
+    // setzte sie während der Messung neu) — die Linse nennt ihre Zahl, nie still
+    const fremdNach = (typ, merk, eigen) => {
+        const bekannt = new Set(merk.map((x) => x[1]));
+        for (const h of eigen || []) bekannt.add(h);
+        const m = new T.Matrix4();
+        let n = 0;
+        for (const [g, , i] of artSlots(typ, bekannt)) {
+            g.mesh.getMatrixAt(i, m);
+            if (m.determinant() !== 0) n++;
+        }
+        return n;
+    };
     const kameraFuer = () => {
         const d = lichtDir();
         const h = Math.hypot(d.x, d.z) || 1;
@@ -728,10 +799,12 @@ async function probe(cfg) {
         verstecken();
         isoAn();
         const k = kameraFuer();
+        const fremd = w.art === "bau" && w.typ ? fremdWeg(w.typ) : [];
         const leer = await schuss(k);
         const h = await setze(w);
         if (!h) {
             isoAus();
+            fremdZurueck(fremd);
             return { name: w.name, zeit, seitlich, fehler: "Werfer nicht gesetzt" };
         }
         const wz = h.wurzeln(),
@@ -739,6 +812,7 @@ async function probe(cfg) {
         isoEbene(wz, sl, true);
         await schattenWarm(k);
         const mit = await schuss(k);
+        const nachgezogen = fremd.length ? fremdNach(w.typ, fremd, sl) : 0;
         const dreiecke = werferDreiecke(wz, sl);
         const d = lichtDir();
         const projiziert = (v) => {
@@ -763,6 +837,7 @@ async function probe(cfg) {
         verstecken();
         const leer2 = await schuss(k);
         isoAus();
+        fremdZurueck(fremd);
         // das Entfernen wirkt im Takt: ohne diese Takte stand der Fuchs noch im LEER des Pfostens (nicht mehr in LEER2), genau
         // über dessen Schatten — die Erwartung fiel als „strömte" auf 0 px
         await halten(6);
@@ -863,6 +938,8 @@ async function probe(cfg) {
             erwartet,
             stroemte,
             dreiecke: dreiecke.length / 9,
+            fremd: fremd.length,
+            nachgezogen,
             stufe: h.stufe == null ? null : h.stufe,
             fund: fund.slice(),
             licht: d.toArray().map((x) => +x.toFixed(3)),
@@ -888,10 +965,12 @@ async function probe(cfg) {
         // der unsichtbare Spieler neben dem Fleck (die Stufen-Wahl von Bau und Tier geht von ihm aus)
         st.playerMesh.position.set(o.x - 6, boden(o.x - 6, o.z + 6) + 0.9, o.z + 6);
         const k = { px: o.x + 4, py: o.gy + 130, pz: o.z, lx: o.x, ly: o.gy, lz: o.z };
+        const fremd = w.art === "bau" && w.typ ? fremdWeg(w.typ) : [];
         const leer = await schuss(k);
         const hh = await setze(w, o);
         if (!hh) {
             isoAus();
+            fremdZurueck(fremd);
             return { name: w.name, zeit, fehler: "Werfer nicht gesetzt" };
         }
         const wz = hh.wurzeln(),
@@ -899,6 +978,7 @@ async function probe(cfg) {
         isoEbene(wz, sl, true);
         await schattenWarm(k);
         const mit = await schuss(k);
+        const nachgezogen = fremd.length ? fremdNach(w.typ, fremd, sl) : 0;
         const dreiecke = werferDreiecke(wz, sl);
         const d = lichtDir();
         const projiziert = (v) => {
@@ -943,6 +1023,8 @@ async function probe(cfg) {
             treffer,
             texelK1: f1 && lichter[1] ? +texelVon(lichter[1].shadow, f1).toFixed(3) : null,
             normalBias: lichter.map((lw) => +lw.shadow.normalBias.toFixed(3)),
+            fremd: fremd.length,
+            nachgezogen,
         };
         if (cfg.bilder) {
             const lupe = (u8) => {
@@ -965,6 +1047,7 @@ async function probe(cfg) {
         isoEbene(wz, sl, false);
         hh.weg();
         isoAus();
+        fremdZurueck(fremd);
         await halten(6);
         return erg;
     };
@@ -1275,11 +1358,11 @@ async function probe(cfg) {
     );
     for (const w of S.werfer || [])
         console.log(
-            `  ${String(w.name).padEnd(8)} @${w.zeit}${w.seitlich ? " (seitlich)" : ""}: IoU mit Saum ${w.iouSaum} (${w.saumPx} px) · IoU ${w.iou} · Deckung ${w.deckung} · gemessen ${w.gemessen} px · erwartet ${w.erwartet} px · ${w.dreiecke} Dreiecke${w.stufe != null ? " · Stufe " + w.stufe : ""}${w.fehler ? " · " + w.fehler : ""}${process.env.SB_DEBUG ? "\n      strömte " + w.stroemte + " · licht " + JSON.stringify(w.licht) + "\n      " + (w.fund || []).join(" | ") : ""}`
+            `  ${String(w.name).padEnd(8)} @${w.zeit}${w.seitlich ? " (seitlich)" : ""}: IoU mit Saum ${w.iouSaum} (${w.saumPx} px) · IoU ${w.iou} · Deckung ${w.deckung} · gemessen ${w.gemessen} px · erwartet ${w.erwartet} px · ${w.dreiecke} Dreiecke${w.stufe != null ? " · Stufe " + w.stufe : ""}${w.fremd ? " · " + w.fremd + " Fremde der Art aus" : ""}${w.fehler ? " · " + w.fehler : ""}${process.env.SB_DEBUG ? "\n      strömte " + w.stroemte + " · licht " + JSON.stringify(w.licht) + "\n      " + (w.fund || []).join(" | ") : ""}`
         );
     for (const f of S.fern || [])
         console.log(
-            `  fern (k1, 130 m über dem Fleck) ${String(f.name).padEnd(6)} @${f.zeit}: ${f.dunkel} Pixel außerhalb der Silhouette abgedunkelt, davon ${f.treffer} in der Erwartung (${f.erwartet} px) · Texel k1 ${f.texelK1} m${f.fehler ? " · " + f.fehler : ""}`
+            `  fern (k1, 130 m über dem Fleck) ${String(f.name).padEnd(6)} @${f.zeit}: ${f.dunkel} Pixel außerhalb der Silhouette abgedunkelt, davon ${f.treffer} in der Erwartung (${f.erwartet} px) · Texel k1 ${f.texelK1} m${f.fremd ? " · " + f.fremd + " Fremde der Art aus" : ""}${f.fehler ? " · " + f.fehler : ""}`
         );
     for (const a of S.akne || [])
         console.log(
