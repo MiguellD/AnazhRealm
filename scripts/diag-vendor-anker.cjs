@@ -351,6 +351,11 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getIndex(){return this._geometries.getIndex(this)}", organ: "_indexWacheDraw (der Index, den der Draw bindet)" },
     { file: "vendor/three.webgpu.min.js", sub: "async init(e){await super.init(e);const t=this.parameters;", organ: "_gpuWacheAn (das Device jedes Backends nach seinem init)" },
     { file: "vendor/three.webgpu.min.js", sub: '[Uint16Array,["uint16","unorm16"]]', organ: "_hautGewicht (normiertes Uint16 → unorm16x4)" },
+    // Die Ego-Sicht ist EIN Ebenen-Schalter (0910-5): jede Kamera — Haupt-Kamera wie Kaskade — zeichnet nur, was ihre Ebenen
+    // trifft, und projiziert die Kinder JEDES Knotens danach ohne Ebenen-Test (das Gerät in der Hand hängt an Knochen auf
+    // SHADOW_TWIN_LAYER und zeichnet doch im Auge).
+    { file: "vendor/three.webgpu.min.js", sub: "_projectObject(e,t,r,s,i){if(!1===e.visible)return;if(e.layers.test(t.layers))", organ: "_applyEgoSicht (jede Kamera zeichnet nur ihre Ebenen)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const n=e.children;for(let e=0,a=n.length;e<a;e++)this._projectObject(n[e],t,r,s,i)", organ: "_applyEgoSicht (die Kinder ohne Ebenen-Test: das Gerät unter Ebene-2-Knochen zeichnet)" },
 ];
 
 // DIE DIÄT-PRÜFUNG (Kamera-Treue je Programm): die Diät-Funktionen aus dem Stamm schneiden (vom ersten

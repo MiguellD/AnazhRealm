@@ -481,11 +481,17 @@ function buehne(arg) {
                     const third = this.state.cameraMode === "third";
                     leibJe(this.state.playerMesh, (o) => (third ? o.layers.disable(E) : o.layers.enable(E)));
                 },
+                // der GANZE Leib (auch ein Zwilling, der den Wurf trägt) auf eine Ebene, die keine Schatten-Kamera sieht
                 "fremde Ebene": function () {
                     const third = this.state.cameraMode === "third";
                     leibJe(this.state.playerMesh, (o) => {
-                        if (o.layers.mask === 1 << E) return;
-                        o.layers.mask = third ? 1 : 1 << 5;
+                        if (third) {
+                            if (o.userData._egoMaske !== undefined) o.layers.mask = o.userData._egoMaske;
+                            o.userData._egoMaske = undefined;
+                        } else if (o.userData._egoMaske === undefined) {
+                            o.userData._egoMaske = o.layers.mask;
+                            o.layers.mask = 1 << 5;
+                        }
                     });
                 },
                 "das Gerät mit": function () {
