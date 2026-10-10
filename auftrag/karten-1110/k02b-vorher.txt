@@ -1,0 +1,74 @@
+PRUEFUNG 2 wasser-wahrheit (rot):
+Kopf `e162430b` (per ls-remote), Basis main `7dd944e6`. Ich habe zwei Prüf-Worktrees angelegt (Kopf und main mit kopierter Linse), dort gemessen und beide wieder entfernt. Den echten Renderer habe ich nicht selbst gefahren und kein GPU-Schloss genommen. Das Bild-Urteil stützt sich auf die Bildpaare des Champions, die Zahlen kommen aus headless-Läufen auf den Ports 7971–7978.
+
+**(a) Spiel-Korrektheit an derselben Stelle**
+- **Hain am Fluss −872/−1127:** Auf main stehen 7 von 7 Stämmen 2,05–5,22 m im Wasser, und der Automat rechnet 15 Chunks. Am Kopf stehen 0 von 7 im Wasser, 0 Chunks wachen. Nach eigener Probe stehen die 6 Satz-Eichen 5,5–11 m vom gezeichneten Wasser, also am Ufer.
+- **Bildpaare angesehen:**
+  - Hain: vorher ein gefluteter Tümpel mit Stämmen darin, nachher trockener Waldboden.
+  - Haus am See: vorher im See, nachher am Ufer.
+  - Haus an der Furt: vorher im Flut-Teich, nachher am Ufer neben dem schmalen Fluss.
+  - Das freie Türblatt und die Krone über dem Dach gehören zu §6 #3 und sind nicht neu. Das GT-Bildpaar zeigt den Wagen kaum; den Beweis tragen die Zahlen.
+- **Wagen in der Furt:** 11,1 → 1,3 m/s eine Sekunde nach dem Eintauchen, die Kamera in 0 Frames unter dem Spiegel.
+- **Höhle:** Der Höhlen-Test K10 ist grün, 0 von 3277 nassen Höhlenböden.
+- **Werkstatt:** Das Phantom liest `_naturWand`, eine Eiche im Wasser wird also orange mit dem Grund „im Wasser steht nichts". Ein Haus im Bau-Modus bleibt bewusst frei; das ist benannt.
+- **Neuer Bruch beim Reload (ROT):** `_wasserVerdraengt` entsteht beim Spawn aus den geladenen Wasser-Zellen. Beim Laden läuft `loadState` aber vor `generateNewWorld`, dann gibt es noch keine Chunks. Darum ist der Wert für jedes wiederhergestellte Werk false.
+  - Gemessen mit einem Damm in der Furt bei −976/−1147, im Umkreis von ±20 m:
+
+    | | nasse Punkte in der Sitzung | nach dem Reload | Invalidierungen beim Abbau nach dem Reload |
+    |---|---|---|---|
+    | Kopf | 697 → 1086 | 698 | 0 |
+    | main | 697 → 1032 | 1086 | 1 |
+
+  - Für den Spieler heißt das: Nach dem Neuladen ist der Stausee hinter seinem Damm verschwunden.
+- **Mehrspieler:** Am Kopf neu gemessen. Ein Peer ohne Chunk urteilt in 20 von 39 335 Land-Entscheidungen anders (0,05 %). Alle Fälle liegen in Streu und Wald: 18 in `_vegetationSampleSpawn`, 2 in `_forestPlantChunk`. Der Fall ist benannt; der Nenner im Bericht (16 720) ist veraltet.
+
+**(b) Engstelle und Klasse**
+- `_isAboveWaterAt` hat 0 Treffer, `_waterLevelAt` hat nur noch 4 Aufrufer mit `uf` (die Ufer-Bänder).
+- Alle Land-Leser laufen über `_landAt`, `_stammFussLand` oder `_fundamentLand`. Die Tiefe kommt aus `_koerperWasser`, und beide `fahrKraefte`-Aufrufer reichen die Tiefe durch.
+- **Zwilling (ROT):** Der Wasser-Term rechnet eine zweite Masse des Wagens.
+  - Er nimmt `FAHR.wasser.schuett` mal den Hüllen-Quader, das ergibt für den GT 1557 kg.
+  - Die eine Masse des Kerns ist `G.m` mal `FAHR.masseDichte`, also 1341 kg; diese liest der Wirt bei jedem Stoß (`_fahrMasse`).
+  - Das sind 16 % Abweichung für denselben Wagen, und die Dichte 150 steht doppelt im Kern.
+- **Kosten, nicht berichtet (gelb):**
+  - `_naturWand` kostet pro Aufruf jetzt 13–16 µs statt 0,7–0,9 µs.
+  - Beim Einströmen am Schau-Ort fallen damit 82–99 ms statt 5,5–6,5 ms an. Der Vegetations-Takt steigt von 322–341 auf 381–436 ms.
+  - Die Takt-Gates sind grün.
+
+**(c) Linse**
+- Gegen main habe ich sie selbst gefahren: ROT mit 38 Tätern. H mit 7 Stämmen und 15 Chunks, Z mit 8 Werken, L mit 17 Funden, F mit 40,05 → 41,53 km/h, dazu K.
+- S läuft auf main nicht, weil es `_landAt` braucht (gelb).
+- Am Kopf: Selbsttest grün, Lauf GRÜN mit EXIT=0. 0 von 92 Werken im Wasser, 7 Häuser an 8 Orten, 3–10,5 m vom Wasser.
+- Der CI-Schritt steht in `matrix.gruppe == 2` und ist im Lauf 38018421775 erfolgreich.
+
+**(d) Zahlen aus den Rohdateien**
+- 7 von 8 Häusern bei 0,49–4,53 m, 20 Täter, 11 von 94 → 0 von 92, K10 1804 von 3277 bis 54,32 m → 0, echter Renderer 465 von 599 bei 4,47 m → 0, Hain 7 von 7 bei 2,06–5,82 m → 0, Wagen 11,1 → 1,3 m/s: alles stimmt.
+- Die Zeit des Haus-Satzes stimmt nicht ganz. „Median 282 → 276 ms" ist jeweils der obere Mittelwert; der echte Median ist 255,9 → 257,7 ms (gelb).
+- `npm run check`, `lint` und `format:check` am Kopf je EXIT=0. Zusätzlich gefahren: `gate:wasser-wahrheit`, `gate:worker-watersheet` (maxDiff 0) und `gate:fern-wasser`, je EXIT=0.
+
+**(e) Ehrlich offen:** Der Reload-Bruch am Damm und der Massen-Zwilling fehlen in der Offen-Liste. Die Mehrspieler-Zahl ist ein alter Stand.
+
+**(f) Wand und CI:** 0 Siegel-Wörter in 12 Commits, `js-yaml` parst die Workflow-Datei. Per API: Code-Check 38018421775 am Kopf erfolgreich, mit check, erst-zeichnung und playtest 1/3 bis 3/3.
+
+**(g) Konflikte per merge-tree**
+
+| Zweig | Ergebnis |
+|---|---|
+| main | sauber |
+| schau2-uhr-wetter | sauber |
+| studio-s3-wiese-gestalten | sauber |
+| schau2-koerper-bild | Textkonflikt in `diag-altlasten.cjs` |
+| studio-s3-haus | `diag-altlasten.cjs` neu; der Konflikt in `diag-studio-vertrag.cjs` besteht schon gegen main. Im Bericht nicht genannt. |
+| studio-s3-pflanzen | `diag-altlasten.cjs`; `diag-studio-vertrag.cjs` besteht schon gegen main |
+| studio-s3-kreatur | `anazhRealm.js`, `foundry-core.js`, `diag-studio-vertrag.cjs` und `bake.json` bestehen schon gegen main; dazu kommt `diag-altlasten.cjs` |
+
+Rohdateien liegen in `C:\Users\micha\AppData\Local\Temp\claude\C--Users-micha-AnazhRealm-profiband\3dfb47a4-adf9-43a5-abe0-d203f372df5e\scratchpad\`. Das Verzeichnis teile ich mit anderen Agenten.
+- `lens-main.log`, `lens-kopf.log`
+- `damm-reload2.cjs`, `damm2-kopf.json`, `damm2-main.json`
+- `kosten-kopf.json`, `kosten-kopf2.json`, `kosten-main.json`, `kosten-main2.json`
+- `uneins-r2-kopf.json`, `hain-kopf.json`
+
+Geprüft: Am Ufer greift die eine Land-Wahrheit; der Hain steht trocken 5,5–11 m vom Wasser, die Haus-Sätze am Ufer, und der Wagen bremst in der Furt.
+Gemessen: Die Linse ist auf main ROT mit 38 Tätern und am Kopf GRÜN. Ein Damm verliert über den Reload seinen Stausee: am Kopf 1086 → 698 nasse Punkte, auf main bleiben es 1086.
+Pflicht-OFFEN Rest: A, B, C, E (docs/PFLICHT-OFFEN.md). Status: ZWISCHENSTAND
+
+merge-reif: nein — (1) anazhRealm.js:70800/70839–70843 und :81231: `_wasserVerdraengt` ist beim Restore (anazhRealm.js:92854 `loadState` vor :92855 `generateNewWorld`, keine Chunks geladen) immer false, darum bildet sich der Stausee eines Damms nach dem Reload nicht neu (Kopf 698 statt 1086 nasse Punkte), und sein Abbau weckt den Automaten nicht (0 statt 1 Invalidierung). (2) vehicle-core.js:2312/2592: Der Wasser-Term rechnet mit einer eigenen Wagen-Masse (`FAHR.wasser.schuett` mal Hüllen-Quader, GT 1557 kg) neben der einen Masse des Kerns (`G.m` mal `FAHR.masseDichte`, vehicle-core.js:2221, GT 1341 kg) — ein Zwilling.
