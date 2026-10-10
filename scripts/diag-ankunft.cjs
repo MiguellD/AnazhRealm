@@ -431,8 +431,24 @@ async function probe(arg) {
                 fall("baumUngebaut", baumWeg, baumHer);
             }
             // (3) die Streu-Region des Spielers wartet auf ihr Asset
+            // (die Region des Spielers, sonst die nächste des Rings, den `_weltbildFehlt` liest — in Reichweite und gebaut: der
+            // Spieler-Ort trägt nicht in jedem Boot eine eigene Region, CI 37983173156/38033181002 „kein Fall (Vorbedingung)")
             const SC = r.constructor.SCATTER;
-            const reg = st.scatterRegions ? st.scatterRegions.get(`${Math.floor(pm.x / SC.regionM)},${Math.floor(pm.z / SC.regionM)}`) : null;
+            let reg = null;
+            if (st.scatterRegions) {
+                const rx0 = Math.floor(pm.x / SC.regionM),
+                    rz0 = Math.floor(pm.z / SC.regionM);
+                let best = Infinity;
+                for (let dz = -SC.ringRegions; dz <= SC.ringRegions; dz++)
+                    for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
+                        if (!r._streuRegionInReichweite(rx0 + dx, rz0 + dz, pm)) continue;
+                        const kand = st.scatterRegions.get(`${rx0 + dx},${rz0 + dz}`);
+                        if (kand && !kand._deferredFoundry && !kand._cont && dx * dx + dz * dz < best) {
+                            best = dx * dx + dz * dz;
+                            reg = kand;
+                        }
+                    }
+            }
             if (reg) fall("streuWartet", () => (reg._deferredFoundry = true), () => delete reg._deferredFoundry);
             // (4) die Karte eines fernen Baums ist offen
             fall(
