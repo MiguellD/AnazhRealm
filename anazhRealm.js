@@ -1534,8 +1534,8 @@ class AnazhRealm {
     // DAS FELD HAT KEINEN ORT, WO DIE WILDNIS NICHT TRÄGT: wählt das Feld selbst (`_feldHandelt` — der Nexus und seine
     // Regeln) einen Ort, den die Wildnis nicht trägt (`_wildnisTraegt`), gibt es ihn nicht — jeder Wurf daran (Tier, Baum,
     // Werk, Insel, UFO, Dorf, Tempel, Wasserfall, Bauplan, Fraktal, Kugel) bricht hier benannt ab; Akte setzen überall.
-    // Bis 10.10. fragte nur die Tier-Geburt: auf der Prüfbühne warfen 18 von 20 Nexus-Würfen (ein Dorf aus 33 Bauten,
-    // Tempel, Wasserfall, Fraktal, Insel, UFO, Baum, Werk), gate:pruefbuehne nennt jeden beim Namen.
+    // Bis 10.10. fragte nur die Tier-Geburt: auf einer Welt ohne Wildnis-Term warfen 18 von 20 Nexus-Würfen (ein Dorf aus
+    // 33 Bauten, Tempel, Wasserfall, Fraktal, Insel, UFO, Baum, Werk) — die Linse der Feld-Würfe nennt jeden beim Namen.
     dslEvalPos(node, ctx) {
         let op = null;
         let pos = null;
