@@ -325,6 +325,15 @@ jobs:
               # setzt auf beiden. Der Selbsttest laesst die Wildnis zum Schein ueberall tragen: jeder Wurf faellt rot beim Namen.
               run: npm run gate:pruefbuehne
 
+            - name: Weltgrenze (kein Feld einer Welt reist in die naechste - Laden, Ersetzen, world-pull, Portal, Geburt, Reload)
+              if: matrix.gruppe == 2
+              # Faehrt die echte Welt (Null-Renderer) je Weg in einem frischen Browser-Kontext: Welt A traegt ein Zeichen in
+              # jedem welt-eigenen Feld (Erbgut der Pruefbuehne, Anker, Edits, Dorf-Zellen, Stempel, Rolle, Gedaechtnisse der
+              # Seite, ein Tier), Welt B ist eine Wildnis-Welt ohne all das. Nach jedem Weg nennt die Linse jedes Feld von A,
+              # das B in der Seite, in ihren Lesern, im Worker-Spiegel oder im Speicher traegt, beim Namen. Der Selbsttest
+              # mischt den alten Spread am Lade-Engpass zum Schein darunter und muss rot werden.
+              run: npm run gate:weltgrenze
+
             - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
               if: matrix.gruppe == 3
               # Beweist headless, dass das Gras (die dominante kapazitäts-geregelte Last, V18.307) dem
