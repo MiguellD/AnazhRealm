@@ -1,0 +1,22 @@
+=== K — kein Zwilling im resize-Handler (Quelle) ===
+  ❌ K der resize-Handler baut keinen Leser der Szenen-Tiefe neu (die Diät trägt jeden Größenwechsel)
+=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ===
+  [6 s] am Ufer {"bach":[-872,-728],"wasser":1,"fernWasser":1264,"abbildBreite":320}
+  [10 s] E1 704×396 DPR 1: Pixel-Ratio 1, Abbild 352×396 v2, 3 Frames, 0 Meldungen, GPU-Wache +0
+  ✅ E1 keine WebGPU-Validierung (704×396 DPR 1, laufender Loop)
+  [12 s] E2 704×396 DPR 2: Pixel-Ratio 1.25, Abbild 440×495 v3, 3 Frames, 2× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit., GPU-Wache +2
+  ❌ E2 keine WebGPU-Validierung (704×396 DPR 2, laufender Loop) — 2× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit.
+  [13 s] E3 640×360 DPR 1: Pixel-Ratio 1, Abbild 320×360 v5, 4 Frames, 5× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit., GPU-Wache +5
+  ❌ E3 keine WebGPU-Validierung (640×360 DPR 1, laufender Loop) — 5× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit.
+  [13 s] E4a setPixelRatio(1.25): Pixel-Ratio 1.25, Abbild 400×450 v6, 3 Frames, 2× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit., GPU-Wache +2
+  ❌ E4a keine WebGPU-Validierung (setPixelRatio(1.25), laufender Loop) — 2× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit.
+  [14 s] E4b setPixelRatio(1): Pixel-Ratio 1, Abbild 320×360 v7, 3 Frames, 0 Meldungen, GPU-Wache +2
+  ❌ E4b keine WebGPU-Validierung (setPixelRatio(1), laufender Loop) — GPU-Wache +2: 
+  ✅ E5 nicht vakuös: das Wasser zeichnet, das Abbild wurde je Größe neu angelegt, die Pixel-Ratio folgte DPR und Kappe — Wasser 1 (Fern-Wasser 1264 Quads), Abbild-Stände 5, Pixel-Ratio E2 1.25 · E3 1 · E4 1.25/1, Frames 3/3/4/3/3
+  [14 s] ESa 704×396 DPR 1 ohne Wächter: Pixel-Ratio 1, Abbild 352×396 v8, 0 Frames, 2× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit., GPU-Wache +3
+  [46 s] ESb setPixelRatio(1.25) ohne Wächter: Pixel-Ratio 1.25, Abbild 400×450 v2, 4 Frames, 2× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit., GPU-Wache +2
+  ✅ ES Selbsttest: ohne den Wächter fällt „Destroyed texture … szene:tiefenabbild“ beim Größen- UND beim Pixel-Ratio-Schritt — 2× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit. · 2× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit. | world-canvas: Destroyed texture [Texture "szene:tiefenabbild"] used in a submit.
+  ✅ E keine Page-Errors
+  [48 s] ROT
+ROT fenster-wechsel
+exit 1, 49 s

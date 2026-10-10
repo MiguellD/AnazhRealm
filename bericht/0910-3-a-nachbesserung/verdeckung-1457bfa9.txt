@@ -1,0 +1,17 @@
+=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===
+  [2 s] Renderer bereit nach 1 s
+  [53 s] ABLAUF: {"begonnen":0,"bruch":54,"bruchOffen":0,"gezaehlt":5,"wasser":51,"gift":0,"letzter":0,"nullFrames":0,"renders":134} · Bach {"x":-872,"z":-728,"ufer":4,"start":[-882,-738]}, Probe jeden 10. Frame, Wasser-Meshes 1, aufgesessen true, Halt 13.2 m vor dem Bach, ausgestiegen true, Sicht {"vorher":"third","nachher":"first"} · 0 Fehler
+  [62 s] BRUCH: {"begonnen":8,"bruch":8,"bruchOffen":8,"gezaehlt":8,"wasser":8,"gift":0,"letzter":0,"nullFrames":0,"renders":16} · vorgebaut 1 · 0 Fehler
+  [72 s] GIFT: {"begonnen":0,"bruch":8,"bruchOffen":0,"gezaehlt":8,"wasser":8,"gift":8,"letzter":0,"nullFrames":0,"renders":16} · vorgebaut 1 · 0 Fehler
+  [78 s] LETZTER: {"begonnen":4,"bruch":8,"bruchOffen":0,"gezaehlt":4,"wasser":8,"gift":0,"letzter":4,"nullFrames":4,"renders":16} · vorgebaut 1 · 4 Täter
+  [81 s] SELBSTTEST bruch ohne Hülle: {"Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0 of [QuerySet \"occlusionQuerySet_3\"].":8,"[Invalid CommandBuffer from CommandEncoder \"renderContext_3\"] is invalid due to a previous error.":8} · Seite {} · Wache 16
+  [85 s] SELBSTTEST gift ohne Hülle: {"No occlusion queries are active.":8,"[Invalid CommandBuffer from CommandEncoder \"renderContext_3\"] is invalid due to a previous error.":8} · Seite {"Invalid value used in weak set":7} · Wache 16
+  [91 s] SELBSTTEST letzter ohne Hülle: {"No occlusion queries are active.":4,"[Invalid CommandBuffer from CommandEncoder \"renderContext_3\"] is invalid due to a previous error.":4} · Seite {"Invalid value used in weak set":1} · Wache 8
+  [91 s] ROT
+
+❌ ROT — 4 Verletzung(en):
+   • LETZTER GPU-VALIDIERUNG 4×: No occlusion queries are active.
+   • LETZTER GPU-VALIDIERUNG 4×: [Invalid CommandBuffer from CommandEncoder "renderContext_3"] is invalid due to a previous error.
+   • LETZTER GPU-WACHE 1×: world-canvas: No occlusion queries are active.
+   • LETZTER GPU-WACHE 1×: world-canvas: [Invalid CommandBuffer from CommandEncoder "renderContext_3"] is invalid due to a previous error.
+exit 1, 92 s

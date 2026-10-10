@@ -1,0 +1,13 @@
+=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===
+  [2 s] Renderer bereit nach 0 s
+  [35 s] ABLAUF: {"begonnen":5,"bruch":54,"bruchOffen":0,"gezaehlt":6,"wasser":52,"gift":0,"letzter":0,"nullFrames":0,"renders":128} · Bach {"x":-872,"z":-728,"ufer":4,"start":[-882,-738]}, Probe jeden 10. Frame, Wasser-Meshes 1, aufgesessen true, Halt 13.4 m vor dem Bach, ausgestiegen true, Sicht {"vorher":"third","nachher":"first"}, ms {"ort":4607,"wagen":3874,"takte":20389} · 0 Fehler
+  [42 s] BRUCH: {"begonnen":6,"bruch":6,"bruchOffen":6,"gezaehlt":6,"wasser":6,"gift":0,"letzter":0,"nullFrames":0,"renders":12} · vorgebaut 1 · 0 Fehler
+  [48 s] GIFT: {"begonnen":0,"bruch":6,"bruchOffen":0,"gezaehlt":6,"wasser":6,"gift":6,"letzter":0,"nullFrames":0,"renders":12} · vorgebaut 1 · 0 Fehler
+  [55 s] LETZTER: {"begonnen":3,"bruch":6,"bruchOffen":0,"gezaehlt":3,"wasser":6,"gift":0,"letzter":3,"nullFrames":3,"renders":12} · vorgebaut 1 · 0 Fehler
+  [56 s] SELBSTTEST bruch ohne Hülle: {"Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0 of [QuerySet \"occlusionQuerySet_3\"].":6,"[Invalid CommandBuffer from CommandEncoder \"renderContext_3\"] is invalid due to a previous error.":6} · Seite {} · Wache 12
+  [58 s] SELBSTTEST gift ohne Hülle: {"No occlusion queries are active.":6,"[Invalid CommandBuffer from CommandEncoder \"renderContext_3\"] is invalid due to a previous error.":6} · Seite {"Invalid value used in weak set":5} · Wache 12
+  [62 s] SELBSTTEST letzter ohne Hülle: {"No occlusion queries are active.":3,"[Invalid CommandBuffer from CommandEncoder \"renderContext_3\"] is invalid due to a previous error.":3} · Seite {"Invalid value used in weak set":1} · Wache 6
+  [62 s] GRÜN
+
+✅ GRÜN — 0 WebGPU-Validierungsfehler und 0 Seitenfehler in Boot, Ablauf, Bruch, Gift und Letzter. Am Bach (-872/-728) aufgesessen, 13.4 m vor dem Wasser ausgestiegen (Sicht third → first), der Stellvertreter 6× gezählt, 5 Abfragen begonnen; Bruch bei offener Abfrage 6×, Gift 6×, 3 Frames endeten mit dem Stellvertreter, 3 Null-Frames danach; ohne die Hüllen fallen „ended with incomplete occlusion query“, „No occlusion queries are active“, „weak set“ und der Letzte beim Namen.
+exit 0, 64 s

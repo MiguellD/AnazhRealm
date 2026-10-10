@@ -1,0 +1,4 @@
+{ "GIFT": false, "gift": 0, "stummJeFenster": [ 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ], "gemeldet": false, "logs": [] }, "ms": 3598}
+
+{ "GIFT": true, "gift": 12, "stummJeFenster": [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 ], "gemeldet": true, "logs": [ "ERROR: BERG-CULL STUMM: der Stellvertreter von regionBundle:-4,-1 begann in 6 Probe-Fenstern keine Verdeckungs-Abfrage — seine Pipeline steht nicht oder gilt als gescheitert (die GPU-Wache nennt den Fehler); ohne Abfrage kein Verdikt" ] }, "ms": 2356}
+
