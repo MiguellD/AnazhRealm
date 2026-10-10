@@ -19652,14 +19652,21 @@ class AnazhRealm {
             const lootSummary = lootParts.length > 0 ? ` → ${lootParts.join(", ")}` : "";
             this.journalAppend("relationship", `${name} fiel im Kampf${lootSummary}.`, { source, loot });
         }
-        // ═══ KAMPF-GEFÜHL — TOD-KIPPEN statt Sofort-Despawn: EIN TIER STIRBT WIE EIN TIER (Welle LF 09.10., Posten 7) ═══
+        this._kreaturFaellt(creature); // der Fall: kippen, liegen, sinken — kein Wesen mehr
+    }
+
+    // ═══ DER FALL — EIN TIER STIRBT WIE EIN TIER (Welle LF kampf, Posten 7 — K-D19) ═══
+    // Der EINE Weg, auf dem ein Tier stirbt, gleich woran: im Kampf (_creatureCombatDeath, nach Loot, Schuld und Journal) und
+    // am Alter (_creatureNaturalDeath, nach Trauer und Journal). Vorher nahm der Tod am Alter den Leib sofort (removeCreature):
+    // „kehrt zur Erde zurück" und er war fort, mitten im Bild.
+    _kreaturFaellt(creature) {
         // Der Körper kippt render-seitig auf seine FLANKE (~1 s, _tickLeichname treibt `dying`): die Kipp-Richtung steht
         // quer zur Leibes-Achse (vorn = (sin ry, cos ry)), auf die Seite, die hangab liegt (_fieldGradient: die waagrechte
         // Komponente der Außen-Normale gegen die Flanke), auf flachem Boden oder bei Gefälle längs der Achse zur rechten
         // Seite. Dann LIEGT er (gefuehl.leichnamSec, Kreatur-Uhr) und sinkt in der letzten Spanne (leichnamSinkSec) in die
-        // Erde, DANN removeCreature (Loot/Schuld/Triumph/Journal sind schon gestempelt). Ein sterbendes Wesen ist inert
-        // (damageCreature-Wand). Vorher kippte er in die Hang-Richtung, wie sie fiel — längs der Achse stand der Hirsch auf
-        // dem Hinterteil, Kopf senkrecht (Bild ks09) —, und nach 0,35 s Nachklang war er fort.
+        // Erde, DANN removeCreature. Ein sterbendes Wesen ist inert (damageCreature-Wand). Vorher kippte er in die
+        // Hang-Richtung, wie sie fiel — längs der Achse stand der Hirsch auf dem Hinterteil, Kopf senkrecht (Bild ks09) —, und
+        // nach 0,35 s Nachklang war er fort.
         const K = AnazhRealm._arenaGesetz().gefuehl; // Kipp-Dauer, Leichnam, Versinken = ARENA-Daten
         const g = this._fieldGradient(creature.position.x, creature.position.y + 0.5, creature.position.z, {});
         const ry = creature.rotation.y || 0;
@@ -19685,9 +19692,10 @@ class AnazhRealm {
         // DER LEICHNAM IST KEIN WESEN (Welle LF kampf Nachbesserung 3): er verlässt die EINE Liste der Wesen im Moment des
         // Todes und liegt in state.leichname, wo der Kreatur-Takt seinen Fall treibt (_tickLeichname). Jeder Leser, der Wesen
         // zählt oder wählt — Kappe, Nexus, Hof, Fadenkreuz, Mehrspieler-Strom, Lebenszyklus, der Nächste, die Anzeige, das
-        // LLM, der Snapshot —, liest state.creatures ohne Frage. Vorher lag er dort 90 s weiter: 17 Leser fragten je selbst
-        // nach `dying`, die übrigen zählten ihn (die Kopie beim Mitspieler stand 90 s aufrecht, der Lebenszyklus wählte ihn
-        // als Ältesten und ließ ihn ein zweites Mal sterben, findNearestCreature gab ihm einen Auftrag).
+        // LLM, der Snapshot —, liest state.creatures ohne Frage. Vorher lag er dort 90 s weiter: 14 Methoden fragten je selbst
+        // nach `dying`, 5 Leser über eine Frage-Methode, die übrigen zählten ihn (die Kopie beim Mitspieler stand 90 s
+        // aufrecht, der Lebenszyklus wählte ihn als Ältesten und ließ ihn ein zweites Mal sterben, findNearestCreature gab ihm
+        // einen Auftrag).
         this._kreaturAusListe(creature);
         this.state.leichname.push(creature);
         this._uiDirty("hof");
@@ -91640,15 +91648,15 @@ class AnazhRealm {
         return oldest;
     }
 
-    // [ATMOSPHERE] Lifecycle-Tod: Trauer (sorrow), journal-loss-Eintrag, Aura-Pulse, der letzte Ruf, dann
-    // removeCreature. Memory stirbt bewusst mit der Kreatur.
+    // [ATMOSPHERE] Lifecycle-Tod: Trauer (sorrow), journal-loss-Eintrag, Aura-Pulse, dann der Fall (_kreaturFaellt: kippen,
+    // liegen, der letzte Ruf, sinken). Memory stirbt bewusst mit der Kreatur.
     _creatureNaturalDeath(creature) {
         if (!creature) return false;
         const name = (creature.userData && creature.userData.name) || "(unbenannt)";
         const soul = (creature.userData && creature.userData.soul) || "wesen";
         const bornAt = (creature.userData && creature.userData.bornAt) || 0;
         const ageSec = bornAt > 0 ? (Date.now() - bornAt) / 1000 : null;
-        // Tags BEVOR removeCreature läuft (danach ist die Kreatur weg)
+        // Tags BEVOR das Wesen fällt
         const tags = this.computeCreatureCompoundTags(creature);
         // Trauer ∝ Bindung × Vitalität: eine gebundene Gefährtin zu verlieren schmerzt mehr. Der
         // `lebendig`-Tag färbt hier SORROW (nicht joy wie die Bau-Brücke) — darum eine explizite Magnitude
@@ -91675,13 +91683,10 @@ class AnazhRealm {
                 cause: "fauna_lifecycle",
             });
         }
-        // Das Lebewohl: der letzte Ruf des Wesens (klang:UMWELT.tier — Grundton aus der Körperlänge, Trauer-Kontur).
-        this._tierRuf(creature, "trauer");
-        // removeCreature: Standard-Cleanup (Scene, Body, Aura, state.creatures); Memory wird bewusst
-        // verworfen, nicht ins Journal kopiert.
-        if (typeof this.removeCreature === "function") {
-            this.removeCreature(creature);
-        }
+        // DER FALL (Posten 7): das Wesen fällt auf die Flanke, liegt und sinkt in die Erde (_kreaturFaellt — derselbe Weg wie
+        // der Tod im Kampf); das Lebewohl, der letzte Ruf (klang:UMWELT.tier, Trauer-Kontur), klingt, wenn es liegt
+        // (_tickLeichname). Memory wird bewusst verworfen, nicht ins Journal kopiert.
+        this._kreaturFaellt(creature);
         this.state.faunaLifecycle.lastDeathAt = Date.now();
         return true;
     }

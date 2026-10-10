@@ -346,6 +346,10 @@ function todVerdict(T) {
                 ? "tod-kopie: beim Mitspieler liegt keine Kopie"
                 : `tod-kopie: die Kopie beim Mitspieler steht (oben·y bis ${T.kopieOben}), der Leib beim Sender liegt`
         );
+    if (T.alterLiegt !== true)
+        v.push(
+            "tod-alter: ein Tier, das am Alter stirbt, ist sofort fort (_creatureNaturalDeath nimmt den Leib) — der Leib verschwindet auf dem Weg des Lebenszyklus"
+        );
     if (T.fragen && T.fragen.length)
         v.push(
             `tod-frage: ${T.fragen.join(", ")} fragen selbst nach dem Sterben — der Leichnam stünde unter den Wesen`
@@ -2337,7 +2341,12 @@ async function WELLE_L() {
                 String(f)
                     .replace(/\/\/.*$/gm, "")
                     .replace(/\/\*[\s\S]*?\*\//g, "");
-            const FRAGT_ERLAUBT = new Set(["damageCreature", "_creatureCombatDeath", "_tickLeichname"]);
+            const FRAGT_ERLAUBT = new Set([
+                "damageCreature",
+                "_creatureCombatDeath",
+                "_kreaturFaellt",
+                "_tickLeichname",
+            ]);
             // über die Deskriptoren (nie A.prototype[n]: ein Getter liefe mit dem Prototyp als this und legte seinen Cache dort ab)
             tod.fragen = Object.getOwnPropertyNames(A.prototype).filter((n) => {
                 const d = Object.getOwnPropertyDescriptor(A.prototype, n);
@@ -2367,6 +2376,21 @@ async function WELLE_L() {
                 if (neuS) r.removeCreature(neuS);
                 const lebend = s.creatures.filter((c) => c && c.userData && !c.userData.dying).length;
                 tod.nexusZaehlt = r.dslConditions.creatures_count_above([lebend], { state: s }) === true;
+            }
+            // DER TOD AM ALTER (Nachbesserung 3, K-D19 auf dem Weg des Lebenszyklus): ein Wesen, das _creatureNaturalDeath
+            // nimmt, liegt 10 s danach wie ein Gefallener — kein Wesen mehr, aber ein Leib im Bild (die Stimmung des Spielers,
+            // die die Trauer berührt, kehrt zurück)
+            {
+                const hN = setze("wesen");
+                if (hN) {
+                    stelle(hN, 24, -6);
+                    const emo0 = p.emotions ? { ...p.emotions } : null;
+                    r._creatureNaturalDeath(hN);
+                    for (let k = 0; k < 200; k++) r.updateCreatures(0.05);
+                    tod.alterLiegt = !!hN.parent && !!hN.userData.dying && s.creatures.indexOf(hN) === -1;
+                    if (emo0) Object.assign(p.emotions, emo0);
+                    if (hN.parent) r.removeCreature(hN);
+                }
             }
             w.z.tod = tod;
             if (hT.parent) r.removeCreature(hT);
@@ -3046,8 +3070,14 @@ async function WELLE_L() {
                 /enabled/.test(shotSrc) &&
                 !/new\s+AudioContext/.test(shotSrc);
             const deathSrc = codeOf(r._creatureCombatDeath);
+            // der Tod im Kampf fällt den EINEN Fall (_kreaturFaellt), der kippt und despawnt nicht selbst
+            const fallSrc = codeOf(r._kreaturFaellt);
             o.checks.todKipptStattDespawn =
-                /_fieldGradient/.test(deathSrc) && /dying/.test(deathSrc) && !/removeCreature\(/.test(deathSrc);
+                /_kreaturFaellt\(/.test(deathSrc) &&
+                !/removeCreature\(/.test(deathSrc) &&
+                /_fieldGradient/.test(fallSrc) &&
+                /dying/.test(fallSrc) &&
+                !/removeCreature\(/.test(fallSrc);
             // der Leichnam-Takt trägt den Abschied, und der Kreatur-Takt treibt ihn
             o.checks.abschiedNachFrist =
                 /dying/.test(codeOf(r._tickLeichname)) &&
@@ -3537,7 +3567,7 @@ async function WELLE_L() {
         );
         check(
             c.todKipptStattDespawn,
-            "(D) Source-Wand: _creatureCombatDeath kippt (_fieldGradient), despawnt nicht selbst"
+            "(D) Source-Wand: _creatureCombatDeath fällt den EINEN Fall (_kreaturFaellt kippt nach _fieldGradient), keiner despawnt selbst"
         );
         check(
             c.abschiedNachFrist,
@@ -3923,7 +3953,7 @@ async function WELLE_L() {
         const tv = todVerdict(z.tod);
         check(
             tv.length === 0,
-            "LF Posten 7: ein Tier stirbt wie ein Tier — es fällt auf die Flanke (auch wenn das Gefälle längs seiner Achse fällt) und bleibt liegen, auch beim Mitspieler; der Leichnam ist kein Wesen (nicht in der Liste der Wesen, kein Ziel, kein Platz, keine Zahl, kein Ältester, kein Nächster, kein Leser fragt selbst)" +
+            "LF Posten 7: ein Tier stirbt wie ein Tier — es fällt auf die Flanke (auch wenn das Gefälle längs seiner Achse fällt) und bleibt liegen, auch beim Mitspieler und am Alter; der Leichnam ist kein Wesen (nicht in der Liste der Wesen, kein Ziel, kein Platz, keine Zahl, kein Ältester, kein Nächster, kein Leser fragt selbst)" +
                 (tv.length ? " — " + tv.join(" · ") : "")
         );
         // die Befunde: Runde 1 (auf dem Hinterteil, nach 22 Takten fort, Ziel/Platz/Zahl) und Gegenprüfung 2 (der Leichnam unter
@@ -3941,6 +3971,7 @@ async function WELLE_L() {
             stromAnteil: 1,
             kopieOben: 1,
             fragen: ["_tierRufTakt", "_serializeCreature", "_kreaturIstBeute", "_pickCreatureAtCrosshair"],
+            alterLiegt: false,
         });
         // der halbe Schnitt: der Leichnam verlässt die Wesen, aber der Strom vergisst ihn — die Kopie verschwindet
         const tvStumm = todVerdict({
@@ -3956,6 +3987,7 @@ async function WELLE_L() {
             stromAnteil: 0,
             kopieOben: null,
             fragen: [],
+            alterLiegt: true,
         });
         const tvGut = todVerdict({
             vornY: 0.05,
@@ -3970,6 +4002,7 @@ async function WELLE_L() {
             stromAnteil: 1,
             kopieOben: 0.12,
             fragen: [],
+            alterLiegt: true,
         });
         check(
             tvGut.length === 0 &&
@@ -3984,9 +4017,10 @@ async function WELLE_L() {
                     "tod-naechster",
                     "tod-kopie",
                     "tod-frage",
+                    "tod-alter",
                 ].every((t) => tvAlt.some((x) => x.startsWith(t))) &&
                 ["tod-strom", "tod-kopie"].every((t) => tvStumm.some((x) => x.startsWith(t))),
-            "Selbst-Test T22: die Befunde (auf dem Hinterteil, nach 22 Takten fort; der Leichnam als Ziel, Platz, Zahl, Ältester und Nächster, die stehende Kopie, die Leser mit eigener Frage; der Strom ohne ihn) nennen jeden Täter; ein Tier auf der Flanke, das kein Wesen mehr ist und beim Mitspieler liegt, bleibt grün"
+            "Selbst-Test T22: die Befunde (auf dem Hinterteil, nach 22 Takten fort; der Leichnam als Ziel, Platz, Zahl, Ältester und Nächster, die stehende Kopie, die Leser mit eigener Frage, der Tod am Alter ohne Leib; der Strom ohne ihn) nennen jeden Täter; ein Tier auf der Flanke, das kein Wesen mehr ist und beim Mitspieler liegt, bleibt grün"
         );
         const bgz = z.bissGeste || {};
         const bgZeile = (L) =>
