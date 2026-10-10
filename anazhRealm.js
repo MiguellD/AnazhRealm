@@ -16595,6 +16595,18 @@ class AnazhRealm {
         // DAS GEMÜT WIRD MIT DEM LEIB GEGOSSEN (Welle LF): Gattung × die EINE Masse des eben gegossenen Leibs
         // (`_creatureTemperament` → `_leibMasse`), gecacht je Gattung × Größe — der Takt liest es, statt es zu rechnen.
         this._creatureTemperament(group);
+        // DER ERSTE GRUND (Leben-Schau 2): der Ort des Rufs liest seinen Boden (`_koerperBodenUnter`, im Gestein trägt die
+        // Säule) — jede Bewegung danach ist ein SCHRITT von ihm (`_koerperSchritt`, die Wand hält). Vorher las erst der
+        // erste Takt den Boden: schob ihn ein Stoß (der Spieler am selben Ort) 0,7 m in den Fuß der Höhlenwand, stand der
+        // frische Wolf auf dem Dach (42,90 m über dem Grund 30,40). DIE FELS-BLASE: die Höhe des Rufers ist eine Schätzung
+        // (die des Spielers, ein Ort 2–15 m daneben am Hang) — ein Ruf landet nur in einer Luft, die einen Leib trägt (2 m
+        // über dem Grund frei), in einer engeren Blase im Hang trägt die Säule wie im Gestein (gate:kreatur-takt: ein Fuchs,
+        // gerufen 8 m unter der Wiese, lag in 1,2 m Luft unter 7 m Fels).
+        let grund0 = this._koerperBodenUnter(x, y, z);
+        if (this._fieldSolid(x, grund0 + 2, z)) grund0 = this._koerperBodenUnter(x, NaN, z);
+        group.userData.cachedGroundY = grund0;
+        group.userData.cachedGroundX = x;
+        group.userData.cachedGroundZ = z;
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
@@ -16605,7 +16617,7 @@ class AnazhRealm {
             emotion === "sad"
                 ? { joy: 0, awe: 0, sorrow: 0.4, hope: 0, peace: 0, chaos: 0 }
                 : { joy: 0.2, awe: 0, sorrow: 0, hope: 0.1, peace: 0.15, chaos: 0 };
-        // Kein Physik-Body: Kreaturen erden feld-nativ (`_creatureGroundY` → `_voxelSurfaceY`), bewegen sich
+        // Kein Physik-Body: Kreaturen erden feld-nativ (`_creatureGroundY` → der Boden unter dem Körper), bewegen sich
         // kinematisch in `updateCreatures`; Knockback via `creature.userData.knockVel`.
         // Der erste Ruf des neuen Wesens (klang:UMWELT.tier — die Stimme folgt dem Körper).
         this._tierRuf(group, emotion === "sad" ? "trauer" : "freude");
@@ -21280,6 +21292,16 @@ class AnazhRealm {
             this._kreaturLeib(c, L, leib);
             const teile = Math.max(1, Math.ceil((sp * dt) / Math.max(0.02, 0.5 * leib.radius)));
             const h = dt / teile;
+            ud._wandHalt = null; // der Stoß trägt den Leib, seine Wand ist die des Schritts (unten)
+            // der Grund, von dem dieser Schritt ausgeht — der SIM-Zustand des Stoßes (Lehre 13: was einen Körper bewegt, läuft
+            // im festen Schritt): der Grund des letzten Stoß-Schritts, steht der Leib noch dort; sonst der Boden unter ihm. Nie
+            // der Boden-Cache des Frame-Takts (Budget, Bildrate: gate:fahr-leben L8, Bär 1,8 cm je Bildrate).
+            const sx = c.position.x;
+            const sz = c.position.z;
+            const sg0 = ud._stossGrund;
+            const amOrt = sg0 && sg0.x === sx && sg0.z === sz;
+            const sg = amOrt ? sg0.g : this._koerperBodenUnter(sx, c.position.y, sz);
+            const sgGenau = amOrt ? sg0.genau : this._feldKanteGenau(sx, sg, sz);
             for (let k = 0; k < teile; k++) {
                 const x0 = c.position.x;
                 const z0 = c.position.z;
@@ -21306,8 +21328,35 @@ class AnazhRealm {
             // Frame-Takt) — vorher setzte dieser Schritt auch im Wasser den Boden (gate:fahr-leben L10: ein Fuchs in 3,2 m Wasser
             // sank beim Gleiten 2,77 m tief), danach setzte der Frame-Takt die Höhe mit seiner Welle (L8: 0,127 m je Bildrate).
             // der Boden UNTER dem Leib (`_koerperBodenUnter`, ab seiner Höhe), nie die Oberkante der Säule — ein in der Höhle
-            // gestoßenes Tier glitt sonst aufs Dach
-            const gesetz = this._koerperBodenUnter(c.position.x, c.position.y, c.position.z);
+            // gestoßenes Tier glitt sonst aufs Dach. Der Boden ist der SCHRITT vom Grund des Schritt-Beginns (`_koerperSchritt`):
+            // trug er den Leib in die Wand, steht er, wo der Schritt begann, und der Stoß stirbt in der Wand (unelastisch, wie
+            // an jeder Hülle).
+            let gesetz = this._koerperSchritt(sx, sz, sg, c.position.x, c.position.z);
+            if (gesetz === null) {
+                c.position.x = sx;
+                c.position.z = sz;
+                sv.x = 0;
+                sv.z = 0;
+                gesetz = sg;
+            }
+            // DIE STEILE WAND: ein Stoß schiebt den Leib keinen Hang steiler als 45° hinauf — dort stirbt er wie an jeder Wand.
+            // Vorher hielt ihn nur die Reibung, und ein mit 6 m/s gestoßener Wolf glitt 4,7 m die 56°-Wand der Höhle hinauf.
+            // Gemessen an der GENAUEN Kante (`_feldKanteGenau`): die Bisektion des Boden-Lesers trägt 8 mm je nach Start-Höhe,
+            // und die Start-Höhe trägt die Bildrate (Lockstep, gate:fahr-leben L8).
+            let genau = gesetz === sg ? sgGenau : this._feldKanteGenau(c.position.x, gesetz, c.position.z);
+            if (genau - sgGenau > Math.hypot(c.position.x - sx, c.position.z - sz)) {
+                c.position.x = sx;
+                c.position.z = sz;
+                sv.x = 0;
+                sv.z = 0;
+                gesetz = sg;
+                genau = sgGenau;
+            }
+            const sgN = ud._stossGrund || (ud._stossGrund = { x: 0, z: 0, g: 0, genau: 0 });
+            sgN.x = c.position.x;
+            sgN.z = c.position.z;
+            sgN.g = gesetz;
+            sgN.genau = genau;
             const spiegelS = this._kreaturSchwimmt(c, gesetz);
             if (spiegelS !== null) c.position.y = this._kreaturSchwimmLinie(c, spiegelS);
             else {
@@ -21365,10 +21414,19 @@ class AnazhRealm {
     // und Frame auf eine feste Diagonale (DDA durchs Dichtefeld + Segment gegen JEDES Bauwerk), nur im Blick, die Antwort
     // ein Math.random-Stoß — 29–37 % der CPU (OMEN-Profil), und die Tiere liefen durch Häuser (R-D7: 21 % der Frames).
     _kreaturHuellenKontakt(creature, L, px0, pz0) {
-        const arches = this.state.architectures;
-        if (!arches || !arches.length) return;
         const ud = creature.userData;
         const p = creature.position;
+        // DIE FELS-WAND (`_creatureGroundY`): die Ebene vor der Wand hält den Leib — er geht seitlich und zurück, nie hinein
+        const wh = ud && ud._wandHalt;
+        if (wh) {
+            const ein = (p.x - wh.x) * wh.nx + (p.z - wh.z) * wh.nz;
+            if (ein > 0) {
+                p.x -= wh.nx * ein;
+                p.z -= wh.nz * ein;
+            }
+        }
+        const arches = this.state.architectures;
+        if (!arches || !arches.length) return;
         const t = this.state.creatureAnimationTime;
         let nah = ud._huellenNah;
         if (!nah || Math.abs(p.x - nah.x) > 4 || Math.abs(p.z - nah.z) > 4 || !(t - nah.t < 1)) {
@@ -33779,6 +33837,40 @@ class AnazhRealm {
         return this._voxelSurfaceY(x, z);
     }
 
+    // DIE KANTE GENAU: die Fels-Grenze um den gefundenen Grund `g` (`_fieldSurfaceBelow` liegt bis 7,8 mm darunter, je nach
+    // Start-Höhe) auf 0,2 µm — wer an ihr misst, misst den Ort, nie die Höhe, von der aus gesucht wurde. Leser: der Stoß.
+    _feldKanteGenau(x, g, z) {
+        let lo = g - 0.002;
+        let hi = g + 0.01;
+        if (!this._fieldSolid(x, lo, z) || this._fieldSolid(x, hi, z)) return g;
+        for (let i = 0; i < 16; i++) {
+            const m = (lo + hi) / 2;
+            if (this._fieldSolid(x, m, z)) lo = m;
+            else hi = m;
+        }
+        return lo;
+    }
+
+    // DER SCHRITT DES KÖRPERS (Leben-Schau 2, CI 38009273564): der Boden eines Leibs, der auf dem Grund `vg` bei (vx, vz)
+    // stand und nach (x, z) geht — oder null: die WAND. Gelesen wie `_koerperBodenUnter` ab seinem Grund (abwärts, der
+    // Hang 2 m aufwärts, jenseits die Oberkante der Säule — eine Klippe unter freiem Himmel), aber nie DURCH EIN DACH: steigt
+    // der Leib über eine Stufe, muss über seinem alten Stand Luft bis über den neuen Grund sein, sonst liegt Fels dazwischen
+    // (die Decke der Höhle, ein Überhang) und der Schritt geht in die Wand. Vorher trug jeder Schritt im Fels die Oberkante
+    // der Säule: ein in der Höhle an die Wand gestoßener Wolf stand auf ihrem Dach (11,88 m über dem Grund), ein in sie
+    // laufender ebenso (11,73 m). Leser: `_creatureGroundY`, `_kreaturStossSchritt`.
+    _koerperSchritt(vx, vz, vg, x, z) {
+        const y0 = vg + AnazhRealm.PLAYER_STEP_UP;
+        if (!this._fieldSolid(x, y0, z)) {
+            const g = this._fieldSurfaceBelow(x, y0, z, 40);
+            return g !== null ? g : this._koerperBodenUnter(x, NaN, z);
+        }
+        const g = this._koerperBodenUnter(x, vg, z);
+        const oben = g + 0.2;
+        if (this._fieldSolid(vx, oben, vz)) return null;
+        const fels = this._fieldSurfaceBelow(vx, oben, vz, oben - vg);
+        return fels !== null && fels > y0 ? null : g;
+    }
+
     // DER FELS-BEWEIS (Welle L, R2): liegt `_voxelSurfaceY(x, z)` sicher über `hoehe`? Der Scan läuft von oben über sein
     // Gitter und nimmt den ERSTEN Fels — ist ein Gitterpunkt über `hoehe` Fels, liegt die Oberfläche dort oder höher.
     // Dichte-Proben an genau diesen Gitterpunkten (dieselbe Subtraktions-Kette, derselbe Spalten-Kontext, dieselbe Dichte
@@ -33825,21 +33917,53 @@ class AnazhRealm {
     // Makro-Schätzwert hob sie in der Höhle aufs Dach, und von dort fand der Scan nur noch das Dach). Der Scan-Aufwand pro
     // Frame ist unabhängig von der Kreatur-Zahl. EINE Quelle für Settle + `_creatureWaterContextAt` (kein Doppel-Scan); der
     // liefert { inWater, depthBelow, submerged, distToShore (Cap 12 m), shoreDir (XZ-Einheit Richtung Ufer | null) }.
+    // DIE FELS-WAND DES TIERS (Leben-Schau 2, CI 38009273564): ein Schritt (kein Versetzen — weiter als 2 m vom letzten
+    // Boden trägt die Säule, Ruf und Portal) liest den Boden als Schritt vom letzten Grund (`_koerperSchritt`): ging der
+    // Leib in die Wand, steht er wieder, wo er zuletzt Boden las, sein Lauf hält, und die Ebene durch diesen Ort quer zum
+    // Schritt hält ihn (`_wandHalt`, im Hüllen-Kontakt jedes Tier-Schritts). Jeder neue Boden blickt eine Cache-Weite
+    // (0,5 m) längs der Gier voraus — liegt dort Wand, hält die Ebene den Leib davor, bevor er hinein geht (EINE
+    // Dichte-Probe je Neu-Scan, die Wand-Regel nur, wo sie Fels trifft). Vorher trug der Fels-Fall die Oberkante der
+    // Säule: der Wolf stand auf dem Dach der Höhle.
     _creatureGroundY(creature) {
         const cx = creature.position.x;
         const cz = creature.position.z;
         const ud = creature.userData;
+        let schritt = false;
         if (ud.cachedGroundY !== undefined) {
             const dx = cx - ud.cachedGroundX;
             const dz = cz - ud.cachedGroundZ;
-            if (dx * dx + dz * dz < 0.25) return ud.cachedGroundY; // < 0.5 m bewegt → Cache
+            const d2 = dx * dx + dz * dz;
+            if (d2 < 0.25) return ud.cachedGroundY; // < 0.5 m bewegt → Cache
+            schritt = d2 < 4 && Number.isFinite(ud.cachedGroundY);
         }
         if (this._creatureGroundBudget > 0 || ud.cachedGroundY === undefined) {
             if (this._creatureGroundBudget > 0) this._creatureGroundBudget--;
-            const gY = this._koerperBodenUnter(cx, creature.position.y - (ud._hopH || 0), cz);
+            const gY = schritt
+                ? this._koerperSchritt(ud.cachedGroundX, ud.cachedGroundZ, ud.cachedGroundY, cx, cz)
+                : this._koerperBodenUnter(cx, creature.position.y - (ud._hopH || 0), cz);
+            if (gY === null) {
+                const nx = cx - ud.cachedGroundX;
+                const nz = cz - ud.cachedGroundZ;
+                const n = Math.hypot(nx, nz);
+                ud._wandHalt = { x: ud.cachedGroundX, z: ud.cachedGroundZ, nx: nx / n, nz: nz / n };
+                creature.position.x = ud.cachedGroundX;
+                creature.position.z = ud.cachedGroundZ;
+                if (ud._steuer) ud._steuer.v = 0;
+                return ud.cachedGroundY;
+            }
             ud.cachedGroundY = gY;
             ud.cachedGroundX = cx;
             ud.cachedGroundZ = cz;
+            const gier = creature.rotation.y || 0;
+            const vx = Math.sin(gier);
+            const vz = Math.cos(gier);
+            const ax = cx + vx * 0.5;
+            const az = cz + vz * 0.5;
+            ud._wandHalt =
+                this._fieldSolid(ax, gY + AnazhRealm.PLAYER_STEP_UP, az) &&
+                this._koerperSchritt(cx, cz, gY, ax, az) === null
+                    ? { x: cx, z: cz, nx: vx, nz: vz }
+                    : null;
             return gY;
         }
         // Budget erschöpft: der leicht veraltete Cache (imperzeptibel, < 1 Frame) — eine frische Kreatur scannte oben. Der

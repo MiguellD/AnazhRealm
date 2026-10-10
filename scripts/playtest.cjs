@@ -23955,7 +23955,8 @@ async function checkBandWelleV11D1WaterContext(ctx) {
         // pro Kreatur. Das Budget dekrementiert je echtem Scan → hier als Scan-Zähler gelesen.
         out.groundCacheFn = typeof r._creatureGroundY === "function";
         if (out.groundCacheFn) {
-            const mk = (x, z) => ({ position: new THREE.Vector3(x, 5, z), userData: {} });
+            // der Leib trägt seine Gier (der Boden blickt längs ihr voraus, Leben-Schau 2) — eine Kreatur ist eine Group
+            const mk = (x, z) => ({ position: new THREE.Vector3(x, 5, z), rotation: new THREE.Euler(), userData: {} });
             r._creatureGroundBudget = 5;
             const m = mk(12, 12);
             const g1 = r._creatureGroundY(m); // erster Scan: Budget 5→4

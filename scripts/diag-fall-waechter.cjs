@@ -15,9 +15,11 @@
 //       O2 die Fahrt der Schau: der GT mit 10,6 m/s über die Spaltkante (Start −912/−975, Fahrt +x, 4 s Gas), 20 s — nie
 //          tiefer als FALL_M unter seinem Grund, nie unter der Todes-Ebene;
 //       O3 die Höhle der Boden-Funktion (−875,5/−1229,4, Fels 38,5–48,5 m, Luft 30–38,5 m): ein Wagen auf dem Höhlen-Grund,
-//          ein gestoßener Wolf, der Spieler zu Fuß — jeder steht am Ende auf dem Grund, keiner unter ihm, keiner auf dem Dach;
+//          ein an die nächste Wand gestoßener Wolf, ein in sie laufender Wolf, der Spieler zu Fuß — jeder steht am Ende auf
+//          dem Grund, keiner unter ihm, keiner auf dem Dach (die Wand hält den Leib: CI 38009273564 trug ein Stoß den Wolf in
+//          den Fels, sein Boden fiel auf die Oberkante der Säule, 11,88 m auf dem Dach);
 //   (Z) DER ZENSUS: je Ort die Überhang-Spalten im Umkreis (Luft ≥ 3 m unter ≥ 2 m Fels, ihr Grund begehbar) — Wagen und
-//       gestoßener Wolf je Spalte; ROT je Körper beim Namen, Ort und Maß;
+//       an die nächste Wand gestoßener Wolf je Spalte; ROT je Körper beim Namen, Ort und Maß;
 //   (T) DER EINGESCHMUGGELTE TÄTER: im selben Lauf liest der Boden des Werks die Oberkante der Säule (der alte Leser) — O1
 //       MUSS rot fallen, beim Namen;
 //   (Q) DIE QUELLE (AST, acorn): die Körper-Schritte lesen ihren Boden nur über `_koerperBodenUnter` — kein
@@ -45,9 +47,10 @@ const KOERPER_SCHRITTE = [
     "_kreaturStossSchritt",
     "_creatureGroundY",
     "_creatureSlopeProbe",
+    "_koerperSchritt",
 ];
 const DACH_LESER = new Set(["getTerrainHeightAt", "_voxelSurfaceY", "findSurfaceAbove", "_terrainMacroSurfaceY"]);
-const BODEN_LESER = new Set(["_koerperBodenUnter", "_werkBoden", "_fahrBoden"]);
+const BODEN_LESER = new Set(["_koerperBodenUnter", "_koerperSchritt", "_werkBoden", "_fahrBoden"]);
 
 // DIE QUELLEN-WAND (AST): je Körper-Schritt die Rufe eines Dach-Lesers (Täter) und ob er einen Boden-Leser ruft.
 function quellenWand(quelle) {
@@ -74,7 +77,8 @@ function quellenWand(quelle) {
         lauf(n.value.body, (c) => {
             if (c.type !== "CallExpression" || c.callee.type !== "MemberExpression") return;
             const nm = name(c.callee);
-            if (DACH_LESER.has(nm)) befunde.push(`${methode} Zeile ${c.loc.start.line} ruft ${nm} (die Oberkante der Säule)`);
+            if (DACH_LESER.has(nm))
+                befunde.push(`${methode} Zeile ${c.loc.start.line} ruft ${nm} (die Oberkante der Säule)`);
             if (BODEN_LESER.has(nm) && nm !== methode) ruftBoden = true;
         });
         if (!ruftBoden && methode !== "_koerperBodenUnter")
@@ -88,7 +92,14 @@ function quellenWand(quelle) {
 function urteil(b) {
     const v = [];
     const proben = b.proben || [];
-    for (const name of ["O1 Wagen unter dem Überhang", "O2 Schau-Fahrt über die Spaltkante", "O3 Wagen in der Höhle", "O3 Wolf in der Höhle", "O3 Spieler in der Höhle"])
+    for (const name of [
+        "O1 Wagen unter dem Überhang",
+        "O2 Schau-Fahrt über die Spaltkante",
+        "O3 Wagen in der Höhle",
+        "O3 Wolf in der Höhle",
+        "O3 Spieler in der Höhle",
+        "O3 Wolf läuft in die Wand",
+    ])
         if (!proben.some((p) => p.name === name)) v.push(`LEER: die Probe „${name}" fehlt`);
     for (const p of proben) {
         if (p.fehler) {
@@ -96,13 +107,22 @@ function urteil(b) {
             continue;
         }
         const wo = `${p.koerper} bei ${p.ort}`;
-        if (p.tiefsteUnter > FALL_M)
+        // ein Tier steht auf der Sicht (Q4, Lehre 22: der sichtbare Boden ist das Mesh) — sein Leib darf so weit neben dem
+        // Gesetz liegen, wie das Stand-Band des Spiels trägt (`band`, STAND_SICHT_BAND); Wagen und Spieler stehen auf dem Gesetz
+        const fallM = Number.isFinite(p.band) ? Math.max(FALL_M, p.band) : FALL_M;
+        const stehtM = Number.isFinite(p.band) ? Math.max(STEHT_M, p.band) : STEHT_M;
+        if (p.tiefsteUnter > fallM)
             v.push(
                 `(O) DURCH DEN BODEN: ${p.name} — ${wo} lag ${p.tiefsteUnter.toFixed(2)} m unter dem Fels unter ihm` +
                     ` (am Ende y ${p.yEnde.toFixed(2)}, Grund ${p.grundEnde.toFixed(2)})`
             );
-        if (p.todesEbene) v.push(`(O) UNENDLICHER FALL: ${p.name} — ${wo} fiel unter die Todes-Ebene (y ${p.yMin.toFixed(1)})`);
-        if (p.ruhe && !(Math.abs(p.yEnde - p.grundEnde) <= STEHT_M) && !(p.yEnde - (Number.isFinite(p.grundSoll) ? p.grundSoll : p.grundEnde) > DACH_M))
+        if (p.todesEbene)
+            v.push(`(O) UNENDLICHER FALL: ${p.name} — ${wo} fiel unter die Todes-Ebene (y ${p.yMin.toFixed(1)})`);
+        if (
+            p.ruhe &&
+            !(Math.abs(p.yEnde - p.grundEnde) <= stehtM) &&
+            !(p.yEnde - (Number.isFinite(p.grundSoll) ? p.grundSoll : p.grundEnde) > DACH_M)
+        )
             v.push(
                 `(O) STEHT NICHT: ${p.name} — ${wo} ruht ${(p.yEnde - p.grundEnde).toFixed(2)} m über seinem Grund ` +
                     `(y ${p.yEnde.toFixed(2)}, Grund ${p.grundEnde.toFixed(2)})`
@@ -130,7 +150,17 @@ function urteil(b) {
 function selbsttest() {
     const probe = (name, koerper, o) =>
         Object.assign(
-            { name, koerper, ort: "-900.6/-976.1", tiefsteUnter: 0.1, yEnde: 16.1, grundEnde: 16.0, dach: 29.6, ruhe: true, yMin: 15 },
+            {
+                name,
+                koerper,
+                ort: "-900.6/-976.1",
+                tiefsteUnter: 0.1,
+                yEnde: 16.1,
+                grundEnde: 16.0,
+                dach: 29.6,
+                ruhe: true,
+                yMin: 15,
+            },
             o || {}
         );
     const gruen = {
@@ -138,8 +168,9 @@ function selbsttest() {
             probe("O1 Wagen unter dem Überhang", "Wagen fahrzeug_gt#9"),
             probe("O2 Schau-Fahrt über die Spaltkante", "Wagen fahrzeug_gt#10", { ruhe: false }),
             probe("O3 Wagen in der Höhle", "Wagen fahrzeug_gt#11"),
-            probe("O3 Wolf in der Höhle", "Tier wolf#3"),
+            probe("O3 Wolf in der Höhle", "Tier wolf#3", { band: 2 }),
             probe("O3 Spieler in der Höhle", "Spieler"),
+            probe("O3 Wolf läuft in die Wand", "Tier wolf#4 (läuft an die Wand 0.4 m)", { band: 2 }),
         ],
         zensus: { spalten: 8, proben: 16, taeter: [] },
         schmuggel: { rot: true, mass: "8,2 m durch den Boden" },
@@ -156,7 +187,11 @@ function selbsttest() {
             (b) => Object.assign(b.proben[0], { tiefsteUnter: 6444, yEnde: -6428, todesEbene: true, yMin: -6428 }),
             /\(O\) DURCH DEN BODEN: O1 Wagen unter dem Überhang — Wagen fahrzeug_gt#9 bei -900\.6\/-976\.1 lag 6444\.00 m unter/,
         ],
-        ["unendlicher Fall", (b) => Object.assign(b.proben[1], { todesEbene: true, yMin: -900 }), /UNENDLICHER FALL: O2/],
+        [
+            "unendlicher Fall",
+            (b) => Object.assign(b.proben[1], { todesEbene: true, yMin: -900 }),
+            /UNENDLICHER FALL: O2/,
+        ],
         [
             "der Wolf auf dem Dach",
             (b) => Object.assign(b.proben[3], { yEnde: 48.6, grundEnde: 30.0, dach: 48.6 }),
@@ -168,12 +203,40 @@ function selbsttest() {
             /\(O\) STEHT NICHT: O3 Wagen in der Höhle — .* ruht 1\.50 m/,
         ],
         ["fehlende Probe", (b) => b.proben.splice(4, 1), /LEER: die Probe „O3 Spieler in der Höhle" fehlt/],
+        [
+            "der Wolf läuft durch die Wand aufs Dach",
+            (b) => Object.assign(b.proben[5], { yEnde: 42.28, grundEnde: 42.28, dach: 42.33, grundSoll: 30.4 }),
+            /\(O\) AUF DEM DACH: O3 Wolf läuft in die Wand — Tier wolf#4 \(läuft an die Wand 0\.4 m\) .* 11\.88 m über dem Grund/,
+        ],
+        [
+            "ein Tier tiefer als sein Sicht-Band",
+            (b) => Object.assign(b.proben[5], { tiefsteUnter: 2.5, yEnde: 29.8, grundEnde: 32.3 }),
+            /\(O\) DURCH DEN BODEN: O3 Wolf läuft in die Wand — .* lag 2\.50 m unter dem Fels/,
+        ],
         ["leerer Zensus", (b) => (b.zensus.spalten = 0), /LEER: \(Z\) der Zensus fand keine/],
-        ["Zensus-Täter", (b) => b.zensus.taeter.push("Wagen an -870/-1230 3,1 m durch den Boden"), /\(Z\) Wagen an -870\/-1230/],
+        [
+            "Zensus-Täter",
+            (b) => b.zensus.taeter.push("Wagen an -870/-1230 3,1 m durch den Boden"),
+            /\(Z\) Wagen an -870\/-1230/,
+        ],
         ["stumpfer Schmuggel", (b) => (b.schmuggel.rot = false), /LINSE STUMPF: \(T\)/],
-        ["Quelle", (b) => b.quelle.push("_fahrBoden Zeile 1 ruft getTerrainHeightAt"), /\(Q\) DACH-LESER: _fahrBoden Zeile 1/],
+        [
+            "Quelle",
+            (b) => b.quelle.push("_fahrBoden Zeile 1 ruft getTerrainHeightAt"),
+            /\(Q\) DACH-LESER: _fahrBoden Zeile 1/,
+        ],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
     ];
+    {
+        // das Gegenstück: ein Tier am steilen Fuß der Höhlenwand steht auf dem Mesh, 0,75 m unter dem Gesetz — im Band, grün
+        const b = klon();
+        Object.assign(b.proben[5], { tiefsteUnter: 1.0, yEnde: 31.52, grundEnde: 32.27 });
+        const v = urteil(b);
+        console.log(
+            `  ${v.length ? "❌" : "✅"} Selbsttest „Tier im Sicht-Band" bleibt grün: ${v.join(" · ") || "grün"}`
+        );
+        if (v.length) fehler.push("ein Tier im Sicht-Band fällt rot: " + v.join(" · "));
+    }
     for (const [name, tat, muss] of faelle) {
         const b = klon();
         tat(b);
@@ -193,7 +256,9 @@ function selbsttest() {
     );
     const anKopie = quellenWand(kopie);
     const genannt = anKopie.some((x) => /^_werkBoden Zeile \d+ ruft getTerrainHeightAt/.test(x));
-    console.log(`  ${genannt ? "✅" : "❌"} Quellen-Wand an der Kopie mit dem alten Leser → ${anKopie.join(" · ") || "(nichts)"}`);
+    console.log(
+        `  ${genannt ? "✅" : "❌"} Quellen-Wand an der Kopie mit dem alten Leser → ${anKopie.join(" · ") || "(nichts)"}`
+    );
     if (!genannt) fehler.push("die Quellen-Wand nennt den eingeschleusten Dach-Leser nicht");
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
@@ -254,6 +319,14 @@ async function probe(K) {
         if (r._fieldSolid(x, y, z)) return Infinity;
         for (let yy = y; yy > y - 60; yy -= 0.05) if (r._fieldSolid(x, yy, z)) return yy;
         return -Infinity;
+    };
+    // DIE LAGE DES KÖRPERS: wie `grundUnter`, aber steckt der Punkt im Fels, ist sein Grund die Fels-Grenze ÜBER ihm — die
+    // Tiefe, in der der Körper steckt, als Zahl (ein Leib 0,3 m im Fuß einer Wand ist kein Sturz durch den Boden); ohne
+    // Grenze in 60 m +Infinity (99 m). Der Soll-Grund (`grundAb`) bleibt beim Fels UNTER dem Punkt.
+    const grundAm = (x, y, z) => {
+        if (!r._fieldSolid(x, y, z)) return grundUnter(x, y, z);
+        for (let yy = y; yy < y + 60; yy += 0.05) if (!r._fieldSolid(x, yy, z)) return yy;
+        return Infinity;
     };
     const dachAn = (x, z) => r._voxelSurfaceY(x, z);
     const einschwingen = async (x, z, y) => {
@@ -327,7 +400,7 @@ async function probe(K) {
             takt();
             const fz = e._fahr;
             if (!fz || !Number.isFinite(fz.y)) continue;
-            const g = grundUnter(e.position.x, fz.y + 0.6, e.position.z);
+            const g = grundAm(e.position.x, fz.y + 0.6, e.position.z);
             const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - fz.y : 99;
             if (unter > m.tiefsteUnter) m.tiefsteUnter = unter;
             if (fz.y < m.yMin) m.yMin = fz.y;
@@ -338,7 +411,7 @@ async function probe(K) {
         }
         const fz = e._fahr;
         m.yEnde = fz ? fz.y : NaN;
-        const gE = grundUnter(e.position.x, m.yEnde + 0.6, e.position.z);
+        const gE = grundAm(e.position.x, m.yEnde + 0.6, e.position.z);
         m.grundEnde = Number.isFinite(gE) ? gE : m.yEnde - 99;
         m.dach = dachAn(e.position.x, e.position.z);
         m.grundSoll = grundAb(e.position.x, e.position.z, ySoll);
@@ -385,7 +458,10 @@ async function probe(K) {
         raeumen(O1.x, O1.z, 30);
         const grund = grundUnter(O1.x, 20, O1.z);
         if (!Number.isFinite(grund) || grund > 18 || dachAn(O1.x, O1.z) - grund < 8)
-            return { name, fehler: `kein Überhang an ${ort(O1.x, O1.z)} (Grund ${grund}, Oberkante ${dachAn(O1.x, O1.z)})` };
+            return {
+                name,
+                fehler: `kein Überhang an ${ort(O1.x, O1.z)} (Grund ${grund}, Oberkante ${dachAn(O1.x, O1.z)})`,
+            };
         const e = await wagen(O1.x, O1.z, grund, Math.PI / 2);
         if (!e) return { name, fehler: "der GT ließ sich nicht setzen/aufsitzen" };
         for (let i = 0; i < 3; i++) takt();
@@ -398,7 +474,10 @@ async function probe(K) {
             fz.yBoden = NaN;
         }
         const m = wagenSpur(e, 240, null, grund);
-        const aus = Object.assign({ name, koerper: "Wagen " + e.type + "#" + e.id, ort: ort(e.position.x, e.position.z) }, m);
+        const aus = Object.assign(
+            { name, koerper: "Wagen " + e.type + "#" + e.id, ort: ort(e.position.x, e.position.z) },
+            m
+        );
         weg(e);
         return aus;
     };
@@ -432,7 +511,13 @@ async function probe(K) {
             if (e._fahr) e._fahr.vlong = 10.6;
             const m = wagenSpur(e, 1200, (i) => tasten(i < 240));
             tasten(false);
-            proben.push(Object.assign({ name, koerper: "Wagen " + e.type + "#" + e.id, ort: ort(e.position.x, e.position.z) }, m, { ruhe: false }));
+            proben.push(
+                Object.assign(
+                    { name, koerper: "Wagen " + e.type + "#" + e.id, ort: ort(e.position.x, e.position.z) },
+                    m,
+                    { ruhe: false }
+                )
+            );
             weg(e);
         }
     }
@@ -448,24 +533,67 @@ async function probe(K) {
     const hoehleOk = !!hs;
     {
         const name = "O3 Wagen in der Höhle";
-        if (!hoehleOk) proben.push({ name, fehler: `keine Höhle um ${ort(O3.x, O3.z)} (keine Spalte mit 4 m Fels über 3 m Luft)` });
+        if (!hoehleOk)
+            proben.push({
+                name,
+                fehler: `keine Höhle um ${ort(O3.x, O3.z)} (keine Spalte mit 4 m Fels über 3 m Luft)`,
+            });
         else {
             const e = await wagen(H.x, H.z, hoehleGrund, 0);
             if (!e) proben.push({ name, fehler: "der GT ließ sich nicht setzen/aufsitzen" });
             else {
                 const m = wagenSpur(e, 120, null, hoehleGrund);
-                proben.push(Object.assign({ name, koerper: "Wagen " + e.type + "#" + e.id, ort: ort(e.position.x, e.position.z) }, m));
+                proben.push(
+                    Object.assign(
+                        { name, koerper: "Wagen " + e.type + "#" + e.id, ort: ort(e.position.x, e.position.z) },
+                        m
+                    )
+                );
                 weg(e);
             }
         }
     }
-    // Ein gestoßener Wolf: er steht (sein Steuer-Schritt hält ihn), dann gleitet er 1 s mit 3 m/s in +x.
+    // DIE WAND DER HÖHLE (die Wahrheit der Linse, das Dichtefeld): je Richtung (16) der erste Abstand, an dem der Fels vom
+    // Fuß + einer Stufe bis über zwei weitere Meter reicht — dort ist kein Boden in der Schicht des Körpers, nur Wand. Die
+    // nächste Wand im Umkreis von 2,5 m, sonst null.
+    const wandUm = (x, z, grund) => {
+        let best = null;
+        for (let k = 0; k < 16; k++) {
+            const w = (k / 16) * Math.PI * 2;
+            const dx = Math.cos(w),
+                dz = Math.sin(w);
+            for (let d = 0.1; d <= 2.5 && (!best || d < best.d); d += 0.1) {
+                const px = x + dx * d,
+                    pz = z + dz * d;
+                let fels = true;
+                for (let yy = grund + A.PLAYER_STEP_UP; yy <= grund + A.PLAYER_STEP_UP + 2.1 && fels; yy += 0.25)
+                    fels = r._fieldSolid(px, yy, pz);
+                if (fels) {
+                    best = { dx, dz, d };
+                    break;
+                }
+            }
+        }
+        return best;
+    };
+    // Ein Wolf an der Wand: er steht (sein Steuer-Schritt hält ihn), dann gleitet er gestoßen 1,5 s auf die nächste Wand zu
+    // (6 m/s — die Reibung zehrt 0,6·g, er trüge 3 m weit; ohne Wand 3 m/s in +x) — oder er LÄUFT 2,5 s mit 2 m/s in sie
+    // hinein (`art` „lauf"). Die Wand hält ihn; vorher trug ihn der Schritt in den Fels, und der Boden des Körpers fiel auf
+    // die Oberkante der Säule (CI 38009273564: ein gestoßener Wolf 11,88 m auf dem Dach der Höhle).
     const steuerRoh = A._steuerGesetz;
     const kappe = st.maxCreatures;
-    const wolfStoss = async (x, z, y) => {
+    const wolfStoss = async (x, z, y, art) => {
+        const wand = wandUm(x, z, y);
+        const rx = wand ? wand.dx : 1,
+            rz = wand ? wand.dz : 0;
+        const lauf = art === "lauf";
+        const steuer = { lauf: false };
         const steht = Object.create(steuerRoh.call(A));
         steht.steuerSchritt = (sw) => {
-            sw.v = 0;
+            if (steuer.lauf) {
+                sw.gier = Math.atan2(rx, rz);
+                sw.v = 2;
+            } else sw.v = 0;
         };
         A._steuerGesetz = () => steht;
         st.maxCreatures = st.creatures.length + 2;
@@ -473,19 +601,24 @@ async function probe(K) {
             const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
             if (!w) return null;
             for (let i = 0; i < 20; i++) takt();
-            w.userData._stossV = { x: 3, z: 0 };
+            const v0 = wand ? 6 : 3;
+            if (lauf) steuer.lauf = true;
+            else w.userData._stossV = { x: rx * v0, z: rz * v0 };
             let tiefsteUnter = -Infinity,
                 yMin = Infinity;
-            for (let i = 0; i < 90; i++) {
+            for (let i = 0; i < (lauf ? 150 : 90); i++) {
                 takt();
-                const g = grundUnter(w.position.x, w.position.y + 0.6, w.position.z);
+                const g = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
                 const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - w.position.y : 99;
                 if (unter > tiefsteUnter) tiefsteUnter = unter;
                 if (w.position.y < yMin) yMin = w.position.y;
             }
-            const gE = grundUnter(w.position.x, w.position.y + 0.6, w.position.z);
+            const gE = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
             const out = {
-                koerper: "Tier wolf#" + (w.userData.id != null ? w.userData.id : w.id),
+                koerper:
+                    "Tier wolf#" +
+                    (w.userData.id != null ? w.userData.id : w.id) +
+                    (wand ? ` (${lauf ? "läuft" : "gestoßen"} an die Wand ${wand.d.toFixed(1)} m)` : ""),
                 ort: ort(w.position.x, w.position.z),
                 tiefsteUnter,
                 yMin,
@@ -495,6 +628,7 @@ async function probe(K) {
                 dach: dachAn(w.position.x, w.position.z),
                 grundSoll: grundAb(w.position.x, w.position.z, y),
                 ruhe: true,
+                band: A.STAND_SICHT_BAND,
             };
             r.removeCreature(w);
             return out;
@@ -508,6 +642,16 @@ async function probe(K) {
         if (!hoehleOk) proben.push({ name, fehler: "keine Höhle" });
         else {
             const m = await wolfStoss(H.x, H.z, hoehleGrund);
+            proben.push(m ? Object.assign({ name }, m) : { name, fehler: "der Wolf ließ sich nicht rufen" });
+        }
+    }
+    {
+        const name = "O3 Wolf läuft in die Wand";
+        if (!hoehleOk) proben.push({ name, fehler: "keine Höhle" });
+        else if (!wandUm(H.x, H.z, hoehleGrund))
+            proben.push({ name, fehler: "keine Wand der Höhle im Umkreis von 2,5 m" });
+        else {
+            const m = await wolfStoss(H.x, H.z, hoehleGrund, "lauf");
             proben.push(m ? Object.assign({ name }, m) : { name, fehler: "der Wolf ließ sich nicht rufen" });
         }
     }
@@ -527,14 +671,14 @@ async function probe(K) {
                 tasten(i < 150);
                 takt();
                 const fuss = pm.y - A.PLAYER_FOOT_OFFSET;
-                const g = grundUnter(pm.x, fuss + 0.6, pm.z);
+                const g = grundAm(pm.x, fuss + 0.6, pm.z);
                 const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - fuss : 99;
                 if (unter > tiefsteUnter) tiefsteUnter = unter;
                 if (fuss < yMin) yMin = fuss;
             }
             tasten(false);
             const fuss = pm.y - A.PLAYER_FOOT_OFFSET;
-            const gE = grundUnter(pm.x, fuss + 0.6, pm.z);
+            const gE = grundAm(pm.x, fuss + 0.6, pm.z);
             proben.push({
                 name,
                 koerper: "Spieler",
@@ -561,34 +705,47 @@ async function probe(K) {
         const sp = spaltenUm(cx, cz, K.spaltenJeOrt);
         zensus.spalten += sp.length;
         for (const s of sp) {
-            zensus.orte.push(ort(s.x, s.z) + " (Grund " + s.grund.toFixed(1) + ", Oberkante " + s.dach.toFixed(1) + ")");
+            zensus.orte.push(
+                ort(s.x, s.z) + " (Grund " + s.grund.toFixed(1) + ", Oberkante " + s.dach.toFixed(1) + ")"
+            );
             const e = await wagen(s.x, s.z, s.grund, 0);
             if (e) {
                 const m = wagenSpur(e, 90, null, s.grund);
                 zensus.proben++;
                 const wo = `Wagen ${e.type}#${e.id} an ${ort(e.position.x, e.position.z)}`;
                 if (m.tiefsteUnter > K.FALL_M || m.todesEbene)
-                    zensus.taeter.push(`${wo}: ${m.tiefsteUnter.toFixed(2)} m durch den Boden (y ${m.yEnde.toFixed(2)}, Grund ${m.grundEnde.toFixed(2)})`);
+                    zensus.taeter.push(
+                        `${wo}: ${m.tiefsteUnter.toFixed(2)} m durch den Boden (y ${m.yEnde.toFixed(2)}, Grund ${m.grundEnde.toFixed(2)})`
+                    );
                 else if (m.yEnde - m.grundSoll > K.DACH_M)
-                    zensus.taeter.push(`${wo}: ${(m.yEnde - m.grundSoll).toFixed(2)} m über seinem Grund — aufs Dach (Oberkante ${m.dach.toFixed(1)})`);
+                    zensus.taeter.push(
+                        `${wo}: ${(m.yEnde - m.grundSoll).toFixed(2)} m über seinem Grund — aufs Dach (Oberkante ${m.dach.toFixed(1)})`
+                    );
                 weg(e);
             }
             const t = await wolfStoss(s.x, s.z, s.grund);
             if (t) {
                 zensus.proben++;
                 const wo = `${t.koerper} an ${t.ort}`;
-                if (t.tiefsteUnter > K.FALL_M || t.todesEbene)
+                if (t.tiefsteUnter > Math.max(K.FALL_M, t.band || 0) || t.todesEbene)
                     zensus.taeter.push(`${wo}: ${t.tiefsteUnter.toFixed(2)} m durch den Boden`);
                 else if (t.yEnde - t.grundSoll > K.DACH_M)
-                    zensus.taeter.push(`${wo}: ${(t.yEnde - t.grundSoll).toFixed(2)} m über seinem Grund — aufs Dach (Oberkante ${t.dach.toFixed(1)})`);
+                    zensus.taeter.push(
+                        `${wo}: ${(t.yEnde - t.grundSoll).toFixed(2)} m über seinem Grund — aufs Dach (Oberkante ${t.dach.toFixed(1)})`
+                    );
             }
         }
     }
     const t = window.__fallSchmuggel;
     const schmuggel = t
         ? {
-              rot: !!(t.fehler === undefined && (t.tiefsteUnter > K.FALL_M || t.todesEbene || t.yEnde - t.grundEnde > K.DACH_M)),
-              mass: t.fehler || `${(t.tiefsteUnter || 0).toFixed(2)} m unter dem Grund, am Ende y ${(t.yEnde || 0).toFixed(2)}`,
+              rot: !!(
+                  t.fehler === undefined &&
+                  (t.tiefsteUnter > K.FALL_M || t.todesEbene || t.yEnde - t.grundEnde > K.DACH_M)
+              ),
+              mass:
+                  t.fehler ||
+                  `${(t.tiefsteUnter || 0).toFixed(2)} m unter dem Grund, am Ende y ${(t.yEnde || 0).toFixed(2)}`,
           }
         : null;
     return { proben, zensus, schmuggel };
@@ -638,15 +795,21 @@ async function probe(K) {
                 : `  ${p.name.padEnd(36)} ${p.koerper} bei ${p.ort}: am Ende y ${p.yEnde.toFixed(2)} · Grund ${p.grundEnde.toFixed(2)} · ` +
                       `Oberkante ${p.dach.toFixed(2)} · tiefste Lage unter dem Grund ${p.tiefsteUnter.toFixed(2)} m · y min ${p.yMin.toFixed(2)}`
         );
-    console.log(`  Zensus: ${befund.zensus.spalten} Überhang-Spalten, ${befund.zensus.proben} Proben, ${befund.zensus.taeter.length} Täter`);
+    console.log(
+        `  Zensus: ${befund.zensus.spalten} Überhang-Spalten, ${befund.zensus.proben} Proben, ${befund.zensus.taeter.length} Täter`
+    );
     for (const o of befund.zensus.orte) console.log(`    · ${o}`);
     console.log(`  Schmuggel (T): ${JSON.stringify(befund.schmuggel)}`);
-    console.log(`  Quelle: ${befund.quelle.length ? befund.quelle.join(" · ") : "die Körper-Schritte lesen den Boden unter dem Körper"}`);
+    console.log(
+        `  Quelle: ${befund.quelle.length ? befund.quelle.join(" · ") : "die Körper-Schritte lesen den Boden unter dem Körper"}`
+    );
     const v = urteil(befund);
     if (v.length) {
         console.log("\n❌ FALL-WÄCHTER ROT:\n  " + v.join("\n  "));
         process.exit(1);
     }
-    console.log("\n✅ FALL-WÄCHTER GRÜN — jeder Körper steht auf dem Boden unter ihm: keiner fällt durch, keiner springt aufs Dach.");
+    console.log(
+        "\n✅ FALL-WÄCHTER GRÜN — jeder Körper steht auf dem Boden unter ihm: keiner fällt durch, keiner springt aufs Dach."
+    );
     process.exit(0);
 })();

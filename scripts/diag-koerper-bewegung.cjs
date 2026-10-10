@@ -352,6 +352,8 @@ const server = http.createServer((req, res) => {
                 if (!c) return { error: "Tier-Spawn fehlgeschlagen" };
                 const savedSurf = r._koerperBodenUnter;
                 r._koerperBodenUnter = (x, _y, z) => ebene(x, z);
+                // der Ruf liest seinen ersten Grund selbst (Leben-Schau 2) — der gestubbte Boden gilt ab jetzt
+                delete c.userData.cachedGroundY;
                 const tiere = (n) => {
                     for (let k = 0; k < n; k++) {
                         r.updateCreatures(0.02);
