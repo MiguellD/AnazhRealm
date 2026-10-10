@@ -2140,6 +2140,7 @@ class AnazhRealm {
                 for (let i = 0; i < n; i++) {
                     if (ctx.budget.spawnsLeft <= 0) {
                         ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                        weicht.budget = n - i; // die übrigen Würfe fallen benannt
                         break;
                     }
                     ctx.budget.spawnsLeft--;
@@ -2159,18 +2160,28 @@ class AnazhRealm {
                     // gewachsenen Built-in-Parts. arch.type = die Spezies (tragende Identität für hasInitialTrees,
                     // Instancing, Crafting); Varianz (scale/yaw) aus dem Seed, appliziert in spawnArchitecture. Der Hain
                     // setzt durch die EINE Natur-Wand (`_naturSetzen`): kein Baum der KI wächst in einem Haus.
+                    let benannt = false;
                     const entry = this._naturSetzen(
                         treeKind,
                         { x: pos.x + jx, y: pos.y, z: pos.z + jz },
                         { seed: treeSeed },
                         null,
-                        (wo) => (weicht[wo] = (weicht[wo] || 0) + 1)
+                        (wo) => ((benannt = true), (weicht[wo] = (weicht[wo] || 0) + 1))
                     );
                     if (entry) spawned++;
+                    else if (!benannt) weicht.wurzel = (weicht.wurzel || 0) + 1; // die Wurzel nahm ihn nicht an
                 }
                 ctx.log.push({ event: "spawned_tree", count: spawned, pos, kind: treeKind });
-                if (weicht.haus || weicht.lichtung || weicht.wasser)
-                    ctx.log.push({ event: "natur_weicht", op: "spawn_tree", grundriss: weicht, gesetzt: spawned });
+                // DAS ERGEBNIS (der Satz liest es, `_naturAbsageSatz`): gewollt und gesetzt, jeder gefallene Wurf mit Grund
+                if (spawned < n)
+                    ctx.log.push({
+                        event: "natur_weicht",
+                        op: "spawn_tree",
+                        grundriss: weicht,
+                        gewollt: n,
+                        gesetzt: spawned,
+                        art: this._werkLabel(treeKind),
+                    });
             },
             // Co-Schöpfer pflanzt Studio-Assets: ein Wort ("eiche", "birken", "fels", ein Haus-/Tor-Rezept)
             // wird über dieselben Tabellen wie die Werkstatt zum Bauplan (_studioBlueprintForWord) und landet
@@ -3050,6 +3061,7 @@ class AnazhRealm {
         for (let i = 0; i < n; i++) {
             if (ctx.budget.spawnsLeft <= 0) {
                 ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
+                weicht.budget = n - i; // die übrigen Würfe fallen benannt
                 break;
             }
             let x = pos.x,
@@ -3090,16 +3102,22 @@ class AnazhRealm {
                 if (stamp) opts.studioOv = stamp;
             }
             const ort = { x, y, z };
-            if (natur ? this._naturSetzen(name, ort, opts, null, absage) : this.spawnArchitecture(name, ort, opts))
+            let benannt = false;
+            const wand = (wo) => ((benannt = true), absage(wo));
+            if (natur ? this._naturSetzen(name, ort, opts, null, wand) : this.spawnArchitecture(name, ort, opts))
                 spawned++;
+            else if (!benannt) absage("wurzel"); // die Wurzel nahm ihn nicht an (`spawnArchitecture` sagt es im Log)
         }
-        if (weicht.haus || weicht.lichtung || weicht.wasser)
+        // DAS ERGEBNIS (der Satz liest es, `_naturAbsageSatz`): gewollt und gesetzt, jeder gefallene Wurf mit Grund
+        if (spawned < n)
             ctx.log.push({
                 event: "natur_weicht",
                 op: "spawn_studio",
                 grundriss: weicht,
+                gewollt: n,
                 gesetzt: spawned,
                 werk: !natur,
+                art: this._werkLabel(name),
             });
         return spawned;
     }
@@ -4843,7 +4861,7 @@ class AnazhRealm {
                 appendChatOutput(`(${compName} stellt ein Gesetz auf — sieh es in den Fähigkeiten unter Gesetze.)`);
             } else if (result.ok) {
                 const weicht = this._naturAbsageSatz(result.log);
-                if (!weicht || !weicht.nichts)
+                if (!weicht)
                     // die Tat in Worten (`describeProgram`), nie das rohe Programm (V-D8: ids und DSL-JSON im Spieler-Chat)
                     appendChatOutput(`(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)`);
                 if (weicht) appendChatOutput(`(${compName}-Vorschlag: ${weicht.satz})`);
@@ -6872,7 +6890,7 @@ class AnazhRealm {
                 const result = this.dslRun(msg.program, { source: "remote-voice" });
                 if (cb && result && result.ok) {
                     const weicht = this._naturAbsageSatz(result.log);
-                    if (!weicht || !weicht.nichts) cb(`(Welt verändert: ${JSON.stringify(msg.program).slice(0, 140)})`);
+                    if (!weicht) cb(`(Welt verändert: ${JSON.stringify(msg.program).slice(0, 140)})`);
                     if (weicht) cb(`(Geteilte Stimme: ${weicht.satz})`);
                 }
             } catch {
@@ -9243,8 +9261,7 @@ class AnazhRealm {
                     const wo = m[4] ? "am Wasser" : "vor dir";
                     // Der Spieler liest das Label der Art („Eiche", „Alemannisch"), nie die interne id („baum_eiche", Befund
                     // V-D8) — und ein Haus wächst nicht, es wird gebaut (die Art aus dem Wort-Katalog).
-                    const bp = this.state.blueprints && this.state.blueprints[name];
-                    const label = String((bp && bp.label) || name).split(/\s[·—(]/)[0];
+                    const label = this._werkLabel(name);
                     const natur = this._istNatur({ type: name });
                     return {
                         program: ["spawn_studio", wort, pos, n, seed],
@@ -25486,10 +25503,11 @@ class AnazhRealm {
         // Ein Ort, den es nicht gibt, wird laut gesagt, mit seinem Grund (V-k5, `dslEvalPos`): „Kein Wasser im Umkreis von
         // 80 m — am Wasser wächst hier nichts."
         const ohneOrt = result.log.find((e) => e.event === "invalid_position");
-        // Die Natur-Wand sagt, wo nichts wuchs (Grundriss eines Hauses, die Genesis-Lichtung) — nie „gepflanzt" bei 0.
+        // Der Satz des Ergebnisses sagt, was tatsächlich steht und warum der Rest nicht (Grundriss eines Hauses, die
+        // Genesis-Lichtung, Wasser …) — nie „gepflanzt" bei 0, nie die gewünschte Zahl bei weniger.
         const weicht = this._naturAbsageSatz(result.log);
         if (result.ok) {
-            if (!weicht || !weicht.nichts) appendChatOutput(parsed.describe);
+            if (!weicht) appendChatOutput(parsed.describe);
             if (weicht) appendChatOutput(weicht.satz);
         } else if (ohneOrt) {
             const grund = String(ohneOrt.grund || "kein Ort");
@@ -78577,34 +78595,52 @@ class AnazhRealm {
         return null;
     }
 
-    // Der Satz der Natur-Wand nach einem Programm: lagen Würfe eines Hains (`spawn_tree`, `spawn_studio`) in einem Grundriss,
-    // sagt der Chat, warum dort nichts wuchs — auf der Genesis-Plattform stand sonst „Baum gepflanzt" bei 0 Bäumen
-    // (Integration Welle L, D3). { satz, nichts } (nichts: kein Wurf wuchs) oder null. Ein Werk ohne Natur (`werk`: das Haus
-    // des Satzes, der Tempel, ein Bauplan) wächst nicht — es steht nicht (Gegenprüfung 10.10.: „Hier wächst nichts" am Ufer
-    // für ein Haus).
+    // DER SATZ DES ERGEBNISSES nach einem Programm: setzte ein Wurf-Programm (`spawn_tree`, `spawn_studio`, Tempel, Bauplan)
+    // weniger, als gewollt war (`natur_weicht`: gewollt, gesetzt, jeder gefallene Wurf mit Grund — Grundriss, Lichtung,
+    // Wasser, Budget, Wurzel), sagt der Chat die TATSÄCHLICHE Zahl und warum der Rest nicht steht — EINE Antwort aus dem
+    // Ergebnis; der Wunsch des Parsers (`describe`) steht nur, wenn alles stand. { satz, nichts } (nichts: kein Wurf stand)
+    // oder null. Ein Werk ohne Natur (`werk`: das Haus des Satzes, der Tempel, ein Bauplan) wächst nicht — es steht.
+    // Befund: auf der Genesis-Plattform stand „Baum gepflanzt" bei 0 Bäumen (Integration Welle L, D3); bis Schau-2 (Runde 2)
+    // sagte der Satz bei einem Teil-Ergebnis die gewünschte Zahl („6× Birke … gewachsen. 2 davon wuchsen nicht"), und ein
+    // Wurf, den die Wurzel oder das Budget nahm, fiel still.
     _naturAbsageSatz(log) {
-        let lichtung = 0;
-        let haus = 0;
-        let wasser = 0;
+        const n = { lichtung: 0, haus: 0, wasser: 0, budget: 0, wurzel: 0 };
+        let gewollt = 0;
         let gesetzt = 0;
         let natur = false;
+        let art = null;
         for (const e of log || []) {
             if (!e || e.event !== "natur_weicht") continue;
             if (!e.werk) natur = true;
-            lichtung += e.grundriss.lichtung || 0;
-            haus += e.grundriss.haus || 0;
-            wasser += e.grundriss.wasser || 0;
+            let fiel = 0;
+            for (const k of Object.keys(n)) {
+                n[k] += e.grundriss[k] || 0;
+                fiel += e.grundriss[k] || 0;
+            }
             gesetzt += e.gesetzt || 0;
+            gewollt += Number.isFinite(e.gewollt) ? e.gewollt : (e.gesetzt || 0) + fiel;
+            if (e.art) art = e.art;
         }
-        if (!lichtung && !haus && !wasser) return null;
-        const gruende = [];
-        if (lichtung) gruende.push(AnazhRealm.NATUR_WAND_GRUND.lichtung);
-        if (haus) gruende.push(AnazhRealm.NATUR_WAND_GRUND.haus);
-        if (wasser) gruende.push(AnazhRealm.NATUR_WAND_GRUND.wasser);
-        const g = gruende.join("; ");
+        const fehl = gewollt - gesetzt;
+        if (!(fehl > 0)) return null;
+        const g = Object.keys(n)
+            .filter((k) => n[k] > 0)
+            .map((k) => AnazhRealm.NATUR_WAND_GRUND[k])
+            .join("; ");
+        const weiter = n.lichtung || n.haus || n.wasser ? " — geh ein paar Schritte weiter" : "";
         return gesetzt
-            ? { satz: `${lichtung + haus + wasser} davon ${natur ? "wuchsen" : "stehen"} nicht: ${g}.`, nichts: false }
-            : { satz: `Hier ${natur ? "wächst" : "steht"} nichts: ${g} — geh ein paar Schritte weiter.`, nichts: true };
+            ? {
+                  satz: `${gesetzt} von ${gewollt}${art ? ` ${art}` : ""} ${natur ? "gewachsen" : "gebaut"} — ${fehl} nicht: ${g}.`,
+                  nichts: false,
+              }
+            : { satz: `Hier ${natur ? "wächst" : "steht"} nichts: ${g}${weiter}.`, nichts: true };
+    }
+
+    // Das Wort des Spielers für ein Werk (Leben-Schau 07.10., V-D8): das Label seines Bauplans bis zum ersten Zusatz („Eiche",
+    // „Alemannisch"), nie die interne id. Leser: der Studio-Satz (`describe`) und der Satz des Ergebnisses.
+    _werkLabel(name) {
+        const bp = this.state.blueprints && this.state.blueprints[name];
+        return String((bp && bp.label) || name).split(/\s[·—(]/)[0];
     }
 
     // Die Krone eines Natur-Wurfs in der Welt (m) — wie weit er über seinen Ort reicht: der EINE Kronen-Radius seiner Art
@@ -102617,6 +102653,9 @@ AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
     lichtung: "die Lichtung der Genesis-Plattform bleibt frei, keine Krone steht über ihrer Scheibe",
     haus: "im Grundriss eines Hauses wächst nichts",
     wasser: "im Wasser steht nichts, am Ufer schon",
+    // die Gründe des Ergebnis-Satzes jenseits der Wand (`_naturAbsageSatz`): das Budget des Programms, die Wurzel
+    budget: "das Werk-Budget dieses Satzes ist aufgebraucht",
+    wurzel: "die Welt nahm den Wurf nicht an (das Studio-Buch lädt noch)",
 });
 // DER FUSS EINES STAMMS (Schau-2 wasser-wahrheit, Gegenprüfung 10.10.): der Kreis um die Achse, auf dem eine Pflanze steht
 // (m) — die Natur-Wand fragt das Land an der Achse UND auf ihm (`_stammFussLand`). Befund (gate:werk-im-wasser Z am See

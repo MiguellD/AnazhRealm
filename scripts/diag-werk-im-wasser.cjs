@@ -31,6 +31,10 @@
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
 //       Furt um den Schau-Ort, gesucht). Befund: 43 km/h durch 0,61 m, ohne Widerstand. Soll: 1 s nach dem Eintauchen
 //       ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie unter dem Spiegel.
+//   C — DER SATZ NENNT DAS ERGEBNIS (Gegenprüfung Runde 2): am See −906/−634 je Richtung eine Uferkante, der Blick auf den
+//       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Befund am Kopf 047a7def: „6× Birke aus dem Studio vor dir
+//       gewachsen — 4 davon wuchsen nicht" bei 2 gesetzten (die gewünschte Zahl). Soll: der Chat sagt die tatsächliche Zahl
+//       („2 von 6 Birke gewachsen — 4 nicht: …"), bei 0 „nichts", die gewünschte nur, wenn alles steht.
 //   D — DER DAMM ÜBERSTEHT DEN RELOAD (Gegenprüfung Runde 2; eigener Browser-Kontext, frische Welt): der Damm des Studios
 //       quer über den Fluss bei der Furt, 1800 Takte, gespeichert, neu geladen, 1800 Takte, abgerissen. Befund am Kopf
 //       e162430b: 3 574 nasse Punkte (±40 m) vor dem Reload, 1 557 danach (ohne Damm 1 565), der Abbau weckte den Automaten
@@ -126,6 +130,27 @@ function urteil(b) {
             v.push(
                 `F: die Verfolger-Kamera steht in ${F.kameraUnter} Frames unter dem Spiegel (bis ${m(F.kameraTiefe)} m)`
             );
+    }
+    // C
+    const C = b.ergebnis;
+    if (!C || C.fehler) v.push(`C: ${C ? C.fehler : "die Ergebnis-Probe lief nicht"}`);
+    else {
+        const vs = C.versuche || [];
+        if (!vs.some((x) => x.gesetzt > 0 && x.gesetzt < x.gewollt))
+            v.push(`C LEER: kein Teil-Ergebnis am See (gesetzt ${vs.map((x) => x.gesetzt).join(", ") || "—"} von 6)`);
+        for (const x of vs) {
+            const ort = `am Ufer ${x.ufer.join("/")}`;
+            if (x.gesetzt < x.gewollt && new RegExp(`(?<!\\d)${x.gewollt}×`).test(x.chat))
+                v.push(
+                    `C: der Satz sagt die gewünschte Zahl — „${x.chat}" bei ${x.gesetzt} von ${x.gewollt} gesetzten Birken ${ort}`
+                );
+            else if (x.gesetzt > 0 && x.gesetzt < x.gewollt && !x.chat.includes(`${x.gesetzt} von ${x.gewollt}`))
+                v.push(
+                    `C: der Satz nennt die tatsächliche Zahl nicht — „${x.chat}" bei ${x.gesetzt} von ${x.gewollt} ${ort}`
+                );
+            else if (x.gesetzt === 0 && !/nichts/.test(x.chat))
+                v.push(`C: der Satz sagt nicht, dass nichts steht — „${x.chat}" bei 0 von ${x.gewollt} ${ort}`);
+        }
     }
     // D
     const D = b.damm;
@@ -801,6 +826,53 @@ async function probe(A) {
             } catch (e) {
                 satz.fehler = String((e && e.stack) || e).split("\n")[0];
             }
+        // ── C: der Satz nennt das Ergebnis (am See, eine Uferkante je Richtung, der Blick auf den See) ──
+        if (soll("satz"))
+            try {
+                const [cx, cz] = A.satzFern[0];
+                const el = document.getElementById("chat-output");
+                const C = { versuche: [] };
+                const LAND = (x, z) => r._landAt(x, z, 0.4) && !r._nassAt(x, z, 0.4);
+                for (let k = 0; k < 16 && C.versuche.filter((v) => v.gesetzt > 0 && v.gesetzt < 6).length < 2; k++) {
+                    const a = (k / 16) * Math.PI * 2;
+                    let ufer = null;
+                    for (let rr = 4; rr <= 80 && !ufer; rr += 1) {
+                        const px = cx + Math.cos(a) * rr;
+                        const pz = cz + Math.sin(a) * rr;
+                        if (LAND(px, pz)) ufer = [px + Math.cos(a) * 2, pz + Math.sin(a) * 2];
+                    }
+                    if (!ufer) continue;
+                    const [PX, PZ] = ufer;
+                    // der Blick auf den See: die Gier, deren Vorwärts-Richtung (`_blickVorn`) zum See zeigt
+                    let yaw = 0;
+                    let bestD = -2;
+                    for (let q = 0; q < 64; q++) {
+                        const y = (q / 64) * Math.PI * 2;
+                        const v = r._blickVorn(y, 0);
+                        const d = -(v.x * Math.cos(a) + v.z * Math.sin(a));
+                        if (d > bestD) ((bestD = d), (yaw = y));
+                    }
+                    for (let i = 0; i < 60; i++) {
+                        st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
+                        frame();
+                        if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+                    }
+                    st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
+                    st.yaw = yaw;
+                    const v0 = new Set(st.architectures);
+                    const t0 = el ? el.innerText.length : 0;
+                    zensus.quelle = "Birken-Satz";
+                    r.processChatCommand("pflanz mir sechs birken");
+                    zensus.quelle = "strom";
+                    const neu = st.architectures.filter((e) => e && !v0.has(e) && /birke/.test(e.type));
+                    const chat = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
+                    C.versuche.push({ ufer: [+PX.toFixed(1), +PZ.toFixed(1)], gewollt: 6, gesetzt: neu.length, chat });
+                    for (const e of neu) r.removeArchitecture(e);
+                }
+                out.ergebnis = C;
+            } catch (e) {
+                out.ergebnis = { fehler: String((e && e.stack) || e).split("\n")[0] };
+            }
         if (soll("zensus") || soll("satz")) out.zensus = zensus;
         if (soll("satz")) out.satz = satz;
         st.voxelWorker = worker;
@@ -937,6 +1009,17 @@ function selbsttest() {
         leser: [],
         wagen: { vEin: 11, v1: 3, tiefe: 0.61, kameraUnter: 0, kameraTiefe: 0 },
         damm: { id: 504, x: -937, z: -1064, w0: 1565, w1: 3574, w2: 3560, abriss: 1, takte: 1800 },
+        ergebnis: {
+            versuche: [
+                {
+                    ufer: [-890, -650],
+                    gewollt: 6,
+                    gesetzt: 4,
+                    chat: "4 von 6 Birke gewachsen — 2 nicht: im Wasser steht nichts, am Ufer schon.",
+                },
+                { ufer: [-920, -610], gewollt: 6, gesetzt: 6, chat: "6× Birke aus dem Studio vor dir gewachsen" },
+            ],
+        },
         kern: [],
     };
     const faelle = [
@@ -1009,6 +1092,20 @@ function selbsttest() {
             /D: der Abbau des Damms #504 nach dem Reload weckt den Wasser-Automaten nicht \(0/,
         ],
         ["D leer", (b) => (b.damm.w1 = 1600), /D LEER/],
+        [
+            "C Wunsch-Zahl (der Satz am Kopf e162430b, wie der Chat ihn zeigt)",
+            (b) =>
+                (b.ergebnis.versuche[0].chat =
+                    "> pflanz mir sechs birken6× Birke aus dem Studio vor dir gewachsen2 davon wuchsen nicht: im Wasser steht nichts, am Ufer schon."),
+            /C: der Satz sagt die gewünschte Zahl — „.*6× Birke .*" bei 4 von 6 gesetzten Birken am Ufer -890\/-650/,
+        ],
+        [
+            "C ohne Zahl",
+            (b) => (b.ergebnis.versuche[0].chat = "Birken gewachsen."),
+            /C: der Satz nennt die tatsächliche Zahl nicht/,
+        ],
+        ["C leer", (b) => (b.ergebnis.versuche[0].gesetzt = 6), /C LEER/],
+        ["D lief nicht", (b) => delete b.damm, /D: die Damm-Probe lief nicht/],
     ];
     let ok = urteil(JSON.parse(JSON.stringify(gruen))).length === 0;
     console.log(`  ${ok ? "✅" : "❌"} grüner Befund → 0 Täter`);
