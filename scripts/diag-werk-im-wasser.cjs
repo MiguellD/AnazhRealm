@@ -9,14 +9,24 @@
 //       Bau-Modus), dann der Satz, dann 1200 Spiel-Takte (20 s). Je Stamm das gezeichnete Wasser (`_wasserBildAt`) im
 //       Ring von 1,5 m über seinem Fuß, wo es sichtbar über dem Boden steht. Befund V18.537: der Bau weckte den
 //       Wasser-Automaten (15 Chunks), der flutete das Tal — 6 von 6 Stämmen 1,9–3,8 m unter dem Wasser.  Soll 0 · 0 Chunks
-//   Z — DER ZENSUS DER WERKE: jeder Baum, Strauch und jedes Haus, das während der Probe gesetzt wird (Wald und Unterholz
-//       beim Strömen, der Hain, die Bau-Eiche, „dorf" am Fluss: `spawnSettlement` seed 7, 18 Häuser), gemessen VOR seinem
-//       Stempel (der Setz-Punkt `spawnArchitecture` ist Beobachtungs-Punkt): das gezeichnete Wasser über dem Boden am Stamm
-//       bzw. an jedem Raster-Punkt des Fundaments.                                                          Soll 0 im Wasser
+//   S — DAS HAUS AUS DEM SATZ (Gegenprüfung 10.10.): „bau mir ein haus am wasser" an Uferorten um den Schau-Ort, die Furt
+//       −935/−1070 und den See −906/−634 (je Zentrum bis zu drei trockene Standorte 18–40 m vom Zentrum). Befund am Kopf
+//       f5714efb: 11 von 11 Fundamenten im Wasser (6–67 von 81 Raster-Punkten, bis 0,92–3,68 m) — der Satz fragte die Mitte,
+//       und die Spieler-Klemme der Wurzel schob das Haus vom Spieler weg ins Wasser. Die Häuser misst Z.  Soll ≥ 5 Häuser
+//   Z — DER ZENSUS DER WERKE: jedes Werk, das während der Probe gesetzt wird (Wald und Unterholz beim Strömen, der Hain, die
+//       Bau-Eiche, die Häuser der Sätze, „dorf" am Fluss: `spawnSettlement` seed 7, 18 Häuser, Brunnen, Stände; kein
+//       Fahrzeug). Der Setz-Punkt `spawnArchitecture` ist Beobachtungs-Punkt: ein Stamm misst das Wasser über seinem Fuß VOR
+//       seinem Stempel; ein anderes Werk hält dort das Wasser über dem Boden im Umkreis von 18 m fest (1-m-Gitter, Bild UND
+//       Gesetz — ein Stempel verdrängt danach das gezeichnete), und gemessen wird, wenn es STEHT: jede Box seiner Hülle, die
+//       den Boden trägt (die Solids des Gesetzbuchs samt Fundament-Podest — das Haus, mit dem der Körper kollidiert; nie die
+//       Grundriss-Rechnung des Wirts), auf einem Raster ≤ 1 m.                                              Soll 0 im Wasser
 //   L — DIE LESER (kommentarfrei, Node): keine Zwillings-Probe des Lands mehr (`_isAboveWaterAt` fiel), `_waterLevelAt`
 //       nur noch als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`), der Wald plant gegen das Gesetz des Wassers
 //       (`_atlasWaterLevelAt`), die Natur-Wand fragt das Land (`_landAt`), die Pflanze stempelt keine Wasser-Zelle, ein Bau
 //       weckt den Automaten nur, wenn sein Stempel Wasser verdrängt, und beide Fahr-Schritte reichen die Tiefe am Wagen.
+//       Das Fundament: die Wurzel (`spawnArchitecture`) urteilt nach ihrer Spieler-Klemme über jedes Werk mit Grundriss-Gesetz
+//       (`_werkImWasser` → `_fundamentLand`), die Siedlung fragt dasselbe `_fundamentLand`, der Satz, der Tempel und das
+//       Bauplan-Programm suchen ihren Ort über `_werkOrtSuchen`.
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
 //       Furt um den Schau-Ort, gesucht). Befund: 43 km/h durch 0,61 m, ohne Widerstand. Soll: 1 s nach dem Eintauchen
 //       ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie unter dem Spiegel.
@@ -38,6 +48,9 @@ const SCHWELLE = {
     hainMin: 6, // Stämme, die der Satz setzen muss (sonst prüft die Probe nichts)
     zensusMin: 40, // Werke im Zensus (Wald + Hain + Dorf), sonst LEER
     haeuserMin: 6, // Häuser des Dorfs im Zensus
+    satzOrteMin: 6, // Uferorte, an denen der Haus-Satz gesprochen wird
+    satzHaeuserMin: 5, // Häuser, die der Haus-Satz an ihnen setzen muss (sonst misst Z keins)
+    satzAbstandMax: 12, // m vom Haus zum nächsten Wasser: „am Wasser" bleibt am Wasser
     eintrittMin: 6, // m/s: so schnell muss der Wagen ins Wasser fahren (sonst LEER)
     restAnteil: 0.5, // Tempo 1 s nach dem Eintauchen gegen das Eintritts-Tempo
     kameraUnter: 0, // Frames mit der Kamera unter dem Spiegel
@@ -61,14 +74,33 @@ function urteil(b) {
         if (!(H.caChunks <= S.caChunks))
             v.push(`H: die Bauten am Ufer weckten den Wasser-Automaten (${H.caChunks} Chunks rechnen)`);
     }
+    // S
+    const SA = b.satz;
+    if (!SA || SA.fehler) v.push(`S: ${SA ? SA.fehler : "die Satz-Probe lief nicht"}`);
+    else {
+        if (!(SA.orte >= S.satzOrteMin))
+            v.push(`S LEER: nur ${SA.orte} Uferorte für den Haus-Satz gefunden (Soll ≥ ${S.satzOrteMin})`);
+        if (!(SA.haeuser >= S.satzHaeuserMin))
+            v.push(
+                `S LEER: der Haus-Satz setzte ${SA.haeuser} Häuser an ${SA.orte} Uferorten (Soll ≥ ${S.satzHaeuserMin})`
+            );
+        for (const h of SA.fern || [])
+            v.push(
+                `S: ${h.typ} #${h.id} (${m(h.x)}/${m(h.z)}) steht ${m(h.abstand)} m vom Wasser — „am Wasser" (Soll ≤ ${S.satzAbstandMax} m)`
+            );
+    }
     // Z
     const Z = b.zensus;
     if (!Z || Z.fehler) v.push(`Z: ${Z ? Z.fehler : "der Zensus lief nicht"}`);
     else {
         if (!(Z.werke >= S.zensusMin)) v.push(`Z LEER: nur ${Z.werke} Werke gesetzt (Soll ≥ ${S.zensusMin})`);
-        if (!(Z.haeuser >= S.haeuserMin)) v.push(`Z LEER: nur ${Z.haeuser} Häuser des Dorfs (Soll ≥ ${S.haeuserMin})`);
+        if (!(Z.haeuser >= S.haeuserMin)) v.push(`Z LEER: nur ${Z.haeuser} Häuser im Zensus (Soll ≥ ${S.haeuserMin})`);
+        for (const w of Z.ohneHuelle || [])
+            v.push(`Z LEER: ${w.typ} #${w.id} (${w.quelle}) stand ohne Hülle — sein Fundament blieb ungemessen`);
         for (const w of Z.imWasser || [])
-            v.push(`Z: ${w.typ} #${w.id} (${m(w.x)}/${m(w.z)}) ${w.wo} ${m(w.tiefe)} m im Wasser (${w.quelle})`);
+            v.push(
+                `Z: ${w.typ} #${w.id} (${m(w.x)}/${m(w.z)}) ${w.wo} ${m(w.tiefe)} m im Wasser${w.punkte ? ` (${w.punkte})` : ""} (${w.quelle})`
+            );
     }
     // L
     for (const x of b.leser || []) v.push(`L: ${x}`);
@@ -137,7 +169,11 @@ function leserUrteil(srcRoh) {
     else if (!/_atlasWaterLevelAt\(/.test(waldWasser[1]) || /_waterLevelAt\(/.test(waldWasser[1]))
         v.push("der Wald (`_forestCellDarts` waterYAt) plant nicht gegen das Gesetz des Wassers `_atlasWaterLevelAt`");
     const wand = fnBody(src, /\n {4}_naturWand\(name, position, opts\) \{/);
-    if (!wand || !/_landAt\(/.test(wand)) v.push("die Natur-Wand (`_naturWand`) fragt das Land nicht (`_landAt`)");
+    if (!wand || !/_stammFussLand\(/.test(wand))
+        v.push("die Natur-Wand (`_naturWand`) fragt den Fuß des Stamms nicht (`_stammFussLand`)");
+    const fuss = fnBody(src, /\n {4}_stammFussLand\([^)]*\) \{/);
+    if (!fuss || !/_landAt\(/.test(fuss) || !/STAMM_FUSS_M/.test(fuss))
+        v.push("`_stammFussLand` fragt nicht das Land auf dem Fuß-Kreis (`_landAt` × `STAMM_FUSS_M`)");
     const spanne = fnBody(src, /\n {4}_stempelSpanne\([^)]*\) \{/);
     if (!spanne || !/aabb\.pflanze\)\s*return null/.test(spanne))
         v.push("die Pflanze stempelt Wasser-Zellen (`_stempelSpanne` ohne Pflanzen-Ausnahme)");
@@ -151,6 +187,31 @@ function leserUrteil(srcRoh) {
         const vor = i >= 0 ? spawn.slice(Math.max(0, i - 400), i) : "";
         if (!/_stempelImWasser\(/.test(spawn) || !/if \(verdraengt\)/.test(vor))
             v.push("ein Bau weckt den Wasser-Automaten, ohne dass sein Stempel Wasser verdrängt");
+    }
+    // Das Fundament (Gegenprüfung 10.10.): die Wurzel urteilt NACH ihrer Spieler-Klemme, jeder Sucher fragt dasselbe Land.
+    if (spawn) {
+        const iK = spawn.indexOf("_structureSpawnPos(");
+        const iW = spawn.indexOf("_werkImWasser(");
+        if (iW < 0) v.push("die Wurzel (`spawnArchitecture`) urteilt nicht über das Fundament (`_werkImWasser`)");
+        else if (iK < 0 || iW < iK) v.push("die Wurzel urteilt über das Fundament VOR ihrer Spieler-Klemme");
+    }
+    const wiw = fnBody(src, /\n {4}_werkImWasser\([^)]*\) \{/);
+    if (!wiw || !/_fundamentLand\(/.test(wiw))
+        v.push("`_werkImWasser` fragt nicht das Land des Fundaments (`_fundamentLand`)");
+    const fl = fnBody(src, /\n {4}_fundamentLand\([^)]*\) \{/);
+    if (!fl || !/_fundamentRaster\(/.test(fl) || !/_landAt\(/.test(fl))
+        v.push("`_fundamentLand` fragt nicht jeden Raster-Punkt des Fundaments (`_fundamentRaster` × `_landAt`)");
+    const slot = fnBody(src, /\n {4}_spawnSettlementSlot\([^)]*\) \{/);
+    if (!slot || !/_fundamentLand\(/.test(slot))
+        v.push("die Siedlung (`_spawnSettlementSlot`) fragt nicht das Land des Fundaments (`_fundamentLand`)");
+    for (const [wer, re] of [
+        ["der Satz (`_dslSpawnStudioItems`)", /\n {4}_dslSpawnStudioItems\([^)]*\) \{/],
+        ["der Tempel (`spawn_temple`)", /\n {12}spawn_temple: \(\[[^\]]*\], ctx\) => \{/],
+        ["das Bauplan-Programm (`spawn_blueprint`)", /\n {12}spawn_blueprint: \(\[[^\]]*\], ctx\) => \{/],
+    ]) {
+        const body = fnBody(src, re);
+        if (!body || !/_werkOrtSuchen\(/.test(body))
+            v.push(`${wer} sucht keinen Ort, der das ganze Fundament trägt (\`_werkOrtSuchen\`)`);
     }
     const kraefte = src.match(/vc\.fahrKraefte\([\s\S]*?\);/g) || [];
     if (kraefte.length < 2) v.push(`nur ${kraefte.length} Aufrufe von vc.fahrKraefte gefunden`);
@@ -275,63 +336,195 @@ async function probe(A) {
         }
         return t;
     };
-    // ── Z: der Setz-Punkt als Beobachtungs-Punkt (gemessen VOR dem Stempel) ──
-    const zensus = { werke: 0, haeuser: 0, baeume: 0, imWasser: [], quelle: "strom" };
+    // ── Z: der Setz-Punkt als Beobachtungs-Punkt ──
+    // Ein Stamm misst VOR seinem Stempel; jedes andere Werk (kein Fahrzeug) hält am Setz-Punkt das Wasser über dem Boden im
+    // Umkreis von `gitterR` m fest (1-m-Gitter, Bild UND Gesetz) und wird gemessen, wenn es steht (`werkeMessen`: seine Hülle).
+    const zensus = { werke: 0, haeuser: 0, baeume: 0, imWasser: [], ohneHuelle: [], quelle: "strom" };
+    const werke = [];
+    const R = A.gitterR;
+    const gitter = (x0, z0) => {
+        const n = 2 * R + 1;
+        const t = new Float32Array(n * n);
+        for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) t[i * n + j] = sichtbar(x0 - R + i, z0 - R + j, true);
+        return { x0, z0, n, t };
+    };
+    const imGitter = (G, x, z) => {
+        const i = Math.round(x - G.x0 + R);
+        const j = Math.round(z - G.z0 + R);
+        if (i < 0 || j < 0 || i >= G.n || j >= G.n) return sichtbar(x, z, true); // jenseits des Gitters: das Wasser von jetzt
+        return G.t[i * G.n + j];
+    };
     const spawnAlt = r.spawnArchitecture;
     r.spawnArchitecture = function (type, position, opts) {
         const natur = r._istNatur({ type });
-        const fu = opts && opts.fundament;
-        const mess = [];
+        const werk = !natur && !/^fahrzeug_/.test(String(type));
+        let fussT = null;
+        let G = null;
         if (position && natur) {
             const g = r._voxelSurfaceY(position.x, position.z);
-            if (Number.isFinite(g)) mess.push({ wo: "Fuß", t: stammTiefe(position.x, position.z, g, 0.5, true) });
-        } else if (position && fu && Number.isFinite(fu.ex)) {
-            const ry = (opts && opts.rotationY) || 0;
-            const c = Math.cos(ry);
-            const s = Math.sin(ry);
-            const nx = Math.min(12, Math.max(1, Math.ceil(fu.ex)));
-            const nz = Math.min(12, Math.max(1, Math.ceil(fu.ez)));
-            let t = -Infinity;
-            for (let i = 0; i <= nx; i++)
-                for (let j = 0; j <= nz; j++) {
-                    const lx = (fu.ox || 0) + fu.ex * ((2 * i) / nx - 1);
-                    const lz = (fu.oz || 0) + fu.ez * ((2 * j) / nz - 1);
-                    t = Math.max(t, sichtbar(position.x + lx * c + lz * s, position.z - lx * s + lz * c, true));
-                }
-            mess.push({ wo: "Fundament", t });
-        }
+            if (Number.isFinite(g)) fussT = stammTiefe(position.x, position.z, g, 0.5, true);
+        } else if (position && werk) G = gitter(position.x, position.z);
         const e = spawnAlt.apply(this, arguments);
-        if (e && mess.length) {
+        if (e && (fussT !== null || G)) {
             zensus.werke++;
             if (natur) zensus.baeume++;
-            else zensus.haeuser++;
-            for (const q of mess) {
-                const grenze = q.wo === "Fuß" ? A.tiefeStamm : A.tiefeFundament;
-                if (q.t > grenze && zensus.imWasser.length < 40)
-                    zensus.imWasser.push({
-                        typ: type,
-                        id: e.id,
-                        x: e.position.x,
-                        z: e.position.z,
-                        wo: q.wo,
-                        tiefe: q.t,
-                        quelle: zensus.quelle,
-                    });
-            }
+            else if (/^haus_/.test(type)) zensus.haeuser++;
+            if (G) werke.push({ e, G, quelle: zensus.quelle });
+            else if (fussT > A.tiefeStamm && zensus.imWasser.length < 40)
+                zensus.imWasser.push({
+                    typ: type,
+                    id: e.id,
+                    x: e.position.x,
+                    z: e.position.z,
+                    wo: "Fuß",
+                    tiefe: fussT,
+                    // der Täter beim Namen: der erste Rufer hinter der Natur-Wand (Wald-Schlange, Promotion, Satz …)
+                    quelle: `${zensus.quelle} · ${
+                        String(new Error().stack)
+                            .split("\n")
+                            .map((l) => (/at (?:\S+\.)?(\w+)/.exec(l.trim()) || [])[1])
+                            .filter((f) => f && !/^(spawnArchitecture|_naturSetzen|Error)$/.test(f))[0] || "?"
+                    }`,
+                });
         }
         return e;
     };
-    try {
-        // Strömen an den Schau-Ort (Sync-Bau, Worker ausgehängt — wie die Wasser-Linse)
-        const X = A.ort[0];
-        const Z = A.ort[1];
+    // Jedes festgehaltene Werk, wenn es steht: ein Haus wartet auf die Hülle seines Gesetzbuchs (`_hausHuelle`, die Solids
+    // der Stufe 0), jedes andere misst seine Blocker. Gemessen wird jede Box, die den Boden trägt (Unterkante ≤ 0,6 m über
+    // der Haus-Basis: das Podest, die Wände des Erdgeschosses, Treppe und Tritt — nie ein Balkon), auf einem Raster ≤ 1 m.
+    const werkeMessen = async () => {
+        const dl = performance.now() + A.huelleMs;
+        const fertig = (w) =>
+            w.done ||
+            !st.architectures.includes(w.e) ||
+            (/^haus_/.test(w.e.type) ? !!w.e._hausHuelle : !!(w.e.blockerAABBs && w.e.blockerAABBs.length));
+        while (performance.now() < dl && !werke.every(fertig)) {
+            for (let i = 0; i < 30; i++)
+                try {
+                    frame();
+                } catch (_e) {}
+            for (const w of werke) if (!fertig(w)) r._rebuildArchitectureMesh(w.e);
+            await new Promise((res) => setTimeout(res, 50));
+        }
+        for (const w of werke) {
+            const e = w.e;
+            if (w.done || !st.architectures.includes(e)) continue;
+            w.done = true;
+            const boxen = (e.blockerAABBs || []).filter(
+                (b) => b && Number.isFinite(b.botY) && b.botY <= e.position.y - 0.5 + 0.6
+            );
+            if (!boxen.length || (/^haus_/.test(e.type) && !e._hausHuelle)) {
+                zensus.ohneHuelle.push({ typ: e.type, id: e.id, quelle: w.quelle });
+                continue;
+            }
+            let max = -Infinity;
+            let nass = 0;
+            let n = 0;
+            for (const b of boxen) {
+                const o = b.obb || {
+                    cx: (b.minX + b.maxX) / 2,
+                    cz: (b.minZ + b.maxZ) / 2,
+                    c: 1,
+                    s: 0,
+                    hx: (b.maxX - b.minX) / 2,
+                    hz: (b.maxZ - b.minZ) / 2,
+                };
+                const ni = Math.max(1, Math.ceil(2 * o.hx));
+                const nj = Math.max(1, Math.ceil(2 * o.hz));
+                for (let i = 0; i <= ni; i++)
+                    for (let j = 0; j <= nj; j++) {
+                        const lx = o.hx * ((2 * i) / ni - 1);
+                        const lz = o.hz * ((2 * j) / nj - 1);
+                        // lokal = (Δx·c − Δz·s, Δx·s + Δz·c) → Welt = (lx·c + lz·s, −lx·s + lz·c)
+                        const t = imGitter(w.G, o.cx + lx * o.c + lz * o.s, o.cz - lx * o.s + lz * o.c);
+                        n++;
+                        if (t > A.tiefeFundament) nass++;
+                        if (t > max) max = t;
+                    }
+            }
+            if (max > A.tiefeFundament && zensus.imWasser.length < 40)
+                zensus.imWasser.push({
+                    typ: e.type,
+                    id: e.id,
+                    x: e.position.x,
+                    z: e.position.z,
+                    wo: "Fundament",
+                    tiefe: max,
+                    punkte: `${nass} von ${n} Punkten der Hülle`,
+                    quelle: w.quelle,
+                });
+        }
+        zensus.gemessen = werke.filter((w) => w.done).length;
+    };
+    // ── S: der Haus-Satz an Uferorten um ein Zentrum (die Häuser misst Z) ──
+    const satz = { orte: 0, haeuser: 0, saetze: [], fern: [] };
+    const wasserAbstand = (x, z) => {
+        for (let rr = 0.5; rr <= 30; rr += 0.5)
+            for (let k = 0; k < 48; k++) {
+                const a = (k / 48) * Math.PI * 2;
+                if (sichtbar(x + Math.cos(a) * rr, z + Math.sin(a) * rr, true) > A.tiefeFundament) return rr;
+            }
+        return Infinity;
+    };
+    const satzProbe = async (cx, cz) => {
+        const LAND = (x, z) => r._landAt(x, z, 0.4) && !r._nassAt(x, z, 0.4);
+        const orte = [];
+        for (let k = 0; k < 24 && orte.length < A.satzJe; k++) {
+            const a = (k / 24) * Math.PI * 2;
+            for (let rr = 18; rr <= 40; rr += 4) {
+                const px = cx + Math.cos(a) * rr;
+                const pz = cz + Math.sin(a) * rr;
+                if (LAND(px, pz) && LAND(px + 3, pz) && LAND(px - 3, pz) && LAND(px, pz + 3) && LAND(px, pz - 3)) {
+                    orte.push([px, pz]);
+                    k += 5;
+                    break;
+                }
+            }
+        }
+        const o = document.getElementById("chat-output");
+        for (const [PX, PZ] of orte) {
+            for (let i = 0; i < 200; i++) {
+                st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
+                try {
+                    frame();
+                } catch (_e) {}
+                if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+            }
+            st.playerMesh.position.set(PX, r._voxelSurfaceY(PX, PZ) + 1.8, PZ);
+            st.yaw = Math.PI / 2;
+            const v0 = new Set(st.architectures);
+            zensus.quelle = "Haus-Satz";
+            const t0 = performance.now();
+            r.processChatCommand("bau mir ein haus am wasser");
+            const ms = performance.now() - t0; // der Satz samt Ort-Suche und Spawn, synchron
+            const neu = st.architectures.filter((e) => e && !v0.has(e) && /^haus_/.test(e.type));
+            for (let i = 0; i < 60; i++) {
+                try {
+                    frame();
+                } catch (_e) {}
+                if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+            }
+            zensus.quelle = "strom";
+            satz.orte++;
+            satz.haeuser += neu.length;
+            const zeile = o && o.lastElementChild ? o.lastElementChild.textContent : null;
+            const haeuser = neu.map((e) => {
+                const ab = wasserAbstand(e.position.x, e.position.z);
+                if (ab > A.satzAbstandMax)
+                    satz.fern.push({ typ: e.type, id: e.id, x: e.position.x, z: e.position.z, abstand: ab });
+                return { typ: e.type, id: e.id, x: +e.position.x.toFixed(1), z: +e.position.z.toFixed(1), abstand: ab };
+            });
+            satz.saetze.push({ spieler: [+PX.toFixed(1), +PZ.toFixed(1)], ms: +ms.toFixed(1), chat: zeile, haeuser });
+        }
+    };
+    // Strömen an einen Ort (Sync-Bau, Worker ausgehängt — wie die Wasser-Linse)
+    const stroemen = async (X, Z, nachlauf) => {
         st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
-        const worker = st.voxelWorker;
-        st.voxelWorker = null;
         const t0 = performance.now();
         let last = -1;
         let still = performance.now();
         for (;;) {
+            st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
             try {
                 frame();
             } catch (_e) {}
@@ -343,12 +536,19 @@ async function probe(A) {
             if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
             await new Promise((res) => setTimeout(res, 0));
         }
-        for (let i = 0; i < 240; i++) {
+        for (let i = 0; i < nachlauf; i++) {
             try {
                 frame();
             } catch (_e) {}
             if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
         }
+    };
+    try {
+        const X = A.ort[0];
+        const Z = A.ort[1];
+        const worker = st.voxelWorker;
+        st.voxelWorker = null;
+        await stroemen(X, Z, 240);
         // ── H: der Schau-Ablauf ──
         if (soll("hain"))
             try {
@@ -393,10 +593,17 @@ async function probe(A) {
                 zensus.quelle = "Dorf";
                 await r.spawnSettlement({ seed: 7, nH: 18, position: { x: X, y: r._voxelSurfaceY(X, Z), z: Z } });
                 zensus.quelle = "strom";
-                out.zensus = zensus;
             } catch (e) {
-                out.zensus = Object.assign({}, zensus, { fehler: "Dorf: " + String((e && e.message) || e) });
+                zensus.fehler = "Dorf: " + String((e && e.message) || e);
             }
+        // ── S: der Haus-Satz am Schau-Ort und an der Furt (dieselbe gestreamte Welt), gemessen, solange sie steht ──
+        if (soll("satz"))
+            try {
+                for (const [cx, cz] of A.satzNah) await satzProbe(cx, cz);
+            } catch (e) {
+                satz.fehler = String((e && e.stack) || e).split("\n")[0];
+            }
+        if (soll("zensus") || soll("satz")) await werkeMessen();
         // ── F: der Wagen in der Furt ──
         if (soll("wagen"))
             try {
@@ -526,6 +733,19 @@ async function probe(A) {
             } catch (e) {
                 out.wagen = { fehler: String((e && e.message) || e) };
             }
+        // ── S: der Haus-Satz am See (−906/−634, eine eigene gestreamte Welt) ──
+        if (soll("satz"))
+            try {
+                for (const [cx, cz] of A.satzFern) {
+                    await stroemen(cx, cz, 120);
+                    await satzProbe(cx, cz);
+                }
+                await werkeMessen();
+            } catch (e) {
+                satz.fehler = String((e && e.stack) || e).split("\n")[0];
+            }
+        if (soll("zensus") || soll("satz")) out.zensus = zensus;
+        if (soll("satz")) out.satz = satz;
         st.voxelWorker = worker;
     } finally {
         r.spawnArchitecture = spawnAlt;
@@ -541,7 +761,8 @@ function selbsttest() {
             caChunks: 0,
             staemme: Array.from({ length: 7 }, (_, i) => ({ typ: "baum_eiche", id: i, x: 0, z: 0, tiefe: -0.4 })),
         },
-        zensus: { werke: 80, haeuser: 12, baeume: 68, imWasser: [] },
+        zensus: { werke: 80, haeuser: 12, baeume: 68, imWasser: [], ohneHuelle: [] },
+        satz: { orte: 9, haeuser: 9, fern: [] },
         leser: [],
         wagen: { vEin: 11, v1: 3, tiefe: 0.61, kameraUnter: 0, kameraTiefe: 0 },
         kern: [],
@@ -565,6 +786,33 @@ function selbsttest() {
             /Z: haus_x #9 .* Fundament 0\.80 m im Wasser \(Dorf\)/,
         ],
         ["Z leer", (b) => (b.zensus.werke = 3), /Z LEER/],
+        [
+            "Z Haus aus dem Satz im Wasser",
+            (b) =>
+                b.zensus.imWasser.push({
+                    typ: "haus_alemannisch",
+                    id: 4,
+                    x: -926,
+                    z: -1072.2,
+                    wo: "Fundament",
+                    tiefe: 3.68,
+                    punkte: "67 von 81 Punkten der Hülle",
+                    quelle: "Haus-Satz",
+                }),
+            /Z: haus_alemannisch #4 .* Fundament 3\.68 m im Wasser \(67 von 81 Punkten der Hülle\) \(Haus-Satz\)/,
+        ],
+        [
+            "Z ohne Hülle",
+            (b) => b.zensus.ohneHuelle.push({ typ: "haus_x", id: 7, quelle: "Haus-Satz" }),
+            /Z LEER: haus_x #7 \(Haus-Satz\) stand ohne Hülle/,
+        ],
+        ["S keine Orte", (b) => (b.satz.orte = 2), /S LEER: nur 2 Uferorte/],
+        ["S keine Häuser", (b) => (b.satz.haeuser = 0), /S LEER: der Haus-Satz setzte 0 Häuser/],
+        [
+            "S fern vom Wasser",
+            (b) => b.satz.fern.push({ typ: "haus_x", id: 3, x: 0, z: 0, abstand: 31 }),
+            /S: haus_x #3 .* steht 31\.00 m vom Wasser/,
+        ],
         [
             "L Zwilling",
             (b) => b.leser.push("die Zwillings-Probe des Lands `_isAboveWaterAt` lebt"),
@@ -614,6 +862,38 @@ function selbsttest() {
         ],
         ["Automat immer", (s) => s.replace("if (verdraengt)\n", "if (true)\n"), /weckt den Wasser-Automaten/],
         [
+            "Wurzel ohne Fundament-Wand",
+            (s) =>
+                s.replace(
+                    "if (position && opts.id == null && this._werkImWasser(type, position, opts, seed)) {",
+                    "if (position && opts.id == null && false) {"
+                ),
+            /Wurzel .* urteilt nicht über das Fundament/,
+        ],
+        [
+            "Natur-Wand fragt die Achse",
+            (s) =>
+                s.replace(
+                    'return name && !this._stammFussLand(position.x, position.z, 0.05) ? "wasser" : false;',
+                    'return name && !this._landAt(position.x, position.z, 0.05) ? "wasser" : false;'
+                ),
+            /die Natur-Wand .* fragt den Fuß des Stamms nicht/,
+        ],
+        [
+            "Satz fragt die Mitte",
+            (s) => s.replace("const q = this._werkOrtSuchen(name, ziel, opts, wurf);", "const q = ziel;"),
+            /der Satz .* sucht keinen Ort/,
+        ],
+        [
+            "Siedlung fragt die Mitte",
+            (s) =>
+                s.replace(
+                    "if (!this._fundamentLand(wx, wz, ry, fp, tu)) return null;",
+                    "if (!this._landAt(wx, wz, 0.2)) return null;"
+                ),
+            /die Siedlung .* fragt nicht das Land des Fundaments/,
+        ],
+        [
             "Fahr-Schritt ohne Tiefe",
             (s) => s.replace("tiefe: this._fahrTiefe(fz) }", "}"),
             /Fahr-Schritt ohne die Tiefe/,
@@ -633,7 +913,7 @@ function selbsttest() {
     process.exit(ok ? 0 : 1);
 }
 
-// `--nur hain,zensus,wagen` und `--furt x,z,ux,uz` (der Vergleich an DERSELBEN Furt) — Werkbank-Fragen, das Gate fährt alle.
+// `--nur hain,zensus,satz,wagen` und `--furt x,z,ux,uz` (der Vergleich an DERSELBEN Furt) — Werkbank-Fragen, das Gate fährt alle.
 function argListe(name) {
     const i = process.argv.indexOf(name);
     return i >= 0 && process.argv[i + 1] ? process.argv[i + 1].split(",") : null;
@@ -689,6 +969,15 @@ async function lauf() {
             tiefeStamm: SCHWELLE.tiefeStamm,
             tiefeFundament: SCHWELLE.tiefeFundament,
             suchR: 90,
+            gitterR: 18,
+            huelleMs: 60000,
+            satzJe: 3,
+            satzAbstandMax: SCHWELLE.satzAbstandMax,
+            satzNah: [
+                [-872, -1127],
+                [-935, -1070],
+            ],
+            satzFern: [[-906, -634]],
             nur: argListe("--nur"),
             furt: argListe("--furt") ? argListe("--furt").map(Number) : null,
         });
