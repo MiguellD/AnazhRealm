@@ -2276,14 +2276,27 @@ class AnazhRealm {
                     ctx.log.push({ event: "skipped", reason: "studio_kalt", op: "spawn_temple" });
                     return;
                 }
-                const pos = this._structureSpawnPos(name, this.dslEvalPos(positionNode, ctx), ctx);
+                const ziel = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
                 }
-                ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture(name, pos, { seed: s, autonomous: ctx.source === "nexus" });
+                const opts = { seed: s, autonomous: ctx.source === "nexus" };
+                // der Ort, an dem das ganze Fundament auf dem Land steht (nach der Spieler-Klemme der Wurzel); keiner → benannt
+                const pos = this._werkOrtSuchen(name, ziel, opts, this._samenStrom(s));
+                if (!pos) {
+                    ctx.log.push({
+                        event: "natur_weicht",
+                        op: "spawn_temple",
+                        grundriss: { wasser: 1 },
+                        gesetzt: 0,
+                        werk: true,
+                    });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
+                const entry = this.spawnArchitecture(name, pos, opts);
                 ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos, seed: s });
             },
             spawn_waterfall: ([positionNode, seed], ctx) => {
@@ -2319,12 +2332,11 @@ class AnazhRealm {
                     ctx.log.push({ event: "spawn_blueprint_duplicate", name, id: sharedId });
                     return;
                 }
-                const pos = this.dslEvalPos(positionNode, ctx);
+                const ziel = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
                     ctx.log.push({ event: "budget_exceeded", budget: "spawns", program_id: ctx.programId });
                     return;
                 }
-                ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
                 // Autonom (Nexus) gespawnte Baupläne unterliegen dem _capNexusStructures-Cap (kein
                 // unbeschränktes Horten); Mensch-/Remote-Bauten bleiben ungedeckelt (gewollt + permanent).
@@ -2334,6 +2346,20 @@ class AnazhRealm {
                 // PRÄGUNG-WELT — der gereiste Stempel geht ungestrippt an den EINEN
                 // Sanitize-Chokepoint (spawnArchitecture: plain object + Taille-Wand).
                 if (studioOv && typeof studioOv === "object" && !Array.isArray(studioOv)) opts.studioOv = studioOv;
+                // Ein Werk mit geteilter id steht, wo der Sender es gesetzt hat; sonst wählt das Programm den Ort — er trägt das
+                // ganze Fundament (`_werkOrtSuchen`, nach der Spieler-Klemme der Wurzel), keiner → benannt.
+                const pos = sharedId ? ziel : this._werkOrtSuchen(name, ziel, opts, this._samenStrom(s));
+                if (!pos) {
+                    ctx.log.push({
+                        event: "natur_weicht",
+                        op: "spawn_blueprint",
+                        grundriss: { wasser: 1 },
+                        gesetzt: 0,
+                        werk: true,
+                    });
+                    return;
+                }
+                ctx.budget.spawnsLeft--;
                 const entry = this.spawnArchitecture(name, pos, opts);
                 ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos, seed: s });
             },
@@ -3003,15 +3029,19 @@ class AnazhRealm {
         return this._dslEffectsCache;
     }
 
-    // Platzier-Schleife des Co-Schöpfers: n Stück im Jitter-Kreis um pos, je ein trockener Fleck
-    // (max 4 Würfe, die EINE Spalten-Probe `_nassAt`), geerdet auf die Voxel-Oberfläche (+0.5), Streuung + Drehung + Baum-Größe aus dem
-    // Strom des Samens (`_samenStrom`: der Hain ist eine Funktion seines Samens, auf jedem Peer derselbe; ohne Samen der
-    // nächste des Welt-Stroms), Preset-Stempel am Eintrag. Budget wie jeder Spawn-Op. Natur (Baum, Strauch, Fels
-    // — `_istNatur`) setzt durch die EINE Natur-Wand (`_naturSetzen`): kein Hain der KI wächst in einem Haus.
+    // Platzier-Schleife des Co-Schöpfers: n Stück im Jitter-Kreis um pos, je ein trockener Fleck (max 4 Würfe: der Fuß eines
+    // Stamms `_stammFussLand`, jedes andere Werk das EINE Land `_landAt`), geerdet auf die Voxel-Oberfläche (+0.5), Streuung
+    // + Drehung + Baum-Größe aus dem Strom des Samens (`_samenStrom`: der Hain ist eine Funktion seines Samens und der Welt,
+    // die der Peer an diesem Ort gestreamt hat — das Land am Ufer liest das gezeichnete Wasser, ein Peer ohne den Chunk
+    // urteilt nach dem Gesetz allein; ohne Samen der nächste des Welt-Stroms), Preset-Stempel am Eintrag. Budget wie jeder Spawn-Op. Natur (Baum, Strauch, Fels —
+    // `_istNatur`) setzt durch die EINE Natur-Wand (`_naturSetzen`): kein Hain der KI wächst in einem Haus. Ein Werk mit
+    // Grundriss-Gesetz (Haus, Ausstattung) sucht den Ort, an dem sein ganzes Fundament auf dem Land steht (`_werkOrtSuchen`,
+    // nach der Spieler-Klemme der Wurzel); jedes andere Werk fragt das Land an seinem Ort.
     _dslSpawnStudioItems(name, pos, n, seed, ctx, jitter) {
         const stamp = this._studioStampFor(name);
         const istBaum = name.startsWith("baum_");
         const natur = this._istNatur({ type: name });
+        const grundriss = !natur && !!this._grundrissGesetz(name);
         const baseSeed = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : this._bauSame("studio:" + name);
         const wurf = this._samenStrom(baseSeed);
         let spawned = 0;
@@ -3025,13 +3055,28 @@ class AnazhRealm {
             let x = pos.x,
                 z = pos.z,
                 trocken = false;
-            for (let t = 0; t < 4 && !trocken; t++) {
-                const off = n > 1 || t > 0 ? Math.max(jitter, 2.5) : 0;
-                x = pos.x + (wurf() - 0.5) * 2 * off;
-                z = pos.z + (wurf() - 0.5) * 2 * off;
-                trocken = this._landAt(x, z, 0.2);
-            }
-            // vier Würfe im Wasser: der Wurf fällt BENANNT (der Satz sagt „im Wasser wächst nichts", nie „gewachsen" bei 0)
+            let opts = null;
+            if (grundriss) {
+                // DAS WERK MIT GRUNDRISS: Drehung und Same zuerst (der Grundriss dreht mit), dann der Ort, der es trägt
+                opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2 };
+                if (stamp) opts.studioOv = stamp;
+                const off = n > 1 ? Math.max(jitter, 2.5) : 0;
+                const ziel = { x: pos.x + (wurf() - 0.5) * 2 * off, y: pos.y, z: pos.z + (wurf() - 0.5) * 2 * off };
+                const q = this._werkOrtSuchen(name, ziel, opts, wurf);
+                if (q) {
+                    x = q.x;
+                    z = q.z;
+                    trocken = true;
+                }
+            } else
+                for (let t = 0; t < 4 && !trocken; t++) {
+                    const off = n > 1 || t > 0 ? Math.max(jitter, 2.5) : 0;
+                    x = pos.x + (wurf() - 0.5) * 2 * off;
+                    z = pos.z + (wurf() - 0.5) * 2 * off;
+                    trocken = natur ? this._stammFussLand(x, z, 0.2) : this._landAt(x, z, 0.2);
+                }
+            // vier Würfe im Wasser (ein Werk mit Grundriss: kein tragender Ort in Reichweite): der Wurf fällt BENANNT (der Satz
+            // sagt „im Wasser steht nichts, am Ufer schon", nie „gewachsen" bei 0)
             if (!trocken) {
                 absage("wasser");
                 continue;
@@ -3039,15 +3084,23 @@ class AnazhRealm {
             ctx.budget.spawnsLeft--;
             const sy = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(x, z) : NaN;
             const y = Number.isFinite(sy) ? sy + 0.5 : pos.y;
-            const opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2 };
-            if (istBaum) opts.scale = 0.8 + wurf() * 0.45;
-            if (stamp) opts.studioOv = stamp;
+            if (!opts) {
+                opts = { seed: (baseSeed + i) >>> 0, rotationY: wurf() * Math.PI * 2 };
+                if (istBaum) opts.scale = 0.8 + wurf() * 0.45;
+                if (stamp) opts.studioOv = stamp;
+            }
             const ort = { x, y, z };
             if (natur ? this._naturSetzen(name, ort, opts, null, absage) : this.spawnArchitecture(name, ort, opts))
                 spawned++;
         }
         if (weicht.haus || weicht.lichtung || weicht.wasser)
-            ctx.log.push({ event: "natur_weicht", op: "spawn_studio", grundriss: weicht, gesetzt: spawned });
+            ctx.log.push({
+                event: "natur_weicht",
+                op: "spawn_studio",
+                grundriss: weicht,
+                gesetzt: spawned,
+                werk: !natur,
+            });
         return spawned;
     }
 
@@ -10006,6 +10059,23 @@ class AnazhRealm {
         const boden = this._voxelSurfaceY(x, z);
         if (boden === null || !Number.isFinite(boden)) return false;
         return !(boden < this._atlasWaterLevelAt(x, z, boden) + marge);
+    }
+
+    // DAS LAND EINES FUNDAMENTS (Schau-2 wasser-wahrheit, Gegenprüfung): steht der Grundriss `fp` {ex, ez, ox, oz} (bau-lokal)
+    // eines Werks am Ort (x, z) mit der Drehung `ry` samt dem Vorplatz seiner Haustür (`tuer`) ganz auf dem Land? Jeder
+    // Punkt des EINEN Fundament-Rasters (`_fundamentRaster`) fragt das Land eines Werks (`_landAt`, 20 cm über dem Spiegel);
+    // ohne Grundriss urteilt der Ort selbst. Der Ursprung zuerst (der billige Beweis: die meisten Würfe im Wasser fallen dort).
+    // Leser: die Siedlung (`_spawnSettlementSlot`, Grundriss aus dem Export) und die Wand jedes Werks (`_werkImWasser`).
+    // Befund: nur die Siedlung fragte das ganze Fundament — „bau mir ein haus am wasser" stellte an 11 von 11 Uferorten ein
+    // Haus, dessen Fundament 6–67 von 81 Raster-Punkten bis 0,92–3,68 m tief im Wasser stand (der Satz fragte die Mitte).
+    _fundamentLand(x, z, ry, fp, tuer) {
+        if (!this._landAt(x, z, 0.2)) return false;
+        if (!fp) return true;
+        const c = Math.cos(ry || 0);
+        const s = Math.sin(ry || 0);
+        for (const [lx, lz] of AnazhRealm._fundamentRaster(fp, tuer))
+            if (!this._landAt(x + lx * c + lz * s, z - lx * s + lz * c, 0.2)) return false;
+        return true;
     }
 
     // Glut-Bauten im Hör-Radius: je Frame `n` Einträge von state.architectures (rund um die Liste); ein voller Umlauf
@@ -70471,7 +70541,9 @@ class AnazhRealm {
         let dx = pos.x - pp.x;
         let dz = pos.z - pp.z;
         let d = Math.hypot(dx, dz);
-        if (d >= clearance) return pos; // schon weit genug — unberührt
+        // schon weit genug — unberührt; der Mikrometer macht die Klemme idempotent (ein geklemmter Ort liegt sonst um ein ulp
+        // innen, und die Wurzel klemmte ihn ein zweites Mal — mit der Fußhöhe des Spielers statt dem Boden des Suchers)
+        if (d >= clearance - 1e-6) return pos;
         if (d < 1e-3) {
             // ~auf dem Spieler → vor ihn (die EINE Vorwärts-Richtung)
             const yaw = typeof ctx.state.yaw === "number" ? ctx.state.yaw : ctx.rng ? ctx.rng() * Math.PI * 2 : 0;
@@ -70544,6 +70616,19 @@ class AnazhRealm {
             opts.autonomous === true || (!opts.silent && !opts.precise && !(typeof opts.id === "string" && opts.id));
         if (_playerClamp && position) {
             position = this._structureSpawnPos(type, position, { state: this.state }, scale);
+        }
+        // DIE WASSER-WAND DER WERKE an der Wurzel (Schau-2 wasser-wahrheit, Gegenprüfung): ein NEUES Werk mit Grundriss-Gesetz
+        // (Haus, Tempel, Ausstattung — `_werkGrundriss`), dessen Ort die Welt wählt (der Satz, der Nexus, ein Programm, die
+        // Siedlung, eine Kreatur), steht mit dem ganzen Fundament auf dem Land — geurteilt am Ort NACH der Spieler-Klemme
+        // (sie schob ein Haus vom Spieler weg ins Wasser). Ein Werk mit eigener id steht, wo es gewollt oder gespeichert ist:
+        // der Bau-Modus und sein Mitspieler (string-id), der Reload (precise + id), die Tor-Vorschau. Befund: der Satz fragte
+        // nur die Mitte — „bau mir ein haus am wasser" setzte 11 von 11 Fundamente 0,92–3,68 m tief ins Wasser.
+        if (position && opts.id == null && this._werkImWasser(type, position, opts, seed)) {
+            this.log(
+                `WERK IM WASSER: ${type} bei ${Math.round(position.x)}/${Math.round(position.z)} — sein Fundament stünde im Wasser, kein Bau.`,
+                "INFO"
+            );
+            return null;
         }
         const entry = {
             id: typeof opts.id === "string" && opts.id ? opts.id : this.state.architectureNextId++,
@@ -72579,6 +72664,29 @@ class AnazhRealm {
         return true;
     }
 
+    // DAS EINE RASTER EINES FUNDAMENTS (bau-lokal, [lx, lz, flaeche]): die Fläche des Grundrisses `fp` {ex, ez, ox, oz} in
+    // Schritten ≤ 2 m samt ihren Kanten (flaeche true) und der Vorplatz der Haustür `tuer` (0,25 m und 1 m vor der Front −z,
+    // je drei Punkte über die Türbreite; flaeche false). Integration Welle L: vier Ecken und die Mitte ließen den Buckel
+    // zwischen sich durch — an einer Kuppe der Front lag die Haustür 2,9 m unter dem Gelände (gate:haus-welt W1). Leser: die
+    // Höhe der Siedlung (`_spawnSettlementSlot`) und das Land jedes Fundaments (`_fundamentLand`).
+    static _fundamentRaster(fp, tuer) {
+        const out = [];
+        if (!fp || !Number.isFinite(fp.ex) || !Number.isFinite(fp.ez) || !(fp.ex > 0) || !(fp.ez > 0)) return out;
+        const ox = Number.isFinite(fp.ox) ? fp.ox : 0;
+        const oz = Number.isFinite(fp.oz) ? fp.oz : 0;
+        const nx = Math.min(12, Math.max(1, Math.ceil(fp.ex)));
+        const nz = Math.min(12, Math.max(1, Math.ceil(fp.ez)));
+        for (let i = 0; i <= nx; i++)
+            for (let j = 0; j <= nz; j++)
+                out.push([ox + fp.ex * ((2 * i) / nx - 1), oz + fp.ez * ((2 * j) / nz - 1), true]);
+        if (tuer && Number.isFinite(tuer.x) && Number.isFinite(tuer.z) && Number.isFinite(tuer.w))
+            for (let i = -1; i <= 1; i++) {
+                out.push([tuer.x + (i * tuer.w) / 2, tuer.z - 0.25, false]);
+                out.push([tuer.x + (i * tuer.w) / 2, tuer.z - 1, false]);
+            }
+        return out;
+    }
+
     // DER ERSATZ-ORT (Leben-Schau 07.10.: „dorf 7 18" an der Plattform setzte 13 Häuser, 12 von 25 Slots fielen — Klippe,
     // Wasser, Bau-Wand): fällt ein Slot an seinem Ort, sucht er in seiner Nachbarschaft weiter, statt zu fallen. Die
     // Versätze liegen im Rahmen des Hauses (Gier `phi`): entlang der Gasse (±x) und nach hinten (+z, weg von der Haustür
@@ -72611,66 +72719,50 @@ class AnazhRealm {
         const rs = Math.sin(ry);
         const obb = slot.obb;
         const tu = slot.tuer;
-        // Trägt der Ort (wx, wz) das Haus? Die Wände je Ort: Wasser, Klippe (Raster), Bau. Gibt { hMax, fundament } oder null.
+        // DER GRUNDRISS DES SLOTS (haus-lokal): das obb des Exports um seine Mitte — die obb-Mitte (Siedlungs-Rahmen wie
+        // slot.x/z) liegt bis 1,8 m neben dem Haus-Ursprung (das Hof-Haus 4 m), haus-lokal als Versatz {ox,oz}; Ecken, Podest
+        // und Grundriss liegen um IHN (Welle L: vorher um den Ursprung ragte das Podest hinter dem Haus hervor, der Hof vorn
+        // stand ohne Grundriss). Ohne obb (fremder Export) der Kern der Tür-Zeile — derselbe Grundriss, den die Wand jedes
+        // Werks an der Wurzel aus den Optionen liest (`_werkGrundriss`).
+        let fundament = null;
+        if (obb && Number.isFinite(obb.ex) && Number.isFinite(obb.ez) && obb.ex > 0 && obb.ez > 0) {
+            const dxw = Number.isFinite(obb.cx) ? obb.cx - slot.x : 0;
+            const dzw = Number.isFinite(obb.cz) ? obb.cz - slot.z : 0;
+            fundament = { ex: obb.ex, ez: obb.ez, ox: dxw * rc - dzw * rs, oz: dxw * rs + dzw * rc };
+        }
+        const fp =
+            fundament ||
+            (tu && Number.isFinite(tu.W) && Number.isFinite(tu.D)
+                ? { ex: tu.W / 2, ez: tu.D / 2, ox: 0, oz: 0 }
+                : null);
+        const raster = fundament ? AnazhRealm._fundamentRaster(fundament, tu) : null;
+        // Trägt der Ort (wx, wz) das Haus? Die Wände je Ort: Wasser, Klippe (Raster), Bau. Gibt { hMax } oder null.
         const traegt = (wx, wz) => {
-            if (!this._landAt(wx, wz, 0.2)) return null; // die Wasser-Wand
-            // Die Höhe urteilt über den FOOTPRINT: das obb-Raster (Export) + Zentrum + Tür-Vorplatz; Basis = MAX (kein Punkt
+            // DIE WASSER-WAND über dem ganzen Grundriss und dem Vorplatz der Tür (`_fundamentLand`, die EINE Probe mit der
+            // Wand jedes Werks) — die Mitte auf dem Trockenen trug bis V18.537 ein Haus, dessen Fundament im Fluss stand.
+            if (!this._fundamentLand(wx, wz, ry, fp, tu)) return null;
+            // Die Höhe urteilt über den FOOTPRINT: das Raster des Fundaments (`_fundamentRaster`: Fläche ≤ 2 m samt Kanten und
+            // der Vorplatz der Haustür — er hebt nur die Basis, die Tür liegt nie im Hang) + Zentrum; Basis = MAX (kein Punkt
             // im Berg), Δh > SIEDLUNG.fundamentMaxDh → der Ort fällt GESCHLOSSEN (kein schwebendes Haus). Der Eintrag trägt
             // `fundament` {ex,ez}; Podest + Blocker leiten die Tiefe LIVE aus dem Feld ab. Ohne obb (fremder Export):
             // Punkt-Höhe (must-ignore).
             const hMitte = this.getTerrainHeightAt(wx, wz);
             let hMax = hMitte;
             let hMin = hMitte;
-            let fundament = null;
-            if (obb && Number.isFinite(obb.ex) && Number.isFinite(obb.ez) && obb.ex > 0 && obb.ez > 0) {
-                // DIE MITTE DES FOOTPRINTS (Welle L): die obb-Mitte (Siedlungs-Rahmen wie slot.x/z) liegt bis 1,8 m neben
-                // dem Haus-Ursprung (das Hof-Haus 4 m) — haus-lokal als Versatz {ox,oz}; Ecken, Podest und Grundriss liegen
-                // um IHN. Vorher um den Ursprung: das Podest ragte hinter dem Haus hervor, der Hof vorn stand ohne Grundriss.
-                const dxw = Number.isFinite(obb.cx) ? obb.cx - slot.x : 0;
-                const dzw = Number.isFinite(obb.cz) ? obb.cz - slot.z : 0;
-                const ox = dxw * rc - dzw * rs;
-                const oz = dxw * rs + dzw * rc;
-                // DER FOOTPRINT ALS RASTER (Integration Welle L): vier Ecken und die Mitte ließen den Buckel zwischen sich
-                // durch — an einer Kuppe der Front lag die Haustür 2,9 m unter dem Gelände, der Körper trat auf Höhe des
-                // Obergeschosses 0,92 m hinein (gate:haus-welt W1). Die Höhe urteilt über ein Raster (≤ 2 m, Fläche und
-                // Kanten) und über den Vorplatz der Haustür (1 m vor der Front −z; er hebt nur die Basis: die Tür liegt nie
-                // im Hang).
-                const nx = Math.min(12, Math.max(1, Math.ceil(obb.ex)));
-                const nz = Math.min(12, Math.max(1, Math.ceil(obb.ez)));
-                // DAS FUNDAMENT IM WASSER (Schau-2 wasser-wahrheit): dasselbe Raster fragt die EINE Spalten-Probe — die Mitte
-                // auf dem Trockenen trug bis V18.537 ein Haus, dessen Fundament im Fluss stand.
-                let nass = false;
-                const probe = (lx, lz, auchMin) => {
-                    const px = wx + lx * rc + lz * rs;
-                    const pz = wz - lx * rs + lz * rc;
-                    if (!nass && !this._landAt(px, pz, 0.2)) nass = true;
-                    const h = this.getTerrainHeightAt(px, pz);
-                    if (!Number.isFinite(h)) return;
+            if (raster) {
+                for (const [lx, lz, flaeche] of raster) {
+                    const h = this.getTerrainHeightAt(wx + lx * rc + lz * rs, wz - lx * rs + lz * rc);
+                    if (!Number.isFinite(h)) continue;
                     if (h > hMax) hMax = h;
-                    if (auchMin && h < hMin) hMin = h;
-                };
-                for (let i = 0; i <= nx; i++)
-                    for (let j = 0; j <= nz; j++)
-                        probe(ox + obb.ex * ((2 * i) / nx - 1), oz + obb.ez * ((2 * j) / nz - 1), true);
-                if (tu && Number.isFinite(tu.x) && Number.isFinite(tu.z) && Number.isFinite(tu.w))
-                    for (let i = -1; i <= 1; i++) {
-                        probe(tu.x + (i * tu.w) / 2, tu.z - 0.25, false);
-                        probe(tu.x + (i * tu.w) / 2, tu.z - 1, false);
-                    }
-                if (nass) return null; // die Wasser-Wand über dem ganzen Fundament und dem Vorplatz der Tür
+                    if (flaeche && h < hMin) hMin = h;
+                }
                 // ZENSUS 17.07. — die Klippen-Wand ist fachwerk-Gesetz (SIEDLUNG); kaltes Buch → kein Ort.
                 const S = AnazhRealm._siedlungGesetz();
                 if (!S || hMax - hMin > S.fundamentMaxDh) return null; // die Klippen-Wand (fail-closed)
-                fundament = { ex: obb.ex, ez: obb.ez, ox, oz };
             }
             // DIE BAU-WAND: kein Haus IN einem bestehenden Bau, keine Haustür an dessen Wand (_bauFrei).
-            const fp =
-                fundament ||
-                (tu && Number.isFinite(tu.W) && Number.isFinite(tu.D)
-                    ? { ex: tu.W / 2, ez: tu.D / 2, ox: 0, oz: 0 }
-                    : null);
             if (!this._bauFrei(wx, wz, ry, fp || { ex: 0.5, ez: 0.5, ox: 0, oz: 0 }, tu, hMax)) return null;
-            return { hMax, fundament };
+            return { hMax };
         };
         let wx = origin.x + slot.x;
         let wz = origin.z + slot.z;
@@ -72689,7 +72781,7 @@ class AnazhRealm {
             }
         }
         if (!ort) return false;
-        const { hMax, fundament } = ort;
+        const { hMax } = ort;
         const wy = hMax + 0.5;
         // AUSLÖSCHUNGS-WELLE — `autonomous` reist durch (spawn_village vom Nexus →
         // die Häuser zählen in den Nexus-Cap, die V18.297-Hort-Lehre).
@@ -78403,26 +78495,91 @@ class AnazhRealm {
 
     // Das Urteil der Natur-Wand für einen Wurf an `position` ("haus" | "lichtung" | "wasser" | false) — der EINE Leser von
     // Grundriss und Krone; `_naturSetzen` setzt danach, das Bau-Phantom färbt sich danach. NATUR WEICHT DEM WASSER (Schau-2
-    // wasser-wahrheit): ein benannter Wurf steht nie, wo die Spalte kein Land ist (`_landAt`, 5 cm über dem Spiegel — der
-    // Wald plante bis dahin gegen den Bezug der Ufer-Bänder, das Bau-Phantom stand am Fluss grün). Die Nah-Streu (ohne
+    // wasser-wahrheit): ein benannter Wurf steht nie, wo sein Fuß kein Land ist (`_stammFussLand`: die Achse und der
+    // Fuß-Kreis, 5 cm über dem Spiegel — der Wald plante bis dahin gegen den Bezug der Ufer-Bänder, das Bau-Phantom stand am
+    // Fluss grün, und die Wand fragte bis zur Gegenprüfung nur die Achse). Die Nah-Streu (ohne
     // Namen) urteilt selbst, ihr Schilf steht im Ufer-Wasser.
     _naturWand(name, position, opts) {
         if (!position) return false;
         const g = this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));
         if (g) return g;
-        return name && !this._landAt(position.x, position.z, 0.05) ? "wasser" : false;
+        return name && !this._stammFussLand(position.x, position.z, 0.05) ? "wasser" : false;
+    }
+
+    // Steht der Fuß eines Stamms an (x, z) auf dem Land? Die Achse und acht Punkte auf dem Fuß-Kreis (`STAMM_FUSS_M`) fragen
+    // das Land eines Werks (`_landAt`, `marge` m über dem Spiegel) — die Achse zuerst (der billige Beweis). Leser: die
+    // Natur-Wand (`_naturWand`) und die Würfe des Satzes (`_dslSpawnStudioItems`).
+    _stammFussLand(x, z, marge) {
+        if (!this._landAt(x, z, marge)) return false;
+        const R = AnazhRealm.STAMM_FUSS_M;
+        for (let k = 0; k < 8; k++) {
+            const a = (k * Math.PI) / 4;
+            if (!this._landAt(x + Math.cos(a) * R, z + Math.sin(a) * R, marge)) return false;
+        }
+        return true;
+    }
+
+    // STEHT DAS WERK IM WASSER? (Schau-2 wasser-wahrheit, Gegenprüfung) — das Urteil für ein Werk mit Grundriss-Gesetz
+    // (`_werkGrundriss`: Haus, Tempel, Ausstattung) am Ort `position` mit der Drehung `opts.rotationY`: sein ganzes Fundament
+    // samt dem Vorplatz der Haustür auf dem Land (`_fundamentLand`)? false für jedes Werk ohne Grundriss-Gesetz (Natur
+    // urteilt die Natur-Wand am Stamm; Fahrzeug und Tor fragt der Satz an ihrem Ort). `seed`: der Same des Werks (die Wurzel
+    // reicht ihren, sonst `opts.seed`). Leser: die Wurzel (`spawnArchitecture`) und die Ort-Suche (`_werkOrtSuchen`).
+    _werkImWasser(type, position, opts, seed) {
+        if (!position) return false;
+        const g = this._werkGrundriss(type, opts, seed);
+        if (!g) return false;
+        const ry = opts && Number.isFinite(opts.rotationY) ? opts.rotationY : 0;
+        return !this._fundamentLand(position.x, position.z, ry, g.fp, g.tuer);
+    }
+
+    // DER ORT EINES WERKS AM UFER (Schau-2 wasser-wahrheit, Gegenprüfung): wo die Welt ein Werk mit Grundriss-Gesetz hinstellt
+    // (der Satz, der Tempel des Nexus, ein Programm), sucht sie den Ort, an dem sein ganzes Fundament auf dem Land steht —
+    // `pos` selbst, sonst den nächsten in Ringen um ihn (1,5 m Schritt bis zur Reichweite des Grundrisses + 3 m, zwölf
+    // Richtungen ab dem Winkel `wurf()`, dem Strom des Samens). Geurteilt wird am Ort NACH der Spieler-Klemme der Wurzel
+    // (`_structureSpawnPos`), wie die Wurzel urteilt (`_werkImWasser`). „am Wasser" liefert den Fleck 2 m hinter dem Ufer —
+    // ein Stamm steht dort, ein Haus reicht 4–6 m ins Wasser. Rückgabe { x, y, z } (y wie `pos` über dem Boden) oder null
+    // (kein tragender Ort in Reichweite). Ein Werk ohne Grundriss-Gesetz: `pos` geklemmt.
+    _werkOrtSuchen(type, pos, opts, wurf) {
+        const sc = opts && Number.isFinite(opts.scale) && opts.scale > 0 ? opts.scale : 1;
+        const klemme = (p) => this._structureSpawnPos(type, p, { state: this.state }, sc);
+        const p0 = klemme(pos);
+        const g = this._werkGrundriss(type, opts);
+        if (!g) return p0;
+        if (!this._werkImWasser(type, p0, opts)) return p0;
+        // Die Kandidaten nach ihrem GEKLEMMTEN Abstand zu `pos` (die Klemme legt nahe am Spieler jeden auf ihren Kreis — der
+        // erste trockene Ring-Treffer lag sonst jenseits des Spielers, 16 m vom Wasser); der stabile Sort hält die Ring-Folge.
+        const reich = Math.hypot(g.fp.ex, g.fp.ez) + Math.hypot(g.fp.ox, g.fp.oz) + 3;
+        const h0 = this.getTerrainHeightAt(pos.x, pos.z);
+        const a0 = wurf() * Math.PI * 2;
+        const kand = [];
+        for (let r = 1.5; r <= reich; r += 1.5)
+            for (let k = 0; k < 12; k++) {
+                const a = a0 + (k * Math.PI) / 6;
+                const x = pos.x + Math.cos(a) * r;
+                const z = pos.z + Math.sin(a) * r;
+                const h = this.getTerrainHeightAt(x, z);
+                const q = klemme({ x, y: Number.isFinite(h) && Number.isFinite(h0) ? pos.y + h - h0 : pos.y, z });
+                kand.push([Math.hypot(q.x - pos.x, q.z - pos.z), q]);
+            }
+        kand.sort((a, b) => a[0] - b[0]);
+        for (const [, q] of kand) if (!this._werkImWasser(type, q, opts)) return q;
+        return null;
     }
 
     // Der Satz der Natur-Wand nach einem Programm: lagen Würfe eines Hains (`spawn_tree`, `spawn_studio`) in einem Grundriss,
     // sagt der Chat, warum dort nichts wuchs — auf der Genesis-Plattform stand sonst „Baum gepflanzt" bei 0 Bäumen
-    // (Integration Welle L, D3). { satz, nichts } (nichts: kein Wurf wuchs) oder null.
+    // (Integration Welle L, D3). { satz, nichts } (nichts: kein Wurf wuchs) oder null. Ein Werk ohne Natur (`werk`: das Haus
+    // des Satzes, der Tempel, ein Bauplan) wächst nicht — es steht nicht (Gegenprüfung 10.10.: „Hier wächst nichts" am Ufer
+    // für ein Haus).
     _naturAbsageSatz(log) {
         let lichtung = 0;
         let haus = 0;
         let wasser = 0;
         let gesetzt = 0;
+        let natur = false;
         for (const e of log || []) {
             if (!e || e.event !== "natur_weicht") continue;
+            if (!e.werk) natur = true;
             lichtung += e.grundriss.lichtung || 0;
             haus += e.grundriss.haus || 0;
             wasser += e.grundriss.wasser || 0;
@@ -78435,8 +78592,8 @@ class AnazhRealm {
         if (wasser) gruende.push(AnazhRealm.NATUR_WAND_GRUND.wasser);
         const g = gruende.join("; ");
         return gesetzt
-            ? { satz: `${lichtung + haus + wasser} davon wuchsen nicht: ${g}.`, nichts: false }
-            : { satz: `Hier wächst nichts: ${g} — geh ein paar Schritte weiter.`, nichts: true };
+            ? { satz: `${lichtung + haus + wasser} davon ${natur ? "wuchsen" : "stehen"} nicht: ${g}.`, nichts: false }
+            : { satz: `Hier ${natur ? "wächst" : "steht"} nichts: ${g} — geh ein paar Schritte weiter.`, nichts: true };
     }
 
     // Die Krone eines Natur-Wurfs in der Welt (m) — wie weit er über seinen Ort reicht: der EINE Kronen-Radius seiner Art
@@ -78555,6 +78712,93 @@ class AnazhRealm {
             if (r > 0) return { ex: r, ez: r, ox: 0, oz: 0, lichtung: r };
         }
         return null;
+    }
+
+    // Das Grundriss-Gesetz einer Art: { preset, pre (die Zeile des Gesetzbuchs der Architektur), rec (die des Buchs) } für ein
+    // Haus oder eine Ausstattung, sonst null (auch bei kaltem Buch).
+    _grundrissGesetz(type) {
+        const preset = this._foundryPresetForEntry({ type });
+        const buch = this._foundry && this._foundry.recipes;
+        const rec = preset && buch ? buch[preset] : null;
+        if (!rec || (rec.kind !== "haus" && rec.kind !== "ausstattung")) return null;
+        const PRE = AnazhRealm.Gesetz("fachwerk:PRESETS", null) || AnazhRealm._kernPflichtBruch("fachwerk:PRESETS");
+        const pre = PRE[preset];
+        return pre ? { preset, pre, rec } : null; // ohne Zeile: die Art spricht ein anderes Gesetzbuch
+    }
+
+    // DER GRUNDRISS EINES WERKS VOR SEINEM BAU (Schau-2 wasser-wahrheit, Gegenprüfung): die Fläche, auf der es steht, aus
+    // seinem Gesetz — bau-lokal { fp: {ex, ez, ox, oz}, tuer } oder null (ein Werk ohne Grundriss-Gesetz). Die Siedlung reicht
+    // ihn mit (`opts.fundament` aus dem obb des Exports, sonst der Kern der Tür-Zeile `opts.tuer`, wie `_grundrissVon`); sonst
+    // spricht das Gesetzbuch der Architektur: ein HAUS misst seinen Mass-Bau (fachwerk `massBau(hausParams(Rezept, Stempel))`
+    // mit der Gestalt seines Samens — dieselbe Zeile, aus der der Export der Siedlung sein obb und seine Tür nimmt, und der
+    // Bau, den der Worker für diesen Samen baut: `_foundryVariantFor`), die AUSSTATTUNG ihre Trittfläche (`fx.tritt` × Größe);
+    // beides × die Welt-Skala der Gestalt (`_foundryWorldScaleMatrix`, die Skala der Hülle) × die Größe des Eintrags. Gemerkt je
+    // Gestalt, Same, Größe und Stempel (der Mass-Bau baut das Haus einmal). Leser: `_werkImWasser`, `_werkOrtSuchen`.
+    _werkGrundriss(type, opts, seed) {
+        const o = opts || {};
+        const f = o.fundament;
+        if (f && Number.isFinite(f.ex) && Number.isFinite(f.ez))
+            return {
+                fp: { ex: f.ex, ez: f.ez, ox: Number.isFinite(f.ox) ? f.ox : 0, oz: Number.isFinite(f.oz) ? f.oz : 0 },
+                tuer: o.tuer || null,
+            };
+        const t = o.tuer;
+        if (t && Number.isFinite(t.W) && Number.isFinite(t.D))
+            return { fp: { ex: t.W / 2, ez: t.D / 2, ox: 0, oz: 0 }, tuer: t };
+        const art = this._grundrissGesetz(type);
+        if (!art) return null;
+        const { preset, pre, rec } = art;
+        const same = Number.isFinite(seed) ? seed : o.seed;
+        const gestalt = this._foundryVariantFor(Number.isFinite(same) ? same : 0, preset);
+        if (gestalt == null) return null; // Buch kalt: kein Grundriss, kein Urteil (die Wurzel blockiert den Bau ohnehin)
+        const ov = o.studioOv && typeof o.studioOv === "object" && !Array.isArray(o.studioOv) ? o.studioOv : null;
+        const k =
+            (this._foundryWorldScaleMatrix(preset).elements[0] || 1) *
+            (Number.isFinite(o.scale) && o.scale > 0 ? o.scale : 1);
+        const key = `${preset}|${gestalt}|${k}|${ov ? JSON.stringify(ov) : ""}`;
+        const M = this._werkGrundrissMerker || (this._werkGrundrissMerker = new Map());
+        if (M.has(key)) return M.get(key);
+        let g = null;
+        if (rec.kind === "haus") {
+            const hausParams =
+                AnazhRealm.Gesetz("fachwerk:hausParams", null) || AnazhRealm._kernPflichtBruch("fachwerk:hausParams");
+            const massBau =
+                AnazhRealm.Gesetz("fachwerk:massBau", null) || AnazhRealm._kernPflichtBruch("fachwerk:massBau");
+            const p = hausParams(pre, ov);
+            if (!(ov && ov.seed != null)) p.seed = gestalt;
+            const B = massBau(p);
+            const e = B && B.ext;
+            if (e && [e.x0, e.x1, e.z0, e.z1].every(Number.isFinite)) {
+                const dm = B.dims && B.dims.tuer;
+                g = {
+                    fp: {
+                        ex: ((e.x1 - e.x0) / 2) * k,
+                        ez: ((e.z1 - e.z0) / 2) * k,
+                        ox: ((e.x0 + e.x1) / 2) * k,
+                        oz: ((e.z0 + e.z1) / 2) * k,
+                    },
+                    tuer:
+                        dm && [dm.x, dm.z, dm.w].every(Number.isFinite)
+                            ? { x: dm.x * k, z: dm.z * k, w: dm.w * k }
+                            : null,
+                };
+            }
+        } else {
+            const tr = pre.fx && pre.fx.tritt;
+            const gr =
+                (ov && Number.isFinite(ov.groesse)
+                    ? ov.groesse
+                    : pre.s && Number.isFinite(pre.s.groesse)
+                      ? pre.s.groesse
+                      : 1) * k;
+            if (tr && tr.typ === "kreis" && tr.r > 0)
+                g = { fp: { ex: tr.r * gr, ez: tr.r * gr, ox: 0, oz: 0 }, tuer: null };
+            else if (tr && tr.ex > 0 && tr.ez > 0)
+                g = { fp: { ex: tr.ex * gr, ez: tr.ez * gr, ox: 0, oz: 0 }, tuer: null };
+        }
+        if (M.size >= 256) M.clear();
+        M.set(key, g);
+        return g;
     }
 
     // Ein Bau mit Grundriss steht: was die Natur schon in ihn geworfen hat, fällt — der Wald und die Streu standen oft vor
@@ -102362,6 +102606,11 @@ AnazhRealm.NATUR_WAND_GRUND = Object.freeze({
     haus: "im Grundriss eines Hauses wächst nichts",
     wasser: "im Wasser steht nichts, am Ufer schon",
 });
+// DER FUSS EINES STAMMS (Schau-2 wasser-wahrheit, Gegenprüfung 10.10.): der Kreis um die Achse, auf dem eine Pflanze steht
+// (m) — die Natur-Wand fragt das Land an der Achse UND auf ihm (`_stammFussLand`). Befund (gate:werk-im-wasser Z am See
+// −906/−634): eine Kiefer stand 0,5 m neben 2,4 m tiefem Wasser, zwei Hasel 0,23 und 0,52 m im Uferwasser — die Wand fragte
+// nur die Achse.
+AnazhRealm.STAMM_FUSS_M = 0.5;
 // DER STUDIO-SATZ (Leser: die letzte Chat-Regel und `_studioSatzAbsage`): Verb · Zahl · Art (auch leer vor einem Hain) ·
 // Hain/Wald/Gruppe · am Wasser | hier/vor mir.
 AnazhRealm.STUDIO_SATZ =
