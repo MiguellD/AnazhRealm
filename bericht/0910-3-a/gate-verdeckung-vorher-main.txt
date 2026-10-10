@@ -1,0 +1,22 @@
+=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===
+  [4 s] Renderer bereit nach 2 s
+  [338 s] ABLAUF: {"begonnen":0,"bruch":164,"bruchOffen":0,"gezaehlt":17,"wasser":162,"gift":0,"renders":352} · Bach {"x":-872,"z":-728,"ufer":4,"start":[-882,-738]}, Wasser-Meshes 1, aufgesessen true, Halt 12.1 m vor dem Bach, ausgestiegen true, Sicht {"vorher":"third","nachher":"first"} · 5 Täter
+  [350 s] BRUCH: {"begonnen":20,"bruch":20,"bruchOffen":20,"gezaehlt":20,"wasser":20,"gift":0,"renders":40} · vorgebaut 2 · 4 Täter
+  [362 s] GIFT: {"begonnen":0,"bruch":20,"bruchOffen":0,"gezaehlt":20,"wasser":20,"gift":20,"renders":40} · vorgebaut 2 · 3 Täter
+  [374 s] SELBSTTEST bruch ohne Hülle: {"Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0 of [QuerySet \"occlusionQuerySet_3\"].":20,"[Invalid CommandBuffer from CommandEncoder \"renderContext_3\"] is invalid due to a previous error.":20} · Seite {"Invalid value used in weak set":1} · Wache 40
+  [385 s] SELBSTTEST gift ohne Hülle: {"No occlusion queries are active.":20,"[Invalid CommandBuffer from CommandEncoder \"renderContext_3\"] is invalid due to a previous error.":20} · Seite {"Invalid value used in weak set":19} · Wache 40
+
+❌ ROT — 12 Verletzung(en):
+   • ABLAUF GPU-VALIDIERUNG 14×: No occlusion queries are active.
+   • ABLAUF GPU-VALIDIERUNG 14×: [Invalid CommandBuffer from CommandEncoder "renderContext_3"] is invalid due to a previous error.
+   • ABLAUF GPU-WACHE 1×: three: No occlusion queries are active.
+   • ABLAUF GPU-WACHE 1×: world-canvas: [Invalid CommandBuffer from CommandEncoder "renderContext_3"] is invalid due to a previous error.
+   • ABLAUF SEITENFEHLER 16×: Invalid value used in weak set
+   • BRUCH GPU-VALIDIERUNG 20×: Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0 of [QuerySet "occlusionQuerySet_3"].
+   • BRUCH GPU-VALIDIERUNG 20×: [Invalid CommandBuffer from CommandEncoder "renderContext_3"] is invalid due to a previous error.
+   • BRUCH GPU-WACHE 1×: world-canvas: Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0 of [QuerySet "occlusionQuerySet_3"].
+   • BRUCH SEITENFEHLER 1×: Invalid value used in weak set
+   • GIFT GPU-VALIDIERUNG 20×: No occlusion queries are active.
+   • GIFT GPU-VALIDIERUNG 20×: [Invalid CommandBuffer from CommandEncoder "renderContext_3"] is invalid due to a previous error.
+   • GIFT SEITENFEHLER 19×: Invalid value used in weak set
+exit 1

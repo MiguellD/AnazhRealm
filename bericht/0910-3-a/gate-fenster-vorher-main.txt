@@ -1,0 +1,30 @@
+=== Fenster-Wand: 1280×720 → 1600×900 durch den echten resize-Handler ===
+  ✅ F1 kein Mesh trägt das alte Wasser-Material (Szene) — 0
+  ✅ F1 auch nicht die Chunk-Wasser-Ablage (ausgehängt) — 0
+  ✅ F2 das neue Material ist das EINE hydroSurfaceMaterial
+  ✅ F3 die Uniform-Werte reisen mit — time = 0.4321
+=== Selbsttest: Neubinden gestubbt ===
+  ✅ S1 die Linse feuert (altes Material bleibt am Mesh) — 1 / 1
+  ✅ der resize-Handler feuerte (2 Wechsel) — 2
+  ✅ keine Page-Errors
+=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, holz=nah, am Bach der Mess-Wiese) ===
+  [14 s] am Ufer {"bach":[-872,-728],"wasser":1,"abbildBreite":320}
+  [36 s] E1 674×361 DPR 1: Pixel-Ratio 1, Abbild 337×361 v2, 6 Frames, 0 Meldungen, GPU-Wache +0
+  ✅ E1 keine WebGPU-Validierung (674×361, DPR 1, laufender Loop)
+  [63 s] E2 853×480 DPR 1: Pixel-Ratio 1, Abbild 427×480 v3, 6 Frames, 0 Meldungen, GPU-Wache +0
+  ✅ E2 keine WebGPU-Validierung (853×480, DPR 1, laufender Loop)
+  [105 s] E3 853×480 DPR 2: Pixel-Ratio 1.25, Abbild 533×600 v4, 6 Frames, 0 Meldungen, GPU-Wache +0
+  ✅ E3 keine WebGPU-Validierung (853×480, DPR 2, laufender Loop)
+  [136 s] E4 639×342 DPR 1: Pixel-Ratio 1, Abbild 320×342 v6, 6 Frames, 0 Meldungen, GPU-Wache +0
+  ✅ E4 keine WebGPU-Validierung (639×342, DPR 1, laufender Loop)
+  [163 s] E5a setPixelRatio(1.25): Pixel-Ratio 1.25, Abbild 399×427 v7, 6 Frames, 0 Meldungen, GPU-Wache +0
+  ✅ E5a keine WebGPU-Validierung (Pixel-Ratio 1.25 allein, laufender Loop)
+  [174 s] E5b setPixelRatio(1): Pixel-Ratio 1, Abbild 320×342 v8, 6 Frames, 3× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit., GPU-Wache +4
+  ❌ E5b keine WebGPU-Validierung (Pixel-Ratio 1 allein, laufender Loop) — 3× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit.
+  ✅ E6 nicht vakuös: das Wasser zeichnet, das Abbild wurde je Größe neu angelegt, die Pixel-Ratio folgte DPR und Kappe — Wasser 1, Abbild-Stände 6, Pixel-Ratio E2 1 → E3 1.25, E5 1.25/1, Frames 6/6/6/6/6/6
+  [177 s] ESa setPixelRatio(1.25) ohne Wächter: Pixel-Ratio 1.25, Abbild 399×427 v9, 13 Frames, 12× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit., GPU-Wache +12
+  [180 s] ESb setPixelRatio(1) ohne Wächter: Pixel-Ratio 1, Abbild 320×342 v10, 17 Frames, 17× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit., GPU-Wache +18
+  ✅ ES Selbsttest: ohne den Vorher-Textur-Wächter fällt „Destroyed texture … szene:tiefenabbild“ beim Namen — 12× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit. · 17× Destroyed texture [Texture "szene:tiefenabbild"] used in a submit.
+  ✅ E keine Page-Errors
+ROT fenster-wechsel
+exit 1

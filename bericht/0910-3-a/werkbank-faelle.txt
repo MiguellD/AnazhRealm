@@ -1,0 +1,12 @@
+{ "MODUS": "roh", "FALL": "bruch", "gezeichnet": 18, "pipes": 1, "pipeFehler": 18, "gift": 0, "verschoben": 1, "roh": [ "copyFramebufferToTexture", "finishRender", "resolveOccludedAsync" ], "gpuN": 34, "gpu": { "No occlusion queries are active.": 17, "[Invalid CommandBuffer from CommandEncoder \"renderContext_2\"] is invalid due to a previous": 17 }, "seitenN": 20, "seiten": { "Invalid value used in weak set": 20 }, "dreiN": 2 }, "ms": 1047}
+
+{ "MODUS": "roh", "FALL": "gift", "gezeichnet": 19, "pipes": 1, "pipeFehler": 19, "gift": 17, "verschoben": 0, "roh": [ "copyFramebufferToTexture", "finishRender", "resolveOccludedAsync" ], "gpuN": 38, "gpu": { "No occlusion queries are active.": 19, "[Invalid CommandBuffer from CommandEncoder \"renderContext_2\"] is invalid due to a previous": 19 }, "seitenN": 20, "seiten": { "Invalid value used in weak set": 20 }, "dreiN": 1 }, "ms": 1028}
+
+{ "MODUS": "roh", "FALL": "verschoben", "gezeichnet": 0, "pipes": 0, "pipeFehler": 0, "gift": 0, "verschoben": 20, "roh": [ "copyFramebufferToTexture", "finishRender", "resolveOccludedAsync" ], "gpuN": 40, "gpu": { "No occlusion queries are active.": 20, "[Invalid CommandBuffer from CommandEncoder \"renderContext_2\"] is invalid due to a previous": 20 }, "seitenN": 20, "seiten": { "Invalid value used in weak set": 20 }, "dreiN": 0 }, "ms": 1025}
+
+{ "MODUS": "fix", "FALL": "bruch", "gezeichnet": 19, "pipes": 1, "pipeFehler": 0, "gift": 0, "verschoben": 1, "roh": [], "gpuN": 0, "gpu": {}, "seitenN": 0, "seiten": {}, "dreiN": 0 }, "ms": 1030}
+
+{ "MODUS": "fix", "FALL": "gift", "gezeichnet": 19, "pipes": 1, "pipeFehler": 16, "gift": 17, "verschoben": 0, "roh": [], "gpuN": 0, "gpu": {}, "seitenN": 0, "seiten": {}, "dreiN": 0 }, "ms": 1032}
+
+{ "MODUS": "fix", "FALL": "verschoben", "gezeichnet": 0, "pipes": 0, "pipeFehler": 0, "gift": 0, "verschoben": 20, "roh": [], "gpuN": 0, "gpu": {}, "seitenN": 0, "seiten": {}, "dreiN": 0 }, "ms": 1035}
+

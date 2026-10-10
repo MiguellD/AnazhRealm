@@ -1,0 +1,25 @@
+=== Fenster-Wand: 1280×720 → 1600×900 durch den echten resize-Handler ===
+  ✅ F1 kein Mesh trägt das alte Wasser-Material (Szene) — 0
+  ✅ F1 auch nicht die Chunk-Wasser-Ablage (ausgehängt) — 0
+  ✅ F2 das neue Material ist das EINE hydroSurfaceMaterial
+  ✅ F3 die Uniform-Werte reisen mit — time = 0.4321
+=== Selbsttest: Neubinden gestubbt ===
+  ✅ S1 die Linse feuert (altes Material bleibt am Mesh) — 1 / 1
+  ✅ der resize-Handler feuerte (2 Wechsel) — 2
+  ✅ keine Page-Errors
+=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, holz=nah, am Bach der Mess-Wiese) ===
+  [18 s] am Ufer {"bach":[-872,-728],"wasser":1,"abbildBreite":479}
+  [82 s] E1 1010×541 DPR 1: Pixel-Ratio 1, Abbild 505×541 v2, 12 Frames, GPU-Wache +0
+  ✅ E1 keine WebGPU-Validierung (1010×541, DPR 1, laufender Loop)
+  [210 s] E2 1280×720 DPR 1: Pixel-Ratio 1, Abbild 640×720 v3, 12 Frames, GPU-Wache +0
+  ✅ E2 keine WebGPU-Validierung (1280×720, DPR 1, laufender Loop)
+  [390 s] E3 1280×720 DPR 2: Pixel-Ratio 1.25, Abbild 800×900 v4, 11 Frames, GPU-Wache +0
+  ✅ E3 keine WebGPU-Validierung (1280×720, DPR 2, laufender Loop)
+  [493 s] E4 958×512 DPR 1: Pixel-Ratio 1, Abbild 479×512 v6, 12 Frames, GPU-Wache +0
+  ✅ E4 keine WebGPU-Validierung (958×512, DPR 1, laufender Loop)
+  ❌ E5 nicht vakuös: das Wasser zeichnet, das Abbild wurde neu angelegt, der DPR-Schritt stellte die Pixel-Ratio — Wasser 1, Abbild-Stände 4, Pixel-Ratio E2 1 → E3 1.25, Frames 12/12/11/12
+  [516 s] ES ohne Wächter 958×512 DPR 2: Pixel-Ratio 1.25, {"Destroyed texture [Texture \"szene:tiefenabbild\"] used in a submit.":8}
+  ✅ ES Selbsttest: ohne den Vorher-Textur-Wächter fällt „Destroyed texture … szene:tiefenabbild“ beim Namen — {"Destroyed texture [Texture \"szene:tiefenabbild\"] used in a submit.":8}
+  ✅ E keine Page-Errors
+ROT fenster-wechsel
+exit 1

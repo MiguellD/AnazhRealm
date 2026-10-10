@@ -1,0 +1,13 @@
+# 0910-3 A1 — Werkbank (GTX 1060, echte GPU), welle-m-render-fehler VOR dem Wächter, Mess-Wiese 1920×1080, LAUFENDER Loop (a1.js)
+start: { "an": true, "frames": 32, "pr": 1, "dpr": 1, "gpu": {}, "wache": 0 }
+pr1.5: { "vor": 1, "nach": 1.5, "frames": 41, "gpu": { "Destroyed texture [Texture \"szene:tiefenabbild\"] used in a submit.": 2 }, "wache": 0, "abbild": [ 1440, 1620 ] }
+pr1: { "vor": 1.5, "nach": 1, "frames": 41, "gpu": { "Destroyed texture [Texture \"szene:tiefenabbild\"] used in a submit.": 54 }, "wache": 57, "abbild": [ 960, 1080 ] }
+pr2: { "vor": 1, "nach": 2, "frames": 41, "gpu": { "Destroyed texture [Texture \"szene:tiefenabbild\"] used in a submit.": 111 }, "wache": 114, "abbild": [ 1920, 2160 ] }
+pr1: { "vor": 2, "nach": 1, "frames": 42, "gpu": { "Destroyed texture [Texture \"szene:tiefenabbild\"] used in a submit.": 188 }, "wache": 191, "abbild": [ 960, 1080 ] }
+stopp: { "gpu": { "Destroyed texture [Texture \"szene:tiefenabbild\"] used in a submit.": 223 }, "wache": 226, "meldungen": [ "three: Destroyed texture [Texture \"szene:tiefenabbild\"] used in a submit." ] }
+# (Zähler kumulativ.) Wer hält die alte Textur? a1-leser.js: keine Bindegruppe eines Draws, die NACH dem Haken entstand, zeigt auf ein
+# zerstörtes Abbild, kein Bundle — die Leser binden nach dem ersten Wechsel nie neu (ihre Gruppe stammt von vor dem Haken).
+# Hypothese Vorher-Textur-Wächter hinter _diaetRefresh (a1-waechter.js), je 4 Wechsel 1,5 → 1 → 2 → 1:
+an:  { "AN": true, "neu": {}, "waechterRefresh": 10, "objekte": 2 }
+aus: { "AN": false, "neu": { "Destroyed texture [Texture \"szene:tiefenabbild\"] used in a submit.": 118 }, "waechterRefresh": 0, "objekte": 0 }
+an:  { "AN": true, "neu": {}, "waechterRefresh": 10, "objekte": 2 }

@@ -1,0 +1,10 @@
+=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===
+  [3 s] Renderer bereit nach 2 s
+  [372 s] ABLAUF: {"begonnen":16,"bruch":163,"bruchOffen":0,"gezaehlt":17,"wasser":161,"gift":0,"renders":352} · Bach {"x":-872,"z":-728,"ufer":4,"start":[-882,-738]}, Wasser-Meshes 1, aufgesessen true, Halt 12.1 m vor dem Bach, ausgestiegen true, Sicht {"vorher":"third","nachher":"first"} · 0 Fehler
+  [423 s] BRUCH: {"begonnen":20,"bruch":20,"bruchOffen":20,"gezaehlt":20,"wasser":20,"gift":0,"renders":40} · vorgebaut 2 · 0 Fehler
+  [473 s] GIFT: {"begonnen":0,"bruch":20,"bruchOffen":0,"gezaehlt":20,"wasser":20,"gift":20,"renders":40} · vorgebaut 2 · 0 Fehler
+  [486 s] SELBSTTEST bruch ohne Hülle: {"Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0 of [QuerySet \"occlusionQuerySet_3\"].":20,"[Invalid CommandBuffer from CommandEncoder \"renderContext_3\"] is invalid due to a previous error.":20} · Seite {"Invalid value used in weak set":1} · Wache 40
+  [499 s] SELBSTTEST gift ohne Hülle: {"No occlusion queries are active.":20,"[Invalid CommandBuffer from CommandEncoder \"renderContext_3\"] is invalid due to a previous error.":20} · Seite {"Invalid value used in weak set":19} · Wache 40
+
+✅ GRÜN — 0 WebGPU-Validierungsfehler und 0 Seitenfehler in Boot, Ablauf, Bruch und Gift. Am Bach (-872/-728) aufgesessen, 12.1 m vor dem Wasser ausgestiegen (Sicht third → first), der Stellvertreter 17× gezählt, 16 Abfragen begonnen; Bruch bei offener Abfrage 20×, Gift 20×; ohne die Hüllen fallen „ended with incomplete occlusion query“, „No occlusion queries are active“ und „weak set“ beim Namen.
+exit 0
