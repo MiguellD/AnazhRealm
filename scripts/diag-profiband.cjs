@@ -21,6 +21,8 @@
 //   H6  DIE MESSORTE (S1 W1f, `messorte`): jeder Ort trägt Spieler, Blick, Dorf-Zug, Ort-Takt und seine eigene Ratsche
 //       (H2 je Ort); jede Methode, die ein Ort-Takt oder ein Anker nennt, trägt der Stamm (ein umbenannter Ring-Bauer
 //       liefe still aus jedem Werkbank-Takt, der Ort stünde leer; ein umbenannter Anker ließe den Ort ungeprüft wandern)
+//   P   DIE PROJEKTION (S3): Σ Zensus der Mess-Wiese (spec/profiband/zensus-wiese.json) × Golden-Dreiecke je Art × Stufe ×
+//       Pass ≤ Haushalt der Klasse baum — die Studio-Ausgänge gegen das Band, ohne GPU (Pflicht ab dem Vertrags-Akt)
 //
 // Die Absenz der gefallenen Band-Täter (W2 Voxel-Bricks, V18.528) prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
@@ -184,6 +186,69 @@ function ortTaktLebt(haushalt, src) {
         }
     }
     return { errs, n };
+}
+
+// P — DIE PROJEKTION (S3 pflanzen, 09.10.; GPU-frei): was die Studio-Ausgänge an der Mess-Wiese kosten, BEVOR eine Welt
+// läuft — Σ Instanzen (der Zensus `spec/profiband/zensus-wiese.json`, je Art × Stufe × Pass am gestellten Ort gezählt) ×
+// Golden-Dreiecke je Art × Stufe (Hauptbild: die gezeichneten Teile; Kaskade: der Wurf-Teil der L1 — das Maximum über die
+// Golden-Samen) ≤ Haushalt der Klasse. Befund: der Haushalt baum 150 000 stand seit W0, die Studio-Zeile tree[0] 18 000 /
+// tree[1] 10 000 rechnete nie gegen ihn (Band V18.536: baum 417k, die Projektion 421k). Pflicht ab dem Vertrags-Akt (die
+// eingefrorene render-config trägt tree[0].lagen); vorher zeigt sie die Zahl.
+const ZENSUS = path.join(root, "spec", "profiband", "zensus-wiese.json");
+const GOLDEN = path.join(root, "spec", "asset-contract", "v1", "golden");
+function goldenDreiecke(arten) {
+    const haupt = {},
+        wurf = {};
+    for (const f of fs.readdirSync(GOLDEN)) {
+        const m = /^(.+)-s(-?\d+)-L([01])-summer\.json$/.exec(f);
+        if (!m || !arten.has(m[1])) continue;
+        const g = JSON.parse(fs.readFileSync(path.join(GOLDEN, f), "utf8"));
+        let t = 0,
+            w = 0;
+        for (const x of g.meshes || []) {
+            if (!x.attrs || !x.attrs.position) continue;
+            // der Studio-Index reist als Uint32, ohne Index je drei Vertices (Float32 × 3); der Schatten-Teil (S3, teil
+            // "schatten") zeichnet nur in den Kaskaden — er ist der Wurf, nicht das Bild
+            const n = x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
+            if (x.teil === "schatten") w += n;
+            else t += n;
+        }
+        const k = m[1] + "|" + m[3];
+        haupt[k] = Math.max(haupt[k] || 0, t);
+        if (m[3] === "1") wurf[m[1]] = Math.max(wurf[m[1]] || 0, w);
+    }
+    return { haupt, wurf };
+}
+function projektion(zensus, tris) {
+    const jePass = {};
+    let summe = 0;
+    const fehlt = [];
+    for (const z of zensus.zeilen) {
+        const t = z.pass === "haupt" ? tris.haupt[z.art + "|" + z.stufe] : tris.wurf[z.art];
+        if (!Number.isFinite(t)) {
+            fehlt.push(`${z.art} L${z.stufe} ${z.pass}`);
+            continue;
+        }
+        const d = z.inst * t;
+        jePass[z.pass] = (jePass[z.pass] || 0) + d;
+        summe += d;
+    }
+    return { summe, jePass, fehlt };
+}
+function projektionsWand(haushalt, zensus, tris) {
+    const k = haushalt.klassen.find((x) => x.id === zensus.klasse);
+    const p = projektion(zensus, tris);
+    const errs = [];
+    if (!k) errs.push(`P: der Zensus nennt die Klasse ${zensus.klasse}, der Haushalt trägt sie nicht`);
+    for (const f of p.fehlt) errs.push(`P: ${f} ohne Golden-Dreiecke`);
+    if (k && p.summe > k.dreiecke)
+        errs.push(`P: ${zensus.klasse} projiziert ${Math.round(p.summe)} Dreiecke > Haushalt ${k.dreiecke} (${zensus.ort})`);
+    return { p, errs, soll: k ? k.dreiecke : null };
+}
+function projektionPflicht() {
+    const rc = JSON.parse(fs.readFileSync(path.join(GOLDEN, "render-config.json"), "utf8"));
+    const t0 = rc && rc.lod && rc.lod.budget && rc.lod.budget.tree && rc.lod.budget.tree[0];
+    return !!(t0 && t0.lagen != null);
 }
 
 function selbsttest() {
@@ -747,6 +812,28 @@ function selbsttest() {
             BAND.ortGestellt(wiese, undefined).length === 1
     );
 
+    // S25 — die Projektion (P): die Ist-Projektion von V18.536 (Golden-Dreiecke des Zensus `vorher`) liegt über dem
+    // Haushalt baum und wird rot; dieselbe Wiese mit dem Soll je Instanz (L0 7 000 · L1 2 300 · Wurf 1 000) bleibt
+    // grün; eine Zensus-Zeile ohne Golden-Dreiecke wird beim Namen genannt.
+    const zs = JSON.parse(fs.readFileSync(ZENSUS, "utf8"));
+    const ist = projektionsWand(haushalt, zs, zs.vorher);
+    const sollT = { haupt: {}, wurf: {} };
+    for (const z of zs.zeilen) {
+        sollT.haupt[z.art + "|0"] = 7000;
+        sollT.haupt[z.art + "|1"] = 2300;
+        sollT.wurf[z.art] = 1000;
+    }
+    const soll = projektionsWand(haushalt, zs, sollT);
+    const luecke = projektionsWand(haushalt, zs, { haupt: {}, wurf: sollT.wurf });
+    t(
+        `Projektion: die Ist-Wiese V18.536 (${Math.round(ist.p.summe)} Dreiecke) ist rot, das Soll je Instanz (${Math.round(soll.p.summe)}) grün, eine Zeile ohne Golden-Dreiecke beim Namen`,
+        ist.errs.length === 1 &&
+            /projiziert/.test(ist.errs[0]) &&
+            ist.p.summe > 400000 &&
+            soll.errs.length === 0 &&
+            luecke.errs.some((x) => /ohne Golden-Dreiecke/.test(x))
+    );
+
     const rot = tests.filter((x) => !x.ok);
     for (const x of tests) console.log(`${x.ok ? "✅" : "❌"} SELBST-TEST: ${x.name}`);
     if (rot.length) {
@@ -774,6 +861,19 @@ function main() {
     for (const f of nl.errs) errs.push("H5 " + f);
     const ot = ortTaktLebt(haushalt, stamm);
     for (const f of ot.errs) errs.push("H6 " + f);
+    // P — die Projektion der Studio-Ausgänge an der Mess-Wiese (Pflicht ab dem Vertrags-Akt).
+    const zs = JSON.parse(fs.readFileSync(ZENSUS, "utf8"));
+    const pw = projektionsWand(haushalt, zs, goldenDreiecke(new Set(zs.zeilen.map((z) => z.art))));
+    const pflicht = projektionPflicht();
+    if (pflicht) for (const f of pw.errs) errs.push(f);
+    console.log(
+        `P Projektion ${zs.ort}/${zs.klasse}: ${Math.round(pw.p.summe)} Dreiecke (Haushalt ${pw.soll}; ` +
+            Object.entries(pw.p.jePass)
+                .map(([p, d]) => `${p} ${Math.round(d)}`)
+                .join(" · ") +
+            `)` +
+            (pflicht ? "" : pw.errs.length ? ` — noch keine Pflicht (render-config ohne tree[0].lagen): ${pw.errs.join("; ")}` : "")
+    );
     if (errs.length) {
         console.log("⛔ DIE BAND-WAND:");
         for (const e of errs) console.log("   ❌ " + e);

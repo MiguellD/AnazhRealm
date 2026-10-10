@@ -1,0 +1,99 @@
+{
+    "zweck": "DER BAUM-ZENSUS DER MESS-WIESE (S3 pflanzen, Block P in gate:profiband): je Art × Stufe × Pass die gezeichneten Instanzen am gestellten Ort (`werkbank umstellen --ort wiese`, ein Frame, Draw-Klassen des Stamms `_taeterKlasse`, verschiedene Orte auf 0,5 m; f: und fscatter: je Art vereint). Die Projektion Σ Instanzen × Golden-Dreiecke je Art × Stufe (Hauptbild: die gezeichneten Teile, Kaskade: der Wurf-Teil der L1, Maximum über die Golden-Samen) hält gate:profiband gegen den Haushalt der Klasse baum. Ein Weltzustand: ändert sich die Wiese (Wald, Wuchs, Ort), wird der Zensus neu gezählt.",
+    "ort": "wiese",
+    "klasse": "baum",
+    "quelle": "werkbank --echt (Radeon 890M), V18.536 76c9624d, umstellen --ort wiese (yaw 0, Dorf-Zug aus), 09.10.2026",
+    "zeilen": [
+        {
+            "art": "birke",
+            "stufe": 0,
+            "pass": "haupt",
+            "inst": 2
+        },
+        {
+            "art": "birke",
+            "stufe": 1,
+            "pass": "haupt",
+            "inst": 2
+        },
+        {
+            "art": "birke",
+            "stufe": 1,
+            "pass": "k0",
+            "inst": 3
+        },
+        {
+            "art": "eiche",
+            "stufe": 0,
+            "pass": "haupt",
+            "inst": 2
+        },
+        {
+            "art": "eiche",
+            "stufe": 1,
+            "pass": "haupt",
+            "inst": 4
+        },
+        {
+            "art": "eiche",
+            "stufe": 1,
+            "pass": "k0",
+            "inst": 5
+        },
+        {
+            "art": "fichte",
+            "stufe": 1,
+            "pass": "haupt",
+            "inst": 11
+        },
+        {
+            "art": "fichte",
+            "stufe": 1,
+            "pass": "k0",
+            "inst": 11
+        },
+        {
+            "art": "fichte",
+            "stufe": 1,
+            "pass": "k1",
+            "inst": 4
+        },
+        {
+            "art": "tanne",
+            "stufe": 0,
+            "pass": "haupt",
+            "inst": 4
+        },
+        {
+            "art": "tanne",
+            "stufe": 1,
+            "pass": "haupt",
+            "inst": 8
+        },
+        {
+            "art": "tanne",
+            "stufe": 1,
+            "pass": "k0",
+            "inst": 10
+        }
+    ],
+    "vorher": {
+        "quelle": "die Golden-Dreiecke von V18.536 (Maximum über die Samen 7/12345, Sommer) — der Selbsttest: die Ist-Projektion feuert",
+        "haupt": {
+            "birke|0": 15976,
+            "birke|1": 8940,
+            "eiche|0": 11302,
+            "eiche|1": 7214,
+            "fichte|0": 15960,
+            "fichte|1": 5596,
+            "tanne|0": 16246,
+            "tanne|1": 5128
+        },
+        "wurf": {
+            "birke": 4432,
+            "eiche": 3234,
+            "fichte": 5068,
+            "tanne": 4640
+        }
+    }
+}

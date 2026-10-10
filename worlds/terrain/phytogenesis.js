@@ -303,6 +303,7 @@ let barkNormalTex = null,
     foliageMatTex,
     grassMat,
     stemMat,
+    schattenMat,
     _terMat = null,
     _envMats = [];
 let _leafAtlas = null; // FIX v31: foliageMatTex = Multi-Blatt-Texturkarten (L1); _leafAtlas = zur Laufzeit GEMALTER Cluster-Atlas (Canvas-2D, deterministisch, kein GL-Risiko)
@@ -387,7 +388,7 @@ let curSeason = "summer";
 /* ---------- Aufbau / Sitz / Rahmung / Abbau ------------------------------- */
 function disposeSubject() {
     if (!subject) return;
-    const shared = [barkMat, barkMatBirch, foliageMat, grassMat, stemMat];
+    const shared = [barkMat, barkMatBirch, foliageMat, grassMat, stemMat, schattenMat];
     subject.traverse((o) => {
         if (o.isMesh) {
             o.geometry.dispose();
@@ -5198,6 +5199,7 @@ init();
         if (mat === foliageMat) return "foliage";
         if (mat === grassMat) return "grass";
         if (typeof stemMat !== "undefined" && mat === stemMat) return "stem";
+        if (typeof schattenMat !== "undefined" && mat === schattenMat) return "schatten";
         return "unknown";
     }
     function __extractAssetMesh(mesh, zweitKern, basisInv) {
@@ -5215,10 +5217,10 @@ init();
         // DIE EINE PIPE: das animierte Gelenk des Meshes reist mit (Kreatur-Assets;
         // Pflanzen tragen das Feld nie — additiv, must-ignore).
         if (mesh.userData && mesh.userData.__assetJoint) out.joint = mesh.userData.__assetJoint;
-        // DER WURF-TEIL REIST MIT (W6, additiv, must-ignore): die Baum-L1 nennt je Teil die Zahl der Dreiecke, die werfen
-        // (der Vorsatz des Index, foundry-core tree[1].wurf) — der Wirt wirft nur diesen Vorsatz. Andere Teile tragen das
-        // Feld nie (ihre Replies bleiben byte-alt).
-        if (mesh.userData && Number.isInteger(mesh.userData.__wurf)) out.wurf = mesh.userData.__wurf;
+        // DER SCHATTEN-TEIL REIST MIT (S3, 09.10., additiv, must-ignore): die Baum-L1 liefert ihren Wurf als eigenes Teil
+        // (foundry-core tree[1].wurf, `teil: "schatten"`, Attribut aDeckt) — der Wirt zeichnet es nur in den Kaskaden.
+        // Andere Teile tragen das Feld nie (ihre Replies bleiben byte-alt). Der drawRange-Vorsatz (`wurf`) ist gefallen.
+        if (mesh.userData && typeof mesh.userData.__teil === "string") out.teil = mesh.userData.__teil;
         // V18.465 — DIE TÜR REIST MIT (additiv, must-ignore): ein Tor-Flügel-Mesh
         // (porta-core buildGate: leafL/R/LB/RB tragen userData.side + die Hinge-
         // Position der Gruppe) bekommt sein Scharnier als DATEN — die Welt baut

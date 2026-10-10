@@ -28,12 +28,20 @@ Zustand) — der Empfänger baut in identischer Reihenfolge, um die Zustands-Tra
 
 ```
 Mesh {
-  kind:  string,            // __assetMaterialKind: bark | barkBirch | foliage | foliageTex | grass | rock | crystal | flower | …
+  kind:  string,            // __assetMaterialKind: bark | foliage | foliageTex | grass | stem | schatten | unknown | …
   mat:   { roughness, metalness, flatShading, envMapIntensity, side, alphaTest, hasNormalMap },
-  <attr>:{ array:Float32Array, itemSize:int },   // position PFLICHT; normal/uv/color/aWind/aCenter/aType wenn vorhanden
-  index?: Uint32Array
+  <attr>:{ array:Float32Array, itemSize:int },   // position PFLICHT; normal/uv/color/aWind/aCenter/aType/aDeckt wenn vorhanden
+  index?: Uint32Array,
+  teil?: "schatten"         // S3: der Wurf der Stufe als eigenes Teil (kind "schatten", Attribut aDeckt)
 }
 ```
+
+**Der Schatten-Teil (S3, 09.10. — das EINE Wurf-Gesetz, `docs/studio-vertrag.md` B2c `wurf`):** die Baum-L1 liefert
+ihren Wurf als EIN eigenes Mesh `teil: "schatten"` (kind `schatten`): das Gerüst ab `wurf.durchmesserM` als Dreikant
+und die Karten bzw. Strähnen der Krone, je Vertex `aDeckt` (Rinde 1 — deckt ganz; Karte 0 — schneidet mit der
+Atlas-Alpha). Der Empfänger zeichnet es NUR in den Schatten-Pässen; es zählt nicht zu den Dreiecken und Draws der
+Stufe (phyto-core `budgetSippen`), sondern zu ihrem Wurf (`budgetWurf`). Der Index-Vorsatz `wurf` (W6: die Zahl der
+werfenden Dreiecke je Teil) ist gefallen; der Fingerabdruck trägt `teil`.
 
 **Beipack (must-ignore):** Pseudo-Einträge `{ kind: "__…" }` OHNE `position`-Puffer — `__skelett`
 (der Gelenk-Baum der Kreatur, `docs/studio-vertrag.md` §8.4) — reisen im selben `meshes`-Array, sind aber KEINE Meshes:
@@ -66,8 +74,12 @@ REPLY    { type:"world-params", world:"terrain", reqId, params:{ ground:{lit,mea
 ### 4. `get-render-config` → `render-config`
 
 ```
-REPLY    { type:"render-config", world:"terrain", reqId, config:{ lod:{d0,d1,fade,fade0,hyst,ref}, sicht, dichte, understory:{grassStep,flowerStep,bushStep} } }
+REPLY    { type:"render-config", world:"terrain", reqId, config:{ lod:{d0,d1,fade,fade0,hyst,ref,kindStages,budget}, sicht, dichte, understory:{grassStep,flowerStep,bushStep} } }
 ```
+
+`lod.kindStages` und `lod.budget` sind die Stufen-Wahrheit und das Budget je Art × Stufe (`docs/studio-vertrag.md`
+B2/B2c — normativ dort); die drei Daten-Kanäle reisen seit der Synergie-Welle in EINEM Umschlag (`get-book`), ihre
+eingefrorenen JSONs bleiben die Byte-Wahrheit der Payloads.
 
 ### 5. `ready` (Handshake, ungefragt beim Boot)
 
