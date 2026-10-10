@@ -16632,8 +16632,10 @@ class AnazhRealm {
             // MUSS persistiert werden, sonst änderte das Wesen beim Reload seine Größe).
             bodySize: Number.isFinite(ud.bodySize) ? ud.bodySize : 1,
             // Q12 (Kritik 06.10. §2.5): die Wunde und die Blickrichtung reisen mit — ein verwundeter Hirsch kehrte geheilt
-            // zurück (hp 97,3 → 115,4), jeder Leib blickte nach dem Reload nach +z.
-            hp: Number.isFinite(ud.hp) ? +ud.hp.toFixed(2) : undefined,
+            // zurück (hp 97,3 → 115,4), jeder Leib blickte nach dem Reload nach +z. DIE WUNDE IST EIN ANTEIL DES LEBENS (Welle
+            // LF kampf Nachbesserung 2): wie beim Wachsen (_kreaturGroesseSetzen) reist hp/hpMax — das Leben selbst rechnet der Leib
+            // beim Restore neu (Gattung × Größe × Masse); ein absolutes hp stand nach einem neuen Lebens-Gesetz verwundet da.
+            hpAnteil: Number.isFinite(ud.hp) && ud.hpMax > 0 ? +(ud.hp / ud.hpMax).toFixed(4) : undefined,
             gier: Number.isFinite(creature.rotation && creature.rotation.y)
                 ? +creature.rotation.y.toFixed(4)
                 : undefined,
@@ -16686,9 +16688,17 @@ class AnazhRealm {
         if (Number.isFinite(snap.bornAt)) {
             c.userData.bornAt = snap.bornAt;
         }
-        if (Number.isFinite(snap.hp) && snap.hp > 0) {
-            c.userData.hp = Math.min(Number.isFinite(c.userData.hpMax) ? c.userData.hpMax : snap.hp, snap.hp);
+        // die Wunde als Anteil des Lebens, das der Leib jetzt hat; ein Stand vor dem Anteil (Q12 bis Welle LF kampf Nachbesserung 2)
+        // trug hp gegen das Leben VOR dem Massen-Gesetz (Substanz × Größen-Symmetrie, computeCreatureStats.hpOhneMasse) —
+        // vorher stand ein voller Hirsch danach bei 124/168, ein voller Bär bei 159/391 (verwundet, ohne Wunde)
+        const hpMaxR = c.userData.hpMax;
+        let anteil = null;
+        if (Number.isFinite(snap.hpAnteil) && snap.hpAnteil > 0) anteil = snap.hpAnteil;
+        else if (Number.isFinite(snap.hp) && snap.hp > 0) {
+            const alt = this.computeCreatureStats(c).hpOhneMasse;
+            anteil = alt > 0 ? snap.hp / alt : null;
         }
+        if (anteil !== null && Number.isFinite(hpMaxR)) c.userData.hp = Math.min(1, anteil) * hpMaxR;
         if (Number.isFinite(snap.gier)) {
             c.rotation.y = snap.gier;
             c.userData._steuer = { gier: snap.gier, v: 0 };
@@ -19448,6 +19458,9 @@ class AnazhRealm {
         // für jede Gattung und Größe (die Tiere sind tag-gleich), hpMax nur 99,8–158,9 von Fuchs 0,62 bis Bär 2. Ein Leib ohne
         // Gestalt (kein Studio-Tier: kein _tierBaum mit Volumen) hat keine Masse — er behält die Werte seiner Substanz, dieselbe
         // Grenze wie ein ungemessenes Gerät.
+        // das Leben, wie es vor dem Massen-Gesetz galt (Substanz × Größen-Symmetrie) — nur der Restore eines Stands, dessen
+        // Wunde absolut reiste (vor dem Anteil), liest es (_restoreCreatureFromSnapshot)
+        const hpOhneMasse = stats.hpMax;
         const tbK = creature.userData && creature.userData._tierBaum;
         if (tbK && tbK.leibV > 0) {
             const KG = AnazhRealm._kampfGroesseGesetz();
@@ -19456,7 +19469,7 @@ class AnazhRealm {
             stats.defense *= Math.pow(q, KG.haut);
             stats.hpMax = hpSubstanz * Math.pow(q, KG.leben);
         }
-        return { tags: finalTags, stats };
+        return { tags: finalTags, stats, hpOhneMasse };
     }
 
     // Stats sind live-computed (O(MATERIAL_TAG_KEYS) je Aufruf); userData.stats ist nur ein
