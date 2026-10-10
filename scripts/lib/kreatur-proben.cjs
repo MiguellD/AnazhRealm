@@ -987,7 +987,11 @@ async function kreaturProben(r, T, opts) {
             delete s.blueprints._t_linse_haus;
         });
         if (!e) return { fehler: "Haus nicht gesetzt" };
-        r._hausHuelleSetzen(e, { stufe: 0, boxen: [-4, -3, -0.4, 4, 2.5, 0.4] });
+        // die EINE Hüllen-Form (N5, S3 haus): die Wand als Kasten c ± h, rolle "fest" (vorher die Zahlen-Zeile `boxen`)
+        r._hausHuelleSetzen(e, {
+            stufe: 0,
+            teile: [{ art: "box", c: [0, -0.25, 0], h: [4, 2.75, 0.4], rolle: "fest" }],
+        });
         const box = (e.blockerAABBs || []).find((b) => b.obb);
         if (!box) return { fehler: "die Hülle trägt keine gedrehte Box" };
         const ob = box.obb;

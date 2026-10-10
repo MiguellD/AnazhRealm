@@ -159,6 +159,39 @@ const dekodiere = (b64, Typ) => {
     const b = Buffer.from(b64, "base64");
     return new Typ(b.buffer, b.byteOffset, b.byteLength / Typ.BYTES_PER_ELEMENT);
 };
+// DIE FERN-WAND (S3 haus, docs/studio-vertrag.md N5): jede gebaute NUR-WURF-Stufe (B2c `nurWurf`) trägt den Beipack `__fern` in
+// der EINEN Hüllen-Form — Teile box · keil · kapsel mit endlichen Zahlen auf dem Raster 2^-12, die First-Kante ±x/±z, der
+// Walm in [0, 1], die Farbe je sichtbarem Teil, höchstens 24 Teile (die Kapsel-Liste des Welt-March). Der Wirt bricht ohne sie
+// (KERN-PFLICHT in `_archFoundryZiegel`); hier fällt der Bruch am Studio-Ausgang auf. null = die Form steht.
+function huellenFormFehler(h) {
+    const r = (x) => Number.isFinite(x) && Number.isInteger(x * 4096);
+    const v3 = (a) => Array.isArray(a) && a.length === 3 && a.every(r);
+    if (!h || typeof h !== "object") return "fehlt";
+    if (!Number.isInteger(h.stufe)) return "ohne stufe";
+    if (!Array.isArray(h.teile) || !h.teile.length) return "ohne teile";
+    if (h.teile.length > 24) return `${h.teile.length} Teile > 24`;
+    for (const t of h.teile) {
+        if (!t || !["fest", "sicht", "beide"].includes(t.rolle)) return "rolle";
+        if (t.art === "box" || t.art === "keil") {
+            if (!v3(t.c) || !v3(t.h)) return `${t.art} c/h nicht auf dem Raster`;
+            if (t.art === "keil" && !["+x", "-x", "+z", "-z"].includes(t.first)) return `keil first ${t.first}`;
+            if (t.walm != null && !(t.walm >= 0 && t.walm <= 1)) return `walm ${t.walm}`;
+        } else if (t.art === "kapsel") {
+            if (!v3(t.a) || !v3(t.b) || !(r(t.r) && t.r > 0)) return "kapsel a/b/r";
+        } else return `art ${t.art}`;
+        if (t.rolle !== "fest" && !v3(t.farbe)) return "farbe";
+    }
+    return null;
+}
+function fernUrteil(mess) {
+    const out = [];
+    for (const m of mess) {
+        const f = huellenFormFehler(m.fern);
+        if (f) out.push(`${m.fall}: __fern ${f}`);
+    }
+    return out;
+}
+
 // Dreiecke und Draws einer gebauten Antwort — DIESELBE Regel wie Budget-Gesetz und Wirt (phyto-core budgetSippen:
 // je Stoff × Attribut-Form ein Draw, jedes Flügel-Teil und jede Haut eines; Beipack ohne position zählt nicht).
 function teileAus(meshes) {
@@ -458,6 +491,7 @@ function bildUrteil(mess, tafel) {
         const artVon = (preset) => buch[preset] && buch[preset].kind;
         const gemessen = new Set(),
             gemessenFall = new Set();
+        const fernMess = [];
         // SCHWEBE + BODEN je gebauter Baum-L0 (Goldens und Gestalten der Welt).
         const kroneWand = (c, a, fall) => {
             if (c.lod !== 0 || artVon(c.presetId) !== "tree") return;
@@ -528,6 +562,11 @@ function bildUrteil(mess, tafel) {
             if (!Array.isArray(stufen[kind]) || stufen[kind].indexOf(c.lod) < 0) return;
             const k = a.meshes ? kosten(a.meshes) : a;
             messungen.push({ kind, lod: c.lod, fall, tris: k.tris, draws: k.draws, budget: a.budget || null });
+            // die NUR-WURF-Stufe trägt ihre Fernform (die Fern-Wand unten)
+            if (budget[kind][c.lod] && budget[kind][c.lod].nurWurf === true) {
+                const fb = a.meshes ? (a.meshes.find((m) => m && m.kind === "__fern") || {}).huelle : a.fern;
+                fernMess.push({ fall, fern: fb || null });
+            }
             if (a.budgetBruch) fails.push(`Budget-Bruch ${fall}: ${JSON.stringify(a.budgetBruch)}`);
             gemessen.add(c.presetId + "|" + c.lod);
             if (c.season === "summer") gemessenFall.add(c.presetId + "|" + c.seed + "|" + c.lod);
@@ -686,6 +725,21 @@ function bildUrteil(mess, tafel) {
             fails.push(...lagenUrteil(lagenMess, budget).map((x) => "Lagen: " + x));
             fails.push(...quoteUrteil(quotePaare, budget).map((x) => "Quote: " + x));
             fails.push(...wurfUrteil(wurfMess, budget).map((x) => "Wurf: " + x));
+            // DIE FERN-WAND (S3 haus, N5): jede Art mit NUR-WURF-Stufe gebaut, jede mit __fern in der Form; Selbsttest: ohne
+            // __fern und mit einem Keil ohne gültige First-Kante MUSS sie rot werden
+            const nwArten = Object.keys(stufen).filter((k) => stufen[k].some((s) => budget[k] && budget[k][s] && budget[k][s].nurWurf === true));
+            const nwGebaut = new Set(fernMess.map((m) => m.fall.split("-s")[0]));
+            if (nwArten.length && !fernMess.length) fails.push("Fern: keine NUR-WURF-Stufe gebaut (" + nwArten.join(",") + ")");
+            fails.push(...fernUrteil(fernMess).map((x) => "Fern: " + x));
+            const fernSelbst =
+                fernUrteil([{ fall: "S", fern: null }]).length === 1 &&
+                fernUrteil([{ fall: "S", fern: { stufe: 3, teile: [{ art: "keil", c: [0, 0, 0], h: [1, 1, 1], first: "y", rolle: "sicht", farbe: [0.5, 0.5, 0.5] }] } }]).length === 1;
+            if (!fernSelbst) fails.push("Selbsttest der Fern-Wand feuert nicht");
+            console.log(
+                `Fern-Wand (N5): ${fernMess.length} NUR-WURF-Stufen gebaut (${nwArten.join(" · ") || "keine Art"}; ${nwGebaut.size} Rezepte), ` +
+                    `höchstens ${Math.max(0, ...fernMess.map((m) => (m.fern && m.fern.teile ? m.fern.teile.length : 0)))} Teile · ` +
+                    `Selbsttest (ohne __fern · Keil ohne First) ${fernSelbst ? "✅" : "❌"}`
+            );
             fails.push(...bildUrteil(bildMess, tafel).map((x) => "Bild: " + x));
         }
         // DIE PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Golden-Fall mit Samen 7 im Sommer baut

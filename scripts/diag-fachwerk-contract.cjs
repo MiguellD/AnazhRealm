@@ -17,17 +17,19 @@
 // Bauplan bei seed 7 und 12345 NICHT byte-gleich (die Goldens frieren beide
 // Seeds je Stufe ein; stochastik-freie Stil-Familien dürfen seed-stabil sein).
 //
-// SPLIT-PARITÄT (aktiv, je Lauf, Stichproben-Rezepte × alle 3 Stufen): der
+// SPLIT-PARITÄT (aktiv, je Lauf, Stichproben-Rezepte × alle 4 Stufen): der
 // Vertrags-Pfad buildInstance(id, seed, L) == die SHELL-KOMPOSITION derselben
 // Kern-Primitive (kulturParams(name, LAB_SEED) frisch → stapelBau/HAUS.build/
 // bakeLOD/fragFuer/mischeGeoms — wörtlich der promoteBauen-/LOD-Sonden-Pfad
 // des Labs) — Kern-Vertrags-Pfad und Lab-Pfad bleiben EIN Bau, und die
 // eingefrorene PRESETS-Ableitung drift-wacht gegen die lebende Kultur-Quelle.
 //
-// STUFEN-WAHRHEIT (kindStages.haus = [0,1,2], die erste Mehr-Stufen-Domäne
+// STUFEN-WAHRHEIT (kindStages.haus = [0,1,2,3], die erste Mehr-Stufen-Domäne
 // außerhalb der Bäume): jede Stufe baut eine ANDERE Geometrie (L0 voll ·
-// L1 Hülle · L2 Destillat+Fernkörper) — aktiv geprüft; die lod-Klemme faltet
-// lod 9 → 2 und lod −1 → 0 (Flatten-Chokepoint-Semantik).
+// L1 Hülle · L2 Destillat+Fernkörper · 3 der Fernkörper allein, NUR-WURF, S3 haus) —
+// aktiv geprüft; die lod-Klemme des Kerns faltet lod 9 → 3 und lod −1 → 0 (der Wirt
+// serviert die NUR-WURF-Stufe keinem Distanz-Wunsch, `_foundryDeclaredStage`). Die
+// Stufe 3 trägt ihre Fernform (`__fern`, Hüllen-Form N5) im Fingerabdruck.
 //
 // Goldens: spec/asset-contract/v6/golden/haeuser.json — EINGEFROREN
 // (Taille-Disziplin), gemintet NUR wenn die Datei fehlt (oder MINT_FORCE=1).
@@ -96,6 +98,8 @@ function fingerprint(group) {
             h.update(Buffer.from(ia.buffer, ia.byteOffset, ia.byteLength));
         }
     });
+    // DIE FERNFORM (S3 haus): die NUR-WURF-Stufe trägt ihre Liste als Beipack `__fern` — sie gehört zum Fall
+    if (group.userData && group.userData.__fern) h.update("__fern" + JSON.stringify(group.userData.__fern));
     return { objects, vertices, sha256: h.digest("hex") };
 }
 
@@ -118,7 +122,7 @@ for (const k of AUS)
         for (const l of AUS_LODS) AUS_CASES.push({ rezeptId: k, seed: s, lod: l });
 AUS_CASES.push({ rezeptId: "feuerstelle", seed: 1, lod: 0, ov: { fuelle: 0.2 } });
 const SEEDS = [7, 12345];
-const LODS = FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus; // [0, 1, 2] — die B2-Stufen-Wahrheit
+const LODS = FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus; // [0, 1, 2, 3] — die B2-Stufen-Wahrheit (3 = NUR-WURF)
 const CASES = [];
 for (const k of KULTUREN) for (const s of SEEDS) for (const l of LODS) CASES.push({ rezeptId: k, seed: s, lod: l });
 // ov-Kanal (Parameter-Override) — friert auch die Merge-Semantik ein.
@@ -217,24 +221,31 @@ function shellPfad(name, seed, stufe) {
             ext: { x0: bx.min.x, x1: bx.max.x, z0: bx.min.z, z1: bx.max.z, y1: bx.max.y },
             dims: mass.H.dims,
             fp: FC.fpVon(mass.H),
+            masse: FC.masseVon(mass),
             spawnL: { x: mass.H.spawn.x, z: mass.H.spawn.z },
             hofGap: 2.5,
             meshes: [],
         };
         disposeGroup(mass.g);
-        if (stufe === 2 && !turm) {
+        if (stufe >= 2 && !turm) {
             FC.fragFuer(B, 1);
             B.frag = null;
             B.fragStufe = undefined;
         }
-        FC.mischeGeoms(geoms, FC.fragFuer(B, stufe === 1 ? 1 : 2));
+        FC.mischeGeoms(geoms, FC.fragFuer(B, stufe));
         B.frag = null;
         B.fragStufe = undefined;
+        if (stufe === 3) geoms.__fern = FC.huelleVonBau(B);
     }
     const g = FC.geomsZuGruppe(geoms, p.col || null);
     // DORF-ERLEBNIS — die separierten Tür-Flügel reisen wie in buildInstance mit.
     if (geoms.__tuerFluegel) for (const wg of geoms.__tuerFluegel) g.add(wg);
     g.userData = { kind: "haus", rezeptId: name, seed, lod: stufe };
+    // die NUR-WURF-Stufe: ihre Fernform und der EINE Schatten-Stoff (wie buildInstance)
+    if (geoms.__fern) {
+        g.userData.__fern = geoms.__fern;
+        FC.stufeWirft(g);
+    }
     g.updateMatrixWorld(true);
     return g;
 }
@@ -264,8 +275,8 @@ function compare(golden, actual) {
         KULTUREN.length === 32 && KULTUREN.every((k) => /^[a-z0-9_-]+$/.test(k) && FC.PRESETS[k].kind === "haus")
     );
     check(
-        "kindStages.haus == [0,1,2] (B2 — die erste Mehr-Stufen-Domäne außerhalb der Bäume)",
-        JSON.stringify(LODS) === "[0,1,2]"
+        "kindStages.haus == [0,1,2,3] (B2 — die erste Mehr-Stufen-Domäne außerhalb der Bäume; 3 = NUR-WURF, S3 haus)",
+        JSON.stringify(LODS) === "[0,1,2,3]"
     );
 
     // 1) Alle Fälle bauen + fingerprinten.
@@ -276,7 +287,12 @@ function compare(golden, actual) {
         const g = buildCase(c);
         actual[caseKey(c)] = fingerprint(g);
         const hu = g.userData && g.userData.__huelle;
-        huellen[caseKey(c)] = hu && Array.isArray(hu.boxen) ? hu.boxen : null;
+        huellen[caseKey(c)] =
+            hu && Array.isArray(hu.teile)
+                ? hu.teile
+                      .filter((t) => t.art === "box" && (t.rolle === "fest" || t.rolle === "beide"))
+                      .flatMap((t) => [t.c[0] - t.h[0], t.c[1] - t.h[1], t.c[2] - t.h[2], t.c[0] + t.h[0], t.c[1] + t.h[1], t.c[2] + t.h[2]])
+                : null;
         disposeGroup(g);
     }
     console.log(`      ↳ ${CASES.length} Fälle gebaut in ${((Date.now() - t0) / 1000).toFixed(1)} s`);
@@ -284,6 +300,7 @@ function compare(golden, actual) {
     // 1b) KOLLISION == OPTIK IN JEDER FERNE (Welle L): jede Stufe trägt die Solids der Stufe 0 byte-gleich — die Welt
     //     kollidiert nie mit einer Stufen-Bounding-Box (die L1-Box des Hof-Hauses lag 8,2 m vor seinen Solids, die Tür war
     //     von vorn unerreichbar). Selbsttest: eine Stufe mit ihrer Bounding-Box statt der Solids muss rot werden.
+    const NUR_WURF = (l) => !!(FC.PORTAL_RENDER_CONFIG.lod.budget.haus[l] && FC.PORTAL_RENDER_CONFIG.lod.budget.haus[l].nurWurf);
     const huellenBruch = (H) => {
         const bruch = [];
         for (const k of KULTUREN)
@@ -294,13 +311,15 @@ function compare(golden, actual) {
                     continue;
                 }
                 const z0 = h0.join(",");
-                for (const l of LODS)
-                    if (l !== 0 && (!H[`${k}-s${s}-L${l}`] || H[`${k}-s${s}-L${l}`].join(",") !== z0)) bruch.push(`${k}/${s}/L${l}`);
+                for (const l of LODS) {
+                    if (l === 0 || NUR_WURF(l)) continue; // die NUR-WURF-Stufe wird nie gezeigt und trägt keine Kollision
+                    if (!H[`${k}-s${s}-L${l}`] || H[`${k}-s${s}-L${l}`].join(",") !== z0) bruch.push(`${k}/${s}/L${l}`);
+                }
             }
         return bruch;
     };
     const hb = huellenBruch(huellen);
-    check("Hülle des Gesetzbuchs: jede Stufe trägt die Solids der Stufe 0 byte-gleich (32 Kulturen × 2 Samen)", hb.length === 0, hb.slice(0, 4).join(" "));
+    check("Hülle des Gesetzbuchs: jede gezeigte Stufe trägt die Solids der Stufe 0 byte-gleich, in der EINEN Hüllen-Form (rolle fest; 32 Kulturen × 2 Samen)", hb.length === 0, hb.slice(0, 4).join(" "));
     {
         const korrupt = Object.assign({}, huellen);
         korrupt["alemannisch-s7-L1"] = [-4, 0, -5, 4, 9, 5]; // die Stufen-Bounding-Box statt der Solids
@@ -321,12 +340,13 @@ function compare(golden, actual) {
         { rezeptId: "tudor", seed: 12345, lod: 1 },
         { rezeptId: "hochhaus", seed: 7, lod: 2 },
         { rezeptId: "marokkanisch", seed: 7, lod: 2 },
+        { rezeptId: "chinesisch", seed: 7, lod: 3 },
     ]) {
         const g2 = buildCase(c);
         if (fingerprint(g2).sha256 !== actual[caseKey(c)].sha256) determin = false;
         disposeGroup(g2);
     }
-    check("Determinismus: Stichproben-Fälle (alle 3 Stufen) bauen doppelt byte-gleich", determin);
+    check("Determinismus: Stichproben-Fälle (alle 4 Stufen) bauen doppelt byte-gleich", determin);
 
     // 3) SEED-GETRIEBEN (cv:6-Semantik — s. Kopf): der Fachwerk-Bau variiert mit dem Samen.
     check(
@@ -343,11 +363,12 @@ function compare(golden, actual) {
     for (const k of ["alemannisch", "hanseatisch", "japanisch"]) {
         if (
             actual[`${k}-s7-L0`].sha256 === actual[`${k}-s7-L1`].sha256 ||
-            actual[`${k}-s7-L1`].sha256 === actual[`${k}-s7-L2`].sha256
+            actual[`${k}-s7-L1`].sha256 === actual[`${k}-s7-L2`].sha256 ||
+            actual[`${k}-s7-L2`].sha256 === actual[`${k}-s7-L3`].sha256
         )
             stufenEcht = false;
     }
-    check("Stufen-Wahrheit: L0 != L1 != L2 je Stichproben-Kultur (Voll · Hülle · Destillat)", stufenEcht);
+    check("Stufen-Wahrheit: L0 != L1 != L2 != L3 je Stichproben-Kultur (Voll · Hülle · Destillat · Fernkörper)", stufenEcht);
 
     // 5) ov-Kanal wirkt (Override ändert die Geometrie wirklich — kein Passagier).
     check(
@@ -366,7 +387,7 @@ function compare(golden, actual) {
     const lm = buildCase({ rezeptId: "alemannisch", seed: 7, lod: -1 });
     const fm = fingerprint(lm);
     disposeGroup(lm);
-    check("lod-Klemme: buildInstance(…, lod 9) == Stufe 2 (größte deklarierte ≤ Wahl)", f9.sha256 === actual["alemannisch-s7-L2"].sha256);
+    check("lod-Klemme: buildInstance(…, lod 9) == Stufe 3 (größte deklarierte ≤ Wahl — die Anzeige-Klammer ist die des Wirts)", f9.sha256 === actual["alemannisch-s7-L3"].sha256);
     check("lod-Klemme: buildInstance(…, lod −1) == Stufe 0 (fail-closed auf die kleinste)", fm.sha256 === actual["alemannisch-s7-L0"].sha256);
 
     // 7) SPLIT-PARITÄT: der Vertrags-Pfad == der Lab-Pfad (Kern-Primitive, frische Kultur-Ableitung).
@@ -541,8 +562,8 @@ function compare(golden, actual) {
     //     V8 rundet sin/cos auf Linux und Windows verschieden — das Raster macht die Bytes gleich), Determinismus, Goldens.
     console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen (dasselbe Gesetzbuch) ===");
     check(
-        `drei Ausstattungs-Rezepte (kind ausstattung) mit Stufen [0,1] und Gestalten (${AUS.join(", ")})`,
-        AUS.length === 3 && JSON.stringify(AUS_LODS) === "[0,1]" && AUS_CASES.length >= 12
+        `drei Ausstattungs-Rezepte (kind ausstattung) mit Stufen [0,1,3] (3 = NUR-WURF) und Gestalten (${AUS.join(", ")})`,
+        AUS.length === 3 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 18
     );
     const ausIst = {};
     const huelle = {};
@@ -559,7 +580,8 @@ function compare(golden, actual) {
         ausIst[caseKey(c)] = fingerprint(g);
         const bb = new THREE.Box3().setFromObject(g);
         huelle[caseKey(c)] = bb;
-        if (!(bb.min.y < -0.02)) bodenOk = false;
+        const nurWurf = !!(FC.PORTAL_RENDER_CONFIG.lod.budget.ausstattung[c.lod] || {}).nurWurf;
+        if (!nurWurf && !(bb.min.y < -0.02)) bodenOk = false;
         g.traverse((o) => {
             if (!o.isMesh) return;
             const em = o.material && o.material.emissive;
@@ -568,7 +590,7 @@ function compare(golden, actual) {
             // (≤ 0,30 — sie leuchtet durch ihren Stoff, eine helle Glut bleicht in der Sonne zu Creme). Glas misst nicht.
             const seh = o.material.userData && o.material.userData.__seh;
             const col = o.geometry.attributes.color;
-            if (col && seh !== "glas") {
+            if (col && seh !== "glas" && !nurWurf) {
                 const mc = o.material.color;
                 let s = 0;
                 for (let i = 0; i < col.count; i++)
@@ -696,7 +718,7 @@ function compare(golden, actual) {
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — der Haus-Asset-Vertrag steht: buildInstance ist deterministisch + SEED-GETRIEBEN (cv:6), die drei deklarierten Stufen bauen echt verschieden, der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==Lab-Komposition steht je Rezept×Stufe, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
+        "\n✅ GRÜN — der Haus-Asset-Vertrag steht: buildInstance ist deterministisch + SEED-GETRIEBEN (cv:6), die vier deklarierten Stufen (3 = NUR-WURF) bauen echt verschieden, der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==Lab-Komposition steht je Rezept×Stufe, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert."
     );
     process.exit(0);
 })();

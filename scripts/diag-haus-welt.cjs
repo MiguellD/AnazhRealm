@@ -64,7 +64,7 @@ const MIME = {
 const BASIS = {
     // ohne die Hülle des Gesetzbuchs: nur die Wände der Tür-Zeile (vier EG-Wände mit Tür-Lücke — die Basis-Blocker der
     // Siedlungs-Häuser vor der Welle, hier schon gedreht), keine Böden, Tritte, Innenwände
-    huelle: [["if (hu && Array.isArray(hu.boxen)) {", "if (false) {"]],
+    huelle: [["if (fest && fest.length) {", "if (false) {"]],
     // die gedrehte Box als achsparallele Welt-AABB gelesen
     obb: [["        const ob = box.obb;\n        if (ob) {", "        const ob = null;\n        if (ob) {"]],
     // die Natur wirft in den Grundriss, und das Dorf räumt nicht
@@ -895,7 +895,9 @@ async function proben(phasen) {
                 continue;
             }
             orte.push(ort);
-            const huelleVon = (e) => (e._hausHuelle ? e._hausHuelle.boxen.length / 6 : 0);
+            // die Solids der Hülle (die EINE Hüllen-Form, S3: je Box ein Teil mit rolle "fest")
+            const huelleVon = (e) =>
+                e._hausHuelle && Array.isArray(e._hausHuelle.teile) ? e._hausHuelle.teile.filter((t) => t.rolle !== "sicht").length : 0;
             // der Weg (haus-lokal): frontal auf die Tür; beim Hof-Haus durch das Tor, rechts am Brunnen vorbei (das Gesetz des
             // Hofs: zC = Front − Hof-Tiefe, Torriegel 2,8 m, Brunnen mittig im Hof)
             const wegpunkte = [];

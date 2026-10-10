@@ -84,23 +84,31 @@
     var GESTALTEN_JE_REZEPT = 16;
     var PORTAL_RENDER_CONFIG = {
         lod: {
-            kindStages: { haus: [0, 1, 2], ausstattung: [0, 1] },
+            kindStages: { haus: [0, 1, 2, 3], ausstattung: [0, 1, 3] },
             budget: {
+                // DAS EINE WURF-GESETZ (S3, E1): jede gezeigte Stufe wirft die Stufe 3 — der grundriss-treue Fernkörper,
+                // nurWurf (nie gezeigt, ≤ 96 Dreiecke in EINEM Draw, gate:haus-fern); vorher warf die L0 sich selbst
+                // (31 660–101 716 Dreiecke je Kaskade), die L1 ebenso, die L2 gar nicht (der Schatten sprang bei 26 m weg).
                 haus: {
-                    0: { tris: 132000, band: 40000, draws: 11, schatten: 0 },
-                    1: { tris: 44000, band: 10000, draws: 4, schatten: 1 },
-                    2: { tris: 7000, band: 2000, draws: 3, schatten: false },
-                    // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze trägt der Box-Satz im Welt-March (_archBoxFit)
-                    fernform: "gesetz",
+                    0: { tris: 132000, band: 40000, draws: 11, schatten: 3 },
+                    1: { tris: 44000, band: 10000, draws: 4, schatten: 3 },
+                    2: { tris: 7000, band: 2000, draws: 3, schatten: 3 },
+                    3: { tris: 96, draws: 1, schatten: 3, nurWurf: true },
+                    // fernform (B2c, Pflicht je Budget-Art): jenseits der Mesh-Zone zeichnet der Welt-March die Hülle des
+                    // Gesetzbuchs — die Liste der Stufe 3 (`huelle()`, Beipack `__fern`); der Wirts-Fit fiel
+                    fernform: "huelle",
                 },
                 // DIE AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen, unten): die Hülle der gebauten Gestalten (gemessen
                 // 05.10.: nah höchstens 3338 Dreiecke — der Brunnen, mittel 595 — die Feuerstelle); je Stufe höchstens zwei
                 // Draws — der Stoff und eine Seh-Klasse dazu (die Glut der Feuerstelle · das Wasser des Brunnens); jede
                 // Stufe wirft selbst (die Glut nie — der Wirt liest ihre Seh-Klasse).
+                // Die L0 wirft selbst (nah, höchstens drei im Bild), die L1 die Stufe 3 (nurWurf: Feuerstelle ≤ 32, Marktstand
+                // und Brunnen ≤ 48 Dreiecke) — vorher warf jede L1 sich selbst (die Feuerstelle 440 je Kaskade).
                 ausstattung: {
                     0: { tris: 3400, draws: 2, schatten: 0 },
-                    1: { tris: 620, draws: 2, schatten: 1 },
-                    fernform: "gesetz",
+                    1: { tris: 620, draws: 2, schatten: 3 },
+                    3: { tris: 48, draws: 1, schatten: 3, nurWurf: true },
+                    fernform: "huelle",
                 },
                 gestalten: {},
             },
@@ -251,12 +259,15 @@
   function poly(g,pts,role){for(let i=1;i<pts.length-1;i++)tri(g,pts[0],pts[i],pts[i+1],role);}
 
   const solids=[]; const furniture=[]; let chimney=null;
+  const masse=[];                                                                                       // DIE MASSEN DES BAUS (S3, additiv): je Teil des Grundrisses sein Körper — Rechteck, Höhen, Dach. Der Fernkörper des Gesetzbuchs (koerperListe) liest sie; kein Bau liest sie zurück
+  function addMasse(m){ if(Number.isFinite(m.x0)){ m.x0+=SHIFT; m.x1+=SHIFT; } masse.push(m); return m; }   // die 2. Einheit des Doppelhauses um +W wie ihre Solids
   // ════ WELTMODELL · geteilte Quelle: Öffnungen · Erschließung · Kraftfluss ════
   const circR=[];
   function addSolid(cx,cy,cz,lx,ly,lz,tag){solids.push({min:[cx+SHIFT-lx/2,cy-ly/2,cz-lz/2],max:[cx+SHIFT+lx/2,cy+ly/2,cz+lz/2],tag});}
   // ════ GESETZ (geteilt über ALLE Außentüren): jede Tür mit Schwelle auf einer Sockelhöhe bekommt EINE Eingangstreppe — Stufenzahl + Höhe FOLGEN dem Sockel, Richtung = Außennormale (nx,nz). EINE Quelle für Haus-/Hinter-/Flügeltür/Garage. Sockel auf Grund → 0 Stufen (Garage). ════
   function aussentreppe(g, cx, cz, nx, nz, wDoor, baseH){ const h=(baseH==null?baseY:baseH); if(h<0.10)return;
     const n=Math.max(1,Math.round((h+0.02)/0.19)), sh=h/n, tr=0.30, w=wDoor+0.7;
+    { const L=n*tr, ax=Math.abs(nx)>0.5; addMasse({art:'treppe',x0:ax?Math.min(cx,cx+nx*L):cx-w/2,x1:ax?Math.max(cx,cx+nx*L):cx+w/2,z0:ax?cz-w/2:Math.min(cz,cz+nz*L),z1:ax?cz+w/2:Math.max(cz,cz+nz*L),y0:0,y1:h,first:ax?(nx>0?'-x':'+x'):(nz>0?'-z':'+z')}); }   // die Treppe als Keil (hoch an der Tür)
     for(let i=0;i<n;i++){ const topY=(i+1)*sh, depth=(n-i)*tr, dc=depth/2, ccx=cx+nx*dc, ccz=cz+nz*dc;
       const lx=(Math.abs(nx)>0.5)?depth:w, lz=(Math.abs(nx)>0.5)?w:depth;
       beam(g,ccx,topY/2,ccz,lx,topY,lz,'stein'); addSolid(ccx,topY/2,ccz,lx,topY,lz); } }
@@ -344,8 +355,10 @@
     } else {
       beam(g,0,baseY-P.foundH/2,0, W+0.5,P.foundH,Dp+0.5,'stein'); addSolid(0,baseY-P.foundH/2,0,W+0.5,P.foundH,Dp+0.5);
     }
+    addMasse({art:'sockel',x0:-(W+0.5)/2,x1:(W+0.5)/2,z0:-(Dp+0.5)/2,z1:(Dp+0.5)/2,y0:baseY-P.foundH,y1:baseY});   // die Fundamentplatte steht 25 cm vor der Wand
     wings.forEach(w=>{ const m=0.25, fx0=w.x0-m, fx1=w.x1+m, fz0=w.z0-m, fz1=w.z1+m, cx=(fx0+fx1)/2, cz=(fz0+fz1)/2;   // GESETZ (selbe foundH/Material wie das Haus): jeder Flügel WÄCHST aus dem Sockel — kein aufgesetzter Klotz, kein Schweben über der Grasnarbe. Der Sockel verdeckt zugleich die Wiese unter dem Flügel.
       beam(g,cx,baseY-P.foundH/2,cz, fx1-fx0,P.foundH,fz1-fz0,'stein'); addSolid(cx,baseY-P.foundH/2,cz, fx1-fx0,P.foundH,fz1-fz0);
+      addMasse({art:'sockel',x0:fx0,x1:fx1,z0:fz0,z1:fz1,y0:baseY-P.foundH,y1:baseY});
       const sy=baseY+P.sill/2, oEdge=w.outIsX?(Math.abs(w.x1)>Math.abs(w.x0)?w.x1:w.x0):(Math.abs(w.z1)>Math.abs(w.z0)?w.z1:w.z0);   // Schwelle: Stirn an der Aussenkante + zwei Längsseiten (vierte stösst ans Haus)
       if(w.outIsX){ beam(g,oEdge,sy,cz,P.sill,P.sill,fz1-fz0,'holz'); [w.z0,w.z1].forEach(zw=>beam(g,cx,sy,zw,fx1-fx0,P.sill,P.sill,'holz')); }
       else        { beam(g,cx,sy,oEdge,fx1-fx0,P.sill,P.sill,'holz'); [w.x0,w.x1].forEach(xw=>beam(g,xw,sy,cz,P.sill,P.sill,fz1-fz0,'holz')); } });
@@ -1074,6 +1087,7 @@
     const {gw,gd,sx,xin,xout,x0,x1,z0,z1,zc,xc,yLow,yHigh,slope}=GA, wy0=0.06;
     const yR=x=>yHigh-Math.abs(x-xin)*slope, th=Math.atan(slope);                   // Pult: hoch an der Hauswand (xin), tief außen (xout) — SEITEN-GENERISCH via sx
     const ovZ=0.30, ovX=0.30, yOut=yLow-ovX*slope, xoO=xout+sx*ovX;
+    addMasse({art:'anbau',x0,x1,z0,z1,sx,xin,xout,xoO,yLow,yHigh,yOut,flach:ROOFMODE==='flat'});
     beam(g,xc,wy0/2,zc,gw+0.14,wy0+0.05,gd+0.14,'stein');
     beam(g,xc,wy0+0.02,zc,gw,0.06,gd,'boden'); addSolid(xc,wy0,zc,gw,0.12,gd);
     [[xin,z0],[xin,z1],[xout,z0],[xout,z1]].forEach(([x,z])=>{ const yt=yR(x); beam(g,x,(wy0+yt)/2,z,0.14,yt-wy0,0.14,'holz'); });
@@ -1150,6 +1164,7 @@
     const buildOne=(w)=>{ const {ox,oz,ax,az,outIsX,depth,breadth,uc,loc,u0,u1,v0,v1,x0,x1,z0,z1,xc,zc}=w;
       const merge=!outIsX, eT=levels[0].top, twoSt=merge&&levels.length>1;                              // N/S = senkrecht → echtes Kreuzdach, 2 Geschosse, verschmolzener Raum
       const eY = merge ? eaveY-0.06 : Math.min(baseY+P.egH*0.86, eaveY-0.8), h=eY-baseY, half=breadth/2, sX=x1-x0, sZ=z1-z0;
+      const fM=addMasse({art:'fluegel',x0,x1,z0,z1,eY,rY:null,first:outIsX?'x':'z',eOv:0});   // der First (rY) aus dem Dach-Zweig unten; flach ohne
       // Plinth: vom FUNDAMENT-Subsystem getragen (ein Fundament-System, kein Parallel-Sockel im Flügel)
       levels.forEach((lv,k)=>{ if(merge ? (lv.y < eY-0.3) : k===0){ beam(g,xc,lv.y+0.04,zc,sX,0.08,sZ,'boden'); addSolid(xc,lv.y,zc,sX,0.16,sZ); } });   // GESETZ: Geschossboden auf JEDER Ebene (merge-Flügel = volle Höhe → kein Liftschacht); E/W-Flügel nur EG
       if(merge){ beam(g,xc,eaveY-0.05,zc,sX,0.08,sZ,'boden'); addSolid(xc,eaveY,zc,sX,0.16,sZ); }   // Estrich-Boden im Flügel → an den Haupt-Dachboden angebunden (man läuft nicht ins Leere)
@@ -1174,7 +1189,7 @@
         if(outIsX){ beam(g,ix,dh+0.06,c,0.18,0.13,owid+0.3,'holz'); [c-owid/2,c+owid/2].forEach(zz=>beam(g,ix,baseY+P.doorH/2,zz,0.14,P.doorH,0.13,'holz')); beam(g,ix,baseY+0.03,c,0.42,0.06,owid,'boden'); addSolid(ix,baseY,c,0.46,0.12,owid); }
         else      { beam(g,c,dh+0.06,iz,owid+0.3,0.13,0.18,'holz'); [c-owid/2,c+owid/2].forEach(xx=>beam(g,xx,baseY+P.doorH/2,iz,0.13,P.doorH,0.14,'holz')); beam(g,c,baseY+0.03,iz,owid,0.06,0.42,'boden'); addSolid(c,baseY,iz,owid,0.12,0.46); } }
       if(merge && ROOFMODE!=='flat'){ // ════ echtes KREUZDACH mit Kehltälern (senkrechter Flügel verschmilzt mit dem Hauptdach) ════
-        const eYw=eaveY-0.06, rYw=Math.min(eYw+half*mS, ridgeY-0.2), sz=oz, wPit=mS;   // GLEICHE Neigung wie das Hauptdach → Kehltal = saubere Diagonale
+        const eYw=eaveY-0.06, rYw=Math.min(eYw+half*mS, ridgeY-0.2), sz=oz, wPit=mS; fM.eY=eYw; fM.rY=rYw;   // GLEICHE Neigung wie das Hauptdach → Kehltal = saubere Diagonale
         const zEaveV=sz*Dp/2, zOuter=sz*(Dp/2+depth+0.3), zRidge=sz*(ridgeY-rYw)/mS;                      // Kehltal-Eckpunkte: Firstanstoß innen, Trauf am Hauptdach
         const A=[uc,rYw,zRidge], B=[uc,rYw,zOuter];                                                        // FIX: echtes [x,y,z] — y=rYw (Höhe), z=zRidge/zOuter. Vorher war y/z vertauscht → Unterdach hing im falschen Winkel
         [+1,-1].forEach(sx=>{ const C=[uc+sx*half,eYw,zOuter], D=[uc+sx*half,eYw,zEaveV];
@@ -1195,6 +1210,7 @@
         poly(g,[[uc-half,eaveY-0.30,zEaveV],[uc+half,eaveY-0.30,zEaveV],[uc,rYw,zEaveV]],'gefach');             // INNENGIEBEL (glatt): schließt die senkrechte Fuge zum Hauptdach
       } else if(ROOFMODE!=='flat'){ // ── E/W (parallel zum First): geduckte Quergiebel ──
         const rY=Math.min(eY+half*mS, eaveY-0.3), pit=(rY-eY)/half, eOv=0.32, vOv=0.30, vE=v1+vOv, rA=loc(uc,v0), rB=loc(uc,vE);
+        fM.rY=rY; fM.eOv=eOv;
         strut(g,rA[0],rY-0.07,rA[1], rB[0],rY-0.07,rB[1], 0.13,'holz');
         [-1,1].forEach(s=>{ const fA=loc(uc+s*(half+eOv),v0), fB=loc(uc+s*(half+eOv),vE);
           strut(g,fA[0],eY,fA[1], fB[0],eY,fB[1], 0.12,'holz'); { const gA=loc(uc+s*(half+eOv+0.11),v0), gB=loc(uc+s*(half+eOv+0.11),vE); strut(g,gA[0],eY+0.02,gA[1], gB[0],eY+0.02,gB[1], 0.12,'dunkel'); }   // TRAUFRINNE E/W
@@ -1285,6 +1301,7 @@
     // Lochwände der Arme, Pflaster und Brunnen tragen ihre Solids wie jede Wand des Hauses (vorher lief der Körper durch die
     // ganze Hofmauer, die Welt-Fernstufe sah sie nur als Bounding-Box 8,2 m vor den Haus-Solids)
     const bar=(x0,x1,z0,z1,alongZ,gate)=>{ const cx=(x0+x1)/2,cz=(z0+z1)/2,lx=x1-x0,lz=z1-z0, rY=baseY+wH+(alongZ?lx:lz)/2*0.7;
+      addMasse({art:'hofarm',x0,x1,z0,z1,eY:baseY+wH,rY:ROOFMODE==='flat'?null:rY,first:alongZ?'z':'x',eOv:0});
       beam(g,cx,baseY+0.04,cz,lx,0.08,lz,'boden'); addSolid(cx,baseY+0.04,cz,lx,0.08,lz);
       const xWall=(zz)=>{ if(!gate){ beam(g,cx,baseY+wH/2,zz,lx,wH,0.22,wr); addSolid(cx,baseY+wH/2,zz,lx,wH,0.22); return; }   // ohne Korridor: volle Querwand
         const gw2=gate.w/2, lh=Math.min(wH-0.25, gate.h), L=(gate.x-gw2)-x0, R=x1-(gate.x+gw2);   // EINGANGS-KORRIDOR (Sperrflaeche der Haustuer) bleibt frei → das Tor emergiert auf der Tuer-Achse, nicht hart gesetzt
@@ -1323,7 +1340,7 @@
     const B=(c,y,w,h,t2)=>hor?beam(g,c,y,fix,w,h,t2,role):beam(g,fix,y,c,t2,h,w,role);
     B((a0+a1)/2,deckY+bw/2,len+0.3,bw,dpt); B((a0+a1)/2,sill+0.05,len+0.34,0.10,dpt+0.06);                            // Brustwehr + Sims
     for(let i=0;i<n;i++)B(a0+(i+0.5)*len/n,sill+0.10+mh/2,mw,mh,dpt-0.04); }                                          // Merlonen
-  function zinnen(){ const g=grp(); if(!P.zinnen||ROUND) return g;   // ZINNEN (Burg) — Wehrgang-Deck aus dachdeckung (EINE flache-Dach-Quelle); Brustwehr+Merlonen = MERLON-GESETZ (geteilt mit dem Turm)
+  function zinnen(){ const g=grp(); if(!P.zinnen||ROUND) return g; addMasse({art:'zinnen',y1:eaveY+0.1+1.0+0.1});   // ZINNEN (Burg) — Wehrgang-Deck aus dachdeckung (EINE flache-Dach-Quelle); Brustwehr+Merlonen = MERLON-GESETZ (geteilt mit dem Turm)
     eachFootEdge((x0,x1,z0,z1,axis,side,r)=>{ merlonSeg(g,axis,x0,x1,z0,z1,(r.a?r.h+0.06:eaveY+0.1),'stein'); });
     return g; }
   function veranda(){ const g=grp(); if(!P.veranda||ROUND) return g;   // VERANDA (Südstaaten/Kolonial/Queenslander) — umlaufender Pfostengang
@@ -1344,6 +1361,7 @@
         for(let i=0;i<=n;i++){ const px=x0+len*i/n; if(gap>0&&Math.abs(px)<gap)continue; beam(g,px,baseY+pH/2,zf,0.16,pH,0.16,wr); }   // Pfosten VOM Boden
         beam(g,cx,plT,zf,len,0.12,0.16,wr);                                                                // Pfette AUF den Pfosten
         beam(g,cx,(plT+wT)/2+0.06,z0+side*(d/2),len,0.08,ll,'ziegel',[side*ang,0,0]);                      // Pultdach: Wand→Pfette
+        addMasse({art:'vordach',x0,x1,z0:Math.min(z0,zf),z1:Math.max(z0,zf),yB:plT,yT:wT,first:side<0?'+z':'-z',deck:baseY+0.1});
         for(let i=0;i<=n;i++){ const px=x0+len*i/n; if(gap>0&&Math.abs(px)<gap)continue; if(!front)beam(g,px,baseY+0.95,zf,0.06,1.0,0.06,wr); }
       } else { const segs=(r.a?[[z0,z1]]:(()=>{ let S2=[[z0,z1]]; GAs.forEach(A=>{ if(A.sx===Math.sign(side)){ const a=A.z0-0.03,b2=A.z1+0.03, O=[]; S2.forEach(([s0,s1])=>{ if(b2<=s0||a>=s1)O.push([s0,s1]); else { if(a-s0>0.4)O.push([s0,a]); if(s1-b2>0.4)O.push([b2,s1]); } }); S2=O; } }); return S2; })());   // SPLIT-GESETZ: Veranda weicht der Anbau-Zelle — kein Dach durch die Garage
         segs.forEach(([s0,s1])=>{ const len=s1-s0, xf=x0+side*d, cz=(s0+s1)/2, n=Math.max(2,Math.round(len/2.0));
@@ -1352,11 +1370,13 @@
         for(let i=0;i<=n;i++)beam(g,xf,baseY+pH/2,s0+len*i/n,0.16,pH,0.16,wr);
         beam(g,xf,plT,cz,0.16,0.12,len,wr);
         beam(g,x0+side*(d/2),(plT+wT)/2+0.06,cz,ll,0.08,len,'ziegel',[0,0,-side*ang]);
+        addMasse({art:'vordach',x0:Math.min(x0,xf),x1:Math.max(x0,xf),z0:s0,z1:s1,yB:plT,yT:wT,first:side<0?'+x':'-x',deck:baseY+0.1});
         for(let i=0;i<=n;i++)beam(g,xf,baseY+0.95,s0+len*i/n,0.06,1.0,0.06,wr); }); }
     });
     return g; }
   function vorkragung(){ const g=grp(); if(!P.vorkragung||levels.length<2||ROUND) return g;   // VORKRAGUNG/JETTY (mittelalterl. Fachwerk) — Obergeschoss kragt vor
     const ov=0.45,y=levels[0].top,wr=(P.stil==='huette'||P.stil==='stroh'||P.stil==='alt')?'holz':'gefach';
+    addMasse({art:'vorkragung',ov,y0:y});
     eachFootEdge((x0,x1,z0,z1,axis,side,r)=>{ if(r.a)return;   // Jetty braucht ein Obergeschoss — nicht auf dem flachen Anbau
       if(axis==='z'){ const len=x1-x0,zo=z0+side*ov; beam(g,(x0+x1)/2,y+0.55,zo,len+2*ov,1.05,0.24,wr); beam(g,(x0+x1)/2,y-0.04,z0+side*ov/2,len+2*ov,0.22,ov,'holz'); for(let x=x0+0.3;x<=x1-0.2;x+=0.7)beam(g,x,y-0.2,z0+side*ov*0.7,0.1,0.18,ov*1.25,'holz'); }
       else { const len=z1-z0,xo=x0+side*ov; beam(g,xo,y+0.55,(z0+z1)/2,0.24,1.05,len+2*ov,wr); beam(g,x0+side*ov/2,y-0.04,(z0+z1)/2,ov,0.22,len+2*ov,'holz'); for(let z=z0+0.3;z<=z1-0.2;z+=0.7)beam(g,x0+side*ov*0.7,y-0.2,z,ov*1.25,0.18,0.1,'holz'); } });
@@ -1390,12 +1410,15 @@
         if(rw.x1>0.15) bruestungSeg(g,'x',pcx+pw/2,pcx+pw/2,pcz-pd/2,pcz+pd/2,y+0.14,grl); }
       for(let i=0;i<nx;i++){ const px=cx-w/2+w*(i+0.5)/nx; fensterAt(g,px,wy,cz-dd/2-0.02,fwd(w/nx*0.5),wh,true); if(t>0&&Math.abs(px-cx)<0.8)continue; fensterAt(g,px,wy,cz+dd/2+0.02,fwd(w/nx*0.5),wh,true); }
       for(let i=0;i<nz;i++){ const pz=cz-dd/2+dd*(i+0.5)/nz; fensterAt(g,cx-w/2-0.02,wy,pz,fwd(dd/nz*0.5),wh,false); fensterAt(g,cx+w/2+0.02,wy,pz,fwd(dd/nz*0.5),wh,false); }
+      addMasse({art:'stufe',x0:cx-w/2,x1:cx+w/2,z0:cz-dd/2,z1:cz+dd/2,y0:y,y1:y+tH});
       pw=w; pd=dd; pcx=cx; pcz=cz; y+=tH; }
     beam(g,pcx,y+0.07,pcz,pw,0.14,pd,'boden');                                                                          // Dachplatte des obersten Tiers
     bruestungRect(g,pcx-pw/2,pcx+pw/2,pcz-pd/2,pcz+pd/2,y+0.14,grl);                                                    // oberstes Deck: voller SIA-Ring ab Gehfläche
+    addMasse({art:'stufe',x0:pcx-Math.max(1.2,W*0.22)/2,x1:pcx+Math.max(1.2,W*0.22)/2,z0:pcz-Math.max(1.2,Dp*0.22)/2,z1:pcz+Math.max(1.2,Dp*0.22)/2,y0:y,y1:y+1.1});
     beam(g,pcx,y+0.55,pcz,Math.max(1.2,W*0.22),1.1,Math.max(1.2,Dp*0.22),role); const ax=W*0.13,az=Dp*0.13,c=[[-ax,-az],[ax,-az],[ax,az],[-ax,az]]; c.forEach((p,k)=>{const q=c[(k+1)%4]; tri(g,[pcx+p[0],y+1.1,pcz+p[1]],[pcx+q[0],y+1.1,pcz+q[1]],[pcx,y+1.9,pcz],'ziegel');}); return g; }
   function rundbau(){ const g=grp(); if(!ROUND) return g;   // ZYLINDER-GESETZ — runde Wand aus Segmenten, Geschoss-Böden, Kegel/Zwiebel-Dach
     const rad=Math.min(W,Dp)/2, seg=Math.max(18,Math.round(rad*3.5)), nLev=Math.max(1,P.storeys), wallTop=baseY+nLev*P.egH;
+    addMasse({art:'rund',x0:-rad,x1:rad,z0:-rad,z1:rad,rad,y0:baseY-0.35,y1:wallTop,spitze:(P.dachTyp==='zwiebel'||P.kuppel)?wallTop+rad*1.7:wallTop+rad*1.3,zwiebel:(P.dachTyp==='zwiebel'||P.kuppel)?1:0});
     const wr=(P.stil==='huette'||P.stil==='stroh')?'holz':((P.stil==='stein'||P.stil==='klinker'||P.stil==='modern')?'putz':'gefach');
     for(let s=0;s<seg;s++){ const a=(s+0.5)/seg*2*Math.PI; beam(g,(rad+0.05)*Math.cos(a),baseY-0.15,(rad+0.05)*Math.sin(a),2*Math.PI*rad/seg+0.1,0.4,0.45,'stein',[0,Math.PI/2-a,0]); }
     for(let lv=0;lv<=nLev;lv++){ const y=baseY+lv*P.egH; for(let s=0;s<seg;s++){ const a0=s/seg*2*Math.PI,a1=(s+1)/seg*2*Math.PI; tri(g,[0,y,0],[rad*Math.cos(a0),y,rad*Math.sin(a0)],[rad*Math.cos(a1),y,rad*Math.sin(a1)],'boden'); } }
@@ -1424,16 +1447,19 @@
       if(axis==='z'){ const len=x1-x0, zf=z0+side*d, n=Math.max(2,Math.round(len/2.6));
         for(let i=0;i<n;i++){ const x=x0+(i+0.5)*len/n; bogenAuf(g,x,baseY,zf,len/n/2-0.18,pierH,0.5,'stein',typ,true); }
         beam(g,(x0+x1)/2,baseY+0.05,z0+side*d/2,len+0.4,0.1,d,'weg');
-        beam(g,(x0+x1)/2,baseY+(pierH+rH)/2,z0+side*d*0.5,len+0.6,0.12,d+0.5,'ziegel',[side*tilt,0,0]); }
+        beam(g,(x0+x1)/2,baseY+(pierH+rH)/2,z0+side*d*0.5,len+0.6,0.12,d+0.5,'ziegel',[side*tilt,0,0]);
+        addMasse({art:'vordach',x0,x1,z0:Math.min(z0,z0+side*(d+0.25)),z1:Math.max(z0,z0+side*(d+0.25)),yB:baseY+pierH,yT:baseY+rH,first:side<0?'+z':'-z'}); }
       else { const len=z1-z0, xf=x0+side*d, n=Math.max(2,Math.round(len/2.6));
         for(let i=0;i<n;i++){ const z=z0+(i+0.5)*len/n; bogenAuf(g,xf,baseY,z,len/n/2-0.18,pierH,0.5,'stein',typ,false); }
         beam(g,x0+side*d/2,baseY+0.05,(z0+z1)/2,d,0.1,len+0.4,'weg');
-        beam(g,x0+side*d*0.5,baseY+(pierH+rH)/2,(z0+z1)/2,d+0.5,0.12,len+0.6,'ziegel',[0,0,-side*tilt]); }
+        beam(g,x0+side*d*0.5,baseY+(pierH+rH)/2,(z0+z1)/2,d+0.5,0.12,len+0.6,'ziegel',[0,0,-side*tilt]);
+        addMasse({art:'vordach',x0:Math.min(x0,x0+side*(d+0.25)),x1:Math.max(x0,x0+side*(d+0.25)),z0,z1,yB:baseY+pierH,yT:baseY+rH,first:side<0?'+x':'-x'}); }
     });
     return g; }
   function turm(){ const g=grp(); if(!P.turm) return g;   // TURM — HOHL (LOCHWAND-GESETZ: echte Fenster + echtes Portal + Geschossböden), an die Ringmauer gebunden, Standort aus der BELEGUNGS-QUELLE, bei Burg ZINNENKRANZ
     const tw=Math.min(2.2,Math.max(1.4,W*0.22)), _oE=OCC.has('E'),_oW=OCC.has('W'),_oN=OCC.has('N'), sx=!_oE?1:(!_oW?-1:0), szT=(!_oE||!_oW)?-1:1, tx=(sx===0)?0:sx*(W/2+tw/2-0.18), tz=szT<0?(-Dp/2+tw/2-0.18):(Dp/2+tw/2-0.18), h=ridgeY-baseY+Math.max(4.5,P.storeys*2.0), wr=(P.stil==='huette'||P.stil==='stroh')?'holz':'stein', twT=0.26;
-    if(_oE&&_oW&&_oN) return g;                                                                     // TURM-VERZICHTS-GESETZ: kein freier Platz an der Hülle — ehrlich statt Kollision (E→W→Heck-Mitte)
+    if(_oE&&_oW&&_oN) return g;
+    addMasse({art:'turm',x0:tx-tw/2,x1:tx+tw/2,z0:tz-tw/2,z1:tz+tw/2,y0:baseY,y1:baseY+h,spitze:P.zinnen?0:tw*2.4,zinnen:P.zinnen?1:0});   // TURM-VERZICHTS-GESETZ: kein freier Platz an der Hülle — ehrlich statt Kollision (E→W→Heck-Mitte)
     const fw2=Math.min(0.85,tw*0.5), fh=1.05, nLv=Math.max(1,Math.floor(h*0.72/2.4)), pw2=Math.min(0.6,tw*0.36), pH=1.55;
     const zF=tz-tw/2+twT/2, zB=tz+tw/2-twT/2, xL=tx-tw/2+twT/2, xR=tx+tw/2-twT/2, zP=(szT<0?zF:zB), zQ=(szT<0?zB:zF), lvH=2.4, nB=Math.ceil(h/lvH);   // GESCHOSS-BAND-GESETZ: jede Fassade bandweise — lochWand je Ebene (Löcher übereinander sauber getrennt)
     for(let s=0;s<nB;s++){ const y0=baseY+s*lvH, y1=Math.min(baseY+h, y0+lvH), cy=baseY+1.8+s*2.4, hasW=(s>=1&&s<nLv);
@@ -1476,6 +1502,7 @@
     const arY=bT+0.21+0.2+colH+0.16; beam(g,0,arY+0.18,zc,(x1-x0)+0.7,0.36,depth*0.7,'putz');   // Gebälk
     beam(g,0,arY+0.42,zc,(x1-x0)+0.95,0.09,depth*0.78,'stein');   // GEISON-Leiste über dem Gebälk — das Dach LIEGT sichtbar auf, nicht rangebastelt
     const pY=arY+0.36, apex=pY+Math.max(0.9,W*0.12), zf=zc-depth*0.22, zb=zc+depth*0.22;
+    addMasse({art:'portikus',x0:x0-0.35,x1:x1+0.35,z0:zf,z1:zb,yB:pY,yT:apex,gebaelk:{y0:arY,y1:pY,z0:zc-depth*0.35,z1:zc+depth*0.35},basis:{x0:-((x1-x0)+1.0)/2,x1:((x1-x0)+1.0)/2,z0:zc-(depth+0.3)/2,z1:-ez,y1:bT+0.21}});
     poly(g,[[x0-0.35,pY,zf],[x1+0.35,pY,zf],[0,apex,zf]],'putz'); poly(g,[[x0-0.35,pY,zb],[0,apex,zb],[x1+0.35,pY,zb]],'putz');   // Tympanon vorn+hinten
     [-1,1].forEach(sd=>{ eindeckenFlaeche(g,{rY:apex, eaveDropY:pY, eZ:(x1+0.35), zMid:0, sign:sd, axis:'x', trim:true, lift:0.07, xRangeAt:(yy)=>[zf,zb]});   // PORTIKUS-DACH nach DACH-RICHTLINIEN: dieselbe Reihen-Deckung wie das Haus
       strut(g,sd*(x1+0.35),pY+0.05,zf, 0,apex+0.05,zf, 0.08,TRIMR); strut(g,sd*(x1+0.35),pY+0.05,zb, 0,apex+0.05,zb, 0.08,TRIMR);   // ORTGANG beidseitig, stilkonform
@@ -1487,6 +1514,7 @@
     return g; }
   function kuppel(){ const g=grp(); if(!P.kuppel||ROUND) return g;   // KUPPEL auf PENDENTIFS (Byzanz/Osmanen) — sphärische Zwickel tragen Quadrat→Kreis, dann Tambour-Trommel, dann Dom
     const rad=Math.min(W,Dp)/2-0.05, base=eaveY-0.1, springY=base+rad*0.55, seg=24, bands=18;
+    addMasse({art:'kuppel',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,rad,base,springY,y1:springY+rad*1.4});
     const prof=t=>{ const y=springY+rad*1.4*t, r=rad*Math.pow(Math.cos(t*Math.PI*0.5),0.62)*(1+0.30*Math.sin(t*Math.PI)); return [Math.max(0.02,r),y]; };   // ab Springlinie: breit → Zwiebelbauch → Spitze
     { const seg2=8; [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz])=>{ const cxp=sx*(W/2-0.04), czp=sz*(Dp/2-0.04), cd=Math.atan2(czp,cxp); for(let k=0;k<seg2;k++){ const a0=cd-Math.PI/4+(k/seg2)*Math.PI/2, a1=cd-Math.PI/4+((k+1)/seg2)*Math.PI/2; tri(g,[cxp,base,czp],[rad*Math.cos(a0),springY,rad*Math.sin(a0)],[rad*Math.cos(a1),springY,rad*Math.sin(a1)],'putz'); } }); }   // PENDENTIFS: vier sphärische Eckzwickel
     [-Dp/2,Dp/2].forEach(zf=>beam(g,0,base+0.12,zf,W,0.35,0.2,'putz')); [-W/2,W/2].forEach(xf=>beam(g,xf,base+0.12,0,0.2,0.35,Dp,'putz'));   // Gesims-Ring auf der Wandkrone
@@ -1533,6 +1561,9 @@
   const annexDoors = GAs.length ? GAs.flatMap(A=>{ const tw=Math.min(2.45,A.gw-0.55), t0=A.xin+A.sx*0.30, tlo=Math.min(t0,t0+A.sx*tw), thi=Math.max(t0,t0+A.sx*tw), p0=A.xin+A.sx*0.35;
     return [ {x0:tlo, x1:thi, y0:0.06, y1:0.06+2.0, z:A.z0, kind:'tor'},
              {x0:Math.min(p0,p0+A.sx*0.85), x1:Math.max(p0,p0+A.sx*0.85), y0:0.06, y1:0.06+2.0, z:A.z1, kind:'personentuer'} ]; }) : [];
+  { const hm={art:'haupt',x0:-W/2,x1:W/2,z0:-Dp/2,z1:Dp/2,y0:P.pilotis?baseY-0.24:0,eY:eaveY,rY:ridgeY,egTop:levels[0].top,dach:ROOFMODE==='alt'?'alt:'+P.dachTyp:ROOFMODE,hip:P.hip,ovZ:P.ovEave,ovX:P.ovRake,curve:DEF_cv,dachRolle:(sm&&sm.RM&&sm.RM.ziegel)||'ziegel'};
+    addMasse(Object.assign({},hm)); if(P.doppel){ SHIFT=W; addMasse(Object.assign({},hm)); SHIFT=0; }
+    if(DORMER) addMasse({art:'gaube',x0:DORMER.gx-DORMER.gW/2,x1:DORMER.gx+DORMER.gW/2,z0:DORMER.zFront,z1:DORMER.zBack,y0:DORMER.baseY2,y1:DORMER.frontTop}); }   // der Hauptkörper (das Doppelhaus: beide Einheiten)
   return { P, subsystems, order, solids, build, spawn, floors:levels.map(L=>L.y), windows:windowOpenings, annexDoors,
     cellar: P.keller?{x0:-(W/2-0.08),x1:(W/2-0.08),z0:-(Dp/2-0.08),z1:(Dp/2-0.08),floorY:kellerY+0.12}:null,
     wings: wings.map(w=>({side:w.side,outIsX:w.outIsX,ox:w.ox,oz:w.oz,x0:w.x0,x1:w.x1,z0:w.z0,z1:w.z1,eY:w.eY,rY:w.rY,roofAt:w.roofAt,door:w.door})),
@@ -1541,7 +1572,7 @@
       tuer:(ROUND?null:{x:0,z:-Dp/2,w:doorW,h:doorH,y:baseY, hinten:(backDoor?{x:backDoor.cx,z:Dp/2,w:Math.min(1.0,backDoor.hi-backDoor.lo-0.2)}:null)}),   // DORF-ERLEBNIS (17.07., additiv): die TÜR-ZEILE — Position/Maß der Haustür (Front −z, tueren()-Wahrheit) + Hintertür; exportSettlement reicht sie je Slot an den Host (Blocker-Tür-Lücke + Betreten). ROUND-Bauten tragen keine Haustür (tueren() baut dort nichts).
       rooms:rooms.map(r=>({side:r.side,cx:r.cx,cz:r.cz,floor:r.floor,x0:r.x0,x1:r.x1,z0:r.z0,z1:r.z1,y:r.y,func:r.func})), stairX0:wx0, stairX1:wx1, stairZ0:stZ0, stairZ1:wz1,
       flights:flights.map(f=>({base:f.base,x0:f.x0,x1:f.x1,zFoot:f.zFoot,dir:f.dir,N:f.N,rise:f.rise,go:f.go,isLoft:f.isLoft,atLevel:f.atLevel,tr:f.tr})), levelsY:levels.map(L=>L.y),
-      loft:LOFT?{x0:LOFT.x0,x1:LOFT.x1,z0:LOFT.z0,z1:LOFT.z1,xc:LOFT.xc,base:LOFT.base,top:LOFT.top,N:LOFT.N,rise:LOFT.rise,go:LOFT.go}:null}, furniture, chimney, roofY };
+      loft:LOFT?{x0:LOFT.x0,x1:LOFT.x1,z0:LOFT.z0,z1:LOFT.z1,xc:LOFT.xc,base:LOFT.base,top:LOFT.top,N:LOFT.N,rise:LOFT.rise,go:LOFT.go}:null}, furniture, chimney, roofY, masse };
 }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -1918,52 +1949,569 @@
     function fpVon(H){ const d=H.dims;                                                          // GRUNDRISS-QUELLE: Hauptkörper + Flügel-Rechtecke (lokal) — speist den silhouetten-treuen Fernkörper
   return [{x0:-d.W/2,x1:d.W/2,z0:-d.D/2,z1:d.D/2,eY:d.eaveY,rY:d.ridgeY}]
     .concat((H.wings||[]).map(w=>({x0:w.x0,x1:w.x1,z0:w.z0,z1:w.z1,eY:w.eY,rY:w.rY}))); }
+    // ═══════════════════════════════════════════════════════════════════════
+    //  DER FERNKÖRPER DES GESETZBUCHS — DIE EINE HÜLLEN-FORM (S3 haus, Plan §3.3, Lehre 19: die Kosten wohnen im
+    //  Asset). Befund (Kern 78d66a63, gate:haus-fern): der alte Fernkörper las die Massen-Hülle `B.ext` statt des
+    //  Grundrisses (32/32 Kulturen ein Quader, Tiefe Median +1,8 m aufgebläht, max +10,0 m marokkanisch — die
+    //  Hofmauer), legte den First auf die lange Achse (30/62 quer zum Haus-Gesetz) und warf nie; die L2 trug ihn
+    //  über ihrem Destillat. Jetzt liest er die MASSEN DES BAUS (`H.masse`, je Teil des Grundrisses Rechteck, Höhen,
+    //  Dach — Haupt, Flügel, Anbau, Kamin, Hof-Arme, Turm, Portikus, Vordach, Kuppel, Terrassen, Rundbau) und legt
+    //  die EINE Liste (`koerperListe`):
+    //    { stufe, teile: [{ art: "box", c, h | art: "keil", c, h, first, walm? | art: "kapsel", a, b, r;
+    //                       farbe (linear), rolle: "fest" | "sicht" | "beide" }] }
+    //  asset-lokal, jede Zahl auf dem Raster 2^-12 (docs/studio-vertrag.md N5). Ein KEIL ist der Halbkeil des
+    //  Welt-March: der Kasten c ± h, oben geschnitten von der Ebene vom First (die Kante `first` ∈ +x · −x · +z · −z,
+    //  volle Höhe) zur Gegenkante (Höhe 0); ein Satteldach sind zwei Keile, deren Firste sich treffen. `walm` (0..1,
+    //  P.hip) schneidet die zwei Stirnseiten quer zum First mit derselben Neigung: von (1 − walm) der Höhe an der
+    //  Stirn bis zum First, der um walm × Tiefe kürzer wird (walm 1 über einem Quadrat: die Pyramide).
+    //  Der Körper liegt INNEN (`KOERPER_INNEN`): jede Wand 1,5 cm hinter ihrer Grundriss-Ebene, jedes Dach 3 cm unter
+    //  der Dachhaut — er wirft für jede Stufe (Stufe 3, nurWurf) ohne Akne und ohne Peter-Panning (gate:haus-fern I).
+    //  Drei Leser, EINE Liste: die L2 bakt sie mit den Rollen-Stoffen über ihr Destillat (`lod2Koerper`), die Stufe 3
+    //  ist ihr Gitter in EINEM Stoff (`huelleGeoms`, Vertex-Farbe = Rollen-Ton × wandTon), und sie reist als Beipack
+    //  `__fern` (`huelle()`) — jenseits der Mesh-Zone zeichnet der Welt-March sie (fernform "huelle").
+    // ═══════════════════════════════════════════════════════════════════════
+    var HUELLE_RASTER = 4096;
+    var KOERPER_INNEN = { wand: 0.015, dach: 0.03 };
+    function _hr(v) {
+        return Math.round(v * HUELLE_RASTER) / HUELLE_RASTER + 0;
+    }
+    function _hr3(a) {
+        return [_hr(a[0]), _hr(a[1]), _hr(a[2])];
+    }
+    // Ein Teil der EINEN Form (der Kasten aus Grenzen, gerastert) — null, wo er nichts trägt.
+    function huelleTeil(art, x0, x1, y0, y1, z0, z1, farbe, extra) {
+        if (!(x1 - x0 > 0.02 && y1 - y0 > 0.02 && z1 - z0 > 0.02)) return null;
+        var t = { art: art, c: _hr3([(x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2]), h: _hr3([(x1 - x0) / 2, (y1 - y0) / 2, (z1 - z0) / 2]) };
+        if (extra) for (var k in extra) t[k] = extra[k];
+        if (farbe) t.farbe = _hr3(farbe);
+        t.rolle = (extra && extra.rolle) || "sicht";
+        return t;
+    }
+    function huelleKapsel(a, b, r, farbe) {
+        return { art: "kapsel", a: _hr3(a), b: _hr3(b), r: _hr(r), farbe: _hr3(farbe), rolle: "sicht" };
+    }
+    // Die Massen eines Stufe-0-Baus (`stapelBau`): die des Hauses, beim Turm-Stapel die des Aufsatzes um `off` gehoben.
+    // DER KAMIN (die Spitze des Stapels, `H.chimney` — dieselbe Quelle wie B.chimney des Rauchs) gehört zu den Massen: jeder
+    // Leser der Massen (Welt, Labor-Dorf, LOD-Sonde, Vertrag) trägt ihn, ohne B.chimney zu kennen.
+    function masseVon(st) {
+        var m = ((st && st.H && st.H.masse) || []).slice();
+        var hc = st && st.H && st.H.chimney;
+        if (hc && hc.min && hc.max) m.push({ art: "kamin", x0: hc.min[0], x1: hc.max[0], y0: hc.min[1], y1: hc.max[1], z0: hc.min[2], z1: hc.max[2] });
+        if (!st || !st.topH) return m;
+        var off = st.off || 0;
+        var Y = ["y0", "y1", "eY", "rY", "egTop", "yB", "yT", "yLow", "yHigh", "yOut", "base", "springY", "spitze"];
+        return m.concat(
+            (st.topH.masse || []).map(function (x) {
+                var c = Object.assign({}, x);
+                for (var i = 0; i < Y.length; i++) if (Number.isFinite(c[Y[i]])) c[Y[i]] += off;
+                if (c.gebaelk) c.gebaelk = { y0: c.gebaelk.y0 + off, y1: c.gebaelk.y1 + off, z0: c.gebaelk.z0, z1: c.gebaelk.z1 };
+                return c;
+            })
+        );
+    }
+    // Die Wand-Rolle des Fernkörpers (die Stil-Hülle) und ihre Farbe: der Rollen-Ton × der GEMESSENE Fassaden-Ton
+    // (`B.wandTon`, aus der Stufe-1-Fassade — dieselbe Klemme 0,25..1,7 wie der Bake der L2).
+    function _wandRolle(p) {
+        return p.stil === "klinker" ? "backstein" : p.stil === "huette" ? "holz" : p.stil === "glas" ? "glasfern" : p.stil === "alt" ? "gefach" : "putz";
+    }
+    function _wandFaktor(B, wr) {
+        if (!B.wandTon) return null;
+        var base = _colFor(wr, B.p.col);
+        return [0, 1, 2].map(function (i) {
+            return Math.min(1.7, Math.max(0.25, B.wandTon[i] / (base[i] || 0.01)));
+        });
+    }
+    // DIE EINE LISTE: je Masse des Baus ihre Teile — [{ teil, rolle, faktor }] (rolle = der Stoff des Gesetzbuchs, aus
+    // dem die Farbe kommt; der L2-Bake zeichnet mit ihm, `faktor` = der Wand-Ton). Haus-lokal (B.q trägt die Lage).
+    // DIE ZEILE IST DER BAU-REGLER (Lehre 19): die Teile stehen nach RANG (`KOERPER_RANG`: Hauptkörper und Dach zuerst, die
+    // Treppe zuletzt), und die Liste nimmt ein Teil nur, solange ihr Gitter in der Budget-Zeile der Stufe 3 bleibt (tris)
+    // und der Welt-March ihre Teile trägt (24) — ein Teil, das nicht mehr passt, fällt, ein kleineres danach darf noch.
+    var KOERPER_RANG = { haupt: 0, rund: 0, fluegel: 1, hofarm: 1, kuppel: 1, stufe: 1, turm: 1, anbau: 2, portikus: 2, vordach: 2, kamin: 3, sockel: 4, gaube: 5, treppe: 6 };
+    var KOERPER_TEILE_MAX = 24;
+    function koerperListe(B) {
+        var roh = _koerperRoh(B);
+        roh.sort(function (a, b) {
+            return a.rang - b.rang || a.i - b.i;
+        });
+        var zeile = PORTAL_RENDER_CONFIG.lod.budget.haus[3];
+        var soll = zeile && zeile.tris > 0 ? zeile.tris : Infinity;
+        var aus = [];
+        for (var k = 0; k < roh.length && aus.length < KOERPER_TEILE_MAX; k++) {
+            var probe = aus.concat([roh[k]]);
+            var G = { pos: [], nrm: [], idx: [] },
+                alle = probe.map(function (x) {
+                    return x.teil;
+                });
+            for (var j = 0; j < alle.length; j++) _teilGitter(alle[j], alle, G);
+            if (G.idx.length / 3 <= soll) aus = probe;
+        }
+        return aus;
+    }
+    function _koerperRoh(B) {
+        var p = B.p || {};
+        var col = p.col || null;
+        var IW = KOERPER_INNEN.wand,
+            ID = KOERPER_INNEN.dach;
+        var MS = B.masse;
+        if (!Array.isArray(MS) || !MS.length) throw new Error("koerperListe: der Bau trägt keine Massen (B.masse)");
+        var wr = _wandRolle(p);
+        var wf = _wandFaktor(B, wr);
+        var farbe = function (rolle, faktor) {
+            var b = _colFor(rolle, col);
+            return faktor ? [b[0] * faktor[0], b[1] * faktor[1], b[2] * faktor[2]] : b;
+        };
+        var aus = [];
+        var rang = 0;
+        var dazu = function (teil, rolle, faktor, haut) {
+            if (teil) aus.push({ teil: teil, rolle: rolle, faktor: faktor || null, rang: rang, i: aus.length, haut: haut || null });
+        };
+        var wand = function (x0, x1, y0, y1, z0, z1, rolle) {
+            var r = rolle || wr,
+                f = rolle ? null : wf;
+            dazu(huelleTeil("box", x0 + IW, x1 - IW, y0, y1, z0 + IW, z1 - IW, farbe(r, f)), r, f);
+        };
+        var keil = function (x0, x1, y0, y1, z0, z1, first, walm, rolle, haut) {
+            dazu(huelleTeil("keil", x0, x1, y0, y1, z0, z1, farbe(rolle), walm > 0 ? { first: first, walm: _hr(walm) } : { first: first }), rolle, null, haut);
+        };
+        // Satteldach über [x0,x1] × [z0,z1] (schon nach innen gerückt), der First in der Mitte längs `achse`, die Traufe
+        // auf yFuss, der First auf yFirst; zwei Halbkeile. `haut` (nur der L2-Bake, `lod2Koerper`): die Dachhaut über dem
+        // Körper — der Ortgang steht um `ende` über die Giebel, die Ziegel-Lage um `lift` über der Ebene.
+        var sattel = function (x0, x1, z0, z1, yFuss, yFirst, achse, walm, rolle, haut) {
+            if (!(yFirst > yFuss + 0.05)) return;
+            if (achse === "x") {
+                var zm = (z0 + z1) / 2;
+                keil(x0, x1, yFuss, yFirst, z0, zm, "+z", walm, rolle, haut);
+                keil(x0, x1, yFuss, yFirst, zm, z1, "-z", walm, rolle, haut);
+            } else {
+                var xm = (x0 + x1) / 2;
+                keil(x0, xm, yFuss, yFirst, z0, z1, "+x", walm, rolle, haut);
+                keil(xm, x1, yFuss, yFirst, z0, z1, "-x", walm, rolle, haut);
+            }
+        };
+        // die Dachhaut des Gesetzbuchs: die Ziegel liegen 0,08 m über der Ebene (eindeckenFlaeche `lift`), 3 cm stark — mit den
+        // 3 cm des Körpers 0,125 m; der Ortgang je Dach (Haupt `ovRake`, Flügel 0,30, Hof-Arm 0,15)
+        var HAUT_LIFT = ID + 0.095;
+        var finde = function (art) {
+            return MS.filter(function (m) {
+                return m.art === art;
+            });
+        };
+        // DAS SCHWUNGDACH (`curve`, das Verformungs-Feld des Gesetzbuchs): über der Traufe hebt das Feld jede Ecke um
+        // cA · f^2,2 (cA = 1,35 · curve, f = |z| / (D/2)) — die Traufe steht um cA über der Ebene (chinesisch 1,28 m), die
+        // Fläche hängt durch (konvex von unten). Der Körper bleibt darunter: das Satteldach der Ebene bis an die Wand (ohne
+        // Überstand — die echte Traufe schwebt höher), je Traufseite ein Kasten bis zum TIEFSTEN Punkt der Kurve zwischen
+        // fa (wo die Ebene ihn erreicht) und der Wand, und der gehobene Überstand als Keil (die Ebenen-Neigung) vor der
+        // Wand (beide um IW nach innen). An den Walm-Enden endet der Kasten, wo die Walmfläche (samt Hub bei fa) unter seinen
+        // Deckel fiele.
+        var schwung = function (m, dr) {
+            var hz = (m.z1 - m.z0) / 2,
+                hx = (m.x1 - m.x0) / 2,
+                dY = m.rY - m.eY,
+                cA = 1.35 * m.curve,
+                ov = m.ovZ || 0,
+                mS = dY / Math.max(0.1, hz);
+            var kurve = function (f) {
+                return m.rY - dY * f + cA * Math.pow(Math.min(1, f), 2.2);
+            };
+            var fs = Math.min(1, Math.pow(dY / (2.2 * cA), 1 / 1.2));
+            var yMin = Math.min(kurve(fs), kurve(1));
+            var fa = Math.max(0, Math.min(1, (m.rY - yMin) / dY));
+            var xe = hx - IW;
+            if (m.hip > 0.001) {
+                var rH = Math.max(0.25, hx - m.hip * hz),
+                    hs = m.eY + (1 - m.hip) * dY,
+                    noetig = yMin - cA * Math.pow(fa, 2.2) - hs;
+                if (noetig > 0) xe = Math.min(xe, hx - (noetig / Math.max(0.01, m.rY - hs)) * (hx - rH));
+            }
+            sattel(m.x0 + IW, m.x1 - IW, m.z0 + IW, m.z1 - IW, m.eY - ID, m.rY - ID, "x", m.hip || 0, dr, { ende: (m.ovX || 0) + IW, lift: HAUT_LIFT });
+            var hautU = { ende: (m.ovX || 0) + IW, lift: HAUT_LIFT };
+            for (var sz = -1; sz <= 1; sz += 2) {
+                var zi = sz * (fa * hz + IW),
+                    zw = sz * (hz - IW),
+                    zo = sz * (hz + ov);
+                // (wand rückt x und z um IW ein: die Grenzen um IW geweitet, der Kasten liegt auf ±xe und zwischen fa und der Wand)
+                if (xe > 0.3 && yMin - ID > m.eY) wand(-xe - IW, xe + IW, m.eY - ID, yMin - ID, Math.min(zi, zw) - IW, Math.max(zi, zw) + IW, dr);
+                // der Überstand beginnt an der Wand (f = 1 − IW/hz, dort liegt die Kurve um ihren Hub-Rest tiefer als bei f = 1)
+                var yo = kurve((hz - IW) / hz) - ID;
+                if (ov > 0.05) keil(m.x0 + IW, m.x1 - IW, yo - (ov + IW) * mS, yo, Math.min(zw, zo), Math.max(zw, zo), sz > 0 ? "-z" : "+z", 0, dr, hautU);
+            }
+        };
+        var vork = finde("vorkragung")[0] || null;
+        var zinnen = finde("zinnen")[0] || null;
+        var kuppel = finde("kuppel")[0] || null;
+        var rund = finde("rund")[0] || null;
+        var hatStufen = finde("stufe").length > 0;
+        var hauptM = finde("haupt")[0] || null;
+        var dachR = (hauptM && hauptM.dachRolle) || "ziegel";
+        for (var i = 0; i < MS.length; i++) {
+            var m = MS[i];
+            rang = KOERPER_RANG[m.art] != null ? KOERPER_RANG[m.art] : 9;
+            if (m.art === "haupt" && !rund) {
+                var dr = m.dachRolle || "ziegel";
+                var dach = String(m.dach || "sattel");
+                // die Wand bis unter das Dach (beim Dom bis zur Springlinie der Trommel, bei Zinnen bis zur Brustwehr)
+                var top = dach === "sattel" ? m.eY - ID : dach === "dome" && kuppel ? kuppel.springY - ID : zinnen ? zinnen.y1 - ID : hatStufen ? m.eY - 0.15 : m.eY + 0.1 - ID;
+                if (vork && vork.y0 < top) {
+                    wand(m.x0, m.x1, m.y0, vork.y0, m.z0, m.z1);
+                    wand(m.x0 - vork.ov, m.x1 + vork.ov, vork.y0, top, m.z0 - vork.ov, m.z1 + vork.ov);
+                } else wand(m.x0, m.x1, m.y0, top, m.z0, m.z1);
+                var mS = (m.rY - m.eY) / Math.max(0.1, (m.z1 - m.z0) / 2);
+                if (dach === "sattel" && m.curve > 0) schwung(m, dr);
+                else if (dach === "sattel") {
+                    // der Überstand der Traufe (er wirft das Traufschatten-Band)
+                    var ov = m.ovZ || 0;
+                    sattel(m.x0 + IW, m.x1 - IW, m.z0 - ov, m.z1 + ov, m.eY - ov * mS - ID, m.rY - ID, "x", m.hip || 0, dr, { ende: (m.ovX || 0) + IW, lift: HAUT_LIFT });
+                } else if (dach.indexOf("alt:") === 0) {
+                    var dt = dach.slice(4),
+                        ex = (m.x1 - m.x0) / 2,
+                        ez = (m.z1 - m.z0) / 2;
+                    if (dt === "pyramide") sattel(m.x0 + IW, m.x1 - IW, m.z0 + IW, m.z1 - IW, top, m.eY + Math.max(2, 2 * ex * 0.42) - ID, "x", 1, dr);
+                    else if (dt === "kegel") sattel(m.x0 + IW, m.x1 - IW, m.z0 + IW, m.z1 - IW, top, m.eY + Math.min(ex, ez) * 1.8 - ID, "x", 1, dr);
+                    else if (dt === "mansard" || dt === "tonne")
+                        sattel(m.x0 + IW, m.x1 - IW, m.z0 + IW, m.z1 - IW, top, (dt === "tonne" ? m.eY + ez : m.rY) - ID, "x", 0, dr);
+                    else if (dt === "pult") keil(m.x0 + IW, m.x1 - IW, top, m.rY - ID, m.z0 + IW, m.z1 - IW, "+z", 0, dr);
+                    else if (dt === "zwiebel") {
+                        var rz = Math.min(ex, ez) * 0.9;
+                        dazu(huelleKapsel([0, m.eY + rz * 0.9, 0], [0, m.eY + Math.min(ex, ez) * 1.7 - rz, 0], rz, farbe("kupfer")), "kupfer");
+                    }
+                    // flach · schmetterling: die Wand trägt ihr Deck
+                }
+            } else if (m.art === "fluegel") {
+                wand(m.x0, m.x1, 0, m.rY != null ? m.eY - ID : m.eY + 0.1 - ID, m.z0, m.z1);
+                if (m.rY != null) {
+                    var quer = m.first === "z" ? m.x1 - m.x0 : m.z1 - m.z0,
+                        pit = (m.rY - m.eY) / Math.max(0.1, quer / 2),
+                        e = m.eOv || 0;
+                    var hautF = { ende: 0.3 + IW, lift: HAUT_LIFT };
+                    if (m.first === "z") sattel(m.x0 - e + IW, m.x1 + e - IW, m.z0 + IW, m.z1 - IW, m.eY - e * pit - ID, m.rY - ID, "z", 0, dachR, hautF);
+                    else sattel(m.x0 + IW, m.x1 - IW, m.z0 - e + IW, m.z1 + e - IW, m.eY - e * pit - ID, m.rY - ID, "x", 0, dachR, hautF);
+                }
+            } else if (m.art === "anbau") {
+                wand(m.x0, m.x1, 0, (m.flach ? m.yHigh : m.yLow) - ID, m.z0, m.z1, "holz");
+                if (!m.flach)
+                    keil(Math.min(m.xin, m.xoO) + IW, Math.max(m.xin, m.xoO) - IW, m.yOut - ID, m.yHigh - ID, m.z0 + IW, m.z1 - IW, m.sx > 0 ? "-x" : "+x", 0, "ziegel2");
+            } else if (m.art === "hofarm") {
+                wand(m.x0, m.x1, 0, m.rY != null ? m.eY - ID : m.eY + 0.12 - ID, m.z0, m.z1);
+                if (m.rY != null) sattel(m.x0 + IW, m.x1 - IW, m.z0 + IW, m.z1 - IW, m.eY - ID, m.rY - ID, m.first, 0, dachR, { ende: 0.15 + IW, lift: HAUT_LIFT });
+            } else if (m.art === "turm") {
+                wand(m.x0, m.x1, 0, m.y1 - ID + (m.zinnen ? 1.85 : 0), m.z0, m.z1, "stein");
+                if (m.spitze > 0) sattel(m.x0 + IW, m.x1 - IW, m.z0 + IW, m.z1 - IW, m.y1 - ID, m.y1 + m.spitze - ID, "x", 1, "ziegel");
+            } else if (m.art === "vordach") {
+                keil(m.x0 + IW, m.x1 - IW, m.yB - ID, m.yT - ID, m.z0 + IW, m.z1 - IW, m.first, 0, "ziegel");
+                if (m.deck > 0) wand(m.x0, m.x1, 0, m.deck, m.z0, m.z1, "stein"); // das Deck der Veranda steht auf seinem Sockel
+            } else if (m.art === "portikus") {
+                var gb = m.gebaelk,
+                    bs = m.basis;
+                if (gb) wand(m.x0, m.x1, gb.y0, gb.y1 - ID, gb.z0, gb.z1, "putz");
+                if (bs) wand(bs.x0, bs.x1, 0, bs.y1, bs.z0, bs.z1, "stein"); // Krepidoma, Stylobat und Vorplatz bis an die Wand
+                sattel(m.x0 + IW, m.x1 - IW, m.z0 + IW, m.z1 - IW, m.yB - ID, m.yT - ID, "z", 0, "ziegel");
+            } else if (m.art === "kuppel") {
+                var r0 = m.rad * 0.95,
+                    ya = m.springY + m.rad * 0.35,
+                    yb = Math.max(ya, m.y1 - r0 - ID);
+                dazu(huelleKapsel([0, ya, 0], [0, yb, 0], r0, farbe("kupfer")), "kupfer");
+            } else if (m.art === "stufe") {
+                wand(m.x0, m.x1, m.y0, m.y1 - ID, m.z0, m.z1, p.stil === "stein" || p.stil === "klinker" ? "putz" : "stein");
+            } else if (m.art === "sockel") {
+                wand(m.x0, m.x1, m.y0, m.y1, m.z0, m.z1, "stein");
+            } else if (m.art === "treppe") {
+                keil(m.x0 + IW, m.x1 - IW, m.y0, m.y1 - ID, m.z0 + IW, m.z1 - IW, m.first, 0, "stein");
+            } else if (m.art === "gaube") {
+                wand(m.x0, m.x1, m.y0, m.y1 - ID, m.z0, m.z1);
+            } else if (m.art === "rund") {
+                var rr = m.rad - IW,
+                    hoch = m.y1 - m.y0;
+                if (hoch >= 2 * rr) dazu(huelleKapsel([0, m.y0 + rr, 0], [0, m.y1 - rr, 0], rr, farbe(wr, wf)), wr, wf);
+                else wand(-rr * 0.7071, rr * 0.7071, m.y0, m.y1 - ID, -rr * 0.7071, rr * 0.7071);
+                if (m.zwiebel) {
+                    var rk = m.rad * 0.85;
+                    dazu(huelleKapsel([0, m.y1 + rk * 0.8, 0], [0, Math.max(m.y1 + rk * 0.8, m.spitze - rk), 0], rk, farbe("kupfer")), "kupfer");
+                } else sattel(-rr * 0.7071, rr * 0.7071, -rr * 0.7071, rr * 0.7071, m.y1 - ID, m.spitze - ID, "x", 1, "ziegel");
+            }
+        }
+        // DER KAMIN (`B.chimney`, die Spitze des Stapels) — er wirft seinen Schlagschatten aufs Dach
+        rang = KOERPER_RANG.kamin;
+        var c = finde("kamin")[0];
+        if (c) dazu(huelleTeil("box", c.x0 + IW, c.x1 - IW, c.y0, c.y1 - ID, c.z0 + IW, c.z1 - IW, farbe("stein")), "stein");
+        return aus;
+    }
+    // Die Flächen eines Teils (Polygone, Ecken außen herum): der Kasten mit seinen Seiten (der Boden liegt auf dem Grund
+    // oder einem Nachbarn) und seinem Deckel, wo kein Keil auf ihm sitzt; der Keil mit Schräge, Rücken, Stirnen und
+    // Walm-Flächen; die Kapsel als Achteck-Prisma mit Kegel-Kappen. Gitter-Regel des Fernkörpers (L2, Stufe 3).
+    function _keilFlaechen(t, boden) {
+        var c = t.c,
+            h = t.h,
+            f = t.first,
+            w = Math.max(0, Math.min(1, t.walm || 0));
+        var amX = f === "+z" || f === "-z"; // der First liegt längs x
+        var hU = amX ? h[0] : h[2],
+            run = 2 * (amX ? h[2] : h[0]),
+            yB = c[1] - h[1],
+            yT = c[1] + h[1],
+            H = 2 * h[1];
+        // (U längs des Firsts, V vom First zur Traufe, y) → Welt
+        var P = function (U, V, y) {
+            if (f === "+z") return [c[0] + U, y, c[2] + h[2] - V];
+            if (f === "-z") return [c[0] + U, y, c[2] - h[2] + V];
+            if (f === "+x") return [c[0] + h[0] - V, y, c[2] + U];
+            return [c[0] - h[0] + V, y, c[2] + U];
+        };
+        // der Boden (die Untersicht des Überstands) nur, wo der Keil gesehen wird (L2) — der Wurf braucht ihn nie
+        var F = boden ? [[P(-hU, 0, yB), P(-hU, run, yB), P(hU, run, yB), P(hU, 0, yB)]] : [];
+        if (!(w > 0)) {
+            F.push([P(-hU, 0, yT), P(hU, 0, yT), P(hU, run, yB), P(-hU, run, yB)]);
+            F.push([P(-hU, 0, yB), P(hU, 0, yB), P(hU, 0, yT), P(-hU, 0, yT)]);
+            F.push([P(hU, 0, yB), P(hU, run, yB), P(hU, 0, yT)]);
+            F.push([P(-hU, 0, yB), P(-hU, 0, yT), P(-hU, run, yB)]);
+            return F;
+        }
+        var v1 = w * run,
+            yW = yB + (1 - w) * H,
+            rH = Math.max(0, hU - w * run);
+        F.push([P(-rH, 0, yT), P(rH, 0, yT), P(hU, v1, yW), P(hU, run, yB), P(-hU, run, yB), P(-hU, v1, yW)]);
+        F.push([P(-hU, 0, yB), P(hU, 0, yB), P(hU, 0, yW), P(rH, 0, yT), P(-rH, 0, yT), P(-hU, 0, yW)]);
+        if (w < 1) {
+            F.push([P(hU, 0, yB), P(hU, run, yB), P(hU, v1, yW), P(hU, 0, yW)]);
+            F.push([P(-hU, 0, yB), P(-hU, 0, yW), P(-hU, v1, yW), P(-hU, run, yB)]);
+        }
+        F.push([P(hU, 0, yW), P(hU, v1, yW), P(rH, 0, yT)]);
+        F.push([P(-hU, 0, yW), P(-rH, 0, yT), P(-hU, v1, yW)]);
+        return F;
+    }
+    function _kapselFlaechen(t) {
+        var a = t.a,
+            b = t.b,
+            r = t.r,
+            n = 8;
+        var d = [b[0] - a[0], b[1] - a[1], b[2] - a[2]],
+            l = Math.hypot(d[0], d[1], d[2]);
+        var ax = l > 1e-6 ? [d[0] / l, d[1] / l, d[2] / l] : [0, 1, 0];
+        var u = Math.abs(ax[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0];
+        var e1 = [ax[1] * u[2] - ax[2] * u[1], ax[2] * u[0] - ax[0] * u[2], ax[0] * u[1] - ax[1] * u[0]],
+            l1 = Math.hypot(e1[0], e1[1], e1[2]);
+        e1 = [e1[0] / l1, e1[1] / l1, e1[2] / l1];
+        var e2 = [ax[1] * e1[2] - ax[2] * e1[1], ax[2] * e1[0] - ax[0] * e1[2], ax[0] * e1[1] - ax[1] * e1[0]];
+        var ring = function (o) {
+            var R = [];
+            for (var k = 0; k < n; k++) {
+                var s = (2 * Math.PI * k) / n;
+                R.push([o[0] + r * (Math.cos(s) * e1[0] + Math.sin(s) * e2[0]), o[1] + r * (Math.cos(s) * e1[1] + Math.sin(s) * e2[1]), o[2] + r * (Math.cos(s) * e1[2] + Math.sin(s) * e2[2])]);
+            }
+            return R;
+        };
+        var A = ring(a),
+            B = ring(b),
+            ta = [a[0] - ax[0] * r, a[1] - ax[1] * r, a[2] - ax[2] * r],
+            tb = [b[0] + ax[0] * r, b[1] + ax[1] * r, b[2] + ax[2] * r];
+        var F = [];
+        for (var k = 0; k < n; k++) {
+            var k2 = (k + 1) % n;
+            if (l > 1e-6) F.push([A[k], A[k2], B[k2], B[k]]);
+            F.push([ta, A[k2], A[k]]);
+            F.push([tb, B[k], B[k2]]);
+        }
+        return F;
+    }
+    // Liegt der Deckel eines Kastens unter Keilen (der Dach-Fuß unter, der First über ihm, sein Rechteck von ihren
+    // Grundrissen gedeckt)? Dann ist er innen und trägt kein Gitter.
+    function _deckelGedeckt(t, alle) {
+        var top = t.c[1] + t.h[1];
+        var keile = alle.filter(function (k) {
+            return k.art === "keil" && k.c[1] - k.h[1] <= top + 0.01 && k.c[1] + k.h[1] >= top;
+        });
+        if (!keile.length) return false;
+        var ex = t.h[0] - 0.01,
+            ez = t.h[2] - 0.01;
+        for (var i = -1; i <= 1; i++)
+            for (var j = -1; j <= 1; j++) {
+                var x = t.c[0] + i * ex,
+                    z = t.c[2] + j * ez;
+                var drin = keile.some(function (k) {
+                    return Math.abs(x - k.c[0]) <= k.h[0] + 0.02 && Math.abs(z - k.c[2]) <= k.h[2] + 0.02;
+                });
+                if (!drin) return false;
+            }
+        return true;
+    }
+    function teilFlaechen(t, alle, sicht) {
+        if (t.art === "keil") return _keilFlaechen(t, sicht);
+        if (t.art === "kapsel") return _kapselFlaechen(t);
+        var c = t.c,
+            h = t.h,
+            x0 = c[0] - h[0],
+            x1 = c[0] + h[0],
+            y0 = c[1] - h[1],
+            y1 = c[1] + h[1],
+            z0 = c[2] - h[2],
+            z1 = c[2] + h[2];
+        var F = [
+            [[x0, y0, z0], [x1, y0, z0], [x1, y1, z0], [x0, y1, z0]],
+            [[x1, y0, z1], [x0, y0, z1], [x0, y1, z1], [x1, y1, z1]],
+            [[x0, y0, z1], [x0, y0, z0], [x0, y1, z0], [x0, y1, z1]],
+            [[x1, y0, z0], [x1, y0, z1], [x1, y1, z1], [x1, y1, z0]],
+        ];
+        if (!_deckelGedeckt(t, alle)) F.push([[x0, y1, z0], [x1, y1, z0], [x1, y1, z1], [x0, y1, z1]]);
+        return F;
+    }
+    // Ein Teil als Dreiecke (je Fläche eigene Ecken, harte Kanten): die Fläche zeigt von der Mitte des Teils weg (Newell).
+    function _teilGitter(t, alle, out, sicht) {
+        var mitte = t.art === "kapsel" ? [(t.a[0] + t.b[0]) / 2, (t.a[1] + t.b[1]) / 2, (t.a[2] + t.b[2]) / 2] : t.c;
+        var F = teilFlaechen(t, alle, sicht);
+        for (var i = 0; i < F.length; i++) {
+            var Q = F[i].filter(function (q, k, A) {
+                var v = A[(k + A.length - 1) % A.length];
+                return Math.abs(q[0] - v[0]) + Math.abs(q[1] - v[1]) + Math.abs(q[2] - v[2]) > 1e-6;
+            });
+            if (Q.length < 3) continue;
+            var nx = 0,
+                ny = 0,
+                nz = 0,
+                cx = 0,
+                cy = 0,
+                cz = 0;
+            for (var k = 0; k < Q.length; k++) {
+                var a = Q[k],
+                    b = Q[(k + 1) % Q.length];
+                nx += (a[1] - b[1]) * (a[2] + b[2]);
+                ny += (a[2] - b[2]) * (a[0] + b[0]);
+                nz += (a[0] - b[0]) * (a[1] + b[1]);
+                cx += a[0];
+                cy += a[1];
+                cz += a[2];
+            }
+            var l = Math.hypot(nx, ny, nz);
+            if (!(l > 1e-9)) continue;
+            nx /= l;
+            ny /= l;
+            nz /= l;
+            if ((cx / Q.length - mitte[0]) * nx + (cy / Q.length - mitte[1]) * ny + (cz / Q.length - mitte[2]) * nz < 0) {
+                Q = Q.slice().reverse();
+                nx = -nx;
+                ny = -ny;
+                nz = -nz;
+            }
+            var v0 = out.pos.length / 3;
+            for (k = 0; k < Q.length; k++) {
+                out.pos.push(Q[k][0], Q[k][1], Q[k][2]);
+                out.nrm.push(nx, ny, nz);
+            }
+            for (k = 1; k < Q.length - 1; k++) out.idx.push(v0, v0 + k, v0 + k + 1);
+        }
+    }
+    // DIE STUFE 3 (nurWurf): die Liste als EIN Gitter in EINEM Stoff (Rolle putz, Vertex-Farbe = die Farbe des Teils),
+    // in der Lage des Baus (`q` = B.q: Gier um y, dann Ort — der Labor-Dorf mischt die Stufe 3 vieler Häuser), auf dem
+    // Raster 2^-12 (Normalen 2^-14) — die Rollen-Geoms der Stufe (eine Rolle).
+    function huelleGeoms(teile, geoms, q) {
+        var G = { pos: [], nrm: [], col: [], idx: [], uv: [], vo: 0 };
+        for (var i = 0; i < teile.length; i++) {
+            var t = teile[i],
+                n0 = G.pos.length / 3;
+            _teilGitter(t, teile, G);
+            var f = t.farbe || [1, 1, 1];
+            for (var v = n0; v < G.pos.length / 3; v++) G.col.push(f[0], f[1], f[2]);
+        }
+        if (q && (q.phi || q.x || q.z)) {
+            var cs = Math.cos(q.phi || 0),
+                sn = Math.sin(q.phi || 0);
+            for (var j = 0; j < G.pos.length; j += 3) {
+                var x = G.pos[j],
+                    z = G.pos[j + 2],
+                    nx = G.nrm[j],
+                    nz = G.nrm[j + 2];
+                G.pos[j] = x * cs + z * sn + (q.x || 0);
+                G.pos[j + 2] = -x * sn + z * cs + (q.z || 0);
+                G.nrm[j] = nx * cs + nz * sn;
+                G.nrm[j + 2] = -nx * sn + nz * cs;
+            }
+        }
+        for (var k = 0; k < G.pos.length; k++) {
+            G.pos[k] = _hr(G.pos[k]);
+            G.nrm[k] = Math.round(G.nrm[k] * 16384) / 16384 + 0;
+            G.col[k] = _hr(G.col[k]);
+        }
+        G.vo = G.pos.length / 3;
+        geoms = geoms || {};
+        geoms.putz = G;
+        return geoms;
+    }
+    // Der L2-Körper: dieselbe Liste mit den Rollen-Stoffen des Gesetzbuchs gebakt (Kontakt-AO, Material-Illusion, Welt-
+    // UV — `bakeLOD`), in der Lage des Baus (B.q). Die Wand trägt den gemessenen Ton als Vertex-Faktor.
     // prettier-ignore
-    function lod2Koerper(B, geoms){                                                              // Fern-Körper AUS SYSTEMMASSEN — GRUNDRISS-TREU: je Flügel ein Körper (L/U/T/kreuz behalten fern ihre Silhouette; Hof bleibt Hof)
-  const e=B.ext, d=B.dims||{}, W=e.x1-e.x0, D=e.z1-e.z0, cx=(e.x0+e.x1)/2, cz=(e.z0+e.z1)/2, sN=(B.p.storeys||1);
-  const eave=Math.min(d.eaveY||e.y1*0.62, e.y1), ridge=Math.max(eave+0.4, Math.min(d.ridgeY||e.y1, e.y1));
-  const wr= B.p.stil==='klinker'?'backstein': B.p.stil==='huette'?'holz': B.p.stil==='glas'?'glasfern': B.p.stil==='alt'?'gefach':'putz';
-  const grp2=new THREE.Group();
-  const dachPrisma=(X0,X1,Z0,Z1,eY,rY)=>{ const v=[];                                        // First folgt der LANGEN Achse · WINDING-GESETZ: CCW-auswärts, Traufnormalen zeigen NACH OBEN (der geerbte Zweig war invertiert — DoubleSide verschwieg es)
-    if(X1-X0>=Z1-Z0){ const zm=(Z0+Z1)/2;
-      v.push(X1,eY,Z0, X0,eY,Z0, X0,rY,zm,  X1,eY,Z0, X0,rY,zm, X1,rY,zm);                    // Nordschräge → (0,+y,−z)
-      v.push(X0,eY,Z1, X1,eY,Z1, X1,rY,zm,  X0,eY,Z1, X1,rY,zm, X0,rY,zm);                    // Südschräge → (0,+y,+z)
-      v.push(X0,eY,Z0, X0,eY,Z1, X0,rY,zm);                                                   // Westgiebel → (−x)
-      v.push(X1,eY,Z1, X1,eY,Z0, X1,rY,zm); }                                                 // Ostgiebel → (+x)
-    else { const xm=(X0+X1)/2;
-      v.push(X0,eY,Z0, X0,eY,Z1, xm,rY,Z1,  X0,eY,Z0, xm,rY,Z1, xm,rY,Z0);                    // Westschräge → (−x,+y)
-      v.push(X1,eY,Z1, X1,eY,Z0, xm,rY,Z0,  X1,eY,Z1, xm,rY,Z0, xm,rY,Z1);                    // Ostschräge → (+x,+y)
-      v.push(X1,eY,Z0, X0,eY,Z0, xm,rY,Z0);                                                   // Nordgiebel → (−z)
-      v.push(X0,eY,Z1, X1,eY,Z1, xm,rY,Z1); }                                                 // Südgiebel → (+z)
-    const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(v,3)); bg.computeVertexNormals();
-    grp2.add(new THREE.Mesh(bg,M.ziegel)); };
-  const koerper=(X0,X1,Z0,Z1,eY,rY,adj)=>{ adj=adj||{};                                       // adj: Seiten, an denen ein Nachbar-Teil anliegt → dorthin WACHSEN statt schrumpfen (koplanare Fugen-Flächen = Z-Fight, jetzt 0.35 im Nachbarn vergraben)
-    const ix0=X0+(adj.x0?-0.35:0.015), ix1=X1+(adj.x1?0.35:-0.015), iz0=Z0+(adj.z0?-0.35:0.015), iz1=Z1+(adj.z1?0.35:-0.015);   // BÜNDIGKEITS-FIX: Körper 1.5cm statt 6cm hinter dem Frame — Destillat-Zellen lesen sich als GEFACH, nicht als Loch (Michis Bild)
-    const Wp=Math.max(0.4,ix1-ix0), Dp2=Math.max(0.4,iz1-iz0), mx=(ix0+ix1)/2, mz=(iz0+iz1)/2;
-    const wg=new THREE.BoxGeometry(Wp,eY,Dp2);
-    if(B.wandTon){ const base=_colFor(wr,B.p.col), att=new Float32Array(24*3);                // WANDTON: gemessene Fassadenfarbe / Rollen-Basis = Vertex-Faktor (bakeLOD multipliziert)
-      const fx=Math.min(1.7,Math.max(0.25,B.wandTon[0]/(base[0]||0.01))), fy=Math.min(1.7,Math.max(0.25,B.wandTon[1]/(base[1]||0.01))), fz=Math.min(1.7,Math.max(0.25,B.wandTon[2]/(base[2]||0.01)));
-      for(let i=0;i<24;i++){ att[i*3]=fx; att[i*3+1]=fy; att[i*3+2]=fz; }
-      wg.setAttribute('color', new THREE.Float32BufferAttribute(att,3)); }
-    const wand=new THREE.Mesh(wg,M[wr]||M.putz); wand.position.set(mx,eY/2,mz); grp2.add(wand);
-    if(rY>eY+0.45&&B.p.dachTyp!=='flach'&&sN<6) dachPrisma(X0,X1,Z0,Z1,eY,rY);
-    if(sN>=2&&sN<6&&eY>3.5){ const gy=Math.min(2.8,eY-0.7);                                   // GURTBAND-KLAMMER: nie an der Traufe niedriger Flügel kleben
-      const gb=new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.3,Wp-0.08),0.14,Math.max(0.3,Dp2-0.08)),M.dunkel); gb.position.set(mx,gy,mz); grp2.add(gb); } };   // Gurtband JE TEIL — nie quer über den Innenhof
-  const beruehrt=(f,g2)=>({                                                                   // Seiten-Adjazenz zweier Grundriss-Rechtecke (mit 0.12 Toleranz)
-    x1:(Math.abs(g2.x0-f.x1)<0.12&&g2.z0<f.z1-0.05&&g2.z1>f.z0+0.05), x0:(Math.abs(g2.x1-f.x0)<0.12&&g2.z0<f.z1-0.05&&g2.z1>f.z0+0.05),
-    z1:(Math.abs(g2.z0-f.z1)<0.12&&g2.x0<f.x1-0.05&&g2.x1>f.x0+0.05), z0:(Math.abs(g2.z1-f.z0)<0.12&&g2.x0<f.x1-0.05&&g2.x1>f.x0+0.05) });
-  if(B.fp&&B.fp.length>1){ for(const f of B.fp){                                             // FLÜGEL-MODUS: jedes Grundriss-Rechteck trägt Wand+Dach+Band selbst
-      const fe=Math.min(f.eY||eave, e.y1), fr=Math.max(fe+0.3, Math.min(f.rY||ridge, e.y1));
-      const adj={x0:false,x1:false,z0:false,z1:false};
-      for(const g2 of B.fp){ if(g2===f)continue; const t=beruehrt(f,g2); adj.x0=adj.x0||t.x0; adj.x1=adj.x1||t.x1; adj.z0=adj.z0||t.z0; adj.z1=adj.z1||t.z1; }
-      koerper(f.x0,f.x1,f.z0,f.z1,fe,fr,adj); } }
-  else koerper(e.x0,e.x1,e.z0,e.z1,eave,ridge);                                              // EIN-QUADER-MODUS: I-Grundriss, Doppelhaus, Türme
-  if(B.p.turm) { const tm=new THREE.Mesh(new THREE.BoxGeometry(1.6,3.2,1.6),M[wr]||M.putz); tm.position.set(e.x0+1.2,eave+1.4,cz); grp2.add(tm); }   // SIGNATUREN: das System bleibt fern erkennbar
-  if(B.p.kuppel){ const ku=new THREE.Mesh(new THREE.BoxGeometry(W*0.5,W*0.22,D*0.5),M.kupfer||M.metall); ku.position.set(cx,eave+W*0.11,cz); grp2.add(ku); }
-  if(sN>=10){ const an=new THREE.Mesh(new THREE.BoxGeometry(0.14,3.0,0.14),M.metall); an.position.set(cx-W*0.2,eave+1.6,cz+D*0.14); grp2.add(an); }
+    function lod2Koerper(B, geoms){
+  const liste=koerperListe(B), alle=liste.map(x=>x.teil), grp2=new THREE.Group();
+  const mitHaut=(x)=>{ if(!x.haut||x.teil.art!=='keil') return x.teil; const t=Object.assign({},x.teil), amX=(t.first==='+z'||t.first==='-z');   // DIE DACHHAUT (nur sichtbar, die L2): der Keil um die Ziegel-Lage gehoben, der Ortgang über die Giebel
+    t.c=[t.c[0],t.c[1]+x.haut.lift,t.c[2]]; t.h=amX?[t.h[0]+x.haut.ende,t.h[1],t.h[2]]:[t.h[0],t.h[1],t.h[2]+x.haut.ende]; return t; };
+  for(const x of liste){ const G={pos:[],nrm:[],idx:[]}; _teilGitter(mitHaut(x), alle, G, true); if(!G.pos.length) continue;
+    const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.Float32BufferAttribute(G.pos,3)); bg.setAttribute('normal',new THREE.Float32BufferAttribute(G.nrm,3)); bg.setIndex(G.idx);
+    if(x.faktor){ const n=G.pos.length/3, att=new Float32Array(n*3); for(let i=0;i<n;i++){ att[i*3]=x.faktor[0]; att[i*3+1]=x.faktor[1]; att[i*3+2]=x.faktor[2]; } bg.setAttribute('color',new THREE.Float32BufferAttribute(att,3)); }
+    grp2.add(new THREE.Mesh(bg, M[x.rolle]||M.putz)); }
   const wrap=new THREE.Group(); wrap.rotation.y=B.q.phi; wrap.position.set(B.q.x,0,B.q.z); wrap.add(grp2); wrap.updateMatrixWorld(true);
   bakeLOD(grp2, B.p.col, geoms, 0);
 }
+    // Die Hülle eines Baus in der EINEN Form: die Liste des Fernkörpers (Stufe 3, rolle "sicht").
+    function huelleVonBau(B) {
+        return {
+            stufe: 3,
+            teile: koerperListe(B).map(function (x) {
+                return x.teil;
+            }),
+        };
+    }
+    // Die Solids eines Baus (Zahlen-Zeile [x0,y0,z0,x1,y1,z1]…, Welle L) in der EINEN Form: je Box ein Teil, rolle "fest".
+    function huelleAusBoxen(stufe, boxen) {
+        var teile = [];
+        for (var i = 0; i + 5 < boxen.length; i += 6) {
+            var t = huelleTeil("box", boxen[i], boxen[i + 3], boxen[i + 1], boxen[i + 4], boxen[i + 2], boxen[i + 5], null, { rolle: "fest" });
+            if (t) teile.push(t);
+        }
+        return { stufe: stufe, teile: teile };
+    }
+    // DIE STUFE 3 WIRFT MIT DEM EINEN SCHATTEN-STOFF (das Wurf-Gesetz E1): jede Ecke deckt ganz (`aDeckt` 1 — der Stoff
+    // des Wirts: Alpha = max(aDeckt, Atlas-Alpha)), und ihr Stoff IST der Schatten-Stoff — unsichtbar, beidseitig,
+    // alphaTest 0,5, gestempelt `userData.__stoff = "schatten"` (die Brücke reicht ihn als kind "schatten": dieselbe
+    // Material-Identität wie der Schatten-Teil der Baum-L1, EIN Programm in den Kaskaden). Beidseitig, weil die offenen
+    // Flächen des Fernkörpers (der Keil ohne Boden, Plane, Dach) von beiden Seiten werfen müssen.
+    var _wurfStoff = null;
+    function wurfStoff() {
+        if (!_wurfStoff) {
+            _wurfStoff = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide, alphaTest: 0.5 });
+            _wurfStoff.userData.__stoff = "schatten";
+            // die Seh-Klasse (der Budget-Ausgang verlangt sie je Stoff): das Matte — der Stoff faltet mit nichts
+            _wurfStoff.userData.__seh = "stoff";
+        }
+        return _wurfStoff;
+    }
+    function stufeWirft(g) {
+        g.traverse(function (o) {
+            if (!(o.isMesh && o.geometry && o.geometry.attributes.position)) return;
+            var n = o.geometry.attributes.position.count;
+            o.geometry.setAttribute("aDeckt", new THREE.Float32BufferAttribute(new Float32Array(n).fill(1), 1));
+            // die Atlas-Lage des Schatten-Stoffs (er schneidet die Baum-Karte aus dem EINEN Atlas): die Stufe 3 trägt 0 — die
+            // Deckung 1 gewinnt (max), und der Stoff liest dieselbe Attribut-Form wie der Schatten-Teil der Baum-L1
+            if (!o.geometry.attributes.uv) o.geometry.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(n * 2), 2));
+            o.material = wurfStoff();
+            o.castShadow = true;
+        });
+    }
+    // B2 der Hülle: huelle(rezeptId, seed, ov?) → { stufe: 3, teile } — der Fernkörper jeder fachwerk-Art (das Haus aus den
+    // Massen seines Baus, die Ausstattung aus ihrer Grundform): dieselbe Liste, die die Stufe 3 als Beipack `__fern` trägt
+    // und aus der sie ihr Gitter baut. null: kein Rezept.
+    function huelle(rezeptId, seed, ov) {
+        var pre = PRESETS[rezeptId];
+        if (!pre) return null;
+        if (pre.kind === "ausstattung") return ausHuelleFuer(rezeptId, seed, ov);
+        materials();
+        var p = hausParams(pre, ov || null);
+        var sd = Number(seed);
+        if (isFinite(sd) && !(ov && typeof ov === "object" && ov.seed != null)) p.seed = sd;
+        var B = massBau(p);
+        if (!((p.storeys || 1) >= 6)) {
+            fragFuer(B, 1);
+            B.frag = null;
+            B.fragStufe = undefined;
+        }
+        return huelleVonBau(B);
+    }
     // prettier-ignore
     function mischeGeoms(ziel, teil){ for(const role in teil){ const S=teil[role]; if(!S.vo) continue;   // FRAGMENT-MISCHUNG: fertige Bakes verketten — kein Neubau, nur Index-Versatz
   const G=ziel[role]||(ziel[role]={pos:[],nrm:[],col:[],idx:[],uv:[],vo:0}), off=G.vo;
@@ -2030,7 +2578,8 @@
     function fragFuer(B, stufe){                                                                 // GEBÄUDE-FRAGMENT-GESETZ: jedes Gebäude bakt seine Stufe EINMAL — der Chunk mischt nur noch.
   if(B.frag&&B.fragStufe===stufe) return B.frag;                                             // Ein Slot je Gebäude: Stufenwechsel verdrängt, Demotion trifft den warmen Cache
   const geoms={};
-  if(stufe===3||(stufe===2&&(B.p.storeys||1)>=6)){ lod2Koerper(B, geoms); }                  // VOGEL / ferner Turm: reiner dims-Körper, KEIN build
+  if(stufe===3){ huelleGeoms(koerperListe(B).map(x=>x.teil), geoms, B.q); }                         // VOGEL = DIE STUFE 3 des Vertrags (nurWurf): die EINE Liste als EIN Gitter in EINEM Stoff
+  else if(stufe===2&&(B.p.storeys||1)>=6){ lod2Koerper(B, geoms); }                               // ferner Turm: der gebakte Körper der Liste, KEIN build
   else { const turm=(B.p.storeys||1)>=6;
     const st=stapelBau(stufe===1?Object.assign({},B.p,{flaechig:1}):B.p, stufe===1?LOD1S:LOD1F, (stufe===2)?DESTNUR:(turm?TURMNUR:null));   // Stufe 2 = DESTNUR (6.7x); Turm-Stufe 1 ohne Paneel-Masse; Stufe 1 = FLÄCHEN-STUFE (Gefach-Fläche + Ziegel-Band je Reihe)
     if(stufe===1&&!turm){ let wseed=((B.p.seed||3)*2246822519)>>>0; const wr2=()=>{ wseed^=wseed<<13; wseed^=wseed>>>17; wseed^=wseed<<5; wseed>>>=0; return (wseed&0xffff)/0x10000; };
@@ -2727,6 +3276,7 @@
             ext: { x0: bx.min.x, x1: bx.max.x, z0: bx.min.z, z1: bx.max.z, y1: bx.max.y },
             dims: mass.H.dims,
             fp: fpVon(mass.H),
+            masse: masseVon(mass), // DIE MASSEN DES BAUS (S3): der Fernkörper liest sie (koerperListe)
             spawnL: { x: mass.H.spawn.x, z: mass.H.spawn.z },
             hofGap: 2.5,
             meshes: [],
@@ -2857,6 +3407,20 @@
             st.g.traverse(function (o) {
                 if (o.geometry) o.geometry.dispose();
             });
+        } else if (stufe === 3) {
+            // DIE STUFE 3 (nurWurf, S3): der Fernkörper des Gesetzbuchs. Der Warm-Pfad misst den Fassaden-Ton (wie die L2),
+            // die EINE Liste wird EIN Gitter (`fragFuer(B, 3)` — dieselbe Funktion wie das Vogel des Labors) und reist als
+            // Beipack `__fern`; keine Solids (die Stufe wird nie gezeigt, die Kollision trägt die gezeigte Stufe).
+            var B3 = massBau(p);
+            if (!turm) {
+                fragFuer(B3, 1);
+                B3.frag = null;
+                B3.fragStufe = undefined;
+            }
+            mischeGeoms(geoms, fragFuer(B3, 3));
+            B3.frag = null;
+            B3.fragStufe = undefined;
+            geoms.__fern = huelleVonBau(B3);
         } else {
             var B = massBau(p);
             if (stufe === 2 && !turm) {
@@ -2940,7 +3504,14 @@
         // DIE HÜLLE (Welle L): JEDE Stufe trägt die Solids des Gesetzbuchs (die der Stufe 0 — begehbar, Tür offen, die
         // Hofmauer zu); die Welt kollidiert in jeder Ferne, wie das Haus nah gezeichnet ist, nie mit einer Stufen-Box.
         var huelle = gm.__solids && gm.__solids.length ? { stufe: stufe, boxen: gm.__solids } : null;
-        g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe, __huelle: huelle };
+        // … in der EINEN Hüllen-Form (S3, N5: jede Solid-Box ein Teil, rolle "fest" — EIN Parser im Wirt, `_huelleVon`)
+        g.userData = { kind: "haus", rezeptId: rezeptId, seed: seed, lod: stufe, __huelle: huelle ? huelleAusBoxen(huelle.stufe, huelle.boxen) : null };
+        // DIE STUFE 3 (nurWurf): sie wirft mit dem EINEN Schatten-Stoff des Wirts — jede Ecke deckt (`aDeckt` 1, das Wurf-
+        // Gesetz E1) —, ihre Liste reist als Beipack `__fern` (fernform "huelle": jenseits der Mesh-Zone der Welt-March)
+        if (gm.__fern) {
+            g.userData.__fern = gm.__fern;
+            stufeWirft(g);
+        }
         return g;
     }
 
@@ -3740,6 +4311,7 @@
         if (hatFass) {
             var fx = fassSeite * (bx + 0.36),
                 fz = -0.05;
+            g.userData.fass = [fx, fz]; // die Wahl der Gestalt (die Stufe 3 liest sie, `ausWahl`)
             var fass = ausDreh([[0.2, 0], [0.235, 0.16], [0.245, 0.31], [0.235, 0.46], [0.2, 0.62], [0, 0.62]], fein ? 12 : 7, true, false);
             ausSetze(fass, fx, -0.02, fz, 0, 0, 0);
             ausFaerbe(fass, "holz", W, function (x, y, zz, nx, ny, nz) {
@@ -3929,6 +4501,151 @@
     }
 
     var AUS_BAU = { feuerstelle: ausFeuerstelle, marktstand: ausMarktstand, brunnen: ausBrunnen };
+    // DIE STUFE 3 DER AUSSTATTUNG (nurWurf, S3): die Grundform als EIN Gitter in EINEM Stoff (Rolle stein) — sie wirft für
+    // die L1 (die L0 wirft selbst: nah, höchstens drei im Bild); ihre Hülle (`ausHuelle`) reist als Beipack `__fern`.
+    // Dieselben Maße wie die Stufen 0/1 (Ring R + Steinbreite, Tisch und Plane, Kranz, Pfosten, First): Feuerstelle der
+    // Steinring als Achteck-Stumpf mit der Scheit-Spitze (24 Dreiecke) · Marktstand Tisch und Plane (24) · Brunnen Kranz,
+    // zwei Pfosten und Satteldach (44). Vorher warf jede L1 sich selbst (die Feuerstelle 440 Dreiecke je Kaskade).
+    var AUS_MASS = {
+        feuerstelle: function (G) {
+            // der Ring: Steine auf 0,58 (Breite ~0,2, Kuppe 0,10–0,15) — das Achteck flächengleich zum Kreis 0,66 (Umkreis
+            // 0,69), oben 0,58 auf 0,13; die Scheite in der Mitte bis 0,14 (die Flamme wirft nie, die Glut liegt im Boden)
+            return { ra: 0.69 * G, rt: 0.58 * G, hR: 0.13 * G, hS: 0.14 * G };
+        },
+        marktstand: function (G) {
+            var bx = 1.0 * G,
+                bz = 0.45,
+                yV = 2.25 + 0.03,
+                yH = 1.95 + 0.03;
+            var yAt = function (zz) {
+                return yV + ((zz + bz) / (2 * bz)) * (yH - yV);
+            };
+            var zV = -bz - 0.28,
+                zH = bz + 0.22;
+            return { bx: bx, bz: bz, hT: 0.86, hx: bx + 0.2, zV: zV, zH: zH, yV: yAt(zV) + 0.06, yH: yAt(zH) + 0.06, px: bx - 0.05, pz: bz - 0.03, pV: 2.25, pH: 1.95 };
+        },
+        brunnen: function (G) {
+            var ra = 0.92 * G,
+                px = ra + 0.13;
+            return { ra: ra, rk: ra + 0.08, hK: 0.66 + 0.07, px: px, yF: 2.62, yT: 2.16, hz: 0.86, lx: 2 * px + 0.5, wx: px + 0.17, yW: 1.5 };
+        },
+    };
+    // Die Wahl einer Gestalt, die nur der Bau kennt (der Strom zieht sie zwischen den Waren): der Marktstand nennt sein Fass
+    // (`userData.fass` = [x, z] oder fehlt) — die Stufe 3 liest sie aus der L1 derselben Gestalt (dieselbe Funktion,
+    // derselbe Strom), nie aus einem zweiten Würfel.
+    function ausWahl(rezeptId, p, sd, kol) {
+        if (rezeptId !== "marktstand") return {};
+        var tmp = new THREE.Group();
+        AUS_BAU[rezeptId](tmp, p, sd, 1, kol);
+        var w = { fass: tmp.userData.fass || null };
+        tmp.traverse(function (o) {
+            if (o.geometry) o.geometry.dispose();
+        });
+        return w;
+    }
+    function ausWurf(rezeptId, g, p, wahl) {
+        var m = AUS_MASS[rezeptId](p.groesse);
+        var teil = function (geo) {
+            ausFaerbe(geo, "stein", 0, null);
+            ausTeil(g, geo, "stein");
+        };
+        // Der Schatten-Stoff ist beidseitig (der Wirt rendert ihn in die Kaskaden von beiden Seiten): eine Fläche wirft, wie
+        // sie steht — der Tisch, die Ablage, die Plane, der Volant, das Dach je EIN Viereck (2 Dreiecke), ein Pfosten als
+        // Kreuz zweier senkrechter Flächen (4 Dreiecke: sein Strich aus jeder Richtung).
+        var flaeche = function (polys) {
+            teil(ausVielecke(polys, [0, -50, 0]));
+        };
+        var pfosten = function (x, z, y0, y1, b) {
+            flaeche([[[x - b, y0, z], [x + b, y0, z], [x + b, y1, z], [x - b, y1, z]], [[x, y0, z - b], [x, y0, z + b], [x, y1, z + b], [x, y1, z - b]]]);
+        };
+        var platte = function (x0, x1, y, z0, z1) {
+            flaeche([[[x0, y, z0], [x1, y, z0], [x1, y, z1], [x0, y, z1]]]);
+        };
+        if (rezeptId === "feuerstelle") {
+            teil(ausDreh([[m.ra, -0.05], [m.rt, m.hR], [0, m.hS]], 8, false, false));
+        } else if (rezeptId === "marktstand") {
+            platte(-m.bx - 0.06, m.bx + 0.06, m.hT, -m.bz - 0.03, m.bz + 0.03); // der Tisch
+            // die Zargen vorn und hinten (bis 0,135 unter die Platte) und die Waren-Reihe (Körbe auf 0,17 m, z ≈ −0,08)
+            for (var zs = -1; zs <= 1; zs += 2)
+                flaeche([[[-m.bx + 0.07, m.hT - 0.135, zs * (m.bz - 0.07)], [m.bx - 0.07, m.hT - 0.135, zs * (m.bz - 0.07)], [m.bx - 0.07, m.hT, zs * (m.bz - 0.07)], [-m.bx + 0.07, m.hT, zs * (m.bz - 0.07)]]]);
+            flaeche([[[-0.72 * m.bx, m.hT, -0.08], [0.72 * m.bx, m.hT, -0.08], [0.72 * m.bx, m.hT + 0.17, -0.08], [-0.72 * m.bx, m.hT + 0.17, -0.08]]]);
+            platte(-m.bx + 0.03, m.bx - 0.03, 0.29, -0.405, 0.405); // die Ablage
+            // die Plane (die Ebene der Bahnen, 6 cm über den Sparren) und der Volant an ihrer Vorderkante
+            flaeche([[[-m.hx, m.yV, m.zV], [m.hx, m.yV, m.zV], [m.hx, m.yH, m.zH], [-m.hx, m.yH, m.zH]]]);
+            flaeche([[[-m.hx, m.yV, m.zV], [m.hx, m.yV, m.zV], [m.hx, m.yV - 0.14, m.zV], [-m.hx, m.yV - 0.14, m.zV]]]);
+            for (var sx = -1; sx <= 1; sx += 2) for (var sz = -1; sz <= 1; sz += 2) pfosten(sx * m.px, sz * m.pz, 0, sz < 0 ? m.pV : m.pH, 0.045);
+            // das Fass (wo die Gestalt es trägt): drei Flächen im Stern durch die Achse und der Deckel als Sechseck
+            if (wahl && wahl.fass) {
+                var fx = wahl.fass[0],
+                    fz = wahl.fass[1],
+                    fr = 0.235,
+                    fh = 0.6,
+                    stern = [],
+                    deckel = [];
+                for (var k = 0; k < 3; k++) {
+                    var w = (k * Math.PI) / 3,
+                        cx = Math.cos(w) * fr,
+                        cz = Math.sin(w) * fr;
+                    stern.push([[fx - cx, 0, fz - cz], [fx + cx, 0, fz + cz], [fx + cx, fh, fz + cz], [fx - cx, fh, fz - cz]]);
+                }
+                for (k = 0; k < 6; k++) deckel.push([fx + Math.cos((k * Math.PI) / 3) * fr, fh, fz + Math.sin((k * Math.PI) / 3) * fr]);
+                flaeche(stern.concat([deckel]));
+            }
+        } else {
+            teil(ausDreh([[m.rk, -0.05], [m.rk, m.hK], [0, m.hK]], 8, false, false));
+            for (var i = -1; i <= 1; i += 2) pfosten(i * m.px, 0, -0.05, m.yF, 0.07);
+            // das Dach auf der Schindel-Lage (6 cm über den Sparren, 3 cm über die Giebel, 6 cm über die Traufe)
+            var dx = m.lx / 2 + 0.03,
+                dF = m.yF + 0.07,
+                dT = m.yT + 0.07 - (0.06 * (m.yF - m.yT)) / m.hz,
+                dz = m.hz + 0.06;
+            flaeche([[[-dx, dF, 0], [dx, dF, 0], [dx, dT, -dz], [-dx, dT, -dz]], [[-dx, dF, 0], [dx, dF, 0], [dx, dT, dz], [-dx, dT, dz]]]);
+            // die Haspel: die Welle durch beide Pfosten (liegend und stehend je eine Fläche)
+            flaeche([[[-m.wx, m.yW, -0.07], [m.wx, m.yW, -0.07], [m.wx, m.yW, 0.07], [-m.wx, m.yW, 0.07]], [[-m.wx, m.yW - 0.11, 0], [m.wx, m.yW - 0.11, 0], [m.wx, m.yW + 0.11, 0], [-m.wx, m.yW + 0.11, 0]]]);
+        }
+    }
+    // Die Hülle der Ausstattung in der EINEN Form (N5): dieselben Maße als Kästen und Keile, die Farben ihrer Stoffe.
+    function ausHuelle(rezeptId, p, kol, wahl) {
+        var m = AUS_MASS[rezeptId](p.groesse),
+            IW = KOERPER_INNEN.wand;
+        var F = function (r) {
+            return _colFor(r, kol);
+        };
+        var teile = [];
+        var dazu = function (t) {
+            if (t) teile.push(t);
+        };
+        if (rezeptId === "feuerstelle") {
+            dazu(huelleTeil("box", -m.rt, m.rt, -0.05, m.hR, -m.rt, m.rt, F("stein")));
+            var rs = m.rt * 0.6;
+            dazu(huelleTeil("keil", -rs, rs, m.hR, m.hS, -rs, 0, F("holz"), { first: "+z", walm: 1 }));
+            dazu(huelleTeil("keil", -rs, rs, m.hR, m.hS, 0, rs, F("holz"), { first: "-z", walm: 1 }));
+        } else if (rezeptId === "marktstand") {
+            dazu(huelleTeil("box", -m.bx - 0.06, m.bx + 0.06, m.hT - 0.1, m.hT, -m.bz - 0.03, m.bz + 0.03, F("holz")));
+            dazu(huelleTeil("box", -m.bx + 0.03, m.bx - 0.03, 0.26, 0.3, -0.405, 0.405, F("holz")));
+            dazu(huelleTeil("keil", -m.hx, m.hx, m.yH - 0.04, m.yV, m.zV, m.zH, F("tuch"), { first: "-z" }));
+            for (var sx = -1; sx <= 1; sx += 2)
+                for (var sz = -1; sz <= 1; sz += 2) dazu(huelleTeil("box", sx * m.px - 0.045, sx * m.px + 0.045, 0, sz < 0 ? m.pV : m.pH, sz * m.pz - 0.045, sz * m.pz + 0.045, F("holz")));
+            if (wahl && wahl.fass) dazu(huelleTeil("box", wahl.fass[0] - 0.21, wahl.fass[0] + 0.21, 0, 0.6, wahl.fass[1] - 0.21, wahl.fass[1] + 0.21, F("holz")));
+        } else {
+            dazu(huelleTeil("box", -m.rk + IW, m.rk - IW, -0.05, m.hK, -m.rk + IW, m.rk - IW, F("stein")));
+            for (var i = -1; i <= 1; i += 2) dazu(huelleTeil("box", i * m.px - 0.07, i * m.px + 0.07, -0.3, m.yF, -0.07, 0.07, F("holz")));
+            dazu(huelleTeil("keil", -m.lx / 2, m.lx / 2, m.yT, m.yF, -m.hz, 0, F("stamm"), { first: "+z" }));
+            dazu(huelleTeil("keil", -m.lx / 2, m.lx / 2, m.yT, m.yF, 0, m.hz, F("stamm"), { first: "-z" }));
+            dazu(huelleTeil("box", -m.wx, m.wx, m.yW - 0.11, m.yW + 0.11, -0.07, 0.07, F("holz")));
+        }
+        return { stufe: 3, teile: teile };
+    }
+    function ausHuelleFuer(rezeptId, seed, ov) {
+        var pre = PRESETS[rezeptId];
+        ausMaterialien();
+        var p = ausParams(pre, ov || null);
+        var sd = ov && typeof ov === "object" && ov.seed != null ? Number(ov.seed) : Number(seed);
+        if (!isFinite(sd)) sd = 1;
+        sd = (Math.round(sd) ^ AUSSTATTUNG[rezeptId].salz) >>> 0;
+        var kol = ausFarben(rezeptId, sd);
+        return ausHuelle(rezeptId, p, kol, ausWahl(rezeptId, p, sd, kol));
+    }
     // Die Palette der Gestalt: verwittertes Holz, Feldstein, Plane — gewürfelt aus dem Samen (eigener Strom), die
     // Plane in den Färber-Farben des Markts (Krapp · Ocker · Salbei · Waid · Malve) und Naturleinen. Jedes Hex ist eine
     // sRGB-ABSICHT (das FARB-GESETZ, `_colFor` legt es linear in den Vertex); NACH Kontakt-AO und Erdsaum liegt jede
@@ -3972,7 +4689,9 @@
         for (var i = 0; i < AUS_STUFEN.length; i++) if (AUS_STUFEN[i] <= L) stufe = AUS_STUFEN[i];
         var kol = ausFarben(rezeptId, sd);
         var roh = new THREE.Group();
-        AUS_BAU[rezeptId](roh, p, sd, stufe, kol);
+        var wahl = stufe === 3 ? ausWahl(rezeptId, p, sd, kol) : null;
+        if (stufe === 3) ausWurf(rezeptId, roh, p, wahl);
+        else AUS_BAU[rezeptId](roh, p, sd, stufe, kol);
         roh.updateMatrixWorld(true);
         var geoms = {};
         bakeLOD(roh, kol, geoms, 0, true);
@@ -3982,6 +4701,10 @@
         });
         ausRaster(g);
         g.userData = { kind: "ausstattung", rezeptId: rezeptId, seed: seed, lod: stufe };
+        if (stufe === 3) {
+            g.userData.__fern = ausHuelle(rezeptId, p, kol, wahl);
+            stufeWirft(g);
+        }
         g.updateMatrixWorld(true);
         return g;
     }
@@ -4399,6 +5122,14 @@
         bandFassade: bandFassade,
         fpVon: fpVon,
         lod2Koerper: lod2Koerper,
+        // DER FERNKÖRPER (S3): die EINE Hüllen-Form — die Liste, ihr Gitter (Stufe 3), die Massen, der Beipack
+        huelle: huelle,
+        koerperListe: koerperListe,
+        huelleVonBau: huelleVonBau,
+        stufeWirft: stufeWirft,
+        huelleGeoms: huelleGeoms,
+        masseVon: masseVon,
+        KOERPER_INNEN: KOERPER_INNEN,
         mischeGeoms: mischeGeoms,
         hofFuer: hofFuer,
         fragFuer: fragFuer,

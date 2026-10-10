@@ -95,6 +95,13 @@ jobs:
               # Die Messung selbst: `werkbank band` / `werkbank ratsche` (echte GPU).
               run: npm run gate:profiband
 
+            - name: Haus-Fernkörper (S3 haus - die NUR-WURF-Stufe 3 wirft für jede Stufe, grundriss-treu und innen)
+              # GPU-frei, reines Node (three r128 + fachwerk-core): je Kultur (32) × Samen 1/7 und je Ausstattung die
+              # Wurf-Deckung zur L0 (drei Sonnen, Raster 10 cm), die Wurf-Kosten gegen die Budget-Zeile, der Umriss L1 ↔ L2
+              # (kein Sprung bei 26 m), der First auf x, die Aufblähung und „innen" (Wand −1,5 cm, Dach −3 cm). Der
+              # Selbsttest (ein aufgeblähter, quer gedeckter Körper; eine Stufe ohne Werfer) läuft in jedem Lauf.
+              run: npm run gate:haus-fern
+
             - name: Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)
               # GPU-frei, reines Node (three r128 im vm wie im Foundry-Worker): der Kreatur-Bäcker backt Wolf · Fuchs ·
               # Bär · Hirsch, die Linse misst an der Haut der Ruhe-Pose (normiert auf den Widerrist) Widerrist in Metern,

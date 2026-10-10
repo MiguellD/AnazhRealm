@@ -423,7 +423,10 @@ function check(name, ok, detail) {
                         const satz = s.chunkSaetze ? s.chunkSaetze.get(g.satz) : null;
                         const b = satz ? satz.bloecke.get(k) : null;
                         const n = g.geom.attributes.position.count;
-                        let treu = !!b && b.vAnzahl === n * g.liveCount && satz.mesh.name === SATZ[rec.kind];
+                        // der Schatten-Zwilling einer Satz-Art (die NUR-WURF-Stufe 3, S3 haus) lebt im Wurf-Satz `bauWurf`
+                        // seines Stoffs (`_bauSatzArt`), jede gezeigte Gruppe im Satz ihrer Art
+                        const satzName = g.shadowTwin ? "bauWurf" : SATZ[rec.kind];
+                        let treu = !!b && b.vAnzahl === n * g.liveCount && satz.mesh.name === satzName;
                         if (treu) {
                             // die erste Instanz, erster Vertex: Geometrie × Instanz-Matrix, in Welt-Lage im Pool
                             const e = g.mesh.instanceMatrix.array;

@@ -152,13 +152,14 @@ function validateManifest(m) {
         if (typeof m.build === "function") v.push("B2/§8: MESHFREI-Kern trägt buildInstance (widersprüchlich)");
     } else if (typeof m.build !== "function") v.push("B2: buildInstance fehlt (keine Funktion)");
     // B2 (LOD-WURZEL 08.07.) — kindStages: die Stufen-Wahrheit je Art als Daten (SOLL, wenn
-    // vorhanden): nicht-leere, aufsteigende Arrays aus Stufen 0..2.
+    // vorhanden): nicht-leere, aufsteigende Arrays aus Stufen 0..3 — die Stufe 3 ist NUR-WURF (S3 haus: nie Anzeige, sie
+    // wirft für die Art und trägt die Fernform; ihre Budget-Zeile trägt `nurWurf: true`, unten).
     const lodC = m.cfg && m.cfg.lod;
     if (lodC && lodC.kindStages) {
         for (const k in lodC.kindStages) {
             const s = lodC.kindStages[k];
-            if (!Array.isArray(s) || !s.length || s.some((x) => !Number.isInteger(x) || x < 0 || x > 2)) {
-                v.push(`B2: lod.kindStages.${k} muss ein nicht-leeres Array aus Stufen 0..2 sein`);
+            if (!Array.isArray(s) || !s.length || s.some((x) => !Number.isInteger(x) || x < 0 || x > 3)) {
+                v.push(`B2: lod.kindStages.${k} muss ein nicht-leeres Array aus Stufen 0..3 sein`);
             } else {
                 for (let i = 1; i < s.length; i++)
                     if (s[i] <= s[i - 1]) v.push(`B2: lod.kindStages.${k} muss strikt aufsteigend sein`);
@@ -218,10 +219,15 @@ function validateManifest(m) {
                 const st = Array.isArray(ks[k]) ? ks[k] : [];
                 const letzte = st.length ? B[k][st[st.length - 1]] : null;
                 const karte = !!(letzte && letzte.karte === true);
-                if (fern !== "gesetz" && fern !== "boden" && fern !== "karte")
-                    v.push(`B2c: lod.budget.${k}.fernform muss "gesetz", "boden" oder "karte" sein`);
+                // S3 haus: "huelle" — die Liste der NUR-WURF-Stufe in der Hüllen-Form (N5, Beipack `__fern`); genau dann, wenn
+                // die Art eine NUR-WURF-Stufe trägt (sie ist der Träger von `__fern`, die Konsum-Wand in gate:asset-contract)
+                const nurWurf = st.some((x) => B[k][x] && B[k][x].nurWurf === true);
+                if (fern !== "gesetz" && fern !== "boden" && fern !== "karte" && fern !== "huelle")
+                    v.push(`B2c: lod.budget.${k}.fernform muss "gesetz", "boden", "karte" oder "huelle" sein`);
                 else if ((fern === "karte") !== karte)
                     v.push(`B2c: lod.budget.${k}.fernform — "karte" genau dann, wenn die letzte Stufe Karte ist`);
+                else if ((fern === "huelle") !== nurWurf)
+                    v.push(`B2c: lod.budget.${k}.fernform — "huelle" genau dann, wenn eine NUR-WURF-Stufe den Beipack __fern trägt`);
             }
         }
         for (const k in ks) {
@@ -254,6 +260,16 @@ function validateManifest(m) {
                             `B2c: lod.budget.${k}[${st}].karte — nur die letzte Stufe ist Karte, und sie wirft nicht`
                         );
                 }
+                // S3 haus — DIE NUR-WURF-STUFE (B2): nur `true`, nur an der Stufe 3, sie wirft selbst, nie Karte; eine Stufe 3
+                // ohne `nurWurf` wäre eine gezeigte Stufe jenseits der Grob-Stufe
+                if ("nurWurf" in z) {
+                    if (z.nurWurf !== true) v.push(`B2c: lod.budget.${k}[${st}].nurWurf ist nur als true erlaubt`);
+                    else if (st !== 3) v.push(`B2c: lod.budget.${k}[${st}].nurWurf — nur die Stufe 3 ist NUR-WURF`);
+                    else {
+                        if (z.schatten !== st) v.push(`B2c: lod.budget.${k}[${st}].nurWurf — die Stufe wirft selbst (schatten ${st})`);
+                        if ("karte" in z) v.push(`B2c: lod.budget.${k}[${st}].nurWurf mit karte — die Wurf-Stufe ist nie Karte`);
+                    }
+                } else if (st === 3) v.push(`B2: lod.kindStages.${k} — die Stufe 3 trägt nurWurf (nie Anzeige)`);
                 if ("blattKarte" in z && !(typeof z.blattKarte === "number" && z.blattKarte > 0 && isFinite(z.blattKarte)))
                     v.push(`B2c: lod.budget.${k}[${st}].blattKarte muss endlich > 0 sein`);
                 // S3 (09.10.): die Kosten-Regler der Krone — lagen (Quad-Lagen je Kronen-Pixel, > 0), quote (Dreiecke der
@@ -1044,6 +1060,29 @@ function validateManifest(m) {
             cfg: { lod: { kindStages: { shrub: [1] }, budget: { shrub: { 1: { tris: 9, draws: 1, schatten: false } }, gestalten: { a: 1, "*": 3 } } } },
         })
     );
+    // S3 haus — die NUR-WURF-Stufe: eine Stufe 3 ohne nurWurf · "huelle" ohne NUR-WURF-Stufe (kein Träger von __fern) ·
+    // nurWurf mit karte
+    const bvS3 = validateManifest({
+        vertrag: 1,
+        zweit: true,
+        presets: { h: { kind: "haus" }, a: { kind: "aus" }, k: { kind: "karto" } },
+        build: function () {},
+        cfg: {
+            lod: {
+                kindStages: { haus: [0, 3], aus: [0, 1], karto: [0, 3] },
+                budget: {
+                    haus: { 0: { tris: 100, draws: 2, schatten: 3 }, 3: { tris: 10, draws: 1, schatten: 3 }, fernform: "huelle" },
+                    aus: { 0: { tris: 100, draws: 1, schatten: 0 }, 1: { tris: 50, draws: 1, schatten: 1 }, fernform: "huelle" },
+                    karto: {
+                        0: { tris: 100, draws: 1, schatten: 3 },
+                        3: { tris: 10, draws: 1, schatten: 3, nurWurf: true, karte: true },
+                        fernform: "huelle",
+                    },
+                    gestalten: { h: 1, a: 1, k: 1 },
+                },
+            },
+        },
+    });
     const bvVer = validateManifest({ vertrag: null, presets: { a: { kind: "tree" } }, build: function () {} });
     // §8 — ein MESHFREI-Kern mit buildInstance ist widersprüchlich (die Linse feuert).
     const bvMesh = validateManifest({
@@ -1064,7 +1103,7 @@ function validateManifest(m) {
         verhalten: { aktionen: { a: {} }, stimmung: { x: { aktionen: ["fremd"], alle: [1, 2] } } },
     });
     check(
-        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · Boden-Gesetz · kindStages · Budget · Fernform · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
+        "SELBST-TEST: injizierte Verletzungen werden erkannt (kein-kind · Namensraum · rarity · Boden-Gesetz · kindStages · Budget · Fernform · NUR-WURF-Stufe · Version · MESHFREI-Widerspruch · Gefühls-Blöcke)",
         bv.some((s) => s.includes("kein kind")) &&
             bv.some((s) => s.includes("Namensraum")) &&
             bv.some((s) => s.includes("rarity")) &&
@@ -1108,6 +1147,9 @@ function validateManifest(m) {
             bvB.some((s) => s.includes("gestalten.geist — kein Rezept")) &&
             bvB.some((s) => s.includes("gestalten.* — kein Rezept")) &&
             bvB.some((s) => s.includes("gestalten.b fehlt")) &&
+            bvS3.some((s) => s.includes("kindStages.haus — die Stufe 3 trägt nurWurf")) &&
+            bvS3.some((s) => s.includes("aus.fernform — \"huelle\" genau dann")) &&
+            bvS3.some((s) => s.includes("karto[3].nurWurf mit karte")) &&
             bvVer.some((s) => s.includes("G4.3")) &&
             bvMesh.some((s) => s.includes("MESHFREI")) &&
             bvFx.some((s) => s.includes("schwimmen unvollständig")) &&

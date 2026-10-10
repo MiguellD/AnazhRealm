@@ -62,8 +62,8 @@
         },
         "v6": {
             "kern": "fachwerk-core.js",
-            "faelle": 24,
-            "probe": "Samen 7 x Stufen 0/1/2 x jede vierte Kultur (8 von 32)",
+            "faelle": 32,
+            "probe": "Samen 7 x Stufen 0/1/2/3 x jede vierte Kultur (8 von 32; die Stufe 3 - NUR-WURF, S3 haus - ist gerastert und kippt nie)",
             "kippt": {
                 "cos": 16,
                 "sin": 16,
@@ -80,8 +80,8 @@
         },
         "v6a": {
             "kern": "fachwerk-core.js",
-            "faelle": 15,
-            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen) x Gestalt x Stufe + ov",
+            "faelle": 22,
+            "probe": "jede Ausstattung (Feuerstelle, Marktstand, Brunnen) x Gestalt x Stufe (0/1/3) + ov",
             "kippt": {},
             "soll": "0 - erreicht: ausRaster am Ausgang der Ausstattung (Architektur-Welle 05.10.)"
         },

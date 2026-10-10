@@ -33474,17 +33474,19 @@ class AnazhRealm {
         this._blockerStampReach(entry);
     }
 
-    // Die Hülle am Eintrag (Beipack `__huelle` des fachwerk-Asset, haus-lokal `[x0,y0,z0,x1,y1,z1]…`): JEDE Stufe trägt die
+    // Die Hülle am Eintrag (Beipack `__huelle` des fachwerk-Asset in der EINEN Hüllen-Form N5, haus-lokal, je Solid-Box ein Teil
+    // mit rolle "fest" — S3 haus: der Parser ist `_huelleVon`, derselbe wie der Fernform): JEDE Stufe trägt die
     // Solids des Gesetzbuchs (die der Stufe 0) — die Welt kollidiert in jeder Ferne, wie das Haus nah gezeichnet ist. Vorher
     // trug die Fernstufe ihre Bounding-Box: beim Hof-Haus 8,2 m vor den Solids, die Tür von vorn unerreichbar (die Stufe 0
     // kommt erst unter 8,6 m Mittelabstand). Ein Stufen-Wechsel mit derselben Zeile schreibt die Blocker nicht neu.
     _hausHuelleSetzen(entry, huelle) {
-        if (!entry || !huelle || !Array.isArray(huelle.boxen) || huelle.boxen.length < 6) return;
+        if (!entry || !huelle) return;
         const alt = entry._hausHuelle;
         if (alt === huelle) return;
+        const fest = AnazhRealm._huelleVon(huelle, "fest", "fachwerk:__huelle");
+        if (!fest || !fest.length) return;
         entry._hausHuelle = huelle;
-        const b = huelle.boxen;
-        if (alt && alt.boxen.length === b.length && alt.boxen.every((v, i) => v === b[i])) return;
+        if (alt && JSON.stringify(alt.teile) === JSON.stringify(huelle.teile)) return;
         const pr = this._foundryPresetForEntry(entry);
         const ws = pr ? this._foundryWorldScaleMatrix(pr) : null;
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
@@ -33499,8 +33501,19 @@ class AnazhRealm {
         const t = entry && entry.tuer;
         let boxen = null;
         let k = 1;
-        if (hu && Array.isArray(hu.boxen)) {
-            boxen = hu.boxen;
+        const fest = hu ? AnazhRealm._huelleVon(hu, "fest", "fachwerk:__huelle") : null;
+        if (fest && fest.length) {
+            boxen = [];
+            for (const q of fest)
+                if (q.art === "box")
+                    boxen.push(
+                        q.c[0] - q.h[0],
+                        q.c[1] - q.h[1],
+                        q.c[2] - q.h[2],
+                        q.c[0] + q.h[0],
+                        q.c[1] + q.h[1],
+                        q.c[2] + q.h[2]
+                    );
             k = Number.isFinite(entry._hausHuelleSkala) ? entry._hausHuelleSkala : 1;
         } else if (t && Number.isFinite(t.W) && Number.isFinite(t.D) && t.W > 1.5 && t.D > 1.5) {
             boxen = this._hausKernHuelle(t);
@@ -37705,7 +37718,7 @@ class AnazhRealm {
         // (die Kante bei +z · −z · +x · −x, Typ 2 · 3 · 4 · 5, volle Höhe) zur Gegenkante (Höhe 0); der Walm (0..1, im
         // Bruchteil des Typs: Typ + 0,49 · walm) schneidet die zwei Stirnen mit derselben Neigung — von (1 − walm) der Höhe
         // an der Stirn bis zum First, der um walm × Tiefe kürzer wird. Dieselbe Regel wie das Gitter des Gesetzbuchs
-        // (fachwerk-core `_keilFlaechen`). Typ 2 und 3 sind die Dach-Prismen des Fachwerk-Fits (byte-gleich ohne Walm).
+        // (fachwerk-core `_keilFlaechen`); ohne Walm ist Typ 2/3 das Dach-Prisma des Welt-March von gestern, byte-gleich.
         const keilKopf =
             "    let d = p - c;\n" +
             "    let qb = abs(d) - h;\n" +
@@ -38555,8 +38568,7 @@ class AnazhRealm {
                 K[o + 5] = Math.max(0.01, def.h.y);
                 K[o + 6] = Math.max(0.01, def.h.z);
                 K[o + 7] = def.prism
-                    ? (Number.isInteger(def.keilTyp) ? def.keilTyp : def.prismFlip ? 3 : 2) +
-                      0.49 * Math.max(0, Math.min(1, def.walm || 0))
+                    ? def.keilTyp + 0.49 * Math.max(0, Math.min(1, def.walm || 0))
                     : def.ellipsoid
                       ? 1
                       : 0;
@@ -72435,8 +72447,9 @@ class AnazhRealm {
                       ? 49180
                       : 49170;
         const opts = { silent: true, autonomous: true, id, seed };
-        // Nur fachwerk/haus_*: dichtes studioOv, damit `_archFachwerkFit` brace/gaube/fluegel unter Soft-Cap
-        // ≤24 bekommt. Der Stempel gewinnt: ein Eintrag ohne studioOv bleibt; ov nur bei Neu-Spawn.
+        // Nur fachwerk/haus_*: die Vorschau trägt ihre Prägung (studioOv: Stil, Verband, Geschosse, Maße, Dach) — der
+        // Bau des Gesetzbuchs liest sie, fremde Schlüssel ignoriert er. Der Stempel gewinnt: ein Eintrag ohne studioOv
+        // bleibt; ov nur bei Neu-Spawn.
         if (worldKey === "fachwerk" && type.startsWith("haus_")) {
             opts.studioOv = Object.freeze({
                 stil: "alt",
@@ -73863,7 +73876,8 @@ class AnazhRealm {
 
     // ═══ DIE ARCH-BAHN: Bau = BOX-SATZ ═══
     // Key `aarch:type:variant` (mit studioOv `…:ov:<hash>`, ohne ov byte-alt), Dedup über gleiche Vorlage.
-    // Payload = _archFachwerkFit (haus_/studioOv), sonst _archBoxFit (bis 24 AABB-Boxen im Vorlagen-Raum).
+    // Payload = die Hülle des Gesetzbuchs (Studio-Dinge mit fernform "huelle", `_archFoundryZiegel`), sonst _archBoxFit
+    // (bis 24 AABB-Boxen im Vorlagen-Raum).
     // Voxel-Bricks fail-closed; das Mesh ist nur unsichtbarer Interaktions-Körper. Bake getaktet.
     _archZiegelFern(entry) {
         const st = this.state;
@@ -73902,18 +73916,12 @@ class AnazhRealm {
             key,
             M,
             () => {
-                // KONSUM / Fachwerk-Naht: haus_/studioOv → Grammatik-Boxen aus denselben
-                // Maßen wie massBau/buildInstance (kein Mesh nötig). Sonst Mesh-AABB.
-                let defs = this._archFachwerkFit(entry);
-                if (defs && defs.length) {
-                    fitWar = "gepasst";
-                    return defs;
-                }
-                // Cache-Miss: die Vorlage EINMAL bauen + LOKAL passen (relativ zu M⁻¹).
+                // Ein Bau ohne Studio-Vorlage (der Grammatik-Bau): die Vorlage EINMAL bauen + LOKAL passen (relativ zu M⁻¹).
+                // Das Studio-Haus trägt seine Fernform selbst (die Hülle des Gesetzbuchs, oben `_archFoundryZiegel`).
                 const hatte = this._archIsRendered(entry);
                 if (!hatte) this._rebuildArchitectureMesh(entry); // temporärer Bau NUR für den Erst-Fit
                 const inv = M.clone().invert();
-                defs = entry.mesh ? this._archBoxFit(entry.mesh, inv) : null;
+                const defs = entry.mesh ? this._archBoxFit(entry.mesh, inv) : null;
                 if (!hatte && this._archIsRendered(entry)) this._cullArchitectureMesh(entry);
                 fitWar = defs && defs.length ? "gepasst" : "leer";
                 return defs;
@@ -73936,8 +73944,8 @@ class AnazhRealm {
         return true;
     }
 
-    // Welche Foundry-Vorlage trägt diesen gesetzten Bau? null = kein Studio-Ding ODER ein Haus (Häuser
-    // passen aus der Fachwerk-Grammatik). Ohne Rezeptbuch zählt die Vorlage trotzdem: der Eintrag wartet
+    // Welche Foundry-Vorlage trägt diesen gesetzten Bau? null = kein Studio-Ding (S3 haus: auch das Haus ist eines — seine
+    // Fernform ist die Hülle des Gesetzbuchs, `_archFoundryZiegel`). Ohne Rezeptbuch zählt die Vorlage trotzdem: der Eintrag wartet
     // auf die Flat (nie Rückfall auf einen Temporär-Mesh-Fit). Die Vorlage liest der EINE Leser
     // `_foundryPresetForEntry` (Basis-Art `_lodSpecies`, grown-Präfix): `entry.type` allein verfehlte die
     // Wald-Varianten (`grown_busch_hazel_v2`) — sie fielen in den Temporär-Bau-Fit, der für Foundry-
@@ -73945,13 +73953,8 @@ class AnazhRealm {
     // in allen Pässen neu auf (gemessen 04.10., echte GPU, Mess-Wiese: Hasel bei 125 m, 9 Bau/Cull in 4 s).
     _archFoundryPreset(entry) {
         const typ = entry && typeof entry.type === "string" ? entry.type : "";
-        if (!typ || typ.startsWith("haus_") || !this._foundryEnabled()) return null;
-        const preset = this._foundryPresetForEntry(entry);
-        if (!preset) return null;
-        const f = this._foundry;
-        const rec = f && f.recipes ? f.recipes[preset] : null;
-        if (rec && rec.kind === "haus") return null;
-        return preset;
+        if (!typ || !this._foundryEnabled()) return null;
+        return this._foundryPresetForEntry(entry) || null;
     }
 
     // Ist dieser gesetzte Eintrag ein KARTEN-DING — ist seine Fernform die Studio-Karte? Die EINE Quelle ist das
@@ -74045,510 +74048,6 @@ class AnazhRealm {
         entry._ziegelVersuche = (entry._ziegelVersuche || 0) + 1;
         if (entry._ziegelVersuche >= 8) entry._ziegelGebacken = true;
         return true;
-    }
-
-    // Fachwerk-Naht: aarch-Boxen/Prismen aus der HAUS-Grammatik (Balken · Gefache · Diagonal-Verbände ·
-    // Dach · Gaube/Flügel-Stub), Maße wie massBau/buildInstance/HAUS (W/D/storeys/egH/ogH/foundH/pitchDeg/
-    // post/door*), Vorlagen-Raum wie Mesh. Trigger: type `haus_*` ODER entry.studioOv. ≤24 Boxen (timber
-    // prio); Sattel-Dach = Prism-Wedges (pB.w=2|3).
-    _archFachwerkFit(entry) {
-        if (!entry || typeof THREE === "undefined") return null;
-        const typ = entry.type || "";
-        const ov =
-            entry.studioOv && typeof entry.studioOv === "object" && !Array.isArray(entry.studioOv)
-                ? entry.studioOv
-                : null;
-        if (!(typ.startsWith("haus_") || ov)) return null;
-        // Fehlt der Wert (null/undefined/""), gilt der Default — Number(null) ist 0 und machte ohne studioOv
-        // jedes Welt-Haus zur 3×3-m-Flachdach-Hütte.
-        const n = (v, d) => {
-            if (v == null || v === "") return d;
-            const x = Number(v);
-            return Number.isFinite(x) ? x : d;
-        };
-        const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-        const tuer = entry.tuer && typeof entry.tuer === "object" ? entry.tuer : null;
-        const W = clamp(n(ov && ov.W, n(tuer && tuer.W, 9)), 3, 20);
-        const D = clamp(n(ov && ov.D, n(tuer && tuer.D, 7)), 3, 20);
-        const storeys = clamp(Math.round(n(ov && ov.storeys, 2)), 1, 8);
-        const foundH = clamp(n(ov && ov.foundH, 0.55), 0.2, 2.5);
-        const egH = clamp(n(ov && ov.egH, 2.55), 1.8, 4);
-        const ogH = clamp(n(ov && ov.ogH, 2.35), 1.6, 4);
-        const pitchDeg = clamp(n(ov && (ov.pitchDeg != null ? ov.pitchDeg : ov.pitch), 50), 8, 62);
-        const post = clamp(n(ov && ov.post, 0.16), 0.08, 0.4);
-        const sill = clamp(n(ov && ov.sill, 0.18), 0.08, 0.4);
-        const ovEave = clamp(n(ov && ov.ovEave, 0.42), 0, 1.2);
-        const doorW = clamp(n(tuer && tuer.w, n(ov && ov.doorW, 1.1)), 0.7, 2.4);
-        const doorH = clamp(n(tuer && tuer.h, n(ov && ov.doorH, 2.05)), 1.6, 2.8);
-        const doorX = n(tuer && tuer.x, 0);
-        const winW = clamp(n(ov && ov.winW, 1.0), 0.5, 1.8);
-        const winH = clamp(n(ov && ov.winH, 1.2), 0.6, 1.8);
-        const stil = typeof (ov && ov.stil) === "string" ? ov.stil : "alt";
-        const brace =
-            ov && ov.brace != null
-                ? ov.brace
-                : stil === "alt" || stil === "huette" || stil === "stroh"
-                  ? "andreas"
-                  : "none";
-        const fachwerk = brace && brace !== "none";
-        // Hex → LINEARE Albedo wie THREE.Color.setHex (sRGB-dekodiert) — sonst ist das Feld heller als das
-        // Studio-Mesh derselben Farbe; ein fehlender Wert (null/undefined/"") nimmt den Default-Hex.
-        const lin = (c) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
-        const hexRgb = (hex, fbHex) => {
-            let h = hex == null || hex === "" ? fbHex : Number(hex);
-            if (!Number.isFinite(h)) h = fbHex;
-            return { r: lin(((h >> 16) & 255) / 255), g: lin(((h >> 8) & 255) / 255), b: lin((h & 255) / 255) };
-        };
-        const col = ov && ov.col && typeof ov.col === "object" ? ov.col : null;
-        const cHolz = hexRgb(col && (col.holz != null ? col.holz : col.stamm), 0x594533);
-        const cGefach = hexRgb(
-            col &&
-                (col.gefach != null
-                    ? col.gefach
-                    : col.putz != null
-                      ? col.putz
-                      : col.backstein != null
-                        ? col.backstein
-                        : col.lehm),
-            stil === "klinker" ? 0x964f3d : stil === "glas" ? 0x80a6b8 : 0xd9d1c2
-        );
-        const cZiegel = hexRgb(
-            col && (col.ziegel != null ? col.ziegel : col.dachmod != null ? col.dachmod : col.stamm),
-            0x9c4a36
-        );
-        const cFund = hexRgb(col && col.stein, 0x8c857a);
-        const levels = [];
-        {
-            let y = foundH;
-            for (let k = 0; k < storeys; k++) {
-                const h = k === 0 ? egH : ogH;
-                levels.push({ y, h, top: y + h });
-                y += h;
-            }
-        }
-        const eaveY = levels[levels.length - 1].top;
-        const ridgeY = eaveY + (D / 2) * Math.tan((pitchDeg * Math.PI) / 180);
-        const flatRoof = pitchDeg < 14 || stil === "modern" || stil === "glas";
-        const kand = [];
-        // prio: 2 = Balken/Dach-First (dürfen nicht von Volumen-Sort fallen), 1 = Gefach/Dach, 0 = Deko
-        const push = (cx, cy, cz, hx, hy, hz, farbe, prio) => {
-            const hx2 = Math.max(0.02, hx);
-            const hy2 = Math.max(0.02, hy);
-            const hz2 = Math.max(0.02, hz);
-            kand.push({
-                box: true,
-                c: new THREE.Vector3(cx, cy, cz),
-                h: new THREE.Vector3(hx2, hy2, hz2),
-                farbe,
-                vol: hx2 * hy2 * hz2,
-                prio: prio | 0,
-            });
-        };
-        // Prism/Wedge: gleicher Pack wie Box, Typ pB.w=2 (First +local z) / 3 (First −z).
-        const pushPrism = (cx, cy, cz, hx, hy, hz, farbe, prio, flip) => {
-            const hx2 = Math.max(0.02, hx);
-            const hy2 = Math.max(0.02, hy);
-            const hz2 = Math.max(0.02, hz);
-            kand.push({
-                prism: true,
-                prismFlip: !!flip,
-                c: new THREE.Vector3(cx, cy, cz),
-                h: new THREE.Vector3(hx2, hy2, hz2),
-                farbe,
-                vol: hx2 * hy2 * hz2 * 0.5,
-                prio: prio | 0,
-            });
-        };
-        // Fundament-Sockel (massBau baseY-Wahrheit)
-        push(0, foundH * 0.5, 0, W * 0.5 + 0.06, foundH * 0.5, D * 0.5 + 0.06, cFund, 1);
-        const tWall = Math.max(0.1, post * 1.15);
-        const hw = W * 0.5;
-        const hd = D * 0.5;
-        // Eckständer (volle Traufhöhe) — Fachwerk-Lesbarkeit
-        if (fachwerk) {
-            const ph = eaveY - foundH;
-            const py = foundH + ph * 0.5;
-            const px = hw - post * 0.5;
-            const pz = hd - post * 0.5;
-            for (const sx of [-1, 1])
-                for (const sz of [-1, 1]) push(sx * px, py, sz * pz, post * 0.5, ph * 0.5, post * 0.5, cHolz, 2);
-        }
-        for (let li = 0; li < levels.length; li++) {
-            const L = levels[li];
-            const cy = L.y + L.h * 0.5;
-            const hy = L.h * 0.5 - 0.02;
-            // Rähm / Schwelle als Balkenring (vorne/hinten + Seiten)
-            if (fachwerk) {
-                const bySill = L.y + sill * 0.5;
-                const byRaehm = L.top - sill * 0.5;
-                push(0, bySill, -hd + post * 0.5, hw - post, sill * 0.5, post * 0.5, cHolz, 2);
-                push(0, bySill, hd - post * 0.5, hw - post, sill * 0.5, post * 0.5, cHolz, 2);
-                push(0, byRaehm, -hd + post * 0.5, hw - post, sill * 0.5, post * 0.5, cHolz, 2);
-                push(0, byRaehm, hd - post * 0.5, hw - post, sill * 0.5, post * 0.5, cHolz, 2);
-            }
-            // Gefache / Wandplatten — EG Front: Tür + Fenster; OG Front (storeys≥2):
-            // 1–2 Fenster wie EG (ov.winW/winH); Seiten optional bei Soft-Cap; Back massiv.
-            // Timber/Prism behalten prio (Sort ≤24).
-            const frontZ = -hd + tWall * 0.5;
-            const backZ = hd - tWall * 0.5;
-            const yWall0 = cy - hy;
-            const yWall1 = cy + hy;
-            // Lochwand entlang X (Front/Back): Segmente + Brüstung/Sturz je Öffnung.
-            const pushGapsX = (z, a0, a1, y0, y1, holes) => {
-                const hs = (holes || [])
-                    .filter((h) => h && h.w > 0.2 && h.c - h.w * 0.5 > a0 - 0.02 && h.c + h.w * 0.5 < a1 + 0.02)
-                    .sort((p, q) => p.c - q.c);
-                let cur = a0;
-                const halfH = (y1 - y0) * 0.5;
-                const midY = (y0 + y1) * 0.5;
-                for (let hi = 0; hi < hs.length; hi++) {
-                    const h = hs[hi];
-                    const Lh = h.c - h.w * 0.5;
-                    const Rh = h.c + h.w * 0.5;
-                    const leftLen = Lh - cur;
-                    if (leftLen > 0.15) push((cur + Lh) * 0.5, midY, z, leftLen * 0.5, halfH, tWall * 0.5, cGefach, 1);
-                    const b = Math.max(y0, h.b);
-                    const t = Math.min(y1, h.t);
-                    if (b > y0 + 0.08) push(h.c, (y0 + b) * 0.5, z, h.w * 0.5, (b - y0) * 0.5, tWall * 0.5, cGefach, 1);
-                    if (y1 > t + 0.08) push(h.c, (t + y1) * 0.5, z, h.w * 0.5, (y1 - t) * 0.5, tWall * 0.5, cGefach, 1);
-                    cur = Rh;
-                }
-                const rightLen = a1 - cur;
-                if (rightLen > 0.15) push((cur + a1) * 0.5, midY, z, rightLen * 0.5, halfH, tWall * 0.5, cGefach, 1);
-            };
-            // Lochwand entlang Z (Seitenwände).
-            const pushGapsZ = (x, a0, a1, y0, y1, holes) => {
-                const hs = (holes || [])
-                    .filter((h) => h && h.w > 0.2 && h.c - h.w * 0.5 > a0 - 0.02 && h.c + h.w * 0.5 < a1 + 0.02)
-                    .sort((p, q) => p.c - q.c);
-                let cur = a0;
-                const halfH = (y1 - y0) * 0.5;
-                const midY = (y0 + y1) * 0.5;
-                for (let hi = 0; hi < hs.length; hi++) {
-                    const h = hs[hi];
-                    const Lh = h.c - h.w * 0.5;
-                    const Rh = h.c + h.w * 0.5;
-                    const leftLen = Lh - cur;
-                    if (leftLen > 0.15) push(x, midY, (cur + Lh) * 0.5, tWall * 0.5, halfH, leftLen * 0.5, cGefach, 1);
-                    const b = Math.max(y0, h.b);
-                    const t = Math.min(y1, h.t);
-                    if (b > y0 + 0.08) push(x, (y0 + b) * 0.5, h.c, tWall * 0.5, (b - y0) * 0.5, h.w * 0.5, cGefach, 1);
-                    if (y1 > t + 0.08) push(x, (t + y1) * 0.5, h.c, tWall * 0.5, (y1 - t) * 0.5, h.w * 0.5, cGefach, 1);
-                    cur = Rh;
-                }
-                const rightLen = a1 - cur;
-                if (rightLen > 0.15) push(x, midY, (cur + a1) * 0.5, tWall * 0.5, halfH, rightLen * 0.5, cGefach, 1);
-            };
-            const winHoleAt = (c, y0, y1) => {
-                // unter Traufe/Rähm: Sturz-Band bleibt; Brüstung ≥ ~0.55
-                const top = Math.min(y1 - 0.12, y0 + Math.max(winH + 0.7, 1.85));
-                const bot = Math.max(y0 + 0.55, top - winH);
-                return { c, w: winW, b: bot, t: bot + Math.min(winH, top - bot) };
-            };
-            const x0w = -hw + post;
-            const x1w = hw - post;
-            const z0w = -hd + post;
-            const z1w = hd - post;
-            if (li === 0) {
-                // Tür-Lücke bleibt (kein Brüstungsband); daneben 1–2 Fenster wenn Feld breit genug.
-                const holesF = [{ c: doorX, w: doorW, b: yWall0 - 0.05, t: L.y + doorH }];
-                const gapLo = doorX - doorW * 0.5;
-                const gapHi = doorX + doorW * 0.5;
-                const minSpan = winW + 0.55;
-                if (gapLo - x0w >= minSpan) holesF.push(winHoleAt((x0w + gapLo) * 0.5, yWall0, yWall1));
-                if (x1w - gapHi >= minSpan) holesF.push(winHoleAt((gapHi + x1w) * 0.5, yWall0, yWall1));
-                // falls Tür am Rand und nur eine Seite: ggf. zweites Fenster auf der langen Seite
-                if (holesF.length === 2) {
-                    const side = gapLo - x0w >= x1w - gapHi ? { a0: x0w, a1: gapLo } : { a0: gapHi, a1: x1w };
-                    if (side.a1 - side.a0 >= 2 * winW + 1.1) {
-                        const c1 = side.a0 + (side.a1 - side.a0) * 0.33;
-                        const c2 = side.a0 + (side.a1 - side.a0) * 0.67;
-                        holesF.length = 1; // Tür behalten, Fenster neu setzen
-                        holesF.push(winHoleAt(c1, yWall0, yWall1));
-                        holesF.push(winHoleAt(c2, yWall0, yWall1));
-                    }
-                }
-                pushGapsX(frontZ, x0w, x1w, yWall0, yWall1, holesF);
-            } else if (li === 1 && storeys >= 2) {
-                // OG-Front: 1–2 Fenster-Lücken (wie EG ohne Tür), ov.winW/winH Defaults.
-                const holesF = [];
-                const span = x1w - x0w;
-                const minSpan = winW + 0.55;
-                if (span >= 2 * winW + 1.1) {
-                    holesF.push(winHoleAt(x0w + span * 0.33, yWall0, yWall1));
-                    holesF.push(winHoleAt(x0w + span * 0.67, yWall0, yWall1));
-                } else if (span >= minSpan) {
-                    holesF.push(winHoleAt((x0w + x1w) * 0.5, yWall0, yWall1));
-                }
-                if (holesF.length) pushGapsX(frontZ, x0w, x1w, yWall0, yWall1, holesF);
-                else push(0, cy, frontZ, hw - post, hy, tWall * 0.5, cGefach, 1);
-            } else {
-                push(0, cy, frontZ, hw - post, hy, tWall * 0.5, cGefach, 1);
-            }
-            push(0, cy, backZ, hw - post, hy, tWall * 0.5, cGefach, 1);
-            // EG-Seiten: 1 Fenster/Seite wenn Cap; OG-Seiten nur wenn noch Soft-Raum.
-            if (li === 0) {
-                const sideLen = z1w - z0w;
-                const sideBudget = kand.length <= 18 && sideLen >= winW + 0.7;
-                if (sideBudget) {
-                    const holesS = [winHoleAt(0, yWall0, yWall1)];
-                    if (sideLen >= 2 * winW + 1.2 && kand.length <= 14) {
-                        holesS.length = 0;
-                        holesS.push(winHoleAt(z0w + sideLen * 0.33, yWall0, yWall1));
-                        holesS.push(winHoleAt(z0w + sideLen * 0.67, yWall0, yWall1));
-                    }
-                    pushGapsZ(-hw + tWall * 0.5, z0w, z1w, yWall0, yWall1, holesS);
-                    pushGapsZ(hw - tWall * 0.5, z0w, z1w, yWall0, yWall1, holesS);
-                } else {
-                    push(-hw + tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
-                    push(hw - tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
-                }
-            } else if (li === 1 && storeys >= 2) {
-                const sideLen = z1w - z0w;
-                // OG-Seiten optional: Soft vor Verbänden/Dach (enger als EG).
-                const sideBudget = kand.length <= 20 && sideLen >= winW + 0.7;
-                if (sideBudget) {
-                    const holesS = [winHoleAt(0, yWall0, yWall1)];
-                    if (sideLen >= 2 * winW + 1.2 && kand.length <= 16) {
-                        holesS.length = 0;
-                        holesS.push(winHoleAt(z0w + sideLen * 0.33, yWall0, yWall1));
-                        holesS.push(winHoleAt(z0w + sideLen * 0.67, yWall0, yWall1));
-                    }
-                    pushGapsZ(-hw + tWall * 0.5, z0w, z1w, yWall0, yWall1, holesS);
-                    pushGapsZ(hw - tWall * 0.5, z0w, z1w, yWall0, yWall1, holesS);
-                } else {
-                    push(-hw + tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
-                    push(hw - tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
-                }
-            } else {
-                push(-hw + tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
-                push(hw - tWall * 0.5, cy, 0, tWall * 0.5, hy, hd - post, cGefach, 1);
-            }
-            // Mittelständer weichen den Diagonal-Verbänden (gleicher ≤24-Cap;
-            // Verbände tragen die Fachwerk-Lesbarkeit auf Front/Back/Seiten).
-        }
-        // Diagonal-Verbände (Andreas-X / K / Mann) — AABB-Stufen entlang der
-        // Strebe (kein rotiertes Mesh). EG Front/Back immer; EG Left/Right
-        // (1 Stufe/Diag, Cap sparen); OG Front/Back + Left/Right wenn Budget ≤24.
-        if (fachwerk) {
-            const a0 = -hw + post;
-            const a1 = hw - post;
-            const b0 = -hd + post;
-            const b1 = hd - post;
-            const cx = 0;
-            const cz = 0;
-            const zF = -hd + post * 0.55;
-            const zB = hd - post * 0.55;
-            const xL = -hw + post * 0.55;
-            const xR = hw - post * 0.55;
-            const bt = Math.max(0.045, post * 0.38);
-            // Eine Diagonale als N AABB-Stufen (Silhouette / bzw. \) — Front/Back (x,y).
-            const pushDiag = (xA, yA, xB, yB, z, segs) => {
-                const n = Math.max(1, segs | 0);
-                for (let i = 0; i < n; i++) {
-                    const t0 = i / n;
-                    const t1 = (i + 1) / n;
-                    const t = (t0 + t1) * 0.5;
-                    const px = xA + (xB - xA) * t;
-                    const py = yA + (yB - yA) * t;
-                    const hx = Math.abs(xB - xA) / (2 * n) + bt * 0.55;
-                    const hy = Math.abs(yB - yA) / (2 * n) + bt * 0.55;
-                    push(px, py, z, hx, hy, bt, cHolz, 2);
-                }
-            };
-            // Seitenwände: Diagonale in (z,y), x fest — 1 Stufe bevorzugt (Cap).
-            const pushDiagSide = (zA, yA, zB, yB, x, segs) => {
-                const n = Math.max(1, segs | 0);
-                for (let i = 0; i < n; i++) {
-                    const t0 = i / n;
-                    const t1 = (i + 1) / n;
-                    const t = (t0 + t1) * 0.5;
-                    const pz = zA + (zB - zA) * t;
-                    const py = yA + (yB - yA) * t;
-                    const hz = Math.abs(zB - zA) / (2 * n) + bt * 0.55;
-                    const hy = Math.abs(yB - yA) / (2 * n) + bt * 0.55;
-                    push(x, py, pz, bt, hy, hz, cHolz, 2);
-                }
-            };
-            const motifCost = (segs) => (brace === "mann" ? 1 + 2 * Math.max(1, segs | 0) : 2 * Math.max(1, segs | 0));
-            const timberRoom = () => {
-                let p2 = 0;
-                for (let i = 0; i < kand.length; i++) if (kand[i].prio === 2) p2++;
-                return 24 - p2;
-            };
-            const motif = (z, yLo, yHi, segs) => {
-                const cyM = (yLo + yHi) * 0.5;
-                if (brace === "k") {
-                    pushDiag(cx, yLo, a0, yHi, z, segs);
-                    pushDiag(cx, yLo, a1, yHi, z, segs);
-                } else if (brace === "mann") {
-                    // kürzere Halb-Streben; EG oft 1 Stufe (Budget für Dach-AABB)
-                    push(cx, cyM, z, post * 0.35, (yHi - yLo) * 0.5, post * 0.35, cHolz, 2);
-                    pushDiag(a0, yLo, cx, cyM, z, segs);
-                    pushDiag(a1, yLo, cx, cyM, z, segs);
-                } else {
-                    // andreas · wild · Default-X
-                    pushDiag(a0, yLo, a1, yHi, z, segs);
-                    pushDiag(a1, yLo, a0, yHi, z, segs);
-                }
-            };
-            const motifSide = (x, yLo, yHi, segs) => {
-                const cyM = (yLo + yHi) * 0.5;
-                if (brace === "k") {
-                    pushDiagSide(cz, yLo, b0, yHi, x, segs);
-                    pushDiagSide(cz, yLo, b1, yHi, x, segs);
-                } else if (brace === "mann") {
-                    push(x, cyM, cz, post * 0.35, (yHi - yLo) * 0.5, post * 0.35, cHolz, 2);
-                    pushDiagSide(b0, yLo, cz, cyM, x, segs);
-                    pushDiagSide(b1, yLo, cz, cyM, x, segs);
-                } else {
-                    pushDiagSide(b0, yLo, b1, yHi, x, segs);
-                    pushDiagSide(b1, yLo, b0, yHi, x, segs);
-                }
-            };
-            const L0 = levels[0];
-            const y0 = L0.y + sill;
-            const y1 = L0.top - sill;
-            if (y1 - y0 >= 0.55) {
-                // EG Front/Back: Andreas/K mit 2 Stufen; Mann-Halbstreben bleiben 1 Stufe.
-                const segsEg = brace === "mann" ? 1 : 2;
-                motif(zF, y0, y1, segsEg);
-                motif(zB, y0, y1, segsEg);
-                // EG Left/Right: 1 Stufe/Diagonale (Cap sparen) — vor OG, damit EG trägt.
-                const costSide = motifCost(1) * 2;
-                if (timberRoom() >= costSide) {
-                    motifSide(xL, y0, y1, 1);
-                    motifSide(xR, y0, y1, 1);
-                }
-            }
-            // OG Front/Back: storeys≥2 und timber-prio-2-Raum im ≤24-Cap.
-            // Eng → 1 Stufe/Diagonale; wenn Platz → ggf. 2 (wie EG Andreas/K).
-            if (storeys >= 2 && levels[1]) {
-                const L1 = levels[1];
-                const y0g = L1.y + sill;
-                const y1g = L1.top - sill;
-                if (y1g - y0g >= 0.55) {
-                    const room = timberRoom();
-                    const cost1 = motifCost(1) * 2;
-                    const cost2 = motifCost(2) * 2;
-                    let segsOg = 0;
-                    if (room >= cost2 && brace !== "mann") segsOg = 2;
-                    else if (room >= cost1) segsOg = 1;
-                    if (segsOg > 0) {
-                        motif(zF, y0g, y1g, segsOg);
-                        motif(zB, y0g, y1g, segsOg);
-                    }
-                    // OG Left/Right: nur wenn noch ≤24-Raum (immer 1 Stufe).
-                    const costSideOg = motifCost(1) * 2;
-                    if (timberRoom() >= costSideOg) {
-                        motifSide(xL, y0g, y1g, 1);
-                        motifSide(xR, y0g, y1g, 1);
-                    }
-                }
-            }
-        }
-        // Dachkörper — Sattel = zwei Prism-Wedges (First zur Mitte); flach = Platte
-        if (flatRoof) {
-            push(0, eaveY + 0.1, 0, hw + ovEave, 0.1, hd + ovEave * 0.6, cZiegel, 1);
-        } else {
-            const roofH = Math.max(0.25, (ridgeY - eaveY) * 0.5 + 0.06);
-            const midY = eaveY + roofH;
-            const hxR = hw + ovEave;
-            const hzR = hd * 0.5 + ovEave * 0.35;
-            // −z-Hälfte: First bei +local z; +z-Hälfte: First bei −local z (prismFlip)
-            pushPrism(0, midY, -hd * 0.5, hxR, roofH, hzR, cZiegel, 1, false);
-            pushPrism(0, midY, hd * 0.5, hxR, roofH, hzR, cZiegel, 1, true);
-            push(0, ridgeY - 0.06, 0, Math.max(0.2, hw * 0.15), 0.08, 0.12, cHolz, 2);
-            // Gaube-Stub: EINE Front-Gaube (−z-Dachhälfte), Box + Mini-Prism. wantGaube: ov.gaube explizit (false
-            // = aus), sonst Default fachwerk + stil alt/huette/stroh; storeys≥2. Soft-Cap-prio 2.
-            {
-                const wantGaube =
-                    ov && ov.gaube != null
-                        ? !!ov.gaube
-                        : fachwerk && (stil === "alt" || stil === "huette" || stil === "stroh");
-                if (wantGaube && storeys >= 2) {
-                    const gW = clamp(W * 0.14, 0.9, 1.35);
-                    const gD = clamp(hd * 0.28, 0.5, 0.9);
-                    const gH = clamp((ridgeY - eaveY) * 0.42, 0.65, 1.1);
-                    const gx = 0;
-                    const gz = -hd * 0.4;
-                    const roofAt = eaveY + (ridgeY - eaveY) * (1 - Math.min(1, Math.abs(gz) / Math.max(0.01, hd)));
-                    const baseY = roofAt + 0.02;
-                    push(gx, baseY + gH * 0.5, gz, gW * 0.5, gH * 0.5, gD * 0.5, cGefach, 2);
-                    const pH = Math.max(0.1, gH * 0.2);
-                    pushPrism(gx, baseY + gH + pH * 0.5, gz, gW * 0.5 + 0.06, pH, gD * 0.5 + 0.05, cZiegel, 2, false);
-                }
-            }
-        }
-        // Seitenflügel +x/−x (ov.fluegelSide). wantFluegel: ov.fluegel explizit (false = aus), sonst Default
-        // fachwerk + stil alt/huette/stroh + W≥8. Soft-Cap ≤24: 2× prio 2 (Annex + Dachplatte).
-        {
-            const wantFluegel =
-                ov && ov.fluegel != null
-                    ? !!ov.fluegel
-                    : fachwerk && (stil === "alt" || stil === "huette" || stil === "stroh") && W >= 8;
-            if (wantFluegel) {
-                let sx = 1;
-                const fs = ov && ov.fluegelSide;
-                if (fs === -1 || fs === "-1" || fs === "-" || fs === "W" || fs === "w" || fs === "-x" || fs === "left")
-                    sx = -1;
-                else if (typeof fs === "number" && fs < 0) sx = -1;
-                const fW = clamp(W * 0.32, 2.0, 3.2); // Auskragung entlang x (slim Cap)
-                const fD = clamp(D * 0.5, 2.2, 4.0); // Breite entlang z (kleiner als Haupt)
-                const fH = egH; // 1 Geschoss
-                const cx = sx * (hw + fW * 0.5);
-                const y0 = foundH;
-                const y1 = foundH + fH;
-                const cy = (y0 + y1) * 0.5;
-                const hy = fH * 0.5 - 0.02;
-                const hz = fD * 0.5;
-                // Slim wing Soft-Cap hält (18.491.96 denseness): 2× prio-2 neben Andreas/Gaube; wing=2 under andreas+gaube.
-                // solid Annex-Körper + Dachplatte; kein 5-Box-Satz mehr.
-                push(cx, cy, 0, fW * 0.5, hy, hz, cGefach, 2);
-                push(cx, y1 + 0.08, 0, fW * 0.5 + 0.06, 0.08, hz + 0.06, cZiegel, 2);
-            }
-        }
-        if (!kand.length) return null;
-        const fertig = (liste) =>
-            liste.slice(0, 24).map((d) => {
-                delete d.prio;
-                return d;
-            });
-        if (kand.length <= 24) return fertig(kand.sort((a, b) => b.prio - a.prio || b.vol - a.vol));
-        // AUSWAHL bei Budget-Not (≤ 24): die SILHOUETTE zuerst — Dach-Prismen und Sockel/Platten, dann die
-        // Wände (die Loch-Segmente einer Wand-Ebene je Geschoss zu EINER Platte gelegt; Tür/Fenster liest
-        // nah das Mesh), danach Holz nach prio/Volumen. Sonst fallen bei vollem Fachwerk Wände und Dach.
-        const istWand = (d) => d.box && d.prio === 1 && Math.min(d.h.x, d.h.z) <= tWall * 0.5 + 1e-3 && d.h.y > 0.3;
-        const ebenen = new Map();
-        const rest = [];
-        for (const d of kand) {
-            if (!istWand(d)) {
-                rest.push(d);
-                continue;
-            }
-            const achse = d.h.x < d.h.z ? "x" : "z";
-            const stock = levels.findIndex((L) => d.c.y >= L.y - 0.05 && d.c.y <= L.top + 0.05);
-            const key = achse + ":" + Math.round(d.c[achse] * 100) + ":" + stock;
-            const lo = new THREE.Vector3(d.c.x - d.h.x, d.c.y - d.h.y, d.c.z - d.h.z);
-            const hi = new THREE.Vector3(d.c.x + d.h.x, d.c.y + d.h.y, d.c.z + d.h.z);
-            const e = ebenen.get(key);
-            if (!e) ebenen.set(key, { lo, hi, farbe: d.farbe, vol: d.vol });
-            else {
-                e.lo.min(lo);
-                e.hi.max(hi);
-                if (d.vol > e.vol) {
-                    e.farbe = d.farbe;
-                    e.vol = d.vol;
-                }
-            }
-        }
-        const waende = [...ebenen.values()].map((e) => {
-            const h = e.hi.clone().sub(e.lo).multiplyScalar(0.5);
-            return { box: true, c: e.lo.clone().add(h), h, farbe: e.farbe, vol: h.x * h.y * h.z, prio: 1 };
-        });
-        const huelle = rest.filter((d) => d.prio === 1).sort((a, b) => b.vol - a.vol);
-        const holz = rest.filter((d) => d.prio !== 1).sort((a, b) => b.prio - a.prio || b.vol - a.vol);
-        return fertig([...huelle, ...waende.sort((a, b) => b.vol - a.vol), ...holz]);
     }
 
     // DER BOX-FIT: je Kind-Mesh eine Box (lokale AABB im Vorlagen-Raum) mit

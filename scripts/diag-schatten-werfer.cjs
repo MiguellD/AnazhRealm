@@ -900,7 +900,10 @@ function probe(selbsttest) {
                 if (schatten && s.spec.schatten !== true) continue;
                 const dr = s.geom.drawRange;
                 const idx = s.geom.index.array;
-                const soll = wahl(s, L);
+                // der Wurf-Satz (`bauWurf`, S3 haus: die NUR-WURF-Stufe) zeichnet im Hauptbild nie — sein Gesetz dort ist leer,
+                // sein Abschnitt leer und seine Schicht (SHADOW_TWIN_LAYER) außerhalb der Kamera
+                const nurWurfHaupt = !schatten && s.spec.nurWurf === true;
+                const soll = nurWurfHaupt ? [] : wahl(s, L);
                 let n = 0;
                 const sollM = { s: 0, x: 0, n: 0 };
                 for (const z of soll) {
@@ -909,7 +912,9 @@ function probe(selbsttest) {
                 }
                 const gez = dreiecke(idx, dr.start, dr.start + dr.count, { s: 0, x: 0, n: 0 });
                 const inhalt = gez.n === sollM.n && gez.s === sollM.s && gez.x === sollM.x && dr.count >= n;
-                const sichtbar = s.mesh.visible === n > 0;
+                const sichtbar = nurWurfHaupt
+                    ? dr.count === 0 && !s.mesh.layers.test(kam.layers)
+                    : s.mesh.visible === n > 0;
                 if (!inhalt || !sichtbar) {
                     res.falsch++;
                     if (res.taeter.length < 6) res.taeter.push(name + ":" + s.spec.name);
