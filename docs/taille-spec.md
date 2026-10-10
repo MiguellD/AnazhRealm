@@ -96,7 +96,9 @@ Kein Import-Pfad übernimmt Abgeleitetes als Wahrheit:
   deren Erbgut nicht die Wildnis allein ist, reist nur zu einem Leser: der Empfänger erklärt
   `erbgut` ≥ 1 in `world-request`/`world-pull` (`AnazhRealm.ERBGUT_PROTOKOLL`), sonst
   verweigert der Sender benannt (`_erbgutTeilbar`; ein Build davor zeichnete still Wildnis).
-  Die Bühne `spec/pruefbuehne/welt.json`.
+  Die Bühne `spec/pruefbuehne/welt.json`; was auf ihr STEHT (die Hindernis-Station S4: Würfel,
+  Säule, Mauer, Gasse, Hausrumpf, Engpass), ist kein Term, sondern Saat des Snapshots —
+  `blueprints` + `architectures` durch dieselbe Tür wie jedes Haus eines Saves.
 - **Die Weltgrenze:** eine geladene Welt ERSETZT das `worldMeta` der Seite — die Vorlage,
   darüber ihr eigenes (`_weltMetaWechsel`, der Restore jedes Ladens). Aus der Welt davor reist
   nur, was `AnazhRealm.WELT_GRENZE` beim Namen nennt: in die Lücken einer geladenen Welt ihr
