@@ -71,7 +71,7 @@ nächste Welle erfinden · Schöpfer-Abhängigkeit erfinden — ist ROT. Die Wan
    Scope und Ship, nie jeden Pixel.
 5. **SCOPE ZU nur bei Rest = 0** — danach kein Feature-Commit mehr (nur Format/Fix auf Zuruf).
 
-## Stand (V18.537.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
+## Stand (V18.538.0 — die Ziellinie steht, nah und mittel trägt das Studio-Mesh)
 
 **DIE ZIELLINIE (docs/roadmap.md §0.v1):** v1.0 = EIN gespielter Pfad — ankommen · laufen+sehen
 · in der Werkstatt bauen · mit der KI erschaffen (Satz → Rezept-Katalog → Foundry-Asset) ·
@@ -80,30 +80,33 @@ bis dahin. **Schritt 4 GEBAUT (V18.493):** DSL-Op `spawn_studio` (Wort → Baupl
 geerdet + nie im Wasser); „pflanz mir einen eichenhain am wasser" wirkt auch ohne Schlüssel. Offen: der echte
 LLM-Lauf mit Schlüssel (Drehbuch-Schritt 18).
 
-**V18.537 — DER TAKT FRAGT DIE NACHBARSCHAFT, DAS RUDEL HAT EINEN LEIB:** das Blocker-Netz trägt ein Verzeichnis je
-Affordanz (`_blockerMit`); Brennglas, Strahlen, Heben, Portal, Dorf-Rauch und Boost-Resonanz fragen Verzeichnis oder Plätze
-statt des Bestands (1 578 → 1 Einträge je Brennglas-Takt, Boost-Spitze 11,1 → 0,4 ms), die Raum-Tags haben ein Gedächtnis
-mit Inhalts-Schlüssel, die Haus-Tür scannt jede Sekunde. Das Rudel: der persönliche Raum je Leib im EINEN Leib-Löser
-(`_leibKontakte`), das Temperament aus Gattung und Masse, Jagd-Kreis und Rudel-Ring, Bein-Lot, Fern-Gang, das Tier auf der
-Auflage der Bauten, der Nexus würfelt kein Körper-Gesetz (Durchdringung 0 von 870 Takten, Separation 2,06 → 0,10 ms).
+**V18.538 — DAS STUDIO BAUT NACH SEINER ZEILE, DER SCHATTEN NACH SEINER TEXEL-KANTE:** die Baum-Zeile steuert den Bau
+im Studio (Lagen-Wahl, Nadel-Ast als Wedel, L1 = Gerüst + Karte, EIN Schatten-Teil: baum an der Radeon-Wiese 52 → 39 Befehle,
+417k → 120–123k Dreiecke), die Gras-Rispe liest ihre Zeile (Nah-Wiese 84 336 → 54 994 Dreiecke), V Gestalten sind V
+Individuen (Lügen 0 von 657), die Grobstufe der Gelenk-Gestalt ist gelenkig und wirft als Zwilling (Werfer Wolf 28 710/7 →
+5 756/1); der Schatten-Bias je Kaskade aus der Texel-Kante (`_schattenBias`: seitliche IoU 0,00–0,07 → 0,88–1,0, Akne 0);
+das Szenen-Ziel rg11b10ufloat mit Start-Sonde, der Wasser-Satz bei seinem Inhalt (Radeon-Wiese 127,1 → 116,3 MB); EINE
+Abfrage `_streuWartet` für Spiel und Linsen (6× Drossel: Spieler-Region fehlt 2/8 → 0/8 Boots); Uhr und Wetter gehören dem
+Spieler (`_himmelSchreiber`: fremde Uhr-Schreiber 156 → 0, ein Tag 60 min).
 
-**V18.496–536 — AAA NAH, KOSTEN-MECHANIK, ANKUNFT:** Studio-Mesh mit LOD-Kette, EINE geskinnte Haut, FARB-GESETZ, EIN
-Himmel, NAH-WIESE, `_foundrySchale`, TRAA, EIN Karten-Atlas, Koschmieder-Luft, Welle 5 (Pflanzen nah, Fernwald, Stoffe, Fell,
-Klang); die GPU-Kette (gpu-bank 24,85 → 14,70 ms, `_passTrifft`, `_wahlHaelt`), Welle K (Erst-Zeichnung `_erstWartet`,
-Stand-Wache, Diät, host-vram) und L (Wasser, Backend-Gesetz, `_disposeSoulGroup`), die CI in drei Gruppen; V18.536 EIN
-Impuls-Gesetz (Fahrzeug, Leib, Biss), der Weg Werkstatt → stehendes Werk (`_setzUrteil`), die Ankunft (Ladeschirm, EIN
-Tasten-Fänger), der Frost, der Mess-Halt jedes Welt-Akts (OMEN gegen V18.535: Frame p95 25,0 → 16,9 ms). Werkbank:
-`albedo` · `licht` · `zaehlen` · `band` · `lauf` · `zerlegen` · `shader` · `sicht`.
+**V18.496–537 — AAA NAH, KOSTEN-MECHANIK, ANKUNFT, NACHBARSCHAFT:** Studio-Mesh mit LOD-Kette, EINE geskinnte Haut,
+FARB-GESETZ, EIN Himmel, NAH-WIESE, `_foundrySchale`, TRAA, EIN Karten-Atlas, Koschmieder-Luft, Welle 5; die GPU-Kette
+(gpu-bank 24,85 → 14,70 ms, `_passTrifft`, `_wahlHaelt`), Welle K (`_erstWartet`, Stand-Wache, Diät, host-vram) und L
+(Wasser, Backend-Gesetz), die CI in drei Gruppen; V18.536 EIN Impuls-Gesetz, `_setzUrteil`, die Ankunft, der Frost (OMEN
+gegen V18.535: Frame p95 25,0 → 16,9 ms); V18.537 das Blocker-Netz je Affordanz (`_blockerMit`, Brennglas 1 578 → 1
+Einträge) und EIN Leib-Löser (`_leibKontakte`, Durchdringung 0 von 870 Takten). Werkbank: `albedo` · `licht` · `zaehlen` ·
+`band` · `lauf` · `zerlegen` · `shader` · `sicht`.
 
 **WAS STEHT:** TERRAIN = Funktion (Ring · Panorama · Feld-Pass; Chunks = Iso-CACHE) · WELT-MARCH: EIN Pass, je Satz ein
 Stellvertreter · NAH/MITTEL (< 64 m) = Studio-Mesh + LOD-Kette, jede Karte eine Schicht des EINEN Atlas · FERN = Glieder-
 Kapseln · Baum = seine Studio-Karte (der gesetzte bis 384 m) · BODEN-STOFF = das Rausch-Gesetz · WALD-ORT = die Kronen-Karte
 · GRAS = nah Nah-Wiese, fern Boden-Funktion · KLANG = das Klang-Gesetz · LUFT = EINE Koschmieder-Luft · POST = TRAA, die
-Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, EIN Werfer je Gestalt, die Box hält ihren Takt · PASS-WAHL = EIN Gesetz
-(`_passTrifft`), jede Wahl hält nach `_wahlHaelt` · SÄTZE = EIN Pool je Stoff, je Pass ein Abschnitt · SONNE = gestuft
-(höchstens ein Bildpunkt in der Bildecke) · SCHIRM = EINE Quelle (`_schirm`) · STUDIOS = 6 Golden-Sätze + Ofen in der CI ·
-MESSORTE = Wiese und Genesis-Ring · LINSEN-START = `software-gpu.cjs` · NACHBARSCHAFT = das Blocker-Netz (Verzeichnis je
-Affordanz + Plätze), nie der Bestand · LEIB = EIN Leib-Löser im festen Sim-Schritt, EINE Masse.
+Nachbild-Stufen im Zweig · SCHATTEN = 2 Kaskaden, der Bias je Kaskade aus der Texel-Kante, EIN Werfer je Gestalt, die
+Box hält ihren Takt · PASS-WAHL = EIN Gesetz (`_passTrifft`), jede Wahl hält nach `_wahlHaelt` · SÄTZE = EIN Pool je
+Stoff, je Pass ein Abschnitt · SONNE = gestuft (höchstens ein Bildpunkt in der Bildecke) · SCHIRM = EINE Quelle (`_schirm`)
+· STUDIOS = 6 Golden-Sätze + Ofen in der CI, der Bau folgt seiner Budget-Zeile · MESSORTE = Wiese und Genesis-Ring ·
+LINSEN-START = `software-gpu.cjs` · NACHBARSCHAFT = das Blocker-Netz (Verzeichnis je Affordanz + Plätze), nie der Bestand ·
+LEIB = EIN Leib-Löser im festen Sim-Schritt, EINE Masse · UHR + WETTER = das Wort des Spielers, die Welt wünscht nur.
 OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI · 118 MB) — „richter ist nicht mein rechner".
 
 **PFLICHT-OFFEN (Spiegel — Wahrheit: docs/PFLICHT-OFFEN.md):** A–C Code steht (AAA nah, Bilder
