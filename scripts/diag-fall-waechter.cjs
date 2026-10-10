@@ -18,9 +18,11 @@
 //          ein an die nächste Wand gestoßener Wolf, ein in sie laufender Wolf, der Spieler zu Fuß — jeder steht am Ende auf
 //          dem Grund, keiner unter ihm, keiner auf dem Dach (die Wand hält den Leib: CI 38009273564 trug ein Stoß den Wolf in
 //          den Fels, sein Boden fiel auf die Oberkante der Säule, 11,88 m auf dem Dach); und ein Wolf, der auf dem Grund
-//          STIRBT: die tiefste Stelle seiner Haut (je Punkt gegen den Fels unter ihm) liegt nach dem Kippen höchstens TOD_M
-//          neben ihrem Stand-Kontakt, sinkt im Kippen nie tiefer, schwebt nie über TOD_SCHWEBT_M (Gegenprüfung 10.10.: die
-//          Tod-Lage las die Oberkante der Säule, der tote Wolf lag 0,46 m im Grund);
+//          STIRBT, in TOD_GIER Blickrichtungen: die tiefste Stelle seiner Haut (je Punkt gegen den Fels unter ihm, absolut)
+//          liegt nach dem Kippen nie tiefer als TOD_M im Fels und nie höher als TOD_LIEGT_M über ihm (über einem Stand
+//          darüber), sinkt im Kippen nie tiefer, als der Leib stand, schwebt nie über TOD_SCHWEBT_M (Gegenprüfung 10.10.: die
+//          Tod-Lage las die Oberkante der Säule, der tote Wolf lag 0,46 m im Grund; CI 38029478199: eine andere Gier sank
+//          0,24 m — die Tafel hielt einen Stand, der schon im Hang steckte). Der lebende Stand im Fels steht als OFFEN;
 //   (Z) DER ZENSUS: je Ort die Überhang-Spalten im Umkreis (Luft ≥ 3 m unter ≥ 2 m Fels, ihr Grund begehbar) — Wagen und
 //       an die nächste Wand gestoßener Wolf je Spalte; ROT je Körper beim Namen, Ort und Maß;
 //   (T) DER EINGESCHMUGGELTE TÄTER: im selben Lauf liest der Boden des Werks die Oberkante der Säule (der alte Leser) — O1
@@ -43,9 +45,13 @@ const root = path.resolve(__dirname, "..");
 const FALL_M = 1.0; // so tief darf ein Körper nie unter dem Fels unter ihm liegen
 const STEHT_M = 0.6; // so nah steht ein ruhender Körper an seinem Grund (Rad-Ebene, Nick, Sohle)
 const DACH_M = 2.0; // höher über dem Grund steht er nicht — er sprang aufs Dach
-const TOD_M = 0.15; // so weit liegt die tiefste Stelle des toten Leibs neben ihrem Stand-Kontakt (gate:koerper-stand K5: ±3 cm
-// auf der Karte; hier die Fels-Wahrheit unter dem Mesh, Lehre 22: die Feinform trägt das Netz ±0,2 m)
+// DIE TOD-LAGE gegen die Fels-Wahrheit (die tiefste Stelle der Haut über dem Fels, absolut — ein Stand, der schon im Hang
+// steckt, ist nie das Soll des Liegens):
+const TOD_M = 0.15; // so tief liegt sie nie im Fels, und im Kippen nie tiefer, als der Leib stand
+const TOD_LIEGT_M = 0.25; // so hoch über dem Fels liegt sie höchstens (über einem Stand darüber; das 0,5-m-Raster der Tafel liegt
+// auf einem 50°-Hang bis 0,2 m unter dem Fels)
 const TOD_SCHWEBT_M = 0.5; // so hoch hebt die Tod-Lage die tiefste Stelle im Kippen nie (die Flanke legt sich auf den Boden)
+const TOD_GIER = 8; // so viele Blickrichtungen stirbt der Wolf am Ort (die Lage hängt an der Kipp-Richtung und am Leib darüber)
 // Die Körper-Schritte und die Leser, die nie den Boden eines Körpers liefern dürfen.
 const KOERPER_SCHRITTE = [
     "_fahrBoden",
@@ -189,19 +195,27 @@ function urteil(b) {
             );
         if (p.tod) {
             const t = p.tod;
-            if (t.stehtM === null || t.liegtM === null)
+            if (t.stehtM === null || t.liegtM === null || t.kippMin === null)
                 v.push(`LEER: ${p.name} — keine Haut gemessen (Stand ${t.stehtM}, Lage ${t.liegtM})`);
             else {
-                if (Math.abs(t.gegenStandM) > TOD_M)
+                const oben = Math.max(t.stehtM, 0);
+                if (t.liegtM < -TOD_M)
                     v.push(
-                        `(O) TOD-LAGE: ${p.name} — ${wo} liegt ${Math.abs(t.gegenStandM).toFixed(2)} m ` +
-                            `${t.gegenStandM > 0 ? "über" : "unter"} seinem Stand-Kontakt (Stand ${t.stehtM.toFixed(2)} m, ` +
-                            `Lage ${t.liegtM.toFixed(2)} m über dem Fels)`
+                        `(O) TOD-LAGE: ${p.name} — ${wo} liegt ${(-t.liegtM).toFixed(2)} m im Fels ` +
+                            `(Stand ${t.stehtM.toFixed(2)} m über dem Fels)`
                     );
-                if (t.wegMin < -TOD_M)
-                    v.push(`(O) TOD-LAGE: ${p.name} — ${wo} sinkt im Kippen ${(-t.wegMin).toFixed(2)} m in den Boden`);
-                if (t.wegMax > TOD_SCHWEBT_M)
-                    v.push(`(O) TOD-LAGE: ${p.name} — ${wo} schwebt im Kippen ${t.wegMax.toFixed(2)} m über dem Boden`);
+                else if (t.liegtM > oben + TOD_LIEGT_M)
+                    v.push(
+                        `(O) TOD-LAGE: ${p.name} — ${wo} liegt ${t.liegtM.toFixed(2)} m über dem Fels ` +
+                            `(Stand ${t.stehtM.toFixed(2)} m) — er schwebt`
+                    );
+                if (t.kippMin < Math.min(t.stehtM, 0) - TOD_M)
+                    v.push(
+                        `(O) TOD-LAGE: ${p.name} — ${wo} sinkt im Kippen ${(-t.kippMin).toFixed(2)} m in den Fels ` +
+                            `(Stand ${t.stehtM.toFixed(2)} m)`
+                    );
+                if (t.kippMax > oben + TOD_SCHWEBT_M)
+                    v.push(`(O) TOD-LAGE: ${p.name} — ${wo} schwebt im Kippen ${t.kippMax.toFixed(2)} m über dem Fels`);
             }
         }
         const soll = Number.isFinite(p.grundSoll) ? p.grundSoll : p.grundEnde;
@@ -251,7 +265,7 @@ function selbsttest() {
             probe("O3 Wolf stirbt in der Höhle", "Tier wolf#5 (stirbt)", {
                 band: 2,
                 ruhe: false,
-                tod: { stehtM: 0.02, liegtM: 0.04, gegenStandM: 0.02, wegMin: -0.01, wegMax: 0.06 },
+                tod: { stehtM: 0.02, liegtM: 0.04, kippMin: 0.01, kippMax: 0.08 },
             }),
         ],
         zensus: { spalten: 8, proben: 16, taeter: [] },
@@ -296,18 +310,23 @@ function selbsttest() {
             /\(O\) DURCH DEN BODEN: O3 Wolf läuft in die Wand — .* lag 2\.50 m unter dem Fels/,
         ],
         [
-            "der tote Wolf liegt nach dem Dach-Hang",
-            (b) => Object.assign(b.proben[6].tod, { liegtM: 0.62, gegenStandM: 0.6 }),
-            /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — Tier wolf#5 \(stirbt\) .* liegt 0\.60 m über seinem Stand-Kontakt/,
+            "der tote Wolf liegt im Grund (Gegenprüfung 10.10.)",
+            (b) => Object.assign(b.proben[6].tod, { liegtM: -0.38, kippMin: -0.38 }),
+            /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — Tier wolf#5 \(stirbt\) .* liegt 0\.38 m im Fels/,
         ],
         [
-            "der tote Wolf sinkt im Kippen",
-            (b) => Object.assign(b.proben[6].tod, { wegMin: -0.4 }),
-            /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — .* sinkt im Kippen 0\.40 m in den Boden/,
+            "der tote Wolf liegt über dem Boden",
+            (b) => Object.assign(b.proben[6].tod, { liegtM: 0.62 }),
+            /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — .* liegt 0\.62 m über dem Fels .* er schwebt/,
+        ],
+        [
+            "der Stand im Hang ist kein Soll: er sinkt kippend tiefer (CI 38029478199)",
+            (b) => Object.assign(b.proben[6].tod, { stehtM: -0.68, liegtM: -0.1, kippMin: -0.92 }),
+            /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — .* sinkt im Kippen 0\.92 m in den Fels/,
         ],
         [
             "der tote Wolf schwebt im Kippen",
-            (b) => Object.assign(b.proben[6].tod, { wegMax: 0.9 }),
+            (b) => Object.assign(b.proben[6].tod, { kippMax: 0.9 }),
             /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — .* schwebt im Kippen 0\.90 m/,
         ],
         [
@@ -824,7 +843,7 @@ async function probe(K) {
         }
         return Number.isFinite(min) ? min : null;
     };
-    const wolfTod = async (x, z, y) => {
+    const wolfTod = async (x, z, y, gier) => {
         const steht = Object.create(steuerRoh.call(A));
         steht.steuerSchritt = (sw) => {
             sw.v = 0;
@@ -834,6 +853,8 @@ async function probe(K) {
         try {
             const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
             if (!w) return null;
+            w.rotation.y = gier;
+            w.userData._steuer = { gier, v: 0 };
             for (let i = 0; i < 30; i++) takt();
             const stehtM = hautAbstand(w);
             r.damageCreature(w, 1e6, {});
@@ -842,8 +863,8 @@ async function probe(K) {
                 r.removeCreature(w);
                 return { fehler: "der Wolf stirbt nicht" };
             }
-            let wegMin = Infinity,
-                wegMax = -Infinity,
+            let kippMin = Infinity,
+                kippMax = -Infinity,
                 liegtM = null,
                 tiefsteUnter = -Infinity,
                 yMin = Infinity;
@@ -857,9 +878,9 @@ async function probe(K) {
                 const fertig = dy.t >= dy.dauer;
                 if (i % 3 === 2 || fertig) {
                     const a = hautAbstand(w);
-                    if (a !== null && stehtM !== null) {
-                        wegMin = Math.min(wegMin, a - stehtM);
-                        wegMax = Math.max(wegMax, a - stehtM);
+                    if (a !== null) {
+                        kippMin = Math.min(kippMin, a);
+                        kippMax = Math.max(kippMax, a);
                     }
                     if (fertig) {
                         liegtM = a;
@@ -868,7 +889,10 @@ async function probe(K) {
                 }
             }
             const out = {
-                koerper: "Tier wolf#" + (w.userData.id != null ? w.userData.id : w.id) + " (stirbt)",
+                koerper:
+                    "Tier wolf#" +
+                    (w.userData.id != null ? w.userData.id : w.id) +
+                    ` (stirbt, Gier ${Math.round((gier * 180) / Math.PI)}°)`,
                 ort: ort(w.position.x, w.position.z),
                 tiefsteUnter,
                 yMin,
@@ -882,9 +906,8 @@ async function probe(K) {
                 tod: {
                     stehtM,
                     liegtM,
-                    gegenStandM: liegtM !== null && stehtM !== null ? liegtM - stehtM : null,
-                    wegMin: Number.isFinite(wegMin) ? wegMin : null,
-                    wegMax: Number.isFinite(wegMax) ? wegMax : null,
+                    kippMin: Number.isFinite(kippMin) ? kippMin : null,
+                    kippMax: Number.isFinite(kippMax) ? kippMax : null,
                 },
             };
             if (st.creatures.includes(w)) r.removeCreature(w);
@@ -894,17 +917,20 @@ async function probe(K) {
             st.maxCreatures = kappe;
         }
     };
-    {
+    // je Blickrichtung ein Tod am Ort der Höhle (die Kipp-Richtung folgt dem Hang, der Leib darüber der Gier — CI 38029478199:
+    // eine Gier, die der lokale Lauf nicht zog, sank 0,24 m in den Grund)
+    for (let k = 0; k < K.todGier; k++) {
         const name = "O3 Wolf stirbt in der Höhle";
-        if (!hoehleOk) proben.push({ name, fehler: "keine Höhle" });
-        else {
-            const m = await wolfTod(H.x, H.z, hoehleGrund);
-            proben.push(
-                m && !m.fehler
-                    ? Object.assign({ name }, m)
-                    : { name, fehler: (m && m.fehler) || "der Wolf ließ sich nicht rufen" }
-            );
+        if (!hoehleOk) {
+            proben.push({ name, fehler: "keine Höhle" });
+            break;
         }
+        const m = await wolfTod(H.x, H.z, hoehleGrund, (k / K.todGier) * Math.PI * 2);
+        proben.push(
+            m && !m.fehler
+                ? Object.assign({ name }, m)
+                : { name, fehler: (m && m.fehler) || "der Wolf ließ sich nicht rufen" }
+        );
     }
     {
         const name = "O3 Spieler in der Höhle";
@@ -1027,7 +1053,7 @@ async function probe(K) {
         await page.waitForFunction(() => window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function", {
             timeout: 180000,
         });
-        befund = await page.evaluate(probe, { FALL_M, DACH_M, spaltenJeOrt: 6 });
+        befund = await page.evaluate(probe, { FALL_M, DACH_M, spaltenJeOrt: 6, todGier: TOD_GIER });
     } catch (e) {
         befund = { fehler: (e && e.message) || String(e) };
     }
@@ -1048,8 +1074,16 @@ async function probe(K) {
                       `Oberkante ${p.dach.toFixed(2)} · tiefste Lage unter dem Grund ${p.tiefsteUnter.toFixed(2)} m · y min ${p.yMin.toFixed(2)}` +
                       (p.tod
                           ? ` · Tod: Haut über dem Fels im Stand ${fx(p.tod.stehtM)} m, liegend ${fx(p.tod.liegtM)} m, im Kippen ` +
-                            `${fx(p.tod.wegMin)} … ${fx(p.tod.wegMax)} m gegen den Stand`
+                            `${fx(p.tod.kippMin)} … ${fx(p.tod.kippMax)} m`
                           : "")
+        );
+    // OFFEN (nie grün gezählt): der LEBENDE Leib am Fuß einer Höhlenwand steiler als 45° — die Stand-Ebene des Tiers
+    // (`_creatureSlopeProben`) nimmt die steilere Probe als Kante aus, der Leib steht flacher als der Hang
+    const imFels = befund.proben.filter((p) => p.tod && Number.isFinite(p.tod.stehtM) && p.tod.stehtM < -TOD_M);
+    if (imFels.length)
+        console.log(
+            `  OFFEN (Stand am Wandfuß): ${imFels.length} von ${befund.proben.filter((p) => p.tod).length} lebenden Wölfen ` +
+                `stehen mit der Haut bis ${(-Math.min(...imFels.map((p) => p.tod.stehtM))).toFixed(2)} m im Fels`
         );
     console.log(
         `  Zensus: ${befund.zensus.spalten} Überhang-Spalten, ${befund.zensus.proben} Proben, ${befund.zensus.taeter.length} Täter`

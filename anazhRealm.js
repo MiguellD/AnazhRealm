@@ -19689,10 +19689,19 @@ class AnazhRealm {
             const k = Math.floor(fz);
             const tx = fx - i;
             const tz = fz - k;
-            const g =
-                (zelle(i, k) * (1 - tx) + zelle(i + 1, k) * tx) * (1 - tz) +
-                (zelle(i, k + 1) * (1 - tx) + zelle(i + 1, k + 1) * tx) * tz;
-            return Number.isFinite(g) ? this._standSicht(x, z, g, false) : NaN;
+            // bilinear über die Ecken mit Boden (eine Wand-Ecke fällt aus dem Gewicht, nie der ganze Punkt)
+            const g00 = zelle(i, k);
+            const g10 = zelle(i + 1, k);
+            const g01 = zelle(i, k + 1);
+            const g11 = zelle(i + 1, k + 1);
+            const w00 = Number.isFinite(g00) ? (1 - tx) * (1 - tz) : 0;
+            const w10 = Number.isFinite(g10) ? tx * (1 - tz) : 0;
+            const w01 = Number.isFinite(g01) ? (1 - tx) * tz : 0;
+            const w11 = Number.isFinite(g11) ? tx * tz : 0;
+            const sw = w00 + w10 + w01 + w11;
+            if (!(sw > 0)) return NaN;
+            const sg = (w00 && g00 * w00) + (w10 && g10 * w10) + (w01 && g01 * w01) + (w11 && g11 * w11);
+            return this._standSicht(x, z, sg / sw, false);
         };
         // je Winkel: der kleinste Abstand Haut − Boden bei Wurzel-Hebung 0
         const spalt = (k) => {
@@ -19711,10 +19720,14 @@ class AnazhRealm {
         };
         const stand = spalt(0);
         if (!Number.isFinite(stand)) return null;
+        // DAS SOLL DES KLEINSTEN ABSTANDS: was er im Stand war — stand der Leib schon im Boden (der Stand am Fuß einer Wand
+        // steiler als 45°, stand < 0), geht das Soll im Kippen linear auf 0: der tote Leib legt sich AUF den Boden, nie
+        // tiefer. Vorher hielt die Tafel den Stand-Fehler: ein Wolf, der 0,68 m im Hang stand, sank kippend 0,92 m in den Grund.
         const hebe = new Float32Array(n + 1);
         for (let k = 1; k <= n; k++) {
+            const soll = stand < 0 ? stand * (1 - k / n) : stand;
             const sp = spalt(k);
-            hebe[k] = Number.isFinite(sp) ? stand - sp : hebe[k - 1];
+            hebe[k] = Number.isFinite(sp) ? soll - sp : hebe[k - 1];
         }
         return hebe;
     }
@@ -103664,8 +103677,9 @@ AnazhRealm.TOD_KIPP_RAD = 1.45;
 AnazhRealm.TOD_KIPP_STUETZ = 16;
 AnazhRealm.TOD_KIPP_PUNKTE = 1500;
 // Die Zelle des Boden-Rasters der Tod-Lage (m): je Zelle EIN Schritt-Boden des Leibs (`_koerperSchritt`), bilinear dazwischen.
-// Gemessen 10.10. (Null-Renderer, je 3 Tode): in der Höhle O3 liegt der Wolf mit 0,5 m 0,02–0,04 m über seinem Stand-Kontakt,
-// die Tafel kostet 10,8–14,1 ms je Tod (mit 0,25 m 14,8–23,1 ms, die alte Tafel 13,5–17,4 ms bei 0,48–0,50 m im Grund).
+// Gemessen 10.10. (Null-Renderer, je 5 Tode): in der Höhle O3 liegt der Wolf 0,02–0,06 m über seinem Stand-Kontakt (die alte
+// Tafel: 0,46–0,52 m darunter); je Tod kostet das Raster 180 (Höhle) bzw. 206 (Freiland) Feld-Proben neben den 25 568
+// Karten-Lesungen, die auch die alte Tafel trug.
 AnazhRealm.TOD_BODEN_ZELLE = 0.5;
 // Die Kopf-Einheit des Avatars (m): 8 Einheiten = die Welt-Körperhöhe ~1,7 m (bauMensch, Wasserlinie, Studio-Maßstab).
 AnazhRealm.PLAYER_KH = 0.2125;
