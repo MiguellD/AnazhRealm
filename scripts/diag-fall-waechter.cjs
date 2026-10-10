@@ -17,14 +17,19 @@
 //       O3 die Höhle der Boden-Funktion (−875,5/−1229,4, Fels 38,5–48,5 m, Luft 30–38,5 m): ein Wagen auf dem Höhlen-Grund,
 //          ein an die nächste Wand gestoßener Wolf, ein in sie laufender Wolf, der Spieler zu Fuß — jeder steht am Ende auf
 //          dem Grund, keiner unter ihm, keiner auf dem Dach (die Wand hält den Leib: CI 38009273564 trug ein Stoß den Wolf in
-//          den Fels, sein Boden fiel auf die Oberkante der Säule, 11,88 m auf dem Dach);
+//          den Fels, sein Boden fiel auf die Oberkante der Säule, 11,88 m auf dem Dach); und ein Wolf, der auf dem Grund
+//          STIRBT: die tiefste Stelle seiner Haut (je Punkt gegen den Fels unter ihm) liegt nach dem Kippen höchstens TOD_M
+//          neben ihrem Stand-Kontakt, sinkt im Kippen nie tiefer, schwebt nie über TOD_SCHWEBT_M (Gegenprüfung 10.10.: die
+//          Tod-Lage las die Oberkante der Säule, der tote Wolf lag 0,46 m im Grund);
 //   (Z) DER ZENSUS: je Ort die Überhang-Spalten im Umkreis (Luft ≥ 3 m unter ≥ 2 m Fels, ihr Grund begehbar) — Wagen und
 //       an die nächste Wand gestoßener Wolf je Spalte; ROT je Körper beim Namen, Ort und Maß;
 //   (T) DER EINGESCHMUGGELTE TÄTER: im selben Lauf liest der Boden des Werks die Oberkante der Säule (der alte Leser) — O1
 //       MUSS rot fallen, beim Namen;
 //   (Q) DIE QUELLE (AST, acorn): die Körper-Schritte lesen ihren Boden nur über `_koerperBodenUnter` — kein
 //       `getTerrainHeightAt` / `_voxelSurfaceY` / `findSurfaceAbove` / `_terrainMacroSurfaceY` in ihnen, und jeder ruft den
-//       Boden des Körpers;
+//       Boden des Körpers; JEDE andere Methode, die einen dieser Leser ruft UND die Höhe eines Leibs berührt
+//       (`.position.y`, `.position.set`), ist als Platzierung/Welt-Leser benannt (OBERKANTE_BENANNT, mit Grund) — sonst
+//       ROT beim Namen (UNBENANNT), ein Name ohne Leser ist VERALTET;
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter MUSS rot fallen und ihn beim Namen
 // nennen; die Quellen-Wand nennt eine eingeschleuste Zeile in einer Kopie des Stamms (und ist am Stamm grün).
@@ -38,6 +43,9 @@ const root = path.resolve(__dirname, "..");
 const FALL_M = 1.0; // so tief darf ein Körper nie unter dem Fels unter ihm liegen
 const STEHT_M = 0.6; // so nah steht ein ruhender Körper an seinem Grund (Rad-Ebene, Nick, Sohle)
 const DACH_M = 2.0; // höher über dem Grund steht er nicht — er sprang aufs Dach
+const TOD_M = 0.15; // so weit liegt die tiefste Stelle des toten Leibs neben ihrem Stand-Kontakt (gate:koerper-stand K5: ±3 cm
+// auf der Karte; hier die Fels-Wahrheit unter dem Mesh, Lehre 22: die Feinform trägt das Netz ±0,2 m)
+const TOD_SCHWEBT_M = 0.5; // so hoch hebt die Tod-Lage die tiefste Stelle im Kippen nie (die Flanke legt sich auf den Boden)
 // Die Körper-Schritte und die Leser, die nie den Boden eines Körpers liefern dürfen.
 const KOERPER_SCHRITTE = [
     "_fahrBoden",
@@ -48,16 +56,40 @@ const KOERPER_SCHRITTE = [
     "_creatureGroundY",
     "_creatureSlopeProbe",
     "_koerperSchritt",
+    "_todHebeTafel",
 ];
 const DACH_LESER = new Set(["getTerrainHeightAt", "_voxelSurfaceY", "findSurfaceAbove", "_terrainMacroSurfaceY"]);
 const BODEN_LESER = new Set(["_koerperBodenUnter", "_koerperSchritt", "_werkBoden", "_fahrBoden"]);
+// DIE ANDEREN LESER DER OBERKANTE, die die Höhe eines Leibs berühren (Gegenprüfung 10.10.: `_todHebeTafel` las die
+// Oberkante als Boden des sterbenden Leibs, und die Wand kannte ihn nicht): jede Methode, die einen Dach-Leser ruft UND
+// `.position.y` liest oder schreibt (oder `.position.set` ruft), ist ein Körper-Schritt (oben, dort ist die Oberkante
+// verboten) oder hier BENANNT — mit ihren erlaubten Dach-Lesern und dem Grund. Eine unbenannte ist ROT beim Namen, eine
+// benannte, die nicht mehr liest, ist VERALTET (die Liste wandert mit dem Stamm).
+const OBERKANTE_BENANNT = {
+    dslEffects: [
+        ["getTerrainHeightAt"],
+        "Platzierung: die Geburt fern am Wunsch-Ort setzt das Tier auf die Oberfläche",
+    ],
+    _playerDeathRespawn: [["getTerrainHeightAt"], "Platzierung: der Spieler ersteht auf der Oberfläche"],
+    _creatureNaturalBirth: [["getTerrainHeightAt"], "Platzierung: die Geburt fern im Freien"],
+    _rescuePlayerFromVoid: [["getTerrainHeightAt"], "Platzierung: die Rettung aus der Leere auf die Oberfläche"],
+    _stepCharacter: [
+        ["findSurfaceAbove"],
+        "Platzierung: die Todes-Ebene hebt den Spieler unter der Welt auf die Oberfläche",
+    ],
+    _creatureWaterContextAt: [["_voxelSurfaceY"], "Ufer-Suche: Land in den Nachbar-Spalten, nie der Boden des Leibs"],
+    _archFundamentBox: [["getTerrainHeightAt"], "Bauwerk: das Podest eines Hauses (kein Leib)"],
+    _bergSchattenVerdeckt: [["_terrainMacroSurfaceY"], "Sicht: die Berg-Verdeckung einer Region (kein Leib)"],
+};
 
-// DIE QUELLEN-WAND (AST): je Körper-Schritt die Rufe eines Dach-Lesers (Täter) und ob er einen Boden-Leser ruft.
-function quellenWand(quelle) {
+// DIE QUELLEN-WAND (AST): je Körper-Schritt die Rufe eines Dach-Lesers (Täter) und ob er einen Boden-Leser ruft; jeder
+// andere Leser der Oberkante, der die Höhe eines Leibs berührt, ist benannt (OBERKANTE_BENANNT) oder ein Täter.
+function quellenWand(quelle, benannt = OBERKANTE_BENANNT) {
     const acorn = require("acorn");
     const ast = acorn.parse(quelle, { ecmaVersion: "latest", sourceType: "script", locations: true });
     const befunde = [];
     const gefunden = new Set();
+    const benanntGesehen = new Set();
     const lauf = (n, f) => {
         if (!n || typeof n.type !== "string") return;
         f(n);
@@ -68,10 +100,32 @@ function quellenWand(quelle) {
             else if (v && typeof v.type === "string") lauf(v, f);
         }
     };
-    const name = (m) => (m.computed ? null : m.property && m.property.name);
+    const name = (m) => (m && m.type === "MemberExpression" && !m.computed && m.property ? m.property.name : null);
     lauf(ast, (n) => {
-        if (n.type !== "MethodDefinition" || !n.key || !KOERPER_SCHRITTE.includes(n.key.name)) return;
+        if (n.type !== "MethodDefinition" || !n.key) return;
         const methode = n.key.name;
+        if (!KOERPER_SCHRITTE.includes(methode)) {
+            // ein anderer Leser der Oberkante, der die Höhe eines Leibs berührt
+            const dach = [];
+            let leib = false;
+            lauf(n.value.body, (c) => {
+                if (c.type === "CallExpression" && DACH_LESER.has(name(c.callee)))
+                    dach.push([name(c.callee), c.loc.start.line]);
+                if (c.type === "MemberExpression" && name(c) === "y" && name(c.object) === "position") leib = true;
+                if (c.type === "CallExpression" && name(c.callee) === "set" && name(c.callee.object) === "position")
+                    leib = true;
+            });
+            if (!dach.length || !leib || DACH_LESER.has(methode)) return;
+            const b = benannt[methode];
+            if (b) benanntGesehen.add(methode);
+            for (const [nm, zeile] of dach)
+                if (!b || !b[0].includes(nm))
+                    befunde.push(
+                        `UNBENANNT: ${methode} Zeile ${zeile} ruft ${nm} (die Oberkante der Säule) und berührt die Höhe ` +
+                            `eines Leibs — Körper-Schritt (_koerperBodenUnter) oder benannte Platzierung?`
+                    );
+            return;
+        }
         gefunden.add(methode);
         let ruftBoden = false;
         lauf(n.value.body, (c) => {
@@ -85,6 +139,11 @@ function quellenWand(quelle) {
             befunde.push(`${methode} ruft den Boden des Körpers nicht (_koerperBodenUnter · _werkBoden · _fahrBoden)`);
     });
     for (const m of KOERPER_SCHRITTE) if (!gefunden.has(m)) befunde.push(`${m} fehlt im Stamm (die Wand kennt ihn)`);
+    for (const m of Object.keys(benannt))
+        if (!benanntGesehen.has(m))
+            befunde.push(
+                `VERALTET: ${m} ist benannt, liest aber keine Oberkante an einem Leib mehr (die Liste wandert mit)`
+            );
     return befunde;
 }
 
@@ -99,6 +158,7 @@ function urteil(b) {
         "O3 Wolf in der Höhle",
         "O3 Spieler in der Höhle",
         "O3 Wolf läuft in die Wand",
+        "O3 Wolf stirbt in der Höhle",
     ])
         if (!proben.some((p) => p.name === name)) v.push(`LEER: die Probe „${name}" fehlt`);
     for (const p of proben) {
@@ -127,6 +187,23 @@ function urteil(b) {
                 `(O) STEHT NICHT: ${p.name} — ${wo} ruht ${(p.yEnde - p.grundEnde).toFixed(2)} m über seinem Grund ` +
                     `(y ${p.yEnde.toFixed(2)}, Grund ${p.grundEnde.toFixed(2)})`
             );
+        if (p.tod) {
+            const t = p.tod;
+            if (t.stehtM === null || t.liegtM === null)
+                v.push(`LEER: ${p.name} — keine Haut gemessen (Stand ${t.stehtM}, Lage ${t.liegtM})`);
+            else {
+                if (Math.abs(t.gegenStandM) > TOD_M)
+                    v.push(
+                        `(O) TOD-LAGE: ${p.name} — ${wo} liegt ${Math.abs(t.gegenStandM).toFixed(2)} m ` +
+                            `${t.gegenStandM > 0 ? "über" : "unter"} seinem Stand-Kontakt (Stand ${t.stehtM.toFixed(2)} m, ` +
+                            `Lage ${t.liegtM.toFixed(2)} m über dem Fels)`
+                    );
+                if (t.wegMin < -TOD_M)
+                    v.push(`(O) TOD-LAGE: ${p.name} — ${wo} sinkt im Kippen ${(-t.wegMin).toFixed(2)} m in den Boden`);
+                if (t.wegMax > TOD_SCHWEBT_M)
+                    v.push(`(O) TOD-LAGE: ${p.name} — ${wo} schwebt im Kippen ${t.wegMax.toFixed(2)} m über dem Boden`);
+            }
+        }
         const soll = Number.isFinite(p.grundSoll) ? p.grundSoll : p.grundEnde;
         if (p.yEnde - soll > DACH_M)
             v.push(
@@ -171,6 +248,11 @@ function selbsttest() {
             probe("O3 Wolf in der Höhle", "Tier wolf#3", { band: 2 }),
             probe("O3 Spieler in der Höhle", "Spieler"),
             probe("O3 Wolf läuft in die Wand", "Tier wolf#4 (läuft an die Wand 0.4 m)", { band: 2 }),
+            probe("O3 Wolf stirbt in der Höhle", "Tier wolf#5 (stirbt)", {
+                band: 2,
+                ruhe: false,
+                tod: { stehtM: 0.02, liegtM: 0.04, gegenStandM: 0.02, wegMin: -0.01, wegMax: 0.06 },
+            }),
         ],
         zensus: { spalten: 8, proben: 16, taeter: [] },
         schmuggel: { rot: true, mass: "8,2 m durch den Boden" },
@@ -212,6 +294,26 @@ function selbsttest() {
             "ein Tier tiefer als sein Sicht-Band",
             (b) => Object.assign(b.proben[5], { tiefsteUnter: 2.5, yEnde: 29.8, grundEnde: 32.3 }),
             /\(O\) DURCH DEN BODEN: O3 Wolf läuft in die Wand — .* lag 2\.50 m unter dem Fels/,
+        ],
+        [
+            "der tote Wolf liegt nach dem Dach-Hang",
+            (b) => Object.assign(b.proben[6].tod, { liegtM: 0.62, gegenStandM: 0.6 }),
+            /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — Tier wolf#5 \(stirbt\) .* liegt 0\.60 m über seinem Stand-Kontakt/,
+        ],
+        [
+            "der tote Wolf sinkt im Kippen",
+            (b) => Object.assign(b.proben[6].tod, { wegMin: -0.4 }),
+            /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — .* sinkt im Kippen 0\.40 m in den Boden/,
+        ],
+        [
+            "der tote Wolf schwebt im Kippen",
+            (b) => Object.assign(b.proben[6].tod, { wegMax: 0.9 }),
+            /\(O\) TOD-LAGE: O3 Wolf stirbt in der Höhle — .* schwebt im Kippen 0\.90 m/,
+        ],
+        [
+            "Tod ohne Haut",
+            (b) => (b.proben[6].tod.liegtM = null),
+            /LEER: O3 Wolf stirbt in der Höhle — keine Haut gemessen/,
         ],
         ["leerer Zensus", (b) => (b.zensus.spalten = 0), /LEER: \(Z\) der Zensus fand keine/],
         [
@@ -260,6 +362,35 @@ function selbsttest() {
         `  ${genannt ? "✅" : "❌"} Quellen-Wand an der Kopie mit dem alten Leser → ${anKopie.join(" · ") || "(nichts)"}`
     );
     if (!genannt) fehler.push("die Quellen-Wand nennt den eingeschleusten Dach-Leser nicht");
+    // der Leser der Gegenprüfung 10.10.: die Tod-Lage liest die Oberkante der Säule als Boden des sterbenden Leibs
+    {
+        const k2 = stamm.replace(
+            /const g0 = this\._koerperBodenUnter\(px, py - \(creature\.userData\._hopH \|\| 0\), pz\);/,
+            "const g0 = this.getTerrainHeightAt(px, pz);"
+        );
+        const a2 = k2 === stamm ? [] : quellenWand(k2);
+        const ok = a2.some((x) => /^_todHebeTafel Zeile \d+ ruft getTerrainHeightAt/.test(x));
+        console.log(
+            `  ${ok ? "✅" : "❌"} Quellen-Wand an der Kopie mit der alten Tod-Lage → ${a2.join(" · ") || "(nichts)"}`
+        );
+        if (!ok) fehler.push("die Quellen-Wand nennt die Tod-Lage auf der Oberkante nicht");
+    }
+    // ein unbenannter neuer Leser der Oberkante an einem Leib, und ein veralteter Name
+    {
+        const k3 = stamm.replace(
+            /(\n {4}_todHebeTafel\(creature, hx, hz\) \{)/,
+            "\n    _schmuggelLeib(c) {\n        c.position.y = this.getTerrainHeightAt(c.position.x, c.position.z);\n    }\n$1"
+        );
+        const a3 = quellenWand(k3, Object.assign({ _nieGelesen: [["getTerrainHeightAt"], "Test"] }, OBERKANTE_BENANNT));
+        const ok =
+            a3.some((x) => /^UNBENANNT: _schmuggelLeib Zeile \d+ ruft getTerrainHeightAt/.test(x)) &&
+            a3.some((x) => /^VERALTET: _nieGelesen ist benannt/.test(x));
+        console.log(
+            `  ${ok ? "✅" : "❌"} Quellen-Wand: ein unbenannter Leser am Leib und ein veralteter Name → ${a3.join(" · ") || "(nichts)"}`
+        );
+        if (!ok)
+            fehler.push("die Quellen-Wand nennt einen unbenannten Leser am Leib oder einen veralteten Namen nicht");
+    }
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
         process.exit(1);
@@ -655,6 +786,126 @@ async function probe(K) {
             proben.push(m ? Object.assign({ name }, m) : { name, fehler: "der Wolf ließ sich nicht rufen" });
         }
     }
+    // DER TOD IN DER HÖHLE (Gegenprüfung 10.10.): der Wolf steht auf dem Höhlen-Grund, stirbt und kippt — die Tod-Lage
+    // (`_todHebeTafel`) hebt seine Wurzel je Kipp-Winkel so, dass die tiefste Stelle der Haut auf dem Boden bleibt. Die
+    // Wahrheit der Linse: je Punkt der Haut (höchstens 400) der Abstand zum Fels unter ihm im Dichtefeld (im Fels: negativ,
+    // die Tiefe darin). Vorher las die Tod-Lage die Oberkante der Säule als Boden: in der Höhle legte sich der Leib nach dem
+    // Hang des Dachs.
+    const hautAbstand = (c) => {
+        c.updateMatrixWorld(true);
+        const T = window.THREE || globalThis.THREE;
+        const v = new T.Vector3();
+        const haut = [];
+        c.traverseVisible((o) => {
+            if (o.isMesh && !o.isInstancedMesh && o.geometry && o.geometry.attributes.position) haut.push(o);
+        });
+        let n = 0;
+        for (const o of haut) n += o.geometry.attributes.position.count;
+        if (!n) return null;
+        const schritt = Math.max(1, Math.ceil(n / 400));
+        let min = Infinity;
+        for (const o of haut) {
+            const pa = o.geometry.attributes.position;
+            for (let i = 0; i < pa.count; i += schritt) {
+                o.getVertexPosition(i, v);
+                v.applyMatrix4(o.matrixWorld);
+                let a;
+                if (r._fieldSolid(v.x, v.y, v.z)) {
+                    let yy = v.y;
+                    while (yy < v.y + 3 && r._fieldSolid(v.x, yy, v.z)) yy += 0.02;
+                    a = v.y - yy;
+                } else {
+                    let yy = v.y;
+                    while (yy > v.y - 3 && !r._fieldSolid(v.x, yy, v.z)) yy -= 0.02;
+                    a = v.y - yy;
+                }
+                if (a < min) min = a;
+            }
+        }
+        return Number.isFinite(min) ? min : null;
+    };
+    const wolfTod = async (x, z, y) => {
+        const steht = Object.create(steuerRoh.call(A));
+        steht.steuerSchritt = (sw) => {
+            sw.v = 0;
+        };
+        A._steuerGesetz = () => steht;
+        st.maxCreatures = st.creatures.length + 2;
+        try {
+            const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
+            if (!w) return null;
+            for (let i = 0; i < 30; i++) takt();
+            const stehtM = hautAbstand(w);
+            r.damageCreature(w, 1e6, {});
+            const dy = w.userData.dying;
+            if (!dy) {
+                r.removeCreature(w);
+                return { fehler: "der Wolf stirbt nicht" };
+            }
+            let wegMin = Infinity,
+                wegMax = -Infinity,
+                liegtM = null,
+                tiefsteUnter = -Infinity,
+                yMin = Infinity;
+            for (let i = 0; i < 600 && st.creatures.includes(w); i++) {
+                takt();
+                if (!st.creatures.includes(w)) break;
+                const g = grundAm(w.position.x, w.position.y + 0.6, w.position.z);
+                const unter = g === Infinity ? 99 : Number.isFinite(g) ? g - w.position.y : 99;
+                if (unter > tiefsteUnter) tiefsteUnter = unter;
+                if (w.position.y < yMin) yMin = w.position.y;
+                const fertig = dy.t >= dy.dauer;
+                if (i % 3 === 2 || fertig) {
+                    const a = hautAbstand(w);
+                    if (a !== null && stehtM !== null) {
+                        wegMin = Math.min(wegMin, a - stehtM);
+                        wegMax = Math.max(wegMax, a - stehtM);
+                    }
+                    if (fertig) {
+                        liegtM = a;
+                        break;
+                    }
+                }
+            }
+            const out = {
+                koerper: "Tier wolf#" + (w.userData.id != null ? w.userData.id : w.id) + " (stirbt)",
+                ort: ort(w.position.x, w.position.z),
+                tiefsteUnter,
+                yMin,
+                todesEbene: yMin < todesEbene,
+                yEnde: w.position.y,
+                grundEnde: grundAm(w.position.x, w.position.y + 0.6, w.position.z),
+                dach: dachAn(w.position.x, w.position.z),
+                grundSoll: grundAb(w.position.x, w.position.z, y),
+                ruhe: false,
+                band: A.STAND_SICHT_BAND,
+                tod: {
+                    stehtM,
+                    liegtM,
+                    gegenStandM: liegtM !== null && stehtM !== null ? liegtM - stehtM : null,
+                    wegMin: Number.isFinite(wegMin) ? wegMin : null,
+                    wegMax: Number.isFinite(wegMax) ? wegMax : null,
+                },
+            };
+            if (st.creatures.includes(w)) r.removeCreature(w);
+            return out;
+        } finally {
+            A._steuerGesetz = steuerRoh;
+            st.maxCreatures = kappe;
+        }
+    };
+    {
+        const name = "O3 Wolf stirbt in der Höhle";
+        if (!hoehleOk) proben.push({ name, fehler: "keine Höhle" });
+        else {
+            const m = await wolfTod(H.x, H.z, hoehleGrund);
+            proben.push(
+                m && !m.fehler
+                    ? Object.assign({ name }, m)
+                    : { name, fehler: (m && m.fehler) || "der Wolf ließ sich nicht rufen" }
+            );
+        }
+    }
     {
         const name = "O3 Spieler in der Höhle";
         if (!hoehleOk) proben.push({ name, fehler: "keine Höhle" });
@@ -788,12 +1039,17 @@ async function probe(K) {
     }
     befund.pageErrors = pageErrors;
     befund.quelle = quellenWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8"));
+    const fx = (v) => (Number.isFinite(v) ? v.toFixed(3) : String(v));
     for (const p of befund.proben)
         console.log(
             p.fehler
                 ? `  ${p.name}: ${p.fehler}`
                 : `  ${p.name.padEnd(36)} ${p.koerper} bei ${p.ort}: am Ende y ${p.yEnde.toFixed(2)} · Grund ${p.grundEnde.toFixed(2)} · ` +
-                      `Oberkante ${p.dach.toFixed(2)} · tiefste Lage unter dem Grund ${p.tiefsteUnter.toFixed(2)} m · y min ${p.yMin.toFixed(2)}`
+                      `Oberkante ${p.dach.toFixed(2)} · tiefste Lage unter dem Grund ${p.tiefsteUnter.toFixed(2)} m · y min ${p.yMin.toFixed(2)}` +
+                      (p.tod
+                          ? ` · Tod: Haut über dem Fels im Stand ${fx(p.tod.stehtM)} m, liegend ${fx(p.tod.liegtM)} m, im Kippen ` +
+                            `${fx(p.tod.wegMin)} … ${fx(p.tod.wegMax)} m gegen den Stand`
+                          : "")
         );
     console.log(
         `  Zensus: ${befund.zensus.spalten} Überhang-Spalten, ${befund.zensus.proben} Proben, ${befund.zensus.taeter.length} Täter`

@@ -19661,9 +19661,39 @@ class AnazhRealm {
                 pE.push(dx * ax + dz * az);
             }
         });
-        // der gezeichnete Boden unter einem Punkt (die Karte im Band um das Gesetz der Wurzel)
-        const g0 = this.getTerrainHeightAt(px, pz);
-        const boden = (x, z) => this._standSicht(x, z, g0, false);
+        // DER BODEN UNTER JEDEM PUNKT (Leben-Schau 2, Gegenprüfung 10.10.): das Gesetz unter einem Punkt ist der Schritt-Boden
+        // des Leibs von seiner Wurzel aus (`_koerperSchritt` vom Boden UNTER dem Leib, `_koerperBodenUnter`: über den Hang,
+        // nie durch ein Dach — eine Wand ist null und trägt keinen Punkt), auf einem Raster von TOD_BODEN_ZELLE um die
+        // Wurzel (je Zelle einmal je Tod, bilinear); gezeichnet ist die Karte, wo sie im Band um dieses Gesetz liegt
+        // (`_standSicht`, Lehre 22). In der Höhle trägt die Karte das Dach, außerhalb des Bands: dort trägt das Gesetz. Bis
+        // dahin las die Tod-Lage die Oberkante der Säule als Gesetz der Wurzel und je Punkt nur dieses eine: in der Höhle der
+        // Schau (−876,0/−1229,5, der Grund fällt 45° längs der Kipp-Richtung) sank der tote Wolf 0,46 m in den Grund
+        // (gate:fall-waechter O3).
+        const g0 = this._koerperBodenUnter(px, py - (creature.userData._hopH || 0), pz);
+        const Z = AnazhRealm.TOD_BODEN_ZELLE;
+        const zellen = new Map();
+        const zelle = (i, k) => {
+            const key = (i + 512) * 1024 + (k + 512);
+            let g = zellen.get(key);
+            if (g === undefined) {
+                const s = this._koerperSchritt(px, pz, g0, px + i * Z, pz + k * Z);
+                g = s === null ? NaN : s;
+                zellen.set(key, g);
+            }
+            return g;
+        };
+        const boden = (x, z) => {
+            const fx = (x - px) / Z;
+            const fz = (z - pz) / Z;
+            const i = Math.floor(fx);
+            const k = Math.floor(fz);
+            const tx = fx - i;
+            const tz = fz - k;
+            const g =
+                (zelle(i, k) * (1 - tx) + zelle(i + 1, k) * tx) * (1 - tz) +
+                (zelle(i, k + 1) * (1 - tx) + zelle(i + 1, k + 1) * tx) * tz;
+            return Number.isFinite(g) ? this._standSicht(x, z, g, false) : NaN;
+        };
         // je Winkel: der kleinste Abstand Haut − Boden bei Wurzel-Hebung 0
         const spalt = (k) => {
             const t = (wMax * k) / n;
@@ -33825,7 +33855,9 @@ class AnazhRealm {
     // ihren Boden. Der Fahr-Schritt las die Oberkante der Säule (`getTerrainHeightAt`): unter dem Überhang des Spalts
     // (Fels 22,3–29,5 m, Luft 16–22,3 m) stand der Boden 12 m ÜBER dem Wagen, der Flug-Zweig des Kerns ließ ihn fallen —
     // −6 428 m nach 30 s, durch den Grund bei 16 m. Leser: `_creatureGroundY`, `_creatureSlopeProbe`, `_kreaturStossSchritt`,
-    // `_fahrBoden`, `_rittEbene`, `_rittSchritt` (gate:fall-waechter nennt jeden anderen Leser beim Namen).
+    // `_fahrBoden`, `_rittEbene`, `_rittSchritt`, `_todHebeTafel`, der Ruf `spawnCreatureAt`. gate:fall-waechter (Q) nennt
+    // jede Methode beim Namen, die die Oberkante der Säule liest UND die Höhe eines Leibs berührt, ohne als Platzierung
+    // (Geburt, Ersteh-Ort, Rettung aus der Leere) benannt zu sein.
     _koerperBodenUnter(x, yRef, z) {
         if (Number.isFinite(yRef)) {
             // eingegraben (der Hang stieg unter dem Schritt): nur eine Stufe aufwärts suchen — tiefer im Fels ist kein
@@ -103631,6 +103663,10 @@ AnazhRealm.STAND_SICHT_BAND = 2.0;
 AnazhRealm.TOD_KIPP_RAD = 1.45;
 AnazhRealm.TOD_KIPP_STUETZ = 16;
 AnazhRealm.TOD_KIPP_PUNKTE = 1500;
+// Die Zelle des Boden-Rasters der Tod-Lage (m): je Zelle EIN Schritt-Boden des Leibs (`_koerperSchritt`), bilinear dazwischen.
+// Gemessen 10.10. (Null-Renderer, je 3 Tode): in der Höhle O3 liegt der Wolf mit 0,5 m 0,02–0,04 m über seinem Stand-Kontakt,
+// die Tafel kostet 10,8–14,1 ms je Tod (mit 0,25 m 14,8–23,1 ms, die alte Tafel 13,5–17,4 ms bei 0,48–0,50 m im Grund).
+AnazhRealm.TOD_BODEN_ZELLE = 0.5;
 // Die Kopf-Einheit des Avatars (m): 8 Einheiten = die Welt-Körperhöhe ~1,7 m (bauMensch, Wasserlinie, Studio-Maßstab).
 AnazhRealm.PLAYER_KH = 0.2125;
 // Boden-Haftung: bis zu dieser Distanz UNTER den Füßen klebt der Läufer am Boden — nur wenn er

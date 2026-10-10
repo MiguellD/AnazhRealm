@@ -147,7 +147,7 @@ async function kreaturProben(r, T, opts) {
                 const a = (q / n) * Math.PI * 2;
                 const x = P0.x + dx + Math.cos(a) * ring * 10,
                     z = P0.z + dz + Math.sin(a) * ring * 10;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) continue;
+                if (r._nassAt(x, z)) continue; // die EINE Nässe am Körper (kein stiller Wächter: fehlt sie, bricht der Lauf)
                 if (!ohneHoehle(x - 10, z - 8, x + 35, z + 35)) continue;
                 const h = r.getTerrainHeightAt(x, z);
                 return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
