@@ -2,7 +2,8 @@
 // ─────────────────────────────────────────────────────────────────────────
 // diag-scatter-ab.cjs — DIE BYTE-WAND FÜR DEN SCATTER-WASSER-GATE (W3.3a, npm run gate:scatter-ab)
 //
-// GEMESSEN (W1-Attribution, Spieler-Region): das Wasser-Verdikt (heute `_landAt`) = 74 % der
+// GEMESSEN (W1-Attribution, Spieler-Region): das damalige Wasser-Verdikt (die Zwillings-Probe `_isAboveWaterAt`,
+// gefallen in Schau-2; das Land eines Werks ist heute `_landAt` — die 74 % gelten ihr, nicht ihm) = 74 % der
 // _scatterRegion-Kosten, davon praktisch alles `_voxelSurfaceY` (302 Voll-
 // Scans à ~41 µs); `_sampleBakedField` liefert dieselbe Oberfläche ~30×
 // billiger. 3a ersetzt den Voll-Scan durch das Feld-Verdikt MIT konservativem

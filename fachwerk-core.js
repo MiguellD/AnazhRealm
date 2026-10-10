@@ -4199,7 +4199,7 @@
             // reisen — Wege/Platz/Zäune/Äcker (_stlWegeBuild), Brunnen + Stände
             // + Hof-Bäume (Architektur-Spawns). Die Schichten ohne Welt-Wahrheit
             // (fluss/bruecken = Layout-interner Deko-Fluss, das Welt-Wasser ist
-            // _isAboveWaterAt · graph = Diagnose-Meta · mauer/laternen = Stadt-
+            // _landAt · graph = Diagnose-Meta · mauer/laternen = Stadt-
             // Gestalt) sind aus dem Export GESTRICHEN — das Lab liest sein Layout
             // direkt aus dorfLayout. Der Grund (Welle L, 06.10.; die frühere
             // Begründung zitierte eine CLAUDE.md-Zeile, die es nie gab): die

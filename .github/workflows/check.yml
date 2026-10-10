@@ -852,7 +852,7 @@ jobs:
               # DIE WALD-SCHWESTER ALS DELIBERATER AKT: exportSettlement (fachwerk-core, das
               # exportDrive-Muster) ist deterministisch + sha256-eingefroren (siedlung.json);
               # der Export reist durch den EINEN Worker (Bruecke generisch, M8), der Host hebt
-              # die Slots positions-deterministisch, wasser-bewacht (_isAboveWaterAt) und
+              # die Slots positions-deterministisch, wasser-bewacht (_fundamentLand: das ganze Fundament auf dem Land) und
               # fail-closed in die Welt (haus_<kultur> aus der KIND_POLICY-Tabelle, kein
               # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
               run: npm run gate:settlement
