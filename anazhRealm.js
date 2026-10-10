@@ -3156,7 +3156,7 @@ class AnazhRealm {
             fps_below: ([value], ctx) => (ctx.state.fps || 0) < Number(value),
             weather_is: ([name], ctx) => ctx.state.weather === name,
             time_passed: ([seconds], ctx) => performance.now() / 1000 - ctx.startTime >= Number(seconds),
-            creatures_count_above: ([value], ctx) => ctx.state.creatures.length > Number(value),
+            creatures_count_above: ([value]) => this._kreaturZahlLebend() > Number(value),
             player_y_below: ([value], ctx) => {
                 const y = ctx.state.playerMesh ? ctx.state.playerMesh.position.y : 0;
                 return y < Number(value);
@@ -16493,7 +16493,7 @@ class AnazhRealm {
         // Welle 6.H Phase 2A — Kreatur ist jetzt eine Hylomorphismus-Group.
         // Selber Renderpfad wie Architektur + Spieler-Seele: _buildFromBlueprint
         // konsumiert bodyParts × Material aus CREATURE_SOULS.
-        if (this.state.creatures.length >= this.state.maxCreatures) return null;
+        if (this._kreaturZahlLebend() >= this.state.maxCreatures) return null; // ein Leichnam belegt keinen Platz
         // SPIELER-KLEMME: kein Wesen materialisiert IM Spieler — näher als CREATURE_SPAWN_CLEAR_M wird
         // radial auf den Ring geschoben (deckungsgleich → Goldwinkel über netSeq, kein Math.random).
         // Opt-out `precise` für bit-treue Pfade (Restore/Peer-Sicht).
@@ -19635,6 +19635,21 @@ class AnazhRealm {
             hebe: this._todHebeTafel(creature, hx, hz),
             sounded: false,
         };
+        this._uiDirty("hof"); // der Hof zählt nur Lebende (_kreaturLebend) — der Gefallene verlässt die Liste jetzt
+    }
+
+    // LEBT DAS TIER? (Welle LF kampf Nachbesserung 2): ein Leichnam (userData.dying — er kippt, liegt gefuehl.leichnamSec und sinkt)
+    // steht noch in state.creatures, weil der Kreatur-Takt seinen Fall treibt; er ist kein Wesen mehr. Die EINE Frage für
+    // jeden Leser, der Wesen zählt oder wählt: die Kappe des Spawns (maxCreatures), die Zählung des Nexus
+    // (creatures_count_above), der Hof und das Fadenkreuz. Vorher belegte ein Leichnam 90 s lang einen der 20 Plätze
+    // (spawnCreatureAt gab still null), stand in der Hof-Liste und nahm das Fadenkreuz — jeder Klick auf ihn ein Luftschlag.
+    _kreaturLebend(c) {
+        return !!(c && c.userData && !c.userData.dying);
+    }
+    _kreaturZahlLebend() {
+        let n = 0;
+        for (const c of this.state.creatures || []) if (this._kreaturLebend(c)) n++;
+        return n;
     }
 
     // DIE TOD-LAGE (Q4, K-D19): der Körper kippt um seine Wurzel auf die Kipp-Richtung h = (hx, hz) zu. Ein Punkt der Haut
@@ -82935,7 +82950,7 @@ class AnazhRealm {
         const meshes = [];
         const creatureByMesh = new Map();
         for (const c of this.state.creatures) {
-            if (!c) continue;
+            if (!this._kreaturLebend(c)) continue; // ein Leichnam ist kein Ziel (der Strahl geht durch ihn)
             c.traverse((node) => {
                 if (node.isMesh) {
                     meshes.push(node);
@@ -84983,7 +84998,7 @@ class AnazhRealm {
         const host = document.getElementById("hof-sections");
         if (!host) return;
         host.innerHTML = "";
-        const creatures = this.state.creatures || [];
+        const creatures = (this.state.creatures || []).filter((c) => this._kreaturLebend(c));
         const labels = AnazhRealm.HOF_SECTION_LABELS;
         const counts = new Map();
         for (const c of creatures) {
@@ -85051,7 +85066,7 @@ class AnazhRealm {
         if (!list) return;
         list.innerHTML = "";
         this._renderHofSections();
-        const allCreatures = this.state.creatures || [];
+        const allCreatures = (this.state.creatures || []).filter((c) => this._kreaturLebend(c));
         // Hof-E/§G.9 — der einladende Leer-Zustand (das Spawnen als Held des leeren Hofes).
         if (allCreatures.length === 0) {
             this.state.hofSection = "alle";
