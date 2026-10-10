@@ -875,9 +875,11 @@ const FORBIDDEN = [
     // DIE EINE MASSE DES WAGENS (Schau-2, Gegenprüfung Runde 2): der Wasser-Term trägt die Masse des Fahr-Satzes ×
     // masseDichte (dieselbe, die jeder Stoß liest), nie eine eigene Schüttdichte über dem Hüll-Quader.
     { token: "wasser.schuett", fiel: "Schau-2 — die zweite Wagen-Masse des Wasser-Terms", auch: ["vehicle-core.js"] },
-    // DER DAMM (Schau-2, Gegenprüfung Runde 2): ob ein Stempel Wasser verdrängt, fragt das Gesetz (`_stempelImWasser`) am
-    // Zell-Stempel und beim Abbau — nie ein Merk-Feld im Eintrag, gefragt am Lade-Zustand des Baus (beim Reload „trocken").
-    { token: "_wasserVerdraengt", fiel: "Schau-2 — das Merk-Feld des Damms (der Zell-Stempel fragt das Gesetz)" },
+    // DER DAMM (Schau-2, Gegenprüfungen Runden 2 und 3): ob ein Stempel Wasser verdrängt, sagen DIESELBEN Zellen, die der Chunk
+    // trägt (der Zell-Stempel überschreibt eine Wasser-Zelle) — nie ein Merk-Feld, gefragt am Lade-Zustand des Baus (beim
+    // Reload „trocken"), nie eine zweite Wahrheit (das Gesetz samt Rand-Füllung weckte am Seerand den Automaten).
+    { token: "_wasserVerdraengt", fiel: "Schau-2 — das Merk-Feld des Damms (der Zell-Stempel fragt seine Zellen)" },
+    { token: "_stempelImWasser", fiel: "Schau-2 — die Weck-Frage am Gesetz samt Rand (die Zellen antworten am Stempel)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

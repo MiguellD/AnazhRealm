@@ -46427,11 +46427,11 @@ async function checkBandV18129HochBecken(ctx) {
         out.capReadsStau = /_stauFieldsNear/.test(window.__codeOf(r._ensureWaterCALevel));
         out.pinHasDrip = /src\[c\] === 2/.test(window.__codeOf(r._tickWorldWaterCA));
         out.editInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r._addVoxelEdit));
-        // der Bau weckt am Zell-Stempel (Schau-2, Gegenprüfung Runde 2): wo sein Stempel in die Zellen kommt — der Neubau des
-        // Fußabdrucks beim Bau, der Reload, das Wieder-Strömen —, gefragt am Gesetz (`_stempelImWasser`)
+        // der Bau weckt am Zell-Stempel (Schau-2, Gegenprüfungen Runden 2 und 3): wo sein Stempel in die Zellen kommt — der
+        // Neubau des Fußabdrucks beim Bau, der Reload, das Wieder-Strömen —, wenn er eine Wasser-Zelle überschreibt
         out.spawnInvalidates =
             /_rebuildVoxelChunk\(/.test(window.__codeOf(r.spawnArchitecture)) &&
-            /_stempelImWasser\([\s\S]*_invalidateWaterCapsAround/.test(
+            /=== STATE\.WATER[\s\S]*_invalidateWaterCapsAround/.test(
                 window.__codeOf(r._stampArchitectureSolidCellsInto)
             );
         out.removeInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r.removeArchitecture));

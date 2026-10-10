@@ -1065,7 +1065,8 @@ jobs:
               # Furt bremst (1 s nach dem Eintauchen ≤ 50 %), die Kamera nie unter dem Spiegel; die Leser der EINEN
               # Wasser-Wahrheit statisch; der Wasser-Term des Kerns (ohne Tiefe byte-gleich, die EINE Masse des Wagens).
               # D: ein Damm quer über den Fluss in einer frischen Welt, 1800 Takte, gespeichert, neu geladen — der Stausee
-              # bildet sich neu (nasse Punkte ± 10 % des Staus), sein Abbau weckt den Automaten. --selftest zuerst. ~2,5 min.
+              # bildet sich neu (nasse Punkte ± 10 % des Staus), sein Abbau weckt den Automaten. R: das Nexus-Dorf am Seerand
+              # weckt den Automaten nicht, das Wasser bleibt (± 1 %). --selftest zuerst. ~3 min.
               run: npm run gate:werk-im-wasser
 
             - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)

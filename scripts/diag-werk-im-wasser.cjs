@@ -23,8 +23,9 @@
 //   L — DIE LESER (kommentarfrei, Node): keine Zwillings-Probe des Lands mehr (`_isAboveWaterAt` fiel), `_waterLevelAt`
 //       nur noch als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`), der Wald plant gegen das Gesetz des Wassers
 //       (`_atlasWaterLevelAt`), die Natur-Wand fragt das Land (`_landAt`), die Pflanze stempelt keine Wasser-Zelle, ein Bau
-//       weckt den Automaten nur, wenn sein Stempel Wasser verdrängt — gefragt am Gesetz (`_stempelImWasser`, nie am
-//       Lade-Zustand), geweckt am Zell-Stempel, der Abbau fragt dasselbe Gesetz —, und beide Fahr-Schritte reichen die Tiefe
+//       weckt den Automaten nur, wenn sein Stempel eine Wasser-Zelle überschreibt — gefragt an DENSELBEN Zellen am Zell-Stempel
+//       (Main und Worker stempeln nach dem Wasser), nie am Lade-Zustand oder am Gesetz samt Rand; der Abbau liest, was der
+//       Stempel fand; der Stempel läuft nur die Werke am Ort durch —, und beide Fahr-Schritte reichen die Tiefe
 //       am Wagen. Das Fundament: die Wurzel (`spawnArchitecture`) urteilt nach ihrer Spieler-Klemme über jedes Werk mit
 //       Grundriss-Gesetz (`_werkImWasser` → `_fundamentLand`), die Siedlung fragt dasselbe `_fundamentLand`, der Satz, der
 //       Tempel und das Bauplan-Programm suchen ihren Ort über `_werkOrtSuchen`.
@@ -35,6 +36,11 @@
 //       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Befund am Kopf 047a7def: „6× Birke aus dem Studio vor dir
 //       gewachsen — 4 davon wuchsen nicht" bei 2 gesetzten (die gewünschte Zahl). Soll: der Chat sagt die tatsächliche Zahl
 //       („2 von 6 Birke gewachsen — 4 nicht: …"), bei 0 „nichts", die gewünschte nur, wenn alles steht.
+//   R — DAS DORF DES NEXUS AM SEERAND (Gegenprüfung Runde 3): Same 1500797043 bei −1138/−1060, der Spieler am Rand des
+//       Plans (der Anker bleibt der verlangte Ort), ein haus_provenzalisch bei −1129/−1099 am See; die Häuser bekommen ihre
+//       Hülle, die Chunks am Rand entstehen neu, 900 Takte. Befund am Kopf f5b331ae: 1 Invalidierung, 2 Chunks wach, nasse
+//       Punkte (±60 m) 3 019 → 2 752, gezeichnete Spalten 2 562 → 2 604 — die Weck-Frage las das Gesetz samt Rand-Füllung, die
+//       Zellen dort sind trocken. Soll: 0 Invalidierungen, das Wasser bleibt (± 1 %).
 //   D — DER DAMM ÜBERSTEHT DEN RELOAD (Gegenprüfung Runde 2; eigener Browser-Kontext, frische Welt): der Damm des Studios
 //       quer über den Fluss bei der Furt, 1800 Takte, gespeichert, neu geladen, 1800 Takte, abgerissen. Befund am Kopf
 //       e162430b: 3 574 nasse Punkte (±40 m) vor dem Reload, 1 557 danach (ohne Damm 1 565), der Abbau weckte den Automaten
@@ -66,6 +72,7 @@ const SCHWELLE = {
     kameraUnter: 0, // Frames mit der Kamera unter dem Spiegel
     stauMin: 300, // nasse Punkte (1-m-Gitter ±40 m), die der Damm aufstauen muss (sonst prüft D nichts)
     stauTreue: 0.1, // Anteil des Staus, um den der Stausee nach dem Reload vom Stausee davor abweichen darf
+    randTreue: 0.01, // Anteil, um den das Wasser (nasse Punkte, gezeichnete Spalten) am Seerand sich mit dem Dorf ändern darf
 };
 
 // ── DAS URTEIL (rein; Lauf und Selbsttest). Rückgabe: die Täter beim Namen. ──
@@ -152,6 +159,24 @@ function urteil(b) {
                 v.push(`C: der Satz sagt nicht, dass nichts steht — „${x.chat}" bei 0 von ${x.gewollt} ${ort}`);
         }
     }
+    // R
+    const RD = b.rand;
+    if (!RD || RD.fehler) v.push(`R: ${RD ? RD.fehler : "die Seerand-Probe lief nicht"}`);
+    else {
+        if (!(RD.haeuser >= 1) || !RD.randHaus)
+            v.push(`R LEER: das Dorf des Nexus setzte ${RD.haeuser} Häuser, keins am Seerand (${RD.randHaus})`);
+        if (RD.invalidierungen > 0)
+            v.push(
+                `R: das Dorf am Seerand weckt den Wasser-Automaten, ohne Wasser der Zellen zu verdrängen — ${RD.invalidierungen} Invalidierungen, ${RD.ca} Chunks wach nach ${RD.takte} Takten (${RD.randHaus})`
+            );
+        if (
+            Math.abs(RD.nass1 - RD.nass0) > S.randTreue * RD.nass0 ||
+            Math.abs(RD.bild1 - RD.bild0) > S.randTreue * RD.bild0
+        )
+            v.push(
+                `R: das Wasser am Seerand ändert sich mit dem Dorf — nasse Punkte ${RD.nass0} → ${RD.nass1}, gezeichnete Spalten ${RD.bild0} → ${RD.bild1}`
+            );
+    }
     // D
     const D = b.damm;
     if (!D || D.fehler) v.push(`D: ${D ? D.fehler : "die Damm-Probe lief nicht"}`);
@@ -233,29 +258,40 @@ function leserUrteil(srcRoh) {
         v.push("der Zell-Stempel liest nicht die EINE Spanne `_stempelSpanne`");
     const spawn = fnBody(src, /\n {4}spawnArchitecture\(type, position, opts = \{\}\) \{/);
     if (!spawn) v.push("`spawnArchitecture` nicht gefunden");
-    // DER DAMM (Gegenprüfung Runde 2): der Automat wacht am Zell-Stempel — wo der Stempel in einen Chunk kommt (Bau, Reload,
-    // Wieder-Strömen) —, gefragt am Gesetz des Wassers, nie am Lade-Zustand; der Abbau fragt dasselbe Gesetz.
+    // DER DAMM (Gegenprüfungen Runden 2 und 3): der Automat wacht am Zell-Stempel — wo der Stempel in einen Chunk kommt (Bau,
+    // Reload, Wieder-Strömen) —, gefragt an DENSELBEN Zellen, die der Chunk trägt (überschreibt er eine Wasser-Zelle?), nie am
+    // Lade-Zustand und nie an einer zweiten Wahrheit (dem Gesetz samt Rand-Füllung); Main und Worker stempeln nach dem Wasser;
+    // der Abbau liest, was der Stempel fand; der Stempel läuft nur die Werke am Ort durch (`_blockerNahe`).
     else if (/_invalidateWaterCapsAround\(/.test(spawn))
         v.push("ein Bau weckt den Wasser-Automaten am Setz-Punkt (`spawnArchitecture`) statt am Zell-Stempel");
     if (stamp) {
         const i = stamp.indexOf("_invalidateWaterCapsAround(");
-        const vor = i >= 0 ? stamp.slice(Math.max(0, i - 200), i) : "";
+        const vor = i >= 0 ? stamp.slice(Math.max(0, i - 300), i) : "";
         if (i < 0)
             v.push(
                 "der Zell-Stempel (`_stampArchitectureSolidCellsInto`) weckt den Automaten nicht — ein Damm aus dem Reload staut nie"
             );
-        else if (!/if \(this\._stempelImWasser\(\[aabb\]\)\)/.test(vor))
-            v.push("ein Bau weckt den Wasser-Automaten, ohne dass sein Stempel Wasser verdrängt");
+        else if (!/cells\[idx\] === STATE\.WATER/.test(stamp) || !/if \(!nass\) continue;/.test(vor))
+            v.push("ein Bau weckt den Wasser-Automaten, ohne dass sein Stempel eine Wasser-Zelle überschreibt");
+        if (!/_blockerNahe\(/.test(stamp) || /for \(const entry of this\.state\.architectures\)/.test(stamp))
+            v.push("der Zell-Stempel läuft den ganzen Bestand durch statt der Werke am Ort (`_blockerNahe`)");
     }
-    const imWasser = fnBody(src, /\n {4}_stempelImWasser\(aabbs\) \{/);
-    if (!imWasser) v.push("`_stempelImWasser` nicht gefunden");
-    else if (/voxelChunks|waterCells|_wasserBildAt\(/.test(imWasser) || !/_atlasWaterLevelAt\(/.test(imWasser))
+    if (/_stempelImWasser\(/.test(src))
         v.push(
-            "die Frage, ob ein Stempel Wasser verdrängt (`_stempelImWasser`), hängt am Lade-Zustand der Chunks statt am Gesetz des Wassers"
+            "die Weck-Frage `_stempelImWasser` lebt — eine zweite Wasser-Wahrheit neben den Zellen (das Gesetz samt Rand)"
+        );
+    const zellen = fnBody(src, /\n {4}_buildVoxelChunkWaterCells\([^)]*\) \{/);
+    const iSky = zellen ? zellen.indexOf("this._skyOpenWaterFilter(") : -1;
+    const iSt = zellen ? zellen.indexOf("this._stampArchitectureSolidCellsInto(") : -1;
+    if (!zellen || iSt < 0 || iSt < iSky)
+        v.push(
+            "der Main stempelt die Werke VOR dem Wasser (`_buildVoxelChunkWaterCells`), der Worker-Pfad danach — zwei Zellen-Wahrheiten"
         );
     const abbau = fnBody(src, /\n {4}removeArchitecture\(entry\) \{/);
-    if (!abbau || !/_stempelImWasser\(entry\.blockerAABBs\)/.test(abbau))
-        v.push("der Abbau (`removeArchitecture`) fragt nicht das Gesetz, ob sein Stempel Wasser verdrängte");
+    if (!abbau || !/entry\._stempelNass === true/.test(abbau))
+        v.push(
+            "der Abbau (`removeArchitecture`) liest nicht, ob sein Stempel eine Wasser-Zelle überschrieb (`_stempelNass`)"
+        );
     if (/_wasserVerdraengt/.test(src))
         v.push("das Merk-Feld `_wasserVerdraengt` lebt (eine Antwort vom Lade-Zustand des Baus)");
     // Das Fundament (Gegenprüfung 10.10.): die Wurzel urteilt NACH ihrer Spieler-Klemme, jeder Sucher fragt dasselbe Land.
@@ -873,6 +909,231 @@ async function probe(A) {
             } catch (e) {
                 out.ergebnis = { fehler: String((e && e.stack) || e).split("\n")[0] };
             }
+        // ── E: DAS ERGEBNIS JEDES SETZ-OPS (Gegenprüfung Runde 3) — je Op ein erzwungener Fehl-Grund (die Obergrenze der
+        //    Kreaturen, das kalte Buch, ein unbekannter Bauplan, der See), gesprochen wie der Spieler; der Chat sagt die
+        //    tatsächliche Zahl mit dem Grund, nie den Wunsch. Das Dorf folgt: „wird gebaut", dann sein Ergebnis. ──
+        if (soll("satz"))
+            try {
+                const [cx, cz] = A.satzFern[0];
+                const el = document.getElementById("chat-output");
+                const E = { faelle: [] };
+                const stelle = (x, z) => {
+                    st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+                };
+                const sprich = (satz) => {
+                    const t0 = el ? el.innerText.length : 0;
+                    r.processChatCommand(satz);
+                    return el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
+                };
+                const fall = (name, satz, gewollt, wunsch, grund, setzen) => {
+                    const vorA = new Set(st.architectures);
+                    const vorK = st.creatures.length;
+                    const chat = sprich(satz);
+                    const neuA = st.architectures.filter((e) => e && !vorA.has(e));
+                    const gesetzt = setzen === "kreatur" ? st.creatures.length - vorK : neuA.length;
+                    E.faelle.push({ name, satz, gewollt, gesetzt, wunsch, grund, chat });
+                    for (const e of neuA) r.removeArchitecture(e);
+                };
+                const G = r.constructor.SETZ_GRUND;
+                stelle(cx + 40, cz + 40);
+                // E1 die Obergrenze der Kreaturen: noch 3 Plätze, dann keiner
+                const maxAlt = st.maxCreatures;
+                try {
+                    st.maxCreatures = st.creatures.length + 3;
+                    fall(
+                        "Kreaturen an der Obergrenze (3 frei)",
+                        "spawne kreaturen 10",
+                        10,
+                        "10 Kreaturen gespawnt",
+                        G.obergrenze,
+                        "kreatur"
+                    );
+                    st.maxCreatures = st.creatures.length;
+                    fall(
+                        "Kreaturen an der Obergrenze (0 frei)",
+                        "spawne kreaturen 10",
+                        10,
+                        "10 Kreaturen gespawnt",
+                        G.obergrenze,
+                        "kreatur"
+                    );
+                } finally {
+                    st.maxCreatures = maxAlt;
+                }
+                // E2 das kalte Buch: der Tempel und das Fraktal ohne ihren Bauplan
+                const bpT = st.blueprints.haus_griechisch;
+                try {
+                    delete st.blueprints.haus_griechisch;
+                    fall("Tempel bei kaltem Buch", "baue tempel hier", 1, "tempel vor dir gebaut", G.buch);
+                    fall("Fraktal bei kaltem Buch", "baue fraktal tempel", 43, "Fraktal-tempel gebaut", G.buch);
+                } finally {
+                    st.blueprints.haus_griechisch = bpT;
+                }
+                // E3 ein unbekannter Bauplan: der Damm und der Wasserfall ohne ihren Bauplan
+                for (const [wort, key] of [
+                    ["damm", "damm"],
+                    ["wasserfall", "waterfall"],
+                ]) {
+                    const bp = st.blueprints[key];
+                    try {
+                        delete st.blueprints[key];
+                        fall(`${wort} ohne Bauplan`, `baue ${wort} hier`, 1, `${wort} vor dir gebaut`, G.unbekannt);
+                    } finally {
+                        st.blueprints[key] = bp;
+                    }
+                }
+                // E4 der See: der Tempel mitten im See (die Wand der Werke), das Dorf im See (es folgt)
+                stelle(cx, cz);
+                for (let i = 0; i < 30; i++)
+                    try {
+                        frame();
+                    } catch (_e) {}
+                stelle(cx, cz);
+                fall("Tempel im See", "baue tempel hier", 1, "tempel vor dir gebaut", G.wasser);
+                {
+                    const vorA = new Set(st.architectures);
+                    const t0 = el ? el.innerText.length : 0;
+                    r.processChatCommand("baue dorf hier");
+                    const sofort = el ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(0, 300) : "";
+                    const sofortGesetzt = st.architectures.filter(
+                        (e) => e && !vorA.has(e) && /^haus_/.test(e.type)
+                    ).length;
+                    // das Dorf meldet sich, wenn es steht (der Plan kommt aus dem Studio-Worker)
+                    const dl = performance.now() + A.dorfMs;
+                    let echo = "";
+                    while (performance.now() < dl) {
+                        for (let i = 0; i < 10; i++)
+                            try {
+                                frame();
+                            } catch (_e) {}
+                        await new Promise((res2) => setTimeout(res2, 50));
+                        echo = el
+                            ? el.innerText.slice(t0).replace(/\s+/g, " ").trim().slice(sofort.length).slice(0, 300)
+                            : "";
+                        if (/Häuser|Haus\.|kein Haus|kein Dorf|Kein Dorf/.test(echo)) break;
+                    }
+                    const haeuser = st.architectures.filter((e) => e && !vorA.has(e) && /^haus_/.test(e.type));
+                    E.dorf = { sofort, sofortGesetzt, echo, haeuser: haeuser.length };
+                    for (const e of st.architectures.filter((e) => e && !vorA.has(e))) r.removeArchitecture(e);
+                }
+                out.setzen = E;
+            } catch (e) {
+                out.setzen = { fehler: String((e && e.stack) || e).split("\n")[0] };
+            }
+        // ── R: das Dorf des Nexus am Seerand — ein Bau, dessen Stempel kein Wasser der Zellen verdrängt, weckt den Automaten
+        //    nicht, das Wasser bleibt, wie es war. Der Spieler steht am Rand des Plans (der Anker bleibt der verlangte Ort, das
+        //    Haus am Seerand entsteht), die Häuser bekommen ihre Hülle, die Chunks am Rand entstehen neu (wie beim
+        //    Wieder-Strömen), dann laufen die Takte. ──
+        if (soll("rand"))
+            try {
+                const [X, Z] = A.rand.ort;
+                const [hx, hz] = A.rand.haus;
+                const SG = r.constructor._siedlungGesetz();
+                const nH = SG.nHMin + ((A.rand.seed >>> 24) % SG.nHSpan);
+                const plan = await r._foundryRequestSettlement({ seed: A.rand.seed, nH });
+                let mx = 0;
+                let mz = 0;
+                const slots = (plan && plan.slots) || [];
+                for (const sl of slots) ((mx += sl.x / slots.length), (mz += sl.z / slots.length));
+                let planR = 0;
+                for (const sl of slots) {
+                    const o = sl.obb;
+                    const reich = o && Number.isFinite(o.ex) && Number.isFinite(o.ez) ? Math.hypot(o.ex, o.ez) : 6;
+                    planR = Math.max(planR, Math.hypot(sl.x - mx, sl.z - mz) + reich);
+                }
+                const a = (A.rand.winkel * Math.PI) / 180;
+                const dSp = planR + r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN + 1.5;
+                const PX = X + mx + Math.cos(a) * dSp;
+                const PZ = Z + mz + Math.sin(a) * dSp;
+                await stroemen(PX, PZ, 120);
+                const RR = A.rand.R;
+                const zaehlen = () => {
+                    let nass = 0;
+                    let bild = 0;
+                    for (let i = -RR; i <= RR; i++)
+                        for (let j = -RR; j <= RR; j++) {
+                            if (r._nassAt(hx + i, hz + j)) nass++;
+                            const b = r._wasserBildAt(hx + i, hz + j);
+                            if (b !== null && b !== undefined && Number.isFinite(b)) bild++;
+                        }
+                    return { nass, bild };
+                };
+                const vor = zaehlen();
+                const inv = { n: 0 };
+                const invAlt = r._invalidateWaterCapsAround;
+                r._invalidateWaterCapsAround = function () {
+                    inv.n++;
+                    return invAlt.apply(this, arguments);
+                };
+                let res = null;
+                const v0 = new Set(st.architectures);
+                try {
+                    zensus.quelle = "Nexus-Dorf";
+                    res = await r.spawnSettlement({
+                        position: { x: X, y: r._voxelSurfaceY(X, Z), z: Z },
+                        seed: A.rand.seed,
+                        nHAusGesetz: true,
+                        autonomous: true,
+                        verlangt: "nexus",
+                        blick: null,
+                    });
+                    zensus.quelle = "strom";
+                    // die Häuser bekommen ihre Hülle (das Gesetzbuch), wie im Zensus
+                    const haeuser = st.architectures.filter((e) => e && !v0.has(e) && /^haus_/.test(e.type));
+                    const dlH = performance.now() + A.huelleMs;
+                    while (
+                        performance.now() < dlH &&
+                        !haeuser.every((e) => e._hausHuelle || !st.architectures.includes(e))
+                    ) {
+                        for (let i = 0; i < 30; i++)
+                            try {
+                                frame();
+                            } catch (_e) {}
+                        for (const e of haeuser) if (!e._hausHuelle) r._rebuildArchitectureMesh(e);
+                        await new Promise((res2) => setTimeout(res2, 50));
+                    }
+                    // die Chunks am Rand entstehen neu (wie beim Wieder-Strömen): 5 × 5 um das Haus am Rand
+                    const span = r._voxelChunkConfig(0).span;
+                    const hcx = Math.floor(hx / span);
+                    const hcz = Math.floor(hz / span);
+                    if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
+                    for (let dz = -2; dz <= 2; dz++)
+                        for (let dx = -2; dx <= 2; dx++) {
+                            const key = hcx + dx + "," + (hcz + dz);
+                            if (st.voxelChunks.has(key)) st.dirtyVoxelChunks.add(key);
+                        }
+                    for (let d = 0; d < 12 && st.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
+                    for (let i = 0; i < A.rand.takte; i++) {
+                        try {
+                            frame();
+                        } catch (_e) {}
+                        if (i % 20 === 0) await new Promise((res2) => setTimeout(res2, 0));
+                    }
+                } finally {
+                    r._invalidateWaterCapsAround = invAlt;
+                }
+                const nach = zaehlen();
+                const randHaus = st.architectures.find(
+                    (e) => e && /^haus_/.test(e.type) && Math.hypot(e.position.x - hx, e.position.z - hz) < 6
+                );
+                out.rand = {
+                    haeuser: res ? res.placed : 0,
+                    spieler: [+PX.toFixed(1), +PZ.toFixed(1)],
+                    randHaus: randHaus
+                        ? `${randHaus.type} #${randHaus.id} (${randHaus.position.x.toFixed(1)}/${randHaus.position.z.toFixed(1)})`
+                        : null,
+                    huelle: !!(randHaus && randHaus._hausHuelle),
+                    invalidierungen: inv.n,
+                    ca: st.waterCAActive ? st.waterCAActive.size : 0,
+                    nass0: vor.nass,
+                    nass1: nach.nass,
+                    bild0: vor.bild,
+                    bild1: nach.bild,
+                    takte: A.rand.takte,
+                };
+            } catch (e) {
+                out.rand = { fehler: String((e && e.stack) || e).split("\n")[0] };
+            }
         if (soll("zensus") || soll("satz")) out.zensus = zensus;
         if (soll("satz")) out.satz = satz;
         st.voxelWorker = worker;
@@ -1009,6 +1270,17 @@ function selbsttest() {
         leser: [],
         wagen: { vEin: 11, v1: 3, tiefe: 0.61, kameraUnter: 0, kameraTiefe: 0 },
         damm: { id: 504, x: -937, z: -1064, w0: 1565, w1: 3574, w2: 3560, abriss: 1, takte: 1800 },
+        rand: {
+            haeuser: 9,
+            randHaus: "haus_provenzalisch #600 (-1129.0/-1099.0)",
+            invalidierungen: 0,
+            ca: 0,
+            nass0: 2858,
+            nass1: 2858,
+            bild0: 741,
+            bild1: 741,
+            takte: 900,
+        },
         ergebnis: {
             versuche: [
                 {
@@ -1093,6 +1365,17 @@ function selbsttest() {
         ],
         ["D leer", (b) => (b.damm.w1 = 1600), /D LEER/],
         [
+            "R Fehl-Wecker am Seerand (der Befund am Kopf f5b331ae)",
+            (b) => ((b.rand.invalidierungen = 3), (b.rand.ca = 6), (b.rand.nass1 = 2637), (b.rand.bild1 = 685)),
+            /R: das Dorf am Seerand weckt den Wasser-Automaten, ohne Wasser der Zellen zu verdrängen — 3 Invalidierungen, 6 Chunks/,
+        ],
+        [
+            "R Wasser weicht",
+            (b) => (b.rand.nass1 = 2637),
+            /R: das Wasser am Seerand ändert sich mit dem Dorf — nasse Punkte 2858 → 2637/,
+        ],
+        ["R leer", (b) => (b.rand.randHaus = null), /R LEER/],
+        [
             "C Wunsch-Zahl (der Satz am Kopf e162430b, wie der Chat ihn zeigt)",
             (b) =>
                 (b.ergebnis.versuche[0].chat =
@@ -1141,27 +1424,50 @@ function selbsttest() {
             /Pflanze stempelt/,
         ],
         [
-            "Automat immer",
-            (s) => s.replace("if (this._stempelImWasser([aabb]))\n", "if (true)\n"),
-            /weckt den Wasser-Automaten, ohne dass/,
+            "Automat immer (jeder Stempel weckt)",
+            (s) => s.replace("                if (!nass) continue;\n", ""),
+            /weckt den Wasser-Automaten, ohne dass sein Stempel eine Wasser-Zelle überschreibt/,
         ],
         [
-            "Damm am Lade-Zustand (der Bau fragt die geladenen Zellen)",
+            "zweite Wahrheit zurück (die Weck-Frage am Gesetz samt Rand, Kopf f5b331ae)",
             (s) =>
                 s.replace(
-                    "    _stempelImWasser(aabbs) {\n        if (!Array.isArray(aabbs)) return false;",
-                    "    _stempelImWasser(aabbs) {\n        if (!Array.isArray(aabbs) || !this.state.voxelChunks) return false;"
+                    "    _stempelSpanne(aabb, ox, oy, oz, dim, dimY, step) {",
+                    "    _stempelImWasser(aabbs) {\n        return !!aabbs;\n    }\n    _stempelSpanne(aabb, ox, oy, oz, dim, dimY, step) {"
                 ),
-            /hängt am Lade-Zustand der Chunks/,
+            /zweite Wasser-Wahrheit/,
+        ],
+        [
+            "Main stempelt vor dem Wasser",
+            (s) =>
+                s
+                    .replace(
+                        "        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod);\n        return cells;",
+                        "        return cells;"
+                    )
+                    .replace(
+                        "        // 3) Quell-Spiegel pro Spalte",
+                        "        this._stampArchitectureSolidCellsInto(cells, ox, oy, oz, lod);\n        // 3) Quell-Spiegel pro Spalte"
+                    ),
+            /der Main stempelt die Werke VOR dem Wasser/,
         ],
         [
             "Abbau am Merk-Feld des Baus",
             (s) =>
                 s.replace(
-                    "const damm = wasBlocker && this._stempelImWasser(entry.blockerAABBs);",
+                    "const damm = wasBlocker && entry._stempelNass === true;",
                     "const damm = wasBlocker && entry._wasserVerdraengt;"
                 ),
-            /der Abbau .* fragt nicht das Gesetz/,
+            /der Abbau .* liest nicht, ob sein Stempel/,
+        ],
+        [
+            "Stempel läuft den Bestand",
+            (s) =>
+                s.replace(
+                    "this._blockerNahe(ox + halb, oz + halb, halb, 0, nahe);",
+                    "for (const e of this.state.architectures) nahe.push(e);"
+                ),
+            /läuft den ganzen Bestand durch/,
         ],
         [
             "Damm wacht nur beim Bau",
@@ -1327,6 +1633,8 @@ async function lauf() {
                 [-935, -1070],
             ],
             satzFern: [[-906, -634]],
+            // R: das Dorf des Nexus am Seerand (Gegenprüfung Runde 3) — Same, Ort, das Haus am Rand, Fenster, Takte
+            rand: { seed: 1500797043, ort: [-1138, -1060], haus: [-1129, -1099], winkel: 200, R: 60, takte: 900 },
             nur: argListe("--nur"),
             furt: argListe("--furt") ? argListe("--furt").map(Number) : null,
         });
