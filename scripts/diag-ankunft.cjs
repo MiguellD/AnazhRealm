@@ -304,7 +304,7 @@ function wand(src, html) {
         const b = fnBody(nc, new RegExp("\\n {4}" + sig.replace(/[()=]/g, (c) => "\\" + c) + " \\{")) || "";
         return !/this\._fadenkreuzStrahl\(\)/.test(b) || /getWorldDirection\(/.test(b);
     });
-    const durchNode = fnBody(nc, /\n {4}_kameraDurchsichtNode\(T\) \{/) || "";
+    const durchNode = fnBody(nc, /\n {4}_kameraDurchsichtNode\(T, art\) \{/) || "";
     return [
         [
             "W1 die Hilfe liest die EINEN Tafeln (`_hilfeZeilen`: chatDslPatterns · chatSystemPatterns · KEYBINDING_LABELS), der Satz für Unbekanntes trägt keine Liste von Hand",
@@ -945,11 +945,12 @@ async function probe(arg) {
                 // das Ziel und sein Auge, wie `_kamZielSetzen` sie schreibt (dieselben Werte wie uKamZiel · uKamAuge)
                 const ziel = () => {
                     const k = st._kamZiel;
-                    return k ? { x: k.x, y: k.y, z: k.z, w: k.r, auge: { x: k.ex, y: k.ey, z: k.ez } } : null;
+                    return k ? { x: k.x, y: k.y, z: k.z, w: k.r, nr: k.nr, auge: { x: k.ex, y: k.ey, z: k.ez } } : null;
                 };
                 const gewicht = (q) => {
                     const z = ziel();
-                    return K._durchsichtGewicht(K.DURCHSICHT_ZAHLEN, q, z.auge, { x: z.x, y: z.y, z: z.z }, z.w);
+                    // die Rinde mit ihrem Nah-Radius (uKamNah.y, wie `_kamZielSetzen` ihn schreibt)
+                    return K._durchsichtGewicht(K.DURCHSICHT_ZAHLEN, q, z.auge, { x: z.x, y: z.y, z: z.z }, z.w, z.nr);
                 };
                 // die Punkte der Stamm-Hülle (die Seiten jeder Blocker-Box, 0,1 m Raster) bis 3 m vom Ziel (1st das Auge, 3rd
                 // die Brust)
@@ -1526,7 +1527,7 @@ async function probe(arg) {
             .replace("hotbar: [null, null, null, null, null, null, null, null, null],", 'hotbar: ["stein_block", "waterfall", "damm", null, null, null, null, null, null],')
             .replace("const anchor = this._siedlungsAnker(plan, o.position || null, o.blick || null);", 'const anchor = this._structureSpawnPos("haus_basis", base, { state: this.state }, 3);')
             .replace("{ durchPflanzen: true }", "{}")
-            .replace("const _durch = this._kameraDurchsichtNode(TSL);", "const _durch = null;")
+            .replace('const _durch = this._kameraDurchsichtNode(TSL, isBark ? "rinde" : "laub");', "const _durch = null;")
             .replace(/(\n {4}_raycastWorldHit\(maxDist = 30\) \{[\s\S]*?)this\._fadenkreuzStrahl\(\)/, "$1this._alterStrahl()")
             .replace("AnazhRealm._durchsichtGewicht(A,", "AnazhRealm._alteDurchsicht(A,")
             .replace("(Welt verändert: ${compName} ${this.describeProgram(reply.program)}.)", "(Welt verändert: ${JSON.stringify(reply.program)})")

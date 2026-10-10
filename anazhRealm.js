@@ -31906,6 +31906,15 @@ class AnazhRealm {
                     // gelesen von `_kameraDurchsichtNode` (der Sicht-Strahl vom Auge zum Ziel).
                     uKamZiel: _T.uniform(new THREE.Vector4(0, 0, 0, 0)),
                     uKamAuge: _T.uniform(new THREE.Vector3()),
+                    // DIE NAH-KUGEL der Durchsicht um das Auge (Leben-Schau 2, 09.10.): ihr Radius je Stoff-Art — x Laub,
+                    // y Rinde, z Boden (die wiegende Nah-Streu) — `_kamZielSetzen`; −Saum heißt: nichts fällt.
+                    uKamNah: _T.uniform(
+                        new THREE.Vector3(
+                            -AnazhRealm.KAMERA_DURCHSICHT.saumM,
+                            -AnazhRealm.KAMERA_DURCHSICHT.saumM,
+                            -AnazhRealm.KAMERA_DURCHSICHT.saumM
+                        )
+                    ),
                 };
             }
         } catch (_e) {
@@ -32017,19 +32026,25 @@ class AnazhRealm {
     // DIE DURCHSICHT DER KAMERA (Leben-Schau 07.10. L-Kamera, Gegenprüfung Runde 1): eine Pflanze zwischen Auge und Spieler
     // ist durchsichtig, statt die Kamera zu halten — der Profi-Weg für Laub (kein Wald ist für eine Kamera mit 9,6 m Arm frei:
     // die Kronen-Hülle hielt die Verfolger-Kamera am Wagendach). Was zwischen Auge (`uKamAuge`) und Ziel (`uKamZiel.xyz`,
-    // `_kamZielSetzen`) näher als der Radius `uKamZiel.w` am Sicht-Strahl liegt, fällt — die EINE Formel
-    // `_durchsichtGewicht`; über den Saum KAMERA_DURCHSICHT.saumM dithert es aus — dasselbe Interleaved-Gradient-Rauschen
-    // wie die Stufen-Blende (`__phytoCore.lodDitherIGN`, rotiert mit uDitherT: das zeitliche Mittel der Auflösung ist die
-    // weiche Kante). Im 1st ist das Ziel das Auge selbst: nichts fällt. Rückgabe: der bool-Knoten für `maskNode` (true =
-    // behalten) — der Schatten-Pass liest ihn nie (der Aufrufer setzt `maskShadowNode`): der Baum wirft seinen ganzen
-    // Schatten.
-    _kameraDurchsichtNode(T) {
+    // `_kamZielSetzen`) näher als der Radius `uKamZiel.w` am Sicht-Strahl liegt, fällt, und ebenso, was in der NAH-KUGEL um
+    // das Auge liegt (Radius `uKamNah` je Stoff-Art: x Laub, y Rinde, z Boden — Leben-Schau 2, 09.10.: das Rohr um den
+    // Sicht-Strahl ließ die Krone um die Linse stehen) — die EINE Formel `_durchsichtGewicht`; über den Saum
+    // KAMERA_DURCHSICHT.saumM dithert es aus — dasselbe Interleaved-Gradient-Rauschen wie die Stufen-Blende
+    // (`__phytoCore.lodDitherIGN`, rotiert mit uDitherT: das zeitliche Mittel der Auflösung ist die weiche Kante). `art` ∈
+    // "laub" · "rinde" · "boden" (die wiegende Nah-Streu: Blume, Farn, Gestrüpp, Schilf): je Art EIN Knoten
+    // (`_kamDurchKnoten`, die Linse erkennt ihn). Rückgabe: der bool-Knoten für `maskNode` (true = behalten) — der
+    // Schatten-Pass liest ihn nie (der Aufrufer setzt `maskShadowNode`): der Baum wirft seinen ganzen Schatten.
+    _kameraDurchsichtNode(T, art) {
+        const knoten = this._kamDurchKnoten || (this._kamDurchKnoten = {});
+        const a = art === "rinde" || art === "boden" ? art : "laub";
+        if (knoten[a]) return knoten[a];
         const lu = this._ensureLodUniforms();
         if (
             !T ||
             !lu ||
             !lu.uKamAuge ||
             !lu.uKamZiel ||
+            !lu.uKamNah ||
             !lu.uDitherT ||
             !T.positionWorld ||
             !T.screenCoordinate ||
@@ -32047,28 +32062,34 @@ class AnazhRealm {
             dot: (a, b) => T.dot(a, b),
             len: (a) => T.length(a),
             max: (a, b) => a.max(b),
+            min: (a, b) => a.min(b),
             clamp01: (a) => a.clamp(0.0, 1.0),
         };
-        const w = AnazhRealm._durchsichtGewicht(A, T.positionWorld, lu.uKamAuge, lu.uKamZiel.xyz, lu.uKamZiel.w);
+        const n = a === "rinde" ? lu.uKamNah.y : a === "boden" ? lu.uKamNah.z : lu.uKamNah.x;
+        const w = AnazhRealm._durchsichtGewicht(A, T.positionWorld, lu.uKamAuge, lu.uKamZiel.xyz, lu.uKamZiel.w, n);
         const fc = T.screenCoordinate;
         const dh = T.fract(
             T.float(52.9829189)
                 .mul(T.fract(fc.x.mul(0.06711056).add(fc.y.mul(0.00583715))))
                 .add(lu.uDitherT)
         );
-        return w.greaterThan(dh);
+        knoten[a] = w.greaterThan(dh);
+        return knoten[a];
     }
 
     // DIE EINE FORMEL DER DURCHSICHT (Gegenprüfung Runde 2): das Gewicht w ∈ [0, 1], mit dem ein Punkt p steht (0 fällt
-    // ganz, 1 steht; der Stoff vergleicht es mit dem Rauschen) — Auge E, Ziel Z, Radius r. DURCHSICHTIG IST NUR, WAS ZWISCHEN
-    // AUGE UND ZIEL LIEGT: näher als r am Sicht-Strahl (QUER, über den Saum KAMERA_DURCHSICHT.saumM ausgeblendet) UND vor
-    // der Ebene des Ziels (VOR, über denselben Saum vor ihr ausgeblendet) — der Strahl des Fadenkreuzes beginnt auf dieser
-    // Ebene (`_fadenkreuzStrahl`), was er trifft, steht. Die Kugel um das Ziel fiel: sie schnitt im 1st (das Ziel ist das
-    // Auge) die Rinde bis 1,1 m vom Auge (7 von 8 Anläufen an einen Stamm, das Auge 0,01–1,24 m von ihm: ein Loch im Baum,
-    // an dem man steht) und in 3rd den Stamm VOR dem Spieler um die Brust. Im 1st ist die Strecke leer: nichts fällt.
-    // Sie rechnet über einer Algebra A: TSL-Knoten im Stoff (`_kameraDurchsichtNode`), Zahlen in der Linse
-    // (`DURCHSICHT_ZAHLEN`, gate:ankunft LK) — EINE Formel.
-    static _durchsichtGewicht(A, p, E, Z, r) {
+    // ganz, 1 steht; der Stoff vergleicht es mit dem Rauschen) — Auge E, Ziel Z, Radius r, Nah-Radius n. DURCHSICHTIG IST,
+    // WAS ZWISCHEN AUGE UND ZIEL LIEGT: näher als r am Sicht-Strahl (QUER, über den Saum KAMERA_DURCHSICHT.saumM
+    // ausgeblendet) UND vor der Ebene des Ziels (VOR, über denselben Saum vor ihr ausgeblendet) — der Strahl des Fadenkreuzes
+    // beginnt auf dieser Ebene (`_fadenkreuzStrahl`), was er trifft, steht. Die Kugel um das Ziel fiel: sie schnitt im 1st
+    // (das Ziel ist das Auge) die Rinde bis 1,1 m vom Auge (7 von 8 Anläufen an einen Stamm, das Auge 0,01–1,24 m von ihm:
+    // ein Loch im Baum, an dem man steht) und in 3rd den Stamm VOR dem Spieler um die Brust. Im 1st ist die Strecke leer.
+    // UND DURCHSICHTIG IST, WAS IN DER NAH-KUGEL UM DAS AUGE LIEGT (NAH: näher als n am Auge, über denselben Saum
+    // ausgeblendet; Leben-Schau 2, 09.10.: das Rohr allein ließ die Krone um die Linse stehen — die Kamera in der Eichenkrone
+    // am Ufer, im Ich-Auge ein Strauch vor dem Gesicht). Der Schreiber (`_kamZielSetzen`) hält die Kugel in 3rd vor der Ebene
+    // des Ziels, n = −Saum heißt: nichts fällt. Sie rechnet über einer Algebra A: TSL-Knoten im Stoff
+    // (`_kameraDurchsichtNode`), Zahlen in den Linsen (`DURCHSICHT_ZAHLEN`, gate:ankunft LK, gate:kamera-laub) — EINE Formel.
+    static _durchsichtGewicht(A, p, E, Z, r, n) {
         const S = A.k(AnazhRealm.KAMERA_DURCHSICHT.saumM);
         const ez = A.sub(Z, E);
         const pe = A.sub(p, E);
@@ -32078,7 +32099,32 @@ class AnazhRealm {
         const t = A.clamp01(A.div(s, Lm));
         const quer = A.clamp01(A.div(A.sub(A.len(A.sub(pe, A.mul(ez, t))), r), S));
         const vor = A.clamp01(A.sub(A.k(1), A.div(A.sub(L, s), S)));
-        return A.max(quer, vor);
+        const nah = A.clamp01(A.div(A.sub(A.len(pe), n), S));
+        return A.min(A.max(quer, vor), nah);
+    }
+
+    // STEHT DER TREFFER IM BILD? (ein Raycaster-Treffer { point, object, face }): trägt sein Stoff die Durchsicht der Kamera
+    // (`maskNode` = der Knoten seiner Art), steht er mit dem Gewicht der EINEN Formel über der Mitte des Saums (die Werte, die
+    // `_kamZielSetzen` der GPU schrieb) — die Probe durch die Bildmitte trifft nie, was das Bild nicht zeigt (Laub in der
+    // Nah-Kugel des Ich-Auges). Jeder andere Stoff steht.
+    _durchsichtSteht(h) {
+        const kn = this._kamDurchKnoten;
+        const k = this.state._kamZiel;
+        if (!h || !kn || !k || !h.object) return true;
+        const m = h.object.material;
+        const mat = Array.isArray(m) ? m[(h.face && h.face.materialIndex) || 0] : m;
+        const mk = mat ? mat.maskNode : null;
+        const n = !mk ? null : mk === kn.laub ? k.nl : mk === kn.rinde ? k.nr : mk === kn.boden ? k.nb : null;
+        if (n === null) return true;
+        const w = AnazhRealm._durchsichtGewicht(
+            AnazhRealm.DURCHSICHT_ZAHLEN,
+            h.point,
+            { x: k.ex, y: k.ey, z: k.ez },
+            { x: k.x, y: k.y, z: k.z },
+            k.r,
+            n
+        );
+        return w >= 0.5;
     }
 
     _applyVegetationResponse(mat, opts, responseProfile) {
@@ -37361,7 +37407,7 @@ class AnazhRealm {
                     P.hits.length = 0;
                     P.mesh.raycast(rc, P.hits);
                     for (const h of P.hits)
-                        if (!best || h.distance < best.d)
+                        if ((!best || h.distance < best.d) && this._durchsichtSteht(h))
                             best = { d: h.distance, key, senke: a.key, name: a.preset, id: b.ids[i], point: h.point };
                 }
         }
@@ -76092,10 +76138,11 @@ class AnazhRealm {
                 }
             }
             // DIE DURCHSICHT: jeder Pflanzen-Stoff (Rinde · Stiel · Laub · Blatt-Karte; nie Gras, nie die Klassen-Look-Familie
-            // der Kreaturen und Menschen) wird zwischen Auge und Spieler durchsichtig (`_kameraDurchsichtNode`) — im maskNode,
-            // den nur der Bild-Pass liest; der Schatten-Pass liest seinen eigenen maskShadowNode (immer behalten).
+            // der Kreaturen und Menschen) wird zwischen Auge und Spieler und in der Nah-Kugel um das Auge durchsichtig
+            // (`_kameraDurchsichtNode` seiner Art: der wiegende Stoff der Nah-Streu ist Boden, sonst Rinde oder Laub) — im
+            // maskNode, den nur der Bild-Pass liest; der Schatten-Pass liest seinen eigenen maskShadowNode (immer behalten).
             if (!klasseLook && (isBark || kind === "foliage" || kind === "foliageTex")) {
-                const _durch = this._kameraDurchsichtNode(TSL);
+                const _durch = this._kameraDurchsichtNode(TSL, wiegen === true ? "boden" : isBark ? "rinde" : "laub");
                 if (_durch) {
                     mat.maskNode = _durch;
                     mat.maskShadowNode = TSL.bool(true);
@@ -80736,8 +80783,9 @@ class AnazhRealm {
         this._tmpRaycaster.set(F.o, F.d);
         this._tmpRaycaster.far = 30;
         const intersects = this._tmpRaycaster.intersectObjects(meshes, false);
-        if (!intersects.length) return null;
-        const hit = intersects[0];
+        // getroffen wird, was das Bild zeigt: Laub in der Nah-Kugel des Ich-Auges ist durchsichtig (`_durchsichtSteht`)
+        const hit = intersects.find((h) => this._durchsichtSteht(h));
+        if (!hit) return null;
         // Instanced-Treffer: instanceId → Eintrag via slotEntry (Streu trägt null).
         if (hit.object && hit.object.isInstancedMesh && typeof hit.instanceId === "number") {
             const key = hit.object.userData && hit.object.userData.archInstanceKey;
@@ -95397,14 +95445,29 @@ class AnazhRealm {
 
     // DAS ZIEL DER KAMERA (`uKamZiel` und `state._kamZiel`, Leben-Schau 07.10. L-Kamera): wohin das Auge blickt — 3rd der
     // Blickpunkt (die Brust, zu Fuß um die Schulter versetzt), mit dem Radius, bis zu dem eine Pflanze um den Sicht-Strahl durchsichtig wird (zu Fuß KAMERA_DURCHSICHT.fussM,
-    // im Ritt rittM: der Wagen ist breiter als der Leib); 1st das Auge selbst (die Strecke ist leer, nichts wird
-    // durchsichtig). Die Durchsicht (`_durchsichtGewicht`) und der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) lesen
+    // im Ritt rittM: der Wagen ist breiter als der Leib); 1st das Auge selbst (die Strecke ist leer). Dazu die NAH-KUGEL um
+    // das Auge (`uKamNah`, Leben-Schau 2, 09.10.): `nahLaub`, `nahRinde`, `nahBoden` je Stoff-Art (`_kameraDurchsichtNode`)
+    // — in 3rd hält der Schreiber jede Kugel samt Saum vor der Ebene des Ziels (der Stamm vor dem Spieler steht, der Strahl
+    // des Fadenkreuzes beginnt auf ihr und trifft nie Durchsichtiges; Infinity heißt: bis an diese Ebene), −Saum heißt:
+    // nichts fällt. Die Durchsicht (`_durchsichtGewicht`) und der Strahl des Fadenkreuzes (`_fadenkreuzStrahl`) lesen
     // dasselbe Ziel. Der EINE Schreiber ist `_loopCamera`, je Bild nach dem Setzen der Kamera.
-    _kamZielSetzen(x, y, z, r) {
-        const k = this.state._kamZiel || (this.state._kamZiel = { ex: 0, ey: 0, ez: 0, x: 0, y: 0, z: 0, r: 0 });
+    _kamZielSetzen(x, y, z, r, nahLaub, nahRinde, nahBoden) {
+        const k =
+            this.state._kamZiel ||
+            (this.state._kamZiel = { ex: 0, ey: 0, ez: 0, x: 0, y: 0, z: 0, r: 0, nl: 0, nr: 0, nb: 0 });
         // das Auge, für das das Ziel gilt: die eben gesetzte Spieler-Kamera — eine Sonde, die die Kamera selbst stellt, hat
         // kein Ziel (ihr Strahl beginnt an ihr, ihr Bild schneidet nur die Strecke des Spielers)
         const c = this.state.camera.position;
+        const S = AnazhRealm.KAMERA_DURCHSICHT.saumM;
+        const L = Math.hypot(x - c.x, y - c.y, z - c.z);
+        const deckel = L > 1e-4 ? L - S : Infinity; // in 3rd endet die Kugel samt Saum vor der Ebene des Ziels
+        const radius = (n) => {
+            const v = typeof n === "number" && !Number.isNaN(n) ? Math.min(n, deckel) : -S;
+            return Number.isFinite(v) ? Math.max(-S, v) : -S;
+        };
+        const nl = radius(nahLaub);
+        const nr = radius(nahRinde);
+        const nb = radius(nahBoden);
         k.ex = c.x;
         k.ey = c.y;
         k.ez = c.z;
@@ -95412,9 +95475,13 @@ class AnazhRealm {
         k.y = y;
         k.z = z;
         k.r = r;
+        k.nl = nl;
+        k.nr = nr;
+        k.nb = nb;
         const lu = this.state.lodUniforms;
         if (lu && lu.uKamZiel) lu.uKamZiel.value.set(x, y, z, r);
         if (lu && lu.uKamAuge) lu.uKamAuge.value.set(c.x, c.y, c.z);
+        if (lu && lu.uKamNah) lu.uKamNah.value.set(nl, nr, nb);
     }
 
     _loopCamera(currentTime) {
@@ -95555,8 +95622,20 @@ class AnazhRealm {
                 // Fadenkreuz-Strahls steht senkrecht zum Blick und der Strahl beginnt bei jedem Arm an T. Mit der Brust B als
                 // Ziel stand die Ebene senkrecht zu B − Kamera, der Strahl begann 0,36/Arm Meter hinter T (Arm 0,5 m vor einer
                 // Hauswand: 0,52–0,78 m tot, eine Kreatur dort in 1 von 5 verfehlt). Die Brust liegt höchstens
-                // KAMERA_SCHULTER_M (0,6 m) neben T, innerhalb des Durchsicht-Radius `fussM` (0,9 m).
-                this._kamZielSetzen(tx, ty, tz, _fahrRitt ? KD.rittM : KD.fussM);
+                // KAMERA_SCHULTER_M (0,6 m) neben T, innerhalb des Durchsicht-Radius `fussM` (0,9 m). DER FREIRAUM DER KAMERA
+                // (Leben-Schau 2, 09.10.): Laub und Rinde fallen bis an die Ebene des Ziels — die Kamera schwebt frei, kein
+                // Leib steht an ihr, und in der Krone (die Eiche am Ufer, die Weide über dem Wagen) füllte das Laub zwischen
+                // Linse und Figur das Bild; die Boden-Streu (Blume, Farn, Gestrüpp) nur in der Nähe der Linse (bodenM, im
+                // Ritt bodenRittM), die Wiese zwischen Kamera und Figur bleibt.
+                this._kamZielSetzen(
+                    tx,
+                    ty,
+                    tz,
+                    _fahrRitt ? KD.rittM : KD.fussM,
+                    Infinity,
+                    Infinity,
+                    _fahrRitt ? KD.bodenRittM : KD.bodenM
+                );
             } else {
                 // View-Height-Smoothing (à la Source `SmoothViewOnStairs`): Füße/Kollision rasten hart auf den Boden,
                 // das AUGE gleitet gedämpft nach → der Körper federt Stufen/Buckel ab. Nur am Boden glätten; in der
@@ -95606,9 +95685,11 @@ class AnazhRealm {
                 );
                 camera.lookAt(player.position.x + blick.x, eyeY + blick.y, player.position.z + blick.z);
                 this.state._kamArm = undefined; // der Arm der 3rd-Kamera beginnt beim Wechsel frei
-                // das Ziel ist das Auge: zwischen Auge und Ziel liegt nichts, keine Pflanze wird durchsichtig, der Strahl des
-                // Fadenkreuzes beginnt am Auge
-                this._kamZielSetzen(player.position.x, eyeY, player.position.z, 0);
+                // das Ziel ist das Auge: zwischen Auge und Ziel liegt nichts, der Strahl des Fadenkreuzes beginnt am Auge; die
+                // Nah-Kugel nimmt Laub und Boden-Streu (KAMERA_DURCHSICHT.ichM — ein Strauch, eine Krone, durch die der Leib
+                // geht), die Rinde, an der der Leib steht, bleibt ganz
+                const KD1 = AnazhRealm.KAMERA_DURCHSICHT;
+                this._kamZielSetzen(player.position.x, eyeY, player.position.z, 0, KD1.ichM, -KD1.saumM, KD1.ichM);
             }
             if (currentTime - this.state.lastCameraLog >= this.state.cameraLogInterval) {
                 this.log(
@@ -103395,7 +103476,17 @@ AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT = 3.0; // darunter = klein/intentional 
 // DIE DURCHSICHT DER KAMERA (`_durchsichtGewicht`): zwischen Auge und Ziel (`_kamZielSetzen`) wird eine Pflanze um den
 // Sicht-Strahl bis zum Radius durchsichtig und über den Saum ausgedithert, quer zum Strahl wie vor der Ebene des Ziels (m)
 // — zu Fuß der Leib (Schultern ± 0,25 m, der Kopf 0,7 m über der Brust), im Ritt der Wagen (4,5 × 1,9 m um die Kabine).
-AnazhRealm.KAMERA_DURCHSICHT = Object.freeze({ fussM: 0.9, rittM: 2.0, saumM: 0.6 });
+// Dazu die NAH-KUGEL um das Auge (Leben-Schau 2, 09.10.: in allen drei Spuren füllte Laub, Strauch oder Ast die Linse): in
+// 3rd fallen Laub und Rinde bis an die Ebene des Ziels (der Freiraum der Kamera), die Boden-Streu bis bodenM (im Ritt
+// bodenRittM); im Ich-Auge Laub und Boden-Streu bis ichM — die Rinde, an der der Leib steht, bleibt.
+AnazhRealm.KAMERA_DURCHSICHT = Object.freeze({
+    fussM: 0.9,
+    rittM: 2.0,
+    saumM: 0.6,
+    bodenM: 2.0,
+    bodenRittM: 3.0,
+    ichM: 0.8,
+});
 // Die Zahlen-Algebra der EINEN Durchsichts-Formel (`_durchsichtGewicht`): Skalare oder {x, y, z} — die Linse rechnet damit,
 // was der Stoff rechnet.
 AnazhRealm.DURCHSICHT_ZAHLEN = Object.freeze({
@@ -103406,6 +103497,7 @@ AnazhRealm.DURCHSICHT_ZAHLEN = Object.freeze({
     dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
     len: (a) => Math.hypot(a.x, a.y, a.z),
     max: (a, b) => Math.max(a, b),
+    min: (a, b) => Math.min(a, b),
     clamp01: (a) => Math.min(1, Math.max(0, a)),
 });
 // Die Schulter der 3rd-Kamera zu Fuß (m): Auge und Blickziel stehen so weit rechts, die Figur links der Bildmitte.
