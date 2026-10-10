@@ -322,6 +322,31 @@ function todVerdict(T) {
     if (T.platzFrei !== true)
         v.push("tod-platz: der Leichnam belegt einen der maxCreatures-Plätze — der Spawn gibt still null");
     if (T.nexusZaehlt !== false) v.push("tod-zaehlt: der Nexus zählt den Leichnam als Wesen (creatures_count_above)");
+    // die KLASSE (Nachbesserung 3): der Leichnam verlässt die Liste der Wesen — kein Leser muss fragen, keiner kann ihn zählen
+    if (T.unterWesen !== false)
+        v.push(
+            "tod-wesen: der Leichnam steht in der Liste der Wesen (state.creatures) — jeder Leser zählt oder wählt ihn"
+        );
+    if (T.aeltester !== false)
+        v.push(
+            "tod-aeltester: der Lebenszyklus wählt den Leichnam als Ältesten (_findOldestCreature) — er stirbt ein zweites Mal und ist sofort fort"
+        );
+    if (T.naechster !== false)
+        v.push("tod-naechster: findNearestCreature wählt den Leichnam — er bekommt einen Auftrag");
+    if (!(T.stromAnteil >= 1))
+        v.push(
+            `tod-strom: der Leichnam fehlt im Mehrspieler-Strom (in ${T.stromAnteil} der Proben) — die Kopie beim Mitspieler verschwindet`
+        );
+    if (T.kopieOben == null || !(T.kopieOben <= 0.35))
+        v.push(
+            T.kopieOben == null
+                ? "tod-kopie: beim Mitspieler liegt keine Kopie"
+                : `tod-kopie: die Kopie beim Mitspieler steht (oben·y bis ${T.kopieOben}), der Leib beim Sender liegt`
+        );
+    if (T.fragen && T.fragen.length)
+        v.push(
+            `tod-frage: ${T.fragen.join(", ")} fragen selbst nach dem Sterben — der Leichnam stünde unter den Wesen`
+        );
     return v;
 }
 // (T23) DER BISS TRIFFT, WO DIE GESTE SCHNAPPT (Welle LF kampf, Posten 5 — pure Funktion, Probe UND Selbst-Test): auf jedem
@@ -2211,6 +2236,7 @@ async function WELLE_L() {
         await teil("T22", async () => {
             const hT = setze("wesen");
             stelle(hT, 20, 6);
+            hT.userData.bornAt = 1; // der Älteste der Welt — wählt der Lebenszyklus nach dem Tod noch ihn?
             const gier = 0.7;
             hT.rotation.set(0, gier, 0);
             hT.updateMatrixWorld(true);
@@ -2233,16 +2259,70 @@ async function WELLE_L() {
             const vorn = V3().set(0, 0, 1).applyQuaternion(q);
             const oben = V3().set(0, 1, 0).applyQuaternion(q);
             tod = { vornY: +vorn.y.toFixed(2), obenY: +oben.y.toFixed(2) };
-            for (let k = 0; k < 200; k++) r.updateCreatures(0.05); // 10 s danach
-            tod.liegt10s = s.creatures.indexOf(hT) !== -1 && !!hT.parent && !!hT.userData.dying;
-            // DER LEICHNAM IST KEIN WESEN (Nachbesserung 2): das Fadenkreuz auf ihm wählt ihn nicht, er belegt keinen Platz der
-            // Kappe (ein Spawn bei maxCreatures = alle Einträge samt Leichnam gelingt) und der Nexus zählt ihn nicht
+            // DER MEHRSPIELER-STROM (Nachbesserung 3): der Takt des Senders, sein Strom an einen Mitspieler (dieselbe Seite als
+            // Empfänger, `_p2pHandleCreaturePos`) und dessen Sicht-Takt — die Kopie liegt, wie der Leib liegt, die ganze Zeit
+            const sent = [];
+            const sendRoh = r.p2pSend;
+            r.p2pSend = (m) => sent.push(m);
+            const peer = "kg-peer";
+            const kopie = { imStrom: 0, proben: 0, obenMax: -Infinity };
+            try {
+                for (let k = 0; k < 200; k++) {
+                    r.updateCreatures(0.05); // 10 s danach
+                    if (k % 20 !== 19) continue;
+                    sent.length = 0;
+                    r._p2pBroadcastCreatures();
+                    const msg = sent.find((m) => m && m.type === "creature-pos");
+                    if (msg) r._p2pHandleCreaturePos(peer, msg);
+                    for (let f = 0; f < 30; f++) r._p2pTickRemoteCreatures(k * 0.05 + f / 60, 1 / 60);
+                    kopie.proben++;
+                    const id = hT.userData.netId;
+                    if (msg && msg.list.some((e) => e.id === id)) kopie.imStrom++;
+                    const rc = s.p2p.remoteCreatures.get(peer + ":" + id);
+                    if (rc && rc.mesh) {
+                        rc.mesh.updateMatrixWorld(true);
+                        const qk = rc.mesh.getWorldQuaternion(new THREE.Quaternion());
+                        kopie.obenMax = Math.max(kopie.obenMax, V3().set(0, 1, 0).applyQuaternion(qk).y);
+                    }
+                }
+            } finally {
+                r.p2pSend = sendRoh;
+                if (r.p2pSend === A.prototype.p2pSend) delete r.p2pSend;
+                for (const [key, rc] of s.p2p.remoteCreatures)
+                    if (rc.peerId === peer) r._disposeRemoteCreature(key, rc);
+            }
+            tod.stromAnteil = kopie.proben ? +(kopie.imStrom / kopie.proben).toFixed(2) : 0;
+            tod.kopieOben = Number.isFinite(kopie.obenMax) ? +kopie.obenMax.toFixed(2) : null;
+            tod.liegt10s = !!hT.parent && !!hT.userData.dying;
+            // DER LEICHNAM IST KEIN WESEN (Nachbesserung 2 + 3): er steht nicht in der Liste der Wesen; das Fadenkreuz auf ihm
+            // wählt ihn nicht, er belegt keinen Platz der Kappe (ein Spawn bei maxCreatures = alle Leiber samt Leichnam gelingt),
+            // der Nexus zählt ihn nicht, der Lebenszyklus wählt ihn nicht als Ältesten, findNearestCreature nicht als Nächsten;
+            // und kein Leser fragt selbst nach dem Sterben (die Frage lebt nur im Tod, im Leichnam-Takt und im Schadens-Tor)
+            tod.unterWesen = s.creatures.indexOf(hT) !== -1;
+            tod.aeltester = r._findOldestCreature() === hT;
+            tod.naechster = r.findNearestCreature(hT.position, 3) === hT;
+            const ohneKommentar = (f) =>
+                String(f)
+                    .replace(/\/\/.*$/gm, "")
+                    .replace(/\/\*[\s\S]*?\*\//g, "");
+            const FRAGT_ERLAUBT = new Set(["damageCreature", "_creatureCombatDeath", "_tickLeichname"]);
+            // über die Deskriptoren (nie A.prototype[n]: ein Getter liefe mit dem Prototyp als this und legte seinen Cache dort ab)
+            tod.fragen = Object.getOwnPropertyNames(A.prototype).filter((n) => {
+                const d = Object.getOwnPropertyDescriptor(A.prototype, n);
+                return (
+                    n !== "constructor" &&
+                    !FRAGT_ERLAUBT.has(n) &&
+                    d &&
+                    typeof d.value === "function" &&
+                    /\.dying\b/.test(ohneKommentar(d.value))
+                );
+            });
             if (tod.liegt10s) {
                 zielen(punkt(hT, null));
                 const pick = r._pickCreatureAtCrosshair();
                 tod.zielLeichnam = !!(pick && pick.creature === hT);
                 const cap0 = s.maxCreatures;
-                s.maxCreatures = s.creatures.length;
+                s.maxCreatures = s.creatures.length + (s.leichname || []).length;
                 const neuS = r.spawnCreatureAt(
                     pm.position.x + 300,
                     pm.position.y,
@@ -2257,7 +2337,7 @@ async function WELLE_L() {
                 tod.nexusZaehlt = r.dslConditions.creatures_count_above([lebend], { state: s }) === true;
             }
             w.z.tod = tod;
-            if (s.creatures.indexOf(hT) !== -1) r.removeCreature(hT);
+            if (hT.parent) r.removeCreature(hT);
         });
         // (T25) DIE WUNDE REIST ALS ANTEIL DES LEBENS (Nachbesserung 2, Posten 6): ein Hirsch (1,0) und ein Bär (1,75) — ein Stand von vor
         // dem Massen-Gesetz trug hp absolut gegen das Leben der Substanz (der Leib ohne Volumen rechnet es noch: leibV = 0);
@@ -2721,7 +2801,7 @@ async function WELLE_L() {
         delete r._beginPlayerSwing;
         delete r.dslRun;
         delete r.damagePlayer;
-        for (const c of tiere) if (s.creatures.indexOf(c) !== -1) r.removeCreature(c);
+        for (const c of tiere) if (c.parent) r.removeCreature(c); // die Wesen und die Gefallenen
         for (const pf of (s._pfeile || []).slice()) r._pfeilDespawn(pf);
         if (s._pfeile) s._pfeile.length = 0;
         try {
@@ -2858,8 +2938,11 @@ async function WELLE_L() {
             const deathSrc = codeOf(r._creatureCombatDeath);
             o.checks.todKipptStattDespawn =
                 /_fieldGradient/.test(deathSrc) && /dying/.test(deathSrc) && !/removeCreature\(/.test(deathSrc);
+            // der Leichnam-Takt trägt den Abschied, und der Kreatur-Takt treibt ihn
             o.checks.abschiedNachFrist =
-                /dying/.test(codeOf(r.updateCreatures)) && /removeCreature\(/.test(codeOf(r.updateCreatures));
+                /dying/.test(codeOf(r._tickLeichname)) &&
+                /removeCreature\(/.test(codeOf(r._tickLeichname)) &&
+                /_tickLeichname\(/.test(codeOf(r.updateCreatures));
             // Stimme-aus respektiert (headless: Symphonie nie aktiviert → stumm, kein Throw)
             o.checks.stimmeAusStumm = r._playKampfOneShot({ härte: 1 }) === false && !s.symphony.enabled;
 
@@ -3129,7 +3212,9 @@ async function WELLE_L() {
             // = 1 − 2(qx² + qz²), kein THREE nötig.
             const upY = (c) => 1 - 2 * (c.quaternion.x * c.quaternion.x + c.quaternion.z * c.quaternion.z);
             const kill = r.damageCreature(cTod, 99999, { source: "world" });
-            o.checks.dKillKipptErst = !!kill.killed && !!cTod.userData.dying && s.creatures.indexOf(cTod) !== -1;
+            // der Gefallene liegt: nicht mehr unter den Wesen, in der Liste der Gefallenen, in der Szene
+            const liegt = (c) => (s.leichname || []).indexOf(c) !== -1 && s.creatures.indexOf(c) === -1 && !!c.parent;
+            o.checks.dKillKipptErst = !!kill.killed && !!cTod.userData.dying && liegt(cTod);
             const tick = (n, dt) => {
                 for (let k = 0; k < n; k++) r.updateCreatures(dt);
             };
@@ -3140,20 +3225,20 @@ async function WELLE_L() {
             const uyB = upY(cTod);
             o.kipp = { uy0, uyA, uyB };
             o.checks.dRotationWaechst = uy0 > 0.95 && uyA < uy0 - 0.005 && uyB < uyA - 0.05;
-            o.checks.dNochDa = s.creatures.indexOf(cTod) !== -1;
+            o.checks.dNochDa = liegt(cTod);
             const nachtreten = r.damageCreature(cTod, 10, { source: "world" });
             o.checks.dSterbendInert = nachtreten.ok === false && nachtreten.reason === "dying";
             tick(5, 0.1); // t=1.0 — der Kipp ist vollendet, der Nachklang läuft
             const uyC = upY(cTod);
             o.kipp.uyC = uyC;
-            o.checks.dGekippt = uyC < 0.35 && s.creatures.indexOf(cTod) !== -1;
+            o.checks.dGekippt = uyC < 0.35 && liegt(cTod);
             // der Leichnam liegt (Welle LF, Posten 7): nach dem Kippen bleibt er, bis die Frist des Gesetzbuchs (kippDauer +
             // leichnamSec, Kreatur-Uhr) verstrichen ist — dann kehrt er zur Erde zurück
             const GT = r.constructor._arenaGesetz().gefuehl;
             tick(4, 0.1); // t=1.4
-            const liegtNoch = s.creatures.indexOf(cTod) !== -1;
+            const liegtNoch = liegt(cTod);
             tick(Math.ceil((GT.kippDauerSec + GT.leichnamSec - 1.4) / 0.1) + 3, 0.1);
-            o.checks.dDespawnNachFrist = liegtNoch && s.creatures.indexOf(cTod) === -1;
+            o.checks.dDespawnNachFrist = liegtNoch && (s.leichname || []).indexOf(cTod) === -1 && !cTod.parent;
 
             // ── EINHEITSBREI-WAND (18.07.) — die 13 Gattungen differenzieren ──
             // Fake-Blueprints mit BYTE-GLEICHEN Donor-Parts (KIND_SUBSTANCE.
@@ -3228,14 +3313,7 @@ async function WELLE_L() {
             }
 
             // ── Bühne restaurieren ──
-            for (const c of [cNeben, cRuecken]) {
-                if (s.creatures.indexOf(c) !== -1) {
-                    if (c.userData.dying) {
-                        c.userData.dying.t = 9999;
-                        r.updateCreatures(0.016);
-                    } else r.removeCreature(c);
-                }
-            }
+            for (const c of [cNeben, cRuecken]) if (c.parent) r.removeCreature(c); // ein Wesen oder ein Gefallener
             delete blu._kg_klinge;
             s.yaw = saved.yaw;
             p.equipped = saved.equipped;
@@ -3351,7 +3429,10 @@ async function WELLE_L() {
             c.todKipptStattDespawn,
             "(D) Source-Wand: _creatureCombatDeath kippt (_fieldGradient), despawnt nicht selbst"
         );
-        check(c.abschiedNachFrist, "(D) und updateCreatures trägt den Abschied (removeCreature nach der Frist)");
+        check(
+            c.abschiedNachFrist,
+            "(D) und der Leichnam-Takt (_tickLeichname, aus updateCreatures) trägt den Abschied (removeCreature nach der Frist)"
+        );
         check(c.eArmHebt, "(E) OBERKÖRPER-Layer: im Windup heben Arm + Rumpf (additiv über der Lokomotion)");
         check(c.eBeineByteGleich, "(E) die BEINE bleiben byte-gleich (der Layer ist NUR Oberkörper)");
         check(c.eRueckstandsfrei, "(E) nach dem Schwung ist die Pose rückstandsfrei byte-alt");
@@ -3732,9 +3813,11 @@ async function WELLE_L() {
         const tv = todVerdict(z.tod);
         check(
             tv.length === 0,
-            "LF Posten 7: ein Tier stirbt wie ein Tier — es fällt auf die Flanke (auch wenn das Gefälle längs seiner Achse fällt) und bleibt liegen; der Leichnam ist kein Wesen (kein Ziel, kein Platz, keine Zahl)" +
+            "LF Posten 7: ein Tier stirbt wie ein Tier — es fällt auf die Flanke (auch wenn das Gefälle längs seiner Achse fällt) und bleibt liegen, auch beim Mitspieler; der Leichnam ist kein Wesen (nicht in der Liste der Wesen, kein Ziel, kein Platz, keine Zahl, kein Ältester, kein Nächster, kein Leser fragt selbst)" +
                 (tv.length ? " — " + tv.join(" · ") : "")
         );
+        // die Befunde: Runde 1 (auf dem Hinterteil, nach 22 Takten fort, Ziel/Platz/Zahl) und Gegenprüfung 2 (der Leichnam unter
+        // den Wesen: Ältester, Nächster, die stehende Kopie beim Mitspieler, 17 Leser mit eigener Frage)
         const tvAlt = todVerdict({
             vornY: 0.99,
             obenY: 0.12,
@@ -3742,6 +3825,27 @@ async function WELLE_L() {
             zielLeichnam: true,
             platzFrei: false,
             nexusZaehlt: true,
+            unterWesen: true,
+            aeltester: true,
+            naechster: true,
+            stromAnteil: 1,
+            kopieOben: 1,
+            fragen: ["_tierRufTakt", "_serializeCreature", "_kreaturIstBeute", "_pickCreatureAtCrosshair"],
+        });
+        // der halbe Schnitt: der Leichnam verlässt die Wesen, aber der Strom vergisst ihn — die Kopie verschwindet
+        const tvStumm = todVerdict({
+            vornY: 0.05,
+            obenY: 0.1,
+            liegt10s: true,
+            zielLeichnam: false,
+            platzFrei: true,
+            nexusZaehlt: false,
+            unterWesen: false,
+            aeltester: false,
+            naechster: false,
+            stromAnteil: 0,
+            kopieOben: null,
+            fragen: [],
         });
         const tvGut = todVerdict({
             vornY: 0.05,
@@ -3750,13 +3854,29 @@ async function WELLE_L() {
             zielLeichnam: false,
             platzFrei: true,
             nexusZaehlt: false,
+            unterWesen: false,
+            aeltester: false,
+            naechster: false,
+            stromAnteil: 1,
+            kopieOben: 0.12,
+            fragen: [],
         });
         check(
             tvGut.length === 0 &&
-                ["tod-flanke", "tod-leichnam", "tod-ziel", "tod-platz", "tod-zaehlt"].every((t) =>
-                    tvAlt.some((x) => x.startsWith(t))
-                ),
-            "Selbst-Test T22: der Befund (auf dem Hinterteil, nach 22 Takten fort; der Leichnam als Ziel, Platz und Zahl) nennt Flanke, Leichnam, Ziel, Platz und Zahl; ein Tier auf der Flanke, das kein Wesen mehr ist, bleibt grün"
+                [
+                    "tod-flanke",
+                    "tod-leichnam",
+                    "tod-ziel",
+                    "tod-platz",
+                    "tod-zaehlt",
+                    "tod-wesen",
+                    "tod-aeltester",
+                    "tod-naechster",
+                    "tod-kopie",
+                    "tod-frage",
+                ].every((t) => tvAlt.some((x) => x.startsWith(t))) &&
+                ["tod-strom", "tod-kopie"].every((t) => tvStumm.some((x) => x.startsWith(t))),
+            "Selbst-Test T22: die Befunde (auf dem Hinterteil, nach 22 Takten fort; der Leichnam als Ziel, Platz, Zahl, Ältester und Nächster, die stehende Kopie, die Leser mit eigener Frage; der Strom ohne ihn) nennen jeden Täter; ein Tier auf der Flanke, das kein Wesen mehr ist und beim Mitspieler liegt, bleibt grün"
         );
         const bgz = z.bissGeste || {};
         const bgZeile = (L) =>

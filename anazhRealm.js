@@ -181,6 +181,9 @@ class AnazhRealm {
             terrainMaterial: null,
             creatures: [],
             creatureEmotions: [],
+            // DIE GEFALLENEN (Welle LF kampf): ein Leib, der stirbt, verlässt `creatures` (die Wesen) und liegt hier, bis er
+            // versunken ist — der Kreatur-Takt treibt seinen Fall (_tickLeichname), die Sicht liest ihn, kein Wesen-Leser
+            leichname: [],
             creatureAnimationTime: 0,
             ufos: [],
             // Geteiltes horizontales Wasser-Material für Fluss-Ribbons + See-Planes (lazy,
@@ -3156,7 +3159,7 @@ class AnazhRealm {
             fps_below: ([value], ctx) => (ctx.state.fps || 0) < Number(value),
             weather_is: ([name], ctx) => ctx.state.weather === name,
             time_passed: ([seconds], ctx) => performance.now() / 1000 - ctx.startTime >= Number(seconds),
-            creatures_count_above: ([value]) => this._kreaturZahlLebend() > Number(value),
+            creatures_count_above: ([value], ctx) => ctx.state.creatures.length > Number(value),
             player_y_below: ([value], ctx) => {
                 const y = ctx.state.playerMesh ? ctx.state.playerMesh.position.y : 0;
                 return y < Number(value);
@@ -6866,19 +6869,30 @@ class AnazhRealm {
     // keine Tasks, keine Physik). Sie liegen NICHT in state.creatures — updateCreatures ignoriert sie.
 
     _p2pBroadcastCreatures() {
-        const creatures = this.state.creatures || [];
+        // jeder Leib im Bild: zuerst die Wesen, dann die Gefallenen (state.leichname — sie liegen, bis sie versunken sind)
+        const W = this.state.creatures;
+        const LG = this.state.leichname;
         const list = [];
-        for (let i = 0; i < creatures.length && list.length < 40; i++) {
-            const c = creatures[i];
+        for (let i = 0; i < W.length + LG.length && list.length < 40; i++) {
+            const tot = i >= W.length;
+            const c = tot ? LG[i - W.length] : W[i];
             if (!c || !c.position) continue;
-            list.push({
+            const e = {
                 id: (c.userData && c.userData.netId) || "i" + i,
                 x: +c.position.x.toFixed(2),
                 y: +c.position.y.toFixed(2),
                 z: +c.position.z.toFixed(2),
                 yaw: +((c.rotation && c.rotation.y) || 0).toFixed(2),
                 soul: (c.userData && c.userData.soul) || "wesen",
-            });
+            };
+            // DER LEICHNAM REIST MIT SEINER LAGE (Welle LF kampf Nachbesserung 3): die Quaternion des Kipp-Takts
+            // (_tickLeichname) — die Kopie liegt, wie der Leib beim Sender liegt, und sinkt liegend. Vorher reiste nur die
+            // Gier: die Kopie beim Mitspieler stand die 90 s des Leichnams aufrecht (oben·y 1,00 gegen 0,12 beim Sender).
+            if (tot) {
+                const q = c.quaternion;
+                e.q = [+q.x.toFixed(3), +q.y.toFixed(3), +q.z.toFixed(3), +q.w.toFixed(3)];
+            }
+            list.push(e);
         }
         this.p2pSend({ type: "creature-pos", list });
     }
@@ -6910,6 +6924,8 @@ class AnazhRealm {
             rc.ty = +e.y || 0;
             rc.tz = +e.z || 0;
             rc.tyaw = +e.yaw || 0;
+            // die Lage eines Gefallenen (fremdes Datum: nur vier endliche Zahlen gelten)
+            rc.tq = Array.isArray(e.q) && e.q.length === 4 && e.q.every((v) => Number.isFinite(v)) ? e.q : null;
             rc.lastSeen = nowSec;
         }
         // Reconcile: jede creature-pos-Nachricht ist die VOLLE Liste dieses
@@ -6931,8 +6947,15 @@ class AnazhRealm {
             const x0 = m.position.x,
                 z0 = m.position.z;
             m.position.x += ((rc.tx || 0) - m.position.x) * k;
-            m.position.y += ((rc.ty || 0) - m.position.y) * k + Math.sin(t * 2 + m.position.x) * 0.002;
             m.position.z += ((rc.tz || 0) - m.position.z) * k;
+            // DER LEICHNAM liegt still: die Kopie dreht auf die Lage des Senders nach (rc.tq) — kein Atem, kein Gang
+            if (rc.tq) {
+                m.position.y += ((rc.ty || 0) - m.position.y) * k;
+                const q = this._p2pLageQ || (this._p2pLageQ = new THREE.Quaternion());
+                m.quaternion.slerp(q.set(rc.tq[0], rc.tq[1], rc.tq[2], rc.tq[3]).normalize(), k);
+                continue;
+            }
+            m.position.y += ((rc.ty || 0) - m.position.y) * k + Math.sin(t * 2 + m.position.x) * 0.002;
             // DIE SICHT-KOPIE GEHT (Q3): die Gier des Senders (der Steuer-Schritt schreibt sie, der Strom trägt sie) zieht
             // auf dem kurzen Bogen nach, und der Gang läuft durch denselben Chokepoint wie beim Sender (der Baum-Gang
             // misst sein Tempo selbst an der Lage). Vorher: Gier 0 vom Sender, kein Gang — die Kopie glitt.
@@ -10191,7 +10214,7 @@ class AnazhRealm {
         const cs = this.state.creatures;
         if (!um || !pm || !Array.isArray(cs)) return;
         for (const c of cs) {
-            if (!c || !c.position || (c.userData && c.userData.dying)) continue;
+            if (!c || !c.position) continue;
             if (Math.hypot(c.position.x - pm.position.x, c.position.z - pm.position.z) > T.hoerweiteM) continue;
             const stimmung = this._tierStimmung(c);
             um.rufSaat = (Math.imul(um.rufSaat, 1664525) + 1013904223) >>> 0;
@@ -16270,14 +16293,17 @@ class AnazhRealm {
                 Math.max(1.6, (me._rideHalfLen || 1) + 0.6)
             );
         }
+        // jeder Leib im Bild biegt das Gras: die Wesen und die Gefallenen (ein Leichnam liegt im Gras, nie das Gras in ihm)
         const crs = this.state.creatures;
-        if (crs && crs.length && pm) {
+        const LG = this.state.leichname;
+        const nLeib = crs.length + LG.length;
+        if (nLeib && pm) {
             const selD = this._bendSelD || (this._bendSelD = [Infinity, Infinity, Infinity, Infinity]);
             const selI = this._bendSelI || (this._bendSelI = [-1, -1, -1, -1]);
             selD[0] = selD[1] = selD[2] = selD[3] = Infinity;
             selI[0] = selI[1] = selI[2] = selI[3] = -1;
-            for (let i = 0; i < crs.length; i++) {
-                const c = crs[i];
+            for (let i = 0; i < nLeib; i++) {
+                const c = i < crs.length ? crs[i] : LG[i - crs.length];
                 if (!c || !c.position) continue;
                 const dx = c.position.x - pm.position.x;
                 const dz = c.position.z - pm.position.z;
@@ -16297,7 +16323,7 @@ class AnazhRealm {
             }
             for (let k = 0; k < 4 && slot < B.length; k++) {
                 if (selI[k] < 0) break;
-                const c = crs[selI[k]];
+                const c = selI[k] < crs.length ? crs[selI[k]] : LG[selI[k] - crs.length];
                 const r = 0.8 + 0.5 * ((c.scale && c.scale.x) || 1);
                 B[slot++].value.set(c.position.x, c.position.y - 0.4, c.position.z, r);
             }
@@ -16466,20 +16492,32 @@ class AnazhRealm {
         // feld-nativ über `_creatureGroundY`); nur die Mesh-Referenz aus `rigidBodies` lösen.
         creature.userData.physicsBody = null;
         this.state.rigidBodies = this.state.rigidBodies.filter((rb) => rb !== creature);
-        // Auch aus den Parallel-Arrays state.creatures + state.creatureEmotions splicen —
-        // sonst bleibt bei Einzel-Aufrufen die tote Referenz im Save.
-        const idx = this.state.creatures.indexOf(creature);
-        if (idx !== -1) {
-            this.state.creatures.splice(idx, 1);
-            if (Array.isArray(this.state.creatureEmotions) && idx < this.state.creatureEmotions.length) {
-                this.state.creatureEmotions.splice(idx, 1);
-            }
+        // Aus der Liste der Wesen (samt der Parallel-Liste der Emotionen) oder der Gefallenen — sonst bliebe bei
+        // Einzel-Aufrufen die tote Referenz im Save.
+        if (!this._kreaturAusListe(creature)) {
+            const li = this.state.leichname.indexOf(creature);
+            if (li !== -1) this.state.leichname.splice(li, 1);
         }
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
     }
 
+    // DIE EINE STELLE, an der ein Leib die Wesen verlässt (der Tod → state.leichname, removeCreature): die Parallel-Liste der
+    // Emotionen zieht mit, und ein laufender Kreatur-Takt behält sein Tier — fällt eines, das er schon getragen hat (ein Biss
+    // mitten im Takt), rückt sein Index nach (`_kreaturTaktI`), sonst übersprang er das nächste.
+    _kreaturAusListe(creature) {
+        const cs = this.state.creatures;
+        const idx = cs.indexOf(creature);
+        if (idx === -1) return false;
+        cs.splice(idx, 1);
+        const em = this.state.creatureEmotions;
+        if (Array.isArray(em) && idx < em.length) em.splice(idx, 1);
+        if (Number.isInteger(this._kreaturTaktI) && idx <= this._kreaturTaktI) this._kreaturTaktI--;
+        return true;
+    }
+
     clearCreatures() {
+        for (const l of this.state.leichname.slice()) this.removeCreature(l); // auch die Gefallenen gehen mit der Welt
         if (!this.state.creatures || this.state.creatures.length === 0) return;
         // Über eine KOPIE: removeCreature spliced die Liste selbst — ein forEach über das Original übersprang jedes
         // zweite Tier, das als eingefrorener Geist in der Szene blieb (Leben-Prüfung R-D14: 6 Tiere → 3 Geister,
@@ -16493,7 +16531,7 @@ class AnazhRealm {
         // Welle 6.H Phase 2A — Kreatur ist jetzt eine Hylomorphismus-Group.
         // Selber Renderpfad wie Architektur + Spieler-Seele: _buildFromBlueprint
         // konsumiert bodyParts × Material aus CREATURE_SOULS.
-        if (this._kreaturZahlLebend() >= this.state.maxCreatures) return null; // ein Leichnam belegt keinen Platz
+        if (this.state.creatures.length >= this.state.maxCreatures) return null;
         // SPIELER-KLEMME: kein Wesen materialisiert IM Spieler — näher als CREATURE_SPAWN_CLEAR_M wird
         // radial auf den Ring geschoben (deckungsgleich → Goldwinkel über netSeq, kein Math.random).
         // Opt-out `precise` für bit-treue Pfade (Restore/Peer-Sicht).
@@ -16613,10 +16651,6 @@ class AnazhRealm {
     // NICHT persistiert: Specs (live aus memory abgeleitet), Tasks + carrying (reaktiv).
     _serializeCreature(creature) {
         if (!creature || !creature.userData) return null;
-        // KAMPF-GEFÜHL — ein sterbendes (kippendes) Wesen ist für die Welt schon
-        // gefallen: es reist NIE in einen Snapshot (sonst erwachte ein Toter beim
-        // Reload mit hp ≤ 0 — der Kipp ist reine Abschieds-Optik, keine Identität).
-        if (creature.userData.dying) return null;
         const ud = creature.userData;
         return {
             name: typeof ud.name === "string" ? ud.name : null,
@@ -19619,13 +19653,13 @@ class AnazhRealm {
             this.journalAppend("relationship", `${name} fiel im Kampf${lootSummary}.`, { source, loot });
         }
         // ═══ KAMPF-GEFÜHL — TOD-KIPPEN statt Sofort-Despawn: EIN TIER STIRBT WIE EIN TIER (Welle LF 09.10., Posten 7) ═══
-        // Der Körper kippt render-seitig auf seine FLANKE (~1 s, updateCreatures treibt `dying`): die Kipp-Richtung steht
+        // Der Körper kippt render-seitig auf seine FLANKE (~1 s, _tickLeichname treibt `dying`): die Kipp-Richtung steht
         // quer zur Leibes-Achse (vorn = (sin ry, cos ry)), auf die Seite, die hangab liegt (_fieldGradient: die waagrechte
         // Komponente der Außen-Normale gegen die Flanke), auf flachem Boden oder bei Gefälle längs der Achse zur rechten
         // Seite. Dann LIEGT er (gefuehl.leichnamSec, Kreatur-Uhr) und sinkt in der letzten Spanne (leichnamSinkSec) in die
         // Erde, DANN removeCreature (Loot/Schuld/Triumph/Journal sind schon gestempelt). Ein sterbendes Wesen ist inert
-        // (damageCreature-Wand, keine KI, kein Sweep-Ziel). Vorher kippte er in die Hang-Richtung, wie sie fiel — längs der
-        // Achse stand der Hirsch auf dem Hinterteil, Kopf senkrecht (Bild ks09) —, und nach 0,35 s Nachklang war er fort.
+        // (damageCreature-Wand). Vorher kippte er in die Hang-Richtung, wie sie fiel — längs der Achse stand der Hirsch auf
+        // dem Hinterteil, Kopf senkrecht (Bild ks09) —, und nach 0,35 s Nachklang war er fort.
         const K = AnazhRealm._arenaGesetz().gefuehl; // Kipp-Dauer, Leichnam, Versinken = ARENA-Daten
         const g = this._fieldGradient(creature.position.x, creature.position.y + 0.5, creature.position.z, {});
         const ry = creature.rotation.y || 0;
@@ -19648,21 +19682,15 @@ class AnazhRealm {
             hebe: this._todHebeTafel(creature, hx, hz),
             sounded: false,
         };
-        this._uiDirty("hof"); // der Hof zählt nur Lebende (_kreaturLebend) — der Gefallene verlässt die Liste jetzt
-    }
-
-    // LEBT DAS TIER? (Welle LF kampf Nachbesserung 2): ein Leichnam (userData.dying — er kippt, liegt gefuehl.leichnamSec und sinkt)
-    // steht noch in state.creatures, weil der Kreatur-Takt seinen Fall treibt; er ist kein Wesen mehr. Die EINE Frage für
-    // jeden Leser, der Wesen zählt oder wählt: die Kappe des Spawns (maxCreatures), die Zählung des Nexus
-    // (creatures_count_above), der Hof und das Fadenkreuz. Vorher belegte ein Leichnam 90 s lang einen der 20 Plätze
-    // (spawnCreatureAt gab still null), stand in der Hof-Liste und nahm das Fadenkreuz — jeder Klick auf ihn ein Luftschlag.
-    _kreaturLebend(c) {
-        return !!(c && c.userData && !c.userData.dying);
-    }
-    _kreaturZahlLebend() {
-        let n = 0;
-        for (const c of this.state.creatures || []) if (this._kreaturLebend(c)) n++;
-        return n;
+        // DER LEICHNAM IST KEIN WESEN (Welle LF kampf Nachbesserung 3): er verlässt die EINE Liste der Wesen im Moment des
+        // Todes und liegt in state.leichname, wo der Kreatur-Takt seinen Fall treibt (_tickLeichname). Jeder Leser, der Wesen
+        // zählt oder wählt — Kappe, Nexus, Hof, Fadenkreuz, Mehrspieler-Strom, Lebenszyklus, der Nächste, die Anzeige, das
+        // LLM, der Snapshot —, liest state.creatures ohne Frage. Vorher lag er dort 90 s weiter: 17 Leser fragten je selbst
+        // nach `dying`, die übrigen zählten ihn (die Kopie beim Mitspieler stand 90 s aufrecht, der Lebenszyklus wählte ihn
+        // als Ältesten und ließ ihn ein zweites Mal sterben, findNearestCreature gab ihm einen Auftrag).
+        this._kreaturAusListe(creature);
+        this.state.leichname.push(creature);
+        this._uiDirty("hof");
     }
 
     // DIE TOD-LAGE (Q4, K-D19): der Körper kippt um seine Wurzel auf die Kipp-Richtung h = (hx, hz) zu. Ein Punkt der Haut
@@ -20704,11 +20732,11 @@ class AnazhRealm {
         return out;
     }
 
-    // IST DAS BEUTE für diesen Jäger? Nicht wild (wild jagt nicht wild), nicht im Sterben, und höchstens jagd.beuteMasse ×
+    // IST DAS BEUTE für diesen Jäger? Nicht wild (wild jagt nicht wild) und höchstens jagd.beuteMasse ×
     // die Masse des Jägers — die EINE Masse des Leibs (`_leibMasse`, kg: Volumen der Gestalt × Dichte des Kerns), die
     // auch der Stoß liest (Welle LF: der Wolf, 64 kg, jagt Hirsch und Fuchs, nie den Bären, 335 kg).
     _kreaturIstBeute(jaeger, o) {
-        if (!o || o === jaeger || !o.position || !o.userData || o.userData.dying) return false;
+        if (!o || o === jaeger || !o.position || !o.userData) return false;
         if (this._creatureTemperament(o) === "wild") return false;
         return this._leibMasse(o) <= AnazhRealm._verhaltenGesetz().jagd.beuteMasse * this._leibMasse(jaeger);
     }
@@ -20738,7 +20766,7 @@ class AnazhRealm {
         const rudel = this._rudelWinkel || (this._rudelWinkel = []);
         rudel.length = 0;
         for (const j of this._kreaturJaeger || []) {
-            if (j === creature || !j.userData || j.userData._jagdZiel !== zielKey || j.userData.dying) continue;
+            if (j === creature || !j.userData || j.userData._jagdZiel !== zielKey) continue;
             const w = Math.atan2(j.position.x - tx, j.position.z - tz);
             rudel.push(w);
             sx += Math.sin(w);
@@ -20967,7 +20995,7 @@ class AnazhRealm {
         let n = 0;
         for (const cr of this.state.creatures) {
             const ud = cr && cr.userData;
-            if (!ud || ud.dying) continue;
+            if (!ud) continue;
             if (this._kreaturGroesseSetzen(cr, (Number.isFinite(ud.bodySize) ? ud.bodySize : 1) * f)) n++;
         }
         if (ctx && ctx.log) ctx.log.push({ event: "groesse_hauch", faktor: f, tiere: n });
@@ -21007,7 +21035,7 @@ class AnazhRealm {
         const grob = Number.isFinite(this._raumMaxTakt) ? raumEigen + this._raumMaxTakt : Infinity;
         let frei = Infinity;
         for (const o of this.state.creatures) {
-            if (!o || o === creature || !o.userData || o.userData.dying) continue;
+            if (!o || o === creature || !o.userData) continue;
             const ox = o.position.x - p.x,
                 oz = o.position.z - p.z;
             const vor = ox * ux + oz * uz;
@@ -21226,7 +21254,7 @@ class AnazhRealm {
         const teil = (k) => T[k] || (T[k] = { leib: {} });
         for (let i = 0; i < cr.length; i++) {
             const c = cr[i];
-            if (!c || !c.position || !c.userData || c.userData.dying) continue;
+            if (!c || !c.position || !c.userData) continue;
             const t = teil(n++);
             const lb = this._kreaturLeib(c, 0, t.leib);
             t.q = c;
@@ -21633,7 +21661,7 @@ class AnazhRealm {
     // (der Spieler), `quelle` "jagd" | "gegenwehr", `dmg` der Schaden. Rückgabe: true, wenn der Ansprung beginnt.
     _kreaturBissAnsatz(creature, ziel, quelle, dmg) {
         const ud = creature && creature.userData;
-        if (!ud || ud.dying) return false;
+        if (!ud) return false;
         const now = this.state.creatureAnimationTime;
         const A0 = ud._verhaltenAktion;
         if (A0 && A0.bissAkt && now < A0.bis) return false; // ein Ansprung läuft
@@ -21669,11 +21697,7 @@ class AnazhRealm {
         const B = A0 && A0.biss;
         if (!B) return;
         const ziel = B.ziel;
-        if (
-            ud.dying ||
-            this.state.creatureAnimationTime >= A0.bis ||
-            (ziel && (!ziel.userData || ziel.userData.dying || (this.state.creatures || []).indexOf(ziel) === -1))
-        ) {
+        if (this.state.creatureAnimationTime >= A0.bis || (ziel && this.state.creatures.indexOf(ziel) === -1)) {
             A0.biss = null; // ins Leere
             return;
         }
@@ -22737,7 +22761,12 @@ class AnazhRealm {
         const ein2 = N.ein * N.ein,
             aus2 = N.aus * N.aus;
         const an = st.creaturesHidden !== true;
-        for (const cr of st.creatures) {
+        // jeder Leib im Bild trägt seine Gestalt — die Wesen UND die Gefallenen (ein Leichnam liegt fern als Feld, nah als
+        // Studio-Tier, wie er lag, bis er versunken ist)
+        const W = st.creatures,
+            LG = st.leichname;
+        for (let k = 0, n = W.length + LG.length; k < n; k++) {
+            const cr = k < W.length ? W[k] : LG[k - W.length];
             if (!cr || !cr.position) continue;
             const dx = cr.position.x - playerPos.x;
             const dz = cr.position.z - playerPos.z;
@@ -22824,8 +22853,51 @@ class AnazhRealm {
         u._kzVersuch = false;
     }
 
+    // ═══ KAMPF-GEFÜHL — DER LEICHNAM (Welle LF kampf, Posten 7) ═══
+    // Ein Gefallener (state.leichname, _creatureCombatDeath) hat keine KI und keinen Gang: er kippt (~83° smoothstep über
+    // kippDauerSec) auf die beim Tod gemerkte Flanke, die Wurzel steigt nach der Tod-Lage (_todHebeTafel), ein letzter Ruf,
+    // dann liegt er gefuehl.leichnamSec und sinkt in der letzten Spanne um die Höhe seines Leibs in die Erde — DANN
+    // removeCreature. Rein optisch — kein Sim-/Replay-Pfad liest die Lage; der Mehrspieler-Strom trägt sie (q).
+    _tickLeichname(delta) {
+        const L = this.state.leichname;
+        for (let i = L.length - 1; i >= 0; i--) {
+            const creature = L[i];
+            const dying = creature.userData.dying;
+            dying.t += delta;
+            const u = Math.min(1, dying.t / Math.max(1e-6, dying.dauer));
+            const ang = AnazhRealm.TOD_KIPP_RAD * u * u * (3 - 2 * u); // ~83° — gekippt, nicht vergraben
+            const axis = this._kampfTipAxis || (this._kampfTipAxis = new THREE.Vector3());
+            axis.set(dying.dirZ, 0, -dying.dirX).normalize(); // ⊥ Kipp-Richtung: up kippt AUF sie zu
+            const q = this._kampfTipQ || (this._kampfTipQ = new THREE.Quaternion());
+            q.setFromAxisAngle(axis, ang);
+            creature.quaternion.copy(q);
+            if (dying.baseQuat) creature.quaternion.multiply(dying.baseQuat);
+            const hebe = dying.hebe;
+            if (hebe && Number.isFinite(dying.baseY)) {
+                const f = (ang / AnazhRealm.TOD_KIPP_RAD) * (hebe.length - 1);
+                const k0 = Math.max(0, Math.min(hebe.length - 2, Math.floor(f)));
+                creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);
+            }
+            if (u >= 1 && !dying.sounded) {
+                dying.sounded = true;
+                this._tierRuf(creature, "trauer"); // der letzte Ruf — die Stimme des fallenden Körpers
+            }
+            // er sinkt in der letzten Spanne seiner Frist in die Erde (die Höhe seines Leibs), dann fällt er
+            const ende = dying.dauer + dying.nachklang;
+            if (dying.sinken > 0 && dying.t > ende - dying.sinken) {
+                if (!Number.isFinite(dying.liegeY)) dying.liegeY = creature.position.y;
+                const u2 = Math.min(1, (dying.t - (ende - dying.sinken)) / dying.sinken);
+                creature.position.y =
+                    dying.liegeY -
+                    u2 * u2 * this._kreaturLeib(creature, 0, this._sinkLeib || (this._sinkLeib = {})).hoehe;
+            }
+            if (dying.t >= ende) this.removeCreature(creature); // rückwärts: der Splice überspringt keinen
+        }
+    }
+
     updateCreatures(delta) {
         this.state.creatureAnimationTime += delta;
+        this._tickLeichname(delta); // die Gefallenen: kippen, liegen, sinken — kein Wesen mehr
         // W4 (V17.48) — die emotionale CONTAGION + das Wachsen der Bindung leben HIER
         // (im Kreatur-Tick), nicht im Emotion-Tick → die Emotion-Kern-Ticks bleiben isoliert.
         this._tickEmotionContagion(delta);
@@ -22846,7 +22918,7 @@ class AnazhRealm {
         let raumMax = 0;
         for (const c of this.state.creatures) {
             const zj = c && c.userData && c.userData._motionZustand;
-            if ((zj === "jagd" || zj === "hetzen") && !c.userData.dying) jaeger.push(c);
+            if (zj === "jagd" || zj === "hetzen") jaeger.push(c);
             if (c && c.userData) raumMax = Math.max(raumMax, this._kreaturRaum(c));
         }
         this._raumMaxTakt = raumMax;
@@ -22890,7 +22962,7 @@ class AnazhRealm {
                 bucket = flockBucketPool.pop() || [];
                 flockGrid.set(key, bucket);
             }
-            bucket.push(j);
+            bucket.push(c); // der Leib, nie sein Index: ein Tod mitten im Takt verschiebt die Liste
         }
         const lifeTrickleNow = performance.now() / 1000;
         // Frame-Budget für volle `_voxelSurfaceY`-Scans in `_creatureGroundY`, egal wie viele Kreaturen;
@@ -22905,48 +22977,11 @@ class AnazhRealm {
         // SCHLUSS-WELLE — das EINE Verhaltens-Gesetz für den ganzen Tick
         // (memoisiert, fail-closed): Freude-Tempo/Hüpf-Höhen · Herde · Wasser.
         const VGL = AnazhRealm._verhaltenGesetz();
-        for (let i = 0; i < this.state.creatures.length; i++) {
+        // DER TAKT-INDEX lebt am Wirt (`_kreaturTaktI`): fällt mitten im Takt ein Tier, das er schon getragen hat (ein Biss
+        // tötet die Beute), rückt _kreaturAusListe ihn nach — das nächste Tier läuft, keines doppelt, keines übersprungen.
+        for (this._kreaturTaktI = 0; this._kreaturTaktI < this.state.creatures.length; this._kreaturTaktI++) {
+            const i = this._kreaturTaktI;
             const creature = this.state.creatures[i];
-            // ═══ KAMPF-GEFÜHL — TOD-KIPPEN ═══
-            // Ein sterbendes Wesen hat keine KI/Bewegung: es kippt (~90° smoothstep über kippDauerSec) entlang
-            // der beim Tod gemerkten Hang-Richtung, sad-Ping als Nachklang, nach der Frist removeCreature.
-            // Rein optisch — kein Sim-/Replay-Pfad liest die Rotation.
-            const dying = creature && creature.userData && creature.userData.dying;
-            if (dying) {
-                dying.t += delta;
-                const u = Math.min(1, dying.t / Math.max(1e-6, dying.dauer));
-                const ang = AnazhRealm.TOD_KIPP_RAD * u * u * (3 - 2 * u); // ~83° — gekippt, nicht vergraben
-                const axis = this._kampfTipAxis || (this._kampfTipAxis = new THREE.Vector3());
-                axis.set(dying.dirZ, 0, -dying.dirX).normalize(); // ⊥ Kipp-Richtung: up kippt AUF sie zu
-                const q = this._kampfTipQ || (this._kampfTipQ = new THREE.Quaternion());
-                q.setFromAxisAngle(axis, ang);
-                creature.quaternion.copy(q);
-                if (dying.baseQuat) creature.quaternion.multiply(dying.baseQuat);
-                const hebe = dying.hebe;
-                if (hebe && Number.isFinite(dying.baseY)) {
-                    const f = (ang / AnazhRealm.TOD_KIPP_RAD) * (hebe.length - 1);
-                    const k0 = Math.max(0, Math.min(hebe.length - 2, Math.floor(f)));
-                    creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);
-                }
-                if (u >= 1 && !dying.sounded) {
-                    dying.sounded = true;
-                    this._tierRuf(creature, "trauer"); // der letzte Ruf — die Stimme des fallenden Körpers
-                }
-                // DER LEICHNAM sinkt in der letzten Spanne seiner Frist in die Erde (die Höhe seines Leibs), dann fällt er
-                const ende = dying.dauer + dying.nachklang;
-                if (dying.sinken > 0 && dying.t > ende - dying.sinken) {
-                    if (!Number.isFinite(dying.liegeY)) dying.liegeY = creature.position.y;
-                    const u2 = Math.min(1, (dying.t - (ende - dying.sinken)) / dying.sinken);
-                    creature.position.y =
-                        dying.liegeY -
-                        u2 * u2 * this._kreaturLeib(creature, 0, this._sinkLeib || (this._sinkLeib = {})).hoehe;
-                }
-                if (dying.t >= ende) {
-                    this.removeCreature(creature);
-                    i--;
-                }
-                continue;
-            }
             const emotion = this.state.creatureEmotions[i];
             // DAS TEMPO IN m/s (Q3): die Tempo-Einheit des Verhaltens aus dem Gang-Gesetz (tetrapoda tempoEinheit,
             // tempo·√(g·L) an der Hüft-Höhe L — ein großes Tier läuft schneller, ein kleines kürzer), darauf der Charakter
@@ -23057,9 +23092,8 @@ class AnazhRealm {
                                 const bucket = flockGrid.get((gcx + dgx) * 100000 + (gcz + dgz));
                                 if (!bucket) continue;
                                 for (let bi = 0; bi < bucket.length; bi++) {
-                                    const j = bucket[bi];
-                                    if (i === j) continue;
-                                    const o = this.state.creatures[j];
+                                    const o = bucket[bi];
+                                    if (o === creature) continue;
                                     const e =
                                         pool[nb.length] || (pool[nb.length] = { x: 0, z: 0, gattung: null, raum: 0 });
                                     e.x = o.position.x;
@@ -23245,7 +23279,10 @@ class AnazhRealm {
                 }
                 if (!live) {
                     creature.userData.emotions = null;
-                    if (Array.isArray(this.state.creatureEmotions)) this.state.creatureEmotions[i] = "happy";
+                    // der Index JETZT (ein Tod mitten im Takt rückt ihn, _kreaturAusListe)
+                    const ie = this._kreaturTaktI;
+                    if (Array.isArray(this.state.creatureEmotions) && this.state.creatures[ie] === creature)
+                        this.state.creatureEmotions[ie] = "happy";
                 }
             }
 
@@ -23451,6 +23488,7 @@ class AnazhRealm {
             // DETERMINISMUS-BOGEN P3 — kein Ammo-Body-Shadow mehr: die Kreatur-Position IST
             // die Wahrheit (feld-geerdet über `_creatureGroundY`), nichts zu synchronisieren.
         }
+        this._kreaturTaktI = null;
     }
 
     // ===== ATLAS §07 · CHUNK-STREAMING/PHYSIK — Voxel-Worker · Ring · feld-native Kollision =====
@@ -24927,7 +24965,8 @@ class AnazhRealm {
         // WELT-MARCH: das Feld IST die Gestalt — der Toggle schaltet die FELDER
         // (der Kreatur-Ziegel-Tick konsumiert das Flag am EINEN Chokepoint).
         this.state.creaturesHidden = !visible;
-        this.state.creatures.forEach((creature) => {
+        // jeder Leib im Bild: die Wesen und die Gefallenen (state.leichname liegen sichtbar, bis sie versunken sind)
+        for (const creature of [...this.state.creatures, ...this.state.leichname]) {
             const u = creature.userData;
             if (u && u._kzGlieder) {
                 for (const gl of u._kzGlieder) this._weltFeldAktiv(gl.handle, visible, true); // Schalter: kein Schwund
@@ -24935,7 +24974,7 @@ class AnazhRealm {
             } else if (u && u._kzVersuch) {
                 creature.visible = false; // Bake gescheitert: KEIN Rückweg zum Mesh
             } else creature.visible = visible;
-        });
+        }
         this.log(`Kreaturen ${visible ? "aktiviert" : "deaktiviert"}`);
     }
 
@@ -26507,6 +26546,7 @@ class AnazhRealm {
             });
             this.log(`Alte Kreaturen entfernt (${this.state.creatures.length})`);
         }
+        for (const l of this.state.leichname.slice()) this.removeCreature(l); // die Gefallenen gehen mit der alten Welt
         this.state.creatures = [];
         this.state.creatureEmotions = [];
         if (this.state.vegetation && this.state.vegetation.length) {
@@ -41184,7 +41224,8 @@ class AnazhRealm {
             selfAwareness: this.state.selfAwareness,
             // Volle Komponenten-Persistenz je Kreatur (Name+Soul+Memory+bornAt+position); Specs live aus memory.
             // Tasks + carrying bewusst NICHT persistiert (Gesten leben im Moment, Identität lebt fort).
-            // Tote Kreaturen hat removeCreature schon aus state.creatures entfernt.
+            // Ein Gefallener liegt nie in state.creatures (er zog beim Tod nach state.leichname) — er reist nie in den
+            // Snapshot und erwacht nie beim Reload.
             creatures: this.state.creatures.map((c) => this._serializeCreature(c)).filter((s) => s),
             creatureEmotions: this.state.creatureEmotions,
             terrainSteepness: this.state.terrainSteepness,
@@ -75824,7 +75865,7 @@ class AnazhRealm {
         let naechstD2 = Infinity;
         for (const cr of this.state.creatures || []) {
             const u = cr && cr.userData;
-            if (!u || u.dying || !u._tierBaum || u._trefferGlieder !== undefined) continue;
+            if (!u || !u._tierBaum || u._trefferGlieder !== undefined) continue;
             if (namen && namen.has(this._kreaturGattung(cr))) continue;
             const d2 = this._spielerD2(cr.position.x, cr.position.z);
             if (d2 < naechstD2) {
@@ -81589,7 +81630,8 @@ class AnazhRealm {
     // Schwung-Uhr auf IHM (sw.t) — der Hit-Stop hält die Klinge, wo sie trifft, und die Pose zeigt sie dort. Vorher fegte je
     // Takt eine 0,35 m dicke Kapsel um einen Punkt über dem Kopf, die Spitze des Großschwerts sprang 0,45 m: der Treffer fiel
     // bis 0,35 m vor der sichtbaren Klinge, im Treffer-Takt stand sie 30° neben dem Hirsch. Invarianten HIER: nie ein Ziel
-    // hinter dem Rücken (dot ≤ 0), Dedup je Schwung (hits-Set), sterbende Wesen inert.
+    // hinter dem Rücken (dot ≤ 0), Dedup je Schwung (hits-Set); die Liste läuft rückwärts — ein Treffer, der tötet, nimmt
+    // den Leib aus den Wesen (_kreaturAusListe), ohne das nächste Tier zu überspringen.
     _kampfSweepTick(sw, nowSec, tVon, tBis) {
         const pm = this.state.playerMesh;
         const creatures = this.state.creatures;
@@ -81611,9 +81653,9 @@ class AnazhRealm {
                 B = lage.B,
                 T = lage.T;
             let getroffen = false;
-            for (let i = 0; i < creatures.length; i++) {
+            for (let i = creatures.length - 1; i >= 0; i--) {
                 const c = creatures[i];
-                if (!c || !c.userData || c.userData.dying || sw.hits.has(c)) continue;
+                if (!c || !c.userData || sw.hits.has(c)) continue;
                 const tx = c.position.x - S.x;
                 const tz = c.position.z - S.z;
                 if (tx * vorn.x + tz * vorn.z <= 0) continue; // NIE hinter dem Rücken (die Wand)
@@ -82258,7 +82300,7 @@ class AnazhRealm {
             const stepR = Math.hypot(ex - ox, ey - oy, ez - oz);
             for (let c = 0; c < creatures.length; c++) {
                 const cr = creatures[c];
-                if (!cr || !cr.userData || cr.userData.dying) continue;
+                if (!cr || !cr.userData) continue;
                 if (!this._trefferErreichbar(cr, ex, ez, stepR + B.radiusM)) continue; // das Grob-Tor (der Leib)
                 const tr = this._kreaturGliedTreffer(cr, ox, oy, oz, ex, ey, ez, B.radiusM);
                 if (tr && (!hitTr || tr.s < hitTr.s)) {
@@ -82963,7 +83005,7 @@ class AnazhRealm {
         const meshes = [];
         const creatureByMesh = new Map();
         for (const c of this.state.creatures) {
-            if (!this._kreaturLebend(c)) continue; // ein Leichnam ist kein Ziel (der Strahl geht durch ihn)
+            if (!c) continue;
             c.traverse((node) => {
                 if (node.isMesh) {
                     meshes.push(node);
@@ -85011,7 +85053,7 @@ class AnazhRealm {
         const host = document.getElementById("hof-sections");
         if (!host) return;
         host.innerHTML = "";
-        const creatures = (this.state.creatures || []).filter((c) => this._kreaturLebend(c));
+        const creatures = this.state.creatures || [];
         const labels = AnazhRealm.HOF_SECTION_LABELS;
         const counts = new Map();
         for (const c of creatures) {
@@ -85079,7 +85121,7 @@ class AnazhRealm {
         if (!list) return;
         list.innerHTML = "";
         this._renderHofSections();
-        const allCreatures = (this.state.creatures || []).filter((c) => this._kreaturLebend(c));
+        const allCreatures = this.state.creatures || [];
         // Hof-E/§G.9 — der einladende Leer-Zustand (das Spawnen als Held des leeren Hofes).
         if (allCreatures.length === 0) {
             this.state.hofSection = "alle";

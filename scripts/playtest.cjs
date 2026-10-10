@@ -4207,13 +4207,20 @@ async function checkBandV1753CreatureCombat(ctx) {
         for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null; // Platz für Loot garantieren
         const countBefore = r.state.creatures.length;
         const killR = r.damageCreature(c1, 99999, { source: "player" });
-        // Der Kill despawnt nicht sofort: der Körper KIPPT (userData.dying, ~1 s + Nachklang), dann folgt
-        // der Abschied — die Frist synthetisch verstreichen lassen, updateCreatures räumt.
-        const kipptErst = killR.killed && !!c1.userData.dying && r.state.creatures.indexOf(c1) !== -1;
+        // Der Kill despawnt nicht sofort: der Körper KIPPT (userData.dying, ~1 s + Nachklang) — er verlässt die Wesen und
+        // liegt in state.leichname —, dann folgt der Abschied: die Frist synthetisch verstreichen lassen, updateCreatures räumt.
+        const kipptErst =
+            killR.killed &&
+            !!c1.userData.dying &&
+            r.state.creatures.indexOf(c1) === -1 &&
+            r.state.leichname.indexOf(c1) !== -1;
         c1.userData.dying.t = 9999;
         r.updateCreatures(0.016);
         out.killRemoves =
-            kipptErst && r.state.creatures.indexOf(c1) === -1 && r.state.creatures.length === countBefore - 1;
+            kipptErst &&
+            r.state.leichname.indexOf(c1) === -1 &&
+            !c1.parent &&
+            r.state.creatures.length === countBefore - 1;
         out.lootToInventory = matUnits(p.inventory) > 0;
 
         // (7) ein Welt-Tod gibt KEIN Loot (nur der Spieler erntet die Substanz)

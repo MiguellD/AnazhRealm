@@ -569,6 +569,10 @@ const FORBIDDEN = [
     // der Nachklang des Tod-Kippens (0,35 s, dann war der Leib fort) kehrt nicht zurück — ein Tier liegt gefuehl.leichnamSec
     // und sinkt in leichnamSinkSec in die Erde (Vertrags-Akt 09.10., Posten 7)
     { token: "kippNachklangSec", fiel: "Welle LF kampf — der Leichnam liegt (gefuehl.leichnamSec)", auch: ["schmiede-core.js"] },
+    // die Frage je Leser („lebt das Tier?") kehrt nicht zurück — der Leichnam verlässt beim Tod die Liste der Wesen und liegt
+    // in state.leichname (Nachbesserung 3: vorher fragten 14 Methoden selbst nach dying, 5 Leser über diese Frage)
+    { token: "_kreaturLebend", fiel: "Welle LF kampf — der Leichnam ist kein Wesen (state.leichname)" },
+    { token: "_kreaturZahlLebend", fiel: "Welle LF kampf — die Zahl der Wesen ist state.creatures.length" },
     // WELLE LF RUDEL (Leben-Schau 07.10., D11/D1-Rest): das Fuß-Ziel in der Ebene des Leibs (das Ziel im Gruppen-Raum,
     // per Rumpf-Quaternion zurückgedreht — am Querhang kippten die Beine mit dem Leib) kehrt nicht zurück.
     { token: "_gangQ", fiel: "Welle LF rudel — das Fuß-Ziel liegt in der Welt (Pfoten-IK _animateTierBaum)" },
