@@ -37701,6 +37701,48 @@ class AnazhRealm {
                 "    return g0 + gn;\n" +
                 "}"
         );
+        // DER KEIL DER HÜLLEN-FORM (S3, N5 — `HUELLE_KEIL_TYP`): der Kasten c ± h, oben geschnitten von der Ebene vom First
+        // (die Kante bei +z · −z · +x · −x, Typ 2 · 3 · 4 · 5, volle Höhe) zur Gegenkante (Höhe 0); der Walm (0..1, im
+        // Bruchteil des Typs: Typ + 0,49 · walm) schneidet die zwei Stirnen mit derselben Neigung — von (1 − walm) der Höhe
+        // an der Stirn bis zum First, der um walm × Tiefe kürzer wird. Dieselbe Regel wie das Gitter des Gesetzbuchs
+        // (fachwerk-core `_keilFlaechen`). Typ 2 und 3 sind die Dach-Prismen des Fachwerk-Fits (byte-gleich ohne Walm).
+        const keilKopf =
+            "    let d = p - c;\n" +
+            "    let qb = abs(d) - h;\n" +
+            "    let db = length(max(qb, vec3<f32>(0.0))) + min(max(qb.x, max(qb.y, qb.z)), 0.0);\n" +
+            "    let typ = floor(w + 0.001);\n" +
+            "    let walm = clamp((w - typ) / 0.49, 0.0, 1.0);\n" +
+            "    let xa = typ > 3.5;\n" +
+            "    let hR = select(h.z, h.x, xa);\n" +
+            "    let hU = select(h.x, h.z, xa);\n" +
+            "    let dR = select(d.z, d.x, xa);\n" +
+            "    let dU = select(d.x, d.z, xa);\n" +
+            "    let s = select(-1.0, 1.0, typ < 2.5 || (typ > 3.5 && typ < 4.5));\n" +
+            "    let invL = 1.0 / max(length(vec2<f32>(h.y, hR)), 1e-6);\n" +
+            "    let ebene = (d.y * hR - s * dR * h.y) * invL;\n" +
+            "    let walmE = select(-1e30, ((d.y - h.y * (1.0 - 2.0 * walm)) * hR + (abs(dU) - hU) * h.y) * invL, walm > 0.0005);\n";
+        const sdKeilFn = TSL.wgslFn(
+            "fn sdKeil(p: vec3<f32>, c: vec3<f32>, h: vec3<f32>, w: f32) -> f32 {\n" +
+                keilKopf +
+                "    return max(db, max(ebene, walmE));\n" +
+                "}"
+        );
+        const gradKeilFn = TSL.wgslFn(
+            "fn gradKeil(p: vec3<f32>, c: vec3<f32>, h: vec3<f32>, w: f32) -> vec3<f32> {\n" +
+                keilKopf +
+                "    if (walmE > db && walmE >= ebene) {\n" +
+                "        let gU = sign(dU) * h.y;\n" +
+                "        return select(vec3<f32>(gU, hR, 0.0), vec3<f32>(0.0, hR, gU), xa);\n" +
+                "    }\n" +
+                "    if (ebene > db) {\n" +
+                "        let gR = -s * h.y;\n" +
+                "        return select(vec3<f32>(0.0, hR, gR), vec3<f32>(gR, hR, 0.0), xa);\n" +
+                "    }\n" +
+                "    if (qb.x >= qb.y && qb.x >= qb.z) { return vec3<f32>(sign(d.x), 0.0, 0.0); }\n" +
+                "    if (qb.y >= qb.z) { return vec3<f32>(0.0, sign(d.y), 0.0); }\n" +
+                "    return vec3<f32>(0.0, 0.0, sign(d.z));\n" +
+                "}"
+        );
         // Die Kapsel-Liste liegt 2D (Zeilen à textureDimensions.x Texel): eine 1D-Zeile stieß ans garantierte WebGPU-
         // Limit (8192 Texel = 4096 Kapseln, 04.10. zu 59 % belegt, als die Fern-Streu ins Gesetz zog).
         const kapselTexelFn = TSL.wgslFn(
@@ -37851,14 +37893,8 @@ class AnazhRealm {
                 "                            // ELLIPSOID (pB.w≈1), rau\n" +
                 "                            dkG = sdEllipsoidRau(pP, qA.xyz, qB.xyz);\n" +
                 "                        } else {\n" +
-                "                            // PRISM/Wedge (≈2 First +z / ≈3 First −z): max(sdBox, plane)\n" +
-                "                            let d2 = pP - qA.xyz;\n" +
-                "                            let h2 = qB.xyz;\n" +
-                "                            let qb2 = abs(d2) - h2;\n" +
-                "                            let db2 = length(max(qb2, vec3<f32>(0.0))) + min(max(qb2.x, max(qb2.y, qb2.z)), 0.0);\n" +
-                "                            let invL2 = 1.0 / max(length(vec2<f32>(h2.y, h2.z)), 1e-6);\n" +
-                "                            let plane2 = select((d2.y * h2.z + d2.z * h2.y) * invL2, (d2.y * h2.z - d2.z * h2.y) * invL2, qB.w < 2.5);\n" +
-                "                            dkG = max(db2, plane2);\n" +
+                "                            // KEIL (pB.w = Typ 2..5 + 0,49·Walm): der Kasten, oben geschnitten (sdKeil)\n" +
+                "                            dkG = sdKeil(pP, qA.xyz, qB.xyz, qB.w);\n" +
                 "                        }\n" +
                 "                        if (dkG < dmG) { dmG = dkG; nkG = k2; }\n" +
                 "                    }\n" +
@@ -37889,18 +37925,8 @@ class AnazhRealm {
                 "                            ciG = u32(-qA.w - 1.0);\n" +
                 "                            laubG = true; // das kompakte Teil (Blütenkopf, Stein) trägt die Saison\n" +
                 "                        } else {\n" +
-                "                            // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
-                "                            let d2 = pP - qA.xyz;\n" +
-                "                            let h2 = qB.xyz;\n" +
-                "                            let qb2 = abs(d2) - h2;\n" +
-                "                            let db2 = length(max(qb2, vec3<f32>(0.0))) + min(max(qb2.x, max(qb2.y, qb2.z)), 0.0);\n" +
-                "                            let invL2 = 1.0 / max(length(vec2<f32>(h2.y, h2.z)), 1e-6);\n" +
-                "                            let plane2 = select((d2.y * h2.z + d2.z * h2.y) * invL2, (d2.y * h2.z - d2.z * h2.y) * invL2, qB.w < 2.5);\n" +
-                "                            if (plane2 > db2) {\n" +
-                "                                gvG = select(vec3<f32>(0.0, h2.z, h2.y), vec3<f32>(0.0, h2.z, -h2.y), qB.w < 2.5);\n" +
-                "                            } else if (qb2.x >= qb2.y && qb2.x >= qb2.z) { gvG = vec3<f32>(sign(d2.x), 0.0, 0.0); }\n" +
-                "                            else if (qb2.y >= qb2.z) { gvG = vec3<f32>(0.0, sign(d2.y), 0.0); }\n" +
-                "                            else { gvG = vec3<f32>(0.0, 0.0, sign(d2.z)); }\n" +
+                "                            // KEIL-Normale: Kasten-Seite, Dach-Ebene oder Walm (gradKeil)\n" +
+                "                            gvG = gradKeil(pP, qA.xyz, qB.xyz, qB.w);\n" +
                 "                            ciG = u32(-qA.w - 1.0);\n" +
                 "                        }\n" +
                 "                        if (dot(gvG, gvG) < 1e-10) {\n" +
@@ -37942,14 +37968,8 @@ class AnazhRealm {
                 "                    // ELLIPSOID (pB.w≈1), rau\n" +
                 "                    dk = sdEllipsoidRau(pL, pA.xyz, pB.xyz);\n" +
                 "                } else {\n" +
-                "                    // PRISM/Wedge (≈2 First +z / ≈3 First −z): max(sdBox, plane)\n" +
-                "                    let dd = pL - pA.xyz;\n" +
-                "                    let h = pB.xyz;\n" +
-                "                    let qb = abs(dd) - h;\n" +
-                "                    let db = length(max(qb, vec3<f32>(0.0))) + min(max(qb.x, max(qb.y, qb.z)), 0.0);\n" +
-                "                    let invLp = 1.0 / max(length(vec2<f32>(h.y, h.z)), 1e-6);\n" +
-                "                    let plane = select((dd.y * h.z + dd.z * h.y) * invLp, (dd.y * h.z - dd.z * h.y) * invLp, pB.w < 2.5);\n" +
-                "                    dk = max(db, plane);\n" +
+                "                    // KEIL (pB.w = Typ 2..5 + 0,49·Walm): der Kasten, oben geschnitten (sdKeil)\n" +
+                "                    dk = sdKeil(pL, pA.xyz, pB.xyz, pB.w);\n" +
                 "                }\n" +
                 "                if (dk < dm) { dm = dk; nk = k; }\n" +
                 "            }\n" +
@@ -37981,18 +38001,8 @@ class AnazhRealm {
                 "                    ci = u32(-pA.w - 1.0);\n" +
                 "                    laubK = true; // das kompakte Teil trägt die Saison\n" +
                 "                } else {\n" +
-                "                    // PRISM-Normale: Box-Face oder Dach-Ebene\n" +
-                "                    let dd = pL - pA.xyz;\n" +
-                "                    let h = pB.xyz;\n" +
-                "                    let qb = abs(dd) - h;\n" +
-                "                    let db = length(max(qb, vec3<f32>(0.0))) + min(max(qb.x, max(qb.y, qb.z)), 0.0);\n" +
-                "                    let invLp = 1.0 / max(length(vec2<f32>(h.y, h.z)), 1e-6);\n" +
-                "                    let plane = select((dd.y * h.z + dd.z * h.y) * invLp, (dd.y * h.z - dd.z * h.y) * invLp, pB.w < 2.5);\n" +
-                "                    if (plane > db) {\n" +
-                "                        gvK = select(vec3<f32>(0.0, h.z, h.y), vec3<f32>(0.0, h.z, -h.y), pB.w < 2.5);\n" +
-                "                    } else if (qb.x >= qb.y && qb.x >= qb.z) { gvK = vec3<f32>(sign(dd.x), 0.0, 0.0); }\n" +
-                "                    else if (qb.y >= qb.z) { gvK = vec3<f32>(0.0, sign(dd.y), 0.0); }\n" +
-                "                    else { gvK = vec3<f32>(0.0, 0.0, sign(dd.z)); }\n" +
+                "                    // KEIL-Normale: Kasten-Seite, Dach-Ebene oder Walm (gradKeil)\n" +
+                "                    gvK = gradKeil(pL, pA.xyz, pB.xyz, pB.w);\n" +
                 "                    ci = u32(-pA.w - 1.0);\n" +
                 "                }\n" +
                 "                if (dot(gvK, gvK) < 1e-10) {\n" +
@@ -38020,7 +38030,7 @@ class AnazhRealm {
                 "    let licht = (direkt + ambientFarbe + hemi) * (1.0 / PI) + env;\n" +
                 "    return vec4<f32>(bestRgb * licht, bestT);\n" +
                 "}",
-            [sdEllipsoidRauFn, gradEllipsoidRauFn, kapselTexelFn] // der raue Ellipsoid + die 2D-Kapsel-Liste
+            [sdEllipsoidRauFn, gradEllipsoidRauFn, sdKeilFn, gradKeilFn, kapselTexelFn] // der raue Ellipsoid, der Keil + die 2D-Kapsel-Liste
         );
         // DAS PANORAMA (Fragment): Richtung aus invVP → Azimut/Elevation → Panorama-Texel (quadratische Elevation-Umkehr)
         // → Farbe unter dem Licht der Welt; die Luft legt der Pass-Knoten auf. Rückgabe: rgb + Treffer-Distanz (0 =
@@ -38535,7 +38545,8 @@ class AnazhRealm {
                 (Math.min(255, Math.max(0, Math.round(f.g * 255))) << 8) +
                 Math.min(255, Math.max(0, Math.round(f.b * 255)));
             if (def.box || def.ellipsoid || def.prism) {
-                // BOX [Zentrum|−(farbe+1)][Halbmaße|0]; ELLIPSOID pB.w=1; PRISM/Wedge pB.w=2 (+z-First) / 3 (−z-First).
+                // BOX [Zentrum|−(farbe+1)][Halbmaße|0]; ELLIPSOID pB.w=1; KEIL pB.w = Typ 2..5 (First +z · −z · +x · −x,
+                // `HUELLE_KEIL_TYP`) + 0,49 · Walm (das WGSL `sdKeil` liest Typ und Walm aus demselben Float).
                 K[o] = def.c.x;
                 K[o + 1] = def.c.y;
                 K[o + 2] = def.c.z;
@@ -38543,7 +38554,12 @@ class AnazhRealm {
                 K[o + 4] = Math.max(0.01, def.h.x);
                 K[o + 5] = Math.max(0.01, def.h.y);
                 K[o + 6] = Math.max(0.01, def.h.z);
-                K[o + 7] = def.prism ? (def.prismFlip ? 3 : 2) : def.ellipsoid ? 1 : 0;
+                K[o + 7] = def.prism
+                    ? (Number.isInteger(def.keilTyp) ? def.keilTyp : def.prismFlip ? 3 : 2) +
+                      0.49 * Math.max(0, Math.min(1, def.walm || 0))
+                    : def.ellipsoid
+                      ? 1
+                      : 0;
                 lokalMin.x = Math.min(lokalMin.x, def.c.x - def.h.x);
                 lokalMin.y = Math.min(lokalMin.y, def.c.y - def.h.y);
                 lokalMin.z = Math.min(lokalMin.z, def.c.z - def.h.z);
@@ -55779,6 +55795,12 @@ class AnazhRealm {
             // der Fern-Wunsch das Studio-Mesh der Art, nie ein Kapsel-Satz und nie ein Loch.
             const fern = this._streuFernBahn(preset, lod, dist);
             if (fern) {
+                // Die Streu trägt "gesetz" und "boden"; eine gestreute Art mit anderer Fernform ("huelle" gehört dem gesetzten
+                // Bau, `_archFoundryZiegel`) hat hier keinen Leser — laut, nie still als Boden.
+                if (fern !== "gesetz" && fern !== "boden")
+                    return AnazhRealm._kernPflichtBruch(
+                        "phyto:lod.budget fernform " + fern + " in der Streu (" + preset + ")"
+                    );
                 const feld =
                     fern === "gesetz" && this._weltMarchGezeichnet()
                         ? this._streuGesetzSpawn(
@@ -65544,13 +65566,16 @@ class AnazhRealm {
         // Streu-Satz (`_streuSatzArt`, W7): ein Bereich ist der Block einer Kachel in einer Senke der Nah-Streu, seine Attribute
         // trägt der Eintrag (der wiegende Stoff dazu `aWiege`), seine Kapazität ist die der Streu.
         const bau = this.state.satzStoffe ? this.state.satzStoffe.get(art) : null;
+        // Ein NUR-WURF-Satz (`bauWurf`, S3) liegt NUR auf SHADOW_TWIN_LAYER (die Kaskaden-Kameras sehen ihn, das Hauptbild
+        // nie — `_chunkSatzPass` wählt dort nichts) und empfängt nichts.
         if (bau)
             return {
                 name: bau.name,
                 attr: bau.attr || AnazhRealm.BAU_SATZ_ATTR,
                 mat: bau.mat,
                 schatten: bau.wurf,
-                empfang: true,
+                empfang: bau.nurWurf !== true,
+                nurWurf: bau.nurWurf === true,
                 renderOrder: 0,
                 richtung: bau.mat.transparent === true ? -1 : 1, // ein durchscheinender Stoff fern → nah
                 userData: bau.userData || { bauSatz: bau.name },
@@ -65726,6 +65751,7 @@ class AnazhRealm {
         mesh.renderOrder = spec.renderOrder;
         mesh.visible = s.grundAlt = this._chunkSatzGrund(s);
         Object.assign(mesh.userData, spec.userData);
+        if (spec.nurWurf) mesh.layers.set(AnazhRealm.SHADOW_TWIN_LAYER); // der Wurf-Satz: nur die Kaskaden
         s.mesh = mesh;
         return mesh;
     }
@@ -66107,6 +66133,12 @@ class AnazhRealm {
                 for (const a of s.abschnitte.values()) belegt += a.kap;
                 if (s.iEnde - belegt > s.iKap * AnazhRealm.CHUNK_SATZ_ABSCHNITT.verschnitt)
                     this._chunkSatzUmlegen(s, null, 0, key);
+            }
+            // DER WURF-SATZ (S3, `nurWurf`) zeichnet nur in den Kaskaden: das Hauptbild legt seine Abschnitte dicht (oben),
+            // wählt keine Zelle und zieht keinen Befehl
+            if (k < 0 && s.spec.nurWurf === true) {
+                this._chunkSatzZeige(s, null, null);
+                continue;
             }
             let a = s.abschnitte.get(key);
             if (this._satzAbschnittSteht(s, a, S.lage, kamera)) {
@@ -67299,18 +67331,29 @@ class AnazhRealm {
     // Nicht im Satz: was wandert (Tür-Flügel `leaf.tuer`, Fahrzeug), was die Dither-Blende je Instanz trägt und
     // oft wiederkehrt (Baum, Strauch), die Karte (der EINE Atlas), die Streu (regional), ein Schatten-Zwilling (er lebt
     // auf seiner eigenen Ebene — im Satz stünde er im Hauptbild).
+    // DER WURF-SATZ (S3, das Wurf-Gesetz E1): der Schatten-Zwilling einer Satz-Art (die NUR-WURF-Stufe 3 von Haus und
+    // Ausstattung, mit dem EINEN Schatten-Stoff, aDeckt 1) liegt im Satz `bauWurf` seines Stoffs — EIN Befehl je Kaskade für
+    // jeden Werfer, nie im Hauptbild (SHADOW_TWIN_LAYER, `_chunkSatzPass` wählt dort nie). Vorher warf jedes Haus mit seiner
+    // gezeigten Stufe in die Kaskaden (L0 31 660–101 716 Dreiecke je Haus und Kaskade).
     _bauSatzArt(leaf, regionKey, castShadow) {
-        if (regionKey != null || !leaf || leaf.tuer || leaf.shadowTwin || !leaf.mat) return null;
+        if (regionKey != null || !leaf || leaf.tuer || !leaf.mat) return null;
         const m = typeof leaf.leafKey === "string" ? /^f:([^|]+)\|/.exec(leaf.leafKey) : null;
         if (!m) return null;
         const buch = this._foundry && this._foundry.recipes ? this._foundry.recipes : null;
         const rec = buch ? buch[m[1]] : null;
         const name = rec ? AnazhRealm.BAU_SATZ[rec.kind] : null;
         if (!name) return null;
-        const art = name + "|" + leaf.mat.uuid + (castShadow ? "|w" : "|-");
+        const wurf = leaf.shadowTwin === true;
+        const art = wurf ? "bauWurf|" + leaf.mat.uuid + "|S" : name + "|" + leaf.mat.uuid + (castShadow ? "|w" : "|-");
         const st = this.state;
         if (!st.satzStoffe) st.satzStoffe = new Map();
-        if (!st.satzStoffe.has(art)) st.satzStoffe.set(art, { name, mat: leaf.mat, wurf: !!castShadow });
+        if (!st.satzStoffe.has(art))
+            st.satzStoffe.set(
+                art,
+                wurf
+                    ? { name: "bauWurf", mat: leaf.mat, wurf: true, nurWurf: true, attr: AnazhRealm.BAU_WURF_ATTR }
+                    : { name, mat: leaf.mat, wurf: !!castShadow }
+            );
         return art;
     }
 
@@ -67346,12 +67389,13 @@ class AnazhRealm {
 
     // Der Bereich einer Gruppe: jede lebende Instanz [0, liveCount) in Welt-Lage (`_satzBlock`, die Attribute des Bau-Satzes).
     _bauSatzBlock(g) {
+        const st = this.state.satzStoffe ? this.state.satzStoffe.get(g.satz) : null;
         return this._satzBlock(
             g.geom,
             g.mesh.instanceMatrix.array,
             g.mesh.instanceColor ? g.mesh.instanceColor.array : null,
             g.liveCount | 0,
-            AnazhRealm.BAU_SATZ_ATTR,
+            (st && st.attr) || AnazhRealm.BAU_SATZ_ATTR,
             g.key
         );
     }
@@ -73350,12 +73394,34 @@ class AnazhRealm {
         const st = rec && cfg && cfg.kindStages ? cfg.kindStages[rec.kind] : null;
         return Array.isArray(st) && st.length ? st : null;
     }
+    // Eine NUR-WURF-Stufe (B2 Stufe 3, S3 haus: `nurWurf`) wird nie gezeigt — sie wirft für die Art (B2c `schatten`) und
+    // trägt die Fernform. Die Klammer überspringt sie: kein Distanz-Wunsch serviert sie als Anzeige.
     _foundryDeclaredStage(preset, wish) {
         const st = this._foundryKindStages(preset);
         if (!st) return wish;
-        let sv = st[0];
-        for (let i = 0; i < st.length; i++) if (st[i] <= wish) sv = st[i];
-        return sv;
+        let sv = null;
+        for (let i = 0; i < st.length; i++) {
+            if (this._foundryNurWurf(preset, st[i])) continue;
+            if (sv === null || st[i] <= wish) sv = st[i];
+        }
+        return sv === null ? AnazhRealm._kernPflichtBruch("phyto:lod.kindStages (" + preset + ": nur nurWurf)") : sv;
+    }
+    // Die NUR-WURF-Stufe einer Art mit Fernform "huelle" — sie trägt die Liste (`__fern`). Fehlt sie, bricht die Art.
+    _foundryFernStufe(preset) {
+        const st = this._foundryKindStages(preset) || [];
+        for (const s of st) if (this._foundryNurWurf(preset, s)) return s;
+        return AnazhRealm._kernPflichtBruch("phyto:lod.budget (" + preset + ": fernform huelle ohne nurWurf-Stufe)");
+    }
+    // Ist die Stufe einer Art eine NUR-WURF-Stufe (B2c `lod.budget[kind][stufe].nurWurf`)? Der EINE Leser.
+    _foundryNurWurf(preset, stufe) {
+        const f = this._foundry;
+        const rec = f && f.recipes ? f.recipes[preset] : null;
+        return rec ? AnazhRealm._budgetNurWurf(rec.kind, stufe) : false;
+    }
+    static _budgetNurWurf(kind, stufe) {
+        const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        const art = L && L.budget ? L.budget[kind] : null;
+        return !!(art && art[stufe] && art[stufe].nurWurf === true);
     }
     // DAS BUDGET je Art × Stufe (Studio-Vertrag B2c, `PORTAL_RENDER_CONFIG.lod.budget`, live): der EINE Host-Leser des
     // Wurfs. `schatten` = die Stufe, deren Gestalt wirft (die eigene, eine andere = Schatten-Zwilling, false = keine).
@@ -73384,17 +73450,70 @@ class AnazhRealm {
         for (const s of st) if (s !== lod && this._foundryBudgetZeile(preset, s).schatten === lod) return true;
         return false;
     }
-    // DIE FERNFORM einer Art (B2c `lod.budget[kind].fernform`): "karte" · "gesetz" · "boden" — was die Art jenseits
-    // der Nah-Grenze IST (`_streuFernBahn`). Der Zellen-Chokepoint (`_scatterMaterializeCell`) liest sie VOR jedem
+    // DIE FERNFORM einer Art (B2c `lod.budget[kind].fernform`): "karte" · "gesetz" · "boden" · "huelle" — was die Art
+    // jenseits der Nah-Grenze IST (`_streuFernBahn`). Der Zellen-Chokepoint (`_scatterMaterializeCell`) liest sie VOR jedem
     // Mesh-Zug. Fail-closed: eine gestreute Art ohne gültige Fernform ist ein KERN-PFLICHT-Bruch, nie ein stilles L0.
+    // "huelle" (S3, N5): die Liste der Stufe 3 des Gesetzbuchs (Beipack `__fern`, der Leser `_huelleVon`) — der gesetzte Bau
+    // zeichnet sie im Welt-March (`_archFoundryZiegel`); ein Leser, der sie nicht trägt, bricht (KERN-PFLICHT).
     _foundryFernForm(preset) {
         const f = this._foundry;
         const rec = f && f.recipes ? f.recipes[preset] : null;
         const L = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
         const art = rec && L && L.budget ? L.budget[rec.kind] : null;
         const fern = art ? art.fernform : null;
-        if (fern === "gesetz" || fern === "boden" || fern === "karte") return fern;
+        if (fern === "gesetz" || fern === "boden" || fern === "karte" || fern === "huelle") return fern;
         return AnazhRealm._kernPflichtBruch("phyto:lod.budget." + (rec ? rec.kind : preset) + ".fernform");
+    }
+    // DIE EINE HÜLLEN-FORM (docs/studio-vertrag.md N5, S3): `{ stufe, teile: [{ art: "box" | "keil" | "kapsel", c, h | a, b,
+    // r, first ("+x" · "-x" · "+z" · "-z", der Keil), walm (0..1), farbe (linear), rolle: "fest" | "sicht" | "beide" }] }`,
+    // asset-lokal. Der EINE Leser: die Teile EINER Rolle — "fest" die Kollision, "sicht" das Fernbild, "beide" zählt für
+    // beide —, fail-closed geprüft (eine kaputte Hülle ist ein KERN-PFLICHT-Bruch mit Quelle, nie still leer). null: keine
+    // Hülle.
+    static _huelleVon(h, rolle, quelle) {
+        if (!h) return null;
+        const bruch = (was) => AnazhRealm._kernPflichtBruch((quelle || "huelle") + " (Hüllen-Form: " + was + ")");
+        if (!Array.isArray(h.teile)) return bruch("teile");
+        const v3 = (v) =>
+            Array.isArray(v) &&
+            v.length === 3 &&
+            Number.isFinite(v[0]) &&
+            Number.isFinite(v[1]) &&
+            Number.isFinite(v[2]);
+        const out = [];
+        for (const t of h.teile) {
+            if (!t || !(t.rolle === "fest" || t.rolle === "sicht" || t.rolle === "beide")) return bruch("rolle");
+            if (t.art === "box" || t.art === "keil") {
+                if (!v3(t.c) || !v3(t.h)) return bruch(t.art + " c/h");
+                if (t.art === "keil" && AnazhRealm.HUELLE_KEIL_TYP[t.first] == null) return bruch("keil first");
+                if (t.walm != null && !(t.walm >= 0 && t.walm <= 1)) return bruch("keil walm");
+            } else if (t.art === "kapsel") {
+                if (!v3(t.a) || !v3(t.b) || !(t.r > 0)) return bruch("kapsel a/b/r");
+            } else return bruch("art " + t.art);
+            if (t.rolle !== rolle && t.rolle !== "beide") continue;
+            if (rolle === "sicht" && !v3(t.farbe)) return bruch("farbe");
+            out.push(t);
+        }
+        return out;
+    }
+    // Die Teile einer Hülle als Welt-March-Defs (`_weltKapselHolen`): Kasten, Keil (Typ 2..5 = First +z · −z · +x · −x, der
+    // Walm im Bruchteil), Kapsel — die Farbe linear wie jedes Mesh.
+    static _huelleMarchDefs(teile) {
+        const V = (a) => new THREE.Vector3(a[0], a[1], a[2]);
+        const F = (a) => ({ r: a[0], g: a[1], b: a[2] });
+        return teile.map((t) =>
+            t.art === "kapsel"
+                ? { a: V(t.a), b: V(t.b), r: t.r, farbe: F(t.farbe) }
+                : t.art === "keil"
+                  ? {
+                        prism: true,
+                        keilTyp: AnazhRealm.HUELLE_KEIL_TYP[t.first],
+                        walm: t.walm || 0,
+                        c: V(t.c),
+                        h: V(t.h),
+                        farbe: F(t.farbe),
+                    }
+                  : { box: true, c: V(t.c), h: V(t.h), farbe: F(t.farbe) }
+        );
     }
     // DIE EINE NAH-GRENZE der Streu-Fernform (Schöpfer-Wort 30.09.: „AAA nah, nicht Kapseln"): die Fernform einer Art
     // (gesetz · boden) gilt mit Fern-Wunsch erst ab `ANALOG_NAH_M` — diesseits trägt ihr Studio-Mesh (die Stufen-Klammer
@@ -73874,20 +73993,26 @@ class AnazhRealm {
     // Foundry-Fit eines gesetzten Studio-Dings ohne Karte (Fels, Kristall): der Box-Satz (_archBoxFit) über eine
     // transiente Gruppe aus den Flat-Leaves (nie in der Szene). Karten-Dinge erreichen ihn nie (`_archZiegelFern`).
     // Flat lädt noch → warten OHNE Versuch/Bake-Takt; `false` → aufgegeben. Gestempelt (ovH): eigener Satz.
+    // DIE FERNFORM "huelle" (S3, N5): der Satz IST die Liste der NUR-WURF-Stufe des Gesetzbuchs (Beipack `__fern`, der Leser
+    // `_huelleVon`) — kein Fit im Wirt; fehlt die Liste, bricht die Art (KERN-PFLICHT), nie ein Box-Fit-Rückfall.
     _archFoundryZiegel(entry, preset, ovH) {
         const wm = this._weltMarchEnsure();
         if (!wm) return false;
         const variant = this._foundryVariantFor(entry.seed, preset);
         if (variant == null) return false; // Buch kalt — der nächste Tick fragt wieder, nichts verbrannt
+        const huelle = this._foundryFernForm(preset) === "huelle";
+        const stufe = huelle ? this._foundryFernStufe(preset) : 1;
         const key = `aarch:${entry.type}:f${variant}${ovH}`;
         let bf = null;
         if (!wm.kapselCache.has(key)) {
-            bf = this._foundryFlattenFor(entry, preset, 1);
+            bf = this._foundryFlattenFor(entry, preset, stufe);
             if (bf === false) {
                 entry._ziegelGebacken = true;
                 return true;
             }
             if (!bf || !bf.instanceable || !Array.isArray(bf.leaves) || !bf.leaves.length || bf.lod === 2) return false; // lädt noch — der nächste Tick fragt wieder, nichts verbrannt
+            if (huelle && !bf.fern)
+                return AnazhRealm._kernPflichtBruch("fachwerk:__fern (" + preset + ", Stufe " + stufe + ")");
             if (!this._weltBakeErlaubt(this._archZiegelD2(entry))) return false; // Fit-Takt (Treffer sind frei)
         }
         const einblenden = entry._ziegelNah === undefined; // fern entstanden (nie in der Mesh-Zone): die Geburt blendet ein
@@ -73895,6 +74020,10 @@ class AnazhRealm {
             key,
             this._archWeltMatrix(entry),
             () => {
+                if (huelle)
+                    return AnazhRealm._huelleMarchDefs(
+                        AnazhRealm._huelleVon(bf.fern, "sicht", "fachwerk:__fern (" + preset + ")")
+                    );
                 const g = new THREE.Group();
                 for (const lf of bf.leaves) {
                     if (!lf || !lf.geom) continue;
@@ -75455,9 +75584,12 @@ class AnazhRealm {
             group = new T.Group();
             for (const m of meshes) {
                 // Beipack (`{ kind: "__…" }`, das Skelett der Kreatur) ist kein Mesh — der Ofen liest es vor dem Bau.
-                // DIE HÜLLE eines Hauses (`__huelle`, Welle L) hängt an der Gruppe: der Flat reicht sie dem Eintrag.
+                // DIE EINE BEIPACK-KARTE (`FOUNDRY_BEIPACK`): jede Hülle des Gesetzbuchs hängt unter ihrem Namen an der
+                // Gruppe — `__huelle` (Welle L: die Kollision der gezeigten Stufe), `__fern` (S3: die Fernform der Stufe 3,
+                // der Welt-March liest sie über `_huelleVon`); der Flat reicht beide weiter.
                 if (m && typeof m.kind === "string" && m.kind.startsWith("__")) {
-                    if (m.kind === "__huelle" && m.huelle && Array.isArray(m.huelle.boxen)) group._huelle = m.huelle;
+                    const feld = AnazhRealm.FOUNDRY_BEIPACK[m.kind];
+                    if (feld && m.huelle && typeof m.huelle === "object") group[feld] = m.huelle;
                     continue;
                 }
                 const mesh = this._foundryBuildMesh(m);
@@ -75976,6 +76108,9 @@ class AnazhRealm {
     _foundrySchattenGeom(lf) {
         const g = lf && lf.geom;
         if (!g || !g.attributes || !g.attributes.aLodLevel) return g;
+        // Eine ungemaskte Gestalt (Stempel 0: Haus, Ausstattung — die Stufe 3 wirft in jeder Ferne) bleibt ungemaskt: der
+        // Zwilling trägt ihre Geometrie selbst, kein Stempel 3 (der blendete im L1→L2-Band der Bäume aus)
+        if (g.attributes.aLodLevel.count > 0 && g.attributes.aLodLevel.array[0] === 0) return g;
         if (lf._schattenGeom) return lf._schattenGeom;
         const z = new THREE.BufferGeometry();
         for (const k in g.attributes) z.setAttribute(k, g.attributes[k]);
@@ -76012,19 +76147,24 @@ class AnazhRealm {
         if (variant == null) return null; // Buch kalt: wie ein ladendes Asset (der Tick baut nach)
         // DIE EINE LOD-AUTORITÄT: die Distanz-LOD (`_tickArchitectureLOD` → `entry._lodLevel`) FÜHRT, die
         // Foundry serviert genau diese Stufe; `lodOverride` reicht sie herein (sonst Distanz-Schätzung).
+        // DER WURF- UND FERN-RUF (S3 haus): nennt `lodOverride` eine NUR-WURF-Stufe (B2 Stufe 3), baut der Flatten genau
+        // sie — die Klammer 0..2 und die Stufen-Klammer gelten nur dem Distanz-Wunsch (vorher klemmte der Wurf-Ruf der L2
+        // auf die L2 selbst und rief sich ohne Ende).
         let lod = Number.isFinite(lodOverride) ? lodOverride : this._foundryLodForEntry(entry);
-        if (lod < 0) lod = 0;
-        if (lod > 2) lod = 2;
-        // L2 für BÄUME = das Studio-Billboard (bakeImpostorAtlas), nie die schwere L2-Geometrie (~15k Verts ×
-        // Fernwald = Overdraw); Fels/Kristall/Blume bleiben L2-Geometrie. Der fimp-Key trägt den ov-Hash: ein
-        // gestempelter Eintrag zieht seine EIGENE Karte, bis dahin geprägte Geometrie (nie die ungeprägte).
-        if (lod >= 2 && this._foundryPresetIsTree(preset)) return this._foundryBuildImpostorFlat(entry, preset);
-        // DIE EINE STUFEN-KLAMMER (`_foundryDeclaredStage`, Vertrags-Daten `PORTAL_RENDER_CONFIG.lod.kindStages`,
-        // live) für JEDE Art, baumartig oder nicht: die GRÖSSTE deklarierte Stufe ≤ der Distanz-Wahl, sonst die
-        // kleinste — nie eine Stufe, die das Studio nicht vorsieht. Befund 02.10. (Werkbank, Mess-Wiese): der
-        // Strauch (shrub [1,2]) galt als baumartig, der Baum-Zweig klemmte nur Ein-Stufen-Arten — nahe Büsche
-        // standen mit L0 (112k Dreiecke je Busch statt 45k, 25 s Worker-Bau einer nie deklarierten Stufe).
-        lod = this._foundryServierStufe(preset, lod);
+        if (!(Number.isFinite(lodOverride) && this._foundryNurWurf(preset, lodOverride))) {
+            if (lod < 0) lod = 0;
+            if (lod > 2) lod = 2;
+            // L2 für BÄUME = das Studio-Billboard (bakeImpostorAtlas), nie die schwere L2-Geometrie (~15k Verts ×
+            // Fernwald = Overdraw); Fels/Kristall/Blume bleiben L2-Geometrie. Der fimp-Key trägt den ov-Hash: ein
+            // gestempelter Eintrag zieht seine EIGENE Karte, bis dahin geprägte Geometrie (nie die ungeprägte).
+            if (lod >= 2 && this._foundryPresetIsTree(preset)) return this._foundryBuildImpostorFlat(entry, preset);
+            // DIE EINE STUFEN-KLAMMER (`_foundryDeclaredStage`, Vertrags-Daten `PORTAL_RENDER_CONFIG.lod.kindStages`,
+            // live) für JEDE Art, baumartig oder nicht: die GRÖSSTE deklarierte Stufe ≤ der Distanz-Wahl, sonst die
+            // kleinste — nie eine Stufe, die das Studio nicht vorsieht. Befund 02.10. (Werkbank, Mess-Wiese): der
+            // Strauch (shrub [1,2]) galt als baumartig, der Baum-Zweig klemmte nur Ein-Stufen-Arten — nahe Büsche
+            // standen mit L0 (112k Dreiecke je Busch statt 45k, 25 s Worker-Bau einer nie deklarierten Stufe).
+            lod = this._foundryServierStufe(preset, lod);
+        }
         // Gestempelter Welt-Eintrag (entry.studioOv) baut sein Unikat: der ov-Hash trennt Cache-Key UND (via
         // leafKey) den Gruppen-Key — geprägt und ungeprägt vergiften sich nie. Der Request reicht ov als
         // 4. Arg. Ohne Stempel: der Körper-Schlüssel ohne ov.
@@ -76216,7 +76356,15 @@ class AnazhRealm {
                 }
             }
             group._foundryFlat = leaves.length
-                ? { instanceable: true, reason: "foundry", foundry: true, lod, leaves, huelle: group._huelle || null }
+                ? {
+                      instanceable: true,
+                      reason: "foundry",
+                      foundry: true,
+                      lod,
+                      leaves,
+                      huelle: group._huelle || null,
+                      fern: group._fern || null,
+                  }
                 : false;
         }
         return group._foundryFlat;
@@ -87491,9 +87639,10 @@ class AnazhRealm {
         // eine generische LOD-Wahl — auch ohne PARAMS, für Rezept- UND Bauplan-Auswahl. Sie reist als
         // ws.recipeLod bzw. bp._recipeLod in DIESELBE Vorschau-Quelle (kein kind-Literal-if).
         const _cfgLodW = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.lod;
+        // (eine NUR-WURF-Stufe wird nie gezeigt — die Wahl bietet sie nicht an)
         const stages =
             rec && _cfgLodW && _cfgLodW.kindStages && Array.isArray(_cfgLodW.kindStages[rec.kind])
-                ? _cfgLodW.kindStages[rec.kind]
+                ? _cfgLodW.kindStages[rec.kind].filter((st) => !AnazhRealm._budgetNurWurf(rec.kind, st))
                 : null;
         const hasParams = Array.isArray(params) && params.length > 0;
         const hasStages = !!(stages && stages.length > 1);
@@ -97361,6 +97510,16 @@ AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
     Object.freeze(["aH0", 1]),
     Object.freeze(["aH0L", 1]),
 ]);
+// Die Attribute eines Wurf-Satz-Bereichs (`bauWurf`, S3): was der EINE Schatten-Stoff liest — Welt-Lage, die Atlas-Lage
+// (uv; die Stufe 3 trägt 0), die Deckung (aDeckt 1) und die Stufen-Stempel der Dither-Blende (Haus 0 = ungemaskt).
+AnazhRealm.BAU_WURF_ATTR = Object.freeze([
+    Object.freeze(["position", 3]),
+    Object.freeze(["uv", 2]),
+    Object.freeze(["aDeckt", 1]),
+    Object.freeze(["aLodLevel", 1]),
+    Object.freeze(["aH0", 1]),
+    Object.freeze(["aH0L", 1]),
+]);
 // Die Attribute eines wiegenden Streu-Satz-Bereichs (`_streuSatzArt`, W7): was der wiegende Stoff liest — Welt-Lage,
 // Normale, Farbe × Tint und die Höhe über der Wurzel (`aWiege`, m); er blendet nie, Dither-Stempel trägt er keine.
 AnazhRealm.STREU_SATZ_ATTR = Object.freeze([
@@ -101509,6 +101668,13 @@ AnazhRealm.FOUNDRY_LESEN = [
 // saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527). Ein
 // geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit) — die alte Saison-Platte fällt einmal.
 AnazhRealm.FOUNDRY_PLATTE_FORMAT = 3;
+// DIE EINE BEIPACK-KARTE der Foundry-Antwort (`_foundryBuildGroup`): Beipack-Name → das Feld der Gruppe (der Flat reicht es
+// als `huelle` · `fern` weiter). `__huelle` (Welle L) die Kollision der gezeigten Stufe, `__fern` (S3) die Fernform der Stufe 3
+// — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`).
+AnazhRealm.FOUNDRY_BEIPACK = Object.freeze({ __huelle: "_huelle", __fern: "_fern" });
+// Der Keil der Hüllen-Form im Welt-March: die First-Kante → der Typ der Kapsel-Liste (pB.w; 0 Kasten · 1 Ellipsoid). Der
+// Walm (0..1) reist im Bruchteil (Typ + 0,49 · walm), das WGSL (`sdKeil`) schneidet die zwei Stirnen mit der Dach-Neigung.
+AnazhRealm.HUELLE_KEIL_TYP = Object.freeze({ "+z": 2, "-z": 3, "+x": 4, "-x": 5 });
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Berg-Schatten (feld-natives Hi-Z, s. _archRegionBundleCull): konservativer Sichtlinien-Test

@@ -41,6 +41,9 @@
 //       (jeder Bereich treu, jeder Abschnitt neu gelegt). Befund (echte GPU, Mess-Wiese): der Wasser-Satz hielt in Ruhe
 //       3,25 MB für 0,33 MB Inhalt, nach drei Wander-Schleifen à 1,2 km der Boden-Satz 24,9 statt 16,4 MB, die Bau-Sätze 12,0
 //       statt 1,3 MB. Der Selbsttest fährt die alte Regel (nur der leere Satz kehrt zurück) — sie hält das Hochwasser.
+//   (l) DER WURF-SATZ (S3 haus) — der Satz `bauWurf` (die NUR-WURF-Stufe 3 von Haus und Ausstattung, der EINE Schatten-Stoff)
+//       zieht im Hauptbild 0 Befehle und liegt nur auf SHADOW_TWIN_LAYER; die Kaskade zeichnet ihn. Selbsttest: derselbe
+//       Satz ohne die Marke `nurWurf` zeichnet im Hauptbild — die Wand nennt ihn.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Zensus mit einem `voxelChunk:0,0:lod0`
 // direkt in der Szene, einer Gruppe `x#0@p:0,0`, einer selbst zeichnenden Streu-Senke, einem Block ohne Bereich, einer
 // Fern-Deko, einer
@@ -980,6 +983,49 @@ function check(name, ok, detail) {
             };
             res.belegt = belegt(false);
             res.belegtAlt = belegt(true);
+            // (l) DER WURF-SATZ (S3 haus, `bauWurf` — die NUR-WURF-Stufe 3 von Haus und Ausstattung im Satz ihres Schatten-
+            // Stoffs): im Hauptbild wählt er keine Zelle und zieht keinen Befehl (drawRange 0), sein Mesh liegt NUR auf
+            // SHADOW_TWIN_LAYER, eine Kaskade zeichnet seine Zelle. Selbsttest: derselbe Satz ohne die Marke `nurWurf` zeichnet
+            // im Hauptbild — die Wand nennt ihn.
+            const wurfProbe = (marke) => {
+                const A = r.constructor;
+                const art = "bauWurf|probe" + (marke ? "" : "-alt") + "|S";
+                if (!s.satzStoffe) s.satzStoffe = new Map();
+                s.satzStoffe.set(art, {
+                    name: "bauWurf",
+                    mat: new T.MeshBasicMaterial(),
+                    wurf: true,
+                    nurWurf: marke,
+                    attr: A.BAU_WURF_ATTR,
+                });
+                const g = new T.BoxGeometry(4, 4, 4);
+                const n = g.attributes.position.count;
+                g.setAttribute("aDeckt", new T.BufferAttribute(new Float32Array(n).fill(1), 1));
+                for (const a of ["aLodLevel", "aH0", "aH0L"])
+                    g.setAttribute(a, new T.BufferAttribute(new Float32Array(n), 1));
+                const vor = new T.Vector3();
+                s.camera.getWorldDirection(vor);
+                const p = s.camera.position.clone().addScaledVector(vor, 12);
+                const im = new T.Matrix4().makeTranslation(p.x, p.y, p.z).toArray();
+                r._chunkSatzEin(art, "probe#wurf", r._satzBlock(g, im, null, 1, A.BAU_WURF_ATTR, "probe"), "0,0");
+                const satz = s.chunkSaetze.get(art);
+                r._tickChunkSatz();
+                r._passSicht(s.camera, false);
+                const haupt = satz.geom.drawRange.count;
+                const c = ortho(120);
+                S.m.multiplyMatrices(c.projectionMatrix, c.matrixWorldInverse);
+                S.frustum.setFromProjectionMatrix(S.m, c.coordinateSystem);
+                r._passWahlLage(S, c, 0);
+                r._chunkSatzPass(c, false, 0, S);
+                const kaskade = satz.geom.drawRange.count;
+                r._chunkSatzPass(c, true, -1, S);
+                r._passSicht(s.camera, true);
+                const o = { haupt, kaskade, schicht: satz.mesh.layers.mask, soll: 1 << A.SHADOW_TWIN_LAYER };
+                r._chunkSatzAus(art, "probe#wurf");
+                return o;
+            };
+            res.wurf = wurfProbe(true);
+            res.wurfAlt = wurfProbe(false);
             return res;
         });
     } catch (e) {
@@ -1141,6 +1187,18 @@ function check(name, ok, detail) {
         "(k) Selbsttest: die alte Regel (nur ein leerer Satz kehrt zurück) hält das Hochwasser des Boden-Satzes — die Wand nennt es",
         !!ba && ba.nach[0] === ba.gross[0] && ba.nach[0] > ba.ziel * 1.5,
         ba ? `Boden-Satz hält ${ba.nach[0]} Vertices für ${ba.inhalt} Inhalt (Ziel ${ba.ziel})` : "keine Messung"
+    );
+    const wu = out.wurf,
+        wa2 = out.wurfAlt;
+    check(
+        "(l) WURF-SATZ — der nurWurf-Satz (bauWurf) zieht im Hauptbild 0 Befehle, liegt nur auf SHADOW_TWIN_LAYER, die Kaskade zeichnet ihn",
+        !!wu && wu.haupt === 0 && wu.kaskade > 0 && wu.schicht === wu.soll,
+        JSON.stringify(wu)
+    );
+    check(
+        "(l) Selbsttest: derselbe Satz ohne die Marke nurWurf zeichnet im Hauptbild — die Wand nennt ihn",
+        !!wa2 && wa2.haupt > 0,
+        wa2 ? `Hauptbild ${wa2.haupt} Indizes ohne die Marke` : "keine Messung"
     );
     check("(g) kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
     if (errs.length) {
