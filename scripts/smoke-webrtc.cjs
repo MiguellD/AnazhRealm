@@ -411,10 +411,13 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         // B fordert den Welt-Resync an.
         const resync = await pageB.evaluate(() => window.anazhRealm._p2pRequestWorldResync());
         check("B: Welt-Resync angefordert", resync && resync.ok === true, JSON.stringify(resync));
-        // B übernimmt A's Welt → B's worldId wird zu A's worldId.
+        // B übernimmt A's Welt durch die Tür (`_weltBetreten`): sie liegt unter A's worldId im Speicher, der Aktiv-Zeiger
+        // zeigt auf sie (der Reload ist im Test angehalten — die Seite lädt sie nie in sich).
         await waitFor(
             pageB,
-            (wid) => window.anazhRealm.state.worldMeta.worldId === wid,
+            (wid) =>
+                window.anazhRealm.activeWorldGet() === wid &&
+                !!localStorage.getItem(window.anazhRealm.worldStorageKey(wid)),
             15000,
             "B übernimmt A's Welt über den chunked Mesh-Transfer",
             worldIdA

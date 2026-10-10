@@ -11960,27 +11960,36 @@ async function checkBandRing11AndW7Mesh(ctx) {
         const noHost = r._p2pRequestWorldResync();
         out.resyncNoHost = noHost.ok === false && noHost.reason === "no_host";
 
-        // _p2pApplyWorldSnapshot extrahiert: setzt role guest +
-        // ruft activeWorldSet (sonst landet ein Reload in der
-        // ALTEN Welt). loadState + activeWorldSet gestubbt.
-        const origLoad = r.loadState;
-        const origActive = r.activeWorldSet;
-        let activeSetTo = null;
-        r.loadState = () => {
-            // loadState würde worldMeta.worldId setzen — wir
-            // simulieren die Host-worldId.
-            r.state.worldMeta.worldId = "host-world-xyz";
-        };
-        r.activeWorldSet = (wid) => {
-            activeSetTo = wid;
-        };
+        // _p2pApplyWorldSnapshot geht durch DIE TÜR `_weltBetreten`: ein Snapshot ohne worldId bekommt seine eigene (nie
+        // den Platz der Welt der Seite), liegt mit role guest + hostInfo im Speicher, der Aktiv-Zeiger zeigt auf ihn (sonst
+        // landet ein Reload in der ALTEN Welt); die Seite lädt ihn nicht in sich. `_testNoReload` hält den Reload an.
+        const zeiger0 = r.activeWorldGet();
+        const welt0 = r.state.worldMeta.worldId;
         p2p.role = "host";
         p2p._testNoReload = true;
         const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} });
-        out.applyExtractedWorks = applyRes.ok === true && p2p.role === "guest";
-        out.applySetsActiveWorld = activeSetTo === "host-world-xyz";
-        r.loadState = origLoad;
-        r.activeWorldSet = origActive;
+        let abgelegt = null;
+        try {
+            abgelegt = applyRes.ok ? JSON.parse(localStorage.getItem(r.worldStorageKey(applyRes.worldId))) : null;
+        } catch (_e) {
+            abgelegt = null;
+        }
+        out.applyExtractedWorks =
+            applyRes.ok === true &&
+            p2p.role === "guest" &&
+            !!abgelegt &&
+            abgelegt.worldMeta.role === "guest" &&
+            abgelegt.worldMeta.hostInfo.peerId === "hostX";
+        out.applySetsActiveWorld =
+            !!applyRes.worldId &&
+            applyRes.worldId !== welt0 &&
+            r.activeWorldGet() === applyRes.worldId &&
+            r.state.worldMeta.worldId === welt0;
+        if (applyRes.worldId) {
+            localStorage.removeItem(r.worldStorageKey(applyRes.worldId));
+            r.worldsIndexRemove(applyRes.worldId);
+        }
+        r.activeWorldSet(zeiger0);
 
         // W7 P2 Härtung — Rate-Limit-Datenstruktur + Konstante.
         out.pullCooldownFields =
@@ -12027,8 +12036,8 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("W7 P2: ein Stück ohne laufenden Pull wird verworfen", w7p2Results.chunkRejectsWhenNotPending);
         check("W7 P2: Resync ohne Mesh → no_mesh", w7p2Results.resyncNoMesh);
         check("W7 P2: Resync ohne host-Peer → no_host", w7p2Results.resyncNoHost);
-        check("W7 P2: _p2pApplyWorldSnapshot setzt die Guest-Rolle", w7p2Results.applyExtractedWorks);
-        check("W7 P2: _p2pApplyWorldSnapshot setzt den Aktiv-Welt-Zeiger", w7p2Results.applySetsActiveWorld);
+        check("W7 P2: _p2pApplyWorldSnapshot legt die Host-Welt als Gast ab (role guest + hostInfo)", w7p2Results.applyExtractedWorks);
+        check("W7 P2: _p2pApplyWorldSnapshot gibt einer Welt ohne worldId ihre eigene und setzt den Aktiv-Zeiger (die Seite bleibt)", w7p2Results.applySetsActiveWorld);
         check("W7 P2: world-pull Rate-Limit-Struktur + Cooldown-Konstante", w7p2Results.pullCooldownFields);
         check("W7 P2: Resync-Knopf im DOM", w7p2Results.resyncButtonExists);
     }

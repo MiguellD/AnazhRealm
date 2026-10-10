@@ -100,11 +100,20 @@ Kein Import-Pfad übernimmt Abgeleitetes als Wahrheit:
 - **Die Weltgrenze:** eine geladene Welt ERSETZT das `worldMeta` der Seite — die Vorlage,
   darüber ihr eigenes (`_weltMetaWechsel`, der Restore jedes Ladens). Aus der Welt davor reist
   nur, was `AnazhRealm.WELT_GRENZE` beim Namen nennt: in die Lücken einer geladenen Welt ihr
-  Speicher-Platz (`worldId`, `slug`, `bornAt`), in eine neue Welt die Wahl des Schöpfers
-  (`visibility`, `creator`); die Gedächtnisse der Seite, die welt-eigene Felder spiegeln,
-  fallen mit dem `worldMeta`. Jede Tür, durch die eine andere Welt die Seite betritt (Welt-Tor
-  ersetzen, Snapshot eines Mitspielers), legt sie, wie sie kam, auf ihren Speicher-Platz und
-  lädt neu — der Speicher trägt nie die Mischung der Seite (`gate:weltgrenze`, sechs Wege).
+  Speicher-Platz (`worldId`, `slug`, `bornAt` — beim Boot der Platz der aktiven Welt: ein Save
+  ohne `worldId` oder ohne `worldMeta` ist die Welt DIESES Platzes, der Boot vergibt ihm keine
+  neue Id), in eine neue Welt die Wahl des Schöpfers (`visibility`, `creator`); die
+  Gedächtnisse der Seite, die welt-eigene Felder spiegeln, fallen mit dem `worldMeta`.
+- **Die Tür:** eine andere Welt betritt die Seite nur durch `_weltBetreten` (Welt-Tor
+  ersetzen, Snapshot eines Mitspielers, world-pull) — nie lädt die Seite sie in sich, und
+  `loadState` legt nichts im Speicher ab. Ohne `worldId` bekommt sie ihre eigene, nie den Platz
+  der Welt davor (die Welt davor bleibt unter ihrer Id); sie liegt, wie sie kam, unter ihrer Id
+  (`_weltAblegen`, mit Probe). Misslingt die Ablage (Quota), bleibt die Seite in ihrer Welt und
+  sagt es laut — kein Reload in einen alten Stand. Jeder Welt-Wechsel (Tür, Neue Welt, Wechsel,
+  daneben-und-springen, Fusion, Beitritt per Einladung und Adress-Portal) lädt über
+  `_weltWechselNeuLaden` neu: ab dort verweigert `saveState` — jeder Speicher-Weg der lebenden
+  Welt geht durch ihn —, bis die Seite stirbt; der Speicher trägt nie die Mischung der Seite und
+  der Aktiv-Zeiger nie die alte Welt (`gate:weltgrenze`).
 
 ## §4 · Die Versions-Regel (EINE Semantik)
 
