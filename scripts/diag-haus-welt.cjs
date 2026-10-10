@@ -32,7 +32,7 @@
 //   W8  DIE LICHTUNG (Entscheid D3): die Genesis-Plattform ist ein Grundriss derselben Wand — über ihrer Scheibe keine Krone
 //       (Wald-Gesetz × Welt-Skala) eines Natur-Eintrags oder einer Streu-Zelle, keine Kachel-Pflanze auf ihr; der Hain der
 //       KI wächst weder dort noch im Grundriss eines Dorf-Hauses (Gegenprobe 150 m weiter: er wächst), jede Absage steht im
-//       Programm-Log (natur_weicht) und der Satz „pflanz mir eine eiche" auf der Plattform nennt die Lichtung, nie
+//       Programm-Log (das Ergebnis des Setz-Ops, `ergebnis`) und der Satz „pflanz mir eine eiche" auf der Plattform nennt die Lichtung, nie
 //       „gewachsen". Selbsttests: die Wand ohne die Lichtung, der Wald und der Hain der KI an der Wand vorbei, die Wand still.
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js — GENAU die Probe dieses Defekts wird rot;
 //   die Welt eines Selbsttests fährt nur die Phase seines Täters (haus · w4 · w4b · w6), der Hauptlauf alle.
@@ -95,7 +95,7 @@ const BASIS = {
     // eine Quelle geht an der Wand vorbei: die Wald-Schlange setzt ihre Würfe direkt
     lichtungwald: [["            this._naturSetzen(task.name, task.position, task.opts);", "            this.spawnArchitecture(task.name, task.position, task.opts);"]],
     // eine Quelle geht an der Wand vorbei: der Hain der KI (`spawn_studio`) setzt seine Natur direkt — an der Plattform UND im Haus
-    kihain: [["if (natur ? this._naturSetzen(name, ort, opts, null, wand) : this.spawnArchitecture(name, ort, opts))", "if (this.spawnArchitecture(name, ort, opts))"]],
+    kihain: [["? this._naturSetzen(name, ort, opts, null, absage)", "? this.spawnArchitecture(name, ort, opts)"]],
     // die Wand nimmt still: der Hain fällt ohne Absage — der Chat sagte „gewachsen" bei 0 Bäumen
     stumm: [["            if (absage) absage(wo);\n", ""]],
     // die Fernstufe trägt ihre Bounding-Box statt der Solids des Gesetzbuchs (das Gesetzbuch reist über den Worker)
@@ -632,8 +632,8 @@ async function proben(phasen) {
                     try {
                         const res = r.dslRun(prog, { source: "test" });
                         for (const e of res.log || [])
-                            if (e.event === "natur_weicht")
-                                for (const k of ["haus", "lichtung"]) weicht[k] += (e.grundriss && e.grundriss[k]) || 0;
+                            if (e.event === "ergebnis")
+                                for (const k of ["haus", "lichtung"]) weicht[k] += (e.gruende && e.gruende[k]) || 0;
                     } catch (e) {
                         fehler.push(String(e).slice(0, 80));
                     }
@@ -1060,9 +1060,9 @@ function urteil(o) {
             if (ueber.length) f.push(`W8 Lichtung: über der Genesis-Scheibe (r ${w.plattform[2]} m) ${ueber.join(", ")}`);
             if (w.kiHaus) f.push(`W8 Hain im Haus: ${w.kiHaus} Bäume der KI im Grundriss von ${w.kiHausTyp}`);
             const stumm = [];
-            if (!w.kiHaus && !(w.kiWeichtHaus >= 1)) stumm.push(`der Hain im Haus fiel ohne Eintrag (natur_weicht haus ${w.kiWeichtHaus})`);
+            if (!w.kiHaus && !(w.kiWeichtHaus >= 1)) stumm.push(`der Hain im Haus fiel ohne Eintrag (ergebnis haus ${w.kiWeichtHaus})`);
             if (!w.kiPlattform && !(w.kiWeichtPlattform >= 1))
-                stumm.push(`der Hain auf der Plattform fiel ohne Eintrag (natur_weicht lichtung ${w.kiWeichtPlattform})`);
+                stumm.push(`der Hain auf der Plattform fiel ohne Eintrag (ergebnis lichtung ${w.kiWeichtPlattform})`);
             if (w.chatGewachsen === 0 && !(/Lichtung/.test(w.chatSatz || "") && !/gewachsen|gepflanzt/.test(w.chatSatz || "")))
                 stumm.push(`der Chat sagt „${w.chatSatz}" bei 0 Bäumen (Soll: die Lichtung benannt, nie „gewachsen")`);
             if (w.chatBaeume) stumm.push(`der Satz pflanzte ${w.chatBaeume} Bäume über die Scheibe`);

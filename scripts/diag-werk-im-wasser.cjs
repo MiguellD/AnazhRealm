@@ -36,14 +36,21 @@
 //       See, „pflanz mir sechs birken" (bis zwei Teil-Ergebnisse). Befund am Kopf 047a7def: „6× Birke aus dem Studio vor dir
 //       gewachsen — 4 davon wuchsen nicht" bei 2 gesetzten (die gewünschte Zahl). Soll: der Chat sagt die tatsächliche Zahl
 //       („2 von 6 Birke gewachsen — 4 nicht: …"), bei 0 „nichts", die gewünschte nur, wenn alles steht.
+//   E — DAS ERGEBNIS JEDES SETZ-OPS (Gegenprüfung Runde 3): je Op ein erzwungener Fehl-Grund, gesprochen wie der Spieler —
+//       „spawne kreaturen 10" an der Obergrenze (3 frei, 0 frei), Tempel und Fraktal bei kaltem Buch, Damm und Wasserfall
+//       ohne Bauplan, der Tempel mitten im See, „baue dorf hier" im See (es folgt). Befund am Kopf 0302a6c4: „10 Kreaturen
+//       gespawnt" bei 3 und 0, „tempel vor dir gebaut" bei 0, das Fraktal baute bei kaltem Buch still 43 Wasserfälle,
+//       „wasserfall vor dir gebaut" bei 0, „dorf vor dir gebaut" sofort bei 0 Häusern. Soll: die tatsächliche Zahl mit dem
+//       Grund aus der EINEN Tafel (`SETZ_GRUND`), nie der Wunsch, nie eine Absage ohne Grund; das Dorf sagt „wird gebaut" und
+//       meldet dann die Häuser, die stehen. Statisch (L): jeder Setz-Op legt `_setzErgebnis` ins Log, keine Wurzel sagt still ab.
 //   R — DAS DORF DES NEXUS AM SEERAND (Gegenprüfung Runde 3): Same 1500797043 bei −1138/−1060, der Spieler am Rand des
 //       Plans (der Anker bleibt der verlangte Ort), ein haus_provenzalisch bei −1129/−1099 am See; die Häuser bekommen ihre
-//       Hülle, die Chunks am Rand entstehen neu, 900 Takte. Befund am Kopf f5b331ae: 1 Invalidierung, 2 Chunks wach, nasse
+//       Hülle, die Chunks am Rand entstehen neu, 600 Takte. Befund am Kopf f5b331ae (900 Takte): 1 Invalidierung, 2 Chunks wach, nasse
 //       Punkte (±60 m) 3 019 → 2 752, gezeichnete Spalten 2 562 → 2 604 — die Weck-Frage las das Gesetz samt Rand-Füllung, die
 //       Zellen dort sind trocken. Soll: 0 Invalidierungen, das Wasser bleibt (± 1 %).
 //   D — DER DAMM ÜBERSTEHT DEN RELOAD (Gegenprüfung Runde 2; eigener Browser-Kontext, frische Welt): der Damm des Studios
-//       quer über den Fluss bei der Furt, 1800 Takte, gespeichert, neu geladen, 1800 Takte, abgerissen. Befund am Kopf
-//       e162430b: 3 574 nasse Punkte (±40 m) vor dem Reload, 1 557 danach (ohne Damm 1 565), der Abbau weckte den Automaten
+//       quer über den Fluss bei der Furt, 1200 Takte, gespeichert, neu geladen, 1200 Takte, abgerissen. Befund am Kopf
+//       e162430b (1800 Takte): 3 574 nasse Punkte (±40 m) vor dem Reload, 1 557 danach (ohne Damm 1 565), der Abbau weckte den Automaten
 //       nicht (0). Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung).
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
 //       Land); in 0,61 m aus 12 m/s nach 1 s ≤ 6 m/s; Vollgas im Wasser endet im Gleichgewicht des Gesetzes
@@ -157,6 +164,41 @@ function urteil(b) {
                 );
             else if (x.gesetzt === 0 && !/nichts/.test(x.chat))
                 v.push(`C: der Satz sagt nicht, dass nichts steht — „${x.chat}" bei 0 von ${x.gewollt} ${ort}`);
+        }
+    }
+    // E
+    const E = b.setzen;
+    if (!E || E.fehler) v.push(`E: ${E ? E.fehler : "die Setz-Probe lief nicht"}`);
+    else {
+        for (const x of E.faelle || []) {
+            const wo = `${x.name} („${x.satz}")`;
+            if (!(x.gesetzt < x.gewollt)) {
+                v.push(`E LEER: ${wo} setzte ${x.gesetzt} von ${x.gewollt} — der Fehl-Grund griff nicht`);
+                continue;
+            }
+            if (x.chat.includes(x.wunsch))
+                v.push(
+                    `E: ${wo} — der Satz sagt den Wunsch „${x.wunsch}" bei ${x.gesetzt} von ${x.gewollt}: „${x.chat}"`
+                );
+            else if (x.gesetzt > 0 ? !x.chat.includes(`${x.gesetzt} von ${x.gewollt}`) : !/nichts/.test(x.chat))
+                v.push(
+                    `E: ${wo} — der Satz nennt die tatsächliche Zahl nicht (${x.gesetzt} von ${x.gewollt}): „${x.chat}"`
+                );
+            else if (!x.chat.includes(x.grund))
+                v.push(`E: ${wo} — der Satz nennt den Grund nicht („${x.grund}"): „${x.chat}"`);
+            if (/ohne benannten Grund/.test(x.chat)) v.push(`E: ${wo} — eine Absage ohne Grund: „${x.chat}"`);
+        }
+        const DF = E.dorf;
+        if (!DF) v.push("E: das Dorf im See lief nicht");
+        else {
+            if (/vor dir gebaut/.test(DF.sofort) || !/wird gebaut/.test(DF.sofort))
+                v.push(
+                    `E: das Dorf im See — der Satz sagt sofort „${DF.sofort}" bei ${DF.sofortGesetzt} stehenden Häusern (Soll: „wird gebaut")`
+                );
+            const zahl = /: (\d+) (?:Haus|Häuser)\./.exec(DF.echo || "");
+            if (!DF.echo) v.push("E LEER: das Dorf im See meldete sein Ergebnis nicht");
+            else if (zahl ? Number(zahl[1]) !== DF.haeuser : DF.haeuser > 0)
+                v.push(`E: das Dorf im See meldet „${DF.echo}" bei ${DF.haeuser} stehenden Häusern`);
         }
     }
     // R
@@ -319,6 +361,37 @@ function leserUrteil(srcRoh) {
         if (!body || !/_werkOrtSuchen\(/.test(body))
             v.push(`${wer} sucht keinen Ort, der das ganze Fundament trägt (\`_werkOrtSuchen\`)`);
     }
+    // DAS ERGEBNIS JEDES SETZ-OPS (Gegenprüfung Runde 3): jeder Op legt `_setzErgebnis` ins Log, die Wurzeln der Werke und der
+    // Kreaturen nennen jede Absage (kein stilles `return null`), der Satz liest das Protokoll — `natur_weicht` fiel.
+    for (const op of [
+        "spawn_creature",
+        "spawn_tree",
+        "spawn_island",
+        "spawn_ufo",
+        "spawn_village",
+        "spawn_temple",
+        "spawn_waterfall",
+        "spawn_blueprint",
+        "spawn_fractal",
+    ]) {
+        const body = fnBody(src, new RegExp(`\\n {12}${op}: \\(\\[[^\\]]*\\], ctx\\) => \\{`));
+        if (!body || !new RegExp(`_setzErgebnis\\(\\s*ctx,\\s*"${op}"`).test(body))
+            v.push(`der Setz-Op \`${op}\` legt sein Ergebnis nicht ins Log (\`_setzErgebnis\`)`);
+    }
+    const studio = fnBody(src, /\n {4}_dslSpawnStudioItems\([^)]*\) \{/);
+    if (!studio || !/_setzErgebnis\(\s*ctx,\s*"spawn_studio"/.test(studio))
+        v.push("der Setz-Op `spawn_studio` legt sein Ergebnis nicht ins Log (`_setzErgebnis`)");
+    for (const [wer, re] of [
+        ["spawnArchitecture", /\n {4}spawnArchitecture\(type, position, opts = \{\}\) \{/],
+        ["spawnCreatureAt", /\n {4}spawnCreatureAt\([^)]*\) \{/],
+    ]) {
+        const body = fnBody(src, re);
+        // jedes `return null` außer dem EINEN in `nein` (der Absage mit Grund)
+        const ohneNein = body ? body.replace(/const nein = \(grund\) => \{[\s\S]*?return null;\s*\};/, "") : "";
+        if (!body || !/const nein = \(grund\) =>/.test(body) || /return null;/.test(ohneNein))
+            v.push(`die Wurzel \`${wer}\` sagt still ab (\`return null\` ohne Grund über \`opts.absage\`)`);
+    }
+    if (/natur_weicht/.test(src)) v.push("das alte Protokoll `natur_weicht` lebt neben dem Ergebnis");
     const kraefte = src.match(/vc\.fahrKraefte\([\s\S]*?\);/g) || [];
     if (kraefte.length < 2) v.push(`nur ${kraefte.length} Aufrufe von vc.fahrKraefte gefunden`);
     for (const k of kraefte)
@@ -934,7 +1007,9 @@ async function probe(A) {
                     E.faelle.push({ name, satz, gewollt, gesetzt, wunsch, grund, chat });
                     for (const e of neuA) r.removeArchitecture(e);
                 };
-                const G = r.constructor.SETZ_GRUND;
+                // die Gründe aus der EINEN Tafel des Stamms (fehlt sie, nennt der Satz keinen — das Urteil sagt es)
+                const T = r.constructor.SETZ_GRUND || {};
+                const G = new Proxy(T, { get: (t, k) => t[k] || `(kein Grund „${String(k)}" in SETZ_GRUND)` });
                 stelle(cx + 40, cz + 40);
                 // E1 die Obergrenze der Kreaturen: noch 3 Plätze, dann keiner
                 const maxAlt = st.maxCreatures;
@@ -1270,6 +1345,34 @@ function selbsttest() {
         leser: [],
         wagen: { vEin: 11, v1: 3, tiefe: 0.61, kameraUnter: 0, kameraTiefe: 0 },
         damm: { id: 504, x: -937, z: -1064, w0: 1565, w1: 3574, w2: 3560, abriss: 1, takte: 1800 },
+        setzen: {
+            faelle: [
+                {
+                    name: "Kreaturen an der Obergrenze (3 frei)",
+                    satz: "spawne kreaturen 10",
+                    gewollt: 10,
+                    gesetzt: 3,
+                    wunsch: "10 Kreaturen gespawnt",
+                    grund: "die Welt trägt nicht mehr Kreaturen",
+                    chat: "> spawne kreaturen 103 von 10 Kreaturen erschienen — 7 nicht: die Welt trägt nicht mehr Kreaturen (20).",
+                },
+                {
+                    name: "Tempel bei kaltem Buch",
+                    satz: "baue tempel hier",
+                    gewollt: 1,
+                    gesetzt: 0,
+                    wunsch: "tempel vor dir gebaut",
+                    grund: "das Studio-Buch ist noch nicht geladen",
+                    chat: "> baue tempel hierHier steht nichts: das Studio-Buch ist noch nicht geladen.",
+                },
+            ],
+            dorf: {
+                sofort: "> baue dorf hierDas Dorf wird gebaut — es meldet sich, wenn es steht.",
+                sofortGesetzt: 0,
+                echo: '„Villaalto" steht vor dir: 4 Häuser.',
+                haeuser: 4,
+            },
+        },
         rand: {
             haeuser: 9,
             randHaus: "haus_provenzalisch #600 (-1129.0/-1099.0)",
@@ -1376,6 +1479,31 @@ function selbsttest() {
         ],
         ["R leer", (b) => (b.rand.randHaus = null), /R LEER/],
         [
+            "E Wunsch-Zahl der Kreaturen (Befund am Kopf f5b331ae)",
+            (b) => (b.setzen.faelle[0].chat = "> spawne kreaturen 1010 Kreaturen gespawnt (am Spieler)"),
+            /E: Kreaturen an der Obergrenze \(3 frei\) .* der Satz sagt den Wunsch „10 Kreaturen gespawnt" bei 3 von 10/,
+        ],
+        [
+            "E Tempel ohne Grund",
+            (b) => (b.setzen.faelle[1].chat = "> baue tempel hierHier steht nichts."),
+            /E: Tempel bei kaltem Buch .* der Satz nennt den Grund nicht/,
+        ],
+        [
+            "E Absage ohne Grund",
+            (b) =>
+                (b.setzen.faelle[1].chat =
+                    "> baue tempel hierHier steht nichts: das Studio-Buch ist noch nicht geladen; ohne benannten Grund (das Log der Welt nennt ihn)."),
+            /E: Tempel bei kaltem Buch .* eine Absage ohne Grund/,
+        ],
+        ["E Fehl-Grund griff nicht", (b) => (b.setzen.faelle[1].gesetzt = 1), /E LEER: Tempel bei kaltem Buch/],
+        [
+            "E Dorf sofort gebaut",
+            (b) => (b.setzen.dorf.sofort = "> baue dorf hierdorf vor dir gebaut"),
+            /E: das Dorf im See — der Satz sagt sofort „> baue dorf hierdorf vor dir gebaut" bei 0/,
+        ],
+        ["E Dorf meldet falsch", (b) => (b.setzen.dorf.haeuser = 2), /E: das Dorf im See meldet .* bei 2 stehenden/],
+        ["E Dorf stumm", (b) => (b.setzen.dorf.echo = ""), /E LEER: das Dorf im See meldete/],
+        [
             "C Wunsch-Zahl (der Satz am Kopf e162430b, wie der Chat ihn zeigt)",
             (b) =>
                 (b.ergebnis.versuche[0].chat =
@@ -1468,6 +1596,20 @@ function selbsttest() {
                     "for (const e of this.state.architectures) nahe.push(e);"
                 ),
             /läuft den ganzen Bestand durch/,
+        ],
+        [
+            "Setz-Op ohne Ergebnis (der Tempel)",
+            (s) => s.replace('this._setzErgebnis(ctx, "spawn_temple"', 'this._setzErgebnisX(ctx, "spawn_temple"'),
+            /der Setz-Op `spawn_temple` legt sein Ergebnis nicht ins Log/,
+        ],
+        [
+            "Wurzel sagt still ab (die Obergrenze)",
+            (s) =>
+                s.replace(
+                    'if (this.state.creatures.length >= this.state.maxCreatures) return nein("obergrenze");',
+                    "if (this.state.creatures.length >= this.state.maxCreatures) return null;"
+                ),
+            /die Wurzel `spawnCreatureAt` sagt still ab/,
         ],
         [
             "Damm wacht nur beim Bau",
@@ -1633,8 +1775,9 @@ async function lauf() {
                 [-935, -1070],
             ],
             satzFern: [[-906, -634]],
+            dorfMs: 30000, // E: so lange darf das Dorf im See brauchen, bis es sich meldet
             // R: das Dorf des Nexus am Seerand (Gegenprüfung Runde 3) — Same, Ort, das Haus am Rand, Fenster, Takte
-            rand: { seed: 1500797043, ort: [-1138, -1060], haus: [-1129, -1099], winkel: 200, R: 60, takte: 900 },
+            rand: { seed: 1500797043, ort: [-1138, -1060], haus: [-1129, -1099], winkel: 200, R: 60, takte: 600 },
             nur: argListe("--nur"),
             furt: argListe("--furt") ? argListe("--furt").map(Number) : null,
         });
@@ -1656,7 +1799,7 @@ async function lauf() {
                     waitUntil: "domcontentloaded",
                     timeout: 120000,
                 });
-                const D = { takte: 1800, R: 40 };
+                const D = { takte: 1200, R: 40 };
                 const bau = await p2.evaluate(dammProbe, Object.assign({ phase: "bau", ort: [-935, -1070] }, D));
                 if (bau.fehler) befund.damm = bau;
                 else {
