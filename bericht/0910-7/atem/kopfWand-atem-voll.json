@@ -1,0 +1,39 @@
+{
+ "ergebnis": {
+  "frames": 3665,
+  "jeFrame": {
+   "fd": 0.018,
+   "arch": 0.005,
+   "fol": 0.017,
+   "perf": 0.018,
+   "stempel": 0.126
+  },
+  "stempelIdx": {
+   "0": 455,
+   "1": 65,
+   "4": 2,
+   "5": 18,
+   "6": 7
+  },
+  "genJeFrame": {
+   "k0": 0.02,
+   "k1": 0.008,
+   "haupt": 0.018
+  },
+  "einheitenJeFrame": {
+   "strom": 0.1,
+   "archLod": 34.8,
+   "archCull": 0.1,
+   "nahWiese": 0.1,
+   "nahStreu": 0.1,
+   "streuLod": 13.4,
+   "deckWache": 8.2
+  },
+  "stell": {
+   "fd": 1,
+   "arch": 150,
+   "fol": 216
+  }
+ },
+ "ms": 2
+}

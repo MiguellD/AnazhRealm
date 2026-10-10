@@ -1,0 +1,7 @@
+=== TAKT-ATEM — der Regler atmet, der Takt rechnet nur, was sich ändert ===
+  [37 s] Welt bereit nach 36 s (13 Bäume der Stufen-Wahl, Bestand 129 ruht)
+  [44 s] Welt: {"baeume":13,"saetze":14,"archs":416} · 6961 ms für zwei Läufe zu 280 Takten
+  [44 s] Kopf: {"bestand":416,"takte":280,"dichteJeTakt":0.004,"stempelDichteJeTakt":0.004,"archLodJeTakt":200.1,"sichtHoeheJeTakt":99.818,"foundryHoeheJeTakt":135.157,"lageJeTakt":0.004,"abschnittJeTakt":0.086,"hoehleJeTakt":0.004,"dichteEnde":1}
+  [44 s] Gegenprobe (stoßende Dichte): {"bestand":416,"takte":280,"dichteJeTakt":1,"stempelDichteJeTakt":1,"archLodJeTakt":256,"sichtHoeheJeTakt":127.968,"foundryHoeheJeTakt":145.557,"lageJeTakt":1,"abschnittJeTakt":14,"hoehleJeTakt":1,"dichteEnde":1}
+
+✅ GRÜN — unter atmendem Regler (280 gezählte Takte auf stehenden Stufen 1 → 0,1 → 1) wechselt die Dichte in 0.4 % der Takte, die Stufen-Wahl geht 200.1 von 416 Einträgen je Takt, die Lage des Hauptbilds fällt in 0.4 % der Takte; die stoßende Dichte der Gegenprobe fällt als DICHTE ATMET.

@@ -1,0 +1,10 @@
+=== TAKT-ATEM — der Regler atmet, der Takt rechnet nur, was sich ändert ===
+  [36 s] Welt bereit nach 35 s (13 Bäume der Stufen-Wahl, Bestand 129 ruht)
+  [43 s] Welt: {"baeume":13,"saetze":14,"archs":416} · 7234 ms für zwei Läufe zu 280 Takten
+  [43 s] Kopf: {"bestand":416,"takte":280,"dichteJeTakt":1,"stempelDichteJeTakt":1,"archLodJeTakt":200.1,"sichtHoeheJeTakt":99.818,"foundryHoeheJeTakt":127.196,"lageJeTakt":1,"abschnittJeTakt":11.657,"hoehleJeTakt":1,"dichteEnde":0.996}
+  [43 s] Gegenprobe (stoßende Dichte): {"bestand":416,"takte":280,"dichteJeTakt":1,"stempelDichteJeTakt":1,"archLodJeTakt":256,"sichtHoeheJeTakt":127.968,"foundryHoeheJeTakt":146.057,"lageJeTakt":1,"abschnittJeTakt":14,"hoehleJeTakt":1,"dichteEnde":0.996}
+
+❌ ROT — 3 Verletzung(en):
+   • DICHTE ATMET: _foliageDensityScale wechselt in 100.0 % der Takte (Soll ≤ 10.0 %) — der Stand-Stempel stieg in 100.0 % der Takte allein durch sie
+   • STAND WACH: die Dichte weckt über den Stand-Stempel die Fege-Takte in 100.0 % der Takte (Soll ≤ 10.0 %) — _tickArchitectureLOD geht 200.1 von 416 Einträgen je Takt, _lodTreeVisHeight 99.818, _foundrySichtHoehe 127.196 je Takt
+   • LAGE FÄLLT: die Lage des Hauptbilds fällt in 100.0 % der Takte (Soll ≤ 10.0 %) — _chunkSatzAbschnitt 11.657, _hoehlenSicht 1 je Takt

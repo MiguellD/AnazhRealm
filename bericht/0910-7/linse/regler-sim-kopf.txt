@@ -1,0 +1,21 @@
+
+> anazhrealm@18.538.0 gate:regler-sim
+> node scripts/diag-regler-sim.cjs
+
+
+=== Regler-Simulation mit ehrlichen Zahlen (fold → regulate → actuate, die echte Kette) ===
+  ✅ S1 schwache GPU: der Regler DROSSELT (loadScale 0, Dichte 0.256)
+  ✅ S1 KONVERGENZ: nach +400 Frames settled (Δdichte 0, ΔloadScale 0) — kein Pendeln
+  ✅ S1 STUDIO-REGIME: trotz gefallener Dichte 0 Thin-Rebuilds + Dichte-Quelle=1 (die V18.427-Endlosschleife ist tot, live)
+  ✅ S2 STREAMING IST HEILIG: Rückstau → Stream-Budget MAX trotz Render-Last (V18.282)
+  ✅ S3 starke GPU: alles wächst zurück (loadScale 1, Dichte 1, renderScale 1)
+  ✅ S5 GERÄTE-SEED Klassen: stark=1 · schwach=0.45 · mittel=0.7, auf 4K derselbe Seed (stark/schwach/mittel/0.7)
+  ✅ S5 SEED-KONSUM: frischer Sense-Init startet loadScale am Seed (0.7) · headless byte-alt (Seed 1: true)
+  ✅ S6 GRENZZYKLUS-SCHNITT: gepulster Kopfraum bewegt den Radius NICHT (Δ 0) · anhaltende Ruhe wächst (75→216)
+  ✅ S6 DIESELBE WAND für den Architektur-Radius: gepulster Kopfraum bewegt ihn NICHT (Δ 0) · anhaltende Ruhe wächst (105→150)
+  ✅ S4 SESSION-ZEIT-INVARIANZ: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ 0)
+  ✅ die Sim fuhr die ECHTEN Nicht-Headless-Zweige (GPU-Anwender-Stubs wurden gerufen — nicht vakuös)
+  ✅ SICHERN+WIEDERHERSTELLEN: headless-Zustand + Dichte=1 restauriert (gate-treu)
+
+12/12 Regler-Sim-Invarianten OK.
+✅ Der Regler konvergiert, hält das Heilige, erholt sich und ist session-zeit-invariant — bereit für die Wahrheit.

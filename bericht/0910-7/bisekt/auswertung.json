@@ -1,0 +1,702 @@
+[
+ {
+  "stand": "7dd944e6",
+  "zweig": "V18.537 (main vorher)",
+  "cpu": [
+   4.4,
+   4.9
+  ],
+  "streaming": [
+   0.2,
+   0.18
+  ],
+  "stell": [
+   {
+    "loadScale": 0.15,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 100,
+    "foliageDichte": 0.34,
+    "archRadius": 111,
+    "ring": 2,
+    "schattenIntervall": 4.4,
+    "holz": "voll"
+   },
+   {
+    "loadScale": 0.16,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 100,
+    "foliageDichte": 0.34,
+    "archRadius": 115,
+    "ring": 2,
+    "schattenIntervall": 4.4,
+    "holz": "voll"
+   }
+  ],
+  "fn": {
+   "_loopVoxelStreaming": [
+    5.2,
+    5.4
+   ],
+   "_tickArchitectureLOD": [
+    1.4,
+    1.4
+   ],
+   "_lodTreeVisHeight": [
+    0.7,
+    0.7
+   ],
+   "_foundrySichtHoehe": [
+    0,
+    0
+   ],
+   "_passSicht": [
+    2.4,
+    2.7
+   ],
+   "_chunkSatzPass": [
+    1.3,
+    1.3
+   ],
+   "_hoehlenSicht": [
+    0.9,
+    0.9
+   ],
+   "AnazhRealm._diaetRefresh": [
+    5.4,
+    7.3
+   ]
+  }
+ },
+ {
+  "stand": "d3ebfc79",
+  "zweig": "fix-ankunft-streu-fall",
+  "cpu": [
+   4.6,
+   5.4
+  ],
+  "streaming": [
+   0.19,
+   0.22
+  ],
+  "stell": [
+   {
+    "loadScale": 0.13,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 98,
+    "foliageDichte": 0.32,
+    "archRadius": 111,
+    "ring": 2,
+    "schattenIntervall": 4.5,
+    "holz": "voll"
+   },
+   {
+    "loadScale": 0.29,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 78,
+    "foliageDichte": 0.44,
+    "archRadius": 118,
+    "ring": 2,
+    "schattenIntervall": 3.9,
+    "holz": "voll"
+   }
+  ],
+  "fn": {
+   "_loopVoxelStreaming": [
+    5.2,
+    4.3
+   ],
+   "_tickArchitectureLOD": [
+    1.3,
+    2.1
+   ],
+   "_lodTreeVisHeight": [
+    0.7,
+    1.1
+   ],
+   "_foundrySichtHoehe": [
+    0,
+    0.6
+   ],
+   "_passSicht": [
+    2.8,
+    3.2
+   ],
+   "_chunkSatzPass": [
+    1.5,
+    2.1
+   ],
+   "_hoehlenSicht": [
+    1.1,
+    1.6
+   ],
+   "AnazhRealm._diaetRefresh": [
+    7,
+    6.3
+   ]
+  }
+ },
+ {
+  "stand": "e65e9208",
+  "zweig": "welle-m-schatten",
+  "cpu": [
+   4.6,
+   4.7
+  ],
+  "streaming": [
+   0.16,
+   0.2
+  ],
+  "stell": [
+   {
+    "loadScale": 0.15,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 95,
+    "foliageDichte": 0.33,
+    "archRadius": 110,
+    "ring": 2,
+    "schattenIntervall": 4.4,
+    "holz": "voll"
+   },
+   {
+    "loadScale": 0.12,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 91,
+    "foliageDichte": 0.32,
+    "archRadius": 108,
+    "ring": 2,
+    "schattenIntervall": 4.5,
+    "holz": "voll"
+   }
+  ],
+  "fn": {
+   "_loopVoxelStreaming": [
+    5.7,
+    6
+   ],
+   "_tickArchitectureLOD": [
+    1.4,
+    1.5
+   ],
+   "_lodTreeVisHeight": [
+    0.7,
+    0.7
+   ],
+   "_foundrySichtHoehe": [
+    0,
+    0
+   ],
+   "_passSicht": [
+    2.3,
+    2.3
+   ],
+   "_chunkSatzPass": [
+    1.2,
+    1.3
+   ],
+   "_hoehlenSicht": [
+    0.9,
+    1
+   ],
+   "AnazhRealm._diaetRefresh": [
+    6.1,
+    5.4
+   ]
+  }
+ },
+ {
+  "stand": "90307589",
+  "zweig": "studio-s3-kreatur",
+  "cpu": [
+   4.7,
+   4.5
+  ],
+  "streaming": [
+   0.21,
+   0.2
+  ],
+  "stell": [
+   {
+    "loadScale": 0.11,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 93,
+    "foliageDichte": 0.31,
+    "archRadius": 109,
+    "ring": 2,
+    "schattenIntervall": 4.6,
+    "holz": "voll"
+   },
+   {
+    "loadScale": 0.1,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 92,
+    "foliageDichte": 0.3,
+    "archRadius": 111,
+    "ring": 2,
+    "schattenIntervall": 4.6,
+    "holz": "voll"
+   }
+  ],
+  "fn": {
+   "_loopVoxelStreaming": [
+    6.6,
+    4.4
+   ],
+   "_tickArchitectureLOD": [
+    1.4,
+    1.2
+   ],
+   "_lodTreeVisHeight": [
+    0.7,
+    0.6
+   ],
+   "_foundrySichtHoehe": [
+    0,
+    0
+   ],
+   "_passSicht": [
+    2,
+    2.1
+   ],
+   "_chunkSatzPass": [
+    1,
+    1.1
+   ],
+   "_hoehlenSicht": [
+    0.7,
+    0.8
+   ],
+   "AnazhRealm._diaetRefresh": [
+    5.2,
+    5.4
+   ]
+  }
+ },
+ {
+  "stand": "e18c1951",
+  "zweig": "studio-s3-wiese-gestalten",
+  "cpu": [
+   4.8,
+   4.9
+  ],
+  "streaming": [
+   0.21,
+   0.23
+  ],
+  "stell": [
+   {
+    "loadScale": 0.1,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 90,
+    "foliageDichte": 0.3,
+    "archRadius": 111,
+    "ring": 2,
+    "schattenIntervall": 4.6,
+    "holz": "voll"
+   },
+   {
+    "loadScale": 0.13,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 97,
+    "foliageDichte": 0.32,
+    "archRadius": 108,
+    "ring": 2,
+    "schattenIntervall": 4.5,
+    "holz": "voll"
+   }
+  ],
+  "fn": {
+   "_loopVoxelStreaming": [
+    4.5,
+    4.9
+   ],
+   "_tickArchitectureLOD": [
+    1.4,
+    1.4
+   ],
+   "_lodTreeVisHeight": [
+    0.7,
+    0.7
+   ],
+   "_foundrySichtHoehe": [
+    0,
+    0
+   ],
+   "_passSicht": [
+    2.7,
+    2.4
+   ],
+   "_chunkSatzPass": [
+    1.4,
+    1.4
+   ],
+   "_hoehlenSicht": [
+    1,
+    1
+   ],
+   "AnazhRealm._diaetRefresh": [
+    6.2,
+    6.6
+   ]
+  }
+ },
+ {
+  "stand": "c503eaad",
+  "zweig": "studio-s3-pflanzen",
+  "cpu": [
+   12.2,
+   11.6
+  ],
+  "streaming": [
+   1.58,
+   1.84
+  ],
+  "stell": [
+   {
+    "loadScale": 0.26,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 117,
+    "foliageDichte": 0.42,
+    "archRadius": 116,
+    "ring": 4,
+    "schattenIntervall": 4,
+    "holz": "voll"
+   },
+   {
+    "loadScale": 0.2,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 105,
+    "foliageDichte": 0.38,
+    "archRadius": 114,
+    "ring": 4,
+    "schattenIntervall": 4.2,
+    "holz": "voll"
+   }
+  ],
+  "fn": {
+   "_loopVoxelStreaming": [
+    10.4,
+    13.3
+   ],
+   "_tickArchitectureLOD": [
+    4.2,
+    5.3
+   ],
+   "_lodTreeVisHeight": [
+    2.1,
+    2.8
+   ],
+   "_foundrySichtHoehe": [
+    1,
+    1.4
+   ],
+   "_passSicht": [
+    11.2,
+    12.3
+   ],
+   "_chunkSatzPass": [
+    8.7,
+    9.8
+   ],
+   "_hoehlenSicht": [
+    6.9,
+    7.8
+   ],
+   "AnazhRealm._diaetRefresh": [
+    13.1,
+    13.1
+   ]
+  }
+ },
+ {
+  "stand": "e3836ce3",
+  "zweig": "gate:profiband",
+  "cpu": [
+   12.4,
+   12.8
+  ],
+  "streaming": [
+   2.08,
+   9.94
+  ],
+  "stell": [
+   {
+    "loadScale": 0.45,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 118,
+    "foliageDichte": 0.57,
+    "archRadius": 126,
+    "ring": 4,
+    "schattenIntervall": 3.2,
+    "holz": "voll"
+   },
+   {
+    "loadScale": 0.61,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 108,
+    "foliageDichte": 0.74,
+    "archRadius": 134,
+    "ring": 4,
+    "schattenIntervall": 2,
+    "holz": "voll"
+   }
+  ],
+  "fn": {
+   "_loopVoxelStreaming": [
+    13.4,
+    13.6
+   ],
+   "_tickArchitectureLOD": [
+    4.8,
+    4.9
+   ],
+   "_lodTreeVisHeight": [
+    2.5,
+    2.5
+   ],
+   "_foundrySichtHoehe": [
+    1.4,
+    1.2
+   ],
+   "_passSicht": [
+    11.8,
+    13.5
+   ],
+   "_chunkSatzPass": [
+    9.6,
+    11
+   ],
+   "_hoehlenSicht": [
+    7.4,
+    8.8
+   ],
+   "AnazhRealm._diaetRefresh": [
+    12.8,
+    15
+   ]
+  }
+ },
+ {
+  "stand": "70b957f3",
+  "zweig": "schau2-uhr-wetter",
+  "cpu": [
+   11.4,
+   11.7
+  ],
+  "streaming": [
+   2.19,
+   17.78
+  ],
+  "stell": [
+   {
+    "loadScale": 0.42,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 128,
+    "foliageDichte": 0.55,
+    "archRadius": 124,
+    "ring": 4,
+    "schattenIntervall": 3.3,
+    "holz": "voll"
+   },
+   {
+    "loadScale": 0.29,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 140,
+    "foliageDichte": 0.63,
+    "archRadius": 130,
+    "ring": 4,
+    "schattenIntervall": 2,
+    "holz": "voll"
+   }
+  ],
+  "fn": {
+   "_loopVoxelStreaming": [
+    13.3,
+    17.5
+   ],
+   "_tickArchitectureLOD": [
+    5.1,
+    6.9
+   ],
+   "_lodTreeVisHeight": [
+    2.7,
+    3.6
+   ],
+   "_foundrySichtHoehe": [
+    1.3,
+    1.7
+   ],
+   "_passSicht": [
+    11,
+    10.9
+   ],
+   "_chunkSatzPass": [
+    8.3,
+    8.3
+   ],
+   "_hoehlenSicht": [
+    6.4,
+    6.4
+   ],
+   "AnazhRealm._diaetRefresh": [
+    12.2,
+    10.2
+   ]
+  }
+ },
+ {
+  "stand": "76c036b0",
+  "zweig": "welle-m-host-vram-2",
+  "cpu": [
+   11,
+   11.4
+  ],
+  "streaming": [
+   1.79,
+   22.34
+  ],
+  "stell": [
+   {
+    "loadScale": 0.2,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 110,
+    "foliageDichte": 0.38,
+    "archRadius": 114,
+    "ring": 4,
+    "schattenIntervall": 4.2,
+    "holz": "voll"
+   },
+   {
+    "loadScale": 0.18,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 143,
+    "foliageDichte": 0.65,
+    "archRadius": 132,
+    "ring": 4,
+    "schattenIntervall": 1.9,
+    "holz": "voll"
+   }
+  ],
+  "fn": {
+   "_loopVoxelStreaming": [
+    11.1,
+    18.5
+   ],
+   "_tickArchitectureLOD": [
+    5.3,
+    7.4
+   ],
+   "_lodTreeVisHeight": [
+    2.7,
+    3.8
+   ],
+   "_foundrySichtHoehe": [
+    1.4,
+    2
+   ],
+   "_passSicht": [
+    11.8,
+    12.1
+   ],
+   "_chunkSatzPass": [
+    9.2,
+    9.1
+   ],
+   "_hoehlenSicht": [
+    7.3,
+    7
+   ],
+   "AnazhRealm._diaetRefresh": [
+    13.2,
+    10.6
+   ]
+  }
+ },
+ {
+  "stand": "66005ca6",
+  "zweig": "V18.538",
+  "cpu": [
+   11.7,
+   11.3
+  ],
+  "streaming": [
+   2.24,
+   1.9
+  ],
+  "stell": [
+   {
+    "loadScale": 0.56,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 125,
+    "foliageDichte": 0.66,
+    "archRadius": 135,
+    "ring": 4,
+    "schattenIntervall": 2.8,
+    "holz": "voll"
+   },
+   {
+    "loadScale": 0.28,
+    "renderScale": 1,
+    "pixelRatio": 1,
+    "foliageRadius": 121,
+    "foliageDichte": 0.44,
+    "archRadius": 119,
+    "ring": 4,
+    "schattenIntervall": 3.9,
+    "holz": "voll"
+   }
+  ],
+  "fn": {
+   "_loopVoxelStreaming": [
+    12.7,
+    10.1
+   ],
+   "_tickArchitectureLOD": [
+    5.5,
+    4.7
+   ],
+   "_lodTreeVisHeight": [
+    2.8,
+    2.6
+   ],
+   "_foundrySichtHoehe": [
+    1.4,
+    1.2
+   ],
+   "_passSicht": [
+    11.5,
+    10.9
+   ],
+   "_chunkSatzPass": [
+    8.8,
+    8.4
+   ],
+   "_hoehlenSicht": [
+    7,
+    6.6
+   ],
+   "AnazhRealm._diaetRefresh": [
+    12.8,
+    13.3
+   ]
+  }
+ }
+]
