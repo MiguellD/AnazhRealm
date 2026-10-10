@@ -187,6 +187,16 @@ const ANKER = [
     { file: "vendor/TRAANode.js", sub: "this._previousDepthNode = texture( new DepthTexture( 1, 1 ) );", organ: "_ensurePostProcessing (TRAANode.vortiefe — die Band-Linse nennt jede Textur)" },
     { file: "vendor/TRAANode.js", sub: "this._jitterIndex = this._jitterIndex % ( _haltonOffsets.length - 1 );", organ: "Ausgabe-Aufnahme (32 Frames = eine Halton-Runde)" },
     { file: "vendor/TRAANode.js", sub: "this.updateBeforeType = NodeUpdateType.FRAME;", organ: "Ausgabe-Aufnahme/gpu-bank (je Frame nodeFrame.update)" },
+    // DAS AUSGABE-ZIEL IN 32 BIT (0910-1 B, `_ausgabeFormat`): r184 fordert jedes Feature an, das der Adapter trägt (darum
+    // fragt der Stamm `device.features`); RGBFormat × UnsignedInt101111Type ist rg11b10ufloat; PassNode.setup schreibt den
+    // Typ je Bau auf den des Renderers zurück (der Stamm stellt ihn danach); der Neustart der Geschichte kopiert das
+    // Szenen-Bild in die rgba16float-Geschichte (verschiedene Formate: `_traaNeustartZug` zeichnet statt zu kopieren);
+    // TRAA reicht Kanal a nur durch (ein rg11b10-Abtaster liefert 1).
+    { file: "vendor/three.webgpu.min.js", sub: 'RG11B10UFloat:"rg11b10ufloat-renderable"', organ: "_ausgabeFormat (das Feature, das r184 anfordert)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'case Xe:switch(s){case Je:u=OA;break;case et:u=kA;break;default:o("WebGPURenderer: Unsupported texture type with RGBFormat."', organ: "_ausgabeFormat (RGBFormat × UnsignedInt101111Type → rg11b10ufloat)" },
+    { file: "vendor/three.webgpu.min.js", sub: "setup({renderer:e}){return this.renderTarget.samples=void 0===this.options.samples?e.samples:this.options.samples,this.renderTarget.texture.type=e.getOutputBufferType()", organ: "_ausgabeFormat (PassNode.setup stellt den Typ je Bau zurück — der Pass stellt ihn danach)" },
+    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( beautyRenderTarget.texture, this._historyRenderTarget.texture );", organ: "_traaNeustartZug (der Neustart der Geschichte — am Renderer gehakt, gezeichnet bei verschiedenem Format)" },
+    { file: "vendor/TRAANode.js", sub: "const vClip = historyColor.sub( vec4( pClip, currentColor.a ) );", organ: "_ausgabeFormat (TRAA reicht Kanal a nur durch)" },
     // DIE KASKADEN-BOX (W7: _kaskadenGeburt · _kaskadenPassen · _kaskadenZiele · _passSicht): der Host ersetzt je Instanz
     // die Licht-Stellung des Addons (updateBefore stumm, sein Zweit-Schreiber _updateShadowBounds stumm), ruft dessen
     // _init vom Prototyp, liest seine Kaskaden-Uniform und den Fade-Saum des Shaders, hüllt den Ziel-Bau jedes
