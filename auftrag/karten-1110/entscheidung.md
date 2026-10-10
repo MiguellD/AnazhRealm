@@ -895,3 +895,7 @@ selbst — offen benannt, jeder kippbar durch ein Wort des Schöpfers:
 6. **Monolith (H1, Frage des Schöpfers „neu bauen?“):** kein Neubau von null — Neubau je Domäne von innen. Die Modul-Zielkarte
    (Gelände · Wasser · Render · Vegetation · Siedlung · Kreatur · Körper · Fahrzeug · Kampf · Klang · P2P · Werkstatt · Speicher, je mit
    fester Schnittstelle) wird vorgezogen; jede Karte, die eine Zone anfasst, zieht sie als Modul heraus (K09 gelaende-core ist die erste).
+7. **CI in zwei Stufen (Schöpfer 11.10.: „der war früher unter 2 min, das wäre wieder genial“, Karte K14 Fassung 2):** jeder Push
+   fährt den Puls (≤ 2 min: Syntax, eslint, Format geänderter Dateien, statische Wände, Byte-Verträge < 30 s, playtest:fast); die volle
+   Batterie (≤ 12 min durch Breite) läuft auf integ-probe und main, nachts, auf Abruf und bei `[ci voll]`. §2.8 Schritt 3 heißt damit:
+   R0/R1 brauchen den grünen Puls, R2/R3 tragen am letzten Push `[ci voll]` und brauchen die volle Batterie grün.
