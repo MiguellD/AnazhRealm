@@ -566,6 +566,9 @@ const FORBIDDEN = [
     // Kopf den Leib berührt.
     { token: "strikeRange", fiel: "Welle LF kampf — der Biss ist der Ansprung (_kreaturBissReich)", auch: ["tetrapoda-core.js"] },
     { token: "pirschStoppM", fiel: "Welle LF kampf — die Hetze hält in der Weite des Ansprungs", auch: ["tetrapoda-core.js"] },
+    // der Nachklang des Tod-Kippens (0,35 s, dann war der Leib fort) kehrt nicht zurück — ein Tier liegt gefuehl.leichnamSec
+    // und sinkt in leichnamSinkSec in die Erde (Vertrags-Akt 09.10., Posten 7)
+    { token: "kippNachklangSec", fiel: "Welle LF kampf — der Leichnam liegt (gefuehl.leichnamSec)", auch: ["schmiede-core.js"] },
     // WELLE LF RUDEL (Leben-Schau 07.10., D11/D1-Rest): das Fuß-Ziel in der Ebene des Leibs (das Ziel im Gruppen-Raum,
     // per Rumpf-Quaternion zurückgedreht — am Querhang kippten die Beine mit dem Leib) kehrt nicht zurück.
     { token: "_gangQ", fiel: "Welle LF rudel — das Fuß-Ziel liegt in der Welt (Pfoten-IK _animateTierBaum)" },

@@ -307,7 +307,9 @@ minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`, fail-closed
   rein additiv): `schwung` trägt auch die Hieb-GEOMETRIE (`windupFrac
 strikeFrac arcHalfRad bladeRadiusM reachBaseM reachMaxM shoulderH`),
   `gefuehl` den Stoß + das Tod-Kippen (`wucht pProKb` — der Stoß ist seit 0710-2 das EINE
-  Impuls-Gesetz des Wirts, AnazhRealm.STOSS; `kippDauerSec kippNachklangSec`), `bogen` den Pfeil-Flug (`maxFlugSec
+  Impuls-Gesetz des Wirts, AnazhRealm.STOSS; `kippDauerSec leichnamSec leichnamSinkSec` — VERTRAGS-AKT Welle LF kampf
+  09.10.: ein Tier fällt auf die Flanke, LIEGT `leichnamSec` (90 s, Kreatur-Uhr) und sinkt in der letzten Spanne
+  `leichnamSinkSec` (4 s) in die Erde; `kippNachklangSec` (0,35 s, danach war der Leib fort) fiel), `bogen` den Pfeil-Flug (`maxFlugSec
 radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
   Schadens-Faktor; `gueteAnteil(rezeptId, ov?)` (Welle L, additiv) — derselbe
@@ -325,6 +327,13 @@ radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `guete.mEffDmgMin/Max` samt `guete.mEffRefKg` (die Wirkung eines Treffers ist seine
   Energie gegen `gefuehl.keRefJ`, für Schaden UND Hit-Stop), die Wirts-Eichung
   `bogen.zugJouleRef` (E = `ableitenBogen(task).energie`).
+  Welle LF kampf (09.10., rein additiv — nur wer `treffer.weg` reicht, die Shell reicht ihn nie; Prüfstand byte-gleich):
+  `treffer.weg = [xLo, xHi]` ist der Treffer-Weg (m ab dem Knauf, wo die Waffe den Leib auf ihrem Bogen durchquert);
+  getroffen wird am Punkt des Wegs, der dem Schlagpunkt `S.impactX` am nächsten liegt. Das Urteil trägt dann `eff`
+  (die Wirkung, 1 − 1,4·|x − x_S|/L, Boden 0,25 — das Gesetz der Bambus-Probe; KE × eff, p × √eff) und `ort`
+  (`schlagpunkt` nur bei voller Wirkung, sonst die Seite: `griffnah` · `hand` · `spitze`). `buildPfeil()` (rein
+  additiv) ist die EINE Gestalt des Pfeils (Schaft, Bodkin-Spitze, Nocke, drei Federn; die Albedo im Vertex nach dem
+  FARB-GESETZ, `PFEIL` trägt Masse und Paletten-Hexe) — die Shell und der Wirt (`_pfeilVorlage`) bauen keinen eigenen.
 - **`VERHALTEN` (V18.483, tetrapoda-core, Namensraum-Export):** die
   Verhaltens-Seele (`aktionen { <name>: { dauer profil dreh? kopfSweep?
 rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)
@@ -387,7 +396,18 @@ matResilienz · greifkraft · pobZiel · ableitenPick/Graben/Klinge`)
   `tempoEinheit` × seine Dauer, die Flugzeit des Sprung-Gesetzes), die Hetze
   hält, wo das Maul den Leib erreicht. `jagd.strikeRange` und
   `jagd.pirschStoppM` fielen; `BISS.kopfNeigung` (rein additiv) ist der
-  Bereich, in dem der Kopf im Ansprung auf das Ziel zielt.
+  Bereich, in dem der Kopf im Ansprung auf das Ziel zielt, `BISS.rumpfNeigung`
+  (rad, wie bodyX) die tiefste Senkung der Front, mit der das Maul einen
+  tieferen Leib erreicht; `BISS.masseAnteil` der Anteil der Masse, mit dem der
+  Biss stößt. Ein Ansprung erreicht einen Leib nur, wenn dessen Unterkante
+  höchstens Kopf + Sprung-Höhe hoch liegt (Wirt `_kreaturBissSpalt`, Nachbesserung 2).
+  `KAMPF { refKg biss haut leben }` (rein additiv, Welle LF kampf): Biss, Haut
+  und Leben eines Tiers folgen der EINEN Masse seines Leibs gegen die
+  Bezugs-Masse `refKg` (der Wolf der Größe 1, 64 kg) mit den Exponenten
+  ⅔ · ⅓ · ⅔ (Wirt `computeCreatureStats`; ein Leib ohne Gestalt behält die
+  Werte seiner Substanz). Der Snapshot eines Tiers trägt seine Wunde als
+  `hpAnteil` (hp/hpMax); ein Stand mit absolutem `hp` (vor der Nachbesserung 2 der Welle LF kampf) gilt gegen
+  das Leben vor dem Massen-Gesetz.
 - **`STEUER_GESETZ` + `tempoEinheit` · `steuerSchritt` · `ankunftTempo` ·
   `herdeZug` (Welle L 06.10., tetrapoda-core, Namensraum-Export, rein
   additiv — PRESETS/PARAMS unberührt, der v7-Fingerabdruck wandert nicht
@@ -714,7 +734,9 @@ kindStages` auf seinem Namensraum tragen. Die Zeile deklariert die
 **Stand der MESHFREI-Kerne:** `klang-core.js` (`__klangCore` — B1 22 Genres ·
 B4 bpm+6 DNA-Dials · fx.klang) · `koerper-core.js` (`__koerperCore` — B1
 `mensch` · B4 8 Morph-Dials · fx.gestalt + fx.motion + **fx.bewegung**
-[schwimmen · parkour · slidePose · speed/jump/stamina, §8.2+]) ·
+[schwimmen · parkour · slidePose · speed/jump/stamina, §8.2+] · `LEIB { dichteKgM3 armAnteil }` — die Masse des
+Menschen aus dem Volumen seiner Haut; `armAnteil` (Welle LF kampf, rein additiv: 5,0 % nach Dempster) ist der Arm samt
+Hand, mit dem die Ausdauer einer Maus-Arm-Aktion wächst, (m_Arm + m_Gerät) / m_Arm, Wirt `_mausAusdauer`) ·
 `tetrapoda-core.js` (`__tetrapodaCore` — B1 4 Gattungen · B4 5 allometrische
 Dials · fx.motion + **VERHALTEN** [12 Aktionen · 6 Stimmungen, B6]).
 Alle drei: keine KIND_POLICY-Zeile (keine Katalog-Blueprints — die Rezepte
