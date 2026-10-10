@@ -19517,12 +19517,12 @@ class AnazhRealm {
         if (opts.fromPos && typeof this.getGameMode === "function" && this.getGameMode() === "pfad") {
             const chaos = (creature.userData.emotions && creature.userData.emotions.chaos) || 0;
             const strikeChance = Math.min(tProf.strikeCap, tProf.strike + chaos * tProf.strikeChaos);
-            // DIE GEGENWEHR IST DER EINE BISS (Welle LF kampf, Posten 5): erreicht das Maul den Spieler (_kreaturBissRadial ≤
+            // DIE GEGENWEHR IST DER EINE BISS (Welle LF kampf, Posten 5): erreicht das Maul den Spieler (_kreaturBissSpalt ≤
             // _kreaturBissReich — die EINE Biss-Reichweite, die Reichweite des Ansprungs) und fällt der Wurf aus dem
             // Fauna-Strom (Γ5, nie Math.random), springt das Tier an (_kreaturBissAnsatz); gebissen wird im Schnappen, wenn
             // der Kopf den Leib berührt. Vorher biss es sofort aus jagd.strikeRange 2,4 m um die Mitten, ohne Geste.
             if (strikeChance > 0 && this.state.playerMesh) {
-                const spalt = this._kreaturBissRadial(creature, null);
+                const spalt = this._kreaturBissSpalt(creature, null);
                 if (spalt !== null && spalt <= this._kreaturBissReich(creature) && this._faunaRng()() < strikeChance)
                     this._kreaturBissAnsatz(
                         creature,
@@ -20754,8 +20754,9 @@ class AnazhRealm {
             const fort = d > 1e-6 ? Math.max(0, (vx * dx + vz * dz) / d) : 0;
             const sprint = K.sprintTempo(hueftL);
             // DIE HETZE HÄLT IN DER WEITE DES ANSPRUNGS (Welle LF kampf, Posten 5): der Rest ist der Spalt vor dem Maul
-            // (_kreaturBissRadial, die Gestalt des Jägers am Leib des Ziels) weniger dem halben Weg des Ansprungs
-            // (_kreaturBissReich) — der Jäger steht, wo sein Sprung den Leib sicher erreicht, und drängt sich nicht an ihn.
+            // (_kreaturBissRadial, waagrecht, die Gestalt des Jägers am Leib des Ziels) weniger dem halben Weg des Ansprungs
+            // (_kreaturBissReich) — der Jäger steht, wo sein Sprung den Leib sicher erreicht, und drängt sich nicht an ihn;
+            // liegt der Leib über seinem Sprung (ein Sims), wartet er dort unten, ohne anzuspringen (_kreaturBissSpalt).
             // Vorher hielt sie bei jagd.pirschStoppM 1,6 m um die Mitten, für jede Gestalt (ein kleiner Fuchs stand dort, wo
             // sein Ansprung den Spieler nie erreichte).
             const spalt = this._kreaturBissRadial(creature, ziel);
@@ -21166,7 +21167,7 @@ class AnazhRealm {
 
     // DER LEIB DES SPIELERS unter den Leibern (Welle LF): seine Wand-Kapsel — die Mitte (x, z), der Radius PLAYER_WALL_RADIUS,
     // vom Fuß (y0) bis über den Stufen-Saum (y1). Ihn lesen der Kontakt Leib an Leib (_leibKontakte) und der Biss
-    // (_kreaturBissRadial, _kreaturBissKontakt) — EINE Gestalt des Spielers, an die ein Tier stößt und die es beißt.
+    // (_kreaturBissSpalt, _kreaturBissKontakt) — EINE Gestalt des Spielers, an die ein Tier stößt und die es beißt.
     _spielerKapsel(out) {
         const pm = this.state.playerMesh;
         const fd = AnazhRealm.PLAYER_FOOT_OFFSET;
@@ -21558,8 +21559,8 @@ class AnazhRealm {
     }
 
     // DER BISS AUF EINE BEUTE (V18.210 §1-A3, die Jagd auf Tiere): unter allen Tieren, die Beute sind (_kreaturIstBeute),
-    // das, dessen Leib das Maul am nächsten erreicht — es setzt den EINEN Biss an (_kreaturBissAnsatz). Der Biss-Takt läuft
-    // auf der Kreatur-Uhr (Welle LF, Q1).
+    // das, dessen Leib das Maul am nächsten erreicht (_kreaturBissSpalt — wer außerhalb des Grob-Tors steht, kostet keine
+    // Gestalt) — es setzt den EINEN Biss an (_kreaturBissAnsatz). Der Biss-Takt läuft auf der Kreatur-Uhr (Welle LF, Q1).
     _tickCreatureScentStrike(creature) {
         const HUNT = AnazhRealm._verhaltenGesetz().jagd;
         const ud = creature.userData || {};
@@ -21573,8 +21574,8 @@ class AnazhRealm {
         for (let i = 0; i < creatures.length; i++) {
             const other = creatures[i];
             if (!this._kreaturIstBeute(creature, other)) continue;
-            const spalt = this._kreaturBissRadial(creature, other, maul);
-            if (spalt <= nearestSpalt) {
+            const spalt = this._kreaturBissSpalt(creature, other, maul);
+            if (spalt !== null && spalt <= nearestSpalt) {
                 nearestSpalt = spalt;
                 nearest = other;
             }
@@ -21595,7 +21596,7 @@ class AnazhRealm {
     }
 
     // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5 — K-D13): EIN Akt für alle drei Biss-Wege (Jagd auf den Spieler,
-    // Jagd auf Beute, Gegenwehr). Der ANSATZ: erreicht das Maul das Ziel (_kreaturBissRadial ≤ _kreaturBissReich — so weit
+    // Jagd auf Beute, Gegenwehr). Der ANSATZ: erreicht das Maul das Ziel (_kreaturBissSpalt ≤ _kreaturBissReich — so weit
     // trägt der Ansprung den Kopf) und ist die Biss-Uhr frei, springt das Tier an — die Geste ist die Aktion pounce des
     // tetrapoda-Gesetzbuchs (_bissGesetz().geste), ihr Hüpfer das EINE Sprung-Gesetz, ihr Ansprung der Wunsch auf das Ziel
     // (updateCreatures). Gebissen wird im SCHNAPPEN (_kreaturBissTakt): wenn der Kopf den Leib berührt, nie aus der Ferne;
@@ -21609,7 +21610,7 @@ class AnazhRealm {
         const A0 = ud._verhaltenAktion;
         if (A0 && A0.bissAkt && now < A0.bis) return false; // ein Ansprung läuft
         if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
-        const spalt = this._kreaturBissRadial(creature, ziel);
+        const spalt = this._kreaturBissSpalt(creature, ziel);
         if (spalt === null || spalt > this._kreaturBissReich(creature)) return false;
         const HUNT = AnazhRealm._verhaltenGesetz().jagd;
         const def = AnazhRealm._bissGesetz().geste;
@@ -21717,24 +21718,47 @@ class AnazhRealm {
         return this._kreaturBissTempo(creature) * this._kreaturSprungZeit(creature);
     }
 
+    // DER SPALT, DEN DER ANSPRUNG SCHLIESSEN MUSS (m, Welle LF kampf Nachbesserung 2): erreicht ein Ansprung den Leib, ist es der
+    // waagrechte Spalt vor dem Maul (_kreaturBissRadial); erreicht ihn keiner, ist er unendlich. Ihn lesen alle drei Biss-Wege
+    // gegen _kreaturBissReich (der Ansatz _kreaturBissAnsatz, die Gegenwehr, die Wahl der Beute). Zwei Tore vor der Gestalt:
+    // (1) DIE HÖHE — höher als der Kopf plus die Höhe des Sprungs trägt kein Ansprung: liegt die Unterkante des Leibs darüber
+    // (der Spieler auf einem Sims, über einem Abhang), erreicht ihn kein Sprung, wie nah er auch steht. Vorher war der Rest nach
+    // oben ein Teil des waagrechten Spalts und wurde gegen die waagrechte Reichweite gemessen — ein Wolf unter einem Sims, das
+    // 1 m über seinem Sprung lag, sprang alle 1,6 s ins Leere. (2) DAS GROB-TOR des Leibs (_trefferErreichbar, dieselbe
+    // Reichweite, die Klinge und Pfeil fragen): liegt die Mitte des Ziels weiter als Maul + Ansprung + die Spanne seiner Gestalt,
+    // rechnet keine Gestalt (Lehre 25 — vorher rechnete die Wahl der Beute je Takt die ganze Gestalt jedes Beutetiers der Welt
+    // samt erzwungener Welt-Matrix: 1,29–2,35 ms je Jäger bei 15 Tieren). null = kein Maul oder ein Ziel ohne Gestalt.
+    _kreaturBissSpalt(creature, ziel, maul) {
+        const m = maul || this._kreaturMaul(creature, this._bissMaulRad || (this._bissMaulRad = {}));
+        if (!m) return null;
+        const kopfOben =
+            Math.max(m.ay, m.by) + m.r + (AnazhRealm._bissGesetz().geste.hop ? this._kreaturSprungHoehe(creature) : 0);
+        if (!ziel) {
+            const K = this._spielerKapsel(this._bissKapsel || (this._bissKapsel = {}));
+            if (K.y0 > kopfOben) return Infinity;
+            return this._kreaturBissRadial(creature, null, m);
+        }
+        if (!this._kreaturTrefferGlieder(ziel)) return null;
+        if (ziel.position.y > kopfOben) return Infinity;
+        const reich = this._kreaturBissReich(creature);
+        if (!this._trefferErreichbar(ziel, creature.position.x, creature.position.z, m.vorM + reich)) return Infinity;
+        return this._kreaturBissRadial(creature, ziel, m);
+    }
+
     // DER SPALT VOR DEM MAUL (m, waagrecht), wenn das Tier sich dem Ziel zuwendet: der Abstand seiner Mitte zum Leib des Ziels
     // — der Spieler-Kapsel (_spielerKapsel) oder der Gestalt eines Tiers (seine Treffer-Glieder, dieselben, die das Maul
-    // berühren muss) — weniger die Spanne des Mauls (vorM). Ihn lesen der Ansatz des Bisses, der Ansprung (er schließt ihn bis
-    // zur Landung) und die Hetze, die dort hält, wo das Maul den Leib erreicht. null = kein Maul oder ein Ziel ohne Gestalt.
+    // berühren muss) — weniger die Spanne des Mauls (vorM). Ihn liest die Hetze, die dort hält, wo das Maul den Leib waagrecht
+    // erreicht (unter einem Sims wartet der Jäger, statt in den Fels zu laufen); ob ein Ansprung ihn schließt, sagt
+    // _kreaturBissSpalt. null = kein Maul oder ein Ziel ohne Gestalt.
     _kreaturBissRadial(creature, ziel, maul) {
         const m = maul || this._kreaturMaul(creature, this._bissMaulRad || (this._bissMaulRad = {}));
         if (!m) return null;
         const cx = creature.position.x,
             cz = creature.position.z;
-        // DIE HÖHE: höher als der Kopf plus die Höhe des Sprungs reicht kein Ansprung — liegt die Unterkante des Leibs darüber
-        // (der Spieler auf einem Sims, über einem Abhang), ist der Spalt ihr Rest nach oben
-        const kopfOben =
-            Math.max(m.ay, m.by) + m.r + (AnazhRealm._bissGesetz().geste.hop ? this._kreaturSprungHoehe(creature) : 0);
         if (!ziel) {
             const K = this._spielerKapsel(this._bissKapsel || (this._bissKapsel = {}));
-            return Math.max(Math.hypot(K.x - cx, K.z - cz) - m.vorM - K.r, K.y0 - kopfOben);
+            return Math.hypot(K.x - cx, K.z - cz) - m.vorM - K.r;
         }
-        const hoch = ziel.position.y - kopfOben;
         const gl = this._kreaturTrefferGlieder(ziel);
         if (!gl) return null;
         ziel.updateMatrixWorld(true);
@@ -21751,7 +21775,7 @@ class AnazhRealm {
                 Math.hypot(cx - pa.x - ux * t, cz - pa.z - uz * t) - g.r * g.anker.matrixWorld.getMaxScaleOnAxis();
             if (d < best) best = d;
         }
-        return Math.max(best - m.vorM, hoch);
+        return best - m.vorM;
     }
 
     // DER WEG DES KOPFES (m, waagrecht, Posten 5): wie weit die Kopf-Kapsel (_kreaturMaul) noch von der Mittel-Linie des
