@@ -1124,6 +1124,16 @@ jobs:
               # ein eingeschmuggelter Taeter, der beim Namen rot faellt und danach restlos fort ist. --selftest zuerst.
               run: npm run gate:ziel-zensus
 
+            - name: Verdeckungs-Abfrage (echter Renderer — der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)
+              if: matrix.gruppe == 2
+              # Faehrt am Bach der Mess-Wiese (swiftshader, kienspan) den echten Spiel-Takt: ein Region-Buendel jenseits des
+              # Bachs (der Berg-Cull baut seinen Occlusion-Stellvertreter, Probe jeden Frame), der GT am Ufer, Aufsitzen,
+              # Fahrt, AUSSTEIGEN (die Sicht zurueck auf first), Blick uebers Wasser. Dazu die Stationen Bruch (ein Leser der
+              # Szenen-Tiefe bricht den Pass bei offener Abfrage) und Gift (ein gezaehlter Stellvertreter mit gescheiterter
+              # Pipeline). ROT bei jeder Device-Meldung, jeder Zeile der GPU-Wache und jedem Seitenfehler; zuletzt ohne die
+              # Huellen (Vendor-Methoden) muessen „incomplete occlusion query“, „No occlusion queries“ und „weak set“ fallen.
+              run: npm run gate:verdeckungs-abfrage
+
             - name: Wasser-Bild (echter Renderer — das Wasser-Material und der Regen)
               if: matrix.gruppe == 3
               # Fährt den ECHTEN Renderer (swiftshader, Software-Holz) mit dem echten Wasser-Material auf einem Fluss-Bogen:

@@ -24101,6 +24101,70 @@ class AnazhRealm {
                 };
                 be.__anazhEinSchreiben = true;
             }
+            // DIE VERDECKUNGS-ABFRAGE SCHLIESST NUR, WAS SIE BEGANN (0910-3 A, Leben-Schau 2: am Bach beim Aussteigen „No
+            // occlusion queries are active" in renderContext_4/_6, danach ungültige Command-Buffer und „Invalid value used in
+            // weak set"). r184 hält die offene Occlusion-Query nur indirekt: sie beginnt im Draw eines Objekts mit
+            // `occlusionTest` und endet träge beim Draw des NÄCHSTEN (`lastOcclusionObject`). Drei Vendor-Stellen nehmen dabei
+            // an, dass JEDES gezählte Objekt (`renderContext.occlusionQueryCount`, die Render-Liste) in einem durchgehenden
+            // Pass begann:
+            //   (1) `copyFramebufferToTexture` (das Tiefen-Abbild für Wasser und Feld-Pass, jede Viewport-Textur) beendet den
+            //       Pass mitten im Bild: die offene Query endet nie („ended with incomplete occlusion query"), die nächste
+            //       Zeichnung schließt sie im neuen Pass, in dem keine offen ist;
+            //   (2) `finishRender` schließt, sobald weniger begonnen als gezählt wurden — auch wenn keine offen ist. Ein
+            //       gezähltes Objekt beginnt nicht, wenn seine Pipeline nicht steht (die Erst-Zeichnung wartet oder verschiebt
+            //       es) oder als gescheitert gilt (`pipelineData.error`, auch durch einen FREMDEN Fehler, den r184s Fehler-
+            //       Bereich um den asynchronen Bau einfängt) → „No occlusion queries are active", der Frame ungültig;
+            //   (3) `resolveOccludedAsync` legt jedes Objekt mit 0 Proben in ein WeakSet — die Lücke eines nie begonnenen
+            //       Index ist `undefined` → „Invalid value used in weak set" (das Ergebnis eines ungültigen Frames ist 0).
+            // Der EINE Ort: der Bruch schließt die offene Abfrage im alten Pass, `finishRender` schließt nur eine offene, das
+            // Auflösen überspringt Lücken. Nachgestellt in gate:verdeckungs-abfrage (am Bach, Aussteigen).
+            const VERDECKT_LEER = {};
+            const offen = (d) => {
+                const o = d.lastOcclusionObject;
+                return !!(o && o.occlusionTest === true);
+            };
+            if (
+                typeof be.copyFramebufferToTexture !== "function" ||
+                typeof be.finishRender !== "function" ||
+                typeof be.resolveOccludedAsync !== "function"
+            )
+                this.log(
+                    "VERDECKUNGS-ABFRAGE: r184-Backend copyFramebufferToTexture/finishRender/resolveOccludedAsync nicht gefunden (Vendor-Drift)",
+                    "ERROR"
+                );
+            else if (!be.__anazhVerdeckung) {
+                const bruchRoh = be.copyFramebufferToTexture;
+                be.copyFramebufferToTexture = function (textur, kontext, rechteck) {
+                    const d = this.get(kontext);
+                    if (d && d.currentPass && d.occlusionQuerySet !== undefined) {
+                        if (offen(d)) {
+                            d.currentPass.endOcclusionQuery();
+                            d.occlusionQueryIndex++;
+                        }
+                        d.lastOcclusionObject = null;
+                    }
+                    return bruchRoh.call(this, textur, kontext, rechteck);
+                };
+                const schlussRoh = be.finishRender;
+                be.finishRender = function (kontext) {
+                    const d = this.get(kontext);
+                    // keine offen → r184s Vergleich `occlusionQueryCount > occlusionQueryIndex` schließt nichts; danach liest
+                    // r184 nur noch den Zähler (resolveQuerySet über occlusionQueryCount)
+                    if (d && d.occlusionQuerySet !== undefined && !offen(d))
+                        d.occlusionQueryIndex = Math.max(d.occlusionQueryIndex, kontext.occlusionQueryCount);
+                    return schlussRoh.call(this, kontext);
+                };
+                const aufloesenRoh = be.resolveOccludedAsync;
+                be.resolveOccludedAsync = function (kontext) {
+                    const d = this.get(kontext);
+                    const objekte = d ? d.currentOcclusionQueryObjects : null;
+                    if (objekte)
+                        for (let i = 0; i < objekte.length; i++)
+                            if (objekte[i] === undefined) objekte[i] = VERDECKT_LEER;
+                    return aufloesenRoh.call(this, kontext);
+                };
+                be.__anazhVerdeckung = true;
+            }
         }
         // DER SCHATTEN-STOFF JE OBJEKT: r184 setzt in `renderObject` je Objekt `alphaTest` (und Seite, Knoten) des
         // Originals auf den EINEN geteilten Schatten-Stoff; der Material-Setter zählt bei jedem Wechsel über 0 die
@@ -102634,6 +102698,15 @@ AnazhRealm._tuerOffenRad = function () {
 //      (ein Werfer ohne Diät, oder jeder Diät-Werfer der Kaskade an einem Wächter), lässt die Render-Id unverändert zurück:
 //      ein Stempel nur aus ihr überlebte ihn, die nächste erstmals geladene Gruppe trug die Schatten-Kamera (gemessen am
 //      echten Renderer: das Bild 0,11 gleich mit dem vollen Refresh statt 1,0 — gate:kamera-treue VERSCHACHTELT).
+//  (6) DER VORHER-TEXTUR-WÄCHTER (0910-3 A1, Leben-Schau 2: 264× „Destroyed texture [Texture "szene:tiefenabbild"] used
+//      in a submit" beim Fenster-Wechsel mit laufendem Loop): ein Vorher-Knoten, der eine Textur zieht (das Tiefen-Abbild,
+//      `_tiefenAbbild`), legt sie bei jedem Größenwechsel der Szenen-Tiefe neu an — r184 zerstört dabei die alte GPU-Textur.
+//      equals() sieht Textur-Knoten nie: jedes Render-Objekt des Stoffs (das Wasser) zeichnete weiter mit der Bindegruppe
+//      der zerstörten Textur, bis sein Stoff neu gebaut wurde. Den Fenster-Wechsel deckte das Neubinden im resize-Handler
+//      (`_tiefenLeserNeuBinden`), jeden anderen Wechsel nicht: `setPixelRatio` (die DPR-Kappe `_applyRenderScale` nach
+//      einem DPR-Wechsel, Frames NACH dem resize-Ereignis) — nachgestellt am OMEN (GTX 1060, Mess-Wiese, laufender Loop):
+//      vier Wechsel, 118 Fehler. Je Render-Objekt merkt die Diät Id und Version dieser Texturen; nach dem Gang (der den
+//      Zug und damit den Neubau ausgelöst hat) zieht ein Wechsel EINEN Refresh nach sich, die Bindung folgt der Textur.
 AnazhRealm._diaetGang = function (ro, nbs) {
     const jeZeichen = (n, typ) => typ === "object" || (typeof n.property === "string" && n.object === null);
     const vor = [],
@@ -102650,7 +102723,29 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         const b0 = g.bindings && g.bindings[0];
         if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
     }
-    return { vor, knoten, eigenVor, eigenKnoten, gruppen };
+    // (6) die Vorher-Knoten, die eine Textur ziehen (ihr `value` kann neu angelegt werden)
+    const texturen = nbs.updateBeforeNodes.filter((n) => n.isTextureNode === true);
+    return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen };
+};
+// (6) Wechselte eine Textur eines Vorher-Knotens (Id oder Version) seit dem letzten Blick dieses Render-Objekts?
+AnazhRealm._diaetVorTextur = function (obs, ro) {
+    const nbs = ro.getNodeBuilderState();
+    const k = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
+    if (k.texturen.length === 0) return false;
+    const d = obs.getRenderObjectData(ro);
+    const v = d._anazhVorTexV || (d._anazhVorTexV = []);
+    let anders = false;
+    for (let i = 0; i < k.texturen.length; i++) {
+        const t = k.texturen[i].value;
+        const id = t ? t.id : -1,
+            ver = t ? t.version : -1;
+        if (v[2 * i] !== id || v[2 * i + 1] !== ver) {
+            v[2 * i] = id;
+            v[2 * i + 1] = ver;
+            anders = true;
+        }
+    }
+    return anders;
 };
 AnazhRealm._diaetGeteiltSchreiben = function (rend, ro, rid) {
     const nbs = ro.getNodeBuilderState();
@@ -102775,6 +102870,8 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         obs.renderId = rid;
         AnazhRealm._diaetGeteiltSchreiben(rend, ro, rid);
     }
+    // (6) NACH dem Gang: der Zug des ersten Render-Objekts kann die Textur eben neu angelegt haben
+    if (AnazhRealm._diaetVorTextur(obs, ro)) return true;
     return obs.equals(ro, obs.getLights(ro.lightsNode, rid), rid) !== true;
 };
 // W17 Phase B-Relay — der subworld-net-Kanal trägt den `WebSocket`-Verkehr

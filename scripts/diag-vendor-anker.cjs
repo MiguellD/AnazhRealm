@@ -158,6 +158,17 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture", organ: "_tiefenAbbild (Quelle des Bruchs = die Tiefe des Kontexts)" },
     { file: "vendor/three.webgpu.min.js", sub: 's.currentPass?(s.currentPass.end(),a=s.encoder):a=this.device.createCommandEncoder({label:"copyFramebufferToTexture_"+e.id}),a.copyTextureToTexture({texture:i,origin:[r.x,r.y,0]},{texture:n},[r.z,r.w])', organ: "_tiefenAbbild (Pass-Ende und die EINE Encoder-Kopie)" },
     { file: "vendor/three.webgpu.min.js", sub: "s.currentPass=a.beginRenderPass(e),s.currentSets={attributes:{},bindingGroups:[],pipeline:null,index:null}", organ: "_tiefenAbbild (der Neubeginn mit load)" },
+    // DER VORHER-TEXTUR-WÄCHTER der Diät (0910-3 A1): r184 zerstört beim Neu-Anlegen einer Ziel-Textur (das Tiefen-Abbild
+    // in neuer Größe) die alte GPU-Textur; die Diät liest die Texturen der Vorher-Knoten am NodeBuilderState.
+    { file: "vendor/three.webgpu.min.js", sub: "const s=e.isRenderTargetTexture||e.isDepthTexture||e.isFramebufferTexture,i=this.backend;if(s&&!0===r.initialized&&i.destroyTexture(e)", organ: "Diät (6) Vorher-Textur-Wächter (updateTexture zerstört die alte Ziel-Textur)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "Diät (6) Vorher-Textur-Wächter (die Vorher-Knoten am NodeBuilderState)" },
+    // DIE VERDECKUNGS-ABFRAGE (0910-3 A): r184 beginnt die Query im Draw und schließt sie träge beim nächsten Objekt; der
+    // Wirt hält die offene am selben Feld (`lastOcclusionObject`), schließt sie vor dem Pass-Bruch, lässt `finishRender` nur
+    // eine offene schließen und füllt die Lücken nie begonnener Indizes vor dem WeakSet.
+    { file: "vendor/three.webgpu.min.js", sub: "if(void 0!==n.occlusionQuerySet){const e=n.lastOcclusionObject;e!==r&&(null!==e&&!0===e.occlusionTest&&(n.currentPass.endOcclusionQuery(),n.occlusionQueryIndex++),!0===r.occlusionTest&&(n.currentPass.beginOcclusionQuery(n.occlusionQueryIndex),n.occlusionQueryObjects[n.occlusionQueryIndex]=r),n.lastOcclusionObject=r)}", organ: "Verdeckungs-Abfrage (träges Ende am nächsten Objekt, `lastOcclusionObject`)" },
+    { file: "vendor/three.webgpu.min.js", sub: "t.occlusionQueryIndex=0,t.occlusionQueryObjects=new Array(s),t.lastOcclusionObject=null", organ: "Verdeckungs-Abfrage (beginRender: Index, Objekt-Feld mit Lücken, keine offene)" },
+    { file: "vendor/three.webgpu.min.js", sub: "r>t.occlusionQueryIndex&&t.currentPass.endOcclusionQuery()", organ: "Verdeckungs-Abfrage (finishRender schließt nach Zähler, nicht nach offen)" },
+    { file: "vendor/three.webgpu.min.js", sub: "for(let t=0;t<s.length;t++)n[t]===BigInt(0)&&e.add(s[t])", organ: "Verdeckungs-Abfrage (resolveOccludedAsync: das WeakSet nimmt jede Lücke)" },
     { file: "vendor/three.webgpu.min.js", sub: "else if(t===ri.RENDER){const t=this._getMaps(this.updateBeforeMap,r);if(t.renderId!==this.renderId)", organ: "_szeneTiefe (der Abbild-Knoten zieht je Render einmal)" },
     { file: "vendor/three.webgpu.min.js", sub: 'e===K&&(this.backend.hasFeature("float32-filterable")?t.sampleType=Gw:t.sampleType=zw)', organ: "_szeneTiefe (das r32float-Abbild als float-Textur gebunden)" },
     { file: "vendor/three.webgpu.min.js", sub: "if(!1===r.has(e)){const s=t.clone();r.set(e,s)}return r.get(e)}", organ: "_szeneTiefe (der Klon je Ziel trägt den Namen)" },
