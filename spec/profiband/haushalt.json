@@ -105,25 +105,43 @@
                     "name": "Ausstattungs-Wurf",
                     "art": "ausstattung",
                     "stufen": [
-                        0,
                         1,
                         3
                     ],
                     "pass": "k0",
                     "dreieckeJe": 48,
-                    "quelle": "S3 haus (Plan §3.3): die nurWurf-Stufe 3 der Ausstattung (Feuerstelle ≤ 32, Marktstand und Brunnen ≤ 48) wirft für L0 und L1"
+                    "quelle": "S3 haus (Plan §3.3, Budget 4e): die nurWurf-Stufe 3 der Ausstattung (Feuerstelle ≤ 32, Marktstand und Brunnen ≤ 48) wirft für die L1; die L0 wirft selbst (die Zeile Ausstattungs-Wurf nah)"
+                },
+                {
+                    "name": "Ausstattungs-Wurf nah",
+                    "art": "ausstattung",
+                    "stufen": [
+                        0
+                    ],
+                    "pass": "k0",
+                    "dreieckeJe": 3400,
+                    "quelle": "S3 haus (Plan §3.3, Budget 4e): die Ausstattungs-L0 wirft selbst (nah < 12 m, höchstens drei im Bild) — ihre Budget-Zeile 3 400 Dreiecke je Exemplar"
                 },
                 {
                     "name": "Ausstattungs-Wurf",
                     "art": "ausstattung",
                     "stufen": [
-                        0,
                         1,
                         3
                     ],
                     "pass": "k1",
                     "dreieckeJe": 48,
-                    "quelle": "S3 haus (Plan §3.3): die nurWurf-Stufe 3 der Ausstattung (Feuerstelle ≤ 32, Marktstand und Brunnen ≤ 48) wirft für L0 und L1"
+                    "quelle": "S3 haus (Plan §3.3, Budget 4e): die nurWurf-Stufe 3 der Ausstattung (Feuerstelle ≤ 32, Marktstand und Brunnen ≤ 48) wirft für die L1; die L0 wirft selbst (die Zeile Ausstattungs-Wurf nah)"
+                },
+                {
+                    "name": "Ausstattungs-Wurf nah",
+                    "art": "ausstattung",
+                    "stufen": [
+                        0
+                    ],
+                    "pass": "k1",
+                    "dreieckeJe": 3400,
+                    "quelle": "S3 haus (Plan §3.3, Budget 4e): die Ausstattungs-L0 wirft selbst (nah < 12 m, höchstens drei im Bild) — ihre Budget-Zeile 3 400 Dreiecke je Exemplar"
                 }
             ]
         }
