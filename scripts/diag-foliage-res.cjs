@@ -59,21 +59,28 @@ const server = http.createServer((req, res) => {
         window.__anazhHeadlessNullRenderer = true;
     });
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await page.evaluate(async () => {
+    // Bereit heißt: der Loop steht (`_gameLoopTick`, gesetzt in startEternalLoop NACH `await _idbPreload()` und
+    // generateNewWorld). Bis 10.10. wartete die Probe nur auf die Szene: lokal warfen 14 von 20 Warmup-Takten (der Loop
+    // fehlte), der Läufer der CI (integ-probe d0dec7ce, Lauf 38035611007) traf alle 20 — der Aktuator lief nie, (1) las
+    // undefined. Ein Takt, der trotzdem wirft, steht mit seinem Grund im Bericht, nie still.
+    const warmup = await page.evaluate(async () => {
         const start = performance.now();
         while (performance.now() - start < 40000) {
             const r = window.anazhRealm;
-            if (r && typeof r._nexusPerfActuate === "function" && r.state && r.state.scene) break;
+            if (r && typeof r._gameLoopTick === "function" && r.state && r.state.scene) break;
             await new Promise((res) => setTimeout(res, 6));
         }
+        const w = { loop: typeof (window.anazhRealm && window.anazhRealm._gameLoopTick), wuerfe: 0, grund: null };
         for (let i = 0; i < 20; i++) {
             try {
                 window.anazhRealm._gameLoopTick(performance.now());
-            } catch (_e) {
-                /* */
+            } catch (e) {
+                w.wuerfe++;
+                if (!w.grund) w.grund = String((e && e.message) || e);
             }
             await new Promise((res) => setTimeout(res, 4));
         }
+        return w;
     });
 
     const report = await page.evaluate(() => {
@@ -179,7 +186,9 @@ const server = http.createServer((req, res) => {
     if (pageErr) console.log("PAGE-ERROR:", pageErr);
     const o = report;
     console.log(`  FOLIAGE_LAYER ${o.LAYER} · PERF_FOLIAGE_RES_MIN ${o.MIN}`);
-    console.log(`  (1) headless _foliageResScale: ${o.headlessRes} (erw 1)`);
+    console.log(
+        `  (1) headless _foliageResScale: ${o.headlessRes} (erw 1) · Warmup: Loop ${warmup.loop}, ${warmup.wuerfe} von 20 Takten warfen${warmup.grund ? " — " + warmup.grund : ""}`
+    );
     console.log(
         `  (2) _markFoliageLayer: foliage {L0 ${o.foliageMark.l0}, L${o.LAYER} ${o.foliageMark.l1}} · placed {L0 ${o.placedMark.l0}, L${o.LAYER} ${o.placedMark.l1}} · global {L0 ${o.globalMark.l0}, L${o.LAYER} ${o.globalMark.l1}}`
     );
@@ -197,6 +206,7 @@ const server = http.createServer((req, res) => {
 
     const ok =
         !pageErr &&
+        warmup.wuerfe === 0 &&
         o.headlessRes === 1 &&
         o.foliageMark.l0 === true &&
         o.foliageMark.l1 === true &&
