@@ -497,12 +497,16 @@ jobs:
               # --selftest zuerst.
               run: npm run gate:sicht-arbeit
 
-            - name: Wetter-Wache (Welle K — Halt heisst Halt, jeder Schreiber beim Namen)
+            - name: Wetter-Wache (Welle K und Leben-Schau 2 — Halt heisst Halt, Uhr und Wetter gehoeren dem Spieler)
               if: matrix.gruppe == 2
               # Null-Renderer, eine echte Welt: unter der Buehne versucht jeder Schreiber-Weg des Spiels das Wetter zu drehen
               # (Emotion sorrow, Nexus, Gesetz, Mensch, Mitspieler, Auto-Zug) - das Wetter bleibt sunny, jeder Zug steht als
-              # verweigert beim Namen seiner Quelle; ein roher Schreiber am _setWeather vorbei faellt rot; ohne Halt wirkt
-              # das Spiel wie immer; im Stamm schreibt nur _setWeather und das Laden. --selftest zuerst.
+              # verweigert beim Namen seiner Quelle; ein roher Schreiber am _setWeather vorbei faellt rot. Dazu eine frische
+              # Welt, das Spiel getaktet mit seinem Nexus (2 x 6 Spiel-Minuten): nach "setze uhrzeit mittag" und "setze
+              # wetter sonnig" schreiben die Taeter der Schau (Nexus-Gesetze auf Uhr und Regen alle 4,7 s, Wuerfe, Emotion) -
+              # die Uhr geht nur ihren Gang, das Wetter bleibt, jeder Taeter steht beim Namen; nach "frei" zieht nur der
+              # Wetter-Zug im Takt das Wort, das die Welt wuenscht; der Regler zeigt die Welt-Zeit; der Tag traegt eine Szene;
+              # im Stamm schreibt die Uhr nur _uhrSetzen, kein Nexus-Wurf traegt einen Uhr-Op. --selftest zuerst.
               run: npm run gate:wetter-wache
 
             - name: Welt-Wache (0710-7 — die Buehne haelt die Welt, jeder Welt-Akt beim Namen)

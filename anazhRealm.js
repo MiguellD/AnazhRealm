@@ -280,9 +280,14 @@ class AnazhRealm {
             terrainBaseHeight: 0.0,
             weather: "sunny",
             weatherEffectTime: 0,
-            // Tag-Nacht: timeOfDay 0..1 (0=Mitternacht, 0.25=Aufgang, 0.5=Mittag, 0.75=Untergang);
-            // dayLengthMinutes = Echtzeit je Zyklus (Slider 1–60). Beide persistiert; Lichter + Skybox leiten
-            // sich pro Frame aus timeOfDay ab.
+            // DAS WORT DES SPIELERS über das Wetter (`_setWeather`, Leben-Schau 2): steht es, hält der Wetter-Zug und
+            // keine Stimme der Welt dreht das Wetter, bis der Spieler es freigibt („setze wetter frei"); persistiert.
+            // Der WUNSCH der Welt (Nexus, seine Gesetze, die Emotion, die Wesen): das Wort, das der nächste Zug zieht.
+            wetterWort: null,
+            wetterWunsch: null,
+            // Tag-Nacht: timeOfDay 0..1 (0=Mitternacht, 0.25=Aufgang, 0.5=Mittag, 0.75=Untergang), persistiert; ihn
+            // schreibt nur der EINE Uhr-Schreiber `_uhrSetzen`. dayLengthMinutes = Echtzeit je Zyklus (Slider 1–60), die
+            // Wahl des Spielers (localStorage, nie im Spielstand). Lichter + Skybox leiten sich pro Frame aus timeOfDay ab.
             timeOfDay: 0.5,
             // JAHRESZEIT (Vorlagen-Phaenologie): eine langsame Uhr treibt die Saison; die Foundry
             // backt die Assets in dieser Jahreszeit (Herbst golden, Winter kahl). Auto-Zyklus an,
@@ -300,7 +305,7 @@ class AnazhRealm {
             // Guss, Bestand bleibt). Persistiert im Snapshot; Linse: gate:studio-uebergabe.
             studioUebergabe: { koerper: null, kreatur: {} },
             seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
-            dayLengthMinutes: 8,
+            dayLengthMinutes: AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES,
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
             directionalLight: null, // Reference, in initThreeJS gesetzt
             ambientLight: null,
@@ -1415,7 +1420,8 @@ class AnazhRealm {
     }
 
     // Erlaubt, wenn der Effekt-AST KEINEN verbotenen Op enthält (_dslContainsAnyOp): reaktive Effekte
-    // (weather, creatures_*, deposit_*, spawn_creature, say, skybox_color, time_of_day) passieren.
+    // (weather, creatures_*, deposit_*, spawn_creature, say, skybox_color, set_time_of_day) passieren — ob sie Uhr und Wetter
+    // schreiben dürfen, entscheidet ihre Quelle am Schreiber (`_himmelSchreiber`), nie die Registrierung.
     _isRuleEffectAllowed(node) {
         return (
             Array.isArray(node) &&
@@ -2008,15 +2014,26 @@ class AnazhRealm {
         const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
         this._dslEffectsCache = {
             weather: ([name], ctx) => {
-                // Vokabular = die WEATHER_INTENSITY-Tabelle (sunny · rainy · stormy); der EINE Schreiber
-                // _setWeather trägt Logik-instant + visuellen Cross-Fade (DSL-Op und Auto-Zug teilen ihn) und
-                // die Quelle des Programms.
-                if (name in AnazhRealm.WEATHER_INTENSITY) this._setWeather(name, ctx && ctx.source);
+                // Vokabular = die WEATHER_INTENSITY-Tabelle (sunny · rainy · stormy) und „frei" (der Spieler gibt sein
+                // Wort zurück, `_wetterFreigeben`); der EINE Schreiber _setWeather trägt das Gesetz der Schreiber,
+                // Logik-instant + visuellen Cross-Fade (DSL-Op und Auto-Zug teilen ihn) und die Quelle des Programms.
+                const quelle = ctx && ctx.source;
+                if (name === "frei") {
+                    if (!this._wetterFreigeben(quelle) && ctx)
+                        ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
+                    return;
+                }
+                if (!(name in AnazhRealm.WEATHER_INTENSITY)) return;
+                const ok = this._setWeather(name, quelle);
+                if (ctx && ok === "wunsch") ctx.log.push({ event: "wetter_gewuenscht", quelle, wort: name });
+                else if (ctx && ok === false) ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
             },
             // set_time_of_day(t), t ∈ 0..1 (0 = Mitternacht, 0.5 = Mittag). NON_BROADCASTABLE — jeder
-            // Mitspieler darf seine eigene Tageszeit haben.
-            set_time_of_day: ([t]) => {
-                this.setTimeOfDay(Number(t));
+            // Mitspieler darf seine eigene Tageszeit haben. Die Uhr gehört dem Spieler (`_himmelSchreiber`): der Satz einer
+            // anderen Quelle (Nexus, seine Gesetze, die Emotion) steht beim Namen im Protokoll und die Uhr geht weiter.
+            set_time_of_day: ([t], ctx) => {
+                const quelle = ctx && ctx.source;
+                if (!this.setTimeOfDay(Number(t), quelle) && ctx) ctx.log.push({ event: "uhr_gehalten", quelle, t });
             },
             // JAHRESZEIT setzen (Vorlagen-Phaenologie): "fruehling/sommer/herbst/winter" -> die
             // Foundry backt den Wald in dieser Saison um (Herbst golden, Winter kahl).
@@ -2050,9 +2067,6 @@ class AnazhRealm {
                 const r = c(radius, 0.5, 12);
                 this.fillVoxelSphere(p.x, p.y, p.z, r);
                 ctx.log.push({ event: "voxel_filled", x: p.x, y: p.y, z: p.z, r });
-            },
-            time_of_day: ([value]) => {
-                this.state.timeOfDay = c(value, 0, 1);
             },
             skybox_color: ([color]) => {
                 // Die Farbe überschreibt nebulaColor NICHT (das schriebe _dayNightApplySkybox jeden Frame zurück):
@@ -3423,7 +3437,8 @@ class AnazhRealm {
             { w: 8, build: () => ["skybox_color", this.dslComposeFieldColor(rng, aura)] },
             // KEIN WÜRFEL SCHREIBT EIN KÖRPER-GESETZ (Leben-Schau 07.10., Neu 1): Gang, Sprung und Größe stehen nicht im
             // Pool — der Würfel setzte dem Spieler Gehen 4–12 und Sprungkraft 8–20 zu und blähte die Tiere ohne Achse auf.
-            { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
+            // KEIN WÜRFEL SCHREIBT DIE UHR (Leben-Schau 2, 09.10.): die Uhr gehört dem Spieler (`_himmelSchreiber`) — der
+            // Tageszeit-Wurf (Gewicht 5) und seine Mutationen in Nexus-Gesetzen warfen sie 30-mal in 160 s.
             // Der Nexus baut via far_player in eine FERNE Schale (180–380 m, JENSEITS des 150-m-Cull-Radius):
             // nah am Spieler stapelten sich Bauten und wurden nie gecullt (sceneChildren-Leck). Dazu der Cap
             // _capNexusStructures (MAX_NEXUS_STRUCTURES, Fernstes verblasst) und niedrige Gewichte (2/2/2/1)
@@ -4944,7 +4959,8 @@ class AnazhRealm {
 
     // === Welt-Aktion-Vorschlag verarbeiten ===
     // Whitelist rekursiv via _isCreatureProposalAllowed (Defense in Depth; verboten → Memory +
-    // INFO-Log + Chat-Hinweis). schöpfer → auto-execute, frieden/pfad → [Ausführen]/[Ablehnen].
+    // INFO-Log + Chat-Hinweis). schöpfer → auto-execute (ohne Zusage: das Wesen handelt als Welt, `_executeCreatureProgram` —
+    // es wünscht das Wetter nur und schreibt nie gegen das Wort des Spielers), frieden/pfad → [Ausführen]/[Ablehnen].
     // Memory-Einträge (proposed_action / accepted_action / auto_executed_action / rejected_action /
     // proposal_blocked) lassen die Kreatur aus den Spieler-Reaktionen lernen.
     _handleCreatureProposedProgram(creature, name, program) {
@@ -4988,11 +5004,19 @@ class AnazhRealm {
         return this._renderCreatureProposalButtons(creature, name, program);
     }
 
-    // Ausführen über die dslRun-Sandbox; source "creature:<name>" markiert die Herkunft (History +
-    // P2P-Loop-Schutz: ≠ "human" → kein Broadcast, wie llm:grok / nexus / emotion).
+    // Ausführen über die dslRun-Sandbox. Die Quelle trägt die ZUSAGE (das Gesetz der Schreiber, `_himmelSchreiber`): sagte der
+    // Spieler zu (sein Klick auf „Ausführen"), läuft das Programm als „zusage:creature:<name>" und schreibt wie ein Gesetz des
+    // Spielers; läuft es von selbst (der Schöpfer-Modus, auch ohne Zutun des Spielers über den Level-Aufstieg), ist es
+    // „creature:<name>" — ein Wesen der Welt, das das Wetter nur wünscht und nie gegen das Wort des Spielers schreibt. Bis zur
+    // Gegenprüfung trugen beide „creature:" (als Zusage gelesen): ein Wesen im Schöpfer-Modus drehte „setze wetter sonnig" zu
+    // Regen und nahm dem Spieler sein Wort. ≠ "human" → kein Broadcast (P2P-Loop-Schutz), wie llm:grok / nexus / emotion.
     _executeCreatureProgram(creature, name, program, auto) {
-        const result = this.dslRun(program, { source: `creature:${name}` });
+        const result = this.dslRun(program, { source: auto ? `creature:${name}` : `zusage:creature:${name}` });
         const ok = result && result.ok;
+        // was das Gesetz der Schreiber aus dem Wetter-Wort des Wesens machte (gehalten / gewünscht) — der Hinweis sagt es
+        const wetter = ((result && result.log) || []).find(
+            (e) => e && (e.event === "wetter_gehalten" || e.event === "wetter_gewuenscht")
+        );
         const memType = auto ? "auto_executed_action" : "accepted_action";
         if (typeof this._creatureRemember === "function") {
             this._creatureRemember(creature, memType, {
@@ -5009,7 +5033,12 @@ class AnazhRealm {
             const tag = auto ? "auto-ausgeführt" : "ausgeführt";
             const summary = JSON.stringify(program).slice(0, 100);
             if (ok) {
-                line.textContent = `(${name}'s Vorschlag ${tag}: ${summary})`;
+                const zusatz = !wetter
+                    ? ""
+                    : wetter.event === "wetter_gehalten"
+                      ? ` — das Wetter hält dein Wort (${this.state.wetterWort || "Halt"})`
+                      : ` — der Wetter-Zug zieht ${wetter.wort} als Nächstes`;
+                line.textContent = `(${name}'s Vorschlag ${tag}: ${summary}${zusatz})`;
             } else {
                 const reason =
                     (result &&
@@ -8645,8 +8674,9 @@ class AnazhRealm {
             {
                 example: "setze wetter rainy",
                 // D5a (V18.128) — das Vokabular wächst mit der WEATHER_INTENSITY-
-                // Tabelle; deutsche Worte normalisieren auf die kanonischen.
-                re: /^setze\s+wetter\s+(sunny|rainy|stormy|sturm|stürmisch|sonnig|sonne|regen|regnerisch)\s*$/i,
+                // Tabelle; deutsche Worte normalisieren auf die kanonischen. Das Wort des Spielers steht, bis er es
+                // freigibt: „setze wetter frei" (oder „wechselhaft") lässt den Wetter-Zug wieder ziehen.
+                re: /^setze\s+wetter\s+(sunny|rainy|stormy|sturm|stürmisch|sonnig|sonne|regen|regnerisch|frei|wechselhaft)\s*$/i,
                 build: (m) => {
                     const raw = m[1].toLowerCase();
                     const map = {
@@ -8656,11 +8686,15 @@ class AnazhRealm {
                         sonne: "sunny",
                         regen: "rainy",
                         regnerisch: "rainy",
+                        wechselhaft: "frei",
                     };
                     const word = map[raw] || raw;
                     return {
                         program: ["weather", word],
-                        describe: `Wetter gesetzt auf ${word}`,
+                        describe:
+                            word === "frei"
+                                ? "Wetter frei: es zieht wieder mit der Welt"
+                                : `Wetter gesetzt auf ${word} — es bleibt, bis du „setze wetter frei" sagst`,
                     };
                 },
             },
@@ -20107,8 +20141,20 @@ class AnazhRealm {
     static get DAY_LENGTH_MAX_MINUTES() {
         return 60; // Slider-Maximum
     }
+    // DER TAG TRÄGT EINE SZENE (Leben-Schau 2, 09.10.): eine frische Welt beginnt am Mittag (0,5), die Sonne geht bei 0,75
+    // unter — von der Ankunft bis zum Sonnenuntergang vergeht ein Viertel des Tags. Die Szenen der Schau dauerten 9–12,3 min
+    // (aus den Zeitstempeln der Bilder: A-5 Dorf und Haus 11 min, A-7 Bauen 9 min, C-9 Rudel 12,3 min); eine Szene ist 15 min.
+    // Mit dem alten Tag von 8 min war es nach 2 min Abend und nach 3–6 min Nacht (3 von 3 Spuren, jede stellte selbst auf 60).
+    static get TAG_SZENE_MINUTEN() {
+        return 15;
+    }
     static get DAY_LENGTH_DEFAULT_MINUTES() {
-        return 8; // Schöpfer-Wahl: schnell-spürbar
+        return AnazhRealm.TAG_SZENE_MINUTEN * 4; // 60 min: Mittag bis Sonnenuntergang = eine Szene
+    }
+    // DER TAKT DES WETTER-ZUGS: das Wetter steht so lange, bevor der Zug das nächste Wort zieht (mit dem 45-s-Übergang steht
+    // es ~75 s). Leser: der Zug (`_loopWeatherAndGrowth`) — und damit jeder Wunsch der Welt, den nur der Zug erfüllt.
+    static get WETTER_ZUG_SEK() {
+        return 120;
     }
     // Fauna-Lifecycle: TARGET = untere Schwelle für Geburten, MAX = obere für sanften Tod; Check alle
     // 10 s, unabhängig von DAY_LENGTH.
@@ -24754,7 +24800,7 @@ class AnazhRealm {
             terrain_base_height: (a) => `hebt die Welt-Grundhöhe auf ${a[0]}`,
             voxel_carve: (a) => `schnitzt das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]}`,
             voxel_fill: (a) => `schüttet das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]} auf`,
-            time_of_day: (a) => `verschiebt die Tageszeit auf ${a[0]}`,
+            set_time_of_day: (a) => `stellt die Uhr auf ${a[0]}`,
             skybox_color: () => `färbt den Himmel`,
             deposit_life: (a) => `trägt Leben ins Feld ${pos(a[0])}`,
             deposit_emotion: (a) => `prägt „${a[0]}" ins Feld ${pos(a[2])}`,
@@ -40946,10 +40992,15 @@ class AnazhRealm {
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
             playerEmotions: { ...this.state.player.emotions },
-            // Tag-Nacht: timeOfDay läuft nach dem Reload weiter, dayLengthMinutes ist Spieler-Wahl.
+            // Tag-Nacht: timeOfDay läuft nach dem Reload weiter. Die Tag-Länge ist die Wahl des Spielers und lebt bei ihm
+            // (localStorage, `setDayLength`): der Kopf trägt sie, weil die Taille v1 den Schlüssel verlangt
+            // (spec/golden/v1/snapshot-head.json, MUST weiter produziert), das Laden setzt sie nie (Leben-Schau 2: jeder
+            // alte Stand trug den 8-min-Tag und hielte ihn fest).
             // weatherTransition NICHT persistiert (Laufzeit-Artefakt; Reload startet mit stabilem Wetter).
             timeOfDay: typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5,
-            dayLengthMinutes: this.state.dayLengthMinutes || 8,
+            dayLengthMinutes: this.state.dayLengthMinutes,
+            // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
+            wetterWort: this.state.wetterWort || null,
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
             klangPreset: typeof this.state.klangPreset === "string" ? this.state.klangPreset : null,
             // Die Studio-Übergabe überlebt den Reload (sonst still zurück auf die gefrorenen Kern-Presets).
@@ -44837,6 +44888,11 @@ class AnazhRealm {
         this.state.terrainSteepness = state.terrainSteepness || 1.0;
         this.state.terrainBaseHeight = state.terrainBaseHeight || 0.0;
         this.state.weather = state.weather || "sunny";
+        this.state.wetterWort =
+            typeof state.wetterWort === "string" && state.wetterWort in AnazhRealm.WEATHER_INTENSITY
+                ? state.wetterWort
+                : null;
+        this.state.wetterWunsch = null;
         if (this.state.skybox) this.updateSkyboxWeather();
     }
 
@@ -44984,15 +45040,10 @@ class AnazhRealm {
             }
         }
         if (typeof state.timeOfDay === "number" && state.timeOfDay >= 0 && state.timeOfDay <= 1) {
-            this.state.timeOfDay = state.timeOfDay;
+            this._uhrSetzen(state.timeOfDay, "laden");
         }
-        if (typeof state.dayLengthMinutes === "number") {
-            const min = this.constructor.DAY_LENGTH_MIN_MINUTES;
-            const max = this.constructor.DAY_LENGTH_MAX_MINUTES;
-            if (state.dayLengthMinutes >= min && state.dayLengthMinutes <= max) {
-                this.state.dayLengthMinutes = state.dayLengthMinutes;
-            }
-        }
+        // `state.dayLengthMinutes` des Stands setzt der Restore NIE: die Tag-Länge ist die Wahl des Spielers (localStorage,
+        // `setDayLength`) — der Kopf trägt sie nur für die Taille v1 (Leben-Schau 2, gate:wetter-wache (T)).
         // ERFINDER-WELLE — die Welt-Klang-Wahl (Genre-Id; der Konsument `_klangStudioPreset`
         // prueft LIVE gegen das Buch — ein stale Name faellt dort fail-soft aufs Host-Rezept).
         if (typeof state.klangPreset === "string" && state.klangPreset.length <= 64) {
@@ -90629,20 +90680,82 @@ class AnazhRealm {
         const minutes = this.state.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
         const cycleSeconds = Math.max(60, minutes * 60); // hard-floor 1min
         const advance = delta / cycleSeconds; // wieviel von 0..1 in delta vergeht
-        this.state.timeOfDay = (this.state.timeOfDay + advance) % 1;
+        this._uhrSetzen((this.state.timeOfDay + advance) % 1, "uhr");
         // Läuft JEDEN Frame, kein Throttle: bei 10 Hz sprang die Beleuchtung in Stufen (ruckelnde Schatten);
         // die Funktion ist billig genug (Color-Lerps + Vector-Copies).
         this._applyDayNightToScene();
-        // Status-Bar-Text bleibt 10 Hz throttled (DOM-textContent ist teurer
-        // als die Scene-Updates, und das Auge braucht keine 60-Hz-Uhr).
+        // Status-Zeile und Regler bleiben 10 Hz throttled (DOM ist teurer als die Scene-Updates, und das Auge braucht
+        // keine 60-Hz-Uhr).
         const lastApply = this.state._lastDayNightApply || 0;
         if (currentTime - lastApply >= 0.1) {
             this.state._lastDayNightApply = currentTime;
-            const r = this._statusRefs;
-            if (r && r.time) {
-                r.time.textContent = this._timeOfDayLabel(this.state.timeOfDay);
-            }
+            this._uhrAnzeigen(this.state.timeOfDay);
         }
+    }
+
+    // DIE ANZEIGE DER UHR (Leben-Schau 2: der Tageszeit-Regler zeigte 12:00 bei Welt 01:41 — er las die Uhr nur beim
+    // Aufbau der Einstellungen): die Status-Zeile UND der Regler (`_tageszeitRegler`) zeigen die Welt-Zeit, nach jedem
+    // Satz und im Gang der Uhr.
+    _uhrAnzeigen(t) {
+        const r = this._statusRefs;
+        if (r && r.time) r.time.textContent = this._timeOfDayLabel(t);
+        const g = this._tageszeitRegler;
+        if (g && g.tod) {
+            const wert = String(Math.round((((t % 1) + 1) % 1) * 1000));
+            if (g.tod.value !== wert) g.tod.value = wert;
+            const text = this._timeOfDayLabel(t).replace(/^[^\s]+\s/, "");
+            if (g.todVal && g.todVal.textContent !== text) g.todVal.textContent = text;
+        }
+    }
+
+    // DAS GESETZ DER SCHREIBER VON UHR UND WETTER (Leben-Schau 2, 09.10., §6 #1 — „Uhr und Wetter gehören dem Spieler"):
+    // die Klasse einer Quelle (`ctx.source` der DSL, oder der Name eines Host-Schreibers) für `was` = "uhr" | "wetter".
+    //   „spieler" — sein Satz und seine Werkzeuge (`_spielerVerlangt`), der Regler der Einstellungen („regler"), der Begleiter
+    //               der geteilten Stimme („remote-voice"); für das GETEILTE Wetter auch ein Mitspieler („remote:…" — die Uhr
+    //               reist nie, set_time_of_day ist NON_BROADCASTABLE).
+    //   „gesetz"  — ein Gesetz, das der Spieler gab („rule:" + eine Quelle des Spielers), und der Vorschlag eines Wesens,
+    //               dem der Spieler mit seinem Klick zusagte („zusage:…", `_executeCreatureProgram`): es schreibt wie er (ein
+    //               stehendes Wort folgt ihm).
+    //   „eigen"   — der Gang der Uhr („uhr"), der Wetter-Zug („auto-zug"), das Laden eines Spielstands („laden").
+    //   „welt"    — alles andere: der Nexus, seine Gesetze, die Emotion, die Wesen („creature:…" — auch das Wesen, das im
+    //               Schöpfer-Modus von selbst handelt; bis zur Gegenprüfung las es sich als Zusage und nahm dem Spieler sein
+    //               Wort), eine Quelle ohne Namen. Rechte trägt nur eine Quelle, die den Spieler oder seine Zusage NENNT.
+    // Die Welt schreibt die Uhr nie und das Wetter nie direkt — sie wünscht das nächste Wort des Wetter-Zugs (`_setWeather`).
+    // Vorher schrieben zwei Nexus-Gesetze die Uhr 30-mal in 160 s, und „setze wetter sonnig" hielt bis zum nächsten Regen.
+    _himmelSchreiber(quelle, was) {
+        if (quelle === "uhr" || quelle === "auto-zug" || quelle === "laden") return "eigen";
+        if (typeof quelle !== "string") return "welt";
+        const spieler = (q) =>
+            this._spielerVerlangt(q) ||
+            q === "regler" ||
+            q === "remote-voice" ||
+            (was === "wetter" && q.startsWith("remote:"));
+        if (spieler(quelle)) return "spieler";
+        // ein Gesetz trägt die Quelle seines Gebers, auch ein Gesetz, das ein Gesetz gab („rule:rule:human")
+        let geber = quelle;
+        while (geber.startsWith("rule:")) geber = geber.slice(5);
+        if (geber !== quelle && spieler(geber)) return "gesetz";
+        // der Vorschlag eines Wesens, dem der Spieler zusagte (sein Klick auf „Ausführen", `_executeCreatureProgram`), schreibt
+        // wie ein Gesetz des Spielers; was ein Wesen von selbst tut („creature:…"), ist Welt
+        if (quelle.startsWith("zusage:")) return "gesetz";
+        return "welt";
+    }
+
+    // DER EINE SCHREIBER DER UHR (`state.timeOfDay`): der Gang der Uhr („uhr", `tickDayNight`), der Spieler (`setTimeOfDay`
+    // aus seinem Satz, seinem Gesetz, dem Regler) und das Laden („laden") — die Welt nie (`_himmelSchreiber`; sie steht beim
+    // Namen im Log). Liefert, ob die Uhr geschrieben wurde. gate:wetter-wache zählt `this.state.timeOfDay =` im Stamm: einmal.
+    _uhrSetzen(t, quelle) {
+        const v = Number(t);
+        if (!Number.isFinite(v)) return false;
+        if (this._himmelSchreiber(quelle, "uhr") === "welt") {
+            this.log(
+                `Uhr gehalten: ${quelle || "?"} wollte ${this._timeOfDayLabel(v)} — die Uhr gehört dem Spieler`,
+                "DEBUG"
+            );
+            return false;
+        }
+        this.state.timeOfDay = v;
+        return true;
     }
 
     // Liefert eine kurze, lesbare Tageszeit-Beschreibung. z. B. "🌅 06:24".
@@ -90665,7 +90778,8 @@ class AnazhRealm {
         return `${emoji} ${hStr}:${mStr}`;
     }
 
-    // Setzt die Tag-Länge (in Minuten). Persistiert in worldMeta + localStorage.
+    // Setzt die Tag-Länge (in Minuten): die Wahl des Spielers, persistiert bei ihm (localStorage) — nie im Spielstand, sonst
+    // hielte ein alter Stand seinen alten Tag fest (bis zur Leben-Schau 2 trug jeder Stand den 8-min-Standard).
     setDayLength(minutes) {
         const min = this.constructor.DAY_LENGTH_MIN_MINUTES;
         const max = this.constructor.DAY_LENGTH_MAX_MINUTES;
@@ -90680,14 +90794,13 @@ class AnazhRealm {
         }
     }
 
-    // Setzt timeOfDay direkt (z. B. via DSL-Op set_time_of_day(0.5) für Mittag).
-    setTimeOfDay(t) {
+    // Stellt die Uhr (z. B. via DSL-Op set_time_of_day(0.5) für Mittag, oder der Regler „regler") — über den EINEN
+    // Uhr-Schreiber und sein Gesetz: eine Quelle der Welt stellt sie nie (false).
+    setTimeOfDay(t, quelle) {
         const v = Math.max(0, Math.min(1, Number(t)));
-        if (!Number.isFinite(v)) return false;
-        this.state.timeOfDay = v;
+        if (!Number.isFinite(v) || !this._uhrSetzen(v, quelle)) return false;
         this._applyDayNightToScene();
-        const r = this._statusRefs;
-        if (r && r.time) r.time.textContent = this._timeOfDayLabel(v);
+        this._uhrAnzeigen(v);
         return true;
     }
 
@@ -90747,12 +90860,35 @@ class AnazhRealm {
     // scripts/lib/ausgabe-aufnahme.cjs `__wetterHalten`; im Spiel zählt die Uhr von 0 aufwärts). Halt heißt Halt:
     // solange sie steht, dreht KEIN Schreiber das Wetter. Bis V18.534 hielt sie nur den Auto-Zug — der OMEN
     // fand in einem Boot sunny → rainy bei eingefrorener Uhr (ein anderer Schreiber: Nexus, Emotion, Gesetz).
+    // DAS GESETZ DER SCHREIBER (`_himmelSchreiber`, Leben-Schau 2): der SPIELER schreibt, und sein Wort steht
+    // (`wetterWort`, bis „setze wetter frei"); ein Gesetz des Spielers schreibt wie er; solange das Wort steht, dreht
+    // weder der Zug noch die Welt das Wetter (false). Ohne Wort schreibt die WELT (Nexus, seine Gesetze, die Emotion,
+    // die Wesen) nie selbst: sie WÜNSCHT das nächste Wort (`wetterWunsch`, Rückgabe "wunsch"), der Zug zieht es in seinem
+    // Takt (`WETTER_ZUG_SEK`). Vorher hielt „setze wetter sonnig" bis zum nächsten Nexus-Regen (alle 4,7 s).
     _setWeather(name, quelle) {
         if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
         if (this._messHalt()) {
             this.log(`Wetter gehalten: ${quelle || "?"} wollte ${name}`, "DEBUG");
             return false;
         }
+        const wer = this._himmelSchreiber(quelle, "wetter");
+        if (wer === "welt" || wer === "eigen") {
+            if (this.state.wetterWort) {
+                this.log(
+                    `Wetter gehalten: ${quelle || "?"} wollte ${name} — es gilt das Wort des Spielers (${this.state.wetterWort})`,
+                    "DEBUG"
+                );
+                return false;
+            }
+            if (wer === "welt") {
+                this.state.wetterWunsch = { wort: name, quelle: quelle || "?" };
+                return "wunsch";
+            }
+        }
+        if (wer === "spieler") {
+            this.state.wetterWort = name;
+            this.state.wetterWunsch = null;
+        } else if (wer === "gesetz" && this.state.wetterWort) this.state.wetterWort = name;
         const oldWeather = this.state.weather;
         this.state.weather = name;
         this.state.weatherEffectTime = 0;
@@ -90762,6 +90898,17 @@ class AnazhRealm {
         // updateSkyboxWeather wird nicht direkt gerufen —
         // _applyDayNightToScene übernimmt das pro Frame.
         this.updateCreatureEmotions();
+        return true;
+    }
+
+    // DER SPIELER GIBT DAS WETTER FREI („setze wetter frei"): sein Wort fällt, ein alter Wunsch der Welt mit ihm; das Wetter
+    // steht noch einen Takt des Zugs (seine Uhr beginnt bei 0 — nie unter dem Halt einer Messung), dann zieht es wieder.
+    _wetterFreigeben(quelle) {
+        const wer = this._himmelSchreiber(quelle, "wetter");
+        if (wer !== "spieler" && wer !== "gesetz") return false;
+        this.state.wetterWort = null;
+        this.state.wetterWunsch = null;
+        if (!this._messHalt()) this.state.weatherEffectTime = 0;
         return true;
     }
 
@@ -91336,7 +91483,10 @@ class AnazhRealm {
                     if (stored) {
                         const v = Math.max(
                             this.constructor.DAY_LENGTH_MIN_MINUTES,
-                            Math.min(this.constructor.DAY_LENGTH_MAX_MINUTES, parseInt(stored, 10) || 8)
+                            Math.min(
+                                this.constructor.DAY_LENGTH_MAX_MINUTES,
+                                parseInt(stored, 10) || this.constructor.DAY_LENGTH_DEFAULT_MINUTES
+                            )
                         );
                         this.state.dayLengthMinutes = v;
                     }
@@ -91344,7 +91494,7 @@ class AnazhRealm {
             } catch (e) {
                 void e;
             }
-            dl.value = String(this.state.dayLengthMinutes || 8);
+            dl.value = String(this.state.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES);
             if (dlVal) dlVal.textContent = `${dl.value} Min`;
             dl.addEventListener("input", () => {
                 const v = parseInt(dl.value, 10);
@@ -91356,13 +91506,11 @@ class AnazhRealm {
         const tod = document.getElementById("slider-timeofday");
         const todVal = document.getElementById("slider-timeofday-val");
         if (tod) {
-            const t0 = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-            tod.value = String(Math.round(t0 * 1000));
-            if (todVal) todVal.textContent = this._timeOfDayLabel(t0).replace(/^[^\s]+\s/, "");
+            // Der Regler zeigt die Welt-Zeit (`_uhrAnzeigen`, im Gang der Uhr) und stellt sie als Hand des Spielers.
+            this._tageszeitRegler = { tod, todVal };
+            this._uhrAnzeigen(typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5);
             tod.addEventListener("input", () => {
-                const v = parseInt(tod.value, 10) / 1000;
-                this.setTimeOfDay(v);
-                if (todVal) todVal.textContent = this._timeOfDayLabel(v).replace(/^[^\s]+\s/, "");
+                this.setTimeOfDay(parseInt(tod.value, 10) / 1000, "regler");
             });
         }
 
@@ -95043,21 +95191,35 @@ class AnazhRealm {
             const gust = Math.sin(wt * 0.19) * 0.6 + Math.sin(wt * 0.47 + 1.3) * 0.3 + Math.sin(wt * 1.13 + 3.7) * 0.1;
             this._weatherWob = 1 + 0.18 * gust; // ~[0.82, 1.18]
         }
-        // Auto-Zug: zieht aus dem Vokabular (nie zweimal dasselbe Wort) und geht sanft über die Transition.
-        // Takt 120 s: mit der 45-s-Transition STEHT das Wetter ~75 s. Wartet auf die Bühne (nur der
-        // Wechsel-Tick; weatherEffectTime akkumuliert weiter → danach EIN weicher Zug). Headless sofort.
-        if (this.state.weatherEffectTime >= 120.0 && this._buehneSteht()) {
-            const words = Object.keys(AnazhRealm.WEATHER_INTENSITY).filter((w) => w !== this.state.weather);
-            // Deterministische Wort-Wahl (Math.random-frei): Index aus layered sines der Wall-Clock. Das Wort
-            // lesen Symphonie/Journal/wet-Frage; der Wechsel ist reine Optik/Klang → Fixed-Step/Replay unberührt.
-            const wc = performance.now() / 1000 + this.state.weatherEffectTime;
-            const pick = Math.sin(wc * 0.131) + Math.sin(wc * 0.373 + 1.7) + Math.sin(wc * 0.911 + 4.2); // [-3,3]
-            let idx = Math.floor(((pick + 3) / 6) * words.length);
-            if (idx < 0) idx = 0;
-            if (idx >= words.length) idx = words.length - 1;
-            const next = words[idx];
-            this._setWeather(next, "auto-zug");
-            this.log(`Das Wetter zieht zu ${next}`, "INFO");
+        // Auto-Zug: zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die
+        // Wesen schreiben nie selbst), sonst eines aus dem Vokabular (nie zweimal dasselbe Wort), und geht sanft über die
+        // Transition. Takt `WETTER_ZUG_SEK` (120 s): mit der 45-s-Transition STEHT das Wetter ~75 s. Steht das Wort des
+        // Spielers (`wetterWort`), ruht der Zug. Wartet auf die Bühne (nur der Wechsel-Tick; weatherEffectTime
+        // akkumuliert weiter → danach EIN weicher Zug). Headless sofort.
+        if (
+            !this.state.wetterWort &&
+            this.state.weatherEffectTime >= AnazhRealm.WETTER_ZUG_SEK &&
+            this._buehneSteht()
+        ) {
+            const wunsch = this.state.wetterWunsch;
+            this.state.wetterWunsch = null;
+            let next;
+            if (wunsch && wunsch.wort in AnazhRealm.WEATHER_INTENSITY) next = wunsch.wort;
+            else {
+                const words = Object.keys(AnazhRealm.WEATHER_INTENSITY).filter((w) => w !== this.state.weather);
+                // Deterministische Wort-Wahl (Math.random-frei): Index aus layered sines der Wall-Clock. Das Wort
+                // lesen Symphonie/Journal/wet-Frage; der Wechsel ist reine Optik/Klang → Fixed-Step/Replay unberührt.
+                const wc = performance.now() / 1000 + this.state.weatherEffectTime;
+                const pick = Math.sin(wc * 0.131) + Math.sin(wc * 0.373 + 1.7) + Math.sin(wc * 0.911 + 4.2); // [-3,3]
+                let idx = Math.floor(((pick + 3) / 6) * words.length);
+                if (idx < 0) idx = 0;
+                if (idx >= words.length) idx = words.length - 1;
+                next = words[idx];
+            }
+            if (next !== this.state.weather) {
+                this._setWeather(next, "auto-zug");
+                this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
+            } else this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");
             this.state.weatherEffectTime = 0;
         }
     }
@@ -102944,7 +103106,6 @@ AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "terrain_base_height",
     "gravity",
     "set_time_of_day",
-    "time_of_day",
     "set_season",
     "skybox_color",
     "creatures_color",
