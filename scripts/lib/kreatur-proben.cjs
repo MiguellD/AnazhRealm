@@ -706,6 +706,7 @@ async function kreaturProben(r, T, opts) {
             kontakt = 0,
             achs = 0,
             achs5 = 0,
+            achsWasser = 0,
             bedroht = 0,
             fort = 0;
         let wv = { x: wolf.position.x, z: wolf.position.z };
@@ -727,7 +728,12 @@ async function kreaturProben(r, T, opts) {
                 // Himmelsachse, der Lauf lag auf ihr (Basis: 100 % auf 0,25° genau). Ein stetiger Gradient trifft das
                 // 0,5°-Fenster je Achse zufällig in ~0,6 % der Takte; nahe einer Achse liegt er nur, wenn der Wind dort
                 // weht (die Fahne des Geruchs) — darum zählt das enge Fenster, das 5°-Fenster steht als Zahl daneben.
-                if (grad(m) < 0.25) achs++;
+                if (grad(m) < 0.25) {
+                    achs++;
+                    // der Ort des Achsen-Takts (Bericht): im Wasser drückt die Ufer-Scheu den Leib entlang einer Himmelsachse
+                    // (_creatureWaterContextAt: shoreDir ist kardinal) — eine zweite Quelle der Rasterung neben dem Jagd-Weg
+                    if (r._creatureWaterContextAt(wolf, r._creatureGroundY(wolf)).inWater) achsWasser++;
+                }
                 if (grad(m) < 5) achs5++;
             }
             // Die Beute, die den Jäger bemerkt (Zustand flucht — ein pirschender Jäger bleibt bis jagd.pirschSichtM
@@ -756,6 +762,7 @@ async function kreaturProben(r, T, opts) {
             kontaktFrames: kontakt,
             achsAnteil: jagdFrames ? +(achs / jagdFrames).toFixed(3) : null,
             achsAnteil5Grad: jagdFrames ? +(achs5 / jagdFrames).toFixed(3) : null,
+            achsImWasser: achsWasser,
             bedrohtFrames: bedroht,
             fortAnteil: bedroht ? +(fort / bedroht).toFixed(3) : null,
             bisse: beute.filter((c) => c.userData.hp < 9999).length,
@@ -2552,7 +2559,7 @@ function urteil(name, z) {
         soll(z.jagdFrames >= 60, `nur ${z.jagdFrames} Jagd-Frames (Probe vakuös)`);
         soll(
             z.achsAnteil !== null && z.achsAnteil < 0.1,
-            `Jagd auf den Achsen (0,25°) ${(z.achsAnteil * 100).toFixed(1)} % (5°: ${(z.achsAnteil5Grad * 100).toFixed(1)} %)`
+            `Jagd auf den Achsen (0,25°) ${(z.achsAnteil * 100).toFixed(1)} % (5°: ${(z.achsAnteil5Grad * 100).toFixed(1)} %; davon im Wasser ${z.achsImWasser} Takte)`
         );
         soll(z.bedrohtFrames >= 60, `nur ${z.bedrohtFrames} bedrohte Beute-Frames`);
         soll(z.fortAnteil !== null && z.fortAnteil > 0.8, `Beute fort vom Jäger ${z.fortAnteil} (Soll > 0,8)`);
