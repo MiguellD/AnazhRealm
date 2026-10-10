@@ -51724,6 +51724,10 @@ class AnazhRealm {
     // Durchqueren der Membran-Ebene = BETRETEN (derselbe enterPortal-Chokepoint wie die E-Taste).
 
     // Die geteilte Membran-Geometrie je Gestalt (Plane spanW×height, Gesetz-seg).
+    // DIE HÜLLE UM DIE WELLE (0910-4, Spike der Prüfbühne 10.10.): die Membran trug `frustumCulled = false` („Wellen-
+    // Verformung sprengt die statische Hülle") und zeichnete am Genesis-Ring 8 Befehle und 129 600 Dreiecke auch mit dem
+    // Ring im Rücken. Die Welle (`positionNode = (x, y, d0)`) verschiebt jede Ecke NUR in z, und |d0| ≤ der Amplitude des
+    // Gesetzes (`_membranAmplitude`): die Hülle trägt sie, das Culling bleibt an. Die Notfall-Fläche liegt in z = 0, also darin.
     _membranGeometryFor(tor) {
         if (!this._membranGeoMemo) this._membranGeoMemo = new Map();
         let geo = this._membranGeoMemo.get(tor.gestalt);
@@ -51732,9 +51736,24 @@ class AnazhRealm {
             const seg = tor.gesetz.seg;
             geo = new THREE.PlaneGeometry(mu.spanW, mu.height, seg, seg);
             geo.translate(0, mu.midY, 0);
+            const a = AnazhRealm._membranAmplitude(tor);
+            geo.computeBoundingBox();
+            geo.boundingBox.min.z = -a;
+            geo.boundingBox.max.z = a;
+            geo.boundingSphere = geo.boundingBox.getBoundingSphere(new THREE.Sphere());
             this._membranGeoMemo.set(tor.gestalt, geo);
         }
         return geo;
+    }
+
+    // Die größte Auslenkung der Membran-Welle (Gesetz porta-core MEMBRAN_GESETZ): h ist auf ±1 geklemmt, die Tiefe
+    // `uWaveDepth` atmet im Membran-Tick bis zFace · (aktivDepth[0] + aktivDepth[1]) (act ≤ 1; der Start-Wert waveDepth
+    // liegt darunter oder ist das Minimum), der Shader multipliziert (waveDepthK[0] + waveDepthK[1] · wave).
+    static _membranAmplitude(tor) {
+        const MG = tor.gesetz;
+        const MU = tor.mu;
+        const tiefe = Math.max(MU.waveDepth, MU.zFace * (MG.aktivDepth[0] + MG.aktivDepth[1]));
+        return tiefe * (MG.waveDepthK[0] + MG.waveDepthK[1] * MU.wave);
     }
 
     // TSL-Port des Shell-Shaders (Formel-Referenz: worlds/portale/porta.js buildMembrane); Konstanten aus
@@ -52385,7 +52404,7 @@ class AnazhRealm {
         if (Number.isFinite(entry.scale) && entry.scale !== 1) mesh.scale.setScalar(entry.scale);
         mesh.castShadow = false;
         mesh.receiveShadow = false;
-        mesh.frustumCulled = false; // Wellen-Verformung sprengt die statische Hülle (≤ Handvoll Meshes)
+        // das Culling bleibt an: die Hülle der geteilten Geometrie trägt die Welle (`_membranGeometryFor`)
         mesh.userData.inventar = "portal-membran"; // Identitäts-Stempel (gate:asset-inventory-Familie)
         st.scene.add(mesh);
         // Bodennebel-Kasten am Tor-Fuß. Fail-soft LEISE: die Membran ist Pflicht, der Nebel Kür — ein TSL-Fehl
@@ -52400,7 +52419,7 @@ class AnazhRealm {
                 nebel.scale.copy(mesh.scale);
                 nebel.castShadow = false;
                 nebel.receiveShadow = false;
-                nebel.frustumCulled = false;
+                // der Kasten verformt nichts: seine Hülle ist exakt, das Culling bleibt an
                 nebel.visible = false; // der Tick weckt ihn nähe-aktiviert (act > 0.001)
                 nebel.userData.inventar = "portal-nebel"; // Identitäts-Stempel
                 st.scene.add(nebel);

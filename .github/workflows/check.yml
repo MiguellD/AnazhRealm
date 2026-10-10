@@ -1095,6 +1095,14 @@ jobs:
               # die Index-Wache nennt beide beim Namen, die GPU-Wache zaehlt, das stehende Bild wird erkannt.
               run: npm run gate:weltbild-frost
 
+            - name: Portal-Membran (die Passage ist integriert und zeichnet nur im Blick)
+              if: matrix.gruppe == 1
+              # Null-Renderer: Kollision der Gesetz-Huelle, Membran baut und atmet, Hindurchgehen ist Betreten. Dann der
+              # ECHTE Frame am Genesis-Ring (swiftshader, kienspan): aus der Mitte zeichnen Membranen, die im Ruecken nicht
+              # alle; 70 m vor dem Ring mit dem Blick vom Ring weg keine Membran und kein Nebel (Taeter beim Namen); die
+              # Huelle traegt die Amplitude der Welle; mit frustumCulled = false nennt der Selbsttest jede Membran.
+              run: npm run gate:portal-membran
+
             - name: Post-Kette (echter Renderer — der Direktpfad zeichnet mit Tiefe, jede Nachbild-Stufe kostet nur, wenn sie zeigt)
               if: matrix.gruppe == 1
               # Faehrt den ECHTEN Frame (swiftshader, kienspan) durch die Weiche: Post-Kette, Direktpfad (wie die

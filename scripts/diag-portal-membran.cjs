@@ -13,13 +13,21 @@
 //   W (Hindurchgehen): kreuzt der Spieler die Membran-Ebene INNERHALB der
 //     Apertur, feuert enterPortal (derselbe Chokepoint wie die E-Taste) —
 //     seitlich am Pfosten vorbei feuert NICHT.
+//   B (Blick, 0910-4 — echter Frame, WebGPU auf swiftshader, am Genesis-Ring): die Membran trug `frustumCulled = false`
+//     und zeichnete 8 Befehle und 129 600 Dreiecke auch mit dem Ring im Rücken (Spike der Prüfbühne 10.10.). Gezählt wird,
+//     was der Renderer nach dem Culling zeichnet (`_renderObjectDirect` je Objekt im Hauptbild):
+//       B1 aus der Ring-Mitte nach −x zeichnen Membranen (nicht vakuös), die im Rücken nicht alle
+//       B2 70 m vor dem Ring, Blick vom Ring weg: KEINE Membran und kein Nebel zeichnet — Täter beim Namen (Gestalt, Abstand)
+//       B3 die Hülle trägt die Welle: die Kugel jeder Membran-Geometrie reicht in z bis zur Amplitude des Gesetzes
+//       BS Selbsttest am echten Frame: mit `frustumCulled = false` (dem alten Stand) MUSS B2 jede Membran beim Namen nennen
 //
-//   node scripts/diag-portal-membran.cjs
+//   node scripts/diag-portal-membran.cjs [--ohne-blick]
 "use strict";
 const puppeteer = require("puppeteer");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
 
 const PORT = Number(process.env.PORTAL_MEMBRAN_PORT || 4439);
 const root = path.resolve(__dirname, "..");
@@ -48,6 +56,139 @@ const errs = [];
 function check(name, ok, detail) {
     console.log(`  ${ok ? "✅" : "❌"} ${name}${detail ? " — " + detail : ""}`);
     if (!ok) errs.push(name);
+}
+
+// B: die Seite — der Renderer steht, die Membranen sind gebaut; dann ruht der Loop, und je Blick zählt EIN Frame, was der
+// Renderer nach dem Culling zeichnet. `opts.alt`: alle Membranen und Nebel auf `frustumCulled = false` (der Selbsttest).
+async function blickProbe(opts) {
+    const warte = (ms) => new Promise((q) => setTimeout(q, ms));
+    const t0 = performance.now();
+    let r = null,
+        st = null;
+    while (performance.now() - t0 < 300000) {
+        r = window.anazhRealm;
+        st = r && r.state;
+        if (st && st.rendererReady && st.renderer && st.renderer.backend && st.camera && r._portalMembranes)
+            if (r._portalMembranes.size >= 3) break;
+        await warte(250);
+    }
+    if (!st || !st.renderer || st.renderer.backend.isWebGPUBackend !== true) return { fehler: "kein WebGPU-Renderer" };
+    if (!r._portalMembranes || r._portalMembranes.size < 3)
+        return { fehler: `Membranen am Ring: ${r._portalMembranes ? r._portalMembranes.size : 0} nach 300 s` };
+    const rend = st.renderer;
+    rend.setAnimationLoop(null);
+    const recs = [...r._portalMembranes.values()];
+    if (opts.alt)
+        for (const rec of recs) {
+            rec.mesh.frustumCulled = false;
+            if (rec.nebel) rec.nebel.frustumCulled = false;
+        }
+    const nf = rend._nodes && rend._nodes.nodeFrame;
+    const roh = rend._renderObjectDirect;
+    let zug = null;
+    rend._renderObjectDirect = function (object, material, scene, camera, ...rest) {
+        const inv = object.userData && object.userData.inventar;
+        if (zug && camera === st.camera && (inv === "portal-membran" || inv === "portal-nebel")) zug.push(object);
+        return roh.call(this, object, material, scene, camera, ...rest);
+    };
+    const g = r._genesisMitte();
+    const hoch = (x, z) => r._voxelSurfaceY(x, z);
+    const blick = async (px, pz, lx, lz) => {
+        const cam = st.camera;
+        cam.position.set(px, hoch(px, pz) + 1.7, pz);
+        cam.lookAt(lx, hoch(lx, lz) + 1.7, lz + 1e-4);
+        cam.updateMatrixWorld(true);
+        zug = [];
+        if (nf) nf.update();
+        r._loopRender(performance.now());
+        try {
+            await rend.backend.device.queue.onSubmittedWorkDone();
+        } catch (_e) {}
+        const gesehen = zug;
+        zug = null;
+        const name = (o) => {
+            const rec = recs.find((x) => x.mesh === o || x.nebel === o);
+            const p = new window.THREE.Vector3();
+            o.getWorldPosition(p);
+            return `${o.userData.inventar} ${rec ? rec.tor.gestalt : "?"} (${Math.round(p.distanceTo(cam.position))} m)`;
+        };
+        return {
+            membran: gesehen.filter((o) => o.userData.inventar === "portal-membran").length,
+            nebel: gesehen.filter((o) => o.userData.inventar === "portal-nebel").length,
+            taeter: gesehen.map(name),
+        };
+    };
+    const aus = { membranen: recs.length, mitte: [Math.round(g.x), Math.round(g.z)] };
+    try {
+        aus.im = await blick(g.x, g.z, g.x - 10, g.z);
+        aus.weg = await blick(g.x + 70, g.z, g.x + 104, g.z);
+    } finally {
+        rend._renderObjectDirect = roh;
+    }
+    // B3: die Hülle je Gestalt gegen die Amplitude des Gesetzes
+    const KL = r.constructor;
+    aus.huelle = recs.map((rec) => {
+        const bs = rec.mesh.geometry.boundingSphere;
+        const bb = rec.mesh.geometry.boundingBox;
+        const a = typeof KL._membranAmplitude === "function" ? KL._membranAmplitude(rec.tor) : null;
+        return {
+            gestalt: rec.tor.gestalt,
+            amplitude: a,
+            zReicht: !!(bb && a != null && bb.max.z >= a - 1e-6 && bb.min.z <= -a + 1e-6),
+            kugelUmfasst: !!(bs && bb && bs.radius + 1e-6 >= bb.getBoundingSphere(new window.THREE.Sphere()).radius),
+        };
+    });
+    return aus;
+}
+
+async function blickStufe(check) {
+    const browser = await puppeteer.launch({ headless: true, protocolTimeout: 900000, args: softwareWebGpuArgs() });
+    const lauf = async (alt) => {
+        const page = await browser.newPage();
+        await page.setViewport({ width: 480, height: 270 });
+        const seite = [];
+        page.on("pageerror", (e) => seite.push((e.message || String(e)).split("\n")[0]));
+        await page.goto(`http://127.0.0.1:${PORT}/index.html?holz=kienspan`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        const o = await page.evaluate(blickProbe, { alt });
+        o.seite = seite;
+        await page.close();
+        return o;
+    };
+    try {
+        const b = await lauf(false);
+        if (b.fehler) throw new Error(b.fehler);
+        console.log(`=== B — der Blick am Genesis-Ring ${JSON.stringify(b.mitte)} (WebGPU auf swiftshader, ${b.membranen} Membranen) ===`);
+        check(
+            "B1 aus der Ring-Mitte nach −x zeichnen Membranen, die im Rücken nicht alle",
+            b.im.membran > 0 && b.im.membran < b.membranen,
+            `${b.im.membran} von ${b.membranen} Membranen, ${b.im.nebel} Nebel`
+        );
+        check(
+            "B2 70 m vor dem Ring, Blick vom Ring weg: keine Membran und kein Nebel zeichnet",
+            b.weg.membran === 0 && b.weg.nebel === 0,
+            b.weg.taeter.length ? b.weg.taeter.join(" · ") : "0 Befehle"
+        );
+        const loch = b.huelle.filter((h) => !h.zReicht || !h.kugelUmfasst);
+        check(
+            "B3 die Hülle jeder Membran-Geometrie trägt die Amplitude der Welle",
+            loch.length === 0,
+            loch.length
+                ? loch.map((h) => `${h.gestalt} (Amplitude ${h.amplitude})`).join(" · ")
+                : b.huelle.map((h) => `${h.gestalt} ±${h.amplitude.toFixed(2)} m`).join(" · ")
+        );
+        check("B keine Page-Errors", b.seite.length === 0, b.seite.slice(0, 2).join(" | "));
+        // BS: der alte Stand (frustumCulled = false) in einer frischen Seite — B2 MUSS jede Membran beim Namen nennen
+        const s = await lauf(true);
+        if (s.fehler) throw new Error("Selbsttest: " + s.fehler);
+        check(
+            "BS Selbsttest: mit frustumCulled = false nennt B2 die Membranen im Rücken beim Namen",
+            s.weg.membran === s.membranen,
+            `${s.weg.membran} von ${s.membranen}: ${s.weg.taeter.slice(0, 4).join(" · ")}${s.weg.taeter.length > 4 ? " …" : ""}`
+        );
+    } catch (e) {
+        check("B Lauf", false, (e && e.message) || String(e));
+    }
+    await browser.close();
 }
 
 (async () => {
@@ -258,13 +399,14 @@ function check(name, ok, detail) {
     check("keine Page-Errors während der Probe", pageErrors.length === 0, pageErrors.slice(0, 2).join(" | "));
 
     await browser.close();
+    if (!process.argv.includes("--ohne-blick")) await blickStufe(check);
     server.close();
     if (errs.length) {
         console.log(`\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`);
         process.exit(1);
     }
     console.log(
-        "\n✅ GRÜN — das Welt-Portal ist VOLL integriert: die Kollision folgt der sichtbaren Studio-Form (Öffnung frei, Rahmen solide), die Passage-Membran baut + atmet aus dem EINEN Gesetz, und Hindurchgehen IST Betreten."
+        "\n✅ GRÜN — das Welt-Portal ist VOLL integriert: die Kollision folgt der sichtbaren Studio-Form (Öffnung frei, Rahmen solide), die Passage-Membran baut + atmet aus dem EINEN Gesetz, Hindurchgehen IST Betreten, und mit dem Ring im Rücken zeichnet keine Membran (B)."
     );
 })().catch((e) => {
     console.error("DIAG-FEHLER:", e);
