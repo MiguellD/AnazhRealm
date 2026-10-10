@@ -13784,6 +13784,7 @@ class AnazhRealm {
         if (st.renderer && st.renderer._isHeadlessNull) {
             st.foliageRadius = AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
             st.architectureCullingRadius = archZiel;
+            st._foliageDensityScale = 1;
         } else {
             // Der Radius wächst Chunk für Chunk nach Kapazität (die Dichte lebt PRO Chunk);
             // nie den Sicht-Radius erzwingen.
@@ -13813,45 +13814,47 @@ class AnazhRealm {
             if (st._frameOverBudget || _gpuVoll) this._folRuheSec = 0;
             else this._folRuheSec = (this._folRuheSec || 0) + Math.min(0.3, (sense.frameMs || 17) / 1000);
             const _frRuhig = (this._folRuheSec || 0) >= AnazhRealm.PERF_FOLIAGE_GROW_RUHE_S;
-            // DIE EINE Wand für BEIDE Cull-Radien (Laub + Architektur). Ohne sie folgte der Architektur-Radius
-            // dem PID Frame für Frame (gemessen 04.10., echte GPU, Mess-Wiese: 100↔150 m, 30 Wechsel in 94
-            // Frames): Bauten am Rand wurden gecullt und vom Foundry-Rewarm sofort neu gebaut, je Runde nahmen
-            // die großen Region-Bundles in allen drei Pässen neu auf — die CPU trieb den Regler, der Regler
-            // den Radius.
-            const wand = (cur, ziel) =>
+            // DIE EINE Wand für JEDE Stellgröße, die ein Fege-Takt liest: die beiden Cull-Radien (Laub + Architektur) und
+            // die Laub-Dichte. Ohne sie folgte der Architektur-Radius dem PID Frame für Frame (gemessen 04.10., echte GPU,
+            // Mess-Wiese: 100↔150 m, 30 Wechsel in 94 Frames): Bauten am Rand wurden gecullt und vom Foundry-Rewarm sofort
+            // neu gebaut, je Runde nahmen die großen Region-Bundles in allen drei Pässen neu auf — die CPU trieb den Regler,
+            // der Regler den Radius. Die Dichte lief bis 0910-7 ohne sie: wo der Regler mitten in seiner Spanne steht,
+            // pendelte sie je Takt um ihr Ziel (+Schritt, −2 Schritte; OMEN, V18.538, Regler frei: Wechsel in 0,52 der
+            // Frames). Jeder Wechsel weckte über den Stand-Stempel jeden Fege-Takt zu einer vollen Runde über den Bestand
+            // (Stufen-Wahl 299 Einheiten je Frame statt 34) und über `uLodPerf` die Lage jedes Passes (die Satz-Wahl und
+            // die Höhlen-Sicht rechneten je Pass neu) — CPU-Takt p95 4,8 → 11,7 ms. Das Totband ist für jede Größe derselbe
+            // Anteil ihrer Spanne (SHRINK_TOTBAND über die Spanne des Laub-Radius).
+            const wand = (cur, ziel, schritt, totband, darfWachsen) =>
                 cur < ziel
-                    ? _frRuhig
-                        ? Math.min(ziel, cur + step)
+                    ? _frRuhig && darfWachsen
+                        ? Math.min(ziel, cur + schritt)
                         : cur
-                    : ziel < cur - AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND
-                      ? Math.max(ziel, cur - step * 2)
+                    : ziel < cur - totband
+                      ? Math.max(ziel, cur - schritt * 2)
                       : cur;
-            st.foliageRadius = wand(frCur, frTarget);
+            const TOT = AnazhRealm.PERF_FOLIAGE_SHRINK_TOTBAND;
+            st.foliageRadius = wand(frCur, frTarget, step, TOT, true);
             st.architectureCullingRadius = wand(
                 Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : archZiel,
-                archZiel
+                archZiel,
+                step,
+                TOT,
+                true
             );
-        }
-        // Kapazitäts-gewachsene Dichte: `_foliageDensityScale` skaliert die Instanz-Zahl je Zelle
-        // (die Last-Dichte der Nah-Streu, `_nahStreuKachel`) → unter Last direkt weniger Dreiecke.
-        // Verdichtet nur in den Lücken, lichtet sofort; headless → 1.
-        if (st.renderer && st.renderer._isHeadlessNull) {
-            st._foliageDensityScale = 1;
-        } else {
-            const fdTarget = lerp(AnazhRealm.PERF_FOLIAGE_DENSITY_MIN, 1, effArch);
-            const fdCur =
-                st._foliageDensityScale != null ? st._foliageDensityScale : AnazhRealm.PERF_FOLIAGE_DENSITY_MIN;
-            const fdStep = AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP;
-            // Kaltstart-Wand: das Laub ist ~90 % der GPU-Last, die leere Start-Welt hat aber Luft — wüchse
-            // die Dichte da, buken die ersten Chunks DICHT (Freeze). Solange die Welt STREAMT (Rückstau),
-            // wächst sie nicht: Start-Chunks backen an PERF_FOLIAGE_DENSITY_MIN.
+            // Kapazitäts-gewachsene Dichte: `_foliageDensityScale` skaliert die Instanz-Zahl je Zelle (die Last-Dichte der
+            // Nah-Streu, `_nahStreuKachel`) → unter Last weniger Dreiecke. Kaltstart-Wand: das Laub ist ~90 % der GPU-Last,
+            // die leere Start-Welt hat aber Luft — wüchse die Dichte da, buken die ersten Chunks DICHT (Freeze). Solange die
+            // Welt STREAMT (Rückstau), wächst sie nicht: Start-Chunks backen an PERF_FOLIAGE_DENSITY_MIN.
+            const fdMin = AnazhRealm.PERF_FOLIAGE_DENSITY_MIN;
+            const fdCur = st._foliageDensityScale != null ? st._foliageDensityScale : fdMin;
             const streamBusy = !!(st.voxelMeshPending && st.voxelMeshPending.size > 0);
-            st._foliageDensityScale =
-                fdTarget > fdCur
-                    ? st._frameOverBudget || streamBusy
-                        ? fdCur
-                        : Math.min(fdTarget, fdCur + fdStep)
-                    : Math.max(fdTarget, fdCur - fdStep * 2);
+            st._foliageDensityScale = wand(
+                fdCur,
+                lerp(fdMin, 1, effArch),
+                AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP,
+                (TOT / (AnazhRealm.PERF_FOLIAGE_RADIUS_MAX - AnazhRealm.PERF_FOLIAGE_RADIUS_MIN)) * (1 - fdMin),
+                !streamBusy
+            );
         }
         // SUBSYSTEM 5 — DIE EINE SZENE-AUFLÖSUNG: `_foliageResScale` skaliert das pass()-RenderTarget der
         // GANZEN Szene via `scenePass.setResolutionScale` in `_loopRender` — flicker-frei, nie die Swapchain
