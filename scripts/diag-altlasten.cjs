@@ -1248,7 +1248,10 @@ const ENTSORGUNG_BESITZER = {
     _p2pRemovePeer: { arten: ["material"], grund: "das Namensschild des Peers beim Abschied" },
     createGalaxySkybox: { arten: ["geometry", "material"], grund: "die Himmels-Kugel (je Bau frisch)" },
     _canopyDisposeChunkByKey: { arten: ["geometry", "material"], grund: "die Kronen-Kachel (je Kachel frisch)" },
-    removeCreature: { arten: ["material"], grund: "Aufgaben-Aura und Trage-Sprite der Kreatur (je Kreatur frisch)" },
+    _leibZeichenFrei: {
+        arten: ["material"],
+        grund: "Aufgaben-Aura und Trage-Sprite des Leibs (je Kreatur frisch) — im Fall und im Abschied",
+    },
     _refreshCreatureTaskAura: { arten: ["material"], grund: "die Aufgaben-Aura (je Aufgabe frisch)" },
     _refreshCreatureCarryingVisual: { arten: ["material"], grund: "das Trage-Sprite (je Last frisch)" },
     _spawnVoxelTestChunk: { arten: ["geometry", "material"], grund: "der Test-Chunk" },

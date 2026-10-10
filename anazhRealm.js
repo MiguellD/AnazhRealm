@@ -6948,6 +6948,12 @@ class AnazhRealm {
                 z0 = m.position.z;
             m.position.x += ((rc.tx || 0) - m.position.x) * k;
             m.position.z += ((rc.tz || 0) - m.position.z) * k;
+            // DIE SICHT DER KOPIE (die EINE Wahl jedes Leibs im Bild, _leibSicht): die Stufe nach dem Abstand, lebend wie
+            // gefallen — vorher trug jede Kopie in jeder Ferne die volle Gestalt (Tod-Zensus: der Leichnam des Mitspielers
+            // lag auf 40 m als Gestalt, nie als Fern-Guss).
+            const ddx = pm ? m.position.x - pm.x : 0,
+                ddz = pm ? m.position.z - pm.z : 0;
+            this._leibSicht(m, ddx * ddx + ddz * ddz, this.isInFrustum(m));
             // DER LEICHNAM liegt still: die Kopie dreht auf die Lage des Senders nach (rc.tq) — kein Atem, kein Gang
             if (rc.tq) {
                 m.position.y += ((rc.ty || 0) - m.position.y) * k;
@@ -6967,8 +6973,6 @@ class AnazhRealm {
             const sp = dt > 0 ? Math.hypot(m.position.x - x0, m.position.z - z0) / dt : 0;
             // Kosten am Schirm: jenseits der Standbild-Schwelle der Welt-Tiere (TIER_FERN_DIST × Größe) ruht der Gang.
             const fs = (m.scale && m.scale.x) || 1;
-            const ddx = pm ? m.position.x - pm.x : 0,
-                ddz = pm ? m.position.z - pm.z : 0;
             if (m.userData && m.userData._tierBaum && ddx * ddx + ddz * ddz < AnazhRealm.TIER_FERN_DIST_SQ * fs * fs) {
                 const ud = m.userData;
                 ud.walkPhase = (ud.walkPhase || 0) + (sp > 0.1 ? (dt || 0) * 5.0 : 0);
@@ -16467,23 +16471,7 @@ class AnazhRealm {
     removeCreature(creature) {
         this._kreaturZiegelTod(creature); // das Feld stirbt mit dem Tier
         if (!creature) return;
-        // Task-Aura mit disposen, sonst bleibt das Sprite als Geist im WebGL-Heap. Die Textur ist shared
-        // (_getCreatureTaskAuraTexture, lebt mit der Realm-Klasse) → nur das Material disposen, nie die Map.
-        const aura = creature.userData && creature.userData.taskAura;
-        if (aura) {
-            if (this.state.scene) this.state.scene.remove(aura);
-            // V10.0-j.e — Defer Material-Dispose (WebGPU Submit-Race).
-            if (aura.material) this._queueDispose(aura.material);
-            creature.userData.taskAura = null;
-        }
-        // Welle 6.H P2B.5 — Carrying-Sprite analog disposen.
-        const carrySprite = creature.userData && creature.userData.carryingSprite;
-        if (carrySprite) {
-            if (this.state.scene) this.state.scene.remove(carrySprite);
-            // V10.0-j.e — Defer Material-Dispose (WebGPU Submit-Race).
-            if (carrySprite.material) this._queueDispose(carrySprite.material);
-            creature.userData.carryingSprite = null;
-        }
+        this._leibZeichenFrei(creature); // die Zeichen über dem Leib (ein Gefallener trägt seit dem Fall keine mehr)
         this.state.scene.remove(creature);
         // Welle 6.H Phase 2A — Kreatur ist jetzt eine Group; tiefes Disposal
         // wie bei Soul-Wechsel, sonst leakt jede Sub-Mesh-Geometrie.
@@ -16500,6 +16488,22 @@ class AnazhRealm {
         }
         if (typeof this._renderTaskStatusUI === "function") this._renderTaskStatusUI();
         this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
+    }
+
+    // DIE ZEICHEN ÜBER DEM LEIB (die Aura des Auftrags, das Sprite der Traglast) räumen — der EINE Weg für den Abschied
+    // (removeCreature) und den Fall (_kreaturFaellt: ein Leichnam trägt keinen Auftrag, keine Last). Die Textur ist geteilt
+    // (_getCreatureTaskAuraTexture, lebt mit der Realm-Klasse) — nur das Material geht, aufgeschoben (V10.0-j.e, das
+    // Submit-Rennen unter WebGPU); sonst bliebe das Sprite als Geist im Heap.
+    _leibZeichenFrei(creature) {
+        const ud = creature && creature.userData;
+        if (!ud) return;
+        for (const feld of ["taskAura", "carryingSprite"]) {
+            const z = ud[feld];
+            if (!z) continue;
+            if (this.state.scene) this.state.scene.remove(z);
+            if (z.material) this._queueDispose(z.material);
+            ud[feld] = null;
+        }
     }
 
     // DIE EINE STELLE, an der ein Leib die Wesen verlässt (der Tod → state.leichname, removeCreature): die Parallel-Liste der
@@ -19660,6 +19664,37 @@ class AnazhRealm {
     // am Alter (_creatureNaturalDeath, nach Trauer und Journal). Vorher nahm der Tod am Alter den Leib sofort (removeCreature):
     // „kehrt zur Erde zurück" und er war fort, mitten im Bild.
     _kreaturFaellt(creature) {
+        const ud = creature.userData;
+        // DER ÜBERGANG LEBEND → LEICHNAM (Welle LF kampf Nachbesserung 4): was das lebende Tier trug, endet HIER, in EINEM
+        // Schritt — vorher endete es erst im Abschied 90 s später (removeCreature) oder nie (Tod-Zensus: die Aura des
+        // Auftrags hing 90 s in der Luft, die Traglast blieb, ein Wolf, im Scheitel seines Sprungs getötet, lag 1,2 m über dem
+        // Boden, der letzte Ruf kam aus dem liegenden Leib). Der letzte Ruf klingt im Fall — die Stimme des sterbenden Tiers;
+        // der Leichnam ruft nie. Ein Tod im Sprung legt den Leib auf seinen Stand (die Wurzel ohne den Hüpfer; ein gleitender
+        // Leib steht schon auf der Höhe seines Sim-Schritts), ein getragener Stoß endet (kein Sim-Schritt trägt einen
+        // Gefallenen). Auftrag und Traglast enden: die Last fällt an den Schöpfer zurück (für ihn geerntet oder ihm entnommen —
+        // eine freie Bau-Last war nie seine), die Zeichen über dem Leib gehen (_leibZeichenFrei). Seine Sicht wählt danach der
+        // Takt der Gefallenen wie die jedes Leibs im Bild (_leibSicht): die Stufe nach dem Abstand, nah mit Schatten.
+        this._tierRuf(creature, "trauer");
+        if (ud._hopH > 0 && !ud._stossV) creature.position.y -= ud._hopH;
+        ud._hopH = 0;
+        ud._hopV = 0;
+        ud._stossV = null;
+        const last = ud.carrying;
+        if (last && last.free !== true) {
+            const zurueck = [];
+            for (const [mat, n] of Object.entries(last.materials || {}))
+                if (this.addMaterialToInventory(mat, n)) zurueck.push(`${n}× ${mat}`);
+            if (zurueck.length)
+                this.journalAppend(
+                    "loss",
+                    `${ud.name || "Ein Wesen"} fiel mit seiner Last — sie fällt an dich zurück: ${zurueck.join(", ")}.`,
+                    {
+                        materials: last.materials,
+                    }
+                );
+        }
+        ud.carrying = null;
+        ud.task = null;
         // Der Körper kippt render-seitig auf seine FLANKE (~1 s, _tickLeichname treibt `dying`): die Kipp-Richtung steht
         // quer zur Leibes-Achse (vorn = (sin ry, cos ry)), auf die Seite, die hangab liegt (_fieldGradient: die waagrechte
         // Komponente der Außen-Normale gegen die Flanke), auf flachem Boden oder bei Gefälle längs der Achse zur rechten
@@ -19687,8 +19722,8 @@ class AnazhRealm {
             baseQuat: creature.quaternion.clone(),
             baseY: creature.position.y,
             hebe: this._todHebeTafel(creature, hx, hz),
-            sounded: false,
         };
+        this._leibZeichenFrei(creature);
         // DER LEICHNAM IST KEIN WESEN (Welle LF kampf Nachbesserung 3): er verlässt die EINE Liste der Wesen im Moment des
         // Todes und liegt in state.leichname, wo der Kreatur-Takt seinen Fall treibt (_tickLeichname). Jeder Leser, der Wesen
         // zählt oder wählt — Kappe, Nexus, Hof, Fadenkreuz, Mehrspieler-Strom, Lebenszyklus, der Nächste, die Anzeige, das
@@ -19699,13 +19734,14 @@ class AnazhRealm {
         this._kreaturAusListe(creature);
         this.state.leichname.push(creature);
         this._uiDirty("hof");
+        this._renderTaskStatusUI(); // sein Auftrag zählt nicht mehr
     }
 
     // DIE TOD-LAGE (Q4, K-D19): der Körper kippt um seine Wurzel auf die Kipp-Richtung h = (hx, hz) zu. Ein Punkt der Haut
     // mit Abstand d längs h, Höhe y über der Wurzel und e längs der Kipp-Achse liegt beim Winkel θ bei d·cosθ + y·sinθ längs
     // h, auf der Höhe y·cosθ − d·sinθ. Die Wurzel steigt je Winkel so weit, dass der kleinste Abstand Haut − Boden (der
     // gezeichnete Boden unter JEDEM Punkt, `_standSicht`) bleibt, was er im Stand war — die Flanke legt sich auf den Hang,
-    // nie in ihn, nie darüber. Punkte: die sichtbare Haut der Todes-Pose (Skin angewandt), höchstens TOD_KIPP_PUNKTE; die
+    // nie in ihn, nie darüber. Punkte: die Haut der gezeigten Stufe in der Todes-Pose (Skin angewandt), höchstens TOD_KIPP_PUNKTE; die
     // Tafel trägt TOD_KIPP_STUETZ + 1 Winkel bis TOD_KIPP_RAD, der Kipp-Takt liest sie linear. Vorher hob eine Welt-AABB-
     // Flanke (flanke·sinθ) den Körper: präzise gemessen lag er am Ende 10,4 cm über seinem Stand-Kontakt und schwebte im
     // Kippen bis 54,2 cm; ohne Hebung lag er 84 cm im Gelände (gate:koerper-stand K5). Einmal je Tod, nie je Frame.
@@ -19721,16 +19757,23 @@ class AnazhRealm {
         creature.updateMatrixWorld(true);
         let gesamt = 0;
         const istHaut = (o) => o.isMesh && !o.isInstancedMesh && o.geometry && o.geometry.attributes.position;
-        creature.traverseVisible((o) => {
-            if (istHaut(o)) gesamt += o.geometry.attributes.position.count;
-        });
+        // die Haut der gezeigten Stufe (Gestalt oder Fern-Guss, das Fell nach seinem Schirm-Gesetz) — die WURZEL zählt immer:
+        // fern verbirgt der Kreatur-Ziegel sie, das Feld trägt den Leib (_kzBesitztFeld), die Haut ist dieselbe. Vorher las
+        // traverseVisible eine verborgene Wurzel als „keine Haut": ein Tier, das jenseits der Mesh-Zone starb (der
+        // Lebenszyklus nimmt den Ältesten, wo er steht), lag ohne Tod-Lage — trat der Spieler heran, steckte die Flanke im Hang.
+        const haut = [];
+        const sammle = (o) => {
+            if (istHaut(o)) haut.push(o);
+            for (const k of o.children) if (k.visible) sammle(k);
+        };
+        sammle(creature);
+        for (const o of haut) gesamt += o.geometry.attributes.position.count;
         if (!gesamt) return null;
         const schritt = Math.max(1, Math.ceil(gesamt / AnazhRealm.TOD_KIPP_PUNKTE));
         const pD = [];
         const pY = [];
         const pE = [];
-        creature.traverseVisible((o) => {
-            if (!istHaut(o)) return;
+        for (const o of haut) {
             const pa = o.geometry.attributes.position;
             for (let i = 0; i < pa.count; i += schritt) {
                 o.getVertexPosition(i, v);
@@ -19741,7 +19784,7 @@ class AnazhRealm {
                 pY.push(v.y - py);
                 pE.push(dx * ax + dz * az);
             }
-        });
+        }
         // der gezeichnete Boden unter einem Punkt (die Karte im Band um das Gesetz der Wurzel)
         const g0 = this.getTerrainHeightAt(px, pz);
         const boden = (x, z) => this._standSicht(x, z, g0, false);
@@ -22883,11 +22926,12 @@ class AnazhRealm {
     }
 
     // ═══ KAMPF-GEFÜHL — DER LEICHNAM (Welle LF kampf, Posten 7) ═══
-    // Ein Gefallener (state.leichname, _creatureCombatDeath) hat keine KI und keinen Gang: er kippt (~83° smoothstep über
-    // kippDauerSec) auf die beim Tod gemerkte Flanke, die Wurzel steigt nach der Tod-Lage (_todHebeTafel), ein letzter Ruf,
-    // dann liegt er gefuehl.leichnamSec und sinkt in der letzten Spanne um die Höhe seines Leibs in die Erde — DANN
-    // removeCreature. Rein optisch — kein Sim-/Replay-Pfad liest die Lage; der Mehrspieler-Strom trägt sie (q).
-    _tickLeichname(delta) {
+    // Ein Gefallener (state.leichname, _kreaturFaellt) hat keine KI, keinen Gang und keine Stimme: er kippt (~83° smoothstep
+    // über kippDauerSec) auf die beim Tod gemerkte Flanke, die Wurzel steigt nach der Tod-Lage (_todHebeTafel), dann liegt
+    // er gefuehl.leichnamSec und sinkt in der letzten Spanne um die Höhe seines Leibs in die Erde — DANN removeCreature. Je
+    // Takt wählt er seine Sicht wie jeder Leib im Bild (_leibSicht: die Stufe nach dem Abstand). Rein optisch — kein
+    // Sim-/Replay-Pfad liest die Lage; der Mehrspieler-Strom trägt sie (q).
+    _tickLeichname(delta, playerPos) {
         const L = this.state.leichname;
         for (let i = L.length - 1; i >= 0; i--) {
             const creature = L[i];
@@ -22907,10 +22951,6 @@ class AnazhRealm {
                 const k0 = Math.max(0, Math.min(hebe.length - 2, Math.floor(f)));
                 creature.position.y = dying.baseY + hebe[k0] + (hebe[k0 + 1] - hebe[k0]) * (f - k0);
             }
-            if (u >= 1 && !dying.sounded) {
-                dying.sounded = true;
-                this._tierRuf(creature, "trauer"); // der letzte Ruf — die Stimme des fallenden Körpers
-            }
             // er sinkt in der letzten Spanne seiner Frist in die Erde (die Höhe seines Leibs), dann fällt er
             const ende = dying.dauer + dying.nachklang;
             if (dying.sinken > 0 && dying.t > ende - dying.sinken) {
@@ -22920,13 +22960,55 @@ class AnazhRealm {
                     dying.liegeY -
                     u2 * u2 * this._kreaturLeib(creature, 0, this._sinkLeib || (this._sinkLeib = {})).hoehe;
             }
-            if (dying.t >= ende) this.removeCreature(creature); // rückwärts: der Splice überspringt keinen
+            if (dying.t >= ende) {
+                this.removeCreature(creature); // rückwärts: der Splice überspringt keinen
+                continue;
+            }
+            const dx = creature.position.x - playerPos.x,
+                dz = creature.position.z - playerPos.z;
+            this._leibSicht(creature, dx * dx + dz * dz, this.isInFrustum(creature));
         }
+    }
+
+    // DIE SICHT EINES LEIBS (je Takt — die Wesen im Kreatur-Takt, die Gefallenen in _tickLeichname): die EINE Stelle, an der
+    // ein Leib im Bild seine Darstellung wählt. Der Sichtbarkeits-Besitzer: trägt das Tier sein Feld, gehört `visible` dem
+    // Kreatur-Ziegel (der Mesh-Rückweg bliebe sonst lebendig; _kzVersuch hält den Körper unsichtbar, auch bei Atlas-
+    // Erschöpfung) — sonst ist das Mesh-Tier sichtbar, gecullt JE PASS an der Körper-Kugel jeder Hülle (frustumCulled, gegen
+    // den Blick UND jede Kaskaden-Box: ein Tier hinter dem Blick wirft ins Bild). Im Blick: die STUFE nach dem Abstand —
+    // jenseits TIER_FERN_DIST × Größe der FERN-GUSS (das gemergte Standbild, ~8 Draws statt ~235, ohne Schatten), diesseits
+    // die Gestalt mit Schatten; dazu das Fell-Bildschirm-Gesetz und die Zeichen über dem Leib (die Aura des Auftrags, die
+    // Traglast — ein Gefallener trägt keine, `_kreaturFaellt`). Vorher lebte die Wahl im Takt der Wesen: ein Leichnam behielt
+    // 90 s die Stufe, in der er fiel (Tod-Zensus: fern gefallen lag er auf 2 m als Fern-Guss ohne Schatten, nah gefallen
+    // trug er auf 40 m die volle Gestalt — 2 400 von 5 460 Leichnam-Takten).
+    _leibSicht(creature, distSq, inFrustum) {
+        if (!this._kzBesitztFeld(creature)) creature.visible = this.state.creaturesHidden !== true;
+        if (!inFrustum) return; // beim Hinschwenken setzt DERSELBE Frame den richtigen Zustand
+        const ud = creature.userData;
+        const tB = ud._tierBaum;
+        if (tB && tB.fern && tB.wrap) {
+            const fL = creature.scale.x || 1;
+            const grenzSq = AnazhRealm.TIER_FERN_DIST_SQ * fL * fL;
+            // HYSTERESE am EINEN Chokepoint (gate:tier-fern): im ±TIER_FERN_HYST-Band hält der letzte Zustand (kein
+            // Flackern); geschaltet wird NUR visible, die Templates bleiben memoisiert. Render-rein.
+            const h = AnazhRealm.TIER_FERN_HYST;
+            const kante = tB.wrap.visible ? (1 + h) * (1 + h) : (1 - h) * (1 - h);
+            const nah = distSq < grenzSq * kante;
+            if (tB.wrap.visible !== nah) {
+                tB.wrap.visible = nah;
+                tB.fern.visible = !nah;
+            }
+            if (nah) this._fellBildschirmGesetz(creature, tB);
+        }
+        // Welle 6.H — die Aura des Auftrags folgt dem Leib (über dem Mesh), das Sprite der Traglast darüber (P2B.5)
+        const auraY = ud.taskAura || ud.carryingSprite ? this._creatureAuraOffsetY(creature) : 0;
+        if (ud.taskAura)
+            ud.taskAura.position.set(creature.position.x, creature.position.y + auraY, creature.position.z);
+        if (ud.carryingSprite)
+            ud.carryingSprite.position.set(creature.position.x, creature.position.y + auraY + 0.5, creature.position.z);
     }
 
     updateCreatures(delta) {
         this.state.creatureAnimationTime += delta;
-        this._tickLeichname(delta); // die Gefallenen: kippen, liegen, sinken — kein Wesen mehr
         // W4 (V17.48) — die emotionale CONTAGION + das Wachsen der Bindung leben HIER
         // (im Kreatur-Tick), nicht im Emotion-Tick → die Emotion-Kern-Ticks bleiben isoliert.
         this._tickEmotionContagion(delta);
@@ -22937,6 +23019,7 @@ class AnazhRealm {
         // DER KREATUR-ZIEGEL (Analog A): Tiere sind Kapsel-Feld — das Feld
         // WANDERT mit dem Tier (lebende Knochen-Matrix, Matrix der Matrix).
         this._tickKreaturZiegel(playerPos);
+        this._tickLeichname(delta, playerPos); // die Gefallenen: kippen, liegen, sinken — kein Wesen mehr, ihre Sicht wie jede
         // DIE JÄGER dieses Takts (Q11): wer jagt (der Zustand des Vor-Takts), ist eine Bedrohung für jede Beute in seiner
         // Witterung — _creatureWariness liest die Liste (die Beute floh vorher nur vor dem Spieler, R-D4/K-D11).
         const jaeger = this._kreaturJaeger || (this._kreaturJaeger = []);
@@ -23026,15 +23109,9 @@ class AnazhRealm {
             // in ihre Zelle (Leben sustainiert, wo es wohnt; rate-limitiert).
             this._tickCreatureLifeTrickle(creature, lifeTrickleNow);
 
-            // Im Sichtfeld? Nur für die Sicht-Pflege unten (Aura, Fern-Guss, Fell) — nie für eine Bewegungs-Entscheidung
-            // (Q11: Herde und Hindernis hingen am Blick des Spielers, R-D5).
+            // Im Sichtfeld? Nur für die Sicht des Leibs (_leibSicht: Stufe, Fell, Aura) und den Gang ferner Läufer — nie für
+            // eine Bewegungs-Entscheidung (Q11: Herde und Hindernis hingen am Blick des Spielers, R-D5).
             const inFrustum = this.isInFrustum(creature);
-
-            // EIN SICHTBARKEITS-BESITZER: trägt das Tier sein Feld, gehört `visible` dem Kreatur-Ziegel (der
-            // Mesh-Rückweg bliebe sonst lebendig); _kzVersuch hält den Körper unsichtbar — auch bei Atlas-Erschöpfung.
-            // Das Mesh-Tier ist sichtbar, gecullt wird JE PASS: jede Hülle trägt die Körper-Kugel (frustumCulled),
-            // three prüft sie gegen den Blick UND gegen jede Kaskaden-Box — ein Tier hinter dem Blick wirft ins Bild.
-            if (!this._kzBesitztFeld(creature)) creature.visible = this.state.creaturesHidden !== true;
 
             // Das Distanz-Band bestimmt, wie oft die KI-Richtung neu rechnet. distSq (XZ) EINMAL hier (der
             // Wasser-Kontext nutzt es wieder), die Wurzel EINMAL (die Anim-Raten-Leiter liest sie).
@@ -23455,46 +23532,10 @@ class AnazhRealm {
             if (creature.userData._verhaltenAktion && creature.userData._verhaltenAktion.biss)
                 this._kreaturBissTakt(creature);
 
-            // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
-            // sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
+            // DIE SICHT DES LEIBS (die EINE Wahl jedes Leibs im Bild — Stufe, Fell, Zeichen; die Gefallenen gehen denselben Weg)
+            this._leibSicht(creature, distSqToPlayer, inFrustum);
+            // Farb-Updates nur `inFrustum` — beim Hinschwenken sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
             if (inFrustum) {
-                // FERN-GUSS-Leser: jenseits ~TIER_FERN_DIST·L trägt das gemergte Standbild (~8 Draws) statt des
-                // animierten Baums (~235). Nur im Frustum getoggelt; beim Frustum-Eintritt setzt DERSELBE Frame
-                // den korrekten Zustand.
-                const tB = creature.userData._tierBaum;
-                if (tB && tB.fern && tB.wrap) {
-                    const fL = creature.scale.x || 1;
-                    const grenzSq = AnazhRealm.TIER_FERN_DIST_SQ * fL * fL;
-                    // HYSTERESE am EINEN Chokepoint (gate:tier-fern): im ±TIER_FERN_HYST-Band hält der letzte Zustand
-                    // (kein Flackern); geschaltet wird NUR visible, die Templates bleiben memoisiert. Render-rein.
-                    const h = AnazhRealm.TIER_FERN_HYST;
-                    const kante = tB.wrap.visible ? (1 + h) * (1 + h) : (1 - h) * (1 - h);
-                    const nah = distSqToPlayer < grenzSq * kante;
-                    if (tB.wrap.visible !== nah) {
-                        tB.wrap.visible = nah;
-                        tB.fern.visible = !nah;
-                    }
-                    if (nah) this._fellBildschirmGesetz(creature, tB);
-                }
-                // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
-                const aura = creature.userData && creature.userData.taskAura;
-                if (aura) {
-                    aura.position.set(
-                        creature.position.x,
-                        creature.position.y + this._creatureAuraOffsetY(creature),
-                        creature.position.z
-                    );
-                }
-                // Welle 6.H P2B.5 — Carrying-Sprite folgt der Kreatur darüber.
-                const carrySprite = creature.userData && creature.userData.carryingSprite;
-                if (carrySprite) {
-                    carrySprite.position.set(
-                        creature.position.x,
-                        creature.position.y + this._creatureAuraOffsetY(creature) + 0.5,
-                        creature.position.z
-                    );
-                }
-
                 // Farbe aus der Emotion; defensiv ohne material (bricht den Frame nicht ab).
                 // Zwei gepoolte THREE.Color statt Allokation je Kreatur × Frame (GC-Spikes); `material.color.lerp`
                 // mutiert nur material.color, nie das Ziel → die Singletons bleiben rein.
@@ -39950,7 +39991,8 @@ class AnazhRealm {
         const jetzt = performance.now();
         const traeger = new Map();
         for (const e of st.architectures || []) if (e && e._ziegelSlot) traeger.set(e._ziegelSlot, { bau: e });
-        for (const c of st.creatures || []) {
+        // jeder Leib im Bild trägt seinen Satz: die Wesen und die Gefallenen (state.leichname liegen fern als Feld)
+        for (const c of [...(st.creatures || []), ...(st.leichname || [])]) {
             const u = c && c.userData;
             if (u && u._kzGlieder) for (const gl of u._kzGlieder) traeger.set(gl.handle, { tier: c });
         }
@@ -91648,8 +91690,8 @@ class AnazhRealm {
         return oldest;
     }
 
-    // [ATMOSPHERE] Lifecycle-Tod: Trauer (sorrow), journal-loss-Eintrag, Aura-Pulse, dann der Fall (_kreaturFaellt: kippen,
-    // liegen, der letzte Ruf, sinken). Memory stirbt bewusst mit der Kreatur.
+    // [ATMOSPHERE] Lifecycle-Tod: Trauer (sorrow), journal-loss-Eintrag, Aura-Pulse, dann der Fall (_kreaturFaellt: der
+    // letzte Ruf, kippen, liegen, sinken). Memory stirbt bewusst mit der Kreatur.
     _creatureNaturalDeath(creature) {
         if (!creature) return false;
         const name = (creature.userData && creature.userData.name) || "(unbenannt)";
@@ -91684,8 +91726,8 @@ class AnazhRealm {
             });
         }
         // DER FALL (Posten 7): das Wesen fällt auf die Flanke, liegt und sinkt in die Erde (_kreaturFaellt — derselbe Weg wie
-        // der Tod im Kampf); das Lebewohl, der letzte Ruf (klang:UMWELT.tier, Trauer-Kontur), klingt, wenn es liegt
-        // (_tickLeichname). Memory wird bewusst verworfen, nicht ins Journal kopiert.
+        // der Tod im Kampf); das Lebewohl, der letzte Ruf (klang:UMWELT.tier, Trauer-Kontur), klingt im Fall — der Leichnam
+        // ruft nie. Memory wird bewusst verworfen, nicht ins Journal kopiert.
         this._kreaturFaellt(creature);
         this.state.faunaLifecycle.lastDeathAt = Date.now();
         return true;
@@ -97347,8 +97389,10 @@ class AnazhRealm {
             if (v.z + r > zt) zt = v.z + r;
             if (y + r > yTop) yTop = y + r;
         };
-        for (const cr of st.creatures || [])
-            if (cr && cr.visible !== false) frei(cr.position.x, cr.position.y, cr.position.z, 6);
+        // jeder Leib im Bild wirft: die Wesen und die Gefallenen (ein Leichnam liegt mit Schatten, bis er versunken ist)
+        for (const liste of [st.creatures || [], st.leichname || []])
+            for (const cr of liste)
+                if (cr && cr.visible !== false) frei(cr.position.x, cr.position.y, cr.position.z, 6);
         if (st.playerMesh) frei(st.playerMesh.position.x, st.playerMesh.position.y, st.playerMesh.position.z, 4);
         for (const is of st.floatingIslands || []) {
             const g = is && is.geometry;

@@ -759,6 +759,17 @@ jobs:
               # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S9.
               run: npm run gate:kampf-gefuehl
 
+            - name: Tod-Zensus (der Leichnam traegt nichts vom lebenden Tier, seine Sicht waehlt der EINE Weg jedes Leibs)
+              if: matrix.gruppe == 2
+              # Headless (Null-Renderer, Produktions-Boot): ein Hirsch stirbt am Alter, ein Wolf im Kampf im Scheitel seines
+              # Sprungs, beide mit Auftrag (Aura) und Traglast; je Kreatur-Takt ueber die ganze Frist (91 s), der Spieler
+              # wechselt nach 10 s und 50 s die Seite (2 m <-> 40 m), dazu je eine Leichnam-Kopie beim Mitspieler: die Stufe
+              # passt zum Abstand wie bei einem lebenden Tier (nah die Gestalt mit Schatten-Werfer, fern der Fern-Guss), keine
+              # Aura, keine Traglast, kein Wesen-Takt, keine Stimme, die Wurzel der Tod-Lage auf dem Stand-Boden, nach der Frist
+              # fort. Sechs Taeter im selben Boot (Sicht, Kopie, Zeichen, Sprung, Wesen, Stimme) muessen beim Namen rot lesen.
+              # Lokal 18 s.
+              run: npm run gate:tod-zensus
+
             - name: Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)
               if: matrix.gruppe == 2
               # cv:3 (spec/asset-contract/v3): 12 frozen sha256-Goldens (5 Gattungen × 2 Seeds + 2 ov-Kulturen),

@@ -1291,10 +1291,30 @@ function probe(selbsttest) {
 
     // ── W6: jeder Werfer ist der Box bekannt — ein Bundle-Kind (Werfer-Hülle), ein Boden-Bereich, ein freier Werfer
     // (Tier · Spieler · Insel · Bauplan-Bau als eigene Gruppe). Eine neue Werfer-Klasse außerhalb davon läge über der
-    // nahen Ebene der Box (luftM) und verlöre ihren Schatten — die Linse nennt sie beim Namen. ──
+    // nahen Ebene der Box (luftM) und verlöre ihren Schatten — die Linse nennt sie beim Namen. Ein Gefallener liegt in der
+    // Szene (state.leichname, mit Schatten bis er versunken ist — Welle LF kampf Nachbesserung 4): die Probe legt einen hin,
+    // und die Box kennt ihn wie ein lebendes Tier (`_kaskadenWerferOben` liest beide Listen). ──
     {
+        const altMax = st.maxCreatures;
+        st.maxCreatures = Math.max(altMax || 0, st.creatures.length + 1);
+        const tot = r.spawnCreatureAt(pm.x + 3, pm.y, pm.z + 3, "happy", "wolf", { precise: true, bodySize: 1 });
+        st.maxCreatures = altMax;
+        if (tot) r.damageCreature(tot, 1e9, { source: "world" });
+        aus.w6Tot = !!tot && (st.leichname || []).indexOf(tot) !== -1 && !!tot.parent;
+        // der Konsum: die Box-Methode selbst, ein Fenster nur um den Gefallenen (500 m über allem, Licht-Raum = Welt) —
+        // kennt sie ihn, steht die Höhe ihres höchsten Werfers über ihm
+        aus.w6TotOben = null;
+        if (aus.w6Tot) {
+            const S = { v: new T.Vector3(), basisInv: new T.Matrix4() };
+            tot.position.y += 500;
+            const p = tot.position;
+            r._kaskadenWerferOben([], S, p.x - 1, p.x + 1, p.y - 1, p.y + 1);
+            aus.w6TotOben = S.werferY >= p.y;
+            tot.position.y -= 500;
+        }
         const frei = new Set([
             ...(st.creatures || []),
+            ...(st.leichname || []),
             ...(st.floatingIslands || []),
             ...(st.architectures || []).map((e) => e && e.mesh).filter(Boolean),
             st.playerMesh,
@@ -1311,7 +1331,8 @@ function probe(selbsttest) {
                 if (o.isMesh && o.castShadow === true) fremd.push((top.name || top.type) + " > " + (o.name || o.type));
             });
         }
-        aus.w6 = { fremd: fremd.slice(0, 8), n: fremd.length };
+        aus.w6 = { fremd: fremd.slice(0, 8), n: fremd.length, tot: aus.w6Tot, totOben: aus.w6TotOben };
+        if (tot && tot.parent) r.removeCreature(tot);
     }
 
     // ── Z1: die Karten-Ziele — der Knoten baut sein Ziel durch die Hülle (wie r184 setupRenderTarget) ──
@@ -1591,9 +1612,15 @@ function probe(selbsttest) {
             JSON.stringify(a.w5)
         );
         check(
-            "W6 jeder Werfer ist der Box bekannt (Bundle · Satz · Tier · Spieler · Insel · Bauplan-Bau)",
-            a.w6.n === 0,
-            a.w6.n ? a.w6.fremd.join(" | ") : "keine fremde Werfer-Klasse"
+            "W6 jeder Werfer ist der Box bekannt (Bundle · Satz · Tier, lebend und gefallen · Spieler · Insel · Bauplan-Bau)",
+            a.w6.n === 0 && a.w6.tot === true && a.w6.totOben === true,
+            a.w6.n
+                ? a.w6.fremd.join(" | ")
+                : !a.w6.tot
+                  ? "kein Gefallener in der Szene (die Probe ist für die Gefallenen vakuös)"
+                  : !a.w6.totOben
+                    ? "der Gefallene wirft, aber die Box kennt ihn nicht (_kaskadenWerferOben liest nur die Wesen)"
+                    : "keine fremde Werfer-Klasse, die Box kennt den Gefallenen"
         );
         const w7t = (w) =>
             w.paesse.map((p) => `${p.name} ${Math.round(p.tris)}/${Math.round(w.voll)}`).join(" · ") +

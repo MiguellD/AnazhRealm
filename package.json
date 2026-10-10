@@ -124,6 +124,7 @@
         "gate:mensch-anatomie": "node scripts/diag-mensch-anatomie.cjs --selftest && node scripts/diag-mensch-anatomie.cjs",
         "gate:koerper-bewegung": "node scripts/diag-koerper-bewegung.cjs",
         "gate:kampf-gefuehl": "node scripts/diag-kampf-gefuehl.cjs",
+        "gate:tod-zensus": "node scripts/diag-tod-zensus.cjs",
         "gate:schritt-klang": "node scripts/diag-schritt-klang.cjs",
         "gate:klang-zensus": "node scripts/diag-klang-zensus.cjs --selftest",
         "gate:schmiede-contract": "node scripts/diag-schmiede-contract.cjs",
