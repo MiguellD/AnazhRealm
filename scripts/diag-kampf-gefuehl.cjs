@@ -900,21 +900,33 @@ async function WELLE_L() {
                     const j = r.spawnCreatureAt(bx, ort0.y, bz, "calm", seele, { bodySize: 1 });
                     const h = r.spawnCreatureAt(bx + 1.2, ort0.y, bz, "calm", "wesen", { bodySize: 0.6 });
                     if (j && h) {
-                        j.position.set(bx, r.getTerrainHeightAt(bx, bz), bz);
-                        j.rotation.set(0, Math.PI / 2, 0); // dem Kitz zugewandt
-                        j.userData._steuer = null;
-                        h.position.set(bx + 1.2, r.getTerrainHeightAt(bx + 1.2, bz), bz);
-                        h.userData._stossV = null;
-                        h.userData.hp = 1e6;
-                        j.userData.nextHuntStrikeAt = 0;
-                        const ansatz = r._tickCreatureScentStrike(j) === true;
-                        const dv = ansatz
-                            ? beiss(() => {
-                                  h.position.x = bx + 1.2;
-                                  h.position.z = bz;
-                                  h.userData.fearUntil = 0;
-                              })
-                            : null;
+                        // gemessen wird der Stoß des Bisses, nicht seine Trefferquote: bis zu drei Ansprünge aus der Ruhe (ein
+                        // Ansprung des Freude-Hüpfers geht über ein Kitz hinweg — benannt offen, Nachbesserung 2; vorher
+                        // wackelte die Wand in 2 von 27 Läufen am Fuchs)
+                        let dv = null;
+                        let ansatz = false;
+                        for (let a = 0; a < 3 && dv === null; a++) {
+                            j.position.set(bx, r.getTerrainHeightAt(bx, bz), bz);
+                            j.rotation.set(0, Math.PI / 2, 0); // dem Kitz zugewandt
+                            Object.assign(j.userData, {
+                                _steuer: null,
+                                _stossV: null,
+                                _verhaltenAktion: null,
+                                _hopH: 0,
+                                _hopV: 0,
+                                nextHuntStrikeAt: 0,
+                            });
+                            h.position.set(bx + 1.2, r.getTerrainHeightAt(bx + 1.2, bz), bz);
+                            h.userData._stossV = null;
+                            h.userData.hp = 1e6;
+                            ansatz = r._tickCreatureScentStrike(j) === true;
+                            if (!ansatz) break;
+                            dv = beiss(() => {
+                                h.position.x = bx + 1.2;
+                                h.position.z = bz;
+                                h.userData.fearUntil = 0;
+                            });
+                        }
                         beute[seele] = { biss: dv !== null, dv: dv || 0 };
                     }
                     if (h) r.removeCreature(h);
@@ -2532,6 +2544,8 @@ async function WELLE_L() {
                                         letzte = VA;
                                         reh.anspruenge++;
                                     }
+                                    // die Höhe des Ansprungs (Bericht: der Freude-Hüpfer 0,8 / 1,2 m oder so hoch wie das Ziel)
+                                    reh.hubMaxM = Math.max(reh.hubMaxM || 0, +(j2.userData._hopH || 0).toFixed(3));
                                     if (VA.biss && Number.isFinite(VA.kopfZiel)) {
                                         reh.takte++;
                                         if (VA.kopfZiel <= KN[0] + 1e-6 || VA.kopfZiel >= KN[1] - 1e-6) reh.klemme++;
