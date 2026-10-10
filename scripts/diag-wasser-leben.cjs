@@ -18,7 +18,8 @@
 //                   Vertices anders als der Main (die Feuchte las eine Halbbreite, die kein Segment trägt).
 //   Gegenprüfung 07.10. (jede Zahl rot am Vorher 8f09227d bzw. cf9a07ba):
 //   K10 (D11)       die Decke: in trockenen Höhlen unter und neben dem See las der Körper Wasser (3511 von 3511 Proben),
-//                   Spieler schwamm, Kamera tauchte, Tier schwamm.
+//                   Spieler schwamm, Kamera tauchte, Tier schwamm. Dazu (Schau-2 wasser-wahrheit, 10.10.) der Wagen: die
+//                   Tiefe des Fahr-Schritts (`_fahrTiefe`) an jedem Höhlen-Boden — sie las das Wasser über der obersten Fläche.
 //   K11 (D10)       der Straßenwagen trieb im See mit der Dichte des Holzkarren-Spenders; treibend nickte das Boot mit dem
 //                   Seegrund (Wank-Ziel 29,5°). W2: der Rand-Streifen des Sees war für das Gefährt blind (0 von 13).
 //   F5              jede Quelle der Welt im Mess-Ring (64, ohne Filter): bricht sie aus dem Nichts (breiter oder tiefer als die
@@ -260,6 +261,13 @@ function urteil(b) {
             if (ti.schwimmt > 0)
                 v.push(
                     `K10 TIER: in ${ti.schwimmt} von ${ti.proben} trockenen Höhlen schwimmt das Tier auf dem Höhlen-Boden`
+                );
+            // der Wagen (Schau-2 wasser-wahrheit): die Tiefe des Fahr-Schritts am Höhlen-Boden
+            const wa = hh.wagen;
+            if (!wa) v.push("K10 WAGEN LEER: keine Tiefe am Wagen (`_fahrTiefe`) im Stand");
+            else if (wa.nass > 0)
+                v.push(
+                    `K10 WAGEN: an ${wa.nass} von ${wa.proben} trockenen Höhlen-Böden steht der Wagen im Wasser (bis ${wa.maxM} m) — die Tiefe am Wagen liest das Wasser über der obersten Fläche`
                 );
         }
     }
@@ -528,6 +536,7 @@ function selbsttest() {
             spieler: { proben: 6, schritte: 120, schwimmFrames: 0 },
             kamera: { proben: 6, unterWasser: 0 },
             tier: { proben: 6, schwimmt: 0 },
+            wagen: { proben: 3500, nass: 0, maxM: 0 },
         },
         wagen: {
             wagen: { afloat: false, tiefe: 8.2, unterkanteUeberGrund: 0, unterkanteUnterSpiegel: 8.2 },
@@ -623,6 +632,8 @@ function selbsttest() {
         ["K10 SPIELER", (b) => (b.hoehle.spieler.schwimmFrames = 120)],
         ["K10 KAMERA", (b) => (b.hoehle.kamera.unterWasser = 6)],
         ["K10 TIER", (b) => (b.hoehle.tier.schwimmt = 6)],
+        ["K10 WAGEN", (b) => Object.assign(b.hoehle.wagen, { nass: 766, maxM: 8.2 })],
+        ["K10 WAGEN LEER", (b) => (b.hoehle.wagen = null)],
         ["K10 LEER", (b) => (b.hoehle.proben = 0)],
         [
             "K11 STRASSENWAGEN SCHWIMMT",

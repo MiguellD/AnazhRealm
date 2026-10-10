@@ -54508,13 +54508,12 @@ class AnazhRealm {
 
     // DIE TIEFE AM WAGEN (Schau-2 wasser-wahrheit): so tief steht die Unterkante des Fahr-Zustands (`fz.y`, die Ebene der
     // Räder bzw. die Unterkante der schwimmenden Hülle) in der EINEN Wasser-Wahrheit am Körper (`_koerperWasser` über dem
-    // Grund unter dem Wagen) — der Wasser-Term des Fahr-Schritts (vehicle-core fahrKraefte `e.tiefe`). Bis V18.537 kannte der
-    // Fahr-Schritt kein Wasser: der GT fuhr 19 m durch 0,61 m Wasser mit 43 km/h.
+    // Grund des Wagens — seiner eigenen Unterkante, nie der obersten Fläche: unter Fels trägt die Decke kein Wasser, ein Wagen
+    // in einer Höhle unter dem See steht trocken, wie der Körper) — der Wasser-Term des Fahr-Schritts (vehicle-core
+    // fahrKraefte `e.tiefe`). Bis V18.537 kannte der Fahr-Schritt kein Wasser: der GT fuhr 19 m durch 0,61 m Wasser mit 43 km/h.
     _fahrTiefe(fz) {
         if (!fz || !Number.isFinite(fz.y)) return 0;
-        const grund = this.getTerrainHeightAt(fz.x, fz.z);
-        if (!Number.isFinite(grund)) return 0;
-        const spiegel = this._koerperWasser(fz.x, fz.z, grund);
+        const spiegel = this._koerperWasser(fz.x, fz.z, fz.y);
         return spiegel > fz.y ? spiegel - fz.y : 0;
     }
 
