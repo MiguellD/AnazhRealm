@@ -396,7 +396,12 @@ function wundeVerdict(W) {
 // Reichweite (1,29–2,35 ms je Jäger), unter dem Sims ein Ansprung alle 1,6 s. Dazu das stehende Reh (Größe 0,8, aus 1,6 und
 // 1,3 m): mindestens 5 von 6 Ansprüngen beißen — der Biss trifft auch ein Ziel, das größer ist als das Kitz, und dort, wo die
 // Hetze hält.
-const REH_SOLL = { bisse: 5 };
+// Der Kopf zielt aus der gezeigten Pose (98042fd4, Nachbesserung 3 die Wand): stehen Pose und Ziel still, steht das Ziel der
+// Kopf-Neigung still — zehn Takte _kreaturBissKopf ohne Pose-Fortschritt, das Ziel wandert höchstens 1e-6 rad (die Probe trägt
+// nur, wenn der erste Rest ≥ 0,05 rad ist). Vorher summierte sich der Rest je Takt auf das Ziel des Vor-Takts und lief an die
+// Klemme (BISS.kopfNeigung). Die Klemmen-Takte im Spiel-Takt (Bericht, kein Urteil — sie streuen je Lauf: vorher 12–18 von 60,
+// danach 2–8 von 42–84) stehen in der Zeile daneben.
+const REH_SOLL = { bisse: 5, kopfDrift: 1e-6, kopfRest: 0.05 };
 function bissReichVerdict(R, reh) {
     if (!R) return ["biss-reich keine Probe"];
     const v = [];
@@ -404,6 +409,21 @@ function bissReichVerdict(R, reh) {
     else if (!(reh.anspruenge >= reh.versuche && reh.bisse >= REH_SOLL.bisse))
         v.push(
             `biss-reh: ${reh.bisse} Bisse aus ${reh.anspruenge} Ansprüngen auf ein stehendes Reh (Soll ≥ ${REH_SOLL.bisse} von ${reh.versuche}) — ${JSON.stringify(reh.je)}`
+        );
+    const K = reh && reh.kopfSumme;
+    if (!K) v.push("biss-kopf keine Probe (Wolf vor dem Reh, Pose still)");
+    else if (!(Math.abs(K.rest) >= REH_SOLL.kopfRest))
+        v.push(
+            `biss-kopf-probe: der erste Rest ist ${K.rest} rad — die Pose weist schon aufs Ziel, die Probe trägt nicht`
+        );
+    else if (!(K.drift <= REH_SOLL.kopfDrift))
+        v.push(
+            `biss-kopf: ohne Pose-Fortschritt wandert das Ziel der Kopf-Neigung in ${K.takte} Takten ${K.drift} rad (${K.reihe.join(" → ")}) — der Rest summiert sich auf das Ziel des Vor-Takts`
+        );
+    if (R.kaltZerlegt === null) v.push("biss-kalt keine Probe (Wolf und Fuchs, 35 m, kalt)");
+    else if (R.kaltZerlegt > 0)
+        v.push(
+            `biss-kalt: die Wahl der Beute zerlegt ${R.kaltZerlegt} Gestalten noch kalter Gattungen synchron im Kreatur-Takt (${R.kaltVerts} Vertices, Jäger und Beute 35 m außer Reichweite) — an der Bake-Uhr vorbei`
         );
     if (R.gestaltenJeTakt === null) v.push("biss-kosten keine Probe (Wolf und 15 Beutetiere)");
     else if (R.gestaltenJeTakt > 0)
@@ -2638,6 +2658,34 @@ async function WELLE_L() {
                             r.damageCreature = dcT;
                         }
                     }
+                    // DIE REST-SUMME (Nachbesserung 3, deterministisch): der Wolf 1,3 m vor dem Reh in der Stand-Pose, eine Biss-Geste
+                    // offen; zehnmal das Zielen des Kopfs (_kreaturBissKopf) ohne Takt dazwischen — die gezeigte Pose steht still
+                    if (j2 && r2 && ortR && j2.userData._tierBaum) {
+                        const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };
+                        r2.position.set(R0.x, r.getTerrainHeightAt(R0.x, R0.z), R0.z);
+                        j2.position.set(R0.x, r.getTerrainHeightAt(R0.x, R0.z - 1.3), R0.z - 1.3);
+                        j2.rotation.set(0, 0, 0);
+                        const gang = j2.userData._tierBaum._gang || (j2.userData._tierBaum._gang = {});
+                        gang.bissKopf = 0;
+                        gang.bissRumpf = 0;
+                        j2.updateMatrixWorld(true);
+                        r2.updateMatrixWorld(true);
+                        const VA = { biss: { ziel: r2 }, kopfZiel: 0, rumpfZiel: 0 };
+                        const m = r._kreaturMaul(j2, {});
+                        const reihe = [];
+                        if (m)
+                            for (let k = 0; k < 10; k++) {
+                                r._kreaturBissKopf(j2, VA, m, r2);
+                                reihe.push(+VA.kopfZiel.toFixed(4));
+                            }
+                        if (reihe.length)
+                            reh.kopfSumme = {
+                                takte: reihe.length,
+                                rest: reihe[0],
+                                drift: +(Math.max(...reihe) - Math.min(...reihe)).toFixed(6),
+                                reihe: reihe.slice(0, 4),
+                            };
+                    }
                     if (j2) r.removeCreature(j2);
                     if (r2) r.removeCreature(r2);
                     w.z.bissReh = reh;
@@ -2662,8 +2710,58 @@ async function WELLE_L() {
                 // (T24) DER BISS KOSTET, WAS IN REICHWEITE STEHT, UND SPRINGT NIE INS LEERE (Nachbesserung 2):
                 // (a) die Kosten — ein Wolf, 15 Beutetiere 8–28 m um ihn (keines in der Weite seines Ansprungs): je Beute-Biss-
                 // Takt gezählt, wie viele Gestalten er rechnet (_kreaturBissRadial auf ein Tier), dazu die Zeit je Takt (Bericht)
-                const reich = { gestaltenJeTakt: null, msJeTakt: null, simsAnspruenge: null, simsSek: 10 };
+                const reich = {
+                    gestaltenJeTakt: null,
+                    msJeTakt: null,
+                    simsAnspruenge: null,
+                    simsSek: 10,
+                    kaltZerlegt: null,
+                };
                 await teil("T24", async () => {
+                    // (c) DIE KALTE GATTUNG (Nachbesserung 3, Lehre 14): ein Wolf und ein Fuchs 35 m vor ihm, beide Gattungen kalt
+                    // (wie eine Gattung, die nie nah beim Spieler stand — das Namen-Memo vergessen, danach wiederhergestellt);
+                    // gezählt, wie oft die Wahl der Beute eine Gestalt synchron zerlegt (_kreaturGliederGruppen) und wie viele
+                    // Vertices. Befund Gegenprüfung 2: das Maul des Jägers (Wolf 29 987 Vertices) und die Gestalt der Beute (Fuchs
+                    // 31 405) — 12,4 und 3,1 ms im Kreatur-Takt, an der Bake-Uhr vorbei
+                    {
+                        const J1 = { x: P.x + 60, z: P.z - 60 };
+                        const wolfC = neu("wolf", J1.x, J1.z, 1);
+                        const fuchsC = neu("fuchs", J1.x + 35, J1.z, 1);
+                        if (wolfC && fuchsC) {
+                            wolfC.position.y = r.getTerrainHeightAt(J1.x, J1.z);
+                            fuchsC.position.y = r.getTerrainHeightAt(J1.x + 35, J1.z);
+                            const memo = r._trefferGliedNamen || new Map();
+                            const gesichert = new Map();
+                            for (const c of [wolfC, fuchsC]) {
+                                const g = r._kreaturGattung(c);
+                                if (memo.has(g)) gesichert.set(g, memo.get(g));
+                                memo.delete(g);
+                                delete c.userData._trefferGlieder;
+                            }
+                            const grRoh = r._kreaturGliederGruppen;
+                            let zerlegt = 0,
+                                verts = 0;
+                            r._kreaturGliederGruppen = function (cr) {
+                                zerlegt++;
+                                const G = grRoh.call(this, cr);
+                                if (G) for (const [, g] of G.gruppen) verts += g.verts || 0;
+                                return G;
+                            };
+                            try {
+                                wolfC.userData.nextHuntStrikeAt = 0;
+                                wolfC.userData._verhaltenAktion = null;
+                                r._tickCreatureScentStrike(wolfC);
+                            } finally {
+                                r._kreaturGliederGruppen = grRoh;
+                                delete r._kreaturGliederGruppen;
+                                for (const [g, n] of gesichert) memo.set(g, n);
+                            }
+                            reich.kaltZerlegt = zerlegt;
+                            reich.kaltVerts = verts;
+                        }
+                        if (wolfC) r.removeCreature(wolfC);
+                        if (fuchsC) r.removeCreature(fuchsC);
+                    }
                     {
                         const J0 = { x: P.x - 60, z: P.z - 60 };
                         const wolfK = neu("wolf", J0.x, J0.z, 1);
@@ -3926,7 +4024,7 @@ async function WELLE_L() {
         const brv = bissReichVerdict(z.bissReich, z.bissReh);
         check(
             brv.length === 0,
-            "LF Posten 5 (Nachbesserung 2): der Biss kostet, was in Reichweite steht (0 Gestalten außer Reichweite je Takt), springt nie ins Leere (0 Ansprünge auf den Sims) und trifft ein stehendes Reh (≥ 5 von 6)" +
+            "LF Posten 5 (Nachbesserung 2 + 3): der Biss kostet, was in Reichweite steht (0 Gestalten außer Reichweite je Takt, keine kalte Gattung zerlegt), springt nie ins Leere (0 Ansprünge auf den Sims) und trifft ein stehendes Reh (≥ 5 von 6, das Ziel des Kopfs aus der gezeigten Pose)" +
                 (brv.length ? " — " + brv.join(" · ") : "")
         );
         const brvAlt = bissReichVerdict(
@@ -3938,8 +4036,19 @@ async function WELLE_L() {
                 simsUeber: 1.0,
                 simsWaagrecht: 0.9,
                 simsReich: 2.6,
+                kaltZerlegt: 2,
+                kaltVerts: 61392,
             },
-            { versuche: 6, anspruenge: 6, bisse: 0, boden: {}, je: { 1.3: { anspruenge: 3, bisse: 0 } } }
+            {
+                versuche: 6,
+                anspruenge: 6,
+                bisse: 0,
+                takte: 61,
+                klemme: 14,
+                kopfSumme: { takte: 10, rest: 0.31, drift: 0.69, reihe: [0.31, 0.62, 0.93, 1] },
+                boden: {},
+                je: { 1.3: { anspruenge: 3, bisse: 0 } },
+            }
         );
         const brvGut = bissReichVerdict(
             {
@@ -3950,13 +4059,26 @@ async function WELLE_L() {
                 simsUeber: 1.0,
                 simsWaagrecht: 0.9,
                 simsReich: 2.6,
+                kaltZerlegt: 0,
+                kaltVerts: 0,
             },
-            { versuche: 6, anspruenge: 6, bisse: 6, boden: {}, je: {} }
+            {
+                versuche: 6,
+                anspruenge: 6,
+                bisse: 6,
+                takte: 70,
+                klemme: 8,
+                kopfSumme: { takte: 10, rest: 0.31, drift: 0, reihe: [0.31, 0.31, 0.31, 0.31] },
+                boden: {},
+                je: {},
+            }
         );
         check(
             brvGut.length === 0 &&
-                ["biss-kosten:", "biss-sims:", "biss-reh:"].every((t) => brvAlt.some((x) => x.startsWith(t))),
-            "Selbst-Test T24: der Befund (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh) nennt Kosten, Sims und Reh; ein Biss nur in Reichweite, der trifft, bleibt grün"
+                ["biss-kosten:", "biss-sims:", "biss-reh:", "biss-kopf:", "biss-kalt:"].every((t) =>
+                    brvAlt.some((x) => x.startsWith(t))
+                ),
+            "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert, 2 kalte Gattungen zerlegt) nennen Kosten, Sims, Reh, Kopf und Kälte; ein Biss nur in Reichweite, der trifft, bleibt grün"
         );
         check(
             c.bogenVerschleiss,

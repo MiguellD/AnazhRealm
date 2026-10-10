@@ -21622,14 +21622,16 @@ class AnazhRealm {
         const ud = creature.userData || {};
         if (Number.isFinite(ud.nextHuntStrikeAt) && this.state.creatureAnimationTime < ud.nextHuntStrikeAt)
             return false;
-        const maul = this._kreaturMaul(creature, this._bissMaulBeute || (this._bissMaulBeute = {}));
-        if (!maul) return false;
+        // das Maul erst, wenn ein Leib das Tor des Leibs passiert (_kreaturBissGrob) — ein ferner Jäger rechnet keine Gestalt
+        let maul = null;
         let nearest = null;
         let nearestSpalt = this._kreaturBissReich(creature);
         const creatures = this.state.creatures || [];
         for (let i = 0; i < creatures.length; i++) {
             const other = creatures[i];
-            if (!this._kreaturIstBeute(creature, other)) continue;
+            if (!this._kreaturIstBeute(creature, other) || !this._kreaturBissGrob(creature, other)) continue;
+            if (!maul) maul = this._kreaturMaul(creature, this._bissMaulBeute || (this._bissMaulBeute = {}));
+            if (!maul) return false;
             const spalt = this._kreaturBissSpalt(creature, other, maul);
             if (spalt !== null && spalt <= nearestSpalt) {
                 nearestSpalt = spalt;
@@ -21779,8 +21781,11 @@ class AnazhRealm {
     // 1 m über seinem Sprung lag, sprang alle 1,6 s ins Leere. (2) DAS GROB-TOR des Leibs (_trefferErreichbar, dieselbe
     // Reichweite, die Klinge und Pfeil fragen): liegt die Mitte des Ziels weiter als Maul + Ansprung + die Spanne seiner Gestalt,
     // rechnet keine Gestalt (Lehre 25 — vorher rechnete die Wahl der Beute je Takt die ganze Gestalt jedes Beutetiers der Welt
-    // samt erzwungener Welt-Matrix: 1,29–2,35 ms je Jäger bei 15 Tieren). null = kein Maul oder ein Ziel ohne Gestalt.
+    // samt erzwungener Welt-Matrix: 1,29–2,35 ms je Jäger bei 15 Tieren). Vor beiden steht das Tor des LEIBS (_kreaturBissGrob):
+    // weder das Maul des Jägers noch die Gestalt des Ziels wird gerechnet, solange der ganze Leib samt Ansprung es nicht
+    // erreicht. null = kein Maul oder ein Ziel ohne Gestalt.
     _kreaturBissSpalt(creature, ziel, maul) {
+        if (!this._kreaturBissGrob(creature, ziel)) return Infinity;
         const m = maul || this._kreaturMaul(creature, this._bissMaulRad || (this._bissMaulRad = {}));
         if (!m) return null;
         const kopfOben =
@@ -21790,11 +21795,27 @@ class AnazhRealm {
             if (K.y0 > kopfOben) return Infinity;
             return this._kreaturBissRadial(creature, null, m);
         }
-        if (!this._kreaturTrefferGlieder(ziel)) return null;
         if (ziel.position.y > kopfOben) return Infinity;
         const reich = this._kreaturBissReich(creature);
         if (!this._trefferErreichbar(ziel, creature.position.x, creature.position.z, m.vorM + reich)) return Infinity;
+        if (!this._kreaturTrefferGlieder(ziel)) return null;
         return this._kreaturBissRadial(creature, ziel, m);
+    }
+
+    // DAS TOR DES LEIBS VOR JEDER GESTALT (Welle LF kampf Nachbesserung 3, Lehre 14/25): erreicht der ganze Leib des Jägers —
+    // seine Reichweite (_kreaturLeib, sie deckt jedes Glied samt Maul, gate:kampf-gefuehl T12) — mit dem Ansprung
+    // (_kreaturBissReich) das Ziel überhaupt (der Leib des Tiers, _trefferErreichbar; die Kapsel des Spielers)? Ohne jede
+    // Gestalt: weder das Maul des Jägers noch die Glieder des Ziels werden zerlegt, solange es zu ist. Vorher zerlegte die Wahl
+    // der Beute eine noch kalte Gattung synchron im Kreatur-Takt, an der Bake-Uhr vorbei — der Wolf sein Maul in 21,2 ms, die
+    // Gestalt eines Fuchses 4,9 ms, beide 35 m außer Reichweite.
+    _kreaturBissGrob(creature, ziel) {
+        const L = this._kreaturLeib(creature, 0, this._bissGrobLeib || (this._bissGrobLeib = {}));
+        const spanne = L.reichweite + this._kreaturBissReich(creature);
+        const cx = creature.position.x,
+            cz = creature.position.z;
+        if (ziel) return this._trefferErreichbar(ziel, cx, cz, spanne);
+        const K = this._spielerKapsel(this._bissKapsel || (this._bissKapsel = {}));
+        return Math.hypot(K.x - cx, K.z - cz) - K.r <= spanne;
     }
 
     // DER SPALT VOR DEM MAUL (m, waagrecht), wenn das Tier sich dem Ziel zuwendet: der Abstand seiner Mitte zum Leib des Ziels
