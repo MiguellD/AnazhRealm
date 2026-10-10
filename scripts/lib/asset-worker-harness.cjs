@@ -306,7 +306,10 @@ function pageHtml() {
       pool.push((msg) => new Promise((res) => { const reqId = "p" + seq++; pend.set(reqId, res); w.postMessage(Object.assign({ reqId }, msg)); }));
     }
   };
-  window.__kostenListe = async (liste) => {
+  // \`mitAbdruck\` (DARF, je Eintrag true/false): dieselbe Stufe trägt zusätzlich den EINEN Bau-Fingerabdruck
+  // (\`bauAbdruck\`) — die Gestalten-Wand liest so jede Gestalt der Zweit-Kerne aus dem Bau, den der Kosten-Zug ohnehin
+  // fährt (kein Zweitbau).
+  window.__kostenListe = async (liste, mitAbdruck) => {
     poolMehr(Math.max(1, Math.min(4, (navigator.hardwareConcurrency || 2) >> 1)));
     const out = new Array(liste.length);
     let next = 0;
@@ -316,6 +319,10 @@ function pageHtml() {
         const r = await frag(Object.assign({ type: "build-asset" }, liste[i]));
         const k = window.__phytoCore.budgetSippen(r.meshes || []);
         out[i] = { tris: k.tris, draws: k.draws, budget: r.budget || null, budgetBruch: r.budgetBruch || null };
+        if (mitAbdruck && mitAbdruck[i]) {
+          const a = await bauAbdruck(r.meshes || []);
+          out[i].abdruck = a.teile > 0 ? a.hash : null;
+        }
       }
     }));
     return out;
@@ -379,10 +386,18 @@ async function runWithWorker(port, cb) {
         const build = (msg) => page.evaluate((m) => window.__build(m), msg);
         // In Scheiben zu 120 Stufen: jede Scheibe ein eigener evaluate (der protocolTimeout gilt je Ruf — 2 224
         // Zweit-Kern-Stufen in EINEM Ruf rissen ihn unter Last).
-        const kostenListe = async (liste) => {
+        // `abdruck` (DARF): (Eintrag) => true, wenn die Stufe auch ihren Bau-Fingerabdruck tragen soll.
+        const kostenListe = async (liste, abdruck) => {
             const out = [];
+            const flags = abdruck ? liste.map((c) => !!abdruck(c)) : null;
             for (let i = 0; i < liste.length; i += 120)
-                out.push(...(await page.evaluate((l) => window.__kostenListe(l), liste.slice(i, i + 120))));
+                out.push(
+                    ...(await page.evaluate(
+                        (l, f) => window.__kostenListe(l, f),
+                        liste.slice(i, i + 120),
+                        flags ? flags.slice(i, i + 120) : null
+                    ))
+                );
             return out;
         };
         // Der Bau-Hash vieler Stufen (gate:regler-wirkt), in Scheiben wie die Kosten-Liste.

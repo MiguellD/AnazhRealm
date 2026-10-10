@@ -30,9 +30,11 @@
     // darüber liegt), draws = Draws je Körper und Pass nach der Wirts-Regel: das Budget-Gesetz am Ausgang (Brücke
     // UND Sync-Guss des Wirts-Ofens, phyto-core budgetErzwingen) faltet die starren Stoffe und die Stoff-Hüllen
     // je Bindungs-Klasse (Haut bleibt Haut) und Seh-Klasse (MATERIAL_KLASSEN.seh: Auge · Haut · Haar · Stoff bleiben
-    // getrennt — L1 6 ist das gemessene Minimum); schatten = die werfende Stufe. gestalten = Individuen je Rezept (das
-    // bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
-    var GESTALTEN_JE_REZEPT = 16;
+    // getrennt — L1 6 ist das gemessene Minimum); schatten = die werfende Stufe. gestalten = Individuen je Rezept
+    // (gefüllt je Rezept unten bei PRESETS): EINE — der Guss ist seed-invariant (Same 1 ≡ 2 byte-gleich, L0 und L1),
+    // 16 Gestalten waren 16 byte-gleiche Zwillinge. Eine Seed-Achse ist ein Re-Mint-Akt, nie eine Zahl hier (S3 08.10.,
+    // gate:asset-contract Gestalten-Wand).
+    var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
             kindStages: { koerper: [0, 1] },

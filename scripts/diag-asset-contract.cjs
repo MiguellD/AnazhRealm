@@ -223,6 +223,52 @@ function steckbriefUrteil(atlas, breit, nadel, gross, weide) {
     }
     return v;
 }
+// DIE GESTALTEN-WAND (S3 08.10., Studio-Vertrag B2c `gestalten`): V Gestalten je Art sind V verschiedene Individuen —
+// die Welt zieht je Gestalt einen eigenen Körper (`_foundryVariantFor`, je Gestalt × Stufe × Teil ein Leaf und ein Befehl).
+// Ein Rezept, dessen Bau den Samen nicht liest, trägt mit V ≥ 2 byte-gleiche Zwillinge als eigene Leaves (Genesis: zwei
+// Drachentore = zwei Leaves, 43 Befehle, 8,67 MB). Die Wand baut je Art und Rezept mit V ≥ 2 JEDE Gestalt 1..V über die
+// echte Brücke (die erste gelieferte Gitter-Stufe, der EINE Bau-Fingerabdruck `bauAbdruck`; die Zweit-Kerne aus dem Bau
+// des Kosten-Zugs, kein Zweitbau) — V Gestalten müssen V verschiedene Abdrücke zeigen, jeder Zwilling ist ROT beim Namen
+// („Gestalten-Lüge: vehicle-Rezept gt (8 von 16 verschieden: 1=9, …)"). Bis zur Gegenprüfung 08.10. verglich sie nur die
+// Samen 1 und 2 und war für Zwillinge dahinter blind: das Fahrzeug trug V 16 bei acht Lacken (Same 1 = 9 … 8 = 16).
+// Eine Seed-Achse zu schaffen ist ein Re-Mint-Akt des Kerns, nie eine Zahl in der Zeile.
+const SELBST_GESTALT = "drachentor"; // der Selbsttest: porta-Rezept, seed-invariant, mit V 2 MUSS es rot werden
+const SELBST_ACHSE = "gt"; // der Selbsttest hinter Same 2: das Lack-Gesetz wiederholt sich nach V — mit V + 1 MUSS es rot werden
+function gestaltenV(gestalten, preset) {
+    const V = Number.isInteger(gestalten[preset]) && gestalten[preset] >= 1 ? gestalten[preset] : gestalten["*"];
+    return Number.isInteger(V) && V >= 1 ? V : 0;
+}
+// abdruecke[preset] = { lod, h: [Abdruck von Same 1, Same 2, …] } — das Urteil liest die ersten V.
+function gestaltenUrteil(abdruecke, gestalten, kernVon) {
+    const v = [];
+    for (const [preset, a] of Object.entries(abdruecke)) {
+        const V = gestaltenV(gestalten, preset);
+        if (V < 2) continue;
+        const fehlt = [];
+        for (let s = 1; s <= V; s++) if (!a.h[s - 1]) fehlt.push(s);
+        if (fehlt.length) {
+            v.push(`Gestalten: ${kernVon(preset)}-Rezept ${preset} ohne Abdruck für Same ${fehlt.join(", ")}`);
+            continue;
+        }
+        const erste = new Map(),
+            zwillinge = [];
+        for (let s = 1; s <= V; s++) {
+            const h = a.h[s - 1];
+            if (erste.has(h)) zwillinge.push(`${erste.get(h)}=${s}`);
+            else erste.set(h, s);
+        }
+        if (zwillinge.length)
+            v.push(
+                `Gestalten-Lüge: ${kernVon(preset)}-Rezept ${preset} (${erste.size} von ${V} verschieden: ` +
+                    zwillinge.slice(0, 8).join(", ") +
+                    (zwillinge.length > 8 ? ", …" : "") +
+                    ")"
+            );
+    }
+    return v;
+}
+const istLuege = (urteil, kern, preset) => urteil.some((x) => x.startsWith(`Gestalten-Lüge: ${kern}-Rezept ${preset} (`));
+
 // Die Bild-Deckung eines Paars: L1 gegen L0 auf demselben Raster (Pixel-Kante = L0-Höhe / 300).
 function deckungsWert(p, atlas) {
     const px = p.H / 300;
@@ -261,7 +307,8 @@ function deckungsUrteil(paare, band, atlas) {
     const schwebeMess = [];
     let schwebeProbe = null;
     const sehProben = [];
-    await runWithWorker(PORT, async ({ build, kostenListe, getData, atlas, atlasAlpha, karte, probeLauf }) => {
+    let gestaltWand = null;
+    await runWithWorker(PORT, async ({ build, kostenListe, bauHashListe, getData, atlas, atlasAlpha, karte, probeLauf }) => {
         // Daten-Kanäle gegen die eingefrorenen JSONs.
         // SYNERGIE-WELLE — DER EINE UMSCHLAG (get-book): die drei Daten-Payloads reisen
         // in EINEM Reply; die eingefrorenen JSONs (recipes/world-params/render-config)
@@ -412,8 +459,40 @@ function deckungsUrteil(paare, band, atlas) {
                 miss(c, await build(c), `${preset}-s7-L${lod}-summer`);
             }
         }
-        const weltK = welt.length ? await kostenListe(welt) : [];
+        // DIE GESTALTEN-WAND: je Art und Rezept mit V ≥ 2 JEDE Gestalt 1..V an der ersten gelieferten Gitter-Stufe — der
+        // Bau-Fingerabdruck über die echte Brücke. Die Zweit-Kerne tragen ihn aus dem Kosten-Zug (dieselben Bauten), die
+        // Pflanzen-Arten und die Selbsttests (drachentor Same 1/2, gt Same V + 1) baut `bauHashListe`.
+        const ersteStufe = (preset) => {
+            const kind = artVon(preset);
+            return stufen[kind].find((l) => !(budget[kind][l] && budget[kind][l].karte));
+        };
+        const weltK = welt.length
+            ? await kostenListe(welt, (c) => gestaltenV(gestalten, c.presetId) >= 2 && c.lod === ersteStufe(c.presetId))
+            : [];
         welt.forEach((c, i) => miss(c, weltK[i], `${c.presetId}-s${c.seed}-L${c.lod}`));
+        const abdruecke = {};
+        const abdruck = (c, h) => {
+            const a = abdruecke[c.presetId] || (abdruecke[c.presetId] = { lod: c.lod, h: [] });
+            a.h[c.seed - 1] = h || null;
+        };
+        welt.forEach((c, i) => {
+            if (weltK[i] && "abdruck" in weltK[i]) abdruck(c, weltK[i].abdruck);
+        });
+        const gFaelle = [];
+        for (const preset of alle) {
+            const lod = ersteStufe(preset);
+            if (lod === undefined) continue;
+            const V = gestaltenV(gestalten, preset);
+            if (preset === SELBST_GESTALT) for (const seed of [1, 2]) gFaelle.push({ presetId: preset, seed, lod, season: "summer" });
+            else if (preset === SELBST_ACHSE) gFaelle.push({ presetId: preset, seed: V + 1, lod, season: "summer" });
+            if (V < 2 || kernVonArt[artVon(preset)]) continue;
+            for (let seed = 1; seed <= V; seed++) gFaelle.push({ presetId: preset, seed, lod, season: "summer" });
+        }
+        const gH = gFaelle.length ? await bauHashListe(gFaelle) : [];
+        gFaelle.forEach((c, i) => abdruck(c, gH[i] && gH[i].teile > 0 ? gH[i].hash : null));
+        const kernVon = (preset) => kernVonArt[artVon(preset)] || "phyto";
+        gestaltWand = { abdruecke, gestalten, kernVon, zweitBauten: welt.length, hashBauten: gFaelle.length };
+        fails.push(...gestaltenUrteil(abdruecke, gestalten, kernVon));
         // JEDE GESTALT DER WELT (W5): der Host baut je Art die Samen 1..V (budget.gestalten, '*' ohne eigene Zeile,
         // _foundryVariantFor) — die Wand misst, was die Welt liefert, nicht nur die eingefrorenen Samen. Die Zweit-Kerne
         // zählt der Zug oben (ihre Gestalten aus IHREM Gesetzbuch, in der Seite gezählt).
@@ -633,6 +712,57 @@ function deckungsUrteil(paare, band, atlas) {
         if (!s1 || !s2 || !s3 || !s4 || !s5 || !s6 || !s7 || !s8 || !s9 || !s10 || !s11 || !s12 || !s13)
             fails.push("Selbsttest der Budget-Wand feuert nicht");
     }
+
+    // DIE GESTALTEN-WAND — die Zeile und ihr Selbsttest: (14) das Selbsttest-Rezept mit V 2 MUSS als Lüge rot werden;
+    // (15) wenigstens eine geprüfte Art zeigt V verschiedene Abdrücke (die Wand ist nicht blind rot); (16) hinter Same 2:
+    // das Fahrzeug mit V + 1 MUSS rot werden (das Lack-Gesetz wiederholt sich nach V — Same V + 1 = Same 1).
+    if (gestaltWand) {
+        const G = gestaltWand;
+        const luegen = gestaltenUrteil(G.abdruecke, G.gestalten, G.kernVon);
+        const geprueft = Object.keys(G.abdruecke).filter((p) => gestaltenV(G.gestalten, p) >= 2);
+        const jeKern = {};
+        let gestaltZahl = 0;
+        for (const p of geprueft) {
+            jeKern[G.kernVon(p)] = (jeKern[G.kernVon(p)] || 0) + 1;
+            gestaltZahl += gestaltenV(G.gestalten, p);
+        }
+        console.log(
+            `Gestalten-Wand: ${geprueft.length} Arten/Rezepte mit V ≥ 2, ${gestaltZahl} Gestalten (jede Gestalt 1..V; ` +
+                Object.entries(jeKern)
+                    .map(([k, n]) => `${k} ${n}`)
+                    .join(" · ") +
+                `) · Lügen ${luegen.length}` +
+                (luegen.length ? ` (${luegen.map((x) => x.replace(/^Gestalten-Lüge: /, "")).join("; ")})` : "") +
+                ` · Zweit-Kern-Zug ${G.zweitBauten} Bauten · Hash-Bauten ${G.hashBauten}`
+        );
+        const s14 =
+            !!G.abdruecke[SELBST_GESTALT] &&
+            istLuege(
+                gestaltenUrteil(G.abdruecke, Object.assign({}, G.gestalten, { [SELBST_GESTALT]: 2 }), G.kernVon),
+                G.kernVon(SELBST_GESTALT),
+                SELBST_GESTALT
+            );
+        const s15 = geprueft.some((p) => {
+            const V = gestaltenV(G.gestalten, p);
+            const h = G.abdruecke[p].h.slice(0, V);
+            return h.length === V && h.every(Boolean) && new Set(h).size === V;
+        });
+        const vAchse = gestaltenV(G.gestalten, SELBST_ACHSE);
+        const s16 =
+            vAchse >= 2 &&
+            !!G.abdruecke[SELBST_ACHSE] &&
+            !!G.abdruecke[SELBST_ACHSE].h[vAchse] &&
+            istLuege(
+                gestaltenUrteil(G.abdruecke, Object.assign({}, G.gestalten, { [SELBST_ACHSE]: vAchse + 1 }), G.kernVon),
+                G.kernVon(SELBST_ACHSE),
+                SELBST_ACHSE
+            );
+        console.log(
+            `Selbsttest Gestalten-Wand: ${SELBST_GESTALT} mit V 2 wird rot ${s14 ? "✅" : "❌"} · V verschiedene Abdrücke gesehen ${s15 ? "✅" : "❌"} · ` +
+                `${SELBST_ACHSE} mit V ${vAchse + 1} wird rot (Same ${vAchse + 1} = Same 1) ${s16 ? "✅" : "❌"}`
+        );
+        if (!s14 || !s15 || !s16) fails.push("Selbsttest der Gestalten-Wand feuert nicht");
+    } else fails.push("Gestalten-Wand lief nicht");
 
     // DER KARTEN-RUNDLAUF (W6) — das Urteil je Fall, dann der Selbsttest (die gestörte Schicht MUSS rot werden, die
     // Box-Mip der GPU MUSS die Deckungs-Wand sprengen — sonst misst die Linse nichts).

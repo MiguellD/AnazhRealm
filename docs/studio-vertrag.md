@@ -113,7 +113,10 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   `rinde` ({ast, reisig} in trunkR, 0 < reisig < ast < 1) · `schnitt` / `rute` (das Reisig des Strauchs, in
   trunkR, 0 < schnitt < rute < 1: dünnere Stränge als `schnitt` fallen, unter `rute` trägt der Strang die
   Vierkant-Röhre auf jedem 3. Ring) · `boden` (tiefstes Laub in Baumhöhen, [0, 1)) ·
-  `deckung` (Band [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt).
+  `deckung` (Band [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt) · `rispe` ({grannen
+  ganz ≥ 1, segmente ganz 1..3, breite > 0}: die Rispe des Grases je gelieferter Stufe — Grannen × Segmente und die
+  Breite der Granne in Einheiten der vollen; emitGrass liest sie, jede Granne des Individuums zieht ihre Würfe weiter,
+  und jede Stufe tastet DIESELBE Kurve der Granne ab — 3 Segmente, nie neu integriert, nie verfeinert).
 - DARF-Felder der Gelenk-Gestalt (S3, Form geprüft): `ab` (an einer Stufe außer der ersten, endlich > 0, streng
   steigend über die Stufen) = ab `ab` m × Körpergröße trägt die Stufe das Bild — die Gestalt liest es beim Bau, jeder
   Leser fragt die Gestalt (die Wirts-Distanzen TIER_FERN_DIST_SQ · MENSCH_FERN_DIST_SQ fielen) · `hyst` (Art-Ebene,
@@ -122,13 +125,27 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   der werfende Teil der Stufe nach Seh-Klasse (Tier `["haar"]`, Mensch `["haut", "stoff", "haar"]`); der Rest
   der Stufe wirft nie. (Der Wurf-Teil des Baums ist eine eigene Form derselben Zeile — E1, Sache der Pflanzen-Familie;
   `wurf.seh` ist die Form der Gelenk-Gestalt, der Validator prüft sie neben jener.)
+- **Die Gras-Zeile (S3, 08.10.) ist aus dem Haushalt abgeleitet:** die Nah-Wiese der Welt zeichnet an der Mess-Wiese
+  höchstens 57 066 Dreiecke (Ratsche des Profi-Bands, je Blick ≤ 80 000) — `grass[1]` 1 220 (L1 0–5 m, Rispe 6 × 2:
+  der Federbusch; die Zeile stand bei 1 000 und stieg offen — der Halm-Kontrast der Wiesen-Linse trägt die Zahl der
+  Grannen, 6 × 2 hält 13,61/7,97 gegen 14,04/8,22 der Basis) und `grass[2]` 130 (L2 5–14 m, EINE Granne, die Sehne
+  der Kurve) statt der gemessenen Hülle 1 700/320; die Halme bleiben byte-gleich, die Breite der Granne ist an der
+  Bild-Deckung geeicht (Ährchen-Anteil der Pixel, 8 Blicke).
 - `band` (DARF, ganze Zahl > 0 und < `tris`): das Profi-Band-Ziel der Stufe (Haushalt), solange die
   gebaute Hülle `tris` darüber liegt — offen und benannt, die Wand druckt den Faktor; erreicht die Stufe
   das Band, fällt das Feld und `tris` IST das Band. `tris` bleibt die Ratsche (darf nur fallen).
 - `gestalten` (je Rezept, ganze Zahl ≥ 1): wie viele Individuen (Samen 1..V) die Welt von einem Rezept
   trägt (`_foundryVariantFor`). Der Haupt-Kern trägt dazu die `'*'`-Zeile (jede Pflanzen-/Fels-Art ohne
   eigene Zeile); ein Zweit-Kern zählt JEDES eigene Rezept selbst, kein fremdes, keine `'*'`-Zeile (W8:
-  das Wirts-16 gehört dem Gesetzbuch).
+  das Wirts-16 gehört dem Gesetzbuch). **V Gestalten sind V verschiedene Individuen (S3, 08.10.):** ein Rezept, dessen
+  Bau den Samen nicht liest (seed-invariant), zählt EINE Gestalt — mehr nur mit bewiesener Seed-Achse; eine Achse zu
+  schaffen ist ein Re-Mint-Akt des Kerns, nie eine Zahl in der Zeile. Die Wand: `gate:asset-contract` baut je Art und
+  Rezept mit V ≥ 2 JEDE Gestalt 1..V über die echte Brücke (die Zweit-Kerne aus dem Bau des Kosten-Zugs) und verlangt V
+  verschiedene Bau-Abdrücke — jeder Zwilling steht beim Namen („Gestalten-Lüge: vehicle-Rezept gt (8 von 16 verschieden:
+  1=9, …)“; Selbsttests: drachentor mit V 2 und gt mit V + 1 MÜSSEN rot werden). Gemessen 08.10.: porta 7 · schmiede 21
+  · tetrapoda 4 · koerper 1 waren seed-invariant und zählen 1; das Fahrzeug trägt EINE Achse, den Lack je Same
+  (`lackIndex`, reihum über acht Lacke) — es zählt 8 (`GESTALTEN_JE_REZEPT` = die Lacke ohne Clay), mit 16 trugen Same
+  9..16 den Lack von 1..8 (40 byte-gleiche Zwillinge); fachwerk (Haus 16, Ausstattung 2/3/2) zeigt V von V.
 - **Das Budget-Gesetz (W8, phyto-core `budgetErzwingen`):** der EINE Ausgang jeder Zweit-Kern-Gestalt —
   die Brücke (`__replyBuildAsset`) UND der Sync-Guss des Wirts-Ofens (`_ofenBudget`, Tier + Mensch)
   falten eine Stufe über `draws` auf ihre Zeile: Stoffe (der Wirts-Material-Schlüssel `budgetStoff`; die

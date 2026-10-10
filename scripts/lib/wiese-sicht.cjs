@@ -1,7 +1,7 @@
 // wiese-sicht.cjs — DER SICHT-SATZ DER NAH-WIESE FÜR LINSEN (Welle 6, 06.10.).
 //
-// Die Nah-Wiese legt ihre Senken (`nahWiese:<v>:L<stufe>:<teil>`) je Frame im Haupt-Pass neu: `_passSicht` →
-// `_nahWieseSicht(kamera, lage)`. Der Null-Renderer zeichnet nie — headless läuft der Sicht-Satz nicht, jede Senke steht mit
+// Die Nah-Wiese legt ihre Senken (`nahWiese:L<stufe>:<v>:<teil>`, jede ein oberster Knoten der Szene) je Frame im
+// Haupt-Pass neu: `_passSicht` → `_nahWieseSicht(kamera, lage)`. Der Null-Renderer zeichnet nie — headless läuft der Sicht-Satz nicht, jede Senke steht mit
 // anzahl 0, und eine Prüfung „dicht nach 7 Umzügen" wäre leer bewiesen (Gegenprüfung W6, ROT 2). Die Linse stellt die
 // Voraussetzung HER, statt auf den Weltzustand zu hoffen: eine Linsen-Kamera am Ring-Mittelpunkt (die Spiel-Kamera,
 // um die `_tickNahWiese` die Kacheln legt), 1,7 m über dem Boden, 90° Blick auf den nächsten Büschel jenseits 2 m —

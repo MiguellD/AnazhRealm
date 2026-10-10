@@ -709,7 +709,12 @@ const FORBIDDEN = [
     // gefüllt vom Sicht-Satz je Büschel (`_nahWieseSicht`). Der Kachel-Mesh-Bau und sein Entsorgen kehren nie zurück.
     { token: "_nahWieseKachelMeshes", fiel: "Welle 6 — die Senken der Nah-Wiese (_nahWieseSenken, _nahWieseSicht)" },
     { token: "_nahWieseKachelEntsorgen", fiel: "Welle 6 — die Kachel trägt nur Daten (_nahWieseKachelFaellt)" },
-    { token: '"nahWiese:" + key', fiel: "Welle 6 — kein Mesh je Kachel (nahWiese:<v>:L<stufe>:<teil>)" },
+    { token: '"nahWiese:" + key', fiel: "Welle 6 — kein Mesh je Kachel (nahWiese:L<stufe>:<v>:<teil>)" },
+    // S3 wiese-gestalten (08.10.): die Senken der Nah-Wiese hingen unter EINER Gruppe „nahWiese" — die Täter-Klasse las den
+    // obersten Knoten und buchte beide Stufen unter „nahWiese" (die Band-Linse sah nie, welche Stufe das Band sprengt). Jetzt
+    // ist jede Senke ihr eigener oberster Knoten `nahWiese:L<stufe>:<v>:<teil>` (Täter `nahWiese:L1` · `nahWiese:L2`).
+    { token: "nahWiese:${v}:L${stufe}", fiel: "S3 wiese-gestalten — der Name trägt die Stufe vorn (nahWiese:L<stufe>:<v>:<teil>)" },
+    { token: "nw.gruppe", fiel: "S3 wiese-gestalten — keine Sammel-Gruppe der Nah-Wiese, die Senke hängt in der Szene" },
     // DIE STUFE 0 HAT EINE BEDEUTUNG (Welle 6, 06.10.): buildInstance baute den Strauch über die Steuer-Globale
     // `__strauchZeile` als Nah-Stufe, das Labor (build() → emitTree, Knopf L0) als Klingen-Krone (~175k Dreiecke, kein
     // Golden, kein Empfänger). Die Abbildung Stufe → Rezept wohnt in `stufenRezept` (die Stufen-Wand unten); die Globale

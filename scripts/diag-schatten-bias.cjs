@@ -378,8 +378,10 @@ async function probe(cfg) {
         await halten(4);
     };
     let mitGras = false; // der Nachtrag (G) misst mit der Nah-Wiese im Bild, jeder andere Schuss ohne
+    // Die Nah-Wiese hat keine Sammel-Gruppe mehr (S3 wiese-gestalten): jede Senke ist ihr eigener oberster Knoten, und ein
+    // Wachsen (`_senkeMesh`) setzt ein neues Mesh ein — der Schalter trifft je Aufruf jede lebende Senke.
     const wieseAus = () => {
-        if (st.nahWiese && st.nahWiese.gruppe) st.nahWiese.gruppe.visible = mitGras;
+        if (st.nahWiese) for (const a of st.nahWiese.senken.values()) if (a.mesh) a.mesh.visible = mitGras;
     };
     // DIE BIAS-STEUERUNG: „spiel" = das Gesetz des Stamms (`_schattenBias` je Kaskade; ohne Gesetz der feste Meter-Wert und der
     // Tiefen-Nudge `biasM`), „versuch" = n/d in Texeln der Kaskade. Sie hängt hinter jeder neuen Box (`_kaskadeFit`) und gilt

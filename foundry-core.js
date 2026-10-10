@@ -294,7 +294,7 @@ const PORTAL_RENDER_CONFIG = {
         // Nahbild bis d0): aus dem Haushalt Baum L0/L1+Werfer 150k (W5 rechnete 14 L0-Baeume bei 20 m: 10 714 je
         // Baum); das Soll-Bild (Cluster-Karten an ihrem Traeger, Weiden-Straehnen entlang der Peitsche, Stamm und
         // Starkaeste ganz) braucht hoechstens 17,6k (Tanne s2) — die Zeile steht offen bei 18 000, der Haushalt
-        // verschiebt sich um das L0-Band (docs/studio-vertrag.md B2c). grass, flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr Band-Schnitt ist offen
+        // verschiebt sich um das L0-Band (docs/studio-vertrag.md B2c). flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr Band-Schnitt ist offen
         // (docs/PFLICHT-OFFEN.md E). Konsum: gate:asset-contract (die Wand baut jede Stufe — Goldens, Samen 7 und jede
         // Gestalt der Welt — und nennt den Taeter), gate:studio-vertrag B2c (Vollstaendigkeit, Monotonie: tris faellt
         // je Stufe streng, draws steigt nie). Die Kosten-Regler der Kronen wohnen in ihrer Zeile: blattKarte (Kante der
@@ -375,9 +375,26 @@ const PORTAL_RENDER_CONFIG = {
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
                 fernform: "karte",
             },
+            // DAS GRAS (S3 08.10., aus dem Haushalt abgeleitet): die Nah-Wiese der Welt darf an der Mess-Wiese höchstens
+            // 57 066 Dreiecke zeichnen (die Ratsche des Profi-Bands, Haushalt 80 000 je Blick; Ist V18.536: 84 336 =
+            // L1 37 800 + L2 46 536 aus 1 188/1 560 und 162/228 je Büschel) — die Zeilen sind gegen dieses Band gebaut,
+            // nicht an der Gestalt abgelesen (bis dahin die gemessene Hülle 1 700/320). L1 (0–5 m) ≤ 1 220: Halme 5
+            // Segmente wie zuvor, die Rispe 6 Grannen × 2 Segmente (936/1 200, Hülle 17 Samen 888–1 212 — der Federbusch);
+            // L2 (5–14 m) ≤ 130: die Rispe EINE Granne (96/118, der helle Saum). Die Halme bleiben byte-gleich (Halm-Fläche
+            // 2,702 / 3,770 m²). Jede Stufe tastet DIESELBE Granne ab (emitGrass: die Kurve in 3 Segmenten, die Stufe nimmt
+            // Punkte auf ihr) — eine neu integrierte 2-Segment-Granne nickte kaum und las an 3 m als V/Möwe.
+            // Die L1-Zeile stand im Plan bei 1 000 (Rispe 3 × 2) und steigt offen: die Wiesen-Linse (Wind-Uhr gepinnt,
+            // swiftshader, -809/-903) misst den Halm-Kontrast fern/Armlänge an der Basis (7 × 3) 14,04/8,22, an 4 × 2
+            // (neu integriert) 12,39/7,06, an 4 × 3 12,70/7,27, an 6 × 2 abgetastet 13,61/7,97 — der Kontrast trägt die
+            // Zahl der Grannen; 6 × 2 kostet 24 Dreiecke je Rispe wie 4 × 3, an der Mess-Wiese 51 432 → 54 994
+            // (Ratsche 57 066; 8 Blicke höchstens 67 598 ≤ 80 000).
+            // `rispe` ist der Kosten-Regler der Stufe (emitGrass liest ihn): grannen × segmente (1..3) je Rispe und die
+            // Breite der Granne in Einheiten der alten. Die Breite ist an der BILD-Deckung geeicht (echte GPU, Mess-Wiese,
+            // 8 Blicke, Wind-Uhr gepinnt, Ährchen-Anteil der Pixel 2,5–3,5 m voraus): 6 × 2 bei 1,1 zeigt 3,07 % gegen
+            // 3,20 % der Basis (flächen-treu 1,09); L2 bei 2,65 im Band 6–9 m 3,11 % gegen 3,19 %.
             grass: {
-                1: { tris: 1700, draws: 1, schatten: false },
-                2: { tris: 320, draws: 1, schatten: false },
+                1: { tris: 1220, draws: 1, schatten: false, rispe: { grannen: 6, segmente: 2, breite: 1.1 } },
+                2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
                 fernform: "boden",
             },
             flower: {
@@ -2239,8 +2256,26 @@ function emitGrass(P) {
         g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
         geos.push(g);
         if (isCulm) {
-            // Rispe: feine nickende Grannen an der Spitze
-            const Naw = __lod === 0 ? 11 : __lod === 1 ? 7 : 4,
+            // Rispe: feine nickende Grannen an der Spitze. DIE RISPE IST GESTUFT (S3 08.10., Lehre 19): bis dahin war sie in
+            // jeder Stufe gleich fein (L1 7 Grannen × 3 Segmente = 42 Dreiecke je Rispe, 49/54 % der L1 an den zwei
+            // Nah-Wiesen-Vorlagen) — die Stufe war an der Gestalt abgelesen, nicht aus dem Band. Jetzt liest jede gelieferte
+            // Stufe ihre Rispe aus ihrer Budget-Zeile (`lod.budget.grass[stufe].rispe`: Grannen, Segmente, Breite); die
+            // Labor-Stufe L0 (keine gelieferte Stufe) bleibt 11 × 3 in voller Breite. STROM-ERHALT: jede Granne der vollen
+            // Zahl `NawVoll` (das Individuum: 11/7/4) zieht ihre Würfe (Winkel, Länge), auch die nicht gezeichnete — das
+            // Individuum, seine Halme und jede folgende Rispe bleiben byte-gleich, nur die Rispe fällt.
+            // DIE GRANNE IST EINE KURVE (S3 08.10., Gegenprüfung): ihre Biegung wird in voller Auflösung integriert (AKV = 3
+            // Segmente, die Kurve der Labor-Stufe), jede Stufe TASTET DIESELBE Kurve mit ihren `segmente` ab (Punkte auf der
+            // Kurve, die Richtung der Sehne). Bis dahin integrierte eine Stufe mit weniger Segmenten die Biegung neu — mit 2
+            // Segmenten nickte die Granne kaum (Biegung −0,30/−0,73 statt −0,30/−0,58/−0,87) und knickte zur V-Form: an 3 m
+            // las die Rispe als Möwe statt als Federbusch. Mit `segmente` 3 ist der Bau byte-gleich zum alten (L0, 17 Samen).
+            const AKV = 3,
+                NawVoll = __lod === 0 ? 11 : __lod === 1 ? 7 : 4,
+                _rz = __lod === 0 ? { grannen: 11, segmente: 3, breite: 1 } : PORTAL_RENDER_CONFIG.lod.budget.grass[__lod].rispe;
+            if (!(_rz && Number.isInteger(_rz.grannen) && _rz.grannen >= 1 && _rz.grannen <= NawVoll && Number.isInteger(_rz.segmente) && _rz.segmente >= 1 && _rz.segmente <= AKV && _rz.breite > 0))
+                throw new Error("[phyto] lod.budget.grass[" + __lod + "].rispe fehlt (grannen 1.." + NawVoll + ", segmente 1.." + AKV + ", breite > 0)");
+            const Naw = _rz.grannen,
+                AK = _rz.segmente,
+                breit = _rz.breite,
                 pg = [],
                 pi = [],
                 pc = [],
@@ -2250,18 +2285,34 @@ function emitGrass(P) {
                 pu = [];
             let vb = 0;
             const swT = P.windGain * 1.15;
-            for (let k = 0; k < Naw; k++) {
+            for (let k = 0; k < NawVoll; k++) {
                 const aa = (k / Naw) * 6.2831 + rnd() * 0.5,
                     awl = L * rrange(0.14, 0.28);
-                let ad = vnorm([Math.cos(aa) * 0.3, 0.96, Math.sin(aa) * 0.3]),
-                    ap = tip.slice();
-                const AK = 3;
+                if (k >= Naw) continue; // Strom-Erhalt: die Würfe sind gezogen, die Granne zeichnet nicht
+                // Die Kurve der Granne: AKV Segmente (Punkte kp, Richtung je Segment kd).
+                let ad = vnorm([Math.cos(aa) * 0.3, 0.96, Math.sin(aa) * 0.3]);
+                const kp = [tip.slice()],
+                    kd = [];
+                for (let s2 = 0; s2 < AKV; s2++) {
+                    ad = vnorm(vadd(ad, [0, -0.3 - (s2 / AKV) * 0.85, 0]));
+                    kd.push(ad);
+                    kp.push(vadd(kp[s2], vscl(ad, awl / AKV)));
+                }
+                // Ein Punkt der Kurve beim Parameter u (0..AKV): ganzzahlig der Kurven-Punkt selbst, sonst auf seinem Segment.
+                const kpu = (u) => {
+                    const i = Math.floor(u),
+                        t = u - i;
+                    return t === 0 ? kp[i] : vadd(kp[i], vscl(vsub(kp[i + 1], kp[i]), t));
+                };
+                // Die Stufe tastet ab: Segment s2 von u0 = s2·AKV/AK bis u1 = (s2 + 1)·AKV/AK, seine Richtung die Sehne
+                // (bei AK = AKV die Kurven-Richtung selbst — byte-gleich zum alten Bau).
                 for (let s2 = 0; s2 < AK; s2++) {
-                    const f2 = s2 / AK;
-                    ad = vnorm(vadd(ad, [0, -0.3 - f2 * 0.85, 0]));
-                    const np = vadd(ap, vscl(ad, awl / AK)),
-                        hw = 0.016 * (1 - f2 * 0.7),
-                        rt2 = vnorm(vcross(ad, [0, 1, 0]));
+                    const f2 = s2 / AK,
+                        ap = kpu((s2 * AKV) / AK),
+                        np = kpu(((s2 + 1) * AKV) / AK),
+                        sd = AK === AKV ? kd[s2] : vnorm(vsub(np, ap)),
+                        hw = 0.016 * breit * (1 - f2 * 0.7),
+                        rt2 = vnorm(vcross(sd, [0, 1, 0]));
                     const c0 = vadd(ap, vscl(rt2, -hw)),
                         c1 = vadd(ap, vscl(rt2, hw)),
                         c2 = vadd(np, vscl(rt2, hw * 0.5)),
@@ -2277,7 +2328,6 @@ function emitGrass(P) {
                         pty.push(4);
                     }
                     vb += 4;
-                    ap = np;
                 }
             }
             const gp = new THREE.BufferGeometry();

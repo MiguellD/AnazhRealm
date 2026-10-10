@@ -49,11 +49,13 @@
     // Waffen/Werkzeuge tragen NUR Stufe 0 (fein); L1=L0-Grade + L2-Auto-Impostor sind
     // Sache des Wirts (docs/studio-vertrag.md B2 / N7.5-Merge am EINEN Ingest).
     // B2c-Daten (W8, rein additiv): DAS BUDGET der einen Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
-    // Hülle über alle Klingen/Werkzeuge × 16 Gestalten (gate:asset-contract, die Ratsche fällt nur), band = das
+    // Hülle über alle Klingen/Werkzeuge (gate:asset-contract, die Ratsche fällt nur), band = das
     // Profi-Band-Ziel (Haushalt, offen solange tris darüber liegt), draws = Draws je Stück und Pass nach der Wirts-
     // Regel (das Budget-Gesetz am Studio-Ausgang, phyto-core budgetErzwingen, faltet die Stoffe darauf).
-    // gestalten = Individuen je Rezept (das bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
-    var GESTALTEN_JE_REZEPT = 16;
+    // gestalten = Individuen je Rezept (gefüllt je Rezept unten bei PRESETS): EINE — der Bau ist seed-invariant (Same
+    // 1 ≡ 2 byte-gleich, 21/21), 16 Gestalten waren 16 byte-gleiche Zwillinge als eigene Leaves. Eine Seed-Achse ist ein
+    // Re-Mint-Akt, nie eine Zahl hier (S3 08.10., gate:asset-contract Gestalten-Wand).
+    var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
             kindStages: { weapon: [0] },
