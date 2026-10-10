@@ -47222,6 +47222,8 @@ class AnazhRealm {
             const studio = this._heldFoundryGroup(bpName);
             const isStudio = !!(studio && studio !== "pending");
             const mesh = isStudio ? studio : this._buildFromBlueprint({ name: `held_${bpName}`, parts: bp.parts });
+            // das Gerät in der Hand ist keine Haut: die Ich-Regel (_applyEgoSicht) lässt es sichtbar
+            mesh.userData._gehalten = true;
             // Der Erst-Zeig-Stall (die V18.367-Klasse) fällt an der Erst-Zeichnung (`_configureRenderer`): die Hand
             // zeichnet ab dem Frame, in dem ihr Stoff gebaut und ihre Pipeline steht.
             // Anker: der Arm/Flügel der Seite (schwingt mit dem Walk-Cycle) wenn die Seele ihn
@@ -95311,18 +95313,42 @@ class AnazhRealm {
         }
     }
 
-    // DIE EGO-SICHT AM CHOKEPOINT: der EINE Schreiber der 1st/3rd-Person-Avatar-Sichtbarkeit (Kopf-Part
-    // + _creatureSkin-Wrap; 3rd sichtbar, 1st verborgen — die Kamera sitzt im Leib). Aufrufer:
-    // Avatar-Guss (applyPlayerSoul), Modus-Schalter (setCameraMode) und _loopCamera (idempotenter
-    // Halter) — lebte die Regel nur im per-Frame-Tick, zeigte jeder Render davor den Kopf von innen.
+    // DIE EGO-SICHT AM CHOKEPOINT: der EINE Schreiber der 1st/3rd-Person-Avatar-Sicht (Kopf-Part + _creatureSkin-Wrap;
+    // 3rd sieht das Auge den Leib, 1st nicht — die Kamera sitzt im Leib). Aufrufer: Avatar-Guss (applyPlayerSoul),
+    // Modus-Schalter (setCameraMode) und _loopCamera (idempotenter Halter, je Frame vor dem Render) — lebte die Regel nur
+    // im per-Frame-Tick, zeigte jeder Render davor den Kopf von innen.
+    // DER EINE EBENEN-SCHALTER (0910-5): im 1st verlässt der Leib die Ebene 0 der Haupt-Kamera und liegt auf
+    // SHADOW_TWIN_LAYER — die Kaskaden sehen ihn GANZ (wie den Kronen-Zwilling), das Auge nie. Bis 0910-5 schaltete die
+    // Regel `visible` und nahm mit der Haut den Wurf: in der Ego-Sicht, dem Standard-Blick, warf der Spieler keinen Schatten
+    // (Lehre 26: unsichtbar für die Haupt-Kamera heißt Ebene, nie Transparenz). `visible` bleibt unberührt — die Stufen-Regel
+    // (`_menschFernToggle`) behält ihr Wort. Ebenen erbt kein Kind: die Regel geht jeden Knoten, verschiebt nur, was auf
+    // Ebene 0 liegt, und merkt dessen Maske (`_egoMaske`); 3rd gibt genau sie zurück — ein Knoten, der schon nur in den
+    // Kaskaden lebt (ein Zwilling), bleibt, wie er ist. Das Gerät in der Hand (`_gehalten`, _refreshHeldMesh) ist keine
+    // Haut: es bleibt auf Ebene 0, das Auge sieht es, es wirft.
     _applyEgoSicht() {
         const player = this.state.playerMesh;
         if (!player) return;
         const third = this.state.cameraMode === "third";
+        const zwilling = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
+        const leib = (o) => {
+            const u = o.userData;
+            if (u._gehalten) return;
+            const m = o.layers.mask;
+            if (third) {
+                if (u._egoMaske !== undefined) {
+                    o.layers.mask = u._egoMaske;
+                    u._egoMaske = undefined;
+                }
+            } else if (m & 1) {
+                u._egoMaske = m;
+                o.layers.mask = (m & ~1) | zwilling;
+            }
+            for (const k of o.children) leib(k);
+        };
         const headPart = player.userData && player.userData.parts && player.userData.parts.head;
-        if (headPart) headPart.visible = third;
+        if (headPart) leib(headPart);
         for (const ch of player.children) {
-            if (ch && ch.userData && ch.userData._creatureSkin) ch.visible = third;
+            if (ch && ch.userData && ch.userData._creatureSkin) leib(ch);
         }
     }
 

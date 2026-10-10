@@ -41614,27 +41614,38 @@ async function checkBandWelle6G4Atmosphere(ctx) {
 
         // --- Avatar-Hide im 1st-Person ---
         out.avatarHideMethods = typeof r.setCameraMode === "function" && !!r.state.playerMesh;
-        // Render-Loop hält player.visible=true und versteckt im 1st-Person nur den KOPF (headPart.visible =
-        // cameraMode==="third") im Chokepoint `_applyEgoSicht`. Das Pattern akzeptiert beide Formen, verlangt
-        // aber die Modus-Quelle in DERSELBEN Funktion (kein blindes `= third`-Match).
+        // Die Ego-Sicht ist EIN Ebenen-Schalter (0910-5, Chokepoint `_applyEgoSicht`): im 1st liegt jeder Knoten des Leibs
+        // (Kopf-Part + _creatureSkin-Hülle, ohne das Gerät in der Hand), der im 3rd auf Ebene 0 lag, nicht mehr dort und auf
+        // SHADOW_TWIN_LAYER (die Kaskaden werfen ihn); 3rd gibt jede Maske genau zurück; `visible` wechselt nie.
         {
-            let found = false;
-            const proto = Object.getPrototypeOf(r);
-            for (const name of Object.getOwnPropertyNames(proto)) {
-                try {
-                    const fn = proto[name];
-                    if (typeof fn !== "function") continue;
-                    const src = window.__codeOf(fn);
-                    if (
-                        /headPart\.visible\s*=\s*(this\.state\.cameraMode|third)\b/.test(src) &&
-                        /cameraMode\s*===\s*"third"/.test(src)
-                    )
-                        found = true;
-                } catch {
-                    /* skip */
-                }
-            }
-            out.avatarHideInLoop = found;
+            const pm = r.state.playerMesh;
+            const E = r.constructor.SHADOW_TWIN_LAYER;
+            const knoten = [];
+            const sammle = (o) => {
+                if (o.userData && o.userData._gehalten) return;
+                knoten.push(o);
+                for (const k of o.children) sammle(k);
+            };
+            const kopf = pm && pm.userData && pm.userData.parts && pm.userData.parts.head;
+            if (kopf) sammle(kopf);
+            for (const ch of (pm && pm.children) || []) if (ch.userData && ch.userData._creatureSkin) sammle(ch);
+            const vorher = r.state.cameraMode;
+            r.setCameraMode("third");
+            const dritt = knoten.map((o) => o.layers.mask);
+            const sicht = knoten.map((o) => o.visible);
+            r.setCameraMode("first");
+            let leib = 0;
+            let ego = true;
+            knoten.forEach((o, i) => {
+                if (o.visible !== sicht[i]) ego = false;
+                if (!(dritt[i] & 1)) return;
+                leib++;
+                if (o.layers.isEnabled(0) || !o.layers.isEnabled(E)) ego = false;
+            });
+            r.setCameraMode("third");
+            const zurueck = knoten.every((o, i) => o.layers.mask === dritt[i] && o.visible === sicht[i]);
+            r.setCameraMode(vorher);
+            out.egoEbene = { knoten: knoten.length, leib, ego, zurueck };
         }
 
         // --- Instanced-Gras (Voxel-Gras-Pendant) ---
@@ -41753,10 +41764,14 @@ async function checkBandWelle6G4Atmosphere(ctx) {
     });
 
     if (v829Results && !v829Results.error) {
-        check(
-            "V8.29.1: nur der Kopf wird im 1st-Person versteckt (Avatar bleibt sichtbar)",
-            v829Results.avatarHideInLoop
-        );
+        {
+            const e = v829Results.egoEbene || {};
+            check(
+                "V8.29.1 (0910-5): die Ego-Sicht ist EIN Ebenen-Schalter — 1st nimmt den Leib aus Ebene 0 auf SHADOW_TWIN_LAYER (er wirft), 3rd gibt die Maske zurück, visible wechselt nie",
+                e.leib > 0 && e.ego === true && e.zurueck === true,
+                JSON.stringify(e)
+            );
+        }
         check(
             "V8.29 (V9.39): _buildVoxelChunkGrass + _disposeVoxelChunkGrass + _grassInstanceMat existieren",
             v829Results.grassMethodsExist

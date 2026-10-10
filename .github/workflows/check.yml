@@ -1115,6 +1115,16 @@ jobs:
               # --selftest zuerst: injizierte Taeter fallen rot.
               run: npm run gate:kamera-treue
 
+            - name: Ego-Schatten (echter Renderer — in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)
+              if: matrix.gruppe == 3
+              # Faehrt den ECHTEN Renderer (swiftshader, kienspan, Schatten an) an einer eigenen Buehne mit dem echten Leib des
+              # Spielers, der echten Ego-Regel (_applyEgoSicht) und der echten Haupt-Kamera am Auge: in der Ego-Sicht wirft der
+              # Leib (Schatten-Maske am Boden, IoU >= 0,9 gegen dieselbe Pose in der 3rd-Person), die Haupt-Kamera sieht 0
+              # Bildpunkte Leib, das Geraet in der Hand bleibt auf Ebene 0, ein Zwilling bleibt in den Kaskaden, 3rd gibt jede
+              # Maske zurueck. Fuenf eingeschmuggelte Regeln (main: visible, Ebene 0 bleibt, fremde Ebene, das Geraet mit,
+              # Zwilling geweckt) fallen je beim Namen. --selftest zuerst.
+              run: npm run gate:ego-schatten
+
             - name: Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)
               if: matrix.gruppe == 2
               # Faehrt den ECHTEN Frame (swiftshader, kienspan) n Frames lang durch die Haken des Ziel-Zensus: jede GPU-Textur
