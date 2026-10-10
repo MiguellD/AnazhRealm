@@ -325,7 +325,7 @@ jobs:
               # setzt auf beiden. Der Selbsttest laesst die Wildnis zum Schein ueberall tragen: jeder Wurf faellt rot beim Namen.
               run: npm run gate:pruefbuehne
 
-            - name: Weltgrenze (kein Feld einer Welt reist in die naechste - Laden, Ersetzen, world-pull, Portal, Geburt, Reload)
+            - name: Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)
               if: matrix.gruppe == 2
               # Faehrt die echte Welt (Null-Renderer) je Weg in einem frischen Browser-Kontext: Welt A traegt ein Zeichen in
               # jedem welt-eigenen Feld (Erbgut der Pruefbuehne, Anker, Edits, Dorf-Zellen, Stempel, Rolle, Gedaechtnisse der
@@ -333,6 +333,15 @@ jobs:
               # das B in der Seite, in ihren Lesern, im Worker-Spiegel oder im Speicher traegt, beim Namen. Der Selbsttest
               # mischt den alten Spread am Lade-Engpass zum Schein darunter und muss rot werden.
               run: npm run gate:weltgrenze
+
+            - name: Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)
+              if: matrix.gruppe == 1
+              # Faehrt die neun Speicher-Formen der Boot-Sonde (Platz ohne worldId, ohne worldMeta, Legacy ohne worldId, ohne
+              # worldMeta, mehrere Welten + Wechsel, korrupter Platz + gueltiges .bak, nur IndexedDB, IndexedDB frischer, und ein
+              # Zeiger auf eine Welt, die nirgends liegt) je in einem frischen Browser-Kontext: Boot 1 erwacht in der Welt der Form
+              # mit ihrer Marke, Boot 2 bleibt stabil, die leere Form erwacht frisch und laut. Der Selbsttest laesst die
+              # Rettungs-Kette zum Schein nur den Platz lesen und muss an korrupt, nur-IDB und IDB-frischer rot werden.
+              run: npm run gate:boot-rettung
 
             - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
               if: matrix.gruppe == 3

@@ -15,8 +15,13 @@
 //   ersetzen-quota      dasselbe, der Speicher wirft beim Ablegen (Quota): die Seite bleibt laut in A, kein Reload
 //   weltpull[-ohne-id|-ohne-meta]   der Snapshot des Hosts (`_p2pApplyWorldSnapshot`, Resync, world-pull)
 //   portal              das Adress-Portal (`_enterPortalToAddress` → `joinWorldFromCode` gegen einen Schein-Broker)
+//   einladung           der Beitritt per Einladungs-Code (`joinWorldFromCode` → `_importGuestWorld`, Schein-Broker)
 //   geburt              „Neue Welt" (`createNewWorld`) — erlaubt ist nur die Positiv-Liste (visibility, creator)
-//   reload[-ohne-id|-ohne-meta]     B liegt im Speicher, die Seite lädt neu (Boot: Vorlade + Restore)
+//   reload              B liegt im Speicher, die Seite lädt neu (Boot: Vorlade + Restore; die Formen ohne worldId,
+//                       ohne worldMeta, korrupt, nur IndexedDB fährt gate:boot-rettung)
+// Dazu je Tür: A trägt nach dem letzten Autosave noch MARKER-A-SPAET (Fortschritt) — die Tür sichert A vor der Sperre.
+// Und statisch (Absenz): eine ganze Welt schreibt in den Speicher nur saveState (die lebende) und `_weltAblegen` (die EINE
+// Ablage), `location.reload` steht nur in `_weltWechselNeuLaden` — jeder andere Schreiber fällt beim Namen.
 //
 // Welt A ist die frisch gebootete Standard-Welt (gespeichert), in die die Linse ein Zeichen pflanzt: das Erbgut der
 // Prüfbühne (spec/pruefbuehne/welt.json), einen Makro-Anker, ein Edit, Dorf-Zellen, die Stempel von Ring, Vorschau und
@@ -60,10 +65,9 @@ const ALLE_WEGE = [
     "weltpull-ohne-id",
     "weltpull-ohne-meta",
     "portal",
+    "einladung",
     "geburt",
     "reload",
-    "reload-ohne-id",
-    "reload-ohne-meta",
 ];
 // Das Reload-Fenster: so lange liefert der Server die neue Seite später (die alte lebt, ihre Timer feuern).
 const FENSTER_MS = 1500;
@@ -178,8 +182,9 @@ function seitenPruefer() {
         markerB() {
             return JSON.stringify(window.anazhRealm.buildStateSnapshot()).includes("MARKER-B");
         },
-        // A BLEIBT unter seiner Id: sein Platz trägt A (nicht B), der Index kennt A.
-        befundeA(aId) {
+        // A BLEIBT unter seiner Id: sein Platz trägt A (nicht B), der Index kennt A; mit `spaet` auch A's Fortschritt seit
+        // dem letzten Autosave (die Tür sichert A vor der Sperre).
+        befundeA(aId, spaet) {
             const r = window.anazhRealm;
             const roh = localStorage.getItem(r.worldStorageKey(aId));
             if (!roh) return [`A: unter ${aId} liegt keine Welt mehr`];
@@ -189,6 +194,10 @@ function seitenPruefer() {
             if (id !== aId) out.push(`A: der Platz von A trägt die Welt ${id === undefined ? "ohne worldId" : id}`);
             if (roh.includes("MARKER-B")) out.push("A: der Platz von A trägt B (MARKER-B)");
             if (!r.worldsIndexLoad().some((e) => e && e.worldId === aId)) out.push("A: fehlt im Index der Welten");
+            if (spaet && !roh.includes("MARKER-A-SPAET"))
+                out.push(
+                    "A: der Fortschritt seit dem letzten Autosave fehlt (MARKER-A-SPAET) — A wurde vor der Sperre nicht gesichert"
+                );
             return out;
         },
         // DAS RELOAD-FENSTER des Spiels: vor der Tür steht ein Edit-Save an (Edit direkt vor dem Ersetzen), nach ihr ein
@@ -321,7 +330,35 @@ async function bereit(page, weltId) {
     }, weltId || null);
 }
 
-const TUEREN = new Set(["ersetzen", "weltpull", "portal", "geburt"]);
+// DIE ABSENZ (statisch, im Stamm des Baums): eine ganze Welt schreibt nur saveState (die lebende) und `_weltAblegen` (die
+// EINE Ablage) in den Speicher, `location.reload` steht nur im Welt-Wechsel `_weltWechselNeuLaden`. Jeder andere Ort fällt
+// beim Namen seiner Methode.
+function absenz() {
+    const zeilen = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8").split("\n");
+    const methodeAn = (i) => {
+        for (let j = i; j >= 0; j--) {
+            const m = /^ {4}(?:static |async )*([A-Za-z_$][\w$]*)\(.*\)\s*\{\s*$/.exec(zeilen[j]);
+            if (m) return m[1];
+        }
+        return "?";
+    };
+    const out = [];
+    const pruefe = (re, erlaubt, was) =>
+        zeilen.forEach((z, i) => {
+            if (!re.test(z) || /^\s*\/\//.test(z)) return;
+            const m = methodeAn(i);
+            if (!erlaubt.includes(m)) out.push(`${was}: ${m} (anazhRealm.js:${i + 1})`);
+        });
+    pruefe(
+        /localStorage\.setItem\(this\.worldStorageKey\(/,
+        ["saveState", "_weltAblegen"],
+        "Welt-Schreiber neben der EINEN Ablage"
+    );
+    pruefe(/location\.reload\(\)/, ["_weltWechselNeuLaden"], "Reload neben dem Welt-Wechsel");
+    return out;
+}
+
+const TUEREN = new Set(["ersetzen", "weltpull", "portal", "einladung", "geburt"]);
 
 // Ein Weg in einem frischen Browser-Kontext (eigener Speicher): A booten und speichern, B bauen, A zeichnen, den Weg gehen
 // (eine Tür im Reload-Fenster), B prüfen und A. `schein`: "spread" (der alte Spread am Lade-Engpass) · "sperre" (saveState
@@ -369,6 +406,11 @@ async function fahreWeg(browser, weg, schein) {
         });
         const B = await page.evaluate((f) => window.__grenze.bauB("grenze-b", f), form);
         rep.pflanzung = await page.evaluate((e) => window.__grenze.pflanzeA(e), BUEHNE.worldMeta.erbgut);
+        // A's Fortschritt nach dem letzten Autosave: er muss die Tür überleben (auf A's Platz)
+        await page.evaluate(() => {
+            const r = window.anazhRealm;
+            r.state.knowledgeBase = (r.state.knowledgeBase || []).concat(["MARKER-A-SPAET"]);
+        });
         if (schein === "spread") {
             // DER ALTE SPREAD ZUM SCHEIN: nach jedem Laden mischt sich das worldMeta der alten Welt darunter.
             await page.evaluate(() => {
@@ -458,9 +500,9 @@ async function fahreWeg(browser, weg, schein) {
                         g.fensterNach();
                         return out;
                     }
-                    if (basis === "portal") {
+                    if (basis === "portal" || basis === "einladung") {
                         // DER SCHEIN-BROKER: eine WebSocket, die auf world-request den Snapshot von B schickt (das echte
-                        // joinWorldFromCode, die echte Gast-Ablage, der echte Rufer `_enterPortalToAddress`).
+                        // joinWorldFromCode, die echte Gast-Ablage, der echte Rufer `_enterPortalToAddress` bzw. der Code).
                         class ScheinWS {
                             constructor(url) {
                                 this.url = url;
@@ -500,10 +542,12 @@ async function fahreWeg(browser, weg, schein) {
                         };
                         g.fensterVor();
                         const id = B.worldMeta.worldId;
-                        await r._enterPortalToAddress(
-                            { type: "welt_portal", affordances: { isPortal: true } },
-                            { worldId: id, roomId: id, broker: "ws://127.0.0.1:9", label: "grenze-b" }
-                        );
+                        if (basis === "portal")
+                            await r._enterPortalToAddress(
+                                { type: "welt_portal", affordances: { isPortal: true } },
+                                { worldId: id, roomId: id, broker: "ws://127.0.0.1:9", label: "grenze-b" }
+                            );
+                        else await r.joinWorldFromCode(`anazh://127.0.0.1:9/${id}`, { slugHint: "grenze-b" });
                         return {};
                     }
                     if (basis === "reload") {
@@ -528,7 +572,7 @@ async function fahreWeg(browser, weg, schein) {
             )
             .catch((e) => ({ abbruch: String(e && e.message ? e.message : e) }));
         rep.navigiert = await nav;
-        if (basis === "portal" && gemeldet) Object.assign(lauf, gemeldet);
+        if ((basis === "portal" || basis === "einladung") && gemeldet) Object.assign(lauf, gemeldet);
         if (lauf && lauf.inSeite) for (const f of lauf.inSeite) rep.befunde.push(`in der Seite: ${f}`);
         if (basis === "laden") return rep;
         if (weg === "ersetzen-quota") {
@@ -545,6 +589,7 @@ async function fahreWeg(browser, weg, schein) {
                     rep.befunde.push(`die Seite trägt nach der gescheiterten Ablage die Welt ${z.welt}`);
                 if (!/fehlgeschlagen/.test(lauf.chat || ""))
                     rep.befunde.push("die gescheiterte Ablage blieb still (kein Satz im Chat)");
+                rep.befunde.push(...(await lege((id) => window.__grenze.befundeA(id, true), aId)));
             }
             return rep;
         }
@@ -555,7 +600,7 @@ async function fahreWeg(browser, weg, schein) {
             rep.erlaubt = ["worldMeta.visibility", "worldMeta.creator"];
         }
         if (!rep.navigiert) {
-            if (tuer && basis !== "portal") {
+            if (tuer && basis !== "portal" && basis !== "einladung") {
                 // in der Seite geblieben: der nächste Schritt des Spiels — der Autosave schreibt, was die Seite trägt
                 await page.evaluate(() => window.anazhRealm.saveState()).catch(() => {});
                 rep.befunde.push(
@@ -581,7 +626,7 @@ async function fahreWeg(browser, weg, schein) {
                 );
         }
         rep.befunde.push(
-            ...(await lege((id) => window.__grenze.befundeA(id), aId)).map((f) => `nach dem Reload: ${f}`)
+            ...(await lege((id, sp) => window.__grenze.befundeA(id, sp), aId, tuer)).map((f) => `nach dem Reload: ${f}`)
         );
         rep.befunde.push(
             ...(await lege((id, ok) => window.__grenze.befundeSpeicher(id, ok), ziel, rep.erlaubt)).map(
@@ -623,6 +668,12 @@ async function fahreWeg(browser, weg, schein) {
     console.log(`  Baum: ${root}`);
     const berichte = [];
     let rot = false;
+    const abs = absenz();
+    if (abs.length) rot = true;
+    console.log(
+        `  ${abs.length ? "⛔" : "✓"} absenz             ${abs.length ? abs.length + " Befunde" : "ein Schreiber je Rolle (saveState, _weltAblegen), ein Reload (_weltWechselNeuLaden)"}`
+    );
+    for (const f of abs) console.log(`      ⛔ ${f}`);
     for (const weg of WEGE) {
         const rep = await fahreWeg(browser, weg, null);
         berichte.push(rep);
@@ -657,7 +708,7 @@ async function fahreWeg(browser, weg, schein) {
             `  SELBSTTEST 2 (saveState ohne die Sperre des Welt-Wechsels zum Schein): ${fenster.length} Befunde — ${fenster.join(" · ")}`
         );
     }
-    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ root, berichte, selbst }, null, 1));
+    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ root, absenz: abs, berichte, selbst }, null, 1));
     let pass;
     if (SELBSTTEST) {
         pass = !rot && selbst && selbst.spread.length > 0 && selbst.sperre.length > 0;
