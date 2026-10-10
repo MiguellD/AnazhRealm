@@ -82376,12 +82376,17 @@ class AnazhRealm {
             );
         });
         const teile = this._foundryBuildGroup(eintraege, { lod: 0 });
-        // ein leerer Guss bricht laut (Nachbesserung 2): vorher gab die Vorlage null, und jeder Pfeil flog unsichtbar, ohne Meldung
-        if (!teile) return AnazhRealm._kernPflichtBruch("schmiede:buildPfeil (der Guss der Gestalt ist leer)");
+        let n = 0;
+        if (teile)
+            teile.traverse((o) => {
+                if (!o.isMesh) return;
+                o.castShadow = o.receiveShadow = true;
+                n++;
+            });
+        // ein leerer Guss bricht laut (Nachbesserung 2 + 3): keine Gruppe ODER eine Gruppe ohne ein einziges Mesh (jedes
+        // _foundryBuildMesh gab null) — vorher flog jeder Pfeil dann unsichtbar, ohne Meldung
+        if (!n) return AnazhRealm._kernPflichtBruch("schmiede:buildPfeil (der Guss der Gestalt ist leer)");
         teile.rotation.y = -Math.PI / 2;
-        teile.traverse((o) => {
-            if (o.isMesh) o.castShadow = o.receiveShadow = true;
-        });
         const huelle = new THREE.Group();
         huelle.name = "pfeil";
         huelle.add(teile);

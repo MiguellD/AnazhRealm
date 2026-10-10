@@ -301,7 +301,10 @@ function pfeilVerdict(P, shell) {
     if (!(P.laenge >= 0.7 && P.laenge <= 0.85)) v.push(`pfeil-laenge: ${P.laenge} m längs der Flug-Richtung`);
     if (P.wirtZylinder) v.push("pfeil-zwilling: der Wirt baut seinen eigenen Zylinder (_pfeilMeshAttach)");
     if (shell && shell.eigenerPfeil) v.push("pfeil-zwilling: die Prüfstand-Shell baut ihren eigenen Pfeil");
-    if (P.leerStill !== false) v.push("pfeil-still: ein leerer Guss lässt den Pfeil ohne Meldung unsichtbar fliegen");
+    if (P.leerStill !== false)
+        v.push(
+            `pfeil-still: ein leerer Guss (${typeof P.leerStill === "string" ? P.leerStill : "null"}) lässt den Pfeil ohne Meldung unsichtbar fliegen`
+        );
     return v;
 }
 // (T22) EIN TIER STIRBT WIE EIN TIER (Welle LF kampf, Posten 7 — pure Funktion, Probe UND Selbst-Test): nach dem Kippen liegt
@@ -2228,23 +2231,32 @@ async function WELLE_L() {
                 }
             }
             pfeilAus.wirtZylinder = /CylinderGeometry\(0\.015/.test(A.prototype._pfeilMeshAttach.toString());
-            // ein leerer Guss bricht laut (Nachbesserung 2): der Ofen liefert nichts (_foundryBuildGroup ≡ null, die Vorlage frisch) —
-            // der Pfeil darf nicht still unsichtbar fliegen
+            // ein leerer Guss bricht laut (Nachbesserung 2 + 3): der Ofen liefert nichts — null ODER eine Gruppe ohne ein einziges
+            // Mesh (jedes _foundryBuildMesh gab null), die Vorlage frisch — der Pfeil darf nicht still unsichtbar fliegen
             if (fn("_pfeilVorlage")) {
                 const memo = r._pfeilVorlageMemo;
                 const fbg = r._foundryBuildGroup;
-                r._pfeilVorlageMemo = null;
-                r._foundryBuildGroup = () => null;
-                try {
-                    r._pfeilMeshAttach({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 1 });
-                    pfeilAus.leerStill = true;
-                } catch (_e) {
-                    pfeilAus.leerStill = false;
-                } finally {
-                    r._foundryBuildGroup = fbg;
-                    delete r._foundryBuildGroup;
-                    r._pfeilVorlageMemo = memo;
+                const still = [];
+                for (const [name, leer] of [
+                    ["null", () => null],
+                    ["leere Gruppe", () => new THREE.Group()],
+                ]) {
+                    const pfT = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 1 };
+                    r._pfeilVorlageMemo = null;
+                    r._foundryBuildGroup = leer;
+                    try {
+                        r._pfeilMeshAttach(pfT);
+                        still.push(name);
+                    } catch (_e) {
+                        /* laut gebrochen — so trägt es */
+                    } finally {
+                        if (pfT.mesh) r._pfeilDespawn(pfT);
+                        r._foundryBuildGroup = fbg;
+                        delete r._foundryBuildGroup;
+                        r._pfeilVorlageMemo = memo;
+                    }
                 }
+                pfeilAus.leerStill = still.length ? still.join(", ") : false;
             }
             w.z.pfeilGestalt = pfeilAus;
         });
