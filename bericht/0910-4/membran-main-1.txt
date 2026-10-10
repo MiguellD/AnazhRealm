@@ -1,0 +1,33 @@
+=== V18.464 PORTAL-MEMBRAN — Kollision · Passage · Hindurchgehen ===
+  ✅ Boot + warmes Buch (geisttor im LIVE-Buch)
+  ✅ welt_portal gespawnt + Tor-Gesetz aufgelöst — gestalt=geisttor
+  ✅ K: Gesetz-Hülle trägt 5 Boxen (Pfosten×2 · Schultern×2 · Krone) — boxen=5
+  ✅ K: die APERTUR ist körperlich FREI (5 Probe-Punkte, Torso-Höhe)
+  ✅ K: die PFOSTEN sind solide (beidseitig)
+  ✅ K: die KRONE über dem Scheitel ist solide
+  ✅ M: der Membran-Tick baut das Passage-Mesh (Registry je entry.id)
+  ✅ M: die Membran hängt in der Szene
+  ✅ M: die Uniforms atmen (time folgt dem Tick)
+  ✅ M: Material trägt den portalMembran-Marker (oder fail-LAUT-Fallback)
+  ✅ M: der ECHTE TSL-Gesetz-Graph baute (kein Fallback noetig)
+  ✅ N: das fog-Gesetz trägt (mu.fog > 0 — der Dial reist)
+  ✅ N: der Nebel-Kasten hängt gestempelt in der Szene (portal-nebel)
+  ✅ N: der ECHTE Nebel-TSL-Graph baute (portalNebel-Marker)
+  ✅ N: mu.fog speist die nebelAct-Uniform (> 0 bei Nähe) — die Kette Dial→mu→Uniform lebt
+  ✅ N: der Kasten lebt nähe-aktiviert (visible == act > 0.001)
+  ✅ F: Flügel-Meshes durch die Pipe gefunden (4) — anzahl=4
+  ✅ F: die Flügel ÖFFNEN sich dem Reisenden (Winkel 1.938)
+  ✅ W: Hindurchgehen durch die Apertur feuert enterPortal (genau 1×)
+  ✅ W: kein Doppelfeuer im selben Pass (Rueck-Kreuzen in der Zone stumm)
+  ✅ W: nach Verlassen der Zone feuert der naechste Durchgang wieder
+  ✅ W: seitlich am Pfosten vorbei feuert NICHT
+  ✅ keine Page-Errors während der Probe
+=== B — der Blick am Genesis-Ring [36,0] (WebGPU auf swiftshader, 7 Membranen) ===
+  ❌ B1 aus der Ring-Mitte nach −x zeichnen Membranen, die im Rücken nicht alle — 7 von 7 Membranen, 7 Nebel
+  ❌ B2 70 m vor dem Ring, Blick vom Ring weg: keine Membran und kein Nebel zeichnet — portal-membran ruine (79 m) · portal-membran maurentor (81 m) · portal-membran kathedrale (79 m) · portal-membran maschine (74 m) · portal-membran verkalkt (68 m) · portal-membran geisttor (59 m) · portal-membran drachentor (62 m) · portal-nebel drachentor (62 m) · portal-nebel geisttor (59 m) · portal-nebel verkalkt (68 m) · portal-nebel maschine (74 m) · portal-nebel kathedrale (79 m) · portal-nebel maurentor (81 m) · portal-nebel ruine (79 m)
+  ❌ B3 die Hülle jeder Membran-Geometrie trägt die Amplitude der Welle — geisttor (Amplitude null) · drachentor (Amplitude null) · verkalkt (Amplitude null) · maschine (Amplitude null) · kathedrale (Amplitude null) · maurentor (Amplitude null) · ruine (Amplitude null)
+  ✅ B keine Page-Errors
+  ✅ BS Selbsttest: mit frustumCulled = false nennt B2 die Membranen im Rücken beim Namen — 7 von 7: portal-membran ruine (79 m) · portal-membran maurentor (81 m) · portal-membran kathedrale (79 m) · portal-membran maschine (74 m) …
+
+❌ ROT — 3 Verletzung(en): B1 aus der Ring-Mitte nach −x zeichnen Membranen, die im Rücken nicht alle · B2 70 m vor dem Ring, Blick vom Ring weg: keine Membran und kein Nebel zeichnet · B3 die Hülle jeder Membran-Geometrie trägt die Amplitude der Welle
+exit 1

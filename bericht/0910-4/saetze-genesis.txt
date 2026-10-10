@@ -1,0 +1,5 @@
+# 0910-4 Teil 2: die Sätze an Genesis (Kopf-Werkbank, nach band): CPU-Bytes je Satz, Kapazität (vKap/iKap) gegen Ende (vEnde/iEnde)
+boden: 13.99 MB, vKap 215937 / vEnde 165481 (77 %), iKap 859200 / iEnde 774144 (90 %) — position · normal · color · aMorphTarget Float32x3, aMorphWeight Float32x1, Index Uint32 (52 B je Vertex)
+wasser: 0.23 MB, vKap 6269 / vEnde 5693, iKap 9600 / iEnde 9216
+formationenSatz (2): 1.03 + 0.44 MB; bauSatz (6): 0.73 + 1.56 + 0.06 + 0.07 + 0.63 + 0.44 MB; streuSatz (3): 0.22 + 0.49 + 0.09 MB
+buf:szene je Klasse (band, GPU): Genesis bodenSatz 13.99 · bauSatz 3.48 · formationenSatz 1.17 · streuSatz 0.71 · wasserSatz 0.23 — Wiese bodenSatz 13.99 · bauSatz 5.50 · streuSatz 2.42 · formationenSatz 0.83 · wasserSatz 0.54

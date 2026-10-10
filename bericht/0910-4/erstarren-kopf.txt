@@ -1,0 +1,14 @@
+
+===== P0 — DIE ERSTARREN-LINSE (kalter Boot · Wander-Lauf · Membran-Wand) =====
+
+  Lauf: 2400 Ticks · Q1-Mittel 4.14 ms · Q4-Mittel 4.95 ms · max 66 ms · >250 ms: 0 (0.0 %)
+  ✅ (a) kein Todes-Spiral (Q4 < 3×Q1 + 5-ms-Boden) — Q1 4.14 → Q4 4.95
+  ✅ (b) kein hartes Erstarren (kein Tick > 2 s, < 5 % > 250 ms) — max 66 ms · 0.0 %
+  ✅ (c) Membran gebaut (Tor vor dem Spieler)
+  ✅ (c) RECOMPILE-WAND: Sichtring verlassen+zurück = KEIN Neu-Bau, Eintrag überlebt, Fern-Schlaf + Rück-Wachen — Bauten 1→1 · schlaeft=true · wach=true
+  ✅ (c) der Schlaf verlässt den Graphen (der Kehraus nimmt die Puffer), das Erwachen kehrt zurück — schlafend außerhalb=true · wach im Graphen=true
+  ✅ SELBST-TEST: der injizierte 300-ms-Block wurde als Stall gesehen (die Uhr misst)
+  ✅ kein Page-Error — sauber
+
+✅ GRÜN — kein Todes-Spiral, kein hartes Erstarren im headless-Pfad, die Membran kompiliert genau einmal. (Was diese Linse NICHT sieht: GPU-seitige Freezes — dafür trägt der Flugschreiber anazhRealmPerf.json vom echten Holz.)
+exit 0, 26 s

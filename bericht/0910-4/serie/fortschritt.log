@@ -1,0 +1,19 @@
+03:42:47 SERIE START  A=7dd944e6 (main)  B=fd3a0dff (Kopf, Arbeitsbaum)  Instrument=Kopf
+03:42:47 anazhRealm.js  A=bd76f13ddf041525  B=1aa196fa8637bf98
+03:42:52 1A genesis-boot (Versuch 1)  GPU[62, 987 MHz, 4 %, P0]
+03:42:53 1A Seite geliefert (bd76f13ddf041525)
+03:43:58 1A genesis exit=0  GRUEN |  |     band: ROT (Linse SAUBER, Stempel GRUEN) · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 2, deer 5, fox 3) 
+03:44:03 1A Pause 60 s  GPU[70, 923 MHz, 3 %, P2]
+03:45:07 2B genesis-boot (Versuch 1)  GPU[61, 139 MHz, 11 %, P8]
+03:45:08 2B Seite geliefert (1aa196fa8637bf98)
+03:46:06 2B genesis exit=0  GRUEN |  |     band: ROT (Linse SAUBER, Stempel GRUEN) · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 2, deer 2, fox 6) 
+03:46:10 2B Pause 60 s  GPU[70, 1708 MHz, 3 %, P0]
+03:47:15 3A genesis-boot (Versuch 1)  GPU[60, 139 MHz, 10 %, P8]
+03:47:16 3A Seite geliefert (bd76f13ddf041525)
+03:48:20 3A genesis exit=0  GRUEN |  |     band: ROT (Linse SAUBER, Stempel GRUEN) · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 2, deer 4, fox 4) 
+03:48:25 3A Pause 60 s  GPU[69, 1303 MHz, 3 %, P0]
+03:49:29 4B genesis-boot (Versuch 1)  GPU[61, 139 MHz, 9 %, P8]
+03:49:30 4B Seite geliefert (1aa196fa8637bf98)
+03:50:28 4B genesis exit=0  GRUEN |  |     band: ROT (Linse SAUBER, Stempel GRUEN) · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 2, fox 5) 
+03:50:33 4B Pause 60 s  GPU[70, 923 MHz, 4 %, P2]
+03:51:37 SERIE ENDE

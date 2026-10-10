@@ -1,0 +1,11 @@
+ring-eine-aus-0.png ↔ ring-eine-aus-1.png: Δ>0 1.407 %, Δ>2 0.341 %, Δ>8 0.048 %, max 68, Mittel 0.0314
+ring-eine-an-0.png ↔ ring-eine-an-1.png: Δ>0 7.906 %, Δ>2 1.162 %, Δ>8 0.404 %, max 107, Mittel 0.2023
+ring-eine-aus-0.png ↔ ring-eine-an-0.png: Δ>0 1.414 %, Δ>2 0.348 %, Δ>8 0.057 %, max 71, Mittel 0.0331
+ring-eine-aus-1.png ↔ ring-eine-an-1.png: Δ>0 7.882 %, Δ>2 1.126 %, Δ>8 0.390 %, max 107, Mittel 0.1992
+ring-main.png ↔ ring-kopf.png: Δ>0 4.646 %, Δ>2 0.334 %, Δ>8 0.094 %, max 139, Mittel 0.0746
+geist-eine-aus-0.png ↔ geist-eine-aus-1.png: Δ>0 20.906 %, Δ>2 3.301 %, Δ>8 0.537 %, max 116, Mittel 0.4001
+geist-eine-an-0.png ↔ geist-eine-an-1.png: Δ>0 9.655 %, Δ>2 1.413 %, Δ>8 0.320 %, max 100, Mittel 0.1883
+geist-eine-aus-0.png ↔ geist-eine-an-0.png: Δ>0 21.048 %, Δ>2 3.097 %, Δ>8 0.459 %, max 119, Mittel 0.3834
+geist-eine-aus-1.png ↔ geist-eine-an-1.png: Δ>0 0.990 %, Δ>2 0.157 %, Δ>8 0.024 %, max 87, Mittel 0.0185
+geist-main.png ↔ geist-kopf.png: Δ>0 20.754 %, Δ>2 8.003 %, Δ>8 4.742 %, max 125, Mittel 2.0397
+maschine-main.png ↔ maschine-kopf.png: Δ>0 15.304 %, Δ>2 1.755 %, Δ>8 0.518 %, max 116, Mittel 0.3701

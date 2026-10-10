@@ -1,0 +1,44 @@
+1A BAND ROT: Befehle 266/208 (1.28×) · Dreiecke 2490k/680k (3.66×) · VRAM MB 156.9/118 (1.33×) · GPU ms/Frame 22.7/16.7 (1.36×)
+   boden 8/12 6/1/1 245k/200k !bodenSatz 3 · fern-ring 3 · farWater 1 · wasserSatz 1
+   baum 40/40 18/18/4 232k/150k !f:birke:L1 10 · f:tanne:L1 8 · f:fichte:L1 6 · fscatter:tanne:L1 6
+   bau 181/40 97/67/17 1827k/60k !f:drachentor:L0 46 · f:maurentor:L0 25 · f:verkalkt:L0 24 · f:maschine:L0 14
+   formationen 5/20 2/2/1 24k/30k formationenSatz 5
+   einzelstuecke 26/25 21/3/2 154k/15k !portal-membran 8 · dsl-insel 7 · portal-nebel 7 · feld-pass 2
+   VRAM 156.9 MB / Band 118 MB (1.33×) — je Erzeuger:
+   64.0 MB  1144  buf:szene  (bodenSatz · f:drachentor:L0 · f:maurentor:L0)
+   19.8 MB  2     tex:TRAANode.history
+   15.8 MB  1     tex:output
+   r184-ausgabe: 0 (keine Zeile)
+2B BAND ROT: Befehle 259/208 (1.25×) · Dreiecke 2425k/680k (3.57×) · VRAM MB 156.1/118 (1.32×) · GPU ms/Frame 21.48/16.7 (1.29×)
+   boden 8/12 6/1/1 245k/200k !bodenSatz 3 · fern-ring 3 · farWater 1 · wasserSatz 1
+   baum 40/40 18/18/4 232k/150k !f:birke:L1 10 · f:tanne:L1 8 · f:fichte:L1 6 · fscatter:tanne:L1 6
+   bau 181/40 97/67/17 1827k/60k !f:drachentor:L0 46 · f:maurentor:L0 25 · f:verkalkt:L0 24 · f:maschine:L0 14
+   formationen 5/20 2/2/1 24k/30k formationenSatz 5
+   einzelstuecke 19/25 14/3/2 89k/15k !dsl-insel 7 · portal-membran 4 · portal-nebel 4 · feld-pass 2
+   VRAM 156.1 MB / Band 118 MB (1.32×) — je Erzeuger:
+   63.2 MB  1126  buf:szene  (bodenSatz · f:drachentor:L0 · f:maurentor:L0)
+   19.8 MB  2     tex:TRAANode.history
+   15.8 MB  1     tex:output
+   r184-ausgabe: 0 (keine Zeile)
+3A BAND ROT: Befehle 266/208 (1.28×) · Dreiecke 2490k/680k (3.66×) · VRAM MB 157/118 (1.33×) · GPU ms/Frame 21.83/16.7 (1.31×)
+   boden 8/12 6/1/1 245k/200k !bodenSatz 3 · fern-ring 3 · farWater 1 · wasserSatz 1
+   baum 40/40 18/18/4 232k/150k !f:birke:L1 10 · f:tanne:L1 8 · f:fichte:L1 6 · fscatter:tanne:L1 6
+   bau 181/40 97/67/17 1827k/60k !f:drachentor:L0 46 · f:maurentor:L0 25 · f:verkalkt:L0 24 · f:maschine:L0 14
+   formationen 5/20 2/2/1 24k/30k formationenSatz 5
+   einzelstuecke 26/25 21/3/2 154k/15k !portal-membran 8 · dsl-insel 7 · portal-nebel 7 · feld-pass 2
+   VRAM 157 MB / Band 118 MB (1.33×) — je Erzeuger:
+   64.0 MB  1144  buf:szene  (bodenSatz · f:drachentor:L0 · f:maurentor:L0)
+   19.8 MB  2     tex:TRAANode.history
+   15.8 MB  1     tex:output
+   r184-ausgabe: 0 (keine Zeile)
+4B BAND ROT: Befehle 259/208 (1.25×) · Dreiecke 2425k/680k (3.57×) · VRAM MB 156.1/118 (1.32×) · GPU ms/Frame 21.88/16.7 (1.31×)
+   boden 8/12 6/1/1 245k/200k !bodenSatz 3 · fern-ring 3 · farWater 1 · wasserSatz 1
+   baum 40/40 18/18/4 232k/150k !f:birke:L1 10 · f:tanne:L1 8 · f:fichte:L1 6 · fscatter:tanne:L1 6
+   bau 181/40 97/67/17 1827k/60k !f:drachentor:L0 46 · f:maurentor:L0 25 · f:verkalkt:L0 24 · f:maschine:L0 14
+   formationen 5/20 2/2/1 24k/30k formationenSatz 5
+   einzelstuecke 19/25 14/3/2 89k/15k !dsl-insel 7 · portal-membran 4 · portal-nebel 4 · feld-pass 2
+   VRAM 156.1 MB / Band 118 MB (1.32×) — je Erzeuger:
+   63.1 MB  1126  buf:szene  (bodenSatz · f:drachentor:L0 · f:maurentor:L0)
+   19.8 MB  2     tex:TRAANode.history
+   15.8 MB  1     tex:output
+   r184-ausgabe: 0 (keine Zeile)
