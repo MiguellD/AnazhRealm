@@ -95,7 +95,7 @@ const BASIS = {
     // eine Quelle geht an der Wand vorbei: die Wald-Schlange setzt ihre Würfe direkt
     lichtungwald: [["            this._naturSetzen(task.name, task.position, task.opts);", "            this.spawnArchitecture(task.name, task.position, task.opts);"]],
     // eine Quelle geht an der Wand vorbei: der Hain der KI (`spawn_studio`) setzt seine Natur direkt — an der Plattform UND im Haus
-    kihain: [["if (natur ? this._naturSetzen(name, ort, opts, null, absage) : this.spawnArchitecture(name, ort, opts))", "if (this.spawnArchitecture(name, ort, opts))"]],
+    kihain: [["if (natur ? this._naturSetzen(name, ort, opts, null, wand) : this.spawnArchitecture(name, ort, opts))", "if (this.spawnArchitecture(name, ort, opts))"]],
     // die Wand nimmt still: der Hain fällt ohne Absage — der Chat sagte „gewachsen" bei 0 Bäumen
     stumm: [["            if (absage) absage(wo);\n", ""]],
     // die Fernstufe trägt ihre Bounding-Box statt der Solids des Gesetzbuchs (das Gesetzbuch reist über den Worker)

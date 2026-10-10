@@ -46427,7 +46427,13 @@ async function checkBandV18129HochBecken(ctx) {
         out.capReadsStau = /_stauFieldsNear/.test(window.__codeOf(r._ensureWaterCALevel));
         out.pinHasDrip = /src\[c\] === 2/.test(window.__codeOf(r._tickWorldWaterCA));
         out.editInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r._addVoxelEdit));
-        out.spawnInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r.spawnArchitecture));
+        // der Bau weckt am Zell-Stempel (Schau-2, Gegenprüfung Runde 2): wo sein Stempel in die Zellen kommt — der Neubau des
+        // Fußabdrucks beim Bau, der Reload, das Wieder-Strömen —, gefragt am Gesetz (`_stempelImWasser`)
+        out.spawnInvalidates =
+            /_rebuildVoxelChunk\(/.test(window.__codeOf(r.spawnArchitecture)) &&
+            /_stempelImWasser\([\s\S]*_invalidateWaterCapsAround/.test(
+                window.__codeOf(r._stampArchitectureSolidCellsInto)
+            );
         out.removeInvalidates = /_invalidateWaterCapsAround/.test(window.__codeOf(r.removeArchitecture));
         // PURE Spill-Scan (Priority-Flood): das BECKEN hält, der PFEILER nicht —
         // der strukturelle Damm/Pfeiler-Diskriminator (die Physik filtert).
@@ -46491,7 +46497,7 @@ async function checkBandV18129HochBecken(ctx) {
         res.capReadsStau && res.pinHasDrip
     );
     check(
-        "V18.129 Hoch-Becken: alle drei Werk-Pfade invalidieren (Edit · Spawn · Remove)",
+        "V18.129 Hoch-Becken: alle drei Werk-Pfade invalidieren (Edit · Bau am Zell-Stempel · Abbau)",
         res.editInvalidates && res.spawnInvalidates && res.removeInvalidates
     );
     check("V18.129 Hoch-Becken: der Spill-Scan hält das GESCHLOSSENE Becken (Krone-Pegel)", res.basinHolds);
