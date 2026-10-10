@@ -52247,12 +52247,21 @@ class AnazhRealm {
             const d = Math.hypot(dx, dz);
             // Fern-Schlaf: jenseits der Sicht ruht die Membran (unsichtbar, kein
             // Uniform-Takt) — das Material bleibt kompiliert stehen (Erstarren-Lehre).
+            // DER SCHLAF VERLÄSST DEN GRAPHEN (0910-4): ein unsichtbares Mesh im Graphen hält seine Puffer auf der GPU (der
+            // Kehraus `_gpuKehraus` lässt, was ein Objekt des Graphen trägt) — gemessen an der Wiese 1 000 m vom Ring: 1,98 MB
+            // `szene:portal-membran` für sieben schlafende Passagen. Schläft sie, verlässt sie mit ihrem Nebel den Graphen,
+            // und der EINE Kehraus nimmt die Puffer, die keine wache Schwester derselben Gestalt mehr trägt; erwacht sie,
+            // kehrt sie zurück und lädt hoch — Stoff und Pipeline stehen weiter.
             if (d > SICHT) {
                 if (rec.mesh && rec.mesh.visible) rec.mesh.visible = false;
                 if (rec.nebel && rec.nebel.visible) rec.nebel.visible = false;
+                if (rec.mesh && rec.mesh.parent) rec.mesh.parent.remove(rec.mesh);
+                if (rec.nebel && rec.nebel.parent) rec.nebel.parent.remove(rec.nebel);
                 rec.lastLz = null;
                 continue;
             }
+            if (rec.mesh && !rec.mesh.parent) st.scene.add(rec.mesh);
+            if (rec.nebel && !rec.nebel.parent) st.scene.add(rec.nebel);
             if (rec.mesh && !rec.mesh.visible) rec.mesh.visible = true;
             let act = Math.max(0, Math.min(1, 1 - (d - reach) / 12));
             // V18.491.75 — Heimkehr-Linger: Ausgangstor bleibt kurz warm (Kontinuum).

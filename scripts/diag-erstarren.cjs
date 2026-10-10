@@ -225,6 +225,8 @@ function check(name, ok, detail) {
                 r._tickPortalMembranes(9004.0);
                 const recFern = reg ? reg.get(entry.id) : null;
                 const schlaeft = !!(recFern && recFern.mesh && recFern.mesh.visible === false);
+                // 0910-4: der Schlaf verlässt den Graphen (der Kehraus nimmt die Puffer), das Erwachen kehrt zurück
+                const ausGraph = !!(recFern && recFern.mesh && recFern.mesh.parent === null);
                 // zurück → Scan + Frame-Pass
                 p.x = heim.x;
                 r._tickPortalMembranes(9006.0);
@@ -235,6 +237,8 @@ function check(name, ok, detail) {
                     eintragUeberlebtFerne: !!recFern,
                     fernSchlaf: schlaeft,
                     wachZurueck: !!(recZurueck && recZurueck.mesh && recZurueck.mesh.visible === true),
+                    ausGraph,
+                    imGraph: !!(recZurueck && recZurueck.mesh && recZurueck.mesh.parent === s.scene),
                     bautenNachZyklus: membranBauten,
                     keinRecompile: membranBauten === vorher,
                 };
@@ -269,6 +273,11 @@ function check(name, ok, detail) {
         "(c) RECOMPILE-WAND: Sichtring verlassen+zurück = KEIN Neu-Bau, Eintrag überlebt, Fern-Schlaf + Rück-Wachen",
         M.keinRecompile === true && M.eintragUeberlebtFerne === true && M.fernSchlaf === true && M.wachZurueck === true,
         `Bauten ${M.bautenBeimBau}→${M.bautenNachZyklus} · schlaeft=${M.fernSchlaf} · wach=${M.wachZurueck}`
+    );
+    check(
+        "(c) der Schlaf verlässt den Graphen (der Kehraus nimmt die Puffer), das Erwachen kehrt zurück",
+        M.ausGraph === true && M.imGraph === true,
+        `schlafend außerhalb=${M.ausGraph} · wach im Graphen=${M.imGraph}`
     );
     check("SELBST-TEST: der injizierte 300-ms-Block wurde als Stall gesehen (die Uhr misst)", L.selbstTestGesehen === true);
     check("kein Page-Error", pageErrors.length === 0, pageErrors[0] || "sauber");
