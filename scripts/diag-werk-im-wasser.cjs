@@ -23,17 +23,23 @@
 //   L — DIE LESER (kommentarfrei, Node): keine Zwillings-Probe des Lands mehr (`_isAboveWaterAt` fiel), `_waterLevelAt`
 //       nur noch als Bezug der Ufer-Bänder (jeder Aufruf mit `aus`), der Wald plant gegen das Gesetz des Wassers
 //       (`_atlasWaterLevelAt`), die Natur-Wand fragt das Land (`_landAt`), die Pflanze stempelt keine Wasser-Zelle, ein Bau
-//       weckt den Automaten nur, wenn sein Stempel Wasser verdrängt, und beide Fahr-Schritte reichen die Tiefe am Wagen.
-//       Das Fundament: die Wurzel (`spawnArchitecture`) urteilt nach ihrer Spieler-Klemme über jedes Werk mit Grundriss-Gesetz
-//       (`_werkImWasser` → `_fundamentLand`), die Siedlung fragt dasselbe `_fundamentLand`, der Satz, der Tempel und das
-//       Bauplan-Programm suchen ihren Ort über `_werkOrtSuchen`.
+//       weckt den Automaten nur, wenn sein Stempel Wasser verdrängt — gefragt am Gesetz (`_stempelImWasser`, nie am
+//       Lade-Zustand), geweckt am Zell-Stempel, der Abbau fragt dasselbe Gesetz —, und beide Fahr-Schritte reichen die Tiefe
+//       am Wagen. Das Fundament: die Wurzel (`spawnArchitecture`) urteilt nach ihrer Spieler-Klemme über jedes Werk mit
+//       Grundriss-Gesetz (`_werkImWasser` → `_fundamentLand`), die Siedlung fragt dasselbe `_fundamentLand`, der Satz, der
+//       Tempel und das Bauplan-Programm suchen ihren Ort über `_werkOrtSuchen`.
 //   F — DER WAGEN IM WASSER: der GT fährt im echten Sim-Schritt mit Vollgas aus 26 m Anlauf in 0,5–0,75 m Wasser (eine
 //       Furt um den Schau-Ort, gesucht). Befund: 43 km/h durch 0,61 m, ohne Widerstand. Soll: 1 s nach dem Eintauchen
 //       ≤ 50 % des Eintritts-Tempos; die Verfolger-Kamera nie unter dem Spiegel.
+//   D — DER DAMM ÜBERSTEHT DEN RELOAD (Gegenprüfung Runde 2; eigener Browser-Kontext, frische Welt): der Damm des Studios
+//       quer über den Fluss bei der Furt, 1800 Takte, gespeichert, neu geladen, 1800 Takte, abgerissen. Befund am Kopf
+//       e162430b: 3 574 nasse Punkte (±40 m) vor dem Reload, 1 557 danach (ohne Damm 1 565), der Abbau weckte den Automaten
+//       nicht (0). Soll: der Stausee bildet sich neu (± 10 % des Staus), der Abbau weckt ihn (≥ 1 Invalidierung).
 //   K — DER KERN (Node, vehicle-core fahrKraefte): ohne Tiefe byte-gleich (das Labor kennt kein Wasser, Labor = Welt an
 //       Land); in 0,61 m aus 12 m/s nach 1 s ≤ 6 m/s; Vollgas im Wasser endet im Gleichgewicht des Gesetzes
 //       √((aEngine − rollDecel) / (kStirn·Tiefe + dragK)) ± 5 %; steht das Wasser an der Ansaugung (Gürtellinie), fährt er
-//       aus dem Stand keine 5 cm.
+//       aus dem Stand keine 5 cm; die Trägheit des Wasser-Terms ist die EINE Masse des Wagens (Fahr-Satz × masseDichte —
+//       am Kopf e162430b trug er eine eigene: Schüttdichte × Hüll-Quader, GT 1 557 statt 1 341 kg).
 //
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
@@ -54,6 +60,8 @@ const SCHWELLE = {
     eintrittMin: 6, // m/s: so schnell muss der Wagen ins Wasser fahren (sonst LEER)
     restAnteil: 0.5, // Tempo 1 s nach dem Eintauchen gegen das Eintritts-Tempo
     kameraUnter: 0, // Frames mit der Kamera unter dem Spiegel
+    stauMin: 300, // nasse Punkte (1-m-Gitter ±40 m), die der Damm aufstauen muss (sonst prüft D nichts)
+    stauTreue: 0.1, // Anteil des Staus, um den der Stausee nach dem Reload vom Stausee davor abweichen darf
 };
 
 // ── DAS URTEIL (rein; Lauf und Selbsttest). Rückgabe: die Täter beim Namen. ──
@@ -119,6 +127,24 @@ function urteil(b) {
                 `F: die Verfolger-Kamera steht in ${F.kameraUnter} Frames unter dem Spiegel (bis ${m(F.kameraTiefe)} m)`
             );
     }
+    // D
+    const D = b.damm;
+    if (!D || D.fehler) v.push(`D: ${D ? D.fehler : "die Damm-Probe lief nicht"}`);
+    else {
+        const stau = D.w1 - D.w0;
+        if (!(stau >= S.stauMin))
+            v.push(
+                `D LEER: der Damm staute ${stau} nasse Punkte (ohne Damm ${D.w0}, mit ${D.w1}; Soll ≥ ${S.stauMin})`
+            );
+        else if (!(Math.abs(D.w2 - D.w1) <= S.stauTreue * stau))
+            v.push(
+                `D: der Stausee des Damms #${D.id} (${m(D.x)}/${m(D.z)}) bildet sich nach dem Reload nicht neu — ${D.w2} statt ${D.w1} nasse Punkte nach ${D.takte} Takten (ohne Damm ${D.w0})`
+            );
+        if (!(D.abriss >= 1))
+            v.push(
+                `D: der Abbau des Damms #${D.id} nach dem Reload weckt den Wasser-Automaten nicht (${D.abriss} Invalidierungen)`
+            );
+    }
     // K
     for (const x of b.kern || []) v.push(`K: ${x}`);
     return v;
@@ -182,12 +208,31 @@ function leserUrteil(srcRoh) {
         v.push("der Zell-Stempel liest nicht die EINE Spanne `_stempelSpanne`");
     const spawn = fnBody(src, /\n {4}spawnArchitecture\(type, position, opts = \{\}\) \{/);
     if (!spawn) v.push("`spawnArchitecture` nicht gefunden");
-    else {
-        const i = spawn.indexOf("_invalidateWaterCapsAround(");
-        const vor = i >= 0 ? spawn.slice(Math.max(0, i - 400), i) : "";
-        if (!/_stempelImWasser\(/.test(spawn) || !/if \(verdraengt\)/.test(vor))
+    // DER DAMM (Gegenprüfung Runde 2): der Automat wacht am Zell-Stempel — wo der Stempel in einen Chunk kommt (Bau, Reload,
+    // Wieder-Strömen) —, gefragt am Gesetz des Wassers, nie am Lade-Zustand; der Abbau fragt dasselbe Gesetz.
+    else if (/_invalidateWaterCapsAround\(/.test(spawn))
+        v.push("ein Bau weckt den Wasser-Automaten am Setz-Punkt (`spawnArchitecture`) statt am Zell-Stempel");
+    if (stamp) {
+        const i = stamp.indexOf("_invalidateWaterCapsAround(");
+        const vor = i >= 0 ? stamp.slice(Math.max(0, i - 200), i) : "";
+        if (i < 0)
+            v.push(
+                "der Zell-Stempel (`_stampArchitectureSolidCellsInto`) weckt den Automaten nicht — ein Damm aus dem Reload staut nie"
+            );
+        else if (!/if \(this\._stempelImWasser\(\[aabb\]\)\)/.test(vor))
             v.push("ein Bau weckt den Wasser-Automaten, ohne dass sein Stempel Wasser verdrängt");
     }
+    const imWasser = fnBody(src, /\n {4}_stempelImWasser\(aabbs\) \{/);
+    if (!imWasser) v.push("`_stempelImWasser` nicht gefunden");
+    else if (/voxelChunks|waterCells|_wasserBildAt\(/.test(imWasser) || !/_atlasWaterLevelAt\(/.test(imWasser))
+        v.push(
+            "die Frage, ob ein Stempel Wasser verdrängt (`_stempelImWasser`), hängt am Lade-Zustand der Chunks statt am Gesetz des Wassers"
+        );
+    const abbau = fnBody(src, /\n {4}removeArchitecture\(entry\) \{/);
+    if (!abbau || !/_stempelImWasser\(entry\.blockerAABBs\)/.test(abbau))
+        v.push("der Abbau (`removeArchitecture`) fragt nicht das Gesetz, ob sein Stempel Wasser verdrängte");
+    if (/_wasserVerdraengt/.test(src))
+        v.push("das Merk-Feld `_wasserVerdraengt` lebt (eine Antwort vom Lade-Zustand des Baus)");
     // Das Fundament (Gegenprüfung 10.10.): die Wurzel urteilt NACH ihrer Spieler-Klemme, jeder Sucher fragt dasselbe Land.
     if (spawn) {
         const iK = spawn.indexOf("_structureSpawnPos(");
@@ -765,6 +810,120 @@ async function probe(A) {
     return out;
 }
 
+// ── D: DER DAMM ÜBERSTEHT DEN RELOAD (eigener Browser-Kontext: eine frische Welt). `A.phase` "bau": ein Damm quer über den
+// Fluss (der Kern des Gesetzes, die Strömung achsen-parallel, die Breite aus der Nässe), `A.takte` Spiel-Takte, gespeichert;
+// "reload": dieselbe Welt neu geladen, dieselben Takte, dann der Abbau. Gezählt: die nassen Punkte (`_nassAt`, 1-m-Gitter
+// ±A.R m um den Damm) ohne Damm, mit Damm, nach dem Reload; die Invalidierungen des Automaten beim Abbau. ──
+async function dammProbe(A) {
+    const dl0 = performance.now() + 120000;
+    while (
+        (!window.anazhRealm || !window.anazhRealm.state.hydrosphere || !window.anazhRealm.state.hydrosphere.ready) &&
+        performance.now() < dl0
+    )
+        await new Promise((res) => setTimeout(res, 200));
+    const r = window.anazhRealm;
+    if (!r) return { fehler: "die Welt bootete nicht" };
+    const st = r.state;
+    if (st.renderer) {
+        st.renderer.render = function () {};
+        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
+    }
+    st.postProcessingFailed = true;
+    const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+    let tMs = performance.now();
+    let nFrame = 0;
+    const frame = () => {
+        tMs += MUSTER[nFrame++ % MUSTER.length];
+        try {
+            r._gameLoopTick(tMs);
+        } catch (_e) {}
+    };
+    const takte = async (n) => {
+        for (let i = 0; i < n; i++) {
+            frame();
+            if (i % 20 === 0) await new Promise((res) => setTimeout(res, 0));
+        }
+    };
+    const stroemen = async (X, Z) => {
+        const t0 = performance.now();
+        let last = -1;
+        let still = performance.now();
+        for (;;) {
+            st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
+            frame();
+            const n = st.voxelChunks ? st.voxelChunks.size : 0;
+            if (n !== last) {
+                last = n;
+                still = performance.now();
+            }
+            if ((n >= 9 && performance.now() - still > 1500) || performance.now() - t0 > 90000) break;
+            await new Promise((res) => setTimeout(res, 0));
+        }
+        await takte(120);
+    };
+    const nass = (X, Z) => {
+        let n = 0;
+        for (let i = -A.R; i <= A.R; i++) for (let j = -A.R; j <= A.R; j++) if (r._nassAt(X + i, Z + j)) n++;
+        return n;
+    };
+    if (A.phase === "bau") {
+        const [X, Z] = A.ort;
+        await stroemen(X, Z);
+        let ort = null;
+        for (let gz = -60; gz <= 60; gz += 2)
+            for (let gx = -60; gx <= 60; gx += 2) {
+                const x = X + gx;
+                const z = Z + gz;
+                const rv = r._hydroRiverAt(x, z);
+                if (!rv || !(rv.centerness > 0.7) || !r._nassAt(x, z)) continue;
+                const fm = Math.hypot(rv.flowX, rv.flowZ);
+                if (!(fm > 1e-6) || Math.max(Math.abs(rv.flowX), Math.abs(rv.flowZ)) / fm < 0.94) continue;
+                const quer = Math.abs(rv.flowX) > Math.abs(rv.flowZ) ? [0, 1] : [1, 0];
+                let breite = 0;
+                for (const sg of [1, -1]) {
+                    let k = 0;
+                    while (k < 30 && r._nassAt(x + quer[0] * sg * (k + 0.5), z + quer[1] * sg * (k + 0.5))) k += 0.5;
+                    breite += k;
+                }
+                if (breite > 2 && breite < 14 && (!ort || Math.hypot(gx, gz) < Math.hypot(ort.x - X, ort.z - Z)))
+                    ort = { x, z, quer, breite };
+            }
+        if (!ort) return { fehler: `kein Fluss-Querschnitt (2–14 m) im Umkreis von 60 m um ${X}/${Z}` };
+        const w0 = nass(ort.x, ort.z);
+        const grund = r._voxelSurfaceY(ort.x, ort.z);
+        // der Damm des Studios (8 × 3 × 1,2 m) quer zur Strömung, so breit, dass er das Ufer fasst, 0,3 m im Grund
+        const e = r.spawnArchitecture(
+            "damm",
+            { x: ort.x, y: grund + 0.2, z: ort.z },
+            { precise: true, scale: Math.max(1, (ort.breite + 6) / 8), rotationY: ort.quer[0] === 1 ? 0 : Math.PI / 2 }
+        );
+        if (!e) return { fehler: "der Damm wurde nicht gebaut" };
+        await takte(A.takte);
+        const w1 = nass(ort.x, ort.z);
+        st.playerMesh.position.set(ort.x, r._voxelSurfaceY(ort.x, ort.z) + 1.8, ort.z);
+        r.saveState();
+        return { x: ort.x, z: ort.z, breite: ort.breite, id: e.id, w0, w1, takte: A.takte };
+    }
+    // "reload": dieselbe Welt, der Damm aus dem Save
+    const e = st.architectures.find((a) => a && a.type === "damm");
+    if (!e) return { fehler: "der Damm überstand den Reload nicht (kein Eintrag)" };
+    await stroemen(A.x, A.z);
+    await takte(A.takte);
+    const w2 = nass(A.x, A.z);
+    const inv = { n: 0 };
+    const invAlt = r._invalidateWaterCapsAround;
+    r._invalidateWaterCapsAround = function () {
+        inv.n++;
+        return invAlt.apply(this, arguments);
+    };
+    try {
+        r.removeArchitecture(e);
+    } finally {
+        r._invalidateWaterCapsAround = invAlt;
+    }
+    return { w2, abriss: inv.n };
+}
+
 function selbsttest() {
     const gruen = {
         hain: {
@@ -777,6 +936,7 @@ function selbsttest() {
         satz: { orte: 9, haeuser: 9, fern: [] },
         leser: [],
         wagen: { vEin: 11, v1: 3, tiefe: 0.61, kameraUnter: 0, kameraTiefe: 0 },
+        damm: { id: 504, x: -937, z: -1064, w0: 1565, w1: 3574, w2: 3560, abriss: 1, takte: 1800 },
         kern: [],
     };
     const faelle = [
@@ -838,6 +998,17 @@ function selbsttest() {
         ],
         ["F leer", (b) => (b.wagen.vEin = 1), /F LEER/],
         ["K Kern", (b) => b.kern.push("K2 …"), /K: K2/],
+        [
+            "D Stausee nach dem Reload weg (der Befund am Kopf e162430b)",
+            (b) => (b.damm.w2 = 1557),
+            /D: der Stausee des Damms #504 .* bildet sich nach dem Reload nicht neu — 1557 statt 3574/,
+        ],
+        [
+            "D Abbau weckt nicht",
+            (b) => (b.damm.abriss = 0),
+            /D: der Abbau des Damms #504 nach dem Reload weckt den Wasser-Automaten nicht \(0/,
+        ],
+        ["D leer", (b) => (b.damm.w1 = 1600), /D LEER/],
     ];
     let ok = urteil(JSON.parse(JSON.stringify(gruen))).length === 0;
     console.log(`  ${ok ? "✅" : "❌"} grüner Befund → 0 Täter`);
@@ -872,7 +1043,38 @@ function selbsttest() {
             (s) => s.replace("if (aabb.pflanze) return null;", "if (aabb.pflanzeX) return null;"),
             /Pflanze stempelt/,
         ],
-        ["Automat immer", (s) => s.replace("if (verdraengt)\n", "if (true)\n"), /weckt den Wasser-Automaten/],
+        [
+            "Automat immer",
+            (s) => s.replace("if (this._stempelImWasser([aabb]))\n", "if (true)\n"),
+            /weckt den Wasser-Automaten, ohne dass/,
+        ],
+        [
+            "Damm am Lade-Zustand (der Bau fragt die geladenen Zellen)",
+            (s) =>
+                s.replace(
+                    "    _stempelImWasser(aabbs) {\n        if (!Array.isArray(aabbs)) return false;",
+                    "    _stempelImWasser(aabbs) {\n        if (!Array.isArray(aabbs) || !this.state.voxelChunks) return false;"
+                ),
+            /hängt am Lade-Zustand der Chunks/,
+        ],
+        [
+            "Abbau am Merk-Feld des Baus",
+            (s) =>
+                s.replace(
+                    "const damm = wasBlocker && this._stempelImWasser(entry.blockerAABBs);",
+                    "const damm = wasBlocker && entry._wasserVerdraengt;"
+                ),
+            /der Abbau .* fragt nicht das Gesetz/,
+        ],
+        [
+            "Damm wacht nur beim Bau",
+            (s) =>
+                s.replace(
+                    "this._playWaterReactionPing(fussabdruecke);\n",
+                    "this._playWaterReactionPing(fussabdruecke);\n            this._invalidateWaterCapsAround(0, 0, 1);\n"
+                ),
+            /am Setz-Punkt .* statt am Zell-Stempel/,
+        ],
         [
             "Wurzel ohne Fundament-Wand",
             (s) =>
@@ -1032,6 +1234,38 @@ async function lauf() {
             furt: argListe("--furt") ? argListe("--furt").map(Number) : null,
         });
         Object.assign(befund, out);
+        // D: der Damm in einer frischen Welt (eigener Kontext — eigener Speicher), gespeichert und neu geladen
+        const nur = argListe("--nur");
+        if (!nur || nur.includes("damm")) {
+            const kontext = await browser.createBrowserContext();
+            try {
+                const p2 = await kontext.newPage();
+                p2.on("pageerror", (e) =>
+                    seitenFehler.push("D: " + (e.stack || e.message || String(e)).split("\n")[0])
+                );
+                await p2.evaluateOnNewDocument(() => {
+                    window.__anazhForceFoundry = true;
+                    window.__anazhHeadlessNullRenderer = true;
+                });
+                await p2.goto(`http://127.0.0.1:${PORT}/index.html`, {
+                    waitUntil: "domcontentloaded",
+                    timeout: 120000,
+                });
+                const D = { takte: 1800, R: 40 };
+                const bau = await p2.evaluate(dammProbe, Object.assign({ phase: "bau", ort: [-935, -1070] }, D));
+                if (bau.fehler) befund.damm = bau;
+                else {
+                    await p2.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+                    const nach = await p2.evaluate(
+                        dammProbe,
+                        Object.assign({ phase: "reload", x: bau.x, z: bau.z }, D)
+                    );
+                    befund.damm = nach.fehler ? nach : Object.assign({}, bau, nach);
+                }
+            } finally {
+                await kontext.close().catch(() => {});
+            }
+        }
         const v = urteil(befund);
         const kurz = Object.assign({}, befund, { seitenFehler: seitenFehler.slice(0, 5) });
         console.log(JSON.stringify(kurz, null, 1));

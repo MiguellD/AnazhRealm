@@ -29916,13 +29916,26 @@ class AnazhRealm {
                         }
                     }
                 }
+                // DER DAMM ENTSTEHT MIT SEINEN ZELLEN (Schau-2 wasser-wahrheit, Gegenprüfung Runde 2): verdrängt die Hülle Wasser
+                // des Gesetzes (`_stempelImWasser`), weicht die Welt hier ab — der Automat wacht um sie, wann immer ein Chunk mit
+                // ihrem Stempel entsteht: der Bau baut seinen Fußabdruck neu, der Reload und das Wieder-Strömen bauen aus dem
+                // Gesetz, und der Stausee bildet sich neu. Die Kappen und Stau-Felder bauen faul aus den Zellen, die dieser Bau
+                // gleich ablegt. Bis zur Gegenprüfung wachte er nur beim Bau, gefragt an den geladenen Zellen: nach dem Reload
+                // stand der Damm im fließenden Fluss (−937/−1064: 3 574 nasse Punkte vor dem Reload, 1 557 danach).
+                if (this._stempelImWasser([aabb]))
+                    this._invalidateWaterCapsAround(
+                        (aabb.minX + aabb.maxX) * 0.5,
+                        (aabb.minZ + aabb.maxZ) * 0.5,
+                        Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5
+                    );
             }
         }
     }
 
-    // Die Zellen, die eine Blocker-Hülle in einem Chunk (Ursprung ox/oy/oz) stempelt: xz der Überlapp, y vom Fuß (botY, sonst
-    // topY − 4) bis zum Kopf — EINE Regel für den Stempel und die Frage, ob er Wasser verdrängt (`_stempelImWasser`). null =
-    // die Hülle stempelt hier nichts (außerhalb des Chunks, oder eine Pflanze). Liefert ein geteiltes Scratch-Objekt.
+    // Die Zellen, die eine Blocker-Hülle in einem Chunk (Ursprung ox/oy/oz) stempelt: xz der Überlapp, y vom Fuß (`fuss`: botY,
+    // sonst topY − 4) bis zum Kopf — EINE Regel für den Stempel und die Frage, ob er Wasser verdrängt (`_stempelImWasser`). null
+    // = die Hülle stempelt hier nichts (außerhalb des Chunks, oder eine Pflanze). Reine Geometrie (kein geladener Zustand);
+    // liefert ein geteiltes Scratch-Objekt.
     _stempelSpanne(aabb, ox, oy, oz, dim, dimY, step) {
         if (aabb.pflanze) return null;
         if (aabb.maxX < ox || aabb.minX > ox + dim * step) return null;
@@ -29932,32 +29945,42 @@ class AnazhRealm {
         s.i1 = Math.min(dim - 1, Math.floor((aabb.maxX - ox) / step));
         s.k0 = Math.max(0, Math.floor((aabb.minZ - oz) / step));
         s.k1 = Math.min(dim - 1, Math.floor((aabb.maxZ - oz) / step));
-        const yBot = Number.isFinite(aabb.botY) ? aabb.botY : aabb.topY - 4;
-        s.j0 = Math.max(0, Math.floor((yBot - oy) / step));
+        s.fuss = Number.isFinite(aabb.botY) ? aabb.botY : aabb.topY - 4;
+        s.j0 = Math.max(0, Math.floor((s.fuss - oy) / step));
         s.j1 = Math.min(dimY - 1, Math.floor((aabb.topY - oy) / step));
         return s;
     }
 
-    // Verdrängt der Stempel dieser Hüllen Wasser? Je geladenem Chunk unter ihnen: liegt eine Wasser-Zelle in den Zellen, die
-    // er stempeln wird (`_stempelSpanne`, auf den Zellen VOR dem Stempel)? Nur dann weicht die Welt ab und der Automat wacht.
+    // VERDRÄNGT DER STEMPEL DIESER HÜLLEN WASSER? Gefragt am Wasser-GESETZ, aus dem die Zellen erst werden — nie am Lade-Zustand
+    // der Chunks: an jeder Spalte, die eine Hülle in einem Chunk stempelt (`_stempelSpanne`, je Chunk unter ihr — reine
+    // Geometrie), steht das Wasser des Gesetzes (`_atlasWaterLevelAt` über dem Boden der Spalte `_voxelSurfaceY` — die Wahrheit
+    // am Körper ohne Chunk) über dem Boden UND über dem Fuß des Stempels? Der billige Beweis zuerst (Lehre 25): reicht das
+    // Wasser des Gesetzes samt Rand nicht über den Fuß, kein Spalten-Scan. Nur dann weicht die Welt ab und der Automat wacht.
+    // Leser: der Zell-Stempel (`_stampArchitectureSolidCellsInto`: jeder Chunk, der mit dem Stempel entsteht — Bau, Reload,
+    // Wieder-Strömen) und der Abbau (`removeArchitecture`). Bis zur Gegenprüfung (Runde 2) fragte der Bau die geladenen Zellen
+    // VOR dem Stempel: beim Reload ist kein Chunk geladen (`loadState` vor `generateNewWorld`), der Damm galt als trocken — sein
+    // Stausee bildete sich nicht neu, und sein Abbau weckte den Automaten nicht.
     _stempelImWasser(aabbs) {
-        if (!Array.isArray(aabbs) || !this.state.voxelChunks) return false;
+        if (!Array.isArray(aabbs)) return false;
         const { dim, dimY, step, span, floorDrop } = this._voxelChunkConfig(0);
         const oy = (this.state.terrainBaseHeight || 0) - floorDrop;
-        const W = AnazhRealm.CELL_STATE.WATER;
         for (const aabb of aabbs) {
-            if (!aabb || aabb.pflanze) continue;
+            if (!aabb) continue;
             for (let cz = Math.floor(aabb.minZ / span); cz <= Math.floor(aabb.maxZ / span); cz++)
                 for (let cx = Math.floor(aabb.minX / span); cx <= Math.floor(aabb.maxX / span); cx++) {
-                    const e = this.state.voxelChunks.get(`${cx},${cz}`);
-                    const cells = e ? e.waterCells : null;
-                    if (!cells) continue;
                     const s = this._stempelSpanne(aabb, cx * span, oy, cz * span, dim, dimY, step);
                     if (!s) continue;
-                    for (let j = s.j0; j <= s.j1; j++)
-                        for (let k = s.k0; k <= s.k1; k++)
-                            for (let i = s.i0; i <= s.i1; i++)
-                                if (cells[i + k * dim + j * dim * dim] === W) return true;
+                    const { i0, i1, k0, k1, fuss } = s;
+                    for (let k = k0; k <= k1; k++)
+                        for (let i = i0; i <= i1; i++) {
+                            const x = cx * span + (i + 0.5) * step;
+                            const z = cz * span + (k + 0.5) * step;
+                            if (!(this._atlasWaterLevelAt(x, z, -1e9) > fuss)) continue;
+                            const boden = this._voxelSurfaceY(x, z);
+                            if (boden === null || !Number.isFinite(boden)) continue;
+                            const spiegel = this._atlasWaterLevelAt(x, z, boden);
+                            if (spiegel > boden + 0.05 && spiegel > fuss) return true;
+                        }
                 }
         }
         return false;
@@ -70796,8 +70819,6 @@ class AnazhRealm {
             const { span: _fpSpan } = this._voxelChunkConfig();
             const footprintKeys = new Set();
             const fussabdruecke = [];
-            // DER STEMPEL IM WASSER (Schau-2 wasser-wahrheit): auf den Zellen VOR dem Stempel gefragt.
-            const verdraengt = this._stempelImWasser(stempel);
             for (const aabb of stempel) {
                 const cxw = (aabb.minX + aabb.maxX) * 0.5;
                 const czw = (aabb.minZ + aabb.maxZ) * 0.5;
@@ -70830,21 +70851,12 @@ class AnazhRealm {
             // Mutiert eine solide Architektur die Cell-Klassifikation (Wasser strömt um den Damm), antwortet die
             // Welt mit einem kurzen Strömungs-Hauch — nur wo Wasser ist. KEIN Journal-Eintrag je Spawn (Journal-Idempotenz).
             this._playWaterReactionPing(fussabdruecke);
-            // V18.129 — eine solide Architektur kann ein DAMM sein: Kappen/Stau-Felder der Region verwerfen (lazy-Neubau
-            // liest die frisch gestempelten Zellen) + CA wecken → das Wasser staut sich auf. DER AUTOMAT WACHT NUR, WO DIE
-            // WELT ABWEICHT (Schau-2 wasser-wahrheit, die Lehre W-W1 der Welle L): nur ein Stempel, der Wasser verdrängt,
-            // ist ein Damm. Bis V18.537 weckte JEDER Bau den Automaten im weiten Stau-Radius — sechs Eichen am Ufer des
-            // Flusses −872/−1127 weckten 15 Chunks, der Automat rechnete den fließenden Fluss in ganzen Zellen nach, der
-            // Quellen-Pin füllte das Tal: nach 20 s standen 6 von 6 Stämmen 1,9–3,8 m unter dem gezeichneten Wasser.
-            entry._wasserVerdraengt = verdraengt;
-            if (verdraengt)
-                for (const aabb of stempel) {
-                    this._invalidateWaterCapsAround(
-                        (aabb.minX + aabb.maxX) * 0.5,
-                        (aabb.minZ + aabb.maxZ) * 0.5,
-                        Math.max(aabb.maxX - aabb.minX, aabb.maxZ - aabb.minZ) * 0.5
-                    );
-                }
+            // V18.129 — eine solide Architektur kann ein DAMM sein: das Wasser staut sich auf. DER AUTOMAT WACHT NUR, WO DIE
+            // WELT ABWEICHT (Schau-2 wasser-wahrheit, die Lehre W-W1 der Welle L): nur ein Stempel, der Wasser des Gesetzes
+            // verdrängt, ist ein Damm — und er wacht dort, wo der Stempel in die Zellen kommt (`_stampArchitectureSolidCellsInto`,
+            // im Neubau des Fußabdrucks oben), nie hier. Bis V18.537 weckte JEDER Bau den Automaten im weiten Stau-Radius —
+            // sechs Eichen am Ufer des Flusses −872/−1127 weckten 15 Chunks, der Automat rechnete den fließenden Fluss in
+            // ganzen Zellen nach, der Quellen-Pin füllte das Tal: nach 20 s standen 6 von 6 Stämmen 1,9–3,8 m unter Wasser.
         }
         // V2: kein Cap mehr — wir bauen den Mesh nur, wenn der Spieler nahe
         // genug ist. Sonst bleibt der Eintrag „cold" (nur Daten) und der
@@ -81213,6 +81225,9 @@ class AnazhRealm {
                       r: Math.max(a.maxX - a.minX, a.maxZ - a.minZ) * 0.5,
                   }))
             : null;
+        // Ein Damm ist nur, wessen Stempel Wasser des Gesetzes verdrängt (`_stempelImWasser`, gefragt VOR dem Abbau der Hüllen,
+        // unabhängig davon, welche Chunks geladen sind) — der Abbau eines Baums oder Hauses am Ufer weckt den Automaten nicht.
+        const damm = wasBlocker && this._stempelImWasser(entry.blockerAABBs);
         // Ohne Hydro-Recompute: betroffene Voxel-Chunks remeshen (der Eintrag ist schon aus
         // state.architectures raus), Wasser-Cells nehmen den Platz zurück.
         entry.blockerAABBs = null;
@@ -81226,10 +81241,8 @@ class AnazhRealm {
             // V9.75 — Spiegel zum Spawn-Trigger: das Wasser kehrt zurück (klingt nur, wo Wasser ist).
             this._playWaterReactionPing(blockerFootprints);
             // Ein abgebauter DAMM lässt seinen Stausee ablaufen: Kappen/Stau-Felder verwerfen + CA wecken
-            // (Gravitation ist kappen-frei; die Empfänger-Kappe sinkt lazy zurück). Ein Damm ist nur, wer beim Bau
-            // Wasser verdrängte (`_wasserVerdraengt`) — der Abbau eines Baums am Ufer weckt den Automaten nicht.
-            if (entry._wasserVerdraengt)
-                for (const fp of blockerFootprints) this._invalidateWaterCapsAround(fp.cx, fp.cz, fp.r);
+            // (Gravitation ist kappen-frei; die Empfänger-Kappe sinkt lazy zurück).
+            if (damm) for (const fp of blockerFootprints) this._invalidateWaterCapsAround(fp.cx, fp.cz, fp.r);
         }
         // Resonierende Strukturen verstummen beim Abbau mit abklingendem Sinus; stumme bleiben still.
         this._playArchitectureFarewellPing(entry);
