@@ -1150,8 +1150,14 @@ jobs:
               if: matrix.gruppe == 3
               run: npm run gate:worker-watersheet
 
-            - name: Portal-Membran (ein Tor-Gestalt-Portal ist in der Welt ganz eingefädelt)
+            - name: Portal-Membran (die Passage ist integriert und zeichnet nur im Blick)
               if: matrix.gruppe == 3
+              # Null-Renderer: Kollision der Gesetz-Huelle, Membran baut und atmet, Hindurchgehen ist Betreten. Dann der
+              # ECHTE Frame am Genesis-Ring (swiftshader, kienspan): aus der Mitte zeichnen Membranen, die im Ruecken nicht
+              # alle; 70 m vor dem Ring mit dem Blick vom Ring weg keine Membran und kein Nebel (Taeter beim Namen); die
+              # Huelle traegt die Amplitude der Welle; mit frustumCulled = false nennt der Selbsttest jede Membran.
+              # Gruppe 3 seit der Vereinigung mit waende-ci (EIN Schritt): sie lief in integ-probe ce10dcb6 (Lauf 38092890885)
+              # 19,3 min, Gruppe 1 22,5 min, Gruppe 2 26,6 min; der Schritt kostet im Zweig 21 s (Lauf 38021693010).
               run: npm run gate:portal-membran
 
             - name: Dritter Spiegel (das Makro-Gesetz rechnet auf swiftshader-WebGPU seh-paritätisch)
