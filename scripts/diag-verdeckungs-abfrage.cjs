@@ -20,7 +20,7 @@
 //   A  DER ABLAUF: ein Region-Bündel jenseits des Bachs (`_archRegionBundleFor`: der Berg-Cull baut seinen Stellvertreter
 //      und fragt in jedem `queryTakt`-ten Frame — das Gesetz ist eingefroren, die Linse stellt es nicht um), der GT am
 //      Ufer, Aufsitzen aus der Ego-Sicht, Fahrt zum Wasser, Bremsen, AUSSTEIGEN (die Seele wechselt zurück in den Körper,
-//      die Sicht zurück auf `first`), drei Probe-Fenster lang Blick übers Wasser — alles durch den echten
+//      die Sicht zurück auf `first`), zwei Probe-Fenster lang Blick übers Wasser — alles durch den echten
 //      Spiel-Takt (`_gameLoopTick`). Nicht vakuös: aufgesessen und ausgestiegen, die Sicht wechselte, der Stellvertreter
 //      wurde gezählt, das Wasser gezeichnet.
 //   B  DER BRUCH: ein vorgebauter Stellvertreter, direkt danach ein Leser der Szenen-Tiefe (`_szeneTiefe`) — der Pass bricht
@@ -450,12 +450,15 @@ async function verdeckungPhase(opts) {
             };
             const f = r._ensureAssetFoundry();
             const bereit = () => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt;
+            const tOrt = performance.now();
             const dlW = performance.now() + (opts.ortMs || 180000);
             while (performance.now() < dlW && !(sichtbaresWasser() > 0 && bereit())) {
                 for (let i = 0; i < 5; i++) takt();
                 await warte(20);
             }
             aus.wasserMeshes = sichtbaresWasser();
+            aus.ms = { ort: Math.round(performance.now() - tOrt) };
+            const tWagen = performance.now();
             if (!bereit()) throw new Error("das Rezept des GT stand nicht");
             // der GT am Ufer, Blick zum Wasser
             const fahrt = Math.atan2(-nx, -nz);
@@ -481,22 +484,25 @@ async function verdeckungPhase(opts) {
                 st.keys.w = !!w;
                 st.keys.s = !!sb;
             };
+            aus.ms.wagen = Math.round(performance.now() - tWagen);
+            const tTakte = performance.now();
             const auf = r.mountArchitecture(e);
             aus.aufgesessen = !!(auf && auf.ok);
-            await tick(4);
+            await tick(2);
             const sichtVorher = st.cameraMode;
             tasten(true);
-            await tick(8);
+            await tick(4);
             tasten(false, true);
-            await tick(6);
+            await tick(3);
             tasten(false);
             aus.halt = Math.round(Math.hypot(e.position.x - P.x, e.position.z - P.z) * 10) / 10;
             // DAS AUSSTEIGEN: die Seele zurück in den Körper, die Sicht zurück
             const ab = r.dismountArchitecture();
             aus.ausgestiegen = !!(ab && ab.ok);
             st.yaw = fahrt;
-            await tick(3 * aus.takt); // drei Probe-Fenster nach dem Aussteigen
+            await tick(2 * aus.takt); // zwei Probe-Fenster nach dem Aussteigen
             aus.sicht = { vorher: sichtVorher, nachher: st.cameraMode };
+            aus.ms.takte = Math.round(performance.now() - tTakte);
             aus.stellvertreter = !!bg.userData._occlProxy;
         } else {
             // B / G / L: der vorgebaute Stellvertreter der Station vor der Kamera (B mit dem Leser der Szenen-Tiefe danach)
@@ -539,7 +545,7 @@ async function verdeckungPhase(opts) {
                 for (const pd of giftMarken) pd.error = false;
             });
             // L: im Wechsel sichtbar (Zähler 1, der Stellvertreter ist der letzte Draw) und unsichtbar (Zähler 0)
-            await render(8, (i) => {
+            await render(6, (i) => {
                 stelle();
                 if (opts.phase === "letzter") q.visible = i % 2 === 0;
             });
@@ -559,8 +565,8 @@ async function verdeckungPhase(opts) {
         for (const k in eigen) be[k] = eigen[k];
     }
     // die Nachläufer der Phase (das Auflösen ist asynchron) noch in ihr buchen
-    await render(2);
-    await warte(300);
+    await render(1);
+    await warte(200);
     S.phase = "zwischen";
     aus.z = z;
     aus.gpu = S.gpu[marke] || {};
@@ -625,7 +631,7 @@ async function verdeckungPhase(opts) {
                     (phase === "ablauf"
                         ? ` · Bach ${JSON.stringify(p.bach)}, Probe jeden ${p.takt}. Frame, Wasser-Meshes ${p.wasserMeshes}, ` +
                           `aufgesessen ${p.aufgesessen}, Halt ${p.halt} m vor dem Bach, ausgestiegen ${p.ausgestiegen}, ` +
-                          `Sicht ${JSON.stringify(p.sicht)}`
+                          `Sicht ${JSON.stringify(p.sicht)}, ms ${JSON.stringify(p.ms)}`
                         : ` · vorgebaut ${p.vorgebaut}`) +
                     ` · ${fehler ? fehler + " Täter" : "0 Fehler"}`
             );

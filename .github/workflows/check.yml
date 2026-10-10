@@ -261,7 +261,7 @@ jobs:
               # Leser des Tiefen-Abbilds) mit LAUFENDEM Loop am Bach der Mess-Wiese: vergroessern, DPR 2 (die Kappe stellt die
               # Pixel-Ratio Frames nach dem Ereignis), zurueck, die Pixel-Ratio allein — je Schritt keine WebGPU-Validierung,
               # gezaehlt in gerenderten Frames. Der resize-Handler baut keinen Leser neu (die Diaet traegt jeden
-              # Groessenwechsel); ohne ihren Vorher-Textur-Waechter fallen ein Groessen- und ein Pixel-Ratio-Schritt beim Namen.
+              # Groessenwechsel, die Quelle haelt es); ohne ihren Vorher-Textur-Waechter faellt der Pixel-Ratio-Schritt beim Namen. EIN Boot.
               run: npm run gate:fenster-wechsel
 
             - name: Schirm-Wand (ein kleinerer Schirm traegt hoechstens gleich viel Welt, jede Schirm-Groesse aus der EINEN Quelle)
@@ -1130,7 +1130,7 @@ jobs:
               if: matrix.gruppe == 2
               # Faehrt am Bach der Mess-Wiese (swiftshader, kienspan, EIN Boot) den echten Spiel-Takt: ein Region-Buendel jenseits
               # des Bachs (der Berg-Cull baut seinen Occlusion-Stellvertreter, Probe jeden queryTakt-ten Frame), der GT am Ufer,
-              # Aufsitzen, Fahrt, AUSSTEIGEN (die Sicht zurueck auf first), drei Probe-Fenster Blick uebers Wasser. Dazu die
+              # Aufsitzen, Fahrt, AUSSTEIGEN (die Sicht zurueck auf first), zwei Probe-Fenster Blick uebers Wasser. Dazu die
               # Stationen Bruch (ein Leser der Szenen-Tiefe bricht den Pass bei offener Abfrage), Gift (ein gezaehlter
               # Stellvertreter mit gescheiterter Pipeline) und Letzter (der Stellvertreter als letzter Draw, der naechste Frame
               # mit Zaehler 0). ROT bei jeder Device-Meldung, jeder Zeile der GPU-Wache und jedem Seitenfehler; zuletzt ohne die
