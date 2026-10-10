@@ -2284,8 +2284,8 @@ class AnazhRealm {
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
                 const opts = { seed: s, autonomous: ctx.source === "nexus" };
                 // der Ort, an dem das ganze Fundament auf dem Land steht (nach der Spieler-Klemme der Wurzel); keiner → benannt
-                const pos = this._werkOrtSuchen(name, ziel, opts, this._samenStrom(s));
-                if (!pos) {
+                const ort = this._werkOrtSuchen(name, ziel, opts, this._samenStrom(s));
+                if (!ort) {
                     ctx.log.push({
                         event: "natur_weicht",
                         op: "spawn_temple",
@@ -2296,8 +2296,8 @@ class AnazhRealm {
                     return;
                 }
                 ctx.budget.spawnsLeft--;
-                const entry = this.spawnArchitecture(name, pos, opts);
-                ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos, seed: s });
+                const entry = this.spawnArchitecture(name, ort, opts);
+                ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos: ort, seed: s });
             },
             spawn_waterfall: ([positionNode, seed], ctx) => {
                 const pos = this._structureSpawnPos("waterfall", this.dslEvalPos(positionNode, ctx), ctx);
@@ -2348,8 +2348,8 @@ class AnazhRealm {
                 if (studioOv && typeof studioOv === "object" && !Array.isArray(studioOv)) opts.studioOv = studioOv;
                 // Ein Werk mit geteilter id steht, wo der Sender es gesetzt hat; sonst wählt das Programm den Ort — er trägt das
                 // ganze Fundament (`_werkOrtSuchen`, nach der Spieler-Klemme der Wurzel), keiner → benannt.
-                const pos = sharedId ? ziel : this._werkOrtSuchen(name, ziel, opts, this._samenStrom(s));
-                if (!pos) {
+                const ort = sharedId ? ziel : this._werkOrtSuchen(name, ziel, opts, this._samenStrom(s));
+                if (!ort) {
                     ctx.log.push({
                         event: "natur_weicht",
                         op: "spawn_blueprint",
@@ -2360,8 +2360,8 @@ class AnazhRealm {
                     return;
                 }
                 ctx.budget.spawnsLeft--;
-                const entry = this.spawnArchitecture(name, pos, opts);
-                ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos, seed: s });
+                const entry = this.spawnArchitecture(name, ort, opts);
+                ctx.log.push({ event: "spawned_blueprint", name, id: entry ? entry.id : null, pos: ort, seed: s });
             },
             // Architektur mit geteilter id entfernen: der Sender hat sie lokal schon abgebaut
             // (harvestArchitecture), Mitspieler holen es hier nach. Nur string-ids (spieler-gebaut) — eine

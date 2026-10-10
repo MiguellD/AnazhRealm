@@ -111,11 +111,15 @@ const BASIS = {
         ["if (!this._bauFrei(wx, wz, ry,", "if (false && !this._bauFrei(wx, wz, ry,"],
         ["const R = Math.max(0.5, (this._blueprintFootprintRadius(type, 1) || 0) * Math.SQRT1_2);", "return true;"],
     ],
-    // die Höhe des Footprints aus vier Ecken + Mitte, ohne den Tür-Vorplatz (der Stand vor dem Raster)
+    // die Höhe des Footprints aus vier Ecken + Mitte, ohne den Tür-Vorplatz (der Stand vor dem Raster) — das Raster lebt seit
+    // der Gegenprüfung 10.10. im EINEN `_fundamentRaster` (Höhe der Siedlung und Land jedes Fundaments)
     raster: [
-        ["const nx = Math.min(12, Math.max(1, Math.ceil(obb.ex)));", "const nx = 1;"],
-        ["const nz = Math.min(12, Math.max(1, Math.ceil(obb.ez)));", "const nz = 1;"],
-        ["if (tu && Number.isFinite(tu.x) && Number.isFinite(tu.z) && Number.isFinite(tu.w))", "if (false)"],
+        ["const nx = Math.min(12, Math.max(1, Math.ceil(fp.ex)));", "const nx = 1;"],
+        ["const nz = Math.min(12, Math.max(1, Math.ceil(fp.ez)));", "const nz = 1;"],
+        [
+            "out.push([tuer.x + (i * tuer.w) / 2, tuer.z - 0.25, false]);\n                out.push([tuer.x + (i * tuer.w) / 2, tuer.z - 1, false]);",
+            "void 0;",
+        ],
     ],
     // vor der ersten Studio-Stufe die geschlossene Kern-Box ohne Tür-Lücke
     kern: [["boxen = this._hausKernHuelle(t);", "boxen = [-t.W / 2, 0, -t.D / 2, t.W / 2, 3.1, t.D / 2];"]],

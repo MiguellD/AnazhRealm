@@ -472,10 +472,13 @@ const FIXTURES = [
             !/Math\.random/.test(srcSame);
         // Nachlese-Welle (V9.56-i — die Probe wandert mit dem Code): die Wasser-Wand
         // lebt seit der Slot-Extraktion in der EINEN Slot-Quelle _spawnSettlementSlot.
-        // Schau-2: das LAND (`_landAt`) über dem ganzen Fundament, die Zwillings-Probe fiel.
-        res.waterWall = /_landAt\(/.test(
-            window.__codeOf ? window.__codeOf(r._spawnSettlementSlot) : r._spawnSettlementSlot.toString()
-        );
+        // Schau-2: das LAND (`_landAt`) über dem ganzen Fundament, die Zwillings-Probe fiel; seit der Gegenprüfung fragt der
+        // Slot das EINE Land des Fundaments (`_fundamentLand`: jeder Punkt des `_fundamentRaster` fragt `_landAt`) — dieselbe
+        // Probe wie die Wand jedes Werks an der Wurzel.
+        const codeOf = (f) => (window.__codeOf ? window.__codeOf(f) : f.toString());
+        const fl = typeof r._fundamentLand === "function" ? codeOf(r._fundamentLand) : "";
+        res.waterWall =
+            /_fundamentLand\(/.test(codeOf(r._spawnSettlementSlot)) && /_fundamentRaster\(/.test(fl) && /_landAt\(/.test(fl);
         // Der Anker misst den Plan selbst (`_siedlungsAnker`: das Dorf vor dem Spieler, im Bildwinkel); die Schätzung über
         // `_structureSpawnPos("haus_basis")` fiel (Leben-Schau 07.10.: „dorf 7 18" umringte den Spieler).
         res.anchorChokepoint = /this\._siedlungsAnker\(plan/.test(src) && !/_structureSpawnPos/.test(src);
@@ -825,7 +828,7 @@ const FIXTURES = [
         `nH ${out.villageNH} (Soll ${out.villageNHSoll})${out.villageNHErr ? " err=" + out.villageNHErr : ""}`
     );
     check(
-        "B: die Wasser-Wand steht in der EINEN Slot-Quelle (_spawnSettlementSlot, _landAt je Slot und Fundament)",
+        "B: die Wasser-Wand steht in der EINEN Slot-Quelle (_spawnSettlementSlot → _fundamentLand: _landAt je Punkt des Fundaments)",
         out.waterWall === true
     );
     check("B: der Anker misst den Plan (_siedlungsAnker, keine haus_basis-Schaetzung)", out.anchorChokepoint === true);
