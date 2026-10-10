@@ -969,8 +969,8 @@ function zerlegeMessen(k) {
         };
         const t0 = performance.now();
         const ergebnis = { n, runden: k.runden, schalter: [], fenster: [] };
-        // Ein Fenster-Ereignis ist FREMD (Fenster-Verwaltung, nie die Linse) und baut die Welt um: `resize` bindet die
-        // Tiefen-Leser neu (`_tiefenLeserNeuBinden` — der Feld-Pass fällt bis zum nächsten Ring-Takt). Gemessen 06.10.
+        // Ein Fenster-Ereignis ist FREMD (Fenster-Verwaltung, nie die Linse) und ändert die Welt: `resize` stellt die
+        // Leinwand, die Szenen-Tiefe und das Tiefen-Abbild neu (der Frame trägt andere Pixel). Gemessen 06.10.
         // (Radeon 890M, Werkbank-Fenster 1940×1200 auf 1920×1200 geklemmt): zwei von vier Läufen trafen ein `resize`
         // OHNE Größenänderung der Seite (der Viewport ist emuliert, 1920×1080). Ein solches Ereignis schluckt die Linse
         // für die Dauer des Laufs (es ändert für die Seite nichts, die Welt bliebe sonst nicht dieselbe) und zählt es;
@@ -1562,7 +1562,7 @@ function zerlegeTabelle(a, inv, sch) {
     if (echt.length)
         z.push(
             `FREMDES FENSTER-EREIGNIS MIT GRÖSSENÄNDERUNG: ${echt.map((e) => `${e.s} s (${e.schalter})`).join(" · ")} — die` +
-                " Welt baute um (_tiefenLeserNeuBinden: der Feld-Pass fällt bis zum nächsten Ring-Takt); dieser Lauf" +
+                " Welt änderte sich (neue Leinwand, Szenen-Tiefe und Tiefen-Abbild); dieser Lauf" +
                 " vergleicht keine gleichen Welten, neu messen"
         );
     z.push(

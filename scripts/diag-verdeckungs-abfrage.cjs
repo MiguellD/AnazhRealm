@@ -10,29 +10,39 @@
 //     gezeichnet (die Erst-Zeichnung wartet oder verschiebt ihn) → `finishRender` schließt eine Query, die nie begann,
 //     und `resolveOccludedAsync` legt die Lücke (`undefined`) ins WeakSet;
 //   - bricht der Pass zwischen Beginn und trägem Ende (`copyFramebufferToTexture`: das Tiefen-Abbild für den ersten Leser
-//     der Szenen-Tiefe), endet der alte Pass mit offener Query.
+//     der Szenen-Tiefe), endet der alte Pass mit offener Query;
+//   - ist ein Stellvertreter der LETZTE Draw eines Probe-Frames, erbt der nächste Frame (Zähler 0 — r184s `beginRender` setzt
+//     `lastOcclusionObject` nur bei Zähler > 0 zurück) die offene Query und schließt sie in einem Pass ohne Abfrage-Satz
+//     (Gegenprüfung 10.10., Radeon, Bündel seitlich: 176 Meldungen in 45 s am Kopf 1457bfa9, 382 an main).
 // Der Schnitt: der EINE Block „Verdeckungs-Abfrage" in `_configureRenderer` (be.__anazhVerdeckung).
 //
 // Die Linse (echter Frame, WebGPU auf swiftshader, holz=kienspan), am Bach der Mess-Wiese:
-//   A  DER ABLAUF: ein Region-Bündel jenseits des Bachs (`_archRegionBundleFor`: der Berg-Cull baut seinen Stellvertreter,
-//      Probe-Fenster jeden Frame), der GT am Ufer, Aufsitzen aus der Ego-Sicht, Fahrt zum Wasser, Bremsen, AUSSTEIGEN (die
-//      Seele wechselt zurück in den Körper, die Sicht zurück auf `first`), Blick übers Wasser — alles durch den echten
+//   A  DER ABLAUF: ein Region-Bündel jenseits des Bachs (`_archRegionBundleFor`: der Berg-Cull baut seinen Stellvertreter
+//      und fragt in jedem `queryTakt`-ten Frame — das Gesetz ist eingefroren, die Linse stellt es nicht um), der GT am
+//      Ufer, Aufsitzen aus der Ego-Sicht, Fahrt zum Wasser, Bremsen, AUSSTEIGEN (die Seele wechselt zurück in den Körper,
+//      die Sicht zurück auf `first`), drei Probe-Fenster lang Blick übers Wasser — alles durch den echten
 //      Spiel-Takt (`_gameLoopTick`). Nicht vakuös: aufgesessen und ausgestiegen, die Sicht wechselte, der Stellvertreter
 //      wurde gezählt, das Wasser gezeichnet.
 //   B  DER BRUCH: ein vorgebauter Stellvertreter, direkt danach ein Leser der Szenen-Tiefe (`_szeneTiefe`) — der Pass bricht
 //      bei offener Abfrage (gezählt: Brüche mit offener Abfrage > 0).
 //   G  DAS GIFT: ein Stellvertreter, dessen Pipeline r184 als gescheitert führt (wie nach einem geschluckten fremden Fehler)
 //      — gezählt, nie begonnen.
+//   L  DER LETZTE: ein Stellvertreter als letzter Draw (durchsichtig, renderOrder 1e6), im Wechsel sichtbar und unsichtbar —
+//      jeder unsichtbare Frame hat Zähler 0 und folgt einem Frame, der mit dem Stellvertreter endete (nicht vakuös: Frames,
+//      die mit ihm endeten, und Null-Frames danach > 0).
 //   In jeder Phase ROT bei jedem WebGPU-Validierungsfehler beim Namen: `uncapturederror`, die GPU-Wache des Stamms (auch die
 //   von r184s Fehler-Bereichen geschluckten, als THREE-Zeile gemeldeten) und jeder Seitenfehler.
-//   S  SELBSTTEST AM ECHTEN FRAME (zuletzt): B und G mit den Vendor-Methoden (die drei Hüllen abgenommen) müssen ROT werden
-//      — B mit „ended with incomplete occlusion query", G mit „No occlusion queries are active" und „weak set".
+//   S  SELBSTTEST AM ECHTEN FRAME (zuletzt): B, G und L mit den Vendor-Methoden (die drei Hüllen abgenommen) müssen ROT
+//      werden — B mit „ended with incomplete occlusion query", G mit „No occlusion queries are active" und „weak set", L mit
+//      einer Meldung beim Namen.
+//   Eine Welt, ein Boot: die Stoffe der Stationen bauen, während der Ablauf fährt; gezählt wird in gerenderten Frames (die
+//   GPU-Leine), nie in Wanduhr-Wartezeiten (CI-Soll ≤ 3 min).
 //   --selftest (Node): das Urteil nennt jeden Täter und jede vakuöse Phase beim Namen.
 //
 //   node scripts/diag-verdeckungs-abfrage.cjs [--selftest]
 "use strict";
 
-const PHASEN = ["boot", "ablauf", "bruch", "gift"];
+const PHASEN = ["boot", "ablauf", "bruch", "gift", "letzter"];
 
 // Das Urteil: aus dem Befund je Phase die Verletzungen (leer = GRÜN).
 function urteil(out) {
@@ -67,6 +77,11 @@ function urteil(out) {
         if (!(G.z.gift > 0)) v.push("GIFT VAKUÖS: der Stellvertreter zeichnete nie mit gescheiterter Pipeline");
         if (!(G.z.gezaehlt > G.z.begonnen)) v.push(`GIFT VAKUÖS: gezählt ${G.z.gezaehlt}, begonnen ${G.z.begonnen}`);
     }
+    const L = P.letzter;
+    if (L && L.z) {
+        if (!(L.z.letzter > 0)) v.push("LETZTER VAKUÖS: kein Frame endete mit dem Stellvertreter");
+        if (!(L.z.nullFrames > 0)) v.push("LETZTER VAKUÖS: kein Frame mit Zähler 0 folgte");
+    }
     // der Selbsttest am echten Frame: ohne die Hüllen fallen die Täter beim Namen
     const S = out.selbst;
     if (S) {
@@ -76,6 +91,8 @@ function urteil(out) {
         if (!hat(S.gift, /No occlusion queries are active/))
             v.push("SELBSTTEST VAKUÖS: das Gift ohne Hülle nennt „No occlusion queries are active“ nicht");
         if (!hat(S.gift, /weak set/)) v.push("SELBSTTEST VAKUÖS: das Gift ohne Hülle nennt „Invalid value used in weak set“ nicht");
+        if (!S.letzter || ![S.letzter.gpu, S.letzter.wache].some((m) => Object.keys(m || {}).length > 0))
+            v.push("SELBSTTEST VAKUÖS: der Letzte ohne Hülle nennt keine Meldung");
     } else if (!out.abbruch) v.push("SELBSTTEST fehlt");
     return v;
 }
@@ -95,10 +112,12 @@ function selbsttest() {
             },
             bruch: { gpu: {}, wache: {}, seite: {}, z: { bruchOffen: 20, begonnen: 20 } },
             gift: { gpu: {}, wache: {}, seite: {}, z: { gift: 18, gezaehlt: 20, begonnen: 0 } },
+            letzter: { gpu: {}, wache: {}, seite: {}, z: { letzter: 4, nullFrames: 4, begonnen: 4 } },
         },
         selbst: {
             bruch: { gpu: { "Render pass [RenderPassEncoder (unlabeled)] ended with incomplete occlusion query index 0": 20 } },
             gift: { gpu: { "No occlusion queries are active.": 20 }, seite: { "Invalid value used in weak set": 20 } },
+            letzter: { gpu: { "No occlusion queries are active.": 4 } },
         },
     });
     const faelle = [
@@ -137,6 +156,14 @@ function selbsttest() {
         ["Gift: nie gezeichnet", (o) => (o.phasen.gift.z.gift = 0), /GIFT VAKUÖS: der Stellvertreter zeichnete nie/],
         ["Gift: alle begonnen", (o) => (o.phasen.gift.z.begonnen = 20), /GIFT VAKUÖS: gezählt 20, begonnen 20/],
         ["Phase fehlt", (o) => delete o.phasen.gift, /GIFT: Phase fehlt/],
+        [
+            "Letzter: der vierte Weg",
+            (o) => (o.phasen.letzter.gpu["No occlusion queries are active."] = 4),
+            /LETZTER GPU-VALIDIERUNG 4×: No occlusion queries are active/,
+        ],
+        ["Letzter: nie letzter", (o) => (o.phasen.letzter.z.letzter = 0), /LETZTER VAKUÖS: kein Frame endete/],
+        ["Letzter: kein Null-Frame", (o) => (o.phasen.letzter.z.nullFrames = 0), /LETZTER VAKUÖS: kein Frame mit Zähler 0/],
+        ["Selbsttest Letzter blind", (o) => (o.selbst.letzter.gpu = {}), /SELBSTTEST VAKUÖS: der Letzte ohne Hülle/],
         ["Selbsttest Bruch blind", (o) => (o.selbst.bruch.gpu = {}), /SELBSTTEST VAKUÖS: der Bruch ohne Hülle/],
         ["Selbsttest Gift ohne weak set", (o) => (o.selbst.gift.seite = {}), /SELBSTTEST VAKUÖS: .*weak set/],
         ["Selbsttest fehlt", (o) => delete o.selbst, /SELBSTTEST fehlt/],
@@ -214,7 +241,46 @@ function sammlerInstall() {
     window.addEventListener("unhandledrejection", (e) => buche("seite", (e.reason && e.reason.message) || e.reason));
 }
 
-// Seite: die Phasen der Linse. `opts.phase` = ablauf | bruch | gift, `opts.roh` = die drei Hüllen abnehmen (Selbsttest).
+// Seite: die Stoffe der drei Stationen — je einer mit eigenem Programm (eine Konstante im Shader: das Gift markiert SEINE
+// Pipeline), unsichtbar (ohne Farbe, ohne Tiefe) und ohne Abfrage in die Szene gehängt, damit ihre Pipelines bauen, während
+// der Ablauf fährt. B und G opak am Anfang der Liste, L durchsichtig am Ende.
+function stationenVorbau() {
+    const r = window.anazhRealm;
+    const T = window.THREE;
+    const st = r.state;
+    const stoff = (k, durchsichtig) => {
+        const m = new T.MeshBasicNodeMaterial({ transparent: durchsichtig });
+        m.colorNode = T.TSL.vec4(T.TSL.float(k), 0, 0, 1);
+        m.colorWrite = false;
+        m.depthWrite = false;
+        return m;
+    };
+    const kasten = (name, m, ordnung) => {
+        const q = new T.Mesh(new T.BoxGeometry(0.5, 0.5, 0.5), m);
+        q.name = name;
+        q.frustumCulled = false;
+        q.renderOrder = ordnung;
+        st.scene.add(q);
+        return q;
+    };
+    const lm = new T.MeshBasicNodeMaterial();
+    lm.colorNode = T.TSL.vec4(T.TSL.vec3(r._szeneTiefe()), 1);
+    const leser = new T.Mesh(new T.PlaneGeometry(0.4, 0.4), lm);
+    leser.name = "verdeckung:tiefen-leser";
+    leser.frustumCulled = false;
+    leser.renderOrder = -1e6 + 1;
+    leser.visible = false; // erst die Station B stellt ihn (sein Abbild bräche jeden Frame des Ablaufs)
+    st.scene.add(leser);
+    window.__stationen = {
+        bruch: kasten("verdeckung:stellvertreter-b", stoff(0.0021, false), -1e6),
+        gift: kasten("verdeckung:stellvertreter-g", stoff(0.0043, false), -1e6),
+        letzter: kasten("verdeckung:stellvertreter-l", stoff(0.0067, true), 1e6),
+        leser,
+    };
+    return Object.keys(window.__stationen).length;
+}
+
+// Seite: die Phasen der Linse. `opts.phase` = ablauf | bruch | gift | letzter, `opts.roh` = die drei Hüllen abnehmen.
 async function verdeckungPhase(opts) {
     const r = window.anazhRealm;
     const T = window.THREE;
@@ -234,8 +300,9 @@ async function verdeckungPhase(opts) {
                 eigen[k] = be[k];
                 delete be[k];
             }
-    // die Zähler: begonnene Abfragen, Pass-Brüche (bei offener Abfrage), gezählte Objekte, Wasser-Draws, Gift-Draws
-    const z = { begonnen: 0, bruch: 0, bruchOffen: 0, gezaehlt: 0, wasser: 0, gift: 0, renders: 0 };
+    // die Zähler: begonnene Abfragen, Pass-Brüche (bei offener Abfrage), gezählte Objekte, Wasser-, Gift-Draws, Frames, die
+    // mit dem Stellvertreter L endeten, und Null-Frames danach
+    const z = { begonnen: 0, bruch: 0, bruchOffen: 0, gezaehlt: 0, wasser: 0, gift: 0, letzter: 0, nullFrames: 0, renders: 0 };
     const RP = GPURenderPassEncoder.prototype;
     const bQ = RP.beginOcclusionQuery;
     RP.beginOcclusionQuery = function (i) {
@@ -250,18 +317,33 @@ async function verdeckungPhase(opts) {
         if (o && o.occlusionTest === true) z.bruchOffen++;
         return bruchVor.call(this, t, k, rr);
     };
+    const stn = window.__stationen;
+    let warLetzter = false;
     const anfangVor = be.beginRender;
     be.beginRender = function (k) {
         z.renders++;
         if (k.occlusionQueryCount > 0) z.gezaehlt += k.occlusionQueryCount;
+        else if (warLetzter && k.camera === st.camera) z.nullFrames++;
         return anfangVor.call(this, k);
     };
+    const schlussVor = be.finishRender;
+    be.finishRender = function (k) {
+        if (k.camera === st.camera) {
+            const d = this.get(k);
+            warLetzter = !!(stn && d && d.lastOcclusionObject === stn.letzter && stn.letzter.occlusionTest === true);
+            if (warLetzter) z.letzter++;
+        }
+        return schlussVor.call(this, k);
+    };
     let giftObjekt = null;
+    const giftMarken = new Set(); // die markierten Pipelines — nach der Phase nimmt die Linse die Marke zurück
     const drawVor = be.draw;
     be.draw = function (ro, info) {
         if (ro.material === st.hydroSurfaceMaterial) z.wasser++;
         if (giftObjekt !== null && ro.object === giftObjekt) {
-            this.get(ro.pipeline).error = true; // r184s Marke einer gescheiterten Pipeline (6:590415)
+            const pd = this.get(ro.pipeline);
+            if (pd.error !== true) giftMarken.add(pd);
+            pd.error = true; // r184s Marke einer gescheiterten Pipeline (6:590415)
             z.gift++;
         }
         return drawVor.call(this, ro, info);
@@ -270,7 +352,7 @@ async function verdeckungPhase(opts) {
     // der Szenen-Pass rendert einmal je NODE-FRAME, den sonst die Animations-Schleife weiterschaltet (wie die Ausgabe-Aufnahme)
     const nf = rend._nodes && rend._nodes.nodeFrame;
     // DIE GPU-LEINE (`_gpuLeineFrei`) setzt den Render aus, solange GPU_FRAMES_IM_FLUG Frames unterwegs sind — auf
-    // swiftshader fast jeden Takt: die Linse wartet nach jedem Takt, bis die GPU die Arbeit abgab
+    // swiftshader fast jeden Takt: gemessene Takte warten, bis die GPU die Arbeit abgab
     const frei = async () => {
         try {
             await be.device.queue.onSubmittedWorkDone();
@@ -279,7 +361,7 @@ async function verdeckungPhase(opts) {
     };
     const render = async (n, vor) => {
         for (let i = 0; i < n; i++) {
-            if (vor) vor();
+            if (vor) vor(i);
             if (nf) nf.update();
             r._loopRender(performance.now());
             await frei();
@@ -325,7 +407,7 @@ async function verdeckungPhase(opts) {
             const ux = P.x + nx * (s + 10),
                 uz = P.z + nz * (s + 10);
             aus.bach = { x: Math.round(P.x), z: Math.round(P.z), ufer: s, start: [Math.round(ux), Math.round(uz)] };
-            // ein Region-Bündel jenseits des Bachs: der Berg-Cull baut seinen Stellvertreter, jeder Frame ein Probe-Fenster
+            // ein Region-Bündel jenseits des Bachs: der Berg-Cull baut seinen Stellvertreter (Probe jeden queryTakt-ten Frame)
             const KL = r.constructor;
             const R = KL.ARCH_REGION_M;
             const fx = P.x - nx * 700,
@@ -334,29 +416,28 @@ async function verdeckungPhase(opts) {
             const neu = !(st._regionBundles && st._regionBundles.has(key));
             const bg = r._archRegionBundleFor(key);
             if (!bg) throw new Error("kein Region-Bündel (`_archRegionBundleFor` lieferte null)");
-            const taktVor = KL.BERG_CULL.queryTakt,
-                cullVor = window.__anazhBergCull;
-            KL.BERG_CULL.queryTakt = 1;
-            window.__anazhBergCull = true;
             aufraeumen.push(() => {
-                KL.BERG_CULL.queryTakt = taktVor;
-                window.__anazhBergCull = cullVor;
                 if (bg.userData._occlProxy) r._bundleQueryProxyTod(bg);
                 if (neu) {
                     st.scene.remove(bg);
                     st._regionBundles.delete(key);
                 }
             });
-            // der Ort steht: der Spieler am Ufer, die Welt zieht nach (Chunks, Wasser)
+            aus.takt = KL.BERG_CULL.queryTakt;
+            // der Ort steht: der Spieler am Ufer, die Welt zieht nach (Chunks, Wasser) — Takte ohne Warten (die Leine setzt
+            // den Render aus, das Streamen läuft)
             st.playerMesh.position.set(ux, hh(ux, uz) + 1.2, uz);
             if (st.playerVel) st.playerVel.setValue(0, 0, 0);
             r.setCameraMode("first");
             let tMs = performance.now();
+            const takt = () => {
+                tMs += 16.7;
+                if (nf) nf.update();
+                r._gameLoopTick(tMs);
+            };
             const tick = async (n) => {
                 for (let i = 0; i < n; i++) {
-                    tMs += 16.7;
-                    if (nf) nf.update();
-                    r._gameLoopTick(tMs);
+                    takt();
                     await frei();
                 }
             };
@@ -367,14 +448,16 @@ async function verdeckungPhase(opts) {
                 });
                 return n;
             };
-            const dlW = performance.now() + (opts.ortMs || 180000);
-            while (performance.now() < dlW && sichtbaresWasser() === 0) await tick(10);
-            aus.wasserMeshes = sichtbaresWasser();
-            // der GT am Ufer, Blick zum Wasser
             const f = r._ensureAssetFoundry();
-            const dlF = performance.now() + (opts.foundryMs || 120000);
-            while (performance.now() < dlF && !(f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt))
-                await warte(100);
+            const bereit = () => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt;
+            const dlW = performance.now() + (opts.ortMs || 180000);
+            while (performance.now() < dlW && !(sichtbaresWasser() > 0 && bereit())) {
+                for (let i = 0; i < 5; i++) takt();
+                await warte(20);
+            }
+            aus.wasserMeshes = sichtbaresWasser();
+            if (!bereit()) throw new Error("das Rezept des GT stand nicht");
+            // der GT am Ufer, Blick zum Wasser
             const fahrt = Math.atan2(-nx, -nz);
             const e = r.spawnArchitecture(
                 "fahrzeug_gt",
@@ -390,7 +473,8 @@ async function verdeckungPhase(opts) {
             while (!e.instanced && !e.mesh && performance.now() < dlB) {
                 r._rebuildArchitectureMesh(e);
                 if (e.instanced || e.mesh) break;
-                await warte(200);
+                takt();
+                await warte(50);
             }
             const tasten = (w, sb) => {
                 for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
@@ -399,45 +483,28 @@ async function verdeckungPhase(opts) {
             };
             const auf = r.mountArchitecture(e);
             aus.aufgesessen = !!(auf && auf.ok);
-            await tick(12);
+            await tick(4);
             const sichtVorher = st.cameraMode;
             tasten(true);
-            await tick(24);
+            await tick(8);
             tasten(false, true);
-            await tick(30);
+            await tick(6);
             tasten(false);
             aus.halt = Math.round(Math.hypot(e.position.x - P.x, e.position.z - P.z) * 10) / 10;
             // DAS AUSSTEIGEN: die Seele zurück in den Körper, die Sicht zurück
             const ab = r.dismountArchitecture();
             aus.ausgestiegen = !!(ab && ab.ok);
             st.yaw = fahrt;
-            await tick(90);
+            await tick(3 * aus.takt); // drei Probe-Fenster nach dem Aussteigen
             aus.sicht = { vorher: sichtVorher, nachher: st.cameraMode };
             aus.stellvertreter = !!bg.userData._occlProxy;
         } else {
-            // B / G: ein Stellvertreter des Berg-Culls (sein Stoff: unsichtbar, ohne Tiefe) vor der Kamera
+            // B / G / L: der vorgebaute Stellvertreter der Station vor der Kamera (B mit dem Leser der Szenen-Tiefe danach)
             const cam = st.camera;
-            // je Phase ein eigener Stoff (eine Konstante im Shader → eine eigene Pipeline): das Gift markiert SEINE Pipeline
-            const m = new T.MeshBasicNodeMaterial();
-            m.colorNode = T.TSL.vec4(T.TSL.float(0.001 + Math.random() * 0.01), 0, 0, 1);
-            m.colorWrite = false;
-            m.depthWrite = false;
-            const q = new T.Mesh(new T.BoxGeometry(0.5, 0.5, 0.5), m);
-            q.name = "verdeckung:stellvertreter";
-            q.frustumCulled = false;
-            q.renderOrder = -1e6; // der erste opake Draw
-            const dazu = [q];
-            let l = null;
-            if (opts.phase === "bruch") {
-                // direkt danach ein Leser der Szenen-Tiefe: sein Abbild bricht den Pass
-                const lm = new T.MeshBasicNodeMaterial();
-                lm.colorNode = T.TSL.vec4(T.TSL.vec3(r._szeneTiefe()), 1);
-                l = new T.Mesh(new T.PlaneGeometry(0.4, 0.4), lm);
-                l.name = "verdeckung:tiefen-leser";
-                l.frustumCulled = false;
-                l.renderOrder = -1e6 + 1;
-                dazu.push(l);
-            }
+            const q = stn[opts.phase];
+            const l = opts.phase === "bruch" ? stn.leser : null;
+            // je Station zeichnet nur IHR Kasten (die anderen trügen dieselbe Ordnung und schlössen die Abfrage dazwischen)
+            for (const k of ["bruch", "gift", "letzter"]) stn[k].visible = false;
             const stelle = () => {
                 q.position.copy(new T.Vector3(0, 0, -3).applyQuaternion(cam.quaternion).add(cam.position));
                 if (l) {
@@ -445,29 +512,37 @@ async function verdeckungPhase(opts) {
                     l.quaternion.copy(cam.quaternion);
                 }
             };
-            stelle();
-            st.scene.add(...dazu);
-            aufraeumen.push(() => st.scene.remove(...dazu));
-            // den Stoff vorbauen (ohne Abfrage zeichnen, bis seine Pipeline steht), dann zählen
+            // der Stoff steht, wenn sein Stellvertreter mit gültiger Pipeline zeichnet (sonst baut er hier fertig)
             let gebaut = 0;
             const dv = be.draw;
             be.draw = function (ro, info) {
                 if (ro.object === q && this.get(ro.pipeline).error !== true) gebaut++;
                 return dv.call(this, ro, info);
             };
-            const dlV = performance.now() + (opts.vorbauMs || 90000);
-            while (gebaut < 2 && performance.now() < dlV) {
+            q.visible = true;
+            q.occlusionTest = false;
+            for (let i = 0; i < 400 && gebaut < 1; i++) {
                 await render(1, stelle);
-                await warte(40); // Zeit für den GPU-Prozess (die Pipeline entsteht asynchron)
+                if (gebaut < 1) await warte(30);
             }
             be.draw = dv;
             aus.vorgebaut = gebaut;
-            if (gebaut < 2)
-                throw new Error(`der Stoff des Stellvertreters stand nach ${Math.round((opts.vorbauMs || 90000) / 1000)} s nicht`);
+            if (gebaut < 1) throw new Error("der Stoff des Stellvertreters stand nicht");
             for (const k of Object.keys(z)) z[k] = 0;
+            if (l) l.visible = true;
             q.occlusionTest = true;
             if (opts.phase === "gift") giftObjekt = q;
-            await render(20, stelle);
+            aufraeumen.push(() => {
+                q.occlusionTest = false;
+                q.visible = false;
+                if (l) l.visible = false;
+                for (const pd of giftMarken) pd.error = false;
+            });
+            // L: im Wechsel sichtbar (Zähler 1, der Stellvertreter ist der letzte Draw) und unsichtbar (Zähler 0)
+            await render(8, (i) => {
+                stelle();
+                if (opts.phase === "letzter") q.visible = i % 2 === 0;
+            });
         }
     } catch (e) {
         aus.fehler = (e && e.message) || String(e);
@@ -479,12 +554,13 @@ async function verdeckungPhase(opts) {
         RP.beginOcclusionQuery = bQ;
         be.copyFramebufferToTexture = bruchVor;
         be.beginRender = anfangVor;
+        be.finishRender = schlussVor;
         be.draw = drawVor;
         for (const k in eigen) be[k] = eigen[k];
     }
     // die Nachläufer der Phase (das Auflösen ist asynchron) noch in ihr buchen
-    await render(3);
-    await warte(500);
+    await render(2);
+    await warte(300);
     S.phase = "zwischen";
     aus.z = z;
     aus.gpu = S.gpu[marke] || {};
@@ -502,7 +578,7 @@ async function verdeckungPhase(opts) {
     await new Promise((r) => server.listen(PORT, "127.0.0.1", r));
     const browser = await puppeteer.launch({ headless: true, protocolTimeout: 1200000, args: softwareWebGpuArgs() });
     const page = await browser.newPage();
-    await page.setViewport({ width: 480, height: 270 });
+    await page.setViewport({ width: 320, height: 180 });
     await page.evaluateOnNewDocument(sammlerInstall);
     const seitenFehler = [];
     page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
@@ -525,19 +601,21 @@ async function verdeckungPhase(opts) {
         if (!bereit.ok) throw new Error("der Renderer stand nach 300 s nicht");
         if (!bereit.webgpu) throw new Error("kein WebGPU-Backend — die Linse liest WebGPU-Validierung, sie wäre blind");
         log(`Renderer bereit nach ${Math.round(bereit.ms / 1000)} s`);
-        // der Loop gehört der Linse (der echte Spiel-Takt läuft durch `_gameLoopTick`)
-        out.phasen.boot = await page.evaluate(() => {
-            const r = window.anazhRealm;
-            r.state.renderer.setAnimationLoop(null);
-            const S = window.__verdeckung;
-            S.phase = "zwischen";
-            const W = r._gpuWache || { n: 0, meldungen: [] };
-            const wache = {};
-            for (const m of W.meldungen) wache[`${m.quelle}: ${m.kopf}`] = 1;
-            return { gpu: S.gpu.boot || {}, seite: S.seite.boot || {}, wache };
-        });
+        // der Loop gehört der Linse (der echte Spiel-Takt läuft durch `_gameLoopTick`); die Stoffe der Stationen bauen mit
+        out.phasen.boot = await page.evaluate(stationenVorbau).then(() =>
+            page.evaluate(() => {
+                const r = window.anazhRealm;
+                r.state.renderer.setAnimationLoop(null);
+                const S = window.__verdeckung;
+                S.phase = "zwischen";
+                const W = r._gpuWache || { n: 0, meldungen: [] };
+                const wache = {};
+                for (const m of W.meldungen) wache[`${m.quelle}: ${m.kopf}`] = 1;
+                return { gpu: S.gpu.boot || {}, seite: S.seite.boot || {}, wache };
+            })
+        );
         const messort = ladeSpec("wiese").ort.spieler;
-        for (const phase of ["ablauf", "bruch", "gift"]) {
+        for (const phase of ["ablauf", "bruch", "gift", "letzter"]) {
             const p = await page.evaluate(verdeckungPhase, { phase, messort });
             if (p.fehler) throw new Error(`${phase}: ${p.fehler}`);
             out.phasen[phase] = p;
@@ -545,15 +623,16 @@ async function verdeckungPhase(opts) {
             log(
                 `${phase.toUpperCase()}: ${JSON.stringify(p.z)}` +
                     (phase === "ablauf"
-                        ? ` · Bach ${JSON.stringify(p.bach)}, Wasser-Meshes ${p.wasserMeshes}, aufgesessen ${p.aufgesessen}, ` +
-                          `Halt ${p.halt} m vor dem Bach, ausgestiegen ${p.ausgestiegen}, Sicht ${JSON.stringify(p.sicht)}`
+                        ? ` · Bach ${JSON.stringify(p.bach)}, Probe jeden ${p.takt}. Frame, Wasser-Meshes ${p.wasserMeshes}, ` +
+                          `aufgesessen ${p.aufgesessen}, Halt ${p.halt} m vor dem Bach, ausgestiegen ${p.ausgestiegen}, ` +
+                          `Sicht ${JSON.stringify(p.sicht)}`
                         : ` · vorgebaut ${p.vorgebaut}`) +
                     ` · ${fehler ? fehler + " Täter" : "0 Fehler"}`
             );
         }
         // S: der Selbsttest am echten Frame — die Vendor-Methoden (Hüllen ab), zuletzt (ihre Fehler vergiften Pipelines)
         out.selbst = {};
-        for (const phase of ["bruch", "gift"]) {
+        for (const phase of ["bruch", "gift", "letzter"]) {
             const p = await page.evaluate(verdeckungPhase, { phase, messort, roh: true });
             out.selbst[phase] = p;
             log(`SELBSTTEST ${phase} ohne Hülle: ${JSON.stringify(p.gpu)} · Seite ${JSON.stringify(p.seite)} · Wache ${p.wacheN}`);
@@ -565,17 +644,20 @@ async function verdeckungPhase(opts) {
     server.close();
     out.seitenFehlerGesamt = seitenFehler.slice(0, 8);
     const v = urteil(out);
+    log(v.length ? "ROT" : "GRÜN");
     if (v.length) {
         console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
         for (const s of v) console.log("   • " + s);
         process.exit(1);
     }
     const A = out.phasen.ablauf;
+    const Lz = out.phasen.letzter.z;
     console.log(
-        `\n✅ GRÜN — 0 WebGPU-Validierungsfehler und 0 Seitenfehler in Boot, Ablauf, Bruch und Gift. Am Bach (${A.bach.x}/${A.bach.z}) ` +
-            `aufgesessen, ${A.halt} m vor dem Wasser ausgestiegen (Sicht ${A.sicht.vorher} → ${A.sicht.nachher}), der Stellvertreter ` +
-            `${A.z.gezaehlt}× gezählt, ${A.z.begonnen} Abfragen begonnen; Bruch bei offener Abfrage ${out.phasen.bruch.z.bruchOffen}×, ` +
-            `Gift ${out.phasen.gift.z.gift}×; ohne die Hüllen fallen „ended with incomplete occlusion query“, „No occlusion queries ` +
-            `are active“ und „weak set“ beim Namen.`
+        `\n✅ GRÜN — 0 WebGPU-Validierungsfehler und 0 Seitenfehler in Boot, Ablauf, Bruch, Gift und Letzter. Am Bach ` +
+            `(${A.bach.x}/${A.bach.z}) aufgesessen, ${A.halt} m vor dem Wasser ausgestiegen (Sicht ${A.sicht.vorher} → ` +
+            `${A.sicht.nachher}), der Stellvertreter ${A.z.gezaehlt}× gezählt, ${A.z.begonnen} Abfragen begonnen; Bruch bei ` +
+            `offener Abfrage ${out.phasen.bruch.z.bruchOffen}×, Gift ${out.phasen.gift.z.gift}×, ${Lz.letzter} Frames endeten mit ` +
+            `dem Stellvertreter, ${Lz.nullFrames} Null-Frames danach; ohne die Hüllen fallen „ended with incomplete occlusion ` +
+            `query“, „No occlusion queries are active“, „weak set“ und der Letzte beim Namen.`
     );
 })();

@@ -24115,9 +24115,15 @@ class AnazhRealm {
             //       es) oder als gescheitert gilt (`pipelineData.error`, auch durch einen FREMDEN Fehler, den r184s Fehler-
             //       Bereich um den asynchronen Bau einfängt) → „No occlusion queries are active", der Frame ungültig;
             //   (3) `resolveOccludedAsync` legt jedes Objekt mit 0 Proben in ein WeakSet — die Lücke eines nie begonnenen
-            //       Index ist `undefined` → „Invalid value used in weak set" (das Ergebnis eines ungültigen Frames ist 0).
-            // Der EINE Ort: der Bruch schließt die offene Abfrage im alten Pass, `finishRender` schließt nur eine offene, das
-            // Auflösen überspringt Lücken. Nachgestellt in gate:verdeckungs-abfrage (am Bach, Aussteigen).
+            //       Index ist `undefined` → „Invalid value used in weak set" (das Ergebnis eines ungültigen Frames ist 0);
+            //   (4) `beginRender` setzt `lastOcclusionObject` (und den Abfrage-Satz) nur bei Zähler > 0 zurück: war in einem
+            //       Probe-Frame ein Stellvertreter der LETZTE Draw, schließt der nächste Frame mit Zähler 0 (der Berg-Cull fragt
+            //       jeden `queryTakt`-ten) seine Abfrage beim ersten Draw — in einem Pass ohne Abfrage-Satz (Gegenprüfung
+            //       10.10., Radeon, Mess-Wiese, Bündel seitlich: 176 Meldungen in 45 s am Kopf 1457bfa9, 382 an main).
+            // Der EINE Ort: der Bruch schließt die offene Abfrage im alten Pass, `finishRender` schließt nur eine offene, und mit
+            // ihm endet die Abfrage des Kontexts (`lastOcclusionObject` fällt; den Satz zerstört r184 selbst im nächsten
+            // Probe-Frame), das Auflösen überspringt Lücken. Nachgestellt in gate:verdeckungs-abfrage (am Bach, Aussteigen;
+            // die Stationen Bruch, Gift, Letzter).
             const VERDECKT_LEER = {};
             const offen = (d) => {
                 const o = d.lastOcclusionObject;
@@ -24152,7 +24158,10 @@ class AnazhRealm {
                     // r184 nur noch den Zähler (resolveQuerySet über occlusionQueryCount)
                     if (d && d.occlusionQuerySet !== undefined && !offen(d))
                         d.occlusionQueryIndex = Math.max(d.occlusionQueryIndex, kontext.occlusionQueryCount);
-                    return schlussRoh.call(this, kontext);
+                    const aus = schlussRoh.call(this, kontext);
+                    // (4) die Abfrage endet mit ihrem Render — der nächste Frame (Zähler 0) erbt keinen offenen Stellvertreter
+                    if (d) d.lastOcclusionObject = null;
+                    return aus;
                 };
                 const aufloesenRoh = be.resolveOccludedAsync;
                 be.resolveOccludedAsync = function (kontext) {
@@ -35973,15 +35982,14 @@ class AnazhRealm {
         }
     }
 
-    // DIE TIEFE NACH DEM REALLOC: die Leser der Szenen-Tiefe (der EINE Knoten `_szeneTiefe` — auf WebGPU das
-    // Tiefen-Abbild, im Rückfall r184s ViewportDepthTextureNode mit einem Klon je Render-Ziel, beide gezogen im
-    // Pass-Bruch) sind das Wasser (weiche Ufer) und der Feld-Pass (die Tiefen-Grenze des Marchs). Ein Resize
-    // (`setSize`) legt Szene-Tiefe und Abbild (Klon) neu an, die
-    // Textur-Bindung eines Lesers zieht nicht nach: jeder Submit des Hauptpasses fällt („Destroyed texture … used in a
-    // submit", renderContext des Szene-Passes), die Welt bleibt SCHWARZ — gemessen 03.10. (echte GPU, Fenster
-    // 1920→1600→1920). Das Wasser-Material wird frisch gebaut (gleicher WGSL → Programm aus dem Cache), alle
-    // Uniform-Werte reisen mit; der Feld-Pass fällt und baut sich im nächsten Fern-Ring-Takt neu (frisch gebunden).
-    _tiefenLeserNeuBinden() {
+    // DER TAUSCH DES TIEFEN-KNOTENS: die Leser der Szenen-Tiefe (der EINE Knoten `_szeneTiefe` — auf WebGPU das
+    // Tiefen-Abbild, im Rückfall r184s ViewportDepthTextureNode) sind das Wasser (weiche Ufer) und der Feld-Pass (die
+    // Tiefen-Grenze des Marchs). Wechselt der KNOTEN selbst (eine Linse tauscht `_szeneTiefeKnoten`/`_szeneTiefeWert` für
+    // ein A/B in EINER Welt: gate:post-kette (e), die Werkbank), ändert sich der Shader-Graph beider Leser: das Wasser-
+    // Material wird frisch gebaut (die Uniform-Werte reisen mit), der Feld-Pass fällt und baut sich im nächsten
+    // Fern-Ring-Takt neu. Ein Größenwechsel braucht das nie — die neu angelegte TEXTUR desselben Knotens trägt die Diät
+    // (Vorher-Textur-Wächter, `_diaetVorTextur`); der resize-Handler baute hier bis 0910-3 A einen Zwilling davon.
+    _tiefenKnotenTausch() {
         const st = this.state;
         if (st.feldPass) this._feldPassDispose();
         const alt = st.hydroSurfaceMaterial;
@@ -38826,7 +38834,7 @@ class AnazhRealm {
             envOben: U.envOben,
             // Die Szenen-Tiefe VOR dem Feld-Pass (das Tiefen-Abbild `_szeneTiefe`, gezeichnet im Pass-Bruch wie beim
             // Wasser, je Texel die fernste Tiefe seines waagrechten Pixel-Paars): die Grenze des Marchs — am Rand läuft er höchstens
-            // einen Pixel weiter, der Tiefentest verwirft. Ein Leser bindet nach jedem Resize neu (_tiefenLeserNeuBinden).
+            // einen Pixel weiter, der Tiefentest verwirft. Die Bindung folgt jeder neu angelegten Textur über die Diät (6).
             szeneTiefe: this._szeneTiefe().x,
             // Die Schwund-Blende liest Pixel und Rotation der Stufen-Blende (`uDitherT`, dieselbe Uniform).
             schirm: TSL.screenCoordinate.xy,
@@ -68533,6 +68541,7 @@ class AnazhRealm {
             q.userData.inventar = "occl-proxy";
             q.onBeforeRender = (r) => {
                 if (r && r._currentRenderContext) this._occlKontext = r._currentRenderContext;
+                q.userData._occlGerufen = this._occlProbeFrame; // der Renderer wollte ihn zeichnen (nach dem Culling)
             };
             u._occlProxy = q;
             if (st.scene) st.scene.add(q);
@@ -68542,6 +68551,26 @@ class AnazhRealm {
         q.scale.setScalar(Math.max(1e-3, s.radius));
         const be = st.renderer && st.renderer.backend;
         const okt = this._occlKontext;
+        // DER STUMME STELLVERTRETER (0910-3 A, Gegenprüfung): wollte der Renderer ihn im letzten Probe-Fenster zeichnen, steht
+        // er im Abfrage-Feld dieses Renders (`occlusionQueryObjects`, r184 ersetzt es nur bei Zähler > 0 — also bis zum
+        // nächsten Probe-Frame). Fehlt er dort `STUMM_FENSTER` Fenster in Folge, steht seine Pipeline nicht oder gilt als
+        // gescheitert (r184s Fehler-Bereich um den asynchronen Bau vergiftet sie still mit einem FREMDEN Fehler) — ohne
+        // Abfrage gibt es nie wieder ein Verdikt: laut beim Namen, einmal je Welt.
+        if (be && okt && q.userData._occlGerufen !== undefined && q.userData._occlGerufen !== this._occlProbeFrame) {
+            const d = be.get(okt);
+            const begann = !!(d && d.occlusionQueryObjects && d.occlusionQueryObjects.indexOf(q) >= 0);
+            u._occlStumm = begann ? 0 : (u._occlStumm || 0) + 1;
+            q.userData._occlGerufen = undefined;
+            if (u._occlStumm >= AnazhRealm.BERG_CULL.stummFenster && !this._occlStummGemeldet) {
+                this._occlStummGemeldet = true;
+                this.log(
+                    `BERG-CULL STUMM: der Stellvertreter von ${bg.name} begann in ${u._occlStumm} Probe-Fenstern keine ` +
+                        "Verdeckungs-Abfrage — seine Pipeline steht nicht oder gilt als gescheitert (die GPU-Wache nennt den " +
+                        "Fehler); ohne Abfrage kein Verdikt",
+                    "ERROR"
+                );
+            }
+        }
         if (be && okt && typeof be.isOccluded === "function") {
             if (be.isOccluded(okt, q)) {
                 u._occlTreffer = (u._occlTreffer || 0) + 1;
@@ -92766,8 +92795,9 @@ class AnazhRealm {
             // B4 (V18.130) — die CSM-Frusta hängen an der Kamera-Projektion
             // (Addon-Vertrag: „call every time you change camera settings").
             if (this.state.csmNode && this.state.csmNode.camera) this.state.csmNode.updateFrustums();
-            // setSize legt Szene-Tiefe und Viewport-Tiefen-Klon neu an — der EINE Leser bindet neu.
-            this._tiefenLeserNeuBinden();
+            // setSize legt Szene-Tiefe und Tiefen-Abbild im nächsten Frame neu an; die Leser folgen der neuen Textur über die
+            // EINE Refresh-Entscheidung der Diät (Vorher-Textur-Wächter, `_diaetVorTextur`) — wie bei jedem anderen Wechsel
+            // der Pixel-Ratio. Kein Neubau hier: der frühere Wasser-Neubau war ein Zwilling des Wächters (0910-3 A).
             this.log("Fenstergröße angepasst", "INFO");
         });
 
@@ -102505,6 +102535,7 @@ AnazhRealm.BERG_CULL = Object.freeze({
     testMsVerdeckt: 150, // verdeckte testen HÄUFIGER → schneller Un-Cull hinterm Grat
     budgetJeFrame: 6, // max Berg-Tests je Frame (≤ 6×15 Gesetz-Proben ≈ sub-ms)
     queryTakt: 10, // Occlusion-Query-Probe-Fenster: nur jeder N-te Frame fragt (Dawn-QuerySet-Cliff)
+    stummFenster: 6, // so viele Probe-Fenster ohne begonnene Abfrage, dann meldet der Berg-Cull den Stellvertreter laut
 });
 // Adaptive Render-Auflösung (Vorlage `_rScale`/`setRenderScale`): unter Last gibt die Pixel-Ratio
 // nach, mit Kopfraum wächst sie zurück (dieselbe effArch-Quelle); 0.05-Rast-Stufen + Dead-Band
@@ -102702,11 +102733,12 @@ AnazhRealm._tuerOffenRad = function () {
 //      in a submit" beim Fenster-Wechsel mit laufendem Loop): ein Vorher-Knoten, der eine Textur zieht (das Tiefen-Abbild,
 //      `_tiefenAbbild`), legt sie bei jedem Größenwechsel der Szenen-Tiefe neu an — r184 zerstört dabei die alte GPU-Textur.
 //      equals() sieht Textur-Knoten nie: jedes Render-Objekt des Stoffs (das Wasser) zeichnete weiter mit der Bindegruppe
-//      der zerstörten Textur, bis sein Stoff neu gebaut wurde. Den Fenster-Wechsel deckte das Neubinden im resize-Handler
-//      (`_tiefenLeserNeuBinden`), jeden anderen Wechsel nicht: `setPixelRatio` (die DPR-Kappe `_applyRenderScale` nach
-//      einem DPR-Wechsel, Frames NACH dem resize-Ereignis) — nachgestellt am OMEN (GTX 1060, Mess-Wiese, laufender Loop):
-//      vier Wechsel, 118 Fehler. Je Render-Objekt merkt die Diät Id und Version dieser Texturen; nach dem Gang (der den
-//      Zug und damit den Neubau ausgelöst hat) zieht ein Wechsel EINEN Refresh nach sich, die Bindung folgt der Textur.
+//      der zerstörten Textur, bis sein Stoff neu gebaut wurde. Den Fenster-Wechsel deckte bis dahin ein Wasser-Neubau im
+//      resize-Handler (ein Zwilling, gefallen), jeden anderen Wechsel nicht: `setPixelRatio` (die DPR-Kappe
+//      `_applyRenderScale` nach einem DPR-Wechsel, Frames NACH dem resize-Ereignis) — nachgestellt am OMEN (GTX 1060,
+//      Mess-Wiese, laufender Loop): vier Wechsel, 118 Fehler. Je Render-Objekt merkt die Diät Id und Version dieser
+//      Texturen; nach dem Gang (der den Zug und damit den Neubau ausgelöst hat) zieht ein Wechsel EINEN Refresh nach sich,
+//      die Bindung folgt der Textur — für JEDEN Größenwechsel, den des Fensters eingeschlossen.
 AnazhRealm._diaetGang = function (ro, nbs) {
     const jeZeichen = (n, typ) => typ === "object" || (typeof n.property === "string" && n.object === null);
     const vor = [],
