@@ -16,6 +16,9 @@
 //       24 s eine) und ein Takt, in dem seine Regeln feuern. Bühne: Zuwachs 0.
 //   (4) DER ABSENZ-ZENSUS in 300 m nach dem Takt: fremde Bauten, Streu-Zellen, Nah-Streu, Tiere, Inseln, Dorf-Zellen,
 //       Pflanz-Schlange, Flüsse — auf der Bühne 0.
+//   (5) DIE S4-PROBE: die Hindernis-Station (`s4-hindernisse` in spec/pruefbuehne/stationen.json — Würfel, Säule, Mauer,
+//       Gasse, Hausrumpf 45°, Engpass) steht, gesät über die Snapshot-Tür: je Körper die Blocker-Boxen ≤ 0,1 m an der
+//       Spec und im Blocker-Netz. Der Selbsttest rückt die Mauer 0,5 m — die Probe nennt sie, und nur sie.
 //
 //   node scripts/diag-pruefbuehne.cjs [--json datei] [--evolutionen 60] [--wurzel dir]
 //                                                  (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
@@ -40,6 +43,10 @@ const EVOLUTIONEN = Math.max(1, Number(opt("--evolutionen", 60)) || 60);
 const PORT = Number(process.env.PRUEFBUEHNE_PORT) || 4394;
 const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
+const S4 = JSON.parse(
+    fs.readFileSync(path.resolve(__dirname, "..", "spec", "pruefbuehne", "stationen.json"), "utf8")
+).stationen.find((st) => st.id === "s4-hindernisse");
+const S4_SCHEIN = { bauplan: "pruef_mauer", dx: 0.5 }; // der Selbsttest: die Mauer rückt 0,5 m
 
 const mime = {
     ".html": "text/html",
@@ -105,6 +112,118 @@ async function boote(page) {
         }
         return { ok: false };
     });
+}
+
+// (5) DIE S4-PROBE: die Hindernis-Station steht, wie ihre Spec sagt (spec/pruefbuehne/stationen.json `s4-hindernisse`) —
+// je Körper sein Bau (der Bauplan der Saat) in der Station, je Teil seine Blocker-Box (die Wahrheit, die Leib-Löser, Kapsel,
+// Wagen-Hülle und Strahl lesen) ≤ 0,1 m an der Spec: Welt-AABB, die Sohle auf dem Boden-Gesetz (`_terrainMacroSurfaceY`),
+// gedreht die OBB mit ihrer Gier; und das Blocker-Netz (`_blockerNahe`, der EINE Weg jedes Kontakt-Lesers) kennt ihn.
+// `schein` (der Selbsttest): ein Körper rückt zum Schein ab — die Probe MUSS ihn beim Namen nennen.
+const S4_TOLERANZ = 0.1;
+async function s4Probe(page, station, schein) {
+    return page.evaluate(
+        (st, tol, schein) => {
+            const r = window.anazhRealm;
+            const s = r.state;
+            const out = { station: st.id, koerper: [], befunde: [] };
+            const inStation = (e) =>
+                e &&
+                e.position &&
+                Math.abs(e.position.x - st.x) <= st.eben / 2 &&
+                Math.abs(e.position.z - st.z) <= st.eben / 2;
+            const bauten = (s.architectures || []).filter(inStation);
+            if (schein) {
+                const e = bauten.find((b) => b.type === schein.bauplan);
+                if (e) {
+                    e.position.x += schein.dx;
+                    r._populateBlockerAABBs(e);
+                }
+            }
+            for (const k of st.koerper) {
+                const e = bauten.find((b) => b.type === k.bauplan);
+                const rep = { id: k.id, bauplan: k.bauplan, steht: !!e, abw: null, teile: k.teile.length };
+                out.koerper.push(rep);
+                if (!e) {
+                    out.befunde.push(`${k.id}: steht nicht — kein Bau „${k.bauplan}" in der Station ${st.x}|${st.z}`);
+                    continue;
+                }
+                const boden = r._terrainMacroSurfaceY(k.x, k.z, true);
+                const g = (k.gier * Math.PI) / 180;
+                const c = Math.cos(g);
+                const sn = Math.sin(g);
+                const live = Array.isArray(e.blockerAABBs) ? e.blockerAABBs : [];
+                if (live.length !== k.teile.length) {
+                    out.befunde.push(`${k.id}: ${live.length} Blocker-Boxen statt ${k.teile.length}`);
+                    continue;
+                }
+                let abw = 0;
+                let wo = "";
+                const miss = (name, ist, soll) => {
+                    const d = Math.abs(ist - soll);
+                    if (!(d <= abw)) {
+                        abw = Number.isFinite(d) ? d : Infinity;
+                        wo = name;
+                    }
+                };
+                k.teile.forEach((t, i) => {
+                    const [mx, my, mz] = t.mitte;
+                    const [sx, sy, sz] = t.mass;
+                    // die Gier des Eintrags: x' = x·cos + z·sin, z' = −x·sin + z·cos (THREE um die Hoch-Achse)
+                    const wx = k.x + mx * c + mz * sn;
+                    const wz = k.z - mx * sn + mz * c;
+                    const ex = (Math.abs(c) * sx + Math.abs(sn) * sz) / 2;
+                    const ez = (Math.abs(sn) * sx + Math.abs(c) * sz) / 2;
+                    const b = live[i];
+                    miss(`Teil ${i} minX`, b.minX, wx - ex);
+                    miss(`Teil ${i} maxX`, b.maxX, wx + ex);
+                    miss(`Teil ${i} minZ`, b.minZ, wz - ez);
+                    miss(`Teil ${i} maxZ`, b.maxZ, wz + ez);
+                    miss(`Teil ${i} Sohle`, b.botY, boden + my - sy / 2);
+                    miss(`Teil ${i} Krone`, b.topY, boden + my + sy / 2);
+                    if (Math.abs(Math.sin(2 * g)) > 1e-9) {
+                        if (!b.obb) {
+                            abw = Infinity;
+                            wo = `Teil ${i} ohne gedrehte Box (Gier ${k.gier}°)`;
+                        } else {
+                            miss(`Teil ${i} OBB-Mitte x`, b.obb.cx, wx);
+                            miss(`Teil ${i} OBB-Mitte z`, b.obb.cz, wz);
+                            miss(`Teil ${i} OBB halb x`, b.obb.hx, sx / 2);
+                            miss(`Teil ${i} OBB halb z`, b.obb.hz, sz / 2);
+                            // die Gier als Bogen am Rand der Box (Halb-Diagonale × Winkel-Fehler)
+                            const dg = Math.atan2(b.obb.s * c - b.obb.c * sn, b.obb.c * c + b.obb.s * sn);
+                            miss(`Teil ${i} OBB-Gier`, Math.abs(dg) * Math.hypot(sx, sz) * 0.5, 0);
+                        }
+                    }
+                });
+                rep.abw = Math.round(abw * 1000) / 1000;
+                rep.wo = wo || null;
+                rep.boden = Math.round(boden * 1000) / 1000;
+                if (abw > tol) out.befunde.push(`${k.id}: ${rep.abw} m neben der Spec (${wo})`);
+                // der Konsum: das Blocker-Netz, durch das jeder Kontakt-Leser fragt, kennt den Körper an seiner Spec
+                rep.imNetz = r._blockerNahe(k.x, k.z, 0.5, 0, []).includes(e);
+                if (!rep.imNetz) out.befunde.push(`${k.id}: das Blocker-Netz kennt ihn an ${k.x}|${k.z} nicht`);
+            }
+            out.stehen = out.koerper.filter((k) => k.steht && k.abw != null && k.abw <= tol && k.imNetz).length;
+            return out;
+        },
+        station,
+        S4_TOLERANZ,
+        schein || null
+    );
+}
+
+function zeigeS4(rep, schein) {
+    console.log(
+        `\n  ── S4-PROBE ${rep.station}${schein ? ` · SCHEIN (${schein.bauplan} rückt ${schein.dx} m)` : ""}: ${rep.stehen} von ${rep.koerper.length} Körpern an ihrer Spec (≤ ${S4_TOLERANZ} m)`
+    );
+    for (const k of rep.koerper)
+        console.log(
+            `    ${k.steht && k.abw <= S4_TOLERANZ && k.imNetz ? "—    " : "FEHLT"} ${k.id.padEnd(10)} ${k.bauplan.padEnd(16)} ${
+                k.steht
+                    ? `Abw ${k.abw} m${k.wo ? " (" + k.wo + ")" : ""} · Boden ${k.boden} · Netz ${k.imNetz ? "ja" : "NEIN"}`
+                    : "steht nicht"
+            }`
+        );
 }
 
 // Die Probe in der Seite: (1)–(4) einer Welt.
@@ -378,6 +497,13 @@ function zeige(rep) {
                 if (z[k]) rep.befunde.push(`Zensus: ${k} ${z[k]}`);
             // die Tiere: nur das gesetzte (der Akt pflanzt einen Baum, kein Tier) — jedes Tier ist ein Wurf
             if (z.tiere) rep.befunde.push(`Zensus: ${z.tiere} Tiere, die niemand setzte`);
+            // (5) die Hindernis-Station steht an ihrer Spec
+            rep.s4 = await s4Probe(page, S4, null);
+            zeigeS4(rep.s4, null);
+            for (const f of rep.s4.befunde) rep.befunde.push(`S4 ${f}`);
+        } else {
+            rep.s4 = await s4Probe(page, S4, S4_SCHEIN);
+            zeigeS4(rep.s4, S4_SCHEIN);
         }
         if (!schein) {
             for (const f of rep.befunde) console.log(`    ⛔ ${f}`);
@@ -388,16 +514,24 @@ function zeige(rep) {
     if (SELBSTTEST && berichte["buehne-schein"]) {
         const s = berichte["buehne-schein"];
         const namen = s.wuerfe.filter((w) => w.zuwachs > 0).map((w) => `${w.op}/${w.quelle}`);
-        selbst = { benannt: namen };
+        // die S4-Probe nennt den abgerückten Körper, und nur ihn
+        const s4Namen = (s.s4 ? s.s4.befunde : []).map((b) => b.split(":")[0]);
+        const s4Soll = S4.koerper.find((k) => k.bauplan === S4_SCHEIN.bauplan).id;
+        selbst = { benannt: namen, s4: s4Namen, s4Treffer: s4Namen.length === 1 && s4Namen[0] === s4Soll };
         console.log(
             `\n  SELBSTTEST (die Wildnis trägt zum Schein überall): ${namen.length} Würfe beim Namen — ${namen.join(", ")}`
+        );
+        console.log(
+            `  SELBSTTEST S4 (${S4_SCHEIN.bauplan} rückt ${S4_SCHEIN.dx} m): beim Namen [${s4Namen.join(", ")}] — ${
+                selbst.s4Treffer ? "getroffen" : "BLIND"
+            }`
         );
     }
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ berichte, selbst }, null, 1));
     if (pageErr) rot = true;
     let pass;
     if (SELBSTTEST) {
-        pass = !rot && selbst && selbst.benannt.length > 0;
+        pass = !rot && selbst && selbst.benannt.length > 0 && selbst.s4Treffer;
         console.log(
             `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf der Bühne wirft das Feld nichts, der Akt setzt, die Wildnis wirft — und der Schein fällt rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "der Schein blieb unentdeckt (die Linse ist blind)")}\n`
         );
