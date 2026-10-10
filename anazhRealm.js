@@ -82313,7 +82313,8 @@ class AnazhRealm {
             );
         });
         const teile = this._foundryBuildGroup(eintraege, { lod: 0 });
-        if (!teile) return null;
+        // ein leerer Guss bricht laut (Nachbesserung 2): vorher gab die Vorlage null, und jeder Pfeil flog unsichtbar, ohne Meldung
+        if (!teile) return AnazhRealm._kernPflichtBruch("schmiede:buildPfeil (der Guss der Gestalt ist leer)");
         teile.rotation.y = -Math.PI / 2;
         teile.traverse((o) => {
             if (o.isMesh) o.castShadow = o.receiveShadow = true;
@@ -82328,7 +82329,6 @@ class AnazhRealm {
     _pfeilMeshAttach(pf) {
         if (typeof THREE === "undefined" || !this.state.scene) return;
         const v = this._pfeilVorlage();
-        if (!v) return;
         pf.mesh = v.clone();
         pf.mesh.position.set(pf.x, pf.y, pf.z);
         pf.mesh.lookAt(pf.x + pf.vx, pf.y + pf.vy, pf.z + pf.vz);
