@@ -1,0 +1,10 @@
+{
+ "ergebnis": {
+  "tageszeit": 0.5,
+  "welt": null,
+  "sonneHoehe": 74.2,
+  "wetter": "sunny",
+  "uhrWetter": -999999987.3203005
+ },
+ "ms": 3
+}

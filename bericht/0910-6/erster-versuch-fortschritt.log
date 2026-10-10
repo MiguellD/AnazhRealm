@@ -1,0 +1,12 @@
+09:32:45 SERIE START  A=7dd944e6 (main V18.537)  B=66005ca6 (integ-probe V18.538)  Instrument=66005ca6
+09:32:45 anazhRealm.js  A=bd76f13ddf041525  B=5a6b15365f4d76f3
+09:32:50 1A boot (Versuch 1)  GPU[60, 227 MHz, 19 %, P8] eigene-reste=0
+09:32:51 1A Seite geliefert (bd76f13ddf041525)
+09:35:11 1A exit=1  ROT |  | SCHRITT band: r._streuWartet is not a function
+      [folge] gpu-bank …
+        ROT SCHRITT band: r._streuWartet is not a function
+        laufVoll: 60.7 fps · Frame p50/p95/max 16.7/17/33.4 ms · CPU p50/p95 3.6/5.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.82 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 65.9 fps · Frame p50/p95/max 16.6/16.8/266.7 ms · CPU p50/p95 3.2/4.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.82 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 15.26 ms je Frame (CPU 1.6) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 13.69 ms je Frame (CPU 1.65) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+09:35:16 1A verworfen (1), wiederhole

@@ -1,0 +1,20 @@
+diff --git a/scripts/werkbank.cjs b/scripts/werkbank.cjs
+index 2aa53049..81f1a834 100644
+--- a/scripts/werkbank.cjs
++++ b/scripts/werkbank.cjs
+@@ -728,7 +728,14 @@ function bandEinschwingen(k) {
+             // Die EINE Antwort der Welt (`_streuWartet`); der eigene Zähler las die fehlende Regionen-Karte als „keine
+             // aufgeschoben" und sah fehlende und angeschnittene Regionen nie (Befund 09.10.).
+             const streuListe = [];
+-            if (r._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe)) o.streuWartet = streuListe.join(" · ");
++            if (typeof r._streuWartet === "function") {
++                if (r._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe)) o.streuWartet = streuListe.join(" · ");
++            } else {
++                // 0910-6 (Messplatz): ein Stand vor V18.538 kennt `_streuWartet` nicht — dort zählt der Zähler jenes Stands
++                let aufgeschoben = 0;
++                if (st.scatterRegions) for (const reg of st.scatterRegions.values()) if (reg._deferredFoundry) aufgeschoben++;
++                if (aufgeschoben) o.streuAufgeschoben = aufgeschoben;
++            }
+             const s = stand();
+             if (s.loadScale < 1) o.loadScale = s.loadScale;
+             if (vor) for (const key of Object.keys(s)) if (s[key] !== vor[key]) o[key] = `${vor[key]}→${s[key]}`;
