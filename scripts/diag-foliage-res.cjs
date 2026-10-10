@@ -8,7 +8,8 @@
 // HARDWARE-UNABHÄNGIG (reine Regler-/Layer-Logik, kein GPU-Render):
 //   (1) headless (Null-Renderer) → `_foliageResScale === 1` (volle Auflösung, gate-treu);
 //   (2) `_markFoliageLayer`: Foliage-Key → FOLIAGE_LAYER + Layer 0; placed (`p:`) → nur Layer 0;
-//   (3) REGLER: heavy (effArch→0) → Faktor zum Floor (MIN) · light (effArch→1) → Faktor zu 1;
+//   (3) REGLER: heavy im Stand (effArch→0) → Faktor zum Last-Boden (PERF_SCENE_RES_LOAD_FLOOR) · heavy + schnelle
+//       Kamera → Bewegungs-Boden (PERF_SCENE_RES_MOTION_FLOOR) · light (effArch→1) → Faktor zu 1; nie unter MIN;
 //   (4) der Flugschreiber-Snapshot trägt `foliageRes` (die etablierte Stellgrößen-Surface).
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -139,13 +140,27 @@ const server = http.createServer((req, res) => {
             renderCalls: calls,
             frameMs,
         });
-        // heavy: Last voll (ls 0), Render dominant → effArch ~0 → Faktor sinkt zum Floor.
+        // Seit 20.07. (1db0a23b, Wahrnehmung als dritter Kostenterm) ist der Faktor das MINIMUM zweier
+        // Erlaubnisse: die PID-Last senkt im STAND nur bis PERF_SCENE_RES_LOAD_FLOOR (das Auge sieht scharf),
+        // die schnelle Kamera bis PERF_SCENE_RES_MOTION_FLOOR; PERF_FOLIAGE_RES_MIN ist der absolute Boden.
+        // Die Linse hält alle drei Fälle (bis 09.10. erwartete sie „heavy → MIN" und stand rot).
+        out.LOAD = K.PERF_SCENE_RES_LOAD_FLOOR;
+        out.MOTION = K.PERF_SCENE_RES_MOTION_FLOOR;
+        const motionWar = st._camMotion01;
+        // heavy im Stand: Last voll (ls 0), Render dominant → effArch ~0 → Faktor sinkt zum Last-Boden.
+        st._camMotion01 = 0;
         st._foliageResScale = 1;
         for (let i = 0; i < 60; i++) r._nexusPerfActuate(mkSense(0.0, 2000, 60));
         out.heavyRes = st._foliageResScale;
-        // light: keine Last (ls 1) → effArch ~1 → Faktor steigt zu 1.
+        // heavy + schnelle Kamera: die Wahrnehmung senkt weiter, bis zum Bewegungs-Boden.
+        st._camMotion01 = 1;
+        for (let i = 0; i < 60; i++) r._nexusPerfActuate(mkSense(0.0, 2000, 60));
+        out.heavyMotionRes = st._foliageResScale;
+        // light im Stand: keine Last (ls 1) → effArch ~1 → Faktor steigt zu 1.
+        st._camMotion01 = 0;
         for (let i = 0; i < 80; i++) r._nexusPerfActuate(mkSense(1.0, 0, 8));
         out.lightRes = st._foliageResScale;
+        st._camMotion01 = motionWar;
         if (st.renderer) st.renderer._isHeadlessNull = wasNull;
 
         // (4) Flugschreiber-Snapshot trägt foliageRes (die etablierte Stellgrößen-Surface).
@@ -172,8 +187,9 @@ const server = http.createServer((req, res) => {
     console.log(
         `  (2b) echte Gruppen: foliage-InstGroup ${fmt(o.grpFoliage)} · placed ${fmt(o.grpPlaced)} · Gras ${fmt(o.grpGrass)}${o.groupErr ? " ERR:" + o.groupErr : ""}`
     );
+    const f3 = (x) => (x != null ? x.toFixed(3) : "?");
     console.log(
-        `  (3) REGLER heavy (effArch→0): Faktor ${o.heavyRes != null ? o.heavyRes.toFixed(3) : "?"} → Floor ${o.MIN} · light (effArch→1): ${o.lightRes != null ? o.lightRes.toFixed(3) : "?"} → 1`
+        `  (3) REGLER heavy im Stand (effArch→0): Faktor ${f3(o.heavyRes)} → Last-Boden ${o.LOAD} · heavy + schnelle Kamera: ${f3(o.heavyMotionRes)} → ${Math.min(o.LOAD, o.MOTION)} · light (effArch→1): ${f3(o.lightRes)} → 1 · absoluter Boden ${o.MIN}`
     );
     console.log(
         `  (4) Flugschreiber-Snapshot foliageRes: vorhanden ${o.snapshotHasFoliageRes} (${o.snapshotFoliageRes})`
@@ -197,13 +213,16 @@ const server = http.createServer((req, res) => {
         o.grpGrass.l0 === true &&
         o.grpGrass.l1 === true && // Gras: FOLIAGE_LAYER + Layer 0
         o.heavyRes != null &&
-        o.heavyRes <= o.MIN + 0.01 && // heavy → Floor
+        Math.abs(o.heavyRes - o.LOAD) <= 0.01 && // heavy im Stand → Last-Boden
+        o.heavyRes >= o.MIN &&
+        o.heavyMotionRes != null &&
+        Math.abs(o.heavyMotionRes - Math.max(o.MIN, Math.min(o.LOAD, o.MOTION))) <= 0.01 && // + Kamera → Bewegungs-Boden
         o.lightRes != null &&
         o.lightRes >= 0.99 && // light → volle Auflösung
         o.heavyRes < o.lightRes - 0.2 && // klar getrennt (Regler wirkt)
         o.snapshotHasFoliageRes === true;
     console.log(
-        `\n  ${ok ? "✅ Der Laub-Auflösungs-Faktor folgt dem EINEN Regler (heavy→Floor, light→1, headless→1); das Laub trägt die FOLIAGE_LAYER ZUSÄTZLICH (Layer 0 bleibt → Render/Schatten unberührt)." : "⚠️ Mechanismus weicht ab — prüfen."}\n`
+        `\n  ${ok ? "✅ Der Laub-Auflösungs-Faktor folgt dem EINEN Regler (heavy im Stand→Last-Boden, heavy + Kamera→Bewegungs-Boden, light→1, headless→1); das Laub trägt die FOLIAGE_LAYER ZUSÄTZLICH (Layer 0 bleibt → Render/Schatten unberührt)." : "⚠️ Mechanismus weicht ab — prüfen."}\n`
     );
     await browser.close();
     server.close();

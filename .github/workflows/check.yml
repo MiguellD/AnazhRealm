@@ -28,6 +28,19 @@ jobs:
                   node-version: "22"
                   cache: "npm"
 
+            # Die Statik (`npm run check`) bootet in gate:taille einmal Chromium (puppeteer) gegen den eigenen save-server.
+            - name: System-Libs für headless Chromium
+              run: |
+                  sudo apt-get update -qq
+                  sudo apt-get install -y --no-install-recommends \
+                    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+                    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+                    libgbm1 libpango-1.0-0 libcairo2 libasound2t64 || \
+                  sudo apt-get install -y --no-install-recommends \
+                    libnss3 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 \
+                    libxkbcommon0 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
+                    libgbm1 libpango-1.0-0 libcairo2 libasound2
+
             - name: Dependencies installieren
               run: npm ci --no-audit --no-fund
 
@@ -70,30 +83,23 @@ jobs:
                   fi
                   echo "✅ Keine Duplikate ($n Methoden in class AnazhRealm)"
 
-            - name: Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben — die c1c1271-Klasse)
-              run: npm run gate:source-probes
-
-            - name: CI-Deckung (die Gruppen des playtest-Jobs - jeder Gate-Schritt genau einmal, jede Gruppe vorbereitet)
-              # Der playtest-Job laeuft in drei Gruppen (Matrix): jeder Gate-Schritt traegt genau EINE Gruppe, die
-              # Vorbereitung keine; ein Schritt ohne Gruppe (dreifach), mit einer Gruppe ausserhalb der Matrix (nie),
-              # doppelt in zwei Jobs oder eine leere Gruppe fallen rot beim Namen. --selftest zuerst.
-              run: npm run gate:ci-deckung
+            - name: Statik (npm run check — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)
+              # Die EINE Statik, dieselbe wie lokal: bis 09.10. stand `npm run check` in keinem Workflow — die Norm-Wände
+              # (Verfassung, Studio-Vertrag, Altlasten, Apparat, Vendor-Anker, Betriebsgesetz, Taille, Start-Rezept …)
+              # waren Wachsamkeit. Darin: die Stale-Source-Probe-Linse (Refactor-Drift in den Gate-Proben, c1c1271-Klasse),
+              # die Band-Wand (Haushalt des Profi-Bands, Ratsche, Textur-Namen, Täter-Klasse — gemessen wird mit
+              # `werkbank band` an der echten GPU), das Wasser-Urteil (jeder Täter der Wasser-Wand fällt beim Namen rot)
+              # und die CI-Deckung: jeder Gate-Schritt trägt genau EINE Gruppe, und in der Gegenrichtung läuft jedes
+              # `gate:*` und jeder Teil dieser Statik in einem Workflow — oder steht mit Klasse und Grund in der
+              # Ausnahme-Liste von scripts/diag-ci-deckung.cjs. gate:taille startet den save-server selbst (TAILLE_PORT,
+              # sonst 4312 — auf dem Läufer frei) und liest ihn mit einem Chromium.
+              run: npm run check
 
             - name: Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)
               # GPU-frei, reines Node: liest die Boden-Zeilen des Pflanzen-Kerns (placement.boden ring nah), jeder Emitter mit
               # weichem Gewebe backt seine Palette über vegFarbe; die Senken zeichnen mit dem Studio-Stoff (nie Lambert —
               # r184-Lambert liest scene.environment nie diffus) und wiegen im EINEN Wind; der Karten-Codec kodiert sRGB.
               run: npm run gate:streu-wahrheit
-
-            - name: Band-Wand (W0 — Haushalt des Profi-Bands, Ratsche, Textur-Namen, Täter-Klasse des Stamms)
-              # GPU-frei, reines Node: der Haushalt (spec/profiband/haushalt.json) hält das Band 208 Befehle / 680k
-              # Dreiecke ohne Sammelzeile und mit verankerten Mustern, die Ratsche trägt jede Klasse × Pass (Hülle einer
-              # eingeschwungenen Serie der echten GPU), jede Textur des Stamms trägt den Namen ihres Erzeugers, die
-              # Täter-Klasse des Stamms (_taeterKlasse) klassifiziert jede Schlüssel-Form. --selftest zuerst: 15
-              # injizierte Fälle (unbenanntes Mesh, Täter ohne Haushalt-Regel, Fern-Geröll-L0 bei 200 m, Klasse über der
-              # Ratsche, Band überschritten bei sauberer Linse …) werden rot, ein sauberer Zensus im Band bleibt grün.
-              # Die Messung selbst: `werkbank band` / `werkbank ratsche` (echte GPU).
-              run: npm run gate:profiband
 
             - name: Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)
               # GPU-frei, reines Node (three r128 im vm wie im Foundry-Worker): der Kreatur-Bäcker backt Wolf · Fuchs ·
@@ -109,13 +115,6 @@ jobs:
               # Pupillen-Abstand, Augapfel, Iris, Mund, Fuß gegen koerper-core MENSCH_SOLL. --selftest zuerst: 1,5-fache
               # Hand, doppelte Augäpfel, doppelter Pupillen-Abstand → rot.
               run: npm run gate:mensch-anatomie
-
-            - name: Wasser-Urteil (Welle L — das Urteil der Wasser-Linse gegen jeden Täter, ohne Browser)
-              # GPU-frei, reines Node: ein grüner Befund bleibt grün, jeder Täter der Wasser-Wand (Fluss bergauf, Buckel,
-              # Quelle, Steilwand, Kanal-Parität, Körper am Grund, Zell-Dach, Höhle, Wagen, Rand-Streifen, Ufer-Flut, die
-              # Leser der EINEN Wahrheit, Schilf-Sprung, Zebra, Regen …) fällt beim Namen rot. Die Linse selbst läuft
-              # im playtest-Job (gate:wasser-leben und gate:wasser-leben:bild).
-              run: node scripts/diag-wasser-leben.cjs --selftest
 
             - name: EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)
               # GPU-frei, reines Node: beweist die ZWEI Wände um den geteilten Baum-Wuchs, damit kein
@@ -396,7 +395,7 @@ jobs:
               # IDENTISCHE Normalen tragen (≤1°, vor V18.372 bis 69° = eine Lichtungs-Naht, der „Naht
               # direkt unter dem Wasser"-Befund). Die Heilung: in der Rand-Schale rechnet der Gradient
               # via sample() (reine Funktion der Welt-Position) → beide Nachbarn rechnen dieselbe Normale.
-              # Schnell (3 Chunks); der volle ring-4 `gate:seam` bleibt manuell/Full-Tier.
+              # Schnell (3 Chunks); der volle ring-4 `gate:seam` läuft in Gruppe 3 (Chunk-Naht).
               run: npm run gate:seam-normal
 
             - name: Godrays (V8 Kür — die Licht-Schäfte im EINEN Post-FX-Pass + unter dem EINEN Regler)
@@ -1051,6 +1050,128 @@ jobs:
               # in BEIDEN Stufen-Gruppen, außerhalb exakt einer, nie 0, Slot-Bilanz dicht (kein Leck).
               run: npm run gate:foundry-crossfade
 
+            # ── DIE WÄNDE OHNE WORKFLOW (09.10., gate:ci-deckung (W)) ── Bis hier liefen 50 der 152 `gate:*` nirgends
+            # automatisch. Die folgenden 29 fahren headless (Null-Renderer, swiftshader nur für Rechen- und Bäcker-Proben)
+            # und liefen am 09.10. lokal grün (foliage-res und membran-gesetz nach der Heilung ihrer Proben); verteilt nach
+            # Familie und Gewicht, Gruppe 1 Kreatur und Übergabe, Gruppe 2 Regler und Leistung, Gruppe 3 Wasser und
+            # Studio-Naht. Am 10.10. kam gate:webgl-probe dazu (echter Renderer auf swiftshader-GL); gate:arch-feld trägt den
+            # Deckel des Läufers nicht (Lauf 38005574907) und steht mit Klasse FRIST in AUSNAHMEN (scripts/diag-ci-deckung.cjs);
+            # wer nur abgeschaltet läuft (nächtlich, || true, continue-on-error), ist (S) rot.
+            - name: Tier-Separation (die Tiere entstapeln sich und differenzieren sich über die Größen-Achse)
+              if: matrix.gruppe == 1
+              run: npm run gate:tier-separation
+
+            - name: Körper-Bewegung (der Körper geht den Weg, nicht die Uhr)
+              if: matrix.gruppe == 1
+              run: npm run gate:koerper-bewegung
+
+            - name: Schritt-Klang (der Fuß spielt den Boden, nicht die Uhr)
+              if: matrix.gruppe == 1
+              run: npm run gate:schritt-klang
+
+            - name: Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)
+              if: matrix.gruppe == 1
+              run: npm run gate:reload-treue
+
+            - name: Studio-Übergabe (die Live-Bearbeitung eines Studios reist in die Welt)
+              if: matrix.gruppe == 1
+              run: npm run gate:studio-uebergabe
+
+            - name: P2P-Gestalt (die Studio-Übergabe reist zu den Mitspielern)
+              if: matrix.gruppe == 1
+              run: npm run gate:p2p-gestalt
+
+            - name: Prägung-Welt (die Prägung reist mit dem Artefakt in die Welt-Pfade)
+              if: matrix.gruppe == 1
+              run: npm run gate:praegung-welt
+
+            - name: Scatter-LOD (die Streu-Stufen folgen der Live-Distanz, ohne Flacker-Churn, über Region-Grenzen)
+              if: matrix.gruppe == 2
+              run: npm run gate:scatter-lod
+
+            - name: Leistungs-Vertrag (Stand-Churn null, Ingest-Takt, Gruppen-Stabilität, Linsen-Konsum)
+              if: matrix.gruppe == 2
+              run: npm run gate:leistungs-vertrag
+
+            - name: Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)
+              if: matrix.gruppe == 2
+              run: npm run gate:erstarren
+
+            - name: Existenz-Boden (bei leerem Budget läuft die Welt-Substanz jeden Frame, Deko jeden vierten)
+              if: matrix.gruppe == 2
+              run: npm run gate:existenz-boden
+
+            - name: Perf-Panel (das Screenshot-Panel füllt sich aus den EINEN Quellen, der Export liefert den Trace)
+              if: matrix.gruppe == 2
+              run: npm run gate:perf-panel
+
+            - name: GPU-Zeit-Linse (headless der Proxy, die echte Leitung über ein API-treues Fake-Backend)
+              if: matrix.gruppe == 2
+              run: npm run gate:gpu-zeit
+
+            - name: Render-Diät (ein geteiltes Material je Tag-Signatur, die Part-Farbe reist als Instanz-Farbe)
+              if: matrix.gruppe == 2
+              run: npm run gate:render-diaet
+
+            - name: Laub-Auflösung (die Szene-Auflösung folgt dem EINEN Regler, Last-Boden im Stand, Bewegungs-Boden)
+              if: matrix.gruppe == 2
+              run: npm run gate:foliage-res
+
+            - name: Fern-Ring (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz, der Feld-Zeichner auf swiftshader)
+              if: matrix.gruppe == 2
+              run: npm run gate:fern-ring
+
+            - name: WebGL2-Rückfall (ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt)
+              if: matrix.gruppe == 2
+              # swiftshader-GL (__anazhForceWebGL, der EINE Hook): W1 der Backend ist WebGL, W2 der Rückfall wird einmal laut
+              # benannt, W3 Feld-Pass und Region-Bundles ruhen, W4 der Fern-Ring verfeinert auf CPU, W5 Takte laufen und ein
+              # Render trägt Substanz.
+              run: npm run gate:webgl-probe
+
+            - name: Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)
+              if: matrix.gruppe == 3
+              run: npm run gate:fern-wasser
+
+            - name: Warm-Start (der zweite Boot liest den Ring byte-gleich aus der Platte, ein Edit geht am Cache vorbei)
+              if: matrix.gruppe == 3
+              run: npm run gate:warm-start
+
+            - name: Wasser-Wahrheit (kein Wasser an der Wand, kein Spiegel über Land, keine bleibenden Blobs, Stau nur geschlossen)
+              if: matrix.gruppe == 3
+              run: npm run gate:wasser-wahrheit
+
+            - name: Kopplung (die Welt fasst den Körper an — Strömung, Gleiten, Wind-Richtung, Gras-Biegung)
+              if: matrix.gruppe == 3
+              run: npm run gate:kopplung
+
+            - name: Worker-Wasser-Sheet (der Spiegel im Worker ist byte-identisch, Lehre 7)
+              if: matrix.gruppe == 3
+              run: npm run gate:worker-watersheet
+
+            - name: Portal-Membran (ein Tor-Gestalt-Portal ist in der Welt ganz eingefädelt)
+              if: matrix.gruppe == 3
+              run: npm run gate:portal-membran
+
+            - name: Dritter Spiegel (das Makro-Gesetz rechnet auf swiftshader-WebGPU seh-paritätisch)
+              if: matrix.gruppe == 3
+              run: npm run gate:dritter-spiegel
+
+            - name: Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)
+              if: matrix.gruppe == 3
+              run: npm run gate:fahrzeug-fern
+
+            - name: Bäcker-Kanal (der Studio-Bäcker antwortet im Foundry-Worker)
+              if: matrix.gruppe == 3
+              run: npm run gate:baecker-kanal
+
+            - name: Konsum-Matrix (je Gattung und Facette, was das Studio liefert und wer es liest — die Ratsche hält jede volle Zelle)
+              if: matrix.gruppe == 3
+              run: npm run gate:konsum-matrix
+
+            - name: Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)
+              if: matrix.gruppe == 3
+              run: npm run gate:seam
+
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
               if: matrix.gruppe == 3
               # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den
@@ -1127,7 +1248,9 @@ jobs:
               run: npm run gate:weltbild-frost
 
             - name: Post-Kette (echter Renderer — der Direktpfad zeichnet mit Tiefe, jede Nachbild-Stufe kostet nur, wenn sie zeigt)
-              if: matrix.gruppe == 1
+              if: matrix.gruppe == 2
+              # Gruppe 2 seit der Vereinigung mit waende-ci: Gruppe 1 lief in V18.538 (Lauf 38033163539) 24,4 min, mit den
+              # sieben Kreatur- und Übergabe-Wänden geschätzt 25,4 — Gruppe 2 lief 12,5 (die Post-Kette dort 202 s).
               # Faehrt den ECHTEN Frame (swiftshader, kienspan) durch die Weiche: Post-Kette, Direktpfad (wie die
               # Zerleg-Linse ihn stellt), zurueck, ein Render-Fehler der Kette — je Schritt kein Fehler, der Leser der
               # Szenen-Tiefe kopiert, der Direktpfad zeichnet mit Tiefe (die nahe Kiste deckt die ferne), die Post-Kette
