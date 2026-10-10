@@ -868,3 +868,30 @@ Geschnitten: am Code nichts (Synthese). Entschieden sind: die Auflösung der Vol
 Gemessen: 13 P0 gegengelesen, 8 mit falscher Ursache, falschem Messwert oder falscher Heilung, MP-01 am Spielpfad bis auf den Platzhalter widerlegt; 7 Karten deklarieren einen Re-Mint-Akt (K06, K07, K08, K10, K11, K12, K13 nach Byte-Beweis; recipes.json trägt `kalib`, `landung`, `vmax`, `feuerstelle.fx`); 11 offene Zweige, integ-probe ce10dcb6; Konto 2: 711 M gewichtete Token in 23 h, das 2,8-Fache des Tagesdeckels.
 Pflicht-OFFEN Rest: A, B, C, E (4) — docs/PFLICHT-OFFEN.md
 Status: ZWISCHENSTAND
+
+---
+
+## §6 Entschieden mit der Vollmacht des Schöpfers (11.10., „du entscheidest champ, du dein eigener Meister“ + „fahre selbstständig fort“)
+
+Der Schöpfer hat nach dieser Synthese die Vollmacht ausdrücklich auf alles gelegt. Damit entscheidet der Koordinator die Punkte aus §5
+selbst — offen benannt, jeder kippbar durch ein Wort des Schöpfers:
+
+1. **Frozen-Liste (§5.1):** angenommen wie vorgeschlagen. Ausgeführt im Commit nach dem Beweis-Satz A1 (Auge, Ausgabe-Pfad, nach V18.539):
+   B und C fallen, A fällt mit gegossener Kopf-Zeile oder FINAL unter dem Pixel; neu A) DER ORT AUF DEM GELÄNDE, B) DER PFAD OHNE BRUCH
+   (Zahlen wie §5.1); E erhält das Kriterium (beide Messplätze Radeon 890M + GTX 1060, Wiese UND Genesis, Regler voll: Frame p95
+   ≤ 33 ms, ≤ 208 Befehle, ≤ 680k Dreiecke, ≤ 118 MB, CPU-Takt p95 ≤ 5,8 ms). Weitere Standardgeräte (Telefon, Mac): offen benannt.
+2. **Feature-Stopp (§5.2):** S1 Tempo aus Leistung — ja, nach E. S2 steckende Pfeile — ja (Konsum von `stickArrow`). S3 Fallschaden —
+   nach v1. Laternen und Fensterlicht — drin (K11/K10). Brücken als Wege-Etikett — drin. Mauer und Siedlungs-Fluss — nach K10.
+   **G2 Landformen — in v1, nach K09** (Wort des Schöpfers vom 10.10.: „das Gelände selbst ist noch nicht genial — flache Talkessel,
+   Schluchten“; die Zahlen der Forschung tragen es, K09 misst sie am gebauten Boden nach und setzt den Soll-Korridor).
+   Klima/Biom, 16 Bühnen, translated r184, Markt-Inhalt — nach v1.
+3. **Bindender Text (§5.3):** der F4-Zusatz zu Gebot 10 ist gesetzt (Verschärfung, keine Lockerung) — Zweig vollmacht-1110 596aca4b,
+   Stufe vor kampf in V18.539, zusammen mit Lehre 26 und champion.md:18. Sonst bleibt der Text wörtlich.
+4. **Altwelten (§5.4):** alte Welten ziehen um, ihre Bauten werden auf das neue Gelände geerdet; kein eingefrorener Alt-Term.
+5. **Budget (Klarstellung des Schöpfers 11.10.):** der Tagesdeckel ist KEIN Warte-Tor. Die Grenze ist das Wochenlimit (Reset 17.10.);
+   gemessen wird Effizienz (sichtbarer Fortschritt je Token). Liegt der Verbrauch vor dem Wochen-Anteil, wird billiger gearbeitet
+   (kleinere Kontexte, weniger Vermessung, eher Prüfer als Nachbesserer) — nie stillgestanden. Die Ampel aus §2.5 gilt sinngemäß:
+   keine neue Vermessung ab 60 % des Tagesanteils, Bau-Karten laufen weiter.
+6. **Monolith (H1, Frage des Schöpfers „neu bauen?“):** kein Neubau von null — Neubau je Domäne von innen. Die Modul-Zielkarte
+   (Gelände · Wasser · Render · Vegetation · Siedlung · Kreatur · Körper · Fahrzeug · Kampf · Klang · P2P · Werkstatt · Speicher, je mit
+   fester Schnittstelle) wird vorgezogen; jede Karte, die eine Zone anfasst, zieht sie als Modul heraus (K09 gelaende-core ist die erste).
