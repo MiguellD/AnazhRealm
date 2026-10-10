@@ -1531,12 +1531,17 @@ class AnazhRealm {
     // Knoten, der keiner ist (ein Text — die KI schreibt "near_water" ohne Klammern —, eine Zahl, ein Objekt, []), ist ein
     // ungültiger Ort und scheitert ebenso benannt (bis 07.10. wurde er still der Ursprung). Jeder aufgelöste Knoten merkt
     // sich seinen Ort im Kontext (`ctx.orte`): der Absender schickt ihn mit (V-k6, `_dslMitOrten`).
+    // DAS FELD HAT KEINEN ORT, WO DIE WILDNIS NICHT TRÄGT: wählt das Feld selbst (`_feldHandelt` — der Nexus und seine
+    // Regeln) einen Ort, den die Wildnis nicht trägt (`_wildnisTraegt`), gibt es ihn nicht — jeder Wurf daran (Tier, Baum,
+    // Werk, Insel, UFO, Dorf, Tempel, Wasserfall, Bauplan, Fraktal, Kugel) bricht hier benannt ab; Akte setzen überall.
+    // Bis 10.10. fragte nur die Tier-Geburt: auf der Prüfbühne warfen 18 von 20 Nexus-Würfen (ein Dorf aus 33 Bauten,
+    // Tempel, Wasserfall, Fraktal, Insel, UFO, Baum, Werk), gate:pruefbuehne nennt jeden beim Namen.
     dslEvalPos(node, ctx) {
-        if (node == null) return this._defaultSpawnPos();
         let op = null;
         let pos = null;
         let grund = null;
-        if (!Array.isArray(node)) grund = `„${this._dslZeig(node)}“ ist kein Ort-Knoten`;
+        if (node == null) pos = this._defaultSpawnPos();
+        else if (!Array.isArray(node)) grund = `„${this._dslZeig(node)}“ ist kein Ort-Knoten`;
         else if (node.length === 0) grund = "leerer Ort-Knoten";
         else {
             op = String(node[0]);
@@ -1552,6 +1557,8 @@ class AnazhRealm {
                     grund = `${op} fand keinen Ort`;
             }
         }
+        if (!grund && this._feldHandelt(ctx) && !this._wildnisTraegt(pos.x, pos.z))
+            grund = `die Wildnis trägt (${Math.round(pos.x)}|${Math.round(pos.z)}) nicht — das Feld wirft hier nichts`;
         if (grund) {
             const eintrag = { event: "invalid_position", op, grund, program_id: ctx.programId };
             ctx.log.push(eintrag);
@@ -1559,6 +1566,7 @@ class AnazhRealm {
             fehler.dslKeinOrt.eintrag = eintrag;
             throw fehler;
         }
+        if (node == null) return pos;
         if (ctx.orte) {
             const liste = ctx.orte.get(node);
             if (liste) liste.push(pos);
@@ -2084,7 +2092,7 @@ class AnazhRealm {
                 // (`_kreaturGeburtsOrt` — der gewünschte Ort, wenn er es ist; sonst ein Ort nach dem Gesetz). Vorher setzte
                 // `spawn_creature at_player` es 4–7 m vor den Spieler. Der Mensch (und wer in seinem Namen spricht) ruft
                 // Leben vor sich — das ist sein Akt.
-                const autonom = ctx.source === "nexus" || ctx.source === "rule:nexus";
+                const autonom = this._feldHandelt(ctx);
                 let spawned = 0;
                 let lastBorn = null;
                 for (let i = 0; i < n; i++) {
@@ -2262,7 +2270,7 @@ class AnazhRealm {
                     position: pos,
                     seed: s,
                     nHAusGesetz: true,
-                    autonomous: ctx.source === "nexus",
+                    autonomous: this._feldHandelt(ctx),
                     verlangt: ctx.source,
                     blick,
                 });
@@ -2284,7 +2292,7 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture(name, pos, { seed: s, autonomous: ctx.source === "nexus" });
+                const entry = this.spawnArchitecture(name, pos, { seed: s, autonomous: this._feldHandelt(ctx) });
                 ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos, seed: s });
             },
             spawn_waterfall: ([positionNode, seed], ctx) => {
@@ -2295,7 +2303,7 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture("waterfall", pos, { seed: s, autonomous: ctx.source === "nexus" });
+                const entry = this.spawnArchitecture("waterfall", pos, { seed: s, autonomous: this._feldHandelt(ctx) });
                 ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos, seed: s });
             },
             // Generischer Bauplan-Spawn für jeden Namen (built-in oder eigen), z. B. ["spawn_blueprint",
@@ -2329,7 +2337,7 @@ class AnazhRealm {
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
                 // Autonom (Nexus) gespawnte Baupläne unterliegen dem _capNexusStructures-Cap (kein
                 // unbeschränktes Horten); Mensch-/Remote-Bauten bleiben ungedeckelt (gewollt + permanent).
-                const opts = { seed: s, autonomous: ctx.source === "nexus" };
+                const opts = { seed: s, autonomous: this._feldHandelt(ctx) };
                 if (sharedId) opts.id = sharedId;
                 if (typeof drehung === "number" && Number.isFinite(drehung)) opts.rotationY = drehung;
                 // PRÄGUNG-WELT — der gereiste Stempel geht ungestrippt an den EINEN
@@ -2814,7 +2822,7 @@ class AnazhRealm {
                     this.spawnArchitecture(
                         t,
                         { x: cx, y: pos.y, z: cz },
-                        { seed: childSeed, scale, precise: true, autonomous: ctx.source === "nexus" }
+                        { seed: childSeed, scale, precise: true, autonomous: this._feldHandelt(ctx) }
                     );
                     if (level >= d) return;
                     const childRadius = 14 * scale;
@@ -27364,10 +27372,21 @@ class AnazhRealm {
     }
 
     // Trägt die Wildnis den Ort? Das EINE Prädikat an den WÜRFEN des Feldes (Wald, Streu, Nah-Streu, Geburts-Ort, Dorf-
-    // Ort, Schwebe-Inseln): wo der Wildnis-Term nicht wiegt, wirft das Feld nichts — Akte (Mensch, KI, Saat, Linse)
-    // setzen überall. Liest das Gewicht des Erbguts (heute je Welt: 1 oder 0, der Ort ist die Naht künftiger Masken).
+    // Ort, Schwebe-Inseln und jeder Ort, den der Nexus wählt — `dslEvalPos`): wo der Wildnis-Term nicht wiegt, wirft das
+    // Feld nichts — Akte (Mensch, KI, Saat, Linse) setzen überall. Liest das Gewicht des Erbguts (heute je Welt: 1 oder
+    // 0, der Ort ist die Naht künftiger Masken).
     _wildnisTraegt(_x, _z) {
         return (this._erbgutCache || this._erbgut()).wildnis > 0;
+    }
+
+    // HANDELT DAS FELD? Die EINE Antwort für die DSL-Quelle eines Akts (`ctx.source`): der Nexus („nexus" — seine
+    // Evolutionen und Kristalle) und die Regeln, die er gesetzt hat („rule:nexus"), handeln für die Welt selbst. Der
+    // Mensch, seine Werkzeuge, der Begleiter, die Mitspieler und ihre Regeln handeln nie für das Feld. Leser: die
+    // Ort-Engstelle `dslEvalPos` (das Feld hat keinen Ort, wo die Wildnis nicht trägt), die Nexus-Geburt in
+    // `spawn_creature` und der Hort-Deckel der Nexus-Bauten (`autonomous`).
+    _feldHandelt(ctx) {
+        const quelle = ctx && ctx.source;
+        return quelle === "nexus" || quelle === "rule:nexus";
     }
 
     // DER WILDNIS-TERM (`art: "wildnis"`): die Natur-Höhe der Welt — Rauschen, Erosion, Makro-Anker, Canyon, Tafelberg,
