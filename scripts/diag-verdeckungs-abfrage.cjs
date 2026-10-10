@@ -21,8 +21,10 @@
 //      und fragt in jedem `queryTakt`-ten Frame — das Gesetz ist eingefroren, die Linse stellt es nicht um), der GT am
 //      Ufer, Aufsitzen aus der Ego-Sicht, Fahrt zum Wasser, Bremsen, AUSSTEIGEN (die Seele wechselt zurück in den Körper,
 //      die Sicht zurück auf `first`), zwei Probe-Fenster lang Blick übers Wasser — alles durch den echten
-//      Spiel-Takt (`_gameLoopTick`). Nicht vakuös: aufgesessen und ausgestiegen, die Sicht wechselte, der Stellvertreter
-//      wurde gezählt, das Wasser gezeichnet.
+//      Spiel-Takt (`_gameLoopTick`). Der Ort steht, wenn der Blick vom Ufer zum Bach das Wasser ZEICHNET (ein sichtbares
+//      Wasser-Mesh irgendwo in der Szene reichte nicht: im kalten Boot fuhr der Ablauf ohne einen Wasser-Draw); gezählt wird
+//      danach. Nicht vakuös: aufgesessen und ausgestiegen, die Sicht wechselte, der Stellvertreter wurde gezählt, das Wasser
+//      gezeichnet.
 //   B  DER BRUCH: ein vorgebauter Stellvertreter, direkt danach ein Leser der Szenen-Tiefe (`_szeneTiefe`) — der Pass bricht
 //      bei offener Abfrage (gezählt: Brüche mit offener Abfrage > 0).
 //   G  DAS GIFT: ein Stellvertreter, dessen Pipeline r184 als gescheitert führt (wie nach einem geschluckten fremden Fehler)
@@ -429,6 +431,10 @@ async function verdeckungPhase(opts) {
             st.playerMesh.position.set(ux, hh(ux, uz) + 1.2, uz);
             if (st.playerVel) st.playerVel.setValue(0, 0, 0);
             r.setCameraMode("first");
+            // der Blick zum Bach (`_blickVorn`: vorn = (sin yaw, cos yaw)) — der Ort steht erst, wenn dieser Blick das Wasser
+            // ZEICHNET (Abschnitt gestreamt, Pipeline steht), nicht schon, wenn irgendein Wasser-Mesh der Szene sichtbar ist
+            st.yaw = Math.atan2(-nx, -nz);
+            st.pitch = -0.25;
             let tMs = performance.now();
             const takt = () => {
                 tMs += 16.7;
@@ -452,12 +458,15 @@ async function verdeckungPhase(opts) {
             const bereit = () => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt;
             const tOrt = performance.now();
             const dlW = performance.now() + (opts.ortMs || 180000);
-            while (performance.now() < dlW && !(sichtbaresWasser() > 0 && bereit())) {
+            while (performance.now() < dlW && !(sichtbaresWasser() > 0 && z.wasser > 0 && bereit())) {
                 for (let i = 0; i < 5; i++) takt();
                 await warte(20);
             }
             aus.wasserMeshes = sichtbaresWasser();
+            aus.wasserAmOrt = z.wasser;
             aus.ms = { ort: Math.round(performance.now() - tOrt) };
+            // gezählt wird ab hier der Ablauf (Wagen, Fahrt, Aussteigen) — die Zeichnungen des Orts machen ihn nie unvakuös
+            for (const k of Object.keys(z)) z[k] = 0;
             const tWagen = performance.now();
             if (!bereit()) throw new Error("das Rezept des GT stand nicht");
             // der GT am Ufer, Blick zum Wasser
@@ -629,7 +638,7 @@ async function verdeckungPhase(opts) {
             log(
                 `${phase.toUpperCase()}: ${JSON.stringify(p.z)}` +
                     (phase === "ablauf"
-                        ? ` · Bach ${JSON.stringify(p.bach)}, Probe jeden ${p.takt}. Frame, Wasser-Meshes ${p.wasserMeshes}, ` +
+                        ? ` · Bach ${JSON.stringify(p.bach)}, Probe jeden ${p.takt}. Frame, Wasser-Meshes ${p.wasserMeshes} (am Ort ${p.wasserAmOrt}× gezeichnet), ` +
                           `aufgesessen ${p.aufgesessen}, Halt ${p.halt} m vor dem Bach, ausgestiegen ${p.ausgestiegen}, ` +
                           `Sicht ${JSON.stringify(p.sicht)}, ms ${JSON.stringify(p.ms)}`
                         : ` · vorgebaut ${p.vorgebaut}`) +
