@@ -878,6 +878,9 @@ const FORBIDDEN = [
     { token: "STUDIO_WORLD_SCALE", fiel: "Leben-Schau 2 — die Welt-Skala liest der Kern (__terrainCore.PORTAL_RENDER_CONFIG)" },
     { token: "STUDIO_TREE_SCALE_MUL", fiel: "Leben-Schau 2 — der Wald-Mul liest der Kern (placement.treeScaleMul)" },
     { token: "_baumHuellenNachBuch", fiel: "Leben-Schau 2 — die Stamm-Hülle misst ab dem Spawn in der Welt-Skala" },
+    // DIE TOR-HÜLLE IST GESETZ-DATEN (Gegenprüfung 10.10.): der Wirt baute die Tor-Gestalt am Spawn synchron nach (15–50 ms je
+    // Gestalt auf dem Haupt-Thread) — er liest die gemintete Tafel `__portaCore.TOR_HUELLE`.
+    { token: "_torHuelleGemessen", fiel: "Leben-Schau 2 — der Wirt liest TOR_HUELLE, er baut kein Tor nach" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

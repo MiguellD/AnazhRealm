@@ -34848,12 +34848,17 @@ class AnazhRealm {
         if (!tor) return null;
         const mu = tor.mu;
         if (!mu || !Number.isFinite(mu.apexY)) return null;
-        // DIE MASSE AUS DEM BILD (Leben-Schau 2, gate:kollision-bild): Pfosten-Außenkante, Tiefe und Krone misst die gezeichnete
-        // Gestalt selbst (`_torHuelleGemessen`) — die Öffnung (±rimAx bis zur Bogenkurve) und die Schultern bleiben das Gesetz.
-        // Bis dahin schätzte der Wirt sie aus dem Gesetz (Pfosten jambW·(Ordnungen + ½), Tiefe aus der Staffelung): der
-        // Drachentor-Pfosten stand 0,57 m neben seinem Bild, die Ruine 0,99 m innerhalb.
-        const hm = this._torHuelleGemessen(tor);
-        if (!hm) return null;
+        // DIE MASSE AUS DEM BILD (Leben-Schau 2, gate:kollision-bild): Pfosten-Außenkante, Tiefe und Krone der gezeichneten
+        // Gestalt trägt das Gesetzbuch als gemintete Daten (`__portaCore.TOR_HUELLE`, je Seite [pfostenX, pfostenZ, obenX,
+        // obenZ] + Oberkante, gemessen an buildInstance LOD 0 — gate:porta-contract hält die Mint-Treue) — die Öffnung (±rimAx
+        // bis zur Bogenkurve) und die Schultern bleiben das Gesetz. Bis dahin schätzte der Wirt sie aus dem Gesetz (der
+        // Drachentor-Pfosten stand 0,57 m neben seinem Bild, die Ruine 0,99 m innerhalb), danach baute er die Gestalt beim
+        // ersten Spawn jeder Gestalt synchron auf dem Haupt-Thread nach (Gegenprüfung 10.10.: 15–50 ms je Gestalt, 231–244 ms
+        // für die sieben, am Genesis-Ring, an jedem Restore mit Toren, am ersten Setzen in der Werkstatt). Jetzt eine Lesung.
+        const hm = AnazhRealm.Gesetz("porta:TOR_HUELLE." + tor.gestalt, null);
+        const zeileOk = (z) => Array.isArray(z) && z.length === 4 && z.every(Number.isFinite);
+        if (!hm || !Array.isArray(hm.seiten) || !hm.seiten.every(zeileOk) || !Number.isFinite(hm.oberkante))
+            return AnazhRealm._kernPflichtBruch("porta:TOR_HUELLE." + tor.gestalt);
         const rise = Math.max(0.05, mu.apexY - mu.springY);
         const schulterB = mu.rimAx * 0.45;
         const schulterY0 = mu.springY + rise * 0.3;
@@ -34866,16 +34871,16 @@ class AnazhRealm {
                 : null;
         const pseudo = [];
         [-1, 1].forEach((sx, k) => {
-            const hs = hm.seiten[k];
+            const [pfostenX, pfostenZ, obenX, obenZ] = hm.seiten[k];
             const spiegel = (b) =>
                 b ? Object.assign(b, { position: Object.assign(b.position, { x: sx * b.position.x }) }) : null;
             // Pfosten — von der Öffnungskante (rimAx) bis zur gezeichneten Außenkante, bis zur Kämpferlinie
-            pseudo.push(spiegel(box(mu.rimAx, hs.pfostenX, 0, mu.springY, hs.pfostenZ)));
+            pseudo.push(spiegel(box(mu.rimAx, pfostenX, 0, mu.springY, pfostenZ)));
             // über der Kämpferlinie bis zum Scheitel: der Rahmen bis zur Außenkante oben, die Schulter über der Öffnung
-            pseudo.push(spiegel(box(mu.rimAx, hs.obenX, mu.springY, mu.apexY, hs.obenZ)));
-            pseudo.push(spiegel(box(mu.rimAx - schulterB, mu.rimAx, schulterY0, mu.apexY, hs.obenZ)));
+            pseudo.push(spiegel(box(mu.rimAx, obenX, mu.springY, mu.apexY, obenZ)));
+            pseudo.push(spiegel(box(mu.rimAx - schulterB, mu.rimAx, schulterY0, mu.apexY, obenZ)));
             // die Krone über dem Scheitel bis zur gezeichneten Oberkante, die Hälfte dieser Seite
-            pseudo.push(spiegel(box(0, hs.obenX, mu.apexY, hm.oberkante, hs.obenZ)));
+            pseudo.push(spiegel(box(0, obenX, mu.apexY, hm.oberkante, obenZ)));
         });
         const boxes = [];
         for (const part of pseudo) {
@@ -34883,46 +34888,6 @@ class AnazhRealm {
             if (aabb) boxes.push(aabb);
         }
         return boxes;
-    }
-
-    // DIE GEMESSENE TOR-HÜLLE (Leben-Schau 2): die Gestalt, die die Welt zeichnet (porta-core `buildInstance` — dieselbe
-    // Bau-Funktion, die das Studio im Worker ruft; seed-invariant, die Goldens frieren es ein), EINMAL je Gestalt synchron im
-    // Kern gebaut und gemessen (am Spawn, Lockstep): die Außenkante der Pfosten (Punkte außerhalb der Öffnung ±rimAx im
-    // Körper-Band bis zur Kämpferlinie), die Tiefe dort, und darüber Außenkante, Tiefe und Oberkante des Rahmens. Gemerkt am
-    // Tor-Gesetz (`_torGesetzFor`, je Gestalt); die Gruppe erreicht nie einen Renderer (keine GPU-Puffer), der Sammler nimmt
-    // sie. null ohne Bau-Funktion (das Tor kollidiert dann nicht als Gestalt, der Parts-Pfad trägt).
-    _torHuelleGemessen(tor) {
-        if (tor.huelle !== undefined) return tor.huelle;
-        const core = typeof globalThis !== "undefined" ? globalThis.__portaCore : null;
-        const g = core && typeof core.buildInstance === "function" ? core.buildInstance(tor.gestalt, 0, 0) : null;
-        if (!g) return (tor.huelle = null);
-        const mu = tor.mu;
-        const v = new THREE.Vector3();
-        // je Seite (0: x < 0, 1: x > 0) — eine Ruine fehlt hier ein Stein, dort nicht
-        const seite = () => ({ pfostenX: mu.rimAx, pfostenZ: 0, obenX: mu.rimAx, obenZ: 0 });
-        const S = [seite(), seite()];
-        let oberkante = mu.apexY;
-        g.updateMatrixWorld(true);
-        g.traverse((o) => {
-            const P = o.isMesh && o.geometry && o.geometry.attributes ? o.geometry.attributes.position : null;
-            if (P)
-                for (let i = 0; i < P.count; i++) {
-                    v.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);
-                    const s = S[v.x < 0 ? 0 : 1];
-                    const ax = Math.abs(v.x);
-                    const az = Math.abs(v.z);
-                    if (v.y > oberkante) oberkante = v.y;
-                    if (v.y > mu.springY) {
-                        if (ax > s.obenX) s.obenX = ax;
-                        if (az > s.obenZ) s.obenZ = az;
-                    } else if (v.y > 0.1 && ax >= mu.rimAx) {
-                        if (ax > s.pfostenX) s.pfostenX = ax;
-                        if (az > s.pfostenZ) s.pfostenZ = az;
-                    }
-                }
-        });
-        tor.huelle = { seiten: S, oberkante };
-        return tor.huelle;
     }
 
     // Nächstes Fluss-Segment an (x,z), wenn der Punkt im Kanal liegt (dist ≤ halbe Breite + Tiefe / bankNeigung, die

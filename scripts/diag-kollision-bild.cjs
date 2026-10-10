@@ -13,10 +13,14 @@
 //   (B) BLOCKER OHNE BILD: keine Box ragt seitlich mehr als SEITE_M über das Bild hinaus, oben mehr als max(SEITE_M; OBEN_ANTEIL
 //       der Bild-Höhe); das Fundament ist Blocker UND Podest aus derselben Box (`_archFundamentBox`) und zählt nicht;
 //   (U) BILD OHNE BLOCKER (umgekehrt): ein FESTES Werk (Fels · Haus · Tor · Wagen · Ausstattung) trägt Boxen, ein Baum seinen
-//       Stamm (≥ 1 Box); beim Fels — der Wirt leitet seine Hülle aus der gezeichneten Gestalt ab — liegt jeder Punkt des Bilds im
-//       Körper-Band (0,1–KOERPER_BAND_M über der Basis, wo Spieler, Tier und Wagen anstoßen) höchstens SEITE_M neben einer Box.
-//       Die festen Teile von Haus, Tor, Wagen und Ausstattung erklärt ihr Gesetzbuch (`__huelle`, das porta-Gesetz,
-//       exportDrive, die Teile); ihr Abstand im Band steht in der Tabelle;
+//       Stamm (≥ 1 Box); bei Fels, Tor und Wagen (STRENG — ihre Hülle misst die gezeichnete Gestalt: fx.huellen, TOR_HUELLE,
+//       exportDrive.huelle) liegt jeder Punkt des Bilds im Körper-Band (0,1–KOERPER_BAND_M über der Basis, wo Spieler, Tier
+//       und Wagen anstoßen) höchstens SEITE_M neben einer Box — beim Tor außer der PASSAGE (|x| < rimAx: das Gesetz hält die
+//       Öffnung frei, die Flügel öffnen sich vor dem Körper, TUER_GESETZ). Haus und Ausstattung erklärt ihr Gesetzbuch
+//       (`__huelle`, die Teile) nicht ganz als fest: ihr Abstand steht als OFFEN mit Zahl und Ort in der Ausgabe, nie im Grün;
+//   (K) KOSTEN: kein Blocker-Erzeuger baut eine Studio-Gestalt auf dem Haupt-Thread — jeder `buildInstance` eines Kerns während
+//       der Spawns der Exemplare (kaltes Tor-Gedächtnis) ist ein Täter beim Namen (Kern, Rezept, Werk). Gegenprüfung 10.10.: der
+//       Wirt baute jedes Tor beim ersten Spawn seiner Gestalt nach (15–50 ms je Gestalt, 231–244 ms für sieben);
 //   (G) GESTALT: ein Fels wählt für seinen Blocker dieselbe Gestalt, die gezeichnet ist (der Slot des Bilds gegen
 //       `_foundryVariantFor` mit der Kern-Zahl `_studioGestaltenKern`);
 //   (E) EXEMPLARE: je Klasse eines an der Mess-Wiese gesetzt (Felsturm · Felsbogen · Steinblock · Kiesel · Felsbrocken · Geode ·
@@ -24,11 +28,12 @@
 //       dort wächst;
 //   (T) DER EINGESCHMUGGELTE TÄTER: ein Felsturm bekommt die Spender-Parts (die alte Regel) — (B) MUSS ihn beim Namen nennen;
 //   (Q) QUELLE: der Fels-Zweig führt keine Typ-Liste (kein `_var`-Muster), Fels-Zweig und Parts-Pfad lesen die Welt-Skala jedes
-//       Studio-Werks (`_studioWeltSkala`), der Hand-Spiegel `STUDIO_WORLD_SCALE` ist fort;
+//       Studio-Werks (`_studioWeltSkala`), der Hand-Spiegel `STUDIO_WORLD_SCALE` ist fort, das Tor liest seine Hülle aus dem
+//       Gesetzbuch (`porta:TOR_HUELLE`) und kein Blocker-Erzeuger ruft `buildInstance`;
 //   (P) kein Page-Error.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Blocker ohne Bild, Bild ohne
-// Blocker, Baum ohne Stamm, fremde Gestalt, leere Zählung, stumpfer Schmuggel, fehlende Klasse, Quelle, Page-Error — MUSS rot
-// fallen und ihn beim Namen nennen.
+// Blocker, Baum ohne Stamm, fremde Gestalt, leere Zählung, stumpfer Schmuggel, fehlende Klasse, Bau auf dem Haupt-Thread,
+// Quelle, Page-Error — MUSS rot fallen und ihn beim Namen nennen.
 //   node scripts/diag-kollision-bild.cjs [--selftest]   (npm run gate:kollision-bild; Port KOLLISION_BILD_PORT)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
@@ -37,7 +42,7 @@ const SEITE_M = 0.3; // die Kapsel des Spielers misst 0,35 m — was weniger dan
 const OBEN_ANTEIL = 0.02; // oben: 2 % der Bild-Höhe (über einer 40-m-Krone erreicht kein Körper die Spitze)
 const KOERPER_BAND_M = 2.5; // Spieler 1,8 m · Bär ~2 m · GT-Dach 1,4 m
 const FEST = new Set(["rock", "haus", "gate", "vehicle", "ausstattung"]);
-const STRENG = ["rock"]; // der Wirt leitet die Hülle aus der gezeichneten Gestalt ab
+const STRENG = ["rock", "gate", "vehicle"]; // die Hülle misst die gezeichnete Gestalt (fx.huellen · TOR_HUELLE · exportDrive)
 const PFLICHT_EXEMPLARE = [
     "felsturm",
     "felsbogen",
@@ -77,21 +82,35 @@ function urteil(b) {
             );
         else if (t.art === "stamm") v.push(`(U) BAUM OHNE STAMM: ${t.wer} bei ${t.ort} trägt keine Box`);
         else if (t.art === "gestalt")
-            v.push(`(G) FREMDE GESTALT: ${t.wer} bei ${t.ort} — gezeichnet Gestalt ${t.bildG}, der Blocker misst ${t.blockG}`);
+            v.push(
+                `(G) FREMDE GESTALT: ${t.wer} bei ${t.ort} — gezeichnet Gestalt ${t.bildG}, der Blocker misst ${t.blockG}`
+            );
     }
     for (const k of PFLICHT_EXEMPLARE)
         if (!(b.exemplare && b.exemplare[k] === true))
-            v.push(`(E) KLASSE FEHLT: das Exemplar ${k} stand nicht in der Zählung (${(b.exemplare || {})[k] || "nicht gesetzt"})`);
+            v.push(
+                `(E) KLASSE FEHLT: das Exemplar ${k} stand nicht in der Zählung (${(b.exemplare || {})[k] || "nicht gesetzt"})`
+            );
     if (!b.schmuggel || !b.schmuggel.genannt)
         v.push(
             "LINSE STUMPF: (T) der eingeschmuggelte Täter (ein Felsturm mit den Spender-Parts) wurde nicht beim Namen genannt" +
                 (b.schmuggel && b.schmuggel.wer ? ` (${b.schmuggel.wer})` : "")
         );
+    if (!b.schmuggelTor || !b.schmuggelTor.genannt)
+        v.push(
+            "LINSE STUMPF: (T) das Tor ohne seinen ersten Pfosten wurde nicht als Bild ohne Blocker genannt" +
+                (b.schmuggelTor && b.schmuggelTor.wer ? ` (${b.schmuggelTor.wer})` : "")
+        );
+    if (!Array.isArray(b.bauten)) v.push("LEER: (K) die Zählung der Haupt-Thread-Bauten fehlt");
+    for (const t of b.bauten || []) v.push(`(K) DER HAUPT-THREAD BAUT: ${t}`);
     const q = b.quelle || {};
+    if (!q.torTafel) v.push("(Q) QUELLE: das Tor liest seine Hülle nicht aus dem Gesetzbuch (`porta:TOR_HUELLE`)");
+    if (!q.ohneBau) v.push("(Q) QUELLE: ein Blocker-Erzeuger ruft `buildInstance` (die Gestalt am Spawn nachgebaut)");
     if (!q.felsOhneTypListe) v.push("(Q) QUELLE: der Fels-Zweig `_felsBlockerParts` trägt eine Typ-Liste (`_var`)");
     if (!q.felsSkala) v.push("(Q) QUELLE: der Fels-Zweig liest die Welt-Skala nicht (`_studioWeltSkala`)");
     if (!q.partsSkala) v.push("(Q) QUELLE: der Parts-Pfad liest die Welt-Skala nicht (`_studioWeltSkala`)");
-    if (!q.ohneSpiegel) v.push("(Q) QUELLE: der Hand-Spiegel STUDIO_WORLD_SCALE lebt (zweite Welt-Skala neben dem Kern)");
+    if (!q.ohneSpiegel)
+        v.push("(Q) QUELLE: der Hand-Spiegel STUDIO_WORLD_SCALE lebt (zweite Welt-Skala neben dem Kern)");
     if (!q.gestaltKern) v.push("(Q) QUELLE: der Fels-Blocker kennt die Gestalt nicht (_studioGestaltenKern fehlt)");
     for (const e of b.pageErrors || []) v.push(`PAGE-ERROR: ${e}`);
     return v;
@@ -103,14 +122,25 @@ function selbsttest() {
         zensus: { werke: 900, taeter: [] },
         exemplare: ex,
         schmuggel: { genannt: true, wer: "felsturm#4" },
-        quelle: { felsOhneTypListe: true, felsSkala: true, partsSkala: true, ohneSpiegel: true, gestaltKern: true },
+        schmuggelTor: { genannt: true, wer: "welt_fachwerk#9" },
+        bauten: [],
+        quelle: {
+            felsOhneTypListe: true,
+            felsSkala: true,
+            partsSkala: true,
+            ohneSpiegel: true,
+            gestaltKern: true,
+            torTafel: true,
+            ohneBau: true,
+        },
         pageErrors: [],
     };
     const fehler = [];
     const g = urteil(gruen);
     if (g.length) fehler.push("der grüne Befund fällt rot: " + g.join(" · "));
     const klon = () => JSON.parse(JSON.stringify(gruen));
-    const T = (o) => Object.assign({ wer: "felsturm#174", ort: "-913.7/-900.7", bild: "1.4×0.8×0.9", box: "4.4×16.8×4.4" }, o);
+    const T = (o) =>
+        Object.assign({ wer: "felsturm#174", ort: "-913.7/-900.7", bild: "1.4×0.8×0.9", box: "4.4×16.8×4.4" }, o);
     const faelle = [
         [
             "Felsturm als Eisen-Mast",
@@ -122,7 +152,11 @@ function selbsttest() {
             (b) => b.zensus.taeter.push(T({ wer: "haus_alemannisch#9", art: "bild", mass: 1.2 })),
             /\(U\) BILD OHNE BLOCKER: haus_alemannisch#9 .* 1\.20 m neben/,
         ],
-        ["Baum ohne Stamm", (b) => b.zensus.taeter.push(T({ wer: "baum_eiche#3", art: "stamm" })), /BAUM OHNE STAMM: baum_eiche#3/],
+        [
+            "Baum ohne Stamm",
+            (b) => b.zensus.taeter.push(T({ wer: "baum_eiche#3", art: "stamm" })),
+            /BAUM OHNE STAMM: baum_eiche#3/,
+        ],
         [
             "fremde Gestalt",
             (b) => b.zensus.taeter.push(T({ art: "gestalt", bildG: 3, blockG: 7 })),
@@ -130,11 +164,45 @@ function selbsttest() {
         ],
         ["leere Zählung", (b) => (b.zensus.werke = 0), /LEER: die Zählung fand kein Werk/],
         ["stumpfer Schmuggel", (b) => (b.schmuggel.genannt = false), /LINSE STUMPF: \(T\)/],
+        [
+            "stumpfer Tor-Schmuggel",
+            (b) => (b.schmuggelTor.genannt = false),
+            /LINSE STUMPF: \(T\) das Tor ohne seinen ersten Pfosten .* \(welt_fachwerk#9\)/,
+        ],
         ["fehlende Klasse", (b) => delete b.exemplare.felsbogen, /\(E\) KLASSE FEHLT: das Exemplar felsbogen/],
         ["Typ-Liste", (b) => (b.quelle.felsOhneTypListe = false), /\(Q\) QUELLE: der Fels-Zweig .* Typ-Liste/],
-        ["Fels ohne Skala", (b) => (b.quelle.felsSkala = false), /\(Q\) QUELLE: der Fels-Zweig liest die Welt-Skala nicht/],
+        [
+            "Fels ohne Skala",
+            (b) => (b.quelle.felsSkala = false),
+            /\(Q\) QUELLE: der Fels-Zweig liest die Welt-Skala nicht/,
+        ],
         ["Parts ohne Skala", (b) => (b.quelle.partsSkala = false), /\(Q\) QUELLE: der Parts-Pfad liest/],
-        ["Hand-Spiegel", (b) => (b.quelle.ohneSpiegel = false), /\(Q\) QUELLE: der Hand-Spiegel STUDIO_WORLD_SCALE lebt/],
+        [
+            "Hand-Spiegel",
+            (b) => (b.quelle.ohneSpiegel = false),
+            /\(Q\) QUELLE: der Hand-Spiegel STUDIO_WORLD_SCALE lebt/,
+        ],
+        [
+            "Tor gebaut am Spawn",
+            (b) => b.bauten.push("__portaCore.buildInstance(drachentor) am Spawn von tor_drachentor"),
+            /\(K\) DER HAUPT-THREAD BAUT: __portaCore\.buildInstance\(drachentor\) am Spawn von tor_drachentor/,
+        ],
+        ["Bau-Zählung fehlt", (b) => delete b.bauten, /LEER: \(K\) die Zählung der Haupt-Thread-Bauten fehlt/],
+        [
+            "Tor ohne Tafel",
+            (b) => (b.quelle.torTafel = false),
+            /\(Q\) QUELLE: das Tor liest seine Hülle nicht aus dem Gesetzbuch/,
+        ],
+        [
+            "Bau im Erzeuger",
+            (b) => (b.quelle.ohneBau = false),
+            /\(Q\) QUELLE: ein Blocker-Erzeuger ruft `buildInstance`/,
+        ],
+        [
+            "Tor-Bild ohne Box neben der Passage",
+            (b) => b.zensus.taeter.push(T({ wer: "tor_ruine#7", art: "bild", mass: 0.62 })),
+            /\(U\) BILD OHNE BLOCKER: tor_ruine#7 .* 0\.62 m neben/,
+        ],
         ["Page-Error", (b) => b.pageErrors.push("TypeError: x"), /PAGE-ERROR: TypeError: x/],
     ];
     for (const [name, tat, muss] of faelle) {
@@ -214,34 +282,65 @@ async function probe(K) {
         if (i > 300 && stabil > 120 && !(st.voxelMeshPending && st.voxelMeshPending.size > 0)) break;
         if (i % 5 === 0) await pause(10);
     }
-    const aus = { ring: last, exemplare: {}, zensus: { werke: 0, taeter: [], klassen: {} }, quelle: {}, schmuggel: null };
+    const aus = {
+        ring: last,
+        exemplare: {},
+        zensus: { werke: 0, taeter: [], klassen: {} },
+        quelle: {},
+        schmuggel: null,
+    };
+    // (K) DIE BAUTEN DES HAUPT-THREADS: jeder Kern mit einer Bau-Funktion wird gezählt, solange die Exemplare entstehen
+    // (Spawn und Bau-Takte) — mit kaltem Tor-Gedächtnis, wie bei der Ankunft (der Genesis-Ring) und jedem Restore
+    const bauten = [];
+    let amSpawn = null;
+    const rohBau = [];
+    for (const ns of Object.keys(globalThis)) {
+        const kern = /^__\w+Core$/.test(ns) ? globalThis[ns] : null;
+        if (!kern || typeof kern.buildInstance !== "function") continue;
+        const roh = kern.buildInstance;
+        rohBau.push([kern, roh]);
+        kern.buildInstance = function (id) {
+            if (bauten.length < 40)
+                bauten.push(`${ns}.buildInstance(${id}) ${amSpawn ? "am Spawn von " + amSpawn : "im Takt"}`);
+            return roh.apply(this, arguments);
+        };
+    }
+    r._torGesetzMemo = null;
     // (E) DIE EXEMPLARE: je Klasse eines in einer Reihe 30 m südlich der Mess-Wiese (Abstand 9 m)
     const gesetzt = [];
-    K.exemplare.forEach((typ, i) => {
-        const x = MW.x - 50 + i * 9;
-        const z = MW.z + 30;
-        if (!st.blueprints[typ]) {
-            aus.exemplare[typ] = "kein Bauplan";
-            return;
+    try {
+        K.exemplare.forEach((typ, i) => {
+            const x = MW.x - 50 + i * 9;
+            const z = MW.z + 30;
+            if (!st.blueprints[typ]) {
+                aus.exemplare[typ] = "kein Bauplan";
+                return;
+            }
+            amSpawn = typ;
+            const e = r.spawnArchitecture(
+                typ,
+                { x, y: r.getTerrainHeightAt(x, z) + 0.5, z },
+                { silent: true, precise: true, rotationY: 0.6 + i * 0.37 }
+            );
+            amSpawn = null;
+            if (e) gesetzt.push([typ, e]);
+            else aus.exemplare[typ] = "Spawn verweigert";
+        });
+        // die Exemplare bauen (das Studio liefert die Gestalt, das Haus seine Hülle)
+        for (let i = 0; i < 900; i++) {
+            takt();
+            if (i % 4 === 0) await pause(10);
+            if (i > 120 && gesetzt.every(([, e]) => e.instanced || e.mesh || e._bauSatz)) break;
         }
-        const e = r.spawnArchitecture(
-            typ,
-            { x, y: r.getTerrainHeightAt(x, z) + 0.5, z },
-            { silent: true, precise: true, rotationY: 0.6 + i * 0.37 }
-        );
-        if (e) gesetzt.push([typ, e]);
-        else aus.exemplare[typ] = "Spawn verweigert";
-    });
-    // die Exemplare bauen (das Studio liefert die Gestalt, das Haus seine Hülle)
-    for (let i = 0; i < 900; i++) {
-        takt();
-        if (i % 4 === 0) await pause(10);
-        if (i > 120 && gesetzt.every(([, e]) => e.instanced || e.mesh || e._bauSatz)) break;
+        for (let i = 0; i < 240; i++) {
+            takt();
+            if (i % 4 === 0) await pause(10);
+        }
+    } finally {
+        for (const [kern, roh] of rohBau) kern.buildInstance = roh;
     }
-    for (let i = 0; i < 240; i++) {
-        takt();
-        if (i % 4 === 0) await pause(10);
-    }
+    aus.bauten = bauten;
+    aus.offen = [];
     // DAS BILD einer Gestalt (LOD 0 im Vorlagen-Raum), je Art|Gestalt einmal
     const bildCache = new Map();
     const bild = async (pr, g) => {
@@ -333,7 +432,10 @@ async function probe(K) {
         const funde = [];
         // (G) die Gestalt des Fels-Blockers gegen die gezeichnete
         if (kind === "rock") {
-            const kern = typeof r.constructor._studioGestaltenKern === "function" ? r.constructor._studioGestaltenKern(pr) : undefined;
+            const kern =
+                typeof r.constructor._studioGestaltenKern === "function"
+                    ? r.constructor._studioGestaltenKern(pr)
+                    : undefined;
             const gB = r._foundryVariantFor(e.seed, pr, kern);
             if (gB !== g) funde.push({ art: "gestalt", wer, ort, bildG: g, blockG: gB });
         }
@@ -360,21 +462,31 @@ async function probe(K) {
             }
             const sd = Math.max(a0 + R.hx, R.hx - a1, q0 + R.hz, R.hz - q1);
             const od = b.topY - y1;
-            if (sd > seite || od > oben) boxTxt = (2 * R.hx).toFixed(1) + "×" + (b.topY - b.botY).toFixed(1) + "×" + (2 * R.hz).toFixed(1);
+            if (sd > seite || od > oben)
+                boxTxt = (2 * R.hx).toFixed(1) + "×" + (b.topY - b.botY).toFixed(1) + "×" + (2 * R.hz).toFixed(1);
             if (sd > seite) seite = sd;
             if (od > oben) oben = od;
         }
         const obenTol = Math.max(K.SEITE_M, K.OBEN_ANTEIL * (y1 - y0));
-        if (seite > K.SEITE_M) funde.push({ art: "blocker", wer, ort, mass: seite, wo: "seitlich", bild: bildTxt, box: boxTxt });
-        else if (oben > obenTol) funde.push({ art: "blocker", wer, ort, mass: oben, wo: "oben", bild: bildTxt, box: boxTxt });
-        // (U) das Bild im Körper-Band gegen die Boxen (feste Werke)
-        let neben = 0;
+        if (seite > K.SEITE_M)
+            funde.push({ art: "blocker", wer, ort, mass: seite, wo: "seitlich", bild: bildTxt, box: boxTxt });
+        else if (oben > obenTol)
+            funde.push({ art: "blocker", wer, ort, mass: oben, wo: "oben", bild: bildTxt, box: boxTxt });
+        // (U) das Bild im Körper-Band gegen die Boxen (feste Werke). DIE PASSAGE des Tors (|x| < rimAx im Vorlagen-Raum) ist
+        // nach dem Gesetz frei — dort öffnen sich die Flügel vor dem Körper (TUER_GESETZ); gemessen 10.10.: die einzigen
+        // Punkte des Tor-Bilds ohne Box lagen dort (x ≈ 0, 0,1–2,0 m, die Fuge der geschlossenen Flügel), 1,27–1,49 m neben
+        // dem Pfosten.
+        const torG = kind === "gate" ? r._torGesetzFor(e) : null;
+        const passage = torG && torG.mu ? torG.mu.rimAx : 0;
+        let neben = 0,
+            nebenWo = null;
         if (FEST_KIND.has(kind)) {
             if (!B.length) neben = Infinity;
             else
                 for (let i = 0; i < W.length; i += 3) {
                     const hy = W[i + 1] - basis;
                     if (hy < 0.1 || hy > K.KOERPER_BAND_M) continue;
+                    if (passage > 0 && Math.abs(pts[i]) < passage) continue;
                     let best = Infinity;
                     for (const b of B) {
                         const R = rahmen(b);
@@ -390,13 +502,28 @@ async function probe(K) {
                         if (d < best) best = d;
                         if (best === 0) break;
                     }
-                    if (best > neben) neben = best;
+                    if (best > neben) {
+                        neben = best;
+                        nebenWo = [pts[i] * ws, pts[i + 1] * ws, pts[i + 2] * ws];
+                    }
                 }
-            // die Hülle leitet der Wirt aus der gezeichneten Gestalt ab (Fels): das ganze Bild im Band ist gedeckt; die festen
-            // Teile der anderen Werke erklärt ihr Gesetzbuch (Haus `__huelle`, Tor das porta-Gesetz, Wagen exportDrive,
-            // Ausstattung ihre Teile) — dort trägt das Bild mindestens EINE Box, die Zahl steht in der Tabelle
+            // Fels, Tor und Wagen messen ihre Hülle an der gezeichneten Gestalt: das ganze Bild im Band ist gedeckt (das Tor
+            // außer der Passage). Haus und Ausstattung erklärt ihr Gesetzbuch (`__huelle`, die Teile) nicht ganz als fest —
+            // ihr Abstand ist OFFEN (Zahl und Ort im Werk-Rahmen), nie grün gezählt
             if (neben === Infinity || (K.STRENG.includes(kind) && neben > K.SEITE_M))
                 funde.push({ art: "bild", wer, ort, mass: neben, bild: bildTxt });
+            else if (merke && neben > K.SEITE_M) {
+                const neu = {
+                    typ: e.type,
+                    kind,
+                    wer,
+                    mass: +neben.toFixed(2),
+                    wo: nebenWo.map((v) => v.toFixed(1)).join("/"),
+                };
+                const k = aus.offen.findIndex((x) => x.typ === e.type);
+                if (k < 0) aus.offen.push(neu);
+                else if (neu.mass > aus.offen[k].mass) aus.offen[k] = neu;
+            }
         }
         if (merke) {
             const kl = aus.zensus.klassen[e.type.replace(/_v?\d+$/, "#") + "→" + pr] || {
@@ -424,7 +551,8 @@ async function probe(K) {
         const ex = gesetzt.find(([, x]) => x === e);
         if (ex) aus.exemplare[ex[0]] = true;
     }
-    for (const [typ, e] of gesetzt) if (aus.exemplare[typ] !== true) aus.exemplare[typ] = e.instanced || e.mesh ? "kein Bild" : "nicht gebaut";
+    for (const [typ, e] of gesetzt)
+        if (aus.exemplare[typ] !== true) aus.exemplare[typ] = e.instanced || e.mesh ? "kein Bild" : "nicht gebaut";
     // (T) DER EINGESCHMUGGELTE TÄTER: ein Felsturm mit den Spender-Parts (die alte Regel, Vorlagen-Maß)
     const turm = st.architectures.find((e) => e && e.type === "felsturm" && e.blockerAABBs && e.blockerAABBs.length);
     if (turm) {
@@ -443,16 +571,42 @@ async function probe(K) {
         turm.blockerAABBs = alt;
         r._blockerStampReach(turm);
     }
+    // (T) DER ZWEITE TÄTER: ein Tor ohne seinen ersten Pfosten (die Ruine — eine Seite trägt den Schutt) — (U) MUSS ihn außerhalb
+    // der Passage beim Namen nennen (die Strenge des Tors ist nicht vakuös)
+    const tor = (gesetzt.find(([typ]) => typ === "welt_fachwerk") || [])[1];
+    if (tor && tor.blockerAABBs && tor.blockerAABBs.length > 1) {
+        const alt = tor.blockerAABBs;
+        tor.blockerAABBs = alt.slice(1);
+        const funde = (await urteileWerk(tor, false)) || [];
+        aus.schmuggelTor = {
+            wer: tor.type + "#" + tor.id,
+            genannt: funde.some((t) => t.art === "bild" && t.wer === tor.type + "#" + tor.id),
+            funde: funde.map((t) => t.art + " " + (t.mass ? t.mass.toFixed(2) : "")),
+        };
+        tor.blockerAABBs = alt;
+    }
     // (Q) DIE QUELLE (kommentarfrei)
     const code = (fn) => (typeof fn === "function" ? window.__codeOf(fn) : "");
     const fels = code(r._felsBlockerParts);
     const pba = code(r._populateBlockerAABBs);
     aus.quelle = {
         felsOhneTypListe: fels.length > 0 && !/_var/.test(fels),
-        felsSkala: /_felsBlockerParts\(entry\)[\s\S]*?_studioWeltSkala\(entry\)[\s\S]*?_blockerComputePartAABB\(entry, part, kFels\)/.test(pba),
+        felsSkala:
+            /_felsBlockerParts\(entry\)[\s\S]*?_studioWeltSkala\(entry\)[\s\S]*?_blockerComputePartAABB\(entry, part, kFels\)/.test(
+                pba
+            ),
         partsSkala: /const kWelt = this\._studioWeltSkala\(entry\)/.test(pba),
-        ohneSpiegel: !("STUDIO_WORLD_SCALE" in r.constructor) && !/STUDIO_WORLD_SCALE/.test(code(r._foundryWorldScaleMatrix)),
+        ohneSpiegel:
+            !("STUDIO_WORLD_SCALE" in r.constructor) && !/STUDIO_WORLD_SCALE/.test(code(r._foundryWorldScaleMatrix)),
         gestaltKern: typeof r.constructor._studioGestaltenKern === "function",
+        torTafel: /AnazhRealm\.Gesetz\("porta:TOR_HUELLE\." \+ tor\.gestalt/.test(code(r._torBlockerAABBs)),
+        // die Erzeuger und jede Methode, die sie rufen (eine Stufe tief: der Nachbau lag in einer Hilfs-Methode des Tors)
+        ohneBau: (() => {
+            const erzeuger = ["_populateBlockerAABBs", "_torBlockerAABBs", "_felsBlockerParts", "_hausBlockerBoxen"];
+            const namen = new Set(erzeuger);
+            for (const n of erzeuger) for (const m of code(r[n]).matchAll(/this\.(_\w+)\(/g)) namen.add(m[1]);
+            return ![...namen].some((n) => /buildInstance|buildGate/.test(code(r[n])));
+        })(),
     };
     return aus;
 }
@@ -502,20 +656,34 @@ async function probe(K) {
     }
     befund.pageErrors = pageErrors;
     console.log(`  Ring ${befund.ring} Chunks · ${befund.zensus.werke} Studio-Werke gezählt`);
-    console.log("  Klasse (Typ→Gestalt)                     n   Blocker ohne Bild seitlich/oben (m)   Bild ohne Blocker (m)");
-    for (const [k, kl] of Object.entries(befund.zensus.klassen).sort((a, b) => b[1].seiteMax + b[1].obenMax - a[1].seiteMax - a[1].obenMax))
+    console.log(
+        "  Klasse (Typ→Gestalt)                     n   Blocker ohne Bild seitlich/oben (m)   Bild ohne Blocker (m)"
+    );
+    for (const [k, kl] of Object.entries(befund.zensus.klassen).sort(
+        (a, b) => b[1].seiteMax + b[1].obenMax - a[1].seiteMax - a[1].obenMax
+    ))
         console.log(
             `  ${k.padEnd(40)} ${String(kl.n).padStart(4)}   ${kl.seiteMax.toFixed(2).padStart(6)} / ${kl.obenMax.toFixed(2).padEnd(6)}` +
                 `                 ${kl.nebenMax.toFixed(2)}`
         );
     console.log(`  Exemplare: ${JSON.stringify(befund.exemplare)}`);
-    console.log(`  Schmuggel (T): ${JSON.stringify(befund.schmuggel)}`);
+    console.log(`  Schmuggel (T): ${JSON.stringify(befund.schmuggel)} · Tor: ${JSON.stringify(befund.schmuggelTor)}`);
+    console.log(`  Bauten des Haupt-Threads (K): ${(befund.bauten || []).length}`);
     console.log(`  Quelle: ${JSON.stringify(befund.quelle)}`);
+    // OFFEN (nie grün gezählt): Haus und Ausstattung — Bild im Körper-Band ohne Box, Zahl und Ort im Werk-Rahmen (x/y/z)
+    for (const o of befund.offen || [])
+        console.log(
+            `  OFFEN (U) ${o.kind}: ${o.wer} — das Bild steht ${o.mass.toFixed(2)} m neben jeder Box (bei ${o.wo})`
+        );
     const v = urteil(befund);
     if (v.length) {
         console.log("\n❌ KOLLISION = BILD ROT:\n  " + v.join("\n  "));
         process.exit(1);
     }
-    console.log("\n✅ KOLLISION = BILD GRÜN — jede Box hat ihr Bild, jedes feste Bild seine Box, der Fels misst seine Gestalt.");
+    console.log(
+        "\n✅ KOLLISION = BILD GRÜN — jede Box hat ihr Bild; Fels, Tor (außer der Passage) und Wagen: jedes Bild im Körper-Band " +
+            "liegt an einer Box; jedes feste Werk trägt Boxen; kein Blocker baut eine Gestalt auf dem Haupt-Thread" +
+            ((befund.offen || []).length ? ` — OFFEN: ${befund.offen.length} Werk(e) mit Bild ohne Box (oben)` : "")
+    );
     process.exit(0);
 })();

@@ -523,6 +523,24 @@
     // byte-gleich: kalter Kern -> das alte Literal).
     var TUER_GESETZ = { offen: 1.95 };
 
+    // DIE TOR-HUELLE (Leben-Schau 2, Nachbesserung 10.10. — rein additive DATEN, wie die Fels-Huellen fx.huellen im
+    // terrain-Kern): je Rezept die Masse der gezeichneten Gestalt (buildInstance LOD 0, seed-invariant), mit denen der
+    // Wirt das Tor stossen laesst. Je Seite (0: x < 0, 1: x > 0) [pfostenX, pfostenZ, obenX, obenZ]: die Aussenkante der
+    // Pfosten ausserhalb der Oeffnung (±rimAx, 0,1 m bis zur Kaempferlinie) und ihre Tiefe, darueber Aussenkante und
+    // Tiefe des Rahmens; dazu die Oberkante — auf den cm nach aussen gerundet. Bis dahin baute der Wirt die Gestalt beim
+    // ersten Spawn jeder Gestalt synchron auf dem Haupt-Thread nach. Gemintet und gemessen von gate:porta-contract
+    // (scripts/lib/tor-huelle.cjs, Mint-Treue je Zahl); der Bau liest sie nie.
+    // prettier-ignore
+    var TOR_HUELLE = {
+        drachentor: { seiten: [[2.7, 1.62, 2.69, 1.61], [2.7, 1.62, 2.69, 1.61]], oberkante: 8.01 },
+        kathedrale: { seiten: [[3.29, 2.81, 3.27, 2.81], [3.29, 2.81, 3.27, 2.8]], oberkante: 8.57 },
+        maschine: { seiten: [[2.67, 1.33, 2.66, 1.33], [2.67, 1.33, 2.66, 1.33]], oberkante: 7.14 },
+        geisttor: { seiten: [[2.36, 1.35, 2.36, 1.35], [2.36, 1.35, 2.36, 1.35]], oberkante: 7.4 },
+        verkalkt: { seiten: [[2.61, 1.81, 2.6, 1.81], [2.61, 1.81, 2.6, 1.81]], oberkante: 7.36 },
+        ruine: { seiten: [[5.78, 1.87, 4.18, 1.87], [5.29, 1.87, 4.18, 1.86]], oberkante: 6.83 },
+        maurentor: { seiten: [[2.93, 1.75, 2.92, 1.75], [2.93, 1.75, 2.92, 1.75]], oberkante: 7.03 },
+    };
+
     // GLUT_GESETZ — Lab+Host portal PointLight (·126). Same numbers as porta.js / _tickPortalLicht.
     var GLUT_GESETZ = {
         color: 0xffd9a0,
@@ -657,6 +675,7 @@
         membranPalette: membranPalette,
         MEMBRAN_GESETZ: MEMBRAN_GESETZ,
         TUER_GESETZ: TUER_GESETZ,
+        TOR_HUELLE: TOR_HUELLE,
         GLUT_GESETZ: GLUT_GESETZ,
         glutIntensity: glutIntensity,
         NEBEL_GESETZ: NEBEL_GESETZ,
