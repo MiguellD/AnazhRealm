@@ -418,10 +418,15 @@ function bissReichVerdict(R, reh) {
             `biss-reh: ${reh.bisse} Bisse aus ${reh.anspruenge} Ansprüngen auf ein stehendes Reh (Soll ≥ ${REH_SOLL.bisse} von ${reh.versuche}) — ${JSON.stringify(reh.je)}`
         );
     const K = reh && reh.kopfSumme;
+    const KL = K && Array.isArray(K.klemme) ? K.klemme : null;
     if (!K) v.push("biss-kopf keine Probe (Wolf vor dem Reh, Pose still)");
     else if (!(Math.abs(K.rest) >= REH_SOLL.kopfRest))
         v.push(
             `biss-kopf-probe: der erste Rest ist ${K.rest} rad — die Pose weist schon aufs Ziel, die Probe trägt nicht`
+        );
+    else if (!(KL && K.rest >= KL[0] + REH_SOLL.kopfRest && K.rest <= KL[1] - REH_SOLL.kopfRest))
+        v.push(
+            `biss-kopf-probe: der erste Rest ${K.rest} rad steht an der Klemme ${JSON.stringify(KL)} — dort zeigt sich keine Summe, die Probe trägt nicht`
         );
     else if (!(K.drift <= REH_SOLL.kopfDrift))
         v.push(
@@ -2695,12 +2700,17 @@ async function WELLE_L() {
                         }
                     }
                     // DIE REST-SUMME (Nachbesserung 3, deterministisch): der Wolf 1,3 m vor dem Reh in der Stand-Pose, eine Biss-Geste
-                    // offen; zehnmal das Zielen des Kopfs (_kreaturBissKopf) ohne Takt dazwischen — die gezeigte Pose steht still
+                    // offen; zehnmal das Zielen des Kopfs (_kreaturBissKopf) ohne Takt dazwischen — die gezeigte Pose steht still.
+                    // Beide Leiber stehen in der STAND-POSE des Kerns (_tierBaumNeutralStance, Nachbesserung 4): vorher trug der Wolf
+                    // die Haltung seines letzten Ansprungs — der erste Rest schwankte je Lauf 0,31–1,0 rad und stand oft an der
+                    // Klemme (BISS.kopfNeigung), wo eine Summe sich nie zeigt (die Wand war dort vakuös).
                     if (j2 && r2 && ortR && j2.userData._tierBaum) {
                         const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };
                         r2.position.set(R0.x, r.getTerrainHeightAt(R0.x, R0.z), R0.z);
                         j2.position.set(R0.x, r.getTerrainHeightAt(R0.x, R0.z - 1.3), R0.z - 1.3);
                         j2.rotation.set(0, 0, 0);
+                        r._tierBaumNeutralStance(j2);
+                        r._tierBaumNeutralStance(r2);
                         const gang = j2.userData._tierBaum._gang || (j2.userData._tierBaum._gang = {});
                         gang.bissKopf = 0;
                         gang.bissRumpf = 0;
@@ -2720,6 +2730,7 @@ async function WELLE_L() {
                                 rest: reihe[0],
                                 drift: +(Math.max(...reihe) - Math.min(...reihe)).toFixed(6),
                                 reihe: reihe.slice(0, 4),
+                                klemme: A._bissGesetz().kopfNeigung.slice(),
                             };
                     }
                     if (j2) r.removeCreature(j2);
@@ -4091,7 +4102,7 @@ async function WELLE_L() {
                 bisse: 0,
                 takte: 61,
                 klemme: 14,
-                kopfSumme: { takte: 10, rest: 0.31, drift: 0.69, reihe: [0.31, 0.62, 0.93, 1] },
+                kopfSumme: { takte: 10, rest: 0.31, drift: 0.69, reihe: [0.31, 0.62, 0.93, 1], klemme: [-0.6, 1] },
                 boden: {},
                 je: { 1.3: { anspruenge: 3, bisse: 0 } },
             }
@@ -4114,17 +4125,30 @@ async function WELLE_L() {
                 bisse: 6,
                 takte: 70,
                 klemme: 8,
-                kopfSumme: { takte: 10, rest: 0.31, drift: 0, reihe: [0.31, 0.31, 0.31, 0.31] },
+                kopfSumme: { takte: 10, rest: 0.31, drift: 0, reihe: [0.31, 0.31, 0.31, 0.31], klemme: [-0.6, 1] },
+                boden: {},
+                je: {},
+            }
+        );
+        // der Befund Gegenprüfung 3: der erste Rest an der Klemme 1,0 — die alte Summe zeigte dort 1 → 1 → 1 (drift 0)
+        const brvKlemme = bissReichVerdict(
+            { gestaltenJeTakt: 0, msJeTakt: 0, simsAnspruenge: 0, kaltZerlegt: 0 },
+            {
+                versuche: 6,
+                anspruenge: 6,
+                bisse: 6,
+                kopfSumme: { takte: 10, rest: 1, drift: 0, reihe: [1, 1, 1, 1], klemme: [-0.6, 1] },
                 boden: {},
                 je: {},
             }
         );
         check(
             brvGut.length === 0 &&
+                brvKlemme.some((x) => x.startsWith("biss-kopf-probe:") && /Klemme/.test(x)) &&
                 ["biss-kosten:", "biss-sims:", "biss-reh:", "biss-kopf:", "biss-kalt:"].every((t) =>
                     brvAlt.some((x) => x.startsWith(t))
                 ),
-            "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert, 2 kalte Gattungen zerlegt) nennen Kosten, Sims, Reh, Kopf und Kälte; ein Biss nur in Reichweite, der trifft, bleibt grün"
+            "Selbst-Test T24: die Befunde (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh, ein Kopf-Ziel, das ohne Pose-Fortschritt 0,69 rad wandert, 2 kalte Gattungen zerlegt) nennen Kosten, Sims, Reh, Kopf und Kälte; ein erster Rest an der Klemme (1,0) heißt vakuös; ein Biss nur in Reichweite, der trifft, bleibt grün"
         );
         check(
             c.bogenVerschleiss,
