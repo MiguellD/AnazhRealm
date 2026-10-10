@@ -1,0 +1,12 @@
+=== EGO-SCHATTEN — der Leib wirft in der Ego-Sicht, das Auge sieht ihn nicht ===
+  [9 s] Renderer und Leib (human) bereit nach 8 s
+  [15 s] Bühne 5 s (Erst-Zeichnung 2 s, echte Regel 0 s, Gegenprobe 0 s) · Leib 14 Meshes, 8 werfen · Auge 2.19 m über dem Fuß · 1 Schatten-Kameras im Vertrag
+  [15 s] 3rd-Person: Schatten 698 px, Leib im Bild 1078 px
+  [15 s] Ego (Kopf): {"ego":{"wurf":698,"leibPx":0,"leibAufNull":0},"iou":1,"geraet":true,"zwilling":true,"zurueck":true}
+  [15 s] Gegenprobe „main: visible": {"ego":{"wurf":0,"leibPx":0,"leibAufNull":0},"iou":0,"geraet":true,"zwilling":true,"zurueck":true}
+  [15 s] Gegenprobe „Ebene 0 bleibt": {"ego":{"wurf":698,"leibPx":1078,"leibAufNull":8},"iou":1,"geraet":true,"zwilling":0,"zurueck":"nach 1st → 3rd tragen 1 Knoten eine andere Maske, 0 eine andere Sichtbarkeit (die Regel schaltet visible oder gibt die Maske nicht zurück)"}
+  [15 s] Gegenprobe „fremde Ebene": {"ego":{"wurf":0,"leibPx":0,"leibAufNull":0},"iou":0,"geraet":true,"zwilling":true,"zurueck":true}
+  [15 s] Gegenprobe „das Gerät mit": {"ego":{"wurf":698,"leibPx":0,"leibAufNull":0},"iou":1,"geraet":4,"zwilling":true,"zurueck":true}
+  [15 s] Gegenprobe „Zwilling geweckt": {"ego":{"wurf":698,"leibPx":0,"leibAufNull":0},"iou":1,"geraet":true,"zwilling":1,"zurueck":"nach 1st → 3rd tragen 1 Knoten eine andere Maske, 0 eine andere Sichtbarkeit (die Regel schaltet visible oder gibt die Maske nicht zurück)"}
+
+✅ GRÜN — in der Ego-Sicht wirft der Leib 698 px Schatten am Boden, IoU 1 gegen dieselbe Pose in der 3rd-Person (698 px); die Haupt-Kamera sieht 0 Bildpunkte Leib, kein Leib-Mesh liegt auf Ebene 0; das Gerät bleibt auf Ebene 0, ein Zwilling bleibt in den Kaskaden, 3rd gibt jede Maske zurück, visible wechselt nie; die 5 Gegenproben fallen je beim Namen (LEIB WIRFT NICHT · AUGE · LEIB WIRFT NICHT · GERÄT · ZWILLING).
