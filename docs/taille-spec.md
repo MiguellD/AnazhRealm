@@ -101,19 +101,27 @@ Kein Import-Pfad übernimmt Abgeleitetes als Wahrheit:
   darüber ihr eigenes (`_weltMetaWechsel`, der Restore jedes Ladens). Aus der Welt davor reist
   nur, was `AnazhRealm.WELT_GRENZE` beim Namen nennt: in die Lücken einer geladenen Welt ihr
   Speicher-Platz (`worldId`, `slug`, `bornAt` — beim Boot der Platz der aktiven Welt: ein Save
-  ohne `worldId` oder ohne `worldMeta` ist die Welt DIESES Platzes, der Boot vergibt ihm keine
-  neue Id), in eine neue Welt die Wahl des Schöpfers (`visibility`, `creator`); die
-  Gedächtnisse der Seite, die welt-eigene Felder spiegeln, fallen mit dem `worldMeta`.
-- **Die Tür:** eine andere Welt betritt die Seite nur durch `_weltBetreten` (Welt-Tor
-  ersetzen, Snapshot eines Mitspielers, world-pull) — nie lädt die Seite sie in sich, und
-  `loadState` legt nichts im Speicher ab. Ohne `worldId` bekommt sie ihre eigene, nie den Platz
-  der Welt davor (die Welt davor bleibt unter ihrer Id); sie liegt, wie sie kam, unter ihrer Id
-  (`_weltAblegen`, mit Probe). Misslingt die Ablage (Quota), bleibt die Seite in ihrer Welt und
-  sagt es laut — kein Reload in einen alten Stand. Jeder Welt-Wechsel (Tür, Neue Welt, Wechsel,
-  daneben-und-springen, Fusion, Beitritt per Einladung und Adress-Portal) lädt über
-  `_weltWechselNeuLaden` neu: ab dort verweigert `saveState` — jeder Speicher-Weg der lebenden
-  Welt geht durch ihn —, bis die Seite stirbt; der Speicher trägt nie die Mischung der Seite und
-  der Aktiv-Zeiger nie die alte Welt (`gate:weltgrenze`).
+  ohne `worldId` oder ohne `worldMeta` ist die Welt DIESES Platzes), in eine neue Welt die Wahl
+  des Schöpfers (`visibility`, `creator`); die Gedächtnisse der Seite, die welt-eigene Felder
+  spiegeln, fallen mit dem `worldMeta`.
+- **Die Rettungs-Kette:** der Speicher liest eine Welt durch EINE Kette (`_weltRettungsKette`):
+  der Platz (IndexedDB gewinnt nur, wenn er nachweislich frischer ist), fehlt er oder ist er
+  korrupt der `.bak`, sonst IndexedDB. Der Boot fragt sie, BEVOR er eine neue Id vergibt; eine
+  neue Welt erwacht nur, wenn alle drei leer sind — und dann laut (Log + Chat: was gefunden,
+  warum frisch; `gate:boot-rettung`).
+- **Die Tür:** eine fremde Welt betritt Seite und Speicher nur durch `_weltBetreten` (Welt-Tor
+  ersetzen und daneben legen, Snapshot eines Mitspielers, world-pull, Beitritt per Einladung und
+  Adress-Portal über `_importGuestWorld`, dessen Gast-Felder Parameter der Tür sind) — nie lädt
+  die Seite sie in sich, und `loadState` legt nichts im Speicher ab. Zuerst sichert sich die Welt
+  der Seite (sie ist noch ganz sie selbst); ohne `worldId` bekommt die neue ihre eigene
+  (`_neueWeltId`), nie den Platz der Welt davor (die bleibt unter ihrer Id); sie liegt, wie sie
+  kam, unter ihrer Id (`_weltAblegen`, mit Probe — die EINE Ablage, neben saveState der einzige
+  Schreiber einer ganzen Welt; auch Geburt, Fusion und Legacy-Migration legen durch sie ab).
+  Misslingt die Ablage (Quota), bleibt die Seite in ihrer Welt und sagt es laut — kein Reload in
+  einen alten Stand. Jeder Welt-Wechsel lädt über `_weltWechselNeuLaden` neu: ab dort verweigert
+  `saveState` laut (WARN; „speichere zustand" sagt es dem Spieler), bis die Seite stirbt; der
+  Speicher trägt nie die Mischung der Seite und der Aktiv-Zeiger nie die alte Welt
+  (`gate:weltgrenze`).
 
 ## §4 · Die Versions-Regel (EINE Semantik)
 

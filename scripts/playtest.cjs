@@ -12036,8 +12036,14 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("W7 P2: ein Stück ohne laufenden Pull wird verworfen", w7p2Results.chunkRejectsWhenNotPending);
         check("W7 P2: Resync ohne Mesh → no_mesh", w7p2Results.resyncNoMesh);
         check("W7 P2: Resync ohne host-Peer → no_host", w7p2Results.resyncNoHost);
-        check("W7 P2: _p2pApplyWorldSnapshot legt die Host-Welt als Gast ab (role guest + hostInfo)", w7p2Results.applyExtractedWorks);
-        check("W7 P2: _p2pApplyWorldSnapshot gibt einer Welt ohne worldId ihre eigene und setzt den Aktiv-Zeiger (die Seite bleibt)", w7p2Results.applySetsActiveWorld);
+        check(
+            "W7 P2: _p2pApplyWorldSnapshot legt die Host-Welt als Gast ab (role guest + hostInfo)",
+            w7p2Results.applyExtractedWorks
+        );
+        check(
+            "W7 P2: _p2pApplyWorldSnapshot gibt einer Welt ohne worldId ihre eigene und setzt den Aktiv-Zeiger (die Seite bleibt)",
+            w7p2Results.applySetsActiveWorld
+        );
         check("W7 P2: world-pull Rate-Limit-Struktur + Cooldown-Konstante", w7p2Results.pullCooldownFields);
         check("W7 P2: Resync-Knopf im DOM", w7p2Results.resyncButtonExists);
     }

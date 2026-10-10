@@ -172,9 +172,21 @@ async function waitFor(page, evalFn, timeoutMs, label, ...args) {
         console.log("Lade beide Spielseiten ...");
         await pageA.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
         await pageB.goto(PAGE_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
-        // Welt + window.anazhRealm initialisieren lassen.
-        await waitFor(pageA, () => !!window.anazhRealm, 15000, "Seite A initialisiert");
-        await waitFor(pageB, () => !!window.anazhRealm, 15000, "Seite B initialisiert");
+        // Welt + window.anazhRealm initialisieren lassen — bis init durchlief (`_gameLoopTick`): init wartet auf den
+        // IndexedDB-Vorlauf, BEVOR es die Welt wählt und die Auto-Verbindung prüft; ein Raum-Beitritt davor fiele in
+        // init hinein (die Auto-Verbindung baute ihn neu).
+        await waitFor(
+            pageA,
+            () => !!window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
+            120000,
+            "Seite A initialisiert"
+        );
+        await waitFor(
+            pageB,
+            () => !!window.anazhRealm && typeof window.anazhRealm._gameLoopTick === "function",
+            120000,
+            "Seite B initialisiert"
+        );
 
         // Beide Seiten in DENSELBEN Raum bringen (worldId unterscheidet sich
         // pro Seite — der roomOverride zwingt sie zusammen).

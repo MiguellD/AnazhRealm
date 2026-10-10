@@ -5416,10 +5416,10 @@ class AnazhRealm {
     }
 
     // Join-Flow: kurzlebige WS, join + world-request, auf world-snapshot warten; die Welt unter der
-    // host-worldId mit role="guest" + hostInfo speichern und aktivieren; den Welt-Wechsel (Sperre, Reload) gehen die Rufer
-    // (Einladung, Adress-Portal) über `_weltWechselNeuLaden`.
+    // host-worldId mit role="guest" + hostInfo durch die Tür `_weltBetreten` ablegen (Sichern, Probe, Sperre, Reload);
+    // `zeugnisA` hält die alte Welt vorher fest (das Adress-Portal).
     // Liefert Promise<{worldId} | null>.
-    async joinWorldFromCode(code, { slugHint = null, timeoutMs = 10000 } = {}) {
+    async joinWorldFromCode(code, { slugHint = null, timeoutMs = 10000, zeugnisA = null } = {}) {
         const parsed = this.parseInvitationCode(code);
         if (!parsed) {
             this.log("Einladungs-Code ungültig", "WARN");
@@ -5486,7 +5486,7 @@ class AnazhRealm {
                     roomId: parsed.roomId,
                     peerId: typeof msg.peerId === "string" ? msg.peerId : null,
                 };
-                const worldId = this._importGuestWorld(msg.state, hostInfo, slugHint);
+                const worldId = this._importGuestWorld(msg.state, hostInfo, slugHint, { neuLaden: true, zeugnisA });
                 finish(worldId ? { ok: true, worldId } : { ok: false, reason: "import_failed" });
             });
             ws.addEventListener("error", () => {
@@ -5497,18 +5497,22 @@ class AnazhRealm {
         });
     }
 
-    // Ring 11.5: Welt-Snapshot vom Host → neue lokale Welt mit role="guest".
-    // worldId wird vom Host übernommen, damit beide Spieler standardmäßig
-    // im selben P2P-Raum landen (Raum = worldId, V2.1).
-    _importGuestWorld(snapshot, hostInfo, slugHint) {
+    // Ring 11.5: Welt-Snapshot vom Host → neue lokale Welt mit role="guest". worldId wird vom Host übernommen, damit beide
+    // Spieler standardmäßig im selben P2P-Raum landen (Raum = worldId, V2.1); ohne Host-Id die EINE Id-Regel
+    // (`_neueWeltId`). Was der Gast Eigenes trägt — der eindeutige slug, role, hostInfo, schemaVersion und die
+    // Auto-Verbindung zum Host —, sind Parameter der EINEN Tür `_weltBetreten` (Sichern, Ablage mit Probe, Sperre). Bis
+    // 10.10. schrieb diese Methode Platz, Index und Zeiger selbst (eigene Id-Regel `guest-<Zeit>`, keine Probe) — eine
+    // zweite Tür neben der ersten. `opts.neuLaden` (Einladung, Adress-Portal: true), `opts.zeugnisA` (das Zeugnis der
+    // alten Welt). → worldId | null
+    _importGuestWorld(snapshot, hostInfo, slugHint, { neuLaden = false, zeugnisA = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return null;
         const erbgutNein = AnazhRealm._erbgutEinlass(snapshot);
         if (erbgutNein) {
             this.log(`Gast-Welt abgelehnt: ${erbgutNein}`, "ERROR");
             return null;
         }
-        const meta = snapshot.worldMeta || {};
-        const worldId = (meta.worldId && String(meta.worldId)) || `guest-${Date.now()}`;
+        const meta = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};
+        const worldId = (meta.worldId && String(meta.worldId)) || AnazhRealm._neueWeltId();
         const baseSlug = (slugHint && String(slugHint).trim()) || meta.slug || "geladen";
         // Slug-Kollisions-Resolution (analog Ring 9 importWorldBeside)
         let slug =
@@ -5524,45 +5528,22 @@ class AnazhRealm {
         while (slugs.has(slug)) {
             slug = `${originalSlug}-${suffix++}`;
         }
-        // Deep clone, role + hostInfo setzen
-        let guestSnap;
-        try {
-            guestSnap = JSON.parse(JSON.stringify(snapshot));
-        } catch (err) {
-            this.log(`Guest-Welt-Clone fehlgeschlagen: ${err.message}`, "ERROR");
+        const h = hostInfo || {};
+        const r = this._weltBetreten(
+            snapshot,
+            {
+                worldId,
+                slug,
+                role: "guest",
+                hostInfo: { url: h.url || null, roomId: h.roomId || worldId, peerId: h.peerId || null },
+                schemaVersion: meta.schemaVersion || "11.5-multiuser-v1",
+            },
+            { neuLaden, zeugnisA, p2pAuto: h.url || AnazhRealm.P2P_DEFAULT_WS_URL }
+        );
+        if (!r.ok) {
+            this.log(`Guest-Welt konnte nicht abgelegt werden: ${r.reason}`, "ERROR");
             return null;
         }
-        if (!guestSnap.worldMeta) guestSnap.worldMeta = {};
-        guestSnap.worldMeta.worldId = worldId;
-        guestSnap.worldMeta.slug = slug;
-        guestSnap.worldMeta.role = "guest";
-        guestSnap.worldMeta.hostInfo = {
-            url: hostInfo.url || null,
-            roomId: hostInfo.roomId || worldId,
-            peerId: hostInfo.peerId || null,
-        };
-        guestSnap.worldMeta.schemaVersion = guestSnap.worldMeta.schemaVersion || "11.5-multiuser-v1";
-        try {
-            localStorage.setItem(this.worldStorageKey(worldId), JSON.stringify(guestSnap));
-        } catch (err) {
-            this.log(`Guest-Welt konnte nicht geschrieben werden: ${err.message}`, "ERROR");
-            return null;
-        }
-        this.worldsIndexUpsert({
-            worldId,
-            slug,
-            bornAt: meta.bornAt || Date.now(),
-            lastPlayed: Date.now(),
-        });
-        // P2P-Settings für Auto-Connect nach Reload schreiben
-        try {
-            localStorage.setItem("anazh.p2p.enabled", "true");
-            localStorage.setItem("anazh.p2p.url", hostInfo.url || AnazhRealm.P2P_DEFAULT_WS_URL);
-            localStorage.setItem("anazh.p2p.room", ""); // default = worldId = sync room
-        } catch {
-            /* defensive */
-        }
-        this.activeWorldSet(worldId);
         this.log(`Guest-Welt importiert: ${slug} (${worldId.slice(0, 8)}…)`, "INFO");
         return worldId;
     }
@@ -13079,31 +13060,77 @@ class AnazhRealm {
     // ensureWorldMeta laufen, sonst feuert der Frisch-Welt-Pfad (UUID + Genesis-Eintrag) für eine
     // existierende Welt. Rein lesend. DER PLATZ IST DIE IDENTITÄT: liegt auf dem Platz der aktiven Welt ein Save ohne
     // worldId oder ohne worldMeta (ein Legacy-Save, ein Bruchstück, abgelegt vor der Tür `_weltBetreten`), ist er die Welt
-    // dieses Platzes — bis 10.10. vergab ensureWorldMeta ihr eine neue Id samt Aktiv-Zeiger, bevor loadState den Platz las,
-    // und die Welt war fort.
+    // dieses Platzes. Sie fragt DIESELBE Rettungs-Kette wie loadState (`_weltRettungsKette`: Platz → .bak → IndexedDB) —
+    // bis 10.10. las sie nur den Platz, und ensureWorldMeta vergab einer Welt, die korrupt mit gültigem .bak oder nur in
+    // IndexedDB lag, eine neue Id samt Aktiv-Zeiger, bevor loadState retten konnte. Findet die Kette nichts, merkt sie den
+    // Befund (`_bootLeer`): die frische Welt erwacht LAUT (init).
     _preloadActiveWorldMeta() {
-        const active = this.activeWorldGet();
-        if (!active) {
-            // Vielleicht hat der User einen Legacy-Save → erst Migration
-            // versuchen, dann erneut Pre-Load.
-            const migrated = this._migrateLegacySingleWorld();
-            if (!migrated) return false;
+        this._bootLeer = null;
+        if (!this.activeWorldGet() && !this._migrateLegacySingleWorld()) {
+            this._bootLeer = { id: null, befund: ["kein Aktiv-Zeiger", "kein Legacy-Save"] };
+            return false;
         }
         const id = this.activeWorldGet();
-        if (!id) return false;
-        try {
-            const raw = localStorage.getItem(this.worldStorageKey(id));
-            if (!raw) return false;
-            const parsed = JSON.parse(raw);
-            if (parsed && typeof parsed === "object") {
-                const wm = parsed.worldMeta && typeof parsed.worldMeta === "object" ? parsed.worldMeta : {};
-                this.state.worldMeta = this._weltMetaWechsel(wm, { ...this.state.worldMeta, worldId: id });
-                return true;
-            }
-        } catch (err) {
-            this.log(`Welt-Vorlade fehlgeschlagen: ${err.message}`, "WARN");
+        const fund = this._weltRettungsKette(id, this._idbVorlage(id));
+        if (!fund.state) {
+            this._bootLeer = { id, befund: fund.befund };
+            return false;
         }
-        return false;
+        const wm = fund.state.worldMeta && typeof fund.state.worldMeta === "object" ? fund.state.worldMeta : {};
+        this.state.worldMeta = this._weltMetaWechsel(wm, { ...this.state.worldMeta, worldId: id });
+        return true;
+    }
+
+    // DIE RETTUNGS-KETTE DES SPEICHERS (EINE, feste Reihenfolge), Leser: die Vorlade des Boots und loadState. Für die Welt
+    // `id`: (1) der Platz; ist er lesbar, gewinnt IndexedDB nur, wenn er nachweislich frischer ist (saveState stempelt
+    // beide, der Index trägt lastPlayed — wie bisher); (2) fehlt der Platz oder ist er korrupt, der .bak (ein Stand zurück,
+    // die Rotation in saveState); (3) sonst IndexedDB. `idb` = {state, at} des Boot-Vorlaufs oder null. Liefert {state,
+    // quelle, befund} — state null nur, wenn alle drei leer oder unlesbar sind, der Befund nennt jedes Glied.
+    _weltRettungsKette(id, idb) {
+        const befund = [];
+        const lies = (roh, name) => {
+            if (roh == null) {
+                befund.push(`${name} leer`);
+                return null;
+            }
+            try {
+                const s = JSON.parse(roh);
+                if (s && typeof s === "object") return s;
+                befund.push(`${name} unlesbar`);
+            } catch (e) {
+                befund.push(`${name} korrupt (${e.message})`);
+            }
+            return null;
+        };
+        let ls = null;
+        let bak = null;
+        try {
+            ls = localStorage.getItem(this.worldStorageKey(id));
+            bak = localStorage.getItem(this.worldStorageKey(id) + ".bak");
+        } catch (e) {
+            befund.push(`localStorage nicht lesbar (${e.message})`);
+        }
+        const platz = lies(ls, "Platz");
+        if (platz) {
+            const eintrag = this.worldsIndexLoad().find((w) => w && w.worldId === id);
+            const lsAt = eintrag && Number.isFinite(eintrag.lastPlayed) ? eintrag.lastPlayed : 0;
+            // IDB gewinnt bei Gleichstand NICHT (saveState schreibt beide im selben Zug; kleiner Takt-Skew soll den
+            // Spiegel nicht entthronen) — nur ECHT frischer.
+            if (idb && idb.state && idb.at > lsAt + 1500)
+                return { state: idb.state, quelle: "IndexedDB (frischer als der Platz)", befund };
+            return { state: platz, quelle: "Platz", befund };
+        }
+        const gerettet = lies(bak, ".bak");
+        if (gerettet) return { state: gerettet, quelle: ".bak (ein Stand zurück)", befund };
+        if (idb && idb.state) return { state: idb.state, quelle: "IndexedDB", befund };
+        befund.push(idb ? `IndexedDB korrupt (${idb.kaputt || "kein Zustand"})` : "IndexedDB leer");
+        return { state: null, quelle: null, befund };
+    }
+
+    // Der IndexedDB-Stand des Boot-Vorlaufs für die Welt `id` (nur lesen; loadState verbraucht ihn).
+    _idbVorlage(id) {
+        const pre = this._idbPreloadedState;
+        return pre && pre.worldId === id ? pre : null;
     }
 
     // Einmalige Migration des Single-Keys `anazhRealmState` → worldId, Multi-Key, Index, aktiv;
@@ -13120,11 +13147,12 @@ class AnazhRealm {
                 worldId = AnazhRealm._neueWeltId();
                 parsed.worldMeta = { ...(parsed.worldMeta || {}), worldId };
             }
-            const slug = (parsed.worldMeta && parsed.worldMeta.slug) || "";
-            const bornAt = (parsed.worldMeta && parsed.worldMeta.bornAt) || Date.now();
-            localStorage.setItem(this.worldStorageKey(worldId), JSON.stringify(parsed));
-            this.worldsIndexUpsert({ worldId, slug, bornAt, lastPlayed: Date.now() });
-            this.activeWorldSet(worldId);
+            // die EINE Ablage (mit Probe); der alte Key fällt erst, wenn die Welt sicher auf ihrem Platz liegt
+            const ab = this._weltAblegen(parsed);
+            if (!ab.ok) {
+                this.log(`Welt-Migration: Ablage fehlgeschlagen (${ab.reason}) — der alte Save bleibt.`, "ERROR");
+                return false;
+            }
             localStorage.removeItem("anazhRealmState");
             this.log(
                 `Welt-Migration: alter Single-Welt-Save → Multi-Welt-Index (worldId=${worldId.slice(0, 8)}…)`,
@@ -13284,19 +13312,11 @@ class AnazhRealm {
         // Voxel ist permanent: das Flag IMMER explizit setzen — nie auf den
         // `_buildEmptyWorldSnapshot`-Spread verlassen (bräche leise bei einer Init-Änderung).
         snap.worldMeta.voxelTerrain = true;
-        try {
-            localStorage.setItem(this.worldStorageKey(meta.worldId), JSON.stringify(snap));
-        } catch (err) {
-            this.log(`Neue Welt konnte nicht geschrieben werden: ${err.message}`, "ERROR");
+        const ab = this._weltAblegen(snap);
+        if (!ab.ok) {
+            this.log(`Neue Welt konnte nicht geschrieben werden: ${ab.reason}`, "ERROR");
             return null;
         }
-        this.worldsIndexUpsert({
-            worldId: meta.worldId,
-            slug: meta.slug,
-            bornAt: meta.bornAt,
-            lastPlayed: Date.now(),
-        });
-        this.activeWorldSet(meta.worldId);
         this.log(
             `Neue Welt erschaffen: ${meta.slug} (${meta.worldId.slice(0, 8)}…, inheritPlayer=${inheritPlayer})`,
             "INFO"
@@ -25572,7 +25592,11 @@ class AnazhRealm {
                 example: "speichere zustand",
                 re: /^speichere\s+zustand(?:\s.*)?$/i,
                 run: (m, append) => {
-                    this.saveState();
+                    // Verweigert die Sperre des Welt-Wechsels, sagt der Befehl es — nie „gespeichert", wenn nichts geschrieben wurde.
+                    if (this.saveState() === false) {
+                        append("Nicht gespeichert: die Seite wechselt gerade die Welt (der Reload läuft).");
+                        return;
+                    }
                     this.saveToProjectFolder().then((result) => {
                         if (result === "server") {
                             append("Zustand gespeichert (direkt im Spielordner + localStorage)");
@@ -41494,42 +41518,33 @@ class AnazhRealm {
         });
     }
 
-    // Boot-Vorlauf (init awaitet ihn VOR loadState): den IDB-Snapshot der aktiven Welt nur behalten, wenn
-    // er FRISCHER ist als der localStorage-Spiegel (worldsIndex.lastPlayed). saveState stempelt beide im
-    // selben Zug — sie laufen nur auseinander, wenn ein Pfad fehlschlug; der überlebende ist die Wahrheit.
+    // Boot-Vorlauf (init awaitet ihn VOR der Vorlade und vor loadState): den IDB-Stand der aktiven Welt lesen und halten —
+    // ob er gewinnt (frischer als der Platz) oder rettet (Platz und .bak leer oder korrupt), entscheidet die EINE
+    // Rettungs-Kette `_weltRettungsKette`. Bis 10.10. lief er erst nach ensureWorldMeta: eine Welt, die nur in IndexedDB
+    // lag, war da schon durch eine frische ersetzt.
     async _idbPreload() {
         this._idbPreloadedState = null;
         const activeId = this.activeWorldGet();
         if (!activeId) return;
         const rec = await this._idbGetWorld(activeId);
         if (!rec) return;
-        let lsAt = 0;
         try {
-            const idx = this.worldsIndexLoad();
-            const entry = Array.isArray(idx) ? idx.find((w) => w && w.worldId === activeId) : null;
-            const hasLs = typeof localStorage !== "undefined" && !!localStorage.getItem(this.worldStorageKey(activeId));
-            lsAt = hasLs && entry && Number.isFinite(entry.lastPlayed) ? entry.lastPlayed : 0;
-        } catch {
-            lsAt = 0;
-        }
-        // IDB gewinnt bei Gleichstand NICHT (saveState schreibt beide im
-        // selben Zug — der Spiegel ist dann identisch; kleiner Takt-Skew
-        // soll den sync-Pfad nicht entthronen). Nur ECHT frischer gewinnt.
-        if (rec.at > lsAt + 1500) {
-            try {
-                this._idbPreloadedState = { worldId: activeId, state: JSON.parse(rec.json) };
-                this.log("Welt-Stand aus IndexedDB (frischer als der localStorage-Spiegel).", "INFO");
-            } catch {
-                this._idbPreloadedState = null;
-            }
+            this._idbPreloadedState = { worldId: activeId, state: JSON.parse(rec.json), at: rec.at };
+        } catch (e) {
+            this._idbPreloadedState = { worldId: activeId, state: null, at: rec.at, kaputt: e.message };
         }
     }
 
+    // → true, wenn der Stand geschrieben wurde (localStorage oder, bei voller Quota, IndexedDB); false, wenn die Sperre
+    // des Welt-Wechsels verweigert — laut, nie still (der Rufer „speichere zustand" sagt es dem Spieler).
     saveState() {
         // DIE SPERRE DES WELT-WECHSELS (`_weltWechselNeuLaden`): die Seite stirbt gleich, ihr Speicher gehört der Ziel-Welt.
         if (this._weltWechselSperre) {
-            this.log("Speichern verweigert: die Seite wechselt die Welt (der Reload läuft).", "DEBUG");
-            return;
+            this.log(
+                "Speichern verweigert: die Seite wechselt die Welt (der Reload läuft) — dieser Stand bleibt ungesichert.",
+                "WARN"
+            );
+            return false;
         }
         const stateToSave = this.buildStateSnapshot();
         // Pro Welt eigener Key + lastPlayed im Index. Ohne worldId (nach ensureWorldMeta unmöglich) auf den
@@ -41584,6 +41599,7 @@ class AnazhRealm {
                 "WARN"
             );
         }
+        return true;
     }
 
     // Debounced Edit-Save: bündelt die schwere Persistenz (buildStateSnapshot + JSON.stringify +
@@ -44547,8 +44563,7 @@ class AnazhRealm {
             statusEl.textContent = "Welt empfangen — lade…";
             cleanup();
             dialog.close();
-            // in die Gast-Welt: der Welt-Wechsel mit seiner Sperre (der Zeiger bleibt auf ihr, bis die Seite stirbt)
-            this._weltWechselNeuLaden(result.worldId);
+            // (die Tür lädt in die Gast-Welt: `joinWorldFromCode` → `_importGuestWorld` → `_weltBetreten`)
         };
 
         cancelBtn.addEventListener("click", onCancel);
@@ -44994,49 +45009,40 @@ class AnazhRealm {
         return true;
     }
 
-    // Drei Quellen: localStorage (Default), externes Objekt (z. B. File-Upload) oder nichts (frühes
-    // init()). Per-Welt-Key über die aktive worldId, mit Legacy-Single-Key-Fallback. null bei
-    // fehlendem/ungültigem Save.
+    // Der Zustand der aktiven Welt aus dem Speicher — durch DIE Rettungs-Kette `_weltRettungsKette` (Platz → .bak →
+    // IndexedDB des Boot-Vorlaufs, der hier verbraucht wird; Welt-Guard: nur für DIESELBE Welt). Ohne Aktiv-Zeiger der
+    // Legacy-Single-Key. null, wenn nichts lesbar ist — dann sagt das Log, was die Kette fand.
     _loadStateLoadFromStorage() {
         const activeId = this.activeWorldGet();
-        // Der Boot-Vorlauf (_idbPreload) hat den IndexedDB-Stand schon geparst, wenn er FRISCHER ist als der
-        // localStorage-Spiegel. Welt-Guard: nur für DIESELBE Welt — sonst liefe ein
-        // {reload:false}-Welt-Wechsel auf den Preload der alten Welt.
-        if (this._idbPreloadedState && this._idbPreloadedState.worldId === activeId) {
-            const pre = this._idbPreloadedState.state;
-            this._idbPreloadedState = null;
-            return pre;
-        }
-        let savedState = null;
-        if (activeId) {
-            savedState = localStorage.getItem(this.worldStorageKey(activeId));
-        }
-        if (!savedState) {
-            savedState = localStorage.getItem("anazhRealmState");
-        }
-        if (!savedState) return null;
-        try {
-            return JSON.parse(savedState);
-        } catch (error) {
-            // V18.361 — KORRUPTIONS-SICHERER LOAD: der Haupt-Stand ist unlesbar (truncated/
-            // partieller Write) → der rotierende `.bak`-Backup (der letzte gute Stand) rettet
-            // die Welt, statt sie zu verlieren. Auch der Backup korrupt → ehrlich null.
-            this.log(`Speicherstand korrupt (${error.message}) — versuche den Backup…`, "WARN");
-            if (activeId) {
-                try {
-                    const bak = localStorage.getItem(this.worldStorageKey(activeId) + ".bak");
-                    if (bak) {
-                        const parsed = JSON.parse(bak);
-                        this.log("Welt aus dem Backup wiederhergestellt (ein Stand zurück).", "INFO");
-                        return parsed;
-                    }
-                } catch (_bakErr) {
-                    /* auch der Backup korrupt → unten null */
-                }
+        if (!activeId) {
+            const legacy = localStorage.getItem("anazhRealmState");
+            if (!legacy) return null;
+            try {
+                return JSON.parse(legacy);
+            } catch (e) {
+                this.log(`Legacy-Speicherstand korrupt (${e.message}).`, "ERROR");
+                return null;
             }
-            this.log("Kein gültiger Backup — Welt konnte nicht geladen werden.", "ERROR");
+        }
+        const idb = this._idbVorlage(activeId);
+        this._idbPreloadedState = null;
+        const fund = this._weltRettungsKette(activeId, idb);
+        if (!fund.state) {
+            // Eine frische Welt hat noch keinen Stand (die Vorlade sagte es schon laut); ERROR nur, wenn etwas da war, das
+            // sich nicht lesen ließ.
+            const kaputt = fund.befund.some((b) => /korrupt|unlesbar|nicht lesbar/.test(b));
+            this.log(
+                `Die Welt ${activeId} ließ sich nicht laden: ${fund.befund.join(", ")}.`,
+                kaputt ? "ERROR" : "DEBUG"
+            );
             return null;
         }
+        if (fund.quelle !== "Platz")
+            this.log(
+                `Welt aus ${fund.quelle} geladen${fund.befund.length ? ` (${fund.befund.join(", ")})` : ""}.`,
+                fund.quelle.startsWith("IndexedDB (frischer") ? "INFO" : "WARN"
+            );
+        return fund.state;
     }
 
     // terrainEverGenerated=true NUR, wenn der Save eine ECHTE Spieler-Position trägt. playerPosition:null
@@ -45756,34 +45762,55 @@ class AnazhRealm {
         }
     }
 
-    // DIE TÜR (Ring 8: ein Welt-Wechsel ist ein Reload): eine andere Welt betritt die Seite — das Welt-Tor „Ersetzen" und der
-    // Snapshot eines Mitspielers (WS-Snapshot eines Resyncs, world-pull). An EINER Stelle, in dieser Folge:
+    // DIE TÜR (Ring 8: ein Welt-Wechsel ist ein Reload): eine andere Welt betritt die Seite — das Welt-Tor „Ersetzen", der
+    // Snapshot eines Mitspielers (WS-Snapshot eines Resyncs, world-pull) und der Beitritt (Einladung, Adress-Portal:
+    // `_importGuestWorld`). EINE Stelle, in dieser Folge:
+    //   0. SICHERN: die Welt der Seite ist noch ganz sie selbst — ihr Zeugnis (`zeugnisA`, das Adress-Portal) und ihr
+    //      Fortschritt seit dem letzten Autosave landen unter IHRER Id, bevor die neue Welt abgelegt wird (bis 10.10. fielen
+    //      bei Ersetzen, world-pull und Einladung bis zu 10 s weg).
     //   1. IDENTITÄT: trägt sie keine worldId (ein Legacy-Save vor Ring 8, ein Minimal-Snapshot `{worldMeta:{}}`), bekommt sie
-    //      ihre eigene — nie den Platz der Welt davor. Bis 10.10. lag sie roh unter deren Id, und der Boot vergab vor dem
-    //      Lesen des Platzes eine neue: beide Welten waren fort (Gegenprüfung Runde 3).
+    //      ihre eigene (`_neueWeltId`) — nie den Platz der Welt davor. Bis 10.10. lag sie roh unter deren Id, und der Boot
+    //      vergab vor dem Lesen des Platzes eine neue: beide Welten waren fort (Gegenprüfung Runde 3).
     //   2. ABLAGE: sie liegt, wie sie kam, unter ihrer Id (`_weltAblegen`, mit Probe) — misslingt das (Quota), bleibt die
-    //      Seite in ihrer Welt und sagt es laut; kein Reload in einen alten Stand.
+    //      Seite in ihrer Welt und sagt es laut; kein Reload in einen alten Stand. `p2pAuto` (der Gast): danach die
+    //      Auto-Verbindung zum Host.
     //   3. SPERRE, ZEIGER, RELOAD (`_weltWechselNeuLaden`): die neue Welt erwacht in einer frischen Seite.
     // Die Seite lädt sie nie in sich (die alte Welt lebte darin weiter: Tiere, Chunks, Worker, Wasser). `meta` legt Felder
-    // ins worldMeta (der Gast: role, hostInfo), `neuLaden:false` nur für Tests (`p2p._testNoReload`). → {ok, worldId|reason}
-    _weltBetreten(snapshot, meta = null, { neuLaden = true } = {}) {
+    // ins worldMeta (der Gast: role, hostInfo, slug); `neuLaden:false` legt nur ab (daneben legen, Tests), `aktiv:false`
+    // lässt dann auch den Aktiv-Zeiger (daneben legen). → {ok, worldId|reason}
+    _weltBetreten(snapshot, meta = null, { neuLaden = true, aktiv = true, zeugnisA = null, p2pAuto = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return { ok: false, reason: "kein Snapshot" };
+        if (!this._weltWechselSperre && this.state.worldMeta && this.state.worldMeta.worldId) {
+            if (zeugnisA) this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", zeugnisA.text);
+            this.saveState();
+        }
         const wm = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};
         const welt = { ...snapshot, worldMeta: { ...wm, ...(meta || {}) } };
         if (typeof welt.worldMeta.worldId !== "string" || !welt.worldMeta.worldId)
             welt.worldMeta.worldId = AnazhRealm._neueWeltId();
-        const ab = this._weltAblegen(welt);
+        const ab = this._weltAblegen(welt, { aktiv: aktiv || neuLaden });
         if (!ab.ok) {
             this.log(`Die Welt konnte nicht abgelegt werden (${ab.reason}) — die Seite bleibt in ihrer Welt.`, "ERROR");
             return ab;
+        }
+        if (p2pAuto) {
+            try {
+                localStorage.setItem("anazh.p2p.enabled", "true");
+                localStorage.setItem("anazh.p2p.url", p2pAuto);
+                localStorage.setItem("anazh.p2p.room", ""); // default = worldId = sync room
+            } catch (e) {
+                this.log(`Die Auto-Verbindung zum Host ließ sich nicht merken: ${e.message}`, "WARN");
+            }
         }
         if (neuLaden) this._weltWechselNeuLaden(ab.worldId);
         return ab;
     }
 
-    // DIE ABLAGE einer Welt, wie sie kam, unter IHRER Id (Per-Welt-Key + Index + Aktiv-Zeiger), mit Probe: der Speicher
-    // trägt danach genau diese Bytes. Ohne worldId legt sie nichts ab (die Tür vergibt sie). → {ok, worldId|reason}
-    _weltAblegen(welt) {
+    // DIE ABLAGE einer ganzen Welt, wie sie kam, unter IHRER Id (Per-Welt-Key + Index, mit `aktiv` der Aktiv-Zeiger), mit
+    // Probe: der Speicher trägt danach genau diese Bytes. Ohne worldId legt sie nichts ab (die Tür vergibt sie). Der EINE
+    // Schreiber neben saveState (der die lebende Welt schreibt): die Tür, die Geburt, daneben legen, die Fusion, die
+    // Legacy-Migration. → {ok, worldId|reason}
+    _weltAblegen(welt, { aktiv = true } = {}) {
         const m = welt && welt.worldMeta;
         const worldId = m && typeof m.worldId === "string" ? m.worldId : "";
         if (!worldId) return { ok: false, reason: "keine worldId" };
@@ -45798,7 +45825,8 @@ class AnazhRealm {
                 bornAt: m.bornAt || Date.now(),
                 lastPlayed: Date.now(),
             });
-            if (!this.activeWorldSet(worldId)) return { ok: false, reason: "der Aktiv-Zeiger ließ sich nicht setzen" };
+            if (aktiv && !this.activeWorldSet(worldId))
+                return { ok: false, reason: "der Aktiv-Zeiger ließ sich nicht setzen" };
             return { ok: true, worldId };
         } catch (e) {
             return { ok: false, reason: String((e && e.message) || e) };
@@ -46242,17 +46270,14 @@ class AnazhRealm {
             asWorldId: newWorldId,
             asSlug: slug,
         });
-        try {
-            localStorage.setItem(this.worldStorageKey(newWorldId), JSON.stringify(cloned));
-        } catch (err) {
-            return { ok: false, reason: `Speicher voll: ${err.message}` };
-        }
-        this.worldsIndexUpsert({ worldId: newWorldId, slug, bornAt, lastPlayed: Date.now() });
+        // durch DIE TÜR: die Welt der Seite sichert sich, die fremde liegt mit Probe unter ihrer neuen Id; mit `reload` der
+        // Welt-Wechsel (Zeiger, Sperre, Reload), sonst bleibt die aktive Welt.
+        const ab = this._weltBetreten(cloned, null, { neuLaden: reload, aktiv: reload });
+        if (!ab.ok) return { ok: false, reason: `Speicher voll: ${ab.reason}` };
         this.log(
             `Welt „${slug}" als ${newWorldId.slice(0, 8)}… neben uns gelegt (Parent: ${originalId || "keine"})`,
             "INFO"
         );
-        if (reload) this._weltWechselNeuLaden(newWorldId);
         return { ok: true, worldId: newWorldId, slug, parentWorlds: newParents };
     }
 
@@ -46517,6 +46542,10 @@ class AnazhRealm {
         if (!AnazhRealm.FUSION_STRATEGIES.includes(strategy)) {
             return { ok: false, reason: `unbekannte Strategie: ${strategy}` };
         }
+        // Führt die Fusion in die neue Welt (reload), sichert sich die Welt der Seite zuerst — ihr Fortschritt seit dem
+        // letzten Autosave fiele sonst hinter die Sperre des Welt-Wechsels (und ist sie ein Elternteil, liest die Fusion
+        // so ihren jetzigen Stand).
+        if (reload && this.state.worldMeta && this.state.worldMeta.worldId) this.saveState();
         const rawA = localStorage.getItem(this.worldStorageKey(idA));
         const rawB = localStorage.getItem(this.worldStorageKey(idB));
         if (!rawA || !rawB) {
@@ -46598,17 +46627,8 @@ class AnazhRealm {
             hotbar: Array.isArray(saveA.hotbar) ? saveA.hotbar.slice(0, 9) : [],
         };
 
-        try {
-            localStorage.setItem(this.worldStorageKey(identity.newWorldId), JSON.stringify(snap));
-        } catch (err) {
-            return { ok: false, reason: `Speicher voll: ${err.message}` };
-        }
-        this.worldsIndexUpsert({
-            worldId: identity.newWorldId,
-            slug: identity.finalSlug,
-            bornAt: identity.bornAt,
-            lastPlayed: Date.now(),
-        });
+        const ab = this._weltAblegen(snap, { aktiv: false });
+        if (!ab.ok) return { ok: false, reason: `Speicher voll: ${ab.reason}` };
         this.log(
             `Welt-Fusion: ${identity.slugA} ⊕ ${identity.slugB} → ${identity.finalSlug} (Strategie ${strategy}, ID ${identity.newWorldId.slice(0, 8)}…)`,
             "INFO"
@@ -50799,23 +50819,18 @@ class AnazhRealm {
         // Der bestehende Join-Flow (W11.5): broker + roomId → world-snapshot.
         const code = `anazh://${addr.broker.replace(/^wss?:\/\//i, "")}/${addr.roomId}`;
         this.log(`Reise zur Welt „${addr.label}" (${status}) — Adresse ${code}`, "INFO");
-        const result = await this.joinWorldFromCode(code, { slugHint: addr.label });
-        if (result && result.ok) {
-            // Ein erfolgreicher Join lebt als Journal-Eintrag (analog dem
-            // Sub-Welt-Erstbesuch); die fremde Welt wird unsere lokale Welt
-            // (role:"guest"), darum: kein Portal-Overlay nötig.
-            this.journalAppendOnce(
-                `portalAddress:${addr.worldId}`,
-                "portal",
-                `Du tratst zum ersten Mal durch das Tor zur Welt „${addr.label}".`
-            );
-            // Die Welt der Seite sichert ihr Zeugnis (sie ist noch ganz sie selbst), dann der Welt-Wechsel mit seiner
-            // Sperre. Bis 10.10. lud das Adress-Portal nie neu: der nächste saveState setzte den Aktiv-Zeiger auf die alte
-            // Welt zurück, und der Beitritt verschwand still (Gegenprüfung Runde 3).
-            this.saveState();
-            this._weltWechselNeuLaden(result.worldId);
-        }
-        return result;
+        // Der Beitritt geht durch DIE TÜR (`_importGuestWorld` → `_weltBetreten`): die alte Welt hält ihr Zeugnis fest und
+        // sichert sich, die fremde wird unsere lokale Welt (role:"guest", kein Portal-Overlay), Sperre und Reload. Bis 10.10.
+        // lud das Adress-Portal nie neu: der nächste saveState setzte den Aktiv-Zeiger auf die alte Welt zurück, und der
+        // Beitritt verschwand still (Gegenprüfung Runde 3).
+        return this.joinWorldFromCode(code, {
+            slugHint: addr.label,
+            zeugnisA: {
+                key: `portalAddress:${addr.worldId}`,
+                type: "portal",
+                text: `Du tratst zum ersten Mal durch das Tor zur Welt „${addr.label}".`,
+            },
+        });
     }
 
     // Φ1 — die Bestätigungs-Karte. Im Browser ein confirm()-Dialog (R2-konform:
@@ -92417,9 +92432,21 @@ class AnazhRealm {
         this.p2pLoadPersisted();
         this.initP2PUI();
         // Aktive Welt-Identität VOR ensureWorldMeta laden, sonst triggert fresh=true (neue UUID + Genesis)
-        // für eine bestehende Welt. Migriert nebenbei einen Legacy-Single-Welt-Save.
+        // für eine bestehende Welt. Migriert nebenbei einen Legacy-Single-Welt-Save. DIE RETTUNGS-KETTE DES BOOTS
+        // (Gegenprüfung Runde 4): erst der IndexedDB-Stand der aktiven Welt (V18.151, Faden #6), dann fragt die Vorlade die
+        // EINE Kette (Platz → .bak → IndexedDB), BEVOR ensureWorldMeta eine neue Id vergibt.
+        await this._idbPreload();
         this._preloadActiveWorldMeta();
         this.ensureWorldMeta();
+        // EINE NEUE WELT NUR, WENN DIE KETTE LEER IST — UND DANN LAUT: was gefunden wurde, warum frisch.
+        if (this._bootLeer) {
+            const b = this._bootLeer;
+            const satz = b.id
+                ? `Die Welt ${b.id} ließ sich nicht finden (${b.befund.join(", ")}) — eine neue Welt erwacht.`
+                : `Kein gespeicherter Stand (${b.befund.join(", ")}) — eine neue Welt erwacht.`;
+            this.log(satz, b.id ? "ERROR" : "INFO");
+            this._chatEcho(satz);
+        }
         // Die Empfänger-Wand des Erbguts (fail-closed): ein Erbgut, das dieser Build nicht trägt, lässt die Welt nicht
         // erwachen — der Wurf landet auf dem Ladeschirm (`_bootAnazhRealm`), nie fährt sie still als Wildnis.
         this._erbgut();
@@ -92835,9 +92862,8 @@ class AnazhRealm {
         this.state._fieldVy = 0;
         this.state.selfAwareness.components.push("fieldController");
 
-        // V18.151 (Faden #6) — den IndexedDB-Stand der aktiven Welt laden
-        // (gewinnt nur, wenn frischer als der localStorage-Spiegel).
-        await this._idbPreload();
+        // Der Zustand der aktiven Welt: dieselbe Rettungs-Kette wie die Vorlade (Platz → .bak → IndexedDB; der IDB-Stand
+        // des Boot-Vorlaufs wird hier verbraucht).
         this.loadState();
         this.generateNewWorld();
 
