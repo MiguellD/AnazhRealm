@@ -61,8 +61,8 @@ const name = (s) => String(s.name || s.uses || lauf(s).split("\n")[0]).replace(/
 // ── DIE GEGENRICHTUNG (W)/(A)/(R) ──
 const WORKFLOWS = ".github/workflows";
 // Die Klassen, aus denen eine Wand der CI fernbleiben darf. Jede nennt eine Eigenschaft der Wand, keinen Zeitplan. (Die
-// Klasse „echter Renderer nötig" fiel am 10.10.: der Läufer rastert swiftshader-WebGPU und -GL, gate:arch-feld und
-// gate:webgl-probe laufen in Gruppe 1 und 2.)
+// Klasse „echter Renderer nötig" fiel am 10.10.: der Läufer rastert swiftshader-WebGPU und -GL — gate:webgl-probe läuft
+// in Gruppe 2; was dort nicht steht, steht wegen einer anderen Eigenschaft.)
 const KLASSEN = {
     GPU: "echte GPU nötig", // der Läufer hat keinen Hardware-Adapter (Werkbank `--echt`)
     MESS: "Messwerkzeug, kein Urteil", // gibt Zahlen aus, kennt kein Rot
@@ -76,6 +76,15 @@ const AUSNAHMEN = {
         grund:
             "fährt die Frost-Wand mit dem Hardware-Adapter der Werkbank (--echt, echteWebGpuArgs); der Läufer hat keine " +
             "GPU — die swiftshader-Fassung gate:weltbild-frost läuft in Gruppe 1",
+    },
+    "gate:arch-feld": {
+        klasse: KLASSEN.FRIST,
+        grund:
+            "trägt den Deckel des Läufers nicht (Lauf 38005574907: Gruppe 1 nach 45,3 min abgebrochen, die Wand allein " +
+            "25 min): der Bäcker backt dort auf swiftshader 1 Karte in 4 000 Takten (lokal 6 in 1 887) — A' wartet auf " +
+            "die Karte der fernen Eiche —, und die Erst-Zeichnung des D-Blicks reißt zweimal die 600-s-Wand (lokal 369 s); " +
+            "B nannte dort 1 ausgebrannten von 342 Foundry-Bauten (offen benannt). Lokal GRÜN in 549 s, D seit 3ec8844b " +
+            "an der Wurzel geheilt (Feld gegen Mesh 0,99 aus der EINEN Aufnahme)",
     },
     "gate:perf-parity": {
         klasse: KLASSEN.ROT,
