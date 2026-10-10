@@ -14,7 +14,8 @@
 //   wachsen   (Q2) die Skala nach 3600 Wachstums-Takten = 1,000
 //   gier      (Q3) Lauf ↔ Blick p90 ≤ 20°, 0 Rückwärts-Frames, Stand-Schlupf quer ≤ 0,2, Beschleunigung im Gesetz,
 //             Folgen ohne Gas ↔ Bremse (≤ 30 Wechsel je Minute, R-D17)
-//   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf), die Beute läuft vom Jäger fort (> 80 %)
+//   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf, der Lauf nicht auf sein Ziel), die Beute
+//             läuft vom Jäger fort (> 80 %)
 //   herde     (Q11) Kohäsion je Gattung (herdeZug zählt gleichartige Nachbarn, n > 0; der Fuchs zieht den Bären nicht),
 //             Bewegung gleich mit und ohne Blick (Frustum + Zufall)
 //   hindernis (Q11) kein Feld-Strahl je Tier und Takt, kein Tier in der Wand; der Kontakt liest den EINEN Leib des Tiers
@@ -702,6 +703,18 @@ async function kreaturProben(r, T, opts) {
         const dt = 1 / 60;
         const NAT = A._verhaltenGesetz().furcht;
         const geschoben = kontaktZaehler(restore);
+        // DIE PEILUNG DES ZIELS (mitlaufend, durchgereicht): wohin der EINE Jagd-Weg den Wolf in seinem letzten Ruf schickte
+        // — das Ziel und der Ort des Wolfs in diesem Ruf
+        let peilung = null;
+        decke(
+            restore,
+            "_kreaturJagdZug",
+            (alt) =>
+                function (c, tx, tz, ...rest) {
+                    if (c === wolf) peilung = { tx, tz, x: c.position.x, z: c.position.z };
+                    return alt.call(this, c, tx, tz, ...rest);
+                }
+        );
         let jagdFrames = 0,
             kontakt = 0,
             achs = 0,
@@ -710,6 +723,7 @@ async function kreaturProben(r, T, opts) {
             bedroht = 0,
             fort = 0;
         const achsOrt = { gierAchse: 0, rein: 0, ansprung: 0, stoss: 0, beispiele: [] };
+        let achsZiel = 0; // Achsen-Takte, in denen der Wolf geradewegs auf sein Ziel läuft (es liegt auf derselben Linie)
         let wv = { x: wolf.position.x, z: wolf.position.z };
         const bv = beute.map((c) => ({ x: c.position.x, z: c.position.z }));
         for (let k = 0; k < 1800; k++) {
@@ -729,7 +743,20 @@ async function kreaturProben(r, T, opts) {
                 // Himmelsachse, der Lauf lag auf ihr (Basis: 100 % auf 0,25° genau). Ein stetiger Gradient trifft das
                 // 0,5°-Fenster je Achse zufällig in ~0,6 % der Takte; nahe einer Achse liegt er nur, wenn der Wind dort
                 // weht (die Fahne des Geruchs) — darum zählt das enge Fenster, das 5°-Fenster steht als Zahl daneben.
-                if (grad(m) < 0.25) {
+                // DER LAUF AUF SEIN ZIEL (Nachbesserung 4, der Täter der zwei CI-Ausschläge 38,4 % / 16,2 %): eine gerade Hetze
+                // hinter einer Beute, die genau längs einer Himmelsachse flieht (sie flieht vom Jäger fort, er läuft auf sie zu —
+                // die Linie hält ihre Richtung), oder ein gerader Lauf auf ein Ziel, das auf einer Achse liegt, ist kein Raster.
+                // Welche Linie entsteht, hängt am Zustand der Welt beim Start der Probe (Bauten 1 121–1 258 je Boot, die
+                // Kreatur-Uhr nach einem Einschwingen auf der Wand-Uhr). 169 Orte, Kreatur-Uhr und Wind fest: die alte Zählung
+                // bis 15,0 % (83 Achsen-Takte, jeder auf sein Ziel), diese höchstens 1,9 %. Das Raster (R-D12) dreht den Lauf von
+                // der Peilung fort (Täter jagd: 22–28 %) — gezählt wird nur der Achsen-Takt, dessen Lauf mehr als 1° neben der
+                // Peilung des Ziels liegt.
+                const aufZiel =
+                    !!peilung &&
+                    Math.abs(wrap(h - Math.atan2(peilung.tx - peilung.x, peilung.tz - peilung.z))) <
+                        (1 * Math.PI) / 180;
+                if (grad(m) < 0.25 && aufZiel) achsZiel++;
+                else if (grad(m) < 0.25) {
                     achs++;
                     // DER ORT DES ACHSEN-TAKTS (Bericht, die Linse nennt die Quelle): im Wasser (die Ufer-Scheu sucht das Ufer
                     // in vier Himmelsrichtungen), die Gier selbst auf einer Achse (der Leib läuft längs seiner Gier), ein
@@ -781,6 +808,7 @@ async function kreaturProben(r, T, opts) {
             jagdFrames,
             kontaktFrames: kontakt,
             achsAnteil: jagdFrames ? +(achs / jagdFrames).toFixed(3) : null,
+            achsZielAnteil: jagdFrames ? +(achsZiel / jagdFrames).toFixed(3) : null,
             achsAnteil5Grad: jagdFrames ? +(achs5 / jagdFrames).toFixed(3) : null,
             achsImWasser: achsWasser,
             achsOrt,
@@ -2580,7 +2608,7 @@ function urteil(name, z) {
         soll(z.jagdFrames >= 60, `nur ${z.jagdFrames} Jagd-Frames (Probe vakuös)`);
         soll(
             z.achsAnteil !== null && z.achsAnteil < 0.1,
-            `Jagd auf den Achsen (0,25°) ${(z.achsAnteil * 100).toFixed(1)} % (5°: ${(z.achsAnteil5Grad * 100).toFixed(1)} %; davon im Wasser ${z.achsImWasser} Takte; Ort ${JSON.stringify(z.achsOrt || null)})`
+            `Jagd auf den Achsen (0,25°, der Lauf neben der Peilung des Ziels) ${(z.achsAnteil * 100).toFixed(1)} % (5°: ${(z.achsAnteil5Grad * 100).toFixed(1)} %; auf das Ziel ${(z.achsZielAnteil * 100).toFixed(1)} %; davon im Wasser ${z.achsImWasser} Takte; Ort ${JSON.stringify(z.achsOrt || null)})`
         );
         soll(z.bedrohtFrames >= 60, `nur ${z.bedrohtFrames} bedrohte Beute-Frames`);
         soll(z.fortAnteil !== null && z.fortAnteil > 0.8, `Beute fort vom Jäger ${z.fortAnteil} (Soll > 0,8)`);
