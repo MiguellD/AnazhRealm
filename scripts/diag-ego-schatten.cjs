@@ -451,7 +451,7 @@ function buehne(arg) {
                 for (const [o, m, s] of stand) {
                     o.layers.mask = m;
                     o.visible = s;
-                    if (o.userData) o.userData._egoMaske = undefined;
+                    if (o.userData) o.userData._maskeVorEgo = undefined;
                 }
                 r.setCameraMode("third");
             };
@@ -486,10 +486,10 @@ function buehne(arg) {
                     const third = this.state.cameraMode === "third";
                     leibJe(this.state.playerMesh, (o) => {
                         if (third) {
-                            if (o.userData._egoMaske !== undefined) o.layers.mask = o.userData._egoMaske;
-                            o.userData._egoMaske = undefined;
-                        } else if (o.userData._egoMaske === undefined) {
-                            o.userData._egoMaske = o.layers.mask;
+                            if (o.userData._maskeVorEgo !== undefined) o.layers.mask = o.userData._maskeVorEgo;
+                            o.userData._maskeVorEgo = undefined;
+                        } else if (o.userData._maskeVorEgo === undefined) {
+                            o.userData._maskeVorEgo = o.layers.mask;
                             o.layers.mask = 1 << 5;
                         }
                     });
@@ -498,10 +498,10 @@ function buehne(arg) {
                     const third = this.state.cameraMode === "third";
                     const f = (o) => {
                         if (third) {
-                            if (o.userData._egoMaske !== undefined) o.layers.mask = o.userData._egoMaske;
-                            o.userData._egoMaske = undefined;
+                            if (o.userData._maskeVorEgo !== undefined) o.layers.mask = o.userData._maskeVorEgo;
+                            o.userData._maskeVorEgo = undefined;
                         } else if (o.layers.mask & 1) {
-                            o.userData._egoMaske = o.layers.mask;
+                            o.userData._maskeVorEgo = o.layers.mask;
                             o.layers.mask = (o.layers.mask & ~1) | (1 << E);
                         }
                     };

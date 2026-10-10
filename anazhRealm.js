@@ -95322,7 +95322,7 @@ class AnazhRealm {
     // Regel `visible` und nahm mit der Haut den Wurf: in der Ego-Sicht, dem Standard-Blick, warf der Spieler keinen Schatten
     // (Lehre 26: unsichtbar für die Haupt-Kamera heißt Ebene, nie Transparenz). `visible` bleibt unberührt — die Stufen-Regel
     // (`_menschFernToggle`) behält ihr Wort. Ebenen erbt kein Kind: die Regel geht jeden Knoten, verschiebt nur, was auf
-    // Ebene 0 liegt, und merkt dessen Maske (`_egoMaske`); 3rd gibt genau sie zurück — ein Knoten, der schon nur in den
+    // Ebene 0 liegt, und merkt dessen Maske (`_maskeVorEgo`); 3rd gibt genau sie zurück — ein Knoten, der schon nur in den
     // Kaskaden lebt (ein Zwilling), bleibt, wie er ist. Das Gerät in der Hand (`_gehalten`, _refreshHeldMesh) ist keine
     // Haut: es bleibt auf Ebene 0, das Auge sieht es, es wirft.
     _applyEgoSicht() {
@@ -95335,12 +95335,12 @@ class AnazhRealm {
             if (u._gehalten) return;
             const m = o.layers.mask;
             if (third) {
-                if (u._egoMaske !== undefined) {
-                    o.layers.mask = u._egoMaske;
-                    u._egoMaske = undefined;
+                if (u._maskeVorEgo !== undefined) {
+                    o.layers.mask = u._maskeVorEgo;
+                    u._maskeVorEgo = undefined;
                 }
             } else if (m & 1) {
-                u._egoMaske = m;
+                u._maskeVorEgo = m;
                 o.layers.mask = (m & ~1) | zwilling;
             }
             for (const k of o.children) leib(k);
