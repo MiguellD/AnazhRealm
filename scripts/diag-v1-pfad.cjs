@@ -334,7 +334,9 @@ function wand(src) {
                 /this\._dslKeinOrt\(/.test(evalPos) &&
                 !/return null/.test(evalPos) &&
                 (evalPos.match(/_defaultSpawnPos\(\)/g) || []).length === 1 &&
-                /if \(node == null\) return this\._defaultSpawnPos\(\);/.test(evalPos),
+                // der Default-Spawn nur für `node == null` — seit 10.10. läuft auch er durch die Feld-Wand der Engstelle
+                // (das Feld hat keinen Ort, wo die Wildnis nicht trägt), darum wird er gesetzt statt sofort zurückgegeben
+                /if \(node == null\) pos = this\._defaultSpawnPos\(\);\n\s+else if \(!Array\.isArray\(node\)\)/.test(evalPos),
         ],
         ["W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)", wachen === 0, `${wachen} Wache(n)`],
         [
@@ -1058,7 +1060,7 @@ async function probe(arg) {
             .replace("            throw fehler;\n", "            return null;\n")
             // der Rest der Klasse beim Vorher (c52089c7): jeder Nicht-Array-Knoten ist „nicht verlangt", der Feld-Akt nimmt
             // für jeden Nicht-Array-Knoten den Spieler
-            .replace("if (node == null) return this._defaultSpawnPos();", "if (!Array.isArray(node) || node.length === 0) return this._defaultSpawnPos();")
+            .replace("if (node == null) pos = this._defaultSpawnPos();", "if (!Array.isArray(node) || node.length === 0) pos = this._defaultSpawnPos();")
             .replace(
                 'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
                 'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);'
