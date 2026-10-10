@@ -872,6 +872,9 @@ const FORBIDDEN = [
     // DIE EINE WASSER-WAHRHEIT (Schau-2 wasser-wahrheit, 09.10.): die Land-Probe las den Bezug der Ufer-Bänder
     // (`_waterLevelAt`), blind für das gezeichnete Wasser — jedes Werk fragt das Land (`_landAt`: Bild UND Gesetz).
     { token: "_isAboveWaterAt", fiel: "Schau-2 — die Zwillings-Probe des Lands (jedes Werk fragt `_landAt`)" },
+    // DIE EINE MASSE DES WAGENS (Schau-2, Gegenprüfung Runde 2): der Wasser-Term trägt die Masse des Fahr-Satzes ×
+    // masseDichte (dieselbe, die jeder Stoß liest), nie eine eigene Schüttdichte über dem Hüll-Quader.
+    { token: "wasser.schuett", fiel: "Schau-2 — die zweite Wagen-Masse des Wasser-Terms", auch: ["vehicle-core.js"] },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

@@ -2297,19 +2297,18 @@
             hubMax: 0.08, // m: Anschlag der Hub-Feder (der Landestoss schlaegt hier an)
         },
         // ── SCHAU-2 (09.10., rein additive DATEN-Zeile — Praezedenz: schritt) — DER WAGEN IM WASSER: das Lab kennt kein
-        //    Wasser, der Welt-Ritt reicht die Tiefe der EINEN Wasser-Wahrheit am Wagen (fahrKraefte e.tiefe). Der
-        //    Widerstand eines stumpfen Koerpers ½·rho·cw·A·v² auf die getauchte Stirn (Breite × Tiefe) und Flanke
-        //    (Laenge × Tiefe), geteilt durch die Masse des Wagens: Schuettdichte × Huell-Quader (Laenge × Breite × Dach).
+        //    Wasser, der Welt-Ritt reicht die Tiefe der EINEN Wasser-Wahrheit am Wagen (fahrKraefte e.tiefe). Die KRAFT
+        //    ist der Widerstand eines stumpfen Koerpers ½·rho·cw·A·v² auf die GETAUCHTE FLAECHE der Huelle (die Stirn
+        //    Breite × Tiefe laengs, die Flanke Laenge × Tiefe quer — eine Flaeche, kein Volumen); die TRAEGHEIT ist die
+        //    EINE Masse des Wagens (das Volumen seines Fahr-Satzes × masseDichte, dieselbe, die jeder Stoss liest).
         //    rho: Suesswasser. cw: die Stirn eines Wagens quer im Wasser ist eine stumpfe Platte mit Bugwelle (Platte
-        //    1,17, Wuerfel 1,05). schuett: ein Strassenwagen ueber seinen Huell-Quader (1,4 t / (4,6 × 1,85 × 1,3 m) =
-        //    126 kg/m³, Kleinwagen bis 160). Die Ansaugung sitzt unter der Haube, die Haube schliesst an der
-        //    Guertellinie (huelle.yBelt): steht das Wasser dort, ist der Motorraum voll — kein Vortrieb mehr. Der GT
-        //    (Dach 1,2 m, Laenge 4,6 m, Guertel 0,72 m) verliert in 0,61 m Wasser bei 12 m/s rund 53 m/s², watet unter
-        //    Vollgas mit rund 4,4 m/s (Antrieb gegen Roll-, Luft- und Wasser-Widerstand) und steht ab 0,72 m. ──
+        //    1,17, Wuerfel 1,05). Die Ansaugung sitzt unter der Haube, die Haube schliesst an der Guertellinie
+        //    (huelle.yBelt): steht das Wasser dort, ist der Motorraum voll — kein Vortrieb mehr. Der GT (1 341 kg, Stirn
+        //    1,88 m, Guertel 0,72 m) verliert in 0,61 m Wasser bei 12 m/s rund 62 m/s², watet unter Vollgas mit rund
+        //    4,2 m/s (Antrieb gegen Roll-, Luft- und Wasser-Widerstand) und steht ab 0,72 m. ──
         wasser: {
             rho: 1000, // kg/m³
             cw: 1.0,
-            schuett: 150, // kg/m³ des Huell-Quaders
         },
     };
     // STEER_VIS — intentional dual steer visual (Feel-Entscheid .124). Do NOT merge.
@@ -2583,17 +2582,18 @@
             ansaug: h.yBelt > 0 ? h.yBelt * k : NaN,
         };
     }
-    // Die Huelle im Wasser eines Fahr-Satzes (SCHAU-2): aus den Aufstandspunkten, ohne Huelle (Teile-Werk) aus Spur und
-    // Radstand; ein Werk ohne Dach traegt kein Wasser-Mass (null), ohne Ansaugung (kein Motorraum) treibt es immer.
-    function fahrWasser(a) {
+    // Die Huelle im Wasser eines Fahr-Satzes (SCHAU-2): die getauchte Flaeche je m Tiefe (Stirn = Breite, Flanke = Laenge)
+    // aus den Aufstandspunkten, ohne Huelle (Teile-Werk) aus Spur und Radstand, durch die EINE Masse `masse` (kg: das
+    // Volumen des Fahr-Satzes × masseDichte, fahrGesetz); ein Werk ohne Dach traegt kein Wasser-Mass (null), ohne
+    // Ansaugung (kein Motorraum) treibt es immer.
+    function fahrWasser(a, masse) {
         const breite = a.breite > 0 ? a.breite : 2 * a.quer;
         const laenge = a.laenge > 0 ? a.laenge : a.vorn - a.hinten;
-        if (!(breite > 0) || !(laenge > 0) || !(a.dach > 0)) return null;
-        const m = FAHR.wasser.schuett * breite * laenge * a.dach;
+        if (!(breite > 0) || !(laenge > 0) || !(a.dach > 0) || !(masse > 0)) return null;
         const q = 0.5 * FAHR.wasser.rho * FAHR.wasser.cw;
         return {
-            kStirn: (q * breite) / m, // 1/m je m Tiefe: a = kStirn · Tiefe · v²
-            kFlanke: (q * laenge) / m,
+            kStirn: (q * breite) / masse, // 1/m je m Tiefe: a = kStirn · Tiefe · v²
+            kFlanke: (q * laenge) / masse,
             dach: a.dach,
             ansaug: a.ansaug > 0 ? a.ansaug : Infinity,
         };
@@ -2652,7 +2652,7 @@
                 bauch: Number.isFinite(a.bauch) ? a.bauch : 0,
                 hub: a.hub > 0 ? a.hub : 0, // der Federweg je Rad (fahrAufstand); ein starres Werk federt kein Rad einzeln
             },
-            wasser: fahrWasser(a), // SCHAU-2 (rein additiv): die Huelle im Wasser (fahrKraefte e.tiefe)
+            wasser: fahrWasser(a, zs.mass * FAHR.masseDichte), // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse
         };
     }
     function fahrZustand(x, z, yaw) {

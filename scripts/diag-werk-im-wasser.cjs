@@ -277,6 +277,18 @@ function kernUrteil(VC) {
         v.push(
             `K4 über der Ansaugung (${(G.wasser.ansaug + 0.05).toFixed(2)} m) fuhr er ${Math.hypot(k4.x, k4.z).toFixed(2)} m`
         );
+    // K5 EINE Masse: die Kraft wirkt auf die getauchte Stirn (Breite der Hülle), die Trägheit ist die EINE Masse des Wagens
+    // (das Volumen seines Fahr-Satzes × masseDichte — dieselbe, die jeder Stoß liest); die Masse, die der Wasser-Term trägt,
+    // ist ½·rho·cw·Breite / kStirn
+    const auf = VC.fahrAufstand(d.huelle, 1);
+    const breite = auf && auf.breite > 0 ? auf.breite : auf ? 2 * auf.quer : NaN;
+    const W = VC.FAHR.wasser || {};
+    const mWasser = (0.5 * W.rho * W.cw * breite) / G.wasser.kStirn;
+    const mEine = G.m * VC.FAHR.masseDichte;
+    if (!(Math.abs(mWasser - mEine) <= 1e-6 * mEine))
+        v.push(
+            `K5 der Wasser-Term rechnet mit einer eigenen Masse (${mWasser.toFixed(0)} kg) neben der EINEN Masse des Wagens (${mEine.toFixed(0)} kg: Fahr-Satz × masseDichte)`
+        );
     return v;
 }
 
@@ -907,6 +919,44 @@ function selbsttest() {
         const v = s2 === src ? ["(Gift griff nicht)"] : leserUrteil(s2);
         const t = v.some((x) => re.test(x));
         console.log(`  ${t ? "✅" : "❌"} Leser: ${name} → ${v[0] || "(kein Täter)"}`);
+        if (!t) ok = false;
+    }
+    // die Kern-Linse gegen eingeschmuggelte Täter im echten Kern (vm, ohne Browser)
+    const vm = require("vm");
+    const kernSrc = fs.readFileSync(path.join(__dirname, "..", "vehicle-core.js"), "utf8");
+    const kernLaden = (s) => {
+        const ctx = { console, Math, Object, Array, Number, JSON, Map, Set, isFinite, isNaN, Infinity, NaN };
+        for (const T of [Float32Array, Float64Array, Uint8Array, Uint16Array, Uint32Array, Int32Array]) ctx[T.name] = T;
+        ctx.globalThis = ctx;
+        ctx.window = ctx;
+        vm.createContext(ctx);
+        vm.runInContext(s, ctx);
+        return ctx.__vehicleCore;
+    };
+    const kernEcht = kernUrteil(kernLaden(kernSrc));
+    const kernOk = kernEcht.length === 0;
+    console.log(`  ${kernOk ? "✅" : "❌"} der echte Kern → ${kernEcht.length ? kernEcht.join(" · ") : "0 Täter"}`);
+    if (!kernOk) ok = false;
+    for (const [name, gift, re] of [
+        [
+            "eigene Masse im Wasser-Term (der Hüll-Quader × Schüttdichte)",
+            (s) =>
+                s.replace(
+                    "fahrWasser(a, zs.mass * FAHR.masseDichte)",
+                    "fahrWasser(a, 150 * a.breite * a.laenge * a.dach)"
+                ),
+            /K5 der Wasser-Term rechnet mit einer eigenen Masse \(1557 kg\) neben der EINEN Masse des Wagens \(1341 kg/,
+        ],
+        [
+            "Wasser-Term ohne Widerstand",
+            (s) => s.replace("z.vlong = vL0 / (1 + Wg.kStirn * t * Math.abs(vL0) * dt);", "z.vlong = vL0;"),
+            /K2 in 0\.61 m Wasser/,
+        ],
+    ]) {
+        const s2 = gift(kernSrc);
+        const v = s2 === kernSrc ? ["(Gift griff nicht)"] : kernUrteil(kernLaden(s2));
+        const t = v.some((x) => re.test(x));
+        console.log(`  ${t ? "✅" : "❌"} Kern: ${name} → ${v[0] || "(kein Täter)"}`);
         if (!t) ok = false;
     }
     console.log(ok ? "\nWERK-IM-WASSER SELBSTTEST GRÜN" : "\nWERK-IM-WASSER SELBSTTEST ROT");
