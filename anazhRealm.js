@@ -22376,16 +22376,36 @@ class AnazhRealm {
         const ox = [fX * hl, -fX * hl, fZ * hw, -fZ * hw];
         const oz = [fZ * hl, -fZ * hl, -fX * hw, fX * hw];
         const y = [0, 0, 0, 0];
+        let mitteSicht = null;
+        // der Ort, an dem die Mitte ihr Gesetz las (`_creatureGroundY`, Cache je 0,5 m)
+        const gx = Number.isFinite(ud.cachedGroundX) ? ud.cachedGroundX : creature.position.x;
+        const gz = Number.isFinite(ud.cachedGroundZ) ? ud.cachedGroundZ : creature.position.z;
         for (let k = 0; k < 4; k++) {
             const px = creature.position.x + ox[k];
             const pz = creature.position.z + oz[k];
             this._creatureSlopeProbe(P[k], px, pz, centerG);
             const v = this._standSicht(px, pz, Number.isFinite(P[k].g) ? P[k].g : centerG, false);
-            // EINE KANTE ist keine Ebene (Leben-Schau 2, gate:fall-waechter — wie der Fahr-Kern `fahrEbene`): liegt der Boden
-            // einer Probe steiler als 45° über oder unter der Mitte (eine Stufe, ein Loch in die tiefere Höhle), trägt sie nicht —
-            // sie stünde in einer anderen Schicht, und die Mitte der vier zog den Leib in den Fels (ein in der Höhle gestoßener
-            // Wolf stand 1,5 m unter seinem Grund). Dort trägt der Grund unter der Mitte.
-            y[k] = Number.isFinite(v) && Math.abs(v - centerG) <= hl ? v : centerG;
+            // EINE KANTE ist keine Ebene (Leben-Schau 2, gate:fall-waechter — wie der Fahr-Kern `fahrEbene`): liegt das Gesetz
+            // einer Probe steiler als 45° über oder unter dem der Mitte — gemessen zwischen den Orten, an denen beide ihr Gesetz
+            // lasen (ihre Caches wandern je 0,5 m, eine nachlaufende Hang-Probe ist keine Kante) — und weiter als zwei Stufen,
+            // trägt sie weniger, ab vier Stufen nicht mehr: sie stünde in einer anderen Schicht (ein Loch in die tiefere Höhle),
+            // und die Mitte der vier zog den Leib in den Fels (ein in der Höhle gestoßener Wolf stand 1,5 m unter seinem Grund).
+            // Dort trägt die Sicht unter der Mitte. Weich, damit eine Hang-Stufe keine Treppe zieht (gate:koerper-stand).
+            const roh = Number.isFinite(v) ? v : centerG;
+            const dh = Number.isFinite(P[k].g) ? Math.abs(P[k].g - centerG) : 0;
+            const stufe = AnazhRealm.PLAYER_STEP_UP;
+            const w =
+                dh <= Math.hypot(P[k].x - gx, P[k].z - gz)
+                    ? 1
+                    : Math.max(0, Math.min(1, (4 * stufe - dh) / (2 * stufe)));
+            if (w >= 1) y[k] = roh;
+            else {
+                if (mitteSicht === null) {
+                    const ms = this._standSicht(creature.position.x, creature.position.z, centerG, false);
+                    mitteSicht = Number.isFinite(ms) ? ms : centerG;
+                }
+                y[k] = mitteSicht + (roh - mitteSicht) * w;
+            }
         }
         if (!y.every(Number.isFinite)) return null;
         return {

@@ -186,7 +186,7 @@ function gestalten(src) {
         fs.readFileSync(path.join(root, "spec", "asset-contract", "v1", "golden", "render-config.json"), "utf8")
     );
     const G = rc && rc.lod && rc.lod.budget && rc.lod.budget.gestalten;
-    const teile = ["_foundryVariantFor(seed, preset) {", "_foundryGestalten(preset) {", "_scatterFoundrySeed("].map(
+    const teile = ["_foundryVariantFor(seed, preset, Vk) {", "_foundryGestalten(preset) {", "_scatterFoundrySeed("].map(
         (k) => methode(src, k)
     );
     if (!G || teile.some((t) => !t)) return { ok: false, detail: "Budget oder Methode fehlt", arten: {} };

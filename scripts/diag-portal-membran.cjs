@@ -221,9 +221,11 @@ function check(name, ok, detail) {
     check("Boot + warmes Buch (geisttor im LIVE-Buch)", out.boot && out.warm);
     check("welt_portal gespawnt + Tor-Gesetz aufgelöst", out.spawned && out.torGesetz, `gestalt=${out.gestalt}`);
     if (out.k) {
+        // je Seite (Leben-Schau 2, `_torHuelleGemessen`): Pfosten bis zur Kämpferlinie · Rahmen darüber · Schulter · die
+        // halbe Krone — eine Ruine trägt hier einen Stein, dort keinen
         check(
-            "K: Gesetz-Hülle trägt 5 Boxen (Pfosten×2 · Schultern×2 · Krone)",
-            out.k.boxCount === 5,
+            "K: Gesetz-Hülle trägt 8 Boxen (je Seite Pfosten · Rahmen · Schulter · halbe Krone)",
+            out.k.boxCount === 8,
             `boxen=${out.k.boxCount}`
         );
         check("K: die APERTUR ist körperlich FREI (5 Probe-Punkte, Torso-Höhe)", out.k.aperturFrei === true);
