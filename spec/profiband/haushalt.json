@@ -55,8 +55,75 @@
                     "art": "gate",
                     "stufe": 0,
                     "pass": "haupt",
-                    "dreieckeJeTor": 60000,
+                    "dreieckeJe": 60000,
                     "quelle": "Synthese §4 W3 (Tor-L0 auf das Band 60 000, porta-core LOD-Budget)"
+                }
+            ]
+        },
+        {
+            "id": "dorf",
+            "titel": "Das Dorf der Zelle −4,−4 (S3 haus, Plan §3.3 1c): der Dorf-Zug LÄUFT (wie im Spiel) und baut das Dorf der Zelle; die Werkbank wartet beim Einschwingen, bis kein Export unterwegs ist und keine Siedlung mehr wächst (`einschwingOffen`, band-urteil). Der Spieler steht auf dem Zell-Ort, den `_autoSettlementCellInfo(−4, −4)` rechnet (−841,0/−861,1; Same 4291161376, 13 Häuser), der Blick nach Nordost (45°): der Zug rückt das Dorf in seinen Blickkegel (`_siedlungsAnker`: jedes Haus mit Reichweite + 3,5 m vor dem Spieler — derselbe Plan-Anker −763,2/−828,7 für denselben Spieler-Ort, in jedem Boot). Im Bild (10.10., Radeon, frische Welt, Erst- und Zweit-Boot gleich): zehn Häuser zwischen 23 und 103 m (eins L1, neun L2), zwei Marktstände und die Feuerstellen des Glut-Felds; eine L0 erreicht der Zug nie — sie misst gate:haus-fern am Kern und das Bild auf 8 m.",
+            "spieler": [
+                -841,
+                -861
+            ],
+            "blick": [
+                -834,
+                -854
+            ],
+            "dorfZug": true,
+            "ortTakt": [],
+            "ratsche": "ratsche-dorf.json",
+            "soll": [
+                {
+                    "name": "Haus-Wurf",
+                    "art": "haus",
+                    "stufen": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "pass": "k0",
+                    "dreieckeJe": 96,
+                    "quelle": "S3 haus (Plan §3.3, Entscheid E1): die nurWurf-Stufe 3 des Gesetzbuchs (fachwerk-core) wirft für jede Stufe; vorher warf jedes Haus seine L0 (~70k) bzw. L1 (~15k) selbst, die L2 gar nicht"
+                },
+                {
+                    "name": "Haus-Wurf",
+                    "art": "haus",
+                    "stufen": [
+                        0,
+                        1,
+                        2,
+                        3
+                    ],
+                    "pass": "k1",
+                    "dreieckeJe": 96,
+                    "quelle": "S3 haus (Plan §3.3, Entscheid E1): die nurWurf-Stufe 3 des Gesetzbuchs (fachwerk-core) wirft für jede Stufe; vorher warf jedes Haus seine L0 (~70k) bzw. L1 (~15k) selbst, die L2 gar nicht"
+                },
+                {
+                    "name": "Ausstattungs-Wurf",
+                    "art": "ausstattung",
+                    "stufen": [
+                        0,
+                        1,
+                        3
+                    ],
+                    "pass": "k0",
+                    "dreieckeJe": 48,
+                    "quelle": "S3 haus (Plan §3.3): die nurWurf-Stufe 3 der Ausstattung (Feuerstelle ≤ 32, Marktstand und Brunnen ≤ 48) wirft für L0 und L1"
+                },
+                {
+                    "name": "Ausstattungs-Wurf",
+                    "art": "ausstattung",
+                    "stufen": [
+                        0,
+                        1,
+                        3
+                    ],
+                    "pass": "k1",
+                    "dreieckeJe": 48,
+                    "quelle": "S3 haus (Plan §3.3): die nurWurf-Stufe 3 der Ausstattung (Feuerstelle ≤ 32, Marktstand und Brunnen ≤ 48) wirft für L0 und L1"
                 }
             ]
         }

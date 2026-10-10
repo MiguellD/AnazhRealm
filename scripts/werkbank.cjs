@@ -9,7 +9,7 @@
 //                                                           Welt + Steuer-Server (bleibt offen)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
 //   node scripts/werkbank.cjs umstellen --ort <id>         an einen MESSORT (spec/profiband/haushalt.json `messorte`: wiese ·
-//                                                           genesis): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts
+//                                                           genesis · dorf): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360]
 //                                                           Bühne + echter Frame (Ausgabe-Pfad)
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus anazhRealm.js (Arbeitsbaum;
@@ -670,7 +670,9 @@ function tierZahl() {
 
 // DAS EINSCHWINGEN DER BAND-MESSUNG (Seiten-Kontext): der Spiel-Takt läuft mit der Bühne (Mittag · Sonne · Sommer),
 // bis der Bau ruht — die Foundry-Schlange leer und kein Auftrag im Flug, kein Karten-Bake offen, kein Streu-Nachschub,
-// keine aufgeschobene Streu-Region, kein Chunk im Bau, und die Zahl der Chunks, der lebenden Instanzen und der
+// keine aufgeschobene Streu-Region, kein Chunk im Bau, kein Dorf-Export unterwegs und keine wachsende Siedlung (der
+// Messort dorf läuft mit dem Dorf-Zug; die EINE Liste `einschwingOffen`, band-urteil), und die Zahl der Chunks, der
+// lebenden Instanzen und der
 // ungebauten Bauten in der Mesh-Zone steht
 // still — `ruhig` Takte am Stück. Ein Bau, der in Ruhe ungebaut bleibt (Bake-Lücke), steht im Ergebnis, er hält das
 // Einschwingen nicht auf. Deckel `capMs`: dann `eingeschwungen: false`, und die Ratsche verweigert den Nachzug — ein
@@ -680,7 +682,6 @@ function bandEinschwingen(k) {
     return (async () => {
         const r = window.anazhRealm;
         const st = r.state;
-        const f = r._foundry;
         const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
         const RUHIG = k.ruhig || 30;
         // DIE VOLLE WELT: der Regler misst hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
@@ -716,18 +717,8 @@ function bandEinschwingen(k) {
                 r._gameLoopTick(performance.now());
             } catch (_e) {}
             takte++;
-            o = {};
-            if (f && f.warte && f.warte.length) o.foundryWarte = f.warte.length;
-            if (f && f.pending && f.pending.size) o.foundryImFlug = f.pending.size;
-            const kb = (r._impostorBakeQueue || []).length + (r._impostorBakePending ? 1 : 0);
-            if (kb) o.kartenBake = kb;
-            if (r._scatterRefillPending) o.streuNachschub = 1;
-            if (st.voxelMeshPending && st.voxelMeshPending.size) o.chunkBau = st.voxelMeshPending.size;
-            // Eine aufgeschobene Streu-Region wartet auf ein Asset oder eine Karte — ruhig ist die Welt erst ohne sie
-            // (eine, die in Ruhe aufgeschoben bleibt, ist ein Befund: die Messung schwingt nicht ein).
-            let aufgeschoben = 0;
-            if (st.scatterRegions) for (const reg of st.scatterRegions.values()) if (reg._deferredFoundry) aufgeschoben++;
-            if (aufgeschoben) o.streuAufgeschoben = aufgeschoben;
+            // was die Welt noch baut — die EINE Liste (band-urteil `einschwingOffen`, mit der Dorf-Wache des Messorts dorf)
+            o = window.__einschwingOffen(r);
             const s = stand();
             if (s.loadScale < 1) o.loadScale = s.loadScale;
             if (vor) for (const key of Object.keys(s)) if (s[key] !== vor[key]) o[key] = `${vor[key]}→${s[key]}`;
@@ -861,6 +852,7 @@ async function starte() {
         await page.evaluate(AUSGABE_INSTALL);
         await page.evaluate(LINSEN_INSTALL);
         await page.evaluate(ZAEHLER_INSTALL);
+        await page.evaluate(BAND.EINSCHWING_INSTALL);
         await page.evaluate(FLUSS_INSTALL);
         await page.evaluate(TAKT_INSTALL);
         await page.evaluate(DIAET.DIAET_INSTALL);

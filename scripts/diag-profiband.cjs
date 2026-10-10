@@ -38,6 +38,9 @@
 // Richtung, mit doppelter id, fremder oder geteilter Ratsche wird rot · dieselbe Klasse ist über der Ratsche ihres Orts rot,
 // über der eines anderen nicht · die Tor-Hülle je Tor (Soll-Zeile des Genesis-Rings) · ein toter Ort-Takt wird rot ·
 // ein Lauf, der nicht im Zustand seines Orts stand (Dorf-Zug, Aufstellung, Blick, Ort-Takt), wird beim Namen genannt.
+// S3 haus: der Satz-Inhalt nennt den Täter im EINEN Befehl eines Satzes (ein gepflanzter Bereich erscheint, ein falscher
+// Draw-Umfang als REST; die Ratschen-Zeile „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760") · der Wurf je Exemplar
+// (Soll-Zeile mit `stufen`, Messort dorf) · das Einschwingen wartet auf den Dorf-Zug (Export, wachsende Siedlung).
 //
 //   node scripts/diag-profiband.cjs [--selftest]          (npm run gate:profiband)
 "use strict";
@@ -801,6 +804,117 @@ function selbsttest() {
             ist.p.summe > 400000 &&
             soll.errs.length === 0 &&
             luecke.errs.some((x) => /ohne Golden-Dreiecke/.test(x))
+    );
+
+    // S26 — DER SATZ-INHALT (S3 haus, 1b): ein Satz zeichnet je Pass EINEN Befehl — die Ratschen-Zeile nennt, wer darin
+    // liegt („bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760"), die Tabelle druckt den Inhalt je Pass.
+    const r26 = JSON.parse(JSON.stringify(rt));
+    r26.klassen.bau.k0 = { befehle: 1, dreiecke: 4224 };
+    const satz26 = {
+        klasse: "bauSatz",
+        stufe: null,
+        art: null,
+        je: { haupt: 1, k0: 1 },
+        jeTris: { haupt: 18445, k0: 12760 },
+        inhalt: {
+            k0: [{ klasse: "f:feuerstelle:L1", stufe: 1, art: "ausstattung", zellen: 29, tris: 12760, eintraege: [] }],
+        },
+    };
+    const u26 = urteil([satz26], r26);
+    const zeile26 = u26.rot.find((x) => x.art === "ratsche" && /^bau k0/.test(x.text));
+    t(
+        "Satz-Inhalt: bauSatz k0 über der Ratsche nennt „bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760\", die Tabelle den Inhalt",
+        !!zeile26 &&
+            /bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760/.test(zeile26.text) &&
+            /bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760/.test(BAND.bandTabelle(u26))
+    );
+    // S26b — der Satz-Inhalt am Satz selbst (draw-zaehler `satzInhalt`, die Seiten-Funktion): ein in k0 gepflanzter Bereich
+    // (die Gruppe einer Feuerstelle, 3 Instanzen = 3 Zellen à 440 Dreiecke, ihre Einträge 7/8/9) erscheint mit Klasse,
+    // Zellen, Dreiecken und Exemplaren; die Lücke des Laufs steht als `lücke`, ohne Rest; das Hauptbild ohne den Bereich
+    // nennt ihn nicht, ein falscher Draw-Umfang erscheint als REST.
+    const key26 = "f:feuerstelle|1|1:0";
+    const b26 = { key: key26, zellen: [] };
+    for (let i = 0; i < 3; i++) b26.zellen.push({ bereich: b26, idx: new Uint32Array(1320) });
+    const satz26b = {
+        abschnitte: new Map([
+            ["k0", { liste: b26.zellen.slice(), n: 3960, ende: 3960 + 30 }],
+            ["haupt", { liste: [], n: 0, ende: 0 }],
+        ]),
+    };
+    const ein26 = new Map([[key26, new Map([[0, 7], [1, 8], [2, 9]])]]);
+    const i26 = DZ.satzInhalt(satz26b, "k0", (3960 + 30) / 3, S.instanz, ein26);
+    const f26 = i26.get("f:feuerstelle:L1");
+    t(
+        "Satz-Inhalt: ein gepflanzter Bereich erscheint (f:feuerstelle:L1 3 Zellen = 1 320, Einträge 7/8/9, Lücke 10, kein Rest), " +
+            "das Hauptbild ohne ihn nicht, ein falscher Draw-Umfang als REST",
+        !!f26 &&
+            f26.zellen === 3 &&
+            f26.tris === 1320 &&
+            [...f26.eintraege].join(",") === "7,8,9" &&
+            i26.get("lücke").tris === 10 &&
+            !i26.has("REST") &&
+            DZ.satzInhalt(satz26b, "haupt", 0, S.instanz, ein26).size === 0 &&
+            DZ.satzInhalt(satz26b, "k0", 1500, S.instanz, ein26).get("REST").tris === 170
+    );
+    // S27 — DER WURF JE EXEMPLAR (Soll-Zeile mit `stufen`, Messort dorf): zwei Häuser werfen in k0 ihre L0 (140 000) und
+    // eine L1 (15 000) über den Satz-Inhalt → 77 500 je Haus (807×); eine Art daneben zählt nicht; `stufe` UND `stufen`
+    // zugleich (oder keins) bricht das Schema. Ein Pass ohne Exemplar trägt keine Zeile.
+    const dorf = BAND.ortOf(haushalt, "dorf");
+    const satz27 = {
+        klasse: "bauSatz",
+        stufe: null,
+        art: null,
+        je: { k0: 1 },
+        jeTris: { k0: 155000 + 12760 },
+        inhalt: {
+            k0: [
+                { klasse: "f:alemannisch:L0", stufe: 0, art: "haus", zellen: 6, tris: 140000, eintraege: [11, 12] },
+                { klasse: "f:griechisch:L1", stufe: 1, art: "haus", zellen: 3, tris: 15000, eintraege: [12] },
+                { klasse: "f:feuerstelle:L1", stufe: 1, art: "ausstattung", zellen: 29, tris: 12760, eintraege: [1, 2] },
+            ],
+        },
+    };
+    const s27 = BAND.ortSoll(dorf, { klassen: [satz27] });
+    const haus27 = s27.find((x) => x.name === "Haus-Wurf" && /k0/.test(x.klasse));
+    const h27 = (f) => {
+        const h = JSON.parse(JSON.stringify(haushalt));
+        f(h.messorte.find((o) => o.id === "dorf").soll[0]);
+        return BAND.messortePruefen(h);
+    };
+    t(
+        "Wurf je Exemplar: Haus-Wurf k0 = 155 000 / 2 Häuser = 77 500 (807×, Täter f:alemannisch:L0), die Feuerstelle nicht im " +
+            "Haus-Wurf; stufe + stufen bzw. keins bricht das Schema; ohne k1 keine k1-Zeile",
+        !!haus27 &&
+            haus27.huelle === 77500 &&
+            haus27.exemplare === 2 &&
+            haus27.faktor === 807.29 &&
+            /f:alemannisch:L0/.test(haus27.taeter) &&
+            !s27.some((x) => /k1/.test(x.klasse)) &&
+            s27.some((x) => x.name === "Ausstattungs-Wurf" && x.huelle === 6380) &&
+            h27((s) => (s.stufe = 0)).some((x) => /Soll-Zeile/.test(x)) &&
+            h27((s) => delete s.stufen).some((x) => /Soll-Zeile/.test(x)) &&
+            !BAND.messortePruefen(haushalt).length
+    );
+    // S28 — DAS EINSCHWINGEN WARTET AUF DEN DORF-ZUG (Messort dorf: der Zug läuft): ein Export unterwegs und eine wachsende
+    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts.
+    const welt28 = (z) =>
+        Object.assign(
+            {
+                state: { voxelMeshPending: new Set(), scatterRegions: new Map() },
+                _foundry: { warte: [], pending: new Map() },
+                _impostorBakeQueue: [],
+                _autoSettlementQueue: null,
+                _autoSettlementPendingKey: null,
+            },
+            z
+        );
+    const o28 = BAND.einschwingOffen(welt28({ _autoSettlementQueue: { plan: { slots: [1, 2, 3] }, idx: 1 } }));
+    t(
+        "Einschwingen: eine wachsende Siedlung (1/3) und ein Export unterwegs halten offen, die ruhige Welt nicht",
+        o28.dorfWaechst === "1/3" &&
+            BAND.einschwingOffen(welt28({ _autoSettlementPendingKey: "-4,-4" })).dorfExport === "-4,-4" &&
+            Object.keys(BAND.einschwingOffen(welt28({}))).length === 0 &&
+            /window\.__einschwingOffen = function einschwingOffen/.test(BAND.EINSCHWING_INSTALL)
     );
 
     const rot = tests.filter((x) => !x.ok);
