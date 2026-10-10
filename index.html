@@ -1423,6 +1423,55 @@
                 z-index: 5;
                 box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
             }
+            /* DER TACHO (Leben-Schau 2, fahr-bahn) — rechts über der Hotbar-Höhe (auf 958 px Breite deckt er die
+               Hotbar nicht), im Messing-Rahmen des Stats-HUD; er bleibt auch bei ausgeblendetem HUD (H) das Instrument
+               der Fahrt und fängt keine Maus. */
+            #fahr-tacho {
+                position: absolute;
+                right: 18px;
+                bottom: 150px;
+                z-index: 6;
+                min-width: 136px;
+                max-width: min(240px, calc(100vw - 36px));
+                padding: 8px 14px 9px;
+                box-sizing: border-box;
+                background: linear-gradient(180deg, rgba(28, 20, 12, 0.88) 0%, rgba(20, 14, 8, 0.92) 100%);
+                border: 1px solid var(--brass-2, #8a6322);
+                border-radius: 6px;
+                box-shadow:
+                    inset 0 0 0 1px rgba(198, 154, 74, 0.25),
+                    0 3px 14px rgba(0, 0, 0, 0.6);
+                color: #e9d49e;
+                pointer-events: none;
+            }
+            #fahr-tacho[hidden] {
+                display: none;
+            }
+            #fahr-tacho .fahr-tacho-anzeige {
+                text-align: right;
+                white-space: nowrap;
+            }
+            #fahr-tacho .fahr-tacho-zahl {
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 34px;
+                line-height: 1;
+                font-variant-numeric: tabular-nums;
+                text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+            }
+            #fahr-tacho .fahr-tacho-einheit {
+                margin-left: 6px;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                letter-spacing: 0.12em;
+                opacity: 0.8;
+            }
+            #fahr-tacho .fahr-tacho-tasten {
+                margin-top: 6px;
+                font-family: Georgia, serif;
+                font-size: 10px;
+                line-height: 1.4;
+                opacity: 0.78;
+            }
             /* Welle 6.X.4 B3 (Audit 17.05.2026) — Stats-HUD über der Hotbar.
                Painterly Pergament + Kupfer. HP/Stamina als zwei SVG-Bars,
                schmaler als die Hotbar (etwa 80% Breite, zentriert). Hover
@@ -8080,6 +8129,15 @@
             <div id="stats-hud-tooltip" aria-hidden="true">Stats laden …</div>
         </div>
         <div id="hotbar" role="toolbar" aria-label="Bauplan-Hotbar"></div>
+        <!-- DER TACHO (Leben-Schau 2, fahr-bahn): im Sattel eines Gesetz-Wagens die km/h seines Fahr-Zustands
+             (|vlong| × vehicle:FAHR.kmh, dieselbe Zahl wie die Probefahrt) und die Fahr-Tasten (AnazhRealm.FAHR_TASTEN).
+             Schreiber: `_fahrAnzeige` (anazhRealm.js); ohne Ritt verborgen. -->
+        <div id="fahr-tacho" role="status" aria-label="Tacho" hidden>
+            <div class="fahr-tacho-anzeige">
+                <span class="fahr-tacho-zahl" data-kmh>0</span><span class="fahr-tacho-einheit">km/h</span>
+            </div>
+            <div class="fahr-tacho-tasten"></div>
+        </div>
         <!-- Welle 6.C1 — Hylomorphismus-Inventar (Tab-Toggle). 27 Slots in
              3×9-Grid. Jeder Slot trägt Tag-Profile bei Hover als Glow + Audio. -->
         <div id="inventory-overlay" role="dialog" aria-label="Dein Ich" aria-modal="false" hidden>

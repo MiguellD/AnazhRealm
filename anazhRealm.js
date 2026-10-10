@@ -740,6 +740,8 @@ class AnazhRealm {
                 lofi: null, // { gain, filter, melodyGain, grooveGain, bassGain, noiseBuffer, degree, lastChordAt, rngState }
                 // Welle 5 Klang — die Klang-Welt (klang:UMWELT), lazy in initSymphony. Runtime-only, NIE im Save.
                 umwelt: null, // { kern, bus, graph, ring, glut, letzteMischung, rufSaat, lage, mix }
+                // Leben-Schau 2 — die Stimme der Fahrt (klang:FAHRT), nur im Sattel (_fahrtKlangTick). Runtime-only.
+                fahrt: null, // { entry, stimme }
             },
             player: {
                 // Avatar-Name (Default "Schöpfer"), editierbar, persistiert in localStorage; der LLM-System-Prompt
@@ -9812,6 +9814,7 @@ class AnazhRealm {
         // mit dem geschlossenen ctx.
         s.lofi = null;
         s.umwelt = null;
+        s.fahrt = null; // die Stimme der Fahrt starb mit dem Kontext
         s.masterGain = null;
         s.spitze = null;
     }
@@ -10458,6 +10461,34 @@ class AnazhRealm {
         if (!s.enabled || !s.ctx) return;
         this._lofiTick();
         this._umweltKlangTick();
+        this._fahrtKlangTick();
+    }
+
+    // DIE STIMME DER FAHRT (Leben-Schau 2, fahr-bahn — Befund: Fahren war stumm): im Sattel eines Gesetz-Wagens klingt seine
+    // Fahrt aus dem Gesetzbuch (klang:FAHRT — der Motor aus der Zünd-Folge seiner Drehzahl im Gang, das Abrollen aus dem
+    // Tempo; die Quellen baut klang-core `fahrtStimme`) auf dem Welt-Master. Der Wirt reicht nur die Lage: das Tempo des
+    // Fahr-Zustands, die Deckel des Fahr-Satzes (vmax, rückwärts vehicle:FAHR.schritt.rueckVmax), das Gas aus den Fahr-
+    // Tasten (W, rückwärts S), den Flug. Absteigen oder ein Wagen-Wechsel stoppt sie. Kosten: eine Stimme, nur im Sattel.
+    _fahrtKlangTick() {
+        const s = this.state.symphony;
+        const pl = this.state.player;
+        const e = pl && pl.mountedArch != null ? this._mountedEntry : null;
+        const fz = e && e.id === pl.mountedArch && e._fahrSatz && e._fahr && Number.isFinite(e._fahr.vlong) ? e._fahr : null;
+        if (s.fahrt && (!fz || s.fahrt.entry !== e)) {
+            s.fahrt.stimme.stop(s.ctx.currentTime);
+            s.fahrt = null;
+        }
+        if (!fz) return;
+        if (!s.fahrt) s.fahrt = { entry: e, stimme: AnazhRealm._umweltGesetz().kern.fahrtStimme(s.ctx, s.masterGain) };
+        const S = AnazhRealm._fahrSchrittGesetz().S;
+        const FT = AnazhRealm.FAHR_TASTEN;
+        const keys = this.state.keys;
+        const gas = keys[FT.gas.tasten[0]] || (keys[FT.bremse.tasten[0]] && fz.vlong <= S.bremsV) ? 1 : 0;
+        const vmax = e._fahrSatz.vmax;
+        s.fahrt.stimme.anwenden(
+            { v: fz.vlong, vmax, rueckVmax: vmax * S.rueckVmax, gas, luft: !!fz.luft },
+            s.ctx.currentTime
+        );
     }
 
     // ### Lofi-Pad-Schicht ###
@@ -25931,7 +25962,15 @@ class AnazhRealm {
             `Die Welt versteht: ${dsl.map((p) => q(p.example)).join(" · ")}`,
             `System: ${this.chatSystemPatterns.map((p) => q(p.example)).join(" · ")}`,
             `Tasten: WASD laufen · 1–9 Hotbar · ${tasten.join(" · ")}`,
+            `Fahren: ${this._fahrTastenZeile()}`,
         ];
+    }
+
+    // Die Fahr-Tasten als EINE Zeile (die Tafel AnazhRealm.FAHR_TASTEN, die die Eingabe liest): die Hilfe und der Tacho.
+    _fahrTastenZeile() {
+        return Object.values(AnazhRealm.FAHR_TASTEN)
+            .map((t) => `${t.zeigen} ${t.label}`)
+            .join(" · ");
     }
 
     // Beschreibung → DSL-Programm. Vier bekannte Pattern + Catch-All als
@@ -54188,6 +54227,121 @@ class AnazhRealm {
         entry._rideRoll = Math.max(-kl, Math.min(kl, eb.wank));
     }
 
+    // DER PLATZ, DEN DIE WELT WÄHLT (Leben-Schau 2, fahr-bahn — Befund: der Vorschau-GT am Garage-Tor stand 38° steil und
+    // 40° gewankt auf dem Felsblock, W 3 s brachte 0,08 m; der Ort lag 8 m radial hinter dem Tor, ohne Neigungs- und Fels-
+    // Probe). Ein Wagen, den die Welt hinstellt (`spawnArchitecture` ohne präzisen Ort: die Vorschau, „bau mir einen gt",
+    // der Nexus), steht auf fahrbarem Grund (`_fahrPlatzFrei`); ist der gewünschte Ort keiner, wandert er zum nächsten in
+    // Ringen um ihn (vehicle-core FAHR.platz: Schritt und Radius; je Ring der Umfang in Schritten, ab der Fahrt-Richtung —
+    // deterministisch, jeder Peer gleich). Ein präziser Ort (Wiederherstellen, Mitspieler, das Phantom, die Linsen) bleibt
+    // bit-treu. Trägt kein Ort im Radius, bleibt der Wagen und das Log nennt den Grund (WARN) — nie still.
+    _fahrPlatzSuche(entry) {
+        const fzg = this._fahrzeugGesetzFor(entry);
+        if (!fzg || !fzg.drive || !fzg.drive.huelle) return;
+        entry._fahrAchseX = true; // Studio-Wagen: Bug +x (die Aufstandspunkte lesen das Gesetz)
+        const prof = this._vehicleProfile(entry);
+        const G = prof ? this._fahrSatz(entry, prof) : null;
+        if (!G) return;
+        const P = AnazhRealm._fahrPlatzGesetz().P;
+        const k = this._fahrHuelleBau(entry, G);
+        const ry = (Number.isFinite(entry.rotationY) ? entry.rotationY : 0) + Math.PI / 2;
+        const x0 = entry.position.x;
+        const z0 = entry.position.z;
+        const grund = this._fahrPlatzFrei(entry, G, k, x0, z0, ry);
+        if (!grund) return;
+        for (let r = 0; r <= P.suchRadiusM + 1e-9; r += P.suchSchrittM) {
+            const n = r === 0 ? 1 : Math.max(8, Math.round((2 * Math.PI * r) / P.suchSchrittM));
+            for (let i = 0; i < n; i++) {
+                const a = ry + (i / n) * 2 * Math.PI;
+                const x = x0 + Math.sin(a) * r;
+                const z = z0 + Math.cos(a) * r;
+                for (let j = r === 0 ? 1 : 0; j < P.richtungen; j++) {
+                    const rj = ry + (j / P.richtungen) * 2 * Math.PI;
+                    const g = this._fahrPlatzFrei(entry, G, k, x, z, rj);
+                    // zu steil ist der Grund, nicht die Richtung: die Fallinie der Ebene trägt keine Drehung weiter
+                    if (g === "steil") break;
+                    if (g) continue;
+                    entry.position.x = x;
+                    entry.position.z = z;
+                    entry.rotationY = rj - Math.PI / 2; // Studio-Wagen: Template-Gier = Fahrt − π/2
+                    this.log(`Fahr-Platz: ${entry.type} steht ${r} m weiter auf fahrbarem Grund (dort: ${grund}).`, "INFO");
+                    return;
+                }
+            }
+        }
+        this.log(
+            `Fahr-Platz: kein fahrbarer Grund im Umkreis von ${P.suchRadiusM} m um (${x0.toFixed(1)}, ${z0.toFixed(1)}) — ${entry.type} bleibt (${grund}).`,
+            "WARN"
+        );
+    }
+
+    // Steht der Wagen bei (x, z) in Fahrt-Richtung `ry` frei, und hat er eine BAHN? null = ja, sonst der Grund beim Namen:
+    // der Stand dort (`_fahrStandFrei`) und derselbe Stand je bahnLaengen Wagenlängen vor und hinter ihm (vehicle-core
+    // FAHR.platz) — er fährt in beide Richtungen los, ohne sofort anzustoßen.
+    _fahrPlatzFrei(entry, G, k, x, z, ry) {
+        const L = (k.bug - k.heck) * AnazhRealm._fahrPlatzGesetz().P.bahnLaengen;
+        const fX = Math.sin(ry);
+        const fZ = Math.cos(ry);
+        for (const s of [0, 1, -1]) {
+            const g = this._fahrStandFrei(entry, G, k, x + fX * L * s, z + fZ * L * s, ry);
+            if (g) return s === 0 ? g : `${g} ${s > 0 ? "vor" : "hinter"} ihm`;
+        }
+        return null;
+    }
+
+    // Der STAND bei (x, z): das Gesetz des Kerns (vehicle-core fahrPlatz: die Ebene der Räder trägt, die Anfahrt bergauf) und
+    // die Welt des Wirts: keine Wand des Geländes unter der Hülle (5 × 3 Punkte — der Fels, der in den Wagen ragt),
+    // keine Box eines Baus, Baums oder Wagens im Band der Hülle (der EINE Struktur-Löser mit der Hülle als Körper, wie im
+    // Ritt), kein Wasser am Ort (`_nassAt`), der Spieler nicht unter dem Wagen. Die Wand ist die des Kontakts
+    // (`_fahrGelaendeWand` ohne Fahrt-Richtung: jede steile Fläche zählt).
+    _fahrStandFrei(entry, G, k, x, z, ry) {
+        const { vc } = AnazhRealm._fahrPlatzGesetz();
+        const pl = vc.fahrPlatz(
+            G,
+            this._fahrTerrainBoden || (this._fahrTerrainBoden = (a, b) => this.getTerrainHeightAt(a, b)),
+            x,
+            z,
+            ry - Math.PI / 2
+        );
+        if (!pl.ok) return pl.grund;
+        const eb = pl.eb;
+        const fX = Math.sin(ry);
+        const fZ = Math.cos(ry);
+        const qX = Math.cos(ry);
+        const qZ = -Math.sin(ry);
+        const tS = Math.tan(eb.steig);
+        const tW = Math.tan(eb.wank);
+        for (let i = 0; i <= 4; i++) {
+            const l = k.heck + ((k.bug - k.heck) * i) / 4;
+            for (const q of [-k.hw, 0, k.hw]) {
+                const px = x + l * fX + q * qX;
+                const pz = z + l * fZ + q * qZ;
+                if (this._fahrGelaendeWand(px, pz, eb.y + tS * l + tW * q, k, 0, 0)) return "fels";
+            }
+        }
+        if (this._nassAt(x, z)) return "wasser";
+        const pm = this.state.playerMesh;
+        if (pm && pm.position) {
+            const dx = pm.position.x - (x + fX * k.mitte);
+            const dz = pm.position.z - (z + fZ * k.mitte);
+            const rS = AnazhRealm.PLAYER_WALL_RADIUS;
+            if (Math.abs(dx * fX + dz * fZ) < k.hl + rS && Math.abs(dx * qX + dz * qZ) < k.hw + rS) return "spieler";
+        }
+        k.fX = fX;
+        k.fZ = fZ;
+        k.qX = qX;
+        k.qZ = qZ;
+        k.unten = eb.y + k.stufe;
+        k.oben = eb.y + k.dach;
+        k.schub.length = 0;
+        k.schubQuelle.length = 0;
+        const pos = this._fahrPlatzPos || (this._fahrPlatzPos = { x: 0, z: 0 });
+        pos.x = x;
+        pos.z = z;
+        this._stepCharacterStructures(pos, 0, 0, 0, k);
+        this._stepCharacterIslands(pos, 0, 0, 0, k);
+        return k.schub.length ? "bau" : null;
+    }
+
     // Die Template-Gier zu einer Fahrt-Richtung (sin, cos): ein Studio-Fahrzeug liegt längs x (Bug +x) — R_y(φ)
     // trägt +x nach (cos φ, −sin φ), also φ = Fahrt − π/2; ein Teile-Werk fährt in +z (φ = Fahrt).
     _rittGier(entry, fahrtYaw) {
@@ -54848,11 +55002,43 @@ class AnazhRealm {
         pl.liftingField = { active: best > 0, strength: best };
     }
 
+    // DER TACHO (Leben-Schau 2, fahr-bahn — Befund: im Spiel kein Tacho, die Probefahrt zeigt ihn): im Sattel eines Gesetz-
+    // Wagens zeigt #fahr-tacho die km/h seines Fahr-Zustands (|vlong| × vehicle:FAHR.kmh — dieselbe Zahl wie der Tacho der
+    // Probefahrt) und darunter die Fahr-Tasten (`_fahrTastenZeile`); ohne Ritt ist er fort. Das DOM wird nur geschrieben,
+    // wenn die Zahl oder die Sichtbarkeit wechselt.
+    _fahrAnzeige() {
+        if (typeof document === "undefined") return;
+        const el = this._fahrTachoEl || (this._fahrTachoEl = document.getElementById("fahr-tacho"));
+        if (!el) return;
+        const pl = this.state.player;
+        const e = pl && pl.mountedArch != null ? this._mountedEntry : null;
+        const fz = e && e._fahrSatz && e._fahr && e.id === pl.mountedArch ? e._fahr : null;
+        if (!fz) {
+            if (!el.hidden) el.hidden = true;
+            this._fahrTachoKmh = null;
+            return;
+        }
+        const proKmh = AnazhRealm._fahrSchrittGesetz().vc.FAHR.kmh;
+        if (!Number.isFinite(proKmh)) return AnazhRealm._kernPflichtBruch("vehicle:FAHR.kmh");
+        const kmh = Math.round(Math.abs(fz.vlong) * proKmh);
+        if (el.hidden) {
+            const t = el.querySelector(".fahr-tacho-tasten");
+            if (t) t.textContent = this._fahrTastenZeile();
+            el.hidden = false;
+        }
+        if (kmh !== this._fahrTachoKmh) {
+            this._fahrTachoKmh = kmh;
+            const z = el.querySelector("[data-kmh]");
+            if (z) z.textContent = String(kmh);
+        }
+    }
+
     // Global-Tick für alle Affordances (wird im Game-Loop aufgerufen).
     // Nimmt dt = Sekunden seit letztem Frame.
     tickAffordances(dt) {
         if (!Number.isFinite(dt) || dt <= 0) return;
         this._tickMountedMovement(dt);
+        this._fahrAnzeige();
         this._tickFocusingAffordances(dt);
         this._tickRadiatingAffordances(dt);
         this._tickBalancingAffordances(dt);
@@ -70627,7 +70813,9 @@ class AnazhRealm {
                 }
             }
         }
-        // DER STAND (W5): ein Studio-Fahrzeug parkt auf der Ebene seiner vier Räder (Höhe · Nick · Wank).
+        // DER PLATZ (Leben-Schau 2): wählt die Welt den Ort (dieselbe Weiche wie die Spieler-Klemme), steht ein Wagen auf
+        // fahrbarem Grund; ein präziser Ort bleibt bit-treu. DER STAND (W5): er parkt auf der Ebene seiner vier Räder.
+        if (_playerClamp) this._fahrPlatzSuche(entry);
         this._fahrzeugStand(entry);
         this.state.architectures.push(entry);
         this._blockerEintritt(entry);
@@ -73199,6 +73387,9 @@ class AnazhRealm {
                       ? 49180
                       : 49170;
         const opts = { silent: true, autonomous: true, id, seed };
+        // Der Vorschau-Wagen schaut vom Ring hinaus in die Welt (Studio-Wagen: Template-Gier = Fahrt − π/2); wo er steht,
+        // entscheidet das Platz-Gesetz (`_fahrPlatzSuche` in spawnArchitecture: der nächste fahrbare Grund mit Bahn).
+        if (worldKey === "garage") opts.rotationY = Math.atan2(px - M.x, pz - M.z) - Math.PI / 2;
         // Nur fachwerk/haus_*: dichtes studioOv, damit `_archFachwerkFit` brace/gaube/fluegel unter Soft-Cap
         // ≤24 bekommt. Der Stempel gewinnt: ein Eintrag ohne studioOv bleibt; ov nur bei Neu-Spawn.
         if (worldKey === "fachwerk" && type.startsWith("haus_")) {
@@ -92576,7 +92767,7 @@ class AnazhRealm {
             } else if (action === "cancelBuild" || event.key === "Escape") {
                 if (this.state.buildMode.active) this._clearBuildMode();
                 this._updateHotbarHighlight();
-            } else if (event.code === "KeyE") {
+            } else if (event.code === AnazhRealm.FAHR_TASTEN.einsteigen.code) {
                 // E toggelt Mount/Dismount für moveable-Architekturen, nur außerhalb des Werkstatt-Drawers (dort ist
                 // E der Rotate-Modus). Ein Portal in Reichweite schlägt das Reiten (_tryEnterPortalAtPlayer zuerst).
                 if (this.state.uiActiveDrawer !== "werkstatt") {
@@ -93540,6 +93731,11 @@ class AnazhRealm {
     // `_blockerComputePartAABB`), gegen die jeder Löser im Rahmen der Box rechnet — auch `_resolveHuelleVsAABB`.
     _fahrHuelle(entry) {
         if (!entry || !entry._fahr || !entry._fahrSatz || !Number.isFinite(entry._fahr.y)) return null;
+        return this._fahrHuelleBau(entry, entry._fahrSatz);
+    }
+    // Die Hülle aus dem Gesetz (je Eintrag einmal, `mountArchitecture` setzt sie frisch): der Ritt liest sie über
+    // `_fahrHuelle`, der Platz eines Wagens, den die Welt hinstellt (`_fahrPlatzFrei`), schon vor der ersten Fahrt.
+    _fahrHuelleBau(entry, G) {
         if (entry._fahrHuelleKette) return entry._fahrHuelleKette;
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
         const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;
@@ -93560,7 +93756,7 @@ class AnazhRealm {
             dach = ext && Number.isFinite(ext.dy) ? Math.max(0.6, ext.dy * sc) : 1.5;
         }
         // die Stufe aus dem Kern (FAHR.schritt.stufeRad × radR des Fahr-Satzes; radR ist Pflicht des Satzes)
-        const stufe = AnazhRealm._fahrSchrittGesetz().S.stufeRad * entry._fahrSatz.radR;
+        const stufe = AnazhRealm._fahrSchrittGesetz().S.stufeRad * G.radR;
         // Der UMRISS (Fahrt-Rahmen: längs l, quer q, Außen-Normale nl/nq): die vier Ecken, Bug- und Heck-Mitte und je
         // Flanke drei Punkte — wo das Gelände dort steil über die Ebene + Stufe ragt, steht eine Wand.
         const umriss = [];
@@ -93693,6 +93889,26 @@ class AnazhRealm {
     // wird überrollt — der Hasel-Trieb hält keinen Wagen, der Kiefern-Stamm schon); (3) KREATUREN — das Rechteck gegen
     // den Leib eines Wesens (`_kreaturLeib`, D2: derselbe Leib, mit dem das Tier gegen jede Hülle löst). Was die Hülle
     // schiebt, nimmt der Fahrt die Normal-Komponente. Liefert {x, z, vx, vz}.
+    // DIE WAND DES GELÄNDES an einem Punkt (px, pz) der Hülle über der Ebene `yE` ihrer Räder — EINE Regel für den Kontakt
+    // der Hülle (`_fahrHuelleKontakt`) und den Platz eines Wagens (`_fahrStandFrei`): Feld über Ebene + Rad-Stufe ist eine
+    // Wand, wenn seine Fläche steiler steht als die Ebenen-Klammer des Kerns (ein Hang, den die Räder nehmen, hebt den Wagen —
+    // er hält ihn nicht) und, in Fahrt (wx, wz ≠ 0), dem Wagen zugewandt ist; Feld auf Brust-Höhe ist immer eine Wand.
+    // Liefert den Kontakt-Punkt {x, y, z} oder null.
+    _fahrGelaendeWand(px, pz, yE, k, wx, wz) {
+        const ctx = this._terrainColumnContext(px, pz);
+        const yS = yE + k.stufe + 0.02;
+        if (this._fieldSolid(px, yS, pz, ctx)) {
+            const n = this._fahrHuelleN || (this._fahrHuelleN = {});
+            this._fieldGradient(px, yS, pz, n);
+            const steilY = Math.cos(AnazhRealm._fahrSchrittGesetz().S.ebeneMax); // die Ebenen-Klammer des Kerns
+            if (!(n.mag > 1e-6) || (n.y < steilY && ((wx === 0 && wz === 0) || n.x * wx + n.z * wz < 0)))
+                return { x: px, z: pz, y: yS };
+        }
+        const brust = Math.min(k.dach, 1.2);
+        if (this._fieldSolid(px, yE + brust, pz, ctx)) return { x: px, z: pz, y: yE + brust };
+        return null;
+    }
+
     _fahrHuelleKontakt(entry, k, x0, z0, vx, vz, dt, meldet = true) {
         const fz = entry._fahr;
         const ry = Number.isFinite(entry._rideYaw) ? entry._rideYaw : 0;
@@ -93708,9 +93924,6 @@ class AnazhRealm {
             const dz = pz - z0;
             return fz.y + tS * (dx * fX + dz * fZ) + tW * (dx * qX + dz * qZ);
         };
-        const brust = Math.min(k.dach, 1.2);
-        const steilY = Math.cos(AnazhRealm._fahrSchrittGesetz().S.ebeneMax); // die Ebenen-Klammer des Kerns
-        const nrmW = this._fahrHuelleN || (this._fahrHuelleN = {});
         // (1) GELÄNDE: die führenden Umriss-Punkte gegen das Feld. Eine WAND ist Feld über Ebene + Stufe, dessen Fläche
         // steiler steht als die Ebenen-Klammer (ein Hang, den die Räder nehmen, hebt den Wagen — er hält ihn nicht) UND dem
         // Wagen zugewandt ist, oder Feld auf Brust-Höhe. Zeigt die Fläche in die Fahrt, ist sie die Rückseite einer Kuppe
@@ -93724,15 +93937,8 @@ class AnazhRealm {
                 if (nx * wx + nz * wz <= 0) continue; // nur, wohin die Hülle fährt
                 const px = ox + p.l * fX + p.q * qX;
                 const pz = oz + p.l * fZ + p.q * qZ;
-                const e = ebene(px, pz);
-                const ctx = this._terrainColumnContext(px, pz);
-                const yS = e + k.stufe + 0.02;
-                if (this._fieldSolid(px, yS, pz, ctx)) {
-                    this._fieldGradient(px, yS, pz, nrmW);
-                    if (!(nrmW.mag > 1e-6) || (nrmW.y < steilY && nrmW.x * wx + nrmW.z * wz < 0))
-                        return { x: px, z: pz, y: yS };
-                }
-                if (this._fieldSolid(px, e + brust, pz, ctx)) return { x: px, z: pz, y: e + brust };
+                const w = this._fahrGelaendeWand(px, pz, ebene(px, pz), k, wx, wz);
+                if (w) return w;
             }
             return null;
         };
@@ -94663,13 +94869,14 @@ class AnazhRealm {
                 z.vlat = -v.x() * syF - v.z() * cyF;
                 vc.fahrStand(z, fahrG, this._fahrBoden(ent), nowDt);
                 const keys = this.state.keys;
+                const FT = AnazhRealm.FAHR_TASTEN; // die EINE Tafel der Fahr-Tasten (Hilfe und Tacho nennen sie)
                 vc.fahrKraefte(
                     z,
                     {
-                        throttle: keys["w"] ? 1 : 0,
-                        brake: keys["s"] ? 1 : 0,
-                        steer: (keys["a"] ? 1 : 0) - (keys["d"] ? 1 : 0),
-                        hand: !!keys["shift"],
+                        throttle: keys[FT.gas.tasten[0]] ? 1 : 0,
+                        brake: keys[FT.bremse.tasten[0]] ? 1 : 0,
+                        steer: (keys[FT.lenken.tasten[0]] ? 1 : 0) - (keys[FT.lenken.tasten[1]] ? 1 : 0),
+                        hand: !!keys[FT.handbremse.tasten[0]],
                     },
                     fahrG,
                     nowDt
@@ -99069,12 +99276,32 @@ AnazhRealm._fahrSchrittGesetz = function () {
         ["fahrGesetz", "fahrZustand", "fahrEbene", "fahrStand", "fahrKraefte", "fahrAufstand"].every(
             (f) => typeof vc[f] === "function"
         ) &&
-        ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps"].every((k) => Number.isFinite(S[k]))
+        ["stufeRad", "radHub", "ebeneMax", "ebeneTol", "luftEps", "bremsV", "rueckVmax"].every((k) => Number.isFinite(S[k]))
     ) {
         AnazhRealm._fahrSchrittMemo = { vc, S };
         return AnazhRealm._fahrSchrittMemo;
     }
     return AnazhRealm._kernPflichtBruch("vehicle:FAHR.schritt/fahrSchritt");
+};
+// Der EINE Platz-Leser (Leben-Schau 2, fahr-bahn): das Platz-Gesetz eines Wagens, den die Welt hinstellt (vehicle-core
+// fahrPlatz + FAHR.platz: Anfahrt-Anteil, Such-Schritt, Such-Radius). Fail-closed: ein Kern ohne Platz-Gesetz bricht laut,
+// nie stellt die Welt einen Wagen still ungeprüft hin. Memo je Kern-Objekt.
+AnazhRealm._fahrPlatzGesetz = function () {
+    const vc = typeof globalThis !== "undefined" ? globalThis.__vehicleCore : null;
+    const memo = AnazhRealm._fahrPlatzMemo;
+    if (memo && memo.vc === vc) return memo;
+    const P = vc && vc.FAHR && vc.FAHR.platz;
+    if (
+        P &&
+        typeof vc.fahrPlatz === "function" &&
+        ["anfahrAnteil", "bahnLaengen", "suchRadiusM", "suchSchrittM", "richtungen"].every((k) => Number.isFinite(P[k])) &&
+        P.suchSchrittM > 0 &&
+        P.richtungen >= 1
+    ) {
+        AnazhRealm._fahrPlatzMemo = { vc, P };
+        return AnazhRealm._fahrPlatzMemo;
+    }
+    return AnazhRealm._kernPflichtBruch("vehicle:FAHR.platz/fahrPlatz");
 };
 // Der EINE Kampf-Koeffizienten-Leser: hpMax/damage/knockback/defense aus PRESETS.mensch.fx.kampf,
 // Formel base + dichte-Tag·dichte + härte-Tag·haerte. Fail-closed.
@@ -99225,7 +99452,10 @@ AnazhRealm._umweltGesetz = function () {
         kern.tierRufSpielen &&
         kern.tierRufPegel &&
         kern.substanzKlang &&
-        kern.SUBSTANZ
+        kern.SUBSTANZ &&
+        kern.fahrtStimme &&
+        kern.fahrtMischung &&
+        kern.FAHRT
     ) {
         AnazhRealm._umweltGesetzMemo = { UMWELT: U, kern };
         return AnazhRealm._umweltGesetzMemo;
@@ -100589,6 +100819,17 @@ AnazhRealm.DEFAULT_KEYBINDINGS = Object.freeze({
     swapHands: "KeyG",
     // Das Gespräch (Leben-Schau 07.10., L3): Enter öffnet den Chat, Enter im Feld sendet und gibt die Welt zurück.
     chat: "Enter",
+});
+// DIE FAHR-TASTEN (Leben-Schau 2, fahr-bahn — Befund: in der Tastenliste fehlten E und die Handbremse): die EINE Tafel, die
+// die Eingabe liest (E im keydown-Hörer, Gas · Bremse · Lenkung · Handbremse im Fahr-Schritt) und die Hilfe (`_hilfeZeilen`)
+// und der Tacho (`_fahrAnzeige`) nennen. `tasten` = Namen in state.keys (event.key klein; die Pfeile schreiben w/a/s/d über
+// PFEIL_ALIAS), `code` = KeyboardEvent.code, `zeigen` = die Taste für den Spieler.
+AnazhRealm.FAHR_TASTEN = Object.freeze({
+    einsteigen: Object.freeze({ code: "KeyE", zeigen: "E", label: "einsteigen/aussteigen" }),
+    gas: Object.freeze({ tasten: Object.freeze(["w"]), zeigen: "W", label: "Gas" }),
+    bremse: Object.freeze({ tasten: Object.freeze(["s"]), zeigen: "S", label: "Bremse/rückwärts" }),
+    lenken: Object.freeze({ tasten: Object.freeze(["a", "d"]), zeigen: "A/D", label: "lenken" }),
+    handbremse: Object.freeze({ tasten: Object.freeze(["shift"]), zeigen: "Shift", label: "Handbremse" }),
 });
 AnazhRealm.KEYBINDING_ACTIONS = Object.freeze(Object.keys(AnazhRealm.DEFAULT_KEYBINDINGS));
 AnazhRealm.KEYBINDING_LABELS = Object.freeze({
