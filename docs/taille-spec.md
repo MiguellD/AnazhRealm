@@ -97,6 +97,14 @@ Kein Import-Pfad übernimmt Abgeleitetes als Wahrheit:
   `erbgut` ≥ 1 in `world-request`/`world-pull` (`AnazhRealm.ERBGUT_PROTOKOLL`), sonst
   verweigert der Sender benannt (`_erbgutTeilbar`; ein Build davor zeichnete still Wildnis).
   Die Bühne `spec/pruefbuehne/welt.json`.
+- **Die Weltgrenze:** eine geladene Welt ERSETZT das `worldMeta` der Seite — die Vorlage,
+  darüber ihr eigenes (`_weltMetaWechsel`, der Restore jedes Ladens). Aus der Welt davor reist
+  nur, was `AnazhRealm.WELT_GRENZE` beim Namen nennt: in die Lücken einer geladenen Welt ihr
+  Speicher-Platz (`worldId`, `slug`, `bornAt`), in eine neue Welt die Wahl des Schöpfers
+  (`visibility`, `creator`); die Gedächtnisse der Seite, die welt-eigene Felder spiegeln,
+  fallen mit dem `worldMeta`. Jede Tür, durch die eine andere Welt die Seite betritt (Welt-Tor
+  ersetzen, Snapshot eines Mitspielers), legt sie, wie sie kam, auf ihren Speicher-Platz und
+  lädt neu — der Speicher trägt nie die Mischung der Seite (`gate:weltgrenze`, sechs Wege).
 
 ## §4 · Die Versions-Regel (EINE Semantik)
 

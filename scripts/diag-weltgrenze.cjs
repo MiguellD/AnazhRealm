@@ -255,8 +255,13 @@ async function fahreWeg(browser, weg, schein) {
     const page = await ctx.newPage();
     const rep = { weg, schein, befunde: [], erlaubt: [], boot: [], navigiert: null };
     let pageErr = null;
+    let phase = "boot A";
     page.on("pageerror", (err) => {
-        pageErr = (err.stack || err.message).split("\n")[0];
+        const zeilen = String(err.stack || err.message).split("\n");
+        if (!pageErr) pageErr = `[${phase}] ${zeilen.slice(0, 4).join(" | ")}`;
+    });
+    page.on("framenavigated", (f) => {
+        if (f === page.mainFrame() && phase !== "boot A") phase = "nach dem Reload";
     });
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
@@ -268,6 +273,7 @@ async function fahreWeg(browser, weg, schein) {
         const a = await bereit(page, null);
         rep.boot.push(a.ms);
         if (!a.ok) throw new Error("Welt A nicht bereit nach 120 s");
+        phase = "Weg";
         const B = await page.evaluate(() => window.__grenze.bauB("grenze-b"));
         const bId = B.worldMeta.worldId;
         rep.pflanzung = await page.evaluate((e) => window.__grenze.pflanzeA(e), BUEHNE.worldMeta.erbgut);
@@ -311,7 +317,7 @@ async function fahreWeg(browser, weg, schein) {
                     }
                     if (weg === "weltpull") {
                         r.state.p2p.pendingWorldSnapshot = true;
-                        r._p2pApplyWorldSnapshot("grenze-host", B, { reload: true });
+                        r._p2pApplyWorldSnapshot("grenze-host", B);
                         return {};
                     }
                     if (weg === "portal") {
@@ -421,7 +427,7 @@ async function fahreWeg(browser, weg, schein) {
         const gruen = rep.befunde.length === 0;
         if (!gruen) rot = true;
         console.log(
-            `  ${gruen ? "✓" : "⛔"} ${weg.padEnd(9)} ${rep.navigiert ? "lud neu" : "blieb in der Seite"} · Boot ${rep.boot.join(" + ")} ms · ${(rep.ms / 1000).toFixed(1)} s${rep.erlaubt.length ? ` · Positiv-Liste ${rep.erlaubt.map((p) => p.split(".")[1]).join(", ")}` : ""} · ${gruen ? "0 Felder von A" : rep.befunde.length + " Befunde"}`
+            `  ${gruen ? "✓" : "⛔"} ${weg.padEnd(9)} ${rep.navigiert ? "die Tür lud neu" : weg === "portal" || weg === "reload" ? "der Rufer lud neu" : "blieb in der Seite"} · Boot ${rep.boot.join(" + ")} ms · ${(rep.ms / 1000).toFixed(1)} s${rep.erlaubt.length ? ` · Positiv-Liste ${rep.erlaubt.map((p) => p.split(".")[1]).join(", ")}` : ""} · ${gruen ? "0 Felder von A" : rep.befunde.length + " Befunde"}`
         );
         for (const f of rep.befunde) console.log(`      ⛔ ${f}`);
     }

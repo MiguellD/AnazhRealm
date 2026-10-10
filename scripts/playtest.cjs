@@ -11976,7 +11976,7 @@ async function checkBandRing11AndW7Mesh(ctx) {
         };
         p2p.role = "host";
         p2p._testNoReload = true;
-        const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} }, { reload: false });
+        const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} });
         out.applyExtractedWorks = applyRes.ok === true && p2p.role === "guest";
         out.applySetsActiveWorld = activeSetTo === "host-world-xyz";
         r.loadState = origLoad;
