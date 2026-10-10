@@ -3271,7 +3271,9 @@
                 xh = isFinite(xa) && isFinite(xb) ? clamp(xs, xa, xb) : xs,
                 ab = Math.abs(xh - xs) / m.S.L;
             eff = clamp(1 - 1.4 * ab, 0.25, 1);
-            ort = ab < 0.12 ? "schlagpunkt" : xh < xs ? (xh < (m.S.xBlade0 || 0) ? "hand" : "griffnah") : "spitze";
+            // der Ort heißt Schlagpunkt nur, wo die Wirkung voll ist (der Weg kreuzt x_S) — jede Minderung nennt ihre Seite;
+            // vorher hieß das Band |x − x_S| < 0,12·L Schlagpunkt, die Wirkung darin fiel schon bis 0,83 (ungenannt)
+            ort = xh === xs ? "schlagpunkt" : xh < xs ? (xh < (m.S.xBlade0 || 0) ? "hand" : "griffnah") : "spitze";
             KE *= eff;
         }
         return {
