@@ -5,28 +5,36 @@
 // Welt, die ohne Erbgut geladen wurde, behielt das Erbgut, den Anker, die Edits, die Dorf-Zellen und die Stempel der
 // Welt davor — über das Welt-Tor „Ersetzen" wurde eine Wildnis-Welt still als Insel gezeichnet und mit dem Erbgut der
 // Prüfbühne gespeichert. Diese Linse fährt JEDEN Weg, auf dem eine Welt B die Seite oder den Speicher einer Welt A
-// betritt, und nennt jedes Feld von A, das B danach trägt, beim Namen:
+// betritt, und nennt jedes Feld von A, das B danach trägt, beim Namen. Die Gegenprüfung Runde 3 fand zwei Wege, auf denen
+// der Speicher eine Mischung trägt oder eine Welt verliert: eine Welt ohne worldId lag roh auf dem Platz von A, und der
+// Boot vergab vor dem Lesen des Platzes eine neue Id (beide Welten fort); und zwischen `location.reload()` und dem Tod der
+// Seite schrieb jeder saveState die lebende Seite unter den Namen von B oder setzte den Aktiv-Zeiger auf A zurück.
 //
-//   laden     `loadState(B)` in der lebenden Seite (der Engpass jedes Ladens: Boot, „lade zustand", Datei, Tor, Mitspieler)
-//   ersetzen  das Welt-Tor „Ersetzen" (`_weltTorImportReplace`)
-//   weltpull  der Snapshot des Hosts (`_p2pApplyWorldSnapshot`, Beitritt und Mesh-Resync world-pull)
-//   portal    die Einladung / das Adress-Portal (`_importGuestWorld`, danach der Reload des Rufers)
-//   geburt    „Neue Welt" (`createNewWorld`) — erlaubt ist nur die Positiv-Liste der Geburt (visibility, creator)
-//   reload    B liegt im Speicher, die Seite lädt neu (Boot: Vorlade + Restore)
+//   laden               `loadState(B)` in der lebenden Seite (der Engpass jedes Ladens: Boot, „lade zustand")
+//   ersetzen[-ohne-id|-ohne-meta]   das Welt-Tor „Ersetzen" (`_weltTorImportReplace`)
+//   ersetzen-quota      dasselbe, der Speicher wirft beim Ablegen (Quota): die Seite bleibt laut in A, kein Reload
+//   weltpull[-ohne-id|-ohne-meta]   der Snapshot des Hosts (`_p2pApplyWorldSnapshot`, Resync, world-pull)
+//   portal              das Adress-Portal (`_enterPortalToAddress` → `joinWorldFromCode` gegen einen Schein-Broker)
+//   geburt              „Neue Welt" (`createNewWorld`) — erlaubt ist nur die Positiv-Liste (visibility, creator)
+//   reload[-ohne-id|-ohne-meta]     B liegt im Speicher, die Seite lädt neu (Boot: Vorlade + Restore)
 //
-// Welt A ist die frisch gebootete Standard-Welt, in die die Linse ein Zeichen pflanzt: das Erbgut der Prüfbühne
-// (spec/pruefbuehne/welt.json), einen Makro-Anker, ein Edit, Dorf-Zellen, die Stempel von Ring, Vorschau und Saat, Rolle,
-// Bann-Liste, Adresse, Region, Rechte, Modus, Sichtbarkeit, ein Feld, das dieser Build nicht kennt, die Gedächtnisse der
-// Seite (Anker, Ring, Vorschau, Dorf-Zug) und ein Tier. Welt B ist eine Wildnis-Welt ohne all das. Geprüft werden nach
-// jedem Weg: das worldMeta der lebenden Seite, die Leser (`_erbgut`, `_macroAnker`, der Worker-Spiegel), die Gedächtnisse,
-// der Snapshot der Seite und der Speicher-Eintrag von B. Ein Weg, der neu lädt, wird nach dem Reload geprüft; ein Weg,
-// der in der Seite bleibt, bekommt den nächsten Schritt des Spiels (Autosave, Reload) — was dann im Speicher steht, ist B.
+// Welt A ist die frisch gebootete Standard-Welt (gespeichert), in die die Linse ein Zeichen pflanzt: das Erbgut der
+// Prüfbühne (spec/pruefbuehne/welt.json), einen Makro-Anker, ein Edit, Dorf-Zellen, die Stempel von Ring, Vorschau und
+// Saat, Rolle, Bann-Liste, Adresse, Region, Rechte, Modus, Sichtbarkeit, ein Feld, das dieser Build nicht kennt, die
+// Gedächtnisse der Seite (Anker, Ring, Vorschau, Dorf-Zug) und ein Tier. Welt B ist eine Wildnis-Welt ohne all das, mit
+// MARKER-B im Wissen (je Weg auch ohne worldId oder ohne worldMeta). Jede Tür bekommt das RELOAD-FENSTER des Spiels: der
+// Server liefert die neue Seite 1,5 s später, ein Edit-Save steht vor der Tür an, danach ein saveState und ein Edit-Save.
+// Geprüft werden: das worldMeta der Seite, die Leser (`_erbgut`, `_macroAnker`, der Worker-Spiegel), die Gedächtnisse,
+// der Snapshot der Seite, der Speicher-Eintrag von B (byte-gleich mit der abgelegten Datei, wenn die neue Seite startet),
+// der Aktiv-Zeiger, MARKER-B in der erwachten Welt und A unter seiner Id (ohne MARKER-B, im Index). Ein Weg, der in der
+// Seite bleibt, bekommt den nächsten Schritt des Spiels (Autosave, Reload).
 //
 //   node scripts/diag-weltgrenze.cjs [--json datei] [--wurzel dir] [--wege laden,ersetzen,...]
 //                                      (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
-//   node scripts/diag-weltgrenze.cjs --selftest   zusätzlich: der alte Spread am Lade-Engpass zum Schein — der Weg
-//                                      „laden" MUSS rot werden, beim Namen
-// Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Feld von A in B, einem Page-Error oder einem blinden Selbsttest.
+//   node scripts/diag-weltgrenze.cjs --selftest   zusätzlich zwei Scheine: der alte Spread am Lade-Engpass (der Weg
+//                                      „laden" MUSS rot werden) und saveState ohne die Sperre des Welt-Wechsels (der Weg
+//                                      „ersetzen" MUSS rot werden) — beide beim Namen
+// Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
 const puppeteer = require("puppeteer");
 const http = require("http");
@@ -42,7 +50,24 @@ const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.WELTGRENZE_PORT) || 4401;
 const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));
-const ALLE_WEGE = ["laden", "ersetzen", "weltpull", "portal", "geburt", "reload"];
+const ALLE_WEGE = [
+    "laden",
+    "ersetzen",
+    "ersetzen-ohne-id",
+    "ersetzen-ohne-meta",
+    "ersetzen-quota",
+    "weltpull",
+    "weltpull-ohne-id",
+    "weltpull-ohne-meta",
+    "portal",
+    "geburt",
+    "reload",
+    "reload-ohne-id",
+    "reload-ohne-meta",
+];
+// Das Reload-Fenster: so lange liefert der Server die neue Seite später (die alte lebt, ihre Timer feuern).
+const FENSTER_MS = 1500;
+let verzoegerung = 0;
 const WEGE = opt("--wege", ALLE_WEGE.join(","))
     .split(",")
     .filter((w) => ALLE_WEGE.includes(w));
@@ -67,16 +92,29 @@ const server = http.createServer((req, res) => {
         res.statusCode = 403;
         return res.end();
     }
-    fs.readFile(fp, (err, data) => {
-        if (err) {
-            res.statusCode = 404;
-            return res.end();
-        }
-        res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
-        res.setHeader("Cache-Control", "no-store");
-        res.end(data);
-    });
+    const sende = () =>
+        fs.readFile(fp, (err, data) => {
+            if (err) {
+                res.statusCode = 404;
+                return res.end();
+            }
+            res.setHeader("Content-Type", mime[path.extname(fp)] || "application/octet-stream");
+            res.setHeader("Cache-Control", "no-store");
+            res.end(data);
+        });
+    if (verzoegerung && p === "/index.html") setTimeout(sende, verzoegerung);
+    else sende();
 });
+
+// Beim Start JEDER Seite, vor dem Spiel: der Aktiv-Zeiger und sein Speicher-Eintrag (was die alte Seite hinterließ).
+function startFang() {
+    try {
+        const id = localStorage.getItem("anazhRealmActiveWorld");
+        window.__grenzeStart = { id, json: id ? localStorage.getItem("anazhRealmState_" + id) : null };
+    } catch (_e) {
+        window.__grenzeStart = { id: null, json: null };
+    }
+}
 
 // Die Prüfer in der Seite (überleben jeden Reload: evaluateOnNewDocument).
 function seitenPruefer() {
@@ -127,10 +165,47 @@ function seitenPruefer() {
         T,
         // Welt B: eine Wildnis-Welt ohne Erbgut, Anker, Edits, Dörfer und Stempel — geboren wie jede neue Welt, gebaut,
         // BEVOR A ihr Zeichen trägt.
-        bauB(slug) {
+        // `form`: "voll" · "ohne-id" (worldMeta ohne worldId: ein Minimal-Snapshot) · "ohne-meta" (ein Legacy-Save vor Ring 8).
+        bauB(slug, form) {
             const r = window.anazhRealm;
-            const b = r._buildEmptyWorldSnapshot(r._generateFreshWorldMeta(slug), false);
-            return JSON.parse(JSON.stringify(b));
+            const b = JSON.parse(JSON.stringify(r._buildEmptyWorldSnapshot(r._generateFreshWorldMeta(slug), false)));
+            b.knowledgeBase = ["MARKER-B"];
+            if (form === "ohne-id") delete b.worldMeta.worldId;
+            if (form === "ohne-meta") delete b.worldMeta;
+            return b;
+        },
+        // B lebt: MARKER-B steht im Zustand der erwachten Seite.
+        markerB() {
+            return JSON.stringify(window.anazhRealm.buildStateSnapshot()).includes("MARKER-B");
+        },
+        // A BLEIBT unter seiner Id: sein Platz trägt A (nicht B), der Index kennt A.
+        befundeA(aId) {
+            const r = window.anazhRealm;
+            const roh = localStorage.getItem(r.worldStorageKey(aId));
+            if (!roh) return [`A: unter ${aId} liegt keine Welt mehr`];
+            const out = [];
+            const s = JSON.parse(roh);
+            const id = s.worldMeta && s.worldMeta.worldId;
+            if (id !== aId) out.push(`A: der Platz von A trägt die Welt ${id === undefined ? "ohne worldId" : id}`);
+            if (roh.includes("MARKER-B")) out.push("A: der Platz von A trägt B (MARKER-B)");
+            if (!r.worldsIndexLoad().some((e) => e && e.worldId === aId)) out.push("A: fehlt im Index der Welten");
+            return out;
+        },
+        // DAS RELOAD-FENSTER des Spiels: vor der Tür steht ein Edit-Save an (Edit direkt vor dem Ersetzen), nach ihr ein
+        // saveState (Loop-Autosave) und ein Edit-Save (Dorf-Rückruf, Settlement-Export).
+        fensterVor() {
+            window.anazhRealm._scheduleEditSave();
+        },
+        fensterNach() {
+            const r = window.anazhRealm;
+            setTimeout(() => {
+                try {
+                    r.saveState();
+                } catch (_e) {
+                    /* ein Wurf zählt der Page-Error */
+                }
+            }, 300);
+            r._scheduleEditSave();
         },
         // Welt A trägt ihr Zeichen: jedes welt-eigene Feld, die Gedächtnisse der Seite und ein Tier.
         pflanzeA(buehneErbgut) {
@@ -229,33 +304,38 @@ function seitenPruefer() {
     };
 }
 
+// Die Seite ist erwacht (die Welt bereit). Mit `weltId`: in DIESER Welt — sonst sofort der Name der Welt, in der sie erwachte.
 async function bereit(page, weltId) {
     return page.evaluate(async (weltId) => {
         const t0 = performance.now();
         while (performance.now() - t0 < 120000) {
             const r = window.anazhRealm;
-            if (
-                r &&
-                typeof r._gameLoopTick === "function" &&
-                r.state &&
-                r.state.worldMeta &&
-                (!weltId || r.state.worldMeta.worldId === weltId)
-            )
-                return { ok: true, ms: Math.round(performance.now() - t0), welt: r.state.worldMeta.worldId };
+            if (r && typeof r._gameLoopTick === "function" && r.state && r.state.worldMeta) {
+                const welt = r.state.worldMeta.worldId;
+                return { ok: !weltId || welt === weltId, ms: Math.round(performance.now() - t0), welt };
+            }
             await new Promise((res) => setTimeout(res, 50));
         }
         const r = window.anazhRealm;
-        return { ok: false, welt: r && r.state && r.state.worldMeta ? r.state.worldMeta.worldId : null };
+        return { ok: false, haengt: true, welt: r && r.state && r.state.worldMeta ? r.state.worldMeta.worldId : null };
     }, weltId || null);
 }
 
-// Ein Weg in einem frischen Browser-Kontext (eigener Speicher): A booten, B bauen, A zeichnen, den Weg gehen, B prüfen.
+const TUEREN = new Set(["ersetzen", "weltpull", "portal", "geburt"]);
+
+// Ein Weg in einem frischen Browser-Kontext (eigener Speicher): A booten und speichern, B bauen, A zeichnen, den Weg gehen
+// (eine Tür im Reload-Fenster), B prüfen und A. `schein`: "spread" (der alte Spread am Lade-Engpass) · "sperre" (saveState
+// ohne die Sperre des Welt-Wechsels).
 async function fahreWeg(browser, weg, schein) {
     const ctx = await browser.createBrowserContext();
     const page = await ctx.newPage();
     const rep = { weg, schein, befunde: [], erlaubt: [], boot: [], navigiert: null };
+    const basis = weg.split("-")[0];
+    const form = weg.endsWith("-ohne-id") ? "ohne-id" : weg.endsWith("-ohne-meta") ? "ohne-meta" : "voll";
+    const tuer = TUEREN.has(basis);
     let pageErr = null;
     let phase = "boot A";
+    let gemeldet = null;
     page.on("pageerror", (err) => {
         const zeilen = String(err.stack || err.message).split("\n");
         if (!pageErr) pageErr = `[${phase}] ${zeilen.slice(0, 4).join(" | ")}`;
@@ -263,21 +343,33 @@ async function fahreWeg(browser, weg, schein) {
     page.on("framenavigated", (f) => {
         if (f === page.mainFrame() && phase !== "boot A") phase = "nach dem Reload";
     });
+    page.on("dialog", (d) => d.accept().catch(() => {}));
+    await page.exposeFunction("__grenzeMelde", (x) => {
+        gemeldet = x;
+    });
+    await page.evaluateOnNewDocument(startFang);
     await page.evaluateOnNewDocument(() => {
         window.__anazhHeadlessNullRenderer = true;
     });
     await page.evaluateOnNewDocument(seitenPruefer);
     const t0 = Date.now();
+    const lege = async (fn, ...a) => (await page.evaluate(fn, ...a)) || [];
     try {
+        verzoegerung = 0;
         await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
         const a = await bereit(page, null);
         rep.boot.push(a.ms);
         if (!a.ok) throw new Error("Welt A nicht bereit nach 120 s");
         phase = "Weg";
-        const B = await page.evaluate(() => window.__grenze.bauB("grenze-b"));
-        const bId = B.worldMeta.worldId;
+        // A ist gespeichert (sein Platz besteht), bevor sie ihr Zeichen trägt
+        const aId = await page.evaluate(() => {
+            const r = window.anazhRealm;
+            r.saveState();
+            return r.state.worldMeta.worldId;
+        });
+        const B = await page.evaluate((f) => window.__grenze.bauB("grenze-b", f), form);
         rep.pflanzung = await page.evaluate((e) => window.__grenze.pflanzeA(e), BUEHNE.worldMeta.erbgut);
-        if (schein) {
+        if (schein === "spread") {
             // DER ALTE SPREAD ZUM SCHEIN: nach jedem Laden mischt sich das worldMeta der alten Welt darunter.
             await page.evaluate(() => {
                 const r = window.anazhRealm;
@@ -291,121 +383,231 @@ async function fahreWeg(browser, weg, schein) {
                 };
             });
         }
-        // Der Weg. Lädt er neu, prüft die Linse nach dem Reload; bleibt er in der Seite, folgt der nächste Schritt des
-        // Spiels (der Autosave, dann der Reload).
-        const tuer = weg === "ersetzen" || weg === "weltpull" || weg === "geburt";
-        const nav = tuer
-            ? page
-                  .waitForNavigation({ waitUntil: "domcontentloaded", timeout: 4000 })
-                  .then(() => true)
-                  .catch(() => false)
-            : Promise.resolve(false);
-        let ziel = bId;
-        let erlaubt = [];
+        if (schein === "sperre") {
+            // SAVESTATE OHNE DIE SPERRE ZUM SCHEIN: im Reload-Fenster schreibt die Seite wieder.
+            await page.evaluate(() => {
+                const r = window.anazhRealm;
+                const roh = r.saveState.bind(r);
+                r.saveState = () => {
+                    const s = r._weltWechselSperre;
+                    r._weltWechselSperre = false;
+                    try {
+                        return roh();
+                    } finally {
+                        r._weltWechselSperre = s;
+                    }
+                };
+            });
+        }
+        verzoegerung = tuer || weg === "ersetzen-quota" ? FENSTER_MS : 0;
+        const nav =
+            tuer || weg === "ersetzen-quota"
+                ? page
+                      .waitForNavigation({
+                          waitUntil: "domcontentloaded",
+                          // die gescheiterte Ablage lädt nicht: das Fenster plus der Boot der neuen Seite reicht als Frist
+                          timeout: FENSTER_MS + (weg === "ersetzen-quota" ? 2500 : 6000),
+                      })
+                      .then(() => true)
+                      .catch(() => false)
+                : Promise.resolve(false);
         const lauf = await page
             .evaluate(
-                (weg, B) => {
+                async (weg, basis, B, aId) => {
                     const r = window.anazhRealm;
-                    if (weg === "laden") {
+                    const g = window.__grenze;
+                    const ablage = (id) => ({
+                        ziel: id,
+                        abgelegt: id ? localStorage.getItem(r.worldStorageKey(id)) : null,
+                    });
+                    if (basis === "laden") {
                         r.loadState(B);
-                        return { inSeite: window.__grenze.befundeLive([], false) };
+                        return { inSeite: g.befundeLive([], false).concat(g.befundeA(aId)) };
                     }
-                    if (weg === "ersetzen") {
+                    if (basis === "ersetzen") {
+                        if (weg === "ersetzen-quota") {
+                            const key = r.worldStorageKey(B.worldMeta.worldId);
+                            const roh = Storage.prototype.setItem;
+                            Storage.prototype.setItem = function (k, v) {
+                                if (k === key) throw new DOMException("Speicher voll (Linse)", "QuotaExceededError");
+                                return roh.call(this, k, v);
+                            };
+                        }
+                        g.fensterVor();
                         r.state.pendingImport = { parsed: B, fileName: "grenze-b.json" };
                         r._weltTorImportReplace();
-                        return {};
+                        const out = ablage(r.activeWorldGet());
+                        const chat = document.getElementById("chat-output");
+                        out.chat = chat ? chat.textContent.slice(-400) : "";
+                        out.liveWelt = r.state.worldMeta.worldId;
+                        g.fensterNach();
+                        return out;
                     }
-                    if (weg === "weltpull") {
+                    if (basis === "weltpull") {
+                        g.fensterVor();
                         r.state.p2p.pendingWorldSnapshot = true;
                         r._p2pApplyWorldSnapshot("grenze-host", B);
+                        const out = ablage(r.activeWorldGet());
+                        g.fensterNach();
+                        return out;
+                    }
+                    if (basis === "geburt") {
+                        g.fensterVor();
+                        const id = r.createNewWorld({ slug: "grenze-geburt", reload: true });
+                        const out = ablage(id);
+                        g.fensterNach();
+                        return out;
+                    }
+                    if (basis === "portal") {
+                        // DER SCHEIN-BROKER: eine WebSocket, die auf world-request den Snapshot von B schickt (das echte
+                        // joinWorldFromCode, die echte Gast-Ablage, der echte Rufer `_enterPortalToAddress`).
+                        class ScheinWS {
+                            constructor(url) {
+                                this.url = url;
+                                this.h = {};
+                                setTimeout(() => this.feuer("open", {}), 0);
+                            }
+                            addEventListener(t, f) {
+                                (this.h[t] = this.h[t] || []).push(f);
+                            }
+                            feuer(t, ev) {
+                                for (const f of this.h[t] || []) f(ev);
+                            }
+                            send(d) {
+                                const m = JSON.parse(d);
+                                if (m.type === "world-request")
+                                    setTimeout(
+                                        () =>
+                                            this.feuer("message", {
+                                                data: JSON.stringify({
+                                                    type: "world-snapshot",
+                                                    peerId: "grenze-host",
+                                                    state: B,
+                                                }),
+                                            }),
+                                        0
+                                    );
+                            }
+                            close() {}
+                        }
+                        window.WebSocket = ScheinWS;
+                        const roh = r._importGuestWorld.bind(r);
+                        r._importGuestWorld = (...a) => {
+                            const id = roh(...a);
+                            window.__grenzeMelde(ablage(id));
+                            g.fensterNach();
+                            return id;
+                        };
+                        g.fensterVor();
+                        const id = B.worldMeta.worldId;
+                        await r._enterPortalToAddress(
+                            { type: "welt_portal", affordances: { isPortal: true } },
+                            { worldId: id, roomId: id, broker: "ws://127.0.0.1:9", label: "grenze-b" }
+                        );
                         return {};
                     }
-                    if (weg === "portal") {
-                        const id = r._importGuestWorld(
-                            B,
-                            { url: "ws://127.0.0.1:9", roomId: B.worldMeta.worldId, peerId: "grenze-host" },
-                            null
-                        );
-                        try {
-                            localStorage.setItem("anazh.p2p.enabled", "false");
-                        } catch (_e) {
-                            /* die Linse wählt keinen Host an */
-                        }
-                        return { id };
-                    }
-                    if (weg === "geburt") {
-                        const id = r.createNewWorld({ slug: "grenze-geburt", reload: true });
-                        return { id };
-                    }
-                    if (weg === "reload") {
-                        localStorage.setItem(r.worldStorageKey(B.worldMeta.worldId), JSON.stringify(B));
+                    if (basis === "reload") {
+                        const id =
+                            B.worldMeta && B.worldMeta.worldId ? B.worldMeta.worldId : "grenze-platz-" + Date.now();
+                        localStorage.setItem(r.worldStorageKey(id), JSON.stringify(B));
                         r.worldsIndexUpsert({
-                            worldId: B.worldMeta.worldId,
-                            slug: B.worldMeta.slug,
-                            bornAt: B.worldMeta.bornAt,
+                            worldId: id,
+                            slug: "grenze-b",
+                            bornAt: Date.now(),
                             lastPlayed: Date.now(),
                         });
-                        r.activeWorldSet(B.worldMeta.worldId);
-                        return {};
+                        r.activeWorldSet(id);
+                        return { ziel: id };
                     }
                     return {};
                 },
                 weg,
-                B
+                basis,
+                B,
+                aId
             )
             .catch((e) => ({ abbruch: String(e && e.message ? e.message : e) }));
         rep.navigiert = await nav;
+        if (basis === "portal" && gemeldet) Object.assign(lauf, gemeldet);
         if (lauf && lauf.inSeite) for (const f of lauf.inSeite) rep.befunde.push(`in der Seite: ${f}`);
-        if (weg === "geburt" && lauf && lauf.id) {
-            ziel = lauf.id;
-            // DIE POSITIV-LISTE DER GEBURT: die Wahl des Schöpfers reist in die neue Welt (Sichtbarkeit, Schöpfer).
-            erlaubt = ["worldMeta.visibility", "worldMeta.creator"];
-        }
-        if (weg === "portal" && lauf && lauf.id) ziel = lauf.id;
-        rep.erlaubt = erlaubt;
-        if (weg === "laden") {
-            // der Engpass in der Seite: geprüft ist, was er hinterlässt (die Seite selbst wechselt die Welt nur über den
-            // Reload — die Türen laden neu, die übrigen Wege prüfen das)
-            if (pageErr) rep.befunde.push(`PAGE-ERROR: ${pageErr}`);
-            rep.befunde = Array.from(new Set(rep.befunde));
-            rep.ms = Date.now() - t0;
-            await ctx.close();
+        if (basis === "laden") return rep;
+        if (weg === "ersetzen-quota") {
+            // KEIN RELOAD OHNE GELUNGENE ABLAGE: die Seite bleibt in A, und sie sagt es.
+            if (rep.navigiert) rep.befunde.push("Reload ohne gelungene Ablage — der alte Stand lädt still");
+            else {
+                const z = await page.evaluate(() => ({
+                    zeiger: window.anazhRealm.activeWorldGet(),
+                    welt: window.anazhRealm.state.worldMeta.worldId,
+                }));
+                if (z.zeiger !== aId)
+                    rep.befunde.push(`der Aktiv-Zeiger zeigt nach der gescheiterten Ablage auf ${z.zeiger}`);
+                if (z.welt !== aId)
+                    rep.befunde.push(`die Seite trägt nach der gescheiterten Ablage die Welt ${z.welt}`);
+                if (!/fehlgeschlagen/.test(lauf.chat || ""))
+                    rep.befunde.push("die gescheiterte Ablage blieb still (kein Satz im Chat)");
+            }
             return rep;
         }
-        if (weg === "portal" || weg === "reload") {
-            // der Rufer lädt neu (die Einladung, der Boot): kein Autosave dazwischen
-            await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
-        } else if (!rep.navigiert) {
-            // in der Seite geblieben: der nächste Schritt des Spiels — der Autosave schreibt, was die Seite trägt
-            await page.evaluate(() => window.anazhRealm.saveState()).catch(() => {});
-            rep.befunde.push(
-                ...(await page.evaluate((id, ok) => window.__grenze.befundeSpeicher(id, ok), ziel, erlaubt)).map(
-                    (f) => `nach dem Autosave: ${f}`
-                )
-            );
+        const ziel = lauf && lauf.ziel;
+        if (!ziel) throw new Error(`der Weg nannte keine Ziel-Welt (${JSON.stringify(lauf).slice(0, 160)})`);
+        if (basis === "geburt") {
+            // DIE POSITIV-LISTE DER GEBURT: die Wahl des Schöpfers reist in die neue Welt (Sichtbarkeit, Schöpfer).
+            rep.erlaubt = ["worldMeta.visibility", "worldMeta.creator"];
+        }
+        if (!rep.navigiert) {
+            if (tuer && basis !== "portal") {
+                // in der Seite geblieben: der nächste Schritt des Spiels — der Autosave schreibt, was die Seite trägt
+                await page.evaluate(() => window.anazhRealm.saveState()).catch(() => {});
+                rep.befunde.push(
+                    ...(await lege((id, ok) => window.__grenze.befundeSpeicher(id, ok), ziel, rep.erlaubt)).map(
+                        (f) => `nach dem Autosave: ${f}`
+                    )
+                );
+            }
+            // der Rufer lädt neu (die Einladung, der Boot) — oder die nächste Sitzung
             await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
         }
-        // (lud die Tür neu, ist ihr Speicher-Eintrag die Welt)
+        verzoegerung = 0;
         const b = await bereit(page, ziel);
         rep.boot.push(b.ms);
-        if (!b.ok) throw new Error(`Welt B (${ziel}) nicht bereit nach 120 s (aktiv: ${b.welt})`);
+        if (b.haengt) throw new Error(`die Seite erwachte nicht in 120 s (aktiv: ${b.welt})`);
+        const start = await page.evaluate(() => window.__grenzeStart);
+        if (tuer) {
+            if (start.id !== ziel)
+                rep.befunde.push(`nach dem Reload-Fenster zeigt der Aktiv-Zeiger auf ${start.id} statt auf ${ziel}`);
+            else if (start.json !== lauf.abgelegt)
+                rep.befunde.push(
+                    `der Platz von B trägt nach dem Reload-Fenster ${start.json ? start.json.length : 0} Bytes statt der abgelegten ${lauf.abgelegt ? lauf.abgelegt.length : 0} (die Seite schrieb in ihn)`
+                );
+        }
         rep.befunde.push(
-            ...(await page.evaluate((id, ok) => window.__grenze.befundeSpeicher(id, ok), ziel, erlaubt)).map(
+            ...(await lege((id) => window.__grenze.befundeA(id), aId)).map((f) => `nach dem Reload: ${f}`)
+        );
+        rep.befunde.push(
+            ...(await lege((id, ok) => window.__grenze.befundeSpeicher(id, ok), ziel, rep.erlaubt)).map(
                 (f) => `nach dem Reload: ${f}`
             )
         );
-        rep.befunde.push(
-            ...(await page.evaluate((ok) => window.__grenze.befundeLive(ok, true), erlaubt)).map(
-                (f) => `nach dem Reload: ${f}`
-            )
-        );
+        if (!b.ok) {
+            rep.befunde.push(`die Seite erwachte in ${b.welt} statt in der Ziel-Welt ${ziel}`);
+        } else {
+            if (basis !== "geburt" && !(await page.evaluate(() => window.__grenze.markerB())))
+                rep.befunde.push("nach dem Reload: MARKER-B fehlt — B lebt nicht");
+            rep.befunde.push(
+                ...(await lege((ok) => window.__grenze.befundeLive(ok, true), rep.erlaubt)).map(
+                    (f) => `nach dem Reload: ${f}`
+                )
+            );
+        }
     } catch (e) {
         rep.befunde.push(`ABBRUCH: ${e && e.message ? e.message : e}`);
+    } finally {
+        verzoegerung = 0;
+        if (pageErr) rep.befunde.push(`PAGE-ERROR: ${pageErr}`);
+        rep.ms = Date.now() - t0;
+        rep.befunde = Array.from(new Set(rep.befunde));
+        await ctx.close();
     }
-    if (pageErr) rep.befunde.push(`PAGE-ERROR: ${pageErr}`);
-    rep.ms = Date.now() - t0;
-    rep.befunde = Array.from(new Set(rep.befunde));
-    await ctx.close();
     return rep;
 }
 
@@ -417,43 +619,55 @@ async function fahreWeg(browser, weg, schein) {
         protocolTimeout: 600000,
         args: ["--no-sandbox", "--disable-setuid-sandbox"],
     });
-    console.log("\n========= DIE WELTGRENZE — kein Feld von A reist nach B =========");
+    console.log("\n========= DIE WELTGRENZE — kein Feld von A reist nach B, keine Welt geht verloren =========");
     console.log(`  Baum: ${root}`);
     const berichte = [];
     let rot = false;
     for (const weg of WEGE) {
-        const rep = await fahreWeg(browser, weg, false);
+        const rep = await fahreWeg(browser, weg, null);
         berichte.push(rep);
         const gruen = rep.befunde.length === 0;
         if (!gruen) rot = true;
+        const art = rep.navigiert
+            ? "die Tür lud neu"
+            : weg === "laden"
+              ? "blieb in der Seite"
+              : weg === "ersetzen-quota"
+                ? "kein Reload"
+                : "neu geladen";
         console.log(
-            `  ${gruen ? "✓" : "⛔"} ${weg.padEnd(9)} ${rep.navigiert ? "die Tür lud neu" : weg === "portal" || weg === "reload" ? "der Rufer lud neu" : "blieb in der Seite"} · Boot ${rep.boot.join(" + ")} ms · ${(rep.ms / 1000).toFixed(1)} s${rep.erlaubt.length ? ` · Positiv-Liste ${rep.erlaubt.map((p) => p.split(".")[1]).join(", ")}` : ""} · ${gruen ? "0 Felder von A" : rep.befunde.length + " Befunde"}`
+            `  ${gruen ? "✓" : "⛔"} ${weg.padEnd(18)} ${art} · Boot ${rep.boot.join(" + ")} ms · ${(rep.ms / 1000).toFixed(1)} s${rep.erlaubt.length ? ` · Positiv-Liste ${rep.erlaubt.map((p) => p.split(".")[1]).join(", ")}` : ""} · ${gruen ? "0 Befunde" : rep.befunde.length + " Befunde"}`
         );
         for (const f of rep.befunde) console.log(`      ⛔ ${f}`);
     }
     let selbst = null;
     if (SELBSTTEST) {
-        const rep = await fahreWeg(browser, "laden", true);
-        const namen = rep.befunde.filter((f) => f.startsWith("in der Seite: worldMeta."));
-        selbst = { benannt: namen, befunde: rep.befunde };
+        const spread = await fahreWeg(browser, "laden", "spread");
+        const sperre = await fahreWeg(browser, "ersetzen", "sperre");
+        const namen = spread.befunde.filter((f) => f.startsWith("in der Seite: worldMeta."));
+        const fenster = sperre.befunde.filter((f) => /Reload-Fenster|erwachte in/.test(f));
+        selbst = { spread: namen, sperre: fenster, befunde: { spread: spread.befunde, sperre: sperre.befunde } };
         console.log(
-            `\n  SELBSTTEST (der alte Spread am Lade-Engpass zum Schein): ${namen.length} Felder von A beim Namen — ${namen
+            `\n  SELBSTTEST 1 (der alte Spread am Lade-Engpass zum Schein): ${namen.length} Felder von A beim Namen — ${namen
                 .map((f) => f.replace("in der Seite: ", ""))
-                .slice(0, 8)
-                .join(", ")}${namen.length > 8 ? " …" : ""}`
+                .slice(0, 6)
+                .join(", ")}${namen.length > 6 ? " …" : ""}`
+        );
+        console.log(
+            `  SELBSTTEST 2 (saveState ohne die Sperre des Welt-Wechsels zum Schein): ${fenster.length} Befunde — ${fenster.join(" · ")}`
         );
     }
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ root, berichte, selbst }, null, 1));
     let pass;
     if (SELBSTTEST) {
-        pass = !rot && selbst && selbst.benannt.length > 0;
+        pass = !rot && selbst && selbst.spread.length > 0 && selbst.sperre.length > 0;
         console.log(
-            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A — und der alte Spread fällt rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "der Schein blieb unentdeckt (die Linse ist blind)")}`
+            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren — und beide Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "ein Schein blieb unentdeckt (die Linse ist blind)")}`
         );
     } else {
         pass = !rot;
         console.log(
-            `\n${pass ? "✅" : "⛔"} ${pass ? `Auf ${WEGE.length} von ${WEGE.length} Wegen trägt B 0 Felder von A` : "EIN WELT-ZUSTAND REIST ÜBER DIE WELTGRENZE"}`
+            `\n${pass ? "✅" : "⛔"} ${pass ? `Auf ${WEGE.length} von ${WEGE.length} Wegen trägt B 0 Felder von A, und keine Welt geht verloren` : "EIN WELT-ZUSTAND REIST ÜBER DIE WELTGRENZE ODER EINE WELT GEHT VERLOREN"}`
         );
     }
     console.log(`  Laufzeit ${((Date.now() - tStart) / 1000).toFixed(1)} s\n`);
