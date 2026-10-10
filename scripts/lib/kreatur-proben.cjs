@@ -1174,6 +1174,7 @@ async function kreaturProben(r, T, opts) {
                         const o = alt.call(this, cr);
                         if (o) {
                             delete o.hp;
+                            delete o.hpAnteil; // die Wunde reist als Anteil des Lebens (Welle LF kampf Nachbesserung 2)
                             delete o.gier;
                         }
                         return o;

@@ -301,6 +301,7 @@ function pfeilVerdict(P, shell) {
     if (!(P.laenge >= 0.7 && P.laenge <= 0.85)) v.push(`pfeil-laenge: ${P.laenge} m längs der Flug-Richtung`);
     if (P.wirtZylinder) v.push("pfeil-zwilling: der Wirt baut seinen eigenen Zylinder (_pfeilMeshAttach)");
     if (shell && shell.eigenerPfeil) v.push("pfeil-zwilling: die Prüfstand-Shell baut ihren eigenen Pfeil");
+    if (P.leerStill !== false) v.push("pfeil-still: ein leerer Guss lässt den Pfeil ohne Meldung unsichtbar fliegen");
     return v;
 }
 // (T22) EIN TIER STIRBT WIE EIN TIER (Welle LF kampf, Posten 7 — pure Funktion, Probe UND Selbst-Test): nach dem Kippen liegt
@@ -315,6 +316,12 @@ function todVerdict(T) {
         );
     if (!(T.obenY <= 0.35)) v.push(`tod-kipp: die Hochachse steht (oben·y ${T.obenY})`);
     if (!T.liegt10s) v.push("tod-leichnam: 10 s nach dem Tod ist der Leib fort");
+    // der Leichnam ist kein Wesen (Nachbesserung 2): kein Ziel des Fadenkreuzes, kein Platz der Kappe, keine Zahl des Nexus
+    if (T.zielLeichnam !== false)
+        v.push("tod-ziel: das Fadenkreuz wählt den Leichnam — jeder Klick auf ihn ein Luftschlag");
+    if (T.platzFrei !== true)
+        v.push("tod-platz: der Leichnam belegt einen der maxCreatures-Plätze — der Spawn gibt still null");
+    if (T.nexusZaehlt !== false) v.push("tod-zaehlt: der Nexus zählt den Leichnam als Wesen (creatures_count_above)");
     return v;
 }
 // (T23) DER BISS TRIFFT, WO DIE GESTE SCHNAPPT (Welle LF kampf, Posten 5 — pure Funktion, Probe UND Selbst-Test): auf jedem
@@ -338,6 +345,55 @@ function bissGesteVerdict(B) {
         if (fern.length)
             v.push(
                 `biss-ferne: ${art} beißt mit dem Kopf ${Math.max(...fern.map((b) => b.spalt)).toFixed(2)} m vor dem Leib (Mitten ${fern.map((b) => b.xz).join(" / ")} m)`
+            );
+    }
+    return v;
+}
+// (T25) DIE WUNDE REIST ALS ANTEIL DES LEBENS (Welle LF kampf Nachbesserung 2 — pure Funktion, Probe UND Selbst-Test): voll bleibt
+// voll, halb bleibt halb (ein Stand von vor dem Massen-Gesetz), 30 % bleiben 30 % (ein neuer Stand) — je ± 0,01.
+function wundeVerdict(W) {
+    if (!Array.isArray(W) || W.length < 2) return ["wunde keine Probe"];
+    const v = [];
+    for (const x of W) {
+        if (!(Math.abs(x.altVoll - 1) <= 0.01))
+            v.push(`wunde-alt: ${x.seele} kehrt aus einem vollen alten Stand mit ${x.altVoll} des Lebens zurück`);
+        if (!(Math.abs(x.altHalb - 0.5) <= 0.01))
+            v.push(`wunde-alt: ${x.seele} kehrt aus einem halb verwundeten alten Stand mit ${x.altHalb} zurück`);
+        if (!(Math.abs(x.neu30 - 0.3) <= 0.01))
+            v.push(`wunde-neu: ${x.seele} kehrt mit 30 % gespeichert mit ${x.neu30} zurück`);
+    }
+    return v;
+}
+// (T24) DER BISS KOSTET, WAS IN REICHWEITE STEHT, UND SPRINGT NIE INS LEERE (Welle LF kampf Nachbesserung 2 — pure Funktion, Probe
+// UND Selbst-Test): die Wahl der Beute rechnet keine Gestalt eines Tiers jenseits des Grob-Tors (Lehre 25: billige Filter
+// zuerst), und kein Jäger springt einen Leib an, der über seinem Sprung liegt (der Spieler auf einem Sims) — die Gegenprobe:
+// waagrecht stand er in der Weite seines Ansprungs. Befund Gegenprüfung 1: 15 Gestalten je Takt bei 15 Beutetieren außer
+// Reichweite (1,29–2,35 ms je Jäger), unter dem Sims ein Ansprung alle 1,6 s. Dazu das stehende Reh (Größe 0,8, aus 1,6 und
+// 1,3 m): mindestens 5 von 6 Ansprüngen beißen — der Biss trifft auch ein Ziel, das größer ist als das Kitz, und dort, wo die
+// Hetze hält.
+const REH_SOLL = { bisse: 5 };
+function bissReichVerdict(R, reh) {
+    if (!R) return ["biss-reich keine Probe"];
+    const v = [];
+    if (!reh || !reh.boden) v.push("biss-reh keine Probe (kein trockener, ebener Ort)");
+    else if (!(reh.anspruenge >= reh.versuche && reh.bisse >= REH_SOLL.bisse))
+        v.push(
+            `biss-reh: ${reh.bisse} Bisse aus ${reh.anspruenge} Ansprüngen auf ein stehendes Reh (Soll ≥ ${REH_SOLL.bisse} von ${reh.versuche}) — ${JSON.stringify(reh.je)}`
+        );
+    if (R.gestaltenJeTakt === null) v.push("biss-kosten keine Probe (Wolf und 15 Beutetiere)");
+    else if (R.gestaltenJeTakt > 0)
+        v.push(
+            `biss-kosten: die Wahl der Beute rechnet je Takt ${R.gestaltenJeTakt} Gestalten von Tieren außer Reichweite (${R.msJeTakt} ms je Jäger) — das Grob-Tor fehlt`
+        );
+    if (R.simsAnspruenge === null) v.push("biss-sims keine Probe");
+    else {
+        if (R.simsAnspruenge > 0)
+            v.push(
+                `biss-sims: ${R.simsAnspruenge} Ansprünge in ${R.simsSek} s auf einen Leib ${R.simsUeber} m über Kopf und Sprung — ins Leere`
+            );
+        if (!(R.simsUeber > 0) || !(R.simsWaagrecht <= R.simsReich))
+            v.push(
+                `biss-sims-probe: der Leib liegt ${R.simsUeber} m über dem Sprung, der Wolf waagrecht ${R.simsWaagrecht} m vor ihm (Weite ${R.simsReich} m) — die Probe trägt nicht`
             );
     }
     return v;
@@ -446,6 +502,16 @@ async function WELLE_L() {
         return orig.damagePlayer.call(this, amount, source);
     };
     const tiere = [];
+    // JE PRÜFUNG IHR EIGENER ABBRUCH (Welle LF kampf Nachbesserung 2): fehlt einer Prüfung ihre Naht (ein älterer Stand), nennt sie
+    // sich mit dem Fehler, und die übrigen laufen weiter — vorher brach die Linse am Basis-Stand mit „_kampfSchwungRahmen is
+    // not a function“ ganz ab und nannte keinen Täter.
+    const teil = async (name, f) => {
+        try {
+            await f();
+        } catch (e) {
+            w.fehler.push(name + " ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 2).join(" | "));
+        }
+    };
     try {
         const kamera = () => {
             T += 0.02;
@@ -1700,7 +1766,7 @@ async function WELLE_L() {
         // 1,6 · 1,9 m) × fünf Lagen des Leibs (Breitseite, abgewandt, zugewandt, zwei schräg), das Fadenkreuz auf der
         // Leibes-Mitte. Gemessen: die Energie des Urteils je Treffer (KE am Kontakt). Befund: Großschwert in 1,6 m, Hirsch
         // abgewandt → Kontakt am Griff-Drittel, 15–18 J; in 1,7 m 91 J; der Dolch 24–32 J.
-        {
+        await teil("T16", async () => {
             const hE = setze("wesen");
             const detail = [];
             const energie = (name, d, rotY, dy = 0) => {
@@ -1759,13 +1825,13 @@ async function WELLE_L() {
                 w.z.energie.nah = { ke, ort: j ? j.ort : null, eff: j ? j.eff : null, weg };
             }
             if (hE) parke(hE);
-        }
+        });
         // (T17) EINE REICHWEITE AUS DER WAFFE (Posten 3): die Befund-Geometrie — ein Fuchs 1,8 m vor dir, seine Füße 0,77 m
         // tiefer, das Fadenkreuz auf ihm, neun Klicks über den EINEN Dispatcher (tryMouseBreak) mit dem Langschwert. Gemessen:
         // das Verb des Drückens (hieb am Tier oder Luftschlag), Treffer, und was der Spieler-Kanal sagt. Gegenprobe: derselbe
         // Fuchs in 1,3 m / −0,6 m (in Reichweite) trifft. Befund: das Tor wählte „hieb" bis 6 m ab der Schulter, die Klinge
         // reichte 2,46 m — 9 Schwünge, 0 Treffer, kein Hinweis.
-        {
+        await teil("T17", async () => {
             const fR = setze("fuchs");
             ausruesten("klinge_langschwert");
             if (s.blueprints.klinge_langschwert) r._setBlueprintWear(s.blueprints.klinge_langschwert, 1);
@@ -1818,14 +1884,14 @@ async function WELLE_L() {
                 delete r._spielerSagt;
                 parke(fR);
             }
-        }
+        });
         // (T18) POSE, TREFFER-VOLUMEN UND ICH-SICHT LESEN DENSELBEN SCHWUNG (Posten 2): je Ziel EIN Großschwert-Hieb; im
         // Treffer-Takt steht die Anzeige-Uhr (Hit-Stop ∞), die Pose des Spielers wird gelegt (animatePlayerSoul), die Kamera
         // folgt (_loopCamera). Gemessen gegen das TREFFER-VOLUMEN selbst — die Strecke, die der Sweep der Gestalt reicht
         // (_kreaturGliedTreffer, Strecke a→b): der Abstand der sichtbaren Spitze und der Klingen-Mitte (Ecken des Geräts in
         // Welt, die Spitze am weitesten vom Handgelenk) von ihrer Geraden, und ob Spitze und Mitte im Bild der Ich-Kamera
         // liegen (Spitze UND Mitte). Befund: im Treffer-Takt stand das Großschwert über dem Kopf (ks02), die Ich-Sicht zeigte keine Klinge (ks01).
-        {
+        await teil("T18", async () => {
             const hP = setze("wesen");
             ausruesten("klinge_grossschwert");
             if (s.blueprints.klinge_grossschwert) r._setBlueprintWear(s.blueprints.klinge_grossschwert, 1);
@@ -1999,11 +2065,11 @@ async function WELLE_L() {
                 p._swing = null;
                 parke(hP);
             }
-        }
+        });
         // (T19) DIE AUSDAUER JE HIEB AUS DER MASSE (Posten 8): im Modus pfad je Gerät EIN Hieb über _beginPlayerSwing bei
         // voller Ausdauer — gemessen, was der Hieb zehrt, und die Masse des Geräts (kampfMasze des Kerns). Befund: 5 je Hieb
         // für Dolch, Großschwert und Keule (flach).
-        {
+        await teil("T19", async () => {
             const modeA = r.getGameMode();
             r.setGameMode("pfad");
             const zehr = [];
@@ -2031,11 +2097,11 @@ async function WELLE_L() {
             p.stamina = 100;
             if (r.getGameMode() !== modeA) r.setGameMode(modeA);
             w.z.ausdauer = zehr;
-        }
+        });
         // (T20) DIE KAMPF-WERTE AUS GATTUNG × GRÖSSE (Posten 6): je Gattung (Fuchs · Wolf · Hirsch · Bär) und Größe (0,62 · 1 ·
         // 2) ein frisches Tier — Biss (damage), Haut (defense), Leben (hpMax) aus computeCreatureStats und die EINE Masse
         // seines Leibs (_leibMasse). Befund: damage 19,75 und defense 11,9 überall, nur hpMax 99,8–158,9.
-        {
+        await teil("T20", async () => {
             const reihe = [];
             for (const seele of ["fuchs", "wolf", "wesen", "baer"])
                 for (const L of [0.62, 1, 2]) {
@@ -2063,11 +2129,11 @@ async function WELLE_L() {
                     r.removeCreature(c);
                 }
             w.z.kampfWerte = reihe;
-        }
+        });
         // (T21) DIE GESTALT DES PFEILS AUS DEM SCHMIEDE-KERN (Posten 4): ein Schuss mit dem Langbogen — gezählt, was fliegt
         // (Teile, beleuchteter Stoff, Schatten, Länge längs der Flug-Richtung), dazu die Quelle: der Wirt baut keinen eigenen
         // Zylinder, die Prüfstand-Shell keinen eigenen Pfeil. Befund: ein brauner MeshBasic-Zylinder ohne Spitze und Federn.
-        {
+        await teil("T21", async () => {
             ausruesten("klinge_langbogen");
             const recP = fn("_heldBogenRecipe") ? r._heldBogenRecipe() : null;
             const pfeilAus = { teile: 0, unbeleuchtet: 0, wirft: 0, laenge: null, farben: 0 };
@@ -2105,14 +2171,32 @@ async function WELLE_L() {
                 }
             }
             pfeilAus.wirtZylinder = /CylinderGeometry\(0\.015/.test(A.prototype._pfeilMeshAttach.toString());
+            // ein leerer Guss bricht laut (Nachbesserung 2): der Ofen liefert nichts (_foundryBuildGroup ≡ null, die Vorlage frisch) —
+            // der Pfeil darf nicht still unsichtbar fliegen
+            if (fn("_pfeilVorlage")) {
+                const memo = r._pfeilVorlageMemo;
+                const fbg = r._foundryBuildGroup;
+                r._pfeilVorlageMemo = null;
+                r._foundryBuildGroup = () => null;
+                try {
+                    r._pfeilMeshAttach({ x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 1 });
+                    pfeilAus.leerStill = true;
+                } catch (_e) {
+                    pfeilAus.leerStill = false;
+                } finally {
+                    r._foundryBuildGroup = fbg;
+                    delete r._foundryBuildGroup;
+                    r._pfeilVorlageMemo = memo;
+                }
+            }
             w.z.pfeilGestalt = pfeilAus;
-        }
+        });
         // (T22) EIN TIER STIRBT WIE EIN TIER (Posten 7): ein Hirsch auf geneigtem Boden, das Gefälle LÄNGS seiner Leibes-Achse
         // (die Befund-Lage ks09: er blickt hangab) — die Naht `_fieldGradient` trägt das Gefälle (0,3 längs der Achse); dann der
         // Tod und der Kreatur-Takt. Gemessen: wohin die Leibes-Achse (vorn, lokal +z) und die Hochachse nach dem Kippen zeigen,
         // und ob der Leib 10 s danach noch liegt. Befund: der Hirsch richtete sich auf das Hinterteil auf (Kopf senkrecht) und war
         // nach 22 Takten fort.
-        {
+        await teil("T22", async () => {
             const hT = setze("wesen");
             stelle(hT, 20, 6);
             const gier = 0.7;
@@ -2139,16 +2223,83 @@ async function WELLE_L() {
             tod = { vornY: +vorn.y.toFixed(2), obenY: +oben.y.toFixed(2) };
             for (let k = 0; k < 200; k++) r.updateCreatures(0.05); // 10 s danach
             tod.liegt10s = s.creatures.indexOf(hT) !== -1 && !!hT.parent && !!hT.userData.dying;
+            // DER LEICHNAM IST KEIN WESEN (Nachbesserung 2): das Fadenkreuz auf ihm wählt ihn nicht, er belegt keinen Platz der
+            // Kappe (ein Spawn bei maxCreatures = alle Einträge samt Leichnam gelingt) und der Nexus zählt ihn nicht
+            if (tod.liegt10s) {
+                zielen(punkt(hT, null));
+                const pick = r._pickCreatureAtCrosshair();
+                tod.zielLeichnam = !!(pick && pick.creature === hT);
+                const cap0 = s.maxCreatures;
+                s.maxCreatures = s.creatures.length;
+                const neuS = r.spawnCreatureAt(
+                    pm.position.x + 300,
+                    pm.position.y,
+                    pm.position.z + 310,
+                    "happy",
+                    "wolf"
+                );
+                s.maxCreatures = cap0;
+                tod.platzFrei = !!neuS;
+                if (neuS) r.removeCreature(neuS);
+                const lebend = s.creatures.filter((c) => c && c.userData && !c.userData.dying).length;
+                tod.nexusZaehlt = r.dslConditions.creatures_count_above([lebend], { state: s }) === true;
+            }
             w.z.tod = tod;
             if (s.creatures.indexOf(hT) !== -1) r.removeCreature(hT);
-        }
+        });
+        // (T25) DIE WUNDE REIST ALS ANTEIL DES LEBENS (Nachbesserung 2, Posten 6): ein Hirsch (1,0) und ein Bär (1,75) — ein Stand von vor
+        // dem Massen-Gesetz trug hp absolut gegen das Leben der Substanz (der Leib ohne Volumen rechnet es noch: leibV = 0);
+        // voll gespeichert kehrt er voll zurück, halb verwundet halb; ein neuer Stand mit 30 % Leben kehrt mit 30 % zurück.
+        // Befund Gegenprüfung 1: ein voller Hirsch stand nach dem Reload bei 124/168, ein voller Bär bei 159/391.
+        await teil("T25", async () => {
+            const wunde = [];
+            for (const [seele, L] of [
+                ["wesen", 1],
+                ["baer", 1.75],
+            ]) {
+                s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4);
+                const c = r.spawnCreatureAt(pm.position.x + 300, pm.position.y, pm.position.z + 320, "happy", seele, {
+                    bodySize: L,
+                });
+                if (!c) continue;
+                const tb = c.userData._tierBaum;
+                const lv = tb.leibV;
+                tb.leibV = 0;
+                const hpAlt = r.computeCreatureStats(c).stats.hpMax; // das Leben vor dem Massen-Gesetz
+                tb.leibV = lv;
+                const zurueck = (snap) => {
+                    const c2 = r._restoreCreatureFromSnapshot(snap, "happy");
+                    const q = c2 ? +(c2.userData.hp / c2.userData.hpMax).toFixed(3) : null;
+                    if (c2) r.removeCreature(c2);
+                    return q;
+                };
+                const roh = r._serializeCreature(c);
+                const alt = (hp) => {
+                    const o = JSON.parse(JSON.stringify(roh));
+                    delete o.hpAnteil;
+                    o.hp = hp;
+                    return o;
+                };
+                c.userData.hp = 0.3 * c.userData.hpMax;
+                const neu30 = r._serializeCreature(c);
+                r.removeCreature(c);
+                wunde.push({
+                    seele: seele + "@" + L,
+                    hpAlt: +hpAlt.toFixed(1),
+                    altVoll: zurueck(alt(+hpAlt.toFixed(2))),
+                    altHalb: zurueck(alt(+(0.5 * hpAlt).toFixed(2))),
+                    neu30: zurueck(neu30),
+                });
+            }
+            w.z.wunde = wunde;
+        });
         // (T23) DER BISS TRIFFT, WO DIE GESTE SCHNAPPT (Posten 5): alle drei Biss-Wege im ECHTEN Kreatur-Takt (updateCreatures,
         // 1/60 s) — ein Wolf jagt den stehenden Spieler (6 m vor ihm), ein Wolf beißt ein Kitz 1,5 m vor seiner Schnauze (der
         // Beute-Biss, _tickCreatureScentStrike), ein Bär wehrt sich gegen Hiebe aus 1,6 m (die Gegenwehr). Gemessen im Biss-Takt
         // (damagePlayer / damageCreature): die Geste des Beißers (seine laufende Aktion) und der Spalt zwischen seinem KOPF
         // (die Treffer-Glieder der Zone kopf, die Gestalt) und dem Leib des Gebissenen (die Kapsel des Spielers / die Glieder
         // des Tiers), dazu der Abstand der Mitten. Befund K-D13: 12 Bisse am stehenden Spieler, 9 ohne Geste, aus 1,36–2,39 m XZ.
-        {
+        await teil("T23", async () => {
             const kopfKapseln = (c) => {
                 c.updateMatrixWorld(true);
                 return (r._kreaturTrefferGlieder(c) || [])
@@ -2290,6 +2441,113 @@ async function WELLE_L() {
                 }
                 if (jaeger) r.removeCreature(jaeger);
                 if (kitz) r.removeCreature(kitz);
+                // (b2) das stehende Reh (Nachbesserung 2): ein Wolf, ein Reh (Größe 0,8) breitseits vor ihm — sechs Ansprünge aus der
+                // Ruhe (drei aus 1,6 m, drei aus 1,3 m, wo die Hetze hält), je 90 Takte; gezählt Ansprünge, Bisse und die Takte,
+                // in denen das Ziel der Kopf-Neigung an der Klemme des Bisses (BISS.kopfNeigung) steht (Bericht: der Kopf
+                // schwang über, solange sein Rest sich je Takt auf das Ziel des Vor-Takts summierte)
+                await teil("T24 Reh", async () => {
+                    const reh = { versuche: 6, anspruenge: 0, bisse: 0, takte: 0, klemme: 0, je: {} };
+                    const j2 = neu("wolf", P.x - 40, P.z + 40, 1);
+                    const r2 = neu("wesen", P.x - 40, P.z + 41.6, 0.8);
+                    // der Ort: trockener Boden für beide (im Wasser schwämme das Reh mit der Wasserlinie an der Schulter), auf dem
+                    // die Boden-Karte des Chunks (die Sicht, auf der ein Tier steht — _standSicht) beim Gesetz liegt: wo sie
+                    // tiefer liegt, stünde das Reh tiefer als der Wolf (headless an der ersten Probe 0,94 m)
+                    const trocken = (c, x, z) => {
+                        const gy = r.getTerrainHeightAt(x, z);
+                        c.position.set(x, gy, z);
+                        return (
+                            r._kreaturSchwimmt(c, r._creatureGroundY(c)) === null &&
+                            Math.abs(r._standSicht(x, z, gy, false) - gy) < 0.15
+                        );
+                    };
+                    const ortR = [
+                        [-14, 14],
+                        [14, -14],
+                        [-14, -14],
+                        [14, 14],
+                        [-40, 40],
+                        [40, -40],
+                        [-40, -40],
+                        [70, 0],
+                        [0, 70],
+                        [-70, 0],
+                    ].find(
+                        ([ox, oz]) =>
+                            j2 &&
+                            r2 &&
+                            trocken(r2, P.x + ox, P.z + oz + 1.6) &&
+                            trocken(j2, P.x + ox, P.z + oz) &&
+                            trocken(j2, P.x + ox, P.z + oz + 0.3)
+                    );
+                    if (j2 && r2 && ortR) {
+                        const R0 = { x: P.x + ortR[0], z: P.z + ortR[1] + 1.6 };
+                        r2.position.set(R0.x, r.getTerrainHeightAt(R0.x, R0.z), R0.z);
+                        r2.rotation.set(0, Math.PI / 2, 0);
+                        const J0 = { x: R0.x, y: r.getTerrainHeightAt(R0.x, R0.z - 1.6), z: R0.z - 1.6 };
+                        j2.position.set(J0.x, J0.y, J0.z);
+                        // beide stehen erst (die Erdung des Takts), der Wolf ohne Ansprung
+                        j2.userData.nextHuntStrikeAt = Infinity;
+                        for (let k = 0; k < 30; k++) {
+                            r2.position.x = R0.x;
+                            r2.position.z = R0.z;
+                            tickT23();
+                        }
+                        reh.boden = {
+                            ort: ortR,
+                            reh: +(r2.position.y - r.getTerrainHeightAt(R0.x, R0.z)).toFixed(2),
+                            wolf: +(j2.position.y - r.getTerrainHeightAt(j2.position.x, j2.position.z)).toFixed(2),
+                        };
+                        const KN = A._bissGesetz().kopfNeigung;
+                        const dcT = r.damageCreature;
+                        r.damageCreature = function (c2, amount, opts) {
+                            if (c2 === r2 && opts && opts.source === "jagd") reh.bisse++;
+                            return dcT.call(this, c2, amount, opts);
+                        };
+                        try {
+                            for (let a = 0; a < reh.versuche; a++) {
+                                // drei Ansprünge aus 1,6 m, drei aus 1,3 m (dort hält die Hetze: der Spalt ist die halbe Weite)
+                                const dist = a < reh.versuche / 2 ? 1.6 : 1.3;
+                                const zeile = reh.je[dist] || (reh.je[dist] = { anspruenge: 0, bisse: 0 });
+                                const b0 = reh.bisse,
+                                    n0 = reh.anspruenge;
+                                j2.position.set(J0.x, r.getTerrainHeightAt(J0.x, R0.z - dist), R0.z - dist);
+                                j2.rotation.set(0, 0, 0);
+                                Object.assign(j2.userData, {
+                                    _steuer: null,
+                                    _stossV: null,
+                                    nextHuntStrikeAt: 0,
+                                    _verhaltenAktion: null,
+                                    _hopH: 0,
+                                    _hopV: 0,
+                                });
+                                let letzte = null;
+                                for (let k = 0; k < 90; k++) {
+                                    r2.position.set(R0.x, r2.position.y, R0.z);
+                                    Object.assign(r2.userData, { _stossV: null, _steuer: null, hp: 1e6, fearUntil: 0 });
+                                    if (k === 0) r._tickCreatureScentStrike(j2);
+                                    tickT23();
+                                    const VA = j2.userData._verhaltenAktion;
+                                    if (!(VA && VA.bissAkt && s.creatureAnimationTime < VA.bis)) continue;
+                                    if (VA !== letzte) {
+                                        letzte = VA;
+                                        reh.anspruenge++;
+                                    }
+                                    if (VA.biss && Number.isFinite(VA.kopfZiel)) {
+                                        reh.takte++;
+                                        if (VA.kopfZiel <= KN[0] + 1e-6 || VA.kopfZiel >= KN[1] - 1e-6) reh.klemme++;
+                                    }
+                                }
+                                zeile.anspruenge += reh.anspruenge - n0;
+                                zeile.bisse += reh.bisse - b0;
+                            }
+                        } finally {
+                            r.damageCreature = dcT;
+                        }
+                    }
+                    if (j2) r.removeCreature(j2);
+                    if (r2) r.removeCreature(r2);
+                    w.z.bissReh = reh;
+                });
                 // (c) die Gegenwehr: ein Bär wird aus 1,6 m geschlagen (Breitseite, wie T5), dann läuft der Takt 1 s
                 const baer = neu("baer", P.x, P.z + 1.6, 1);
                 if (baer) {
@@ -2307,6 +2565,124 @@ async function WELLE_L() {
                     mitBiss.spieler = null;
                     r.removeCreature(baer);
                 }
+                // (T24) DER BISS KOSTET, WAS IN REICHWEITE STEHT, UND SPRINGT NIE INS LEERE (Nachbesserung 2):
+                // (a) die Kosten — ein Wolf, 15 Beutetiere 8–28 m um ihn (keines in der Weite seines Ansprungs): je Beute-Biss-
+                // Takt gezählt, wie viele Gestalten er rechnet (_kreaturBissRadial auf ein Tier), dazu die Zeit je Takt (Bericht)
+                const reich = { gestaltenJeTakt: null, msJeTakt: null, simsAnspruenge: null, simsSek: 10 };
+                await teil("T24", async () => {
+                    {
+                        const J0 = { x: P.x - 60, z: P.z - 60 };
+                        const wolfK = neu("wolf", J0.x, J0.z, 1);
+                        const schar = [];
+                        for (let i = 0; i < 15 && wolfK; i++) {
+                            const a = (i / 15) * Math.PI * 2,
+                                d = 8 + (i % 5) * 5;
+                            const x = J0.x + Math.sin(a) * d,
+                                z = J0.z + Math.cos(a) * d;
+                            const c = neu(i % 3 ? "wesen" : "fuchs", x, z, 0.8);
+                            if (!c) continue;
+                            c.position.y = r.getTerrainHeightAt(x, z);
+                            schar.push(c);
+                        }
+                        if (wolfK && schar.length === 15) {
+                            wolfK.position.y = r.getTerrainHeightAt(J0.x, J0.z);
+                            for (const c of [wolfK, ...schar]) c.updateMatrixWorld(true);
+                            reich.beute = schar.filter((o) => r._kreaturIstBeute(wolfK, o)).length;
+                            const radRoh = r._kreaturBissRadial;
+                            let gestalten = 0;
+                            r._kreaturBissRadial = function (c2, z2, m2) {
+                                if (z2) gestalten++;
+                                return radRoh.call(this, c2, z2, m2);
+                            };
+                            const takt = () => {
+                                wolfK.userData.nextHuntStrikeAt = 0;
+                                wolfK.userData._verhaltenAktion = null;
+                                r._tickCreatureScentStrike(wolfK);
+                            };
+                            try {
+                                for (let k = 0; k < 20; k++) takt();
+                                gestalten = 0;
+                                const N = 200;
+                                const t0 = performance.now();
+                                for (let k = 0; k < N; k++) takt();
+                                reich.msJeTakt = +((performance.now() - t0) / N).toFixed(4);
+                                reich.gestaltenJeTakt = gestalten / N;
+                            } finally {
+                                r._kreaturBissRadial = radRoh;
+                            }
+                        }
+                        for (const c of schar) r.removeCreature(c);
+                        if (wolfK) r.removeCreature(wolfK);
+                    }
+                    // (b) der Sims — auf trockenem Boden neben der Plattform (der erste Ort, an dem weder der Wolf noch der Fuß des
+                    // Sims im Wasser steht) steht der Spieler 3,5 m über dem Boden, ein Wolf jagt ihn wie in (a): 10 s im Takt,
+                    // gezählt jeder Ansprung; je Takt die Höhe der Füße über Kopf plus Sprung (das Kleinste zählt — so hoch reicht
+                    // der Wolf nie); die Gegenprobe: waagrecht steht er in der Weite seines Ansprungs (ohne die Höhe spränge er)
+                    {
+                        const P0 = { x: P.x, y: P.y, z: P.z };
+                        const wolfS = neu("wolf", P.x + 0.4, P.z + 6, 1);
+                        const trocken = (x, z) => {
+                            wolfS.position.set(x, r.getTerrainHeightAt(x, z), z);
+                            return r._kreaturSchwimmt(wolfS, r._creatureGroundY(wolfS)) === null;
+                        };
+                        const ort = wolfS
+                            ? [
+                                  [40, 40],
+                                  [-40, 40],
+                                  [40, -40],
+                                  [-40, -40],
+                                  [70, 0],
+                                  [0, 70],
+                              ].find(
+                                  ([ox, oz]) => trocken(P0.x + ox, P0.z + oz) && trocken(P0.x + ox + 0.4, P0.z + oz + 6)
+                              )
+                            : null;
+                        if (wolfS && ort) {
+                            P.x = P0.x + ort[0];
+                            P.z = P0.z + ort[1];
+                            P.y = r.getTerrainHeightAt(P.x, P.z) + A.PLAYER_FOOT_OFFSET + 3.5;
+                            halte();
+                            wolfS.position.set(P.x + 0.4, r.getTerrainHeightAt(P.x + 0.4, P.z + 6), P.z + 6);
+                            wolfS.rotation.set(0, Math.PI, 0);
+                            wolfS.userData._steuer = null;
+                            let letzte = null,
+                                n = 0,
+                                minWaag = Infinity,
+                                minUeber = Infinity;
+                            const zustaende = new Set();
+                            try {
+                                for (let k = 0; k < reich.simsSek * 60; k++) {
+                                    tickT23();
+                                    const VA = wolfS.userData._verhaltenAktion;
+                                    if (VA && VA.bissAkt && VA !== letzte) {
+                                        letzte = VA;
+                                        n++;
+                                    }
+                                    zustaende.add(wolfS.userData._motionZustand || "–");
+                                    const w2 = r._kreaturBissRadial(wolfS, null);
+                                    if (w2 !== null && w2 < minWaag) minWaag = w2;
+                                    const m = r._kreaturMaul(wolfS, {});
+                                    const hop = A._bissGesetz().geste.hop ? r._kreaturSprungHoehe(wolfS) : 0;
+                                    if (m && !(wolfS.userData._hopH > 0))
+                                        minUeber = Math.min(
+                                            minUeber,
+                                            r._spielerKapsel({}).y0 - (Math.max(m.ay, m.by) + m.r + hop)
+                                        );
+                                }
+                                reich.simsUeber = +minUeber.toFixed(2);
+                                reich.simsAnspruenge = n;
+                                reich.simsWaagrecht = +minWaag.toFixed(2);
+                                reich.simsReich = +r._kreaturBissReich(wolfS).toFixed(2);
+                                reich.simsZustaende = [...zustaende];
+                            } finally {
+                                Object.assign(P, P0);
+                                halte();
+                            }
+                        }
+                        if (wolfS) r.removeCreature(wolfS);
+                    }
+                });
+                w.z.bissReich = reich;
             } finally {
                 r.damagePlayer = dpGate;
                 r.damageCreature = dcGate;
@@ -2317,7 +2693,7 @@ async function WELLE_L() {
                 if (r.getGameMode() !== savedT23.mode) r.setGameMode(savedT23.mode);
             }
             w.z.bissGeste = bisse;
-        }
+        });
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {
@@ -2688,11 +3064,17 @@ async function WELLE_L() {
                     huelleZ: huelle ? huelle.position.z : 0,
                     legLHip: rig.legL.hip.rotation.x,
                     legRKnee: rig.legR.knee.rotation.x,
+                    // die Sohlen in der Welt (Bericht: wie weit der Ausfall die Füße mitnimmt — die Beine-Wand oben prüft
+                    // nur die Gelenk-Winkel)
+                    fussL: rig.legL.ankle ? rig.legL.ankle.getWorldPosition(new THREE.Vector3()) : null,
+                    fussR: rig.legR.ankle ? rig.legR.ankle.getWorldPosition(new THREE.Vector3()) : null,
                 };
             };
             const dauerE = r._playerSwingDauer();
-            // der Schwung trägt seinen Rahmen (Körper und Gerät, _kampfSchwungRahmen) wie _beginPlayerSwing ihn legt
-            const rahmenE = r._kampfSchwungRahmen({});
+            // der Schwung trägt seinen Rahmen (Körper und Gerät, _kampfSchwungRahmen) wie _beginPlayerSwing ihn legt; ein Stand
+            // ohne Rahmen (vor Welle LF kampf) schwingt ohne ihn — die Pose-Probe misst dann seinen alten Layer
+            const rahmenE =
+                typeof r._kampfSchwungRahmen === "function" ? r._kampfSchwungRahmen({}) : { reach: undefined };
             const mkSwing = (t) => ({
                 t,
                 dauer: dauerE,
@@ -2707,8 +3089,17 @@ async function WELLE_L() {
             });
             const pose0 = poseBei(null); // reine Lokomotion (Idle)
             const poseW = poseBei(mkSwing(dauerE * K.windupFrac * 0.6)); // mitten im Windup
+            const poseS = poseBei(mkSwing(dauerE * (K.windupFrac + K.strikeFrac * 0.5))); // mitten im Strike (der Ausfall)
             const poseEnd = poseBei(null); // nach dem Schwung: rückstandsfrei
-            o.pose = { armRad: poseW.armQ.angleTo(pose0.armQ), rumpfRad: poseW.chestQ.angleTo(pose0.chestQ) };
+            const gleit = (a, b) => (a && b ? Math.hypot(a.x - b.x, a.z - b.z) : null);
+            o.pose = {
+                armRad: poseW.armQ.angleTo(pose0.armQ),
+                rumpfRad: poseW.chestQ.angleTo(pose0.chestQ),
+                fussGleitenM: +Math.max(
+                    gleit(poseS.fussL, pose0.fussL) || 0,
+                    gleit(poseS.fussR, pose0.fussR) || 0
+                ).toFixed(3),
+            };
             o.checks.eArmHebt = poseW.armQ.angleTo(pose0.armQ) > 0.3 && poseW.chestQ.angleTo(pose0.chestQ) > 0.05;
             o.checks.eBeineByteGleich = poseW.legLHip === pose0.legLHip && poseW.legRKnee === pose0.legRKnee;
             o.checks.eRueckstandsfrei =
@@ -2875,7 +3266,7 @@ async function WELLE_L() {
             `  (B) Reichweite ${out.reach.toFixed(2)} m · Treffer je Schwung ${out.sweep.hits} · (C) Sim-Schritte im Hit-Stop ${out.simSteps} (Δt ${out.simDelta.toFixed(3)} s) · Phase gestoppt ${out.dPhaseGestoppt.toFixed(3)} / frei ${out.dPhaseFrei.toFixed(2)}`
         );
         console.log(
-            `  (D) up·y: ${out.kipp.uy0.toFixed(2)} → ${out.kipp.uyA.toFixed(2)} → ${out.kipp.uyB.toFixed(2)} → ${out.kipp.uyC.toFixed(2)} · (E) Arm ${out.pose.armRad.toFixed(2)} rad · Rumpf ${out.pose.rumpfRad.toFixed(2)} rad\n`
+            `  (D) up·y: ${out.kipp.uy0.toFixed(2)} → ${out.kipp.uyA.toFixed(2)} → ${out.kipp.uyB.toFixed(2)} → ${out.kipp.uyC.toFixed(2)} · (E) Arm ${out.pose.armRad.toFixed(2)} rad · Rumpf ${out.pose.rumpfRad.toFixed(2)} rad · Füße im Strike ${out.pose.fussGleitenM} m verschoben\n`
         );
         if (out.brei) console.log(`  (BREI) ${out.brei}\n`);
         check(
@@ -3304,32 +3695,54 @@ async function WELLE_L() {
                 (pv2.length ? " — " + pv2.join(" · ") : "")
         );
         const pv2Alt = pfeilVerdict(
-            { teile: 1, farben: 1, unbeleuchtet: 1, wirft: 0, laenge: 0.55, wirtZylinder: true },
+            { teile: 1, farben: 1, unbeleuchtet: 1, wirft: 0, laenge: 0.55, wirtZylinder: true, leerStill: true },
             { eigenerPfeil: true }
         );
         const pv2Gut = pfeilVerdict(
-            { teile: 6, farben: 4, unbeleuchtet: 0, wirft: 6, laenge: 0.76, wirtZylinder: false },
+            { teile: 6, farben: 4, unbeleuchtet: 0, wirft: 6, laenge: 0.76, wirtZylinder: false, leerStill: false },
             { eigenerPfeil: false }
         );
         check(
             pv2Gut.length === 0 &&
-                ["pfeil-gestalt", "pfeil-licht", "pfeil-schatten", "pfeil-laenge", "pfeil-zwilling"].every((t) =>
-                    pv2Alt.some((x) => x.startsWith(t))
-                ),
-            "Selbst-Test T21: der Befund (ein MeshBasic-Zylinder, 0,55 m, Zwillinge) nennt Gestalt, Licht, Schatten, Länge und Zwilling; der Kern-Pfeil bleibt grün"
+                [
+                    "pfeil-gestalt",
+                    "pfeil-licht",
+                    "pfeil-schatten",
+                    "pfeil-laenge",
+                    "pfeil-zwilling",
+                    "pfeil-still",
+                ].every((t) => pv2Alt.some((x) => x.startsWith(t))),
+            "Selbst-Test T21: der Befund (ein MeshBasic-Zylinder, 0,55 m, Zwillinge, ein leerer Guss still) nennt Gestalt, Licht, Schatten, Länge, Zwilling und die Stille; der Kern-Pfeil, der laut bricht, bleibt grün"
         );
         console.log(`  (T22) Tod am Hang (Gefälle längs der Leibes-Achse): ${JSON.stringify(z.tod || null)}`);
         const tv = todVerdict(z.tod);
         check(
             tv.length === 0,
-            "LF Posten 7: ein Tier stirbt wie ein Tier — es fällt auf die Flanke (auch wenn das Gefälle längs seiner Achse fällt) und bleibt liegen" +
+            "LF Posten 7: ein Tier stirbt wie ein Tier — es fällt auf die Flanke (auch wenn das Gefälle längs seiner Achse fällt) und bleibt liegen; der Leichnam ist kein Wesen (kein Ziel, kein Platz, keine Zahl)" +
                 (tv.length ? " — " + tv.join(" · ") : "")
         );
-        const tvAlt = todVerdict({ vornY: 0.99, obenY: 0.12, liegt10s: false });
-        const tvGut = todVerdict({ vornY: 0.05, obenY: 0.1, liegt10s: true });
+        const tvAlt = todVerdict({
+            vornY: 0.99,
+            obenY: 0.12,
+            liegt10s: false,
+            zielLeichnam: true,
+            platzFrei: false,
+            nexusZaehlt: true,
+        });
+        const tvGut = todVerdict({
+            vornY: 0.05,
+            obenY: 0.1,
+            liegt10s: true,
+            zielLeichnam: false,
+            platzFrei: true,
+            nexusZaehlt: false,
+        });
         check(
-            tvGut.length === 0 && ["tod-flanke", "tod-leichnam"].every((t) => tvAlt.some((x) => x.startsWith(t))),
-            "Selbst-Test T22: der Befund (auf dem Hinterteil, nach 22 Takten fort) nennt Flanke und Leichnam; ein Tier auf der Flanke bleibt grün"
+            tvGut.length === 0 &&
+                ["tod-flanke", "tod-leichnam", "tod-ziel", "tod-platz", "tod-zaehlt"].every((t) =>
+                    tvAlt.some((x) => x.startsWith(t))
+                ),
+            "Selbst-Test T22: der Befund (auf dem Hinterteil, nach 22 Takten fort; der Leichnam als Ziel, Platz und Zahl) nennt Flanke, Leichnam, Ziel, Platz und Zahl; ein Tier auf der Flanke, das kein Wesen mehr ist, bleibt grün"
         );
         const bgz = z.bissGeste || {};
         const bgZeile = (L) =>
@@ -3351,8 +3764,65 @@ async function WELLE_L() {
         const gutBiss = [{ geste: "pounce", spalt: -0.01, xz: 1.1 }];
         const bgvGut = bissGesteVerdict({ jagd: gutBiss, beute: gutBiss, gegenwehr: gutBiss });
         check(
-            bgvGut.length === 0 && ["biss-geste", "biss-ferne", "biss-weg"].every((t) => bgvAlt.some((x) => x.startsWith(t))),
+            bgvGut.length === 0 &&
+                ["biss-geste", "biss-ferne", "biss-weg"].every((t) => bgvAlt.some((x) => x.startsWith(t))),
             "Selbst-Test T23: der Befund (Biss ohne Geste, aus 2,39 m, ein Weg ohne Biss) nennt Geste, Ferne und Weg; ein Biss im Ansprung am Leib bleibt grün"
+        );
+        console.log(`  (T25) Wunde über den Reload: ${JSON.stringify(z.wunde || null)}`);
+        const wv = wundeVerdict(z.wunde);
+        check(
+            wv.length === 0,
+            "LF Posten 6 (Nachbesserung 2): die Wunde reist als Anteil des Lebens — voll bleibt voll, auch aus einem Stand vor dem Massen-Gesetz" +
+                (wv.length ? " — " + wv.join(" · ") : "")
+        );
+        const wvAlt = wundeVerdict([
+            { seele: "wesen@1", altVoll: 0.738, altHalb: 0.369, neu30: 0.3 },
+            { seele: "baer@1.75", altVoll: 0.407, altHalb: 0.203, neu30: 0.3 },
+        ]);
+        const wvGut = wundeVerdict([
+            { seele: "wesen@1", altVoll: 1, altHalb: 0.5, neu30: 0.3 },
+            { seele: "baer@1.75", altVoll: 1, altHalb: 0.5, neu30: 0.3 },
+        ]);
+        check(
+            wvGut.length === 0 && wvAlt.some((x) => x.startsWith("wunde-alt")),
+            "Selbst-Test T25: der Befund (ein voller Hirsch bei 124/168 nach dem Reload) nennt die alte Wunde; voll bleibt voll bleibt grün"
+        );
+        console.log(`  (T24) Biss-Reichweite: ${JSON.stringify(z.bissReich || null)}`);
+        console.log(`  (T24) das stehende Reh: ${JSON.stringify(z.bissReh || null)}`);
+        const brv = bissReichVerdict(z.bissReich, z.bissReh);
+        check(
+            brv.length === 0,
+            "LF Posten 5 (Nachbesserung 2): der Biss kostet, was in Reichweite steht (0 Gestalten außer Reichweite je Takt), springt nie ins Leere (0 Ansprünge auf den Sims) und trifft ein stehendes Reh (≥ 5 von 6)" +
+                (brv.length ? " — " + brv.join(" · ") : "")
+        );
+        const brvAlt = bissReichVerdict(
+            {
+                gestaltenJeTakt: 15,
+                msJeTakt: 2.346,
+                simsAnspruenge: 6,
+                simsSek: 10,
+                simsUeber: 1.0,
+                simsWaagrecht: 0.9,
+                simsReich: 2.6,
+            },
+            { versuche: 6, anspruenge: 6, bisse: 0, boden: {}, je: { 1.3: { anspruenge: 3, bisse: 0 } } }
+        );
+        const brvGut = bissReichVerdict(
+            {
+                gestaltenJeTakt: 0,
+                msJeTakt: 0.02,
+                simsAnspruenge: 0,
+                simsSek: 10,
+                simsUeber: 1.0,
+                simsWaagrecht: 0.9,
+                simsReich: 2.6,
+            },
+            { versuche: 6, anspruenge: 6, bisse: 6, boden: {}, je: {} }
+        );
+        check(
+            brvGut.length === 0 &&
+                ["biss-kosten:", "biss-sims:", "biss-reh:"].every((t) => brvAlt.some((x) => x.startsWith(t))),
+            "Selbst-Test T24: der Befund (15 Gestalten je Takt, 6 Ansprünge unter dem Sims, 0 Bisse am Reh) nennt Kosten, Sims und Reh; ein Biss nur in Reichweite, der trifft, bleibt grün"
         );
         check(
             c.bogenVerschleiss,
