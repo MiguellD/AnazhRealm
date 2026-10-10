@@ -10332,12 +10332,53 @@ async function checkBandRing8(ctx) {
                 grundZuerst: /nur der erste Term/.test(
                     wirft({
                         terme: [
-                            { art: "rampe", x: 0, z: 0, richtung: 0, breite: 9, lauf: 9, krone: 1, winkel: 9, boeschung: 45 },
+                            {
+                                art: "rampe",
+                                x: 0,
+                                z: 0,
+                                richtung: 0,
+                                breite: 9,
+                                lauf: 9,
+                                krone: 1,
+                                winkel: 9,
+                                boeschung: 45,
+                            },
                         ],
                     })
                 ),
                 zahl: /keine Zahl/.test(wirft({ terme: [{ art: "insel", x: 0 }] })),
             };
+        }
+        // DIE TÜREN DES ERBGUTS (`_erbgutEinlass`, Gegenprüfung 10.10.): eine Welt mit einer Term-Art, die dieser Build nicht
+        // trägt, betritt den Speicher nie — weder über das Welt-Tor (daneben) noch als Einladung noch als Snapshot eines
+        // Mitspielers; Index, Zeiger der aktiven Welt und die lebende Welt bleiben (bis 10.10. nahmen die Türen sie mit
+        // ok:true an, der Zeiger blieb stehen, und jeder Reload scheiterte am Ladeschirm).
+        {
+            const fremd = () => ({
+                worldMeta: {
+                    worldId: "w-tuer-korridor",
+                    slug: "tuer-korridor",
+                    erbgut: { terme: [{ art: "korridor" }] },
+                },
+            });
+            const index0 = r.worldsIndexLoad().length;
+            const zeiger0 = r.activeWorldGet();
+            const welt0 = r.state.worldMeta;
+            const p2pRolle0 = r.state.p2p.role;
+            const daneben = r.importWorldBeside(fremd());
+            const gast = r._importGuestWorld(fremd(), { url: "ws://127.0.0.1:1", roomId: "w-tuer-korridor" }, null);
+            r.state.p2p.pendingWorldSnapshot = true;
+            const mitspieler = r._p2pApplyWorldSnapshot("tuer-peer", fremd());
+            out.erbgutTueren = {
+                daneben: daneben && daneben.ok === false && /unbekannte Term-Art/.test(daneben.reason),
+                gast: gast === null,
+                mitspieler: mitspieler && mitspieler.ok === false && /unbekannte Term-Art/.test(mitspieler.reason),
+                index: r.worldsIndexLoad().length === index0,
+                zeiger: r.activeWorldGet() === zeiger0,
+                welt: r.state.worldMeta === welt0 && r.state.p2p.role === p2pRolle0,
+                gespeichert: localStorage.getItem(r.worldStorageKey("w-tuer-korridor")) === null,
+            };
+            r.state.p2p.pendingWorldSnapshot = false;
         }
 
         // createNewWorld (ohne Reload) erzeugt eine neue Welt im Index.
@@ -10456,6 +10497,12 @@ async function checkBandRing8(ctx) {
             "Erbgut: ohne Feld [wildnis]; unbekannte Term-Art, Grund nicht zuerst, fehlende Zahl werfen (fail-closed)",
             ew.ohne === true && ew.unbekannt === true && ew.grundZuerst === true && ew.zahl === true,
             JSON.stringify(ew)
+        );
+        const et = ring8Results.erbgutTueren || {};
+        check(
+            "Erbgut: keine Tür lässt ein fremdes Erbgut ein (Welt-Tor, Einladung, Mitspieler) — Index, Zeiger, Welt bleiben",
+            ["daneben", "gast", "mitspieler", "index", "zeiger", "welt", "gespeichert"].every((k) => et[k] === true),
+            JSON.stringify(et)
         );
         check("Ring 8: createNewWorld liefert neue worldId", ring8Results.newWorldCreated);
         check("Ring 8: Index wächst um eins nach createNewWorld", ring8Results.indexGrewByOne);
@@ -15160,6 +15207,31 @@ async function checkBandLateMultiUser(ctx) {
         r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "asker" }));
         const sentSnap = sentMsgs.find((m) => m.type === "world-snapshot" && m.to === "asker");
         out.hostAnswersRequestWithSnapshot = !!sentSnap && !!sentSnap.state;
+        // DIE WELT REIST NUR ZU EINEM LESER IHRES ERBGUTS (Plan R11, `_erbgutTeilbar`): trägt die Welt ein Erbgut jenseits
+        // der Wildnis, bekommt ein Anfrager ohne Erbgut-Stufe (ein Build davor) keinen Snapshot — er zeichnete still
+        // Wildnis darunter; ein Leser (`erbgut` ≥ 1) bekommt ihn. Die lebende Welt trägt das Erbgut nur synchron (kein
+        // Takt dazwischen), ihr Erbgut-Merker bleibt unberührt.
+        {
+            const T = r.constructor;
+            const buehne = {
+                terme: [{ art: "insel", x: 0, z: 0, r: 420, plateau: 9, kuppel: 0.003, schelf: 60, grund: -15 }],
+            };
+            const echt = r.state.worldMeta;
+            r.state.worldMeta = Object.assign({}, echt, { erbgut: buehne });
+            sentMsgs.length = 0;
+            try {
+                r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "alt-build" }));
+            } finally {
+                r.state.worldMeta = echt;
+            }
+            out.erbgutReise = {
+                altVerweigert: sentMsgs.length === 0,
+                teilbarWildnis: T._erbgutTeilbar({}, {}) === null,
+                teilbarLeser: T._erbgutTeilbar({ erbgut: buehne }, { erbgut: T.ERBGUT_PROTOKOLL }) === null,
+                verweigertAlt: /liest kein Erbgut/.test(String(T._erbgutTeilbar({ erbgut: buehne }, {}))),
+                stufe: T.ERBGUT_PROTOKOLL >= 1,
+            };
+        }
         r._p2pSignal = origSignal;
         sentMsgs.length = 0;
         r.state.p2p.role = "solo";
@@ -15213,6 +15285,12 @@ async function checkBandLateMultiUser(ctx) {
         check(
             "Ring 11.5: Host antwortet auf world-request mit world-snapshot (to=asker)",
             ring115Results.hostAnswersRequestWithSnapshot
+        );
+        const er = ring115Results.erbgutReise || {};
+        check(
+            "Ring 11.5: eine Welt mit Erbgut reist nur zu einem Leser (Anfrager ohne Erbgut-Stufe bekommt keinen Snapshot)",
+            ["altVerweigert", "teilbarWildnis", "teilbarLeser", "verweigertAlt", "stufe"].every((k) => er[k] === true),
+            JSON.stringify(er)
         );
         check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
         check(

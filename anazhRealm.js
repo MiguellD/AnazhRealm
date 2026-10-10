@@ -5501,7 +5501,7 @@ class AnazhRealm {
                 setTimeout(() => {
                     if (done) return;
                     try {
-                        ws.send(JSON.stringify({ type: "world-request" }));
+                        ws.send(JSON.stringify({ type: "world-request", erbgut: AnazhRealm.ERBGUT_PROTOKOLL }));
                     } catch {
                         /* defensive */
                     }
@@ -5539,6 +5539,11 @@ class AnazhRealm {
     // im selben P2P-Raum landen (Raum = worldId, V2.1).
     _importGuestWorld(snapshot, hostInfo, slugHint) {
         if (!snapshot || typeof snapshot !== "object") return null;
+        const erbgutNein = AnazhRealm._erbgutEinlass(snapshot);
+        if (erbgutNein) {
+            this.log(`Gast-Welt abgelehnt: ${erbgutNein}`, "ERROR");
+            return null;
+        }
         const meta = snapshot.worldMeta || {};
         const worldId = (meta.worldId && String(meta.worldId)) || `guest-${Date.now()}`;
         const baseSlug = (slugHint && String(slugHint).trim()) || meta.slug || "geladen";
@@ -6019,7 +6024,7 @@ class AnazhRealm {
         // W7 Phase 2 — Welt-Transfer läuft kanal-exklusiv (kann nicht über
         // den WS injiziert werden, weil hier behandelt statt re-dispatcht).
         if (msg.type === "world-pull") {
-            this._p2pHandleWorldPull(peerId);
+            this._p2pHandleWorldPull(peerId, msg);
             return;
         }
         if (msg.type === "world-chunk") {
@@ -6132,7 +6137,7 @@ class AnazhRealm {
         if (!rtc || !rtc.open) return { ok: false, reason: "no_channel" };
         p2p.pendingWorldSnapshot = true;
         p2p.pendingPullFrom = hostPeerId;
-        const sent = this._p2pSendChannelTo(hostPeerId, { type: "world-pull" });
+        const sent = this._p2pSendChannelTo(hostPeerId, { type: "world-pull", erbgut: AnazhRealm.ERBGUT_PROTOKOLL });
         if (!sent) {
             p2p.pendingWorldSnapshot = false;
             p2p.pendingPullFrom = null;
@@ -6146,13 +6151,19 @@ class AnazhRealm {
     // W7 Phase 2 — auf einen world-pull antworten: den eigenen Snapshot in
     // P2P_WORLD_CHUNK_SIZE-Stücke zerlegen und über den DataChannel senden.
     // Backpressure über channel.bufferedAmount fängt grosse Welten ab.
-    async _p2pHandleWorldPull(peerId) {
+    async _p2pHandleWorldPull(peerId, msg) {
         const p2p = this.state.p2p;
         const rtc = p2p.rtcPeers.get(peerId);
         if (!rtc || !rtc.open || !rtc.channel) return;
         // Nur eine echte (geteilte) Welt herausgeben.
         const role = p2p.role;
         if (role !== "host" && role !== "guest") return;
+        // Nur zu einem Leser ihres Erbguts (`_erbgutTeilbar`).
+        const erbgutNein = AnazhRealm._erbgutTeilbar(this.state.worldMeta, msg);
+        if (erbgutNein) {
+            this.log(`Welt-Pull von ${peerId.slice(0, 12)}… verweigert: ${erbgutNein}`, "WARN");
+            return;
+        }
         // Rate-Limit: ein voller Snapshot ist teuer — ein Peer darf höchstens alle P2P_PULL_COOLDOWN_MS
         // einen Pull auslösen (sonst world-pull-Spam als DoS). Sentinel "noch nie bedient" = -Infinity,
         // NICHT 0 — sonst fiele ein Pull in den ersten COOLDOWN-ms der Seite fälschlich weg.
@@ -7397,6 +7408,11 @@ class AnazhRealm {
             this.log(`Welt-Snapshot verweigert — Peer ${requesterId.slice(0, 8)}… gebannt`, "WARN");
             return;
         }
+        const erbgutNein = AnazhRealm._erbgutTeilbar(this.state.worldMeta, msg);
+        if (erbgutNein) {
+            this.log(`Welt-Snapshot verweigert — Peer ${requesterId.slice(0, 8)}…: ${erbgutNein}`, "WARN");
+            return;
+        }
         try {
             const snapshot = this.buildStateSnapshot();
             this._p2pSignal({ type: "world-snapshot", to: requesterId, state: snapshot });
@@ -7425,6 +7441,12 @@ class AnazhRealm {
     // Mesh-Resync (reload=true — "Welt neu holen" baut sauber neu auf).
     _p2pApplyWorldSnapshot(senderId, state, { reload = false } = {}) {
         const p2p = this.state.p2p;
+        const erbgutNein = AnazhRealm._erbgutEinlass(state);
+        if (erbgutNein) {
+            this.log(`Welt-Snapshot abgelehnt: ${erbgutNein}`, "ERROR");
+            p2p.pendingWorldSnapshot = false;
+            return { ok: false, reason: erbgutNein };
+        }
         try {
             this.loadState(state);
             if (this.state.worldMeta) {
@@ -27290,6 +27312,42 @@ class AnazhRealm {
         return this._erbgutCache;
     }
 
+    // DIE EINGANGS-WAND DES ERBGUTS: eine fremde Welt tritt nur ein, wenn dieser Build ihr Erbgut trägt — dieselbe
+    // Normalform wie beim Erwachen (`_erbgutNormal`). Leser: jede Tür, durch die ein Snapshot zur Welt wird (Welt-Tor
+    // daneben/ersetzen `importWorldBeside` · `_weltTorImportReplace`, die Einladung `_importGuestWorld`, der Snapshot eines
+    // Mitspielers `_p2pApplyWorldSnapshot`). Bis 10.10. nahmen die Türen jedes Erbgut an (`ok:true`): der Zeiger stand auf
+    // der Welt, und jeder Reload scheiterte am Ladeschirm. Liefert den Grund der Absage oder null.
+    static _erbgutEinlass(snapshot) {
+        const meta = snapshot && typeof snapshot === "object" ? snapshot.worldMeta : null;
+        try {
+            AnazhRealm._erbgutNormal(meta && typeof meta === "object" ? meta.erbgut : undefined);
+            return null;
+        } catch (e) {
+            return String((e && e.message) || e);
+        }
+    }
+
+    // DIE WELT REIST NUR ZU EINEM LESER IHRES ERBGUTS (Plan R11): ein Build vor dem Erbgut kennt `worldMeta.erbgut` nicht
+    // (must-ignore) und zeichnete still Wildnis unter die Welt und ihre Häuser. Eine Welt, deren Erbgut nicht die Wildnis
+    // allein ist, reist darum nur zu einem Empfänger, der sein Lesen im Protokoll erklärt (`erbgut` ≥
+    // `AnazhRealm.ERBGUT_PROTOKOLL` in world-request und world-pull); sonst verweigert der Sender benannt. Leser: der Host
+    // (`_p2pMsgWorldRequest`), der Mitträger (`_p2pMaybeServeAsCarrier`), der Mesh-Resync (`_p2pHandleWorldPull`).
+    // Liefert den Grund der Absage oder null.
+    static _erbgutTeilbar(meta, msg) {
+        let terme;
+        try {
+            terme = AnazhRealm._erbgutNormal(meta && typeof meta === "object" ? meta.erbgut : undefined);
+        } catch (e) {
+            return String((e && e.message) || e);
+        }
+        if (terme.length === 1 && terme[0].art === "wildnis") return null;
+        const kann = msg && typeof msg.erbgut === "number" && Number.isFinite(msg.erbgut) ? msg.erbgut : 0;
+        if (kann >= AnazhRealm.ERBGUT_PROTOKOLL) return null;
+        return `der Empfänger liest kein Erbgut (Protokoll ${kann} < ${AnazhRealm.ERBGUT_PROTOKOLL}) — die Welt [${terme
+            .map((t) => t.art)
+            .join(", ")}] reist nicht`;
+    }
+
     // Die Normalform der Terme (die Zahlen geklemmt, die Winkel-Größen gerechnet) oder ein Wurf mit dem Grund.
     static _erbgutNormal(roh) {
         if (roh == null) return [{ art: "wildnis" }];
@@ -42570,6 +42628,11 @@ class AnazhRealm {
         if (!wanted) return false;
         const pin = this.state.p2p.pinnedWorlds.get(wanted);
         if (!pin) return false;
+        const erbgutNein = AnazhRealm._erbgutTeilbar(pin.snapshot && pin.snapshot.worldMeta, msg);
+        if (erbgutNein) {
+            this.log(`Φ5 Mitträger verweigert „${pin.label}" an ${requesterId.slice(0, 8)}…: ${erbgutNein}`, "WARN");
+            return false;
+        }
         try {
             this._p2pSignal({
                 type: "world-snapshot",
@@ -45844,11 +45907,22 @@ class AnazhRealm {
         }
         const parsed = pending.parsed;
         const fileName = pending.fileName;
+        const chatOutput = document.getElementById("chat-output");
+        const erbgutNein = AnazhRealm._erbgutEinlass(parsed);
+        if (erbgutNein) {
+            if (chatOutput) {
+                const line = document.createElement("div");
+                line.textContent = `Ersetzen abgelehnt: ${erbgutNein}`;
+                chatOutput.appendChild(line);
+                chatOutput.scrollTop = chatOutput.scrollHeight;
+            }
+            this._closeWeltTorDialog();
+            return;
+        }
         // Aktuelle Welt wird überschrieben — der Welt-Drawer trägt ab jetzt
         // die importierte Identität. loadState(parsed) ist der bisherige
         // Pfad (vor Ring 9 war das der einzige).
         this.loadState(parsed);
-        const chatOutput = document.getElementById("chat-output");
         if (chatOutput) {
             const line = document.createElement("div");
             line.textContent = `Datei ${fileName} importiert — aktuelle Welt wurde ersetzt.`;
@@ -46067,6 +46141,8 @@ class AnazhRealm {
         if (!parsed || typeof parsed !== "object") {
             return { ok: false, reason: "kein gültiger Snapshot" };
         }
+        const erbgutNein = AnazhRealm._erbgutEinlass(parsed);
+        if (erbgutNein) return { ok: false, reason: erbgutNein };
         const originalMeta = parsed.worldMeta || {};
         const originalId = typeof originalMeta.worldId === "string" ? originalMeta.worldId : null;
         const originalSlug = (originalMeta.slug || "import")
@@ -100797,6 +100873,11 @@ AnazhRealm.P2P_SNAP_BUF_MAX = 20;
 // denselben Peer. Schützt vor pull-Spam (jeder Pull serialisiert + sendet
 // die ganze Welt — ohne Limit ein DoS-Vektor).
 AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
+// DIE ERBGUT-STUFE DES PROTOKOLLS: wer eine Welt erbittet (world-request, world-pull), erklärt, dass er
+// `worldMeta.erbgut` liest und eine unbekannte Term-Art ablehnt (`_erbgutEinlass`). Ein Sender reicht eine Welt, deren
+// Erbgut nicht die Wildnis allein ist, nur einem Empfänger mit dieser Stufe (`_erbgutTeilbar`) — ein Build davor
+// zeichnete sie still als Wildnis.
+AnazhRealm.ERBGUT_PROTOKOLL = 1;
 
 // Mesh-Welt-Verteilung: ein vendortes Welt-Bündel reist in P2P_WORLD_CHUNK_SIZE-Stücken über den
 // DataChannel. Mindestabstand zwischen zwei bundle-pull-Antworten an denselben Peer — Read + Versand

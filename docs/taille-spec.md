@@ -90,7 +90,13 @@ Kein Import-Pfad übernimmt Abgeleitetes als Wahrheit:
   `bucht`, höchstens 32, Zahlen am Empfänger geklemmt). Die Empfänger-Wand `_erbgut()` ist
   hier **fail-closed** — die Ausnahme zu §2: eine Term-Art, die dieser Build nicht trägt,
   lässt die Welt nicht erwachen (der Grund steht auf dem Ladeschirm); sie still als Wildnis
-  zu lesen hieße, eine andere Welt zu zeichnen. Die Bühne `spec/pruefbuehne/welt.json`.
+  zu lesen hieße, eine andere Welt zu zeichnen. Dieselbe Wand steht an jeder Tür, durch die
+  ein Snapshot zur Welt wird (`_erbgutEinlass`: Welt-Tor daneben/ersetzen, Einladung,
+  Snapshot eines Mitspielers) — eine abgelehnte Welt betritt den Speicher nie. Und eine Welt,
+  deren Erbgut nicht die Wildnis allein ist, reist nur zu einem Leser: der Empfänger erklärt
+  `erbgut` ≥ 1 in `world-request`/`world-pull` (`AnazhRealm.ERBGUT_PROTOKOLL`), sonst
+  verweigert der Sender benannt (`_erbgutTeilbar`; ein Build davor zeichnete still Wildnis).
+  Die Bühne `spec/pruefbuehne/welt.json`.
 
 ## §4 · Die Versions-Regel (EINE Semantik)
 
@@ -140,7 +146,8 @@ dauerhaften Welt-Besitz (`world-snapshot` ist Durchreiche).
   davor außer `stats`/`world-presence` wird verworfen) · Raum-Broadcasts `pos {x,y,z,yaw}` ·
   `creature-pos {list ≤64}` · `dsl {program: Array 1..256}` · `soul` ·
   `vibe` · `companion-say` · `subworld-net` · `portal-invite` ·
-  `world-request`/`world-snapshot` (Welt-Zug, Durchreiche) · adressiert
+  `world-request {erbgut?}`/`world-snapshot` (Welt-Zug, Durchreiche; `erbgut` = die Erbgut-Stufe
+  des Anfragers, eine ganze Zahl 0..1000, §3) · adressiert
   `rtc-offer`/`rtc-answer`/`rtc-ice {to}` (WebRTC-Rendezvous) · Lobby
   `lobby-publish {label}` / `lobby-unpublish` / `lobby-list` · `stats` ·
   `world-presence {worldId}` (Φ4 — regionale Kopf-Zahlen einer Welt; nur dem Anfrager zurück).
