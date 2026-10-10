@@ -21,9 +21,12 @@
 //   E1–E4  die Folge der Schau (958×512 → 1010×541 → maximiert → DPR 2 → zurück) im Maßstab 2/3 (swiftshader: ein Frame
 //          bei 1280×720 × 1,25 kostet ~16 s): 639×342 → 674×361 → 853×480 → 853×480 bei DPR 2 → 639×342 bei DPR 1, je
 //          Schritt ≥ 6 Frames im laufenden Loop — ROT bei JEDER WebGPU-Validierung beim Namen (Device-Meldung und GPU-Wache)
-//   E5     nicht vakuös: das Wasser zeichnet, das Abbild wurde neu angelegt, der DPR-Schritt stellte die Pixel-Ratio
-//   ES     Selbsttest am echten Frame: ohne den Vorher-Textur-Wächter der Diät (`_diaetVorTextur` → false) MUSS der
-//          DPR-Schritt „Destroyed texture … szene:tiefenabbild" beim Namen zeigen
+//   E5     die Pixel-Ratio ALLEIN (1,25, dann 1), wie die DPR-Kappe sie stellt, ohne resize-Ereignis — der deterministische
+//          Schritt (über setViewport kann je nach Takt der resize-Handler das Wasser vorher neu bauen); ebenso ROT bei jeder
+//          Meldung
+//   E6     nicht vakuös: das Wasser zeichnet, das Abbild wurde je Größe neu angelegt, die Pixel-Ratio folgte DPR und Kappe
+//   ES     Selbsttest am echten Frame: ohne den Vorher-Textur-Wächter der Diät (`_diaetVorTextur` → false) MUSS E5
+//          „Destroyed texture … szene:tiefenabbild" beim Namen zeigen
 //
 //   node scripts/diag-fenster-wechsel.cjs [--ohne-echt]
 const puppeteer = require("puppeteer");
@@ -238,7 +241,26 @@ async function echteStufe(check) {
         log(`am Ufer ${JSON.stringify(u)}`);
         const vor = await page.evaluate(fensterSchritt, { n: 6, ms: 2000 });
         if (Object.keys(vor.gpu).length) console.log(`  (vor den Schritten: ${JSON.stringify(vor.gpu)})`);
-        // die Schritte der Schau: vergrößern, nochmals, maximiert bei DPR 2, zurück
+        // ein Schritt: die Änderung, dann Frames im laufenden Loop; jede Device-Meldung und jede neue Zeile der GPU-Wache
+        let wacheVor = vor.wache;
+        const schritt = async (name, text, tu) => {
+            await page.evaluate((s) => (window.__fensterEcht.schritt = s), name);
+            await tu();
+            const s = await page.evaluate(fensterSchritt, { n: 6, ms: 3000 });
+            s.fremd = Object.entries(s.gpu).map(([k, n]) => `${n}× ${k}`);
+            s.wacheNeu = s.wache - wacheVor;
+            wacheVor = s.wache;
+            const abb = s.abbild ? `${s.abbild.b}×${s.abbild.h} v${s.abbild.version}` : "-";
+            log(
+                `${name} ${text}: Pixel-Ratio ${s.pr}, Abbild ${abb}, ${s.frames} Frames, ` +
+                    `${s.fremd.length ? s.fremd.join(" | ") : "0 Meldungen"}, GPU-Wache +${s.wacheNeu}`
+            );
+            return s;
+        };
+        const befund = (s) =>
+            s.fremd.join(" | ") || (s.wacheNeu ? `GPU-Wache +${s.wacheNeu}: ${s.wacheKoepfe.slice(-2).join(" | ")}` : "");
+        const pixelRatio = (v) => page.evaluate((x) => window.anazhRealm.state.renderer.setPixelRatio(x), v);
+        // E1–E4 die Folge der Schau: vergrößern, nochmals, DPR 2, zurück (setViewport feuert das resize-Ereignis)
         const SCHRITTE = [
             ["E1", 674, 361, 1],
             ["E2", 853, 480, 1],
@@ -246,46 +268,58 @@ async function echteStufe(check) {
             ["E4", 639, 342, 1],
         ];
         const erg = {};
-        let wacheVor = vor.wache;
         for (const [name, w, h, dsf] of SCHRITTE) {
-            await page.evaluate((s) => (window.__fensterEcht.schritt = s), name);
-            await page.setViewport({ width: w, height: h, deviceScaleFactor: dsf });
-            const s = await page.evaluate(fensterSchritt, { n: 6, ms: 3000 });
-            erg[name] = s;
-            const fremd = Object.entries(s.gpu).map(([k, n]) => `${n}× ${k}`);
-            const wache = s.wache - wacheVor;
-            wacheVor = s.wache;
-            log(
-                `${name} ${w}×${h} DPR ${dsf}: Pixel-Ratio ${s.pr}, Abbild ${s.abbild ? s.abbild.b + "×" + s.abbild.h + " v" + s.abbild.version : "-"}, ` +
-                    `${s.frames} Frames, GPU-Wache +${wache}`
+            const s = await schritt(name, `${w}×${h} DPR ${dsf}`, () =>
+                page.setViewport({ width: w, height: h, deviceScaleFactor: dsf })
             );
-            check(`${name} keine WebGPU-Validierung (${w}×${h}, DPR ${dsf}, laufender Loop)`, fremd.length === 0 && wache === 0, fremd.join(" | ") || (wache ? `GPU-Wache +${wache}: ${s.wacheKoepfe.slice(-2).join(" | ")}` : ""));
+            erg[name] = s;
+            check(`${name} keine WebGPU-Validierung (${w}×${h}, DPR ${dsf}, laufender Loop)`, !befund(s), befund(s));
+        }
+        // E5 die Pixel-Ratio ALLEIN, wie sie die DPR-Kappe stellt (`_applyRenderScale` → `setPixelRatio`), ohne resize-
+        // Ereignis: setViewport mit neuem DPR feuert je nach Takt AUCH das resize-Ereignis, dessen Handler das Wasser neu baut
+        // (ohne Wächter: in voller Größe 8 Meldungen, im Maßstab 2/3 keine) — dieser Schritt ist der deterministische
+        for (const [name, v] of [
+            ["E5a", 1.25],
+            ["E5b", 1],
+        ]) {
+            const s = await schritt(name, `setPixelRatio(${v})`, () => pixelRatio(v));
+            erg[name] = s;
+            check(`${name} keine WebGPU-Validierung (Pixel-Ratio ${v} allein, laufender Loop)`, !befund(s), befund(s));
         }
         const abbilder = new Set(Object.values(erg).map((s) => s.abbild && s.abbild.id + ":" + s.abbild.version));
+        const frames = Object.values(erg)
+            .map((s) => s.frames)
+            .join("/");
         check(
-            "E5 nicht vakuös: das Wasser zeichnet, das Abbild wurde neu angelegt, der DPR-Schritt stellte die Pixel-Ratio",
-            vor.wasser > 0 && abbilder.size >= 3 && erg.E3.pr > erg.E2.pr && Object.values(erg).every((s) => s.frames >= 4),
-            `Wasser ${vor.wasser}, Abbild-Stände ${abbilder.size}, Pixel-Ratio E2 ${erg.E2.pr} → E3 ${erg.E3.pr}, Frames ${Object.values(erg)
-                .map((s) => s.frames)
-                .join("/")}`
+            "E6 nicht vakuös: das Wasser zeichnet, das Abbild wurde je Größe neu angelegt, die Pixel-Ratio folgte DPR und Kappe",
+            vor.wasser > 0 &&
+                abbilder.size >= 5 &&
+                erg.E3.pr > erg.E2.pr &&
+                erg.E5a.pr === 1.25 &&
+                erg.E5b.pr === 1 &&
+                Object.values(erg).every((s) => s.frames >= 4),
+            `Wasser ${vor.wasser}, Abbild-Stände ${abbilder.size}, Pixel-Ratio E2 ${erg.E2.pr} → E3 ${erg.E3.pr}, ` +
+                `E5 ${erg.E5a.pr}/${erg.E5b.pr}, Frames ${frames}`
         );
-        // ES: der Selbsttest am echten Frame — ohne den Vorher-Textur-Wächter fällt der DPR-Schritt beim Namen
+        // ES: der Selbsttest am echten Frame — ohne den Vorher-Textur-Wächter fällt E5 beim Namen
         await page.evaluate(() => {
             const KL = window.anazhRealm.constructor;
             window.__fensterEcht.waechter = KL._diaetVorTextur;
             KL._diaetVorTextur = () => false;
-            window.__fensterEcht.schritt = "ES";
         });
-        await page.setViewport({ width: 639, height: 342, deviceScaleFactor: 2 });
-        const es = await page.evaluate(fensterSchritt, { n: 6, ms: 3000 });
+        const esa = await schritt("ESa", "setPixelRatio(1.25) ohne Wächter", () => pixelRatio(1.25));
+        const esb = await schritt("ESb", "setPixelRatio(1) ohne Wächter", () => pixelRatio(1));
         await page.evaluate(() => {
             window.anazhRealm.constructor._diaetVorTextur = window.__fensterEcht.waechter;
             window.__fensterEcht.schritt = "nach";
         });
-        const tot = Object.keys(es.gpu).some((k) => /Destroyed texture \[Texture "szene:tiefenabbild"\]/.test(k)) ||
-            es.wacheKoepfe.some((k) => /Destroyed texture \[Texture "szene:tiefenabbild"\]/.test(k));
-        log(`ES ohne Wächter 639×342 DPR 2: Pixel-Ratio ${es.pr}, ${JSON.stringify(es.gpu)}`);
-        check("ES Selbsttest: ohne den Vorher-Textur-Wächter fällt „Destroyed texture … szene:tiefenabbild“ beim Namen", tot, JSON.stringify(es.gpu));
+        const TOT = /Destroyed texture \[Texture "szene:tiefenabbild"\]/;
+        const tot = [esa, esb].some((s) => s.fremd.some((k) => TOT.test(k)) || s.wacheKoepfe.some((k) => TOT.test(k)));
+        check(
+            "ES Selbsttest: ohne den Vorher-Textur-Wächter fällt „Destroyed texture … szene:tiefenabbild“ beim Namen",
+            tot,
+            [esa, esb].map((s) => s.fremd.join(" | ") || "0").join(" · ")
+        );
         check("E keine Page-Errors", seitenFehler.length === 0, seitenFehler.slice(0, 2).join(" | "));
     } catch (e) {
         check("E Lauf", false, (e && e.message) || String(e));
