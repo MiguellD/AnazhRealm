@@ -294,14 +294,6 @@ jobs:
               # Die Selbsttests zeigen, dass die alten Regeln (Haupt-Urteil je Pass, Huellen ohne Boden) rot werden.
               run: npm run gate:schatten-werfer
 
-            - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)
-              if: matrix.gruppe == 2
-              # Faehrt die echte Welt (Null-Renderer) und vergleicht je Ort und LOD 0-3 das Gitter des Mains
-              # (`_voxelEditedDensityGrid`) mit dem des Workers (`computeDensityGrid`) Wort fuer Wort - die Standard-Welt
-              # (Mess-Wiese, Genesis, ein Fluss) und die Pruefbuehne (spec/pruefbuehne/welt.json, ihre Stationen), dazu
-              # eine Fuell-Kugel ueber dem Band. Der Selbsttest verfaelscht EINEN Term nur im Worker und muss rot werden.
-              run: npm run gate:worker-dichte
-
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               if: matrix.gruppe == 1
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
@@ -316,6 +308,22 @@ jobs:
               # ASYNC (KEIN ~200-ms-Stall auf schwacher HW; Kollision feld-nativ = sofort), explizites
               # forceSync gewinnt immer. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
               run: npm run gate:carve
+
+            - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)
+              if: matrix.gruppe == 2
+              # Faehrt die echte Welt (Null-Renderer) und vergleicht je Ort und LOD 0-3 das Gitter des Mains
+              # (`_voxelEditedDensityGrid`) mit dem des Workers (`computeDensityGrid`) Wort fuer Wort - die Standard-Welt
+              # (Mess-Wiese, Genesis, ein Fluss) und die Pruefbuehne (spec/pruefbuehne/welt.json, ihre Stationen), dazu
+              # eine Fuell-Kugel ueber dem Band. Der Selbsttest verfaelscht EINEN Term nur im Worker und muss rot werden.
+              run: npm run gate:worker-dichte
+
+            - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus)
+              if: matrix.gruppe == 3
+              # Faehrt die echte Welt (Null-Renderer): jede Ort-Op der Welt-Akte mit der Quelle des Feldes (nexus,
+              # rule:nexus), den getriebenen Nexus-Takt und den Absenz-Zensus in 300 m - auf der Pruefbuehne
+              # (spec/pruefbuehne/welt.json) Zuwachs 0 je Wurf, in der Wildnis als Feld-Kontrolle > 0, der Akt des Menschen
+              # setzt auf beiden. Der Selbsttest laesst die Wildnis zum Schein ueberall tragen: jeder Wurf faellt rot beim Namen.
+              run: npm run gate:pruefbuehne
 
             - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
               if: matrix.gruppe == 3
