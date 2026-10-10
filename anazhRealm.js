@@ -21840,17 +21840,23 @@ class AnazhRealm {
             if (!(bd < Infinity)) return;
         }
         const BG = AnazhRealm._bissGesetz();
+        // DER REST ZÄHLT AB DER GEZEIGTEN POSE (Nachbesserung 2): gemessen wird an der Pose dieses Takts, die die Haltung TRÄGT
+        // (_animateTierBaum: g.bissRumpf · g.bissKopf, mit der Folge-Rate der Glieder hinter dem Ziel); das neue Ziel ist sie
+        // plus der Rest. Vorher zählte der Rest auf das ZIEL des Vor-Takts: solange die Pose nachlief, summierte er sich je
+        // Takt auf und lief bis an die Klemme — der Kopf stürzte unter den Leib (Spalt 0,06–0,16 m, 7 von 7 Ansprüngen auf
+        // ein gestelltes Reh ins Leere).
+        const gang = creature.userData._tierBaum._gang || {};
         // die Front: liegt der Punkt tiefer als das Kopf-Gelenk, senkt sich der Rumpf (um sein Gelenk), bis das Kopf-Gelenk auf
         // seiner Höhe steht — höchstens rumpfNeigung; nie hebt er sich (ein höheres Ziel erreicht der Kopf allein)
         const rumpf = creature.userData._tierBaum.teile.wolf;
         if (rumpf) {
             const R = rumpf.getWorldPosition(this._bissRumpfR || (this._bissRumpfR = new THREE.Vector3()));
             const hebel = Math.max(0.1, Math.hypot(H.x - R.x, H.z - R.z));
-            VA.rumpfZiel = Math.max(0, Math.min(BG.rumpfNeigung, (VA.rumpfZiel || 0) + Math.atan2(H.y - zy, hebel)));
+            VA.rumpfZiel = Math.max(0, Math.min(BG.rumpfNeigung, (gang.bissRumpf || 0) + Math.atan2(H.y - zy, hebel)));
         }
         const ist = Math.atan2(H.y - sy, Math.hypot(sx - H.x, sz - H.z));
         const soll = Math.atan2(H.y - zy, Math.hypot(zx - H.x, zz - H.z));
-        VA.kopfZiel = Math.max(BG.kopfNeigung[0], Math.min(BG.kopfNeigung[1], (VA.kopfZiel || 0) + soll - ist));
+        VA.kopfZiel = Math.max(BG.kopfNeigung[0], Math.min(BG.kopfNeigung[1], (gang.bissKopf || 0) + soll - ist));
     }
 
     // DIE BERÜHRUNG: der Kopf (_kreaturMaul) am Leib des Ziels — an der Spieler-Kapsel (die Achse zwischen ihren Kappen, ihr
