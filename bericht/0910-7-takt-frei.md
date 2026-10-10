@@ -1,10 +1,9 @@
-> **ENTWURF — Zwischenstand-Sicherung, UNGEPRÜFT.** Der volle Playtest am Kopf läuft noch.
-
 # Bericht 0910-7: der Takt unter Regler frei — die Laub-Dichte pendelte und weckte jeden Fege-Takt und jede Pass-Lage
 
 Auftrag: `auftrag/0910-7-omen-takt-frei.md` (koordination 537a3e15).
 Kopf: **welle-m-takt-frei 72019cac** (per `git ls-remote`), ab main 66005ca6, zwei Commits (2f6ce3bf der Schnitt, 72019cac die
-Linse). CI: Lauf 38092154993 auf 72019cac, 5 von 5 grün. PLAYTEST-ZEILE
+Linse). CI: Lauf 38092154993 auf 72019cac, 5 von 5 grün. Voller Playtest lokal am Kopf: „Alle Invarianten OK“ (5 017 Prüfungen, EXIT=0).
+Karte **O1** der Entscheidung vom 11.10. (§4.2).
 
 ## In drei Sätzen
 
@@ -17,7 +16,8 @@ die Lage jedes Passes.
 - Täter-Zweig: **studio-s3-pflanzen (c503eaad)**. Der CPU-Takt p95 frei springt dort von 4,4–4,9 auf 11,6–12,2 ms, jeder spätere
   Stand bleibt oben.
 - ABAB (je 4 Boots, alle im ersten Versuch grün): CPU-Takt p95 frei **10,8 → 5,6 ms** (voll 4,9 → 4,8; Soll ≤ voll + 1 ms erfüllt).
-  Frame p95 16,9 → 16,8 ms, gpu-bank 11,73 → 11,82 ms, Band 77 Befehle und 110,1 MB auf beiden Seiten.
+  Frame p95 16,9 → 16,8 ms, gpu-bank 11,73 → 11,82 ms, Band 77 Befehle und 110,1 MB auf beiden Seiten. Das Bild der Mess-Wiese
+  liegt im Rausch-Boden zweier Boots desselben Stands.
 - `gate:takt-atem` (neu, CI Gruppe 2, 0,5 min): main ROT mit Dichte, Stand-Stempel und Lage des Hauptbilds in 100 % der Takte,
   Kopf GRÜN mit 0,4 %.
 - Teil B: Die Formationen an Genesis trägt kein Zweig fest. main zeigt in 4 von 8 Genesis-Boots 27,1–32,8k statt 23,6k Dreiecke,
@@ -149,12 +149,25 @@ Befehlen und 110,1 MB.
   27,1k meldet die Band-Linse für die Formationen nichts, rot war sie nur in den beiden schwersten Fällen (32,4k und 32,8k: haupt
   13 880 über 8 400).
 
+## Bild (O1-Abnahme „Bild unverändert“, `0910-7/bild/`)
+
+Je Seite zwei frische Sitzungen (A B A B): Mess-Wiese, Bühne, `lauf 30 --regler frei` (der gemessene Zustand), dann ein Bild aus
+dem Ausgabe-Pfad mit fester TRAA-Phase und Himmels-Uhr. Die Dichte stand dabei auf beiden Seiten bei 0,54–0,62.
+
+| Paar | MSSIM ganz | MSSIM Boden | mittlere Luma | Farbton-Blöcke > 6 |
+|---|---|---|---|---|
+| Rauschen A (A1↔A3) | 0,954 | 0,933 | | 5,6 % |
+| Rauschen B (B2↔B4) | 0,957 | 0,936 | | 4,6 % |
+| A↔B (vier Quer-Paare) | 0,959–0,969 | 0,938–0,953 | B − A −0,03 (Rauschen 0,19) | 3,4–5,0 % |
+
+Urteil `p3/hv2/vergleich.cjs`: GRÜN, jedes Quer-Paar liegt im Rausch-Boden. Bilder: `wiese-A1.jpg`, `wiese-B2.jpg`.
+
 ## Prüfungen
 
 - CI 38092154993 auf 72019cac: check 4,0 · erst-zeichnung 4,0 · playtest 1/3 19,8 · 2/3 21,4 (darin `gate:takt-atem` 0,5) · 3/3
   15,4 min, 5 von 5 grün.
 - `gate:regler-sim` lokal grün; Lint 0 Fehler; `prettier --check` sauber; `gate:ci-deckung` grün.
-- PLAYTEST-PRUEFUNG
+- Voller Playtest lokal an 72019cac: „Alle Invarianten OK“, 5 017 Prüfungen, EXIT=0 (`0910-7/playtest-voll-72019cac.txt`).
 
 ## Offen (mit Zahl)
 
@@ -166,3 +179,10 @@ Befehlen und 110,1 MB.
 3. **boden im Band** ist auf beiden Seiten zweigipflig (A 166/173k, B 166/186–187k Dreiecke) und kein Effekt dieses Schnitts.
 4. **gpu-bank CPU-Seite** 1,73 → 1,97 ms je Frame (Spannen 1,63–1,79 gegen 1,85–2,35), die GPU-Seite gleich. Die Ursache ist nicht
    gemessen.
+
+## Status: ZWISCHENSTAND · Übergabe
+
+- Zweig welle-m-takt-frei 72019cac (per `git ls-remote`), CI 38092154993 5/5, ab main 66005ca6, keine offene Änderung im Worktree.
+- O1-Abnahme: CPU-Takt p95 frei 5,6 ≤ 5,8 ms im ABAB, Band und Bild unverändert. Der Zweig ist für die nächste Version bereit.
+- Werkzeuge: `p3/tf/` (bisekt.sh, atem.sh + atem-zaehler.js, genesis-bisekt.sh, genesis-wdh.sh, bild.sh), `abab-tf/serie.sh`.
+- Als Nächstes laut Reihenfolge: 0910-5 (Ego-Schatten, welle-m-ego-schatten 0097998b, CI 5/5; Bericht-Entwurf auf koordination).
