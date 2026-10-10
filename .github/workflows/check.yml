@@ -317,12 +317,14 @@ jobs:
               # eine Fuell-Kugel ueber dem Band. Der Selbsttest verfaelscht EINEN Term nur im Worker und muss rot werden.
               run: npm run gate:worker-dichte
 
-            - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus)
+            - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec)
               if: matrix.gruppe == 3
               # Faehrt die echte Welt (Null-Renderer): jede Ort-Op der Welt-Akte mit der Quelle des Feldes (nexus,
               # rule:nexus), den getriebenen Nexus-Takt und den Absenz-Zensus in 300 m - auf der Pruefbuehne
               # (spec/pruefbuehne/welt.json) Zuwachs 0 je Wurf, in der Wildnis als Feld-Kontrolle > 0, der Akt des Menschen
               # setzt auf beiden. Der Selbsttest laesst die Wildnis zum Schein ueberall tragen: jeder Wurf faellt rot beim Namen.
+              # Dazu die S4-Probe: die sechs Hindernis-Koerper der Saat (stationen.json s4-hindernisse) stehen je Teil
+              # mit ihrer Blocker-Box <= 0,1 m an der Spec und im Blocker-Netz; der Selbsttest rueckt die Mauer 0,5 m.
               run: npm run gate:pruefbuehne
 
             - name: Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)
