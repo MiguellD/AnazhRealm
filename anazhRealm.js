@@ -39183,7 +39183,8 @@ class AnazhRealm {
     // des Reglers (gemessen 11.10. an der Wiese: dichte Kronen bis 120 m bei Laub-Radius 115, bis 200 m bei 235) und ab 384 m
     // vom Auge (die Karte des Baums); dazwischen trug NIEMAND den Wald — der Boden-Satz zeigte nackten Boden, aus 420 m Höhe das
     // ganze Quadrat (das weiße Quadrat im Oliv des Panoramas). Jetzt liest der Boden-Satz dort, wo kein echter Wald zeichnet,
-    // DIESELBEN Teile wie der Fern-Ring (EIN Gedächtnis `_fernRingTeile`, ganzzahlige Punkte) aus einer Karte über dem Quadrat
+    // DIESELBEN Teile wie der Fern-Ring (`_fernFarbeTeile` an ganzzahligen Punkten; der Ring liest sie über sein Gedächtnis,
+    // die Karte daneben — ihre Füllung je Chunk-Wechsel verdrängte sonst die Ring-Punkte) aus einer Karte über dem Quadrat
     // und mischt zum Kronendach × Saison nach der Deckung (`_fernKroneNahMisch`) — wie der Ring-Stoff, eine Formel.
     // Die Kronenfarbe reist sRGB-kodiert in 8 Bit (linear lägen 0,03–0,1 in 8–25 Stufen), die Deckung linear im Alpha.
     // Die Karte füllt sich im Fern-Farb-Budget und tauscht erst, wenn sie ganz steht (`bereit`); bis dahin mischt nichts.
@@ -39217,8 +39218,12 @@ class AnazhRealm {
         return st.fernKroneNah;
     }
 
-    // Der Takt der Karte: Wald-Radius und Spieler je Takt; die Karte folgt dem Quadrat ((2·Ring + rand)·span, Anker auf
-    // ein Viertel davon gerastert) und füllt sich, bis die Frist `ende` steht — mindestens `mindest` Punkte je Takt.
+    // Der Takt der Karte: Wald-Radius und Spieler je Takt; die Karte liegt auf dem Chunk-Quadrat — ihre Mitte ist die Mitte
+    // des Chunks unter dem Spieler (die Mitte des Rings), ihre Größe (2·Ring + 1 + rand)·span: der Rand von rand/2 Chunks je
+    // Seite trägt das neue Quadrat, solange sie nach einem Chunk-Wechsel neu füllt. Der Anker auf einem Raster von einem
+    // Viertel der Karte lag bis 59 m neben der Mitte des Quadrats, weiter als sein Rand von 43 m: aus 420 m blieb am Rand des
+    // Quadrats ein Streifen von 22 m blass (11.10.). Sie füllt sich, bis die Frist `ende` steht — mindestens `mindest` Punkte
+    // je Takt.
     _fernKroneNahTakt(ende, mindest) {
         const st = this.state;
         const k = st.fernKroneNah || this._fernKroneNahEnsure();
@@ -39228,16 +39233,17 @@ class AnazhRealm {
         k.U.waldR.value = Number.isFinite(st.foliageRadius) ? st.foliageRadius : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX;
         k.U.spieler.value.set(pm.position.x, pm.position.z);
         const ring = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-        const groesse = this._voxelChunkConfig().span * (2 * ring + K.rand);
-        const raster = groesse / 4;
-        const mx = Math.round(pm.position.x / raster) * raster;
-        const mz = Math.round(pm.position.z / raster) * raster;
+        const span = this._voxelChunkConfig().span;
+        const groesse = span * (2 * ring + 1 + K.rand);
+        const mx = (Math.floor(pm.position.x / span) + 0.5) * span;
+        const mz = (Math.floor(pm.position.z / span) + 0.5) * span;
         const a = k.anker;
         if (!k.job && (!a || a.x !== mx || a.z !== mz || a.groesse !== groesse)) k.job = { mx, mz, groesse, i: 0 };
         const j = k.job;
         if (!j) return;
         const N = k.N;
         const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        const t = k.teile || (k.teile = new Float32Array(7));
         const sRGB = (c) => {
             const v = c <= 0 ? 0 : c >= 1 ? 1 : c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
             return Math.round(v * 255);
@@ -39249,12 +39255,16 @@ class AnazhRealm {
             const x = Math.round(j.mx - j.groesse / 2 + ((ix + 0.5) * j.groesse) / N);
             const z = Math.round(j.mz - j.groesse / 2 + ((iz + 0.5) * j.groesse) / N);
             const law = this._terrainMacroSurfaceY(x, z, false);
-            const t = this._fernRingTeile(x, z, law, law < wl, true);
             const o = j.i * 4;
-            k.puffer[o] = sRGB(t[3]);
-            k.puffer[o + 1] = sRGB(t[4]);
-            k.puffer[o + 2] = sRGB(t[5]);
-            k.puffer[o + 3] = Math.round(Math.max(0, Math.min(1, t[6])) * 255);
+            // Wasser trägt keine Krone (der Ring: Deckung 0 auf dem Spiegel)
+            if (law < wl) k.puffer[o] = k.puffer[o + 1] = k.puffer[o + 2] = k.puffer[o + 3] = 0;
+            else {
+                this._fernFarbeTeile(x, law, z, t);
+                k.puffer[o] = sRGB(t[3]);
+                k.puffer[o + 1] = sRGB(t[4]);
+                k.puffer[o + 2] = sRGB(t[5]);
+                k.puffer[o + 3] = Math.round(Math.max(0, Math.min(1, t[6])) * 255);
+            }
             j.i++;
         }
         if (j.i < N * N) return;
