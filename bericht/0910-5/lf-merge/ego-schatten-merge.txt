@@ -1,0 +1,29 @@
+
+> anazhrealm@18.537.0 gate:ego-schatten
+> node scripts/diag-ego-schatten.cjs --selftest && node scripts/diag-ego-schatten.cjs
+
+=== EGO-SCHATTEN — Selbsttest (ohne Browser) ===
+  ✅ Selbsttest „main (der Wurf geht mit der Haut)" → rot: LEIB WIRFT NICHT: in der Ego-Sicht 0 px Schatten des Spielers am Boden (3rd-Person: 1500 px) — die Ego-Regel nimmt dem Leib den Wurf
+  ✅ Selbsttest „nur der Rumpf wirft" → rot: UMRISS: der Ego-Schatten deckt den der 3rd-Person zu IoU 0.62 (Soll ≥ 0.9; Ego 1500 px, 3rd 1500 px) — es wirft nicht der ganze Leib
+  ✅ Selbsttest „Leib vor dem Auge" → rot: AUGE: die Haupt-Kamera sieht in der Ego-Sicht Leib — 12 Bildpunkte vor dem Auge, 0 sichtbare Leib-Meshes auf Ebene 0
+  ✅ Selbsttest „Leib-Mesh auf Ebene 0" → rot: AUGE: die Haupt-Kamera sieht in der Ego-Sicht Leib — 0 Bildpunkte vor dem Auge, 3 sichtbare Leib-Meshes auf Ebene 0
+  ✅ Selbsttest „Gerät verborgen" → rot: GERÄT: das Gerät in der Hand liegt in der Ego-Sicht auf Maske 4 statt 1 (Ebene 0) — das Auge sähe es nicht
+  ✅ Selbsttest „Zwilling geweckt" → rot: ZWILLING: ein Knoten, der nur in den Kaskaden lebt, trägt nach 1st → 3rd die Maske 5 — die Haupt-Kamera sähe ihn
+  ✅ Selbsttest „visible geschaltet" → rot: ZURÜCK: die Regel schaltet visible an 2 Knoten
+  ✅ Selbsttest „Haupt-Kamera sieht die Zwillings-Ebene" → rot: VERTRAG: die Haupt-Kamera sieht Ebene 2
+  ✅ Selbsttest „Bühne ohne Schatten" → rot: BLIND: die 3rd-Person wirft auf der Bühne 3 px (Soll ≥ 400) — die Linse sähe keinen Schatten
+  ✅ Selbsttest „Gegenprobe blind" → rot: GEGENPROBE: die Regel „main: visible" fällt nicht als LEIB WIRFT NICHT (grün) — die Linse ist blind
+
+✅ SELBSTTEST GRÜN — jeder injizierte Täter fällt rot und wird beim Namen genannt.
+=== EGO-SCHATTEN — der Leib wirft in der Ego-Sicht, das Auge sieht ihn nicht ===
+  [9 s] Renderer und Leib (human) bereit nach 8 s
+  [13 s] Bühne 4 s (Erst-Zeichnung 0 s, echte Regel 0 s, Gegenprobe 0 s) · Leib 14 Meshes, 8 werfen · Auge 2.19 m über dem Fuß · 1 Schatten-Kameras im Vertrag
+  [13 s] 3rd-Person: Schatten 697 px, Leib im Bild 1092 px
+  [13 s] Ego (Kopf): {"ego":{"wurf":697,"leibPx":0,"leibAufNull":0},"iou":1,"geraet":true,"zwilling":true,"zurueck":true}
+  [13 s] Gegenprobe „main: visible": {"ego":{"wurf":0,"leibPx":0,"leibAufNull":0},"iou":0,"geraet":true,"zwilling":true,"zurueck":true}
+  [13 s] Gegenprobe „Ebene 0 bleibt": {"ego":{"wurf":697,"leibPx":1092,"leibAufNull":8},"iou":1,"geraet":true,"zwilling":0,"zurueck":"nach 1st → 3rd tragen 1 Knoten eine andere Maske, 0 eine andere Sichtbarkeit (die Regel schaltet visible oder gibt die Maske nicht zurück)"}
+  [13 s] Gegenprobe „fremde Ebene": {"ego":{"wurf":0,"leibPx":0,"leibAufNull":0},"iou":0,"geraet":true,"zwilling":true,"zurueck":true}
+  [13 s] Gegenprobe „das Gerät mit": {"ego":{"wurf":697,"leibPx":0,"leibAufNull":0},"iou":1,"geraet":4,"zwilling":true,"zurueck":true}
+  [13 s] Gegenprobe „Zwilling geweckt": {"ego":{"wurf":697,"leibPx":0,"leibAufNull":0},"iou":1,"geraet":true,"zwilling":1,"zurueck":"nach 1st → 3rd tragen 1 Knoten eine andere Maske, 0 eine andere Sichtbarkeit (die Regel schaltet visible oder gibt die Maske nicht zurück)"}
+
+✅ GRÜN — in der Ego-Sicht wirft der Leib 697 px Schatten am Boden, IoU 1 gegen dieselbe Pose in der 3rd-Person (697 px); die Haupt-Kamera sieht 0 Bildpunkte Leib, kein Leib-Mesh liegt auf Ebene 0; das Gerät bleibt auf Ebene 0, ein Zwilling bleibt in den Kaskaden, 3rd gibt jede Maske zurück, visible wechselt nie; die 5 Gegenproben fallen je beim Namen (LEIB WIRFT NICHT · AUGE · LEIB WIRFT NICHT · GERÄT · ZWILLING).

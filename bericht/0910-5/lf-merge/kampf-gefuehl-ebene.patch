@@ -1,0 +1,51 @@
+diff --git a/scripts/diag-kampf-gefuehl.cjs b/scripts/diag-kampf-gefuehl.cjs
+index b0e33891..5d839fb7 100644
+--- a/scripts/diag-kampf-gefuehl.cjs
++++ b/scripts/diag-kampf-gefuehl.cjs
+@@ -1968,8 +1968,10 @@ async function WELLE_L() {
+             // Klinge, die der Spieler sieht
+             for (let i = 0; i < 120 && !(pm.userData.heldMesh && pm.userData.heldMesh.userData.foundryHeld); i++)
+                 await new Promise((res) => setTimeout(res, 125));
+-            // die Ich-Regel bleibt rückstandsfrei: 3rd → 1st → 3rd stellt jede Sichtbarkeit des Leibs wieder her, und im 1st
+-            // zeichnet keine Haut (die Kamera sitzt im Leib) außer dem Gerät in der Hand
++            // die Ich-Regel bleibt rückstandsfrei: 3rd → 1st → 3rd stellt jede Sichtbarkeit UND Ebene des Leibs wieder her, und
++            // im 1st zeichnet keine Haut (die Kamera sitzt im Leib) außer dem Gerät in der Hand. „Zeichnet" fragt, was r184s
++            // _projectObject fragt: jeder Ahne sichtbar UND die eigene Ebene in der Haupt-Kamera — die Ich-Regel ist die
++            // Ebenen-Regel (0910-5): die Haut verlässt Ebene 0 und bleibt sichtbar, damit sie in den Kaskaden wirft
+             {
+                 const heldR = pm.userData.heldMesh;
+                 const unterGeraet = (o) => {
+@@ -1979,7 +1981,7 @@ async function WELLE_L() {
+                 const sicht = () => {
+                     const a = [];
+                     pm.traverse((o) => {
+-                        if (o.isMesh) a.push(o.visible);
++                        if (o.isMesh) a.push(o.visible + "/" + o.layers.mask);
+                     });
+                     return a.join(",");
+                 };
+@@ -1990,7 +1992,7 @@ async function WELLE_L() {
+                 r._loopCamera(T);
+                 let hautSichtbar = 0;
+                 pm.traverseVisible((o) => {
+-                    if (o.isMesh && !unterGeraet(o)) hautSichtbar++;
++                    if (o.isMesh && !unterGeraet(o) && o.layers.test(s.camera.layers)) hautSichtbar++;
+                 });
+                 r.setCameraMode("third");
+                 r._loopCamera(T);
+@@ -2080,13 +2082,13 @@ async function WELLE_L() {
+                     out.mitteAb = +abGerade(g.M, strecke.a, strecke.b).toFixed(2);
+                     // die Klinge steht im Bild: Spitze UND Mitte in der Ich-Kamera (die Hand allein ist keine Klinge) — und sie
+                     // ZEICHNET: das Gerät und jeder Knoten über ihm bis zur Szene sind sichtbar (die Ich-Sicht verbarg den
+-                    // ganzen Leib samt der Hand, an der das Gerät hängt)
++                    // ganzen Leib samt der Hand, an der das Gerät hängt), und seine Meshes liegen auf der Ebene der Ich-Kamera
+                     const held = pm.userData.heldMesh;
+                     let zeichnet = true;
+                     for (let n = held; n && !n.isScene; n = n.parent) if (!n.visible) zeichnet = false;
+                     let meshSichtbar = 0;
+                     held.traverseVisible((o) => {
+-                        if (o.isMesh) meshSichtbar++;
++                        if (o.isMesh && o.layers.test(s.camera.layers)) meshSichtbar++;
+                     });
+                     out.zeichnet = zeichnet && meshSichtbar > 0;
+                     out.imBild = out.zeichnet && imBild(g.T) && imBild(g.M);

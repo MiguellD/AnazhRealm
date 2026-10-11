@@ -1,10 +1,11 @@
-> **ENTWURF — Zwischenstand-Sicherung, UNGEPRÜFT.** Die CI-Zeilen sind noch offen; der Bericht folgt nach 0910-7.
-
 # Bericht 0910-5: der Spieler wirft in der Ego-Sicht seinen Schatten — EIN Ebenen-Schalter am Leib
 
-Auftrag: `auftrag/0910-5-omen-ego-schatten.md` (koordination 6f0b8a46).
+Auftrag: `auftrag/0910-5-omen-ego-schatten.md` (koordination 6f0b8a46); Entscheidung 11.10. §3.3 („in `_applyEgoSicht` gilt
+EINE Regel: die Ebenen-Regel“).
 Kopf: **welle-m-ego-schatten 0097998b** (per `git ls-remote`), ab main 7dd944e6, vier Commits (59f580b0 der Schnitt,
-a2e00597 Gegenprobe und Vendor-Anker, 11bb9c36 der Name des Merkfelds, 0097998b leer: CI erneut). CI: CI-ZEILE
+a2e00597 Gegenprobe und Vendor-Anker, 11bb9c36 der Name des Merkfelds, 0097998b leer: CI erneut). CI an 0097998b: Lauf
+38038945137, alle fünf Jobs grün (check 4,3 min, erst-zeichnung 8,4 min, Gruppen 18,6 / 18,6 / 20,3 min;
+`0910-5/ci-38038945137.json`).
 
 ## In drei Sätzen
 
@@ -19,14 +20,18 @@ unberührt, ein Zwilling bleibt in den Kaskaden, das Gerät in der Hand bleibt a
 - Werkbank (GTX 1060, EINE Welt, Methode getauscht), Klasse `spieler` in der Ego-Sicht: auf main k0 0 → 8 Befehle /
   162 412 Dreiecke, Hauptbild 0 → 0. Auf dem Probe-Merge mit integ-probe trägt der Zwilling der Grobstufe den Wurf:
   k0 0 → 5 Befehle / 37 964 Dreiecke.
+- Merge mit welle-lf-kampf 7ccab2f4 nach §3.3 (Teil 5): lfs `gate:kampf-gefuehl` fällt am rohen Merge („8 Haut-Meshes“,
+  sie zählt `visible`). Mit der Ebenen-Zeile ist sie GRÜN am Merge und am lf-Kopf allein, und beide Gegenproben fallen beim
+  Namen. Der volle Playtest am Merge: „Alle Invarianten OK“.
 - Bild-Paar Ego (Ausgabe-Pfad): im Schatten-Streifen am Boden Helligkeit 88,2 → 68,9 (auf main) und 90,0 → 68,3 (Probe-
   Merge); daneben 102,0 und 102,6 → 102,8.
 
 **Ehrlich offen:**
-- Auf main allein zeigt der Boden nur den Stummel des Schattens: `normalBias` 1 m, das Bias-Gesetz aus 0710-12 liegt in
-  integ-probe.
+- Auf dem Zweig allein (ab 7dd944e6) zeigt der Boden nur den Stummel des Schattens: `normalBias` 1 m. Das Bias-Gesetz aus
+  0710-12 steht seit V18.538 auf main; mit dem Merge fällt der Punkt.
 - Das Ego-Auge sitzt 0,45 m über den Augen des Leibs (1,60 m über der Körper-Mitte, die Augen bei 1,15 m).
-- Konflikt mit welle-lf-kampf in `_applyEgoSicht` (zwei Stücke, Lösung unten).
+- Der Merge mit welle-lf-kampf (V18.539) ist gelöst und geprüft (Teil 5), liegt aber noch nicht im Zweig: lfs
+  `gate:kampf-gefuehl` zählt die Haut über `visible` und braucht dafür eine Linsen-Zeile (`0910-5/lf-merge/`).
 
 ## Teil 1: der Schnitt
 
@@ -49,14 +54,9 @@ nie Transparenz.
   - Jetzt trägt es `_gehalten` und bleibt auf Ebene 0: das Auge sieht es, es wirft.
   - r184 projiziert die Kinder jedes Knotens ohne Ebenen-Test. So zeichnet das Gerät an Knochen auf Ebene 2 trotzdem.
     `gate:vendor-anker` hält beide Stellen (170 → 172 Anker).
-- **Konflikt welle-lf-kampf (c9c00777):**
-  - Probe-Merge auf 59f580b0: genau zwei Konflikt-Stücke, beide in `_applyEgoSicht` (Kopf-Kommentar und Rumpf).
-  - Die Marke `_gehalten = true` in `_refreshHeldMesh` ist in beiden Zweigen dieselbe Zeile und mergt sauber.
-  - welle-lf-kampf verbirgt im 1st jedes Haut-Mesh einzeln über `visible` (mit `_egoWar`). Das Schwert bleibt sichtbar,
-    aber der Leib wirft weiter nicht.
-  - Lösung beim Merge: den Rumpf dieses Zweigs nehmen. Er hält die Ausnahme von welle-lf-kampf (`_gehalten`) und braucht
-    `_egoWar` nicht, weil er `visible` nie schreibt.
-  - `gate:kampf-gefuehl` (pose-ich) prüft `visible` entlang der Kette des Geräts und bleibt damit erfüllt.
+- **Konflikt welle-lf-kampf:** zwei Stücke in `_applyEgoSicht`. Lösung nach §3.3 und geprüft am lf-Kopf 7ccab2f4: Teil 5.
+  Mein Entwurf sagte hier, `gate:kampf-gefuehl` bleibe erfüllt. Das war falsch: ich hatte nur die Kette des Geräts gelesen,
+  die Linse aber nicht am Merge laufen lassen. Sie zählt auch die Haut im 1st über `visible`.
 - **Reiten / Fahren:**
   - In der geschlossenen Kabine setzt `_loopCamera` den ganzen Avatar unsichtbar (`player.visible`). Dort wirft der Wagen,
     nicht der Leib, wie bisher.
@@ -120,7 +120,7 @@ Rohdaten: `0910-5/zaehlen-*.json`.
   zum Kopf), dieselbe Pose im 3rd, die Gegenprobe „Ebene 0 bleibt“.
 - Die Gegenprobe „fremde Ebene“ blieb auf dem Probe-Merge zuerst grün: sie ließ den Zwilling stehen, und der warf weiter.
   Seit a2e00597 nimmt sie den ganzen Leib aus den Kaskaden und fällt auf allen Ständen.
-- Kosten: lokal 14–17 s. In der CI CI-LINSE.
+- Kosten: lokal 14–17 s. In der CI 17 s (Lauf 38038945137, Gruppe 3, Schritt 99; `0910-5/ci-38038945137.json`).
 
 ## Teil 4: das Bild-Paar (Ego, Ausgabe-Pfad, TRAA-Phase und Himmels-Uhr fest)
 
@@ -134,6 +134,38 @@ Sonne 23,4° hoch von −67°, Blick 49° hinab, der Schatten fällt 35° rechts
 - Vorher liegt in der Ego-Sicht kein Schatten des Spielers am Boden.
 - Nachher läuft ein dunkler Streifen vom Fuß ins Bild. Auf dem Probe-Merge wirft ihn der Zwilling unter dem Bias-Gesetz.
 - Der Boden steigt am Probe-Ort entlang des Schattens um 0,2 m je Meter: erwartet sind dort 2,7 m statt 4,4 m in der Ebene.
+
+## Teil 5: der Merge mit welle-lf-kampf nach Entscheidung §3.3 (`0910-5/lf-merge/`)
+
+§3.3: in `_applyEgoSicht` gilt EINE Regel, die Ebenen-Regel. Das gehaltene Gerät bleibt auf Ebene 0, lfs `_egoVerborgen`
+fällt. welle-lf-kampf kommt mit V18.539, dieser Zweig mit V18.540: der Integrator trifft den Konflikt beim Merge dieses Zweigs.
+
+**Probe-Merge 0097998b + welle-lf-kampf 7ccab2f4** (beide per `git ls-remote`):
+- Zwei Konflikt-Stücke, beide in `_applyEgoSicht` (Kopf-Kommentar und Rumpf). Lösung: beide Stücke von dieser Seite.
+  Danach stehen `_egoVerborgen` und `_egoWar` nirgends mehr, weder im Stamm noch in `scripts/`.
+- Die Marke `_gehalten = true` in `_refreshHeldMesh` ist in beiden Zweigen dieselbe Zeile und mergt sauber.
+- lfs `gate:kampf-gefuehl` fällt am rohen Merge: „pose-ichregel: im 1st zeichnen 8 Haut-Meshes“ (`kampf-merge-roh.txt`).
+  Die Linse zählt die Haut mit `traverseVisible`, also nur über `visible`. Unter der Ebenen-Regel bleibt die Haut sichtbar
+  und liegt auf Ebene 2: die Haupt-Kamera zeichnet sie nicht, die Kaskaden werfen sie.
+- Der Linsen-Schnitt (`kampf-gefuehl-ebene.patch`, 14 Zeilen in `scripts/diag-kampf-gefuehl.cjs`):
+  - „Zeichnet“ fragt, was r184s `_projectObject` fragt: jeder Ahne sichtbar UND die eigene Ebene in der Haupt-Kamera.
+  - Das gilt für die Haut im 1st und für das Gerät im Treffer-Takt. Der Rückstand 3rd → 1st → 3rd vergleicht `visible`
+    und Ebenen-Maske.
+
+| Stand | Linse | Urteil | Ich-Regel |
+|---|---|---|---|
+| Probe-Merge, lf-Linse wie sie ist | `gate:kampf-gefuehl` | ROT „8 Haut-Meshes“, EXIT=1 | hautImErsten 8 |
+| Probe-Merge, Linse mit Ebene | `gate:kampf-gefuehl` | GRÜN, EXIT=0 (37 s) | hautImErsten 0, Klinge zeichnet |
+| Gegenprobe: das Gerät wandert mit auf Ebene 2 | `gate:kampf-gefuehl` | ROT „im Treffer-Takt zeigt die Ich-Sicht keine Klinge“, EXIT=1 | hautImErsten 0 |
+| Gegenprobe: die Haut bleibt auf Ebene 0 | `gate:kampf-gefuehl` | ROT „8 Haut-Meshes“, EXIT=1 | hautImErsten 8 |
+| lf-Kopf 7ccab2f4 allein (lfs `visible`-Regel), Linse mit Ebene | `gate:kampf-gefuehl` | GRÜN, EXIT=0 (51 s) | hautImErsten 0, Klinge zeichnet |
+| Probe-Merge | `gate:ego-schatten` | GRÜN, EXIT=0 | Ego 697 px, IoU 1,0 |
+
+- Rohdaten: `kampf-merge-roh.txt`, `kampf-merge-ebene.txt`, `kampf-gegenprobe-geraet.txt`, `kampf-gegenprobe-haut.txt`,
+  `kampf-lf-kopf-ebene.txt`, `ego-schatten-merge.txt`.
+- Am Probe-Merge außerdem: `npm run check` EXIT=0, `gate:vendor-anker` EXIT=0 (172 Anker), `npm run lint` EXIT=0
+  (0 Fehler, die 2 Warnungen von main), `prettier --check` sauber. Voller Playtest: „Alle Invarianten OK“, EXIT=0, 189 s, 5 015 ✅ und 0 ❌,
+  V8.29.1 grün (`playtest-voll-merge.txt`).
 
 ## Prüfungen
 
@@ -158,7 +190,8 @@ Sonne 23,4° hoch von −67°, Blick 49° hinab, der Schatten fällt 35° rechts
     (Vorbedingung)“, die Spieler-Region stand noch nicht. main lokal 8 von 8 grün.
   - Das ist der bekannte Wackler von V18.537: V18.538 (a953c758, fix-ankunft-streu-fall) nennt ihn, „gate:ankunft L2a hatte
     bei 6-facher CPU-Drossel in 2 von 8 Boots keinen Streu-Fall, jetzt 0 von 8“. Mit V18.538 fällt er.
-  - Ein grüner CI-Lauf dieses Zweigs steht damit noch aus.
+- CI an 0097998b (Lauf 38038945137, dieselbe Quelle wie 11bb9c36): alle fünf Jobs grün, `gate:ankunft` 77 s,
+  `gate:ego-schatten` 17 s (`0910-5/ci-38038945137.json`).
 
 ## Offen (mit Zahl)
 
@@ -166,8 +199,9 @@ Sonne 23,4° hoch von −67°, Blick 49° hinab, der Schatten fällt 35° rechts
    - `normalBias` 1 m schiebt die Boden-Probe einen Meter hoch, also wirft nur der Leib über 1 m.
    - Am Boden der Werkbank war der Schatten bei 25° Sonne etwa 0,6 m lang statt 3,75 m, auch in der 3rd-Person (die dort
      wie auf main wirft).
-   - Das Bias-Gesetz aus 0710-12 (welle-m-schatten, in integ-probe; dort trägt das Licht 0,083 m) gibt den vollen Umriss.
-   - Mit V18.538 fällt der Punkt.
+   - Das Bias-Gesetz aus 0710-12 (welle-m-schatten; dort trägt das Licht 0,083 m) gibt den vollen Umriss. Es steht seit
+     V18.538 auf main (66005ca6). Der Zweig zweigt von 7dd944e6 ab; der Punkt fällt beim Merge (Probe-Merge V18.538 +
+     0097998b: Ego 693 px, Teil 3).
 2. **Das Ego-Auge über dem Kopf:**
    - `_loopCamera` setzt das Auge 1,60 m über die Körper-Mitte, eine Konstante. Am Standard-Menschen der Mess-Wiese liegen
      die Augen-Meshes bei +1,14–1,19 m, der Scheitel bei +1,25 m, die Sohle bei −0,68 m.
@@ -176,4 +210,21 @@ Sonne 23,4° hoch von −67°, Blick 49° hinab, der Schatten fällt 35° rechts
    - Nicht Teil dieses Schnitts; benannt für Schritt 2 „laufen + sehen“.
 3. **Kosten auf main:** 8 Befehle / 162 412 Dreiecke in k0 je Frame der Ego-Sicht, dieselben wie in der 3rd-Person. Mit dem
    Zwilling aus integ-probe sind es 5 / 37 964.
-4. **Merge mit welle-lf-kampf:** zwei Konflikt-Stücke in `_applyEgoSicht`, Lösung in Teil 1.
+4. **Merge mit welle-lf-kampf:** gelöst und am Probe-Merge geprüft (Teil 5). Im Zweig steht er erst, wenn V18.539 auf main
+   liegt. Bis dahin trägt `0910-5/lf-merge/` die Lösung: beide Stücke nach dieser Seite und die 14 Zeilen der lf-Linse.
+
+## Pflicht-OFFEN Rest
+
+A · B · C · E stehen (`docs/PFLICHT-OFFEN.md` an main 66005ca6; D fiel mit V18.508). Dieser Schnitt nimmt keinen Eintrag.
+E (das Profi-Band) berührt er mit den Kosten aus Teil 2: auf main +8 Befehle / 162 412 Dreiecke in k0 je Frame der
+Ego-Sicht, mit dem Zwilling aus integ-probe +5 / 37 964.
+
+## Status: ZWISCHENSTAND · Übergabe
+
+- Zweig welle-m-ego-schatten 0097998b (per `git ls-remote`), ab main 7dd944e6, CI 38038945137 5/5, keine offene Änderung im
+  Worktree.
+- Nach §3.3: Integrator nach unabhängiger R2-Prüfung, V18.540.
+- Merge mit V18.539 (welle-lf-kampf): `0910-5/lf-merge/` trägt die Lösung. Beide Stücke in `_applyEgoSicht` kommen von dieser
+  Seite, dazu `kampf-gefuehl-ebene.patch`. Der Patch ist regel-neutral (am lf-Kopf allein GRÜN, EXIT=0) und kann darum schon mit lf in
+  V18.539 gehen; sonst gehört er in den Merge dieses Zweigs.
+- Werkzeuge: `p3/es/` (ci-lokal.cjs = alle CI-Schritte seriell, ego.cjs, maske.cjs), `p3/es/lf/` (die Läufe von Teil 5).

@@ -1,0 +1,9 @@
+
+> anazhrealm@18.537.0 gate:vendor-anker
+> node scripts/diag-vendor-anker.cjs --selftest && node scripts/diag-vendor-anker.cjs
+
+✅ SELBST-TEST: die Anker-Wand feuert (manipulierter Anker erkannt)
+✅ SELBST-TEST: die Diät-Probe feuert (eine Abkürzung ohne Schreiben lässt Programme an der alten Kamera kleben; ein Gang ohne Render-Stempel wiederholt Knoten und Gruppen; ein Verweis ohne festes Objekt ohne eigenen Gang; ein gemerkter Node-Frame trägt die Schatten-Kamera; ein Stempel nur aus der Render-Id überlebt den verschachtelten Render)
+✅ SELBST-TEST: die Schatten-Stoff-Probe feuert (ohne den Block prüft jeder Bürger je Frame seinen Schlüssel)
+✅ SELBST-TEST: die Bundle-Wahrheits-Probe feuert (ohne den Block: Zeiger genullt, Bundle unter dem Override-Stoff)
+✅ DIE VENDOR-ANKER-WAND steht — 5 Fingerabdrücke gepinnt, 172 Anker der Laufzeit-Organe leben im Vendor, die Diät-Prüfung hält am Schein-Programm (Kamera-Treue: jede geteilte Gruppe je Render geschrieben, keine Gruppe und kein Knoten zweimal; Voll-Refreshs im Stand 0/0/0 von 50), der Schatten-Stoff prüft im Stand 0 von 40 Bürgern, ein eigener Wechsel 1; die Haupt-Aufnahme verfolgt 10 von 10 Draws trotz Schatten-Render, 0 Bundles unter dem Override-Stoff.
