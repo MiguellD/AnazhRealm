@@ -30,6 +30,10 @@
 //       `aHimmel`, `_himmelsSicht` aus dem Höhlen-Graph): kein Höhlen-Vertex trägt mehr Himmel, als sein gerader Abstand zur
 //       nächsten Himmels-Fläche lässt, und die Mündung bleibt hell. Vorher lag der volle Himmel auf jeder Höhlen-Wand: 22 m
 //       unter dem Fels stand die Ich-Sicht im blaugrauen Schleier (Helligkeit 55,5, ohne Umgebung 0).
+//   (j) LICHT DES AUGES — in der Höhle die wahre Normale und das Licht des Auges nach seinem Gesetz, im Freien aus; BLENDUNG:
+//       es fällt nicht mit dem Abstand (die Wand in 0,3 m höchstens 1,5× die Karte in 2 m — mit 1/d lag sie weiß);
+//   (k) WIESE UNTER FELS — jeder Höhlen-Vertex ohne Himmel trägt den Stein der Palette (`_bodenFarbeUnterFels`), vorher
+//       das Grün der Wiese 25 m über ihm.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
 // leerer Blick, blinde Linse, toter Schnitt, stumpfer Hinaus-Blick, fehlender Chokepoint, Page-Error — MUSS rot fallen und
 // ihn beim Namen nennen.
@@ -140,6 +144,25 @@ function urteil(b) {
                 );
         }
     }
+    // (j) BLENDUNG: das Licht fällt nicht mit dem Abstand — die Wand in Armlänge zeigt ihre Maserung wie die Karte in 2 m
+    if (al && al.hoehle && Number.isFinite(al.hoehle.abfall)) {
+        const q = Math.pow(2 / 0.3, al.hoehle.abfall);
+        if (q > 1.5)
+            v.push(
+                `BLENDUNG: das Licht des Auges fällt mit 1/d^${al.hoehle.abfall} — die Wand in 0,3 m ist ${q.toFixed(1)}× heller ` +
+                    "als die Karte in 2 m (weiß, ohne Maserung; höchstens 1,5×)"
+            );
+    }
+    // (k) UNTER FELS WÄCHST NICHTS: jeder Höhlen-Vertex ohne Himmel trägt den Stein der Palette
+    const wf = b.wieseUnterFels;
+    if (!wf || !(wf.ohneHimmel > 0))
+        v.push("LEER: (k) Wiese unter Fels: kein Höhlen-Vertex ohne Himmel im Boden-Satz (die Wand prüfte nichts)");
+    else if (wf.fremd > 0)
+        v.push(
+            `WIESE UNTER FELS: ${wf.fremd} von ${wf.ohneHimmel} Höhlen-Vertices ohne Himmel tragen nicht den Stein der Palette ` +
+                `(${wf.gruen} davon grün), zuerst ${JSON.stringify(wf.erst)} — die Farbe der Säule (Wiese, Feuchte, Schnee) ` +
+                "liegt auf dem Höhlen-Boden (`_bodenFarbeUnterFels`)"
+        );
     if (!c.passLiest)
         v.push("CODE: `_chunkSatzPass` ruft `_hoehlenSicht` nicht (der Chokepoint wählt die Höhle nicht)");
     if (!c.abschnittLiest) v.push("CODE: `_chunkSatzAbschnitt` liest den Stempel des Höhlen-Knotens nicht");
@@ -231,9 +254,10 @@ function selbsttest() {
         ],
         gedaechtnis: { vor: 0, nach: 6, imBild: 6 },
         code: { passLiest: true, abschnittLiest: true, hinausLiest: true, himmelLiest: true, normaleHoehle: true },
+        wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null },
         augenLicht: {
             augeInHoehle: true,
-            hoehle: { auge: [-1041, 9, -738], h: 0.2, I: 30, soll: 30, amAuge: 0 },
+            hoehle: { auge: [-1041, 9, -738], h: 0.2, I: 30, soll: 30, amAuge: 0, abfall: 0 },
             frei: { auge: [-1041, 30, -738], h: 1, I: 0, soll: 0, amAuge: 0 },
         },
         himmel: {
@@ -333,6 +357,20 @@ function selbsttest() {
         ["Licht neben dem Auge", (b) => (b.augenLicht.hoehle.amAuge = 2), /LICHT DES AUGES: das Licht steht 2 m neben/],
         ["Licht im Freien", (b) => (b.augenLicht.frei.I = 5), /LICHT DES AUGES: unter freiem Himmel .* brennt es/],
         ["Licht ohne Höhle", (b) => (b.augenLicht.augeInHoehle = false), /LEER: \(j\) Licht des Auges/],
+        // (j) der Befund der Werkbank 11.10. (echte GPU, Auge 11): mit 1/d lag die Wand in 0,2 m weiß ohne Maserung
+        ["geblendet", (b) => (b.augenLicht.hoehle.abfall = 1), /BLENDUNG: das Licht des Auges fällt mit 1\/d\^1 — .* 6\.7×/],
+        // (k) der Befund von Auge 11: der Höhlen-Boden 25 m unter der Wiese trug ihr Grün
+        [
+            "Wiese unter Fels",
+            (b) =>
+                Object.assign(b.wieseUnterFels, {
+                    fremd: 650,
+                    gruen: 420,
+                    erst: { p: [762, 9.4, -136], c: [0.05, 0.12, 0.03], fels: [0.14, 0.13, 0.12] },
+                }),
+            /WIESE UNTER FELS: 650 von 700 Höhlen-Vertices ohne Himmel .*420 davon grün/,
+        ],
+        ["Fels ohne Höhle", (b) => (b.wieseUnterFels.ohneHimmel = 0), /LEER: \(k\) Wiese unter Fels/],
     ];
     for (const [name, tat, muss] of faelle) {
         const b = klon();
@@ -820,6 +858,27 @@ const server = http.createServer((req, res) => {
                 if (HA) for (const i of mundV) ms += HA.getX(i);
                 hl.muendMittel = mundV.size ? +(ms / mundV.size).toFixed(3) : null;
                 aus.himmel = hl;
+                // (k) UNTER FELS WÄCHST NICHTS: jeder Höhlen-Vertex ohne Himmel (aHimmel ≤ 0,001) trägt den Stein der Palette
+                // (`BODEN_FARBE.rock`, je Kanal auf 0,002) — nie die Farbe der Säule über ihm
+                const CA = geo && geo.attributes.color;
+                const fels = A.BODEN_FARBE.rock;
+                const wf = { ohneHimmel: 0, fremd: 0, gruen: 0, erst: null };
+                if (HA && CA)
+                    for (const i of hoehleV) {
+                        if (HA.getX(i) > 0.001) continue;
+                        wf.ohneHimmel++;
+                        const c = [CA.getX(i), CA.getY(i), CA.getZ(i)];
+                        if (Math.max(...c.map((q, j) => Math.abs(q - fels[j]))) <= 0.002) continue;
+                        wf.fremd++;
+                        if (c[1] - (c[0] + c[2]) / 2 > 0) wf.gruen++;
+                        if (!wf.erst)
+                            wf.erst = {
+                                p: [PA.getX(i), PA.getY(i), PA.getZ(i)].map((q) => +q.toFixed(1)),
+                                c: c.map((q) => +q.toFixed(3)),
+                                fels: fels.map((q) => +q.toFixed(3)),
+                            };
+                    }
+                aus.wieseUnterFels = wf;
             }
             // ── (j) DAS LICHT DES AUGES: das Auge in der Höhlen-Luft (der Hinaus-Blick, 16 m unter der Wiese) und unter freiem
             // Himmel (2 m über der Säulen-Oberkante desselben Orts) — je Ort der Takt der Lichter (`_applyDayNightToScene`),
@@ -844,6 +903,7 @@ const server = http.createServer((req, res) => {
                         I: L ? +L.intensity.toFixed(3) : null,
                         soll: soll === null ? null : +(soll > 1e-4 ? soll : 0).toFixed(3),
                         amAuge: L ? +L.position.distanceTo(cam.position).toFixed(3) : null,
+                        abfall: L ? L.decay : null,
                     };
                 };
                 const ha = HINAUS.auge;
@@ -917,6 +977,12 @@ const server = http.createServer((req, res) => {
     if (al)
         console.log(
             `  (j) Licht des Auges: in der Höhle ${JSON.stringify(al.hoehle)} · unter freiem Himmel ${JSON.stringify(al.frei)}`
+        );
+    const wu = befund.wieseUnterFels;
+    if (wu)
+        console.log(
+            `  (k) Wiese unter Fels: ${wu.ohneHimmel} Höhlen-Vertices ohne Himmel, ${wu.fremd} nicht Stein (${wu.gruen} grün)` +
+                (wu.erst ? `, zuerst ${JSON.stringify(wu.erst)}` : "")
         );
     const v = urteil(befund);
     if (v.length) {

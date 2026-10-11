@@ -23901,6 +23901,7 @@ class AnazhRealm {
                 1
             )
         );
+        this._bodenFarbeUnterFels(geom);
         // Der CPU-Körper des Chunks (gezeichnet wird er als Bereich im Boden-Satz, `_chunkSatzEin`).
         const mat = this._getVoxelChunkMaterial();
         const mesh = new THREE.Mesh(geom, mat);
@@ -28871,6 +28872,30 @@ class AnazhRealm {
             colors[i * 3 + 2] = out[2];
         }
         geom.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+        this._bodenFarbeUnterFels(geom);
+    }
+
+    // UNTER FELS WÄCHST NICHTS (K02a, Auge 11 bei 762/−138): die Boden-Farbe ist eine Funktion von (x, z) — Wiese, Feuchte,
+    // Schnee liegen auf der Säule —, und der Höhlen-Boden 25 m unter der Wiese trug ihr Grün (der Stoff liest daraus noch
+    // seine Wiese, `_terrainGeologyAlbedo`). Was den Himmel nicht sieht, ist Fels: die Farbe fällt mit der Himmels-Sicht
+    // (`aHimmel`, `_himmelsSicht`) auf den Stein der Palette (`BODEN_FARBE.rock`) — an der Mündung ein Saum, in der Höhle
+    // Stein; unter dem Himmel (aHimmel 1) bleibt jede Zahl, wie sie war. Beide Bau-Wege rufen es: der synchrone über
+    // `_attachVoxelFieldColors`, der Worker-Weg nach seiner Himmels-Sicht (`_buildVoxelChunkDataFromWorkerMesh`).
+    _bodenFarbeUnterFels(geom) {
+        const col = geom.attributes.color;
+        const him = geom.attributes.aHimmel;
+        if (!col || !him) return;
+        const fels = AnazhRealm.BODEN_FARBE.rock;
+        const C = col.array;
+        const H = him.array;
+        for (let i = 0; i < H.length; i++) {
+            const t = 1 - H[i];
+            if (!(t > 0)) continue;
+            C[3 * i] += (fels[0] - C[3 * i]) * t;
+            C[3 * i + 1] += (fels[1] - C[3 * i + 1]) * t;
+            C[3 * i + 2] += (fels[2] - C[3 * i + 2]) * t;
+        }
+        col.needsUpdate = true;
     }
 
     // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts aus derselben fraktalen Sprache
@@ -90499,8 +90524,8 @@ class AnazhRealm {
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
     // Höhle der Boden-Funktion bekommt kein Himmels-Licht (`_himmelsSicht`), und 40 m hinter der Mündung erreicht sie auch
     // keine Sonne — die Ich-Sicht war schwarz (Helligkeit 0). Das Licht steht am Auge (die Kamera), seine Stärke folgt dem
-    // Anteil des Himmels, der fehlt (`_himmelAmAuge`), und ist so geeicht, dass die 18-%-Karte in `AUGEN_LICHT.karteM` Abstand
-    // dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte). Unter
+    // Anteil des Himmels, der fehlt (`_himmelAmAuge`), und ist so geeicht, dass die 18-%-Karte im Fenster (ohne Abfall in jedem
+    // Abstand, mit Abfall in `AUGEN_LICHT.karteM`) dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte). Unter
     // dem Himmel steht es auf 0 — sein Graph überspringt sich dann (`_augenLichtRegistrieren`), die Welt zahlt es nur in der
     // Höhle.
     _dayNightApplyAugenLicht() {
@@ -98586,17 +98611,18 @@ AnazhRealm.HOEHLEN_SAUM = Object.freeze({ schritte: 1.5, m: 2 });
 // DIE HIMMELS-SICHT des Bodens (`_himmelsSicht`): das Himmels-Licht fällt in der Höhlen-Luft je Meter Netz-Weg von der
 // nächsten Himmels-Fläche um den Faktor e (Länge `m`): 2 m hinter der Mündung trägt eine Wand die Hälfte, 14 m dahinter 1 %.
 AnazhRealm.HIMMELS_SICHT = Object.freeze({ m: 3 });
-// DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): die 18-%-Karte in `karteM` Metern zeigt in seinem Schein das Mittelgrau
-// + 1 EV des Tages (die Stärke folgt der Belichtung — das Auge adaptiert an sein Licht); es fällt mit 1/d^`abfall` bis
-// `reichweiteM` (das Fenster von r184): das adaptierte Auge sieht den Fels in Armlänge wie am Tag und die Wand in 10 m
-// 2,3 EV dunkler — mit dem Punkt-Gesetz 1/d² (Werkbank 11.10., Auge 11) lag die Wand in 0,5 m weiß und alles hinter 3 m
-// schwarz; `farbe` das warme Licht einer Flamme (~3500 K, sRGB); der Himmel am Auge (`_himmelAmAuge`) liest die
-// Himmels-Sicht im Umkreis `umkreisM`, neu nach `neuM` Metern Weg.
+// DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): jede dem Auge zugewandte Fläche zeigt in seinem Schein dieselbe
+// Helligkeit wie am Tag — die 18-%-Karte das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge adaptiert an sein
+// Licht), ohne Abfall (`abfall` 0, `karteM` eicht nur ein Gesetz mit Abfall), das Fenster von r184 blendet es bis
+// `reichweiteM` aus (bei 10 m 94 %, 15 m 70 %, 18 m 12 %). Werkbank 11.10., echte GPU, Auge 11: mit 1/d lag die Wand in
+// 0,2–0,6 m weiß ohne Maserung (Helligkeit 210), mit 1/d² alles hinter 3 m schwarz; ohne Abfall trägt der Fels in jeder
+// Nähe seine Maserung. `farbe` warmweiß (~4500 K, sRGB) — eine Flamme (0xffc489) tönte den Fels orange; der Himmel am
+// Auge (`_himmelAmAuge`) liest die Himmels-Sicht im Umkreis `umkreisM`, neu nach `neuM` Metern Weg.
 AnazhRealm.AUGEN_LICHT = Object.freeze({
     karteM: 2,
-    abfall: 1,
-    reichweiteM: 24,
-    farbe: 0xffc489,
+    abfall: 0,
+    reichweiteM: 20,
+    farbe: 0xffe2c6,
     umkreisM: 4,
     neuM: 0.25,
 });
