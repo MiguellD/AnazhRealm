@@ -2821,15 +2821,18 @@
             b = G.b,
             c = G.c,
             g = G.g;
-        const thr = e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;
-        const brk = e && e.brake > 0 ? Math.min(1, e.brake) : 0;
-        const hand = !!(e && e.hand);
         // SCHAU-2 (rein additiv — ohne e.tiefe byte-gleich, das Lab kennt kein Wasser): e.tiefe = wie tief die Huelle im
         // Wasser steht (m ueber ihrer Unterkante; der Wirt liest die EINE Wasser-Wahrheit am Wagen). Steht es an der
-        // Ansaugung, treibt der Motor nicht (G.wasser, FAHR.wasser).
+        // Ansaugung, steht der Motor (Wasserschlag, G.wasser, FAHR.wasser): das Gas treibt nicht mehr, und der Gang haelt
+        // die Antriebsraeder wie die Handbremse — gesperrt bis zum Reibkreis, am Hang haelt ihn die Ruhe. Vorher trieb nur
+        // der Antrieb nicht: unter Vollgas hielt den Wagen keine Ruhe, er rollte am 5°-Ufer mit 0,86 m/s 3 s nach der
+        // Ansaugung weiter ins Tiefe.
         const Wg = G.wasser;
         const tW = Wg && e && e.tiefe > 0 ? e.tiefe : 0;
         const motor = !(tW > 0 && tW >= Wg.ansaug);
+        const thr = motor && e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;
+        const brk = e && e.brake > 0 ? Math.min(1, e.brake) : 0;
+        const hand = !!(e && e.hand);
         const steerIn = e && Number.isFinite(e.steer) ? Math.max(-1, Math.min(1, e.steer)) : 0;
         // Lenksaeule: Ziel-Einschlag mit Selbstzentrierung (sf = 1/(1 + v·sfK)); der Lerp dt-ehrlich (60-fps-Basis:
         // bei 60 fps byte-gleich dem Lab-Lerp je Frame).
@@ -2868,10 +2871,13 @@
             // ── LAENGS am REIBKREIS: Antrieb, Bremse und Handbremse sind Reifenkraft — gedeckelt bei μ·N. Vorher trieb
             //    der Motor ungedeckelt: der Supersport stieg 90°, der GT 66,6°; jetzt steht jeder bei tan α = μ. ──
             let aDrive = 0;
-            if (thr > 0 && motor) aDrive += G.aEngine * thr;
+            if (thr > 0) aDrive += G.aEngine * thr;
             if (brk > 0) aDrive -= vL > S.bremsV ? G.brakeDecel : motor ? G.aEngine * S.rueckAntrieb : 0;
             let Fr = aDrive * m;
             if (hand) Fr -= G.handDecel * m * sgn;
+            // der Wasserschlag sperrt die Antriebsraeder: Haftung wie die Handbremse, nie ueber den Stand hinaus (sie haelt,
+            // sie schiebt nicht zurueck)
+            else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
             const capL = cap * m * g * cosN;
             Fr = Math.max(-capL, Math.min(capL, Fr));
             let Fx = Fr - G.dragK * m * vL * Math.abs(vL); // Luftwiderstand (quadratisch)

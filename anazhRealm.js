@@ -54276,6 +54276,14 @@ class AnazhRealm {
             fzAb.aLong = 0;
             fzAb.aLat = 0;
             if (fzAb.luft) (this._fahrLos || (this._fahrLos = new Set())).add(entry);
+            // der Reiter steigt NEBEN dem Wagen aus (`_aussteigOrt`), nie auf ihn
+            const ort = this._aussteigOrt(entry);
+            const pm = this.state.playerMesh;
+            if (ort && pm) {
+                pm.position.set(ort.x, ort.y, ort.z);
+                if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
+                this.state._fieldVy = 0;
+            }
         }
         this.state.player.mountedArch = null;
         // FAHR-ABSCHLUSS (19.07.) — die gemerkte Vor-Fahrt-Sicht kehrt zurück.
@@ -54285,6 +54293,44 @@ class AnazhRealm {
         }
         this.log(`Ausgestiegen`, "INFO");
         return { ok: true };
+    }
+
+    // DER AUSSTIEG (Karte K02, FZ-01): wer aus einem Gesetz-Wagen steigt, steht NEBEN ihm — an der Flanke links, sonst
+    // rechts, hinter oder vor ihm (die Hülle des Fahr-Gesetzes, `_fahrHuelle`, plus der Wand-Radius des Spielers) —, nie
+    // auf ihm. Bis hierhin blieb der Reiter am Sitz in der Wagen-Mitte, und der Struktur-Löser hob ihn aus den Teil-Boxen
+    // aufs Dach: an Land standen seine Füße 1,55 m über dem Boden, in 1,39 m Wasser über dem Spiegel — er schwamm nicht.
+    // Ein Platz ist frei, wenn dort kein anderes Werk steht (`_blockerNahe`) und der Boden nicht höher als die Stufe des
+    // Spielers über der Rad-Ebene liegt; ohne Boden in Reichweite trägt ihn nur Wasser. Rückgabe: der Ort (Füße auf dem
+    // Boden, im Wasser auf dem Grund — der Körper schwimmt dann selbst) oder null (keine Seite frei: er klettert aufs Dach).
+    _aussteigOrt(entry) {
+        const k = this._fahrHuelle(entry);
+        const fz = entry && entry._fahr;
+        if (!k || !fz || !Number.isFinite(fz.y)) return null;
+        const ry = Number.isFinite(entry._rideYaw) ? entry._rideYaw : 0;
+        const fX = Math.sin(ry);
+        const fZ = Math.cos(ry);
+        const qX = Math.cos(ry);
+        const qZ = -Math.sin(ry);
+        const rW = AnazhRealm.PLAYER_WALL_RADIUS;
+        const ab = rW + 0.25;
+        const nahe = [];
+        for (const [l, q] of [
+            [k.mitte, k.hw + ab],
+            [k.mitte, -(k.hw + ab)],
+            [k.heck - ab, 0],
+            [k.bug + ab, 0],
+        ]) {
+            const x = entry.position.x + l * fX + q * qX;
+            const z = entry.position.z + l * fZ + q * qZ;
+            nahe.length = 0;
+            this._blockerNahe(x, z, rW, -Infinity, nahe);
+            if (nahe.some((e) => e !== entry)) continue;
+            const boden = this._fieldSurfaceBelow(x, fz.y + k.dach, z, k.dach + 4);
+            if (boden !== null && boden > fz.y + AnazhRealm.PLAYER_STEP_UP) continue; // eine Wand
+            if (boden === null && !(this._koerperWasser(x, z, fz.y) > fz.y)) continue; // ein Abgrund ohne Wasser
+            return { x, z, y: (boden !== null ? boden : fz.y) + AnazhRealm.PLAYER_FOOT_OFFSET };
+        }
+        return null;
     }
 
     // Toggle: wenn nicht-mounted und Mount-Kandidat in Reichweite → mount.

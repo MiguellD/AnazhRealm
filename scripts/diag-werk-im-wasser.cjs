@@ -77,6 +77,11 @@ const SCHWELLE = {
     eintrittMin: 6, // m/s: so schnell muss der Wagen ins Wasser fahren (sonst LEER)
     restAnteil: 0.5, // Tempo 1 s nach dem Eintauchen gegen das Eintritts-Tempo
     kameraUnter: 0, // Frames mit der Kamera unter dem Spiegel
+    ansaugRest: 0.5, // m/s: so schnell fährt der Wagen höchstens 3 s, nachdem das Wasser die Ansaugung erreichte (K02)
+    vortriebEps: 0.05, // m/s: um so viel darf das Tempo nach der Ansaugung steigen (Rauschen des Schritts)
+    schwimmAnteil: 0.5, // Anteil der Frames nach dem Aussteigen in tiefem Wasser, in denen der Spieler schwimmt
+    aussteigTiefMin: 1.35, // m Wasser am Wagen, in dem der Spieler aussteigt (Karte K02: 1,5 m)
+    aussteigBoden: 0.3, // m: so weit stehen die Füße nach dem Aussteigen an Land vom Boden (sonst steht er auf dem Wagen)
     stauMin: 300, // nasse Punkte (1-m-Gitter ±40 m), die der Damm aufstauen muss (sonst prüft D nichts)
     stauTreue: 0.1, // Anteil des Staus, um den der Stausee nach dem Reload vom Stausee davor abweichen darf
     randTreue: 0.01, // Anteil, um den das Wasser (nasse Punkte, gezeichnete Spalten) am Seerand sich mit dem Dorf ändern darf
@@ -143,6 +148,38 @@ function urteil(b) {
         if (!(F.kameraUnter <= S.kameraUnter))
             v.push(
                 `F: die Verfolger-Kamera steht in ${F.kameraUnter} Frames unter dem Spiegel (bis ${m(F.kameraTiefe)} m)`
+            );
+    }
+    // A
+    const AN = b.ansaug;
+    if (!AN || AN.fehler) v.push(`A: ${AN ? AN.fehler : "die Ansaug-Probe lief nicht"}`);
+    else if (!AN.erreicht)
+        v.push(`A LEER: das Wasser erreichte die Ansaugung (${m(AN.ansaug)} m) nie (bis ${m(AN.maxTiefe)} m)`);
+    else {
+        if (!(AN.v3 <= S.ansaugRest))
+            v.push(
+                `A: 3 s nach der Ansaugung (${m(AN.ansaug)} m) fährt der Wagen noch ${m(AN.v3)} m/s (Soll ≤ ${S.ansaugRest}; an der Ansaugung ${m(AN.vA)})`
+            );
+        if (!(AN.vMaxNach <= AN.vA + S.vortriebEps))
+            v.push(`A: Vortrieb nach der Ansaugung — das Tempo steigt von ${m(AN.vA)} auf ${m(AN.vMaxNach)} m/s`);
+        if (!(AN.maxTiefe <= AN.dach))
+            v.push(`A: der Wagen taucht ${m(AN.maxTiefe)} m tief — über sein Dach (${m(AN.dach)} m)`);
+        if (!(AN.kameraUnter <= S.kameraUnter))
+            v.push(`A: die Verfolger-Kamera steht in ${AN.kameraUnter} Frames unter dem Spiegel`);
+        const AL = AN.land;
+        if (!AL || !(Math.abs(AL.fussUeberBoden) <= S.aussteigBoden))
+            v.push(
+                `A: Aussteigen an Land — der Spieler steht ${AL ? m(AL.fussUeberBoden) : "?"} m über dem Boden (${AL ? m(AL.abstand) : "?"} m von der Wagen-Mitte: auf dem Wagen)`
+            );
+        const AS = AN.aussteigen;
+        if (!AS || AS.fehler) v.push(`A LEER: ${AS ? AS.fehler : "das Aussteigen lief nicht"}`);
+        else if (!(AS.tiefeWagen >= S.aussteigTiefMin))
+            v.push(
+                `A LEER: der Wagen stand beim Aussteigen in ${m(AS.tiefeWagen)} m Wasser (Soll ≥ ${S.aussteigTiefMin})`
+            );
+        else if (!(AS.schwimmFrames >= S.schwimmAnteil * AS.frames))
+            v.push(
+                `A: Aussteigen in ${m(AS.tiefeWagen)} m Wasser — der Spieler schwimmt ${AS.schwimmFrames} von ${AS.frames} Frames (${m(AS.ueberSpiegel)} m über dem Spiegel, ${m(AS.abstand)} m von der Wagen-Mitte, am Ausstieg ${m(AS.tiefeAusstieg)} m Wasser)`
             );
     }
     // C
@@ -455,6 +492,18 @@ function kernUrteil(VC) {
     if (!(Math.hypot(k4.x, k4.z) <= 0.05))
         v.push(
             `K4 über der Ansaugung (${(G.wasser.ansaug + 0.05).toFixed(2)} m) fuhr er ${Math.hypot(k4.x, k4.z).toFixed(2)} m`
+        );
+    // K6 der Wasserschlag hält (Karte K02): über der Ansaugung am Hang (11°, der Bug tiefer) aus 4 m/s unter Vollgas — der
+    // stehende Motor sperrt die Antriebsräder, die Ruhe hält ihn; vorher rollte er mit 1,33 m/s weiter ins Tiefe
+    const z6 = VC.fahrZustand(0, 0, 0);
+    z6.vlong = 4;
+    z6.speed = 4;
+    z6.steig = -0.2;
+    const e6 = { throttle: 1, brake: 0, steer: 0, hand: false, tiefe: G.wasser.ansaug + 0.01 };
+    for (let i = 0; i < 180; i++) VC.fahrKraefte(z6, e6, G, 1 / 60);
+    if (!(Math.abs(z6.vlong) <= 0.5))
+        v.push(
+            `K6 über der Ansaugung am 11°-Hang rollt er unter Vollgas 3 s später mit ${z6.vlong.toFixed(2)} m/s weiter (Soll ≤ 0,5: der Wasserschlag sperrt die Räder)`
         );
     // K5 EINE Masse: die Kraft wirkt auf die getauchte Stirn (Breite der Hülle), die Trägheit ist die EINE Masse des Wagens
     // (das Volumen seines Fahr-Satzes × masseDichte — dieselbe, die jeder Stoß liest); die Masse, die der Wasser-Term trägt,
@@ -924,6 +973,148 @@ async function probe(A) {
             } catch (e) {
                 out.wagen = { fehler: String((e && e.message) || e) };
             }
+        let ansaugGT = null;
+        // ── A: die Ansaugung (Karte K02, FZ-01): der GT fährt mit Vollgas vom Ufer ins tiefe Wasser ──
+        if (soll("ansaug"))
+            try {
+                const hh = (a, b) => r.getTerrainHeightAt(a, b);
+                // die Rampe: 26 m trockener Anlauf (Stufen ≤ 0,35 m), dann Wasser ohne Insel, das bis A.ansaugTief steigt
+                let rampe = null;
+                for (let gz = -A.suchR; gz <= A.suchR && !rampe; gz += 3)
+                    for (let gx = -A.suchR; gx <= A.suchR && !rampe; gx += 3) {
+                        const px = X + gx;
+                        const pz = Z + gz;
+                        const t0 = sichtbar(px, pz);
+                        if (!(t0 > 0 && t0 <= 0.3)) continue;
+                        for (let k = 0; k < 16; k++) {
+                            const ux = Math.cos((k * Math.PI) / 8);
+                            const uz = Math.sin((k * Math.PI) / 8);
+                            let ok = true;
+                            let vor = null;
+                            for (let s = 2; s <= 28 && ok; s++) {
+                                const h = hh(px - ux * s, pz - uz * s);
+                                if (!Number.isFinite(h) || sichtbar(px - ux * s, pz - uz * s) > -Infinity) ok = false;
+                                else if (vor !== null && Math.abs(h - vor) > 0.35) ok = false;
+                                else vor = h;
+                            }
+                            if (!ok) continue;
+                            // das Ufer fällt flach ab (je m höchstens A.rampeStufe tiefer — eine Furt, ein Strand, nie ein
+                            // Steilufer, von dem der Wagen ins Tiefe stürzt)
+                            let tief = null;
+                            let tVor = t0;
+                            for (let s = 1; s <= 40 && ok && tief === null; s++) {
+                                const t = sichtbar(px + ux * s, pz + uz * s);
+                                if (!(t > 0) || t - tVor > A.rampeStufe) ok = false;
+                                else if (t >= A.ansaugTief) tief = s;
+                                tVor = t;
+                            }
+                            if (!ok || tief === null) continue;
+                            rampe = { x: px, z: pz, ux, uz, tief, steigung: +((A.ansaugTief - t0) / tief).toFixed(3) };
+                            break;
+                        }
+                    }
+                if (!rampe)
+                    throw new Error(
+                        `keine Rampe (26 m trockener Anlauf, dann Wasser bis ${A.ansaugTief} m) im Umkreis von ${A.suchR} m`
+                    );
+                const sx = rampe.x - rampe.ux * 26;
+                const sz = rampe.z - rampe.uz * 26;
+                const bahnFrei = () => {
+                    for (const e of st.architectures.slice()) {
+                        if (!e || !e.blockerAABBs || !e.position || /^fahrzeug_/.test(e.type || "")) continue;
+                        const dx = e.position.x - sx;
+                        const dz = e.position.z - sz;
+                        const l = dx * rampe.ux + dz * rampe.uz;
+                        if (l > -6 && l < 72 && Math.abs(dx * rampe.uz - dz * rampe.ux) < 4) r.removeArchitecture(e);
+                    }
+                    for (const c of st.creatures || []) {
+                        const dx = c.position.x - sx;
+                        const dz = c.position.z - sz;
+                        const l = dx * rampe.ux + dz * rampe.uz;
+                        if (l > -6 && l < 72 && Math.abs(dx * rampe.uz - dz * rampe.ux) < 5 && c.position.y > -400)
+                            c.position.y -= 500;
+                    }
+                };
+                bahnFrei();
+                const fahrt = Math.atan2(rampe.ux, rampe.uz);
+                st.playerMesh.position.set(sx, hh(sx, sz) + 1.2, sz);
+                if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+                st._fieldVy = 0;
+                const gt = r.spawnArchitecture(
+                    "fahrzeug_gt",
+                    { x: sx, y: hh(sx, sz) + 0.5, z: sz },
+                    { silent: true, precise: true, rotationY: fahrt - Math.PI / 2 }
+                );
+                if (!gt) throw new Error("kein GT");
+                for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
+                // Aussteigen an Land (der Anlauf ist trocken): wo steht der Spieler, gemessen am Boden unter ihm?
+                let mr = r.mountArchitecture(gt);
+                if (!mr || !mr.ok) throw new Error("Aufsitzen scheiterte");
+                for (let i = 0; i < 12; i++) frame();
+                r.dismountArchitecture();
+                for (let i = 0; i < 60; i++) frame();
+                const pL = st.playerMesh.position;
+                const land = {
+                    fussUeberBoden: +(pL.y - 0.5 - hh(pL.x, pL.z)).toFixed(2),
+                    abstand: +Math.hypot(pL.x - gt.position.x, pL.z - gt.position.z).toFixed(2),
+                };
+                st.playerMesh.position.set(gt.position.x, hh(gt.position.x, gt.position.z) + 1.2, gt.position.z);
+                mr = r.mountArchitecture(gt);
+                if (!mr || !mr.ok) throw new Error("Aufsitzen scheiterte");
+                for (let i = 0; i < 12; i++) frame();
+                const W = gt._fahrSatz && gt._fahrSatz.wasser;
+                if (!W) throw new Error("der Fahr-Satz des GT trägt kein Wasser-Maß");
+                st.keys.w = true;
+                const spur = [];
+                let kamUnter = 0;
+                let tA = null;
+                let maxTiefe = 0;
+                for (let i = 0; i < 1500; i++) {
+                    frame();
+                    const fz = gt._fahr;
+                    if (!fz) continue;
+                    const t = r._fahrTiefe(fz);
+                    const v = Math.hypot(fz.vlong, fz.vlat);
+                    spur.push({ t: tMs, v, tiefe: t });
+                    maxTiefe = Math.max(maxTiefe, t);
+                    if (tA === null && t >= W.ansaug) tA = { zeit: tMs, v, tiefe: t };
+                    const cam = st.camera && st.camera.position;
+                    if (cam) {
+                        const b = r._wasserBildAt(cam.x, cam.z);
+                        if (Number.isFinite(b) && cam.y < b) kamUnter++;
+                    }
+                    if (tA && tMs - tA.zeit > 4000) break;
+                    if (i % 30 === 0) await new Promise((res) => setTimeout(res, 0));
+                }
+                st.keys.w = false;
+                const nachA = tA ? spur.filter((p) => p.t > tA.zeit) : [];
+                const drei = tA ? nachA.find((p) => p.t >= tA.zeit + 3000) : null;
+                const ansaug = {
+                    rampe,
+                    ansaug: W.ansaug,
+                    dach: W.dach,
+                    vA: tA ? tA.v : NaN,
+                    v3: drei ? drei.v : NaN,
+                    vMaxNach: nachA.reduce((m, p) => Math.max(m, p.v), 0),
+                    maxTiefe,
+                    kameraUnter: kamUnter,
+                    erreicht: !!tA,
+                    land,
+                    verlauf: spur
+                        .filter((p) => !tA || p.t >= tA.zeit - 1500)
+                        .filter((_, i) => i % 15 === 0)
+                        .map((p) => [
+                            +((p.t - (tA ? tA.zeit : spur[0].t)) / 1000).toFixed(2),
+                            +p.v.toFixed(2),
+                            +p.tiefe.toFixed(2),
+                        ]),
+                };
+                if (st.player.mountedArch !== null && st.player.mountedArch !== undefined) r.dismountArchitecture();
+                ansaugGT = gt;
+                out.ansaug = ansaug;
+            } catch (e) {
+                out.ansaug = { fehler: String((e && e.message) || e) };
+            }
         // ── S: der Haus-Satz am See (−906/−634, eine eigene gestreamte Welt) ──
         if (soll("satz"))
             try {
@@ -981,6 +1172,80 @@ async function probe(A) {
                 out.ergebnis = C;
             } catch (e) {
                 out.ergebnis = { fehler: String((e && e.stack) || e).split("\n")[0] };
+            }
+        // ── A (Teil 2): Aussteigen in tiefem Wasser — der GT der Rampe steht im See (−906/−634), wo der Wagen und jeder
+        //    Ausstieg (Ringe 1,5 und 3 m) mindestens A.aussteigTief Wasser tragen (die Tiefe, die der Körper liest: das
+        //    Wasser über dem Boden des Felds); der Spieler steigt aus — schwimmt er? ──
+        if (soll("ansaug") && out.ansaug && !out.ansaug.fehler)
+            try {
+                const [cx, cz] = A.satzFern[0];
+                if (!soll("satz")) await stroemen(cx, cz, 120);
+                const gt = ansaugGT;
+                if (!gt || !gt._fahr) throw new Error("der GT der Rampe fehlt");
+                let ax = null;
+                let maxT = -Infinity;
+                // der Wagen in A.aussteigTief + 0,15 … + 0,5 m Wasser, jeder Ausstieg (Ring 1,6 m) in mindestens A.aussteigTief
+                for (let d = 2; d <= A.suchR && !ax; d += 2)
+                    for (let k = 0; k < 48 && !ax; k++) {
+                        const px = cx + Math.cos((k * Math.PI) / 24) * d;
+                        const pz = cz + Math.sin((k * Math.PI) / 24) * d;
+                        const t = sichtbar(px, pz);
+                        if (t > maxT) maxT = t;
+                        if (!(t >= A.aussteigTief + 0.15 && t <= A.aussteigTief + 0.5)) continue;
+                        let ok = true;
+                        for (let j = 0; j < 16 && ok; j++) {
+                            const a = (j * Math.PI) / 8;
+                            if (!(sichtbar(px + Math.cos(a) * 1.6, pz + Math.sin(a) * 1.6) >= A.aussteigTief))
+                                ok = false;
+                        }
+                        if (ok) ax = { x: px, z: pz, tiefe: t };
+                    }
+                if (!ax)
+                    throw new Error(
+                        `kein Ort mit ${A.aussteigTief} m Wasser um den Wagen im See (am tiefsten ${maxT.toFixed(2)} m)`
+                    );
+                st.playerMesh.position.set(gt.position.x, gt.position.y + 1.2, gt.position.z);
+                const mr = r.mountArchitecture(gt);
+                if (!mr || !mr.ok) throw new Error("Aufsitzen scheiterte");
+                for (let i = 0; i < 3; i++) frame(); // der Ritt stellt den Fahr-Zustand auf
+                // der Reiter führt horizontal (`_rittSchritt`: die Architektur folgt ihm), der Fahr-Zustand mit
+                const fz = gt._fahr;
+                if (!fz) throw new Error("der GT trägt nach dem Aufsitzen keinen Fahr-Zustand");
+                fz.x = ax.x;
+                fz.z = ax.z;
+                fz.vlong = 0;
+                fz.vlat = 0;
+                st.playerMesh.position.x = ax.x;
+                st.playerMesh.position.z = ax.z;
+                gt.position.x = ax.x;
+                gt.position.z = ax.z;
+                for (let i = 0; i < 90; i++) frame(); // er sinkt auf den Grund
+                const tW = r._fahrTiefe(gt._fahr);
+                r.dismountArchitecture();
+                const p0 = st.playerMesh.position;
+                const tAus = sichtbar(p0.x, p0.z); // das Wasser am Ausstieg
+                const abAus = Math.hypot(p0.x - gt.position.x, p0.z - gt.position.z);
+                let schwimm = 0;
+                for (let i = 0; i < 180; i++) {
+                    frame();
+                    if (st.playerUnderwater) schwimm++;
+                    if (i % 30 === 0) await new Promise((res) => setTimeout(res, 0));
+                }
+                const p = st.playerMesh.position;
+                const g = r._voxelSurfaceY(p.x, p.z);
+                out.ansaug.aussteigen = {
+                    x: ax.x,
+                    z: ax.z,
+                    tiefe: ax.tiefe,
+                    tiefeWagen: tW,
+                    tiefeAusstieg: tAus,
+                    abstand: +abAus.toFixed(2),
+                    schwimmFrames: schwimm,
+                    frames: 180,
+                    ueberSpiegel: +(p.y - r._koerperWasser(p.x, p.z, g)).toFixed(2),
+                };
+            } catch (e) {
+                out.ansaug.aussteigen = { fehler: String((e && e.message) || e) };
             }
         // ── E: DAS ERGEBNIS JEDES SETZ-OPS (Gegenprüfung Runde 3) — je Op ein erzwungener Fehl-Grund (die Obergrenze der
         //    Kreaturen, das kalte Buch, ein unbekannter Bauplan, der See), gesprochen wie der Spieler; der Chat sagt die
@@ -1344,6 +1609,26 @@ function selbsttest() {
         satz: { orte: 9, haeuser: 9, fern: [] },
         leser: [],
         wagen: { vEin: 11, v1: 3, tiefe: 0.61, kameraUnter: 0, kameraTiefe: 0 },
+        ansaug: {
+            ansaug: 0.72,
+            dach: 1.2,
+            vA: 2.96,
+            v3: 0,
+            vMaxNach: 2.74,
+            maxTiefe: 0.74,
+            kameraUnter: 0,
+            erreicht: true,
+            land: { fussUeberBoden: 0, abstand: 1.54 },
+            aussteigen: {
+                tiefe: 1.71,
+                tiefeWagen: 1.84,
+                tiefeAusstieg: 1.87,
+                abstand: 1.54,
+                schwimmFrames: 180,
+                frames: 180,
+                ueberSpiegel: -0.94,
+            },
+        },
         damm: { id: 504, x: -937, z: -1064, w0: 1565, w1: 3574, w2: 3560, abriss: 1, takte: 1800 },
         setzen: {
             faelle: [
@@ -1455,6 +1740,28 @@ function selbsttest() {
             /F: die Verfolger-Kamera steht in 4/,
         ],
         ["F leer", (b) => (b.wagen.vEin = 1), /F LEER/],
+        // A (Karte K02): die Zahlen des Kopfs c5e8fa44 am 5°-Ufer der Furt und im See
+        [
+            "A rollt weiter",
+            (b) => (b.ansaug.v3 = 0.86),
+            /A: 3 s nach der Ansaugung \(0\.72 m\) fährt der Wagen noch 0\.86/,
+        ],
+        ["A Vortrieb", (b) => (b.ansaug.vMaxNach = 3.5), /A: Vortrieb nach der Ansaugung/],
+        ["A über dem Dach", (b) => (b.ansaug.maxTiefe = 2.3), /A: der Wagen taucht 2\.30 m tief/],
+        ["A Kamera", (b) => (b.ansaug.kameraUnter = 3), /A: die Verfolger-Kamera steht in 3/],
+        ["A nie an der Ansaugung", (b) => (b.ansaug.erreicht = false), /A LEER: das Wasser erreichte/],
+        [
+            "A an Land auf dem Wagen",
+            (b) => (b.ansaug.land = { fussUeberBoden: 1.55, abstand: 1.1 }),
+            /A: Aussteigen an Land — der Spieler steht 1\.55 m/,
+        ],
+        [
+            "A im Wasser auf dem Wagen",
+            (b) => ((b.ansaug.aussteigen.schwimmFrames = 1), (b.ansaug.aussteigen.ueberSpiegel = 0.57)),
+            /A: Aussteigen in 1\.84 m Wasser — der Spieler schwimmt 1 von 180/,
+        ],
+        ["A seicht", (b) => (b.ansaug.aussteigen.tiefeWagen = 0.6), /A LEER: der Wagen stand beim Aussteigen in 0\.60/],
+        ["A ohne Aussteigen", (b) => (b.ansaug.aussteigen = { fehler: "x" }), /A LEER: x/],
         ["K Kern", (b) => b.kern.push("K2 …"), /K: K2/],
         [
             "D Stausee nach dem Reload weg (der Befund am Kopf e162430b)",
@@ -1699,6 +2006,24 @@ function selbsttest() {
             (s) => s.replace("z.vlong = vL0 / (1 + Wg.kStirn * t * Math.abs(vL0) * dt);", "z.vlong = vL0;"),
             /K2 in 0\.61 m Wasser/,
         ],
+        [
+            "der Wasserschlag sperrt die Räder nicht (der Kopf c5e8fa44)",
+            (s) =>
+                s.replace(
+                    "else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;",
+                    "else if (!motor && dt > 0) Fr -= 0;"
+                ),
+            /K6 über der Ansaugung am 11°-Hang rollt er unter Vollgas 3 s später mit 1\.33 m\/s weiter/,
+        ],
+        [
+            "das Gas wirkt am stehenden Motor (der Kopf c5e8fa44: keine Ruhe unter Vollgas)",
+            (s) =>
+                s.replace(
+                    "const thr = motor && e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;",
+                    "const thr = e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;"
+                ),
+            /K4 über der Ansaugung/,
+        ],
     ]) {
         const s2 = gift(kernSrc);
         const v = s2 === kernSrc ? ["(Gift griff nicht)"] : kernUrteil(kernLaden(s2));
@@ -1766,6 +2091,9 @@ async function lauf() {
             tiefeStamm: SCHWELLE.tiefeStamm,
             tiefeFundament: SCHWELLE.tiefeFundament,
             suchR: 90,
+            ansaugTief: 1.3, // A: so tief wird das Wasser an der Rampe (über dem Dach des GT, 1,2 m)
+            rampeStufe: 0.25, // A: m, um die das Wasser der Rampe je m höchstens tiefer wird (≤ 14°)
+            aussteigTief: SCHWELLE.aussteigTiefMin, // A: so tief steht der Wagen mindestens beim Aussteigen (tiefste Stelle der Rampe)
             gitterR: 18,
             huelleMs: 60000,
             satzJe: 3,
