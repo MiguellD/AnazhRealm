@@ -20751,7 +20751,6 @@ class AnazhRealm {
         });
     }
 
-
     // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden. Die Stream-
     // Power-Erosion (V9.47) entwässert jedes Hochbecken → ohne diesen Pass
     // gibt es keine Bergseen. `_hydroSeedTarns` setzt sie bewusst.
@@ -24525,13 +24524,7 @@ class AnazhRealm {
         // + der Hash des Erbguts (seine Terme und die Regler der Landform formen jeden Chunk: ein fremdes Erbgut darf nie
         // alte Bytes lesen).
         const stamp =
-            AnazhRealm.VERSION +
-            "|" +
-            genV +
-            "|landform|" +
-            this._erbgut().hash +
-            "|" +
-            AnazhRealm.CHUNK_IDB_FORM;
+            AnazhRealm.VERSION + "|" + genV + "|landform|" + this._erbgut().hash + "|" + AnazhRealm.CHUNK_IDB_FORM;
         c._stamp = stamp;
         c._idbReady = new Promise((resolve) => {
             try {
@@ -27643,7 +27636,6 @@ class AnazhRealm {
         this.state.tarns = tarns;
         return tarns;
     }
-
 
     // Abfluss-Invariante: an N=32 Strahlen am Becken-Rim die Makro-Höhe messen (includeDetail=false);
     // die Spannweite max−min MUSS > beckenD*0.5 sein → ein klarer Tiefweg, nie ein rund umringtes
@@ -38834,7 +38826,8 @@ class AnazhRealm {
         return new Promise((fertig) => {
             const scheibe = () => {
                 const ende = Math.min(n, k + SCHEIBE);
-                for (; k < ende; k++) werte[k] = this._terrainMacroSurfaceY(punkte[k * 2], punkte[k * 2 + 1], includeDetail);
+                for (; k < ende; k++)
+                    werte[k] = this._terrainMacroSurfaceY(punkte[k * 2], punkte[k * 2 + 1], includeDetail);
                 if (k < n) setTimeout(scheibe, 0);
                 else fertig(werte);
             };

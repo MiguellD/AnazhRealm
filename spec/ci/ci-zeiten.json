@@ -1511,17 +1511,10 @@
         "38095082458"
       ]
     },
-    "Dritter Spiegel (das Makro-Gesetz rechnet auf swiftshader-WebGPU seh-paritätisch)": {
-      "s": 8,
-      "n": 5,
-      "lauf": "npm run gate:dritter-spiegel",
-      "laeufe": [
-        "38098149763/1",
-        "38098149763/2",
-        "38096987107",
-        "38095155944",
-        "38095082458"
-      ]
+    "Gelaende-Linse (die Natur-Zahlen am Gesetzbuch - Senken, Flint, Hammond, Dorfplaetze, Schicht-Gesetz)": {
+      "s": 40,
+      "lauf": "npm run gate:gelaende-realismus",
+      "geschaetzt": "K16 11.10.: lokal 34 s (Ryzen AI 9 HX 370, Selbsttest + drei Saaten), CI-Laeufer ~1,2x"
     },
     "Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)": {
       "s": 3,

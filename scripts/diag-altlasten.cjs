@@ -1307,23 +1307,16 @@ const ZWILLINGE = [
     // Pfaden am engen Abdruck `wx * 0.00014 + 7.2` vorbei. Verboten in jeder Wurzel-Datei und jedem Skript
     // (`gelaendeLeser`); feld-wgsl.js bleibt der Seh-Spiegel (f32-WGSL), das Terrain-Studio liest den Kern mit G2 (K09b).
     ...[
-        [/\*\s*0\.00014\s*\+\s*7\.2\b/, "die kontinentale Basis des Wildnis-Terms (`kontinentBasis`)"],
         [/\*\s*0\.00026\s*\+\s*(?:11\.3|41\.7)\b/, "der Domain-Warp des Wildnis-Terms"],
-        [
-            /\*\s*0\.000(?:19\s*\+\s*33\.1|22\s*\+\s*91\.3|35\s*\+\s*19\.3|28\s*\+\s*19\.3)\b/,
-            "die Relief-, Stil- und Hochland-Masken des Wildnis-Terms",
-        ],
-        [/\*\s*0\.000(?:3\s*\+\s*61\.1|34\s*\+\s*13\.7)\b|\*\s*0\.00105\s*\+\s*8\.3\b/, "Canyon und Tafelberg"],
-        [/["'`]-macro-ridge["'`]/, "der Grat-Strom des Makro-Ankers"],
-        [/["'`]-macro-anker["'`]/, "der Samen-Strom des Makro-Ankers"],
-        [/0\.7071\s*\*\s*1\.65\b/, "die Grat-Domäne des Makro-Ankers"],
-        [/\/\s*[\w.]*massivAspect\b/, "die Massiv-Maske des Makro-Ankers (`massivMaske`)"],
-        [
-            /\/\s*\(?\s*[\w.]*\b(?:massivR|beckenR|talBreite|talTrenchBreite)\b/,
-            "die Abfall-Profile des Makro-Ankers (Massiv, Becken, Tal)",
-        ],
         [/255\s*\+\s*12\s*\*\s*Math\.tanh\(/, "der Sicherheits-Deckel der Makro-Höhe"],
-        [/noise2D\(\s*[\w.]+\s*\*\s*0\.0005\s*,/, "die Rauheits-Maske (`rauheit`)"],
+        // K16 — DIE LANDFORM: die Großform-Felder (Kontinentalität C, Erosion E, Stil), die Spline-Stützpunkte von OFFSET
+        // und RELIEF, die drei Ebenen des Flussnetzes und die Querneigung der Aue wohnen im Gesetzbuch.
+        [/\+\s*7\.2\s*,[^,;]*?\+\s*3\.8\b/, "die Kontinentalität C der Großform"],
+        [/\+\s*33\.1\s*,[^,;]*?\+\s*71\.7\b/, "das Erosions-Feld E der Großform"],
+        [/\*\s*0\.000192\s*\+\s*91\.3\b/, "das Stil-Feld (Tafelland) der Großform"],
+        [/\[\s*-0\.55\s*,\s*(?:-26|140)\s*\]/, "die Spline-Stützpunkte OFFSET/RELIEF"],
+        [/\[\s*1600\s*,\s*400\s*,\s*100\s*\]/, "die drei Ebenen des Flussnetzes"],
+        [/\bAUE_QUER\s*=/, "die Querneigung der Aue"],
         [/Math\.exp\(\s*-\s*[\w.]+\s*\/\s*[\w.]*twoSig2\b/, "das Tarn-Delta"],
         [/\btwoSig2\s*:/, "die Mulden-Form des Tarns (`tarnMulde`)"],
         [/kuppel\s*\*\s*\(/, "der Insel-Term des Erbguts"],
@@ -1333,6 +1326,30 @@ const ZWILLINGE = [
         gesetzbuch: "gelaende-core.js",
         verboten: gelaendeLeser(),
         fiel: `K09a — Heimat im Gelände-Gesetzbuch: ${was}`,
+    })),
+    // K16 — GEFALLEN: die Landform ersetzt die Rausch-Masken, den Ein-Massiv-Anker samt Grat-Strom und Abfall-Profilen,
+    // Canyon und Tafelberg als Maske und die Rauheits-Maske. Sie haben kein Zuhause mehr — auch das Gesetzbuch nie wieder.
+    ...[
+        [/\*\s*0\.00014\s*\+\s*7\.2\b/, "die alte kontinentale Basis (λ 7100 m)"],
+        [
+            /\*\s*0\.000(?:19\s*\+\s*33\.1|22\s*\+\s*91\.3|35\s*\+\s*19\.3|28\s*\+\s*19\.3)\b/,
+            "die Relief-, Stil- und Hochland-Masken des Rausch-Gesetzes",
+        ],
+        [/\*\s*0\.000(?:3\s*\+\s*61\.1|34\s*\+\s*13\.7)\b|\*\s*0\.00105\s*\+\s*8\.3\b/, "Canyon und Tafelberg als Maske"],
+        [/["'`]-macro-ridge["'`]/, "den Grat-Strom des Makro-Ankers"],
+        [/["'`]-macro-anker["'`]/, "den Samen-Strom des Makro-Ankers"],
+        [/0\.7071\s*\*\s*1\.65\b/, "die Grat-Domäne des Makro-Ankers"],
+        [/\/\s*[\w.]*massivAspect\b/, "die Massiv-Maske des Makro-Ankers"],
+        [
+            /\/\s*\(?\s*[\w.]*\b(?:massivR|beckenR|talBreite|talTrenchBreite)\b/,
+            "die Abfall-Profile des Makro-Ankers (Massiv, Becken, Tal)",
+        ],
+        [/noise2D\(\s*[\w.]+\s*\*\s*0\.0005\s*,/, "die Rauheits-Maske"],
+    ].map(([muster, was]) => ({
+        muster,
+        gefallen: true,
+        verboten: gelaendeLeser().concat(["gelaende-core.js"]),
+        fiel: `K16 — die Landform ersetzt ${was}`,
     })),
 ];
 
@@ -1380,7 +1397,9 @@ function scanZwillinge(ersatz = {}) {
     const errs = [];
     for (const z of ZWILLINGE) {
         const name = z.fingerprint ? `"${z.fingerprint}"` : String(z.muster);
-        if (!(z.gesetzbuch in ersatz) && !fs.existsSync(path.join(root, z.gesetzbuch)))
+        if (z.gefallen) {
+            // kein Zuhause: der Term fiel ganz — die verbotenen Dateien schließen das Gesetzbuch ein
+        } else if (!(z.gesetzbuch in ersatz) && !fs.existsSync(path.join(root, z.gesetzbuch)))
             errs.push(`Zwillings-Wand: das Gesetzbuch ${z.gesetzbuch} fehlt — ${name} hat kein Zuhause`);
         else if (!finde(z, lies(z.gesetzbuch)))
             errs.push(`Zwillings-Wand: Fingerabdruck ${name} fehlt im Gesetzbuch ${z.gesetzbuch}`);
@@ -2129,18 +2148,19 @@ function main() {
             );
         const still = (datei, zeile) =>
             !scanZwillinge({ [datei]: probe + "// " + zeile + "\n" }).some((e) => e.includes(datei + ":"));
-        const cont0 = "const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);";
+        const cont0 = "const c = sandNoise.noise2D((x + _wpX) * lc + 7.2, (z + _wpZ) * lc + 3.8);";
         const maske = "const ax = rxA / anker.massivAspect;";
         const mulde = "tarns.push({ x, z, reach2: r * r, twoSig2: 2 * s * s });";
         const zwillingFeuert =
-            feuert("voxel-worker.js", cont0, "kontinentale Basis") &&
+            feuert("voxel-worker.js", cont0, "Kontinentalität C") &&
             feuert("anazhRealm.js", maske, "Massiv-Maske") &&
+            feuert("gelaende-core.js", maske, "Massiv-Maske") &&
             feuert("scripts/playtest.cjs", mulde, "Mulden-Form") &&
             still("voxel-worker.js", cont0) &&
             still("anazhRealm.js", maske);
         console.log(
             zwillingFeuert
-                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (kontinentale Basis im Worker, Massiv-Maske im Stamm, Tarn-Mulde in einer Linse — je mit Zeile; der Kommentar nicht)"
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (Kontinentalität im Worker, die gefallene Massiv-Maske in Stamm und Gesetzbuch, Tarn-Mulde in einer Linse — je mit Zeile; der Kommentar nicht)"
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);
