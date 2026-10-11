@@ -1,0 +1,115 @@
+06:28:12 SERIE START  A=66005ca6 (main V18.538)  B=be1d6e57 (integ-probe V18.539)  Instrument=be1d6e57
+06:28:13 anazhRealm.js  A=5a6b15365f4d76f3  B=8ef0e3cd2ec23405
+06:28:18 1A boot (Versuch 1)  GPU[59, 139 MHz, 20 %, P8] eigene-reste=0
+06:28:18 1A Seite geliefert (5a6b15365f4d76f3)
+06:30:51 1A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 77.7 fps · Frame p50/p95/max 16.6/16.8/25.1 ms · CPU p50/p95 3.4/4.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.5 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 74.1 fps · Frame p50/p95/max 16.6/16.9/241.6 ms · CPU p50/p95 4.6/10.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 7.13 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 11.59 ms je Frame (CPU 1.68) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 10.73 ms je Frame (CPU 1.55) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+06:30:59 1A haenger-Sitzung  GPU[78, 1746 MHz, 2 %, P0] eigene-reste=1
+06:32:07 1A haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab539\1A-haenger.json 
+06:32:19 1A Pause 60 s  GPU[77, 215 MHz, 8 %, P8] eigene-reste=0
+06:33:24 2B boot (Versuch 1)  GPU[65, 139 MHz, 10 %, P8] eigene-reste=0
+06:33:25 2B Seite geliefert (8ef0e3cd2ec23405)
+06:35:55 2B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 75.5 fps · Frame p50/p95/max 16.6/16.8/25.2 ms · CPU p50/p95 3.7/5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.32 · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        laufFrei: 75.1 fps · Frame p50/p95/max 16.6/16.8/249.5 ms · CPU p50/p95 3.6/5.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.46 · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        gpu-bank Gier 0: 11.75 ms je Frame (CPU 1.97) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        gpu-bank Gier -0.88: 10.55 ms je Frame (CPU 1.63) · Tiere 11 (Sicht 3, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 6, fox 5)
+06:36:03 2B haenger-Sitzung  GPU[80, 1809 MHz, 1 %, P0] eigene-reste=1
+06:37:11 2B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab539\2B-haenger.json 
+06:37:23 2B Pause 60 s  GPU[77, 822 MHz, 2 %, P5] eigene-reste=0
+06:38:28 3A boot (Versuch 1)  GPU[66, 139 MHz, 0 %, P8] eigene-reste=0
+06:38:29 3A Seite geliefert (5a6b15365f4d76f3)
+06:41:01 3A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 75.6 fps · Frame p50/p95/max 16.6/16.8/25.2 ms · CPU p50/p95 3.5/4.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.66 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 75.2 fps · Frame p50/p95/max 16.6/16.9/41.6 ms · CPU p50/p95 5.5/10.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.44 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 11.95 ms je Frame (CPU 1.67) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 10.74 ms je Frame (CPU 1.66) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+06:41:09 3A haenger-Sitzung  GPU[80, 1670 MHz, 1 %, P0] eigene-reste=1
+06:42:17 3A haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab539\3A-haenger.json 
+06:42:28 3A Pause 60 s  GPU[77, 822 MHz, 0 %, P5] eigene-reste=0
+06:43:33 4B boot (Versuch 1)  GPU[66, 139 MHz, 9 %, P8] eigene-reste=0
+06:43:34 4B Seite geliefert (8ef0e3cd2ec23405)
+06:46:02 4B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 79.5 fps · Frame p50/p95/max 16.4/16.8/25.1 ms · CPU p50/p95 3.5/4.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.5 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 79.2 fps · Frame p50/p95/max 16.5/16.8/25.1 ms · CPU p50/p95 3.5/4.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.39 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 10.78 ms je Frame (CPU 1.85) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 10.07 ms je Frame (CPU 1.72) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+06:46:10 4B haenger-Sitzung  GPU[81, 1809 MHz, 1 %, P0] eigene-reste=1
+06:47:18 4B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab539\4B-haenger.json 
+06:47:30 4B Pause 60 s  GPU[77, 215 MHz, 2 %, P8] eigene-reste=0
+06:48:35 5A boot (Versuch 1)  GPU[66, 139 MHz, 10 %, P8] eigene-reste=0
+06:48:36 5A Seite geliefert (5a6b15365f4d76f3)
+06:51:09 5A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 76.1 fps · Frame p50/p95/max 16.6/16.8/25.1 ms · CPU p50/p95 3.5/4.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.56 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 74.7 fps · Frame p50/p95/max 16.6/16.9/266.5 ms · CPU p50/p95 5.9/10.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.15 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 11.43 ms je Frame (CPU 1.95) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 10.57 ms je Frame (CPU 1.35) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+06:51:16 5A haenger-Sitzung  GPU[80, 1721 MHz, 0 %, P0] eigene-reste=1
+06:52:27 5A haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab539\5A-haenger.json 
+06:52:39 5A Pause 60 s  GPU[77, 215 MHz, 10 %, P8] eigene-reste=0
+06:53:44 6B boot (Versuch 1)  GPU[66, 139 MHz, 10 %, P8] eigene-reste=0
+06:53:45 6B Seite geliefert (8ef0e3cd2ec23405)
+06:56:13 6B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 75.5 fps · Frame p50/p95/max 16.6/16.8/25.1 ms · CPU p50/p95 3.6/4.9 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.68 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 75.8 fps · Frame p50/p95/max 16.6/16.8/33.4 ms · CPU p50/p95 3.5/5.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.99 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 11.44 ms je Frame (CPU 1.68) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 10.73 ms je Frame (CPU 1.73) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+06:56:20 6B haenger-Sitzung  GPU[80, 1809 MHz, 1 %, P0] eigene-reste=1
+06:57:28 6B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab539\6B-haenger.json 
+06:57:40 6B Pause 60 s  GPU[77, 215 MHz, 3 %, P8] eigene-reste=0
+06:58:45 7A boot (Versuch 1)  GPU[66, 139 MHz, 10 %, P8] eigene-reste=0
+06:58:46 7A Seite geliefert (5a6b15365f4d76f3)
+07:01:18 7A exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 75.8 fps · Frame p50/p95/max 16.6/16.8/25.1 ms · CPU p50/p95 3.5/4.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.64 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 74.7 fps · Frame p50/p95/max 16.6/16.9/233.3 ms · CPU p50/p95 5.9/10.8 · render-Wanduhr (EWMA, mit CPU-Zustand) 5.16 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 11.26 ms je Frame (CPU 1.92) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 10.85 ms je Frame (CPU 1.54) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+07:01:26 7A haenger-Sitzung  GPU[80, 1683 MHz, 0 %, P0] eigene-reste=1
+07:02:34 7A haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab539\7A-haenger.json 
+07:02:41 A zerlegen  GPU[79, 822 MHz, 0 %, P3] eigene-reste=1
+07:04:57 A zerlegen exit=0
+07:05:05 A genesis-boot (Versuch 1)  GPU[77, 822 MHz, 0 %, P3] eigene-reste=1
+07:06:15 A genesis exit=0  GRUEN |  |     band: ROT (Linse SAUBER, Stempel GRUEN) · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 4, fox 3) 
+07:06:20 7A Pause 60 s  GPU[74, 189 MHz, 0 %, P8] eigene-reste=0
+07:07:25 8B boot (Versuch 1)  GPU[65, 139 MHz, 0 %, P8] eigene-reste=0
+07:07:26 8B Seite geliefert (8ef0e3cd2ec23405)
+07:09:53 8B exit=0  GRUEN |  | 
+      [folge] gpu-bank …
+        laufVoll: 80.2 fps · Frame p50/p95/max 8.8/16.8/25 ms · CPU p50/p95 3.4/4.7 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.6 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        laufFrei: 79.7 fps · Frame p50/p95/max 16.2/16.8/25.1 ms · CPU p50/p95 3.3/4.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.26 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier 0: 11.26 ms je Frame (CPU 1.72) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        gpu-bank Gier -0.88: 9.94 ms je Frame (CPU 1.62) · Tiere 11 (Sicht 2, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+        band: ROT (Linse ROT, Stempel GRUEN) · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4)
+07:10:00 8B haenger-Sitzung  GPU[80, 1708 MHz, 0 %, P0] eigene-reste=1
+07:11:08 8B haenger exit=0  C:\Users\micha\Desktop\AnazhRealm-OMEN\abab539\8B-haenger.json 
+07:11:16 B zerlegen  GPU[79, 923 MHz, 0 %, P2] eigene-reste=1
+07:13:41 B zerlegen exit=0
+07:13:49 B genesis-boot (Versuch 1)  GPU[77, 822 MHz, 0 %, P3] eigene-reste=1
+07:14:53 B genesis exit=0  GRUEN |  |     band: ROT (Linse SAUBER, Stempel GRUEN) · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 2, deer 3, fox 5) 
+07:14:58 8B Pause 60 s  GPU[73, 189 MHz, 0 %, P8] eigene-reste=0
+07:16:02 ALLES ENDE
+07:17:01 ZERLEGEN-NACHLAUF (B A, je eine frische Sitzung)
+07:17:06 zerlegen2-B Seite geliefert (8ef0e3cd2ec23405)
+07:17:07 B zerlegen2  GPU[64, 139 MHz, 17 %, P8] eigene-reste=1
+07:19:16 B zerlegen2 exit=0
+07:20:28 zerlegen2-A Seite geliefert (5a6b15365f4d76f3)
+07:20:28 A zerlegen2  GPU[66, 139 MHz, 17 %, P8] eigene-reste=1
+07:22:44 A zerlegen2 exit=0
+07:23:55 NACHLAUF ENDE

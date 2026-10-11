@@ -1,0 +1,54 @@
+DIE GPU-ZERLEGUNG — gpu-bank je Schalter, ABBA 6 Runden × 30 Frames · nvidia pascal · Leinwand 1920×1080 · Kamera -900 26.3 -850
+Gesamt (alles an): 10,89 ms/Frame · CPU-Haupt-Thread 1,07 ms · Pass-Stempel 0,05 ms (0 %) · GPU-gebunden: ja
+Stempel je Pass (an): post 0,02 · TRAA 0,02 · haupt 0,00 · k0 0,01 · k1 0,00
+
+Schalter           Σ    Δ ms    ±σ  Anteil  Δ CPU Δ Stempel  geschaltet · Beleg
+haupt                   9,04  0,06  83,0 %   1,12      0,01  ja · Renders 180→0
+schatten                0,13  0,09   1,2 %   0,13      0,01  ja · Renders 102→0
+k0                      0,08  0,07   0,7 %   0,20      0,01  ja · Renders 90→0
+k1                     -0,09  0,13  -0,8 %   0,07      0,00  ja · Renders 12→0
+post                    1,57  0,41  14,4 %  -0,61      0,03  ja · post 180→0
+traa               •    0,95  0,42   8,7 %  -0,67      0,02  ja · TRAA 180→0, Szene im AUS 180× gerendert, Haken 1/Frame
+traaKopien              0,27  0,04   2,5 %   0,00      0,00  ja · 2 Kopien/Frame unterdrückt
+tiefenkopie        •    0,11  0,05   1,0 %   0,02     -0,29  ja · 1 Kopien/Frame unterdrückt
+nachbild                0,66  0,02   6,1 %  -0,02      0,02  ja · Abtastungen der Ausgabe 36→3
+bloom              •    0,42  0,05   3,9 %  -0,01      0,01  ja · Abtastungen der Ausgabe 36→28
+godrays            •    0,13  0,10   1,2 %  -0,04      0,01  ja · Abtastungen der Ausgabe 36→16
+kontrast           •    0,24  0,03   2,2 %   0,04      0,01  ja · Abtastungen der Ausgabe 36→32
+baum               •    3,07  0,02  28,2 %   0,09      0,00  ja · Befehle 26→0 · 27 Objekte
+busch              •    0,20  0,03   1,8 %   0,04      0,00  ja · Befehle 6→0 · 6 Objekte
+boden              •    2,13  0,03  19,6 %   0,09      0,00  ja · Befehle 6→0 · 4 Objekte
+nahWiese           •    0,18  0,03   1,7 %   0,08      0,00  ja · Befehle 4→0 · 4 Objekte
+bau                •    0,00  0,07   0,0 %   0,00      0,00  ja · Befehle 3→0 · 2 Objekte
+einzelstuecke      •    0,01  0,02   0,1 %   0,08      0,00  ja · Befehle 3→0 · 3 Objekte
+formationen        •   -0,01  0,04  -0,1 %  -0,09      0,00  ja · Befehle 2→0 · 1 Objekte
+himmel             •    0,10  0,02   0,9 %  -0,03      0,00  ja · Befehle 2→0 · 2 Objekte
+wasser             •    0,07  0,05   0,6 %   0,08     -0,30  ja · Befehle 2→0 · 2 Objekte
+karten             •    0,31  0,08   2,8 %   0,00      0,00  ja · Befehle 1→0 · 1 Objekte
+leer                   10,47  0,10  96,1 %   0,74      0,05  ja · Hauptbild-Befehle 42→0, post 180→0
+
+Σ der •-Posten:      7,91 ms (72,6 %)
+Rest = Gesamt − Σ:   2,98 ms = leerer Frame 0,42 ms (Schalter leer) + Wechselwirkung/geteilt 2,56 ms
+  (Geteiltes fällt erst, wenn ALLE Teilhaber fallen: Pass-Anfänge und Clears, Uniform-Uploads, Bundle-Ausführung; jeder Klassen-Posten trägt seinen Schatten-Wurf mit — darum stehen haupt · schatten · k* · post · traaKopien · nachbild · leer außerhalb Σ.)
+
+FRAME-ANATOMIE je Frame (12 Bank-Frames, alles an):
+  Render-Pässe (6,5×, Ziele 67,3 MB):
+    haupt (Neustart) 2,0× · 19,8 MB · rg11b10ufloat 1920×1080 load + depth24plus 1920×1080 load
+    TRAA 1,0× · 15,8 MB · rgba16float 1920×1080 clear
+    haupt 1,0× · 15,8 MB · rg11b10ufloat 1920×1080 clear + depth24plus 1920×1080 clear
+    post 1,0× · 7,9 MB · bgra8unorm 1920×1080 clear
+    k0 0,5× · 4,0 MB · depth16unorm 2048×2048 clear
+    post (Neustart) 1,0× · 4,0 MB · depth16unorm 1920×1080 load
+  Stempel-Bruch (Neustart überschreibt den Anfangs-Stempel): haupt 1,0×
+  ohne Zeitstempel: haupt [szene:tiefenabbild] 1,0× · post [TRAA-Vortiefe] 1,0×
+  Compute-Pässe: keine · Dispatches 0,0
+  Kopien (2,2×, 15,82 MB): post: Textur TRAANode.resolve → TRAANode.history 1,0× 15,82 MB · haupt: Textur depth → szene:tiefenabbild:bruch 1,0× · ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render 0,1× · ausserhalb: Puffer buffer_timestamp_resolve_render → buffer_timestamp_result_render 0,1×
+  Hochladen (20,3×, 0,01 MB): k0: Puffer ? 0,2× 0,00 MB · haupt: Puffer bindingBuffer#_render_(vertex,fragment,compute) 11,0× 0,00 MB · haupt: Puffer bindingBufferundefined_UniformBuffer_#_(fragment) 7,0× · k0: Puffer bindingBuffer#_render_(vertex,fragment,compute) 1,1× · TRAA: Puffer bindingBuffer#_object_(vertex,fragment,compute) 1,0×
+  Submits 5,6 (Befehls-Puffer 5,6) · executeBundles 1,0 (1,0 Bundles) · setPipeline 19,0 · setBindGroup 42,5 · Leinwand 1,0
+  direkte Draws: haupt 19,0× · k0 6,0× · post 2,0× · TRAA 1,0×
+  Anlagen je Frame: createCommandEncoder 5,6
+
+Zustand zurück (Sichtbarkeit, Weiche, Knoten-Haken, Ausgabe-Knoten, Pipeline-Kontext, Ketten-Graph, Pass-Uhr, Prototypen, Schatten-Flaggen) · 111.7 s
+STEMPEL-POOL GRUEN: 0 verweigerte Abfragen in der Zerlegung (seit Boot 0, Warnung 0), Spitze 214/2048
+
+C:\Users\micha\Desktop\AnazhRealm-OMEN\abab539\zerlegen2-B.json
