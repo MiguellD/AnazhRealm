@@ -1277,6 +1277,12 @@ jobs:
               if: matrix.gruppe == 5
               run: npm run gate:seam
 
+            - name: Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)
+              if: matrix.gruppe == 5
+              # K04: der nackte Aufruf heilt nach Server-Ausfall (Rejoin), der Knopf liest die EINE Absicht, der Mitspieler
+              # erscheint erst an seinem Ort; der Selbsttest setzt die alte Tuer ein und sieht (b) ROT.
+              run: npm run gate:mp-sync
+
             - name: Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)
               if: matrix.gruppe == 8
               # Die Defekte der Leben-Pruefung auf dem gespielten v1.0-Pfad, je beim Namen: jede Probe ruft den

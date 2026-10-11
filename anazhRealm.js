@@ -5730,6 +5730,10 @@ class AnazhRealm {
 
     initP2PSync(roomId, opts = {}) {
         const p2p = this.state.p2p;
+        // DIE TÜR TRÄGT DIE ABSICHT (K04): wer sie ruft, will verbunden sein — vor jedem Erfolg, damit der close-Zweig
+        // und `_p2pScheduleReconnect` auch einen gescheiterten Erst-Aufbau heilen. Aus geht es nur über den Knopf
+        // (`enabled = false` + shutdown); der Transport-Zustand bleibt `connected`.
+        p2p.enabled = true;
         if (p2p.ws) this.shutdownP2PSync();
         // Φ5 (V18.189) — beim ersten P2P-Init die getragenen Welten laden
         // (idempotent — _loadPinnedManifest setzt nur die Map einmal pro
@@ -7620,9 +7624,11 @@ class AnazhRealm {
         if (entry) return entry;
         entry = {
             peerId,
-            x: 0,
-            y: 0,
-            z: 0,
+            // DER ORT IST UNBEKANNT, nie 0 (K04): bis die erste Position kommt (pos oder Lockstep-Schritt) steht der Peer
+            // nirgends — `_p2pUpdatePeer` zeigt ihn erst mit endlichem Ort (vorher stand er sichtbar im Weltursprung).
+            x: NaN,
+            y: NaN,
+            z: NaN,
             yaw: 0,
             mesh: null,
             // meshKind: "placeholder" (Cone+Sphere) | "soul" (Built-in) | "soul-custom" (bodyParts-Seele).
@@ -7658,7 +7664,10 @@ class AnazhRealm {
         };
         p2p.peers.set(peerId, entry);
         entry.mesh = this._p2pBuildPlaceholderMesh(peerId);
-        if (entry.mesh) entry.mesh.name = "p2p-spieler";
+        if (entry.mesh) {
+            entry.mesh.name = "p2p-spieler";
+            entry.mesh.visible = false; // unsichtbar geboren — _p2pUpdatePeer zeigt ihn an seinem Ort
+        }
         if (entry.mesh && this.state.scene) this.state.scene.add(entry.mesh);
         return entry;
     }
@@ -7726,6 +7735,7 @@ class AnazhRealm {
             this._disposeSoulGroup(entry.mesh);
         }
         group.name = "p2p-spieler";
+        group.visible = false; // unsichtbar geboren — _p2pUpdatePeer zeigt ihn an seinem Ort
         this.state.scene.add(group);
         entry.mesh = group;
         entry.meshKind = kind;
@@ -7793,6 +7803,7 @@ class AnazhRealm {
         const shown = entry.dwellingIn ? `${baseName} · wohnt in ${entry.dwellingIn}` : baseName;
         const label = this._p2pBuildNameLabel(shown, fingerprint);
         if (label && this.state.scene) {
+            label.visible = false; // unsichtbar geboren — _p2pUpdatePeer zeigt es über dem Kopf
             this.state.scene.add(label);
             entry.nameLabel = label;
         }
@@ -7857,6 +7868,12 @@ class AnazhRealm {
         // RECONNECT #3 — erst die interpolierte Vergangenheit samplen (nur
         // Nicht-Lockstep-Snaps, s. _p2pSampleSnapBuf), dann zeichnen.
         this._p2pSampleSnapBuf(entry, nowSec * 1000);
+        // DIE EINE SICHT DES MITSPIELERS (K04): sichtbar ist er erst mit einem Ort — Leib und Schild, gleich welcher
+        // Gestalt (Platzhalter, Seele, Schild werden unsichtbar geboren). Ohne Ort gibt es nichts zu zeichnen.
+        const ortBekannt = Number.isFinite(entry.x) && Number.isFinite(entry.y) && Number.isFinite(entry.z);
+        mesh.visible = ortBekannt;
+        if (entry.nameLabel) entry.nameLabel.visible = ortBekannt;
+        if (!ortBekannt) return;
         const isMoving = nowSec - (entry.lastMovedAt || 0) < 0.25;
         // Der Mitspieler schwimmt nach derselben Wahrheit wie der eigene Körper: die Säule über seinen Füßen (die EINE
         // Wasser-Wahrheit am Körper) trägt ihn an der Brustkorb-Linie (bis V18.531 schwamm er nur unter dem
@@ -8578,8 +8595,6 @@ class AnazhRealm {
         // UI auf gespeicherten Stand setzen
         urlInput.value = this.state.p2p.url || AnazhRealm.P2P_DEFAULT_WS_URL;
         if (roomInput) roomInput.value = this.state.p2p.roomOverride || "";
-        toggle.setAttribute("aria-pressed", this.state.p2p.enabled ? "true" : "false");
-        toggle.textContent = this.state.p2p.enabled ? "Deaktivieren" : "Aktivieren";
         this.p2pUpdateStatus();
         urlInput.addEventListener("change", () => {
             this.state.p2p.url = urlInput.value.trim() || AnazhRealm.P2P_DEFAULT_WS_URL;
@@ -8615,17 +8630,14 @@ class AnazhRealm {
                 }
             });
         }
+        // Der Knopf liest die EINE Absicht: an → aus (der einzige Ausgang), aus → die Tür (sie setzt die Absicht selbst).
+        // Seine Beschriftung zeichnet p2pUpdateStatus aus derselben Absicht.
         toggle.addEventListener("click", () => {
             if (this.state.p2p.enabled) {
                 this.state.p2p.enabled = false;
                 this.shutdownP2PSync();
-                toggle.setAttribute("aria-pressed", "false");
-                toggle.textContent = "Aktivieren";
             } else {
-                this.state.p2p.enabled = true;
                 this.initP2PSync(null);
-                toggle.setAttribute("aria-pressed", "true");
-                toggle.textContent = "Deaktivieren";
             }
             this.p2pPersist();
             this.p2pUpdateStatus();
@@ -8734,6 +8746,13 @@ class AnazhRealm {
     }
 
     p2pUpdateStatus() {
+        // Der Knopf zeigt die EINE Absicht (`enabled`), wer immer sie gesetzt hat — Knopf, Boot, Raum-Wechsel, Rejoin.
+        const toggle = document.getElementById("p2p-toggle");
+        if (toggle) {
+            const an = this.state.p2p.enabled === true;
+            toggle.setAttribute("aria-pressed", an ? "true" : "false");
+            toggle.textContent = an ? "Deaktivieren" : "Aktivieren";
+        }
         const statusEl = document.getElementById("p2p-status");
         if (statusEl) {
             const p = this.state.p2p;
@@ -94316,16 +94335,12 @@ class AnazhRealm {
         this.initWorldFusionUI();
         // Auto-Connect, wenn der Spieler die Verbindung aktiv gelassen hat oder worldMeta.role host/guest
         // ist (welt-intrinsischer Modus); ensureWorldMeta lief schon, die worldId ist Raum-Default.
-        if (this.state.worldMeta) {
-            const role = this.state.worldMeta.role;
-            if (role === "host" || role === "guest") {
-                this.state.p2p.enabled = true;
-                this.state.p2p.role = role;
-                // Guests bekamen vom Importer hostInfo.url ins localStorage
-                // gespeichert; p2pLoadPersisted oben hat das schon aufgenommen.
-            }
-        }
-        if (this.state.p2p.enabled) {
+        // Die Absicht setzt die Tür selbst (initP2PSync); Guests bekamen vom Importer hostInfo.url ins localStorage
+        // gespeichert, p2pLoadPersisted oben hat das schon aufgenommen.
+        const weltRolle = this.state.worldMeta ? this.state.worldMeta.role : null;
+        const weltVerbunden = weltRolle === "host" || weltRolle === "guest";
+        if (weltVerbunden) this.state.p2p.role = weltRolle;
+        if (this.state.p2p.enabled || weltVerbunden) {
             this.initP2PSync(null);
         }
         try {

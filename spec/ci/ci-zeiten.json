@@ -1802,6 +1802,14 @@
       "laeufe": [
         "38159690142/1"
       ]
+    },
+    "Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)": {
+      "s": 41,
+      "n": 1,
+      "lauf": "npm run gate:mp-sync",
+      "laeufe": [
+        "38163168632/1"
+      ]
     }
   },
   "vorher": {
