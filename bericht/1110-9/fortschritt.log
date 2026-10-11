@@ -1,0 +1,10 @@
+00:34:43 SERIE START Seite=da90ee92 (346743340e2d84dd) Instrument=da90ee92
+00:37:17 w1 (wiese) exit=0 [folge] lauf-voll … [folge] band …  laufVoll: 76.1 fps · Frame p50/p95/max 16.6/16.8/25.1 ms · CPU p50/p95 3.8/5.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.42 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4) 
+00:39:17 g1 (genesis) exit=0 [folge] lauf-voll … [folge] band …  laufVoll: 50.3 fps · Frame p50/p95/max 16.7/25.1/33.5 ms · CPU p50/p95 5.6/7.5 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.17 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 4, fox 3) 
+00:40:53 d1 (dorf) exit=0 [folge] band … 
+00:43:59 w2 (wiese) exit=0 [folge] lauf-voll … [folge] band …  laufVoll: 69.4 fps · Frame p50/p95/max 16.6/16.8/33.4 ms · CPU p50/p95 4.1/5.4 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.79 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4) 
+00:45:58 g2 (genesis) exit=0 [folge] lauf-voll … [folge] band …  laufVoll: 50.2 fps · Frame p50/p95/max 16.7/25.1/33.5 ms · CPU p50/p95 5.6/7.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.28 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 2, deer 4, fox 4) 
+00:47:33 d2 (dorf) exit=0 [folge] band … 
+00:50:39 w3 (wiese) exit=0 [folge] lauf-voll … [folge] band …  laufVoll: 68.9 fps · Frame p50/p95/max 16.6/16.8/25.1 ms · CPU p50/p95 4.1/5.6 · render-Wanduhr (EWMA, mit CPU-Zustand) 2.79 · Tiere 11 (Sicht 1, nah 0, Schatten k0 0 / k1 0; bear 7, fox 4) 
+00:52:38 g3 (genesis) exit=0 [folge] lauf-voll … [folge] band …  laufVoll: 50.3 fps · Frame p50/p95/max 16.7/25.1/33.7 ms · CPU p50/p95 5.7/8.1 · render-Wanduhr (EWMA, mit CPU-Zustand) 4.55 · Tiere 10 (Sicht 0, nah 0, Schatten k0 0 / k1 0; bear 3, deer 4, fox 3) 
+00:53:13 SERIE ENDE

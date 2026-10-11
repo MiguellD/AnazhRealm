@@ -1,0 +1,1482 @@
+{
+ "zeilen": [
+  {
+   "boot": "d1",
+   "ort": "dorf",
+   "urteil": "GRUEN",
+   "befehle": 105,
+   "dreiecke": 604900,
+   "je": {
+    "haupt": 72,
+    "k0": 22,
+    "k1": 11
+   },
+   "vramMB": 125.6,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     40.3
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "klassen": [
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 157946,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "wasserSatz 1"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 43,
+     "dreiecke": 123272,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "fscatter:fichte:L1 8",
+      "f:fichte:L1 7",
+      "f:tanne:L1 6"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 18,
+     "dreiecke": 87781,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "spieler 10",
+      "dsl-insel 3",
+      "feld-pass 2"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 6,
+     "dreiecke": 69696,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": [
+      "f:strauch:L1 4",
+      "f:strauch:L0 2"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 5,
+     "dreiecke": 53076,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 5"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 4,
+     "dreiecke": 45686,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L1 2",
+      "nahWiese:L2 2"
+     ]
+    },
+    {
+     "id": "bau",
+     "befehle": 15,
+     "dreiecke": 45191,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "bauSatz 11",
+      "bauWurf 2",
+      "bau-fundament 1"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 5,
+     "dreiecke": 21320,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 5"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 932,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "baum haupt: 30 befehle über der Ratsche 26 (Täter: fscatter:fichte:L1, f:fichte:L1, f:tanne:L1)",
+    "baum haupt: 105234 dreiecke über der Ratsche 99330 (Täter: fscatter:fichte:L1, f:fichte:L1, f:tanne:L1)",
+    "Summe (gebunden) 105 Befehle über der Ratsche 97"
+   ]
+  },
+  {
+   "boot": "d2",
+   "ort": "dorf",
+   "urteil": "GRUEN",
+   "befehle": 105,
+   "dreiecke": 605474,
+   "je": {
+    "haupt": 72,
+    "k0": 22,
+    "k1": 11
+   },
+   "vramMB": 124.7,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     39.7
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "klassen": [
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 158236,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "wasserSatz 1"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 43,
+     "dreiecke": 123272,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "fscatter:fichte:L1 8",
+      "f:fichte:L1 7",
+      "f:tanne:L1 6"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 18,
+     "dreiecke": 87781,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "spieler 10",
+      "dsl-insel 3",
+      "feld-pass 2"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 6,
+     "dreiecke": 69980,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": [
+      "f:strauch:L1 4",
+      "f:strauch:L0 2"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 5,
+     "dreiecke": 53076,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 5"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 4,
+     "dreiecke": 45686,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L1 2",
+      "nahWiese:L2 2"
+     ]
+    },
+    {
+     "id": "bau",
+     "befehle": 15,
+     "dreiecke": 45191,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "bauSatz 11",
+      "bauWurf 2",
+      "bau-fundament 1"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 5,
+     "dreiecke": 21320,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 5"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 932,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "baum haupt: 30 befehle über der Ratsche 26 (Täter: fscatter:fichte:L1, f:fichte:L1, f:tanne:L1)",
+    "baum haupt: 105234 dreiecke über der Ratsche 99330 (Täter: fscatter:fichte:L1, f:fichte:L1, f:tanne:L1)",
+    "Summe (gebunden) 105 Befehle über der Ratsche 97"
+   ]
+  },
+  {
+   "boot": "g1",
+   "ort": "genesis",
+   "urteil": "GRUEN",
+   "frameP95": 25.1,
+   "cpuP95": 7.5,
+   "laufBefehleMax": 229,
+   "laufDreieckeMax": 2342228,
+   "taktMHz": 1710.9,
+   "tiere": 10,
+   "befehle": 226,
+   "dreiecke": 2273805,
+   "je": {
+    "haupt": 130,
+    "k0": 77,
+    "k1": 19
+   },
+   "vramMB": 141.8,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     56.5
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "klassen": [
+    {
+     "id": "bau",
+     "befehle": 156,
+     "dreiecke": 1805627,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "f:maurentor:L0 25",
+      "f:drachentor:L0 24",
+      "f:verkalkt:L0 24"
+     ]
+    },
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 261411,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "farWater 1"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 24,
+     "dreiecke": 127409,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "dsl-insel 7",
+      "spieler 5",
+      "portal-membran 4"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 27,
+     "dreiecke": 48572,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "f:tanne:L1 6",
+      "f:birke:L1 6",
+      "f:fichte:L1 4"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 5,
+     "dreiecke": 23600,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 5"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 2,
+     "dreiecke": 5072,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 2"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 3,
+     "dreiecke": 1268,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L2 2",
+      "nahWiese:L1 1"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 846,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": []
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "boden k1: 70141 dreiecke über der Ratsche 64204 (Täter: bodenSatz, fern-ring, farWater)",
+    "einzelstuecke k0: 8 befehle über der Ratsche 3 (Täter: dsl-insel, spieler, portal-membran)",
+    "einzelstuecke k0: 47028 dreiecke über der Ratsche 9064 (Täter: dsl-insel, spieler, portal-membran)"
+   ]
+  },
+  {
+   "boot": "g2",
+   "ort": "genesis",
+   "urteil": "GRUEN",
+   "frameP95": 25.1,
+   "cpuP95": 7.6,
+   "laufBefehleMax": 229,
+   "laufDreieckeMax": 2341867,
+   "taktMHz": 1732.6,
+   "tiere": 10,
+   "befehle": 226,
+   "dreiecke": 2273711,
+   "je": {
+    "haupt": 130,
+    "k0": 77,
+    "k1": 19
+   },
+   "vramMB": 141.8,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     56.5
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "klassen": [
+    {
+     "id": "bau",
+     "befehle": 156,
+     "dreiecke": 1805627,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "f:maurentor:L0 25",
+      "f:drachentor:L0 24",
+      "f:verkalkt:L0 24"
+     ]
+    },
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 261317,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "farWater 1"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 24,
+     "dreiecke": 127409,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "dsl-insel 7",
+      "spieler 5",
+      "portal-membran 4"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 27,
+     "dreiecke": 48572,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "f:tanne:L1 6",
+      "f:birke:L1 6",
+      "f:fichte:L1 4"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 5,
+     "dreiecke": 23600,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 5"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 2,
+     "dreiecke": 5072,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 2"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 3,
+     "dreiecke": 1268,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L2 2",
+      "nahWiese:L1 1"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 846,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": []
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "boden k1: 70047 dreiecke über der Ratsche 64204 (Täter: bodenSatz, fern-ring, farWater)",
+    "einzelstuecke k0: 8 befehle über der Ratsche 3 (Täter: dsl-insel, spieler, portal-membran)",
+    "einzelstuecke k0: 47028 dreiecke über der Ratsche 9064 (Täter: dsl-insel, spieler, portal-membran)"
+   ]
+  },
+  {
+   "boot": "g3",
+   "ort": "genesis",
+   "urteil": "GRUEN",
+   "frameP95": 25.1,
+   "cpuP95": 8.1,
+   "laufBefehleMax": 229,
+   "laufDreieckeMax": 2341372,
+   "taktMHz": 1699.4,
+   "tiere": 10,
+   "befehle": 226,
+   "dreiecke": 2273555,
+   "je": {
+    "haupt": 130,
+    "k0": 77,
+    "k1": 19
+   },
+   "vramMB": 141.5,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     56.5
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "klassen": [
+    {
+     "id": "bau",
+     "befehle": 156,
+     "dreiecke": 1805627,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "f:maurentor:L0 25",
+      "f:drachentor:L0 24",
+      "f:verkalkt:L0 24"
+     ]
+    },
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 261161,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "farWater 1"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 24,
+     "dreiecke": 127409,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "dsl-insel 7",
+      "spieler 5",
+      "portal-membran 4"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 27,
+     "dreiecke": 48572,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "f:tanne:L1 6",
+      "f:birke:L1 6",
+      "f:fichte:L1 4"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 5,
+     "dreiecke": 23600,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 5"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 2,
+     "dreiecke": 5072,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 2"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 3,
+     "dreiecke": 1268,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L2 2",
+      "nahWiese:L1 1"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 846,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": []
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "boden k1: 69891 dreiecke über der Ratsche 64204 (Täter: bodenSatz, fern-ring, farWater)",
+    "einzelstuecke k0: 8 befehle über der Ratsche 3 (Täter: dsl-insel, spieler, portal-membran)",
+    "einzelstuecke k0: 47028 dreiecke über der Ratsche 9064 (Täter: dsl-insel, spieler, portal-membran)"
+   ]
+  },
+  {
+   "boot": "w1",
+   "ort": "wiese",
+   "urteil": "GRUEN",
+   "frameP95": 16.8,
+   "cpuP95": 5.1,
+   "laufBefehleMax": 85,
+   "laufDreieckeMax": 557206,
+   "taktMHz": 1711,
+   "tiere": 11,
+   "befehle": 82,
+   "dreiecke": 472252,
+   "je": {
+    "haupt": 58,
+    "k0": 19,
+    "k1": 5
+   },
+   "vramMB": 112.4,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     27.4
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "klassen": [
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 170679,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "wasserSatz 1"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 39,
+     "dreiecke": 119758,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "fscatter:fichte:L1 8",
+      "f:tanne:L1 6",
+      "f:fichte:L1 6"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 4,
+     "dreiecke": 54994,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L1 2",
+      "nahWiese:L2 2"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 12,
+     "dreiecke": 49505,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "spieler 5",
+      "dsl-insel 3",
+      "feld-pass 2"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 5,
+     "dreiecke": 28540,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 5"
+     ]
+    },
+    {
+     "id": "bau",
+     "befehle": 4,
+     "dreiecke": 19002,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "bauSatz 2",
+      "bauWurf 2"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 6,
+     "dreiecke": 18360,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": [
+      "f:strauch:L1 4",
+      "f:strauch:L0 2"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 3,
+     "dreiecke": 10240,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 3"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 1174,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "einzelstuecke k0: 5 befehle über der Ratsche 0 (Täter: spieler, dsl-insel, feld-pass)",
+    "einzelstuecke k0: 37964 dreiecke über der Ratsche 0 (Täter: spieler, dsl-insel, feld-pass)"
+   ]
+  },
+  {
+   "boot": "w2",
+   "ort": "wiese",
+   "urteil": "GRUEN",
+   "frameP95": 16.8,
+   "cpuP95": 5.4,
+   "laufBefehleMax": 86,
+   "laufDreieckeMax": 562668,
+   "taktMHz": 1719.8,
+   "tiere": 11,
+   "befehle": 83,
+   "dreiecke": 468080,
+   "je": {
+    "haupt": 59,
+    "k0": 19,
+    "k1": 5
+   },
+   "vramMB": 112.4,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     27.4
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "klassen": [
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 166195,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "wasserSatz 1"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 39,
+     "dreiecke": 119758,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "fscatter:fichte:L1 8",
+      "f:tanne:L1 6",
+      "f:fichte:L1 6"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 4,
+     "dreiecke": 54994,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L1 2",
+      "nahWiese:L2 2"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 13,
+     "dreiecke": 49817,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "spieler 5",
+      "dsl-insel 3",
+      "feld-pass 2"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 5,
+     "dreiecke": 28540,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 5"
+     ]
+    },
+    {
+     "id": "bau",
+     "befehle": 4,
+     "dreiecke": 19002,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "bauSatz 2",
+      "bauWurf 2"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 6,
+     "dreiecke": 18360,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": [
+      "f:strauch:L1 4",
+      "f:strauch:L0 2"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 3,
+     "dreiecke": 10240,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 3"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 1174,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "einzelstuecke k0: 5 befehle über der Ratsche 0 (Täter: spieler, dsl-insel, feld-pass)",
+    "einzelstuecke k0: 37964 dreiecke über der Ratsche 0 (Täter: spieler, dsl-insel, feld-pass)"
+   ]
+  },
+  {
+   "boot": "w3",
+   "ort": "wiese",
+   "urteil": "GRUEN",
+   "frameP95": 16.8,
+   "cpuP95": 5.6,
+   "laufBefehleMax": 86,
+   "laufDreieckeMax": 562524,
+   "taktMHz": 1730.5,
+   "tiere": 11,
+   "befehle": 83,
+   "dreiecke": 471483,
+   "je": {
+    "haupt": 59,
+    "k0": 19,
+    "k1": 5
+   },
+   "vramMB": 112.5,
+   "vramErzeuger": [
+    [
+     "buf:szene",
+     27.4
+    ],
+    [
+     "tex:TRAANode.history",
+     19.8
+    ],
+    [
+     "tex:TRAANode.resolve",
+     15.8
+    ],
+    [
+     "tex:kaskade0",
+     8
+    ],
+    [
+     "tex:kaskade1",
+     8
+    ],
+    [
+     "tex:output",
+     7.9
+    ],
+    [
+     "tex:depth",
+     7.9
+    ],
+    [
+     "tex:szene",
+     4
+    ]
+   ],
+   "klassen": [
+    {
+     "id": "boden",
+     "befehle": 8,
+     "dreiecke": 166726,
+     "sollB": 12,
+     "sollD": 200000,
+     "taeter": [
+      "bodenSatz 3",
+      "fern-ring 3",
+      "wasserSatz 1"
+     ]
+    },
+    {
+     "id": "baum",
+     "befehle": 39,
+     "dreiecke": 122630,
+     "sollB": 40,
+     "sollD": 150000,
+     "taeter": [
+      "fscatter:fichte:L1 8",
+      "f:tanne:L1 6",
+      "f:fichte:L1 6"
+     ]
+    },
+    {
+     "id": "nahWiese",
+     "befehle": 4,
+     "dreiecke": 54994,
+     "sollB": 4,
+     "sollD": 80000,
+     "taeter": [
+      "nahWiese:L1 2",
+      "nahWiese:L2 2"
+     ]
+    },
+    {
+     "id": "einzelstuecke",
+     "befehle": 13,
+     "dreiecke": 49817,
+     "sollB": 25,
+     "sollD": 15000,
+     "taeter": [
+      "spieler 5",
+      "dsl-insel 3",
+      "feld-pass 2"
+     ]
+    },
+    {
+     "id": "streu",
+     "befehle": 5,
+     "dreiecke": 28540,
+     "sollB": 9,
+     "sollD": 40000,
+     "taeter": [
+      "streuSatz 5"
+     ]
+    },
+    {
+     "id": "bau",
+     "befehle": 4,
+     "dreiecke": 19002,
+     "sollB": 40,
+     "sollD": 60000,
+     "taeter": [
+      "bauSatz 2",
+      "bauWurf 2"
+     ]
+    },
+    {
+     "id": "busch",
+     "befehle": 6,
+     "dreiecke": 18360,
+     "sollB": 8,
+     "sollD": 40000,
+     "taeter": [
+      "f:strauch:L1 4",
+      "f:strauch:L0 2"
+     ]
+    },
+    {
+     "id": "formationen",
+     "befehle": 3,
+     "dreiecke": 10240,
+     "sollB": 20,
+     "sollD": 30000,
+     "taeter": [
+      "formationenSatz 3"
+     ]
+    },
+    {
+     "id": "karten",
+     "befehle": 1,
+     "dreiecke": 1174,
+     "sollB": 1,
+     "sollD": 1000,
+     "taeter": [
+      "fimp:atlas:L2 1"
+     ]
+    },
+    {
+     "id": "tier",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 30,
+     "sollD": 60000,
+     "taeter": []
+    },
+    {
+     "id": "leerHuellen",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 0,
+     "sollD": 0,
+     "taeter": []
+    },
+    {
+     "id": "reserve",
+     "befehle": 0,
+     "dreiecke": 0,
+     "sollB": 19,
+     "sollD": 4000,
+     "taeter": []
+    }
+   ],
+   "rot": [
+    "einzelstuecke k0: 5 befehle über der Ratsche 0 (Täter: spieler, dsl-insel, feld-pass)",
+    "einzelstuecke k0: 37964 dreiecke über der Ratsche 0 (Täter: spieler, dsl-insel, feld-pass)"
+   ]
+  }
+ ],
+ "mediane": {
+  "wiese": {
+   "frameP95": 16.8,
+   "cpuP95": 5.4,
+   "befehle": 83,
+   "dreiecke": 471483,
+   "vramMB": 112.4,
+   "taktMHz": 1719.8
+  },
+  "genesis": {
+   "frameP95": 25.1,
+   "cpuP95": 7.6,
+   "befehle": 226,
+   "dreiecke": 2273711,
+   "vramMB": 141.8,
+   "taktMHz": 1710.9
+  },
+  "dorf": {
+   "frameP95": null,
+   "cpuP95": null,
+   "befehle": 105,
+   "dreiecke": 605187,
+   "vramMB": 125.15,
+   "taktMHz": null
+  }
+ },
+ "soll": {
+  "frameP95": 33,
+  "befehle": 208,
+  "dreiecke": 680000,
+  "vramMB": 118,
+  "cpuP95": 5.8
+ }
+}
