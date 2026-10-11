@@ -199,6 +199,13 @@ function shellPfad(name, seed, stufe) {
         for (const Lf of fluegelL) {
             const lg = {};
             FC.bakeLOD(Lf, p.col, lg, 0, true);
+            // das Blatt sitzt am Scharnier (K08): das haus-lokale Gitter rückt um das Scharnier zurück, die Hülle steht daran
+            for (const rk in lg)
+                if (lg[rk] && lg[rk].pos)
+                    for (let vi = 0; vi < lg[rk].pos.length; vi += 3) {
+                        lg[rk].pos[vi] -= Lf.position.x;
+                        lg[rk].pos[vi + 2] -= Lf.position.z;
+                    }
             const wg = FC.geomsZuGruppe(lg, p.col || null);
             if (!wg.children.length) continue;
             wg.position.set(Lf.position.x, 0, Lf.position.z);

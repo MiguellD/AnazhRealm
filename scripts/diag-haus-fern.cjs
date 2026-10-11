@@ -21,6 +21,12 @@
 //   I  INNEN: der Fernkörper liegt im Haus — jede Wand ≥ 1,5 cm hinter der Grundriss-Ebene (Haupt, Flügel, Anbau,
 //      Kamin), das Hauptdach ≥ 3 cm unter der Dachhaut (`roofY` des Gesetzbuchs − 0,13 = die Sparren-Ebene); sonst
 //      Akne und Peter-Panning (Risiko 2)
+//   T  TÜRBLATT (K08, Auge 05 „freistehende Türblätter vor zwei Fachwerk-Fassaden"): jedes Türblatt sitzt an seinem
+//      Scharnier in der Fassade — L0: der Flügel, wie ihn der Extraktor liest (`__extractAssetMesh`: matrixWorld, das
+//      Scharnier = die Gruppen-Position), offen am Scharnier und vom Wirt zugedreht (`_tickTorFluegel`: um −offen) in
+//      der Scharnier-Ebene; L1: das Blatt, das der Bau an Ort und Stelle bakt; die L2 trägt keins (DESTNUR). Abstand
+//      ≤ 0,05 m je Tür. Vorher (Kern 7e182557): 192 von 192 L0-Blättern 2,19–5,33 m vor ihrem Scharnier (Median 4,18) —
+//      `buildStufe` bakt das Blatt haus-lokal und setzte die Hülle noch einmal aufs Scharnier.
 //
 // Die Linse misst die deklarierte Stufe 3 (`buildInstance(…, 3)`, dieselbe Funktion wie das Vogel des Labors
 // `fragFuer(B, 3)`: gate:fachwerk-contract hält die Split-Parität); fehlt sie, wirft keine Stufe (rot). Vorher (Kern
@@ -54,7 +60,102 @@ const RASTER = 1 / 4096;
 //   Umriss      min 0,843 (japanisch, entlang x) · Median x 0,903 / z 0,945 → Soll je Achse ≥ 0,84, Median ≥ 0,90. Grund: die
 //               L1 trägt die Windbretter am Ortgang (+0,14 m über der Dachhaut), Fensterläden, Türblätter und Kamin-Hut — die L2
 //               ist der Körper mit Dachhaut; der Keller (unter y = 0) sieht kein Auge und zählt nicht.
-const SOLL = { wurfIou: 0.87, wurfMedian: 0.92, wurfAus: 0.85, sprung: 0.84, sprungMedian: 0.9, aufblaehung: 0.05, wand: -0.015, dach: -0.03 };
+const SOLL = {
+    wurfIou: 0.87,
+    wurfMedian: 0.92,
+    wurfAus: 0.85,
+    sprung: 0.84,
+    sprungMedian: 0.9,
+    aufblaehung: 0.05,
+    wand: -0.015,
+    dach: -0.03,
+    tuer: 0.05,
+};
+
+// ── T: DER TÜRBLATT-FANG — die Flügel, die der Bau anlegt (`tueren()`: userData.door + side), bevor die L1 sie an Ort und
+//    Stelle in ihre Rollen bakt; nur so sind sie nach dem Bau noch einzeln zu messen (die L0 trennt sie selbst ab). ──
+let TUER_FANG = null;
+Object.defineProperty(T.Object3D.prototype, "userData", {
+    configurable: true,
+    get() {
+        return this.__ud;
+    },
+    set(v) {
+        this.__ud = v;
+        if (TUER_FANG && v && v.door && typeof v.side === "number") TUER_FANG.push(this);
+    },
+});
+// die Punkte eines Flügels in der Lage, die der Bake bzw. der Extraktor liest (matrixWorld)
+function blattPunkte(o) {
+    const P = [];
+    const v = new T.Vector3();
+    o.updateMatrixWorld(true);
+    o.traverse((m) => {
+        const pa = m.isMesh && m.geometry && m.geometry.attributes.position;
+        if (pa)
+            for (let i = 0; i < pa.count; i++)
+                P.push(v.fromBufferAttribute(pa, i).applyMatrix4(m.matrixWorld).toArray());
+    });
+    return P;
+}
+// der Abstand des Blatts (seine xz-Box) zur Scharnier-Achse (hx, hz)
+function achsAbstand(P, hx, hz) {
+    if (!P.length) return Infinity;
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity; // prettier-ignore
+    for (const p of P) {
+        x0 = Math.min(x0, p[0]);
+        x1 = Math.max(x1, p[0]);
+        z0 = Math.min(z0, p[2]);
+        z1 = Math.max(z1, p[2]);
+    }
+    return Math.hypot(Math.max(x0 - hx, 0, hx - x1), Math.max(z0 - hz, 0, hz - z1));
+}
+// L0: je Flügel der Ausgabe (Kind mit userData.side) — offen am Scharnier, zu (der Wirt dreht um −offen) in der Ebene
+function tuerL0(g) {
+    const out = [];
+    for (const w of g.children) {
+        if (!(w.userData && typeof w.userData.side === "number")) continue;
+        const hx = w.position.x,
+            hz = w.position.z,
+            P = blattPunkte(w);
+        const a = -(w.userData.offen || 0),
+            c = Math.cos(a),
+            s = Math.sin(a);
+        let zuEbene = Infinity;
+        if (P.length) {
+            let z0 = Infinity, z1 = -Infinity; // prettier-ignore
+            for (const p of P) {
+                // R_y(a) um das Scharnier: z' = −sin(a)·dx + cos(a)·dz
+                const z = hz - s * (p[0] - hx) + c * (p[2] - hz);
+                z0 = Math.min(z0, z);
+                z1 = Math.max(z1, z);
+            }
+            zuEbene = Math.max(z0 - hz, 0, hz - z1);
+        }
+        out.push(Math.max(achsAbstand(P, hx, hz), zuEbene));
+    }
+    return out;
+}
+// L1 (und L2): je gefangenem Flügel, der IN der Stufe steht (seine Punkte liegen in ihrem Gitter — Zwischenbauten wie der
+// Ton-Bau der L2 zählen nicht), einmal je Scharnier; sein Scharnier ist seine Weltlage im Bake. Ein verschobenes Blatt
+// fehlt hier und fällt über die Zahl der Blätter (L0 ≠ L1).
+const mmKey = (x, y, z) => `${Math.round(x * 1000)},${Math.round(y * 1000)},${Math.round(z * 1000)}`;
+function tuerGefangen(g) {
+    const gitter = new Set();
+    for (const p of blattPunkte(g)) gitter.add(mmKey(p[0], p[1], p[2]));
+    const out = [];
+    const je = new Set();
+    const h = new T.Vector3();
+    for (const o of TUER_FANG) {
+        const P = blattPunkte(o);
+        if (!P.length || P.filter((p) => gitter.has(mmKey(p[0], p[1], p[2]))).length < 0.9 * P.length) continue;
+        h.setFromMatrixPosition(o.matrixWorld);
+        if (je.has(mmKey(h.x, 0, h.z))) continue;
+        je.add(mmKey(h.x, 0, h.z));
+        out.push(achsAbstand(P, h.x, h.z));
+    }
+    return out;
+}
 // drei Sonnen: Höhe und Azimut (aus +z über +x) — tief, mittel, hoch, aus drei Richtungen
 const SONNEN = [
     [25, 35],
@@ -255,13 +356,21 @@ function massen(p) {
             rechtecke.push({ x0: m.x0, x1: m.x1, z0: m.z0, z1: m.z1, art: m.art });
         // der Portikus steht auf seiner Basis (Krepidoma, Stylobat, Vorplatz) und trägt sein Gebälk vor der Wand
         if (m.art === "portikus") {
-            if (m.basis) rechtecke.push({ x0: m.basis.x0, x1: m.basis.x1, z0: m.basis.z0, z1: m.basis.z1, art: "portikus" });
+            if (m.basis)
+                rechtecke.push({ x0: m.basis.x0, x1: m.basis.x1, z0: m.basis.z0, z1: m.basis.z1, art: "portikus" });
             if (m.gebaelk) rechtecke.push({ x0: m.x0, x1: m.x1, z0: m.gebaelk.z0, z1: m.gebaelk.z1, art: "portikus" });
         }
     }
     // die Vorkragung: das Obergeschoss steht um ov vor (das Haupt-Rechteck darüber gewachsen)
     const vk = (H.masse || []).find((m) => m.art === "vorkragung");
-    if (vk) rechtecke.push({ x0: -d.W / 2 - vk.ov, x1: d.W / 2 + vk.ov, z0: -d.D / 2 - vk.ov, z1: d.D / 2 + vk.ov, art: "vorkragung" });
+    if (vk)
+        rechtecke.push({
+            x0: -d.W / 2 - vk.ov,
+            x1: d.W / 2 + vk.ov,
+            z0: -d.D / 2 - vk.ov,
+            z1: d.D / 2 + vk.ov,
+            art: "vorkragung",
+        });
     if (H.chimney) {
         const c = H.chimney;
         rechtecke.push({ x0: c.min[0], x1: c.max[0], z0: c.min[2], z1: c.max[2], art: "kamin", y1: c.max[1] });
@@ -288,7 +397,9 @@ function innen(tl, M) {
     // die Treppe, das Vordach und der Portikus liegen darunter und nehmen keine Dach-Ecke aus
     const DURCH = new Set(["kamin", "gaube", "turm", "kuppel", "rund", "stufe", "fluegel", "hofarm", "anbau"]);
     const inMasse = (x, z) =>
-        rechtecke.some((r) => DURCH.has(r.art) && x >= r.x0 - 0.05 && x <= r.x1 + 0.05 && z >= r.z0 - 0.05 && z <= r.z1 + 0.05);
+        rechtecke.some(
+            (r) => DURCH.has(r.art) && x >= r.x0 - 0.05 && x <= r.x1 + 0.05 && z >= r.z0 - 0.05 && z <= r.z1 + 0.05
+        );
     const draussen = (x, z) => {
         let best = Infinity;
         for (const r of rechtecke) {
@@ -313,7 +424,12 @@ function innen(tl, M) {
             for (let k = 0; k < 9; k += 3) if (imBand) wand = Math.max(wand, draussen(w[i + k], w[i + k + 2]));
             // die Dachfläche an ihrem Schwerpunkt und den Kanten-Mitten (die Ecken liegen auf den Rändern)
             if (sattel && ny > 0.15)
-                for (const [a, b] of [[1 / 3, 1 / 3], [0.5, 0], [0, 0.5], [0.5, 0.5]]) {
+                for (const [a, b] of [
+                    [1 / 3, 1 / 3],
+                    [0.5, 0],
+                    [0, 0.5],
+                    [0.5, 0.5],
+                ]) {
                     const q = (o) => w[i + o] + a * (w[i + 3 + o] - w[i + o]) + b * (w[i + 6 + o] - w[i + o]);
                     const x = q(0),
                         y = q(1),
@@ -345,10 +461,17 @@ const median = (a) => {
 const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 
 // ── Ein Haus-Fall → seine Zahlen ──
-function hausFall(id, seed, ersatz3) {
+function hausFall(id, seed, ersatz3, tuerDefekt) {
     const B = LOD.budget.haus;
     const g = {};
-    for (const s of [0, 1, 2]) g[s] = FC.buildInstance(id, seed, s);
+    const tuer = {};
+    for (const s of [0, 1, 2]) {
+        TUER_FANG = [];
+        g[s] = FC.buildInstance(id, seed, s);
+        if (s === 0 && tuerDefekt) tuerDefekt(g[0]);
+        tuer[s] = s === 0 ? tuerL0(g[0]) : tuerGefangen(g[s]);
+        TUER_FANG = null;
+    }
     g[3] = ersatz3 ? ersatz3(id, seed) : stufe3(id, seed, "haus") || new T.Group();
     const werf = {},
         alle = {};
@@ -383,6 +506,7 @@ function hausFall(id, seed, ersatz3) {
     z.aufbl = aufblaehung(alle[3], alle[1], M.d.baseY + 0.3, M.d.eaveY - 0.6);
     z.innen = innen(alle[3], M);
     z.tris3 = anzahl(alle[3]);
+    z.tuer = tuer;
     for (const s of [0, 1, 2, 3]) entsorge(g[s]);
     return z;
 }
@@ -396,6 +520,13 @@ function hausUrteil(z) {
     if (z.aufbl == null || z.aufbl > SOLL.aufblaehung) f.push(`Aufblähung ${f3(z.aufbl)} m > ${SOLL.aufblaehung}`);
     if (!(z.innen.wand <= SOLL.wand + RASTER)) f.push(`Wand ${f3(z.innen.wand)} m (Soll ≤ ${SOLL.wand})`);
     if (!(z.innen.dach <= SOLL.dach + RASTER)) f.push(`Dach ${f3(z.innen.dach)} m über der Haut − 3 cm`);
+    for (const s of [0, 1, 2]) {
+        const weg = z.tuer[s].filter((d) => !(d <= SOLL.tuer));
+        if (weg.length)
+            f.push(`Türblatt L${s} ${weg.length}/${z.tuer[s].length} bis ${f3(Math.max(...weg))} m vor dem Scharnier`);
+    }
+    // dieselben Türen nah und mittel (die L0 trennt ihre Flügel ab, die L1 bakt sie an Ort und Stelle)
+    if (z.tuer[0].length !== z.tuer[1].length) f.push(`Türblätter L0 ${z.tuer[0].length} ≠ L1 ${z.tuer[1].length}`);
     return f;
 }
 
@@ -468,6 +599,14 @@ function selbsttest() {
     const z2 = hausFall("holzhuette", 1);
     LOD.budget.haus[2].schatten = alt;
     if (!hausUrteil(z2).some((x) => /L2 wirft nicht/.test(x))) fehler.push("W: eine Stufe ohne Werfer ist nicht rot");
+    // T: das Blatt noch einmal aufs Scharnier gesetzt (der Befund vor K08: haus-lokal gebakt + Hülle am Scharnier)
+    const doppelt = (g0) => {
+        for (const w of g0.children)
+            if (w.userData && typeof w.userData.side === "number")
+                w.traverse((m) => m.isMesh && m.geometry.translate(w.position.x, 0, w.position.z));
+    };
+    if (!hausUrteil(hausFall("alemannisch", 1, null, doppelt)).some((x) => /^Türblatt L0/.test(x)))
+        fehler.push("T: ein Türblatt vor seinem Scharnier ist nicht rot");
     return fehler;
 }
 
@@ -475,7 +614,13 @@ function selbsttest() {
     const t0 = Date.now();
     console.log("=== DIE LINSE DES HAUS-FERNKÖRPERS (gate:haus-fern) ===");
     if (!hatStufe3("haus") || !hatStufe3("ausstattung")) {
-        console.log("❌ ROT — die Stufe 3 (nurWurf) ist nicht deklariert (kindStages haus " + STUFEN_HAUS + " · ausstattung " + STUFEN_AUS + ")");
+        console.log(
+            "❌ ROT — die Stufe 3 (nurWurf) ist nicht deklariert (kindStages haus " +
+                STUFEN_HAUS +
+                " · ausstattung " +
+                STUFEN_AUS +
+                ")"
+        );
         process.exit(1);
     }
     const rot = [];
@@ -506,7 +651,8 @@ function selbsttest() {
     if (zeilen.length && !(mWurf >= SOLL.wurfMedian)) rot.push(`Wurf-IoU Median ${f3(mWurf)} < ${SOLL.wurfMedian}`);
     for (const a of ["x", "z"]) {
         const mS = median(zeilen.map((z) => z.sprung[a]));
-        if (zeilen.length && !(mS >= SOLL.sprungMedian)) rot.push(`Umriss L1↔L2 entlang ${a} Median ${f3(mS)} < ${SOLL.sprungMedian}`);
+        if (zeilen.length && !(mS >= SOLL.sprungMedian))
+            rot.push(`Umriss L1↔L2 entlang ${a} Median ${f3(mS)} < ${SOLL.sprungMedian}`);
     }
     const kosten3 = zeilen.map((z) => (z.kosten[2] ? z.kosten[2].tris : null));
     console.log(
@@ -516,18 +662,38 @@ function selbsttest() {
             `Wand max ${f3(Math.max(...zeilen.map((z) => z.innen.wand)))} · Dach max ${f3(Math.max(...zeilen.map((z) => z.innen.dach)))} · ` +
             `Wurf-Kosten L2 Median ${median(kosten3) ?? "—"}`
     );
+    const tuerZeile = [0, 1, 2]
+        .map((s) => {
+            const d = zeilen.flatMap((z) => z.tuer[s]);
+            return d.length
+                ? `L${s} ${d.length} Blätter, Abstand Median ${f3(median(d))} · max ${f3(Math.max(...d))} m`
+                : `L${s} keine Blätter`;
+        })
+        .join(" · ");
+    console.log(`  Türblatt am Scharnier (T, Soll ≤ ${SOLL.tuer} m): ${tuerZeile}`);
     console.log(
         `  Ausstattung ${aus.length}: ` +
-            aus.map((z) => `${z.id}/s${z.seed} Wurf ${Object.values(z.wurf).map(f3).join("/")} (${Object.values(z.kosten).map((k) => k.tris).join("/")} Dreiecke)`).join(" · ")
+            aus
+                .map(
+                    (z) =>
+                        `${z.id}/s${z.seed} Wurf ${Object.values(z.wurf).map(f3).join("/")} (${Object.values(z.kosten)
+                            .map((k) => k.tris)
+                            .join("/")} Dreiecke)`
+                )
+                .join(" · ")
     );
     const st = selbsttest();
     for (const f of st) rot.push("SELBSTTEST " + f);
-    console.log(`  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+    console.log(
+        `  Selbsttest: ${st.length ? "ROT" : "der aufgeblähte, quer gedeckte Körper ist rot (A · F · I), die Stufe ohne Werfer (W), das Blatt vor dem Scharnier (T)"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`
+    );
     if (rot.length) {
         console.log(`\n❌ ROT — ${rot.length} Befunde:`);
         for (const r of rot.slice(0, 80)) console.log("   " + r);
         if (rot.length > 80) console.log(`   … und ${rot.length - 80} weitere`);
         process.exit(1);
     }
-    console.log("\n✅ GRÜN — jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen.");
+    console.log(
+        "\n✅ GRÜN — jede Stufe wirft den grundriss-treuen Fernkörper, kein Sprung, kein Querfirst, der Körper liegt innen, jedes Türblatt sitzt an seinem Scharnier."
+    );
 })();

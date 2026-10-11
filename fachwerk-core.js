@@ -3389,9 +3389,23 @@
                 var Lf = fluegelL[fi];
                 var lg = {};
                 bakeLOD(Lf, p.col, lg, 0, true); // dieselbe Bake-Wahrheit (AO/Illusion/Farben) wie der Rumpf
+                // DAS BLATT SITZT AM SCHARNIER (K08, Auge 05): der Bake liegt haus-lokal, die Hülle steht AM Scharnier — das
+                // Gitter rückt um das Scharnier zurück (Welt-UV und Illusion bleiben haus-lokal gerechnet), sonst stand das
+                // Blatt um seine Scharnier-Lage noch einmal vor der Fassade (192 von 192 L0-Blättern 2,19–5,33 m,
+                // gate:haus-fern T).
+                var hxL = Lf.position.x,
+                    hzL = Lf.position.z;
+                for (var rk in lg) {
+                    var lp = lg[rk] && lg[rk].pos;
+                    if (lp)
+                        for (var vi = 0; vi < lp.length; vi += 3) {
+                            lp[vi] -= hxL;
+                            lp[vi + 2] -= hzL;
+                        }
+                }
                 var wg = geomsZuGruppe(lg, p.col || null);
                 if (!wg.children.length) continue;
-                wg.position.set(Lf.position.x, 0, Lf.position.z); // HINGE-Achse (Extraktor liest anc.position)
+                wg.position.set(hxL, 0, hzL); // HINGE-Achse (Extraktor liest anc.position)
                 wg.userData = { side: Lf.userData.side, offen: Lf.userData.offen || 0 };
                 if (Lf.parent) Lf.parent.remove(Lf);
                 tuerWraps.push(wg);
