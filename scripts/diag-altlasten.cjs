@@ -1501,10 +1501,9 @@ const ENTSORGUNG_BESITZER = {
     _canopyDisposeChunkByKey: { arten: ["geometry", "material"], grund: "die Kronen-Kachel (je Kachel frisch)" },
     _leibZeichenFrei: {
         arten: ["material"],
-        grund: "Aufgaben-Aura und Trage-Sprite des Leibs (je Kreatur frisch) — im Fall und im Abschied",
+        // K13: auch am Ende von Auftrag und Last — die EINE Räum-Methode
+        grund: "Aufgaben-Aura und Trage-Sprite des Leibs (je Kreatur frisch) — Fall, Abschied, Ende von Auftrag und Last",
     },
-    _refreshCreatureTaskAura: { arten: ["material"], grund: "die Aufgaben-Aura (je Aufgabe frisch)" },
-    _refreshCreatureCarryingVisual: { arten: ["material"], grund: "das Trage-Sprite (je Last frisch)" },
     _spawnVoxelTestChunk: { arten: ["geometry", "material"], grund: "der Test-Chunk" },
     _disposeVoxelChunkWaterIso: { arten: ["geometry"], grund: "das Wasser-Iso-Mesh des Chunks" },
     _rebuildLodStitchBand: { arten: ["geometry"], grund: "das LOD-Naht-Band des Chunks" },
