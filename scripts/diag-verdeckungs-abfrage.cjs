@@ -378,22 +378,13 @@ async function verdeckungPhase(opts) {
                 const ws = r._atlasWaterLevelAt(x, zz, hh(x, zz));
                 return Number.isFinite(ws) && ws > hh(x, zz) - 0.3;
             };
-            // der Bach der Mess-Wiese: der nächste Fluss-Punkt zum Messort
+            // der Bach der Mess-Wiese: der nächste Fluss-Punkt mit gezeichnetem Wasser zum Messort (`__wasserOrt("fluss")`,
+            // scripts/lib/orte-des-gesetzes.cjs — seit K16 tragen die Quell-Läufe an der Wiese kein Wasser)
             const [mx, mz] = opts.messort;
-            r._ensureHydroTilesAround(mx, mz, 200);
-            const h = r._hydroFor(mx, mz);
-            let P = null,
-                fl = null,
-                pi = -1;
-            for (const f of (h && h.rivers) || [])
-                f.points.forEach((q, i) => {
-                    const d = Math.hypot(q.x - mx, q.z - mz);
-                    if (!P || d < P.d) {
-                        P = { x: q.x, z: q.z, d };
-                        fl = f;
-                        pi = i;
-                    }
-                });
+            const fo = window.__wasserOrt("fluss", { nahe: [mx, mz] });
+            const P = fo ? { x: fo.x, z: fo.z, d: Math.hypot(fo.x - mx, fo.z - mz) } : null;
+            const fl = fo ? fo.fluss : null;
+            const pi = fo ? fo.punkt : -1;
             if (!P || P.d > 300) throw new Error(`kein Bach an der Mess-Wiese (${P ? Math.round(P.d) + " m" : "keine Hydrosphäre"})`);
             const a = fl.points[Math.max(0, pi - 1)],
                 b = fl.points[Math.min(fl.points.length - 1, pi + 1)];
@@ -595,6 +586,7 @@ async function verdeckungPhase(opts) {
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
     await page.evaluateOnNewDocument(sammlerInstall);
+    await page.evaluateOnNewDocument(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
     const seitenFehler = [];
     page.on("pageerror", (e) => seitenFehler.push((e.stack || e.message || String(e)).split("\n")[0]));
     const T0 = Date.now();

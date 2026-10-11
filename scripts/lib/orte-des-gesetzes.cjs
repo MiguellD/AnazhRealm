@@ -5,7 +5,8 @@
 // Proben, die in der Heimat suchten, wurden blind (Zweig-CI 38168337384 an grund-studio: Luft-Sicht „unter Wasser −1 m“,
 // Klang „S seeufer“ und „O fallArm“, der Scatter-Selbsttest ohne Wasser, das Werk im Wasser). EIN Ort je Art, gecacht je Seite.
 //
-//   window.__wasserOrt(art)    "see" · "ufer" · "meer" · "hoehle" · "fall" → { x, z, hydro, lake?, wasser?, fall? } | null
+//   window.__wasserOrt(art, { nahe })  "see" · "ufer" · "meer" · "hoehle" · "fall" · "fluss" (der nächste nasse Fluss-Punkt
+//                              zum Anker `nahe`) → { x, z, hydro, lake?, wasser?, fall?, fluss?, punkt? } | null
 //   window.__wasserChunk(art)  der Chunk am Ort, synchron über den EINEN Build-Eingang gebaut → Schlüssel | null
 //
 // Eingebaut als Seiten-Skript (`page.evaluateOnNewDocument(ORTE.ORTE_INSTALL)` oder `page.evaluate(ORTE.ORTE_INSTALL)`) von
@@ -19,11 +20,13 @@ function orteAn() {
     // gerenderten See (Spiegel > Meer + 2 m, ≥ 16 Zellen) trägt; „meer“: der nächste Punkt unter dem Meeresspiegel auf
     // Ringen um den Ursprung, dort die nächste Ozean-Zelle. Die Kachel wird über den EINEN Kachel-Eingang registriert
     // (`_ensureHydroTilesAround`), damit jeder Hydro-Leser (`_hydroFor`) sie findet. Rückgabe { x, z, hydro, lake }.
-    window.__wasserOrt = (art) => {
+    window.__wasserOrt = (art, opt) => {
         const r = window.anazhRealm;
         const G = window.__gelaendeCore;
+        const nahe = (opt && opt.nahe) || null;
+        const schluessel = nahe ? art + "@" + nahe.join(",") : art;
         window.__wasserOrtCache = window.__wasserOrtCache || {};
-        const c = window.__wasserOrtCache[art];
+        const c = window.__wasserOrtCache[schluessel];
         if (c) {
             r._ensureHydroTilesAround(c.x, c.z, 0);
             return { ...c, hydro: r._hydroFor(c.x, c.z) };
@@ -141,6 +144,21 @@ function orteAn() {
                     }
                 }
             }
+        } else if (art === "fluss") {
+            // der nächste Fluss-Punkt mit gezeichnetem Wasser (`_nassAt`) zum Anker `nahe` (Standard: der Ursprung) — die
+            // Quell-Läufe des Flussnetzes tragen auf ihren ersten Metern kein Wasser, ein Fluss-Punkt allein ist kein Bach.
+            const [ax, az] = nahe || [0, 0];
+            r._ensureHydroTilesAround(ax, az, 200);
+            const h = r._hydroFor(ax, az);
+            let best = null;
+            for (const f of (h && h.rivers) || [])
+                f.points.forEach((q, i) => {
+                    const d = Math.hypot(q.x - ax, q.z - az);
+                    if (best && d >= best.d) return;
+                    if (!r._nassAt(q.x, q.z)) return;
+                    best = { d, x: q.x, z: q.z, fluss: f, punkt: i };
+                });
+            if (best) ort = { x: best.x, z: best.z, fluss: best.fluss, punkt: best.punkt, lake: null };
         } else if (art === "fall") {
             // der nächste Wasserfall des Gesetzes: die Hydro-Kacheln (dim × cell, die Heimat-Kachel um den Ursprung) Ring
             // um Ring, im ersten Ring mit Fällen der dem Ursprung nächste — der Fuß (x, z) und der Fall (topY, bottomY).
@@ -161,7 +179,7 @@ function orteAn() {
             if (best) ort = { x: best.f.x, z: best.f.z, fall: best.f, lake: null };
         }
         if (!ort) return null;
-        window.__wasserOrtCache[art] = ort;
+        window.__wasserOrtCache[schluessel] = ort;
         return { ...ort, hydro: r._hydroFor(ort.x, ort.z) };
     };
     // Der Wasser-Chunk am Wasser-Ort: synchron gebaut über den EINEN Build-Eingang und in die Chunk-Menge gelegt (der

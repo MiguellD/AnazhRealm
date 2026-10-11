@@ -803,7 +803,10 @@ async function probe(arg) {
             if (s === null || !Number.isFinite(s)) return !(r._atlasWaterLevelAt(x, z, -1e9) > -Infinity);
             return !(s < r._koerperWasser(x, z, s) + mg) && !(s < r._atlasWaterLevelAt(x, z, s) + mg);
         };
-        const w0 = r._findNearestWaterPoint(P.x, P.z, 200);
+        // das Wasser ist das des Gesetzes (`__wasserOrt("ufer")`, scripts/lib/orte-des-gesetzes.cjs): die Heimat trägt seit
+        // K16 im 200-m-Umkreis kein Wasser, die Stichprobe hatte 0 nasse Punkte (die Vorbedingung fiel)
+        const wo = window.__wasserOrt("ufer");
+        const w0 = wo ? { x: wo.wasser.x, z: wo.wasser.z } : null;
         const zentren = [ort, P].concat(w0 ? [w0] : []);
         let seed = 12345;
         const rnd = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
@@ -1296,6 +1299,7 @@ async function probe(arg) {
     const browser = await puppeteer.launch({ headless: true, protocolTimeout: 600000, args: softwareWebGpuArgs() });
     const page = await browser.newPage();
     await page.setViewport({ width: 1280, height: 720 });
+    await page.evaluateOnNewDocument(require("./lib/orte-des-gesetzes.cjs").ORTE_INSTALL);
     await page.evaluateOnNewDocument(() => {
         window.__anazhForceFoundry = true;
         window.__anazhHeadlessNullRenderer = true;
