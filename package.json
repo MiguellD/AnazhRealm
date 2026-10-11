@@ -122,6 +122,7 @@
         "gate:existenz-boden": "node scripts/diag-existenz-boden.cjs",
         "gate:charakter-achsen": "node scripts/diag-charakter-achsen.cjs",
         "gate:p2p-gestalt": "node scripts/diag-p2p-gestalt.cjs",
+        "gate:mp-sync": "node scripts/diag-mp-sync.cjs --selftest && node scripts/diag-mp-sync.cjs",
         "gate:praegung-welt": "node scripts/diag-praegung-welt.cjs",
         "gate:reload-treue": "node scripts/diag-reload-treue.cjs",
         "gate:studio-uebergabe": "node scripts/diag-studio-uebergabe.cjs",

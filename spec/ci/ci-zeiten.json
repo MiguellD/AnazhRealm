@@ -1794,6 +1794,13 @@
       "laeufe": [
         "38096257646/1"
       ]
+    },
+    "Mehrspieler-Wand (zwei Seiten, echter signaling-server - Tuer, Knopf, Boot, kein Mitspieler im Ursprung)": {
+      "s": 150,
+      "n": 0,
+      "lauf": "npm run gate:mp-sync",
+      "geschaetzt": "lokal 100 s (K04, 11.10., Selbsttest 25 s + Lauf 75 s) x 1,5 fuer den CI-Laeufer; erst der naechste ci-zeiten-Lauf misst",
+      "laeufe": []
     }
   },
   "vorher": {
