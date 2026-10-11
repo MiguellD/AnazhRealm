@@ -379,7 +379,10 @@ function handleClientMessage(ws, raw) {
         const out = { type: msg.type, peerId: ws.anazh.peerId };
         if (target) out.to = target;
         if (msg.type === "world-request") {
-            // world-request hat keine state-payload, nur Aufforderung
+            // world-request hat keine state-payload, nur Aufforderung — und die Erbgut-Stufe des Anfragers (eine
+            // kleine ganze Zahl, additiv seit 10.10.): der Host reicht eine Welt mit Erbgut nur einem Leser
+            // (`_erbgutTeilbar`); ohne das Feld gilt Stufe 0.
+            if (Number.isInteger(msg.erbgut) && msg.erbgut >= 0 && msg.erbgut <= 1000) out.erbgut = msg.erbgut;
         } else if (msg.type === "world-snapshot") {
             // world-snapshot trägt den Welt-Snapshot. Server prüft NUR
             // dass es ein Objekt ist; der Joiner-Client führt loadState

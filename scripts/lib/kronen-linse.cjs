@@ -9,7 +9,7 @@
 //     (Kante `px` in Vorlagen-Einheiten, für beide Stufen eines Paars dieselbe); Karten-Dreiecke lesen je Pixel die
 //     Alpha des EINEN Blatt-Atlas (Textur-Ordnung, nächster Texel von Stufe 0) gegen die Schwelle des Stoffs, Klingen
 //     und Nadel-Röhren decken voll. Ein Pixel zählt einmal, wie oft es auch überdeckt wird — das ist das Bild.
-//       bildDeckung(krone, atlas, px) → { je: [Fläche je Ansicht], mittel }
+//       bildDeckung(krone, atlas, px) → { je: [Fläche je Ansicht], mittel, hebung: [Mittel je Blick-Hebung 0°/30°/60°] }
 //         krone: [{ kind, pos: Float32Array, idx: Uint32Array, uv: Float32Array|null }] (kroneAus)
 //         atlas: { w, h, alpha: Uint8Array (w×h, Zeile 0 = v 0), schwelle: 0..1 }
 //
@@ -21,6 +21,15 @@
 //
 // (3) DER BODEN — kein Laub unter dem Boden der Vorlage (y < 0; die Strähnen hingen unter den Boden-Rand, R1).
 //     unterBoden(krone) → tiefstes y des Laubs.
+//
+// (4) DIE LAGEN (S3, 09.10.) — wie viele Karten-Lagen ein Kronen-Pixel trägt. Befund (Späher S3 pflanzen, Kern
+//     78d66a63): die Budget-Zeile war nur gegen die sättigende BINÄRE Deckung geeicht — die Eiche-L0 trug 1 280 Karten
+//     mit der Kante 0,22 H, 40,8 Quad-Lagen je Kronen-Pixel; jede Lage wird alpha-getestet und schattiert, 65 % ihrer
+//     Fragmente verwirft der Atlas (Kern-Füllung 0,347) — die GPU-Kosten der Krone ohne Bild. Gezählt in DENSELBEN 24
+//     Ansichten wie die Bild-Deckung, je Pixel-Mitte jede Karte, die sie überdeckt (Quad-Lage), und jede, deren Atlas-
+//     Alpha dort die Schwelle hält (Alpha-Lage); gemittelt über die Pixel mit mindestens einer Lage.
+//       bildLagen(krone, atlas, px) → { quad, alpha, je: [{ quad, alpha }] }
+//     bildAus(meshes) → die ganze Stufe als Bild (Krone UND Rinde: die Rinde deckt voll) — die L0-Deckungs-Tafel (D0).
 "use strict";
 
 const AZIMUTE = 8;
@@ -83,6 +92,13 @@ function bildDeckung(meshes, atlas, px) {
                     xb = Math.min(W - 1, Math.ceil(Math.max(ax, bx, qx))),
                     ya = Math.max(0, Math.floor(Math.min(ay, by, qy))),
                     yb = Math.min(H - 1, Math.ceil(Math.max(ay, by, qy)));
+                // DER BODEN (Gegenprüfung S3): das Bild ist, was über dem Boden der Vorlage steht (y ≥ 0) — die Wurzeln tauchen
+                // ab, kein Spieler sieht sie im Boden, und eine Ansicht von unten sähe sie sonst von unter der Erde.
+                const ya3 = p[a * 3 + 1],
+                    yb3 = p[b * 3 + 1],
+                    yc3 = p[c * 3 + 1];
+                if (ya3 < 0 && yb3 < 0 && yc3 < 0) continue;
+                const ganz = ya3 >= 0 && yb3 >= 0 && yc3 >= 0;
                 for (let y = ya; y <= yb; y++) {
                     const sy = y + 0.5;
                     for (let x = xa; x <= xb; x++) {
@@ -93,6 +109,7 @@ function bildDeckung(meshes, atlas, px) {
                             w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl,
                             w2 = 1 - w0 - w1;
                         if (w0 < 0 || w1 < 0 || w2 < 0) continue;
+                        if (!ganz && w0 * ya3 + w1 * yb3 + w2 * yc3 < 0) continue;
                         if (karte) {
                             const tu = w0 * uv[a * 2] + w1 * uv[b * 2] + w2 * uv[c * 2],
                                 tv = w0 * uv[a * 2 + 1] + w1 * uv[b * 2 + 1] + w2 * uv[c * 2 + 1];
@@ -109,7 +126,158 @@ function bildDeckung(meshes, atlas, px) {
         for (let i = 0; i < bild.length; i++) n += bild[i];
         je.push(n * px * px);
     }
-    return { je, mittel: je.reduce((s, x) => s + x, 0) / je.length };
+    return { je, mittel: je.reduce((s, x) => s + x, 0) / je.length, hebung: jeHebung(je) };
+}
+// Das Bild JE BLICK-HEBUNG (Gegenprüfung S3 R1, 09.10.): das Mittel über die acht Azimute je Hebung (0°, 30°, 60° von
+// unten) — das Mittel über alle 24 Ansichten wog die Seitenansicht mit einem Drittel: die flachen Wedel der Koniferen
+// deckten von unten 12–35 % mehr, als die Seitenansicht verlor (Tanne-L1 0° 0,70 des Bilds von V18.536, Mittel 0,93).
+function jeHebung(je) {
+    return HEBUNGEN.map((_, h) => je.slice(h * AZIMUTE, (h + 1) * AZIMUTE).reduce((s, x) => s + x, 0) / AZIMUTE);
+}
+
+// DIE LAGEN (4): dieselben Ansichten wie bildDeckung, aber jede Karte zählt — eine Lage je Karte über der Pixel-Mitte.
+function bildLagen(meshes, atlas, px) {
+    const je = [];
+    const thr = Math.round((atlas && atlas.schwelle != null ? atlas.schwelle : 0.5) * 255);
+    let sQ = 0,
+        nQ = 0,
+        sA = 0,
+        nA = 0;
+    for (let k = 0; k < ANSICHTEN; k++) {
+        const th = ((k % AZIMUTE) * Math.PI) / AZIMUTE,
+            e = HEBUNGEN[Math.floor(k / AZIMUTE)];
+        const cx = Math.cos(th),
+            cz = Math.sin(th);
+        const ux = Math.sin(th) * Math.sin(e),
+            uy = Math.cos(e),
+            uz = -Math.cos(th) * Math.sin(e);
+        let u0 = Infinity,
+            u1 = -Infinity,
+            v0 = Infinity,
+            v1 = -Infinity;
+        for (const m of meshes) {
+            if (m.kind !== "foliageTex") continue;
+            const p = m.pos;
+            for (let i = 0; i < p.length; i += 3) {
+                const u = p[i] * cx + p[i + 2] * cz,
+                    v = p[i] * ux + p[i + 1] * uy + p[i + 2] * uz;
+                if (u < u0) u0 = u;
+                if (u > u1) u1 = u;
+                if (v < v0) v0 = v;
+                if (v > v1) v1 = v;
+            }
+        }
+        if (!(u1 > u0) || !(v1 > v0)) {
+            je.push({ quad: 0, alpha: 0 });
+            continue;
+        }
+        const W = Math.ceil((u1 - u0) / px) + 2,
+            H = Math.ceil((v1 - v0) / px) + 2;
+        const quad = new Uint16Array(W * H),
+            alpha = new Uint16Array(W * H);
+        for (const m of meshes) {
+            if (m.kind !== "foliageTex" || !m.uv) continue;
+            const p = m.pos,
+                ix = m.idx,
+                uv = m.uv;
+            for (let t = 0; t < ix.length; t += 3) {
+                const a = ix[t],
+                    b = ix[t + 1],
+                    c = ix[t + 2];
+                const ax = (p[a * 3] * cx + p[a * 3 + 2] * cz - u0) / px,
+                    ay = (p[a * 3] * ux + p[a * 3 + 1] * uy + p[a * 3 + 2] * uz - v0) / px;
+                const bx = (p[b * 3] * cx + p[b * 3 + 2] * cz - u0) / px,
+                    by = (p[b * 3] * ux + p[b * 3 + 1] * uy + p[b * 3 + 2] * uz - v0) / px;
+                const qx = (p[c * 3] * cx + p[c * 3 + 2] * cz - u0) / px,
+                    qy = (p[c * 3] * ux + p[c * 3 + 1] * uy + p[c * 3 + 2] * uz - v0) / px;
+                const fl = (bx - ax) * (qy - ay) - (by - ay) * (qx - ax);
+                if (Math.abs(fl) < 1e-12) continue;
+                const xa = Math.max(0, Math.floor(Math.min(ax, bx, qx))),
+                    xb = Math.min(W - 1, Math.ceil(Math.max(ax, bx, qx))),
+                    ya = Math.max(0, Math.floor(Math.min(ay, by, qy))),
+                    yb = Math.min(H - 1, Math.ceil(Math.max(ay, by, qy)));
+                for (let y = ya; y <= yb; y++) {
+                    const sy = y + 0.5;
+                    for (let x = xa; x <= xb; x++) {
+                        const sx = x + 0.5;
+                        const w0 = ((bx - sx) * (qy - sy) - (by - sy) * (qx - sx)) / fl,
+                            w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl,
+                            w2 = 1 - w0 - w1;
+                        // die Diagonale eines Quads gehört EINEM seiner zwei Dreiecke (w2 > 0 halb offen)
+                        if (w0 < 0 || w1 < 0 || w2 <= 0) continue;
+                        const o = y * W + x;
+                        quad[o]++;
+                        if (atlas) {
+                            const tu = w0 * uv[a * 2] + w1 * uv[b * 2] + w2 * uv[c * 2],
+                                tv = w0 * uv[a * 2 + 1] + w1 * uv[b * 2 + 1] + w2 * uv[c * 2 + 1];
+                            const tx = Math.min(atlas.w - 1, Math.max(0, Math.floor(tu * atlas.w))),
+                                ty = Math.min(atlas.h - 1, Math.max(0, Math.floor(tv * atlas.h)));
+                            if (atlas.alpha[ty * atlas.w + tx] >= thr) alpha[o]++;
+                        }
+                    }
+                }
+            }
+        }
+        let q = 0,
+            nq = 0,
+            al = 0,
+            na = 0;
+        for (let i = 0; i < quad.length; i++) {
+            if (quad[i]) {
+                q += quad[i];
+                nq++;
+            }
+            if (alpha[i]) {
+                al += alpha[i];
+                na++;
+            }
+        }
+        sQ += q;
+        nQ += nq;
+        sA += al;
+        nA += na;
+        je.push({ quad: nq ? q / nq : 0, alpha: na ? al / na : 0 });
+    }
+    return { quad: nQ ? sQ / nQ : 0, alpha: nA ? sA / nA : 0, je };
+}
+
+// Die ganze Stufe als Bild (D0): die Krone mit ihrer Atlas-Alpha, die Rinde (und jedes andere Teil) deckt voll.
+function bildAus(meshes) {
+    const dek = (b64, Typ) => {
+        const b = Buffer.from(b64, "base64");
+        return new Typ(b.buffer, b.byteOffset, b.byteLength / Typ.BYTES_PER_ELEMENT);
+    };
+    const out = [];
+    for (const m of meshes || []) {
+        if (!m.attrs || !m.attrs.position || !m.index) continue;
+        out.push({
+            kind: m.kind,
+            pos: dek(m.attrs.position.b64, Float32Array),
+            idx: dek(m.index, Uint32Array),
+            uv: m.kind === "foliageTex" && m.attrs.uv ? dek(m.attrs.uv.b64, Float32Array) : null,
+        });
+    }
+    return out;
+}
+
+// Jede zweite Karte fällt (Quads in Bau-Reihenfolge: 4 Ecken, 6 Indizes) — der Selbsttest der L0-Deckungs-Wand.
+function kartenAusgeduennt(krone) {
+    return krone.map((m) => {
+        if (m.kind !== "foliageTex") return m;
+        const idx = [];
+        for (let t = 0; t + 6 <= m.idx.length; t += 12) for (let k = 0; k < 6; k++) idx.push(m.idx[t + k]);
+        return Object.assign({}, m, { idx: Uint32Array.from(idx) });
+    });
+}
+
+// Jede Karte n-fach (dieselbe Lage n-mal) — der Selbsttest der Lagen-Wand.
+function kartenVervielfacht(krone, n) {
+    return krone.map((m) => {
+        if (m.kind !== "foliageTex") return m;
+        const idx = new Uint32Array(m.idx.length * n);
+        for (let k = 0; k < n; k++) idx.set(m.idx, k * m.idx.length);
+        return Object.assign({}, m, { idx });
+    });
 }
 
 // Die Krone einer gebauten Antwort (asset-worker-harness: Attribute als base64 des rohen Puffers): Klingen/Nadeln/
@@ -257,10 +425,14 @@ function schwebe(meshes) {
     const fest = karten.map((k) => {
         if (abstand(k.m, k.h * 0.5) <= k.h * 0.5) return true;
         const tol = Math.max(k.h * 0.15, H * 0.003);
+        // die Kante berührt die Rinde: ihre Mitte — und (S3, 09.10.) acht weitere Proben je Kante: der Wedel tritt aus dem
+        // offenen Ende seiner Röhre, seine Ansatz-Kante kreuzt die Röhren-Wand, ihre Mitte liegt auf der Achse (r entfernt)
         for (let e = 0; e < 4; e++) {
             const A = k.c[e],
                 B = k.c[(e + 1) % 4];
-            if (abstand([(A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2], tol) <= tol) return true;
+            for (const t of [0.5, 0.0625, 0.1875, 0.3125, 0.4375, 0.5625, 0.6875, 0.8125, 0.9375])
+                if (abstand([A[0] + (B[0] - A[0]) * t, A[1] + (B[1] - A[1]) * t, A[2] + (B[2] - A[2]) * t], tol) <= tol)
+                    return true;
         }
         return false;
     });
@@ -283,7 +455,25 @@ function schwebe(meshes) {
                 for (let z = c[2] - 1; z <= c[2] + 1; z++)
                     for (const i of G2.get(x + "," + y + "," + z) || []) {
                         if (fest[i]) continue;
-                        if (Math.hypot(...sub(karten[i].m, kj.m)) < (karten[i].h + kj.h) * 0.75) {
+                        // S3 (09.10.): eine Kanten-Mitte der Karte liegt IN der hängenden Karte (die Glieder einer Strähne
+                        // überlappen je ein Zehntel — der Wedel teilt seine Bahn in Stücke von Nadel-Maß, schmaler als die
+                        // Mitten-Regel reicht)
+                        const ki = karten[i];
+                        let haengt = Math.hypot(...sub(ki.m, kj.m)) < (ki.h + kj.h) * 0.75;
+                        const tol = Math.max(ki.h * 0.15, H * 0.003);
+                        for (let e = 0; e < 4 && !haengt; e++) {
+                            const A = ki.c[e],
+                                B = ki.c[(e + 1) % 4];
+                            const mi = [(A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2];
+                            for (const [a, b, c2] of [
+                                [kj.c[0], kj.c[1], kj.c[2]],
+                                [kj.c[0], kj.c[2], kj.c[3]],
+                            ]) {
+                                const q = naechster(mi, a, b, c2);
+                                if (Math.hypot(mi[0] - q[0], mi[1] - q[1], mi[2] - q[2]) <= tol) haengt = true;
+                            }
+                        }
+                        if (haengt) {
                             fest[i] = true;
                             offen.push(i);
                         }
@@ -305,5 +495,18 @@ function unterBoden(krone) {
     return y;
 }
 
-module.exports = { bildDeckung, kroneAus, kartenSkaliert, schwebe, unterBoden, ANSICHTEN, AZIMUTE, HEBUNGEN };
+module.exports = {
+    bildDeckung,
+    bildLagen,
+    bildAus,
+    kroneAus,
+    kartenSkaliert,
+    kartenAusgeduennt,
+    kartenVervielfacht,
+    schwebe,
+    unterBoden,
+    ANSICHTEN,
+    AZIMUTE,
+    HEBUNGEN,
+};
 

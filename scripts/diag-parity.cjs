@@ -218,10 +218,10 @@ async function renderAnazh() {
                     } catch (_e) {}
                 }
                 await new Promise((res) => setTimeout(res, 300));
-                let deferred = 0;
-                if (r.state.scatterRegions)
-                    for (const reg of r.state.scatterRegions.values()) if (reg && reg._deferredFoundry) deferred++;
-                if (deferred === 0 && !r._scatterRefillPending) break;
+                // die EINE Antwort der Welt (`_streuWartet`, Befund 09.10.: der eigene Zähler las die fehlende
+                // Regionen-Karte — der Streamer lief noch nie — als „keine deferriert")
+                const pm = r.state.playerMesh;
+                if (pm && r._streuWartet(pm.position) === 0 && !r._scatterRefillPending) break;
             }
         });
         // UI aus + Avatar aus + TAGESZEIT auf Studio-10:00 gepinnt (die Tick-Pumpe hatte die Uhr

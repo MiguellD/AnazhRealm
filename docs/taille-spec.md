@@ -84,6 +84,46 @@ Kein Import-Pfad übernimmt Abgeleitetes als Wahrheit:
 - Jeder Artefakt-Import läuft durch **EINEN Eingang** (`_admitForeignArtifact`): Signatur-
   Status ans Artefakt, Rückruf-Sieb AM EINGANG, Provenance angehängt, Behauptung/Wahrheit
   getrennt.
+- **Das Erbgut einer Welt** (`worldMeta.erbgut = { terme: [...] }`, additiv seit 10.10.; ohne
+  Feld = `[wildnis]`) ist keine Behauptung, sondern das Gesetz ihres Bodens: die Terme der
+  EINEN 2D-Höhe (`_terrainMacroSurfaceY`; Arten `wildnis` · `insel` zuerst, dann `rampe` ·
+  `bucht`, höchstens 32, Zahlen am Empfänger geklemmt). Die Empfänger-Wand `_erbgut()` ist
+  hier **fail-closed** — die Ausnahme zu §2: eine Term-Art, die dieser Build nicht trägt,
+  lässt die Welt nicht erwachen (der Grund steht auf dem Ladeschirm); sie still als Wildnis
+  zu lesen hieße, eine andere Welt zu zeichnen. Dieselbe Wand steht an jeder Tür, durch die
+  ein Snapshot zur Welt wird (`_erbgutEinlass`: Welt-Tor daneben/ersetzen, Einladung,
+  Snapshot eines Mitspielers) — eine abgelehnte Welt betritt den Speicher nie. Und eine Welt,
+  deren Erbgut nicht die Wildnis allein ist, reist nur zu einem Leser: der Empfänger erklärt
+  `erbgut` ≥ 1 in `world-request`/`world-pull` (`AnazhRealm.ERBGUT_PROTOKOLL`), sonst
+  verweigert der Sender benannt (`_erbgutTeilbar`; ein Build davor zeichnete still Wildnis).
+  Die Bühne `spec/pruefbuehne/welt.json`; was auf ihr STEHT (die Hindernis-Station S4: Würfel,
+  Säule, Mauer, Gasse, Hausrumpf, Engpass), ist kein Term, sondern Saat des Snapshots —
+  `blueprints` + `architectures` durch dieselbe Tür wie jedes Haus eines Saves.
+- **Die Weltgrenze:** eine geladene Welt ERSETZT das `worldMeta` der Seite — die Vorlage,
+  darüber ihr eigenes (`_weltMetaWechsel`, der Restore jedes Ladens). Aus der Welt davor reist
+  nur, was `AnazhRealm.WELT_GRENZE` beim Namen nennt: in die Lücken einer geladenen Welt ihr
+  Speicher-Platz (`worldId`, `slug`, `bornAt` — beim Boot der Platz der aktiven Welt: ein Save
+  ohne `worldId` oder ohne `worldMeta` ist die Welt DIESES Platzes), in eine neue Welt die Wahl
+  des Schöpfers (`visibility`, `creator`); die Gedächtnisse der Seite, die welt-eigene Felder
+  spiegeln, fallen mit dem `worldMeta`.
+- **Die Rettungs-Kette:** der Speicher liest eine Welt durch EINE Kette (`_weltRettungsKette`):
+  der Platz (IndexedDB gewinnt nur, wenn er nachweislich frischer ist), fehlt er oder ist er
+  korrupt der `.bak`, sonst IndexedDB. Der Boot fragt sie, BEVOR er eine neue Id vergibt; eine
+  neue Welt erwacht nur, wenn alle drei leer sind — und dann laut (Log + Chat: was gefunden,
+  warum frisch; `gate:boot-rettung`).
+- **Die Tür:** eine fremde Welt betritt Seite und Speicher nur durch `_weltBetreten` (Welt-Tor
+  ersetzen und daneben legen, Snapshot eines Mitspielers, world-pull, Beitritt per Einladung und
+  Adress-Portal über `_importGuestWorld`, dessen Gast-Felder Parameter der Tür sind) — nie lädt
+  die Seite sie in sich, und `loadState` legt nichts im Speicher ab. Zuerst sichert sich die Welt
+  der Seite (sie ist noch ganz sie selbst); ohne `worldId` bekommt die neue ihre eigene
+  (`_neueWeltId`), nie den Platz der Welt davor (die bleibt unter ihrer Id); sie liegt, wie sie
+  kam, unter ihrer Id (`_weltAblegen`, mit Probe — die EINE Ablage, neben saveState der einzige
+  Schreiber einer ganzen Welt; auch Geburt, Fusion und Legacy-Migration legen durch sie ab).
+  Misslingt die Ablage (Quota), bleibt die Seite in ihrer Welt und sagt es laut — kein Reload in
+  einen alten Stand. Jeder Welt-Wechsel lädt über `_weltWechselNeuLaden` neu: ab dort verweigert
+  `saveState` laut (WARN; „speichere zustand" sagt es dem Spieler), bis die Seite stirbt; der
+  Speicher trägt nie die Mischung der Seite und der Aktiv-Zeiger nie die alte Welt
+  (`gate:weltgrenze`).
 
 ## §4 · Die Versions-Regel (EINE Semantik)
 
@@ -133,7 +173,8 @@ dauerhaften Welt-Besitz (`world-snapshot` ist Durchreiche).
   davor außer `stats`/`world-presence` wird verworfen) · Raum-Broadcasts `pos {x,y,z,yaw}` ·
   `creature-pos {list ≤64}` · `dsl {program: Array 1..256}` · `soul` ·
   `vibe` · `companion-say` · `subworld-net` · `portal-invite` ·
-  `world-request`/`world-snapshot` (Welt-Zug, Durchreiche) · adressiert
+  `world-request {erbgut?}`/`world-snapshot` (Welt-Zug, Durchreiche; `erbgut` = die Erbgut-Stufe
+  des Anfragers, eine ganze Zahl 0..1000, §3) · adressiert
   `rtc-offer`/`rtc-answer`/`rtc-ice {to}` (WebRTC-Rendezvous) · Lobby
   `lobby-publish {label}` / `lobby-unpublish` / `lobby-list` · `stats` ·
   `world-presence {worldId}` (Φ4 — regionale Kopf-Zahlen einer Welt; nur dem Anfrager zurück).

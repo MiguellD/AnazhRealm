@@ -31,12 +31,11 @@
     // Fahrzeuge tragen NUR Stufe 0 (fein); L1=L0-Grade + L2-Auto-Impostor sind
     // Sache des Wirts (docs/studio-vertrag.md B2 / W7b-Merge am EINEN Ingest).
     // B2c-Daten (W8, rein additiv): DAS BUDGET der einen Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
-    // Hülle über alle Fahrzeuge × 16 Gestalten (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-
+    // Hülle über alle Fahrzeuge × ihre Gestalten (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-
     // Ziel (Haushalt, offen solange tris darüber liegt), draws = Draws je Fahrzeug und Pass nach der Wirts-Regel: das
     // Budget-Gesetz am Studio-Ausgang (phyto-core budgetErzwingen) faltet die Stoffe darauf (Lack · Glas · Chrom ·
-    // Gummi · …; Glut — die Lichter — faltet nie). gestalten = Individuen je Fahrzeug (das bisherige Wirts-16,
-    // gefüllt je Rezept unten bei PRESETS).
-    const GESTALTEN_JE_REZEPT = 16;
+    // Gummi · …; Glut — die Lichter — faltet nie). gestalten = Individuen je Fahrzeug (GESTALTEN_JE_REZEPT, eine je
+    // Lack — beim LACK_GESETZ; gefüllt je Rezept unten bei PRESETS).
     const PORTAL_RENDER_CONFIG = {
         lod: {
             kindStages: { vehicle: [0] },
@@ -270,7 +269,7 @@
     }
     // DER LACK DER WELT (W5): das Labor zeigt das Ton-Modell (Clay, die Anatomie-Ansicht) und den Lack der Leiste; die
     // Welt fuhr bisher das Ton-Modell — jeder Wagen weiß-grau (Albedo 0,55 am Mittag). Jede Gestalt trägt ihren Lack aus
-    // dem LACK_GESETZ: der Same (die Gestalt 1..16 des Wirts) wählt reihum einen der acht Lacke (Clay ausgenommen), je
+    // dem LACK_GESETZ: der Same (die Gestalt 1..V des Wirts, V = GESTALTEN_JE_REZEPT) wählt reihum einen der acht Lacke (Clay ausgenommen), je
     // Lack EIN geteiltes Material (der Lack-Stoff mit Farbe und Lack-Art — Klarlack, Seh-Klasse metall), dasselbe, das
     // die Lack-Leiste des Labors setzt.
     const LACK_STOFFE = {};
@@ -2296,6 +2295,20 @@
             nickMax: 0.12, // rad: Anschlag der Nick-/Wank-Feder
             hubMax: 0.08, // m: Anschlag der Hub-Feder (der Landestoss schlaegt hier an)
         },
+        // ── SCHAU-2 (09.10., rein additive DATEN-Zeile — Praezedenz: schritt) — DER WAGEN IM WASSER: das Lab kennt kein
+        //    Wasser, der Welt-Ritt reicht die Tiefe der EINEN Wasser-Wahrheit am Wagen (fahrKraefte e.tiefe). Die KRAFT
+        //    ist der Widerstand eines stumpfen Koerpers ½·rho·cw·A·v² auf die GETAUCHTE FLAECHE der Huelle (die Stirn
+        //    Breite × Tiefe laengs, die Flanke Laenge × Tiefe quer — eine Flaeche, kein Volumen); die TRAEGHEIT ist die
+        //    EINE Masse des Wagens (das Volumen seines Fahr-Satzes × masseDichte, dieselbe, die jeder Stoss liest).
+        //    rho: Suesswasser. cw: die Stirn eines Wagens quer im Wasser ist eine stumpfe Platte mit Bugwelle (Platte
+        //    1,17, Wuerfel 1,05). Die Ansaugung sitzt unter der Haube, die Haube schliesst an der Guertellinie
+        //    (huelle.yBelt): steht das Wasser dort, ist der Motorraum voll — kein Vortrieb mehr. Der GT (1 341 kg, Stirn
+        //    1,88 m, Guertel 0,72 m) verliert in 0,61 m Wasser bei 12 m/s rund 62 m/s², watet unter Vollgas mit rund
+        //    4,2 m/s (Antrieb gegen Roll-, Luft- und Wasser-Widerstand) und steht ab 0,72 m. ──
+        wasser: {
+            rho: 1000, // kg/m³
+            cw: 1.0,
+        },
     };
     // STEER_VIS — intentional dual steer visual (Feel-Entscheid .124). Do NOT merge.
     // compound "hub-yaw" = Host rad.front + rotation.y = base + _rideSteerYaw (.120).
@@ -2345,6 +2358,11 @@
     // lab:"swatches-9" = LACK_GESETZ 9 [name, hex, clayFlag, art]; host:"gestalt-8" = der Same der Gestalt wählt reihum
     // einen der 8 Lacke (Clay bleibt die Anatomie-Ansicht des Labors).
     const LACK_VIS = { lab: "swatches-9", host: "gestalt-8" };
+    // DIE GESTALTEN JE FAHRZEUG (S3 08.10., Studio-Vertrag B2c): die Geometrie ist seed-invariant, der Same wählt nur den
+    // Lack (`lackIndex`, reihum über die Lacke ohne Clay) — EINE Gestalt je Lack. Bis dahin zählte jedes Fahrzeug 16:
+    // Same 9..16 trugen den Lack von 1..8, byte-gleiche Zwillinge als eigene Leaves (die Gestalten-Wand in
+    // gate:asset-contract baut jede Gestalt 1..V). Eine weitere Seed-Achse zu schaffen ist ein Re-Mint-Akt.
+    const GESTALTEN_JE_REZEPT = LACK_GESETZ.length - 1;
 
     // V18.491.265 Lab Garage caliper status colors; Host none (PRUEF_VIS).
     // ≠ LACK_GESETZ — do not Fake-merge.
@@ -2551,6 +2569,8 @@
     // fahrAufstand(huelle, s) — DIE Aufstandspunkte eines Studio-Fahrzeugs (Nachbesserung 07.10., rein additiv): die Achsen
     //   fAx/rAx, die halbe Spur, der Bauch (yFloor) und der FEDERWEG je Rad (schritt.radHub × radR — so weit federt ein Rad
     //   einzeln zu seinem Boden), alle × Welt-Skala s. EINE Quelle fuer Probefahrt (fahrGesetz ohne auf) und Welt-Ritt.
+    // SCHAU-2 (rein additiv): dazu die Huelle im Wasser — Breite (2·bw), Laenge (Bug bis Heck), Dach (yRoof) und die
+    // Ansaugung (die Guertellinie yBelt, FAHR.wasser), × s.
     function fahrAufstand(h, s) {
         const k = s > 0 ? s : 1;
         if (!h || !(h.fAx > h.rAx) || !(h.spur > 0)) return null;
@@ -2560,6 +2580,26 @@
             quer: (h.spur / 2) * k,
             bauch: (Number.isFinite(h.yFloor) ? h.yFloor : 0) * k,
             hub: h.radR > 0 ? FAHR.schritt.radHub * h.radR * k : 0,
+            breite: h.bw > 0 ? 2 * h.bw * k : NaN,
+            laenge: h.noseX > h.tailX ? (h.noseX - h.tailX) * k : NaN,
+            dach: h.yRoof > 0 ? h.yRoof * k : NaN,
+            ansaug: h.yBelt > 0 ? h.yBelt * k : NaN,
+        };
+    }
+    // Die Huelle im Wasser eines Fahr-Satzes (SCHAU-2): die getauchte Flaeche je m Tiefe (Stirn = Breite, Flanke = Laenge)
+    // aus den Aufstandspunkten, ohne Huelle (Teile-Werk) aus Spur und Radstand, durch die EINE Masse `masse` (kg: das
+    // Volumen des Fahr-Satzes × masseDichte, fahrGesetz); ein Werk ohne Dach traegt kein Wasser-Mass (null), ohne
+    // Ansaugung (kein Motorraum) treibt es immer.
+    function fahrWasser(a, masse) {
+        const breite = a.breite > 0 ? a.breite : 2 * a.quer;
+        const laenge = a.laenge > 0 ? a.laenge : a.vorn - a.hinten;
+        if (!(breite > 0) || !(laenge > 0) || !(a.dach > 0) || !(masse > 0)) return null;
+        const q = 0.5 * FAHR.wasser.rho * FAHR.wasser.cw;
+        return {
+            kStirn: (q * breite) / masse, // 1/m je m Tiefe: a = kStirn · Tiefe · v²
+            kFlanke: (q * laenge) / masse,
+            dach: a.dach,
+            ansaug: a.ansaug > 0 ? a.ansaug : Infinity,
         };
     }
     function fahrGesetz(d, auf) {
@@ -2616,6 +2656,7 @@
                 bauch: Number.isFinite(a.bauch) ? a.bauch : 0,
                 hub: a.hub > 0 ? a.hub : 0, // der Federweg je Rad (fahrAufstand); ein starres Werk federt kein Rad einzeln
             },
+            wasser: fahrWasser(a, zs.mass * FAHR.masseDichte), // SCHAU-2 (rein additiv): die Huelle im Wasser, EINE Masse
         };
     }
     function fahrZustand(x, z, yaw) {
@@ -2784,7 +2825,16 @@
             b = G.b,
             c = G.c,
             g = G.g;
-        const thr = e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;
+        // SCHAU-2 (rein additiv — ohne e.tiefe byte-gleich, das Lab kennt kein Wasser): e.tiefe = wie tief die Huelle im
+        // Wasser steht (m ueber ihrer Unterkante; der Wirt liest die EINE Wasser-Wahrheit am Wagen). Steht es an der
+        // Ansaugung, steht der Motor (Wasserschlag, G.wasser, FAHR.wasser): das Gas treibt nicht mehr, und der Gang haelt
+        // die Antriebsraeder wie die Handbremse — gesperrt bis zum Reibkreis, am Hang haelt ihn die Ruhe. Vorher trieb nur
+        // der Antrieb nicht: unter Vollgas hielt den Wagen keine Ruhe, er rollte am 5°-Ufer mit 0,86 m/s 3 s nach der
+        // Ansaugung weiter ins Tiefe.
+        const Wg = G.wasser;
+        const tW = Wg && e && e.tiefe > 0 ? e.tiefe : 0;
+        const motor = !(tW > 0 && tW >= Wg.ansaug);
+        const thr = motor && e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;
         const brk = e && e.brake > 0 ? Math.min(1, e.brake) : 0;
         const hand = !!(e && e.hand);
         const steerIn = e && Number.isFinite(e.steer) ? Math.max(-1, Math.min(1, e.steer)) : 0;
@@ -2826,9 +2876,12 @@
             //    der Motor ungedeckelt: der Supersport stieg 90°, der GT 66,6°; jetzt steht jeder bei tan α = μ. ──
             let aDrive = 0;
             if (thr > 0) aDrive += G.aEngine * thr;
-            if (brk > 0) aDrive -= vL > S.bremsV ? G.brakeDecel : G.aEngine * S.rueckAntrieb;
+            if (brk > 0) aDrive -= vL > S.bremsV ? G.brakeDecel : motor ? G.aEngine * S.rueckAntrieb : 0;
             let Fr = aDrive * m;
             if (hand) Fr -= G.handDecel * m * sgn;
+            // der Wasserschlag sperrt die Antriebsraeder: Haftung wie die Handbremse, nie ueber den Stand hinaus (sie haelt,
+            // sie schiebt nicht zurueck)
+            else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;
             const capL = cap * m * g * cosN;
             Fr = Math.max(-capL, Math.min(capL, Fr));
             let Fx = Fr - G.dragK * m * vL * Math.abs(vL); // Luftwiderstand (quadratisch)
@@ -2863,6 +2916,20 @@
                 z.yawRate *= S.haltGier;
             } else {
                 z.vlong -= g * Math.sin(z.steig || 0) * dt;
+            }
+        }
+        if (tW > 0) {
+            // ── DAS WASSER (SCHAU-2): der Widerstand der getauchten Stirn laengs und der Flanke quer, halb-implizit
+            //    (v / (1 + k·|v|·dt): stabil bei jeder Tiefe und jedem Schritt, er kehrt die Fahrt nie um); er zaehlt in
+            //    die Beschleunigung, die die Federn neigt (der Bug taucht beim Eintauchen). ──
+            const t = Math.min(tW, Wg.dach);
+            const vL0 = z.vlong,
+                vQ0 = z.vlat;
+            z.vlong = vL0 / (1 + Wg.kStirn * t * Math.abs(vL0) * dt);
+            z.vlat = vQ0 / (1 + Wg.kFlanke * t * Math.abs(vQ0) * dt);
+            if (dt > 0) {
+                z.aLong += (z.vlong - vL0) / dt;
+                z.aLat += (z.vlat - vQ0) / dt;
             }
         }
         z.yaw += z.yawRate * dt;

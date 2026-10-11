@@ -22,8 +22,9 @@
 //      mittlere Karten-Kante (aus den gelieferten Quads, ÷ kern) × Blatt-Länge des Zweigs der Zelle (Baum ZWEIG_BLATT,
 //      Strauch ZWEIG_GROSS) / BLATT_ATLAS_ZELLE × Welt-Skala im Band
 //      BLATT_BAND. Vorher 1,4–1,7 m (Rosetten), dann 0,37–0,49 m (Zweig mit 27-px-Blättern).
-//  (N) NADEL-MASS (Koniferen L0, Gestalt 1): die Länge einer Atlas-Nadel in der Welt = mittlere Kante der
-//      Nadel-Karte × NADEL_ZWEIG.nadel/BLATT_ATLAS_ZELLE × Welt-Skala ≤ NADEL_MAX_M. Vorher (Striche von 40–94 px) 0,17–0,44 m.
+//  (N) NADEL-MASS (Koniferen L0, Gestalt 1): die Länge einer Atlas-Nadel in der Welt. Seit S3 (09.10.) sitzt die Nadel im
+//      Wedel (Zelle 3, WEDEL_ZWEIG — der Nadel-Ast als Strähne): mittlere Wedel-Länge (die Kante längs der Bahn, ÷ kern) ×
+//      WEDEL_ZWEIG.nadel/BLATT_ATLAS_ZELLE × Welt-Skala ≤ NADEL_MAX_M. Vorher (Striche von 40–94 px) 0,17–0,44 m.
 //  (K) KEINE KLINGEN-KRONE in einer Baum-L1 (Gestalt 1): die Trauer-Klinge las auf 12–26 m als Papier-Streifen
 //      (Blick-Tour Bild 01, Raycast f:weide|1|1:2) — jede L1-Krone ist Karte oder Strähne. Vorher Weide 3 344 Dreiecke.
 //  (U) UNTERSEITE — die Blatt-Unterseite (phyto-core BLATT_UNTERSEITE) hat ihre zwei Leser: den Laub-Shader des Labors
@@ -263,9 +264,20 @@ function blattMass(fall, T, skala, zweig) {
     };
 }
 function nadelMass(fall, T, skala) {
-    const kante = kartenKante(T);
-    if (!kante) return { v: [`${fall}: keine Nadel-Karte`], m: {} };
-    const nadel = (kante / PC.BLATT_ATLAS_NADEL.kern) * (PC.NADEL_ZWEIG.nadel / PC.BLATT_ATLAS_ZELLE) * skala;
+    // die Wedel-Länge: Kante 1→2 der Strähnen-Karte (längs der Bahn; Kante 0→1 ist ihre Breite)
+    let sL = 0,
+        nL = 0;
+    for (const t of T) {
+        if (t.kind !== "foliageTex") continue;
+        const p = t.pos;
+        for (let i = 0; i + 11 < p.length; i += 12) {
+            sL += Math.hypot(p[i + 6] - p[i + 3], p[i + 7] - p[i + 4], p[i + 8] - p[i + 5]);
+            nL++;
+        }
+    }
+    const kante = nL ? sL / nL : 0;
+    if (!kante) return { v: [`${fall}: kein Wedel`], m: {} };
+    const nadel = (kante / PC.BLATT_ATLAS_WEDEL.kern) * (PC.WEDEL_ZWEIG.nadel / PC.BLATT_ATLAS_ZELLE) * skala;
     return { v: nadel <= NADEL_MAX_M ? [] : [`${fall}: Nadel ${nadel.toFixed(3)} m > ${NADEL_MAX_M} m`], m: { nadel } };
 }
 // (K) die L1-Krone eines Baums trägt keine Klinge (kind "foliage").

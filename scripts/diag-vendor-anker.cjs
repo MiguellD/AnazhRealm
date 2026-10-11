@@ -148,7 +148,7 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "_renderBundle(e,t,r){const{bundleGroup:s,camera:i,renderList:n}=e,a=this._currentRenderContext,o=this._bundles.get(s,i,a)", organ: "Bundle-Replay-Buchung (renderer._renderBundle → info.update)" },
     { file: "vendor/three.webgpu.min.js", sub: "getDrawParameters(){", organ: "Bundle-Replay-Buchung (Draw-Parameter)" },
     // Der Fenster-Wechsel: die Viewport-Tiefe ist ein Klon je Render-Ziel (der EINE Leser bindet nach setSize neu)
-    { file: "vendor/three.webgpu.min.js", sub: "getTextureForReference(e=null){", organ: "_tiefenLeserNeuBinden (Viewport-Tiefen-Klon je Ziel)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getTextureForReference(e=null){", organ: "Diät (6) / _tiefenKnotenTausch (Viewport-Tiefen-Klon je Ziel)" },
     // Der Name der Viewport-Tiefe: EIN geteiltes Original je Seite, jeder Klon je Ziel erbt seinen Namen
     { file: "vendor/three.webgpu.min.js", sub: '"ViewportDepthTextureNode"}constructor(e=ud,t=null,r=null){null===r&&(null===Kp&&(Kp=new Z),r=Kp)', organ: "_szeneTiefe (WebGL2-Rückfall und Null-Renderer: r184s Viewport-Tiefe, szene:tiefenkopie)" },
     // DAS TIEFEN-ABBILD (0710-1 P2, Runde 2): r184s Bruch-Weg (Pass beenden, auf demselben Encoder kopieren, mit load neu
@@ -158,6 +158,21 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture", organ: "_tiefenAbbild (Quelle des Bruchs = die Tiefe des Kontexts)" },
     { file: "vendor/three.webgpu.min.js", sub: 's.currentPass?(s.currentPass.end(),a=s.encoder):a=this.device.createCommandEncoder({label:"copyFramebufferToTexture_"+e.id}),a.copyTextureToTexture({texture:i,origin:[r.x,r.y,0]},{texture:n},[r.z,r.w])', organ: "_tiefenAbbild (Pass-Ende und die EINE Encoder-Kopie)" },
     { file: "vendor/three.webgpu.min.js", sub: "s.currentPass=a.beginRenderPass(e),s.currentSets={attributes:{},bindingGroups:[],pipeline:null,index:null}", organ: "_tiefenAbbild (der Neubeginn mit load)" },
+    // DER VORHER-TEXTUR-WÄCHTER der Diät (0910-3 A1): r184 zerstört beim Neu-Anlegen einer Ziel-Textur (das Tiefen-Abbild
+    // in neuer Größe) die alte GPU-Textur; die Diät liest die Texturen der Vorher-Knoten am NodeBuilderState.
+    { file: "vendor/three.webgpu.min.js", sub: "const s=e.isRenderTargetTexture||e.isDepthTexture||e.isFramebufferTexture,i=this.backend;if(s&&!0===r.initialized&&i.destroyTexture(e)", organ: "Diät (6) Vorher-Textur-Wächter (updateTexture zerstört die alte Ziel-Textur)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.updateNodes=n,this.updateBeforeNodes=a,this.updateAfterNodes=o,this.observer=u", organ: "Diät (6) Vorher-Textur-Wächter (die Vorher-Knoten am NodeBuilderState)" },
+    // DIE VERDECKUNGS-ABFRAGE (0910-3 A): r184 beginnt die Query im Draw und schließt sie träge beim nächsten Objekt; der
+    // Wirt hält die offene am selben Feld (`lastOcclusionObject`), schließt sie vor dem Pass-Bruch, lässt `finishRender` nur
+    // eine offene schließen und füllt die Lücken nie begonnener Indizes vor dem WeakSet.
+    { file: "vendor/three.webgpu.min.js", sub: "if(void 0!==n.occlusionQuerySet){const e=n.lastOcclusionObject;e!==r&&(null!==e&&!0===e.occlusionTest&&(n.currentPass.endOcclusionQuery(),n.occlusionQueryIndex++),!0===r.occlusionTest&&(n.currentPass.beginOcclusionQuery(n.occlusionQueryIndex),n.occlusionQueryObjects[n.occlusionQueryIndex]=r),n.lastOcclusionObject=r)}", organ: "Verdeckungs-Abfrage (träges Ende am nächsten Objekt, `lastOcclusionObject`)" },
+    { file: "vendor/three.webgpu.min.js", sub: "t.occlusionQueryIndex=0,t.occlusionQueryObjects=new Array(s),t.lastOcclusionObject=null", organ: "Verdeckungs-Abfrage (beginRender: Index, Objekt-Feld mit Lücken, keine offene)" },
+    { file: "vendor/three.webgpu.min.js", sub: "r>t.occlusionQueryIndex&&t.currentPass.endOcclusionQuery()", organ: "Verdeckungs-Abfrage (finishRender schließt nach Zähler, nicht nach offen)" },
+    { file: "vendor/three.webgpu.min.js", sub: "for(let t=0;t<s.length;t++)n[t]===BigInt(0)&&e.add(s[t])", organ: "Verdeckungs-Abfrage (resolveOccludedAsync: das WeakSet nimmt jede Lücke)" },
+    // das Feld, das die Hülle des Auflösens füllt: beginRender reicht das Objekt-Feld des vorigen Probe-Frames als
+    // `currentOcclusionQueryObjects` weiter, resolveOccludedAsync liest es (und der Berg-Cull liest `occlusionQueryObjects`)
+    { file: "vendor/three.webgpu.min.js", sub: "t.currentOcclusionQuerySet=t.occlusionQuerySet,t.currentOcclusionQueryBuffer=t.occlusionQueryBuffer,t.currentOcclusionQueryObjects=t.occlusionQueryObjects", organ: "Verdeckungs-Abfrage (beginRender: das Objekt-Feld wandert nach current*)" },
+    { file: "vendor/three.webgpu.min.js", sub: "{currentOcclusionQueryBuffer:r,currentOcclusionQueryObjects:s}=t;if(r&&s){const e=new WeakSet;t.currentOcclusionQueryObjects=null", organ: "Verdeckungs-Abfrage (resolveOccludedAsync liest currentOcclusionQueryObjects)" },
     { file: "vendor/three.webgpu.min.js", sub: "else if(t===ri.RENDER){const t=this._getMaps(this.updateBeforeMap,r);if(t.renderId!==this.renderId)", organ: "_szeneTiefe (der Abbild-Knoten zieht je Render einmal)" },
     { file: "vendor/three.webgpu.min.js", sub: 'e===K&&(this.backend.hasFeature("float32-filterable")?t.sampleType=Gw:t.sampleType=zw)', organ: "_szeneTiefe (das r32float-Abbild als float-Textur gebunden)" },
     { file: "vendor/three.webgpu.min.js", sub: "if(!1===r.has(e)){const s=t.clone();r.set(e,s)}return r.get(e)}", organ: "_szeneTiefe (der Klon je Ziel trägt den Namen)" },
@@ -187,6 +202,16 @@ const ANKER = [
     { file: "vendor/TRAANode.js", sub: "this._previousDepthNode = texture( new DepthTexture( 1, 1 ) );", organ: "_ensurePostProcessing (TRAANode.vortiefe — die Band-Linse nennt jede Textur)" },
     { file: "vendor/TRAANode.js", sub: "this._jitterIndex = this._jitterIndex % ( _haltonOffsets.length - 1 );", organ: "Ausgabe-Aufnahme (32 Frames = eine Halton-Runde)" },
     { file: "vendor/TRAANode.js", sub: "this.updateBeforeType = NodeUpdateType.FRAME;", organ: "Ausgabe-Aufnahme/gpu-bank (je Frame nodeFrame.update)" },
+    // DAS AUSGABE-ZIEL IN 32 BIT (0910-1 B, `_ausgabeFormat`): r184 fordert jedes Feature an, das der Adapter trägt (darum
+    // fragt der Stamm `device.features`); RGBFormat × UnsignedInt101111Type ist rg11b10ufloat; PassNode.setup schreibt den
+    // Typ je Bau auf den des Renderers zurück (der Stamm stellt ihn danach); der Neustart der Geschichte kopiert das
+    // Szenen-Bild in die rgba16float-Geschichte (verschiedene Formate: `_traaNeustartZug` zeichnet statt zu kopieren);
+    // TRAA reicht Kanal a nur durch (ein rg11b10-Abtaster liefert 1).
+    { file: "vendor/three.webgpu.min.js", sub: 'RG11B10UFloat:"rg11b10ufloat-renderable"', organ: "_ausgabeFormat (das Feature, das r184 anfordert)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'case Xe:switch(s){case Je:u=OA;break;case et:u=kA;break;default:o("WebGPURenderer: Unsupported texture type with RGBFormat."', organ: "_ausgabeFormat (RGBFormat × UnsignedInt101111Type → rg11b10ufloat)" },
+    { file: "vendor/three.webgpu.min.js", sub: "setup({renderer:e}){return this.renderTarget.samples=void 0===this.options.samples?e.samples:this.options.samples,this.renderTarget.texture.type=e.getOutputBufferType()", organ: "_ausgabeFormat (PassNode.setup stellt den Typ je Bau zurück — der Pass stellt ihn danach)" },
+    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( beautyRenderTarget.texture, this._historyRenderTarget.texture );", organ: "_traaNeustartZug (der Neustart der Geschichte — am Renderer gehakt, gezeichnet bei verschiedenem Format)" },
+    { file: "vendor/TRAANode.js", sub: "const vClip = historyColor.sub( vec4( pClip, currentColor.a ) );", organ: "_ausgabeFormat (TRAA reicht Kanal a nur durch)" },
     // DIE KASKADEN-BOX (W7: _kaskadenGeburt · _kaskadenPassen · _kaskadenZiele · _passSicht): der Host ersetzt je Instanz
     // die Licht-Stellung des Addons (updateBefore stumm, sein Zweit-Schreiber _updateShadowBounds stumm), ruft dessen
     // _init vom Prototyp, liest seine Kaskaden-Uniform und den Fade-Saum des Shaders, hüllt den Ziel-Bau jedes
@@ -322,6 +347,12 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "class GS extends u{", organ: "_rahmenZielAbschied (das Leinwand-Ziel ist ein EventDispatcher)" },
     { file: "vendor/three.webgpu.min.js", sub: "EventDispatcher as u", organ: "_rahmenZielAbschied (u ist der EventDispatcher von three.core)" },
     { file: "vendor/three.webgpu.min.js", sub: "this._canvasTarget=new GS(", organ: "_rahmenZielAbschied (der Renderer hält sein Leinwand-Ziel)" },
+    // DAS GESETZ DES SCHATTEN-BIAS (`_schattenBias`, 0710-12): r184 schiebt die Probe des Empfängers um normalWorld × normalBias
+    // in WELT-METERN und addiert `bias` auf die Tiefe der Schatten-Koordinate (0..1) — beides in Texeln der Kaskade.
+    { file: "vendor/three.webgpu.min.js", sub: "qc(\"normalBias\",\"float\",i).setGroup(_a)", organ: "_schattenBias (normalBias ist eine Uniform des Lichts)" },
+    { file: "vendor/three.webgpu.min.js", sub: "h=Rc.mul(d);", organ: "_schattenBias (normalBias × normalWorld)" },
+    { file: "vendor/three.webgpu.min.js", sub: "p=c.mul(w_.add(h))", organ: "_schattenBias (die Probe sitzt bei positionWorld + normalWorld × normalBias — Welt-Meter)" },
+    { file: "vendor/three.webgpu.min.js", sub: "s.reversedDepthBuffer?n.sub(i):n.add(i)", organ: "_schattenBias (bias addiert auf die Tiefe der Schatten-Koordinate)" },
     // DIE STUFE KOSTET NUR, WENN SIE ZEIGT (`nurBeiStaerke` in _ensurePostProcessing): ein Fn-Aufruf trägt seine Argumente
     // als `rawInputs` (der Ketten-Graph der Zerleg-Linse liest sie), ein Fn ohne Layout baut seinen Rumpf inline.
     { file: "vendor/three.webgpu.min.js", sub: "constructor(e,t){super(),this.shaderNode=e,this.rawInputs=t,this.isShaderCallNodeInternal=!0}", organ: "_ensurePostProcessing (nurBeiStaerke — die Stufe bleibt im Ketten-Graph sichtbar)" },
@@ -351,6 +382,11 @@ const ANKER = [
     { file: "vendor/three.webgpu.min.js", sub: "getIndex(){return this._geometries.getIndex(this)}", organ: "_indexWacheDraw (der Index, den der Draw bindet)" },
     { file: "vendor/three.webgpu.min.js", sub: "async init(e){await super.init(e);const t=this.parameters;", organ: "_gpuWacheAn (das Device jedes Backends nach seinem init)" },
     { file: "vendor/three.webgpu.min.js", sub: '[Uint16Array,["uint16","unorm16"]]', organ: "_hautGewicht (normiertes Uint16 → unorm16x4)" },
+    // Die Ego-Sicht ist EIN Ebenen-Schalter (0910-5): jede Kamera — Haupt-Kamera wie Kaskade — zeichnet nur, was ihre Ebenen
+    // trifft, und projiziert die Kinder JEDES Knotens danach ohne Ebenen-Test (das Gerät in der Hand hängt an Knochen auf
+    // SHADOW_TWIN_LAYER und zeichnet doch im Auge).
+    { file: "vendor/three.webgpu.min.js", sub: "_projectObject(e,t,r,s,i){if(!1===e.visible)return;if(e.layers.test(t.layers))", organ: "_applyEgoSicht (jede Kamera zeichnet nur ihre Ebenen)" },
+    { file: "vendor/three.webgpu.min.js", sub: "const n=e.children;for(let e=0,a=n.length;e<a;e++)this._projectObject(n[e],t,r,s,i)", organ: "_applyEgoSicht (die Kinder ohne Ebenen-Test: das Gerät unter Ebene-2-Knochen zeichnet)" },
 ];
 
 // DIE DIÄT-PRÜFUNG (Kamera-Treue je Programm): die Diät-Funktionen aus dem Stamm schneiden (vom ersten

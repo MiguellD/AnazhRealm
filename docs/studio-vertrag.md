@@ -73,15 +73,22 @@ Ein Top-Level-Objekt `PRESETS`: `{ <rezeptId>: Rezept }`.
 `buildInstance(rezeptId, seed, lod, ov?)` — die EINE Bau-Funktion.
 
 - Deterministisch (G2.3), LOD-gestuft: **die LOD-Grade sind Studio-eigen**
-  (0 fein · 1 mittel · 2 grob/Impostor) — AnazhRealm erfindet keine LODs, es
+  (0 fein · 1 mittel · 2 grob/Impostor · 3 NUR-WURF) — AnazhRealm erfindet keine LODs, es
   RUFT sie.
+- **Die Stufe 3 ist NUR-WURF (S3 haus, 10.10.2026):** `kindStages` tragen Stufen 0..3; eine Stufe 3 trägt in ihrer
+  Budget-Zeile `nurWurf: true` und wird NIE gezeigt — der Wirt serviert sie keinem Distanz-Wunsch
+  (`_foundryDeclaredStage` überspringt sie, der Wurf- und Fern-Ruf nennt sie beim Namen). Sie wirft für die Art (B2c
+  `schatten`) und trägt die Fernform (`fernform: "huelle"`: ihre Liste reist als Beipack `__fern` in der Hüllen-Form N5).
+  Ihr Stoff ist der EINE Schatten-Stoff (`material.userData.__stoff = "schatten"` — die Brücke reicht ihn als kind
+  `schatten`, dieselbe Material-Identität wie der Schatten-Teil der Baum-L1; jede Ecke `aDeckt` 1). Eine Stufe 3 ohne
+  `nurWurf` ist rot (`gate:studio-vertrag`). Träger: fachwerk `haus` [0,1,2,3] und `ausstattung` [0,1,3].
 - Byte-Beweis: die eingefrorenen Vertrags-Fixtures (`spec/asset-contract/`,
   sha256-Goldens, NIE regenerieren) — jede Domäne bekommt ihren Ordner
   (v1 Pflanzen · v2 Kreatur-Haut · v3 Fahrzeuge · v4 Tore …).
 
 #### B2c — DAS BUDGET je Art × Stufe (SOLL; trägt ein Kern es, dann VOLLSTÄNDIG)
 
-`PORTAL_RENDER_CONFIG.lod.budget = { <kind>: { <stufe>: { tris, draws, schatten, karte?, …Regler }, fernform } }` —
+`PORTAL_RENDER_CONFIG.lod.budget = { <kind>: { <stufe>: { tris, draws, schatten, karte?, ab?, wurf?, …Regler }, fernform, hyst? } }` —
 was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 
 - **Vollständig:** jede Art aus den eigenen `kindStages` × jede deklarierte Stufe trägt eine Zeile;
@@ -89,10 +96,20 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 - `tris` (ganze Zahl > 0) = Obergrenze der Dreiecke je Instanz · `draws` (ganze Zahl ≥ 1) = Obergrenze
   der Sippen je Instanz (die EINE Verschmelz-Regel phyto-core `budgetSippe`: Stoff × Attribut-Form × Index —
   der Flatten und die Starr-Bindung des Ofens gruppieren nach ihr, das Gesetz zählt mit ihr = Draws je
-  Instanz-Gruppe und Pass) · `schatten` = die Stufe, deren Gestalt wirft (der L0-Baum wirft seine L1), oder `false`.
+  Instanz-Gruppe und Pass) · `schatten` = die Stufe, deren Gestalt wirft (der L0-Baum wirft seine L1, jede gezeigte
+  Haus-Stufe die NUR-WURF-Stufe 3), oder `false`.
+  Bei einer GELENK-GESTALT (Tier, Mensch — §8.4) darf `schatten` auf die gelenkige Grobstufe zeigen: sie bindet an das
+  Skelett der feinen (EIN Skelett je Gestalt) und wirft für beide Stufen mit ihren eigenen Stoffen (S3, Lehre 19). Ihr
+  Umriss trägt den der feinen: die Grobstufe liegt auf dem Gesetz (`__aufsNiveau` — die Glättung zieht sie nicht nach
+  innen), `gate:kreatur-kosten` (W) DECKUNG misst den Wurf-Umriss je Pose × Sonne gegen die feine Stufe (IoU ≥ 0,94).
+- **`nurWurf: true`** (nur so, nur an einer Stufe 3, B2): die Stufe wird nie gezeigt und wirft selbst (`schatten` = sie
+  selbst), nie `karte`. Der Satz-Bau des Wirts legt ihren Zwilling in den Wurf-Satz `bauWurf` seines Schatten-Stoffs
+  (`_bauSatzArt`: EIN Befehl je Kaskade für jeden Werfer, im Hauptbild keiner — `gate:chunk-satz` (l)). Haus: Stufe 3 ≤ 96
+  Dreiecke in 1 Draw; Ausstattung ≤ 48 (die Feuerstelle ≤ 32) — `gate:haus-fern` misst Kosten und Form.
 - **Wurf am Konsum:** der EINE Host-Leser `_foundryBudgetZeile(preset, stufe)` liest `schatten` für jeden
   Foundry-Flat (die eigene Stufe wirft selbst, eine andere reist als Schatten-Zwilling im selben Zug,
-  `false` wirft nicht) und für die Nah-Wiese — kein Stufen-Literal im Host; fail-closed (KERN-PFLICHT) bei
+  `false` wirft nicht) und für die Nah-Wiese, die Gelenk-Gestalt liest sie über `_ofenZeile` (den Leser von
+  `_ofenBudget`; `_gelenkGestalt` → der EINE Stufen-Schalter `_gelenkStufe`) — kein Stufen-Literal im Host; fail-closed (KERN-PFLICHT) bei
   fehlender Zeile — auch bei einer Art ohne Budget: seit W8 trägt jede Art mit Gestalt ihre Zeilen (die
   Wirt-Stufen-Tafel `_WIRT_WURF` ist gefallen, `gate:altlasten`). Ein Zwilling wirft selbst (der Validator hält
   es: kein Zwillings-Kreis).
@@ -100,22 +117,49 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 - `karte: true` (nur die letzte Stufe, wirft nicht): die Stufe IST die Studio-Karte (bakeImpostorAtlas),
   ihre Gitter-Geometrie wird nicht geliefert; sie gilt genau dort, wo der Wirt die Art als Impostor führt
   (`KIND_POLICY[kind].impostor` — die Karten-Linse in `gate:studio-vertrag`).
-- DARF-Regler einer Stufe (Form geprüft): `blattKarte` / `nadelKarte` (Kartenkante in Blatt- bzw.
-  Nadel-Längen, endlich > 0) · `dichte` (je
-  Kronen-Art der Anteil der gewachsenen Blattstellen, der eine Karte trägt, bzw. der Peitschen, die eine Strähne
-  tragen, in (0, 1]) · `straehne` ({teile ganz ≥ 1, breite > 0}: Stücke je Peitsche, Kartenbreite in Blattlängen —
+- DARF-Regler einer Stufe (Form geprüft): `blattKarte` (Kartenkante in Blatt-Größen, endlich > 0) · `dichte` (je
+  Kronen-Art der Anteil der gewachsenen Blattstellen, der eine Karte trägt, in (0, 1] — seit S3 nur noch der Strauch,
+  `shrub[0].dichte.laub`; die Baum-Krone wählt über `lagen`) · `lagen` · `quote` · `geruest` · `wedel` · `wurf`
+  (die Kronen-Kosten, unten) · `straehne` ({teile ganz ≥ 1, breite > 0}: Stücke je Peitsche, Kartenbreite in Blattlängen —
   die Trauer-Krone in L0 und L1) ·
   `rinde` ({ast, reisig} in trunkR, 0 < reisig < ast < 1) · `schnitt` / `rute` (das Reisig des Strauchs, in
   trunkR, 0 < schnitt < rute < 1: dünnere Stränge als `schnitt` fallen, unter `rute` trägt der Strang die
   Vierkant-Röhre auf jedem 3. Ring) · `boden` (tiefstes Laub in Baumhöhen, [0, 1)) ·
-  `deckung` (Band [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt).
+  `deckung` (Band [lo ≤ 1 ≤ hi], in dem die gebaute Krone die der feineren Stufe bedeckt) · `rispe` ({grannen
+  ganz ≥ 1, segmente ganz 1..3, breite > 0}: die Rispe des Grases je gelieferter Stufe — Grannen × Segmente und die
+  Breite der Granne in Einheiten der vollen; emitGrass liest sie, jede Granne des Individuums zieht ihre Würfe weiter,
+  und jede Stufe tastet DIESELBE Kurve der Granne ab — 3 Segmente, nie neu integriert, nie verfeinert).
+- DARF-Felder der Gelenk-Gestalt (S3, Form geprüft): `ab` (an einer Stufe außer der ersten, endlich > 0, streng
+  steigend über die Stufen) = ab `ab` m × Körpergröße trägt die Stufe das Bild — die Gestalt liest es beim Bau, jeder
+  Leser fragt die Gestalt (die Wirts-Distanzen TIER_FERN_DIST_SQ · MENSCH_FERN_DIST_SQ fielen) · `hyst` (Art-Ebene,
+  0 < hyst < 0,5) = die Hysterese dieser Grenze (fern erst jenseits (1+h)·ab, zurück erst innerhalb (1−h)·ab) ·
+  `wurf.seh` (nur an einer selbst werfenden Stufe; eine nicht-leere Teilmenge von phyto-core `BUDGET_GESETZ.seh`) =
+  der werfende Teil der Stufe nach Seh-Klasse (Tier `["haar"]`, Mensch `["haut", "stoff", "haar"]`); der Rest
+  der Stufe wirft nie. `wurf` ist EINE Zeile in zwei Formen: die Gelenk-Gestalt nennt ihren Wurf-Teil nach Seh-Klasse
+  (`wurf.seh` — ihre Teile sind geskinnt und werfen mit dem eigenen Stoff), der Baum als eigenes Gitter (`wurf.teil`
+  "schatten" mit `tris` und `lagen`, E1 — unten bei den Kronen-Kosten); der Validator prüft beide in EINER Regel
+  (nur eine selbst werfende Stufe nennt einen Wurf-Teil).
+- **Die Gras-Zeile (S3, 08.10.) ist aus dem Haushalt abgeleitet:** die Nah-Wiese der Welt zeichnet an der Mess-Wiese
+  höchstens 57 066 Dreiecke (Ratsche des Profi-Bands, je Blick ≤ 80 000) — `grass[1]` 1 220 (L1 0–5 m, Rispe 6 × 2:
+  der Federbusch; die Zeile stand bei 1 000 und stieg offen — der Halm-Kontrast der Wiesen-Linse trägt die Zahl der
+  Grannen, 6 × 2 hält 13,61/7,97 gegen 14,04/8,22 der Basis) und `grass[2]` 130 (L2 5–14 m, EINE Granne, die Sehne
+  der Kurve) statt der gemessenen Hülle 1 700/320; die Halme bleiben byte-gleich, die Breite der Granne ist an der
+  Bild-Deckung geeicht (Ährchen-Anteil der Pixel, 8 Blicke).
 - `band` (DARF, ganze Zahl > 0 und < `tris`): das Profi-Band-Ziel der Stufe (Haushalt), solange die
   gebaute Hülle `tris` darüber liegt — offen und benannt, die Wand druckt den Faktor; erreicht die Stufe
   das Band, fällt das Feld und `tris` IST das Band. `tris` bleibt die Ratsche (darf nur fallen).
 - `gestalten` (je Rezept, ganze Zahl ≥ 1): wie viele Individuen (Samen 1..V) die Welt von einem Rezept
   trägt (`_foundryVariantFor`). Der Haupt-Kern trägt dazu die `'*'`-Zeile (jede Pflanzen-/Fels-Art ohne
   eigene Zeile); ein Zweit-Kern zählt JEDES eigene Rezept selbst, kein fremdes, keine `'*'`-Zeile (W8:
-  das Wirts-16 gehört dem Gesetzbuch).
+  das Wirts-16 gehört dem Gesetzbuch). **V Gestalten sind V verschiedene Individuen (S3, 08.10.):** ein Rezept, dessen
+  Bau den Samen nicht liest (seed-invariant), zählt EINE Gestalt — mehr nur mit bewiesener Seed-Achse; eine Achse zu
+  schaffen ist ein Re-Mint-Akt des Kerns, nie eine Zahl in der Zeile. Die Wand: `gate:asset-contract` baut je Art und
+  Rezept mit V ≥ 2 JEDE Gestalt 1..V über die echte Brücke (die Zweit-Kerne aus dem Bau des Kosten-Zugs) und verlangt V
+  verschiedene Bau-Abdrücke — jeder Zwilling steht beim Namen („Gestalten-Lüge: vehicle-Rezept gt (8 von 16 verschieden:
+  1=9, …)“; Selbsttests: drachentor mit V 2 und gt mit V + 1 MÜSSEN rot werden). Gemessen 08.10.: porta 7 · schmiede 21
+  · tetrapoda 4 · koerper 1 waren seed-invariant und zählen 1; das Fahrzeug trägt EINE Achse, den Lack je Same
+  (`lackIndex`, reihum über acht Lacke) — es zählt 8 (`GESTALTEN_JE_REZEPT` = die Lacke ohne Clay), mit 16 trugen Same
+  9..16 den Lack von 1..8 (40 byte-gleiche Zwillinge); fachwerk (Haus 16, Ausstattung 2/3/2) zeigt V von V.
 - **Das Budget-Gesetz (W8, phyto-core `budgetErzwingen`):** der EINE Ausgang jeder Zweit-Kern-Gestalt —
   die Brücke (`__replyBuildAsset`) UND der Sync-Guss des Wirts-Ofens (`_ofenBudget`, Tier + Mensch)
   falten eine Stufe über `draws` auf ihre Zeile: Stoffe (der Wirts-Material-Schlüssel `budgetStoff`; die
@@ -125,6 +169,12 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   Teil (das Scharnier reist mit). Innerhalb der Zeile ist es ein No-op (byte-gleich). Dreiecke faltet es nicht:
   über `tris` oder bleibend über `draws` reist ein `budgetBruch` mit, der Wirt loggt ERROR, die Wand wird rot —
   nie still.
+- **Der Flügel am Scharnier (K08):** ein Tür- oder Tor-Flügel reist als Gruppe, deren Position das Scharnier ist
+  (`userData.side`, bei gebackener Offen-Pose `offen`); sein Gitter liegt relativ zu ihr. Der Extraktor liest das
+  Scharnier aus der Gruppen-Position (`out.tuer` hx/zf) und bakt die Lage über matrixWorld, der Wirt dreht um
+  dieselbe Achse (`_tickTorFluegel`: T(h)·R·T(−h)). Ein haus-lokal gebakter Flügel rückt vor dem Ausgang um sein
+  Scharnier zurück (fachwerk `buildStufe`) — sonst steht er um seine Scharnier-Lage vor der Fassade
+  (`gate:haus-fern` T: jedes Blatt ≤ 0,05 m an seinem Scharnier, L0 offen und zugedreht, L1 im Bake).
 - **Die Seh-Klasse (Integration W8, 05.10.):** was ein Stoff dem AUGE ist — `stoff` (Holz · Putz · Stein ·
   Textil · Gummi) · `haut` (Haut, Lippe, Nase, Ballen) · `haar` (Haar · Fell · Strähne) · `auge` (Augapfel ·
   Iris · Pupille · Hornhaut) · `glas` (Glas, Durchscheinendes) · `metall` (Metallizität ≥ 0,5: Chrom, Stahl,
@@ -156,9 +206,14 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
 - **`fernform`** je Art (Pflicht, kein Stufen-Schlüssel; nie `fern` — der Name der Farn-Art): was die Art
   jenseits der Nah-Grenze des Wirts IST (`AnazhRealm.ANALOG_NAH_M`, 64 m — diesseits trägt ihr Mesh) — `"karte"` (ihre
   Karten-Stufe; genau dann, wenn die letzte Stufe `karte: true` trägt), `"gesetz"` (ihr Satz im
-  Welt-March: die Passung der Studio-Gestalt als Primitive, 0 Draws, kein Schatten-Wurf) oder `"boden"`
-  (keine Geometrie, die Boden-Funktion trägt die Farbe). foundry-core: tree/shrub `karte` ·
-  flower/rock `gesetz` · grass `boden`. Kein Builder liest sie. Pflicht am Konsum: der Host-Leser
+  Welt-March: die Passung der Studio-Gestalt als Primitive, 0 Draws, kein Schatten-Wurf), `"boden"`
+  (keine Geometrie, die Boden-Funktion trägt die Farbe) oder `"huelle"` (S3: die Liste der NUR-WURF-Stufe in der
+  Hüllen-Form N5 — PFLICHT dann eine Stufe mit `nurWurf`, und ihr Bau trägt den Beipack `__fern`; der EINE Host-Leser
+  `_huelleVon` legt die Teile in den Welt-March (`_archFoundryZiegel`), fail-closed: fehlt `__fern`, bricht die Art
+  (KERN-PFLICHT), nie ein Box-Fit-Rückfall; die Streu trägt `huelle` nicht und bricht laut). foundry-core: tree/shrub
+  `karte` · flower/rock `gesetz` · grass `boden`; fachwerk: haus/ausstattung `huelle`.
+  **Die Haus-Karte ist FINAL GESTRICHEN** (S3, E7): das Befehle-Ziel (karten 37 → ≤ 2) trägt seit W6 der Bau-Satz, eine
+  Karte zeigte bei 26–64 m Parallaxe; die Fernstufe des Hauses ist die grundriss-treue L2, jenseits 64 m die Hülle. Kein Builder liest sie. Pflicht am Konsum: der Host-Leser
   (`_foundryFernForm`) liest sie im Zellen-Chokepoint VOR jedem Mesh-Zug und bricht fail-closed
   (KERN-PFLICHT), wo eine gestreute Art sie nicht trägt — der Validator verlangt sie je Budget-Art; eine `gesetz`-Zelle, deren Satz nicht steht
   (Fit-Takt, erschöpfte Kapsel-Liste), WARTET ohne Geometrie — nie das Mesh-L0 (`gate:streu-fern`).
@@ -208,6 +263,68 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   Nadel-Röhren von gestern deckten unter ihrer eigenen L1, die L1 deckt die L0 jetzt im Band) und 1,04–1,17 (Weide)
   der L0 von gestern; L1/L0 1,00–1,12. Dreiecke höchstens 17 720 (Tanne s2). Gemessen mit SCHWEBE: 0 von 41 404 Karten
   in 34 Baum-L0 (Goldens + Gestalten).
+- **Die Kronen-Kosten (S3, 09.10. — Vertrags-Akt, Pflicht in `gate:studio-vertrag`, Wände in `gate:asset-contract`).**
+  Befund (Kern V18.536, kronen-linse 24 Ansichten): die Zeile war nur gegen die sättigende BINÄRE Deckung geeicht —
+  die Laub-L0 trug 35–72 Quad-Lagen je Kronen-Pixel (jede Lage alpha-getestet und schattiert, 65 % ihrer Fragmente
+  verworfen), die L1 24–47 und war die ausgedünnte L0 (Quote 0,46–0,71), der Nadel-Ast eine Röhre unter radialen
+  Nadel-Sprays (Koniferen-L0 78–80 % Rinde), der Wurf ein Index-Vorsatz zweier Teile. Die Baum-Zeilen tragen:
+  - `lagen` (tree[0] 16 · tree[1] 13): Quad-Lagen je Kronen-Pixel (kronen-linse `bildLagen`) — der BAU-REGLER der
+    Karten-Wahl (`__lagenWahl`: phyto-core `kronenLagen` schätzt die volle Krone, die Stufe trägt 0,82·lagen davon
+    im Index-Stride; die Trauer-Krone wählt ihre Peitschen über `quadLagen`) UND die Wand (L). Das Soll der L1 (12)
+    steigt offen auf 13: mit 12 deckte die Laub-L1 von unten (60°) im Mittel 0,90–0,94 ihres Bilds von V18.536, die
+    Weiden-L1 0,86 (Gegenprüfung R1, Bild-Tafel);
+  - `quote` (tree[1] 0,4): Dreiecke L1 / L0 derselben KRONE (Q) — Laub ≤ 0,29, Koniferen ≤ 0,39 (Mammut: 14 Furchen am
+    Stamm); das Soll 0,35 hält der Mammut nicht, die Zeile steht offen bei 0,4. Ein Baum ohne Krone (Totholz) ist in der
+    L1 nie Gerüst + Karte — die Quote gilt ihm nicht (unten: sein Gerüst);
+  - `geruest` (tree[0] 0,1 · tree[1] 0,25 trunkR): die Stufe trägt als Röhre nur Stränge ab geruest·trunkR — jeder
+    feinere Strang ist seine Karte (das Atlas-Bild ist ein belaubter Zweig) bzw. Strähne. Ein Baum OHNE Krone (Totholz)
+    hat keine Karte, die ihn trüge: seine L1 trägt jeden Strang ab einem Bild-Pixel an der Nahkante (STUFEN_BILD_PX) —
+    mit dem Gerüst ab 0,25·trunkR verlor das Totholz-L1 bis 16 % seiner Ansicht;
+  - `wedel` ({ab, teile, breite, nadel, rand, winkel, holz}; tree[0] {0,35, 1, 1,65, 0,025 m, 0,5, 10°, 0,15} · tree[1]
+    {0, 2, 2,03, 0,05 m, 0,3, 5°, 0,15}): der Nadel-Ast (jeder Seitenast des Leittriebs) ist bis `ab` seiner Bahn Röhre
+    und läuft dort spitz aus; sein Wedel — Strähnen aus der Wedel-Zelle (`BLATT_ATLAS_WEDEL`, Zelle 3, Füllung 0,2811),
+    mindestens `teile` und so viele Stücke, dass die Nadel in der Welt `nadel` misst — trägt die ganze Bahn: je Stück so
+    breit wie die Hülle seiner Nadel-Wolke (Abstand zur Bahn + `rand` × Nadel-Größe, unter 45° um ihre Stelle) ×
+    `breite`, vom Röhren-Ende bis zur Spitze in Kette (mindestens der Saum `rand` × Nadel-Größe: kein Stück schwebt).
+    Die Nadel-Wolke ist rund um den Ast (Flaschenbürste) — die zwei Karten kreuzen ±`winkel` aus der Lotrechten (waagrecht
+    und lotrecht gekreuzt deckten die Koniferen von unten 12–35 % mehr, von der Seite 9–34 % weniger als V18.536); der
+    Leittrieb trägt seinen Wedel, wo er benadelt ist (die Spitze stand sonst kahl). `holz` ist der Anteil des Holzes
+    (das Mittel der Rinden-Farben des Baums) an der Farbe des Wedels — die Nadel deckt in der Zelle ihr Holz zu 99,9 %,
+    die Karte war ohne Holz um ΔE 2,4–5,2 heller und grüner; geeicht an der Kronenfarbe der Karten von V18.536. Was am
+    Ast wächst, fällt mit ihm; die Nadel-Karte (`nadelKarte`) und der Blatt-Stride der Laub-L0 (`dichte.laub`) sind
+    gefallen;
+  - `straehne.holz` (tree[0] 0 · tree[1] 0,06): der Holz-Anteil an der Farbe der Trauer-Strähne — die L1 trägt die
+    Peitsche samt ihrem Ast unter 0,25·trunkR (die Weiden-Karte war ohne ihn um ΔE 2,2–2,5 grüner);
+  - `blattKarte` (tree[0] 4,0 · tree[1] 2,2) und `straehne.breite` der L1 (0,95) sind an der Bild-Tafel geeicht (die
+    Laub-L1 deckte mit 1,8 im Mittel 0,84–0,92 ihres Bilds von V18.536, die Weiden-L1 mit 0,52 0,81–0,87);
+  - `wurf` (tree[1] {durchmesserM 0,17, teil "schatten", lagen 12, tris 1 200}) — DAS EINE WURF-GESETZ (E1): die Stufe,
+    auf die `schatten` zeigt, liefert ihren Wurf als EIGENES Teil `teil: "schatten"` mit dem Attribut `aDeckt` (Rinde 1,
+    Karte 0): das Gerüst ab `durchmesserM` Welt-Durchmesser (der Kaskaden-Texel k0) als Dreikant mit der mittleren
+    Breite des Rundstrangs (Umkreis 2π/(3√3)·r) und die Karten bzw. Strähnen der Krone auf höchstens `lagen` Lagen.
+    Der Wirt zeichnet das Teil mit EINEM Schatten-Stoff (Alpha = max(aDeckt, Atlas-Alpha) in colorNode, beidseitig)
+    nur auf SHADOW_TWIN_LAYER, jedes andere Teil der Stufe wirft nicht; fehlt das Teil, KERN-PFLICHT. Der drawRange-
+    Vorsatz (`__wurf`, `lf.wurf`) ist gefallen. Mit 6 Lagen deckte der Wurf von oben 61 % des L1-Bilds (Eiche), mit 12
+    81–94 % — die Zeile trägt 12. Haus (Stufe 3, aDeckt 1) liest dasselbe Gesetz; die Gelenk-Gestalt liest dieselbe
+    Zeile in ihrer Seh-Form (`wurf.seh`, oben bei den DARF-Feldern: ihre Grobstufe wirft auf SHADOW_TWIN_LAYER).
+  - Die Zeilen: `tree[0].tris` 18 000 → 12 000 (Soll 9 000 — die Birke trägt 10 954–11 924: das Lentizellen-Gitter mit
+    seinen Naht-Ringen, die die Armlänge braucht — ohne sie fiel die Stamm-Albedo auf 0,291 < 0,30; Laub 4 886–7 526,
+    Koniferen 5 188–6 412, Weide 6 474–8 842), `tree[1].tris` 10 000 → 2 900 (Soll 2 400 — die Birke 2 690–2 782, der
+    Mammut 2 308–2 448; jede andere Art ≤ 2 034), `draws` 3 → 2 (die Birken-Wurzel trägt den Birken-Stoff).
+  - DAS BILD VON V18.536 (Wand D, Gegenprüfung R1): `spec/asset-contract/v1/bild-v18536.json` trägt je Baum-Art × Same
+    L0 und L1 je Blick-Hebung (0°/30°/60° von unten, je acht Azimute; das Bild über dem Boden der Vorlage — die Wurzeln
+    im Boden sieht kein Spieler) und die Studio-Karte (Deckung, Kronenfarbe). Je Art hält das Mittel der Gestalten je
+    Stufe und Hebung und die Deckung der Karten 0,92–1,08, jede Gestalt 0,85–1,15; die Kronenfarbe der Karten je Art im
+    Mittel ΔE76 ≤ 2, je Gestalt ≤ 4 (V18.536 zeigte zwischen dünnen Sprays je Gestalt verschieden viel Holz). Das
+    Mittel der 24 Ansichten (D0) sah die Seitenansicht mit einem Drittel: die Koniferen-L1 verlor 30–32 % ihrer
+    Seitenansicht, die Karte 22–25 %, ohne dass eine Wand anschlug.
+  - Die Pixel-Gesetze der L1 (ihre Nahkante: 704 px je Baumhöhe; die L0 beginnt auf Armlänge, dort trägt jedes Merkmal):
+    die Radial-Teilung folgt dem Umriss (Sehnen-Abstand ≤ ½ px) und trägt mindestens zwei Seiten je Furche; die
+    Birken-Zeile ist ein Band nur ab 2 px, ihre Naht ab 1 px; die L1-Wurzel liegt in der Radial-Teilung der L2.
+  - **FINAL GESTRICHEN (S3):** die Fels-L1 — `formationen` an der Mess-Wiese 3/20 Befehle, 10 240/30 000 Dreiecke,
+    Genesis 3 / 14 720, Fels-L0 320–1 280 je Stein: eine L1 spart < 3k, `kindStages.rock` bleibt [0] (der Validator
+    hält es) · `budgetErzwingen` für Pflanzen — die Zeile IST der Bau-Regler, `gate:asset-contract` die Wand, ein
+    Ausgangs-Falten wäre ein Zwilling (`gate:studio-vertrag`: der Ruf lebt nur im Zweit-Kern-Zweig der Brücke) · die
+    Seh-Klasse `laub` — ihr einziger Leser wäre dieses Falten (Konsum 0); `BUDGET_GESETZ.seh` trägt sie nicht.
 - **Der EINE Blatt-Atlas als Textur** (`bakeLeafAtlasBild`, phyto-core): die gemalte Leinwand blutet (nicht
   deckende Texel tragen das Zell-Mittel statt Schwarz), alle Zellen tragen dasselbe lineare Mittel `wert`,
   die Mip-Kette ist die des Karten-Gesetzes (`impostorMips`, die vier Zellen als Ansichten nebeneinander: je Stufe
@@ -218,6 +335,29 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   auf Mip-Stufe 4 von 0,24 auf 0,14.
 - Es tragen: foundry-core (tree · shrub · grass · flower · rock · gestalten) und alle sechs Zweit-Kerne
   (vehicle · gate · weapon · haus · koerper · kreatur); klang trägt keine Gestalt und kein Budget.
+
+#### N5 — DIE EINE HÜLLEN-FORM (NORMATIV, S3 haus 10.10.2026)
+
+`{ stufe, teile: [ { art: "box" | "keil" | "kapsel", c, h | a, b, r, first?, walm?, farbe?, rolle } ] }` — die Gestalt
+eines Gesetzbuchs als Primitive, asset-lokal (Vorlagen-Raum, Meter), JEDE Zahl auf dem Raster 2^-12 (Plattform-gleich).
+
+- `box`: der Kasten `c ± h` (Mitte, Halbmaße — je drei Zahlen).
+- `keil`: der Halbkeil `c ± h`, oben geschnitten von der Ebene vom First (die Kante `first` ∈ `"+x"` · `"-x"` · `"+z"` ·
+  `"-z"`, volle Höhe) zur Gegenkante (Höhe 0); ein Satteldach sind zwei Keile, deren Firste sich treffen. `walm`
+  (0..1, fehlt = 0) schneidet die zwei Stirnen quer zum First mit derselben Neigung: von (1 − walm) der Höhe an der Stirn
+  bis zum First, der um walm × Tiefe kürzer wird (walm 1 über einem Quadrat: die Pyramide).
+- `kapsel`: die Strecke `a → b` mit Radius `r` (Kuppel, Rundbau, Zwiebel).
+- `farbe` (linear, drei Zahlen): Pflicht für jedes sichtbare Teil; `rolle`: `"fest"` (die Kollision), `"sicht"` (das
+  Fernbild) oder `"beide"`.
+- **EINE Quelle je Gesetzbuch:** die reine Kern-Funktion `huelle(rezeptId, seed, ov)` (fachwerk: der grundriss-treue
+  Fernkörper `koerperListe`, die Ausstattung aus ihrer Grundform); dieselbe Liste trägt die NUR-WURF-Stufe als Beipack
+  `__fern`, und ihr Gitter IST diese Liste. Die Kollision (`__huelle`, Welle L) trägt dieselbe Form (rolle `fest`).
+- **EIN Transport:** die Beipack-Karte der Foundry-Antwort (`FOUNDRY_BEIPACK`: `__huelle` → `huelle`, `__fern` → `fern`
+  am Flat). **EIN Leser:** `_huelleVon(h, rolle, quelle)` (prüft die Form, fail-closed), die Kollision
+  (`_hausHuelleSetzen`/`_hausBlockerBoxen`, rolle `fest`) und der Welt-March (`_archFoundryZiegel` →
+  `_huelleMarchDefs`, rolle `sicht`: Kasten, Keil Typ 2..5 + 0,49 · walm, Kapsel — das WGSL `sdKeil`/`gradKeil`).
+- Wände: `gate:haus-fern` (Form, Kosten, innen am Kern), `gate:studio-vertrag` (B2/B2c/fernform), `gate:asset-contract`
+  (die NUR-WURF-Stufe gebaut über die Brücke: `__fern` in der Form, Dreiecke ≤ Zeile).
 
 ### B3 — PLACEMENT (SOLL)
 
@@ -307,7 +447,9 @@ minAuszugFrac }`) — Leser `AnazhRealm._arenaGesetz()`, fail-closed
   rein additiv): `schwung` trägt auch die Hieb-GEOMETRIE (`windupFrac
 strikeFrac arcHalfRad bladeRadiusM reachBaseM reachMaxM shoulderH`),
   `gefuehl` den Stoß + das Tod-Kippen (`wucht pProKb` — der Stoß ist seit 0710-2 das EINE
-  Impuls-Gesetz des Wirts, AnazhRealm.STOSS; `kippDauerSec kippNachklangSec`), `bogen` den Pfeil-Flug (`maxFlugSec
+  Impuls-Gesetz des Wirts, AnazhRealm.STOSS; `kippDauerSec leichnamSec leichnamSinkSec` — VERTRAGS-AKT Welle LF kampf
+  09.10.: ein Tier fällt auf die Flanke, LIEGT `leichnamSec` (90 s, Kreatur-Uhr) und sinkt in der letzten Spanne
+  `leichnamSinkSec` (4 s) in die Erde; `kippNachklangSec` (0,35 s, danach war der Leib fort) fiel), `bogen` den Pfeil-Flug (`maxFlugSec
 radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `gueteFaktor(rezeptId, ov?)` — das Lehren-Urteil der Schmiede als
   Schadens-Faktor; `gueteAnteil(rezeptId, ov?)` (Welle L, additiv) — derselbe
@@ -325,13 +467,20 @@ radiusM muendungM`), dazu `guete { faktorVoll faktorLeer }` +
   `guete.mEffDmgMin/Max` samt `guete.mEffRefKg` (die Wirkung eines Treffers ist seine
   Energie gegen `gefuehl.keRefJ`, für Schaden UND Hit-Stop), die Wirts-Eichung
   `bogen.zugJouleRef` (E = `ableitenBogen(task).energie`).
+  Welle LF kampf (09.10., rein additiv — nur wer `treffer.weg` reicht, die Shell reicht ihn nie; Prüfstand byte-gleich):
+  `treffer.weg = [xLo, xHi]` ist der Treffer-Weg (m ab dem Knauf, wo die Waffe den Leib auf ihrem Bogen durchquert);
+  getroffen wird am Punkt des Wegs, der dem Schlagpunkt `S.impactX` am nächsten liegt. Das Urteil trägt dann `eff`
+  (die Wirkung, 1 − 1,4·|x − x_S|/L, Boden 0,25 — das Gesetz der Bambus-Probe; KE × eff, p × √eff) und `ort`
+  (`schlagpunkt` nur bei voller Wirkung, sonst die Seite: `griffnah` · `hand` · `spitze`). `buildPfeil()` (rein
+  additiv) ist die EINE Gestalt des Pfeils (Schaft, Bodkin-Spitze, Nocke, drei Federn; die Albedo im Vertex nach dem
+  FARB-GESETZ, `PFEIL` trägt Masse und Paletten-Hexe) — die Shell und der Wirt (`_pfeilVorlage`) bauen keinen eigenen.
 - **`VERHALTEN` (V18.483, tetrapoda-core, Namensraum-Export):** die
   Verhaltens-Seele (`aktionen { <name>: { dauer profil dreh? kopfSweep?
 rollAmp/Rate? hop? tempo? } } · stimmung { <lage>: { aktionen[] alle[min,max] } }`)
   — der Wirt wählt/stempelt FNV-deterministisch, der Baum-Gang trägt den
   Overlay. Jede Stimmungs-Aktion MUSS in `aktionen` existieren (Validator).
   Spiegel-Zensus 17.07. (V18.486+, rein additiv): die KREATUR-SEELE reist —
-  `jagd { radius speedBoost strikeRange strikeCooldownSec damageMul
+  `jagd { radius speedBoost strikeCooldownSec damageMul
 fearHpFrac triumphWindowSec scentRangeM hetzM pirschSichtM beuteMasse }`
   (VERTRAGS-AKT Welle LF 08.10.: DIE JAGD SCHLIESST SICH — die Witterung wählt
   die Beute an der Nase, der Gradienten-Schritt `scentProbeM` fiel; das Rudel
@@ -368,7 +517,7 @@ hopHochM hopBasisM }` · `sprung { impulsProM }` (VERTRAGS-AKT Welle L
   (Gefährten-Tempi/Halt-Distanzen — die Stamm-Getter wurden Leser) ·
   `herde { fensterRaum gewicht maxNachbarn }` (Schwarm-Kohäsion; Welle LF: im
   Paar-Raum zieht niemand, der Zug ist das Mittel × Tempo — `minAbstSq`/`fensterSq`
-  fielen) · `wasser` (Ufer-Scheu) · `jagd.pirschStoppM` (`furcht.neugierStoppM`
+  fielen) · `wasser` (Ufer-Scheu) · (`furcht.neugierStoppM`
   fiel: die Neugier hält am Paar-Raum mit dem Spieler) · `stimmung.schwellen`
   (die Schwellen-DATEN-Zeile der Stimmungs-Tabelle — KEINE Stimmung,
   Validator/Leser überspringen den Schlüssel). Alle Kern-Pflicht
@@ -380,8 +529,25 @@ matResilienz · greifkraft · pobZiel · ableitenPick/Graben/Klinge`)
   Maschinen leben intern weiter, `buildInstance` byte-unberührt
   (52/52 Goldens; nur die recipes/render-config-Datenkanäle wurden
   per Mint-Mechanik neu gemünzt).
-  Die Gegenwehr-Reichweite liest `jagd.strikeRange` (die EINE
-  Reichweiten-Wahrheit; das nackte Stamm-`4` fiel bewusst auf 2.4).
+  DER BISS IST DER ANSPRUNG (VERTRAGS-AKT Welle LF kampf 09.10.): alle drei
+  Biss-Wege (Jagd auf den Spieler, Beute, Gegenwehr) springen an
+  (`aktionen.pounce`) und beißen, wenn der Kopf der Gestalt den Leib des
+  Ziels berührt; die Reichweite ist der Weg des Ansprungs (`pounce.tempo` ×
+  `tempoEinheit` × seine Dauer, die Flugzeit des Sprung-Gesetzes), die Hetze
+  hält, wo das Maul den Leib erreicht. `jagd.strikeRange` und
+  `jagd.pirschStoppM` fielen; `BISS.kopfNeigung` (rein additiv) ist der
+  Bereich, in dem der Kopf im Ansprung auf das Ziel zielt, `BISS.rumpfNeigung`
+  (rad, wie bodyX) die tiefste Senkung der Front, mit der das Maul einen
+  tieferen Leib erreicht; `BISS.masseAnteil` der Anteil der Masse, mit dem der
+  Biss stößt. Ein Ansprung erreicht einen Leib nur, wenn dessen Unterkante
+  höchstens Kopf + Sprung-Höhe hoch liegt (Wirt `_kreaturBissSpalt`, Nachbesserung 2).
+  `KAMPF { refKg biss haut leben }` (rein additiv, Welle LF kampf): Biss, Haut
+  und Leben eines Tiers folgen der EINEN Masse seines Leibs gegen die
+  Bezugs-Masse `refKg` (der Wolf der Größe 1, 64 kg) mit den Exponenten
+  ⅔ · ⅓ · ⅔ (Wirt `computeCreatureStats`; ein Leib ohne Gestalt behält die
+  Werte seiner Substanz). Der Snapshot eines Tiers trägt seine Wunde als
+  `hpAnteil` (hp/hpMax); ein Stand mit absolutem `hp` (vor der Nachbesserung 2 der Welle LF kampf) gilt gegen
+  das Leben vor dem Massen-Gesetz.
 - **`STEUER_GESETZ` + `tempoEinheit` · `steuerSchritt` · `ankunftTempo` ·
   `herdeZug` (Welle L 06.10., tetrapoda-core, Namensraum-Export, rein
   additiv — PRESETS/PARAMS unberührt, der v7-Fingerabdruck wandert nicht
@@ -413,16 +579,16 @@ out?)` → `{ x, z, n }` — die Herden-FORM (Kohäsion nur zu Nachbarn
   Welt, Halt des stehenden Fußes, Senke auf die Reichweite, Abspreizen +
   ebene Zwei-Knochen-IK); Linsen `gate:tier-gang` · `gate:kreatur-takt`
   (gier · querhang).
-- **Das Fern-Bild ist geskinnt (Welle LF 08.10., foundry-core
-  `bakeTierInstance` Stufe 1, Vertrags-Akt am Ofen-Golden — 28 Klassen, die
-  Geometrie byte-gleich ohne die Gewichte):** die L1-Haut trägt Gelenk-Gewichte
-  wie L0, die starren Teile hängen starr an ihren Gelenken, `skinJoints` reist
-  im Beipack (die 27 Gelenke von L0 und L1 sind byte-gleich). Der Wirt spiegelt
-  die Pose des EINEN animierten Baums auf die Gelenke des Fern-Bilds
-  (`_tierFernFolgt`) und wertet jenseits der Standbild-Schwelle jedes Tier aus,
-  das LÄUFT (`_kreaturLaufTakt` · `_kreaturLaeuft`, die Raten-Leiter auf ihrer
-  untersten Stufe); wer steht, friert ein. Linse `gate:kreatur-takt`
-  (ferngang).
+- **Die ferne Stufe geht (Welle LF 08.10., mit S3 in V18.538 auf EIN Skelett
+  gelegt):** die L1-Haut trägt Gelenk-Gewichte wie L0, die starren Teile hängen
+  starr an ihren Gelenken, `skinJoints` reist im Beipack — das ist die gelenkige
+  Grobstufe der Gelenk-Gestalt (B2c, EIN Ofen-Golden-Akt `*-L1|*` aus S3; der
+  Spiegel `_tierFernFolgt` auf ein zweites Skelett fiel, die Grobstufe bindet
+  an die Knochen der feinen). Der Wirt wertet jenseits der Stufen-Grenze jedes
+  Tier aus, das LÄUFT (`_kreaturLaufTakt` · `_kreaturLaeuft`, die Raten-Leiter
+  auf ihrer untersten Stufe); wer steht, ruht (`_gelenkStufe` → `_gelenkRuhe`
+  nur für den Stehenden). Linse `gate:kreatur-takt` (ferngang, Täter
+  `ferngang` · `ferngang-bindung`).
 
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 
@@ -637,7 +803,10 @@ erfinden"). Sie reisen je Rezept in `fx` durch das EINE Buch (`__replyRecipes`)
   KONSUMIERT der Bäcker sie (Streu/Hüllen deterministisch, Verlauf als
   Vertex-Farben) — das Gesetz sagt WAS (Teile · Farben · Verteilung), die
   Deck-TECHNIK ist Leser-Sache (das Lab behält seine Builder, Benchmark
-  unbewegt). Fehlt die Tabelle, bäckt der Bäcker kahl (DARF, fail-soft).
+  unbewegt). Fehlt die Tabelle, schreit der Bäcker (fail-closed, LAUT — `FELL: kern.fellStreu fehlt`);
+  kahl ist nur die Grobstufe (lod ≥ 1: ohne Fell-Schalen und Strähnen). Die Grobstufe ist GELENKIG
+  (S3): die Haut bindet an die Gelenke wie die feine, jedes starre Teil hängt mit Gewicht 1 an
+  seinem Gelenk; der Wirt bindet sie an das Skelett der feinen (EIN Skelett je Gestalt).
   WELT-LOOK-GESETZE (V18.462, dasselbe Muster eine Ebene höher): der Himmel
   (`HIMMEL_GESETZ`) und die Wasser-Oberfläche (`WASSER_GESETZ`) wohnen als
   Zahlen-Tabellen in foundry-core — das Studio-GLSL INJIZIERT sie in seinen
@@ -702,13 +871,15 @@ kindStages` auf seinem Namensraum tragen. Die Zeile deklariert die
   EHRLICH verschieden backen, sonst TEIL) + die Fern-Linsen (`gate:tier-fern`
   · `gate:kreatur-kosten`). Ohne die Zeile gilt fail-closed `[0]` (N7.5,
   unverändert). Spender heute: `tetrapoda-core.js` (`kreatur:[0,1]` — bauTier
-  Gelenk-Baum/Fern-Standbild) · `koerper-core.js` (`koerper:[0,1]` —
-  bakeMenschInstance fein/Fern-Guss).
+  Gelenk-Baum/gelenkige Grobstufe) · `koerper-core.js` (`koerper:[0,1]` —
+  bakeMenschInstance fein/gelenkige Grobstufe).
 
 **Stand der MESHFREI-Kerne:** `klang-core.js` (`__klangCore` — B1 22 Genres ·
 B4 bpm+6 DNA-Dials · fx.klang) · `koerper-core.js` (`__koerperCore` — B1
 `mensch` · B4 8 Morph-Dials · fx.gestalt + fx.motion + **fx.bewegung**
-[schwimmen · parkour · slidePose · speed/jump/stamina, §8.2+]) ·
+[schwimmen · parkour · slidePose · speed/jump/stamina, §8.2+] · `LEIB { dichteKgM3 armAnteil }` — die Masse des
+Menschen aus dem Volumen seiner Haut; `armAnteil` (Welle LF kampf, rein additiv: 5,0 % nach Dempster) ist der Arm samt
+Hand, mit dem die Ausdauer einer Maus-Arm-Aktion wächst, (m_Arm + m_Gerät) / m_Arm, Wirt `_mausAusdauer`) ·
 `tetrapoda-core.js` (`__tetrapodaCore` — B1 4 Gattungen · B4 5 allometrische
 Dials · fx.motion + **VERHALTEN** [12 Aktionen · 6 Stimmungen, B6]).
 Alle drei: keine KIND_POLICY-Zeile (keine Katalog-Blueprints — die Rezepte
@@ -717,3 +888,25 @@ erscheinen als Studio-Rezepte in der Werkstatt, W-A1-Straße), `fx.place
 Der GUSS ihres Ofens (§8.4, `BAKERS_BY_KIND.kreatur/.koerper`) trägt seit S1 Wände das Bake-Golden
 `spec/asset-contract/ofen/` (`gate:ofen-contract`): sha256 je Stoff-Klasse × Gelenk, je Gelenk und je
 Beipack, jede Art × jede Stufe der Ofen-Stufen-Zeile (§8.5).
+
+## §9 v1.2 — Der Gesetz-Kern: reine Funktionen ohne Rezept (NORMATIV, K09a, 11.10.2026)
+
+Ein Kern, der ein GESETZ als reine Funktion trägt und weder Rezepte noch Gestalt liefert (die Gelände-Höhe:
+`gelaende-core.js`, `__gelaendeCore`), ist ein **Gesetz-Kern**. Seine Manifest-Zeile trägt `"funktion": true` und
+einen Namensraum; der Namensraum erklärt `STUDIO_VERTRAG = 1` und `FUNKTION = 1`. Für ihn gelten B1–B6 nicht: er
+trägt KEINE `PRESETS` (kein Buch-Eintrag, keine Werkstatt-Rezepte), KEIN `buildInstance` (kein build-asset-Dispatch),
+KEIN `MESHFREI` (das gilt Rezept-Kernen ohne Gestalt) und KEINE `PARAMS_BY_KIND`; er trägt mindestens eine Funktion.
+Die Brücke liest ihn generisch (die Zweit-Kern-Schleife findet keinen Block und überspringt ihn), der Foundry-Worker
+lädt ihn mit (das Studio liest dasselbe Gesetz). Seine Funktionen sind rein: `f(Lage, x, z, …)` — die Lage reicht der
+Wirt, der Kern hält keinen Welt-Zustand außer Strömen, die er aus der Saat ableitet. Validator: `gate:studio-vertrag`
+(beide Seiten der Erklärung, die Absenz der Blöcke, die Funktions-Fläche; Selbsttest), die Zwillings-Wand in
+`gate:altlasten` hält die Formeln im Gesetzbuch.
+
+**Stand der Gesetz-Kerne:** `gelaende-core.js` (`__gelaendeCore`) — die EINE 2D-Höhe `hoehe(L, x, z, mitDetail)` (der
+Term-Auswerter des Erbguts samt seiner Normalform `erbgutNormal`, der Wildnis-Term samt kontinentaler Basis
+`kontinentBasis`, der Makro-Anker `ankerAusSaat`/`ankerBeitrag`/`massivMaske`/`grat`, Erosions- und Tarn-Delta samt
+Mulden-Form `tarnMulde`, die Rauheits-Maske `rauheit`, der Kachel-Schlüssel); geladen vom Stamm (vor `anazhRealm.js`),
+vom voxel-worker (`importScripts` mit `?v=`) und vom Foundry-Worker; `feld-wgsl.js` bleibt der Seh-Spiegel und liest
+seine Eingaben aus ihm. Kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `kontinentBasis`, die Fels-
+Exposition `massivMaske`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder Wurzel-Datei und jedem
+Skript.

@@ -10,6 +10,12 @@
 //     im Bild bleibt. Befund: 21 108 Dreiecke in der Szene, 0 im Bild (das Welt-Auge stand 36 m weit).   Soll ≥ 0,99
 //     Dazu die Wand: jeder Neben-Renderer zeichnet nur über `_buehneRender`, und der setzt die Maske um den Render aus.
 //
+//   V-D3 RAHMEN (K05, Runner WS-01) — JEDE GESTALT FÜLLT DIE VORSCHAU: jedes Rezept des LIVE-Buchs und jeder Bauplan wird
+//     über den Chokepoint des Spielers gewählt (selectStudioRecipeForView · selectBlueprintForEdit), `_workshopRender`
+//     stellt die Kamera; gemessen: die projizierte Box3 der Gestalt, größere Kante je Bildkante (NDC, geklemmt), jede
+//     Waffe des Buchs gemessen. Befund 32027dc2: Messer 0,059, Waffen-Median 0,146, 71 von 232 unter 0,5 (der
+//     3-m-Mindestabstand in `_workshopCenterPreviewOn`).                                          Soll [0,5; 0,9]
+//
 //   V-D1 (Q15) — DIE ANKUNFT AUF DER LICHTUNG: der echte Boot legt die Genesis-Plattform, der Wald wächst um den
 //     Spieler (Chunk-Strom + Pflanz-Schlange). Gemessen an den GEPFLANZTEN Bäumen: Stamm-Abstand zur Plattform-Mitte und
 //     ihre Krone in der Welt (Kronen-Radius der Art × Größe × Welt-Skala — auf der echten GPU gegen die weiteste Ast-Spitze
@@ -42,7 +48,7 @@
 //       ein FEHLENDER Radius/Abstand ist der dokumentierte (near_water 60 m, at_player_forward 5 m, at_field_need 50 m),
 //       nie die Untergrenze von `dslClamp`. Befund c52089c7: der Text wird der Ursprung, at(null) die 0, das Dorf ohne
 //       Abstände steht beim Spieler, voxel_carve(null) gräbt bei 0, near_water ohne Radius sucht 8 m.
-//     R2 — DIE WASSER-SUCHE: das Urteil `_isAboveWaterAt` (mit dem Fels-Beweis `_felsUeber`) gegen den vollen Spalten-Scan,
+//     R2 — DIE WASSER-SUCHE: das Urteil des Lands `_landAt` (mit den Fels-Beweisen `_felsUeber`) gegen den vollen Spalten-Scan,
 //       3 600 Urteile um den trockenen Ort, die Plattform und das nächste Wasser — 0 Abweichungen; dann
 //       `_findNearestWaterPoint` für Trinken (40 m), Chat (80 m), KI (200 m), Spalten-Scans gezählt (Scan und Urteil sind
 //       Beobachtungs-Punkte). Soll trocken ≤ 8 je 4-m-Ring (die Strahlen-Suche von cf9a07ba). Befund 6b988a07: 351/1330/8037.
@@ -95,7 +101,29 @@ function fnBody(src, sigRe) {
 }
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
-const SOLL = { vorschauAnteil: 0.99 };
+const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9 };
+// V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs gemessen.
+// Befund integ-probe 32027dc2 (Runner R10): Messer 0,059, Median 0,157 — Täter der 3-m-Mindestabstand der Vorschau.
+function rahmenVerdict(m) {
+    if (!m || m.gestartet !== true) return ["rahmen start"];
+    const out = [];
+    const e = m.eintraege || [];
+    const waffen = e.filter((q) => q.kind === "weapon" && Number.isFinite(q.fuell)).length;
+    if (!(m.waffenImBuch > 0) || waffen !== m.waffenImBuch) out.push(`rahmen waffen ${waffen} von ${m.waffenImBuch} gemessen`);
+    const frist = e.filter((q) => q.frist).map((q) => q.id);
+    if (frist.length) out.push(`rahmen ${frist.length} ohne Gestalt nach Frist (${frist.slice(0, 4).join(", ")})`);
+    const aus = e
+        .filter((q) => Number.isFinite(q.fuell) && !(q.fuell >= SOLL.rahmenMin && q.fuell <= SOLL.rahmenMax))
+        .sort((a, b) => a.fuell - b.fuell);
+    if (aus.length)
+        out.push(
+            `rahmen ${aus.length} außerhalb [${SOLL.rahmenMin}; ${SOLL.rahmenMax}]: ${aus
+                .slice(0, 5)
+                .map((q) => `${q.id} ${q.fuell} (${q.kante} m, Abstand ${q.dist} m)`)
+                .join(", ")} — Täter _workshopCenterPreviewOn`
+        );
+    return out;
+}
 function vorschauVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = [];
@@ -269,7 +297,7 @@ function knotenVerdict(m) {
     return out;
 }
 
-// R2 — DIE WASSER-SUCHE: das Urteil `_isAboveWaterAt` ist bit-gleich zum vollen Spalten-Scan, und die dichte Ring-Suche
+// R2 — DIE WASSER-SUCHE: das Urteil des Lands `_landAt` ist bit-gleich zum vollen Spalten-Scan, und die dichte Ring-Suche
 // scannt am trockenen Ort (kein Wasser im Kreis, der teuerste Fall) nicht mehr Spalten als die 8-Strahlen-Suche von
 // cf9a07ba (8 je 4-m-Ring). Befund 6b988a07: 351/1330/8037 Spalten für 40/80/200 m.
 const ALT8 = (R) => 8 * Math.floor(R / 4);
@@ -334,7 +362,9 @@ function wand(src) {
                 /this\._dslKeinOrt\(/.test(evalPos) &&
                 !/return null/.test(evalPos) &&
                 (evalPos.match(/_defaultSpawnPos\(\)/g) || []).length === 1 &&
-                /if \(node == null\) return this\._defaultSpawnPos\(\);/.test(evalPos),
+                // der Default-Spawn nur für `node == null` — seit 10.10. läuft auch er durch die Feld-Wand der Engstelle
+                // (das Feld hat keinen Ort, wo die Wildnis nicht trägt), darum wird er gesetzt statt sofort zurückgegeben
+                /if \(node == null\) pos = this\._defaultSpawnPos\(\);\n\s+else if \(!Array\.isArray\(node\)\)/.test(evalPos),
         ],
         ["W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)", wachen === 0, `${wachen} Wache(n)`],
         [
@@ -394,7 +424,7 @@ async function probe(arg) {
         const platR = st.blueprints.start_plattform.parts[0].size.x / 2;
         const P = plat.position;
         m.plattform = [+P.x.toFixed(1), +P.z.toFixed(1)];
-        m.trocken = r._isAboveWaterAt(P.x, P.z, 0);
+        m.trocken = r._landAt(P.x, P.z, 0);
         // Der Wald wächst um den Spieler: ticken, bis die Bäume im 40-m-Kreis ruhen.
         const baeume = () =>
             st.architectures.filter((a) => a && /^baum_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 40);
@@ -541,7 +571,7 @@ async function probe(arg) {
         const pm = st.playerMesh.position;
         const ausgabe = document.getElementById("chat-output");
         const letzteZeile = () => (ausgabe && ausgabe.lastElementChild ? ausgabe.lastElementChild.textContent : "");
-        const nass = (x, z) => !r._isAboveWaterAt(x, z, 0.2);
+        const nass = (x, z) => !r._landAt(x, z, 0.2);
         // Ein Ort ohne Wasser im 84-m-Kreis (eigenes 4-m-Raster, unabhängig von der Such-Funktion des Spiels).
         const trockenUm = (x, z) => {
             for (let dz = -84; dz <= 84; dz += 4)
@@ -550,7 +580,7 @@ async function probe(arg) {
         };
         let ort = null;
         for (const [x, z] of [[pm.x, pm.z], [200, 200], [-200, 200], [200, -200], [-200, -200], [400, 0], [0, 400], [-400, 0]]) {
-            if (r._isAboveWaterAt(x, z, 1) && trockenUm(x, z)) {
+            if (r._landAt(x, z, 1) && trockenUm(x, z)) {
                 ort = { x, z };
                 break;
             }
@@ -764,12 +794,14 @@ async function probe(arg) {
         const plat = st.architectures.find((a) => a && a.type === "start_plattform");
         const P = plat ? { x: plat.position.x, z: plat.position.z } : { x: 0, z: 0 };
         const scan = r._voxelSurfaceY;
-        const urteil = r._isAboveWaterAt;
+        const urteil = r._landAt;
         // (a) Das Urteil gegen den vollen Spalten-Scan (die Referenz, wie bis 06.10. gerechnet): 3 Margen, je 400 Punkte
         //     um den trockenen Ort, die Plattform und das nächste Wasser (deterministischer Zufall).
         const ref = (x, z, mg) => {
             const s = scan.call(r, x, z);
-            return s !== null && Number.isFinite(s) && s > r._waterLevelAt(x, z) + mg;
+            // die Definition des Lands ohne Beweise: über dem gezeichneten Wasser am Körper UND über dem des Gesetzes
+            if (s === null || !Number.isFinite(s)) return !(r._atlasWaterLevelAt(x, z, -1e9) > -Infinity);
+            return !(s < r._koerperWasser(x, z, s) + mg) && !(s < r._atlasWaterLevelAt(x, z, s) + mg);
         };
         const w0 = r._findNearestWaterPoint(P.x, P.z, 200);
         const zentren = [ort, P].concat(w0 ? [w0] : []);
@@ -830,14 +862,16 @@ async function probe(arg) {
         let scans = 0,
             proben = 0;
         const eigen = (k) => Object.prototype.hasOwnProperty.call(r, k);
-        const hatte = { scan: eigen("_voxelSurfaceY"), urteil: eigen("_isAboveWaterAt") };
+        const nassAlt = r._nassAt;
+        const hatte = { scan: eigen("_voxelSurfaceY"), urteil: eigen("_nassAt") };
         r._voxelSurfaceY = function (...a) {
             scans++;
             return scan.apply(this, a);
         };
-        r._isAboveWaterAt = function (...a) {
+        // die Ring-Suche fragt die Spalten-Probe `_nassAt` (der Beobachtungs-Punkt zählt und reicht durch)
+        r._nassAt = function (...a) {
             proben++;
-            return urteil.apply(this, a);
+            return nassAlt.apply(this, a);
         };
         try {
             for (const [pfad, R] of [
@@ -863,7 +897,7 @@ async function probe(arg) {
                 const D = Math.max(8, Math.ceil((2 * Math.PI * rr) / 4));
                 for (let d = 0; d < D; d++) {
                     const s0 = scans;
-                    const ja = r._isAboveWaterAt(ort.x + Math.cos((d / D) * Math.PI * 2) * rr, ort.z + Math.sin((d / D) * Math.PI * 2) * rr, 0.2);
+                    const ja = !r._nassAt(ort.x + Math.cos((d / D) * Math.PI * 2) * rr, ort.z + Math.sin((d / D) * Math.PI * 2) * rr, 0.2);
                     if (ja) {
                         trockenProben++;
                         trockenScans += scans - s0;
@@ -883,8 +917,8 @@ async function probe(arg) {
         } finally {
             if (hatte.scan) r._voxelSurfaceY = scan;
             else delete r._voxelSurfaceY;
-            if (hatte.urteil) r._isAboveWaterAt = urteil;
-            else delete r._isAboveWaterAt;
+            if (hatte.urteil) r._nassAt = nassAlt;
+            else delete r._nassAt;
         }
         m.gestartet = true;
     } catch (e) {
@@ -977,6 +1011,82 @@ async function probe(arg) {
     } catch (e) {
         out.vorschau = Object.assign(out.vorschau || {}, { err: (e && e.stack) || String(e) });
     }
+    // ── V-D3 RAHMEN (K05, WS-01): jedes Rezept und jeder Bauplan füllt die Vorschau ──
+    // Die Wahl läuft über die Chokepoints des Spielers (selectStudioRecipeForView · selectBlueprintForEdit), die Kamera
+    // stellt `_workshopRender` (der Vorschau-Renderer ist oben der Beobachtungs-Punkt, keine GPU-Arbeit); gemessen wird
+    // die projizierte Box3 der Gestalt: größere Kante je Bildkante (NDC, auf das Bild geklemmt) — das Maß des Runners.
+    try {
+        const m = { gestartet: false, eintraege: [] };
+        out.rahmen = m;
+        const ws = r._ensureWorkshopState();
+        const p = ws.preview;
+        const f = r._foundry;
+        if (!p || !f || !f.recipes) throw new Error("keine Vorschau oder kein Buch");
+        const fuell = () => {
+            const o = p.currentMesh;
+            o.updateMatrixWorld(true);
+            const b = new THREE.Box3().setFromObject(o);
+            if (b.isEmpty()) return null;
+            const cam = p.camera;
+            cam.updateMatrixWorld(true);
+            let x0 = 1,
+                x1 = -1,
+                y0 = 1,
+                y1 = -1;
+            const v = new THREE.Vector3();
+            for (const x of [b.min.x, b.max.x])
+                for (const y of [b.min.y, b.max.y])
+                    for (const z of [b.min.z, b.max.z]) {
+                        v.set(x, y, z).project(cam);
+                        x0 = Math.min(x0, v.x);
+                        x1 = Math.max(x1, v.x);
+                        y0 = Math.min(y0, v.y);
+                        y1 = Math.max(y1, v.y);
+                    }
+            const cl = (q) => Math.max(-1, Math.min(1, q));
+            const fw = (cl(x1) - cl(x0)) / 2,
+                fh = (cl(y1) - cl(y0)) / 2;
+            const s = b.getSize(new THREE.Vector3());
+            return { fuell: +Math.max(fw, fh).toFixed(3), kante: +Math.max(s.x, s.y, s.z).toFixed(3) };
+        };
+        const liste = Object.keys(f.recipes)
+            .sort()
+            .map((id) => ["rezept", id, f.recipes[id].kind])
+            .concat(Object.keys(st.blueprints).sort().map((id) => ["bauplan", id, st.blueprints[id].preset || "teile"]));
+        m.waffenImBuch = liste.filter((e) => e[2] === "weapon").length;
+        const t0 = performance.now();
+        const frist = t0 + 150000;
+        for (const [art, id, kind] of liste) {
+            const e = { art, id, kind };
+            m.eintraege.push(e);
+            if (performance.now() > frist) {
+                e.frist = true;
+                continue;
+            }
+            const ti = performance.now();
+            if (art === "rezept") r.selectStudioRecipeForView(id);
+            else r.selectBlueprintForEdit(id);
+            const dl = performance.now() + 20000;
+            while (performance.now() < dl && r._wsStudioPending) await sleep(40);
+            e.ms = Math.round(performance.now() - ti);
+            if (r._wsStudioPending) {
+                e.frist = true;
+                continue;
+            }
+            if (!p.currentMesh) {
+                e.leer = true;
+                continue;
+            }
+            r._workshopRender();
+            Object.assign(e, fuell() || { leer: true });
+            e.dist = +p.orbit.dist.toFixed(3);
+        }
+        m.ms = Math.round(performance.now() - t0);
+        m.aspekt = +p.camera.aspect.toFixed(3);
+        m.gestartet = true;
+    } catch (e) {
+        out.rahmen = Object.assign(out.rahmen || {}, { err: (e && e.stack) || String(e) });
+    }
     return out;
 }
 
@@ -993,6 +1103,18 @@ async function probe(arg) {
         ]) {
             const v = vorschauVerdict(Object.assign({}, gesund, bruch));
             check(`Selbst-Test V-D3: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+        }
+        const waffe = (id, fuell) => ({ art: "rezept", id, kind: "weapon", fuell, kante: 0.4, dist: 3 });
+        const gesundR = { gestartet: true, waffenImBuch: 2, eintraege: [waffe("beil", 0.7), waffe("messer", 0.7)] };
+        check("Selbst-Test V-D3 Rahmen: gesunde Vorschau == 0 Täter", rahmenVerdict(gesundR).length === 0, rahmenVerdict(gesundR).join(" · "));
+        for (const [name, bruch, soll] of [
+            ["Messer 0,059 (3-m-Mindestabstand, Runner WS-01)", { eintraege: [waffe("beil", 0.7), waffe("messer", 0.059)] }, "rahmen 1 außerhalb"],
+            ["ein Bauplan sprengt das Bild (0,97)", { eintraege: gesundR.eintraege.concat([{ art: "bauplan", id: "haus", kind: "teile", fuell: 0.97 }]) }, "rahmen 1 außerhalb"],
+            ["eine Waffe ungemessen", { eintraege: [waffe("beil", 0.7), { art: "rezept", id: "messer", kind: "weapon", leer: true }] }, "rahmen waffen 1 von 2"],
+            ["eine Gestalt bleibt pending", { eintraege: gesundR.eintraege.concat([{ art: "rezept", id: "eiche", kind: "tree", frist: true }]) }, "rahmen 1 ohne Gestalt"],
+        ]) {
+            const v = rahmenVerdict(Object.assign({}, gesundR, bruch));
+            check(`Selbst-Test V-D3 Rahmen: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
         const gesundA = { gestartet: true, baeume: 9, kronen: 0, ringPortale: 10, ringMitteAbstand: 0, trocken: true };
         check("Selbst-Test V-D1: gesunde Ankunft == 0 Täter", ankunftVerdict(gesundA).length === 0);
@@ -1058,7 +1180,7 @@ async function probe(arg) {
             .replace("            throw fehler;\n", "            return null;\n")
             // der Rest der Klasse beim Vorher (c52089c7): jeder Nicht-Array-Knoten ist „nicht verlangt", der Feld-Akt nimmt
             // für jeden Nicht-Array-Knoten den Spieler
-            .replace("if (node == null) return this._defaultSpawnPos();", "if (!Array.isArray(node) || node.length === 0) return this._defaultSpawnPos();")
+            .replace("if (node == null) pos = this._defaultSpawnPos();", "if (!Array.isArray(node) || node.length === 0) pos = this._defaultSpawnPos();")
             .replace(
                 'return this.dslEvalPos(posNode == null ? ["at_player"] : posNode, ctx);',
                 'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);'
@@ -1284,6 +1406,21 @@ async function probe(arg) {
         vV.length === 0,
         `${vm.vertices || 0} Proben · ${(100 * (vm.anteil || 0)).toFixed(1)} % behalten · Maske im Render ${vm.maskeImRender} · Welt-Auge ${vm.augeAbstand} m${vV.length ? " — Täter: " + vV.join(", ") : ""}`
     );
+    const rm = out.rahmen || {};
+    if (rm.err) check("V-D3 Rahmen Probe ohne Ausnahme", false, rm.err.split("\n")[0]);
+    const vR = rahmenVerdict(rm);
+    const re = (rm.eintraege || []).filter((q) => Number.isFinite(q.fuell));
+    const stat = (xs) => {
+        const s = xs.map((q) => q.fuell).sort((a, b) => a - b);
+        return s.length ? `min ${s[0]} · median ${s[Math.floor(s.length / 2)]} · max ${s[s.length - 1]}` : "—";
+    };
+    const rw = re.filter((q) => q.kind === "weapon");
+    check(
+        `V-D3 Rahmen jede Gestalt füllt die Vorschau (projizierte Box3 in [${SOLL.rahmenMin}; ${SOLL.rahmenMax}] der Bildkante)`,
+        vR.length === 0,
+        `${rm.gestartet ? `${re.length} gemessen (${rw.length}/${rm.waffenImBuch} Waffen: ${stat(rw)}; alle: ${stat(re)}) · ${(rm.eintraege || []).filter((q) => q.leer).length} ehrlich leer · Aspekt ${rm.aspekt} · ${rm.ms} ms` : "nicht gestartet"}${vR.length ? " — Täter: " + vR.join(", ") : ""}`
+    );
+    if (process.env.V1_PFAD_RAHMEN_JSON) fs.writeFileSync(process.env.V1_PFAD_RAHMEN_JSON, JSON.stringify(rm, null, 1));
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

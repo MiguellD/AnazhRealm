@@ -17,7 +17,9 @@
 > reist im Beipack. 28 Klassen neu geprägt (je Art `L1|fell · straehneD · nase · dunkel · tierauge · pupille`
 > am Gelenk `wolf` und `L1|beipack`); Beweis: ohne `skinIndex`/`skinWeight` im Fingerabdruck trifft jede
 > L1-Stoff-Klasse ihr altes Golden byte-genau (Lage · Normale · Farbe · Index · Stoff), Stufe 0, alle 142
-> Gelenke und der Mensch bleiben unberührt.
+> Gelenke und der Mensch bleiben unberührt. In V18.538 (Integration mit S3 kreatur) aufgegangen: die Werte der
+> `*-L1|*`-Schlüssel trägt allein die S3-Prägung unten (gelenkige Grobstufe für Tier UND Mensch, Fell-Muster über
+> die Bone-Gewichte, `__aufsNiveau`) — der Tier-Sonderweg `fernStarr` des Gelenk-Gusses fiel, EIN Golden.
 
 ## Fälle
 
@@ -36,6 +38,20 @@ Golden)` — rot, bis der Akt sie prägt.
 
 Stand der Prägung: 136 Stoff-Klassen × Gelenk Tier + 53 Mensch = 189 (= der Handbeweis), 284 Gelenke,
 10 Beipacks.
+
+Vertrags-Akt S3 kreatur (08.10.2026, Lehre 19 — die Grobstufe ist gelenkig): Stufe 1 bindet ihre Haut an die
+Gelenke wie Stufe 0 (Gewichte aus derselben Vorauswahl, das Fell-Muster über die Bone-Gewichte), jedes starre Teil
+hängt mit Gewicht 1 an seinem Gelenk (skinIndex/skinWeight im Wurzel-Raum der Ruhe-Pose), die Bone-Ordnung reist im
+Beipack (`skinJoints` wolf 31 · fox 33 · bear 25 · deer 26 · mensch 23; bis dahin trug Stufe 1 des Tiers keine).
+Neu geprägt NUR die 40 Schlüssel `*-L1|*` (35 Stoff-Klassen + 5 Beipacks); L0 297/297 byte-gleich, die Klassen-Menge,
+die Gelenke und die Dreiecke je Klasse unverändert.
+
+Vertrags-Akt S3 kreatur, Nachbesserung (09.10.2026, Spike-Urteil am echten Renderer — Lehre 18): die Grobstufe wirft für
+die feine, ihr Umriss muss deren Umriss tragen. Die Laplace-Glättung zog die Hülle auf dem doppelt so groben Raster nach
+innen (dünne Läufe bis zur halben Dicke); jetzt kehrt jede geglättete Ecke der Grobstufe auf die Niveau-Fläche ihres Felds
+zurück (`__aufsNiveau`, Tier und Mensch). Neu geprägt NUR die 8 Hüllen-Schlüssel `wolf|fox|bear|deer-L1|fell|wolf` und
+`mensch-L1|haut|mensch` · `mensch-L1|stoff_*|mensch` (3); Ecken, Dreiecke und Meshes je Klasse unverändert, alle übrigen
+475 Klassen byte-gleich (L0 297/297).
 
 ## Invarianten des Gates
 

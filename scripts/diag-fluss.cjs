@@ -54,7 +54,8 @@ function statisch(src) {
     const m = src.match(/AnazhRealm\.FOUNDRY_LESEN = (\[[^\]]*\]);/);
     let lesen = null;
     try {
-        lesen = m ? JSON.parse(m[1]) : null;
+        // die Liste darf über Zeilen laufen (Prettier bricht sie mit Schluss-Komma um)
+        lesen = m ? JSON.parse(m[1].replace(/,\s*\]$/, "]")) : null;
     } catch (_e) {}
     const bau = methode(src, "_foundryBuildMesh(m) {");
     const gelesen = new Set();
@@ -186,7 +187,7 @@ function gestalten(src) {
         fs.readFileSync(path.join(root, "spec", "asset-contract", "v1", "golden", "render-config.json"), "utf8")
     );
     const G = rc && rc.lod && rc.lod.budget && rc.lod.budget.gestalten;
-    const teile = ["_foundryVariantFor(seed, preset) {", "_foundryGestalten(preset) {", "_scatterFoundrySeed("].map(
+    const teile = ["_foundryVariantFor(seed, preset, Vk) {", "_foundryGestalten(preset) {", "_scatterFoundrySeed("].map(
         (k) => methode(src, k)
     );
     if (!G || teile.some((t) => !t)) return { ok: false, detail: "Budget oder Methode fehlt", arten: {} };
@@ -863,7 +864,8 @@ const VERHALTEN = [
     };
     if (process.argv.includes("--selftest")) {
         console.log("=== FLUSS-WAND — SELBST-TEST: die Wand feuert auf injizierte Brüche ===");
-        const t1 = statisch(stamm.replace('"skinWeight"];', '"skinWeight", "aWind"];')).gesetze.find((g) =>
+        // die Liste läuft über Zeilen (Prettier, seit S3 aDeckt) — ein Name mehr vor der schließenden Klammer
+        const t1 = statisch(stamm.replace('    "skinWeight",\n];', '    "skinWeight",\n    "aWind",\n];')).gesetze.find((g) =>
             g[0].startsWith("S1")
         );
         check("Selbst-Test 1: ein Wand-Name ohne Leser → S1 rot", t1 && !t1[1]);

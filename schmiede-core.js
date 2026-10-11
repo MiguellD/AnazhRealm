@@ -49,11 +49,13 @@
     // Waffen/Werkzeuge tragen NUR Stufe 0 (fein); L1=L0-Grade + L2-Auto-Impostor sind
     // Sache des Wirts (docs/studio-vertrag.md B2 / N7.5-Merge am EINEN Ingest).
     // B2c-Daten (W8, rein additiv): DAS BUDGET der einen Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
-    // Hülle über alle Klingen/Werkzeuge × 16 Gestalten (gate:asset-contract, die Ratsche fällt nur), band = das
+    // Hülle über alle Klingen/Werkzeuge (gate:asset-contract, die Ratsche fällt nur), band = das
     // Profi-Band-Ziel (Haushalt, offen solange tris darüber liegt), draws = Draws je Stück und Pass nach der Wirts-
     // Regel (das Budget-Gesetz am Studio-Ausgang, phyto-core budgetErzwingen, faltet die Stoffe darauf).
-    // gestalten = Individuen je Rezept (das bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
-    var GESTALTEN_JE_REZEPT = 16;
+    // gestalten = Individuen je Rezept (gefüllt je Rezept unten bei PRESETS): EINE — der Bau ist seed-invariant (Same
+    // 1 ≡ 2 byte-gleich, 21/21), 16 Gestalten waren 16 byte-gleiche Zwillinge als eigene Leaves. Eine Seed-Achse ist ein
+    // Re-Mint-Akt, nie eine Zahl hier (S3 08.10., gate:asset-contract Gestalten-Wand).
+    var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
             kindStages: { weapon: [0] },
@@ -3031,7 +3033,7 @@
     // schwung traegt jetzt auch die HIEB-GEOMETRIE (Phasen-Anteile, Sweep-
     // Bogen +-arcHalfRad um den Blick, Klingen-Kapselradius, Arm-Anteil +
     // Deckel der Reichweite, Sweep-Ursprung ueber der Koerper-Position);
-    // gefuehl den STOSS + das TOD-KIPPEN (Kipp-Dauer + Nachklang). Der Stoss
+    // gefuehl den STOSS + das TOD-KIPPEN (Kipp-Dauer, Leichnam, Versinken). Der Stoss
     // (0710-2, das EINE Impuls-Gesetz des Wirts, AnazhRealm.STOSS): der Schlag
     // ist ein Koerper mit der wirksamen Masse und dem Impuls p des
     // trefferUrteil, verstaerkt um wucht (das Gefuehl der Arena); die Masse des
@@ -3066,7 +3068,12 @@
             windupFrac: 0.3,
             strikeFrac: 0.25,
             arcHalfRad: 1.1,
-            bladeRadiusM: 0.35,
+            // VERTRAGS-AKT Welle LF 09.10. (Leben-Schau, Posten 2: „die Klinge trifft, wo man sie sieht"): der Radius der
+            // Klingen-Kapsel ist die Klinge selbst — halbe Breite 3 cm und 4 cm Spiel — statt 0,35 m. Die dicke Kapsel
+            // ersetzte die Stetigkeit des Sweeps (ein Takt trug die Spitze des Großschwerts 0,45 m weit): sie traf bis
+            // 0,35 m vor der sichtbaren Klinge, im Treffer-Takt stand die Klinge 30° neben dem Hirsch. Die Stetigkeit trägt
+            // jetzt der Wirt (Teil-Schritte des Sweeps, die Spitze höchstens KAMPF_SWEEP_SCHRITT_M je Schritt).
+            bladeRadiusM: 0.07,
             reachBaseM: 0.9,
             reachMaxM: 6,
             shoulderH: 1.2,
@@ -3080,7 +3087,12 @@
             wucht: 2.7,
             pProKb: 0.5,
             kippDauerSec: 1.0,
-            kippNachklangSec: 0.35,
+            // VERTRAGS-AKT Welle LF 09.10. (Leben-Schau, Posten 7: „der Körper verschwindet"): der Leichnam liegt
+            // leichnamSec (Kreatur-Uhr) auf der Flanke und sinkt in der letzten Spanne leichnamSinkSec in die Erde —
+            // statt kippNachklangSec 0,35 (nach 1,35 s war der Hirsch fort, es blieb kein Leichnam). Der Nachklang fiel
+            // mit ihm (sein einziger Leser war der Despawn).
+            leichnamSec: 90,
+            leichnamSinkSec: 4,
         },
         bogen: {
             mArrow: 0.05,
@@ -3245,11 +3257,32 @@
                   : "abseits des Knotens — " + (flex > 1.2 ? "die biegsame Klinge schwingt" : "Vibration");
         }
         var zk = t.zone && ARENA.zonen[t.zone] ? t.zone : null;
+        // DER TREFFER-WEG (Welle LF 09.10., additiv — nur wer t.weg reicht, die Shell reicht ihn nie): t.weg = [xLo, xHi],
+        // wo die Waffe den Leib auf ihrem Bogen durchquert (m ab dem Knauf, gemessen am ganzen Bogen, nie an der ersten
+        // Kontaktstelle). Getroffen wird am Punkt des Wegs, der dem SCHLAGPUNKT S.impactX am nächsten liegt (dort misst
+        // mEff; t.vLat/vAx sind das Tempo dieses Punkts). Liegt der Leib nur am Griff oder nur an der Spitze, sinkt die
+        // Wirkung mit dem Abstand zum Schlagpunkt — das Gesetz der Bambus-Probe des Prüfstands, 1 − 1,4·|x − x_S|/L mit
+        // dem Boden 0,25 (die benannte, begrenzte Streuung) —, der Impuls mit ihrer Wurzel (KE = p²/2m bei derselben
+        // Masse). Vorher richtete die erste Kontaktstelle der Welt-Klinge: das Großschwert 1,6–138 J je Lage des Leibs.
+        var eff = 1,
+            ort = null;
+        if (t.weg && m.S && isFinite(m.S.impactX) && m.S.L > 0) {
+            var xs = m.S.impactX,
+                xa = Math.min(+t.weg[0], +t.weg[1]),
+                xb = Math.max(+t.weg[0], +t.weg[1]),
+                xh = isFinite(xa) && isFinite(xb) ? clamp(xs, xa, xb) : xs,
+                ab = Math.abs(xh - xs) / m.S.L;
+            eff = clamp(1 - 1.4 * ab, 0.25, 1);
+            // der Ort heißt Schlagpunkt nur, wo die Wirkung voll ist (der Weg kreuzt x_S) — jede Minderung nennt ihre Seite;
+            // vorher hieß das Band |x − x_S| < 0,12·L Schlagpunkt, die Wirkung darin fiel schon bis 0,83 (ungenannt)
+            ort = xh === xs ? "schlagpunkt" : xh < xs ? (xh < (m.S.xBlade0 || 0) ? "hand" : "griffnah") : "spitze";
+            KE *= eff;
+        }
         return {
             art: art,
             KE: KE,
             v: v,
-            p: mEff * v,
+            p: mEff * v * Math.sqrt(eff),
             mEff: mEff,
             pen: pen,
             clean: clean,
@@ -3257,6 +3290,8 @@
             verdict: verdict,
             zone: zk,
             zoneMul: zk ? ARENA.zonen[zk].mul : 1,
+            eff: eff,
+            ort: ort,
         };
     }
 
@@ -3294,6 +3329,68 @@
         return isFinite(f) && f > 0 ? f : ARENA.guete.faktorVoll;
     }
 
+    // ═══ DER PFEIL (Welle LF 09.10., additiv) — die EINE Gestalt für Prüfstand und Welt ═══
+    // Schaft, Bodkin-Spitze, Nocke und drei Federn (die Leitfeder rot), längs +X (die Flug-Richtung), die Mitte des Schafts
+    // im Ursprung. Die Albedo trägt der Vertex — die Paletten-Hexe als sRGB-Absicht, linear gerechnet (linKanal, das
+    // FARB-GESETZ), kein Farb-Management der Laufzeit rechnet mit —, der Stoff ist weiß (hautStoff): Labor (r128) und Welt
+    // (r184, Haupt-Faden) tragen dieselbe Farbe. Vorher baute nur die Prüfstand-Shell den Pfeil (mit eigenen Farben); die
+    // Welt zeichnete einen braunen MeshBasic-Zylinder ohne Licht und Schatten (Leben-Schau 07.10., K-D8, Bild ks08).
+    var PFEIL = Object.freeze({
+        laengeM: 0.72,
+        schaftR: 0.0035,
+        schaft: 0x9a7a4a,
+        spitze: 0x9099a0,
+        nocke: 0x222428,
+        feder: 0xe8e0d0,
+        leitfeder: 0xd24b4b,
+    });
+    function vertexAlbedo(geo, hex) {
+        var r = linKanal(((hex >> 16) & 255) / 255),
+            g = linKanal(((hex >> 8) & 255) / 255),
+            b = linKanal((hex & 255) / 255);
+        var n = geo.attributes.position.count;
+        var c = new Float32Array(n * 3);
+        for (var i = 0; i < n; i++) {
+            c[i * 3] = r;
+            c[i * 3 + 1] = g;
+            c[i * 3 + 2] = b;
+        }
+        geo.setAttribute("color", new THREE.BufferAttribute(c, 3));
+        return geo;
+    }
+    function buildPfeil() {
+        materials();
+        var L = PFEIL.laengeM,
+            shR = PFEIL.schaftR;
+        var G = new THREE.Group();
+        var teil = function (geo, mat, hex) {
+            var e = new THREE.Mesh(vertexAlbedo(geo, hex), hautStoff(mat));
+            e.castShadow = e.receiveShadow = true;
+            return e;
+        };
+        var schaft = teil(new THREE.CylinderGeometry(shR, shR, L, 8), M.wood, PFEIL.schaft);
+        schaft.rotation.z = Math.PI / 2;
+        G.add(schaft);
+        var spitze = teil(new THREE.ConeGeometry(shR * 1.8, 0.035, 8), M.iron, PFEIL.spitze);
+        spitze.rotation.z = -Math.PI / 2;
+        spitze.position.set(L / 2 + 0.017, 0, 0);
+        G.add(spitze);
+        var nocke = teil(new THREE.CylinderGeometry(shR * 1.5, shR, 0.02, 8), M.cord, PFEIL.nocke);
+        nocke.rotation.z = Math.PI / 2;
+        nocke.position.set(-L / 2 - 0.01, 0, 0);
+        G.add(nocke);
+        for (var i = 0; i < 3; i++) {
+            var fl = teil(new THREE.BoxGeometry(0.05, 0.022, 0.0015), M.cord, i === 0 ? PFEIL.leitfeder : PFEIL.feder);
+            var grp = new THREE.Group();
+            fl.position.set(-L / 2 + 0.04, 0.011, 0);
+            grp.add(fl);
+            grp.rotation.x = (i / 3) * Math.PI * 2;
+            G.add(grp);
+        }
+        G.userData = { kind: "pfeil" };
+        return G;
+    }
+
     // W8 — die Gestalten je Rezept (B2c): JEDES Stück trägt GESTALTEN_JE_REZEPT Individuen (ein neues zählt mit).
     for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
@@ -3305,6 +3402,8 @@
         gueteAnteil: gueteAnteil,
         kampfMasze: kampfMasze,
         trefferUrteil: trefferUrteil,
+        PFEIL: PFEIL,
+        buildPfeil: buildPfeil,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { weapon: PARAMS },

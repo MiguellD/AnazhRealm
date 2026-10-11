@@ -83,7 +83,7 @@ const LAUF = (k) => {
     // Leiter (_creatureAnimDiv mit dem Takt des Gangs) es will — im Band ihrer Stufe 1/4 (0,8 × Fern-Distanz).
     const dt = 1 / (k.fps || 60),
         N = 360;
-    const fernDist = Math.sqrt(r.constructor.TIER_FERN_DIST_SQ) * (cr.scale.x || 1);
+    const fernDist = window.__tetrapodaCore.PORTAL_RENDER_CONFIG.lod.budget.kreatur[1].ab * (cr.scale.x || 1);
     const stufe = () => (k.last ? r._creatureAnimDiv(0.8 * fernDist, fernDist, tb._gang ? tb._gang.omega : 0, dt) : 1);
     let maxDiv = 1,
         auswertungen = 0;

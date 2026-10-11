@@ -50,6 +50,14 @@ const __phytoV = (function () {
 })();
 importScripts((self.__anazhBase || "") + "phyto-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
 
+// K09a — DAS GELÄNDE-GESETZBUCH (gelaende-core.js): die EINE 2D-Höhe, DIESELBE Datei wie der Main-Thread — kein
+// Spiegel. Der Worker reicht seinen `state` als Gelände-Lage (seed · noise · baseHeight · waterLevel ·
+// terrainSteepness · erosion · erosionTiles · tarns · macroAnker · erbgut · regionSize). Fehlt der Kern, wirft der
+// Worker beim Laden (fail-closed, nie still eine eigene Höhe).
+importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+const G = self.__gelaendeCore;
+if (!G || typeof G.hoehe !== "function") throw new Error("voxel-worker: gelaende-core fehlt");
+
 // State-Container — wird per init-Message gesetzt + per state-update-Delta gepflegt.
 const state = {
     seed: null,
@@ -79,6 +87,11 @@ const state = {
     // Worker liest IHN statt selbst zu bauen → konsistent über
     // Konstanten-Wechsel + Welt-Bündel-Import.
     macroAnker: null,
+    // die Kachel-Kante der Hydro-Regionen (Main `HYDROSPHERE.regionSize`) — der Kachel-Schlüssel des Gesetzbuchs liest sie
+    regionSize: null,
+    // DAS ERBGUT der Welt in der Normalform des Mains (`_erbgut()`: { terme, wildnis, hash }) — die Terme der EINEN
+    // 2D-Höhe. Der Main schickt es mit jedem Snapshot; fehlt es, wirft der Auswerter (fail-closed, nie still Wildnis).
+    erbgut: null,
 };
 
 self.onmessage = function (e) {
@@ -230,11 +243,9 @@ function applyStateSnapshot(snap) {
     // Γ4-Vollendung V18.193 — Erbgut-Anker vom Main übernehmen + Cache
     // invalidieren (sonst klebt der alte re-computed Anker im Worker, wenn
     // der Main ihn aus dem Bündel-Import frisch eingespielt hat).
-    if (snap.macroAnker !== undefined) {
-        state.macroAnker = snap.macroAnker;
-        _macroAnkerCache = null;
-        _macroAnkerSeed = null;
-    }
+    if (snap.macroAnker !== undefined) state.macroAnker = snap.macroAnker;
+    if (typeof snap.regionSize === "number") state.regionSize = snap.regionSize;
+    if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
 }
 
 function applyStateDelta(delta) {
@@ -273,14 +284,13 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     const topMargin = 4 * step;
     // V18.321 (mirror von `_voxelSampleDensityGrid`-Hoist): der rein-2D `terrainColumnContext`
     // EINMAL pro Spalte (statt pro Voxel die Makro-Oberfläche [61 %] neu zu rechnen) — deckt
-    // die Band-Grenzen (`ctx.surf`) UND die per-Voxel-Auswertung (`terrainDensityAtCol`).
-    // BYTE-IDENTISCH (terrainDensityAtCol(x,y,z,ctx) == terrainDensityAt(x,y,z)). Bit-identisch zur Main.
+    // die Band-Grenzen (`ctx.surf`) UND die per-Voxel-Auswertung (`terrainBaseDensityCol`).
     for (let k = 0; k < Nz; k++) {
         const wz = oz + k * step;
         for (let i = 0; i < Nx; i++) {
             const wx = ox + i * step;
             const ctx = state.noise ? terrainColumnContext(wx, wz) : null;
-            const surf = ctx ? ctx.surf : terrainMacroSurfaceY(wx, wz, true);
+            const surf = ctx ? ctx.surf : G.hoehe(state, wx, wz, true);
             const bandTopJ = Math.floor((surf + ROUGH + topMargin - oy) / step) + 1;
             // V17.96-Fix (mirror): Band-Boden folgt surf (Tiefsee-Rinne ~−75).
             const bandBotJ = Math.floor((Math.min(surf, base) - 40 - oy) / step);
@@ -289,11 +299,57 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
                 const idx = colBase + j * Nx;
                 if (j > bandTopJ) density[idx] = -1;
                 else if (j < bandBotJ) density[idx] = 1;
-                else density[idx] = ctx ? terrainDensityAtCol(wx, oy + j * step, wz, ctx) : 0;
+                else density[idx] = ctx ? terrainBaseDensityCol(wx, oy + j * step, wz, ctx) : 0;
             }
         }
     }
+    // Die Edits liegen wie im Main (`_voxelEditedDensityGrid`) auf dem BASIS-Gitter, je Kugel über ihren Index-Kasten
+    // und in Float32 — auch über und unter dem Band. Bis 09.10. legte der Worker sie nur im Band (je Ecke in f64): eine
+    // Füll-Kugel über dem Band stand im Main-Chunk und fehlte im Worker-Chunk (gate:worker-dichte, Mess-Wiese: LOD 0
+    // 93 Ecken, LOD 1 7 Ecken, maxDiff 42,2).
+    applyVoxelEditsGrid(density, ox, oy, oz, Nx, Ny, Nz, step);
     return density;
+}
+
+// Spiegel der Edit-Schleife von `_voxelEditedDensityGrid` (anazhRealm.js) — dieselben Kästen, dieselbe Reihenfolge,
+// dieselbe Float32-Akkumulation. MUSS bit-identisch zur Main (gate:worker-dichte).
+function applyVoxelEditsGrid(out, gox, goy, goz, Nx, Ny, Nz, step) {
+    const edits = state.voxelEdits;
+    if (!edits || !edits.length) return;
+    for (let e = 0; e < edits.length; e++) {
+        const ed = edits[e];
+        if (!ed) continue;
+        const r = ed.r;
+        const r2 = r * r;
+        const strength = ed.strength || 48;
+        const isFill = ed.mode === "fill";
+        const i0 = Math.max(0, Math.floor((ed.x - r - gox) / step));
+        const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - gox) / step));
+        const j0 = Math.max(0, Math.floor((ed.y - r - goy) / step));
+        const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - goy) / step));
+        const k0 = Math.max(0, Math.floor((ed.z - r - goz) / step));
+        const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - goz) / step));
+        for (let k = k0; k <= k1; k++) {
+            const wz = goz + k * step;
+            const dz = wz - ed.z;
+            for (let j = j0; j <= j1; j++) {
+                const wy = goy + j * step;
+                const dy = wy - ed.y;
+                for (let i = i0; i <= i1; i++) {
+                    const wx = gox + i * step;
+                    const dx = wx - ed.x;
+                    const dist2 = dx * dx + dy * dy + dz * dz;
+                    if (dist2 < r2) {
+                        const fall = 1 - Math.sqrt(dist2) / r;
+                        const amt = fall * strength;
+                        const idx = i + j * Nx + k * Nx * Ny;
+                        if (isFill) out[idx] += amt;
+                        else out[idx] -= amt;
+                    }
+                }
+            }
+        }
+    }
 }
 
 // =============================================================================
@@ -306,16 +362,19 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
 // (x,z) ab; einmal pro Spalte berechnet, vom per-Voxel `terrainBaseDensityCol` über das ganze
 // y-Band gelesen = byte-identisch, ~3× weniger Arbeit. MUSS bit-identisch zur Main.
 function terrainColumnContext(x, z) {
-    const surf = terrainMacroSurfaceY(x, z, true);
-    const eroR = state.noise.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
-    let mtnR = 1 - eroR;
-    if (mtnR < 0) mtnR = 0;
-    mtnR *= mtnR;
-    const roughScale = 0.16 + 0.84 * mtnR;
+    const surf = G.hoehe(state, x, z, true);
     const base = state.baseHeight || 0;
-    const canyonOpen = clamp01((state.noise.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18);
-    const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
-    const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+    // DAS WILDNIS-GEWICHT der Spalte (Mirror): Rauheit und Höhlen-Hülle wiegen mit ihm; 0 → kein noise3D.
+    const wild = state.erbgut.wildnis;
+    let roughScale = 0;
+    let ceilOffset = -24;
+    if (wild > 0) {
+        const mtnR = G.rauheit(state, x, z);
+        roughScale = (0.16 + 0.84 * mtnR) * wild;
+        const canyonOpen = clamp01((state.noise.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18);
+        const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
+        ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+    }
     const hydro = state.hydrosphere;
     const hydroActive = !!(hydro && hydro.ready && !state.hydroComputing);
     let hydroCarve = null; // der Fluss-Kanal { P, L, k } (Mirror `_hydrosphereCarveAt`) oder null
@@ -324,29 +383,32 @@ function terrainColumnContext(x, z) {
         hydroCarve = hydrosphereCarveAt(x, z);
         lake = hydrosphereLakeAt(x, z);
     }
-    return { surf, roughScale, base, ceilOffset, hydroActive, hydroCarve, lake };
+    return { surf, wild, roughScale, base, ceilOffset, hydroActive, hydroCarve, lake };
 }
 
 // Die per-VOXEL-Hälfte (y-abhängig, OHNE Edits) — mirror von `_terrainBaseDensityAtCol`.
 function terrainBaseDensityCol(x, y, z, ctx) {
     const surf = ctx.surf;
     let d = surf - y;
-    d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
-    d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
-    const base = ctx.base;
-    const caveFloor = clamp01((y - (base - 28)) / 8);
-    const caveCeil = clamp01((surf + ctx.ceilOffset - y) / 8);
-    const caveEnv = caveFloor * caveCeil;
-    if (caveEnv > 0) {
-        const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
-        const cave = Math.max(0, (ridge - 0.7) / 0.3);
-        d -= cave * caveEnv * 36;
-        const cavern = state.noise.noise3D(x * 0.013, y * 0.018, z * 0.013);
-        const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
-        d -= cavernCarve * caveEnv * 46;
-        const hall = state.noise.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
-        const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
-        d -= hallCarve * caveEnv * 72;
+    // Rauheit und Höhlen sind Wildnis (Mirror): ohne ihr Gewicht kein noise3D.
+    if (ctx.wild > 0) {
+        d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
+        d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
+        const base = ctx.base;
+        const caveFloor = clamp01((y - (base - 28)) / 8);
+        const caveCeil = clamp01((surf + ctx.ceilOffset - y) / 8);
+        const caveEnv = caveFloor * caveCeil * ctx.wild;
+        if (caveEnv > 0) {
+            const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
+            const cave = Math.max(0, (ridge - 0.7) / 0.3);
+            d -= cave * caveEnv * 36;
+            const cavern = state.noise.noise3D(x * 0.013, y * 0.018, z * 0.013);
+            const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
+            d -= cavernCarve * caveEnv * 46;
+            const hall = state.noise.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
+            const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
+            d -= hallCarve * caveEnv * 72;
+        }
     }
     if (ctx.hydroActive) {
         // Der Fluss-Kanal (Mirror): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit dem Kanal; das
@@ -403,321 +465,9 @@ function terrainDensityAt(x, y, z) {
     return terrainDensityAtCol(x, y, z, terrainColumnContext(x, z));
 }
 
-// Γ4 (genese-plan §4) — DER MAKRO-ANKER Worker-Spiegel. Bit-identisch zur
-// Main `_makeMacroAnker` / `_macroAnker` / `_macroSurfaceContribution`. Die
-// MACRO_ANKER-Konstanten sind hardkodiert (V17.100-Lehre, eine Runtime-Tunable
-// im Mirror würde den bit-Vertrag brechen). Bei Anpassung im Main hier mit-
-// ziehen.
-const MACRO_ANKER_SPAWN_R = 700;
-const MACRO_ANKER_MASSIV_R_MIN = 480;
-const MACRO_ANKER_MASSIV_R_MAX = 720;
-const MACRO_ANKER_MASSIV_H_MIN = 70;
-const MACRO_ANKER_MASSIV_H_MAX = 110;
-const MACRO_ANKER_MASSIV_ASPECT = 1.6;
-const MACRO_ANKER_BECKEN_DIST_MIN = 900;
-const MACRO_ANKER_BECKEN_DIST_MAX = 1500;
-const MACRO_ANKER_BECKEN_R_MIN = 280;
-const MACRO_ANKER_BECKEN_R_MAX = 420;
-const MACRO_ANKER_BECKEN_D_MIN = 12;
-const MACRO_ANKER_BECKEN_D_MAX = 22;
-const MACRO_ANKER_TAL_N = 5;
-const MACRO_ANKER_TAL_JITTER = 100;
-const MACRO_ANKER_TAL_BREITE = 120;
-const MACRO_ANKER_TAL_TRENCH_TIEFE = 14;
-const MACRO_ANKER_TAL_TRENCH_BREITE = 28;
-const MACRO_ANKER_TAL_BLEND_EXP = 2.2;
-
-function makeMacroAnker(seed) {
-    const noise = new SimplexNoise(seed + "-macro-anker");
-    const r01 = (k) => (noise.noise2D(k * 17.3, k * 9.7) + 1) * 0.5;
-    const lerp = (a, b, t) => a + (b - a) * t;
-    const massivAng = r01(1) * Math.PI * 2;
-    const massivDist = MACRO_ANKER_SPAWN_R * (0.4 + r01(2) * 0.5);
-    const massivC = { x: Math.cos(massivAng) * massivDist, z: Math.sin(massivAng) * massivDist };
-    const massivR = lerp(MACRO_ANKER_MASSIV_R_MIN, MACRO_ANKER_MASSIV_R_MAX, r01(3));
-    const massivH = lerp(MACRO_ANKER_MASSIV_H_MIN, MACRO_ANKER_MASSIV_H_MAX, r01(4));
-    const massivRot = 0.2 + r01(5) * 1.7;
-    const beckenAng = massivAng + Math.PI + (r01(6) - 0.5) * 0.5;
-    const beckenDist = lerp(MACRO_ANKER_BECKEN_DIST_MIN, MACRO_ANKER_BECKEN_DIST_MAX, r01(7));
-    const beckenC = { x: Math.cos(beckenAng) * beckenDist, z: Math.sin(beckenAng) * beckenDist };
-    const beckenR = lerp(MACRO_ANKER_BECKEN_R_MIN, MACRO_ANKER_BECKEN_R_MAX, r01(8));
-    const beckenD = lerp(MACRO_ANKER_BECKEN_D_MIN, MACRO_ANKER_BECKEN_D_MAX, r01(9));
-    const N = MACRO_ANKER_TAL_N;
-    const talVertices = [];
-    const talFloors = [];
-    const dx = beckenC.x - massivC.x;
-    const dz = beckenC.z - massivC.z;
-    const len = Math.hypot(dx, dz) || 1;
-    const ux = dx / len;
-    const uz = dz / len;
-    const perpX = -uz;
-    const perpZ = ux;
-    const talStartX = massivC.x + ux * massivR;
-    const talStartZ = massivC.z + uz * massivR;
-    const tdx = beckenC.x - talStartX;
-    const tdz = beckenC.z - talStartZ;
-    const startFloor = massivH * 0.15;
-    const endFloor = -beckenD * 0.6;
-    for (let i = 0; i < N; i++) {
-        const t = N === 1 ? 0 : i / (N - 1);
-        const lerpX = talStartX + tdx * t;
-        const lerpZ = talStartZ + tdz * t;
-        const jitterScale = i === 0 || i === N - 1 ? 0 : 1;
-        const jitter = (r01(10 + i) - 0.5) * MACRO_ANKER_TAL_JITTER * jitterScale;
-        talVertices.push({ x: lerpX + perpX * jitter, z: lerpZ + perpZ * jitter });
-        const tSm = t * t * (3 - 2 * t);
-        talFloors.push(startFloor + (endFloor - startFloor) * tSm);
-    }
-    return {
-        massivC,
-        massivR,
-        massivH,
-        massivRot,
-        massivAspect: MACRO_ANKER_MASSIV_ASPECT,
-        beckenC,
-        beckenR,
-        beckenD,
-        talVertices,
-        talFloors,
-        talBreite: MACRO_ANKER_TAL_BREITE,
-        talTrenchTiefe: MACRO_ANKER_TAL_TRENCH_TIEFE,
-        talTrenchBreite: MACRO_ANKER_TAL_TRENCH_BREITE,
-        talBlendExp: MACRO_ANKER_TAL_BLEND_EXP,
-    };
-}
-
-let _macroAnkerCache = null;
-let _macroAnkerSeed = null;
-function macroAnker() {
-    if (state.genVersion < 3) return null;
-    // Γ4-Vollendung V18.193 — Erbgut-Pfad: der vom Main persistierte Anker
-    // ist die Source of Truth. Worker baut nur dann selbst, wenn KEIN Anker
-    // geliefert wurde (Edge-Case in alten Tests, die direkt state.seed
-    // setzen ohne snapshot durchzuschicken).
-    if (state.macroAnker) {
-        if (!_macroAnkerCache || _macroAnkerSeed !== state.seed) {
-            _macroAnkerCache = state.macroAnker;
-            _macroAnkerSeed = state.seed;
-        }
-        return _macroAnkerCache;
-    }
-    if (_macroAnkerCache && _macroAnkerSeed === state.seed) return _macroAnkerCache;
-    if (!state.seed) return null;
-    _macroAnkerCache = makeMacroAnker(state.seed);
-    _macroAnkerSeed = state.seed;
-    return _macroAnkerCache;
-}
-
-// Γ4.2 (Vertiefung §2.2 Worker-Spiegel) — RIDGE-NOISE für scharfe Grate.
-// Bit-identisch zum Main `_ridgeAnkerNoise`.
-let _macroRidgeNoise = null;
-let _macroRidgeSeed = null;
-function ridgeAnkerNoise(x, z) {
-    if (!_macroRidgeNoise || _macroRidgeSeed !== state.seed) {
-        _macroRidgeNoise = new SimplexNoise(state.seed + "-macro-ridge");
-        _macroRidgeSeed = state.seed;
-    }
-    const n = _macroRidgeNoise;
-    const rxBase = (x + z) * 0.7071;
-    const rzBase = (z - x) * 0.7071 * 1.65;
-    const SCALE = 1 / 600;
-    let ridge = 0;
-    let amp = 0.5;
-    let freq = SCALE;
-    let norm = 0;
-    for (let i = 0; i < 7; i++) {
-        const v = n.noise2D(rxBase * freq + i * 7.31, rzBase * freq + i * 7.31);
-        const nv = 1 - Math.abs(v);
-        ridge += nv * nv * amp;
-        norm += amp;
-        amp *= 0.52;
-        freq *= 2.13;
-    }
-    return ridge / norm;
-}
-
-function macroSurfaceContribution(x, z, anker) {
-    const ddx = x - anker.massivC.x;
-    const ddz = z - anker.massivC.z;
-    const cs = Math.cos(anker.massivRot);
-    const sn = Math.sin(anker.massivRot);
-    const rxA = ddx * cs - ddz * sn;
-    const rzA = ddx * sn + ddz * cs;
-    const ax = rxA / anker.massivAspect;
-    const aDist = Math.hypot(ax, rzA);
-    const mT = Math.max(0, Math.min(1, 1 - aDist / anker.massivR));
-    const mShape = mT * mT * (3 - 2 * mT);
-    // Γ4.2 Mirror — Ridge-Noise im Maskel
-    const ridge = ridgeAnkerNoise(x, z);
-    const ridgePow = Math.pow(ridge, 1.5);
-    const massiv = mShape * (ridgePow * anker.massivH * 1.25 + mShape * anker.massivH * 0.35);
-    const bdx = x - anker.beckenC.x;
-    const bdz = z - anker.beckenC.z;
-    const bDist = Math.hypot(bdx, bdz);
-    const bT = Math.max(0, Math.min(1, 1 - bDist / anker.beckenR));
-    const becken = -bT * bT * (3 - 2 * bT) * anker.beckenD;
-    let tDist = Infinity;
-    let tFloor = 0;
-    for (let i = 0; i + 1 < anker.talVertices.length; i++) {
-        const A = anker.talVertices[i];
-        const B = anker.talVertices[i + 1];
-        const ex = B.x - A.x;
-        const ez = B.z - A.z;
-        const len2 = ex * ex + ez * ez || 1;
-        let t = ((x - A.x) * ex + (z - A.z) * ez) / len2;
-        if (t < 0) t = 0;
-        else if (t > 1) t = 1;
-        const px = A.x + ex * t;
-        const pz = A.z + ez * t;
-        const d = Math.hypot(x - px, z - pz);
-        if (d < tDist) {
-            tDist = d;
-            tFloor = anker.talFloors[i] + (anker.talFloors[i + 1] - anker.talFloors[i]) * t;
-        }
-    }
-    return { massiv, becken, tDist, tFloor, mShape };
-}
-
-function terrainMacroSurfaceY(x, z, includeDetail) {
-    if (!state.noise) return state.baseHeight || 0;
-    const n = state.noise;
-    const base = state.baseHeight || 0;
-    const warpX = n.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
-    const warpZ = n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
-    const wx = x + warpX;
-    const wz = z + warpZ;
-    // V14.1 — kontinentale Basis (λ~7100 m, leicht nach oben gebiast). MUSS
-    // bit-identisch zum Main-Thread `_terrainMacroSurfaceY` sein (Naht-Schutz).
-    const cBase = n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);
-    const cont0 = Math.max(0, cBase) * 130 + cBase * 15 + 12; // V14.3 (mirror)
-    const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 45; // V14.7 (mirror)
-    const ero = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5; // V14.3 (mirror)
-    let mtn = 1 - ero;
-    if (mtn < 0) mtn = 0;
-    mtn *= mtn;
-    // V14.9 (mirror): REGIONALE Differenzierung — Stil-Maske wählt Plateau-Region (broad)
-    // vs Ketten-Region (ridged Anden) pro Großregion → abwechslungsreich + stabil.
-    const reliefN = n.noise2D(wx * 0.00019 + 33.1, wz * 0.00019 + 71.7) * 0.5 + 0.5; // V14.9 (mirror): Relief-Maske
-    let upliftMask = Math.min(1, Math.max(0, (reliefN - 0.42) / 0.2));
-    upliftMask = upliftMask * upliftMask * (3 - 2 * upliftMask);
-    const styleN = n.noise2D(wx * 0.00022 + 91.3, wz * 0.00022 + 5.9) * 0.5 + 0.5; // Stil-Maske Plateau/Kette
-    let chainW = Math.min(1, Math.max(0, (styleN - 0.46) / 0.16));
-    chainW = chainW * chainW * (3 - 2 * chainW);
-    const upBroad = Math.max(0, n.noise2D(wx * 0.00035 + 19.3, wz * 0.00035 + 7.1));
-    const upWarpX = n.noise2D(wx * 0.0002 + 51.7, wz * 0.0002 + 13.1) * 300;
-    const upWarpZ = n.noise2D(wx * 0.0002 + 27.3, wz * 0.0002 + 88.9) * 300;
-    const upRidge = 1 - Math.abs(n.noise2D((wx + upWarpX) * 0.00028 + 19.3, (wz + upWarpZ) * 0.00028 + 7.1));
-    const upland = upliftMask * ((1 - chainW) * upBroad * 105 + chainW * upRidge * upRidge * 115);
-    const cont = n.noise2D(wx * 0.0016, wz * 0.0016) * (8 + 28 * mtn); // V14.7 (mirror): λ172→625
-    const ridgeAmp = (5 + 38 * mtn) * (state.terrainSteepness || 1); // V14.7 (mirror): Spitzen-Amp gedämpft 62→38 + terrainSteepness verdrahtet
-    const rN = n.noise2D(wx * 0.003, wz * 0.003); // V14.7 (mirror): λ77→333
-    const ranges = (1 - Math.abs(rN)) * (1 - Math.abs(rN)) * ridgeAmp;
-    const rN2 = n.noise2D(wx * 0.0075 + 5.7, wz * 0.0075 - 2.3); // V14.7 (mirror): λ38→133
-    const ranges2 = (1 - Math.abs(rN2)) * (1 - Math.abs(rN2)) * ridgeAmp * 0.5;
-    const detail = includeDetail ? n.noise2D(x * 0.045, z * 0.045) * (1 + 3 * mtn) : 0; // V14.4 (mirror)
-    let withoutTarn = base + cont0 + upland + tect + cont + ranges + ranges2 + detail + erosionDeltaAt(x, z);
-    // Γ4 (genese-plan §4, Worker-Spiegel) — DIE MAKRO-GEOGRAPHIE: Massiv +
-    // Tal + Becken. MUSS bit-identisch zum Main `_terrainMacroSurfaceY` sein
-    // (Determinismus-/Naht-Wand). genVersion ≥ 3 Schleuse via macroAnker()
-    // → alte Welten unverändert.
-    const _macroAnker = macroAnker();
-    if (_macroAnker) {
-        const _m = macroSurfaceContribution(x, z, _macroAnker);
-        withoutTarn += _m.massiv + _m.becken;
-        // Γ4.4 Drainage-by-Design (Worker-Spiegel)
-        const _distOutsideTal = Math.max(0, _m.tDist - _macroAnker.talBreite);
-        const _drainageH = Math.min(_distOutsideTal * 0.06, 35);
-        const _distBecken = Math.hypot(x - _macroAnker.beckenC.x, z - _macroAnker.beckenC.z);
-        const _beckenBlock = Math.max(
-            0,
-            Math.min(1, (_distBecken - _macroAnker.beckenR * 0.6) / (_macroAnker.beckenR * 0.4))
-        );
-        withoutTarn += _drainageH * (1 - _m.mShape) * _beckenBlock;
-        if (_m.tDist < _macroAnker.talBreite) {
-            const _uT = _m.tDist / _macroAnker.talBreite;
-            const _uShape = Math.pow(_uT, _macroAnker.talBlendExp);
-            const _target = base + _m.tFloor;
-            withoutTarn = withoutTarn + (_target - withoutTarn) * (1 - _uShape);
-            if (_m.tDist < _macroAnker.talTrenchBreite) {
-                const _iT = 1 - _m.tDist / _macroAnker.talTrenchBreite;
-                const _iShape = _iT * _iT * (3 - 2 * _iT);
-                withoutTarn -= _iShape * _macroAnker.talTrenchTiefe;
-            }
-        }
-    }
-    // === T6 (mirror) — DAS DRAMA auf kontinentaler Skala. MUSS bit-identisch zum Main-Thread
-    // `_terrainMacroSurfaceY` sein (Determinismus-/Naht-Wand V9.42-b). ===
-    // T6a (mirror) — GIGANTISCHE CANYONS (λ~960-m-Ravine × sparse λ~3300-m-Maske, bis ~150 m tief, Floor base-65).
-    const canyonRegion = Math.max(0, Math.min(1, (n.noise2D(wx * 0.0003 + 61.1, wz * 0.0003 - 28.7) - 0.3) / 0.18));
-    if (canyonRegion > 0.001) {
-        const cR = 1 - Math.abs(n.noise2D(wx * 0.00105 + 8.3, wz * 0.00105 - 14.9));
-        const cProfile = Math.max(0, (cR - 0.6) / 0.4);
-        withoutTarn -= cProfile * cProfile * canyonRegion * 150;
-        const cFloor = base - 65;
-        if (withoutTarn < cFloor) withoutTarn = cFloor;
-    }
-    // T7a (mirror) — slope-gated SMOOTH terrace (Tafelberge ohne Treppe auf den Flanken). Bit-identisch zur Main.
-    const mesaRegion = Math.max(0, Math.min(1, (n.noise2D(wx * 0.00034 + 13.7, wz * 0.00034 + 47.3) - 0.45) / 0.13));
-    if (mesaRegion > 0.001) {
-        const sm = (sx, sz) => {
-            const cB = n.noise2D(sx * 0.00014 + 7.2, sz * 0.00014 + 3.8);
-            return Math.max(0, cB) * 130 + cB * 15 + n.noise2D(sx * 0.00088, sz * 0.00088) * 45;
-        };
-        const gd = 7;
-        const dhx = sm(wx + gd, wz) - sm(wx - gd, wz);
-        const dhz = sm(wx, wz + gd) - sm(wx, wz - gd);
-        const slope = Math.sqrt(dhx * dhx + dhz * dhz) / (2 * gd);
-        let flat = 1 - Math.min(1, slope / 0.35);
-        flat = flat * flat * (3 - 2 * flat);
-        const strength = mesaRegion * flat;
-        if (strength > 0.001) {
-            const stepH = 26;
-            const f = withoutTarn / stepH;
-            const fl = Math.floor(f);
-            const t = f - fl;
-            const shaped = t * t * t * (t * (t * 6 - 15) + 10);
-            const terraced = (fl + shaped) * stepH;
-            withoutTarn += (terraced - withoutTarn) * strength;
-        }
-    }
-    // T8 (mirror) — der Mountain-Cap FÄLLT (Berge un-gecappt, Decke +282.6); nur ein hoher Sicherheits-
-    // Backstop bei 255 (Asymptote ~267) bleibt. Bit-identisch zum Main `_terrainMacroSurfaceY`.
-    if (withoutTarn > 255) withoutTarn = 255 + 12 * Math.tanh((withoutTarn - 255) / 12);
-    const waterRefSub = Number.isFinite(state.waterLevel) ? state.waterLevel : base + 4;
-    const depthBelow = waterRefSub - withoutTarn;
-    let withoutTarnFinal = withoutTarn;
-    if (depthBelow > 1.5) {
-        const subMask = Math.min(1, Math.max(0, (depthBelow - 3) / 6));
-        const slope = Math.max(0, depthBelow - 4);
-        const slopeDrop = -slope * 0.6;
-        const subA = n.noise2D(x * 0.019, z * 0.019 + 31) * (3 + slope * 0.3);
-        const rBN = n.noise2D(x * 0.026 + 17, z * 0.026 + 9);
-        const subRidge = ((1 - Math.abs(rBN)) * (1 - Math.abs(rBN)) - 0.3) * (3 + slope * 0.25);
-        const subC = n.noise2D(x * 0.062 - 17, z * 0.062 + 8) * 1.0;
-        withoutTarnFinal += slopeDrop + (subA + subRidge + subC) * subMask;
-    }
-    // T8 (mirror) — der unsichtbare Tiefsee-Abgrund sanft geklammert (Asymptote base−120, Band-Boden −135).
-    // Bit-identisch zum Main `_terrainMacroSurfaceY`.
-    const abyssClamp = base - 112;
-    if (withoutTarnFinal < abyssClamp)
-        withoutTarnFinal = abyssClamp - 8 * Math.tanh((abyssClamp - withoutTarnFinal) / 8);
-    const td = tarnDeltaAt(x, z);
-    if (td === 0) return withoutTarnFinal;
-    const waterRef = Number.isFinite(state.waterLevel) ? state.waterLevel : base + 4;
-    return Math.max(withoutTarnFinal + td, waterRef + 1);
-}
-
-// A3 (V18.132) — Mirror der Region-Aufloesung (_hydroTileKeyFor/_hydroFor/
-// _erosionFor in anazhRealm.js): Heimat-Region wenn (x,z) in ihr, sonst die
-// Kachel, sonst die Heimat (deren OOB-Logik in den Lesern = der alte Pfad).
-// MUSS 1:1 mit dem Main wandern (Determinismus-Wand). Kachel-Container ist
-// hier ein plain Object (postMessage-Form), im Main eine Map — gleiche Logik.
-function hydroTileKeyFor(x, z) {
-    const size = 2048; // AnazhRealm.HYDROSPHERE.regionSize (frozen Welt-Konstante)
-    const half = size / 2;
-    return Math.floor((x + half) / size) + "," + Math.floor((z + half) / size);
-}
-
+// A3 (V18.132) — Mirror der Region-Aufloesung (`_hydroFor` in anazhRealm.js): Heimat-Region wenn (x,z) in ihr, sonst die
+// Kachel, sonst die Heimat (deren OOB-Logik in den Lesern = der alte Pfad). Der Kachel-Schlüssel ist der des Gelände-
+// Gesetzbuchs (`G.kachelSchluessel`); der Kachel-Container ist hier ein plain Object (postMessage-Form).
 function hydroFor(x, z) {
     const h = state.hydrosphere;
     if (h && h.ready) {
@@ -725,56 +475,11 @@ function hydroFor(x, z) {
         if (x >= h.originX && z >= h.originZ && x < h.originX + sizeM && z < h.originZ + sizeM) return h;
         const tiles = state.hydroTiles;
         if (tiles) {
-            const t = tiles[hydroTileKeyFor(x, z)];
+            const t = tiles[G.kachelSchluessel(state, x, z)];
             if (t && t.ready) return t;
         }
     }
     return h;
-}
-
-function erosionFor(x, z) {
-    const e = state.erosion;
-    if (e) {
-        const sizeM = e.dim * e.cell;
-        if (x >= e.originX && z >= e.originZ && x < e.originX + sizeM && z < e.originZ + sizeM) return e;
-    }
-    const tiles = state.erosionTiles;
-    if (tiles) {
-        const t = tiles[hydroTileKeyFor(x, z)];
-        if (t) return t;
-    }
-    return e;
-}
-
-function erosionDeltaAt(x, z) {
-    const e = erosionFor(x, z); // A3 (V18.132): Heimat ODER Kachel
-    if (!e) return 0;
-    const fx = (x - e.originX) / e.cell;
-    const fz = (z - e.originZ) / e.cell;
-    if (fx < 0 || fz < 0 || fx >= e.dim - 1 || fz >= e.dim - 1) return 0;
-    const i0 = fx | 0;
-    const j0 = fz | 0;
-    const tx = fx - i0;
-    const tz = fz - j0;
-    const d = e.delta;
-    const dim = e.dim;
-    const a = i0 + j0 * dim;
-    return (d[a] * (1 - tx) + d[a + 1] * tx) * (1 - tz) + (d[a + dim] * (1 - tx) + d[a + dim + 1] * tx) * tz;
-}
-
-function tarnDeltaAt(x, z) {
-    const tarns = state.tarns;
-    if (!tarns || !tarns.length) return 0;
-    let delta = 0;
-    for (let i = 0; i < tarns.length; i++) {
-        const t = tarns[i];
-        const dx = x - t.x;
-        const dz = z - t.z;
-        const d2 = dx * dx + dz * dz;
-        if (d2 > t.reach2) continue;
-        delta -= t.d * Math.exp(-d2 / t.twoSig2);
-    }
-    return delta;
 }
 
 // Mirror von `_hydrosphereCarveAt` (Gegenprüfung 07.10.): der Fluss-Kanal { P, L, k } — P der Kanal (Flachboden, Bank mit
@@ -2414,14 +2119,10 @@ function attachFieldColors(positions) {
         // Der Magie-Akzent in Flecken (Main-Spiegel `_bodenFarbeAt`).
         const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
-        // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y. Bit-
-        // identisch zum Main (`_attachVoxelFieldColors`): cont0 = λ7100-m-
-        // kontinentale Basis; Schnee-Caps nur auf genuine Erhebungen statt über
-        // ~53 % des Bodens geschmiert (V14.5-Co-Tuning nach der Terrain-Weitung).
-        const _wpX = sandNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
-        const _wpZ = sandNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
-        const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
-        const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
+        // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y: cont0 = die λ7100-m-kontinentale Basis aus
+        // dem Gelände-Gesetzbuch (`kontinentBasis`, dieselbe Funktion wie Main `_bodenFarbeAt`); Schnee-Caps nur auf
+        // genuine Erhebungen statt über ~53 % des Bodens geschmiert (V14.5-Co-Tuning nach der Terrain-Weitung).
+        const _cont0 = G.kontinentBasis(state, x, z);
         mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
         // Der Seegrund unter JEDEM Wasser (Main-Spiegel): Schlick, voll ab 4 m Tiefe.
         // Schlick und Strand über beiden Bezügen (Mirror `_bodenFarbeAt`): See/Meer voll, der Fluss mit seiner Kronen-Blende.
@@ -2514,7 +2215,7 @@ function buildChunkWaterCells(ox, oy, oz, step, lod, density) {
     const colSurf = new Float64Array(dim * dim);
     for (let k = 0; k < dim; k++) {
         const cz = oz + (k + 0.5) * step;
-        for (let i = 0; i < dim; i++) colSurf[i + k * dim] = terrainMacroSurfaceY(ox + (i + 0.5) * step, cz, true);
+        for (let i = 0; i < dim; i++) colSurf[i + k * dim] = G.hoehe(state, ox + (i + 0.5) * step, cz, true);
     }
     // Fels über der Zelle (Mirror, ohne Bau-Stempel): unter offenem Himmel ist eine Zelle nie Höhle (`aquiferTrocken`).
     const colFels = new Float64Array(dimSq).fill(-Infinity);
@@ -2884,7 +2585,7 @@ function chunkHasAnyWater(cx, cz, lod) {
             for (let gi = 0; gi <= 4; gi++) {
                 const sx = ox + (gi / 4) * span;
                 const sz = oz + (gj / 4) * span;
-                if (terrainMacroSurfaceY(sx, sz, true) < thr) return true;
+                if (G.hoehe(state, sx, sz, true) < thr) return true;
             }
         }
     }

@@ -1046,6 +1046,9 @@ const server = http.createServer((req, res) => {
                 };
                 try {
                     for (const x of st.chunkSaetze.values()) {
+                        // der Wurf-Satz (`bauWurf`, S3 haus: nurWurf) zeichnet nur in den Kaskaden — das Hauptbild hat für
+                        // ihn kein Gesetz (gate:chunk-satz (l), gate:schatten-werfer W7)
+                        if (x.spec.nurWurf === true) continue;
                         const ab = x.abschnitte.get("haupt");
                         const gezeichnet = new Set(ab ? ab.liste : []);
                         for (const b of x.ordnung) {

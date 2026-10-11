@@ -252,12 +252,12 @@ function triasStaticLaws(anazhSrc) {
     );
     check("N2: die Stufen sind REAL differenziert (L0 ≥ 5×L2)", t0 >= 5 * t2, `L0=${t0} L1=${t1} L2=${t2}`);
     check(
-        "N3: kindStages.haus deklariert [0,1,2] (die Mehr-Stufen-Domaene)",
+        "N3: kindStages.haus deklariert [0,1,2,3] (die Mehr-Stufen-Domaene; 3 = NUR-WURF, S3 haus — nie gezeigt, sie wirft)",
         JSON.stringify(
             FC.PORTAL_RENDER_CONFIG && FC.PORTAL_RENDER_CONFIG.lod && FC.PORTAL_RENDER_CONFIG.lod.kindStages
                 ? FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus
                 : null
-        ) === "[0,1,2]"
+        ) === "[0,1,2,3]"
     );
     // AUSLÖSCHUNGS-WELLE — N4: die Substanz-Paritaet als stehende Linse (alle 5
     // KIND_SUBSTANCE-Zeilen existieren mit nicht-leeren parts, sha256 == Muenze).

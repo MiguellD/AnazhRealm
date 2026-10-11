@@ -1,0 +1,161 @@
+{
+    "zweck": "DIE STATIONEN DER PRÜFBÜHNE (Spike 09.10.): je Station ihr Ort (x|z, Meter) und die Gesetz-Zahlen, die eine Linse am lebenden Erbgut prüft (der Term der Station steht ≤ 1 m neben der Spec). Höhen relativ zur Basis (Spiegel = Basis − 3). Kameras: A, B = die benannten Posen, je [dx, dz, \"+Höhe über dem Boden\"] von der Station. S0 (Atrium), S2 (die 30°-Rampe), S4 (die Hindernisse: ihre Körper je Teil — Mitte über dem Boden und Maß in Metern, Gier in Grad, gesät als Baupläne des Snapshots) und S5 (die Bucht mit Furt); `meer` ist der Schelf-Grund vor der Insel.",
+    "spiegel": -3,
+    "stationen": [
+        {
+            "id": "s0-atrium",
+            "x": 0,
+            "z": 0,
+            "plateau": 9
+        },
+        {
+            "id": "s2-hang30",
+            "x": 0,
+            "z": 148,
+            "winkel": 30,
+            "fusZ": 132,
+            "kroneZ": 164,
+            "breite": 30,
+            "kamera": {
+                "A": {
+                    "von": [12, 0, "+1.2"],
+                    "auf": [0, 0, "+0.8"],
+                    "satz": "quer zur Falllinie, 12 m, halbe Höhe — der Hang im Profil"
+                }
+            }
+        },
+        {
+            "id": "s4-hindernisse",
+            "x": 0,
+            "z": -170,
+            "eben": 60,
+            "koerper": [
+                {
+                    "id": "wuerfel",
+                    "bauplan": "pruef_wuerfel",
+                    "x": -14,
+                    "z": -160,
+                    "gier": 0,
+                    "teile": [
+                        {
+                            "form": "box",
+                            "mitte": [0, 1, 0],
+                            "mass": [2, 2, 2]
+                        }
+                    ]
+                },
+                {
+                    "id": "saeule",
+                    "bauplan": "pruef_saeule",
+                    "x": -6,
+                    "z": -160,
+                    "gier": 0,
+                    "teile": [
+                        {
+                            "form": "zylinder",
+                            "mitte": [0, 1.5, 0],
+                            "mass": [0.6, 3, 0.6]
+                        }
+                    ]
+                },
+                {
+                    "id": "mauer",
+                    "bauplan": "pruef_mauer",
+                    "x": 8,
+                    "z": -160,
+                    "gier": 0,
+                    "teile": [
+                        {
+                            "form": "box",
+                            "mitte": [0, 1, 0],
+                            "mass": [10, 2, 0.4]
+                        }
+                    ]
+                },
+                {
+                    "id": "gasse",
+                    "bauplan": "pruef_gasse",
+                    "x": -12,
+                    "z": -182,
+                    "gier": 0,
+                    "lichte": 1.2,
+                    "teile": [
+                        {
+                            "form": "box",
+                            "mitte": [-0.8, 1.25, 0],
+                            "mass": [0.4, 2.5, 8]
+                        },
+                        {
+                            "form": "box",
+                            "mitte": [0.8, 1.25, 0],
+                            "mass": [0.4, 2.5, 8]
+                        }
+                    ]
+                },
+                {
+                    "id": "hausrumpf",
+                    "bauplan": "pruef_hausrumpf",
+                    "x": 2,
+                    "z": -182,
+                    "gier": 45,
+                    "teile": [
+                        {
+                            "form": "box",
+                            "mitte": [0, 1.5, 0],
+                            "mass": [6, 3, 8]
+                        }
+                    ]
+                },
+                {
+                    "id": "engpass",
+                    "bauplan": "pruef_engpass",
+                    "x": 16,
+                    "z": -182,
+                    "gier": 0,
+                    "lichte": 2,
+                    "teile": [
+                        {
+                            "form": "box",
+                            "mitte": [-2.5, 1, 0],
+                            "mass": [3, 2, 3]
+                        },
+                        {
+                            "form": "box",
+                            "mitte": [2.5, 1, 0],
+                            "mass": [3, 2, 3]
+                        }
+                    ]
+                }
+            ],
+            "kamera": {
+                "A": {
+                    "von": [0, 22, "+20"],
+                    "auf": [0, -2, "+0"],
+                    "satz": "Vogel 20 m, vom Atrium weg — die sechs Körper auf der Wiese"
+                },
+                "B": {
+                    "von": [-26, 20, "+1.7"],
+                    "auf": [6, -6, "+1"],
+                    "satz": "Augenhöhe 1,7 m, schräg über die Reihen"
+                }
+            }
+        },
+        {
+            "id": "s5-furt",
+            "x": 0,
+            "z": -380,
+            "furtKrone": -3.6,
+            "tiefeSoll": 0.6
+        },
+        {
+            "id": "s5-kolk",
+            "x": 0,
+            "z": -350
+        },
+        {
+            "id": "meer",
+            "x": 0,
+            "z": 640
+        }
+    ]
+}

@@ -1015,7 +1015,7 @@ function wasserRegen(opts) {
             mesh = null,
             eltern = null;
         try {
-            r._setWeather("stormy");
+            r._setWeather("stormy", "human");
             st.weatherTransition = null;
             st.camera = cam;
             r._tickRain(t * 1000);
@@ -1033,7 +1033,7 @@ function wasserRegen(opts) {
         } finally {
             if (mesh && eltern) eltern.add(mesh);
             st.camera = camAlt;
-            r._setWeather(wetterAlt);
+            r._setWeather(wetterAlt, "human");
             st.weatherTransition = null;
             rt.dispose();
         }
@@ -1079,7 +1079,7 @@ function wasserRegen(opts) {
 // tiefem Boden — See, Fluss, Rand-Spiegel) und über der eine FEST-Zelle steht (die Decke). Ihr Boden (`_fieldSurfaceBelow`)
 // ist der Grund eines Körpers in der Höhle: die EINE Wasser-Wahrheit am Körper darf dort kein Wasser lesen (Chokepoint), der
 // Spieler schwimmt dort nicht (`_stepFixedSim`), die Kamera taucht nicht (`_applyDayNightToScene`), das Tier schwimmt nicht
-// (`updateCreatures`, sein Grund der Höhlen-Boden — wie ihn `_kreaturBodenUnter` liefert). Bis 8f09227d las der Körper den
+// (`updateCreatures`, sein Grund der Höhlen-Boden — wie ihn `_koerperBodenUnter` liefert). Bis 8f09227d las der Körper den
 // Spiegel des Gesetzes ohne Decke: im Höhlen-Boden unter dem See der Mess-Wiese 393 von 400 Proben „nass".
 function wasserHoehle(opts) {
     return (async () => {
@@ -1141,6 +1141,20 @@ function wasserHoehle(opts) {
                 if (beispiele.length < 4) beispiele.push([R(h.x, 1), R(h.z, 1), R(h.boden), R(w)]);
             }
         }
+        // DER WAGEN (Schau-2 wasser-wahrheit, Gegenprüfung 10.10.): die Tiefe am Wagen (`_fahrTiefe`, der Wasser-Term des
+        // Fahr-Schritts) an jedem Höhlen-Boden — ein Wagen, der dort steht, steht trocken. Vorher las sie das Wasser über der
+        // obersten Fläche: im Höhlen-Boden unter dem See die volle Tiefe des Sees (kein Vortrieb).
+        let wagenNass = 0,
+            wagenMax = 0;
+        const wagenLeser = typeof r._fahrTiefe === "function";
+        if (wagenLeser)
+            for (const h of hoehlen) {
+                const t = r._fahrTiefe({ x: h.x, z: h.z, y: h.boden });
+                if (t > 0.05) {
+                    wagenNass++;
+                    if (t > wagenMax) wagenMax = t;
+                }
+            }
         // Die Pfade der Leser an Höhlen mit Kopf-Raum (zwei Luft-Zellen über dem Boden): Spieler, Kamera, Tier.
         const raum = hoehlen.filter((h) => h.luft);
         const wahl = [];
@@ -1222,6 +1236,7 @@ function wasserHoehle(opts) {
             spieler: { proben: wahl.length, schritte: wahl.length * 20, schwimmFrames },
             kamera: { proben: st.camera ? wahl.length : 0, unterWasser: kameraUnter },
             tier: { proben: tierProben, schwimmt: tierSchwimmt },
+            wagen: wagenLeser ? { proben: hoehlen.length, nass: wagenNass, maxM: R(wagenMax) } : null,
         };
     })();
 }
