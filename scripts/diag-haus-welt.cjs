@@ -869,11 +869,13 @@ async function proben(phasen) {
         {
             const RM = A.SCATTER.regionM;
             const keys = new Set();
-            // nur Regionen, die stehen: eine Region außer Reichweite des Spielers fehlt nach der Regel der Welt und baut nie
-            // (das Dorf an −206/1 reicht mit zwei Häusern in −2,−1 und −2,0 — der Neubau kam nie zur Ruhe)
+            // nur Regionen in der Reichweite des Spielers: eine Region außer Reichweite fehlt nach der Regel der Welt und baut
+            // nie neu (das Dorf an −206/1 reichte mit zwei Häusern in −2,−1 und −2,0, das an 215/1 in 1,0 und 1,−1 — die
+            // Vorphasen hatten sie gebaut, am Start fielen sie aus der Reichweite; der Neubau kam nie zur Ruhe)
             for (const hs of FH) {
-                const k = `${Math.floor(hs.position.x / RM)},${Math.floor(hs.position.z / RM)}`;
-                if (s.scatterRegions && s.scatterRegions.has(k)) keys.add(k);
+                const rx = Math.floor(hs.position.x / RM);
+                const rz = Math.floor(hs.position.z / RM);
+                if (r._streuRegionInReichweite(rx, rz, pm.position)) keys.add(`${rx},${rz}`);
             }
             for (const k of keys) r._disposeScatterRegion(k);
             const neuSteht = () => [...keys].every((q) => !r._streuRegionWartet(q));
@@ -1050,6 +1052,14 @@ async function proben(phasen) {
                         }
                         if (grund) break;
                     }
+                    // die Wände des Slots selbst (Wasser über Grundriss und Vorplatz, kein Bau im Weg): sonst fällt er am Ort, den
+                    // die Suche fand (K16: „viktorianisch: Slot fiel", seit das Dorf am Hang und das ferne Dorf im Westen stehen)
+                    if (
+                        !grund &&
+                        (!r._fundamentLand(cx, cz, gier, fu, tu, A.FUNDAMENT_SOCKEL_M) ||
+                            !r._bauFrei(cx, cz, gier, fu, tu, hi))
+                    )
+                        grund = "wand";
                     if (grund) verworfen[grund] = (verworfen[grund] || 0) + 1;
                     else ort = { x: cx, z: cz, hMax: hi, gier };
                 }
