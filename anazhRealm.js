@@ -29988,8 +29988,9 @@ class AnazhRealm {
     // Aufrufers passen — sonst out-of-bounds-Writes. Gestempelt werden die Werke, deren Hülle den Chunk berührt (die
     // Nachbarschaft der Blocker, `_blockerNahe`): die Kosten folgen den Werken am Ort, nie dem Bestand (Lehre 25; bis zur
     // Gegenprüfung Runde 3 lief jeder Chunk-Bau den ganzen Bestand durch — 763–1 940 Werke, 0,7–8,1 ms, Spitze 14,9 ms).
-    // DIE PFLANZE STEHT IM WASSER (Schau-2 wasser-wahrheit): die Hülle einer Pflanze (`aabb.pflanze`: Stamm, Trieb) stempelt
-    // keine Zelle — das Wasser fließt um sie, wie der Körper sie schon liest (`_koerperWasserSpiegel`). Auf dem 1,8-m-Gitter
+    // DIE PFLANZE STEHT IM WASSER (Schau-2 wasser-wahrheit): die Hülle einer Pflanze (Stamm, Trieb) und eines Gefährts
+    // (`aabb.stempelfrei`, Karte K02) stempelt keine Zelle — das Wasser fließt um sie, wie der Körper sie schon liest
+    // (`_koerperWasserSpiegel`). Auf dem 1,8-m-Gitter
     // wurde ein 0,6-m-Stamm am Ufer zu einer Zellen-Säule, die Wasser verdrängte: der Bau weckte den Automaten, und der
     // flutete das Tal (Schau 09.10.: der Eichenhain am Fluss −872/−1127 stand nach 20 s 1,9–3,8 m unter dem Wasser).
     // DER DAMM ENTSTEHT MIT SEINEN ZELLEN (Gegenprüfung Runden 2 und 3): überschreibt der Stempel eine WASSER-Zelle, verdrängt
@@ -30037,10 +30038,10 @@ class AnazhRealm {
     }
 
     // Die Zellen, die eine Blocker-Hülle in einem Chunk (Ursprung ox/oy/oz) stempelt: xz der Überlapp, y vom Fuß (botY, sonst
-    // topY − 4) bis zum Kopf. null = die Hülle stempelt hier nichts (außerhalb des Chunks, oder eine Pflanze). Liefert ein
+    // topY − 4) bis zum Kopf. null = die Hülle stempelt hier nichts (außerhalb des Chunks, oder stempelfrei). Liefert ein
     // geteiltes Scratch-Objekt.
     _stempelSpanne(aabb, ox, oy, oz, dim, dimY, step) {
-        if (aabb.pflanze) return null;
+        if (aabb.stempelfrei) return null;
         if (aabb.maxX < ox || aabb.minX > ox + dim * step) return null;
         if (aabb.maxZ < oz || aabb.minZ > oz + dim * step) return null;
         const s = this._stempelScratch || (this._stempelScratch = {});
@@ -34222,7 +34223,12 @@ class AnazhRealm {
     // Schreibt `entry.blockerAABBs` (nur solide Parts, `_isPartSolid`) — Spawn, Restore und Dismount-
     // Refresh laufen hier durch. Leser: Cell-Stempel (`_stampArchitectureSolidCellsInto`), Kapsel,
     // Raycast (über die Nachbarschaft `_blockerNetz`, gestempelt in `_blockerStampReach`).
+    // DAS GEFÄHRT STEHT IM WASSER (Karte K02): was man reitet (`affordances.moveable`) bewegt sich — seine Hülle (der Fahrzeug-
+    // und der Teile-Zweig) stempelt wie die Pflanze keine Wasser-Zelle (`stempelfrei`, `_stempelSpanne`), das Wasser fließt um
+    // es, wie der Körper es liest. Bis hierhin wurde der geparkte GT in der Furt (0,74 m Wasser), sobald sein Chunk neu entstand,
+    // ein Damm: sein Stempel verdrängte Wasser, der Automat wachte (15 Chunks) und rechnete das Wasser am Wagen in 4 s auf 0,14 m.
     _populateBlockerAABBs(entry) {
+        const gefaehrt = !!(entry.affordances && entry.affordances.moveable);
         // Tor-Gestalt (studioGestalt-Zeile ODER Katalog-Typ tor_*): die Kollision deckt die SICHTBARE
         // Studio-Form (Pfosten + Bogen aus deriveGate/deriveFrame, Öffnung FREI), nicht die Substanz-Parts.
         // Die Gestalt-ZEILE entscheidet (deterministisch am Spawn, Lockstep), nie der Buch-Lade-Stand.
@@ -34253,7 +34259,9 @@ class AnazhRealm {
             const fzgBoxes = [];
             for (const part of fzgParts) {
                 const aabb = this._blockerComputePartAABB(entry, part);
-                if (aabb) fzgBoxes.push(aabb);
+                if (!aabb) continue;
+                if (gefaehrt) aabb.stempelfrei = true;
+                fzgBoxes.push(aabb);
             }
             if (fzgBoxes.length) {
                 entry.blockerAABBs = fzgBoxes;
@@ -34294,6 +34302,7 @@ class AnazhRealm {
             const aabb = this._blockerComputePartAABB(entry, part, kWelt);
             if (!aabb) continue;
             if (pflanze) aabb.pflanze = true;
+            if (pflanze || gefaehrt) aabb.stempelfrei = true; // keine Wasser-Zelle (`_stempelSpanne`)
             // Welle L (Q5): ein STAMM (Zylinder-Teil) trägt seine Dicke — was dünner ist als die Stufe eines Rades (der
             // Hasel-Trieb, der Ast), überrollt die Hülle des Wagens (`_fahrHuelleKontakt`); die Kapsel liest das Feld nie.
             if (part.shape === "cylinder" && part.size)
@@ -54328,7 +54337,8 @@ class AnazhRealm {
             const boden = this._fieldSurfaceBelow(x, fz.y + k.dach, z, k.dach + 4);
             if (boden !== null && boden > fz.y + AnazhRealm.PLAYER_STEP_UP) continue; // eine Wand
             if (boden === null && !(this._koerperWasser(x, z, fz.y) > fz.y)) continue; // ein Abgrund ohne Wasser
-            return { x, z, y: (boden !== null ? boden : fz.y) + AnazhRealm.PLAYER_FOOT_OFFSET };
+            // die Füße nie unter der Rad-Ebene (ein Boden tiefer ist Wasser-Grund unter einem schwimmenden Werk: er schwimmt)
+            return { x, z, y: Math.max(boden !== null ? boden : fz.y, fz.y) + AnazhRealm.PLAYER_FOOT_OFFSET };
         }
         return null;
     }
@@ -70934,7 +70944,7 @@ class AnazhRealm {
         // Voxel-Chunks im Footprint dirty markieren → das Cell-Feld wird mit dem Architektur-Stempel neu
         // gebaut (Damm-Cells SOLID, Wasser-Cells im Stempel überschrieben). Eine Pflanze stempelt nicht
         // (`_stempelSpanne`): ihr Bau lässt die Zellen und den Automaten in Ruhe.
-        const stempel = entry.blockerAABBs ? entry.blockerAABBs.filter((a) => !a.pflanze) : [];
+        const stempel = entry.blockerAABBs ? entry.blockerAABBs.filter((a) => !a.stempelfrei) : [];
         if (!opts.silent && stempel.length) {
             const { span: _fpSpan } = this._voxelChunkConfig();
             const footprintKeys = new Set();
@@ -81378,12 +81388,12 @@ class AnazhRealm {
         // Blocker-Index beim Remove pflegen (früher Out ohne solide Parts via entry.blockerAABBs); vorher
         // merken, ob es ein Blocker war — danach dirty markieren (das Wasser bekommt den Pfad zurück).
         // Eine Pflanze stempelte nie (`_stempelSpanne`): ihr Abbau gibt keiner Zelle etwas zurück.
-        const wasBlocker = !!entry.blockerAABBs && entry.blockerAABBs.some((a) => !a.pflanze);
+        const wasBlocker = !!entry.blockerAABBs && entry.blockerAABBs.some((a) => !a.stempelfrei);
         // Footprint-bboxes VOR dem Index-Remove einfrieren (danach sind sie weg); Voxel-Chunks im Footprint
         // werden dirty → das Cell-Feld baut ohne Architektur-Stempel, Wasser-Cells nehmen den Platz zurück.
         const blockerFootprints = wasBlocker
             ? entry.blockerAABBs
-                  .filter((a) => !a.pflanze)
+                  .filter((a) => !a.stempelfrei)
                   .map((a) => ({
                       cx: (a.minX + a.maxX) * 0.5,
                       cz: (a.minZ + a.maxZ) * 0.5,

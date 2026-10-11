@@ -1067,7 +1067,10 @@ jobs:
               # D: ein Damm quer über den Fluss in einer frischen Welt, 1200 Takte, gespeichert, neu geladen — der Stausee
               # bildet sich neu (nasse Punkte ± 10 % des Staus), sein Abbau weckt den Automaten. R: das Nexus-Dorf am Seerand
               # weckt den Automaten nicht, das Wasser bleibt (± 1 %). E: jeder Setz-Op mit erzwungenem Fehl-Grund sagt die
-              # tatsächliche Zahl und den Grund. --selftest zuerst. ~3 min.
+              # tatsächliche Zahl und den Grund. A (Karte K02, FZ-01): der GT fährt mit Vollgas die Rampe der Furt hinab —
+              # 3 s nach der Ansaugung ≤ 0,5 m/s, kein Vortrieb, nie über das Dach im Wasser; der Ausstieg an Land steht
+              # neben dem Wagen, im See (≥ 1,35 m) schwimmt er; K6: der Wasserschlag sperrt die Räder am Hang.
+              # --selftest zuerst. ~3 min.
               run: npm run gate:werk-im-wasser
 
             - name: Schnell-Playtest (Kern-Gesundheit, ~13 Checks)

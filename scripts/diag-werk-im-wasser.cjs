@@ -166,6 +166,12 @@ function urteil(b) {
             v.push(`A: der Wagen taucht ${m(AN.maxTiefe)} m tief — über sein Dach (${m(AN.dach)} m)`);
         if (!(AN.kameraUnter <= S.kameraUnter))
             v.push(`A: die Verfolger-Kamera steht in ${AN.kameraUnter} Frames unter dem Spiegel`);
+        const AD = AN.damm;
+        if (!AD) v.push("A LEER: der geparkte Wagen wurde nicht neu gestempelt");
+        else if (AD.nass || AD.invalidierungen > 0)
+            v.push(
+                `A: der geparkte Wagen in ${m(AD.tiefe)} m Wasser ist ein Damm — sein Zell-Stempel verdrängt Wasser und weckt den Automaten (${AD.invalidierungen} Invalidierungen, ${AD.caChunks} Chunks wach)`
+            );
         const AL = AN.land;
         if (!AL || !(Math.abs(AL.fussUeberBoden) <= S.aussteigBoden))
             v.push(
@@ -330,8 +336,19 @@ function leserUrteil(srcRoh) {
     if (!fuss || !/_landAt\(/.test(fuss) || !/STAMM_FUSS_M/.test(fuss))
         v.push("`_stammFussLand` fragt nicht das Land auf dem Fuß-Kreis (`_landAt` × `STAMM_FUSS_M`)");
     const spanne = fnBody(src, /\n {4}_stempelSpanne\([^)]*\) \{/);
-    if (!spanne || !/aabb\.pflanze\)\s*return null/.test(spanne))
-        v.push("die Pflanze stempelt Wasser-Zellen (`_stempelSpanne` ohne Pflanzen-Ausnahme)");
+    if (!spanne || !/aabb\.stempelfrei\)\s*return null/.test(spanne))
+        v.push("die Pflanze stempelt Wasser-Zellen (`_stempelSpanne` ohne die Ausnahme `stempelfrei`)");
+    // die Hülle des Reitbaren: der Fahrzeug-Zweig und der Teile-Zweig von `_populateBlockerAABBs`
+    const huelle = fnBody(src, /\n {4}_populateBlockerAABBs\([^)]*\) \{/);
+    if (
+        !huelle ||
+        !/affordances\.moveable/.test(huelle) ||
+        !/if \(gefaehrt\) aabb\.stempelfrei = true/.test(huelle) ||
+        !/\(pflanze \|\| gefaehrt\) aabb\.stempelfrei = true/.test(huelle)
+    )
+        v.push(
+            "das Gefährt stempelt Wasser-Zellen (`_populateBlockerAABBs` macht die Hülle des Reitbaren nicht `stempelfrei`)"
+        );
     const stamp = fnBody(src, /\n {4}_stampArchitectureSolidCellsInto\([^)]*\) \{/);
     if (!stamp || !/_stempelSpanne\(/.test(stamp))
         v.push("der Zell-Stempel liest nicht die EINE Spanne `_stempelSpanne`");
@@ -827,6 +844,172 @@ async function probe(A) {
             } catch (e) {
                 out.hain = { fehler: String((e && e.stack) || e).split("\n")[0] };
             }
+        let ansaugGT = null;
+        // ── A: die Ansaugung (Karte K02, FZ-01): der GT fährt mit Vollgas vom Ufer ins tiefe Wasser ──
+        if (soll("ansaug"))
+            try {
+                const hh = (a, b) => r.getTerrainHeightAt(a, b);
+                // die Rampe (A.rampe: Ort am Wasserrand und Fahrt-Richtung, dieselbe in jedem Lauf): 26 m trockener Anlauf
+                // (Stufen ≤ 0,35 m), dann Wasser ohne Insel, das flach (je m höchstens A.rampeStufe tiefer — eine Furt, ein
+                // Strand, kein Steilufer) bis A.ansaugTief steigt
+                const [px, pz, ux, uz] = A.rampe;
+                const t0 = sichtbar(px, pz);
+                if (!(t0 > 0 && t0 <= 0.3)) throw new Error(`die Rampe beginnt nicht am Wasserrand (${t0} m Wasser)`);
+                let vor = null;
+                for (let s = 2; s <= 28; s++) {
+                    const h = hh(px - ux * s, pz - uz * s);
+                    if (
+                        !Number.isFinite(h) ||
+                        sichtbar(px - ux * s, pz - uz * s) > -Infinity ||
+                        (vor !== null && Math.abs(h - vor) > 0.35)
+                    )
+                        throw new Error(`der Anlauf der Rampe ist ${s} m vor dem Wasser nicht trocken und eben`);
+                    vor = h;
+                }
+                let tief = null;
+                let tVor = t0;
+                for (let s = 1; s <= 40 && tief === null; s++) {
+                    const t = sichtbar(px + ux * s, pz + uz * s);
+                    if (!(t > 0) || t - tVor > A.rampeStufe)
+                        throw new Error(`die Rampe fällt ${s} m im Wasser nicht flach ab (${tVor} → ${t} m)`);
+                    if (t >= A.ansaugTief) tief = s;
+                    tVor = t;
+                }
+                if (tief === null) throw new Error(`die Rampe erreicht in 40 m nicht ${A.ansaugTief} m Wasser`);
+                const rampe = { x: px, z: pz, ux, uz, tief, steigung: +((A.ansaugTief - t0) / tief).toFixed(3) };
+                const sx = rampe.x - rampe.ux * 26;
+                const sz = rampe.z - rampe.uz * 26;
+                const bahnFrei = () => {
+                    for (const e of st.architectures.slice()) {
+                        if (!e || !e.blockerAABBs || !e.position || /^fahrzeug_/.test(e.type || "")) continue;
+                        const dx = e.position.x - sx;
+                        const dz = e.position.z - sz;
+                        const l = dx * rampe.ux + dz * rampe.uz;
+                        if (l > -6 && l < 72 && Math.abs(dx * rampe.uz - dz * rampe.ux) < 4) r.removeArchitecture(e);
+                    }
+                    for (const c of st.creatures || []) {
+                        const dx = c.position.x - sx;
+                        const dz = c.position.z - sz;
+                        const l = dx * rampe.ux + dz * rampe.uz;
+                        if (l > -6 && l < 72 && Math.abs(dx * rampe.uz - dz * rampe.ux) < 5 && c.position.y > -400)
+                            c.position.y -= 500;
+                    }
+                };
+                bahnFrei();
+                const fahrt = Math.atan2(rampe.ux, rampe.uz);
+                st.playerMesh.position.set(sx, hh(sx, sz) + 1.2, sz);
+                if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+                st._fieldVy = 0;
+                const gt = r.spawnArchitecture(
+                    "fahrzeug_gt",
+                    { x: sx, y: hh(sx, sz) + 0.5, z: sz },
+                    { silent: true, precise: true, rotationY: fahrt - Math.PI / 2 }
+                );
+                if (!gt) throw new Error("kein GT");
+                for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
+                // Aussteigen an Land (der Anlauf ist trocken): wo steht der Spieler, gemessen am Boden unter ihm?
+                let mr = r.mountArchitecture(gt);
+                if (!mr || !mr.ok) throw new Error("Aufsitzen scheiterte");
+                for (let i = 0; i < 12; i++) frame();
+                r.dismountArchitecture();
+                for (let i = 0; i < 60; i++) frame();
+                const pL = st.playerMesh.position;
+                const land = {
+                    fussUeberBoden: +(pL.y - 0.5 - hh(pL.x, pL.z)).toFixed(2),
+                    abstand: +Math.hypot(pL.x - gt.position.x, pL.z - gt.position.z).toFixed(2),
+                };
+                st.playerMesh.position.set(gt.position.x, hh(gt.position.x, gt.position.z) + 1.2, gt.position.z);
+                mr = r.mountArchitecture(gt);
+                if (!mr || !mr.ok) throw new Error("Aufsitzen scheiterte");
+                for (let i = 0; i < 12; i++) frame();
+                const W = gt._fahrSatz && gt._fahrSatz.wasser;
+                if (!W) throw new Error("der Fahr-Satz des GT trägt kein Wasser-Maß");
+                const caVor = st.waterCAActive ? st.waterCAActive.size : 0;
+                st.keys.w = true;
+                const spur = [];
+                let kamUnter = 0;
+                let tA = null;
+                let maxTiefe = 0;
+                for (let i = 0; i < 1500; i++) {
+                    frame();
+                    const fz = gt._fahr;
+                    if (!fz) continue;
+                    const t = r._fahrTiefe(fz);
+                    const v = Math.hypot(fz.vlong, fz.vlat);
+                    spur.push({ t: tMs, v, tiefe: t });
+                    maxTiefe = Math.max(maxTiefe, t);
+                    if (tA === null && t >= W.ansaug) tA = { zeit: tMs, v, tiefe: t };
+                    const cam = st.camera && st.camera.position;
+                    if (cam) {
+                        const b = r._wasserBildAt(cam.x, cam.z);
+                        if (Number.isFinite(b) && cam.y < b) kamUnter++;
+                    }
+                    if (tA && tMs - tA.zeit > 4000) break;
+                    if (i % 30 === 0) await new Promise((res) => setTimeout(res, 0));
+                }
+                st.keys.w = false;
+                const nachA = tA ? spur.filter((p) => p.t > tA.zeit) : [];
+                const drei = tA ? nachA.find((p) => p.t >= tA.zeit + 3000) : null;
+                const ansaug = {
+                    rampe,
+                    ansaug: W.ansaug,
+                    dach: W.dach,
+                    vA: tA ? tA.v : NaN,
+                    v3: drei ? drei.v : NaN,
+                    vMaxNach: nachA.reduce((m, p) => Math.max(m, p.v), 0),
+                    maxTiefe,
+                    kameraUnter: kamUnter,
+                    erreicht: !!tA,
+                    land,
+                    // der Wasser-Automat vor und nach der Fahrt (Chunks, die er rechnet)
+                    caVor,
+                    caNach: st.waterCAActive ? st.waterCAActive.size : 0,
+                    verlauf: spur
+                        .filter((p) => !tA || p.t >= tA.zeit - 1500)
+                        .filter((_, i) => i % 15 === 0)
+                        .map((p) => [
+                            +((p.t - (tA ? tA.zeit : spur[0].t)) / 1000).toFixed(2),
+                            +p.v.toFixed(2),
+                            +p.tiefe.toFixed(2),
+                        ]),
+                };
+                if (st.player.mountedArch !== null && st.player.mountedArch !== undefined) r.dismountArchitecture();
+                // der geparkte Wagen im Wasser ist kein Damm: die Chunks um ihn entstehen neu (wie beim Wieder-Strömen), der
+                // Zell-Stempel läuft — verdrängt er Wasser, weckt er den Automaten?
+                const invA = { n: 0 };
+                const invAltA = r._invalidateWaterCapsAround;
+                r._invalidateWaterCapsAround = function () {
+                    invA.n++;
+                    return invAltA.apply(this, arguments);
+                };
+                try {
+                    const span = r._voxelChunkConfig(0).span;
+                    const wcx = Math.floor(gt.position.x / span);
+                    const wcz = Math.floor(gt.position.z / span);
+                    if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
+                    for (let dz = -1; dz <= 1; dz++)
+                        for (let dx = -1; dx <= 1; dx++) {
+                            const key = wcx + dx + "," + (wcz + dz);
+                            if (st.voxelChunks.has(key)) st.dirtyVoxelChunks.add(key);
+                        }
+                    for (let i = 0; i < 240; i++) {
+                        frame();
+                        if (i % 30 === 0) await new Promise((res) => setTimeout(res, 0));
+                    }
+                } finally {
+                    r._invalidateWaterCapsAround = invAltA;
+                }
+                ansaug.damm = {
+                    invalidierungen: invA.n,
+                    nass: !!gt._stempelNass,
+                    caChunks: st.waterCAActive ? st.waterCAActive.size : 0,
+                    tiefe: r._fahrTiefe(gt._fahr),
+                };
+                ansaugGT = gt;
+                out.ansaug = ansaug;
+            } catch (e) {
+                out.ansaug = { fehler: String((e && e.message) || e) };
+            }
         // ── Z: das Dorf am Fluss ──
         if (soll("zensus"))
             try {
@@ -972,148 +1155,6 @@ async function probe(A) {
                 };
             } catch (e) {
                 out.wagen = { fehler: String((e && e.message) || e) };
-            }
-        let ansaugGT = null;
-        // ── A: die Ansaugung (Karte K02, FZ-01): der GT fährt mit Vollgas vom Ufer ins tiefe Wasser ──
-        if (soll("ansaug"))
-            try {
-                const hh = (a, b) => r.getTerrainHeightAt(a, b);
-                // die Rampe: 26 m trockener Anlauf (Stufen ≤ 0,35 m), dann Wasser ohne Insel, das bis A.ansaugTief steigt
-                let rampe = null;
-                for (let gz = -A.suchR; gz <= A.suchR && !rampe; gz += 3)
-                    for (let gx = -A.suchR; gx <= A.suchR && !rampe; gx += 3) {
-                        const px = X + gx;
-                        const pz = Z + gz;
-                        const t0 = sichtbar(px, pz);
-                        if (!(t0 > 0 && t0 <= 0.3)) continue;
-                        for (let k = 0; k < 16; k++) {
-                            const ux = Math.cos((k * Math.PI) / 8);
-                            const uz = Math.sin((k * Math.PI) / 8);
-                            let ok = true;
-                            let vor = null;
-                            for (let s = 2; s <= 28 && ok; s++) {
-                                const h = hh(px - ux * s, pz - uz * s);
-                                if (!Number.isFinite(h) || sichtbar(px - ux * s, pz - uz * s) > -Infinity) ok = false;
-                                else if (vor !== null && Math.abs(h - vor) > 0.35) ok = false;
-                                else vor = h;
-                            }
-                            if (!ok) continue;
-                            // das Ufer fällt flach ab (je m höchstens A.rampeStufe tiefer — eine Furt, ein Strand, nie ein
-                            // Steilufer, von dem der Wagen ins Tiefe stürzt)
-                            let tief = null;
-                            let tVor = t0;
-                            for (let s = 1; s <= 40 && ok && tief === null; s++) {
-                                const t = sichtbar(px + ux * s, pz + uz * s);
-                                if (!(t > 0) || t - tVor > A.rampeStufe) ok = false;
-                                else if (t >= A.ansaugTief) tief = s;
-                                tVor = t;
-                            }
-                            if (!ok || tief === null) continue;
-                            rampe = { x: px, z: pz, ux, uz, tief, steigung: +((A.ansaugTief - t0) / tief).toFixed(3) };
-                            break;
-                        }
-                    }
-                if (!rampe)
-                    throw new Error(
-                        `keine Rampe (26 m trockener Anlauf, dann Wasser bis ${A.ansaugTief} m) im Umkreis von ${A.suchR} m`
-                    );
-                const sx = rampe.x - rampe.ux * 26;
-                const sz = rampe.z - rampe.uz * 26;
-                const bahnFrei = () => {
-                    for (const e of st.architectures.slice()) {
-                        if (!e || !e.blockerAABBs || !e.position || /^fahrzeug_/.test(e.type || "")) continue;
-                        const dx = e.position.x - sx;
-                        const dz = e.position.z - sz;
-                        const l = dx * rampe.ux + dz * rampe.uz;
-                        if (l > -6 && l < 72 && Math.abs(dx * rampe.uz - dz * rampe.ux) < 4) r.removeArchitecture(e);
-                    }
-                    for (const c of st.creatures || []) {
-                        const dx = c.position.x - sx;
-                        const dz = c.position.z - sz;
-                        const l = dx * rampe.ux + dz * rampe.uz;
-                        if (l > -6 && l < 72 && Math.abs(dx * rampe.uz - dz * rampe.ux) < 5 && c.position.y > -400)
-                            c.position.y -= 500;
-                    }
-                };
-                bahnFrei();
-                const fahrt = Math.atan2(rampe.ux, rampe.uz);
-                st.playerMesh.position.set(sx, hh(sx, sz) + 1.2, sz);
-                if (st.playerVel) st.playerVel.setValue(0, 0, 0);
-                st._fieldVy = 0;
-                const gt = r.spawnArchitecture(
-                    "fahrzeug_gt",
-                    { x: sx, y: hh(sx, sz) + 0.5, z: sz },
-                    { silent: true, precise: true, rotationY: fahrt - Math.PI / 2 }
-                );
-                if (!gt) throw new Error("kein GT");
-                for (const k of ["w", "a", "s", "d", "shift", " "]) st.keys[k] = false;
-                // Aussteigen an Land (der Anlauf ist trocken): wo steht der Spieler, gemessen am Boden unter ihm?
-                let mr = r.mountArchitecture(gt);
-                if (!mr || !mr.ok) throw new Error("Aufsitzen scheiterte");
-                for (let i = 0; i < 12; i++) frame();
-                r.dismountArchitecture();
-                for (let i = 0; i < 60; i++) frame();
-                const pL = st.playerMesh.position;
-                const land = {
-                    fussUeberBoden: +(pL.y - 0.5 - hh(pL.x, pL.z)).toFixed(2),
-                    abstand: +Math.hypot(pL.x - gt.position.x, pL.z - gt.position.z).toFixed(2),
-                };
-                st.playerMesh.position.set(gt.position.x, hh(gt.position.x, gt.position.z) + 1.2, gt.position.z);
-                mr = r.mountArchitecture(gt);
-                if (!mr || !mr.ok) throw new Error("Aufsitzen scheiterte");
-                for (let i = 0; i < 12; i++) frame();
-                const W = gt._fahrSatz && gt._fahrSatz.wasser;
-                if (!W) throw new Error("der Fahr-Satz des GT trägt kein Wasser-Maß");
-                st.keys.w = true;
-                const spur = [];
-                let kamUnter = 0;
-                let tA = null;
-                let maxTiefe = 0;
-                for (let i = 0; i < 1500; i++) {
-                    frame();
-                    const fz = gt._fahr;
-                    if (!fz) continue;
-                    const t = r._fahrTiefe(fz);
-                    const v = Math.hypot(fz.vlong, fz.vlat);
-                    spur.push({ t: tMs, v, tiefe: t });
-                    maxTiefe = Math.max(maxTiefe, t);
-                    if (tA === null && t >= W.ansaug) tA = { zeit: tMs, v, tiefe: t };
-                    const cam = st.camera && st.camera.position;
-                    if (cam) {
-                        const b = r._wasserBildAt(cam.x, cam.z);
-                        if (Number.isFinite(b) && cam.y < b) kamUnter++;
-                    }
-                    if (tA && tMs - tA.zeit > 4000) break;
-                    if (i % 30 === 0) await new Promise((res) => setTimeout(res, 0));
-                }
-                st.keys.w = false;
-                const nachA = tA ? spur.filter((p) => p.t > tA.zeit) : [];
-                const drei = tA ? nachA.find((p) => p.t >= tA.zeit + 3000) : null;
-                const ansaug = {
-                    rampe,
-                    ansaug: W.ansaug,
-                    dach: W.dach,
-                    vA: tA ? tA.v : NaN,
-                    v3: drei ? drei.v : NaN,
-                    vMaxNach: nachA.reduce((m, p) => Math.max(m, p.v), 0),
-                    maxTiefe,
-                    kameraUnter: kamUnter,
-                    erreicht: !!tA,
-                    land,
-                    verlauf: spur
-                        .filter((p) => !tA || p.t >= tA.zeit - 1500)
-                        .filter((_, i) => i % 15 === 0)
-                        .map((p) => [
-                            +((p.t - (tA ? tA.zeit : spur[0].t)) / 1000).toFixed(2),
-                            +p.v.toFixed(2),
-                            +p.tiefe.toFixed(2),
-                        ]),
-                };
-                if (st.player.mountedArch !== null && st.player.mountedArch !== undefined) r.dismountArchitecture();
-                ansaugGT = gt;
-                out.ansaug = ansaug;
-            } catch (e) {
-                out.ansaug = { fehler: String((e && e.message) || e) };
             }
         // ── S: der Haus-Satz am See (−906/−634, eine eigene gestreamte Welt) ──
         if (soll("satz"))
@@ -1619,6 +1660,7 @@ function selbsttest() {
             kameraUnter: 0,
             erreicht: true,
             land: { fussUeberBoden: 0, abstand: 1.54 },
+            damm: { invalidierungen: 0, nass: false, caChunks: 0, tiefe: 0.74 },
             aussteigen: {
                 tiefe: 1.71,
                 tiefeWagen: 1.84,
@@ -1762,6 +1804,12 @@ function selbsttest() {
         ],
         ["A seicht", (b) => (b.ansaug.aussteigen.tiefeWagen = 0.6), /A LEER: der Wagen stand beim Aussteigen in 0\.60/],
         ["A ohne Aussteigen", (b) => (b.ansaug.aussteigen = { fehler: "x" }), /A LEER: x/],
+        [
+            "A der geparkte Wagen ist ein Damm (der Kopf c5e8fa44)",
+            (b) => (b.ansaug.damm = { invalidierungen: 1, nass: true, caChunks: 15, tiefe: 0.14 }),
+            /A: der geparkte Wagen in 0\.14 m Wasser ist ein Damm .*1 Invalidierungen, 15 Chunks wach/,
+        ],
+        ["A ohne Neu-Stempel", (b) => delete b.ansaug.damm, /A LEER: der geparkte Wagen wurde nicht neu gestempelt/],
         ["K Kern", (b) => b.kern.push("K2 …"), /K: K2/],
         [
             "D Stausee nach dem Reload weg (der Befund am Kopf e162430b)",
@@ -1855,8 +1903,13 @@ function selbsttest() {
         ],
         [
             "Pflanze stempelt",
-            (s) => s.replace("if (aabb.pflanze) return null;", "if (aabb.pflanzeX) return null;"),
+            (s) => s.replace("if (aabb.stempelfrei) return null;", "if (aabb.stempelfreiX) return null;"),
             /Pflanze stempelt/,
+        ],
+        [
+            "Gefährt stempelt (der Kopf c5e8fa44)",
+            (s) => s.replace("if (gefaehrt) aabb.stempelfrei = true;", ""),
+            /das Gefährt stempelt Wasser-Zellen/,
         ],
         [
             "Automat immer (jeder Stempel weckt)",
@@ -2091,6 +2144,8 @@ async function lauf() {
             tiefeStamm: SCHWELLE.tiefeStamm,
             tiefeFundament: SCHWELLE.tiefeFundament,
             suchR: 90,
+            // A: die Rampe am Ufer der Furt (Wasserrand, Fahrt-Richtung): 5° bis 1,3 m, dahinter der Fluss bis 1,4 m
+            rampe: [-923, -1073, -0.7071067811865475, 0.7071067811865476],
             ansaugTief: 1.3, // A: so tief wird das Wasser an der Rampe (über dem Dach des GT, 1,2 m)
             rampeStufe: 0.25, // A: m, um die das Wasser der Rampe je m höchstens tiefer wird (≤ 14°)
             aussteigTief: SCHWELLE.aussteigTiefMin, // A: so tief steht der Wagen mindestens beim Aussteigen (tiefste Stelle der Rampe)
