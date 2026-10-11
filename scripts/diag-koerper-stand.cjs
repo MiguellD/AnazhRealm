@@ -377,7 +377,7 @@ async function proben() {
                     wegMaxCm: Number.isFinite(wegMax) ? Math.round(wegMax * 10) / 10 : null,
                 };
             } else o.k5 = { fehler: "kein Sterben" };
-            if (s.creatures.includes(c)) r.removeCreature(c);
+            if (c.parent) r.removeCreature(c); // ein Wesen oder ein Gefallener (state.leichname)
         }
         s.maxCreatures = saveMax;
     }

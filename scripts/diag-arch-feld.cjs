@@ -26,11 +26,12 @@
 //      gate:fernwald) — bis 05.10. stand dort ein Kegel-und-Lappen-Satz
 //   D  das Feld liest dasselbe Licht wie das Mesh: neutrale Feld-Box vs. MeshStandard-Box am
 //      selben Ort, Luminanz-Verhältnis über die gemeinsame Maske im Band 0,8–1,25
-// plus je ein Schuss (artifacts/beweis-e/arch-feld-*.png) fürs Auge.
+// plus die vier D-Schüsse (artifacts/beweis-e/arch-feld-licht-*.png) aus der EINEN Aufnahme fürs Auge.
 //   node scripts/diag-arch-feld.cjs
 "use strict";
 const puppeteer = require("puppeteer");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
+const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
@@ -64,75 +65,6 @@ const server = http.createServer((req, res) => {
         res.end(data);
     });
 });
-
-// Im Seiten-Kontext: EIN Schuss mit der gegebenen Kamera + die Zahlen dieses Renders.
-const SCHUSS_FN = async (kam) => {
-    const r = window.anazhRealm;
-    const THREE_ = window.THREE;
-    const rend = r.state.renderer;
-    const cam = r.state.camera;
-    const scene = r.state.scene;
-    cam.position.set(kam.px, kam.py, kam.pz);
-    // BODEN-KLEMME: das Auge nie im Hang (der 24.07.-Befund der Kreatur-Sonde).
-    const sy = typeof r._voxelSurfaceY === "function" ? r._voxelSurfaceY(kam.px, kam.pz) : null;
-    if (typeof sy === "number" && isFinite(sy) && cam.position.y < sy + 0.35) cam.position.y = sy + 0.35;
-    cam.lookAt(kam.lx, kam.ly, kam.lz);
-    cam.updateMatrixWorld(true);
-    // Die March-Uniforms folgen der Kamera über den EINEN Produktions-Pfad (sonst
-    // marcht der Pass aus der Kamera des letzten Loop-Takts — falsche Gestalt).
-    try {
-        if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
-    } catch (_e) {}
-    if (r.state.playerMesh) r.state.playerMesh.visible = false; // der eigene Körper steht nicht im Beweis
-    const rt = new THREE_.RenderTarget(640, 360, { depthBuffer: true, samples: 0 });
-    const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
-    if (rend.info && typeof rend.info.reset === "function") rend.info.reset();
-    rend.setRenderTarget(rt);
-    const t0 = performance.now();
-    if (typeof rend.renderAsync === "function") await rend.renderAsync(scene, cam);
-    else rend.render(scene, cam);
-    const renderMs = performance.now() - t0;
-    const ri = (rend.info && rend.info.render) || {};
-    const zahlen = {
-        dc: ri.drawCalls != null ? ri.drawCalls : ri.calls,
-        tris: ri.triangles,
-        renderMsSwiftshader: Math.round(renderMs),
-    };
-    let px = null;
-    if (typeof rend.readRenderTargetPixelsAsync === "function")
-        px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, 640, 360);
-    rend.setRenderTarget(prev);
-    if (rt.dispose) rt.dispose();
-    if (!px || !px.length) return { ok: false, grund: "keine Pixel", zahlen };
-    const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
-    const set = new Set();
-    let nonzero = 0;
-    for (let i = 0; i < u8.length; i += 4 * 97) {
-        set.add(((u8[i] >> 4) << 8) | ((u8[i + 1] >> 4) << 4) | (u8[i + 2] >> 4));
-        if (u8[i] + u8[i + 1] + u8[i + 2] > 12) nonzero++;
-    }
-    const cv = document.createElement("canvas");
-    cv.width = 640;
-    cv.height = 360;
-    const ctx = cv.getContext("2d");
-    const img = ctx.createImageData(640, 360);
-    img.data.set(u8.subarray(0, 640 * 360 * 4)); // WebGPU-Readback ist TOP-DOWN (diag-blick-Messwert)
-    ctx.putImageData(img, 0, 0);
-    const wm = r.state.weltMarch;
-    const fp = r.state.feldPass;
-    zahlen.weltMarch = wm
-        ? {
-              belegt: wm.belegt,
-              kapseln: wm.kapselCache ? wm.kapselCache.size : null,
-              gesetzBloecke: wm.gesetzBloecke || 0,
-          }
-        : null;
-    zahlen.feldPass = fp ? { sichtbar: !!(fp.mesh && fp.mesh.visible), laeufe: fp.laeufe, pano: fp.panoLaeufe } : null;
-    try {
-        if (typeof r._analogEMetrologieZeile === "function") zahlen.zeile = String(r._analogEMetrologieZeile());
-    } catch (_e) {}
-    return { ok: true, farben: set.size, nonzero, png: cv.toDataURL("image/png"), zahlen };
-};
 
 // A' — das Gesetz des Bäckers über das Karten-Buch (je begonnenem Bake: Zelle, ihr Rang d, der Rang dF der Zelle der
 // fernen Eiche im Moment der Wahl): bis die Zelle der Eiche dran ist, überholt sie keine fernere (Rang −1 = ohne Bedarf).
@@ -422,8 +354,6 @@ function schlangenGesetz(src) {
                       d: Math.round(Math.hypot(e.position.x - pm.x, e.position.z - pm.z)),
                   }
                 : null;
-        window.__afB = B;
-        window.__afH = Hh;
         return {
             hausName,
             idx,
@@ -513,42 +443,54 @@ function schlangenGesetz(src) {
         `${C ? "✅" : "❌"} C  die Eiche trägt keinen Feld-Satz (Satz an einer Eiche: ${res.satzBF} · ` +
             `Satz-Schlüssel eines Karten-Dings: ${res.kartenSaetze})`
     );
-    const kam = await page.evaluate(() => {
-        const r = window.anazhRealm;
-        const pm = r.state.playerMesh.position;
-        const g = r._voxelSurfaceY(pm.x, pm.z);
-        const B = window.__afB,
-            H = window.__afH;
-        return {
-            baum: { px: pm.x, py: g + 1.7, pz: pm.z, lx: B.x, ly: B.y + 3, lz: B.z },
-            haus: { px: pm.x, py: g + 1.7, pz: pm.z, lx: H.x, ly: H.y + 3, lz: H.z },
-        };
-    });
-    for (const k of ["baum", "haus"]) {
-        const s = await page.evaluate(SCHUSS_FN, kam[k]);
-        if (!s.ok) {
-            console.log(`– Schuss ${k}: ${s.grund}`);
-            continue;
-        }
-        const f = path.join(OUT, `arch-feld-${k}.png`);
-        fs.writeFileSync(f, Buffer.from(s.png.split(",")[1], "base64"));
-        console.log(`  Schuss ${k}: ${path.relative(root, f)} · dc=${s.zahlen.dc} tris=${s.zahlen.tris}`);
-    }
+    // DIE SCHÜSSE DER LINSE sind die vier D-Bilder aus der EINEN Aufnahme (arch-feld-licht-*.png). Die zwei Augen-Schüsse
+    // (Eiche, Haus) renderten bis 10.10. in ein eigenes Render-Target und waren schwarz (dc=0 — der Bundle-Replay bucht
+    // nichts ins Info); im Ausgabe-Pfad wartet ihr Blick am Boden auf swiftshader-voll über 15 min auf seine Pipelines
+    // (gemessen 10.10.: Protokoll-Frist 900 s gerissen). Sie urteilten nie und fallen.
+    await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme + die Bühne für D
     // D — DAS LICHT DER WELT (das Licht-Modell, ohne Albedo-Störer): am SELBEN Ort einmal eine Feld-Box
     // (Kapsel-Satz, Albedo 0,5 linear), einmal eine MeshStandard-Box (color 0,5, roughness 1, metalness 0),
     // dazu der Hintergrund. Die Pixel-Maske ist identisch; Luminanz-Mittel Feld/Mesh muss ~1 sein.
-    // Die Boxen schweben über dem Kronendach (freie Sicht); der Spiel-Loop ruht, Mittag fest, die Sonne
-    // wirft keinen Schatten (das Feld hat keinen Schatten-Lookup).
+    // Die Boxen schweben über dem Kronendach (freie Sicht); der Spiel-Loop ruht, die Bühne hält Mittag · Sonne · Sommer,
+    // die Sonne wirft keinen Schatten (das Feld hat keinen Schatten-Lookup). Gelesen wird die EINE Aufnahme (der echte,
+    // getonte Frame): bis 10.10. las D ein eigenes Render-Target — linear, ungetont, blind für die Bundle-Bürger; an der
+    // Mess-Wiese lag die Bild-Mitte dort in JEDEM Modus bei 0/0/0, im Ausgabe-Pfad Feld 136/155/164 · Mesh 137/156/164.
+    // Und der Feld-Pass muss STEHEN, bevor D schießt (gemalt und sein Panorama gebacken — vorher zeichnet er nichts, das
+    // Fern-Farb-Budget malt seinen Farb-Job über Takte, nah zuerst): sonst verglich D die Mesh-Box mit dem Hintergrund.
+    const FELD_TAKTE = 3000;
     const schussPx = (modus) =>
         page.evaluate(
-            async (modus, DW, DH) => {
+            async (modus, DW, DH, FELD_TAKTE) => {
                 const r = window.anazhRealm;
                 const THREE_ = window.THREE;
                 const rend = r.state.renderer;
                 rend.setAnimationLoop(null);
-                if (r.state.world) r.state.world.timeOfDay = 0.5;
-                r.state.timeOfDay = 0.5;
-                if (typeof r._applyDayNightToScene === "function") r._applyDayNightToScene();
+                if (!window.__feldSteht) {
+                    // Existenz vor Messung: Takte, bis der Feld-Pass gemalt und sichtbar ist — sonst LAUT rot mit Stand.
+                    let n = 0;
+                    const f = () => r.state.feldPass;
+                    while (n < FELD_TAKTE && !(f() && f().laeufe > 0 && f().mesh && f().mesh.visible)) {
+                        window.__wetterHalten();
+                        try {
+                            r._gameLoopTick(performance.now());
+                        } catch (_e) {}
+                        n++;
+                        await new Promise((q) => setTimeout(q, 5));
+                    }
+                    const fp = f();
+                    if (!(fp && fp.laeufe > 0 && fp.mesh && fp.mesh.visible))
+                        return {
+                            fehlt:
+                                `der Feld-Pass steht nach ${n} Takten nicht (` +
+                                (fp
+                                    ? `gemalt ${fp.laeufe}× · Farb-Job ${fp.farbJob ? fp.farbJob.k + "/" + fp.farbJob.n : "keiner"} · ` +
+                                      `Panorama ${fp.panoLaeufe || 0}× · sichtbar ${!!(fp.mesh && fp.mesh.visible)}`
+                                    : "kein Feld-Pass") +
+                                ")",
+                        };
+                    window.__feldSteht = { takte: n };
+                }
+                window.__buehne();
                 if (r.state.directionalLight) r.state.directionalLight.castShadow = false;
                 let L = window.__licht;
                 if (!L) {
@@ -583,22 +525,10 @@ function schlangenGesetz(src) {
                 cam.lookAt(L.cam.lx, L.cam.ly, L.cam.lz);
                 cam.updateMatrixWorld(true);
                 if (r.state.playerMesh) r.state.playerMesh.visible = false;
-                let u8 = null;
-                for (let k = 0; k < 2; k++) {
-                    try {
-                        if (r.state.fernRing && typeof r._tickFeldPass === "function")
-                            r._tickFeldPass(r.state.fernRing);
-                    } catch (_e) {}
-                    const rt = new THREE_.RenderTarget(DW, DH, { depthBuffer: true, samples: 0 });
-                    const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
-                    rend.setRenderTarget(rt);
-                    if (typeof rend.renderAsync === "function") await rend.renderAsync(r.state.scene, cam);
-                    else rend.render(r.state.scene, cam);
-                    const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, DW, DH);
-                    rend.setRenderTarget(prev);
-                    if (rt.dispose) rt.dispose();
-                    u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
-                }
+                try {
+                    if (r.state.fernRing && typeof r._tickFeldPass === "function") r._tickFeldPass(r.state.fernRing);
+                } catch (_e) {}
+                const u8 = (await window.__ausgabeAufnahme(DW, DH, 1)).u8;
                 const cv = document.createElement("canvas");
                 cv.width = DW;
                 cv.height = DH;
@@ -613,7 +543,8 @@ function schlangenGesetz(src) {
             },
             modus,
             320,
-            180
+            180,
+            FELD_TAKTE
         );
     const bilder = {};
     // Erster Schuss wärmt (Pipelines, Sichtbarkeit nach dem Umsetzen); der Hintergrund zählt zuletzt.
@@ -624,6 +555,10 @@ function schlangenGesetz(src) {
             new Promise((res) => setTimeout(() => res({ fehlt: `Zeit-Wand 600 s im Modus ${modus}` }), 600000)),
         ]);
         console.log(`  D-Schuss ${modus}: ${b.fehlt || "ok"} · ${((Date.now() - t0) / 1000).toFixed(1)} s`);
+        if (modus === "warm" && !b.fehlt) {
+            const w = await page.evaluate(() => window.__feldSteht);
+            console.log(`  D  der Feld-Pass stand nach ${w ? w.takte : "?"} weiteren Takten (Grenze ${FELD_TAKTE})`);
+        }
         if (!b.fehlt) {
             b.px = Buffer.from(b.b64, "base64");
             fs.writeFileSync(

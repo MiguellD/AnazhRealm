@@ -4219,13 +4219,20 @@ async function checkBandV1753CreatureCombat(ctx) {
         for (let i = 0; i < p.inventory.length; i++) p.inventory[i] = null; // Platz für Loot garantieren
         const countBefore = r.state.creatures.length;
         const killR = r.damageCreature(c1, 99999, { source: "player" });
-        // Der Kill despawnt nicht sofort: der Körper KIPPT (userData.dying, ~1 s + Nachklang), dann folgt
-        // der Abschied — die Frist synthetisch verstreichen lassen, updateCreatures räumt.
-        const kipptErst = killR.killed && !!c1.userData.dying && r.state.creatures.indexOf(c1) !== -1;
+        // Der Kill despawnt nicht sofort: der Körper KIPPT (userData.dying, ~1 s + Nachklang) — er verlässt die Wesen und
+        // liegt in state.leichname —, dann folgt der Abschied: die Frist synthetisch verstreichen lassen, updateCreatures räumt.
+        const kipptErst =
+            killR.killed &&
+            !!c1.userData.dying &&
+            r.state.creatures.indexOf(c1) === -1 &&
+            r.state.leichname.indexOf(c1) !== -1;
         c1.userData.dying.t = 9999;
         r.updateCreatures(0.016);
         out.killRemoves =
-            kipptErst && r.state.creatures.indexOf(c1) === -1 && r.state.creatures.length === countBefore - 1;
+            kipptErst &&
+            r.state.leichname.indexOf(c1) === -1 &&
+            !c1.parent &&
+            r.state.creatures.length === countBefore - 1;
         out.lootToInventory = matUnits(p.inventory) > 0;
 
         // (7) ein Welt-Tod gibt KEIN Loot (nur der Spieler erntet die Substanz)
@@ -28575,7 +28582,7 @@ async function checkBandPhaseEThreat(ctx) {
         const r = window.anazhRealm;
         const out = {};
         const HUNT = r.constructor._verhaltenGesetz().jagd;
-        out.consts = !!HUNT && HUNT.radius > 0 && HUNT.strikeRange > 0;
+        out.consts = !!HUNT && HUNT.radius > 0 && HUNT.strikeCooldownSec > 0;
         // Die Raubtier-Seele (ALTLASTEN-NULL: der WOLF): registriert + predator-
         // markiert + aus BEIDEN Ambient-Pickern gefiltert (sparsam per Konstruktion).
         const soul = r.constructor.CREATURE_SOULS.wolf;
@@ -28593,17 +28600,51 @@ async function checkBandPhaseEThreat(ctx) {
         const savedMax = r.state.maxCreatures;
         const savedEmo = {};
         for (const k of Object.keys(p.emotions)) savedEmo[k] = p.emotions[k];
+        const savedOrt = { x: pm.x, y: pm.y, z: pm.z };
         const spawned = [];
         try {
             r.setGameMode("pfad");
             p.respawnGraceUntil = -Infinity;
             r.state.maxCreatures = r.state.creatures.length + 4;
+            // der Spieler steht auf dem Boden: der Biss braucht den Kopf am Leib, auch in der Höhe (Welle LF kampf)
+            pm.y = r.getTerrainHeightAt(pm.x, pm.z) + r.constructor.PLAYER_FOOT_OFFSET;
             const wolf = r.spawnCreatureAt(pm.x + 2, pm.y, pm.z, "happy", "wolf");
             spawned.push(wolf);
             // W-D/M-F1 (V18.170) — die Spieler-Klemme schiebt frische Spawns auf
-            // ≥3 m (> strikeRange 2.4); dieser Test prüft den BISS, nicht den
-            // Spawn-Ort → die Kreatur rückt explizit in Biss-Distanz (V9.56-i).
-            if (wolf) wolf.position.set(pm.x + 2, pm.y, pm.z);
+            // ≥3 m; dieser Test prüft den BISS, nicht den Spawn-Ort → die Kreatur
+            // rückt explizit in die Weite ihres Ansprungs (V9.56-i; Welle LF kampf:
+            // der Biss ist der Ansprung, 1,2 m reicht jeder Größe), ihm zugewandt.
+            if (wolf) {
+                wolf.position.set(pm.x + 1.2, pm.y, pm.z);
+                wolf.rotation.set(0, -Math.PI / 2, 0);
+                wolf.userData._steuer = null;
+            }
+            // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): der Ansatz springt an, gebissen wird, wenn der Kopf
+            // den Leib berührt — der Kreatur-Takt läuft, bis der Ansprung schnappt oder endet (höchstens 1,5 s). Ein
+            // voriger Ansprung landet erst (die Biss-Uhr ruht so lange: kein Biss, den die Probe nicht setzt).
+            const bissOffen = (c) => {
+                const A0 = c.userData._verhaltenAktion;
+                return A0 && A0.bissAkt && r.state.creatureAnimationTime < A0.bis ? A0 : null;
+            };
+            // der Takt des Spiels: der Kreatur-Takt, dann der feste Sim-Schritt der Leiber (getragener Stoß, Leib an Leib)
+            const takt = () => {
+                r.updateCreatures(1 / 60);
+                r._kreaturStossSchritt(1 / 60);
+                r._leibKontakte();
+            };
+            const beiss = (c) => {
+                const uhr = c.userData.nextHuntStrikeAt;
+                c.userData.nextHuntStrikeAt = 1e12; // (endlich: die Biss-Uhr liest nur endliche Zeiten)
+                for (let k = 0; bissOffen(c) && k < 90; k++) takt();
+                c.userData.nextHuntStrikeAt = uhr;
+                const ok = r._tickCreatureHuntStrike(c);
+                for (let k = 0; ok && k < 90; k++) {
+                    const A0 = bissOffen(c);
+                    if (!A0 || !A0.biss) break;
+                    takt();
+                }
+                return ok;
+            };
             // (1) die GATTUNG trägt WILD (predator = Carnivor-diet als Daten;
             // die Substanz bleibt Richter für alle Nicht-Raubtiere).
             out.wildTemperament = !!wolf && r._creatureTemperament(wolf) === "wild";
@@ -28624,14 +28665,14 @@ async function checkBandPhaseEThreat(ctx) {
             p.stats.defense = 0;
             p.hp = p.stats.hpMax || 100;
             const hp0 = p.hp;
-            const bit = r._tickCreatureHuntStrike(wolf);
+            const bit = beiss(wolf);
             out.strikeHits = bit === true && p.hp < hp0;
             out.cooldownGates = r._tickCreatureHuntStrike(wolf) === false;
             const dealt1 = hp0 - p.hp;
             wolf.userData.nextHuntStrikeAt = 0;
             p.stats.defense = 3;
             const hp1 = p.hp;
-            r._tickCreatureHuntStrike(wolf);
+            beiss(wolf);
             const dealt2 = hp1 - p.hp;
             p.stats.defense = savedDef;
             out.armorDampens = dealt2 < dealt1 - 1e-9 && dealt2 >= 1;
@@ -28641,7 +28682,7 @@ async function checkBandPhaseEThreat(ctx) {
             p.emotions.sorrow = 0;
             const sor0 = p.emotions.sorrow || 0;
             wolf.userData.nextHuntStrikeAt = 0;
-            r._tickCreatureHuntStrike(wolf);
+            beiss(wolf);
             out.fearFelt = (p.emotions.sorrow || 0) > sor0;
             // (5) der TRIUMPH: ein frischer Jäger fällt von Spieler-Hand → joy steigt.
             // joy ebenso ZUERST auf 0 (dieselbe Decken-Konfundierung) → der Anstieg ist messbar.
@@ -28664,6 +28705,7 @@ async function checkBandPhaseEThreat(ctx) {
             r.state.maxCreatures = savedMax;
             for (const k of Object.keys(p.emotions)) p.emotions[k] = savedEmo[k] || 0;
             r.setGameMode(savedMode);
+            pm.set(savedOrt.x, savedOrt.y, savedOrt.z);
         }
         return out;
     });
@@ -35072,7 +35114,7 @@ async function checkBandV18210Verdrahtung(ctx) {
             if (prey) r.removeCreature(prey);
             // Strike-Range-Test mit ECHTEN Leibern (0710-4: der Biss stößt durch das EINE Impuls-Gesetz und liest die
             // Masse aus der Gestalt — ein körperloser Stub hat keine, der Biss bräche fail-closed): ein Wolf, ein Fuchs
-            // in 1,5 m → der Biss trifft UND stößt die Beute vom Jäger weg.
+            // in 1,2 m → der Ansprung trifft UND stößt die Beute vom Jäger weg.
             r.state.creatures = savedCreatures;
             const pmS = r.state.playerMesh.position;
             const capS = r.state.maxCreatures;
@@ -35082,12 +35124,27 @@ async function checkBandV18210Verdrahtung(ctx) {
             const beute = jaeger && r.spawnCreatureAt(pmS.x + 342, pmS.y, pmS.z - 340, "calm", "fuchs", opt);
             r.state.maxCreatures = capS;
             if (jaeger && beute) {
-                beute.position.set(jaeger.position.x + 1.5, jaeger.position.y, jaeger.position.z);
+                const B0 = { x: jaeger.position.x + 1.2, z: jaeger.position.z };
+                beute.position.set(B0.x, jaeger.position.y, B0.z);
                 beute.userData.hp = 1e6; // der Biss soll stoßen, nicht töten
                 beute.userData._stossV = null;
+                jaeger.rotation.set(0, Math.PI / 2, 0); // der Beute zugewandt
+                jaeger.userData._steuer = null;
                 r.state.creatures = [jaeger, beute];
                 jaeger.userData.nextHuntStrikeAt = -Infinity;
                 const struck = r._tickCreatureScentStrike(jaeger);
+                // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): der Takt des Spiels läuft (der Kreatur-Takt, dann
+                // der feste Sim-Schritt der Leiber), bis das Maul am Leib schnappt (höchstens 1,5 s; die Beute steht still)
+                for (let k = 0; struck && k < 90; k++) {
+                    const A0 = jaeger.userData._verhaltenAktion;
+                    if (!A0 || !A0.biss) break;
+                    beute.position.x = B0.x;
+                    beute.position.z = B0.z;
+                    beute.userData._steuer = null;
+                    r.updateCreatures(1 / 60);
+                    r._kreaturStossSchritt(1 / 60);
+                    r._leibKontakte();
+                }
                 const sv = beute.userData._stossV;
                 out.a3StrikeHits = struck === true && !!sv && sv.x > 0;
                 r.state.creatures = savedCreatures;

@@ -506,12 +506,12 @@ function saumProbe() {
             r._szeneTiefeWert = r._szeneTiefeKnoten;
             let b;
             try {
-                r._tiefenLeserNeuBinden();
+                r._tiefenKnotenTausch();
                 b = await aufnahme();
             } finally {
                 r._szeneTiefeKnoten = knoten;
                 r._szeneTiefeWert = wert;
-                r._tiefenLeserNeuBinden();
+                r._tiefenKnotenTausch();
             }
             const L = (u, x, y) => {
                 const i = (y * W + x) * 4;
@@ -748,7 +748,7 @@ function buehne(nFrames) {
             // (e) DAS WASSER LIEST DAS ABBILD WIE r184s TIEFE: die unteren sieben Zeilen des Bildes (32×24) sind Wasser über
             // dem Grund. Bei festen Uhren (Wasser, Schaum, Knoten-Zeit) einmal mit dem Abbild, einmal mit r184s
             // Viewport-Tiefe (der volle Klon im Pass-Bruch), wieder mit dem Abbild (der Rausch-Boden) und ohne Grund (die
-            // Probe ist nicht blind: die Farbe hängt an der Tiefe). Die Leser hängt `_tiefenLeserNeuBinden` um, der Weg
+            // Probe ist nicht blind: die Farbe hängt an der Tiefe). Die Leser hängt `_tiefenKnotenTausch` um, der Weg
             // des Resize.
             const P = Object.getPrototypeOf(r);
             const nf = rend._nodes.nodeFrame;
@@ -782,12 +782,12 @@ function buehne(nFrames) {
                 r._szeneTiefeKnoten = T.TSL.viewportDepthTexture();
                 r._szeneTiefeWert = r._szeneTiefeKnoten;
                 try {
-                    w.umgehaengt.push(r._tiefenLeserNeuBinden());
+                    w.umgehaengt.push(r._tiefenKnotenTausch());
                     w.r184 = await wasserFarbe();
                 } finally {
                     r._szeneTiefeKnoten = knoten;
                     r._szeneTiefeWert = wert;
-                    w.umgehaengt.push(r._tiefenLeserNeuBinden());
+                    w.umgehaengt.push(r._tiefenKnotenTausch());
                 }
                 w.zurueck = await wasserFarbe();
                 grund.visible = false;
