@@ -27963,7 +27963,6 @@ class AnazhRealm {
             if (tooClose) continue;
             const rr = n.noise2D(p.ci * 2.7 - 12, p.cj * 2.7 + 4) * 0.5 + 0.5;
             const r = T.radiusMin + rr * (T.radiusMax - T.radiusMin);
-            const sigma = r * 0.5;
             // Adaptive Tiefe ∝ `slope·r` (Hang-Abfall über den Radius) + ~8 m garantierte Wassertiefe — das
             // Becken schließt immer mit derselben Wassertiefe; geklemmt auf [depthMin, depthMax].
             let depth = Math.max(T.depthMin, Math.min(T.depthMax, 0.996 * slope * r + 8));
@@ -27973,15 +27972,8 @@ class AnazhRealm {
             const maxAllowed = p.surf - waterRef - 1;
             if (maxAllowed < T.depthMin) continue; // zu niedrig — kein Bergsee
             if (depth > maxAllowed) depth = maxAllowed;
-            tarns.push({
-                x: p.x,
-                z: p.z,
-                surf: p.surf,
-                r,
-                d: depth,
-                reach2: r * 2.2 * (r * 2.2),
-                twoSig2: 2 * sigma * sigma,
-            });
+            // Die Mulden-Form (σ, Reichweite) ist Gesetz: `tarnMulde` im Gelände-Gesetzbuch, `tarnDelta` liest sie.
+            tarns.push(globalThis.__gelaendeCore.tarnMulde(p.x, p.z, p.surf, r, depth));
         }
         this.state.tarns = tarns;
         return tarns;
@@ -28118,21 +28110,9 @@ class AnazhRealm {
             return t * t * (3 - 2 * t);
         };
         let exposure = ss(0.75, 1.45, slope);
+        // Die Massiv-Maske des Ankers (smoothstep-Glocke ohne Grate) aus dem Gelände-Gesetzbuch.
         const anker = this._macroAnker();
-        if (anker) {
-            // Massiv-Maske aus dem Anker (smoothstep-Glocke ohne Ridge)
-            const ddx = x - anker.massivC.x;
-            const ddz = z - anker.massivC.z;
-            const cs = Math.cos(anker.massivRot);
-            const sn = Math.sin(anker.massivRot);
-            const rxA = ddx * cs - ddz * sn;
-            const rzA = ddx * sn + ddz * cs;
-            const ax = rxA / anker.massivAspect;
-            const aDist = Math.hypot(ax, rzA);
-            const mT = Math.max(0, Math.min(1, 1 - aDist / anker.massivR));
-            const massivMask = mT * mT * (3 - 2 * mT);
-            exposure += massivMask * 0.18;
-        }
+        if (anker) exposure += globalThis.__gelaendeCore.massivMaske(anker, x, z) * 0.18;
         return exposure;
     }
 
@@ -28198,7 +28178,7 @@ class AnazhRealm {
         const wm = this.state.worldMeta;
         const roh = wm ? wm.erbgut : undefined;
         if (this._erbgutCache && this._erbgutRoh === roh) return this._erbgutCache;
-        const terme = AnazhRealm._erbgutNormal(roh);
+        const terme = globalThis.__gelaendeCore.erbgutNormal(roh);
         this._erbgutRoh = roh;
         this._erbgutCache = {
             terme,
@@ -28209,14 +28189,15 @@ class AnazhRealm {
     }
 
     // DIE EINGANGS-WAND DES ERBGUTS: eine fremde Welt tritt nur ein, wenn dieser Build ihr Erbgut trägt — dieselbe
-    // Normalform wie beim Erwachen (`_erbgutNormal`). Leser: jede Tür, durch die ein Snapshot zur Welt wird (Welt-Tor
-    // daneben/ersetzen `importWorldBeside` · `_weltTorImportReplace`, die Einladung `_importGuestWorld`, der Snapshot eines
-    // Mitspielers `_p2pApplyWorldSnapshot`). Bis 10.10. nahmen die Türen jedes Erbgut an (`ok:true`): der Zeiger stand auf
-    // der Welt, und jeder Reload scheiterte am Ladeschirm. Liefert den Grund der Absage oder null.
+    // Normalform wie beim Erwachen (`erbgutNormal` im Gelände-Gesetzbuch). Leser: jede Tür, durch die ein Snapshot zur
+    // Welt wird (Welt-Tor daneben/ersetzen `importWorldBeside` · `_weltTorImportReplace`, die Einladung
+    // `_importGuestWorld`, der Snapshot eines Mitspielers `_p2pApplyWorldSnapshot`). Bis 10.10. nahmen die Türen jedes
+    // Erbgut an (`ok:true`): der Zeiger stand auf der Welt, und jeder Reload scheiterte am Ladeschirm. Liefert den Grund
+    // der Absage oder null.
     static _erbgutEinlass(snapshot) {
         const meta = snapshot && typeof snapshot === "object" ? snapshot.worldMeta : null;
         try {
-            AnazhRealm._erbgutNormal(meta && typeof meta === "object" ? meta.erbgut : undefined);
+            globalThis.__gelaendeCore.erbgutNormal(meta && typeof meta === "object" ? meta.erbgut : undefined);
             return null;
         } catch (e) {
             return String((e && e.message) || e);
@@ -28232,7 +28213,7 @@ class AnazhRealm {
     static _erbgutTeilbar(meta, msg) {
         let terme;
         try {
-            terme = AnazhRealm._erbgutNormal(meta && typeof meta === "object" ? meta.erbgut : undefined);
+            terme = globalThis.__gelaendeCore.erbgutNormal(meta && typeof meta === "object" ? meta.erbgut : undefined);
         } catch (e) {
             return String((e && e.message) || e);
         }
@@ -28242,87 +28223,6 @@ class AnazhRealm {
         return `der Empfänger liest kein Erbgut (Protokoll ${kann} < ${AnazhRealm.ERBGUT_PROTOKOLL}) — die Welt [${terme
             .map((t) => t.art)
             .join(", ")}] reist nicht`;
-    }
-
-    // Die Normalform der Terme (die Zahlen geklemmt, die Winkel-Größen gerechnet) oder ein Wurf mit dem Grund.
-    static _erbgutNormal(roh) {
-        if (roh == null) return [{ art: "wildnis" }];
-        const nein = (grund) => {
-            throw new Error(`Erbgut abgelehnt: ${grund}`);
-        };
-        if (typeof roh !== "object" || !Array.isArray(roh.terme)) nein("keine Liste `terme`");
-        if (roh.terme.length < 1 || roh.terme.length > 32) nein(`${roh.terme.length} Terme (1–32)`);
-        const zahl = (t, k, lo, hi) => {
-            const v = t[k];
-            if (typeof v !== "number" || !Number.isFinite(v)) nein(`${t.art}.${k} ist keine Zahl`);
-            return Math.min(hi, Math.max(lo, v));
-        };
-        const RAD = Math.PI / 180;
-        return roh.terme.map((t, i) => {
-            if (!t || typeof t !== "object") nein(`Term ${i} ist kein Objekt`);
-            if (!["wildnis", "insel", "rampe", "bucht"].includes(t.art)) nein(`unbekannte Term-Art „${t.art}"`);
-            const basis = t.art === "wildnis" || t.art === "insel";
-            if (basis !== (i === 0)) nein(`Term ${i} (${t.art}): nur der erste Term setzt den Grund`);
-            if (t.art === "wildnis") return { art: "wildnis" };
-            if (t.art === "insel")
-                return {
-                    art: "insel",
-                    x: zahl(t, "x", -1e5, 1e5),
-                    z: zahl(t, "z", -1e5, 1e5),
-                    r: zahl(t, "r", 10, 5000),
-                    plateau: zahl(t, "plateau", -100, 200),
-                    kuppel: zahl(t, "kuppel", 0, 0.05),
-                    schelf: zahl(t, "schelf", 1, 1000),
-                    grund: zahl(t, "grund", -120, 0),
-                };
-            if (t.art === "rampe") {
-                const w = zahl(t, "winkel", 1, 60) * RAD;
-                const a = zahl(t, "richtung", -360, 360) * RAD;
-                const lauf = zahl(t, "lauf", 1, 500);
-                return {
-                    art: "rampe",
-                    x: zahl(t, "x", -1e5, 1e5),
-                    z: zahl(t, "z", -1e5, 1e5),
-                    ux: Math.sin(a),
-                    uz: Math.cos(a),
-                    breite: zahl(t, "breite", 1, 500),
-                    krone: zahl(t, "krone", 0, 500),
-                    hoehe: lauf * Math.tan(w),
-                    tanW: Math.tan(w),
-                    tanB: Math.tan(zahl(t, "boeschung", 10, 80) * RAD),
-                };
-            }
-            if (t.art === "bucht") {
-                const x0 = zahl(t, "x0", -1e5, 1e5);
-                const z0 = zahl(t, "z0", -1e5, 1e5);
-                const ex = zahl(t, "x1", -1e5, 1e5) - x0;
-                const ez = zahl(t, "z1", -1e5, 1e5) - z0;
-                const len = Math.hypot(ex, ez);
-                if (!(len >= 1)) nein("bucht: A und B fallen zusammen");
-                const kolk = Math.min(len, zahl(t, "kolkLage", 0, 1e5)) / len;
-                return {
-                    art: "bucht",
-                    x0,
-                    z0,
-                    ex,
-                    ez,
-                    len,
-                    len2: ex * ex + ez * ez,
-                    sohle: zahl(t, "sohle", 4, 500),
-                    grund: zahl(t, "grund", -100, 50),
-                    tanU: Math.tan(zahl(t, "ufer", 5, 60) * RAD),
-                    furtLage: Math.min(len, zahl(t, "furtLage", 0, 1e5)),
-                    furtBreite: zahl(t, "furtBreite", 0, 100),
-                    furtKrone: zahl(t, "furtKrone", -50, 50),
-                    tanF: Math.tan(zahl(t, "furtFlanke", 5, 60) * RAD),
-                    kolkX: x0 + ex * kolk,
-                    kolkZ: z0 + ez * kolk,
-                    kolkR: zahl(t, "kolkR", 1, 100),
-                    kolkTiefe: zahl(t, "kolkTiefe", 0, 30),
-                };
-            }
-            return nein(`unbekannte Term-Art „${t.art}"`);
-        });
     }
 
     // Trägt die Wildnis den Ort? Das EINE Prädikat an den WÜRFEN des Feldes (Wald, Streu, Nah-Streu, Geburts-Ort, Dorf-
@@ -29797,11 +29697,9 @@ class AnazhRealm {
         // Schnee auf PROMINENZ `y − cont0` (Relief über der λ7100-m-Basis), nicht absolutem y — sonst
         // schmiert Schnee über ~halb den Boden (Hochkontrast-Flecken, die unter Licht driften). Robust gegen
         // regionale Höhen (Prominenz max 70 m nah, 156 m fern). Wer die Terrain-Höhe ändert, MUSS die
-        // surf-relativen Schichten nachziehen. cont0 bit-identisch zum Worker (`attachFieldColors`).
-        const _wpX = sandNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
-        const _wpZ = sandNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
-        const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
-        const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
+        // surf-relativen Schichten nachziehen. cont0 ist die kontinentale Basis des Gelände-Gesetzbuchs (`kontinentBasis`
+        // — dieselbe Funktion ruft der Worker in `attachFieldColors`).
+        const _cont0 = globalThis.__gelaendeCore.kontinentBasis(this._gelaende(), x, z);
         mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
         // Der Seegrund: unter JEDEM Wasser (Meer, See, Fluss — der Spiegel des Orts) liegt Schlick, voll ab 4 m
         // Tiefe (bis V18.530 nur unter dem Meeresspiegel y < −2: die Bergseen lagen auf Wiese und Streu).

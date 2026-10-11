@@ -1290,39 +1290,97 @@ const ZWILLINGE = [
         verboten: ["anazhRealm.js"],
         fiel: "U6d — die Oakeshott-Proportions-Tabelle wohnt im Gesetzbuch (OAKESHOTT_TYPES, Stamm = Getter-Delegat)",
     },
-    // K09a (11.10.) — DAS GELÄNDE HAT SEIN GESETZBUCH: die Makro-Höhe (Wildnis-Term, Erbgut-Terme, Makro-Anker samt
-    // Grat-Strom, Erosions- und Tarn-Delta, die Rauheits-Maske) lebt in gelaende-core.js; Stamm und voxel-worker rufen
-    // sie, der bit-identische Worker-Spiegel fiel physisch (feld-wgsl.js bleibt der Seh-Spiegel und steht nicht hier).
+    // K09a (11.10.) — DAS GELÄNDE HAT SEIN GESETZBUCH: die Makro-Höhe (Wildnis-Term, Erbgut-Terme samt Normalform,
+    // Makro-Anker samt Grat-Strom und Massiv-Maske, Erosions- und Tarn-Delta samt Mulden-Form, die Rauheits-Maske, die
+    // kontinentale Basis der Schnee-Prominenz) lebt in gelaende-core.js; Stamm, voxel-worker und jede Linse RUFEN sie.
+    // Die Abdrücke sind MUSTER, nie ein Variablen-Name: die Prüfung 1 fand `(x + _wpX) * 0.00014 + 7.2` in beiden Farb-
+    // Pfaden am engen Abdruck `wx * 0.00014 + 7.2` vorbei. Verboten in jeder Wurzel-Datei und jedem Skript
+    // (`gelaendeLeser`); feld-wgsl.js bleibt der Seh-Spiegel (f32-WGSL), das Terrain-Studio liest den Kern mit G2 (K09b).
     ...[
-        ["wx * 0.00014 + 7.2", "die kontinentale Basis des Wildnis-Terms"],
-        ['"-macro-ridge"', "der Grat-Strom des Makro-Ankers"],
-        ['"-macro-anker"', "der Samen-Strom des Makro-Ankers"],
-        ["255 + 12 * Math.tanh(", "der Sicherheits-Deckel der Makro-Höhe"],
-        ["noise2D(x * 0.0005, z * 0.0005)", "die Rauheits-Maske (Wildnis-Term und Spalten-Kontext lesen `rauheit`)"],
-        ["Math.exp(-d2 / t.twoSig2)", "das Tarn-Delta"],
-        ["t.kuppel * (t.r - r)", "der Insel-Term des Erbguts"],
-    ].map(([fingerprint, was]) => ({
-        fingerprint,
+        [/\*\s*0\.00014\s*\+\s*7\.2\b/, "die kontinentale Basis des Wildnis-Terms (`kontinentBasis`)"],
+        [/\*\s*0\.00026\s*\+\s*(?:11\.3|41\.7)\b/, "der Domain-Warp des Wildnis-Terms"],
+        [
+            /\*\s*0\.000(?:19\s*\+\s*33\.1|22\s*\+\s*91\.3|35\s*\+\s*19\.3|28\s*\+\s*19\.3)\b/,
+            "die Relief-, Stil- und Hochland-Masken des Wildnis-Terms",
+        ],
+        [/\*\s*0\.000(?:3\s*\+\s*61\.1|34\s*\+\s*13\.7)\b|\*\s*0\.00105\s*\+\s*8\.3\b/, "Canyon und Tafelberg"],
+        [/["'`]-macro-ridge["'`]/, "der Grat-Strom des Makro-Ankers"],
+        [/["'`]-macro-anker["'`]/, "der Samen-Strom des Makro-Ankers"],
+        [/0\.7071\s*\*\s*1\.65\b/, "die Grat-Domäne des Makro-Ankers"],
+        [/\/\s*[\w.]*massivAspect\b/, "die Massiv-Maske des Makro-Ankers (`massivMaske`)"],
+        [
+            /\/\s*\(?\s*[\w.]*\b(?:massivR|beckenR|talBreite|talTrenchBreite)\b/,
+            "die Abfall-Profile des Makro-Ankers (Massiv, Becken, Tal)",
+        ],
+        [/255\s*\+\s*12\s*\*\s*Math\.tanh\(/, "der Sicherheits-Deckel der Makro-Höhe"],
+        [/noise2D\(\s*[\w.]+\s*\*\s*0\.0005\s*,/, "die Rauheits-Maske (`rauheit`)"],
+        [/Math\.exp\(\s*-\s*[\w.]+\s*\/\s*[\w.]*twoSig2\b/, "das Tarn-Delta"],
+        [/\btwoSig2\s*:/, "die Mulden-Form des Tarns (`tarnMulde`)"],
+        [/kuppel\s*\*\s*\(/, "der Insel-Term des Erbguts"],
+        [/\btan[UFWB]\s*:/, "die Normalform des Erbguts (`erbgutNormal`)"],
+    ].map(([muster, was]) => ({
+        muster,
         gesetzbuch: "gelaende-core.js",
-        verboten: ["anazhRealm.js", "voxel-worker.js"],
-        fiel: `K09a — ${was} wohnt im Gelände-Gesetzbuch (der Worker-Spiegel fiel)`,
+        verboten: gelaendeLeser(),
+        fiel: `K09a — Heimat im Gelände-Gesetzbuch: ${was}`,
     })),
 ];
 
-// `ersatz` (Selbsttest): { datei: Text } liest statt der Platte.
+// Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
+// Spiegel, jedes Skript und jede Linse (eine Probe misst am Gesetz, nie an ihrer Kopie). Diese Wand trägt die Muster
+// selbst als Proben und steht nicht in der Liste.
+function gelaendeLeser() {
+    const root = path.join(__dirname, "..");
+    const wurzel = fs
+        .readdirSync(root)
+        .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "gelaende-core.js" && f !== "feld-wgsl.js");
+    const skripte = (d) =>
+        fs
+            .readdirSync(path.join(root, d))
+            .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "diag-altlasten.cjs")
+            .map((f) => d + "/" + f);
+    return wurzel.concat(skripte("scripts"), skripte("scripts/lib"));
+}
+
+// `ersatz` (Selbsttest): { datei: Text } liest statt der Platte. Ein Abdruck ist ein Text (`fingerprint`) oder ein
+// Muster (`muster`, ohne g-Flag); der Fund nennt Datei, Zeile und Text. Roh-Vorfilter vor dem Kommentar-Abzug, je
+// Datei EIN Lesen und EIN Abzug.
 function scanZwillinge(ersatz = {}) {
     const root = path.join(__dirname, "..");
-    const lies = (f) => (f in ersatz ? ersatz[f] : fs.readFileSync(path.join(root, f), "utf8"));
+    const roh = new Map();
+    const lies = (f) => {
+        if (f in ersatz) return ersatz[f];
+        if (!roh.has(f)) roh.set(f, fs.readFileSync(path.join(root, f), "utf8"));
+        return roh.get(f);
+    };
+    const code = new Map();
+    const ohneKommentar = (f) => {
+        if (f in ersatz) return stripComments(ersatz[f]);
+        if (!code.has(f)) code.set(f, stripComments(lies(f)));
+        return code.get(f);
+    };
+    const finde = (z, text) => {
+        if (z.muster) {
+            const m = z.muster.exec(text);
+            return m ? { at: m.index, was: m[0] } : null;
+        }
+        const at = text.indexOf(z.fingerprint);
+        return at < 0 ? null : { at, was: z.fingerprint };
+    };
     const errs = [];
     for (const z of ZWILLINGE) {
+        const name = z.fingerprint ? `"${z.fingerprint}"` : String(z.muster);
         if (!(z.gesetzbuch in ersatz) && !fs.existsSync(path.join(root, z.gesetzbuch)))
-            errs.push(`Zwillings-Wand: das Gesetzbuch ${z.gesetzbuch} fehlt — "${z.fingerprint}" hat kein Zuhause`);
-        else if (lies(z.gesetzbuch).indexOf(z.fingerprint) < 0)
-            errs.push(`Zwillings-Wand: Fingerabdruck "${z.fingerprint}" fehlt im Gesetzbuch ${z.gesetzbuch}`);
+            errs.push(`Zwillings-Wand: das Gesetzbuch ${z.gesetzbuch} fehlt — ${name} hat kein Zuhause`);
+        else if (!finde(z, lies(z.gesetzbuch)))
+            errs.push(`Zwillings-Wand: Fingerabdruck ${name} fehlt im Gesetzbuch ${z.gesetzbuch}`);
         for (const f of z.verboten) {
-            const src = stripComments(lies(f));
-            if (src.indexOf(z.fingerprint) >= 0)
-                errs.push(`Zwillings-Wand: ${f} trägt wieder "${z.fingerprint}" (fiel: ${z.fiel})`);
+            if (!finde(z, lies(f))) continue;
+            const src = ohneKommentar(f);
+            const hit = finde(z, src);
+            if (!hit) continue;
+            const zeile = src.slice(0, hit.at).split("\n").length;
+            errs.push(`Zwillings-Wand: ${f}:${zeile} trägt wieder „${hit.was}" (fiel: ${z.fiel})`);
         }
     }
     return errs;
@@ -2052,19 +2110,28 @@ function main() {
                 ? "✅ SELBST-TEST: die Alias-Wand feuert (der Mammut als Buche erkannt)"
                 : "❌ SELBST-TEST: die Alias-Wand feuert nicht"
         );
-        // Die Zwillings-Wand muss feuern (K09a): ein Worker, der die kontinentale Basis wieder selbst rechnet, und ein
-        // fehlendes Gesetzbuch — beide beim Namen; ein Kommentar darf den Fingerabdruck zitieren.
-        const workerProbe = "const state = {};\n";
-        const zwillingFeuert =
-            scanZwillinge({
-                "voxel-worker.js": workerProbe + "const cB = n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);\n",
-            }).some((e) => /voxel-worker\.js trägt wieder "wx \* 0\.00014 \+ 7\.2"/.test(e)) &&
-            !scanZwillinge({ "voxel-worker.js": workerProbe + "// wx * 0.00014 + 7.2\n" }).some((e) =>
-                /voxel-worker\.js trägt wieder/.test(e)
+        // Die Zwillings-Wand muss feuern (K09a, Prüfung 1): die kontinentale Basis in der Schreibweise der Farb-Pfade
+        // (`(x + _wpX) * 0.00014 + 7.2`), die Massiv-Maske im Stamm und eine Linse mit eigener Tarn-Mulde — je beim Namen
+        // samt Zeile; ein Kommentar darf jeden Abdruck zitieren.
+        const probe = "const state = {};\n";
+        const feuert = (datei, zeile, re) =>
+            scanZwillinge({ [datei]: probe + zeile + "\n" }).some((e) =>
+                new RegExp(`${datei.replace(/[.]/g, "\\.")}:2 trägt wieder .*${re}`).test(e)
             );
+        const still = (datei, zeile) =>
+            !scanZwillinge({ [datei]: probe + "// " + zeile + "\n" }).some((e) => e.includes(datei + ":"));
+        const cont0 = "const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);";
+        const maske = "const ax = rxA / anker.massivAspect;";
+        const mulde = "tarns.push({ x, z, reach2: r * r, twoSig2: 2 * s * s });";
+        const zwillingFeuert =
+            feuert("voxel-worker.js", cont0, "kontinentale Basis") &&
+            feuert("anazhRealm.js", maske, "Massiv-Maske") &&
+            feuert("scripts/playtest.cjs", mulde, "Mulden-Form") &&
+            still("voxel-worker.js", cont0) &&
+            still("anazhRealm.js", maske);
         console.log(
             zwillingFeuert
-                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (die kontinentale Basis im Worker erkannt, der Kommentar nicht)"
+                ? "✅ SELBST-TEST: die Zwillings-Wand feuert (kontinentale Basis im Worker, Massiv-Maske im Stamm, Tarn-Mulde in einer Linse — je mit Zeile; der Kommentar nicht)"
                 : "❌ SELBST-TEST: die Zwillings-Wand feuert nicht"
         );
         if (!zwillingFeuert) process.exit(1);

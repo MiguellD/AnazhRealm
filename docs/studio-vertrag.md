@@ -903,7 +903,10 @@ Wirt, der Kern hält keinen Welt-Zustand außer Strömen, die er aus der Saat ab
 `gate:altlasten` hält die Formeln im Gesetzbuch.
 
 **Stand der Gesetz-Kerne:** `gelaende-core.js` (`__gelaendeCore`) — die EINE 2D-Höhe `hoehe(L, x, z, mitDetail)` (der
-Term-Auswerter des Erbguts, der Wildnis-Term, der Makro-Anker `ankerAusSaat`/`ankerBeitrag`/`grat`, Erosions- und
-Tarn-Delta, die Rauheits-Maske `rauheit`, der Kachel-Schlüssel); geladen vom Stamm (vor `anazhRealm.js`), vom
-voxel-worker (`importScripts` mit `?v=`) und vom Foundry-Worker; `feld-wgsl.js` bleibt der Seh-Spiegel und liest seine
-Eingaben aus ihm.
+Term-Auswerter des Erbguts samt seiner Normalform `erbgutNormal`, der Wildnis-Term samt kontinentaler Basis
+`kontinentBasis`, der Makro-Anker `ankerAusSaat`/`ankerBeitrag`/`massivMaske`/`grat`, Erosions- und Tarn-Delta samt
+Mulden-Form `tarnMulde`, die Rauheits-Maske `rauheit`, der Kachel-Schlüssel); geladen vom Stamm (vor `anazhRealm.js`),
+vom voxel-worker (`importScripts` mit `?v=`) und vom Foundry-Worker; `feld-wgsl.js` bleibt der Seh-Spiegel und liest
+seine Eingaben aus ihm. Kein Leser rechnet eine dieser Formeln nach (die Boden-Farbe liest `kontinentBasis`, die Fels-
+Exposition `massivMaske`); die Zwillings-Wand in `gate:altlasten` sucht sie als Muster in jeder Wurzel-Datei und jedem
+Skript.

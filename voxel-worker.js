@@ -2119,14 +2119,10 @@ function attachFieldColors(positions) {
         // Der Magie-Akzent in Flecken (Main-Spiegel `_bodenFarbeAt`).
         const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
-        // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y. Bit-
-        // identisch zum Main (`_attachVoxelFieldColors`): cont0 = λ7100-m-
-        // kontinentale Basis; Schnee-Caps nur auf genuine Erhebungen statt über
-        // ~53 % des Bodens geschmiert (V14.5-Co-Tuning nach der Terrain-Weitung).
-        const _wpX = sandNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
-        const _wpZ = sandNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
-        const _cB = sandNoise.noise2D((x + _wpX) * 0.00014 + 7.2, (z + _wpZ) * 0.00014 + 3.8);
-        const _cont0 = Math.max(0, _cB) * 130 + _cB * 15 + 12;
+        // V17.105 — Schnee auf PROMINENZ (y − cont0), nicht absolutem y: cont0 = die λ7100-m-kontinentale Basis aus
+        // dem Gelände-Gesetzbuch (`kontinentBasis`, dieselbe Funktion wie Main `_bodenFarbeAt`); Schnee-Caps nur auf
+        // genuine Erhebungen statt über ~53 % des Bodens geschmiert (V14.5-Co-Tuning nach der Terrain-Weitung).
+        const _cont0 = G.kontinentBasis(state, x, z);
         mix(snow, ss(SNOW_PROM_START, SNOW_PROM_FULL, y - base - _cont0));
         // Der Seegrund unter JEDEM Wasser (Main-Spiegel): Schlick, voll ab 4 m Tiefe.
         // Schlick und Strand über beiden Bezügen (Mirror `_bodenFarbeAt`): See/Meer voll, der Fluss mit seiner Kronen-Blende.

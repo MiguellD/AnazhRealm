@@ -171,11 +171,10 @@
         return ridge / norm;
     }
 
-    // Drei Terme der Makro-Geographie: Massiv-Boost (Ridge-Noise im Maskel), Tal-Senke (U-Profil + Innentrog, Lerp zum
-    // Ziel-Floor), Becken-Mulde.
-    function ankerBeitrag(L, x, z, anker) {
-        // (1) Massiv: der Maskel `mShape` bündelt die Grate ins Massiv-Footprint, die Grate kommen aus `grat`. Form
-        // `mask × (ridge^1.5 × H_core + mask × H_lift)` = scharfe Gipfel-Linien plus breiter Sockel-Lift.
+    // DIE MASSIV-MASKE [0,1] des Makro-Ankers an (x, z): die anisotrope smoothstep-Glocke (gedreht um die Streich-
+    // richtung, gestreckt um den Aspekt) ohne Grate. Leser: `ankerBeitrag` (der Maskel der Grate) und die Fels-
+    // Exposition des Wirts (`_rockExposureAt`: im Massiv-Footprint mehr Fels).
+    function massivMaske(anker, x, z) {
         const ddx = x - anker.massivC.x;
         const ddz = z - anker.massivC.z;
         const cs = Math.cos(anker.massivRot);
@@ -185,7 +184,15 @@
         const ax = rxA / anker.massivAspect;
         const aDist = Math.hypot(ax, rzA);
         const mT = Math.max(0, Math.min(1, 1 - aDist / anker.massivR));
-        const mShape = mT * mT * (3 - 2 * mT);
+        return mT * mT * (3 - 2 * mT);
+    }
+
+    // Drei Terme der Makro-Geographie: Massiv-Boost (Ridge-Noise im Maskel), Tal-Senke (U-Profil + Innentrog, Lerp zum
+    // Ziel-Floor), Becken-Mulde.
+    function ankerBeitrag(L, x, z, anker) {
+        // (1) Massiv: der Maskel `mShape` bündelt die Grate ins Massiv-Footprint, die Grate kommen aus `grat`. Form
+        // `mask × (ridge^1.5 × H_core + mask × H_lift)` = scharfe Gipfel-Linien plus breiter Sockel-Lift.
+        const mShape = massivMaske(anker, x, z);
         const ridge = grat(L, x, z);
         const ridgePow = Math.pow(ridge, 1.5);
         const massiv = mShape * (ridgePow * anker.massivH * 1.25 + mShape * anker.massivH * 0.35);
@@ -263,6 +270,13 @@
         return (d[a] * (1 - tx) + d[a + 1] * tx) * (1 - tz) + (d[a + dim] * (1 - tx) + d[a + dim + 1] * tx) * tz;
     }
 
+    // DIE MULDEN-FORM eines Tarns (Bergsee): die Gauss-Mulde mit σ = r/2 und Reichweite 2,2·r um (x, z), Tiefe d. Der
+    // Wirt wählt Ort, Radius und Tiefe (die Genese `_hydroSeedTarns`), die Form ist Gesetz; `tarnDelta` liest sie.
+    function tarnMulde(x, z, surf, r, d) {
+        const sigma = r * 0.5;
+        return { x, z, surf, r, d, reach2: r * 2.2 * (r * 2.2), twoSig2: 2 * sigma * sigma };
+    }
+
     // Die Tarn-Mulden-Senkung an (x, z) (≤ 0, eine Gauss-Mulde je Tarn); per-Tarn-Early-Out → eine tarn-lose Welt
     // kostet 0 Ops.
     function tarnDelta(L, x, z) {
@@ -292,7 +306,7 @@
 
     // Ein Term des Erbguts an (x, z) auf die Höhe `h` darunter (Bühnen-Terme sind analytisch, kein Rauschen). Höhen
     // sind relativ zur Basis (der Meeresspiegel liegt bei Basis − 3). Die Winkel-Größen (Sinus, Tangens) rechnet die
-    // Normalform des Wirts (`_erbgutNormal`) EINMAL.
+    // Normalform (`erbgutNormal`) EINMAL.
     function termY(t, h, x, z, L) {
         const base = L.baseHeight || 0;
         if (t.art === "insel") {
@@ -332,24 +346,124 @@
         return b < h ? b : h;
     }
 
+    // DIE NORMALFORM DES ERBGUTS (`worldMeta.erbgut` roh → die Terme, die `hoehe` liest): die Zahlen geklemmt, die
+    // Winkel-Größen EINMAL gerechnet (Sinus, Tangens, Kolk-Ort), oder ein Wurf mit dem Grund (fail-closed, nie still
+    // Wildnis). Fehlt das Erbgut, ist die Welt [wildnis]. Leser: das Erwachen des Wirts (`_erbgut`), seine Eingangs-
+    // Wände (`_erbgutEinlass`, `_erbgutTeilbar`) und das Studio (G2) — EINE Grammatik der Terme.
+    function erbgutNormal(roh) {
+        if (roh == null) return [{ art: "wildnis" }];
+        const nein = (grund) => {
+            throw new Error(`Erbgut abgelehnt: ${grund}`);
+        };
+        if (typeof roh !== "object" || !Array.isArray(roh.terme)) nein("keine Liste `terme`");
+        if (roh.terme.length < 1 || roh.terme.length > 32) nein(`${roh.terme.length} Terme (1–32)`);
+        const zahl = (t, k, lo, hi) => {
+            const v = t[k];
+            if (typeof v !== "number" || !Number.isFinite(v)) nein(`${t.art}.${k} ist keine Zahl`);
+            return Math.min(hi, Math.max(lo, v));
+        };
+        const RAD = Math.PI / 180;
+        return roh.terme.map((t, i) => {
+            if (!t || typeof t !== "object") nein(`Term ${i} ist kein Objekt`);
+            if (!["wildnis", "insel", "rampe", "bucht"].includes(t.art)) nein(`unbekannte Term-Art „${t.art}"`);
+            const basis = t.art === "wildnis" || t.art === "insel";
+            if (basis !== (i === 0)) nein(`Term ${i} (${t.art}): nur der erste Term setzt den Grund`);
+            if (t.art === "wildnis") return { art: "wildnis" };
+            if (t.art === "insel")
+                return {
+                    art: "insel",
+                    x: zahl(t, "x", -1e5, 1e5),
+                    z: zahl(t, "z", -1e5, 1e5),
+                    r: zahl(t, "r", 10, 5000),
+                    plateau: zahl(t, "plateau", -100, 200),
+                    kuppel: zahl(t, "kuppel", 0, 0.05),
+                    schelf: zahl(t, "schelf", 1, 1000),
+                    grund: zahl(t, "grund", -120, 0),
+                };
+            if (t.art === "rampe") {
+                const w = zahl(t, "winkel", 1, 60) * RAD;
+                const a = zahl(t, "richtung", -360, 360) * RAD;
+                const lauf = zahl(t, "lauf", 1, 500);
+                return {
+                    art: "rampe",
+                    x: zahl(t, "x", -1e5, 1e5),
+                    z: zahl(t, "z", -1e5, 1e5),
+                    ux: Math.sin(a),
+                    uz: Math.cos(a),
+                    breite: zahl(t, "breite", 1, 500),
+                    krone: zahl(t, "krone", 0, 500),
+                    hoehe: lauf * Math.tan(w),
+                    tanW: Math.tan(w),
+                    tanB: Math.tan(zahl(t, "boeschung", 10, 80) * RAD),
+                };
+            }
+            if (t.art === "bucht") {
+                const x0 = zahl(t, "x0", -1e5, 1e5);
+                const z0 = zahl(t, "z0", -1e5, 1e5);
+                const ex = zahl(t, "x1", -1e5, 1e5) - x0;
+                const ez = zahl(t, "z1", -1e5, 1e5) - z0;
+                const len = Math.hypot(ex, ez);
+                if (!(len >= 1)) nein("bucht: A und B fallen zusammen");
+                const kolk = Math.min(len, zahl(t, "kolkLage", 0, 1e5)) / len;
+                return {
+                    art: "bucht",
+                    x0,
+                    z0,
+                    ex,
+                    ez,
+                    len,
+                    len2: ex * ex + ez * ez,
+                    sohle: zahl(t, "sohle", 4, 500),
+                    grund: zahl(t, "grund", -100, 50),
+                    tanU: Math.tan(zahl(t, "ufer", 5, 60) * RAD),
+                    furtLage: Math.min(len, zahl(t, "furtLage", 0, 1e5)),
+                    furtBreite: zahl(t, "furtBreite", 0, 100),
+                    furtKrone: zahl(t, "furtKrone", -50, 50),
+                    tanF: Math.tan(zahl(t, "furtFlanke", 5, 60) * RAD),
+                    kolkX: x0 + ex * kolk,
+                    kolkZ: z0 + ez * kolk,
+                    kolkR: zahl(t, "kolkR", 1, 100),
+                    kolkTiefe: zahl(t, "kolkTiefe", 0, 30),
+                };
+            }
+            return nein(`unbekannte Term-Art „${t.art}"`);
+        });
+    }
+
     // DER WILDNIS-TERM (`art: "wildnis"`): die Natur-Höhe der Welt — Rauschen, Erosion, Makro-Anker, Canyon,
     // Tafelberg, Deckel, Tiefsee und Tarn. Unteilbar: ihre Klemmen folgen nichtlinear aufeinander (der Anker addiert vor
     // Canyon-Boden, Terrasse, Deckel, Tiefsee und Tarn-Klemme), darum ist sie EIN Term und nie die Summe ihrer Teile.
     // `mitDetail = false` für die Hydrosphäre: die Detail-Oktave aliast bei 16-m-Abtastung.
+    // (a) Der Domain-Warp des Wildnis-Terms — verschobene Sample-Koordinaten (bricht die Gitter-Parallelität der ridged-
+    // Kämme; λ~3900 m, ±70 m Versatz).
+    function warpX(n, x, z) {
+        return n.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
+    }
+    function warpZ(n, x, z) {
+        return n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
+    }
+    // (0a) Die kontinentale Basis (λ~7100 m) an den GEWARPTEN Koordinaten: das Rohsignal und sein Hub, asymmetrisch nach
+    // oben gebiast — HEBT Hochländer bis ~+145 m, senkt Becken nur bis −15 m (E[cont0]≈+25 m — die Land-Marge bleibt; die
+    // V14.1-Messfalle: eine symmetrische Basis kippte 46 % unter Wasser); +12 kompensiert die abgesenkten flachen Regionen.
+    function kontinentRoh(n, wx, wz) {
+        return n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);
+    }
+    function kontinentHub(cBase) {
+        return Math.max(0, cBase) * 130 + cBase * 15 + 12;
+    }
+    // DIE KONTINENTALE BASIS `cont0` an (x, z) — dieselbe Float-Folge wie im Wildnis-Term. Leser: der Wildnis-Term und die
+    // Schnee-Prominenz `y − Basis − cont0` der Boden-Farbe (Stamm `_bodenFarbeAt`, Worker `attachFieldColors`).
+    function kontinentBasis(L, x, z) {
+        const n = L.noise;
+        return kontinentHub(kontinentRoh(n, x + warpX(n, x, z), z + warpZ(n, x, z)));
+    }
+
     function wildnisY(L, x, z, mitDetail) {
         const n = L.noise;
         const base = L.baseHeight || 0;
-        // (a) Domain-Warp — verschobene Sample-Koordinaten (bricht die Gitter-Parallelität der ridged-Kämme; λ~3900 m,
-        // ±70 m Versatz).
-        const warpX = n.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
-        const warpZ = n.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
-        const wx = x + warpX;
-        const wz = z + warpZ;
-        // (0a) Kontinentale Basis (λ~7100 m), asymmetrisch nach oben gebiast: HEBT Hochländer bis ~+145 m, senkt Becken
-        // nur bis −15 m (E[cont0]≈+25 m — die Land-Marge bleibt; die V14.1-Messfalle: eine symmetrische Basis kippte 46 %
-        // unter Wasser); +12 kompensiert die abgesenkten flachen Regionen.
-        const cBase = n.noise2D(wx * 0.00014 + 7.2, wz * 0.00014 + 3.8);
-        const cont0 = Math.max(0, cBase) * 130 + cBase * 15 + 12;
+        const wx = x + warpX(n, x, z);
+        const wz = z + warpZ(n, x, z);
+        const cont0 = kontinentHub(kontinentRoh(n, wx, wz));
         // (0b) Tektonische Oktave (λ~1136 m) formt die breiten Massive; die ridged-`ranges` sitzen darauf als Textur.
         const tect = n.noise2D(wx * 0.00088, wz * 0.00088) * 45;
         // (b) Rauheit — moduliert ALLE Relief-Oktaven (ridgeAmp, cont, detail) → echte flache Ebenen.
@@ -430,7 +544,7 @@
             // Flatness aus dem Gradienten der DOMINANTEN glatten Struktur (cont0 λ7100 + tect λ1136; die gewarpten wx/wz
             // als Basis — der Warp variiert langsam, für ein Steilheits-GATE genügt das).
             const sm = (sx, sz) => {
-                const cB = n.noise2D(sx * 0.00014 + 7.2, sz * 0.00014 + 3.8);
+                const cB = kontinentRoh(n, sx, sz);
                 return Math.max(0, cB) * 130 + cB * 15 + n.noise2D(sx * 0.00088, sz * 0.00088) * 45;
             };
             const gd = 7;
@@ -501,16 +615,20 @@
         FUNKTION: 1, // studio-vertrag §9 — ein Gesetz-Kern: reine Funktionen, keine Rezepte, keine Gestalt
         MACRO_ANKER: MACRO_ANKER,
         hoehe: hoehe,
+        erbgutNormal: erbgutNormal,
         wildnisY: wildnisY,
         termY: termY,
+        kontinentBasis: kontinentBasis,
         rauheit: rauheit,
         ankerAusSaat: ankerAusSaat,
         ankerBeitrag: ankerBeitrag,
+        massivMaske: massivMaske,
         grat: grat,
         gratRauschen: gratRauschen,
         kachelSchluessel: kachelSchluessel,
         erosionFuer: erosionFuer,
         erosionDelta: erosionDelta,
+        tarnMulde: tarnMulde,
         tarnDelta: tarnDelta,
     });
 })(typeof self !== "undefined" ? self : globalThis);

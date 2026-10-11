@@ -10339,14 +10339,14 @@ async function checkBandRing8(ctx) {
         {
             const wirft = (roh) => {
                 try {
-                    r.constructor._erbgutNormal(roh);
+                    window.__gelaendeCore.erbgutNormal(roh);
                     return "";
                 } catch (e) {
                     return String(e.message);
                 }
             };
             out.erbgutWand = {
-                ohne: JSON.stringify(r.constructor._erbgutNormal(undefined)) === '[{"art":"wildnis"}]',
+                ohne: JSON.stringify(window.__gelaendeCore.erbgutNormal(undefined)) === '[{"art":"wildnis"}]',
                 unbekannt: /unbekannte Term-Art/.test(wirft({ terme: [{ art: "vulkan" }] })),
                 grundZuerst: /nur der erste Term/.test(
                     wirft({
@@ -33240,13 +33240,8 @@ async function checkBandV18194Gamma6Befoerderung(ctx) {
             t = t < 0 ? 0 : t > 1 ? 1 : t;
             return t * t * (3 - 2 * t);
         };
-        const cont0At = (x, z) => {
-            if (!r._voxelNoise) return 0;
-            const wpX = r._voxelNoise.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;
-            const wpZ = r._voxelNoise.noise2D(x * 0.00026 + 41.7, z * 0.00026 + 23.9) * 70;
-            const cB = r._voxelNoise.noise2D((x + wpX) * 0.00014 + 7.2, (z + wpZ) * 0.00014 + 3.8);
-            return Math.max(0, cB) * 130 + cB * 15 + 12;
-        };
+        // Die Prominenz misst am Gesetz (die kontinentale Basis des Gelände-Gesetzbuchs), nie an einer Kopie.
+        const cont0At = (x, z) => window.__gelaendeCore.kontinentBasis(r._gelaende(), x, z);
         let snowSum = 0;
         let nSamples = 0;
         const base = s.terrainBaseHeight || 0;
