@@ -375,6 +375,14 @@ jobs:
               # muss die Senken rot faerben.
               run: npm run gate:gelaende-realismus
 
+            - name: Gelaende-Studio (jeder Regler wirkt, EIN Plan reist durch die Welt-Tuer byte-gleich in die Welt)
+              if: matrix.gruppe == 5
+              # Faehrt index.html?studio=gelaende (Null-Renderer): jeder Regler aus LANDFORM_REGLER einmal ueber sein
+              # Schieber-Element (tot = das Raster des Studios bleibt byte-gleich), der Export (EIN Plan: Saat + Regler)
+              # durch das Welt-Tor, nach dem Reload derselbe Makro-Abdruck (64 x 64) und dieselbe Statistik in der Welt.
+              # Der Selbsttest: ein Schritt am Regler "hoehe" muss den Abdruck aendern (Karte K16b).
+              run: npm run gate:gelaende-studio
+
             - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec)
               if: matrix.gruppe == 3
               # Faehrt die echte Welt (Null-Renderer): jede Ort-Op der Welt-Akte mit der Quelle des Feldes (nexus,

@@ -34,7 +34,7 @@
 #gelaende-studio{--panel:rgba(9,14,20,.72);--ink:#cdd8e2;--mut:#7f8f9c;--hair:rgba(90,140,170,.18);--steel:#4f8fa6;
   --hell:#6fd0e8;--pass:#4ec98a;--fail:#e0664a;--mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
   --sans:system-ui,-apple-system,"Segoe UI",sans-serif;position:fixed;top:14px;right:14px;width:296px;max-height:calc(100vh - 28px);
-  overflow-y:auto;z-index:60;background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:10px 11px 11px;
+  overflow-y:auto;z-index:2147483100;background:var(--panel);border:1px solid var(--hair);border-radius:12px;padding:10px 11px 11px;
   backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);font-family:var(--sans);color:var(--ink);font-size:11px;
   box-shadow:0 10px 30px rgba(0,0,0,.28);scrollbar-width:thin;scrollbar-color:rgba(80,130,160,.3) transparent}
 #gelaende-studio *{box-sizing:border-box}
@@ -240,7 +240,7 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
                 !e || !e.schicht
                     ? "…"
                     : b
-                      ? `K ${pz(b.kliff)} · S ${pz(b.schutt)} · P ${pz(b.pediment)}`
+                      ? `K ${pz(b.kliff)}  S ${pz(b.schutt)}  P ${pz(b.pediment)}`
                       : "kein Tafelland",
                 u.schicht,
                 "Kliff ≥ 2 % · Schutt ≥ 5 % · Pediment ≥ 20 %",
@@ -523,10 +523,16 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
             kam.pos = null;
             return;
         }
+        // Erst kommt der Spieler an (das erste fertige Weltbild, `_weltbildDa`), dann steigt die Kamera — der Ladeschirm
+        // wartet auf die Welt um den Spieler, nie auf einen Blick aus 400 m.
+        if (!r.state._weltbildDa) {
+            setTimeout(() => st.kamera === modus && kamera(modus), 250);
+            return;
+        }
         r.kameraFuehren(fuehre);
     }
     function fuehre(camera, t, p) {
-        const dt = kam.t ? Math.min(0.1, Math.max(0, (t - kam.t) / 1000)) : 0;
+        const dt = kam.t ? Math.min(0.1, Math.max(0, t - kam.t)) : 0; // t in Sekunden (der Loop-Takt)
         kam.t = t;
         const r = st.realm;
         const boden = (x, z) => {
@@ -540,16 +546,18 @@ body.gelaende-studio-an #statusbar,body.gelaende-studio-an #fps{display:none!imp
         let zy;
         let zz = p.z;
         if (st.kamera === "makro") {
-            kam.az += dt * 0.018;
-            const d = 560;
+            // Hoch über dem GEBAUTEN Boden (die Kamera bleibt über dem Kreis der Chunks, der Blick geht weit übers Land);
+            // langsam genug, dass die Szene-Auflösung voll bleibt (PERF_CAM_POSVEL_FULL: 11 m/s senkt sie auf 60 %).
+            kam.az += dt * 0.012;
+            const d = 110;
             wx = p.x - Math.sin(kam.az) * d;
             wz = p.z - Math.cos(kam.az) * d;
-            wy = Math.max(boden(wx, wz) + 120, p.y + 330);
-            zx = p.x + Math.sin(kam.az) * 220;
-            zz = p.z + Math.cos(kam.az) * 220;
-            zy = boden(zx, zz);
+            wy = Math.max(boden(wx, wz) + 150, p.y + 210);
+            zx = p.x + Math.sin(kam.az) * 900;
+            zz = p.z + Math.cos(kam.az) * 900;
+            zy = boden(zx, zz) - 60;
         } else {
-            kam.az += dt * 0.07;
+            kam.az += dt * 0.022;
             const d = 150;
             wx = p.x - Math.sin(kam.az) * d;
             wz = p.z - Math.cos(kam.az) * d;
