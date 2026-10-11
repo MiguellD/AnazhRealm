@@ -86,7 +86,11 @@ const FOLGEN = {
 // DIE WIEDERHOLBARKEIT EINES MESSORTS (1110-6, rein): dieselbe Seite in N frischen Sitzungen — je Pose (Toggle-Ort) bzw. je
 // Blick (Band-Ort) das Bank-Mittel jeder Sitzung. Liegt die Spanne (max − min) über dem Soll, ist der Ort für Toggle-Urteile
 // dieser Größe blind und nennt die Pose. An der Mess-Wiese lag sie am 11.10. bis 1,8 ms (der Baum-Inhalt je Sitzung).
-// `sitzungen` = [{ name, je: { <pose|gier>: ms } }]; mindestens drei.
+// DER TAKT (1110-7): die GTX des OMEN läuft unter Last am Leistungs-Deckel (Drossel 0x4, ~70 W) mit 1680–1710 MHz, in Ruhe mit
+// 1771 MHz — zwischen Sitzungen ~4 %, so viel wie der vermeintliche Merge-Täter von 1110-6. Verglichen wird nur bei gleichem
+// Takt (±0,5 % um den Median); fehlt er in einer Sitzung (kein nvidia-smi), ist der gleiche Takt nicht belegt — beides laut.
+// `sitzungen` = [{ name, je: { <pose|gier>: ms }, takt: { <pose|gier>: MHz | null } }]; mindestens drei.
+const TAKT_TOLERANZ = 0.005;
 function streuungUrteil(sitzungen, soll) {
     const befunde = [];
     const zeilen = [];
@@ -106,9 +110,27 @@ function streuungUrteil(sitzungen, soll) {
         const max = Math.max(...w);
         const mittel = w.reduce((a, b) => a + b, 0) / w.length;
         const sigma = Math.sqrt(w.reduce((a, b) => a + (b - mittel) ** 2, 0) / Math.max(1, w.length - 1));
+        const t = sitzungen.map((s) => (s.takt || {})[k]);
+        const ohneTakt = t.filter((x) => !(Number.isFinite(x) && x > 0)).length;
+        if (ohneTakt)
+            befunde.push(
+                `TAKT ${k}: in ${ohneTakt} von ${t.length} Sitzungen kein Takt (nvidia-smi) — der gleiche Takt ist nicht belegt`
+            );
+        else {
+            const ts = t.slice().sort((a, b) => a - b);
+            const med = ts.length % 2 ? ts[ts.length >> 1] : (ts[ts.length / 2 - 1] + ts[ts.length / 2]) / 2;
+            sitzungen.forEach((s, i) => {
+                if (Math.abs(t[i] - med) > med * TAKT_TOLERANZ)
+                    befunde.push(
+                        `TAKT ${k}: Sitzung ${s.name || i + 1} bei ${t[i].toFixed(0)} MHz, Median ${med.toFixed(0)} MHz ` +
+                            `(±${TAKT_TOLERANZ * 100} %) — der Vergleich ist blind (Täter: Takt)`
+                    );
+            });
+        }
         zeilen.push({
             k,
             werte: w,
+            takt: t,
             mittel: +mittel.toFixed(3),
             spanne: +(max - min).toFixed(3),
             sigma: +sigma.toFixed(3),
@@ -121,12 +143,81 @@ function streuungUrteil(sitzungen, soll) {
     return { befunde, zeilen };
 }
 
-// Die Bank eines Laufs je Pose bzw. Blick (aus `kurz.gpuBank`) — die Eingabe des Streuungs-Urteils.
+// Die Bank eines Laufs je Pose bzw. Blick (aus `kurz.gpuBank`) und ihr Takt — die Eingabe des Streuungs-Urteils.
 function bankJe(lauf) {
     const je = {};
-    for (const [k, b] of Object.entries((lauf && lauf.kurz && lauf.kurz.gpuBank) || {}))
+    const takt = {};
+    for (const [k, b] of Object.entries((lauf && lauf.kurz && lauf.kurz.gpuBank) || {})) {
         je[k] = b && Number.isFinite(b.gpuJeFrameMs) ? b.gpuJeFrameMs : NaN;
-    return je;
+        takt[k] = b && b.takt && Number.isFinite(b.takt.mhz) ? b.takt.mhz : null;
+    }
+    return { je, takt };
+}
+
+// DER TAKT EINER BANK (rein): `nvidia-smi --format=csv,noheader,nounits` je Zeile Takt (MHz), Temperatur, Leistung und die
+// Drossel-Gründe (Maske) → Mittel, Spanne und die Zahl der Proben je Drossel-Maske; ohne eine lesbare Zeile null.
+const SMI_ABFRAGE = [
+    "--query-gpu=clocks.gr,temperature.gpu,power.draw,clocks_throttle_reasons.active",
+    "--format=csv,noheader,nounits",
+    "-lms",
+    "250",
+];
+function taktAus(zeilen) {
+    const w = zeilen
+        .map((l) => l.split(",").map((x) => x.trim()))
+        .filter((r) => r.length >= 4 && Number(r[0]) > 0 && Number.isFinite(Number(r[1])));
+    if (!w.length) return null;
+    const m = (i) => w.reduce((a, r) => a + Number(r[i]), 0) / w.length;
+    const mhz = w.map((r) => Number(r[0]));
+    const drossel = {};
+    for (const r of w) drossel[r[3]] = (drossel[r[3]] || 0) + 1;
+    return {
+        mhz: +m(0).toFixed(1),
+        min: Math.min(...mhz),
+        max: Math.max(...mhz),
+        temp: +m(1).toFixed(1),
+        watt: +m(2).toFixed(1),
+        drossel,
+        n: w.length,
+    };
+}
+
+// Eine Bank mit ihrem Takt: `nvidia-smi` liest je 250 ms, solange die Bank läuft; ohne nvidia-smi (kein NVIDIA-Treiber) steht
+// `takt: null` — das Streuungs-Urteil nennt es.
+async function mitTakt(fn) {
+    const zeilen = [];
+    let proc = null;
+    try {
+        proc = spawn("nvidia-smi", SMI_ABFRAGE, { windowsHide: true });
+        proc.on("error", () => (proc = null));
+        proc.stdout.on("data", (d) => zeilen.push(...String(d).split(/\r?\n/).filter(Boolean)));
+    } catch (_e) {
+        proc = null;
+    }
+    try {
+        const b = await fn();
+        return { b, takt: taktAus(zeilen) };
+    } finally {
+        if (proc) proc.kill();
+    }
+}
+
+// Die Takte mehrerer Bänke derselben Pose zu EINEM: Mittel der Mittel, Spanne über alle, die Drossel-Masken summiert.
+function taktZusammen(liste) {
+    const t = liste.filter(Boolean);
+    if (!t.length) return null;
+    const drossel = {};
+    for (const x of t) for (const [k, n] of Object.entries(x.drossel)) drossel[k] = (drossel[k] || 0) + n;
+    return {
+        mhz: +(t.reduce((a, x) => a + x.mhz, 0) / t.length).toFixed(1),
+        min: Math.min(...t.map((x) => x.min)),
+        max: Math.max(...t.map((x) => x.max)),
+        temp: +(t.reduce((a, x) => a + x.temp, 0) / t.length).toFixed(1),
+        watt: +(t.reduce((a, x) => a + x.watt, 0) / t.length).toFixed(1),
+        drossel,
+        n: t.reduce((a, x) => a + x.n, 0),
+        baenke: t.length,
+    };
 }
 const ORT = opt("--ort", "wiese");
 if (!FOLGEN[ORT]) throw new Error(`omen-messfolge: kein Messort „${ORT}" (Folgen: ${Object.keys(FOLGEN).join(", ")})`);
@@ -489,14 +580,16 @@ async function folge() {
                     await blick(BAND.ortGier(p));
                     await R("/gpu-bank", { n: 120, runden: 2 });
                     const werte = [];
+                    const takte = [];
                     let cpu = 0;
                     for (let i = 0; i < B.je; i++) {
-                        const b = await R("/gpu-bank", { n: B.n, runden: B.runden });
+                        const { b, takt } = await mitTakt(() => R("/gpu-bank", { n: B.n, runden: B.runden }));
                         if (abbruchVon(b)) {
                             je[p.id] = b;
                             break;
                         }
                         werte.push(b.gpuJeFrameMs);
+                        takte.push(takt);
                         cpu += b.cpuJeFrameMs / B.je;
                     }
                     if (je[p.id]) continue;
@@ -506,6 +599,7 @@ async function folge() {
                         cpuJeFrameMs: +cpu.toFixed(3),
                         werte,
                         chunks: u.chunks,
+                        takt: taktZusammen(takte),
                     };
                 }
                 await R("/umstellen", { ort: ORT });
@@ -522,9 +616,12 @@ async function folge() {
                 const je = {};
                 for (const g of BANK_GIER) {
                     const b = await blick(g);
-                    je[String(g)] = await R("/gpu-bank", { n: 12, runden: 3 });
-                    if (je[String(g)] && typeof je[String(g)] === "object")
+                    const m = await mitTakt(() => R("/gpu-bank", { n: 12, runden: 3 }));
+                    je[String(g)] = m.b;
+                    if (je[String(g)] && typeof je[String(g)] === "object") {
                         je[String(g)].tiere = b && b.ergebnis ? b.ergebnis.tiere : null;
+                        je[String(g)].takt = m.takt;
+                    }
                 }
                 await blick(BAND.ortGier(ort));
                 return je;
@@ -536,7 +633,12 @@ async function folge() {
                 else aus.befunde.push(...tierUrteil(`gpu-bank (Gier ${g})`, b && b.tiere));
                 aus.kurz.gpuBank[String(g)] =
                     b && !abbruchVon(b)
-                        ? { gpuJeFrameMs: b.gpuJeFrameMs, cpuJeFrameMs: b.cpuJeFrameMs, tiere: tierKurz(b.tiere) }
+                        ? {
+                              gpuJeFrameMs: b.gpuJeFrameMs,
+                              cpuJeFrameMs: b.cpuJeFrameMs,
+                              tiere: tierKurz(b.tiere),
+                              takt: b.takt || null,
+                          }
                         : b;
             }
         }
@@ -620,7 +722,7 @@ async function folge() {
         if (b && b.gpuJeFrameMs != null)
             console.log(
                 b.werte
-                    ? `  gpu-bank Pose ${g}: ${b.gpuJeFrameMs} ms je Frame (${b.werte.join(" · ")}; CPU ${b.cpuJeFrameMs}, Chunks ${b.chunks})`
+                    ? `  gpu-bank Pose ${g}: ${b.gpuJeFrameMs} ms je Frame (${b.werte.join(" · ")}; CPU ${b.cpuJeFrameMs}, Chunks ${b.chunks}; Takt ${b.takt ? b.takt.mhz + " MHz, " + b.takt.temp + " °C, Drossel " + Object.keys(b.takt.drossel).join("/") : "—"})`
                     : `  gpu-bank Gier ${g}: ${b.gpuJeFrameMs} ms je Frame (CPU ${b.cpuJeFrameMs}) · ${tierZeile(b.tiere)}`
             );
     if (aus.kurz.band && aus.kurz.band.urteil)
@@ -961,13 +1063,42 @@ async function selbsttest() {
     }
     // DIE WIEDERHOLBARKEIT (1110-6): vier ruhige Sitzungen liegen im Soll; eine fünfte 0,3 ms daneben fällt an IHRER Pose;
     // zwei Sitzungen sind zu wenig; eine Pose ohne Wert steht beim Namen; die Spanne der Wiese (1110-3: 0,40 ms) ist rot.
-    const S = (je) => ({ je });
+    // DER TAKT (1110-7): eine Sitzung mit denselben ms bei 1640 statt ~1700 MHz fällt an ihrer Pose mit dem Täter „Takt"; eine
+    // Sitzung ohne Takt ist laut; die nvidia-smi-Zeile wird gelesen.
+    const S = (je, mhz) => ({
+        je,
+        takt: Object.fromEntries(Object.keys(je).map((k) => [k, mhz === undefined ? 1700 : mhz])),
+    });
     const ruhig = [
-        S({ a: 13.5, b: 12.1 }),
-        S({ a: 13.56, b: 12.14 }),
-        S({ a: 13.52, b: 12.08 }),
-        S({ a: 13.58, b: 12.12 }),
+        S({ a: 13.5, b: 12.1 }, 1700),
+        S({ a: 13.56, b: 12.14 }, 1702),
+        S({ a: 13.52, b: 12.08 }, 1698),
+        S({ a: 13.58, b: 12.12 }, 1701),
     ];
+    pruefe(
+        "Takt gedrosselt",
+        streuungUrteil(ruhig.concat([S({ a: 13.54, b: 12.1 }, 1640)]), 0.1).befunde,
+        /^TAKT a: Sitzung 5 bei 1640 MHz, Median 1700 MHz .*Täter: Takt/
+    );
+    pruefe(
+        "ohne Takt",
+        streuungUrteil(ruhig.slice(0, 3).concat([S({ a: 13.54, b: 12.1 }, null)]), 0.1).befunde,
+        /^TAKT a: in 1 von 4 Sitzungen kein Takt/
+    );
+    {
+        const t = taktAus(["1701, 78, 70.1, 0x0000000000000004", "1699, 79, 70.5, 0x0000000000000001", "", "[N/A], x"]);
+        const v = [];
+        if (
+            !t ||
+            t.mhz !== 1700 ||
+            t.n !== 2 ||
+            t.drossel["0x0000000000000004"] !== 1 ||
+            t.min !== 1699 ||
+            t.max !== 1701
+        )
+            v.push(`taktAus las ${JSON.stringify(t)}`);
+        pruefe("die nvidia-smi-Zeile", v, null);
+    }
     pruefe("Streuung im Soll", streuungUrteil(ruhig, 0.1).befunde, null);
     pruefe(
         "eine Sitzung 0,3 ms daneben",
@@ -1011,7 +1142,7 @@ function streuungCli() {
     const { ort } = BAND.ladeSpec(orte[0]);
     const soll = Number(opt("--soll", ort.bank ? ort.bank.soll : NaN));
     const u = streuungUrteil(
-        laeufe.map((l) => ({ name: l.name, je: bankJe(l.lauf) })),
+        laeufe.map((l) => Object.assign({ name: l.name }, bankJe(l.lauf))),
         soll
     );
     console.log(
@@ -1019,7 +1150,7 @@ function streuungCli() {
     );
     for (const z of u.zeilen)
         console.log(
-            `  ${z.k}: ${z.werte.map((x) => x.toFixed(2)).join(" · ")} → Mittel ${z.mittel}, Spanne ${z.spanne}, σ ${z.sigma} ` +
+            `  ${z.k}: ${z.werte.map((x) => x.toFixed(2)).join(" · ")} ms bei ${z.takt.map((x) => (x ? x.toFixed(0) : "?")).join(" · ")} MHz → Mittel ${z.mittel}, Spanne ${z.spanne}, σ ${z.sigma} ` +
                 `(2σ ${(2 * z.sigma).toFixed(3)})`
         );
     if (u.befunde.length) {
