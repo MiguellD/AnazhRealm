@@ -93,15 +93,26 @@ async function kreaturProben(r, T, opts) {
         for (let k = 0; k < 40; k++) {
             const x = P0.x + dx + (k % 8) * 3,
                 z = P0.z + dz + Math.floor(k / 8) * 3;
-            if (!r._isAboveWaterAt || r._isAboveWaterAt(x, z)) {
+            if (r._landAt(x, z)) {
                 const h = r.getTerrainHeightAt(x, z);
                 return { x, y: (Number.isFinite(h) ? h : 0) + 0.5, z };
             }
         }
         return { x: P0.x + dx, y: P0.y, z: P0.z + dz };
     };
-    // Ein Ort auf Land ohne Bauwerks-Hülle im Umkreis R — die Witterungs-Jagd im Freien: an einer Wand gleitet ein Leib
-    // längs der Box-Kante (achsparallel), das misst die Hindernis-Probe, nicht die Richtung der Jagd.
+    // Ein Ort auf Land ohne Bauwerks-Hülle und ohne Wasser im Umkreis R — die Witterungs-Jagd im Freien: an einer Wand
+    // gleitet ein Leib längs der Box-Kante (achsparallel), im Wasser schwimmt er in einer Himmelsrichtung ans Ufer
+    // (`_creatureWaterContextAt`, vier Richtungen) — beides misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der
+    // Jagd. Seit Schau-2 nennt das Land (`_landAt`) das Ufer eines Sees genau (die Zwillings-Probe dehnte jeden See um
+    // eine 16-m-Zelle): ohne die Wasser-Wand wählte die Probe ein Feld am Ufer, und die Jagd lief ins Wasser.
+    const imUmkreisLand = (x, z, R) => {
+        for (const f of [0.5, 1])
+            for (let q = 0; q < 8; q++) {
+                const a = (q / 8) * Math.PI * 2;
+                if (!r._landAt(x + Math.cos(a) * R * f, z + Math.sin(a) * R * f)) return false;
+            }
+        return true;
+    };
     const frei = (dx, dz, R) => {
         const arches = s.architectures || [];
         for (let ring = 0; ring < 40; ring++) {
@@ -110,7 +121,7 @@ async function kreaturProben(r, T, opts) {
                 const a = (q / n) * Math.PI * 2;
                 const x = P0.x + dx + Math.cos(a) * ring * 8,
                     z = P0.z + dz + Math.sin(a) * ring * 8;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) continue;
+                if (!r._landAt(x, z) || !imUmkreisLand(x, z, R)) continue;
                 let ok = true;
                 for (const e of arches) {
                     if (!e || !e.blockerAABBs || !e.position) continue;
@@ -757,7 +768,8 @@ async function kreaturProben(r, T, opts) {
             achs5 = 0,
             achsWasser = 0,
             bedroht = 0,
-            fort = 0;
+            fort = 0,
+            imWasser = 0;
         const achsOrt = { gierAchse: 0, rein: 0, ansprung: 0, stoss: 0, beispiele: [] };
         let achsZiel = 0; // Achsen-Takte, in denen der Wolf geradewegs auf sein Ziel läuft (es liegt auf derselben Linie)
         let wv = { x: wolf.position.x, z: wolf.position.z };
@@ -770,6 +782,7 @@ async function kreaturProben(r, T, opts) {
             const anprall = geschoben.has(wolf.position);
             geschoben.clear();
             if (jagt && anprall) kontakt++;
+            if (jagt && r._nassAt(wolf.position.x, wolf.position.z)) imWasser++; // die Jagd im Wasser (Diagnose)
             if (jagt && !anprall && Math.hypot(dx, dz) / dt > 0.3) {
                 jagdFrames++;
                 const h = Math.atan2(dx, dz);
@@ -843,6 +856,7 @@ async function kreaturProben(r, T, opts) {
         return {
             jagdFrames,
             kontaktFrames: kontakt,
+            wasserFrames: imWasser,
             achsAnteil: jagdFrames ? +(achs / jagdFrames).toFixed(3) : null,
             achsZielAnteil: jagdFrames ? +(achsZiel / jagdFrames).toFixed(3) : null,
             achsAnteil5Grad: jagdFrames ? +(achs5 / jagdFrames).toFixed(3) : null,
@@ -2281,7 +2295,7 @@ async function kreaturProben(r, T, opts) {
                 const a = (q / n) * Math.PI * 2;
                 const x = P0.x + Math.cos(a) * ring * 5,
                     z = P0.z + Math.sin(a) * ring * 5;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) continue;
+                if (!r._landAt(x, z)) continue;
                 const gx = (h(x + 1.5, z) - h(x - 1.5, z)) / 3,
                     gz = (h(x, z + 1.5) - h(x, z - 1.5)) / 3;
                 const g = Math.hypot(gx, gz);
@@ -2479,7 +2493,7 @@ async function kreaturProben(r, T, opts) {
             for (const d of [45, 55, 65, 75, 85, 95]) {
                 const x = P0.x + Math.cos(a) * d,
                     z = P0.z + Math.sin(a) * d;
-                if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) ok = false;
+                if (!r._landAt(x, z)) ok = false;
             }
             if (ok) richtung = a;
         }

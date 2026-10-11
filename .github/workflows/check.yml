@@ -962,7 +962,7 @@ jobs:
               # DIE WALD-SCHWESTER ALS DELIBERATER AKT: exportSettlement (fachwerk-core, das
               # exportDrive-Muster) ist deterministisch + sha256-eingefroren (siedlung.json);
               # der Export reist durch den EINEN Worker (Bruecke generisch, M8), der Host hebt
-              # die Slots positions-deterministisch, wasser-bewacht (_isAboveWaterAt) und
+              # die Slots positions-deterministisch, wasser-bewacht (_fundamentLand: das ganze Fundament auf dem Land) und
               # fail-closed in die Welt (haus_<kultur> aus der KIND_POLICY-Tabelle, kein
               # Literal; Anker durch _structureSpawnPos; Chat "dorf"). Inkl. Selbst-Test.
               run: npm run gate:settlement
@@ -1302,6 +1302,22 @@ jobs:
               # Klang · Tier-Scheu · Küsten-Sheet lesen die EINE Wahrheit, die Ufer-Bänder stetig über die Krone. --selftest
               # zuerst.
               run: npm run gate:wasser-leben
+
+            - name: Werk im Wasser (Schau-2 — der Hain am Fluss, das Dorf am Ufer, der Wagen in der Furt, der Damm im Reload)
+              if: matrix.gruppe == 10
+              # Der Schau-Ablauf am Fluss −872/−1127 im echten Spiel-Takt (Bau-Eiche, „pflanz mir einen eichenhain am
+              # wasser", 1200 Takte): kein Stamm unter dem gezeichneten Wasser, der Wasser-Automat schläft; jedes gesetzte
+              # Werk (Wald, Hain, Dorf mit Fundament) vor seinem Stempel gegen Bild UND Gesetz des Wassers; der GT in einer
+              # Furt bremst (1 s nach dem Eintauchen ≤ 50 %), die Kamera nie unter dem Spiegel; die Leser der EINEN
+              # Wasser-Wahrheit statisch; der Wasser-Term des Kerns (ohne Tiefe byte-gleich, die EINE Masse des Wagens).
+              # D: ein Damm quer über den Fluss in einer frischen Welt, 1200 Takte, gespeichert, neu geladen — der Stausee
+              # bildet sich neu (nasse Punkte ± 10 % des Staus), sein Abbau weckt den Automaten. R: das Nexus-Dorf am Seerand
+              # weckt den Automaten nicht, das Wasser bleibt (± 1 %). E: jeder Setz-Op mit erzwungenem Fehl-Grund sagt die
+              # tatsächliche Zahl und den Grund. A (Karte K02, FZ-01): der GT fährt mit Vollgas die Rampe der Furt hinab —
+              # 3 s nach der Ansaugung ≤ 0,5 m/s, kein Vortrieb, nie über das Dach im Wasser; der Ausstieg an Land steht
+              # neben dem Wagen, im See (≥ 1,35 m) schwimmt er; K6: der Wasserschlag sperrt die Räder am Hang.
+              # --selftest zuerst. ~3 min.
+              run: npm run gate:werk-im-wasser
 
             - name: GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)
               if: matrix.gruppe == 6

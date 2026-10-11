@@ -759,6 +759,13 @@ async function probe(K) {
                     )
                 );
                 weg(e);
+                // DER SPIELER AM ORT DES RUFS (die Szene der Prüfung 2 K02a): der Abstieg setzte ihn auf den Ort des Wagens, und
+                // die Wolf-Proben riefen ihre Tiere neben ihn (sein Stoß am selben Ort: der erste Grund, `spawnCreatureAt`). Seit
+                // K02b steigt er NEBEN dem Wagen aus (`_aussteigOrt`, 1,54 m) — die Linse stellt ihn selbst dorthin, wo er stand.
+                // Ohne ihn ruht der Wolf auf dem 56°-Wandfuß 0,25 m über seinem Grund (Haut 0,14 m über dem Fels) — benannt.
+                st.playerMesh.position.set(H.x, hoehleGrund + A.PLAYER_FOOT_OFFSET + 0.05, H.z);
+                st.playerVel.setValue(0, 0, 0);
+                st._fieldVy = 0;
             }
         }
     }

@@ -65,7 +65,7 @@ function todZensus(r, T, taeter) {
         // der Ort: Spieler P, Tier A 2 m vor ihm, Tier B 40 m — dieselbe Linie, damit ein Blick beide fasst; nach dem Wechsel
         // steht der Spieler 42 m weiter und blickt zurück (A auf 40 m, B auf 2 m). Jeder Punkt trocken und eben.
         const trocken = (x, z) => {
-            if (r._isAboveWaterAt && !r._isAboveWaterAt(x, z)) return false;
+            if (!r._landAt(x, z)) return false;
             const gy = r.getTerrainHeightAt(x, z);
             return Number.isFinite(gy) && Math.abs(r._standSicht(x, z, gy, false) - gy) < 0.15;
         };

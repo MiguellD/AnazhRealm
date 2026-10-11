@@ -62,7 +62,7 @@ function probe(stoerung) {
         const z = pm.z + Math.floor(k / 8) * 40 - 140;
         let trocken = true;
         for (let i = -2; i <= 2 && trocken; i++)
-            for (let j = -2; j <= 2 && trocken; j++) trocken = r._isAboveWaterAt(x + i * 15, z + j * 15, 0.2);
+            for (let j = -2; j <= 2 && trocken; j++) trocken = r._landAt(x + i * 15, z + j * 15, 0.2);
         if (trocken) o = { x, z };
     }
     if (!o) return { fehler: "kein trockener Probe-Ort" };
@@ -72,7 +72,7 @@ function probe(stoerung) {
         const a = (k / 8) * Math.PI * 2;
         const fx = Math.round(Math.cos(a) * 300);
         const fz = Math.round(Math.sin(a) * 300);
-        if (r._isAboveWaterAt(o.x + fx, o.z + fz, 0.2) && r._isAboveWaterAt(o.x + fx + 30, o.z + fz, 0.2))
+        if (r._landAt(o.x + fx, o.z + fz, 0.2) && r._landAt(o.x + fx + 30, o.z + fz, 0.2))
             fern = { x: fx, z: fz };
     }
     r._stlWegeDispose();
@@ -196,7 +196,7 @@ function trittProbe(stoerung) {
     for (let k = 0; k < 64 && !o; k++) {
         const x = pm.x + (k % 8) * 6 - 21;
         const z = pm.z + Math.floor(k / 8) * 6 - 21;
-        if (r._isAboveWaterAt(x, z, 0.2) && r._isAboveWaterAt(x + 3, z + 3, 0.2) && r._isAboveWaterAt(x - 3, z - 3, 0.2))
+        if (r._landAt(x, z, 0.2) && r._landAt(x + 3, z + 3, 0.2) && r._landAt(x - 3, z - 3, 0.2))
             o = { x, z };
     }
     if (!o) return { fehler: "kein trockener Tritt-Ort" };

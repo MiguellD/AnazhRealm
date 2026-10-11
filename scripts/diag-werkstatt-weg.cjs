@@ -482,7 +482,7 @@ async function probe(argW) {
             const a = (k / 16) * Math.PI * 2;
             const x = P0.x + Math.cos(a) * ring;
             const z = P0.z + Math.sin(a) * ring;
-            if (!r._isAboveWaterAt(x, z, 1)) continue;
+            if (!r._landAt(x, z, 1)) continue;
             if (r._imGrundriss(x, z, 0.8, 12)) continue;
             const y = r._voxelSurfaceY(x, z);
             if (!Number.isFinite(y)) continue;

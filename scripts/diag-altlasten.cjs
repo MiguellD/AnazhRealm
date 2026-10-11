@@ -1017,6 +1017,17 @@ const FORBIDDEN = [
     // DIE TOR-HÜLLE IST GESETZ-DATEN (Gegenprüfung 10.10.): der Wirt baute die Tor-Gestalt am Spawn synchron nach (15–50 ms je
     // Gestalt auf dem Haupt-Thread) — er liest die gemintete Tafel `__portaCore.TOR_HUELLE`.
     { token: "_torHuelleGemessen", fiel: "Leben-Schau 2 — der Wirt liest TOR_HUELLE, er baut kein Tor nach" },
+    // DIE EINE WASSER-WAHRHEIT (Schau-2 wasser-wahrheit, 09.10.): die Land-Probe las den Bezug der Ufer-Bänder
+    // (`_waterLevelAt`), blind für das gezeichnete Wasser — jedes Werk fragt das Land (`_landAt`: Bild UND Gesetz).
+    { token: "_isAboveWaterAt", fiel: "Schau-2 — die Zwillings-Probe des Lands (jedes Werk fragt `_landAt`)" },
+    // DIE EINE MASSE DES WAGENS (Schau-2, Gegenprüfung Runde 2): der Wasser-Term trägt die Masse des Fahr-Satzes ×
+    // masseDichte (dieselbe, die jeder Stoß liest), nie eine eigene Schüttdichte über dem Hüll-Quader.
+    { token: "wasser.schuett", fiel: "Schau-2 — die zweite Wagen-Masse des Wasser-Terms", auch: ["vehicle-core.js"] },
+    // DER DAMM (Schau-2, Gegenprüfungen Runden 2 und 3): ob ein Stempel Wasser verdrängt, sagen DIESELBEN Zellen, die der Chunk
+    // trägt (der Zell-Stempel überschreibt eine Wasser-Zelle) — nie ein Merk-Feld, gefragt am Lade-Zustand des Baus (beim
+    // Reload „trocken"), nie eine zweite Wahrheit (das Gesetz samt Rand-Füllung weckte am Seerand den Automaten).
+    { token: "_wasserVerdraengt", fiel: "Schau-2 — das Merk-Feld des Damms (der Zell-Stempel fragt seine Zellen)" },
+    { token: "_stempelImWasser", fiel: "Schau-2 — die Weck-Frage am Gesetz samt Rand (die Zellen antworten am Stempel)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
