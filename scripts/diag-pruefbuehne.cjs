@@ -668,6 +668,59 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // auf alles, was davor in die Schlange der CPU-Rasterung fiel — die Wildnis des ersten Ladens, der Blick des Spielers in den
 // Warte-Takten (gemessen 12.10., 24 Kerne: der erste Schuss las 90–176 s, die Zeichnung selbst 2 s). Bis zum Schuss zeichnet
 // die Seite nichts (`_loopRender` ruht); der Schuss zeichnet alles selbst (Erst-Zeichnung, Warm-Frames).
+// DIE NAH-BÜHNE DES SCHUSSES (swiftshader — die CI; `--echt` zeichnet die ganze Welt): der Schuss zeichnet über den
+// Spielpfad (`_loopRender`, die Stoffe der Welt, der Ausgabe-Pfad) nur die Nähe des Feuers — jedes Objekt der Welt-Szene,
+// dessen Hülle (Kugel in Welt-Lage, Instanz- und Batch-Hülle eingeschlossen) die Kugel um das Feuer schneidet. Die Sätze
+// (`bodenSatz`, `bauSatz`: Boden und Bauten je Stoff in EINEM Mesh) tragen die Überall-Hülle (1e9) und zeichnen; eine
+// Hülle ≥ 1 km ist die Ferne (Panorama, Fern-Ring) und fällt. Fremde Szenen (Post, PMREM) und die Lichter bleiben. Gemessen 12.10. (24 Kerne):
+// die ganze Welt übersetzte im ersten Schuss 54 Programme (1,5 MB Fragment-WGSL, 90–176 s am Rücklesen); auf dem Runner
+// mit 4 Kernen riss so die Protokoll-Grenze von 900 s. Der Feuerkreis liest nur Boden, Feuer, Pool und Ausgabe.
+const S0_NAH_INSTALL = () => {
+    window.__s0Nah = (mitte, radius) => {
+        const st = window.anazhRealm.state;
+        const rend = st.renderer;
+        const welt = st.scene;
+        const kugel = new window.THREE.Sphere();
+        const urteil = new WeakMap();
+        const zaehl = { nah: 0, fern: 0 };
+        const nah = (o) => {
+            let u = urteil.get(o);
+            if (u !== undefined) return u;
+            let wurzel = o;
+            while (wurzel.parent) wurzel = wurzel.parent;
+            let k = null;
+            if ((o.isInstancedMesh || o.isBatchedMesh) && typeof o.computeBoundingSphere === "function") {
+                if (!o.boundingSphere) o.computeBoundingSphere();
+                k = o.boundingSphere;
+            } else if (o.geometry) {
+                if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere();
+                k = o.geometry.boundingSphere;
+            }
+            if (wurzel !== welt || !k) u = true;
+            else {
+                kugel.copy(k).applyMatrix4(o.matrixWorld);
+                u =
+                    kugel.radius >= 1e8 ||
+                    (kugel.radius < 1000 && kugel.center.distanceTo(mitte) - kugel.radius < radius);
+            }
+            urteil.set(o, u);
+            zaehl[u ? "nah" : "fern"]++;
+            return u;
+        };
+        rend._projectObject = function (o, ...rest) {
+            if (o.visible !== false && (o.isMesh || o.isLine || o.isPoints || o.isSprite) && !nah(o)) {
+                for (const c of o.children) this._projectObject(c, ...rest);
+                return undefined;
+            }
+            return Object.getPrototypeOf(this)._projectObject.call(this, o, ...rest);
+        };
+        return () => {
+            delete rend._projectObject;
+            return zaehl;
+        };
+    };
+};
+const S0_NAH_M = 4;
 const S0_LUMA_2M = 0.15;
 const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
@@ -777,6 +830,7 @@ async function lichtLauf() {
             if (!b.ok) throw new Error("Boot nicht bereit nach 120 s");
             zeit("die Bühne gebootet");
             await page.evaluate(AUSGABE_INSTALL);
+            await page.evaluate(S0_NAH_INSTALL);
         });
         // der Satz des Menschen, bis die Welt ihn trägt (direkt nach dem Boot lädt das Gesetzbuch noch) — und die Gestalt
         // der Feuerstelle (der Bau der Foundry), ehe der Schuss misst
@@ -828,41 +882,24 @@ async function lichtLauf() {
                             window.__s0Feuer = feuer;
                             return feuer ? null : "die Feuerstelle steht nicht (der Satz `spawn_studio feuerstelle`)";
                         }
-                        // die Welt steht, wie der Spieler sie sieht: die Feuerstelle gebaut (ein Mesh oder ein Slot im
-                        // Instanz-Pool, `_archIsRendered`) und das EINE Urteil des ersten Weltbilds leer (`_weltbildFehlt`:
-                        // Boden, Bauten, Streu, Karten) — bis 12.10. fragte die Linse nur das eigene Mesh der Feuerstelle,
-                        // die instanziert steht: 300 Takte warteten ins Leere, und erst ihre 35 s ließen die Streu wachsen
-                        // Die Streu wächst nur mit dem Bild: ab hier zeichnet die Seite — in ein Ziel vom Format der Aufnahme
-                        // (`__ausgabeAufnahme`: RGBA8, Tiefe, ohne MSAA), so trägt jede Pipeline der Warte-Takte den Schuss
-                        // (gegen den Canvas übersetzte swiftshader dieselbe Welt ein zweites Mal)
+                        // DIE GESTALT, die der Schuss liest: die Feuerstelle gebaut (ein Mesh oder ein Slot im Instanz-Pool,
+                        // `_archIsRendered`) und ihr Boden gemesht (der Boden-Teil des EINEN Weltbild-Urteils `_weltbildFehlt`:
+                        // der Ring bis `RING_EXIST_FLOOR`). Bis 12.10. wartete die Linse auf das ganze Urteil — dessen
+                        // Streu-Regionen der Bühne warten im stillen Takt ohne Ende auf ihr Asset (der Schuss misst den Boden
+                        // im Feuerkreis, nie die Streu), davor fragte sie das eigene Mesh der instanziert stehenden Feuerstelle
                         const feuer = window.__s0Feuer;
-                        const rend = s.renderer;
-                        const db = rend.getDrawingBufferSize(new window.THREE.Vector2());
-                        const ziel = new window.THREE.RenderTarget(Math.max(1, Math.round(db.x)), Math.max(1, Math.round(db.y)), {
-                            depthBuffer: true,
-                            samples: 0,
-                        });
-                        rend.setOutputRenderTarget(ziel);
-                        window.__s0Still = false;
+                        const K = r.constructor;
                         let fehlt = [];
-                        try {
-                            while (performance.now() < fristEnde) {
-                                fehlt = r._archIsRendered(feuer) ? r._weltbildFehlt() : ["die Feuerstelle wächst"];
-                                if (!fehlt.length) return null;
-                                await takt(5);
-                            }
-                        } finally {
-                            window.__s0Still = true;
-                            rend.setOutputRenderTarget(null);
-                            rend.setRenderTarget(null);
-                            ziel.dispose();
+                        while (performance.now() < fristEnde) {
+                            fehlt = [];
+                            if (!r._archIsRendered(feuer)) fehlt.push("die Feuerstelle wächst");
+                            const ring = r._builtRingRadius();
+                            if (!(ring != null && ring >= K.RING_EXIST_FLOOR))
+                                fehlt.push(`der Boden wächst (Ring ${ring} von ${K.RING_EXIST_FLOOR})`);
+                            if (!fehlt.length) return null;
+                            await takt(5);
                         }
-                        const regionen = [];
-                        r._streuWartet(s.playerMesh.position, regionen);
-                        return (
-                            `die Welt um die Feuerstelle stand nicht in der Frist (${fehlt.join(" · ")}; Streu-Regionen: ` +
-                            `${regionen.join(" · ") || "-"}; foliageRadius ${s.foliageRadius})`
-                        );
+                        return `die Feuerstelle und ihr Boden standen nicht in der Frist (${fehlt.join(" · ")})`;
                     },
                     S0,
                     gestalt,
@@ -877,7 +914,7 @@ async function lichtLauf() {
         }
         for (const schein of SELBSTTEST && !ergebnis.sauber ? [false, true] : ergebnis.sauber ? [] : [false]) {
             ergebnis[schein ? "schein" : "sauber"] = await phase(schein ? "Schein" : "Schuss", () =>
-                page.evaluate(async (schein) => {
+                page.evaluate(async (schein, nahM) => {
                     const r = window.anazhRealm;
                     const s = r.state;
                     const T = window.THREE;
@@ -906,6 +943,9 @@ async function lichtLauf() {
                     const cam = s.camera;
                     let auf = null;
                     window.__s0Still = false; // der Schuss zeichnet
+                    // die Nah-Bühne (oben): auf swiftshader zeichnet der Schuss die Nähe des Feuers
+                    const nahLos = nahM ? window.__s0Nah(new T.Vector3(f.x, g, f.z), nahM) : null;
+                    let nahZahl = null;
                     try {
                         window.__buehne();
                         uhr(0);
@@ -921,6 +961,7 @@ async function lichtLauf() {
                     } finally {
                         r._leuchtTakt = alt;
                         FC.lichtFlackern = flAlt;
+                        if (nahLos) nahZahl = nahLos();
                     }
                     const u8 = auf.u8;
                     const lum = (i) => (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]) / 255;
@@ -962,10 +1003,11 @@ async function lichtLauf() {
                         pool: pool.map((p) => ({ q: p.quelle, I: +p.staerke.toFixed(2), d: +Math.hypot(p.x - f.x, p.z - f.z).toFixed(1) })),
                         feuer: [feuer.type, ...[f.x, g, f.z].map((x) => +x.toFixed(2))],
                         dc: auf.info && auf.info.drawCalls,
+                        nah: nahZahl,
                         zaehl,
                         png: cv.toDataURL("image/png"),
                     };
-                }, schein)
+                }, schein, ECHT ? 0 : S0_NAH_M)
             );
             zeit(schein ? "der Schein aufgenommen" : "das Feuer aufgenommen");
         }
@@ -979,7 +1021,7 @@ async function lichtLauf() {
     // das Beweisbild der Figur (nur mit `--bild`, kein Urteil): ein Wolf 2,3 m neben dem Feuer, der Spieler gegenüber, das Auge
     // 5 m zurück — die Figur im Licht des Pools
     if (BILD && ergebnis.sauber && !ergebnis.sauber.fehler) {
-        const png = await page.evaluate(async () => {
+        const png = await page.evaluate(async (nahM) => {
             const r = window.anazhRealm;
             const s = r.state;
             const f = window.__s0Feuer.position;
@@ -999,9 +1041,14 @@ async function lichtLauf() {
             cam.updateMatrixWorld(true);
             await new Promise((res) => setTimeout(res, 700));
             let auf = null;
-            for (let i = 0; i < 2; i++) {
-                r._schattenAlleNeu();
-                auf = await window.__ausgabeAufnahme(960, 540, 1);
+            const nahLos = nahM ? window.__s0Nah(new window.THREE.Vector3(f.x, g(f.x, f.z), f.z), nahM) : null;
+            try {
+                for (let i = 0; i < 2; i++) {
+                    r._schattenAlleNeu();
+                    auf = await window.__ausgabeAufnahme(960, 540, 1);
+                }
+            } finally {
+                if (nahLos) nahLos();
             }
             const cv = document.createElement("canvas");
             cv.width = 960;
@@ -1012,7 +1059,7 @@ async function lichtLauf() {
             ctx.putImageData(img, 0, 0);
             if (wolf) r.removeCreature(wolf);
             return cv.toDataURL("image/png");
-        });
+        }, ECHT ? 0 : S0_NAH_M);
         fs.writeFileSync(BILD.replace(/\.png$/, "") + "-figur.png", Buffer.from(png.split(",")[1], "base64"));
     }
     await browser.close();
@@ -1027,7 +1074,7 @@ async function lichtLauf() {
         if (BILD) fs.writeFileSync(BILD.replace(/\.png$/, "") + (k === "schein" ? "-schein" : "") + ".png", Buffer.from(e.png.split(",")[1], "base64"));
         delete e.png;
         console.log(
-            `  S0 BILD ${k === "schein" ? "SCHEIN (der Pool leer)" : "      "}: Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
+            `  S0 BILD ${k === "schein" ? "SCHEIN (der Pool leer)" : "      "}: Feuerkreis aus 2 m Luma ${e.kreis} (${e.punkte} Punkte, Soll ≥ ${S0_LUMA_2M}) · Belichtung ${e.belichtung} · Feuer ${JSON.stringify(e.feuer)} · Pool ${JSON.stringify(e.pool)} · Befehle ${e.dc} · Nah-Bühne ${JSON.stringify(e.nah)} · Programme/Pipelines ${JSON.stringify(e.zaehl)}`
         );
     }
     if (sauber && !sauber.fehler && !(sauber.kreis >= S0_LUMA_2M))

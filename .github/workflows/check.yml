@@ -384,7 +384,8 @@ jobs:
             - name: Pruefbuehne S0 im Bild (echter Renderer - der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)
               if: matrix.gruppe == 5
               # Faehrt die Pruefbuehne am ECHTEN Renderer (swiftshader, kienspan): die Feuerstelle ueber den Satz des Menschen,
-              # Mitternacht still, das Auge 2 m vor dem Feuer, aufgenommen ueber den Ausgabe-Pfad (ACES, sRGB, Post); der Boden
+              # Mitternacht still, das Auge 2 m vor dem Feuer, aufgenommen ueber den Ausgabe-Pfad (ACES, sRGB, Post) - der Schuss
+              # zeichnet die Naehe des Feuers (Saetze, Feuer, Leib; Huellen >= 1 km und ferne Bauten fallen, 8 Programme); der Boden
               # in 0,75 / 1,25 / 1,75 m um das Feuer traegt Luma >= 0,15 (K11 Abnahme). Der Selbsttest leert den Licht-Pool:
               # der Kreis faellt unter die Schwelle und nennt den Pool.
               run: npm run gate:pruefbuehne-licht
