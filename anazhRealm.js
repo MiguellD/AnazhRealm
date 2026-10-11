@@ -30014,12 +30014,25 @@ class AnazhRealm {
             for (const aabb of entry.blockerAABBs) {
                 const s = this._stempelSpanne(aabb, ox, oy, oz, dim, dimY, step);
                 if (!s) continue;
+                // DIE GEDREHTE BOX STEMPELT IHRE ZELLEN (Karte K02): ein gedrehtes Teil (`aabb.obb`) stempelt nur die Zellen, die
+                // es berührt — der Schnitt der Zelle mit dem Rechteck in der Ebene (die Achsen der Box; die Welt-Achsen trägt die
+                // Spanne), nie die Ecken seiner Welt-AABB. Bis hierhin stempelte ein 45° gedrehtes Haus am Fluss die Ecken seiner
+                // Hülle über dem Wasser: Wasser-Zellen ohne Wand, ein Damm, den es nicht gibt — der Automat wachte (9–11 Chunks)
+                // und hob den Fluss −872/−1113 auf 33,6 m, 1,9 m über seinen Spiegel. Achsparallele Teile stempeln byte-alt.
+                const ob = aabb.obb;
+                const obR = ob ? step * 0.5 * (Math.abs(ob.c) + Math.abs(ob.s)) : 0;
                 let nass = false;
                 for (let j = s.j0; j <= s.j1; j++) {
                     const baseJ = j * dim * dim;
                     for (let k = s.k0; k <= s.k1; k++) {
                         const baseK = k * dim;
+                        const qz = ob ? oz + (k + 0.5) * step - ob.cz : 0;
                         for (let i = s.i0; i <= s.i1; i++) {
+                            if (ob) {
+                                const qx = ox + (i + 0.5) * step - ob.cx;
+                                if (Math.abs(qx * ob.c - qz * ob.s) > ob.hx + obR) continue;
+                                if (Math.abs(qx * ob.s + qz * ob.c) > ob.hz + obR) continue;
+                            }
                             const idx = i + baseK + baseJ;
                             if (cells[idx] === STATE.WATER) nass = true;
                             cells[idx] = STATE.SOLID;
@@ -34182,7 +34195,7 @@ class AnazhRealm {
         }
         // DIE GEDREHTE BOX (D5, Welle L — dieselbe Form wie die Haus-Hülle `_hausObb`): ein Teil, das nur um die Hoch-Achse
         // dreht, ist in der Ebene ein Rechteck mit der Gier Eintrag + Teil; quer zu den Welt-Achsen trägt es seine `obb`, und
-        // Kapsel, Tier-Leib, Wagen-Hülle und Strahl lösen in ihrem Rahmen (die Welt-AABB bleibt Vorfilter und Zellen-Stempel).
+        // Kapsel, Tier-Leib, Wagen-Hülle, Strahl und Zellen-Stempel lösen in ihrem Rahmen (die Welt-AABB bleibt Vorfilter).
         // Vorher stand jedes gedrehte Teil als seine Welt-AABB (eine 34° gedrehte Mauer aus einem Teil 12 × 0,8 m: die Hülle
         // eines Wagens hielt 2,36 m vor ihr; der geparkte Wagen, der gedrehte Fels, das Tor ebenso). Achsparallele Teile
         // bleiben byte-alt.
@@ -34311,7 +34324,7 @@ class AnazhRealm {
         }
         // Das FUNDAMENT ist Blocker-Wahrheit: der Sockel vom tiefsten Footprint-Punkt bis zur Haus-Basis
         // ist SOLID (Kapsel, Cell-Stempel, Wasser urteilen gleich — nicht unters Haus am Hang). Gedreht trägt es seine
-        // `obb` (Kapsel und Strahl im Rahmen des Podests), die Welt-AABB bleibt Vorfilter und Zellen-Stempel.
+        // `obb` (Kapsel, Strahl und Zellen-Stempel im Rahmen des Podests), die Welt-AABB bleibt Vorfilter.
         const fu = this._archFundamentBox(entry);
         if (fu) solidAABBs.push(fu);
         if (solidAABBs.length === 0) return;
