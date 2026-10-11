@@ -11,7 +11,9 @@
 //                 worlds/<id>/manifest.json (Form: schemaVersion 1.0 · id · label · dsl) und die Heimat steht danach auf
 //                 Stufe „nativ" mit dem Label und jedem Wort (die Welt las ihr Manifest und meldete es im ready — Konsum
 //                 statt Quelltext-Zitat); fehlt es ihr, ist K1 rot beim Namen, ebenso ein Manifest ohne Soll-Zeile
-//   K2 endlich    der Handshake endet: die Heimat schickt höchstens drei enter (about:blank · load · erste ready)
+//   K2 endlich    der Handshake endet: die Heimat schickt höchstens drei enter (about:blank · load · erste ready),
+//                 und zwei SCHLEUSEN hintereinander lesen dieselben Zähler (kein Urteil der Probe wartet eine Uhr ab:
+//                 eine Marke läuft hinter allem Geschickten durch die Schlange der Welt und zurück — `schleuse`)
 //   K3 Quelle     eine FREMDE Seite (Geschwister-Frame der Heimat) schickt der Welt dieselbe Nachricht — die Welt
 //                 nimmt sie nicht an (event.source !== parent), nichts wirkt
 //   K4 wirkt      die Heimat schickt die chain-Form des Worts über ihren echten Weiterleiter (`_portalRouteDsl`): die
@@ -33,7 +35,9 @@
 //                                                        Element, skeleton und terrain ohne Manifest — der Server
 //                                                        antwortet 404 —, fluid meldet ihr Manifest ohne „flut", die
 //                                                        garage trägt eins ohne Soll-Zeile) → jede Wand wird rot und
-//                                                        nennt den Täter
+//                                                        nennt den Täter; die TRÄGE fachwerk (3 s Bau zwischen ihrer
+//                                                        ready und den enter) hält die Ratsche readyEcho — ein
+//                                                        Uhr-Fenster las dort „ready 1 · enter 3"
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
@@ -86,7 +90,7 @@ const WELTEN = [
 async function probefahrt(page, fr) {
     const route = (w) => page.evaluate((x) => window.anazhRealm._portalRouteDsl(["chain", [x]], x, () => {}), w);
     await route("probefahrt");
-    await warte(600);
+    await schleuse(page, "heimat");
     const hud = await fr.evaluate(() => {
         const h = document.getElementById("hud");
         // sichtbar = berechnet nicht „none" (die Garage darf den HUD als block oder flex zeigen)
@@ -100,7 +104,7 @@ async function probefahrt(page, fr) {
         return el ? parseInt(el.textContent, 10) : -1;
     });
     await route("werkstatt");
-    await warte(600);
+    await schleuse(page, "heimat");
     return { ok: hud && spd > 0, notiz: `Probefahrt: HUD ${hud ? "sichtbar" : "fehlt"}, Tacho ${spd}` };
 }
 
@@ -184,8 +188,14 @@ const UEBERSETZT = {
 const TAETER = {
     // begegnung vor dem Schnitt: der message-Handler prüft die Quelle nicht.
     "worlds/begegnung/index.html": [["if (event.source !== window.parent) return;\n", ""]],
-    // die Heimat vor dem Schnitt: JEDE ready bekommt ein enter zur Antwort (das Ping-Pong mit den Echo-Studios).
-    "anazhRealm.js": [["if (!po.enterAufReady) {\n                    po.enterAufReady = true;\n                    this._portalSendEnter();\n                }", "this._portalSendEnter();"]],
+    // die Heimat vor dem Schnitt: JEDE ready bekommt ein enter zur Antwort (das Ping-Pong mit den Echo-Studios) —
+    // eingespielt an der garage (die träge fachwerk unten misst die Uhr, nicht das Ping-Pong).
+    "anazhRealm.js": [
+        [
+            "if (!po.enterAufReady) {\n                    po.enterAufReady = true;\n                    this._portalSendEnter();\n                }",
+            'if (!po.enterAufReady || String(po.world || "").includes("/garage/")) this._portalSendEnter();\n                po.enterAufReady = true;',
+        ],
+    ],
     // skeleton mit dem Studio-Adapter: die Elemente des Programms je einzeln (aus ["w", arg] wird "w", arg).
     "worlds/skeleton/skeleton.js": [
         ["applyDsl(msg.program);", "msg.program.forEach(function (op) { applyDsl(op); });"],
@@ -194,6 +204,17 @@ const TAETER = {
     ],
     // fluid meldet ihr Manifest unvollständig (das welt-eigene Wort fehlt im ready) → K1 rot, „flut" beim Namen
     "worlds/fluid/fluid.js": [["const dsl = m && Array.isArray(m.dsl) ? m.dsl : null;", 'const dsl = m && Array.isArray(m.dsl) ? m.dsl.filter((w) => w !== "flut") : null;']],
+    // fachwerk TRÄGE wie auf dem CI-Runner (V18.540, Lauf 38138358932: „fachwerk ready 1 · enter 3", die Ratsche
+    // meldete „readyEcho geheilt"): die Brücke meldet ready, der Boot läuft noch 0,6 s weiter und stellt dann 3 s Bau
+    // in die Schlange — VOR die enter der Heimat; ein Bild hält das load der Welt 5 s auf. Die Probe sah die ready,
+    // ihr Uhr-Fenster endete im Bau, und ihr Zähler stand in der Schlange vor der Antwort. Das Echo ist eine Eigenschaft
+    // der Welt, kein Urteil der Uhr.
+    "worlds/fachwerk/fachwerk.js": [
+        [
+            'post({ type: "ready", world: "fachwerk", label: "Fachwerkhaus — parametrisch, begehbar", dsl: DSL });\n})();',
+            'document.body.appendChild(new Image()).src = "/__traege.gif";\n    window.addEventListener("message", function (ev) {\n        if (ev.source === window && ev.data && ev.data.__bau) for (var t1 = Date.now(); Date.now() - t1 < 3000; );\n    });\n    setTimeout(function () {\n        post({ type: "ready", world: "fachwerk", label: "Fachwerkhaus — parametrisch, begehbar", dsl: DSL });\n        for (var t0 = Date.now(); Date.now() - t0 < 600; );\n        window.postMessage({ __bau: 1 }, "*");\n    }, 0);\n})();',
+        ],
+    ],
 };
 // Die Soll-Welten verlieren ihr Manifest: der Server antwortet 404 (vorher fielen skeleton und terrain still auf die
 // Registry-Wörter zurück, und K1 blieb grün) → K1 rot, die Welt beim Namen.
@@ -239,6 +260,11 @@ function server(taeter) {
                     'var f=parent.document.querySelector("#portal-overlay iframe.portal-frame");' +
                     'if(f&&f.contentWindow)f.contentWindow.postMessage(ev.data.nachricht,"*");});</script>'
             );
+        }
+        // Das träge Bild der fachwerk-Täterin: es kommt nach 5 s (ein leeres GIF), so lange wartet das load der Welt.
+        if (taeter && p === "/__traege.gif") {
+            res.setHeader("Content-Type", "image/gif");
+            return void setTimeout(() => res.end(Buffer.from("R0lGODlhAQABAAAAACw=", "base64")), 5000);
         }
         const fp = path.join(ROOT, p);
         if (!fp.startsWith(ROOT)) return ((res.statusCode = 403), res.end());
@@ -288,12 +314,13 @@ async function betreten(page, welt) {
             const meta = r.state.blueprints[ob.blueprint].portalMeta;
             // Zähler: was die Welt der Heimat schickt (Quelle = das Portal-iframe) und wie oft die Heimat enter sendet
             // (eine delegierende Zähl-Hülle, nach der Messung entfernt).
-            const k = (window.__k = { typen: {}, n: 0, enters: 0, t0: performance.now(), ersteReady: null });
+            const k = (window.__k = { typen: {}, n: 0, enters: 0, geladen: 0, t0: performance.now(), ersteReady: null });
             if (window.__kSpy) window.removeEventListener("message", window.__kSpy, true);
             window.__kSpy = (ev) => {
                 const po = r._portalOverlay;
                 if (!po || !po.iframe || ev.source !== po.iframe.contentWindow) return;
                 const d = ev.data || {};
+                if (d.__schleuse) return;
                 const t = d.type || (d.__anazhNet ? "net" : "?");
                 k.typen[t] = (k.typen[t] || 0) + 1;
                 k.n++;
@@ -307,6 +334,9 @@ async function betreten(page, welt) {
                 return orig.apply(this, arguments);
             };
             r._buildPortalOverlay(meta, { computeRole: "host" });
+            // Das load der Welt (das about:blank davor lädt synchron beim Einhängen, vor diesem Hörer): der load-Hörer
+            // der Heimat steht vor diesem und hat sein enter geschickt, wenn er zählt.
+            if (r._portalOverlay) r._portalOverlay.iframe.addEventListener("load", () => k.geladen++);
             return { ok: true, label: r._portalOverlay && r._portalOverlay.label, worldId: id };
         },
         welt,
@@ -323,6 +353,7 @@ async function zaehler(page) {
             readys: k.typen.ready || 0,
             typen: k.typen,
             enters: k.enters,
+            geladen: k.geladen,
             ersteReady: k.ersteReady,
             readyDsl: !!k.readyDsl,
             offen: !!po,
@@ -340,6 +371,74 @@ async function zaehlerAus(page) {
         if (window.__kSpy) window.removeEventListener("message", window.__kSpy, true);
         window.__kSpy = null;
     });
+}
+
+// DIE SCHLEUSE — kein Urteil über die Brücke wartet eine Uhr ab. Nachrichten an dasselbe Fenster laufen in EINER Schlange
+// (HTML: posted-message task source, FIFO). Die Probe schickt der Welt eine Marke auf dem Weg, den sie prüft (Heimat →
+// Welt bzw. Heimat → fremde Seite → Welt), die Welt reicht sie der Heimat zurück: kommt sie an, hat die Welt alles davor
+// Geschickte gelesen, und was sie dabei der Heimat antwortete, hat die Heimat vor der Marke gelesen — auf jedem Rechner
+// gleich, wie träge der Faden auch ist. (Das Uhr-Fenster von 1,5 s las auf dem Runner „fachwerk ready 1 · enter 3": der
+// Zähler stand in der Schlange vor den Antworten, die Ratsche meldete „readyEcho geheilt".) Die Frist ist der Deckel
+// gegen den Hänger, rot beim Namen, nie die Messung.
+const SCHLEUSE_FRIST_MS = 60000;
+let schleuseNr = 0;
+
+async function schleuseAuf(page) {
+    const marke = `schleuse-${++schleuseNr}`;
+    await page.evaluate(
+        (m, frist) => {
+            window.__schleuse = new Promise((fertig) => {
+                const uhr = setTimeout(() => (window.removeEventListener("message", hoer, true), fertig(false)), frist);
+                function hoer(ev) {
+                    if (!ev.data || ev.data.__schleuse !== m) return;
+                    ev.stopImmediatePropagation();
+                    clearTimeout(uhr);
+                    window.removeEventListener("message", hoer, true);
+                    fertig(true);
+                }
+                window.addEventListener("message", hoer, true);
+            });
+        },
+        marke,
+        SCHLEUSE_FRIST_MS
+    );
+    return marke;
+}
+
+async function schleuseZu(page, marke, weg) {
+    if (!(await page.evaluate(() => window.__schleuse)))
+        throw new Error(`die Schleuse ${marke} (${weg}) kam binnen ${SCHLEUSE_FRIST_MS / 1000} s nicht zurück`);
+}
+
+// Heimat → Welt → Heimat (weg „heimat") bzw. Heimat → fremde Seite → Welt → Heimat (weg „fremd").
+async function schleuse(page, weg) {
+    const el = await page.$("#portal-overlay iframe.portal-frame");
+    const fr = el && (await el.contentFrame());
+    if (!fr) throw new Error(`die Schleuse (${weg}) findet keine Welt`);
+    // Die Welt reicht jede Marke zurück, gleich von wem (die fremde Seite ist nicht ihr Eltern-Fenster) — und nur die
+    // Marke: ihre eigene Brücke sieht sie nie.
+    await fr.evaluate(() => {
+        if (window.__schleuseHin) return;
+        window.__schleuseHin = (ev) => {
+            if (!ev.data || typeof ev.data.__schleuse !== "string") return;
+            ev.stopImmediatePropagation();
+            window.parent.postMessage({ __schleuse: ev.data.__schleuse }, "*");
+        };
+        window.addEventListener("message", window.__schleuseHin, true);
+    });
+    const marke = await schleuseAuf(page);
+    await page.evaluate(
+        (m, w) => {
+            if (w === "fremd")
+                document
+                    .getElementById("__fremd")
+                    .contentWindow.postMessage({ __fremd: true, nachricht: { __schleuse: m } }, "*");
+            else window.anazhRealm._portalOverlay.iframe.contentWindow.postMessage({ __schleuse: m }, "*");
+        },
+        marke,
+        weg
+    );
+    await schleuseZu(page, marke, weg);
 }
 
 // Die Wirkung, die man sieht: Journal-Ereignisse der Welt in der Heimat + (same-origin) der Zustand der Welt-UI.
@@ -365,10 +464,12 @@ async function zustand(page, welt) {
     return { journal, ui };
 }
 const wirkt = (welt, vor, nach) => (welt.ui ? nach.ui === welt.ui.soll && vor.ui !== welt.ui.soll : nach.journal > vor.journal);
-// Auf eine Wirkung warten, bis sie steht oder die Frist um ist (ein Preset-Bau des Labors kann auf dem CPU-Raster
-// dauern, bevor die Welt ihr Ereignis schickt) — eine Frist gegen den Hänger, keine Messung.
+// Auf eine Wirkung warten: erst die Schleuse (was die Welt beim Lesen der Nachricht tut, steht danach), dann, bis sie
+// steht oder die Frist um ist (ein Preset-Bau des Labors kann auf dem CPU-Raster dauern, bevor die Welt ihr Ereignis
+// schickt) — eine Frist gegen den Hänger, keine Messung.
 const WIRKUNG_FRIST_MS = 6000;
 async function bisWirkung(page, welt, gut) {
+    await schleuse(page, "heimat");
     const t0 = Date.now();
     let n = await zustand(page, welt);
     while (!gut(n) && Date.now() - t0 < WIRKUNG_FRIST_MS) {
@@ -409,21 +510,30 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         aus.notiz.push((b && b.fehler) || "betreten fehlgeschlagen");
         return aus;
     }
-    // K1: auf die ready warten (terrain bootet mehrere Sekunden), dann den Handshake ausklingen lassen.
+    // K1: auf die ready und das load der Welt warten (terrain bootet mehrere Sekunden; nach dem load ist das enter des
+    // load-Hörers geschickt), dann klingt der Handshake durch zwei Schleusen aus: danach ist jedes enter beantwortet,
+    // und die zweite liest dieselben Zähler wie die erste — ein Ping-Pong bewegt sie dazwischen (K2).
     const t0 = Date.now();
     let z = await zaehler(page);
-    while (!z.readys && Date.now() - t0 < READY_FRIST_MS) {
+    while (!(z.readys && z.geladen) && Date.now() - t0 < READY_FRIST_MS) {
         await warte(250);
         z = await zaehler(page);
     }
-    aus.k.K1 = z.readys > 0;
+    aus.k.K1 = z.readys > 0 && z.geladen > 0;
     if (!aus.k.K1) {
-        aus.notiz.push(`keine ready binnen ${READY_FRIST_MS / 1000} s`);
+        aus.notiz.push(
+            z.readys
+                ? `die Welt lädt nicht binnen ${READY_FRIST_MS / 1000} s (kein load)`
+                : `keine ready binnen ${READY_FRIST_MS / 1000} s`
+        );
         await zaehlerAus(page);
         return aus;
     }
-    await warte(1500);
+    await schleuse(page, "heimat");
+    const z1 = await zaehler(page);
+    await schleuse(page, "heimat");
     z = await zaehler(page);
+    const ruhig = z.enters === z1.enters && z.readys === z1.readys;
     // Meldet die Welt ihr Wörterbuch in der ready, übernimmt die Heimat es (Stufe „nativ", `_portalReceiveManifest`).
     if (z.readyDsl && z.stufe !== "nativ") {
         aus.k.K1 = false;
@@ -472,9 +582,12 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         aus.k.K7 = k7.ok;
         aus.notiz.push(...k7.notiz);
     }
-    aus.k.K2 = z.enters <= 3;
+    aus.k.K2 = ruhig && z.enters <= 3;
     aus.handshake = { readys: z.readys, enters: z.enters, ersteReadyMs: z.ersteReady, stufe: z.stufe };
-    if (!aus.k.K2) aus.notiz.push(`Handshake ohne Ende: ${z.enters} enter, ${z.readys} ready in ${Math.round((Date.now() - t0) / 1000)} s`);
+    if (!aus.k.K2)
+        aus.notiz.push(
+            `Handshake ohne Ende: ${z.enters} enter, ${z.readys} ready${ruhig ? "" : ` (zwischen zwei Schleusen ${z1.enters} → ${z.enters} enter)`} in ${Math.round((Date.now() - t0) / 1000)} s`
+        );
     aus.echo = z.readys > 1;
     await zaehlerAus(page);
     // K3: die fremde Seite schickt, was wirken würde (chain-Form bzw. peer-join) — nichts darf wirken.
@@ -491,7 +604,7 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         : { type: "peer-join", peerId: "fremd-konformanz", name: "Fremder" };
     let vor = await zustand(page, welt);
     await fremdSchicken(page, fremd);
-    await warte(1500);
+    await schleuse(page, "fremd");
     let nach = await zustand(page, welt);
     aus.k.K3 = !wirkt(welt, vor, nach) && nach.journal === vor.journal;
     if (!aus.k.K3) aus.notiz.push("eine fremde Seite steuert die Welt (event.source ungeprüft)");
@@ -526,9 +639,16 @@ async function pruefeWelt(page, welt, fehlerLog, lies) {
         k4 = k4 && z2.ok;
     }
     if (aus.k.K4 !== false) aus.k.K4 = k4;
-    // K5: Esc in der Welt → die Heimat schließt das Overlay.
-    if (fr) await fr.evaluate(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }))).catch(() => {});
-    await warte(600);
+    // K5: Esc in der Welt → die Heimat schließt das Overlay. Hinter dem Esc reicht die Welt der Heimat eine Marke: kommt
+    // sie an, hat die Heimat gelesen, was die Welt auf Esc schickte.
+    if (fr) {
+        const marke = await schleuseAuf(page);
+        await fr.evaluate((m) => {
+            window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+            window.parent.postMessage({ __schleuse: m }, "*");
+        }, marke);
+        await schleuseZu(page, marke, "esc");
+    }
     const offen = await page.evaluate(() => !!window.anazhRealm._portalOverlay);
     aus.k.K5 = !!fr && !offen;
     if (!aus.k.K5) {
@@ -602,7 +722,7 @@ function drucke(e) {
 }
 
 async function selbsttest() {
-    const welten = WELTEN.filter((w) => ["begegnung", "garage", "skeleton", "fluid", "terrain"].includes(w.id));
+    const welten = WELTEN.filter((w) => ["begegnung", "garage", "skeleton", "fluid", "terrain", "fachwerk"].includes(w.id));
     const { ergebnisse, fehlend, weg } = await lauf(welten, true);
     ergebnisse.forEach(drucke);
     const by = Object.fromEntries(ergebnisse.map((e) => [e.id, e]));
@@ -613,6 +733,13 @@ async function selbsttest() {
         ["Täter-Fundstellen gefunden", !fehlend.length, fehlend.join(" · ")],
         ["K3 rot: begegnung ohne Quellen-Prüfung nimmt den fremden peer-join an", by.begegnung && by.begegnung.k.K3 === false, ""],
         ["K2 rot: die Heimat beantwortet jede ready, garage spielt Ping-Pong", by.garage && by.garage.k.K2 === false, by.garage && by.garage.handshake ? `${by.garage.handshake.enters} enter` : ""],
+        [
+            "Uhr-frei: fachwerk baut nach ihrer ready 3 s, bevor sie die enter liest — die Ratsche readyEcho hält, der Handshake endet",
+            by.fachwerk && by.fachwerk.echo === true && by.fachwerk.k.K2 === true,
+            by.fachwerk && by.fachwerk.handshake
+                ? `ready ${by.fachwerk.handshake.readys} · enter ${by.fachwerk.handshake.enters}`
+                : "",
+        ],
         ["Ratsche rot: skeleton mit Element-Adapter ist NEU stumm", v.neu.includes("skeleton"), "neu stumm: " + v.neu.join(",")],
         ["Kontrolle: die chain-Form wirkt trotz Element-Adapter (der Täter trifft nur das Einzelwort)", by.skeleton && by.skeleton.k.K4 === true, ""],
         ["K7 rot: skeleton rendert den Material-Namen als Markup", by.skeleton && by.skeleton.k.K7 === false, by.skeleton ? by.skeleton.notiz.filter((n) => /Markup/.test(n)).join("") : ""],
