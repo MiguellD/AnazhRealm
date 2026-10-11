@@ -209,33 +209,46 @@ function werkzeug() {
     // DIE ORTE aus dem Gesetz.
     W.orte = async (wx, wz) => {
         const orte = { wiese: { x: wx, z: wz } };
-        // Seeufer: nächster trockener Punkt, der 3–7 m vor stillem Wasser liegt.
+        // Seeufer: der trockene Punkt 3–7 m vor dem nächsten SEE des Gesetzes. Seit K16 sind die Seen die Senken des
+        // Flussnetzes (benannt, selten): die Ring-Suche nach „stillem Wasser" traf den Saum eines Flusses (−795,9/−598,7,
+        // dort ohne Strömung), den der geladene Chunk nicht als Wasser zeichnet — das Ohr hörte kein Ufer. Gesucht wird
+        // in den Kacheln bis zum zweiten Ring der See (≥ 16 Zellen, über dem Meer) mit der Zelle nächst der Wiese.
         let best = null;
-        for (let r0 = 16; r0 <= 480 && !best; r0 += 16) {
-            for (let a = 0; a < 64; a++) {
-                const ang = (a / 64) * Math.PI * 2;
-                const x = wx + Math.sin(ang) * r0;
-                const z = wz + Math.cos(ang) * r0;
-                if (!W.nass(x, z) || W.fliesst(x, z)) continue;
-                // vom Wasser zurück Richtung Wiese, bis trocken
-                const ux = (wx - x) / r0;
-                const uz = (wz - z) / r0;
-                for (let s = 1; s < 40; s++) {
-                    const qx = x + ux * s;
-                    const qz = z + uz * s;
-                    if (!W.nass(qx, qz)) {
-                        // drei Meter hinter dem ersten trockenen Punkt (das Wasser 3–4 m entfernt): das Ohr hört das Ufer auf
-                        // seinem ersten Ring (4 m). Mit vier Metern traf der erste Ring den trockenen Saum, seit die Welt das
-                        // flache Ufer zeichnet und der Körper es liest (Gegenprüfung 07.10., Runde 3: Ufer 10 m, −31,5 dB).
-                        const fx = qx + ux * 3;
-                        const fz = qz + uz * 3;
-                        if (!W.nass(fx, fz)) best = { x: fx, z: fz, wasser: { x, z } };
-                        break;
+        const kachel = r.constructor.HYDROSPHERE.regionSize;
+        let seeZelle = null;
+        for (let rx = -2; rx <= 2; rx++)
+            for (let rz = -2; rz <= 2; rz++) {
+                r._ensureHydroTilesAround(wx + rx * kachel, wz + rz * kachel, 0);
+                const h = r._hydroFor(wx + rx * kachel, wz + rz * kachel);
+                for (const lake of (h && h.lakes) || []) {
+                    if (!lake.cells || lake.cells.length < 16 || !(lake.level > st.waterLevel + 2)) continue;
+                    for (const q of lake.cells) {
+                        const x = h.originX + ((q % h.dim) + 0.5) * h.cell;
+                        const z = h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell;
+                        const d = Math.hypot(x - wx, z - wz);
+                        if (!seeZelle || d < seeZelle.d) seeZelle = { x, z, d };
                     }
                 }
-                if (best) break;
+                await sleep(0);
             }
-            await sleep(0);
+        if (seeZelle) {
+            // vom See zurück Richtung Wiese, bis trocken
+            const r0 = Math.max(1e-3, seeZelle.d);
+            const ux = (wx - seeZelle.x) / r0;
+            const uz = (wz - seeZelle.z) / r0;
+            for (let s = 1; s < r0; s++) {
+                const qx = seeZelle.x + ux * s;
+                const qz = seeZelle.z + uz * s;
+                if (!W.nass(qx, qz)) {
+                    // drei Meter hinter dem ersten trockenen Punkt (das Wasser 3–4 m entfernt): das Ohr hört das Ufer auf
+                    // seinem ersten Ring (4 m). Mit vier Metern traf der erste Ring den trockenen Saum, seit die Welt das
+                    // flache Ufer zeichnet und der Körper es liest (Gegenprüfung 07.10., Runde 3: Ufer 10 m, −31,5 dB).
+                    const fx = qx + ux * 3;
+                    const fz = qz + uz * 3;
+                    if (!W.nass(fx, fz)) best = { x: fx, z: fz, wasser: { x: qx - ux, z: qz - uz } };
+                    break;
+                }
+            }
         }
         if (best) orte.seeufer = best;
         W.wasserPunkt = best ? best.wasser : null; // die Ereignis-Tour lässt das Wasser hier zurückströmen
@@ -288,12 +301,17 @@ function werkzeug() {
         // Fuß liegt im Becken). Seit die Bank mit ihrer Neigung ins Gelände läuft (Welle L, Gegenprüfung 07.10.), reicht
         // das Becken eines Falls bis zur Krone seines Kanals: am 9,1-m-Fall der Mess-Wiese ist kein Punkt ≤ 12 m trocken.
         // Das SOLL misst die Ferne mit (SOLL.fallArm).
-        const h = r._hydroFor(wx, wz);
+        // Seit K16 trägt die Kachel der Wiese keinen Fall: der nächste Fall der Kacheln bis zum zweiten Ring (wie der
+        // Playtest, `__wasserOrt("fall")`).
         let wfN = null;
-        for (const f of (h && h.waterfalls) || []) {
-            const d = Math.hypot(f.x - wx, f.z - wz);
-            if (!wfN || d < wfN.d) wfN = { f, d };
-        }
+        for (let rx = -2; rx <= 2; rx++)
+            for (let rz = -2; rz <= 2; rz++) {
+                const h = r._hydroFor(wx + rx * kachel, wz + rz * kachel);
+                for (const f of (h && h.waterfalls) || []) {
+                    const d = Math.hypot(f.x - wx, f.z - wz);
+                    if (!wfN || d < wfN.d) wfN = { f, d };
+                }
+            }
         for (const rad of wfN ? [3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 24] : []) {
             for (let a = 0; a < 16 && !orte.fallArm; a++) {
                 const ang = (a / 16) * Math.PI * 2;
@@ -1327,7 +1345,9 @@ function drucke(zeilen, offline, kostenErg, lab) {
         console.log("Orte:", JSON.stringify(orte));
         const daten = {};
         const offline = {};
-        for (const name of ["wiese", "seeufer", "wald", "dorf", "glutArm", "fallArm"]) {
+        // die nahen Orte zuerst, dann die fernen (K16: Seeufer und Fall liegen Kilometer weit — kehrt die Tour von dort
+        // zurück, pflanzt der Wald seinen Bestand neu, er zählte 6 statt 24 Bäume im 15-m-Kreis)
+        for (const name of ["wiese", "wald", "dorf", "glutArm", "seeufer", "fallArm"]) {
             if (!orte[name]) continue;
             daten[name] = await messeOrt(page, name, orte[name]);
             const z = daten[name].zensus;

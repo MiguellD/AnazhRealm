@@ -760,13 +760,17 @@ async function lauf() {
             waitUntil: "domcontentloaded",
             timeout: 120000,
         });
+        // mit Bild auch der Renderer (K16: die Hydrosphäre des Flussnetzes steht vor `renderer.init()` — das erste Bild rief
+        // .render() vor dem Backend)
         await page.waitForFunction(
-            () =>
+            (bild) =>
                 window.anazhRealm &&
                 typeof window.anazhRealm._gameLoopTick === "function" &&
                 window.anazhRealm.state.hydrosphere &&
-                window.anazhRealm.state.hydrosphere.ready,
-            { timeout: 600000, polling: 250 }
+                window.anazhRealm.state.hydrosphere.ready &&
+                (!bild || window.anazhRealm.state.rendererReady),
+            { timeout: 600000, polling: 250 },
+            BILD
         );
         await page.evaluate(WASSER_INSTALL);
         if (BILD) {
