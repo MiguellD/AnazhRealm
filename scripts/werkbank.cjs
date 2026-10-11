@@ -9,7 +9,9 @@
 //                                                           Welt + Steuer-Server (bleibt offen)
 //   node scripts/werkbank.cjs umstellen <x> <z>            Spieler setzen, einschwingen
 //   node scripts/werkbank.cjs umstellen --ort <id> [--pose p] an einen MESSORT (spec/profiband/haushalt.json `messorte`: wiese ·
-//                                                           genesis · dorf): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts
+//                                                           genesis · dorf · buehne): Spieler, Blick, Dorf-Zug und Ort-Takt des Orts;
+//                                                           ein Toggle-Ort (buehne, 1110-6) betritt seine Welt, hält Stellgrößen
+//                                                           und Lade-Ring fest, `--pose` stellt an eine seiner Stationen
 //   node scripts/werkbank.cjs bild <px> <py> <pz> <lx> <ly> <lz> [--datei f.png] [--w 640 --h 360]
 //                                                           Bühne + echter Frame (Ausgabe-Pfad)
 //   node scripts/werkbank.cjs methode <name> [--terrain] [--quelle datei]  Methode aus anazhRealm.js (Arbeitsbaum;
