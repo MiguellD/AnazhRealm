@@ -1512,10 +1512,10 @@
       "lauf": "npm run gate:gelaende-realismus",
       "geschaetzt": "K16 11.10.: lokal 34 s (Ryzen AI 9 HX 370, Selbsttest + drei Saaten), CI-Laeufer ~1,2x"
     },
-    "Gelaende-Studio (jeder Regler wirkt, EIN Plan reist durch die Welt-Tuer byte-gleich in die Welt)": {
-      "s": 90,
+    "Gelaende-Studio (A ist die gebaute Welt, jeder Regler wirkt, jedes Preset im Korridor, EIN Plan reist byte-gleich in die Welt)": {
+      "s": 100,
       "lauf": "npm run gate:gelaende-studio",
-      "geschaetzt": "K16b 11.10.: lokal 71 s (Ryzen AI 9 HX 370, Studio + 18 Regler + Export + Welt-Tor + Selbsttest), CI-Laeufer ~1,2x"
+      "geschaetzt": "K16b N1 11.10.: lokal 84 s (Ryzen AI 9 HX 370, fremde Welt + A + 18 Regler + Export + 4 Presets + Welt-Tor + Selbsttest; vorher 69 s), CI-Laeufer ~1,2x"
     },
     "Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)": {
       "s": 3,
