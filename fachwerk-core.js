@@ -3557,19 +3557,20 @@
     // Wirt setzt sie über seine Schichten: Glut-Feld · Dorfplatz).
     // DIE TRITTFLÄCHE (`tritt`, Asset-Raum, reist als fx-Daten): um eine Feuerstelle, einen Brunnen, einen Stand ist der
     // Boden getreten — der Wirt malt sie in seine Wege-Karte (Erde statt Wiese, kein Halm durch Glut und Kranz).
-    // DAS LEUCHTQUELLEN-GESETZ (K11, rein additiv): EIN Emitter-Datum je Quelle — `farbe` die sRGB-Absicht, `staerke` der
-    // Lichtstrom in der Zahl des Labors (r128-Punktlicht, Legacy-Abfall (1 − d/R)^abfall), `reichweiteM` und `abfall` des
-    // Punktlichts, `flacker` das Atmen der Flamme (zwei Sinus in 6–10 Hz, `lichtFlackern`), `zeit` der Zeitplan je Tageszeit
-    // (fehlt er, brennt die Quelle immer), `hoeheM` die Höhe des Licht-Mittelpunkts über dem Boden. `feuer` ist das Herdfeuer
-    // des Labors (fachwerk.js: PointLight 0xff7a35, 1,4 ± 0,25, 9 m, Abfall 2, 0,35 m über dem Bett), `fenster` das Nachtlicht
-    // der Glas-Stoffe (die Glut je Tageszeit, 0xffb45e), `laterne` das Gaslicht der Gasse (1 900 K, Nordstern Fachwerk-Soll;
-    // Stärke der Feuerstelle, Reichweite über den Laternen-Abstand 9 m, der Kopf auf der Lichthöhe des Labors bei 3,7 m
-    // Straße). Leser: das Labor (Herdfeuer, Fenster) und die Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit
+    // DAS LEUCHTQUELLEN-GESETZ (K11, rein additiv): EIN Emitter-Datum je Quelle — `farbe` die sRGB-Absicht, der Lichtstrom
+    // `staerke` × `zeit` (der Zeitplan je Tageszeit; fehlt er, brennt die Quelle immer) in der Zahl des Labors (r128-Punktlicht,
+    // Legacy-Abfall (1 − d/R)^abfall), `reichweiteM` und `abfall` des Punktlichts, `flacker` das Atmen der Flamme (relativ,
+    // zwei Sinus in 6–10 Hz, `lichtFlackern`), `hoeheM` die Höhe des Licht-Mittelpunkts über dem Boden. `feuer` ist das
+    // Herdfeuer des Labors (fachwerk.js: PointLight 0xff7a35, 9 m, Abfall 2, 0,35 m über dem Bett; sein Tageszeit-Satz .228
+    // mittag/morgen 1,6 · abend 2,2 · nacht 3,0 — bis K11 überschrieb der Bild-Takt ihn mit 1,4 ± 0,25), `fenster` das
+    // Nachtlicht der Glas-Stoffe (die Glut je Tageszeit, 0xffb45e), `laterne` das Gaslicht der Gasse (1 900 K, Nordstern
+    // Fachwerk-Soll; die Nacht-Stärke der Feuerstelle über die Reichweite des Laternen-Abstands 9 m hinaus, der Kopf auf der
+    // Lichthöhe des Labors bei 3,7 m Straße). Leser: das Labor (Herdfeuer, Fenster) und die Welt (`_leuchtTakt`: Feuerstelle, Glut, jeder Eintrag mit
     // Datum — die Laternen eines Plans, K10; `_leuchtStoff`: Fenster).
     var LICHT_GESETZ = {
-        feuer: { farbe: 0xff7a35, staerke: 1.4, reichweiteM: 9, abfall: 2, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
+        feuer: { farbe: 0xff7a35, staerke: 1, zeit: { mittag: 1.6, morgen: 1.6, abend: 2.2, nacht: 3 }, reichweiteM: 9, abfall: 2, hoeheM: 0.35, flacker: { amp: 0.18, hz: [6.3, 9.7] } },
         fenster: { farbe: 0xffb45e, zeit: { mittag: 0, morgen: 0, abend: 0.42, nacht: 0.85 } },
-        laterne: { farbe: 0xff8a27, staerke: 1.4, reichweiteM: 12, abfall: 2, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
+        laterne: { farbe: 0xff8a27, staerke: 3, reichweiteM: 12, abfall: 2, hoeheM: 3.6, zeit: { mittag: 0, morgen: 0, abend: 1, nacht: 1 } },
     };
     // Das Flackern einer Quelle zur Zeit t (s) mit der Phase `phase`: −1 … 1 aus zwei Sinus in `flacker.hz` (die Flamme atmet
     // in 6–10 Hz; die Schwebung beider bricht die Periode). Ohne `flacker` 0.

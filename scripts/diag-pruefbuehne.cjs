@@ -222,7 +222,7 @@ async function s4Probe(page, station, schein) {
 // Feuerstelle (der Satz `spawn_studio feuerstelle`), die Nacht steht still (Mitternacht, Sonne, das Wetter gehalten — Lehre 17),
 // das Auge 2 m vor dem Feuer. Gezählt wird jedes Licht ≤ 10 m um das Feuer, das ein Stoff liest — ein Punktlicht der Szene mit
 // Stärke oder ein Platz des Licht-Pools mit Stärke (`_leuchtPool`) —, einmal mit „Klang: AUS" (der Standard), einmal mit Klang;
-// dazu die Bestrahlung des Pools in 2 m (r184 Punktlicht-Abfall, lineare Farbe nach Luminanz) gegen die der Nacht selbst (die
+// dazu die Bestrahlung des Pools in 2 m (der Abfall des Labors, lineare Farbe nach Luminanz) gegen die der Nacht selbst (die
 // waagrechte Bestrahlung aus Mond, Himmel, Halbkugel und Boden — `_waagrechtIrradianz`, dieselbe, die die Belichtung liest:
 // das Feuer trägt in 2 m mindestens das Doppelte der Nacht) und die Fenster-Glut des
 // Zeitplans um Mitternacht und Mittag (`atmoUniforms.fensterGlut`). Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und jeder
@@ -298,11 +298,10 @@ async function s0Probe(page, station, schein) {
                 for (const p of (pool && pool.plaetze) || []) {
                     if (!(p.staerke > 0) || Math.hypot(p.x - f.x, p.y - f.y, p.z - f.z) > umkreis) continue;
                     lichter.push({ art: "pool", quelle: p.quelle, I: +p.staerke.toFixed(3) });
-                    // r184 Punktlicht in 2 m: 1/max(d^abfall, 0,01) · (1 − (d/R)⁴)², die Farbe nach Luminanz
-                    const d = 2;
-                    const fen = Math.pow(Math.max(0, Math.min(1, 1 - Math.pow(d / p.reichweite, 4))), 2);
+                    // der Pool in 2 m: der Abfall des Labors (1 − d/R)^abfall, die Farbe nach Luminanz
+                    const ab = Math.pow(Math.max(0, 1 - 2 / p.reichweite), p.abfall);
                     const lum = 0.2126 * p.farbe[0] + 0.7152 * p.farbe[1] + 0.0722 * p.farbe[2];
-                    e2 += (p.staerke * fen * lum) / Math.max(Math.pow(d, p.abfall), 0.01);
+                    e2 += p.staerke * ab * lum;
                 }
                 const en = r._waagrechtIrradianz([0, 0, 0]);
                 const nacht = 0.2126 * en[0] + 0.7152 * en[1] + 0.0722 * en[2];

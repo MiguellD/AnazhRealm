@@ -32465,17 +32465,22 @@ class AnazhRealm {
         if (!mat || mat.isNodeMaterial !== true || !Te) return mat;
         const atmo = this._ensureAtmoUniforms();
         if (!atmo || !atmo.lichtLage) return mat;
+        // die Glut selbst (Seh-Klasse glut, das Leucht-Gesetz) ist die Quelle: sie leuchtet in ihrer Farbe und liest den Pool nicht
+        if (mp && (mp.seh === "glut" || mp.leucht > 0)) return mat;
         let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
         if (mp && mp.licht === "fenster") em = em.add(atmo.fensterGlut);
         mat.emissiveNode = em.add(this._lichtPoolTerm(Te, atmo));
         return mat;
     }
 
-    // DER LICHT-POOL ALS TERM (K11): je Platz ein Zweig mit r184s Punktlicht-Rechnung (`getDistanceAttenuation` 1/max(d^abfall,
-    // 0,01) · (1 − (d/R)⁴)², `_punktLichtBrdf`). Die BEDINGUNG liest `positionView` und `normalView` (EINE Variable je
-    // Programm: r184 baut das Leuchten VOR der Lichtung — zuerst im Zweig gelesen, stünde ihre Zuweisung nur dort, die Falle des
-    // Lichts des Auges) und rechnet nur, wo der Platz trägt: eine Reichweite, die Fläche in ihr und ihm zugewandt. Die
-    // Blick-Richtung rechnet der Zweig selbst aus `positionView` (nie `positionViewDirection` zuerst im Zweig).
+    // DER LICHT-POOL ALS TERM (K11): je Platz ein Zweig mit der Rechnung des Labors — der Abfall des r128-Punktlichts
+    // (1 − d/R)^abfall, die Stärke schon durch LEGACY_LICHT (`_laborLichtStaerke`) — und r184s BRDF (`_punktLichtBrdf`). Der
+    // Abfall des Labors ist nah an der Quelle beschränkt (eine Flamme ist keine Punkt-Singularität: r184s 1/d² legte die
+    // Steine am Bett auf das Zehnfache ihrer Glut, und der lokale Kontrast der Ausgabe kehrte die Glut daneben ins Schwarze).
+    // Die BEDINGUNG liest `positionView` und `normalView` (EINE Variable je Programm: r184 baut das Leuchten VOR der
+    // Lichtung — zuerst im Zweig gelesen, stünde ihre Zuweisung nur dort, die Falle des Lichts des Auges) und rechnet nur, wo
+    // der Platz trägt: eine Reichweite, die Fläche in ihr und ihm zugewandt. Die Blick-Richtung rechnet der Zweig selbst aus
+    // `positionView` (nie `positionViewDirection` zuerst im Zweig).
     _lichtPoolTerm(Te, atmo) {
         const N = Te.normalView;
         const P = Te.positionView;
@@ -32492,7 +32497,7 @@ class AnazhRealm {
             const d = Lv.length();
             const L = Lv.div(d);
             const nl = N.dot(L).clamp();
-            const abst = d.div(lage.w).pow4().oneMinus().clamp().pow2().mul(d.pow(farbe.a).max(0.01).reciprocal());
+            const abst = d.div(lage.w).oneMinus().clamp().pow(farbe.a);
             const beitrag = farbe.rgb.mul(nl.mul(abst)).mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
             const term = Te.select(bedingung, beitrag, Te.vec3(0));
             summe = summe ? summe.add(term) : term;
@@ -77314,7 +77319,10 @@ class AnazhRealm {
                         mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(_keepX));
                         kanal = "farbe";
                     }
-                    if (!(mat.alphaTest > 0)) mat.alphaTest = 0.5;
+                    // die Schwelle trennt die Maske (0 | 1), nie die Deckkraft des Stoffs: eine Scheibe (Deckkraft 0,42 < 0,5)
+                    // fiel bis K11 ganz unter die Schwelle — kein Fenster, keine Wagen-Scheibe zeichnete, das Fenster-Licht
+                    // der Nacht (`_leuchtStoff`) blieb unsichtbar
+                    if (!(mat.alphaTest > 0)) mat.alphaTest = 0.5 * R.op;
                     mat.userData = mat.userData || {};
                     if (kanal) {
                         mat.userData.foundryCrossfade = true;
@@ -92310,11 +92318,8 @@ class AnazhRealm {
                 L && L.flacker && FC && typeof FC.lichtFlackern === "function"
                     ? L.flacker.amp * FC.lichtFlackern(L, t, q.phase)
                     : 0;
-            const I = L
-                ? this._laborLichtStaerke(L.staerke * (1 + fl), L.reichweiteM, L.abfall) *
-                  q.masse *
-                  this._lichtZeitplan(L.zeit)
-                : 0;
+            const I = L ? this._laborLichtStaerke(L.staerke * (1 + fl)) * q.masse * this._lichtZeitplan(L.zeit) : 0;
+            // der Stoff rechnet den Abfall 2 (r184 physikalisch); eine Quelle mit anderem Abfall trägt er nicht
             if (!(I > 0)) {
                 lage.set(0, 0, 0, 0);
                 farbe.set(0, 0, 0, 2);
@@ -92338,8 +92343,9 @@ class AnazhRealm {
     }
 
     // DIE LEUCHTQUELLEN um (x, z) im Umkreis R (K11): jeder Eintrag des Verzeichnisses „licht" (`_blockerMit`, gestempelt beim
-    // Eintritt) mit seinem Emitter-Datum (`_lichtDatum`) — die Masse ist die Fläche seiner Glut über dem Glutbett der
-    // Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns), ohne Glut 1 —, die Laterne eines Plans (K10) als Eintrag
+    // Eintritt) mit seinem Emitter-Datum (`_lichtDatum`) — die Masse folgt der Fläche: trägt die Studio-Gestalt das Datum, ist
+    // es ihres (Masse = Skala²); eine Glut ohne Datum der Gestalt trägt das Herdfeuer im Verhältnis ihrer Fläche zum Glutbett
+    // der Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns) —, die Laterne eines Plans (K10) als Eintrag
     // mit Datum, und das wache Tor (`_portalLeuchte`). Die Lichthöhe liest das Datum (`hoeheM` über dem Boden des Eintrags).
     _leuchtQuellen(x, z, R) {
         const out = [];
@@ -92352,15 +92358,15 @@ class AnazhRealm {
             if (d2 > R * R) continue;
             const L = this._lichtDatum(e);
             if (!L) continue;
-            const a = this._glutFlaeche(e);
             const sk = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+            const a = this._lichtDatumDerGestalt(e) ? 0 : this._glutFlaeche(e);
             out.push({
                 quelle: e.type,
                 x: p.x,
                 y: p.y - 0.5 + (L.hoeheM || 0) * sk,
                 z: p.z,
                 L,
-                masse: a > 0 ? a / bezug : 1,
+                masse: a > 0 ? a / bezug : sk * sk,
                 phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
                 d2,
             });
@@ -92377,25 +92383,26 @@ class AnazhRealm {
     // Gesetzbuch fachwerk, synchron geladen — die Feuerstelle trägt LICHT_GESETZ.feuer, dasselbe Rezept, das das Buch der Welt
     // reist: recipes.json), sonst für jede Glut (Brenn-Fläche > 0) das Herdfeuer des Gesetzbuchs. null: keine Leuchtquelle.
     _lichtDatum(entry) {
+        const L = this._lichtDatumDerGestalt(entry);
+        if (L) return L;
         const FC = globalThis.__fachwerkCore;
-        if (!entry || !FC || !FC.PRESETS || !FC.LICHT_GESETZ) return null;
-        const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
-        const pre = bp && typeof bp.studioGestalt === "string" ? FC.PRESETS[bp.studioGestalt] : null;
-        if (pre && pre.fx && pre.fx.licht) return pre.fx.licht;
-        return this._glutFlaeche(entry) > 0 ? FC.LICHT_GESETZ.feuer : null;
+        return FC && FC.LICHT_GESETZ && this._glutFlaeche(entry) > 0 ? FC.LICHT_GESETZ.feuer : null;
     }
 
-    // DIE EINE ÜBERSETZUNG LABOR → WELT eines Punktlichts (K11): das r128-Labor rechnet ohne 1/π-Normierung (`LEGACY_LICHT`)
-    // mit dem Legacy-Abfall (1 − d/R)^abfall, r184 physikalisch mit 1/max(d^abfall, 0,01) · (1 − (d/R)⁴)². Gleich gemacht in
-    // der Karten-Distanz `LICHT_POOL.karteM` (2 m, wo das Licht des Auges die Karte eicht): dieselbe Bestrahlung dort.
-    _laborLichtStaerke(I, R, abfall) {
-        const dk = AnazhRealm.LICHT_POOL.karteM;
-        if (!(I > 0) || !(R > dk)) return 0;
-        const fenster = Math.pow(1 - Math.pow(dk / R, 4), 2);
-        return (
-            (AnazhRealm.LEGACY_LICHT * I * Math.pow(1 - dk / R, abfall) * Math.max(Math.pow(dk, abfall), 0.01)) /
-            fenster
-        );
+    // Das Emitter-Datum der Studio-Gestalt eines Eintrags (`fx.licht` ihres Rezepts) oder null.
+    _lichtDatumDerGestalt(entry) {
+        const FC = globalThis.__fachwerkCore;
+        if (!entry || !FC || !FC.PRESETS) return null;
+        const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
+        const pre = bp && typeof bp.studioGestalt === "string" ? FC.PRESETS[bp.studioGestalt] : null;
+        return pre && pre.fx && pre.fx.licht ? pre.fx.licht : null;
+    }
+
+    // DIE EINE ÜBERSETZUNG LABOR → WELT eines Punktlichts (K11): das r128-Labor rechnet ohne 1/π-Normierung — derselbe EINE
+    // Faktor `LEGACY_LICHT`, durch den die Rig-Werte des Studios laufen; den Abfall (1 − d/R)^abfall rechnet der Stoff wie das
+    // Labor (`_lichtPoolTerm`). So trifft jeder Abstand das Labor.
+    _laborLichtStaerke(I) {
+        return I > 0 ? AnazhRealm.LEGACY_LICHT * I : 0;
     }
 
     // DER ZEITPLAN EINER LEUCHTQUELLE (K11, fachwerk LICHT_GESETZ `zeit`: mittag · morgen · abend · nacht; ohne Zeitplan 1)
@@ -100799,9 +100806,8 @@ AnazhRealm.AUGEN_LICHT = Object.freeze({
 // DER LICHT-POOL (K11, `_leuchtTakt`, `_leuchtStoff`): `plaetze` Punktlicht-Plätze ab dem Boot (eine feste Zahl geteilter
 // Uniforms — ein Wechsel der Quellen baut kein Programm) an den nächsten Leuchtquellen im `umkreisM` um das Auge (die Reichweite
 // eines Feuers 9 m, einer Laterne 12 m, eines Tors 14 m — dahinter trägt keine Quelle zum Bild nah am Auge bei), neu gewählt
-// je `wahlS` Sekunden oder nach `wahlM` Metern Weg; `karteM` ist die Distanz der Übersetzung Labor → Welt
-// (`_laborLichtStaerke`).
-AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, karteM: 2 });
+// je `wahlS` Sekunden oder nach `wahlM` Metern Weg.
+AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1 });
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;
