@@ -169,6 +169,12 @@ was eine GELIEFERTE Stufe kosten darf, als Daten neben `kindStages`.
   Teil (das Scharnier reist mit). Innerhalb der Zeile ist es ein No-op (byte-gleich). Dreiecke faltet es nicht:
   über `tris` oder bleibend über `draws` reist ein `budgetBruch` mit, der Wirt loggt ERROR, die Wand wird rot —
   nie still.
+- **Der Flügel am Scharnier (K08):** ein Tür- oder Tor-Flügel reist als Gruppe, deren Position das Scharnier ist
+  (`userData.side`, bei gebackener Offen-Pose `offen`); sein Gitter liegt relativ zu ihr. Der Extraktor liest das
+  Scharnier aus der Gruppen-Position (`out.tuer` hx/zf) und bakt die Lage über matrixWorld, der Wirt dreht um
+  dieselbe Achse (`_tickTorFluegel`: T(h)·R·T(−h)). Ein haus-lokal gebakter Flügel rückt vor dem Ausgang um sein
+  Scharnier zurück (fachwerk `buildStufe`) — sonst steht er um seine Scharnier-Lage vor der Fassade
+  (`gate:haus-fern` T: jedes Blatt ≤ 0,05 m an seinem Scharnier, L0 offen und zugedreht, L1 im Bake).
 - **Die Seh-Klasse (Integration W8, 05.10.):** was ein Stoff dem AUGE ist — `stoff` (Holz · Putz · Stein ·
   Textil · Gummi) · `haut` (Haut, Lippe, Nase, Ballen) · `haar` (Haar · Fell · Strähne) · `auge` (Augapfel ·
   Iris · Pupille · Hornhaut) · `glas` (Glas, Durchscheinendes) · `metall` (Metallizität ≥ 0,5: Chrom, Stahl,
