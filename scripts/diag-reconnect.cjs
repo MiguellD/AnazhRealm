@@ -522,6 +522,7 @@ function makeRealmA(env, initSrcOverride) {
         };
         self._p2pSampleSnapBuf = mk("_p2pSampleSnapBuf", env).bind(self);
         self._p2pMsgPos = mk("_p2pMsgPos", env);
+        self._fremdeZahl = mk("_fremdeZahl", env); // die EINE Zahl aus fremder Hand, die _p2pMsgPos liest
 
         // Der reine Kern: (t=0,x=0) · (t=100,x=3) ⇒ bei 50 ≈ 1,5.
         const buf = [

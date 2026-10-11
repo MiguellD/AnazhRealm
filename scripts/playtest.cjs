@@ -11583,10 +11583,36 @@ async function checkBandRing11AndW7Mesh(ctx) {
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "self-test", x: 1, y: 1, z: 1, yaw: 0 }));
         out.ownPeerIgnored = !r.state.p2p.peers.has("self-test");
 
-        // Invalid pos (NaN) wird verworfen
+        // Invalid pos (NaN) wird verworfen — über den Draht reist NaN als null (JSON.stringify), und Number(null) === 0
+        // (Lehre 17): der ortlos geborene peerB darf davon nicht in den Ursprung springen, er bleibt ohne Ort. Bis K04
+        // war die Probe vakuös (`peerB.x === 0` hielt geboren bei 0 UND nach dem Sprung in den Ursprung).
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: NaN, y: 0, z: 0, yaw: 0 }));
+        r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: 4, y: null, z: 2, yaw: 0 }));
+        r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: 4, y: 1, z: "", yaw: 0 }));
         const peerB = r.state.p2p.peers.get("peerB");
-        out.nanPosNotApplied = peerB && peerB.x === 0;
+        out.nanPosNotApplied =
+            !!peerB &&
+            ![peerB.x, peerB.y, peerB.z].some(Number.isFinite) &&
+            !(peerB.snapBuf && peerB.snapBuf.length) &&
+            !!peerB.mesh &&
+            peerB.mesh.visible === false;
+        // DIE KLASSE (Lehre 17): jeder Leser einer Zahl aus dem Draht — null (das JSON-Bild von NaN) ist kein Ort und
+        // keine Zahl. Je Leser ein Fall über den echten JSON-Weg; jeder Name in der Liste las null als 0.
+        const draht = (o) => JSON.parse(JSON.stringify(o));
+        const nullAlsNull = [];
+        if (r._sanitizePose(draht({ x: NaN, y: 0, z: 0, yaw: 0 })) !== null) nullAlsNull.push("subworld-pose");
+        r._p2pHandleCreaturePos("peerB", draht({ list: [{ id: "ortlos", x: NaN, y: 0, z: 0, soul: "wesen" }] }));
+        if (r.state.p2p.remoteCreatures.has("peerB:ortlos")) nullAlsNull.push("creature-pos");
+        r._p2pMsgInput(draht({ peerId: "peerB", s0: 1, f: [[0, 0]], a: { s: 1, t: 0, x: 1, y: NaN, z: 2 } }));
+        const lsB = r.state.p2p.peers.get("peerB").lockstep;
+        if (lsB && lsB.anchor) nullAlsNull.push("lockstep-anker");
+        const statsVorher = r.state.p2p.brokerStats;
+        r.state.p2p.brokerStats = null;
+        r._p2pMsgStats(draht({ rooms: NaN, peers: 3 }), r.state.p2p);
+        if (r.state.p2p.brokerStats) nullAlsNull.push("stats");
+        r.state.p2p.brokerStats = statsVorher;
+        if (!out.nanPosNotApplied) nullAlsNull.unshift("pos");
+        out.drahtNullAlsNull = nullAlsNull;
 
         // p2pSend ohne open WS liefert false
         r.state.p2p.ws = null;
@@ -11658,7 +11684,15 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("Ring 11 V1: peer-leave entfernt peer aus state.p2p.peers", ring11Results.peerLeaveRemoves);
         check("Ring 11 V1: peer-leave entfernt mesh aus der Szene", ring11Results.peerLeaveDisposesMesh);
         check("Ring 11 V1: eigene peerId wird in pos-Nachrichten ignoriert", ring11Results.ownPeerIgnored);
-        check("Ring 11 V1: NaN-Koordinate in pos wird verworfen", ring11Results.nanPosNotApplied);
+        check(
+            "Ring 11 V1: NaN-Koordinate in pos wird verworfen (der null-Fall über den Draht, der Peer bleibt ohne Ort)",
+            ring11Results.nanPosNotApplied
+        );
+        check(
+            "Ring 11 V1: kein Leser einer Draht-Zahl liest null als 0 (pos · subworld-pose · creature-pos · Lockstep-Anker · stats)",
+            Array.isArray(ring11Results.drahtNullAlsNull) && ring11Results.drahtNullAlsNull.length === 0,
+            `${(ring11Results.drahtNullAlsNull || []).length} lasen null als 0: ${(ring11Results.drahtNullAlsNull || []).join(" · ")}`
+        );
         check("Ring 11 V1: p2pSend ohne offene WS liefert false", ring11Results.sendWithoutWsFalse);
         check("Ring 11 V1: p2pTick ohne enabled ist no-op (kein Crash)", ring11Results.tickNoOpSafe);
         check("Ring 11 V1: KEIN p2p-/peer_dsl-/remote_run-DSL-Op (Sandbox-Grenze)", ring11Results.noP2PDslOp);

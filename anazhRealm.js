@@ -1559,6 +1559,14 @@ class AnazhRealm {
         return Array.isArray(v) || (v !== null && typeof v === "object") ? JSON.stringify(v) : String(v);
     }
 
+    // DIE EINE ZAHL AUS FREMDER HAND (Draht, DSL-Programm): eine endliche Zahl oder NaN, nie still die 0. Über den Draht
+    // reist NaN als null (JSON), und `Number(null) === 0` (Lehre 17) — ein ortloser Mitspieler stand so im Ursprung, eine
+    // ortlose Sicht-Kreatur bei 0/0/0. null, leer, Wahrheitswert, Liste, Objekt sind keine Zahl; ein Zahl-Text gilt.
+    _fremdeZahl(v) {
+        const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
+        return Number.isFinite(n) ? n : NaN;
+    }
+
     // DER EINE ZAHLEN-LESER der Orte (Koordinate, Radius, Abstand, Spanne): fehlt die Zahl (`v == null`), gilt ihr
     // dokumentierter Default — hat sie keinen, fehlt der Ort; steht sie da und ist keine endliche Zahl (Text, leer,
     // Wahrheitswert, Liste), gibt es den Ort nicht. Nie still die 0 oder die Untergrenze (Lehre 17: `Number(null) === 0`;
@@ -1569,7 +1577,7 @@ class AnazhRealm {
             if (def == null) throw this._dslKeinOrt(op, `${op}: ${was} fehlt`);
             return def;
         }
-        const n = typeof v === "number" ? v : typeof v === "string" && v.trim() !== "" ? Number(v) : NaN;
+        const n = this._fremdeZahl(v);
         if (!Number.isFinite(n)) throw this._dslKeinOrt(op, `${op}: ${was} „${this._dslZeig(v)}“ ist keine Zahl`);
         return Math.min(hi, Math.max(lo, n));
     }
@@ -7051,6 +7059,12 @@ class AnazhRealm {
             if (!e || typeof e.id !== "string") continue;
             const key = peerId + ":" + e.id;
             seen.add(key);
+            // Ein Ort aus dem Draht ohne Zahl ist kein Ort (NaN reist als null, bis hierher `+e.x || 0`): keine
+            // Sicht-Kopie im Ursprung, eine bestehende hält ihr letztes Ziel.
+            const ex = this._fremdeZahl(e.x);
+            const ey = this._fremdeZahl(e.y);
+            const ez = this._fremdeZahl(e.z);
+            if (!Number.isFinite(ex) || !Number.isFinite(ey) || !Number.isFinite(ez)) continue;
             let rc = remote.get(key);
             if (!rc) {
                 const mesh = this._buildCreatureGroup(typeof e.soul === "string" ? e.soul : "wesen");
@@ -7060,15 +7074,16 @@ class AnazhRealm {
                 // eigenes Sync-Feld; der gewachsene Wald-Disziplin Γ5 treu).
                 const _peerBs = this._creatureBodySize(e.id);
                 mesh.scale.setScalar(_peerBs);
-                mesh.position.set(+e.x || 0, +e.y || 0, +e.z || 0);
+                mesh.position.set(ex, ey, ez);
                 if (this.state.scene) this.state.scene.add(mesh);
                 rc = { mesh, peerId };
                 remote.set(key, rc);
             }
-            rc.tx = +e.x || 0;
-            rc.ty = +e.y || 0;
-            rc.tz = +e.z || 0;
-            rc.tyaw = +e.yaw || 0;
+            rc.tx = ex;
+            rc.ty = ey;
+            rc.tz = ez;
+            const eyaw = this._fremdeZahl(e.yaw);
+            rc.tyaw = Number.isFinite(eyaw) ? eyaw : rc.tyaw || 0;
             // die Lage eines Gefallenen (fremdes Datum: nur vier endliche Zahlen gelten)
             rc.tq = Array.isArray(e.q) && e.q.length === 4 && e.q.every((v) => Number.isFinite(v)) ? e.q : null;
             rc.lastSeen = nowSec;
@@ -7221,8 +7236,8 @@ class AnazhRealm {
     // Gecacht + im Multi-User-Bereich sichtbar (Vision-Mechanik sichtbar,
     // V9.95-c — der Schöpfer sieht das Makrosystem, nicht nur den Raum).
     _p2pMsgStats(msg, p2p) {
-        const rooms = Number(msg.rooms);
-        const peers = Number(msg.peers);
+        const rooms = this._fremdeZahl(msg.rooms);
+        const peers = this._fremdeZahl(msg.peers);
         if (!Number.isFinite(rooms) || !Number.isFinite(peers)) return;
         p2p.brokerStats = { rooms, peers, at: Date.now() };
         if (typeof document !== "undefined") {
@@ -7358,10 +7373,12 @@ class AnazhRealm {
         const pid = msg.peerId;
         if (typeof pid !== "string" || pid === p2p.peerId) return;
         const entry = this._p2pEnsurePeerEntry(pid);
-        const x = Number(msg.x);
-        const y = Number(msg.y);
-        const z = Number(msg.z);
-        const yaw = Number(msg.yaw);
+        // Ein Ort aus dem Draht ohne Zahl ist kein Ort (NaN reist als null): der ortlos geborene Mitspieler bleibt ohne
+        // Ort und unsichtbar, statt in den Ursprung zu springen.
+        const x = this._fremdeZahl(msg.x);
+        const y = this._fremdeZahl(msg.y);
+        const z = this._fremdeZahl(msg.z);
+        const yaw = this._fremdeZahl(msg.yaw);
         if (![x, y, z, yaw].every(Number.isFinite)) return;
         const nowMs = performance.now();
         // Lockstep: treibt der Ghost diesen Peer (frisch gesteppt), wird pos zur AUTORITÄT des
@@ -8361,7 +8378,10 @@ class AnazhRealm {
             ls.buf.splice(0, drop);
             ls.bufStart += drop;
         }
-        if (msg.a && Number.isFinite(msg.a.s) && Number.isFinite(msg.a.x)) ls.anchor = msg.a;
+        // Der Anker seedet den Ghost-Ort: alle drei Achsen endlich (eine null-Achse — das JSON-Bild von NaN — stand als 0).
+        const a = msg.a;
+        const ankerOrt = !!a && Number.isFinite(a.x) && Number.isFinite(a.y) && Number.isFinite(a.z);
+        if (ankerOrt && Number.isFinite(a.s)) ls.anchor = a;
     }
 
     // GHOST-SWAP: die KOMPLETTE Charakter-Sim-Oberfläche Spieler↔Ghost tauschen, den EINEN
@@ -52127,10 +52147,10 @@ class AnazhRealm {
     // oder Objekt-Schmuggel in die Zustell-Kette legen.
     _sanitizePose(p) {
         if (!p || typeof p !== "object") return null;
-        const x = Number(p.x);
-        const y = Number(p.y);
-        const z = Number(p.z);
-        const yaw = Number(p.yaw);
+        const x = this._fremdeZahl(p.x);
+        const y = this._fremdeZahl(p.y);
+        const z = this._fremdeZahl(p.z);
+        const yaw = this._fremdeZahl(p.yaw);
         if (![x, y, z, yaw].every(Number.isFinite)) return null;
         const c = (v) => Math.max(-1e6, Math.min(1e6, v));
         return { x: c(x), y: c(y), z: c(z), yaw: Math.max(-Math.PI * 2, Math.min(Math.PI * 2, yaw)) };
