@@ -1,0 +1,31 @@
+=== FERN-RING (STUFE 2) — Browser, Null-Renderer + Hook ===
+  ✅ 4: HEADLESS-DEFAULT — ohne Hook entsteht KEIN Ring (Null-Renderer ruht)
+  ✅ 1: genau 3 Schalen-Meshes in der Szene (Draw-Calls gedeckelt) — meshes=3 szene=3
+  ✅ 1: Vertex-Zahlen wie deklariert (winkel×reihen je Schale) — counts=3072/3072/3072
+  ✅ 1: EIN geteiltes Material für alle Schalen
+  ✅ 1: sichtbar erst nach vollem Refresh + frustumCulled/Schatten aus
+  ✅ 1: LOCH-DECKEL — Schale 1 beginnt am Spieler (0.5·span), deckZoneRad = Ziel-Zone
+  ✅ Bau BUDGETIERT über Ticks (je Tick <= refreshVertsProTick, mehrere Ticks — BOOT_PHASE3-Muster) — ticks=16 maxDelta=600
+  ✅ 2: HÖHEN == GESETZ — 60 Proben |mesh − _terrainMacroSurfaceY(snap,false)| < 0.01 (inkl. Wasser-Klemme/Saum) — bad=0 worst=0.0000
+  ✅ SELBSTTEST: die verfälschte Erwartung (law + 0.5) fällt rot (60/60)
+  ✅ 2b: RING-GRENZE — vor dem Gebauten liegt der Ring auf seinem Gesetz (|Sprung| ≤ 0,5 m, kein weichendes Dreieck) — 240 Proben, Sprung max 0 m, Median 0 m bei 174/-81, 1 m vor der Kante
+  ✅ 2b SELBSTTEST: die alte Regel (jede gedeckte Ecke weicht −60) fällt rot beim Namen — alt: 162 Treffer auf weichenden Dreiecken, Sprung max 45.5 m, Median 11.5 m bei 174/-38, 1 m vor der Kante
+  ✅ 3: RE-ZENTRIEREN — der Anker wandert QUANTISIERT nach 400-m-Teleport
+  ✅ 3: der Höhen-Refresh läuft budgetiert durch (Budget-Zähler == totalVerts) — ticks=16
+  ✅ 3b: DAS FERN-FARB-BUDGET — der GPU-Rückruf eines Re-Ankers stellt neue Punkte in die Farb-Schlange, die Takte färben sie leer, keine Fern-Farbe außerhalb des Budgets — gpu=true offen=6011 leer=true außerhalb=0
+  ✅ 3: die Proben stimmen am NEUEN Ort (Höhen schwimmen nicht) — bad=0 worst=0.0000
+  ✅ 6: KAMERA-WEITUNG — far = Schale-3-aussen + 500, alter Wert gemerkt — far=8500 soll=8500 alt=1000
+  ✅ 6: DIE LUFT TRÄGT — scene.fogNode statt Nebel, Sichtweite am Boden ≥ 5 km, aus 300 m weiter (Höhen-Dunst) — boden=20933 hoch=28232 zurueck=20935 knoten=true
+  ✅ 6: DISPOSE-RÜCKNAHME — camera.far kehrt zum alten Wert zurück, Ring entsorgt
+  ✅ 7: DER FELD-ZEICHNER startet den GPU-Flug beim vollen Refresh (feld-wgsl im SPIEL konsumiert) — laeufe=1
+  ✅ 7: das Feld malt den Horizont VOR der CPU (ready bei cursor < totalVerts) — cursor=600/9216
+  ✅ 7: GPU-Höhen im SEH-Band des dritten Spiegels (≤ 0.5 m auf 8 km, 60 Proben) — worst=0.0034 proben=60
+  ✅ 7: die CPU verfeinert danach aufs f64-Gesetz durch (Cursor läuft voll)
+  ✅ 8: DER FELD-PASS existiert, das Feld malte, das PANORAMA ist gebacken (Persistenz) — laeufe=1 pano=1
+  ✅ 8: Texel-Höhen == f64-Gesetz im Seh-Band (≤ 0.5 m bis 40 km, Wasser flach auf wl) — worst=0.0199
+  ✅ 8: die ECHTE Render-Probe trifft — der Fullscreen-Raymarch zeichnet Horizont-Pixel — treffer=1726
+  ✅ 8b: DAS EINBLENDEN — ein fern geborener Satz beginnt ganz verworfen und löst sich über WELT_SCHWUND_MS auf, ohne Wunsch erscheint er sofort — start=1 mitte=0.4887999892234802 ende=0 aus=true sofort=0
+  ✅ 8: der Pass fällt mit dem Ring (Dispose)
+  ✅ 5: kein pageerror
+
+✅ GRÜN — DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz (Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Feld-Zeichner malt den vollen Refresh per GPU durch feld-wgsl (die CPU verfeinert aufs f64-Gesetz), budgetierter Refresh, quantisiertes Re-Zentrieren, headless-default ruhig.

@@ -1,0 +1,11 @@
+prettier EXIT=0
+lint EXIT=0
+check EXIT=0
+gate:fern-ring EXIT=0
+gate:fern-wasser EXIT=0
+playtest:fast EXIT=0
+gate:sicht-arbeit EXIT=0
+gate:wasser-leben EXIT=0
+gate:wasser-wahrheit EXIT=0
+gate:werk-im-wasser EXIT=0
+playtest EXIT=0

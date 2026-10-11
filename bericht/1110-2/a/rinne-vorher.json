@@ -1,0 +1,102 @@
+{
+ "ergebnis": {
+  "span": 43.2,
+  "chunks": 81,
+  "proben": 720,
+  "ohneTreffer": 0,
+  "je": {
+   "1": {
+    "n": 180,
+    "min": -53.92,
+    "median": -23.04,
+    "max": 11.6,
+    "ueber1m": 148
+   },
+   "5": {
+    "n": 180,
+    "min": -51.41,
+    "median": -18.04,
+    "max": 11.6,
+    "ueber1m": 151
+   },
+   "10": {
+    "n": 180,
+    "min": -47.12,
+    "median": -11.78,
+    "max": 11.6,
+    "ueber1m": 145
+   },
+   "20": {
+    "n": 180,
+    "min": -36.57,
+    "median": -0.01,
+    "max": 11.6,
+    "ueber1m": 98
+   }
+  },
+  "versenktUnterTreffern": 521,
+  "schlimm": [
+   {
+    "x": 212,
+    "z": -174,
+    "d": 1,
+    "law": 9.44,
+    "far": -44.49,
+    "sprung": -53.92,
+    "versenkt": 1,
+    "gedecktEcken": 1
+   },
+   {
+    "x": 410,
+    "z": -174,
+    "d": 1,
+    "law": -0.43,
+    "far": -53.49,
+    "sprung": -53.06,
+    "versenkt": 1,
+    "gedecktEcken": 1
+   },
+   {
+    "x": 203,
+    "z": -174,
+    "d": 1,
+    "law": 9.46,
+    "far": -43.54,
+    "sprung": -53,
+    "versenkt": 2,
+    "gedecktEcken": 2
+   },
+   {
+    "x": 194,
+    "z": -174,
+    "d": 1,
+    "law": 9.48,
+    "far": -43.52,
+    "sprung": -52.99,
+    "versenkt": 2,
+    "gedecktEcken": 2
+   },
+   {
+    "x": 186,
+    "z": -174,
+    "d": 1,
+    "law": 9.5,
+    "far": -42.95,
+    "sprung": -52.44,
+    "versenkt": 2,
+    "gedecktEcken": 2
+   },
+   {
+    "x": 212,
+    "z": -178,
+    "d": 5,
+    "law": 9.43,
+    "far": -41.98,
+    "sprung": -51.41,
+    "versenkt": 1,
+    "gedecktEcken": 1
+   }
+  ]
+ },
+ "ms": 1500
+}
