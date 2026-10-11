@@ -92365,6 +92365,7 @@ class AnazhRealm {
             const p = e.position;
             if (!p || (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z) > R * R) continue;
             const L = this._lichtDatum(e);
+            if (!L) continue; // das Datum ging mit dem Bauplan (das Verzeichnis stempelt beim Eintritt)
             const sk = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
             const a = this._lichtDatumDerGestalt(e) ? 0 : this._glutFlaeche(e);
             nimm(e, {

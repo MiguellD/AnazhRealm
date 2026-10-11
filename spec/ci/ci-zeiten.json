@@ -1780,9 +1780,9 @@
       ]
     },
     "Pruefbuehne S0 im Bild (echter Renderer - der Feuerkreis aus 2 m traegt Luma >= 0,15 in der Ausgabe)": {
-      "s": 150,
+      "s": 170,
       "geschaetzt": true,
-      "quelle": "K11 Runde 2: lokaler swiftshader-Lauf (Windows), siehe Commit"
+      "quelle": "K11: lokaler swiftshader-Lauf 169 s (Windows; Boot 14 s, Feuer und Aufnahme 146 s, Schein 7 s)"
     },
     "Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)": {
       "s": 112,

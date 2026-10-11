@@ -331,11 +331,14 @@ async function s0Probe(page, station, schein) {
                 const pool = r._leuchtPool;
                 for (const p of (pool && pool.plaetze) || []) {
                     if (!(p.staerke > 0) || Math.hypot(p.x - um.x, p.y - um.y, p.z - um.z) > umkreis) continue;
-                    lichter.push({ art: "pool", quelle: p.quelle, I: +p.staerke.toFixed(3) });
+                    // das Licht DIESER Feuerstelle steht über ihrem Bett (≤ 1,5 m waagrecht); jedes andere zählt nur als Licht
+                    const eigen = Math.hypot(p.x - um.x, p.z - um.z) <= 1.5;
+                    lichter.push({ art: "pool", quelle: p.quelle, I: +p.staerke.toFixed(3), eigen });
+                    if (!eigen) continue;
                     // der Pool in 2 m: das EINE Gesetz (1 − d/R)^abfall, die Farbe nach Luminanz
                     const ab = Math.pow(Math.max(0, 1 - 2 / p.reichweite), p.abfall);
                     const lum = 0.2126 * p.farbe[0] + 0.7152 * p.farbe[1] + 0.0722 * p.farbe[2];
-                    if (p.quelle !== "laterne") e2 += p.staerke * ab * lum;
+                    e2 += p.staerke * ab * lum;
                 }
                 const en = r._waagrechtIrradianz([0, 0, 0]);
                 const nacht = 0.2126 * en[0] + 0.7152 * en[1] + 0.0722 * en[2];
@@ -351,7 +354,7 @@ async function s0Probe(page, station, schein) {
                 const z = zaehle(f);
                 out.nacht[klang ? "klang" : "still"] = z;
                 const wie = klang ? "Klang an" : "Klang aus";
-                const amFeuer = z.lichter.filter((l) => l.quelle !== "laterne");
+                const amFeuer = z.lichter.filter((l) => l.eigen);
                 if (amFeuer.length < 1) {
                     const taeter = !out.verzeichnis
                         ? "das Verzeichnis nennt die Feuerstelle nicht als Leuchtquelle (`_blockerNamen`: „licht“ fehlt)"
@@ -359,7 +362,7 @@ async function s0Probe(page, station, schein) {
                           ? "kein Licht-Leser der Glut (`_leuchtTakt` fehlt)"
                           : "der Licht-Takt setzt keinen Platz an die Glut";
                     out.befunde.push(
-                        `S0 Nacht (${wie}): 0 Lichter ≤ ${umkreis} m um die Feuerstelle — ${taeter}; Punktlichter baut ` +
+                        `S0 Nacht (${wie}): kein Licht über der Feuerstelle (${z.n} Lichter ≤ ${umkreis} m) — ${taeter}; Punktlichter baut ` +
                             (out.bauer.length ? out.bauer.map((b) => "`" + b + "`").join(", ") : "niemand")
                     );
                 } else if (!(z.e2 >= e2min * z.nacht))
@@ -670,16 +673,20 @@ async function lichtLauf() {
                 .replace(/\/\/.*$/gm, "")
                 .replace(/\/\*[\s\S]*?\*\//g, "");
     });
-    const url = `http://127.0.0.1:${PORT}/index.html?holz=${HOLZ}`;
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120000 });
-    await page.evaluate(() => {
+    // der Speicher fällt vor dem ersten Skript des ERSTEN Ladens (ein Laden weniger als Laden → Löschen → Neu laden)
+    await page.evaluateOnNewDocument(() => {
         try {
-            localStorage.clear();
+            if (!sessionStorage.getItem("__s0Leer")) {
+                localStorage.clear();
+                sessionStorage.setItem("__s0Leer", "1");
+            }
         } catch (_e) {
             /* */
         }
     });
-    await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+    const url = `http://127.0.0.1:${PORT}/index.html?holz=${HOLZ}`;
+    const zeit = (was) => console.log(`    · ${was} nach ${Math.round((Date.now() - t0) / 1000)} s`);
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120000 });
     const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
     const id = await page.evaluate(async (json) => {
         const t = performance.now();
@@ -692,9 +699,11 @@ async function lichtLauf() {
         return res.worldId;
     }, json);
     if (!id) throw new Error("die Bühne ließ sich nicht importieren");
+    zeit("die Bühne importiert");
     await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
     const b = await boote(page);
     if (!b.ok) throw new Error("Boot nicht bereit nach 120 s");
+    zeit("die Bühne gebootet");
     await page.evaluate(AUSGABE_INSTALL);
     const ergebnis = {};
     for (const schein of SELBSTTEST ? [false, true] : [false]) {
@@ -833,6 +842,7 @@ async function lichtLauf() {
             S0,
             schein
         );
+        zeit(schein ? "der Schein aufgenommen" : "das Feuer aufgenommen");
     }
     // das Beweisbild der Figur (nur mit `--bild`, kein Urteil): ein Wolf 2,3 m neben dem Feuer, der Spieler gegenüber, das Auge
     // 5 m zurück — die Figur im Licht des Pools
