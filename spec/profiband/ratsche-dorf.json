@@ -1,0 +1,190 @@
+{
+    "version": 1,
+    "zweck": "DIE RATSCHE DES DORFS (S3 haus, der dritte Messort `dorf` in spec/profiband/haushalt.json): je Haushalt-Klasse × Pass (und je VRAM-Erzeuger) die obere Hülle einer Mess-Serie am Dorf der Zelle −4,−4 — dieselbe Form und dieselben Regeln wie die Ratsche der Mess-Wiese (ratsche.json, dort der volle Zweck). Angelegt UNGEMESSEN (`null`): die Werte setzt die EINE Serie des Integrators auf dem integrierten Kopf (Plan §2 E6 — eine Serie wartet das Einschwingen ab, Zeitfrist, und läuft nie neben dem parallelen Fenster der anderen Gruppe): `werkbank.cjs start --echt --serie <name>` · `umstellen --ort dorf` · `band --ort dorf --datei a.json` (≥ 4, dazu `reload` für den Zweit-Boot) · `ratsche --ort dorf a.json b.json …`. Der Dorf-Zug läuft (der Ort will ihn), die Ratsche nimmt nur Läufe, die eingeschwungen sind (kein Export unterwegs, keine wachsende Siedlung).",
+    "gemessen": null,
+    "toleranzPct": 1,
+    "toleranzAbs": {
+        "befehle": 2,
+        "dreiecke": 5000,
+        "vramMB": 2
+    },
+    "frei": {
+        "tier": "Weltzustand, nicht Kosten: die Tiere wandern — in der Serie 04./05.10. 11 bis 101 Befehle im Hauptbild (0 bis 3 Arten im Bild, je Art 11 bis 42 Befehle mit Schatten). Die Kosten je Tier hält gate:kreatur-kosten (ein Draw je Material, Körper-Kugel-Cull); im Band zählt die Klasse voll."
+    },
+    "gesamt": {
+        "befehle": null,
+        "dreiecke": null,
+        "vramMB": null
+    },
+    "klassen": {
+        "boden": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "streu": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "karten": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "baum": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "busch": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "nahWiese": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "tier": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "bau": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "formationen": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "einzelstuecke": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "leerHuellen": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        },
+        "reserve": {
+            "haupt": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k0": {
+                "befehle": null,
+                "dreiecke": null
+            },
+            "k1": {
+                "befehle": null,
+                "dreiecke": null
+            }
+        }
+    },
+    "vramMB": {}
+}

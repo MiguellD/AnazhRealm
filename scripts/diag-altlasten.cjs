@@ -996,6 +996,15 @@ const FORBIDDEN = [
     // 0910-3 A (Gegenprüfung): der Wasser-Neubau im resize-Handler war ein Zwilling des Vorher-Textur-Wächters der Diät
     // (`_diaetVorTextur` trägt JEDEN Größenwechsel); was bleibt, ist der Tausch des Tiefen-KNOTENS (`_tiefenKnotenTausch`).
     { token: "_tiefenLeserNeuBinden", fiel: "0910-3 A — die Diät (6) trägt jeden Größenwechsel, kein Neubau im resize-Handler" },
+    // S3 haus (10.10.): der Fernkörper des Gesetzbuchs ist die NUR-WURF-Stufe 3 (`huelle()`, Beipack __fern, fernform "huelle") —
+    // der Wirts-Fit der Häuser, seine Dach-Prismen-Marke und seine Linse fallen; die Fernform liest `_huelleVon`
+    { token: "_archFachwerkFit", fiel: "S3 haus — die Fernform ist die Hülle des Gesetzbuchs (_huelleVon → _archFoundryZiegel)" },
+    { token: "prismFlip", fiel: "S3 haus — der Keil trägt seinen Typ (HUELLE_KEIL_TYP: First ±x/±z, Walm)" },
+    {
+        token: "diag-arch-fachwerk-fit",
+        fiel: "S3 haus — die Linse des Wirts-Fits; der Fernkörper misst gate:haus-fern",
+        auch: ["package.json", ".github/workflows/check.yml"],
+    },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
@@ -1640,6 +1649,63 @@ function scanPortWand(dateien) {
             errs.push(`Port-Wand: ${name} liest DIAG_PORT — je Gate EINE Variable (<GATE>_PORT)`);
     return errs;
 }
+// DIE HÜLLEN-FORM-WAND (S3 haus, K08): der Wirt liest die Hülle eines Baus in der EINEN Form (N5: `{ stufe, teile }`,
+// der Leser `_huelleVon`, fail-closed) — die Zahlen-Zeile `{ stufe, boxen }` fiel mit ee37daf7 als Wirts-Form (sie lebt nur
+// im Gesetzbuch, fachwerk-core `huelleAusBoxen`). Die Probe `sockel` kam mit V18.538 und gab dem Wirt noch die alte Zeile —
+// ein KERN-PFLICHT-Bruch, den erst playtest 2/3 der CI fand. Kein Wirts-Code (Stamm, Gates, Linsen) trägt `boxen` als
+// Objekt-Schlüssel; Kommentare und Texte (die Kern-Ersetzungen von diag-haus-welt) zählen nicht. Rot mit Datei:Zeile.
+function ohneTexte(src) {
+    const code = stripComments(src);
+    let out = "";
+    let mode = "code";
+    for (let i = 0; i < code.length; i++) {
+        const c = code[i];
+        if (mode === "code") {
+            if (c === "'") mode = "sq";
+            else if (c === '"') mode = "dq";
+            else if (c === "`") mode = "tpl";
+            out += c;
+            continue;
+        }
+        if (c === "\\") {
+            out += " " + (code[i + 1] === "\n" ? "\n" : " ");
+            i++;
+            continue;
+        }
+        if ((mode === "sq" && c === "'") || (mode === "dq" && c === '"') || (mode === "tpl" && c === "`")) {
+            mode = "code";
+            out += c;
+            continue;
+        }
+        out += c === "\n" ? c : " ";
+    }
+    return out;
+}
+function scanHuellenFormWand(dateien) {
+    const errs = [];
+    const alt = /[{,]\s*boxen\s*:|[{,]\s*boxen\s*\}|\{\s*boxen\s*,/g;
+    for (const [name, src] of dateien) {
+        const code = ohneTexte(src);
+        for (const m of code.matchAll(alt)) {
+            const zeile = code.slice(0, m.index + m[0].indexOf("boxen")).split("\n").length;
+            errs.push(
+                `Hüllen-Form-Wand: ${name}:${zeile} gibt dem Wirt die alte Hüllen-Zeile (boxen) — die EINE Form trägt teile (N5, _huelleVon)`
+            );
+        }
+    }
+    return errs;
+}
+function wirtsDateien(root, files) {
+    const gesehen = new Set();
+    const aus = [];
+    for (const f of files.concat(gateDateien(root).map(([n]) => path.join(root, n)))) {
+        const n = path.relative(root, f).split(path.sep).join("/");
+        if (gesehen.has(n)) continue;
+        gesehen.add(n);
+        aus.push([n, fs.readFileSync(f, "utf8")]);
+    }
+    return aus;
+}
 function gateDateien(root) {
     const aus = [];
     for (const d of ["scripts", "scripts/lib"])
@@ -1844,6 +1910,36 @@ function main() {
             process.exit(1);
         }
         console.log(`✅ SELBST-TEST: die Port-Wand feuert (${gates.length} Gate-Dateien, DIAG_PORT erkannt)`);
+        // Die Hüllen-Form-Wand muss feuern: die alte Zeile als Schlüssel und als Kurzform, über eine Variable gereicht —
+        // ein Kommentar und ein Text (die Kern-Ersetzung) dürfen sie tragen, die Form mit teile ist still.
+        const wirt = wirtsDateien(root, files);
+        const sockel = "r._hausHuelleSetzen(e, { stufe: 0, boxen: [-2, u, -2, 2, o, 2] });\n";
+        const huelleRot = scanHuellenFormWand([
+            ["scripts/lib/x.cjs", "const a = 1;\n" + sockel],
+            ["scripts/y.cjs", "const h = { stufe, boxen };\nr._hausHuelleSetzen(e, h);\n"],
+        ]);
+        const huelleStill = scanHuellenFormWand([
+            ["scripts/z.cjs", "// " + sockel + "const k = " + JSON.stringify(sockel) + ";\nconst n = boxen.length;\n"],
+            ["scripts/w.cjs", 'r._hausHuelleSetzen(e, { stufe: 0, teile: [{ art: "box", rolle: "fest" }] });\n'],
+        ]);
+        const huelleFeuert =
+            scanHuellenFormWand(wirt).length === 0 &&
+            huelleRot.length === 2 &&
+            /x\.cjs:2 /.test(huelleRot[0]) &&
+            /y\.cjs:1 /.test(huelleRot[1]) &&
+            huelleStill.length === 0;
+        if (!huelleFeuert) {
+            console.log(
+                "❌ SELBST-TEST: die Hüllen-Form-Wand feuert nicht (oder steht heute rot)",
+                scanHuellenFormWand(wirt),
+                huelleRot,
+                huelleStill
+            );
+            process.exit(1);
+        }
+        console.log(
+            `✅ SELBST-TEST: die Hüllen-Form-Wand feuert (${wirt.length} Wirts-Dateien, ${huelleRot[0]} · Kurzform erkannt)`
+        );
         // Die Linsen stehen in der Wand: der tote Aufruf der Fernwald-Linse (Welle G) kehrt in eine Kopie zurück und
         // wird beim Namen genannt.
         const fernwald = files.find((f) => /[\\/]scripts[\\/]lib[\\/]fernwald-linse\.cjs$/.test(f));
@@ -1908,6 +2004,7 @@ function main() {
         .concat(scanNormalWand(fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8")))
         .concat(scanStufenWand(fs.readFileSync(path.join(root, "foundry-core.js"), "utf8")))
         .concat(scanPortWand(gateDateien(root)))
+        .concat(scanHuellenFormWand(wirtsDateien(root, files)))
         .concat(checkAliasArten());
     if (errs.length) {
         console.log("⛔ DIE RÜCKKEHR-WAND — gefallene Namen im Stamm und in den Linsen:");
@@ -1915,7 +2012,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
+        `✅ DIE RÜCKKEHR-WAND steht — ${FORBIDDEN.length} gefallene Namen grep=0 in ${files.length} Dateien (Stamm + Linsen in scripts/lib), CREATURE_SOULS = exakt [${SOUL_KEYS_EXPECTED.join(" · ")}], ${ZWILLINGE.length} Zwillings-Fingerabdrücke wohnen nur im Gesetzbuch, jede InstancedMesh entsteht im EINEN Chokepoint, ${KARTEN_METHODEN.length} Karten-Methoden malen nichts im Haupt-Thread, kein normalNode dreht mit der transponierten Matrix oder liest r184s normalWorld, die Bau-Stufe hat EINE Bedeutung (stufenRezept), jedes Gate liest seinen Port aus EINER eigenen Variable, kein Wirt gibt eine Hülle in der alten Zeile (boxen statt teile), jede Gruppe mit Welt-Vorlagen entsorgt über die EINE Regel (_disposeSoulGroup).`
     );
 }
 
