@@ -1574,17 +1574,33 @@ async function probeLeben(expected) {
             hindernis.weg(ziel);
             return { tief, abstand, nah, schritte, vorn };
         };
-        const boxTiefe = (boxes, px, pz) => {
+        // jede Teil-Box in IHREM Rahmen (`box.obb`, D5 — so lösen Kapsel und Hülle, `_resolveCapsuleVsAABB`/
+        // `_resolveHuelleVsAABB`), nie als Welt-AABB: ein gedrehtes Teil reicht als Welt-AABB weiter als es selbst (an der
+        // 45°-Gasse seit K16 las die am Wagen gehaltene Kapsel „1,68 m im Wagen“). Rückgabe [Rechteck, px, pz] im Rahmen.
+        const boxRahmen = (b, px, pz) => {
+            const ob = b.obb;
+            if (!ob) return [b, px, pz];
+            const dx = px - ob.cx;
+            const dz = pz - ob.cz;
+            return [
+                { minX: -ob.hx, maxX: ob.hx, minZ: -ob.hz, maxZ: ob.hz },
+                dx * ob.c - dz * ob.s,
+                dx * ob.s + dz * ob.c,
+            ];
+        };
+        const boxTiefe = (boxes, px0, pz0) => {
             let t = 0;
-            for (const b of boxes || []) {
+            for (const b0 of boxes || []) {
+                const [b, px, pz] = boxRahmen(b0, px0, pz0);
                 if (px < b.minX || px > b.maxX || pz < b.minZ || pz > b.maxZ) continue;
                 t = Math.max(t, Math.min(px - b.minX, b.maxX - px, pz - b.minZ, b.maxZ - pz));
             }
             return t;
         };
-        const boxAbstand = (boxes, px, pz) => {
+        const boxAbstand = (boxes, px0, pz0) => {
             let a = Infinity;
-            for (const b of boxes || []) {
+            for (const b0 of boxes || []) {
+                const [b, px, pz] = boxRahmen(b0, px0, pz0);
                 const dx = Math.max(b.minX - px, 0, px - b.maxX);
                 const dz = Math.max(b.minZ - pz, 0, pz - b.maxZ);
                 a = Math.min(a, Math.hypot(dx, dz));
@@ -2208,16 +2224,17 @@ async function probeLeben(expected) {
                 }
                 return e && e.blockerAABBs && e.blockerAABBs.length ? e : null;
             };
-            // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), längs der Gasse gemessen
+            // der Abstand der Spieler-Kapsel (r 0,35) zur Hülle des Wagens (< 0: sie steckt in ihm), je Teil-Box in ihrem
+            // Rahmen (`boxRahmen`)
             const kapselAbstand = (e) => {
                 const pmP = st.playerMesh.position;
                 let d = Infinity;
-                for (const b of e.blockerAABBs) {
-                    const ix = Math.max(b.minX - pmP.x, 0, pmP.x - b.maxX);
-                    const iz = Math.max(b.minZ - pmP.z, 0, pmP.z - b.maxZ);
+                for (const b0 of e.blockerAABBs) {
+                    const [b, px, pz] = boxRahmen(b0, pmP.x, pmP.z);
+                    const ix = Math.max(b.minX - px, 0, px - b.maxX);
+                    const iz = Math.max(b.minZ - pz, 0, pz - b.maxZ);
                     const aussen = Math.hypot(ix, iz);
-                    const innen =
-                        aussen > 0 ? 0 : Math.min(pmP.x - b.minX, b.maxX - pmP.x, pmP.z - b.minZ, b.maxZ - pmP.z);
+                    const innen = aussen > 0 ? 0 : Math.min(px - b.minX, b.maxX - px, pz - b.minZ, b.maxZ - pz);
                     d = Math.min(d, aussen > 0 ? aussen : -innen);
                 }
                 return d - 0.35;
