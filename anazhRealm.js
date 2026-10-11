@@ -32407,41 +32407,52 @@ class AnazhRealm {
             // am Auge (die geteilte Uniform `augenLicht` = Farbe × Stärke, unter dem Himmel 0): dieselbe Rechnung wie r184s
             // Punkt-Licht am Auge (Lambert + GGX des Vendors, Abstand und Fenster aus `AUGEN_LICHT`), nur wo beides nicht 0 ist.
             // ZWEI FALLEN (Werkbank 11.10., echte GPU): r184 baut die Emissiv-Zuweisung VOR der Lichtung — liest der Term
-            // `normalView`/`positionViewDirection` (EINE Variable je Programm) zuerst im If-Zweig, steht ihre Zuweisung nur dort,
+            // `normalView`/`positionViewDirection` (EINE Variable je Programm) zuerst im Zweig, steht ihre Zuweisung nur dort,
             // und unter dem Himmel lichtete jede Boden-Fläche mit der Normale 0 (schwarz, die Mündung Helligkeit 60 statt 123):
-            // sie werden VOR dem Zweig gelesen. Und `three/tsl` der Seite kennt `diffuseContribution`/`specularColorBlended` nicht —
-            // die Stoff-Werte kommen aus `diffuseColor` · `metalness` · `specularColor` · `specularF90` (wie r184 sie mischt).
+            // die BEDINGUNG des Zweigs liest sie (r184 `select` baut die Bedingung vor dem `if`). Und `three/tsl` der Seite kennt
+            // `diffuseContribution`/`specularColorBlended` nicht — die Stoff-Werte kommen aus `diffuseColor` · `metalness` ·
+            // `specularColor` · `specularF90` (wie r184 sie mischt).
+            // KEIN Fn-RUMPF (Integration V18.541, voller Playtest RAUSCH-GESETZ (B): „1 verborgene Fn-Rümpfe (Soll 0)"): ein
+            // Fn-Aufruf ohne Layout baut seinen Rumpf erst im Compiler, der Stoff-Graph sieht ihn nicht — der Term ist ein
+            // Ausdruck und `select` der Zweig, Lambert und GGX des Vendors stehen ausgeschrieben (BRDF_Lambert, BRDF_GGX und
+            // F_Schlick tragen kein Layout; D_GGX und V_GGX_SmithCorrelated tragen ihres).
             if (opts.himmelsSicht) {
                 const _Te = THREE.TSL;
                 const _A = AnazhRealm.AUGEN_LICHT;
                 const _uAuge = this.state.atmoUniforms.augenLicht;
                 const _hS = _Te.attribute("aHimmel", "float");
                 const _unterFels = _hS.oneMinus();
-                mat.emissiveNode = _Te.Fn(() => {
-                    const _N = _Te.normalView.toVar();
-                    const _L = _Te.positionViewDirection.toVar(); // vom Fragment zum Auge (das Licht steht am Auge)
-                    const _d = _Te.positionView.length().toVar();
-                    const _e = _Te.vec3(0).toVar();
-                    _Te.If(_unterFels.mul(_uAuge.r).greaterThan(0), () => {
-                        // r184 getDistanceAttenuation: 1/max(d^abfall, 0,01) · (1 − (d/R)⁴)²
-                        let _abst = _d.div(_A.reichweiteM).pow4().oneMinus().clamp().pow2();
-                        if (_A.abfall !== 0) _abst = _abst.mul(_d.pow(_A.abfall).max(0.01).reciprocal());
-                        const _E = _uAuge.mul(_N.dot(_L).clamp().mul(_abst).mul(_unterFels));
-                        const _alb = _Te.diffuseColor.rgb;
-                        const _met = _Te.metalness;
-                        const _brdf = _Te.BRDF_Lambert({ diffuseColor: _alb.mul(_met.oneMinus()) }).add(
-                            _Te.BRDF_GGX({
-                                lightDirection: _L,
-                                f0: _Te.mix(_Te.specularColor, _alb, _met),
-                                f90: _Te.specularF90,
-                                roughness: _Te.roughness,
-                                normalView: _N,
-                            })
-                        );
-                        _e.assign(_E.mul(_brdf));
-                    });
-                    return _e;
-                })();
+                const _N = _Te.normalView;
+                const _L = _Te.positionViewDirection; // vom Fragment zum Auge (das Licht steht am Auge)
+                const _d = _Te.positionView.length();
+                const _nl = _N.dot(_L);
+                // der Zweig rechnet nur, wo der Term nicht 0 ist: Fels über der Fläche und Licht am Auge · die Fläche dem Auge
+                // zugewandt · innerhalb der Reichweite (das Fenster ist dort 0)
+                const _zweig = _unterFels
+                    .mul(_uAuge.r)
+                    .greaterThan(0)
+                    .and(_nl.greaterThan(0))
+                    .and(_d.lessThan(_A.reichweiteM));
+                // r184 getDistanceAttenuation: 1/max(d^abfall, 0,01) · (1 − (d/R)⁴)²
+                let _abst = _d.div(_A.reichweiteM).pow4().oneMinus().clamp().pow2();
+                if (_A.abfall !== 0) _abst = _abst.mul(_d.pow(_A.abfall).max(0.01).reciprocal());
+                const _nlc = _nl.clamp();
+                const _E = _uAuge.mul(_nlc.mul(_abst).mul(_unterFels));
+                const _alb = _Te.diffuseColor.rgb;
+                const _met = _Te.metalness;
+                // r184 BRDF_GGX mit dem Licht am Auge: Licht- und Blick-Richtung sind eine, H = L, also N·H = N·V = N·L und
+                // V·H = 1 — F_Schlick(V·H = 1) mischt f0 und f90 mit 2^(−5,55473 − 6,98316)
+                const _a = _Te.roughness.pow2();
+                const _s = Math.pow(2, -5.55473 - 6.98316);
+                const _F = _Te
+                    .mix(_Te.specularColor, _alb, _met)
+                    .mul(1 - _s)
+                    .add(_Te.specularF90.mul(_s));
+                const _glanz = _F
+                    .mul(_Te.V_GGX_SmithCorrelated({ alpha: _a, dotNL: _nlc, dotNV: _nlc }))
+                    .mul(_Te.D_GGX({ alpha: _a, dotNH: _nlc }));
+                const _diffus = _alb.mul(_met.oneMinus()).mul(1 / Math.PI); // r184 BRDF_Lambert
+                mat.emissiveNode = _Te.select(_zweig, _E.mul(_diffus.add(_glanz)), _Te.vec3(0));
             }
             // Geomorph (T2 Cross-LOD-Boundary-Naht) — wie im Toon-Pfad.
             if (opts.geomorph) {

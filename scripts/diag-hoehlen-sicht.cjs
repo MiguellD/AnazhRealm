@@ -126,7 +126,8 @@ function urteil(b) {
         );
     if (c.augenTerm && !c.augenVorZweig)
         v.push(
-            "CODE: der Term des Lichts des Auges liest `normalView`/`positionViewDirection` erst im If-Zweig — r184 baut das " +
+            "CODE: der Term des Lichts des Auges liest `normalView`/`positionViewDirection` nicht in der Bedingung seines " +
+                "Zweigs (`select`), sondern erst im Zweig — r184 baut das " +
                 "Emissiv VOR der Lichtung, die Variable stünde nur im Zweig: unter dem Himmel lichtet der Boden mit der Normale 0 " +
                 "(schwarz)"
         );
@@ -414,7 +415,7 @@ function selbsttest() {
         [
             "Normale im Zweig",
             (b) => (b.code.augenVorZweig = false),
-            /CODE: der Term .* liest `normalView`\/`positionViewDirection` erst im If-Zweig/,
+            /CODE: der Term .* liest `normalView`\/`positionViewDirection` nicht in der Bedingung seines Zweigs/,
         ],
         [
             "fremder TSL-Name",
@@ -1058,11 +1059,17 @@ const server = http.createServer((req, res) => {
             aus.code.normaleHoehle = /_flat\.mul\(_hS\)/.test(pbr) && /attribute\("aHimmel"/.test(pbr);
             aus.code.augenTerm = /\.augenLicht\b/.test(pbr) && /_hS\.oneMinus\(\)/.test(pbr);
             // die zwei Fallen des Terms (Werkbank 11.10., echte GPU — der Null-Renderer baut keinen Graph): die geteilten
-            // Variablen VOR dem Zweig gelesen, und nur Namen, die `three/tsl` der Seite kennt
-            const em = pbr.slice(Math.max(0, pbr.indexOf("emissiveNode")));
-            const vorZweig = em.slice(0, Math.max(0, em.indexOf(".If(")));
-            aus.code.augenVorZweig =
-                /normalView\.toVar\(\)/.test(vorZweig) && /positionViewDirection\.toVar\(\)/.test(vorZweig);
+            // Variablen VOR dem Zweig gelesen — in der BEDINGUNG des `select` (r184 baut sie vor dem `if`; ein Fn-Rumpf mit
+            // If fiel, der Stoff-Graph sah ihn nicht: Integration V18.541) —, und nur Namen, die `three/tsl` der Seite kennt
+            const def = (n) => {
+                const m = new RegExp("const\\s+" + n.replace(/\$/g, "\\$") + "\\s*=\\s*([^;]+);").exec(pbr);
+                return m ? m[1] : "";
+            };
+            const aufloesen = (t) => t.replace(/[\w$]+/g, (w) => (/^_/.test(w) && def(w) ? "(" + def(w) + ")" : w));
+            const sel = /emissiveNode\s*=\s*_Te\.select\(\s*([\w$]+)/.exec(pbr);
+            const bedingung = sel ? aufloesen(aufloesen(def(sel[1]))) : "";
+            aus.code.augenVorZweig = /\bnormalView\b/.test(bedingung) && /\bpositionViewDirection\b/.test(bedingung);
+            const em = pbr.slice(Math.max(0, pbr.indexOf("const _uAuge")));
             const fremd = em.slice(0, 4000).match(/\b(diffuseContribution|specularColorBlended)\b/);
             aus.code.augenTslFremd = fremd ? fremd[1] : null;
             aus.code.passLiest = /this\._hoehlenSicht\(/.test(code(r._chunkSatzPass));
