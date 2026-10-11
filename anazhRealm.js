@@ -9979,7 +9979,7 @@ class AnazhRealm {
     // (Wetter-Feld + dieselbe wandernde Böe, die das Gras biegt · Kronen-Deckung aus dem Pflanz-Gesetz · Wasser im
     // Hör-Ring · Wasserfälle der Region · Glut-Bauten · Sonne · Leben · Jahreszeit), `umweltMischung` macht daraus
     // Pegel/Filter/Panorama, `umweltGraph` spielt es — Lab und Linse bauen denselben Graphen. Kosten je Frame:
-    // UMWELT.ohr.probenJeFrame Ring-Proben + ohr.bautenJeFrame Bauten-Prüfungen, die Mischung im Takt ohr.mischSek;
+    // UMWELT.ohr.probenJeFrame Ring-Proben, die Glut aus dem Verzeichnis (`_blockerMit("glut")`), die Mischung im Takt ohr.mischSek;
     // Quellen laufen nur, solange ihre Stimme hörbar ist. Nie die Weltgröße. Gerechnet wird in der KLANG-WERKSTATT
     // (`_klangWerkstattBooten`, ein Worker): der Spiel-Takt rechnet keinen Sample. Linse: gate:klang-zensus.
     _umweltKlangBauen(ctx, masterGain, UM) {
@@ -10010,7 +10010,6 @@ class AnazhRealm {
         return Object.assign(um, {
             graph: K.umweltGraph(ctx, bus, liefern),
             ring: { punkte, nass: new Uint8Array(punkte.length), tempo: new Float32Array(punkte.length), idx: 0 },
-            glut: { idx: 0, laufend: new Map(), fertig: new Map() },
             letzteMischung: -Infinity,
             rufSaat: saat || 1,
             lage: null,
@@ -10084,7 +10083,6 @@ class AnazhRealm {
         const p = this.state.playerMesh.position;
         const O = AnazhRealm._umweltGesetz().UMWELT.ohr;
         this._umweltRingProbe(um, p.x, p.z, O.probenJeFrame);
-        this._umweltGlutSweep(um, p.x, p.z, O.bautenJeFrame);
         const jetzt = s.ctx.currentTime;
         if (jetzt - um.letzteMischung < O.mischSek) return;
         const dt = Number.isFinite(um.letzteMischung) ? jetzt - um.letzteMischung : 0;
@@ -10171,32 +10169,6 @@ class AnazhRealm {
         for (const [lx, lz] of AnazhRealm._fundamentRaster(raster, tuer))
             if (!this._landAt(x + lx * c + lz * s, z - lx * s + lz * c, 0.2)) return false;
         return true;
-    }
-
-    // Glut-Bauten im Hör-Radius: je Frame `n` Einträge von state.architectures (rund um die Liste); ein voller Umlauf
-    // tauscht die Kandidaten (abgebaute Bauten fallen spätestens nach einem Umlauf). Die Stärke ist die Substanz: die
-    // Brenn-Fläche der Teile (Material „glut"), je Bauplan gemerkt.
-    _umweltGlutSweep(um, px, pz, n) {
-        const archs = this.state.architectures;
-        const N = Array.isArray(archs) ? archs.length : 0;
-        const G = um.glut;
-        const U = AnazhRealm._umweltGesetz().UMWELT;
-        const H = U.stimmen.glut.hoerweiteM + U.ohr.glutRandM;
-        const lim = Math.min(n, N);
-        for (let k = 0; k < lim; k++) {
-            if (G.idx >= N) {
-                G.idx = 0;
-                G.fertig = G.laufend;
-                G.laufend = new Map();
-            }
-            const e = archs[G.idx++];
-            if (!e || !e.position) continue;
-            const dx = e.position.x - px;
-            const dz = e.position.z - pz;
-            if (dx * dx + dz * dz > H * H) continue;
-            const a = this._glutFlaeche(e);
-            if (a > 0) G.laufend.set(e, a);
-        }
     }
 
     // Die Brenn-Fläche eines Baus (m²): Σ der Grundflächen seiner Teile mit Material „glut" (Kugel und Zylinder als
@@ -10308,16 +10280,16 @@ class AnazhRealm {
                 fall.pan = d > 1e-3 ? pan((wfall.x - px) / d, (wfall.z - pz) / d) : 0;
             }
         }
-        // Die nächste Glut (Kandidaten des Umlaufs).
+        // Die nächste Glut — das Verzeichnis „glut" (`_blockerMit`: jeder Eintrag mit Brenn-Fläche, gestempelt beim Eintritt;
+        // jenseits der Hörweite schweigt das Gesetz). Bis K11 lief ein Umlauf über alle Bauten (48 je Frame, nur mit Klang).
         const glut = { d: Infinity, flaeche: 0, pan: 0 };
-        for (const quelle of [um.glut.fertig, um.glut.laufend]) {
-            for (const [e, a] of quelle) {
-                const d = Math.hypot(e.position.x - px, e.position.z - pz);
-                if (d < glut.d) {
-                    glut.d = d;
-                    glut.flaeche = a;
-                    glut.pan = d > 1e-3 ? pan((e.position.x - px) / d, (e.position.z - pz) / d) : 0;
-                }
+        for (const e of this._blockerMit("glut")) {
+            if (!e.position) continue;
+            const d = Math.hypot(e.position.x - px, e.position.z - pz);
+            if (d < glut.d) {
+                glut.d = d;
+                glut.flaeche = this._glutFlaeche(e);
+                glut.pan = d > 1e-3 ? pan((e.position.x - px) / d, (e.position.z - pz) / d) : 0;
             }
         }
         return {
@@ -18329,6 +18301,7 @@ class AnazhRealm {
         // Die Seh-Klasse des Gesetzbuchs reist mit (das Budget-Gesetz faltet nur innerhalb EINER, `_ofenBudget`).
         if (mat.userData && mat.userData.__seh) out.mat.seh = mat.userData.__seh;
         if (mat.userData && typeof mat.userData.__leucht === "number") out.mat.leucht = mat.userData.__leucht;
+        if (mat.userData && typeof mat.userData.__licht === "string") out.mat.licht = mat.userData.__licht; // K11 (Brücke)
         if (mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
             out.mat.emissive = [mat.emissive.r, mat.emissive.g, mat.emissive.b];
             out.mat.emissiveIntensity = typeof mat.emissiveIntensity === "number" ? mat.emissiveIntensity : 1;
@@ -31757,6 +31730,17 @@ class AnazhRealm {
             // DAS LICHT DES AUGES (K15): Farbe × Stärke am Auge (linear); der Boden-Stoff trägt es unter Fels
             // (`_buildPbrNodeMaterial`, 1 − aHimmel), unter dem Himmel 0. EIN Schreiber: `_dayNightApplyAugenLicht`.
             augenLicht: TSL.uniform(new THREE.Color(0, 0, 0)),
+            // DER LICHT-POOL (K11, `_leuchtStoff`): je Platz die Lage im Blick-Raum (xyz) mit der Reichweite (w, 0 = leer)
+            // und die lineare Farbe × Stärke (rgb) mit dem Abfall (a) — eine feste Zahl ab dem Boot (`LICHT_POOL.plaetze`):
+            // ein Wechsel der Quellen baut kein Programm. Dazu die Glut der wachen Fenster (lineare Farbe × Glut des
+            // Zeitplans). EIN Schreiber: `_leuchtTakt`.
+            lichtLage: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () =>
+                TSL.uniform(new THREE.Vector4(0, 0, 0, 0))
+            ),
+            lichtFarbe: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () =>
+                TSL.uniform(new THREE.Vector4(0, 0, 0, 2))
+            ),
+            fensterGlut: TSL.uniform(new THREE.Color(0, 0, 0)),
             // Struktur-Boost als LIVE-Uniform: Multiplier auf das micro-Gewicht des werk-Profils, vom Settings-
             // Slider „Struktur-Tiefe" getrieben. Init aus `atmosphere.r5StructureBoost` (persistiert) oder
             // R5_STRUCTURE_TEXTURE.microBoost (1.3); `_applySubstanceResponse` liest ihn live.
@@ -32438,21 +32422,8 @@ class AnazhRealm {
                 if (_A.abfall !== 0) _abst = _abst.mul(_d.pow(_A.abfall).max(0.01).reciprocal());
                 const _nlc = _nl.clamp();
                 const _E = _uAuge.mul(_nlc.mul(_abst).mul(_unterFels));
-                const _alb = _Te.diffuseColor.rgb;
-                const _met = _Te.metalness;
-                // r184 BRDF_GGX mit dem Licht am Auge: Licht- und Blick-Richtung sind eine, H = L, also N·H = N·V = N·L und
-                // V·H = 1 — F_Schlick(V·H = 1) mischt f0 und f90 mit 2^(−5,55473 − 6,98316)
-                const _a = _Te.roughness.pow2();
-                const _s = Math.pow(2, -5.55473 - 6.98316);
-                const _F = _Te
-                    .mix(_Te.specularColor, _alb, _met)
-                    .mul(1 - _s)
-                    .add(_Te.specularF90.mul(_s));
-                const _glanz = _F
-                    .mul(_Te.V_GGX_SmithCorrelated({ alpha: _a, dotNL: _nlc, dotNV: _nlc }))
-                    .mul(_Te.D_GGX({ alpha: _a, dotNH: _nlc }));
-                const _diffus = _alb.mul(_met.oneMinus()).mul(1 / Math.PI); // r184 BRDF_Lambert
-                mat.emissiveNode = _Te.select(_zweig, _E.mul(_diffus.add(_glanz)), _Te.vec3(0));
+                // die EINE BRDF eines Punktlichts (K11, `_punktLichtBrdf`) — das Licht steht am Auge: L = V
+                mat.emissiveNode = _Te.select(_zweig, _E.mul(this._punktLichtBrdf(_Te, _N, _L, _L, _nlc)), _Te.vec3(0));
             }
             // Geomorph (T2 Cross-LOD-Boundary-Naht) — wie im Toon-Pfad.
             if (opts.geomorph) {
@@ -32473,12 +32444,93 @@ class AnazhRealm {
         // Die geteilte Vegetations-Antwort (Wind-Sway + Instance-Tint + Subsurface-Backlit) wie in Toon.
         // Laub (useFlexAttr) trägt die Vertex-Farbe EINMAL im colorNode; die Instanz-Farbe multipliziert die Pipeline.
         this._applyVegetationResponse(mat, opts, responseProfile);
+        // das Leuchtquellen-Gesetz: der Licht-Pool im Leuchten des Stoffs (K11)
+        this._leuchtStoff(mat, null);
         // Marker für das Test-Band (kein semantisches Verhalten)
         mat.userData = mat.userData || {};
         mat.userData.isPbrMaterial = true;
         mat.userData.pbrRoughness = params.roughness;
         mat.userData.pbrMetalness = params.metalness;
         return mat;
+    }
+
+    // DAS LEUCHTQUELLEN-GESETZ IM STOFF (K11): jeder beleuchtete Stoff der Welt (der Stoff-Bau `_buildPbrNodeMaterial` samt
+    // Toon-Weg und der Foundry-Stoff `_foundryTreeMaterial`) trägt den Licht-Pool als Term seines Leuchtens, und ein Stoff,
+    // dessen Gesetzbuch einen Zeitplan stempelt (`mp.licht` = "fenster", fachwerk `glas`), glüht in der Glut der Tageszeit
+    // (`atmoUniforms.fensterGlut`). KEIN Szenen-Licht: r184 sammelt jedes Szenen-Licht in den Licht-Hash jedes beleuchteten
+    // Stoffs und rechnet seine BRDF auch auf Stärke 0 — der Pool ist eine feste Zahl geteilter Uniforms ab dem Boot (EIN
+    // Schreiber `_leuchtTakt`), ein Wechsel der Quellen baut kein Programm. Dasselbe Muster wie das Licht des Auges (K15).
+    _leuchtStoff(mat, mp) {
+        const Te = typeof THREE !== "undefined" ? THREE.TSL : null;
+        if (!mat || mat.isNodeMaterial !== true || !Te) return mat;
+        const atmo = this._ensureAtmoUniforms();
+        if (!atmo || !atmo.lichtLage) return mat;
+        let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
+        if (mp && mp.licht === "fenster") em = em.add(atmo.fensterGlut);
+        mat.emissiveNode = em.add(this._lichtPoolTerm(Te, atmo));
+        return mat;
+    }
+
+    // DER LICHT-POOL ALS TERM (K11): je Platz ein Zweig mit r184s Punktlicht-Rechnung (`getDistanceAttenuation` 1/max(d^abfall,
+    // 0,01) · (1 − (d/R)⁴)², `_punktLichtBrdf`). Die BEDINGUNG liest `positionView` und `normalView` (EINE Variable je
+    // Programm: r184 baut das Leuchten VOR der Lichtung — zuerst im Zweig gelesen, stünde ihre Zuweisung nur dort, die Falle des
+    // Lichts des Auges) und rechnet nur, wo der Platz trägt: eine Reichweite, die Fläche in ihr und ihm zugewandt. Die
+    // Blick-Richtung rechnet der Zweig selbst aus `positionView` (nie `positionViewDirection` zuerst im Zweig).
+    _lichtPoolTerm(Te, atmo) {
+        const N = Te.normalView;
+        const P = Te.positionView;
+        let summe = null;
+        for (let k = 0; k < atmo.lichtLage.length; k++) {
+            const lage = atmo.lichtLage[k];
+            const farbe = atmo.lichtFarbe[k];
+            const zuLicht = lage.xyz.sub(P);
+            const bedingung = lage.w
+                .greaterThan(0)
+                .and(zuLicht.length().lessThan(lage.w))
+                .and(N.dot(zuLicht).greaterThan(0));
+            const Lv = lage.xyz.sub(P);
+            const d = Lv.length();
+            const L = Lv.div(d);
+            const nl = N.dot(L).clamp();
+            const abst = d.div(lage.w).pow4().oneMinus().clamp().pow2().mul(d.pow(farbe.a).max(0.01).reciprocal());
+            const beitrag = farbe.rgb.mul(nl.mul(abst)).mul(this._punktLichtBrdf(Te, N, L, P.negate().normalize(), nl));
+            const term = Te.select(bedingung, beitrag, Te.vec3(0));
+            summe = summe ? summe.add(term) : term;
+        }
+        return summe;
+    }
+
+    // DIE EINE BRDF EINES PUNKTLICHTS (K11; das Licht des Auges und jeder Platz des Licht-Pools): r184s Lambert + GGX
+    // ausgeschrieben — BRDF_Lambert, BRDF_GGX und F_Schlick tragen kein Layout (ein Fn-Aufruf ohne Layout baut seinen Rumpf erst
+    // im Compiler, der Stoff-Graph sieht ihn nicht), D_GGX und V_GGX_SmithCorrelated tragen ihres; die Stoff-Werte aus
+    // `diffuseColor` · `metalness` · `specularColor` · `specularF90` (wie r184 sie mischt — `three/tsl` der Seite kennt
+    // `diffuseContribution`/`specularColorBlended` nicht). N, L, V normiert im Blick-Raum, `nl` = N·L geklemmt. Steht das
+    // Licht am Auge (V === L), ist H = L: N·H = N·V = N·L und V·H = 1.
+    _punktLichtBrdf(Te, N, L, V, nl) {
+        const alb = Te.diffuseColor.rgb;
+        const met = Te.metalness;
+        const a = Te.roughness.pow2();
+        const f0 = Te.mix(Te.specularColor, alb, met);
+        let fres;
+        let nv = nl;
+        let nh = nl;
+        if (V === L)
+            fres = Te.float(Math.pow(2, -5.55473 - 6.98316)); // r184 F_Schlick bei V·H = 1
+        else {
+            const H = L.add(V).normalize();
+            const vh = V.dot(H).clamp();
+            nv = N.dot(V).clamp();
+            nh = N.dot(H).clamp();
+            fres = Te.exp2(vh.mul(-5.55473).sub(6.98316).mul(vh)); // r184 F_Schlick: 2^((−5,55473 · V·H − 6,98316) · V·H)
+        }
+        const F = f0.mul(fres.oneMinus()).add(Te.specularF90.mul(fres));
+        const glanz = F.mul(Te.V_GGX_SmithCorrelated({ alpha: a, dotNL: nl, dotNV: nv })).mul(
+            Te.D_GGX({ alpha: a, dotNH: nh })
+        );
+        return alb
+            .mul(met.oneMinus())
+            .mul(1 / Math.PI)
+            .add(glanz); // r184 BRDF_Lambert + GGX
     }
 
     // DER RAUSCH-ATLAS (Welle G, der Boden-Stoff): das RAUSCH-GESETZ als EINE Textur, gelesen von zwei Knoten-Bauern, die
@@ -35728,12 +35780,16 @@ class AnazhRealm {
         }
     }
 
-    // Die Namen eines Eintrags im Verzeichnis: jeder wahre Schlüssel seiner Affordanzen und „rauch", wenn er einen Kamin trägt.
+    // Die Namen eines Eintrags im Verzeichnis: jeder wahre Schlüssel seiner Affordanzen, „rauch", wenn er einen Kamin trägt,
+    // „glut", wenn er eine Brenn-Fläche trägt (`_glutFlaeche`; Leser: der Klang), und „licht", wenn er eine Leuchtquelle ist
+    // (`_lichtDatum`; Leser: der Licht-Takt `_leuchtTakt`).
     _blockerNamen(entry) {
         const out = [];
         const a = entry.affordances;
         if (a && typeof a === "object") for (const k in a) if (a[k]) out.push(k);
         if ((entry.userData && entry.userData.rauchQuelle) || entry.chimney) out.push("rauch");
+        if (this._glutFlaeche(entry) > 0) out.push("glut");
+        if (this._lichtDatum(entry)) out.push("licht");
         return out;
     }
 
@@ -53634,37 +53690,32 @@ class AnazhRealm {
         this._tickPortalLicht(naeh);
     }
 
+    // DAS LICHT DES TORS (K11): das Lab-portalLight ist ein Bürger des Licht-Pools — das wache Tor (das nächste aktive) trägt
+    // sein Emitter-Datum aus porta GLUT_GESETZ (Farbe, Reichweite, Abfall, Höhe am Spring-Punkt) und die Stärke des Labors
+    // `glutIntensity(act, puls)`; der Licht-Takt liest es (`_leuchtQuellen`). Kein Szenen-Licht (bis K11 ein PointLight, das
+    // beim ersten Tor in die Szene trat und dort auf 0 blieb). Ohne porta-Gesetz trägt das Tor kein Licht.
     _tickPortalLicht(rec) {
-        // V18.491.126 GLUT_GESETZ — Lab+Host portal PointLight (fail-soft Literale).
-        let li = this._portalLicht;
-        if (!rec) {
-            if (li) li.intensity = 0;
-            return;
-        }
         const PC = globalThis.__portaCore;
-        const G = (PC && PC.GLUT_GESETZ) || {};
-        if (!li) {
-            // Lab-Werte (porta.js / GLUT_GESETZ: PointLight color, Reichweite, decay).
-            li = this._portalLicht = new THREE.PointLight(
-                G.color != null ? G.color : 0xffd9a0,
-                0,
-                G.dist != null ? G.dist : 14,
-                G.decay != null ? G.decay : 2
-            );
-            li.castShadow = false;
-            this.state.scene.add(li);
+        const G = PC && PC.GLUT_GESETZ;
+        if (!rec || !G || typeof PC.glutIntensity !== "function") {
+            this._portalLeuchte = null;
+            return;
         }
         const e = rec.entry;
         const mu = rec.tor.mu;
         const sc = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-        const ySpring = G.ySpring != null ? G.ySpring : 0.55;
-        li.position.set(e.position.x, e.position.y - 0.5 + mu.springY * ySpring * sc, e.position.z);
-        const pulse = rec.u && rec.u.pulse ? rec.u.pulse.value : 1;
-        // V18.491.160 GLUT_GESETZ cold fallback fail-soft (i0/iOpen/pulseBase/pulseAmp; live glutIntensity first)
-        li.intensity =
-            PC && typeof PC.glutIntensity === "function"
-                ? PC.glutIntensity(rec._act, pulse)
-                : ((G.i0 || 0.3) + rec._act * (G.iOpen || 3.4)) * ((G.pulseBase || 0.8) + (G.pulseAmp || 0.28) * pulse);
+        const q =
+            this._portalLeuchte ||
+            (this._portalLeuchte = {
+                quelle: "tor",
+                L: { farbe: G.color, staerke: 0, reichweiteM: G.dist, abfall: G.decay },
+                masse: 1,
+                phase: 0,
+            });
+        q.x = e.position.x;
+        q.y = e.position.y - 0.5 + mu.springY * G.ySpring * sc;
+        q.z = e.position.z;
+        q.L.staerke = PC.glutIntensity(rec._act, rec.u && rec.u.pulse ? rec.u.pulse.value : 1);
     }
 
     // Eine Membran für einen Eintrag bauen (fail-LAUT: schlägt der TSL-Bau
@@ -77302,6 +77353,8 @@ class AnazhRealm {
                 const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
                 if (_sway) mat.positionNode = TSL.positionLocal.add(_sway);
             }
+            // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
+            this._leuchtStoff(mat, mp);
             mat.userData = mat.userData || {};
             mat.userData.foundryKind = kind;
             mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
@@ -92212,6 +92265,152 @@ class AnazhRealm {
         atmo.augenLicht.value.set(A.farbe).multiplyScalar(I > 1e-4 ? I : 0);
     }
 
+    // DER LICHT-TAKT (K11) — der EINE Schreiber des Licht-Pools und der Fenster-Glut, je Bild vor dem Render (`_gameLoopTick`).
+    // Die Plätze gehen an die nächsten Leuchtquellen im Umkreis des Auges (`_leuchtQuellen`; neu gewählt je `wahlS` oder nach
+    // `wahlM` Weg), die Stärke je Bild: das Emitter-Datum des Kerns über die EINE Übersetzung Labor → Welt
+    // (`_laborLichtStaerke`) × Masse (die Fläche der Glut) × Flackern auf der Wind-Uhr (fachwerk `lichtFlackern`) × Zeitplan
+    // (`_lichtZeitplan`). Die Lage steht im Blick-Raum des Auges (der Stoff rechnet mit `positionView`). Unabhängig vom Klang.
+    // Lesbar für Linsen: `_leuchtPool.plaetze` (Quelle, Welt-Ort, Stärke, Reichweite, Abfall, lineare Farbe).
+    _leuchtTakt() {
+        const st = this.state;
+        const atmo = st.atmoUniforms;
+        const cam = st.camera;
+        if (!atmo || !atmo.lichtLage || !cam) return;
+        const LP = AnazhRealm.LICHT_POOL;
+        const FC = globalThis.__fachwerkCore;
+        const LG = FC && FC.LICHT_GESETZ;
+        if (LG && LG.fenster)
+            atmo.fensterGlut.value.set(LG.fenster.farbe).multiplyScalar(this._lichtZeitplan(LG.fenster.zeit));
+        const pool =
+            this._leuchtPool || (this._leuchtPool = { t: -Infinity, x: NaN, y: NaN, z: NaN, wahl: [], plaetze: [] });
+        const cp = cam.position;
+        const jetzt = performance.now() / 1000;
+        if (jetzt - pool.t >= LP.wahlS || !(Math.hypot(cp.x - pool.x, cp.y - pool.y, cp.z - pool.z) < LP.wahlM)) {
+            pool.t = jetzt;
+            pool.x = cp.x;
+            pool.y = cp.y;
+            pool.z = cp.z;
+            const q = this._leuchtQuellen(cp.x, cp.z, LP.umkreisM);
+            q.sort((a, b) => a.d2 - b.d2);
+            pool.wahl = q.slice(0, LP.plaetze);
+        }
+        cam.updateMatrixWorld();
+        const inv = this._leuchtBlick || (this._leuchtBlick = new THREE.Matrix4());
+        inv.copy(cam.matrixWorld).invert();
+        const v = this._leuchtV || (this._leuchtV = new THREE.Vector3());
+        const c = this._leuchtC || (this._leuchtC = new THREE.Color());
+        const t = this._windZeit();
+        pool.plaetze.length = 0;
+        for (let k = 0; k < atmo.lichtLage.length; k++) {
+            const q = pool.wahl[k];
+            const lage = atmo.lichtLage[k].value;
+            const farbe = atmo.lichtFarbe[k].value;
+            const L = q && q.L;
+            const fl =
+                L && L.flacker && FC && typeof FC.lichtFlackern === "function"
+                    ? L.flacker.amp * FC.lichtFlackern(L, t, q.phase)
+                    : 0;
+            const I = L
+                ? this._laborLichtStaerke(L.staerke * (1 + fl), L.reichweiteM, L.abfall) *
+                  q.masse *
+                  this._lichtZeitplan(L.zeit)
+                : 0;
+            if (!(I > 0)) {
+                lage.set(0, 0, 0, 0);
+                farbe.set(0, 0, 0, 2);
+                continue;
+            }
+            v.set(q.x, q.y, q.z).applyMatrix4(inv);
+            lage.set(v.x, v.y, v.z, L.reichweiteM);
+            c.set(L.farbe);
+            farbe.set(c.r * I, c.g * I, c.b * I, L.abfall);
+            pool.plaetze.push({
+                quelle: q.quelle,
+                x: q.x,
+                y: q.y,
+                z: q.z,
+                staerke: I,
+                reichweite: L.reichweiteM,
+                abfall: L.abfall,
+                farbe: [c.r, c.g, c.b],
+            });
+        }
+    }
+
+    // DIE LEUCHTQUELLEN um (x, z) im Umkreis R (K11): jeder Eintrag des Verzeichnisses „licht" (`_blockerMit`, gestempelt beim
+    // Eintritt) mit seinem Emitter-Datum (`_lichtDatum`) — die Masse ist die Fläche seiner Glut über dem Glutbett der
+    // Studio-Feuerstelle (klang `bettRefM`, der Bezug des Knisterns), ohne Glut 1 —, die Laterne eines Plans (K10) als Eintrag
+    // mit Datum, und das wache Tor (`_portalLeuchte`). Die Lichthöhe liest das Datum (`hoeheM` über dem Boden des Eintrags).
+    _leuchtQuellen(x, z, R) {
+        const out = [];
+        const bett = AnazhRealm._umweltGesetz().UMWELT.stimmen.glut.bettRefM;
+        const bezug = (Math.PI / 4) * bett * bett;
+        for (const e of this._blockerMit("licht")) {
+            const p = e.position;
+            if (!p) continue;
+            const d2 = (p.x - x) * (p.x - x) + (p.z - z) * (p.z - z);
+            if (d2 > R * R) continue;
+            const L = this._lichtDatum(e);
+            if (!L) continue;
+            const a = this._glutFlaeche(e);
+            const sk = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+            out.push({
+                quelle: e.type,
+                x: p.x,
+                y: p.y - 0.5 + (L.hoeheM || 0) * sk,
+                z: p.z,
+                L,
+                masse: a > 0 ? a / bezug : 1,
+                phase: (((p.x * 12.9898 + p.z * 78.233) % 6.2832) + 6.2832) % 6.2832,
+                d2,
+            });
+        }
+        const tor = this._portalLeuchte;
+        if (tor) {
+            const d2 = (tor.x - x) * (tor.x - x) + (tor.z - z) * (tor.z - z);
+            if (d2 <= R * R) out.push(Object.assign({ d2 }, tor));
+        }
+        return out;
+    }
+
+    // DAS EMITTER-DATUM eines Eintrags (K11): die Zeile `fx.licht` des Studio-Rezepts seiner Gestalt (`studioGestalt` im
+    // Gesetzbuch fachwerk, synchron geladen — die Feuerstelle trägt LICHT_GESETZ.feuer, dasselbe Rezept, das das Buch der Welt
+    // reist: recipes.json), sonst für jede Glut (Brenn-Fläche > 0) das Herdfeuer des Gesetzbuchs. null: keine Leuchtquelle.
+    _lichtDatum(entry) {
+        const FC = globalThis.__fachwerkCore;
+        if (!entry || !FC || !FC.PRESETS || !FC.LICHT_GESETZ) return null;
+        const bp = this.state.blueprints && typeof entry.type === "string" ? this.state.blueprints[entry.type] : null;
+        const pre = bp && typeof bp.studioGestalt === "string" ? FC.PRESETS[bp.studioGestalt] : null;
+        if (pre && pre.fx && pre.fx.licht) return pre.fx.licht;
+        return this._glutFlaeche(entry) > 0 ? FC.LICHT_GESETZ.feuer : null;
+    }
+
+    // DIE EINE ÜBERSETZUNG LABOR → WELT eines Punktlichts (K11): das r128-Labor rechnet ohne 1/π-Normierung (`LEGACY_LICHT`)
+    // mit dem Legacy-Abfall (1 − d/R)^abfall, r184 physikalisch mit 1/max(d^abfall, 0,01) · (1 − (d/R)⁴)². Gleich gemacht in
+    // der Karten-Distanz `LICHT_POOL.karteM` (2 m, wo das Licht des Auges die Karte eicht): dieselbe Bestrahlung dort.
+    _laborLichtStaerke(I, R, abfall) {
+        const dk = AnazhRealm.LICHT_POOL.karteM;
+        if (!(I > 0) || !(R > dk)) return 0;
+        const fenster = Math.pow(1 - Math.pow(dk / R, 4), 2);
+        return (
+            (AnazhRealm.LEGACY_LICHT * I * Math.pow(1 - dk / R, abfall) * Math.max(Math.pow(dk, abfall), 0.01)) /
+            fenster
+        );
+    }
+
+    // DER ZEITPLAN EINER LEUCHTQUELLE (K11, fachwerk LICHT_GESETZ `zeit`: mittag · morgen · abend · nacht; ohne Zeitplan 1)
+    // auf der Tag-Achse der Welt: der Nacht-Anteil der Sonne (`_nachtAnteil`: 0 ab ~15° Sonnenhöhe, 1 am Horizont und darunter)
+    // führt stückweise linear vom Mittag über die Dämmerung (Morgen vor, Abend nach der Mitte des Tages) in die Nacht.
+    _lichtZeitplan(z) {
+        if (!z) return 1;
+        const t = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
+        const n = this._nachtAnteil(this._sonnenWinkel(t));
+        const daemmer = ((t % 1) + 1) % 1 < 0.5 ? z.morgen : z.abend;
+        return n <= 0.5
+            ? z.mittag + (daemmer - z.mittag) * (n / 0.5)
+            : daemmer + (z.nacht - daemmer) * ((n - 0.5) / 0.5);
+    }
+
     // DER HIMMEL AM AUGE (0…1): der Anteil des Himmels-Lichts am Ort (x, y, z) — gelesen von der Himmels-Sicht des Bodens
     // (`aHimmel`) um ihn, gewichtet 1/(d² + ¼) im Umkreis `AUGEN_LICHT.umkreisM`. Steht der Ort in keiner Luft-Box eines
     // Höhlen-Knotens (`_hoehlenKnoten`, dieselbe Probe wie die Höhlen-Sicht), ist er Himmels-Luft: 1. Die Kosten folgen dem
@@ -100135,6 +100334,8 @@ class AnazhRealm {
         // Steht die Post-Pipeline, rendert sie die Szene; bei postProcessingFailed direkter
         // renderer.render() — nie ein schwarzer Schirm.
         const pp = this._ensurePostProcessing();
+        // DER LICHT-TAKT (K11): die Plätze des Licht-Pools und die Fenster-Glut für dieses Bild (die Kamera steht)
+        this._leuchtTakt();
         // Die Kehraus-Marke vor dem Frame: was dieser Frame zeichnet, trägt einen höheren Zähler.
         const zaehlerVor = this._gpuKehrausMarke();
         // Das Szene-RT bleibt für immer auf Skala 1 — kein Laufzeit-Realloc: die Render-Objekte (auch die mit noch
@@ -100595,6 +100796,12 @@ AnazhRealm.AUGEN_LICHT = Object.freeze({
     umkreisM: 4,
     neuM: 0.25,
 });
+// DER LICHT-POOL (K11, `_leuchtTakt`, `_leuchtStoff`): `plaetze` Punktlicht-Plätze ab dem Boot (eine feste Zahl geteilter
+// Uniforms — ein Wechsel der Quellen baut kein Programm) an den nächsten Leuchtquellen im `umkreisM` um das Auge (die Reichweite
+// eines Feuers 9 m, einer Laterne 12 m, eines Tors 14 m — dahinter trägt keine Quelle zum Bild nah am Auge bei), neu gewählt
+// je `wahlS` Sekunden oder nach `wahlM` Metern Weg; `karteM` ist die Distanz der Übersetzung Labor → Welt
+// (`_laborLichtStaerke`).
+AnazhRealm.LICHT_POOL = Object.freeze({ plaetze: 4, umkreisM: 48, wahlS: 0.25, wahlM: 1, karteM: 2 });
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;

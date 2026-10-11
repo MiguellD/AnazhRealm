@@ -407,9 +407,9 @@
         // Eingangs-Spielraum, ueberabtastung gegen Aliasing der Saettigung.
         spitze: { linearBisDb: -6, deckeDb: -1, kopfraumDb: 12, punkte: 8193, ueberabtastung: "4x" },
         // DAS OHR des Wirts — Kosten je Frame, nie die Weltgroesse: der Hoer-Ring (Mitte + radien × richtungen,
-        // Meter) wird mit probenJeFrame Punkten je Frame abgetastet, die Glut-Bauten mit bautenJeFrame Eintraegen
-        // je Frame (Hoerweite + glutRandM); die Mischung laeuft im Takt mischSek (Sekunden).
-        ohr: { radien: [4, 10, 22, 40], richtungen: 8, probenJeFrame: 2, bautenJeFrame: 48, glutRandM: 20, mischSek: 0.1 },
+        // Meter) wird mit probenJeFrame Punkten je Frame abgetastet (die Glut liest der Wirt aus seinem Verzeichnis); die
+        // Mischung laeuft im Takt mischSek (Sekunden).
+        ohr: { radien: [4, 10, 22, 40], richtungen: 8, probenJeFrame: 2, mischSek: 0.1 },
         stimmen: {
             // Wind ueber offenem Land: v = vMin + (vMax − vMin)·windFeld, vEff = v·Boee am Ohr.
             wind:   { textur: ["wind"], sr: 22050, sek: 9.7, saat: 11, quellen: 2, spreizung: 0.6, filter: "bandpass",
