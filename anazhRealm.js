@@ -17591,27 +17591,31 @@ class AnazhRealm {
         const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
         const emoF = opts && Number.isFinite(opts.emoFaktor) && opts.emoFaktor > 0 ? opts.emoFaktor : 1;
         const gs = this._gaitGesetz(rig, v);
-        // DER ANLAUF (K07): der Gang beginnt aus dem Stand — ein Bein mitten in seinem Stand (dz = 0, dort steht der
-        // ruhende Fuß), das andere mitten im Schwung. Vorher lief die Phase vom Halt weiter: der Stand-Fuß lockte unter der
-        // Hüfte, das Gesetz führte ihn um S/2 weiter zurück, als er stand — er lag jenseits der Reichweite, das Becken sank
-        // 9 cm oder der Lock löste (2 der 3 Löser beim Gehen lagen im Anlauf).
-        if (!(halter._gaitW > 0.05) && gs.omega > 0) {
-            const TAU = 2 * Math.PI;
-            const mitte = TAU - Math.PI * gs.tast;
-            const alt = Number.isFinite(halter.walkPhase) ? halter.walkPhase : 0;
-            const basis = Math.floor(alt / TAU) * TAU;
-            const u = alt - basis;
-            const nah = (z) => Math.abs(((u - z + 3 * Math.PI) % TAU) - Math.PI);
-            halter.walkPhase = basis + (nah(mitte) <= nah(mitte - Math.PI) ? mitte : mitte - Math.PI);
+        const g =
+            halter._gait || (halter._gait = { w: 0, amp: 1, ik: null, S: 0, tast: 0.5, auf: Math.PI, omega: 0, L: 0 });
+        // DER STEHENDE FUSS HÄLT (K07, tetrapoda `gangPhaseHaelt`): ändert sich die Zeile (Tempo, Gangart, Emotion), setzt
+        // sich die Phase so, dass das stehende Bein sein Fuß-Ziel behält; aus dem Stand (S0 = 0) setzt das nähere Bein in
+        // der Mitte seines Stands ein (der Anlauf). Vorher lief die Phase weiter: der gelockte Fuß lag nach dem Tempo-Sprung
+        // hinter dem Ziel des Laufs, das Becken reichte ihn nicht, der Lock löste (je 1 Löser bei 5,16 und 6,75 m/s).
+        const S1 = gs.S / emoF;
+        if (gs.omega > 0) {
+            const steht = !(halter._gaitW > 0.05) || !(g.S > 0);
+            const S0 = steht ? 0 : g.S;
+            if (steht || Math.abs(S0 - S1) > 1e-9 || g.tast !== gs.tast)
+                halter.walkPhase = window.__tetrapodaCore.gangPhaseHaelt(
+                    Number.isFinite(halter.walkPhase) ? halter.walkPhase : 0,
+                    S0,
+                    g.tast,
+                    S1,
+                    gs.tast
+                );
         }
         halter.walkPhase = (halter.walkPhase || 0) + d * gs.omega * emoF;
         halter._gaitW = this._gaitBlendStep(halter._gaitW, v, d);
-        const g =
-            halter._gait || (halter._gait = { w: 0, amp: 1, ik: null, S: 0, tast: 0.5, auf: Math.PI, omega: 0, L: 0 });
         g.w = halter._gaitW;
         // das Fuß-Ziel des Gesetzes: der Fußweg im Stand (die Emotion reist als Kadenz — bei gleichem Weg kürzt sie den
         // Schritt, der Fuß im Stand bleibt stehen), der Tastgrad, die Phase des Aufsetzens (2π·(1 − Tastgrad)), die Beinlänge
-        g.S = gs.S / emoF;
+        g.S = S1;
         g.tast = gs.tast;
         g.hub = gs.hub;
         g.auf = 2 * Math.PI * (1 - gs.tast);

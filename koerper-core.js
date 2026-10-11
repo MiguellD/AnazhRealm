@@ -551,9 +551,9 @@
                         // -- Schrittlaenge je Zyklus L*(schrittBasis + schrittFroude*
                         // v/sqrt(g*L)) mit L = gebaute Beinlaenge, der Tastgrad vom
                         // Gehen (0.6) zum Laufen (0.39) um Fr = laufFroude (Alexander
-                        // 2004), maxWinkel deckelt den Fussweg (2*L*tan: +-29 Grad
-                        // Bein-Winkel; im Lauf faellt der Tastgrad mit dem Tempo,
-                        // Weyand 2000), hub*L hebt den Fuss im Schwung (laufend
+                        // 2004), maxWinkel deckelt den Fussweg (2*L*tan: +-27 Grad
+                        // Bein-Winkel: die Huefte sinkt im Lauf <= 0.25 L; im Lauf
+                        // faellt der Tastgrad mit dem Tempo, Weyand 2000), hub*L hebt den Fuss im Schwung (laufend
                         // hubLauf*L), beckenHub*L hebt das Becken ueber der Mitte des
                         // Stands (Gard 2004: 4-5 cm; tetrapoda gangBecken). Geeicht
                         // auf 1.34 m/s ~ 1.9 Schritte/s bei 0.7 m und 6 m/s ~ 3
@@ -565,7 +565,7 @@
                             tastgrad: 0.6,
                             tastgradLauf: 0.39,
                             laufFroude: 0.5,
-                            maxWinkel: 0.5,
+                            maxWinkel: 0.47,
                             hub: 0.12,
                             hubLauf: 0.3,
                             hubForm: 0.5,

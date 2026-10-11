@@ -20,7 +20,7 @@ function ankleYFromAngles(hx,kr){return -(L1+L2*Math.cos(kr))*Math.cos(hx)+L2*Ma
 var G_BUEHNE=44;
 var _TC=window.__tetrapodaCore,_GZ0=window.__koerperCore.bewegung&&window.__koerperCore.bewegung.gang;
 // jedes Feld der Zeile ist Pflicht (fehlt eines, faehrt kein stiller Tier-Gang); das Becken traegt tetrapoda gangBecken
-if(!_TC||typeof _TC.gangSchritt!=='function'||typeof _TC.gangFuss!=='function'||typeof _TC.gangBecken!=='function'||!_GZ0||!['schrittBasis','schrittFroude','tastgrad','tastgradLauf','laufFroude','maxWinkel','hub','hubLauf','hubForm','beckenHub'].every(function(k){return isFinite(_GZ0[k]);}))throw new Error('Kern-Pflicht: tetrapoda gangSchritt/gangFuss/gangBecken + koerper fx.bewegung.gang');
+if(!_TC||typeof _TC.gangSchritt!=='function'||typeof _TC.gangFuss!=='function'||typeof _TC.gangBecken!=='function'||typeof _TC.gangPhaseHaelt!=='function'||!_GZ0||!['schrittBasis','schrittFroude','tastgrad','tastgradLauf','laufFroude','maxWinkel','hub','hubLauf','hubForm','beckenHub'].every(function(k){return isFinite(_GZ0[k]);}))throw new Error('Kern-Pflicht: tetrapoda gangSchritt/gangFuss/gangBecken/gangPhaseHaelt + koerper fx.bewegung.gang');
 var _GZ=Object.assign({},_GZ0,{g:G_BUEHNE,vMax:Infinity});
 function gangGesetz(v,Lg){var gs=_TC.gangSchritt(v,Lg,_GZ);return{cad:gs.omega/(2*Math.PI),omega:gs.omega,S:gs.S,tast:gs.tast,hubE:gs.hub*Lg};}
 // der Fuss zur Studio-Phase ph (0..1, der Stand zuerst wie anklePhase): die Phase des Gesetzes beginnt mit dem Schwung;
@@ -1868,6 +1868,11 @@ function playGait(dt,t){
   // wird kuerzer und schneller, statt zu gleiten); die Huefte sinkt, wo der Fussweg sonst die Reichweite des Beins sprengt
   var gs=gangGesetz(sp,(L1+L2)*cs*_mix(1,0.66,cb)),duty=gs.tast;
   gs.hubE=gs.hubE/_mix(1,0.66,cb);                     // der Hub misst am gestreckten Bein: die Bodenfreiheit hockt nicht mit
+  // DER STEHENDE FUSS HAELT (K07, tetrapoda gangPhaseHaelt wie in der Welt): aendert sich die Zeile, behaelt das stehende
+  // Bein sein Fuss-Ziel; aus dem Stand setzt das naehere Bein in der Mitte seines Stands ein (die Phase zaehlt ab dem Aufsetzen)
+  var g0=play._gs,S0=g0&&g0.S>0?g0.S:0,t0=g0?g0.tast:gs.tast;
+  if(gs.omega>0&&(!S0||Math.abs(S0-gs.S)>1e-9||t0!==gs.tast)){var u1=_TC.gangPhaseHaelt(2*Math.PI*(play.gaitPhase+1-t0),S0,t0,gs.S,gs.tast);play.gaitPhase=((u1/(2*Math.PI)-1+gs.tast)%1+1)%1;}
+  play._gs=gs.omega>0?gs:null;
   play.gaitPhase=(play.gaitPhase+gs.cad*dt)%1;var ph=play.gaitPhase,T=Math.PI*2,aS=Math.cos(ph*T);
   var standY=standYBase*(1-g*0.16);
   standY=_mix(standY,standYBase*0.66,cb);                                               // crouch-tiefe

@@ -1421,6 +1421,31 @@
         }
         return Math.max(0, geh + (lau - geh) * lauf);
     }
+    // DER STEHENDE FUSS HÄLT (K07, additiv — die Tiere lesen es nicht): ändert sich die Zeile des Gangs (Tempo, Gangart,
+    // Kadenz — Fußweg S0 → S1, Tastgrad t0 → t1), setzt sich die Phase so, dass das stehende Bein (das vordere, wenn zwei
+    // stehen) sein Fuß-Ziel dz behält — der Fuß steht in der Welt, das Gesetz folgt ihm, nicht umgekehrt. Vorher lief die
+    // Phase weiter: beim Tempo-Sprung 1,15 → 5,16 m/s lag der gelockte Fuß 15 cm hinter dem Ziel des Laufs, das Becken
+    // reichte ihn nicht mehr, der Lock löste (gate:tier-gang, Lock-Löser). Der Anlauf aus dem Stand ist derselbe Fall: im
+    // Stand (S0 = 0) stehen beide Füße bei dz = 0, das nähere Bein setzt in der Mitte seines Stands ein. Zurück kommt die
+    // Phase des ersten Beins, um weniger als π verschoben (die Zählung der Zyklen bleibt).
+    function gangPhaseHaelt(ph, S0, t0, S1, t1) {
+        var TAU = 2 * Math.PI;
+        if (!(S1 > 0) || !isFinite(ph)) return ph;
+        var sw0 = t0 > 0 && t0 < 1 ? TAU * (1 - t0) : Math.PI,
+            sw1 = t1 > 0 && t1 < 1 ? TAU * (1 - t1) : Math.PI;
+        var u = ((ph % TAU) + TAU) % TAU,
+            beste = null;
+        for (var b = 0; b < 2; b++) {
+            var ub = (u + b * Math.PI) % TAU;
+            if (S0 > 0 && ub < sw0) continue;
+            var dz = S0 > 0 ? S0 / 2 - (S0 * (ub - sw0)) / (TAU - sw0) : 0;
+            var s = Math.max(0, Math.min(1, (S1 / 2 - dz) / S1));
+            var d = sw1 + s * (TAU - sw1) - b * Math.PI - u;
+            d = ((((d + Math.PI) % TAU) + TAU) % TAU) - Math.PI;
+            if (!beste || (S0 > 0 ? dz > beste.dz : Math.abs(d) < Math.abs(beste.d))) beste = { dz: dz, d: d };
+        }
+        return beste ? ph + beste.d : ph;
+    }
 
     // ════════════════════════════════════════════════════════════════════
     // DAS STEUER-GESETZ (Welle L, additiv): EIN Steuer-Schritt je Tier und Takt. Befund der Leben-Prüfung 06.10.: die
@@ -2905,6 +2930,7 @@
         gangSchritt: gangSchritt,
         gangFuss: gangFuss,
         gangBecken: gangBecken,
+        gangPhaseHaelt: gangPhaseHaelt,
         STEUER_GESETZ: STEUER_GESETZ,
         tempoEinheit: tempoEinheit,
         sprintTempo: sprintTempo,

@@ -253,7 +253,6 @@ const LEIB = (k) => {
         const N = 180;
         const spur = [[], []],
             leib = [];
-        const kl = s._schrittKlang;
         let ton0 = null,
             ph0 = null;
         for (let i = 0; i < N; i++) {
