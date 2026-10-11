@@ -1,0 +1,12 @@
+const fs = require("fs");
+const d = "C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/bk/";
+const src = fs.readFileSync(d + "v0-wie.js", "utf8");
+const AO = '            if (opts.himmelsSicht) mat.aoNode = THREE.TSL.attribute("aHimmel", "float");\n';
+const NO = '                    const _hS = opts.himmelsSicht ? _Tn.attribute("aHimmel", "float") : null;\n';
+for (const a of [AO, NO]) if (src.split(a).length !== 2) throw new Error("Anker nicht eindeutig: " + a.slice(0, 60));
+const ohneAO = src.replace(AO, "");
+const alteN = src.replace(NO, "                    const _hS = null;\n");
+fs.writeFileSync(d + "v1-ohneAO.js", ohneAO);
+fs.writeFileSync(d + "v2-alteNormale.js", alteN);
+fs.writeFileSync(d + "v3-ohneBeide.js", alteN.replace(AO, ""));
+console.log("ok", ohneAO.length, alteN.length);

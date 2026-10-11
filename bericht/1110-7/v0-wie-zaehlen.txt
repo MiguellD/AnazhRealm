@@ -1,0 +1,198 @@
+{
+ "gesamt": {
+  "cmd": 17,
+  "tris": 129200
+ },
+ "passe": {
+  "OrthographicCamera": {
+   "cmd": 2,
+   "tris": 2
+  },
+  "haupt": {
+   "cmd": 8,
+   "tris": 65857
+  },
+  "k0": {
+   "cmd": 6,
+   "tris": 56235
+  },
+  "k1": {
+   "cmd": 1,
+   "tris": 7106
+  }
+ },
+ "klassen": [
+  {
+   "klasse": "spieler",
+   "stufe": null,
+   "art": null,
+   "cmd": 5,
+   "tris": 37964,
+   "je": {
+    "k0": 5
+   },
+   "jeTris": {
+    "k0": 37964
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "fern-ring",
+   "stufe": null,
+   "art": null,
+   "cmd": 3,
+   "tris": 17280,
+   "je": {
+    "haupt": 3
+   },
+   "jeTris": {
+    "haupt": 17280
+   },
+   "inst": 3,
+   "exemplare": 2,
+   "dMin": 12,
+   "dMax": 27
+  },
+  {
+   "klasse": "bodenSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 3,
+   "tris": 44278,
+   "je": {
+    "haupt": 1,
+    "k0": 1,
+    "k1": 1
+   },
+   "jeTris": {
+    "haupt": 18901,
+    "k0": 18271,
+    "k1": 7106
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 300,
+   "dMax": 300
+  },
+  {
+   "klasse": "Render Pipeline",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 1,
+   "je": {
+    "OrthographicCamera": 1
+   },
+   "jeTris": {
+    "OrthographicCamera": 1
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "TRAA",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 1,
+   "je": {
+    "OrthographicCamera": 1
+   },
+   "jeTris": {
+    "OrthographicCamera": 1
+   },
+   "inst": 0,
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  },
+  {
+   "klasse": "himmel",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 1984,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 1984
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 0,
+   "dMax": 0
+  },
+  {
+   "klasse": "himmel-sonne",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 480,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 480
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 395,
+   "dMax": 395
+  },
+  {
+   "klasse": "farWater",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 17112,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 17112
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 25,
+   "dMax": 25
+  },
+  {
+   "klasse": "wasserSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 1,
+   "tris": 10100,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 10100
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 300,
+   "dMax": 300
+  }
+ ],
+ "unbenannt": [],
+ "programme": {
+  "vertex": 23,
+  "fragment": 22,
+  "familien": 20,
+  "pipelines": 23
+ },
+ "frameMs": 10,
+ "kaskaden": 2,
+ "kamera": [
+  300,
+  11.5,
+  0
+ ],
+ "ms": 13
+}

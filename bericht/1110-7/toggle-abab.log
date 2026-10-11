@@ -1,0 +1,15 @@
+17:19:59 ABAB START
+17:20:17 v0-wie  bank 6.46 6.49 6.5   takt 1678 MHz 75 C (n=34)  prog 19/18/17/19
+17:20:35 v1-ohneAO  bank 6.35 6.35 6.35   takt 1701 MHz 79 C (n=33)  prog 20/19/17/20
+17:20:52 v0-wie  bank 6.44 6.45 6.45   takt 1704 MHz 81 C (n=33)  prog 20/19/17/20
+17:21:10 v1-ohneAO  bank 6.47 6.47 6.47   takt 1692 MHz 83 C (n=34)  prog 20/19/17/20
+17:21:28 v0-wie  bank 6.55 6.55 6.55   takt 1697 MHz 84 C (n=34)  prog 20/19/17/20
+17:21:46 v1-ohneAO  bank 6.41 6.43 6.43   takt 1683 MHz 85 C (n=34)  prog 20/19/17/20
+17:22:04 v0-wie  bank 6.5 6.49 6.49   takt 1699 MHz 85 C (n=34)  prog 20/19/17/20
+17:22:21 v4-s3  bank 6.41 6.41 6.4   takt 1679 MHz 85 C (n=34)  prog 21/20/18/21
+17:22:39 v0-wie  bank 6.49 6.48 6.5   takt 1695 MHz 84 C (n=33)  prog 21/20/18/21
+17:22:57 v4-s3  bank 6.41 6.4 6.41   takt 1683 MHz 84 C (n=33)  prog 21/20/18/21
+17:23:14 v0-wie  bank 6.47 6.48 6.47   takt 1692 MHz 83 C (n=34)  prog 21/20/18/21
+17:23:32 v4-s3  bank 6.41 6.39 6.4   takt 1684 MHz 83 C (n=33)  prog 21/20/18/21
+17:23:49 v0-wie  bank 6.49 6.48 6.49   takt 1683 MHz 83 C (n=34)  prog 21/20/18/21
+17:23:57 ABAB ENDE

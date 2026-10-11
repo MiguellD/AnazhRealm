@@ -1,5 +1,9 @@
 # Bericht 1110-6 — die Prüfbühne als GPU-Messort im EINEN Instrument
 
+> **Korrektur (1110-7):** Der Aufschlag „ab koerper-bild +0,19–0,27 ms“ ist der GPU-Takt (Leistungs-Deckel ~70 W,
+> 1680–1710 statt ~1770 MHz), nicht der Merge: S3 erreichte denselben Modus. Gemessen in EINER Sitzung kostet der Boden-Stoff
+> von koerper-bild 0,085 ms. Die Wiederholbarkeit der Bühne gilt bei gleichem Takt. Siehe `bericht/1110-7-boden-kosten.md`.
+
 **Urteil:**
 - **Der Ort ist gebaut und richtet:** `omen-messfolge --ort buehne` misst vier frische Boots derselben Seite je Pose mit einer
   Spanne von 0,015–0,075 ms (2σ höchstens 0,064 ms; Soll ≤ 0,1). Die Mess-Wiese lag mit demselben Urteil bei 0,40 / 1,63 ms.
