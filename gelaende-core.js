@@ -422,7 +422,10 @@
         }
         // T7a Tafelberge: slope-gated SMOOTH TERRACE — nur wo der Hang flach ist terrassieren, mit gerundeten Stufen
         // (smootherstep, C1-stetig); hartes `round(h/26)·26` stapelte auf steilen Flanken eine Ziehharmonika.
-        const mesaRegion = Math.max(0, Math.min(1, (n.noise2D(wx * 0.00034 + 13.7, wz * 0.00034 + 47.3) - 0.45) / 0.13));
+        const mesaRegion = Math.max(
+            0,
+            Math.min(1, (n.noise2D(wx * 0.00034 + 13.7, wz * 0.00034 + 47.3) - 0.45) / 0.13)
+        );
         if (mesaRegion > 0.001) {
             // Flatness aus dem Gradienten der DOMINANTEN glatten Struktur (cont0 λ7100 + tect λ1136; die gewarpten wx/wz
             // als Basis — der Warp variiert langsam, für ein Steilheits-GATE genügt das).

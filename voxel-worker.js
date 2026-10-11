@@ -52,8 +52,8 @@ importScripts((self.__anazhBase || "") + "phyto-core.js" + (__phytoV ? "?v=" + _
 
 // K09a — DAS GELÄNDE-GESETZBUCH (gelaende-core.js): die EINE 2D-Höhe, DIESELBE Datei wie der Main-Thread — kein
 // Spiegel. Der Worker reicht seinen `state` als Gelände-Lage (seed · noise · baseHeight · waterLevel ·
-// terrainSteepness · erosion · erosionTiles · tarns · macroAnker · erbgut · regionSize). Fehlt der Kern, lädt der
-// Worker nicht (fail-closed: der Main baut dann selbst und die Welt schreit über die Kern-Pflicht).
+// terrainSteepness · erosion · erosionTiles · tarns · macroAnker · erbgut · regionSize). Fehlt der Kern, wirft der
+// Worker beim Laden (fail-closed, nie still eine eigene Höhe).
 importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
 const G = self.__gelaendeCore;
 if (!G || typeof G.hoehe !== "function") throw new Error("voxel-worker: gelaende-core fehlt");

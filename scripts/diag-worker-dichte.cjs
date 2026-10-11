@@ -436,7 +436,13 @@ function zeige(rep) {
         for (const rep of berichte)
             for (const o of rep.orte || [])
                 for (const z of o.zeilen)
-                    abdruck.gitter.push({ welt: rep.welt, ort: o.id, lod: z.lod, main: z.shaMain, worker: z.shaWorker });
+                    abdruck.gitter.push({
+                        welt: rep.welt,
+                        ort: o.id,
+                        lod: z.lod,
+                        main: z.shaMain,
+                        worker: z.shaWorker,
+                    });
         // Das Prüfbühnen-Erbgut (Insel · Rampe · Bucht): seine Makro-Höhe mit demselben Abdruck.
         const bue = berichte.find((b) => b.welt === "buehne");
         abdruck.buehne = bue ? { seed: bue.seed, makro: bue.shaMakro, erbgut: bue.erbgut } : null;
