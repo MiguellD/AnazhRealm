@@ -590,9 +590,7 @@ async function auditStateAndMethods() {
                 "_caFpScratch", // Float32Array, `if (!fp || fp.length<…)`-realloc
                 "_caTickCount", // V18.292 — Fluss-Re-Mesh-Throttle-Zähler, `(x||0)+1` lazy-init
                 // Worldgen-gesetzt (in generateTerrainWithParameters, vor jedem Tick-Read):
-                "erosionTiles",
                 "hydroTiles",
-                "tarns", // null-init, `if (state.tarns)`-Leser
                 "canopyChunks",
                 "bakedRegionFields",
                 "scatterRegions",

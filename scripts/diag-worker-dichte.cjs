@@ -233,8 +233,8 @@ async function probe(page, welt, mitAbdruck) {
             };
             // DIE LESER der Formeln, die der Kern seit der Prüfung 1 trägt (K09a): die Boden-Farbe des Mains auf 32×32
             // Punkten in drei Höhen über der Makro-Höhe (die Schnee-Prominenz `y − Basis − kontinentBasis` greift erst
-            // hoch), die Fels-Exposition (die Steilheit an der Makro-Höhe statt am Chunk-Cache), die Tarn-
-            // Mulden (`tarnMulde`) und die Normalform des Erbguts (`erbgutNormal`); dazu die Farben, die der Worker in
+            // hoch), die Fels-Exposition (die Steilheit an der Makro-Höhe statt am Chunk-Cache) und die
+            // Normalform des Erbguts (`erbgutNormal`); dazu die Farben, die der Worker in
             // seine Chunks legt (`attachFieldColors`, LOD 0 je Ort). Vorher = nachher beweist die Leser byte-gleich.
             const leserSha = async () => {
                 const f = new Float64Array(32 * 32 * 10);
@@ -259,8 +259,8 @@ async function probe(page, welt, mitAbdruck) {
                 } finally {
                     r._voxelSurfaceY = surfAlt;
                 }
-                const text = JSON.stringify({ tarns: s.tarns || null, terme: r._erbgut().terme });
-                return { farbeFels: await hex(f), tarnErbgut: await hex(new TextEncoder().encode(text)) };
+                const text = JSON.stringify({ terme: r._erbgut().terme });
+                return { farbeFels: await hex(f), erbgut: await hex(new TextEncoder().encode(text)) };
             };
             const workerFarbeSha = async () => {
                 const je = {};
@@ -281,7 +281,7 @@ async function probe(page, welt, mitAbdruck) {
                 out.shaLeser = await leserSha();
                 out.shaLeser.worker = await workerFarbeSha();
                 // DREI WELT-SAATEN (K09a): der Boot-Seed und zwei frische Saaten in der Form `w-<12>-<6>` — je Saat die
-                // chirurgische Regenesis (Ströme DANN Tarns; das Netz des Gesetzbuchs ist je Saat gemerkt), dann der Abdruck.
+                // chirurgische Regenesis (die Ströme; das Netz des Gesetzbuchs ist je Saat gemerkt), dann der Abdruck.
                 if (welt === "standard") {
                     out.shaSaaten = { [s.worldMeta.seed]: out.shaMakro };
                     out.shaLeserSaaten = {};
@@ -292,7 +292,6 @@ async function probe(page, welt, mitAbdruck) {
                         r._voxelNoise = null;
                         if (macro !== undefined) s.worldMeta.macro = macro;
                         else delete s.worldMeta.macro;
-                        r._worldgenTarns();
                     };
                     for (const saat of ["w-sweepalpha0001-aaaaaa", "w-sweepbeta00002-bbbbbb"]) {
                         regenesis(saat, undefined);
@@ -399,7 +398,6 @@ function realismusLage(K, saat) {
         baseHeight: 0,
         waterLevel: -3,
         terrainSteepness: 1,
-        tarns: null,
         erbgut: { terme: G.erbgutNormal(undefined), wildnis: 1 },
         regionSize: 2048,
     };
@@ -620,7 +618,7 @@ function realismus() {
         abdruck.buehne = bue
             ? { seed: bue.seed, makro: bue.shaMakro, erbgut: bue.erbgut, leser: bue.shaLeser || null }
             : null;
-        // Die Leser der Kern-Formeln (Boden-Farbe Main und Worker, Fels-Exposition, Tarn-Mulden, Erbgut-Normalform).
+        // Die Leser der Kern-Formeln (Boden-Farbe Main und Worker, Fels-Exposition, Erbgut-Normalform).
         abdruck.leser = (berichte[0] && berichte[0].shaLeser) || null;
         abdruck.leserSaaten = (berichte[0] && berichte[0].shaLeserSaaten) || null;
         fs.writeFileSync(ABDRUCK, JSON.stringify(abdruck, null, 1));

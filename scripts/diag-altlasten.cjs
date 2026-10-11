@@ -1039,7 +1039,7 @@ const FORBIDDEN = [
         ["_makeMacroAnker", "ankerAusSaat"],
         ["_erosionDeltaAt", "erosionDelta"],
         ["_erosionFor", "erosionFuer"],
-        ["_tarnDeltaAt", "tarnDelta"],
+        ["_tarnDeltaAt", "tarnDelta (fiel mit dem Tarn-Pass, K16)"],
         ["_hydroTileKeyFor", "kachelSchluessel"],
         ["MACRO_ANKER_", "MACRO_ANKER (die Literal-Zwillinge des Workers)"],
         ["function terrainMacroSurfaceY(", "hoehe (der Worker-Spiegel)"],
@@ -1054,6 +1054,12 @@ const FORBIDDEN = [
         ["_thermalErosionPass", "der Talus-Pass der Erosion"],
         ["_worldgenComputeErosionAndTarns", "die Erosion im Worldgen (`_worldgenTarns`)"],
         ["_isValidMacroAnker", "die Anker-Wand (der Anker fiel)"],
+        ["_macroSpillpointAnalysis", "die Überlauf-Analyse des Ankers (der Anker fiel)"],
+        ["_hydroSeedTarns", "der Tarn-Pass (die Seen sind die Senken des Flussnetzes)"],
+        ["_worldgenTarns", "der Tarn-Pass im Worldgen"],
+        ["tarnMulde", "die Mulden-Form des Tarns"],
+        ["tarnDelta", "die Tarn-Senkung des Wildnis-Terms"],
+        ["state.tarns", "die Tarn-Liste im Zustand"],
         ["__feldWgsl", "der WGSL-Spiegel des alten Rausch-Gesetzes (der Feld-Zeichner liest den Kern)"],
     ].map(([token, kern]) => ({ token, fiel: `K16 — ${kern}` })),
 ];
@@ -1317,8 +1323,6 @@ const ZWILLINGE = [
         [/\[\s*-0\.55\s*,\s*(?:-26|140)\s*\]/, "die Spline-Stützpunkte OFFSET/RELIEF"],
         [/\[\s*1600\s*,\s*400\s*,\s*100\s*\]/, "die drei Ebenen des Flussnetzes"],
         [/\bAUE_QUER\s*=/, "die Querneigung der Aue"],
-        [/Math\.exp\(\s*-\s*[\w.]+\s*\/\s*[\w.]*twoSig2\b/, "das Tarn-Delta"],
-        [/\btwoSig2\s*:/, "die Mulden-Form des Tarns (`tarnMulde`)"],
         [/kuppel\s*\*\s*\(/, "der Insel-Term des Erbguts"],
         [/\btan[UFWB]\s*:/, "die Normalform des Erbguts (`erbgutNormal`)"],
     ].map(([muster, was]) => ({
@@ -1345,6 +1349,7 @@ const ZWILLINGE = [
             "die Abfall-Profile des Makro-Ankers (Massiv, Becken, Tal)",
         ],
         [/noise2D\(\s*[\w.]+\s*\*\s*0\.0005\s*,/, "die Rauheits-Maske"],
+        [/Math\.exp\(\s*-\s*[\w.]+\s*\/\s*[\w.]*twoSig2\b|\btwoSig2\s*:/, "die Tarn-Mulde (die Seen sind die Senken des Netzes)"],
     ].map(([muster, was]) => ({
         muster,
         gefallen: true,

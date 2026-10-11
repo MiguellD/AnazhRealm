@@ -1,18 +1,16 @@
 // AnazhRealm — gelaende-core.js: DAS GESETZBUCH DES GELÄNDES (K09a, 11.10.2026).
 //
 // Die EINE Quelle der 2D-Höhe der Welt: der Term-Auswerter des Erbguts (`worldMeta.erbgut` in seiner Normalform —
-// Wildnis, Insel, Rampe, Bucht), der Wildnis-Term (Rauschen, Erosion, Makro-Anker, Canyon, Tafelberg, Deckel,
-// Tiefsee, Tarn), der Makro-Anker samt Grat-Strom und die Rauheits-Maske. Geladen vom Main-Thread (index.html, vor
-// dem Stamm), vom voxel-worker (importScripts mit ?v=) und vom Foundry-Worker (cores.manifest.json) — der bit-
-// identische Worker-Spiegel ist gefallen; feld-wgsl.js bleibt der Seh-Spiegel (f32) und liest seine Eingaben hier.
+// Wildnis, Insel, Rampe, Bucht) und der Wildnis-Term = die LANDFORM (K16: Großform-Splines T1, Flussnetz T2 mit seinen
+// Senken als den benannten Seen, hang-begrenztes Detail T3, Schicht-Gesetz T5, Tiefsee). Geladen vom Main-Thread
+// (index.html, vor dem Stamm), vom voxel-worker (importScripts mit ?v=) und vom Foundry-Worker (cores.manifest.json) —
+// es gibt keinen Spiegel: jeder Leser rechnet hier.
 //
 // REIN: jede Funktion ist f(L, x, z, …). `L` ist die GELÄNDE-LAGE, die der Wirt reicht — der voxel-worker seinen
 // `state`, der Stamm die lebende Sicht `_gelaende()` auf seinen Zustand. Gelesen werden genau diese Namen:
-//   seed · noise (SimplexNoise des Stroms seed + ":voxel") · baseHeight · waterLevel · terrainSteepness · erosion ·
-//   erosionTiles (Map oder Objekt {schlüssel: Kachel}) · tarns · macroAnker (null bei genVersion < 3) ·
-//   erbgut ({ terme, wildnis, hash } — die Normalform) · regionSize (die Kachel-Kante der Hydro-Regionen).
+//   seed · noise (SimplexNoise des Stroms seed + ":voxel") · baseHeight · waterLevel · erbgut ({ terme, wildnis, hash }
+//   — die Normalform) · regionSize (die Kachel-Kante der Hydro-Regionen).
 // Kein this, kein Zustand außer den Rausch-Strömen je Saat (aus der Saat abgeleitet, nie Math.random), keine Zeit.
-// Die Float-Reihenfolge jeder Formel ist die des Stamms vor dem Umzug (Byte-Beweis: gate:worker-dichte --abdruck).
 //
 // GESETZ-KERN (studio-vertrag §9): STUDIO_VERTRAG = 1 und FUNKTION = 1 — keine Rezepte, keine Gestalt.
 (function (root) {
@@ -20,37 +18,13 @@
 
     const VERSION = 1;
 
-    // Der Schlüssel der Hydro-/Erosions-Kachel an (x, z): Regionen der Kante `regionSize` um den Ursprung. Leser: die
-    // Erosions-Auflösung hier und die Hydro-Auflösung des Wirts (`_hydroFor`, Worker `hydroFor`).
+    // Der Schlüssel der Hydro-Kachel an (x, z): Regionen der Kante `regionSize` um den Ursprung. Leser: die Hydro-
+    // Auflösung des Wirts (`_hydroFor`, Worker `hydroFor`).
     function kachelSchluessel(L, x, z) {
         const size = L.regionSize;
         if (!(size > 0)) throw new Error("gelaende-core: die Lage trägt keine regionSize");
         const half = size / 2;
         return Math.floor((x + half) / size) + "," + Math.floor((z + half) / size);
-    }
-
-    // DIE MULDEN-FORM eines Tarns (Bergsee): die Gauss-Mulde mit σ = r/2 und Reichweite 2,2·r um (x, z), Tiefe d. Der
-    // Wirt wählt Ort, Radius und Tiefe (die Genese `_hydroSeedTarns`), die Form ist Gesetz; `tarnDelta` liest sie.
-    function tarnMulde(x, z, surf, r, d) {
-        const sigma = r * 0.5;
-        return { x, z, surf, r, d, reach2: r * 2.2 * (r * 2.2), twoSig2: 2 * sigma * sigma };
-    }
-
-    // Die Tarn-Mulden-Senkung an (x, z) (≤ 0, eine Gauss-Mulde je Tarn); per-Tarn-Early-Out → eine tarn-lose Welt
-    // kostet 0 Ops.
-    function tarnDelta(L, x, z) {
-        const tarns = L.tarns;
-        if (!tarns || !tarns.length) return 0;
-        let delta = 0;
-        for (let i = 0; i < tarns.length; i++) {
-            const t = tarns[i];
-            const dx = x - t.x;
-            const dz = z - t.z;
-            const d2 = dx * dx + dz * dz;
-            if (d2 > t.reach2) continue;
-            delta -= t.d * Math.exp(-d2 / t.twoSig2);
-        }
-        return delta;
     }
 
     // Ein Term des Erbguts an (x, z) auf die Höhe `h` darunter (Bühnen-Terme sind analytisch, kein Rauschen). Höhen
@@ -772,13 +746,10 @@
         // Sanfter Tiefsee-Clamp (Asymptote base−120) über dem Chunk-Boden (−135).
         const abyssClamp = base - 112;
         if (h < abyssClamp) h = abyssClamp - 8 * Math.tanh((abyssClamp - h) / 8);
-        // Die Bergsee-Mulden (Tarns, benannt): Bowl-Boden auf waterLevel+1 geklemmt.
-        const td = tarnDelta(L, x, z);
-        if (td === 0) return h;
-        return Math.max(h + td, N.wl + 1);
+        return h;
     }
 
-    // Die benannten Seen eines Rasters (Zellen-Indizes): die Senken-Knoten der Ebene 0 auf Land und die Tarns. Leser: die
+    // Die benannten Seen eines Rasters (Zellen-Indizes): die Senken-Knoten der Ebene 0 auf Land. Leser: die
     // Gelände-Linse (eine Senke, die einen benannten See trägt, zählt nicht).
     function benannteSeen(L, x0, z0, step, n) {
         const N = netzFuer(L);
@@ -799,11 +770,6 @@
                     const k = idx(kn.x, kn.z);
                     if (k >= 0) out.push(k);
                 }
-            }
-        if (L.tarns)
-            for (const t of L.tarns) {
-                const k = idx(t.x, t.z);
-                if (k >= 0) out.push(k);
             }
         return out;
     }
@@ -841,7 +807,7 @@
     // DIE EINE 2D-HÖHE der Welt = der Term-Auswerter ihres Erbguts: der erste Term setzt den Startwert (die Wildnis oder
     // eine Insel), jeder weitere legt sich nach seiner Art darauf — die Rampe addiert, die Bucht schneidet (Minimum).
     // Eine Welt ohne Erbgut trägt [wildnis]. Fehlt der Lage ihr Erbgut, wirft der Auswerter (fail-closed, nie still
-    // Wildnis). Leser: jeder Leser der Höhe (Dichte, Hydrosphäre, Fern-Ring, Spawn-Ort, Erosion) in Stamm und Worker.
+    // Wildnis). Leser: jeder Leser der Höhe (Dichte, Hydrosphäre, Fern-Ring, Spawn-Ort) in Stamm und Worker.
     function hoehe(L, x, z, mitDetail = true) {
         const T = L.erbgut.terme;
         const t0 = T[0];
@@ -1239,7 +1205,5 @@
         benannteSeen: benannteSeen,
         schichtOrt: schichtOrt,
         kachelSchluessel: kachelSchluessel,
-        tarnMulde: tarnMulde,
-        tarnDelta: tarnDelta,
     });
 })(typeof self !== "undefined" ? self : globalThis);

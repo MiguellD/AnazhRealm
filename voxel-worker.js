@@ -3,7 +3,7 @@
 //
 // V9.89 (Welle Perf-3.c Phase 1 — Worker-Foundation): mirror der Density-Pipeline
 // aus `anazhRealm.js` für den Web-Worker-Kontext. Der Worker bekommt einen
-// State-Snapshot per `init`-Message (Seed, Atlas, Erosion, Tarns, voxelEdits,
+// State-Snapshot per `init`-Message (Seed, Atlas, voxelEdits,
 // baseHeight, waterLevel), Delta-Updates bei Welt-Mutationen, und beantwortet
 // `density-grid`-Requests mit einem Float32Array via Transferable (zero-copy).
 //
@@ -52,7 +52,7 @@ importScripts((self.__anazhBase || "") + "phyto-core.js" + (__phytoV ? "?v=" + _
 
 // K09a — DAS GELÄNDE-GESETZBUCH (gelaende-core.js): die EINE 2D-Höhe, DIESELBE Datei wie der Main-Thread — kein
 // Spiegel. Der Worker reicht seinen `state` als Gelände-Lage (seed · noise · baseHeight · waterLevel ·
-// terrainSteepness · tarns · erbgut · regionSize). Fehlt der Kern, wirft der
+// terrainSteepness · erbgut · regionSize). Fehlt der Kern, wirft der
 // Worker beim Laden (fail-closed, nie still eine eigene Höhe).
 importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
 const G = self.__gelaendeCore;
@@ -67,7 +67,6 @@ const state = {
     hydrosphere: null, // { ready, originX, originZ, cell, dim, riverBuckets, bucketSize, bucketsDim, lakeBedCell, lakeW, lakeNear, water:{waterY, waterKind} }
     hydroTiles: null, // A3 (V18.132) — {key: tile} ferne Kacheln (gleicher Feld-Satz wie hydrosphere)
     hydroBand: null, // V9.91 — { top, bottom } für Cell-Klassifikation-Skip
-    tarns: null, // Array of { x, z, d, reach2, twoSig2 }
     voxelEdits: [], // Array of { x, y, z, r, strength, mode }
     hydroComputing: false,
     spiegelFreibord: 0.25, // Mirror AnazhRealm.HYDROSPHERE.spiegelFreibord (Welle L, der Fluss-Spiegel)
@@ -218,7 +217,6 @@ function applyStateSnapshot(snap) {
     if (snap.hydrosphere !== undefined) state.hydrosphere = snap.hydrosphere;
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
     if (snap.hydroTiles !== undefined) state.hydroTiles = snap.hydroTiles; // A3 (V18.132)
-    if (snap.tarns !== undefined) state.tarns = snap.tarns;
     if (snap.voxelEdits !== undefined) state.voxelEdits = snap.voxelEdits;
     if (typeof snap.hydroComputing === "boolean") state.hydroComputing = snap.hydroComputing;
     if (typeof snap.spiegelFreibord === "number") state.spiegelFreibord = snap.spiegelFreibord;

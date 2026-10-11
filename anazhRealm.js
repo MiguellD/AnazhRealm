@@ -20751,36 +20751,6 @@ class AnazhRealm {
         });
     }
 
-    // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden. Die Stream-
-    // Power-Erosion (V9.47) entwässert jedes Hochbecken → ohne diesen Pass
-    // gibt es keine Bergseen. `_hydroSeedTarns` setzt sie bewusst.
-    static get TARN() {
-        return Object.freeze({
-            spacing: 200, // m — Kantenlänge einer Kandidaten-Zelle (jittered grid)
-            reliefPercentile: 0.55, // ADAPTIVE Höhen-Schwelle — Tarns im oberen
-            // ~45 % des Relief DIESER Welt (V9.58-c von 0.58 gesenkt, weil die
-            // Tektonik die Hochlands-Verteilung verbreitete — die alte 42%-
-            // Grenze schloss jetzt zu viele echte Hochlands-Spots aus).
-            minReliefAbs: 30, // m — absoluter Boden über terrainBaseHeight (V9.58-c
-            // von 14 auf 30 angehoben: in der V9.58-b-Welt mit max ~120 m sind
-            // 14 m kein Hochland mehr, sondern Mittelland).
-            maxSlope: 0.35, // Hang-Grenze (V9.58-c von 0.25 auf 0.35 erweitert,
-            // weil die V9.58-b-Berge steiler sind; die Mulden-Tiefe skaliert
-            // adaptiv mit dem Hang, das Becken schliesst trotzdem sicher).
-            placeThreshold: -0.1, // Tief-Frequenz-Platzierungs-Noise: Spot nur darüber
-            // (V9.58-c von 0.05 auf −0.1 gesenkt — die alte Schwelle nahm nur
-            // ~47 % der Spots an, in einer Welt mit weiteren Hochlandsregionen
-            // wollen wir grosszügiger sein; ~60 % der Spots passen).
-            radiusMin: 85, // m — Mulden-Radius. GROSS (> 5 Hydro-16-m-Zellen), damit
-            radiusMax: 120, // das 16-m-Raster + der 3×3-Blur die Mulde nicht wegglätten.
-            depthMin: 34, // m — Mulden-Tiefe (V14.2 von 28 auf 34: die thermische
-            // Erosion glättet die Tarn-Umgebung, flachere Mulden schließen sonst nicht zum See — Kopplung
-            // Erosion↔Tarn). Nicht höher: sonst klemmt `maxAllowed = surf − waterRef − 1` zu viele
-            // Hochlands-Spots raus (aggressiver depthMin frisst Tarns).
-            depthMax: 55, // m — OBERgrenze (V9.58-c von 42 auf 55 entsprechend).
-        });
-    }
-
     static get CREATURE_TASKS() {
         return Object.freeze(["wander", "follow_player", "wait", "gather", "build", "drink"]);
     }
@@ -24235,7 +24205,7 @@ class AnazhRealm {
                 this.state.voxelWorkerReady = false;
             };
             this.state.voxelWorker = worker;
-            // Der Worker ist erst nutzbar, wenn sein State (Seed, Atlas, Erosion, Tarns, voxelEdits) gesetzt
+            // Der Worker ist erst nutzbar, wenn sein State (Seed, Atlas, voxelEdits) gesetzt
             // ist; fire-and-forget, das Ready-Flag setzt der init-ack.
             this._voxelWorkerSyncState({ op: "init" });
             return worker;
@@ -24245,7 +24215,7 @@ class AnazhRealm {
         }
     }
 
-    // Voller State-Snapshot für den Worker (Seed, Hydrosphäre-Atlas, erosion, tarns, voxelEdits, …).
+    // Voller State-Snapshot für den Worker (Seed, Hydrosphäre-Atlas, voxelEdits, …).
     // Structured Clone statt Transfer: der Main-Thread muss die Atlas-Daten BEHALTEN.
     _voxelWorkerSnapshotState() {
         const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
@@ -24305,7 +24275,6 @@ class AnazhRealm {
         snap.hydroBand = this.state.hydroBand
             ? { top: this.state.hydroBand.top, bottom: this.state.hydroBand.bottom }
             : null;
-        snap.tarns = Array.isArray(this.state.tarns) ? this.state.tarns.map((t) => ({ ...t })) : null;
         // Die fernen Kacheln reisen mit (plain Object {key: tile}, gelesen in hydroFor) — sonst
         // baut der Worker ferne Chunks gegen die OOB-Wahrheit = Determinismus-Bruch main↔worker.
         snap.hydroTiles = null;
@@ -24824,7 +24793,7 @@ class AnazhRealm {
         }
     }
 
-    // Worker-Update bei voxelEdit: nur der Delta-Edit (Atlas/Erosion/Tarns unverändert). Bumpt stateGen
+    // Worker-Update bei voxelEdit: nur der Delta-Edit (Atlas unverändert). Bumpt stateGen
     // → stale Density-Results verworfen; Cache leeren, der nächste Pump fordert frisch an.
     _voxelWorkerNotifyEdit(ed) {
         if (!this.state.voxelWorker) return;
@@ -24843,7 +24812,7 @@ class AnazhRealm {
         }
     }
 
-    // Nach Worldgen: voller Atlas + Erosion + Tarns + waterLevel an den Worker; bumpt stateGen →
+    // Nach Worldgen: voller Atlas + waterLevel an den Worker; bumpt stateGen →
     // in-flight Requests vom Pre-Worldgen-Stand werden verworfen.
     _voxelWorkerSyncWorldgenState() {
         // V12.0-perf.b — Basis-Density-Cache bei Worldgen leeren (neue Welt =
@@ -27157,8 +27126,6 @@ class AnazhRealm {
         this.state.terrainEverGenerated = true;
         if (wasFirstSpawn) this.grokMarkFirstSpawn();
 
-        this._worldgenTarns();
-
         // V9.38 Phase 5c.2.c.3.b.ii — heightData/minHeight/maxHeight bleiben
         // null/0 in einer Voxel-Welt (voxelTerrain konstant true seit V9.35).
         // Alle Konsumenten sind voxel-aware (`getTerrainHeightAt` → `_voxelSurfaceY`).
@@ -27276,16 +27243,9 @@ class AnazhRealm {
         }
     }
 
-    // ===== ATLAS §08 · WELT-GENESE — Dichtefeld · Erosion · Hydrosphäre · Feuchte/Kronen =====
-    // V9.47 — Hydraulische Tröpfchen-Erosion carvt dendritische Täler + füllt
-    // Becken mit Sediment. MUSS hier laufen — VOR allem Surface-abhängigen
-
-    // Der Tarn-Pass (Bergseen, benannte Senken) VOR der Hydrosphäre. Die Täler trägt das Flussnetz des Gelände-
-    // Gesetzbuchs (K16) — keine Erosions-Simulation mehr, das Gelände entwässert aus sich selbst.
-    _worldgenTarns() {
-        const tarns = this._hydroSeedTarns();
-        this.log(`V9.51: Tarn-Pass — ${tarns.length} Bergsee-Mulden gesetzt`, "INFO");
-    }
+    // ===== ATLAS §08 · WELT-GENESE — Dichtefeld · Hydrosphäre · Feuchte/Kronen =====
+    // Täler und Seen trägt das Flussnetz des Gelände-Gesetzbuchs (K16): ein See ist eine Senke des Netzes (Ebene 0),
+    // die Hydrosphäre füllt sie — keine Erosions-Simulation, kein Tarn-Pass, das Gelände entwässert aus sich selbst.
 
     // Worldgen-Inseln über `spawnIslandAt` (Surface-Nets, ein Pfad); Spawn-Y aus der echten Voxel-Surface
     // (`maxHeight` ist in Voxel-Welten 0 — `maxHeight + 20` landete Inseln IM Terrain).
@@ -27375,7 +27335,7 @@ class AnazhRealm {
         } catch (e) {
             this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
         }
-        // Der Worker erhält fertigen Atlas + Erosion + Tarns (full state-set); ab
+        // Der Worker erhält fertigen Atlas (full state-set); ab
         // `voxelWorkerSyncedHydroStateGen === voxelWorkerStateGen` traut ihm der Streaming-Pfad.
         // Bumpt stateGen → in-flight Pre-Worldgen-Requests werden verworfen.
         this._voxelWorkerSyncWorldgenState();
@@ -27558,133 +27518,6 @@ class AnazhRealm {
         return made;
     }
 
-    // Tarn-Pass: Bergseen (benannte Senken) als Gauss-Mulden an hohen, sanft geneigten Stellen. Läuft VOR
-    // `_computeHydrosphere` → das Priority-Flood füllt die Mulde zum See, die bestehende Wasser-Maschinerie
-    // rendert ihn. Deterministisch (seed-Noise), legt `state.tarns` ab.
-    _hydroSeedTarns() {
-        this.state.tarns = [];
-        // Die Tarne sind Mulden des Wildnis-Terms (gelaende-core `wildnisY` addiert sie): eine Welt ohne ihn sät keine.
-        if (!(this._erbgut().wildnis > 0)) return this.state.tarns;
-        const T = AnazhRealm.TARN;
-        const base = this.state.terrainBaseHeight || 0;
-        const region = AnazhRealm.HYDROSPHERE.regionSize;
-        const n = this._gelaende().noise;
-        const half = region / 2;
-        const cols = Math.max(3, Math.round(region / T.spacing));
-        const cellW = region / cols;
-        // --- die Kandidaten-Punkte (jittered grid) + ihre Makro-Höhen ---
-        const pts = [];
-        for (let cj = 0; cj < cols; cj++) {
-            for (let ci = 0; ci < cols; ci++) {
-                const jx = n.noise2D(ci * 7.13 + 1.7, cj * 7.13 + 9.2) * cellW * 0.34;
-                const jz = n.noise2D(ci * 4.41 + 50.3, cj * 4.41 + 31.8) * cellW * 0.34;
-                const x = -half + (ci + 0.5) * cellW + jx;
-                const z = -half + (cj + 0.5) * cellW + jz;
-                pts.push({ ci, cj, x, z, surf: this._terrainMacroSurfaceY(x, z, false) });
-            }
-        }
-        // ADAPTIVE Höhen-Schwelle — die Tarns sitzen im oberen Relief-Anteil
-        // DIESER Welt. So findet der Pass auch in einer flachen Welt das
-        // Hochland (ein fixer Wert verfehlte mal alles, mal zu viel).
-        const sorted = pts
-            .map((p) => p.surf)
-            .filter((s) => Number.isFinite(s))
-            .sort((a, b) => a - b);
-        if (sorted.length < 4) return [];
-        const reliefThr = Math.max(base + T.minReliefAbs, sorted[Math.floor(sorted.length * T.reliefPercentile)]);
-        // --- Kandidaten gaten + akzeptieren ---
-        const tarns = [];
-        const d = 16; // m — der Hang-Schritt des Tarn-Gates
-        const minSep = T.radiusMax;
-        for (const p of pts) {
-            if (!Number.isFinite(p.surf) || p.surf < reliefThr) continue;
-            // Platzierungs-Noise (tief-frequent) — hält die Tarns sparsam.
-            if (n.noise2D(p.x * 0.0021 + 17, p.z * 0.0021 - 8) < T.placeThreshold) continue;
-            // Hang messen — ein Tarn sitzt in einer sanften Hochmulde; sanft
-            // genug, dass die grosse, tiefe Gauss-Mulde ein geschlossenes
-            // Becken formt (`depthMin` > 0.83·maxSlope·radiusMax).
-            const gx =
-                (this._terrainMacroSurfaceY(p.x + d, p.z, false) - this._terrainMacroSurfaceY(p.x - d, p.z, false)) /
-                (2 * d);
-            const gz =
-                (this._terrainMacroSurfaceY(p.x, p.z + d, false) - this._terrainMacroSurfaceY(p.x, p.z - d, false)) /
-                (2 * d);
-            const slope = Math.hypot(gx, gz);
-            if (slope > T.maxSlope) continue;
-            let tooClose = false;
-            for (const tn of tarns) {
-                if (Math.hypot(tn.x - p.x, tn.z - p.z) < minSep) {
-                    tooClose = true;
-                    break;
-                }
-            }
-            if (tooClose) continue;
-            const rr = n.noise2D(p.ci * 2.7 - 12, p.cj * 2.7 + 4) * 0.5 + 0.5;
-            const r = T.radiusMin + rr * (T.radiusMax - T.radiusMin);
-            // Adaptive Tiefe ∝ `slope·r` (Hang-Abfall über den Radius) + ~8 m garantierte Wassertiefe — das
-            // Becken schließt immer mit derselben Wassertiefe; geklemmt auf [depthMin, depthMax].
-            let depth = Math.max(T.depthMin, Math.min(T.depthMax, 0.996 * slope * r + 8));
-            // KRITISCH: der Mulden-Boden bleibt ≥ waterRef+1 — sonst kriecht der Border-Ozean-Flood hinein und
-            // markiert den Tarn als Ozean (keine See-Extraktion). Reicht es dann nicht für depthMin → verwerfen.
-            const waterRef = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : base + 4;
-            const maxAllowed = p.surf - waterRef - 1;
-            if (maxAllowed < T.depthMin) continue; // zu niedrig — kein Bergsee
-            if (depth > maxAllowed) depth = maxAllowed;
-            // Die Mulden-Form (σ, Reichweite) ist Gesetz: `tarnMulde` im Gelände-Gesetzbuch, `tarnDelta` liest sie.
-            tarns.push(globalThis.__gelaendeCore.tarnMulde(p.x, p.z, p.surf, r, depth));
-        }
-        this.state.tarns = tarns;
-        return tarns;
-    }
-
-    // Abfluss-Invariante: an N=32 Strahlen am Becken-Rim die Makro-Höhe messen (includeDetail=false);
-    // die Spannweite max−min MUSS > beckenD*0.5 sein → ein klarer Tiefweg, nie ein rund umringtes
-    // (endorheisches) Becken. spillAngle zeigt zum Tal-Endpunkt — das Tal ist der designte Auslass.
-    // Nutzbar als Verifikations-Wand im Test-Band und als Bau-Zeit-Check.
-    _macroSpillpointAnalysis(anker) {
-        if (!anker) return null;
-        const N = 32;
-        let minRimY = Infinity;
-        let maxRimY = -Infinity;
-        let spillAngle = 0;
-        let crestAngle = 0;
-        for (let i = 0; i < N; i++) {
-            const theta = (i / N) * Math.PI * 2;
-            const x = anker.beckenC.x + Math.cos(theta) * anker.beckenR;
-            const z = anker.beckenC.z + Math.sin(theta) * anker.beckenR;
-            const y = this._terrainMacroSurfaceY(x, z, false);
-            if (y < minRimY) {
-                minRimY = y;
-                spillAngle = theta;
-            }
-            if (y > maxRimY) {
-                maxRimY = y;
-                crestAngle = theta;
-            }
-        }
-        const span = maxRimY - minRimY;
-        const hasOutflow = span > anker.beckenD * 0.5;
-        // Tal-Eingangs-Richtung vom Becken-Zentrum nach außen: das letzte Tal-Vertex liegt am beckenC, das
-        // vorletzte davor in Tal-Längsrichtung → diese Richtung zeigt, wo das Tal den Rim kreuzt. Zeigt
-        // spillAngle dorthin, ist der Tal-Eingang der designte Spillweg.
-        const tEnd = anker.talVertices[anker.talVertices.length - 1];
-        const tPrev = anker.talVertices[anker.talVertices.length - 2];
-        const talEntryDirAng = Math.atan2(tPrev.z - tEnd.z, tPrev.x - tEnd.x);
-        let dAng = spillAngle - talEntryDirAng;
-        while (dAng > Math.PI) dAng -= 2 * Math.PI;
-        while (dAng < -Math.PI) dAng += 2 * Math.PI;
-        const spillVsTalDeg = (Math.abs(dAng) * 180) / Math.PI;
-        return {
-            minRimY,
-            maxRimY,
-            span,
-            spillAngleRad: spillAngle,
-            crestAngleRad: crestAngle,
-            hasOutflow,
-            spillVsTalDeg,
-        };
-    }
-
     // Slope + Rock-Exposure als abgeleitete Welt-Felder direkt aus `_voxelSurfaceY` — am Genese-Leser
     // (Spawn/Streu/Boden/Material), NICHT in worldFieldAt (Hot-Path). Vier `_voxelSurfaceY`-Calls pro
     // Slope: OK für Punkt-Probes, nicht für Massen-Aufrufe.
@@ -27750,9 +27583,6 @@ class AnazhRealm {
             },
             get terrainSteepness() {
                 return realm.state.terrainSteepness;
-            },
-            get tarns() {
-                return realm.state.tarns;
             },
             get erbgut() {
                 return realm._erbgutCache || realm._erbgut();
@@ -27838,7 +27668,7 @@ class AnazhRealm {
         return quelle === "nexus" || quelle === "rule:nexus";
     }
 
-    // Der Hydrosphäre-Compute-Pfad (`_hydroSeedTarns`, `_hydroInit`) liest direkt
+    // Der Hydrosphäre-Compute-Pfad (`_hydroInit`) liest direkt
     // `_terrainMacroSurfaceY` (worldgen-frozen); der Spieler-Wille lebt im Cell-Feld, nie in der Drainage.
 
     // Spalten-Kontext: die rein 2D-Arbeit (Makro-Oberfläche `_terrainMacroSurfaceY` ~61 % der Density-

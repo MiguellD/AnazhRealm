@@ -20211,35 +20211,32 @@ async function checkBandHydrosphere(ctx) {
                 }
             }
         }
-        // V9.51 — der Tarn-Pass: Bergseen als additive Hochmulden.
-        out.hasTarnPass = typeof r._hydroSeedTarns === "function";
-        out.tarnCount = Array.isArray(r.state.tarns) ? r.state.tarns.length : -1;
-        out.tarnsHighAltitude = true;
-        out.tarnsBecameLakes = 0;
-        if (Array.isArray(r.state.tarns) && r.state.tarns.length && h1.lakes) {
-            const base = r.state.terrainBaseHeight || 0;
-            const minRel = 11; // TARN.minReliefAbs minus Float-Marge
-            for (const t of r.state.tarns) {
-                if (!(t.surf - base >= minRel)) out.tarnsHighAltitude = false;
-                // Zähle Wasser-Zellen (kind=2) im Tarn-Fussabdruck
-                // — der Beweis, dass die Mulde zu einem See wurde.
-                let lakeCells = 0;
-                if (h1.water) {
-                    const hi = Math.floor((t.x - h1.originX) / h1.cell);
-                    const hj = Math.floor((t.z - h1.originZ) / h1.cell);
-                    const rng = Math.ceil(t.r / h1.cell);
-                    for (let dj = -rng; dj <= rng; dj++) {
-                        for (let di = -rng; di <= rng; di++) {
-                            const ci = hi + di;
-                            const cj = hj + dj;
-                            if (ci < 0 || cj < 0 || ci >= h1.dim || cj >= h1.dim) continue;
-                            if (h1.water.waterKind[ci + cj * h1.dim] === 2) lakeCells++;
-                        }
+        // K16 — die Seen sind die Senken des Flussnetzes (Ebene 0 auf Land, `benannteSeen` des Gelände-Gesetzbuchs); der
+        // Tarn-Pass (V9.51) ist gefallen. Je Netz-Senke in der Kachel: trägt die Hydrosphäre um sie (± 3 Zellen) See-Zellen?
+        out.tarnPassTot = typeof r._hydroSeedTarns !== "function" && !("tarns" in r.state);
+        out.netzSeen = -1;
+        out.netzSeenSee = 0;
+        if (h1.water && globalThis.__gelaendeCore && typeof globalThis.__gelaendeCore.benannteSeen === "function") {
+            const idx = globalThis.__gelaendeCore.benannteSeen(
+                r._gelaende(),
+                h1.originX + h1.cell / 2,
+                h1.originZ + h1.cell / 2,
+                h1.cell,
+                h1.dim
+            );
+            out.netzSeen = idx.length;
+            for (const k of idx) {
+                const hi = k % h1.dim;
+                const hj = (k / h1.dim) | 0;
+                let see = 0;
+                for (let dj = -3; dj <= 3; dj++)
+                    for (let di = -3; di <= 3; di++) {
+                        const ci = hi + di;
+                        const cj = hj + dj;
+                        if (ci < 0 || cj < 0 || ci >= h1.dim || cj >= h1.dim) continue;
+                        if (h1.water.waterKind[ci + cj * h1.dim] === 2) see++;
                     }
-                }
-                // ein Tarn gilt als See, wenn ≥ minLakeCells (6)
-                // See-Zellen in seinem Fussabdruck liegen.
-                if (lakeCells >= 6) out.tarnsBecameLakes++;
+                if (see >= 1) out.netzSeenSee++;
             }
         }
         return out;
@@ -20281,12 +20278,11 @@ async function checkBandHydrosphere(ctx) {
         );
         check("Voxel V9.50-a: `_waterLevelAt` an einer Ozean-Zelle == waterLevel", hb.waterLevelOceanOk);
         check("Voxel V9.50-a: `_waterLevelAt` an einer See-Zelle ≥ waterLevel (der See-Spiegel)", hb.waterLevelLakeOk);
-        check("Voxel V9.51: `_hydroSeedTarns` existiert (der Tarn-Pass)", hb.hasTarnPass);
-        check("Voxel V9.51: der Tarn-Pass setzt Bergsee-Mulden", hb.tarnCount >= 1, `tarnCount=${hb.tarnCount}`);
-        check("Voxel V9.51: jede Tarn-Mulde liegt im Hochland (surf − base ≥ minRelief)", hb.tarnsHighAltitude);
+        check("K16: der Tarn-Pass ist gefallen (kein `_hydroSeedTarns`, kein state.tarns)", hb.tarnPassTot);
         check(
-            `Voxel V14.2/V14.8: die Mehrheit der Tarn-Mulden wird zum See (${hb.tarnsBecameLakes}/${hb.tarnCount} — die reichere V14.2-Erosion + die V14.8-Ketten-Täler zapfen gelegentlich eine Hochmulde durch einen Drainage-Kanal an, geomorphologisch korrekt → mehr drainierende Flüsse, ≥60 % bleiben Seen)`,
-            hb.tarnCount >= 1 && hb.tarnsBecameLakes >= Math.ceil(hb.tarnCount * 0.6)
+            `K16: jede Senke des Flussnetzes in der Kachel wird zum See (${hb.netzSeenSee}/${hb.netzSeen})`,
+            hb.netzSeen >= 0 && hb.netzSeenSee === hb.netzSeen,
+            `netzSeen=${hb.netzSeen} see=${hb.netzSeenSee}`
         );
     }
 
