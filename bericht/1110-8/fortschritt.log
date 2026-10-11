@@ -1,0 +1,18 @@
+19:19:54 SERIE START A=be1d6e57 (8ef0e3cd2ec23405) A'=953186f4 (58d260a967fc9d33) B=2c8deda9 (6ad641672bb635be) Instrument=2c8deda9
+19:22:32 w1A exit=0  laufFrei: 76.2 fps · Frame p50/p95/max 16.6/16.8/250 ms · CPU p50/p95 3.5/6.8 ·   gpu-bank Gier 0: 11.97 ms je Frame (CPU 2.03)  gpu-bank Gier -0.88: 10.61 ms je Frame (CPU 1.5) 
+19:25:39 w2B exit=0  laufFrei: 72.9 fps · Frame p50/p95/max 16.6/16.8/241.4 ms · CPU p50/p95 3.5/5 ·   gpu-bank Gier 0: 12.23 ms je Frame (CPU 1.83)  gpu-bank Gier -0.88: 11.92 ms je Frame (CPU 1.93) 
+19:28:43 w3A exit=0  laufFrei: 75.1 fps · Frame p50/p95/max 16.6/16.8/241.3 ms · CPU p50/p95 3.5/5.4 ·   gpu-bank Gier 0: 11.78 ms je Frame (CPU 1.75)  gpu-bank Gier -0.88: 10.88 ms je Frame (CPU 1.81) 
+19:31:54 w4B exit=0  laufFrei: 75.6 fps · Frame p50/p95/max 16.6/16.8/250 ms · CPU p50/p95 3.6/5.9 ·   gpu-bank Gier 0: 11.59 ms je Frame (CPU 1.68)  gpu-bank Gier -0.88: 11.03 ms je Frame (CPU 1.83) 
+19:34:58 w5A exit=0  laufFrei: 75.3 fps · Frame p50/p95/max 16.6/16.8/250 ms · CPU p50/p95 3.5/5.9 ·   gpu-bank Gier 0: 11.98 ms je Frame (CPU 1.83)  gpu-bank Gier -0.88: 10.72 ms je Frame (CPU 1.82) 
+19:38:03 w6B exit=0  laufFrei: 75.5 fps · Frame p50/p95/max 16.6/16.8/233.2 ms · CPU p50/p95 3.7/5.5 ·   gpu-bank Gier 0: 11.82 ms je Frame (CPU 1.77)  gpu-bank Gier -0.88: 11.08 ms je Frame (CPU 1.76) 
+19:41:09 w7A exit=0  laufFrei: 75.5 fps · Frame p50/p95/max 16.6/16.8/257.9 ms · CPU p50/p95 3.6/5.5 ·   gpu-bank Gier 0: 11.58 ms je Frame (CPU 1.65)  gpu-bank Gier -0.88: 10.83 ms je Frame (CPU 1.67) 
+19:44:13 w8B exit=0  laufFrei: 75.2 fps · Frame p50/p95/max 16.6/16.8/241.6 ms · CPU p50/p95 3.6/6 ·   gpu-bank Gier 0: 11.65 ms je Frame (CPU 1.81)  gpu-bank Gier -0.88: 11.08 ms je Frame (CPU 1.81) 
+19:46:17 b1A exit=0  ost: 6.4 1692.5MHz  west: 6.41 1689.4MHz  s4-hindernisse: 6.59 1688.6MHz  s5-bucht: 7.62 1677.9MHz 
+19:48:16 b2B exit=0  ost: 6.515 1703MHz  west: 6.535 1702.8MHz  s4-hindernisse: 6.695 1695.9MHz  s5-bucht: 7.705 1686.3MHz 
+19:50:10 b3A exit=0  ost: 6.375 1693.2MHz  west: 6.44 1685.3MHz  s4-hindernisse: 6.595 1685.3MHz  s5-bucht: 7.685 1676.1MHz 
+19:52:09 b4B exit=0  ost: 6.545 1702.7MHz  west: 6.56 1698.2MHz  s4-hindernisse: 6.68 1696.8MHz  s5-bucht: 7.74 1682.5MHz 
+19:54:04 b5A exit=0  ost: 6.395 1691.2MHz  west: 6.43 1689.5MHz  s4-hindernisse: 6.605 1685.6MHz  s5-bucht: 7.625 1675.1MHz 
+19:56:04 b6B exit=0  ost: 6.545 1702.8MHz  west: 6.575 1700.8MHz  s4-hindernisse: 6.71 1696MHz  s5-bucht: 7.72 1685MHz 
+19:58:00 b7A exit=0  ost: 6.41 1693.9MHz  west: 6.395 1691.5MHz  s4-hindernisse: 6.62 1686.9MHz  s5-bucht: 7.63 1678.5MHz 
+19:59:59 b8B exit=0  ost: 6.525 1705.8MHz  west: 6.565 1703.2MHz  s4-hindernisse: 6.725 1696.3MHz  s5-bucht: 7.705 1684.3MHz 
+20:00:24 SERIE ENDE
