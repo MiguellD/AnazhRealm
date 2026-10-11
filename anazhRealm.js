@@ -24908,7 +24908,6 @@ class AnazhRealm {
     // (r164 hat webgl-legacy/WebGLNodeBuilder entfernt → NodeMaterials laufen
     // nur auf WebGPU). `kind`-Param gestrichen.
     _configureRenderer(renderer) {
-        this._augenLichtRegistrieren(renderer);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(1);
         renderer.setClearColor(0x000000, 1);
@@ -32270,6 +32269,9 @@ class AnazhRealm {
             // Sync (nachts setTerrainMoonRim-Basis, tags 0 — kein Shader-Branch; EIN Schreiber:
             // _dayNightApplyHemiUndLuft).
             terrainMoonRim: TSL.uniform(0.0),
+            // DAS LICHT DES AUGES (K15): Farbe × Stärke am Auge (linear); der Boden-Stoff trägt es unter Fels
+            // (`_buildPbrNodeMaterial`, 1 − aHimmel), unter dem Himmel 0. EIN Schreiber: `_dayNightApplyAugenLicht`.
+            augenLicht: TSL.uniform(new THREE.Color(0, 0, 0)),
             // Struktur-Boost als LIVE-Uniform: Multiplier auf das micro-Gewicht des werk-Profils, vom Settings-
             // Slider „Struktur-Tiefe" getrieben. Init aus `atmosphere.r5StructureBoost` (persistiert) oder
             // R5_STRUCTURE_TEXTURE.microBoost (1.3); `_applySubstanceResponse` liest ihn live.
@@ -32913,6 +32915,40 @@ class AnazhRealm {
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
             // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
             if (opts.himmelsSicht) mat.aoNode = THREE.TSL.attribute("aHimmel", "float");
+            // DAS LICHT DES AUGES (K02a, K15 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`): eine Eigenschaft der Flächen unter
+            // Fels, kein Szenen-Licht. Ein Punkt-Licht ab Boot stand im Licht-Hash JEDES beleuchteten Stoffs und rechnete
+            // seine BRDF in jedem Fragment, auch unter dem Himmel auf Stärke 0 (OMEN 1110-3, GTX 1060: 0,48 ms je Frame).
+            // Hier rechnet es nur der Boden, gewichtet mit dem fehlenden Himmel der Fläche (1 − `aHimmel`) und der Stärke
+            // am Auge (die geteilte Uniform `augenLicht` = Farbe × Stärke, unter dem Himmel 0): dieselbe Rechnung wie r184s
+            // Punkt-Licht am Auge (Lambert + GGX, Abstand und Fenster aus `AUGEN_LICHT`), nur wo beides nicht 0 ist.
+            if (opts.himmelsSicht) {
+                const _Te = THREE.TSL;
+                const _A = AnazhRealm.AUGEN_LICHT;
+                const _uAuge = this.state.atmoUniforms.augenLicht;
+                const _hS = _Te.attribute("aHimmel", "float");
+                const _unterFels = _hS.oneMinus();
+                mat.emissiveNode = _Te.Fn(() => {
+                    const _e = _Te.vec3(0).toVar();
+                    _Te.If(_unterFels.mul(_uAuge.r).greaterThan(0), () => {
+                        const _L = _Te.positionViewDirection; // vom Fragment zum Auge (das Licht steht am Auge)
+                        const _d = _Te.positionView.length();
+                        // r184 getDistanceAttenuation: 1/max(d^abfall, 0,01) · (1 − (d/R)⁴)²
+                        let _abst = _d.div(_A.reichweiteM).pow4().oneMinus().clamp().pow2();
+                        if (_A.abfall !== 0) _abst = _abst.mul(_d.pow(_A.abfall).max(0.01).reciprocal());
+                        const _E = _uAuge.mul(_Te.normalView.dot(_L).clamp().mul(_abst).mul(_unterFels));
+                        const _brdf = _Te.BRDF_Lambert({ diffuseColor: _Te.diffuseContribution }).add(
+                            _Te.BRDF_GGX({
+                                lightDirection: _L,
+                                f0: _Te.specularColorBlended,
+                                f90: 1,
+                                roughness: _Te.roughness,
+                            })
+                        );
+                        _e.assign(_E.mul(_brdf));
+                    });
+                    return _e;
+                })();
+            }
             // Geomorph (T2 Cross-LOD-Boundary-Naht) — wie im Toon-Pfad.
             if (opts.geomorph) {
                 try {
@@ -92655,55 +92691,23 @@ class AnazhRealm {
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
     // Höhle der Boden-Funktion bekommt kein Himmels-Licht (`_himmelsSicht`), und 40 m hinter der Mündung erreicht sie auch
     // keine Sonne — die Ich-Sicht war schwarz (Helligkeit 0). Das Licht steht am Auge (die Kamera), seine Stärke folgt dem
-    // Anteil des Himmels, der fehlt (`_himmelAmAuge`), und ist so geeicht, dass die 18-%-Karte im Fenster (ohne Abfall in jedem
-    // Abstand, mit Abfall in `AUGEN_LICHT.karteM`) dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte). Unter
-    // dem Himmel steht es auf 0 — sein Graph überspringt sich dann (`_augenLichtRegistrieren`), die Welt zahlt es nur in der
-    // Höhle.
+    // Anteil des Himmels, der fehlt (`_himmelAmAuge`: das Auge adaptiert — unter dem Himmel bleibt jede Höhle dunkel), und
+    // ist so geeicht, dass die 18-%-Karte im Fenster (ohne Abfall in jedem Abstand, mit Abfall in `AUGEN_LICHT.karteM`)
+    // dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte).
+    // Es ist KEIN Szenen-Licht (K15): die Uniform `atmoUniforms.augenLicht` (Farbe × Stärke) trägt es in den Boden-Stoff,
+    // der es nur unter Fels rechnet (`_buildPbrNodeMaterial`, 1 − aHimmel) — kein anderer Stoff zahlt es.
     _dayNightApplyAugenLicht() {
         const st = this.state;
-        const L = st.augenLicht;
-        if (!L) return;
+        const atmo = this._ensureAtmoUniforms();
+        if (!atmo) return;
         const cam = st.camera;
         const h = cam ? this._himmelAmAuge(cam.position.x, cam.position.y, cam.position.z) : 1;
         st.himmelAmAuge = h;
-        if (cam) L.position.copy(cam.position);
         const B = AnazhRealm.BELICHTUNG;
         const A = AnazhRealm.AUGEN_LICHT;
         const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
         const I = (1 - h) * ((B.zielKarte * Math.PI) / 0.18) * Math.pow(A.karteM, A.abfall) * (1 / k);
-        L.intensity = I > 1e-4 ? I : 0;
-        L.updateMatrixWorld();
-    }
-
-    // Die Klasse des Lichts des Auges: ein Punkt-Licht (r184 rechnet es wie jedes andere), mit eigenem Knoten
-    // (`_augenLichtRegistrieren`). Einmal je Seite.
-    static _augenLichtKlasse() {
-        if (!AnazhRealm._AugenLicht) AnazhRealm._AugenLicht = class AugenLicht extends THREE.PointLight {};
-        return AnazhRealm._AugenLicht;
-    }
-
-    // Der Knoten des Lichts des Auges (r184 vendor/three.webgpu.min.js gelesen: AnalyticLightNode.setup baut die direkte
-    // Lichtung über `lightsNode.setupDirectLight`, die Farbe ist eine Uniform aus Farbe × Stärke, je Frame). Er ist der
-    // PointLightNode, nur hinter einer Bedingung auf diese Uniform: steht das Licht auf 0 (unter dem Himmel), überspringt jedes
-    // Programm seinen Term — die Welt zahlt das Licht nur, wo es leuchtet, und die Licht-Menge (der Programm-Schlüssel) bleibt
-    // dieselbe. Der Null-Renderer hat keinen Licht-Graph; ein echter ohne Knoten-Bibliothek ist ein Vendor-Bruch (laut).
-    _augenLichtRegistrieren(renderer) {
-        if (!renderer || renderer._isHeadlessNull) return;
-        const lib = renderer.library;
-        if (!lib || typeof lib.getLightNodeClass !== "function" || typeof lib.addLight !== "function")
-            throw new Error("_augenLichtRegistrieren: r184-Renderer ohne Licht-Bibliothek (Vendor-Drift)");
-        const Klasse = AnazhRealm._augenLichtKlasse();
-        if (lib.getLightNodeClass(Klasse)) return;
-        const Punkt = lib.getLightNodeClass(THREE.PointLight);
-        if (!Punkt) throw new Error("_augenLichtRegistrieren: r184 kennt keinen PointLightNode (Vendor-Drift)");
-        const TSL = THREE.TSL;
-        class AugenLichtNode extends Punkt {
-            setup(builder) {
-                const c = this.colorNode;
-                TSL.If(c.x.add(c.y).add(c.z).greaterThan(0), () => Punkt.prototype.setup.call(this, builder));
-            }
-        }
-        lib.addLight(AugenLichtNode, Klasse);
+        atmo.augenLicht.value.set(A.farbe).multiplyScalar(I > 1e-4 ? I : 0);
     }
 
     // DER HIMMEL AM AUGE (0…1): der Anteil des Himmels-Lichts am Ort (x, y, z) — gelesen von der Himmels-Sicht des Bodens
@@ -95164,15 +95168,6 @@ class AnazhRealm {
         const hemiLight = new THREE.HemisphereLight(0x88a0c8, 0x3a2818, 0.55);
         scene.add(hemiLight);
         this.state.hemiLight = hemiLight;
-        // DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): von Anfang an in der Szene — die Licht-Menge jedes Programms
-        // bleibt dieselbe (kein Neubau der Pipelines, keine Bundle-Lücke, wenn das Auge eine Höhle betritt); unter dem
-        // Himmel steht es auf 0 und sein Graph überspringt sich.
-        const AL = AnazhRealm.AUGEN_LICHT;
-        const augenLicht = new (AnazhRealm._augenLichtKlasse())(AL.farbe, 0, AL.reichweiteM, AL.abfall);
-        augenLicht.castShadow = false;
-        augenLicht.name = "augenLicht";
-        scene.add(augenLicht);
-        this.state.augenLicht = augenLicht;
         // DIE LUFT (`scene.fogNode`): die EINE Luftperspektive für jedes Material; Farbe, Extinktion und Sonne
         // synct _applyDayNightToScene. Ungebautes deckt der Fern-Ring (Loch-Deckel), nie ein Nebel-Kokon.
         this._luftEnsure();
@@ -101084,8 +101079,9 @@ AnazhRealm.HOEHLEN_SAUM = Object.freeze({ schritte: 1.5, m: 2 });
 AnazhRealm.HIMMELS_SICHT = Object.freeze({ m: 3 });
 // DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): jede dem Auge zugewandte Fläche zeigt in seinem Schein dieselbe
 // Helligkeit wie am Tag — die 18-%-Karte das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge adaptiert an sein
-// Licht), ohne Abfall (`abfall` 0, `karteM` eicht nur ein Gesetz mit Abfall), das Fenster von r184 blendet es bis
-// `reichweiteM` aus (bei 10 m 94 %, 15 m 70 %, 18 m 12 %). Werkbank 11.10., echte GPU, Auge 11: mit 1/d lag die Wand in
+// Licht), ohne Abfall (`abfall` 0, `karteM` eicht nur ein Gesetz mit Abfall), das Fenster von r184 (1 − (d/R)⁴)² blendet
+// es bis `reichweiteM` aus (bei 10 m 88 %, 15 m 47 %, 18 m 12 %). Es ist ein Term des Boden-Stoffs unter Fels
+// (`_buildPbrNodeMaterial`, 1 − aHimmel), kein Szenen-Licht (K15). Werkbank 11.10., echte GPU, Auge 11: mit 1/d lag die Wand in
 // 0,2–0,6 m weiß ohne Maserung (Helligkeit 210), mit 1/d² alles hinter 3 m schwarz; ohne Abfall trägt der Fels in jeder
 // Nähe seine Maserung. `farbe` warmweiß (~4500 K, sRGB) — eine Flamme (0xffc489) tönte den Fels orange; der Himmel am
 // Auge (`_himmelAmAuge`) liest die Himmels-Sicht im Umkreis `umkreisM`, neu nach `neuM` Metern Weg.

@@ -31,7 +31,12 @@
 //       nächsten Himmels-Fläche lässt, und die Mündung bleibt hell. Vorher lag der volle Himmel auf jeder Höhlen-Wand: 22 m
 //       unter dem Fels stand die Ich-Sicht im blaugrauen Schleier (Helligkeit 55,5, ohne Umgebung 0).
 //   (j) LICHT DES AUGES — in der Höhle die wahre Normale und das Licht des Auges nach seinem Gesetz, im Freien aus; BLENDUNG:
-//       es fällt nicht mit dem Abstand (die Wand in 0,3 m höchstens 1,5× die Karte in 2 m — mit 1/d lag sie weiß);
+//       es fällt nicht mit dem Abstand (die Wand in 0,3 m höchstens 1,5× die Karte in 2 m — mit 1/d lag sie weiß). Es ist
+//       EIN Term des Boden-Stoffs (`_buildPbrNodeMaterial`, gewichtet mit 1 − `aHimmel`), seine Stärke die geteilte Uniform
+//       `atmoUniforms.augenLicht`; die Wand zählt dazu die Wesen in Höhlen-Luft (sie tragen es nicht);
+//   (l) SZENEN-LICHT (K15, OMEN 1110-3): unter freiem Himmel trägt jedes Licht der Szene Licht — ein Licht auf Stärke 0
+//       steht trotzdem im Licht-Hash JEDES beleuchteten Stoffs und kostet in jedem Fragment (das Punkt-Licht des Auges ab
+//       Boot: 0,48 ms je Frame auf der GTX 1060, wo es nicht leuchtete);
 //   (k) WIESE UNTER FELS — jeder Höhlen-Vertex ohne Himmel trägt den Stein der Palette (`_bodenFarbeUnterFels`), vorher
 //       das Grün der Wiese 25 m über ihm.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Spiegel-Drift, Loch, Licht-Leck,
@@ -114,6 +119,11 @@ function urteil(b) {
             "CODE: `_buildPbrNodeMaterial` flacht die Normale auch in der Höhle (die 2.5D-Lichtung ohne `aHimmel`) — jede Decke " +
                 "und Wand liegt als Wiese im Licht von oben, kein Licht von unten erreicht sie"
         );
+    if (!c.augenTerm)
+        v.push(
+            "CODE: der Boden-Stoff (`_buildPbrNodeMaterial`) trägt den Term des Lichts des Auges nicht (`atmoUniforms.augenLicht` " +
+                "× (1 − `aHimmel`)) — die Höhle ist schwarz oder ein Szenen-Licht trägt es überall"
+        );
     const al = b.augenLicht;
     if (!al || !al.hoehle || !al.frei || !al.augeInHoehle)
         v.push("LEER: (j) Licht des Auges: kein Auge in der Höhlen-Luft gemessen (die Wand prüfte nichts)");
@@ -122,8 +132,8 @@ function urteil(b) {
             fr = al.frei;
         if (ho.I === null)
             v.push(
-                `LICHT DES AUGES: die Welt trägt kein Licht des Auges — die Ich-Sicht in der Höhle ${JSON.stringify(ho.auge)} ` +
-                    "ist schwarz (kein Himmel, keine Sonne, kein Licht)"
+                `LICHT DES AUGES: der Boden-Stoff trägt kein Licht des Auges (\`atmoUniforms.augenLicht\` fehlt) — die Ich-Sicht ` +
+                    `in der Höhle ${JSON.stringify(ho.auge)} ist schwarz (kein Himmel, keine Sonne, kein Licht)`
             );
         else {
             if (!(ho.h < 1) || !(ho.I > 0))
@@ -135,8 +145,6 @@ function urteil(b) {
                 v.push(
                     `LICHT DES AUGES: in der Höhle Stärke ${ho.I}, das Gesetz verlangt ${ho.soll} (Himmel am Auge ${ho.h})`
                 );
-            if (!(ho.amAuge <= 0.01))
-                v.push(`LICHT DES AUGES: das Licht steht ${ho.amAuge} m neben dem Auge ${JSON.stringify(ho.auge)}`);
             if (!(fr.h === 1) || fr.I !== 0)
                 v.push(
                     `LICHT DES AUGES: unter freiem Himmel ${JSON.stringify(fr.auge)} brennt es (Himmel ${fr.h}, Stärke ` +
@@ -152,6 +160,24 @@ function urteil(b) {
                 `BLENDUNG: das Licht des Auges fällt mit 1/d^${al.hoehle.abfall} — die Wand in 0,3 m ist ${q.toFixed(1)}× heller ` +
                     "als die Karte in 2 m (weiß, ohne Maserung; höchstens 1,5×)"
             );
+    }
+    // (l) SZENEN-LICHT: unter freiem Himmel trägt jedes DIREKTE Licht der Szene Licht (r184 sammelt jedes sichtbare Licht in
+    // den Licht-Hash jedes beleuchteten Stoffs — ein direktes Licht auf 0 rechnet trotzdem seine BRDF in jedem Fragment;
+    // Umgebung und Halbkugel addieren nur eine Bestrahlung und stehen im Bericht)
+    const sl = b.szenenLicht;
+    if (!sl || !Array.isArray(sl.frei) || sl.frei.length === 0)
+        v.push("LEER: (l) Szenen-Licht: kein Licht der Szene unter freiem Himmel gezählt (die Wand prüfte nichts)");
+    else {
+        const tot = sl.frei.filter((l) => l.direkt && (!(l.I > 0) || l.schwarz));
+        if (tot.length > 0) {
+            const t = tot[0];
+            const nd = sl.frei.filter((l) => l.direkt).length;
+            v.push(
+                `SZENEN-LICHT: ${tot.length} von ${nd} direkten Lichtern der Szene tragen unter freiem Himmel nichts, zuerst ` +
+                    `\`${t.name || "(ohne Namen)"}\` (${t.typ}, Stärke ${t.I}${t.schwarz ? ", schwarz" : ""}) — jeder beleuchtete ` +
+                    `Stoff trägt ${sl.frei.length} Licht-Knoten im Hash, ${tot.length} davon rechnen eine BRDF ohne Licht`
+            );
+        }
     }
     // (k) UNTER FELS WÄCHST NICHTS: jeder Höhlen-Vertex ohne Himmel trägt den Stein der Palette
     const wf = b.wieseUnterFels;
@@ -253,12 +279,27 @@ function selbsttest() {
             },
         ],
         gedaechtnis: { vor: 0, nach: 6, imBild: 6 },
-        code: { passLiest: true, abschnittLiest: true, hinausLiest: true, himmelLiest: true, normaleHoehle: true },
+        code: {
+            passLiest: true,
+            abschnittLiest: true,
+            hinausLiest: true,
+            himmelLiest: true,
+            normaleHoehle: true,
+            augenTerm: true,
+        },
         wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null },
         augenLicht: {
             augeInHoehle: true,
-            hoehle: { auge: [-1041, 9, -738], h: 0.2, I: 30, soll: 30, amAuge: 0, abfall: 0 },
-            frei: { auge: [-1041, 30, -738], h: 1, I: 0, soll: 0, amAuge: 0 },
+            hoehle: { auge: [-1041, 9, -738], h: 0.2, I: 30, soll: 30, abfall: 0 },
+            frei: { auge: [-1041, 30, -738], h: 1, I: 0, soll: 0 },
+            wesenInHoehle: 0,
+        },
+        szenenLicht: {
+            frei: [
+                { name: "", typ: "AmbientLight", I: 0, schwarz: false, direkt: false },
+                { name: "", typ: "DirectionalLight", I: 1, schwarz: false, direkt: true },
+                { name: "", typ: "HemisphereLight", I: 0, schwarz: false, direkt: false },
+            ],
         },
         himmel: {
             hoehle: 900,
@@ -342,7 +383,7 @@ function selbsttest() {
         [
             "kein Licht des Auges",
             (b) => (b.augenLicht.hoehle.I = null),
-            /LICHT DES AUGES: die Welt trägt kein Licht des Auges — die Ich-Sicht in der Höhle \[-1041,9,-738\]/,
+            /LICHT DES AUGES: der Boden-Stoff trägt kein Licht des Auges .* in der Höhle \[-1041,9,-738\]/,
         ],
         [
             "Licht aus in der Höhle",
@@ -354,11 +395,34 @@ function selbsttest() {
             (b) => (b.augenLicht.hoehle.I = 3),
             /LICHT DES AUGES: in der Höhle Stärke 3, das Gesetz verlangt 30/,
         ],
-        ["Licht neben dem Auge", (b) => (b.augenLicht.hoehle.amAuge = 2), /LICHT DES AUGES: das Licht steht 2 m neben/],
         ["Licht im Freien", (b) => (b.augenLicht.frei.I = 5), /LICHT DES AUGES: unter freiem Himmel .* brennt es/],
+        ["Stoff ohne Augen-Term", (b) => (b.code.augenTerm = false), /CODE: der Boden-Stoff .* trägt den Term/],
+        // (l) der Befund von OMEN 1110-3 (GTX 1060, V18.540): das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
+        [
+            "Szenen-Licht auf 0",
+            (b) =>
+                b.szenenLicht.frei.push({
+                    name: "augenLicht",
+                    typ: "PointLight/AugenLicht",
+                    I: 0,
+                    schwarz: false,
+                    direkt: true,
+                }),
+            /SZENEN-LICHT: 1 von 2 direkten .*`augenLicht` \(PointLight\/AugenLicht, Stärke 0\) — jeder beleuchtete Stoff trägt 4/,
+        ],
+        [
+            "schwarzes Szenen-Licht",
+            (b) => (b.szenenLicht.frei[1].schwarz = true),
+            /SZENEN-LICHT: 1 von 1 direkten .*DirectionalLight, Stärke 1, schwarz/,
+        ],
+        ["Szenen-Licht ungezählt", (b) => (b.szenenLicht = null), /LEER: \(l\) Szenen-Licht/],
         ["Licht ohne Höhle", (b) => (b.augenLicht.augeInHoehle = false), /LEER: \(j\) Licht des Auges/],
         // (j) der Befund der Werkbank 11.10. (echte GPU, Auge 11): mit 1/d lag die Wand in 0,2 m weiß ohne Maserung
-        ["geblendet", (b) => (b.augenLicht.hoehle.abfall = 1), /BLENDUNG: das Licht des Auges fällt mit 1\/d\^1 — .* 6\.7×/],
+        [
+            "geblendet",
+            (b) => (b.augenLicht.hoehle.abfall = 1),
+            /BLENDUNG: das Licht des Auges fällt mit 1\/d\^1 — .* 6\.7×/,
+        ],
         // (k) der Befund von Auge 11: der Höhlen-Boden 25 m unter der Wiese trug ihr Grün
         [
             "Wiese unter Fels",
@@ -882,33 +946,78 @@ const server = http.createServer((req, res) => {
             }
             // ── (j) DAS LICHT DES AUGES: das Auge in der Höhlen-Luft (der Hinaus-Blick, 16 m unter der Wiese) und unter freiem
             // Himmel (2 m über der Säulen-Oberkante desselben Orts) — je Ort der Takt der Lichter (`_applyDayNightToScene`),
-            // dann der Himmel am Auge und die Stärke des Lichts gegen sein Gesetz (AUGEN_LICHT, die Belichtung des Takts)
+            // dann der Himmel am Auge und die Stärke des Terms (die Uniform `atmoUniforms.augenLicht` = Farbe × Stärke) gegen
+            // sein Gesetz (AUGEN_LICHT, die Belichtung des Takts); (l) unter freiem Himmel jedes Licht der Szene, wie r184 es
+            // sammelt (sichtbar, in den Ebenen der Kamera)
             {
+                const A = r.constructor.AUGEN_LICHT;
+                const B = r.constructor.BELICHTUNG;
                 const lichtAm = (p) => {
                     cam.position.set(p[0], p[1], p[2]);
                     cam.updateMatrixWorld(true);
                     r._applyDayNightToScene();
-                    const L = st.augenLicht;
-                    const A = r.constructor.AUGEN_LICHT;
-                    const B = r.constructor.BELICHTUNG;
+                    const au = st.atmoUniforms && st.atmoUniforms.augenLicht;
+                    const farbe = A ? new T.Color(A.farbe) : null;
                     const h = st.himmelAmAuge;
                     const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
                     const soll =
                         A && Number.isFinite(h)
                             ? ((1 - h) * ((B.zielKarte * Math.PI) / 0.18) * Math.pow(A.karteM, A.abfall)) / k
                             : null;
+                    const lichter = [];
+                    st.scene.traverseVisible((o) => {
+                        if (!o.isLight || !o.layers.test(cam.layers)) return;
+                        const c = o.color;
+                        // die Klasse beim Namen: der Typ, und eine Unterklasse (eigener Licht-Knoten) dazu
+                        const stamm = T[o.type];
+                        const unter =
+                            stamm && Object.getPrototypeOf(o) !== stamm.prototype ? "/" + o.constructor.name : "";
+                        lichter.push({
+                            name: o.name || "",
+                            typ: o.type + unter,
+                            I: +(+o.intensity).toFixed(4),
+                            schwarz: !!c && c.r + c.g + c.b <= 0,
+                            direkt: !(o.isAmbientLight || o.isHemisphereLight || o.isLightProbe),
+                        });
+                    });
                     return {
                         auge: p.map((v) => +v.toFixed(1)),
                         h: Number.isFinite(h) ? +h.toFixed(3) : null,
-                        I: L ? +L.intensity.toFixed(3) : null,
+                        I: au && farbe && farbe.r > 0 ? +(au.value.r / farbe.r).toFixed(3) : null,
                         soll: soll === null ? null : +(soll > 1e-4 ? soll : 0).toFixed(3),
-                        amAuge: L ? +L.position.distanceTo(cam.position).toFixed(3) : null,
-                        abfall: L ? L.decay : null,
+                        abfall: A ? A.abfall : null,
+                        lichter,
                     };
                 };
                 const ha = HINAUS.auge;
                 const frei = [ha[0], r.getTerrainHeightAt(ha[0], ha[2]) + 2, ha[2]];
-                aus.augenLicht = { hoehle: lichtAm(ha), frei: lichtAm(frei), augeInHoehle: xh.augeInHoehle === true };
+                const hoe = lichtAm(ha);
+                const fr = lichtAm(frei);
+                aus.szenenLicht = { frei: fr.lichter, hoehle: hoe.lichter };
+                delete hoe.lichter;
+                delete fr.lichter;
+                // die Wesen in Höhlen-Luft (in einer Luft-Box eines Höhlen-Knotens): der Term liegt im Boden-Stoff, sie tragen
+                // das Licht des Auges nicht
+                const sb = st.chunkSaetze.get("boden");
+                let wesen = 0;
+                for (const w of st.creatures || []) {
+                    const wp = w && w.position;
+                    if (!wp) continue;
+                    let drin = false;
+                    for (const bl of sb.bloecke.values()) {
+                        if (!bl.hoehle) continue;
+                        for (const kn of bl.hoehle.knoten) if (kn.luft && kn.luft.containsPoint(wp)) drin = true;
+                        if (drin) break;
+                    }
+                    if (drin) wesen++;
+                }
+                aus.augenLicht = {
+                    hoehle: hoe,
+                    frei: fr,
+                    augeInHoehle: xh.augeInHoehle === true,
+                    wesenInHoehle: wesen,
+                    wesen: (st.creatures || []).length,
+                };
                 cam.position.copy(merk.p);
                 cam.quaternion.copy(merk.q);
                 cam.updateMatrixWorld(true);
@@ -923,6 +1032,7 @@ const server = http.createServer((req, res) => {
                 /himmelsSicht:\s*true/.test(code(r._getVoxelChunkMaterial)) &&
                 /\.aoNode\s*=\s*THREE\.TSL\.attribute\("aHimmel"/.test(pbr);
             aus.code.normaleHoehle = /_flat\.mul\(_hS\)/.test(pbr) && /attribute\("aHimmel"/.test(pbr);
+            aus.code.augenTerm = /\.augenLicht\b/.test(pbr) && /_hS\.oneMinus\(\)/.test(pbr);
             aus.code.passLiest = /this\._hoehlenSicht\(/.test(code(r._chunkSatzPass));
             aus.code.abschnittLiest = /\.knoten\.sicht\s*===\s*stempel/.test(code(r._chunkSatzAbschnitt));
             aus.code.hinausLiest = /this\._hoehlenHinaus\(/.test(code(r._hoehlenSicht));
@@ -976,7 +1086,16 @@ const server = http.createServer((req, res) => {
     const al = befund.augenLicht;
     if (al)
         console.log(
-            `  (j) Licht des Auges: in der Höhle ${JSON.stringify(al.hoehle)} · unter freiem Himmel ${JSON.stringify(al.frei)}`
+            `  (j) Licht des Auges: in der Höhle ${JSON.stringify(al.hoehle)} · unter freiem Himmel ${JSON.stringify(al.frei)}` +
+                ` · Wesen in Höhlen-Luft ${al.wesenInHoehle} von ${al.wesen} (sie tragen es nicht)`
+        );
+    const sl = befund.szenenLicht;
+    if (sl)
+        console.log(
+            `  (l) Szenen-Licht: unter freiem Himmel ${sl.frei.length} Lichter (Licht-Knoten je beleuchtetem Stoff): ` +
+                sl.frei
+                    .map((l) => `${l.typ}${l.name ? " `" + l.name + "`" : ""} ${l.I}${l.direkt ? "" : " (indirekt)"}`)
+                    .join(" · ")
         );
     const wu = befund.wieseUnterFels;
     if (wu)
