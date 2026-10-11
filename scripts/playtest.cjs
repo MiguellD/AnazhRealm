@@ -28867,10 +28867,8 @@ async function checkBandPhaseEThreat(ctx) {
             // DER BISS IST DER ANSPRUNG (Welle LF kampf, Posten 5): der Ansatz springt an, gebissen wird, wenn der Kopf
             // den Leib berührt — der Kreatur-Takt läuft, bis der Ansprung schnappt oder endet (höchstens 1,5 s). Ein
             // voriger Ansprung landet erst (die Biss-Uhr ruht so lange: kein Biss, den die Probe nicht setzt).
-            const bissOffen = (c) => {
-                const A0 = c.userData._verhaltenAktion;
-                return A0 && A0.bissAkt && r.state.creatureAnimationTime < A0.bis ? A0 : null;
-            };
+            // (die EINE Frage des Spiels, _kreaturAnsprungOffen: die Landung gehört zum Sprung — K13)
+            const bissOffen = (c) => (r._kreaturAnsprungOffen(c) ? c.userData._verhaltenAktion : null);
             // der Takt des Spiels: der Kreatur-Takt, dann der feste Sim-Schritt der Leiber (getragener Stoß, Leib an Leib)
             const takt = () => {
                 r.updateCreatures(1 / 60);
