@@ -2020,21 +2020,21 @@
         return t * t * (3 - 2 * t);
     }
 
-    // DER BESTAND UNTER DEM FUSSABDRUCK (K16, die Fern-Farbe): Bestandsdichte sd und Kronen-Deckung (forestGeburt(sd)) eines
+    // DER BESTAND UNTER DEM FUSSABDRUCK (K16, die Fern-Farbe): Bestandsdichte sd und Geburt (forestGeburt(sd), die Dart-Rate) eines
     // Orts, der für eine Fläche der Kante fussM steht. forestStandDensity liest zwei Oktaven (λ 71 m und 26 m); was der Abdruck
     // nicht auflöst, trägt seinen ERWARTUNGSWERT über die Verteilung des Rauschens: die feine Oktave bedingt auf die grobe
-    // (E[· | grob], 32 Quantile), beide zusammen das Mittel des Bestands. Deckung und Dichte werden je für sich gemittelt (die
-    // Geburt ist nichtlinear — das Mittel der Deckung ist nie die Deckung des Mittels). fussM 0: die Zahlen von
-    // forestStandDensity und forestGeburt.
+    // (E[· | grob], 32 Quantile), beide zusammen das Mittel des Bestands. Geburt und Dichte werden je für sich gemittelt (die
+    // Geburt ist nichtlinear — das Mittel der Geburt ist nie die Geburt des Mittels). fussM 0: die Zahlen von
+    // forestStandDensity und forestGeburt. Die Kronen-Deckung daraus trägt forestKronenDeckung.
     const _bestandMemo = typeof WeakMap === "function" ? new WeakMap() : null;
     function forestBestand(fbm, x, z, fussM) {
         const sdAus = (f1, f2) => forestStandDensityAus(f1, f2, FOREST_STAND.host.contrast, FOREST_STAND.host.mid);
         const f1 = fbm(x * 0.014 + 30, z * 0.014 + 12);
         const f2 = fbm(x * 0.038 + 5, z * 0.038 + 20);
         const sd = sdAus(f1, f2);
-        const deckung = forestGeburt(sd);
+        const geburt = forestGeburt(sd);
         const k2 = fussM > 0 ? forestOktavMittel(fussM, 1 / 0.038) : 0;
-        if (!(k2 > 0)) return { sd, deckung };
+        if (!(k2 > 0)) return { sd, geburt };
         let Q = _bestandMemo && _bestandMemo.get(fbm);
         if (!Q) {
             const v = [];
@@ -2065,7 +2065,56 @@
         const k1 = forestOktavMittel(fussM, 1 / 0.014);
         const sdM = sd1 + (Q.sd0 - sd1) * k1;
         const aM = a1 + (Q.a0 - a1) * k1;
-        return { sd: sd + (sdM - sd) * k2, deckung: deckung + (aM - deckung) * k2 };
+        return { sd: sd + (sdM - sd) * k2, geburt: geburt + (aM - geburt) * k2 };
+    }
+
+    // DIE KRONEN-DECKUNG DES GEPFLANZTEN BESTANDS (K16, die Naht): der Anteil des Bodens unter Kronen, den planForestCell samt der
+    // Kronen-Schüchternheit des Hosts im Mittel stehen lässt — die Fernform des Waldes (das Kronendach des Rings) liest diese
+    // Zahl, nie die Geburt. Die Geburt ist die Rate der Darts (F.dartsPerCell je F.cell², Wurf gegen forestGeburt(sd)); die
+    // Schüchternheit (Zentren >= F.pack·(Ti+Tj), das prio-Maximum gewinnt) ist ein Matérn-II-Prozess: ein Dart der Krone T steht
+    // mit (1 − e^(−λA))/(λA), A = π·pack²·E[(T+Tj)²]; seine Krone überlappt keine andere, die Deckung ist die Summe ihrer Flächen.
+    // Die Kronen: T = Art-Krone × Größe (forestTreeSize über ihre Quantile samt der Überhälter). Befund 11.10.: das Dach las die
+    // Geburt (0,90) als Deckung, der gepflanzte Bestand deckt 0,16 — die Ferne stand als geschlossenes Grün vor offenem Wald.
+    // kronen = [[Gewicht, Kronen-Radius bei Größe 1], …] (die Arten-Mischung am Ort); F = { cell, dartsPerCell, pack }.
+    function forestKronenDeckung(sd, geburt, kronen, F) {
+        const lambda = (F.dartsPerCell / (F.cell * F.cell)) * (geburt > 0 ? geburt : 0);
+        if (!(lambda > 0) || !kronen || !kronen.length) return 0;
+        let wSumme = 0;
+        for (let k = 0; k < kronen.length; k++) wSumme += kronen[k][0] > 0 ? kronen[k][0] : 0;
+        if (!(wSumme > 0)) return 0;
+        // Die Größen-Verteilung (forestTreeSize): ue gleichverteilt auf [0, 1 − 0,52·sd], s = 0,55 + 1,45·ue^1,45; mit 5 % ein
+        // Überhälter max(s, 1,3 + 0,55·u). 12 × 4 Quantile.
+        const NQ = 12;
+        const NU = 4;
+        const oben = 1 - 0.52 * (sd < 0 ? 0 : sd > 1 ? 1 : sd);
+        const groesse = [];
+        for (let i = 0; i < NQ; i++) {
+            const s = 0.55 + 1.45 * Math.pow(((i + 0.5) / NQ) * oben, 1.45);
+            groesse.push([0.95 / NQ, s]);
+            for (let j = 0; j < NU; j++) groesse.push([0.05 / NQ / NU, Math.max(s, 1.3 + 0.55 * ((j + 0.5) / NU))]);
+        }
+        const T = [];
+        for (let k = 0; k < kronen.length; k++) {
+            const w = kronen[k][0] > 0 ? kronen[k][0] / wSumme : 0;
+            if (!(w > 0)) continue;
+            for (let g = 0; g < groesse.length; g++) {
+                const s = groesse[g][1] < 0.5 ? 0.5 : groesse[g][1] > 1.95 ? 1.95 : groesse[g][1];
+                T.push([w * groesse[g][0], kronen[k][1] * s]);
+            }
+        }
+        let mT = 0;
+        let mT2 = 0;
+        for (let i = 0; i < T.length; i++) {
+            mT += T[i][0] * T[i][1];
+            mT2 += T[i][0] * T[i][1] * T[i][1];
+        }
+        let deckung = 0;
+        for (let i = 0; i < T.length; i++) {
+            const t = T[i][1];
+            const A = Math.PI * F.pack * F.pack * (t * t + 2 * t * mT + mT2);
+            deckung += T[i][0] * Math.PI * t * t * ((1 - Math.exp(-lambda * A)) / A);
+        }
+        return deckung > 1 ? 1 : deckung;
     }
 
     // DIE NISCHE EINES ORTS (EINE Formel für den gepflanzten und den fernen Wald): Klima, Bestands-Mosaik, Feuchte,
@@ -4231,6 +4280,7 @@
         forestStandDensity: forestStandDensity,
         forestGeburt: forestGeburt,
         forestBestand: forestBestand,
+        forestKronenDeckung: forestKronenDeckung, // K16: die Kronen-Deckung des gepflanzten Bestands (das Dach des Rings liest sie)
         forestOktavMittel: forestOktavMittel, // K16: die Blende einer Oktave unter einem Fußabdruck (Wert → Mittel) // K16: Bestandsdichte + Deckung unter einem Fußabdruck (die Fern-Farbe)
         forestNicheWeights: forestNicheWeights,
         forestNische: forestNische,
