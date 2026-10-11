@@ -959,6 +959,14 @@
         "38095155944"
       ]
     },
+    "Tod-Zensus (der Leichnam traegt nichts vom lebenden Tier, seine Sicht waehlt der EINE Weg jedes Leibs)": {
+      "s": 15,
+      "n": 1,
+      "lauf": "npm run gate:tod-zensus",
+      "laeufe": [
+        "38030449627/1"
+      ]
+    },
     "Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)": {
       "s": 1,
       "n": 5,

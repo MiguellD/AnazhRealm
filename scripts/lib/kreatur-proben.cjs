@@ -14,7 +14,8 @@
 //   wachsen   (Q2) die Skala nach 3600 Wachstums-Takten = 1,000
 //   gier      (Q3) Lauf ↔ Blick p90 ≤ 20°, 0 Rückwärts-Frames, Stand-Schlupf quer ≤ 0,2, Beschleunigung im Gesetz,
 //             Folgen ohne Gas ↔ Bremse (≤ 30 Wechsel je Minute, R-D17)
-//   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf), die Beute läuft vom Jäger fort (> 80 %)
+//   jagd      (Q3/Q11) Witterungs-Jagd < 10 % Achs-Frames (0,25°, im freien Lauf, der Lauf nicht auf sein Ziel), die Beute
+//             läuft vom Jäger fort (> 80 %)
 //   herde     (Q11) Kohäsion je Gattung (herdeZug zählt gleichartige Nachbarn, n > 0; der Fuchs zieht den Bären nicht),
 //             Bewegung gleich mit und ohne Blick (Frustum + Zufall)
 //   hindernis (Q11) kein Feld-Strahl je Tier und Takt, kein Tier in der Wand; der Kontakt liest den EINEN Leib des Tiers
@@ -702,12 +703,27 @@ async function kreaturProben(r, T, opts) {
         const dt = 1 / 60;
         const NAT = A._verhaltenGesetz().furcht;
         const geschoben = kontaktZaehler(restore);
+        // DIE PEILUNG DES ZIELS (mitlaufend, durchgereicht): wohin der EINE Jagd-Weg den Wolf in seinem letzten Ruf schickte
+        // — das Ziel und der Ort des Wolfs in diesem Ruf
+        let peilung = null;
+        decke(
+            restore,
+            "_kreaturJagdZug",
+            (alt) =>
+                function (c, tx, tz, ...rest) {
+                    if (c === wolf) peilung = { tx, tz, x: c.position.x, z: c.position.z };
+                    return alt.call(this, c, tx, tz, ...rest);
+                }
+        );
         let jagdFrames = 0,
             kontakt = 0,
             achs = 0,
             achs5 = 0,
+            achsWasser = 0,
             bedroht = 0,
             fort = 0;
+        const achsOrt = { gierAchse: 0, rein: 0, ansprung: 0, stoss: 0, beispiele: [] };
+        let achsZiel = 0; // Achsen-Takte, in denen der Wolf geradewegs auf sein Ziel läuft (es liegt auf derselben Linie)
         let wv = { x: wolf.position.x, z: wolf.position.z };
         const bv = beute.map((c) => ({ x: c.position.x, z: c.position.z }));
         for (let k = 0; k < 1800; k++) {
@@ -727,7 +743,44 @@ async function kreaturProben(r, T, opts) {
                 // Himmelsachse, der Lauf lag auf ihr (Basis: 100 % auf 0,25° genau). Ein stetiger Gradient trifft das
                 // 0,5°-Fenster je Achse zufällig in ~0,6 % der Takte; nahe einer Achse liegt er nur, wenn der Wind dort
                 // weht (die Fahne des Geruchs) — darum zählt das enge Fenster, das 5°-Fenster steht als Zahl daneben.
-                if (grad(m) < 0.25) achs++;
+                // DER LAUF AUF SEIN ZIEL (Nachbesserung 4, der Täter der zwei CI-Ausschläge 38,4 % / 16,2 %): eine gerade Hetze
+                // hinter einer Beute, die genau längs einer Himmelsachse flieht (sie flieht vom Jäger fort, er läuft auf sie zu —
+                // die Linie hält ihre Richtung), oder ein gerader Lauf auf ein Ziel, das auf einer Achse liegt, ist kein Raster.
+                // Welche Linie entsteht, hängt am Zustand der Welt beim Start der Probe (Bauten 1 121–1 258 je Boot, die
+                // Kreatur-Uhr nach einem Einschwingen auf der Wand-Uhr). 169 Orte, Kreatur-Uhr und Wind fest: die alte Zählung
+                // bis 15,0 % (83 Achsen-Takte, jeder auf sein Ziel), diese höchstens 1,9 %. Das Raster (R-D12) dreht den Lauf von
+                // der Peilung fort (Täter jagd: 22–28 %) — gezählt wird nur der Achsen-Takt, dessen Lauf mehr als 1° neben der
+                // Peilung des Ziels liegt.
+                const aufZiel =
+                    !!peilung &&
+                    Math.abs(wrap(h - Math.atan2(peilung.tx - peilung.x, peilung.tz - peilung.z))) <
+                        (1 * Math.PI) / 180;
+                if (grad(m) < 0.25 && aufZiel) achsZiel++;
+                else if (grad(m) < 0.25) {
+                    achs++;
+                    // DER ORT DES ACHSEN-TAKTS (Bericht, die Linse nennt die Quelle): im Wasser (die Ufer-Scheu sucht das Ufer
+                    // in vier Himmelsrichtungen), die Gier selbst auf einer Achse (der Leib läuft längs seiner Gier), ein
+                    // reiner Achsen-Schritt (dx oder dz exakt 0), im Ansprung, mit getragenem Stoß; dazu drei Beispiele
+                    const ud = wolf.userData;
+                    const gier = ud._steuer ? ud._steuer.gier : wolf.rotation.y;
+                    let mg = Infinity;
+                    for (let q = 0; q < 4; q++) mg = Math.min(mg, Math.abs(wrap(gier - (q * Math.PI) / 2)));
+                    if (r._creatureWaterContextAt(wolf, r._creatureGroundY(wolf)).inWater) achsWasser++;
+                    if (grad(mg) < 0.25) achsOrt.gierAchse++;
+                    if (dx === 0 || dz === 0) achsOrt.rein++;
+                    if (ud._verhaltenAktion && ud._verhaltenAktion.biss) achsOrt.ansprung++;
+                    if (ud._stossV) achsOrt.stoss++;
+                    if (achsOrt.beispiele.length < 3)
+                        achsOrt.beispiele.push({
+                            k,
+                            zs: ud._motionZustand,
+                            ziel: ud._jagdZiel ? String(ud._jagdZiel).slice(0, 8) : null,
+                            v: ud._steuer ? +ud._steuer.v.toFixed(2) : null,
+                            gierGrad: +grad(gier).toFixed(2),
+                            dx: +dx.toFixed(4),
+                            dz: +dz.toFixed(4),
+                        });
+                }
                 if (grad(m) < 5) achs5++;
             }
             // Die Beute, die den Jäger bemerkt (Zustand flucht — ein pirschender Jäger bleibt bis jagd.pirschSichtM
@@ -755,7 +808,10 @@ async function kreaturProben(r, T, opts) {
             jagdFrames,
             kontaktFrames: kontakt,
             achsAnteil: jagdFrames ? +(achs / jagdFrames).toFixed(3) : null,
+            achsZielAnteil: jagdFrames ? +(achsZiel / jagdFrames).toFixed(3) : null,
             achsAnteil5Grad: jagdFrames ? +(achs5 / jagdFrames).toFixed(3) : null,
+            achsImWasser: achsWasser,
+            achsOrt,
             bedrohtFrames: bedroht,
             fortAnteil: bedroht ? +(fort / bedroht).toFixed(3) : null,
             bisse: beute.filter((c) => c.userData.hp < 9999).length,
@@ -1174,6 +1230,7 @@ async function kreaturProben(r, T, opts) {
                         const o = alt.call(this, cr);
                         if (o) {
                             delete o.hp;
+                            delete o.hpAnteil; // die Wunde reist als Anteil des Lebens (Welle LF kampf Nachbesserung 2)
                             delete o.gier;
                         }
                         return o;
@@ -1813,7 +1870,8 @@ async function kreaturProben(r, T, opts) {
                         const dx = tx - c.position.x,
                             dz = tz - c.position.z;
                         const J = A._verhaltenGesetz().jagd;
-                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - J.pirschStoppM, speed * J.speedBoost);
+                        // der alte Pirsch-Stopp (1,6 m um die Mitten — jagd.pirschStoppM fiel mit dem Biss im Ansprung)
+                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - 1.6, speed * J.speedBoost);
                     }
             );
         if (taeter === "jagd-schritt") schrittJagd();
@@ -1854,7 +1912,10 @@ async function kreaturProben(r, T, opts) {
             if (z === "jagd" || z === "hetzen") {
                 jagdT += dt;
                 jagdWeg += v;
-                if (v / dt > 0.3) {
+                // der Weg ZUR BEUTE zählt nur die Schritte der Jagd auf sie: verliert der Wolf den Hirsch und kommt dem
+                // Spieler nah, jagt er ihn (_jagdZiel "spieler") — seit der Biss ein Ansprung ist (Welle LF kampf), springt er
+                // ihn an, statt still neben ihm aus der Ferne zu beißen; diese Schritte gehen nicht zum Hirsch
+                if (v / dt > 0.3 && wolf.userData._jagdZiel !== "spieler") {
                     bewegt++;
                     if (vx * (hx - wx) + vz * (hz - wz) > 0) hin++;
                 }
@@ -1919,15 +1980,15 @@ async function kreaturProben(r, T, opts) {
             s.player.respawnGraceUntil = altGnade;
         });
         s.player.hp = 1e9;
+        // gezählt wird der Biss, der den Spieler trifft (das Maul am Leib, Welle LF kampf) — nicht der Ansprung
         let spielerBisse = 0;
         decke(
             restore,
-            "_tickCreatureHuntStrike",
+            "damagePlayer",
             (alt) =>
-                function (...a) {
-                    const o = alt.apply(this, a);
-                    if (o) spielerBisse++;
-                    return o;
+                function (amount, quelle) {
+                    if (quelle === "jagd") spielerBisse++;
+                    return alt.call(this, amount, quelle);
                 }
         );
         const sprint = s.sprintSpeed;
@@ -1935,6 +1996,10 @@ async function kreaturProben(r, T, opts) {
         let abstMin = abst0;
         for (let k = 0; k < 600; k++) {
             pm.x += sprint * dt;
+            // die Füße des Läufers bleiben auf dem Boden (die Probe trägt ihn ohne Physik; der Biss braucht den Kopf am
+            // Leib, auch in der Höhe — Welle LF kampf)
+            const hS = r.getTerrainHeightAt(pm.x, pm.z);
+            if (Number.isFinite(hS)) pm.y = hS + 0.5;
             ruhigSpieler();
             takt(dt);
             abstMin = Math.min(abstMin, Math.hypot(wolf2.position.x - pm.x, wolf2.position.z - pm.z));
@@ -1985,7 +2050,8 @@ async function kreaturProben(r, T, opts) {
                         const dx = tx - c.position.x,
                             dz = tz - c.position.z;
                         const J = A._verhaltenGesetz().jagd;
-                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - J.pirschStoppM, speed * J.speedBoost);
+                        // der alte Pirsch-Stopp (1,6 m um die Mitten — jagd.pirschStoppM fiel mit dem Biss im Ansprung)
+                        this._kreaturZiel(direction, dx, dz, Math.hypot(dx, dz) - 1.6, speed * J.speedBoost);
                     }
             );
         const o = frei(60, -60, 25) || land(60, -60);
@@ -2002,15 +2068,15 @@ async function kreaturProben(r, T, opts) {
             ruhig(c);
             return c;
         });
+        // die Lücke beim ersten Biss, der den Spieler trifft (das Maul am Leib, Welle LF kampf)
         let ersterBiss = null;
         decke(
             restore,
-            "_tickCreatureHuntStrike",
+            "damagePlayer",
             (alt) =>
-                function (...a) {
-                    const out = alt.apply(this, a);
-                    if (out && ersterBiss === null) ersterBiss = luecke();
-                    return out;
+                function (amount, quelle) {
+                    if (quelle === "jagd" && ersterBiss === null) ersterBiss = luecke();
+                    return alt.call(this, amount, quelle);
                 }
         );
         const luecke = () => {
@@ -2554,7 +2620,7 @@ function urteil(name, z) {
         soll(z.jagdFrames >= 60, `nur ${z.jagdFrames} Jagd-Frames (Probe vakuös)`);
         soll(
             z.achsAnteil !== null && z.achsAnteil < 0.1,
-            `Jagd auf den Achsen (0,25°) ${(z.achsAnteil * 100).toFixed(1)} % (5°: ${(z.achsAnteil5Grad * 100).toFixed(1)} %)`
+            `Jagd auf den Achsen (0,25°, der Lauf neben der Peilung des Ziels) ${(z.achsAnteil * 100).toFixed(1)} % (5°: ${(z.achsAnteil5Grad * 100).toFixed(1)} %; auf das Ziel ${(z.achsZielAnteil * 100).toFixed(1)} %; davon im Wasser ${z.achsImWasser} Takte; Ort ${JSON.stringify(z.achsOrt || null)})`
         );
         soll(z.bedrohtFrames >= 60, `nur ${z.bedrohtFrames} bedrohte Beute-Frames`);
         soll(z.fortAnteil !== null && z.fortAnteil > 0.8, `Beute fort vom Jäger ${z.fortAnteil} (Soll > 0,8)`);

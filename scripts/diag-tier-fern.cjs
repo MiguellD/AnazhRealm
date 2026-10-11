@@ -28,8 +28,9 @@
 //      volle Baum auf jede Distanz) MUSS die (N)-Messung den Fehler erkennen.
 //      Stub wird restauriert.
 //
-// Frustum-Disziplin: der Schalter läuft nur `inFrustum` — die Linse stubbt
-// isInFrustum ≡ true (in ALLEN Läufen identisch, auch in beiden D-Läufen)
+// Frustum-Disziplin: der Schalter läuft in und außer Blick (_leibSicht), das Bild-Gesetz (Fell, Zeichen) und der
+// Gang ferner Läufer nur `inFrustum` — die Linse stubbt isInFrustum ≡ true (in ALLEN Läufen identisch, auch in
+// beiden D-Läufen)
 // und restauriert (Gate-Hook-Lehre). Proben werden vor jedem Tick auf ihre
 // Distanz re-gepinnt; Distanzen skalieren mit der echten Körpergröße (creature.scale.x).
 //   node scripts/diag-tier-fern.cjs
@@ -129,7 +130,7 @@ const server = http.createServer((req, res) => {
             s.maxCreatures = 8;
             const saveFrustum = r.isInFrustum;
             r.isInFrustum = function () {
-                return true; // der Schalter läuft nur inFrustum — für die Messung immer „im Bild"
+                return true; // Bild-Gesetz und ferner Gang laufen nur inFrustum — für die Messung immer „im Bild"
             };
 
             // Was die HAUPT-Kamera zeichnet (sichtbare Kette, Layer 0) + Dreiecke und die größte Bone-Zahl einer

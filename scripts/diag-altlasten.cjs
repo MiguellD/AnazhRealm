@@ -610,6 +610,18 @@ const FORBIDDEN = [
         fiel: "Welle LF rudel — die Flucht ist der Sprint der Gestalt",
         auch: ["tetrapoda-core.js"],
     },
+    // WELLE LF KAMPF (Vertrags-Akt 09.10., der Biss ist der Ansprung): die Biss-Reichweite um die Mitten (2,4 m, jede Gestalt)
+    // und der feste Pirsch-Stopp (1,6 m) kehren nicht zurück — die Reichweite ist der Weg des Ansprungs, gebissen wird, wo der
+    // Kopf den Leib berührt.
+    { token: "strikeRange", fiel: "Welle LF kampf — der Biss ist der Ansprung (_kreaturBissReich)", auch: ["tetrapoda-core.js"] },
+    { token: "pirschStoppM", fiel: "Welle LF kampf — die Hetze hält in der Weite des Ansprungs", auch: ["tetrapoda-core.js"] },
+    // der Nachklang des Tod-Kippens (0,35 s, dann war der Leib fort) kehrt nicht zurück — ein Tier liegt gefuehl.leichnamSec
+    // und sinkt in leichnamSinkSec in die Erde (Vertrags-Akt 09.10., Posten 7)
+    { token: "kippNachklangSec", fiel: "Welle LF kampf — der Leichnam liegt (gefuehl.leichnamSec)", auch: ["schmiede-core.js"] },
+    // die Frage je Leser („lebt das Tier?") kehrt nicht zurück — der Leichnam verlässt beim Tod die Liste der Wesen und liegt
+    // in state.leichname (Nachbesserung 3: vorher fragten 14 Methoden selbst nach dying, 5 Leser über diese Frage)
+    { token: "_kreaturLebend", fiel: "Welle LF kampf — der Leichnam ist kein Wesen (state.leichname)" },
+    { token: "_kreaturZahlLebend", fiel: "Welle LF kampf — die Zahl der Wesen ist state.creatures.length" },
     // WELLE LF RUDEL (Leben-Schau 07.10., D11/D1-Rest): das Fuß-Ziel in der Ebene des Leibs (das Ziel im Gruppen-Raum,
     // per Rumpf-Quaternion zurückgedreht — am Querhang kippten die Beine mit dem Leib) kehrt nicht zurück.
     { token: "_gangQ", fiel: "Welle LF rudel — das Fuß-Ziel liegt in der Welt (Pfoten-IK _animateTierBaum)" },
@@ -1347,7 +1359,10 @@ const ENTSORGUNG_BESITZER = {
     _p2pRemovePeer: { arten: ["material"], grund: "das Namensschild des Peers beim Abschied" },
     createGalaxySkybox: { arten: ["geometry", "material"], grund: "die Himmels-Kugel (je Bau frisch)" },
     _canopyDisposeChunkByKey: { arten: ["geometry", "material"], grund: "die Kronen-Kachel (je Kachel frisch)" },
-    removeCreature: { arten: ["material"], grund: "Aufgaben-Aura und Trage-Sprite der Kreatur (je Kreatur frisch)" },
+    _leibZeichenFrei: {
+        arten: ["material"],
+        grund: "Aufgaben-Aura und Trage-Sprite des Leibs (je Kreatur frisch) — im Fall und im Abschied",
+    },
     _refreshCreatureTaskAura: { arten: ["material"], grund: "die Aufgaben-Aura (je Aufgabe frisch)" },
     _refreshCreatureCarryingVisual: { arten: ["material"], grund: "das Trage-Sprite (je Last frisch)" },
     _spawnVoxelTestChunk: { arten: ["geometry", "material"], grund: "der Test-Chunk" },
