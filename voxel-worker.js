@@ -353,9 +353,9 @@ function terrainColumnContext(x, z) {
     const wild = state.erbgut.wildnis;
     let ceilOffset = -24;
     if (wild > 0) {
-        const canyonOpen = clamp01((state.noise.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18);
+        // Die Decke bleibt unter dem Boden (Mirror): die Täler sind das Flussnetz, die Canyon-Maske fiel (K16).
         const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
-        ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+        ceilOffset = surf < waterLevelD + 1 ? -24 : -16;
     }
     const hydro = state.hydrosphere;
     const hydroActive = !!(hydro && hydro.ready && !state.hydroComputing);

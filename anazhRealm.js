@@ -200,10 +200,6 @@ class AnazhRealm {
             // _computeHydrosphere. ALLE Voxel-Chunks teilen es → Cells außerhalb sind deterministisch
             // (above=AIR, below=WATER) ohne Naht-Drift; spart ~60 % Density-Samples auf Wasser-Chunks.
             hydroBand: null,
-            // V9.47 — das hydraulische-Erosions-Delta (erodiert − roh, ein
-            // Heightfield-Raster). Wie die Hydrosphäre: lazy beim Worldgen
-            // gebaut, deterministisch aus dem Seed, NICHT im Save persistiert.
-            erosion: null,
             keys: {},
             // 0 ist NULL-SENTINEL, kein spielbarer Zwilling: bei kaltem Kern steht der Spieler sichtbar
             // (_kernPflichtWand nennt den Täter), bei warmem Kern setzt die Boot-Gesetz-Eichung (init) die
@@ -27693,14 +27689,12 @@ class AnazhRealm {
         const wild = (this._erbgutCache || this._erbgut()).wildnis;
         let ceilOffset = -24;
         if (wild > 0) {
-            // T5 (G3) — die CANYON-MASKE (2D, freq 0.0065) hebt die Höhlen-Decke selektiv → Canyons.
-            const canyonOpen = Math.max(
-                0,
-                Math.min(1, (n.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18)
-            );
-            // T7b-ii (Aquifer-Gate): unter Wasser hält die Decke −24 m Abstand + kein canyonOpen (kein Abfluss).
+            // Die Höhlen-Decke bleibt unter dem Boden (16 m, unter Wasser 24 m — T7b-ii, kein Abfluss). DIE TÄLER SIND DAS
+            // FLUSSNETZ (K16, gelaende-core T2): die Canyon-Maske (2D, λ 154 m) hob die Decke bis 8 m ÜBER den Boden, die
+            // Höhle brach als Grube ohne Abfluss durch — am gebauten Boden 15,2 Senken > 1 m je km², ohne sie 4,5
+            // (gate:worker-dichte, Band GEBAUTER BODEN).
             const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
-            ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+            ceilOffset = surf < waterLevelD + 1 ? -24 : -16;
         }
         // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
         const hydro = this.state.hydrosphere;
