@@ -1200,15 +1200,11 @@
       ]
     },
     "Portal-Konformanz (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)": {
-      "s": 348,
-      "n": 5,
+      "s": 378,
+      "n": 1,
       "lauf": "npm run gate:portal-konformanz",
       "laeufe": [
-        "38098149763/1",
-        "38098149763/2",
-        "38096987107",
-        "38096257646",
-        "38095155944"
+        "38148115649/1"
       ]
     },
     "Regler wirkt (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)": {
