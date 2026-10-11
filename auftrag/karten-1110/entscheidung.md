@@ -905,3 +905,6 @@ selbst — offen benannt, jeder kippbar durch ein Wort des Schöpfers:
    die Bisektion). Braucht eine Klasse mehr als einen Bauer + eine Nachbesserung (wie K02: 8 Arbeiter), wird die Domäne im Studio neu gebaut
    statt weiter geflickt. Studios und Module beginnen jetzt im Neubau-Modus: K09a Gelände-Kern → Gelände-Studio mit den Landformen (Bild-
    Schleife in Minuten, Lab = Welt über den Kern) → Ort im Fachwerk-Studio auf diesem Gelände (K10) → Schienen der Modul-Zerlegung (K09b).
+9. **Merge-Regel mit Rauschband (11.10., OMEN 1110-4):** „nicht langsamer“ heißt: die Abweichung liegt im Rauschband des Instruments
+   (am Messort, 2σ) UND kein benannter Täter trägt Kosten ohne Bild. Mehr Inhalt im Bild ist kein Täter, solange das Profi-Band an Wiese und
+   Genesis nicht schlechter wird. Das Instrument wird präziser: die Prüfbühne als GPU-Messort (OMEN 1110-6, Soll Streuung ≤ 0,1 ms).
