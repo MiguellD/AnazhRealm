@@ -10,6 +10,12 @@
 //     im Bild bleibt. Befund: 21 108 Dreiecke in der Szene, 0 im Bild (das Welt-Auge stand 36 m weit).   Soll ≥ 0,99
 //     Dazu die Wand: jeder Neben-Renderer zeichnet nur über `_buehneRender`, und der setzt die Maske um den Render aus.
 //
+//   V-D3 RAHMEN (K05, Runner WS-01) — JEDE GESTALT FÜLLT DIE VORSCHAU: jedes Rezept des LIVE-Buchs und jeder Bauplan wird
+//     über den Chokepoint des Spielers gewählt (selectStudioRecipeForView · selectBlueprintForEdit), `_workshopRender`
+//     stellt die Kamera; gemessen: die projizierte Box3 der Gestalt, größere Kante je Bildkante (NDC, geklemmt), jede
+//     Waffe des Buchs gemessen. Befund 32027dc2: Messer 0,059, Waffen-Median 0,146, 71 von 232 unter 0,5 (der
+//     3-m-Mindestabstand in `_workshopCenterPreviewOn`).                                          Soll [0,5; 0,9]
+//
 //   V-D1 (Q15) — DIE ANKUNFT AUF DER LICHTUNG: der echte Boot legt die Genesis-Plattform, der Wald wächst um den
 //     Spieler (Chunk-Strom + Pflanz-Schlange). Gemessen an den GEPFLANZTEN Bäumen: Stamm-Abstand zur Plattform-Mitte und
 //     ihre Krone in der Welt (Kronen-Radius der Art × Größe × Welt-Skala — auf der echten GPU gegen die weiteste Ast-Spitze
@@ -95,7 +101,29 @@ function fnBody(src, sigRe) {
 }
 
 // ── DIE VERDIKTE (pure Funktionen; Browser-Probe UND Selbst-Test). Rückgabe: die Täter beim Namen. ──
-const SOLL = { vorschauAnteil: 0.99 };
+const SOLL = { vorschauAnteil: 0.99, rahmenMin: 0.5, rahmenMax: 0.9 };
+// V-D3 RAHMEN (K05, WS-01): die projizierte Box3 jeder Gestalt in [0,5; 0,9] der Bildkante, jede Waffe des Buchs gemessen.
+// Befund integ-probe 32027dc2 (Runner R10): Messer 0,059, Median 0,157 — Täter der 3-m-Mindestabstand der Vorschau.
+function rahmenVerdict(m) {
+    if (!m || m.gestartet !== true) return ["rahmen start"];
+    const out = [];
+    const e = m.eintraege || [];
+    const waffen = e.filter((q) => q.kind === "weapon" && Number.isFinite(q.fuell)).length;
+    if (!(m.waffenImBuch > 0) || waffen !== m.waffenImBuch) out.push(`rahmen waffen ${waffen} von ${m.waffenImBuch} gemessen`);
+    const frist = e.filter((q) => q.frist).map((q) => q.id);
+    if (frist.length) out.push(`rahmen ${frist.length} ohne Gestalt nach Frist (${frist.slice(0, 4).join(", ")})`);
+    const aus = e
+        .filter((q) => Number.isFinite(q.fuell) && !(q.fuell >= SOLL.rahmenMin && q.fuell <= SOLL.rahmenMax))
+        .sort((a, b) => a.fuell - b.fuell);
+    if (aus.length)
+        out.push(
+            `rahmen ${aus.length} außerhalb [${SOLL.rahmenMin}; ${SOLL.rahmenMax}]: ${aus
+                .slice(0, 5)
+                .map((q) => `${q.id} ${q.fuell} (${q.kante} m, Abstand ${q.dist} m)`)
+                .join(", ")} — Täter _workshopCenterPreviewOn`
+        );
+    return out;
+}
 function vorschauVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = [];
@@ -983,6 +1011,82 @@ async function probe(arg) {
     } catch (e) {
         out.vorschau = Object.assign(out.vorschau || {}, { err: (e && e.stack) || String(e) });
     }
+    // ── V-D3 RAHMEN (K05, WS-01): jedes Rezept und jeder Bauplan füllt die Vorschau ──
+    // Die Wahl läuft über die Chokepoints des Spielers (selectStudioRecipeForView · selectBlueprintForEdit), die Kamera
+    // stellt `_workshopRender` (der Vorschau-Renderer ist oben der Beobachtungs-Punkt, keine GPU-Arbeit); gemessen wird
+    // die projizierte Box3 der Gestalt: größere Kante je Bildkante (NDC, auf das Bild geklemmt) — das Maß des Runners.
+    try {
+        const m = { gestartet: false, eintraege: [] };
+        out.rahmen = m;
+        const ws = r._ensureWorkshopState();
+        const p = ws.preview;
+        const f = r._foundry;
+        if (!p || !f || !f.recipes) throw new Error("keine Vorschau oder kein Buch");
+        const fuell = () => {
+            const o = p.currentMesh;
+            o.updateMatrixWorld(true);
+            const b = new THREE.Box3().setFromObject(o);
+            if (b.isEmpty()) return null;
+            const cam = p.camera;
+            cam.updateMatrixWorld(true);
+            let x0 = 1,
+                x1 = -1,
+                y0 = 1,
+                y1 = -1;
+            const v = new THREE.Vector3();
+            for (const x of [b.min.x, b.max.x])
+                for (const y of [b.min.y, b.max.y])
+                    for (const z of [b.min.z, b.max.z]) {
+                        v.set(x, y, z).project(cam);
+                        x0 = Math.min(x0, v.x);
+                        x1 = Math.max(x1, v.x);
+                        y0 = Math.min(y0, v.y);
+                        y1 = Math.max(y1, v.y);
+                    }
+            const cl = (q) => Math.max(-1, Math.min(1, q));
+            const fw = (cl(x1) - cl(x0)) / 2,
+                fh = (cl(y1) - cl(y0)) / 2;
+            const s = b.getSize(new THREE.Vector3());
+            return { fuell: +Math.max(fw, fh).toFixed(3), kante: +Math.max(s.x, s.y, s.z).toFixed(3) };
+        };
+        const liste = Object.keys(f.recipes)
+            .sort()
+            .map((id) => ["rezept", id, f.recipes[id].kind])
+            .concat(Object.keys(st.blueprints).sort().map((id) => ["bauplan", id, st.blueprints[id].preset || "teile"]));
+        m.waffenImBuch = liste.filter((e) => e[2] === "weapon").length;
+        const t0 = performance.now();
+        const frist = t0 + 150000;
+        for (const [art, id, kind] of liste) {
+            const e = { art, id, kind };
+            m.eintraege.push(e);
+            if (performance.now() > frist) {
+                e.frist = true;
+                continue;
+            }
+            const ti = performance.now();
+            if (art === "rezept") r.selectStudioRecipeForView(id);
+            else r.selectBlueprintForEdit(id);
+            const dl = performance.now() + 20000;
+            while (performance.now() < dl && r._wsStudioPending) await sleep(40);
+            e.ms = Math.round(performance.now() - ti);
+            if (r._wsStudioPending) {
+                e.frist = true;
+                continue;
+            }
+            if (!p.currentMesh) {
+                e.leer = true;
+                continue;
+            }
+            r._workshopRender();
+            Object.assign(e, fuell() || { leer: true });
+            e.dist = +p.orbit.dist.toFixed(3);
+        }
+        m.ms = Math.round(performance.now() - t0);
+        m.aspekt = +p.camera.aspect.toFixed(3);
+        m.gestartet = true;
+    } catch (e) {
+        out.rahmen = Object.assign(out.rahmen || {}, { err: (e && e.stack) || String(e) });
+    }
     return out;
 }
 
@@ -999,6 +1103,18 @@ async function probe(arg) {
         ]) {
             const v = vorschauVerdict(Object.assign({}, gesund, bruch));
             check(`Selbst-Test V-D3: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
+        }
+        const waffe = (id, fuell) => ({ art: "rezept", id, kind: "weapon", fuell, kante: 0.4, dist: 3 });
+        const gesundR = { gestartet: true, waffenImBuch: 2, eintraege: [waffe("beil", 0.7), waffe("messer", 0.7)] };
+        check("Selbst-Test V-D3 Rahmen: gesunde Vorschau == 0 Täter", rahmenVerdict(gesundR).length === 0, rahmenVerdict(gesundR).join(" · "));
+        for (const [name, bruch, soll] of [
+            ["Messer 0,059 (3-m-Mindestabstand, Runner WS-01)", { eintraege: [waffe("beil", 0.7), waffe("messer", 0.059)] }, "rahmen 1 außerhalb"],
+            ["ein Bauplan sprengt das Bild (0,97)", { eintraege: gesundR.eintraege.concat([{ art: "bauplan", id: "haus", kind: "teile", fuell: 0.97 }]) }, "rahmen 1 außerhalb"],
+            ["eine Waffe ungemessen", { eintraege: [waffe("beil", 0.7), { art: "rezept", id: "messer", kind: "weapon", leer: true }] }, "rahmen waffen 1 von 2"],
+            ["eine Gestalt bleibt pending", { eintraege: gesundR.eintraege.concat([{ art: "rezept", id: "eiche", kind: "tree", frist: true }]) }, "rahmen 1 ohne Gestalt"],
+        ]) {
+            const v = rahmenVerdict(Object.assign({}, gesundR, bruch));
+            check(`Selbst-Test V-D3 Rahmen: ‚${name}' → die Linse nennt ${soll}`, v.some((t) => t.startsWith(soll)), v.join(" · "));
         }
         const gesundA = { gestartet: true, baeume: 9, kronen: 0, ringPortale: 10, ringMitteAbstand: 0, trocken: true };
         check("Selbst-Test V-D1: gesunde Ankunft == 0 Täter", ankunftVerdict(gesundA).length === 0);
@@ -1290,6 +1406,21 @@ async function probe(arg) {
         vV.length === 0,
         `${vm.vertices || 0} Proben · ${(100 * (vm.anteil || 0)).toFixed(1)} % behalten · Maske im Render ${vm.maskeImRender} · Welt-Auge ${vm.augeAbstand} m${vV.length ? " — Täter: " + vV.join(", ") : ""}`
     );
+    const rm = out.rahmen || {};
+    if (rm.err) check("V-D3 Rahmen Probe ohne Ausnahme", false, rm.err.split("\n")[0]);
+    const vR = rahmenVerdict(rm);
+    const re = (rm.eintraege || []).filter((q) => Number.isFinite(q.fuell));
+    const stat = (xs) => {
+        const s = xs.map((q) => q.fuell).sort((a, b) => a - b);
+        return s.length ? `min ${s[0]} · median ${s[Math.floor(s.length / 2)]} · max ${s[s.length - 1]}` : "—";
+    };
+    const rw = re.filter((q) => q.kind === "weapon");
+    check(
+        `V-D3 Rahmen jede Gestalt füllt die Vorschau (projizierte Box3 in [${SOLL.rahmenMin}; ${SOLL.rahmenMax}] der Bildkante)`,
+        vR.length === 0,
+        `${rm.gestartet ? `${re.length} gemessen (${rw.length}/${rm.waffenImBuch} Waffen: ${stat(rw)}; alle: ${stat(re)}) · ${(rm.eintraege || []).filter((q) => q.leer).length} ehrlich leer · Aspekt ${rm.aspekt} · ${rm.ms} ms` : "nicht gestartet"}${vR.length ? " — Täter: " + vR.join(", ") : ""}`
+    );
+    if (process.env.V1_PFAD_RAHMEN_JSON) fs.writeFileSync(process.env.V1_PFAD_RAHMEN_JSON, JSON.stringify(rm, null, 1));
     if (pageErrors.length) check("keine Seiten-Fehler", false, pageErrors[0]);
     if (errs.length) {
         console.error(`\n❌ ROT — ${errs.length} Verletzung(en).`);

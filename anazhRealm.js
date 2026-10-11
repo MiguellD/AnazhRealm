@@ -87695,6 +87695,8 @@ class AnazhRealm {
             gridHelper: grid,
             axesHelper: axes,
             currentMesh: null,
+            // K05 — der Rahmen der Gestalt: Box3, Hüllkugel-Radius R, auto (folgt dem Canvas, bis der Spieler zoomt).
+            rahmen: null,
             partMeshes: new Map(), // sub-Mesh → partIdx
             origColors: new Map(), // sub-Mesh → original color (uint)
             orbit: {
@@ -88464,25 +88466,89 @@ class AnazhRealm {
     }
 
     // W-A1 — das Auto-Center der Vorschau-Kamera (aus _workshopRebuildPreviewMesh gehoben,
-    // V9.56-i: Bauplan- UND Rezept-Vorschau teilen es — eine Quelle).
+    // V9.56-i: Bauplan- UND Rezept-Vorschau teilen es — eine Quelle). K05 (WS-01) — DER RAHMEN AUS DEM KAMERAWINKEL:
+    // der Abstand ist gelöst, nicht geschätzt (`_workshopRahmen`); der 3-m-Mindestabstand fiel (ein Messer füllte 0,059
+    // der Bildkante). Nah- und Fern-Ebene folgen dem Radius R der Hüllkugel, der Zoom lebt in [0,5·R; 30·R].
     _workshopCenterPreviewOn(group, p) {
         const bbox = new THREE.Box3().setFromObject(group);
-        if (!bbox.isEmpty()) {
-            bbox.getCenter(p.orbit.target);
-            const size = new THREE.Vector3();
-            bbox.getSize(size);
-            const maxDim = Math.max(size.x, size.y, size.z);
-            if (maxDim > 0) {
-                // Distanz so dass Bauplan komfortabel im Frame steht
-                const targetDist = Math.max(3, maxDim * 2.2);
-                // Nur initial setzen (orbit.dist === 6.0 default); spätere
-                // Spieler-Zooms überschreiben wir nicht.
-                if (!p._distInitialized || Math.abs(p.orbit.dist - 6.0) < 0.001) {
-                    p.orbit.dist = targetDist;
-                    p._distInitialized = true;
-                }
-            }
+        if (bbox.isEmpty()) return;
+        bbox.getCenter(p.orbit.target);
+        const R = bbox.getSize(new THREE.Vector3()).length() / 2;
+        if (!(R > 0)) return;
+        // near ≤ R/10: der Zoom-Boden 0,5·R bleibt ≥ 4·near; far trägt den Zoom-Deckel 30·R samt Gestalt.
+        p.camera.near = Math.min(0.1, R / 10);
+        p.camera.far = Math.max(200, 32 * R);
+        p.camera.updateProjectionMatrix();
+        // Gerahmt wird bei frischer Wahl (resetWorkshopCamera nullt _distInitialized) — ein Teil-Edit behält den Abstand.
+        if (!p._distInitialized) {
+            p.rahmen = { box: bbox, R, auto: true };
+            this._workshopSyncCanvasSize(); // das Seitenverhältnis des Canvas, bevor der Rahmen es liest
+            p.orbit.dist = this._workshopRahmen(p);
+            p._distInitialized = true;
+        } else if (p.rahmen) {
+            p.rahmen.box = bbox;
+            p.rahmen.R = R;
         }
+    }
+
+    // K05 (WS-01) — der Abstand, bei dem die projizierte Box3 der Gestalt aus dem Orbit-Winkel und dem Seitenverhältnis
+    // des Canvas 0,7 der Bildkante füllt (größere Kante je Bildkante, NDC, auf das Bild geklemmt — das Maß von
+    // gate:v1-pfad V-D3). Das Maß fällt monoton mit dem Abstand: Bisektion zwischen der Ebene vor der nächsten Ecke
+    // (≥ 4·near, ≥ 0,5·R) und dem Zoom-Deckel 30·R. Eine flache Klinge rahmt an ihrer Bild-Länge, nicht an der Hüllkugel.
+    _workshopRahmen(p) {
+        const { box, R } = p.rahmen;
+        const cam = p.camera;
+        const cosP = Math.cos(p.orbit.pitch);
+        const blick = new THREE.Vector3(
+            cosP * Math.cos(p.orbit.yaw),
+            Math.sin(p.orbit.pitch),
+            cosP * Math.sin(p.orbit.yaw)
+        );
+        const ax = new THREE.Vector3(),
+            ay = new THREE.Vector3(),
+            az = new THREE.Vector3();
+        new THREE.Matrix4().lookAt(blick, new THREE.Vector3(), cam.up).extractBasis(ax, ay, az);
+        const mitte = box.getCenter(new THREE.Vector3());
+        const v = new THREE.Vector3();
+        const ecken = [];
+        for (const x of [box.min.x, box.max.x])
+            for (const y of [box.min.y, box.max.y])
+                for (const z of [box.min.z, box.max.z]) {
+                    v.set(x, y, z).sub(mitte);
+                    ecken.push([v.dot(ax), v.dot(ay), v.dot(az)]);
+                }
+        const tv = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2);
+        const th = tv * cam.aspect;
+        const kl = (q) => Math.max(-1, Math.min(1, q));
+        const fuell = (d) => {
+            let x0 = 1,
+                x1 = -1,
+                y0 = 1,
+                y1 = -1;
+            for (const [ex, ey, ez] of ecken) {
+                const w = d - ez;
+                const nx = ex / (w * th),
+                    ny = ey / (w * tv);
+                if (nx < x0) x0 = nx;
+                if (nx > x1) x1 = nx;
+                if (ny < y0) y0 = ny;
+                if (ny > y1) y1 = ny;
+            }
+            return Math.max((kl(x1) - kl(x0)) / 2, (kl(y1) - kl(y0)) / 2);
+        };
+        const ZIEL = 0.7;
+        let vorn = -Infinity;
+        for (const e of ecken) if (e[2] > vorn) vorn = e[2];
+        let lo = Math.max(4 * cam.near, 0.5 * R, vorn + cam.near);
+        let hi = 30 * R;
+        if (lo >= hi || fuell(lo) <= ZIEL) return Math.min(lo, hi);
+        if (fuell(hi) > ZIEL) return hi;
+        for (let i = 0; i < 40; i++) {
+            const mid = (lo + hi) / 2;
+            if (fuell(mid) > ZIEL) lo = mid;
+            else hi = mid;
+        }
+        return hi;
     }
 
     // Rezept-Vorschau: Seed aus der Rezept-Id gehasht, LOD aus ws.recipeLod, ov aus den Reglern — durch
@@ -88619,6 +88685,8 @@ class AnazhRealm {
                 p.camera.aspect = w / h;
                 p.camera.updateProjectionMatrix();
             }
+            // K05 — bis der Spieler zoomt, folgt der Rahmen dem Canvas (das Seitenverhältnis gehört zum Kamerawinkel).
+            if (p.rahmen && p.rahmen.auto) p.orbit.dist = this._workshopRahmen(p);
             p.dirty = true;
         }
     }
@@ -88789,7 +88857,12 @@ class AnazhRealm {
             event.stopPropagation();
             const factor = event.deltaY > 0 ? 1.12 : 0.89;
             const oldDist = p.orbit.dist;
-            const newDist = Math.max(1.5, Math.min(60, oldDist * factor));
+            // K05 — der Zoom lebt in [0,5·R; 30·R] der Gestalt (vorher absolut 1,5–60 m: ein Messer blieb ein Punkt);
+            // ohne Gestalt gibt es nichts zu zoomen. Der Spieler-Zoom beendet das Mitgehen des Rahmens mit dem Canvas.
+            const R = p.rahmen ? p.rahmen.R : 0;
+            if (!(R > 0)) return;
+            p.rahmen.auto = false;
+            const newDist = Math.max(0.5 * R, 4 * p.camera.near, Math.min(30 * R, oldDist * factor));
             const actualFactor = newDist / oldDist;
             // Zoom-zum-Cursor: Welt-Punkt unter dem Cursor (Schnitt mit der Ebene y = target.y), target anteilig
             // dorthin schieben. Trifft der Ray die Ebene nicht (Top-Down), bleibt der dist-Zoom.
@@ -89124,8 +89197,8 @@ class AnazhRealm {
         }
         p.gizmo.visible = true;
         p.gizmo.position.set(part.position.x || 0, part.position.y || 0, part.position.z || 0);
-        // Distance-Scale: orbit.dist * 0.18 ergibt ~0.18 bei dist 1, ~1.0 bei dist ~5.5
-        const s = Math.max(0.4, p.orbit.dist * 0.18);
+        // Distance-Scale: die Griffe halten ihre Schirm-Größe (∝ Abstand); der 0,4-m-Boden fiel mit dem 3-m-Rahmen (K05).
+        const s = p.orbit.dist * 0.18;
         p.gizmo.scale.setScalar(s);
         // Sub-Group-Visibility nach Mode
         const mode = ws.manipulatorMode;
@@ -89396,21 +89469,22 @@ class AnazhRealm {
         return ws.snapEnabled;
     }
 
-    // CAD-Kamera zurück: orbit.target = BBox-Center, dist = BBox-Diagonale × 2.2 (Initial-Formel).
+    // CAD-Kamera zurück: orbit.target = BBox-Center, dist = der Rahmen aus dem Kamerawinkel (`_workshopRahmen`).
     // Shortcut H.
     resetWorkshopCamera() {
         // H tut EXAKT dasselbe wie ein Bauplan-Wechsel: Mesh frisch + Kamera zentriert (Edits bleiben in
         // bp.parts). _distInitialized zurücksetzen — sonst behält der Rebuild den alten Zoom.
         const p = this.state.workshop && this.state.workshop.preview;
         if (!p) return;
-        // Reset dist-Flag → Rebuild setzt dist neu auf BBox-passende Distanz.
+        // Yaw/Pitch zurück auf neutrale Werkstatt-Sicht (PI/4 schräg, 0.3 oben) — VOR dem Rebuild: der Rahmen
+        // rechnet aus diesem Winkel (K05).
+        p.orbit.yaw = Math.PI / 4;
+        p.orbit.pitch = 0.3;
+        // Reset dist-Flag → Rebuild rahmt die Gestalt neu.
         p._distInitialized = false;
         if (typeof this._workshopRebuildPreviewMesh === "function") {
             this._workshopRebuildPreviewMesh();
         }
-        // Yaw/Pitch zurück auf neutrale Werkstatt-Sicht (PI/4 schräg, 0.3 oben).
-        p.orbit.yaw = Math.PI / 4;
-        p.orbit.pitch = 0.3;
         p.dirty = true;
         this.log("CAD-Kamera zentriert", "INFO");
     }
