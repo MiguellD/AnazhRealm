@@ -84039,40 +84039,55 @@ class AnazhRealm {
         // _kampfZielAbstand; dazu der Klingen-Radius) — vorher wählte es „hieb" bis zum Deckel 6 m,
         // die Klinge reichte 2,46 m: am Hang 9 Schwünge, 0 Treffer, kein Hinweis. Steht das Tier unter dem Fadenkreuz
         // jenseits der Klinge, nennt der Spieler-Kanal beim Drücken die Reichweite (der Klick bleibt ein Luftschlag).
-        // DIE EINE ZIEL-WAHL DES HIEBS (K13): liegt kein Leib unter dem Fadenkreuz, wählt der Schwung-Kegel
-        // (_kampfKegelZiel) — wer waagrecht über den Wolf blickt, schlägt den Wolf (vorher 0 von 48 Horizont-Fällen: die Klinge
-        // fegte über ihn). Steht das Tier unter dem Fadenkreuz jenseits der Klinge, bleibt der Klick ein Luftschlag mit dem
-        // Hinweis — nie ein Pflücken oder Graben hinter dem Tier (vorher pflückte der Dolch 1,3 m vor dem Wolf die Blüte dahinter).
+        // DIE EINE ABSICHT DES KLICKS (K13 Runde 2): das Fadenkreuz nennt das Verb, der Schwung-Kegel richtet nur den Hieb.
+        // Ein Leib auf dem Strahl vor dem Bauwerk heißt hieb; sonst nennt das Ziel des Strahls sein Verb — das Bauwerk abbau,
+        // die Blüte pflücken, der Boden vor einem Grab-Gerät graben. Liegt dieses Ziel in Arm-Länge (FORAGE.reach ab dem Anfang
+        // des Strahls, dieselbe Länge, die der Streu-Pick fasst), gilt es; liegt es dahinter oder fehlt es, wählt der Kegel
+        // (_kampfKegelZiel) das Tier in Klingen-Reichweite, und der Klick wird sein Hieb. Vorher maß der Kegel den Kamera-Abstand
+        // seines Punkts NEBEN dem Strahl gegen das Bauwerk AUF ihm, und Blüte und Boden fragte er nie: Abbau, Pflücken und Graben
+        // neben einem ruhigen Wildtier schlugen das Tier (Langschwert, Blick −0,5 rad: abbau → hieb 35,5). Steht das Tier unter dem
+        // Fadenkreuz jenseits der Klinge, bleibt der Klick ein Luftschlag mit dem Hinweis — nie ein Pflücken oder Graben dahinter.
         const pick = this._pickArchitectureAtCrosshair();
         let verb = null;
         let zuWeit = null;
         let creaturePick = null;
+        let ort = null; // der Punkt des Ziels auf dem Strahl (Bauwerk · Blüte · Boden)
+        let flora = null;
+        let boden = null;
         const pmB = this.state.playerMesh;
-        if (pmB) {
-            const K = AnazhRealm._arenaGesetz().schwung;
-            const R = this._kampfSchwungRahmen(this._torRahmen || (this._torRahmen = {}));
-            const klinge = R.reach + K.bladeRadiusM;
-            const unter = this._pickCreatureAtCrosshair();
-            const tier = unter && unter.point ? unter : this._kampfKegelZiel(R, klinge);
-            if (tier) {
-                const pt = tier.point;
-                const creatureDist = this.state.camera.position.distanceTo(pt);
-                const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
-                if (creatureDist <= archDist) {
-                    const nahDist = this._kampfZielAbstand(R, pt);
-                    verb = "hieb";
-                    if (nahDist <= klinge) creaturePick = tier;
-                    else zuWeit = { d: nahDist, klinge };
-                }
+        const R = pmB ? this._kampfSchwungRahmen(this._torRahmen || (this._torRahmen = {})) : null;
+        const klinge = R ? R.reach + AnazhRealm._arenaGesetz().schwung.bladeRadiusM : 0;
+        const unter = pmB ? this._pickCreatureAtCrosshair() : null;
+        if (unter && unter.point) {
+            const creatureDist = this.state.camera.position.distanceTo(unter.point);
+            const archDist = pick && pick.point ? this.state.camera.position.distanceTo(pick.point) : Infinity;
+            if (creatureDist <= archDist) {
+                const nahDist = this._kampfZielAbstand(R, unter.point);
+                verb = "hieb";
+                if (nahDist <= klinge) creaturePick = unter;
+                else zuWeit = { d: nahDist, klinge };
             }
         }
-        // S6-B (V18.133) — FORAGING vor dem Graben: nahe Klein-Vegetation in Arm-Laenge wird GEPFLUECKT (wer auf die
-        // Bluete zielt, will sie — kein Loch darunter). Reichweite 6 m « der 30-m-Grabe-Ray.
-        const flora = !verb && !(pick && pick.entry) ? this._pickScatterAtCrosshair() : null;
         if (!verb) {
-            if (pick && pick.entry) verb = "abbau";
-            else if (flora) verb = "pfluecken";
-            else verb = this._geraetGraebt(this._heldImplementBlueprint()) ? "graben" : "hieb";
+            if (pick && pick.entry) {
+                verb = "abbau";
+                ort = pick.point;
+            } else if ((flora = this._pickScatterAtCrosshair())) {
+                // S6-B (V18.133) — FORAGING vor dem Graben: wer auf die Blüte zielt, will sie, kein Loch darunter
+                verb = "pfluecken";
+                ort = flora.point;
+            } else if (this._geraetGraebt(this._heldImplementBlueprint())) {
+                verb = "graben";
+                boden = this._raycastWorldHit(30);
+                if (boden.hit) ort = boden;
+            }
+            const F = ort ? this._fadenkreuzStrahl() : null;
+            const inArm = !!F && Math.hypot(ort.x - F.o.x, ort.y - F.o.y, ort.z - F.o.z) <= AnazhRealm.FORAGE.reach;
+            const tier = pmB && !inArm ? this._kampfKegelZiel(R, klinge) : null;
+            if (tier) {
+                verb = "hieb";
+                creaturePick = tier;
+            } else if (!verb) verb = "hieb";
         }
         const pV = this.state.player;
         if (gehalten) {
@@ -84103,7 +84118,7 @@ class AnazhRealm {
         // Multi-User-Sync + das Loot + das Gefühl leben in _strikeArchitecture (bei Bruch).
         if (verb === "abbau") return this._strikeArchitecture(pick.entry);
         if (verb === "pfluecken") return this._harvestScatterPick(flora);
-        const target = this._raycastWorldHit(30);
+        const target = boden || this._raycastWorldHit(30);
         if (!target.hit) {
             this.log("Abbauen: kein Ziel in Reichweite.", "INFO");
             return false;

@@ -230,7 +230,10 @@ function reichVerdict(R) {
 // Dispatcher (tryMouseBreak, nie _beginPlayerSwing direkt): jeder der 96 Fälle macht Schaden; je rotem Fall der Täter beim
 // Namen (kein Schwung · kein Ziel unter dem Fadenkreuz · zu weit · Sweep vorbei). Ein Wolf hinter dem Rücken und ein Begleiter bleiben heil
 // (kein Ziel, kein Schaden); ein Wolf unter dem Fadenkreuz jenseits der Klinge (der Dolch, Reichweite + 0,8 m) bleibt ein Luftschlag mit
-// dem Hinweis — nie ein Pflücken oder Graben dahinter. Vorher: Rumpf 46 von 48, Horizont 0 von 48 („kein Ziel").
+// dem Hinweis — nie ein Pflücken oder Graben dahinter. Vorher: Rumpf 46 von 48, Horizont 0 von 48 („kein Ziel"). DIE ERNTE NEBEN DEM
+// WILDTIER (Runde 2): trägt das Fadenkreuz in Arm-Länge sein Ziel (Block · Blüte · Boden vor der Spitzhacke), bleibt der Klick dort
+// und ein ruhiger Wolf im Schwung-Kegel heil; ein Bauwerk jenseits der Arm-Länge nimmt dem Hieb den Wolf vor dem Spieler nicht.
+// Vorher (6133e62d): abbau → hieb 38,1 · pflücken → hieb 26,5 · graben → hieb 10,9 — der Kegel nannte das Verb.
 const KLICK_SOLL = { faelle: 96 };
 function klickVerdict(M) {
     if (!M || !Array.isArray(M.faelle) || M.faelle.length !== KLICK_SOLL.faelle)
@@ -259,6 +262,21 @@ function klickVerdict(M) {
         v.push(
             `klick-zuweit: der Dolch jenseits seiner Klinge (${M.zuWeit.klinge} m) — ${M.zuWeit.schwung ? "Schwung" : `kein Schwung (${M.zuWeit.verb})`}, ${M.zuWeit.gesagt ? "Hinweis" : "kein Hinweis"}, Schaden ${M.zuWeit.dmg}`
         );
+    // die Ernte neben dem Wildtier: das Fadenkreuz nennt das Verb, der Kegel nie (abbau · pflücken · graben, je ein Fall)
+    const E = Array.isArray(M.ernte) ? M.ernte : [];
+    for (const soll of ["abbau", "pfluecken", "graben"]) {
+        const e = E.find((x) => x.soll === soll);
+        if (!e || !e.ziel) v.push(`klick-ernte keine Probe (${soll}: kein Ziel unter dem Fadenkreuz gestellt)`);
+        else if (e.verb !== soll || e.dmg > 0)
+            v.push(
+                `klick-ernte: ${soll} neben dem Wildtier — der Kegel nennt das Verb (${e.verb || "–"}), der Wolf daneben nimmt ${e.dmg}`
+            );
+    }
+    // der Gegenfall: ein Bauwerk jenseits der Arm-Länge unter dem Fadenkreuz nimmt dem Hieb den Wolf vor dem Spieler nicht
+    const F = E.find((x) => x.fern);
+    if (!F || !F.ziel) v.push("klick-ernte keine Probe (fern: kein Pfeiler unter dem Fadenkreuz gestellt)");
+    else if (F.verb !== "hieb" || !(F.dmg > 0))
+        v.push(`klick-fern: der Pfeiler 8 m voraus nennt das Verb (${F.verb || "–"}), der Wolf vor dir nimmt ${F.dmg}`);
     return v;
 }
 // (T18) POSE = TREFFER-VOLUMEN = ICH-SICHT (Welle LF kampf, Posten 2 — pure Funktion, Probe UND Selbst-Test): im Treffer-Takt
@@ -2134,6 +2152,162 @@ async function WELLE_L() {
                 stelle(wolf, klingeD + 0.8);
                 zielen(rumpfPunkt(wolf));
                 const zw = klick(wolf);
+                // DIE ERNTE NEBEN DEM WILDTIER (Runde 2): ein ruhiger wilder Wolf steht 1,2 m neben dem Spieler (0,5 rad seitlich) im
+                // Schwung-Kegel, der Blick geht −0,5 rad abwärts (3rd), und das Fadenkreuz trägt sein Ziel in Arm-Länge — ein Stein-
+                // Block (abbau, Langschwert), eine Blüte (pflücken, Langschwert; die Nah-Streu wächst erst im Takt um den Spieler: der
+                // Streu-Pick nennt die Blüte, die Ernte zeichnet auf), der Boden vor der Spitzhacke (graben; der Erd-Auftrag zeichnet
+                // auf, die Welt bleibt ungekerbt). Der Klick bleibt beim Ziel des Fadenkreuzes, der Wolf heil. Gegenfall „fern": ein
+                // Stein-Pfeiler 8 m voraus, jenseits der Arm-Länge, unter dem waagrechten Fadenkreuz, der Wolf 1,3 m voraus — der Hieb
+                // trifft den Wolf. Der Ort: freier Boden (der Spawn steht auf der Start-Plattform), kein Bauwerk unter dem Fadenkreuz.
+                const ernte = [];
+                const ortAlt = pm.position.clone();
+                const ernteSteine = [];
+                const gepflueckt = [];
+                const erde = [];
+                try {
+                    r.setCameraMode("third");
+                    const geraet = (name) => {
+                        ausruesten(name);
+                        if (s.blueprints[name]) r._setBlueprintWear(s.blueprints[name], 1);
+                    };
+                    // die Kamera folgt dem Spieler mit Nachlauf: nach jedem Ortswechsel und jeder Neigung bis zur Ruhe führen
+                    const neige = (pitch) => {
+                        s.pitch = pitch;
+                        for (let i = 0; i < 40; i++) kamera();
+                    };
+                    const vorn = (dist, seit = 0) => {
+                        const dd = camDir();
+                        const g = Math.atan2(dd.x, dd.z) + seit;
+                        const x = pm.position.x + Math.sin(g) * dist;
+                        const z = pm.position.z + Math.cos(g) * dist;
+                        return { g, P: V3().set(x, r.getTerrainHeightAt(x, z), z) };
+                    };
+                    const wolfAn = (dist, seit) => {
+                        const { g, P } = vorn(dist, seit);
+                        stelle(wolf, 0);
+                        wolf.position.copy(P);
+                        wolf.rotation.set(0, g + Math.PI / 2, 0);
+                        wolf.updateMatrixWorld(true);
+                    };
+                    const stein = (P, hoch) => {
+                        const nm = "_kg_stein_" + ernteSteine.length;
+                        s.blueprints[nm] = {
+                            name: nm,
+                            parts: [
+                                {
+                                    shape: "box",
+                                    material: "stein",
+                                    size: { x: 0.8, y: hoch, z: 0.8 },
+                                    position: { x: 0, y: hoch / 2, z: 0 },
+                                },
+                            ],
+                        };
+                        const e = r.spawnArchitecture(nm, { x: P.x, y: P.y, z: P.z }, { precise: true, seed: 1 });
+                        ernteSteine.push({ nm, e });
+                        return { e, M: e && e.mesh ? new THREE.Box3().setFromObject(e.mesh).getCenter(V3()) : null };
+                    };
+                    // der Abstand des Ziels vom Anfang des Fadenkreuz-Strahls (die Arm-Länge misst dort)
+                    const strahlAb = (P) => {
+                        const F = r._fadenkreuzStrahl();
+                        return F ? +F.o.distanceTo(P).toFixed(2) : null;
+                    };
+                    let frei = false;
+                    let ortK = -1;
+                    for (let k = 0; k < 24 && !frei; k++) {
+                        const g = k * 2.4;
+                        const x = ortAlt.x + Math.sin(g) * (40 + 8 * k);
+                        const z = ortAlt.z + Math.cos(g) * (40 + 8 * k);
+                        pm.position.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
+                        pm.updateMatrixWorld(true);
+                        neige(0);
+                        const w0 = r._pickArchitectureAtCrosshair();
+                        const waagrecht = !w0 || w0.point.distanceTo(pm.position) > 12;
+                        neige(-0.5);
+                        const H = r._raycastWorldHit(30);
+                        const abH = H.hit ? strahlAb(V3().set(H.x, H.y, H.z)) : Infinity;
+                        // der Boden unter dem geneigten Fadenkreuz liegt sicher in Arm-Länge (am Hang abwärts läge er dahinter)
+                        frei =
+                            waagrecht && !r._pickArchitectureAtCrosshair() && abH >= 1.5 && abH <= A.FORAGE.reach - 1.5;
+                        ortK = k;
+                    }
+                    ernte.ortK = frei ? ortK : -1;
+                    const fall = (soll, ziel, ab) => {
+                        wolfAn(1.2, 0.5);
+                        const k = klick(wolf);
+                        ernte.push({ soll, ziel: !!(frei && ziel), ab, verb: k.verb, dmg: k.dmg });
+                    };
+                    const armLaenge = A.FORAGE.reach;
+                    const bodenPunkt = () => {
+                        const H = r._raycastWorldHit(30);
+                        return H.hit ? V3().set(H.x, H.y, H.z) : null;
+                    };
+                    // abbau: der Stein-Block (1,2 m hoch) 3,2 m voraus, das Fadenkreuz auf seiner Mitte — der Wolf daneben steht dem
+                    // Auge näher als der Block (die Kamera-Abstände, die der Kegel vorher verglich)
+                    geraet("klinge_langschwert");
+                    neige(-0.5);
+                    const sb = stein(vorn(3.2).P, 1.2);
+                    if (sb.M) zielen(sb.M);
+                    const unterB = r._pickArchitectureAtCrosshair();
+                    const abA = unterB ? strahlAb(unterB.point) : null;
+                    fall("abbau", !!(sb.e && unterB && unterB.entry === sb.e && abA <= armLaenge), abA);
+                    if (sb.e) r.removeArchitecture(sb.e);
+                    // pflücken: die Blüte, wo das Fadenkreuz den Boden trifft
+                    neige(-0.5);
+                    const PB = bodenPunkt();
+                    const abB = PB ? strahlAb(PB) : null;
+                    r._pickScatterAtCrosshair = () =>
+                        PB ? { key: "_kg", senke: "_kg", name: "bluete", id: 0, point: PB } : null;
+                    r._harvestScatterPick = (pk) => (gepflueckt.push(pk && pk.name), true);
+                    fall("pfluecken", !!PB && !r._pickArchitectureAtCrosshair() && abB <= armLaenge, abB);
+                    delete r._pickScatterAtCrosshair;
+                    delete r._harvestScatterPick;
+                    // graben: der Boden vor der Spitzhacke
+                    geraet("klinge_spitzhacke");
+                    neige(-0.5);
+                    const PC = bodenPunkt();
+                    const abC = PC ? strahlAb(PC) : null;
+                    r.dslRun = (op) => (erde.push(op && op[0]), { ok: true });
+                    fall(
+                        "graben",
+                        !!s.blueprints.klinge_spitzhacke &&
+                            !!PC &&
+                            !r._pickArchitectureAtCrosshair() &&
+                            abC <= armLaenge,
+                        abC
+                    );
+                    delete r.dslRun;
+                    // fern: der Pfeiler 8 m voraus jenseits der Arm-Länge, das Fadenkreuz waagrecht auf ihm, der Wolf 1,3 m voraus
+                    geraet("klinge_langschwert");
+                    neige(0);
+                    const PF = vorn(8).P;
+                    const FoY = r._fadenkreuzStrahl().o.y;
+                    // der Pfeiler (6 m hoch) überragt den waagrechten Strahl, wie der Boden dort auch fällt oder steigt
+                    const sp = stein(V3().set(PF.x, Math.min(PF.y, FoY - 2), PF.z), 6);
+                    if (sp.M) zielen(V3().set(sp.M.x, FoY, sp.M.z));
+                    wolfAn(1.3, 0);
+                    const unterF = r._pickArchitectureAtCrosshair();
+                    const abF = unterF ? strahlAb(unterF.point) : null;
+                    const kf = klick(wolf);
+                    ernte.push({
+                        soll: "hieb",
+                        fern: true,
+                        ziel: !!(frei && sp.e && unterF && unterF.entry === sp.e && abF > armLaenge),
+                        ab: abF,
+                        verb: kf.verb,
+                        dmg: kf.dmg,
+                    });
+                } finally {
+                    delete r._pickScatterAtCrosshair;
+                    delete r._harvestScatterPick;
+                    delete r.dslRun;
+                    for (const x of ernteSteine) {
+                        if (x.e) r.removeArchitecture(x.e);
+                        delete s.blueprints[x.nm];
+                    }
+                    pm.position.copy(ortAlt);
+                    pm.updateMatrixWorld(true);
+                }
+                const ernteZeugen = { gepflueckt: gepflueckt.length, erde: erde.length, ort: ernte.ortK };
                 // Selbst-Test (S10): die Kegel-Wahl verstummt — die Horizont-Fälle müssen den Täter nennen
                 r._kampfKegelZiel = () => null;
                 let selbst;
@@ -2153,6 +2327,8 @@ async function WELLE_L() {
                         dmg: zw.dmg,
                         verb: zw.verb,
                     },
+                    ernte: ernte.map((e) => ({ ...e })),
+                    ernteZeugen,
                     selbst: selbst.filter((f) => f.blick === "horizont").map((f) => f.taeter),
                     ms: Date.now() - t0,
                 };
@@ -4071,12 +4247,12 @@ async function WELLE_L() {
         const kZahl = (blick) =>
             `${kf.filter((f) => f.blick === blick && f.dmg > 0).length}/${kf.filter((f) => f.blick === blick).length}`;
         console.log(
-            `  (T26) Klick-Pfad-Matrix (8 Waffen × 3 Abstände × 3rd/1st): Rumpf ${kZahl("rumpf")} · Horizont ${kZahl("horizont")} mit Schaden · Rücken ${JSON.stringify(kz.ruecken || null)} · Begleiter ${JSON.stringify(kz.begleiter || null)} · Dolch jenseits ${JSON.stringify(kz.zuWeit || null)} · ${kz.ms} ms`
+            `  (T26) Klick-Pfad-Matrix (8 Waffen × 3 Abstände × 3rd/1st): Rumpf ${kZahl("rumpf")} · Horizont ${kZahl("horizont")} mit Schaden · Rücken ${JSON.stringify(kz.ruecken || null)} · Begleiter ${JSON.stringify(kz.begleiter || null)} · Dolch jenseits ${JSON.stringify(kz.zuWeit || null)} · Ernte neben dem Wildtier ${JSON.stringify(kz.ernte || null)} · ${kz.ms} ms`
         );
         const klv = klickVerdict(z.klick);
         check(
             klv.length === 0,
-            "K13 T26: der Hieb trifft im Horizont-Blick — 96 von 96 Klicks auf den Wolf machen Schaden, der Wolf hinter dem Rücken und der Begleiter bleiben heil, jenseits der Klinge ein Luftschlag mit Hinweis" +
+            "K13 T26: der Hieb trifft im Horizont-Blick — 96 von 96 Klicks auf den Wolf machen Schaden, der Wolf hinter dem Rücken und der Begleiter bleiben heil, jenseits der Klinge ein Luftschlag mit Hinweis, Abbau, Pflücken und Graben neben dem Wildtier bleiben beim Fadenkreuz" +
                 (klv.length ? " — " + klv.join(" · ") : "")
         );
         const selbstK = Array.isArray(kz.selbst) ? kz.selbst : [];
@@ -4101,6 +4277,12 @@ async function WELLE_L() {
             ruecken: { dmg: 12, ziel: true, dot: -1 },
             begleiter: { dmg: 9, ziel: true },
             zuWeit: { klinge: 1.02, schwung: false, gesagt: false, dmg: 0, verb: "pfluecken" },
+            ernte: [
+                { soll: "abbau", ziel: true, verb: "hieb", dmg: 19 },
+                { soll: "pfluecken", ziel: true, verb: "hieb", dmg: 19 },
+                { soll: "graben", ziel: true, verb: "hieb", dmg: 14 },
+                { soll: "hieb", fern: true, ziel: true, verb: "abbau", dmg: 0 },
+            ],
         });
         const klvGut = klickVerdict({
             faelle: Array.from({ length: 96 }, (_, i) => ({
@@ -4113,14 +4295,22 @@ async function WELLE_L() {
             ruecken: { dmg: 0, ziel: false, dot: -1 },
             begleiter: { dmg: 0, ziel: false },
             zuWeit: { klinge: 1.02, schwung: true, gesagt: true, dmg: 0, verb: "hieb" },
+            ernte: [
+                ...["abbau", "pfluecken", "graben"].map((soll) => ({ soll, ziel: true, verb: soll, dmg: 0 })),
+                { soll: "hieb", fern: true, ziel: true, verb: "hieb", dmg: 9 },
+            ],
         });
         check(
             klvGut.length === 0 &&
-                ["klick-horizont", "klick-ruecken", "klick-begleiter", "klick-zuweit"].every((t) => klvAlt.some((x) => x.startsWith(t))) &&
+                ["klick-horizont", "klick-ruecken", "klick-begleiter", "klick-zuweit"].every((t) =>
+                    klvAlt.some((x) => x.startsWith(t))
+                ) &&
+                klvAlt.filter((x) => x.startsWith("klick-ernte:")).length === 3 &&
+                klvAlt.some((x) => x.startsWith("klick-fern:")) &&
                 selbstK.length === 6 &&
                 selbstK.every((t) => !!t) &&
                 selbstK.includes("kein Ziel unter dem Fadenkreuz"),
-            `Selbst-Test T26: der Befund (Horizont 0 von 48, der Wolf im Rücken getroffen, der Dolch pflückt) nennt Horizont, Rücken und Ferne; ohne die Kegel-Wahl (S10) trifft kein Horizont-Klick, und der Schwung ohne Ziel heißt „kein Ziel unter dem Fadenkreuz" (${JSON.stringify(selbstK)}); 96 Treffer bleiben grün`
+            `Selbst-Test T26: der Befund (Horizont 0 von 48, der Wolf im Rücken getroffen, der Dolch pflückt, der Kegel erntet den Wolf) nennt Horizont, Rücken, Ferne und je Ernte-Verb den Kegel; ohne die Kegel-Wahl (S10) trifft kein Horizont-Klick, und der Schwung ohne Ziel heißt „kein Ziel unter dem Fadenkreuz" (${JSON.stringify(selbstK)}); 96 Treffer bleiben grün`
         );
         console.log(
             `  (T18) Pose im Treffer-Takt: ${JSON.stringify(z.pose || null)
