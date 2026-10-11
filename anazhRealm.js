@@ -32243,32 +32243,46 @@ class AnazhRealm {
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
                                     const _off = _ecke.mul(_rahmen.x).mul(_sInst);
-                                    // leichter Wind (Vorlagen-sway: die Kronenspitze pendelt, Gewicht (y/H)² = uv.y² — ein eigenes
-                                    // aFlex-Attribut wäre ein weiterer Vertex-Puffer (WebGPU: höchstens 8))
-                                    let _swayX = _Ta.float(0.0);
-                                    let _swayZ = _Ta.float(0.0);
-                                    if (!this.state.windUniforms && typeof this._grassInstanceMat === "function")
-                                        this._grassInstanceMat();
-                                    const _wu = this.state.windUniforms;
-                                    if (_wu && _wu.uWindTime && opts.useFlexAttr) {
-                                        const _fx = _uv.y.mul(_uv.y); // das Wind-Gewicht y² (die Kronenspitze pendelt)
-                                        // Der Impostor liest DIESELBE Richtungs-Quelle uWindDir wie Baum/Gras → die ferne Karte wogt im
-                                        // Gleichtakt mit dem nahen Laub (kein Richtungs-Riss am 40-m-Crossfade).
-                                        const _wcu = this._ensureWindCoupling(_Ta);
-                                        const _phSpatial =
-                                            _wcu && _wcu.uWindDir
-                                                ? _axis.x
-                                                      .mul(_wcu.uWindDir.x)
-                                                      .add(_axis.z.mul(_wcu.uWindDir.y))
-                                                      .mul(_Ta.float(0.228))
-                                                : _axis.x.mul(_Ta.float(0.18)).add(_axis.z.mul(_Ta.float(0.14)));
-                                        const _ph = _wu.uWindTime.mul(_Ta.float(1.1)).add(_phSpatial);
-                                        _swayX = _Ta.sin(_ph).mul(_fx).mul(_Ta.float(0.22));
-                                        _swayZ = _Ta
-                                            .cos(_ph.mul(_Ta.float(0.7)))
-                                            .mul(_fx)
-                                            .mul(_Ta.float(0.13));
-                                    }
+                                    // DER WIND DER KARTE (K19): derselbe Wind-Term wie Rinde und Laub der nahen Stufen (phyto-core
+                                    // `windAusschlag`, das Stamm-Glied: ζ = uv.y, die Kronenspitze pendelt ζ²) — die Last aus der
+                                    // Wind-Zeile des Wetters, die Böe aus WIND_BOE, die Richtung uWindDir, H = Rahmen-Höhe × Instanz-Skala,
+                                    // f0 = kF · δ / H mit der mittleren Schlankheit der Baum-Arten (`_karteWindDelta`: die Karte trägt
+                                    // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter.
+                                    if (!this.state.windUniforms) this._grassInstanceMat();
+                                    const _wu = this._ensureWindCoupling(_Ta);
+                                    const _WB = AnazhRealm.WIND_BOE;
+                                    const _Hk = _rahmen.y.mul(_sInst).max(0.5);
+                                    const _ortK = _axis.x.mul(_wu.uWindDir.x).add(_axis.z.mul(_wu.uWindDir.y));
+                                    const _wK = globalThis.__phytoCore.windAusschlag(
+                                        {
+                                            k: (n) => _Ta.float(n),
+                                            add: (a, b) => a.add(b),
+                                            mul: (a, b) => a.mul(b),
+                                            max: (a, b) => _Ta.max(a, b),
+                                            pow: (a, b) => _Ta.pow(a, b),
+                                            sin: (a) => _Ta.sin(a),
+                                            sqrt: (a) => _Ta.sqrt(a),
+                                        },
+                                        {
+                                            t: _wu.uWindTime,
+                                            U: _wu.uWindStrength.div(AnazhRealm.WEATHER_WIND_AMP),
+                                            g: _Ta
+                                                .sin(_wu.uWindTime.mul(_WB.omega).sub(_ortK.mul(_WB.k)))
+                                                .mul(_WB.amp)
+                                                .add(_WB.mitte),
+                                            f0: _Ta
+                                                .float(globalThis.__phytoCore.WIND_GESETZ.kF * this._karteWindDelta())
+                                                .div(_Hk),
+                                            H: _Hk,
+                                            zeta: _uv.y,
+                                            rho: _Ta.float(0),
+                                            phi: _ortK.mul(-_WB.k),
+                                            psi: _Ta.float(0),
+                                        },
+                                        false
+                                    );
+                                    const _swayX = _wu.uWindDir.x.mul(_wK.quer);
+                                    const _swayZ = _wu.uWindDir.y.mul(_wK.quer);
                                     mat.positionNode = _Ta.vec3(
                                         _axis.x.add(_lz.mul(_off)).add(_swayX),
                                         _axisY,
@@ -77082,7 +77096,7 @@ class AnazhRealm {
 
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
     // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
-    _foundryTreeMaterial(kind, mp, wiegen) {
+    _foundryTreeMaterial(kind, mp, wiegen, baum) {
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
         const TSL = T.TSL;
@@ -77111,7 +77125,10 @@ class AnazhRealm {
         // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
         // Dazu die Wirts-Zustände, die kein Studio-Stoff sind: die Dither-Blende und das Wiegen der Nah-Streu.
         const key =
-            globalThis.__phytoCore.budgetStoff(kind, mp) + (xfade ? "|xf" : "") + (wiegen === true ? "|wiegt" : "");
+            globalThis.__phytoCore.budgetStoff(kind, mp) +
+            (xfade ? "|xf" : "") +
+            (wiegen === true ? "|wiegt" : "") +
+            (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -77479,13 +77496,100 @@ class AnazhRealm {
         // statischen Blatt-Atlas. Der Fallback (MeshStandardMaterial, kein setupObserver) bleibt unberührt.
         this._materialObserverDiaet(mat);
         this._foundryMats[key] = mat;
+        if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex"))
+            this._baumWindStoff(mat, kind, baum);
         return mat;
+    }
+
+    // Die Schlankheit der Karte (K19): das Mittel von δ über die Baum-Arten des Buchs (phyto-core `windBaum`) — die Karte
+    // zeichnet jede Art aus EINEM Stoff und kennt ihre Art nur als Atlas-Schicht.
+    _karteWindDelta() {
+        if (this._karteWindDeltaWert) return this._karteWindDeltaWert;
+        const rs = (this._foundry && this._foundry.recipes) || {};
+        let s = 0,
+            n = 0;
+        for (const p in rs) {
+            const r = rs[p];
+            if (!r || r.kind !== "tree" || !r.s) continue;
+            s += globalThis.__phytoCore.windBaum(r.s, 1).delta;
+            n++;
+        }
+        if (!n) throw new Error("_karteWindDelta: kein Baum im Buch — die Karte baut erst mit dem Buch");
+        return (this._karteWindDeltaWert = s / n);
+    }
+
+    // DIE WIND-DATEN EINER ART (K19) für den Stoff ihrer Gruppe: die Vorlagen-Höhe der gelieferten Gestalt (die Wurzel liegt
+    // bei y = 0 — ζ = y / ht), die Schlankheit δ aus ihrem Buch (phyto-core `windBaum`, dasselbe McMahon-Gesetz, mit dem der
+    // Stamm wächst) und ob sie im Wind steht (Baum und Strauch; der liegende Stamm, der Stumpf, Fels und Bau stehen still).
+    _baumWindDaten(preset, meshes) {
+        const rec = this._foundryRecipeFor(preset);
+        if (!rec || !rec.s || rec.panel !== "plant") return null;
+        let top = 0;
+        for (const m of meshes || []) {
+            const pa = m && m.position && m.position.array;
+            if (!pa) continue;
+            for (let i = 1; i < pa.length; i += 3) if (pa[i] > top) top = pa[i];
+        }
+        if (!(top > 0)) return null;
+        const wb = globalThis.__phytoCore.windBaum(rec.s, 1);
+        return { ht: top, delta: wb.delta, an: rec.kind === "tree" || rec.kind === "shrub" ? 1 : 0 };
+    }
+
+    // DER WIND IM PFLANZEN-STOFF (K19): Rinde und Laub jeder Foundry-Pflanze tragen den EINEN Wind-Term (phyto-core
+    // `windAusschlag`, hier über der TSL-Algebra) — Stamm, Ast und Blatt je mit ihrer Frequenz, die Last aus der Wind-Zeile
+    // des Wetters (U = uWindStrength / WEATHER_WIND_AMP, dieselbe Zeile, die das Wasser kräuselt), die Böe aus WIND_BOE
+    // (Gras, Streu und Ohr lesen sie), die Richtung uWindDir. Je Baum: die Höhe H aus seinem Instanz-Stempel aH0 (die
+    // Sichthöhe der Stufen-Blende, Vorlage × Instanz-Skala), f0 = kF · δ / H. Die Art-Größen (ht, δ, an) sind EINE
+    // Uniform je Stoff (der Schlüssel trägt sie): jede Art zeichnet ihren eigenen Stoff im selben Programm. r184 rechnet den
+    // positionNode NACH der Instanzierung — positionLocal ist instanziert (Welt-Meter), positionGeometry die Vorlage.
+    _baumWindStoff(mat, kind, baum) {
+        if (!mat || mat.isNodeMaterial !== true || mat.positionNode) return;
+        if (!this.state.windUniforms) this._grassInstanceMat();
+        const T = THREE.TSL;
+        const wu = this._ensureWindCoupling(T);
+        const WG = globalThis.__phytoCore.WIND_GESETZ;
+        const B = AnazhRealm.WIND_BOE;
+        const uB = T.uniform(new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0.08, baum ? baum.an : 0));
+        const A = {
+            k: (n) => T.float(n),
+            add: (a, b) => a.add(b),
+            mul: (a, b) => a.mul(b),
+            max: (a, b) => T.max(a, b),
+            pow: (a, b) => T.pow(a, b),
+            sin: (a) => T.sin(a),
+            sqrt: (a) => T.sqrt(a),
+        };
+        const pG = T.positionGeometry;
+        const pW = T.positionWorld;
+        const ht = uB.x.max(1e-3);
+        const H = T.attribute("aH0", "float").max(0.5);
+        const ort = pW.x.mul(wu.uWindDir.x).add(pW.z.mul(wu.uWindDir.y));
+        const g = T.sin(wu.uWindTime.mul(B.omega).sub(ort.mul(B.k)))
+            .mul(B.amp)
+            .add(B.mitte);
+        const e = {
+            t: wu.uWindTime,
+            U: wu.uWindStrength.div(AnazhRealm.WEATHER_WIND_AMP),
+            g,
+            f0: uB.y.mul(WG.kF).div(H),
+            H,
+            zeta: pG.y.div(ht),
+            rho: T.length(pG.xz).div(ht),
+            phi: ort.mul(-B.k),
+            psi: pG.x.mul(1.7).add(pG.y.mul(0.9)).add(pG.z.mul(1.3)).div(ht).mul(6.2832),
+        };
+        const w = globalThis.__phytoCore.windAusschlag(A, e, kind !== "bark");
+        const quer = w.quer.mul(uB.z);
+        let off = T.vec3(wu.uWindDir.x.mul(quer), w.hoch.mul(uB.z), wu.uWindDir.y.mul(quer));
+        if (kind !== "bark") off = off.add(T.normalize(T.normalLocal).mul(w.flattern.mul(uB.z)));
+        mat.positionNode = T.positionLocal.add(off);
+        mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
     }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
     // für die Dither-Blende, NUR unter dem foundryCrossfade-Gate; ohne `stage` Stempel 0 = ungemaskt.
     // Liest GENAU die Attribute aus FOUNDRY_LESEN (die Konsum-Wand der Transport-Schale) — sonst nichts.
-    _foundryBuildMesh(m) {
+    _foundryBuildMesh(m, baum) {
         if (!m || !m.position || !m.position.array) return null;
         // Defensiv: ein absurd grosser Puffer (>200k Verts/Teil) ist ein Transfer-Glitch
         // (kein echter Vorlagen-Baum hat das — LOD0 ~110k GESAMT) -> Teil ueberspringen.
@@ -77542,7 +77646,7 @@ class AnazhRealm {
             geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(m.skinWeight.array, m.skinWeight.itemSize || 4));
             mesh = new T.SkinnedMesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
         } else {
-            mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
+            mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null));
         }
         // Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder). Eine
         // LICHTQUELLE wirft nie (Seh-Klasse glut, vom Gesetzbuch gestempelt: Glutbett und Flamme der Feuerstelle, das
@@ -77593,6 +77697,8 @@ class AnazhRealm {
         if (!Array.isArray(meshes) || !meshes.length) return null;
         const T = THREE;
         let group = null;
+        // die Wind-Daten der Art (K19): Rinde und Laub ihrer Gestalt tragen sie im Stoff (`_baumWindStoff`)
+        const baum = stage && stage.preset ? this._baumWindDaten(stage.preset, meshes) : null;
         try {
             group = new T.Group();
             for (const m of meshes) {
@@ -77605,7 +77711,7 @@ class AnazhRealm {
                     if (feld && m.huelle && typeof m.huelle === "object") group[feld] = m.huelle;
                     continue;
                 }
-                const mesh = this._foundryBuildMesh(m);
+                const mesh = this._foundryBuildMesh(m, baum);
                 if (mesh) group.add(mesh);
             }
         } catch (_e) {
