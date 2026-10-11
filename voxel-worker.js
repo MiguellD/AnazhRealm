@@ -51,8 +51,8 @@ const __phytoV = (function () {
 importScripts((self.__anazhBase || "") + "phyto-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
 
 // K09a — DAS GELÄNDE-GESETZBUCH (gelaende-core.js): die EINE 2D-Höhe, DIESELBE Datei wie der Main-Thread — kein
-// Spiegel. Der Worker reicht seinen `state` als Gelände-Lage (seed · noise · baseHeight · waterLevel ·
-// terrainSteepness · erbgut · regionSize). Fehlt der Kern, wirft der
+// Spiegel. Der Worker reicht seinen `state` als Gelände-Lage (seed · noise · baseHeight · waterLevel · erbgut ·
+// regionSize). Fehlt der Kern, wirft der
 // Worker beim Laden (fail-closed, nie still eine eigene Höhe).
 importScripts((self.__anazhBase || "") + "gelaende-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
 const G = self.__gelaendeCore;
@@ -213,7 +213,6 @@ function applyStateSnapshot(snap) {
     }
     if (typeof snap.baseHeight === "number") state.baseHeight = snap.baseHeight;
     if (typeof snap.waterLevel === "number") state.waterLevel = snap.waterLevel;
-    if (typeof snap.terrainSteepness === "number") state.terrainSteepness = snap.terrainSteepness; // V14.7: ridgeAmp-Skala
     if (snap.hydrosphere !== undefined) state.hydrosphere = snap.hydrosphere;
     if (snap.hydroBand !== undefined) state.hydroBand = snap.hydroBand;
     if (snap.hydroTiles !== undefined) state.hydroTiles = snap.hydroTiles; // A3 (V18.132)

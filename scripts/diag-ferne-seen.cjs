@@ -77,18 +77,15 @@ const server = http.createServer((req, res) => {
         const wl = r.state.waterLevel;
         const out = { wl: +wl.toFixed(2) };
 
-        // (2a) HEIMAT-Fingerprint VOR den Kacheln (256 deterministische Punkte).
+        // (2a) HEIMAT-Fingerprint VOR den Kacheln (256 deterministische Punkte; die Kachel-Erosion fiel mit K16 — die Höhe
+        // trägt das Flussnetz des Gesetzbuchs).
         const homeFp = () => {
             const vals = [];
             for (let i = 0; i < 16; i++) {
                 for (let j = 0; j < 16; j++) {
                     const x = -1000 + (i + 0.5) * 125;
                     const z = -1000 + (j + 0.5) * 125;
-                    vals.push(
-                        r._atlasWaterLevelAt(x, z, -Infinity),
-                        window.__gelaendeCore.erosionDelta(r._gelaende(), x, z),
-                        r._terrainMacroSurfaceY(x, z, true)
-                    );
+                    vals.push(r._atlasWaterLevelAt(x, z, -Infinity), r._terrainMacroSurfaceY(x, z, true));
                 }
             }
             return JSON.stringify(vals);
