@@ -22,6 +22,8 @@ const API = `https://api.github.com/repos/${REPO}`;
 const WORKFLOW = ".github/workflows/check.yml";
 const AUS = "spec/ci/ci-zeiten.json";
 const JE_SCHRITT = 5;
+// höchstens so viele Messungen (ein neuer Schritt, den erst wenige Läufe tragen, liest sonst die ganze Liste)
+const HOECHSTENS = 40;
 const VORBEREITUNG =
     /^(Set up job|Run actions\/checkout@|Run actions\/setup-node@|System-Libs|Dependencies installieren|Post Run |Complete job)/;
 const ZIEL_VOLL_S = 7.5 * 60;
@@ -82,8 +84,10 @@ function schritteAus(doc) {
     const proben = new Map([...soll.keys()].map((n) => [n, []]));
     const vorb = [];
     const ymlAm = new Map();
+    let gelesen = 0;
     for (const { r, a, lauf: messung } of laeufe) {
         if ([...proben.values()].every((p) => p.length >= JE_SCHRITT) && vorb.length >= 25) break;
+        if (++gelesen > HOECHSTENS) break;
         if (!ymlAm.has(r.head_sha)) {
             const c = await api(`/contents/${WORKFLOW}?ref=${r.head_sha}`);
             ymlAm.set(r.head_sha, schritteAus(yaml.load(Buffer.from(c.content, "base64").toString("utf8"))));
@@ -91,7 +95,8 @@ function schritteAus(doc) {
         const damals = ymlAm.get(r.head_sha);
         const jobs = (await api(`/actions/runs/${r.id}/attempts/${a}/jobs?per_page=100`)).jobs;
         const rot = jobs.filter((j) => !["success", "skipped"].includes(j.conclusion));
-        if (rot.length) throw new Error(`Lauf ${messung} trägt ${rot.map((j) => j.name + " " + j.conclusion).join(", ")}`);
+        if (rot.length)
+            throw new Error(`Lauf ${messung} trägt ${rot.map((j) => j.name + " " + j.conclusion).join(", ")}`);
         for (const job of jobs) {
             if (job.conclusion === "skipped") continue;
             let v = 0;
@@ -143,7 +148,7 @@ function schritteAus(doc) {
     fs.mkdirSync(path.dirname(path.join(root, AUS)), { recursive: true });
     fs.writeFileSync(path.join(root, AUS), JSON.stringify(out, null, 2) + "\n");
     console.log(
-        `${AUS}: ${Object.keys(schritte).length} Schritte, Vorbereitung ${out.vorbereitung_s} s, ${laeufe.length} Läufe gelesen`
+        `${AUS}: ${Object.keys(schritte).length} Schritte, Vorbereitung ${out.vorbereitung_s} s, ${Math.min(gelesen, laeufe.length)} Messungen gelesen`
     );
     if (ohne.length) console.log(`  ohne Messung (Eintrag mit „geschaetzt" nötig): ${ohne.join(" · ")}`);
     if (args.includes("--verteilen")) {

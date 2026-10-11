@@ -4,15 +4,15 @@
   "vorbereitung_s": 18,
   "schritte": {
     "Prettier-Format-Check": {
-      "s": 12,
+      "s": 11,
       "n": 5,
       "lauf": "npm run format:check",
       "laeufe": [
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "ESLint": {
@@ -23,20 +23,20 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Syntax-Check JS-Dateien": {
-      "s": 1,
+      "s": 2,
       "n": 5,
       "lauf": "set -e for f in $(git ls-files '*.js'); do echo \"→ $f\" node --check \"$f\" done",
       "laeufe": [
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Duplikate Methodendefinitionen": {
@@ -47,20 +47,20 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Statik (npm run check — Atlas, Source-Probes, Verfassung, Studio-Vertrag, Altlasten, Band-Wand, Selbsttests, Apparat, Vendor-Anker, Betriebsgesetz, CI-Deckung, Taille)": {
-      "s": 49,
+      "s": 58,
       "n": 5,
       "lauf": "npm run check",
       "laeufe": [
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38095155944",
-        "38095082458"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Streu-Wahrheit (die Studio-Arten der Nah-Streu tragen das Farb-Gesetz, ihr Stoff liest den EINEN Himmel)": {
@@ -71,8 +71,8 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Mensch-Anatomie (Welle 5 — Hand, Arm, Kopf, Gesicht, Fuß gegen die Anthropometrie)": {
@@ -83,8 +83,8 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "EIN-Wuchs-Parität (growSkeleton eine Quelle, zwei Konsumenten-Eingänge)": {
@@ -95,8 +95,8 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Single-Quote-Template-Strings (B2-Pattern)": {
@@ -107,8 +107,8 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Verbotenes dynamisches Auswerten (eval / new Function)": {
@@ -119,8 +119,8 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "innerHTML-Schreibzugriffe (Hinweis, kein Fail)": {
@@ -131,8 +131,8 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "TODO/FIXME-Übersicht (Hinweis, kein Fail)": {
@@ -143,8 +143,8 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Fahrzeug-Asset-Vertrag v3 (vehicle-core buildInstance byte-eingefroren, Plattform-Probe)": {
@@ -155,20 +155,20 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Tor-Asset-Vertrag v4 (porta-core buildInstance byte-eingefroren, Byte-Raster am Ausgang)": {
-      "s": 6,
+      "s": 5,
       "n": 5,
       "lauf": "npm run gate:porta-contract",
       "laeufe": [
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Klingen-Asset-Vertrag v5 (W-A4a — schmiede-core buildInstance byte-eingefroren)": {
@@ -179,8 +179,8 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Daten-Vertrag v7 (W-A6/W-A7 — die MESHFREI-Kerne byte-eingefroren)": {
@@ -191,8 +191,8 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Schnell-Playtest (Kern-Gesundheit, ~13 Checks)": {
@@ -203,8 +203,8 @@
         "38097795097/1",
         "38097795097/2",
         "38097795097/3",
-        "38096257646",
-        "38095155944"
+        "38098149763/1",
+        "38098149763/2"
       ]
     },
     "Tier-Anatomie (Welle 5 — die gebackene Gestalt je Art gegen ihre Natur-Bänder)": {
@@ -212,59 +212,59 @@
       "n": 5,
       "lauf": "npm run gate:tier-anatomie",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Erst-Zeichnungs-Wand (echter Renderer — kein Frame trägt eine synchrone Pipeline der Welt)": {
-      "s": 401,
+      "s": 312,
       "n": 5,
       "lauf": "npm run gate:hitch-telemetrie",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Page-Error-Wächter (Runtime-Wurzel — die V17.20-Klasse fail-fast)": {
-      "s": 12,
+      "s": 11,
       "n": 5,
       "lauf": "npm run gate:page-error",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Fenster-Wand (ein Fenster-Wechsel macht die Welt nie wieder schwarz)": {
-      "s": 66,
+      "s": 76,
       "n": 5,
       "lauf": "npm run gate:fenster-wechsel",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Schirm-Wand (ein kleinerer Schirm traegt hoechstens gleich viel Welt, jede Schirm-Groesse aus der EINEN Quelle)": {
-      "s": 23,
+      "s": 25,
       "n": 5,
       "lauf": "npm run gate:schirm-monotonie",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Stellvertreter-Wand (der Feld-Pass marcht nur in den Hüllen seiner Sätze, das Panorama nur am Himmel)": {
@@ -272,23 +272,23 @@
       "n": 5,
       "lauf": "npm run gate:feld-stellvertreter",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Schatten-Wand (je CSM-Kaskade am echten Leser — nah im Regler-Takt, fern seltener)": {
-      "s": 5,
+      "s": 4,
       "n": 5,
       "lauf": "npm run gate:schatten-takt",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Werfer-Wand (jede Kaskade misst ihre Scheibe, jeder Schatten-Pass waehlt seine Werfer)": {
@@ -296,11 +296,11 @@
       "n": 5,
       "lauf": "npm run gate:schatten-werfer",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Schatten-Bias (das Gesetz der Kaskade statt eines festen Meter-Werts)": {
@@ -308,23 +308,23 @@
       "n": 5,
       "lauf": "npm run gate:schatten-bias",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993",
-        "38091744489"
+        "38095082458"
       ]
     },
     "Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)": {
-      "s": 5,
+      "s": 6,
       "n": 5,
       "lauf": "npm run gate:persistence",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Adaptiver Carve-Rebuild (der Grab-Stall an der Wurzel)": {
@@ -332,119 +332,127 @@
       "n": 5,
       "lauf": "npm run gate:carve",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)": {
-      "s": 14,
+      "s": 17,
       "n": 5,
       "lauf": "npm run gate:grass-thin",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Render-Tap-Wahrheits-Wand (W1 — die vergiftete Zahl kann nicht zurück)": {
-      "s": 14,
+      "s": 13,
       "n": 5,
       "lauf": "npm run gate:render-tap",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Regler-Simulation mit ehrlichen Zahlen (W1 — fold→regulate→actuate)": {
-      "s": 13,
+      "s": 14,
       "n": 5,
       "lauf": "npm run gate:regler-sim",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
+        "38095155944"
+      ]
+    },
+    "Takt-Atem (echter Renderer — der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)": {
+      "s": 31,
+      "n": 1,
+      "lauf": "npm run gate:takt-atem",
+      "laeufe": [
         "38092154993"
       ]
     },
     "Volle-Bühne-Prädikat (W2 — Kriterium 2 wird messbar)": {
-      "s": 12,
+      "s": 13,
       "n": 5,
       "lauf": "npm run gate:boot-stage",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Bewegungs-Garantie unter Last (P1 — die 3-FPS-Realität als Linse)": {
-      "s": 14,
+      "s": 13,
       "n": 5,
       "lauf": "npm run gate:move-under-load",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Scatter-Wasser-Gate A/B-Byte-Wand (W3.3a — die Benchmark bewegt sich nie)": {
-      "s": 14,
+      "s": 15,
       "n": 5,
       "lauf": "npm run gate:scatter-ab",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Scatter-Zeit-Scheiben byte-treu (W3.3b/3c — der 54-ms-Block fällt)": {
-      "s": 12,
+      "s": 15,
       "n": 5,
       "lauf": "npm run gate:scatter-slice",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Streu-Fernform aus dem Studio-Budget (jenseits der EINEN Nah-Grenze 64 m kein stilles L0)": {
-      "s": 21,
+      "s": 24,
       "n": 5,
       "lauf": "npm run gate:streu-fern",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Konforme Same-LOD-Rand-Normale (Goldstandard-Mesh G1)": {
-      "s": 6,
+      "s": 7,
       "n": 5,
       "lauf": "npm run gate:seam-normal",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Godrays (V8 Kür — die Licht-Schäfte im EINEN Post-FX-Pass + unter dem EINEN Regler)": {
@@ -452,47 +460,47 @@
       "n": 5,
       "lauf": "npm run gate:godray",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Asset-Vertrag v1 (Studio-Generator trifft die eingefrorenen Goldens byte-genau)": {
-      "s": 213,
+      "s": 212,
       "n": 5,
       "lauf": "npm run gate:asset-contract",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Pflanzen-Nahbild (Rinde · Gitter · Strauch · Blüte · Blatt-Maß · Unterseite · Weide · Fracht)": {
-      "s": 4,
+      "s": 5,
       "n": 5,
       "lauf": "npm run gate:pflanzen-nah",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Sippen-Wirt (das Budget-Gesetz zaehlt, was der Wirt zeichnet)": {
-      "s": 33,
+      "s": 34,
       "n": 5,
       "lauf": "npm run gate:sippen-wirt",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Pack-Kanon (N3 — die Gestalt-Reise als dokumentierter, mintbarer Vertrag)": {
@@ -500,23 +508,23 @@
       "n": 5,
       "lauf": "npm run gate:pack-contract",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Fluss-Wand (V18.511 — der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau)": {
-      "s": 77,
+      "s": 78,
       "n": 5,
       "lauf": "npm run gate:fluss",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Takt-Wand (V18.512 — ein Takt-Subsystem rechnet nur, was es betrifft, nie die ganze Welt)": {
@@ -524,23 +532,23 @@
       "n": 5,
       "lauf": "npm run gate:takt",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Satz-Wand (Welle B — die Draw-Einheit ist Material mal Geometrie über den Ring, nie Chunk mal Material)": {
-      "s": 12,
+      "s": 14,
       "n": 5,
       "lauf": "npm run gate:chunk-satz",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Höhlen-Sicht (Welle 7 — die Höhlen-Schicht zeichnet nur, was ein Strahl durch Luft erreicht)": {
@@ -548,23 +556,23 @@
       "n": 5,
       "lauf": "npm run gate:hoehlen-sicht",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Sicht-Arbeit (Welle C — die Sicht-Kette kostet, was sich ändert, nie die Weltgröße)": {
-      "s": 14,
+      "s": 16,
       "n": 5,
       "lauf": "npm run gate:sicht-arbeit",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Wetter-Wache (Welle K und Leben-Schau 2 — Halt heisst Halt, Uhr und Wetter gehoeren dem Spieler)": {
@@ -572,11 +580,11 @@
       "n": 5,
       "lauf": "npm run gate:wetter-wache",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Welt-Wache (0710-7 — die Buehne haelt die Welt, jeder Welt-Akt beim Namen)": {
@@ -584,23 +592,23 @@
       "n": 5,
       "lauf": "npm run gate:weltakt-wache",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Blocker-Netz (0710-7 — der Strahl fragt seine Nachbarschaft, byte-gleiche Treffer)": {
-      "s": 14,
+      "s": 17,
       "n": 5,
       "lauf": "npm run gate:blocker-netz",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Brennglas-Takt (0710-10 — der Takt kostet, was ihn betrifft, byte-gleiche Brand-Urteile)": {
@@ -608,59 +616,59 @@
       "n": 5,
       "lauf": "npm run gate:brennglas-takt",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Raum-Tags (0710-11 — das Gedaechtnis der Raum-Tags sieht jeden Schreiber)": {
-      "s": 11,
+      "s": 13,
       "n": 5,
       "lauf": "npm run gate:raum-tags",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Stand-Takt (Welle K — im Stand kostet die Welt nichts, Gehen kostet die Änderung)": {
-      "s": 24,
+      "s": 23,
       "n": 5,
       "lauf": "npm run gate:stand-takt",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Foundry-Worker liest headless (P3a — der Gate sieht den ECHTEN Produktions-Pfad)": {
-      "s": 8,
+      "s": 9,
       "n": 5,
       "lauf": "npm run gate:foundry-warm",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Terrain-Portal bootet im Display-Modus (P2 — die Shell liest foundry-core-Globals)": {
-      "s": 14,
+      "s": 15,
       "n": 5,
       "lauf": "npm run gate:portal-boot",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Foundry-Deadlock geheilt (P4 — die Nähe konvergiert unter Last)": {
@@ -668,23 +676,23 @@
       "n": 5,
       "lauf": "npm run gate:foundry-deadlock",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Fernwald (der gesetzte Wald ist jenseits der Mesh-Zone seine Karte, kein Satz, kein Pop)": {
-      "s": 40,
+      "s": 42,
       "n": 5,
       "lauf": "npm run gate:fernwald",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Luft-Sicht (die Luftperspektive ist Physik, keine Nebel-Wand)": {
@@ -692,11 +700,11 @@
       "n": 5,
       "lauf": "npm run gate:luft-sicht",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Himmel-Tag (am Mittag steht kein Punkt am Himmel)": {
@@ -704,11 +712,11 @@
       "n": 5,
       "lauf": "npm run gate:himmel-tag",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Weg-Boden (der Siedlungs-Weg ist Boden, kein schwebendes Quad)": {
@@ -716,35 +724,35 @@
       "n": 5,
       "lauf": "npm run gate:weg-boden",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Boot-Foliage-Ring (die Vegetation waechst mit dem Boden, nicht voraus)": {
-      "s": 9,
+      "s": 10,
       "n": 5,
       "lauf": "npm run gate:boot-foliage-ring",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Foundry-Impostor auf dem EINEN Haupt-Renderer (P5 — kein Bake-iframe mehr)": {
-      "s": 11,
+      "s": 14,
       "n": 5,
       "lauf": "npm run gate:foundry-impostor",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "V1 Kristall-Kleid + V2 Werkstatt — Varianten tragen das Studio-Rezept": {
@@ -752,35 +760,35 @@
       "n": 5,
       "lauf": "npm run gate:v1-resolve",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "V3 Kein zweiter Baum-Bäcker — bei lebender Foundry rendert kein Baum Grammatik": {
-      "s": 20,
+      "s": 21,
       "n": 5,
       "lauf": "npm run gate:no-second-treebuilder",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)": {
-      "s": 19,
+      "s": 20,
       "n": 5,
       "lauf": "npm run gate:asset-inventory",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Slot-Linse — ein freier Slot und eine leere Hülle zeichnen nie, in keinem Pass": {
@@ -788,11 +796,11 @@
       "n": 5,
       "lauf": "npm run gate:freie-slots",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "V6 Wetter-5-Kanal-Feld — _weatherFieldFor liefert {fog,sun,grey,wind,rain}, grey entsättigt das Licht": {
@@ -800,35 +808,35 @@
       "n": 5,
       "lauf": "npm run gate:weather-vector",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Saison ist eine Farbe (V18.527) — uSeasonMul nach dem Studio-Gesetz, kein Neubau": {
-      "s": 0,
+      "s": 1,
       "n": 5,
       "lauf": "npm run gate:season-meadow",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "V4(B) Foundry-Geometrie-Speicher flach — Ref-Zähler-Dispose gegen das LRU-Leck": {
-      "s": 17,
+      "s": 20,
       "n": 5,
       "lauf": "npm run gate:foundry-memory",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "S4 Impostor eager + Werkstatt-L2-Billboard (Studio-Modell, Wand 4/5)": {
@@ -836,11 +844,11 @@
       "n": 5,
       "lauf": "npm run gate:s4-impostor-workshop",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Das Nervensystem (die Pipeline-Abnahme — ein neues Vorlage-Asset fließt automatisch)": {
@@ -848,11 +856,11 @@
       "n": 5,
       "lauf": "npm run gate:nervensystem",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Der Zweit-Kern (Studio-Vertrag Phase 1 — vehicle-core dockt an, W7b)": {
@@ -860,23 +868,23 @@
       "n": 5,
       "lauf": "npm run gate:nervensystem-vehicle",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Place-Policy-Weiche (N5/H8 — wie eine Buch-Art in die Welt kommt)": {
-      "s": 6,
+      "s": 7,
       "n": 5,
       "lauf": "npm run gate:place-policy",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Das Lab-Fahrprofil (N6/H7 — drive aus der EINEN Lab-Formel)": {
@@ -884,35 +892,35 @@
       "n": 5,
       "lauf": "npm run gate:vehicle-drive",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Fahr-Linse des Lebens (Welle L — der Ritt im echten Spiel-Takt)": {
-      "s": 47,
+      "s": 54,
       "n": 5,
       "lauf": "npm run gate:fahr-leben",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Labor-Linse der Garage (Welle L — Maus, HUD, Tacho, Preset, Kultur)": {
-      "s": 38,
+      "s": 48,
       "n": 5,
       "lauf": "npm run gate:garage-labor",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Der ε-Beweis (Nervensystem TEIL VIII Punkt 4 — porta-core dockt nur über Daten an)": {
@@ -920,35 +928,35 @@
       "n": 5,
       "lauf": "npm run gate:nervensystem-porta",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Der ε-Beweis Schmiede (W-A4a — schmiede-core dockt nur über Daten an)": {
-      "s": 8,
+      "s": 9,
       "n": 5,
       "lauf": "npm run gate:nervensystem-schmiede",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Kampf und Maus (Welle L — das EINE Treffer-Urteil, die Maus-Absicht, die Blick-Wahrheit)": {
-      "s": 18,
+      "s": 19,
       "n": 5,
       "lauf": "npm run gate:kampf-gefuehl",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)": {
@@ -956,11 +964,11 @@
       "n": 5,
       "lauf": "npm run gate:gegenstand-stoff",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Albedo-Tafel Labor gegen Welt (S1 W1e - je Klasse Labor-Albedo, Welt-Albedo und ihr Verhaeltnis als Ratsche)": {
@@ -968,11 +976,11 @@
       "n": 5,
       "lauf": "npm run gate:albedo-tafel",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)": {
@@ -980,71 +988,71 @@
       "n": 5,
       "lauf": "npm run gate:nervensystem-fachwerk",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Haus-Asset-Vertrag v6 (W-A5a — fachwerk-core buildInstance byte-eingefroren)": {
-      "s": 74,
+      "s": 78,
       "n": 5,
       "lauf": "npm run gate:fachwerk-contract",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Der Settlement-Kanal N5.7 (W-A5b — exportSettlement + spawnSettlement)": {
-      "s": 24,
+      "s": 26,
       "n": 5,
       "lauf": "npm run gate:settlement",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Das Studio-Dorf begehen (Welle L — Hülle je Haus, Treppe, Keller-Decke, Fluss, Antike)": {
-      "s": 276,
+      "s": 294,
       "n": 5,
       "lauf": "npm run gate:studio-begehen",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Der Körper steht, wo das Auge ihn sieht (Welle L — Träger, Luft-Sperre, Höhle, Tier am Hang, Tod-Lage)": {
-      "s": 64,
+      "s": 59,
       "n": 5,
       "lauf": "npm run gate:koerper-stand",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Das Haus der Welt ist begehbar, wie es gezeichnet ist (Welle L — Hülle der Stufe, Treppe, Grundriss)": {
-      "s": 360,
+      "s": 423,
       "n": 5,
       "lauf": "npm run gate:haus-welt",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Trias-Linse (V18.444 — der Szenen-Dreiecke-Deckel + Klon-Erbe)": {
@@ -1052,23 +1060,23 @@
       "n": 5,
       "lauf": "npm run gate:trias",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die drei MESHFREI-Domaenen (W-A6/W-A7 — klang · koerper · kreatur)": {
-      "s": 8,
+      "s": 9,
       "n": 5,
       "lauf": "npm run gate:nervensystem-labs",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Tier-Gang ohne Gleiten (Welle 5 — das Gang-Gesetz am echten Chokepoint)": {
@@ -1076,23 +1084,23 @@
       "n": 5,
       "lauf": "npm run gate:tier-gang",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Kreatur-Linse (Welle L — der Kreatur-Takt am echten Chokepoint)": {
-      "s": 38,
+      "s": 37,
       "n": 5,
       "lauf": "npm run gate:kreatur-takt",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Kreatur-Kosten (S3 — der Werfer je Gestalt aus der Kern-Zeile)": {
@@ -1100,47 +1108,47 @@
       "n": 5,
       "lauf": "npm run gate:kreatur-kosten",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993",
-        "38091744489"
+        "38095082458"
       ]
     },
     "Die gelenkige Grobstufe (S3 — gate tier-fern am EINEN Stufen-Schalter)": {
-      "s": 10,
+      "s": 13,
       "n": 5,
       "lauf": "npm run gate:tier-fern",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993",
-        "38091744489"
+        "38095082458"
       ]
     },
     "Ofen-Vertrag (S1 Waende — Tier- und Mensch-Bake je Stoff-Klasse x Gelenk byte-eingefroren)": {
-      "s": 108,
+      "s": 142,
       "n": 5,
       "lauf": "npm run gate:ofen-contract",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Klang-Linse (Welle 5 Klang — jede klingende Quelle traegt ein Gesetz)": {
-      "s": 94,
+      "s": 99,
       "n": 5,
       "lauf": "npm run gate:klang-zensus",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Der Rezept-Katalog + B4-Regler (W-A1 — Katalysator-Bogen)": {
@@ -1148,11 +1156,11 @@
       "n": 5,
       "lauf": "npm run gate:rezept-katalog",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Der Portal-Gestalt-Wechsel (W-A3 — Katalysator-Bogen)": {
@@ -1160,23 +1168,23 @@
       "n": 5,
       "lauf": "npm run gate:portal-gestalt",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Portal-Konformanz (W1 c/e — die Heimat richtet jede Welt — Handshake endlich, Quelle geprüft, DSL wirkt, Esc heim)": {
-      "s": 350,
+      "s": 348,
       "n": 5,
       "lauf": "npm run gate:portal-konformanz",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Regler wirkt (W1 d — jede PARAMS-Zeile bewegt den Bau am Kanal der Werkstatt, tote Regler beim Namen)": {
@@ -1184,23 +1192,23 @@
       "n": 5,
       "lauf": "npm run gate:regler-wirkt",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Studio-Dither-Blende (W5.3+W5.4 — Masken-Quelle + CPU-Doppel-Mitgliedschaft)": {
-      "s": 29,
+      "s": 32,
       "n": 5,
       "lauf": "npm run gate:foundry-crossfade",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Tier-Separation (die Tiere entstapeln sich und differenzieren sich über die Größen-Achse)": {
@@ -1208,71 +1216,71 @@
       "n": 5,
       "lauf": "npm run gate:tier-separation",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Körper-Bewegung (der Körper geht den Weg, nicht die Uhr)": {
-      "s": 8,
+      "s": 10,
       "n": 5,
       "lauf": "npm run gate:koerper-bewegung",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Schritt-Klang (der Fuß spielt den Boden, nicht die Uhr)": {
-      "s": 8,
+      "s": 9,
       "n": 5,
       "lauf": "npm run gate:schritt-klang",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Reload-Treue (die Kreatur kehrt nach dem Reload wie gegossen wieder)": {
-      "s": 8,
+      "s": 11,
       "n": 5,
       "lauf": "npm run gate:reload-treue",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Studio-Übergabe (die Live-Bearbeitung eines Studios reist in die Welt)": {
-      "s": 8,
+      "s": 9,
       "n": 5,
       "lauf": "npm run gate:studio-uebergabe",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "P2P-Gestalt (die Studio-Übergabe reist zu den Mitspielern)": {
-      "s": 7,
+      "s": 8,
       "n": 5,
       "lauf": "npm run gate:p2p-gestalt",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Prägung-Welt (die Prägung reist mit dem Artefakt in die Welt-Pfade)": {
@@ -1280,11 +1288,11 @@
       "n": 5,
       "lauf": "npm run gate:praegung-welt",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Scatter-LOD (die Streu-Stufen folgen der Live-Distanz, ohne Flacker-Churn, über Region-Grenzen)": {
@@ -1292,11 +1300,11 @@
       "n": 5,
       "lauf": "npm run gate:scatter-lod",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Leistungs-Vertrag (Stand-Churn null, Ingest-Takt, Gruppen-Stabilität, Linsen-Konsum)": {
@@ -1304,11 +1312,11 @@
       "n": 5,
       "lauf": "npm run gate:leistungs-vertrag",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Erstarren-Linse (kalter Boot, Wander-Lauf ohne Todes-Spirale, ein Tor-Material genau einmal gebaut)": {
@@ -1316,11 +1324,11 @@
       "n": 5,
       "lauf": "npm run gate:erstarren",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Existenz-Boden (bei leerem Budget läuft die Welt-Substanz jeden Frame, Deko jeden vierten)": {
@@ -1328,23 +1336,23 @@
       "n": 5,
       "lauf": "npm run gate:existenz-boden",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Perf-Panel (das Screenshot-Panel füllt sich aus den EINEN Quellen, der Export liefert den Trace)": {
-      "s": 16,
+      "s": 17,
       "n": 5,
       "lauf": "npm run gate:perf-panel",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "GPU-Zeit-Linse (headless der Proxy, die echte Leitung über ein API-treues Fake-Backend)": {
@@ -1352,11 +1360,11 @@
       "n": 5,
       "lauf": "npm run gate:gpu-zeit",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Render-Diät (ein geteiltes Material je Tag-Signatur, die Part-Farbe reist als Instanz-Farbe)": {
@@ -1364,11 +1372,11 @@
       "n": 5,
       "lauf": "npm run gate:render-diaet",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Laub-Auflösung (die Szene-Auflösung folgt dem EINEN Regler, Last-Boden im Stand, Bewegungs-Boden)": {
@@ -1376,47 +1384,47 @@
       "n": 5,
       "lauf": "npm run gate:foliage-res",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Fern-Ring (jenseits des Streaming-Rings zeichnet das EINE Höhen-Gesetz, der Feld-Zeichner auf swiftshader)": {
-      "s": 13,
+      "s": 12,
       "n": 5,
       "lauf": "npm run gate:fern-ring",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "WebGL2-Rückfall (ohne WebGPU-Adapter bootet die Welt laut benannt auf GL und lebt)": {
-      "s": 24,
+      "s": 23,
       "n": 5,
       "lauf": "npm run gate:webgl-probe",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Fern-Wasser (die Atlas-Kulisse jenseits des Chunk-Rings baut mit vollem Material-Vertrag)": {
-      "s": 17,
+      "s": 19,
       "n": 5,
       "lauf": "npm run gate:fern-wasser",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Warm-Start (der zweite Boot liest den Ring byte-gleich aus der Platte, ein Edit geht am Cache vorbei)": {
@@ -1424,11 +1432,11 @@
       "n": 5,
       "lauf": "npm run gate:warm-start",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Wasser-Wahrheit (kein Wasser an der Wand, kein Spiegel über Land, keine bleibenden Blobs, Stau nur geschlossen)": {
@@ -1436,11 +1444,11 @@
       "n": 5,
       "lauf": "npm run gate:wasser-wahrheit",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Kopplung (die Welt fasst den Körper an — Strömung, Gleiten, Wind-Richtung, Gras-Biegung)": {
@@ -1448,11 +1456,11 @@
       "n": 5,
       "lauf": "npm run gate:kopplung",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Worker-Wasser-Sheet (der Spiegel im Worker ist byte-identisch, Lehre 7)": {
@@ -1460,23 +1468,23 @@
       "n": 5,
       "lauf": "npm run gate:worker-watersheet",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Portal-Membran (die Passage ist integriert und zeichnet nur im Blick)": {
-      "s": 19,
+      "s": 21,
       "n": 5,
       "lauf": "npm run gate:portal-membran",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38021693010"
+        "38095082458"
       ]
     },
     "Dritter Spiegel (das Makro-Gesetz rechnet auf swiftshader-WebGPU seh-paritätisch)": {
@@ -1484,11 +1492,11 @@
       "n": 5,
       "lauf": "npm run gate:dritter-spiegel",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Fahrzeug-Fernstufe (ein geparktes Fahrzeug serviert fern das Billboard der EINEN Bäckerei)": {
@@ -1496,11 +1504,11 @@
       "n": 5,
       "lauf": "npm run gate:fahrzeug-fern",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Bäcker-Kanal (der Studio-Bäcker antwortet im Foundry-Worker)": {
@@ -1508,11 +1516,11 @@
       "n": 5,
       "lauf": "npm run gate:baecker-kanal",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Konsum-Matrix (je Gattung und Facette, was das Studio liefert und wer es liest — die Ratsche hält jede volle Zelle)": {
@@ -1520,59 +1528,59 @@
       "n": 5,
       "lauf": "npm run gate:konsum-matrix",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Chunk-Naht (same-LOD-Ränder koinzident, Cross-LOD-Paare gestreamt, kein ungedeckter Spalt)": {
-      "s": 24,
+      "s": 25,
       "n": 5,
       "lauf": "npm run gate:seam",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38038744814",
-        "38009438179"
+        "38095082458"
       ]
     },
     "Die V1-Pfad-Linse (Welle L - Vorschau, Ankunft, Eingabe, Wort, Rezeptbuch, KI-Fehler)": {
-      "s": 16,
+      "s": 17,
       "n": 5,
       "lauf": "npm run gate:v1-pfad",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Werkstatt-Weg-Linse (Welle L Folge - v1-Schritte 3 und 4, Werkstatt bauen und KI erschaffen)": {
-      "s": 24,
+      "s": 26,
       "n": 5,
       "lauf": "npm run gate:werkstatt-weg",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die Ankunfts-Linse (Welle L Folge - Ladeschirm, Fadenkreuz, Hilfe, Chat-Taste, Start-Gurt, Kamera im Baum, Dorf vor dir)": {
-      "s": 74,
+      "s": 76,
       "n": 5,
       "lauf": "npm run gate:ankunft",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Die GPU-Fehler-Linse (Welle L - V-D7, Selbsttest)": {
@@ -1580,11 +1588,11 @@
       "n": 5,
       "lauf": "npm run gate:gpu-fehler",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Wasser-Wand (Welle L — Q6 + Q7, die Proben rufen die Chokepoints selbst)": {
@@ -1592,107 +1600,107 @@
       "n": 5,
       "lauf": "npm run gate:wasser-leben",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "GPU-Churn-Linse (echter Renderer — die Klasse hinter dem V18.322-Idle-Freeze)": {
-      "s": 75,
+      "s": 65,
       "n": 5,
       "lauf": "npm run gpu-lens",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Nah-Linse (echter Renderer — kein Analog-Satz diesseits der Nah-Grenze 64 m)": {
-      "s": 32,
+      "s": 34,
       "n": 5,
       "lauf": "npm run gate:analog-nah",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Frost-Wand (echter Renderer — das Weltbild folgt der Kamera durch Werkstatt, Ich- und Hof-Buehne)": {
-      "s": 82,
+      "s": 97,
       "n": 5,
       "lauf": "npm run gate:weltbild-frost",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Post-Kette (echter Renderer — der Direktpfad zeichnet mit Tiefe, jede Nachbild-Stufe kostet nur, wenn sie zeigt)": {
-      "s": 114,
+      "s": 26,
       "n": 5,
       "lauf": "npm run gate:post-kette",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Kamera-Treue und Stand-Wand (echter Renderer — der Replay zeichnet wie der direkte Pfad, im Stand arbeitet die Diät nichts doppelt)": {
-      "s": 7,
+      "s": 8,
       "n": 5,
       "lauf": "npm run gate:kamera-treue",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)": {
-      "s": 84,
+      "s": 74,
       "n": 5,
       "lauf": "npm run gate:ziel-zensus",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Verdeckungs-Abfrage (echter Renderer — der Aussteige-Ablauf am Bach, jede WebGPU-Validierung beim Namen)": {
-      "s": 105,
+      "s": 100,
       "n": 5,
       "lauf": "npm run gate:verdeckungs-abfrage",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38095155944",
-        "38095082458",
-        "38092890885",
-        "38021261668",
-        "38009485719"
+        "38095082458"
       ]
     },
     "Wasser-Bild (echter Renderer — das Wasser-Material und der Regen)": {
-      "s": 6,
+      "s": 7,
       "n": 5,
       "lauf": "npm run gate:wasser-leben:bild",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Look-Physik-Linse (der Look gegen die gemessene Realität)": {
@@ -1700,11 +1708,11 @@
       "n": 5,
       "lauf": "npm run look-lens",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     },
     "Look-Golden-Linse (Selbst-Test der perzeptuellen MSSIM-Metrik)": {
@@ -1712,11 +1720,11 @@
       "n": 5,
       "lauf": "npm run look-golden",
       "laeufe": [
+        "38098149763/1",
+        "38098149763/2",
+        "38096987107",
         "38096257646",
-        "38095155944",
-        "38095082458",
-        "38092890885",
-        "38092154993"
+        "38095155944"
       ]
     }
   },

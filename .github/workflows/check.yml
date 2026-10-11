@@ -385,6 +385,16 @@ jobs:
               # Stellgrößen). Fing beim Erstlauf die NaN-EWMA-Vergiftung (argloser _gameLoopTick).
               run: npm run gate:regler-sim
 
+            - name: Takt-Atem (echter Renderer — der atmende Regler weckt keinen Fege-Takt und keine Pass-Lage)
+              if: matrix.gruppe == 6
+              # Faehrt die echte Welt (swiftshader, kienspan) ohne Loop und ohne Wanduhr: der Aktuator steht auf festen Stufen
+              # (loadScale 1 -> 0,1 -> 1, je 80 Takte) und atmet darueber; gezaehlt je Takt (zweite Haelfte jeder Stufe): die
+              # Wechsel der Laub-Dichte, die Weckrufe des Stand-Stempels durch sie, die neuen Lagen des Hauptbilds, dazu
+              # _tickArchitectureLOD, _lodTreeVisHeight, _foundrySichtHoehe, _chunkSatzAbschnitt, _hoehlenSicht. main 66005ca6:
+              # Dichte, Stempel und Lage in 100 % der Takte (CPU-Takt frei 4,8 -> 11,7 ms). Gegenprobe (stossende Dichte) und
+              # --selftest zuerst.
+              run: npm run gate:takt-atem
+
             - name: Volle-Bühne-Prädikat (W2 — Kriterium 2 wird messbar)
               if: matrix.gruppe == 3
               # „Volle Bühne" als Prädikat aus kanonischen Quellen (Ring am Ziel · Gras/Wasser leer ·
