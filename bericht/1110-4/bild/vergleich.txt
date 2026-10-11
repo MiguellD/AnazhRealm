@@ -1,0 +1,24 @@
+S0-main → S1-pruefbuehne: MSSIM ganz 0.9237, Boden 0.8902, |ΔLuma| 5.37, Pixel>8 15.07%, Farbton 10.65%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| boden, Pixel>8 0.8902%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| ganz, Pixel>8 0.9237%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden 10.65, |ΔLuma| %, Pixel>8 Farbton-Blöcke%, Farbton verschoben,%
+S1-pruefbuehne → S2-egoschatten: MSSIM ganz 0.9392, Boden 0.9163, |ΔLuma| 4.36, Pixel>8 13.59%, Farbton 7.73%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| boden, Pixel>8 0.9163%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| ganz, Pixel>8 0.9392%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden 7.73, |ΔLuma| %, Pixel>8 Farbton-Blöcke%, Farbton verschoben,%
+S2-egoschatten → S3-haus: MSSIM ganz 0.9436, Boden 0.9131, |ΔLuma| 4.13, Pixel>8 11.3%, Farbton 7.45%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| boden, Pixel>8 0.9131%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| ganz, Pixel>8 0.9436%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden 7.45, |ΔLuma| %, Pixel>8 Farbton-Blöcke%, Farbton verschoben,%
+S3-haus → S4-koerperbild: MSSIM ganz 0.9458, Boden 0.9228, |ΔLuma| 2.93, Pixel>8 6.47%, Farbton 6.34%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| boden, Pixel>8 0.9228%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| ganz, Pixel>8 0.9458%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden 6.34, |ΔLuma| %, Pixel>8 Farbton-Blöcke%, Farbton verschoben,%
+S4-koerperbild → S5-wasser: MSSIM ganz 0.9317, Boden 0.9026, |ΔLuma| 5.71, Pixel>8 16.2%, Farbton 10.88%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| boden, Pixel>8 0.9026%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| ganz, Pixel>8 0.9317%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden 10.88, |ΔLuma| %, Pixel>8 Farbton-Blöcke%, Farbton verschoben,%
+S5-wasser → S6-werkstatt: MSSIM ganz 0.9426, Boden 0.9163, |ΔLuma| 5.21, Pixel>8 12.5%, Farbton 9.07%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| boden, Pixel>8 0.9163%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden MSSIM, |ΔLuma| ganz, Pixel>8 0.9426%, Farbton unter%
+MSSIM ganz A1↔B1:, Boden 9.07, |ΔLuma| %, Pixel>8 Farbton-Blöcke%, Farbton verschoben,%

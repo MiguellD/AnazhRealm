@@ -1,0 +1,44 @@
+13:24:47 1110-4 START
+13:24:55 S0-main (be1d6e57) Seite 8ef0e3cd2ec2 · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+13:27:26 S0-main g1 exit=0 GRUEN |  |    gpu-bank Gier 0: 11.47 ms je Frame (CPU 1.77)    gpu-bank Gier -0.88: 10.88 ms je Frame (CPU 1.87)  
+13:28:03 S1-pruefbuehne (953186f4) Seite 58d260a967fc · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+13:30:33 S1-pruefbuehne g1 exit=0 GRUEN |  |    gpu-bank Gier 0: 11.63 ms je Frame (CPU 1.56)    gpu-bank Gier -0.88: 10.53 ms je Frame (CPU 1.62)  
+13:31:11 S2-egoschatten (9ecb874c) Seite 725ce8b07c78 · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+13:33:40 S2-egoschatten g1 exit=0 GRUEN |  |    gpu-bank Gier 0: 11.45 ms je Frame (CPU 1.86)    gpu-bank Gier -0.88: 10.86 ms je Frame (CPU 1.87)  
+13:34:18 S3-haus (1c47714d) Seite 3be95061b7ac · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+13:36:47 S3-haus g1 exit=0 GRUEN |  |    gpu-bank Gier 0: 11.58 ms je Frame (CPU 1.73)    gpu-bank Gier -0.88: 10.82 ms je Frame (CPU 1.76)  
+13:37:25 S4-koerperbild (269ecfa8) Seite c666b9281167 · Augen-Licht im Stand: 1 · nach dem Patch in der Szene: 0
+13:39:54 S4-koerperbild g1 exit=0 GRUEN |  |    gpu-bank Gier 0: 11.83 ms je Frame (CPU 1.91)    gpu-bank Gier -0.88: 10.66 ms je Frame (CPU 1.61)  
+13:40:32 S5-wasser (b0bcb073) Seite d554e1dd1c9e · Augen-Licht im Stand: 1 · nach dem Patch in der Szene: 0
+13:43:04 S5-wasser g1 exit=0 GRUEN |  |    gpu-bank Gier 0: 12.88 ms je Frame (CPU 1.82)    gpu-bank Gier -0.88: 11.68 ms je Frame (CPU 1.73)  
+13:43:42 S6-werkstatt (03997b3f) Seite 68ace2755456 · Augen-Licht im Stand: 1 · nach dem Patch in der Szene: 0
+13:46:11 S6-werkstatt g1 exit=0 GRUEN |  |    gpu-bank Gier 0: 11.82 ms je Frame (CPU 1.75)    gpu-bank Gier -0.88: 11.07 ms je Frame (CPU 1.74)  
+13:46:49 S6-werkstatt (03997b3f) Seite 68ace2755456 · Augen-Licht im Stand: 1 · nach dem Patch in der Szene: 0
+13:49:21 S6-werkstatt g2 exit=0 GRUEN |  |    gpu-bank Gier 0: 13.07 ms je Frame (CPU 1.86)    gpu-bank Gier -0.88: 11.99 ms je Frame (CPU 1.72)  
+13:49:59 S5-wasser (b0bcb073) Seite d554e1dd1c9e · Augen-Licht im Stand: 1 · nach dem Patch in der Szene: 0
+13:52:29 S5-wasser g2 exit=0 GRUEN |  |    gpu-bank Gier 0: 11.73 ms je Frame (CPU 2.12)    gpu-bank Gier -0.88: 11.13 ms je Frame (CPU 1.85)  
+13:53:07 S4-koerperbild (269ecfa8) Seite c666b9281167 · Augen-Licht im Stand: 1 · nach dem Patch in der Szene: 0
+13:55:40 S4-koerperbild g2 exit=0 GRUEN |  |    gpu-bank Gier 0: 11.62 ms je Frame (CPU 1.77)    gpu-bank Gier -0.88: 10.89 ms je Frame (CPU 1.78)  
+13:56:17 S3-haus (1c47714d) Seite 3be95061b7ac · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+13:58:50 S3-haus g2 exit=0 GRUEN |  |    gpu-bank Gier 0: 12.25 ms je Frame (CPU 1.93)    gpu-bank Gier -0.88: 11.82 ms je Frame (CPU 1.85)  
+13:59:28 S2-egoschatten (9ecb874c) Seite 725ce8b07c78 · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+14:01:57 S2-egoschatten g2 exit=0 GRUEN |  |    gpu-bank Gier 0: 11.89 ms je Frame (CPU 1.99)    gpu-bank Gier -0.88: 10.58 ms je Frame (CPU 1.69)  
+14:02:35 S1-pruefbuehne (953186f4) Seite 58d260a967fc · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+14:05:04 S1-pruefbuehne g2 exit=0 GRUEN |  |    gpu-bank Gier 0: 11.79 ms je Frame (CPU 1.74)    gpu-bank Gier -0.88: 10.88 ms je Frame (CPU 1.63)  
+14:05:41 S0-main (be1d6e57) Seite 8ef0e3cd2ec2 · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+14:08:10 S0-main g2 exit=0 GRUEN |  |    gpu-bank Gier 0: 11.48 ms je Frame (CPU 1.59)    gpu-bank Gier -0.88: 10.78 ms je Frame (CPU 1.77)  
+14:08:48 S0-main (be1d6e57) Seite 8ef0e3cd2ec2 · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+14:11:05 S0-main zerlegen+bild+zaehlen  haupt 9,18 k0 0,10 post 1,40 
+14:11:33 S1-pruefbuehne (953186f4) Seite 58d260a967fc · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+14:13:39 S1-pruefbuehne zerlegen+bild+zaehlen  haupt 7,73 k0 0,09 post 1,57 
+14:14:07 S2-egoschatten (9ecb874c) Seite 725ce8b07c78 · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+14:16:37 S2-egoschatten zerlegen+bild+zaehlen  haupt 9,96 k0 0,05 post 1,50 
+14:17:05 S3-haus (1c47714d) Seite 3be95061b7ac · Augen-Licht im Stand: 0 · nach dem Patch in der Szene: 0
+14:19:23 S3-haus zerlegen+bild+zaehlen  haupt 9,24 k0 0,17 post 1,58 
+14:19:51 S4-koerperbild (269ecfa8) Seite c666b9281167 · Augen-Licht im Stand: 1 · nach dem Patch in der Szene: 0
+14:22:03 S4-koerperbild zerlegen+bild+zaehlen  haupt 9,14 k0 0,06 post 1,60 
+14:22:31 S5-wasser (b0bcb073) Seite d554e1dd1c9e · Augen-Licht im Stand: 1 · nach dem Patch in der Szene: 0
+14:24:39 S5-wasser zerlegen+bild+zaehlen  haupt 7,98 k0 0,13 post 1,45 
+14:25:07 S6-werkstatt (03997b3f) Seite 68ace2755456 · Augen-Licht im Stand: 1 · nach dem Patch in der Szene: 0
+14:27:42 S6-werkstatt zerlegen+bild+zaehlen  haupt 10,28 k0 0,12 post 1,92 
+14:28:09 1110-4 ENDE

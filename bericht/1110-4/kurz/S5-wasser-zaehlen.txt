@@ -1,0 +1,369 @@
+{
+ "gesamt": {
+  "cmd": 59,
+  "tris": 265528
+ },
+ "passe": {
+  "OrthographicCamera": {
+   "cmd": 2,
+   "tris": 2
+  },
+  "haupt": {
+   "cmd": 45,
+   "tris": 189011
+  },
+  "k0": {
+   "cmd": 11,
+   "tris": 56683
+  },
+  "k1": {
+   "cmd": 1,
+   "tris": 19832
+  }
+ },
+ "klassen": [
+  {
+   "klasse": "f:tanne:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 6,
+   "tris": 14502,
+   "je": {
+    "k0": 2,
+    "haupt": 4
+   },
+   "jeTris": {
+    "k0": 3066,
+    "haupt": 11436
+   },
+   "inst": 12,
+   "exemplare": 6,
+   "dMin": 10,
+   "dMax": 28
+  },
+  {
+   "klasse": "f:eiche:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 5,
+   "tris": 3108,
+   "je": {
+    "k0": 2,
+    "haupt": 3
+   },
+   "jeTris": {
+    "k0": 1044,
+    "haupt": 2064
+   },
+   "inst": 3,
+   "exemplare": 2,
+   "dMin": 15,
+   "dMax": 18
+  },
+  {
+   "klasse": "f:strauch:L1",
+   "stufe": 1,
+   "art": "shrub",
+   "cmd": 4,
+   "tris": 8444,
+   "je": {
+    "k0": 2,
+    "haupt": 2
+   },
+   "jeTris": {
+    "k0": 5384,
+    "haupt": 3060
+   },
+   "inst": 6,
+   "exemplare": 2,
+   "dMin": 10,
+   "dMax": 22
+  },
+  {
+   "klasse": "streuSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 4,
+   "tris": 15354,
+   "je": {
+    "haupt": 4
+   },
+   "jeTris": {
+    "haupt": 15354
+   },
+   "inst": 4,
+   "exemplare": 1,
+   "dMin": 1238,
+   "dMax": 1238
+  },
+  {
+   "klasse": "f:fichte:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 3,
+   "tris": 7722,
+   "je": {
+    "k0": 1,
+    "haupt": 2
+   },
+   "jeTris": {
+    "k0": 1638,
+    "haupt": 6084
+   },
+   "inst": 6,
+   "exemplare": 2,
+   "dMin": 23,
+   "dMax": 33
+  },
+  {
+   "klasse": "f:birke:L1",
+   "stufe": 1,
+   "art": "tree",
+   "cmd": 3,
+   "tris": 6820,
+   "je": {
+    "k0": 1,
+    "haupt": 2
+   },
+   "jeTris": {
+    "k0": 1256,
+    "haupt": 5564
+   },
+   "inst": 4,
+   "exemplare": 1,
+   "dMin": 5,
+   "dMax": 16
+  },
+  {
+   "klasse": "bodenSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 3,
+   "tris": 88403,
+   "je": {
+    "k0": 1,
+    "k1": 1,
+    "haupt": 1
+   },
+   "jeTris": {
+    "k0": 43927,
+    "k1": 19832,
+    "haupt": 24644
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 1238,
+   "dMax": 1238
+  },
+  {
+   "klasse": "fern-ring",
+   "stufe": null,
+   "art": null,
+   "cmd": 3,
+   "tris": 17280,
+   "je": {
+    "haupt": 3
+   },
+   "jeTris": {
+    "haupt": 17280
+   },
+   "inst": 3,
+   "exemplare": 3,
+   "dMin": 1242,
+   "dMax": 1274
+  },
+  {
+   "klasse": "dsl-insel",
+   "stufe": null,
+   "art": null,
+   "cmd": 3,
+   "tris": 9064,
+   "je": {
+    "haupt": 3
+   },
+   "jeTris": {
+    "haupt": 9064
+   },
+   "inst": 3,
+   "exemplare": 3,
+   "dMin": 1206,
+   "dMax": 1211
+  },
+  {
+   "klasse": "f:birke:L0",
+   "stufe": 0,
+   "art": "tree",
+   "cmd": 2,
+   "tris": 10954,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 10954
+   },
+   "inst": 2,
+   "exemplare": 1,
+   "dMin": 5,
+   "dMax": 5
+  },
+  {
+   "klasse": "formationenSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 2,
+   "tris": 640,
+   "je": {
+    "k0": 1,
+    "haupt": 1
+   },
+   "jeTris": {
+    "k0": 320,
+    "haupt": 320
+   },
+   "inst": 1,
+   "exemplare": 1,
+   "dMin": 1238,
+   "dMax": 1238,
+   "inhalt": {
+    "k0": [
+     {
+      "klasse": "f:zacken:L0",
+      "stufe": 0,
+      "art": "rock",
+      "zellen": 1,
+      "tris": 320,
+      "eintraege": [
+       87
+      ]
+     }
+    ],
+    "haupt": [
+     {
+      "klasse": "f:zacken:L0",
+      "stufe": 0,
+      "art": "rock",
+      "zellen": 1,
+      "tris": 320,
+      "eintraege": [
+       87
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "klasse": "f:tanne:L0",
+   "stufe": 0,
+   "art": "tree",
+   "cmd": 2,
+   "tris": 5348,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 5348
+   },
+   "inst": 2,
+   "exemplare": 1,
+   "dMin": 10,
+   "dMax": 10
+  },
+  {
+   "klasse": "f:strauch:L0",
+   "stufe": 0,
+   "art": "shrub",
+   "cmd": 2,
+   "tris": 8612,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 8612
+   },
+   "inst": 2,
+   "exemplare": 1,
+   "dMin": 10,
+   "dMax": 10
+  },
+  {
+   "klasse": "f:eiche:L0",
+   "stufe": 0,
+   "art": "tree",
+   "cmd": 2,
+   "tris": 6754,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 6754
+   },
+   "inst": 2,
+   "exemplare": 1,
+   "dMin": 18,
+   "dMax": 18
+  },
+  {
+   "klasse": "bauSatz",
+   "stufe": null,
+   "art": null,
+   "cmd": 2,
+   "tris": 595,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 595
+   },
+   "inst": 2,
+   "exemplare": 1,
+   "dMin": 1238,
+   "dMax": 1238,
+   "inhalt": {
+    "haupt": [
+     {
+      "klasse": "f:feuerstelle:L1",
+      "stufe": 1,
+      "art": "ausstattung",
+      "zellen": 2,
+      "tris": 595,
+      "eintraege": [
+       88
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "klasse": "nahWiese:L1",
+   "stufe": 1,
+   "art": null,
+   "cmd": 2,
+   "tris": 28584,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 28584
+   },
+   "inst": 28,
+   "exemplare": 28,
+   "dMin": 2,
+   "dMax": 5
+  }
+ ],
+ "unbenannt": [],
+ "programme": {
+  "vertex": 44,
+  "fragment": 34,
+  "familien": 31,
+  "pipelines": 61
+ },
+ "frameMs": 15,
+ "kaskaden": 2,
+ "kamera": [
+  -900,
+  25.9,
+  -850
+ ],
+ "ms": 19
+}

@@ -1,0 +1,583 @@
+{
+ "S0-main": {
+  "n": 2,
+  "b0": [
+   11.47,
+   11.48
+  ],
+  "b88": [
+   10.88,
+   10.78
+  ],
+  "m0": 11.475000000000001,
+  "m88": 10.83,
+  "befehle": 77,
+  "dreiecke": 454233,
+  "vram": 110.15,
+  "bandGpu": 14.275,
+  "kl": {
+   "boden": {
+    "befehle": 8,
+    "dreiecke": 167686
+   },
+   "streu": {
+    "befehle": 5,
+    "dreiecke": 28540
+   },
+   "nahWiese": {
+    "befehle": 4,
+    "dreiecke": 54994
+   },
+   "karten": {
+    "befehle": 1,
+    "dreiecke": 1194
+   },
+   "baum": {
+    "befehle": 39,
+    "dreiecke": 119758
+   },
+   "busch": {
+    "befehle": 6,
+    "dreiecke": 18360
+   },
+   "tier": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "bau": {
+    "befehle": 4,
+    "dreiecke": 41920
+   },
+   "formationen": {
+    "befehle": 3,
+    "dreiecke": 10240
+   },
+   "einzelstuecke": {
+    "befehle": 7,
+    "dreiecke": 11541
+   },
+   "leerHuellen": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "reserve": {
+    "befehle": 0,
+    "dreiecke": 0
+   }
+  },
+  "pass": {
+   "haupt": 9.18,
+   "k0": 0.1,
+   "k1": -0.01,
+   "post": 1.4
+  },
+  "prog": {
+   "vertex": 27,
+   "fragment": 28,
+   "familien": 26,
+   "pipelines": 44
+  },
+  "urteile": [
+   "GRUEN",
+   "GRUEN"
+  ]
+ },
+ "S1-pruefbuehne": {
+  "n": 2,
+  "b0": [
+   11.63,
+   11.79
+  ],
+  "b88": [
+   10.53,
+   10.88
+  ],
+  "m0": 11.71,
+  "m88": 10.705,
+  "befehle": 77,
+  "dreiecke": 454828.5,
+  "vram": 110.25,
+  "bandGpu": 12.955,
+  "kl": {
+   "boden": {
+    "befehle": 8,
+    "dreiecke": 168281.5
+   },
+   "streu": {
+    "befehle": 5,
+    "dreiecke": 28540
+   },
+   "nahWiese": {
+    "befehle": 4,
+    "dreiecke": 54994
+   },
+   "karten": {
+    "befehle": 1,
+    "dreiecke": 1194
+   },
+   "baum": {
+    "befehle": 39,
+    "dreiecke": 119758
+   },
+   "busch": {
+    "befehle": 6,
+    "dreiecke": 18360
+   },
+   "tier": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "bau": {
+    "befehle": 4,
+    "dreiecke": 41920
+   },
+   "formationen": {
+    "befehle": 3,
+    "dreiecke": 10240
+   },
+   "einzelstuecke": {
+    "befehle": 7,
+    "dreiecke": 11541
+   },
+   "leerHuellen": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "reserve": {
+    "befehle": 0,
+    "dreiecke": 0
+   }
+  },
+  "pass": {
+   "haupt": 7.73,
+   "k0": 0.09,
+   "k1": -0.11,
+   "post": 1.57
+  },
+  "prog": {
+   "vertex": 28,
+   "fragment": 29,
+   "familien": 27,
+   "pipelines": 46
+  },
+  "urteile": [
+   "GRUEN",
+   "GRUEN"
+  ]
+ },
+ "S2-egoschatten": {
+  "n": 2,
+  "b0": [
+   11.45,
+   11.89
+  ],
+  "b88": [
+   10.86,
+   10.58
+  ],
+  "m0": 11.67,
+  "m88": 10.719999999999999,
+  "befehle": 82,
+  "dreiecke": 491837,
+  "vram": 111.85,
+  "bandGpu": 13.71,
+  "kl": {
+   "boden": {
+    "befehle": 8,
+    "dreiecke": 167326
+   },
+   "streu": {
+    "befehle": 5,
+    "dreiecke": 28540
+   },
+   "nahWiese": {
+    "befehle": 4,
+    "dreiecke": 54994
+   },
+   "karten": {
+    "befehle": 1,
+    "dreiecke": 1194
+   },
+   "baum": {
+    "befehle": 39,
+    "dreiecke": 119758
+   },
+   "busch": {
+    "befehle": 6,
+    "dreiecke": 18360
+   },
+   "tier": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "bau": {
+    "befehle": 4,
+    "dreiecke": 41920
+   },
+   "formationen": {
+    "befehle": 3,
+    "dreiecke": 10240
+   },
+   "einzelstuecke": {
+    "befehle": 12,
+    "dreiecke": 49505
+   },
+   "leerHuellen": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "reserve": {
+    "befehle": 0,
+    "dreiecke": 0
+   }
+  },
+  "pass": {
+   "haupt": 9.96,
+   "k0": 0.05,
+   "k1": 0.04,
+   "post": 1.5
+  },
+  "prog": {
+   "vertex": 44,
+   "fragment": 33,
+   "familien": 32,
+   "pipelines": 61
+  },
+  "urteile": [
+   "GRUEN",
+   "GRUEN"
+  ]
+ },
+ "S3-haus": {
+  "n": 2,
+  "b0": [
+   11.58,
+   12.25
+  ],
+  "b88": [
+   10.82,
+   11.82
+  ],
+  "m0": 11.915,
+  "m88": 11.32,
+  "befehle": 82.5,
+  "dreiecke": 471689,
+  "vram": 111.6,
+  "bandGpu": 14.925,
+  "kl": {
+   "boden": {
+    "befehle": 8,
+    "dreiecke": 168630
+   },
+   "streu": {
+    "befehle": 5,
+    "dreiecke": 28540
+   },
+   "nahWiese": {
+    "befehle": 4,
+    "dreiecke": 54994
+   },
+   "karten": {
+    "befehle": 1,
+    "dreiecke": 1194
+   },
+   "baum": {
+    "befehle": 39,
+    "dreiecke": 119758
+   },
+   "busch": {
+    "befehle": 6,
+    "dreiecke": 18360
+   },
+   "tier": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "bau": {
+    "befehle": 4,
+    "dreiecke": 20312
+   },
+   "formationen": {
+    "befehle": 3,
+    "dreiecke": 10240
+   },
+   "einzelstuecke": {
+    "befehle": 12.5,
+    "dreiecke": 49661
+   },
+   "leerHuellen": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "reserve": {
+    "befehle": 0,
+    "dreiecke": 0
+   }
+  },
+  "pass": {
+   "haupt": 9.24,
+   "k0": 0.17,
+   "k1": -0.05,
+   "post": 1.58
+  },
+  "prog": {
+   "vertex": 43,
+   "fragment": 33,
+   "familien": 30,
+   "pipelines": 59
+  },
+  "urteile": [
+   "GRUEN",
+   "GRUEN"
+  ]
+ },
+ "S4-koerperbild": {
+  "n": 2,
+  "b0": [
+   11.83,
+   11.62
+  ],
+  "b88": [
+   10.66,
+   10.89
+  ],
+  "m0": 11.725,
+  "m88": 10.775,
+  "befehle": 82.5,
+  "dreiecke": 482144,
+  "vram": 112.5,
+  "bandGpu": 14.780000000000001,
+  "kl": {
+   "boden": {
+    "befehle": 8,
+    "dreiecke": 179185
+   },
+   "streu": {
+    "befehle": 5,
+    "dreiecke": 28540
+   },
+   "nahWiese": {
+    "befehle": 4,
+    "dreiecke": 54994
+   },
+   "karten": {
+    "befehle": 1,
+    "dreiecke": 1194
+   },
+   "baum": {
+    "befehle": 39,
+    "dreiecke": 119634
+   },
+   "busch": {
+    "befehle": 6,
+    "dreiecke": 18360
+   },
+   "tier": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "bau": {
+    "befehle": 4,
+    "dreiecke": 20336
+   },
+   "formationen": {
+    "befehle": 3,
+    "dreiecke": 10240
+   },
+   "einzelstuecke": {
+    "befehle": 12.5,
+    "dreiecke": 49661
+   },
+   "leerHuellen": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "reserve": {
+    "befehle": 0,
+    "dreiecke": 0
+   }
+  },
+  "pass": {
+   "haupt": 9.14,
+   "k0": 0.06,
+   "k1": 0.07,
+   "post": 1.6
+  },
+  "prog": {
+   "vertex": 41,
+   "fragment": 31,
+   "familien": 28,
+   "pipelines": 55
+  },
+  "urteile": [
+   "GRUEN",
+   "GRUEN"
+  ]
+ },
+ "S5-wasser": {
+  "n": 2,
+  "b0": [
+   12.88,
+   11.73
+  ],
+  "b88": [
+   11.68,
+   11.13
+  ],
+  "m0": 12.305,
+  "m88": 11.405000000000001,
+  "befehle": 83,
+  "dreiecke": 471769.5,
+  "vram": 112.4,
+  "bandGpu": 15.030000000000001,
+  "kl": {
+   "boden": {
+    "befehle": 8,
+    "dreiecke": 168448.5
+   },
+   "streu": {
+    "befehle": 5,
+    "dreiecke": 28540
+   },
+   "nahWiese": {
+    "befehle": 4,
+    "dreiecke": 54994
+   },
+   "karten": {
+    "befehle": 1,
+    "dreiecke": 1174
+   },
+   "baum": {
+    "befehle": 39,
+    "dreiecke": 121194
+   },
+   "busch": {
+    "befehle": 6,
+    "dreiecke": 18360
+   },
+   "tier": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "bau": {
+    "befehle": 4,
+    "dreiecke": 19002
+   },
+   "formationen": {
+    "befehle": 3,
+    "dreiecke": 10240
+   },
+   "einzelstuecke": {
+    "befehle": 13,
+    "dreiecke": 49817
+   },
+   "leerHuellen": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "reserve": {
+    "befehle": 0,
+    "dreiecke": 0
+   }
+  },
+  "pass": {
+   "haupt": 7.98,
+   "k0": 0.13,
+   "k1": 0,
+   "post": 1.45
+  },
+  "prog": {
+   "vertex": 44,
+   "fragment": 34,
+   "familien": 31,
+   "pipelines": 61
+  },
+  "urteile": [
+   "GRUEN",
+   "GRUEN"
+  ]
+ },
+ "S6-werkstatt": {
+  "n": 2,
+  "b0": [
+   11.82,
+   13.07
+  ],
+  "b88": [
+   11.07,
+   11.99
+  ],
+  "m0": 12.445,
+  "m88": 11.530000000000001,
+  "befehle": 82.5,
+  "dreiecke": 475614.5,
+  "vram": 112.4,
+  "bandGpu": 14.600000000000001,
+  "kl": {
+   "boden": {
+    "befehle": 8,
+    "dreiecke": 172449.5
+   },
+   "streu": {
+    "befehle": 5,
+    "dreiecke": 28540
+   },
+   "nahWiese": {
+    "befehle": 4,
+    "dreiecke": 54994
+   },
+   "karten": {
+    "befehle": 1,
+    "dreiecke": 1174
+   },
+   "baum": {
+    "befehle": 39,
+    "dreiecke": 121194
+   },
+   "busch": {
+    "befehle": 6,
+    "dreiecke": 18360
+   },
+   "tier": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "bau": {
+    "befehle": 4,
+    "dreiecke": 19002
+   },
+   "formationen": {
+    "befehle": 3,
+    "dreiecke": 10240
+   },
+   "einzelstuecke": {
+    "befehle": 12.5,
+    "dreiecke": 49661
+   },
+   "leerHuellen": {
+    "befehle": 0,
+    "dreiecke": 0
+   },
+   "reserve": {
+    "befehle": 0,
+    "dreiecke": 0
+   }
+  },
+  "pass": {
+   "haupt": 10.28,
+   "k0": 0.12,
+   "k1": 0.05,
+   "post": 1.92
+  },
+  "prog": {
+   "vertex": 46,
+   "fragment": 35,
+   "familien": 34,
+   "pipelines": 62
+  },
+  "urteile": [
+   "GRUEN",
+   "GRUEN"
+  ]
+ }
+}
