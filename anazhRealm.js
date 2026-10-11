@@ -32262,9 +32262,7 @@ class AnazhRealm {
                                     );
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
-                                    // Der Atlas deklariert sich der Diät (equals() sieht Textur-Knoten nie): Schicht-Upload und Wachsen
-                                    // ändern die Wache, der Atlas-Wächter refresht EINMAL.
-                                    mat._anazhAtlasTexe = [_at.wache];
+                                    // Schicht-Upload und Wachsen sieht der Textur-Wächter der Diät (`_diaetVorTextur`): EIN Refresh.
                                     _wired = true;
                                 }
                             } catch (_e) {
@@ -38200,7 +38198,7 @@ class AnazhRealm {
     _streuSatzArt(a) {
         const mat = a.mat;
         const u = mat.userData || {};
-        if (mat.map || u.foundryKind === "foliageTex" || mat._anazhAtlasTexe)
+        if (mat.map || u.foundryKind === "foliageTex" || u.foundryKind === "schatten" || u.impostorBillboard === true)
             throw new Error(
                 `_streuSatzArt(${a.name}): der Stoff liest eine Karte (uv) — der Streu-Satz trägt sie nicht`
             );
@@ -67060,16 +67058,8 @@ class AnazhRealm {
             mat: null,
             haengend: 0,
             verworfen: 0,
-            gen: 0, // Textur-Generation (jedes Wachsen +1)
-            wache: null, // die Diät-Wache des Materials (`mat._anazhAtlasTexe`)
         };
-        const at = this._kartenAtlas;
-        at.wache = {
-            get version() {
-                return at.gen + ":" + (at.map ? at.map.version : -1) + ":" + (at.nmap ? at.nmap.version : -1);
-            },
-        };
-        return at;
+        return this._kartenAtlas;
     }
 
     // Das Schicht-Format: BC nur über das WebGPU-Feature (WebGL2 kennt BC5 nur über Erweiterungen — dort rgba8).
@@ -67166,7 +67156,6 @@ class AnazhRealm {
         at.map = map;
         at.nmap = nmap;
         at.cap = cap;
-        at.gen++;
         if (at.mapNode) {
             at.mapNode.value = map;
             at.nmapNode.value = nmap;
@@ -67815,8 +67804,8 @@ class AnazhRealm {
             mat.userData.sharedFoliage = true;
             // OBSERVER-DIÄT: die sharedFoliage-Singletons hängen NUR an geteilten Sätzen (Atmo/LOD/Wind,
             // renderGroup) + Attributen + Instanz-Daten; die Wächter decken instanceMatrix/instanceColor.
-            // Impostor-Materialien laufen auch hier durch — ihre Atlanten deckt der ATLAS-WÄCHTER
-            // (mat._anazhAtlasTexe).
+            // Impostor-Materialien laufen auch hier durch — ihre Atlanten deckt der Textur-Wächter
+            // (`_diaetVorTextur`).
             this._materialObserverDiaet(mat);
             this.state._foliageMatCache.set(sig, mat);
         }
@@ -77211,17 +77200,12 @@ class AnazhRealm {
                 // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
                 const atl = this._blattAtlasProbe(TSL);
                 if (atl) {
-                    const tex = atl.tex;
                     // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
                     // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
                     // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`).
                     mat.colorNode = TSL.vec4(atl.rgb.mul(laubFarbe), atl.a);
                     mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                     mat.transparent = false;
-                    // ATLAS-WÄCHTER — der Blatt-Atlas deklariert sich der Diät
-                    // (heute statisch nach dem Mint; ein künftiger Live-Re-Bake
-                    // bleibt fail-closed sichtbar statt still eingefroren).
-                    mat._anazhAtlasTexe = [tex];
                 } else {
                     // Nur headless (kein document): kein Stoff zeichnet — mit document liefert der Atlas oder bricht.
                     mat.colorNode = TSL.vec4(laubFarbe, 1.0);
@@ -77237,7 +77221,6 @@ class AnazhRealm {
                 mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);
                 mat.alphaTest = 0.5;
                 mat.transparent = false;
-                if (atl) mat._anazhAtlasTexe = [atl.tex];
             } else if (klasseLook) {
                 // Haut + Fell: Shader-Gesetze der Labs (koerperstudio matSkin: SSS-Fresnel-Saum · tetrapoda matFur:
                 // Fell-Rim + Gold-Sheen + Spitzen-Rim/-Spec) reisen als DATEN (FELL_LOOK/HAUT_LOOK/HAAR_LOOK, Kern-
@@ -105339,7 +105322,8 @@ AnazhRealm._tuerOffenRad = function () {
 // seine Vendor-Bahn. Sie läuft im direkten Draw UND im Bundle-Replay (r184 ruft needsRefresh je verfolgtem Bürger).
 //  (1) Instanz-Wächter: equals() walkt nur geometry.attributes — instanceMatrix/instanceColor leben am MESH →
 //      Mutation → genau EIN Refresh.
-//  (2) Atlas-Wächter: lebende Canvas-Atlanten deklarieren sich an mat._anazhAtlasTexe → Bake → EIN Refresh.
+//  (2) gefallen in (6): die Erklärung der Atlanten an die Diät (Integration V18.542) — wer eine Textur liest, muss sich
+//      nicht mehr erklären, der Textur-Wächter sieht jede.
 //  (3) DIE KAMERA-TREUE: Beobachter UND geteilte Bindegruppe (render · frame: cameraViewMatrix ·
 //      cameraProjectionMatrix · uLodAuge) hängen in r184 am PROGRAMM (NodeBuilderState), und jedes Objekt mit eigener
 //      Geometrie hat sein eigenes (gemessen 04.10. an der Mess-Wiese: 218 von 234 Programmen sind Diät-Programme).
@@ -105377,6 +105361,13 @@ AnazhRealm._tuerOffenRad = function () {
 //      Mess-Wiese, laufender Loop): vier Wechsel, 118 Fehler. Je Render-Objekt merkt die Diät Id und Version dieser
 //      Texturen; nach dem Gang (der den Zug und damit den Neubau ausgelöst hat) zieht ein Wechsel EINEN Refresh nach sich,
 //      die Bindung folgt der Textur — für JEDEN Größenwechsel, den des Fensters eingeschlossen.
+//      JEDE TEXTUR DES PROGRAMMS (Integration V18.542, die weiße Masse): r184 lädt eine Textur nur im Binde-Gang eines
+//      Render-Objekts hoch (`Bindings._update`: SampledTexture.update → updateTexture), und den fährt nur ein Refresh. Der
+//      Wächter sah nur die Vorher-Knoten, die Atlanten erklärten sich selbst (der Atlas-Wächter (2)); die Daten-Bilder des
+//      Boden-Stoffs erklärte niemand: in der stehenden Welt (Mess-Wiese, Software-Holz) hob ein Schreiber die Version der
+//      Fern-Krone, der Wege-Karte (nah und fern) und der Kronen-Streu, und die GPU hielt 20 Takte lang die alte (die
+//      Version der GPU 3 gegen 4, 20 gegen 21, 17 gegen 18) — hochgeladen nur, wenn zufällig ein Chunk den Satz änderte.
+//      Jetzt merkt die Diät Id und Version JEDES Textur-Knotens der Bindegruppen (und der Vorher-Knoten) je Render-Objekt.
 AnazhRealm._diaetGang = function (ro, nbs) {
     const jeZeichen = (n, typ) => typ === "object" || (typeof n.property === "string" && n.object === null);
     const vor = [],
@@ -105393,11 +105384,17 @@ AnazhRealm._diaetGang = function (ro, nbs) {
         const b0 = g.bindings && g.bindings[0];
         if (b0 && b0.groupNode && b0.groupNode.shared === true) gruppen.push(g);
     }
-    // (6) die Vorher-Knoten, die eine Textur ziehen (ihr `value` kann neu angelegt werden)
+    // (6) JEDE Textur des Programms: die Vorher-Knoten, die eine Textur ziehen (ihr `value` kann neu angelegt werden), und
+    // jeder Textur-Knoten seiner Bindegruppen (ein Daten-Bild oder Atlas, dessen Version ein Schreiber hebt oder dessen Wert
+    // ein Wachsen tauscht) — die Knoten sind die des Programms, jedes seiner Render-Objekte bindet dieselben.
     const texturen = nbs.updateBeforeNodes.filter((n) => n.isTextureNode === true);
+    for (const g of ro.getBindings())
+        for (const b of g.bindings)
+            if (b.isSampledTexture === true && b.textureNode && texturen.indexOf(b.textureNode) < 0)
+                texturen.push(b.textureNode);
     return { vor, knoten, eigenVor, eigenKnoten, gruppen, texturen };
 };
-// (6) Wechselte eine Textur eines Vorher-Knotens (Id oder Version) seit dem letzten Blick dieses Render-Objekts?
+// (6) Wechselte eine Textur des Programms (Id oder Version) seit dem letzten Blick dieses Render-Objekts?
 AnazhRealm._diaetVorTextur = function (obs, ro) {
     const nbs = ro.getNodeBuilderState();
     const k = nbs._anazhGang || (nbs._anazhGang = AnazhRealm._diaetGang(ro, nbs));
@@ -105475,12 +105472,6 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
             return true;
         }
     }
-    const mat =
-        ro && ro.material && ro.material.isShadowPassMaterial !== true
-            ? ro.material
-            : obj && obj.material && !Array.isArray(obj.material)
-              ? obj.material
-              : null;
     // DER GEOMETRIE-WÄCHTER JE RENDER-OBJEKT (Welle 6): der Vendor merkt Attribut-Versionen je GEOMETRIE, nicht je
     // Render-Objekt — der erste Pass, der eine Änderung sieht (die Kaskade), verbraucht sie, und ein Pass, der ein Attribut
     // allein liest (die Normale im Hauptbild), lädt es nie hoch. Gemessen am werfenden Bau-Satz (echte GPU, Dorf der
@@ -105508,21 +105499,6 @@ AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
         if (g.length !== i) {
             g.length = i;
             anders = true;
-        }
-        if (anders) return true;
-    }
-    const texe = mat ? mat._anazhAtlasTexe : null;
-    if (texe) {
-        if (d === null) d = obs.getRenderObjectData(ro);
-        const va = d._anazhAtlasVs || (d._anazhAtlasVs = []);
-        let anders = va.length !== texe.length;
-        va.length = texe.length;
-        for (let i = 0; i < texe.length; i++) {
-            const v = texe[i] ? texe[i].version : -1;
-            if (va[i] !== v) {
-                va[i] = v;
-                anders = true;
-            }
         }
         if (anders) return true;
     }

@@ -1054,6 +1054,10 @@ const FORBIDDEN = [
     { token: "AugenLichtNode", fiel: "K15 — der Punkt-Licht-Knoten hinter TSL.If" },
     { token: "_AugenLicht", fiel: "K15 — die Licht-Klasse des Auges" },
     { token: "state.augenLicht", fiel: "K15 — das Szenen-Licht des Auges (die Uniform `atmoUniforms.augenLicht`)" },
+    {
+        token: "_anazhAtlasTexe",
+        fiel: "V18.542 — die Erklärung der Atlanten an die Diät: der Textur-Wächter (`_diaetVorTextur`) sieht jede Textur des Programms",
+    },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
