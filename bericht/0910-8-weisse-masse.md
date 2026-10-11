@@ -121,7 +121,7 @@ CI 38168874025 (`[ci voll]`) war beim Bericht noch in der Warteschlange.
 
 ## Offen (mit Zahl)
 
-1. **Die Fern-Deckung ist keine Kronen-Deckung.**
+1. **Die Fern-Deckung ist keine Kronen-Deckung.** Entscheidung des Koordinators (11.10.): fällt in 1110-2 als dieselbe Klasse (nah und fern lesen den Wald-Ort aus EINER Quelle, der Kronen-Karte).
    - `forestGeburt` ist die Geburts-Wahrscheinlichkeit eines Darts (Boden 0,3).
    - In dieser Welt (`nach/deckung.json`): 1515 trockene 150-m-Quadrate über ±3 km, Minimum 0,784, Median 0,903, keines unter 0,5. Das Fern-Gesetz kennt keine Wiese.
    - Darum sind die Wiesen-Orte der Linse Lichtungen (Mitte 0,36–0,42, Fußabdruck im Mittel um 0,9).
@@ -132,6 +132,7 @@ CI 38168874025 (`[ci voll]`) war beim Bericht noch in der Warteschlange.
    - Fern: das rohe `_bodenFarbeAt`.
    - Der nahe Boden ohne Krone liegt das 1,03- bis 1,17-Fache über dem Boden des Gesetzes (`nach/boden.json`).
    - Unter einer Deckung ≥ 0,78 sind das höchstens ~4 % der Mischung. Sichtbar würde es erst, wenn das Fern-Gesetz Wiesen kennt.
+   - **Übergabe an K17** (Entscheidung des Koordinators, 11.10.): der Fels-Stoff als EIN Gesetz im gelaende-core, nah und fern gelesen. Nicht bei mir; die Zahl oben ist der Ausgangswert.
 3. **Der Fern-Ring tastet auf 24 m:** auf 44 m −22 … +20 % gegen sein eigenes Gesetz (`nach/fuss-22.json`). Das ist Abtastung, keine Farbe.
 4. **Die Karte füllt je Chunk-Wechsel neu** (4096 Punkte `_fernFarbeTeile` im Fern-Farb-Budget). Nach einem Sprung mischt das Quadrat nichts, bis die Füllung steht. Die Dauer habe ich nicht gemessen.
 5. **Die CI-Zeit von `gate:nah-fern`** steht als „geschaetzt“ 90 s, bis der erste CI-Lauf sie misst.
