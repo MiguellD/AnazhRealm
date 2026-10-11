@@ -206,7 +206,6 @@ const BILD_FN = async (kam, W, H) => {
             await page.evaluate((an) => {
                 const tB = window.__fellWolf.userData._tierBaum;
                 if (tB.wrap) tB.wrap.visible = an !== null;
-                if (tB.fern) tB.fern.visible = false;
                 for (const s of tB.straehnen || []) s.visible = an === true;
             }, an);
             const b = await page.evaluate(BILD_FN, kam, W, H);

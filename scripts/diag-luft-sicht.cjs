@@ -61,7 +61,7 @@ function probe(stoerung) {
         if (typeof r.setSeason === "function") r.setSeason("sommer");
         st.timeOfDay = 0.5;
         if (st.world) st.world.timeOfDay = 0.5;
-        r._setWeather(wetter);
+        r._setWeather(wetter, "human");
         st.weatherTransition = null;
         st.playerEyesUnderwater = false;
         r._applyDayNightToScene();
@@ -126,16 +126,20 @@ function probe(stoerung) {
 
 function urteil(S) {
     const rot = [];
-    if (!S.knoten) rot.push("1 KNOTEN: scene.fogNode fehlt oder ein THREE.Fog/state.fog lebt daneben (linearer Zwilling)");
+    if (!S.knoten)
+        rot.push("1 KNOTEN: scene.fogNode fehlt oder ein THREE.Fog/state.fog lebt daneben (linearer Zwilling)");
     if (!(S.sichtSonne >= 5000))
         rot.push(`2 SICHT: klarer Sommertag trägt nur ${S.sichtSonne} m (< 5000) — eine Nebel-Wand lebt`);
     if (!(S.sichtRegen < S.sichtSonne && S.sichtSturm < S.sichtRegen && S.sichtSturm >= 500))
         rot.push(
             `3 WETTER: Sonne ${S.sichtSonne} · Regen ${S.sichtRegen} · Sturm ${S.sichtSturm} m — nicht monoton dichter oder eine Wand`
         );
-    if (!(S.sichtHoch > S.sichtSonne)) rot.push(`4 HÖHE: aus 500 m höher ${S.sichtHoch} m ≤ am Boden ${S.sichtSonne} m`);
-    if (!(S.tKante >= 0.9)) rot.push(`5 KANTE: die Ring-Kante (${S.kanteM} m) liegt im Dunst (Transmission ${S.tKante} < 0,9)`);
-    if (!(S.tFern > 0.02)) rot.push(`5 KANTE: die Fern-Ring-Kante (8 km) ist verdeckt (Transmission ${S.tFern} ≤ 0,02)`);
+    if (!(S.sichtHoch > S.sichtSonne))
+        rot.push(`4 HÖHE: aus 500 m höher ${S.sichtHoch} m ≤ am Boden ${S.sichtSonne} m`);
+    if (!(S.tKante >= 0.9))
+        rot.push(`5 KANTE: die Ring-Kante (${S.kanteM} m) liegt im Dunst (Transmission ${S.tKante} < 0,9)`);
+    if (!(S.tFern > 0.02))
+        rot.push(`5 KANTE: die Fern-Ring-Kante (8 km) ist verdeckt (Transmission ${S.tFern} ≤ 0,02)`);
     if (!(S.sichtWasser > 0 && S.sichtWasser <= 60)) rot.push(`6 WASSER: unter Wasser ${S.sichtWasser} m (soll ≤ 60)`);
     for (const [k, v] of Object.entries(S.absenz)) if (!v) rot.push(`7 ABSENZ: ${k} lebt noch`);
     return rot;

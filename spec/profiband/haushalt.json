@@ -217,6 +217,17 @@
             ]
         },
         {
+            "id": "nahWiese",
+            "titel": "Nah-Wiese",
+            "befehle": 4,
+            "dreiecke": 80000,
+            "regeln": [
+                {
+                    "muster": "^nahWiese:L[12]$"
+                }
+            ]
+        },
+        {
             "id": "karten",
             "titel": "Karten (jede Fernstufe L2)",
             "befehle": 1,
@@ -274,17 +285,6 @@
                 },
                 {
                     "muster": "^g:grown_busch:L[01]$"
-                }
-            ]
-        },
-        {
-            "id": "nahWiese",
-            "titel": "Nah-Wiese",
-            "befehle": 4,
-            "dreiecke": 80000,
-            "regeln": [
-                {
-                    "muster": "^nahWiese$"
                 }
             ]
         },

@@ -47,13 +47,16 @@
     // Tore tragen NUR Stufe 0 (fein); L1=L0-Grade + L2-Auto-Impostor sind Sache
     // des Wirts (docs/studio-vertrag.md B2 / N7.5-Merge am EINEN Ingest).
     // B2c-Daten (W8, rein additiv): DAS BUDGET der einen Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
-    // Hülle über alle Tore × 16 Gestalten (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-Ziel
+    // Hülle über alle Tore (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-Ziel
     // (Haushalt, offen solange tris darüber liegt), draws = Draws je Tor und Pass nach der Wirts-Regel: das
     // Budget-Gesetz am Studio-Ausgang (phyto-core budgetErzwingen) faltet die Flügel-Teile je Flügel × Stoff (das
     // Scharnier reist mit, `_tickTorFluegel` dreht je Flügel und Stoff EINE Matrix), nur innerhalb EINER Seh-Klasse;
     // Glut faltet nie — 13 ist das gemessene Minimum über alle 112 Fälle (Flügel × Stoff × Seh-Klasse). gestalten =
-    // Individuen je Tor (das bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
-    var GESTALTEN_JE_REZEPT = 16;
+    // Individuen je Tor (gefüllt je Rezept unten bei PRESETS): EINE — der Bau liest den Samen nicht (seed reserviert,
+    // Kopf; Same 1 ≡ 2 byte-gleich), 16 Gestalten waren 16 byte-gleiche Zwillinge als eigene Leaves (Genesis: zwei
+    // Drachentore, zwei Leaves, 43 Befehle). Eine Seed-Achse ist ein Re-Mint-Akt, nie eine Zahl hier (S3 08.10.,
+    // gate:asset-contract Gestalten-Wand).
+    var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
             kindStages: { gate: [0] },

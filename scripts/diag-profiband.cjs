@@ -22,7 +22,9 @@
 //       (H2 je Ort); jede Methode, die ein Ort-Takt oder ein Anker nennt, trägt der Stamm (ein umbenannter Ring-Bauer
 //       liefe still aus jedem Werkbank-Takt, der Ort stünde leer; ein umbenannter Anker ließe den Ort ungeprüft wandern)
 //   P   DIE PROJEKTION (S3): Σ Zensus der Mess-Wiese (spec/profiband/zensus-wiese.json) × Golden-Dreiecke je Art × Stufe ×
-//       Pass ≤ Haushalt der Klasse baum — die Studio-Ausgänge gegen das Band, ohne GPU (Pflicht ab dem Vertrags-Akt)
+//       Pass ≤ Haushalt der Klasse baum — die Studio-Ausgänge gegen das Band, ohne GPU (Pflicht ab dem Vertrags-Akt);
+//       die Zeile nahWiese: Σ Büschel je Gestalt × Stufe × Golden-Dreiecke IHRER Gestalt ≤ Ratsche der Klasse am Ort
+//       (haupt) und ≤ Haushalt
 //
 // Die Absenz der gefallenen Band-Täter (W2 Voxel-Bricks, V18.528) prüft gate:altlasten — die EINE Rückkehr-Wand.
 //
@@ -252,6 +254,57 @@ function projektionPflicht() {
     const rc = JSON.parse(fs.readFileSync(path.join(GOLDEN, "render-config.json"), "utf8"));
     const t0 = rc && rc.lod && rc.lod.budget && rc.lod.budget.tree && rc.lod.budget.tree[0];
     return !!(t0 && t0.lagen != null);
+}
+
+// P — DIE ZEILE nahWiese (S3 wiese-gestalten × pflanzen, Integration V18.538): die Nah-Wiese zeichnet genau ihre Gestalten
+// (je Vorlage × Stufe × Teil EINE Senke `nahWiese:L<stufe>:<v>:<teil>`), die Golden-Samen des Grases SIND diese Gestalten —
+// die Zeile nimmt je Zensus-Zeile die Golden-Dreiecke IHRER Gestalt (das Maximum über die Samen, wie beim Baum, hätte an der
+// Mess-Wiese 63 002 statt der gemessenen 54 994 projiziert) und hält Σ Büschel × Dreiecke je Pass gegen die Ratsche der
+// Klasse am Ort, darüber den Haushalt. Ein fehlender Ratschen-Wert ist nie 0 (Lehre 17): er wird beim Namen genannt.
+function gestaltDreiecke(art, zeilen) {
+    const out = {};
+    for (const z of zeilen) {
+        const f = path.join(GOLDEN, `${art}-s${z.gestalt}-L${z.stufe}-summer.json`);
+        if (!fs.existsSync(f)) continue;
+        const g = JSON.parse(fs.readFileSync(f, "utf8"));
+        let t = 0;
+        for (const x of g.meshes || []) {
+            if (!x.attrs || !x.attrs.position || x.teil === "schatten") continue;
+            t += x.index ? x.index.bytes / 12 : x.attrs.position.bytes / 36;
+        }
+        out[z.gestalt + "|" + z.stufe] = t;
+    }
+    return out;
+}
+function gestaltWand(haushalt, ratsche, block, ort, tris) {
+    const k = haushalt.klassen.find((x) => x.id === block.klasse);
+    const rz = ratsche && ratsche.klassen ? ratsche.klassen[block.klasse] : null;
+    const errs = [];
+    const jePass = {};
+    const jeStufe = {};
+    let summe = 0;
+    if (!k) errs.push(`P: die Zeile ${block.klasse} nennt eine Klasse, die der Haushalt nicht trägt`);
+    for (const z of block.zeilen) {
+        const t = tris[z.gestalt + "|" + z.stufe];
+        if (!Number.isFinite(t)) {
+            errs.push(`P: ${block.art} Gestalt ${z.gestalt} L${z.stufe} ohne Golden-Dreiecke`);
+            continue;
+        }
+        const d = z.inst * t;
+        jePass[z.pass] = (jePass[z.pass] || 0) + d;
+        jeStufe["L" + z.stufe] = (jeStufe["L" + z.stufe] || 0) + d;
+        summe += d;
+    }
+    for (const [pass, d] of Object.entries(jePass)) {
+        const r = rz && rz[pass] ? rz[pass].dreiecke : null;
+        if (r == null || !Number.isFinite(r))
+            errs.push(`P: die Ratsche (${ort}) trägt für ${block.klasse} ${pass} keine Dreiecke — kein Soll, keine Zeile`);
+        else if (d > r) errs.push(`P: ${block.klasse} ${pass} projiziert ${d} Dreiecke > Ratsche ${r} (${ort})`);
+    }
+    if (k && summe > k.dreiecke)
+        errs.push(`P: ${block.klasse} projiziert ${summe} Dreiecke > Haushalt ${k.dreiecke} (${ort})`);
+    const soll = rz && rz.haupt ? rz.haupt.dreiecke : null;
+    return { summe, jePass, jeStufe, soll, haushalt: k ? k.dreiecke : null, errs };
 }
 
 function selbsttest() {
@@ -630,6 +683,37 @@ function selbsttest() {
             szene.form[0] === "buf:szene:bodenSatz" &&
             szene.form[1] === "buf:szene:spieler"
     );
+    // S17c — DAS RAHMEN-ZIEL DES DIREKTPFADS (0910-1): `tex:r184-ausgabe` im Band ist ein Linsen-Rest (0710-9 B: 23,7 MB in
+    // `band --ort genesis` nach `zerlegen`) → LINSE rot `leck` mit Zahl und Grund; ohne VRAM-Abgriff zählen die Textur-Objekte;
+    // ein Band ohne Rahmen-Ziel bleibt sauber.
+    const u17c = v17([
+        { k: "buf:szene:bodenSatz", mb: 21.0, n: 6 },
+        { k: "tex:r184-ausgabe rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+        { k: "tex:r184-ausgabe:tiefe depth24plus 1920x1080x1", mb: 7.9, n: 1 },
+    ]);
+    const r17c = BAND.rahmenZielBefunde(null, {
+        mb: 30,
+        erzeuger: [
+            { erzeuger: "TRAANode", mb: 15.8, n: 2 },
+            { erzeuger: "r184-ausgabe", mb: 23.7, n: 2 },
+        ],
+        unbenannt: [],
+    });
+    t(
+        "tex:r184-ausgabe → LINSE rot `leck` (23.7 MB, Rahmen-Ziel des Direktpfads); aus den Textur-Objekten ebenso; ohne es sauber",
+        u17c.linse === "ROT" &&
+            u17c.rot.some(
+                (x) =>
+                    x.art === "leck" &&
+                    /tex:r184-ausgabe 23\.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads/.test(x.text)
+            ) &&
+            BAND.vramBefunde(u17c).length === 1 &&
+            r17c.length === 1 &&
+            /23\.7 MB/.test(r17c[0].text) &&
+            BAND.rahmenZielBefunde({ mb: 21, liste: [{ k: "buf:szene:bodenSatz", mb: 21, n: 6 }] }, null).length ===
+                0 &&
+            !u17.rot.some((x) => /r184-ausgabe/.test(x.text))
+    );
     // S18 — ein gefallener VRAM-Erzeuger (der Abgriff sieht ihn nicht mehr) zieht seine Ratsche auf 0, ein lebender sinkt.
     const r18 = JSON.parse(JSON.stringify(rt));
     r18.vramMB = { "tex:depthBuffer": 7.9, "buf:szene": 50 };
@@ -905,6 +989,7 @@ function selbsttest() {
                 _impostorBakeQueue: [],
                 _autoSettlementQueue: null,
                 _autoSettlementPendingKey: null,
+                _streuWartet: () => false,
             },
             z
         );
@@ -915,6 +1000,36 @@ function selbsttest() {
             BAND.einschwingOffen(welt28({ _autoSettlementPendingKey: "-4,-4" })).dorfExport === "-4,-4" &&
             Object.keys(BAND.einschwingOffen(welt28({}))).length === 0 &&
             /window\.__einschwingOffen = function einschwingOffen/.test(BAND.EINSCHWING_INSTALL)
+    );
+    // S29 — die Zeile nahWiese: der Zensus der Mess-Wiese liegt unter der Ratsche; dieselben Büschel mit dem Maximum
+    // über die Samen (jede Gestalt trüge die schwerste) liegen darüber und werden rot; eine Gestalt ohne Golden und eine
+    // Ratsche ohne Wert werden beim Namen genannt (ein fehlender Wert ist nie 0).
+    const nwB = zs.nahWiese;
+    const nwT = gestaltDreiecke(nwB.art, nwB.zeilen);
+    const rtW = BAND.ladeSpec(zs.ort).ratsche;
+    const nwEcht = gestaltWand(haushalt, rtW, nwB, zs.ort, nwT);
+    const maxT = {};
+    for (const z of nwB.zeilen) {
+        const k = z.gestalt + "|" + z.stufe;
+        for (const y of nwB.zeilen) if (y.stufe === z.stufe) maxT[k] = Math.max(maxT[k] || 0, nwT[y.gestalt + "|" + y.stufe]);
+    }
+    const nwMax = gestaltWand(haushalt, rtW, nwB, zs.ort, maxT);
+    const nwFremd = gestaltWand(
+        haushalt,
+        rtW,
+        Object.assign({}, nwB, { zeilen: nwB.zeilen.concat([{ gestalt: 99, stufe: 1, pass: "haupt", inst: 1 }]) }),
+        zs.ort,
+        nwT
+    );
+    const rtLeer = JSON.parse(JSON.stringify(rtW));
+    rtLeer.klassen[nwB.klasse].haupt.dreiecke = null;
+    const nwOhne = gestaltWand(haushalt, rtLeer, nwB, zs.ort, nwT);
+    t(
+        `Projektion nahWiese: die Mess-Wiese (${nwEcht.summe} Dreiecke) liegt unter der Ratsche ${nwEcht.soll}, das Maximum über die Samen (${nwMax.summe}) wird rot, eine Gestalt ohne Golden und eine Ratsche ohne Wert beim Namen`,
+        nwEcht.errs.length === 0 &&
+            nwMax.errs.some((x) => /> Ratsche/.test(x)) &&
+            nwFremd.errs.some((x) => /Gestalt 99 L1 ohne Golden-Dreiecke/.test(x)) &&
+            nwOhne.errs.some((x) => /keine Dreiecke/.test(x))
     );
 
     const rot = tests.filter((x) => !x.ok);
@@ -957,6 +1072,21 @@ function main() {
             `)` +
             (pflicht ? "" : pw.errs.length ? ` — noch keine Pflicht (render-config ohne tree[0].lagen): ${pw.errs.join("; ")}` : "")
     );
+    // Die Zeile nahWiese (Pflicht seit der Integration V18.538: Gras-Zeile und Gestalten der Nah-Wiese stehen im Kern).
+    const nwB = zs.nahWiese;
+    if (!nwB || !Array.isArray(nwB.zeilen) || !nwB.zeilen.length)
+        errs.push(`P: der Zensus ${zs.ort} trägt keine Zeile nahWiese (je Gestalt × Stufe die gelegten Büschel)`);
+    else {
+        const nw = gestaltWand(haushalt, BAND.ladeSpec(zs.ort).ratsche, nwB, zs.ort, gestaltDreiecke(nwB.art, nwB.zeilen));
+        for (const f of nw.errs) errs.push(f);
+        console.log(
+            `P Projektion ${zs.ort}/${nwB.klasse}: ${nw.summe} Dreiecke (Ratsche ${nw.soll}, Haushalt ${nw.haushalt}; ` +
+                Object.entries(nw.jeStufe)
+                    .map(([s, d]) => `${s} ${d}`)
+                    .join(" · ") +
+                `)`
+        );
+    }
     if (errs.length) {
         console.log("⛔ DIE BAND-WAND:");
         for (const e of errs) console.log("   ❌ " + e);

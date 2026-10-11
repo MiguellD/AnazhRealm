@@ -7,7 +7,8 @@
 // Schuss fern (1,7 m, 10 m voraus) und Armlänge (1,6 m, 0,8 m voraus) + die Halm-Zahl: mittlerer
 // Nachbar-Kontrast der unteren Bildhälfte (hochfrequente Struktur = Halme, glatter Boden ≈ 0). Seit V18.508
 // steht nah die Nah-Wiese (Studio-Gras im Kamera-Ring); die Aufnahme schwingt sie für jede Kamera ein.
-//   node scripts/diag-wiese.cjs [--tag name] [--out DIR]
+// Die Wind-Uhr steht für jeden Schuss (S3 08.10.); `--stelle x,z` setzt die Stelle fest (Vorher/Nachher an derselben).
+//   node scripts/diag-wiese.cjs [--tag name] [--out DIR] [--stelle x,z]
 "use strict";
 const puppeteer = require("puppeteer");
 const { softwareWebGpuArgs } = require("./lib/software-gpu.cjs");
@@ -23,6 +24,11 @@ const argOf = (k, d) => {
 };
 const TAG = argOf("--tag", "head");
 const OUT = path.resolve(argOf("--out", path.join(root, "artifacts", "beweis-e")));
+const STELLE = argOf("--stelle", null) ? argOf("--stelle").split(",").map(Number) : null;
+if (STELLE && !(STELLE.length === 2 && STELLE.every(Number.isFinite))) {
+    console.log("❌ --stelle erwartet x,z (z. B. --stelle -809,-903)");
+    process.exit(1);
+}
 const PORT = Number(process.env.WIESE_PORT || 4468);
 const mime = {
     ".html": "text/html",
@@ -52,6 +58,14 @@ const RENDER_FN = async (kam, W, H, png) => {
     const rend = r.state.renderer;
     rend.setAnimationLoop(null);
     window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
+    // Die Wind-Uhr steht (S3 08.10.): die Halme wiegen mit `uWindTime`, die der Takt aus der Seiten-Zeit schreibt — zwei
+    // Boots trafen den Wind in verschiedener Phase (im 3-m-Ausschnitt 11,5 je Pixel), ein Vorher/Nachher der Gestalt maß
+    // den Wind mit. Die Linse hält die Uhr auf 100 s; ihre Seite zeigt nur Schüsse.
+    const wu = r.state.windUniforms && r.state.windUniforms.uWindTime;
+    if (wu && !wu.__fest) {
+        Object.defineProperty(wu, "value", { get: () => 100, set: () => {}, configurable: true });
+        wu.__fest = true;
+    }
     const cam = r.state.camera;
     cam.position.set(kam.px, kam.py, kam.pz);
     cam.lookAt(kam.lx, kam.ly, kam.lz);
@@ -161,7 +175,12 @@ const RENDER_FN = async (kam, W, H, png) => {
                     // die Nah-Wiese liest das Studio-Buch (Budget, Gras-Vorlagen): ohne Buch fiele die Aufnahme in die
                     // KERN-PFLICHT — die Linse wartet darauf (W7: unter Last kam das Buch nach den 40 Takten)
                     const buch = !!(r._foundry && r._foundry.recipes && r.constructor._studioRenderConfig);
-                    if (takte >= 40 && stabil >= 15 && buch) break;
+                    // ... und auf die Nah-Wiese selbst: ihre Studio-Vorlagen kommen aus der Foundry (das Profil der Linse
+                    // ist frisch, die Platte kalt) — ohne sie zeigte ein Schuss 0 Büschel und die Linse druckte einen
+                    // Kontrast des nackten Bodens (S3 08.10., mit `--stelle` ohne die Zeit der Kandidaten-Suche).
+                    const nw = r.state.nahWiese;
+                    const wiese = !!(nw && nw.offen === 0 && nw.vorlagen.size > 0);
+                    if (takte >= 40 && stabil >= 15 && buch && wiese) break;
                     await sleep(50);
                 }
                 return { takte, chunks: last };
@@ -201,9 +220,14 @@ const RENDER_FN = async (kam, W, H, png) => {
             }
         return out;
     });
-    // Die besonnte Stelle: je Kandidat ein Blick senkrecht nach unten (Mittag, Schatten frisch).
+    // Die besonnte Stelle: je Kandidat ein Blick senkrecht nach unten (Mittag, Schatten frisch). `--stelle x,z` setzt sie
+    // fest (Vorher/Nachher): die Wertung liest Pixel, eine geänderte Gestalt kann sonst eine andere Stelle wählen.
     let best = null;
-    for (const c of kand) {
+    if (STELLE) {
+        const [x, z] = STELLE;
+        best = { x, z, y: await page.evaluate((x, z) => window.anazhRealm._voxelSurfaceY(x, z), x, z), wert: 0 };
+    }
+    for (const c of best ? [] : kand) {
         const m = await page.evaluate(
             RENDER_FN,
             { px: c.x, py: c.y + 6, pz: c.z + 0.01, lx: c.x, ly: c.y, lz: c.z },
@@ -237,7 +261,9 @@ const RENDER_FN = async (kam, W, H, png) => {
         process.exit(1);
     }
     console.log(
-        `Besonnte Wiese: ${best.x.toFixed(0)}/${best.z.toFixed(0)} · von oben Helligkeit ${best.hell.toFixed(1)}, Grün-Überschuss ${best.gruen.toFixed(1)}, ${best.bueschel} Büschel (3×3 Kacheln) (${kand.length} Kandidaten)`
+        STELLE
+            ? `Besonnte Wiese: ${best.x.toFixed(0)}/${best.z.toFixed(0)} · fest gesetzt (--stelle)`
+            : `Besonnte Wiese: ${best.x.toFixed(0)}/${best.z.toFixed(0)} · von oben Helligkeit ${best.hell.toFixed(1)}, Grün-Überschuss ${best.gruen.toFixed(1)}, ${best.bueschel} Büschel (3×3 Kacheln) (${kand.length} Kandidaten)`
     );
     // Der Spieler steht 25 m HINTER der Kamera (sie blickt nach +x): an der Stelle selbst stünde die
     // Kamera im eigenen Körper — gemessen 01.10. im Ausgabe-Pfad (Gewand + Füße füllten das Bild).
@@ -269,6 +295,15 @@ const RENDER_FN = async (kam, W, H, png) => {
     await browser.close();
     server.close();
     console.log(pageErrors.length ? "Page-Errors: " + pageErrors.slice(0, 3).join(" | ") : "Page-Errors: 0");
+    // Ein Schuss ohne Büschel ist kein Beweis der Wiese (die Stelle trägt Büschel nach dem Gesetz): laut, nie ein Kontrast
+    // des nackten Bodens als Zahl.
+    const leer = Object.entries(bericht.schuesse).filter(([, s]) => !(s.bueschel > 0));
+    if (leer.length) {
+        console.log(
+            `❌ Nah-Wiese leer im Schuss ${leer.map(([a]) => a).join(", ")} — der Kontrast misst den nackten Boden`
+        );
+        process.exit(1);
+    }
     process.exit(0);
 })().catch((e) => {
     console.error("DIAG-FEHLER:", e);

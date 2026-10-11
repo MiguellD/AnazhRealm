@@ -216,7 +216,7 @@ function trittProbe(stoerung) {
     const vorStreu = st.nahStreu;
     const eigenWiese = !vorWiese;
     const eigenStreu = !vorStreu;
-    if (eigenWiese) st.nahWiese = { gruppe: null, kacheln: new Map(), chunkStand: new Map() };
+    if (eigenWiese) st.nahWiese = { kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
     if (eigenStreu) st.nahStreu = { senken: new Map(), kacheln: new Map() };
     const KW = A.NAH_WIESE.kachel;
     const KS = A.NAH_STREU.kachel;

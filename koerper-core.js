@@ -22,24 +22,32 @@
     var MESHFREI = 1; // v1.1 §8 — components-only-Kern (keine Gestalt, nur Daten)
     // v1.2 §8.5 (V18.478, rein additiv) — DIE OFEN-STUFEN-ZEILE: ein MESHFREI-Kern
     // deklariert hiermit die LOD-Stufen, die der WIRTS-OFEN seiner Gestalt bäckt
-    // (bakeMenschInstance: Stufe 0 = feiner Gelenk-Baum · Stufe 1 = gemergter
-    // Fern-Guss, _menschFernToggle). B2 bleibt N/A (kein buildInstance) — die
+    // (bakeMenschInstance: Stufe 0 = feiner Gelenk-Baum · Stufe 1 = gelenkige
+    // Grobstufe, _gelenkStufe). B2 bleibt N/A (kein buildInstance) — die
     // Zeile ist die VERTRAGS-Wahrheit der Pipe-Bäckerei (BAKERS_BY_KIND).
     // B2c-Daten (W8, rein additiv): DAS BUDGET je Ofen-Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
     // Hülle (gate:asset-contract, die Ratsche fällt nur), band = das Profi-Band-Ziel (Haushalt, offen solange tris
     // darüber liegt), draws = Draws je Körper und Pass nach der Wirts-Regel: das Budget-Gesetz am Ausgang (Brücke
     // UND Sync-Guss des Wirts-Ofens, phyto-core budgetErzwingen) faltet die starren Stoffe und die Stoff-Hüllen
     // je Bindungs-Klasse (Haut bleibt Haut) und Seh-Klasse (MATERIAL_KLASSEN.seh: Auge · Haut · Haar · Stoff bleiben
-    // getrennt — L1 6 ist das gemessene Minimum); schatten = die werfende Stufe. gestalten = Individuen je Rezept (das
-    // bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
-    var GESTALTEN_JE_REZEPT = 16;
+    // getrennt — L1 6 ist das gemessene Minimum); schatten = die werfende Stufe. gestalten = Individuen je Rezept
+    // (gefüllt je Rezept unten bei PRESETS): EINE — der Guss ist seed-invariant (Same 1 ≡ 2 byte-gleich, L0 und L1),
+    // 16 Gestalten waren 16 byte-gleiche Zwillinge. Eine Seed-Achse ist ein Re-Mint-Akt, nie eine Zahl hier (S3 08.10.,
+    // gate:asset-contract Gestalten-Wand).
+    var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
             kindStages: { koerper: [0, 1] },
             budget: {
                 koerper: {
-                    0: { tris: 166000, band: 40000, draws: 8, schatten: 0 },
-                    1: { tris: 40000, band: 8000, draws: 6, schatten: 1 },
+                    0: { tris: 166000, band: 40000, draws: 8, schatten: 1 },
+                    1: { tris: 40000, band: 8000, draws: 6, schatten: 1, ab: 40, wurf: { seh: ["haut", "stoff", "haar"] } },
+                    // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m das Bild und wirft für beide Stufen (die
+                    // feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil (Haut, Kleid,
+                    // Haar — nie die Augen). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 40 m ist eine KOSTEN-Grenze,
+                    // keine Pixel-Grenze: die Beine spreizen in 38 m noch ~10 px bei 720 p (Leben-Prüfung N-D7, 06.10.; bis S3
+                    // die Wirts-Konstante MENSCH_FERN_DIST_SQ).
+                    hyst: 0.1,
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze tragen die Glieder-Kapseln im Welt-March
                     fernform: "gesetz",
                 },

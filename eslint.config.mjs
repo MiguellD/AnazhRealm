@@ -56,6 +56,8 @@ export default [
                 GPUShaderStage: "readonly",
                 // Das Tiefen-Abbild (`_tiefenAbbild`) hängt für EINEN Pass-Bruch an die Encoder-Kopie.
                 GPUCommandEncoder: "readonly",
+                // Die Rundungs-Sonde des Ausgabe-Ziels (`_ausgabeSonde`, 0910-1 B) legt ihr 1×1-Ziel roh an.
+                GPUTextureUsage: "readonly",
             },
         },
         rules: {

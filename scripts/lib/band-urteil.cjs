@@ -14,7 +14,8 @@
 //     stufe      eine Nah-Stufe in der Ferne (die `stufenWand` des Haushalts — der stille L0-Rückfall)
 //     ratsche    eine Klasse × Pass (oder ein VRAM-Erzeuger, oder die Summe) über ihrem letzten Ist plus Toleranz
 //     leck       VRAM, den kein Bild trägt: Geometrie-Puffer, die nur der Foundry-Cache (`buf:ruhend`) oder nur r184s
-//                Attribut-Register (`buf:verwaist`) hält — der Täter beim Namen (W6)
+//                Attribut-Register (`buf:verwaist`) hält — der Täter beim Namen (W6); und das Rahmen-Ziel des Direktpfads
+//                (`tex:r184-ausgabe`), das eine Linse liegen ließ (0910-1)
 //
 // Die RATSCHE zieht nur die HÜLLE einer Mess-Serie nach (`werkbank ratsche`: ≥ 4 eingeschwungene Läufe der vollen
 // Welt aus Erst- und Zweit-Boot, je Klasse × Pass das Maximum) und nur ohne Linsen-Fehler (unbenannt · haushalt ·
@@ -154,11 +155,12 @@ function einschwingOffen(r) {
     if (kb) o.kartenBake = kb;
     if (r._scatterRefillPending) o.streuNachschub = 1;
     if (st.voxelMeshPending && st.voxelMeshPending.size) o.chunkBau = st.voxelMeshPending.size;
-    // Eine aufgeschobene Streu-Region wartet auf ein Asset oder eine Karte — ruhig ist die Welt erst ohne sie
-    // (eine, die in Ruhe aufgeschoben bleibt, ist ein Befund: die Messung schwingt nicht ein).
-    let aufgeschoben = 0;
-    if (st.scatterRegions) for (const reg of st.scatterRegions.values()) if (reg._deferredFoundry) aufgeschoben++;
-    if (aufgeschoben) o.streuAufgeschoben = aufgeschoben;
+    // Eine Streu-Region in Reichweite fehlt, wartet auf ein Asset oder eine Karte oder trägt eine offene Scheibe —
+    // ruhig ist die Welt erst ohne sie (eine, die in Ruhe wartet, ist ein Befund: die Messung schwingt nicht ein).
+    // Die EINE Antwort der Welt (`_streuWartet`); der eigene Zähler las die fehlende Regionen-Karte als „keine
+    // aufgeschoben" und sah fehlende und angeschnittene Regionen nie (Befund 09.10.).
+    const streuListe = [];
+    if (r._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe)) o.streuWartet = streuListe.join(" · ");
     const q = r._autoSettlementQueue;
     if (q != null) o.dorfWaechst = q.plan && q.plan.slots ? `${q.idx}/${q.plan.slots.length}` : 1;
     if (r._autoSettlementPendingKey) o.dorfExport = r._autoSettlementPendingKey;
@@ -177,6 +179,42 @@ const LINSEN_ARTEN = ["unbenannt", "haushalt", "ratsche", "leck"];
 // (`ruhend`) oder nur r184s Attribut-Register (`verwaist`) hält (`__pufferZensus`, draw-zaehler) — VRAM an der Geschichte
 // statt am Schirm. Jedes MB davon ist ein LECK, der Täter steht im Urteil beim Namen.
 const LECK_ERZEUGER = /^buf:(ruhend|verwaist)$/;
+// DAS RAHMEN-ZIEL DES DIREKTPFADS (0910-1): r184 legt es nur an, wenn ein Render MIT Tonemapping auf die Leinwand geht
+// (`_getFrameBufferTarget`: rgba16float + depth24plus, 15,8 + 7,9 MB bei 1080p, `isPostProcessingRenderTarget` → der Erzeuger
+// `r184-ausgabe`). Die Post-Kette tut das nie (r184 schaltet Tonemapping und Farbraum für ihr Quad ab), im Spiel lebt es also
+// nur im Rückfall ohne Kette. Steht es im Band, fuhr eine Linse den Direktpfad und ließ es liegen: in 0710-6 und 0710-9 trug
+// `band --ort genesis` nach `zerlegen` 23,7 MB davon. Der Stamm entsorgt es, sobald die Kette wieder zeichnet (`_leinwandWeg`);
+// was dennoch im Band steht, ist ein Linsen-Rest beim Namen. Gezählt aus dem VRAM-Abgriff (WebGPU), sonst aus den
+// Textur-Objekten (jedes Backend).
+const RAHMEN_ZIEL = /^r184-ausgabe/;
+function rahmenZielBefunde(vram, texturen) {
+    let mb = 0,
+        n = 0;
+    if (vram && Array.isArray(vram.liste)) {
+        for (const v of vram.liste) {
+            const { art, erzeuger } = erzeugerOf(v.k);
+            if (art === "tex" && RAHMEN_ZIEL.test(erzeuger)) {
+                mb += v.mb;
+                n += v.n;
+            }
+        }
+    } else if (texturen)
+        for (const e of texturen.erzeuger || [])
+            if (RAHMEN_ZIEL.test(e.erzeuger)) {
+                mb += e.mb;
+                n += e.n;
+            }
+    return n > 0
+        ? [
+              {
+                  art: "leck",
+                  text:
+                      `tex:r184-ausgabe ${+mb.toFixed(1)} MB in ${n} Texturen — Rahmen-Ziel des Direktpfads, im Spiel nie ` +
+                      "angelegt (eine Linse fuhr den Direktpfad und ließ es liegen)",
+              },
+          ]
+        : [];
+}
 // Eine FREIE Klasse misst den Weltzustand, nicht die Kosten (die Tiere wandern: an der Mess-Wiese 0 bis 3 Arten im Bild):
 // die Ratsche hält sie nicht, ihre Kosten je Einheit hält das Gate, das ihr Grund nennt. Im Band zählt sie voll.
 const freiGrund = (ratsche, id) => (ratsche && ratsche.frei && ratsche.frei[id]) || null;
@@ -537,6 +575,7 @@ function bandUrteil({ zensus, vram, texturen, gpu, haushalt, ratsche, ort }) {
         // gebunden = ohne die freien Erzeuger (wie die Summen-Ratsche der Befehle): die Ratsche hält, was Kosten sind
         speicher = { mb: vram.mb, gebunden: +(vram.mb - frei).toFixed(1), band: haushalt.band.vramMB, erzeuger: liste };
     }
+    rot.push(...rahmenZielBefunde(vram, texturen));
     // DIE TEXTUR-OBJEKTE (Backend-unabhängig): jedes trägt seinen Erzeuger — selbst oder über sein Render-Ziel.
     if (texturen)
         for (const t of texturen.unbenannt || [])
@@ -851,6 +890,7 @@ module.exports = {
     bandHuelle,
     ratscheNachziehen,
     vramBefunde,
+    rahmenZielBefunde,
     bandTabelle,
     einOf,
     zuordnen,

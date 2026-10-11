@@ -294,7 +294,7 @@ const PORTAL_RENDER_CONFIG = {
         // Nahbild bis d0): aus dem Haushalt Baum L0/L1+Werfer 150k (W5 rechnete 14 L0-Baeume bei 20 m: 10 714 je
         // Baum); das Soll-Bild (Cluster-Karten an ihrem Traeger, Weiden-Straehnen entlang der Peitsche, Stamm und
         // Starkaeste ganz) braucht hoechstens 17,6k (Tanne s2) — die Zeile steht offen bei 18 000, der Haushalt
-        // verschiebt sich um das L0-Band (docs/studio-vertrag.md B2c). grass, flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr Band-Schnitt ist offen
+        // verschiebt sich um das L0-Band (docs/studio-vertrag.md B2c). flower und rock stehen als gemessene Huelle ueber 17 Samen; ihr Band-Schnitt ist offen
         // (docs/PFLICHT-OFFEN.md E). Konsum: gate:asset-contract (die Wand baut jede Stufe — Goldens, Samen 7 und jede
         // Gestalt der Welt — und nennt den Taeter), gate:studio-vertrag B2c (Vollstaendigkeit, Monotonie: tris faellt
         // je Stufe streng, draws steigt nie). Die Kosten-Regler der Kronen wohnen in ihrer Zeile: blattKarte (Kante der
@@ -380,9 +380,26 @@ const PORTAL_RENDER_CONFIG = {
                 2: { tris: 2, draws: 1, schatten: false, karte: true },
                 fernform: "karte",
             },
+            // DAS GRAS (S3 08.10., aus dem Haushalt abgeleitet): die Nah-Wiese der Welt darf an der Mess-Wiese höchstens
+            // 57 066 Dreiecke zeichnen (die Ratsche des Profi-Bands, Haushalt 80 000 je Blick; Ist V18.536: 84 336 =
+            // L1 37 800 + L2 46 536 aus 1 188/1 560 und 162/228 je Büschel) — die Zeilen sind gegen dieses Band gebaut,
+            // nicht an der Gestalt abgelesen (bis dahin die gemessene Hülle 1 700/320). L1 (0–5 m) ≤ 1 220: Halme 5
+            // Segmente wie zuvor, die Rispe 6 Grannen × 2 Segmente (936/1 200, Hülle 17 Samen 888–1 212 — der Federbusch);
+            // L2 (5–14 m) ≤ 130: die Rispe EINE Granne (96/118, der helle Saum). Die Halme bleiben byte-gleich (Halm-Fläche
+            // 2,702 / 3,770 m²). Jede Stufe tastet DIESELBE Granne ab (emitGrass: die Kurve in 3 Segmenten, die Stufe nimmt
+            // Punkte auf ihr) — eine neu integrierte 2-Segment-Granne nickte kaum und las an 3 m als V/Möwe.
+            // Die L1-Zeile stand im Plan bei 1 000 (Rispe 3 × 2) und steigt offen: die Wiesen-Linse (Wind-Uhr gepinnt,
+            // swiftshader, -809/-903) misst den Halm-Kontrast fern/Armlänge an der Basis (7 × 3) 14,04/8,22, an 4 × 2
+            // (neu integriert) 12,39/7,06, an 4 × 3 12,70/7,27, an 6 × 2 abgetastet 13,61/7,97 — der Kontrast trägt die
+            // Zahl der Grannen; 6 × 2 kostet 24 Dreiecke je Rispe wie 4 × 3, an der Mess-Wiese 51 432 → 54 994
+            // (Ratsche 57 066; 8 Blicke höchstens 67 598 ≤ 80 000).
+            // `rispe` ist der Kosten-Regler der Stufe (emitGrass liest ihn): grannen × segmente (1..3) je Rispe und die
+            // Breite der Granne in Einheiten der alten. Die Breite ist an der BILD-Deckung geeicht (echte GPU, Mess-Wiese,
+            // 8 Blicke, Wind-Uhr gepinnt, Ährchen-Anteil der Pixel 2,5–3,5 m voraus): 6 × 2 bei 1,1 zeigt 3,07 % gegen
+            // 3,20 % der Basis (flächen-treu 1,09); L2 bei 2,65 im Band 6–9 m 3,11 % gegen 3,19 %.
             grass: {
-                1: { tris: 1700, draws: 1, schatten: false },
-                2: { tris: 320, draws: 1, schatten: false },
+                1: { tris: 1220, draws: 1, schatten: false, rispe: { grannen: 6, segmente: 2, breite: 1.1 } },
+                2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
                 fernform: "boden",
             },
             flower: {
@@ -2617,8 +2634,26 @@ function emitGrass(P) {
         g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
         geos.push(g);
         if (isCulm) {
-            // Rispe: feine nickende Grannen an der Spitze
-            const Naw = __lod === 0 ? 11 : __lod === 1 ? 7 : 4,
+            // Rispe: feine nickende Grannen an der Spitze. DIE RISPE IST GESTUFT (S3 08.10., Lehre 19): bis dahin war sie in
+            // jeder Stufe gleich fein (L1 7 Grannen × 3 Segmente = 42 Dreiecke je Rispe, 49/54 % der L1 an den zwei
+            // Nah-Wiesen-Vorlagen) — die Stufe war an der Gestalt abgelesen, nicht aus dem Band. Jetzt liest jede gelieferte
+            // Stufe ihre Rispe aus ihrer Budget-Zeile (`lod.budget.grass[stufe].rispe`: Grannen, Segmente, Breite); die
+            // Labor-Stufe L0 (keine gelieferte Stufe) bleibt 11 × 3 in voller Breite. STROM-ERHALT: jede Granne der vollen
+            // Zahl `NawVoll` (das Individuum: 11/7/4) zieht ihre Würfe (Winkel, Länge), auch die nicht gezeichnete — das
+            // Individuum, seine Halme und jede folgende Rispe bleiben byte-gleich, nur die Rispe fällt.
+            // DIE GRANNE IST EINE KURVE (S3 08.10., Gegenprüfung): ihre Biegung wird in voller Auflösung integriert (AKV = 3
+            // Segmente, die Kurve der Labor-Stufe), jede Stufe TASTET DIESELBE Kurve mit ihren `segmente` ab (Punkte auf der
+            // Kurve, die Richtung der Sehne). Bis dahin integrierte eine Stufe mit weniger Segmenten die Biegung neu — mit 2
+            // Segmenten nickte die Granne kaum (Biegung −0,30/−0,73 statt −0,30/−0,58/−0,87) und knickte zur V-Form: an 3 m
+            // las die Rispe als Möwe statt als Federbusch. Mit `segmente` 3 ist der Bau byte-gleich zum alten (L0, 17 Samen).
+            const AKV = 3,
+                NawVoll = __lod === 0 ? 11 : __lod === 1 ? 7 : 4,
+                _rz = __lod === 0 ? { grannen: 11, segmente: 3, breite: 1 } : PORTAL_RENDER_CONFIG.lod.budget.grass[__lod].rispe;
+            if (!(_rz && Number.isInteger(_rz.grannen) && _rz.grannen >= 1 && _rz.grannen <= NawVoll && Number.isInteger(_rz.segmente) && _rz.segmente >= 1 && _rz.segmente <= AKV && _rz.breite > 0))
+                throw new Error("[phyto] lod.budget.grass[" + __lod + "].rispe fehlt (grannen 1.." + NawVoll + ", segmente 1.." + AKV + ", breite > 0)");
+            const Naw = _rz.grannen,
+                AK = _rz.segmente,
+                breit = _rz.breite,
                 pg = [],
                 pi = [],
                 pc = [],
@@ -2628,18 +2663,34 @@ function emitGrass(P) {
                 pu = [];
             let vb = 0;
             const swT = P.windGain * 1.15;
-            for (let k = 0; k < Naw; k++) {
+            for (let k = 0; k < NawVoll; k++) {
                 const aa = (k / Naw) * 6.2831 + rnd() * 0.5,
                     awl = L * rrange(0.14, 0.28);
-                let ad = vnorm([Math.cos(aa) * 0.3, 0.96, Math.sin(aa) * 0.3]),
-                    ap = tip.slice();
-                const AK = 3;
+                if (k >= Naw) continue; // Strom-Erhalt: die Würfe sind gezogen, die Granne zeichnet nicht
+                // Die Kurve der Granne: AKV Segmente (Punkte kp, Richtung je Segment kd).
+                let ad = vnorm([Math.cos(aa) * 0.3, 0.96, Math.sin(aa) * 0.3]);
+                const kp = [tip.slice()],
+                    kd = [];
+                for (let s2 = 0; s2 < AKV; s2++) {
+                    ad = vnorm(vadd(ad, [0, -0.3 - (s2 / AKV) * 0.85, 0]));
+                    kd.push(ad);
+                    kp.push(vadd(kp[s2], vscl(ad, awl / AKV)));
+                }
+                // Ein Punkt der Kurve beim Parameter u (0..AKV): ganzzahlig der Kurven-Punkt selbst, sonst auf seinem Segment.
+                const kpu = (u) => {
+                    const i = Math.floor(u),
+                        t = u - i;
+                    return t === 0 ? kp[i] : vadd(kp[i], vscl(vsub(kp[i + 1], kp[i]), t));
+                };
+                // Die Stufe tastet ab: Segment s2 von u0 = s2·AKV/AK bis u1 = (s2 + 1)·AKV/AK, seine Richtung die Sehne
+                // (bei AK = AKV die Kurven-Richtung selbst — byte-gleich zum alten Bau).
                 for (let s2 = 0; s2 < AK; s2++) {
-                    const f2 = s2 / AK;
-                    ad = vnorm(vadd(ad, [0, -0.3 - f2 * 0.85, 0]));
-                    const np = vadd(ap, vscl(ad, awl / AK)),
-                        hw = 0.016 * (1 - f2 * 0.7),
-                        rt2 = vnorm(vcross(ad, [0, 1, 0]));
+                    const f2 = s2 / AK,
+                        ap = kpu((s2 * AKV) / AK),
+                        np = kpu(((s2 + 1) * AKV) / AK),
+                        sd = AK === AKV ? kd[s2] : vnorm(vsub(np, ap)),
+                        hw = 0.016 * breit * (1 - f2 * 0.7),
+                        rt2 = vnorm(vcross(sd, [0, 1, 0]));
                     const c0 = vadd(ap, vscl(rt2, -hw)),
                         c1 = vadd(ap, vscl(rt2, hw)),
                         c2 = vadd(np, vscl(rt2, hw * 0.5)),
@@ -2655,7 +2706,6 @@ function emitGrass(P) {
                         pty.push(4);
                     }
                     vb += 4;
-                    ap = np;
                 }
             }
             const gp = new THREE.BufferGeometry();
@@ -4786,9 +4836,14 @@ function __tierMergeGeos(geos, fuell) {
     // Spitze-Verlauf der Haar-Strähnen), füllen die übrigen mit der Stoff-Farbe (fuell, linear). Vorher fielen die
     // Farben beim Verschmelzen still: die Strähnen des Menschen verloren ihren Lab-Verlauf.
     if (mitFarbe && mitFarbe !== geos.length && !fuell) throw new Error("GELENK-GUSS: Farbe an " + mitFarbe + " von " + geos.length + " Teilen, keine Füll-Farbe");
+    // DIE BINDUNG REIST MIT (S3): ein geskinnter Eimer (die gelenkige Grobstufe: Haut + starr gebundene Teile, Gewicht 1)
+    // verschmilzt mit seinen Gewichten — jeder Teil zeigt auf dieselbe Bone-Ordnung.
+    const mitHaut = geos.every((g) => g.attributes.skinIndex && g.attributes.skinWeight);
     const pos = new Float32Array(nv * 3);
     const nor = new Float32Array(nv * 3);
     const col = mitFarbe ? new Float32Array(nv * 3) : null;
+    const sIx = mitHaut ? new Float32Array(nv * 4) : null;
+    const sGw = mitHaut ? new Float32Array(nv * 4) : null;
     const idx = new Uint32Array(ni);
     let vo = 0,
         io = 0;
@@ -4798,6 +4853,10 @@ function __tierMergeGeos(geos, fuell) {
         const c = g.attributes.position.count;
         if (col && g.attributes.color) col.set(g.attributes.color.array, vo * 3);
         else if (col) for (let i = 0; i < c; i++) col.set(fuell, (vo + i) * 3);
+        if (mitHaut) {
+            sIx.set(g.attributes.skinIndex.array, vo * 4);
+            sGw.set(g.attributes.skinWeight.array, vo * 4);
+        }
         if (g.index) {
             const ia = g.index.array;
             for (let i = 0; i < ia.length; i++) idx[io + i] = ia[i] + vo;
@@ -4812,6 +4871,10 @@ function __tierMergeGeos(geos, fuell) {
     out.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     out.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
     if (col) out.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    if (mitHaut) {
+        out.setAttribute("skinIndex", new THREE.BufferAttribute(sIx, 4));
+        out.setAttribute("skinWeight", new THREE.BufferAttribute(sGw, 4));
+    }
     out.setIndex(new THREE.BufferAttribute(idx, 1));
     return out;
 }
@@ -4949,13 +5012,63 @@ function __streuGeo(row, seed, tonRGB) {
     return geo;
 }
 
+// AUFS NIVEAU (S3, die gelenkige Grobstufe wirft für die feine): die Laplace-Glättung zieht jede gewölbte Fläche nach
+// innen, um so mehr, je gröber das Raster ist (der Schwund wächst mit vox²) — auf dem Raster der Grobstufe (0,04 H) um
+// Zentimeter, an den dünnen Läufen bis zur halben Dicke: der Wurf-Umriss der Grobstufe lag beim Wolf 7 % unter dem der
+// feinen (IoU 0,92, Lauf und Pfote fehlten). Jede geglättete Ecke kehrt auf die Niveau-Fläche des Felds zurück (Newton
+// über das trilineare Feld, Zentral-Gradient, je Schritt höchstens ½ Zelle): die Fläche bleibt glatt und liegt wieder auf
+// dem Gesetz, ihre Dreiecke bleiben dieselben.
+function __aufsNiveau(verts, f, nx, ny, nz, lo, vox, level) {
+    const dy = nx,
+        dz = nx * ny;
+    for (const p of verts)
+        for (let s = 0; s < 3; s++) {
+            // das trilineare Feld und sein Gradient in EINEM Zugriff auf die acht Ecken der Zelle
+            const gx = Math.min(nx - 1.000001, Math.max(0, (p[0] - lo[0]) / vox)),
+                gy = Math.min(ny - 1.000001, Math.max(0, (p[1] - lo[1]) / vox)),
+                gz = Math.min(nz - 1.000001, Math.max(0, (p[2] - lo[2]) / vox));
+            const i = Math.floor(gx),
+                j = Math.floor(gy),
+                k = Math.floor(gz);
+            const u = gx - i,
+                v = gy - j,
+                w = gz - k;
+            const a = i + nx * (j + ny * k);
+            const f000 = f[a],
+                f100 = f[a + 1],
+                f010 = f[a + dy],
+                f110 = f[a + dy + 1],
+                f001 = f[a + dz],
+                f101 = f[a + dz + 1],
+                f011 = f[a + dy + dz],
+                f111 = f[a + dy + dz + 1];
+            const c00 = f000 + (f100 - f000) * u,
+                c10 = f010 + (f110 - f010) * u,
+                c01 = f001 + (f101 - f001) * u,
+                c11 = f011 + (f111 - f011) * u;
+            const c0 = c00 + (c10 - c00) * v,
+                c1 = c01 + (c11 - c01) * v;
+            const d = c0 + (c1 - c0) * w - level;
+            const ex = (((f100 - f000) * (1 - v) + (f110 - f010) * v) * (1 - w) + ((f101 - f001) * (1 - v) + (f111 - f011) * v) * w) / vox,
+                ey = ((c10 - c00) * (1 - w) + (c11 - c01) * w) / vox,
+                ez = (c1 - c0) / vox;
+            const g2 = ex * ex + ey * ey + ez * ez;
+            if (!(g2 > 1e-6)) break;
+            const lim = (0.5 * vox) / Math.sqrt(g2);
+            const t = Math.max(-lim, Math.min(lim, d / g2));
+            p[0] -= t * ex;
+            p[1] -= t * ey;
+            p[2] -= t * ez;
+        }
+}
 
 // ── DIE HÜLLEN-MASCHINE DES OFENS (V18.497 — ein Gesetz für Mensch UND Tier): Feld → Surface-Nets
-// (koerper-core, verbatim Lab) → Orientierung → 2× Laplace → CLR-Push → Gelenk-Gewichte → Geometrie.
+// (koerper-core, verbatim Lab) → Orientierung → 2× Laplace → [aufs Niveau] → CLR-Push → Gelenk-Gewichte → Geometrie.
 // Der Aufrufer liefert das FELD (Mensch: Punkt-Splat + Closing · Tier: Primitiv-Füllung); zentren =
 // [{j, c, d?}] je Teil-Primitiv (d(v) = eigener Abstand², sonst Zentrums-Abstand), skinJoints = Bone-
-// Ordnung (null = ungeskinnte Hülle, die Fern-Stufe), kandidaten(v) = optionale Vorauswahl der zentren. ──
-function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, eW, kandidaten) {
+// Ordnung (null = ungeskinnte Hülle: die starren Kopf- und Hand-Häute), kandidaten(v) = optionale Vorauswahl der
+// zentren, aufsNiveau = die geglätteten Ecken kehren auf die Niveau-Fläche des Felds zurück (__aufsNiveau). ──
+function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, eW, kandidaten, aufsNiveau) {
     const sn = hk.surfaceNets(f, nx, ny, nz, level, lo[0], lo[1], lo[2], vox);
     if (!sn.verts.length || !sn.faces.length) return null;
     // ORIENTIERUNG pro Hülle (das Lab-Mehrheitsvotum): Nets kann nach
@@ -5016,6 +5129,7 @@ function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJo
                 v[2] = v[2] * 0.5 + acc[i * 3 + 2] * k;
             }
     }
+    if (aufsNiveau) __aufsNiveau(sn.verts, f, nx, ny, nz, lo, vox, level);
     // CLR-PUSH: jeden Vertex entlang seiner Flächen-Normale nach AUSSEN
     // (die Vorlagen-Klarheit: Hülle ÜBER den Primitiven, kein Durchstoß).
     if (clr) {
@@ -5103,8 +5217,8 @@ function __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJo
 // voll gelenkig. Rückgabe: THREE.Group, Meshes FLACH auf IDENTITY (der
 // Asset-Extractor bäckt matrixWorld — Identity = no-op), userData.__assetJoint
 // je Mesh + group.userData.__skelett (Gelenk-Baum + tailSegs + masse) als
-// Beipack. lod0 = gelenkig (Segmente 20/14) · lod≥1 = EIN Standbild
-// (Segmente 8/6, ohne Strähnen) für die Ferne.
+// Beipack. lod0 = gelenkig (Segmente 20/14) · lod≥1 = die gelenkige Grobstufe
+// (Segmente 8/6, ohne Strähnen; S3: jedes Teil an den Knochen der feinen).
 function bakeTierInstance(kern, presetId, seed, lod, ov) {
     const dials0 = (kern.GATTUNGEN && kern.GATTUNGEN[presetId]) || {};
     const dials = ov && typeof ov === "object" ? Object.assign({}, dials0, ov) : Object.assign({}, dials0);
@@ -5293,7 +5407,7 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
         tailSegs: tailNamen,
         masse: B.masse || null,
         base: typeof P.cB === "number" ? P.cB : null,
-        // V18.497 — die Bone-Ordnung der Tier-Haut (nur Stufe 0 ist geskinnt).
+        // V18.497 — die Bone-Ordnung der Tier-Haut (S3: beide Stufen sind geskinnt).
         ...(skinJoints ? { skinJoints } : {}),
     });
 }
@@ -5303,13 +5417,13 @@ function bakeTierInstance(kern, presetId, seed, lod, ov) {
 // als Einzel-Kugeln war er eine sichtbare Perlen-Kette (85k Dreiecke). Hier wird er EINE geschlossene
 // Haut: das Feld ist die GLATTE Vereinigung (polynomiales smin, Verrundung `blend`) der Ellipsoid-
 // Abstände — exakt, ohne die Blur-Erosion, die dünne Beine fräße —, die Hüllen-Maschine des Ofens
-// (Surface-Nets, dieselbe wie beim Menschen) macht daraus die Fläche. Stufe 0 bindet sie per Gewicht
-// an die Bein-/Schweif-Gelenke (Abstand zur Primitiv-OBERFLÄCHE, Top-4); Stufe 1 (das Fern-Standbild)
-// bleibt ungeskinnt und gröber und schließt den Kopf mit ein. Nah tragen Kopf und Kiefer eigene starre
-// Häute (__tierKopfHaeute); Ohren, Lider und Teile unter dem Raster (Zehen, Krallen-Bett) bleiben Primitive. Die ersetzten Kugeln bleiben im Baum (Strähnen-Wirte), gegossen werden sie
-// nicht (__nichtGiessen). Das Fern-Standbild gießt keine Teile unter der Pfote oder im Maul (Krallen,
-// Ballen, Zähne, Zahnfleisch): bei ≥ 35 m trägt es Silhouette und Farbe, nicht Details unter einem Pixel.
-// Rückgabe: skinJoints (Stufe 0) oder null.
+// (Surface-Nets, dieselbe wie beim Menschen) macht daraus die Fläche. Beide Stufen binden sie per Gewicht
+// an die Gelenke (Abstand zur Primitiv-OBERFLÄCHE, Top-4); Stufe 1 (die gelenkige Grobstufe, S3) ist
+// gröber und schließt den Kopf mit ein (Kopf und Kiefer binden an ihre Gelenke). Nah tragen Kopf und Kiefer
+// eigene starre Häute (__tierKopfHaeute); Ohren, Lider und Teile unter dem Raster (Zehen, Krallen-Bett) bleiben Primitive. Die ersetzten Kugeln bleiben im Baum (Strähnen-Wirte), gegossen werden sie
+// nicht (__nichtGiessen). Die Grobstufe gießt keine Teile unter der Pfote oder im Maul (Krallen,
+// Ballen, Zähne, Zahnfleisch): bei ≥ 35 m trägt sie Silhouette und Farbe, nicht Details unter einem Pixel.
+// Rückgabe: skinJoints (die Bone-Ordnung der Haut; der Gelenk-Guss hängt die Gelenke der starren Teile an).
 var TIER_HAUT = Object.freeze({
     voxNah: 0.02, // × H (Rasterweite Stufe 0)
     voxFern: 0.04, // × H (Stufe 1)
@@ -5363,8 +5477,8 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
         for (let c = n; c; c = c.parent) if (nodeName.has(c)) return nodeName.get(c);
         return "wolf";
     };
-    // Stufe 0: der Kopf trägt seine eigenen starren Häute (__tierKopfHaeute); das Fern-Standbild ist starr
-    // und nimmt ihn in die eine Haut.
+    // Stufe 0: der Kopf trägt seine eigenen starren Häute (__tierKopfHaeute); die Grobstufe nimmt ihn in die eine Haut
+    // (Kopf und Kiefer binden über die Gewichte an ihre Gelenke).
     const nimmHaut = (n) => fein || !unterKopf(n);
     let prims = __tierPrims(root, root, nimmHaut, vox, blend, gelenkVon);
     if (prims.length < 4) return null;
@@ -5383,13 +5497,11 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
             if (kl && TIER_HAUT.fernOhne.includes(kl)) node.userData.__nichtGiessen = true;
         });
     const { f, nx, ny, nz, lo, hi } = feld;
-    // Gelenke der Haut in Baum-Ordnung (nur die, die ein Primitiv trägt).
-    let skinJoints = null;
-    if (!fein) {
-        const genutzt = new Set(prims.map((p) => p.j));
-        skinJoints = [];
-        for (const nm of nodeName.values()) if (genutzt.has(nm)) skinJoints.push(nm);
-    }
+    // Gelenke der Haut in Baum-Ordnung (nur die, die ein Primitiv trägt). Beide Stufen binden (S3, Lehre 19): die
+    // Grobstufe ist gelenkig wie die feine — sie trägt den Gang und den Wurf derselben Knochen.
+    const genutzt = new Set(prims.map((p) => p.j));
+    const skinJoints = [];
+    for (const nm of nodeName.values()) if (genutzt.has(nm)) skinJoints.push(nm);
     // Gewicht nach Abstand zur Primitiv-OBERFLÄCHE (nicht zum Zentrum: der Rumpf-Punkt an der
     // Schulter gehört dem Rumpf, auch wenn das Oberarm-Zentrum näher liegt).
     const zentren = prims.map((p) => ({
@@ -5409,7 +5521,7 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
     // Vorauswahl je Vertex: ein grobes Raster (Zelle 0.3·H) trägt jedes Primitiv in allen Zellen,
     // die seine Reichweite (R + 0.3·H) berührt — der Vertex fragt nur seine Zelle.
     let kandidaten = null;
-    if (skinJoints) {
+    {
         const C = 0.3 * H,
             reich = 0.3 * H;
         const cnx = Math.ceil((hi[0] - lo[0]) / C) + 1,
@@ -5429,24 +5541,13 @@ function __tierHaut(kern, B, root, nodeName, fein, P, matFuer, fell) {
         kandidaten = (v) => zellen[zi(v[0], 0, cnx) + cnx * (zi(v[1], 1, cny) + cny * zi(v[2], 2, cnz))] || zentren;
     }
     const eW = TIER_HAUT.eW * H;
-    const geo = __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten);
+    // Die Grobstufe liegt auf dem Gesetz (__aufsNiveau): ihr Raster ist doppelt so grob, die Glättung zöge sie sonst nach
+    // innen — sie wirft den Schatten der feinen (B2c), ihr Umriss muss deren Umriss tragen.
+    const geo = __huelleAusFeld(hk, f, nx, ny, nz, lo, vox, 0, 0, zentren, skinJoints, eW * eW, kandidaten, fein);
     if (!geo) throw new Error("TIER-HAUT: die Hüllen-Maschine lieferte keine Fläche");
-    // Das Fell-Muster auf der Haut: L0 über die Bone-Gewichte, das Fern-Standbild nach dem nächsten Glied.
-    const gelenkeHaut = skinJoints
-        ? __tierHautGelenke(geo, skinJoints)
-        : (i) => {
-              const p = [geo.attributes.position.getX(i), geo.attributes.position.getY(i), geo.attributes.position.getZ(i)];
-              let best = null,
-                  bd = Infinity;
-              for (const z of zentren) {
-                  const d = z.d(p);
-                  if (d < bd) {
-                      bd = d;
-                      best = z.j;
-                  }
-              }
-              return [[best, 1]];
-          };
+    // Das Fell-Muster auf der Haut: beide Stufen über die Bone-Gewichte (EINE Regel; das Glied-Raten der Grobstufe fiel mit
+    // ihrem Standbild).
+    const gelenkeHaut = __tierHautGelenke(geo, skinJoints);
     geo.setAttribute("color", new THREE.BufferAttribute(__tierMusterFarben(kern, P, B.masse, geo.attributes.position, gelenkeHaut, null), 3));
     const mesh = new THREE.Mesh(geo, matFuer("fell"));
     root.add(mesh); // Root-lokal gebacken (Identität)
@@ -5928,17 +6029,39 @@ function __bakeGelenkBaum(root, rootName, nodeName, fein, beipack) {
     }
     const buckets = new Map();
     const tmp = new THREE.Matrix4();
+    // DIE GROBSTUFE IST GELENKIG (S3, Lehre 19 — das Standbild an der Wurzel fiel): jedes starre Teil hängt mit Gewicht 1
+    // an SEINEM Gelenk (skinIndex = Gelenk, im Wurzel-Raum der Ruhe-Pose) und verschmilzt im geskinnten Eimer seines Stoffs
+    // mit der Haut — die Stufe trägt dieselben Knochen wie die feine (der Wirt bindet beide an EIN Skelett) und wirft
+    // mit ihnen. Ein Gelenk, das die Haut nicht trägt (Ohr, Lid, Auge), hängt sich an die Bone-Ordnung an (die Indizes
+    // der Haut bleiben). Die feine Stufe bleibt byte-alt: ihre starren Teile bindet der Wirt (`_ofenStarrBinden`).
+    const bones = fein && beipack && Array.isArray(beipack.skinJoints) ? beipack.skinJoints : null;
     root.traverse((node) => {
-        // __nichtGiessen (V18.497): das Primitiv lebt in einer Haut oder fällt im Fern-Standbild.
+        // __nichtGiessen (V18.497): das Primitiv lebt in einer Haut oder fällt in der Grobstufe.
         if (!node.isMesh || !node.geometry || node.userData.__nichtGiessen) return;
-        const a = fein ? root : animAhn(node);
+        const ahn = animAhn(node);
+        const starr = bones && !node.geometry.attributes.skinIndex;
+        const a = starr ? root : ahn;
         const jName = nodeName.get(a) || rootName;
         const klasse = (node.material && node.material.userData && node.material.userData.__klasse) || "fell";
-        const key = jName + "|" + klasse + (node.geometry.attributes.skinIndex ? "|skin" : "");
+        const key = jName + "|" + klasse + (starr || node.geometry.attributes.skinIndex ? "|skin" : "");
         inv.copy(a.matrixWorld).invert();
         tmp.multiplyMatrices(inv, node.matrixWorld);
         const g2 = node.geometry.clone();
         g2.applyMatrix4(tmp);
+        if (starr) {
+            const gName = nodeName.get(ahn) || rootName;
+            let b = bones.indexOf(gName);
+            if (b < 0) b = bones.push(gName) - 1;
+            const n = g2.attributes.position.count;
+            const si = new Float32Array(n * 4),
+                sw = new Float32Array(n * 4);
+            for (let i = 0; i < n; i++) {
+                si[i * 4] = b;
+                sw[i * 4] = 1;
+            }
+            g2.setAttribute("skinIndex", new THREE.BufferAttribute(si, 4));
+            g2.setAttribute("skinWeight", new THREE.BufferAttribute(sw, 4));
+        }
         if (!buckets.has(key)) buckets.set(key, { geos: [], mat: node.material, joint: jName });
         buckets.get(key).geos.push(g2);
     });
@@ -6133,7 +6256,8 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             let f = new Float32Array(g.length);
             for (let i = 0; i < g.length; i++) f[i] = g[i];
             f = kern.blur3(f, nx, ny, nz, sigma);
-            const geo = __huelleAusFeld(kern, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, 0.04);
+            // die Grobstufe liegt auf dem Gesetz wie die des Tiers (__aufsNiveau): ihre Hüllen werfen für die feine
+            const geo = __huelleAusFeld(kern, f, nx, ny, nz, lo, vox, level, clr, zentren, skinJoints, 0.04, undefined, fein);
             if (!geo) return;
             const mesh = new THREE.Mesh(geo, matFuer(klasse));
             mesh.userData.__skinned = true;
@@ -6233,7 +6357,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     // Kinn, Wangen, Masseter, Lippen — jede mit eigener Kante, der Kartoffel-Kopf der Tour). Wie beim Tier (V18.499)
     // gießt derselbe SDF-Guss die Haut- und Lippen-Kugeln des Kopfes (ohne die Augen-Gruppen: ihre Lider blinzeln) zu
     // EINER glatten Fläche im Kopf-Raum; die Lippe ist eine Farbe der Haut (Vertex, je Punkt das nächste Primitiv),
-    // keine Wurst auf dem Gesicht. Nur nah (lod 0) — das Fern-Standbild bleibt der Primitiv-Guss. Ohne Hüllen-Maschine
+    // keine Wurst auf dem Gesicht. Nur nah (lod 0) — die Grobstufe bleibt der Primitiv-Guss. Ohne Hüllen-Maschine
     // oder Gestalt-Tafel kein Mensch nah: LAUT (Integration W5-Körper; vorher fiel die Haut still weg — Kugel-Gesicht).
     const handMitte = {};
     if (!fein) {

@@ -1015,7 +1015,7 @@ function wasserRegen(opts) {
             mesh = null,
             eltern = null;
         try {
-            r._setWeather("stormy");
+            r._setWeather("stormy", "human");
             st.weatherTransition = null;
             st.camera = cam;
             r._tickRain(t * 1000);
@@ -1033,7 +1033,7 @@ function wasserRegen(opts) {
         } finally {
             if (mesh && eltern) eltern.add(mesh);
             st.camera = camAlt;
-            r._setWeather(wetterAlt);
+            r._setWeather(wetterAlt, "human");
             st.weatherTransition = null;
             rt.dispose();
         }

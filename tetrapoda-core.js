@@ -23,7 +23,7 @@
     var MESHFREI = 1; // v1.1 §8 — components-only-Kern (keine Gestalt, nur Daten)
     // v1.2 §8.5 (V18.478, rein additiv) — DIE OFEN-STUFEN-ZEILE: ein MESHFREI-Kern
     // deklariert hiermit die LOD-Stufen, die der WIRTS-OFEN seiner Gestalt bäckt
-    // (bauTier: Stufe 0 = voller Gelenk-Baum · Stufe 1 = gemergtes Fern-Standbild).
+    // (bauTier: Stufe 0 = voller Gelenk-Baum · Stufe 1 = gelenkige Grobstufe).
     // B2 bleibt N/A (kein buildInstance) — die Zeile ist die VERTRAGS-Wahrheit der
     // Pipe-Bäckerei (BAKERS_BY_KIND), gemessen von gate:konsum-matrix/gate:tier-fern.
     // B2c-Daten (W8, rein additiv): DAS BUDGET je Ofen-Stufe (docs/studio-vertrag.md B2c) — tris = die gebaute
@@ -33,15 +33,22 @@
     // starren Stoffe je Bindungs-Klasse (Haut und Fell-Schale bleiben) und Seh-Klasse (TIER_MATERIAL_KLASSEN.seh:
     // das glimmende Auge · Hornhaut/Pupille · Nase/Ballen · Fell · Klaue/Zahn bleiben getrennt — L1 5 ist das
     // gemessene Minimum); schatten = die werfende Stufe.
-    // gestalten = Individuen je Gattung (das bisherige Wirts-16, gefüllt je Rezept unten bei PRESETS).
-    var GESTALTEN_JE_REZEPT = 16;
+    // gestalten = Individuen je Gattung (gefüllt je Rezept unten bei PRESETS): EINE — der Guss ist seed-invariant
+    // (Same 1 ≡ 2 byte-gleich, 4/4, L0 und L1), 16 Gestalten waren 16 byte-gleiche Zwillinge. Eine Seed-Achse ist ein
+    // Re-Mint-Akt, nie eine Zahl hier (S3 08.10., gate:asset-contract Gestalten-Wand).
+    var GESTALTEN_JE_REZEPT = 1;
     var PORTAL_RENDER_CONFIG = {
         lod: {
             kindStages: { kreatur: [0, 1] },
             budget: {
                 kreatur: {
-                    0: { tris: 62000, band: 20000, draws: 8, schatten: 0 },
-                    1: { tris: 7000, band: 3000, draws: 5, schatten: 1 },
+                    0: { tris: 62000, band: 20000, draws: 8, schatten: 1 },
+                    1: { tris: 7000, band: 3000, draws: 5, schatten: 1, ab: 35, wurf: { seh: ["haar"] } },
+                    // S3 (rein additiv, Lehre 19): die Grobstufe trägt ab `ab` m × Körpergröße das Bild und wirft für beide
+                    // Stufen (die feine wirft über `schatten: 1` ihren Zwilling); `wurf.seh` wählt den werfenden Teil
+                    // (das Fell: Leib, Ohren, Lider, Pfoten). `hyst` = die Hysterese der Stufen-Grenze (±10 %). 35 m: der
+                    // Beinschwung ist dort ~2,7 px (die Grenze war bis S3 die Wirts-Konstante TIER_FERN_DIST_SQ).
+                    hyst: 0.1,
                     // fernform (B2c, Pflicht je Budget-Art): jenseits der Nah-Grenze tragen die Glieder-Kapseln im Welt-March
                     fernform: "gesetz",
                 },
@@ -139,8 +146,18 @@
             fearHpFrac: 0.5, // unter dieser HP-Fraktion wird Schaden zur FURCHT (threatened)
             triumphWindowSec: 20, // s — ein Jaeger, so frisch er biss, gebiert beim Fall TRIUMPH
             scentRangeM: 50, // m — Beute-Wittern ueber das Geruch-Feld (weiter als Sehen)
-            scentProbeM: 4, // m — Probe-Schritt der 4-Richtungs-Gradient-Suche
             pirschStoppM: 1.6, // m — SCHLUSS-WELLE: naeher pirscht der Jaeger nicht heran (Stopp vor dem Biss)
+            // DIE JAGD SCHLIESST SICH (Welle LF 08.10., VERTRAGS-AKT): der Jaeger pirscht (unbemerkt bis pirschSichtM),
+            // bezieht im Rudel seinen Platz auf dem Ring hetzM um das Ziel (die Flanke) und hetzt von dort im Sprint der
+            // Gestalt (STEUER_GESETZ.sprint); Beute ist, wer nicht wild ist und hoechstens beuteMasse × die eigene Masse
+            // traegt (der Baer ist keine Beute des Wolfs). Vorher folgte er einem Gradienten, der vom Ziel fortzeigte,
+            // im Schritt-Tempo: 0 Bisse in 3600 Takten, der Sprinter entkam immer (Leben-Schau 07.10.).
+            hetzM: 6, // m — von hier hetzt der Jaeger (der Ring, auf dem das Rudel seine Plaetze bezieht)
+            pirschSichtM: 5, // m — einen pirschenden Jaeger bemerkt die Beute erst hier (einen hetzenden ab noticeRadius)
+            // DIE EINE MASSE (V18.536): das Volumen der Gestalt × MASSSTAB.dichteKgM3 (Fuchs 15 · Wolf 64 · Hirsch 94 · Baer
+            // 335 kg bei Groesse 1) — ein grosser Fleischfresser schlaegt Beute um seine eigene Masse und darueber (Carbone
+            // et al. 2007): der Wolf (64 kg) den Hirsch (94 kg), nie den Baeren (335 kg).
+            beuteMasse: 2.0, // × die eigene Masse (kg) — schwerer ist keine Beute
         },
         furcht: {
             noticeRadius: 22, // m — fern davon ignoriert das Wesen den Spieler
@@ -148,28 +165,33 @@
             menaceFromSorrow: 0.5, // Trauer verunsichert etwas
             calmFromPeace: 0.9, // Ruhe laedt ein
             calmFromJoy: 0.5, // Freude lockt
-            boldFromDichte: 0.8, // ein dichtes/massives Wesen ist robust → kuehner
-            ["boldFromHärte"]: 0.6, // ein hartes Wesen steht fester
-            shyFromLebendig: 1.1, // ein lebendiges/zartes Wesen ist scheuer
+            // DIE NATUR ist das Temperament der Gattung (Welle LF 08.10., VERTRAGS-AKT): der Mut der Art (0 scheu … 1
+            // wehrhaft, aus profile.fleeMul) wiegt die Wariness — die Substanz-Gewichte (dichte/haerte/lebendig) fielen,
+            // die Tiere sind tag-gleich (Lehre 8: jeder Hirsch stand neugierig bei Wariness −1,0).
+            mutGewicht: 0.9, // Natur-Term (2·mut − 1)·mutGewicht: scheu −0,9 … wehrhaft +0,9
             boldFromBond: 0.9, // Bindung macht mutig in Spieler-Naehe
             friedenMenace: 0.3, // frieden daempft die Bedrohung stark
             schoepferMenace: 0.1, // schoepfer: die Welt ist ruhig
             curiousThreshold: -0.2, // Wariness darunter → neugierig (naeher)
             fleeThreshold: 0.3, // Wariness darueber → scheu (fort)
             fleeRadius: 14, // m — innerhalb davon flieht ein verschrecktes Wesen aktiv
-            fleeSpeedBoost: 1.6, // Flucht ist schneller als das Schlendern
             combatFearWariness: 1.5, // ein getroffenes Wesen ist garantiert ueber der Flucht-Schwelle
             fearSec: 5, // s — wie lange die Kampf-Furcht (fearUntil) anhaelt
-            neugierStoppM: 2, // m — SCHLUSS-WELLE: naeher tritt ein neugieriges Wesen nicht heran
         },
         temperament: {
-            signaturen: {
-                wehrhaft: { dichte: 1.0, ["härte"]: 0.6, transparent: -0.5, lebendig: -0.3 },
-                wild: { brennbar: 0.5, ["wärmeleitung"]: 0.7, ["härte"]: -0.2 },
-                sanft: { lebendig: 1.4, ["zähigkeit"]: 0.5, dichte: -0.5, ["härte"]: -0.3 },
-                scheu: { transparent: 0.8, magieleitung: 0.6, dichte: -0.4 },
+            // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., VERTRAGS-AKT): aus der Ernaehrung (Dial diet) und der EINEN
+            // Masse des Leibs (kg: das Volumen der Gestalt × MASSSTAB.dichteKgM3, beim Wirt _leibMasse) —
+            // temperamentDerGattung. Ein Fleischfresser mit Masse jagt (wild), ohne sie ist er scheu; ein Pflanzenfresser
+            // ist ein Fluchttier (scheu), erst als Koloss wehrhaft; dazwischen wehrt sich, wer Masse hat (wehrhaft), sonst
+            // sanft. Die Substanz-Signaturen und ihr Floor fielen: die Tiere sind tag-gleich, Hirsch und Fuchs blieben
+            // „wehrhaft" (Leben-Schau 07.10., D16/K-D12).
+            gattung: {
+                fleischDiet: 0.75, // diet ab hier: Fleischfresser
+                pflanzDiet: 0.25, // diet bis hier: Pflanzenfresser (Fluchttier)
+                jagdKg: 21.5, // kg — ab hier schlaegt ein Fleischfresser grosse Beute (Carbone et al. 2007; Wolf ab Groesse 0,7)
+                wehrKg: 200, // kg — ab hier wehrt sich ein Allesfresser (der Baer ab Groesse 0,84, das Jungtier nicht)
+                kolossKg: 600, // kg — ab hier wehrt sich auch ein Fluchttier (der Hirsch erst als Gigant, ab Groesse 1,86)
             },
-            floor: 0.35, // beste Resonanz darunter → scheu (zarte Natur)
             profile: {
                 wehrhaft: { strike: 0.45, strikeChaos: 0.3, strikeCap: 0.8, counterMul: 0.7, fleeMul: 0.5 },
                 wild: { strike: 0.3, strikeChaos: 0.5, strikeCap: 0.85, counterMul: 0.85, fleeMul: 0.7 },
@@ -196,7 +218,7 @@
         // Lehre 8: DIE Differenzierungs-Achse) · separation (Herden-Abstand) ·
         // aufgaben (Gefaehrten-Tempi + Halt-Distanzen) · herde (Schwarm-
         // Kohaesion) · wasser (Ufer-Scheu) — plus jagd.pirschStoppM,
-        // furcht.neugierStoppM und stimmung.schwellen oben. Der Wirt liest
+        // stimmung.schwellen oben (furcht.neugierStoppM fiel mit dem persoenlichen Raum, Welle LF). Der Wirt liest
         // fail-closed via AnazhRealm._verhaltenGesetz (Kern-Pflicht); die
         // Werte sind byte-gleich den historischen Stamm-Literalen.
         // must-ignore: fremde Leser ueberlesen die Bloecke. ──
@@ -217,7 +239,12 @@
             { name: "gigant", bis: 1, min: 1.9, max: 2.7 }, // GIGANT — ein Koloss (robust, traege), selten
         ],
         separation: {
-            radiusBaseM: 1.6, // m — Paar-Radius zweier Normal-Wesen (bodySize 1); skaliert × (bsI+bsJ)/2
+            // DER PERSOENLICHE RAUM (Welle LF 08.10., VERTRAGS-AKT): je Leib die Koerper-Kugel (die waagrechte Spanne der
+            // Gestalt um ihre Mitte, beim Wirt halb + Radius des Leibs, in Hueft-Hoehen der Art und Groesse) × raumKugel; der
+            // Paar-Raum zweier Tiere ist die Summe, auch zum Spieler (seine Wand-Kapsel × raumKugel). Darin stoesst die
+            // Separation, die Herde zieht nicht, die Neugier haelt an. Vorher galt fuer jede Art 1,6 m × bodySize, die
+            // neugierige Schar kroch auf 0,7 m zusammen und durchdrang sich und den Spieler (Leben-Schau 07.10.).
+            raumKugel: 1.3, // × Koerper-Kugel — der Raum, den ein Leib um sich haelt
             strength: 1.5, // Abstoss-Gewicht (× speed) bei voller Deckung; linear → 0 am Radius-Rand
         },
         aufgaben: {
@@ -234,9 +261,10 @@
             trinkTempo: 3.0, // m/s — sichtbares Gehen zum Ufer
         },
         herde: {
-            minAbstSq: 1, // m² — darunter zaehlt der Nachbar nicht zur Kohaesion (Deckung → Separation)
-            fensterSq: 25, // m² — das Kohaesions-Fenster (5 m) der neugierigen Schar
-            gewicht: 0.5, // Zug-Gewicht je Nachbar auf die Richtung
+            // (Welle LF 08.10., VERTRAGS-AKT): im Paar-Raum zieht kein Nachbar, das Fenster und der Zug messen in ihm und im
+            // Tempo des Tiers — vorher zog jeder Nachbar ab 1 m mit 0,5 m/s, mehr als die Separation stiess.
+            fensterRaum: 2.5, // × Paar-Raum — bis dahin zieht die Schar zusammen
+            gewicht: 0.5, // × Tempo des Tiers — der Zug je Nachbar
             maxNachbarn: 6, // Kohaesions-Budget je Wesen (dann bricht der Scan ab)
         },
         wasser: {
@@ -1277,7 +1305,7 @@
     // Geschwindigkeit: die Pfoten glitten mit dem Leib (Schlupf 1,0, gate:tier-gang). gangFuss liest je Bein das ZIEL
     // des Fußes zur Phase: im STAND (π…2π) wandert er am Boden gleichförmig von vorn (+S/2) nach hinten (−S/2), im
     // SCHWUNG (0…π) kehrt er auf einer Hermite-Kurve nach vorn, die an beiden Enden mit der Stand-Rate rückwärts läuft
-    // (kein Vorwärts-Rutschen beim Aufsetzen), gehoben um hub·h·sin(Phase). Hüfte und Unterglied stellt der Wirt per
+    // (kein Vorwärts-Rutschen beim Aufsetzen), gehoben um hub·h·sin(Phase)^hubForm. Hüfte und Unterglied stellt der Wirt per
     // ebener Zwei-Knochen-IK auf dieses Ziel (die Pfote bleibt waagrecht) — der Fuß steht, wo das Gesetz ihn hinstellt.
     var GANG_GESETZ = Object.freeze({
         g: 9.81,
@@ -1286,6 +1314,10 @@
         tastgrad: 0.5,
         maxWinkel: 0.42, // rad — die größte Bein-Auslenkung (deckelt die Schritt-Länge)
         hub: 0.12, // × h — die Schwung-Höhe des Fußes
+        // die Form des Hubs (Welle LF, Stand-Schlupf): sin(Phase)^hubForm — der Fuß hebt steil ab und setzt steil auf. Mit
+        // sin(Phase) hing er ein Drittel des Schwungs in den untersten 3 cm und strich dort mit 0,8–1,1 × Leib-Tempo über
+        // den Boden (die Hälfte des Stand-Schlupfs am Querhang, gate:tier-gang mit erreichtem Boden 0,16–0,49)
+        hubForm: 0.5,
         falte: 0.6, // rad — die Pfote faltet im Schwung
         stand: 0.05, // m/s — darunter steht das Tier
         vMax: 15, // m/s — Sprünge der Lage (Spawn, Peer-Schnapp) sind kein Lauf
@@ -1311,7 +1343,10 @@
             h10 = t * t * t - 2 * t * t + t,
             h01 = -2 * t * t * t + 3 * t * t,
             h11 = t * t * t - t * t;
-        return { dz: (h00 * -S) / 2 + h10 * m + (h01 * S) / 2 + h11 * m, hub: Math.sin(u) };
+        return {
+            dz: (h00 * -S) / 2 + h10 * m + (h01 * S) / 2 + h11 * m,
+            hub: Math.pow(Math.sin(u), GANG_GESETZ.hubForm),
+        };
     }
 
     // ════════════════════════════════════════════════════════════════════
@@ -1327,6 +1362,10 @@
     // ihn je Tier, die Gier reist im Positions-Strom zum Mitspieler.
     var STEUER_GESETZ = Object.freeze({
         tempo: 0.34, // v̂ — die Tempo-Einheit des Verhaltens als Froude-Zahl (ein Schritt; Hirsch L 0,9 m ≈ 1 m/s)
+        // DER SPRINT DER GESTALT (Welle LF 08.10., additiv): der Galopp als Froude-Tempo — Hetze und Flucht laufen
+        // sprint·√(g·L) (Wolf L 0,63 m ≈ 7,5 m/s, Hirsch L 0,92 m ≈ 9,0 m/s): der Wolf holt den sprintenden Menschen
+        // (5,2–6,0 m/s) ein, der gesunde Hirsch entkommt ihm auf freier Strecke — die Jagd gelingt im Rudel und am Kitz.
+        sprint: 3.0,
         wende: 1.1, // × √(g/L) rad/s — die Wendegrenze (Hirsch: ~3,6 rad/s)
         beschl: 0.5, // × g — Anfahren (m/s²)
         brems: 0.8, // × g — Bremsen (m/s²); der Ankunfts-Weg liest dieselbe Zahl
@@ -1334,6 +1373,10 @@
     // Die Tempo-Einheit in m/s für die Hüft-Höhe L (m).
     function tempoEinheit(L) {
         return STEUER_GESETZ.tempo * Math.sqrt(GANG_GESETZ.g * Math.max(0.05, L));
+    }
+    // Der Sprint (Galopp) in m/s für die Hüft-Höhe L (m) — Hetze und Flucht (Welle LF).
+    function sprintTempo(L) {
+        return STEUER_GESETZ.sprint * Math.sqrt(GANG_GESETZ.g * Math.max(0.05, L));
     }
     // z = {gier (rad, three: Blick längs (sin, cos)), v (m/s, vorwärts)} wird fortgeschrieben; (wx, wz) der Wunsch in m/s.
     function steuerSchritt(z, wx, wz, dt, L) {
@@ -1368,8 +1411,12 @@
     // Gattung (die Art unterscheidet die Gestalt, nie ein Tag; Lehre 8) und haengt nie am Blick des Spielers (der Wirt
     // ruft ihn fuer jedes Tier). Die Leben-Pruefung 06.10. sah artfremde Nachbarn (Fuchs zieht Hirsch) und eine Kohaesion
     // nur im Frustum. Das Herden-VERHALTEN (Verband, Anker, Ausrichtung) ist nach v1.0 — dies ist die Form, die es traegt.
-    // nachbarn: [{x, z, gattung}] (Kandidaten im Gitter des Wirts), H = VERHALTEN.herde. Liefert {x, z, n} (n Mitglieder).
-    function herdeZug(x, z, gattung, nachbarn, H, out) {
+    // DER PERSOENLICHE RAUM (Welle LF 08.10.): raum = der Raum dieses Tiers (m), nb.raum der des Nachbarn — im Paar-Raum
+    // (Summe) zieht niemand, bis fensterRaum × Paar-Raum zieht die Schar; der Zug ist das MITTEL der Richtungen × H.gewicht
+    // (der Wirt multipliziert das Tempo) — nie die Summe: sechs Nachbarn zogen sechsfach und drueckten die Schar durch die
+    // Separation hindurch zusammen. nachbarn: [{x, z, gattung, raum}] (Kandidaten im Gitter des Wirts), H = VERHALTEN.herde.
+    // Liefert {x, z, n}.
+    function herdeZug(x, z, gattung, nachbarn, H, out, raum) {
         var o = out || { x: 0, z: 0, n: 0 };
         o.x = 0;
         o.z = 0;
@@ -1379,14 +1426,28 @@
             if (!nb || nb.gattung !== gattung) continue;
             var dx = nb.x - x,
                 dz = nb.z - z;
-            var dsq = dx * dx + dz * dz;
-            if (!(dsq > H.minAbstSq && dsq < H.fensterSq)) continue;
-            var d = Math.sqrt(dsq);
+            var d = Math.sqrt(dx * dx + dz * dz);
+            var paar = (raum > 0 ? raum : 0) + (nb.raum > 0 ? nb.raum : 0);
+            if (!(d > paar && d < paar * H.fensterRaum)) continue;
             o.x += (dx / d) * H.gewicht;
             o.z += (dz / d) * H.gewicht;
             o.n++;
         }
+        if (o.n > 1) {
+            o.x /= o.n;
+            o.z /= o.n;
+        }
         return o;
+    }
+
+    // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., additiv): g = die Dials der Gattung (GATTUNGEN, diet), kg = die Masse
+    // des Leibs (das Volumen seiner Gestalt × MASSSTAB.dichteKgM3 — die EINE Masse, die auch das Impuls-Gesetz des Wirts
+    // liest), T = VERHALTEN.temperament.gattung. Liefert "wild" · "wehrhaft" · "sanft" · "scheu" — die Art und die Groesse
+    // unterscheiden das Gemuet, nie ein Tag (Lehre 8).
+    function temperamentDerGattung(g, kg, T) {
+        if (g.diet >= T.fleischDiet) return kg >= T.jagdKg ? "wild" : "scheu";
+        if (g.diet <= T.pflanzDiet) return kg >= T.kolossKg ? "wehrhaft" : "scheu";
+        return kg >= T.wehrKg ? "wehrhaft" : "sanft";
     }
 
     function cpgStep(phases, freq, coupling, dt) {
@@ -2759,9 +2820,11 @@
         gangFuss: gangFuss,
         STEUER_GESETZ: STEUER_GESETZ,
         tempoEinheit: tempoEinheit,
+        sprintTempo: sprintTempo,
         steuerSchritt: steuerSchritt,
         ankunftTempo: ankunftTempo,
         herdeZug: herdeZug,
+        temperamentDerGattung: temperamentDerGattung,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,
         DIAL_MAP: DIAL_MAP,

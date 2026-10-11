@@ -13,9 +13,10 @@
 //   K2  MENSCH IN DER HÖHLE: der Spieler auf einem Höhlen-Boden (die Kapsel steht dort) → die Fuß-Probe liest diesen
 //       Boden (± 10 cm), nie die Oberkante der Säule darüber
 //   K3  TIER IN DER HÖHLE: ein Wolf, gerufen auf den Höhlen-Boden → er bleibt dort (± 15 cm)
-//   K4  TIER AM HANG: an der Stelle mit dem größten Abstand Gesetz ↔ Karte im Hang (≥ 12°) stehen die vier Sohlen auf der
-//       Boden-Karte (Median |Sohle − Karte| ≤ 6 cm); entlang eines Wegs über den Hang springt die Lage je Takt nie mehr als
-//       8 cm über die Neigung hinaus (die Cache-Treppe)
+//   K4  TIER AM HANG: an der Stelle mit dem größten Abstand Gesetz ↔ Karte im Hang (≥ 12°) stehen der Leib (seine Lage) und
+//       die vier Sohlen auf der Boden-Karte (Median |Lage − Karte| und |Sohle − Karte| ≤ 6 cm — seit der Pfoten-IK der
+//       Welle LF finden die Sohlen die Karte selbst, gleich wo der Leib steht: der Leib ist der Zeuge der Sicht); entlang
+//       eines Wegs über den Hang springt die Lage je Takt nie mehr als 8 cm über die Neigung hinaus (die Cache-Treppe)
 //   K5  TOD-LAGE: die PRÄZISE tiefste Stelle (jeder Vertex der Haut gegen die Karte unter ihm) liegt nach dem Kippen, wo
 //       sie im Stand lag (± 3 cm), und sinkt auf dem Weg nie mehr als 5 cm darunter
 //   --selftest: je Defekt serviert der Server die Basis-Zeile von anazhRealm.js (cf9a07ba) — GENAU die Probe dieses
@@ -282,9 +283,12 @@ async function proben() {
                 c.rotation.x = rx;
                 c.rotation.z = rz;
                 const abst = [];
+                const leib = [];
                 for (let k = 0; k < 30; k++) {
                     tiere(1);
                     c.updateMatrixWorld(true);
+                    const mL = karte(c.position.x, c.position.z);
+                    if (mL !== null) leib.push(Math.abs(c.position.y - mL));
                     for (let i = 0; i < 4; i++) {
                         const w = pf[i].localToWorld(lokal[i].clone());
                         const m = karte(w.x, w.z);
@@ -292,7 +296,9 @@ async function proben() {
                     }
                 }
                 abst.sort((a, b) => a - b);
+                leib.sort((a, b) => a - b);
                 o.k4 = {
+                    leibMedianCm: leib.length ? Math.round(leib[leib.length >> 1] * 1000) / 10 : null,
                     sohlen: abst.length,
                     medianCm: abst.length ? Math.round(abst[abst.length >> 1] * 1000) / 10 : null,
                     p90Cm: abst.length ? Math.round(abst[Math.floor(abst.length * 0.9)] * 1000) / 10 : null,
@@ -397,6 +403,8 @@ function urteil(o) {
     else {
         if (!o.k4 || !(o.k4.sohlen >= 40) || !(o.k4.medianCm <= 6))
             f.push(`K4 Sohlen gegen die Karte: Median ${o.k4 ? o.k4.medianCm : "?"} cm, p90 ${o.k4 ? o.k4.p90Cm : "?"} cm (die Sicht steht auf dem Gesetz)`);
+        if (!o.k4 || !(o.k4.leibMedianCm <= 6))
+            f.push(`K4 Leib gegen die Karte: Median ${o.k4 ? o.k4.leibMedianCm : "?"} cm (der Leib steht auf dem Gesetz)`);
         if (!o.k4b || !(o.k4b.treppeCm <= 8)) f.push(`K4 Treppe: ${o.k4b ? o.k4b.treppeCm : "?"} cm Sprung je Takt über die Neigung hinaus`);
         if (!o.eben) f.push("K5 Aufbau: keine ebene Stelle im Raster");
         else if (!o.k5 || !(Math.abs(o.k5.gegenStandCm) <= 3) || !(o.k5.wegMinCm >= -5))
@@ -413,7 +421,7 @@ function zeile(o) {
     return (
         `K1 Becken ${v(o.k1.beckenCm)} cm · Sprung ${v(o.k1.sprungBeckenCm)} cm` +
         ` · K2 Höhlen-Probe ${o.k2 ? v(o.k2.abstandCm) : "?"} cm · K3 Tier ${o.k3 ? v(o.k3.abstandM) : "?"} m` +
-        ` · K4 Sohle−Karte Median ${o.k4 ? v(o.k4.medianCm) : "?"} cm (p90 ${o.k4 ? v(o.k4.p90Cm) : "?"}) · Treppe ${o.k4b ? v(o.k4b.treppeCm) : "?"} cm` +
+        ` · K4 Leib−Karte Median ${o.k4 ? v(o.k4.leibMedianCm) : "?"} cm · Sohle−Karte Median ${o.k4 ? v(o.k4.medianCm) : "?"} cm (p90 ${o.k4 ? v(o.k4.p90Cm) : "?"}) · Treppe ${o.k4b ? v(o.k4b.treppeCm) : "?"} cm` +
         ` · K5 Tod ${o.k5 ? v(o.k5.gegenStandCm) : "?"} cm gegen den Stand (Weg ${o.k5 ? v(o.k5.wegMinCm) + "…" + v(o.k5.wegMaxCm) : "?"})` +
         (o.hang ? ` · Hang ${o.hang.neig.toFixed(0)}° Gesetz↔Karte ${(o.hang.abstand * 100).toFixed(0)} cm` : "") +
         (o.hoehle ? ` · Höhle ${(o.hoehle.top - o.hoehle.boden).toFixed(1)} m tief` : "")
@@ -471,7 +479,7 @@ function zeile(o) {
                 traeger: ["K1 Becken auf dem Träger", "K2 Fuß-Probe"],
                 luft: ["K1 Becken im Sprung"],
                 hoehle: ["K3 Tier in der Höhle"],
-                sicht: ["K4 Sohlen gegen die Karte", "K4 Treppe"],
+                sicht: ["K4 Leib gegen die Karte", "K4 Treppe"],
                 tod: ["K5 Tod-Lage"],
             };
             for (const inj of Object.keys(soll)) {

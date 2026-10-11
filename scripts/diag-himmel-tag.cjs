@@ -59,7 +59,7 @@ function probe(stoerung) {
     const zeit = (t) => {
         st.timeOfDay = t;
         if (st.world) st.world.timeOfDay = t;
-        r._setWeather("sunny");
+        r._setWeather("sunny", "human");
         st.weatherTransition = null;
         r._applyDayNightToScene();
     };

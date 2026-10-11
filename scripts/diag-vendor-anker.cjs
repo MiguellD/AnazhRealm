@@ -187,6 +187,16 @@ const ANKER = [
     { file: "vendor/TRAANode.js", sub: "this._previousDepthNode = texture( new DepthTexture( 1, 1 ) );", organ: "_ensurePostProcessing (TRAANode.vortiefe — die Band-Linse nennt jede Textur)" },
     { file: "vendor/TRAANode.js", sub: "this._jitterIndex = this._jitterIndex % ( _haltonOffsets.length - 1 );", organ: "Ausgabe-Aufnahme (32 Frames = eine Halton-Runde)" },
     { file: "vendor/TRAANode.js", sub: "this.updateBeforeType = NodeUpdateType.FRAME;", organ: "Ausgabe-Aufnahme/gpu-bank (je Frame nodeFrame.update)" },
+    // DAS AUSGABE-ZIEL IN 32 BIT (0910-1 B, `_ausgabeFormat`): r184 fordert jedes Feature an, das der Adapter trägt (darum
+    // fragt der Stamm `device.features`); RGBFormat × UnsignedInt101111Type ist rg11b10ufloat; PassNode.setup schreibt den
+    // Typ je Bau auf den des Renderers zurück (der Stamm stellt ihn danach); der Neustart der Geschichte kopiert das
+    // Szenen-Bild in die rgba16float-Geschichte (verschiedene Formate: `_traaNeustartZug` zeichnet statt zu kopieren);
+    // TRAA reicht Kanal a nur durch (ein rg11b10-Abtaster liefert 1).
+    { file: "vendor/three.webgpu.min.js", sub: 'RG11B10UFloat:"rg11b10ufloat-renderable"', organ: "_ausgabeFormat (das Feature, das r184 anfordert)" },
+    { file: "vendor/three.webgpu.min.js", sub: 'case Xe:switch(s){case Je:u=OA;break;case et:u=kA;break;default:o("WebGPURenderer: Unsupported texture type with RGBFormat."', organ: "_ausgabeFormat (RGBFormat × UnsignedInt101111Type → rg11b10ufloat)" },
+    { file: "vendor/three.webgpu.min.js", sub: "setup({renderer:e}){return this.renderTarget.samples=void 0===this.options.samples?e.samples:this.options.samples,this.renderTarget.texture.type=e.getOutputBufferType()", organ: "_ausgabeFormat (PassNode.setup stellt den Typ je Bau zurück — der Pass stellt ihn danach)" },
+    { file: "vendor/TRAANode.js", sub: "renderer.copyTextureToTexture( beautyRenderTarget.texture, this._historyRenderTarget.texture );", organ: "_traaNeustartZug (der Neustart der Geschichte — am Renderer gehakt, gezeichnet bei verschiedenem Format)" },
+    { file: "vendor/TRAANode.js", sub: "const vClip = historyColor.sub( vec4( pClip, currentColor.a ) );", organ: "_ausgabeFormat (TRAA reicht Kanal a nur durch)" },
     // DIE KASKADEN-BOX (W7: _kaskadenGeburt · _kaskadenPassen · _kaskadenZiele · _passSicht): der Host ersetzt je Instanz
     // die Licht-Stellung des Addons (updateBefore stumm, sein Zweit-Schreiber _updateShadowBounds stumm), ruft dessen
     // _init vom Prototyp, liest seine Kaskaden-Uniform und den Fade-Saum des Shaders, hüllt den Ziel-Bau jedes
@@ -293,21 +303,41 @@ const ANKER = [
     // Die Textur merkt jede Bindegruppe, die sie liest, und vergisst sie nie — _instanzAbschied nimmt die Gruppen der Senke heraus.
     { file: "vendor/three.webgpu.min.js", sub: "l=this.textures.get(u);o&&(this.textures.updateTexture(u),t.generation!==l.generation&&(t.generation=l.generation,s=!0),l.bindGroups.add(e))", organ: "_instanzAbschied (die Textur hält die Bindegruppen ihrer Leser)" },
     { file: "vendor/three.webgpu.min.js", sub: "this._textures=new tb(this,r,this.info)", organ: "_instanzAbschied (renderer._textures)" },
-    // DER EINE TIEFEN-WEG DER LEINWAND (`_leinwandTiefe`, gestellt von der Weiche in `_loopRender`): der Leinwand-Pass trägt
+    // DER EINE LEINWAND-WEG (`_leinwandWeg`, gestellt von der Weiche in `_loopRender`): der Leinwand-Pass trägt
     // eine Tiefe nur bei renderer.depth/stencil, updateSize verwirft seinen Deskriptor; das Rahmen-Ziel des Direktpfads
     // (Tonemapping zur Leinwand) nimmt seine Tiefe aus renderer.depth — ohne sie liest copyFramebufferToTexture die Tiefen-
     // Textur eines Ziels, das keine trägt (der Absturz des Direktpfads, gate:post-kette); die GPU-Textur der Leinwand-Tiefe
     // hängt am Leinwand-Ziel und fällt über destroyTexture.
-    { file: "vendor/three.webgpu.min.js", sub: "!0!==e.depth&&!0!==e.stencil||(i.depthStencilAttachment={view:this.textureUtils.getDepthBuffer(e.depth,e.stencil).createView()})", organ: "_leinwandTiefe (die Post-Kette zeichnet in eine Leinwand ohne Tiefe)" },
-    { file: "vendor/three.webgpu.min.js", sub: "updateSize(){this.delete(this.renderer.getCanvasTarget())}", organ: "_leinwandTiefe (der Leinwand-Pass baut seinen Deskriptor neu)" },
-    { file: "vendor/three.webgpu.min.js", sub: "this.isWebGPUBackend=!0", organ: "_leinwandTiefe (Leinwand-Tiefe nur auf WebGPU)" },
-    { file: "vendor/three.webgpu.min.js", sub: "{depth:a,stencil:o}=this,u=this._outputRenderTarget||this._canvasTarget;", organ: "_leinwandTiefe (das Rahmen-Ziel des Direktpfads liest renderer.depth)" },
-    { file: "vendor/three.webgpu.min.js", sub: "l.depthBuffer=a,l.stencilBuffer=o,", organ: "_leinwandTiefe (das Rahmen-Ziel folgt renderer.depth je Frame)" },
-    { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture:", organ: "_leinwandTiefe (die Tiefen-Kopie liest die Tiefen-Textur des Ziels — ohne sie der WeakMap-Absturz)" },
-    { file: "vendor/three.webgpu.min.js", sub: "a=r.renderer.currentSamples,o=s.depthTexture;", organ: "_leinwandTiefe (die Leinwand-Tiefe ist die DepthTexture des Leinwand-Ziels)" },
-    { file: "vendor/three.webgpu.min.js", sub: "getCanvasTarget(){return this._canvasTarget}", organ: "_leinwandTiefe (das Leinwand-Ziel)" },
-    { file: "vendor/three.webgpu.min.js", sub: "destroyTexture(e,t=!1){this.textureUtils.destroyTexture(e,t)}", organ: "_leinwandTiefe (die GPU-Textur der Leinwand-Tiefe fällt in der Post-Kette)" },
-    { file: "vendor/three.webgpu.min.js", sub: "destroyTexture(e,t=!1){const r=this.backend,s=r.get(e);void 0!==s.texture&&!1===t&&s.texture.destroy(),void 0!==s.msaaTexture&&s.msaaTexture.destroy(),r.delete(e)}", organ: "_leinwandTiefe (destroyTexture zerstört und vergisst — getDepthBuffer legt sie im Direktpfad neu an)" },
+    { file: "vendor/three.webgpu.min.js", sub: "!0!==e.depth&&!0!==e.stencil||(i.depthStencilAttachment={view:this.textureUtils.getDepthBuffer(e.depth,e.stencil).createView()})", organ: "_leinwandWeg (die Post-Kette zeichnet in eine Leinwand ohne Tiefe)" },
+    { file: "vendor/three.webgpu.min.js", sub: "updateSize(){this.delete(this.renderer.getCanvasTarget())}", organ: "_leinwandWeg (der Leinwand-Pass baut seinen Deskriptor neu)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this.isWebGPUBackend=!0", organ: "_leinwandWeg (Leinwand-Tiefe nur auf WebGPU)" },
+    { file: "vendor/three.webgpu.min.js", sub: "{depth:a,stencil:o}=this,u=this._outputRenderTarget||this._canvasTarget;", organ: "_leinwandWeg (das Rahmen-Ziel des Direktpfads liest renderer.depth)" },
+    { file: "vendor/three.webgpu.min.js", sub: "l.depthBuffer=a,l.stencilBuffer=o,", organ: "_leinwandWeg (das Rahmen-Ziel folgt renderer.depth je Frame)" },
+    { file: "vendor/three.webgpu.min.js", sub: "i=t.renderTarget?e.isDepthTexture?this.get(t.depthTexture).texture:", organ: "_leinwandWeg (die Tiefen-Kopie liest die Tiefen-Textur des Ziels — ohne sie der WeakMap-Absturz)" },
+    { file: "vendor/three.webgpu.min.js", sub: "a=r.renderer.currentSamples,o=s.depthTexture;", organ: "_leinwandWeg (die Leinwand-Tiefe ist die DepthTexture des Leinwand-Ziels)" },
+    { file: "vendor/three.webgpu.min.js", sub: "getCanvasTarget(){return this._canvasTarget}", organ: "_leinwandWeg (das Leinwand-Ziel)" },
+    { file: "vendor/three.webgpu.min.js", sub: "destroyTexture(e,t=!1){this.textureUtils.destroyTexture(e,t)}", organ: "_leinwandWeg (die GPU-Textur der Leinwand-Tiefe fällt in der Post-Kette)" },
+    { file: "vendor/three.webgpu.min.js", sub: "destroyTexture(e,t=!1){const r=this.backend,s=r.get(e);void 0!==s.texture&&!1===t&&s.texture.destroy(),void 0!==s.msaaTexture&&s.msaaTexture.destroy(),r.delete(e)}", organ: "_leinwandWeg (destroyTexture zerstört und vergisst — getDepthBuffer legt sie im Direktpfad neu an)" },
+    // DAS RAHMEN-ZIEL DES DIREKTPFADS (`_rahmenZielAbschied`, 0910-1): r184 legt es je Leinwand- bzw. Ausgabe-Ziel einmal an
+    // (Map `_frameBufferTargets`), markiert es `isPostProcessingRenderTarget` (der Erzeuger `r184-ausgabe` im Band) und hängt
+    // seinen Abschied als dispose-Hörer an das Ziel — der Stamm findet ihn am Text (`_frameBufferTargets.delete(`) und ruft ihn,
+    // sobald die Post-Kette zeichnet.
+    { file: "vendor/three.webgpu.min.js", sub: 'l.isPostProcessingRenderTarget=!0;const e=()=>{u.removeEventListener("dispose",e),l.dispose(),this._frameBufferTargets.delete(u)};u.addEventListener("dispose",e),this._frameBufferTargets.set(u,l)}', organ: "_rahmenZielAbschied (r184s Abschied des Rahmen-Ziels: Hörer ab, Ziel entsorgt, Eintrag fort)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this._frameBufferTargets=new Map;", organ: "_rahmenZielAbschied (die Rahmen-Ziele je Ziel)" },
+    // … und die Liste, aus der `_rahmenZielAbschied` den Hörer liest: der EventDispatcher von three.core hält die Hörer je Art in
+    // `this._listeners[art]`, und das Leinwand-Ziel des Renderers (`GS`) ist einer (0910-1 A, Gegenprüfung: der zweite Abschied
+    // stand ohne Wand). Die Drift-Probe in gate:post-kette (g) fährt den Zweig ohne Hörer.
+    { file: "vendor/three.core.min.js", sub: "addEventListener(t,e){void 0===this._listeners&&(this._listeners={});const i=this._listeners;void 0===i[t]&&(i[t]=[]),-1===i[t].indexOf(e)&&i[t].push(e)}", organ: "_rahmenZielAbschied (die Hörer je Art in `_listeners`)" },
+    { file: "vendor/three.core.min.js", sub: "removeEventListener(t,e){const i=this._listeners;if(void 0===i)return;const s=i[t];if(void 0!==s){const t=s.indexOf(e);-1!==t&&s.splice(t,1)}}", organ: "_rahmenZielAbschied (der Hörer nimmt sich aus `_listeners`)" },
+    { file: "vendor/three.webgpu.min.js", sub: "class GS extends u{", organ: "_rahmenZielAbschied (das Leinwand-Ziel ist ein EventDispatcher)" },
+    { file: "vendor/three.webgpu.min.js", sub: "EventDispatcher as u", organ: "_rahmenZielAbschied (u ist der EventDispatcher von three.core)" },
+    { file: "vendor/three.webgpu.min.js", sub: "this._canvasTarget=new GS(", organ: "_rahmenZielAbschied (der Renderer hält sein Leinwand-Ziel)" },
+    // DAS GESETZ DES SCHATTEN-BIAS (`_schattenBias`, 0710-12): r184 schiebt die Probe des Empfängers um normalWorld × normalBias
+    // in WELT-METERN und addiert `bias` auf die Tiefe der Schatten-Koordinate (0..1) — beides in Texeln der Kaskade.
+    { file: "vendor/three.webgpu.min.js", sub: "qc(\"normalBias\",\"float\",i).setGroup(_a)", organ: "_schattenBias (normalBias ist eine Uniform des Lichts)" },
+    { file: "vendor/three.webgpu.min.js", sub: "h=Rc.mul(d);", organ: "_schattenBias (normalBias × normalWorld)" },
+    { file: "vendor/three.webgpu.min.js", sub: "p=c.mul(w_.add(h))", organ: "_schattenBias (die Probe sitzt bei positionWorld + normalWorld × normalBias — Welt-Meter)" },
+    { file: "vendor/three.webgpu.min.js", sub: "s.reversedDepthBuffer?n.sub(i):n.add(i)", organ: "_schattenBias (bias addiert auf die Tiefe der Schatten-Koordinate)" },
     // DIE STUFE KOSTET NUR, WENN SIE ZEIGT (`nurBeiStaerke` in _ensurePostProcessing): ein Fn-Aufruf trägt seine Argumente
     // als `rawInputs` (der Ketten-Graph der Zerleg-Linse liest sie), ein Fn ohne Layout baut seinen Rumpf inline.
     { file: "vendor/three.webgpu.min.js", sub: "constructor(e,t){super(),this.shaderNode=e,this.rawInputs=t,this.isShaderCallNodeInternal=!0}", organ: "_ensurePostProcessing (nurBeiStaerke — die Stufe bleibt im Ketten-Graph sichtbar)" },

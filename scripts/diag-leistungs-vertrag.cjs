@@ -95,11 +95,9 @@ const server = http.createServer((req, res) => {
                 // ... und bis der Vorrat steht (`_foundryPrefetchLibrary`): solange er saugt, baut der gelüftete Ring
                 // jede neue Region leer und aufgeschoben (der Prefetch-Zweig von `_scatterRegion`).
                 const vorrat = () => !!(r._foundry && r._foundry._prefetching);
-                const wartend = () => {
-                    let n = 0;
-                    if (st.scatterRegions) for (const reg of st.scatterRegions.values()) if (reg && reg._deferredFoundry) n++;
-                    return n;
-                };
+                // die EINE Antwort der Welt (`_streuWartet`, Befund 09.10.: der eigene Zähler las die fehlende Regionen-Karte
+                // — der Streamer lief noch nie — als „keine wartet")
+                const wartend = (liste) => r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
                 while ((wartend() > 0 || vorrat()) && performance.now() < dlW) {
                     for (let i = 0; i < 30; i++) {
                         try {
@@ -108,7 +106,8 @@ const server = http.createServer((req, res) => {
                     }
                     await sleep(30);
                 }
-                o.wartendNachBoot = wartend() + (vorrat() ? 1 : 0);
+                o.wartendListe = [];
+                o.wartendNachBoot = wartend(o.wartendListe) + (vorrat() ? 1 : 0);
                 o.vorratSaugt = vorrat();
             }
             const _oH0 = st.renderer._isHeadlessNull;
@@ -159,16 +158,21 @@ const server = http.createServer((req, res) => {
             // Regionen in Scheiben neu baute (Zellen 0 → 53), lief durch zwei Batches ohne neuen Schlüssel und münzte
             // seine Konifere-L1 erst im Fenster (2 Mints, 3 von 3 Läufen) — das Fenster maß den Boot, nicht den Stand.
             {
-                const ringStand = () => {
-                    const keys = [];
-                    let offen = 0;
+                // was am Ring wartet: die EINE Antwort der Welt je Region in Reichweite (`_streuWartet` — auch eine fehlende
+                // Karte, Befund 09.10.: der eigene Zähler las sie als „|0") und jede Region der Karte, die noch wartet
+                // (`_streuRegionWartet` — eine Scheibe jenseits der Reichweite des gedrosselten Radius baut weiter)
+                const ringWartet = () => {
+                    const liste = [];
+                    r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
                     if (st.scatterRegions)
-                        for (const [k, reg] of st.scatterRegions) {
-                            keys.push(k);
-                            if (reg && (reg._cont || reg._deferredFoundry)) offen++;
+                        for (const k of st.scatterRegions.keys()) {
+                            const grund = r._streuRegionWartet(k);
+                            if (grund && !liste.includes(`${k} ${grund}`)) liste.push(`${k} ${grund}`);
                         }
-                    return keys.sort().join(";") + "|" + offen;
+                    return liste;
                 };
+                const ringStand = () =>
+                    (st.scatterRegions ? Array.from(st.scatterRegions.keys()).sort().join(";") : "") + "|" + ringWartet().length;
                 const dlQ = performance.now() + 180000;
                 let ruhigeBatches = 0;
                 while (ruhigeBatches < 2 && performance.now() < dlQ) {
@@ -186,11 +190,7 @@ const server = http.createServer((req, res) => {
                     ruhigeBatches = ruhig ? ruhigeBatches + 1 : 0;
                 }
                 o.quieszent = ruhigeBatches >= 2;
-                o.ringOffen = [];
-                if (st.scatterRegions)
-                    for (const [k, reg] of st.scatterRegions)
-                        if (reg && (reg._cont || reg._deferredFoundry))
-                            o.ringOffen.push(k + (reg._cont ? " Scheibe offen" : "") + (reg._deferredFoundry ? " wartet" : ""));
+                o.ringOffen = ringWartet();
             }
             // GOLD 4 (19.07.) — V5: DAS SZENE-SPEICHER-BAND. Der Live-Set-Zensus
             // (heapZensus, reine Lese-Linse) misst die CPU-TypedArray-Bytes der
@@ -326,7 +326,7 @@ const server = http.createServer((req, res) => {
     if (out.err) errs.push("Vertrag brach ab: " + out.err);
     if (out.wartendNachBoot !== 0)
         errs.push(
-            `BOOT: nach 150 s headless warten ${out.wartendNachBoot - (out.vorratSaugt ? 1 : 0)} Streu-Regionen auf ein Studio-Asset (_deferredFoundry)${out.vorratSaugt ? ", der Vorrat saugt noch" : ""}`
+            `BOOT: nach 150 s headless stehen ${out.wartendNachBoot - (out.vorratSaugt ? 1 : 0)} Streu-Regionen in Reichweite nicht (_streuWartet: ${(out.wartendListe || []).join(", ") || "—"})${out.vorratSaugt ? ", der Vorrat saugt noch" : ""}`
         );
     if (!out.quieszent)
         errs.push(

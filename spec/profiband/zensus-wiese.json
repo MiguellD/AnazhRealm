@@ -95,5 +95,37 @@
             "fichte": 5068,
             "tanne": 4640
         }
+    },
+    "nahWiese": {
+        "zweck": "DIE NAH-WIESE DER MESS-WIESE (Projektion P, Zeile nahWiese): je Gestalt x Stufe die gelegten Büschel am gestellten Ort — eine Senke nahWiese:L<stufe>:<v>:<teil> je Vorlage x Stufe x Teil, die Gestalt aus ihrem Leaf (f:gras|<gestalt>|<stufe>). Die Nah-Wiese zeichnet genau ihre Gestalten 1 und 2, die Golden-Samen s1/s2 SIND diese Gestalten: die Projektion nimmt je Zeile die Golden-Dreiecke ihrer Gestalt (kein Maximum über die Samen) und hält Σ gegen die Ratsche der Klasse nahWiese am Ort (haupt dreiecke), darüber den Haushalt.",
+        "art": "gras",
+        "klasse": "nahWiese",
+        "quelle": "werkbank --echt (Radeon 890M), integ-probe c503eaad (V18.537 + fix-ankunft, schatten, S3 kreatur, wiese-gestalten, pflanzen), umstellen --ort wiese (yaw 0, Dorf-Zug aus), lauf 5 --ein 20 --ruhe 300, ein Frame: zaehlen nahWiese:L1 29 520 / L2 25 474 Dreiecke, je Senke ihre Anzahl, 10.10.2026",
+        "zeilen": [
+            {
+                "gestalt": 1,
+                "stufe": 1,
+                "pass": "haupt",
+                "inst": 20
+            },
+            {
+                "gestalt": 2,
+                "stufe": 1,
+                "pass": "haupt",
+                "inst": 9
+            },
+            {
+                "gestalt": 1,
+                "stufe": 2,
+                "pass": "haupt",
+                "inst": 124
+            },
+            {
+                "gestalt": 2,
+                "stufe": 2,
+                "pass": "haupt",
+                "inst": 115
+            }
+        ]
     }
 }

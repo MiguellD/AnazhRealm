@@ -280,9 +280,14 @@ class AnazhRealm {
             terrainBaseHeight: 0.0,
             weather: "sunny",
             weatherEffectTime: 0,
-            // Tag-Nacht: timeOfDay 0..1 (0=Mitternacht, 0.25=Aufgang, 0.5=Mittag, 0.75=Untergang);
-            // dayLengthMinutes = Echtzeit je Zyklus (Slider 1–60). Beide persistiert; Lichter + Skybox leiten
-            // sich pro Frame aus timeOfDay ab.
+            // DAS WORT DES SPIELERS über das Wetter (`_setWeather`, Leben-Schau 2): steht es, hält der Wetter-Zug und
+            // keine Stimme der Welt dreht das Wetter, bis der Spieler es freigibt („setze wetter frei"); persistiert.
+            // Der WUNSCH der Welt (Nexus, seine Gesetze, die Emotion, die Wesen): das Wort, das der nächste Zug zieht.
+            wetterWort: null,
+            wetterWunsch: null,
+            // Tag-Nacht: timeOfDay 0..1 (0=Mitternacht, 0.25=Aufgang, 0.5=Mittag, 0.75=Untergang), persistiert; ihn
+            // schreibt nur der EINE Uhr-Schreiber `_uhrSetzen`. dayLengthMinutes = Echtzeit je Zyklus (Slider 1–60), die
+            // Wahl des Spielers (localStorage, nie im Spielstand). Lichter + Skybox leiten sich pro Frame aus timeOfDay ab.
             timeOfDay: 0.5,
             // JAHRESZEIT (Vorlagen-Phaenologie): eine langsame Uhr treibt die Saison; die Foundry
             // backt die Assets in dieser Jahreszeit (Herbst golden, Winter kahl). Auto-Zyklus an,
@@ -300,7 +305,7 @@ class AnazhRealm {
             // Guss, Bestand bleibt). Persistiert im Snapshot; Linse: gate:studio-uebergabe.
             studioUebergabe: { koerper: null, kreatur: {} },
             seasonYearSeconds: 2400, // ein Jahr ueber 40 min Echtzeit (10 min/Saison)
-            dayLengthMinutes: 8,
+            dayLengthMinutes: AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES,
             _lastDayNightTick: -Infinity, // Sentinel, erste Iteration setzt initialen Stand
             directionalLight: null, // Reference, in initThreeJS gesetzt
             ambientLight: null,
@@ -347,7 +352,7 @@ class AnazhRealm {
                 // V17.111 R1 — Schatten-Hebel (= bisherige Licht-Werte, kein
                 // Look-Sprung; der Light-Space-Snap ist die eigentliche Heilung).
                 shadowRange: 170, // V18.352 — User-CEILING (Frustum-Halbbreite m); 300→170, der Nebel deckte damals >~150 m (bis V18.530) → fern-Schatten waren unsichtbar; tighter = billiger UND schärfer. Der Perf-Regler skaliert darunter (PERF_SHADOW_RANGE_MIN).
-                shadowBias: 1.0, // normalBias (Acne ↔ Peter-Panning)
+                shadowBias: 1.0, // der Hebel auf das Bias-Gesetz der Kaskaden (_schattenBias: 1 = 0,5 / 0,75 Texel; Akne ↔ Peter-Panning)
                 // LOD-Schalter der Bäume (Browser-Toggle); false → _tickArchitectureLOD läuft im No-Op-Pfad,
                 // alle Bäume bleiben LOD0.
                 treeLOD: true,
@@ -1322,7 +1327,6 @@ class AnazhRealm {
         return new Set([
             "player_jump_power",
             "player_speed",
-            "player_size_mul",
             "player_soul",
             "set_visible",
             // Welle 6.D Etappe 3a — Schaden + Konsum sind Spieler-private Aktionen
@@ -1416,7 +1420,8 @@ class AnazhRealm {
     }
 
     // Erlaubt, wenn der Effekt-AST KEINEN verbotenen Op enthält (_dslContainsAnyOp): reaktive Effekte
-    // (weather, creatures_*, deposit_*, spawn_creature, say, skybox_color, time_of_day) passieren.
+    // (weather, creatures_*, deposit_*, spawn_creature, say, skybox_color, set_time_of_day) passieren — ob sie Uhr und Wetter
+    // schreiben dürfen, entscheidet ihre Quelle am Schreiber (`_himmelSchreiber`), nie die Registrierung.
     _isRuleEffectAllowed(node) {
         return (
             Array.isArray(node) &&
@@ -2009,15 +2014,26 @@ class AnazhRealm {
         const c = (v, lo, hi) => this.dslClamp(v, lo, hi);
         this._dslEffectsCache = {
             weather: ([name], ctx) => {
-                // Vokabular = die WEATHER_INTENSITY-Tabelle (sunny · rainy · stormy); der EINE Schreiber
-                // _setWeather trägt Logik-instant + visuellen Cross-Fade (DSL-Op und Auto-Zug teilen ihn) und
-                // die Quelle des Programms.
-                if (name in AnazhRealm.WEATHER_INTENSITY) this._setWeather(name, ctx && ctx.source);
+                // Vokabular = die WEATHER_INTENSITY-Tabelle (sunny · rainy · stormy) und „frei" (der Spieler gibt sein
+                // Wort zurück, `_wetterFreigeben`); der EINE Schreiber _setWeather trägt das Gesetz der Schreiber,
+                // Logik-instant + visuellen Cross-Fade (DSL-Op und Auto-Zug teilen ihn) und die Quelle des Programms.
+                const quelle = ctx && ctx.source;
+                if (name === "frei") {
+                    if (!this._wetterFreigeben(quelle) && ctx)
+                        ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
+                    return;
+                }
+                if (!(name in AnazhRealm.WEATHER_INTENSITY)) return;
+                const ok = this._setWeather(name, quelle);
+                if (ctx && ok === "wunsch") ctx.log.push({ event: "wetter_gewuenscht", quelle, wort: name });
+                else if (ctx && ok === false) ctx.log.push({ event: "wetter_gehalten", quelle, wort: name });
             },
             // set_time_of_day(t), t ∈ 0..1 (0 = Mitternacht, 0.5 = Mittag). NON_BROADCASTABLE — jeder
-            // Mitspieler darf seine eigene Tageszeit haben.
-            set_time_of_day: ([t]) => {
-                this.setTimeOfDay(Number(t));
+            // Mitspieler darf seine eigene Tageszeit haben. Die Uhr gehört dem Spieler (`_himmelSchreiber`): der Satz einer
+            // anderen Quelle (Nexus, seine Gesetze, die Emotion) steht beim Namen im Protokoll und die Uhr geht weiter.
+            set_time_of_day: ([t], ctx) => {
+                const quelle = ctx && ctx.source;
+                if (!this.setTimeOfDay(Number(t), quelle) && ctx) ctx.log.push({ event: "uhr_gehalten", quelle, t });
             },
             // JAHRESZEIT setzen (Vorlagen-Phaenologie): "fruehling/sommer/herbst/winter" -> die
             // Foundry backt den Wald in dieser Saison um (Herbst golden, Winter kahl).
@@ -2052,9 +2068,6 @@ class AnazhRealm {
                 this.fillVoxelSphere(p.x, p.y, p.z, r);
                 ctx.log.push({ event: "voxel_filled", x: p.x, y: p.y, z: p.z, r });
             },
-            time_of_day: ([value]) => {
-                this.state.timeOfDay = c(value, 0, 1);
-            },
             skybox_color: ([color]) => {
                 // Die Farbe überschreibt nebulaColor NICHT (das schriebe _dayNightApplySkybox jeden Frame zurück):
                 // sie setzt eine TÖNUNG, die der Tag-Nacht-Himmel parallel blendet + smooth fadet.
@@ -2080,6 +2093,12 @@ class AnazhRealm {
                 // deterministisch + broadcast-konsistent.
                 const ppos = ctx.state.playerMesh && ctx.state.playerMesh.position;
                 const onPlayer = !!(ppos && Math.hypot(pos.x - ppos.x, pos.z - ppos.z) < 2.0);
+                // DIE NEXUS-GEBURT folgt dem Geburts-Gesetz (D13 auch für den Nexus-Weg, Leben-Schau 07.10. Neu 1): der
+                // autonome Nexus setzt ein Wesen nur dorthin, wo es fern und außerhalb des Blicks zur Welt kommt
+                // (`_kreaturGeburtsOrt` — der gewünschte Ort, wenn er es ist; sonst ein Ort nach dem Gesetz). Vorher setzte
+                // `spawn_creature at_player` es 4–7 m vor den Spieler. Der Mensch (und wer in seinem Namen spricht) ruft
+                // Leben vor sich — das ist sein Akt.
+                const autonom = ctx.source === "nexus" || ctx.source === "rule:nexus";
                 let spawned = 0;
                 let lastBorn = null;
                 for (let i = 0; i < n; i++) {
@@ -2090,9 +2109,19 @@ class AnazhRealm {
                     ctx.budget.spawnsLeft--;
                     const ang = ctx.rng() * Math.PI * 2;
                     const rad = (onPlayer ? 2.5 : 0) + 1.5 + ctx.rng() * 2.5; // 1.5..4 m, +2.5 wenn auf dem Spieler
-                    const sx = pos.x + Math.cos(ang) * rad;
-                    const sz = pos.z + Math.sin(ang) * rad;
-                    const born = this.spawnCreatureAt(sx, pos.y, sz, e);
+                    let sx = pos.x + Math.cos(ang) * rad;
+                    let sz = pos.z + Math.sin(ang) * rad;
+                    let sy = pos.y;
+                    if (autonom) {
+                        const ort = this._kreaturGeburtsOrt(ctx.rng, 80, { x: sx, z: sz });
+                        if (ort.x !== sx || ort.z !== sz) {
+                            sx = ort.x;
+                            sz = ort.z;
+                            const gY = this.getTerrainHeightAt(sx, sz);
+                            sy = (Number.isFinite(gY) ? gY : pos.y) + 1;
+                        }
+                    }
+                    const born = this.spawnCreatureAt(sx, sy, sz, e);
                     // Intentional getragene Kreatur (Nexus/Chat/DSL) TENDET das Feld (träufelt Leben, wo sie wohnt;
                     // _tickCreatureLifeTrickle). Ambiente Fauna bekommt das Flag NIE — sie ist die Folge des Feldes
                     // (kein Runaway).
@@ -2862,38 +2891,21 @@ class AnazhRealm {
                     this._projectCreatureEmotion(c);
                 }
             },
-            creatures_speed_mul: ([factor]) => {
-                const f = c(factor, 0.1, 5);
-                for (const cr of this.state.creatures) {
-                    if (cr.userData) cr.userData.speedMul = (cr.userData.speedMul || 1) * f;
-                }
-            },
-            creatures_size_mul: ([factor]) => {
-                const f = c(factor, 0.5, 3);
-                for (const cr of this.state.creatures) {
-                    if (cr.scale) cr.scale.multiplyScalar(f);
-                }
-            },
-            player_jump_power: ([value]) => {
-                this.state.jumpPower = c(value, 5, 40);
-            },
-            player_speed: ([value]) => {
-                // Nur der DSL-Eingabe-Clamp; _applyPlayerSpeed koppelt speed + sprintSpeed (sonst wäre Sprint
-                // langsamer als Gehen).
-                this._applyPlayerSpeed(c(value, 1, 30));
-            },
+            // DIE KÖRPER-GESETZE SIND GESETZ (Leben-Schau 07.10., Neu 1): ein Op moduliert Gang, Sprung und Größe nur
+            // INNERHALB der Bänder des Gesetzes, benannt im Protokoll — der Spieler-Leib im Band seines Körper-Gesetzes
+            // (koerper fx.bewegung), das Tier-Tempo im Wander-Band, die Tier-Größe nur über die bodySize-Achse. Vorher
+            // schrieben die Ops absolute Werte (Gehen 11,1 m/s, Sprint 45 m/s, Sprungkraft 18,6 statt 2,6), skalierten
+            // jedes Tier ohne Achse (16 von 16 ×1,11) und schrieben ein Tempo, das niemand las.
+            creatures_speed_mul: ([factor], ctx) => this._kreaturTempoHauch(factor, ctx),
+            creatures_size_mul: ([factor], ctx) => this._kreaturGroesseHauch(factor, ctx),
+            player_jump_power: ([value], ctx) => this._koerperHauch("jumpPower", value, ctx),
+            player_speed: ([value], ctx) => this._koerperHauch("speed", value, ctx),
             // Welle 6.D Etappe 3a — Schaden zufügen (DSL-getrieben). Schöpfer-
             // Werkzeug + Test-Hook. Welt-Hazards (6.G) + Kreaturen (6.H) hängen
             // sich später an damagePlayer. Bewusst NICHT im atomic-Pool.
             damage: ([amount, source], ctx) => {
                 const dealt = this.damagePlayer(c(amount, 0, 1000), source || "dsl");
                 if (ctx && ctx.log) ctx.log.push({ event: dealt ? "player_damaged" : "damage_ignored", amount });
-            },
-            player_size_mul: ([factor]) => {
-                const f = c(factor, 0.5, 2);
-                if (this.state.playerMesh && this.state.playerMesh.scale) {
-                    this.state.playerMesh.scale.multiplyScalar(f);
-                }
             },
             player_soul: ([name]) => {
                 // Seele wechseln — NICHT im dslComposeAtomic-Pool (der Nexus schreibt dem Menschen nie die
@@ -3423,11 +3435,10 @@ class AnazhRealm {
             { w: 10, build: () => ["creatures_emotion", rng() < happyBias ? "happy" : "sad"] },
             { w: 8, build: () => ["creatures_color", this.dslComposeFieldColor(rng, aura)] },
             { w: 8, build: () => ["skybox_color", this.dslComposeFieldColor(rng, aura)] },
-            { w: 7, build: () => ["player_jump_power", Number((8 + rng() * 12).toFixed(2))] },
-            { w: 7, build: () => ["player_speed", Number((4 + rng() * 8).toFixed(2))] },
-            { w: 5, build: () => ["time_of_day", Number(rng().toFixed(2))] },
-            { w: 4, build: () => ["creatures_speed_mul", Number((0.5 + rng() * 1.5).toFixed(2))] },
-            { w: 4, build: () => ["creatures_size_mul", Number((0.7 + rng()).toFixed(2))] },
+            // KEIN WÜRFEL SCHREIBT EIN KÖRPER-GESETZ (Leben-Schau 07.10., Neu 1): Gang, Sprung und Größe stehen nicht im
+            // Pool — der Würfel setzte dem Spieler Gehen 4–12 und Sprungkraft 8–20 zu und blähte die Tiere ohne Achse auf.
+            // KEIN WÜRFEL SCHREIBT DIE UHR (Leben-Schau 2, 09.10.): die Uhr gehört dem Spieler (`_himmelSchreiber`) — der
+            // Tageszeit-Wurf (Gewicht 5) und seine Mutationen in Nexus-Gesetzen warfen sie 30-mal in 160 s.
             // Der Nexus baut via far_player in eine FERNE Schale (180–380 m, JENSEITS des 150-m-Cull-Radius):
             // nah am Spieler stapelten sich Bauten und wurden nie gecullt (sceneChildren-Leck). Dazu der Cap
             // _capNexusStructures (MAX_NEXUS_STRUCTURES, Fernstes verblasst) und niedrige Gewichte (2/2/2/1)
@@ -4948,7 +4959,8 @@ class AnazhRealm {
 
     // === Welt-Aktion-Vorschlag verarbeiten ===
     // Whitelist rekursiv via _isCreatureProposalAllowed (Defense in Depth; verboten → Memory +
-    // INFO-Log + Chat-Hinweis). schöpfer → auto-execute, frieden/pfad → [Ausführen]/[Ablehnen].
+    // INFO-Log + Chat-Hinweis). schöpfer → auto-execute (ohne Zusage: das Wesen handelt als Welt, `_executeCreatureProgram` —
+    // es wünscht das Wetter nur und schreibt nie gegen das Wort des Spielers), frieden/pfad → [Ausführen]/[Ablehnen].
     // Memory-Einträge (proposed_action / accepted_action / auto_executed_action / rejected_action /
     // proposal_blocked) lassen die Kreatur aus den Spieler-Reaktionen lernen.
     _handleCreatureProposedProgram(creature, name, program) {
@@ -4992,11 +5004,19 @@ class AnazhRealm {
         return this._renderCreatureProposalButtons(creature, name, program);
     }
 
-    // Ausführen über die dslRun-Sandbox; source "creature:<name>" markiert die Herkunft (History +
-    // P2P-Loop-Schutz: ≠ "human" → kein Broadcast, wie llm:grok / nexus / emotion).
+    // Ausführen über die dslRun-Sandbox. Die Quelle trägt die ZUSAGE (das Gesetz der Schreiber, `_himmelSchreiber`): sagte der
+    // Spieler zu (sein Klick auf „Ausführen"), läuft das Programm als „zusage:creature:<name>" und schreibt wie ein Gesetz des
+    // Spielers; läuft es von selbst (der Schöpfer-Modus, auch ohne Zutun des Spielers über den Level-Aufstieg), ist es
+    // „creature:<name>" — ein Wesen der Welt, das das Wetter nur wünscht und nie gegen das Wort des Spielers schreibt. Bis zur
+    // Gegenprüfung trugen beide „creature:" (als Zusage gelesen): ein Wesen im Schöpfer-Modus drehte „setze wetter sonnig" zu
+    // Regen und nahm dem Spieler sein Wort. ≠ "human" → kein Broadcast (P2P-Loop-Schutz), wie llm:grok / nexus / emotion.
     _executeCreatureProgram(creature, name, program, auto) {
-        const result = this.dslRun(program, { source: `creature:${name}` });
+        const result = this.dslRun(program, { source: auto ? `creature:${name}` : `zusage:creature:${name}` });
         const ok = result && result.ok;
+        // was das Gesetz der Schreiber aus dem Wetter-Wort des Wesens machte (gehalten / gewünscht) — der Hinweis sagt es
+        const wetter = ((result && result.log) || []).find(
+            (e) => e && (e.event === "wetter_gehalten" || e.event === "wetter_gewuenscht")
+        );
         const memType = auto ? "auto_executed_action" : "accepted_action";
         if (typeof this._creatureRemember === "function") {
             this._creatureRemember(creature, memType, {
@@ -5013,7 +5033,12 @@ class AnazhRealm {
             const tag = auto ? "auto-ausgeführt" : "ausgeführt";
             const summary = JSON.stringify(program).slice(0, 100);
             if (ok) {
-                line.textContent = `(${name}'s Vorschlag ${tag}: ${summary})`;
+                const zusatz = !wetter
+                    ? ""
+                    : wetter.event === "wetter_gehalten"
+                      ? ` — das Wetter hält dein Wort (${this.state.wetterWort || "Halt"})`
+                      : ` — der Wetter-Zug zieht ${wetter.wort} als Nächstes`;
+                line.textContent = `(${name}'s Vorschlag ${tag}: ${summary}${zusatz})`;
             } else {
                 const reason =
                     (result &&
@@ -6946,11 +6971,11 @@ class AnazhRealm {
                 m.rotation.y += dg * k;
             }
             const sp = dt > 0 ? Math.hypot(m.position.x - x0, m.position.z - z0) / dt : 0;
-            // Kosten am Schirm: jenseits der Standbild-Schwelle der Welt-Tiere (TIER_FERN_DIST × Größe) ruht der Gang.
-            const fs = (m.scale && m.scale.x) || 1;
+            // Kosten am Schirm: die Kopie schaltet ihre Stufe am EINEN Schalter der Gelenk-Gestalt (`_gelenkStufe`, Grenze
+            // `ab` × Größe aus der Kern-Zeile) — jenseits trägt die Grobstufe das Bild und der Gang ruht.
             const ddx = pm ? m.position.x - pm.x : 0,
                 ddz = pm ? m.position.z - pm.z : 0;
-            if (m.userData && m.userData._tierBaum && ddx * ddx + ddz * ddz < AnazhRealm.TIER_FERN_DIST_SQ * fs * fs) {
+            if (m.userData && m.userData._tierBaum && !this._gelenkStufe(m, ddx * ddx + ddz * ddz)) {
                 const ud = m.userData;
                 ud.walkPhase = (ud.walkPhase || 0) + (sp > 0.1 ? (dt || 0) * 5.0 : 0);
                 this._animateCompoundMotion(m, null, t, ud.walkPhase, sp > 0.1, null);
@@ -7742,19 +7767,15 @@ class AnazhRealm {
         // Built-in-Seelen voll animieren (Geh-/Schwimm-Zyklus), abgeleitet aus
         // dem Positions-Stream — keine Extra-Bandbreite.
         if (entry.meshKind === "soul") {
-            // Der FERNE Mensch trägt die gemergte lod1-Fern-Gestalt (EIN Toggle-Chokepoint `_menschFernToggle`,
-            // TIER_FERN-Muster); dahinter ruht auch der Rig-Tick (verdeckt animiert niemand).
-            // Nur der Mensch-Guss trägt _menschFern.
+            // Der FERNE Leib trägt seine gelenkige Grobstufe (der EINE Stufen-Schalter `_gelenkStufe`, Grenze aus der
+            // Kern-Zeile); dahinter ruht auch der Rig-Tick. Jede Gelenk-Gestalt (Mensch, Tier-Seele) trägt `_gelenk`.
             let fernAktiv = false;
-            const mf = mesh.userData && mesh.userData._menschFern;
-            if (mf) {
+            const gl = mesh.userData && mesh.userData._gelenk;
+            if (gl) {
                 const pp = this.state.playerMesh && this.state.playerMesh.position;
-                if (pp) {
-                    const fdx = entry.x - pp.x;
-                    const fdz = entry.z - pp.z;
-                    this._menschFernToggle(mesh, fdx * fdx + fdz * fdz);
-                }
-                fernAktiv = !!(mf.fern && mf.fern.visible);
+                fernAktiv = pp
+                    ? this._gelenkStufe(mesh, (entry.x - pp.x) * (entry.x - pp.x) + (entry.z - pp.z) * (entry.z - pp.z))
+                    : gl.istFern;
             }
             const def = this.playerSoulDefs[entry.soulName];
             if (!fernAktiv && def && typeof def.animate === "function" && mesh.userData && mesh.userData.parts) {
@@ -8653,8 +8674,9 @@ class AnazhRealm {
             {
                 example: "setze wetter rainy",
                 // D5a (V18.128) — das Vokabular wächst mit der WEATHER_INTENSITY-
-                // Tabelle; deutsche Worte normalisieren auf die kanonischen.
-                re: /^setze\s+wetter\s+(sunny|rainy|stormy|sturm|stürmisch|sonnig|sonne|regen|regnerisch)\s*$/i,
+                // Tabelle; deutsche Worte normalisieren auf die kanonischen. Das Wort des Spielers steht, bis er es
+                // freigibt: „setze wetter frei" (oder „wechselhaft") lässt den Wetter-Zug wieder ziehen.
+                re: /^setze\s+wetter\s+(sunny|rainy|stormy|sturm|stürmisch|sonnig|sonne|regen|regnerisch|frei|wechselhaft)\s*$/i,
                 build: (m) => {
                     const raw = m[1].toLowerCase();
                     const map = {
@@ -8664,11 +8686,15 @@ class AnazhRealm {
                         sonne: "sunny",
                         regen: "rainy",
                         regnerisch: "rainy",
+                        wechselhaft: "frei",
                     };
                     const word = map[raw] || raw;
                     return {
                         program: ["weather", word],
-                        describe: `Wetter gesetzt auf ${word}`,
+                        describe:
+                            word === "frei"
+                                ? "Wetter frei: es zieht wieder mit der Welt"
+                                : `Wetter gesetzt auf ${word} — es bleibt, bis du „setze wetter frei" sagst`,
                     };
                 },
             },
@@ -11375,7 +11401,11 @@ class AnazhRealm {
         const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
         const strong = (T && T.resonance_strong) || 1.5;
         const RADIUS2 = 24 * 24;
-        for (const e of archs) {
+        // die Plätze um den Spieler (`_blockerUmPlatz`, in der Ordnung des Bestands) — vorher jeder Eintrag je Akkord
+        const nahe = this._lofiNahe || (this._lofiNahe = []);
+        nahe.length = 0;
+        this._blockerUmPlatz(pm.position.x, pm.position.z, 24 + 1e-6, nahe);
+        for (const e of nahe) {
             if (!e || !e.position) continue;
             const dx = e.position.x - pm.position.x;
             const dz = e.position.z - pm.position.z;
@@ -14787,7 +14817,7 @@ class AnazhRealm {
     }
 
     // Der Name eines Knotens: `name` || Inventar-Stempel || Wasser-Art; ein Schlüssel-Schwanz hinter einem Trenner
-    // fällt (`voxelChunk:3,-4:lod0` → `voxelChunk`, `nahWiese:-2,7` → `nahWiese`), Ziffern IM Namen bleiben
+    // fällt (`voxelChunk:3,-4:lod0` → `voxelChunk`, `nahWiese:L1:0:2` → `nahWiese:L1`), Ziffern IM Namen bleiben
     // (`p2p-spieler`, `r184-ausgabe`).
     static _taeterName(x) {
         const u = x.userData || {};
@@ -16592,6 +16622,9 @@ class AnazhRealm {
         const _cStats = this.computeCreatureStats(group).stats;
         group.userData.hpMax = _cStats.hpMax;
         group.userData.hp = _cStats.hpMax;
+        // DAS GEMÜT WIRD MIT DEM LEIB GEGOSSEN (Welle LF): Gattung × die EINE Masse des eben gegossenen Leibs
+        // (`_creatureTemperament` → `_leibMasse`), gecacht je Gattung × Größe — der Takt liest es, statt es zu rechnen.
+        this._creatureTemperament(group);
         if (this.state.scene) this.state.scene.add(group);
         this.state.creatures.push(group);
         this.state.creatureEmotions.push(emotion === "sad" ? "sad" : "happy");
@@ -17013,24 +17046,17 @@ class AnazhRealm {
         wrap.add(klon);
         wrap.userData._creatureSkin = true; // die 1st-Person-Regel deckt den GANZEN Leib (wie zuvor die Haut)
         wrap.userData.hautTon = skinCol; // die EINE Farb-Wahrheit für Leser (Band/Tint — Genom/Studio-Zahl)
-        // Ferner Mensch aus derselben Pipe: lod1 = gemergte Fern-Gestalt (grobe Segmente, kahl, wenige
-        // Meshes), verdeckt gebaut; `_menschFernToggle` schaltet nah↔fern. Kalter lod1-Guss → kein
-        // Fern-Zweig, es bleibt lod 0.
+        // Die Grobstufe aus derselben Pipe (lod 1, gelenkig — dasselbe Gesetz wie das Tier, `_gelenkGestalt`): unter
+        // DEMSELBEN Wrap an die Knochen der feinen gebunden, Wurf und Stufen-Grenze aus der Kern-Zeile; fehlt sie, gibt
+        // es keinen Menschen (fail-closed).
         const t1 = this._ofenMenschTemplate(dials, skinCol, hairCol, 1, g.eigen === true);
-        if (t1 && t1.root) {
-            const fernKlon = t1.root.clone(true);
-            const teileF = {};
-            fernKlon.traverse((n) => {
-                if ((n.isGroup || n.isBone) && n.name) teileF[n.name] = n;
-            });
-            fernKlon.traverse((n) => {
-                if (n.isMesh) n.castShadow = false;
-            });
-            AnazhRealm._ofenKlonRebind(fernKlon, teileF);
-            fernKlon.visible = false;
-            wrap.add(fernKlon);
-            wrap.userData._menschFern = { nah: klon, fern: fernKlon };
+        const gelenk = this._gelenkGestalt(core, "koerper", wrap, klon, teile, t1);
+        if (!gelenk) {
+            this.log("Mensch: ohne gelenkige Grobstufe kein Körper (fail-closed).", "ERROR");
+            return null;
         }
+        wrap.userData._gelenk = gelenk;
+        this._gelenkStufe(wrap, 0);
         // der Leib meldet sich bei seinen Vorlagen an (die Grenze des Ofen-Memos, `_ofenVorlage`)
         this._ofenVorlagenBinden(wrap, [t0, t1]);
         const P2 = (n2) => teile[n2] || null;
@@ -17066,19 +17092,111 @@ class AnazhRealm {
         return { mesh: wrap, rig, kh, bones: [] };
     }
 
-    // DER EINE MENSCH-FERN-TOGGLE (Chokepoint, TIER_FERN-Muster): jenseits MENSCH_FERN_DIST_SQ trägt
-    // die statische lod1-Gestalt statt des animierten Gelenk-Baums. Idempotent (visible nur bei Wechsel),
-    // no-op ohne Fern-Zweig; Konsument _p2pUpdatePeer. Hysterese TIER_FERN_HYST (die EINE Bande aller
-    // Fern-Toggles), sonst flackert ein Peer an der Schwelle. Linse: gate:kreatur-kosten.
-    _menschFernToggle(group, distSq) {
-        const mf = group && group.userData && group.userData._menschFern;
-        if (!mf || !mf.nah || !mf.fern) return;
-        const h = AnazhRealm.TIER_FERN_HYST;
-        const kante = mf.nah.visible ? (1 + h) * (1 + h) : (1 - h) * (1 - h);
-        const nah = distSq < AnazhRealm.MENSCH_FERN_DIST_SQ * kante;
-        if (mf.nah.visible !== nah) {
-            mf.nah.visible = nah;
-            mf.fern.visible = !nah;
+    // DIE GELENK-GESTALT (S3, Lehre 19 — die Grobstufe ist gelenkig, das Standbild fiel an der Wurzel): EIN Wrap trägt
+    // beide Klone; die Grobstufe (lod 1) bindet in der Ruhe-Pose an die Knochen der feinen — EIN Skelett je Gestalt (der
+    // Ofen bindet jedes ihrer Teile, auch die starren mit Gewicht 1). Den Wurf liest sie aus der Kern-Zeile (`_ofenZeile`):
+    // Stufe 0 wirft über `schatten` (1 = die Grobstufe ist ihr Zwilling), die Grobstufe wirft mit ihrem Teil `wurf.seh`,
+    // jeder andere Teil nie; die Stufen-Grenze (`ab` × Größe, `hyst`) kommt aus derselben Zeile. Die Grobstufe ist Pflicht:
+    // fehlt sie, ihre Zeile oder die Bindung eines Teils, schreit der Bau und liefert nichts (fail-closed).
+    _gelenkGestalt(core, kind, wrap, klon, teile, t1) {
+        const z0 = this._ofenZeile(core, kind, 0);
+        const z1 = this._ofenZeile(core, kind, 1);
+        const s1 = z1.zeile;
+        if (!t1 || !t1.root || !z0.zeile || z1.stufe !== 1 || !s1 || !(s1.ab > 0) || !(z0.hyst > 0 && z0.hyst < 0.5)) {
+            this.log(
+                `GELENK-GESTALT ${kind}: die Grobstufe oder ihre Kern-Zeile (ab, hyst) fehlt — fail-closed`,
+                "ERROR"
+            );
+            return null;
+        }
+        const fern = t1.root.clone(true);
+        const seh = s1.wurf && Array.isArray(s1.wurf.seh) ? s1.wurf.seh : null;
+        const meshes = [];
+        const lose = [];
+        fern.traverse((n) => {
+            if (!n.isMesh) return;
+            const namen = n.isSkinnedMesh ? n.userData.__skinJoints : null;
+            if (!Array.isArray(namen) || !namen.length || namen.some((nm) => !teile[nm])) lose.push(n.name || n.type);
+            n.castShadow = n.castShadow && s1.schatten === 1 && (!seh || seh.indexOf(n.userData.__seh) >= 0);
+            meshes.push(n);
+        });
+        if (lose.length) {
+            this.log(
+                `GELENK-GESTALT ${kind}: ${lose.length} Teile der Grobstufe ohne Knochen der feinen — fail-closed`,
+                "ERROR"
+            );
+            return null;
+        }
+        AnazhRealm._ofenKlonRebind(fern, teile); // EIN Skelett: die Grobstufe trägt die Knochen der feinen
+        // EINE Körper-Kugel je Gestalt: die Grobstufe cullt (Bild und Kaskaden) gegen die Kugel der feinen — ihre eigene
+        // (ohne die Fell-Schalen) ließ den Schweif im Gang hinaus (Pose-Probe gate:kreatur-kosten (R): 4 von 246 240).
+        let kugel = null;
+        klon.traverse((n) => {
+            if (n.isMesh) n.castShadow = n.castShadow && z0.zeile.schatten === 0;
+            if (!kugel && n.isSkinnedMesh && n.boundingSphere)
+                kugel = n.boundingSphere.clone().applyMatrix4(n.matrixWorld);
+        });
+        const inv = new THREE.Matrix4();
+        if (kugel)
+            for (const m of meshes) m.boundingSphere = kugel.clone().applyMatrix4(inv.copy(m.matrixWorld).invert());
+        wrap.add(fern);
+        // DIE RUHE des Menschen: die Pose seiner Gelenke beim Bau (der Klon der Vorlage, die Ruhe-Pose des Ofens) —
+        // jenseits der Grenze steht er in ihr (`_gelenkRuhe`). Das Tier ruht in der Kern-STAND_POSE (kein Satz nötig).
+        const ruhe =
+            kind === "kreatur"
+                ? null
+                : Object.keys(teile).map((nm) => {
+                      const k = teile[nm];
+                      return [k, k.position.clone(), k.quaternion.clone(), k.scale.clone()];
+                  });
+        return {
+            nah: klon,
+            fern,
+            meshes,
+            abM: s1.ab,
+            hyst: z0.hyst,
+            zwilling: z0.zeile.schatten === 1,
+            istFern: true,
+            ruhe,
+        };
+    }
+
+    // DER EINE STUFEN-SCHALTER der Gelenk-Gestalt (Tier, Mensch, Peer, Werkstatt): jenseits `ab` × Größe trägt die
+    // Grobstufe das Bild, diesseits die feine — und die Grobstufe wirft als ihr Zwilling auf SHADOW_TWIN_LAYER (die
+    // Haupt-Kamera sieht sie nie, die Kaskaden immer). Hysterese ±`hyst` (fern erst jenseits (1+h)·Grenze, zurück erst
+    // innerhalb (1−h)·Grenze); geschaltet werden nur `visible` und die Ebenen, nur beim Wechsel. Jenseits ruht jeder Gang
+    // (updateCreatures, der Peer-Tick, die Sicht-Kopie) außer dem eines laufenden Tiers (`_kreaturLaeuft`, Welle LF) —
+    // der Wechsel nach fern stellt die Gestalt in ihre Ruhe (`_gelenkRuhe`), denn beide Stufen tragen dieselben Knochen.
+    // Rückgabe: fern?
+    _gelenkStufe(gruppe, distSq) {
+        const g = gruppe.userData._gelenk;
+        const s = gruppe.scale.x || 1;
+        const grenzSq = g.abM * g.abM * s * s;
+        const h = g.hyst;
+        const fern = !(distSq < grenzSq * (g.istFern ? (1 - h) * (1 - h) : (1 + h) * (1 + h)));
+        if (fern !== g.istFern) {
+            g.istFern = fern;
+            g.nah.visible = !fern;
+            g.fern.visible = fern || g.zwilling;
+            const ebene = fern ? 0 : AnazhRealm.SHADOW_TWIN_LAYER;
+            for (const m of g.meshes) m.layers.set(ebene);
+            // wer läuft, behält seinen Schritt (Welle LF, der ferne Gang: die Raten-Leiter wertet ihn jenseits weiter aus)
+            if (fern && !this._kreaturLaeuft(gruppe)) this._gelenkRuhe(gruppe);
+        }
+        return fern;
+    }
+
+    // DIE RUHE der Gelenk-Gestalt (S3): die Grobstufe hängt an den Knochen der feinen — wo der Gang ruht, stünde sie sonst
+    // mitten im Schritt erstarrt (gate:kreatur-kosten (F): der ferne Mensch-Peer 0,454 rad, die Sicht-Kopie 1,064 rad). Das
+    // Tier steht in der Kern-STAND_POSE (`_tierBaumNeutralStance`, dieselbe wie hinter der Anim-Leiter), der Mensch in der
+    // Ruhe-Pose seiner Vorlage (die Pose, die das Standbild der Basis trug).
+    _gelenkRuhe(gruppe) {
+        const ruhe = gruppe.userData._gelenk.ruhe;
+        if (!ruhe) return this._tierBaumNeutralStance(gruppe);
+        for (const [k, p, q, s] of ruhe) {
+            k.position.copy(p);
+            k.quaternion.copy(q);
+            k.scale.copy(s);
         }
     }
 
@@ -17710,6 +17828,8 @@ class AnazhRealm {
             // Template-Geometrie ist über ALLE Klone geteilt — der Dispose-
             // Chokepoint (_disposeSoulGroup) lässt sharedGeom stehen.
             mesh.userData.sharedGeom = true;
+            // Die Seh-Klasse des Stoffs steht am Teil: die Gelenk-Gestalt wählt mit ihr den Wurf-Teil (`wurf.seh`, S3).
+            if (m.mat && typeof m.mat.seh === "string") mesh.userData.__seh = m.mat.seh;
             (teile[m.joint] || teile[rootName] || root).add(mesh);
             gebaut++;
         }
@@ -17852,13 +17972,26 @@ class AnazhRealm {
             });
         }
     }
+    // DIE ZEILE DER GELENK-GESTALT (S3, Lehre 19) — der EINE Leser der Kern-Zeile für Tier und Mensch: phyto-core
+    // `budgetZeile` (die Stufen-Klammer) und die Art-Ebene (`hyst`). Der Ausgang des Ofens (`_ofenBudget`) faltet auf sie,
+    // die Gestalt (`_gelenkGestalt`) liest aus ihr den Wurf (`schatten`, `wurf.seh`) und die Stufen-Grenze (`ab`, `hyst`).
+    _ofenZeile(core, kind, lod) {
+        const cfg = core && core.PORTAL_RENDER_CONFIG;
+        const bz = globalThis.__phytoCore.budgetZeile(cfg, kind, lod | 0);
+        const block = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget[kind] : null;
+        return {
+            stufe: bz ? bz.stufe : null,
+            zeile: bz ? bz.zeile : null,
+            hyst: block && typeof block.hyst === "number" ? block.hyst : null,
+        };
+    }
     // DAS BUDGET-GESETZ im Sync-Guss (W8): der Haupt-Thread-Guss verlässt das Studio an DERSELBEN Stelle wie die
     // Worker-Antwort (`__replyBuildAsset`) — phyto-core `budgetErzwingen` auf der Zeile des Kerns (seine
-    // PORTAL_RENDER_CONFIG.lod.budget[kind][stufe]); ein Bruch schreit, nie still.
+    // PORTAL_RENDER_CONFIG.lod.budget[kind][stufe], `_ofenZeile`); ein Bruch schreit, nie still.
     _ofenBudget(core, kind, lod, eintraege, name) {
         const PC = globalThis.__phytoCore;
-        const bz = PC.budgetZeile(core && core.PORTAL_RENDER_CONFIG, kind, lod | 0);
-        const res = PC.budgetErzwingen(eintraege, bz && bz.zeile);
+        const bz = this._ofenZeile(core, kind, lod);
+        const res = PC.budgetErzwingen(eintraege, bz.zeile);
         if (res.bericht.bruch.length)
             this.log("BUDGET-BRUCH " + name + " L" + (lod | 0) + ": " + JSON.stringify(res.bericht.bruch), "ERROR");
         return res.meshes;
@@ -18012,8 +18145,8 @@ class AnazhRealm {
             const dM = Object.assign({}, kc.START_PARAMS, bmD || {});
             const fM = this._menschGussFarben(bmD);
             // KREATUR-KOSTEN (3) — beide Stufen vorbacken (das Kreatur-Muster
-            // unten): lod 0 = der animierte Gelenk-Baum, lod 1 = die gemergte
-            // Fern-Gestalt (der _menschFernToggle-Zweig). Warm = Spawn ~1 ms.
+            // unten): lod 0 = der animierte Gelenk-Baum, lod 1 = die gelenkige
+            // Grobstufe (`_gelenkGestalt`). Warm = Spawn ~1 ms.
             for (const lodM of [0, 1]) {
                 if (fM.skin === null || fM.hair === null) break; // Kern kalt → der Guss schreit ohnehin
                 const keyM = this._ofenMenschKey(dM, fM.skin, fM.hair, lodM);
@@ -18135,8 +18268,8 @@ class AnazhRealm {
                 P = VA._P;
             }
         }
-        // AUSKLINGE-SAUM: am Standbild-Saum schreibt updateCreatures ud._animFade (1→0); Schritt/Sway/
-        // Schwanz/Kopf klingen in die Stand-Pose aus, damit der wrap↔fern-Toggle eine STEHENDE Gestalt
+        // AUSKLINGE-SAUM: vor der Stufen-Grenze (`ab` × Größe) schreibt updateCreatures ud._animFade (1→0); Schritt/Sway/
+        // Schwanz/Kopf klingen in die Stand-Pose aus, damit der Stufen-Schalter (`_gelenkStufe`) eine STEHENDE Gestalt
         // trifft. Aufrufer ohne _animFade → fadeMul 1.
         const fade = group.userData._animFade;
         const fadeMul = fade !== undefined && fade < 1 ? (fade > 0 ? fade : 0) : 1;
@@ -18188,13 +18321,12 @@ class AnazhRealm {
             const nT = Math.ceil(dtTakt / 0.1);
             for (let k = 0; k < nT; k++) core.cpgStep(g.ph, freq, core.CPG_COUPLING, dtTakt / nT);
         }
-        const SP = (core && core.STAND_POSE) || [
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-        ];
-        let roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0) * fadeMul;
+        // DER LEIB WIEGT SICH IM SCHRITT, NIE IM STAND (Welle LF, die Pfoten-IK): Wiegen (sway) und Federn (bob) sind die
+        // Gewichts-Verlagerung von Tritt zu Tritt — ihr Anteil folgt dem Schritt des Gang-Gesetzes (eingeblendet in ~0,25 s).
+        // Ein Leib, der laufen WILL und steht (der Wunsch ohne Weg), wiegte sonst im Lauf-Takt, und die stehenden Pfoten
+        // knickten die Knie nach (gemessen am stehenden Wolf: Knie-Falte 0,16 rad statt < 0,05).
+        g.schritt = (g.schritt || 0) + ((st > 0.002 ? 1 : 0) - (g.schritt || 0)) * (dt > 0 ? 1 - Math.exp(-4 * dt) : 1);
+        let roll = Math.sin(g.ph[0] * 2) * (Number(P.sway) || 0) * fadeMul * g.schritt;
         // V18.491.80 — ZIP/LAB→HOST: bodyZ reist im MOTION-Preset (Lab-Roll-
         // additiv neben sway·sin); ohne Feld 0 = byte-alt.
         roll += (Number(P.bodyZ) || 0) * fadeMul;
@@ -18219,7 +18351,7 @@ class AnazhRealm {
             // getrennt am Kreatur-ROOT (creature.rotation.x). bob (Galopp-Federn, Lab: spineX·bob·sin(ph·2))
             // wird auf wolf.rotation.x verdichtet.
             const bob = (Number(P.bob) || 0) * fadeMul;
-            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul + Math.sin(g.ph[0] * 2) * bob;
+            T.wolf.rotation.x = (Number(P.bodyX) || 0) * fadeMul + Math.sin(g.ph[0] * 2) * bob * g.schritt;
             T.wolf.rotation.y = drehY;
         }
         // PD-Kanäle aus dem MOTION-Preset: tension → Stand-Unruhe + Rumpf-Plant-Pitch; kpMul → einpolige
@@ -18255,49 +18387,210 @@ class AnazhRealm {
         // (höher → knackiger). State an tb._gang; NeutralStance nullt den Gang.
         if (!g.legCur)
             g.legCur = [
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0],
             ];
-        const legA = dt > 0 ? 1 - Math.exp(-Math.max(18, 55 * kpMul) * (st > 0 ? 2.5 : 1) * dt) : 1;
-        // Das Fuß-Ziel liegt am BODEN (Gruppen-Raum); der Rumpf neigt und rollt (Federn, Wiegen) — die IK rechnet im
-        // Rumpf-Raum, das Ziel wird zurückgedreht.
-        const qRumpf = T.wolf
-            ? (this._gangQ || (this._gangQ = new THREE.Quaternion())).setFromEuler(T.wolf.rotation).invert()
-            : null;
+        // die Glieder folgen ihrem Ziel im Gang ohne Nachlauf (die Ziele sind stetig: der Schwung kam mit dem alten Faktor
+        // 2,5 um bis zu 5 cm hinter seinem Ziel auf und strich dabei über den Boden)
+        const legA = dt > 0 ? 1 - Math.exp(-Math.max(18, 55 * kpMul) * (st > 0 ? 6 : 1) * dt) : 1;
+        // DIE PFOTE STEHT AUF DEM BODEN UNTER IHR, DAS BEIN IM LOT (Welle LF, Leben-Schau 07.10.: am Querhang standen die
+        // Beine 20–31° aus dem Lot — sie kippten mit dem Leib, die Pfoten zielten auf die Ebene des Leibs; der Stand-Schlupf
+        // lag bei 0,56–1,27). Drei Schritte je Takt: das Fuß-Ziel in der WELT (Schritt 1, mit dem Halt des stehenden
+        // Fußes), die Senke des Rumpfs auf die Reichweite der Beine (Schritt 2), die Pfote auf ihr Ziel per Abspreizen und
+        // ebener Zwei-Knochen-IK im Rumpf-Raum (Schritt 3). Der Boden unter der Pfote ist _kreaturFussBoden (der
+        // Stand-Leser der Sicht um den Träger des Leibs; wer schwimmt oder springt, hält die Pfote an seiner Ebene).
+        const GG = core.GANG_GESETZ;
+        const fLab = tb.f || 1;
         const vZiel = this._gangV || (this._gangV = new THREE.Vector3());
+        const vHuefte = this._gangH || (this._gangH = new THREE.Vector3());
+        // der Rumpf in seiner Ruhe-Lage (die Senke dieses Takts folgt aus den Zielen, Schritt 2)
+        const ruhe = T.wolf ? tb._rumpfRuhe || (tb._rumpfRuhe = T.wolf.position.clone()) : null;
+        if (T.wolf) {
+            T.wolf.position.copy(ruhe);
+            T.wolf.updateWorldMatrix(true, false);
+        }
+        // die Hüften im Leib (Gruppen-Raum) in der RUHE des Rumpfs, einmal je Tier: das Federn und Wiegen des Rumpfs dreht
+        // die Hüfte um seinen Drehpunkt — folgte das Fuß-Ziel ihm, glitte der Fuß im Stand mit
+        if (!tb._huefteLeib && T.wolf && T.wolf.parent) {
+            const M = new THREE.Matrix4().copy(group.matrixWorld).invert();
+            M.multiply(T.wolf.parent.matrixWorld).multiply(
+                new THREE.Matrix4().compose(T.wolf.position, new THREE.Quaternion(), T.wolf.scale)
+            );
+            tb._huefteLeib = tb.bein.map((B) =>
+                new THREE.Vector3(B.p0[0] / fLab, B.p0[1] / fLab, B.p0[2] / fLab).applyMatrix4(M)
+            );
+        }
+        const gier = group.rotation.y || 0;
+        const vorX = Math.sin(gier),
+            vorZ = Math.cos(gier);
+        const stand = st < 0.002;
+        const fl = g.fuss || (g.fuss = [{ an: false }, { an: false }, { an: false }, { an: false }]);
+        const ziele =
+            g.ziele ||
+            (g.ziele = [
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ]);
+        const glied = (B) => (Math.hypot(B.a[0], B.a[1]) + Math.hypot(B.b[0], B.b[1])) * skala;
+        // wo die Pfote JETZT steht: ihre Sohle (das Ende des Pfoten-Glieds c — der Punkt, den die IK auf den Boden stellt;
+        // das Gelenk darüber liegt am geneigten Leib um |c|·sin(Neigung) versetzt)
+        const pfoteHier = (K, L, fx, fz, BM) => {
+            if (K[3] && g.legInit) {
+                K[3].updateWorldMatrix(true, false);
+                vZiel.set(0, BM.c[0] / fLab, BM.c[1] / fLab).applyMatrix4(K[3].matrixWorld);
+                L.x = vZiel.x;
+                L.z = vZiel.z;
+            } else {
+                L.x = fx;
+                L.z = fz;
+            }
+            L.an = true;
+        };
+        // SCHRITT 1 — DAS FUSS-ZIEL IN DER WELT je Bein: unter der Hüfte in der Ruhe des Rumpfs (die Lage des Leibs mit
+        // Gier, Nick und Wank — ohne sein Federn und Wiegen), längs der Blickrichtung um die Ruhe-Lage und den Schritt des
+        // Gang-Gesetzes versetzt, auf dem Boden dort. Ein Fuß, der steht, GLEITET NIE: im Stand des Beins beim Gehen (Phase
+        // π … 2π) bleibt er, wo er aufsetzte (das Ziel des Gesetzes wandert mit dem Leib zurück — Wank, Nick-Regeln und
+        // Schub verschöben ihn sonst); er hebt erst im frühen Schwung ab (beginnt der Gang spät im Schwung, bleibt er stehen
+        // bis zum nächsten) und führt vom Abhebe-Punkt auf das Ziel des Gesetzes. Ein STEHENDES Tier lässt die Pfoten, wo
+        // sie stehen. Wo eine stehende Pfote fern ihrer Lage ist — im Stand fern dem Lot, im Gehen von der Hüfte nicht
+        // mehr erreichbar —, TRITT sie dorthin: gehoben, in einer Viertel-Sekunde, eine nach der anderen.
+        let tritt = false;
+        for (let i = 0; i < 4; i++) if (fl[i].tritt >= 0) tritt = true;
         for (let i = 0; i < 4; i++) {
             const ph = g.ph[i];
             const K = ketten[i];
-            const swing = Math.max(0, Math.sin(ph));
-            let z0, z1, z2, z3;
-            if (st < 0.002) {
-                // Stand: STAND_POSE + Gewichts-Unruhe + Roll-Shift (Lab-Mathe, t-Sinus).
-                // V18.491.81 — tension skaliert Unruhe (Lab ribcage/support-Verwandte).
-                const wn = (Math.sin(t * 2.5 + i * 1.7) * 0.004 + Math.sin(t * 1.3 + i * 2.3) * 0.003) * tension;
-                const wShift = roll * seiten[i] * 0.025;
-                z0 = SP[i][0] + wn + wShift;
-                z1 = SP[i][1] + wn * 0.5 + wShift * 0.3;
-                z2 = SP[i][2] + wn * 0.3 - wShift * 0.2;
-                z3 = SP[i][3] + wn * 0.2;
+            const BM = tb.bein[i];
+            const L = fl[i];
+            // der Fußweg dieses Beins folgt SEINER Phasen-Rate (die Kopplung beschleunigt/bremst einzelne Beine): im Stand
+            // wandert der Fuß mit genau der Geschwindigkeit des Leibs zurück
+            const rate = dtTakt > 0 ? (g.ph[i] - phAlt[i]) / dtTakt : freq;
+            const F = stand ? null : core.gangFuss(ph, st * (freq / Math.max(0.25 * freq, rate)));
+            let hub = F ? F.hub : 0;
+            if (tb._huefteLeib) vHuefte.copy(tb._huefteLeib[i]).applyMatrix4(group.matrixWorld);
+            else vHuefte.copy(group.position);
+            const vor = BM.zr * skala + (F ? F.dz : 0);
+            let fx = vHuefte.x + vorX * vor,
+                fz = vHuefte.z + vorZ * vor;
+            const u = ((ph % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+            const imStand = stand || u >= Math.PI;
+            if (imStand && !L.an && !(L.tritt >= 0)) pfoteHier(K, L, fx, fz, BM);
+            if (imStand && L.an && !(L.tritt >= 0) && !tritt) {
+                const fern = stand
+                    ? Math.hypot(fx - L.x, fz - L.z) > 0.15 * BM.h * skala
+                    : Math.hypot(vHuefte.x - L.x, vHuefte.z - L.z) > glied(BM) - BM.c[0] * skala;
+                if (fern) {
+                    L.tritt = 0;
+                    L.ax = L.x;
+                    L.az = L.z;
+                    tritt = true;
+                }
+            }
+            if (L.tritt >= 0) {
+                L.tritt = Math.min(1, L.tritt + dt / 0.25);
+                const w = L.tritt * L.tritt * (3 - 2 * L.tritt);
+                fx = L.ax + (fx - L.ax) * w;
+                fz = L.az + (fz - L.az) * w;
+                hub = Math.pow(Math.sin(Math.PI * L.tritt), GG.hubForm);
+                L.x = fx;
+                L.z = fz;
+                L.an = true;
+                if (L.tritt >= 1) L.tritt = -1;
+            } else if (imStand) {
+                fx = L.x;
+                fz = L.z;
             } else {
-                // DAS BEIN im Gang-Gesetz (tetrapoda gangFuss): das Fuß-Ziel (am Boden im Stand, gehoben im Schwung)
-                // stellt eine ebene Zwei-Knochen-IK — Hüfte (Kette[0]) und Unterglied (Kette[2]) nach dem Kosinussatz,
-                // der Knick in der Ruhe-Richtung; die Pfote bleibt waagrecht und faltet im Schwung.
-                const BM = tb.bein[i];
-                const GG = core.GANG_GESETZ;
-                // der Fußweg dieses Beins folgt SEINER Phasen-Rate (die Kopplung beschleunigt/bremst einzelne Beine):
-                // im Stand wandert der Fuß mit genau der Geschwindigkeit des Leibs zurück
-                const rate = dtTakt > 0 ? (g.ph[i] - phAlt[i]) / dtTakt : freq;
-                const Si = st * (freq / Math.max(0.25 * freq, rate));
-                const F = core.gangFuss(ph, Si);
-                const p0y = BM.p0[1] * skala,
-                    p0z = BM.p0[2] * skala;
-                vZiel.set(BM.p0[0] * skala, p0y + (-BM.h + F.hub * GG.hub * BM.h) * skala, p0z + BM.zr * skala + F.dz);
-                if (qRumpf) vZiel.applyQuaternion(qRumpf);
-                const ty = vZiel.y - p0y - BM.c[0] * skala,
-                    tz = vZiel.z - p0z;
+                if (L.an && u < 0.7 * Math.PI) {
+                    L.ax = L.x;
+                    L.az = L.z;
+                    L.au = u;
+                    L.an = false;
+                }
+                if (L.an) {
+                    // der Gang beginnt spät im Schwung: der Fuß bleibt stehen bis zum nächsten
+                    fx = L.x;
+                    fz = L.z;
+                    hub = 0;
+                } else if (Number.isFinite(L.ax)) {
+                    const w0 = Math.max(0, Math.min(1, (u - L.au) / Math.max(0.2 * Math.PI, 0.8 * Math.PI - L.au)));
+                    const w = w0 * w0 * (3 - 2 * w0);
+                    fx = L.ax + (fx - L.ax) * w;
+                    fz = L.az + (fz - L.az) * w;
+                }
+            }
+            const Z = ziele[i];
+            Z[0] = fx;
+            Z[1] = this._kreaturFussBoden(group, fx, fz);
+            Z[2] = fz;
+            Z[3] = hub;
+        }
+        // SCHRITT 2 — DIE SENKE (die Reichweite der Beine): die Beine stehen in der Ruhe fast gestreckt. Das Ende des
+        // Schritts (Ruhe-Lage ± halber Fußweg) und am Hang der Boden unter der talseitigen Hüfte (der Leib neigt und rollt,
+        // die Hüfte wandert talwärts, das Lot darunter trifft den Boden tiefer) lagen jenseits ihrer Länge — die IK klemmte,
+        // die Pfote schwebte und glitt dem Ziel nach. Der Rumpf senkt sich LOTRECHT (die Hüften sinken auf ihr Lot, die
+        // Fuß-Ziele bleiben), bis jede Pfote ihren Boden erreicht: je Bein das Gelenk über der Pfote höchstens
+        // √(Glied² − seitlich² − Schritt-Ende²) unter der Hüfte; gedeckelt auf ein Drittel der Hüft-Höhe (ein Rumpf kriecht
+        // nicht).
+        let senke = 0;
+        const vHw = this._gangHW || (this._gangHW = new THREE.Vector3());
+        if (T.wolf) {
+            for (let i = 0; i < 4; i++) {
+                const B = tb.bein[i],
+                    Z = ziele[i];
+                vHw.set(B.p0[0] / fLab, B.p0[1] / fLab, B.p0[2] / fLab);
+                vHw.applyMatrix4(T.wolf.matrixWorld);
+                const dx = Z[0] - vHw.x,
+                    dz = Z[2] - vHw.z;
+                const quer = dx * vorZ - dz * vorX;
+                const weit = Math.max(Math.abs(dx * vorX + dz * vorZ), Math.abs(B.zr) * skala + st / 2);
+                const lg = glied(B) * 0.98;
+                const ueber = vHw.y - (Z[1] - B.c[0] * skala); // die Hüfte über dem Pfoten-Gelenk auf dem Boden
+                const noetig = ueber - Math.sqrt(Math.max(0, lg * lg - quer * quer - weit * weit));
+                if (noetig > senke) senke = Math.min(noetig, (B.h * skala) / 3);
+            }
+        }
+        g.senke = (g.senke || 0) + (senke - (g.senke || 0)) * (dt > 0 ? 1 - Math.exp(-6 * dt) : 1);
+        if (T.wolf && T.wolf.parent) {
+            // das Lot im Raum des Rumpf-Halters: die Senke wirkt längs der Welt-Senkrechten, nie längs des geneigten Leibs
+            const Pinv = (this._gangM || (this._gangM = new THREE.Matrix4())).copy(T.wolf.parent.matrixWorld).invert();
+            const vA = vHw.copy(group.position).applyMatrix4(Pinv);
+            const ax = vA.x,
+                ay = vA.y,
+                az = vA.z;
+            vHw.copy(group.position);
+            vHw.y -= g.senke;
+            vHw.applyMatrix4(Pinv);
+            T.wolf.position.set(ruhe.x + vHw.x - ax, ruhe.y + vHw.y - ay, ruhe.z + vHw.z - az);
+            T.wolf.updateMatrix();
+            T.wolf.matrixWorld.multiplyMatrices(T.wolf.parent.matrixWorld, T.wolf.matrix);
+        }
+        const Rinv = T.wolf
+            ? (this._gangR || (this._gangR = new THREE.Matrix4())).copy(T.wolf.matrixWorld).invert()
+            : null;
+        // SCHRITT 3 — DIE PFOTE AUF DEM ZIEL: in den Rumpf-Raum gerechnet (er neigt, rollt, federt) stellt die Hüfte das Bein
+        // erst seitlich in die Ebene des Ziels (Abspreizen um die Längs-Achse: der Leib rollt, das Bein bleibt im Lot), dann
+        // die ebene Zwei-Knochen-IK. Dieselbe IK trägt den Stand mit seiner Gewichts-Unruhe.
+        for (let i = 0; i < 4; i++) {
+            const K = ketten[i];
+            const BM = tb.bein[i];
+            const Z = ziele[i];
+            const hub = Z[3];
+            const p0x = BM.p0[0] * skala,
+                p0y = BM.p0[1] * skala,
+                p0z = BM.p0[2] * skala;
+            vZiel.set(Z[0], Z[1] + hub * GG.hub * BM.h * skala, Z[2]);
+            if (Rinv) vZiel.applyMatrix4(Rinv).multiplyScalar(fLab * skala);
+            // das Abspreizen: die Hüfte dreht die Bein-Ebene um die Längs-Achse durch das Ziel
+            const lx = vZiel.x - p0x,
+                ly = vZiel.y - p0y;
+            const ab = Math.atan2(lx, -ly);
+            const ty = -Math.hypot(lx, ly) - BM.c[0] * skala,
+                tz = vZiel.z - p0z;
+            let z0, z1, z2, z3;
+            {
                 const ay = BM.a[0] * skala,
                     az = BM.a[1] * skala,
                     by = BM.b[0] * skala,
@@ -18317,7 +18610,18 @@ class AnazhRealm {
                 z0 = thH;
                 z1 = 0;
                 z2 = thK;
-                z3 = -(thH + thK) + F.hub * GG.falte;
+                // die Pfote faltet im Schwung und streckt sich, bevor sie den Boden erreicht (hub²: beim steilen Hub
+                // stünde die gefaltete Sohle sonst noch in den untersten Zentimetern schräg und striche über den Boden)
+                z3 = -(thH + thK) + hub * hub * GG.falte;
+                if (stand) {
+                    // die Gewichts-Unruhe des Stands (Lab-Mathe, t-Sinus; tension skaliert sie) auf der IK
+                    const wn = (Math.sin(t * 2.5 + i * 1.7) * 0.004 + Math.sin(t * 1.3 + i * 2.3) * 0.003) * tension;
+                    const wShift = roll * seiten[i] * 0.025;
+                    z0 += wn + wShift;
+                    z1 += wn * 0.5 + wShift * 0.3;
+                    z2 += wn * 0.3 - wShift * 0.2;
+                    z3 += wn * 0.2;
+                }
             }
             const cur = g.legCur[i];
             if (!g.legInit) {
@@ -18325,13 +18629,20 @@ class AnazhRealm {
                 cur[1] = z1;
                 cur[2] = z2;
                 cur[3] = z3;
+                cur[4] = ab;
             } else {
                 cur[0] += (z0 - cur[0]) * legA;
                 cur[1] += (z1 - cur[1]) * legA;
                 cur[2] += (z2 - cur[2]) * legA;
                 cur[3] += (z3 - cur[3]) * legA;
+                cur[4] += (ab - cur[4]) * legA;
             }
-            if (K[0]) K[0].rotation.x = cur[0];
+            if (K[0]) {
+                // erst abspreizen (um die Längs-Achse des Rumpfs), dann schwingen: Rz · Rx
+                K[0].rotation.order = "ZXY";
+                K[0].rotation.z = cur[4];
+                K[0].rotation.x = cur[0];
+            }
             if (K[1]) K[1].rotation.x = cur[1];
             if (K[2]) K[2].rotation.x = cur[2];
             if (K[3]) K[3].rotation.x = cur[3];
@@ -18347,6 +18658,17 @@ class AnazhRealm {
         const rate = Math.max(0.4, Number(P.tailRate) || 0.5);
         const ts = tb.tailSegs || [];
         for (let i = 0; i < ts.length; i++) ts[i].rotation.y = Math.sin(t * rate - i * 0.5) * amp;
+    }
+
+    // DER BODEN UNTER EINER PFOTE (Welle LF, die Pfoten-IK _animateTierBaum): der Stand-Leser der Sicht um den Träger des
+    // Leibs (updateCreatures stempelt ihn je Takt: _traegerY, _traegerStruktur — die Höhe, auf der der Leib steht, und ob
+    // ein Bau ihn trägt). Wer keinen Boden unter den Pfoten hat — schwimmend, im Sprung, oder ein Halter außerhalb der Welt
+    // (Werkstatt, Sicht-Kopie ohne Träger) —, hält die Pfote an der Ebene seines Leibs (seine Lage).
+    _kreaturFussBoden(group, x, z) {
+        const ud = group.userData || {};
+        const ebene = group.position.y;
+        if (!Number.isFinite(ud._traegerY) || ud._motionZustand === "schwimmen" || ud._hopH > 0) return ebene;
+        return this._standSicht(x, z, ud._traegerY, ud._traegerStruktur === true);
     }
 
     _tetrapodaSoulParts(soulKey, ovOpt) {
@@ -18424,33 +18746,20 @@ class AnazhRealm {
             wrap2.scale.setScalar(f2);
             wrap2.position.y = -t0.minY * f2;
             wrap2.add(klon);
-            wrap2.userData._creatureSkin = true; // die 1st-Person-Regel deckt den Leib
+            wrap2.userData._creatureSkin = true; // die 1st-Person-Regel deckt den Leib (beide Stufen)
             group2.add(wrap2);
-            // DER FERN-GUSS aus DERSELBEN Pipe: lod1 = das gemergte Standbild
-            // (~8 Meshes). updateCreatures toggelt wrap↔fern (TIER_FERN_DIST).
-            let wrap3 = null;
+            // DIE GROBSTUFE aus DERSELBEN Pipe (lod 1, gelenkig): unter DEMSELBEN Wrap an die Knochen der feinen gebunden,
+            // Wurf und Stufen-Grenze aus der Kern-Zeile (`_gelenkGestalt`); fehlt sie, gibt es kein Tier (fail-closed).
             const t1 = this._ofenKreaturTemplate(recId, opts && opts.dialsOv, 1, !!(opts && opts.eigen));
-            if (t1 && t1.root) {
-                wrap3 = new THREE.Group();
-                wrap3.scale.setScalar(f2);
-                wrap3.position.y = -t0.minY * f2;
-                const fernKlon = t1.root.clone(true);
-                const teileF = {};
-                fernKlon.traverse((n) => {
-                    if ((n.isGroup || n.isBone) && n.name) teileF[n.name] = n;
-                });
-                fernKlon.traverse((n) => {
-                    if (n.isMesh) n.castShadow = false;
-                });
-                AnazhRealm._ofenKlonRebind(fernKlon, teileF); // die starr gebundenen Teile hängen an SEINEN Gelenken
-                wrap3.add(fernKlon);
-                wrap3.visible = false;
-                wrap3.userData._creatureSkin = true;
-                group2.add(wrap3);
+            const gelenk = this._gelenkGestalt(window.__tetrapodaCore, "kreatur", wrap2, klon, teile, t1);
+            if (!gelenk) {
+                this.log(`Kreatur „${soulKey}": ohne gelenkige Grobstufe kein Tier (fail-closed).`, "ERROR");
+                return null;
             }
             // der Leib meldet sich bei seinen Vorlagen an (die Grenze des Ofen-Memos, `_ofenVorlage`)
             this._ofenVorlagenBinden(group2, [t0, t1]);
             group2.userData._soulParts = parts2;
+            group2.userData._gelenk = gelenk;
             group2.userData._tierBaum = {
                 teile,
                 tailSegs,
@@ -18459,10 +18768,10 @@ class AnazhRealm {
                 beinL: (new THREE.Vector3().setFromMatrixPosition(t0.teile.legHL.matrixWorld).y - t0.minY) * f2,
                 bein: AnazhRealm._tierBeinMass(t0, f2),
                 wrap: wrap2,
-                fern: wrap3,
                 // das Volumen der Gestalt bei Größe 1 (m³, die Nah-Gestalt im Rahmen des Tiers) — die Masse liest es
-                leibV: AnazhRealm._leibVolumen(wrap2, group2),
+                leibV: AnazhRealm._leibVolumen(klon, group2),
             };
+            this._gelenkStufe(group2, 0);
             return group2;
         }
         this.log(`Kreatur-Ofen für „${soulKey}" fiel aus (kalter Kern?) — fail-closed, kein Ersatz-Körper.`, "ERROR");
@@ -18789,7 +19098,8 @@ class AnazhRealm {
         const ud = creature.userData;
         if (!ud) return;
         if (zustand) ud._motionZustand = zustand;
-        else if (ud._motionZustand === "jagd" || ud._motionZustand === "flucht") ud._motionZustand = null;
+        else if (ud._motionZustand === "jagd" || ud._motionZustand === "hetzen" || ud._motionZustand === "flucht")
+            ud._motionZustand = null;
     }
     // KREATUR-LEBEN — der deterministische Verhaltens-Hash (FNV-1a über zwei
     // Zahlen; kein Math.random — dieselbe Kreatur würfelt reproduzierbar).
@@ -18809,7 +19119,7 @@ class AnazhRealm {
         const ud = creature.userData;
         if (!ud) return;
         const z = ud._motionZustand;
-        if (z === "flucht" || z === "schwimmen") {
+        if (z === "flucht" || z === "schwimmen" || z === "hetzen") {
             ud._verhaltenAktion = null;
             return;
         }
@@ -19098,40 +19408,48 @@ class AnazhRealm {
         return this.computeCompoundTags({ parts: soul.bodyParts });
     }
 
-    // TEMPERAMENT: argmax-Resonanz der geclampten Substanz-Tags gegen tetrapoda
-    // VERHALTEN.temperament.signaturen (_verhaltenGesetz), Floor → scheu; gecacht pro Soul.
-    // Konsumenten: damageCreature (Gegenwehr/Furcht-Dauer) + _creatureProfile.
+    // DAS TEMPERAMENT DER GATTUNG (Welle LF 08.10., D16/K-D12): wild · wehrhaft · sanft · scheu aus der Ernährung der
+    // Gattung (Dial diet, wie das Tier gegossen ist) und der EINEN Masse des Leibs (`_leibMasse`, kg) — tetrapoda
+    // temperamentDerGattung; gecacht je Gattung × Körpergröße. Konsumenten: der Mut der Art (_kreaturMut: Leine und
+    // Wariness), die Beute (_kreaturIstBeute), der Kampf (damageCreature: Gegenwehr, Furcht-Dauer) und _creatureProfile.
     _creatureTemperament(creature) {
         if (!creature || !creature.userData) return "scheu";
-        const soulKey = creature.userData.soul || "";
-        if (creature.userData._temperament && creature.userData._temperamentSoul === soulKey)
-            return creature.userData._temperament;
-        // Die GATTUNG trägt das Raubtier-Temperament: die Tiere sind bewusst tag-identisch, also IST der
-        // predator-Flag (Carnivor-diet) die Wahrheit. Customs + Nicht-Raubtiere bleiben substanz-gerichtet.
-        const soulDef = AnazhRealm.CREATURE_SOULS[soulKey];
-        if (soulDef && soulDef.predator === true) {
-            creature.userData._temperament = "wild";
-            creature.userData._temperamentSoul = soulKey;
-            return "wild";
+        const ud = creature.userData;
+        const bs = Number.isFinite(ud.bodySize) ? ud.bodySize : 1;
+        const gattung = this._kreaturGattung(creature);
+        const key = gattung + "|" + bs;
+        if (ud._temperament && ud._temperamentKey === key) return ud._temperament;
+        // Ein Fleischfresser mit Masse jagt, ein Pflanzenfresser flieht, wer Masse hat, wehrt sich. Die Tiere sind tag-gleich
+        // (Lehre 8): vorher entschied die Resonanz der Substanz-Tags, Hirsch, Fuchs und Bär waren „wehrhaft", nur der
+        // predator-Stempel machte den Wolf wild. Ohne Gattungs-Dials (kalter Kern) bricht es laut, ohne Gestalt die Masse.
+        const d = this._ofenKreaturDials(gattung, ud.gussDials || null);
+        if (!d || !d.dials) return AnazhRealm._kernPflichtBruch("tetrapoda:GATTUNGEN." + gattung);
+        const t = AnazhRealm._steuerGesetz().temperamentDerGattung(
+            d.dials,
+            this._leibMasse(creature),
+            AnazhRealm._verhaltenGesetz().temperament.gattung
+        );
+        ud._temperament = t;
+        ud._temperamentKey = key;
+        return t;
+    }
+
+    // DER MUT DER ART ∈ [0, 1] aus dem Temperament (Gattung × Größe): die Flucht-Neigung fleeMul seines Profils, gespannt
+    // zwischen dem scheuesten und dem kühnsten Profil des Gesetzbuchs (scheu 1,7 → 0 · wehrhaft 0,5 → 1). EINE Quelle für
+    // die Leine (_creatureMoveCharacter) und die Natur der Wariness (_creatureWarinessSpieler).
+    _kreaturMut(creature) {
+        const P = AnazhRealm._verhaltenGesetz().temperament.profile;
+        let lo = Infinity,
+            hi = -Infinity;
+        for (const k in P) {
+            const f = P[k] && P[k].fleeMul;
+            if (!Number.isFinite(f)) continue;
+            if (f < lo) lo = f;
+            if (f > hi) hi = f;
         }
-        const raw = this.computeCreatureCompoundTags(creature) || {};
-        const tags = {};
-        // ÷3-Norm (PRODUCT_VECTOR_TAG_NORM) statt Clamp — die MAX-Aktivierung
-        // sättigt sonst (GEMESSEN: clamp → fast alles dichte=1, sprite würde
-        // „wehrhaft"); die ÷3-Skala ist die EINE Resonanz-Skala (V17.90).
-        const norm = AnazhRealm.PRODUCT_VECTOR_TAG_NORM || 3;
-        for (const k of AnazhRealm.MATERIAL_TAG_KEYS) tags[k] = Math.max(0, Number(raw[k]) || 0) / norm;
-        // Ψ1 — das EINE argmax-Organ liest; unter dem Floor bleibt „scheu".
-        // SPIEGEL-ZENSUS — Signaturen + Floor wohnen im tetrapoda-Gesetzbuch
-        // (VERHALTEN.temperament via _verhaltenGesetz, fail-soft byte-gleich).
-        const TG = AnazhRealm._verhaltenGesetz().temperament;
-        const best =
-            this._resonateArgmax(tags, TG.signaturen, {
-                floor: TG.floor,
-            }).key || "scheu";
-        creature.userData._temperament = best;
-        creature.userData._temperamentSoul = soulKey;
-        return best;
+        const prof = P[this._creatureTemperament(creature)] || P.scheu;
+        const f = Number.isFinite(prof.fleeMul) ? prof.fleeMul : hi;
+        return hi > lo ? Math.max(0, Math.min(1, (hi - f) / (hi - lo))) : 0.5;
     }
 
     // === Kreatur-Stats wie Spieler ===
@@ -19257,7 +19575,9 @@ class AnazhRealm {
         const VG = AnazhRealm._verhaltenGesetz();
         const temperament = this._creatureTemperament(creature);
         const tProf = VG.temperament.profile[temperament] || VG.temperament.profile.scheu;
-        creature.userData.fearUntil = performance.now() / 1000 + VG.furcht.fearSec * tProf.fleeMul;
+        // die Kampf-Furcht läuft auf der Kreatur-Uhr (Welle LF, Q1: was den Körper bewegt, läuft im Takt — auf der Wand-Uhr
+        // floh ein Tier je nach Bildrate verschieden lang)
+        creature.userData.fearUntil = this.state.creatureAnimationTime + VG.furcht.fearSec * tProf.fleeMul;
         // V18.100 (G4-1) — der Treffer fühlt sich über DASSELBE Substrat wie
         // beim Spieler (ACTION_TO_EMOTION.damage → sorrow+chaos); die binäre
         // "sad"-Projektion fällt aus der Valenz, statt direkt gestempelt zu werden.
@@ -19343,7 +19663,7 @@ class AnazhRealm {
             const lastHunt = creature.userData && creature.userData.lastHuntAt;
             if (
                 Number.isFinite(lastHunt) &&
-                performance.now() / 1000 - lastHunt < AnazhRealm._verhaltenGesetz().jagd.triumphWindowSec
+                this.state.creatureAnimationTime - lastHunt < AnazhRealm._verhaltenGesetz().jagd.triumphWindowSec
             ) {
                 this._feelAction("triumph", { magnitude: 1 });
                 this.journalAppend("relationship", `Du hast die Bedrohung bezwungen — ${name} jagt dich nie wieder.`);
@@ -19821,8 +20141,20 @@ class AnazhRealm {
     static get DAY_LENGTH_MAX_MINUTES() {
         return 60; // Slider-Maximum
     }
+    // DER TAG TRÄGT EINE SZENE (Leben-Schau 2, 09.10.): eine frische Welt beginnt am Mittag (0,5), die Sonne geht bei 0,75
+    // unter — von der Ankunft bis zum Sonnenuntergang vergeht ein Viertel des Tags. Die Szenen der Schau dauerten 9–12,3 min
+    // (aus den Zeitstempeln der Bilder: A-5 Dorf und Haus 11 min, A-7 Bauen 9 min, C-9 Rudel 12,3 min); eine Szene ist 15 min.
+    // Mit dem alten Tag von 8 min war es nach 2 min Abend und nach 3–6 min Nacht (3 von 3 Spuren, jede stellte selbst auf 60).
+    static get TAG_SZENE_MINUTEN() {
+        return 15;
+    }
     static get DAY_LENGTH_DEFAULT_MINUTES() {
-        return 8; // Schöpfer-Wahl: schnell-spürbar
+        return AnazhRealm.TAG_SZENE_MINUTEN * 4; // 60 min: Mittag bis Sonnenuntergang = eine Szene
+    }
+    // DER TAKT DES WETTER-ZUGS: das Wetter steht so lange, bevor der Zug das nächste Wort zieht (mit dem 45-s-Übergang steht
+    // es ~75 s). Leser: der Zug (`_loopWeatherAndGrowth`) — und damit jeder Wunsch der Welt, den nur der Zug erfüllt.
+    static get WETTER_ZUG_SEK() {
+        return 120;
     }
     // Fauna-Lifecycle: TARGET = untere Schwelle für Geburten, MAX = obere für sanften Tod; Check alle
     // 10 s, unabhängig von DAY_LENGTH.
@@ -20291,12 +20623,16 @@ class AnazhRealm {
         const wSpieler = this._creatureWarinessSpieler(creature, NAT, von);
         const jaeger = this._kreaturJaeger;
         if (!jaeger || !jaeger.length || this._creatureTemperament(creature) === "wild") return wSpieler;
-        let best = NAT.noticeRadius;
+        // Ein PIRSCHENDER Jäger bleibt unbemerkt bis jagd.pirschSichtM, ein HETZENDER fällt ab noticeRadius auf (Welle LF:
+        // die Jagd gelingt aus der Pirsch — vorher sah die Beute jeden Jäger auf 22 m und floh, ehe er nahe war).
+        const sichtPirsch = AnazhRealm._verhaltenGesetz().jagd.pirschSichtM;
+        let best = Infinity;
         let J = null;
         for (const j of jaeger) {
             if (j === creature || !j.position) continue;
+            const sicht = j.userData && j.userData._motionZustand === "hetzen" ? NAT.noticeRadius : sichtPirsch;
             const d = Math.hypot(j.position.x - creature.position.x, j.position.z - creature.position.z);
-            if (d < best) {
+            if (d < sicht && d < best) {
                 best = d;
                 J = j;
             }
@@ -20313,7 +20649,7 @@ class AnazhRealm {
     // Die Wariness vor dem SPIELER (Aura-Menace × Natur × Bindung × Modus + frische Kampf-Furcht); merkt seinen Ort und
     // den Flucht-Radius in `von`.
     _creatureWarinessSpieler(creature, NAT, von) {
-        const now = performance.now() / 1000;
+        const now = this.state.creatureAnimationTime; // die Kampf-Furcht auf der Kreatur-Uhr (damageCreature)
         const ud = creature.userData || {};
         const fearActive = Number.isFinite(ud.fearUntil) && now < ud.fearUntil;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
@@ -20329,12 +20665,10 @@ class AnazhRealm {
             (e.sorrow || 0) * NAT.menaceFromSorrow -
             (e.peace || 0) * NAT.calmFromPeace -
             (e.joy || 0) * NAT.calmFromJoy;
-        const t = this.computeCreatureCompoundTags(creature) || {};
-        const boldness =
-            (t.dichte || 0) * NAT.boldFromDichte +
-            (t.härte || 0) * NAT.boldFromHärte -
-            (t.lebendig || 0) * NAT.shyFromLebendig +
-            (ud.bond || 0) * NAT.boldFromBond;
+        // DIE NATUR des Wesens ist das Temperament seiner Gattung (Welle LF 08.10.): der Mut der Art (_kreaturMut) macht
+        // kühn oder scheu, Bindung macht mutig. Vorher lasen hier die Substanz-Tags (dichte · härte · lebendig), die für
+        // alle Tiere gleich sind (Lehre 8) — jeder Hirsch stand mit Wariness −1,0 neugierig am Spieler.
+        const boldness = (this._kreaturMut(creature) * 2 - 1) * NAT.mutGewicht + (ud.bond || 0) * NAT.boldFromBond;
         const mode = typeof this.getGameMode === "function" ? this.getGameMode() : "frieden";
         const modeMul = mode === "pfad" ? 1 : mode === "frieden" ? NAT.friedenMenace : NAT.schoepferMenace;
         const proximity = Math.max(0, 1 - dist / NAT.noticeRadius);
@@ -20357,38 +20691,39 @@ class AnazhRealm {
         return dist < VG.jagd.radius;
     }
 
-    // ZWEITER JAGD-SINN: das WILDE Wesen wittert Beute über das Geruch-Feld (`_scentAt`; Quelle =
-    // Beute-Position, strength = sizeFactor, der Wind trägt). Vier Proben (N/S/O/W) im Abstand
-    // VERHALTEN.jagd.scentProbeM → stärkste Richtung; kein Gradient → null (Caller wandert neutral).
+    // ZWEITER JAGD-SINN: das WILDE Wesen wittert Beute über das Geruch-Feld (`_scentAt` an seiner Nase; Quelle = die
+    // Beute, strength = sizeFactor, der Wind trägt). DIE WITTERUNG FÜHRT ZUR BEUTE (Welle LF 08.10.): von allen Tieren, die
+    // Beute sind (_kreaturIstBeute — nicht wild, höchstens jagd.beuteMasse × die eigene Masse) und in scentRangeM liegen,
+    // wählt es das, dessen Geruch am stärksten herüberweht, merkt es als `userData._beute` und liefert die Richtung zu ihm
+    // (der Jagd-Weg _kreaturJagdZug führt dorthin). Vorher folgte es dem Gradienten des Felds über vier Proben: nah an der
+    // Quelle wog der Wind-Winkel bis zwölfmal mehr als der Abstand, der Gradient zeigte vom Ziel fort (Leben-Schau 07.10.:
+    // ein Wolf 1200 Takte „jagd", 0,3 m bewegt, 0 Bisse in 3600 Takten). Kein Ziel → null (der Aufrufer wandert neutral).
     // Gates wie _creatureHuntDrive: nur pfad; verängstigt (wariness ≥ fleeThreshold) jagt nicht.
     _creatureScentHuntDir(creature, wariness) {
+        const ud = creature.userData || {};
+        ud._beute = null;
         if (typeof this.getGameMode !== "function" || this.getGameMode() !== "pfad") return null;
         if (this._creatureTemperament(creature) !== "wild") return null;
         const VG = AnazhRealm._verhaltenGesetz();
         if (wariness >= VG.furcht.fleeThreshold) return null;
-        const HUNT = VG.jagd;
-        const scentRange = HUNT.scentRangeM || 50;
-        const probeStep = HUNT.scentProbeM || 4;
+        const scentRange = VG.jagd.scentRangeM;
         const cx = creature.position.x;
         const cz = creature.position.z;
-        // Beute = scheu + sanft + wehrhaft (wild jagt nicht wild). Strength = sizeFactor — große Beute
-        // riecht stärker.
-        const sources = this._creatureScentSourcesScratch || (this._creatureScentSourcesScratch = []);
-        sources.length = 0;
+        const quelle =
+            this._creatureScentSourcesScratch || (this._creatureScentSourcesScratch = [{ x: 0, z: 0, strength: 1 }]);
         const creatures = this.state.creatures || [];
         // sizeFactor PRO SEELE memoizen (hängt nur an den frozen Body-Parts der Soul): lazy
         // `this._scentSizeBySoul: Map<soulName, sizeFactor>` statt je Tick × Quelle neu rechnen.
         const sizeBySoul = this._scentSizeBySoul || (this._scentSizeBySoul = new Map());
+        const t = (performance.now() || 0) / 1000;
+        let best = null,
+            bestS = 0;
         for (let i = 0; i < creatures.length; i++) {
             const other = creatures[i];
-            if (!other || other === creature) continue;
-            const otherTemp = this._creatureTemperament(other);
-            if (otherTemp === "wild") continue; // wild jagt nicht wild
+            if (!this._kreaturIstBeute(creature, other)) continue;
             const dx = other.position.x - cx;
             const dz = other.position.z - cz;
             if (dx * dx + dz * dz > scentRange * scentRange) continue;
-            // sizeFactor als strength (eine grosse Beute zieht stärker an) —
-            // PRO SOUL gecacht.
             const soulName = other.userData && other.userData.soul;
             let sizeFactor;
             if (soulName && sizeBySoul.has(soulName)) {
@@ -20400,33 +20735,134 @@ class AnazhRealm {
             } else {
                 sizeFactor = 1.0;
             }
-            sources.push({ x: other.position.x, z: other.position.z, strength: sizeFactor });
-            // Cap, damit ein dichter Schwarm den Scent-Pfad nicht O(N²) macht.
-            if (sources.length >= 12) break;
+            quelle[0].x = other.position.x;
+            quelle[0].z = other.position.z;
+            quelle[0].strength = sizeFactor;
+            const witterung = this._scentAt(cx, cz, quelle, { time: t });
+            if (witterung > bestS) {
+                bestS = witterung;
+                best = other;
+            }
         }
-        if (sources.length === 0) return null;
-        // DER GRADIENT des Geruchs (Q3): vier Proben im Abstand probeStep (±x, ±z) als zentrale Differenz — die Richtung
-        // ist die des Gefälles, nicht die beste von vier Himmelsachsen (R-D12: die Witterungs-Jagd lief zu 91–98,9 % auf
-        // einer Achse). Die Stärke des Gefälles über die Proben-Spanne ist der Gewinn eines Schritts bergauf im Geruch.
-        const t = (performance.now() || 0) / 1000;
-        const ex = this._scentAt(cx + probeStep, cz, sources, { time: t });
-        const wx = this._scentAt(cx - probeStep, cz, sources, { time: t });
-        const nz = this._scentAt(cx, cz + probeStep, sources, { time: t });
-        const sz = this._scentAt(cx, cz - probeStep, sources, { time: t });
-        const gx = (ex - wx) / 2;
-        const gz = (nz - sz) / 2;
-        // Gradient < 0.02 je Proben-Schritt ist Rauschen → kein Tunnel-Drift; ein klarer downwind-Gradient (Beute in
-        // 20–30 m) liegt typisch bei 0.1–0.5 und geht immer durch.
-        const gain = Math.hypot(gx, gz);
-        if (gain < 0.02) return null;
+        if (!best) return null;
+        ud._beute = best;
+        const dx = best.position.x - cx,
+            dz = best.position.z - cz;
+        const d = Math.hypot(dx, dz) || 1;
         const out = this._creatureScentDirScratch || (this._creatureScentDirScratch = new THREE.Vector3());
-        out.set(gx / gain, 0, gz / gain);
+        out.set(dx / d, 0, dz / d);
         return out;
     }
 
+    // IST DAS BEUTE für diesen Jäger? Nicht wild (wild jagt nicht wild), nicht im Sterben, und höchstens jagd.beuteMasse ×
+    // die Masse des Jägers — die EINE Masse des Leibs (`_leibMasse`, kg: Volumen der Gestalt × Dichte des Kerns), die
+    // auch der Stoß liest (Welle LF: der Wolf, 64 kg, jagt Hirsch und Fuchs, nie den Bären, 335 kg).
+    _kreaturIstBeute(jaeger, o) {
+        if (!o || o === jaeger || !o.position || !o.userData || o.userData.dying) return false;
+        if (this._creatureTemperament(o) === "wild") return false;
+        return this._leibMasse(o) <= AnazhRealm._verhaltenGesetz().jagd.beuteMasse * this._leibMasse(jaeger);
+    }
+
+    // DIE JAGD (Welle LF 08.10.): der EINE Weg eines Jägers zu seinem Ziel (der Spieler oder seine Beute, zielKey benennt
+    // es). DAS RUDEL — die Jäger desselben Ziels (der Vor-Takt) — verteilt sich auf dem Ring jagd.hetzM um das Ziel: die
+    // Plätze liegen im Winkel-Abstand 2π/n, in der Reihenfolge, in der die Jäger um das Ziel stehen, um ihre mittlere
+    // Richtung. Wer seinen Platz nicht hat, pirscht (Pirsch-Tempo) zum Platz — nah am Ring kreist er außen herum, statt
+    // durch das Ziel zu laufen; wer in seinem Sektor auf dem Ring steht, HETZT im Sprint der Gestalt (STEUER sprintTempo)
+    // auf das Ziel und hält erst ein, wenn es weiter als drei Ringe davonläuft. LÄUFT DAS ZIEL DAVON (sein Lauf vx, vz zeigt
+    // vom Jäger fort, schneller als ein Schritt), hetzt der Jäger schon aus drei Ringen. Vorher pirschte jeder Jäger einzeln
+    // im Schritt-Tempo geradewegs auf das Ziel (Leben-Schau 07.10.: drei Wölfe von einer Seite, größte Lücke 239–288°; der
+    // Sprinter entkam immer).
+    _kreaturJagdZug(creature, tx, tz, zielKey, direction, speed, hueftL, vx = 0, vz = 0) {
+        const J = AnazhRealm._verhaltenGesetz().jagd;
+        const ud = creature.userData;
+        const p = creature.position;
+        ud._jagdZiel = zielKey;
+        const dx = tx - p.x,
+            dz = tz - p.z;
+        const d = Math.hypot(dx, dz);
+        const TAU = Math.PI * 2;
+        const eigen = Math.atan2(p.x - tx, p.z - tz);
+        let sx = Math.sin(eigen),
+            sz = Math.cos(eigen),
+            n = 1;
+        const rudel = this._rudelWinkel || (this._rudelWinkel = []);
+        rudel.length = 0;
+        for (const j of this._kreaturJaeger || []) {
+            if (j === creature || !j.userData || j.userData._jagdZiel !== zielKey || j.userData.dying) continue;
+            const w = Math.atan2(j.position.x - tx, j.position.z - tz);
+            rudel.push(w);
+            sx += Math.sin(w);
+            sz += Math.cos(w);
+            n++;
+        }
+        let platz = eigen;
+        if (n > 1) {
+            const mittel = Math.atan2(sx, sz);
+            const rel = (w) => {
+                const r = w - mittel;
+                return r - TAU * Math.round(r / TAU);
+            };
+            const re = rel(eigen);
+            let rang = 0;
+            for (const w of rudel) if (rel(w) < re) rang++;
+            platz = mittel + (rang - (n - 1) / 2) * (TAU / n);
+        }
+        let abw = eigen - platz;
+        abw -= TAU * Math.round(abw / TAU);
+        // UMSTELLT: das Rudel hetzt erst, wenn es das Ziel umringt — die größte Winkel-Lücke zwischen den Jägern ist höchstens
+        // anderthalb Plätze breit (allein ist man immer „umstellt"); vorher hetzte, wer zuerst auf dem Ring stand.
+        let umstellt = true;
+        if (n > 1) {
+            rudel.push(eigen);
+            rudel.sort((a, b) => a - b);
+            let luecke = 0;
+            for (let k = 0; k < rudel.length; k++) {
+                const nx = k + 1 < rudel.length ? rudel[k + 1] : rudel[0] + TAU;
+                if (nx - rudel[k] > luecke) luecke = nx - rudel[k];
+            }
+            umstellt = luecke <= 1.5 * (TAU / n);
+        }
+        const hetzt = ud._motionZustand === "hetzen";
+        const davon = d > 1e-6 && (vx * dx + vz * dz) / d > AnazhRealm._steuerGesetz().tempoEinheit(hueftL);
+        if (((hetzt || davon) && d <= 3 * J.hetzM) || (d <= J.hetzM && Math.abs(abw) <= Math.PI / n && umstellt)) {
+            this._kreaturZustandStempel(creature, "hetzen");
+            // die Ankunft gegen ein LAUFENDES Ziel: das Brems-Tempo vor dem Biss plus der Lauf des Ziels von ihm fort — sonst
+            // bremste der Hetzer vor einem Sprinter dort, wo sein Brems-Tempo dessen Lauf glich (3,8 m, nie in Biss-Weite)
+            const K = AnazhRealm._steuerGesetz();
+            const fort = d > 1e-6 ? Math.max(0, (vx * dx + vz * dz) / d) : 0;
+            const sprint = K.sprintTempo(hueftL);
+            const vh = d > J.pirschStoppM ? Math.min(sprint, K.ankunftTempo(d - J.pirschStoppM, sprint) + fort) : 0;
+            if (d > 1e-6) direction.set((dx / d) * vh, 0, (dz / d) * vh);
+            else direction.set(0, 0, 0);
+            return;
+        }
+        this._kreaturZustandStempel(creature, "jagd");
+        const v = speed * J.speedBoost;
+        if (d < 1.5 * J.hetzM && Math.abs(abw) > Math.PI / (4 * n)) {
+            // außen herum: tangential zum Platz (die Drehung um das Ziel, die die Abweichung schließt), radial auf den Ring
+            const dreh = abw > 0 ? -1 : 1;
+            const ux = Math.cos(eigen) * dreh,
+                uz = -Math.sin(eigen) * dreh;
+            const rad = Math.max(-1, Math.min(1, (d - J.hetzM) / J.hetzM));
+            const wx = ux + (d > 1e-6 ? (dx / d) * rad : 0),
+                wz = uz + (d > 1e-6 ? (dz / d) * rad : 0);
+            const wl = Math.hypot(wx, wz) || 1;
+            direction.set((wx / wl) * v, 0, (wz / wl) * v);
+            return;
+        }
+        if (d <= J.hetzM) {
+            // auf dem Platz: warten, bis das Rudel umstellt (die Pirsch hält)
+            direction.set(0, 0, 0);
+            return;
+        }
+        const qx = tx + Math.sin(platz) * J.hetzM - p.x,
+            qz = tz + Math.cos(platz) * J.hetzM - p.z;
+        this._kreaturZiel(direction, qx, qz, Math.hypot(qx, qz), v);
+    }
+
     // SEPARATIONS-KRAFT am EINEN Bewegungs-Chokepoint: updateCreatures ruft sie JEDEN Frame auf die
-    // LIVE-Richtung, NACH dem aiDir-Cache (nie stale gebacken). Nachbarn im Paar-Radius (~2·Körper-
-    // radius, bodySize-skaliert) → Abstoß linear 1→0 zum Rand, Summe auf 1 geklemmt; O(n²) (maxCreatures
+    // LIVE-Richtung, NACH dem aiDir-Cache (nie stale gebacken). Nachbarn im PAAR-RAUM (der persönliche Raum beider Leiber,
+    // _kreaturRaum — Gattung und Größe, Welle LF) → Abstoß linear 1→0 zum Rand, Summe auf 1 geklemmt; O(n²) (maxCreatures
     // 20). Deterministisch: bei exakter Deckung drückt jede Kreatur in ihre Index-Goldwinkel-Richtung.
     _applyCreatureSeparation(creature, index, direction, speed) {
         // SCHLUSS-WELLE — der Herden-Abstand ist Arterhaltungs-Gefühl und wohnt
@@ -20434,21 +20870,20 @@ class AnazhRealm {
         // Stamm-Zwilling CREATURE_SEPARATION ist gefallen (Absenz-Wand).
         const SEP = AnazhRealm._verhaltenGesetz().separation;
         const creatures = this.state.creatures || [];
-        if (creatures.length < 2) return;
-        const ud = creature.userData || {};
-        const bsI = Number.isFinite(ud.bodySize) ? ud.bodySize : 1;
+        const raumI = this._kreaturRaum(creature);
+        // der grobe Filter: kein Paar-Raum dieses Takts reicht weiter als der eigene Raum + der weiteste (updateCreatures)
+        const grob = Number.isFinite(this._raumMaxTakt) ? raumI + this._raumMaxTakt : Infinity;
         let pushX = 0;
         let pushZ = 0;
         for (let j = 0; j < creatures.length; j++) {
             if (j === index) continue;
             const other = creatures[j];
             if (!other || !other.position || other === creature) continue;
-            const oud = other.userData || {};
-            const bsJ = Number.isFinite(oud.bodySize) ? oud.bodySize : 1;
-            const radius = SEP.radiusBaseM * 0.5 * (bsI + bsJ);
             const dx = creature.position.x - other.position.x;
             const dz = creature.position.z - other.position.z;
             const dSq = dx * dx + dz * dz;
+            if (dSq >= grob * grob) continue;
+            const radius = raumI + this._kreaturRaum(other);
             if (dSq >= radius * radius) continue;
             const d = Math.sqrt(dSq);
             const w = 1 - d / radius; // 1 bei voller Deckung → 0 am Rand
@@ -20462,6 +20897,21 @@ class AnazhRealm {
                 pushZ += Math.sin(ang) * w;
             }
         }
+        // DER SPIELER ZU FUSS hält seinen Raum wie jedes Tier (Welle LF, der Paar-Raum ist die Summe, `_spielerRaum`): vorher
+        // stieß nur die Schar — ein Nachbar im Rücken drückte das vordere Tier in den Spieler, bis der Leib-Löser es im
+        // nächsten Sim-Schritt zurückschob (die Neugier am ruhigen Spieler: 20 Takte mit dem Leib bis 3,5 cm im Spieler).
+        const pm = this.state.playerMesh;
+        if (pm && pm.position && !(this.state.player && this.state.player.mountedArch != null)) {
+            const radius = raumI + this._spielerRaum();
+            const dx = creature.position.x - pm.position.x;
+            const dz = creature.position.z - pm.position.z;
+            const d = Math.hypot(dx, dz);
+            if (d < radius && d > 1e-4) {
+                const w = 1 - d / radius;
+                pushX += (dx / d) * w;
+                pushZ += (dz / d) * w;
+            }
+        }
         if (pushX === 0 && pushZ === 0) return;
         // Klemme: ein dichter Haufen darf keinen Explosions-Impuls summieren.
         const pl = Math.hypot(pushX, pushZ);
@@ -20473,28 +20923,149 @@ class AnazhRealm {
         direction.z += pushZ * speed * SEP.strength;
     }
 
-    // CHARAKTER-BEWEGUNG liest vorhandene Achsen, gecacht pro Soul×bodySize:
-    // speedMul = _creatureBodySpeedMultiplier (computeCreatureStats.speed / 7), geklemmt auf [0.6, 1.6];
-    // leashM = Mut-Achse aus VERHALTEN.temperament.profile.fleeMul (invertiert: wehrhaft ~28 m … scheu
-    // 8 m) × bodySize (Differenzierung über Größe, nie Tags): Kitz ~16.8 m, GIGANT ~75.6 m.
+    // CHARAKTER-BEWEGUNG liest vorhandene Achsen, gecacht pro Soul×bodySize×Tempo-Hauch:
+    // speedMul = _creatureBodySpeedMultiplier (computeCreatureStats.speed / 7) × Tempo-Hauch, geklemmt auf [0.6, 1.6];
+    // leashM = Mut-Achse aus dem Temperament der Gattung (_kreaturMut: wehrhaft ~28 m … scheu 8 m) × bodySize
+    // (Differenzierung über Gattung und Größe, nie Tags): das scheue Kitz ~4,8 m, der wehrhafte Koloss-Hirsch ~67 m.
     _creatureMoveCharacter(creature) {
         const ud = creature.userData || {};
-        const key = (ud.soul || "") + "|" + (Number.isFinite(ud.bodySize) ? ud.bodySize : 1);
+        const hauch = Number.isFinite(ud.tempoHauch) ? ud.tempoHauch : 1;
+        const key = (ud.soul || "") + "|" + (Number.isFinite(ud.bodySize) ? ud.bodySize : 1) + "|" + hauch;
         if (ud._moveChar && ud._moveCharKey === key) return ud._moveChar;
         // SPIEGEL-ZENSUS — Leine + Profile wohnen im tetrapoda-Gesetzbuch
         // (VERHALTEN.wandern/temperament via _verhaltenGesetz, fail-soft byte-gleich).
         const VG = AnazhRealm._verhaltenGesetz();
         const K = VG.wandern;
-        const raw = this._creatureBodySpeedMultiplier(creature);
+        // Der TEMPO-HAUCH (creatures_speed_mul, `_kreaturTempoHauch`) wiegt den Charakter INNERHALB des Wander-Bands.
+        const raw = this._creatureBodySpeedMultiplier(creature) * hauch;
         const speedMul = Math.min(K.speedMulMax, Math.max(K.speedMulMin, Number.isFinite(raw) ? raw : 1));
-        const prof = VG.temperament.profile[this._creatureTemperament(creature)] || VG.temperament.profile.scheu;
-        // Mut ∈ [0,1] aus fleeMul ∈ [0.5 (wehrhaft) … 1.7 (scheu)]
-        const mut = Math.max(0, Math.min(1, (1.7 - (Number.isFinite(prof.fleeMul) ? prof.fleeMul : 1)) / 1.2));
+        // Mut ∈ [0,1] aus dem Temperament der Gattung (_kreaturMut: fleeMul zwischen scheu und wehrhaft)
+        const mut = this._kreaturMut(creature);
         const bs = Number.isFinite(ud.bodySize) ? ud.bodySize : 1;
         const leashM = (K.leashBaseM + K.leashSpanM * (mut * 2 - 1)) * bs;
         ud._moveChar = Object.freeze({ speedMul, leashM });
         ud._moveCharKey = key;
         return ud._moveChar;
+    }
+
+    // DER TEMPO-HAUCH der Tiere (creatures_speed_mul; Leben-Schau 07.10., Neu 1): ein Op wiegt das Charakter-Tempo jedes Tiers
+    // mit dem Faktor (der jüngste Hauch gilt — Ruhe 0,7, Zorn 1,5, kein Aufschaukeln über Rufe), der Hauch und das Ergebnis
+    // bleiben im Wander-Band (VERHALTEN.wandern.speedMulMin..Max, `_creatureMoveCharacter` liest ihn). Vorher schrieb der Op
+    // `userData.speedMul`, das niemand las.
+    _kreaturTempoHauch(faktor, ctx) {
+        const f = Number(faktor);
+        if (!(f > 0)) {
+            if (ctx && ctx.log) ctx.log.push({ event: "invalid_tempo_hauch", faktor });
+            return;
+        }
+        const K = AnazhRealm._verhaltenGesetz().wandern;
+        const h = Math.min(K.speedMulMax, Math.max(K.speedMulMin, f));
+        let n = 0;
+        for (const cr of this.state.creatures) {
+            const ud = cr && cr.userData;
+            if (!ud) continue;
+            ud.tempoHauch = h;
+            n++;
+        }
+        if (ctx && ctx.log) ctx.log.push({ event: "tempo_hauch", faktor: f, tiere: n });
+        this.log(`Tempo-Hauch (${(ctx && ctx.source) || "dsl"}): ${n} Tiere ×${f} im Wander-Band`, "INFO");
+    }
+
+    // DIE GRÖSSE EINES TIERS nur über seine bodySize-Achse (Leben-Schau 07.10., Neu 1 — die Klasse von D2): der EINE
+    // Schreiber nach der Geburt, in den Bändern des Gesetzes (VERHALTEN.groessen); die Skala IST die Achse, die
+    // Größen-Gedächtnisse (Körperlänge, Hang-Spanne, Stats) fallen mit. Vorher skalierte creatures_size_mul die Skala ohne
+    // Achse (16 von 16 Tieren ×1,11, bodySize blieb 1).
+    _kreaturGroesseSetzen(cr, bs) {
+        const ud = cr && cr.userData;
+        if (!ud || !Number.isFinite(bs)) return false;
+        const GB = AnazhRealm._verhaltenGesetz().groessen;
+        let lo = Infinity,
+            hi = -Infinity;
+        for (const z of GB) {
+            if (z.min < lo) lo = z.min;
+            if (z.max > hi) hi = z.max;
+        }
+        const neu = Math.min(hi, Math.max(lo, bs));
+        const hpAnteil = Number.isFinite(ud.hp) && ud.hpMax > 0 ? ud.hp / ud.hpMax : null;
+        ud.bodySize = neu;
+        cr.scale.setScalar(neu);
+        ud._koerperLaengeM = undefined;
+        ud._slopeHalbLen = undefined;
+        this._refreshCreatureStatsCache(cr);
+        const hpMax = ud.stats && ud.stats.hpMax;
+        if (Number.isFinite(hpMax)) {
+            ud.hpMax = hpMax;
+            if (hpAnteil !== null) ud.hp = hpAnteil * hpMax;
+        }
+        return true;
+    }
+
+    _kreaturGroesseHauch(faktor, ctx) {
+        const f = Number(faktor);
+        if (!(f > 0)) {
+            if (ctx && ctx.log) ctx.log.push({ event: "invalid_groesse_hauch", faktor });
+            return;
+        }
+        let n = 0;
+        for (const cr of this.state.creatures) {
+            const ud = cr && cr.userData;
+            if (!ud || ud.dying) continue;
+            if (this._kreaturGroesseSetzen(cr, (Number.isFinite(ud.bodySize) ? ud.bodySize : 1) * f)) n++;
+        }
+        if (ctx && ctx.log) ctx.log.push({ event: "groesse_hauch", faktor: f, tiere: n });
+        this.log(`Größen-Hauch (${(ctx && ctx.source) || "dsl"}): ${n} Tiere ×${f} auf der bodySize-Achse`, "INFO");
+    }
+
+    // DER PERSÖNLICHE RAUM eines Leibs (m, Welle LF 08.10.): die Körper-Kugel des Leibs (halb + Radius — die waagrechte
+    // Spanne der Gestalt um ihre Mitte, _kreaturLeib; die Art und die Größe tragen sie über die Hüft-Höhe L) ×
+    // VERHALTEN.separation.raumKugel. Der Paar-Raum zweier Tiere ist die Summe; der Spieler hält den Raum seiner Wand-Kapsel
+    // (_spielerRaum). Darin stößt die Separation, die Herde zieht nicht, die Neugier hält an. Vorher galt für jede Art
+    // 1,6 m × bodySize (die neugierige Schar kroch auf 0,7 m zusammen, Leben-Schau 07.10.). Gecacht je L.
+    _kreaturRaum(creature, L) {
+        const ud = creature.userData || (creature.userData = {});
+        const l = L > 0 ? L : this._kreaturHueftL(creature);
+        if (ud._raumL === l && Number.isFinite(ud._raum)) return ud._raum;
+        const lb = this._kreaturLeib(creature, l, this._kreaturRaumLeib || (this._kreaturRaumLeib = {}));
+        ud._raumL = l;
+        ud._raum = (lb.halb + lb.radius) * AnazhRealm._verhaltenGesetz().separation.raumKugel;
+        return ud._raum;
+    }
+
+    _spielerRaum() {
+        return AnazhRealm.PLAYER_WALL_RADIUS * AnazhRealm._verhaltenGesetz().separation.raumKugel;
+    }
+
+    // DER FREIE WEG eines Tiers zu seinem Ziel (Richtung dx, dz): wie weit es auf der Geraden geht, bevor es in den Paar-Raum
+    // eines anderen Tiers tritt (der Strahl gegen den Kreis aus beiden Räumen; steht es schon darin, geht es nicht weiter
+    // auf das andere zu) — die Neugier stellt sich an, statt sich durch die Schar zu drücken (Welle LF: die Schar am
+    // Spieler stand Leib an Leib). Unbegrenzt: Infinity.
+    _kreaturFreierWeg(creature, dx, dz, raumEigen) {
+        const d0 = Math.hypot(dx, dz);
+        if (!(d0 > 1e-6)) return Infinity;
+        const ux = dx / d0,
+            uz = dz / d0;
+        const p = creature.position;
+        // der grobe Filter (updateCreatures, der weiteste Raum des Takts): wer weder nah steht noch nah am Weg liegt, zählt nie
+        const grob = Number.isFinite(this._raumMaxTakt) ? raumEigen + this._raumMaxTakt : Infinity;
+        let frei = Infinity;
+        for (const o of this.state.creatures) {
+            if (!o || o === creature || !o.userData || o.userData.dying) continue;
+            const ox = o.position.x - p.x,
+                oz = o.position.z - p.z;
+            const vor = ox * ux + oz * uz;
+            const d2 = ox * ox + oz * oz;
+            if (d2 >= grob * grob && (!(vor > 0) || d2 - vor * vor >= grob * grob)) continue;
+            const R = raumEigen + this._kreaturRaum(o);
+            if (d2 < R * R) {
+                if (vor > 0) frei = Math.min(frei, 0);
+                continue;
+            }
+            if (!(vor > 0)) continue;
+            const quer2 = d2 - vor * vor;
+            if (quer2 >= R * R) continue;
+            frei = Math.min(frei, vor - Math.sqrt(R * R - quer2));
+        }
+        return frei;
     }
 
     // Die Hüft-Höhe L eines Tiers (m) — dieselbe L, an der das Gang-Gesetz die Schritt-Länge misst (tb.beinL × Körper-
@@ -20509,8 +21080,10 @@ class AnazhRealm {
     // DAS ANKUNFTS-GESETZ am EINEN Ort (Q3, tetrapoda ankunftTempo): der Wunsch zu einem Ziel in Richtung (dx, dz),
     // `rest` Meter vor dem Halt — höchstens vMax, nah am Halt nur das Tempo, aus dem die Brems-Grenze dort steht. Folgen,
     // Pirsch, Neugier, Sammeln, Bauen und Trinken lesen es; vorher war jeder dieser Wege Gas oder Bremse (R-D17: 4 m/s
-    // oder 0, Tempo-Sprünge ~290 m/s²).
-    _kreaturZiel(out, dx, dz, rest, vMax) {
+    // oder 0, Tempo-Sprünge ~290 m/s²). DER PERSÖNLICHE RAUM (Welle LF): der Halt kommt früher, wenn der Weg vorher in den
+    // Paar-Raum eines anderen Tiers führt (_kreaturFreierWeg) — wer folgt, stellt sich an, statt in den Vordermann zu laufen.
+    _kreaturZiel(out, dx, dz, rest, vMax, creature) {
+        if (creature) rest = Math.min(rest, this._kreaturFreierWeg(creature, dx, dz, this._kreaturRaum(creature)));
         const d = Math.hypot(dx, dz);
         if (!(d > 1e-6) || !(rest > 0) || !(vMax > 0)) return out.set(0, 0, 0);
         const v = AnazhRealm._steuerGesetz().ankunftTempo(rest, vMax);
@@ -20669,6 +21242,9 @@ class AnazhRealm {
     // sie sich längs der Normalen, tauschen sie Impuls (`_stossPaar`): der Fuchs prallt am Bären ab, der Bär wankt kaum.
     // Vorher trennte nur der Herden-Abstand als Steuer-Wunsch (`_applyCreatureSeparation`) — Leiber gingen durcheinander,
     // ohne Impuls. Paare in Index-Folge, ohne Frame-Delta, ohne Zufall, im festen Sim-Schritt (`_stepFixedSim`, 0710-5).
+    // DIE GÄNGE (Welle LF, die dichte Schar): eine Trennung schiebt einen Leib in den nächsten — der Löser geht die Paare
+    // erneut durch, bis kein Leib mehr weicht (höchstens LEIB_GAENGE); der Impuls fließt je Paar einmal (nach dem Tausch
+    // entfernen sie sich, `_stossPaar` gibt 0). Vorher ein Gang: acht neugierige Tiere am Spieler standen Leib an Leib.
     _leibKontakte() {
         const st = this.state;
         const cr = st.creatures || [];
@@ -20707,6 +21283,13 @@ class AnazhRealm {
         }
         if (n < 2) return;
         const nah = this._leibKontaktNah || (this._leibKontaktNah = {});
+        for (let gang = 0; gang < AnazhRealm.LEIB_GAENGE; gang++) {
+            if (!this._leibKontaktGang(T, n, nah)) break;
+        }
+    }
+    // EIN GANG über alle Paare (`_leibKontakte`): true, wenn ein Leib wich.
+    _leibKontaktGang(T, n, nah) {
+        let wich = false;
         for (let i = 0; i < n; i++) {
             const a = T[i];
             for (let j = i + 1; j < n; j++) {
@@ -20727,6 +21310,7 @@ class AnazhRealm {
                 );
                 const tief = a.r + b.r - nah.d;
                 if (!(tief > 0)) continue;
+                if (tief > 1e-4) wich = true; // ein Rest unter 0,1 mm ruft keinen weiteren Gang
                 let nx;
                 let nz;
                 if (nah.d > 1e-6) {
@@ -20765,6 +21349,7 @@ class AnazhRealm {
                 this._stossPaar(a.q, b.q, nx, nz);
             }
         }
+        return wich;
     }
 
     // DER STOSS AUF DEN SPIELER: dv (m/s) längs (nx, nz) in seine Geschwindigkeit — die Beschleunigungs- und Brems-Kurven
@@ -20952,6 +21537,47 @@ class AnazhRealm {
         }
     }
 
+    // DIE AUFLAGE eines Tiers auf den Hüllen der Bauten (Welle LF): dieselbe Haft-Regel wie die Kapsel des Spielers
+    // (_resolveCapsuleVsAABB: eine Oberkante im Band [Fuß − PLAYER_GROUND_SNAP, Fuß + PLAYER_STEP_UP] über dem Fußabdruck
+    // trägt), gemessen an den drei Achsen des EINEN Leibs (_kreaturLeib); die höchste trägt. Die Nähe-Liste ist die des
+    // Hüllen-Kontakts (ud._huellenNah). Keine Auflage → −Infinity.
+    _kreaturAuflage(creature, L) {
+        const nah = creature.userData && creature.userData._huellenNah;
+        if (!nah || !nah.liste.length) return -Infinity;
+        const p = creature.position;
+        const leib = this._kreaturLeib(creature, L, this._kreaturLeibAuflage || (this._kreaturLeibAuflage = {}));
+        const lo = p.y - AnazhRealm.PLAYER_GROUND_SNAP,
+            hi = p.y + AnazhRealm.PLAYER_STEP_UP;
+        const r2 = leib.radius * leib.radius;
+        const reich = leib.halb + leib.radius; // der grobe Filter: ein Bau, dessen Reichweite den Leib nicht erreicht
+        let top = -Infinity;
+        for (const e of nah.liste) {
+            const boxes = e.blockerAABBs;
+            if (!boxes || !e.position) continue;
+            const er = (e._blockerReach || 0) + reich;
+            if (Math.abs(e.position.x - p.x) > er || Math.abs(e.position.z - p.z) > er) continue;
+            for (let b = 0; b < boxes.length; b++) {
+                const box = boxes[b];
+                if (!(box.topY >= lo && box.topY <= hi) || box.topY <= top) continue;
+                if (
+                    p.x < box.minX - reich ||
+                    p.x > box.maxX + reich ||
+                    p.z < box.minZ - reich ||
+                    p.z > box.maxZ + reich
+                )
+                    continue;
+                for (let o = -1; o <= 1; o++) {
+                    const off = o * leib.halb;
+                    if (this._boxAbstand2(box, p.x + leib.fx * off, p.z + leib.fz * off) <= r2) {
+                        top = box.topY;
+                        break;
+                    }
+                }
+            }
+        }
+        return top;
+    }
+
     // CHARAKTER-WANDERN, die EINE Wander-Quelle (Flucht-Fallback + NEUTRAL): ein ZUG je Zeit-Slot
     // (strideSec), Heading deterministisch aus netId × Slot (sin-Hash; ein Goldwinkel-INKREMENT wäre
     // falsch — rotierende Einheitsvektoren summieren sich zum Kreisel). Emotionen modulieren Amplitude
@@ -20992,7 +21618,8 @@ class AnazhRealm {
     // identisch (pfad-only); Cooldown identisch.
     _tickCreatureScentStrike(creature) {
         const HUNT = AnazhRealm._verhaltenGesetz().jagd;
-        const now = performance.now() / 1000;
+        // der Biss-Takt läuft auf der Kreatur-Uhr (Welle LF, Q1: was den Körper bewegt, läuft im Takt)
+        const now = this.state.creatureAnimationTime;
         const ud = creature.userData || {};
         if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
         // Beute in Strike-Range finden (Bestes Ziel = nächstes nicht-wildes Wesen).
@@ -21001,8 +21628,7 @@ class AnazhRealm {
         const creatures = this.state.creatures || [];
         for (let i = 0; i < creatures.length; i++) {
             const other = creatures[i];
-            if (!other || other === creature) continue;
-            if (this._creatureTemperament(other) === "wild") continue;
+            if (!this._kreaturIstBeute(creature, other)) continue;
             const dx = other.position.x - creature.position.x;
             const dz = other.position.z - creature.position.z;
             const dist = Math.hypot(dx, dz);
@@ -21037,7 +21663,7 @@ class AnazhRealm {
         const dist = Math.hypot(creature.position.x - pm.x, creature.position.z - pm.z);
         if (dist > HUNT.strikeRange) return false;
         const ud = creature.userData || {};
-        const now = performance.now() / 1000;
+        const now = this.state.creatureAnimationTime; // der Biss-Takt auf der Kreatur-Uhr (Welle LF)
         if (Number.isFinite(ud.nextHuntStrikeAt) && now < ud.nextHuntStrikeAt) return false;
         const stats = this.computeCreatureStats(creature).stats || {};
         // ZENSUS-REST V18.488 — derselbe attackSpeed-Biss-Takt wie die
@@ -21140,7 +21766,7 @@ class AnazhRealm {
         }
         // Phase 2: walk Richtung Ziel (das Ankunfts-Gesetz bremst vor dem Halt).
         const speed = SPEED * this._creatureBodySpeedMultiplier(creature);
-        return this._kreaturZiel(out, dx, dz, dist - HALT_DIST, speed);
+        return this._kreaturZiel(out, dx, dz, dist - HALT_DIST, speed, creature);
     }
 
     // Ring-Scan: konzentrische Ringe in 4-m-Schritten bis radius, je Ring so viele Richtungen, dass der Bogen
@@ -21184,7 +21810,7 @@ class AnazhRealm {
         if (dist <= haltDist) return out.set(0, 0, 0);
         const speed =
             emotion === "happy" ? AnazhRealm.CREATURE_FOLLOW_MAX_SPEED : AnazhRealm.CREATURE_FOLLOW_MAX_SPEED * 0.7;
-        return this._kreaturZiel(out, dx, dz, dist - haltDist, speed);
+        return this._kreaturZiel(out, dx, dz, dist - haltDist, speed, creature);
     }
 
     // Welle 6.H Phase 2B.5 — zwei-Phasen-gather (Vision §1.1 Beziehungs-Geste):
@@ -21236,7 +21862,7 @@ class AnazhRealm {
                 AnazhRealm.CREATURE_GATHER_SPEED *
                 this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
                 this._creatureBodySpeedMultiplier(creature);
-            return this._kreaturZiel(out, dxp, dzp, distp - handover, speed);
+            return this._kreaturZiel(out, dxp, dzp, distp - handover, speed, creature);
         }
         // ERNTE-PHASE: Ziel suchen, hingehen, harvesten.
         let target = task.args._target;
@@ -21297,7 +21923,7 @@ class AnazhRealm {
             AnazhRealm.CREATURE_GATHER_SPEED *
             this._creatureTaskSpeedMultiplier(creature, "gather", task.args) *
             this._creatureBodySpeedMultiplier(creature);
-        return this._kreaturZiel(out, dx, dz, dist - AnazhRealm.CREATURE_GATHER_HALT_DIST, speed);
+        return this._kreaturZiel(out, dx, dz, dist - AnazhRealm.CREATURE_GATHER_HALT_DIST, speed, creature);
     }
 
     // Build = Umkehrung zu gather: take (zum Spieler, Material aus dem Inventar, modus-gated via
@@ -21384,7 +22010,7 @@ class AnazhRealm {
                 this._uiDirty("hof"); // W3 (V18.176) — der UI-Puls (war _renderCreatureListUI direkt)
                 return out.set(0, 0, 0);
             }
-            return this._kreaturZiel(out, dxp, dzp, distp - handover, buildSpeed);
+            return this._kreaturZiel(out, dxp, dzp, distp - handover, buildSpeed, creature);
         }
         // WALK-PHASE: von Spieler weg bis Bau-Distanz, dann SPAWN.
         const dxp2 = creature.position.x - player.x;
@@ -21398,7 +22024,7 @@ class AnazhRealm {
                 // Spieler steht direkt auf der Kreatur — willkürliche Richtung.
                 return out.set(buildSpeed, 0, 0);
             }
-            return this._kreaturZiel(out, dxp2, dzp2, placement - distp2, buildSpeed);
+            return this._kreaturZiel(out, dxp2, dzp2, placement - distp2, buildSpeed, creature);
         }
         // SPAWN-PHASE: am Kreatur-Ort. spawnArchitecture y+0.5-Konvention
         // (analog confirmBuild, kalibriert auf at_player wo player.y die
@@ -21676,10 +22302,11 @@ class AnazhRealm {
 
     // DIE EINE BÜHNEN-WAHRHEIT (das W2-Prädikat aus `diag-boot-stage.cjs`, live): alle spielfremden
     // Tick-Quellen (Nexus, Wetter, Brennglas …) LESEN sie statt eigener Boot-Heuristik. „Bühne steht“ =
-    // Ring am Ziel + Gras/Wasser aufgeholt + keine deferierte Streu-Region — bewusst OHNE Impostor-Term (die Streu
+    // Ring am Ziel + Gras/Wasser aufgeholt + die Streu steht (`_streuWartet` 0) — bewusst OHNE Impostor-Term (die Streu
     // wartet auf ihre Karten; der Karten-Bäcker läuft seit 04.10. frei im festen Takt, nie hinter der Bühne — der Kreis
     // Bühne → Streu → Karte → Bühne ist gelöst). Latch `state._buehneStand`; headless sofort.
-    // Deckel: nach BUEHNE_SETTLE_CAP_MS öffnet sie bedingungslos (Dauer-über-Budget erreicht nie das Ziel)
+    // Deckel: nach BUEHNE_SETTLE_CAP_MS öffnet sie bedingungslos und laut (WARN mit der Lücke) — Dauer-über-Budget
+    // erreicht nie das Ziel
     _buehneSteht() {
         const st = this.state;
         if (st._buehneStand) return true;
@@ -21688,43 +22315,43 @@ class AnazhRealm {
             return true;
         }
         if (this._buehneT0 == null) this._buehneT0 = performance.now();
-        let steht = false;
-        if (performance.now() - this._buehneT0 > AnazhRealm.BUEHNE_SETTLE_CAP_MS) {
-            steht = true; // der Deckel: die Welt hat settled, was die Hardware trägt
-        } else {
-            const ringTarget = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
-            const ring = st._activeRingRadius != null && st._activeRingRadius >= ringTarget;
-            const grass = !st.pendingGrass || st.pendingGrass.size === 0;
-            const water = !st.pendingWaterIso || st.pendingWaterIso.size === 0;
-            let streu = true;
-            if (ring && grass && water && st.scatterRegions) {
-                for (const reg of st.scatterRegions.values()) {
-                    if (reg && reg._deferredFoundry) {
-                        streu = false;
-                        break;
-                    }
-                }
-            }
-            steht = ring && grass && water && streu;
-        }
-        if (steht) {
-            st._buehneStand = true;
+        // Was der Bühne fehlt — je Term ein Satz mit seiner Zahl. Die Streu steht nach der EINEN Antwort (`_streuWartet`):
+        // der eigene Zähler las die fehlende Regionen-Karte (der Streamer lief noch nie) als „keine deferierte Region"
+        // (Befund 09.10.).
+        const fehlt = [];
+        const ringTarget = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
+        if (!(st._activeRingRadius != null && st._activeRingRadius >= ringTarget))
+            fehlt.push(`der Ring (${st._activeRingRadius != null ? st._activeRingRadius : "—"} von ${ringTarget})`);
+        if (st.pendingGrass && st.pendingGrass.size) fehlt.push(`${st.pendingGrass.size} Gras-Stücke`);
+        if (st.pendingWaterIso && st.pendingWaterIso.size) fehlt.push(`${st.pendingWaterIso.size} Wasser-Stücke`);
+        const streuListe = [];
+        const streu = this._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe);
+        if (streu) fehlt.push(`${streu} Wald-Stücke (${streuListe.slice(0, 3).join(" · ")})`);
+        // der Deckel: die Welt hat settled, was die Hardware trägt — er öffnet LAUT wie das erste Weltbild (`_ankunftsBild`):
+        // das Log nennt die Lücke
+        const gedeckelt = performance.now() - this._buehneT0 > AnazhRealm.BUEHNE_SETTLE_CAP_MS;
+        if (fehlt.length && !gedeckelt) return false;
+        st._buehneStand = true;
+        if (fehlt.length)
             this.log(
-                "Die Bühne steht — die Welt-Systeme (Wetter-Zug · Nexus · Begleiter · Fern-Deko) starten.",
-                "INFO"
+                `Die Bühne steht ohne: ${fehlt.join(" · ")} — der Deckel von ${AnazhRealm.BUEHNE_SETTLE_CAP_MS} ms ist erreicht.`,
+                "WARN"
             );
-        }
-        return steht;
+        this.log("Die Bühne steht — die Welt-Systeme (Wetter-Zug · Nexus · Begleiter · Fern-Deko) starten.", "INFO");
+        return true;
     }
 
     // ═══ KREATUR-KOSTEN — DIE ANIM-RATEN-LEITER ═══
-    // EINE Rate je Distanz relativ zur Standbild-Schwelle (dieselbe wie der wrap↔fern-Toggle): 1 = jeden
-    // Frame · 2 · 4 · 0 = hinterm Standbild (eingefroren in Stand-Pose). walkPhase + Anim-Uhr akkumulieren
+    // EINE Rate je Distanz relativ zur Stufen-Grenze der Gelenk-Gestalt (`ab` × Größe, dieselbe wie `_gelenkStufe`): 1 =
+    // jeden Frame · 2 · 4 · 0 = jenseits der Grenze (eingefroren in Stand-Pose). walkPhase + Anim-Uhr akkumulieren
     // JEDEN Frame → der Gang bleibt gleich schnell, nur seltener ausgewertet. Linse: gate:kreatur-kosten.
-    _creatureAnimDiv(dist, fernDist, omega, frameDt) {
+    // Jenseits der Grenze friert nur ein Tier, das STEHT (Welle LF, der ferne Gang): wer läuft (laeuft), wird auf der
+    // Stufe 1/8 weiter ausgewertet (nie gröber als ein Viertel seines Takts) — seine Knochen tragen die gelenkige
+    // Grobstufe (EIN Skelett, S3) und die Glieder-Kapseln.
+    _creatureAnimDiv(dist, fernDist, omega, frameDt, laeuft) {
         if (!(fernDist > 0) || !(dist >= 0)) return 1;
-        if (dist >= fernDist) return 0;
-        const div = dist >= fernDist * 0.75 ? 4 : dist >= fernDist * 0.5 ? 2 : 1;
+        if (dist >= fernDist && laeuft !== true) return 0;
+        const div = dist >= fernDist ? 8 : dist >= fernDist * 0.75 ? 4 : dist >= fernDist * 0.5 ? 2 : 1;
         // Der Gang wird nie gröber als ein Viertel seines Takts abgetastet (ω des Gang-Gesetzes aus der letzten
         // Auswertung): ein Fuchs im schnellen Trab (Takt 0,24 s) traf bei 30 fps und Stufe 1/4 (0,133 s je Auswertung)
         // seine Stand-Phase nie zweimal — die Beine sprangen (gate:tier-gang unter Last, Schlupf 1,33).
@@ -21732,8 +22359,32 @@ class AnazhRealm {
             return Math.max(1, Math.min(div, Math.floor((2 * Math.PI) / omega / (4 * frameDt))));
         return div;
     }
-    // AUSKLINGE-SAUM (letzte 15 % vor der Standbild-Schwelle): 1 → 0 linear; _animateTierBaum
-    // multipliziert Schritt/Schwanz/Sway/Kopf damit → der Toggle trifft die Stand-Pose. Jenseits 0.
+    // DER LAUF DES LEIBS (Welle LF, der ferne Gang): je Takt die Lage-Änderung des Leibs, geglättet (ein Sprung über das
+    // vMax des Gang-Gesetzes — Spawn, Teleport, Peer-Schnapp — ist kein Lauf); „läuft" mit Hysterese (ein ab 0,2 m/s, aus
+    // unter 0,1 m/s). Leser: _kreaturLaeuft — die Raten-Leiter (updateCreatures) und die Ruhe am Stufen-Schalter (`_gelenkStufe`).
+    _kreaturLaufTakt(creature, delta) {
+        const tc = globalThis.__tetrapodaCore;
+        if (!tc || !tc.GANG_GESETZ) AnazhRealm._kernPflichtBruch("tetrapoda:GANG_GESETZ");
+        const ud = creature.userData;
+        const p = creature.position;
+        const alt = ud._laufLage;
+        if (!alt) ud._laufLage = { x: p.x, z: p.z };
+        else if (delta > 0) {
+            let v = Math.hypot(p.x - alt.x, p.z - alt.z) / delta;
+            if (!(v <= tc.GANG_GESETZ.vMax)) v = 0;
+            const lv = ud._laufV || 0;
+            ud._laufV = lv + (v - lv) * (1 - Math.exp(-6 * Math.min(0.1, delta)));
+            alt.x = p.x;
+            alt.z = p.z;
+        }
+        const lv = ud._laufV || 0;
+        ud._laeuft = ud._laeuft === true ? lv > 0.1 : lv > 0.2;
+    }
+    _kreaturLaeuft(creature) {
+        return !!(creature && creature.userData && creature.userData._laeuft === true);
+    }
+    // AUSKLINGE-SAUM (letzte 15 % vor der Stufen-Grenze): 1 → 0 linear; _animateTierBaum
+    // multipliziert Schritt/Schwanz/Sway/Kopf damit → der Stufen-Schalter trifft die Stand-Pose. Jenseits 0.
     _creatureAnimFade(dist, fernDist) {
         if (!(fernDist > 0) || !(dist >= 0)) return 1;
         const saum = fernDist * 0.85;
@@ -21741,8 +22392,8 @@ class AnazhRealm {
         if (dist >= fernDist) return 0;
         return 1 - (dist - saum) / (fernDist - saum);
     }
-    // NEUTRALE STAND-POSE (Standbild-Freeze): friert den bauTier-Baum in der Kern-STAND_POSE ein
-    // (Ketten = Stand-Winkel, Schwanz/Kopf/Roll = 0) statt mitten im Schritt. tb._gang fällt → beim
+    // NEUTRALE STAND-POSE (die Ruhe des Tiers jenseits der Grenze, auch `_gelenkRuhe`): friert den bauTier-Baum in der
+    // Kern-STAND_POSE ein (Ketten = Stand-Winkel, Schwanz/Kopf/Roll = 0) statt mitten im Schritt. tb._gang fällt → beim
     // Aufwachen seedet der CPG frisch aus walkPhase. Ketten-Ordnung = _animateTierBaum.
     _tierBaumNeutralStance(group) {
         const tb = group && group.userData && group.userData._tierBaum;
@@ -21758,6 +22409,7 @@ class AnazhRealm {
         if (T.wolf) {
             T.wolf.rotation.z = 0;
             T.wolf.rotation.x = 0;
+            if (tb._rumpfRuhe) T.wolf.position.copy(tb._rumpfRuhe); // die Senke des Schritts (Welle LF) fällt mit
         }
         if (T.headGroup) {
             T.headGroup.rotation.x = 0;
@@ -21775,6 +22427,7 @@ class AnazhRealm {
         for (let i = 0; i < 4; i++) {
             const K = ketten[i];
             for (let k = 0; k < 4; k++) if (K[k]) K[k].rotation.x = SP[i][k];
+            if (K[0]) K[0].rotation.z = 0; // das Abspreizen der Pfoten-IK (Welle LF) fällt mit
         }
         const ts = tb.tailSegs || [];
         for (let i = 0; i < ts.length; i++) ts[i].rotation.y = 0;
@@ -21969,8 +22622,28 @@ class AnazhRealm {
         // Witterung — _creatureWariness liest die Liste (die Beute floh vorher nur vor dem Spieler, R-D4/K-D11).
         const jaeger = this._kreaturJaeger || (this._kreaturJaeger = []);
         jaeger.length = 0;
-        for (const c of this.state.creatures)
-            if (c && c.userData && c.userData._motionZustand === "jagd" && !c.userData.dying) jaeger.push(c);
+        // DER WEITESTE RAUM dieses Takts (Lehre 25: billige Filter zuerst): die Separation und der freie Weg prüfen ein
+        // Paar erst genau (`_kreaturRaum` des anderen), wenn es näher steht als der eigene Raum + dieser — vorher fragte
+        // jedes Tier den Raum JEDES anderen (40 Tiere: 1 600 Rufe je Takt).
+        let raumMax = 0;
+        for (const c of this.state.creatures) {
+            const zj = c && c.userData && c.userData._motionZustand;
+            if ((zj === "jagd" || zj === "hetzen") && !c.userData.dying) jaeger.push(c);
+            if (c && c.userData) raumMax = Math.max(raumMax, this._kreaturRaum(c));
+        }
+        this._raumMaxTakt = raumMax;
+        // DER LAUF DES SPIELERS in diesem Takt (die Lage-Änderung, gleich welcher Weg ihn bewegt): ein Jäger hetzt, wenn
+        // sein Ziel davonläuft (_kreaturJagdZug).
+        {
+            const sa =
+                this._spielerLageAlt || (this._spielerLageAlt = { x: playerPos.x, z: playerPos.z, vx: 0, vz: 0 });
+            const dtS = delta > 1e-6 ? delta : 1 / 60;
+            sa.vx = (playerPos.x - sa.x) / dtS;
+            sa.vz = (playerPos.z - sa.z) / dtS;
+            if (!(Math.hypot(sa.vx, sa.vz) < 50)) sa.vx = sa.vz = 0; // ein Sprung der Lage (Teleport) ist kein Lauf
+            sa.x = playerPos.x;
+            sa.z = playerPos.z;
+        }
         // Spatial-Hash fürs Flocking: 5-m-Buckets (= Flocking-Range `dsq < 25`), je Kreatur nur die 3×3-
         // Nachbar-Cells statt O(N²). Map + Buckets als Pool recycelt — keine Allokation pro Frame.
         const FLOCK_CELL = 5;
@@ -22008,9 +22681,6 @@ class AnazhRealm {
         // Ferne Kreaturen rechnen die teure KI-Richtung seltener (Band-`aiDiv`), bewegen sich aber jeden
         // Frame glatt weiter; der Frame-Zähler staffelt die Neuberechnung (kein Sammel-Spike).
         const aiFrame = (this._creatureAiFrame = (this._creatureAiFrame || 0) + 1);
-        // Standbild-Schwelle als DISTANZ: EINE Wurzel pro Frame (die Anim-Raten-Leiter skaliert sie je
-        // Kreatur mit L; der wrap↔fern-Toggle liest das Quadrat — dieselbe Schwelle).
-        const tierFernDist = Math.sqrt(AnazhRealm.TIER_FERN_DIST_SQ);
         // SCHLUSS-WELLE — das EINE Verhaltens-Gesetz für den ganzen Tick
         // (memoisiert, fail-closed): Freude-Tempo/Hüpf-Höhen · Herde · Wasser.
         const VGL = AnazhRealm._verhaltenGesetz();
@@ -22102,15 +22772,18 @@ class AnazhRealm {
                         // KREATUR-LEBEN — der ECHTE Jagd-Zustand stempelt die Motion-
                         // Brücke (das tetrapoda-hunt-Preset war TOTE Daten: kein Pfad
                         // wählte es je — jetzt pirscht der Jäger sichtbar).
-                        this._kreaturZustandStempel(creature, "jagd");
-                        // Der Pirsch-Stopp ist Jagd-Gesetz (pirschStoppM), davor bremst das Ankunfts-Gesetz.
-                        this._kreaturZiel(
+                        // DIE JAGD (Welle LF): der EINE Weg des Jägers — Pirsch, der Platz im Rudel, die Hetze im Sprint.
+                        const sv = this._spielerLageAlt;
+                        this._kreaturJagdZug(
+                            creature,
+                            playerPos.x,
+                            playerPos.z,
+                            "spieler",
                             direction,
-                            playerPos.x - creature.position.x,
-                            playerPos.z - creature.position.z,
-                            Math.hypot(playerPos.x - creature.position.x, playerPos.z - creature.position.z) -
-                                VG.jagd.pirschStoppM,
-                            speed * VG.jagd.speedBoost
+                            speed,
+                            hueftL,
+                            sv.vx,
+                            sv.vz
                         );
                         this._tickCreatureHuntStrike(creature);
                     } else if (wariness >= NAT.fleeThreshold) {
@@ -22122,7 +22795,9 @@ class AnazhRealm {
                         const fd = Math.hypot(fx, fz);
                         if (fd < B.r) {
                             this._kreaturZustandStempel(creature, "flucht");
-                            const fv = fd > 1e-6 ? (speed * NAT.fleeSpeedBoost) / fd : 0;
+                            // DIE FLUCHT IST DER SPRINT DER GESTALT (Welle LF, STEUER sprintTempo): ein Fluchttier galoppiert
+                            // davon (vorher ein Trab, 1,6 × Schlendern — jede Hetze holte es ein, jeder Mensch auch)
+                            const fv = fd > 1e-6 ? AnazhRealm._steuerGesetz().sprintTempo(hueftL) / fd : 0;
                             direction.set(fx * fv, 0, fz * fv);
                         } else {
                             this._kreaturZustandStempel(creature, null);
@@ -22132,10 +22807,13 @@ class AnazhRealm {
                     } else if (wariness <= NAT.curiousThreshold) {
                         // NEUGIERIG — näher zum Spieler (sanfte Aura lockt das Wesen heran).
                         this._kreaturZustandStempel(creature, null);
-                        // Der Neugier-Stopp ist Furcht-Gesetz (neugierStoppM), davor bremst das Ankunfts-Gesetz.
+                        // DIE NEUGIER HÄLT ABSTAND (Welle LF): sie hält am Paar-Raum mit dem Spieler an (der Raum des Leibs +
+                        // der des Spielers, _kreaturRaum/_spielerRaum), davor bremst das Ankunfts-Gesetz. Vorher hielt sie bei
+                        // festen 2 m um die Mitte des Spielers — ein Bär stand mit dem Leib im Spieler.
                         const tpx = playerPos.x - creature.position.x;
                         const tpz = playerPos.z - creature.position.z;
-                        this._kreaturZiel(direction, tpx, tpz, Math.hypot(tpx, tpz) - NAT.neugierStoppM, speed);
+                        const rest = Math.hypot(tpx, tpz) - this._kreaturRaum(creature, hueftL) - this._spielerRaum();
+                        this._kreaturZiel(direction, tpx, tpz, rest, speed, creature);
                         // DIE HERDEN-FORM (Q11, tetrapoda herdeZug): Kohäsion nur zu Nachbarn DERSELBEN Gattung, für jedes
                         // Tier — nie am Blick des Spielers (R-D5: nur im Frustum, artfremd). Kandidaten aus dem Gitter (die 9
                         // Zellen um das Tier), die Zahlen VERHALTEN.herde, die Kosten trägt aiDiv.
@@ -22152,34 +22830,50 @@ class AnazhRealm {
                                     const j = bucket[bi];
                                     if (i === j) continue;
                                     const o = this.state.creatures[j];
-                                    const e = pool[nb.length] || (pool[nb.length] = { x: 0, z: 0, gattung: null });
+                                    const e =
+                                        pool[nb.length] || (pool[nb.length] = { x: 0, z: 0, gattung: null, raum: 0 });
                                     e.x = o.position.x;
                                     e.z = o.position.z;
                                     e.gattung = this._kreaturGattung(o); // die EINE Gattungs-Quelle
+                                    e.raum = this._kreaturRaum(o); // der persönliche Raum des Nachbarn
                                     nb.push(e);
                                 }
                             }
                         }
                         if (nb.length) {
+                            // im Paar-Raum zieht niemand (Welle LF), der Zug misst im Tempo des Tiers
                             const zug = AnazhRealm._steuerGesetz().herdeZug(
                                 creature.position.x,
                                 creature.position.z,
                                 this._kreaturGattung(creature),
                                 nb,
                                 VG.herde,
-                                this._herdeZug || (this._herdeZug = { x: 0, z: 0, n: 0 })
+                                this._herdeZug || (this._herdeZug = { x: 0, z: 0, n: 0 }),
+                                this._kreaturRaum(creature, hueftL)
                             );
-                            direction.x += zug.x;
-                            direction.z += zug.z;
+                            direction.x += zug.x * speed;
+                            direction.z += zug.z * speed;
                         }
                     } else {
                         // Raubtier ("wild") wittert Beute in 50 m → folgt dem Geruch-Gradienten (`_scentAt`, Beute-Kreaturen
                         // als Quellen); sonst neutrales Wandern. Der Beute-Strike läuft separat.
                         const scentDir = this._creatureScentHuntDir(creature, wariness);
-                        if (scentDir) {
-                            // KREATUR-LEBEN — auch die Witterungs-Jagd IST Jagd (ein Stempel).
-                            this._kreaturZustandStempel(creature, "jagd");
-                            direction.copy(scentDir.normalize().multiplyScalar(speed * VG.jagd.speedBoost));
+                        const beute = scentDir && creature.userData._beute;
+                        if (beute) {
+                            // DIE JAGD (Welle LF): die gewitterte Beute ist das Ziel desselben EINEN Wegs wie der Spieler.
+                            const bs = beute.userData._steuer;
+                            const bv = bs && beute.userData._motionZustand === "flucht" ? bs.v : 0;
+                            this._kreaturJagdZug(
+                                creature,
+                                beute.position.x,
+                                beute.position.z,
+                                beute.userData.netId || beute.uuid,
+                                direction,
+                                speed,
+                                hueftL,
+                                Math.sin(beute.rotation.y) * bv,
+                                Math.cos(beute.rotation.y) * bv
+                            );
                             this._tickCreatureScentStrike(creature);
                         } else {
                             this._kreaturZustandStempel(creature, null);
@@ -22198,8 +22892,8 @@ class AnazhRealm {
                 direction = scratchDir.copy(creature.userData.aiDir);
             }
 
-            // Separation JEDEN Frame auf die LIVE-Richtung (nach dem aiDir-Cache, nie stale): Nachbarn im
-            // ~2·Körperradius stoßen ab, deterministisch aus Positionen + Index.
+            // Separation JEDEN Frame auf die LIVE-Richtung (nach dem aiDir-Cache, nie stale): Nachbarn im PAAR-RAUM (der
+            // persönliche Raum beider Leiber, Welle LF) stoßen ab, deterministisch aus Positionen + Index.
             this._applyCreatureSeparation(creature, i, direction, speed);
 
             // DER KÖRPER IM WASSER (Welle L, Q6 — JEDE Kreatur, nie nur im 50-m-Kreis um den Spieler): die EINE
@@ -22293,48 +22987,6 @@ class AnazhRealm {
                 }
             }
 
-            // Emergente Bewegung aus den Soul-Parts (Beine schwingen, Flügel schlagen, Schwänze wellen).
-            // walkPhase läuft nur in Bewegung (kein Glieder-Sprung beim Stopp). Kosten: wenige sin() je Wesen.
-            {
-                const mroles = this._motionRolesForSoul(creature.userData.soul);
-                if (mroles) {
-                    const movingNow = steuer.v > 0.1; // der Leib läuft (das Tempo des Steuer-Schritts), nicht der Wunsch
-                    creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? delta * 5.0 : 0);
-                    // ANIM-RATEN-LOD: walkPhase + creatureAnimationTime akkumulieren JEDEN Frame (Gang gleich schnell),
-                    // ferne Wesen werten nur 1/2 · 1/4 aus ((aiFrame+i)-Stagger, kein Spike). Hinterm Standbild-Toggle
-                    // tickt nichts — die Gestalt friert EINMAL in der Stand-Pose ein. Ohne Fern-Guss bleibt 1/4 die
-                    // unterste Stufe (sonst stünde die volle Gestalt sichtbar im Schritt).
-                    const fLA = creature.scale.x || 1;
-                    const fernDist = tierFernDist * fLA;
-                    const tBA = creature.userData._tierBaum;
-                    const omegaGang = tBA && tBA._gang ? tBA._gang.omega : 0;
-                    let animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, delta);
-                    if (animDiv === 0 && !(tBA && tBA.fern)) animDiv = 4;
-                    if (animDiv === 0) {
-                        if (!creature.userData._animEingefroren) {
-                            creature.userData._animEingefroren = true;
-                            this._tierBaumNeutralStance(creature);
-                        }
-                    } else if (animDiv === 1 || (aiFrame + i) % animDiv === 0) {
-                        creature.userData._animEingefroren = false;
-                        // der Ausklinge-Saum: vor der Schwelle blendet der Schritt in
-                        // die Stand-Pose — der Standbild-Toggle trifft eine STEHENDE
-                        // Gestalt (_animateTierBaum konsumiert _animFade).
-                        creature.userData._animFade = this._creatureAnimFade(distToPlayer, fernDist);
-                        // ABSCHIEDS-WELLE (Motion-Vollendung) — das Kreatur-Innenleben reist in
-                        // die EINE Emotions→Profil-Brücke (chaos→flee · joy→joy · null→Default).
-                        this._animateCompoundMotion(
-                            creature,
-                            mroles,
-                            this.state.creatureAnimationTime,
-                            creature.userData.walkPhase,
-                            movingNow,
-                            creature.userData.emotions
-                        );
-                    }
-                }
-            }
-
             // Boden über den gecachten `_creatureGroundY` (Budget) statt vollem `_voxelSurfaceY`-Scan je Frame;
             // Semantik wie `getTerrainHeightAt` (null → terrainBaseHeight). Nie state.groundHeightField direkt
             // lesen — in Voxel-Welten schwebten die Kreaturen sonst.
@@ -22348,6 +23000,7 @@ class AnazhRealm {
             let baseY;
             let pitchZiel = 0;
             let rollZiel = 0;
+            let traegtBau = false;
             if (waterSurface !== null) {
                 // Die Wasserlinie am Schultergelenk: die Sohle hängt so tief unter dem Spiegel (das Paddeln trägt der
                 // Gang selbst, MOTION.schwimmen; das Literal −0,3 ± 0,2 m fiel) — `_kreaturSchwimmLinie`, dieselbe wie im
@@ -22359,13 +23012,23 @@ class AnazhRealm {
                 baseY = this._standSicht(creature.position.x, creature.position.z, terrainHeight, false);
                 if (!Number.isFinite(baseY)) baseY = terrainHeight;
                 const fLB = creature.scale.x || 1;
-                if (distToPlayer < tierFernDist * fLB * 0.5) {
+                if (distToPlayer < creature.userData._gelenk.abM * fLB * 0.5) {
                     const sp = this._creatureSlopeProben(creature, terrainHeight);
                     if (sp) {
                         baseY = sp.mitte;
                         pitchZiel = sp.pitch;
                         rollZiel = sp.roll;
                     }
+                }
+                // DIE AUFLAGE DER BAUTEN (Welle LF, Neu 4/D7): trägt eine Box der Hüllen den Leib (ihre Oberkante in der
+                // Stufe über dem Fuß — Sockel, Podest, Stufe), steht das Tier auf ihr, wie der Spieler; vorher las es nur
+                // den Boden und ging 0,35 m tief im Haus-Sockel, auf dem der Spieler stand.
+                const auflage = this._kreaturAuflage(creature, hueftL);
+                if (auflage > baseY) {
+                    baseY = auflage;
+                    pitchZiel = 0;
+                    rollZiel = 0;
+                    traegtBau = true;
                 }
             }
             {
@@ -22402,27 +23065,69 @@ class AnazhRealm {
             // ein gleitender Leib (er trägt einen Stoß) steht auf der Höhe seines Sim-Schritts (`_kreaturStossSchritt`) — an
             // Land wie im Wasser (L8: die Höhe des gestoßenen Schwimmers lebt im Sim-Schritt, gleich bei jeder Bildrate)
             if (!creature.userData._stossV) creature.position.y = baseY + hopOffset;
+            // DER TRÄGER der Pfoten (Welle LF): die Höhe, auf der der Leib steht, und ob ein Bau ihn trägt (_kreaturFussBoden)
+            udH._traegerY = baseY;
+            udH._traegerStruktur = traegtBau;
+            // DER LAUF DES LEIBS (Welle LF, der ferne Gang): wer läuft, dem laufen die Beine in jeder Ferne
+            this._kreaturLaufTakt(creature, delta);
+
+            // Emergente Bewegung aus den Soul-Parts (Beine schwingen, Flügel schlagen, Schwänze wellen) — NACH der Lage des
+            // Takts (Welle LF): die Beine stellen sich auf den Boden unter jeder Pfote (_animateTierBaum liest Höhe, Nick und
+            // Wank dieses Takts, nicht die des vorigen).
+            // walkPhase läuft nur in Bewegung (kein Glieder-Sprung beim Stopp). Kosten: wenige sin() je Wesen.
+            {
+                const mroles = this._motionRolesForSoul(creature.userData.soul);
+                if (mroles) {
+                    const movingNow = steuer.v > 0.1; // der Leib läuft (das Tempo des Steuer-Schritts), nicht der Wunsch
+                    creature.userData.walkPhase = (creature.userData.walkPhase || 0) + (movingNow ? delta * 5.0 : 0);
+                    // ANIM-RATEN-LOD: walkPhase + creatureAnimationTime akkumulieren JEDEN Frame (Gang gleich schnell),
+                    // ferne Wesen werten nur 1/2 · 1/4 aus ((aiFrame+i)-Stagger, kein Spike). Jenseits der Stufen-Grenze
+                    // tickt nur, wer läuft (1/8) — wer steht, friert EINMAL in der Stand-Pose ein (die Grobstufe trägt
+                    // dieselben Knochen). Die Grenze der Gestalt (`ab` aus der Kern-Zeile, `_gelenkGestalt`) × Größe —
+                    // dieselbe wie der Schalter.
+                    const fLA = creature.scale.x || 1;
+                    const fernDist = creature.userData._gelenk.abM * fLA;
+                    const tBA = creature.userData._tierBaum;
+                    const omegaGang = tBA && tBA._gang ? tBA._gang.omega : 0;
+                    // KOSTEN AN DEN SCHIRM (Gebot 7): jenseits der Stufen-Grenze läuft der Gang nur, wo der Blick ihn
+                    // sieht — ein ferner Läufer hinter der Kamera steht still, bis er ins Bild kommt (39 Tiere, 32 fern:
+                    // der Kreatur-Takt kostete mit jedem fernen Läufer 0,78 ms statt 0,41)
+                    const laeuft = this._kreaturLaeuft(creature) && (inFrustum || distToPlayer < fernDist);
+                    const animDiv = this._creatureAnimDiv(distToPlayer, fernDist, omegaGang, delta, laeuft);
+                    if (animDiv === 0) {
+                        if (!creature.userData._animEingefroren) {
+                            creature.userData._animEingefroren = true;
+                            this._tierBaumNeutralStance(creature);
+                        }
+                    } else if (animDiv === 1 || (aiFrame + i) % animDiv === 0) {
+                        creature.userData._animEingefroren = false;
+                        // der Ausklinge-Saum: vor der Schwelle blendet der Schritt in
+                        // die Stand-Pose — der Stufen-Schalter trifft eine STEHENDE
+                        // Gestalt (_animateTierBaum konsumiert _animFade).
+                        // (wer läuft, behält seinen Schritt: die Ruhe trägt nur, wer steht)
+                        creature.userData._animFade = laeuft ? 1 : this._creatureAnimFade(distToPlayer, fernDist);
+                        // ABSCHIEDS-WELLE (Motion-Vollendung) — das Kreatur-Innenleben reist in
+                        // die EINE Emotions→Profil-Brücke (chaos→flee · joy→joy · null→Default).
+                        this._animateCompoundMotion(
+                            creature,
+                            mroles,
+                            this.state.creatureAnimationTime,
+                            creature.userData.walkPhase,
+                            movingNow,
+                            creature.userData.emotions
+                        );
+                    }
+                }
+            }
+
             // Visual-Updates (Aura-/Carrying-Sprite-Position, Color-Lerp) nur `inFrustum` — beim Hinschwenken
             // sofort zurück. Bewegung + Physik laufen für ALLE Kreaturen.
             if (inFrustum) {
-                // FERN-GUSS-Leser: jenseits ~TIER_FERN_DIST·L trägt das gemergte Standbild (~8 Draws) statt des
-                // animierten Baums (~235). Nur im Frustum getoggelt; beim Frustum-Eintritt setzt DERSELBE Frame
-                // den korrekten Zustand.
+                // DIE STUFE der Gelenk-Gestalt (der EINE Schalter `_gelenkStufe`, Grenze `ab` × Größe aus der Kern-Zeile):
+                // jenseits trägt die gelenkige Grobstufe das Bild, diesseits wirft sie als Zwilling. Nur im Frustum
+                // geschaltet; beim Frustum-Eintritt setzt DERSELBE Frame den Zustand. Render-rein.
                 const tB = creature.userData._tierBaum;
-                if (tB && tB.fern && tB.wrap) {
-                    const fL = creature.scale.x || 1;
-                    const grenzSq = AnazhRealm.TIER_FERN_DIST_SQ * fL * fL;
-                    // HYSTERESE am EINEN Chokepoint (gate:tier-fern): im ±TIER_FERN_HYST-Band hält der letzte Zustand
-                    // (kein Flackern); geschaltet wird NUR visible, die Templates bleiben memoisiert. Render-rein.
-                    const h = AnazhRealm.TIER_FERN_HYST;
-                    const kante = tB.wrap.visible ? (1 + h) * (1 + h) : (1 - h) * (1 - h);
-                    const nah = distSqToPlayer < grenzSq * kante;
-                    if (tB.wrap.visible !== nah) {
-                        tB.wrap.visible = nah;
-                        tB.fern.visible = !nah;
-                    }
-                    if (nah) this._fellBildschirmGesetz(creature, tB);
-                }
+                if (!this._gelenkStufe(creature, distSqToPlayer) && tB) this._fellBildschirmGesetz(creature, tB);
                 // Welle 6.H — Task-Aura folgt der Kreatur (Y +0.9 über dem Mesh).
                 const aura = creature.userData && creature.userData.taskAura;
                 if (aura) {
@@ -24095,7 +24800,7 @@ class AnazhRealm {
             terrain_base_height: (a) => `hebt die Welt-Grundhöhe auf ${a[0]}`,
             voxel_carve: (a) => `schnitzt das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]}`,
             voxel_fill: (a) => `schüttet das Voxel-Terrain bei (${a[0]}, ${a[1]}, ${a[2]}) im Radius ${a[3]} auf`,
-            time_of_day: (a) => `verschiebt die Tageszeit auf ${a[0]}`,
+            set_time_of_day: (a) => `stellt die Uhr auf ${a[0]}`,
             skybox_color: () => `färbt den Himmel`,
             deposit_life: (a) => `trägt Leben ins Feld ${pos(a[0])}`,
             deposit_emotion: (a) => `prägt „${a[0]}" ins Feld ${pos(a[2])}`,
@@ -24149,11 +24854,10 @@ class AnazhRealm {
             creature_apply_boost: (a) => `gibt Kreatur #${a[0]} den Trank „${a[1]}"`,
             creatures_color: () => `färbt alle Kreaturen`,
             creatures_emotion: (a) => `setzt die Kreaturen-Stimmung auf „${a[0]}"`,
-            creatures_speed_mul: (a) => `skaliert die Kreaturen-Geschwindigkeit um ${a[0]}`,
-            creatures_size_mul: (a) => `skaliert die Kreaturen-Größe um ${a[0]}`,
-            player_jump_power: (a) => `setzt die Sprungkraft auf ${a[0]}`,
-            player_speed: (a) => `setzt die Lauf-Geschwindigkeit auf ${a[0]}`,
-            player_size_mul: (a) => `skaliert deine Größe um ${a[0]}`,
+            creatures_speed_mul: (a) => `wiegt das Kreaturen-Tempo um ${a[0]} (im Wander-Band)`,
+            creatures_size_mul: (a) => `wiegt die Kreaturen-Größe um ${a[0]} (die bodySize-Achse, im Größen-Band)`,
+            player_jump_power: (a) => `wiegt die Sprungkraft auf ${a[0]} (im Gesetz-Band deines Körpers)`,
+            player_speed: (a) => `wiegt die Lauf-Geschwindigkeit auf ${a[0]} (im Gesetz-Band deines Körpers)`,
             player_soul: (a) => `wandelt dich zur Seele „${a[0]}"`,
             set_visible: (a) => `macht „${a[0]}" ${a[1] ? "sichtbar" : "unsichtbar"}`,
         };
@@ -27967,10 +28671,10 @@ class AnazhRealm {
     // trilinear aus den 8 Corner-Densities (spart 6 Dichte-Calls/Vertex); nicht abgedeckt → sample().
     _voxelGradientNormals(positions, sample, step, preGrid = null) {
         const normals = new Float32Array(positions.length);
-        // NIE up-Normalen in die Geometrie backen: `shadow.normalBias` schiebt die Schatten-Probe entlang der
-        // Normale — an Hängen dann parallel zur Fläche → Schatten-Akne-Rauten. Zwei korrekte Wahrheiten:
-        // Geometrie = echte Oberflächen-Normale (Schatten-Vertrag), das Shading flacht im Material-normalNode
-        // (TERRAIN_NORMAL_FLATTEN).
+        // NIE up-Normalen in die Geometrie backen: die Geometrie trägt die echte Oberflächen-Normale (der Boden-Stoff
+        // liest sie als `normalWorldGeometry` — das Bump-Tor nach Hangneigung, die Mischung zur Senkrechten), das
+        // Shading flacht im Material-normalNode (TERRAIN_NORMAL_FLATTEN). Der Schatten-Versatz liest NICHT die
+        // Geometrie, sondern die End-Normale dieses normalNode (r184 `normalWorld`).
         const eps = step * 1.5;
         // Schneller Trilinear-Sampler aus dem Grid. Wenn preGrid==null oder
         // Sample-Punkt out-of-bounds → fallback auf sample(x,y,z).
@@ -28442,8 +29146,9 @@ class AnazhRealm {
     }
 
     // Eingefrorener 2.5D-Lichtungs-Wert (der eine Tuning-Hebel). NUR die Shading-Normale (Material-
-    // normalNode + AO in _buildToonNodeMaterial), NIE die Geometrie — shadow.normalBias braucht die echte
-    // Oberflächen-Normale, sonst Schatten-Akne-Rauten an Hängen.
+    // normalNode + AO in _buildToonNodeMaterial), NIE die Geometrie. Der Schatten-Versatz liest dieselbe End-Normale:
+    // r184 schiebt die Probe um `normalWorld` × normalBias, und `normalWorld` IST die Normale dieses normalNode (setupNormal) —
+    // bei 1,0 zeigt der Versatz (`_schattenBias`, 0,5 Texel) auch am Hang senkrecht nach oben, nie entlang der Fläche.
     static get TERRAIN_NORMAL_FLATTEN() {
         return 1.0;
     }
@@ -33684,7 +34389,13 @@ class AnazhRealm {
     // (`_stepCharacterStructures` über `_blockerNahe`). DER ZWEITE SCHLÜSSEL, der PLATZ: jeder Eintrag des Bestands (auch
     // ohne Boxen) steht in den Zellen von Position ± Reichweite (`plaetze`); wandert seine Position nach dem Eintritt (das
     // gerittene Werk, `_blockerBewegt`), fragt man ihn direkt (`beweger`). Leser: der Tier-Leib (`_kreaturHuellenKontakt`
-    // über `_blockerUmPlatz`). Das alte Bucket-Grid (`state.blockerIndex`, V9.65) trug die Hydrosphäre und fiel mit ihr (V9.75).
+    // über `_blockerUmPlatz`), ebenso der Brennglas-Takt, die Resonanz der Boosts und das Lofi-Pad. DAS VERZEICHNIS
+    // (0710-10): je Name die Einträge, die ihn tragen — jeder Schlüssel ihrer Affordanzen (`entry.affordances`, beim Spawn
+    // eingefroren, nachgezogen von `setBlueprintAsPortal`) und „rauch" (ein Kamin: `userData.rauchQuelle` oder `chimney`),
+    // gestempelt mit den Zellen; `_blockerMit(name)` gibt sie in der Ordnung des Bestands. Leser: die Affordanz-Takte und der
+    // Dorf-Rauch. Die WARMEN Einträge (`warm`, Hitze > 0) führt der Brennglas-Takt — erwärmt wird nur dort; jeder Stempel
+    // trägt einen warmen Eintrag ein (ein Wiedereintritt). Das alte Bucket-Grid (`state.blockerIndex`, V9.65) trug die
+    // Hydrosphäre und fiel mit ihr.
     _blockerNetz() {
         const liste = this.state.architectures;
         const alt = this._blockerNetzStand;
@@ -33694,6 +34405,9 @@ class AnazhRealm {
             zellen: new Map(),
             plaetze: new Map(),
             beweger: new Set(),
+            verzeichnis: new Map(),
+            verzeichnisListe: new Map(),
+            warm: alt ? alt.warm : new Set(),
             seq: alt ? alt.seq : 0,
             gen: alt ? alt.gen + 1 : 1,
             // der Zähler der Fragen läuft über jeden Neubau weiter (wie die Ordnung): die Einträge tragen die Marken der alten
@@ -33738,6 +34452,7 @@ class AnazhRealm {
         this._blockerNetzLoesen(entry);
         if (entry._blockerGen !== N.gen) return;
         entry._blockerZellenGen = N.gen;
+        if (entry.heatBuildup > 0) N.warm.add(entry); // ein warmer Eintrag tritt (wieder) ein: der Brennglas-Takt kühlt ihn
         const pos = entry.position;
         if (pos) {
             const rr = entry._blockerReach || 0;
@@ -33749,6 +34464,16 @@ class AnazhRealm {
                 pos.z - rr,
                 pos.z + rr
             );
+        }
+        const namen = this._blockerNamen(entry);
+        if (namen.length) {
+            for (const n of namen) {
+                let menge = N.verzeichnis.get(n);
+                if (!menge) N.verzeichnis.set(n, (menge = new Set()));
+                menge.add(entry);
+                N.verzeichnisListe.delete(n);
+            }
+            entry._blockerNamenListe = namen;
         }
         const boxes = entry.blockerAABBs;
         if (!boxes || !boxes.length) return;
@@ -33887,6 +34612,38 @@ class AnazhRealm {
             if (gilt) this._blockerZellenAus(N.plaetze, entry, entry._blockerPlatz);
             entry._blockerPlatz = null;
         }
+        if (entry._blockerNamenListe) {
+            if (gilt)
+                for (const n of entry._blockerNamenListe) {
+                    const menge = N.verzeichnis.get(n);
+                    if (menge && menge.delete(entry)) N.verzeichnisListe.delete(n);
+                }
+            entry._blockerNamenListe = null;
+        }
+    }
+
+    // Die Namen eines Eintrags im Verzeichnis: jeder wahre Schlüssel seiner Affordanzen und „rauch", wenn er einen Kamin trägt.
+    _blockerNamen(entry) {
+        const out = [];
+        const a = entry.affordances;
+        if (a && typeof a === "object") for (const k in a) if (a[k]) out.push(k);
+        if ((entry.userData && entry.userData.rauchQuelle) || entry.chimney) out.push("rauch");
+        return out;
+    }
+
+    // Die Einträge des Bestands, die `name` tragen, in seiner Ordnung — dieselbe Liste wie
+    // `state.architectures.filter((e) => e.affordances && e.affordances[name])` (für „rauch": jeder Kamin). Die Liste lebt, bis
+    // sich der Name regt; der Leser ändert sie nie.
+    _blockerMit(name) {
+        const N = this._blockerNetz();
+        let liste = N.verzeichnisListe.get(name);
+        if (!liste) {
+            const menge = N.verzeichnis.get(name);
+            liste = menge ? Array.from(menge) : [];
+            if (liste.length > 1) liste.sort(AnazhRealm._nachBestand);
+            N.verzeichnisListe.set(name, liste);
+        }
+        return liste;
     }
 
     // Das Tor-Gesetz eines Eintrags: reine porta-Zahlen (Dial-Satz p · membranUniforms mu ·
@@ -35223,6 +35980,8 @@ class AnazhRealm {
         A.attrappe.type = quelle.format === "depth32float" ? THREE.FloatType : THREE.UnsignedIntType;
         rend._textures.updateTexture(A.attrappe);
         A.attrappeGpu = be.get(A.attrappe).texture;
+        // die Marke für den Ziel-Zensus: die Kopie hierher findet nie statt, der Haken zeichnet sie ins Abbild
+        if (A.attrappeGpu) A.attrappeGpu.__umleitung = "szene:tiefenabbild";
         // DER HAKEN AN DER ENCODER-KOPIE liegt EINMAL (Gegenprüfung 0710-3: vorher je Frame ein- und ausgehängt — jede
         // Zuweisung an `GPUCommandEncoder.prototype` verwirft, was der Motor über die Methode aller Aufrufer annahm); scharf
         // ist er nur für die Dauer des EINEN Bruchs (`A.scharf`, try/finally), jede andere Kopie fährt r184 unverändert.
@@ -35799,12 +36558,10 @@ class AnazhRealm {
         const st = this.state;
         if (!st.scene || !st.camera || typeof THREE === "undefined") return 0;
         const NW = AnazhRealm.NAH_WIESE;
-        if (!st.nahWiese) {
-            const gruppe = new THREE.Group();
-            gruppe.name = "nahWiese";
-            st.scene.add(gruppe);
-            st.nahWiese = { gruppe, kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
-        }
+        // Die Senken hängen direkt in der Szene (`_nahWieseSenken`): jede ist ihr eigener oberster Knoten, die Täter-Klasse
+        // (`_taeterKlasse`) liest ihren Namen `nahWiese:L<stufe>:…` — die Band-Linse trennt die Stufen.
+        if (!st.nahWiese)
+            st.nahWiese = { kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
         const nw = st.nahWiese;
         // DIE STAND-WACHE: stehen Auge, Chunks und Studio-Vorlagen, steht jede Kachel — kein Gang.
         if (this._standRuht("nahWiese", 1, { pos: st.camera.position, rand: AnazhRealm.STAND_RAND_M })) return 0;
@@ -35946,8 +36703,9 @@ class AnazhRealm {
         };
     }
 
-    // Die Senken einer Vorlage × Stufe: je Studio-Teil EINE InstancedMesh für den ganzen Ring (`nahWiese:<v>:L<stufe>:<p>`).
-    // Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt; ein neues Studio-Asset
+    // Die Senken einer Vorlage × Stufe: je Studio-Teil EINE InstancedMesh für den ganzen Ring (`nahWiese:L<stufe>:<v>:<p>`,
+    // ein oberster Knoten der Szene — die Täter-Klasse faltet den Namen auf `nahWiese:L<stufe>`, die Band-Linse nennt jede
+    // Stufe beim Namen). Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt; ein neues Studio-Asset
     // (Saison) ersetzt die Senken der Vorlage. Die Sicht-Kugel der Vorlage: Höhe der Mitte und Radius in Büschel-Skala 1
     // (die waagrechte Lage der Mitte geht in den Radius — der Büschel dreht um die Hochachse).
     _nahWieseSenken(v, stufe, fl) {
@@ -35968,7 +36726,7 @@ class AnazhRealm {
                 );
             const a = {
                 key: `${kopf}:${p}`,
-                name: `nahWiese:${v}:L${stufe}:${p}`,
+                name: `nahWiese:L${stufe}:${v}:${p}`,
                 geo: lf.geom,
                 mat: lf.mat,
                 lokal: lf.localMatrix,
@@ -35980,7 +36738,7 @@ class AnazhRealm {
                 wachse: 0,
             };
             if (a.quelle) a.quelle._liveRefs = (a.quelle._liveRefs || 0) + 1;
-            this._senkeMesh(a, 256, nw.gruppe);
+            this._senkeMesh(a, 256, this.state.scene);
             nw.senken.set(a.key, a);
             senken.push(a);
             if (!lf.geom.boundingSphere) lf.geom.computeBoundingSphere();
@@ -36056,7 +36814,7 @@ class AnazhRealm {
                 if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s)) continue;
                 m4.fromArray(k.basis, i * 16);
                 for (const a of vl.senken) {
-                    if (a.anzahl >= a.kap) this._senkeMesh(a, Math.ceil(a.kap * 1.5), nw.gruppe);
+                    if (a.anzahl >= a.kap) this._senkeMesh(a, Math.ceil(a.kap * 1.5), this.state.scene);
                     mw.multiplyMatrices(m4, a.lokal).toArray(a.mesh.instanceMatrix.array, a.anzahl * 16);
                     a.anzahl++;
                 }
@@ -40264,10 +41022,15 @@ class AnazhRealm {
             // bleiben absichtlich draußen — sie sind reine Laufzeit-Drosselung,
             // ein Reload soll wieder triggerfähig sein.
             playerEmotions: { ...this.state.player.emotions },
-            // Tag-Nacht: timeOfDay läuft nach dem Reload weiter, dayLengthMinutes ist Spieler-Wahl.
+            // Tag-Nacht: timeOfDay läuft nach dem Reload weiter. Die Tag-Länge ist die Wahl des Spielers und lebt bei ihm
+            // (localStorage, `setDayLength`): der Kopf trägt sie, weil die Taille v1 den Schlüssel verlangt
+            // (spec/golden/v1/snapshot-head.json, MUST weiter produziert), das Laden setzt sie nie (Leben-Schau 2: jeder
+            // alte Stand trug den 8-min-Tag und hielte ihn fest).
             // weatherTransition NICHT persistiert (Laufzeit-Artefakt; Reload startet mit stabilem Wetter).
             timeOfDay: typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5,
-            dayLengthMinutes: this.state.dayLengthMinutes || 8,
+            dayLengthMinutes: this.state.dayLengthMinutes,
+            // Das Wort des Spielers über das Wetter reist mit (es steht, bis er es freigibt); der Wunsch der Welt nicht.
+            wetterWort: this.state.wetterWort || null,
             // ERFINDER-WELLE — die Welt-Klang-Wahl reist (V8.59-Klasse: sonst still zurückgesetzt).
             klangPreset: typeof this.state.klangPreset === "string" ? this.state.klangPreset : null,
             // Die Studio-Übergabe überlebt den Reload (sonst still zurück auf die gefrorenen Kern-Presets).
@@ -44155,6 +44918,11 @@ class AnazhRealm {
         this.state.terrainSteepness = state.terrainSteepness || 1.0;
         this.state.terrainBaseHeight = state.terrainBaseHeight || 0.0;
         this.state.weather = state.weather || "sunny";
+        this.state.wetterWort =
+            typeof state.wetterWort === "string" && state.wetterWort in AnazhRealm.WEATHER_INTENSITY
+                ? state.wetterWort
+                : null;
+        this.state.wetterWunsch = null;
         if (this.state.skybox) this.updateSkyboxWeather();
     }
 
@@ -44302,15 +45070,10 @@ class AnazhRealm {
             }
         }
         if (typeof state.timeOfDay === "number" && state.timeOfDay >= 0 && state.timeOfDay <= 1) {
-            this.state.timeOfDay = state.timeOfDay;
+            this._uhrSetzen(state.timeOfDay, "laden");
         }
-        if (typeof state.dayLengthMinutes === "number") {
-            const min = this.constructor.DAY_LENGTH_MIN_MINUTES;
-            const max = this.constructor.DAY_LENGTH_MAX_MINUTES;
-            if (state.dayLengthMinutes >= min && state.dayLengthMinutes <= max) {
-                this.state.dayLengthMinutes = state.dayLengthMinutes;
-            }
-        }
+        // `state.dayLengthMinutes` des Stands setzt der Restore NIE: die Tag-Länge ist die Wahl des Spielers (localStorage,
+        // `setDayLength`) — der Kopf trägt sie nur für die Taille v1 (Leben-Schau 2, gate:wetter-wache (T)).
         // ERFINDER-WELLE — die Welt-Klang-Wahl (Genre-Id; der Konsument `_klangStudioPreset`
         // prueft LIVE gegen das Buch — ein stale Name faellt dort fail-soft aufs Host-Rezept).
         if (typeof state.klangPreset === "string" && state.klangPreset.length <= 64) {
@@ -46034,7 +46797,11 @@ class AnazhRealm {
         if (playerPos && Array.isArray(this.state.architectures)) {
             const T = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
             const radiusSq = AnazhRealm.BOOST_RESONANCE_RADIUS * AnazhRealm.BOOST_RESONANCE_RADIUS;
-            for (const entry of this.state.architectures) {
+            // die Plätze um den Spieler (`_blockerUmPlatz`, in der Ordnung des Bestands) — vorher jeder Eintrag je Sekunde
+            const nahe = this._boostNahe || (this._boostNahe = []);
+            nahe.length = 0;
+            this._blockerUmPlatz(playerPos.x, playerPos.z, AnazhRealm.BOOST_RESONANCE_RADIUS + 1e-6, nahe);
+            for (const entry of nahe) {
                 if (!entry || !entry.position) continue;
                 const dx = entry.position.x - playerPos.x;
                 const dz = entry.position.z - playerPos.z;
@@ -47182,6 +47949,7 @@ class AnazhRealm {
             for (const entry of arches) {
                 if (entry && entry.type === name) {
                     entry.affordances = this.computeBlueprintAffordances(bp);
+                    this._blockerNetzSetzen(entry); // das Verzeichnis der Affordanzen
                 }
             }
         }
@@ -51843,8 +52611,9 @@ class AnazhRealm {
         if (!Array.isArray(dr.teilchen)) dr.teilchen = [];
         // Quellen neu aus Architectures mit rauchQuelle (world tip = origin + φ-rotate).
         const quellen = [];
-        const archs = st.architectures;
-        if (Array.isArray(archs)) {
+        // die Kamine aus dem Verzeichnis (`_blockerMit("rauch")`, in der Ordnung des Bestands) — vorher je Frame jeder Eintrag
+        const archs = Array.isArray(st.architectures) ? this._blockerMit("rauch") : null;
+        if (archs) {
             for (let i = 0; i < archs.length; i++) {
                 const e = archs[i];
                 if (!e || !e.position) continue;
@@ -51981,11 +52750,18 @@ class AnazhRealm {
         const st = this.state;
         const pm = st.playerMesh;
         if (!pm || !Array.isArray(st.architectures)) return;
-        if (!this._hausTuerScanT || currentTime - this._hausTuerScanT > 1000) {
+        // `currentTime` sind SEKUNDEN (der Loop: `t / 1000`) — der Scan jede Sekunde. Bis 0710-11 stand hier `> 1000`: die
+        // Liste baute sich nur alle 1 000 s neu, ein Haus, das danach in die Nähe kam oder beim Scan noch kein Mesh trug, öffnete
+        // seine Tür bis zu ~17 min nicht (gate:brennglas-takt (H)).
+        if (!this._hausTuerScanT || currentTime - this._hausTuerScanT > 1) {
             this._hausTuerScanT = currentTime; // Instanz-Felder (die _editSaveTimer-Klasse: nicht serialisiert)
             const nah = [];
             const p = pm.position;
-            for (const e of st.architectures) {
+            // die Plätze um den Spieler (`_blockerUmPlatz`, in der Ordnung des Bestands) — vorher jeder Eintrag je Scan
+            const kand = this._hausTuerKand || (this._hausTuerKand = []);
+            kand.length = 0;
+            this._blockerUmPlatz(p.x, p.z, 40 + 1e-6, kand);
+            for (const e of kand) {
                 if (!e || !e.tuer || !e.position || !e.instSlots) continue;
                 const dx = e.position.x - p.x;
                 const dz = e.position.z - p.z;
@@ -52159,10 +52935,9 @@ class AnazhRealm {
                 (built.mesh.userData && built.mesh.userData._leibNah) || built.mesh,
                 group
             );
-            // KREATUR-KOSTEN (3) — die Fern-Gestalt-Refs am Gruppen-Level: der
-            // Peer-Tick liest entry.mesh.userData._menschFern (EIN Chokepoint,
-            // _menschFernToggle). null = kein lod1-Guss → Toggle no-op.
-            group.userData._menschFern = (built.mesh.userData && built.mesh.userData._menschFern) || null;
+            // DIE GELENK-GESTALT am Gruppen-Level (S3): der Peer-Tick und die Werkstatt schalten die Stufe am Leib
+            // (`_gelenkStufe`); der Rig-Bau liefert sie immer (fail-closed ohne Grobstufe).
+            group.userData._gelenk = built.mesh.userData._gelenk;
             return group;
         }
         // Kein Rig → fail-LAUT: sichtbarer Not-Körper (Magenta-Kapsel) + Log statt stumm-leerer Gruppe
@@ -52369,7 +53144,7 @@ class AnazhRealm {
     // (die Ecken des Kopf-Knochens und die Meshes unter ihm: Haar, Augen). kopfMit: der Kopf hängt am Rumpf (dann gleicht
     // er dessen Neigung aus und bleibt aufrecht). Rahmen: der Spieler (seine Gier ändert keine Höhe).
     _sitzLeib(group, rig) {
-        const nah = (group.userData._menschFern && group.userData._menschFern.nah) || group;
+        const nah = group.userData._gelenk ? group.userData._gelenk.nah : group;
         if (rig.spine) rig.spine.rotation.x = 0;
         if (rig.head) rig.head.rotation.x = 0;
         group.updateMatrixWorld(true);
@@ -52998,8 +53773,7 @@ class AnazhRealm {
         const r2 = radiusM * radiusM;
         let best = null;
         let bestD2 = r2;
-        for (const entry of this.state.architectures || []) {
-            if (!entry.affordances || !entry.affordances[affordanceKey]) continue;
+        for (const entry of this._blockerMit(affordanceKey)) {
             const dx = entry.position.x - pm.x;
             const dy = entry.position.y - pm.y;
             const dz = entry.position.z - pm.z;
@@ -53941,8 +54715,7 @@ class AnazhRealm {
         // Zündet erst auf stehender Bühne — sonst verbrennt Welt-Substanz im unspielbaren Boot. Headless steht
         // die Bühne sofort (direkte Tick-Aufrufe laufen unverändert).
         if (!this._buehneSteht()) return;
-        const archs = this.state.architectures || [];
-        const focusing = archs.filter((e) => e.affordances && e.affordances.focusing);
+        const focusing = this._blockerMit("focusing");
         const sonne = this.state.weather === "sunny" ? this._sonnenRichtung() : null;
         const licht = sonne && sonne.y > 0 ? sonne : null;
         const punkte = [];
@@ -53958,7 +54731,28 @@ class AnazhRealm {
         // Das GERITTENE Gefährt brennt nie unter dem Reiter weg (sonst Auto-Dismount aus dem Nichts) —
         // Reiter + Gefährt sind EINS.
         const riddenId = this.state.player ? this.state.player.mountedArch : null;
-        for (const target of archs) {
+        // DIE BETROFFENEN (0710-10, Lehre 25): erwärmen kann sich nur, wer in Reichweite eines Brennglases steht — die Plätze um
+        // jedes (`_blockerUmPlatz`) —, kühlen nur, wer warm ist (`warm`, die Menge dieses Takts); jeder andere Eintrag ginge
+        // ohne Wirkung durch. In der Ordnung des Bestands (die Sätze und das Feuer in derselben Folge) — dieselben Urteile wie
+        // die Schleife über ihn (gate:brennglas-takt, der alte Takt als Orakel). Vorher: jeder Eintrag je Takt (Wiese 1 578).
+        const N = this._blockerNetz();
+        const ziele = this._brennZiele || (this._brennZiele = []);
+        ziele.length = 0;
+        if (punkte.length)
+            for (const fa of focusing)
+                if (fa.position)
+                    this._blockerUmPlatz(fa.position.x, fa.position.z, AnazhRealm.FOCUSING_HEAT_RANGE_M + 1e-6, ziele);
+        for (const e of N.warm) {
+            if (e._blockerGen !== N.gen) N.warm.delete(e);
+            else ziele.push(e);
+        }
+        if (ziele.length > 1) {
+            ziele.sort(AnazhRealm._nachBestand);
+            let w = 1;
+            for (let i = 1; i < ziele.length; i++) if (ziele[i] !== ziele[w - 1]) ziele[w++] = ziele[i];
+            ziele.length = w;
+        }
+        for (const target of ziele) {
             const warm = target.heatBuildup > 0;
             if (!warm && !punkte.length) continue; // kein Licht, nichts zu kühlen: der billigste Weg (Lehre 25)
             if (target.affordances && target.affordances.focusing) continue; // selbst nicht
@@ -53986,11 +54780,15 @@ class AnazhRealm {
                         }
             }
             if (!quelle) {
-                if (warm) target.heatBuildup = Math.max(0, target.heatBuildup - ratePerSec * dt);
+                if (warm) {
+                    target.heatBuildup = Math.max(0, target.heatBuildup - ratePerSec * dt);
+                    if (!(target.heatBuildup > 0)) N.warm.delete(target);
+                }
                 continue;
             }
             const vorher = target.heatBuildup || 0;
             target.heatBuildup = vorher + ratePerSec * dt;
+            if (target.heatBuildup > 0) N.warm.add(target);
             if (vorher < ignite / 2 && target.heatBuildup >= ignite / 2 && target.heatBuildup < ignite)
                 this._spielerSagt(
                     `„${name(target)}" glimmt im Brennpunkt von „${name(quelle)}" — rück es aus dem Licht, sonst fängt es Feuer.`
@@ -54065,7 +54863,7 @@ class AnazhRealm {
     // spürbar); der erste Kontakt je Strahler schreibt eine Erinnerung (journalAppendOnce).
     // Spiegelt den focusing-Tick (filtern, Range-Check, akkumulieren).
     _tickRadiatingAffordances(dt) {
-        const radiating = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.radiating);
+        const radiating = this._blockerMit("radiating");
         if (radiating.length === 0) return;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
@@ -54075,9 +54873,7 @@ class AnazhRealm {
         const baseStep = AnazhRealm.RADIATING_EMOTION_RATE_PER_SEC * dt;
         // W10 ext. — broadcasting-Relais: ein leitfähiger Mast in Reichweite
         // eines Strahlers verstärkt dessen Reichweite (Affordances komponieren).
-        const broadcasting = (this.state.architectures || []).filter(
-            (e) => e.affordances && e.affordances.broadcasting && e.position
-        );
+        const broadcasting = this._blockerMit("broadcasting").filter((e) => e.position);
         const relayRange2 = AnazhRealm.BROADCAST_RELAY_RANGE_M * AnazhRealm.BROADCAST_RELAY_RANGE_M;
         const maxMult = AnazhRealm.BROADCAST_RANGE_MULT;
         const strengthOf = (e, key) => {
@@ -54122,7 +54918,7 @@ class AnazhRealm {
     // mit der Compound-Stärke, erster Kontakt schreibt eine Erinnerung. Weniger chaos verlangsamt
     // zugleich die Kreaturen (chaos → Tempo).
     _tickBalancingAffordances(dt) {
-        const balancing = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.balancing);
+        const balancing = this._blockerMit("balancing");
         if (balancing.length === 0) return;
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm) return;
@@ -54154,7 +54950,7 @@ class AnazhRealm {
     _tickLiftingAffordances() {
         const pl = this.state.player;
         if (!pl) return;
-        const lifting = (this.state.architectures || []).filter((e) => e.affordances && e.affordances.lifting);
+        const lifting = this._blockerMit("lifting");
         const pm = this.state.playerMesh && this.state.playerMesh.position;
         if (!pm || lifting.length === 0) {
             pl.liftingField = { active: false, strength: 0 };
@@ -54490,6 +55286,41 @@ class AnazhRealm {
         // Sprint-Faktor ist fail-closed Kern-Pflicht (koerper:bewegung.sprintMul); ein alter Kern bricht
         // laut, wie speed/jumpPower (_bewegungsKoeff).
         this.state.sprintSpeed = v * AnazhRealm._sprintMulGesetz();
+    }
+
+    // DAS GESETZ-BAND eines Bewegungs-Stats für DIESEN Leib: das Körper-Gesetz (koerper fx.bewegung: base + leicht·(1 −
+    // dichte) + mag·magieleitung, die Tags in [0, 1]) spannt [base, base + leicht + mag]; die Größe des Leibs (dieselbe
+    // Pipeline, computePlayerStats) skaliert es mit g = Stat / Rohwert der Tags. Liefert {min, max, wert}.
+    _koerperGesetzBand(stat) {
+        const { tags, stats } = this.computePlayerStats();
+        const K = AnazhRealm._bewegungsKoeff(stat);
+        const roh = AnazhRealm.STAT_FROM_TAGS[stat](tags);
+        const g = roh > 0 && Number.isFinite(stats[stat]) ? stats[stat] / roh : 1;
+        return { min: K.base * g, max: (K.base + K.leicht + K.mag) * g, wert: stats[stat] };
+    }
+
+    // DER KÖRPER-HAUCH (Leben-Schau 07.10., Neu 1): ein DSL-Op wiegt Lauf-Tempo oder Sprungkraft nur INNERHALB des
+    // Gesetz-Bands des Leibs (`_koerperGesetzBand`) — der Wunsch jenseits des Bands landet an seinem Rand, benannt im
+    // Protokoll (Wunsch, gesetzt, Band, Quelle). Vorher setzte der Op den Wunsch absolut: der Nexus würfelte Gehen 11,1 m/s
+    // (Sprint 45 m/s) und Sprungkraft bis 18,6 statt 2,6, der Hang-Gang und der Sprung hingen am Würfel.
+    _koerperHauch(stat, wunsch, ctx) {
+        const w = Number(wunsch);
+        if (!Number.isFinite(w)) {
+            if (ctx && ctx.log) ctx.log.push({ event: "invalid_koerper_hauch", stat, wunsch });
+            return;
+        }
+        const b = this._koerperGesetzBand(stat);
+        const v = Math.min(b.max, Math.max(b.min, w));
+        if (stat === "speed") this._applyPlayerSpeed(v);
+        else if (stat === "jumpPower") this.state.jumpPower = v;
+        else return;
+        const quelle = (ctx && ctx.source) || "dsl";
+        if (ctx && ctx.log) ctx.log.push({ event: "koerper_hauch", stat, wunsch: w, gesetzt: v, band: [b.min, b.max] });
+        this.log(
+            `Körper-Hauch (${quelle}): ${stat === "speed" ? "Lauf-Tempo" : "Sprungkraft"} ${v.toFixed(2)} ` +
+                `(Wunsch ${w.toFixed(2)}, Gesetz-Band ${b.min.toFixed(2)}–${b.max.toFixed(2)})`,
+            "INFO"
+        );
     }
 
     // Mana-Helper für Konsumenten (Magie-Akte, Boost, DSL-Kosten): strukturell, KEIN DSL-Op — ein Skript
@@ -56316,6 +57147,49 @@ class AnazhRealm {
         const nx = Math.max(rx * SC.regionM, Math.min(p.x, (rx + 1) * SC.regionM));
         const nz = Math.max(rz * SC.regionM, Math.min(p.z, (rz + 1) * SC.regionM));
         return Math.hypot(nx - p.x, nz - p.z) <= R;
+    }
+
+    // Steht die Streu? — die EINE Antwort (das erste Weltbild `_weltbildFehlt`, die Bühnen-Linse): wie viele Streu-Regionen
+    // in Reichweite (`_streuRegionInReichweite`) nicht stehen — sie fehlen, warten auf ihr Asset oder tragen eine offene
+    // Scheibe. Keine Regionen-Karte heißt: der Streamer lief noch nie (der Deko-Job wartet, solange der Ring Chunks baut),
+    // jede Region in Reichweite fehlt. Befund 09.10. (gate:ankunft, CI 37942425121): bei langsamem Takt stand der Ring am
+    // Existenz-Boden, bevor der Streamer einen Frame bekam — die fehlende Karte galt als „nichts wartet", der Ladeschirm wich
+    // ohne ein einziges Wald-Stück. Ist die Streu aus (`gpuScatter === false`), wartet nichts; ohne Spieler-Ort steht keine.
+    // `liste` (optional) nimmt je wartende Region ihren Schlüssel und Grund auf (`_streuRegionWartet`).
+    _streuWartet(p, liste) {
+        const SC = AnazhRealm.SCATTER;
+        const st = this.state;
+        if (st.atmosphere && st.atmosphere.gpuScatter === false) return 0;
+        if (!p) {
+            if (liste) liste.push("kein Spieler-Ort");
+            return 1;
+        }
+        const rx0 = Math.floor(p.x / SC.regionM);
+        const rz0 = Math.floor(p.z / SC.regionM);
+        let warten = 0;
+        for (let dz = -SC.ringRegions; dz <= SC.ringRegions; dz++)
+            for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
+                const rx = rx0 + dx;
+                const rz = rz0 + dz;
+                if (!this._streuRegionInReichweite(rx, rz, p)) continue;
+                const grund = this._streuRegionWartet(`${rx},${rz}`);
+                if (!grund) continue;
+                warten++;
+                if (liste) liste.push(`${rx},${rz} ${grund}`);
+            }
+        return warten;
+    }
+
+    // Worauf EINE Streu-Region wartet — die Regel je Region (null: sie steht): sie fehlt (keine Karte oder kein Eintrag),
+    // wartet auf ihr Asset (`_deferredFoundry`, der Nachschub baut sie nach der Lieferung neu) oder trägt eine offene
+    // Scheibe (`_cont`). Jeder Leser fragt hier, keiner liest die Marken selbst.
+    _streuRegionWartet(rk) {
+        const regionen = this.state.scatterRegions;
+        const reg = regionen ? regionen.get(rk) : null;
+        if (!reg) return "fehlt";
+        if (reg._deferredFoundry) return "wartet auf ihr Asset";
+        if (reg._cont) return "Scheibe offen";
+        return null;
     }
 
     _tickScatterStreaming(playerPos, deadlineMs) {
@@ -61941,11 +62815,82 @@ class AnazhRealm {
         return dx < gap && dy < gap && dz < gap;
     }
 
-    // Räumliche Tags = computeCompoundTags-Basis + Bonus-Regeln, VOR der MAX-Aggregation je Part:
+    // DAS GEDÄCHTNIS DER RAUM-TAGS (0710-11): die Rechnung (`_raumTagsRechnen`) prüft je Teil-Paar Kontakt und Hohlraum —
+    // O(Teile²), an der Mess-Wiese 0,6–1,1 ms je Bauplan (Haselbusch 112 Teile); die Resonanz der Boosts fragte je Sekunde
+    // dieselben Baupläne für jeden nahen Eintrag neu (10 Rufe, 8,3 ms, Spitze 10,3 ms). Je Bauplan-Objekt merkt sich das
+    // Gedächtnis die Tags und den SCHLÜSSEL: einen Schnappschuss JEDES Eingangs der Rechnung (`_raumTagSchluessel`: je Teil
+    // Form, Stoff, Position, Größe; je benutzter Stoff seine Tags) — gebaut bei jedem Ruf, Wert für Wert verglichen. So sieht
+    // das Gedächtnis jeden Schreiber (die Werkstatt-API, Undo/Redo, das Laden, `defineMaterial`, eine direkte Änderung am
+    // Teil ohne API), ohne ihn zu kennen; die Tags rechnen nur bei geändertem Schlüssel neu. Der Leser bekommt je Ruf ein
+    // eigenes Objekt (wie die Rechnung). Die Wand (gate:raum-tags): der Schlüssel liest jeden Eingang der Rechnung (Proxy-
+    // Linse), die Rechnung liest keinen Zustand außer `state.materials`, ihre Tabellen schreibt niemand (AST), und über eine
+    // Werkstatt-Sitzung mit Edits urteilt das Gedächtnis byte-gleich wie die Rechnung.
+    computeSpatialTags(blueprint) {
+        if (!blueprint || !Array.isArray(blueprint.parts) || blueprint.parts.length === 0) {
+            return this._raumTagsRechnen(blueprint);
+        }
+        const gedaechtnis = this._raumTagGedaechtnis || (this._raumTagGedaechtnis = new WeakMap());
+        const neu = this._raumTagSchluessel(blueprint, this._raumTagKratz || (this._raumTagKratz = []));
+        let m = gedaechtnis.get(blueprint);
+        if (m && this._raumTagGleich(m.schluessel, neu)) return Object.assign({}, m.tags);
+        const tags = this._raumTagsRechnen(blueprint);
+        if (!m) gedaechtnis.set(blueprint, (m = { schluessel: [], tags: null }));
+        // der neue Schlüssel wird das Gedächtnis, das alte Array der nächste Kratzplatz
+        this._raumTagKratz = m.schluessel;
+        m.schluessel = neu;
+        m.tags = tags;
+        return Object.assign({}, tags);
+    }
+
+    // Der Schlüssel der Raum-Tags: jeder Eingang der Rechnung in fester Folge (Flaggen vor den Teil-Stücken, so ist die Folge
+    // eindeutig) — die Teile (Form, Stoff, Position, Größe) und je benutztem Stoff (`material || "stein"`) seine Tags.
+    _raumTagSchluessel(blueprint, out) {
+        out.length = 0;
+        const parts = blueprint.parts;
+        const n = parts.length;
+        out.push(n);
+        const stoffe = this._raumTagStoffe || (this._raumTagStoffe = []);
+        stoffe.length = 0;
+        for (let i = 0; i < n; i++) {
+            const p = parts[i];
+            if (!p || typeof p !== "object") {
+                out.push(0, p);
+                continue;
+            }
+            const pos = p.position;
+            const size = p.size;
+            out.push(1, p.shape, p.material);
+            if (pos) out.push(1, pos.x, pos.y, pos.z);
+            else out.push(0);
+            if (size) out.push(1, size.x, size.y, size.z);
+            else out.push(0);
+            const stoff = p.material || "stein";
+            if (stoffe.indexOf(stoff) < 0) stoffe.push(stoff);
+        }
+        const mats = this.state.materials;
+        out.push(mats ? 1 : 0);
+        if (mats)
+            for (const name of stoffe) {
+                const mat = mats[name];
+                const t = mat ? mat.tags : undefined;
+                out.push(name, mat ? 1 : 0, t ? 1 : 0);
+                if (t) for (const k of AnazhRealm.MATERIAL_TAG_KEYS) out.push(t[k]);
+            }
+        return out;
+    }
+
+    _raumTagGleich(a, b) {
+        if (a.length !== b.length) return false;
+        for (let i = 0; i < a.length; i++) if (!Object.is(a[i], b[i])) return false;
+        return true;
+    }
+
+    // Räumliche Tags = computeCompoundTags-Basis + Bonus-Regeln, VOR der MAX-Aggregation je Part (die gedächtnislose
+    // Rechnung; Leser fragen `computeSpatialTags`):
     // Prinzip 1: pointed-shape (cone/pyramid/octahedron/helix) at_top/at_outside → Bonus auf härte +
     // magieleitung, skaliert mit der intrinsischen Aktivierung (computePartTags).
     // Prinzip 4: je Tag max(Original, Kontakt × CONTACT_TRANSFER) zwischen berührenden Parts.
-    computeSpatialTags(blueprint) {
+    _raumTagsRechnen(blueprint) {
         if (!blueprint || !Array.isArray(blueprint.parts) || blueprint.parts.length === 0) {
             return this.computeCompoundTags(blueprint);
         }
@@ -70486,6 +71431,7 @@ class AnazhRealm {
             sc.top = m;
             sc.bottom = -m;
             sc.updateProjectionMatrix();
+            this._hauptSchattenBias(dl); // der Texel der Haupt-Karte folgt der Reichweite
         }
         const csm = this.state.csmNode;
         if (csm) {
@@ -70505,24 +71451,65 @@ class AnazhRealm {
         return m;
     }
 
-    // Schatten-Bias (shadow.normalBias): verschiebt den Sample entlang der Normale — zu klein → Acne-
-    // Streifen an steilen Wänden, zu groß → Peter-Panning (Schatten löst sich vom Fuß). Default 1.0.
+    // DER SCHATTEN-HEBEL (`atmosphere.shadowBias`, 0..3, Standard 1): er skaliert das GESETZ des Bias (`_schattenBias`) — bis
+    // 0710-12 war er der normalBias selbst, ein fester Meter-Wert für jede Kaskade (1,0 m: kein Werfer unter ~1 m erreichte den
+    // Boden). Jeder gespeicherte Stand trägt 1 = das Gesetz. Er stellt jede Karte sofort: das Haupt-Licht (der Rückfall ohne
+    // Kaskaden) und jede Kaskade mit der Box ihres letzten Renders (B4, V18.130: die Kaskaden-Lichter klonen nur beim Init).
     setShadowBias(bias) {
         const v = Math.max(0, Math.min(3, Number(bias)));
         const m = Number.isFinite(v) ? v : 1.0;
         if (!this.state.atmosphere) this.state.atmosphere = { waterCull: 0.0025 };
         this.state.atmosphere.shadowBias = m;
-        const dl = this.state.directionalLight;
-        if (dl && dl.shadow) dl.shadow.normalBias = m;
-        // B4 (V18.130) — die CSM-Kaskaden-Lichter klonen den normalBias nur
-        // beim Init; ein Live-Hebel MUSS sie mit-stellen (sonst stellt der
-        // Slider nur die unbenutzte Haupt-Map — der Passagier-Trugschluss).
+        this._hauptSchattenBias(this.state.directionalLight);
         const csm = this.state.csmNode;
-        if (csm && Array.isArray(csm.lights)) {
-            for (const lw of csm.lights) if (lw && lw.shadow) lw.shadow.normalBias = m;
-        }
+        if (csm && Array.isArray(csm.lights) && csm._anazhFit)
+            csm.lights.forEach((lw, i) => {
+                const f = csm._anazhFit[i];
+                if (lw && lw.shadow && f)
+                    this._schattenBias(
+                        lw,
+                        Math.max(f.W / lw.shadow.mapSize.width, f.H / lw.shadow.mapSize.height),
+                        f.zt - f.zb
+                    );
+            });
         if (typeof this.saveState === "function") this.saveState();
         return m;
+    }
+
+    // DAS GESETZ DES SCHATTEN-BIAS (0710-12) — je Karte aus ihrer Texel-Kante, nie ein Meter-Wert für alle Kaskaden. Befund
+    // (Studio-Welle S3, Familie kreatur): `normalBias` 1,0 m für beide Kaskaden; r184 schiebt die Probe jedes Empfängers um
+    // `normalWorld × normalBias` in WELT-METERN (ShadowNode: `positionWorld.add(normalWorld.mul(normalBias))`), der Boden fragte
+    // die Karte 1 m über sich ab — Wolf, Fuchs, Busch, Zaun-Pfosten und die Beine des Spielers warfen keinen sichtbaren
+    // Schatten (Boden-IoU ≈ 0; die Kaskaden tragen an der Wiese 0,11–0,16 / 0,16–0,41 m je Texel, 1 m waren 3–9 Texel). Akne
+    // entsteht innerhalb EINES Texels — der Bias, der sie hält, ist ein Bruchteil der Texel-Kante:
+    //   normalBias = normalTexel · Hebel · Texel   (`_schattenNormalBias`, die EINE Quelle `atmosphere.shadowBias`)
+    //   bias       = −tiefeTexel · Texel / Tiefe der Box   (r184 addiert ihn auf die Tiefe der Schatten-Koordinate, 0..1)
+    // `texel` = die gröbere Kante der Karte (Welt-Meter), `tiefe` = Fern- minus Nah-Ebene ihrer Kamera. Gemessen 09.10. (GTX 1060,
+    // gate:schatten-bias --echt, 2-mm-Platten eben · im Streiflicht 10° · Dach 40° bei 11° und 26° Sonne): die Akne-Kante liegt
+    // zwischen 0,1/0 und 0,25/0,4 Texel (normal/Tiefe); ohne Normal-Anteil (0/1) streift das Streiflicht 4,9 %; das Gesetz 0,5/0,75
+    // hält jede Platte bei 0,00 % und die kleinen Werfer am Fuß (Boden-IoU mit Saum 0,97–1,0).
+    // KEIN HANG-BIAS: r184 trägt den hang-skalierten Tiefen-Bias (polygonOffset des Schatten-Stoffs → Pipeline
+    // depthBiasSlopeScale) nicht verlässlich — der Pipeline-Schlüssel enthält ihn nicht (WebGPUBackend.getRenderCacheKey), der
+    // Stoff-Schlüssel kennt Zahlen nur als 0/≠0, und r184 legt den Schatten-Stoff einer Kaskade neu an (bei der Geburt gesetzt,
+    // im Lauf wieder 0: gemessen 09.10.). Ein Bias, der nach dem nächsten Neubau still fehlt, wäre der Bruch.
+    _schattenBias(licht, texel, tiefe) {
+        const K = AnazhRealm.SCHATTEN_KASKADE;
+        const sh = licht && licht.shadow;
+        if (!sh || !(texel > 0) || !(tiefe > 0)) return;
+        sh.normalBias = this._schattenNormalBias(texel);
+        sh.bias = (-K.tiefeTexel * texel) / tiefe;
+    }
+    _schattenNormalBias(texel) {
+        const a = this.state.atmosphere;
+        const hebel = a && Number.isFinite(a.shadowBias) ? Math.max(0, Math.min(3, a.shadowBias)) : 1;
+        return AnazhRealm.SCHATTEN_KASKADE.normalTexel * hebel * texel;
+    }
+    // Das Haupt-Licht: der Rückfall ohne Kaskaden und die Vorlage, aus der die Kaskaden-Lichter klonen. Seine Karte deckt
+    // ±Reichweite um den Spieler — ein Texel ist 2 · Reichweite / Kartengröße.
+    _hauptSchattenBias(dl) {
+        const c = dl && dl.shadow && dl.shadow.camera;
+        if (!c) return;
+        this._schattenBias(dl, (c.right - c.left) / dl.shadow.mapSize.width, c.far - c.near);
     }
 
     // ===== ATLAS §20 · SPAWN-ÖKOLOGIE — Affinität · Boden-Material · Klump/Streu-Verteilung =====
@@ -74209,7 +75196,7 @@ class AnazhRealm {
 
     // DIE GLIEDER DER GESTALT — EINE Quelle für Fern-Bild UND Treffer (Welle L 06.10.): jedes Mesh gehört seinem
     // nächsten artikulierten Anker (die Gruppen, die _animateTierBaum rotiert; die Tier-Haut zerfällt je dominantem
-    // Bone), Mini-Gruppen verschmelzen in den Eltern-Anker, Deckel 12 je Tier. Der Fern-Standbild-Ast zählt NIE
+    // Bone), Mini-Gruppen verschmelzen in den Eltern-Anker, Deckel 12 je Tier. Die Grobstufe (`_gelenk.fern`) zählt NIE
     // (Doppel-Körper). Liefert { gruppen: Map(Anker → {meshes, verts}), wurzel, gattung } oder null.
     _kreaturGliederGruppen(cr) {
         const tb = cr.userData && cr.userData._tierBaum;
@@ -74232,13 +75219,8 @@ class AnazhRealm {
         cr.updateMatrixWorld(true);
         cr.traverse((o) => {
             if (!o.isMesh || !o.geometry || !o.geometry.attributes || !o.geometry.attributes.position) return;
-            if (tb && tb.fern) {
-                let p = o;
-                while (p && p !== cr) {
-                    if (p === tb.fern) return; // das gemergte Standbild wäre der Doppel-Körper
-                    p = p.parent;
-                }
-            }
+            const grob = cr.userData._gelenk ? cr.userData._gelenk.fern : null;
+            for (let p = o; grob && p && p !== cr; p = p.parent) if (p === grob) return; // die Grobstufe wäre der Doppel-Körper
             // Die Tier-Haut (V18.497) ist EIN SkinnedMesh über alle Glieder: je Vertex zählt der dominante
             // Bone (skinIndex[0] trägt das größte Gewicht) — die Haut zerfällt in Glied-Stücke, deren
             // matrixWorld (Bone · boneInverse · bindMatrix) den Bind-Raum starr an die LAUFENDE Pose hängt.
@@ -75468,8 +76450,9 @@ class AnazhRealm {
     // Art:Gestalt:LOD:Teil ein leafKey im BESTEHENDEN HISM; null solange das Asset lädt (Tick baut nach).
     // DIE GESTALT eines Samens (V18.527): eine von V Gestalten je Art, V aus dem Studio-Budget
     // (`PORTAL_RENDER_CONFIG.lod.budget.gestalten` über das Buch — eiche/fichte/birke/tanne 2 · weide/mammut/strauch 1 ·
-    // '*' 16; seit W8 zählt jeder Zweit-Kern die Gestalten SEINER Rezepte selbst, Haus/Tor/Fahrzeug/Klinge/Körper/Tier
-    // je 16, gemergt am Ingest), dieselben Zahlen, mit denen der Studio-Wald pflanzt. Die Wahl liest die HOHEN Hash-Bits (h·V / 2³²): das
+    // '*' 16; seit W8 zählt jeder Zweit-Kern die Gestalten SEINER Rezepte selbst, gemergt am Ingest — seit S3 nur
+    // verschiedene Individuen: Haus 16 · Fahrzeug 8 (je Lack eine) · Tor/Klinge/Körper/Tier 1, seed-invariant; die
+    // Gestalten-Wand in gate:asset-contract), dieselben Zahlen, mit denen der Studio-Wald pflanzt. Die Wahl liest die HOHEN Hash-Bits (h·V / 2³²): das
     // alte `h % 16` hing an den unteren Bits, die im Baum-Raster periodisch laufen — dieselbe Gestalt 16 Zellen weiter
     // mit 0,339 statt 1/16 (ein Klon-Gitter mit 54 m Periode). Ohne Buch null: der Aufrufer deferriert, nie eine
     // geratene Zahl. Gleicher Same = gleicher Baum, scale/yaw/tint je Instanz.
@@ -84665,32 +85648,13 @@ class AnazhRealm {
             }
             if (soulKey) {
                 group = this._buildCreatureGroup(soulKey, { dialsOv: ov || null, eigen: true });
-                // Die LOD-Wahl toggelt nah↔fern am Guss (userData._tierBaum, der Welt-
-                // Chokepoint-Struktur folgend): L0 = der Gelenk-Baum, L1 = das gemergte
-                // Standbild aus DERSELBEN Pipe. Fail-soft: kein fern-Guss → nah bleibt.
-                const tb = group && group.userData && group.userData._tierBaum;
-                if (tb && tb.wrap) {
-                    const useFern = lodN >= 1 && !!tb.fern;
-                    tb.wrap.visible = !useFern;
-                    if (tb.fern) tb.fern.visible = useFern;
-                } else if (group) {
-                    // Ohne Baum-Refs (Alt-Guss): die Teile sichtbar lassen (ehrliches Interim).
-                    for (const ch of group.children) ch.visible = true;
-                }
             }
-        } else {
-            group = this._buildHumanGroup(ov || undefined, { eigen: true });
-            // Dieselbe Stufen-Wahl am Mensch-Guss (userData._menschFern = {nah, fern},
-            // der _menschFernToggle-Chokepoint-Struktur folgend). Fail-soft: kein
-            // lod1-Guss → alles bleibt byte-alt L0.
-            const mf = group && group.userData && group.userData._menschFern;
-            if (mf && mf.nah && mf.fern) {
-                const useFernM = lodN >= 1;
-                mf.nah.visible = !useFernM;
-                mf.fern.visible = useFernM;
-            }
-        }
+        } else group = this._buildHumanGroup(ov || undefined, { eigen: true });
         if (!group || !group.children) return false;
+        // Die LOD-Wahl der Vorschau schaltet die Stufe am EINEN Schalter der Gelenk-Gestalt (Tier und Mensch): L0 = die
+        // feine, L1 = die gelenkige Grobstufe aus DERSELBEN Pipe (jede Gelenk-Gestalt trägt beide, fail-closed im Bau; der
+        // magentafarbene Not-Körper eines kalten Kerns ist keine).
+        if (group.userData._gelenk) this._gelenkStufe(group, lodN >= 1 ? Infinity : 0);
         // Der Guss gehört dem Ofen (`eigen`): ein Regler-Einzelstück trägt keine Geteilt-Markierung, eine Vorlage aus dem
         // Memo ihre eigene — `_disposeSoulGroup` entsorgt beim Wechsel genau das Einzelstück. Die Bauplan-Vorschau rührt
         // die Gestalt des Ofens nie an (`_workshopRebuildPreviewMesh`).
@@ -89366,20 +90330,82 @@ class AnazhRealm {
         const minutes = this.state.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES;
         const cycleSeconds = Math.max(60, minutes * 60); // hard-floor 1min
         const advance = delta / cycleSeconds; // wieviel von 0..1 in delta vergeht
-        this.state.timeOfDay = (this.state.timeOfDay + advance) % 1;
+        this._uhrSetzen((this.state.timeOfDay + advance) % 1, "uhr");
         // Läuft JEDEN Frame, kein Throttle: bei 10 Hz sprang die Beleuchtung in Stufen (ruckelnde Schatten);
         // die Funktion ist billig genug (Color-Lerps + Vector-Copies).
         this._applyDayNightToScene();
-        // Status-Bar-Text bleibt 10 Hz throttled (DOM-textContent ist teurer
-        // als die Scene-Updates, und das Auge braucht keine 60-Hz-Uhr).
+        // Status-Zeile und Regler bleiben 10 Hz throttled (DOM ist teurer als die Scene-Updates, und das Auge braucht
+        // keine 60-Hz-Uhr).
         const lastApply = this.state._lastDayNightApply || 0;
         if (currentTime - lastApply >= 0.1) {
             this.state._lastDayNightApply = currentTime;
-            const r = this._statusRefs;
-            if (r && r.time) {
-                r.time.textContent = this._timeOfDayLabel(this.state.timeOfDay);
-            }
+            this._uhrAnzeigen(this.state.timeOfDay);
         }
+    }
+
+    // DIE ANZEIGE DER UHR (Leben-Schau 2: der Tageszeit-Regler zeigte 12:00 bei Welt 01:41 — er las die Uhr nur beim
+    // Aufbau der Einstellungen): die Status-Zeile UND der Regler (`_tageszeitRegler`) zeigen die Welt-Zeit, nach jedem
+    // Satz und im Gang der Uhr.
+    _uhrAnzeigen(t) {
+        const r = this._statusRefs;
+        if (r && r.time) r.time.textContent = this._timeOfDayLabel(t);
+        const g = this._tageszeitRegler;
+        if (g && g.tod) {
+            const wert = String(Math.round((((t % 1) + 1) % 1) * 1000));
+            if (g.tod.value !== wert) g.tod.value = wert;
+            const text = this._timeOfDayLabel(t).replace(/^[^\s]+\s/, "");
+            if (g.todVal && g.todVal.textContent !== text) g.todVal.textContent = text;
+        }
+    }
+
+    // DAS GESETZ DER SCHREIBER VON UHR UND WETTER (Leben-Schau 2, 09.10., §6 #1 — „Uhr und Wetter gehören dem Spieler"):
+    // die Klasse einer Quelle (`ctx.source` der DSL, oder der Name eines Host-Schreibers) für `was` = "uhr" | "wetter".
+    //   „spieler" — sein Satz und seine Werkzeuge (`_spielerVerlangt`), der Regler der Einstellungen („regler"), der Begleiter
+    //               der geteilten Stimme („remote-voice"); für das GETEILTE Wetter auch ein Mitspieler („remote:…" — die Uhr
+    //               reist nie, set_time_of_day ist NON_BROADCASTABLE).
+    //   „gesetz"  — ein Gesetz, das der Spieler gab („rule:" + eine Quelle des Spielers), und der Vorschlag eines Wesens,
+    //               dem der Spieler mit seinem Klick zusagte („zusage:…", `_executeCreatureProgram`): es schreibt wie er (ein
+    //               stehendes Wort folgt ihm).
+    //   „eigen"   — der Gang der Uhr („uhr"), der Wetter-Zug („auto-zug"), das Laden eines Spielstands („laden").
+    //   „welt"    — alles andere: der Nexus, seine Gesetze, die Emotion, die Wesen („creature:…" — auch das Wesen, das im
+    //               Schöpfer-Modus von selbst handelt; bis zur Gegenprüfung las es sich als Zusage und nahm dem Spieler sein
+    //               Wort), eine Quelle ohne Namen. Rechte trägt nur eine Quelle, die den Spieler oder seine Zusage NENNT.
+    // Die Welt schreibt die Uhr nie und das Wetter nie direkt — sie wünscht das nächste Wort des Wetter-Zugs (`_setWeather`).
+    // Vorher schrieben zwei Nexus-Gesetze die Uhr 30-mal in 160 s, und „setze wetter sonnig" hielt bis zum nächsten Regen.
+    _himmelSchreiber(quelle, was) {
+        if (quelle === "uhr" || quelle === "auto-zug" || quelle === "laden") return "eigen";
+        if (typeof quelle !== "string") return "welt";
+        const spieler = (q) =>
+            this._spielerVerlangt(q) ||
+            q === "regler" ||
+            q === "remote-voice" ||
+            (was === "wetter" && q.startsWith("remote:"));
+        if (spieler(quelle)) return "spieler";
+        // ein Gesetz trägt die Quelle seines Gebers, auch ein Gesetz, das ein Gesetz gab („rule:rule:human")
+        let geber = quelle;
+        while (geber.startsWith("rule:")) geber = geber.slice(5);
+        if (geber !== quelle && spieler(geber)) return "gesetz";
+        // der Vorschlag eines Wesens, dem der Spieler zusagte (sein Klick auf „Ausführen", `_executeCreatureProgram`), schreibt
+        // wie ein Gesetz des Spielers; was ein Wesen von selbst tut („creature:…"), ist Welt
+        if (quelle.startsWith("zusage:")) return "gesetz";
+        return "welt";
+    }
+
+    // DER EINE SCHREIBER DER UHR (`state.timeOfDay`): der Gang der Uhr („uhr", `tickDayNight`), der Spieler (`setTimeOfDay`
+    // aus seinem Satz, seinem Gesetz, dem Regler) und das Laden („laden") — die Welt nie (`_himmelSchreiber`; sie steht beim
+    // Namen im Log). Liefert, ob die Uhr geschrieben wurde. gate:wetter-wache zählt `this.state.timeOfDay =` im Stamm: einmal.
+    _uhrSetzen(t, quelle) {
+        const v = Number(t);
+        if (!Number.isFinite(v)) return false;
+        if (this._himmelSchreiber(quelle, "uhr") === "welt") {
+            this.log(
+                `Uhr gehalten: ${quelle || "?"} wollte ${this._timeOfDayLabel(v)} — die Uhr gehört dem Spieler`,
+                "DEBUG"
+            );
+            return false;
+        }
+        this.state.timeOfDay = v;
+        return true;
     }
 
     // Liefert eine kurze, lesbare Tageszeit-Beschreibung. z. B. "🌅 06:24".
@@ -89402,7 +90428,8 @@ class AnazhRealm {
         return `${emoji} ${hStr}:${mStr}`;
     }
 
-    // Setzt die Tag-Länge (in Minuten). Persistiert in worldMeta + localStorage.
+    // Setzt die Tag-Länge (in Minuten): die Wahl des Spielers, persistiert bei ihm (localStorage) — nie im Spielstand, sonst
+    // hielte ein alter Stand seinen alten Tag fest (bis zur Leben-Schau 2 trug jeder Stand den 8-min-Standard).
     setDayLength(minutes) {
         const min = this.constructor.DAY_LENGTH_MIN_MINUTES;
         const max = this.constructor.DAY_LENGTH_MAX_MINUTES;
@@ -89417,14 +90444,13 @@ class AnazhRealm {
         }
     }
 
-    // Setzt timeOfDay direkt (z. B. via DSL-Op set_time_of_day(0.5) für Mittag).
-    setTimeOfDay(t) {
+    // Stellt die Uhr (z. B. via DSL-Op set_time_of_day(0.5) für Mittag, oder der Regler „regler") — über den EINEN
+    // Uhr-Schreiber und sein Gesetz: eine Quelle der Welt stellt sie nie (false).
+    setTimeOfDay(t, quelle) {
         const v = Math.max(0, Math.min(1, Number(t)));
-        if (!Number.isFinite(v)) return false;
-        this.state.timeOfDay = v;
+        if (!Number.isFinite(v) || !this._uhrSetzen(v, quelle)) return false;
         this._applyDayNightToScene();
-        const r = this._statusRefs;
-        if (r && r.time) r.time.textContent = this._timeOfDayLabel(v);
+        this._uhrAnzeigen(v);
         return true;
     }
 
@@ -89484,12 +90510,35 @@ class AnazhRealm {
     // scripts/lib/ausgabe-aufnahme.cjs `__wetterHalten`; im Spiel zählt die Uhr von 0 aufwärts). Halt heißt Halt:
     // solange sie steht, dreht KEIN Schreiber das Wetter. Bis V18.534 hielt sie nur den Auto-Zug — der OMEN
     // fand in einem Boot sunny → rainy bei eingefrorener Uhr (ein anderer Schreiber: Nexus, Emotion, Gesetz).
+    // DAS GESETZ DER SCHREIBER (`_himmelSchreiber`, Leben-Schau 2): der SPIELER schreibt, und sein Wort steht
+    // (`wetterWort`, bis „setze wetter frei"); ein Gesetz des Spielers schreibt wie er; solange das Wort steht, dreht
+    // weder der Zug noch die Welt das Wetter (false). Ohne Wort schreibt die WELT (Nexus, seine Gesetze, die Emotion,
+    // die Wesen) nie selbst: sie WÜNSCHT das nächste Wort (`wetterWunsch`, Rückgabe "wunsch"), der Zug zieht es in seinem
+    // Takt (`WETTER_ZUG_SEK`). Vorher hielt „setze wetter sonnig" bis zum nächsten Nexus-Regen (alle 4,7 s).
     _setWeather(name, quelle) {
         if (!(name in AnazhRealm.WEATHER_INTENSITY)) return false;
         if (this._messHalt()) {
             this.log(`Wetter gehalten: ${quelle || "?"} wollte ${name}`, "DEBUG");
             return false;
         }
+        const wer = this._himmelSchreiber(quelle, "wetter");
+        if (wer === "welt" || wer === "eigen") {
+            if (this.state.wetterWort) {
+                this.log(
+                    `Wetter gehalten: ${quelle || "?"} wollte ${name} — es gilt das Wort des Spielers (${this.state.wetterWort})`,
+                    "DEBUG"
+                );
+                return false;
+            }
+            if (wer === "welt") {
+                this.state.wetterWunsch = { wort: name, quelle: quelle || "?" };
+                return "wunsch";
+            }
+        }
+        if (wer === "spieler") {
+            this.state.wetterWort = name;
+            this.state.wetterWunsch = null;
+        } else if (wer === "gesetz" && this.state.wetterWort) this.state.wetterWort = name;
         const oldWeather = this.state.weather;
         this.state.weather = name;
         this.state.weatherEffectTime = 0;
@@ -89499,6 +90548,17 @@ class AnazhRealm {
         // updateSkyboxWeather wird nicht direkt gerufen —
         // _applyDayNightToScene übernimmt das pro Frame.
         this.updateCreatureEmotions();
+        return true;
+    }
+
+    // DER SPIELER GIBT DAS WETTER FREI („setze wetter frei"): sein Wort fällt, ein alter Wunsch der Welt mit ihm; das Wetter
+    // steht noch einen Takt des Zugs (seine Uhr beginnt bei 0 — nie unter dem Halt einer Messung), dann zieht es wieder.
+    _wetterFreigeben(quelle) {
+        const wer = this._himmelSchreiber(quelle, "wetter");
+        if (wer !== "spieler" && wer !== "gesetz") return false;
+        this.state.wetterWort = null;
+        this.state.wetterWunsch = null;
+        if (!this._messHalt()) this.state.weatherEffectTime = 0;
         return true;
     }
 
@@ -89700,13 +90760,18 @@ class AnazhRealm {
     // DER GEBURTS-ORT — die Boot-Regel als EIN Gesetz für den Boot-Spawn UND die natürliche Geburt: fern
     // (CREATURE_SPAWN_FAR_MIN + Streu-Spanne um den Spieler) und außerhalb des Blicks; das Wesen taucht aus der Distanz
     // auf, sein Satz blendet ein (`einblenden`). Die Leben-Prüfung (R-D13) sah die Geburt 12–25 m vor dem Spieler, einen
-    // Hirsch 2 m neben ihm. Bis zu acht Würfe suchen einen Ort außerhalb des Blicks; fern ist jeder.
-    _kreaturGeburtsOrt(rng, spanne = 80) {
+    // Hirsch 2 m neben ihm. Bis zu acht Würfe suchen einen Ort außerhalb des Blicks; fern ist jeder. Ein WUNSCH-Ort (die
+    // Nexus-Geburt am Ort des Bedarfs) gilt, wenn er selbst fern und außerhalb des Blicks liegt.
+    _kreaturGeburtsOrt(rng, spanne = 80, wunsch = null) {
         const pm = this.state.playerMesh;
         const cx = pm ? pm.position.x : 0;
         const cz = pm ? pm.position.z : 0;
         const fr = this._frustumCache;
         const v = this._geburtsOrtV || (this._geburtsOrtV = new THREE.Vector3());
+        if (wunsch && Math.hypot(wunsch.x - cx, wunsch.z - cz) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN) {
+            v.set(wunsch.x, this.getTerrainHeightAt(wunsch.x, wunsch.z) + 1, wunsch.z);
+            if (!fr || !fr.containsPoint(v)) return { x: wunsch.x, z: wunsch.z };
+        }
         let x = cx;
         let z = cz;
         for (let k = 0; k < 8; k++) {
@@ -90068,7 +91133,10 @@ class AnazhRealm {
                     if (stored) {
                         const v = Math.max(
                             this.constructor.DAY_LENGTH_MIN_MINUTES,
-                            Math.min(this.constructor.DAY_LENGTH_MAX_MINUTES, parseInt(stored, 10) || 8)
+                            Math.min(
+                                this.constructor.DAY_LENGTH_MAX_MINUTES,
+                                parseInt(stored, 10) || this.constructor.DAY_LENGTH_DEFAULT_MINUTES
+                            )
                         );
                         this.state.dayLengthMinutes = v;
                     }
@@ -90076,7 +91144,7 @@ class AnazhRealm {
             } catch (e) {
                 void e;
             }
-            dl.value = String(this.state.dayLengthMinutes || 8);
+            dl.value = String(this.state.dayLengthMinutes || this.constructor.DAY_LENGTH_DEFAULT_MINUTES);
             if (dlVal) dlVal.textContent = `${dl.value} Min`;
             dl.addEventListener("input", () => {
                 const v = parseInt(dl.value, 10);
@@ -90088,13 +91156,11 @@ class AnazhRealm {
         const tod = document.getElementById("slider-timeofday");
         const todVal = document.getElementById("slider-timeofday-val");
         if (tod) {
-            const t0 = typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5;
-            tod.value = String(Math.round(t0 * 1000));
-            if (todVal) todVal.textContent = this._timeOfDayLabel(t0).replace(/^[^\s]+\s/, "");
+            // Der Regler zeigt die Welt-Zeit (`_uhrAnzeigen`, im Gang der Uhr) und stellt sie als Hand des Spielers.
+            this._tageszeitRegler = { tod, todVal };
+            this._uhrAnzeigen(typeof this.state.timeOfDay === "number" ? this.state.timeOfDay : 0.5);
             tod.addEventListener("input", () => {
-                const v = parseInt(tod.value, 10) / 1000;
-                this.setTimeOfDay(v);
-                if (todVal) todVal.textContent = this._timeOfDayLabel(v).replace(/^[^\s]+\s/, "");
+                this.setTimeOfDay(parseInt(tod.value, 10) / 1000, "regler");
             });
         }
 
@@ -90274,7 +91340,8 @@ class AnazhRealm {
             });
         }
         // Schatten-Reichweite (Frustum-Halbbreite 80..400 m; kleiner = schärfere Texel) + Schatten-Bias
-        // (normalBias ×100, 0..3). Das Wandern heilt der Light-Space-Snap; diese Regler feilen die Schärfe.
+        // (der Hebel auf das Gesetz `_schattenBias` ×100, 0..3; 1 = das Gesetz). Das Wandern heilt der Light-Space-Snap; diese
+        // Regler feilen die Schärfe.
         const srS = document.getElementById("slider-shadowrange");
         const srVal = document.getElementById("slider-shadowrange-val");
         if (srS) {
@@ -91208,8 +92275,9 @@ class AnazhRealm {
         directionalLight.shadow.mapSize.height = 2048;
         directionalLight.shadow.camera.near = 0.5;
         directionalLight.shadow.camera.far = 500;
-        // Frustum-Halbbreite + normalBias aus den persistierten Schatten-Hebeln (Default 300 / 1.0), falls
-        // loadState vor der Licht-Erstellung lief; sonst greifen setShadowRange/setShadowBias in loadState.
+        // Frustum-Halbbreite aus dem persistierten Schatten-Hebel (Default 170), falls loadState vor der Licht-Erstellung
+        // lief; sonst greift setShadowRange in loadState. Den Bias setzt das Gesetz (`_hauptSchattenBias` unten, der Hebel
+        // `atmosphere.shadowBias` liest setShadowBias).
         const _atmo = this.state.atmosphere || {};
         const _shRange = Number.isFinite(_atmo.shadowRange) ? Math.max(80, Math.min(400, _atmo.shadowRange)) : 170;
         directionalLight.shadow.camera.left = -_shRange;
@@ -91219,10 +92287,8 @@ class AnazhRealm {
         // Shadow-Acne-Schutz: ohne Bias schattet die grobe Map flache, zur Sonne zeigende Flächen selbst
         // (Streifen auf Dächern). normalBias (Sample entlang der Normale) ist der wirksame Acne-Killer,
         // bias nur ein kleiner Tiefen-Nudge; mapSize 2048.
-        directionalLight.shadow.bias = -0.0005;
-        directionalLight.shadow.normalBias = Number.isFinite(_atmo.shadowBias)
-            ? Math.max(0, Math.min(3, _atmo.shadowBias))
-            : 1.0;
+        // Beide aus dem EINEN Gesetz (`_schattenBias`, 0710-12): Texel der Karte = 2 · Reichweite / Kartengröße.
+        this._hauptSchattenBias(directionalLight);
         // KRITISCH: nach dem Setzen der Shadow-Camera-Bounds MUSS updateProjectionMatrix() laufen — die
         // OrthographicCamera rechnet sie nur im Konstruktor; sonst ist light.shadow.matrix degeneriert
         // und es fällt nie ein Schatten.
@@ -91242,9 +92308,9 @@ class AnazhRealm {
         // geregelten Reichweite, die dritte Kaskade klemmte auf 0,95 und deckte einen 5-%-Streifen (285–300 m), für
         // den sie alle Werfer ein drittes Mal zeichnete. Die Box jeder Kaskade misst der Host (`_kaskadenPassen`
         // ersetzt das Addon-updateBefore: Frustum-Scheibe im Licht-Raum statt Diagonal-Quadrat), die Werfer wählt
-        // jeder Pass selbst (`_passSicht` an scene.onBeforeRender); `fade` weicht den Übergang. Kaskaden klonen
-        // bias/normalBias vom Haupt-Licht (setShadowBias propagiert live), die Karten-Größe folgt der Texel-Dichte
-        // (`_kaskadenKarten`). Ohne Vendor-Symbol bleibt die EINE Map.
+        // jeder Pass selbst (`_passSicht` an scene.onBeforeRender); `fade` weicht den Übergang. Den Bias setzt jede
+        // Kaskade bei ihrem Fit aus dem EINEN Gesetz (`_schattenBias` in `_kaskadeFit`, setShadowBias stellt ihn live),
+        // die Karten-Größe folgt der Texel-Dichte (`_kaskadenKarten`). Ohne Vendor-Symbol bleibt die EINE Map.
         if (typeof THREE.CSMShadowNode === "function") {
             try {
                 const bands = AnazhRealm.DETAIL_CASCADE;
@@ -93775,21 +94841,35 @@ class AnazhRealm {
             const gust = Math.sin(wt * 0.19) * 0.6 + Math.sin(wt * 0.47 + 1.3) * 0.3 + Math.sin(wt * 1.13 + 3.7) * 0.1;
             this._weatherWob = 1 + 0.18 * gust; // ~[0.82, 1.18]
         }
-        // Auto-Zug: zieht aus dem Vokabular (nie zweimal dasselbe Wort) und geht sanft über die Transition.
-        // Takt 120 s: mit der 45-s-Transition STEHT das Wetter ~75 s. Wartet auf die Bühne (nur der
-        // Wechsel-Tick; weatherEffectTime akkumuliert weiter → danach EIN weicher Zug). Headless sofort.
-        if (this.state.weatherEffectTime >= 120.0 && this._buehneSteht()) {
-            const words = Object.keys(AnazhRealm.WEATHER_INTENSITY).filter((w) => w !== this.state.weather);
-            // Deterministische Wort-Wahl (Math.random-frei): Index aus layered sines der Wall-Clock. Das Wort
-            // lesen Symphonie/Journal/wet-Frage; der Wechsel ist reine Optik/Klang → Fixed-Step/Replay unberührt.
-            const wc = performance.now() / 1000 + this.state.weatherEffectTime;
-            const pick = Math.sin(wc * 0.131) + Math.sin(wc * 0.373 + 1.7) + Math.sin(wc * 0.911 + 4.2); // [-3,3]
-            let idx = Math.floor(((pick + 3) / 6) * words.length);
-            if (idx < 0) idx = 0;
-            if (idx >= words.length) idx = words.length - 1;
-            const next = words[idx];
-            this._setWeather(next, "auto-zug");
-            this.log(`Das Wetter zieht zu ${next}`, "INFO");
+        // Auto-Zug: zieht das Wort, das die Welt sich wünscht (`wetterWunsch` — Nexus, seine Gesetze, die Emotion, die
+        // Wesen schreiben nie selbst), sonst eines aus dem Vokabular (nie zweimal dasselbe Wort), und geht sanft über die
+        // Transition. Takt `WETTER_ZUG_SEK` (120 s): mit der 45-s-Transition STEHT das Wetter ~75 s. Steht das Wort des
+        // Spielers (`wetterWort`), ruht der Zug. Wartet auf die Bühne (nur der Wechsel-Tick; weatherEffectTime
+        // akkumuliert weiter → danach EIN weicher Zug). Headless sofort.
+        if (
+            !this.state.wetterWort &&
+            this.state.weatherEffectTime >= AnazhRealm.WETTER_ZUG_SEK &&
+            this._buehneSteht()
+        ) {
+            const wunsch = this.state.wetterWunsch;
+            this.state.wetterWunsch = null;
+            let next;
+            if (wunsch && wunsch.wort in AnazhRealm.WEATHER_INTENSITY) next = wunsch.wort;
+            else {
+                const words = Object.keys(AnazhRealm.WEATHER_INTENSITY).filter((w) => w !== this.state.weather);
+                // Deterministische Wort-Wahl (Math.random-frei): Index aus layered sines der Wall-Clock. Das Wort
+                // lesen Symphonie/Journal/wet-Frage; der Wechsel ist reine Optik/Klang → Fixed-Step/Replay unberührt.
+                const wc = performance.now() / 1000 + this.state.weatherEffectTime;
+                const pick = Math.sin(wc * 0.131) + Math.sin(wc * 0.373 + 1.7) + Math.sin(wc * 0.911 + 4.2); // [-3,3]
+                let idx = Math.floor(((pick + 3) / 6) * words.length);
+                if (idx < 0) idx = 0;
+                if (idx >= words.length) idx = words.length - 1;
+                next = words[idx];
+            }
+            if (next !== this.state.weather) {
+                this._setWeather(next, "auto-zug");
+                this.log(`Das Wetter zieht zu ${next}${wunsch ? ` (Wunsch: ${wunsch.quelle})` : ""}`, "INFO");
+            } else this.log(`Das Wetter bleibt ${next} (Wunsch: ${wunsch.quelle})`, "INFO");
             this.state.weatherEffectTime = 0;
         }
     }
@@ -94511,7 +95591,8 @@ class AnazhRealm {
         return n;
     }
 
-    // DER EINE TIEFEN-WEG DER LEINWAND (06.10.): in die Leinwand zeichnet die Post-Kette nur ihr Ausgabe-Quad (die Szene
+    // DER EINE LEINWAND-WEG (06.10., 0910-1) — was der Direktpfad an der Leinwand braucht, lebt nur, solange er zeichnet.
+    // DIE TIEFE: in die Leinwand zeichnet die Post-Kette nur ihr Ausgabe-Quad (die Szene
     // lebt im Ziel des Szene-Passes, mit eigener Tiefe) — r184 legt für jeden Leinwand-Pass dennoch eine Tiefe in Leinwand-
     // Größe an (`depthBuffer`, depth24plus, 7,9 MB bei 1080p), die dort kein Pixel liest. Der Direktpfad dagegen zeichnet
     // die Szene in das Rahmen-Ziel des Renderers (`_getFrameBufferTarget`, das Tonemapping zur Leinwand), dessen Tiefe
@@ -94521,9 +95602,18 @@ class AnazhRealm {
     // Render-Fehlers gab sie zurück) — jeder andere Weg in den Direktpfad (die Weiche der Zerleg-Linse `post`/`leer`) fuhr
     // ohne und stürzte. Jetzt stellt sie die Weiche in `_loopRender` je Frame hier: Direktpfad → mit Tiefe, Post-Kette →
     // ohne, und die GPU-Textur der Leinwand-Tiefe fällt dabei mit (sonst hielte ein Ausflug in den Direktpfad die 7,9 MB
-    // für immer). Nur WebGPU: das WebGL2-Rückend legt die Tiefe mit dem Kontext an. Die Wand: gate:post-kette.
-    _leinwandTiefe(direkt) {
+    // für immer). Nur WebGPU: das WebGL2-Rückend legt die Tiefe mit dem Kontext an.
+    // DAS RAHMEN-ZIEL (0910-1, Koordinator + OMEN): r184 legt es beim ersten Leinwand-Render mit Tonemapping an
+    // (`_getFrameBufferTarget`: rgba16float + depth24plus, 15,8 + 7,9 MB bei 1080p, `isPostProcessingRenderTarget`) und
+    // entsorgt es nur mit dem Leinwand-Ziel. Die Post-Kette legt es nie an (r184 schaltet Tonemapping und Farbraum für ihr
+    // Quad ab) — jeder Ausflug in den Direktpfad hielt es für immer: `zerlegen` (die Weiche `post`) ließ 23,7 MB
+    // `tex:r184-ausgabe` in der Sitzung, und `band --ort genesis` danach maß sie mit (0710-6, 0710-9). Zeichnet die Kette,
+    // verlässt jedes Rahmen-Ziel die GPU (`_rahmenZielAbschied`), gleich wer es anlegte — die Weiche oder eine Linse mit
+    // eigenem Leinwand-Render; eine Prüfung der Map-Größe je Frame. Die Wand: gate:post-kette (b) und (g).
+    _leinwandWeg(direkt) {
         const rend = this.state.renderer;
+        if (rend && direkt !== true && rend._frameBufferTargets && rend._frameBufferTargets.size > 0)
+            this._rahmenZielAbschied(rend);
         const be = rend && rend.backend;
         if (!be || be.isWebGPUBackend !== true) return;
         const soll = direkt === true;
@@ -94535,6 +95625,29 @@ class AnazhRealm {
         if (!soll) {
             const t = rend.getCanvasTarget().depthTexture;
             if (t && be.has(t)) be.destroyTexture(t);
+        }
+    }
+
+    // DER ABSCHIED DES RAHMEN-ZIELS: r184s eigener — der dispose-Hörer, den `_getFrameBufferTarget` an das Leinwand- bzw.
+    // Ausgabe-Ziel hängt (Hörer ab, Ziel entsorgt: seine Farb- und Tiefen-Textur verlassen die GPU, der Eintrag fällt). Er
+    // ist am Text erkennbar (er löscht aus `_frameBufferTargets`; gate:vendor-anker pinnt ihn). Fehlt er (Vendor-Drift),
+    // fällt das Ziel trotzdem — LAUT, mit dem Grund.
+    _rahmenZielAbschied(rend) {
+        for (const [ziel, rahmen] of [...rend._frameBufferTargets]) {
+            const hoerer = (ziel && ziel._listeners && ziel._listeners.dispose) || [];
+            const abschied = hoerer.find((h) =>
+                /_frameBufferTargets\.delete\(/.test(Function.prototype.toString.call(h))
+            );
+            if (abschied) {
+                abschied.call(ziel);
+                continue;
+            }
+            this.log(
+                "RAHMEN-ZIEL: r184s Abschied am Leinwand-Ziel fehlt (Vendor-Drift) — das Ziel fällt ohne ihn, der Hörer bleibt",
+                "ERROR"
+            );
+            rahmen.dispose();
+            rend._frameBufferTargets.delete(ziel);
         }
     }
 
@@ -94559,13 +95672,191 @@ class AnazhRealm {
         }
         const tiefe = ziel.depthTexture;
         tiefe.type = THREE.UnsignedShortType;
+        const farbe = ziel.texture;
         const realm = this;
         const roh = rend.copyTextureToTexture;
         rend.copyTextureToTexture = function (von, nach, ...rest) {
-            if (nach !== tiefe || !von || von.isDepthTexture !== true) return roh.call(this, von, nach, ...rest);
-            realm._traaVortiefeZug(this, von, tiefe);
-            return undefined;
+            if (nach === tiefe && von && von.isDepthTexture === true) {
+                realm._traaVortiefeZug(this, von, tiefe);
+                return undefined;
+            }
+            // DER NEUSTART DER GESCHICHTE (0910-1 B): bei jedem Größenwechsel kopiert der Knoten das Szenen-Bild in die
+            // Geschichte (vendor/TRAANode.js `needsRestart`). Trägt das Szenen-Ziel rg11b10ufloat (`_ausgabeFormat`), die
+            // Geschichte rgba16float, verbietet WebGPU die Kopie — ein Vollbild-Zug lädt Texel für Texel und schreibt Alpha 1.
+            if (nach === farbe && von && von.type !== nach.type) {
+                realm._traaNeustartZug(this, von, farbe);
+                return undefined;
+            }
+            return roh.call(this, von, nach, ...rest);
         };
+    }
+
+    // DAS AUSGABE-ZIEL DER SZENE IN 32 BIT (0910-1 B, Host-VRAM Runde 2): r184s Szenen-Pass legt `output` als rgba16float an
+    // (8 Byte je Pixel, 15,8 MB bei 1080p). Sein Inhalt ist lineares HDR-Licht ≥ 0, und der Kanal a steht an jedem Ort auf 1
+    // (der Ziel-Zensus, 07.10.): TRAA reicht `currentColor.a` nur durch (vendor/TRAANode.js clipAABB), kein Leser wertet ihn.
+    // rg11b10ufloat trägt dieselben drei Kanäle in 4 Byte (−7,9 MB) mit 6/6/5 Bit Mantisse — für das EINE Bild eines Frames.
+    // Auflösung und Geschichte bleiben rgba16float: dort summiert die zeitliche Auflösung über 32 Frames, und rg11b10 posterisierte
+    // die Wolken zu Höhenlinien (W7, alle drei in 11/11/10). Ohne das Geräte-Feature `rg11b10ufloat-renderable` bleibt `output`
+    // rgba16float — LAUT (WARN mit Grund und Zahl, und der Ziel-Zensus nennt das Format), nie still.
+    _ausgabeFormat(szenePass) {
+        const rend = this.state.renderer;
+        const be = rend && rend.backend;
+        const ziel = szenePass && szenePass.renderTarget;
+        if (!ziel || !ziel.texture) return;
+        const dev = be && be.isWebGPUBackend === true ? be.device : null;
+        if (!(dev && dev.features && dev.features.has("rg11b10ufloat-renderable"))) {
+            this.state._ausgabeFormat = "rgba16float";
+            this.log(
+                "AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel " +
+                    "bleibt rgba16float, +7,9 MB bei 1080p",
+                "WARN"
+            );
+            return;
+        }
+        // r184 `PassNode.setup` schreibt bei jedem Bau `texture.type = renderer.getOutputBufferType()` (rgba16float) — das Format
+        // gehört diesem EINEN Pass, nicht dem Renderer (dessen Typ legt auch das Rahmen-Ziel des Direktpfads an, RGBA: dort gibt es
+        // kein 11/11/10). Der Pass stellt es darum nach seinem eigenen Bau.
+        const P = Object.getPrototypeOf(szenePass);
+        szenePass.setup = function (builder) {
+            const o = P.setup.call(this, builder);
+            this.renderTarget.texture.type = THREE.UnsignedInt101111Type;
+            this.renderTarget.texture.format = THREE.RGBFormat;
+            return o;
+        };
+        ziel.texture.type = THREE.UnsignedInt101111Type;
+        ziel.texture.format = THREE.RGBFormat;
+        this.state._ausgabeFormat = "rg11b10ufloat";
+        this._ausgabeSonde(dev);
+    }
+
+    // DIE RUNDUNG DES GERÄTS (0910-1 B): GTX 1060 und Radeon 890M runden beim Schreiben in 11/11/10 GEGEN NULL (Sonde: 1 + ¾ ulp
+    // → 1,0; W7 sah es auf der Radeon in der Geschichte). Je Kanal fehlt dann im Mittel ein halbes ulp — bei 6 Bit Mantisse
+    // 2⁻⁷ · E[1/m] = 0,56 %, beim Blau (5 Bit) 1,13 % (m die Mantisse, log-gleich verteilt: E[1/m] = 1/(2 ln 2) = 0,721): das
+    // Bild wurde 0,2–0,7 Luma-Stufen dunkler und gelber (gemessen OMEN, 16 Blicke, A/B gegen rgba16float). Die Sonde schreibt
+    // 1 + ¾ ulp in ein 1×1-Ziel und liest zurück; rundet das Gerät gegen null, hebt der Ausgleich jede Abtastung des
+    // Szenen-Bilds in der Post-Kette (`ausgabeAusgleich`) um dieses Mittel — rundet es zum nächsten, bleibt er 1.
+    _ausgabeSonde(dev) {
+        const st = this.state;
+        if (!st._ausgabeAusgleich) st._ausgabeAusgleich = new THREE.Vector3(1, 1, 1);
+        const A = st._ausgabeAusgleich;
+        const tex = dev.createTexture({
+            label: "ausgabe-sonde",
+            size: [1, 1],
+            format: "rg11b10ufloat",
+            usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+        });
+        const modul = dev.createShaderModule({
+            label: "ausgabe-sonde",
+            code:
+                "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
+                "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
+                "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
+                "}\n" +
+                "@fragment fn fs() -> @location(0) vec4f { return vec4f(1.01171875, 1.01171875, 1.0234375, 1.0); }\n",
+        });
+        const pipe = dev.createRenderPipeline({
+            label: "ausgabe-sonde",
+            layout: "auto",
+            vertex: { module: modul, entryPoint: "vs" },
+            fragment: { module: modul, entryPoint: "fs", targets: [{ format: "rg11b10ufloat" }] },
+            primitive: { topology: "triangle-list" },
+        });
+        const buf = dev.createBuffer({
+            label: "ausgabe-sonde",
+            size: 256,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        });
+        const enc = dev.createCommandEncoder({ label: "ausgabe-sonde" });
+        const pass = enc.beginRenderPass({
+            label: "ausgabe-sonde",
+            colorAttachments: [{ view: tex.createView(), loadOp: "clear", clearValue: [0, 0, 0, 0], storeOp: "store" }],
+        });
+        pass.setPipeline(pipe);
+        pass.draw(3);
+        pass.end();
+        enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: 256 }, [1, 1]);
+        dev.queue.submit([enc.finish()]);
+        return buf
+            .mapAsync(GPUMapMode.READ)
+            .then(() => {
+                const w = new Uint32Array(buf.getMappedRange())[0];
+                buf.unmap();
+                // R: Mantisse Bit 0–5 über 1 + ¾ ulp: 0 = gegen null, 1 = zum nächsten
+                const nullRund = (w & 0x3f) === 0;
+                st._ausgabeRundung = nullRund ? "gegen null" : "zum nächsten";
+                if (nullRund) A.set(1 + 0.721 / 128, 1 + 0.721 / 128, 1 + 0.721 / 64);
+                else A.set(1, 1, 1);
+                const faktor = A.toArray().map((x) => x.toFixed(4));
+                this.log(
+                    `AUSGABE: rg11b10ufloat, das Gerät rundet ${st._ausgabeRundung} — Ausgleich ${faktor.join("/")}`,
+                    "INFO"
+                );
+            })
+            .catch((e) => {
+                this.log("AUSGABE: die Rundungs-Sonde fiel (" + ((e && e.message) || e) + ") — kein Ausgleich", "WARN");
+            })
+            .finally(() => {
+                tex.destroy();
+                buf.destroy();
+            });
+    }
+
+    // DER ZUG DES NEUSTARTS: ein roher Pass auf eigenem Encoder wie `_traaVortiefeZug` — ein Vollbild-Dreieck lädt das
+    // Szenen-Bild Texel für Texel und schreibt es mit Alpha 1 in die Farbe der Geschichte (die Ziele legt r184 an wie für
+    // seine Kopie, `_textures.updateTexture`).
+    _traaNeustartZug(rend, von, nach) {
+        const be = rend.backend;
+        rend._textures.updateTexture(von);
+        rend._textures.updateTexture(nach);
+        const q = be.get(von).texture;
+        const z = be.get(nach).texture;
+        if (!q || !z) return;
+        let N = this._traaNeustartGpu;
+        if (!N || N.format !== z.format) {
+            const modul = be.device.createShaderModule({
+                label: "TRAA-Neustart",
+                code:
+                    "@group(0) @binding(0) var bild: texture_2d<f32>;\n" +
+                    "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
+                    "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
+                    "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
+                    "}\n" +
+                    "@fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f {\n" +
+                    "    return vec4f(textureLoad(bild, vec2i(p.xy), 0).rgb, 1.0);\n" +
+                    "}\n",
+            });
+            N = this._traaNeustartGpu = {
+                format: z.format,
+                pipe: be.device.createRenderPipeline({
+                    label: "TRAA-Neustart",
+                    layout: "auto",
+                    vertex: { module: modul, entryPoint: "vs" },
+                    fragment: { module: modul, entryPoint: "fs", targets: [{ format: z.format }] },
+                    primitive: { topology: "triangle-list" },
+                }),
+                quelle: null,
+                ziel: null,
+            };
+        }
+        if (N.quelle !== q || N.ziel !== z) {
+            N.gruppe = be.device.createBindGroup({
+                layout: N.pipe.getBindGroupLayout(0),
+                entries: [{ binding: 0, resource: q.createView() }],
+            });
+            N.ansicht = z.createView();
+            N.quelle = q;
+            N.ziel = z;
+        }
+        const enc = be.device.createCommandEncoder({ label: "TRAA-Neustart" });
+        const pass = enc.beginRenderPass({
+            label: "TRAA-Neustart",
+            colorAttachments: [{ view: N.ansicht, loadOp: "clear", clearValue: [0, 0, 0, 1], storeOp: "store" }],
+        });
+        pass.setPipeline(N.pipe);
+        pass.setBindGroup(0, N.gruppe);
+        pass.draw(3);
+        pass.end();
+        be.device.queue.submit([enc.finish()]);
     }
 
     // DER ZUG DER VORTIEFE (Gegenprüfung 0710-3, gelb: gpu-bank CPU je Frame 2,73 → 3,04 ms — der Zug war ein eigenes
@@ -94661,6 +95952,7 @@ class AnazhRealm {
             // Das Szene-RT bleibt auf Skala 1 (setResolutionScale): jeder Laufzeit-Realloc zerstört die
             // Depth-View des Render-Kontexts (s. _loopRender).
             if (typeof scenePass.setResolutionScale === "function") scenePass.setResolutionScale(1);
+            this._ausgabeFormat(scenePass); // das Szenen-Ziel in rg11b10ufloat (0910-1 B), vor dem ersten Render
             this.state.scenePass = scenePass;
             // EIN Szene-Pass, eine Diät-Wahrheit: ein zweiter Szene-Pass (die Fern-Schicht) ließ Material-Diät
             // und Uniform-Updates zwischen den Pässen racen (Schwarz-Flackern); das Ferne trägt der Welt-March.
@@ -94677,11 +95969,13 @@ class AnazhRealm {
             // Bloom, Godrays und lokaler Kontrast lesen das aufgelöste Bild. Die Bewegung je Pixel ist die
             // KAMERA-Bewegung aus der Tiefe (`_traaKameraBewegung`), keine MRT-Velocity. Kosten (04.10., echte GPU
             // Radeon 890M, 1080p, ruhig, gpu-bank 200 Frames × 12 Paare gegen FXAA): +1,1 ms je Frame (die Pass-
-            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB. Szene,
-            // Auflösung und Geschichte bleiben rgba16float (die Geschichts-Kopien verlangen EIN Format für alle drei):
-            // rg11b10ufloat (−23,7 MB, W7, echte GPU) posterisierte die Wolken zu Höhenlinien, die Radeon rundet beim
-            // Schreiben gegen null (Sonde 1,0117 → 1,0; das Mittel −2…−3 % Luma) und die Ruhe halbierte sich (Frame zu Frame
-            // 0,29 → 0,58 Luma auf Armlänge) — 6 bzw. 5 Mantissen-Bit tragen die zeitliche Auflösung nicht.
+            // Stempel sehen nur +0,34 ms — Resolve und Geschichts-Kopie laufen teils außerhalb), VRAM +23,7 MB. Auflösung
+            // und Geschichte bleiben rgba16float: alle drei in rg11b10ufloat (−23,7 MB, W7, echte GPU) posterisierten die
+            // Wolken zu Höhenlinien, die Radeon rundet beim Schreiben gegen null (Sonde 1,0117 → 1,0; über die Geschichte das
+            // Mittel −2…−3 % Luma) und die Ruhe halbierte sich (Frame zu Frame 0,29 → 0,58 Luma auf Armlänge) — 6 bzw. 5
+            // Mantissen-Bit tragen die zeitliche Auflösung nicht. Das Szenen-Bild EINES Frames trägt sie: es liegt seit 0910-1 B
+            // in rg11b10ufloat (`_ausgabeFormat`, −7,9 MB), die Rundung gleicht `_ausgabeSonde` aus, den Neustart der
+            // Geschichte zeichnet `_traaNeustartZug` (die Kopie verlangte gleiche Formate).
             // Fehlt TRAANode im THREE der Seite (eine Cache-Kopie des Bootstraps von vor der zeitlichen Auflösung), bricht
             // die Kette LAUT — nie still ohne Kantenglättung, Bloom und Grading weiter.
             if (this.state._traa && typeof THREE.TRAANode !== "function") {
@@ -94747,6 +96041,9 @@ class AnazhRealm {
                 godrayStrength: uniform(0),
                 godrayDensity: uniform(0.55),
                 godrayThreshold: uniform(0.8),
+                // DER AUSGLEICH DER AUSGABE-RUNDUNG (0910-1 B, `_ausgabeSonde`): je Kanal der Faktor, um den das Szenen-Bild
+                // in 11/11/10 im Mittel zu dunkel ankommt — derselbe Vektor, den die Sonde setzt (1 ohne Sonde).
+                ausgabeAusgleich: uniform(this.state._ausgabeAusgleich || new THREE.Vector3(1, 1, 1)),
             };
             this.state.postProcessingUniforms = u;
             // V8 (Kür) — die EINE benannte Godray-Quelle (Gesetz #0): der Frame-Code (`_loopRender`)
@@ -94781,9 +96078,11 @@ class AnazhRealm {
             // -> Glanz/Gluehen an Wasser/Sonne/Highlights. `bright` sampelt den
             // Szene-Textur-Node an versetzter UV. Die MITTE ist zugleich das Bild selbst (`base`): EINE Abtastung
             // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV).
-            const mitte = sceneColor.sample(screenUV);
+            // Jede Abtastung des Szenen-Bilds trägt den Ausgleich der Ausgabe-Rundung (`_ausgabeSonde`; 1 auf rgba16float).
+            const bild = (uv) => sceneColor.sample(uv).rgb.mul(u.ausgabeAusgleich);
+            const mitte = bild(screenUV);
             const bright = (uv) => {
-                const c = (uv === screenUV ? mitte : sceneColor.sample(uv)).rgb;
+                const c = uv === screenUV ? mitte : bild(uv);
                 const l = luminance(c);
                 const m = smoothstep(u.bloomThreshold, u.bloomThreshold.add(float(0.25)), l);
                 return c.mul(m);
@@ -94817,7 +96116,7 @@ class AnazhRealm {
             let gacc = null;
             for (let i = 0; i < GN; i++) {
                 const uvI = screenUV.add(gDelta.mul(u.godrayDensity.mul(float(i / GN))));
-                const cI = sceneColor.sample(uvI).rgb;
+                const cI = bild(uvI);
                 const mI = smoothstep(u.godrayThreshold, u.godrayThreshold.add(float(0.2)), luminance(cI));
                 const wI = Math.pow(0.96, i) * (1 / GN); // JS-Skalar-Gewicht
                 const srcI = cI.mul(mI).mul(float(wI));
@@ -94826,7 +96125,7 @@ class AnazhRealm {
             const godray = nurBeiStaerke(gacc.mul(u.godrayStrength), u.godrayStrength);
 
             // --- Color-Grading: Saettigung + Kontrast um 0.5 ---
-            const base = mitte.rgb;
+            const base = mitte;
             const bloomed = base.add(bloom).add(godray);
             // V17.13 — lokaler Kontrast (Unsharp-Mask): die lokale Umgebungs-
             // Luminanz aus 4 versetzten Samples mitteln; die Differenz Pixel −
@@ -94836,7 +96135,7 @@ class AnazhRealm {
             // ist etwas weiter als das Bloom-px (groebere Umgebung = Mikro-Detail).
             // Kanten-Schärfe 0 (der Regler „aus") → der Zweig fällt mit seinen 4 Abtastungen (`nurBeiStaerke`).
             const lcPx = float(0.0026);
-            const lumAt = (uv) => luminance(sceneColor.sample(uv).rgb);
+            const lumAt = (uv) => luminance(bild(uv));
             const localAvg = lumAt(screenUV.add(vec2(lcPx, float(0.0))))
                 .add(lumAt(screenUV.add(vec2(lcPx.negate(), float(0.0)))))
                 .add(lumAt(screenUV.add(vec2(float(0.0), lcPx))))
@@ -94866,7 +96165,7 @@ class AnazhRealm {
             // Die Ausgabe-Wandlung (ACES + sRGB) macht die Pipeline selbst im Ausgabe-Quad — keine Zwischen-Textur.
             pp.outputNode = graded;
             this.state.postProcessing = pp;
-            // Die Leinwand-Tiefe stellt die Weiche in `_loopRender` (`_leinwandTiefe`) je Pfad — nie der Bau.
+            // Die Leinwand-Tiefe stellt die Weiche in `_loopRender` (`_leinwandWeg`) je Pfad — nie der Bau.
             // Die Kette steht: ab jetzt rotiert die Dither-Blende (_loopRender liest den Knoten, nie ein Flag).
             this.state.traaNode = traa;
             this.log("Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.", "INFO");
@@ -95225,7 +96524,7 @@ class AnazhRealm {
         c.near = 0;
         c.far = zt - zb;
         c.updateProjectionMatrix();
-        sh.bias = K.biasM[Math.min(i, K.biasM.length - 1)] / (zt - zb);
+        this._schattenBias(lw, Math.max(tx, ty), zt - zb);
         const f = alt || { basisInv: new THREE.Matrix4() };
         f.basisInv.copy(S.basisInv);
         f.x0 = bx0;
@@ -96491,10 +97790,10 @@ class AnazhRealm {
         // offener Pipeline, die Erst-Zeichnung) hängen am Render-Kontext, jeder RT-Realloc zerstört dessen Depth-View
         // (Fehler-Klasse ohne fps-Gewinn). Die statische KLASSEN-PIXEL-KAPPE (Boot-Set) trägt die Auflösungs-
         // Ökonomie; eine Wahrnehmungs-Auflösung nur realloc-frei (Viewport-Scaling).
-        // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr die Leinwand-Tiefe (`_leinwandTiefe`, der EINE Tiefen-Weg).
+        // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr Leinwand-Tiefe und Rahmen-Ziel (`_leinwandWeg`, der EINE Weg).
         let direkt = !pp || this.state.postProcessingFailed === true;
         if (!direkt) {
-            this._leinwandTiefe(false);
+            this._leinwandWeg(false);
             try {
                 // V18.113 — renderAsync() ist im PR-#81-Vendor deprecated (Warnung
                 // in der Schöpfer-Konsole); render() ist der eine Pfad.
@@ -96508,7 +97807,7 @@ class AnazhRealm {
             }
         }
         if (direkt) {
-            this._leinwandTiefe(true);
+            this._leinwandWeg(true);
             this.state.renderer.render(this.state.scene, this.state.camera);
         }
         // Das erste fertige Weltbild nimmt den Ladeschirm weg (L2: nie die schwarze Leinwand).
@@ -96603,7 +97902,7 @@ class AnazhRealm {
     // Was dem ersten Weltbild fehlt — leer heißt: es steht. Je Lücke ein Satz für die Stand-Zeile (mit ihrer Zahl, die sinkt,
     // solange die Welt wächst): der Boden bis zum Existenz-Boden des Rings (RING_EXIST_FLOOR, die Ringe ohne fps-Tor), das
     // Buch der Studios und sein Vor-Backen, jeder Bau und Baum der Mesh-Zone (`architectureCullingRadius`) gezeichnet, jede
-    // Streu-Region, die der Streamer holt (`_streuRegionInReichweite`), gebaut (keine wartet auf ihr Asset), keine Karte eines
+    // Streu-Region, die der Streamer holt, gebaut (`_streuWartet`: keine fehlt, keine wartet auf ihr Asset), keine Karte eines
     // fernen Baums offen.
     _weltbildFehlt() {
         const st = this.state;
@@ -96631,22 +97930,8 @@ class AnazhRealm {
             if (dx * dx + dz * dz <= R * R && !this._archIsRendered(e)) ungebaut++;
         }
         if (ungebaut) out.push(`${ungebaut} Bäume und Bauten wachsen`);
-        const SC = AnazhRealm.SCATTER;
-        const regionen = st.scatterRegions;
-        if (SC && regionen && !(st.atmosphere && st.atmosphere.gpuScatter === false)) {
-            const rx0 = Math.floor(p.x / SC.regionM);
-            const rz0 = Math.floor(p.z / SC.regionM);
-            let warten = 0;
-            for (let dz = -SC.ringRegions; dz <= SC.ringRegions; dz++)
-                for (let dx = -SC.ringRegions; dx <= SC.ringRegions; dx++) {
-                    const rx = rx0 + dx;
-                    const rz = rz0 + dz;
-                    if (!this._streuRegionInReichweite(rx, rz, p)) continue;
-                    const reg = regionen.get(`${rx},${rz}`);
-                    if (!reg || reg._deferredFoundry || reg._cont) warten++;
-                }
-            if (warten) out.push(`${warten} Wald-Stücke warten auf ihre Gestalt`);
-        }
+        const warten = this._streuWartet(p);
+        if (warten) out.push(`${warten} Wald-Stücke warten auf ihre Gestalt`);
         const karten =
             (this._impostorBakeQueue ? this._impostorBakeQueue.length : 0) + (this._impostorBakePending ? 1 : 0);
         if (karten) out.push(`${karten} ferne Bäume werden gemalt`);
@@ -96915,7 +98200,7 @@ class AnazhRealm {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.536.0";
+AnazhRealm.VERSION = "18.538.0";
 // Foundry-Cache-LRU-Deckel: max distinkte Körper (`_foundryKoerperKey`: Art|Gestalt|LOD[|ov]) im Speicher. Ein BOOT
 // räumt nie (V18.527): bei 256 räumte die LRU im Boot 162 Einträge (headless, 16 Gestalten je Art) — die Räumung löschte
 // `requested`, die Neu-Anfrage traf die eben geschriebene Platte. Mit den Budget-Gestalten hält ein Boot ~230 Körper;
@@ -96961,7 +98246,11 @@ AnazhRealm.HOEHLEN_LICHT_KACHEL_M = 4;
 // Ein Wachsen (Vertices ×1,5, Indizes ×1,25 oder auf die Summe) kostet eine frische Geometrie mit vollem Upload.
 AnazhRealm.CHUNK_SATZ = Object.freeze({
     boden: Object.freeze({ v: 229376, i: 1310720 }),
-    wasser: Object.freeze({ v: 1 << 16, i: 1 << 18 }),
+    // Der Wasser-Satz (0910-1 B) beginnt bei seinem Inhalt an der Mess-Wiese: 9 849 Vertices und ein Index-Hochwasser von
+    // 30 720 (werkbank, OMEN, Satz-Takt 579) — bis dahin begann er bei 2^16 / 2^18 und hielt so 3,0 MiB für ~0,4 MiB Inhalt, bis
+    // ihn die Ruhe-Frist verdichtete (`_chunkSatzVerdichten`, 600 Takte; das Band nach der Ankunft misst davor). Ein Seen-Land
+    // wächst ihn wie jeden Satz (×1,5): 8 Floats je Vertex, ein Wachsen lädt höchstens wenige MB neu.
+    wasser: Object.freeze({ v: 1 << 14, i: 1 << 16 }),
     // Der Bau-Satz (Welle 6) beginnt klein: je Stoff ein Satz, das Dorf der Mess-Wiese trägt in seinem größten Stoff
     // ~40k Vertices — er wächst in wenigen Schritten, eine Formation bleibt darunter.
     bau: Object.freeze({ v: 1 << 13, i: 1 << 14 }),
@@ -98066,16 +99355,21 @@ AnazhRealm._verhaltenGesetz = function () {
             v.furcht &&
             Number.isFinite(v.furcht.fleeThreshold) &&
             v.temperament &&
-            v.temperament.signaturen &&
             v.temperament.profile &&
-            Number.isFinite(v.temperament.floor) &&
+            // DAS TEMPERAMENT DER GATTUNG (Welle LF, Vertrags-Akt 08.10.): die Gattungs-Zeile und der Mut der Natur
+            // (die Substanz-Signaturen und ihr Floor fielen).
+            v.temperament.gattung &&
+            Number.isFinite(v.temperament.gattung.jagdKg) &&
+            Number.isFinite(v.furcht.mutGewicht) &&
             v.wandern &&
             Number.isFinite(v.wandern.leashBaseM) &&
             // SCHLUSS-WELLE (17.07.) — die neun heimgekehrten Blöcke sind
             // Kern-Pflicht: je Block deckt EIN Feld (alter Kern → Bruch,
             // nie ein Misch-Gesetz aus neuem Leser + fehlender Zeile).
             Number.isFinite(v.jagd.pirschStoppM) &&
-            Number.isFinite(v.furcht.neugierStoppM) &&
+            Number.isFinite(v.jagd.hetzM) &&
+            Number.isFinite(v.jagd.pirschSichtM) &&
+            Number.isFinite(v.jagd.beuteMasse) &&
             v.stimmung &&
             v.stimmung.schwellen &&
             Number.isFinite(v.stimmung.schwellen.weideDiet) &&
@@ -98086,10 +99380,11 @@ AnazhRealm._verhaltenGesetz = function () {
             Array.isArray(v.groessen) &&
             v.groessen.length >= 2 &&
             v.separation &&
-            Number.isFinite(v.separation.radiusBaseM) &&
+            Number.isFinite(v.separation.raumKugel) &&
             v.aufgaben &&
             Number.isFinite(v.aufgaben.followTempo) &&
             v.herde &&
+            Number.isFinite(v.herde.fensterRaum) &&
             Number.isFinite(v.herde.gewicht) &&
             v.wasser &&
             Number.isFinite(v.wasser.uferBias)
@@ -98107,7 +99402,8 @@ AnazhRealm._hopSchwere = function () {
     return Number.isFinite(g) && g > 0 ? g : AnazhRealm._kernPflichtBruch("tetrapoda:GANG_GESETZ.g");
 };
 // DAS STEUER-GESETZ (tetrapoda STEUER_GESETZ + steuerSchritt · tempoEinheit · ankunftTempo · herdeZug, Welle L): der EINE
-// Steuer-Schritt je Tier und Takt, das Ankunfts-Gesetz, die Tempo-Einheit √(g·L) und die Herden-Form. Fail-closed.
+// Steuer-Schritt je Tier und Takt, das Ankunfts-Gesetz, die Tempo-Einheit √(g·L) und die Herden-Form; dazu das Temperament
+// der Gattung (temperamentDerGattung, Welle LF). Fail-closed.
 AnazhRealm._steuerGesetz = function () {
     if (AnazhRealm._steuerGesetzMemo) return AnazhRealm._steuerGesetzMemo;
     const S = AnazhRealm.Gesetz("tetrapoda:STEUER_GESETZ", null);
@@ -98120,7 +99416,10 @@ AnazhRealm._steuerGesetz = function () {
         typeof k.steuerSchritt === "function" &&
         typeof k.tempoEinheit === "function" &&
         typeof k.ankunftTempo === "function" &&
-        typeof k.herdeZug === "function"
+        typeof k.herdeZug === "function" &&
+        typeof k.temperamentDerGattung === "function" &&
+        Number.isFinite(S.sprint) &&
+        typeof k.sprintTempo === "function"
     ) {
         AnazhRealm._steuerGesetzMemo = k;
         return k;
@@ -98282,6 +99581,8 @@ AnazhRealm.STOSS = Object.freeze({
 // Gestalt (`_leibVolumen` der geschlossenen Haut, carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
+// die Gänge des EINEN Leib-Lösers je Sim-Schritt (`_leibKontakte`): eine Klemme in der dichten Schar löst sich in wenigen
+AnazhRealm.LEIB_GAENGE = 8;
 AnazhRealm._leibGesetz = function () {
     if (AnazhRealm._leibGesetzMemo) return AnazhRealm._leibGesetzMemo;
     const T = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
@@ -99571,22 +100872,6 @@ AnazhRealm.CREATURE_SOULS = Object.freeze({
     }),
 });
 AnazhRealm.CREATURE_SOUL_NAMES = Object.freeze(Object.keys(AnazhRealm.CREATURE_SOULS));
-
-// Fern-Guss-Distanz (m, Körpergröße L=1): jenseits tauscht der animierte Baum (~235 Draws) gegen das
-// gemergte lod1-Standbild (~8 Draws). Als Quadrat (der Loop führt distSqToPlayer ohne sqrt).
-// 35 m: der Beinschwung ist dort ~2.7 px (Sichtbarkeits-Kante); skaliert mit der Körpergröße (fL).
-AnazhRealm.TIER_FERN_DIST_SQ = 35 * 35;
-// Hysterese des wrap↔fern-Toggles: ±10-%-Band — fern erst jenseits (1+h)·Grenze, zurück erst
-// innerhalb (1−h)·Grenze → kein Flackern; der Toggle schreibt NUR `visible`. EIN Leser: der
-// wrap↔fern-Chokepoint in updateCreatures (gate:tier-fern).
-AnazhRealm.TIER_FERN_HYST = 0.1;
-// Mensch-Fern-Guss (Peers): jenseits trägt die Menschen-Gestalt den gemergten lod1-Guss (wenige
-// Draws, kein Rig-Tick). 40 m ist eine KOSTEN-Grenze, keine Pixel-Grenze: gemessen 06.10. (Leben-Prüfung N-D7, echte
-// GPU) spreizen die Beine in 38 m noch 10,4–10,6 px bei 720 p (15,6 px bei 1080 p) — die „< 2,6 px" dieser Zeile
-// stimmten nie, unter 2,6 px fällt der Schwung erst jenseits ~150 m (720 p). Jenseits 44 m (Hysterese) gleitet ein
-// Peer als Standbild, bis die Grobstufe die Gang-Phase trägt (Mensch-L1, synthese W3c/W3g). Als Quadrat (distSq XZ);
-// EIN Leser: _menschFernToggle.
-AnazhRealm.MENSCH_FERN_DIST_SQ = 40 * 40;
 
 // HARVEST_VOLUME_TO_UNITS — Volumen→Material-Einheiten für harvestArchitecture: k=4 →
 // 1×1×1-Box = 4 Einheiten, 0.5³ → 1 (min 1).
@@ -101323,7 +102608,9 @@ AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;
 // Kaskaden-Geburt; k0 = k1 = 2048, gate:schatten-werfer K5/K6). `rasterTeiler`: die Box wächst in Schritten von
 // Scheiben-Tiefe / rasterTeiler (eine Größe hält, solange die Scheibe hineinpasst — sonst schimmert jede Drehung);
 // `randM` = Saum der Werfer-Hülle (Wind, Morph), `luftM` = Saum über dem höchsten Werfer und unter der tiefsten
-// Scheibe; `biasM` = der Tiefen-Nudge je Kaskade in Metern (bisher −0,0005 × 500 m × (i+1)).
+// Scheibe. DER BIAS (0710-12, `_schattenBias`) in Texeln der Karte, nie in Metern: `normalTexel` = der normalBias je Texel
+// (mal dem Hebel `atmosphere.shadowBias`), `tiefeTexel` = der Tiefen-Nudge entlang des Lichts. Den Versatz trägt die
+// End-Normale des Empfänger-Stoffs (r184 `normalWorld`), am geflachten Boden also die Senkrechte (TERRAIN_NORMAL_FLATTEN).
 AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     texelM: Object.freeze([0.17, 0.47]),
     bezugAspekt: 16 / 9,
@@ -101331,7 +102618,8 @@ AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     rasterTeiler: 8,
     randM: 2,
     luftM: 4,
-    biasM: Object.freeze([-0.25, -0.5]),
+    normalTexel: 0.5,
+    tiefeTexel: 0.75,
 });
 // DAS GESETZ DER PASS-WAHL (`_passTrifft`, W7-Vereinigung) — EIN Urteil je Körper und Pass für jeden Leser (Zellen der
 // Sätze · Werfer der Bündel · Instanzen der Wahl-Gruppen · Büschel der Nah-Wiese). `sichtRand` je Meter Abstand zum Auge:
@@ -101675,7 +102963,6 @@ AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "terrain_base_height",
     "gravity",
     "set_time_of_day",
-    "time_of_day",
     "set_season",
     "skybox_color",
     "creatures_color",
@@ -101692,7 +102979,6 @@ AnazhRealm.DSL_WELTAKTE = Object.freeze([
     "creature_apply_boost",
     "player_jump_power",
     "player_speed",
-    "player_size_mul",
     "player_soul",
     "damage",
     "apply_boost",
@@ -101882,6 +103168,8 @@ AnazhRealm.MOTION_PROFILE_MAP = Object.freeze({
 AnazhRealm.MOTION_ZUSTAND_PROFILES = Object.freeze({
     schwimmen: Object.freeze({ kreatur: "schwimmen" }),
     jagd: Object.freeze({ kreatur: "hunt" }),
+    // die HETZE galoppiert wie die Flucht (Welle LF: der Sprint der Gestalt)
+    hetzen: Object.freeze({ kreatur: "flee" }),
     flucht: Object.freeze({ kreatur: "flee" }),
     // koerper-Zustand kampf: frischer Schwung/Schuss (_koerperKampfZustand) wählt das Lab-Profil "fight"
     // (Garde-Haltung); "angry" lebt über MOTION_EMOTION_PROFILES. Lab-only bleiben "showcase" (kein
