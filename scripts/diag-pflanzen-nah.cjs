@@ -418,6 +418,101 @@ function leserUrteil(quelle) {
     return v;
 }
 
+// (WI) DER WIND (K19) — das Wind-Gesetz des Kerns (phyto-core WIND_GESETZ · windBaum · windAusschlag) gegen die gelieferte
+// Gestalt und seine Leser:
+//   f0   je Baum-Art (L0, Gestalt 1): f0 = kF · D / H² mit D = Stamm-Durchmesser in 1,3 m Welt-Höhe (der Ring des Stamm-
+//        Strangs) und H = Welt-Höhe — gegen das f0, das der Welt-Stoff aus dem Buch rechnet (kF · δ / H, `windBaum`): ± F0_TOL.
+//   GLIED der Ausschlag je Glied (Stamm-Spitze, Ast-Hebel, Blatt) über 20 s: Sturm (Wind-Zeile 1) zu Brise (0,06) ≥ STURM_BRISE,
+//        und die Leiter der Frequenzen Stamm < Ast < Blatt.
+//   LESER der EINE Term hat seine Leser — Rinde und Laub der Welt (`_baumWindStoff`, gerufen aus `_foundryTreeMaterial`), die
+//        Karte (`_buildPbrNodeMaterial`) und das Labor (foundry-core `injectWind`); die eigenen Sinus-Formeln sind fort (die
+//        Karte pendelte 0,22 m in jedem Wetter, das Labor bog linear in uWindStrength und las omega nie).
+const F0_TOL = 0.3;
+const STURM_BRISE = 3;
+function stammDurchmesser(T, yT) {
+    const S = stammRinge(T);
+    if (!S) return null;
+    let best = null;
+    for (const x of S.ringe) if (!best || Math.abs(x.y - yT) < Math.abs(best.y - yT)) best = x;
+    const p = S.t.pos;
+    let cx = 0,
+        cz = 0;
+    const n = S.R1 - 1;
+    for (let j = 0; j < n; j++) {
+        cx += p[(best.r * S.R1 + j) * 3];
+        cz += p[(best.r * S.R1 + j) * 3 + 2];
+    }
+    cx /= n;
+    cz /= n;
+    let r = 0;
+    for (let j = 0; j < n; j++) r += Math.hypot(p[(best.r * S.R1 + j) * 3] - cx, p[(best.r * S.R1 + j) * 3 + 2] - cz);
+    return (2 * r) / n;
+}
+function gliedAusschlag(f0, H, U) {
+    const A = PC.WIND_ZAHLEN;
+    const m = { stamm: 0, ast: 0, blatt: 0 };
+    for (let t = 0; t < 20; t += 0.005) {
+        const e = { t, U, g: 1, f0, H, zeta: 1, rho: 0, phi: 0, psi: 1 };
+        const s = PC.windAusschlag(A, e, true);
+        const a = PC.windAusschlag(A, Object.assign({}, e, { zeta: 0.8, rho: 0.3 }), true);
+        const s8 = PC.windAusschlag(A, Object.assign({}, e, { zeta: 0.8 }), true);
+        m.stamm = Math.max(m.stamm, Math.abs(s.quer));
+        m.ast = Math.max(m.ast, Math.hypot(a.quer - s8.quer, a.hoch - s8.hoch));
+        m.blatt = Math.max(m.blatt, Math.abs(s.flattern));
+    }
+    return m;
+}
+function windUrteil(fall, T, skala, s) {
+    const v = [];
+    const H = hoehe(T) * skala;
+    const D = stammDurchmesser(T, 1.3 / skala);
+    if (!(D > 0)) return { v: [`${fall}: kein Stamm-Strang für den Wind`], m: {} };
+    const Dw = D * skala;
+    const W = PC.WIND_GESETZ;
+    const f0mess = (W.kF * Dw) / (H * H);
+    const f0welt = (W.kF * PC.windBaum(s, 1).delta) / H;
+    if (Math.abs(f0welt / f0mess - 1) > F0_TOL)
+        v.push(
+            `${fall}: f0 der Welt ${f0welt.toFixed(2)} Hz ≠ Gesetz ${f0mess.toFixed(2)} Hz (D ${Dw.toFixed(2)} m, H ${H.toFixed(1)} m)`
+        );
+    const sturm = gliedAusschlag(f0welt, H, 1);
+    const brise = gliedAusschlag(f0welt, H, 0.06);
+    for (const g of ["stamm", "ast", "blatt"])
+        if (!(sturm[g] >= STURM_BRISE * brise[g]))
+            v.push(
+                `${fall}: ${g} im Sturm ${sturm[g].toFixed(3)} m nur ${(sturm[g] / brise[g]).toFixed(2)}× die Brise`
+            );
+    const fAst = W.ast.faktor * f0welt,
+        fBl = Math.max(W.blatt.f, W.blatt.ueberAst * fAst);
+    if (!(f0welt < fAst && fAst < fBl)) v.push(`${fall}: Leiter Stamm < Ast < Blatt gebrochen`);
+    return {
+        v,
+        m: {
+            f0: f0welt,
+            f0Gesetz: f0mess,
+            "Stamm Sturm/Brise m": `${sturm.stamm.toFixed(3)}/${brise.stamm.toFixed(4)}`,
+            "Blatt Sturm/Brise m": `${sturm.blatt.toFixed(3)}/${brise.blatt.toFixed(4)}`,
+        },
+    };
+}
+function windLeserUrteil(quellen) {
+    const v = [];
+    const code = (t) => t.replace(/\/\/[^\n]*/g, "");
+    const welt = code(quellen["anazhRealm.js"]);
+    const i = welt.indexOf("\n    _baumWindStoff(");
+    const rumpf = i < 0 ? "" : welt.slice(i, welt.indexOf("\n    }\n", i));
+    if (!/__phytoCore\.windAusschlag\(/.test(rumpf))
+        v.push("anazhRealm.js: Rinde und Laub der Welt lesen den Wind-Term nicht");
+    if (!/this\._baumWindStoff\(/.test(welt)) v.push("anazhRealm.js: _foundryTreeMaterial ruft _baumWindStoff nicht");
+    if ((welt.match(/__phytoCore\.windAusschlag\(/g) || []).length < 2)
+        v.push("anazhRealm.js: die Karte liest den Wind-Term nicht");
+    if (/_Ta\.sin\(_ph\)\.mul\(_fx\)/.test(welt)) v.push("anazhRealm.js: die Karte pendelt mit eigener Formel");
+    const labor = code(quellen["foundry-core.js"]);
+    if (!/__phytoCore\.windAusschlag\(/.test(labor)) v.push("foundry-core.js: das Labor liest den Wind-Term nicht");
+    if (/_theta=clamp\(_sw\*uWindStrength/.test(labor)) v.push("foundry-core.js: das Labor biegt mit eigener Formel");
+    return v;
+}
+
 (async () => {
     const fails = [];
     const roh = {};
@@ -442,7 +537,8 @@ function leserUrteil(quelle) {
         for (const p of baeume) await fall(p, 0, 1);
         for (const p of baeume) await fall(p, 1, 1);
         await fall("birke", 0, 2);
-        for (const p of Object.keys(buch).filter((x) => art(x) === "shrub")) for (const l of [0, 1]) await fall(p, l, 1);
+        for (const p of Object.keys(buch).filter((x) => art(x) === "shrub"))
+            for (const l of [0, 1]) await fall(p, l, 1);
         for (const p of Object.keys(buch).filter((x) => art(x) === "flower"))
             for (const s of [1, 2]) await fall(p, 0, s);
     });
@@ -459,6 +555,11 @@ function leserUrteil(quelle) {
         if (kind === "tree" && f.lod === 1) u = klingenL1(k, f.T);
         else if (kind === "tree") {
             u = rindeUrteil(k, f.T, fx.barkType || (fx.conifer ? "conifer" : "oak"), f.presetId !== "totholz");
+            if (f.seed === 1) {
+                const w = windUrteil(k, f.T, skala(f.presetId), buch[f.presetId].s);
+                u.v.push(...w.v);
+                Object.assign(u.m, w.m);
+            }
             // Die Trauer-L0 trägt Strähnen (gestreckte Zellen) — ihr Blatt-Maß ist kein Karten-Maß.
             const trauer = buch[f.presetId].s && buch[f.presetId].s.trop >= 0.55;
             if (!trauer && f.T.some((t) => t.kind === "foliageTex")) {
@@ -494,7 +595,7 @@ function leserUrteil(quelle) {
         "foundry-core.js": fs.readFileSync(path.join(ROOT, "foundry-core.js"), "utf8"),
         "anazhRealm.js": fs.readFileSync(path.join(ROOT, "anazhRealm.js"), "utf8"),
     };
-    fails.push(...unterseiteUrteil(quellen));
+    fails.push(...unterseiteUrteil(quellen), ...windLeserUrteil(quellen));
     console.log("Pflanzen-Nahbild (gelieferte Puffer, Welt-Gestalt):\n" + zeilen.join("\n"));
     // (F) die Fracht je Format gegen das Labor, und der EINE Leser in der Quelle.
     const fracht = frachtReihen(bild);
@@ -595,11 +696,33 @@ function leserUrteil(quelle) {
         "Leser teilt nicht durch alpha",
         leserUrteil(quellen["anazhRealm.js"].replace(".rgb.div(s.a.max(T.float(1e-3)))", ".rgb")).length > 0,
     ]);
+    if (eiche) {
+        const dick = eiche.T.map((t) => {
+            if (t.kind !== "bark") return t;
+            const p = Float32Array.from(t.pos);
+            for (let i = 0; i < p.length; i += 3) {
+                p[i] *= 3;
+                p[i + 2] *= 3;
+            }
+            return Object.assign({}, t, { pos: p });
+        });
+        st.push([
+            "Stamm ×3 dick (f0 gegen das Gesetz)",
+            windUrteil("dick", dick, skala("eiche"), buch.eiche.s).v.length > 0,
+        ]);
+    }
+    st.push([
+        "Wind-Leser entfernt",
+        windLeserUrteil({
+            "anazhRealm.js": quellen["anazhRealm.js"].replace(/__phytoCore\.windAusschlag\(/g, "X("),
+            "foundry-core.js": quellen["foundry-core.js"],
+        }).length >= 2,
+    ]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
 
     console.log(
-        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Unterseite · Fracht ==="
+        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Unterseite · Fracht · Wind ==="
     );
     if (fails.length) {
         console.error("\n❌ ROT:");
