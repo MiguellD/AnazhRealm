@@ -1166,6 +1166,9 @@ function probe(selbsttest) {
         };
         if (abweichung === "zellen")
             r._chunkSatzPass = function (kamera, nach, k, S2) {
+                // die gehaltene Wahl gilt nicht (Welle C: steht Lage und Stand, zeichnet der Abschnitt, wie er lag — der
+                // Leser urteilte nie, S10 war blind, sobald kein Satz seit dem Haupt-Urteil wuchs: „Zellen falsch 0")
+                for (const sz of this.state.chunkSaetze.values()) for (const a of sz.abschnitte.values()) a.wahl = null;
                 return ohneKapsel(S2.lage, () => P._chunkSatzPass.call(this, kamera, nach, k, S2));
             };
         if (abweichung === "werfer")
