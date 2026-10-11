@@ -144,6 +144,8 @@ OFFEN: das PROFI-BAND auf jedem Standardgerät (60 fps · 208 DRW · ~680k TRI �
    `diag-worker-watersheet` maxDiff 0; das Chunk-Gitter `gate:worker-dichte`, Edits auch über dem Band). Welt-Substanz
    zieht aus Γ5-Seed-Streams, nie Math.random. Gesetz statt Spiegel, wo es geht: die 2D-Höhe spiegelt niemand mehr —
    Stamm und Worker rufen EIN Gesetzbuch (`gelaende-core.js`, die Lage = Worker-`state` bzw. Stamm-`_gelaende()`).
+   Ein Zwillings-Abdruck ist ein MUSTER über jede Datei und jedes Skript, nie ein Variablen-Name (`wx * 0.00014 + 7.2`
+   ließ `(x + _wpX) * 0.00014 + 7.2` in beiden Farb-Pfaden durch).
 8. **Spawn-Affinität ist TAG-NEUTRAL** (winner-take-all; die Tiere sind bewusst tag-identisch —
    Differenzierung über die Größen-/Gattungs-Achse, nie über Tags).
 9. **`gate | tail` maskiert Exit-Codes** — Exits IMMER explizit (`echo EXIT=$?`).
