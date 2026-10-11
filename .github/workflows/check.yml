@@ -897,7 +897,9 @@ jobs:
               # offene Werkstatt = tauber Canvas, ein Bauwerk geht in den Bau-Modus · Q10: Ego-Neigung −90° = Blick
               # −90°, „vor dir" liegt vor dem Blick, der Pfeil fliegt aufs Fadenkreuz, der Sweep liest _blickVorn.
               # Kein dritter Leib: Klinge und Pfeil fragen das EINE Grob-Tor, es liest den kreatur-Leib und deckt die
-              # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S9.
+              # Gestalt. Dazu die alten Gesetze (Dauer ∝ √I, Sweep, Hit-Stop ≠ Sim, Tod-Kippen). Selbst-Tests S1–S10.
+              # K13 T26: die Klick-Pfad-Matrix (8 Waffen × 3 Abstände × Rumpf/Horizont × 3rd/1st über tryMouseBreak) macht
+              # 96 von 96 Schaden, der Wolf im Rücken bleibt heil, jenseits der Klinge ein Luftschlag mit Hinweis.
               run: npm run gate:kampf-gefuehl
 
             - name: Tod-Zensus (der Leichnam traegt nichts vom lebenden Tier, seine Sicht waehlt der EINE Weg jedes Leibs)
@@ -907,8 +909,9 @@ jobs:
               # wechselt nach 10 s und 50 s die Seite (2 m <-> 40 m), dazu je eine Leichnam-Kopie beim Mitspieler: die Stufe
               # passt zum Abstand wie bei einem lebenden Tier (nah die Gestalt mit Schatten-Werfer, fern der Fern-Guss), keine
               # Aura, keine Traglast, kein Wesen-Takt, keine Stimme, die Wurzel der Tod-Lage auf dem Stand-Boden, nach der Frist
-              # fort. Sechs Taeter im selben Boot (Sicht, Kopie, Zeichen, Sprung, Wesen, Stimme) muessen beim Namen rot lesen.
-              # Lokal 18 s, CI 15 s (Lauf 38030449627).
+              # fort; die Traglast faellt an den Spieler zurueck (Holz + Journal), EINE Methode raeumt die Zeichen (K13).
+              # Zehn Taeter im selben Boot (Sicht, Kopie, Zeichen, Lage, Haltung, Sprung, Wesen, Stimme, Last, Raeumen)
+              # muessen beim Namen rot lesen. Vorher CI 15 s (Lauf 38030449627), acht Laeufe; jetzt zehn.
               run: npm run gate:tod-zensus
 
             - name: Die Stoff-Linse der Gegenstaende (W5 — Fahrzeuge und Klingen im Band ihrer Natur)

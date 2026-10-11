@@ -750,18 +750,31 @@ async function kreaturProben(r, T, opts) {
         const dt = 1 / 60;
         const NAT = A._verhaltenGesetz().furcht;
         const geschoben = kontaktZaehler(restore);
-        // DIE PEILUNG DES ZIELS (mitlaufend, durchgereicht): wohin der EINE Jagd-Weg den Wolf in seinem letzten Ruf schickte
-        // — das Ziel und der Ort des Wolfs in diesem Ruf
-        let peilung = null;
-        decke(
-            restore,
-            "_kreaturJagdZug",
-            (alt) =>
-                function (c, tx, tz, ...rest) {
-                    if (c === wolf) peilung = { tx, tz, x: c.position.x, z: c.position.z };
-                    return alt.call(this, c, tx, tz, ...rest);
-                }
-        );
+        // DIE PEILUNG DES ZIELS LIEST DEN ZUSTAND (K13): die Körper, die die Probe selbst kennt — die drei Beutetiere und den
+        // Spieler — je Takt an ihrem Ort, vom Ort des Wolfs vor dem Schritt. Vorher war sie das Argument des geprüften Jagd-Wegs
+        // (_kreaturJagdZug tx/tz): ein Raster, das schon das Ziel auf eine Achse legt, ginge als „auf dem Ziel" durch.
+        const peilKoerper = [...beute, s.playerMesh];
+        // K13: das Raster liegt schon auf dem ZIEL (die äußerste Hülle: der Fehler sitzt vor dem Jagd-Weg) — er bekommt eine Peilung, die vom Wolf aus genau längs einer
+        // Himmelsachse liegt (gleicher Abstand); ein Lauf darauf ist ein Raster, auch wenn er „auf sein Ziel" geht
+        if (taeter === "jagd-ziel")
+            decke(
+                restore,
+                "_kreaturJagdZug",
+                (alt) =>
+                    function (c, tx, tz, ...rest) {
+                        const dx = tx - c.position.x,
+                            dz = tz - c.position.z;
+                        const m = Math.hypot(dx, dz);
+                        if (Math.abs(dx) > Math.abs(dz)) {
+                            tx = c.position.x + Math.sign(dx) * m;
+                            tz = c.position.z;
+                        } else {
+                            tx = c.position.x;
+                            tz = c.position.z + Math.sign(dz) * m;
+                        }
+                        return alt.call(this, c, tx, tz, ...rest);
+                    }
+            );
         let jagdFrames = 0,
             kontakt = 0,
             achs = 0,
@@ -800,10 +813,10 @@ async function kreaturProben(r, T, opts) {
                 // bis 15,0 % (83 Achsen-Takte, jeder auf sein Ziel), diese höchstens 1,9 %. Das Raster (R-D12) dreht den Lauf von
                 // der Peilung fort (Täter jagd: 22–28 %) — gezählt wird nur der Achsen-Takt, dessen Lauf mehr als 1° neben der
                 // Peilung des Ziels liegt.
-                const aufZiel =
-                    !!peilung &&
-                    Math.abs(wrap(h - Math.atan2(peilung.tx - peilung.x, peilung.tz - peilung.z))) <
-                        (1 * Math.PI) / 180;
+                const aufZiel = peilKoerper.some(
+                    (c) =>
+                        Math.abs(wrap(h - Math.atan2(c.position.x - wv.x, c.position.z - wv.z))) < (1 * Math.PI) / 180
+                );
                 if (grad(m) < 0.25 && aufZiel) achsZiel++;
                 else if (grad(m) < 0.25) {
                     achs++;
@@ -2917,6 +2930,7 @@ const TAETER = {
     ],
     jagd: [
         ["jagd", /Achsen/],
+        ["jagd-ziel", /Achsen/],
         ["jagd-flucht", /Beute fort/],
     ],
     herde: [

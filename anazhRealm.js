@@ -16754,11 +16754,13 @@ class AnazhRealm {
     // DIE ZEICHEN ÜBER DEM LEIB (die Aura des Auftrags, das Sprite der Traglast) räumen — der EINE Weg für den Abschied
     // (removeCreature) und den Fall (_kreaturFaellt: ein Leichnam trägt keinen Auftrag, keine Last). Die Textur ist geteilt
     // (_getCreatureTaskAuraTexture, lebt mit der Realm-Klasse) — nur das Material geht, aufgeschoben (V10.0-j.e, das
-    // Submit-Rennen unter WebGPU); sonst bliebe das Sprite als Geist im Heap.
-    _leibZeichenFrei(creature) {
+    // Submit-Rennen unter WebGPU); sonst bliebe das Sprite als Geist im Heap. `nur` räumt EIN Zeichen ("taskAura" |
+    // "carryingSprite"): das Ende eines Auftrags (_refreshCreatureTaskAura) und einer Traglast (_refreshCreatureCarryingVisual)
+    // gehen DENSELBEN Weg (K13 — vorher räumten beide in eigenen Kopien dieses Codes).
+    _leibZeichenFrei(creature, nur = null) {
         const ud = creature && creature.userData;
         if (!ud) return;
-        for (const feld of ["taskAura", "carryingSprite"]) {
+        for (const feld of nur ? [nur] : ["taskAura", "carryingSprite"]) {
             const z = ud[feld];
             if (!z) continue;
             if (this.state.scene) this.state.scene.remove(z);
@@ -22907,13 +22909,7 @@ class AnazhRealm {
         const hue = task ? AnazhRealm.CREATURE_TASK_AURA_HUE[task.name] : null;
         const aura = creature.userData && creature.userData.taskAura;
         if (hue === null || hue === undefined) {
-            // Task wander → Aura entfernen. Textur NICHT disposen (shared).
-            if (aura) {
-                if (this.state.scene) this.state.scene.remove(aura);
-                // V10.0-j.e — Material-Dispose deferred (per-Frame triggerbar).
-                if (aura.material) this._queueDispose(aura.material);
-                creature.userData.taskAura = null;
-            }
+            this._leibZeichenFrei(creature, "taskAura"); // Task wander → die Aura geht (die geteilte Textur bleibt)
             return;
         }
         // Aura existiert → nur Hue aktualisieren über Material-Color-Setter
@@ -22951,13 +22947,7 @@ class AnazhRealm {
         const carrying = ud.carrying;
         const oldSprite = ud.carryingSprite;
         if (!carrying) {
-            // Kein Träger-State → Sprite entfernen.
-            if (oldSprite) {
-                if (this.state.scene) this.state.scene.remove(oldSprite);
-                // V10.0-j.e — Material-Dispose deferred (per-Frame triggerbar).
-                if (oldSprite.material) this._queueDispose(oldSprite.material);
-                ud.carryingSprite = null;
-            }
+            this._leibZeichenFrei(creature, "carryingSprite"); // keine Traglast → das Sprite geht
             return;
         }
         // Material-Farbe ermitteln — dominantes Material aus carrying.materials.
