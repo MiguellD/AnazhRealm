@@ -487,7 +487,7 @@ async function folge() {
                         continue;
                     }
                     await blick(BAND.ortGier(p));
-                    await R("/gpu-bank", { n: 60, runden: 1 });
+                    await R("/gpu-bank", { n: 120, runden: 2 });
                     const werte = [];
                     let cpu = 0;
                     for (let i = 0; i < B.je; i++) {

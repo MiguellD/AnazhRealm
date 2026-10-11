@@ -937,19 +937,23 @@ async function starte() {
                 }
                 window.__ortTakt = (o && o.takt) || [];
                 // DIE STELLGRÖSSEN des Orts (Toggle-Ort, haushalt.json `stell`): der Regler hält sie je Takt fest — an der
-                // Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, die GPU-Bank derselben Seite um 0,2 ms (1110-6).
+                // Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, die GPU-Bank derselben Seite um 0,2 ms; an der Bühne
+                // stand der Lade-Ring je Sitzung bei 25 oder 81–93 Chunks (der Ring wächst nur bei Kopfraum und vollem
+                // Ring, `_activeRingRadius`), die Bank derselben Pose um 0,8–1,0 ms (1110-6). `ring` setzt Ziel UND aktiven
+                // Ring, wie der Null-Renderer es tut.
                 const FELD = {
-                    foliageRadius: "foliageRadius",
-                    architectureCullingRadius: "architectureCullingRadius",
-                    dichte: "_foliageDensityScale",
-                    perfTargetMs: "perfTargetMs",
+                    foliageRadius: ["foliageRadius"],
+                    architectureCullingRadius: ["architectureCullingRadius"],
+                    dichte: ["_foliageDensityScale"],
+                    perfTargetMs: ["perfTargetMs"],
+                    ring: ["chunkRingRadius", "_activeRingRadius"],
                 };
                 const stell = (o && o.stell) || null;
                 for (const k of Object.keys(stell || {}))
                     if (!FELD[k]) throw new Error(`Messort ${o.ort}: unbekannte Stellgröße „${k}" (${Object.keys(FELD).join(", ")})`);
                 window.__ortStell = stell
                     ? () => {
-                          for (const [k, v] of Object.entries(stell)) r.state[FELD[k]] = v;
+                          for (const [k, v] of Object.entries(stell)) for (const f of FELD[k]) r.state[f] = v;
                       }
                     : null;
                 window.__ortSchritt = () => {
@@ -982,9 +986,18 @@ async function starte() {
                         stabil = 0;
                         last = sz;
                     }
-                    if (takte >= 40 && stabil >= 15) break;
+                    // Ein Toggle-Ort ruht erst, wenn der gebaute Ring sein Ziel erreicht und kein Chunk mehr im Bau ist.
+                    const ruht =
+                        !stell ||
+                        ((!stell.ring || r._builtRingRadius() >= stell.ring) &&
+                            !(r.state.voxelMeshPending && r.state.voxelMeshPending.size > 0));
+                    if (takte >= 40 && stabil >= 15 && ruht) break;
                     await sleep(50);
                 }
+                if (stell && stell.ring && r._builtRingRadius() < stell.ring)
+                    throw new Error(
+                        `Messort ${o.ort}: der Ring steht nach ${takte} Takten bei ${r._builtRingRadius()}, Ziel ${stell.ring}`
+                    );
                 return {
                     takte,
                     chunks: last,

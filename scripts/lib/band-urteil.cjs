@@ -133,6 +133,9 @@ function messortePruefen(h) {
             const b = o.bank;
             if (!b || ![b.n, b.runden, b.je].every((v) => Number.isInteger(v) && v > 0) || !(b.soll > 0))
                 f.push(`${o.id}: bank ohne n/runden/je (ganz, > 0) und soll (ms, > 0)`);
+            // Eine Bank-Runde rendert n Frames in EINER Aufgabe, der Zeitstempel-Pool (2048) leert sich erst danach: an der
+            // Prüfbühne braucht ein Frame ~9,7 Abfragen — 240 Frames verweigerten 288 (Stempel-Wache ROT, 1110-6).
+            else if (b.n > 200) f.push(`${o.id}: bank.n ${b.n} füllt den Stempel-Pool je Runde (höchstens 200 Frames)`);
             const st = o.stell;
             if (!st || !Object.keys(st).length || Object.values(st).some((v) => typeof v !== "number" || !Number.isFinite(v)))
                 f.push(`${o.id}: stell ist keine Liste fester Stellgrößen`);

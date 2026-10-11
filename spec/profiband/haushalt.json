@@ -147,15 +147,15 @@
         },
         {
             "id": "buehne",
-            "titel": "DIE PRÜFBÜHNE als GPU-Messort (1110-6): die geborene Welt aus spec/pruefbuehne/welt.json (Welt-Tor importWorldBeside + aktiv + Reload, wie im Spiel). Fester Inhalt: die Saat, kein Feld-Wurf, keine ungesetzten Tiere (gate:pruefbuehne); feste Uhr und Sonne (__buehne); feste Stellgrößen des Reglers (`stell`, je Takt gehalten — an der Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, der Baum-Inhalt 1,7–3,1 ms); feste Posen je Station. Der Ort der Toggle-Urteile unter 0,3 ms (gemessen 11.10. GTX 1060: drei Welt-Instanzen 13,50–13,64 ms, Mittel je Sitzung in 0,085 ms; das Licht des Auges 0,47 ms). Kein Band-Ort: keine Ratsche, das Profi-Band richten Wiese und Genesis.",
+            "titel": "DIE PRÜFBÜHNE als GPU-Messort (1110-6): die geborene Welt aus spec/pruefbuehne/welt.json (Welt-Tor importWorldBeside + aktiv + Reload, wie im Spiel). Fester Inhalt: die Saat, kein Feld-Wurf, keine ungesetzten Tiere (gate:pruefbuehne); feste Uhr und Sonne (__buehne); feste Stellgrößen des Reglers (`stell`, je Takt gehalten — an der Wiese wanderte der Laub-Radius je Sitzung 50 ↔ 55 m, der Baum-Inhalt 1,7–3,1 ms); feste Posen je Station, alle aus der Reichweite des Genesis-Rings am Ursprung (seine Tore L0 trugen an s0 +6 ms je nachdem, ob sie beim Messen schon standen); fester Lade-Ring (`stell.ring`: an derselben Pose 25 oder 81–93 Chunks je Sitzung, 0,8–1,0 ms). Der Ort der Toggle-Urteile unter 0,3 ms (gemessen 11.10. GTX 1060: drei Welt-Instanzen 13,50–13,64 ms, Mittel je Sitzung in 0,085 ms; das Licht des Auges 0,47 ms). Kein Band-Ort: keine Ratsche, das Profi-Band richten Wiese und Genesis.",
             "welt": "pruefbuehne/welt.json",
             "spieler": [
-                0,
+                300,
                 0
             ],
             "blick": [
-                0,
-                148
+                420,
+                0
             ],
             "dorfZug": false,
             "ortTakt": [],
@@ -163,20 +163,33 @@
                 "foliageRadius": 240,
                 "architectureCullingRadius": 150,
                 "dichte": 1,
-                "perfTargetMs": 1000
+                "perfTargetMs": 1000,
+                "ring": 4
             },
             "posen": [
                 {
-                    "id": "s0-hang",
+                    "id": "ost",
                     "spieler": [
-                        0,
+                        300,
                         0
                     ],
                     "blick": [
-                        0,
-                        148
+                        420,
+                        0
                     ],
-                    "satz": "vom Atrium über das Plateau auf die 30°-Rampe von S2"
+                    "satz": "300 m östlich des Ursprungs über das Plateau auf die Schelf-Kante — der Genesis-Ring am Ursprung liegt im Rücken und jenseits des Bau-Radius"
+                },
+                {
+                    "id": "west",
+                    "spieler": [
+                        -300,
+                        0
+                    ],
+                    "blick": [
+                        -420,
+                        0
+                    ],
+                    "satz": "dasselbe nach Westen"
                 },
                 {
                     "id": "s4-hindernisse",
@@ -188,7 +201,7 @@
                         0,
                         -170
                     ],
-                    "satz": "die sechs Steinkörper der Hindernis-Station"
+                    "satz": "die sechs Steinkörper der Hindernis-Station, der Ursprung im Rücken"
                 },
                 {
                     "id": "s5-bucht",
@@ -204,8 +217,8 @@
                 }
             ],
             "bank": {
-                "n": 240,
-                "runden": 3,
+                "n": 120,
+                "runden": 6,
                 "je": 2,
                 "soll": 0.1
             }
