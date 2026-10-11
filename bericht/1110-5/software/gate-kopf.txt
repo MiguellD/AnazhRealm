@@ -1,0 +1,10 @@
+SELBSTTEST GRÜN: das Terminator-Urteil nennt die Hang-Akne beim Namen
+  Start: 5 s
+  umstellen --ort buehne --pose ost: 21 s
+  umstellen 0 120: 12 s
+  Probe 22°/45°: 42 s
+  Sonne 22°/45° · N·L -0.002 · 1600 Proben · fleckig mit Schatten 0.0 %, ohne 0.0 % · Median 41.6 / 41.6
+  Probe 20°/45°: 39 s
+  Sonne 20°/45° · N·L -0.034 · 1600 Proben · fleckig mit Schatten 0.0 %, ohne 0.0 % · Median 41.6 / 41.6
+✅ GRÜN — der Terminator der Rampe ohne Akne
+diag-schatten-terminator: 119 s

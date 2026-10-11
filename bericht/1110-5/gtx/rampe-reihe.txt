@@ -1,0 +1,19 @@
+kopf "e":15,"NdotL":-0.257,"proben":1600,"medianAn":41.4,"medianAus":41.4,"fleckenAn":0,"fleckenAus":0,"cvAn":0.041,"cvAus":0.041
+kopf "e":20,"NdotL":-0.171,"proben":1600,"medianAn":41.4,"medianAus":41.4,"fleckenAn":0,"fleckenAus":0,"cvAn":0.041,"cvAus":0.041
+kopf "e":25,"NdotL":-0.085,"proben":1600,"medianAn":41.4,"medianAus":41.4,"fleckenAn":0,"fleckenAus":0,"cvAn":0.041,"cvAus":0.041
+kopf "e":28,"NdotL":-0.033,"proben":1600,"medianAn":41.4,"medianAus":41.4,"fleckenAn":0,"fleckenAus":0,"cvAn":0.041,"cvAus":0.041
+kopf "e":30,"NdotL":0.002,"proben":1600,"medianAn":41.5,"medianAus":41.5,"fleckenAn":0,"fleckenAus":0,"cvAn":0.041,"cvAus":0.041
+kopf "e":32,"NdotL":0.037,"proben":1600,"medianAn":54.1,"medianAus":54.9,"fleckenAn":0,"fleckenAus":0,"cvAn":0.041,"cvAus":0.039
+kopf "e":35,"NdotL":0.089,"proben":1600,"medianAn":90.5,"medianAus":91.7,"fleckenAn":0,"fleckenAus":0,"cvAn":0.043,"cvAus":0.041
+kopf "e":40,"NdotL":0.176,"proben":1600,"medianAn":116.7,"medianAus":117.4,"fleckenAn":0.0006,"fleckenAus":0.0006,"cvAn":0.037,"cvAus":0.038
+kopf "e":60,"NdotL":0.502,"proben":1600,"medianAn":134.8,"medianAus":134.8,"fleckenAn":0,"fleckenAus":0,"cvAn":0.03,"cvAus":0.03
+"chunksNeu":1
+main "e":15,"NdotL":-0.257,"proben":1600,"medianAn":41.4,"medianAus":79.4,"fleckenAn":0,"fleckenAus":0,"cvAn":0.041,"cvAus":0.048
+main "e":20,"NdotL":-0.171,"proben":1600,"medianAn":41.4,"medianAus":88.8,"fleckenAn":0,"fleckenAus":0,"cvAn":0.041,"cvAus":0.046
+main "e":25,"NdotL":-0.085,"proben":1600,"medianAn":41.4,"medianAus":97.7,"fleckenAn":0,"fleckenAus":0,"cvAn":0.041,"cvAus":0.044
+main "e":28,"NdotL":-0.033,"proben":1600,"medianAn":41.4,"medianAus":102.1,"fleckenAn":0,"fleckenAus":0,"cvAn":0.041,"cvAus":0.043
+main "e":30,"NdotL":0.002,"proben":1600,"medianAn":102.1,"medianAus":105,"fleckenAn":0,"fleckenAus":0,"cvAn":0.055,"cvAus":0.042
+main "e":32,"NdotL":0.037,"proben":1600,"medianAn":106,"medianAus":107.9,"fleckenAn":0,"fleckenAus":0,"cvAn":0.048,"cvAus":0.041
+main "e":35,"NdotL":0.089,"proben":1600,"medianAn":110.1,"medianAus":111.9,"fleckenAn":0,"fleckenAus":0,"cvAn":0.042,"cvAus":0.039
+main "e":40,"NdotL":0.176,"proben":1600,"medianAn":116.7,"medianAus":117.4,"fleckenAn":0.0006,"fleckenAus":0.0006,"cvAn":0.037,"cvAus":0.038
+main "e":60,"NdotL":0.502,"proben":1600,"medianAn":134.8,"medianAus":134.8,"fleckenAn":0,"fleckenAus":0,"cvAn":0.03,"cvAus":0.03

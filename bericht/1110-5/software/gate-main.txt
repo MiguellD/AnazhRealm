@@ -1,0 +1,12 @@
+SELBSTTEST GRÜN: das Terminator-Urteil nennt die Hang-Akne beim Namen
+  Start: 5 s
+  umstellen --ort buehne --pose ost: 21 s
+  umstellen 0 120: 12 s
+  Probe 22°/45°: 42 s
+  Sonne 22°/45° · N·L -0.002 · 1600 Proben · fleckig mit Schatten 11.7 %, ohne 0.2 % · Median 75.6 / 92.7
+  Probe 20°/45°: 39 s
+  Sonne 20°/45° · N·L -0.034 · 1600 Proben · fleckig mit Schatten 2.2 %, ohne 0.2 % · Median 41.8 / 88.9
+  ❌ (T) TERMINATOR-AKNE bei N·L -0.002 (Sonne 22° aus Azimut 45°): 11.7 % der Rampe fleckig, ohne Schatten 0.2 % — TÄTER: am Terminator entscheidet allein der Schatten-Test (die 2,5D-Lichtung kennt die Zuwendung der Fläche nicht)
+  ❌ (T) TERMINATOR-AKNE bei N·L -0.034 (Sonne 20° aus Azimut 45°): 2.2 % der Rampe fleckig, ohne Schatten 0.2 % — TÄTER: am Terminator entscheidet allein der Schatten-Test (die 2,5D-Lichtung kennt die Zuwendung der Fläche nicht)
+❌ ROT — die Hang-Akne am Terminator
+diag-schatten-terminator: 119 s

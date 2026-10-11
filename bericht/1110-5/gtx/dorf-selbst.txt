@@ -1,0 +1,8 @@
+{"hebel":1,"lichtPixel":125908,"akneAnteil":0.0052
+
+{"hebel":2,"lichtPixel":125987,"akneAnteil":0.0065
+
+{"hebel":3,"lichtPixel":126494,"akneAnteil":0.0045
+
+{"hebel":0,"lichtPixel":125328,"akneAnteil":0.0292
+

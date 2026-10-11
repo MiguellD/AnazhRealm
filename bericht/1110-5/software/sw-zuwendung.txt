@@ -1,0 +1,20 @@
+"chunksNeu":1
+main "e":20,"az":45,"NdotL":-0.034,"medianAn":41.6,"medianAus":88.9,"fleckenAn":0.0219,"fleckenAus":0.0019,"cvAn":0.108,"cvAus":0.051
+main "e":22,"az":45,"NdotL":-0.002,"medianAn":76.6,"medianAus":92.8,"fleckenAn":0.1156,"fleckenAus":0.0019,"cvAn":0.155,"cvAus":0.05
+main "e":24,"az":45,"NdotL":0.031,"medianAn":90.8,"medianAus":96,"fleckenAn":0.0019,"fleckenAus":0.0019,"cvAn":0.05,"cvAus":0.048
+main "e":28,"az":45,"NdotL":0.096,"medianAn":97.9,"medianAus":102.2,"fleckenAn":0.0019,"fleckenAus":0.0019,"cvAn":0.047,"cvAus":0.046
+main "e":40,"az":45,"NdotL":0.288,"medianAn":114.5,"medianAus":117.5,"fleckenAn":0.0013,"fleckenAus":0.0013,"cvAn":0.04,"cvAus":0.039
+"chunksNeu":1
+0.15 "e":20,"az":45,"NdotL":-0.034,"medianAn":41.5,"medianAus":41.5,"fleckenAn":0,"fleckenAus":0,"cvAn":0.04,"cvAus":0.04
+0.15 "e":22,"az":45,"NdotL":-0.002,"medianAn":41.5,"medianAus":41.5,"fleckenAn":0,"fleckenAus":0,"cvAn":0.04,"cvAus":0.04
+0.15 "e":24,"az":45,"NdotL":0.031,"medianAn":48.5,"medianAus":49.4,"fleckenAn":0,"fleckenAus":0,"cvAn":0.04,"cvAus":0.041
+0.15 "e":28,"az":45,"NdotL":0.096,"medianAn":83.9,"medianAus":87.7,"fleckenAn":0.0019,"fleckenAus":0.0019,"cvAn":0.047,"cvAus":0.047
+0.15 "e":40,"az":45,"NdotL":0.288,"medianAn":114.5,"medianAus":117.5,"fleckenAn":0.0013,"fleckenAus":0.0013,"cvAn":0.04,"cvAus":0.039
+"chunksNeu":1
+0.08 "e":20,"az":45,"NdotL":-0.034,"medianAn":41.5,"medianAus":41.5,"fleckenAn":0,"fleckenAus":0,"cvAn":0.04,"cvAus":0.04
+0.08 "e":22,"az":45,"NdotL":-0.002,"medianAn":41.5,"medianAus":41.5,"fleckenAn":0,"fleckenAus":0,"cvAn":0.04,"cvAus":0.04
+0.08 "e":24,"az":45,"NdotL":0.031,"medianAn":60.3,"medianAus":63,"fleckenAn":0.0006,"fleckenAus":0.0019,"cvAn":0.045,"cvAus":0.045
+0.08 "e":28,"az":45,"NdotL":0.096,"medianAn":97.9,"medianAus":102.1,"fleckenAn":0.0019,"fleckenAus":0.0019,"cvAn":0.047,"cvAus":0.046
+0.08 "e":40,"az":45,"NdotL":0.288,"medianAn":114.5,"medianAus":117.5,"fleckenAn":0.0013,"fleckenAus":0.0013,"cvAn":0.04,"cvAus":0.039
+
+[exited with code 0]

@@ -1,0 +1,7 @@
+prettier EXIT=0
+lint EXIT=0
+gate:worker-dichte EXIT=0
+gate:schatten-bias EXIT=0
+check EXIT=0 (nach dem Umzug in Gruppe 5)
+playtest:fast EXIT=0
+playtest EXIT=0
