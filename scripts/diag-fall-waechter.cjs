@@ -22,7 +22,10 @@
 //          liegt nach dem Kippen nie tiefer als TOD_M im Fels und nie höher als TOD_LIEGT_M über ihm (über einem Stand
 //          darüber), sinkt im Kippen nie tiefer, als der Leib stand, schwebt nie über TOD_SCHWEBT_M (Gegenprüfung 10.10.: die
 //          Tod-Lage las die Oberkante der Säule, der tote Wolf lag 0,46 m im Grund; CI 38029478199: eine andere Gier sank
-//          0,24 m — die Tafel hielt einen Stand, der schon im Hang steckte). Der lebende Stand im Fels steht als OFFEN;
+//          0,24 m — die Tafel hielt einen Stand, der schon im Hang steckte). Der lebende Stand liegt nie tiefer als TOD_M im
+//          Fels (STAND IM FELS), und der in die Wand laufende Wolf steht am Ende nie mit der Stirn höher über seinem Heck, als
+//          der Gang-Deckel über die Länge trägt oder als sie beim Anlauf stand, + STIRN_M (KLETTERWAND, Prüfung 2 K02a: er
+//          stieg die gekrümmte Wand hinauf, Stirn 3,60 m über dem Heck; unter CPU-Last ruhte er 1,00 m über seinem Grund);
 //   (Z) DER ZENSUS: je Ort die Überhang-Spalten im Umkreis (Luft ≥ 3 m unter ≥ 2 m Fels, ihr Grund begehbar) — Wagen und
 //       an die nächste Wand gestoßener Wolf je Spalte; ROT je Körper beim Namen, Ort und Maß;
 //   (T) DER EINGESCHMUGGELTE TÄTER: im selben Lauf liest der Boden des Werks die Oberkante der Säule (der alte Leser) — O1
