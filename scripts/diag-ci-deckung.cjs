@@ -35,6 +35,18 @@
 //                die Linse nicht liest; npm fährt seine Skripte als `sh -c` ohne errexit (ein `;` in einem Skript macht
 //                den Teil davor stumm — STUMM IN SICH). Wer nur stumm läuft, steht beim Namen mit Schritt und Schalter.
 //
+// DIE ZWEI STUFEN UND DIE WAAGE (K14, 11.10.; der Schöpfer: „der war früher unter 2 min, das wäre wieder genial"). Befund:
+// jeder Push fuhr die ganze Batterie — drei Gruppen mit 17,7 / 26,0 / 19,0 min Median und zwei Jobs daneben (check 4,7 min,
+// darin Prettier 2,1 min auf dem ganzen Stamm; erst-zeichnung 5,8 min), die Wanduhr ~25 min. check.yml trägt jetzt GENAU
+// zwei Gruppen-Jobs: `puls` (je Push) und `voll` (die übrige Batterie, unter der EINEN Bedingung VOLL_WENN); jeder Schritt
+// steht an GENAU einer Stelle (G)/(D), ein dritter Job ist ROT (er stünde außerhalb der Waage):
+//   (T) WAAGE    je Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte aus spec/ci/ci-zeiten.json (gemessen von
+//                scripts/ci-zeiten.cjs über die GitHub-API; die CI fragt die API nie): ein Job je Push ≤ 2 min, eine
+//                Voll-Gruppe ≤ 11 min — wer drüber liegt, steht mit Minuten und seinem größten Schritt beim Namen; ein Schritt
+//                ohne Zeit ist UNGEMESSEN (ROT: erst messen oder mit „geschaetzt" und Quelle eintragen).
+// Die Voll-Bedingung zählt für (S) als Merge-haltend: sie feuert auf integ-probe und main (der Weg nach main führt nur über
+// integ-probe, Merge-Regel entscheidung.md §2.8) und auf jedem PR nach main; jede andere Job-Bedingung bleibt STUMM.
+//
 //   node scripts/diag-ci-deckung.cjs [--selftest] [--gegen <git-ref>]     (npm run gate:ci-deckung; in npm run check)
 "use strict";
 const fs = require("fs");
@@ -44,7 +56,19 @@ const yaml = require("js-yaml");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
-const GRUPPEN_JOB = "playtest";
+const ZEITEN = "spec/ci/ci-zeiten.json";
+const PULS_JOB = "puls";
+const VOLL_JOB = "voll";
+const GRUPPEN_JOBS = [PULS_JOB, VOLL_JOB];
+// Die EINE Bedingung der vollen Batterie: nachts, auf Abruf, auf jedem PR nach main, auf integ-probe und main, und wo die
+// Commit-Message `[ci voll]` trägt (eine Karte mit Risiko R2/R3 am letzten Push).
+const VOLL_WENN =
+    "github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || " +
+    "github.event_name == 'pull_request' || github.ref == 'refs/heads/integ-probe' || github.ref == 'refs/heads/main' || " +
+    "contains(github.event.head_commit.message, '[ci voll]')";
+const istVollWenn = (x) => String(x == null ? "" : x).trim().replace(/\s+/g, " ") === VOLL_WENN;
+// Die Deckel der Waage (Median samt Vorbereitung): ein Job je Push trägt den Puls, eine Voll-Gruppe ihre Breite.
+const WAAGE_S = { push: 120, voll: 660 };
 const DECKEL_MIN = 45;
 const VORBEREITUNG = [
     ["checkout", (s) => typeof s.uses === "string" && s.uses.startsWith("actions/checkout@")],
@@ -75,7 +99,7 @@ const AUSNAHMEN = {
         klasse: KLASSEN.GPU,
         grund:
             "fährt die Frost-Wand mit dem Hardware-Adapter der Werkbank (--echt, echteWebGpuArgs); der Läufer hat keine " +
-            "GPU — die swiftshader-Fassung gate:weltbild-frost läuft in Gruppe 1",
+            "GPU — die swiftshader-Fassung gate:weltbild-frost läuft in der vollen Batterie (voll 8)",
     },
     "gate:arch-feld": {
         klasse: KLASSEN.FRIST,
@@ -239,7 +263,8 @@ function schrittStumm(datei, doc, job, j, s) {
     if (!haeltMerge(doc)) return `${datei} läuft nicht auf push/pull_request (blockt keinen Merge)`;
     const an = (x) => x !== undefined && x !== false && x !== "false";
     if (an(j["continue-on-error"])) return `continue-on-error am Job „${job}"`;
-    if (j.if !== undefined && !IMMER.test(String(j.if))) return `der Job „${job}" läuft nur unter „${j.if}"`;
+    const vollStufe = datei === path.basename(DATEI) && job === VOLL_JOB && istVollWenn(j.if);
+    if (j.if !== undefined && !IMMER.test(String(j.if)) && !vollStufe) return `der Job „${job}" läuft nur unter „${j.if}"`;
     if (an(s["continue-on-error"])) return "continue-on-error am Schritt";
     if (s.if !== undefined && !IMMER.test(String(s.if))) {
         const m = GRUPPE_RE.exec(String(s.if));
@@ -358,38 +383,21 @@ function gateSchritte(doc) {
 
 function urteil(doc) {
     const v = [];
-    const J = doc && doc.jobs && doc.jobs[GRUPPEN_JOB];
-    if (!J) return [`LEER: kein Job „${GRUPPEN_JOB}" in ${DATEI}`];
-    const M = J.strategy && J.strategy.matrix && J.strategy.matrix.gruppe;
-    if (!Array.isArray(M) || !M.length || !M.every((g) => Number.isInteger(g) && g > 0) || new Set(M).size !== M.length)
-        v.push(
-            `(V) MATRIX: strategy.matrix.gruppe ist keine Liste verschiedener Gruppen-Nummern (${JSON.stringify(M)})`
-        );
-    if (!J.strategy || J.strategy["fail-fast"] !== false)
-        v.push("(V) FAIL-FAST: strategy.fail-fast ist nicht false — eine rote Gruppe bräche die anderen ab");
-    if (!(Number(J["timeout-minutes"]) > 0 && Number(J["timeout-minutes"]) <= DECKEL_MIN))
-        v.push(`(V) DECKEL: timeout-minutes ${J["timeout-minutes"]} (Soll 1–${DECKEL_MIN} je Gruppe)`);
-    const steps = J.steps || [];
-    VORBEREITUNG.forEach(([n, f], i) => {
-        const s = steps[i];
-        if (!s || !f(s)) v.push(`(V) VORBEREITUNG: Schritt ${i + 1} ist nicht „${n}" (${s ? name(s) : "fehlt"})`);
-        else if (s.if) v.push(`(V) VORBEREITUNG: „${n}" trägt eine Bedingung (${s.if}) — jede Gruppe braucht sie`);
-    });
-    const gruppen = new Set(Array.isArray(M) ? M : []);
-    const je = new Map([...gruppen].map((g) => [g, 0]));
-    for (const s of steps.slice(VORBEREITUNG.length)) {
-        if (IST_VORBEREITUNG(s)) continue;
-        const m = typeof s.if === "string" ? GRUPPE_RE.exec(s.if) : null;
-        if (!s.if)
-            v.push(`(G) N-FACH: „${name(s)}" trägt keine Gruppe — er liefe in jeder der ${gruppen.size} Gruppen`);
-        else if (!m) v.push(`(G) UNKLAR: „${name(s)}" trägt die Bedingung „${s.if}" statt genau einer Gruppe`);
-        else if (!gruppen.has(Number(m[1])))
-            v.push(
-                `(G) VERLOREN: „${name(s)}" trägt Gruppe ${m[1]}, die Matrix kennt ${[...gruppen].join(", ")} — er liefe nie`
-            );
-        else je.set(Number(m[1]), je.get(Number(m[1])) + 1);
+    for (const job of Object.keys((doc && doc.jobs) || {}))
+        if (!GRUPPEN_JOBS.includes(job))
+            v.push(`(V) JOB: „${job}" steht außerhalb von ${GRUPPEN_JOBS.join(" und ")} — die Waage sähe ihn nicht`);
+    for (const job of GRUPPEN_JOBS) {
+        const J = doc && doc.jobs && doc.jobs[job];
+        if (!J) {
+            v.push(`(V) LEER: kein Job „${job}" in ${DATEI}`);
+            continue;
+        }
+        if (job === PULS_JOB && J.if !== undefined)
+            v.push(`(V) PULS: „${job}" trägt die Bedingung „${J.if}" — der Puls läuft je Push, ohne Bedingung`);
+        if (job === VOLL_JOB && !istVollWenn(J.if))
+            v.push(`(V) BEDINGUNG: „${job}" läuft unter „${J.if}" statt der EINEN Voll-Bedingung (${VOLL_WENN})`);
+        v.push(...gruppenUrteil(job, J));
     }
-    for (const [g, n] of je) if (n === 0) v.push(`(G) LEER: Gruppe ${g} trägt keinen Schritt (ein Läufer ohne Arbeit)`);
     // (D) über ALLE Jobs: ein Befehl, ein Name
     const alle = gateSchritte(doc);
     const zaehle = (key) => {
@@ -404,6 +412,92 @@ function urteil(doc) {
     for (const [n, l] of zaehle((s) => s.name))
         if (new Set(l.map((s) => s.run)).size > 1) v.push(`(D) DOPPELT: der Name „${n}" steht ${l.length}×`);
     return v;
+}
+
+// (V)/(G) eines Gruppen-Jobs: Matrix, fail-fast, Deckel, Vorbereitung, jeder Schritt genau eine Gruppe, keine leere Gruppe
+function gruppenUrteil(job, J) {
+    const v = [];
+    const M = J.strategy && J.strategy.matrix && J.strategy.matrix.gruppe;
+    if (!Array.isArray(M) || !M.length || !M.every((g) => Number.isInteger(g) && g > 0) || new Set(M).size !== M.length)
+        v.push(
+            `(V) MATRIX: „${job}" strategy.matrix.gruppe ist keine Liste verschiedener Gruppen-Nummern (${JSON.stringify(M)})`
+        );
+    if (!J.strategy || J.strategy["fail-fast"] !== false)
+        v.push(`(V) FAIL-FAST: „${job}" strategy.fail-fast ist nicht false — eine rote Gruppe bräche die anderen ab`);
+    if (!(Number(J["timeout-minutes"]) > 0 && Number(J["timeout-minutes"]) <= DECKEL_MIN))
+        v.push(`(V) DECKEL: „${job}" timeout-minutes ${J["timeout-minutes"]} (Soll 1–${DECKEL_MIN} je Gruppe)`);
+    const steps = J.steps || [];
+    VORBEREITUNG.forEach(([n, f], i) => {
+        const s = steps[i];
+        if (!s || !f(s))
+            v.push(`(V) VORBEREITUNG: „${job}" Schritt ${i + 1} ist nicht „${n}" (${s ? name(s) : "fehlt"})`);
+        else if (s.if)
+            v.push(`(V) VORBEREITUNG: „${job}" „${n}" trägt eine Bedingung (${s.if}) — jede Gruppe braucht sie`);
+    });
+    const gruppen = new Set(Array.isArray(M) ? M : []);
+    const je = new Map([...gruppen].map((g) => [g, 0]));
+    for (const s of steps.slice(VORBEREITUNG.length)) {
+        if (IST_VORBEREITUNG(s)) continue;
+        const m = typeof s.if === "string" ? GRUPPE_RE.exec(s.if) : null;
+        if (!s.if)
+            v.push(`(G) N-FACH: „${name(s)}" trägt keine Gruppe — er liefe in jeder der ${gruppen.size} Gruppen von „${job}"`);
+        else if (!m) v.push(`(G) UNKLAR: „${name(s)}" trägt die Bedingung „${s.if}" statt genau einer Gruppe`);
+        else if (!gruppen.has(Number(m[1])))
+            v.push(
+                `(G) VERLOREN: „${name(s)}" trägt Gruppe ${m[1]}, die Matrix von „${job}" kennt ${[...gruppen].join(", ")} — er liefe nie`
+            );
+        else je.set(Number(m[1]), je.get(Number(m[1])) + 1);
+    }
+    for (const [g, n] of je)
+        if (n === 0) v.push(`(G) LEER: „${job}" Gruppe ${g} trägt keinen Schritt (ein Läufer ohne Arbeit)`);
+    return v;
+}
+
+// (T) DIE WAAGE: je Job und Gruppe die Vorbereitung plus die Median-Zeiten ihrer Schritte. Ein Job ohne Bedingung läuft je
+// Push (Deckel 2 min), der Job unter VOLL_WENN trägt die Breite (11 min je Gruppe); ein Job ohne Matrix ist EINE Gruppe.
+// → { v: Befunde, zeilen: je Gruppe „job g/N: x,y min" }
+const minuten = (s) => (s / 60).toFixed(1).replace(".", ",");
+function waage(doc, zeiten) {
+    const v = [];
+    const zeilen = [];
+    const Z = (zeiten && zeiten.schritte) || {};
+    const vorb = zeiten && Number(zeiten.vorbereitung_s);
+    if (!(vorb >= 0)) return { v: [`(T) ZEITEN: ${ZEITEN} trägt keine vorbereitung_s`], zeilen };
+    for (const [job, J] of Object.entries((doc && doc.jobs) || {})) {
+        const art = J.if === undefined ? "push" : istVollWenn(J.if) ? "voll" : null;
+        if (!art) continue; // eine andere Bedingung urteilt (V)/(S)
+        const M = (J.strategy && J.strategy.matrix && J.strategy.matrix.gruppe) || null;
+        const gs = Array.isArray(M) ? M : [null];
+        const steps = (J.steps || []).filter((s) => s.run && !IST_VORBEREITUNG(s));
+        for (const g of gs) {
+            const mein = steps.filter((s) => {
+                const m = typeof s.if === "string" ? GRUPPE_RE.exec(s.if) : null;
+                return g === null || !s.if || (m && Number(m[1]) === g);
+            });
+            let summe = vorb;
+            let groesster = null;
+            for (const s of mein) {
+                const z = Z[name(s)];
+                if (!z || !(Number(z.s) >= 0)) {
+                    v.push(
+                        `(T) UNGEMESSEN: „${name(s)}" (${job}) trägt keine Zeit in ${ZEITEN} — messen (node scripts/ci-zeiten.cjs) ` +
+                            `oder mit „geschaetzt" und Quelle eintragen`
+                    );
+                    continue;
+                }
+                summe += z.s;
+                if (!groesster || z.s > groesster[1]) groesster = [name(s), z.s];
+            }
+            const wer = g === null ? job : `${job} ${g}/${gs.length}`;
+            zeilen.push(`${wer} ${minuten(summe)}`);
+            if (summe > WAAGE_S[art])
+                v.push(
+                    `(T) WAAGE: „${wer}" trägt ${minuten(summe)} min (Deckel ${minuten(WAAGE_S[art])} min ${art === "push" ? "je Push" : "je Voll-Gruppe"})` +
+                        (groesster ? ` — der größte Schritt „${groesster[0]}" ${minuten(groesster[1])} min` : "")
+                );
+        }
+    }
+    return { v, zeilen };
 }
 
 // (Z) die Gate-Schritte zweier Stände: was fehlt nachher, was steht nachher öfter als vorher
@@ -433,12 +527,17 @@ function vergleich(vorher, nachher, skripte = {}) {
 }
 
 function gruppenBericht(doc) {
-    const je = new Map();
-    for (const s of gateSchritte(doc)) if (s.job === GRUPPEN_JOB) je.set(s.gruppe, (je.get(s.gruppe) || 0) + 1);
-    return [...je]
-        .sort((x, y) => x[0] - y[0])
-        .map(([g, n]) => `Gruppe ${g}: ${n}`)
-        .join(" · ");
+    return GRUPPEN_JOBS.map((job) => {
+        const je = new Map();
+        for (const s of gateSchritte(doc)) if (s.job === job) je.set(s.gruppe, (je.get(s.gruppe) || 0) + 1);
+        return (
+            `${job} ` +
+            [...je]
+                .sort((x, y) => x[0] - y[0])
+                .map(([g, n]) => `${g}: ${n}`)
+                .join(" · ")
+        );
+    }).join(" | ");
 }
 
 function selbsttest() {
@@ -450,10 +549,15 @@ function selbsttest() {
     ];
     const gut = () => ({
         jobs: {
-            check: { steps: [{ uses: "actions/checkout@v4" }, { name: "Lint", run: "npm run lint" }] },
-            playtest: {
+            puls: {
+                strategy: { "fail-fast": false, matrix: { gruppe: [1] } },
+                "timeout-minutes": 10,
+                steps: prep().concat([{ name: "Lint", if: "matrix.gruppe == 1", run: "npm run lint" }]),
+            },
+            voll: {
+                if: VOLL_WENN,
                 strategy: { "fail-fast": false, matrix: { gruppe: [1, 2] } },
-                "timeout-minutes": 45,
+                "timeout-minutes": 30,
                 steps: prep().concat([
                     { name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" },
                     { name: "B", if: "matrix.gruppe == 2", run: "npm run gate:b" },
@@ -474,39 +578,56 @@ function selbsttest() {
             },
         },
     };
-    const P = (d) => d.jobs.playtest;
+    const V = (d) => d.jobs.voll;
     const faelle = [
-        ["ohne Gruppe (er liefe N-fach)", (d) => delete P(d).steps[5].if, /\(G\) N-FACH: „B"/],
+        ["ohne Gruppe (er liefe N-fach)", (d) => delete V(d).steps[5].if, /\(G\) N-FACH: „B"/],
         [
             "Gruppe außerhalb der Matrix (er liefe nie)",
-            (d) => (P(d).steps[5].if = "matrix.gruppe == 3"),
+            (d) => (V(d).steps[5].if = "matrix.gruppe == 3"),
             /\(G\) VERLOREN: „B" trägt Gruppe 3/,
         ],
         [
             "zwei Gruppen in einer Bedingung",
-            (d) => (P(d).steps[5].if = "matrix.gruppe == 1 || matrix.gruppe == 2"),
+            (d) => (V(d).steps[5].if = "matrix.gruppe == 1 || matrix.gruppe == 2"),
             /\(G\) UNKLAR: „B"/,
         ],
-        ["eine Gruppe ohne Schritt", (d) => (P(d).steps[5].if = "matrix.gruppe == 1"), /\(G\) LEER: Gruppe 2/],
+        ["eine Gruppe ohne Schritt", (d) => (V(d).steps[5].if = "matrix.gruppe == 1"), /\(G\) LEER: „voll" Gruppe 2/],
         [
             "derselbe Schritt in zwei Gruppen",
-            (d) => P(d).steps.push({ name: "A2", if: "matrix.gruppe == 2", run: "npm run gate:a" }),
+            (d) => V(d).steps.push({ name: "A2", if: "matrix.gruppe == 2", run: "npm run gate:a" }),
             /\(D\) DOPPELT: „npm run gate:a" läuft 2×/,
         ],
         [
-            "ein Gate im Job check und in einer Gruppe",
-            (d) => d.jobs.check.steps.push({ name: "C", run: "npm run gate:c" }),
+            "ein Gate im Puls und in einer Voll-Gruppe",
+            (d) => d.jobs.puls.steps.push({ name: "C", if: "matrix.gruppe == 1", run: "npm run gate:c" }),
             /\(D\) DOPPELT: „npm run gate:c" läuft 2×/,
         ],
-        ["fail-fast an", (d) => delete P(d).strategy["fail-fast"], /\(V\) FAIL-FAST/],
-        ["Deckel über 45", (d) => (P(d)["timeout-minutes"] = 60), /\(V\) DECKEL: timeout-minutes 60/],
-        ["npm ci fehlt", (d) => P(d).steps.splice(3, 1), /\(V\) VORBEREITUNG: Schritt 4 ist nicht „npm ci"/],
+        ["fail-fast an", (d) => delete V(d).strategy["fail-fast"], /\(V\) FAIL-FAST: „voll"/],
+        ["Deckel über 45", (d) => (V(d)["timeout-minutes"] = 60), /\(V\) DECKEL: „voll" timeout-minutes 60/],
+        ["npm ci fehlt", (d) => V(d).steps.splice(3, 1), /\(V\) VORBEREITUNG: „voll" Schritt 4 ist nicht „npm ci"/],
         [
             "Vorbereitung nur in Gruppe 1",
-            (d) => (P(d).steps[2].if = "matrix.gruppe == 1"),
-            /\(V\) VORBEREITUNG: „System-Libs" trägt eine Bedingung/,
+            (d) => (d.jobs.puls.steps[2].if = "matrix.gruppe == 1"),
+            /\(V\) VORBEREITUNG: „puls" „System-Libs" trägt eine Bedingung/,
         ],
-        ["keine Matrix", (d) => delete P(d).strategy.matrix, /\(V\) MATRIX/],
+        ["keine Matrix", (d) => delete V(d).strategy.matrix, /\(V\) MATRIX: „voll"/],
+        // die zwei Stufen (K14): genau puls und voll, der Puls ohne Bedingung, voll unter der EINEN Bedingung
+        [
+            "ein dritter Job neben puls und voll",
+            (d) => (d.jobs.check = { steps: [{ name: "X", run: "npm run gate:x" }] }),
+            /\(V\) JOB: „check" steht außerhalb von puls und voll/,
+        ],
+        [
+            "voll unter einer anderen Bedingung",
+            (d) => (V(d).if = "github.ref == 'refs/heads/main'"),
+            /\(V\) BEDINGUNG: „voll" läuft unter „github\.ref == 'refs\/heads\/main'"/,
+        ],
+        [
+            "der Puls unter einer Bedingung",
+            (d) => (d.jobs.puls.if = "github.ref == 'refs/heads/main'"),
+            /\(V\) PULS: „puls" trägt die Bedingung/,
+        ],
+        ["kein Job voll", (d) => delete d.jobs.voll, /\(V\) LEER: kein Job „voll"/],
     ];
     const f = [];
     const g0 = urteil(gut());
@@ -523,7 +644,7 @@ function selbsttest() {
     const z0 = vergleich(vorher, gut());
     if (z0.verloren.length || z0.doppelt.length) f.push("(Z) die gute Teilung meldet " + JSON.stringify(z0));
     const weg = gut();
-    P(weg).steps.splice(6, 1);
+    V(weg).steps.splice(6, 1);
     const z1 = vergleich(vorher, weg);
     const ok1 = z1.verloren.length === 1 && z1.verloren[0] === "npm run gate:c";
     console.log(
@@ -531,7 +652,7 @@ function selbsttest() {
     );
     if (!ok1) f.push("(Z) ein bei der Teilung verlorener Schritt steht nicht beim Namen");
     const zwei = gut();
-    P(zwei).steps.push({ name: "C2", if: "matrix.gruppe == 2", run: "npm run gate:c" });
+    V(zwei).steps.push({ name: "C2", if: "matrix.gruppe == 2", run: "npm run gate:c" });
     const z2 = vergleich(vorher, zwei);
     const ok2 = z2.doppelt.length === 1 && z2.doppelt[0] === "npm run gate:c";
     console.log(`  ${ok2 ? "✅" : "❌"} Selbsttest „bei der Teilung doppelt" → doppelt ${JSON.stringify(z2.doppelt)}`);
@@ -546,7 +667,89 @@ function selbsttest() {
         `  ${ok3 ? "✅" : "❌"} Selbsttest „in npm run check gewandert" → verloren ${JSON.stringify(z3.verloren)}`
     );
     if (!ok3) f.push("(Z) ein Schritt, dessen Befehle ein anderer Schritt fährt, zählt als verloren");
-    return f.concat(selbsttestGegenrichtung());
+    return f.concat(selbsttestWaage(), selbsttestGegenrichtung());
+}
+
+// (T) Die Waage gegen ein Fixture — und gegen das heutige check.yml (b5eb02e9, das eingefrorene `vorher` in ci-zeiten.json):
+// jeder Job lief je Push, und keiner trug den Puls.
+function selbsttestWaage() {
+    const prep = () => [
+        { uses: "actions/checkout@v4" },
+        { uses: "actions/setup-node@v4" },
+        { name: "System-Libs", run: "sudo apt-get install -y libnss3" },
+        { name: "Dependencies", run: "npm ci --no-audit --no-fund" },
+    ];
+    const doc = () => ({
+        jobs: {
+            puls: {
+                strategy: { "fail-fast": false, matrix: { gruppe: [1] } },
+                steps: prep().concat([{ name: "Lint", if: "matrix.gruppe == 1", run: "npm run lint" }]),
+            },
+            voll: {
+                if: VOLL_WENN,
+                strategy: { "fail-fast": false, matrix: { gruppe: [1, 2] } },
+                steps: prep().concat([
+                    { name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" },
+                    { name: "B", if: "matrix.gruppe == 2", run: "npm run gate:b" },
+                    { name: "C", if: "matrix.gruppe == 1", run: "npm run gate:c" },
+                ]),
+            },
+        },
+    });
+    const zeiten = () => ({ vorbereitung_s: 20, schritte: { Lint: { s: 30 }, A: { s: 300 }, B: { s: 400 }, C: { s: 200 } } });
+    const faelle = [
+        ["die Waage im Lot (grün)", () => {}, null],
+        [
+            "eine Voll-Gruppe über 11 min",
+            (d, z) => (z.schritte.A.s = 500),
+            /\(T\) WAAGE: „voll 1\/2" trägt 12,0 min \(Deckel 11,0 min je Voll-Gruppe\) — der größte Schritt „A" 8,3 min/,
+        ],
+        [
+            "der Puls über 2 min",
+            (d, z) => (z.schritte.Lint.s = 130),
+            /\(T\) WAAGE: „puls 1\/1" trägt 2,5 min \(Deckel 2,0 min je Push\) — der größte Schritt „Lint" 2,2 min/,
+        ],
+        ["ein Schritt ohne Zeit", (d, z) => delete z.schritte.B, /\(T\) UNGEMESSEN: „B" \(voll\)/],
+        ["die Zeiten ohne Vorbereitung", (d, z) => delete z.vorbereitung_s, /\(T\) ZEITEN/],
+        [
+            "ein Schritt aus voll in den Puls gezogen",
+            (d) => d.jobs.puls.steps.push(Object.assign(d.jobs.voll.steps.splice(5, 1)[0], { if: "matrix.gruppe == 1" })),
+            /\(T\) WAAGE: „puls 1\/1" trägt 7,5 min .*„B" 6,7 min/,
+        ],
+    ];
+    const f = [];
+    for (const [n, tat, soll] of faelle) {
+        const d = doc(),
+            z = zeiten();
+        tat(d, z);
+        const u = waage(d, z).v;
+        const ok = soll ? u.some((x) => soll.test(x)) : u.length === 0;
+        console.log(`  ${ok ? "✅" : "❌"} Selbsttest „${n}" → ${u.join(" · ") || "grün"}`);
+        if (!ok) f.push(`„${n}" fällt nicht rot beim Namen (${u.join(" · ") || "grün"})`);
+    }
+    // das heutige check.yml: der Bau aus dem eingefrorenen `vorher` (Jobs, Gruppen, Schritte mit ihren Medianen)
+    const Z = JSON.parse(fs.readFileSync(path.join(root, ZEITEN), "utf8"));
+    if (!Z.vorher || !Z.vorher.jobs) return f.concat([`${ZEITEN} trägt kein „vorher" — der Selbsttest am heutigen check.yml fehlt`]);
+    const alt = { jobs: {} };
+    const zAlt = { vorbereitung_s: Z.vorher.vorbereitung_s, schritte: {} };
+    for (const [job, j] of Object.entries(Z.vorher.jobs)) {
+        alt.jobs[job] = {
+            strategy: j.matrix ? { "fail-fast": false, matrix: { gruppe: j.matrix } } : undefined,
+            steps: prep().concat(
+                j.schritte.map(([n, g]) => ({ name: n, run: "npm run x", ...(g ? { if: `matrix.gruppe == ${g}` } : {}) }))
+            ),
+        };
+        for (const [n, , s] of j.schritte) zAlt.schritte[n] = { s };
+    }
+    const u = waage(alt, zAlt).v;
+    const soll = [
+        /\(T\) WAAGE: „check" trägt \d+,\d min \(Deckel 2,0 min je Push\) — der größte Schritt „Prettier-Format-Check" 2,1 min/,
+        /\(T\) WAAGE: „playtest [123]\/3" trägt (1\d|2\d),\d min \(Deckel 2,0 min je Push\)/,
+    ];
+    const ok = soll.every((r) => u.some((x) => r.test(x))) && u.length === Object.values(Z.vorher.jobs).reduce((a, j) => a + (j.matrix ? j.matrix.length : 1), 0);
+    console.log(`  ${ok ? "✅" : "❌"} Selbsttest „das heutige check.yml (${Z.vorher.ref.split(" ")[0]})" → ${u.join(" · ") || "grün"}`);
+    if (!ok) f.push(`das heutige check.yml fällt nicht rot mit seinen Tätern (${u.join(" · ") || "grün"})`);
+    return f;
 }
 
 // Die Gegenrichtung (W)/(A)/(R) gegen ein Fixture: package.json-Skripte + Workflows + Ausnahmen.
@@ -731,6 +934,11 @@ if (i > 0) {
 }
 const g = deckung(skripte, workflowsLesen(), AUSNAHMEN);
 v.push(...g.v);
+const zeitenDatei = path.join(root, ZEITEN);
+const w = fs.existsSync(zeitenDatei)
+    ? waage(doc, JSON.parse(fs.readFileSync(zeitenDatei, "utf8")))
+    : { v: [`(T) ZEITEN: ${ZEITEN} fehlt — die Waage hat keine Zeiten`], zeilen: [] };
+v.push(...w.v);
 const jeKlasse = g.zahl.jeKlasse;
 console.log("=== CI-DECKUNG — " + DATEI + " ===");
 console.log(`  Gate-Schritte: ${gateSchritte(doc).length} (alle Jobs) · ${gruppenBericht(doc)}`);
@@ -743,6 +951,7 @@ console.log(
             : "") +
         ` · ohne Workflow ${g.zahl.offen}`
 );
+console.log(`  Waage (Median samt Vorbereitung, min): ${w.zeilen.join(" · ")}`);
 if (z)
     console.log(
         `  gegen ${process.argv[i + 1]}: vorher ${z.vorher}, nachher ${z.nachher}, verloren ${z.verloren.length}, doppelt ${z.doppelt.length}, neu ${z.neu.length}`
@@ -752,5 +961,5 @@ if (v.length) {
     process.exit(1);
 }
 console.log(
-    "✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte; jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste."
+    "✅ GRÜN — jeder Gate-Schritt läuft genau einmal, jede Gruppe trägt die Vorbereitung und ihre Schritte und liegt unter ihrem Deckel (Puls 2 min, Voll 11 min); jede Wand läuft in einem Workflow oder steht mit Klasse und Grund in der Ausnahme-Liste."
 );
