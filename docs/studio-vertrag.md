@@ -838,7 +838,8 @@ sprung { coyoteSec bufferSec } · schritt { taktCompound klangTempoMin } · gang
   C5-Boden-/Luft-Hebel der Beschleunigungs-/Brems-Kurven, `sprung` =
   Coyote-/Jump-Buffer-Fenster, `gang` = die Zweibeiner-Zeile des EINEN
   Gang-Gesetzes (tetrapoda `gangSchritt`/`gangFuss`, K07 — der Eich-Faktor
-  des Schritt-Blocks fiel),
+  des Schritt-Blocks fiel; das Körper-Studio liest dieselbe Zeile unter der
+  Schwere seiner Bühne, `gate:tier-gang` Teil STUDIO),
   `aktionAusdauer` = die Kosten der Maus-Arm-Aktion (Hieb/Abbau),
   `parkour.kontaktFrischeSec` = das EINE Wandkontakt-Fenster (war der
   divergente Stamm-Zwilling 0.18/0.15). Leser `AnazhRealm._bewegungsBlock`
