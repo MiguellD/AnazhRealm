@@ -18,8 +18,9 @@
 //   node scripts/diag-worker-dichte.cjs --selftest     ein verfälschter Worker-Term (terrainSteepness 1 → 1,0001,
 //                                                      nur im Worker) MUSS rot werden; der saubere Lauf grün
 //   node scripts/diag-worker-dichte.cjs --abdruck datei [--wurzel dir]
-//                                                      der BYTE-ABDRUCK der Standard-Welt (SHA-256 je Gitter, Main
-//                                                      UND Worker, und der Makro-Höhe auf einem 64×64-Gitter) — gegen
+//                                                      der BYTE-ABDRUCK beider Welten (SHA-256 je Gitter, Main UND
+//                                                      Worker, und der Makro-Höhe auf einem 64×64-Gitter für drei
+//                                                      Welt-Saaten und das Prüfbühnen-Erbgut) — gegen
 //                                                      einen anderen Stand (`--wurzel` = sein Baum) verglichen beweist er
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
@@ -40,7 +41,7 @@ const ABDRUCK = opt("--abdruck", null);
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.WORKER_DICHTE_PORT) || 4392;
 const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));
-const WELTEN = ABDRUCK ? ["standard"] : String(opt("--welten", "standard,buehne")).split(",").filter(Boolean);
+const WELTEN = String(opt("--welten", "standard,buehne")).split(",").filter(Boolean);
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
 
 const mime = {
@@ -220,7 +221,7 @@ async function probe(page, welt, mitAbdruck) {
             s.worldMeta.voxelEdits = editsVorher;
             await r._voxelWorkerSyncState({ op: "state-set" });
             // Der Abdruck der Makro-Höhe (64×64, ±852 m, Schritt 27 m — ganzzahlig, f32-exakt) für den Byte-Beweis.
-            if (mitAbdruck) {
+            const makroSha = async () => {
                 const h = new Float64Array(64 * 64 * 2);
                 let q = 0;
                 for (let j = 0; j < 64; j++)
@@ -228,7 +229,81 @@ async function probe(page, welt, mitAbdruck) {
                         h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, true);
                         h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, false);
                     }
-                out.shaMakro = await hex(h);
+                return hex(h);
+            };
+            // DIE LESER der Formeln, die der Kern seit der Prüfung 1 trägt (K09a): die Boden-Farbe des Mains auf 32×32
+            // Punkten in drei Höhen über der Makro-Höhe (die Schnee-Prominenz `y − Basis − kontinentBasis` greift erst
+            // hoch), die Fels-Exposition (`massivMaske`, die Steilheit an der Makro-Höhe statt am Chunk-Cache), die Tarn-
+            // Mulden (`tarnMulde`) und die Normalform des Erbguts (`erbgutNormal`); dazu die Farben, die der Worker in
+            // seine Chunks legt (`attachFieldColors`, LOD 0 je Ort). Vorher = nachher beweist die Leser byte-gleich.
+            const leserSha = async () => {
+                const f = new Float64Array(32 * 32 * 10);
+                const c = [0, 0, 0];
+                const surfAlt = r._voxelSurfaceY;
+                r._voxelSurfaceY = (px, pz) => r._terrainMacroSurfaceY(px, pz, true);
+                let q = 0;
+                try {
+                    for (let j = 0; j < 32; j++)
+                        for (let i = 0; i < 32; i++) {
+                            const x = -852 + i * 54;
+                            const z = -852 + j * 54;
+                            const y = r._terrainMacroSurfaceY(x, z, true);
+                            for (const dy of [0, 60, 120]) {
+                                r._bodenFarbeAt(x, y + dy, z, c);
+                                f[q++] = c[0];
+                                f[q++] = c[1];
+                                f[q++] = c[2];
+                            }
+                            f[q++] = r._rockExposureAt(x, z);
+                        }
+                } finally {
+                    r._voxelSurfaceY = surfAlt;
+                }
+                const text = JSON.stringify({ tarns: s.tarns || null, terme: r._erbgut().terme });
+                return { farbeFels: await hex(f), tarnErbgut: await hex(new TextEncoder().encode(text)) };
+            };
+            const workerFarbeSha = async () => {
+                const je = {};
+                for (const ort of orte) {
+                    const cfg = r._voxelChunkConfig(0);
+                    const m = await warteAck({
+                        type: "chunk-mesh",
+                        cx: Math.floor(ort.x / cfg.span),
+                        cz: Math.floor(ort.z / cfg.span),
+                        lod: 0,
+                    });
+                    je[ort.id] = m.empty ? "leer" : await hex(m.colors);
+                }
+                return je;
+            };
+            if (mitAbdruck) {
+                out.shaMakro = await makroSha();
+                out.shaLeser = await leserSha();
+                out.shaLeser.worker = await workerFarbeSha();
+                // DREI WELT-SAATEN (K09a): der Boot-Seed und zwei frische Saaten in der Form `w-<12>-<6>` — je Saat die
+                // chirurgische Regenesis wie gate:dritter-spiegel (Ströme, Anker, Erosion DANN Tarns), dann der Abdruck.
+                if (welt === "standard") {
+                    out.shaSaaten = { [s.worldMeta.seed]: out.shaMakro };
+                    out.shaLeserSaaten = {};
+                    const seedAlt = s.worldMeta.seed;
+                    const macroAlt = s.worldMeta.macro;
+                    const regenesis = (saat, macro) => {
+                        s.worldMeta.seed = saat;
+                        r._voxelNoise = null;
+                        r._macroRidgeNoise = null;
+                        r._macroAnkerCache = null;
+                        if (macro !== undefined) s.worldMeta.macro = macro;
+                        else delete s.worldMeta.macro;
+                        s.erosionTiles = new Map();
+                        r._worldgenComputeErosionAndTarns();
+                    };
+                    for (const saat of ["w-sweepalpha0001-aaaaaa", "w-sweepbeta00002-bbbbbb"]) {
+                        regenesis(saat, undefined);
+                        out.shaSaaten[saat] = await makroSha();
+                        out.shaLeserSaaten[saat] = await leserSha();
+                    }
+                    regenesis(seedAlt, macroAlt);
+                }
             }
             out.warteAck = typeof warteAck === "function";
             // Das lebende Erbgut (die Bühne MUSS ihre Terme tragen, sonst verglich die Linse eine Wildnis-Welt).
@@ -404,14 +479,30 @@ function zeige(rep) {
             wurzel: root,
             seed: berichte[0] && berichte[0].seed,
             makro: berichte[0] && berichte[0].shaMakro,
+            saaten: (berichte[0] && berichte[0].shaSaaten) || null,
             gitter: [],
         };
-        for (const o of (berichte[0] && berichte[0].orte) || [])
-            for (const z of o.zeilen)
-                abdruck.gitter.push({ ort: o.id, lod: z.lod, main: z.shaMain, worker: z.shaWorker });
+        for (const rep of berichte)
+            for (const o of rep.orte || [])
+                for (const z of o.zeilen)
+                    abdruck.gitter.push({
+                        welt: rep.welt,
+                        ort: o.id,
+                        lod: z.lod,
+                        main: z.shaMain,
+                        worker: z.shaWorker,
+                    });
+        // Das Prüfbühnen-Erbgut (Insel · Rampe · Bucht): seine Makro-Höhe mit demselben Abdruck.
+        const bue = berichte.find((b) => b.welt === "buehne");
+        abdruck.buehne = bue
+            ? { seed: bue.seed, makro: bue.shaMakro, erbgut: bue.erbgut, leser: bue.shaLeser || null }
+            : null;
+        // Die Leser der Kern-Formeln (Boden-Farbe Main und Worker, Fels-Exposition, Tarn-Mulden, Erbgut-Normalform).
+        abdruck.leser = (berichte[0] && berichte[0].shaLeser) || null;
+        abdruck.leserSaaten = (berichte[0] && berichte[0].shaLeserSaaten) || null;
         fs.writeFileSync(ABDRUCK, JSON.stringify(abdruck, null, 1));
         console.log(
-            `\n  Abdruck: ${ABDRUCK} (${abdruck.gitter.length} Gitter + Makro ${String(abdruck.makro).slice(0, 12)}…)`
+            `\n  Abdruck: ${ABDRUCK} (${abdruck.gitter.length} Gitter + Makro ${Object.keys(abdruck.saaten || {}).length} Saaten${abdruck.buehne ? " + Bühne" : ""})`
         );
     }
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ berichte, selbst }, null, 1));

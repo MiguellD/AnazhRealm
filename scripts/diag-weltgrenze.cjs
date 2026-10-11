@@ -220,7 +220,7 @@ function seitenPruefer() {
         pflanzeA(buehneErbgut) {
             const r = window.anazhRealm;
             const wm = r.state.worldMeta;
-            const anker = Object.assign(r._makeMacroAnker("grenze-a-anker"), { herkunft: T });
+            const anker = Object.assign(window.__gelaendeCore.ankerAusSaat("grenze-a-anker"), { herkunft: T });
             Object.assign(wm, A_STUFEN, {
                 erbgut: Object.assign({ herkunft: T }, buehneErbgut),
                 macro: anker,

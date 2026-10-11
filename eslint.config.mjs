@@ -71,12 +71,12 @@ export default [
         },
     },
     {
-        files: ["voxel-worker.js", "bake-worker.js", "bake-core.js", "phyto-core.js"],
+        files: ["voxel-worker.js", "bake-worker.js", "bake-core.js", "phyto-core.js", "gelaende-core.js"],
         languageOptions: {
             ecmaVersion: 2022,
             sourceType: "script",
             globals: {
-                // Web-Worker scope (voxel-worker, bake-worker) + bake-core/phyto-core (geteilt: Worker + Main)
+                // Web-Worker scope (voxel-worker, bake-worker) + bake-core/phyto-core/gelaende-core (geteilt: Worker + Main)
                 self: "readonly",
                 globalThis: "readonly",
                 importScripts: "readonly",
