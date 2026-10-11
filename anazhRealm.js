@@ -23978,6 +23978,7 @@ class AnazhRealm {
     // (r164 hat webgl-legacy/WebGLNodeBuilder entfernt → NodeMaterials laufen
     // nur auf WebGPU). `kind`-Param gestrichen.
     _configureRenderer(renderer) {
+        this._augenLichtRegistrieren(renderer);
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(1);
         renderer.setClearColor(0x000000, 1);
@@ -30763,10 +30764,8 @@ class AnazhRealm {
             side: THREE.DoubleSide,
             geomorph: true,
             wegeKarte: true,
+            himmelsSicht: true, // die Verdeckung des Himmels-Lichts und die Normale der Höhle (`_buildPbrNodeMaterial`)
         });
-        // DIE HIMMELS-SICHT (`_himmelsSicht`, je Vertex aus dem Höhlen-Graph): das Himmels-Licht (Umgebung, Hemi, Ambient)
-        // erreicht nur, was den Himmel sieht — r184 multipliziert die Verdeckung in das indirekte Licht (diffus und Glanz).
-        mat.aoNode = THREE.TSL.attribute("aHimmel", "float");
         // OBSERVER-DIÄT (Pflicht-Paar): der Chunk-Boden-Graph hängt nur an den
         // geteilten Atmo-/LOD-/Wind-Sätzen (alle renderGroup) + Vertex-Farben/
         // Morph-Attributen — die equals()-Bahn sieht Rebuilds (neue Geometrie-id).
@@ -31500,7 +31499,17 @@ class AnazhRealm {
                     // 68 statt 133 — gate:altlasten Normal-Wand). Derselbe Wert wie vorher, `normalWorld` baut nur die
                     // Licht-Stufe (die End-Normale aus diesem normalNode).
                     const _nGeo = _Tn.normalWorldGeometry.mul(_Tn.faceDirection);
-                    let _baseN = _Tn.mix(_nGeo, _up, _flat);
+                    // DIE 2.5D-LICHTUNG GILT UNTER DEM HIMMEL (K02a, Auge 11 bei 762/−138): die geflattete Normale zeigt
+                    // jede Boden-Fläche zum Himmel — in der Höhle lag so jede Decke und Wand als Wiese im Licht von oben
+                    // (der Himmel als blaugrauer Schleier, die Sonne ohne Schatten auf dem Fels), und kein Licht von unten
+                    // erreichte die Decke. Mit der Himmels-Sicht (`himmelsSicht`, je Vertex `aHimmel`, `_himmelsSicht`)
+                    // flacht sie nur, soweit der Himmel die Fläche sieht; in der Höhle trägt die WAHRE Normale (−∇d, in die
+                    // Luft — ohne Flächen-Vorzeichen: die Windung des Netzes kennt die Seite der Luft nicht). Unter dem
+                    // Himmel (aHimmel 1) ist sie dieselbe Zahl wie vorher.
+                    const _hS = opts.himmelsSicht ? _Tn.attribute("aHimmel", "float") : null;
+                    let _baseN = _hS
+                        ? _Tn.mix(_Tn.normalWorldGeometry, _up, _flat.mul(_hS))
+                        : _Tn.mix(_nGeo, _up, _flat);
                     // Mikro-Relief (s. TERRAIN_BUMP): ein Noise-Höhengradient (zwei Oktaven: Klumpen + Korn) kippt die
                     // geflattete Normale entgegen dem Gradienten, LOD-gegated. Render-only, try/catch.
                     if (_Tn.cameraPosition && _Tn.positionWorld && _Tn.smoothstep) {
@@ -31549,6 +31558,9 @@ class AnazhRealm {
             } catch (_e) {
                 /* TSL fehlt → volle 3D-Lichtung */
             }
+            // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
+            // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
+            if (opts.himmelsSicht) mat.aoNode = THREE.TSL.attribute("aHimmel", "float");
             // Geomorph (T2 Cross-LOD-Boundary-Naht) — wie im Toon-Pfad.
             if (opts.geomorph) {
                 try {
@@ -89977,6 +89989,7 @@ class AnazhRealm {
         this._dayNightApplyHemiUndLuft(angle, tint, sunDir);
         this._dayNightApplyWaterMaterials(lightDir);
         this._dayNightApplyBelichtung();
+        this._dayNightApplyAugenLicht();
     }
 
     // Tint-Akkumulation aus drei gekoppelten Schichten (jede mutiert skyColor/lightColor/
@@ -90446,6 +90459,117 @@ class AnazhRealm {
         const karte = (0.18 / Math.PI) * E;
         const k = karte > 1e-6 ? B.zielKarte / karte : B.max;
         rend.toneMappingExposure = Math.max(B.min, Math.min(B.max, k));
+    }
+
+    // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
+    // Höhle der Boden-Funktion bekommt kein Himmels-Licht (`_himmelsSicht`), und 40 m hinter der Mündung erreicht sie auch
+    // keine Sonne — die Ich-Sicht war schwarz (Helligkeit 0). Das Licht steht am Auge (die Kamera), seine Stärke folgt dem
+    // Anteil des Himmels, der fehlt (`_himmelAmAuge`), und ist so geeicht, dass die 18-%-Karte in `AUGEN_LICHT.karteM` Abstand
+    // dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte). Unter
+    // dem Himmel steht es auf 0 — sein Graph überspringt sich dann (`_augenLichtRegistrieren`), die Welt zahlt es nur in der
+    // Höhle.
+    _dayNightApplyAugenLicht() {
+        const st = this.state;
+        const L = st.augenLicht;
+        if (!L) return;
+        const cam = st.camera;
+        const h = cam ? this._himmelAmAuge(cam.position.x, cam.position.y, cam.position.z) : 1;
+        st.himmelAmAuge = h;
+        if (cam) L.position.copy(cam.position);
+        const B = AnazhRealm.BELICHTUNG;
+        const A = AnazhRealm.AUGEN_LICHT;
+        const k = st.renderer && st.renderer.toneMappingExposure > 0 ? st.renderer.toneMappingExposure : 1;
+        const I = (1 - h) * ((B.zielKarte * Math.PI) / 0.18) * Math.pow(A.karteM, A.abfall) * (1 / k);
+        L.intensity = I > 1e-4 ? I : 0;
+        L.updateMatrixWorld();
+    }
+
+    // Die Klasse des Lichts des Auges: ein Punkt-Licht (r184 rechnet es wie jedes andere), mit eigenem Knoten
+    // (`_augenLichtRegistrieren`). Einmal je Seite.
+    static _augenLichtKlasse() {
+        if (!AnazhRealm._AugenLicht) AnazhRealm._AugenLicht = class AugenLicht extends THREE.PointLight {};
+        return AnazhRealm._AugenLicht;
+    }
+
+    // Der Knoten des Lichts des Auges (r184 vendor/three.webgpu.min.js gelesen: AnalyticLightNode.setup baut die direkte
+    // Lichtung über `lightsNode.setupDirectLight`, die Farbe ist eine Uniform aus Farbe × Stärke, je Frame). Er ist der
+    // PointLightNode, nur hinter einer Bedingung auf diese Uniform: steht das Licht auf 0 (unter dem Himmel), überspringt jedes
+    // Programm seinen Term — die Welt zahlt das Licht nur, wo es leuchtet, und die Licht-Menge (der Programm-Schlüssel) bleibt
+    // dieselbe. Der Null-Renderer hat keinen Licht-Graph; ein echter ohne Knoten-Bibliothek ist ein Vendor-Bruch (laut).
+    _augenLichtRegistrieren(renderer) {
+        if (!renderer || renderer._isHeadlessNull) return;
+        const lib = renderer.library;
+        if (!lib || typeof lib.getLightNodeClass !== "function" || typeof lib.addLight !== "function")
+            throw new Error("_augenLichtRegistrieren: r184-Renderer ohne Licht-Bibliothek (Vendor-Drift)");
+        const Klasse = AnazhRealm._augenLichtKlasse();
+        if (lib.getLightNodeClass(Klasse)) return;
+        const Punkt = lib.getLightNodeClass(THREE.PointLight);
+        if (!Punkt) throw new Error("_augenLichtRegistrieren: r184 kennt keinen PointLightNode (Vendor-Drift)");
+        const TSL = THREE.TSL;
+        class AugenLichtNode extends Punkt {
+            setup(builder) {
+                const c = this.colorNode;
+                TSL.If(c.x.add(c.y).add(c.z).greaterThan(0), () => Punkt.prototype.setup.call(this, builder));
+            }
+        }
+        lib.addLight(AugenLichtNode, Klasse);
+    }
+
+    // DER HIMMEL AM AUGE (0…1): der Anteil des Himmels-Lichts am Ort (x, y, z) — gelesen von der Himmels-Sicht des Bodens
+    // (`aHimmel`) um ihn, gewichtet 1/(d² + ¼) im Umkreis `AUGEN_LICHT.umkreisM`. Steht der Ort in keiner Luft-Box eines
+    // Höhlen-Knotens (`_hoehlenKnoten`, dieselbe Probe wie die Höhlen-Sicht), ist er Himmels-Luft: 1. Die Kosten folgen dem
+    // Auge: nur in einer Höhlen-Box, nur die Zellen im Umkreis, neu erst nach `AUGEN_LICHT.neuM` Weg oder neuem Boden.
+    _himmelAmAuge(x, y, z) {
+        const s = this.state.chunkSaetze ? this.state.chunkSaetze.get("boden") : null;
+        if (!s || !s.hoehle) return 1;
+        const A = AnazhRealm.AUGEN_LICHT;
+        const c = this._himmelAugeMerk || (this._himmelAugeMerk = { x: NaN, y: NaN, z: NaN, boden: -1, wert: 1 });
+        const dx0 = x - c.x,
+            dy0 = y - c.y,
+            dz0 = z - c.z;
+        if (c.boden === s.hoehle.boden && dx0 * dx0 + dy0 * dy0 + dz0 * dz0 < A.neuM * A.neuM) return c.wert;
+        c.x = x;
+        c.y = y;
+        c.z = z;
+        c.boden = s.hoehle.boden;
+        const v = this._himmelAugeV || (this._himmelAugeV = new THREE.Vector3());
+        v.set(x, y, z);
+        const span = this._voxelChunkConfig(0).span;
+        const cx = Math.floor(x / span),
+            cz = Math.floor(z / span);
+        const um = [];
+        let drin = false;
+        for (let dx = -1; dx <= 1; dx++)
+            for (let dz = -1; dz <= 1; dz++) {
+                const b = s.bloecke.get(cx + dx + "," + (cz + dz));
+                if (!b) continue;
+                um.push(b);
+                if (!drin && b.hoehle)
+                    for (const kn of b.hoehle.knoten) if (kn.luft && kn.luft.containsPoint(v)) drin = true;
+            }
+        if (!drin) return (c.wert = 1);
+        const P = s.geom.attributes.position.array;
+        const H = s.geom.attributes.aHimmel.array;
+        const R2 = A.umkreisM * A.umkreisM;
+        let summe = 0,
+            gewicht = 0;
+        for (const b of um)
+            for (const zl of b.zellen) {
+                if (zl.huelle.isEmpty() || zl.huelle.distanceToPoint(v) > A.umkreisM) continue;
+                const I = zl.idx;
+                for (let i = 0; i < I.length; i++) {
+                    const o = I[i] * 3;
+                    const ddx = P[o] - x,
+                        ddy = P[o + 1] - y,
+                        ddz = P[o + 2] - z;
+                    const d2 = ddx * ddx + ddy * ddy + ddz * ddz;
+                    if (d2 > R2) continue;
+                    const w = 1 / (d2 + 0.25);
+                    summe += w * H[I[i]];
+                    gewicht += w;
+                }
+            }
+        return (c.wert = gewicht > 0 ? summe / gewicht : 1);
     }
 
     // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + Himmels-Umgebung von oben
@@ -92735,6 +92859,15 @@ class AnazhRealm {
         const hemiLight = new THREE.HemisphereLight(0x88a0c8, 0x3a2818, 0.55);
         scene.add(hemiLight);
         this.state.hemiLight = hemiLight;
+        // DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): von Anfang an in der Szene — die Licht-Menge jedes Programms
+        // bleibt dieselbe (kein Neubau der Pipelines, keine Bundle-Lücke, wenn das Auge eine Höhle betritt); unter dem
+        // Himmel steht es auf 0 und sein Graph überspringt sich.
+        const AL = AnazhRealm.AUGEN_LICHT;
+        const augenLicht = new (AnazhRealm._augenLichtKlasse())(AL.farbe, 0, AL.reichweiteM, AL.abfall);
+        augenLicht.castShadow = false;
+        augenLicht.name = "augenLicht";
+        scene.add(augenLicht);
+        this.state.augenLicht = augenLicht;
         // DIE LUFT (`scene.fogNode`): die EINE Luftperspektive für jedes Material; Farbe, Extinktion und Sonne
         // synct _applyDayNightToScene. Ungebautes deckt der Fern-Ring (Loch-Deckel), nie ein Nebel-Kokon.
         this._luftEnsure();
@@ -98418,6 +98551,20 @@ AnazhRealm.HOEHLEN_SAUM = Object.freeze({ schritte: 1.5, m: 2 });
 // DIE HIMMELS-SICHT des Bodens (`_himmelsSicht`): das Himmels-Licht fällt in der Höhlen-Luft je Meter Netz-Weg von der
 // nächsten Himmels-Fläche um den Faktor e (Länge `m`): 2 m hinter der Mündung trägt eine Wand die Hälfte, 14 m dahinter 1 %.
 AnazhRealm.HIMMELS_SICHT = Object.freeze({ m: 3 });
+// DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): die 18-%-Karte in `karteM` Metern zeigt in seinem Schein das Mittelgrau
+// + 1 EV des Tages (die Stärke folgt der Belichtung — das Auge adaptiert an sein Licht); es fällt mit 1/d^`abfall` bis
+// `reichweiteM` (das Fenster von r184): das adaptierte Auge sieht den Fels in Armlänge wie am Tag und die Wand in 10 m
+// 2,3 EV dunkler — mit dem Punkt-Gesetz 1/d² (Werkbank 11.10., Auge 11) lag die Wand in 0,5 m weiß und alles hinter 3 m
+// schwarz; `farbe` das warme Licht einer Flamme (~3500 K, sRGB); der Himmel am Auge (`_himmelAmAuge`) liest die
+// Himmels-Sicht im Umkreis `umkreisM`, neu nach `neuM` Metern Weg.
+AnazhRealm.AUGEN_LICHT = Object.freeze({
+    karteM: 2,
+    abfall: 1,
+    reichweiteM: 24,
+    farbe: 0xffc489,
+    umkreisM: 4,
+    neuM: 0.25,
+});
 // DER HORIZONT der Höhlen-Sicht (`_hoehlenHorizont`): die Raster-Zelle der unteren Boden-Schranke je Chunk (m) — der Schritt
 // des LOD-0-Gitters; die Horizont-Probe einer Mündung tastet ihre Bögen in halben Zellen ab.
 AnazhRealm.HOEHLEN_HORIZONT_M = 1.8;
