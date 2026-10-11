@@ -29043,6 +29043,22 @@ class AnazhRealm {
         col.needsUpdate = true;
     }
 
+    // Das Mittel des Magie-Flecks (`_bodenFarbeAt`: ss(0,6, 0,85, Rauschen)) über die Verteilung des Rauschens selbst — 32 × 32
+    // Proben im Raster 7,31, einmal je Rausch-Instanz (die Saat wechselt sie).
+    _fleckMittel(noise) {
+        if (this._fleckMittelRausch === noise) return this._fleckMittelWert;
+        let m = 0;
+        for (let i = 0; i < 32; i++)
+            for (let j = 0; j < 32; j++) {
+                let t = ((noise.noise2D(i * 7.31 + 0.37, j * 7.31 + 0.71) + 1) * 0.5 - 0.6) / 0.25;
+                t = t < 0 ? 0 : t > 1 ? 1 : t;
+                m += t * t * (3 - 2 * t);
+            }
+        this._fleckMittelRausch = noise;
+        this._fleckMittelWert = m / 1024;
+        return this._fleckMittelWert;
+    }
+
     // DIE EINE BODEN-FARBE (V18.530): die Welt-Feld-Farbe eines Boden-Punkts aus derselben fraktalen Sprache
     // (worldFieldAt) → dieselben Biom-Regionen wie der Boden. Der Voxel-Chunk färbt jeden Vertex durch sie, der
     // Fern-Ring und das Feld-Panorama lesen sie für die Ferne (kein vereinfachter Fern-Zwilling); der Worker
@@ -29051,8 +29067,10 @@ class AnazhRealm {
     // Werte roh als linear (der Stein 0,42/0,44/0,49 mit dem Magie-Violett darüber: weiß-lavendel, Blick-Tour 05).
     // Magie ist ein AKZENT in Flecken, der Seegrund unter jedem Wasser Schlick. Die Laubstreu liegt NICHT hier: sie
     // folgt den echten Kronen (`_kronenStreuNeu` → `_wegeBodenFarbe`). `out` = [r, g, b] (linear, wie das Vertex-
-    // Attribut).
-    _bodenFarbeAt(x, y, z, out) {
+    // Attribut). `fussM` (optional, die Fern-Farbe): die Kante der Fläche, für die der Punkt steht — die Flecken, die sie nicht
+    // auflöst (Flechte λ 25 m, Magie λ 11 m), tragen ihr Mittel (phyto-core `forestOktavMittel`); ohne fussM (jeder Chunk, der
+    // Worker-Spiegel) dieselben Zahlen.
+    _bodenFarbeAt(x, y, z, out, fussM) {
         // V9.60-b.2 — Sand-Variation: lazy-laden des deterministischen
         // Welt-Noises (gleiche Instanz wie `_terrainMacroSurfaceY`). Macht
         // Strand-Breite + Intensität regional variabel statt überall gleich.
@@ -29096,7 +29114,9 @@ class AnazhRealm {
         // NACH dampEarth, VOR lava/snow/sed/strand (die überschreiben den Stein). Schwellen in
         // AnazhRealm.LICHEN (der Worker spiegelt sie hardkodiert), die Farbe ist die Flechte der Palette.
         const LCH = AnazhRealm.LICHEN;
-        const lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
+        let lichenCluster = (sandNoise.noise2D(x * 0.04 + 7.7, z * 0.04 - 3.3) + 1) * 0.5; // [0..1]
+        const oktav = fussM > 0 ? globalThis.__phytoCore.forestOktavMittel : null;
+        if (oktav) lichenCluster += (0.5 - lichenCluster) * oktav(fussM, 1 / 0.04); // das Simplex-Mittel ist 0,5
         const lichenMix =
             ss(LCH.feuchteLo, LCH.feuchteHi, feuchte) *
             ss(LCH.dichteLo, LCH.dichteHi, f.dichte || 0) *
@@ -29105,7 +29125,8 @@ class AnazhRealm {
         mix(P.flechte, lichenMix);
         mix(lava, ss(0.48, 1.02, f.glut) * 0.65); // dunkles Basalt, gekappt — kein flaches Rot
         // Der Magie-Akzent: Flecken (λ ≈ 11 m, ein Sechstel der Fläche, höchstens 30 %) in den Magie-Regionen — nie die Grundfarbe.
-        const magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
+        let magieFleck = ss(0.6, 0.85, (sandNoise.noise2D(x * 0.09 + 3.1, z * 0.09 - 8.7) + 1) * 0.5);
+        if (oktav) magieFleck += (this._fleckMittel(sandNoise) - magieFleck) * oktav(fussM, 1 / 0.09);
         mix(violet, ss(0.55, 1.0, f.magieleitung) * magieFleck * 0.3);
         // Die Schneegrenze ist Gesetz (gelaende-core `schnee`: die Höhe über dem Meer, dieselbe Funktion ruft der Worker
         // in `attachFieldColors`).
@@ -31431,9 +31452,12 @@ class AnazhRealm {
                             _Ta.positionWorld,
                             _terrRough
                         );
-                        if (_geo) {
-                            albedoNode = _geo;
-                            if (_Ta.vec4) mat.colorNode = _Ta.vec4(_geo, 1.0);
+                        // DAS DACH ÜBER DEM BODEN (`opts.dach`, der Fern-Ring): eine Schicht, die über die fertige Boden-Albedo
+                        // fällt — dort, wo keine Bäume mehr stehen, das Kronendach des Waldes. Der Boden darunter ist derselbe Stoff.
+                        const _alb = _geo && typeof opts.dach === "function" ? opts.dach(_Ta, _geo) : _geo;
+                        if (_alb) {
+                            albedoNode = _alb;
+                            if (_Ta.vec4) mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
                         }
                     } else if (opts.useFlexAttr && _Ta.vec4) {
@@ -38213,16 +38237,18 @@ class AnazhRealm {
             off += W * reihen;
             return sh;
         });
-        // EIN geteiltes Material (3 Schalen = 3 Draw-Calls, fix): Standard (rau, nicht-metallisch — es liest den EINEN
-        // Himmel wie das nahe Terrain; Lambert ließ jeden sonnenabgewandten Hang schwarz). Die Farbe: der Boden (color)
-        // unter dem Kronendach (aKrone.rgb × die EINE Saison-Uniform `uSeasonMul`, wie Laub, Gras und Karte) zur
-        // Deckung aKrone.a; fog default AN (die Luft dunstet die Ferne), DoubleSide (die Kamera darf unter den Saum
-        // tauchen). Ohne TSL oder Saison-Uniform bricht der Ring laut.
+        // EIN geteiltes Material (3 Schalen = 3 Draw-Calls, fix): DER BODEN-STOFF DES CHUNKS (K16, die Naht) — dieselbe
+        // Fabrik (`_buildToonNodeMaterial`) mit denselben Gesetzen: die Vertex-Farbe (`_bodenFarbeAt`) durch die Wege-Karte
+        // (`_wegeBodenFarbe`) und die Geologie (`_terrainGeologyAlbedo`: Fels am Hang, der Wiesen-Grund, Moos), die geflattete
+        // Licht-Normale und die Substanz-Antwort. Bis K16 trug der Ring einen eigenen Standard-Stoff aus der rohen Vertex-Farbe:
+        // der gebaute Boden stand als Quadrat mit Farbsprung auf ihm (Wiesen-Grün im Chunk, Erde im Ring). Was der Ring nicht
+        // hat, trägt er nicht: keine Himmels-Sicht (er liegt unter dem Himmel, aHimmel 1), kein Geomorph. Über dem Boden das
+        // Kronendach (aKrone.rgb × die EINE Saison-Uniform `uSeasonMul`, wie Laub, Gras und Karte) zur Deckung aKrone.a;
+        // fog default AN, DoubleSide (die Kamera darf unter den Saum tauchen). Ohne TSL oder Saison-Uniform bricht er laut.
         const TSL = THREE.TSL;
         const su = this._ensureSeasonUniforms();
         if (!TSL || !su || typeof THREE.MeshStandardNodeMaterial !== "function")
             throw new Error("Fern-Ring: der Stoff braucht TSL und die Saison-Uniform (uSeasonMul)");
-        const material = new THREE.MeshStandardNodeMaterial({ side: THREE.DoubleSide, roughness: 1, metalness: 0 });
         const krone = TSL.attribute("aKrone", "vec4");
         // DAS KRONENDACH TRÄGT ERST JENSEITS DER BÄUME (K16, der Farbsprung): bis zum Karten-Horizont stehen die Bäume selbst
         // (Mesh, Karte; `SCATTER.outerM`, ihr Rand dünnt über `KARTEN_HORIZONT_SAUM_M` aus) — dort zeigt der Ring den Boden
@@ -38232,10 +38258,13 @@ class AnazhRealm {
         const dachSaum = AnazhRealm.KARTEN_HORIZONT_SAUM_M;
         const dachWeg = TSL.positionWorld.xz.sub(TSL.cameraPosition.xz).length();
         const dach = krone.a.mul(TSL.smoothstep(TSL.float(dachRand - dachSaum), TSL.float(dachRand), dachWeg));
-        material.colorNode = TSL.vec4(
-            TSL.mix(TSL.attribute("color", "vec3"), krone.rgb.mul(su.uSeasonMul), dach),
-            TSL.float(1.0)
-        );
+        const material = this._buildToonNodeMaterial({
+            vertexColors: true,
+            side: THREE.DoubleSide,
+            wegeKarte: true,
+            dach: (T, boden) => T.mix(boden, krone.rgb.mul(su.uSeasonMul), dach),
+        });
+        if (!material || !material.colorNode) throw new Error("Fern-Ring: der Boden-Stoff des Chunks entstand nicht");
         const meshes = [];
         for (let s = 0; s < schalen.length; s++) {
             const per = schalen[s].per;
@@ -38279,6 +38308,14 @@ class AnazhRealm {
             // Bis zu diesem Radius (Chunk-Ziel-Zone + Blende) tragen die Schale-0-Reihen das VOLLE Gesetz
             // leicht gesenkt → wahres Terrain deckt jedes Chunk-Loch (s. _fernRingRefresh).
             deckZoneRad: (targetRing + 0.5) * cfg.span,
+            // DIE BAU-ZONE (K16, die Naht): so weit vom Anker kann ein gebauter Chunk stehen — die Ziel-Zone ist ein Quadrat um
+            // den SPIELER (die Ecke × √2), der Spieler wandert bis `reanchorDist` vom Anker, und die Naht draußen ist eine Reihe
+            // weiter (Reihen-Faktor). Hier trägt jeder Punkt auch das volle Gesetz (`vollY`), die Deck-Wache geht sie ganz.
+            bauZoneRad: Math.min(
+                schalen[0].aussen,
+                ((targetRing + 0.5) * cfg.span * Math.SQRT2 + F.reanchorDist) * (1 + (F.seite * 2 * Math.PI) / W)
+            ),
+            vollY: new Float32Array(off).fill(NaN),
             cursor: 0, // der budgetierte Höhen-Refresh beginnt am Vertex 0
             totalVerts: off,
             // DIE FARB-SCHLANGE (`_fernRingFaerben`): je Vertex ein offenes Flag + seine Höhe; `farbMin` = der kleinste
@@ -38302,15 +38339,19 @@ class AnazhRealm {
     // ist die Studio-Laubfarbe der Arten, die der Wald-Generator HIER würfelt (phyto-core `forestNische`: dieselben
     // Nischen-Gewichte wie planForestCell), × die Selbstbeschattung der Krone (`FERN_FARBE.kronenSchatten`) — die feste
     // Sommer-Konstante neben dem Studio-Laub (ohne Art, ohne Saison) ist gefallen. Die Saison legt der Leser auf.
-    // `fuss` (optional, `_fernFarbeMasche`): die Masche, für die der Punkt steht — dann das Mittel über sie.
-    _fernFarbeTeile(x, y, z, out, fuss) {
+    // `fuss` (optional, `_fernFarbeMasche`): die Masche, für die der Punkt steht — dann das Mittel über sie. `fussM` (die
+    // Abtastung einer Masche): ihre Kante in Metern — die Nische trägt darunter das Mosaik-Mittel (phyto-core `forestNische`).
+    _fernFarbeTeile(x, y, z, out, fuss, fussM) {
         if (fuss) return this._fernFarbeMasche(x, y, z, out, fuss);
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
-        if (!core || typeof core.forestNische !== "function" || typeof core.forestGeburt !== "function")
-            throw new Error("Fern-Farbe: phyto-core forestNische/forestGeburt fehlen (KERN-PFLICHT)");
-        this._bodenFarbeAt(x, y, z, out);
-        const sd = this._forestStandDensity(x, z);
-        out[6] = core.forestGeburt(sd);
+        if (
+            !core ||
+            typeof core.forestNische !== "function" ||
+            typeof core.forestGeburt !== "function" ||
+            typeof core.forestBestand !== "function"
+        )
+            throw new Error("Fern-Farbe: phyto-core forestNische/forestGeburt/forestBestand fehlen (KERN-PFLICHT)");
+        this._bodenFarbeAt(x, y, z, out, fussM);
         const ctx =
             this._fernNischeCtx ||
             (this._fernNischeCtx = {
@@ -38319,7 +38360,13 @@ class AnazhRealm {
                 fbm: (px, pz) => this._forestFbm(px, pz),
                 feuchteAt: (px, pz, sy) => this._feuchteAt(px, pz, sy),
             });
+        // Der Bestand unter dem Fußabdruck (phyto-core `forestBestand`: ohne fussM die Zahlen von forestStandDensity und
+        // forestGeburt) — die feine Bestands-Oktave (λ 26 m) faltete die Deckung jeder Masche (Streifen-Index der Deckung 0,82–1,09).
+        const B = core.forestBestand(ctx.fbm, x, z, fussM > 0 ? fussM : 0);
+        const sd = B.sd;
+        out[6] = B.deckung;
         ctx.baseH = (this.state && this.state.terrainBaseHeight) || 0;
+        ctx.fussM = fussM > 0 ? fussM : 0;
         const N = core.forestNische(x, z, y, sd, ctx);
         const L = this._fernLaubLinear();
         const w = [N.wF, N.wT, N.wE, N.wB, N.wW];
@@ -38393,12 +38440,16 @@ class AnazhRealm {
         // 11-m-Teilung stehen (Werkbank 11.10., Makro 300 m: die Streifen blieben), die runde, weitere Box dämpft es (Rest im
         // Mittelfeld offen: 3 × 3 Abtastungen auf λ 20 m bleiben teils kohärent).
         const h = 1.5 * Math.max(fuss.ht, fuss.hr);
+        // DAS MOSAIK IM KERN (K16): was die Masche nicht mehr auflöst (das Bestands-Mosaik λ 20 m, das Klima λ 83 m), trägt in
+        // jeder Abtastung sein Mittel (phyto-core `forestNische` mit fussM = die längere Maschen-Kante) — neun Abtastungen auf
+        // λ 20 m blieben kohärent (Streifen-Index 0,89, gate:fern-ring Band 10).
+        const fussM = 2 * Math.max(fuss.ht, fuss.hr);
         const U = [-2 / 3, 0, 2 / 3];
         for (let i = 0; i < 3; i++)
             for (let j = 0; j < 3; j++) {
                 const ur = U[i] * h;
                 const ut = U[j] * h;
-                this._fernFarbeTeile(x + rx * ur - rz * ut, y, z + rz * ur + rx * ut, t);
+                this._fernFarbeTeile(x + rx * ur - rz * ut, y, z + rz * ur + rx * ut, t, null, fussM);
                 const a = t[6];
                 for (let c = 0; c < 3; c++) {
                     S[c] += t[c];
@@ -38433,10 +38484,8 @@ class AnazhRealm {
         const li = gIdx - sh.off;
         const row = (li / W) | 0;
         const ai = li - row * W;
-        // GEOMETRISCHE Reihen-Radien: Auflösung dort, wo das Auge ist (Reihe-0-Tiefe ≈ inner·(q−1)).
-        // Lineare Reihen gäben Riesen-Quads an der Innenkante, deren Farb-Interpolation als Streifen liest.
-        const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (sh.reihen - 1));
-        const ang = (ai / W) * Math.PI * 2;
+        const ort = AnazhRealm._fernRingOrt(fr, sh, row, ai, {});
+        const rad = ort.rad;
         return {
             s,
             g: gIdx,
@@ -38450,9 +38499,48 @@ class AnazhRealm {
                 ht: (Math.PI * rad) / W,
                 hr: (AnazhRealm.FERN_RING.seite * Math.PI * rad) / W,
             },
-            x: Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap,
-            z: Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap,
+            x: ort.x,
+            z: ort.z,
         };
+    }
+
+    // DER ORT EINES SCHALEN-PUNKTS (Reihe, Winkel-Index): GEOMETRISCHE Reihen-Radien — Auflösung dort, wo das Auge ist (Reihe-0-
+    // Tiefe ≈ inner·(q−1); lineare Reihen gäben Riesen-Quads an der Innenkante, deren Farb-Interpolation als Streifen liest) —,
+    // das Welt-XZ aufs Schalen-Snap-Gitter gerundet. Der Punkt-Helfer und die Nachbar-Frage der Naht lesen ihn.
+    static _fernRingOrt(fr, sh, row, ai, out) {
+        const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (sh.reihen - 1));
+        const ang = (ai / AnazhRealm.FERN_RING.winkel) * Math.PI * 2;
+        out.rad = rad;
+        out.x = Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap;
+        out.z = Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap;
+        return out;
+    }
+
+    // DIE LAGE EINES RING-PUNKTS ZUM GEBAUTEN (K16, die Naht): 0 frei · 1 frei, ein Nachbar gebaut (die Naht draußen) · 2 gebaut,
+    // ein Nachbar frei (die Naht drinnen) · 3 gebaut ringsum. Nachbarn = die acht Punkte der Schale um ihn; die Frage stellt nur
+    // die Bau-Zone (`bauZoneRad`: wo ein Chunk stehen kann).
+    _fernRingLage(fr, p) {
+        if (p.s !== 0 || !(p.rad <= fr.bauZoneRad)) return 0;
+        const W = AnazhRealm.FERN_RING.winkel;
+        const sh = fr.schalen[0];
+        const ai = p.li - p.row * W;
+        const selbst = this._chunkDecktRing(p.x, p.z);
+        const o = this._fernRingOrtTmp || (this._fernRingOrtTmp = {});
+        for (let dr = -1; dr <= 1; dr++) {
+            const row = p.row + dr;
+            if (row < 0) continue; // innen steht der Spieler: dort gibt es keinen Nachbarn
+            for (let da = -1; da <= 1; da++) {
+                if (!dr && !da) continue;
+                let gedeckt = false;
+                if (row < sh.reihen) {
+                    AnazhRealm._fernRingOrt(fr, sh, row, (ai + da + W) % W, o);
+                    gedeckt = this._chunkDecktRing(o.x, o.z);
+                }
+                if (selbst && !gedeckt) return 2;
+                if (!selbst && gedeckt) return 1;
+            }
+        }
+        return selbst ? 3 : 0;
     }
 
     // Der Ring weicht dem Gebauten: trägt ein GEBAUTER, sichtbarer Chunk die Säule, existiert der Ring
@@ -38500,23 +38588,29 @@ class AnazhRealm {
     }
 
     // Die Höhe EINES Ring-Punkts aus seinem Gesetz: unter Wasser flach auf waterLevel − wasserDrop, die innerste Reihe jeder
-    // Schale taucht −saumDrop (die Saum-Tauchkante), und wo ein gebauter Chunk die Säule trägt, liegt der Ring knapp UNTER
-    // dem Gebauten (`_fernRingUnterGebaut`).
+    // Schale taucht −saumDrop (die Saum-Tauchkante). DIE NAHT (K16, `_fernRingLage`): wo ein gebauter Chunk den Punkt oder einen
+    // Nachbarn trägt, liegt der Ring auf dem VOLLEN Gesetz (`vollY`, dieselbe Höhe wie der Chunk, ohne die Loch-Senkung); unter
+    // dem Gebauten ringsum taucht er `unterGebaut`, an der Naht drinnen nur `unterSaum` (`_fernRingUnterGebaut`). Bis K16 tauchte
+    // jeder gedeckte Punkt 2 m, und die Masche über die Chunk-Kante zog den Ring draußen mit hinab (Stufe p95 2,05 m, gate:fern-
+    // ring Band 9).
     _fernRingY(fr, p, law, wl) {
         const F = AnazhRealm.FERN_RING;
+        const lage = this._fernRingLage(fr, p);
+        if (lage > 0) {
+            const v = fr.vollY[p.g];
+            if (v === v) law = v;
+        }
         let y = law < wl ? wl - F.wasserDrop : law;
         if (p.row === 0) y -= F.saumDrop;
-        if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35 && this._chunkDecktRing(p.x, p.z))
-            y = this._fernRingUnterGebaut(p.x, p.z, y);
+        if (lage >= 2) y = this._fernRingUnterGebaut(p.x, p.z, y - (lage === 3 ? F.unterGebaut : F.unterSaum));
         return y;
     }
 
-    // DER RING UNTER DEM GEBAUTEN (K16, der Saum): unter einem gebauten Chunk liegt der Ring `unterGebaut` unter dem Gesetz
-    // (das Surface-Nets-Netz weicht ±0,5 m vom Gesetz, das Gebaute deckt ihn per Tiefe) und unter jeder Grabung, die die
-    // Säule senkt (Kugel-Kappe des carve-Edits, 1 m Luft). Bis K16 tauchte er −60 m: jede Ring-Masche an der Kante des
-    // Gebauten fiel als 60-m-Schlitz ab — der gebaute Boden stand als Platte über einer Grube (Bild k16/schnee-nachher-*).
-    _fernRingUnterGebaut(x, z, y) {
-        let u = y - AnazhRealm.FERN_RING.unterGebaut;
+    // DER RING UNTER DEM GEBAUTEN (K16, der Saum): unter einem gebauten Chunk liegt der Ring `u` (schon gesenkt: `unterGebaut`
+    // ringsum, `unterSaum` an der Naht — das Surface-Nets-Netz weicht ±0,5 m vom Gesetz, das Gebaute deckt ihn per Tiefe) und
+    // unter jeder Grabung, die die Säule senkt (Kugel-Kappe des carve-Edits, 1 m Luft). Bis K16 tauchte er −60 m: jede Ring-
+    // Masche an der Kante des Gebauten fiel als 60-m-Schlitz ab — der gebaute Boden stand als Platte über einer Grube.
+    _fernRingUnterGebaut(x, z, u) {
         const meta = this.state.worldMeta;
         const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
         if (!edits) return u;
@@ -38644,9 +38738,11 @@ class AnazhRealm {
             let law = this._terrainMacroSurfaceY(p.x, p.z, false);
             // Loch-Deckel + Naht-Veredelung, EINE Formel (_fernRingDeckMisch, geteilt mit dem GPU-Maler):
             // Schale-0-Reihen in der Chunk-Ziel-Zone tragen das VOLLE Gesetz (includeDetail), −0.3 gesenkt —
-            // stehende Chunks decken sie per Depth, fehlende zeigen wahres Terrain statt der Wasser-Plane.
-            if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35) {
+            // stehende Chunks decken sie per Depth, fehlende zeigen wahres Terrain statt der Wasser-Plane. In der Bau-Zone
+            // merkt sich jeder Punkt das volle Gesetz (die Naht, `_fernRingY`).
+            if (p.s === 0 && p.rad <= fr.bauZoneRad) {
                 const voll = this._terrainMacroSurfaceY(p.x, p.z, true);
+                fr.vollY[p.g] = voll;
                 law = this._fernRingDeckMisch(fr, p.rad, law, voll);
             }
             this._fernRingSetzVertex(fr, p, law, wl);
@@ -38681,7 +38777,7 @@ class AnazhRealm {
             let rows = 0;
             while (
                 rows < sh.reihen &&
-                sh.inner * Math.pow(sh.aussen / sh.inner, rows / (sh.reihen - 1)) <= fr.deckZoneRad * 1.35
+                sh.inner * Math.pow(sh.aussen / sh.inner, rows / (sh.reihen - 1)) <= fr.bauZoneRad
             )
                 rows++;
             fr.zoneVerts = rows * F.winkel;
@@ -38711,6 +38807,7 @@ class AnazhRealm {
             if (law !== law) {
                 const makro = this._terrainMacroSurfaceY(p.x, p.z, false);
                 const voll = this._terrainMacroSurfaceY(p.x, p.z, true);
+                fr.vollY[p.g] = voll;
                 law = fr.deckLaw[i] = this._fernRingDeckMisch(fr, p.rad, makro, voll);
             }
             if (Math.fround(this._fernRingY(fr, p, law, wl)) !== pos.getY(p.li)) {
@@ -38793,7 +38890,7 @@ class AnazhRealm {
         const zonenIdx = [];
         for (let g = 0; g < n; g++) {
             const p = pts[g];
-            if (p.s === 0 && p.rad <= fr.deckZoneRad * 1.35) zonenIdx.push(g);
+            if (p.s === 0 && p.rad <= fr.bauZoneRad) zonenIdx.push(g);
         }
         const zonenPunkte = new Float32Array(zonenIdx.length * 2);
         for (let k = 0; k < zonenIdx.length; k++) {
@@ -38811,6 +38908,7 @@ class AnazhRealm {
                 if (vollWerte) {
                     for (let k = 0; k < zonenIdx.length; k++) {
                         const g = zonenIdx[k];
+                        fr.vollY[g] = vollWerte[k];
                         werte[g] = this._fernRingDeckMisch(fr, pts[g].rad, werte[g], vollWerte[k]);
                     }
                 }
@@ -40753,6 +40851,7 @@ class AnazhRealm {
             fr.anchorZ = Math.round(playerPos.z / F.anchorQuant) * F.anchorQuant;
             fr.cursor = 0; // voller Höhen-Refresh, budgetiert über die nächsten Frames
             fr.gen = (fr.gen || 0) + 1; // laufende Feld-Flüge sind überholt
+            fr.vollY.fill(NaN); // das volle Gesetz der Bau-Zone gehört zum Anker
             fr.gpuFlug = false;
         }
         // Die Schalen leben auf Layer 0 (EIN Szene-Pass) — selbstheilend, falls ein Altstand sie verschob.
@@ -70402,21 +70501,26 @@ class AnazhRealm {
         const xz = _T.positionWorld.xz;
         const relNah = xz.sub(nah.U.mitte).div(nah.U.groesse);
         const wNah = _T.texture(nah.tex, relNah.add(0.5));
-        const wFern = _T.texture(fern.tex, xz.sub(fern.U.mitte).div(fern.U.groesse).add(0.5));
+        const relFern = xz.sub(fern.U.mitte).div(fern.U.groesse);
+        const wFern = _T.texture(fern.tex, relFern.add(0.5));
         const innen = _T.step(_T.max(relNah.x.abs(), relNah.y.abs()), _T.float(AnazhRealm._wegeStufeNah(nah.N)));
-        const _wm = _T.mix(wFern, wNah, innen);
+        // Jenseits des Fern-Fensters liegt weder Weg noch Streu (K16: der Fern-Ring trägt denselben Stoff bis 8 km — die Karte
+        // klemmte ihren Rand-Texel sonst radial über die Ferne). Im Fenster, wo jeder Chunk steht, dieselbe Zahl.
+        const imFenster = _T.step(_T.max(relFern.x.abs(), relFern.y.abs()), _T.float(0.5));
+        const _wm = _T.mix(wFern, wNah, innen).mul(imFenster);
         const _begehbar = _T.smoothstep(_T.float(0.6), _T.float(0.85), _T.normalWorldGeometry.y); // der Hang selbst, nie die Licht-Normale
         // DIE KRONEN-STREU (`_kronenStreuNeu`): unter den echten Kronen die Laubstreu der Palette (`lit`) — zuerst, die
         // Wege liegen darüber. Dieselbe Stufen-Wahl, dasselbe UV (dasselbe Fenster).
         const kNah = _T.texture(nah.kronen.tex, relNah.add(0.5)).r;
-        const kFern = _T.texture(fern.kronen.tex, xz.sub(fern.U.mitte).div(fern.U.groesse).add(0.5)).r;
+        const kFern = _T.texture(fern.kronen.tex, relFern.add(0.5)).r;
         // Der Rand ist keine Scheibe: das Laub liegt in Zungen und Flecken (Rauschen λ ≈ 1,4 m verschiebt die Kante).
         const _laubRausch = this._rauschAtlas()
             .raum(_T.vec3(xz.x.mul(0.7), xz.y.mul(0.7), _T.float(3.3)))
             .mul(0.3);
         const _k = _T
             .smoothstep(_T.float(0.15), _T.float(0.85), _T.mix(kFern, kNah, innen).add(_laubRausch))
-            .mul(_begehbar);
+            .mul(_begehbar)
+            .mul(imFenster);
         const l = P.lit;
         // Unter der Krone liegt die Streu — ihre Albedo, nie ein Schatten: das Labor dunkelt seinen Bestandeskern
         // (`c.multiplyScalar(0.58 + 0.46 · Licht)` in worlds/terrain), die Welt hat die echte Schattenkarte der Kronen
@@ -100625,7 +100729,8 @@ AnazhRealm.FAR_WATER = Object.freeze({
 // 150–500 m tiefe Dreiecke); `schalen[i].aussen`
 // = Außenradius (Schale 1 ab Voxel-Ring-Kante + `randPad`); `snap` = grobes Welt-Gitter je Schale
 // (Vertex-XZ gerundet → Höhen schwimmen beim Re-Zentrieren nie); `saumDrop` = Tauchkante der
-// innersten Reihe; `wasserDrop` = Wasser-Klemme; `reanchorDist`/`anchorQuant` = Anker-Hysterese/
+// innersten Reihe; `unterGebaut` / `unterSaum` = die Senkung unter dem Gebauten ringsum / an der Naht drinnen (0: die
+// Masche über die Chunk-Kante liegt auf dem vollen Gesetz, K16); `wasserDrop` = Wasser-Klemme; `reanchorDist`/`anchorQuant` = Anker-Hysterese/
 // -Quantisierung; `refreshVertsProTick` = Höhen-Refresh-Budget je Frame.
 // FELD_PASS — polares Höhen+Farb-Feld jenseits der letzten Schale: az×rad Texel bis rMaxM, gemalt
 // vom GPU-Feld-Zeichner, gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel); die Fern-Farbe malt im
@@ -100658,6 +100763,7 @@ AnazhRealm.FERN_RING = Object.freeze({
     randPad: 40,
     saumDrop: 6,
     unterGebaut: 2,
+    unterSaum: 0.3,
     wasserDrop: 0.4,
     reanchorDist: 180,
     anchorQuant: 24,

@@ -18,6 +18,12 @@
 //       Kamera (far = Schale-3-aussen + 500, alter Wert gemerkt); DIE LUFT trägt
 //       (V18.530: scene.fogNode, Sichtweite am Boden ≥ 5 km, mit der Höhe weiter);
 //       _fernRingDispose stellt camera.far wieder her (die Klippe war Ring-Besitz).
+//   (9) DIE NAHT (K16) — der Ring trägt den Boden-Stoff des Chunks (dieselbe Fabrik: Wege-Karte, Geologie, Licht-
+//       Knoten) und dieselbe Höhe: je Kante zwischen gebautem und freiem Chunk die Stufe Ring ↔ Chunk gegen das volle
+//       Gesetz (Bias ≤ 0,15 m, p95 ≤ Sehne des Rings im Freien + Abweichung des Chunks + 0,1 m), im Gebauten kein Durchstich
+//       (≤ 2 %). Selbsttest: das alte 2-m-Tauchen fällt rot.
+//   (10) DIE FERN-FARBE OHNE STREIFEN (K16) — längs jeder Ring-Reihe jenseits des Karten-Horizonts der Streifen-Index
+//       (RMS Nachbar-Sprung / RMS 4er-Sprung, gefaltet ≈ 1, glatt ≈ 0,25) im Median ≤ 0,5; Selbsttest am Zufall und am Sinus.
 // Selbsttest (immer mitgeprüft): eine absichtlich verfälschte Erwartung
 // (law + 0.5) MUSS rot fallen — die Linse ist nicht vakuös.
 //   node scripts/diag-fern-ring.cjs
@@ -183,6 +189,31 @@ const server = http.createServer((req, res) => {
             const sx = Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap;
             const sz = Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap;
             const wl = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            // DIE NAHT (K16, gespiegelt): die Lage zum Gebauten aus den acht Nachbarn der Schale (_chunkDecktRing ist die Quelle).
+            const orte = (rr, aa) => {
+                const rd = sh.inner * Math.pow(sh.aussen / sh.inner, rr / (reihenSoll[s] - 1));
+                const an = (aa / F.winkel) * Math.PI * 2;
+                return [
+                    Math.round((fr.anchorX + Math.cos(an) * rd) / sh.snap) * sh.snap,
+                    Math.round((fr.anchorZ + Math.sin(an) * rd) / sh.snap) * sh.snap,
+                ];
+            };
+            let lage = 0;
+            if (s === 0 && rad <= fr.bauZoneRad) {
+                const selbst = r._chunkDecktRing(sx, sz);
+                let frei = false;
+                let gedeckt = false;
+                for (let dr = -1; dr <= 1; dr++)
+                    for (let da = -1; da <= 1; da++) {
+                        if ((!dr && !da) || row + dr < 0) continue;
+                        const n =
+                            row + dr < reihenSoll[s] &&
+                            r._chunkDecktRing(...orte(row + dr, (ai + da + F.winkel) % F.winkel));
+                        if (n) gedeckt = true;
+                        else frei = true;
+                    }
+                lage = selbst ? (frei ? 2 : 3) : gedeckt ? 1 : 0;
+            }
             let law = r._terrainMacroSurfaceY(sx, sz, false);
             // LOCH-DECKEL-Formel (gespiegelt): Zone = volles Gesetz −0.3, ×1.35-Blende auf Makro.
             if (s === 0 && rad <= fr.deckZoneRad * 1.35) {
@@ -190,11 +221,12 @@ const server = http.createServer((req, res) => {
                 const voll = r._terrainMacroSurfaceY(sx, sz, true);
                 law = law + (voll - law) * w - 0.3 * w;
             }
+            if (lage > 0) law = r._terrainMacroSurfaceY(sx, sz, true);
             let expY = law < wl ? wl - F.wasserDrop : law;
             if (row === 0) expY -= F.saumDrop;
-            // DER RING UNTER DEM GEBAUTEN (gespiegelt): trägt ein gebauter, sichtbarer Chunk die Säule, liegt der Zone-
-            // Vertex `unterGebaut` unter dem Gesetz (ohne Grabung in der Probe-Welt; _chunkDecktRing ist die Quelle).
-            if (s === 0 && rad <= fr.deckZoneRad * 1.35 && r._chunkDecktRing(sx, sz)) expY -= F.unterGebaut;
+            // DER RING UNTER DEM GEBAUTEN (gespiegelt): gebaut ringsum `unterGebaut`, an der Naht drinnen `unterSaum` unter dem
+            // vollen Gesetz (ohne Grabung in der Probe-Welt).
+            if (lage >= 2) expY -= lage === 3 ? F.unterGebaut : F.unterSaum;
             // Selbsttest-Verfälschung NACH der Klemme (sonst bliebe eine wasser-
             // geklemmte Probe trotz Fudge grün — der Selbsttest wäre lückenhaft):
             expY += fudge || 0;
@@ -497,6 +529,235 @@ const server = http.createServer((req, res) => {
         } catch (e8b) {
             res.einErr = String((e8b && e8b.message) || e8b);
         }
+        // ===== (9) DIE NAHT: gebauter Boden ↔ Ring — dieselbe Höhe, derselbe Stoff (K16) =====
+        // Der Bestand steht still (2 s ohne neuen Chunk), dann baut der Ring SYNCHRON neu (kein await: kein Chunk kommt
+        // dazwischen) und die Linse misst, was gezeichnet wird: je Kante zwischen gebautem und freiem Chunk alle 3 m die Höhe
+        // des Rings 0,3 m draußen gegen die des Chunks 0,3 m drinnen (Strahl von oben auf die Meshes), im Gebauten auf einem
+        // 6-m-Raster den Durchstich (Ring > Chunk + 5 cm), und ob der Ring-Stoff der Boden-Stoff des Chunks ist (die Gesetze
+        // `_wegeBodenFarbe` und `_terrainGeologyAlbedo` bauen ihn, die Licht-Knoten des Chunk-Stoffs trägt er).
+        try {
+            const sleep9 = (ms) => new Promise((rs) => setTimeout(rs, ms));
+            const T9 = THREE;
+            const gebaut9 = () => {
+                let n = 0;
+                for (const e of r.state.voxelChunks ? r.state.voxelChunks.values() : [])
+                    if (e && !e.empty && e.mesh) n++;
+                return n;
+            };
+            // Der Null-Renderer treibt keinen Loop: die Linse pumpt den Spiel-Takt (das diag-boot-stage-Muster), bis der
+            // Boot-Ring steht oder der Bestand 2 s ruht.
+            let n9 = -1;
+            let still9 = performance.now();
+            const dl9 = performance.now() + 60000;
+            const ziel9 = Math.max(1, Math.min(12, r.state.chunkRingRadius || 4));
+            for (let t = 0; performance.now() < dl9; t++) {
+                try {
+                    r._gameLoopTick();
+                } catch (_e) {
+                    /* ein Takt-Fehler zählt im pageerror-Band */
+                }
+                if (t % 5 === 0) await sleep9(0);
+                const n = gebaut9();
+                if (n !== n9) {
+                    n9 = n;
+                    still9 = performance.now();
+                } else if (n >= 9 && (r.state._activeRingRadius >= ziel9 || performance.now() - still9 > 2000)) break;
+            }
+            res.nahtChunks = n9;
+            const spion = { geo: 0, wege: 0 };
+            const tga = r._terrainGeologyAlbedo;
+            const wbf = r._wegeBodenFarbe;
+            r._terrainGeologyAlbedo = function (...a) {
+                spion.geo++;
+                return tga.apply(this, a);
+            };
+            r._wegeBodenFarbe = function (...a) {
+                spion.wege++;
+                return wbf.apply(this, a);
+            };
+            r._fernRingDispose();
+            const pos9 = r.state.playerMesh.position;
+            for (let t = 0; t < 400; t++) {
+                r._tickFernRing(pos9);
+                const f9 = r.state.fernRing;
+                if (f9 && f9.cursor >= f9.totalVerts && f9.farbN === 0) break;
+            }
+            delete r._terrainGeologyAlbedo;
+            delete r._wegeBodenFarbe;
+            const fr9 = r.state.fernRing;
+            res.nahtStoffGeo = spion.geo;
+            res.nahtStoffWege = spion.wege;
+            const cm = r.state.voxelChunkMaterial;
+            const slots = (m) => ["colorNode", "normalNode", "roughnessNode", "outputNode"].filter((k) => m && m[k]);
+            res.nahtSlotsChunk = slots(cm).join(",");
+            res.nahtSlotsRing = slots(fr9 && fr9.material).join(",");
+            r.state.scene.updateMatrixWorld(true);
+            const ray = new T9.Raycaster();
+            const ab = new T9.Vector3(0, -1, 0);
+            const o9 = new T9.Vector3();
+            const hoch = (obj, x, z) => {
+                o9.set(x, 4000, z);
+                ray.set(o9, ab);
+                ray.far = 9000;
+                const h = ray.intersectObject(obj, false);
+                return h.length ? h[0].point.y : null;
+            };
+            const span9 = r._voxelChunkConfig().span;
+            const wl9 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            const ringMesh = fr9.meshes[0];
+            const stufen = [];
+            const eigen = [];
+            const selbst = []; // SELBSTTEST: dieselben Proben mit dem alten 2-m-Tauchen müssen rot fallen
+            let bias = 0;
+            const sehne = []; // die mittlere Stufe mit Vorzeichen: eine systematische Kante (der alte Ring tauchte −2 m) // die Abweichung des Chunks selbst vom Gesetz (die Surface-Nets-Klasse)
+            const durch = [0, 0];
+            const seiten = [
+                [1, 0],
+                [-1, 0],
+                [0, 1],
+                [0, -1],
+            ];
+            for (const [key, e] of r.state.voxelChunks) {
+                if (!e || e.empty || !e.mesh) continue;
+                const [cx, cz] = key.split(",").map(Number);
+                if (!r._chunkDecktRing((cx + 0.5) * span9, (cz + 0.5) * span9)) continue;
+                for (const [sx, sz] of seiten) {
+                    if (r._chunkDecktRing((cx + 0.5 + sx) * span9, (cz + 0.5 + sz) * span9)) continue;
+                    for (let k = 1; k < 14; k++) {
+                        const u = (k / 14) * span9;
+                        const bx = sx ? cx * span9 + (sx > 0 ? span9 : 0) : cx * span9 + u;
+                        const bz = sz ? cz * span9 + (sz > 0 ? span9 : 0) : cz * span9 + u;
+                        if (r._terrainMacroSurfaceY(bx, bz, true) < wl9 + 0.5) continue;
+                        // Die Stufe relativ zum EINEN Gesetz (der Hang zwischen den Proben zählt nicht): der Chunk dort, wo
+                        // seine Deckfläche trägt (0,3 · 0,9 · 1,5 m drinnen — die Kante selbst trägt den Skirt-Vorhang), der Ring
+                        // 0,3 m draußen.
+                        let dc = null;
+                        for (const d of [0.3, 0.9, 1.5]) {
+                            const xi = bx - sx * d;
+                            const zi = bz - sz * d;
+                            const yc = hoch(e.mesh, xi, zi);
+                            const g = r._terrainMacroSurfaceY(xi, zi, true);
+                            if (yc !== null && Math.abs(yc - g) < 5) {
+                                dc = yc - g;
+                                break;
+                            }
+                        }
+                        const xo = bx + sx * 0.3;
+                        const zo = bz + sz * 0.3;
+                        const yr = hoch(ringMesh, xo, zo);
+                        if (dc === null || yr === null) continue;
+                        eigen.push(Math.abs(dc));
+                        const st = yr - r._terrainMacroSurfaceY(xo, zo, true) - dc;
+                        stufen.push(Math.abs(st));
+                        selbst.push(Math.abs(st - 2));
+                        bias += st;
+                        // DIE SEHNE DES RINGS selbst (die Referenz): 15 m draußen im Freien, gegen das Gesetz, das er dort trägt.
+                        const xf = bx + sx * 15;
+                        const zf = bz + sz * 15;
+                        if (!r._chunkDecktRing(xf, zf)) {
+                            const yf = hoch(ringMesh, xf, zf);
+                            const radF = Math.hypot(xf - fr9.anchorX, zf - fr9.anchorZ);
+                            const lawF = r._fernRingDeckMisch(
+                                fr9,
+                                radF,
+                                r._terrainMacroSurfaceY(xf, zf, false),
+                                r._terrainMacroSurfaceY(xf, zf, true)
+                            );
+                            if (yf !== null && !(lawF < wl9)) sehne.push(Math.abs(yf - lawF));
+                        }
+                    }
+                }
+                for (let i = 0; i < 7; i++)
+                    for (let j = 0; j < 7; j++) {
+                        const x = cx * span9 + 3 + i * 6.2;
+                        const z = cz * span9 + 3 + j * 6.2;
+                        if (r._terrainMacroSurfaceY(x, z, true) < wl9 + 0.5) continue;
+                        const yc = hoch(e.mesh, x, z);
+                        const yr = hoch(ringMesh, x, z);
+                        if (yc === null || yr === null) continue;
+                        durch[1]++;
+                        if (yr > yc + 0.05) durch[0]++;
+                    }
+            }
+            stufen.sort((a, b) => a - b);
+            const q = (p) => (stufen.length ? stufen[Math.min(stufen.length - 1, Math.floor(p * stufen.length))] : NaN);
+            res.nahtN = stufen.length;
+            res.nahtBias = stufen.length ? bias / stufen.length : NaN;
+            selbst.sort((a, b) => a - b);
+            sehne.sort((a, b) => a - b);
+            res.nahtSehneP95 = sehne.length ? sehne[Math.floor(0.95 * sehne.length)] : NaN;
+            res.nahtSelbstP95 = selbst.length ? selbst[Math.floor(0.95 * selbst.length)] : NaN;
+            res.nahtP50 = q(0.5);
+            res.nahtP95 = q(0.95);
+            res.nahtMax = stufen.length ? stufen[stufen.length - 1] : NaN;
+            eigen.sort((a, b) => a - b);
+            res.nahtEigenP95 = eigen.length ? eigen[Math.floor(0.95 * eigen.length)] : NaN;
+            res.durchN = durch[1];
+            res.durchAnteil = durch[1] ? durch[0] / durch[1] : NaN;
+            // ===== (10) DIE FERN-FARBE OHNE STREIFEN =====
+            // Längs jeder Ring-Reihe jenseits des Karten-Horizonts (das Kronendach trägt) die gezeichnete Farbe (Boden unter
+            // dem Dach zur Deckung, Saison 1): der STREIFEN-INDEX = RMS der Sprünge zum Nachbarpunkt / RMS der Sprünge über
+            // vier Punkte. Ein bandbegrenztes Bild steigt mit dem Abstand (glatt ≈ 0,25), ein gefaltetes Mosaik springt schon
+            // am Nachbarn so weit wie über vier (≈ 1).
+            const dachRand = r.constructor.SCATTER.outerM;
+            const W9 = r.constructor.FERN_RING.winkel;
+            const indizes = [];
+            for (let s = 0; s < 2; s++) {
+                const sh = fr9.schalen[s];
+                const geo = fr9.meshes[s].geometry;
+                const C = geo.attributes.color.array;
+                const K = geo.attributes.aKrone.array;
+                for (let row = 0; row < sh.reihen; row++) {
+                    const rad = sh.inner * Math.pow(sh.aussen / sh.inner, row / (sh.reihen - 1));
+                    if (rad < dachRand + 16) continue;
+                    const L = new Float64Array(W9);
+
+                    let nass = 0;
+                    for (let a = 0; a < W9; a++) {
+                        const v = row * W9 + a;
+                        const al = K[v * 4 + 3];
+                        if (al === 0) nass++;
+                        const f = (c) => C[v * 3 + c] + (K[v * 4 + c] - C[v * 3 + c]) * al;
+                        L[a] = 0.2126 * f(0) + 0.7152 * f(1) + 0.0722 * f(2);
+                    }
+                    if (nass > W9 / 4) continue;
+                    let s1 = 0;
+                    let s4 = 0;
+                    for (let a = 0; a < W9; a++) {
+                        const d1 = L[(a + 1) % W9] - L[a];
+                        const d4 = L[(a + 4) % W9] - L[a];
+                        s1 += d1 * d1;
+                        s4 += d4 * d4;
+                    }
+                    if (s4 > 0) indizes.push(Math.sqrt(s1 / s4));
+                }
+            }
+            indizes.sort((a, b) => a - b);
+            {
+                // SELBSTTEST des Index: ein gefaltetes Mosaik (Pseudo-Zufall je Punkt) springt ≥ 0,8, eine glatte Reihe ≤ 0,3.
+                const idxVon = (X) => {
+                    let a1 = 0;
+                    let a4 = 0;
+                    for (let a = 0; a < W9; a++) {
+                        a1 += (X[(a + 1) % W9] - X[a]) ** 2;
+                        a4 += (X[(a + 4) % W9] - X[a]) ** 2;
+                    }
+                    return Math.sqrt(a1 / a4);
+                };
+                let h = 12345;
+                const zufall = Float64Array.from(
+                    { length: W9 },
+                    () => (h = (h * 1103515245 + 12345) >>> 0) / 4294967296
+                );
+                const glatt = Float64Array.from({ length: W9 }, (_, a) => Math.sin((a / W9) * Math.PI * 6));
+                res.streifenSelbst = [idxVon(zufall), idxVon(glatt)];
+            }
+            res.streifenN = indizes.length;
+            res.streifenMedian = indizes.length ? indizes[Math.floor(indizes.length / 2)] : NaN;
+            res.streifenP90 = indizes.length ? indizes[Math.floor(indizes.length * 0.9)] : NaN;
+        } catch (e9) {
+            res.nahtErr = String((e9 && e9.stack) || e9).slice(0, 400);
+        }
         r._fernRingDispose();
         res.fpDisposed = r.state.feldPass === null || r.state.feldPass === undefined;
 
@@ -614,6 +875,34 @@ const server = http.createServer((req, res) => {
         `start=${out.einStart} mitte=${out.einMitte} ende=${out.einEnde} aus=${out.einAus} sofort=${out.sofortStart}${out.einErr ? " " + out.einErr : ""}`
     );
     check("8: der Pass fällt mit dem Ring (Dispose)", out.fpDisposed === true);
+    check(
+        "9: DIE NAHT — der Ring trägt den Boden-Stoff des Chunks (Wege-Karte + Geologie bauen ihn, dieselben Licht-Knoten)",
+        out.nahtStoffGeo > 0 && out.nahtStoffWege > 0 && out.nahtSlotsRing === out.nahtSlotsChunk,
+        `geologie=${out.nahtStoffGeo} wege=${out.nahtStoffWege} ring=[${out.nahtSlotsRing}] chunk=[${out.nahtSlotsChunk}]` +
+            (out.nahtErr ? ` err=${out.nahtErr}` : "")
+    );
+    check(
+        "9: DIE NAHT — dieselbe Höhe: die Stufe Ring (0,3 m draußen) gegen Chunk (drinnen), je gegen das volle Gesetz — keine Kante (Bias ≤ 0,15 m), p95 ≤ die Sehne des Rings im Freien + die Abweichung des Chunks + 0,1 m; Selbsttest: das alte 2-m-Tauchen fällt rot",
+        out.nahtN >= 40 &&
+            Math.abs(out.nahtBias) <= 0.15 &&
+            out.nahtP95 <= out.nahtSehneP95 + out.nahtEigenP95 + 0.1 &&
+            out.nahtSelbstP95 > out.nahtSehneP95 + out.nahtEigenP95 + 0.1,
+        `chunks=${out.nahtChunks} proben=${out.nahtN} chunk-eigen-p95=${(+out.nahtEigenP95).toFixed(3)} ring-sehne-p95=${(+out.nahtSehneP95).toFixed(3)} bias=${(+out.nahtBias).toFixed(3)} p50=${(+out.nahtP50).toFixed(3)} p95=${(+out.nahtP95).toFixed(3)} max=${(+out.nahtMax).toFixed(3)} selbsttest-p95=${(+out.nahtSelbstP95).toFixed(3)}`
+    );
+    check(
+        "9: DIE NAHT — kein Durchstich: der Ring liegt im Gebauten unter dem Chunk (≤ 2 % der Raster-Punkte darüber)",
+        out.durchN >= 100 && out.durchAnteil <= 0.02,
+        `proben=${out.durchN} anteil=${(+out.durchAnteil).toFixed(4)}`
+    );
+    check(
+        "10: DIE FERN-FARBE OHNE STREIFEN — Streifen-Index (RMS Nachbar-Sprung / RMS 4er-Sprung) im Median ≤ 0,5",
+        out.streifenN >= 10 &&
+            out.streifenMedian <= 0.5 &&
+            !!out.streifenSelbst &&
+            out.streifenSelbst[0] >= 0.8 &&
+            out.streifenSelbst[1] <= 0.3,
+        `reihen=${out.streifenN} median=${(+out.streifenMedian).toFixed(3)} p90=${(+out.streifenP90).toFixed(3)} selbsttest zufall=${(+(out.streifenSelbst || [])[0]).toFixed(2)} glatt=${(+(out.streifenSelbst || [])[1]).toFixed(2)}`
+    );
     check("5: kein pageerror", pageErrors.length === 0, pageErrors[0] || "");
 
     if (errs.length) {
