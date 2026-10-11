@@ -39164,16 +39164,18 @@ class AnazhRealm {
         geo.attributes.aKrone.needsUpdate = true;
     }
 
-    // DAS FERN-FARB-BUDGET (EIN Zeit-Budget je Takt, nah zuerst, Lehren 14/25): erst die offenen Ring-Farben, dann der
-    // Farb-Job des Feld-Passes, dann die Fern-Krone des nahen Bodens. Über dem Frame-Budget das knappe Maß; nie null —
-    // mindestens `mindestJeTakt` Punkte.
+    // DAS FERN-FARB-BUDGET (EIN Zeit-Budget je Takt, nah zuerst, Lehren 14/25): erst die Fern-Krone des nahen Bodens (das
+    // Quadrat um den Spieler), dann die offenen Ring-Farben, dann der Farb-Job des Feld-Passes. Über dem Frame-Budget das
+    // knappe Maß; nie null — die Krone und der Ring je mindestens `mindestJeTakt` Punkte. Als Letzte im Budget verhungerte die
+    // Krone hinter dem Ring: nach dem Wechsel an die Wiese stand ihre Karte nach dem Einschwingen noch leer (`bereit` 0,
+    // gemessen 11.10.).
     _fernFarbTakt(fr) {
         const K = AnazhRealm.FERN_FARBE;
         const ende = performance.now() + (this.state._frameOverBudget ? K.msKnapp : K.msJeTakt);
+        this._fernKroneNahTakt(ende, K.mindestJeTakt);
         const rest = this._fernRingFaerben(fr, ende, K.mindestJeTakt);
         const fp = this.state.feldPass;
         if (fp && fp.farbJob) this._feldPassFaerben(fp, ende, rest);
-        this._fernKroneNahTakt(ende);
     }
 
     // DIE FERN-KRONE DES NAHEN BODENS (0910-8, „die weiße Masse“): der Fern-Ring trägt den Wald als Kronendach × Deckung
@@ -39216,8 +39218,8 @@ class AnazhRealm {
     }
 
     // Der Takt der Karte: Wald-Radius und Spieler je Takt; die Karte folgt dem Quadrat ((2·Ring + rand)·span, Anker auf
-    // ein Viertel davon gerastert) und füllt sich, bis die Frist `ende` steht.
-    _fernKroneNahTakt(ende) {
+    // ein Viertel davon gerastert) und füllt sich, bis die Frist `ende` steht — mindestens `mindest` Punkte je Takt.
+    _fernKroneNahTakt(ende, mindest) {
         const st = this.state;
         const k = st.fernKroneNah || this._fernKroneNahEnsure();
         const pm = st.playerMesh;
@@ -39240,7 +39242,8 @@ class AnazhRealm {
             const v = c <= 0 ? 0 : c >= 1 ? 1 : c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
             return Math.round(v * 255);
         };
-        while (j.i < N * N && performance.now() < ende) {
+        let n = 0;
+        while (j.i < N * N && (n++ < mindest || performance.now() < ende)) {
             const ix = j.i % N;
             const iz = (j.i / N) | 0;
             const x = Math.round(j.mx - j.groesse / 2 + ((ix + 0.5) * j.groesse) / N);
@@ -41514,7 +41517,8 @@ class AnazhRealm {
         // DER FELD-PASS (Ring-Besitz): die Ferne jenseits der Schalen — Ensure,
         // Re-Malen bei Anker-Wechsel, Kamera-Uniforms.
         this._tickFeldPass(fr);
-        // DAS FERN-FARB-BUDGET: offene Ring-Farben (nah zuerst), dann der Farb-Job des Feld-Passes.
+        // DAS FERN-FARB-BUDGET: die Fern-Krone des nahen Bodens, die offenen Ring-Farben (nah zuerst), dann der Farb-Job des
+        // Feld-Passes.
         this._fernFarbTakt(fr);
         // Kamera-Klippe: camera.far muss Schalen-Rand + Marge umfassen, sonst clippt der Horizont. Der Ring
         // besitzt diese Voraussetzung (EIN Ort, idempotent über _fernRingCamFar); der Dispose stellt das
@@ -101395,8 +101399,8 @@ AnazhRealm.LAUB_STREU = Object.freeze({
 // Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
 // (`uSeasonMul`); der Feld-Pass malt neu, wenn die Saison je Kanal um mehr als `saisonDrift` gewandert ist. Wasser =
 // das Fern-Blau als sRGB-Absicht (FARB-GESETZ: 0x265273 → linear), flach auf dem Spiegel.
-// DAS FERN-FARB-BUDGET (`_fernFarbTakt`): `msJeTakt` je Takt für offene Ring-Farben und den Feld-Farb-Job, über dem
-// Frame-Budget `msKnapp`, nie weniger als `mindestJeTakt` Punkte; `memo` = eine Generation des Fern-Farb-Gedächtnisses
+// DAS FERN-FARB-BUDGET (`_fernFarbTakt`): `msJeTakt` je Takt für die Fern-Krone des nahen Bodens, offene Ring-Farben und
+// den Feld-Farb-Job, über dem Frame-Budget `msKnapp`, nie weniger als `mindestJeTakt` Punkte (Krone und Ring je); `memo` = eine Generation des Fern-Farb-Gedächtnisses
 // (zwei Generationen tragen > 2 volle Ringe).
 AnazhRealm.FERN_FARBE = Object.freeze({
     kronenSchatten: 0.32,

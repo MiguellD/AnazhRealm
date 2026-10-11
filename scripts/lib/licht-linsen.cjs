@@ -635,14 +635,294 @@ function lichtBilanz() {
     })();
 }
 
+// DIE ALBEDO NAH GEGEN FERN AN DERSELBEN STELLE (0910-8, „die weiße Masse“): der Boden-Satz (nah) und der Fern-Ring (fern)
+// zeichnen dieselbe Stelle des Chunk-Quadrats — der Ring liegt darunter. Aus 420 m Höhe (jenseits der Karten-Sicht des Baums,
+// 384 m: kein echter Wald im Bild, wie im Befund des Schöpfers) orthogonal über einem Quadrat von 2 × `halb` (132 m) je Ort
+// zwei Schüsse unter weißem Umgebungslicht π (hell − dunkel = die Albedo, wie `__albedoSicht`): nur der Boden-Satz, nur der
+// Fern-Ring. Das Quadrat trägt mehrere Zellen des Rings (Schale 0 schnappt auf 24 m): auf 44 m lag der Ring allein durch
+// seine Abtastung −22 … +20 % neben dem Gesetz an der Stelle, auf 132 m −12 … +7 % (gemessen 11.10., Mess-Wiese). Die Orte
+// wählt die Linse unter den Blöcken des Boden-Satzes (der ganze Fußabdruck nah gedeckt) nach der Deckung des Fern-Rings in
+// der Mitte (`_fernFarbeTeile`): Wald ≥ 0,9, Wiese ≤ 0,7 (an der Mess-Wiese deckt der Ring im Median 0,98, die lichteste
+// Stelle 0,38), je bis zu vier, 30 m auseinander, auf Land.
+function nahFernSicht(opts) {
+    return (async () => {
+        opts = opts || {};
+        const r = window.anazhRealm;
+        const T = window.THREE;
+        const st = r.state,
+            sc = st.scene,
+            rend = st.renderer;
+        rend.setAnimationLoop(null);
+        const H = opts.hoehe || 420,
+            halb = opts.halb || 66,
+            W = 64,
+            HH = 64;
+        const pp = st.playerMesh.position;
+        const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
+        const satz = st.chunkSaetze && st.chunkSaetze.get("boden");
+        if (!satz || !satz.bloecke || satz.bloecke.size === 0)
+            throw new Error("__nahFernSicht: kein Boden-Satz (chunkSaetze.boden) — nichts Nahes zu messen");
+        // Ein Ort zählt nur, wo der Boden-Satz den GANZEN Fußabdruck des Schusses trägt (der Ring der Chunks endet nach
+        // `_builtRingRadius`, der Fern-Ring nie): Mitte und vier Ecken liegen in der Box eines Blocks.
+        const boxen = [...satz.bloecke.values()].map((b) => {
+            if (!b.geom.boundingBox) b.geom.computeBoundingBox();
+            return b.geom.boundingBox;
+        });
+        const drin = (x, z) => boxen.some((bb) => x >= bb.min.x && x <= bb.max.x && z >= bb.min.z && z <= bb.max.z);
+        const fuss = halb + 1;
+        const gedeckt = (x, z) =>
+            [
+                [0, 0],
+                [fuss, fuss],
+                [fuss, -fuss],
+                [-fuss, fuss],
+                [-fuss, -fuss],
+            ].every(([a, b]) => drin(x + a, z + b));
+        const teile = new Float32Array(7);
+        const kand = [];
+        for (let dx = -220; dx <= 220; dx += 11)
+            for (let dz = -220; dz <= 220; dz += 11) {
+                const x = Math.round(pp.x + dx),
+                    z = Math.round(pp.z + dz);
+                if (!gedeckt(x, z)) continue;
+                const y = r._voxelSurfaceY(x, z);
+                if (!(y > wl + 1)) continue;
+                r._fernFarbeTeile(x, y, z, teile);
+                kand.push({ x, z, y, deckung: teile[6] });
+            }
+        const waehle = (liste) => {
+            const aus = [];
+            for (const k of liste) if (aus.every((a) => Math.hypot(a.x - k.x, a.z - k.z) >= 30)) aus.push(k);
+            return aus.slice(0, opts.jeKlasse || 4);
+        };
+        const WALD = opts.wald == null ? 0.9 : opts.wald,
+            WIESE = opts.wiese == null ? 0.7 : opts.wiese;
+        const orte = waehle(kand.filter((k) => k.deckung >= WALD).sort((a, b) => b.deckung - a.deckung))
+            .map((k) => Object.assign(k, { klasse: "wald" }))
+            .concat(
+                waehle(kand.filter((k) => k.deckung <= WIESE).sort((a, b) => a.deckung - b.deckung)).map((k) =>
+                    Object.assign(k, { klasse: "wiese" })
+                )
+            );
+        const half = (h) => {
+            const s = (h & 0x8000) >> 15,
+                e = (h & 0x7c00) >> 10,
+                f = h & 0x03ff;
+            if (e === 0) return (s ? -1 : 1) * Math.pow(2, -14) * (f / 1024);
+            if (e === 31) return f ? NaN : Infinity;
+            return (s ? -1 : 1) * Math.pow(2, e - 15) * (1 + f / 1024);
+        };
+        const rt = new T.RenderTarget(W, HH, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
+        const lies = async () => {
+            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, HH);
+            const zeile = W * 4;
+            const schritt = px.length > zeile * HH ? Math.ceil((zeile * 2) / 256) * 128 : zeile;
+            const out = new Float32Array(zeile * HH);
+            for (let yy = 0; yy < HH; yy++)
+                for (let i = 0; i < zeile; i++) out[yy * zeile + i] = half(px[yy * schritt + i]);
+            return out;
+        };
+        const meshes = [];
+        sc.traverse((o) => {
+            if (o.isMesh || o.isSprite || o.isPoints || o.isLine) meshes.push(o);
+        });
+        const visAlt = new Map(meshes.map((m) => [m, m.visible]));
+        const lichter = [];
+        sc.traverse((o) => {
+            if (o.isLight) lichter.push([o, o.intensity]);
+        });
+        const A = new T.AmbientLight(0xffffff, Math.PI);
+        sc.add(A);
+        const envAlt = sc.environment,
+            fogAlt = sc.fog;
+        sc.environment = null;
+        sc.fog = null;
+        // Die Kamera blickt ORTHOGONAL hinab: beide Schüsse sehen denselben Fußabdruck (2 × `fuss`), auch wo der Fern-Ring
+        // unter dem Quadrat tiefer liegt — perspektivisch sah er dort einen größeren (60 m tiefer: ein Drittel mehr Fläche).
+        const cam = new T.OrthographicCamera(-halb, halb, halb, -halb, 1, H + 1000);
+        // DAS GESETZ AN DER STELLE (die dritte Zahl, der Richter des Täters): beide Leser lesen `_fernRingTeile` — der
+        // Fern-Ring an seinen Schnapp-Punkten (Schale 0: 24 m), die Karte des Boden-Stoffs im Raster N — hier das Mittel
+        // derselben Formel (Boden unter dem Kronendach × Saison zur Deckung) fein über den Fußabdruck (32 × 32 Punkte).
+        const saison = r._fernSaison();
+        const gesetz = (x0, z0) => {
+            const c = [0, 0, 0];
+            let d = 0;
+            for (let i = 0; i < 32; i++)
+                for (let j = 0; j < 32; j++) {
+                    const x = Math.round(x0 - halb + ((i + 0.5) * 2 * halb) / 32),
+                        z = Math.round(z0 - halb + ((j + 0.5) * 2 * halb) / 32);
+                    const law = r._terrainMacroSurfaceY(x, z, false);
+                    const t = r._fernRingTeile(x, z, law, law < wl, true);
+                    const sm = [saison.r, saison.g, saison.b];
+                    for (let k = 0; k < 3; k++) c[k] += t[k] + (t[3 + k] * sm[k] - t[k]) * t[6];
+                    d += t[6];
+                }
+            const rgb = c.map((v) => v / 1024);
+            return {
+                rgb: rgb.map((v) => +v.toFixed(4)),
+                Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(4),
+                deckung: +(d / 1024).toFixed(2),
+            };
+        };
+        const lu = st.lodUniforms;
+        const maskeAlt = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
+        const istNah = (m) => m.name === "bodenSatz";
+        const istFern = (m) => m.userData && m.userData.inventar === "fern-ring";
+        const schuss = async (sicht, e) => {
+            for (const m of meshes) m.visible = visAlt.get(m) && sicht(m);
+            sc.traverse((o) => {
+                if (o.isBundleGroup) o.needsUpdate = true;
+            });
+            for (const [l] of lichter) l.intensity = 0;
+            A.intensity = e;
+            if (maskeAlt != null) lu.uLodMaskOn.value = 0;
+            // Ein Stoff, dessen Programm unter dem Licht der Linse (nur Umgebungslicht, ohne Umgebung) noch übersetzt, fehlt im
+            // Bild: in frischer Sitzung zeichnete der Boden-Satz 0 von 4 096 Bildpunkten, erst nach Sekunden voll. Vor dem Schuss
+            // stehen darum die Programme der sichtbaren Szene unter dieser Kamera, und der Schuss steht, wenn zwei Läufe dieselben
+            // Bildpunkte decken.
+            if (typeof rend.compileAsync === "function") await rend.compileAsync(sc, cam);
+            let px = null,
+                n = -1;
+            for (let lauf = 0; lauf < 5; lauf++) {
+                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
+                rend.setRenderTarget(rt);
+                rend.setClearColor(0x000000, 0);
+                rend.clear();
+                rend.render(sc, cam);
+                rend.setRenderTarget(null);
+                px = await lies();
+                let m = 0;
+                for (let i = 3; i < px.length; i += 4) if (px[i] > 0.5) m++;
+                if (m === n && m > 0) break;
+                n = m;
+            }
+            return px;
+        };
+        const mittel = (hell, dunkel) => {
+            let n = 0,
+                R = 0,
+                G = 0,
+                B = 0;
+            for (let i = 0; i < W * HH; i++) {
+                if (!(hell[i * 4 + 3] > 0.5)) continue;
+                n++;
+                R += hell[i * 4] - dunkel[i * 4];
+                G += hell[i * 4 + 1] - dunkel[i * 4 + 1];
+                B += hell[i * 4 + 2] - dunkel[i * 4 + 2];
+            }
+            if (!n) return { n: 0 };
+            const rgb = [R / n, G / n, B / n];
+            return {
+                n,
+                rgb: rgb.map((v) => +v.toFixed(4)),
+                Y: +(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]).toFixed(4),
+            };
+        };
+        const aus = [];
+        try {
+            for (const o of orte) {
+                cam.position.set(o.x, o.y + H, o.z + 0.01);
+                cam.lookAt(o.x, o.y, o.z);
+                cam.updateMatrixWorld(true);
+                const nah = mittel(await schuss(istNah, Math.PI), await schuss(istNah, 0));
+                const fern = mittel(await schuss(istFern, Math.PI), await schuss(istFern, 0));
+                aus.push({
+                    ort: [o.x, o.z],
+                    d: Math.round(Math.hypot(o.x - pp.x, o.z - pp.z)),
+                    klasse: o.klasse,
+                    deckung: +o.deckung.toFixed(2),
+                    nah,
+                    fern,
+                    gesetz: gesetz(o.x, o.z),
+                });
+            }
+        } finally {
+            for (const m of meshes) m.visible = visAlt.get(m);
+            for (const [l, i] of lichter) l.intensity = i;
+            sc.remove(A);
+            sc.environment = envAlt;
+            sc.fog = fogAlt;
+            if (maskeAlt != null) lu.uLodMaskOn.value = maskeAlt;
+            rt.dispose();
+            sc.traverse((o) => {
+                if (o.isBundleGroup) o.needsUpdate = true;
+            });
+        }
+        // Die Karte der Fern-Krone im Boden-Stoff (seit 0910-8): steht sie nicht, mischt der Boden nichts — das Urteil nennt es.
+        const nk = st.fernKroneNah;
+        return { hoehe: H, halb, orte: aus, nahKarte: nk ? nk.U.bereit.value : null };
+    })();
+}
+
+// DAS URTEIL NAH GEGEN FERN (rein): je Ort die Abweichung der Luminanz (relativ zum Fern-Ring) und des Grün-Anteils
+// (g / (r + g + b)); ROT, wenn ein Ort über dem Band liegt (beim Namen: Klasse, Ort, Zahlen und der TÄTER — der Leser, der
+// weiter vom Gesetz an der Stelle liegt: der Boden-Satz oder die Abtastung des Fern-Rings), wenn einer Klasse Orte fehlen
+// (mindestens drei Wald- und drei Wiesen-Orte), ein Schuss leer blieb oder die Karte der Fern-Krone nicht steht.
+function nahFernUrteil(messung, band) {
+    band = Object.assign({ luma: 0.12, gruen: 0.03, jeKlasse: 3 }, band || {});
+    const befunde = [];
+    const zeilen = [];
+    if (messung && messung.nahKarte === 0)
+        befunde.push(
+            "NAH-FERN Karte: die Fern-Krone des nahen Bodens steht nicht (bereit 0) — der Boden mischt nichts"
+        );
+    for (const k of ["wald", "wiese"]) {
+        const n = ((messung && messung.orte) || []).filter((o) => o.klasse === k).length;
+        if (n < band.jeKlasse)
+            befunde.push(`NAH-FERN ${k}: ${n} Orte — das Urteil braucht mindestens ${band.jeKlasse}`);
+    }
+    for (const o of (messung && messung.orte) || []) {
+        if (!o.nah || !o.fern || !o.nah.n || !o.fern.n) {
+            befunde.push(
+                `NAH-FERN ${o.klasse} ${o.ort.join("/")}: leerer Schuss (nah ${o.nah ? o.nah.n : 0} px, fern ${o.fern ? o.fern.n : 0} px)`
+            );
+            continue;
+        }
+        const gr = (c) => c[1] / Math.max(1e-6, c[0] + c[1] + c[2]);
+        const dY = (o.nah.Y - o.fern.Y) / Math.max(1e-6, o.fern.Y);
+        const dG = gr(o.nah.rgb) - gr(o.fern.rgb);
+        const gY = o.gesetz && o.gesetz.Y > 0 ? o.gesetz.Y : null;
+        const dN = gY ? o.nah.Y / gY - 1 : null;
+        const dF = gY ? o.fern.Y / gY - 1 : null;
+        zeilen.push({
+            klasse: o.klasse,
+            ort: o.ort,
+            deckung: o.deckung,
+            nahY: o.nah.Y,
+            fernY: o.fern.Y,
+            gesetzY: gY,
+            dY: +dY.toFixed(3),
+            dG: +dG.toFixed(3),
+            nahGesetz: dN == null ? null : +dN.toFixed(3),
+            fernGesetz: dF == null ? null : +dF.toFixed(3),
+        });
+        if (Math.abs(dY) > band.luma || Math.abs(dG) > band.gruen) {
+            const pz = (v) => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(0)} %`;
+            const taeter =
+                dN == null
+                    ? "ohne Gesetz kein Täter"
+                    : Math.abs(dN) >= Math.abs(dF)
+                      ? `Täter Boden-Satz (${pz(dN)} gegen das Gesetz Y ${gY}, Fern-Ring ${pz(dF)})`
+                      : `Täter die Abtastung des Fern-Rings (${pz(dF)} gegen das Gesetz Y ${gY}, Boden-Satz ${pz(dN)})`;
+            befunde.push(
+                `NAH-FERN ${o.klasse} ${o.ort.join("/")} (Deckung ${o.deckung}): Boden-Satz Y ${o.nah.Y} gegen Fern-Ring Y ${o.fern.Y} ` +
+                    `(${(dY * 100).toFixed(0)} %, Grün-Anteil ${dG >= 0 ? "+" : ""}${dG.toFixed(3)}) — zwei Farben derselben Stelle; ${taeter}`
+            );
+        }
+    }
+    return { befunde, zeilen };
+}
+
 module.exports = {
     LINSEN_INSTALL:
         `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
         `window.__stoffPasst = ${stoffPasst.toString()};` +
         `window.__tafelBlicke = ${JSON.stringify(TAFEL_BLICKE)};` +
         `window.__albedoSicht = ${albedoSicht.toString()};` +
+        `window.__nahFernSicht = ${nahFernSicht.toString()};` +
         `window.__lichtBilanz = ${lichtBilanz.toString()};`,
     albedoAuswerten,
     stoffPasst,
+    nahFernUrteil,
     TAFEL_BLICKE,
 };

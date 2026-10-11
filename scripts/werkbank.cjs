@@ -1285,6 +1285,16 @@ async function starte() {
                     );
                     return send(Object.assign(o, { ms: Date.now() - t0 }));
                 }
+                if (req.url === "/albedo" && b.nahFern) {
+                    // DIE ALBEDO NAH GEGEN FERN (0910-8): Boden-Satz gegen Fern-Ring an derselben Stelle, das Urteil in Node.
+                    const m = await page.evaluate(() => window.__nahFernSicht({}));
+                    const u = require("./lib/licht-linsen.cjs").nahFernUrteil(m);
+                    const aus = Object.assign({ messung: m }, u);
+                    if (b.datei) fs.writeFileSync(path.resolve(b.datei), JSON.stringify(aus, null, 1));
+                    return send(
+                        Object.assign(aus, { datei: b.datei ? path.resolve(b.datei) : null, ms: Date.now() - t0 })
+                    );
+                }
                 if (req.url === "/albedo" && b.tafel) {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
@@ -2050,7 +2060,73 @@ async function starte() {
     else if (cmd === "methode")
         o = await rufe("/methode", { name: a[0], terrain: argv.includes("--terrain"), quelle: opt("--quelle") });
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
-    else if (cmd === "albedo") {
+    else if (cmd === "albedo" && argv.includes("--nah-fern")) {
+        // DIE ALBEDO NAH GEGEN FERN (0910-8): je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
+        // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün, der Boden-Satz doppelt so hell rot mit dem
+        // Täter Boden-Satz, ein grob tastender Ring mit dem Täter Fern-Ring, zu wenige Orte, ein leerer Schuss und eine Karte,
+        // die nicht steht, laut.
+        if (argv.includes("--selbsttest")) {
+            const LL = require("./lib/licht-linsen.cjs");
+            const ort = (klasse, x, nY, fY, nG, gY) => ({
+                klasse,
+                ort: [x, 0],
+                deckung: klasse === "wald" ? 0.9 : 0.3,
+                nah: { n: 4096, Y: nY, rgb: [nY * 0.8, nY * (nG || 1.1), nY * 0.5] },
+                fern: { n: 4096, Y: fY, rgb: [fY * 0.8, fY * 1.1, fY * 0.5] },
+                gesetz: { Y: gY || fY },
+            });
+            const ruhig = ["wald", "wald", "wald", "wiese", "wiese", "wiese"].map((k, i) =>
+                ort(k, i * 50, 0.06, 0.058)
+            );
+            const f = [];
+            const pruefe = (name, u, muss) => {
+                const ok = muss ? u.befunde.some((b) => muss.test(b)) : u.befunde.length === 0;
+                if (!ok) f.push(`${name}: ${u.befunde.join(" · ") || "(grün)"}`);
+            };
+            pruefe("im Band", LL.nahFernUrteil({ orte: ruhig }), null);
+            pruefe(
+                "main (Boden doppelt so hell)",
+                LL.nahFernUrteil({ orte: ruhig.map((o, i) => (i ? o : ort("wald", 0, 0.115, 0.056))) }),
+                /^NAH-FERN wald 0\/0 .*Y 0.115 gegen Fern-Ring Y 0.056 \(105 %.*Täter Boden-Satz \(\+105 %/
+            );
+            pruefe(
+                "der Ring tastet grob",
+                LL.nahFernUrteil({ orte: ruhig.map((o, i) => (i ? o : ort("wald", 0, 0.055, 0.07, 1.1, 0.056))) }),
+                /Täter die Abtastung des Fern-Rings \(\+25 %/
+            );
+            pruefe("zu wenige Wiesen-Orte", LL.nahFernUrteil({ orte: ruhig.slice(0, 4) }), /NAH-FERN wiese: 1 Orte/);
+            pruefe(
+                "leerer Schuss",
+                LL.nahFernUrteil({
+                    orte: ruhig.concat([Object.assign(ort("wiese", 400, 0.06, 0.06), { nah: { n: 0 } })]),
+                }),
+                /leerer Schuss/
+            );
+            pruefe("Karte steht nicht", LL.nahFernUrteil({ orte: ruhig, nahKarte: 0 }), /NAH-FERN Karte: .*bereit 0/);
+            console.log(
+                f.length
+                    ? "SELBSTTEST ROT:\n  " + f.join("\n  ")
+                    : "SELBSTTEST GRÜN: das Nah-Fern-Urteil nennt die zwei Farben derselben Stelle beim Namen"
+            );
+            process.exit(f.length ? 1 : 0);
+        }
+        o = await rufe("/albedo", { nahFern: true, datei: opt("--datei") });
+        if (o && o.zeilen) {
+            for (const z of o.zeilen)
+                console.log(
+                    `  ${z.klasse.padEnd(5)} ${z.ort.join("/").padEnd(12)} Deckung ${z.deckung} · nah Y ${z.nahY} · fern Y ${z.fernY} · ` +
+                        `${(z.dY * 100).toFixed(0)} % · Grün ${z.dG} · Gesetz Y ${z.gesetzY} (nah ${z.nahGesetz}, fern ${z.fernGesetz})`
+                );
+            for (const b of o.befunde) console.log("  ROT " + b);
+            console.log(
+                o.befunde.length
+                    ? "\n❌ NAH-FERN ROT — zwei Farben derselben Stelle"
+                    : "\n✅ NAH-FERN GRÜN — EINE Boden-Farbe je Ort"
+            );
+            if (o.datei) console.log(o.datei);
+            process.exit(o.befunde.length ? 1 : 0);
+        }
+    } else if (cmd === "albedo") {
         o = await rufe("/albedo", { nur: opt("--nur"), ordner: opt("--ordner"), tafel: argv.includes("--tafel"), datei: opt("--datei") });
         if (o && o.tabelle) {
             console.log(o.tabelle + "\n\n" + o.datei + "\n" + o.ordner);
