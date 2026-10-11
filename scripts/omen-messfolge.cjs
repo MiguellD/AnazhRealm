@@ -78,7 +78,56 @@ const FOLGEN = {
         "profil",
     ],
     genesis: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "band"],
+    // DER TOGGLE-ORT (1110-6): die Prüfbühne richtet keine Band-Klasse, sondern die GPU-Zeit eines Schalters unter 0,3 ms —
+    // die lange Bank je Pose (haushalt.json `bank`, `posen`), bei festen Stellgrößen des Reglers (`stell`).
+    buehne: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "gpu-bank"],
 };
+
+// DIE WIEDERHOLBARKEIT EINES MESSORTS (1110-6, rein): dieselbe Seite in N frischen Sitzungen — je Pose (Toggle-Ort) bzw. je
+// Blick (Band-Ort) das Bank-Mittel jeder Sitzung. Liegt die Spanne (max − min) über dem Soll, ist der Ort für Toggle-Urteile
+// dieser Größe blind und nennt die Pose. An der Mess-Wiese lag sie am 11.10. bis 1,8 ms (der Baum-Inhalt je Sitzung).
+// `sitzungen` = [{ name, je: { <pose|gier>: ms } }]; mindestens drei.
+function streuungUrteil(sitzungen, soll) {
+    const befunde = [];
+    const zeilen = [];
+    if (!(soll > 0)) befunde.push("STREUUNG: kein Soll (ms > 0)");
+    if (sitzungen.length < 3)
+        befunde.push(`STREUUNG: ${sitzungen.length} Sitzungen — die Wiederholbarkeit braucht mindestens drei`);
+    const schluessel = [...new Set(sitzungen.flatMap((s) => Object.keys(s.je || {})))];
+    if (!schluessel.length) befunde.push("STREUUNG: keine Bank in den Sitzungen");
+    for (const k of schluessel) {
+        const w = sitzungen.map((s) => (s.je || {})[k]);
+        const fehlt = w.filter((x) => !Number.isFinite(x)).length;
+        if (fehlt) {
+            befunde.push(`STREUUNG ${k}: in ${fehlt} von ${w.length} Sitzungen kein Wert`);
+            continue;
+        }
+        const min = Math.min(...w);
+        const max = Math.max(...w);
+        const mittel = w.reduce((a, b) => a + b, 0) / w.length;
+        const sigma = Math.sqrt(w.reduce((a, b) => a + (b - mittel) ** 2, 0) / Math.max(1, w.length - 1));
+        zeilen.push({
+            k,
+            werte: w,
+            mittel: +mittel.toFixed(3),
+            spanne: +(max - min).toFixed(3),
+            sigma: +sigma.toFixed(3),
+        });
+        if (max - min > soll)
+            befunde.push(
+                `STREUUNG ${k}: Spanne ${(max - min).toFixed(2)} ms über dem Soll ${soll} ms (${w.map((x) => x.toFixed(2)).join(" · ")})`
+            );
+    }
+    return { befunde, zeilen };
+}
+
+// Die Bank eines Laufs je Pose bzw. Blick (aus `kurz.gpuBank`) — die Eingabe des Streuungs-Urteils.
+function bankJe(lauf) {
+    const je = {};
+    for (const [k, b] of Object.entries((lauf && lauf.kurz && lauf.kurz.gpuBank) || {}))
+        je[k] = b && Number.isFinite(b.gpuJeFrameMs) ? b.gpuJeFrameMs : NaN;
+    return je;
+}
 const ORT = opt("--ort", "wiese");
 if (!FOLGEN[ORT]) throw new Error(`omen-messfolge: kein Messort „${ORT}" (Folgen: ${Object.keys(FOLGEN).join(", ")})`);
 const FOLGE = FOLGEN[ORT];
@@ -424,7 +473,51 @@ async function folge() {
                     "r.state.renderer.setAnimationLoop(null); " +
                     "return { gier: r.state.yaw, tiere: typeof window.__tierZahl === 'function' ? window.__tierZahl() : null };",
             });
-        if (hat("gpu-bank")) {
+        if (hat("gpu-bank") && ort.bank) {
+            // DIE LANGE BANK je Pose (Toggle-Ort, 1110-6): der Spieler steht an der Pose (die Werkbank wartet, bis der
+            // Chunk-Bestand ruht), eine Aufwärm-Bank fällt weg (nach jedem Wechsel trägt die erste Bank Neu-Übersetzung und
+            // den letzten Zuzug), dann `bank.je` Bänke zu `bank.n` × `bank.runden`; ihr Mittel ist der Wert der Pose.
+            const B = ort.bank;
+            const bank = await schritt("gpu-bank", async () => {
+                const je = {};
+                for (const p of ort.posen) {
+                    const u = await R("/umstellen", { ort: ORT, pose: p.id });
+                    if (abbruchVon(u)) {
+                        je[p.id] = u;
+                        continue;
+                    }
+                    await blick(BAND.ortGier(p));
+                    await R("/gpu-bank", { n: 60, runden: 1 });
+                    const werte = [];
+                    let cpu = 0;
+                    for (let i = 0; i < B.je; i++) {
+                        const b = await R("/gpu-bank", { n: B.n, runden: B.runden });
+                        if (abbruchVon(b)) {
+                            je[p.id] = b;
+                            break;
+                        }
+                        werte.push(b.gpuJeFrameMs);
+                        cpu += b.cpuJeFrameMs / B.je;
+                    }
+                    if (je[p.id]) continue;
+                    const mittel = werte.reduce((a, c) => a + c, 0) / werte.length;
+                    je[p.id] = {
+                        gpuJeFrameMs: +mittel.toFixed(3),
+                        cpuJeFrameMs: +cpu.toFixed(3),
+                        werte,
+                        chunks: u.chunks,
+                    };
+                }
+                await R("/umstellen", { ort: ORT });
+                return je;
+            });
+            aus.kurz.gpuBank = {};
+            for (const p of ort.posen) {
+                const b = bank && bank[p.id];
+                if (abbruchVon(b)) aus.befunde.push(`SCHRITT gpu-bank (Pose ${p.id}): ${abbruchVon(b)}`);
+                aus.kurz.gpuBank[p.id] = b && !abbruchVon(b) ? b : null;
+            }
+        } else if (hat("gpu-bank")) {
             const bank = await schritt("gpu-bank", async () => {
                 const je = {};
                 for (const g of BANK_GIER) {
@@ -447,38 +540,41 @@ async function folge() {
                         : b;
             }
         }
-        const bandDatei = path.join(os.tmpdir(), `messfolge-band-${PORT}-${Date.now()}.json`);
-        const band = await schritt("band", () => R("/band", { ort: ORT, datei: bandDatei, proben: P.proben }));
-        // die Band-Messung reist im EINEN JSON mit (die Werkbank schrieb sie in eine Zwischen-Datei)
-        let messung = null;
-        if (band && fs.existsSync(bandDatei)) {
-            const e = aus.schritte[aus.schritte.length - 1];
-            messung = JSON.parse(fs.readFileSync(bandDatei, "utf8"));
-            e.ergebnis = Object.assign({}, band, { messung });
-            delete e.ergebnis.datei;
-            fs.rmSync(bandDatei, { force: true });
+        if (hat("band")) {
+            const bandDatei = path.join(os.tmpdir(), `messfolge-band-${PORT}-${Date.now()}.json`);
+            const band = await schritt("band", () => R("/band", { ort: ORT, datei: bandDatei, proben: P.proben }));
+            // die Band-Messung reist im EINEN JSON mit (die Werkbank schrieb sie in eine Zwischen-Datei)
+            let messung = null;
+            if (band && fs.existsSync(bandDatei)) {
+                const e = aus.schritte[aus.schritte.length - 1];
+                messung = JSON.parse(fs.readFileSync(bandDatei, "utf8"));
+                e.ergebnis = Object.assign({}, band, { messung });
+                delete e.ergebnis.datei;
+                fs.rmSync(bandDatei, { force: true });
+            }
+            // die Band urteilt ihre eigene Aufzeichnung: der gestellte Ort und kein Rahmen-Ziel des Direktpfads
+            if (!abbruchVon(band)) {
+                const e = aus.schritte[aus.schritte.length - 1];
+                const bb = bandBefunde(messung);
+                e.befunde.push(...bb);
+                aus.befunde.push(...bb);
+                for (const b of bb) console.log(`  ROT ${b}`);
+            }
+            schreibe();
+            const vram = messung && messung.vram ? messung.vram.mb : null;
+            aus.kurz.band = mitTieren(
+                band
+                    ? {
+                          urteil: band.urteil,
+                          linse: band.linse,
+                          stempel: band.stempel && band.stempel.urteil,
+                          gestellt:
+                              messung && Array.isArray(messung.ortGestellt) ? messung.ortGestellt.length === 0 : null,
+                          vramMB: vram,
+                      }
+                    : null
+            );
         }
-        // die Band urteilt ihre eigene Aufzeichnung: der gestellte Ort und kein Rahmen-Ziel des Direktpfads
-        if (!abbruchVon(band)) {
-            const e = aus.schritte[aus.schritte.length - 1];
-            const bb = bandBefunde(messung);
-            e.befunde.push(...bb);
-            aus.befunde.push(...bb);
-            for (const b of bb) console.log(`  ROT ${b}`);
-        }
-        schreibe();
-        const vram = messung && messung.vram ? messung.vram.mb : null;
-        aus.kurz.band = mitTieren(
-            band
-                ? {
-                      urteil: band.urteil,
-                      linse: band.linse,
-                      stempel: band.stempel && band.stempel.urteil,
-                      gestellt: messung && Array.isArray(messung.ortGestellt) ? messung.ortGestellt.length === 0 : null,
-                      vramMB: vram,
-                  }
-                : null
-        );
         if (hat("profil")) {
             const prof = await schritt("profil", () =>
                 R("/profil", { sek: P.profilSek, regler: "voll", tiere: "frei", top: 60 })
@@ -523,7 +619,9 @@ async function folge() {
     for (const [g, b] of Object.entries(aus.kurz.gpuBank || {}))
         if (b && b.gpuJeFrameMs != null)
             console.log(
-                `  gpu-bank Gier ${g}: ${b.gpuJeFrameMs} ms je Frame (CPU ${b.cpuJeFrameMs}) · ${tierZeile(b.tiere)}`
+                b.werte
+                    ? `  gpu-bank Pose ${g}: ${b.gpuJeFrameMs} ms je Frame (${b.werte.join(" · ")}; CPU ${b.cpuJeFrameMs}, Chunks ${b.chunks})`
+                    : `  gpu-bank Gier ${g}: ${b.gpuJeFrameMs} ms je Frame (CPU ${b.cpuJeFrameMs}) · ${tierZeile(b.tiere)}`
             );
     if (aus.kurz.band && aus.kurz.band.urteil)
         console.log(
@@ -861,11 +959,75 @@ async function selbsttest() {
             } catch (_e) {}
         pruefe("hängender /stop: Werkbank und Kind sterben", v, null);
     }
+    // DIE WIEDERHOLBARKEIT (1110-6): vier ruhige Sitzungen liegen im Soll; eine fünfte 0,3 ms daneben fällt an IHRER Pose;
+    // zwei Sitzungen sind zu wenig; eine Pose ohne Wert steht beim Namen; die Spanne der Wiese (1110-3: 0,40 ms) ist rot.
+    const S = (je) => ({ je });
+    const ruhig = [
+        S({ a: 13.5, b: 12.1 }),
+        S({ a: 13.56, b: 12.14 }),
+        S({ a: 13.52, b: 12.08 }),
+        S({ a: 13.58, b: 12.12 }),
+    ];
+    pruefe("Streuung im Soll", streuungUrteil(ruhig, 0.1).befunde, null);
+    pruefe(
+        "eine Sitzung 0,3 ms daneben",
+        streuungUrteil(ruhig.concat([S({ a: 13.85, b: 12.1 })]), 0.1).befunde,
+        /^STREUUNG a: Spanne 0\.35 ms über dem Soll 0\.1/
+    );
+    pruefe("zwei Sitzungen", streuungUrteil(ruhig.slice(0, 2), 0.1).befunde, /mindestens drei/);
+    pruefe(
+        "Pose ohne Wert",
+        streuungUrteil(ruhig.concat([S({ a: 13.5 })]), 0.1).befunde,
+        /STREUUNG b: in 1 von 5 Sitzungen/
+    );
+    pruefe(
+        "die Spanne der Wiese (1110-3)",
+        streuungUrteil(
+            [11.42, 11.82, 11.6, 11.7].map((x) => S({ 0: x })),
+            0.1
+        ).befunde,
+        /STREUUNG 0: Spanne 0\.40 ms/
+    );
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Mess-Folge ist blind: " + fehler.join(" · "));
         process.exit(1);
     }
     console.log("\n✅ SELBSTTEST GRÜN — die Folge-Regel und jede Wache nennen ihren Täter.");
+    process.exit(0);
+}
+
+// DAS STREUUNGS-URTEIL über N Läufe desselben Orts (1110-6, die Linse der Wiederholbarkeit): je Pose bzw. Blick die Werte,
+// Mittel, Spanne und σ; ROT, wenn eine Spanne über dem Soll liegt (Toggle-Ort: `bank.soll`, sonst `--soll`).
+function streuungCli() {
+    const dateien = argv.slice(argv.indexOf("--streuung") + 1).filter((a) => !a.startsWith("--") && /\.json$/.test(a));
+    const laeufe = dateien.map((d) => ({ name: path.basename(d), lauf: JSON.parse(fs.readFileSync(d, "utf8")) }));
+    const orte = [...new Set(laeufe.map((l) => l.lauf.parameter && l.lauf.parameter.ort))];
+    if (orte.length !== 1) {
+        console.log(
+            `❌ STREUUNG: die Läufe stehen an ${orte.join(", ") || "keinem Ort"} — ein Urteil braucht EINEN Ort`
+        );
+        process.exit(1);
+    }
+    const { ort } = BAND.ladeSpec(orte[0]);
+    const soll = Number(opt("--soll", ort.bank ? ort.bank.soll : NaN));
+    const u = streuungUrteil(
+        laeufe.map((l) => ({ name: l.name, je: bankJe(l.lauf) })),
+        soll
+    );
+    console.log(
+        `\n=== DIE WIEDERHOLBARKEIT am Ort ${ort.id}: ${laeufe.length} Sitzungen, Soll Spanne ≤ ${soll} ms ===`
+    );
+    for (const z of u.zeilen)
+        console.log(
+            `  ${z.k}: ${z.werte.map((x) => x.toFixed(2)).join(" · ")} → Mittel ${z.mittel}, Spanne ${z.spanne}, σ ${z.sigma} ` +
+                `(2σ ${(2 * z.sigma).toFixed(3)})`
+        );
+    if (u.befunde.length) {
+        for (const b of u.befunde) console.log("  ROT " + b);
+        console.log(`\n❌ STREUUNG ROT — der Ort ${ort.id} ist für Toggle-Urteile unter ${soll} ms blind.`);
+        process.exit(1);
+    }
+    console.log(`\n✅ STREUUNG GRÜN — der Ort ${ort.id} richtet Toggle-Urteile ab ${soll} ms.`);
     process.exit(0);
 }
 
@@ -875,6 +1037,7 @@ if (require.main === module) {
             console.error("SELBSTTEST-FEHLER:", (e && e.stack) || e);
             process.exit(1);
         });
+    else if (argv.includes("--streuung")) streuungCli();
     else
         folge().catch((e) => {
             console.error("MESS-FOLGE-FEHLER:", (e && e.stack) || e);
@@ -882,4 +1045,14 @@ if (require.main === module) {
         });
 }
 
-module.exports = { FOLGE, FOLGEN, folgeUrteil, wachenUrteil, tierUrteil, bandBefunde, beendeBaum };
+module.exports = {
+    FOLGE,
+    FOLGEN,
+    folgeUrteil,
+    wachenUrteil,
+    tierUrteil,
+    bandBefunde,
+    beendeBaum,
+    streuungUrteil,
+    bankJe,
+};
