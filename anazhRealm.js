@@ -32920,7 +32920,12 @@ class AnazhRealm {
             // seine BRDF in jedem Fragment, auch unter dem Himmel auf Stärke 0 (OMEN 1110-3, GTX 1060: 0,48 ms je Frame).
             // Hier rechnet es nur der Boden, gewichtet mit dem fehlenden Himmel der Fläche (1 − `aHimmel`) und der Stärke
             // am Auge (die geteilte Uniform `augenLicht` = Farbe × Stärke, unter dem Himmel 0): dieselbe Rechnung wie r184s
-            // Punkt-Licht am Auge (Lambert + GGX, Abstand und Fenster aus `AUGEN_LICHT`), nur wo beides nicht 0 ist.
+            // Punkt-Licht am Auge (Lambert + GGX des Vendors, Abstand und Fenster aus `AUGEN_LICHT`), nur wo beides nicht 0 ist.
+            // ZWEI FALLEN (Werkbank 11.10., echte GPU): r184 baut die Emissiv-Zuweisung VOR der Lichtung — liest der Term
+            // `normalView`/`positionViewDirection` (EINE Variable je Programm) zuerst im If-Zweig, steht ihre Zuweisung nur dort,
+            // und unter dem Himmel lichtete jede Boden-Fläche mit der Normale 0 (schwarz, die Mündung Helligkeit 60 statt 123):
+            // sie werden VOR dem Zweig gelesen. Und `three/tsl` der Seite kennt `diffuseContribution`/`specularColorBlended` nicht —
+            // die Stoff-Werte kommen aus `diffuseColor` · `metalness` · `specularColor` · `specularF90` (wie r184 sie mischt).
             if (opts.himmelsSicht) {
                 const _Te = THREE.TSL;
                 const _A = AnazhRealm.AUGEN_LICHT;
@@ -32928,20 +32933,24 @@ class AnazhRealm {
                 const _hS = _Te.attribute("aHimmel", "float");
                 const _unterFels = _hS.oneMinus();
                 mat.emissiveNode = _Te.Fn(() => {
+                    const _N = _Te.normalView.toVar();
+                    const _L = _Te.positionViewDirection.toVar(); // vom Fragment zum Auge (das Licht steht am Auge)
+                    const _d = _Te.positionView.length().toVar();
                     const _e = _Te.vec3(0).toVar();
                     _Te.If(_unterFels.mul(_uAuge.r).greaterThan(0), () => {
-                        const _L = _Te.positionViewDirection; // vom Fragment zum Auge (das Licht steht am Auge)
-                        const _d = _Te.positionView.length();
                         // r184 getDistanceAttenuation: 1/max(d^abfall, 0,01) · (1 − (d/R)⁴)²
                         let _abst = _d.div(_A.reichweiteM).pow4().oneMinus().clamp().pow2();
                         if (_A.abfall !== 0) _abst = _abst.mul(_d.pow(_A.abfall).max(0.01).reciprocal());
-                        const _E = _uAuge.mul(_Te.normalView.dot(_L).clamp().mul(_abst).mul(_unterFels));
-                        const _brdf = _Te.BRDF_Lambert({ diffuseColor: _Te.diffuseContribution }).add(
+                        const _E = _uAuge.mul(_N.dot(_L).clamp().mul(_abst).mul(_unterFels));
+                        const _alb = _Te.diffuseColor.rgb;
+                        const _met = _Te.metalness;
+                        const _brdf = _Te.BRDF_Lambert({ diffuseColor: _alb.mul(_met.oneMinus()) }).add(
                             _Te.BRDF_GGX({
                                 lightDirection: _L,
-                                f0: _Te.specularColorBlended,
-                                f90: 1,
+                                f0: _Te.mix(_Te.specularColor, _alb, _met),
+                                f90: _Te.specularF90,
                                 roughness: _Te.roughness,
+                                normalView: _N,
                             })
                         );
                         _e.assign(_E.mul(_brdf));

@@ -124,6 +124,17 @@ function urteil(b) {
             "CODE: der Boden-Stoff (`_buildPbrNodeMaterial`) trägt den Term des Lichts des Auges nicht (`atmoUniforms.augenLicht` " +
                 "× (1 − `aHimmel`)) — die Höhle ist schwarz oder ein Szenen-Licht trägt es überall"
         );
+    if (c.augenTerm && !c.augenVorZweig)
+        v.push(
+            "CODE: der Term des Lichts des Auges liest `normalView`/`positionViewDirection` erst im If-Zweig — r184 baut das " +
+                "Emissiv VOR der Lichtung, die Variable stünde nur im Zweig: unter dem Himmel lichtet der Boden mit der Normale 0 " +
+                "(schwarz)"
+        );
+    if (c.augenTerm && c.augenTslFremd)
+        v.push(
+            `CODE: der Term des Lichts des Auges liest \`${c.augenTslFremd}\` — \`three/tsl\` der Seite kennt den Namen nicht ` +
+                "(undefined, der Graph bricht, der Boden ist schwarz)"
+        );
     const al = b.augenLicht;
     if (!al || !al.hoehle || !al.frei || !al.augeInHoehle)
         v.push("LEER: (j) Licht des Auges: kein Auge in der Höhlen-Luft gemessen (die Wand prüfte nichts)");
@@ -286,6 +297,8 @@ function selbsttest() {
             himmelLiest: true,
             normaleHoehle: true,
             augenTerm: true,
+            augenVorZweig: true,
+            augenTslFremd: null,
         },
         wieseUnterFels: { ohneHimmel: 700, fremd: 0, gruen: 0, erst: null },
         augenLicht: {
@@ -397,6 +410,17 @@ function selbsttest() {
         ],
         ["Licht im Freien", (b) => (b.augenLicht.frei.I = 5), /LICHT DES AUGES: unter freiem Himmel .* brennt es/],
         ["Stoff ohne Augen-Term", (b) => (b.code.augenTerm = false), /CODE: der Boden-Stoff .* trägt den Term/],
+        // die zwei Fallen der Werkbank 11.10. (echte GPU): die Mündung schwarz (Helligkeit 60 statt 123)
+        [
+            "Normale im Zweig",
+            (b) => (b.code.augenVorZweig = false),
+            /CODE: der Term .* liest `normalView`\/`positionViewDirection` erst im If-Zweig/,
+        ],
+        [
+            "fremder TSL-Name",
+            (b) => (b.code.augenTslFremd = "diffuseContribution"),
+            /CODE: der Term .* liest `diffuseContribution` — `three\/tsl` der Seite kennt/,
+        ],
         // (l) der Befund von OMEN 1110-3 (GTX 1060, V18.540): das Punkt-Licht des Auges stand ab Boot auf 0 in der Szene
         [
             "Szenen-Licht auf 0",
@@ -1033,6 +1057,14 @@ const server = http.createServer((req, res) => {
                 /\.aoNode\s*=\s*THREE\.TSL\.attribute\("aHimmel"/.test(pbr);
             aus.code.normaleHoehle = /_flat\.mul\(_hS\)/.test(pbr) && /attribute\("aHimmel"/.test(pbr);
             aus.code.augenTerm = /\.augenLicht\b/.test(pbr) && /_hS\.oneMinus\(\)/.test(pbr);
+            // die zwei Fallen des Terms (Werkbank 11.10., echte GPU — der Null-Renderer baut keinen Graph): die geteilten
+            // Variablen VOR dem Zweig gelesen, und nur Namen, die `three/tsl` der Seite kennt
+            const em = pbr.slice(Math.max(0, pbr.indexOf("emissiveNode")));
+            const vorZweig = em.slice(0, Math.max(0, em.indexOf(".If(")));
+            aus.code.augenVorZweig =
+                /normalView\.toVar\(\)/.test(vorZweig) && /positionViewDirection\.toVar\(\)/.test(vorZweig);
+            const fremd = em.slice(0, 4000).match(/\b(diffuseContribution|specularColorBlended)\b/);
+            aus.code.augenTslFremd = fremd ? fremd[1] : null;
             aus.code.passLiest = /this\._hoehlenSicht\(/.test(code(r._chunkSatzPass));
             aus.code.abschnittLiest = /\.knoten\.sicht\s*===\s*stempel/.test(code(r._chunkSatzAbschnitt));
             aus.code.hinausLiest = /this\._hoehlenHinaus\(/.test(code(r._hoehlenSicht));
