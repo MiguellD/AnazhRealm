@@ -315,6 +315,11 @@
         "38095082458"
       ]
     },
+    "Schatten am Terminator (1110-5 - die Hang-Akne, die Zuwendung der wahren Normale)": {
+      "s": 150,
+      "geschaetzt": "lokal 78-119 s (12.10., OMEN i7-8750H, Software-Holz holz voll: Start 5 s, Buehne 21 s, Rampe 12 s, je Sonne 39-42 s); der CI-Laeufer bootet etwa 1,5- bis 2-mal langsamer",
+      "lauf": "npm run gate:schatten-terminator"
+    },
     "Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)": {
       "s": 6,
       "n": 5,

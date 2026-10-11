@@ -32401,9 +32401,9 @@ class AnazhRealm {
                     mat.normalNode = _Tn.cameraViewMatrix.transformDirection(_Tn.normalize(_baseN));
                     // DIE ZUWENDUNG DES SCHATTENS (1110-5, die Hang-Akne): die 2,5D-Lichtung schattiert jede Fläche, als sähe
                     // sie senkrecht zum Himmel — ob die Sonne sie trifft, entschied am Terminator allein der Schatten-Test, und
-                    // der rauscht dort (der Normal-Versatz folgt der geflatteten Normale, nicht der Fläche). Gemessen an der
-                    // 30°-Rampe der Prüfbühne im Software-Holz (holz voll), Sonne 22° aus Azimut 45°, N·L −0,002: 11,6 % der
-                    // Rampe fleckig gegen 0,2 % ohne Schatten. Jetzt trägt der empfangene Schatten die Zuwendung der WAHREN
+                    // der rauscht dort (der Normal-Versatz folgt der geflatteten Normale, nicht der Fläche). Gemessen an einer
+                    // ebenen 30°-Rampe im Software-Holz (holz voll), Sonne 22° aus Azimut 45°, N·L −0,002: 11,7 % der Rampe
+                    // fleckig gegen 0,2 % ohne Schatten (gate:schatten-terminator). Jetzt trägt der empfangene Schatten die Zuwendung der WAHREN
                     // Normale (dieselbe, aus der die Lichtung mischt) zur Richtung des aktiven Körpers: abgewandt im Schatten,
                     // der Saum am Terminator (N·L 0 … `zuwendungSaum`, ~5° Sonne) weich.
                     const _nWahr = _hS ? _Tn.normalWorldGeometry : _nGeo;

@@ -345,6 +345,13 @@ jobs:
               # echten Renderer (Boden-IoU kleiner Werfer, Akne-Platten, Zähne) fährt der OMEN: diag-schatten-bias.cjs --echt.
               run: npm run gate:schatten-bias
 
+            - name: Schatten am Terminator (1110-5 - die Hang-Akne, die Zuwendung der wahren Normale)
+              if: matrix.gruppe == 5
+              # Die Werkbank im Software-Holz mit Schatten (holz voll) an der 30-Grad-Rampe der Pruefbuehne, die Sonne am Terminator
+              # (22 Grad aus Azimut 45, N.L -0,002): von oben je ein Schuss mit und ohne Schatten, gemessen nur auf der Rampe - ROT
+              # beim Namen, wenn der Schatten die Rampe fleckig macht (main 2c8deda9: 11,7 % gegen 0,2 %). Lokal 78-119 s.
+              run: npm run gate:schatten-terminator
+
             - name: Persistenz-Härtung (rotierender Backup + korruptions-sicherer Load)
               if: matrix.gruppe == 6
               # Beweist headless, dass ein korrupter/partieller localStorage-Write die Welt NICHT mehr
