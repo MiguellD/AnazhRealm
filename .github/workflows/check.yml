@@ -360,6 +360,42 @@ jobs:
               # forceSync gewinnt immer. Schliesst den Schöpfer-`Gegraben → FPS 4`-Befund an der Wurzel.
               run: npm run gate:carve
 
+            - name: Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)
+              if: matrix.gruppe == 1
+              # Faehrt die echte Welt (Null-Renderer) und vergleicht je Ort und LOD 0-3 das Gitter des Mains
+              # (`_voxelEditedDensityGrid`) mit dem des Workers (`computeDensityGrid`) Wort fuer Wort - die Standard-Welt
+              # (Mess-Wiese, Genesis, ein Fluss) und die Pruefbuehne (spec/pruefbuehne/welt.json, ihre Stationen), dazu
+              # eine Fuell-Kugel ueber dem Band. Der Selbsttest verfaelscht EINEN Term nur im Worker und muss rot werden.
+              run: npm run gate:worker-dichte
+
+            - name: Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec)
+              if: matrix.gruppe == 3
+              # Faehrt die echte Welt (Null-Renderer): jede Ort-Op der Welt-Akte mit der Quelle des Feldes (nexus,
+              # rule:nexus), den getriebenen Nexus-Takt und den Absenz-Zensus in 300 m - auf der Pruefbuehne
+              # (spec/pruefbuehne/welt.json) Zuwachs 0 je Wurf, in der Wildnis als Feld-Kontrolle > 0, der Akt des Menschen
+              # setzt auf beiden. Der Selbsttest laesst die Wildnis zum Schein ueberall tragen: jeder Wurf faellt rot beim Namen.
+              # Dazu die S4-Probe: die sechs Hindernis-Koerper der Saat (stationen.json s4-hindernisse) stehen je Teil
+              # mit ihrer Blocker-Box <= 0,1 m an der Spec und im Blocker-Netz; der Selbsttest rueckt die Mauer 0,5 m.
+              run: npm run gate:pruefbuehne
+
+            - name: Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)
+              if: matrix.gruppe == 6
+              # Faehrt die echte Welt (Null-Renderer) je Weg in einem frischen Browser-Kontext: Welt A traegt ein Zeichen in
+              # jedem welt-eigenen Feld (Erbgut der Pruefbuehne, Anker, Edits, Dorf-Zellen, Stempel, Rolle, Gedaechtnisse der
+              # Seite, ein Tier), Welt B ist eine Wildnis-Welt ohne all das. Nach jedem Weg nennt die Linse jedes Feld von A,
+              # das B in der Seite, in ihren Lesern, im Worker-Spiegel oder im Speicher traegt, beim Namen. Der Selbsttest
+              # mischt den alten Spread am Lade-Engpass zum Schein darunter und muss rot werden.
+              run: npm run gate:weltgrenze
+
+            - name: Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)
+              if: matrix.gruppe == 9
+              # Faehrt die neun Speicher-Formen der Boot-Sonde (Platz ohne worldId, ohne worldMeta, Legacy ohne worldId, ohne
+              # worldMeta, mehrere Welten + Wechsel, korrupter Platz + gueltiges .bak, nur IndexedDB, IndexedDB frischer, und ein
+              # Zeiger auf eine Welt, die nirgends liegt) je in einem frischen Browser-Kontext: Boot 1 erwacht in der Welt der Form
+              # mit ihrer Marke, Boot 2 bleibt stabil, die leere Form erwacht frisch und laut. Der Selbsttest laesst die
+              # Rettungs-Kette zum Schein nur den Platz lesen und muss an korrupt, nur-IDB und IDB-frischer rot werden.
+              run: npm run gate:boot-rettung
+
             - name: Gras-Nach-Dünnen (die dominante Last folgt dem EINEN Regler im Stand)
               if: matrix.gruppe == 10
               # Beweist headless, dass das Gras (die dominante kapazitäts-geregelte Last, V18.307) dem

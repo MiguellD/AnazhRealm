@@ -9476,7 +9476,7 @@
         <input type="file" id="vibe-pass-file-input" accept="application/json,.json" />
         <!-- Ring 9 — Welt-Tor: Drei-Wahl-Dialog beim Import einer fremden Welt.
              Native <dialog> mit painterly Styling. Vier Aktionen:
-               Ersetzen      → aktuelle Welt wird überschrieben (mit Warnung)
+               Ersetzen      → die Datei wird die aktive Welt (Reload); die jetzige bleibt im Index
                Daneben legen → importierte Welt bekommt neue worldId + Eintrag
                                im Index, aktuelle Welt bleibt aktiv
                Fusionieren   → deferred zu Ring 10, Button ist disabled
@@ -9487,7 +9487,7 @@
             <div class="world-tor-actions">
                 <button type="button" id="world-tor-replace" class="world-tor-btn">
                     <strong>Ersetzen</strong>
-                    <span>Aktuelle Welt wird überschrieben — Inventar, Journal, Geschichte gehen verloren.</span>
+                    <span>Die Datei wird deine aktive Welt. Deine jetzige Welt bleibt gesichert im Welt-Index — nur eine Datei mit derselben Welt-Id ersetzt sie.</span>
                 </button>
                 <button type="button" id="world-tor-beside" class="world-tor-btn">
                     <strong>Daneben legen</strong>

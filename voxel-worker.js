@@ -79,6 +79,9 @@ const state = {
     // Worker liest IHN statt selbst zu bauen → konsistent über
     // Konstanten-Wechsel + Welt-Bündel-Import.
     macroAnker: null,
+    // DAS ERBGUT der Welt in der Normalform des Mains (`_erbgut()`: { terme, wildnis, hash }) — die Terme der EINEN
+    // 2D-Höhe. Der Main schickt es mit jedem Snapshot; fehlt es, wirft der Auswerter (fail-closed, nie still Wildnis).
+    erbgut: null,
 };
 
 self.onmessage = function (e) {
@@ -235,6 +238,7 @@ function applyStateSnapshot(snap) {
         _macroAnkerCache = null;
         _macroAnkerSeed = null;
     }
+    if (snap.erbgut !== undefined) state.erbgut = snap.erbgut;
 }
 
 function applyStateDelta(delta) {
@@ -273,8 +277,7 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
     const topMargin = 4 * step;
     // V18.321 (mirror von `_voxelSampleDensityGrid`-Hoist): der rein-2D `terrainColumnContext`
     // EINMAL pro Spalte (statt pro Voxel die Makro-Oberfläche [61 %] neu zu rechnen) — deckt
-    // die Band-Grenzen (`ctx.surf`) UND die per-Voxel-Auswertung (`terrainDensityAtCol`).
-    // BYTE-IDENTISCH (terrainDensityAtCol(x,y,z,ctx) == terrainDensityAt(x,y,z)). Bit-identisch zur Main.
+    // die Band-Grenzen (`ctx.surf`) UND die per-Voxel-Auswertung (`terrainBaseDensityCol`).
     for (let k = 0; k < Nz; k++) {
         const wz = oz + k * step;
         for (let i = 0; i < Nx; i++) {
@@ -289,11 +292,57 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
                 const idx = colBase + j * Nx;
                 if (j > bandTopJ) density[idx] = -1;
                 else if (j < bandBotJ) density[idx] = 1;
-                else density[idx] = ctx ? terrainDensityAtCol(wx, oy + j * step, wz, ctx) : 0;
+                else density[idx] = ctx ? terrainBaseDensityCol(wx, oy + j * step, wz, ctx) : 0;
             }
         }
     }
+    // Die Edits liegen wie im Main (`_voxelEditedDensityGrid`) auf dem BASIS-Gitter, je Kugel über ihren Index-Kasten
+    // und in Float32 — auch über und unter dem Band. Bis 09.10. legte der Worker sie nur im Band (je Ecke in f64): eine
+    // Füll-Kugel über dem Band stand im Main-Chunk und fehlte im Worker-Chunk (gate:worker-dichte, Mess-Wiese: LOD 0
+    // 93 Ecken, LOD 1 7 Ecken, maxDiff 42,2).
+    applyVoxelEditsGrid(density, ox, oy, oz, Nx, Ny, Nz, step);
     return density;
+}
+
+// Spiegel der Edit-Schleife von `_voxelEditedDensityGrid` (anazhRealm.js) — dieselben Kästen, dieselbe Reihenfolge,
+// dieselbe Float32-Akkumulation. MUSS bit-identisch zur Main (gate:worker-dichte).
+function applyVoxelEditsGrid(out, gox, goy, goz, Nx, Ny, Nz, step) {
+    const edits = state.voxelEdits;
+    if (!edits || !edits.length) return;
+    for (let e = 0; e < edits.length; e++) {
+        const ed = edits[e];
+        if (!ed) continue;
+        const r = ed.r;
+        const r2 = r * r;
+        const strength = ed.strength || 48;
+        const isFill = ed.mode === "fill";
+        const i0 = Math.max(0, Math.floor((ed.x - r - gox) / step));
+        const i1 = Math.min(Nx - 1, Math.ceil((ed.x + r - gox) / step));
+        const j0 = Math.max(0, Math.floor((ed.y - r - goy) / step));
+        const j1 = Math.min(Ny - 1, Math.ceil((ed.y + r - goy) / step));
+        const k0 = Math.max(0, Math.floor((ed.z - r - goz) / step));
+        const k1 = Math.min(Nz - 1, Math.ceil((ed.z + r - goz) / step));
+        for (let k = k0; k <= k1; k++) {
+            const wz = goz + k * step;
+            const dz = wz - ed.z;
+            for (let j = j0; j <= j1; j++) {
+                const wy = goy + j * step;
+                const dy = wy - ed.y;
+                for (let i = i0; i <= i1; i++) {
+                    const wx = gox + i * step;
+                    const dx = wx - ed.x;
+                    const dist2 = dx * dx + dy * dy + dz * dz;
+                    if (dist2 < r2) {
+                        const fall = 1 - Math.sqrt(dist2) / r;
+                        const amt = fall * strength;
+                        const idx = i + j * Nx + k * Nx * Ny;
+                        if (isFill) out[idx] += amt;
+                        else out[idx] -= amt;
+                    }
+                }
+            }
+        }
+    }
 }
 
 // =============================================================================
@@ -307,15 +356,21 @@ function computeDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step) {
 // y-Band gelesen = byte-identisch, ~3× weniger Arbeit. MUSS bit-identisch zur Main.
 function terrainColumnContext(x, z) {
     const surf = terrainMacroSurfaceY(x, z, true);
-    const eroR = state.noise.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
-    let mtnR = 1 - eroR;
-    if (mtnR < 0) mtnR = 0;
-    mtnR *= mtnR;
-    const roughScale = 0.16 + 0.84 * mtnR;
     const base = state.baseHeight || 0;
-    const canyonOpen = clamp01((state.noise.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18);
-    const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
-    const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+    // DAS WILDNIS-GEWICHT der Spalte (Mirror): Rauheit und Höhlen-Hülle wiegen mit ihm; 0 → kein noise3D.
+    const wild = state.erbgut.wildnis;
+    let roughScale = 0;
+    let ceilOffset = -24;
+    if (wild > 0) {
+        const eroR = state.noise.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
+        let mtnR = 1 - eroR;
+        if (mtnR < 0) mtnR = 0;
+        mtnR *= mtnR;
+        roughScale = (0.16 + 0.84 * mtnR) * wild;
+        const canyonOpen = clamp01((state.noise.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18);
+        const waterLevelD = typeof state.waterLevel === "number" ? state.waterLevel : base + 4;
+        ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+    }
     const hydro = state.hydrosphere;
     const hydroActive = !!(hydro && hydro.ready && !state.hydroComputing);
     let hydroCarve = null; // der Fluss-Kanal { P, L, k } (Mirror `_hydrosphereCarveAt`) oder null
@@ -324,29 +379,32 @@ function terrainColumnContext(x, z) {
         hydroCarve = hydrosphereCarveAt(x, z);
         lake = hydrosphereLakeAt(x, z);
     }
-    return { surf, roughScale, base, ceilOffset, hydroActive, hydroCarve, lake };
+    return { surf, wild, roughScale, base, ceilOffset, hydroActive, hydroCarve, lake };
 }
 
 // Die per-VOXEL-Hälfte (y-abhängig, OHNE Edits) — mirror von `_terrainBaseDensityAtCol`.
 function terrainBaseDensityCol(x, y, z, ctx) {
     const surf = ctx.surf;
     let d = surf - y;
-    d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
-    d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
-    const base = ctx.base;
-    const caveFloor = clamp01((y - (base - 28)) / 8);
-    const caveCeil = clamp01((surf + ctx.ceilOffset - y) / 8);
-    const caveEnv = caveFloor * caveCeil;
-    if (caveEnv > 0) {
-        const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
-        const cave = Math.max(0, (ridge - 0.7) / 0.3);
-        d -= cave * caveEnv * 36;
-        const cavern = state.noise.noise3D(x * 0.013, y * 0.018, z * 0.013);
-        const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
-        d -= cavernCarve * caveEnv * 46;
-        const hall = state.noise.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
-        const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
-        d -= hallCarve * caveEnv * 72;
+    // Rauheit und Höhlen sind Wildnis (Mirror): ohne ihr Gewicht kein noise3D.
+    if (ctx.wild > 0) {
+        d += state.noise.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
+        d += state.noise.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
+        const base = ctx.base;
+        const caveFloor = clamp01((y - (base - 28)) / 8);
+        const caveCeil = clamp01((surf + ctx.ceilOffset - y) / 8);
+        const caveEnv = caveFloor * caveCeil * ctx.wild;
+        if (caveEnv > 0) {
+            const ridge = 1 - Math.abs(state.noise.noise3D(x * 0.03, y * 0.034, z * 0.03));
+            const cave = Math.max(0, (ridge - 0.7) / 0.3);
+            d -= cave * caveEnv * 36;
+            const cavern = state.noise.noise3D(x * 0.013, y * 0.018, z * 0.013);
+            const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
+            d -= cavernCarve * caveEnv * 46;
+            const hall = state.noise.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
+            const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
+            d -= hallCarve * caveEnv * 72;
+        }
     }
     if (ctx.hydroActive) {
         // Der Fluss-Kanal (Mirror): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit dem Kanal; das
@@ -578,8 +636,55 @@ function macroSurfaceContribution(x, z, anker) {
     return { massiv, becken, tDist, tFloor, mShape };
 }
 
+// DIE EINE 2D-HÖHE (Mirror von `_terrainMacroSurfaceY`): der Term-Auswerter des Erbguts — der erste Term setzt den
+// Startwert (Wildnis oder Insel), jeder weitere legt sich nach seiner Art darauf. Bit-identisch zum Main.
 function terrainMacroSurfaceY(x, z, includeDetail) {
     if (!state.noise) return state.baseHeight || 0;
+    const T = state.erbgut.terme;
+    const t0 = T[0];
+    let h = t0.art === "wildnis" ? wildnisY(x, z, includeDetail) : erbgutTermY(t0, 0, x, z);
+    for (let i = 1; i < T.length; i++) h = erbgutTermY(T[i], h, x, z);
+    return h;
+}
+
+// Ein Term des Erbguts (Mirror von `AnazhRealm._erbgutTermY`) — die Normalform (Sinus, Tangens) kommt vom Main.
+function erbgutTermY(t, h, x, z) {
+    const base = state.baseHeight || 0;
+    if (t.art === "insel") {
+        const r = Math.hypot(x - t.x, z - t.z);
+        if (r <= t.r) return base + t.plateau + t.kuppel * (t.r - r);
+        const u = (r - t.r) / t.schelf;
+        if (u >= 1) return base + t.grund;
+        return base + t.plateau + (t.grund - t.plateau) * (u * u * (3 - 2 * u));
+    }
+    if (t.art === "rampe") {
+        const dx = x - t.x;
+        const dz = z - t.z;
+        const u = Math.abs(dx * t.ux + dz * t.uz) - t.krone * 0.5;
+        let p = u > 0 ? t.hoehe - u * t.tanW : t.hoehe;
+        if (p <= 0) return h;
+        const w = Math.abs(dz * t.ux - dx * t.uz) - t.breite * 0.5;
+        if (w > 0) p -= w * t.tanB;
+        return p > 0 ? h + p : h;
+    }
+    let q = ((x - t.x0) * t.ex + (z - t.z0) * t.ez) / t.len2;
+    if (q < 0) q = 0;
+    else if (q > 1) q = 1;
+    const d = Math.hypot(x - (t.x0 + t.ex * q), z - (t.z0 + t.ez * q));
+    let g = base + t.grund;
+    const f = Math.abs(q * t.len - t.furtLage) - t.furtBreite * 0.5;
+    const furt = base + t.furtKrone - (f > 0 ? f * t.tanF : 0);
+    if (furt > g) g = furt;
+    const kd = Math.hypot(x - t.kolkX, z - t.kolkZ);
+    if (kd < t.kolkR) g -= t.kolkTiefe * 0.5 * (1 + Math.cos((Math.PI * kd) / t.kolkR));
+    const w = d - t.sohle * 0.5;
+    const b = w > 0 ? g + w * t.tanU : g;
+    return b < h ? b : h;
+}
+
+// DER WILDNIS-TERM (Mirror von `_wildnisY`): unteilbar — Rauschen, Erosion, Makro-Anker, Canyon, Tafelberg, Deckel,
+// Tiefsee, Tarn.
+function wildnisY(x, z, includeDetail) {
     const n = state.noise;
     const base = state.baseHeight || 0;
     const warpX = n.noise2D(x * 0.00026 + 11.3, z * 0.00026 + 4.1) * 70;

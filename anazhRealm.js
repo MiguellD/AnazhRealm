@@ -649,47 +649,9 @@ class AnazhRealm {
                 // Laufzeit-State, nicht im Welt-Save.
                 pendingInvite: null,
             },
-            // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11). Felder
-            // werden jetzt schon gesetzt, damit das Save-Schema zukunftsfest
-            // bleibt; Logik für Sichtbarkeit/Fusion kommt später.
-            worldMeta: {
-                worldId: null,
-                slug: "",
-                creator: "local",
-                visibility: "private",
-                parentWorlds: [],
-                bornAt: 0,
-                // Terrain-Seed der Welt — die EINE Quelle der Welt-Geometrie (SimplexNoise(seed)). Neue Welten
-                // zufällig; die allererste fällt auf "anazh-realm-seed", damit sie ihr Aussehen behält.
-                seed: null,
-                schemaVersion: "8.0-multiworld-v1",
-                // Welt-Beziehungs-Rolle: "solo" (lokal, privat, Default) | "host" (für Multi-User erschaffen) |
-                // "guest" (gejoint, Kopie). host/guest starten den Multi-User-Sync automatisch beim Init.
-                // Alte Saves mit chunkDeltas werden ignoriert (Welt-Mods leben im Voxel-Feld).
-                role: "solo",
-                // Ring 11.5: bei "guest" — wohin verbinden wir uns initial?
-                // null bei solo/host. Wird beim Join-Pfad gefüllt mit
-                // {url, roomId} aus dem Einladungs-Code.
-                hostInfo: null,
-                // Welt-Beziehungs-Modus (je Welt persistiert): "frieden" (Default: kein HP/Tod/Stamina-Kosten) |
-                // "pfad" (HP/Stamina/Tod aktiv; Tod → Anker-Rückkehr + Welt-Trauer sorrow+0.3, awe+0.2) |
-                // "schöpfer" (kein Schaden, voller Zugang).
-                gameMode: "frieden",
-                // Gast-Rechte einer verlinkten Welt: "frieden" (Default: sehen/gehen/sprechen) | "pfad" (bauen/
-                // ernten unter Modus-Regeln) | "mitschöpfer" (volle Rechte). Reist im world-snapshot zum Gast.
-                guestRights: "frieden",
-                // Hausrecht: peerIds = Session-Bann (neue Sitzung → neue peerId → darf wieder rein);
-                // vibePassKeys = dauerhafter Bann (vibePass-pubKey, hex). JSON-flache Arrays → verlustfreier
-                // Snapshot-Round-Trip.
-                banList: { peerIds: [], vibePassKeys: [] },
-                // Signierte Welt-Adresse (via setPortalAddress in ein Portal gelegt → Bestätigungs-Karte beim
-                // Durchgehen); null bei solo/lokal. { worldId, roomId, broker, label, authorPubKey, sig, signedAt },
-                // must-ignore-konform.
-                worldAddress: null,
-                // Regions-Archipel, Default AUS (eine Welt = ein Raum). true → Mesh-Raum wird worldId:regionKey,
-                // Bubbles je REGION_CHUNKS × 43.2 m (345.6 m Kante); Grenzwechsel = leave/join mit Hysterese.
-                regionsActive: false,
-            },
+            // Welt-Identität (Ring 8+, siehe docs/state-of-realm.md §11): die EINE Vorlage (`_weltMetaVorlage`), die auch
+            // jede geladene Welt unterlegt (`_weltMetaWechsel`).
+            worldMeta: AnazhRealm._weltMetaVorlage(),
             // Welt-Journal: geordnete Erinnerungen (Genesis, erstes Wetter, erste Kreatur, starke Programme,
             // Emotions-Gipfel). Im Save persistiert; der LLM-System-Prompt blendet einen Auszug ein.
             worldJournal: {
@@ -1540,12 +1502,17 @@ class AnazhRealm {
     // Knoten, der keiner ist (ein Text — die KI schreibt "near_water" ohne Klammern —, eine Zahl, ein Objekt, []), ist ein
     // ungültiger Ort und scheitert ebenso benannt (bis 07.10. wurde er still der Ursprung). Jeder aufgelöste Knoten merkt
     // sich seinen Ort im Kontext (`ctx.orte`): der Absender schickt ihn mit (V-k6, `_dslMitOrten`).
+    // DAS FELD HAT KEINEN ORT, WO DIE WILDNIS NICHT TRÄGT: wählt das Feld selbst (`_feldHandelt` — der Nexus und seine
+    // Regeln) einen Ort, den die Wildnis nicht trägt (`_wildnisTraegt`), gibt es ihn nicht — jeder Wurf daran (Tier, Baum,
+    // Werk, Insel, UFO, Dorf, Tempel, Wasserfall, Bauplan, Fraktal, Kugel) bricht hier benannt ab; Akte setzen überall.
+    // Bis 10.10. fragte nur die Tier-Geburt: auf einer Welt ohne Wildnis-Term warfen 18 von 20 Nexus-Würfen (ein Dorf aus
+    // 33 Bauten, Tempel, Wasserfall, Fraktal, Insel, UFO, Baum, Werk) — die Linse der Feld-Würfe nennt jeden beim Namen.
     dslEvalPos(node, ctx) {
-        if (node == null) return this._defaultSpawnPos();
         let op = null;
         let pos = null;
         let grund = null;
-        if (!Array.isArray(node)) grund = `„${this._dslZeig(node)}“ ist kein Ort-Knoten`;
+        if (node == null) pos = this._defaultSpawnPos();
+        else if (!Array.isArray(node)) grund = `„${this._dslZeig(node)}“ ist kein Ort-Knoten`;
         else if (node.length === 0) grund = "leerer Ort-Knoten";
         else {
             op = String(node[0]);
@@ -1561,6 +1528,8 @@ class AnazhRealm {
                     grund = `${op} fand keinen Ort`;
             }
         }
+        if (!grund && this._feldHandelt(ctx) && !this._wildnisTraegt(pos.x, pos.z))
+            grund = `die Wildnis trägt (${Math.round(pos.x)}|${Math.round(pos.z)}) nicht — das Feld wirft hier nichts`;
         if (grund) {
             const eintrag = { event: "invalid_position", op, grund, program_id: ctx.programId };
             ctx.log.push(eintrag);
@@ -1568,6 +1537,7 @@ class AnazhRealm {
             fehler.dslKeinOrt.eintrag = eintrag;
             throw fehler;
         }
+        if (node == null) return pos;
         if (ctx.orte) {
             const liste = ctx.orte.get(node);
             if (liste) liste.push(pos);
@@ -2101,7 +2071,7 @@ class AnazhRealm {
                 // (`_kreaturGeburtsOrt` — der gewünschte Ort, wenn er es ist; sonst ein Ort nach dem Gesetz). Vorher setzte
                 // `spawn_creature at_player` es 4–7 m vor den Spieler. Der Mensch (und wer in seinem Namen spricht) ruft
                 // Leben vor sich — das ist sein Akt.
-                const autonom = ctx.source === "nexus" || ctx.source === "rule:nexus";
+                const autonom = this._feldHandelt(ctx);
                 let spawned = 0;
                 let lastBorn = null;
                 for (let i = 0; i < n; i++) {
@@ -2117,6 +2087,7 @@ class AnazhRealm {
                     let sy = pos.y;
                     if (autonom) {
                         const ort = this._kreaturGeburtsOrt(ctx.rng, 80, { x: sx, z: sz });
+                        if (!ort) continue; // die Wildnis trägt den Ort nicht: keine autonome Geburt
                         if (ort.x !== sx || ort.z !== sz) {
                             sx = ort.x;
                             sz = ort.z;
@@ -2278,7 +2249,7 @@ class AnazhRealm {
                     position: pos,
                     seed: s,
                     nHAusGesetz: true,
-                    autonomous: ctx.source === "nexus",
+                    autonomous: this._feldHandelt(ctx),
                     verlangt: ctx.source,
                     blick,
                 });
@@ -2300,7 +2271,7 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture(name, pos, { seed: s, autonomous: ctx.source === "nexus" });
+                const entry = this.spawnArchitecture(name, pos, { seed: s, autonomous: this._feldHandelt(ctx) });
                 ctx.log.push({ event: "spawned_temple", id: entry ? entry.id : null, pos, seed: s });
             },
             spawn_waterfall: ([positionNode, seed], ctx) => {
@@ -2311,7 +2282,7 @@ class AnazhRealm {
                 }
                 ctx.budget.spawnsLeft--;
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
-                const entry = this.spawnArchitecture("waterfall", pos, { seed: s, autonomous: ctx.source === "nexus" });
+                const entry = this.spawnArchitecture("waterfall", pos, { seed: s, autonomous: this._feldHandelt(ctx) });
                 ctx.log.push({ event: "spawned_waterfall", id: entry ? entry.id : null, pos, seed: s });
             },
             // Generischer Bauplan-Spawn für jeden Namen (built-in oder eigen), z. B. ["spawn_blueprint",
@@ -2345,7 +2316,7 @@ class AnazhRealm {
                 const s = Number.isFinite(Number(seed)) ? Number(seed) >>> 0 : Math.floor(ctx.rng() * 0xffffffff);
                 // Autonom (Nexus) gespawnte Baupläne unterliegen dem _capNexusStructures-Cap (kein
                 // unbeschränktes Horten); Mensch-/Remote-Bauten bleiben ungedeckelt (gewollt + permanent).
-                const opts = { seed: s, autonomous: ctx.source === "nexus" };
+                const opts = { seed: s, autonomous: this._feldHandelt(ctx) };
                 if (sharedId) opts.id = sharedId;
                 if (typeof drehung === "number" && Number.isFinite(drehung)) opts.rotationY = drehung;
                 // PRÄGUNG-WELT — der gereiste Stempel geht ungestrippt an den EINEN
@@ -2830,7 +2801,7 @@ class AnazhRealm {
                     this.spawnArchitecture(
                         t,
                         { x: cx, y: pos.y, z: cz },
-                        { seed: childSeed, scale, precise: true, autonomous: ctx.source === "nexus" }
+                        { seed: childSeed, scale, precise: true, autonomous: this._feldHandelt(ctx) }
                     );
                     if (level >= d) return;
                     const childRadius = 14 * scale;
@@ -5477,9 +5448,10 @@ class AnazhRealm {
     }
 
     // Join-Flow: kurzlebige WS, join + world-request, auf world-snapshot warten; die Welt unter der
-    // host-worldId mit role="guest" + hostInfo speichern, aktivieren, Reload.
+    // host-worldId mit role="guest" + hostInfo durch die Tür `_weltBetreten` ablegen (Sichern, Probe, Sperre, Reload);
+    // `zeugnisA` hält die alte Welt vorher fest (das Adress-Portal).
     // Liefert Promise<{worldId} | null>.
-    async joinWorldFromCode(code, { slugHint = null, timeoutMs = 10000 } = {}) {
+    async joinWorldFromCode(code, { slugHint = null, timeoutMs = 10000, zeugnisA = null } = {}) {
         const parsed = this.parseInvitationCode(code);
         if (!parsed) {
             this.log("Einladungs-Code ungültig", "WARN");
@@ -5524,7 +5496,7 @@ class AnazhRealm {
                 setTimeout(() => {
                     if (done) return;
                     try {
-                        ws.send(JSON.stringify({ type: "world-request" }));
+                        ws.send(JSON.stringify({ type: "world-request", erbgut: AnazhRealm.ERBGUT_PROTOKOLL }));
                     } catch {
                         /* defensive */
                     }
@@ -5546,7 +5518,7 @@ class AnazhRealm {
                     roomId: parsed.roomId,
                     peerId: typeof msg.peerId === "string" ? msg.peerId : null,
                 };
-                const worldId = this._importGuestWorld(msg.state, hostInfo, slugHint);
+                const worldId = this._importGuestWorld(msg.state, hostInfo, slugHint, { neuLaden: true, zeugnisA });
                 finish(worldId ? { ok: true, worldId } : { ok: false, reason: "import_failed" });
             });
             ws.addEventListener("error", () => {
@@ -5557,13 +5529,22 @@ class AnazhRealm {
         });
     }
 
-    // Ring 11.5: Welt-Snapshot vom Host → neue lokale Welt mit role="guest".
-    // worldId wird vom Host übernommen, damit beide Spieler standardmäßig
-    // im selben P2P-Raum landen (Raum = worldId, V2.1).
-    _importGuestWorld(snapshot, hostInfo, slugHint) {
+    // Ring 11.5: Welt-Snapshot vom Host → neue lokale Welt mit role="guest". worldId wird vom Host übernommen, damit beide
+    // Spieler standardmäßig im selben P2P-Raum landen (Raum = worldId, V2.1); ohne Host-Id die EINE Id-Regel
+    // (`_neueWeltId`). Was der Gast Eigenes trägt — der eindeutige slug, role, hostInfo, schemaVersion und die
+    // Auto-Verbindung zum Host —, sind Parameter der EINEN Tür `_weltBetreten` (Sichern, Ablage mit Probe, Sperre). Bis
+    // 10.10. schrieb diese Methode Platz, Index und Zeiger selbst (eigene Id-Regel `guest-<Zeit>`, keine Probe) — eine
+    // zweite Tür neben der ersten. `opts.neuLaden` (Einladung, Adress-Portal: true), `opts.zeugnisA` (das Zeugnis der
+    // alten Welt). → worldId | null
+    _importGuestWorld(snapshot, hostInfo, slugHint, { neuLaden = false, zeugnisA = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return null;
-        const meta = snapshot.worldMeta || {};
-        const worldId = (meta.worldId && String(meta.worldId)) || `guest-${Date.now()}`;
+        const erbgutNein = AnazhRealm._erbgutEinlass(snapshot);
+        if (erbgutNein) {
+            this.log(`Gast-Welt abgelehnt: ${erbgutNein}`, "ERROR");
+            return null;
+        }
+        const meta = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};
+        const worldId = (meta.worldId && String(meta.worldId)) || AnazhRealm._neueWeltId();
         const baseSlug = (slugHint && String(slugHint).trim()) || meta.slug || "geladen";
         // Slug-Kollisions-Resolution (analog Ring 9 importWorldBeside)
         let slug =
@@ -5579,45 +5560,22 @@ class AnazhRealm {
         while (slugs.has(slug)) {
             slug = `${originalSlug}-${suffix++}`;
         }
-        // Deep clone, role + hostInfo setzen
-        let guestSnap;
-        try {
-            guestSnap = JSON.parse(JSON.stringify(snapshot));
-        } catch (err) {
-            this.log(`Guest-Welt-Clone fehlgeschlagen: ${err.message}`, "ERROR");
+        const h = hostInfo || {};
+        const r = this._weltBetreten(
+            snapshot,
+            {
+                worldId,
+                slug,
+                role: "guest",
+                hostInfo: { url: h.url || null, roomId: h.roomId || worldId, peerId: h.peerId || null },
+                schemaVersion: meta.schemaVersion || "11.5-multiuser-v1",
+            },
+            { neuLaden, zeugnisA, p2pAuto: h.url || AnazhRealm.P2P_DEFAULT_WS_URL }
+        );
+        if (!r.ok) {
+            this.log(`Guest-Welt konnte nicht abgelegt werden: ${r.reason}`, "ERROR");
             return null;
         }
-        if (!guestSnap.worldMeta) guestSnap.worldMeta = {};
-        guestSnap.worldMeta.worldId = worldId;
-        guestSnap.worldMeta.slug = slug;
-        guestSnap.worldMeta.role = "guest";
-        guestSnap.worldMeta.hostInfo = {
-            url: hostInfo.url || null,
-            roomId: hostInfo.roomId || worldId,
-            peerId: hostInfo.peerId || null,
-        };
-        guestSnap.worldMeta.schemaVersion = guestSnap.worldMeta.schemaVersion || "11.5-multiuser-v1";
-        try {
-            localStorage.setItem(this.worldStorageKey(worldId), JSON.stringify(guestSnap));
-        } catch (err) {
-            this.log(`Guest-Welt konnte nicht geschrieben werden: ${err.message}`, "ERROR");
-            return null;
-        }
-        this.worldsIndexUpsert({
-            worldId,
-            slug,
-            bornAt: meta.bornAt || Date.now(),
-            lastPlayed: Date.now(),
-        });
-        // P2P-Settings für Auto-Connect nach Reload schreiben
-        try {
-            localStorage.setItem("anazh.p2p.enabled", "true");
-            localStorage.setItem("anazh.p2p.url", hostInfo.url || AnazhRealm.P2P_DEFAULT_WS_URL);
-            localStorage.setItem("anazh.p2p.room", ""); // default = worldId = sync room
-        } catch {
-            /* defensive */
-        }
-        this.activeWorldSet(worldId);
         this.log(`Guest-Welt importiert: ${slug} (${worldId.slice(0, 8)}…)`, "INFO");
         return worldId;
     }
@@ -6042,7 +6000,7 @@ class AnazhRealm {
         // W7 Phase 2 — Welt-Transfer läuft kanal-exklusiv (kann nicht über
         // den WS injiziert werden, weil hier behandelt statt re-dispatcht).
         if (msg.type === "world-pull") {
-            this._p2pHandleWorldPull(peerId);
+            this._p2pHandleWorldPull(peerId, msg);
             return;
         }
         if (msg.type === "world-chunk") {
@@ -6155,7 +6113,7 @@ class AnazhRealm {
         if (!rtc || !rtc.open) return { ok: false, reason: "no_channel" };
         p2p.pendingWorldSnapshot = true;
         p2p.pendingPullFrom = hostPeerId;
-        const sent = this._p2pSendChannelTo(hostPeerId, { type: "world-pull" });
+        const sent = this._p2pSendChannelTo(hostPeerId, { type: "world-pull", erbgut: AnazhRealm.ERBGUT_PROTOKOLL });
         if (!sent) {
             p2p.pendingWorldSnapshot = false;
             p2p.pendingPullFrom = null;
@@ -6169,13 +6127,19 @@ class AnazhRealm {
     // W7 Phase 2 — auf einen world-pull antworten: den eigenen Snapshot in
     // P2P_WORLD_CHUNK_SIZE-Stücke zerlegen und über den DataChannel senden.
     // Backpressure über channel.bufferedAmount fängt grosse Welten ab.
-    async _p2pHandleWorldPull(peerId) {
+    async _p2pHandleWorldPull(peerId, msg) {
         const p2p = this.state.p2p;
         const rtc = p2p.rtcPeers.get(peerId);
         if (!rtc || !rtc.open || !rtc.channel) return;
         // Nur eine echte (geteilte) Welt herausgeben.
         const role = p2p.role;
         if (role !== "host" && role !== "guest") return;
+        // Nur zu einem Leser ihres Erbguts (`_erbgutTeilbar`).
+        const erbgutNein = AnazhRealm._erbgutTeilbar(this.state.worldMeta, msg);
+        if (erbgutNein) {
+            this.log(`Welt-Pull von ${peerId.slice(0, 12)}… verweigert: ${erbgutNein}`, "WARN");
+            return;
+        }
         // Rate-Limit: ein voller Snapshot ist teuer — ein Peer darf höchstens alle P2P_PULL_COOLDOWN_MS
         // einen Pull auslösen (sonst world-pull-Spam als DoS). Sentinel "noch nie bedient" = -Infinity,
         // NICHT 0 — sonst fiele ein Pull in den ersten COOLDOWN-ms der Seite fälschlich weg.
@@ -6261,7 +6225,7 @@ class AnazhRealm {
         }
         this.log(`Welt-Transfer komplett (${total} Stücke) — übernehme`, "INFO");
         p2p._lastXferProgress = null;
-        this._p2pApplyWorldSnapshot(peerId, parsed, { reload: true });
+        this._p2pApplyWorldSnapshot(peerId, parsed);
     }
 
     // ── Mesh-Welt-Verteilung: eine vendorte Welt reist p2p ──
@@ -7444,6 +7408,11 @@ class AnazhRealm {
             this.log(`Welt-Snapshot verweigert — Peer ${requesterId.slice(0, 8)}… gebannt`, "WARN");
             return;
         }
+        const erbgutNein = AnazhRealm._erbgutTeilbar(this.state.worldMeta, msg);
+        if (erbgutNein) {
+            this.log(`Welt-Snapshot verweigert — Peer ${requesterId.slice(0, 8)}…: ${erbgutNein}`, "WARN");
+            return;
+        }
         try {
             const snapshot = this.buildStateSnapshot();
             this._p2pSignal({ type: "world-snapshot", to: requesterId, state: snapshot });
@@ -7467,49 +7436,34 @@ class AnazhRealm {
         this._p2pApplyWorldSnapshot(senderId, msg.state);
     }
 
-    // Empfangenen Welt-Snapshot übernehmen: loadState, worldMeta.role = "guest" + hostInfo, saveState.
-    // Geteilt vom WS-`world-snapshot`-Pfad (reload=false — der UI-Join reloadet selbst) und vom
-    // Mesh-Resync (reload=true — "Welt neu holen" baut sauber neu auf).
-    _p2pApplyWorldSnapshot(senderId, state, { reload = false } = {}) {
+    // Empfangenen Welt-Snapshot übernehmen: die Welt des Hosts mit worldMeta.role = "guest" + hostInfo betritt die Seite
+    // durch DIE TÜR `_weltBetreten` (Identität, Ablage mit Probe, Sperre, Reload) — der WS-`world-snapshot` eines laufenden
+    // Resyncs und der Mesh-Resync world-pull („Welt neu holen"). DER SPEICHER TRÄGT DIE WELT DES HOSTS, NIE DIE MISCHUNG DER
+    // SEITE: bis 10.10. lud die Seite sie in sich und schrieb sie per saveState — die Tiere der alten Welt und (mit dem
+    // Spread des Restores) ihr Erbgut, ihr Anker, ihre Edits (gate:weltgrenze Weg „weltpull": 50 Felder der alten Welt im
+    // Speicher der Host-Welt); ein Snapshot ohne worldId landete roh auf dem Platz der alten Welt.
+    _p2pApplyWorldSnapshot(senderId, state) {
         const p2p = this.state.p2p;
-        try {
-            this.loadState(state);
-            if (this.state.worldMeta) {
-                this.state.worldMeta.role = "guest";
-                this.state.worldMeta.hostInfo = {
-                    url: p2p.url,
-                    roomId: p2p.room,
-                    peerId: senderId,
-                };
-            }
-            p2p.role = "guest";
+        const erbgutNein = AnazhRealm._erbgutEinlass(state);
+        if (erbgutNein) {
+            this.log(`Welt-Snapshot abgelehnt: ${erbgutNein}`, "ERROR");
             p2p.pendingWorldSnapshot = false;
-            try {
-                this.saveState();
-            } catch (err) {
-                this.log(`Save nach Welt-Snapshot fehlgeschlagen: ${err.message}`, "WARN");
-            }
-            // Aktiv-Welt-Zeiger auf die übernommene Welt setzen — sonst landet ein Reload in der ALTEN Welt
-            // des Spielers statt in der Host-Welt.
-            if (this.state.worldMeta && this.state.worldMeta.worldId && typeof this.activeWorldSet === "function") {
-                try {
-                    this.activeWorldSet(this.state.worldMeta.worldId);
-                } catch (err) {
-                    this.log(`Aktiv-Welt-Zeiger nach Welt-Snapshot fehlgeschlagen: ${err.message}`, "WARN");
-                }
-            }
-            this.log(`Welt-Snapshot empfangen + geladen, jetzt Guest in ${(p2p.room || "").slice(0, 8)}…`, "INFO");
-            this.p2pUpdateStatus();
-            this.updateWorldInfo();
-            if (reload && !p2p._testNoReload && typeof window !== "undefined" && window.location) {
-                window.location.reload();
-            }
-            return { ok: true };
-        } catch (err) {
-            this.log(`Welt-Snapshot konnte nicht geladen werden: ${err.message}`, "ERROR");
-            p2p.pendingWorldSnapshot = false;
-            return { ok: false, reason: err.message };
+            return { ok: false, reason: erbgutNein };
         }
+        p2p.pendingWorldSnapshot = false;
+        const r = this._weltBetreten(
+            state,
+            { role: "guest", hostInfo: { url: p2p.url, roomId: p2p.room, peerId: senderId } },
+            { neuLaden: !p2p._testNoReload }
+        );
+        if (!r.ok) {
+            this.log(`Welt-Snapshot konnte nicht übernommen werden: ${r.reason}`, "ERROR");
+            return r;
+        }
+        p2p.role = "guest";
+        this.log(`Welt-Snapshot empfangen + abgelegt, jetzt Guest in ${(p2p.room || "").slice(0, 8)}…`, "INFO");
+        this.p2pUpdateStatus();
+        return r;
     }
 
     _p2pEnsurePeerEntry(peerId) {
@@ -12952,19 +12906,93 @@ class AnazhRealm {
     }
 
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
+    // DIE IDENTITÄT EINER WELT: eine neue worldId (UUID, ohne crypto ein Zufalls-Stempel). Leser: der Boot einer frischen
+    // Welt, die Geburt, die Migration, daneben legen, die Fusion und die Tür `_weltBetreten` (eine Welt ohne Id bekommt
+    // ihre eigene, nie den Platz der Welt davor).
+    static _neueWeltId() {
+        try {
+            if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+            return "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+        } catch {
+            return "w_" + Math.random().toString(36).slice(2, 10);
+        }
+    }
+
+    // DIE VORLAGE des worldMeta: der Zustand der Seite vor jeder Welt (Konstruktor) und der Grund jeder geladenen
+    // (`_weltMetaWechsel`). Felder werden schon gesetzt, damit das Save-Schema zukunftsfest bleibt.
+    static _weltMetaVorlage() {
+        return {
+            worldId: null,
+            slug: "",
+            creator: "local",
+            visibility: "private",
+            parentWorlds: [],
+            bornAt: 0,
+            // Terrain-Seed der Welt — die EINE Quelle der Welt-Geometrie (SimplexNoise(seed)). Neue Welten
+            // zufällig; die allererste fällt auf "anazh-realm-seed", damit sie ihr Aussehen behält.
+            seed: null,
+            schemaVersion: "8.0-multiworld-v1",
+            // Welt-Beziehungs-Rolle: "solo" (lokal, privat, Default) | "host" (für Multi-User erschaffen) |
+            // "guest" (gejoint, Kopie). host/guest starten den Multi-User-Sync automatisch beim Init.
+            // Alte Saves mit chunkDeltas werden ignoriert (Welt-Mods leben im Voxel-Feld).
+            role: "solo",
+            // Ring 11.5: bei "guest" — wohin verbinden wir uns initial?
+            // null bei solo/host. Wird beim Join-Pfad gefüllt mit
+            // {url, roomId} aus dem Einladungs-Code.
+            hostInfo: null,
+            // Welt-Beziehungs-Modus (je Welt persistiert): "frieden" (Default: kein HP/Tod/Stamina-Kosten) |
+            // "pfad" (HP/Stamina/Tod aktiv; Tod → Anker-Rückkehr + Welt-Trauer sorrow+0.3, awe+0.2) |
+            // "schöpfer" (kein Schaden, voller Zugang).
+            gameMode: "frieden",
+            // Gast-Rechte einer verlinkten Welt: "frieden" (Default: sehen/gehen/sprechen) | "pfad" (bauen/
+            // ernten unter Modus-Regeln) | "mitschöpfer" (volle Rechte). Reist im world-snapshot zum Gast.
+            guestRights: "frieden",
+            // Hausrecht: peerIds = Session-Bann (neue Sitzung → neue peerId → darf wieder rein);
+            // vibePassKeys = dauerhafter Bann (vibePass-pubKey, hex). JSON-flache Arrays → verlustfreier
+            // Snapshot-Round-Trip.
+            banList: { peerIds: [], vibePassKeys: [] },
+            // Signierte Welt-Adresse (via setPortalAddress in ein Portal gelegt → Bestätigungs-Karte beim
+            // Durchgehen); null bei solo/lokal. { worldId, roomId, broker, label, authorPubKey, sig, signedAt },
+            // must-ignore-konform.
+            worldAddress: null,
+            // Regions-Archipel, Default AUS (eine Welt = ein Raum). true → Mesh-Raum wird worldId:regionKey,
+            // Bubbles je REGION_CHUNKS × 43.2 m (345.6 m Kante); Grenzwechsel = leave/join mit Hysterese.
+            regionsActive: false,
+        };
+    }
+
+    // DAS HEIL JEDER WELT (deterministisch, ohne Zufall): ohne Seed ist sie die Eingangs-Welt (identisch für alle —
+    // brandneuer Spieler, Legacy-Migration, ein Save ohne Seed; Zufalls-Seeds nur per ausdrücklichem Akt, createNewWorld →
+    // _generateFreshWorldMeta), und der Voxel-Boden ist die kanonische, irreversible Form (auch ein explizites
+    // `voxelTerrain:false`). Leser: ensureWorldMeta (Boot) und der Restore jeder geladenen Welt.
+    static _weltMetaHeil(m) {
+        if (typeof m.seed !== "string" || m.seed.length === 0) m.seed = "anazh-realm-seed";
+        m.voxelTerrain = true;
+    }
+
+    // DIE WELTGRENZE (Gegenprüfung Runde 2, 10.10.): eine geladene Welt ERSETZT das worldMeta der Seite — die Vorlage,
+    // darüber ihr eigenes. Aus der Welt davor reist nur, was `AnazhRealm.WELT_GRENZE.platz` beim Namen nennt (worldId,
+    // slug, bornAt), und nur in die Lücken der geladenen — der Speicher-Platz, auf dem sie liegt: beim Boot der Platz der
+    // aktiven Welt (ein Save ohne worldId ist die Welt DIESES Platzes; ein migrierter Legacy-Save trägt nur die worldId,
+    // ensureWorldMeta heilte slug und bornAt). Eine Welt, die durch eine Tür kommt, trägt ihre Id schon (`_weltBetreten`)
+    // — sie landet nie auf dem Platz der Welt davor. Bis 10.10. spreizte der Restore die
+    // geladene Welt ÜBER die alte — jedes Feld, das sie nicht trug, blieb das der alten: Erbgut, Anker, Edits, Dorf-Zellen,
+    // Ring- und Vorschau-Stempel, Saat, Rolle, Bann-Liste, Adresse, Region, Rechte (gate:weltgrenze, auf 4564852c nach dem
+    // Laden 29, nach dem Welt-Tor „Ersetzen" 74, nach dem world-pull 50 Felder der alten Welt). Leser: der Restore jedes
+    // Ladens (`_loadStateRestoreWorldMeta`: Boot, „lade zustand") und die Vorlade des Boots (mit dem Platz der aktiven Welt).
+    _weltMetaWechsel(eingang, alt = this.state.worldMeta || {}) {
+        const neu = Object.assign(AnazhRealm._weltMetaVorlage(), eingang);
+        for (const k of AnazhRealm.WELT_GRENZE.platz)
+            if (eingang[k] === undefined && alt[k] !== undefined) neu[k] = alt[k];
+        return neu;
+    }
+
     ensureWorldMeta() {
         const m = this.state.worldMeta;
         let fresh = false;
         if (!m.worldId) {
             fresh = true;
-            try {
-                m.worldId =
-                    typeof crypto !== "undefined" && crypto.randomUUID
-                        ? crypto.randomUUID()
-                        : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-            } catch {
-                m.worldId = "w_" + Math.random().toString(36).slice(2, 10);
-            }
+            m.worldId = AnazhRealm._neueWeltId();
         }
         if (!m.slug) {
             const adjectives = ["still", "weite", "klare", "dunkle", "warme", "leise", "wache"];
@@ -12974,28 +13002,20 @@ class AnazhRealm {
             m.slug = `${a}-${n}`;
         }
         if (!m.bornAt) m.bornAt = Date.now();
-        // Seed-Strategie: ohne Seed nur (a) brandneuer Spieler ohne localStorage oder (b) Legacy-Migration
-        // — beide bekommen die feste Eingangs-Welt (identisch für alle). Zufalls-Seeds nur per
-        // ausdrücklichem Akt (createNewWorld → _generateFreshWorldMeta).
-        if (typeof m.seed !== "string" || m.seed.length === 0) {
-            m.seed = "anazh-realm-seed";
-        }
         // fresh (kein worldId aus einem Save) → heutige Genese-Version: alle neuen Spieler teilen Seed UND
         // genVersion; eine GELADENE Welt ohne Feld bleibt Legacy (fehlend → 1, _genVersion).
         // Stufen: 1 Legacy · 2 Feuchte · 3 Makro-Geographie · 4 prozedurale Baum-Baupläne · 5 Skeleton-
         // Grammar (SPECIES_GRAMMAR) · 6 Mesh-Merge · 7 Tube-Geometrie/Foliage-Cards/Wind ·
         // 8 Palette/Tag-Vektoren/Understory · 9 baum_karst + Busch-Baupläne.
         if (fresh && !Number.isFinite(m.genVersion)) m.genVersion = 9;
-        // Der Voxel-Boden ist die kanonische, irreversible Form: jede Welt (auch explizit
-        // `voxelTerrain:false`) wird voxel-basiert. Journal-Eintrag nur bei `!fresh` (geladene Welt
-        // verdichtet sich); die frische Welt schreibt nur „Ich erwache als <slug>".
-        if (m.voxelTerrain !== true) {
-            m.voxelTerrain = true;
-            if (!fresh && typeof this.journalAppend === "function") {
-                this.journalAppend("genesis", "Die Welt verdichtet sich zu Voxel-Boden.", {
-                    worldId: m.worldId,
-                });
-            }
+        // Seed und Voxel-Boden heilt das EINE Heil jeder Welt (`_weltMetaHeil`, auch jede geladene); Journal-Eintrag nur
+        // bei `!fresh` (geladene Welt verdichtet sich), die frische Welt schreibt nur „Ich erwache als <slug>".
+        const warVoxel = m.voxelTerrain === true;
+        AnazhRealm._weltMetaHeil(m);
+        if (!warVoxel && !fresh && typeof this.journalAppend === "function") {
+            this.journalAppend("genesis", "Die Welt verdichtet sich zu Voxel-Boden.", {
+                worldId: m.worldId,
+            });
         }
         if (fresh) {
             this.journalAppend("genesis", `Ich erwache als ${m.slug}.`, { worldId: m.worldId });
@@ -13095,29 +13115,79 @@ class AnazhRealm {
 
     // Liest die worldMeta der aktiven Welt AUS DEM SAVE ohne vollen loadState() — muss in init() vor
     // ensureWorldMeta laufen, sonst feuert der Frisch-Welt-Pfad (UUID + Genesis-Eintrag) für eine
-    // existierende Welt. Rein lesend.
+    // existierende Welt. Rein lesend. DER PLATZ IST DIE IDENTITÄT: liegt auf dem Platz der aktiven Welt ein Save ohne
+    // worldId oder ohne worldMeta (ein Legacy-Save, ein Bruchstück, abgelegt vor der Tür `_weltBetreten`), ist er die Welt
+    // dieses Platzes. Sie fragt DIESELBE Rettungs-Kette wie loadState (`_weltRettungsKette`: Platz → .bak → IndexedDB) —
+    // bis 10.10. las sie nur den Platz, und ensureWorldMeta vergab einer Welt, die korrupt mit gültigem .bak oder nur in
+    // IndexedDB lag, eine neue Id samt Aktiv-Zeiger, bevor loadState retten konnte. Findet die Kette nichts, merkt sie den
+    // Befund (`_bootLeer`): die frische Welt erwacht LAUT (init).
     _preloadActiveWorldMeta() {
-        const active = this.activeWorldGet();
-        if (!active) {
-            // Vielleicht hat der User einen Legacy-Save → erst Migration
-            // versuchen, dann erneut Pre-Load.
-            const migrated = this._migrateLegacySingleWorld();
-            if (!migrated) return false;
+        this._bootLeer = null;
+        if (!this.activeWorldGet() && !this._migrateLegacySingleWorld()) {
+            this._bootLeer = { id: null, befund: ["kein Aktiv-Zeiger", "kein Legacy-Save"] };
+            return false;
         }
         const id = this.activeWorldGet();
-        if (!id) return false;
-        try {
-            const raw = localStorage.getItem(this.worldStorageKey(id));
-            if (!raw) return false;
-            const parsed = JSON.parse(raw);
-            if (parsed && parsed.worldMeta && typeof parsed.worldMeta === "object") {
-                this.state.worldMeta = { ...this.state.worldMeta, ...parsed.worldMeta };
-                return true;
-            }
-        } catch (err) {
-            this.log(`Welt-Vorlade fehlgeschlagen: ${err.message}`, "WARN");
+        const fund = this._weltRettungsKette(id, this._idbVorlage(id));
+        if (!fund.state) {
+            this._bootLeer = { id, befund: fund.befund };
+            return false;
         }
-        return false;
+        const wm = fund.state.worldMeta && typeof fund.state.worldMeta === "object" ? fund.state.worldMeta : {};
+        this.state.worldMeta = this._weltMetaWechsel(wm, { ...this.state.worldMeta, worldId: id });
+        return true;
+    }
+
+    // DIE RETTUNGS-KETTE DES SPEICHERS (EINE, feste Reihenfolge), Leser: die Vorlade des Boots und loadState. Für die Welt
+    // `id`: (1) der Platz; ist er lesbar, gewinnt IndexedDB nur, wenn er nachweislich frischer ist (saveState stempelt
+    // beide, der Index trägt lastPlayed — wie bisher); (2) fehlt der Platz oder ist er korrupt, der .bak (ein Stand zurück,
+    // die Rotation in saveState); (3) sonst IndexedDB. `idb` = {state, at} des Boot-Vorlaufs oder null. Liefert {state,
+    // quelle, befund} — state null nur, wenn alle drei leer oder unlesbar sind, der Befund nennt jedes Glied.
+    _weltRettungsKette(id, idb) {
+        const befund = [];
+        const lies = (roh, name) => {
+            if (roh == null) {
+                befund.push(`${name} leer`);
+                return null;
+            }
+            try {
+                const s = JSON.parse(roh);
+                if (s && typeof s === "object") return s;
+                befund.push(`${name} unlesbar`);
+            } catch (e) {
+                befund.push(`${name} korrupt (${e.message})`);
+            }
+            return null;
+        };
+        let ls = null;
+        let bak = null;
+        try {
+            ls = localStorage.getItem(this.worldStorageKey(id));
+            bak = localStorage.getItem(this.worldStorageKey(id) + ".bak");
+        } catch (e) {
+            befund.push(`localStorage nicht lesbar (${e.message})`);
+        }
+        const platz = lies(ls, "Platz");
+        if (platz) {
+            const eintrag = this.worldsIndexLoad().find((w) => w && w.worldId === id);
+            const lsAt = eintrag && Number.isFinite(eintrag.lastPlayed) ? eintrag.lastPlayed : 0;
+            // IDB gewinnt bei Gleichstand NICHT (saveState schreibt beide im selben Zug; kleiner Takt-Skew soll den
+            // Spiegel nicht entthronen) — nur ECHT frischer.
+            if (idb && idb.state && idb.at > lsAt + 1500)
+                return { state: idb.state, quelle: "IndexedDB (frischer als der Platz)", befund };
+            return { state: platz, quelle: "Platz", befund };
+        }
+        const gerettet = lies(bak, ".bak");
+        if (gerettet) return { state: gerettet, quelle: ".bak (ein Stand zurück)", befund };
+        if (idb && idb.state) return { state: idb.state, quelle: "IndexedDB", befund };
+        befund.push(idb ? `IndexedDB korrupt (${idb.kaputt || "kein Zustand"})` : "IndexedDB leer");
+        return { state: null, quelle: null, befund };
+    }
+
+    // Der IndexedDB-Stand des Boot-Vorlaufs für die Welt `id` (nur lesen; loadState verbraucht ihn).
+    _idbVorlage(id) {
+        const pre = this._idbPreloadedState;
+        return pre && pre.worldId === id ? pre : null;
     }
 
     // Einmalige Migration des Single-Keys `anazhRealmState` → worldId, Multi-Key, Index, aktiv;
@@ -13131,21 +13201,15 @@ class AnazhRealm {
             // worldId entscheiden: Save hat eine, oder wir generieren eine.
             let worldId = parsed.worldMeta && parsed.worldMeta.worldId;
             if (!worldId) {
-                try {
-                    worldId =
-                        typeof crypto !== "undefined" && crypto.randomUUID
-                            ? crypto.randomUUID()
-                            : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-                } catch {
-                    worldId = "w_" + Math.random().toString(36).slice(2, 10);
-                }
+                worldId = AnazhRealm._neueWeltId();
                 parsed.worldMeta = { ...(parsed.worldMeta || {}), worldId };
             }
-            const slug = (parsed.worldMeta && parsed.worldMeta.slug) || "";
-            const bornAt = (parsed.worldMeta && parsed.worldMeta.bornAt) || Date.now();
-            localStorage.setItem(this.worldStorageKey(worldId), JSON.stringify(parsed));
-            this.worldsIndexUpsert({ worldId, slug, bornAt, lastPlayed: Date.now() });
-            this.activeWorldSet(worldId);
+            // die EINE Ablage (mit Probe); der alte Key fällt erst, wenn die Welt sicher auf ihrem Platz liegt
+            const ab = this._weltAblegen(parsed);
+            if (!ab.ok) {
+                this.log(`Welt-Migration: Ablage fehlgeschlagen (${ab.reason}) — der alte Save bleibt.`, "ERROR");
+                return false;
+            }
             localStorage.removeItem("anazhRealmState");
             this.log(
                 `Welt-Migration: alter Single-Welt-Save → Multi-Welt-Index (worldId=${worldId.slice(0, 8)}…)`,
@@ -13162,15 +13226,7 @@ class AnazhRealm {
     // + bornAt). Nicht idempotent — jeder Aufruf eine neue ID. Wird von
     // createNewWorld genutzt.
     _generateFreshWorldMeta(slug) {
-        let worldId;
-        try {
-            worldId =
-                typeof crypto !== "undefined" && crypto.randomUUID
-                    ? crypto.randomUUID()
-                    : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-        } catch {
-            worldId = "w_" + Math.random().toString(36).slice(2, 10);
-        }
+        const worldId = AnazhRealm._neueWeltId();
         let finalSlug = (slug || "")
             .toString()
             .toLowerCase()
@@ -13203,6 +13259,7 @@ class AnazhRealm {
     // Snapshot einer leeren Welt mit gegebenem worldMeta (optional mit Player-Snapshot für „Person
     // übernehmen"). Wird vor dem Reload geschrieben — der Reload-Init findet einen gültigen Per-Welt-Save.
     _buildEmptyWorldSnapshot(worldMeta, inheritPlayer) {
+        const alt = this.state.worldMeta || {};
         const snap = {
             // playerPosition:null markiert „Welt VOR ihrem Erst-Spawn": terrainEverGenerated bleibt false,
             // generateTerrainWithParameters fährt den echten Erst-Spawn (offener Punkt + Genesis-Plattform).
@@ -13216,15 +13273,17 @@ class AnazhRealm {
             terrainSteepness: 1.0,
             terrainBaseHeight: 0.0,
             weather: "sunny",
-            // Eine neue Welt erbt KEINE parentWorlds — sie ist eigenständig
-            // (Fusion mit parentWorlds folgt in Ring 10). visibility/creator
-            // bleiben aus der Schöpfer-Wahl (Default „private"/„local").
+            // Eine neue Welt ist eigenständig: sie erbt von der alten NUR die Wahl des Schöpfers (die Positiv-Liste
+            // `AnazhRealm.WELT_GRENZE.geburt`: visibility, creator), nie ihre Identität — keine parentWorlds (Fusion: Ring
+            // 10), keinen Makro-Anker, keine Edits, keine Dorf-Zellen, keine Ring- und Vorschau-Stempel, kein Erbgut. Bis
+            // 09.10. spreizte sie das GANZE worldMeta der alten Welt: die neue trug deren Anker und Krater und bekam nie
+            // einen Portal-Ring, keine Vorschauen und kein Start-Dorf (deren Stempel standen schon; Playtest Ring 8: geerbte
+            // Felder 0, gate:weltgrenze Weg „geburt").
             worldMeta: {
-                ...this.state.worldMeta,
+                ...Object.fromEntries(AnazhRealm.WELT_GRENZE.geburt.map((k) => [k, alt[k]])),
                 ...worldMeta,
                 parentWorlds: [],
-                // Der Welt-Strom beginnt neu (`_bauSame`: der Zähler ist das Gedächtnis DIESER Welt, Auflage 6 der zweiten
-                // Werkstatt-Gegenprüfung — der Spread oben trug die Zähler der alten Welt in die neue).
+                // Der Welt-Strom beginnt neu (`_bauSame`: der Zähler ist das Gedächtnis DIESER Welt).
                 bauSame: {},
                 // Kein `chunkDeltas`-Feld mehr (Welt-Mods wirken im 3D-Voxel-Feld); das Schema bleibt
                 // 10.5-chunk-delta-v1 (kein Bump für eine Feld-Löschung).
@@ -13290,7 +13349,7 @@ class AnazhRealm {
     }
 
     // Neue Welt anlegen, schreiben, aktiv setzen. reload standardmäßig aus (Tests prüfen die
-    // Daten-Schicht); UI-Aufrufer hängen `window.location.reload()` selbst an.
+    // Daten-Schicht); mit `reload` läuft der Welt-Wechsel `_weltWechselNeuLaden` (Sperre, Zeiger, Reload).
     createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo" } = {}) {
         // Aktuelle Welt zuerst sichern, sonst geht der Stand verloren.
         if (this.state.worldMeta && this.state.worldMeta.worldId) {
@@ -13310,31 +13369,16 @@ class AnazhRealm {
         // Voxel ist permanent: das Flag IMMER explizit setzen — nie auf den
         // `_buildEmptyWorldSnapshot`-Spread verlassen (bräche leise bei einer Init-Änderung).
         snap.worldMeta.voxelTerrain = true;
-        try {
-            localStorage.setItem(this.worldStorageKey(meta.worldId), JSON.stringify(snap));
-        } catch (err) {
-            this.log(`Neue Welt konnte nicht geschrieben werden: ${err.message}`, "ERROR");
+        const ab = this._weltAblegen(snap);
+        if (!ab.ok) {
+            this.log(`Neue Welt konnte nicht geschrieben werden: ${ab.reason}`, "ERROR");
             return null;
         }
-        this.worldsIndexUpsert({
-            worldId: meta.worldId,
-            slug: meta.slug,
-            bornAt: meta.bornAt,
-            lastPlayed: Date.now(),
-        });
-        this.activeWorldSet(meta.worldId);
         this.log(
             `Neue Welt erschaffen: ${meta.slug} (${meta.worldId.slice(0, 8)}…, inheritPlayer=${inheritPlayer})`,
             "INFO"
         );
-        if (
-            reload &&
-            typeof window !== "undefined" &&
-            window.location &&
-            typeof window.location.reload === "function"
-        ) {
-            window.location.reload();
-        }
+        if (reload) this._weltWechselNeuLaden(meta.worldId);
         return meta.worldId;
     }
 
@@ -13369,14 +13413,7 @@ class AnazhRealm {
         }
         this.activeWorldSet(worldId);
         this.log(`Welt-Wechsel: aktiv ist nun ${worldId.slice(0, 8)}…`, "INFO");
-        if (
-            reload &&
-            typeof window !== "undefined" &&
-            window.location &&
-            typeof window.location.reload === "function"
-        ) {
-            window.location.reload();
-        }
+        if (reload) this._weltWechselNeuLaden(worldId);
         return true;
     }
 
@@ -22683,7 +22720,9 @@ class AnazhRealm {
         // blendet beim ersten Erscheinen ein (`einblenden`). Der Ort ist das EINE Geburts-Gesetz (_kreaturGeburtsOrt:
         // fern um den Spieler, außerhalb des Blicks), jeder Wurf aus dem Fauna-Strom (Γ5).
         const rng = this._faunaRng();
-        const { x, z } = this._kreaturGeburtsOrt(rng, Math.max(80, spawnRadius * 1.6));
+        const ort = this._kreaturGeburtsOrt(rng, Math.max(80, spawnRadius * 1.6));
+        if (!ort) return; // die Wildnis trägt den Ort nicht: kein Boot-Tier
+        const { x, z } = ort;
         const terrainHeight = this.getTerrainHeightAt(x, z);
         const nass = this._weatherIsWet();
         const emotion = rng() < 0.7 ? (nass ? "sad" : "happy") : nass ? "happy" : "sad";
@@ -23827,6 +23866,9 @@ class AnazhRealm {
             // Der persistierte macroAnker reist mit — sonst baut der Worker nach einer Konstanten-Änderung
             // einen anderen Anker als der Main (Naht-Drift). null bei gen < 3.
             macroAnker: typeof this._macroAnker === "function" ? this._macroAnker() : null,
+            // DAS ERBGUT reist in seiner Normalform mit (die Terme der EINEN 2D-Höhe, das Wildnis-Gewicht): der Worker
+            // rechnet dieselben Zahlen, nie eine eigene Ableitung.
+            erbgut: this._erbgut(),
             // DIE BODEN-PALETTE reist mit: der Worker färbt mit DENSELBEN linearen Zahlen (`attachFieldColors`),
             // kein hartkodierter Spiegel der Farben.
             bodenPalette: AnazhRealm.BODEN_FARBE,
@@ -24097,12 +24139,15 @@ class AnazhRealm {
         // KEY (`_chunkIdbKey`); Welt-Wechsel ohne Reload behält den Boot-Stempel (Keys sind seed-scoped).
         const genV = typeof this._genVersion === "function" ? this._genVersion() : 1;
         const anker = typeof this._macroAnker === "function" ? this._macroAnker() : null;
+        // + der Hash des Erbguts (seine Terme formen jeden Chunk: ein fremdes Erbgut darf nie alte Bytes lesen).
         const stamp =
             AnazhRealm.VERSION +
             "|" +
             genV +
             "|" +
             this._fastHash(JSON.stringify(anker || null)) +
+            "|" +
+            this._erbgut().hash +
             "|" +
             AnazhRealm.CHUNK_IDB_FORM;
         c._stamp = stamp;
@@ -26220,7 +26265,11 @@ class AnazhRealm {
                 example: "speichere zustand",
                 re: /^speichere\s+zustand(?:\s.*)?$/i,
                 run: (m, append) => {
-                    this.saveState();
+                    // Verweigert die Sperre des Welt-Wechsels, sagt der Befehl es — nie „gespeichert", wenn nichts geschrieben wurde.
+                    if (this.saveState() === false) {
+                        append("Nicht gespeichert: die Seite wechselt gerade die Welt (der Reload läuft).");
+                        return;
+                    }
                     this.saveToProjectFolder().then((result) => {
                         if (result === "server") {
                             append("Zustand gespeichert (direkt im Spielordner + localStorage)");
@@ -26870,6 +26919,9 @@ class AnazhRealm {
             const islandHeight = 6 + rng() * 10; // 6..16 m Wölbung
             const islandX = (rng() - 0.5) * WORLD_SIZE * 0.8;
             const islandZ = (rng() - 0.5) * WORLD_SIZE * 0.8;
+            // Die Schwebe-Insel ist ein Wurf des Feldes: trägt die Wildnis den Ort nicht, steht keine (die Würfe davor
+            // bleiben, der Strom je Insel ist eigen).
+            if (!this._wildnisTraegt(islandX, islandZ)) continue;
             const surfY = typeof this._voxelSurfaceY === "function" ? this._voxelSurfaceY(islandX, islandZ) : 0;
             const baseSurf = Number.isFinite(surfY) ? surfY : this.state.terrainBaseHeight || 0;
             const islandY = baseSurf + 50 + rng() * 90; // 50..140 m über dem Boden
@@ -27064,6 +27116,11 @@ class AnazhRealm {
     // der Drainage (`_erosionIncisionPass`), gespeichert als Delta (erodiert − roh). Läuft VOR
     // `_computeHydrosphere`; zirkelfrei (`_erosionDeltaAt` = 0 solange `state.erosion` null), ohne RNG.
     _computeErosion(origin = null) {
+        // Die Erosion ist Zustand des Wildnis-Terms (nur `_wildnisY` liest ihr Delta): eine Welt ohne ihn rechnet sie nicht.
+        if (!(this._erbgut().wildnis > 0)) {
+            if (!origin) this.state.erosion = null;
+            return null;
+        }
         const E = AnazhRealm.EROSION;
         const dim = Math.max(8, Math.round(E.regionSize / E.cell));
         // Parametrisierter Ursprung (Kachel-Erosion): die Heimat-Region nullt `state.erosion` (Re-Compute-
@@ -27401,8 +27458,10 @@ class AnazhRealm {
                 // EROSION ZUERST (wie die Heimat: die Hydro-Probe sieht die erodierten Täler via _erosionFor).
                 // flowTo (64 KB) trägt nur der Heimat-Atlas (diag-flow-bias liest ihn) — die Kachel bleibt schlank.
                 const eTile = this._computeErosion(origin);
-                eTile.flowTo = null;
-                this.state.erosionTiles.set(key, eTile);
+                if (eTile) {
+                    eTile.flowTo = null;
+                    this.state.erosionTiles.set(key, eTile);
+                }
                 this.state.hydroTiles.set(key, this._computeHydrosphere(origin));
                 this._computeHydroBand();
                 made++;
@@ -27443,6 +27502,8 @@ class AnazhRealm {
     // ACHTUNG: wer `_computeErosion` neu rechnet, MUSS diesen Pass danach erneut rufen.
     _hydroSeedTarns() {
         this.state.tarns = [];
+        // Die Tarne sind Mulden des Wildnis-Terms (`_wildnisY` addiert sie): eine Welt ohne ihn sät keine.
+        if (!(this._erbgut().wildnis > 0)) return this.state.tarns;
         const T = AnazhRealm.TARN;
         const base = this.state.terrainBaseHeight || 0;
         const region = AnazhRealm.EROSION.regionSize;
@@ -27637,6 +27698,8 @@ class AnazhRealm {
     _macroAnker() {
         if (this._macroAnkerCache) return this._macroAnkerCache;
         if (this._genVersion() < 3) return null;
+        // Der Anker ist Zustand des Wildnis-Terms: eine Welt ohne ihn hat keinen (und schreibt keinen in ihr worldMeta).
+        if (!(this._erbgut().wildnis > 0)) return null;
         const wm = this.state.worldMeta;
         if (!wm) return null;
         if (wm.macro && AnazhRealm._isValidMacroAnker(wm.macro)) {
@@ -27856,7 +27919,219 @@ class AnazhRealm {
         return { massiv, becken, tDist, tFloor, mShape };
     }
 
+    // DIE EINE 2D-HÖHE der Welt = der Term-Auswerter ihres ERBGUTS (`_erbgut().terme`): der erste Term setzt den
+    // Startwert (die Wildnis `_wildnisY` oder eine Insel), jeder weitere legt sich nach seiner Art darauf — die Rampe
+    // addiert, die Bucht schneidet (Minimum). Eine Welt ohne Erbgut liest [wildnis]: kein Term wird addiert, der Wert
+    // ist byte-gleich zum Rumpf (gate:worker-dichte --abdruck). Liest jeder Leser der Höhe (Dichte, Hydrosphäre,
+    // Fern-Ring, Spawn-Ort, Erosion); MUSS bit-identisch im Worker (`terrainMacroSurfaceY`).
     _terrainMacroSurfaceY(x, z, includeDetail = true) {
+        const T = (this._erbgutCache || this._erbgut()).terme;
+        const t0 = T[0];
+        let h = t0.art === "wildnis" ? this._wildnisY(x, z, includeDetail) : AnazhRealm._erbgutTermY(t0, 0, x, z, this);
+        for (let i = 1; i < T.length; i++) h = AnazhRealm._erbgutTermY(T[i], h, x, z, this);
+        return h;
+    }
+
+    // Ein Term des Erbguts an (x, z) auf die Höhe `h` darunter (Bühnen-Terme sind analytisch, kein Rauschen). Höhen sind
+    // relativ zur Basis (`terrainBaseHeight`; der Meeresspiegel liegt bei Basis − 3). Die Winkel-Größen (Sinus, Tangens)
+    // rechnet `_erbgutNormal` EINMAL, der Worker liest dieselben Zahlen. MUSS bit-identisch im Worker (`erbgutTermY`).
+    static _erbgutTermY(t, h, x, z, realm) {
+        const base = realm.state.terrainBaseHeight || 0;
+        if (t.art === "insel") {
+            // Plateau mit Kuppel (steigt zur Mitte, entwässert), dann der Schelf (smoothstep) bis zum Grund.
+            const r = Math.hypot(x - t.x, z - t.z);
+            if (r <= t.r) return base + t.plateau + t.kuppel * (t.r - r);
+            const u = (r - t.r) / t.schelf;
+            if (u >= 1) return base + t.grund;
+            return base + t.plateau + (t.grund - t.plateau) * (u * u * (3 - 2 * u));
+        }
+        if (t.art === "rampe") {
+            // Der Damm: längs der Falllinie (u) die Krone, beidseits der Lauf mit dem Winkel; quer (v) die Breite, dahinter
+            // die Böschung. Addiert (≥ 0).
+            const dx = x - t.x;
+            const dz = z - t.z;
+            const u = Math.abs(dx * t.ux + dz * t.uz) - t.krone * 0.5;
+            let p = u > 0 ? t.hoehe - u * t.tanW : t.hoehe;
+            if (p <= 0) return h;
+            const w = Math.abs(dz * t.ux - dx * t.uz) - t.breite * 0.5;
+            if (w > 0) p -= w * t.tanB;
+            return p > 0 ? h + p : h;
+        }
+        // "bucht": die Rinne A → B (offene Mündung ins Meer), Sohle eben, quer die Ufer mit ihrem Winkel; längs eine
+        // Furt-Schwelle (Krone über ihre Breite, Flanken mit tanF) und ein Kolk (Kosinus-Mulde). Schneidet (Minimum).
+        let q = ((x - t.x0) * t.ex + (z - t.z0) * t.ez) / t.len2;
+        if (q < 0) q = 0;
+        else if (q > 1) q = 1;
+        const d = Math.hypot(x - (t.x0 + t.ex * q), z - (t.z0 + t.ez * q));
+        let g = base + t.grund;
+        const f = Math.abs(q * t.len - t.furtLage) - t.furtBreite * 0.5;
+        const furt = base + t.furtKrone - (f > 0 ? f * t.tanF : 0);
+        if (furt > g) g = furt;
+        const kd = Math.hypot(x - t.kolkX, z - t.kolkZ);
+        if (kd < t.kolkR) g -= t.kolkTiefe * 0.5 * (1 + Math.cos((Math.PI * kd) / t.kolkR));
+        const w = d - t.sohle * 0.5;
+        const b = w > 0 ? g + w * t.tanU : g;
+        return b < h ? b : h;
+    }
+
+    // DAS ERBGUT der Welt (`worldMeta.erbgut`), validiert und gemerkt: { terme, wildnis, hash }. Fehlt es, ist die Welt
+    // [wildnis] (jeder heutige Save). Die Empfänger-Wand ist fail-closed nach dem Muster `_isValidMacroAnker`, aber
+    // ohne stillen Ersatz: eine unbekannte Term-Art, eine fehlende Zahl oder eine Form außerhalb der Regeln WIRFT — die
+    // Welt erwacht nicht und sagt es auf dem Ladeschirm (init), nie still Wildnis. `wildnis` ist das Gewicht des
+    // Wildnis-Terms (1 = die Welt trägt ihn, 0 = nicht); `_wildnisTraegt` und die Spalte lesen es.
+    _erbgut() {
+        const wm = this.state.worldMeta;
+        const roh = wm ? wm.erbgut : undefined;
+        if (this._erbgutCache && this._erbgutRoh === roh) return this._erbgutCache;
+        const terme = AnazhRealm._erbgutNormal(roh);
+        this._erbgutRoh = roh;
+        this._erbgutCache = {
+            terme,
+            wildnis: terme[0].art === "wildnis" ? 1 : 0,
+            hash: this._fastHash(JSON.stringify(terme)),
+        };
+        return this._erbgutCache;
+    }
+
+    // DIE EINGANGS-WAND DES ERBGUTS: eine fremde Welt tritt nur ein, wenn dieser Build ihr Erbgut trägt — dieselbe
+    // Normalform wie beim Erwachen (`_erbgutNormal`). Leser: jede Tür, durch die ein Snapshot zur Welt wird (Welt-Tor
+    // daneben/ersetzen `importWorldBeside` · `_weltTorImportReplace`, die Einladung `_importGuestWorld`, der Snapshot eines
+    // Mitspielers `_p2pApplyWorldSnapshot`). Bis 10.10. nahmen die Türen jedes Erbgut an (`ok:true`): der Zeiger stand auf
+    // der Welt, und jeder Reload scheiterte am Ladeschirm. Liefert den Grund der Absage oder null.
+    static _erbgutEinlass(snapshot) {
+        const meta = snapshot && typeof snapshot === "object" ? snapshot.worldMeta : null;
+        try {
+            AnazhRealm._erbgutNormal(meta && typeof meta === "object" ? meta.erbgut : undefined);
+            return null;
+        } catch (e) {
+            return String((e && e.message) || e);
+        }
+    }
+
+    // DIE WELT REIST NUR ZU EINEM LESER IHRES ERBGUTS (Plan R11): ein Build vor dem Erbgut kennt `worldMeta.erbgut` nicht
+    // (must-ignore) und zeichnete still Wildnis unter die Welt und ihre Häuser. Eine Welt, deren Erbgut nicht die Wildnis
+    // allein ist, reist darum nur zu einem Empfänger, der sein Lesen im Protokoll erklärt (`erbgut` ≥
+    // `AnazhRealm.ERBGUT_PROTOKOLL` in world-request und world-pull); sonst verweigert der Sender benannt. Leser: der Host
+    // (`_p2pMsgWorldRequest`), der Mitträger (`_p2pMaybeServeAsCarrier`), der Mesh-Resync (`_p2pHandleWorldPull`).
+    // Liefert den Grund der Absage oder null.
+    static _erbgutTeilbar(meta, msg) {
+        let terme;
+        try {
+            terme = AnazhRealm._erbgutNormal(meta && typeof meta === "object" ? meta.erbgut : undefined);
+        } catch (e) {
+            return String((e && e.message) || e);
+        }
+        if (terme.length === 1 && terme[0].art === "wildnis") return null;
+        const kann = msg && typeof msg.erbgut === "number" && Number.isFinite(msg.erbgut) ? msg.erbgut : 0;
+        if (kann >= AnazhRealm.ERBGUT_PROTOKOLL) return null;
+        return `der Empfänger liest kein Erbgut (Protokoll ${kann} < ${AnazhRealm.ERBGUT_PROTOKOLL}) — die Welt [${terme
+            .map((t) => t.art)
+            .join(", ")}] reist nicht`;
+    }
+
+    // Die Normalform der Terme (die Zahlen geklemmt, die Winkel-Größen gerechnet) oder ein Wurf mit dem Grund.
+    static _erbgutNormal(roh) {
+        if (roh == null) return [{ art: "wildnis" }];
+        const nein = (grund) => {
+            throw new Error(`Erbgut abgelehnt: ${grund}`);
+        };
+        if (typeof roh !== "object" || !Array.isArray(roh.terme)) nein("keine Liste `terme`");
+        if (roh.terme.length < 1 || roh.terme.length > 32) nein(`${roh.terme.length} Terme (1–32)`);
+        const zahl = (t, k, lo, hi) => {
+            const v = t[k];
+            if (typeof v !== "number" || !Number.isFinite(v)) nein(`${t.art}.${k} ist keine Zahl`);
+            return Math.min(hi, Math.max(lo, v));
+        };
+        const RAD = Math.PI / 180;
+        return roh.terme.map((t, i) => {
+            if (!t || typeof t !== "object") nein(`Term ${i} ist kein Objekt`);
+            if (!["wildnis", "insel", "rampe", "bucht"].includes(t.art)) nein(`unbekannte Term-Art „${t.art}"`);
+            const basis = t.art === "wildnis" || t.art === "insel";
+            if (basis !== (i === 0)) nein(`Term ${i} (${t.art}): nur der erste Term setzt den Grund`);
+            if (t.art === "wildnis") return { art: "wildnis" };
+            if (t.art === "insel")
+                return {
+                    art: "insel",
+                    x: zahl(t, "x", -1e5, 1e5),
+                    z: zahl(t, "z", -1e5, 1e5),
+                    r: zahl(t, "r", 10, 5000),
+                    plateau: zahl(t, "plateau", -100, 200),
+                    kuppel: zahl(t, "kuppel", 0, 0.05),
+                    schelf: zahl(t, "schelf", 1, 1000),
+                    grund: zahl(t, "grund", -120, 0),
+                };
+            if (t.art === "rampe") {
+                const w = zahl(t, "winkel", 1, 60) * RAD;
+                const a = zahl(t, "richtung", -360, 360) * RAD;
+                const lauf = zahl(t, "lauf", 1, 500);
+                return {
+                    art: "rampe",
+                    x: zahl(t, "x", -1e5, 1e5),
+                    z: zahl(t, "z", -1e5, 1e5),
+                    ux: Math.sin(a),
+                    uz: Math.cos(a),
+                    breite: zahl(t, "breite", 1, 500),
+                    krone: zahl(t, "krone", 0, 500),
+                    hoehe: lauf * Math.tan(w),
+                    tanW: Math.tan(w),
+                    tanB: Math.tan(zahl(t, "boeschung", 10, 80) * RAD),
+                };
+            }
+            if (t.art === "bucht") {
+                const x0 = zahl(t, "x0", -1e5, 1e5);
+                const z0 = zahl(t, "z0", -1e5, 1e5);
+                const ex = zahl(t, "x1", -1e5, 1e5) - x0;
+                const ez = zahl(t, "z1", -1e5, 1e5) - z0;
+                const len = Math.hypot(ex, ez);
+                if (!(len >= 1)) nein("bucht: A und B fallen zusammen");
+                const kolk = Math.min(len, zahl(t, "kolkLage", 0, 1e5)) / len;
+                return {
+                    art: "bucht",
+                    x0,
+                    z0,
+                    ex,
+                    ez,
+                    len,
+                    len2: ex * ex + ez * ez,
+                    sohle: zahl(t, "sohle", 4, 500),
+                    grund: zahl(t, "grund", -100, 50),
+                    tanU: Math.tan(zahl(t, "ufer", 5, 60) * RAD),
+                    furtLage: Math.min(len, zahl(t, "furtLage", 0, 1e5)),
+                    furtBreite: zahl(t, "furtBreite", 0, 100),
+                    furtKrone: zahl(t, "furtKrone", -50, 50),
+                    tanF: Math.tan(zahl(t, "furtFlanke", 5, 60) * RAD),
+                    kolkX: x0 + ex * kolk,
+                    kolkZ: z0 + ez * kolk,
+                    kolkR: zahl(t, "kolkR", 1, 100),
+                    kolkTiefe: zahl(t, "kolkTiefe", 0, 30),
+                };
+            }
+            return nein(`unbekannte Term-Art „${t.art}"`);
+        });
+    }
+
+    // Trägt die Wildnis den Ort? Das EINE Prädikat an den WÜRFEN des Feldes (Wald, Streu, Nah-Streu, Geburts-Ort, Dorf-
+    // Ort, Schwebe-Inseln und jeder Ort, den der Nexus wählt — `dslEvalPos`): wo der Wildnis-Term nicht wiegt, wirft das
+    // Feld nichts — Akte (Mensch, KI, Saat, Linse) setzen überall. Liest das Gewicht des Erbguts (heute je Welt: 1 oder
+    // 0, der Ort ist die Naht künftiger Masken).
+    _wildnisTraegt(_x, _z) {
+        return (this._erbgutCache || this._erbgut()).wildnis > 0;
+    }
+
+    // HANDELT DAS FELD? Die EINE Antwort für die DSL-Quelle eines Akts (`ctx.source`): der Nexus („nexus" — seine
+    // Evolutionen und Kristalle) und die Regeln, die er gesetzt hat („rule:nexus"), handeln für die Welt selbst. Der
+    // Mensch, seine Werkzeuge, der Begleiter, die Mitspieler und ihre Regeln handeln nie für das Feld. Leser: die
+    // Ort-Engstelle `dslEvalPos` (das Feld hat keinen Ort, wo die Wildnis nicht trägt), die Nexus-Geburt in
+    // `spawn_creature` und der Hort-Deckel der Nexus-Bauten (`autonomous`).
+    _feldHandelt(ctx) {
+        const quelle = ctx && ctx.source;
+        return quelle === "nexus" || quelle === "rule:nexus";
+    }
+
+    // DER WILDNIS-TERM (`art: "wildnis"`): die Natur-Höhe der Welt — Rauschen, Erosion, Makro-Anker, Canyon, Tafelberg,
+    // Deckel, Tiefsee und Tarn. Unteilbar: ihre Klemmen folgen nichtlinear aufeinander (der Anker addiert vor Canyon-
+    // Boden, Terrasse, Deckel, Tiefsee und Tarn-Klemme), darum ist sie EIN Term und nie die Summe ihrer Teile.
+    _wildnisY(x, z, includeDetail = true) {
         if (!this._voxelNoise) {
             const seed = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
             this._voxelNoise = new SimplexNoise(seed + ":voxel");
@@ -28057,17 +28332,27 @@ class AnazhRealm {
         const n = this._voxelNoise;
         const base = this.state.terrainBaseHeight || 0;
         const surf = this._terrainMacroSurfaceY(x, z);
-        // T6c — WEITE FELDER: `mtnR` (Ruggedness, λ~2000 m) → Roughness regional (0.16 + 0.84·mtnR).
-        const eroR = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
-        let mtnR = 1 - eroR;
-        if (mtnR < 0) mtnR = 0;
-        mtnR *= mtnR;
-        const roughScale = 0.16 + 0.84 * mtnR;
-        // T5 (G3) — die CANYON-MASKE (2D, freq 0.0065) hebt die Höhlen-Decke selektiv → Canyons.
-        const canyonOpen = Math.max(0, Math.min(1, (n.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18));
-        // T7b-ii (Aquifer-Gate): unter Wasser hält die Decke −24 m Abstand + kein canyonOpen (kein Abfluss).
-        const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
-        const ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+        // DAS WILDNIS-GEWICHT der Spalte: die 3D-Rauheit und die Höhlen-Hülle sind Wildnis — sie wiegen mit ihm (Wildnis-
+        // Welt ≡ 1: jeder Wert byte-gleich; ohne Wildnis-Term 0: kein noise3D, keine Höhle, der Boden ist die Term-Höhe).
+        const wild = (this._erbgutCache || this._erbgut()).wildnis;
+        let roughScale = 0;
+        let ceilOffset = -24;
+        if (wild > 0) {
+            // T6c — WEITE FELDER: `mtnR` (Ruggedness, λ~2000 m) → Roughness regional (0.16 + 0.84·mtnR).
+            const eroR = n.noise2D(x * 0.0005, z * 0.0005) * 0.5 + 0.5;
+            let mtnR = 1 - eroR;
+            if (mtnR < 0) mtnR = 0;
+            mtnR *= mtnR;
+            roughScale = (0.16 + 0.84 * mtnR) * wild;
+            // T5 (G3) — die CANYON-MASKE (2D, freq 0.0065) hebt die Höhlen-Decke selektiv → Canyons.
+            const canyonOpen = Math.max(
+                0,
+                Math.min(1, (n.noise2D(x * 0.0065 + 41.7, z * 0.0065 - 18.3) - 0.52) / 0.18)
+            );
+            // T7b-ii (Aquifer-Gate): unter Wasser hält die Decke −24 m Abstand + kein canyonOpen (kein Abfluss).
+            const waterLevelD = typeof this.state.waterLevel === "number" ? this.state.waterLevel : base + 4;
+            ceilOffset = surf < waterLevelD + 1 ? -24 : -16 + canyonOpen * 24;
+        }
         // V9.43-d/-45-b — der Hydrosphären-Carve (Fluss-Rinnen + See-Becken-Blend), 2D je Spalte.
         const hydro = this.state.hydrosphere;
         const hydroActive = !!(hydro && hydro.ready && !this._hydroComputing);
@@ -28080,6 +28365,7 @@ class AnazhRealm {
         out.n = n;
         out.base = base;
         out.surf = surf;
+        out.wild = wild;
         out.roughScale = roughScale;
         out.ceilOffset = ceilOffset;
         out.hydroActive = hydroActive;
@@ -28096,21 +28382,24 @@ class AnazhRealm {
         const base = ctx.base;
         const surf = ctx.surf;
         let d = surf - y;
-        d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
-        d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
-        const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
-        const caveCeil = Math.max(0, Math.min(1, (surf + ctx.ceilOffset - y) / 8));
-        const caveEnv = caveFloor * caveCeil;
-        if (caveEnv > 0) {
-            const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
-            const cave = Math.max(0, (ridge - 0.7) / 0.3);
-            d -= cave * caveEnv * 36;
-            const cavern = n.noise3D(x * 0.013, y * 0.018, z * 0.013);
-            const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
-            d -= cavernCarve * caveEnv * 46;
-            const hall = n.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
-            const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
-            d -= hallCarve * caveEnv * 72;
+        // Rauheit und Höhlen sind Wildnis: ohne ihr Gewicht (ctx.wild 0) wird kein noise3D gerechnet.
+        if (ctx.wild > 0) {
+            d += n.noise3D(x * 0.05, y * 0.05, z * 0.05) * 7 * ctx.roughScale;
+            d += n.noise3D(x * 0.018, y * 0.022, z * 0.018) * 5 * ctx.roughScale;
+            const caveFloor = Math.max(0, Math.min(1, (y - (base - 28)) / 8));
+            const caveCeil = Math.max(0, Math.min(1, (surf + ctx.ceilOffset - y) / 8));
+            const caveEnv = caveFloor * caveCeil * ctx.wild;
+            if (caveEnv > 0) {
+                const ridge = 1 - Math.abs(n.noise3D(x * 0.03, y * 0.034, z * 0.03));
+                const cave = Math.max(0, (ridge - 0.7) / 0.3);
+                d -= cave * caveEnv * 36;
+                const cavern = n.noise3D(x * 0.013, y * 0.018, z * 0.013);
+                const cavernCarve = Math.max(0, (cavern - 0.55) / 0.45);
+                d -= cavernCarve * caveEnv * 46;
+                const hall = n.noise3D(x * 0.0045 + 71.3, y * 0.006 - 12.7, z * 0.0045 + 5.1);
+                const hallCarve = Math.max(0, (hall - 0.5) / 0.5);
+                d -= hallCarve * caveEnv * 72;
+            }
         }
         if (ctx.hydroActive) {
             // Der Fluss-Kanal (`_hydrosphereCarveAt`): das weiche Maximum aus Gelände und Damm, davon das weiche Minimum mit
@@ -28147,8 +28436,9 @@ class AnazhRealm {
     // direkte Aufrufer); der Chunk-Grid-Pfad nutzt `_voxelEditedDensityGrid` (base-gecacht + Delta).
     _terrainDensityAt(x, y, z) {
         // Die Edit-Deltas leben in `_voxelEditDeltaAt`, damit der feld-native Kollisions-Pfad
-        // (`_fieldDensityAt`) DIESELBE Edit-Wahrheit liest; base + Σ delta ist bit-identisch
-        // (diag-density-refactor / diag-worker-chunk: maxDiff 0).
+        // (`_fieldDensityAt`) DIESELBE Edit-Wahrheit liest. Das Chunk-GITTER (`_voxelEditedDensityGrid`) legt die
+        // Edits in Float32 auf das Basis-Gitter; sein Worker-Spiegel `computeDensityGrid` ist byte-gleich
+        // (gate:worker-dichte: maxDiff 0, LOD 0–3, mit Edits über dem Band).
         return this._terrainBaseDensityAt(x, y, z) + this._voxelEditDeltaAt(x, y, z);
     }
 
@@ -28460,7 +28750,10 @@ class AnazhRealm {
         const sample = densityFn || ((x, y, z) => this._terrainDensityAt(x, y, z));
         // `preDensity`: hat der Aufrufer das Grid schon (Cell-Klassifikation), läuft die teure Sample-
         // Schleife (~90k `_terrainDensityAt`-Calls) nur einmal pro Chunk-Build.
-        const density = preDensity || this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample);
+        // ein eigener Sampler (`densityFn`, die Schwebe-Insel) ist nicht der Boden: er trägt dessen Band nicht
+        const density =
+            preDensity ||
+            this._voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, undefined, !densityFn);
         const { positions, vertCells, cellVert, sharp } = this._voxelExtractSurfaceVertices(
             density,
             ox,
@@ -28633,7 +28926,11 @@ class AnazhRealm {
 
     // Pass 0 — Density-Grid: Nx*Ny*Nz Eck-Werte vom Sample. Float32Array,
     // Indizierung gi = i + j*Nx + k*Nx*Ny.
-    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, colVoxel) {
+    // DAS BAND IST DAS DES BODENS (`boden`): ein Feld in eigenen Koordinaten (die Schwebe-Insel, `_voxelChunkGeometry` mit
+    // eigenem Sampler) sampelt jede Ecke. Bis 10.10. schnitt das Boden-Band jedes Feld — die Insel (lokal um 0|0|0) bekam
+    // das Band des Bodens am Welt-Ursprung: lag er tiefer als ~−3 m, verlor sie ihre Kuppe, unter ~−20 m (Tiefsee) jede
+    // Ecke, und `new THREE.Mesh(null)` riss den Boot ab (1 von 40 frisch geborenen Welten erwachte nie).
+    _voxelSampleDensityGrid(ox, oy, oz, dimX, dimY, dimZ, step, sample, colVoxel, boden = true) {
         const Nx = dimX + 1;
         const Ny = dimY + 1;
         const Nz = dimZ + 1;
@@ -28656,11 +28953,11 @@ class AnazhRealm {
             for (let i = 0; i < Nx; i++) {
                 const wx = ox + i * step;
                 const ctx = colVoxel ? this._terrainColumnContext(wx, wz) : null;
-                const surf = ctx ? ctx.surf : this._terrainMacroSurfaceY(wx, wz);
-                const bandTopJ = Math.floor((surf + ROUGH + topMargin - oy) / step) + 1;
+                const surf = !boden ? 0 : ctx ? ctx.surf : this._terrainMacroSurfaceY(wx, wz);
+                const bandTopJ = boden ? Math.floor((surf + ROUGH + topMargin - oy) / step) + 1 : Ny;
                 // Band-Boden: unter `min(surf, base) − 40` ist garantiert Fels. Er MUSS surf folgen — in einer
                 // Tiefsee-Rinne (~−75 m) füllte ein fixes base−40 die Wassersäule fälschlich als Fels.
-                const bandBotJ = Math.floor((Math.min(surf, base) - 40 - oy) / step);
+                const bandBotJ = boden ? Math.floor((Math.min(surf, base) - 40 - oy) / step) : -1;
                 const colBase = i + k * Nx * Ny;
                 for (let j = 0; j < Ny; j++) {
                     const idx = colBase + j * Nx;
@@ -37480,6 +37777,9 @@ class AnazhRealm {
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         if (!core || typeof core.bodenGewicht !== "function")
             throw new Error("_nahStreuKachel: das Boden-Gesetz (__phytoCore.bodenGewicht) fehlt");
+        // Die Nah-Streu ist ein Wurf des Feldes: trägt die Wildnis die Kachel nicht, bleibt sie leer (und liest kein Wasser).
+        if (!this._wildnisTraegt((tx + 0.5) * NS.kachel, (tz + 0.5) * NS.kachel))
+            return { items: [], chunks: new Map(), wasser: [] };
         const span = this._voxelChunkConfig(0).span;
         const seedInt = this._forestSeedInt();
         const last = this._effectiveFoliageDensity();
@@ -41900,38 +42200,34 @@ class AnazhRealm {
         });
     }
 
-    // Boot-Vorlauf (init awaitet ihn VOR loadState): den IDB-Snapshot der aktiven Welt nur behalten, wenn
-    // er FRISCHER ist als der localStorage-Spiegel (worldsIndex.lastPlayed). saveState stempelt beide im
-    // selben Zug — sie laufen nur auseinander, wenn ein Pfad fehlschlug; der überlebende ist die Wahrheit.
+    // Boot-Vorlauf (init awaitet ihn VOR der Vorlade und vor loadState): den IDB-Stand der aktiven Welt lesen und halten —
+    // ob er gewinnt (frischer als der Platz) oder rettet (Platz und .bak leer oder korrupt), entscheidet die EINE
+    // Rettungs-Kette `_weltRettungsKette`. Bis 10.10. lief er erst nach ensureWorldMeta: eine Welt, die nur in IndexedDB
+    // lag, war da schon durch eine frische ersetzt.
     async _idbPreload() {
         this._idbPreloadedState = null;
         const activeId = this.activeWorldGet();
         if (!activeId) return;
         const rec = await this._idbGetWorld(activeId);
         if (!rec) return;
-        let lsAt = 0;
         try {
-            const idx = this.worldsIndexLoad();
-            const entry = Array.isArray(idx) ? idx.find((w) => w && w.worldId === activeId) : null;
-            const hasLs = typeof localStorage !== "undefined" && !!localStorage.getItem(this.worldStorageKey(activeId));
-            lsAt = hasLs && entry && Number.isFinite(entry.lastPlayed) ? entry.lastPlayed : 0;
-        } catch {
-            lsAt = 0;
-        }
-        // IDB gewinnt bei Gleichstand NICHT (saveState schreibt beide im
-        // selben Zug — der Spiegel ist dann identisch; kleiner Takt-Skew
-        // soll den sync-Pfad nicht entthronen). Nur ECHT frischer gewinnt.
-        if (rec.at > lsAt + 1500) {
-            try {
-                this._idbPreloadedState = { worldId: activeId, state: JSON.parse(rec.json) };
-                this.log("Welt-Stand aus IndexedDB (frischer als der localStorage-Spiegel).", "INFO");
-            } catch {
-                this._idbPreloadedState = null;
-            }
+            this._idbPreloadedState = { worldId: activeId, state: JSON.parse(rec.json), at: rec.at };
+        } catch (e) {
+            this._idbPreloadedState = { worldId: activeId, state: null, at: rec.at, kaputt: e.message };
         }
     }
 
+    // → true, wenn der Stand geschrieben wurde (localStorage oder, bei voller Quota, IndexedDB); false, wenn die Sperre
+    // des Welt-Wechsels verweigert — laut, nie still (der Rufer „speichere zustand" sagt es dem Spieler).
     saveState() {
+        // DIE SPERRE DES WELT-WECHSELS (`_weltWechselNeuLaden`): die Seite stirbt gleich, ihr Speicher gehört der Ziel-Welt.
+        if (this._weltWechselSperre) {
+            this.log(
+                "Speichern verweigert: die Seite wechselt die Welt (der Reload läuft) — dieser Stand bleibt ungesichert.",
+                "WARN"
+            );
+            return false;
+        }
         const stateToSave = this.buildStateSnapshot();
         // Pro Welt eigener Key + lastPlayed im Index. Ohne worldId (nach ensureWorldMeta unmöglich) auf den
         // Legacy-Key zurück, damit nichts still verloren geht.
@@ -41985,6 +42281,7 @@ class AnazhRealm {
                 "WARN"
             );
         }
+        return true;
     }
 
     // Debounced Edit-Save: bündelt die schwere Persistenz (buildStateSnapshot + JSON.stringify +
@@ -43024,6 +43321,11 @@ class AnazhRealm {
         if (!wanted) return false;
         const pin = this.state.p2p.pinnedWorlds.get(wanted);
         if (!pin) return false;
+        const erbgutNein = AnazhRealm._erbgutTeilbar(pin.snapshot && pin.snapshot.worldMeta, msg);
+        if (erbgutNein) {
+            this.log(`Φ5 Mitträger verweigert „${pin.label}" an ${requesterId.slice(0, 8)}…: ${erbgutNein}`, "WARN");
+            return false;
+        }
         try {
             this._p2pSignal({
                 type: "world-snapshot",
@@ -44943,12 +45245,7 @@ class AnazhRealm {
             statusEl.textContent = "Welt empfangen — lade…";
             cleanup();
             dialog.close();
-            // Reload in die Guest-Welt
-            try {
-                window.location.reload();
-            } catch {
-                /* headless */
-            }
+            // (die Tür lädt in die Gast-Welt: `joinWorldFromCode` → `_importGuestWorld` → `_weltBetreten`)
         };
 
         cancelBtn.addEventListener("click", onCancel);
@@ -45330,6 +45627,9 @@ class AnazhRealm {
         }
     }
 
+    // Lädt einen Zustand IN DIE SEITE (ohne Argument: den Platz der aktiven Welt). Er legt nichts im Speicher ab — eine
+    // andere Welt betritt den Speicher nur durch die Tür `_weltBetreten` (bis 10.10. spiegelte loadState jeden fremden
+    // Zustand roh in den Speicher, ohne worldId auf den Platz der Welt der Seite).
     loadState(externalState = null) {
         let state = externalState;
         if (!state) {
@@ -45386,55 +45686,45 @@ class AnazhRealm {
                 })
                 .slice(-64);
         }
-        if (externalState) this._loadStatePersistExternalImport(externalState);
         this.log(externalState ? "Zustand aus Datei geladen" : "Zustand geladen");
         if (!externalState) this._loadStateRestoreVersionHistory();
         return true;
     }
 
-    // Drei Quellen: localStorage (Default), externes Objekt (z. B. File-Upload) oder nichts (frühes
-    // init()). Per-Welt-Key über die aktive worldId, mit Legacy-Single-Key-Fallback. null bei
-    // fehlendem/ungültigem Save.
+    // Der Zustand der aktiven Welt aus dem Speicher — durch DIE Rettungs-Kette `_weltRettungsKette` (Platz → .bak →
+    // IndexedDB des Boot-Vorlaufs, der hier verbraucht wird; Welt-Guard: nur für DIESELBE Welt). Ohne Aktiv-Zeiger der
+    // Legacy-Single-Key. null, wenn nichts lesbar ist — dann sagt das Log, was die Kette fand.
     _loadStateLoadFromStorage() {
         const activeId = this.activeWorldGet();
-        // Der Boot-Vorlauf (_idbPreload) hat den IndexedDB-Stand schon geparst, wenn er FRISCHER ist als der
-        // localStorage-Spiegel. Welt-Guard: nur für DIESELBE Welt — sonst liefe ein
-        // {reload:false}-Welt-Wechsel auf den Preload der alten Welt.
-        if (this._idbPreloadedState && this._idbPreloadedState.worldId === activeId) {
-            const pre = this._idbPreloadedState.state;
-            this._idbPreloadedState = null;
-            return pre;
-        }
-        let savedState = null;
-        if (activeId) {
-            savedState = localStorage.getItem(this.worldStorageKey(activeId));
-        }
-        if (!savedState) {
-            savedState = localStorage.getItem("anazhRealmState");
-        }
-        if (!savedState) return null;
-        try {
-            return JSON.parse(savedState);
-        } catch (error) {
-            // V18.361 — KORRUPTIONS-SICHERER LOAD: der Haupt-Stand ist unlesbar (truncated/
-            // partieller Write) → der rotierende `.bak`-Backup (der letzte gute Stand) rettet
-            // die Welt, statt sie zu verlieren. Auch der Backup korrupt → ehrlich null.
-            this.log(`Speicherstand korrupt (${error.message}) — versuche den Backup…`, "WARN");
-            if (activeId) {
-                try {
-                    const bak = localStorage.getItem(this.worldStorageKey(activeId) + ".bak");
-                    if (bak) {
-                        const parsed = JSON.parse(bak);
-                        this.log("Welt aus dem Backup wiederhergestellt (ein Stand zurück).", "INFO");
-                        return parsed;
-                    }
-                } catch (_bakErr) {
-                    /* auch der Backup korrupt → unten null */
-                }
+        if (!activeId) {
+            const legacy = localStorage.getItem("anazhRealmState");
+            if (!legacy) return null;
+            try {
+                return JSON.parse(legacy);
+            } catch (e) {
+                this.log(`Legacy-Speicherstand korrupt (${e.message}).`, "ERROR");
+                return null;
             }
-            this.log("Kein gültiger Backup — Welt konnte nicht geladen werden.", "ERROR");
+        }
+        const idb = this._idbVorlage(activeId);
+        this._idbPreloadedState = null;
+        const fund = this._weltRettungsKette(activeId, idb);
+        if (!fund.state) {
+            // Eine frische Welt hat noch keinen Stand (die Vorlade sagte es schon laut); ERROR nur, wenn etwas da war, das
+            // sich nicht lesen ließ.
+            const kaputt = fund.befund.some((b) => /korrupt|unlesbar|nicht lesbar/.test(b));
+            this.log(
+                `Die Welt ${activeId} ließ sich nicht laden: ${fund.befund.join(", ")}.`,
+                kaputt ? "ERROR" : "DEBUG"
+            );
             return null;
         }
+        if (fund.quelle !== "Platz")
+            this.log(
+                `Welt aus ${fund.quelle} geladen${fund.befund.length ? ` (${fund.befund.join(", ")})` : ""}.`,
+                fund.quelle.startsWith("IndexedDB (frischer") ? "INFO" : "WARN"
+            );
+        return fund.state;
     }
 
     // terrainEverGenerated=true NUR, wenn der Save eine ECHTE Spieler-Position trägt. playerPosition:null
@@ -45485,8 +45775,8 @@ class AnazhRealm {
         if (this.state.skybox) this.updateSkyboxWeather();
     }
 
-    // Best-Effort-Migration: Saves ohne worldMeta bekommen Defaults + Log; ein altes
-    // `worldMeta.chunkDeltas` wird still ignoriert.
+    // Die Weltgrenze jedes Ladens: das worldMeta der geladenen Welt ersetzt das der Seite (`_weltMetaWechsel`); ein
+    // altes `worldMeta.chunkDeltas` wird still ignoriert.
     _loadStateRestoreWorldMeta(state) {
         // Welt-Wechsel ist eine WELT-IDENTITÄTS-GRENZE: lazy-cached Worldgen-Caches MÜSSEN zurück, sonst trägt
         // die neue Welt alte Welt-Stempel (P2P-Drift). _growTreeNoise hängt an worldSeed (rebuild lazy),
@@ -45522,9 +45812,17 @@ class AnazhRealm {
             this.state.archMergedGeomCache.clear();
         }
         if (state.worldMeta && typeof state.worldMeta === "object") {
-            this.state.worldMeta = { ...this.state.worldMeta, ...state.worldMeta };
+            // DIE WELTGRENZE: die geladene Welt ersetzt das worldMeta ganz (`_weltMetaWechsel`), das EINE Heil jeder Welt
+            // heilt sie (Seed, Voxel-Boden), und die Gedächtnisse der Seite, die welt-eigene Felder spiegeln
+            // (`AnazhRealm.WELT_GRENZE.gedaechtnis`: Erbgut-Merker, Anker, Ring, Vorschau, Dorf-Zug), fallen mit ihm — der
+            // Heiß-Pfad liest den Erbgut-Merker direkt, `_macroAnker` gab bis 10.10. den Anker der Welt davor zurück.
+            this.state.worldMeta = this._weltMetaWechsel(state.worldMeta);
+            AnazhRealm._weltMetaHeil(this.state.worldMeta);
+            for (const k of AnazhRealm.WELT_GRENZE.gedaechtnis) this[k] = null;
         } else {
-            this.log("Save-Migration: kein worldMeta gefunden, generiere neue Welt-Identität", "INFO");
+            // Ein Zustand ohne worldMeta ist keine Welt (ein Bruchstück: Baupläne, Hotbar, Seele) — er quert keine Grenze,
+            // die Welt der Seite bleibt sie selbst.
+            this.log("Save-Migration: kein worldMeta gefunden — die Welt der Seite bleibt", "INFO");
         }
         // V18.221 — die SCATTER-PROMOTED-Set aus dem worldMeta-Array wiederherstellen.
         // worldMeta.scatterPromoted wandert via Array, hier re-bilden wir das Set.
@@ -46146,30 +46444,93 @@ class AnazhRealm {
         }
     }
 
-    // Externe Quelle in localStorage spiegeln, damit ein Reload sie behält (Per-Welt-Key + Index, sonst
-    // Legacy-Fallback). Eine fremde worldId wird angenommen, registriert und aktiv gesetzt.
-    _loadStatePersistExternalImport(externalState) {
-        try {
-            const m = externalState.worldMeta;
-            const targetId =
-                (m && typeof m.worldId === "string" && m.worldId) ||
-                (this.state.worldMeta && this.state.worldMeta.worldId) ||
-                null;
-            if (targetId) {
-                localStorage.setItem(this.worldStorageKey(targetId), JSON.stringify(externalState));
-                this.worldsIndexUpsert({
-                    worldId: targetId,
-                    slug: (m && m.slug) || (this.state.worldMeta && this.state.worldMeta.slug) || "",
-                    bornAt: (m && m.bornAt) || Date.now(),
-                    lastPlayed: Date.now(),
-                });
-                this.activeWorldSet(targetId);
-            } else {
-                localStorage.setItem("anazhRealmState", JSON.stringify(externalState));
-            }
-        } catch (e) {
-            this.log(`localStorage-Persistenz nach Import fehlgeschlagen: ${e.message}`, "WARNING");
+    // DIE TÜR (Ring 8: ein Welt-Wechsel ist ein Reload): eine andere Welt betritt die Seite — das Welt-Tor „Ersetzen", der
+    // Snapshot eines Mitspielers (WS-Snapshot eines Resyncs, world-pull) und der Beitritt (Einladung, Adress-Portal:
+    // `_importGuestWorld`). EINE Stelle, in dieser Folge:
+    //   0. SICHERN: die Welt der Seite ist noch ganz sie selbst — ihr Zeugnis (`zeugnisA`, das Adress-Portal) und ihr
+    //      Fortschritt seit dem letzten Autosave landen unter IHRER Id, bevor die neue Welt abgelegt wird (bis 10.10. fielen
+    //      bei Ersetzen, world-pull und Einladung bis zu 10 s weg).
+    //   1. IDENTITÄT: trägt sie keine worldId (ein Legacy-Save vor Ring 8, ein Minimal-Snapshot `{worldMeta:{}}`), bekommt sie
+    //      ihre eigene (`_neueWeltId`) — nie den Platz der Welt davor. Bis 10.10. lag sie roh unter deren Id, und der Boot
+    //      vergab vor dem Lesen des Platzes eine neue: beide Welten waren fort (Gegenprüfung Runde 3).
+    //   2. ABLAGE: sie liegt, wie sie kam, unter ihrer Id (`_weltAblegen`, mit Probe) — misslingt das (Quota), bleibt die
+    //      Seite in ihrer Welt und sagt es laut; kein Reload in einen alten Stand. `p2pAuto` (der Gast): danach die
+    //      Auto-Verbindung zum Host.
+    //   3. SPERRE, ZEIGER, RELOAD (`_weltWechselNeuLaden`): die neue Welt erwacht in einer frischen Seite.
+    // Die Seite lädt sie nie in sich (die alte Welt lebte darin weiter: Tiere, Chunks, Worker, Wasser). `meta` legt Felder
+    // ins worldMeta (der Gast: role, hostInfo, slug); `neuLaden:false` legt nur ab (daneben legen, Tests), `aktiv:false`
+    // lässt dann auch den Aktiv-Zeiger (daneben legen). → {ok, worldId|reason}
+    _weltBetreten(snapshot, meta = null, { neuLaden = true, aktiv = true, zeugnisA = null, p2pAuto = null } = {}) {
+        if (!snapshot || typeof snapshot !== "object") return { ok: false, reason: "kein Snapshot" };
+        if (!this._weltWechselSperre && this.state.worldMeta && this.state.worldMeta.worldId) {
+            if (zeugnisA) this.journalAppendOnce(zeugnisA.key, zeugnisA.type || "portal", zeugnisA.text);
+            this.saveState();
         }
+        const wm = snapshot.worldMeta && typeof snapshot.worldMeta === "object" ? snapshot.worldMeta : {};
+        const welt = { ...snapshot, worldMeta: { ...wm, ...(meta || {}) } };
+        if (typeof welt.worldMeta.worldId !== "string" || !welt.worldMeta.worldId)
+            welt.worldMeta.worldId = AnazhRealm._neueWeltId();
+        const ab = this._weltAblegen(welt, { aktiv: aktiv || neuLaden });
+        if (!ab.ok) {
+            this.log(`Die Welt konnte nicht abgelegt werden (${ab.reason}) — die Seite bleibt in ihrer Welt.`, "ERROR");
+            return ab;
+        }
+        if (p2pAuto) {
+            try {
+                localStorage.setItem("anazh.p2p.enabled", "true");
+                localStorage.setItem("anazh.p2p.url", p2pAuto);
+                localStorage.setItem("anazh.p2p.room", ""); // default = worldId = sync room
+            } catch (e) {
+                this.log(`Die Auto-Verbindung zum Host ließ sich nicht merken: ${e.message}`, "WARN");
+            }
+        }
+        if (neuLaden) this._weltWechselNeuLaden(ab.worldId);
+        return ab;
+    }
+
+    // DIE ABLAGE einer ganzen Welt, wie sie kam, unter IHRER Id (Per-Welt-Key + Index, mit `aktiv` der Aktiv-Zeiger), mit
+    // Probe: der Speicher trägt danach genau diese Bytes. Ohne worldId legt sie nichts ab (die Tür vergibt sie). Der EINE
+    // Schreiber neben saveState (der die lebende Welt schreibt): die Tür, die Geburt, daneben legen, die Fusion, die
+    // Legacy-Migration. → {ok, worldId|reason}
+    _weltAblegen(welt, { aktiv = true } = {}) {
+        const m = welt && welt.worldMeta;
+        const worldId = m && typeof m.worldId === "string" ? m.worldId : "";
+        if (!worldId) return { ok: false, reason: "keine worldId" };
+        try {
+            const json = JSON.stringify(welt);
+            localStorage.setItem(this.worldStorageKey(worldId), json);
+            if (localStorage.getItem(this.worldStorageKey(worldId)) !== json)
+                return { ok: false, reason: "der Speicher trägt andere Bytes" };
+            this.worldsIndexUpsert({
+                worldId,
+                slug: m.slug || "",
+                bornAt: m.bornAt || Date.now(),
+                lastPlayed: Date.now(),
+            });
+            if (aktiv && !this.activeWorldSet(worldId))
+                return { ok: false, reason: "der Aktiv-Zeiger ließ sich nicht setzen" };
+            return { ok: true, worldId };
+        } catch (e) {
+            return { ok: false, reason: String((e && e.message) || e) };
+        }
+    }
+
+    // DER WELT-WECHSEL IST EIN RELOAD — UND BIS DIE SEITE STIRBT, SCHREIBT SIE NICHTS MEHR (Gegenprüfung Runde 3, 10.10.):
+    // zwischen `location.reload()` und dem Tod der Seite lief sie weiter, und jeder saveState (Loop-Autosave, Edit-Timer,
+    // Dorf-Rückruf, Settlement-Export) schrieb die lebende Seite unter den Namen der Ziel-Welt (6 698 Bytes mit dem Tier der
+    // alten im Platz der neuen) oder setzte den Aktiv-Zeiger auf die alte zurück (der Beitritt durchs Adress-Portal und die
+    // „Neue Welt" verschwanden still). DIE EINE SPERRE: der Edit-Timer fällt, `saveState` — jeder Speicher-Weg der lebenden
+    // Welt geht durch ihn — verweigert, der Zeiger zeigt auf die Ziel-Welt. Rufer: jeder Welt-Wechsel (Neue Welt, Wechsel,
+    // daneben-und-springen, Fusion, die Tür `_weltBetreten`, der Beitritt per Einladung und Adress-Portal).
+    _weltWechselNeuLaden(zielId) {
+        this._weltWechselSperre = true;
+        if (this._editSaveTimer) {
+            clearTimeout(this._editSaveTimer);
+            this._editSaveTimer = null;
+        }
+        if (zielId) this.activeWorldSet(zielId);
+        if (typeof window !== "undefined" && window.location && typeof window.location.reload === "function")
+            window.location.reload();
     }
 
     // Globaler localStorage-Key `anazhRealmVersions` (versionsHistory ist nicht
@@ -46295,19 +46656,35 @@ class AnazhRealm {
         }
         const parsed = pending.parsed;
         const fileName = pending.fileName;
-        // Aktuelle Welt wird überschrieben — der Welt-Drawer trägt ab jetzt
-        // die importierte Identität. loadState(parsed) ist der bisherige
-        // Pfad (vor Ring 9 war das der einzige).
-        this.loadState(parsed);
         const chatOutput = document.getElementById("chat-output");
+        const erbgutNein = AnazhRealm._erbgutEinlass(parsed);
+        if (erbgutNein) {
+            if (chatOutput) {
+                const line = document.createElement("div");
+                line.textContent = `Ersetzen abgelehnt: ${erbgutNein}`;
+                chatOutput.appendChild(line);
+                chatOutput.scrollTop = chatOutput.scrollHeight;
+            }
+            this._closeWeltTorDialog();
+            return;
+        }
+        // Die Datei wird die Welt der Seite — durch DIE TÜR `_weltBetreten` (Identität, Ablage mit Probe, Sperre, Reload);
+        // das Zeugnis des Ersetzens reist in ihrem Journal. Bis 10.10. lud die Seite sie in sich und blieb in der alten
+        // Welt: ihre Tiere, Chunks, Worker und Wasser trugen die neue, und jeder Autosave schrieb diese Mischung unter deren
+        // Namen (gate:weltgrenze Weg „ersetzen": 74 Felder der alten Welt im Speicher der neuen, darunter ihr Erbgut und ein
+        // Tier); eine Datei ohne worldId landete roh auf dem Platz der alten Welt, und beide waren fort.
+        const neu = JSON.parse(JSON.stringify(parsed));
+        AnazhRealm._zeugnisEintragen(neu, "Eine fremde Welt hat mich ersetzt.");
+        this._closeWeltTorDialog();
+        const r = this._weltBetreten(neu);
         if (chatOutput) {
             const line = document.createElement("div");
-            line.textContent = `Datei ${fileName} importiert — aktuelle Welt wurde ersetzt.`;
+            line.textContent = r.ok
+                ? `Datei ${fileName} importiert — die Welt erwacht neu.`
+                : `Ersetzen fehlgeschlagen: ${fileName} ließ sich nicht ablegen (${r.reason}) — du bleibst in deiner Welt.`;
             chatOutput.appendChild(line);
             chatOutput.scrollTop = chatOutput.scrollHeight;
         }
-        this.journalAppend("witness", "Eine fremde Welt hat mich ersetzt.");
-        this._closeWeltTorDialog();
     }
 
     _weltTorImportBeside() {
@@ -46511,6 +46888,23 @@ class AnazhRealm {
         }
     }
 
+    // DAS ZEUGNIS DES EMPFANGS im Journal eines Snapshots, bevor er Welt wird (das Welt-Tor: daneben, ersetzen). Ohne
+    // Journal (Legacy/Minimal-Snapshot) wird der Behälter angelegt — sonst fiele der Eintrag still weg.
+    static _zeugnisEintragen(snap, text, ctx) {
+        if (!snap.worldJournal || typeof snap.worldJournal !== "object") {
+            snap.worldJournal = { entries: [], seen: {} };
+        }
+        if (!Array.isArray(snap.worldJournal.entries)) {
+            snap.worldJournal.entries = [];
+        }
+        if (!snap.worldJournal.seen || typeof snap.worldJournal.seen !== "object") {
+            snap.worldJournal.seen = {};
+        }
+        const eintrag = { id: snap.worldJournal.entries.length + 1, at: Date.now(), tick: 0, type: "witness", text };
+        if (ctx) eintrag.ctx = ctx;
+        snap.worldJournal.entries.push(eintrag);
+    }
+
     // Importierte Welt bekommt eine NEUE worldId (sonst überschriebe sie eine gleichnamige), behält Seed +
     // Inhalt, trägt die Original-ID in `parentWorlds`. Slug-Kollision → `-2`/`-3`/… wie createNewWorld.
     // Die aktive Welt bleibt; `reload` springt direkt in die importierte.
@@ -46518,6 +46912,8 @@ class AnazhRealm {
         if (!parsed || typeof parsed !== "object") {
             return { ok: false, reason: "kein gültiger Snapshot" };
         }
+        const erbgutNein = AnazhRealm._erbgutEinlass(parsed);
+        if (erbgutNein) return { ok: false, reason: erbgutNein };
         const originalMeta = parsed.worldMeta || {};
         const originalId = typeof originalMeta.worldId === "string" ? originalMeta.worldId : null;
         const originalSlug = (originalMeta.slug || "import")
@@ -46534,15 +46930,7 @@ class AnazhRealm {
         }
         // Frische worldId — sonst würde ein lokal existierender Eintrag mit
         // identischer ID stillschweigend überschrieben.
-        let newWorldId;
-        try {
-            newWorldId =
-                typeof crypto !== "undefined" && crypto.randomUUID
-                    ? crypto.randomUUID()
-                    : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-        } catch {
-            newWorldId = "w_" + Math.random().toString(36).slice(2, 10);
-        }
+        const newWorldId = AnazhRealm._neueWeltId();
         const bornAt = Date.now();
         // Importierter Snapshot wird tief geklont, dann mit neuer Identität
         // überschrieben. parentWorlds erbt jegliche bestehenden Eltern +
@@ -46558,45 +46946,20 @@ class AnazhRealm {
             parentWorlds: newParents,
             schemaVersion: "9.0-tor-v1",
         };
-        // Der Import hält seinen Empfang als Witness-Eintrag mit Provenienz fest. Ohne Journal (Legacy/
-        // Minimal-Snapshot) wird der Container angelegt — sonst fiele der Eintrag still weg.
-        if (!cloned.worldJournal || typeof cloned.worldJournal !== "object") {
-            cloned.worldJournal = { entries: [], seen: {} };
-        }
-        if (!Array.isArray(cloned.worldJournal.entries)) {
-            cloned.worldJournal.entries = [];
-        }
-        if (!cloned.worldJournal.seen || typeof cloned.worldJournal.seen !== "object") {
-            cloned.worldJournal.seen = {};
-        }
-        const nextId = cloned.worldJournal.entries.length + 1;
-        cloned.worldJournal.entries.push({
-            id: nextId,
-            at: Date.now(),
-            tick: 0,
-            type: "witness",
-            text: `Ich wurde als „${slug}" neben einer fremden Welt empfangen.`,
-            ctx: { fromWorldId: originalId, asWorldId: newWorldId, asSlug: slug },
+        // Der Import hält seinen Empfang als Witness-Eintrag mit Provenienz fest.
+        AnazhRealm._zeugnisEintragen(cloned, `Ich wurde als „${slug}" neben einer fremden Welt empfangen.`, {
+            fromWorldId: originalId,
+            asWorldId: newWorldId,
+            asSlug: slug,
         });
-        try {
-            localStorage.setItem(this.worldStorageKey(newWorldId), JSON.stringify(cloned));
-        } catch (err) {
-            return { ok: false, reason: `Speicher voll: ${err.message}` };
-        }
-        this.worldsIndexUpsert({ worldId: newWorldId, slug, bornAt, lastPlayed: Date.now() });
+        // durch DIE TÜR: die Welt der Seite sichert sich, die fremde liegt mit Probe unter ihrer neuen Id; mit `reload` der
+        // Welt-Wechsel (Zeiger, Sperre, Reload), sonst bleibt die aktive Welt.
+        const ab = this._weltBetreten(cloned, null, { neuLaden: reload, aktiv: reload });
+        if (!ab.ok) return { ok: false, reason: `Speicher voll: ${ab.reason}` };
         this.log(
             `Welt „${slug}" als ${newWorldId.slice(0, 8)}… neben uns gelegt (Parent: ${originalId || "keine"})`,
             "INFO"
         );
-        if (
-            reload &&
-            typeof window !== "undefined" &&
-            window.location &&
-            typeof window.location.reload === "function"
-        ) {
-            this.activeWorldSet(newWorldId);
-            window.location.reload();
-        }
         return { ok: true, worldId: newWorldId, slug, parentWorlds: newParents };
     }
 
@@ -46861,6 +47224,10 @@ class AnazhRealm {
         if (!AnazhRealm.FUSION_STRATEGIES.includes(strategy)) {
             return { ok: false, reason: `unbekannte Strategie: ${strategy}` };
         }
+        // Führt die Fusion in die neue Welt (reload), sichert sich die Welt der Seite zuerst — ihr Fortschritt seit dem
+        // letzten Autosave fiele sonst hinter die Sperre des Welt-Wechsels (und ist sie ein Elternteil, liest die Fusion
+        // so ihren jetzigen Stand).
+        if (reload && this.state.worldMeta && this.state.worldMeta.worldId) this.saveState();
         const rawA = localStorage.getItem(this.worldStorageKey(idA));
         const rawB = localStorage.getItem(this.worldStorageKey(idB));
         if (!rawA || !rawB) {
@@ -46942,31 +47309,14 @@ class AnazhRealm {
             hotbar: Array.isArray(saveA.hotbar) ? saveA.hotbar.slice(0, 9) : [],
         };
 
-        try {
-            localStorage.setItem(this.worldStorageKey(identity.newWorldId), JSON.stringify(snap));
-        } catch (err) {
-            return { ok: false, reason: `Speicher voll: ${err.message}` };
-        }
-        this.worldsIndexUpsert({
-            worldId: identity.newWorldId,
-            slug: identity.finalSlug,
-            bornAt: identity.bornAt,
-            lastPlayed: Date.now(),
-        });
+        const ab = this._weltAblegen(snap, { aktiv: false });
+        if (!ab.ok) return { ok: false, reason: `Speicher voll: ${ab.reason}` };
         this.log(
             `Welt-Fusion: ${identity.slugA} ⊕ ${identity.slugB} → ${identity.finalSlug} (Strategie ${strategy}, ID ${identity.newWorldId.slice(0, 8)}…)`,
             "INFO"
         );
 
-        if (
-            reload &&
-            typeof window !== "undefined" &&
-            window.location &&
-            typeof window.location.reload === "function"
-        ) {
-            this.activeWorldSet(identity.newWorldId);
-            window.location.reload();
-        }
+        if (reload) this._weltWechselNeuLaden(identity.newWorldId);
         return {
             ok: true,
             worldId: identity.newWorldId,
@@ -46979,15 +47329,7 @@ class AnazhRealm {
     // Neue Identität: UUID + Slugs + Seed + Geburts-Timestamp. crypto.randomUUID
     // ist die bevorzugte Quelle (echter Zufall); Fallback ist Math.random.
     _fusionGenerateIdentity(saveA, saveB, slugHint) {
-        let newWorldId;
-        try {
-            newWorldId =
-                typeof crypto !== "undefined" && crypto.randomUUID
-                    ? crypto.randomUUID()
-                    : "w_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-        } catch {
-            newWorldId = "w_" + Math.random().toString(36).slice(2, 10);
-        }
+        const newWorldId = AnazhRealm._neueWeltId();
         const slugA = (saveA.worldMeta && saveA.worldMeta.slug) || "welt-a";
         const slugB = (saveB.worldMeta && saveB.worldMeta.slug) || "welt-b";
         const finalSlug = this._generateFusionSlug(slugA, slugB, slugHint);
@@ -51161,18 +51503,18 @@ class AnazhRealm {
         // Der bestehende Join-Flow (W11.5): broker + roomId → world-snapshot.
         const code = `anazh://${addr.broker.replace(/^wss?:\/\//i, "")}/${addr.roomId}`;
         this.log(`Reise zur Welt „${addr.label}" (${status}) — Adresse ${code}`, "INFO");
-        const result = await this.joinWorldFromCode(code, { slugHint: addr.label });
-        if (result && result.ok) {
-            // Ein erfolgreicher Join lebt als Journal-Eintrag (analog dem
-            // Sub-Welt-Erstbesuch); die fremde Welt wird unsere lokale Welt
-            // (role:"guest"), darum: kein Portal-Overlay nötig.
-            this.journalAppendOnce(
-                `portalAddress:${addr.worldId}`,
-                "portal",
-                `Du tratst zum ersten Mal durch das Tor zur Welt „${addr.label}".`
-            );
-        }
-        return result;
+        // Der Beitritt geht durch DIE TÜR (`_importGuestWorld` → `_weltBetreten`): die alte Welt hält ihr Zeugnis fest und
+        // sichert sich, die fremde wird unsere lokale Welt (role:"guest", kein Portal-Overlay), Sperre und Reload. Bis 10.10.
+        // lud das Adress-Portal nie neu: der nächste saveState setzte den Aktiv-Zeiger auf die alte Welt zurück, und der
+        // Beitritt verschwand still (Gegenprüfung Runde 3).
+        return this.joinWorldFromCode(code, {
+            slugHint: addr.label,
+            zeugnisA: {
+                key: `portalAddress:${addr.worldId}`,
+                type: "portal",
+                text: `Du tratst zum ersten Mal durch das Tor zur Welt „${addr.label}".`,
+            },
+        });
     }
 
     // Φ1 — die Bestätigungs-Karte. Im Browser ein confirm()-Dialog (R2-konform:
@@ -57004,6 +57346,8 @@ class AnazhRealm {
     // Deko-Instanzen in die GETEILTEN HISM-Gruppen. Deterministisch (pcg2d).
     _scatterPass(region, layer, regX, regZ, seedHash, playerPos, cont, deadlineMs) {
         const SC = AnazhRealm.SCATTER;
+        // Die Streu-Zelle ist ein Wurf des Feldes: trägt die Wildnis die Region nicht, entsteht keine (und keine Promotion).
+        if (!this._wildnisTraegt((regX + 0.5) * SC.regionM, (regZ + 0.5) * SC.regionM)) return 0;
         const cellM = layer.cellM;
         const cellsPerRegion = Math.round(SC.regionM / cellM);
         const baseCellX = Math.round((regX * SC.regionM) / cellM);
@@ -73873,6 +74217,8 @@ class AnazhRealm {
     }
 
     _autoSettlementSiteOk(x, z, noSpawnClear) {
+        // Der Dorf-Ort ist ein Wurf des Feldes (Auto-Dorf, Start-Dorf): wo die Wildnis nicht trägt, steht keins.
+        if (!this._wildnisTraegt(x, z)) return false;
         const A = AnazhRealm.AUTO_SETTLEMENT; // Wirt-Streaming (spawnClearM)
         if (!noSpawnClear) {
             const g = this._genesisMitte();
@@ -79099,6 +79445,8 @@ class AnazhRealm {
     // Per-Frame-Spawn-Budget: FIFO-Queue, `_tickPendingVegSpawns` arbeitet sie mit Frame-Limit ab;
     // Welt-Wechsel/Reload räumt sie. `this._vegSpawnImmediate === true` (Test/Worldgen) spawnt synchron.
     _enqueueVegetationSpawn(name, position, opts) {
+        // Ein Wurf des Feldes (Wald, Unterholz, Totholz, Fels-Streu): wo die Wildnis nicht trägt, fällt er.
+        if (!this._wildnisTraegt(position.x, position.z)) return;
         if (this._vegSpawnImmediate) {
             this._naturSetzen(name, position, opts);
             return;
@@ -92315,7 +92663,8 @@ class AnazhRealm {
         const v = this._geburtsOrtV || (this._geburtsOrtV = new THREE.Vector3());
         if (wunsch && Math.hypot(wunsch.x - cx, wunsch.z - cz) >= AnazhRealm.CREATURE_SPAWN_FAR_MIN) {
             v.set(wunsch.x, this.getTerrainHeightAt(wunsch.x, wunsch.z) + 1, wunsch.z);
-            if (!fr || !fr.containsPoint(v)) return { x: wunsch.x, z: wunsch.z };
+            if (!fr || !fr.containsPoint(v))
+                return this._wildnisTraegt(wunsch.x, wunsch.z) ? { x: wunsch.x, z: wunsch.z } : null;
         }
         let x = cx;
         let z = cz;
@@ -92328,7 +92677,9 @@ class AnazhRealm {
             v.set(x, this.getTerrainHeightAt(x, z) + 1, z);
             if (!fr.containsPoint(v)) break;
         }
-        return { x, z };
+        // Die Geburt ist ein Wurf des Feldes: trägt die Wildnis den Ort nicht, gibt es keinen (null — kein Boot-, Natur-
+        // oder Nexus-Tier; der Akt eines Menschen ruft Leben weiter überall).
+        return this._wildnisTraegt(x, z) ? { x, z } : null;
     }
 
     // [ATMOSPHERE] Geburt: 6 Kandidaten-Orte nach dem Geburts-Gesetz (fern, außerhalb des Blicks), je die affinity-beste
@@ -92342,6 +92693,7 @@ class AnazhRealm {
         const candidates = [];
         for (let i = 0; i < 6; i++) {
             const ort = this._kreaturGeburtsOrt(rng);
+            if (!ort) continue; // die Wildnis trägt den Ort nicht
             const field = typeof this.worldFieldAt === "function" ? this.worldFieldAt(ort.x, ort.z) : null;
             const soul = this._pickFaunaSoulAtPlayer(ort.x, ort.z, rng);
             // Resonanz-Score: Soul-Tags · Field, total
@@ -92355,6 +92707,7 @@ class AnazhRealm {
             candidates.push({ x: ort.x, z: ort.z, soul, score });
         }
         // Welt entscheidet: höchster Resonanz-Score gewinnt; der Strom streut schon die Orte.
+        if (!candidates.length) return false;
         let best = candidates[0];
         for (const c of candidates) if (c.score > best.score) best = c;
         const gY = this.getTerrainHeightAt(best.x, best.z);
@@ -93533,9 +93886,24 @@ class AnazhRealm {
         this.p2pLoadPersisted();
         this.initP2PUI();
         // Aktive Welt-Identität VOR ensureWorldMeta laden, sonst triggert fresh=true (neue UUID + Genesis)
-        // für eine bestehende Welt. Migriert nebenbei einen Legacy-Single-Welt-Save.
+        // für eine bestehende Welt. Migriert nebenbei einen Legacy-Single-Welt-Save. DIE RETTUNGS-KETTE DES BOOTS
+        // (Gegenprüfung Runde 4): erst der IndexedDB-Stand der aktiven Welt (V18.151, Faden #6), dann fragt die Vorlade die
+        // EINE Kette (Platz → .bak → IndexedDB), BEVOR ensureWorldMeta eine neue Id vergibt.
+        await this._idbPreload();
         this._preloadActiveWorldMeta();
         this.ensureWorldMeta();
+        // EINE NEUE WELT NUR, WENN DIE KETTE LEER IST — UND DANN LAUT: was gefunden wurde, warum frisch.
+        if (this._bootLeer) {
+            const b = this._bootLeer;
+            const satz = b.id
+                ? `Die Welt ${b.id} ließ sich nicht finden (${b.befund.join(", ")}) — eine neue Welt erwacht.`
+                : `Kein gespeicherter Stand (${b.befund.join(", ")}) — eine neue Welt erwacht.`;
+            this.log(satz, b.id ? "ERROR" : "INFO");
+            this._chatEcho(satz);
+        }
+        // Die Empfänger-Wand des Erbguts (fail-closed): ein Erbgut, das dieser Build nicht trägt, lässt die Welt nicht
+        // erwachen — der Wurf landet auf dem Ladeschirm (`_bootAnazhRealm`), nie fährt sie still als Wildnis.
+        this._erbgut();
         // Vibe-Pass laden oder beim ersten Erwachen erzeugen — nach ensureWorldMeta, damit die
         // Genesis-Erinnerung ins Journal der aktiven Welt fließt (die Identität ist welt-unabhängig).
         await this._ensureVibePass();
@@ -93947,9 +94315,8 @@ class AnazhRealm {
         this.state._fieldVy = 0;
         this.state.selfAwareness.components.push("fieldController");
 
-        // V18.151 (Faden #6) — den IndexedDB-Stand der aktiven Welt laden
-        // (gewinnt nur, wenn frischer als der localStorage-Spiegel).
-        await this._idbPreload();
+        // Der Zustand der aktiven Welt: dieselbe Rettungs-Kette wie die Vorlade (Platz → .bak → IndexedDB; der IDB-Stand
+        // des Boot-Vorlaufs wird hier verbraucht).
         this.loadState();
         this.generateNewWorld();
 
@@ -102293,6 +102660,31 @@ AnazhRealm.P2P_SNAP_BUF_MAX = 20;
 // denselben Peer. Schützt vor pull-Spam (jeder Pull serialisiert + sendet
 // die ganze Welt — ohne Limit ein DoS-Vektor).
 AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
+// DIE ERBGUT-STUFE DES PROTOKOLLS: wer eine Welt erbittet (world-request, world-pull), erklärt, dass er
+// `worldMeta.erbgut` liest und eine unbekannte Term-Art ablehnt (`_erbgutEinlass`). Ein Sender reicht eine Welt, deren
+// Erbgut nicht die Wildnis allein ist, nur einem Empfänger mit dieser Stufe (`_erbgutTeilbar`) — ein Build davor
+// zeichnete sie still als Wildnis.
+AnazhRealm.ERBGUT_PROTOKOLL = 1;
+// DIE WELTGRENZE: was beim Wechsel der Welt aus der alten reist — beim Namen, sonst nichts (gate:weltgrenze).
+//   geburt       die Wahl des Schöpfers, die eine neue Welt erbt (`_buildEmptyWorldSnapshot`)
+//   platz        der Speicher-Platz der Seite, nur in die Lücken einer geladenen Welt (`_weltMetaWechsel`)
+//   gedaechtnis  die Gedächtnisse der Seite, die welt-eigene Felder spiegeln (Erbgut, Anker, Ring, Vorschau, Dorf-Zug) —
+//                sie fallen mit dem worldMeta (`_loadStateRestoreWorldMeta`)
+AnazhRealm.WELT_GRENZE = Object.freeze({
+    geburt: Object.freeze(["visibility", "creator"]),
+    platz: Object.freeze(["worldId", "slug", "bornAt"]),
+    gedaechtnis: Object.freeze([
+        "_erbgutCache",
+        "_macroAnkerCache",
+        "_genesisRingFertig",
+        "_portalPreviewFertig",
+        "_portalPreviewAwaiting",
+        "_autoSettlementQueue",
+        "_autoSettlementRejected",
+        "_autoSettlementStartHopeless",
+        "_stlWegeKeys",
+    ]),
+});
 
 // Mesh-Welt-Verteilung: ein vendortes Welt-Bündel reist in P2P_WORLD_CHUNK_SIZE-Stücken über den
 // DataChannel. Mindestabstand zwischen zwei bundle-pull-Antworten an denselben Peer — Read + Versand

@@ -1734,6 +1734,38 @@
         "38096257646",
         "38095155944"
       ]
+    },
+    "Dichte-Spiegel (Main und voxel-worker bauen jedes Chunk-Gitter byte-gleich, mit Edits ueber dem Band)": {
+      "s": 14,
+      "n": 1,
+      "lauf": "npm run gate:worker-dichte",
+      "laeufe": [
+        "38096257646/1"
+      ]
+    },
+    "Pruefbuehne (wo die Wildnis nicht traegt, wirft das Feld nichts - auch nicht der Nexus; S4 steht an ihrer Spec)": {
+      "s": 136,
+      "n": 1,
+      "lauf": "npm run gate:pruefbuehne",
+      "laeufe": [
+        "38096257646/1"
+      ]
+    },
+    "Weltgrenze (kein Feld einer Welt reist in die naechste, keine geht verloren - Laden, Ersetzen, world-pull, Portal, Einladung, Geburt, Reload)": {
+      "s": 112,
+      "n": 1,
+      "lauf": "npm run gate:weltgrenze",
+      "laeufe": [
+        "38096257646/1"
+      ]
+    },
+    "Boot-Rettung (der Boot verliert die Welt des Aktiv-Zeigers nie - Platz, .bak, IndexedDB, dann erst frisch und laut)": {
+      "s": 76,
+      "n": 1,
+      "lauf": "npm run gate:boot-rettung",
+      "laeufe": [
+        "38096257646/1"
+      ]
     }
   },
   "vorher": {

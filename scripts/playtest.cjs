@@ -10295,6 +10295,111 @@ async function checkBandRing8(ctx) {
         // Legacy-Single-Key wurde nach Migration (falls vorhanden) entfernt.
         out.legacyKeyAbsent = localStorage.getItem("anazhRealmState") === null;
 
+        // DIE GEBURT ERBT NICHTS (Positiv-Liste, 09.10.): die alte Welt trägt jedes Identitäts-Feld (Anker, Edits,
+        // Dorf-Zellen, Ring- und Vorschau-Stempel, Erbgut, Saat, Rolle, Bann-Liste …) — der leere Snapshot der neuen Welt
+        // darf davon keins tragen, nur die Wahl des Schöpfers (visibility, creator). Die alte Welt steht dafür nur
+        // synchron in state.worldMeta (kein Takt dazwischen), danach wieder die echte.
+        {
+            const echt = r.state.worldMeta;
+            r.state.worldMeta = Object.assign({}, echt, {
+                macro: { massivC: { x: 1, z: 2 } },
+                voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, strength: 48, mode: "carve" }],
+                settlementCells: { start: { x: 0, z: 0 } },
+                genesisPortalRing: true,
+                portalPreviewFachwerk: true,
+                erbgut: { terme: [{ art: "wildnis" }] },
+                saat: [{ dsl: "x" }],
+                role: "host",
+                hostInfo: { peerId: "p" },
+                banList: { peerIds: ["p"], vibePassKeys: [] },
+                guestRights: "frieden",
+                worldAddress: "anazh://alt",
+                regionsActive: true,
+                currentRegionKey: "r0_0",
+                visibility: "privat",
+                creator: "local",
+            });
+            let leer = null;
+            try {
+                leer = r._buildEmptyWorldSnapshot(r._generateFreshWorldMeta("test-erbe"), false);
+            } finally {
+                r.state.worldMeta = echt;
+            }
+            const NEU = new Set(["worldId", "slug", "bornAt", "seed", "genVersion", "variantSeed"]);
+            const SCHNAPPSCHUSS = new Set(["parentWorlds", "bauSame", "schemaVersion", "gameMode"]);
+            const POSITIV = new Set(["visibility", "creator"]);
+            const wmNeu = (leer && leer.worldMeta) || {};
+            out.geborenGeerbt = Object.keys(wmNeu).filter(
+                (k) => wmNeu[k] !== undefined && !NEU.has(k) && !SCHNAPPSCHUSS.has(k) && !POSITIV.has(k)
+            );
+            out.geborenPositiv = wmNeu.visibility === "privat" && wmNeu.creator === "local";
+        }
+        // DIE EMPFÄNGER-WAND DES ERBGUTS (docs/taille-spec.md §3): ohne Feld [wildnis]; eine unbekannte Term-Art, ein
+        // Grund-Term nicht zuerst, eine fehlende Zahl werfen (fail-closed, nie still Wildnis).
+        {
+            const wirft = (roh) => {
+                try {
+                    r.constructor._erbgutNormal(roh);
+                    return "";
+                } catch (e) {
+                    return String(e.message);
+                }
+            };
+            out.erbgutWand = {
+                ohne: JSON.stringify(r.constructor._erbgutNormal(undefined)) === '[{"art":"wildnis"}]',
+                unbekannt: /unbekannte Term-Art/.test(wirft({ terme: [{ art: "vulkan" }] })),
+                grundZuerst: /nur der erste Term/.test(
+                    wirft({
+                        terme: [
+                            {
+                                art: "rampe",
+                                x: 0,
+                                z: 0,
+                                richtung: 0,
+                                breite: 9,
+                                lauf: 9,
+                                krone: 1,
+                                winkel: 9,
+                                boeschung: 45,
+                            },
+                        ],
+                    })
+                ),
+                zahl: /keine Zahl/.test(wirft({ terme: [{ art: "insel", x: 0 }] })),
+            };
+        }
+        // DIE TÜREN DES ERBGUTS (`_erbgutEinlass`, Gegenprüfung 10.10.): eine Welt mit einer Term-Art, die dieser Build nicht
+        // trägt, betritt den Speicher nie — weder über das Welt-Tor (daneben) noch als Einladung noch als Snapshot eines
+        // Mitspielers; Index, Zeiger der aktiven Welt und die lebende Welt bleiben (bis 10.10. nahmen die Türen sie mit
+        // ok:true an, der Zeiger blieb stehen, und jeder Reload scheiterte am Ladeschirm).
+        {
+            const fremd = () => ({
+                worldMeta: {
+                    worldId: "w-tuer-korridor",
+                    slug: "tuer-korridor",
+                    erbgut: { terme: [{ art: "korridor" }] },
+                },
+            });
+            const index0 = r.worldsIndexLoad().length;
+            const zeiger0 = r.activeWorldGet();
+            const welt0 = r.state.worldMeta;
+            const p2pRolle0 = r.state.p2p.role;
+            const daneben = r.importWorldBeside(fremd());
+            const gast = r._importGuestWorld(fremd(), { url: "ws://127.0.0.1:1", roomId: "w-tuer-korridor" }, null);
+            r.state.p2p.pendingWorldSnapshot = true;
+            const mitspieler = r._p2pApplyWorldSnapshot("tuer-peer", fremd());
+            out.erbgutTueren = {
+                daneben: daneben && daneben.ok === false && /unbekannte Term-Art/.test(daneben.reason),
+                gast: gast === null,
+                mitspieler: mitspieler && mitspieler.ok === false && /unbekannte Term-Art/.test(mitspieler.reason),
+                index: r.worldsIndexLoad().length === index0,
+                zeiger: r.activeWorldGet() === zeiger0,
+                welt: r.state.worldMeta === welt0 && r.state.p2p.role === p2pRolle0,
+                gespeichert: localStorage.getItem(r.worldStorageKey("w-tuer-korridor")) === null,
+            };
+            r.state.p2p.pendingWorldSnapshot = false;
+        }
+
         // createNewWorld (ohne Reload) erzeugt eine neue Welt im Index.
         // Ziel: Ring-8-Invarianten ohne page-reload prüfbar.
         const beforeCount = r.worldsIndexLoad().length;
@@ -10400,6 +10505,24 @@ async function checkBandRing8(ctx) {
         check("Ring 8: anazhRealmActiveWorld zeigt auf aktive Welt", ring8Results.activeWorldPointerSet);
         check("Ring 8: Per-Welt-Save-Key existiert", ring8Results.perWorldSaveExists);
         check("Ring 8: Legacy-Single-Key nach Migration weg", ring8Results.legacyKeyAbsent);
+        check(
+            "Ring 8: eine neue Welt erbt kein Identitäts-Feld der alten (Positiv-Liste visibility · creator)",
+            Array.isArray(ring8Results.geborenGeerbt) && ring8Results.geborenGeerbt.length === 0,
+            `geerbt: ${(ring8Results.geborenGeerbt || ["?"]).join(", ") || "—"}`
+        );
+        check("Ring 8: die Positiv-Liste reist (visibility, creator)", ring8Results.geborenPositiv === true);
+        const ew = ring8Results.erbgutWand || {};
+        check(
+            "Erbgut: ohne Feld [wildnis]; unbekannte Term-Art, Grund nicht zuerst, fehlende Zahl werfen (fail-closed)",
+            ew.ohne === true && ew.unbekannt === true && ew.grundZuerst === true && ew.zahl === true,
+            JSON.stringify(ew)
+        );
+        const et = ring8Results.erbgutTueren || {};
+        check(
+            "Erbgut: keine Tür lässt ein fremdes Erbgut ein (Welt-Tor, Einladung, Mitspieler) — Index, Zeiger, Welt bleiben",
+            ["daneben", "gast", "mitspieler", "index", "zeiger", "welt", "gespeichert"].every((k) => et[k] === true),
+            JSON.stringify(et)
+        );
         check("Ring 8: createNewWorld liefert neue worldId", ring8Results.newWorldCreated);
         check("Ring 8: Index wächst um eins nach createNewWorld", ring8Results.indexGrewByOne);
         check("Ring 8: Neue Welt im Index mit slug", ring8Results.newWorldInIndex);
@@ -11856,27 +11979,36 @@ async function checkBandRing11AndW7Mesh(ctx) {
         const noHost = r._p2pRequestWorldResync();
         out.resyncNoHost = noHost.ok === false && noHost.reason === "no_host";
 
-        // _p2pApplyWorldSnapshot extrahiert: setzt role guest +
-        // ruft activeWorldSet (sonst landet ein Reload in der
-        // ALTEN Welt). loadState + activeWorldSet gestubbt.
-        const origLoad = r.loadState;
-        const origActive = r.activeWorldSet;
-        let activeSetTo = null;
-        r.loadState = () => {
-            // loadState würde worldMeta.worldId setzen — wir
-            // simulieren die Host-worldId.
-            r.state.worldMeta.worldId = "host-world-xyz";
-        };
-        r.activeWorldSet = (wid) => {
-            activeSetTo = wid;
-        };
+        // _p2pApplyWorldSnapshot geht durch DIE TÜR `_weltBetreten`: ein Snapshot ohne worldId bekommt seine eigene (nie
+        // den Platz der Welt der Seite), liegt mit role guest + hostInfo im Speicher, der Aktiv-Zeiger zeigt auf ihn (sonst
+        // landet ein Reload in der ALTEN Welt); die Seite lädt ihn nicht in sich. `_testNoReload` hält den Reload an.
+        const zeiger0 = r.activeWorldGet();
+        const welt0 = r.state.worldMeta.worldId;
         p2p.role = "host";
         p2p._testNoReload = true;
-        const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} }, { reload: false });
-        out.applyExtractedWorks = applyRes.ok === true && p2p.role === "guest";
-        out.applySetsActiveWorld = activeSetTo === "host-world-xyz";
-        r.loadState = origLoad;
-        r.activeWorldSet = origActive;
+        const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} });
+        let abgelegt = null;
+        try {
+            abgelegt = applyRes.ok ? JSON.parse(localStorage.getItem(r.worldStorageKey(applyRes.worldId))) : null;
+        } catch (_e) {
+            abgelegt = null;
+        }
+        out.applyExtractedWorks =
+            applyRes.ok === true &&
+            p2p.role === "guest" &&
+            !!abgelegt &&
+            abgelegt.worldMeta.role === "guest" &&
+            abgelegt.worldMeta.hostInfo.peerId === "hostX";
+        out.applySetsActiveWorld =
+            !!applyRes.worldId &&
+            applyRes.worldId !== welt0 &&
+            r.activeWorldGet() === applyRes.worldId &&
+            r.state.worldMeta.worldId === welt0;
+        if (applyRes.worldId) {
+            localStorage.removeItem(r.worldStorageKey(applyRes.worldId));
+            r.worldsIndexRemove(applyRes.worldId);
+        }
+        r.activeWorldSet(zeiger0);
 
         // W7 P2 Härtung — Rate-Limit-Datenstruktur + Konstante.
         out.pullCooldownFields =
@@ -11923,8 +12055,14 @@ async function checkBandRing11AndW7Mesh(ctx) {
         check("W7 P2: ein Stück ohne laufenden Pull wird verworfen", w7p2Results.chunkRejectsWhenNotPending);
         check("W7 P2: Resync ohne Mesh → no_mesh", w7p2Results.resyncNoMesh);
         check("W7 P2: Resync ohne host-Peer → no_host", w7p2Results.resyncNoHost);
-        check("W7 P2: _p2pApplyWorldSnapshot setzt die Guest-Rolle", w7p2Results.applyExtractedWorks);
-        check("W7 P2: _p2pApplyWorldSnapshot setzt den Aktiv-Welt-Zeiger", w7p2Results.applySetsActiveWorld);
+        check(
+            "W7 P2: _p2pApplyWorldSnapshot legt die Host-Welt als Gast ab (role guest + hostInfo)",
+            w7p2Results.applyExtractedWorks
+        );
+        check(
+            "W7 P2: _p2pApplyWorldSnapshot gibt einer Welt ohne worldId ihre eigene und setzt den Aktiv-Zeiger (die Seite bleibt)",
+            w7p2Results.applySetsActiveWorld
+        );
         check("W7 P2: world-pull Rate-Limit-Struktur + Cooldown-Konstante", w7p2Results.pullCooldownFields);
         check("W7 P2: Resync-Knopf im DOM", w7p2Results.resyncButtonExists);
     }
@@ -15103,6 +15241,31 @@ async function checkBandLateMultiUser(ctx) {
         r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "asker" }));
         const sentSnap = sentMsgs.find((m) => m.type === "world-snapshot" && m.to === "asker");
         out.hostAnswersRequestWithSnapshot = !!sentSnap && !!sentSnap.state;
+        // DIE WELT REIST NUR ZU EINEM LESER IHRES ERBGUTS (Plan R11, `_erbgutTeilbar`): trägt die Welt ein Erbgut jenseits
+        // der Wildnis, bekommt ein Anfrager ohne Erbgut-Stufe (ein Build davor) keinen Snapshot — er zeichnete still
+        // Wildnis darunter; ein Leser (`erbgut` ≥ 1) bekommt ihn. Die lebende Welt trägt das Erbgut nur synchron (kein
+        // Takt dazwischen), ihr Erbgut-Merker bleibt unberührt.
+        {
+            const T = r.constructor;
+            const buehne = {
+                terme: [{ art: "insel", x: 0, z: 0, r: 420, plateau: 9, kuppel: 0.003, schelf: 60, grund: -15 }],
+            };
+            const echt = r.state.worldMeta;
+            r.state.worldMeta = Object.assign({}, echt, { erbgut: buehne });
+            sentMsgs.length = 0;
+            try {
+                r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "alt-build" }));
+            } finally {
+                r.state.worldMeta = echt;
+            }
+            out.erbgutReise = {
+                altVerweigert: sentMsgs.length === 0,
+                teilbarWildnis: T._erbgutTeilbar({}, {}) === null,
+                teilbarLeser: T._erbgutTeilbar({ erbgut: buehne }, { erbgut: T.ERBGUT_PROTOKOLL }) === null,
+                verweigertAlt: /liest kein Erbgut/.test(String(T._erbgutTeilbar({ erbgut: buehne }, {}))),
+                stufe: T.ERBGUT_PROTOKOLL >= 1,
+            };
+        }
         r._p2pSignal = origSignal;
         sentMsgs.length = 0;
         r.state.p2p.role = "solo";
@@ -15156,6 +15319,12 @@ async function checkBandLateMultiUser(ctx) {
         check(
             "Ring 11.5: Host antwortet auf world-request mit world-snapshot (to=asker)",
             ring115Results.hostAnswersRequestWithSnapshot
+        );
+        const er = ring115Results.erbgutReise || {};
+        check(
+            "Ring 11.5: eine Welt mit Erbgut reist nur zu einem Leser (Anfrager ohne Erbgut-Stufe bekommt keinen Snapshot)",
+            ["altVerweigert", "teilbarWildnis", "teilbarLeser", "verweigertAlt", "stufe"].every((k) => er[k] === true),
+            JSON.stringify(er)
         );
         check("Ring 11.5: new-world-dialog im DOM", ring115Results.dialogExists);
         check(
