@@ -622,6 +622,10 @@ const FORBIDDEN = [
     // in state.leichname (Nachbesserung 3: vorher fragten 14 Methoden selbst nach dying, 5 Leser über diese Frage)
     { token: "_kreaturLebend", fiel: "Welle LF kampf — der Leichnam ist kein Wesen (state.leichname)" },
     { token: "_kreaturZahlLebend", fiel: "Welle LF kampf — die Zahl der Wesen ist state.creatures.length" },
+    // EGO-SCHATTEN (0910-5, V18.540): die Ich-Regel schaltet Ebenen, nie `visible` — das Merk-Paar der Haut-Verbergung aus
+    // Welle LF (die Haut ging mit `visible` und nahm ihren Wurf mit) kehrt nicht zurück.
+    { token: "_egoVerborgen", fiel: "Ego-Schatten 0910-5 — die Ich-Regel ist der Ebenen-Schalter (_maskeVorEgo)" },
+    { token: "_egoWar", fiel: "Ego-Schatten 0910-5 — die Ich-Regel ist der Ebenen-Schalter (_maskeVorEgo)" },
     // WELLE LF RUDEL (Leben-Schau 07.10., D11/D1-Rest): das Fuß-Ziel in der Ebene des Leibs (das Ziel im Gruppen-Raum,
     // per Rumpf-Quaternion zurückgedreht — am Querhang kippten die Beine mit dem Leib) kehrt nicht zurück.
     { token: "_gangQ", fiel: "Welle LF rudel — das Fuß-Ziel liegt in der Welt (Pfoten-IK _animateTierBaum)" },

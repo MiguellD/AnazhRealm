@@ -1675,6 +1675,14 @@
         "38095155944"
       ]
     },
+    "Ego-Schatten (echter Renderer — in der Ego-Sicht wirft der Leib seinen Schatten, das Auge sieht ihn nicht)": {
+      "s": 17,
+      "n": 1,
+      "lauf": "npm run gate:ego-schatten",
+      "laeufe": [
+        "38038945137/1"
+      ]
+    },
     "Ziel-Zensus (echter Renderer — jedes GPU-Ziel hat einen Leser, die Schatten-Karte zeichnet ohne Farbe)": {
       "s": 74,
       "n": 5,

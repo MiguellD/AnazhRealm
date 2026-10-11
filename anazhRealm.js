@@ -97146,53 +97146,45 @@ class AnazhRealm {
         }
     }
 
-    // DIE EGO-SICHT AM CHOKEPOINT: der EINE Schreiber der 1st/3rd-Person-Avatar-Sichtbarkeit (Kopf-Part
-    // + _creatureSkin-Wrap; 3rd sichtbar, 1st verborgen — die Kamera sitzt im Leib). Aufrufer:
-    // Avatar-Guss (applyPlayerSoul), Modus-Schalter (setCameraMode) und _loopCamera (idempotenter
-    // Halter) — lebte die Regel nur im per-Frame-Tick, zeigte jeder Render davor den Kopf von innen.
-    // DAS GERÄT BLEIBT IN DER HAND (Welle LF 09.10., Posten 2 / K-L4): im 1st verbirgt die Regel die HAUT des Leibs (jedes
-    // Mesh der _creatureSkin-Hülle — die Kamera sitzt im Leib), nie die Hülle selbst: an ihren Knochen hängt das gehaltene
-    // Gerät (_refreshHeldMesh, Handgelenk), und eine verborgene Hülle nahm es mit — die Ich-Sicht zeigte keine Waffe, auch
-    // nicht im Treffer-Takt (Bild ks01). Nur die Hülle, an der das Gerät hängt, geht so (ohne den Teilbaum des Geräts,
-    // userData._gehalten); jede andere Hülle wie zuvor als Ganzes. Je Aufruf über den Baum der Hülle (rund hundert Knoten) —
-    // eine neue Haut (Seelen-Wechsel, Kleid) oder ein neues Gerät gilt sofort.
+    // DIE EGO-SICHT AM CHOKEPOINT: der EINE Schreiber der 1st/3rd-Person-Avatar-Sicht (Kopf-Part + _creatureSkin-Wrap;
+    // 3rd sieht das Auge den Leib, 1st nicht — die Kamera sitzt im Leib). Aufrufer: Avatar-Guss (applyPlayerSoul),
+    // Modus-Schalter (setCameraMode) und _loopCamera (idempotenter Halter, je Frame vor dem Render) — lebte die Regel nur
+    // im per-Frame-Tick, zeigte jeder Render davor den Kopf von innen.
+    // DER EINE EBENEN-SCHALTER (0910-5): im 1st verlässt der Leib die Ebene 0 der Haupt-Kamera und liegt auf
+    // SHADOW_TWIN_LAYER — die Kaskaden sehen ihn GANZ (wie den Kronen-Zwilling), das Auge nie. Bis 0910-5 schaltete die
+    // Regel `visible` und nahm mit der Haut den Wurf: in der Ego-Sicht, dem Standard-Blick, warf der Spieler keinen Schatten
+    // (Lehre 26: unsichtbar für die Haupt-Kamera heißt Ebene, nie Transparenz). `visible` bleibt unberührt — die Stufen-Regel
+    // (`_gelenkStufe`) behält ihr Wort. Ebenen erbt kein Kind: die Regel geht jeden Knoten, verschiebt nur, was auf
+    // Ebene 0 liegt, und merkt dessen Maske (`_maskeVorEgo`); 3rd gibt genau sie zurück — ein Knoten, der schon nur in den
+    // Kaskaden lebt (ein Zwilling), bleibt, wie er ist. Das Gerät in der Hand (`_gehalten`, _refreshHeldMesh) ist keine
+    // Haut: es bleibt auf Ebene 0, das Auge sieht es, es wirft. Es hängt am Handgelenk IN der Hülle (Welle LF 09.10., K-L4:
+    // eine verborgene Hülle nahm es mit, Bild ks01) — r184 projiziert die Kinder jedes Knotens ohne Ebenen-Test, so zeichnet
+    // es unter Knochen auf Ebene 2 (gate:vendor-anker). Je Aufruf über den Baum (rund hundert Knoten): eine neue Haut
+    // (Seelen-Wechsel, Kleid) oder ein neues Gerät gilt sofort.
     _applyEgoSicht() {
         const player = this.state.playerMesh;
         if (!player) return;
         const third = this.state.cameraMode === "third";
-        const headPart = player.userData && player.userData.parts && player.userData.parts.head;
-        if (headPart) headPart.visible = third;
-        // verbergen merkt, was die Haut vorher war (_egoWar) — eine andere Regel (Fell-Strähnen, Fern-Klon) behält ihr Wort;
-        // zeigen gibt genau das zurück
-        const haut = (o, zeigen) => {
-            if (o.userData && o.userData._gehalten) return;
-            if (o.isMesh) {
-                if (!zeigen) {
-                    if (!o.userData._egoVerborgen) {
-                        o.userData._egoVerborgen = true;
-                        o.userData._egoWar = o.visible;
-                    }
-                    o.visible = false;
-                } else if (o.userData._egoVerborgen) {
-                    o.userData._egoVerborgen = false;
-                    o.visible = o.userData._egoWar !== false;
+        const zwilling = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
+        const leib = (o) => {
+            const u = o.userData;
+            if (u._gehalten) return;
+            const m = o.layers.mask;
+            if (third) {
+                if (u._maskeVorEgo !== undefined) {
+                    o.layers.mask = u._maskeVorEgo;
+                    u._maskeVorEgo = undefined;
                 }
+            } else if (m & 1) {
+                u._maskeVorEgo = m;
+                o.layers.mask = (m & ~1) | zwilling;
             }
-            for (const k of o.children) haut(k, zeigen);
+            for (const k of o.children) leib(k);
         };
-        const held = player.userData && player.userData.heldMesh;
+        const headPart = player.userData && player.userData.parts && player.userData.parts.head;
+        if (headPart) leib(headPart);
         for (const ch of player.children) {
-            if (!ch || !ch.userData || !ch.userData._creatureSkin) continue;
-            let traegt = false;
-            for (let n = held; n && !traegt; n = n.parent) traegt = n === ch;
-            if (traegt && !third) {
-                // die Hülle trägt das Gerät: sie bleibt, ihre Haut geht
-                ch.visible = true;
-                haut(ch, false);
-            } else {
-                haut(ch, true);
-                ch.visible = third;
-            }
+            if (ch && ch.userData && ch.userData._creatureSkin) leib(ch);
         }
     }
 
@@ -97323,8 +97315,8 @@ class AnazhRealm {
                 const fzg = this._fahrzeugGesetzFor(ent);
                 return { ent, kam: prof.kamera || null, kabine: !!(fzg && fzg.drive && fzg.drive.huelle) };
             })();
-            // Im 1st-Person bleibt der Körper sichtbar, nur der Kopf wird versteckt; die Regel wohnt in
-            // _applyEgoSicht (EINE Quelle).
+            // Im 1st-Person verlässt der Leib (Kopf und Haut, ohne das Gerät in der Hand) die Ebene 0 der Haupt-Kamera und
+            // wirft weiter in den Kaskaden; die Regel wohnt in _applyEgoSicht (EINE Quelle, der Ebenen-Schalter).
             player.visible = !(_fahrRitt && _fahrRitt.kabine);
             this._applyEgoSicht();
             if (this.state.cameraMode === "third") {
