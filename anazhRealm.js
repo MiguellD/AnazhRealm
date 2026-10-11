@@ -55618,24 +55618,36 @@ class AnazhRealm {
     // der Nexus), steht auf fahrbarem Grund (`_fahrPlatzFrei`); ist der gewünschte Ort keiner, wandert er zum nächsten in
     // Ringen um ihn (vehicle-core FAHR.platz: Schritt und Radius; je Ring der Umfang in Schritten, ab der Fahrt-Richtung —
     // deterministisch, jeder Peer gleich). Ein präziser Ort (Wiederherstellen, Mitspieler, das Phantom, die Linsen) bleibt
-    // bit-treu. Trägt kein Ort im Radius, bleibt der Wagen und das Log nennt den Grund (WARN) — nie still.
+    // bit-treu. Trägt kein Ort im Radius, stellt die Welt den Wagen nicht hin (false; die Wurzel sagt „platz", das Log nennt
+    // den Grund) — nie still auf den Fels. → true, wenn der Wagen steht (oder kein Studio-Wagen ist). Die Suche selbst ist
+    // ein Weg in Schritten (`_fahrPlatzWege`): die Wurzel geht ihn ganz, die Vorschau im Takt (`_ensurePortalPreview`).
     _fahrPlatzSuche(entry) {
+        const weg = this._fahrPlatzWege(entry);
+        let r = weg.next();
+        while (!r.done) r = weg.next();
+        return r.value;
+    }
+
+    // Der Weg der Platz-Suche: je Ort ein Schritt (yield), am Ende true (der Wagen steht dort, Lage und Gier am Eintrag) oder
+    // false (kein Platz im Radius).
+    *_fahrPlatzWege(entry) {
         const fzg = this._fahrzeugGesetzFor(entry);
-        if (!fzg || !fzg.drive || !fzg.drive.huelle) return;
+        if (!fzg || !fzg.drive || !fzg.drive.huelle) return true;
         entry._fahrAchseX = true; // Studio-Wagen: Bug +x (die Aufstandspunkte lesen das Gesetz)
         const prof = this._vehicleProfile(entry);
         const G = prof ? this._fahrSatz(entry, prof) : null;
-        if (!G) return;
+        if (!G) return true;
         const P = AnazhRealm._fahrPlatzGesetz().P;
         const k = this._fahrHuelleBau(entry, G);
         const ry = (Number.isFinite(entry.rotationY) ? entry.rotationY : 0) + Math.PI / 2;
         const x0 = entry.position.x;
         const z0 = entry.position.z;
         const grund = this._fahrPlatzFrei(entry, G, k, x0, z0, ry);
-        if (!grund) return;
+        if (!grund) return true;
         for (let r = 0; r <= P.suchRadiusM + 1e-9; r += P.suchSchrittM) {
             const n = r === 0 ? 1 : Math.max(8, Math.round((2 * Math.PI * r) / P.suchSchrittM));
             for (let i = 0; i < n; i++) {
+                yield r;
                 const a = ry + (i / n) * 2 * Math.PI;
                 const x = x0 + Math.sin(a) * r;
                 const z = z0 + Math.cos(a) * r;
@@ -55652,46 +55664,54 @@ class AnazhRealm {
                         `Fahr-Platz: ${entry.type} steht ${r} m weiter auf fahrbarem Grund (dort: ${grund}).`,
                         "INFO"
                     );
-                    return;
+                    return true;
                 }
             }
         }
         this.log(
-            `Fahr-Platz: kein fahrbarer Grund im Umkreis von ${P.suchRadiusM} m um (${x0.toFixed(1)}, ${z0.toFixed(1)}) — ${entry.type} bleibt (${grund}).`,
+            `Fahr-Platz: kein fahrbarer Grund im Umkreis von ${P.suchRadiusM} m um (${x0.toFixed(1)}, ${z0.toFixed(1)}) — die Welt stellt ${entry.type} nicht hin (dort: ${grund}).`,
             "WARN"
         );
+        return false;
     }
 
     // Steht der Wagen bei (x, z) in Fahrt-Richtung `ry` frei, und hat er eine BAHN? null = ja, sonst der Grund beim Namen:
     // der Stand dort (`_fahrStandFrei`) und derselbe Stand je bahnLaengen Wagenlängen vor und hinter ihm (vehicle-core
-    // FAHR.platz) — er fährt in beide Richtungen los, ohne sofort anzustoßen.
+    // FAHR.platz) — er fährt in beide Richtungen los, ohne sofort anzustoßen. Die billige Probe zuerst (Lehre 25): die Ebene der
+    // Räder an allen drei (vehicle-core fahrPlatz), erst dann die Welt des Wirts.
     _fahrPlatzFrei(entry, G, k, x, z, ry) {
-        const L = (k.bug - k.heck) * AnazhRealm._fahrPlatzGesetz().P.bahnLaengen;
+        const { vc, P } = AnazhRealm._fahrPlatzGesetz();
+        const L = (k.bug - k.heck) * P.bahnLaengen;
         const fX = Math.sin(ry);
         const fZ = Math.cos(ry);
+        const boden = this._werkBoden(entry);
+        const wo = (s) => (s === 0 ? "" : ` ${s > 0 ? "vor" : "hinter"} ihm`);
+        const ebenen = [];
         for (const s of [0, 1, -1]) {
-            const g = this._fahrStandFrei(entry, G, k, x + fX * L * s, z + fZ * L * s, ry);
-            if (g) return s === 0 ? g : `${g} ${s > 0 ? "vor" : "hinter"} ihm`;
+            const pl = vc.fahrPlatz(G, boden, x + fX * L * s, z + fZ * L * s, ry - Math.PI / 2);
+            if (!pl.ok) return pl.grund + wo(s);
+            ebenen.push(pl.eb);
+        }
+        for (let i = 0; i < 3; i++) {
+            const s = [0, 1, -1][i];
+            const g = this._fahrStandFrei(entry, k, x + fX * L * s, z + fZ * L * s, ry, ebenen[i]);
+            if (g) return g + wo(s);
         }
         return null;
     }
 
-    // Der STAND bei (x, z): das Gesetz des Kerns (vehicle-core fahrPlatz: die Ebene der Räder trägt, die Anfahrt bergauf) auf
-    // dem Boden des Werks (`_werkBoden` — derselbe, auf dem `_fahrzeugStand` ihn danach abstellt und der Ritt ihn fährt) und
-    // die Welt des Wirts: E steigt ein (kein Tor reicht mit seiner E-Reichweite an einen Platz, von dem aus der Spieler
+    // Der STAND bei (x, z) auf der Ebene `eb` seiner Räder (vehicle-core fahrPlatz auf dem Boden des Werks, `_werkBoden` —
+    // derselbe, auf dem `_fahrzeugStand` ihn danach abstellt und der Ritt ihn fährt; `_fahrPlatzFrei` fragt sie) in der Welt
+    // des Wirts: E steigt ein (kein Tor reicht mit seiner E-Reichweite an einen Platz, von dem aus der Spieler
     // einsteigt — sonst betritt E das Tor: „bau mir einen gt" stand 5,3 m vor welt_portal), die Hülle steht auf dem Land
     // eines Werks (`_landAt`: die Mitte, dann die vier Ecken), keine Wand des Geländes unter der Hülle (5 × 3 Punkte — der
     // Fels, der in den Wagen ragt), keine Box eines Baus, Baums oder Wagens im Band der Hülle (der EINE Struktur-Löser mit der
     // Hülle als Körper, wie im Ritt), der Spieler nicht unter dem Wagen. Die Wand ist die des Kontakts (`_fahrGelaendeWand`
     // ohne Fahrt-Richtung: jede steile Fläche zählt). Die billigen Proben zuerst (Lehre 25).
-    _fahrStandFrei(entry, G, k, x, z, ry) {
-        const { vc } = AnazhRealm._fahrPlatzGesetz();
-        const pl = vc.fahrPlatz(G, this._werkBoden(entry), x, z, ry - Math.PI / 2);
-        if (!pl.ok) return pl.grund;
+    _fahrStandFrei(entry, k, x, z, ry, eb) {
         const torFrei = AnazhRealm.PORTAL_REACH_M + AnazhRealm.MOUNT_RANGE_M;
         for (const t of this._blockerMit("isPortal"))
             if (t.position && (t.position.x - x) ** 2 + (t.position.z - z) ** 2 < torFrei * torFrei) return "tor";
-        const eb = pl.eb;
         const fX = Math.sin(ry);
         const fZ = Math.cos(ry);
         const qX = Math.cos(ry);
@@ -72358,7 +72378,7 @@ class AnazhRealm {
         }
         // DER PLATZ (Leben-Schau 2): wählt die Welt den Ort (dieselbe Weiche wie die Spieler-Klemme), steht ein Wagen auf
         // fahrbarem Grund; ein präziser Ort bleibt bit-treu. DER STAND (W5): er parkt auf der Ebene seiner vier Räder.
-        if (_playerClamp) this._fahrPlatzSuche(entry);
+        if (_playerClamp && !this._fahrPlatzSuche(entry)) return nein("platz");
         this._fahrzeugStand(entry);
         this.state.architectures.push(entry);
         this._blockerEintritt(entry);
@@ -75020,12 +75040,40 @@ class AnazhRealm {
                 fluegelSide: 1,
             });
         }
+        // DER PLATZ DES VORSCHAU-WAGENS IM TAKT: die Suche des Platz-Gesetzes (`_fahrPlatzWege`) läuft vor dem Bau, je Takt
+        // höchstens FAHR_PLATZ_JE_TAKT Orte (die Ring-Suche kostete am Garage-Tor bis 0,66 s in EINEM Takt); der Wagen entsteht
+        // dort, wo sie endet — die Wurzel prüft den Ort dann in einem Schritt. Kein Platz: dieses Tor bleibt ohne Vorschau.
+        if (this._fahrzeugGesetzFor({ type })) {
+            const wege = (this._vorschauPlatzWege = this._vorschauPlatzWege || Object.create(null));
+            let job = wege[worldKey];
+            if (!job) {
+                const probe = { type, position: { x: ort.x, y: ort.y, z: ort.z }, rotationY: opts.rotationY, scale: 1 };
+                job = wege[worldKey] = { probe, weg: this._fahrPlatzWege(probe), ende: null };
+            }
+            for (let i = 0; i < AnazhRealm.FAHR_PLATZ_JE_TAKT && job.ende === null; i++) {
+                const r = job.weg.next();
+                if (r.done) job.ende = r.value;
+            }
+            if (job.ende === null) return;
+            delete wege[worldKey];
+            if (!job.ende) {
+                fertig[worldKey] = true;
+                return;
+            }
+            ort.x = job.probe.position.x;
+            ort.z = job.probe.position.z;
+            opts.rotationY = job.probe.rotationY;
+        }
+        // die Absage der Wurzel beim Namen: findet das Platz-Gesetz keinen fahrbaren Grund, steht dieses Tor ohne Vorschau —
+        // einmal (die Suche liefe sonst in jedem Takt neu)
+        let absage = null;
+        opts.absage = (g) => (absage = g);
         const entry = this.spawnArchitecture(type, { x: ort.x, y: ort.y, z: ort.z }, opts);
         if (entry) {
             wm[metaKey] = true;
             fertig[worldKey] = true;
             this.log(`Portal-Preview ${worldKey}: ${type} ~8 m vor ${portalType}.`, "INFO");
-        }
+        } else if (absage === "platz") fertig[worldKey] = true;
     }
 
     // Approach-Prefetch: nähert sich der Spieler einem Genesis-Tor (~22 m), Previews über
@@ -101818,6 +101866,7 @@ AnazhRealm._fahrPlatzGesetz = function () {
     if (
         P &&
         typeof vc.fahrPlatz === "function" &&
+        typeof vc.fahrPlatzGrenze === "function" &&
         ["anfahrAnteil", "bahnLaengen", "suchRadiusM", "suchSchrittM", "richtungen"].every((k) =>
             Number.isFinite(P[k])
         ) &&
@@ -105071,6 +105120,7 @@ AnazhRealm.SETZ_GRUND = Object.freeze({
     seele: "die Welt kennt diese Seele nicht",
     gestalt: "die Gestalt ließ sich nicht gießen",
     buehne: "die Welt hat noch keine Bühne",
+    platz: "kein fahrbarer Grund in Reichweite, die Welt stellt den Wagen nicht hin",
     unbenannt: "ohne benannten Grund (das Log der Welt nennt ihn)",
 });
 // DER FUSS EINES STAMMS (Schau-2 wasser-wahrheit, Gegenprüfung 10.10.): der Kreis um die Achse, auf dem eine Pflanze steht
@@ -105448,6 +105498,9 @@ AnazhRealm.PERF_LEVERS = Object.freeze({
 // W12 — E-Reichweite, um ein Portal zu betreten. Etwas großzügiger als
 // MOUNT_RANGE_M: ein Tor-Ring ist groß, der Spieler steht davor.
 AnazhRealm.PORTAL_REACH_M = 4.5;
+// DER PLATZ DES VORSCHAU-WAGENS im Takt (`_ensurePortalPreview`): so viele Orte der Platz-Suche (`_fahrPlatzWege`) je Takt —
+// je Ort eine Ebene der Räder (4 Proben des Bodens, ~0,13 ms), an einem tragenden Ort die Bahn und die Welt.
+AnazhRealm.FAHR_PLATZ_JE_TAKT = 12;
 // Offener Flügel-Winkel der Welt-Tore (Nähe öffnet): wohnt NUR im porta-Gesetzbuch
 // (__portaCore.TUER_GESETZ.offen — Shell UND Welt lesen die EINE Quelle); Leser fail-closed nach dem
 // _sprintMulGesetz-Muster (Gesetz() memoisiert je Pfad).

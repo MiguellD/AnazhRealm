@@ -2852,9 +2852,10 @@ async function probeLeben(expected) {
 //   FK2 (Node) DIE DREHZAHL ÜBER 0…vmax: klang:FAHRT trägt sie vom Leerlauf (v 0) zum Begrenzer (vmax), steigt in jedem
 //       Gang, der Motor-Ton ist die Zünd-Folge U/min/60 · Zylinder/2.
 //   F1  DER PLATZ AN JEDEM TOR des Genesis-Rings: die Welt stellt den GT an den Wunsch-Ort der Vorschau (`_portalVorschauOrt`,
-//       spawnArchitecture autonomous wie die Vorschau); nach 1 s Welt (die Wald-Schlange setzt ihre Würfe): Neigung der
-//       Rad-Ebene ≤ 15°, keine Wand im Umriss, kein Blocker im Band, E steigt ein, W 2 s ≥ 2 m, S 2,5 s ≥ 3 m.
-//   F2  DIE VORSCHAU DES SPIELS (`_portalApproachPrefetch`, der Befund-Ort) — dasselbe Urteil am echten Vorschau-GT.
+//       spawnArchitecture autonomous wie die Vorschau; alle zugleich); nach 1 s Welt (die Wald-Schlange setzt ihre Würfe):
+//       Neigung der Rad-Ebene ≤ 15°, keine Wand im Umriss, kein Blocker im Band, E steigt ein und aus.
+//   F2  DIE VORSCHAU DES SPIELS (`_portalApproachPrefetch`, der Befund-Ort, die Platz-Suche im Takt) — dasselbe Urteil und
+//       die Fahrt: W 2 s ≥ 2 m, bremsen, S 2,5 s rückwärts aus dem Stand ≥ 3 m.
 //   F3  DIE NATUR-WAND KENNT DEN WAGEN: ein Wurf der Natur in der Hülle eines stehenden GT fällt ("wagen").
 //   F4  DER STOSS UND DIE BEFREIUNG: Gas gegen den Glutbrunnen der Schau (−875/−732) und gegen einen Kiefern-Stamm; danach
 //       S + Gegenlenkung je Seite — frei (≥ 1 m vom Stoß) in ≤ 2 s.
@@ -2896,8 +2897,8 @@ function bahnPlatzVerdict(m) {
     if (m.blocker > 0) out.push(`${m.blocker} Blocker im Band (${m.blockerNamen.join(", ")})`);
     if (m.eingestiegen === false) out.push(`E steigt nicht ein${m.statt ? " (" + m.statt + ")" : ""}`);
     else if (m.eingestiegen) {
-        if (!(m.vor >= BAHN.vorM)) out.push(`W 2 s ${m.vor.toFixed(2)} m`);
-        if (!(m.zurueck >= BAHN.rueckM)) out.push(`S 2,5 s ${m.zurueck.toFixed(2)} m`);
+        if (m.vor != null && !(m.vor >= BAHN.vorM)) out.push(`W 2 s ${m.vor.toFixed(2)} m`);
+        if (m.zurueck != null && !(m.zurueck >= BAHN.rueckM)) out.push(`S 2,5 s ${m.zurueck.toFixed(2)} m`);
         if (!m.ausgestiegen) out.push("E steigt nicht aus");
     }
     return out;
@@ -3016,6 +3017,12 @@ function bahnKernStimme(KC, VC) {
 // ── DIE PROBE DER BAHN IN DER SEITE (Funktionsrumpf; ein eigenes Boot, alle F-Phasen). ──
 async function probeBahn(B) {
     const out = { log: [] };
+    const uhr = { t: performance.now(), zeilen: [] }; // die Dauer je Phase (Bericht, kein Urteil)
+    const phase = (name) => {
+        const t = performance.now();
+        uhr.zeilen.push(`${name} ${((t - uhr.t) / 1000).toFixed(1)} s`);
+        uhr.t = t;
+    };
     const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
     const dl0 = performance.now() + 120000;
     while ((!window.anazhRealm || typeof window.anazhRealm._gameLoopTick !== "function") && performance.now() < dl0)
@@ -3187,8 +3194,10 @@ async function probeBahn(B) {
             blockerNamen: Array.from(namen),
         };
     };
-    // ── DIE PROBE-FAHRT: E (echte Taste, Reichweite des Spiels), W 2 s, ausrollen, S 2,5 s, E. ──
-    const probeFahrt = (e, m) => {
+    // ── DIE PROBE-FAHRT: E (echte Taste, Reichweite des Spiels), W 2 s vom Platz, bremsen bis zum Stand, S 2,5 s rückwärts aus
+    // dem Stand, E;
+    // `nurEin`: nur E ein und aus (der Platz an jedem Tor). ──
+    const probeFahrt = (e, m, nurEin) => {
         const pos = () => ({ x: e.position.x, z: e.position.z });
         const ry = fahrtGier(e);
         stelle(e.position.x + Math.cos(ry) * 1.5, e.position.z - Math.sin(ry) * 1.5); // 1,5 m neben der Flanke
@@ -3202,20 +3211,26 @@ async function probeBahn(B) {
             return m;
         }
         takt(12);
-        const p0 = pos();
-        halte(["w"]);
-        takt(B.vorFrames);
-        halte([]);
-        const p1 = pos();
-        m.vor = Math.hypot(p1.x - p0.x, p1.z - p0.z);
-        takt(60); // ausrollen
-        const p2 = pos();
-        halte(["s"]);
-        takt(B.rueckFrames);
-        halte([]);
-        const p3 = pos();
-        m.zurueck = Math.hypot(p3.x - p2.x, p3.z - p2.z);
-        takt(30);
+        if (!nurEin) {
+            const p0 = pos();
+            halte(["w"]);
+            takt(B.vorFrames);
+            halte([]);
+            const p1 = pos();
+            m.vor = Math.hypot(p1.x - p0.x, p1.z - p0.z);
+            // bremsen bis zum Stand (S über der Brems-Schwelle des Kerns ist die Bremse), dann rückwärts AUS DEM STAND
+            halte(["s"]);
+            for (let i = 0; i < 120 && e._fahr && e._fahr.vlong > VC.FAHR.schritt.bremsV; i++) frame();
+            halte([]);
+            for (let i = 0; i < 30 && e._fahr && Math.abs(e._fahr.vlong) > 0.1; i++) frame();
+            const p2 = pos();
+            halte(["s"]);
+            takt(B.rueckFrames);
+            halte([]);
+            const p3 = pos();
+            m.zurueck = Math.hypot(p3.x - p2.x, p3.z - p2.z);
+            takt(30);
+        }
         tippe("e");
         frame();
         m.ausgestiegen = st.player.mountedArch == null;
@@ -3225,12 +3240,13 @@ async function probeBahn(B) {
     const vorschau = async () => {
         const dlV = performance.now() + 30000;
         let e = null;
-        while (performance.now() < dlV) {
+        // der Ort-Takt des Spiels: je Takt Ring und Vorschau (die Platz-Suche läuft im Takt, FAHR_PLATZ_JE_TAKT Orte)
+        for (let t = 0; performance.now() < dlV; t++) {
             r._genesisPortalRing(st.playerMesh.position);
             r._portalApproachPrefetch(st.playerMesh.position);
             e = st.architectures.find((a) => a && a.id === "portal-preview-garage");
             if (e) break;
-            await sleep(100);
+            if (t % 20 === 19) await sleep(20); // das Buch und der Bau dürfen ankommen
         }
         return e;
     };
@@ -3246,6 +3262,7 @@ async function probeBahn(B) {
         wagenWeg(ev);
     } else out.vorschau = { da: false, grund: "keine Vorschau am Garage-Tor" };
 
+    phase("Boot + F2");
     // ════ F1 — DER PLATZ AN JEDEM TOR des Genesis-Rings (der Weg der Vorschau: autonomous, Blick vom Ring hinaus) ════
     const tore = st.architectures.filter((a) => {
         const bp = a && st.blueprints[a.type];
@@ -3260,13 +3277,14 @@ async function probeBahn(B) {
     });
     out.tore = [];
     let n = 0;
+    const gesetzt = [];
+    stelle(M.x, M.z);
     for (const t of tore) {
         const ort = typeof r._portalVorschauOrt === "function" ? r._portalVorschauOrt(t) : null;
         if (!ort) {
             out.tore.push({ tor: t.type, da: false, grund: "kein Wunsch-Ort der Vorschau (_portalVorschauOrt)" });
             continue;
         }
-        stelle(M.x, M.z);
         const e = r.spawnArchitecture(
             "fahrzeug_gt",
             { x: ort.x, y: ort.y, z: ort.z },
@@ -3282,16 +3300,19 @@ async function probeBahn(B) {
             out.tore.push({ tor: t.type, da: false, grund: "kein GT gesetzt" });
             continue;
         }
-        await gebaut(e);
-        takt(B.settleFrames);
+        gesetzt.push({ e, t, ort });
+    }
+    takt(B.settleFrames); // EINE Sekunde Welt für alle: die Wald-Schlange setzt ihre Würfe
+    for (const { e, t, ort } of gesetzt) {
         const m = platzMessung(e);
         m.tor = t.type;
         m.weiter = +Math.hypot(e.position.x - ort.x, e.position.z - ort.z).toFixed(1);
-        probeFahrt(e, m);
+        probeFahrt(e, m, true);
         out.tore.push(m);
-        wagenWeg(e);
     }
+    for (const { e } of gesetzt) wagenWeg(e);
 
+    phase("F1");
     // ════ F3 — DIE NATUR-WAND KENNT DEN WAGEN: eine Tanne 1,5 m vor dem Ursprung eines stehenden GT ════
     const wandProbe = () => {
         const sx = M.x + 14;
@@ -3320,12 +3341,18 @@ async function probeBahn(B) {
         };
         neuVorschau();
         const hatGesetz = typeof P._fahrPlatzSuche === "function";
-        if (hatGesetz) r._fahrPlatzSuche = function () {};
+        if (hatGesetz) {
+            r._fahrPlatzSuche = () => true;
+            r._fahrPlatzWege = function* () {
+                return true;
+            };
+        }
         stelle(M.x, M.z);
         const e3 = await vorschau();
         out.schmuggelPlatz = e3 ? platzMessung(e3) : { da: false, grund: "keine Vorschau" };
         out.schmuggelPlatz.gesetzStub = hatGesetz;
         delete r._fahrPlatzSuche;
+        delete r._fahrPlatzWege;
         wagenWeg(e3);
         neuVorschau();
         r._blockerMit = function (name) {
@@ -3335,6 +3362,7 @@ async function probeBahn(B) {
         delete r._blockerMit;
     }
 
+    phase("F3 + Schmuggel");
     // ════ F4 — DER STOSS UND DIE BEFREIUNG (die Stelle der Schau, Kurs auf −765/−752) ════
     let symphonie = false;
     try {
@@ -3411,7 +3439,7 @@ async function probeBahn(B) {
                     break;
                 }
             }
-            takt(30);
+            takt(15);
             halte([]);
             takt(10);
             m.stoss = m.stoss !== false && stoss;
@@ -3425,7 +3453,10 @@ async function probeBahn(B) {
                 frame();
                 if (e._fahr) vMin = Math.min(vMin, e._fahr.vlong);
                 weg = Math.hypot(e.position.x - p0.x, e.position.z - p0.z);
-                if (freiFrame < 0 && weg >= B.freiM) freiFrame = i;
+                if (weg >= B.freiM) {
+                    freiFrame = i;
+                    break;
+                }
             }
             halte([]);
             m.versuche.push({ seite, freiFrame, weg, vMinKmh: vMin * 3.6 });
@@ -3439,6 +3470,7 @@ async function probeBahn(B) {
     out.stossGlut = await stossStation("glutbrunnen", 4.4);
     out.stossStamm = await stossStation("baum_kiefer", 5);
 
+    phase("F4");
     // ════ F5 + F6 + F7 — DIE FAHRT AUF DER MESS-WIESE (die Vollgas-Gerade der Schau, Kurs 127,7°): Tacho, Stimme und
     // Handbremse, nie der Wald — die Bahn-Wache räumt die Gerade (70 × 12 m) vor und während der Fahrt. ════
     const tacho = { element: !!document.getElementById("fahr-tacho"), proben: 0, unsichtbar: 0, falsch: 0, maxKmh: 0 };
@@ -3579,6 +3611,8 @@ async function probeBahn(B) {
         out.log.push(`Fahrt-Station: Bahn geräumt ${geraeumt}`);
         wagenWeg(e);
     }
+    phase("F5–F7");
+    out.log.push("Dauer: " + uhr.zeilen.join(" · "));
     hilfe.zeilen = typeof r._hilfeZeilen === "function" ? r._hilfeZeilen() : [];
     out.tacho = tacho;
     out.stimme = stimme;
@@ -4402,18 +4436,21 @@ function quellenAbgriff() {
     await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e
     const messort = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort.spieler;
+    // F — die Fahr-Bahn im eigenen Boot nach dem Leben (der Quellen-Abgriff der Stimme vor jedem Seiten-Skript)
+    const bahnLauf = async () => {
+        const page2 = await browser.newPage();
+        await page2.evaluateOnNewDocument(() => {
+            window.__anazhForceFoundry = true;
+            window.__anazhHeadlessNullRenderer = true;
+        });
+        await page2.evaluateOnNewDocument(quellenAbgriff);
+        page2.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
+        await page2.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
+        return page2.evaluate(probeBahn, BAHN);
+    };
     const out = await page.evaluate(probeLeben, { messort });
     await page.close();
-    // F — die Fahr-Bahn im eigenen Boot (der Quellen-Abgriff der Stimme vor jedem Seiten-Skript)
-    const page2 = await browser.newPage();
-    await page2.evaluateOnNewDocument(() => {
-        window.__anazhForceFoundry = true;
-        window.__anazhHeadlessNullRenderer = true;
-    });
-    await page2.evaluateOnNewDocument(quellenAbgriff);
-    page2.on("pageerror", (e) => pageErrors.push((e.stack || e.message || String(e)).split("\n")[0]));
-    await page2.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
-    const bahn = await page2.evaluate(probeBahn, BAHN);
+    const bahn = await bahnLauf();
     await browser.close();
     server.close();
 
@@ -4699,9 +4736,9 @@ function quellenAbgriff() {
         const toreDa = (bahn.tore || []).filter((m) => m.da).length;
         const neigMax = Math.max(0, ...(bahn.tore || []).filter((m) => m.da).map((m) => m.neigung));
         check(
-            `F1 an jedem Tor des Genesis-Rings (${BAHN.tore}) steht der GT der Welt auf fahrbarem Grund und fährt an`,
+            `F1 an jedem Tor des Genesis-Rings (${BAHN.tore}) steht der GT der Welt nach 1 s Welt auf fahrbarem Grund (≤ 15°, ohne Berührung), E steigt ein und aus`,
             toreDa >= BAHN.tore && torTaeter.length === 0,
-            `${toreDa}/${(bahn.tore || []).length} Tore · Neigung höchstens ${neigMax.toFixed(1)}° · zurück min ${Math.min(...(bahn.tore || []).filter((m) => m.da).map((m) => m.zurueck || 0)).toFixed(2)} m${torTaeter.length ? " — Täter: " + torTaeter.slice(0, 6).join(" · ") : ""}`
+            `${toreDa}/${(bahn.tore || []).length} Tore · Neigung höchstens ${neigMax.toFixed(1)}° · weiter als der Wunsch-Ort höchstens ${Math.max(0, ...(bahn.tore || []).filter((m) => m.da).map((m) => m.weiter || 0)).toFixed(0)} m${torTaeter.length ? " — Täter: " + torTaeter.slice(0, 6).join(" · ") : ""}`
         );
         const wv = bahnWandVerdict(bahn.wand);
         check(

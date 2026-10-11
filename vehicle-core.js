@@ -2312,7 +2312,7 @@
         platz: {
             anfahrAnteil: 0.7, // die Anfahrt bergauf ≥ 70 % der Anfahrt in der Ebene (GT bis 14,2°, SUV bis 9,8°)
             bahnLaengen: 1, // DIE BAHN: vor und hinter dem Wagen je so viele Wagenlaengen derselbe fahrbare Grund
-            suchRadiusM: 32, // die Ankunft steht auf Fels: der naechste fahrbare Grund liegt dort ~20–30 m weiter
+            suchRadiusM: 64, // um den Genesis-Ring liegt der naechste fahrbare Grund bis ~60 m weiter (Garage-Tor 58 m)
             suchSchrittM: 2,
             richtungen: 4, // je Ort die Fahrt-Richtung des Wagens, dann um je 360°/richtungen gedreht
         },
@@ -2987,19 +2987,37 @@
     // faehrt er von dort an? Die Anfahrt ist die Laengskraft am Reibkreis (Antrieb min(aEngine · Gang, μ·g·cos θ)) gegen
     // Rollwiderstand und Hangabtrieb g·sin θ, θ die Fallinie der Ebene (steig und wank zusammen); der schwaechere Gang
     // (vorwaerts 1, rueckwaerts rueckAntrieb) zaehlt — der Wagen muss in jede Richtung loskommen. Quer haelt ihn die
-    // Haftung, solange die Anfahrt bergauf positiv ist (tan θ < μ). → { ok, grund, eb, neigung (rad), anfahrt, eben }.
+    // Haftung, solange die Anfahrt bergauf positiv ist (tan θ < μ). Die Anfahrt faellt mit θ: die GRENZE (fahrPlatzGrenze) ist
+    // die Neigung, bei der sie anfahrAnteil der Anfahrt in der Ebene erreicht (Bisektion) — der Platz traegt bis zu ihr, und
+    // die Suche des Wirts filtert mit ihr. → { ok, grund, eb, neigung (rad), grenze (rad) }.
+    function fahrPlatzAnfahrt(G) {
+        const mu = G.maxGrip * G.grip;
+        const antrieb = G.aEngine * Math.min(1, FAHR.schritt.rueckAntrieb);
+        return function (t) {
+            return Math.min(antrieb, mu * G.g * Math.cos(t)) - FAHR.rollDecel - G.g * Math.sin(t);
+        };
+    }
+    function fahrPlatzGrenze(G) {
+        const anfahrt = fahrPlatzAnfahrt(G);
+        const soll = FAHR.platz.anfahrAnteil * anfahrt(0);
+        if (!(soll > 0)) return 0;
+        let lo = 0;
+        let hi = Math.PI / 2;
+        for (let i = 0; i < 40; i++) {
+            const m = (lo + hi) / 2;
+            if (anfahrt(m) >= soll) lo = m;
+            else hi = m;
+        }
+        return lo;
+    }
     function fahrPlatz(G, boden, x, z, yaw) {
         const eb = fahrEbene(G, boden, x, z, yaw);
         if (!eb) return { ok: false, grund: "ungebaut", eb: null };
         if (!eb.traegt) return { ok: false, grund: "kante", eb: eb };
         const neigung = Math.atan(Math.hypot(Math.tan(eb.steig), Math.tan(eb.wank)));
-        const mu = G.maxGrip * G.grip;
-        const antrieb = G.aEngine * Math.min(1, FAHR.schritt.rueckAntrieb);
-        const anfahrt = (t) => Math.min(antrieb, mu * G.g * Math.cos(t)) - FAHR.rollDecel - G.g * Math.sin(t);
-        const eben = anfahrt(0);
-        const a = anfahrt(neigung);
-        const ok = eben > 0 && a >= FAHR.platz.anfahrAnteil * eben;
-        return { ok: ok, grund: ok ? null : "steil", eb: eb, neigung: neigung, anfahrt: a, eben: eben };
+        const grenze = fahrPlatzGrenze(G);
+        const ok = grenze > 0 && neigung <= grenze;
+        return { ok: ok, grund: ok ? null : "steil", eb: eb, neigung: neigung, grenze: grenze };
     }
 
     const PARAMS = [
@@ -3419,6 +3437,7 @@
         fahrSchritt: fahrSchritt,
         // SCHAU 2 (rein additiv) — der Platz eines Wagens, den die Welt hinstellt (FAHR.platz)
         fahrPlatz: fahrPlatz,
+        fahrPlatzGrenze: fahrPlatzGrenze,
         A_PITCH_MAX: A_PITCH_MAX,
         A_LAT_MAX: A_LAT_MAX,
         // Bau-Fläche (die Shell baut ihre Ebenen aus DIESER Quelle)
