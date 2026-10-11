@@ -1007,6 +1007,11 @@
         "38095155944"
       ]
     },
+    "Die Albedo nah gegen fern (0910-8 — EINE Boden-Farbe je Ort, die weisse Masse)": {
+      "s": 90,
+      "geschaetzt": "lokal 23–31 s in 6 Läufen (11.10., OMEN i7-8750H, Software-Holz: Start 3–6 s, Umstellen 10–17 s, Linse 4–15 s); der CI-Läufer bootet die Mess-Wiese etwa dreimal langsamer (gate:verdeckungs-abfrage: 100 s)",
+      "lauf": "npm run gate:nah-fern"
+    },
     "Der ε-Beweis Fachwerk (W-A5a — fachwerk-core dockt nur über Daten an)": {
       "s": 10,
       "n": 5,

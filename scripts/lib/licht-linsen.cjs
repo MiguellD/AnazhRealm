@@ -776,14 +776,14 @@ function nahFernSicht(opts) {
             for (const [l] of lichter) l.intensity = 0;
             A.intensity = e;
             if (maskeAlt != null) lu.uLodMaskOn.value = 0;
-            // Ein Stoff, dessen Programm unter dem Licht der Linse (nur Umgebungslicht, ohne Umgebung) noch übersetzt, fehlt im
-            // Bild: in frischer Sitzung zeichnete der Boden-Satz 0 von 4 096 Bildpunkten, erst nach Sekunden voll. Vor dem Schuss
-            // stehen darum die Programme der sichtbaren Szene unter dieser Kamera, und der Schuss steht, wenn zwei Läufe dieselben
-            // Bildpunkte decken.
-            if (typeof rend.compileAsync === "function") await rend.compileAsync(sc, cam);
+            // Das Licht der Linse (nur Umgebungslicht) ist ein neuer Lichter-Satz, ihr Ziel ein neuer Pass: jeder Stoff zeichnet
+            // hier zum ersten Mal und wartet auf seine Pipeline (`_erstWartet`, die Welt baut sie asynchron) — in frischer
+            // Sitzung zeichnete der Boden-Satz 0 von 4 096 Bildpunkten, erst nach Sekunden voll. Der Schuss steht darum erst,
+            // wenn zwei Läufe dieselben Bildpunkte decken (höchstens 20 s).
             let px = null,
                 n = -1;
-            for (let lauf = 0; lauf < 5; lauf++) {
+            const frist = performance.now() + 20000;
+            for (let lauf = 0; ; lauf++) {
                 if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
                 rend.setRenderTarget(rt);
                 rend.setClearColor(0x000000, 0);
@@ -793,8 +793,10 @@ function nahFernSicht(opts) {
                 px = await lies();
                 let m = 0;
                 for (let i = 3; i < px.length; i += 4) if (px[i] > 0.5) m++;
-                if (m === n && m > 0) break;
+                if ((m === n && m > 0) || performance.now() > frist) break;
                 n = m;
+                // im Software-Holz übersetzt ein Programm über viele Läufe (gemessen: die ersten zwei Orte leer)
+                if (m === 0 || lauf >= 4) await new Promise((w) => setTimeout(w, 100));
             }
             return px;
         };
@@ -848,29 +850,33 @@ function nahFernSicht(opts) {
                 if (o.isBundleGroup) o.needsUpdate = true;
             });
         }
-        // Die Karte der Fern-Krone im Boden-Stoff (seit 0910-8): steht sie nicht, mischt der Boden nichts — das Urteil nennt es.
+        // Die Karte der Fern-Krone im Boden-Stoff (seit 0910-8): steht sie nicht (bereit 0, oder ein Füll-Job offen — dann
+        // liegt ihre Mitte noch am alten Anker), mischt der Boden hier nichts — das Urteil nennt es.
         const nk = st.fernKroneNah;
-        return { hoehe: H, halb, orte: aus, nahKarte: nk ? nk.U.bereit.value : null };
+        return { hoehe: H, halb, orte: aus, nahKarte: nk ? (nk.U.bereit.value === 1 && !nk.job ? 1 : 0) : null };
     })();
 }
 
-// DAS URTEIL NAH GEGEN FERN (rein): je Ort die Abweichung der Luminanz (relativ zum Fern-Ring) und des Grün-Anteils
-// (g / (r + g + b)); ROT, wenn ein Ort über dem Band liegt (beim Namen: Klasse, Ort, Zahlen und der TÄTER — der Leser, der
-// weiter vom Gesetz an der Stelle liegt: der Boden-Satz oder die Abtastung des Fern-Rings), wenn einer Klasse Orte fehlen
-// (mindestens drei Wald- und drei Wiesen-Orte), ein Schuss leer blieb oder die Karte der Fern-Krone nicht steht.
+// DAS URTEIL NAH GEGEN FERN (rein): beide Leser lesen EIN Gesetz an der Stelle (`gesetz`, das feine Mittel derselben Formel);
+// jeder liegt in SEINEM Band um das Gesetz — der Boden-Satz eng (`nah`: Karte 8 Bit im Raster N), der Fern-Ring nach seiner
+// Abtastung (`fern`: Schale 0 schnappt auf 24 m; über 132 m gemessen −12 … +18 %), dazu der Grün-Anteil g / (r + g + b). ROT
+// beim Namen (Klasse, Ort, nah gegen fern, der TÄTER: der Leser außerhalb seines Bands), wenn einer Klasse Orte fehlen (mindestens
+// drei Wald- und drei Wiesen-Orte), ein Schuss leer blieb, das Gesetz fehlt oder die Karte der Fern-Krone nicht steht.
 function nahFernUrteil(messung, band) {
-    band = Object.assign({ luma: 0.12, gruen: 0.03, jeKlasse: 3 }, band || {});
+    band = Object.assign({ nah: 0.1, fern: 0.25, gruenNah: 0.03, gruenFern: 0.05, jeKlasse: 3 }, band || {});
     const befunde = [];
     const zeilen = [];
     if (messung && messung.nahKarte === 0)
         befunde.push(
-            "NAH-FERN Karte: die Fern-Krone des nahen Bodens steht nicht (bereit 0) — der Boden mischt nichts"
+            "NAH-FERN Karte: die Fern-Krone des nahen Bodens steht nicht für diesen Ort (bereit 0 oder Füll-Job offen) — der Boden mischt nichts"
         );
     for (const k of ["wald", "wiese"]) {
         const n = ((messung && messung.orte) || []).filter((o) => o.klasse === k).length;
         if (n < band.jeKlasse)
             befunde.push(`NAH-FERN ${k}: ${n} Orte — das Urteil braucht mindestens ${band.jeKlasse}`);
     }
+    const gr = (c) => c[1] / Math.max(1e-6, c[0] + c[1] + c[2]);
+    const pz = (v) => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(0)} %`;
     for (const o of (messung && messung.orte) || []) {
         if (!o.nah || !o.fern || !o.nah.n || !o.fern.n) {
             befunde.push(
@@ -878,12 +884,17 @@ function nahFernUrteil(messung, band) {
             );
             continue;
         }
-        const gr = (c) => c[1] / Math.max(1e-6, c[0] + c[1] + c[2]);
-        const dY = (o.nah.Y - o.fern.Y) / Math.max(1e-6, o.fern.Y);
-        const dG = gr(o.nah.rgb) - gr(o.fern.rgb);
         const gY = o.gesetz && o.gesetz.Y > 0 ? o.gesetz.Y : null;
-        const dN = gY ? o.nah.Y / gY - 1 : null;
-        const dF = gY ? o.fern.Y / gY - 1 : null;
+        if (!gY) {
+            befunde.push(`NAH-FERN ${o.klasse} ${o.ort.join("/")}: ohne das Gesetz an der Stelle kein Urteil`);
+            continue;
+        }
+        const dY = o.nah.Y / o.fern.Y - 1;
+        const dN = o.nah.Y / gY - 1;
+        const dF = o.fern.Y / gY - 1;
+        const gG = o.gesetz.rgb ? gr(o.gesetz.rgb) : null;
+        const gN = gG == null ? 0 : gr(o.nah.rgb) - gG;
+        const gF = gG == null ? 0 : gr(o.fern.rgb) - gG;
         zeilen.push({
             klasse: o.klasse,
             ort: o.ort,
@@ -892,23 +903,21 @@ function nahFernUrteil(messung, band) {
             fernY: o.fern.Y,
             gesetzY: gY,
             dY: +dY.toFixed(3),
-            dG: +dG.toFixed(3),
-            nahGesetz: dN == null ? null : +dN.toFixed(3),
-            fernGesetz: dF == null ? null : +dF.toFixed(3),
+            nahGesetz: +dN.toFixed(3),
+            fernGesetz: +dF.toFixed(3),
+            gruenNah: +gN.toFixed(3),
+            gruenFern: +gF.toFixed(3),
         });
-        if (Math.abs(dY) > band.luma || Math.abs(dG) > band.gruen) {
-            const pz = (v) => `${v >= 0 ? "+" : ""}${(v * 100).toFixed(0)} %`;
-            const taeter =
-                dN == null
-                    ? "ohne Gesetz kein Täter"
-                    : Math.abs(dN) >= Math.abs(dF)
-                      ? `Täter Boden-Satz (${pz(dN)} gegen das Gesetz Y ${gY}, Fern-Ring ${pz(dF)})`
-                      : `Täter die Abtastung des Fern-Rings (${pz(dF)} gegen das Gesetz Y ${gY}, Boden-Satz ${pz(dN)})`;
+        const taeter = [];
+        if (Math.abs(dN) > band.nah || Math.abs(gN) > band.gruenNah)
+            taeter.push(`Boden-Satz ${pz(dN)} (Grün ${gN >= 0 ? "+" : ""}${gN.toFixed(3)})`);
+        if (Math.abs(dF) > band.fern || Math.abs(gF) > band.gruenFern)
+            taeter.push(`Fern-Ring ${pz(dF)} (Grün ${gF >= 0 ? "+" : ""}${gF.toFixed(3)})`);
+        if (taeter.length)
             befunde.push(
                 `NAH-FERN ${o.klasse} ${o.ort.join("/")} (Deckung ${o.deckung}): Boden-Satz Y ${o.nah.Y} gegen Fern-Ring Y ${o.fern.Y} ` +
-                    `(${(dY * 100).toFixed(0)} %, Grün-Anteil ${dG >= 0 ? "+" : ""}${dG.toFixed(3)}) — zwei Farben derselben Stelle; ${taeter}`
+                    `(${pz(dY)}) — zwei Farben derselben Stelle; Täter ${taeter.join(" und ")} gegen das Gesetz Y ${gY}`
             );
-        }
     }
     return { befunde, zeilen };
 }

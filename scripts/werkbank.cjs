@@ -1287,6 +1287,30 @@ async function starte() {
                 }
                 if (req.url === "/albedo" && b.nahFern) {
                     // DIE ALBEDO NAH GEGEN FERN (0910-8): Boden-Satz gegen Fern-Ring an derselben Stelle, das Urteil in Node.
+                    // Vorher steht die Welt: der Ring der Chunks trägt das Quadrat der Linse (≥ 2, Ziel und aktiv wie `stell.ring`
+                    // der Bühne — im Software-Holz wählte der Regler je Sitzung Ring 1 oder 2), kein Chunk ist im Bau, und die
+                    // Karte der Fern-Krone ist für DIESEN Ort gefüllt (kein Füll-Job offen: nach dem Umstellen hielt die Karte
+                    // bereit 1 mit der Mitte am Spawn, am Messort mischte nichts — nah Y 0,13 wie main). Den Takt treibt die Route selbst wie `umstellen` (danach läuft kein
+                    // Loop: einmal stand die Welt 120 s bei 9 Chunks und bereit 0). Steht sie nach 120 s nicht, misst die Linse
+                    // trotzdem und urteilt laut.
+                    await page.evaluate(async () => {
+                        const r = window.anazhRealm;
+                        const st = r.state;
+                        const frist = performance.now() + 120000;
+                        while (performance.now() < frist) {
+                            if (!(st.chunkRingRadius >= 2)) st.chunkRingRadius = 2;
+                            if (!(st._activeRingRadius >= 2)) st._activeRingRadius = 2;
+                            const k = st.fernKroneNah;
+                            const baut = st.voxelMeshPending && st.voxelMeshPending.size > 0;
+                            if (r._builtRingRadius() >= 2 && !baut && (!k || (k.U.bereit.value === 1 && !k.job))) return;
+                            try {
+                                if (window.__buehne) window.__buehne();
+                                if (window.__ortSchritt) window.__ortSchritt();
+                                r._gameLoopTick(performance.now());
+                            } catch (_e) {}
+                            await new Promise((w) => setTimeout(w, 50));
+                        }
+                    });
                     const m = await page.evaluate(() => window.__nahFernSicht({}));
                     const u = require("./lib/licht-linsen.cjs").nahFernUrteil(m);
                     const aus = Object.assign({ messung: m }, u);
@@ -2062,9 +2086,9 @@ async function starte() {
     else if (cmd === "eval") o = await rufe("/eval", { code: a[0] });
     else if (cmd === "albedo" && argv.includes("--nah-fern")) {
         // DIE ALBEDO NAH GEGEN FERN (0910-8): je Ort im Chunk-Quadrat Boden-Satz gegen Fern-Ring aus 420 m, dazu das Gesetz an
-        // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün, der Boden-Satz doppelt so hell rot mit dem
-        // Täter Boden-Satz, ein grob tastender Ring mit dem Täter Fern-Ring, zu wenige Orte, ein leerer Schuss und eine Karte,
-        // die nicht steht, laut.
+        // der Stelle; `--selbsttest` (ohne Welt) prüft das Urteil: im Band grün (auch ein Ring, der im Band seiner Abtastung
+        // rauscht), der Boden-Satz doppelt so hell rot mit dem Täter Boden-Satz, ein Ring neben dem Gesetz mit dem Täter
+        // Fern-Ring, zu wenige Orte, ein leerer Schuss, ein fehlendes Gesetz und eine Karte, die nicht steht, laut.
         if (argv.includes("--selbsttest")) {
             const LL = require("./lib/licht-linsen.cjs");
             const ort = (klasse, x, nY, fY, nG, gY) => ({
@@ -2087,12 +2111,24 @@ async function starte() {
             pruefe(
                 "main (Boden doppelt so hell)",
                 LL.nahFernUrteil({ orte: ruhig.map((o, i) => (i ? o : ort("wald", 0, 0.115, 0.056))) }),
-                /^NAH-FERN wald 0\/0 .*Y 0.115 gegen Fern-Ring Y 0.056 \(105 %.*Täter Boden-Satz \(\+105 %/
+                /^NAH-FERN wald 0\/0 .*Y 0.115 gegen Fern-Ring Y 0.056 \(\+105 %\).*Täter Boden-Satz \+105 %/
             );
             pruefe(
-                "der Ring tastet grob",
-                LL.nahFernUrteil({ orte: ruhig.map((o, i) => (i ? o : ort("wald", 0, 0.055, 0.07, 1.1, 0.056))) }),
-                /Täter die Abtastung des Fern-Rings \(\+25 %/
+                "der Ring neben dem Gesetz",
+                LL.nahFernUrteil({ orte: ruhig.map((o, i) => (i ? o : ort("wald", 0, 0.055, 0.075, 1.1, 0.056))) }),
+                /Täter Fern-Ring \+34 %/
+            );
+            pruefe(
+                "das Rauschen des Rings im Band",
+                LL.nahFernUrteil({ orte: ruhig.map((o, i) => (i ? o : ort("wald", 0, 0.055, 0.066, 1.1, 0.056))) }),
+                null
+            );
+            pruefe(
+                "ohne Gesetz",
+                LL.nahFernUrteil({
+                    orte: ruhig.map((o, i) => (i ? o : Object.assign(ort("wald", 0, 0.06, 0.06), { gesetz: null }))),
+                }),
+                /ohne das Gesetz an der Stelle/
             );
             pruefe("zu wenige Wiesen-Orte", LL.nahFernUrteil({ orte: ruhig.slice(0, 4) }), /NAH-FERN wiese: 1 Orte/);
             pruefe(
@@ -2115,7 +2151,7 @@ async function starte() {
             for (const z of o.zeilen)
                 console.log(
                     `  ${z.klasse.padEnd(5)} ${z.ort.join("/").padEnd(12)} Deckung ${z.deckung} · nah Y ${z.nahY} · fern Y ${z.fernY} · ` +
-                        `${(z.dY * 100).toFixed(0)} % · Grün ${z.dG} · Gesetz Y ${z.gesetzY} (nah ${z.nahGesetz}, fern ${z.fernGesetz})`
+                        `${(z.dY * 100).toFixed(0)} % · Gesetz Y ${z.gesetzY}: nah ${z.nahGesetz} (Grün ${z.gruenNah}), fern ${z.fernGesetz} (Grün ${z.gruenFern})`
                 );
             for (const b of o.befunde) console.log("  ROT " + b);
             console.log(
