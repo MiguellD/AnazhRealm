@@ -1,0 +1,498 @@
+{
+ "spec": {
+  "id": "b-eiche-2m6",
+  "klasse": "eiche",
+  "dist": 2.6,
+  "auge": 1.7,
+  "zielH": 1.8
+ },
+ "objektMasse": {
+  "x": -783.9213921508715,
+  "y": 34.129229271461135,
+  "z": -674.3431688560893,
+  "h": 9,
+  "r": 3,
+  "boden": 34.129229271461135,
+  "slots": 1
+ },
+ "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\frozen-a1\\artifacts\\a1-beweis\\b-eiche-2m6.png",
+ "bild": {
+  "kamera": [
+   -782.43,
+   35.98,
+   -676.47
+  ],
+  "hell": 68.2,
+  "kontrast": 1.53,
+  "dc": 17,
+  "dreiecke": 131831,
+  "ms": 471,
+  "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\frozen-a1\\artifacts\\a1-beweis\\b-eiche-2m6.png",
+  "gesamtMs": 1327
+ },
+ "lupe": null,
+ "vorbereiten": {
+  "pose": {
+   "px": -782.4300934163588,
+   "py": 35.9797673661561,
+   "pz": -676.4729641712406,
+   "lx": -783.9213921508715,
+   "ly": 35.92922927146113,
+   "lz": -674.3431688560893,
+   "w": 5.323254218582705
+  },
+  "blick": {
+   "n": 7614,
+   "liste": [
+    0,
+    2717,
+    1432,
+    750,
+    3022,
+    3455,
+    3875,
+    4678,
+    4930,
+    1626,
+    5659,
+    5469,
+    5095,
+    5525,
+    5602,
+    2331,
+    7238,
+    7614,
+    6675,
+    5431,
+    3925,
+    4450,
+    5522,
+    5900
+   ]
+  },
+  "stell1": {
+   "takte": 40,
+   "chunks": 34,
+   "ungebaut": 0,
+   "zielStufe": 0,
+   "zielServiert": 0,
+   "ms": 1789
+  },
+  "stell2": {
+   "takte": 40,
+   "chunks": 34,
+   "ungebaut": 0,
+   "zielStufe": 0,
+   "zielServiert": 0,
+   "ms": 1547
+  }
+ },
+ "messen": {
+  "buehne": {
+   "saison": "summer",
+   "phase": 0.375,
+   "autoSeason": false,
+   "wetter": "sunny",
+   "wetterUhr": -999998984.9873012,
+   "tageszeit": 0.5,
+   "tiereGehalten": true,
+   "loopRuht": true
+  },
+  "ungebaut": {
+   "n": 0,
+   "imRadius": 82,
+   "radius": 105,
+   "typen": {}
+  },
+  "spieler": [
+   -782.43,
+   -676.47
+  ],
+  "kamera": {
+   "pos": [
+    -782.43,
+    35.98,
+    -676.473
+   ],
+   "ziel": [
+    -783.921,
+    35.929,
+    -674.343
+   ],
+   "fov": 75,
+   "aspect": 1.7778,
+   "azimut": 5.3233
+  },
+  "objekt": {
+   "x": -783.92,
+   "y": 34.13,
+   "z": -674.34,
+   "distKameraXZ": 2.6,
+   "distKamera3D": 3.19
+  },
+  "stufe": {
+   "lod": 0,
+   "serviert": 0,
+   "gezeichnet": true,
+   "d0": 12,
+   "d1": 26,
+   "hyst": 3.4,
+   "nahGrenze": 64
+  },
+  "tris": {
+   "L0": 0,
+   "L1": 0,
+   "L2": 0,
+   "L3": 0
+  }
+ },
+ "fellHaut": null,
+ "klasseImBild": [
+  {
+   "klasse": "f:eiche:L0",
+   "stufe": 0,
+   "cmd": 2,
+   "tris": 6754,
+   "je": {
+    "haupt": 2
+   },
+   "jeTris": {
+    "haupt": 6754
+   },
+   "exemplare": 1,
+   "dMin": 4,
+   "dMax": 4
+  },
+  {
+   "klasse": "fimp:atlas:L2",
+   "stufe": 2,
+   "cmd": 1,
+   "tris": 276,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 276
+   },
+   "exemplare": 138,
+   "dMin": 77,
+   "dMax": 346
+  },
+  {
+   "klasse": "f:eiche:L1",
+   "stufe": 1,
+   "cmd": 1,
+   "tris": 532,
+   "je": {
+    "k0": 1
+   },
+   "jeTris": {
+    "k0": 532
+   },
+   "exemplare": 0,
+   "dMin": null,
+   "dMax": null
+  }
+ ],
+ "zaehlen": {
+  "gesamt": {
+   "cmd": 23,
+   "tris": 213928
+  },
+  "passe": {
+   "OrthographicCamera": {
+    "cmd": 2,
+    "tris": 2
+   },
+   "haupt": {
+    "cmd": 15,
+    "tris": 93441
+   },
+   "k0": {
+    "cmd": 5,
+    "tris": 70489
+   },
+   "k1": {
+    "cmd": 1,
+    "tris": 49996
+   }
+  },
+  "klassen": [
+   {
+    "klasse": "bodenSatz",
+    "stufe": null,
+    "art": null,
+    "cmd": 3,
+    "tris": 164988,
+    "je": {
+     "k0": 1,
+     "k1": 1,
+     "haupt": 1
+    },
+    "jeTris": {
+     "k0": 68431,
+     "k1": 49996,
+     "haupt": 46561
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 1035,
+    "dMax": 1035
+   },
+   {
+    "klasse": "fern-ring",
+    "stufe": null,
+    "art": null,
+    "cmd": 3,
+    "tris": 17280,
+    "je": {
+     "haupt": 3
+    },
+    "jeTris": {
+     "haupt": 17280
+    },
+    "inst": 3,
+    "exemplare": 3,
+    "dMin": 197,
+    "dMax": 234
+   },
+   {
+    "klasse": "f:tanne:L1",
+    "stufe": 1,
+    "art": "tree",
+    "cmd": 2,
+    "tris": 1022,
+    "je": {
+     "k0": 2
+    },
+    "jeTris": {
+     "k0": 1022
+    },
+    "inst": 0,
+    "exemplare": 0,
+    "dMin": null,
+    "dMax": null
+   },
+   {
+    "klasse": "f:eiche:L0",
+    "stufe": 0,
+    "art": "tree",
+    "cmd": 2,
+    "tris": 6754,
+    "je": {
+     "haupt": 2
+    },
+    "jeTris": {
+     "haupt": 6754
+    },
+    "inst": 2,
+    "exemplare": 1,
+    "dMin": 4,
+    "dMax": 4
+   },
+   {
+    "klasse": "streuSatz",
+    "stufe": null,
+    "art": null,
+    "cmd": 2,
+    "tris": 12237,
+    "je": {
+     "haupt": 2
+    },
+    "jeTris": {
+     "haupt": 12237
+    },
+    "inst": 2,
+    "exemplare": 1,
+    "dMin": 1035,
+    "dMax": 1035
+   },
+   {
+    "klasse": "feld-pass",
+    "stufe": null,
+    "art": null,
+    "cmd": 2,
+    "tris": 13,
+    "je": {
+     "haupt": 2
+    },
+    "jeTris": {
+     "haupt": 13
+    },
+    "inst": 2,
+    "exemplare": 2,
+    "dMin": 1036,
+    "dMax": 1036
+   },
+   {
+    "klasse": "Render Pipeline",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 1,
+    "je": {
+     "OrthographicCamera": 1
+    },
+    "jeTris": {
+     "OrthographicCamera": 1
+    },
+    "inst": 0,
+    "exemplare": 0,
+    "dMin": null,
+    "dMax": null
+   },
+   {
+    "klasse": "TRAA",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 1,
+    "je": {
+     "OrthographicCamera": 1
+    },
+    "jeTris": {
+     "OrthographicCamera": 1
+    },
+    "inst": 0,
+    "exemplare": 0,
+    "dMin": null,
+    "dMax": null
+   },
+   {
+    "klasse": "fimp:atlas:L2",
+    "stufe": 2,
+    "art": null,
+    "cmd": 1,
+    "tris": 276,
+    "je": {
+     "haupt": 1
+    },
+    "jeTris": {
+     "haupt": 276
+    },
+    "inst": 138,
+    "exemplare": 138,
+    "dMin": 77,
+    "dMax": 346
+   },
+   {
+    "klasse": "f:eiche:L1",
+    "stufe": 1,
+    "art": "tree",
+    "cmd": 1,
+    "tris": 532,
+    "je": {
+     "k0": 1
+    },
+    "jeTris": {
+     "k0": 532
+    },
+    "inst": 0,
+    "exemplare": 0,
+    "dMin": null,
+    "dMax": null
+   },
+   {
+    "klasse": "f:weide:L1",
+    "stufe": 1,
+    "art": "tree",
+    "cmd": 1,
+    "tris": 504,
+    "je": {
+     "k0": 1
+    },
+    "jeTris": {
+     "k0": 504
+    },
+    "inst": 0,
+    "exemplare": 0,
+    "dMin": null,
+    "dMax": null
+   },
+   {
+    "klasse": "himmel",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 1984,
+    "je": {
+     "haupt": 1
+    },
+    "jeTris": {
+     "haupt": 1984
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 0,
+    "dMax": 0
+   },
+   {
+    "klasse": "himmel-sonne",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 480,
+    "je": {
+     "haupt": 1
+    },
+    "jeTris": {
+     "haupt": 480
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 395,
+    "dMax": 395
+   },
+   {
+    "klasse": "wasserSatz",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 5516,
+    "je": {
+     "haupt": 1
+    },
+    "jeTris": {
+     "haupt": 5516
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 1035,
+    "dMax": 1035
+   },
+   {
+    "klasse": "farWater",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 2340,
+    "je": {
+     "haupt": 1
+    },
+    "jeTris": {
+     "haupt": 2340
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 222,
+    "dMax": 222
+   }
+  ],
+  "unbenannt": [],
+  "programme": {
+   "vertex": 63,
+   "fragment": 47,
+   "familien": 40,
+   "pipelines": 94
+  },
+  "frameMs": 26,
+  "kaskaden": 2,
+  "kamera": [
+   -782.4,
+   36,
+   -676.5
+  ],
+  "ms": 35
+ },
+ "ms": 5962
+}

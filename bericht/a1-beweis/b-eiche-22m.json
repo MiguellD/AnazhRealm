@@ -1,0 +1,510 @@
+{
+ "spec": {
+  "id": "b-eiche-22m",
+  "klasse": "eiche",
+  "dist": 22,
+  "auge": 1.7,
+  "zielH": 4.05,
+  "frei": true
+ },
+ "objektMasse": {
+  "x": -783.9213921508715,
+  "y": 34.129229271461135,
+  "z": -674.3431688560893,
+  "h": 9,
+  "r": 3,
+  "boden": 34.129229271461135,
+  "slots": 1
+ },
+ "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\frozen-a1\\artifacts\\a1-beweis\\b-eiche-22m.png",
+ "bild": {
+  "kamera": [
+   -805.92,
+   35.11,
+   -674.34
+  ],
+  "hell": 141.9,
+  "kontrast": 1.45,
+  "dc": 27,
+  "dreiecke": 151072,
+  "ms": 735,
+  "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\frozen-a1\\artifacts\\a1-beweis\\b-eiche-22m.png",
+  "gesamtMs": 1837
+ },
+ "lupe": null,
+ "vorbereiten": {
+  "pose": {
+   "px": -805.9213921508715,
+   "py": 35.11460716373133,
+   "pz": -674.3431688560893,
+   "lx": -783.9213921508715,
+   "ly": 38.17922927146113,
+   "lz": -674.3431688560893,
+   "w": 3.141592653589793
+  },
+  "strahlen": {
+   "gewaehlt": {
+    "w": 3.141592653589793,
+    "frei": 5
+   },
+   "versuche": [
+    {
+     "w": 2.0944,
+     "vor": 5,
+     "nach": 0,
+     "blocker": [
+      "Mesh@16.0",
+      "Mesh@15.6",
+      "Mesh@16.2",
+      "Mesh@15.3",
+      "Mesh@15.9"
+     ]
+    },
+    {
+     "w": 3.1416,
+     "vor": 5,
+     "nach": 5,
+     "blocker": []
+    }
+   ]
+  },
+  "blick": {
+   "n": 5
+  }
+ },
+ "messen": {
+  "buehne": {
+   "saison": "summer",
+   "phase": 0.375,
+   "autoSeason": false,
+   "wetter": "sunny",
+   "wetterUhr": -999998941.598801,
+   "tageszeit": 0.5,
+   "tiereGehalten": true,
+   "loopRuht": true
+  },
+  "ungebaut": {
+   "n": 0,
+   "imRadius": 57,
+   "radius": 105,
+   "typen": {}
+  },
+  "spieler": [
+   -805.92,
+   -674.34
+  ],
+  "kamera": {
+   "pos": [
+    -805.921,
+    35.115,
+    -674.343
+   ],
+   "ziel": [
+    -783.921,
+    38.179,
+    -674.343
+   ],
+   "fov": 75,
+   "aspect": 1.7778,
+   "azimut": 3.1416
+  },
+  "objekt": {
+   "x": -783.92,
+   "y": 34.13,
+   "z": -674.34,
+   "distKameraXZ": 22,
+   "distKamera3D": 22.02
+  },
+  "stufe": {
+   "lod": 1,
+   "serviert": 1,
+   "gezeichnet": true,
+   "d0": 12,
+   "d1": 26,
+   "hyst": 3.4,
+   "nahGrenze": 64
+  },
+  "tris": {
+   "L0": 0,
+   "L1": 0,
+   "L2": 0,
+   "L3": 0
+  }
+ },
+ "fellHaut": null,
+ "klasseImBild": [
+  {
+   "klasse": "f:eiche:L1",
+   "stufe": 1,
+   "cmd": 3,
+   "tris": 2042,
+   "je": {
+    "k0": 1,
+    "haupt": 2
+   },
+   "jeTris": {
+    "k0": 532,
+    "haupt": 1510
+   },
+   "exemplare": 1,
+   "dMin": 22,
+   "dMax": 22
+  },
+  {
+   "klasse": "fimp:atlas:L2",
+   "stufe": 2,
+   "cmd": 1,
+   "tris": 408,
+   "je": {
+    "haupt": 1
+   },
+   "jeTris": {
+    "haupt": 408
+   },
+   "exemplare": 115,
+   "dMin": 22,
+   "dMax": 1051
+  }
+ ],
+ "zaehlen": {
+  "gesamt": {
+   "cmd": 32,
+   "tris": 231405
+  },
+  "passe": {
+   "OrthographicCamera": {
+    "cmd": 2,
+    "tris": 2
+   },
+   "haupt": {
+    "cmd": 25,
+    "tris": 112682
+   },
+   "k0": {
+    "cmd": 4,
+    "tris": 68336
+   },
+   "k1": {
+    "cmd": 1,
+    "tris": 50385
+   }
+  },
+  "klassen": [
+   {
+    "klasse": "f:tanne:L1",
+    "stufe": 1,
+    "art": "tree",
+    "cmd": 3,
+    "tris": 2416,
+    "je": {
+     "k0": 1,
+     "haupt": 2
+    },
+    "jeTris": {
+     "k0": 512,
+     "haupt": 1904
+    },
+    "inst": 2,
+    "exemplare": 1,
+    "dMin": 46,
+    "dMax": 46
+   },
+   {
+    "klasse": "f:fichte:L1",
+    "stufe": 1,
+    "art": "tree",
+    "cmd": 3,
+    "tris": 2360,
+    "je": {
+     "k0": 1,
+     "haupt": 2
+    },
+    "jeTris": {
+     "k0": 512,
+     "haupt": 1848
+    },
+    "inst": 2,
+    "exemplare": 1,
+    "dMin": 51,
+    "dMax": 51
+   },
+   {
+    "klasse": "f:eiche:L1",
+    "stufe": 1,
+    "art": "tree",
+    "cmd": 3,
+    "tris": 2042,
+    "je": {
+     "k0": 1,
+     "haupt": 2
+    },
+    "jeTris": {
+     "k0": 532,
+     "haupt": 1510
+    },
+    "inst": 2,
+    "exemplare": 1,
+    "dMin": 22,
+    "dMax": 22
+   },
+   {
+    "klasse": "bodenSatz",
+    "stufe": null,
+    "art": null,
+    "cmd": 3,
+    "tris": 170500,
+    "je": {
+     "k0": 1,
+     "k1": 1,
+     "haupt": 1
+    },
+    "jeTris": {
+     "k0": 66780,
+     "k1": 50385,
+     "haupt": 53335
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 1051,
+    "dMax": 1051
+   },
+   {
+    "klasse": "fern-ring",
+    "stufe": null,
+    "art": null,
+    "cmd": 3,
+    "tris": 17280,
+    "je": {
+     "haupt": 3
+    },
+    "jeTris": {
+     "haupt": 17280
+    },
+    "inst": 3,
+    "exemplare": 3,
+    "dMin": 187,
+    "dMax": 219
+   },
+   {
+    "klasse": "dsl-insel",
+    "stufe": null,
+    "art": null,
+    "cmd": 3,
+    "tris": 9064,
+    "je": {
+     "haupt": 3
+    },
+    "jeTris": {
+     "haupt": 9064
+    },
+    "inst": 3,
+    "exemplare": 3,
+    "dMin": 1015,
+    "dMax": 1031
+   },
+   {
+    "klasse": "streuSatz",
+    "stufe": null,
+    "art": null,
+    "cmd": 2,
+    "tris": 17030,
+    "je": {
+     "haupt": 2
+    },
+    "jeTris": {
+     "haupt": 17030
+    },
+    "inst": 2,
+    "exemplare": 1,
+    "dMin": 1051,
+    "dMax": 1051
+   },
+   {
+    "klasse": "nahWiese:L2",
+    "stufe": 2,
+    "art": null,
+    "cmd": 2,
+    "tris": 332,
+    "je": {
+     "haupt": 2
+    },
+    "jeTris": {
+     "haupt": 332
+    },
+    "inst": 3,
+    "exemplare": 3,
+    "dMin": 7,
+    "dMax": 11
+   },
+   {
+    "klasse": "feld-pass",
+    "stufe": null,
+    "art": null,
+    "cmd": 2,
+    "tris": 13,
+    "je": {
+     "haupt": 2
+    },
+    "jeTris": {
+     "haupt": 13
+    },
+    "inst": 2,
+    "exemplare": 2,
+    "dMin": 1052,
+    "dMax": 1052
+   },
+   {
+    "klasse": "Render Pipeline",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 1,
+    "je": {
+     "OrthographicCamera": 1
+    },
+    "jeTris": {
+     "OrthographicCamera": 1
+    },
+    "inst": 0,
+    "exemplare": 0,
+    "dMin": null,
+    "dMax": null
+   },
+   {
+    "klasse": "TRAA",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 1,
+    "je": {
+     "OrthographicCamera": 1
+    },
+    "jeTris": {
+     "OrthographicCamera": 1
+    },
+    "inst": 0,
+    "exemplare": 0,
+    "dMin": null,
+    "dMax": null
+   },
+   {
+    "klasse": "fimp:atlas:L2",
+    "stufe": 2,
+    "art": null,
+    "cmd": 1,
+    "tris": 408,
+    "je": {
+     "haupt": 1
+    },
+    "jeTris": {
+     "haupt": 408
+    },
+    "inst": 204,
+    "exemplare": 115,
+    "dMin": 22,
+    "dMax": 1051
+   },
+   {
+    "klasse": "himmel",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 1984,
+    "je": {
+     "haupt": 1
+    },
+    "jeTris": {
+     "haupt": 1984
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 0,
+    "dMax": 0
+   },
+   {
+    "klasse": "nahWiese:L1",
+    "stufe": 1,
+    "art": null,
+    "cmd": 1,
+    "tris": 2400,
+    "je": {
+     "haupt": 1
+    },
+    "jeTris": {
+     "haupt": 2400
+    },
+    "inst": 2,
+    "exemplare": 2,
+    "dMin": 5,
+    "dMax": 6
+   },
+   {
+    "klasse": "himmel-sonne",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 480,
+    "je": {
+     "haupt": 1
+    },
+    "jeTris": {
+     "haupt": 480
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 395,
+    "dMax": 395
+   },
+   {
+    "klasse": "wasserSatz",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 2754,
+    "je": {
+     "haupt": 1
+    },
+    "jeTris": {
+     "haupt": 2754
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 1051,
+    "dMax": 1051
+   },
+   {
+    "klasse": "farWater",
+    "stufe": null,
+    "art": null,
+    "cmd": 1,
+    "tris": 2340,
+    "je": {
+     "haupt": 1
+    },
+    "jeTris": {
+     "haupt": 2340
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 213,
+    "dMax": 213
+   }
+  ],
+  "unbenannt": [],
+  "programme": {
+   "vertex": 63,
+   "fragment": 47,
+   "familien": 40,
+   "pipelines": 94
+  },
+  "frameMs": 33,
+  "kaskaden": 2,
+  "kamera": [
+   -805.9,
+   35.1,
+   -674.3
+  ],
+  "ms": 43
+ },
+ "ms": 8397
+}

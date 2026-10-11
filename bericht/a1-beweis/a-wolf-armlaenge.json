@@ -1,0 +1,678 @@
+{
+ "spec": {
+  "id": "a-wolf-armlaenge",
+  "klasse": "wolf",
+  "dist": 1.7958118915557861,
+  "auge": "wolf",
+  "zielH": "mitte",
+  "fellHaut": true
+ },
+ "objektMasse": {
+  "x": -917.8851258113232,
+  "y": 27.627616966738344,
+  "z": -828.4766480194105,
+  "sx": 0.35959972937905604,
+  "sy": 0.9516641596953086,
+  "sz": 1.5916237831115723,
+  "boden": 27.07865879002636
+ },
+ "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\frozen-a1\\artifacts\\a1-beweis\\a-wolf-armlaenge.png",
+ "bild": {
+  "kamera": [
+   -919.55,
+   28.7,
+   -827.92
+  ],
+  "hell": 127.3,
+  "kontrast": 5.16,
+  "dc": 52,
+  "dreiecke": 320205,
+  "ms": 853,
+  "datei": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\frozen-a1\\artifacts\\a1-beweis\\a-wolf-armlaenge.png",
+  "gesamtMs": 2537
+ },
+ "vorbereiten": {
+  "pose": {
+   "px": -919.5521093120927,
+   "py": 28.703449046586,
+   "pz": -827.9241120826135,
+   "lx": -917.867561681107,
+   "ly": 27.627616966738344,
+   "lz": -828.5463978921844,
+   "w": 2.7877333200365673
+  },
+  "blick": {
+   "n": 8567,
+   "liste": [
+    407,
+    6,
+    88,
+    494,
+    454,
+    0,
+    916,
+    8567,
+    0,
+    0,
+    2,
+    258
+   ]
+  },
+  "stell1": {
+   "takte": 40,
+   "chunks": 30,
+   "ungebaut": 0,
+   "zielStufe": null,
+   "zielServiert": null,
+   "ms": 2078
+  },
+  "stell2": {
+   "takte": 40,
+   "chunks": 30,
+   "ungebaut": 0,
+   "zielStufe": null,
+   "zielServiert": null,
+   "ms": 2323
+  }
+ },
+ "messen": {
+  "buehne": {
+   "saison": "summer",
+   "phase": 0.375,
+   "autoSeason": false,
+   "wetter": "sunny",
+   "wetterUhr": -999999698.8615999,
+   "tageszeit": 0.5,
+   "tiereGehalten": true,
+   "loopRuht": true
+  },
+  "ungebaut": {
+   "n": 0,
+   "imRadius": 217,
+   "radius": 105,
+   "typen": {}
+  },
+  "spieler": [
+   -919.55,
+   -827.92
+  ],
+  "kamera": {
+   "pos": [
+    -919.552,
+    28.703,
+    -827.924
+   ],
+   "ziel": [
+    -917.868,
+    27.628,
+    -828.546
+   ],
+   "fov": 75,
+   "aspect": 1.7778,
+   "azimut": 2.7877
+  },
+  "objekt": {
+   "x": -917.87,
+   "y": 27.6,
+   "z": -828.55,
+   "distKameraXZ": 1.8,
+   "distKamera3D": 2.11
+  },
+  "stufe": {
+   "fern": false,
+   "grenzeM": 35,
+   "hyst": 0.1,
+   "nahSichtbar": true,
+   "fernSichtbar": true,
+   "wolfSichtbar": true,
+   "kzNah": true,
+   "feldGlieder": 0,
+   "fellAn": true
+  },
+  "tris": {
+   "L0_nah_gesamt": 55422,
+   "L0_fell": 26712,
+   "L0_haut": 28710,
+   "L1_grob": 6026,
+   "imBild": 61448
+  },
+  "kopfStraehne": {
+   "zeile": {
+    "n": 30,
+    "l_lab": 0.045000002112183274,
+    "t_lab": 0.005
+   },
+   "weltSkala": 0.3333,
+   "laengeMm": 15,
+   "dickeMm": 1.67,
+   "dKopfM": 1.823,
+   "hoehePx": 1080,
+   "pxJeM": 385.9,
+   "pxLaenge": 5.789,
+   "pxDicke": 0.643,
+   "px28mm": 1.081
+  }
+ },
+ "fellHaut": {
+  "schalen": 1,
+  "schalenAn": 1,
+  "W": 1920,
+  "H": 1080,
+  "fell": {
+   "px": 233450,
+   "hell": 126.6
+  },
+  "haut": {
+   "px": 216727,
+   "hell": 126.1
+  },
+  "gemeinsam": {
+   "px": 161192,
+   "hellFell": 124,
+   "hellHaut": 127,
+   "verhaeltnis": 0.976
+  }
+ },
+ "zaehlen": {
+  "gesamt": {
+   "cmd": 78,
+   "tris": 445177
+  },
+  "passe": {
+   "OrthographicCamera": {
+    "cmd": 2,
+    "tris": 2
+   },
+   "haupt": {
+    "cmd": 50,
+    "tris": 306391
+   },
+   "k0": {
+    "cmd": 15,
+    "tris": 86235
+   },
+   "k1": {
+    "cmd": 11,
+    "tris": 52549
+   }
+  },
+  "klassen": [
+   {
+    "klasse": "tier:wolf",
+    "stufe": null,
+    "art": null,
+    "cmd": 9,
+    "tris": 61178,
+    "je": {
+     "k0": 1,
+     "haupt": 8
+    },
+    "jeTris": {
+     "k0": 5756,
+     "haupt": 55422
+    },
+    "inst": 8,
+    "exemplare": 2,
+    "dMin": 2,
+    "dMax": 2
+   },
+   {
+    "klasse": "f:tanne:L1",
+    "stufe": 1,
+    "art": "tree",
+    "cmd": 8,
+    "tris": 15150,
+    "je": {
+     "k0": 2,
+     "k1": 2,
+     "haupt": 4
+    },
+    "jeTris": {
+     "k0": 4600,
+     "k1": 1022,
+     "haupt": 9528
+    },
+    "inst": 10,
+    "exemplare": 3,
+    "dMin": 7,
+    "dMax": 33
+   },
+   {
+    "klasse": "f:eiche:L1",
+    "stufe": 1,
+    "art": "tree",
+    "cmd": 6,
+    "tris": 10964,
+    "je": {
+     "k0": 2,
+     "k1": 2,
+     "haupt": 2
+    },
+    "jeTris": {
+     "k0": 3624,
+     "k1": 2068,
+     "haupt": 5272
+    },
+    "inst": 7,
+    "exemplare": 3,
+    "dMin": 14,
+    "dMax": 28
+   },
+   {
+    "klasse": "bauSatz",
+    "stufe": null,
+    "art": null,
+    "cmd": 5,
+    "tris": 7611,
+    "je": {
+     "k0": 1,
+     "haupt": 4
+    },
+    "jeTris": {
+     "k0": 1410,
+     "haupt": 6201
+    },
+    "inst": 4,
+    "exemplare": 1,
+    "dMin": 1238,
+    "dMax": 1238,
+    "inhalt": {
+     "k0": [
+      {
+       "klasse": "f:feuerstelle:L0",
+       "stufe": 0,
+       "art": "ausstattung",
+       "zellen": 1,
+       "tris": 1410,
+       "eintraege": [
+        78
+       ]
+      }
+     ],
+     "haupt": [
+      {
+       "klasse": "f:feuerstelle:L1",
+       "stufe": 1,
+       "art": "ausstattung",
+       "zellen": 14,
+       "tris": 4165,
+       "eintraege": [
+        63,
+        65,
+        67,
+        95,
+        66,
+        93,
+        164
+       ]
+      },
+      {
+       "klasse": "f:feuerstelle:L0",
+       "stufe": 0,
+       "art": "ausstattung",
+       "zellen": 2,
+       "tris": 1780,
+       "eintraege": [
+        78
+       ]
+      },
+      {
+       "klasse": "f:fraenkisch:L2",
+       "stufe": 2,
+       "art": "haus",
+       "zellen": 1,
+       "tris": 256,
+       "eintraege": [
+        218
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "klasse": "f:birke:L1",
+    "stufe": 1,
+    "art": "tree",
+    "cmd": 4,
+    "tris": 8076,
+    "je": {
+     "haupt": 2,
+     "k0": 1,
+     "k1": 1
+    },
+    "jeTris": {
+     "haupt": 5564,
+     "k0": 1884,
+     "k1": 628
+    },
+    "inst": 4,
+    "exemplare": 2,
+    "dMin": 8,
+    "dMax": 25
+   },
+   {
+    "klasse": "f:fichte:L1",
+    "stufe": 1,
+    "art": "tree",
+    "cmd": 4,
+    "tris": 8268,
+    "je": {
+     "k0": 1,
+     "k1": 1,
+     "haupt": 2
+    },
+    "jeTris": {
+     "k0": 1638,
+     "k1": 546,
+     "haupt": 6084
+    },
+    "inst": 6,
+    "exemplare": 2,
+    "dMin": 7,
+    "dMax": 23
+   },
+   {
+    "klasse": "fscatter:fichte:L1",
+    "stufe": 1,
+    "art": "tree",
+    "cmd": 4,
+    "tris": 3720,
+    "je": {
+     "k0": 2,
+     "k1": 2
+    },
+    "jeTris": {
+     "k0": 2662,
+     "k1": 1058
+    },
+    "inst": 0,
+    "exemplare": 0,
+    "dMin": null,
+    "dMax": null
+   },
+   {
+    "klasse": "f:strauch:L1",
+    "stufe": 1,
+    "art": "shrub",
+    "cmd": 4,
+    "tris": 8444,
+    "je": {
+     "k0": 2,
+     "haupt": 2
+    },
+    "jeTris": {
+     "k0": 6120,
+     "haupt": 2324
+    },
+    "inst": 5,
+    "exemplare": 3,
+    "dMin": 17,
+    "dMax": 18
+   },
+   {
+    "klasse": "streuSatz",
+    "stufe": null,
+    "art": null,
+    "cmd": 4,
+    "tris": 39364,
+    "je": {
+     "haupt": 4
+    },
+    "jeTris": {
+     "haupt": 39364
+    },
+    "inst": 4,
+    "exemplare": 1,
+    "dMin": 1238,
+    "dMax": 1238
+   },
+   {
+    "klasse": "bodenSatz",
+    "stufe": null,
+    "art": null,
+    "cmd": 3,
+    "tris": 132255,
+    "je": {
+     "k0": 1,
+     "k1": 1,
+     "haupt": 1
+    },
+    "jeTris": {
+     "k0": 56273,
+     "k1": 45779,
+     "haupt": 30203
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 1238,
+    "dMax": 1238
+   },
+   {
+    "klasse": "formationenSatz",
+    "stufe": null,
+    "art": null,
+    "cmd": 3,
+    "tris": 4480,
+    "je": {
+     "k0": 1,
+     "k1": 1,
+     "haupt": 1
+    },
+    "jeTris": {
+     "k0": 1920,
+     "k1": 1280,
+     "haupt": 1280
+    },
+    "inst": 1,
+    "exemplare": 1,
+    "dMin": 1238,
+    "dMax": 1238,
+    "inhalt": {
+     "k0": [
+      {
+       "klasse": "f:zacken:L0",
+       "stufe": 0,
+       "art": "rock",
+       "zellen": 6,
+       "tris": 1920,
+       "eintraege": [
+        167,
+        31,
+        64,
+        77,
+        163,
+        94
+       ]
+      }
+     ],
+     "k1": [
+      {
+       "klasse": "f:zacken:L0",
+       "stufe": 0,
+       "art": "rock",
+       "zellen": 4,
+       "tris": 1280,
+       "eintraege": [
+        167,
+        64,
+        163,
+        94
+       ]
+      }
+     ],
+     "haupt": [
+      {
+       "klasse": "f:zacken:L0",
+       "stufe": 0,
+       "art": "rock",
+       "zellen": 4,
+       "tris": 1280,
+       "eintraege": [
+        64,
+        77,
+        163,
+        94
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "klasse": "fern-ring",
+    "stufe": null,
+    "art": null,
+    "cmd": 3,
+    "tris": 17280,
+    "je": {
+     "haupt": 3
+    },
+    "jeTris": {
+     "haupt": 17280
+    },
+    "inst": 3,
+    "exemplare": 3,
+    "dMin": 50,
+    "dMax": 109
+   },
+   {
+    "klasse": "bauWurf",
+    "stufe": null,
+    "art": null,
+    "cmd": 2,
+    "tris": 516,
+    "je": {
+     "k0": 1,
+     "k1": 1
+    },
+    "jeTris": {
+     "k0": 348,
+     "k1": 168
+    },
+    "inst": 0,
+    "exemplare": 0,
+    "dMin": null,
+    "dMax": null,
+    "inhalt": {
+     "k0": [
+      {
+       "klasse": "f:feuerstelle:L3",
+       "stufe": 3,
+       "art": "ausstattung",
+       "zellen": 12,
+       "tris": 288,
+       "eintraege": [
+        63,
+        65,
+        67,
+        95,
+        33,
+        35,
+        30,
+        66,
+        166,
+        93,
+        164,
+        165
+       ]
+      },
+      {
+       "klasse": "f:fraenkisch:L3",
+       "stufe": 3,
+       "art": "haus",
+       "zellen": 1,
+       "tris": 60,
+       "eintraege": [
+        218
+       ]
+      }
+     ],
+     "k1": [
+      {
+       "klasse": "f:feuerstelle:L3",
+       "stufe": 3,
+       "art": "ausstattung",
+       "zellen": 7,
+       "tris": 168,
+       "eintraege": [
+        63,
+        65,
+        67,
+        95,
+        166,
+        93,
+        164
+       ]
+      }
+     ]
+    }
+   },
+   {
+    "klasse": "f:birke:L0",
+    "stufe": 0,
+    "art": "tree",
+    "cmd": 2,
+    "tris": 10954,
+    "je": {
+     "haupt": 2
+    },
+    "jeTris": {
+     "haupt": 10954
+    },
+    "inst": 2,
+    "exemplare": 1,
+    "dMin": 8,
+    "dMax": 8
+   },
+   {
+    "klasse": "f:tanne:L0",
+    "stufe": 0,
+    "art": "tree",
+    "cmd": 2,
+    "tris": 10696,
+    "je": {
+     "haupt": 2
+    },
+    "jeTris": {
+     "haupt": 10696
+    },
+    "inst": 4,
+    "exemplare": 1,
+    "dMin": 7,
+    "dMax": 12
+   },
+   {
+    "klasse": "f:fichte:L0",
+    "stufe": 0,
+    "art": "tree",
+    "cmd": 2,
+    "tris": 11376,
+    "je": {
+     "haupt": 2
+    },
+    "jeTris": {
+     "haupt": 11376
+    },
+    "inst": 4,
+    "exemplare": 1,
+    "dMin": 7,
+    "dMax": 12
+   }
+  ],
+  "unbenannt": [],
+  "programme": {
+   "vertex": 45,
+   "fragment": 38,
+   "familien": 34,
+   "pipelines": 56
+  },
+  "frameMs": 45,
+  "kaskaden": 2,
+  "kamera": [
+   -919.6,
+   28.7,
+   -827.9
+  ],
+  "ms": 58
+ },
+ "ms": 12118
+}
