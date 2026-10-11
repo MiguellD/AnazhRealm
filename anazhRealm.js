@@ -27338,30 +27338,29 @@ class AnazhRealm {
         this._voxelWorkerSyncWorldgenState();
     }
 
-    // Globales Wasser-Y-Band: top = max(state.waterLevel, alle lake.level) + 10 m, bottom = waterLevel
-    // − 10 m (reicht, weil die Iso nur die OBERE Wassergrenze rendert). Cells außerhalb werden ohne
+    // Globales Wasser-Y-Band: top = max(state.waterLevel, jeder See-Spiegel, jeder Fluss-Spiegel) + 10 m, bottom =
+    // waterLevel − 10 m (reicht, weil die Iso nur die OBERE Wassergrenze rendert). Cells außerhalb werden ohne
     // Density-Sample klassifiziert (above=AIR, below=WATER) — dieselbe Regel wie der OOB-Live-Compute in
-    // `_buildVoxelChunkWaterIsoSurface` → nahtfrei.
+    // `_buildVoxelChunkWaterIsoSurface` → nahtfrei. DER FLUSS GEHÖRT INS BAND (K16b): bis hier hob nur ein See das Band;
+    // seit der Landform im Kern trägt die Heimat keinen See (die Seen sind die Senken des Flussnetzes), das Band endete
+    // 10 m über dem Meer, und jeder Fluss darüber blieb in jeder Zelle LUFT — die Welt zeichnete keinen Fluss, der Körper
+    // stand im Fluss des Gesetzes trocken (gate:wasser-leben F5: 44 von 56 Quellen ohne Wasser auf 16 m).
     _computeHydroBand() {
         const wl = typeof this.state.waterLevel === "number" ? this.state.waterLevel : 0;
         let topY = wl;
-        const h = this.state.hydrosphere;
-        if (h && Array.isArray(h.lakes)) {
-            for (const lake of h.lakes) {
-                if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
-            }
-        }
+        const hebe = (h) => {
+            if (!h) return;
+            if (Array.isArray(h.lakes))
+                for (const lake of h.lakes) if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
+            if (Array.isArray(h.rivers))
+                for (const f of h.rivers)
+                    for (const p of f.points || []) if (Number.isFinite(p.S) && p.S > topY) topY = p.S;
+        };
+        hebe(this.state.hydrosphere);
         // A3 (V18.132) — das Band ist GLOBAL (V9.77: alle Chunks teilen die
-        // Thresholds): die See-Spiegel der fernen Kacheln heben es mit, sonst
+        // Thresholds): die Spiegel der fernen Kacheln heben es mit, sonst
         // wuerde der Band-Skip ihre Zellen als garantiert-AIR ueberspringen.
-        if (this.state.hydroTiles) {
-            for (const t of this.state.hydroTiles.values()) {
-                if (!t || !Array.isArray(t.lakes)) continue;
-                for (const lake of t.lakes) {
-                    if (Number.isFinite(lake.level) && lake.level > topY) topY = lake.level;
-                }
-            }
-        }
+        if (this.state.hydroTiles) for (const t of this.state.hydroTiles.values()) hebe(t);
         this.state.hydroBand = {
             top: topY + 10,
             bottom: wl - 10,
