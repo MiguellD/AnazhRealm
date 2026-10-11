@@ -50,8 +50,22 @@ function ladeSpec(ortId) {
     return {
         haushalt,
         ort,
-        ratsche: JSON.parse(fs.readFileSync(path.join(SPEC, ort.ratsche), "utf8")),
+        // ein Toggle-Ort (`bank`) trägt keine Ratsche: wer an ihm ein Band richten will, bricht laut (`ratscheVon`)
+        ratsche: ort.ratsche ? JSON.parse(fs.readFileSync(path.join(SPEC, ort.ratsche), "utf8")) : null,
     };
+}
+
+// Die Ratsche des Orts für ein Band-Urteil — ein Toggle-Ort hat keine, das Band richten die Band-Orte.
+function ratscheVon(spec) {
+    if (!spec.ratsche)
+        throw new Error(
+            `Messort ${spec.ort.id} ist ein Toggle-Ort ohne Ratsche (bank) — das Band richten ` +
+                spec.haushalt.messorte
+                    .filter((o) => o.ratsche)
+                    .map((o) => o.id)
+                    .join(", ")
+        );
+    return spec.ratsche;
 }
 
 // Die Ratsche eines Orts schreiben (`werkbank ratsche --ort <id>`): dieselbe Form wie gelesen.
@@ -109,11 +123,36 @@ function messortePruefen(h) {
         // Aufstellen, dass `spieler` auf ihm steht (diag-profiband H6: der Stamm trägt sie).
         if (o.anker !== undefined && (typeof o.anker !== "string" || !/^_?[A-Za-z]\w*$/.test(o.anker)))
             f.push(`${o.id}: anker ist kein Methoden-Name`);
-        if (typeof o.ratsche !== "string" || !/^ratsche(-[a-z0-9-]+)?\.json$/.test(o.ratsche))
+        // DER TOGGLE-ORT (1110-6): ein Ort mit `bank` richtet keine Band-Klasse, sondern die GPU-Zeit eines Schalters unter
+        // 0,3 ms — eine geborene Welt (`welt`, relativ zu spec/), feste Stellgrößen des Reglers (`stell`), feste Posen und die
+        // lange Bank. Er trägt keine Ratsche; jeder Band-Ort trägt eine.
+        if (o.bank !== undefined) {
+            if (o.ratsche !== undefined) f.push(`${o.id}: ein Toggle-Ort (bank) trägt keine Ratsche`);
+            if (typeof o.welt !== "string" || !fs.existsSync(path.join(SPEC, "..", o.welt)))
+                f.push(`${o.id}: welt ist keine Datei unter spec/`);
+            const b = o.bank;
+            if (!b || ![b.n, b.runden, b.je].every((v) => Number.isInteger(v) && v > 0) || !(b.soll > 0))
+                f.push(`${o.id}: bank ohne n/runden/je (ganz, > 0) und soll (ms, > 0)`);
+            // Eine Bank-Runde rendert n Frames in EINER Aufgabe, der Zeitstempel-Pool (2048) leert sich erst danach: an der
+            // Prüfbühne braucht ein Frame ~9,7 Abfragen — 240 Frames verweigerten 288 (Stempel-Wache ROT, 1110-6).
+            else if (b.n > 200) f.push(`${o.id}: bank.n ${b.n} füllt den Stempel-Pool je Runde (höchstens 200 Frames)`);
+            const st = o.stell;
+            if (!st || !Object.keys(st).length || Object.values(st).some((v) => typeof v !== "number" || !Number.isFinite(v)))
+                f.push(`${o.id}: stell ist keine Liste fester Stellgrößen`);
+            const pIds = new Set();
+            if (!Array.isArray(o.posen) || !o.posen.length) f.push(`${o.id}: posen fehlt (mindestens eine)`);
+            for (const p of o.posen || []) {
+                if (!p || typeof p.id !== "string" || pIds.has(p.id) || !xz(p.spieler) || !xz(p.blick))
+                    f.push(`${o.id}: Pose ohne/mit doppelter id oder ohne spieler/blick [x, z]: ${p && p.id}`);
+                else if (Math.hypot(p.blick[0] - p.spieler[0], p.blick[1] - p.spieler[1]) < 1)
+                    f.push(`${o.id}: Pose ${p.id} blickt auf den Spieler (keine Richtung)`);
+                pIds.add(p && p.id);
+            }
+        } else if (typeof o.ratsche !== "string" || !/^ratsche(-[a-z0-9-]+)?\.json$/.test(o.ratsche))
             f.push(`${o.id}: ratsche ist keine Datei ratsche[-<ort>].json`);
         else if (dateien.has(o.ratsche)) f.push(`${o.id}: die Ratsche ${o.ratsche} trägt schon ein anderer Ort`);
         else if (!fs.existsSync(path.join(SPEC, o.ratsche))) f.push(`${o.id}: die Ratsche ${o.ratsche} fehlt`);
-        dateien.add(o.ratsche);
+        if (o.ratsche) dateien.add(o.ratsche);
         // Eine Soll-Zeile: die Hülle EINES Exemplars der Art `art` im Pass `pass` — auf EINER Stufe (`stufe`, die Tor-Hülle
         // L0) oder über mehrere (`stufen`, der Wurf: was in der Kaskade für die Art wirft, gleich welche Stufe es ist).
         for (const s of o.soll || []) {
@@ -877,6 +916,7 @@ module.exports = {
     einschwingOffen,
     EINSCHWING_INSTALL: `window.__einschwingOffen = ${einschwingOffen.toString()};`,
     ladeSpec,
+    ratscheVon,
     ortOf,
     ortGier,
     ortGestellt,

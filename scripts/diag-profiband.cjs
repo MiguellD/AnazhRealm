@@ -1048,7 +1048,8 @@ function main() {
     const h = BAND.haushaltPruefen(haushalt);
     for (const f of h.fehler) errs.push("H1 " + f);
     // H2 je Ort: jede Ratsche trägt das Schema (die Mess-Wiese und jeder weitere Ort).
-    const orte = (haushalt.messorte || []).map((o) => ({ o, r: BAND.ladeSpec(o.id).ratsche }));
+    // (ein Toggle-Ort mit `bank` trägt keine Ratsche — H1 prüft sein Schema)
+    const orte = (haushalt.messorte || []).filter((o) => o.ratsche).map((o) => ({ o, r: BAND.ladeSpec(o.id).ratsche }));
     for (const { o, r } of orte) for (const f of BAND.ratschePruefen(r, haushalt)) errs.push(`H2 [${o.id}] ${f}`);
     const stamm = fs.readFileSync(path.join(root, "anazhRealm.js"), "utf8");
     const nw = namensWand(stamm);

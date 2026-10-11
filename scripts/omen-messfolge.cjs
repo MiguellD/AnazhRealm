@@ -78,7 +78,147 @@ const FOLGEN = {
         "profil",
     ],
     genesis: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "band"],
+    // DER TOGGLE-ORT (1110-6): die Prüfbühne richtet keine Band-Klasse, sondern die GPU-Zeit eines Schalters unter 0,3 ms —
+    // die lange Bank je Pose (haushalt.json `bank`, `posen`), bei festen Stellgrößen des Reglers (`stell`).
+    buehne: ["boot", "dorf-aus", "fenster", "umstellen", "buehne", "gpu-bank"],
 };
+
+// DIE WIEDERHOLBARKEIT EINES MESSORTS (1110-6, rein): dieselbe Seite in N frischen Sitzungen — je Pose (Toggle-Ort) bzw. je
+// Blick (Band-Ort) das Bank-Mittel jeder Sitzung. Liegt die Spanne (max − min) über dem Soll, ist der Ort für Toggle-Urteile
+// dieser Größe blind und nennt die Pose. An der Mess-Wiese lag sie am 11.10. bis 1,8 ms (der Baum-Inhalt je Sitzung).
+// DER TAKT (1110-7): die GTX des OMEN läuft unter Last am Leistungs-Deckel (Drossel 0x4, ~70 W) mit 1680–1710 MHz, in Ruhe mit
+// 1771 MHz — zwischen Sitzungen ~4 %, so viel wie der vermeintliche Merge-Täter von 1110-6. Verglichen wird nur bei gleichem
+// Takt (±0,5 % um den Median); fehlt er in einer Sitzung (kein nvidia-smi), ist der gleiche Takt nicht belegt — beides laut.
+// `sitzungen` = [{ name, je: { <pose|gier>: ms }, takt: { <pose|gier>: MHz | null } }]; mindestens drei.
+const TAKT_TOLERANZ = 0.005;
+function streuungUrteil(sitzungen, soll) {
+    const befunde = [];
+    const zeilen = [];
+    if (!(soll > 0)) befunde.push("STREUUNG: kein Soll (ms > 0)");
+    if (sitzungen.length < 3)
+        befunde.push(`STREUUNG: ${sitzungen.length} Sitzungen — die Wiederholbarkeit braucht mindestens drei`);
+    const schluessel = [...new Set(sitzungen.flatMap((s) => Object.keys(s.je || {})))];
+    if (!schluessel.length) befunde.push("STREUUNG: keine Bank in den Sitzungen");
+    for (const k of schluessel) {
+        const w = sitzungen.map((s) => (s.je || {})[k]);
+        const fehlt = w.filter((x) => !Number.isFinite(x)).length;
+        if (fehlt) {
+            befunde.push(`STREUUNG ${k}: in ${fehlt} von ${w.length} Sitzungen kein Wert`);
+            continue;
+        }
+        const min = Math.min(...w);
+        const max = Math.max(...w);
+        const mittel = w.reduce((a, b) => a + b, 0) / w.length;
+        const sigma = Math.sqrt(w.reduce((a, b) => a + (b - mittel) ** 2, 0) / Math.max(1, w.length - 1));
+        const t = sitzungen.map((s) => (s.takt || {})[k]);
+        const ohneTakt = t.filter((x) => !(Number.isFinite(x) && x > 0)).length;
+        if (ohneTakt)
+            befunde.push(
+                `TAKT ${k}: in ${ohneTakt} von ${t.length} Sitzungen kein Takt (nvidia-smi) — der gleiche Takt ist nicht belegt`
+            );
+        else {
+            const ts = t.slice().sort((a, b) => a - b);
+            const med = ts.length % 2 ? ts[ts.length >> 1] : (ts[ts.length / 2 - 1] + ts[ts.length / 2]) / 2;
+            sitzungen.forEach((s, i) => {
+                if (Math.abs(t[i] - med) > med * TAKT_TOLERANZ)
+                    befunde.push(
+                        `TAKT ${k}: Sitzung ${s.name || i + 1} bei ${t[i].toFixed(0)} MHz, Median ${med.toFixed(0)} MHz ` +
+                            `(±${TAKT_TOLERANZ * 100} %) — der Vergleich ist blind (Täter: Takt)`
+                    );
+            });
+        }
+        zeilen.push({
+            k,
+            werte: w,
+            takt: t,
+            mittel: +mittel.toFixed(3),
+            spanne: +(max - min).toFixed(3),
+            sigma: +sigma.toFixed(3),
+        });
+        if (max - min > soll)
+            befunde.push(
+                `STREUUNG ${k}: Spanne ${(max - min).toFixed(2)} ms über dem Soll ${soll} ms (${w.map((x) => x.toFixed(2)).join(" · ")})`
+            );
+    }
+    return { befunde, zeilen };
+}
+
+// Die Bank eines Laufs je Pose bzw. Blick (aus `kurz.gpuBank`) und ihr Takt — die Eingabe des Streuungs-Urteils.
+function bankJe(lauf) {
+    const je = {};
+    const takt = {};
+    for (const [k, b] of Object.entries((lauf && lauf.kurz && lauf.kurz.gpuBank) || {})) {
+        je[k] = b && Number.isFinite(b.gpuJeFrameMs) ? b.gpuJeFrameMs : NaN;
+        takt[k] = b && b.takt && Number.isFinite(b.takt.mhz) ? b.takt.mhz : null;
+    }
+    return { je, takt };
+}
+
+// DER TAKT EINER BANK (rein): `nvidia-smi --format=csv,noheader,nounits` je Zeile Takt (MHz), Temperatur, Leistung und die
+// Drossel-Gründe (Maske) → Mittel, Spanne und die Zahl der Proben je Drossel-Maske; ohne eine lesbare Zeile null.
+const SMI_ABFRAGE = [
+    "--query-gpu=clocks.gr,temperature.gpu,power.draw,clocks_throttle_reasons.active",
+    "--format=csv,noheader,nounits",
+    "-lms",
+    "250",
+];
+function taktAus(zeilen) {
+    const w = zeilen
+        .map((l) => l.split(",").map((x) => x.trim()))
+        .filter((r) => r.length >= 4 && Number(r[0]) > 0 && Number.isFinite(Number(r[1])));
+    if (!w.length) return null;
+    const m = (i) => w.reduce((a, r) => a + Number(r[i]), 0) / w.length;
+    const mhz = w.map((r) => Number(r[0]));
+    const drossel = {};
+    for (const r of w) drossel[r[3]] = (drossel[r[3]] || 0) + 1;
+    return {
+        mhz: +m(0).toFixed(1),
+        min: Math.min(...mhz),
+        max: Math.max(...mhz),
+        temp: +m(1).toFixed(1),
+        watt: +m(2).toFixed(1),
+        drossel,
+        n: w.length,
+    };
+}
+
+// Eine Bank mit ihrem Takt: `nvidia-smi` liest je 250 ms, solange die Bank läuft; ohne nvidia-smi (kein NVIDIA-Treiber) steht
+// `takt: null` — das Streuungs-Urteil nennt es.
+async function mitTakt(fn) {
+    const zeilen = [];
+    let proc = null;
+    try {
+        proc = spawn("nvidia-smi", SMI_ABFRAGE, { windowsHide: true });
+        proc.on("error", () => (proc = null));
+        proc.stdout.on("data", (d) => zeilen.push(...String(d).split(/\r?\n/).filter(Boolean)));
+    } catch (_e) {
+        proc = null;
+    }
+    try {
+        const b = await fn();
+        return { b, takt: taktAus(zeilen) };
+    } finally {
+        if (proc) proc.kill();
+    }
+}
+
+// Die Takte mehrerer Bänke derselben Pose zu EINEM: Mittel der Mittel, Spanne über alle, die Drossel-Masken summiert.
+function taktZusammen(liste) {
+    const t = liste.filter(Boolean);
+    if (!t.length) return null;
+    const drossel = {};
+    for (const x of t) for (const [k, n] of Object.entries(x.drossel)) drossel[k] = (drossel[k] || 0) + n;
+    return {
+        mhz: +(t.reduce((a, x) => a + x.mhz, 0) / t.length).toFixed(1),
+        min: Math.min(...t.map((x) => x.min)),
+        max: Math.max(...t.map((x) => x.max)),
+        temp: +(t.reduce((a, x) => a + x.temp, 0) / t.length).toFixed(1),
+        watt: +(t.reduce((a, x) => a + x.watt, 0) / t.length).toFixed(1),
+        drossel,
+        n: t.reduce((a, x) => a + x.n, 0),
+        baenke: t.length,
+    };
+}
 const ORT = opt("--ort", "wiese");
 if (!FOLGEN[ORT]) throw new Error(`omen-messfolge: kein Messort „${ORT}" (Folgen: ${Object.keys(FOLGEN).join(", ")})`);
 const FOLGE = FOLGEN[ORT];
@@ -424,14 +564,64 @@ async function folge() {
                     "r.state.renderer.setAnimationLoop(null); " +
                     "return { gier: r.state.yaw, tiere: typeof window.__tierZahl === 'function' ? window.__tierZahl() : null };",
             });
-        if (hat("gpu-bank")) {
+        if (hat("gpu-bank") && ort.bank) {
+            // DIE LANGE BANK je Pose (Toggle-Ort, 1110-6): der Spieler steht an der Pose (die Werkbank wartet, bis der
+            // Chunk-Bestand ruht), eine Aufwärm-Bank fällt weg (nach jedem Wechsel trägt die erste Bank Neu-Übersetzung und
+            // den letzten Zuzug), dann `bank.je` Bänke zu `bank.n` × `bank.runden`; ihr Mittel ist der Wert der Pose.
+            const B = ort.bank;
+            const bank = await schritt("gpu-bank", async () => {
+                const je = {};
+                for (const p of ort.posen) {
+                    const u = await R("/umstellen", { ort: ORT, pose: p.id });
+                    if (abbruchVon(u)) {
+                        je[p.id] = u;
+                        continue;
+                    }
+                    await blick(BAND.ortGier(p));
+                    await R("/gpu-bank", { n: 120, runden: 2 });
+                    const werte = [];
+                    const takte = [];
+                    let cpu = 0;
+                    for (let i = 0; i < B.je; i++) {
+                        const { b, takt } = await mitTakt(() => R("/gpu-bank", { n: B.n, runden: B.runden }));
+                        if (abbruchVon(b)) {
+                            je[p.id] = b;
+                            break;
+                        }
+                        werte.push(b.gpuJeFrameMs);
+                        takte.push(takt);
+                        cpu += b.cpuJeFrameMs / B.je;
+                    }
+                    if (je[p.id]) continue;
+                    const mittel = werte.reduce((a, c) => a + c, 0) / werte.length;
+                    je[p.id] = {
+                        gpuJeFrameMs: +mittel.toFixed(3),
+                        cpuJeFrameMs: +cpu.toFixed(3),
+                        werte,
+                        chunks: u.chunks,
+                        takt: taktZusammen(takte),
+                    };
+                }
+                await R("/umstellen", { ort: ORT });
+                return je;
+            });
+            aus.kurz.gpuBank = {};
+            for (const p of ort.posen) {
+                const b = bank && bank[p.id];
+                if (abbruchVon(b)) aus.befunde.push(`SCHRITT gpu-bank (Pose ${p.id}): ${abbruchVon(b)}`);
+                aus.kurz.gpuBank[p.id] = b && !abbruchVon(b) ? b : null;
+            }
+        } else if (hat("gpu-bank")) {
             const bank = await schritt("gpu-bank", async () => {
                 const je = {};
                 for (const g of BANK_GIER) {
                     const b = await blick(g);
-                    je[String(g)] = await R("/gpu-bank", { n: 12, runden: 3 });
-                    if (je[String(g)] && typeof je[String(g)] === "object")
+                    const m = await mitTakt(() => R("/gpu-bank", { n: 12, runden: 3 }));
+                    je[String(g)] = m.b;
+                    if (je[String(g)] && typeof je[String(g)] === "object") {
                         je[String(g)].tiere = b && b.ergebnis ? b.ergebnis.tiere : null;
+                        je[String(g)].takt = m.takt;
+                    }
                 }
                 await blick(BAND.ortGier(ort));
                 return je;
@@ -443,42 +633,50 @@ async function folge() {
                 else aus.befunde.push(...tierUrteil(`gpu-bank (Gier ${g})`, b && b.tiere));
                 aus.kurz.gpuBank[String(g)] =
                     b && !abbruchVon(b)
-                        ? { gpuJeFrameMs: b.gpuJeFrameMs, cpuJeFrameMs: b.cpuJeFrameMs, tiere: tierKurz(b.tiere) }
+                        ? {
+                              gpuJeFrameMs: b.gpuJeFrameMs,
+                              cpuJeFrameMs: b.cpuJeFrameMs,
+                              tiere: tierKurz(b.tiere),
+                              takt: b.takt || null,
+                          }
                         : b;
             }
         }
-        const bandDatei = path.join(os.tmpdir(), `messfolge-band-${PORT}-${Date.now()}.json`);
-        const band = await schritt("band", () => R("/band", { ort: ORT, datei: bandDatei, proben: P.proben }));
-        // die Band-Messung reist im EINEN JSON mit (die Werkbank schrieb sie in eine Zwischen-Datei)
-        let messung = null;
-        if (band && fs.existsSync(bandDatei)) {
-            const e = aus.schritte[aus.schritte.length - 1];
-            messung = JSON.parse(fs.readFileSync(bandDatei, "utf8"));
-            e.ergebnis = Object.assign({}, band, { messung });
-            delete e.ergebnis.datei;
-            fs.rmSync(bandDatei, { force: true });
+        if (hat("band")) {
+            const bandDatei = path.join(os.tmpdir(), `messfolge-band-${PORT}-${Date.now()}.json`);
+            const band = await schritt("band", () => R("/band", { ort: ORT, datei: bandDatei, proben: P.proben }));
+            // die Band-Messung reist im EINEN JSON mit (die Werkbank schrieb sie in eine Zwischen-Datei)
+            let messung = null;
+            if (band && fs.existsSync(bandDatei)) {
+                const e = aus.schritte[aus.schritte.length - 1];
+                messung = JSON.parse(fs.readFileSync(bandDatei, "utf8"));
+                e.ergebnis = Object.assign({}, band, { messung });
+                delete e.ergebnis.datei;
+                fs.rmSync(bandDatei, { force: true });
+            }
+            // die Band urteilt ihre eigene Aufzeichnung: der gestellte Ort und kein Rahmen-Ziel des Direktpfads
+            if (!abbruchVon(band)) {
+                const e = aus.schritte[aus.schritte.length - 1];
+                const bb = bandBefunde(messung);
+                e.befunde.push(...bb);
+                aus.befunde.push(...bb);
+                for (const b of bb) console.log(`  ROT ${b}`);
+            }
+            schreibe();
+            const vram = messung && messung.vram ? messung.vram.mb : null;
+            aus.kurz.band = mitTieren(
+                band
+                    ? {
+                          urteil: band.urteil,
+                          linse: band.linse,
+                          stempel: band.stempel && band.stempel.urteil,
+                          gestellt:
+                              messung && Array.isArray(messung.ortGestellt) ? messung.ortGestellt.length === 0 : null,
+                          vramMB: vram,
+                      }
+                    : null
+            );
         }
-        // die Band urteilt ihre eigene Aufzeichnung: der gestellte Ort und kein Rahmen-Ziel des Direktpfads
-        if (!abbruchVon(band)) {
-            const e = aus.schritte[aus.schritte.length - 1];
-            const bb = bandBefunde(messung);
-            e.befunde.push(...bb);
-            aus.befunde.push(...bb);
-            for (const b of bb) console.log(`  ROT ${b}`);
-        }
-        schreibe();
-        const vram = messung && messung.vram ? messung.vram.mb : null;
-        aus.kurz.band = mitTieren(
-            band
-                ? {
-                      urteil: band.urteil,
-                      linse: band.linse,
-                      stempel: band.stempel && band.stempel.urteil,
-                      gestellt: messung && Array.isArray(messung.ortGestellt) ? messung.ortGestellt.length === 0 : null,
-                      vramMB: vram,
-                  }
-                : null
-        );
         if (hat("profil")) {
             const prof = await schritt("profil", () =>
                 R("/profil", { sek: P.profilSek, regler: "voll", tiere: "frei", top: 60 })
@@ -523,7 +721,9 @@ async function folge() {
     for (const [g, b] of Object.entries(aus.kurz.gpuBank || {}))
         if (b && b.gpuJeFrameMs != null)
             console.log(
-                `  gpu-bank Gier ${g}: ${b.gpuJeFrameMs} ms je Frame (CPU ${b.cpuJeFrameMs}) · ${tierZeile(b.tiere)}`
+                b.werte
+                    ? `  gpu-bank Pose ${g}: ${b.gpuJeFrameMs} ms je Frame (${b.werte.join(" · ")}; CPU ${b.cpuJeFrameMs}, Chunks ${b.chunks}; Takt ${b.takt ? b.takt.mhz + " MHz, " + b.takt.temp + " °C, Drossel " + Object.keys(b.takt.drossel).join("/") : "—"})`
+                    : `  gpu-bank Gier ${g}: ${b.gpuJeFrameMs} ms je Frame (CPU ${b.cpuJeFrameMs}) · ${tierZeile(b.tiere)}`
             );
     if (aus.kurz.band && aus.kurz.band.urteil)
         console.log(
@@ -861,11 +1061,104 @@ async function selbsttest() {
             } catch (_e) {}
         pruefe("hängender /stop: Werkbank und Kind sterben", v, null);
     }
+    // DIE WIEDERHOLBARKEIT (1110-6): vier ruhige Sitzungen liegen im Soll; eine fünfte 0,3 ms daneben fällt an IHRER Pose;
+    // zwei Sitzungen sind zu wenig; eine Pose ohne Wert steht beim Namen; die Spanne der Wiese (1110-3: 0,40 ms) ist rot.
+    // DER TAKT (1110-7): eine Sitzung mit denselben ms bei 1640 statt ~1700 MHz fällt an ihrer Pose mit dem Täter „Takt"; eine
+    // Sitzung ohne Takt ist laut; die nvidia-smi-Zeile wird gelesen.
+    const S = (je, mhz) => ({
+        je,
+        takt: Object.fromEntries(Object.keys(je).map((k) => [k, mhz === undefined ? 1700 : mhz])),
+    });
+    const ruhig = [
+        S({ a: 13.5, b: 12.1 }, 1700),
+        S({ a: 13.56, b: 12.14 }, 1702),
+        S({ a: 13.52, b: 12.08 }, 1698),
+        S({ a: 13.58, b: 12.12 }, 1701),
+    ];
+    pruefe(
+        "Takt gedrosselt",
+        streuungUrteil(ruhig.concat([S({ a: 13.54, b: 12.1 }, 1640)]), 0.1).befunde,
+        /^TAKT a: Sitzung 5 bei 1640 MHz, Median 1700 MHz .*Täter: Takt/
+    );
+    pruefe(
+        "ohne Takt",
+        streuungUrteil(ruhig.slice(0, 3).concat([S({ a: 13.54, b: 12.1 }, null)]), 0.1).befunde,
+        /^TAKT a: in 1 von 4 Sitzungen kein Takt/
+    );
+    {
+        const t = taktAus(["1701, 78, 70.1, 0x0000000000000004", "1699, 79, 70.5, 0x0000000000000001", "", "[N/A], x"]);
+        const v = [];
+        if (
+            !t ||
+            t.mhz !== 1700 ||
+            t.n !== 2 ||
+            t.drossel["0x0000000000000004"] !== 1 ||
+            t.min !== 1699 ||
+            t.max !== 1701
+        )
+            v.push(`taktAus las ${JSON.stringify(t)}`);
+        pruefe("die nvidia-smi-Zeile", v, null);
+    }
+    pruefe("Streuung im Soll", streuungUrteil(ruhig, 0.1).befunde, null);
+    pruefe(
+        "eine Sitzung 0,3 ms daneben",
+        streuungUrteil(ruhig.concat([S({ a: 13.85, b: 12.1 })]), 0.1).befunde,
+        /^STREUUNG a: Spanne 0\.35 ms über dem Soll 0\.1/
+    );
+    pruefe("zwei Sitzungen", streuungUrteil(ruhig.slice(0, 2), 0.1).befunde, /mindestens drei/);
+    pruefe(
+        "Pose ohne Wert",
+        streuungUrteil(ruhig.concat([S({ a: 13.5 })]), 0.1).befunde,
+        /STREUUNG b: in 1 von 5 Sitzungen/
+    );
+    pruefe(
+        "die Spanne der Wiese (1110-3)",
+        streuungUrteil(
+            [11.42, 11.82, 11.6, 11.7].map((x) => S({ 0: x })),
+            0.1
+        ).befunde,
+        /STREUUNG 0: Spanne 0\.40 ms/
+    );
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Mess-Folge ist blind: " + fehler.join(" · "));
         process.exit(1);
     }
     console.log("\n✅ SELBSTTEST GRÜN — die Folge-Regel und jede Wache nennen ihren Täter.");
+    process.exit(0);
+}
+
+// DAS STREUUNGS-URTEIL über N Läufe desselben Orts (1110-6, die Linse der Wiederholbarkeit): je Pose bzw. Blick die Werte,
+// Mittel, Spanne und σ; ROT, wenn eine Spanne über dem Soll liegt (Toggle-Ort: `bank.soll`, sonst `--soll`).
+function streuungCli() {
+    const dateien = argv.slice(argv.indexOf("--streuung") + 1).filter((a) => !a.startsWith("--") && /\.json$/.test(a));
+    const laeufe = dateien.map((d) => ({ name: path.basename(d), lauf: JSON.parse(fs.readFileSync(d, "utf8")) }));
+    const orte = [...new Set(laeufe.map((l) => l.lauf.parameter && l.lauf.parameter.ort))];
+    if (orte.length !== 1) {
+        console.log(
+            `❌ STREUUNG: die Läufe stehen an ${orte.join(", ") || "keinem Ort"} — ein Urteil braucht EINEN Ort`
+        );
+        process.exit(1);
+    }
+    const { ort } = BAND.ladeSpec(orte[0]);
+    const soll = Number(opt("--soll", ort.bank ? ort.bank.soll : NaN));
+    const u = streuungUrteil(
+        laeufe.map((l) => Object.assign({ name: l.name }, bankJe(l.lauf))),
+        soll
+    );
+    console.log(
+        `\n=== DIE WIEDERHOLBARKEIT am Ort ${ort.id}: ${laeufe.length} Sitzungen, Soll Spanne ≤ ${soll} ms ===`
+    );
+    for (const z of u.zeilen)
+        console.log(
+            `  ${z.k}: ${z.werte.map((x) => x.toFixed(2)).join(" · ")} ms bei ${z.takt.map((x) => (x ? x.toFixed(0) : "?")).join(" · ")} MHz → Mittel ${z.mittel}, Spanne ${z.spanne}, σ ${z.sigma} ` +
+                `(2σ ${(2 * z.sigma).toFixed(3)})`
+        );
+    if (u.befunde.length) {
+        for (const b of u.befunde) console.log("  ROT " + b);
+        console.log(`\n❌ STREUUNG ROT — der Ort ${ort.id} ist für Toggle-Urteile unter ${soll} ms blind.`);
+        process.exit(1);
+    }
+    console.log(`\n✅ STREUUNG GRÜN — der Ort ${ort.id} richtet Toggle-Urteile ab ${soll} ms.`);
     process.exit(0);
 }
 
@@ -875,6 +1168,7 @@ if (require.main === module) {
             console.error("SELBSTTEST-FEHLER:", (e && e.stack) || e);
             process.exit(1);
         });
+    else if (argv.includes("--streuung")) streuungCli();
     else
         folge().catch((e) => {
             console.error("MESS-FOLGE-FEHLER:", (e && e.stack) || e);
@@ -882,4 +1176,14 @@ if (require.main === module) {
         });
 }
 
-module.exports = { FOLGE, FOLGEN, folgeUrteil, wachenUrteil, tierUrteil, bandBefunde, beendeBaum };
+module.exports = {
+    FOLGE,
+    FOLGEN,
+    folgeUrteil,
+    wachenUrteil,
+    tierUrteil,
+    bandBefunde,
+    beendeBaum,
+    streuungUrteil,
+    bankJe,
+};
