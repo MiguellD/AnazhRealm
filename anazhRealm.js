@@ -105500,7 +105500,7 @@ AnazhRealm.PERF_LEVERS = Object.freeze({
 AnazhRealm.PORTAL_REACH_M = 4.5;
 // DER PLATZ DES VORSCHAU-WAGENS im Takt (`_ensurePortalPreview`): so viele Orte der Platz-Suche (`_fahrPlatzWege`) je Takt —
 // je Ort eine Ebene der Räder (4 Proben des Bodens, ~0,13 ms), an einem tragenden Ort die Bahn und die Welt.
-AnazhRealm.FAHR_PLATZ_JE_TAKT = 12;
+AnazhRealm.FAHR_PLATZ_JE_TAKT = 6;
 // Offener Flügel-Winkel der Welt-Tore (Nähe öffnet): wohnt NUR im porta-Gesetzbuch
 // (__portaCore.TUER_GESETZ.offen — Shell UND Welt lesen die EINE Quelle); Leser fail-closed nach dem
 // _sprintMulGesetz-Muster (Gesetz() memoisiert je Pfad).

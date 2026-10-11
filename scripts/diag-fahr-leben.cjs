@@ -2983,6 +2983,8 @@ function bahnKernRueck(VC) {
 }
 // FK2 — DIE DREHZAHL ÜBER 0…vmax (Node, klang:FAHRT): je Rezept vom Stand bis vmax in 1 %-Schritten.
 function bahnKernStimme(KC, VC) {
+    if (!KC || !KC.FAHRT || typeof KC.fahrtMischung !== "function")
+        return ["klang-core ohne klang:FAHRT / fahrtMischung — die Fahrt hat keine Stimme"];
     const F = KC.FAHRT;
     const out = [];
     for (const rezept of Object.keys(VC.PRESETS)) {
