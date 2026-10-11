@@ -1102,6 +1102,14 @@ const FORBIDDEN = [
         ["kontinentBasis", "die Prominenz-Basis der Schneegrenze"],
         ["__feldWgsl", "der WGSL-Spiegel des alten Rausch-Gesetzes (der Feld-Zeichner liest den Kern)"],
     ].map(([token, kern]) => ({ token, fiel: `K16 — ${kern}` })),
+    // DAS LICHT DES AUGES OHNE SZENEN-LICHT (K15, OMEN 1110-3): das Punkt-Licht am Auge stand ab Boot in der Szene und im
+    // Licht-Hash jedes beleuchteten Stoffs — 0,48 ms je Frame auch unter dem Himmel (Stärke 0, der TSL.If-Knoten sparte den
+    // Term nicht). Es ist ein Term des Boden-Stoffs unter Fels (`atmoUniforms.augenLicht`, 1 − aHimmel).
+    { token: "_augenLichtKlasse", fiel: "K15 — die Licht-Klasse des Auges (der Boden-Stoff trägt den Term)" },
+    { token: "_augenLichtRegistrieren", fiel: "K15 — der eigene Licht-Knoten in der r184-Bibliothek" },
+    { token: "AugenLichtNode", fiel: "K15 — der Punkt-Licht-Knoten hinter TSL.If" },
+    { token: "_AugenLicht", fiel: "K15 — die Licht-Klasse des Auges" },
+    { token: "state.augenLicht", fiel: "K15 — das Szenen-Licht des Auges (die Uniform `atmoUniforms.augenLicht`)" },
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt
