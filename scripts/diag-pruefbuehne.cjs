@@ -273,21 +273,36 @@ async function s0Probe(page, station, schein) {
                 P._scheinStoff = function () {
                     return new THREE.MeshStandardNodeMaterial({ color: 0xffffff });
                 };
+                // der stille Rückfall unter fremdem Namen: ein Bauer mit Pool, dessen Fang einen Stoff ohne Pool baut
+                P._scheinRueckfall = function () {
+                    const T3 = THREE;
+                    try {
+                        return this._leuchtStoff(new T3.MeshStandardNodeMaterial({ color: 0xffffff }), null);
+                    } catch (_e) {
+                        return new T3.MeshStandardMaterial({ color: 0xffffff });
+                    }
+                };
                 const m = new T.Mesh(new T.BoxGeometry(1, 1, 1), new T.MeshStandardNodeMaterial({ color: 0x808080 }));
                 m.name = "pruef-schein";
                 s.scene.add(m);
             }
             // der Zensus der Bauer im Stamm: Punktlichter (die Täter-Klasse von K11 Runde 1), beleuchtete Stoffe ohne Pool,
             // Rufer der BRDF eines Punktlichts (das EINE Gesetz)
-            const LIT = /new THREE\.Mesh(Standard|Physical|Lambert|Phong|Toon)(Node)?Material\(/;
+            // je Bau eines beleuchteten Stoffs, unter jedem Namen der Bibliothek (`THREE`, `T` …): ein Stoff ohne Knoten trägt
+            // den Pool nie (`_leuchtStoff` wirft), ein Knoten-Stoff nur, wo die Methode ihn in den Pool legt
+            const LIT = /new\s+[A-Za-z_$][\w$]*\.Mesh(Standard|Physical|Lambert|Phong|Toon)(Node)?Material\(/g;
             for (const n of Object.getOwnPropertyNames(P)) {
                 if (n === "constructor" || typeof P[n] !== "function") continue;
                 const c = code(P[n]);
                 if (/new THREE\.PointLight\(/.test(c)) out.bauer.push(n);
-                if (LIT.test(c) && !/this\._leuchtStoff\(/.test(c)) out.ohnePool.push(n);
+                const bau = [...c.matchAll(LIT)];
+                if (bau.some((b) => !b[2]) || (bau.length && !/this\._leuchtStoff\(/.test(c))) out.ohnePool.push(n);
                 if (/this\._punktLichtBrdf\(/.test(c)) out.brdf.push(n);
             }
-            if (schein) delete P._scheinStoff;
+            if (schein) {
+                delete P._scheinStoff;
+                delete P._scheinRueckfall;
+            }
             r._setWeather("sunny", "human");
             s.weatherTransition = null;
             // die Uhr steht, und mit ihr die Himmels-Umgebung (der Loop malt sie nur bei Drift und gedrosselt — ohne den
@@ -646,7 +661,15 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
 // Abnahme der Karte: Luma ≥ 0,15. Konsum-Leser: der Licht-Takt (`_leuchtTakt`) und der Licht-Pool in jedem Stoff
 // (`_lichtPoolTerm`). Der Selbsttest leert den Pool (jeder Platz ohne Reichweite) — der Kreis MUSS unter die Schwelle fallen
 // und den Pool beim Namen nennen.
+// DIE FRIST (Kartenkopf: eine Linse ≤ 3 min CI): der ganze Lauf steht unter EINER Uhr (`S0_FRIST_S`), jede Phase (Laden,
+// Boot, Satz, Gestalt, Schuss, Schein) läuft gegen ihren Rest — reißt sie, endet die Linse ROT beim Namen der Phase (bis
+// 12.10. hielt nur die Protokoll-Grenze von 900 s: die Zweig-CI brach nach 15 min ohne Namen ab, die Schleifen zählten nur
+// Versuche). Und DIE STILLE BIS ZUM SCHUSS: swiftshader übersetzt jede Pipeline beim ersten Zeichnen, und der Schuss wartet
+// auf alles, was davor in die Schlange der CPU-Rasterung fiel — die Wildnis des ersten Ladens, der Blick des Spielers in den
+// Warte-Takten (gemessen 12.10., 24 Kerne: der erste Schuss las 90–176 s, die Zeichnung selbst 2 s). Bis zum Schuss zeichnet
+// die Seite nichts (`_loopRender` ruht); der Schuss zeichnet alles selbst (Erst-Zeichnung, Warm-Frames).
 const S0_LUMA_2M = 0.15;
+const S0_FRIST_S = Math.max(30, Number(opt("--frist", 170)) || 170);
 async function lichtLauf() {
     const { softwareWebGpuArgs, echteWebGpuArgs } = require("./lib/software-gpu.cjs");
     const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -654,13 +677,38 @@ async function lichtLauf() {
     const HOLZ = opt("--holz", "kienspan");
     const BILD = opt("--bild", null);
     const t0 = Date.now();
+    const bis = t0 + S0_FRIST_S * 1000;
+    const zeit = (was) => console.log(`    · ${was} nach ${Math.round((Date.now() - t0) / 1000)} s`);
+    // je Phase der Rest der EINEN Uhr: die Seite bekommt ihn mit (`rest`), der Lauf wartet höchstens so lange
+    let phaseJetzt = "Start";
+    const phase = async (name, fn) => {
+        phaseJetzt = name;
+        const rest = bis - Date.now();
+        let uhrwerk = null;
+        try {
+            return await Promise.race([
+                fn(Math.max(0, rest)),
+                new Promise((_, nein) => {
+                    uhrwerk = setTimeout(() => nein(new Error("FRIST")), Math.max(0, rest));
+                }),
+            ]);
+        } finally {
+            clearTimeout(uhrwerk);
+        }
+    };
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
         headless: !ECHT,
-        protocolTimeout: 900000,
+        protocolTimeout: (S0_FRIST_S + 60) * 1000,
         defaultViewport: ECHT ? null : { width: 640, height: 360 },
         args: ECHT ? [...echteWebGpuArgs(), "--window-size=1280,800"] : softwareWebGpuArgs(),
     });
+    const ende = async (befund) => {
+        console.log(`\n⛔ S0 BILD ROT: ${befund} (${Math.round((Date.now() - t0) / 1000)} s)\n`);
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(1);
+    };
     const page = await browser.newPage();
     let pageErr = null;
     page.on("pageerror", (err) => {
@@ -684,165 +732,249 @@ async function lichtLauf() {
             /* */
         }
     });
+    // die Stille bis zum Schuss (oben): `_loopRender` ruht, solange `__s0Still` steht — in jedem Laden ab dem ersten Skript
+    await page.evaluateOnNewDocument(() => {
+        window.__s0Still = true;
+        const warte = setInterval(() => {
+            // eslint-disable-next-line no-undef
+            const K = typeof AnazhRealm === "function" ? AnazhRealm : null;
+            if (!K) return;
+            clearInterval(warte);
+            const zeichne = K.prototype._loopRender;
+            K.prototype._loopRender = function (t) {
+                if (window.__s0Still) return undefined;
+                return zeichne.call(this, t);
+            };
+        }, 1);
+    });
     const url = `http://127.0.0.1:${PORT}/index.html?holz=${HOLZ}`;
-    const zeit = (was) => console.log(`    · ${was} nach ${Math.round((Date.now() - t0) / 1000)} s`);
-    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120000 });
     const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
-    const id = await page.evaluate(async (json) => {
-        const t = performance.now();
-        while (!(window.anazhRealm && window.anazhRealm.importWorldBeside) && performance.now() - t < 120000)
-            await new Promise((r) => setTimeout(r, 50));
-        const r = window.anazhRealm;
-        const res = r.importWorldBeside(json);
-        if (!res.ok) return null;
-        r.activeWorldSet(res.worldId);
-        return res.worldId;
-    }, json);
-    if (!id) throw new Error("die Bühne ließ sich nicht importieren");
-    zeit("die Bühne importiert");
-    await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
-    const b = await boote(page);
-    if (!b.ok) throw new Error("Boot nicht bereit nach 120 s");
-    zeit("die Bühne gebootet");
-    await page.evaluate(AUSGABE_INSTALL);
     const ergebnis = {};
-    for (const schein of SELBSTTEST ? [false, true] : [false]) {
-        ergebnis[schein ? "schein" : "sauber"] = await page.evaluate(
-            async (st, schein) => {
-                const r = window.anazhRealm;
-                const s = r.state;
-                const T = window.THREE;
-                const rend = s.renderer;
-                rend.setAnimationLoop(null);
-                const takt = async (n) => {
-                    for (let i = 0; i < n; i++) {
-                        try {
-                            r._gameLoopTick(performance.now());
-                        } catch (_e) {
-                            /* ein Takt-Fehler zählt der Page-Error */
-                        }
-                        await new Promise((res) => setTimeout(res, 16));
-                    }
-                };
-                const uhr = (t) => {
-                    r._uhrSetzen(t, "human");
-                    r._applyDayNightToScene();
-                    s._skyEnvLastRegenMs = -Infinity;
-                    r._ensureSkyEnvironment(false);
-                    r._applyDayNightToScene();
-                };
-                window.__buehne();
-                uhr(0);
-                let feuer = window.__s0Feuer;
-                if (!feuer) {
-                    const y0 = r.getTerrainHeightAt(st.x, st.z);
-                    s.playerMesh.position.set(st.x, y0 + 1, st.z);
-                    const vor = new Set(s.architectures);
-                    const pm = s.playerMesh.position;
-                    // der Satz des Menschen, bis die Welt ihn trägt (direkt nach dem Boot lädt das Gesetzbuch noch)
-                    for (let versuch = 0; versuch < 30 && !feuer; versuch++) {
-                        const halt = s.weatherEffectTime;
-                        s.weatherEffectTime = 0; // der Satz geht durch den Mess-Halt (der Akt ist die Probe)
-                        try {
-                            r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" });
-                        } finally {
-                            s.weatherEffectTime = halt;
-                        }
-                        await takt(20);
-                        feuer = s.architectures.find(
-                            (e) =>
-                                !vor.has(e) &&
-                                e.position &&
-                                r._glutFlaeche(e) > 0 &&
-                                Math.hypot(e.position.x - pm.x, e.position.z - pm.z) < 8
-                        );
-                    }
-                    window.__s0Feuer = feuer;
-                    if (!feuer) return { fehler: "die Feuerstelle steht nicht (der Satz `spawn_studio feuerstelle`)" };
-                    for (let i = 0; i < 300; i++) {
-                        await takt(5);
-                        if (feuer.mesh || (feuer.group && feuer.group.children.length)) break;
-                    }
-                }
-                const f = feuer.position;
-                const g = r._voxelSurfaceY(f.x, f.z);
-                const w = 640;
-                const h = 360;
-                const alt = r._leuchtTakt;
-                if (schein)
-                    r._leuchtTakt = function () {
-                        alt.call(this);
-                        for (const u of this.state.atmoUniforms.lichtLage) u.value.w = 0;
-                    };
-                const FC = window.__fachwerkCore;
-                const flAlt = FC.lichtFlackern;
-                FC.lichtFlackern = () => 0; // die Flamme steht still (der Schuss misst das Gesetz, nicht den Atem)
-                const cam = s.camera;
-                let auf = null;
-                try {
-                    window.__buehne();
-                    uhr(0);
-                    cam.position.set(f.x - 2, g + 1.6, f.z);
-                    cam.lookAt(f.x, g + 0.2, f.z + 1e-4);
-                    cam.updateMatrixWorld(true);
-                    // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
-                    await new Promise((res) => setTimeout(res, 1000 * r.constructor.LICHT_POOL.blendeS + 100));
-                    for (let i = 0; i < 2; i++) {
-                        r._schattenAlleNeu();
-                        auf = await window.__ausgabeAufnahme(w, h, 1);
-                    }
-                } finally {
-                    r._leuchtTakt = alt;
-                    FC.lichtFlackern = flAlt;
-                }
-                const u8 = auf.u8;
-                const lum = (i) => (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]) / 255;
-                const v = new T.Vector3();
-                let lk = 0;
-                let nk = 0;
-                for (const rr of [0.75, 1.25, 1.75])
-                    for (let a = 0; a < 24; a++) {
-                        const x = f.x + rr * Math.cos((a / 24) * 2 * Math.PI);
-                        const z = f.z + rr * Math.sin((a / 24) * 2 * Math.PI);
-                        v.set(x, r._voxelSurfaceY(x, z) + 0.02, z).project(cam);
-                        if (v.z > 1 || Math.abs(v.x) > 0.98 || Math.abs(v.y) > 0.98) continue;
-                        const sx = Math.round((v.x * 0.5 + 0.5) * (w - 1));
-                        const sy = Math.round((0.5 - v.y * 0.5) * (h - 1));
-                        for (let dy = -1; dy <= 1; dy++)
-                            for (let dx = -1; dx <= 1; dx++) {
-                                lk += lum(((sy + dy) * w + sx + dx) * 4);
-                                nk++;
+    try {
+        await phase("Laden", async (rest) => {
+            await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
+            const id = await page.evaluate(
+                async (json, rest) => {
+                    const t = performance.now();
+                    while (!(window.anazhRealm && window.anazhRealm.importWorldBeside) && performance.now() - t < rest)
+                        await new Promise((r) => setTimeout(r, 50));
+                    const r = window.anazhRealm;
+                    if (!r || !r.importWorldBeside) return null;
+                    const res = r.importWorldBeside(json);
+                    if (!res.ok) return null;
+                    r.activeWorldSet(res.worldId);
+                    return res.worldId;
+                },
+                json,
+                rest
+            );
+            if (!id) throw new Error("die Bühne ließ sich nicht importieren");
+            zeit("die Bühne importiert");
+            await page.reload({ waitUntil: "domcontentloaded", timeout: Math.max(1, bis - Date.now()) });
+        });
+        await phase("Boot", async () => {
+            const b = await boote(page);
+            if (!b.ok) throw new Error("Boot nicht bereit nach 120 s");
+            zeit("die Bühne gebootet");
+            await page.evaluate(AUSGABE_INSTALL);
+        });
+        // der Satz des Menschen, bis die Welt ihn trägt (direkt nach dem Boot lädt das Gesetzbuch noch) — und die Gestalt
+        // der Feuerstelle (der Bau der Foundry), ehe der Schuss misst
+        for (const [name, gestalt] of [
+            ["Satz", false],
+            ["Gestalt", true],
+        ]) {
+            const fehler = await phase(name, (rest) =>
+                page.evaluate(
+                    async (st, gestalt, rest) => {
+                        const r = window.anazhRealm;
+                        const s = r.state;
+                        const fristEnde = performance.now() + rest - 5000; // die Seite nennt, was fehlt, ehe die Uhr reißt
+                        s.renderer.setAnimationLoop(null);
+                        const takt = async (n) => {
+                            for (let i = 0; i < n; i++) {
+                                try {
+                                    r._gameLoopTick(performance.now());
+                                } catch (_e) {
+                                    /* ein Takt-Fehler zählt der Page-Error */
+                                }
+                                await new Promise((res) => setTimeout(res, 16));
                             }
+                        };
+                        if (!gestalt) {
+                            window.__buehne();
+                            const y0 = r.getTerrainHeightAt(st.x, st.z);
+                            s.playerMesh.position.set(st.x, y0 + 1, st.z);
+                            const vor = new Set(s.architectures);
+                            const pm = s.playerMesh.position;
+                            let feuer = null;
+                            while (!feuer && performance.now() < fristEnde) {
+                                const halt = s.weatherEffectTime;
+                                s.weatherEffectTime = 0; // der Satz geht durch den Mess-Halt (der Akt ist die Probe)
+                                try {
+                                    r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" });
+                                } finally {
+                                    s.weatherEffectTime = halt;
+                                }
+                                await takt(20);
+                                feuer = s.architectures.find(
+                                    (e) =>
+                                        !vor.has(e) &&
+                                        e.position &&
+                                        r._glutFlaeche(e) > 0 &&
+                                        Math.hypot(e.position.x - pm.x, e.position.z - pm.z) < 8
+                                );
+                            }
+                            window.__s0Feuer = feuer;
+                            return feuer ? null : "die Feuerstelle steht nicht (der Satz `spawn_studio feuerstelle`)";
+                        }
+                        // die Welt steht, wie der Spieler sie sieht: die Feuerstelle gebaut (ein Mesh oder ein Slot im
+                        // Instanz-Pool, `_archIsRendered`) und das EINE Urteil des ersten Weltbilds leer (`_weltbildFehlt`:
+                        // Boden, Bauten, Streu, Karten) — bis 12.10. fragte die Linse nur das eigene Mesh der Feuerstelle,
+                        // die instanziert steht: 300 Takte warteten ins Leere, und erst ihre 35 s ließen die Streu wachsen
+                        // Die Streu wächst nur mit dem Bild: ab hier zeichnet die Seite — in ein Ziel vom Format der Aufnahme
+                        // (`__ausgabeAufnahme`: RGBA8, Tiefe, ohne MSAA), so trägt jede Pipeline der Warte-Takte den Schuss
+                        // (gegen den Canvas übersetzte swiftshader dieselbe Welt ein zweites Mal)
+                        const feuer = window.__s0Feuer;
+                        const rend = s.renderer;
+                        const db = rend.getDrawingBufferSize(new window.THREE.Vector2());
+                        const ziel = new window.THREE.RenderTarget(Math.max(1, Math.round(db.x)), Math.max(1, Math.round(db.y)), {
+                            depthBuffer: true,
+                            samples: 0,
+                        });
+                        rend.setOutputRenderTarget(ziel);
+                        window.__s0Still = false;
+                        let fehlt = [];
+                        try {
+                            while (performance.now() < fristEnde) {
+                                fehlt = r._archIsRendered(feuer) ? r._weltbildFehlt() : ["die Feuerstelle wächst"];
+                                if (!fehlt.length) return null;
+                                await takt(5);
+                            }
+                        } finally {
+                            window.__s0Still = true;
+                            rend.setOutputRenderTarget(null);
+                            rend.setRenderTarget(null);
+                            ziel.dispose();
+                        }
+                        const regionen = [];
+                        r._streuWartet(s.playerMesh.position, regionen);
+                        return (
+                            `die Welt um die Feuerstelle stand nicht in der Frist (${fehlt.join(" · ")}; Streu-Regionen: ` +
+                            `${regionen.join(" · ") || "-"}; foliageRadius ${s.foliageRadius})`
+                        );
+                    },
+                    S0,
+                    gestalt,
+                    rest
+                )
+            );
+            if (fehler) {
+                ergebnis.sauber = { fehler };
+                break;
+            }
+            zeit(gestalt ? "die Gestalt steht" : "der Satz steht");
+        }
+        for (const schein of SELBSTTEST && !ergebnis.sauber ? [false, true] : ergebnis.sauber ? [] : [false]) {
+            ergebnis[schein ? "schein" : "sauber"] = await phase(schein ? "Schein" : "Schuss", () =>
+                page.evaluate(async (schein) => {
+                    const r = window.anazhRealm;
+                    const s = r.state;
+                    const T = window.THREE;
+                    const rend = s.renderer;
+                    const uhr = (t) => {
+                        r._uhrSetzen(t, "human");
+                        r._applyDayNightToScene();
+                        s._skyEnvLastRegenMs = -Infinity;
+                        r._ensureSkyEnvironment(false);
+                        r._applyDayNightToScene();
+                    };
+                    const feuer = window.__s0Feuer;
+                    const f = feuer.position;
+                    const g = r._voxelSurfaceY(f.x, f.z);
+                    const w = 640;
+                    const h = 360;
+                    const alt = r._leuchtTakt;
+                    if (schein)
+                        r._leuchtTakt = function () {
+                            alt.call(this);
+                            for (const u of this.state.atmoUniforms.lichtLage) u.value.w = 0;
+                        };
+                    const FC = window.__fachwerkCore;
+                    const flAlt = FC.lichtFlackern;
+                    FC.lichtFlackern = () => 0; // die Flamme steht still (der Schuss misst das Gesetz, nicht den Atem)
+                    const cam = s.camera;
+                    let auf = null;
+                    window.__s0Still = false; // der Schuss zeichnet
+                    try {
+                        window.__buehne();
+                        uhr(0);
+                        cam.position.set(f.x - 2, g + 1.6, f.z);
+                        cam.lookAt(f.x, g + 0.2, f.z + 1e-4);
+                        cam.updateMatrixWorld(true);
+                        // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
+                        await new Promise((res) => setTimeout(res, 1000 * r.constructor.LICHT_POOL.blendeS + 100));
+                        for (let i = 0; i < 2; i++) {
+                            r._schattenAlleNeu();
+                            auf = await window.__ausgabeAufnahme(w, h, 1);
+                        }
+                    } finally {
+                        r._leuchtTakt = alt;
+                        FC.lichtFlackern = flAlt;
                     }
-                const pool = (r._leuchtPool && r._leuchtPool.plaetze) || [];
-                // die Programme und Pipelines (ein Wechsel der Plätze baut keins: Pool voll und leer zählen gleich)
-                const PL = rend._pipelines;
-                const zaehl =
-                    PL && PL.programs
-                        ? [PL.programs.vertex.size, PL.programs.fragment.size, PL.caches ? PL.caches.size : null]
-                        : null;
-                const cv = document.createElement("canvas");
-                cv.width = w;
-                cv.height = h;
-                const ctx = cv.getContext("2d");
-                const img = ctx.createImageData(w, h);
-                img.data.set(u8.subarray(0, w * h * 4));
-                ctx.putImageData(img, 0, 0);
-                return {
-                    kreis: nk ? +(lk / nk).toFixed(4) : null,
-                    punkte: nk / 9,
-                    belichtung: +rend.toneMappingExposure.toFixed(3),
-                    pool: pool.map((p) => ({ q: p.quelle, I: +p.staerke.toFixed(2), d: +Math.hypot(p.x - f.x, p.z - f.z).toFixed(1) })),
-                    feuer: [feuer.type, ...[f.x, g, f.z].map((x) => +x.toFixed(2))],
-                    dc: auf.info && auf.info.drawCalls,
-                    zaehl,
-                    png: cv.toDataURL("image/png"),
-                };
-            },
-            S0,
-            schein
-        );
-        zeit(schein ? "der Schein aufgenommen" : "das Feuer aufgenommen");
+                    const u8 = auf.u8;
+                    const lum = (i) => (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]) / 255;
+                    const v = new T.Vector3();
+                    let lk = 0;
+                    let nk = 0;
+                    for (const rr of [0.75, 1.25, 1.75])
+                        for (let a = 0; a < 24; a++) {
+                            const x = f.x + rr * Math.cos((a / 24) * 2 * Math.PI);
+                            const z = f.z + rr * Math.sin((a / 24) * 2 * Math.PI);
+                            v.set(x, r._voxelSurfaceY(x, z) + 0.02, z).project(cam);
+                            if (v.z > 1 || Math.abs(v.x) > 0.98 || Math.abs(v.y) > 0.98) continue;
+                            const sx = Math.round((v.x * 0.5 + 0.5) * (w - 1));
+                            const sy = Math.round((0.5 - v.y * 0.5) * (h - 1));
+                            for (let dy = -1; dy <= 1; dy++)
+                                for (let dx = -1; dx <= 1; dx++) {
+                                    lk += lum(((sy + dy) * w + sx + dx) * 4);
+                                    nk++;
+                                }
+                        }
+                    const pool = (r._leuchtPool && r._leuchtPool.plaetze) || [];
+                    // die Programme und Pipelines (ein Wechsel der Plätze baut keins: Pool voll und leer zählen gleich)
+                    const PL = rend._pipelines;
+                    const zaehl =
+                        PL && PL.programs
+                            ? [PL.programs.vertex.size, PL.programs.fragment.size, PL.caches ? PL.caches.size : null]
+                            : null;
+                    const cv = document.createElement("canvas");
+                    cv.width = w;
+                    cv.height = h;
+                    const ctx = cv.getContext("2d");
+                    const img = ctx.createImageData(w, h);
+                    img.data.set(u8.subarray(0, w * h * 4));
+                    ctx.putImageData(img, 0, 0);
+                    return {
+                        kreis: nk ? +(lk / nk).toFixed(4) : null,
+                        punkte: nk / 9,
+                        belichtung: +rend.toneMappingExposure.toFixed(3),
+                        pool: pool.map((p) => ({ q: p.quelle, I: +p.staerke.toFixed(2), d: +Math.hypot(p.x - f.x, p.z - f.z).toFixed(1) })),
+                        feuer: [feuer.type, ...[f.x, g, f.z].map((x) => +x.toFixed(2))],
+                        dc: auf.info && auf.info.drawCalls,
+                        zaehl,
+                        png: cv.toDataURL("image/png"),
+                    };
+                }, schein)
+            );
+            zeit(schein ? "der Schein aufgenommen" : "das Feuer aufgenommen");
+        }
+    } catch (e) {
+        if (e && e.message === "FRIST")
+            await ende(
+                `die Frist von ${S0_FRIST_S} s riss in der Phase „${phaseJetzt}" — der Deckel der Linse (≤ 3 min CI) hält nicht`
+            );
+        throw e;
     }
     // das Beweisbild der Figur (nur mit `--bild`, kein Urteil): ein Wolf 2,3 m neben dem Feuer, der Spieler gegenüber, das Auge
     // 5 m zurück — die Figur im Licht des Pools
@@ -1104,7 +1236,7 @@ function zeige(rep) {
         const s0Rest = {
             laterne: s0B.some((b) => /^S0 Laterne: .*`_laternenLesen`/.test(b)),
             stoff: s0B.some((b) => /^S0 Stoff ohne Pool: .*pruef-schein/.test(b)),
-            bauer: s0B.some((b) => /^S0 Bauer ohne Pool: .*`_scheinStoff`/.test(b)),
+            bauer: s0B.some((b) => /^S0 Bauer ohne Pool: .*`_scheinStoff`/.test(b) && /`_scheinRueckfall`/.test(b)),
         };
         selbst = {
             benannt: namen,
