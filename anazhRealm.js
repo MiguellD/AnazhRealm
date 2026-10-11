@@ -55660,6 +55660,7 @@ class AnazhRealm {
                     entry.position.x = x;
                     entry.position.z = z;
                     entry.rotationY = rj - Math.PI / 2; // Studio-Wagen: Template-Gier = Fahrt − π/2
+                    this._blockerBewegt(entry); // im Bestand meldet er den neuen Platz (vor dem Eintritt: nichts zu melden)
                     this.log(
                         `Fahr-Platz: ${entry.type} steht ${r} m weiter auf fahrbarem Grund (dort: ${grund}).`,
                         "INFO"
@@ -79774,7 +79775,30 @@ class AnazhRealm {
         if (!position) return false;
         const g = this._imGrundriss(position.x, position.z, 0.8, this._naturKrone(name, opts));
         if (g) return g;
+        if (this._imWagen(position.x, position.z, 0.8)) return "wagen";
         return name && !this._stammFussLand(position.x, position.z, 0.05) ? "wasser" : false;
+    }
+
+    // Liegt (x, z) in der Hülle eines Studio-Wagens (+ `rand`, der Stamm; eine Krone darf über das Dach)? Ein Wagen ist Bau,
+    // nie Natur — aber kein Grundriss: er fährt, kein Haus räumt (`_grundrissRaeumen`) die Natur aus ihm, nur die Natur-Wand
+    // (`_naturWand`) wirft keinen Baum in ihn (K12 Fahr-Bahn — Befund: nach dem Platz des Vorschau-GT setzte die Wald-Schlange,
+    // `_tickPendingVegSpawns`, eine Tanne 2,1 m vor seinen Ursprung, in die Hülle; W 2 s brachte 0,08 m). Je Frage zählt die
+    // lebende Lage der Wagen (das Blocker-Netz, wenige je Welt).
+    _imWagen(x, z, rand) {
+        for (const w of this._blockerMit("moveable")) {
+            if (!w._fahrAchseX || !w.position) continue;
+            const dx = x - w.position.x;
+            const dz = z - w.position.z;
+            const u = this._fahrUmriss(w);
+            if (dx * dx + dz * dz > (Math.max(u.bug, -u.heck) + u.hw + rand) ** 2) continue;
+            const ry = Number.isFinite(w._rideYaw)
+                ? w._rideYaw
+                : (Number.isFinite(w.rotationY) ? w.rotationY : 0) + Math.PI / 2;
+            const l = dx * Math.sin(ry) + dz * Math.cos(ry);
+            const q = dx * Math.cos(ry) - dz * Math.sin(ry);
+            if (l >= u.heck - rand && l <= u.bug + rand && Math.abs(q) <= u.hw + rand) return true;
+        }
+        return false;
     }
 
     // Steht der Fuß eines Stamms an (x, z) auf dem Land? Die Achse und acht Punkte auf dem Fuß-Kreis (`STAMM_FUSS_M`) fragen
@@ -79946,7 +79970,7 @@ class AnazhRealm {
     // dessen Bauplan sie trägt (die Genesis-Plattform: ihre Scheibe plus die Reichweite des Wurfs, `max(rand, krone)` —
     // über ihr steht keine Krone). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je Zelle) hält die Häuser, die
     // Lichtungen stehen daneben (eine je Welt); es entsteht faul aus den Einträgen und fällt bei jedem Spawn/Abriss eines Baus
-    // mit Grundriss. Rückgabe: "lichtung" | "wagen" | "haus" | false.
+    // mit Grundriss. Rückgabe: "lichtung" | "haus" | false.
     _imGrundriss(x, z, rand = 0.8, krone = 0) {
         const G = 32;
         const schluessel = (gx, gz) => (gx + 0x8000) * 0x10000 + (gz + 0x8000);
@@ -79972,23 +79996,6 @@ class AnazhRealm {
         }
         const reich = Math.max(rand, krone);
         for (const L of gitter.lichtungen) if ((x - L.x) ** 2 + (z - L.z) ** 2 < (L.r + reich) ** 2) return "lichtung";
-        // DER WAGEN (K12 Fahr-Bahn): ein Studio-Wagen ist Bau, nie Natur — in seiner Hülle (+ `rand`, der Stamm; eine Krone
-        // darf über das Dach) steht kein Wurf. Befund: nach dem Platz des Vorschau-GT setzte die Wald-Schlange
-        // (`_tickPendingVegSpawns`) eine Tanne 2,1 m vor seinen Ursprung, in die Hülle — W 2 s brachte 0,08 m. Die Wagen
-        // fahren: sie stehen nicht im Gitter, je Frage zählt ihre lebende Lage (das Blocker-Netz, wenige je Welt).
-        for (const w of this._blockerMit("moveable")) {
-            if (!w._fahrAchseX || !w.position) continue;
-            const dx = x - w.position.x;
-            const dz = z - w.position.z;
-            const u = this._fahrUmriss(w);
-            if (dx * dx + dz * dz > (Math.max(u.bug, -u.heck) + u.hw + rand) ** 2) continue;
-            const ry = Number.isFinite(w._rideYaw)
-                ? w._rideYaw
-                : (Number.isFinite(w.rotationY) ? w.rotationY : 0) + Math.PI / 2;
-            const l = dx * Math.sin(ry) + dz * Math.cos(ry);
-            const q = dx * Math.cos(ry) - dz * Math.sin(ry);
-            if (l >= u.heck - rand && l <= u.bug + rand && Math.abs(q) <= u.hw + rand) return "wagen";
-        }
         if (gitter.zellen.size === 0) return false;
         const l = gitter.zellen.get(schluessel(Math.floor(x / G), Math.floor(z / G)));
         if (!l) return false;
@@ -96036,7 +96043,7 @@ class AnazhRealm {
     }
     // DER UMRISS eines Wagens im Fahrt-Rahmen (m): Bug, Heck, halbe Breite, Dach — ein Studio-Wagen aus dem Gesetz seiner
     // Hülle (vehicle-core exportDrive.huelle × Größe), sonst aus der Gestalt des Bauplans. Leser: die Hülle des Ritts und des
-    // Platzes (`_fahrHuelleBau`) und die Natur-Wand (`_imGrundriss`: kein Wurf der Natur in einem Wagen).
+    // Platzes (`_fahrHuelleBau`) und die Natur-Wand (`_imWagen`: kein Wurf der Natur in einem Wagen).
     _fahrUmriss(entry) {
         const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
         const fzg = entry._fahrAchseX ? this._fahrzeugGesetzFor(entry) : null;

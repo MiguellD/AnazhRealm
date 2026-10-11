@@ -2856,7 +2856,8 @@ async function probeLeben(expected) {
 //       Neigung der Rad-Ebene ≤ 15°, keine Wand im Umriss, kein Blocker im Band, E steigt ein und aus.
 //   F2  DIE VORSCHAU DES SPIELS (`_portalApproachPrefetch`, der Befund-Ort, die Platz-Suche im Takt) — dasselbe Urteil und
 //       die Fahrt: W 2 s ≥ 2 m, bremsen, S 2,5 s rückwärts aus dem Stand ≥ 3 m.
-//   F3  DIE NATUR-WAND KENNT DEN WAGEN: ein Wurf der Natur in der Hülle eines stehenden GT fällt ("wagen").
+//   F3  DIE NATUR-WAND KENNT DEN WAGEN: ein Wurf der Natur in der Hülle eines stehenden GT fällt ("wagen"); der Wagen ist
+//       kein Grundriss (`_imGrundriss` false: kein Haus räumt die Natur aus einem Wagen und nennt dafür seinen Grundriss).
 //   F4  DER STOSS UND DIE BEFREIUNG: Gas gegen den Glutbrunnen der Schau (−875/−732) und gegen einen Kiefern-Stamm; danach
 //       S + Gegenlenkung je Seite — frei (≥ 1 m vom Stoß) in ≤ 2 s.
 //   F5  DER TACHO zeigt |vlong| × vehicle:FAHR.kmh (die Zahl der Probefahrt), nach dem Absteigen ist er fort.
@@ -2948,9 +2949,11 @@ function bahnTastenVerdict(m) {
 }
 function bahnWandVerdict(m) {
     if (!m || !m.da) return [m && m.grund ? m.grund : "keine Probe"];
-    return m.urteil === "wagen"
-        ? []
-        : [`ein Wurf (${m.art}) ${m.l} m vor dem Ursprung steht im Wagen (Urteil ${m.urteil})`];
+    const out = [];
+    if (m.urteil !== "wagen") out.push(`ein Wurf (${m.art}) ${m.l} m vor dem Ursprung steht im Wagen (Urteil ${m.urteil})`);
+    if (m.grundriss)
+        out.push(`der Wagen ist ein Grundriss (_imGrundriss → ${m.grundriss}): ein Haus räumt die Natur aus ihm und nennt sich`);
+    return out;
 }
 
 // FK — DER KERN SELBST: rückwärts aus dem Stand je Rezept, eben und bergauf (Node).
@@ -3329,8 +3332,9 @@ async function probeBahn(B) {
         const l = 1.5;
         const p = { x: sx + Math.sin(ry) * l, y: boden(sx, sz), z: sz + Math.cos(ry) * l };
         const urteil = r._naturWand("baum_tanne", p, { scale: 1 });
+        const grundriss = r._imGrundriss(p.x, p.z, 0.8, 0);
         wagenWeg(e);
-        return { da: true, art: "baum_tanne", l, urteil: urteil || false };
+        return { da: true, art: "baum_tanne", l, urteil: urteil || false, grundriss: grundriss || false };
     };
     out.wand = wandProbe();
 
@@ -4305,6 +4309,11 @@ function quellenAbgriff() {
                     /steht im Wagen \(Urteil false\)/,
                 ],
                 [
+                    "F3 der Wagen als Grundriss (Prüfung K12/1: ein Haus räumte die Natur aus nahen Wagen)",
+                    bahnWandVerdict({ da: true, art: "baum_tanne", l: 1.5, urteil: "wagen", grundriss: "wagen" }),
+                    /der Wagen ist ein Grundriss \(_imGrundriss → wagen\)/,
+                ],
+                [
                     "F4 Befreiung −0,9 km/h",
                     bahnStossVerdict(
                         Object.assign({}, gutS, {
@@ -4744,9 +4753,11 @@ function quellenAbgriff() {
         );
         const wv = bahnWandVerdict(bahn.wand);
         check(
-            "F3 die Natur-Wand kennt den Wagen: eine Tanne 1,5 m vor dem Ursprung eines stehenden GT fällt („wagen“)",
+            "F3 die Natur-Wand kennt den Wagen: eine Tanne 1,5 m vor dem Ursprung eines stehenden GT fällt („wagen“), der Wagen ist kein Grundriss",
             wv.length === 0,
-            bahn.wand && bahn.wand.da ? `Urteil ${bahn.wand.urteil}` : wv.join(" · ")
+            bahn.wand && bahn.wand.da
+                ? `Urteil ${bahn.wand.urteil} · Grundriss ${bahn.wand.grundriss}${wv.length ? " — " + wv.join(" · ") : ""}`
+                : wv.join(" · ")
         );
         const sp = bahnPlatzVerdict(bahn.schmuggelPlatz);
         const sw = bahnWandVerdict(bahn.schmuggelWand);
