@@ -451,13 +451,9 @@ function realismus() {
                 else maske[i + j * fn] = 1;
             }
         const schicht = Z.hangBaender(HF, fn, 2, maske);
-        const urteil = {
-            senken: st.senken1mJeKm2 <= 1 && st.anteilSenkeTiefer1m < 0.01,
-            flint: st.flint.theta != null && st.flint.theta >= 0.3 && st.flint.theta <= 0.7 && st.flint.r2 >= 0.5,
-            hammond: st.hammond.sanft >= 1,
-            dorfplaetze: st.dorfplaetze >= 3,
-            schicht: !!ort && schicht.kliff >= 0.02 && schicht.schutt >= 0.05 && schicht.pediment >= 0.2,
-        };
+        // Der Korridor ist EINE Quelle (`urteil`/`KORRIDOR` im Kern — dieselbe Zahl-Leiste wie im Studio); die Wand verlangt
+        // jedes Ziel, auch das Schicht-Gesetz (ohne Schicht-Ort: null = rot).
+        const urteil = Z.urteil(st, ort ? schicht : null);
         const taeter = {
             senken: "geschlossene Mulden ohne Auslass (flaeche: ein Profil-Minimum ohne Netz-Abfluss, oder das Detail T3)",
             flint: "das Gefälle folgt dem Einzugsgebiet nicht (knotenSohle: das Bett steigt nicht mit S = ks·A^−θ je Flächen-Klasse)",
@@ -514,8 +510,224 @@ function realismus() {
     return rot ? 1 : 0;
 }
 
+// ── DIE STUDIO-PROBE (K16b, `--studio`): das Gelände-Studio auf der Welt-Engine (`index.html?studio=gelaende`) trägt EINEN
+// Plan in die Welt. Die Probe fährt die Bedienung wie der Gestalter — jeder Regler aus `LANDFORM_REGLER` einmal über sein
+// Schieber-Element, nach jedem Griff die Zahl-Leiste (die Statistik des Kerns) und der Raster-Abdruck des Studios (ein
+// Regler, der das Raster nicht ändert, ist TOT) —, exportiert den Plan (die Bytes des Downloads), legt ihn durch die
+// Welt-Tür (Welt-Tor „Ersetzen" — die Tür, durch die jede Datei zur Welt wird) und misst nach dem Reload in der Welt
+// denselben Makro-Abdruck (64×64, ±852 m, mit und ohne Detail) und dieselbe Statistik (`_terrainMacroSurfaceY` auf dem
+// Raster des Studios). Studio = Welt byte-gleich, sonst ROT beim Namen. Der Selbsttest: das Studio rechnet den Abdruck
+// eines um EINEN Schritt verstellten Plans — die Welt MUSS sich von ihm unterscheiden (die Linse sieht einen Schritt).
+//   --studio [--selftest] [--json datei]
+async function studioProbe() {
+    await new Promise((r) => server.listen(PORT, r));
+    const browser = await puppeteer.launch({
+        headless: true,
+        protocolTimeout: 900000,
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    const page = await browser.newPage();
+    let pageErr = null;
+    page.on("pageerror", (err) => {
+        pageErr = (err.stack || err.message).split("\n")[0];
+        console.log("[PAGE-ERROR]", pageErr);
+    });
+    await page.evaluateOnNewDocument(() => {
+        window.__anazhHeadlessNullRenderer = true;
+    });
+    const t0 = Date.now();
+    const befunde = [];
+    const out = { zweck: "K16b Studio-Probe (Gelände-Studio → Plan → Welt)", regler: [], befunde };
+    console.log("\n========= DIE STUDIO-PROBE — Gelände-Studio → EIN Plan → Welt-Tür → Welt, byte-gleich =========");
+    try {
+        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        await page.evaluate(() => localStorage.clear());
+        await page.goto(`http://127.0.0.1:${PORT}/index.html?studio=gelaende`, {
+            waitUntil: "domcontentloaded",
+            timeout: 60000,
+        });
+        const b = await boote(page);
+        if (!b.ok) throw new Error("die Welt unter dem Studio erwachte nicht in 120 s");
+        console.log(`  Boot unter dem Studio: ${b.ms} ms (Seed ${b.seed})`);
+        const da = await page.evaluate(async () => {
+            const t = performance.now();
+            while (performance.now() - t < 30000) {
+                if (window.__gelaendeStudio && document.querySelector("#gelaende-studio")) return true;
+                await new Promise((r) => setTimeout(r, 50));
+            }
+            return false;
+        });
+        if (!da) {
+            befunde.push(
+                "kein Gelände-Studio: index.html?studio=gelaende zeigt kein Panel (#gelaende-studio, window.__gelaendeStudio) — Export 0"
+            );
+            throw new Error("kein Studio");
+        }
+        const z0 = await page.evaluate(async () => {
+            await window.__gelaendeStudio.ruhig();
+            return window.__gelaendeStudio.zustand();
+        });
+        out.start = { plan: z0.plan, statistik: z0.statistik };
+        console.log(
+            `  Start: Saat ${z0.plan.saat} · Raster ${z0.rasterSha.slice(0, 12)} · Senken>1m ${z0.statistik.senken1mJeKm2}/km² · θ ${z0.statistik.flint.theta} · Dorfplätze ${z0.statistik.dorfplaetze}`
+        );
+        // JEDER REGLER EINMAL über sein Schieber-Element (der Griff des Gestalters), kumulativ: vier Schritte weg vom Standard.
+        let vorher = z0.rasterSha;
+        const liste = await page.evaluate(() => window.__gelaendeCore.LANDFORM_REGLER.map((r) => Object.assign({}, r)));
+        out.reglerZahl = liste.length;
+        for (const R of liste) {
+            // der Wert auf dem Raster des Schiebers (der Browser rastet auf min + k · step, in Dezimalen)
+            const wert = Number((R.def + 4 * R.step <= R.max ? R.def + 4 * R.step : R.def - 4 * R.step).toFixed(9));
+            const z = await page.evaluate(
+                async (id, wert) => {
+                    const el = document.querySelector(`#gelaende-studio input[data-regler="${id}"]`);
+                    if (!el) return { fehlt: true };
+                    el.value = String(wert);
+                    el.dispatchEvent(new Event("input", { bubbles: true }));
+                    el.dispatchEvent(new Event("change", { bubbles: true }));
+                    const t = performance.now();
+                    await window.__gelaendeStudio.ruhig();
+                    return Object.assign(window.__gelaendeStudio.zustand(), { ms: Math.round(performance.now() - t) });
+                },
+                R.id,
+                wert
+            );
+            if (z.fehlt) {
+                befunde.push(`Regler ${R.id}: kein Schieber im Panel (input[data-regler="${R.id}"])`);
+                continue;
+            }
+            const wirkt = z.rasterSha !== vorher;
+            const traegt = z.plan.regler[R.id] === wert;
+            vorher = z.rasterSha;
+            out.regler.push({ id: R.id, gruppe: R.gruppe, wert, wirkt, traegt, ms: z.ms, statistik: z.statistik });
+            console.log(
+                `    ${wirkt && traegt ? "✓" : "✗"} ${R.gruppe.padEnd(9)} ${R.id.padEnd(15)} ${String(R.def).padStart(6)} → ${String(wert).padEnd(6)} ${z.ms} ms · Senken ${z.statistik.senken1mJeKm2}/km² · θ ${z.statistik.flint.theta} R² ${z.statistik.flint.r2} · Hammond ${z.statistik.hammond.sanft} · Plätze ${z.statistik.dorfplaetze}`
+            );
+            if (!traegt) befunde.push(`Regler ${R.id}: der Plan trägt ${z.plan.regler[R.id]} statt ${wert}`);
+            if (!wirkt) befunde.push(`Regler ${R.id}: TOT — das Raster des Studios blieb byte-gleich`);
+        }
+        // DER EXPORT: EIN Plan (Saat + Regler), die Bytes des Downloads.
+        const studio = await page.evaluate(async () => {
+            const S = window.__gelaendeStudio;
+            await S.ruhig();
+            const text = S.exportPlan();
+            const z = S.zustand();
+            const plan = JSON.parse(text);
+            const schritt = Object.assign({}, plan, { regler: Object.assign({}, plan.regler) });
+            const H = window.__gelaendeCore.LANDFORM_REGLER.find((r) => r.id === "hoehe");
+            schritt.regler.hoehe =
+                plan.regler.hoehe + H.step <= H.max ? plan.regler.hoehe + H.step : plan.regler.hoehe - H.step;
+            return { text, zustand: z, shaSchritt: await S.makroShaVon(schritt) };
+        });
+        const plan = JSON.parse(studio.text);
+        out.plan = plan;
+        out.studio = {
+            makroSha: studio.zustand.makroSha,
+            statistik: studio.zustand.statistik,
+            shaSchritt: studio.shaSchritt,
+        };
+        const fehlend = liste.filter((R) => typeof plan.regler[R.id] !== "number").map((R) => R.id);
+        if (fehlend.length) befunde.push(`der Export trägt ${fehlend.length} Regler nicht: ${fehlend.join(", ")}`);
+        console.log(
+            `  Export: ${studio.text.length} Bytes · Saat ${plan.saat} · ${Object.keys(plan.regler).length} Regler · Makro ${studio.zustand.makroSha.slice(0, 16)}`
+        );
+        // DIE WELT-TÜR: ohne Studio, die Datei durch das Welt-Tor („Ersetzen") — die Welt erwacht neu (Reload).
+        await page.goto(`http://127.0.0.1:${PORT}/index.html`, { waitUntil: "domcontentloaded", timeout: 60000 });
+        const b2 = await boote(page);
+        if (!b2.ok) throw new Error("die Welt vor dem Import erwachte nicht");
+        const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 60000 });
+        const tor = await page.evaluate((text) => {
+            const r = window.anazhRealm;
+            r._openWeltTorDialog(JSON.parse(text), { name: "gelaende-plan.json" });
+            const p = r.state.pendingImport;
+            const ok = !!(p && p.parsed && p.parsed.worldMeta);
+            r._weltTorImportReplace();
+            return { ok, erbgut: ok ? p.parsed.worldMeta.erbgut : null };
+        }, studio.text);
+        if (!tor.ok) {
+            befunde.push("die Welt-Tür liest den Plan nicht (das Welt-Tor macht aus ihm keine Welt)");
+            throw new Error("Tür");
+        }
+        await nav;
+        const b3 = await boote(page);
+        if (!b3.ok) throw new Error("die Welt aus dem Plan erwachte nicht");
+        console.log(`  Import: Welt-Tor „Ersetzen" → Reload → Boot ${b3.ms} ms (Seed ${b3.seed})`);
+        const welt = await page.evaluate(
+            async (n, schritt, x0) => {
+                const r = window.anazhRealm;
+                r._gameLoopTick = () => {};
+                const G = window.__gelaendeCore;
+                const hex = async (arr) => {
+                    const d = await crypto.subtle.digest(
+                        "SHA-256",
+                        arr.buffer.slice(arr.byteOffset, arr.byteOffset + arr.byteLength)
+                    );
+                    return Array.from(new Uint8Array(d))
+                        .map((b) => b.toString(16).padStart(2, "0"))
+                        .join("");
+                };
+                const h = new Float64Array(64 * 64 * 2);
+                let q = 0;
+                for (let j = 0; j < 64; j++)
+                    for (let i = 0; i < 64; i++) {
+                        h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, true);
+                        h[q++] = r._terrainMacroSurfaceY(-852 + i * 27, -852 + j * 27, false);
+                    }
+                const H = new Float64Array(n * n);
+                for (let j = 0; j < n; j++)
+                    for (let i = 0; i < n; i++)
+                        H[i + j * n] = r._terrainMacroSurfaceY(x0 + i * schritt, x0 + j * schritt, true);
+                const L = r._gelaende();
+                const st = G.statistik(
+                    H,
+                    n,
+                    schritt,
+                    L.waterLevel,
+                    G.benannteSeen(L, x0, x0, schritt, n),
+                    Math.round(2000 / schritt)
+                );
+                return { makroSha: await hex(h), statistik: st, seed: L.seed, erbgut: r._erbgut().terme[0] };
+            },
+            studio.zustand.raster.n,
+            studio.zustand.raster.schritt,
+            studio.zustand.raster.x0
+        );
+        out.welt = welt;
+        const gleich = welt.makroSha === studio.zustand.makroSha;
+        const statGleich = JSON.stringify(welt.statistik) === JSON.stringify(studio.zustand.statistik);
+        console.log(
+            `  Welt: Makro ${welt.makroSha.slice(0, 16)} ${gleich ? "=" : "≠"} Studio · Statistik ${statGleich ? "=" : "≠"} (Senken ${welt.statistik.senken1mJeKm2}/km² · θ ${welt.statistik.flint.theta} · Dorfplätze ${welt.statistik.dorfplaetze})`
+        );
+        if (welt.seed !== plan.saat) befunde.push(`die Welt trägt die Saat ${welt.seed} statt ${plan.saat}`);
+        if (!gleich) befunde.push("Makro-Abdruck Welt ≠ Studio — der Plan reiste nicht bit-gleich");
+        if (!statGleich) befunde.push("Statistik Welt ≠ Studio");
+        if (SELBSTTEST) {
+            const sieht = welt.makroSha !== studio.shaSchritt && studio.shaSchritt !== studio.zustand.makroSha;
+            out.selbsttest = { sieht };
+            console.log(
+                `  SELBSTTEST: ein Schritt am Regler „hoehe" ${sieht ? "ändert den Abdruck (die Linse sieht ihn)" : "BLIEB UNSICHTBAR"}`
+            );
+            if (!sieht) befunde.push("SELBSTTEST: der Abdruck sieht einen Regler-Schritt nicht");
+        }
+    } catch (e) {
+        if (!befunde.length) befunde.push(String((e && e.message) || e));
+    }
+    if (pageErr) befunde.push(`Page-Error: ${pageErr}`);
+    out.sekunden = Math.round((Date.now() - t0) / 1000);
+    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify(out, null, 1));
+    for (const f of befunde) console.log(`  ⛔ ${f}`);
+    const tot = out.regler.filter((r) => !r.wirkt).length;
+    console.log(
+        `\n${befunde.length ? "⛔ STUDIO-PROBE ROT" : "✅ STUDIO-PROBE GRÜN"}: ${out.regler.length}/${out.reglerZahl || 18} Regler gegriffen, tot ${tot} · Export ${out.plan ? 1 : 0} · Welt = Studio ${out.welt && out.studio && out.welt.makroSha === out.studio.makroSha ? "byte-gleich" : "nein"} · ${out.sekunden} s\n`
+    );
+    await browser.close();
+    server.close();
+    return befunde.length ? 1 : 0;
+}
+
 (async () => {
     if (argv.includes("--realismus")) process.exit(realismus());
+    if (argv.includes("--studio")) process.exit(await studioProbe());
     await new Promise((r) => server.listen(PORT, r));
     const browser = await puppeteer.launch({
         headless: true,

@@ -27642,7 +27642,9 @@ class AnazhRealm {
         } catch (e) {
             return String((e && e.message) || e);
         }
-        if (terme.length === 1 && terme[0].art === "wildnis") return null;
+        // Die Wildnis allein OHNE Regler reist zu jedem; trägt der Wildnis-Term Regler des Gelände-Studios (eine Plan-Welt),
+        // zeichnete ein Build vor ihnen die Standard-Landform darunter — sie reist nur zur Stufe 2.
+        if (terme.length === 1 && terme[0].art === "wildnis" && Object.keys(terme[0]).length === 1) return null;
         const kann = msg && typeof msg.erbgut === "number" && Number.isFinite(msg.erbgut) ? msg.erbgut : 0;
         if (kann >= AnazhRealm.ERBGUT_PROTOKOLL) return null;
         return `der Empfänger liest kein Erbgut (Protokoll ${kann} < ${AnazhRealm.ERBGUT_PROTOKOLL}) — die Welt [${terme
@@ -46234,6 +46236,25 @@ class AnazhRealm {
     }
 
     _openWeltTorDialog(parsed, file) {
+        // EIN PLAN DES GELÄNDE-STUDIOS klopft an wie eine Welt: die Tür macht aus ihm die Welt, die er beschreibt
+        // (`_weltAusPlan`), dann wählt der Spieler wie bei jeder Datei. Ein Plan, den dieser Build nicht liest, fällt
+        // benannt (fail-closed, nie still Wildnis).
+        if (parsed && parsed.art === globalThis.__gelaendeCore.PLAN_ART) {
+            try {
+                parsed = this._weltAusPlan(parsed);
+            } catch (e) {
+                const grund = String((e && e.message) || e);
+                this.log(grund, "ERROR");
+                const chatOutput = typeof document !== "undefined" ? document.getElementById("chat-output") : null;
+                if (chatOutput) {
+                    const line = document.createElement("div");
+                    line.textContent = grund;
+                    chatOutput.appendChild(line);
+                    chatOutput.scrollTop = chatOutput.scrollHeight;
+                }
+                return;
+            }
+        }
         this.state.pendingImport = { parsed, fileName: (file && file.name) || "unbekannt" };
         const dialog = document.getElementById("world-tor-dialog");
         const summary = document.getElementById("world-tor-summary");
@@ -46535,6 +46556,25 @@ class AnazhRealm {
     // Importierte Welt bekommt eine NEUE worldId (sonst überschriebe sie eine gleichnamige), behält Seed +
     // Inhalt, trägt die Original-ID in `parentWorlds`. Slug-Kollision → `-2`/`-3`/… wie createNewWorld.
     // Die aktive Welt bleibt; `reload` springt direkt in die importierte.
+    // DIE WELT AUS EINEM PLAN (K16b): der Export des Gelände-Studios (`{ art: "gelaende-plan", v, saat, regler }`) wird die
+    // Welt, die er beschreibt — eine frisch geborene Welt (wie „Neue Welt", vor ihrem Erst-Spawn) mit der Saat des Plans
+    // und seinen Reglern im Erbgut (`planErbgut`), auf dem Grund der Plan-Lage (`PLAN_GRUND`). Die Welt erfindet nichts:
+    // ihre Höhe ist `hoehe` an genau der Lage, die das Studio rechnete (`planLage`) — Studio = Welt byte-gleich
+    // (gate:worker-dichte --studio). Wirft mit dem Grund, wenn der Plan nicht gelesen werden kann. Leser: die Welt-Tür
+    // (`_openWeltTorDialog`) und das Studio („Welt bauen").
+    _weltAusPlan(roh) {
+        const G = globalThis.__gelaendeCore;
+        const plan = G.planNormal(roh);
+        const meta = this._generateFreshWorldMeta("gelaende");
+        meta.seed = plan.saat;
+        meta.variantSeed = this._generateVariantSeedPool(plan.saat);
+        const snap = this._buildEmptyWorldSnapshot(meta, false);
+        snap.terrainBaseHeight = G.PLAN_GRUND.basis;
+        snap.worldMeta.erbgut = G.planErbgut(plan);
+        snap.worldMeta.voxelTerrain = true;
+        return snap;
+    }
+
     importWorldBeside(parsed, { reload = false } = {}) {
         if (!parsed || typeof parsed !== "object") {
             return { ok: false, reason: "kein gültiger Snapshot" };
@@ -90625,6 +90665,13 @@ class AnazhRealm {
     }
 
     // Ring 5 V2 Vorbereitung — Kamera-Modus (Erst-/Dritte-Person).
+    // DIE KAMERA-FÜHRUNG (K16b, der Anschluss eines Studios an die Welt-Engine): `fn(camera, t, spielerPos)` setzt je Frame
+    // die Kamera statt der Spieler-Kamera (`_loopCamera`); null gibt sie dem Spieler zurück. Leser: das Gelände-Studio
+    // (Makro-Flug, langsamer Orbit; „Augenhöhe" = null).
+    kameraFuehren(fn) {
+        this._kameraFuehrung = typeof fn === "function" ? fn : null;
+    }
+
     setCameraMode(mode) {
         const next = mode === "third" ? "third" : "first";
         this.state.cameraMode = next;
@@ -97106,6 +97153,12 @@ class AnazhRealm {
         // (gemeinsame Loop-locals); jetzt aus this.state neu gelesen.
         const player = this.state.playerMesh;
         const camera = this.state.camera;
+        // DIE KAMERA-FÜHRUNG eines Studios (`kameraFuehren`): solange eine steht, setzt SIE die Kamera — der Spieler bleibt,
+        // wo er ist, die Welt streamt um ihn wie immer.
+        if (this._kameraFuehrung && player && camera) {
+            this._kameraFuehrung(camera, currentTime, player.position);
+            return;
+        }
         if (player && camera) {
             // Spieler-Mesh in Yaw-Richtung drehen, damit die Seele in
             // Bewegungsrichtung schaut — wichtig für asymmetrische Formen
@@ -102498,8 +102551,9 @@ AnazhRealm.P2P_PULL_COOLDOWN_MS = 5000;
 // DIE ERBGUT-STUFE DES PROTOKOLLS: wer eine Welt erbittet (world-request, world-pull), erklärt, dass er
 // `worldMeta.erbgut` liest und eine unbekannte Term-Art ablehnt (`_erbgutEinlass`). Ein Sender reicht eine Welt, deren
 // Erbgut nicht die Wildnis allein ist, nur einem Empfänger mit dieser Stufe (`_erbgutTeilbar`) — ein Build davor
-// zeichnete sie still als Wildnis.
-AnazhRealm.ERBGUT_PROTOKOLL = 1;
+// zeichnete sie still als Wildnis. Stufe 2 (K16b): der Empfänger liest auch die Regler im Wildnis-Term (eine Welt aus
+// einem Plan des Gelände-Studios).
+AnazhRealm.ERBGUT_PROTOKOLL = 2;
 // DIE WELTGRENZE: was beim Wechsel der Welt aus der alten reist — beim Namen, sonst nichts (gate:weltgrenze).
 //   geburt       die Wahl des Schöpfers, die eine neue Welt erbt (`_buildEmptyWorldSnapshot`)
 //   platz        der Speicher-Platz der Seite, nur in die Lücken einer geladenen Welt (`_weltMetaWechsel`)

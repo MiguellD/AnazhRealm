@@ -1236,7 +1236,169 @@
         return { zellen: c, pediment: r3(ped / c), schutt: r3(schutt / c), ruhe: r3(ruhe / c), kliff: r3(kliff / c) };
     }
 
+    // ── DAS GELÄNDE-STUDIO (K16b): Bedienung, Urteil und Plan — rein additiv, die Höhe rechnet weiter `hoehe` allein.
+    //
+    // DIE HAUPT-REGLER je Gruppe (die vier Gruppen in der Sprache des Bildes; alles Weitere liegt hinter „mehr"). Leser:
+    // das Panel des Studios (worlds/gelaende/studio.js baut jede Zeile aus `LANDFORM_REGLER`, die Haupt-Liste ordnet sie).
+    const LANDFORM_HAUPT = Object.freeze({
+        kontinent: Object.freeze(["land", "hoehe"]),
+        taeler: Object.freeze(["netzDichte", "talForm"]),
+        kliffs: Object.freeze(["tafel", "kliffWinkel"]),
+        rauheit: Object.freeze(["rinnen", "detail"]),
+    });
+    // DIE NAMEN der Regler und Gruppen in der Sprache des Bildes (die Vokabel des Studios; `law` bleibt die Formel).
+    const LANDFORM_NAMEN = Object.freeze({
+        kontinent: "Kontinent",
+        taeler: "Täler",
+        kliffs: "Kliffs",
+        rauheit: "Rauheit",
+        land: "Land ↔ Meer",
+        kontinentLambda: "Weite der Kontinente",
+        hoehe: "Höhe",
+        rauhLambda: "Weite der Gebirge",
+        netzDichte: "Flussnetz",
+        talForm: "Talform V ↔ U",
+        trog: "Trog im Hochgebirge",
+        aue: "Aue",
+        ks: "Steilheit der Flüsse",
+        theta: "Konkavität θ",
+        tafel: "Tafelland",
+        kliffWinkel: "Kliff",
+        schuttWinkel: "Schutthang",
+        pedimentWinkel: "Pediment",
+        schichtDicke: "Schicht",
+        hartAnteil: "harte Lage",
+        rinnen: "Rinnen",
+        detail: "Grate",
+    });
+    // DIE BENANNTEN LANDSCHAFTEN: je Preset nur die Regler, die es vom Gesetz abweichen lässt (der Rest ist def). Jede
+    // trägt ihr Bild aus Nordstern §4.1 und steht mit der Saat der Welt im Natur-Korridor der Linse (gate:worker-dichte
+    // --studio liest sie). Leser: die Preset-Knöpfe des Studios.
+    const LANDFORM_PRESETS = Object.freeze([
+        Object.freeze({
+            id: "mittelgebirge",
+            name: "Mittelgebirge",
+            bild: "sanfte Kuppen, weite Auen, dichtes Talnetz",
+            regler: Object.freeze({ land: 0.45, hoehe: 0.7, rauhLambda: 4600, netzDichte: 1.15, talForm: 1.25, trog: 0.1, aue: 1.5, tafel: 0.1, detail: 0.45 }),
+        }),
+        Object.freeze({
+            id: "alpental",
+            name: "Alpental",
+            bild: "Trogtäler unter hohen Graten (Lauterbrunnental)",
+            regler: Object.freeze({ land: 0.6, hoehe: 1.5, kontinentLambda: 12000, rauhLambda: 2400, netzDichte: 0.85, talForm: 1.8, trog: 1, aue: 0.8, ks: 9, tafel: 0.05, rinnen: 1.2, detail: 0.8 }),
+        }),
+        Object.freeze({
+            id: "tafelland",
+            name: "Tafelland",
+            bild: "Kliff über Schutthang über Pediment (Monument Valley)",
+            regler: Object.freeze({ land: 0.5, hoehe: 1.1, rauhLambda: 3600, netzDichte: 0.9, talForm: 1.5, theta: 0.55, tafel: 1, kliffWinkel: 78, schichtDicke: 30, hartAnteil: 0.6, aue: 1.3, detail: 0.35 }),
+        }),
+        Object.freeze({
+            id: "kueste",
+            name: "Küste",
+            bild: "Land und Meer verzahnt, Buchten und flache Mündungen",
+            regler: Object.freeze({ land: 0.2, kontinentLambda: 6500, hoehe: 0.85, netzDichte: 1.2, aue: 1.6, tafel: 0.3, rinnen: 0.8 }),
+        }),
+    ]);
+    // DER NATUR-KORRIDOR der Gelände-Linse (Nordstern §4.1, Karte K16) — EINE Quelle für die Wand (`diag-worker-dichte
+    // --realismus`) und die Zahl-Leiste des Studios: grün im Korridor, rot außerhalb.
+    const KORRIDOR = Object.freeze({
+        senkenJeKm2: 1,
+        senkeAnteil: 0.01,
+        thetaMin: 0.3,
+        thetaMax: 0.7,
+        r2Min: 0.5,
+        hammondSanft: 1,
+        dorfplaetze: 3,
+        kliff: 0.02,
+        schutt: 0.05,
+        pediment: 0.2,
+    });
+    // Das Urteil je Ziel aus der Statistik (`statistik`) und den Bändern am Schicht-Ort (`hangBaender`, null = kein Ort):
+    // true im Korridor, false außerhalb, null = das Ziel gilt hier nicht.
+    function urteil(st, schicht) {
+        const K = KORRIDOR;
+        return {
+            senken: st.senken1mJeKm2 <= K.senkenJeKm2 && st.anteilSenkeTiefer1m < K.senkeAnteil,
+            flint:
+                st.flint.theta != null &&
+                st.flint.theta >= K.thetaMin &&
+                st.flint.theta <= K.thetaMax &&
+                st.flint.r2 >= K.r2Min,
+            hammond: st.hammond.sanft >= K.hammondSanft,
+            dorfplaetze: st.dorfplaetze >= K.dorfplaetze,
+            // ohne Schicht-Ort (kein Tafelland im Umkreis) gilt das Schicht-Gesetz nicht: null, nie grün
+            schicht:
+                schicht == null
+                    ? null
+                    : schicht.zellen > 0 &&
+                schicht.kliff >= K.kliff &&
+                schicht.schutt >= K.schutt &&
+                schicht.pediment >= K.pediment,
+        };
+    }
+    // DER PLAN (M5): was das Studio exportiert und die Welt beim Import liest — die Saat und die Regler, sonst nichts.
+    // Fail-closed: eine fremde Art, eine andere Version, eine Saat ohne Namen, ein unbekannter Regler (ein neuerer Build
+    // hätte ein Gesetz, das dieser nicht rechnet) oder eine Nicht-Zahl WERFEN mit dem Grund; ein fehlender Regler trägt
+    // sein def (wie im Erbgut), Zahlen werden auf [min, max] geklemmt. Leser: das Studio (Export), die Welt-Tür des Stamms
+    // (`_weltAusPlan`), die Studio-Probe.
+    const PLAN_ART = "gelaende-plan";
+    const PLAN_VERSION = 1;
+    // Der Grund einer Plan-Welt: sie wird auf der Basis 0 geboren, das Meer liegt bei Basis − 3 (`_buildWaterPlane`).
+    const PLAN_GRUND = Object.freeze({ basis: 0, meer: -3, kachel: 2048 });
+    function planNormal(roh) {
+        const nein = (grund) => {
+            throw new Error(`Gelände-Plan abgelehnt: ${grund}`);
+        };
+        if (!roh || typeof roh !== "object") nein("kein Objekt");
+        if (roh.art !== PLAN_ART) nein(`die Art ist „${roh.art}", nicht „${PLAN_ART}"`);
+        if (roh.v !== PLAN_VERSION) nein(`Version ${roh.v} (dieser Build liest ${PLAN_VERSION})`);
+        if (typeof roh.saat !== "string" || !/^[A-Za-z0-9:._-]{1,64}$/.test(roh.saat))
+            nein("die Saat ist kein Name (1–64 Zeichen aus A–Z a–z 0–9 : . _ -)");
+        const rg = roh.regler;
+        if (!rg || typeof rg !== "object" || Array.isArray(rg)) nein("keine Regler");
+        for (const k of Object.keys(rg)) if (!LANDFORM_REGLER.some((r) => r.id === k)) nein(`unbekannter Regler „${k}"`);
+        const regler = {};
+        for (const r of LANDFORM_REGLER) {
+            const v = rg[r.id];
+            if (v === undefined) regler[r.id] = r.def;
+            else if (typeof v !== "number" || !Number.isFinite(v)) nein(`${r.id} ist keine Zahl`);
+            else regler[r.id] = Math.min(r.max, Math.max(r.min, v));
+        }
+        return { art: PLAN_ART, v: PLAN_VERSION, saat: roh.saat, regler };
+    }
+    // Das Erbgut einer Plan-Welt (`worldMeta.erbgut` roh): EIN Wildnis-Term, der jeden Regler trägt.
+    function planErbgut(plan) {
+        const p = planNormal(plan);
+        return { terme: [Object.assign({ art: "wildnis" }, p.regler)] };
+    }
+    // Die Gelände-Lage einer Plan-Welt, wie die Welt sie nach dem Import liest (Saat-Strom, Grund, Erbgut-Normalform) —
+    // `Rausch` ist der SimplexNoise-Konstruktor des Wirts (vendor/simplex-noise.js).
+    function planLage(plan, Rausch) {
+        const p = planNormal(plan);
+        return {
+            seed: p.saat,
+            noise: new Rausch(p.saat + ":voxel"),
+            baseHeight: PLAN_GRUND.basis,
+            waterLevel: PLAN_GRUND.basis + PLAN_GRUND.meer,
+            terrainSteepness: 1,
+            erbgut: { terme: erbgutNormal(planErbgut(p)), wildnis: 1 },
+            regionSize: PLAN_GRUND.kachel,
+        };
+    }
+
     root.__gelaendeCore = Object.freeze({
+        LANDFORM_HAUPT: LANDFORM_HAUPT,
+        LANDFORM_NAMEN: LANDFORM_NAMEN,
+        LANDFORM_PRESETS: LANDFORM_PRESETS,
+        KORRIDOR: KORRIDOR,
+        urteil: urteil,
+        PLAN_ART: PLAN_ART,
+        PLAN_VERSION: PLAN_VERSION,
+        PLAN_GRUND: PLAN_GRUND,
+        planNormal: planNormal,
+        planErbgut: planErbgut,
+        planLage: planLage,
         LINSE: LINSE,
         statistik: statistik,
         hangBaender: hangBaender,

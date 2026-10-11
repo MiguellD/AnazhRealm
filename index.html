@@ -1966,6 +1966,16 @@
             .new-world-footer button:hover {
                 background: rgba(180, 140, 80, 0.32);
             }
+            .new-world-footer .new-world-studio {
+                margin-right: auto;
+                align-self: center;
+                color: var(--parch-ink);
+                font-family: "Cinzel", Georgia, serif;
+                letter-spacing: 0.04em;
+                font-size: 0.9em;
+                text-decoration: none;
+                border-bottom: 1px dotted var(--brass-1, #8b6a3f);
+            }
             #new-world-status {
                 margin-top: 0.5em;
                 font-style: italic;
@@ -9615,6 +9625,7 @@
             </div>
             <div id="new-world-status" class="drawer-hint" aria-live="polite"></div>
             <div class="new-world-footer">
+                <a class="new-world-studio" href="?studio=gelaende" title="das Gelände der neuen Welt gestalten">Gelände-Studio …</a>
                 <button type="button" id="new-world-cancel">Abbrechen</button>
                 <button type="button" id="new-world-confirm">Erschaffen</button>
             </div>
@@ -9696,5 +9707,7 @@
              liest klingenProfil, OAKESHOTT_TYPES ist ein Getter-Delegat auf den Kern. -->
         <script src="schmiede-core.js?v=18.540.0" defer></script>
         <script src="anazhRealm.js?v=18.540.0" defer></script>
+        <!-- DAS GELÄNDE-STUDIO (K16b): nur mit ?studio=gelaende — ein Panel über der laufenden Welt, kein eigener Look-Pfad. -->
+        <script src="worlds/gelaende/studio.js?v=18.540.0" defer></script>
     </body>
 </html>

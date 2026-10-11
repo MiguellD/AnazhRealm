@@ -94,6 +94,38 @@ export default [
         },
     },
     {
+        // DAS GELÄNDE-STUDIO (K16b): das Panel im Browser (studio.js) und sein Makro-Worker (makro-worker.js).
+        files: ["worlds/gelaende/*.js"],
+        languageOptions: {
+            ecmaVersion: 2022,
+            sourceType: "script",
+            globals: {
+                window: "readonly",
+                self: "readonly",
+                document: "readonly",
+                location: "readonly",
+                localStorage: "readonly",
+                performance: "readonly",
+                crypto: "readonly",
+                importScripts: "readonly",
+                postMessage: "readonly",
+                Worker: "readonly",
+                Blob: "readonly",
+                URL: "readonly",
+                URLSearchParams: "readonly",
+                ImageData: "readonly",
+                Event: "readonly",
+                alert: "readonly",
+                setTimeout: "readonly",
+                setInterval: "readonly",
+                console: "readonly",
+            },
+        },
+        rules: {
+            "no-unused-vars": ["warn", { argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
+        },
+    },
+    {
         files: ["save-server.js", "signaling-server.js"],
         languageOptions: {
             ecmaVersion: 2022,

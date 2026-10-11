@@ -10,7 +10,7 @@
         "start": "node save-server.js",
         "signaling": "node signaling-server.js",
         "leuchtturm": "node scripts/leuchtturm.cjs",
-        "lint": "eslint anazhRealm.js phyto-core.js gelaende-core.js voxel-worker.js save-server.js signaling-server.js",
+        "lint": "eslint anazhRealm.js phyto-core.js gelaende-core.js voxel-worker.js save-server.js signaling-server.js worlds/gelaende",
         "lint:fix": "eslint --fix anazhRealm.js phyto-core.js voxel-worker.js save-server.js signaling-server.js",
         "format": "prettier --write anazhRealm.js phyto-core.js voxel-worker.js save-server.js signaling-server.js",
         "format:check": "node scripts/format-teile.cjs --selftest anazhRealm.js phyto-core.js voxel-worker.js save-server.js signaling-server.js",
