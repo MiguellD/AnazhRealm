@@ -1,0 +1,11 @@
+  wald  -1010/-949   Deckung 1 · nah Y 0.0512 · fern Y 0.0482 · 6 % · Gesetz Y 0.0528: nah -0.03 (Grün 0.001), fern -0.087 (Grün 0.008)
+  wald  -1010/-872   Deckung 1 · nah Y 0.0509 · fern Y 0.0577 · -12 % · Gesetz Y 0.0534: nah -0.047 (Grün 0.003), fern 0.081 (Grün 0.002)
+  wald  -1010/-817   Deckung 1 · nah Y 0.0555 · fern Y 0.0636 · -13 % · Gesetz Y 0.0585: nah -0.051 (Grün 0.001), fern 0.087 (Grün -0.009)
+  wald  -1010/-784   Deckung 1 · nah Y 0.0613 · fern Y 0.0649 · -6 % · Gesetz Y 0.0643: nah -0.047 (Grün -0.003), fern 0.009 (Grün -0.013)
+  wiese -856/-718    Deckung 0.36 · nah Y 0.0663 · fern Y 0.06 · 11 % · Gesetz Y 0.0683: nah -0.029 (Grün 0.004), fern -0.122 (Grün 0.008)
+  wiese -867/-773    Deckung 0.38 · nah Y 0.0592 · fern Y 0.0572 · 4 % · Gesetz Y 0.0613: nah -0.034 (Grün 0.003), fern -0.067 (Grün -0.004)
+  wiese -779/-784    Deckung 0.42 · nah Y 0.0636 · fern Y 0.0638 · -0 % · Gesetz Y 0.0679: nah -0.063 (Grün 0.003), fern -0.06 (Grün 0.009)
+  wiese -779/-850    Deckung 0.42 · nah Y 0.0675 · fern Y 0.0631 · 7 % · Gesetz Y 0.0712: nah -0.052 (Grün 0.001), fern -0.114 (Grün 0.029)
+
+✅ NAH-FERN GRÜN — EINE Boden-Farbe je Ort
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\wm2\bild2\kopf-linse.json

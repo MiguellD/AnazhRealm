@@ -1,0 +1,437 @@
+{
+ "messung": {
+  "hoehe": 420,
+  "halb": 66,
+  "orte": [
+   {
+    "ort": [
+     -1010,
+     -949
+    ],
+    "d": 148,
+    "klasse": "wald",
+    "deckung": 1,
+    "nah": {
+     "n": 4096,
+     "rgb": [
+      0.1072,
+      0.1443,
+      0.0412
+     ],
+     "Y": 0.1289
+    },
+    "fern": {
+     "n": 4096,
+     "rgb": [
+      0.0262,
+      0.0585,
+      0.0111
+     ],
+     "Y": 0.0482
+    },
+    "gesetz": {
+     "rgb": [
+      0.0294,
+      0.0638,
+      0.0127
+     ],
+     "Y": 0.0528,
+     "deckung": 0.92
+    }
+   },
+   {
+    "ort": [
+     -1010,
+     -872
+    ],
+    "d": 112,
+    "klasse": "wald",
+    "deckung": 1,
+    "nah": {
+     "n": 4096,
+     "rgb": [
+      0.107,
+      0.144,
+      0.0415
+     ],
+     "Y": 0.1287
+    },
+    "fern": {
+     "n": 4096,
+     "rgb": [
+      0.0332,
+      0.0684,
+      0.0128
+     ],
+     "Y": 0.0569
+    },
+    "gesetz": {
+     "rgb": [
+      0.0302,
+      0.0643,
+      0.0132
+     ],
+     "Y": 0.0534,
+     "deckung": 0.91
+    }
+   },
+   {
+    "ort": [
+     -1010,
+     -817
+    ],
+    "d": 115,
+    "klasse": "wald",
+    "deckung": 1,
+    "nah": {
+     "n": 4096,
+     "rgb": [
+      0.1116,
+      0.1423,
+      0.0408
+     ],
+     "Y": 0.1285
+    },
+    "fern": {
+     "n": 4096,
+     "rgb": [
+      0.0385,
+      0.0748,
+      0.0145
+     ],
+     "Y": 0.0627
+    },
+    "gesetz": {
+     "rgb": [
+      0.034,
+      0.0703,
+      0.0136
+     ],
+     "Y": 0.0585,
+     "deckung": 0.92
+    }
+   },
+   {
+    "ort": [
+     -1010,
+     -784
+    ],
+    "d": 128,
+    "klasse": "wald",
+    "deckung": 1,
+    "nah": {
+     "n": 4096,
+     "rgb": [
+      0.1171,
+      0.1371,
+      0.0475
+     ],
+     "Y": 0.1264
+    },
+    "fern": {
+     "n": 4096,
+     "rgb": [
+      0.0404,
+      0.0759,
+      0.0153
+     ],
+     "Y": 0.064
+    },
+    "gesetz": {
+     "rgb": [
+      0.0386,
+      0.077,
+      0.0145
+     ],
+     "Y": 0.0643,
+     "deckung": 0.91
+    }
+   },
+   {
+    "ort": [
+     -856,
+     -718
+    ],
+    "d": 139,
+    "klasse": "wiese",
+    "deckung": 0.36,
+    "nah": {
+     "n": 4096,
+     "rgb": [
+      0.1113,
+      0.1137,
+      0.0569
+     ],
+     "Y": 0.1091
+    },
+    "fern": {
+     "n": 4096,
+     "rgb": [
+      0.0365,
+      0.0715,
+      0.0145
+     ],
+     "Y": 0.06
+    },
+    "gesetz": {
+     "rgb": [
+      0.0425,
+      0.0811,
+      0.0172
+     ],
+     "Y": 0.0683,
+     "deckung": 0.89
+    }
+   },
+   {
+    "ort": [
+     -867,
+     -773
+    ],
+    "d": 84,
+    "klasse": "wiese",
+    "deckung": 0.38,
+    "nah": {
+     "n": 4096,
+     "rgb": [
+      0.1134,
+      0.1238,
+      0.0503
+     ],
+     "Y": 0.1163
+    },
+    "fern": {
+     "n": 3843,
+     "rgb": [
+      0.0348,
+      0.0681,
+      0.0144
+     ],
+     "Y": 0.0572
+    },
+    "gesetz": {
+     "rgb": [
+      0.0368,
+      0.0732,
+      0.0153
+     ],
+     "Y": 0.0613,
+     "deckung": 0.9
+    }
+   },
+   {
+    "ort": [
+     -779,
+     -784
+    ],
+    "d": 138,
+    "klasse": "wiese",
+    "deckung": 0.42,
+    "nah": {
+     "n": 4094,
+     "rgb": [
+      0.118,
+      0.1167,
+      0.0591
+     ],
+     "Y": 0.1128
+    },
+    "fern": {
+     "n": 4096,
+     "rgb": [
+      0.0396,
+      0.0759,
+      0.0155
+     ],
+     "Y": 0.0638
+    },
+    "gesetz": {
+     "rgb": [
+      0.0431,
+      0.0803,
+      0.0175
+     ],
+     "Y": 0.0679,
+     "deckung": 0.9
+    }
+   },
+   {
+    "ort": [
+     -779,
+     -850
+    ],
+    "d": 121,
+    "klasse": "wiese",
+    "deckung": 0.42,
+    "nah": {
+     "n": 4093,
+     "rgb": [
+      0.1247,
+      0.1309,
+      0.0542
+     ],
+     "Y": 0.124
+    },
+    "fern": {
+     "n": 4096,
+     "rgb": [
+      0.0366,
+      0.0761,
+      0.0122
+     ],
+     "Y": 0.0631
+    },
+    "gesetz": {
+     "rgb": [
+      0.0449,
+      0.0845,
+      0.0162
+     ],
+     "Y": 0.0712,
+     "deckung": 0.91
+    }
+   }
+  ],
+  "nahKarte": null
+ },
+ "befunde": [
+  "NAH-FERN wald -1010/-949 (Deckung 1): Boden-Satz Y 0.1289 gegen Fern-Ring Y 0.0482 (+167 %) — zwei Farben derselben Stelle; Täter Boden-Satz +144 % (Grün -0.109) gegen das Gesetz Y 0.0528",
+  "NAH-FERN wald -1010/-872 (Deckung 1): Boden-Satz Y 0.1287 gegen Fern-Ring Y 0.0569 (+126 %) — zwei Farben derselben Stelle; Täter Boden-Satz +141 % (Grün -0.105) gegen das Gesetz Y 0.0534",
+  "NAH-FERN wald -1010/-817 (Deckung 1): Boden-Satz Y 0.1285 gegen Fern-Ring Y 0.0627 (+105 %) — zwei Farben derselben Stelle; Täter Boden-Satz +120 % (Grün -0.113) gegen das Gesetz Y 0.0585",
+  "NAH-FERN wald -1010/-784 (Deckung 1): Boden-Satz Y 0.1264 gegen Fern-Ring Y 0.064 (+98 %) — zwei Farben derselben Stelle; Täter Boden-Satz +97 % (Grün -0.137) gegen das Gesetz Y 0.0643",
+  "NAH-FERN wiese -856/-718 (Deckung 0.36): Boden-Satz Y 0.1091 gegen Fern-Ring Y 0.06 (+82 %) — zwei Farben derselben Stelle; Täter Boden-Satz +60 % (Grün -0.173) gegen das Gesetz Y 0.0683",
+  "NAH-FERN wiese -867/-773 (Deckung 0.38): Boden-Satz Y 0.1163 gegen Fern-Ring Y 0.0572 (+103 %) — zwei Farben derselben Stelle; Täter Boden-Satz +90 % (Grün -0.154) gegen das Gesetz Y 0.0613",
+  "NAH-FERN wiese -779/-784 (Deckung 0.42): Boden-Satz Y 0.1128 gegen Fern-Ring Y 0.0638 (+77 %) — zwei Farben derselben Stelle; Täter Boden-Satz +66 % (Grün -0.173) gegen das Gesetz Y 0.0679",
+  "NAH-FERN wiese -779/-850 (Deckung 0.42): Boden-Satz Y 0.124 gegen Fern-Ring Y 0.0631 (+97 %) — zwei Farben derselben Stelle; Täter Boden-Satz +74 % (Grün -0.158) gegen das Gesetz Y 0.0712"
+ ],
+ "zeilen": [
+  {
+   "klasse": "wald",
+   "ort": [
+    -1010,
+    -949
+   ],
+   "deckung": 1,
+   "nahY": 0.1289,
+   "fernY": 0.0482,
+   "gesetzY": 0.0528,
+   "dY": 1.674,
+   "nahGesetz": 1.441,
+   "fernGesetz": -0.087,
+   "gruenNah": -0.109,
+   "gruenFern": 0.008
+  },
+  {
+   "klasse": "wald",
+   "ort": [
+    -1010,
+    -872
+   ],
+   "deckung": 1,
+   "nahY": 0.1287,
+   "fernY": 0.0569,
+   "gesetzY": 0.0534,
+   "dY": 1.262,
+   "nahGesetz": 1.41,
+   "fernGesetz": 0.066,
+   "gruenNah": -0.105,
+   "gruenFern": 0.001
+  },
+  {
+   "klasse": "wald",
+   "ort": [
+    -1010,
+    -817
+   ],
+   "deckung": 1,
+   "nahY": 0.1285,
+   "fernY": 0.0627,
+   "gesetzY": 0.0585,
+   "dY": 1.049,
+   "nahGesetz": 1.197,
+   "fernGesetz": 0.072,
+   "gruenNah": -0.113,
+   "gruenFern": -0.011
+  },
+  {
+   "klasse": "wald",
+   "ort": [
+    -1010,
+    -784
+   ],
+   "deckung": 1,
+   "nahY": 0.1264,
+   "fernY": 0.064,
+   "gesetzY": 0.0643,
+   "dY": 0.975,
+   "nahGesetz": 0.966,
+   "fernGesetz": -0.005,
+   "gruenNah": -0.137,
+   "gruenFern": -0.015
+  },
+  {
+   "klasse": "wiese",
+   "ort": [
+    -856,
+    -718
+   ],
+   "deckung": 0.36,
+   "nahY": 0.1091,
+   "fernY": 0.06,
+   "gesetzY": 0.0683,
+   "dY": 0.818,
+   "nahGesetz": 0.597,
+   "fernGesetz": -0.122,
+   "gruenNah": -0.173,
+   "gruenFern": 0.008
+  },
+  {
+   "klasse": "wiese",
+   "ort": [
+    -867,
+    -773
+   ],
+   "deckung": 0.38,
+   "nahY": 0.1163,
+   "fernY": 0.0572,
+   "gesetzY": 0.0613,
+   "dY": 1.033,
+   "nahGesetz": 0.897,
+   "fernGesetz": -0.067,
+   "gruenNah": -0.154,
+   "gruenFern": -0.004
+  },
+  {
+   "klasse": "wiese",
+   "ort": [
+    -779,
+    -784
+   ],
+   "deckung": 0.42,
+   "nahY": 0.1128,
+   "fernY": 0.0638,
+   "gesetzY": 0.0679,
+   "dY": 0.768,
+   "nahGesetz": 0.661,
+   "fernGesetz": -0.06,
+   "gruenNah": -0.173,
+   "gruenFern": 0.009
+  },
+  {
+   "klasse": "wiese",
+   "ort": [
+    -779,
+    -850
+   ],
+   "deckung": 0.42,
+   "nahY": 0.124,
+   "fernY": 0.0631,
+   "gesetzY": 0.0712,
+   "dY": 0.965,
+   "nahGesetz": 0.742,
+   "fernGesetz": -0.114,
+   "gruenNah": -0.158,
+   "gruenFern": 0.029
+  }
+ ]
+}

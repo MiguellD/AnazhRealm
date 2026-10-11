@@ -1,0 +1,7 @@
+check EXIT=0
+lint EXIT=0
+selbsttest EXIT=0
+playtest:fast EXIT=0
+playtest EXIT=0
+gate:nah-fern EXIT=0
+ENDE

@@ -1,0 +1,19 @@
+{
+ "ort": "buehne",
+ "pose": "ost",
+ "welt": {
+  "slug": "pruefbuehne",
+  "neu": true,
+  "id": "8a4b13d3-9cd9-4c22-bd53-68b845f507e0"
+ },
+ "spieler": [
+  300,
+  0
+ ],
+ "takte": 120,
+ "chunks": 81,
+ "gier": 1.5708,
+ "dorfZug": false,
+ "ortTakt": [],
+ "ms": 13196
+}

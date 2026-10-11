@@ -1,0 +1,19 @@
+  wald  -1010/-949   Deckung 1 · nah Y 0.1289 · fern Y 0.0482 · 167 % · Gesetz Y 0.0528: nah 1.441 (Grün -0.109), fern -0.087 (Grün 0.008)
+  wald  -1010/-872   Deckung 1 · nah Y 0.1287 · fern Y 0.0569 · 126 % · Gesetz Y 0.0534: nah 1.41 (Grün -0.105), fern 0.066 (Grün 0.001)
+  wald  -1010/-817   Deckung 1 · nah Y 0.1285 · fern Y 0.0627 · 105 % · Gesetz Y 0.0585: nah 1.197 (Grün -0.113), fern 0.072 (Grün -0.011)
+  wald  -1010/-784   Deckung 1 · nah Y 0.1264 · fern Y 0.064 · 98 % · Gesetz Y 0.0643: nah 0.966 (Grün -0.137), fern -0.005 (Grün -0.015)
+  wiese -856/-718    Deckung 0.36 · nah Y 0.1091 · fern Y 0.06 · 82 % · Gesetz Y 0.0683: nah 0.597 (Grün -0.173), fern -0.122 (Grün 0.008)
+  wiese -867/-773    Deckung 0.38 · nah Y 0.1163 · fern Y 0.0572 · 103 % · Gesetz Y 0.0613: nah 0.897 (Grün -0.154), fern -0.067 (Grün -0.004)
+  wiese -779/-784    Deckung 0.42 · nah Y 0.1128 · fern Y 0.0638 · 77 % · Gesetz Y 0.0679: nah 0.661 (Grün -0.173), fern -0.06 (Grün 0.009)
+  wiese -779/-850    Deckung 0.42 · nah Y 0.124 · fern Y 0.0631 · 97 % · Gesetz Y 0.0712: nah 0.742 (Grün -0.158), fern -0.114 (Grün 0.029)
+  ROT NAH-FERN wald -1010/-949 (Deckung 1): Boden-Satz Y 0.1289 gegen Fern-Ring Y 0.0482 (+167 %) — zwei Farben derselben Stelle; Täter Boden-Satz +144 % (Grün -0.109) gegen das Gesetz Y 0.0528
+  ROT NAH-FERN wald -1010/-872 (Deckung 1): Boden-Satz Y 0.1287 gegen Fern-Ring Y 0.0569 (+126 %) — zwei Farben derselben Stelle; Täter Boden-Satz +141 % (Grün -0.105) gegen das Gesetz Y 0.0534
+  ROT NAH-FERN wald -1010/-817 (Deckung 1): Boden-Satz Y 0.1285 gegen Fern-Ring Y 0.0627 (+105 %) — zwei Farben derselben Stelle; Täter Boden-Satz +120 % (Grün -0.113) gegen das Gesetz Y 0.0585
+  ROT NAH-FERN wald -1010/-784 (Deckung 1): Boden-Satz Y 0.1264 gegen Fern-Ring Y 0.064 (+98 %) — zwei Farben derselben Stelle; Täter Boden-Satz +97 % (Grün -0.137) gegen das Gesetz Y 0.0643
+  ROT NAH-FERN wiese -856/-718 (Deckung 0.36): Boden-Satz Y 0.1091 gegen Fern-Ring Y 0.06 (+82 %) — zwei Farben derselben Stelle; Täter Boden-Satz +60 % (Grün -0.173) gegen das Gesetz Y 0.0683
+  ROT NAH-FERN wiese -867/-773 (Deckung 0.38): Boden-Satz Y 0.1163 gegen Fern-Ring Y 0.0572 (+103 %) — zwei Farben derselben Stelle; Täter Boden-Satz +90 % (Grün -0.154) gegen das Gesetz Y 0.0613
+  ROT NAH-FERN wiese -779/-784 (Deckung 0.42): Boden-Satz Y 0.1128 gegen Fern-Ring Y 0.0638 (+77 %) — zwei Farben derselben Stelle; Täter Boden-Satz +66 % (Grün -0.173) gegen das Gesetz Y 0.0679
+  ROT NAH-FERN wiese -779/-850 (Deckung 0.42): Boden-Satz Y 0.124 gegen Fern-Ring Y 0.0631 (+97 %) — zwei Farben derselben Stelle; Täter Boden-Satz +74 % (Grün -0.158) gegen das Gesetz Y 0.0712
+
+❌ NAH-FERN ROT — zwei Farben derselben Stelle
+C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\wm2\bild2\main-linse.json

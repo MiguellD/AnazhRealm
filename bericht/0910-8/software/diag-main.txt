@@ -1,0 +1,18 @@
+SELBSTTEST GRÜN: das Nah-Fern-Urteil nennt die zwei Farben derselben Stelle beim Namen
+  wald  -911/-883    Deckung 1 · nah Y 0.1299 · fern Y 0.063 · 106 % · Gesetz Y 0.0534: nah 1.433 (Grün -0.098), fern 0.18 (Grün -0.005)
+  wald  -911/-850    Deckung 1 · nah Y 0.1316 · fern Y 0.0626 · 110 % · Gesetz Y 0.0542: nah 1.428 (Grün -0.088), fern 0.155 (Grün -0.01)
+  wald  -889/-828    Deckung 1 · nah Y 0.131 · fern Y 0.057 · 130 % · Gesetz Y 0.0553: nah 1.369 (Grün -0.087), fern 0.031 (Grün -0.003)
+  wald  -878/-872    Deckung 1 · nah Y 0.1307 · fern Y 0.0582 · 125 % · Gesetz Y 0.0542: nah 1.411 (Grün -0.087), fern 0.074 (Grün -0.002)
+  wiese -900/-817    Deckung 0.46 · nah Y 0.1302 · fern Y 0.0581 · 124 % · Gesetz Y 0.0551: nah 1.363 (Grün -0.094), fern 0.054 (Grün -0.007)
+  wiese -922/-872    Deckung 0.49 · nah Y 0.131 · fern Y 0.0635 · 106 % · Gesetz Y 0.0538: nah 1.435 (Grün -0.094), fern 0.18 (Grün -0.011)
+  wiese -845/-817    Deckung 0.7 · nah Y 0.1276 · fern Y 0.0547 · 133 % · Gesetz Y 0.0548: nah 1.328 (Grün -0.101), fern -0.002 (Grün 0)
+  ROT NAH-FERN wald -911/-883 (Deckung 1): Boden-Satz Y 0.1299 gegen Fern-Ring Y 0.063 (+106 %) — zwei Farben derselben Stelle; Täter Boden-Satz +143 % (Grün -0.098) gegen das Gesetz Y 0.0534
+  ROT NAH-FERN wald -911/-850 (Deckung 1): Boden-Satz Y 0.1316 gegen Fern-Ring Y 0.0626 (+110 %) — zwei Farben derselben Stelle; Täter Boden-Satz +143 % (Grün -0.088) gegen das Gesetz Y 0.0542
+  ROT NAH-FERN wald -889/-828 (Deckung 1): Boden-Satz Y 0.131 gegen Fern-Ring Y 0.057 (+130 %) — zwei Farben derselben Stelle; Täter Boden-Satz +137 % (Grün -0.087) gegen das Gesetz Y 0.0553
+  ROT NAH-FERN wald -878/-872 (Deckung 1): Boden-Satz Y 0.1307 gegen Fern-Ring Y 0.0582 (+125 %) — zwei Farben derselben Stelle; Täter Boden-Satz +141 % (Grün -0.087) gegen das Gesetz Y 0.0542
+  ROT NAH-FERN wiese -900/-817 (Deckung 0.46): Boden-Satz Y 0.1302 gegen Fern-Ring Y 0.0581 (+124 %) — zwei Farben derselben Stelle; Täter Boden-Satz +136 % (Grün -0.094) gegen das Gesetz Y 0.0551
+  ROT NAH-FERN wiese -922/-872 (Deckung 0.49): Boden-Satz Y 0.131 gegen Fern-Ring Y 0.0635 (+106 %) — zwei Farben derselben Stelle; Täter Boden-Satz +143 % (Grün -0.094) gegen das Gesetz Y 0.0538
+  ROT NAH-FERN wiese -845/-817 (Deckung 0.7): Boden-Satz Y 0.1276 gegen Fern-Ring Y 0.0547 (+133 %) — zwei Farben derselben Stelle; Täter Boden-Satz +133 % (Grün -0.101) gegen das Gesetz Y 0.0548
+
+❌ NAH-FERN ROT — zwei Farben derselben Stelle
+diag-nah-fern: Start 6 s · Umstellen 15 s · Linse 3 s

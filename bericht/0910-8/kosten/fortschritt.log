@@ -1,0 +1,9 @@
+21:24:44 ABAB START
+21:25:02 k0-kopf  tausch "chunksNeu":1  bank 6.43 6.45 6.46   takt 1683 MHz 71 C (n=34)  prog 20/19/18/20  karte "ergebnis":[1,null],"ms":2
+21:25:20 k1-ohneMisch  tausch "chunksNeu":1  bank 6.44 6.42 6.44   takt 1718 MHz 75 C (n=34)  prog 21/20/19/21  karte "ergebnis":[1,null],"ms":1
+21:25:37 k0-kopf  tausch "chunksNeu":1  bank 6.42 6.43 6.42   takt 1695 MHz 78 C (n=33)  prog 21/20/19/21  karte "ergebnis":[1,null],"ms":2
+21:25:56 k1-ohneMisch  tausch "chunksNeu":1  bank 6.54 6.55 6.55   takt 1713 MHz 79 C (n=34)  prog 21/20/19/21  karte "ergebnis":[1,null],"ms":2
+21:26:14 k0-kopf  tausch "chunksNeu":1  bank 6.53 6.54 6.53   takt 1705 MHz 81 C (n=34)  prog 21/20/19/21  karte "ergebnis":[1,null],"ms":1
+21:26:32 k1-ohneMisch  tausch "chunksNeu":1  bank 6.51 6.52 6.51   takt 1693 MHz 82 C (n=34)  prog 21/20/19/21  karte "ergebnis":[1,null],"ms":1
+21:26:50 k0-kopf  tausch "chunksNeu":1  bank 6.48 6.48 6.49   takt 1695 MHz 83 C (n=34)  prog 21/20/19/21  karte "ergebnis":[1,null],"ms":1
+21:26:56 ABAB ENDE

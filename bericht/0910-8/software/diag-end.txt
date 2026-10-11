@@ -1,0 +1,11 @@
+SELBSTTEST GRÜN: das Nah-Fern-Urteil nennt die zwei Farben derselben Stelle beim Namen
+  wald  -911/-883    Deckung 1 · nah Y 0.0525 · fern Y 0.063 · -17 % · Gesetz Y 0.0534: nah -0.017 (Grün 0.001), fern 0.18 (Grün -0.005)
+  wald  -911/-850    Deckung 1 · nah Y 0.054 · fern Y 0.0626 · -14 % · Gesetz Y 0.0542: nah -0.004 (Grün 0), fern 0.155 (Grün -0.01)
+  wald  -889/-828    Deckung 1 · nah Y 0.0546 · fern Y 0.057 · -4 % · Gesetz Y 0.0553: nah -0.013 (Grün 0.002), fern 0.031 (Grün -0.003)
+  wald  -878/-872    Deckung 1 · nah Y 0.054 · fern Y 0.0582 · -7 % · Gesetz Y 0.0542: nah -0.004 (Grün 0.003), fern 0.074 (Grün -0.002)
+  wiese -900/-817    Deckung 0.46 · nah Y 0.0545 · fern Y 0.0581 · -6 % · Gesetz Y 0.0551: nah -0.011 (Grün 0.004), fern 0.054 (Grün -0.007)
+  wiese -922/-872    Deckung 0.49 · nah Y 0.0528 · fern Y 0.0635 · -17 % · Gesetz Y 0.0538: nah -0.019 (Grün -0.001), fern 0.18 (Grün -0.011)
+  wiese -845/-817    Deckung 0.7 · nah Y 0.0537 · fern Y 0.0547 · -2 % · Gesetz Y 0.0548: nah -0.02 (Grün 0.008), fern -0.002 (Grün 0)
+
+✅ NAH-FERN GRÜN — EINE Boden-Farbe je Ort
+diag-nah-fern: Start 6 s · Umstellen 10 s · Linse 14 s

@@ -1,0 +1,88 @@
+{
+ "ergebnis": {
+  "halb": 66,
+  "orte": [
+   {
+    "ort": [
+     -1010,
+     -949
+    ],
+    "klasse": "wald",
+    "nahBodenOhneKrone": 0.1298,
+    "gesetzBoden": 0.113,
+    "verhaeltnis": 1.149
+   },
+   {
+    "ort": [
+     -1010,
+     -872
+    ],
+    "klasse": "wald",
+    "nahBodenOhneKrone": 0.13,
+    "gesetzBoden": 0.1137,
+    "verhaeltnis": 1.143
+   },
+   {
+    "ort": [
+     -1010,
+     -817
+    ],
+    "klasse": "wald",
+    "nahBodenOhneKrone": 0.13,
+    "gesetzBoden": 0.1114,
+    "verhaeltnis": 1.167
+   },
+   {
+    "ort": [
+     -1010,
+     -784
+    ],
+    "klasse": "wald",
+    "nahBodenOhneKrone": 0.1273,
+    "gesetzBoden": 0.1098,
+    "verhaeltnis": 1.159
+   },
+   {
+    "ort": [
+     -856,
+     -718
+    ],
+    "klasse": "wiese",
+    "nahBodenOhneKrone": 0.1091,
+    "gesetzBoden": 0.1022,
+    "verhaeltnis": 1.068
+   },
+   {
+    "ort": [
+     -867,
+     -773
+    ],
+    "klasse": "wiese",
+    "nahBodenOhneKrone": 0.1163,
+    "gesetzBoden": 0.1086,
+    "verhaeltnis": 1.071
+   },
+   {
+    "ort": [
+     -779,
+     -784
+    ],
+    "klasse": "wiese",
+    "nahBodenOhneKrone": 0.1128,
+    "gesetzBoden": 0.1099,
+    "verhaeltnis": 1.027
+   },
+   {
+    "ort": [
+     -779,
+     -850
+    ],
+    "klasse": "wiese",
+    "nahBodenOhneKrone": 0.1241,
+    "gesetzBoden": 0.1153,
+    "verhaeltnis": 1.076
+   }
+  ]
+ },
+ "ms": 419
+}

@@ -1,0 +1,3 @@
+Laufzeit: 28s · 20 ✅ · 0 ❌
+
+✅ Kern-Gesundheit OK — für den Merge: 'npm run playtest' (voll).
