@@ -1,0 +1,11 @@
+15:57:17 1110-6 WIEDERHOLBARKEIT START edd47e66
+15:58:30 buehne-1 exit=0   gpu-bank Pose s0-hang: 7.14 ms je Frame    gpu-bank Pose s4-hindernisse: 6.76 ms je Frame    gpu-bank Pose s5-bucht: 7.835 ms je Frame  
+16:00:02 buehne-2 exit=0   gpu-bank Pose s0-hang: 7.155 ms je Frame    gpu-bank Pose s4-hindernisse: 6.565 ms je Frame    gpu-bank Pose s5-bucht: 7.645 ms je Frame  
+16:01:57 buehne-3 exit=0   gpu-bank Pose s0-hang: 13.01 ms je Frame    gpu-bank Pose s4-hindernisse: 7.245 ms je Frame    gpu-bank Pose s5-bucht: 8.425 ms je Frame  
+16:03:51 buehne-4 exit=0   gpu-bank Pose s0-hang: 13.075 ms je Frame    gpu-bank Pose s4-hindernisse: 7.265 ms je Frame    gpu-bank Pose s5-bucht: 8.43 ms je Frame  
+16:04:18 streuung exit=1
+16:05:14 eich an   15.56 13.4 
+16:06:04 eich aus  12.69 12.73 
+16:06:29 eich an   13.26 12.97 
+16:06:52 eich aus  12.8 12.79 
+16:06:59 1110-6 WIEDERHOLBARKEIT ENDE

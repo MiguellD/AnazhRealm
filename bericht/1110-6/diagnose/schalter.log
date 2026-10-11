@@ -1,0 +1,4 @@
+16:55:23 d1 bank 6.5 6.51 6.53  "ergebnis":{"lichter":["AmbientLight:-:0:true:","DirectionalLight:-:7.433:true:wurf","HemisphereLight:-:0:true:"],"hoehle":true,"himmelAmAuge":1,"augenLichtImGraph":false},"ms":2}
+16:57:08 d2 bank 6.52 6.55 6.54  "ergebnis":{"lichter":["AmbientLight:-:-0.032:true:","DirectionalLight:-:7.433:true:wurf","HemisphereLight:-:0:true:"],"hoehle":true,"himmelAmAuge":1,"augenLichtImGraph":false},"ms":2}
+16:58:54 d3 bank 6.55 6.57 6.56  "ergebnis":{"lichter":["AmbientLight:-:-0.03:true:","DirectionalLight:-:7.433:true:wurf","HemisphereLight:-:0:true:"],"hoehle":true,"himmelAmAuge":1,"augenLichtImGraph":false},"ms":2}
+16:59:01 SCHALTER ENDE

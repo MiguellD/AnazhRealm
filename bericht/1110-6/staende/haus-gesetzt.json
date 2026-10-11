@@ -1,0 +1,11 @@
+{
+ "ergebnis": {
+  "haus": true,
+  "x": 400,
+  "hoehe": 9.1,
+  "typ": "haus_griechisch",
+  "gezeichnet": true,
+  "bauWurf": 1
+ },
+ "ms": 2211
+}

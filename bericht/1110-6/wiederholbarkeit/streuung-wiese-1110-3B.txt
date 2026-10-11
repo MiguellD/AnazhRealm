@@ -1,0 +1,8 @@
+
+=== DIE WIEDERHOLBARKEIT am Ort wiese: 4 Sitzungen, Soll Spanne ≤ 0.1 ms ===
+  0: 13.45 · 11.96 · 13.30 · 11.82 → Mittel 12.633, Spanne 1.63, σ 0.861 (2σ 1.722)
+  -0.88: 12.20 · 11.52 · 12.51 · 10.73 → Mittel 11.74, Spanne 1.78, σ 0.79 (2σ 1.580)
+  ROT STREUUNG 0: Spanne 1.63 ms über dem Soll 0.1 ms (13.45 · 11.96 · 13.30 · 11.82)
+  ROT STREUUNG -0.88: Spanne 1.78 ms über dem Soll 0.1 ms (12.20 · 11.52 · 12.51 · 10.73)
+
+❌ STREUUNG ROT — der Ort wiese ist für Toggle-Urteile unter 0.1 ms blind.

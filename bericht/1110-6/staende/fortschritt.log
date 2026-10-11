@@ -1,0 +1,30 @@
+16:28:13 1110-6 STAENDE START
+16:28:20 S1-pruefbuehne (953186f4) Augen-Licht im Stand: 0 · in der Szene nach dem Patch: 0
+16:29:48 S1-pruefbuehne-v exit=0  ost: 6.225   west: 6.245   s4-hindernisse: 6.47   s5-bucht: 7.465  
+16:30:16 S2-egoschatten (9ecb874c) Augen-Licht im Stand: 0 · in der Szene nach dem Patch: 0
+16:31:42 S2-egoschatten-v exit=0  ost: 6.25   west: 6.275   s4-hindernisse: 6.475   s5-bucht: 7.47  
+16:32:09 S3-haus (1c47714d) Augen-Licht im Stand: 0 · in der Szene nach dem Patch: 0
+16:33:42 S3-haus-v exit=0  ost: 6.225   west: 6.265   s4-hindernisse: 6.475   s5-bucht: 7.455  
+16:34:09 S4-koerperbild (269ecfa8) Augen-Licht im Stand: 1 · in der Szene nach dem Patch: 0
+16:35:42 S4-koerperbild-v exit=0  ost: 6.32   west: 6.34   s4-hindernisse: 6.53   s5-bucht: 7.49  
+16:36:10 S5-wasser (b0bcb073) Augen-Licht im Stand: 1 · in der Szene nach dem Patch: 0
+16:37:38 S5-wasser-v exit=0  ost: 6.315   west: 6.35   s4-hindernisse: 6.54   s5-bucht: 7.58  
+16:38:06 S6-werkstatt (03997b3f) Augen-Licht im Stand: 1 · in der Szene nach dem Patch: 0
+16:39:40 S6-werkstatt-v exit=0  ost: 6.505   west: 6.54   s4-hindernisse: 6.685   s5-bucht: 7.695  
+16:40:07 S6-werkstatt (03997b3f) Augen-Licht im Stand: 1 · in der Szene nach dem Patch: 0
+16:41:39 S6-werkstatt-r exit=0  ost: 6.515   west: 6.535   s4-hindernisse: 6.69   s5-bucht: 7.7  
+16:42:07 S5-wasser (b0bcb073) Augen-Licht im Stand: 1 · in der Szene nach dem Patch: 0
+16:43:37 S5-wasser-r exit=0  ost: 6.505   west: 6.54   s4-hindernisse: 6.69   s5-bucht: 7.705  
+16:44:05 S4-koerperbild (269ecfa8) Augen-Licht im Stand: 1 · in der Szene nach dem Patch: 0
+16:45:36 S4-koerperbild-r exit=0  ost: 6.51   west: 6.545   s4-hindernisse: 6.68   s5-bucht: 7.69  
+16:46:03 S3-haus (1c47714d) Augen-Licht im Stand: 0 · in der Szene nach dem Patch: 0
+16:47:31 S3-haus-r exit=0  ost: 6.25   west: 6.285   s4-hindernisse: 6.495   s5-bucht: 7.46  
+16:47:59 S2-egoschatten (9ecb874c) Augen-Licht im Stand: 0 · in der Szene nach dem Patch: 0
+16:49:32 S2-egoschatten-r exit=0  ost: 6.275   west: 6.29   s4-hindernisse: 6.5   s5-bucht: 7.46  
+16:49:59 S1-pruefbuehne (953186f4) Augen-Licht im Stand: 0 · in der Szene nach dem Patch: 0
+16:51:27 S1-pruefbuehne-r exit=0  ost: 6.215   west: 6.255   s4-hindernisse: 6.49   s5-bucht: 7.455  
+16:51:54 S6-haus (03997b3f) Augen-Licht im Stand: 1 · in der Szene nach dem Patch: 0
+16:52:33 haus mit        6.35 6.35 6.37 
+16:52:50 haus ohne Wurf  6.56 6.39 6.38   ("ergebnis": 1)
+16:53:07 haus mit        6.6 6.42 6.44 
+16:53:14 1110-6 STAENDE ENDE

@@ -1,0 +1,56 @@
+{
+ "ergebnis": {
+  "pixelRatio": 1,
+  "canvas": [
+   1920,
+   1080
+  ],
+  "traa": true,
+  "kaskaden": 2,
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "saison": 0.375,
+  "wasser": -3,
+  "chunks": 37,
+  "fern": true,
+  "feldPass": false,
+  "stell": [
+   235,
+   150,
+   1,
+   1000
+  ],
+  "lodPerf": 1,
+  "belichtung": 0.615652536029641,
+  "sichtbar": {
+   "himmel": 1,
+   "himmel-sonne": 1,
+   "bau:start_plattform": 2,
+   "fern-ring": 3,
+   "bau:welt_klang": 3,
+   "bau:welt_koerperstudio": 5,
+   "bau:welt_tetrapoda": 2,
+   "bodenSatz": 1,
+   "portal-membran": 8,
+   "portal-nebel": 7,
+   "spieler": 14,
+   "bau:esse": 4,
+   "dorf-rauch": 1,
+   "f:verkalkt:L0": 13,
+   "f:geisttor:L0": 8,
+   "f:maschine:L0": 10,
+   "f:maurentor:L0": 13,
+   "f:kathedrale:L0": 7,
+   "f:ruine:L0": 7,
+   "f:drachentor:L0": 13,
+   "f:gt:L0": 12,
+   "fimp:atlas:L2": 1,
+   "bauSatz": 4,
+   "bauWurf": 1,
+   "nahWiese:L1": 2,
+   "nahWiese:L2": 2,
+   "farWater": 1
+  }
+ },
+ "ms": 3
+}

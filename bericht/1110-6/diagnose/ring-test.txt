@@ -1,0 +1,11 @@
+# 1110-6 Ring-Test (mb/ring-test.sh, EINE Sitzung, V18.540 27e369d8, Stellgrößen fest, Ring NICHT fest): je Pose Chunks,
+# Takte, sichtbare Tore des Genesis-Rings und zwei Bänke 120×6 — vor und nach einem Besuch am Ursprung (Konsolen-Ausgabe).
+vor [300, 0, 420, 0]   chunks 25 takte 51 tore 0   bank 6.51 6.53
+vor [-300, 0, -420, 0] chunks 25 takte 50 tore 0   bank 6.51 6.52
+vor [0, -260, 0, -380] chunks 25 takte 40 tore 0   bank 7.67 7.68
+vor [0, -140, 0, -170] chunks 30 takte 40 tore 0   bank 6.71 6.71
+zum Ring [0, 0 → 0, 148]: chunks 30 → 81, tore 71 (drei Takt-Runden je 81 Chunks, 71 Tore)
+nach [300, 0, 420, 0]   chunks 90 takte 84 tore 0  bank 7.31 7.31
+nach [-300, 0, -420, 0] chunks 81 takte 80 tore 0  bank 7.33 7.34
+nach [0, -260, 0, -380] chunks 86 takte 76 tore 0  bank 8.71 8.72
+nach [0, -140, 0, -170] chunks 93 takte 41 tore 0  bank 7.54 7.55

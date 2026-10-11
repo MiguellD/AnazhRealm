@@ -1,0 +1,8 @@
+
+=== DIE WIEDERHOLBARKEIT am Ort buehne: 4 Sitzungen, Soll Spanne ≤ 0.1 ms ===
+  ost: 6.49 · 6.54 · 6.57 · 6.55 → Mittel 6.535, Spanne 0.075, σ 0.032 (2σ 0.064)
+  west: 6.53 · 6.58 · 6.55 · 6.58 → Mittel 6.561, Spanne 0.05, σ 0.024 (2σ 0.048)
+  s4-hindernisse: 6.74 · 6.73 · 6.76 · 6.75 → Mittel 6.744, Spanne 0.03, σ 0.012 (2σ 0.024)
+  s5-bucht: 7.75 · 7.75 · 7.76 · 7.76 → Mittel 7.758, Spanne 0.015, σ 0.006 (2σ 0.012)
+
+✅ STREUUNG GRÜN — der Ort buehne richtet Toggle-Urteile ab 0.1 ms.
